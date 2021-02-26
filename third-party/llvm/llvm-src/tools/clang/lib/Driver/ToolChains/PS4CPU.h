@@ -1,9 +1,8 @@
 //===--- PS4CPU.h - PS4CPU ToolChain Implementations ------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -27,8 +26,7 @@ void addSanitizerArgs(const ToolChain &TC, llvm::opt::ArgStringList &CmdArgs);
 
 class LLVM_LIBRARY_VISIBILITY Assemble : public Tool {
 public:
-  Assemble(const ToolChain &TC)
-      : Tool("PS4cpu::Assemble", "assembler", TC, RF_Full) {}
+  Assemble(const ToolChain &TC) : Tool("PS4cpu::Assemble", "assembler", TC) {}
 
   bool hasIntegratedCPP() const override { return false; }
 
@@ -41,7 +39,7 @@ public:
 
 class LLVM_LIBRARY_VISIBILITY Link : public Tool {
 public:
-  Link(const ToolChain &TC) : Tool("PS4cpu::Link", "linker", TC, RF_Full) {}
+  Link(const ToolChain &TC) : Tool("PS4cpu::Link", "linker", TC) {}
 
   bool hasIntegratedCPP() const override { return false; }
   bool isLinkJob() const override { return true; }
@@ -84,6 +82,24 @@ public:
   }
 
   SanitizerMask getSupportedSanitizers() const override;
+
+  // PS4 toolchain uses legacy thin LTO API, which is not
+  // capable of unit splitting.
+  bool canSplitThinLTOUnit() const override { return false; }
+
+  void addClangTargetOptions(
+    const llvm::opt::ArgList &DriverArgs,
+    llvm::opt::ArgStringList &CC1Args,
+    Action::OffloadKind DeviceOffloadingKind) const override;
+
+  llvm::DenormalMode getDefaultDenormalModeForType(
+      const llvm::opt::ArgList &DriverArgs, const JobAction &JA,
+      const llvm::fltSemantics *FPType) const override {
+    // DAZ and FTZ are on by default.
+    return llvm::DenormalMode::getPreserveSign();
+  }
+
+  bool useRelaxRelocations() const override { return true; }
 
 protected:
   Tool *buildAssembler() const override;

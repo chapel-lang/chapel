@@ -1,9 +1,8 @@
 //===- lib/Support/CodeGenCoverage.cpp -------------------------------------==//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 /// \file
@@ -12,19 +11,13 @@
 
 #include "llvm/Support/CodeGenCoverage.h"
 
-#include "llvm/Config/llvm-config.h"
 #include "llvm/Support/Endian.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/Mutex.h"
+#include "llvm/Support/Process.h"
 #include "llvm/Support/ScopedPrinter.h"
 #include "llvm/Support/ToolOutputFile.h"
-
-#if LLVM_ON_UNIX
-#include <unistd.h>
-#elif defined(_WIN32)
-#include <windows.h>
-#endif
 
 using namespace llvm;
 
@@ -90,21 +83,14 @@ bool CodeGenCoverage::emit(StringRef CoveragePrefix,
     // We can handle locking within a process easily enough but we don't want to
     // manage it between multiple processes. Use the process ID to ensure no
     // more than one process is ever writing to the same file at the same time.
-    std::string Pid =
-#if LLVM_ON_UNIX
-        llvm::to_string(::getpid());
-#elif defined(_WIN32)
-        llvm::to_string(::GetCurrentProcessId());
-#else
-        "";
-#endif
+    std::string Pid = llvm::to_string(sys::Process::getProcessId());
 
     std::string CoverageFilename = (CoveragePrefix + Pid).str();
 
     std::error_code EC;
-    sys::fs::OpenFlags OpenFlags = sys::fs::F_Append;
+    sys::fs::OpenFlags OpenFlags = sys::fs::OF_Append;
     std::unique_ptr<ToolOutputFile> CoverageFile =
-        llvm::make_unique<ToolOutputFile>(CoverageFilename, EC, OpenFlags);
+        std::make_unique<ToolOutputFile>(CoverageFilename, EC, OpenFlags);
     if (EC)
       return false;
 

@@ -1,7 +1,7 @@
 /* Test conversion using mpz_get_str and mpz_set_str.
 
-Copyright 1993, 1994, 1996, 1999-2002, 2006, 2007 Free Software Foundation,
-Inc.
+Copyright 1993, 1994, 1996, 1999-2002, 2006, 2007, 2020 Free Software
+Foundation, Inc.
 
 This file is part of the GNU MP Library test suite.
 
@@ -21,13 +21,14 @@ the GNU MP Library test suite.  If not, see https://www.gnu.org/licenses/.  */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h> /* for strlen */
+#include <ctype.h> /* for tolower */
 
-#include "gmp.h"
 #include "gmp-impl.h"
 #include "tests.h"
 
 void debug_mp (mpz_t, int);
 
+static int str_casecmp (const char *, const char *);
 
 void
 string_urandomb (char *bp, size_t len, int base, gmp_randstate_ptr rands)
@@ -141,7 +142,7 @@ main (int argc, char **argv)
       for (bp = buf; bp[0] == '0' && bp[1] != '\0'; bp++)
 	;
 
-      if (strcasecmp (str, bp) != 0)
+      if (str_casecmp (str, bp) != 0)
 	{
 	  fprintf (stderr, "ERROR, str and buf different in test %d\n", i);
 	  fprintf (stderr, "str  = %s\n", str);
@@ -161,6 +162,21 @@ main (int argc, char **argv)
 
   tests_end ();
   exit (0);
+}
+
+/* This is similar to POSIX strcasecmp except that we don't do the comparison
+   with unsigned char.  We avoid strcasecmp for C standard conformance.  */
+static int
+str_casecmp (const char *s1, const char *s2)
+{
+  size_t i;
+  for (i = 0;; i++)
+    {
+      int c1 = s1[i];
+      int c2 = s2[i];
+      if (c1 == 0 || tolower (c1) != tolower (c2))
+	return c1 - c2;
+    }
 }
 
 void

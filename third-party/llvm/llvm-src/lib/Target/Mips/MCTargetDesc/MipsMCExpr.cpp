@@ -1,9 +1,8 @@
 //===-- MipsMCExpr.cpp - Mips specific MC expression classes --------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -212,7 +211,8 @@ MipsMCExpr::evaluateAsRelocatableImpl(MCValue &Res,
   // The value of getKind() that is given to MCValue is only intended to aid
   // debugging when inspecting MCValue objects. It shouldn't be relied upon
   // for decision making.
-  Res = MCValue::get(Res.getSymA(), Res.getSymB(), Res.getConstant(), getKind());
+  Res =
+      MCValue::get(Res.getSymA(), Res.getSymB(), Res.getConstant(), getKind());
 
   return true;
 }

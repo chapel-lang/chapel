@@ -1,2 +1,2 @@
 tuple-assignment-1.chpl:3: In function 'main':
-tuple-assignment-1.chpl:5: error: illegal lvalue in assignment
+tuple-assignment-1.chpl:5: error: cannot assign to const variable

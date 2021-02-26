@@ -1,3 +1,4 @@
+use CPtr;
 use Random;
 
 config const nBytes = 100000;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -262,8 +262,8 @@ static void makeDir(const char* dirpath) {
   static const int dirPerms = S_IRWXU | S_IRWXG | S_IRWXO;
   int result = mkdir(dirpath, dirPerms);
   if (result != 0 && errno != 0 && errno != EEXIST) {
-    USR_FATAL(astr("Failed to create directory: ", dirpath,
-                   " due to: ", strerror(errno)));
+    USR_FATAL("Failed to create directory: %s due to: %s",
+              dirpath, strerror(errno));
   }
 }
 
@@ -366,8 +366,7 @@ static char * checkProjectVersion(char * projectVersion) {
   if(check) {
     return projectVersion;
   } else {
-    USR_FATAL(astr("Invalid version format: ", projectVersion,
-                    " due to: ", error));
+    USR_FATAL("Invalid version format: %s due to: %s", projectVersion, error);
   }
   return NULL;
 }
@@ -378,17 +377,12 @@ static char * checkProjectVersion(char * projectVersion) {
  * outputDir for generated html files.
  */
 void generateSphinxOutput(std::string sphinxDir, std::string outputDir) {
-  // Set the PATH and VIRTUAL_ENV variables in the environment. The values are
-  // based on the install path in the third-party/chpl-venv/ dir.
-
-  const char * venvDir = astr(getVenvDir().c_str());
-  const char * venvBinDir = astr(venvDir, "/bin");
-  const char * sphinxBuild = astr("sphinx-build");
+  const char * sphinxBuild = astr("python3", " ",
+                                  getChplDepsApp().c_str(), " ",
+                                  "sphinx-build");
   const char * venvProjectVersion = checkProjectVersion(fDocsProjectVersion);
 
-  const char * envVars = astr("export PATH=\"", venvBinDir, ":$PATH\" && "
-                              "export VIRTUAL_ENV=", venvDir, " && "
-                              "export CHPLDOC_AUTHOR='", fDocsAuthor, "' && "
+  const char * envVars = astr("export CHPLDOC_AUTHOR='", fDocsAuthor, "' && "
                               "export CHPLDOC_PROJECT_VERSION='", venvProjectVersion, "'");
 
   // Run:

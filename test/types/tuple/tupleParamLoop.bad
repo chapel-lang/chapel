@@ -1,1 +1,1 @@
-tupleParamLoop.chpl:3: error: iterators for param-for-loops must be bounded literal ranges
+tupleParamLoop.chpl:3: error: param for-loops currently only support range expressions with well-defined param integral bounds

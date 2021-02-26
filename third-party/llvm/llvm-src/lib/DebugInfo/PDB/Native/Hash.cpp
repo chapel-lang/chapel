@@ -1,16 +1,15 @@
 //===- Hash.cpp - PDB Hash Functions --------------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
 #include "llvm/DebugInfo/PDB/Native/Hash.h"
 #include "llvm/ADT/ArrayRef.h"
+#include "llvm/Support/CRC.h"
 #include "llvm/Support/Endian.h"
-#include "llvm/Support/JamCRC.h"
 #include <cstdint>
 
 using namespace llvm;
@@ -80,7 +79,6 @@ uint32_t pdb::hashStringV2(StringRef Str) {
 // Corresponds to `SigForPbCb` in langapi/shared/crc32.h.
 uint32_t pdb::hashBufferV8(ArrayRef<uint8_t> Buf) {
   JamCRC JC(/*Init=*/0U);
-  JC.update(makeArrayRef<char>(reinterpret_cast<const char *>(Buf.data()),
-                               Buf.size()));
+  JC.update(Buf);
   return JC.getCRC();
 }

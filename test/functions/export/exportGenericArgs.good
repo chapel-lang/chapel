@@ -8,3 +8,5 @@ exportGenericArgs.chpl:10: error: exported function `queryType` can't be generic
 exportGenericArgs.chpl:10: note:    formal argument 'y' causes it to be
 exportGenericArgs.chpl:13: error: exported function `twoGenerics` can't be generic
 exportGenericArgs.chpl:13: note:    formal argument 't' causes it to be
+exportGenericArgs.chpl:13: error: exported function `twoGenerics` can't be generic
+exportGenericArgs.chpl:13: note:    formal argument 'p' causes it to be

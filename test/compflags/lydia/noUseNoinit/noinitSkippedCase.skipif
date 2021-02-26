@@ -1,4 +1,0 @@
-# This test is intended to verify the use, absence, and default behavior
-# of --no-use-noinit is correct.  Specifically throwing --no-use-noinit
-# alters the perception of default behavior.
-COMPOPTS <= --no-use-noinit

@@ -1,9 +1,8 @@
 //===- gcov.cpp - GCOV compatible LLVM coverage tool ----------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -66,11 +65,11 @@ static void reportCoverage(StringRef SourceFile, StringRef ObjectDir,
     // Clear the filename to make it clear we didn't read anything.
     GCDA = "-";
   } else {
-    GCOVBuffer GCDA_GB(GCDA_Buff.get().get());
-    if (!GF.readGCDA(GCDA_GB)) {
+    GCOVBuffer gcda_buf(GCDA_Buff.get().get());
+    if (!gcda_buf.readGCDAFormat())
+      errs() << GCDA << ":not a gcov data file\n";
+    else if (!GF.readGCDA(gcda_buf))
       errs() << "Invalid .gcda File!\n";
-      return;
-    }
   }
 
   if (DumpGCOV)
@@ -78,7 +77,7 @@ static void reportCoverage(StringRef SourceFile, StringRef ObjectDir,
 
   FileInfo FI(Options);
   GF.collectLineCounts(FI);
-  FI.print(llvm::outs(), SourceFile, GCNO, GCDA);
+  FI.print(llvm::outs(), SourceFile, GCNO, GCDA, GF);
 }
 
 int gcovMain(int argc, const char *argv[]) {
@@ -106,6 +105,16 @@ int gcovMain(int argc, const char *argv[]) {
                             cl::desc("Show coverage for each function"));
   cl::alias FuncSummaryA("function-summaries", cl::aliasopt(FuncSummary));
 
+  // Supported by gcov 4.9~8. gcov 9 (GCC r265587) removed --intermediate-format
+  // and -i was changed to mean --json-format. We consider this format still
+  // useful and support -i.
+  cl::opt<bool> Intermediate(
+      "intermediate-format", cl::init(false),
+      cl::desc("Output .gcov in intermediate text format"));
+  cl::alias IntermediateA("i", cl::desc("Alias for --intermediate-format"),
+                          cl::Grouping, cl::NotHidden,
+                          cl::aliasopt(Intermediate));
+
   cl::opt<bool> NoOutput("n", cl::Grouping, cl::init(false),
                          cl::desc("Do not output any .gcov files"));
   cl::alias NoOutputA("no-output", cl::aliasopt(NoOutput));
@@ -120,10 +129,19 @@ int gcovMain(int argc, const char *argv[]) {
                               cl::desc("Preserve path components"));
   cl::alias PreservePathsA("preserve-paths", cl::aliasopt(PreservePaths));
 
+  cl::opt<bool> UseStdout("t", cl::Grouping, cl::init(false),
+                          cl::desc("Print to stdout"));
+  cl::alias UseStdoutA("stdout", cl::aliasopt(UseStdout));
+
   cl::opt<bool> UncondBranch("u", cl::Grouping, cl::init(false),
                              cl::desc("Display unconditional branch info "
                                       "(requires -b)"));
   cl::alias UncondBranchA("unconditional-branches", cl::aliasopt(UncondBranch));
+
+  cl::opt<bool> HashFilenames("x", cl::Grouping, cl::init(false),
+                              cl::desc("Hash long pathnames"));
+  cl::alias HashFilenamesA("hash-filenames", cl::aliasopt(HashFilenames));
+
 
   cl::OptionCategory DebugCat("Internal and debugging options");
   cl::opt<bool> DumpGCOV("dump", cl::init(false), cl::cat(DebugCat),
@@ -136,7 +154,8 @@ int gcovMain(int argc, const char *argv[]) {
   cl::ParseCommandLineOptions(argc, argv, "LLVM code coverage tool\n");
 
   GCOV::Options Options(AllBlocks, BranchProb, BranchCount, FuncSummary,
-                        PreservePaths, UncondBranch, LongNames, NoOutput);
+                        PreservePaths, UncondBranch, Intermediate, LongNames,
+                        NoOutput, UseStdout, HashFilenames);
 
   for (const auto &SourceFile : SourceFiles)
     reportCoverage(SourceFile, ObjectDir, InputGCNO, InputGCDA, DumpGCOV,

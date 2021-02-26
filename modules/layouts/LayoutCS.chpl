@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -153,7 +153,8 @@ class CSDom: BaseSparseDomImpl {
   override proc dsiMyDist() return dist;
 
   proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
-    if _to_borrowed(rhs._instance.type) == this.type && this.dsiNumIndices == 0 {
+    if _to_borrowed(rhs._instance.type) == this.type && 
+       canDoDirectAssignment(rhs) {
       // Optimized CSC->CSC / CSR->CSR
 
       // ENGIN: We cannot use bulkGrow here, because rhs might be grown using
@@ -177,9 +178,13 @@ class CSDom: BaseSparseDomImpl {
     }
   }
 
-  proc dsiBuildArray(type eltType)
-    return new unmanaged CSArr(eltType=eltType, rank=rank, idxType=idxType, dom=_to_unmanaged(this));
+  proc dsiBuildArray(type eltType, param initElts: bool) {
+    return new unmanaged CSArr(eltType=eltType, rank=rank, idxType=idxType,
+                               dom=_to_unmanaged(this),
+                               initElts=initElts);
+  }
 
+  pragma "not order independent yielding loops"
   iter dsiIndsIterSafeForRemoving() {
     var cursor = if this.compressRows then rowRange.high else colRange.high;
     for i in 1.._nnz by -1 {
@@ -194,6 +199,7 @@ class CSDom: BaseSparseDomImpl {
     }
   }
 
+  pragma "not order independent yielding loops"
   iter these() {
     // TODO: Is it faster to start at _private_findStart(1) ?
     var cursor = if this.compressRows then rowRange.low else colRange.low;
@@ -209,6 +215,7 @@ class CSDom: BaseSparseDomImpl {
   }
 
   iter these(param tag: iterKind) where tag == iterKind.leader {
+    use DSIUtil;
     // same as DefaultSparseDom's leader
     const numElems = _nnz;
     const numChunks = _computeNumChunks(numElems);
@@ -226,6 +233,7 @@ class CSDom: BaseSparseDomImpl {
     // pass to the tasks created in 'coforall' smaller ranges to search over.
   }
 
+  pragma "not order independent yielding loops"
   iter these(param tag: iterKind, followThis: (?,?,?)) where tag == iterKind.follower {
     var (followThisDom, startIx, endIx) = followThis;
     if boundsChecking then
@@ -594,6 +602,7 @@ class CSDom: BaseSparseDomImpl {
     startIdx = 1;
   }
 
+  pragma "order independent yielding loops"
   iter dimIter(param d, ind) {
     if (d != 1 && this.compressRows) {
       compilerError("dimIter(0, ..) not supported on CS(compressRows=true) domains");
@@ -635,6 +644,16 @@ class CSDom: BaseSparseDomImpl {
 
 class CSArr: BaseSparseArrImpl {
 
+  proc init(type eltType,
+            param rank : int,
+            type idxType,
+            dom,
+            param initElts:bool) {
+    super.init(eltType, rank, idxType, dom, initElts);
+  }
+
+  // dsiDestroyArr is defined in BaseSparseArrImpl
+
   proc dsiAccess(ind: rank*idxType) ref {
     // make sure we're in the dense bounding box
     dom.boundsCheck(ind);
@@ -675,6 +694,7 @@ class CSArr: BaseSparseArrImpl {
 
 
 
+  pragma "order independent yielding loops"
   iter these() ref {
     for i in 1..dom._nnz do yield data[i];
   }
@@ -687,6 +707,7 @@ class CSArr: BaseSparseArrImpl {
       yield followThis;
   }
 
+  pragma "order independent yielding loops"
   iter these(param tag: iterKind, followThis: (?,?,?)) ref where tag == iterKind.follower {
     // simpler than CSDom's follower - no need to deal with rows (or columns)
     var (followThisDom, startIx, endIx) = followThis;

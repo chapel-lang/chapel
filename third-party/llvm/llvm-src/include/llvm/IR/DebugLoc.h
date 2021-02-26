@@ -1,9 +1,8 @@
 //===- DebugLoc.h - Debug Location Information ------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -86,7 +85,7 @@ namespace llvm {
     /// the chain now is inlined-at the new call site.
     /// \param   InlinedAt    The new outermost inlined-at in the chain.
     /// \param   ReplaceLast  Replace the last location in the inlined-at chain.
-    static DebugLoc appendInlinedAt(DebugLoc DL, DILocation *InlinedAt,
+    static DebugLoc appendInlinedAt(const DebugLoc &DL, DILocation *InlinedAt,
                                     LLVMContext &Ctx,
                                     DenseMap<const MDNode *, MDNode *> &Cache,
                                     bool ReplaceLast = false);

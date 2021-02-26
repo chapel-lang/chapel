@@ -1,9 +1,8 @@
 //===-- ARMSelectionDAGInfo.cpp - ARM SelectionDAG Info -------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -127,24 +126,24 @@ SDValue ARMSelectionDAGInfo::EmitSpecializedLibcall(
 
 SDValue ARMSelectionDAGInfo::EmitTargetCodeForMemcpy(
     SelectionDAG &DAG, const SDLoc &dl, SDValue Chain, SDValue Dst, SDValue Src,
-    SDValue Size, unsigned Align, bool isVolatile, bool AlwaysInline,
+    SDValue Size, Align Alignment, bool isVolatile, bool AlwaysInline,
     MachinePointerInfo DstPtrInfo, MachinePointerInfo SrcPtrInfo) const {
   const ARMSubtarget &Subtarget =
       DAG.getMachineFunction().getSubtarget<ARMSubtarget>();
   // Do repeated 4-byte loads and stores. To be improved.
   // This requires 4-byte alignment.
-  if ((Align & 3) != 0)
+  if (Alignment < Align(4))
     return SDValue();
   // This requires the copy size to be a constant, preferably
   // within a subtarget-specific limit.
   ConstantSDNode *ConstantSize = dyn_cast<ConstantSDNode>(Size);
   if (!ConstantSize)
-    return EmitSpecializedLibcall(DAG, dl, Chain, Dst, Src, Size, Align,
-                                  RTLIB::MEMCPY);
+    return EmitSpecializedLibcall(DAG, dl, Chain, Dst, Src, Size,
+                                  Alignment.value(), RTLIB::MEMCPY);
   uint64_t SizeVal = ConstantSize->getZExtValue();
   if (!AlwaysInline && SizeVal > Subtarget.getMaxInlineSizeThreshold())
-    return EmitSpecializedLibcall(DAG, dl, Chain, Dst, Src, Size, Align,
-                                  RTLIB::MEMCPY);
+    return EmitSpecializedLibcall(DAG, dl, Chain, Dst, Src, Size,
+                                  Alignment.value(), RTLIB::MEMCPY);
 
   unsigned BytesLeft = SizeVal & 3;
   unsigned NumMemOps = SizeVal >> 2;
@@ -171,7 +170,7 @@ SDValue ARMSelectionDAGInfo::EmitTargetCodeForMemcpy(
 
   // Code size optimisation: do not inline memcpy if expansion results in
   // more instructions than the libary call.
-  if (NumMEMCPYs > 1 && DAG.getMachineFunction().getFunction().optForMinSize()) {
+  if (NumMEMCPYs > 1 && Subtarget.hasMinSize()) {
     return SDValue();
   }
 
@@ -241,16 +240,16 @@ SDValue ARMSelectionDAGInfo::EmitTargetCodeForMemcpy(
 
 SDValue ARMSelectionDAGInfo::EmitTargetCodeForMemmove(
     SelectionDAG &DAG, const SDLoc &dl, SDValue Chain, SDValue Dst, SDValue Src,
-    SDValue Size, unsigned Align, bool isVolatile,
+    SDValue Size, Align Alignment, bool isVolatile,
     MachinePointerInfo DstPtrInfo, MachinePointerInfo SrcPtrInfo) const {
-  return EmitSpecializedLibcall(DAG, dl, Chain, Dst, Src, Size, Align,
-                                RTLIB::MEMMOVE);
+  return EmitSpecializedLibcall(DAG, dl, Chain, Dst, Src, Size,
+                                Alignment.value(), RTLIB::MEMMOVE);
 }
 
 SDValue ARMSelectionDAGInfo::EmitTargetCodeForMemset(
     SelectionDAG &DAG, const SDLoc &dl, SDValue Chain, SDValue Dst, SDValue Src,
-    SDValue Size, unsigned Align, bool isVolatile,
+    SDValue Size, Align Alignment, bool isVolatile,
     MachinePointerInfo DstPtrInfo) const {
-  return EmitSpecializedLibcall(DAG, dl, Chain, Dst, Src, Size, Align,
-                                RTLIB::MEMSET);
+  return EmitSpecializedLibcall(DAG, dl, Chain, Dst, Src, Size,
+                                Alignment.value(), RTLIB::MEMSET);
 }

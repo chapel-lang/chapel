@@ -1,16 +1,18 @@
 //===--- DWARFVisitor.cpp ---------------------------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
 //===----------------------------------------------------------------------===//
 
 #include "DWARFVisitor.h"
+#include "llvm/BinaryFormat/Dwarf.h"
 #include "llvm/ObjectYAML/DWARFYAML.h"
+#include "llvm/Support/Errc.h"
+#include "llvm/Support/Error.h"
 
 using namespace llvm;
 
@@ -35,7 +37,7 @@ void DWARFYAML::VisitorImpl<T>::onVariableSizeValue(uint64_t U, unsigned Size) {
 }
 
 static unsigned getOffsetSize(const DWARFYAML::Unit &Unit) {
-  return Unit.Length.isDWARF64() ? 8 : 4;
+  return Unit.Format == dwarf::DWARF64 ? 8 : 4;
 }
 
 static unsigned getRefSize(const DWARFYAML::Unit &Unit) {
@@ -44,16 +46,24 @@ static unsigned getRefSize(const DWARFYAML::Unit &Unit) {
   return getOffsetSize(Unit);
 }
 
-template <typename T> void DWARFYAML::VisitorImpl<T>::traverseDebugInfo() {
+template <typename T> Error DWARFYAML::VisitorImpl<T>::traverseDebugInfo() {
   for (auto &Unit : DebugInfo.CompileUnits) {
     onStartCompileUnit(Unit);
-    auto FirstAbbrevCode = Unit.Entries[0].AbbrCode;
+    if (Unit.Entries.empty())
+      continue;
 
     for (auto &Entry : Unit.Entries) {
       onStartDIE(Unit, Entry);
-      if (Entry.AbbrCode == 0u)
+      uint32_t AbbrCode = Entry.AbbrCode;
+      if (AbbrCode == 0 || Entry.Values.empty())
         continue;
-      auto &Abbrev = DebugInfo.AbbrevDecls[Entry.AbbrCode - FirstAbbrevCode];
+
+      if (AbbrCode > DebugInfo.AbbrevDecls.size())
+        return createStringError(
+            errc::invalid_argument,
+            "abbrev code must be less than or equal to the number of "
+            "entries in abbreviation table");
+      const DWARFYAML::Abbrev &Abbrev = DebugInfo.AbbrevDecls[AbbrCode - 1];
       auto FormVal = Entry.Values.begin();
       auto AbbrForm = Abbrev.Attributes.begin();
       for (;
@@ -106,6 +116,12 @@ template <typename T> void DWARFYAML::VisitorImpl<T>::traverseDebugInfo() {
                                 ""));
             break;
           }
+          case dwarf::DW_FORM_strx:
+          case dwarf::DW_FORM_addrx:
+          case dwarf::DW_FORM_rnglistx:
+          case dwarf::DW_FORM_loclistx:
+            onValue((uint64_t)FormVal->Value, /*LEB=*/true);
+            break;
           case dwarf::DW_FORM_data1:
           case dwarf::DW_FORM_ref1:
           case dwarf::DW_FORM_flag:
@@ -171,6 +187,8 @@ template <typename T> void DWARFYAML::VisitorImpl<T>::traverseDebugInfo() {
     }
     onEndCompileUnit(Unit);
   }
+
+  return Error::success();
 }
 
 // Explicitly instantiate the two template expansions.

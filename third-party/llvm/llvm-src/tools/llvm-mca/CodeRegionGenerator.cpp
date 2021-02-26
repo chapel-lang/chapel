@@ -1,9 +1,8 @@
 //===----------------------- CodeRegionGenerator.cpp ------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 /// \file
@@ -48,22 +47,21 @@ public:
       : MCStreamer(Context), Regions(R) {}
 
   // We only want to intercept the emission of new instructions.
-  virtual void EmitInstruction(const MCInst &Inst,
-                               const MCSubtargetInfo & /* unused */,
-                               bool /* unused */) override {
+  virtual void emitInstruction(const MCInst &Inst,
+                               const MCSubtargetInfo & /* unused */) override {
     Regions.addInstruction(Inst);
   }
 
-  bool EmitSymbolAttribute(MCSymbol *Symbol, MCSymbolAttr Attribute) override {
+  bool emitSymbolAttribute(MCSymbol *Symbol, MCSymbolAttr Attribute) override {
     return true;
   }
 
-  void EmitCommonSymbol(MCSymbol *Symbol, uint64_t Size,
+  void emitCommonSymbol(MCSymbol *Symbol, uint64_t Size,
                         unsigned ByteAlignment) override {}
-  void EmitZerofill(MCSection *Section, MCSymbol *Symbol = nullptr,
+  void emitZerofill(MCSection *Section, MCSymbol *Symbol = nullptr,
                     uint64_t Size = 0, unsigned ByteAlignment = 0,
                     SMLoc Loc = SMLoc()) override {}
-  void EmitGPRel32Value(const MCExpr *Value) override {}
+  void emitGPRel32Value(const MCExpr *Value) override {}
   void BeginCOFFSymbolDef(const MCSymbol *Symbol) override {}
   void EmitCOFFSymbolStorageClass(int StorageClass) override {}
   void EmitCOFFSymbolType(int Type) override {}
@@ -88,7 +86,11 @@ void MCACommentConsumer::HandleComment(SMLoc Loc, StringRef CommentText) {
 
   Comment = Comment.drop_front(Position);
   if (Comment.consume_front("LLVM-MCA-END")) {
-    Regions.endRegion(Loc);
+    // Skip spaces and tabs.
+    Position = Comment.find_first_not_of(" \t");
+    if (Position < Comment.size())
+      Comment = Comment.drop_front(Position);
+    Regions.endRegion(Comment, Loc);
     return;
   }
 
@@ -116,8 +118,9 @@ Expected<const CodeRegions &> AsmCodeRegionGenerator::parseCodeRegions() {
   MCAsmLexer &Lexer = Parser->getLexer();
   MCACommentConsumer CC(Regions);
   Lexer.setCommentConsumer(&CC);
+  // Enable support for MASM literal numbers (example: 05h, 101b).
+  Lexer.setLexMasmIntegers(true);
 
-  // Create a target-specific parser and perform the parse.
   std::unique_ptr<MCTargetAsmParser> TAP(
       TheTarget.createMCAsmParser(STI, *Parser, MCII, Opts));
   if (!TAP)
@@ -127,7 +130,7 @@ Expected<const CodeRegions &> AsmCodeRegionGenerator::parseCodeRegions() {
   Parser->setTargetParser(*TAP);
   Parser->Run(false);
 
-  // Get the assembler dialect from the input.  llvm-mca will use this as the
+  // Set the assembler dialect from the input. llvm-mca will use this as the
   // default dialect when printing reports.
   AssemblerDialect = Parser->getAssemblerDialect();
   return Regions;

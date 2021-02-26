@@ -1,9 +1,8 @@
 //===- DeclObjC.h - Classes for representing declarations -------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -16,6 +15,7 @@
 
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclBase.h"
+#include "clang/AST/DeclObjCCommon.h"
 #include "clang/AST/ExternalASTSource.h"
 #include "clang/AST/Redeclarable.h"
 #include "clang/AST/SelectorLocationsKind.h"
@@ -173,6 +173,7 @@ private:
                  Selector SelInfo, QualType T, TypeSourceInfo *ReturnTInfo,
                  DeclContext *contextDecl, bool isInstance = true,
                  bool isVariadic = false, bool isPropertyAccessor = false,
+                 bool isSynthesizedAccessorStub = false, 
                  bool isImplicitlyDeclared = false, bool isDefined = false,
                  ImplementationControl impControl = None,
                  bool HasRelatedResultType = false);
@@ -233,6 +234,7 @@ public:
          Selector SelInfo, QualType T, TypeSourceInfo *ReturnTInfo,
          DeclContext *contextDecl, bool isInstance = true,
          bool isVariadic = false, bool isPropertyAccessor = false,
+         bool isSynthesizedAccessorStub = false,
          bool isImplicitlyDeclared = false, bool isDefined = false,
          ImplementationControl impControl = None,
          bool HasRelatedResultType = false);
@@ -401,7 +403,7 @@ public:
   }
 
   /// createImplicitParams - Used to lazily create the self and cmd
-  /// implict parameters. This must be called prior to using getSelfDecl()
+  /// implicit parameters. This must be called prior to using getSelfDecl()
   /// or getCmdDecl(). The call is ignored if the implicit parameters
   /// have already been created.
   void createImplicitParams(ASTContext &Context, const ObjCInterfaceDecl *ID);
@@ -409,7 +411,7 @@ public:
   /// \return the type for \c self and set \arg selfIsPseudoStrong and
   /// \arg selfIsConsumed accordingly.
   QualType getSelfType(ASTContext &Context, const ObjCInterfaceDecl *OID,
-                       bool &selfIsPseudoStrong, bool &selfIsConsumed);
+                       bool &selfIsPseudoStrong, bool &selfIsConsumed) const;
 
   ImplicitParamDecl * getSelfDecl() const { return SelfDecl; }
   void setSelfDecl(ImplicitParamDecl *SD) { SelfDecl = SD; }
@@ -435,6 +437,14 @@ public:
 
   void setPropertyAccessor(bool isAccessor) {
     ObjCMethodDeclBits.IsPropertyAccessor = isAccessor;
+  }
+
+  bool isSynthesizedAccessorStub() const {
+    return ObjCMethodDeclBits.IsSynthesizedAccessorStub;
+  }
+
+  void setSynthesizedAccessorStub(bool isSynthesizedAccessorStub) {
+    ObjCMethodDeclBits.IsSynthesizedAccessorStub = isSynthesizedAccessorStub;
   }
 
   bool isDefined() const { return ObjCMethodDeclBits.IsDefined; }
@@ -466,6 +476,9 @@ public:
   void setHasSkippedBody(bool Skipped = true) {
     ObjCMethodDeclBits.HasSkippedBody = Skipped;
   }
+
+  /// True if the method is tagged as objc_direct
+  bool isDirectMethod() const;
 
   /// Returns the property associated with this method's selector.
   ///
@@ -730,33 +743,6 @@ class ObjCPropertyDecl : public NamedDecl {
   void anchor() override;
 
 public:
-  enum PropertyAttributeKind {
-    OBJC_PR_noattr    = 0x00,
-    OBJC_PR_readonly  = 0x01,
-    OBJC_PR_getter    = 0x02,
-    OBJC_PR_assign    = 0x04,
-    OBJC_PR_readwrite = 0x08,
-    OBJC_PR_retain    = 0x10,
-    OBJC_PR_copy      = 0x20,
-    OBJC_PR_nonatomic = 0x40,
-    OBJC_PR_setter    = 0x80,
-    OBJC_PR_atomic    = 0x100,
-    OBJC_PR_weak      = 0x200,
-    OBJC_PR_strong    = 0x400,
-    OBJC_PR_unsafe_unretained = 0x800,
-    /// Indicates that the nullability of the type was spelled with a
-    /// property attribute rather than a type qualifier.
-    OBJC_PR_nullability = 0x1000,
-    OBJC_PR_null_resettable = 0x2000,
-    OBJC_PR_class = 0x4000
-    // Adding a property should change NumPropertyAttrsBits
-  };
-
-  enum {
-    /// Number of bits fitting all the property attributes.
-    NumPropertyAttrsBits = 15
-  };
-
   enum SetterKind { Assign, Retain, Copy, Weak };
   enum PropertyControl { None, Required, Optional };
 
@@ -769,8 +755,8 @@ private:
 
   QualType DeclType;
   TypeSourceInfo *DeclTypeSourceInfo;
-  unsigned PropertyAttributes : NumPropertyAttrsBits;
-  unsigned PropertyAttributesAsWritten : NumPropertyAttrsBits;
+  unsigned PropertyAttributes : NumObjCPropertyAttrsBits;
+  unsigned PropertyAttributesAsWritten : NumObjCPropertyAttrsBits;
 
   // \@required/\@optional
   unsigned PropertyImplementation : 2;
@@ -797,15 +783,14 @@ private:
   ObjCIvarDecl *PropertyIvarDecl = nullptr;
 
   ObjCPropertyDecl(DeclContext *DC, SourceLocation L, IdentifierInfo *Id,
-                   SourceLocation AtLocation,  SourceLocation LParenLocation,
-                   QualType T, TypeSourceInfo *TSI,
-                   PropertyControl propControl)
-    : NamedDecl(ObjCProperty, DC, L, Id), AtLoc(AtLocation),
-      LParenLoc(LParenLocation), DeclType(T), DeclTypeSourceInfo(TSI),
-      PropertyAttributes(OBJC_PR_noattr),
-      PropertyAttributesAsWritten(OBJC_PR_noattr),
-      PropertyImplementation(propControl), GetterName(Selector()),
-      SetterName(Selector()) {}
+                   SourceLocation AtLocation, SourceLocation LParenLocation,
+                   QualType T, TypeSourceInfo *TSI, PropertyControl propControl)
+      : NamedDecl(ObjCProperty, DC, L, Id), AtLoc(AtLocation),
+        LParenLoc(LParenLocation), DeclType(T), DeclTypeSourceInfo(TSI),
+        PropertyAttributes(ObjCPropertyAttribute::kind_noattr),
+        PropertyAttributesAsWritten(ObjCPropertyAttribute::kind_noattr),
+        PropertyImplementation(propControl), GetterName(Selector()),
+        SetterName(Selector()) {}
 
 public:
   static ObjCPropertyDecl *Create(ASTContext &C, DeclContext *DC,
@@ -837,11 +822,11 @@ public:
   /// type.
   QualType getUsageType(QualType objectType) const;
 
-  PropertyAttributeKind getPropertyAttributes() const {
-    return PropertyAttributeKind(PropertyAttributes);
+  ObjCPropertyAttribute::Kind getPropertyAttributes() const {
+    return ObjCPropertyAttribute::Kind(PropertyAttributes);
   }
 
-  void setPropertyAttributes(PropertyAttributeKind PRVal) {
+  void setPropertyAttributes(ObjCPropertyAttribute::Kind PRVal) {
     PropertyAttributes |= PRVal;
   }
 
@@ -849,11 +834,11 @@ public:
     PropertyAttributes = PRVal;
   }
 
-  PropertyAttributeKind getPropertyAttributesAsWritten() const {
-    return PropertyAttributeKind(PropertyAttributesAsWritten);
+  ObjCPropertyAttribute::Kind getPropertyAttributesAsWritten() const {
+    return ObjCPropertyAttribute::Kind(PropertyAttributesAsWritten);
   }
 
-  void setPropertyAttributesAsWritten(PropertyAttributeKind PRVal) {
+  void setPropertyAttributesAsWritten(ObjCPropertyAttribute::Kind PRVal) {
     PropertyAttributesAsWritten = PRVal;
   }
 
@@ -861,22 +846,28 @@ public:
 
   /// isReadOnly - Return true iff the property has a setter.
   bool isReadOnly() const {
-    return (PropertyAttributes & OBJC_PR_readonly);
+    return (PropertyAttributes & ObjCPropertyAttribute::kind_readonly);
   }
 
   /// isAtomic - Return true if the property is atomic.
   bool isAtomic() const {
-    return (PropertyAttributes & OBJC_PR_atomic);
+    return (PropertyAttributes & ObjCPropertyAttribute::kind_atomic);
   }
 
   /// isRetaining - Return true if the property retains its value.
   bool isRetaining() const {
-    return (PropertyAttributes &
-            (OBJC_PR_retain | OBJC_PR_strong | OBJC_PR_copy));
+    return (PropertyAttributes & (ObjCPropertyAttribute::kind_retain |
+                                  ObjCPropertyAttribute::kind_strong |
+                                  ObjCPropertyAttribute::kind_copy));
   }
 
   bool isInstanceProperty() const { return !isClassProperty(); }
-  bool isClassProperty() const { return PropertyAttributes & OBJC_PR_class; }
+  bool isClassProperty() const {
+    return PropertyAttributes & ObjCPropertyAttribute::kind_class;
+  }
+  bool isDirectProperty() const {
+    return PropertyAttributes & ObjCPropertyAttribute::kind_direct;
+  }
 
   ObjCPropertyQueryKind getQueryKind() const {
     return isClassProperty() ? ObjCPropertyQueryKind::OBJC_PR_query_class :
@@ -892,13 +883,13 @@ public:
   /// the property setter. This is only valid if the property has been
   /// defined to have a setter.
   SetterKind getSetterKind() const {
-    if (PropertyAttributes & OBJC_PR_strong)
+    if (PropertyAttributes & ObjCPropertyAttribute::kind_strong)
       return getType()->isBlockPointerType() ? Copy : Retain;
-    if (PropertyAttributes & OBJC_PR_retain)
+    if (PropertyAttributes & ObjCPropertyAttribute::kind_retain)
       return Retain;
-    if (PropertyAttributes & OBJC_PR_copy)
+    if (PropertyAttributes & ObjCPropertyAttribute::kind_copy)
       return Copy;
-    if (PropertyAttributes & OBJC_PR_weak)
+    if (PropertyAttributes & ObjCPropertyAttribute::kind_weak)
       return Weak;
     return Assign;
   }
@@ -2678,9 +2669,7 @@ public:
   /// Get the name of the class associated with this interface.
   //
   // FIXME: Move to StringRef API.
-  std::string getNameAsString() const {
-    return getName();
-  }
+  std::string getNameAsString() const { return std::string(getName()); }
 
   /// Produce a name to be used for class's metadata. It comes either via
   /// class's objc_runtime_name attribute or class name.
@@ -2780,6 +2769,11 @@ private:
   /// Null for \@dynamic. Required for \@synthesize.
   ObjCIvarDecl *PropertyIvarDecl;
 
+  /// The getter's definition, which has an empty body if synthesized.
+  ObjCMethodDecl *GetterMethodDecl = nullptr;
+  /// The getter's definition, which has an empty body if synthesized.
+  ObjCMethodDecl *SetterMethodDecl = nullptr;
+
   /// Null for \@dynamic. Non-null if property must be copy-constructed in
   /// getter.
   Expr *GetterCXXConstructor = nullptr;
@@ -2846,6 +2840,12 @@ public:
     return IvarLoc.isValid() && IvarLoc != getLocation();
   }
 
+  ObjCMethodDecl *getGetterMethodDecl() const { return GetterMethodDecl; }
+  void setGetterMethodDecl(ObjCMethodDecl *MD) { GetterMethodDecl = MD; }
+
+  ObjCMethodDecl *getSetterMethodDecl() const { return SetterMethodDecl; }
+  void setSetterMethodDecl(ObjCMethodDecl *MD) { SetterMethodDecl = MD; }
+
   Expr *getGetterCXXConstructor() const {
     return GetterCXXConstructor;
   }
@@ -2883,11 +2883,11 @@ ObjCInterfaceDecl::filtered_category_iterator<Filter>::operator++() {
 }
 
 inline bool ObjCInterfaceDecl::isVisibleCategory(ObjCCategoryDecl *Cat) {
-  return !Cat->isHidden();
+  return Cat->isUnconditionallyVisible();
 }
 
 inline bool ObjCInterfaceDecl::isVisibleExtension(ObjCCategoryDecl *Cat) {
-  return Cat->IsClassExtension() && !Cat->isHidden();
+  return Cat->IsClassExtension() && Cat->isUnconditionallyVisible();
 }
 
 inline bool ObjCInterfaceDecl::isKnownExtension(ObjCCategoryDecl *Cat) {

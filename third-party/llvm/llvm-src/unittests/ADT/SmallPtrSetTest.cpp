@@ -1,9 +1,8 @@
 //===- llvm/unittest/ADT/SmallPtrSetTest.cpp ------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -314,8 +313,8 @@ TEST(SmallPtrSetTest, ConstTest) {
   IntSet.insert(B);
   EXPECT_EQ(IntSet.count(B), 1u);
   EXPECT_EQ(IntSet.count(C), 1u);
-  EXPECT_NE(IntSet.find(B), IntSet.end());
-  EXPECT_NE(IntSet.find(C), IntSet.end());
+  EXPECT_TRUE(IntSet.contains(B));
+  EXPECT_TRUE(IntSet.contains(C));
 }
 
 // Verify that we automatically get the const version of PointerLikeTypeTraits
@@ -328,5 +327,71 @@ TEST(SmallPtrSetTest, ConstNonPtrTest) {
   TestPair Pair(&A[0], 1);
   IntSet.insert(Pair);
   EXPECT_EQ(IntSet.count(Pair), 1u);
-  EXPECT_NE(IntSet.find(Pair), IntSet.end());
+  EXPECT_TRUE(IntSet.contains(Pair));
+}
+
+// Test equality comparison.
+TEST(SmallPtrSetTest, EqualityComparison) {
+  int buf[3];
+  for (int i = 0; i < 3; ++i)
+    buf[i] = 0;
+
+  SmallPtrSet<int *, 1> a;
+  a.insert(&buf[0]);
+  a.insert(&buf[1]);
+
+  SmallPtrSet<int *, 2> b;
+  b.insert(&buf[1]);
+  b.insert(&buf[0]);
+
+  SmallPtrSet<int *, 3> c;
+  c.insert(&buf[1]);
+  c.insert(&buf[2]);
+
+  SmallPtrSet<int *, 4> d;
+  d.insert(&buf[0]);
+
+  SmallPtrSet<int *, 5> e;
+  e.insert(&buf[0]);
+  e.insert(&buf[1]);
+  e.insert(&buf[2]);
+
+  EXPECT_EQ(a, b);
+  EXPECT_EQ(b, a);
+  EXPECT_NE(b, c);
+  EXPECT_NE(c, a);
+  EXPECT_NE(d, a);
+  EXPECT_NE(a, d);
+  EXPECT_NE(a, e);
+  EXPECT_NE(e, a);
+  EXPECT_NE(c, e);
+  EXPECT_NE(e, d);
+}
+
+TEST(SmallPtrSetTest, Contains) {
+  SmallPtrSet<int *, 2> Set;
+  int buf[4] = {0, 11, 22, 11};
+  EXPECT_FALSE(Set.contains(&buf[0]));
+  EXPECT_FALSE(Set.contains(&buf[1]));
+
+  Set.insert(&buf[0]);
+  Set.insert(&buf[1]);
+  EXPECT_TRUE(Set.contains(&buf[0]));
+  EXPECT_TRUE(Set.contains(&buf[1]));
+  EXPECT_FALSE(Set.contains(&buf[3]));
+
+  Set.insert(&buf[1]);
+  EXPECT_TRUE(Set.contains(&buf[0]));
+  EXPECT_TRUE(Set.contains(&buf[1]));
+  EXPECT_FALSE(Set.contains(&buf[3]));
+
+  Set.erase(&buf[1]);
+  EXPECT_TRUE(Set.contains(&buf[0]));
+  EXPECT_FALSE(Set.contains(&buf[1]));
+
+  Set.insert(&buf[1]);
+  Set.insert(&buf[2]);
+  EXPECT_TRUE(Set.contains(&buf[0]));
+  EXPECT_TRUE(Set.contains(&buf[1]));
+  EXPECT_TRUE(Set.contains(&buf[2]));
 }

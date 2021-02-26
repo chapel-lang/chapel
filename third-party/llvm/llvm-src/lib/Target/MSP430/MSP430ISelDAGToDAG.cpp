@@ -1,9 +1,8 @@
 //===-- MSP430ISelDAGToDAG.cpp - A dag to dag inst selector for MSP430 ----===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -38,25 +37,22 @@ namespace {
     enum {
       RegBase,
       FrameIndexBase
-    } BaseType;
+    } BaseType = RegBase;
 
     struct {            // This is really a union, discriminated by BaseType!
       SDValue Reg;
-      int FrameIndex;
+      int FrameIndex = 0;
     } Base;
 
-    int16_t Disp;
-    const GlobalValue *GV;
-    const Constant *CP;
-    const BlockAddress *BlockAddr;
-    const char *ES;
-    int JT;
-    unsigned Align;    // CP alignment.
+    int16_t Disp = 0;
+    const GlobalValue *GV = nullptr;
+    const Constant *CP = nullptr;
+    const BlockAddress *BlockAddr = nullptr;
+    const char *ES = nullptr;
+    int JT = -1;
+    Align Alignment; // CP alignment.
 
-    MSP430ISelAddressMode()
-      : BaseType(RegBase), Disp(0), GV(nullptr), CP(nullptr),
-        BlockAddr(nullptr), ES(nullptr), JT(-1), Align(0) {
-    }
+    MSP430ISelAddressMode() = default;
 
     bool hasSymbolicDisplacement() const {
       return GV != nullptr || CP != nullptr || ES != nullptr || JT != -1;
@@ -78,12 +74,12 @@ namespace {
       } else if (CP) {
         errs() << " CP ";
         CP->dump();
-        errs() << " Align" << Align << '\n';
+        errs() << " Align" << Alignment.value() << '\n';
       } else if (ES) {
         errs() << "ES ";
         errs() << ES << '\n';
       } else if (JT != -1)
-        errs() << " JT" << JT << " Align" << Align << '\n';
+        errs() << " JT" << JT << " Align" << Alignment.value() << '\n';
     }
 #endif
   };
@@ -150,7 +146,7 @@ bool MSP430DAGToDAGISel::MatchWrapper(SDValue N, MSP430ISelAddressMode &AM) {
     //AM.SymbolFlags = G->getTargetFlags();
   } else if (ConstantPoolSDNode *CP = dyn_cast<ConstantPoolSDNode>(N0)) {
     AM.CP = CP->getConstVal();
-    AM.Align = CP->getAlignment();
+    AM.Alignment = CP->getAlign();
     AM.Disp += CP->getOffset();
     //AM.SymbolFlags = CP->getTargetFlags();
   } else if (ExternalSymbolSDNode *S = dyn_cast<ExternalSymbolSDNode>(N0)) {
@@ -267,8 +263,8 @@ bool MSP430DAGToDAGISel::SelectAddr(SDValue N,
                                           MVT::i16, AM.Disp,
                                           0/*AM.SymbolFlags*/);
   else if (AM.CP)
-    Disp = CurDAG->getTargetConstantPool(AM.CP, MVT::i16,
-                                         AM.Align, AM.Disp, 0/*AM.SymbolFlags*/);
+    Disp = CurDAG->getTargetConstantPool(AM.CP, MVT::i16, AM.Alignment, AM.Disp,
+                                         0 /*AM.SymbolFlags*/);
   else if (AM.ES)
     Disp = CurDAG->getTargetExternalSymbol(AM.ES, MVT::i16, 0/*AM.SymbolFlags*/);
   else if (AM.JT != -1)

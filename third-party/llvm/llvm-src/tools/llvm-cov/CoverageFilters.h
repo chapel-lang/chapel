@@ -1,9 +1,8 @@
 //===- CoverageFilters.h - Function coverage mapping filters --------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -14,13 +13,17 @@
 #ifndef LLVM_COV_COVERAGEFILTERS_H
 #define LLVM_COV_COVERAGEFILTERS_H
 
-#include "CoverageSummaryInfo.h"
-#include "llvm/ProfileData/Coverage/CoverageMapping.h"
-#include "llvm/Support/SpecialCaseList.h"
+#include "llvm/ADT/StringRef.h"
 #include <memory>
 #include <vector>
 
 namespace llvm {
+class SpecialCaseList;
+
+namespace coverage {
+class CoverageMapping;
+struct FunctionRecord;
+} // namespace coverage
 
 /// Matches specific functions that pass the requirement of this filter.
 class CoverageFilter {

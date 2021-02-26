@@ -1,9 +1,8 @@
 //===-- SIMachineScheduler.cpp - SI Scheduler Interface -------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -270,8 +269,8 @@ SUnit* SIScheduleBlock::pickNode() {
     // Predict register usage after this instruction.
     TryCand.SU = SU;
     TopRPTracker.getDownwardPressure(SU->getInstr(), pressure, MaxPressure);
-    TryCand.SGPRUsage = pressure[DAG->getSGPRSetID()];
-    TryCand.VGPRUsage = pressure[DAG->getVGPRSetID()];
+    TryCand.SGPRUsage = pressure[AMDGPU::RegisterPressureSets::SReg_32];
+    TryCand.VGPRUsage = pressure[AMDGPU::RegisterPressureSets::VGPR_32];
     TryCand.IsLowLatency = DAG->IsLowLatencySU[SU->NodeNum];
     TryCand.LowLatencyOffset = DAG->LowLatencyOffset[SU->NodeNum];
     TryCand.HasLowLatencyNonWaitedParent =
@@ -349,7 +348,7 @@ void SIScheduleBlock::initRegPressure(MachineBasicBlock::iterator BeginBlock,
 
   // Do not Track Physical Registers, because it messes up.
   for (const auto &RegMaskPair : RPTracker.getPressure().LiveInRegs) {
-    if (TargetRegisterInfo::isVirtualRegister(RegMaskPair.RegUnit))
+    if (Register::isVirtualRegister(RegMaskPair.RegUnit))
       LiveInRegs.insert(RegMaskPair.RegUnit);
   }
   LiveOutRegs.clear();
@@ -377,7 +376,7 @@ void SIScheduleBlock::initRegPressure(MachineBasicBlock::iterator BeginBlock,
   // The use of findDefBetween removes the case 4.
   for (const auto &RegMaskPair : RPTracker.getPressure().LiveOutRegs) {
     unsigned Reg = RegMaskPair.RegUnit;
-    if (TargetRegisterInfo::isVirtualRegister(Reg) &&
+    if (Register::isVirtualRegister(Reg) &&
         isDefBetween(Reg, LIS->getInstructionIndex(*BeginBlock).getRegSlot(),
                      LIS->getInstructionIndex(*EndBlock).getRegSlot(), MRI,
                      LIS)) {
@@ -596,10 +595,12 @@ void SIScheduleBlock::printDebug(bool full) {
   }
 
   if (Scheduled) {
-    dbgs() << "LiveInPressure " << LiveInPressure[DAG->getSGPRSetID()] << ' '
-           << LiveInPressure[DAG->getVGPRSetID()] << '\n';
-    dbgs() << "LiveOutPressure " << LiveOutPressure[DAG->getSGPRSetID()] << ' '
-           << LiveOutPressure[DAG->getVGPRSetID()] << "\n\n";
+    dbgs() << "LiveInPressure "
+           << LiveInPressure[AMDGPU::RegisterPressureSets::SReg_32] << ' '
+           << LiveInPressure[AMDGPU::RegisterPressureSets::VGPR_32] << '\n';
+    dbgs() << "LiveOutPressure "
+           << LiveOutPressure[AMDGPU::RegisterPressureSets::SReg_32] << ' '
+           << LiveOutPressure[AMDGPU::RegisterPressureSets::VGPR_32] << "\n\n";
     dbgs() << "LiveIns:\n";
     for (unsigned Reg : LiveInRegs)
       dbgs() << printVRegOrUnit(Reg, DAG->getTRI()) << ' ';
@@ -610,13 +611,8 @@ void SIScheduleBlock::printDebug(bool full) {
   }
 
   dbgs() << "\nInstructions:\n";
-  if (!Scheduled) {
-    for (const SUnit* SU : SUnits)
+  for (const SUnit* SU : SUnits)
       DAG->dumpNode(*SU);
-  } else {
-    for (const SUnit* SU : SUnits)
-      DAG->dumpNode(*SU);
-  }
 
   dbgs() << "///////////////////////\n";
 }
@@ -624,11 +620,8 @@ void SIScheduleBlock::printDebug(bool full) {
 
 // SIScheduleBlockCreator //
 
-SIScheduleBlockCreator::SIScheduleBlockCreator(SIScheduleDAGMI *DAG) :
-DAG(DAG) {
-}
-
-SIScheduleBlockCreator::~SIScheduleBlockCreator() = default;
+SIScheduleBlockCreator::SIScheduleBlockCreator(SIScheduleDAGMI *DAG)
+    : DAG(DAG) {}
 
 SIScheduleBlocks
 SIScheduleBlockCreator::getBlocks(SISchedulerBlockCreatorVariant BlockVariant) {
@@ -1229,7 +1222,7 @@ void SIScheduleBlockCreator::createBlocksForVariant(SISchedulerBlockCreatorVaria
     unsigned Color = CurrentColoring[SU->NodeNum];
     if (RealID.find(Color) == RealID.end()) {
       int ID = CurrentBlocks.size();
-      BlockPtrs.push_back(llvm::make_unique<SIScheduleBlock>(DAG, this, ID));
+      BlockPtrs.push_back(std::make_unique<SIScheduleBlock>(DAG, this, ID));
       CurrentBlocks.push_back(BlockPtrs.rbegin()->get());
       RealID[Color] = ID;
     }
@@ -1646,7 +1639,7 @@ SIScheduleBlock *SIScheduleBlockScheduler::pickBlock() {
     TryCand.IsHighLatency = TryCand.Block->isHighLatencyBlock();
     TryCand.VGPRUsageDiff =
       checkRegUsageImpact(TryCand.Block->getInRegs(),
-                          TryCand.Block->getOutRegs())[DAG->getVGPRSetID()];
+          TryCand.Block->getOutRegs())[AMDGPU::RegisterPressureSets::VGPR_32];
     TryCand.NumSuccessors = TryCand.Block->getSuccs().size();
     TryCand.NumHighLatencySuccessors =
       TryCand.Block->getNumHighLatencySuccessors();
@@ -1691,7 +1684,7 @@ SIScheduleBlock *SIScheduleBlockScheduler::pickBlock() {
 void SIScheduleBlockScheduler::addLiveRegs(std::set<unsigned> &Regs) {
   for (unsigned Reg : Regs) {
     // For now only track virtual registers.
-    if (!TargetRegisterInfo::isVirtualRegister(Reg))
+    if (!Register::isVirtualRegister(Reg))
       continue;
     // If not already in the live set, then add it.
     (void) LiveRegs.insert(Reg);
@@ -1751,7 +1744,7 @@ SIScheduleBlockScheduler::checkRegUsageImpact(std::set<unsigned> &InRegs,
 
   for (unsigned Reg : InRegs) {
     // For now only track virtual registers.
-    if (!TargetRegisterInfo::isVirtualRegister(Reg))
+    if (!Register::isVirtualRegister(Reg))
       continue;
     if (LiveRegsConsumers[Reg] > 1)
       continue;
@@ -1763,7 +1756,7 @@ SIScheduleBlockScheduler::checkRegUsageImpact(std::set<unsigned> &InRegs,
 
   for (unsigned Reg : OutRegs) {
     // For now only track virtual registers.
-    if (!TargetRegisterInfo::isVirtualRegister(Reg))
+    if (!Register::isVirtualRegister(Reg))
       continue;
     PSetIterator PSetI = DAG->getMRI()->getPressureSets(Reg);
     for (; PSetI.isValid(); ++PSetI) {
@@ -1802,12 +1795,9 @@ SIScheduler::scheduleVariant(SISchedulerBlockCreatorVariant BlockVariant,
 // SIScheduleDAGMI //
 
 SIScheduleDAGMI::SIScheduleDAGMI(MachineSchedContext *C) :
-  ScheduleDAGMILive(C, llvm::make_unique<GenericScheduler>(C)) {
+  ScheduleDAGMILive(C, std::make_unique<GenericScheduler>(C)) {
   SITII = static_cast<const SIInstrInfo*>(TII);
   SITRI = static_cast<const SIRegisterInfo*>(TRI);
-
-  VGPRSetID = SITRI->getVGPRPressureSet();
-  SGPRSetID = SITRI->getSGPRPressureSet();
 }
 
 SIScheduleDAGMI::~SIScheduleDAGMI() = default;
@@ -1875,6 +1865,8 @@ void SIScheduleDAGMI::moveLowLatencies() {
       bool CopyForLowLat = false;
       for (SDep& SuccDep : SU->Succs) {
         SUnit *Succ = SuccDep.getSUnit();
+        if (SuccDep.isWeak() || Succ->NodeNum >= DAGSize)
+          continue;
         if (SITII->isLowLatencyInstruction(*Succ->getInstr())) {
           CopyForLowLat = true;
         }
@@ -1912,13 +1904,13 @@ SIScheduleDAGMI::fillVgprSgprCost(_Iterator First, _Iterator End,
   for (_Iterator RegI = First; RegI != End; ++RegI) {
     unsigned Reg = *RegI;
     // For now only track virtual registers
-    if (!TargetRegisterInfo::isVirtualRegister(Reg))
+    if (!Register::isVirtualRegister(Reg))
       continue;
     PSetIterator PSetI = MRI.getPressureSets(Reg);
     for (; PSetI.isValid(); ++PSetI) {
-      if (*PSetI == VGPRSetID)
+      if (*PSetI == AMDGPU::RegisterPressureSets::VGPR_32)
         VgprUsage += PSetI.getWeight();
-      else if (*PSetI == SGPRSetID)
+      else if (*PSetI == AMDGPU::RegisterPressureSets::SReg_32)
         SgprUsage += PSetI.getWeight();
     }
   }
@@ -1955,14 +1947,15 @@ void SIScheduleDAGMI::schedule()
 
   for (unsigned i = 0, e = (unsigned)SUnits.size(); i != e; ++i) {
     SUnit *SU = &SUnits[i];
-    MachineOperand *BaseLatOp;
+    const MachineOperand *BaseLatOp;
     int64_t OffLatReg;
     if (SITII->isLowLatencyInstruction(*SU->getInstr())) {
       IsLowLatencySU[i] = 1;
+      bool OffsetIsScalable;
       if (SITII->getMemOperandWithOffset(*SU->getInstr(), BaseLatOp, OffLatReg,
-                                         TRI))
+                                         OffsetIsScalable, TRI))
         LowLatencyOffset[i] = OffLatReg;
-    } else if (SITII->isHighLatencyInstruction(*SU->getInstr()))
+    } else if (SITII->isHighLatencyDef(SU->getInstr()->getOpcode()))
       IsHighLatencySU[i] = 1;
   }
 

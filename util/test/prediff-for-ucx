@@ -1,0 +1,18 @@
+#!/usr/bin/env python3
+#
+# Remove warning about UCX being experiemntal
+#
+import sys, re
+
+outfname = sys.argv[2]
+with open(outfname, "r") as f:
+    outText = f.read()
+
+msg = """ WARNING: ucx-conduit is experimental and should not be used for
+          performance measurements.
+          Please see `ucx-conduit/README` for more details.
+"""
+outText = re.sub(msg, "", outText, flags = re.MULTILINE)
+
+with open(outfname, "w") as f:
+    f.write(outText)

@@ -1,1 +1,1 @@
-$CHPL_HOME/runtime/etc/Makefile.include:nnnnn: *** The requested configuration is not included in the module. Please send the package maintainer the output of $CHPL_HOME/util/printchplenv and request support for this configuration.  Stop.
+The requested configuration is not included in the module. Please send the package maintainer the output of $CHPL_HOME/util/printchplenv and request support for this configuration.

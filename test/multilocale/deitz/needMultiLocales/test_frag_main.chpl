@@ -30,28 +30,28 @@ proc fragmentedMain() {
 
 class node {
   var data: int;
-  var next: unmanaged node?;
+  var next: shared node?;
 }
 
 class list {
-  var head, tail: unmanaged node?;
+  var head, tail: shared node?;
   var lock$: sync bool;
   var signal$: sync bool;
 }
 
 use PrivateDist;
 
-var buffer: [PrivateSpace] [0..numLocales-1] unmanaged list?;
+var buffer: [PrivateSpace] [0..numLocales-1] owned list?;
 forall p in PrivateSpace do
   forall l in LocaleSpace do
-    buffer[p][l] = new unmanaged list();
+    buffer[p][l] = new list();
 
 proc chpl_send_int(data: int, loc) {
   var from = here.id;
   on Locales[loc] {
     var b = buffer[here.id][from]!;
     b.lock$ = true;
-    b.tail = new unmanaged node(data, b.tail);
+    b.tail = new node(data, b.tail);
     if b.head == nil then
       b.head = b.tail;
     b.signal$.writeXF(true);
@@ -65,17 +65,10 @@ proc chpl_recv_int(out data: int, loc) {
   b.lock$ = true;
   data = b.head!.data;
   var next = b.head!.next;
-  delete b.head;
   b.head = next;
   if b.head == nil then
     b.tail = nil;
   else
     b.signal$.writeXF(true);
   b.lock$;
-}
-
-proc deinit() {
-  forall p in PrivateSpace do
-    forall l in LocaleSpace do
-      delete buffer[p][l];
 }

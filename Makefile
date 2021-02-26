@@ -1,4 +1,4 @@
-# Copyright 2020 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2021 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -48,8 +48,9 @@
 MAKEFLAGS = --no-print-directory
 
 export CHPL_MAKE_HOME=$(shell pwd)
+export CHPL_MAKE_PYTHON := $(shell $(CHPL_MAKE_HOME)/util/config/find-python.sh)
 
-NEEDS_LLVM_RUNTIME=${CHPL_MAKE_HOME}/util/chplenv/chpl_llvm.py \
+NEEDS_LLVM_RUNTIME=$(CHPL_MAKE_PYTHON) ${CHPL_MAKE_HOME}/util/chplenv/chpl_llvm.py \
                     --needs-llvm-runtime
 
 default: all
@@ -74,6 +75,7 @@ notcompiler: FORCE
 
 compiler: FORCE
 	@echo "Making the compiler..."
+	@cd third-party && $(MAKE) llvm
 	@cd compiler && $(MAKE)
 
 parser: FORCE
@@ -83,7 +85,7 @@ parser: FORCE
 modules: FORCE
 	@echo "Making the modules..."
 	@cd modules && CHPL_LLVM_CODEGEN=0 $(MAKE)
-	-@if [ ! -z `${NEEDS_LLVM_RUNTIME}` ]; then \
+	@if [ ! -z `${NEEDS_LLVM_RUNTIME}` ]; then \
 	echo "Making the modules for LLVM..."; \
 	cd modules && CHPL_LLVM_CODEGEN=1 $(MAKE) ; \
 	fi
@@ -91,7 +93,7 @@ modules: FORCE
 runtime: FORCE
 	@echo "Making the runtime..."
 	@cd runtime && CHPL_LLVM_CODEGEN=0 $(MAKE)
-	-@if [ ! -z `${NEEDS_LLVM_RUNTIME}` ]; then \
+	@if [ ! -z `${NEEDS_LLVM_RUNTIME}` ]; then \
 	echo "Making the runtime for LLVM..."; \
 	cd runtime && CHPL_LLVM_CODEGEN=1 $(MAKE) ; \
 	fi
@@ -128,6 +130,11 @@ third-party-chpldoc-venv: FORCE
 	cd third-party && $(MAKE) chpldoc-venv; \
 	fi
 
+third-party-c2chapel-venv: FORCE
+	@if [ -z "$$CHPL_DONT_BUILD_C2CHAPEL_VENV" ]; then \
+	cd third-party && $(MAKE) c2chapel-venv; \
+	fi
+
 test-venv: third-party-test-venv
 
 chpldoc: compiler third-party-chpldoc-venv
@@ -148,12 +155,13 @@ chplvis: compiler third-party-fltk FORCE
 	cd tools/chplvis && $(MAKE)
 	cd tools/chplvis && $(MAKE) install
 
-mason: comprt chpldoc mason-no-chpldoc FORCE
-
-mason-no-chpldoc: comprt FORCE
+mason: chpldoc notcompiler FORCE
 	cd tools/mason && $(MAKE) && $(MAKE) install
 
-c2chapel: FORCE
+protoc-gen-chpl: chpldoc notcompiler FORCE
+	cd tools/protoc-gen-chpl && $(MAKE) && $(MAKE) install
+
+c2chapel: third-party-c2chapel-venv FORCE
 	cd tools/c2chapel && $(MAKE)
 	cd tools/c2chapel && $(MAKE) install
 
@@ -190,6 +198,7 @@ clobber: FORCE
 	cd tools/chplvis && $(MAKE) clobber
 	cd tools/c2chapel && $(MAKE) clobber
 	cd tools/mason && $(MAKE) clobber
+	cd tools/protoc-gen-chpl && $(MAKE) clobber
 	if [ -e doc/Makefile ]; then cd doc && $(MAKE) clobber; fi
 	rm -rf bin
 	rm -rf lib

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -67,9 +67,9 @@ ImportStmt::ImportStmt(BaseAST* source, const char* rename,
   gImportStmts.add(this);
 }
 
-ImportStmt::ImportStmt(BaseAST* source, bool isPrivate,
-                       std::vector<const char*>* namesList,
-                       std::map<const char*, const char*>* renamesMap):
+ImportStmt::ImportStmt(BaseAST* source, std::vector<const char*>* namesList,
+                       std::map<const char*, const char*>* renamesMap,
+                       bool isPrivate):
   VisibilityStmt(E_ImportStmt) {
 
   this->isPrivate = isPrivate;
@@ -105,10 +105,10 @@ ImportStmt::ImportStmt(BaseAST* source, bool isPrivate,
 
 ImportStmt* ImportStmt::copyInner(SymbolMap* map) {
   ImportStmt* _this = NULL;
-  if (modRename != astr("")) {
+  if (modRename[0] != '\0') {
     _this = new ImportStmt(COPY_INT(src), modRename, isPrivate);
   } else {
-    _this = new ImportStmt(COPY_INT(src), isPrivate, &unqualified, &renamed);
+    _this = new ImportStmt(COPY_INT(src), &unqualified, &renamed, isPrivate);
   }
 
   return _this;
@@ -142,6 +142,17 @@ void ImportStmt::verify() {
     INT_FATAL(this, "Bad ImportStmt::src");
   }
 
+  for_vector(const char, name, unqualified) {
+    INT_ASSERT(name == astr(name));
+  }
+
+  for (std::map<const char*, const char*>::const_iterator it = renamed.begin();
+       it != renamed.end();
+       ++it) {
+    INT_ASSERT(it->first == astr(it->first));
+    INT_ASSERT(it->second == astr(it->second));
+  }
+
   verifyNotOnList(src);
 }
 
@@ -152,27 +163,48 @@ void ImportStmt::scopeResolve(ResolveScope* scope) {
   // 2020/03/02: checkValid() does not currently return on failure, to generate
   // good error messages
   if (checkValid(src) == true) {
-    // 2017/05/28 The parser inserts a normalized UseStmt of ChapelBase
     if (isSymExpr(src)) {
-      INT_FATAL("This should only happen for a UseStmt");
+      // We should at least be in the process of resolving the use and import
+      // statements for this scope if src is a SymExpr at this point.
+      INT_ASSERT(scope->progress != IUP_NOT_STARTED);
 
-    } else if (Symbol* sym = scope->lookupForImport(src, false)) {
+    } else {
+      SymAndReferencedName symAndName = scope->lookupForImport(src, false);
       SET_LINENO(this);
 
-      if (ModuleSymbol* modSym = toModuleSymbol(sym)) {
+      if (ModuleSymbol* modSym = toModuleSymbol(symAndName.first)) {
+        if (symAndName.second[0] != '\0') {
+          if (providesUnqualifiedAccess()) {
+            // We already have listed unqualified access for this import, which
+            // means this is the last symbol prior to the curly braces (e.g.
+            // this is `B` of `import A.B.{C, D};`).  This symbol is required
+            // to be a module
+            USR_FATAL(this, "Last symbol prior to `{` in import must be a "
+                      "module, symbol '%s' is not", symAndName.second);
+          }
+
+          // The last name resolved wasn't to a module, so point the import to
+          // the last module and move the last name to the unqualified or
+          // renamed list
+          if (modRename[0] != '\0') {
+            // The user wanted to rename this symbol when bringing it in.
+            // Move the module rename to be the rename for the symbol
+            renamed[modRename] = symAndName.second;
+            modRename = astr("");
+          } else {
+            // We want to only enable unqualified access of this particular
+            // symbol in the module
+            this->unqualified.push_back(symAndName.second);
+          }
+        }
         scope->enclosingModule()->moduleUseAdd(modSym);
 
-        updateEnclosingBlock(scope, sym);
+        updateEnclosingBlock(scope, modSym);
 
         validateList();
 
       } else {
-        if (sym->isImmediate() == true) {
-          USR_FATAL(this,
-                    "'import' statements must include a module symbol "
-                    "(e.g., 'import <module>;')");
-
-        } else if (sym->name != NULL) {
+        if (symAndName.second[0] != '\0') {
           if (isCallExpr(src) == false) {
             // We found a symbol that wasn't a module, but the import statement
             // wasn't looking in a path with one or more `.`s in it.  That
@@ -180,51 +212,10 @@ void ImportStmt::scopeResolve(ResolveScope* scope) {
             USR_FATAL(this, "Can't 'import' without naming a module");
           }
 
-          if (unqualified.size() != 0) {
-            // We already have listed unqualified access for this import, which
-            // means this is the last symbol prior to the curly braces (e.g.
-            // this is `B` of `import A.B.{C, D};`).  This symbol is required
-            // to be a module
-            USR_FATAL(this, "Last symbol prior to `{` in import must be a "
-                      "module, symbol '%s' is not", sym->name);
-          }
-
-          if (modRename[0] != '\0') {
-            // The user wanted to rename this symbol when bringing it in.
-            // Move the module rename to be the rename for the symbol
-            renamed[modRename] = sym->name;
-            modRename = "";
-          } else {
-            // We want to only enable unqualified access of this particular
-            // symbol in the module
-            this->unqualified.push_back(sym->name);
-          }
-
-          ModuleSymbol* parentSym = toModuleSymbol(sym->defPoint->parentSymbol);
-          if (parentSym == NULL) {
-            INT_ASSERT(sym->defPoint->parentSymbol != NULL);
-            USR_FATAL_CONT(this, "only the last symbol in an 'import' "
-                           "statement's path can be something other than a "
-                           "module");
-            USR_PRINT(this, "'%s' is not a module",
-                      sym->defPoint->parentSymbol->name);
-            USR_STOP();
-          }
-          scope->enclosingModule()->moduleUseAdd(parentSym);
-          updateEnclosingBlock(scope, parentSym);
-
-          validateList();
-
+          INT_FATAL(this, "Cannot find module");
         } else {
           INT_FATAL(this, "'import' of non-module symbol");
         }
-      }
-    } else {
-      if (UnresolvedSymExpr* import = toUnresolvedSymExpr(src)) {
-        USR_FATAL(this, "Cannot find module or symbol '%s'",
-                  import->unresolved);
-      } else {
-        INT_FATAL(this, "Cannot find module");
       }
     }
   }
@@ -363,7 +354,7 @@ void ImportStmt::noRepeats() const {
 }
 
 void ImportStmt::validateUnqualified() {
-    BaseAST*            scopeToUse = getSearchScope();
+  BaseAST*            scopeToUse = getSearchScope();
   const ResolveScope* scope      = ResolveScope::getScopeFor(scopeToUse);
 
   for_vector(const char, name, unqualified) {
@@ -373,21 +364,83 @@ void ImportStmt::validateUnqualified() {
       scope->getFields(name, symbols);
 
       if (symbols.size() == 0) {
-        SymExpr* srcExpr = toSymExpr(src);
-        INT_ASSERT(srcExpr); // should have been resolved by this point
-        USR_FATAL_CONT(this,
-                       "Bad identifier, no known '%s' defined in '%s'",
-                       name,
-                       srcExpr->symbol()->name);
+        // Could also have been a type with methods defined in that scope
+        if (!scope->matchesTypeWithMethods(name)) {
+          SymExpr* srcExpr = toSymExpr(src);
+          INT_ASSERT(srcExpr); // should have been resolved by this point
+          USR_FATAL_CONT(this,
+                         "Bad identifier, no known '%s' defined in '%s'",
+                         name,
+                         srcExpr->symbol()->name);
+        }
 
       } else {
         for_vector(Symbol, sym, symbols) {
-          if (sym->hasFlag(FLAG_PRIVATE) == true) {
+          if (sym->hasFlag(FLAG_PRIVATE) == true && !sym->isVisible(this)) {
             USR_FATAL_CONT(this,
                            "Bad identifier, '%s' is private",
                            name);
           }
         }
+      }
+    }
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
+* Determine if the provided type was named in some form in the import         *
+* statement.  Used for determining if we should traverse the import statement *
+* to find its methods.                                                        *
+*                                                                             *
+************************************** | *************************************/
+std::set<const char*> ImportStmt::typeWasNamed(Type* t) const {
+  std::set<const char*> namedTypes;
+
+  typeWasNamed(t, &namedTypes);
+  return namedTypes;
+}
+
+void ImportStmt::typeWasNamed(Type* t,
+                              std::set<const char*>* namedTypes) const {
+  // We don't define any symbols for unqualified access, so the type was not
+  // listed
+  if (!providesUnqualifiedAccess()) {
+    return;
+  } else {
+    const char* name = t->symbol->name;
+    if (AggregateType* at = toAggregateType(t)) {
+      if (at->instantiatedFrom != NULL) {
+        // Need to check against the generic type's name rather than the
+        // instantiation, since the instantiation name included instantiation
+        // information in it (and that isn't usable in a use/import list, at
+        // least right now)
+        AggregateType* rootType = at->getRootInstantiation();
+        name = rootType->symbol->name;
+      }
+    }
+
+    // Otherwise, look through the list of unqualified symbol names to see if
+    // this one was listed
+    for_vector(const char, toCheck, unqualified) {
+      if (toCheck == name)
+        namedTypes->insert(toCheck);
+    }
+
+    // Including if it was renamed
+    for(std::map<const char*, const char*>::const_iterator it = renamed.begin();
+        it != renamed.end();
+        ++it) {
+      if (name == it->first) {
+        // Save the original name because we'll be looking in its scope
+        namedTypes->insert(it->second);
+      }
+    }
+
+    // If a parent type was named, we want to traverse this import statement
+    if (AggregateType* at = toAggregateType(t)) {
+      forv_Vec(AggregateType, pt, at->dispatchParents) {
+        typeWasNamed(pt, namedTypes);
       }
     }
   }
@@ -402,10 +455,10 @@ void ImportStmt::validateUnqualified() {
 *                                                                             *
 ************************************** | *************************************/
 
-bool ImportStmt::skipSymbolSearch(const char* name) {
+bool ImportStmt::skipSymbolSearch(const char* name) const {
   // We don't define any symbols for unqualified access, so we should skip this
   // import
-  if (unqualified.size() == 0 && renamed.size() == 0) {
+  if (!providesUnqualifiedAccess()) {
     return true;
   } else {
     // Otherwise, look through the list of unqualified symbol names to see if
@@ -647,7 +700,7 @@ ImportStmt* ImportStmt::applyOuterUse(const UseStmt* outer) {
       // The list will be shorter, create a new ImportStmt with it.
       SET_LINENO(this);
 
-      return new ImportStmt(src, isPrivate, &newUnqualifiedList, &newRenamed);
+      return new ImportStmt(src, &newUnqualifiedList, &newRenamed, isPrivate);
     }
 
   } else {
@@ -703,7 +756,7 @@ ImportStmt* ImportStmt::applyOuterUse(const UseStmt* outer) {
       // There were symbols that were in both lists, so this module use is still
       // interesting.
       SET_LINENO(this);
-      return new ImportStmt(src, isPrivate, &newUnqualifiedList, &newRenamed);
+      return new ImportStmt(src, &newUnqualifiedList, &newRenamed, isPrivate);
 
     } else {
       // all of the 'only' identifiers in the outer use
@@ -790,7 +843,7 @@ ImportStmt* ImportStmt::applyOuterImport(const ImportStmt* outer) {
         // There were symbols that were in both lists, so this module use is
         // still interesting.
         SET_LINENO(this);
-        return new ImportStmt(src, isPrivate, &newUnqualifiedList, &newRenamed);
+        return new ImportStmt(src, &newUnqualifiedList, &newRenamed, isPrivate);
 
       } else {
         // all of the identifiers in the outer import were missing from the

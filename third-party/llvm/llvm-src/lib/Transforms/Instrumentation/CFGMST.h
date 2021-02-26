@@ -1,9 +1,8 @@
 //===-- CFGMST.h - Minimum Spanning Tree for CFG ----------------*- C++ -*-===//
 //
-//                      The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -21,6 +20,7 @@
 #include "llvm/Analysis/BranchProbabilityInfo.h"
 #include "llvm/Analysis/CFG.h"
 #include "llvm/Support/BranchProbability.h"
+#include "llvm/Support/CommandLine.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
@@ -28,6 +28,11 @@
 #include <vector>
 
 #define DEBUG_TYPE "cfgmst"
+
+using namespace llvm;
+static cl::opt<bool> PGOInstrumentEntry(
+    "pgo-instrument-entry", cl::init(false), cl::Hidden,
+    cl::desc("Force to instrument function entry basicblock."));
 
 namespace llvm {
 
@@ -101,8 +106,11 @@ public:
 
     const BasicBlock *Entry = &(F.getEntryBlock());
     uint64_t EntryWeight = (BFI != nullptr ? BFI->getEntryFreq() : 2);
+    // If we want to instrument the entry count, lower the weight to 0.
+    if (PGOInstrumentEntry)
+      EntryWeight = 0;
     Edge *EntryIncoming = nullptr, *EntryOutgoing = nullptr,
-        *ExitOutgoing = nullptr, *ExitIncoming = nullptr;
+         *ExitOutgoing = nullptr, *ExitIncoming = nullptr;
     uint64_t MaxEntryOutWeight = 0, MaxExitOutWeight = 0, MaxExitInWeight = 0;
 
     // Add a fake edge to the entry.
@@ -136,6 +144,8 @@ public:
           }
           if (BPI != nullptr)
             Weight = BPI->getEdgeProbability(&*BB, TargetBB).scale(scaleFactor);
+          if (Weight == 0)
+            Weight++;
           auto *E = &addEdge(&*BB, TargetBB, Weight);
           E->IsCritical = Critical;
           LLVM_DEBUG(dbgs() << "  Edge: from " << BB->getName() << " to "
@@ -196,11 +206,10 @@ public:
 
   // Sort CFG edges based on its weight.
   void sortEdgesByWeight() {
-    std::stable_sort(AllEdges.begin(), AllEdges.end(),
-                     [](const std::unique_ptr<Edge> &Edge1,
-                        const std::unique_ptr<Edge> &Edge2) {
-                       return Edge1->Weight > Edge2->Weight;
-                     });
+    llvm::stable_sort(AllEdges, [](const std::unique_ptr<Edge> &Edge1,
+                                   const std::unique_ptr<Edge> &Edge2) {
+      return Edge1->Weight > Edge2->Weight;
+    });
   }
 
   // Traverse all the edges and compute the Minimum Weight Spanning Tree
@@ -259,13 +268,13 @@ public:
     std::tie(Iter, Inserted) = BBInfos.insert(std::make_pair(Src, nullptr));
     if (Inserted) {
       // Newly inserted, update the real info.
-      Iter->second = std::move(llvm::make_unique<BBInfo>(Index));
+      Iter->second = std::move(std::make_unique<BBInfo>(Index));
       Index++;
     }
     std::tie(Iter, Inserted) = BBInfos.insert(std::make_pair(Dest, nullptr));
     if (Inserted)
       // Newly inserted, update the real info.
-      Iter->second = std::move(llvm::make_unique<BBInfo>(Index));
+      Iter->second = std::move(std::make_unique<BBInfo>(Index));
     AllEdges.emplace_back(new Edge(Src, Dest, W));
     return *AllEdges.back();
   }
@@ -280,6 +289,9 @@ public:
     buildEdges();
     sortEdgesByWeight();
     computeMinimumSpanningTree();
+    if (PGOInstrumentEntry && (AllEdges.size() > 1))
+      std::iter_swap(std::move(AllEdges.begin()),
+                     std::move(AllEdges.begin() + AllEdges.size() - 1));
   }
 };
 

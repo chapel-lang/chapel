@@ -1,9 +1,8 @@
 //===--- Cuda.h - Utilities for compiling CUDA code  ------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -12,6 +11,8 @@
 
 namespace llvm {
 class StringRef;
+class Twine;
+class VersionTuple;
 } // namespace llvm
 
 namespace clang {
@@ -25,12 +26,15 @@ enum class CudaVersion {
   CUDA_91,
   CUDA_92,
   CUDA_100,
-  LATEST = CUDA_100,
+  CUDA_101,
+  CUDA_102,
+  CUDA_110,
+  LATEST = CUDA_110,
+  LATEST_SUPPORTED = CUDA_101,
 };
 const char *CudaVersionToString(CudaVersion V);
-
-// No string -> CudaVersion conversion function because there's no canonical
-// spelling of the various CUDA versions.
+// Input is "Major.Minor"
+CudaVersion CudaStringToVersion(const llvm::Twine &S);
 
 enum class CudaArch {
   UNKNOWN,
@@ -49,6 +53,7 @@ enum class CudaArch {
   SM_70,
   SM_72,
   SM_75,
+  SM_80,
   GFX600,
   GFX601,
   GFX700,
@@ -64,45 +69,46 @@ enum class CudaArch {
   GFX902,
   GFX904,
   GFX906,
+  GFX908,
   GFX909,
+  GFX1010,
+  GFX1011,
+  GFX1012,
+  GFX1030,
   LAST,
 };
+
+static inline bool IsNVIDIAGpuArch(CudaArch A) {
+  return A >= CudaArch::SM_20 && A < CudaArch::GFX600;
+}
+
+static inline bool IsAMDGpuArch(CudaArch A) {
+  return A >= CudaArch::GFX600 && A < CudaArch::LAST;
+}
+
 const char *CudaArchToString(CudaArch A);
+const char *CudaArchToVirtualArchString(CudaArch A);
 
 // The input should have the form "sm_20".
 CudaArch StringToCudaArch(llvm::StringRef S);
-
-enum class CudaVirtualArch {
-  UNKNOWN,
-  COMPUTE_20,
-  COMPUTE_30,
-  COMPUTE_32,
-  COMPUTE_35,
-  COMPUTE_37,
-  COMPUTE_50,
-  COMPUTE_52,
-  COMPUTE_53,
-  COMPUTE_60,
-  COMPUTE_61,
-  COMPUTE_62,
-  COMPUTE_70,
-  COMPUTE_72,
-  COMPUTE_75,
-  COMPUTE_AMDGCN,
-};
-const char *CudaVirtualArchToString(CudaVirtualArch A);
-
-// The input should have the form "compute_20".
-CudaVirtualArch StringToCudaVirtualArch(llvm::StringRef S);
-
-/// Get the compute_xx corresponding to an sm_yy.
-CudaVirtualArch VirtualArchForCudaArch(CudaArch A);
 
 /// Get the earliest CudaVersion that supports the given CudaArch.
 CudaVersion MinVersionForCudaArch(CudaArch A);
 
 /// Get the latest CudaVersion that supports the given CudaArch.
 CudaVersion MaxVersionForCudaArch(CudaArch A);
+
+//  Various SDK-dependent features that affect CUDA compilation
+enum class CudaFeature {
+  // CUDA-9.2+ uses a new API for launching kernels.
+  CUDA_USES_NEW_LAUNCH,
+  // CUDA-10.1+ needs explicit end of GPU binary registration.
+  CUDA_USES_FATBIN_REGISTER_END,
+};
+
+CudaVersion ToCudaVersion(llvm::VersionTuple);
+bool CudaFeatureEnabled(llvm::VersionTuple, CudaFeature);
+bool CudaFeatureEnabled(CudaVersion, CudaFeature);
 
 } // namespace clang
 

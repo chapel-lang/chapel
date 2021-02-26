@@ -54,9 +54,9 @@ proc testit(mode: Mode, param explicit, printStats) {
     when Mode.directIndexLocal {
       forall i in D2 {
         if explicit then
-          unorderedCopy(tmp.localAccess[i], A[rindex.localAccess[i]]);
+          unorderedCopy(tmp[i], A[rindex[i]]);
         else
-          tmp.localAccess[i] = A[rindex.localAccess[i]];
+          tmp[i] = A[rindex[i]];
       }
     }
     when Mode.directIndex {

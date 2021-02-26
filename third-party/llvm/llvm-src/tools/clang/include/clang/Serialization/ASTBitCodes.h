@@ -1,9 +1,8 @@
 //===- ASTBitCodes.h - Enum values for the PCH bitcode format ---*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -24,91 +23,91 @@
 #include "clang/Basic/OperatorKinds.h"
 #include "clang/Basic/SourceLocation.h"
 #include "llvm/ADT/DenseMapInfo.h"
-#include "llvm/Bitcode/BitCodes.h"
+#include "llvm/Bitstream/BitCodes.h"
 #include <cassert>
 #include <cstdint>
 
 namespace clang {
 namespace serialization {
 
-    /// AST file major version number supported by this version of
-    /// Clang.
-    ///
-    /// Whenever the AST file format changes in a way that makes it
-    /// incompatible with previous versions (such that a reader
-    /// designed for the previous version could not support reading
-    /// the new version), this number should be increased.
-    ///
-    /// Version 4 of AST files also requires that the version control branch and
-    /// revision match exactly, since there is no backward compatibility of
-    /// AST files at this time.
-    const unsigned VERSION_MAJOR = 7;
+/// AST file major version number supported by this version of
+/// Clang.
+///
+/// Whenever the AST file format changes in a way that makes it
+/// incompatible with previous versions (such that a reader
+/// designed for the previous version could not support reading
+/// the new version), this number should be increased.
+///
+/// Version 4 of AST files also requires that the version control branch and
+/// revision match exactly, since there is no backward compatibility of
+/// AST files at this time.
+const unsigned VERSION_MAJOR = 11;
 
-    /// AST file minor version number supported by this version of
-    /// Clang.
-    ///
-    /// Whenever the AST format changes in a way that is still
-    /// compatible with previous versions (such that a reader designed
-    /// for the previous version could still support reading the new
-    /// version by ignoring new kinds of subblocks), this number
-    /// should be increased.
-    const unsigned VERSION_MINOR = 0;
+/// AST file minor version number supported by this version of
+/// Clang.
+///
+/// Whenever the AST format changes in a way that is still
+/// compatible with previous versions (such that a reader designed
+/// for the previous version could still support reading the new
+/// version by ignoring new kinds of subblocks), this number
+/// should be increased.
+const unsigned VERSION_MINOR = 0;
 
-    /// An ID number that refers to an identifier in an AST file.
-    ///
-    /// The ID numbers of identifiers are consecutive (in order of discovery)
-    /// and start at 1. 0 is reserved for NULL.
-    using IdentifierID = uint32_t;
+/// An ID number that refers to an identifier in an AST file.
+///
+/// The ID numbers of identifiers are consecutive (in order of discovery)
+/// and start at 1. 0 is reserved for NULL.
+using IdentifierID = uint32_t;
 
-    /// An ID number that refers to a declaration in an AST file.
-    ///
-    /// The ID numbers of declarations are consecutive (in order of
-    /// discovery), with values below NUM_PREDEF_DECL_IDS being reserved.
-    /// At the start of a chain of precompiled headers, declaration ID 1 is
-    /// used for the translation unit declaration.
-    using DeclID = uint32_t;
+/// An ID number that refers to a declaration in an AST file.
+///
+/// The ID numbers of declarations are consecutive (in order of
+/// discovery), with values below NUM_PREDEF_DECL_IDS being reserved.
+/// At the start of a chain of precompiled headers, declaration ID 1 is
+/// used for the translation unit declaration.
+using DeclID = uint32_t;
 
-    // FIXME: Turn these into classes so we can have some type safety when
-    // we go from local ID to global and vice-versa.
-    using LocalDeclID = DeclID;
-    using GlobalDeclID = DeclID;
+// FIXME: Turn these into classes so we can have some type safety when
+// we go from local ID to global and vice-versa.
+using LocalDeclID = DeclID;
+using GlobalDeclID = DeclID;
 
-    /// An ID number that refers to a type in an AST file.
-    ///
-    /// The ID of a type is partitioned into two parts: the lower
-    /// three bits are used to store the const/volatile/restrict
-    /// qualifiers (as with QualType) and the upper bits provide a
-    /// type index. The type index values are partitioned into two
-    /// sets. The values below NUM_PREDEF_TYPE_IDs are predefined type
-    /// IDs (based on the PREDEF_TYPE_*_ID constants), with 0 as a
-    /// placeholder for "no type". Values from NUM_PREDEF_TYPE_IDs are
-    /// other types that have serialized representations.
-    using TypeID = uint32_t;
+/// An ID number that refers to a type in an AST file.
+///
+/// The ID of a type is partitioned into two parts: the lower
+/// three bits are used to store the const/volatile/restrict
+/// qualifiers (as with QualType) and the upper bits provide a
+/// type index. The type index values are partitioned into two
+/// sets. The values below NUM_PREDEF_TYPE_IDs are predefined type
+/// IDs (based on the PREDEF_TYPE_*_ID constants), with 0 as a
+/// placeholder for "no type". Values from NUM_PREDEF_TYPE_IDs are
+/// other types that have serialized representations.
+using TypeID = uint32_t;
 
-    /// A type index; the type ID with the qualifier bits removed.
-    class TypeIdx {
-      uint32_t Idx = 0;
+/// A type index; the type ID with the qualifier bits removed.
+class TypeIdx {
+  uint32_t Idx = 0;
 
-    public:
-      TypeIdx() = default;
-      explicit TypeIdx(uint32_t index) : Idx(index) {}
+public:
+  TypeIdx() = default;
+  explicit TypeIdx(uint32_t index) : Idx(index) {}
 
-      uint32_t getIndex() const { return Idx; }
+  uint32_t getIndex() const { return Idx; }
 
-      TypeID asTypeID(unsigned FastQuals) const {
-        if (Idx == uint32_t(-1))
-          return TypeID(-1);
+  TypeID asTypeID(unsigned FastQuals) const {
+    if (Idx == uint32_t(-1))
+      return TypeID(-1);
 
-        return (Idx << Qualifiers::FastWidth) | FastQuals;
-      }
+    return (Idx << Qualifiers::FastWidth) | FastQuals;
+  }
 
-      static TypeIdx fromTypeID(TypeID ID) {
-        if (ID == TypeID(-1))
-          return TypeIdx(-1);
+  static TypeIdx fromTypeID(TypeID ID) {
+    if (ID == TypeID(-1))
+      return TypeIdx(-1);
 
-        return TypeIdx(ID >> Qualifiers::FastWidth);
-      }
-    };
+    return TypeIdx(ID >> Qualifiers::FastWidth);
+  }
+};
 
     /// A structure for putting "fast"-unqualified QualTypes into a
     /// DenseMap.  This uses the standard pointer hash function.
@@ -182,7 +181,7 @@ namespace serialization {
       /// Raw source location of end of range.
       unsigned End;
 
-      /// Offset in the AST file.
+      /// Offset in the AST file relative to ModuleFile::MacroOffsetsBase.
       uint32_t BitOffset;
 
       PPEntityOffset(SourceRange R, uint32_t BitOffset)
@@ -217,17 +216,43 @@ namespace serialization {
       }
     };
 
-    /// Source range/offset of a preprocessed entity.
+    /// Offset in the AST file. Use splitted 64-bit integer into low/high
+    /// parts to keep structure alignment 32-bit (it is important because
+    /// blobs in bitstream are 32-bit aligned). This structure is serialized
+    /// "as is" to the AST file.
+    struct UnderalignedInt64 {
+      uint32_t BitOffsetLow = 0;
+      uint32_t BitOffsetHigh = 0;
+
+      UnderalignedInt64() = default;
+      UnderalignedInt64(uint64_t BitOffset) { setBitOffset(BitOffset); }
+
+      void setBitOffset(uint64_t Offset) {
+        BitOffsetLow = Offset;
+        BitOffsetHigh = Offset >> 32;
+      }
+
+      uint64_t getBitOffset() const {
+        return BitOffsetLow | (uint64_t(BitOffsetHigh) << 32);
+      }
+    };
+
+    /// Source location and bit offset of a declaration.
     struct DeclOffset {
       /// Raw source location.
       unsigned Loc = 0;
 
-      /// Offset in the AST file.
-      uint32_t BitOffset = 0;
+      /// Offset relative to the start of the DECLTYPES_BLOCK block. Keep
+      /// structure alignment 32-bit and avoid padding gap because undefined
+      /// value in the padding affects AST hash.
+      UnderalignedInt64 BitOffset;
 
       DeclOffset() = default;
-      DeclOffset(SourceLocation Loc, uint32_t BitOffset)
-        : Loc(Loc.getRawEncoding()), BitOffset(BitOffset) {}
+      DeclOffset(SourceLocation Loc, uint64_t BitOffset,
+                 uint64_t DeclTypesBlockStartOffset) {
+        setLocation(Loc);
+        setBitOffset(BitOffset, DeclTypesBlockStartOffset);
+      }
 
       void setLocation(SourceLocation L) {
         Loc = L.getRawEncoding();
@@ -235,6 +260,15 @@ namespace serialization {
 
       SourceLocation getLocation() const {
         return SourceLocation::getFromRawEncoding(Loc);
+      }
+
+      void setBitOffset(uint64_t Offset,
+                        const uint64_t DeclTypesBlockStartOffset) {
+        BitOffset.setBitOffset(Offset - DeclTypesBlockStartOffset);
+      }
+
+      uint64_t getBitOffset(const uint64_t DeclTypesBlockStartOffset) const {
+        return BitOffset.getBitOffset() + DeclTypesBlockStartOffset;
       }
     };
 
@@ -363,6 +397,9 @@ namespace serialization {
       /// Record code for the signature that identifiers this AST file.
       SIGNATURE = 1,
 
+      /// Record code for the content hash of the AST block.
+      AST_BLOCK_HASH,
+
       /// Record code for the diagnostic options table.
       DIAGNOSTIC_OPTIONS,
 
@@ -383,7 +420,10 @@ namespace serialization {
     /// inside the control block.
     enum InputFileRecordTypes {
       /// An input file.
-      INPUT_FILE = 1
+      INPUT_FILE = 1,
+
+      /// The input file content hash
+      INPUT_FILE_HASH
     };
 
     /// Record types that occur within the AST block itself.
@@ -648,7 +688,13 @@ namespace serialization {
       PP_CONDITIONAL_STACK = 62,
 
       /// A table of skipped ranges within the preprocessing record.
-      PPD_SKIPPED_RANGES = 63
+      PPD_SKIPPED_RANGES = 63,
+
+      /// Record code for the Decls to be checked for deferred diags.
+      DECLS_TO_CHECK_FOR_DEFERRED_DIAGS = 64,
+
+      /// Record code for \#pragma float_control options.
+      FLOAT_CONTROL_PRAGMA_OPTIONS = 65,
     };
 
     /// Record types used within a source manager block.
@@ -1011,6 +1057,18 @@ namespace serialization {
       /// \brief The '_Sat unsigned long _Fract' type
       PREDEF_TYPE_SAT_ULONG_FRACT_ID = 69,
 
+      /// The placeholder type for OpenMP array shaping operation.
+      PREDEF_TYPE_OMP_ARRAY_SHAPING = 70,
+
+      /// The placeholder type for OpenMP iterator expression.
+      PREDEF_TYPE_OMP_ITERATOR = 71,
+
+      /// A placeholder type for incomplete matrix index operations.
+      PREDEF_TYPE_INCOMPLETE_MATRIX_IDX = 72,
+
+      /// \brief The '__bf16' type
+      PREDEF_TYPE_BFLOAT16_ID = 73,
+
       /// OpenCL image types with auto numeration
 #define IMAGE_TYPE(ImgType, Id, SingletonId, Access, Suffix) \
       PREDEF_TYPE_##Id##_ID,
@@ -1019,6 +1077,9 @@ namespace serialization {
 #define EXT_OPAQUE_TYPE(ExtType, Id, Ext) \
       PREDEF_TYPE_##Id##_ID,
 #include "clang/Basic/OpenCLExtensionTypes.def"
+      // \brief SVE types with auto numeration
+#define SVE_TYPE(Name, Id, SingletonId) PREDEF_TYPE_##Id##_ID,
+#include "clang/Basic/AArch64SVEACLETypes.def"
     };
 
     /// The number of predefined type IDs that are reserved for
@@ -1035,146 +1096,12 @@ namespace serialization {
     /// constant describes a record for a specific type class in the
     /// AST. Note that DeclCode values share this code space.
     enum TypeCode {
+#define TYPE_BIT_CODE(CLASS_ID, CODE_ID, CODE_VALUE) \
+      TYPE_##CODE_ID = CODE_VALUE,
+#include "clang/Serialization/TypeBitCodes.def"
+
       /// An ExtQualType record.
-      TYPE_EXT_QUAL = 1,
-
-      /// A ComplexType record.
-      TYPE_COMPLEX = 3,
-
-      /// A PointerType record.
-      TYPE_POINTER = 4,
-
-      /// A BlockPointerType record.
-      TYPE_BLOCK_POINTER = 5,
-
-      /// An LValueReferenceType record.
-      TYPE_LVALUE_REFERENCE = 6,
-
-      /// An RValueReferenceType record.
-      TYPE_RVALUE_REFERENCE = 7,
-
-      /// A MemberPointerType record.
-      TYPE_MEMBER_POINTER = 8,
-
-      /// A ConstantArrayType record.
-      TYPE_CONSTANT_ARRAY = 9,
-
-      /// An IncompleteArrayType record.
-      TYPE_INCOMPLETE_ARRAY = 10,
-
-      /// A VariableArrayType record.
-      TYPE_VARIABLE_ARRAY = 11,
-
-      /// A VectorType record.
-      TYPE_VECTOR = 12,
-
-      /// An ExtVectorType record.
-      TYPE_EXT_VECTOR = 13,
-
-      /// A FunctionNoProtoType record.
-      TYPE_FUNCTION_NO_PROTO = 14,
-
-      /// A FunctionProtoType record.
-      TYPE_FUNCTION_PROTO = 15,
-
-      /// A TypedefType record.
-      TYPE_TYPEDEF = 16,
-
-      /// A TypeOfExprType record.
-      TYPE_TYPEOF_EXPR = 17,
-
-      /// A TypeOfType record.
-      TYPE_TYPEOF = 18,
-
-      /// A RecordType record.
-      TYPE_RECORD = 19,
-
-      /// An EnumType record.
-      TYPE_ENUM = 20,
-
-      /// An ObjCInterfaceType record.
-      TYPE_OBJC_INTERFACE = 21,
-
-      /// An ObjCObjectPointerType record.
-      TYPE_OBJC_OBJECT_POINTER = 22,
-
-      /// a DecltypeType record.
-      TYPE_DECLTYPE = 23,
-
-      /// An ElaboratedType record.
-      TYPE_ELABORATED = 24,
-
-      /// A SubstTemplateTypeParmType record.
-      TYPE_SUBST_TEMPLATE_TYPE_PARM = 25,
-
-      /// An UnresolvedUsingType record.
-      TYPE_UNRESOLVED_USING = 26,
-
-      /// An InjectedClassNameType record.
-      TYPE_INJECTED_CLASS_NAME = 27,
-
-      /// An ObjCObjectType record.
-      TYPE_OBJC_OBJECT = 28,
-
-      /// An TemplateTypeParmType record.
-      TYPE_TEMPLATE_TYPE_PARM = 29,
-
-      /// An TemplateSpecializationType record.
-      TYPE_TEMPLATE_SPECIALIZATION = 30,
-
-      /// A DependentNameType record.
-      TYPE_DEPENDENT_NAME = 31,
-
-      /// A DependentTemplateSpecializationType record.
-      TYPE_DEPENDENT_TEMPLATE_SPECIALIZATION = 32,
-
-      /// A DependentSizedArrayType record.
-      TYPE_DEPENDENT_SIZED_ARRAY = 33,
-
-      /// A ParenType record.
-      TYPE_PAREN = 34,
-
-      /// A PackExpansionType record.
-      TYPE_PACK_EXPANSION = 35,
-
-      /// An AttributedType record.
-      TYPE_ATTRIBUTED = 36,
-
-      /// A SubstTemplateTypeParmPackType record.
-      TYPE_SUBST_TEMPLATE_TYPE_PARM_PACK = 37,
-
-      /// A AutoType record.
-      TYPE_AUTO = 38,
-
-      /// A UnaryTransformType record.
-      TYPE_UNARY_TRANSFORM = 39,
-
-      /// An AtomicType record.
-      TYPE_ATOMIC = 40,
-
-      /// A DecayedType record.
-      TYPE_DECAYED = 41,
-
-      /// An AdjustedType record.
-      TYPE_ADJUSTED = 42,
-
-      /// A PipeType record.
-      TYPE_PIPE = 43,
-
-      /// An ObjCTypeParamType record.
-      TYPE_OBJC_TYPE_PARAM = 44,
-
-      /// A DeducedTemplateSpecializationType record.
-      TYPE_DEDUCED_TEMPLATE_SPECIALIZATION = 45,
-
-      /// A DependentSizedExtVectorType record.
-      TYPE_DEPENDENT_SIZED_EXT_VECTOR = 46,
-
-      /// A DependentAddressSpaceType record.
-      TYPE_DEPENDENT_ADDRESS_SPACE = 47,
-
-      /// A dependentSizedVectorType record.
-      TYPE_DEPENDENT_SIZED_VECTOR = 48
+      TYPE_EXT_QUAL = 1
     };
 
     /// The type IDs for special types constructed by semantic
@@ -1254,27 +1181,30 @@ namespace serialization {
       /// The internal '__builtin_ms_va_list' typedef.
       PREDEF_DECL_BUILTIN_MS_VA_LIST_ID = 11,
 
+      /// The predeclared '_GUID' struct.
+      PREDEF_DECL_BUILTIN_MS_GUID_ID = 12,
+
       /// The extern "C" context.
-      PREDEF_DECL_EXTERN_C_CONTEXT_ID = 12,
+      PREDEF_DECL_EXTERN_C_CONTEXT_ID = 13,
 
       /// The internal '__make_integer_seq' template.
-      PREDEF_DECL_MAKE_INTEGER_SEQ_ID = 13,
+      PREDEF_DECL_MAKE_INTEGER_SEQ_ID = 14,
 
       /// The internal '__NSConstantString' typedef.
-      PREDEF_DECL_CF_CONSTANT_STRING_ID = 14,
+      PREDEF_DECL_CF_CONSTANT_STRING_ID = 15,
 
       /// The internal '__NSConstantString' tag type.
-      PREDEF_DECL_CF_CONSTANT_STRING_TAG_ID = 15,
+      PREDEF_DECL_CF_CONSTANT_STRING_TAG_ID = 16,
 
       /// The internal '__type_pack_element' template.
-      PREDEF_DECL_TYPE_PACK_ELEMENT_ID = 16,
+      PREDEF_DECL_TYPE_PACK_ELEMENT_ID = 17,
     };
 
     /// The number of declaration IDs that are predefined.
     ///
     /// For more information about predefined declarations, see the
     /// \c PredefinedDeclIDs type and the PREDEF_DECL_*_ID constants.
-    const unsigned int NUM_PREDEF_DECL_IDS = 17;
+    const unsigned int NUM_PREDEF_DECL_IDS = 18;
 
     /// Record of updates for a declaration that was modified after
     /// being deserialized. This can occur within DECLTYPES_BLOCK_ID.
@@ -1347,6 +1277,9 @@ namespace serialization {
 
       /// A MSPropertyDecl record.
       DECL_MS_PROPERTY,
+
+      /// A MSGuidDecl record.
+      DECL_MS_GUID,
 
       /// A VarDecl record.
       DECL_VAR,
@@ -1439,9 +1372,6 @@ namespace serialization {
       /// A CXXConstructorDecl record.
       DECL_CXX_CONSTRUCTOR,
 
-      /// A CXXConstructorDecl record for an inherited constructor.
-      DECL_CXX_INHERITED_CONSTRUCTOR,
-
       /// A CXXDestructorDecl record.
       DECL_CXX_DESTRUCTOR,
 
@@ -1490,7 +1420,10 @@ namespace serialization {
       /// A TypeAliasTemplateDecl record.
       DECL_TYPE_ALIAS_TEMPLATE,
 
-      /// A StaticAssertDecl record.
+      /// \brief A ConceptDecl record.
+      DECL_CONCEPT,
+
+      /// \brief A StaticAssertDecl record.
       DECL_STATIC_ASSERT,
 
       /// A record containing CXXBaseSpecifiers.
@@ -1522,9 +1455,18 @@ namespace serialization {
 
       /// An OMPRequiresDecl record.
       DECL_OMP_REQUIRES,
-	 
+
+      /// An OMPAllocateDcl record.
+      DECL_OMP_ALLOCATE,
+
       /// An EmptyDecl record.
       DECL_EMPTY,
+
+      /// An LifetimeExtendedTemporaryDecl record.
+      DECL_LIFETIME_EXTENDED_TEMPORARY,
+
+      /// A RequiresExprBodyDecl record.
+      DECL_REQUIRES_EXPR_BODY,
 
       /// An ObjCTypeParamDecl record.
       DECL_OBJC_TYPE_PARAM,
@@ -1537,6 +1479,9 @@ namespace serialization {
 
       /// A PragmaDetectMismatchDecl record.
       DECL_PRAGMA_DETECT_MISMATCH,
+
+      /// An OMPDeclareMapperDecl record.
+      DECL_OMP_DECLARE_MAPPER,
 
       /// An OMPDeclareReductionDecl record.
       DECL_OMP_DECLARE_REDUCTION,
@@ -1664,6 +1609,9 @@ namespace serialization {
       /// An ArraySubscriptExpr record.
       EXPR_ARRAY_SUBSCRIPT,
 
+      /// An MatrixSubscriptExpr record.
+      EXPR_MATRIX_SUBSCRIPT,
+
       /// A CallExpr record.
       EXPR_CALL,
 
@@ -1727,6 +1675,9 @@ namespace serialization {
       /// A GNUNullExpr record.
       EXPR_GNU_NULL,
 
+      /// A SourceLocExpr record.
+      EXPR_SOURCE_LOC,
+
       /// A ShuffleVectorExpr record.
       EXPR_SHUFFLE_VECTOR,
 
@@ -1744,6 +1695,9 @@ namespace serialization {
 
       /// An AtomicExpr record.
       EXPR_ATOMIC,
+
+      /// A RecoveryExpr record.
+      EXPR_RECOVERY,
 
       // Objective-C
 
@@ -1828,6 +1782,9 @@ namespace serialization {
       /// A CXXMemberCallExpr record.
       EXPR_CXX_MEMBER_CALL,
 
+      /// A CXXRewrittenBinaryOperator record.
+      EXPR_CXX_REWRITTEN_BINARY_OPERATOR,
+
       /// A CXXConstructExpr record.
       EXPR_CXX_CONSTRUCT,
 
@@ -1849,8 +1806,14 @@ namespace serialization {
       /// A CXXConstCastExpr record.
       EXPR_CXX_CONST_CAST,
 
+      /// A CXXAddrspaceCastExpr record.
+      EXPR_CXX_ADDRSPACE_CAST,
+
       /// A CXXFunctionalCastExpr record.
       EXPR_CXX_FUNCTIONAL_CAST,
+
+      /// A BuiltinBitCastExpr record.
+      EXPR_BUILTIN_BIT_CAST,
 
       /// A UserDefinedLiteral record.
       EXPR_USER_DEFINED_LITERAL,
@@ -1898,6 +1861,8 @@ namespace serialization {
       EXPR_FUNCTION_PARM_PACK,    // FunctionParmPackExpr
       EXPR_MATERIALIZE_TEMPORARY, // MaterializeTemporaryExpr
       EXPR_CXX_FOLD,              // CXXFoldExpr
+      EXPR_CONCEPT_SPECIALIZATION,// ConceptSpecializationExpr
+      EXPR_REQUIRES,              // RequiresExpr
 
       // CUDA
       EXPR_CUDA_KERNEL_CALL,       // CUDAKernelCallExpr
@@ -1927,12 +1892,15 @@ namespace serialization {
       STMT_OMP_CRITICAL_DIRECTIVE,
       STMT_OMP_PARALLEL_FOR_DIRECTIVE,
       STMT_OMP_PARALLEL_FOR_SIMD_DIRECTIVE,
+      STMT_OMP_PARALLEL_MASTER_DIRECTIVE,
       STMT_OMP_PARALLEL_SECTIONS_DIRECTIVE,
       STMT_OMP_TASK_DIRECTIVE,
       STMT_OMP_TASKYIELD_DIRECTIVE,
       STMT_OMP_BARRIER_DIRECTIVE,
       STMT_OMP_TASKWAIT_DIRECTIVE,
       STMT_OMP_FLUSH_DIRECTIVE,
+      STMT_OMP_DEPOBJ_DIRECTIVE,
+      STMT_OMP_SCAN_DIRECTIVE,
       STMT_OMP_ORDERED_DIRECTIVE,
       STMT_OMP_ATOMIC_DIRECTIVE,
       STMT_OMP_TARGET_DIRECTIVE,
@@ -1947,6 +1915,10 @@ namespace serialization {
       STMT_OMP_CANCEL_DIRECTIVE,
       STMT_OMP_TASKLOOP_DIRECTIVE,
       STMT_OMP_TASKLOOP_SIMD_DIRECTIVE,
+      STMT_OMP_MASTER_TASKLOOP_DIRECTIVE,
+      STMT_OMP_MASTER_TASKLOOP_SIMD_DIRECTIVE,
+      STMT_OMP_PARALLEL_MASTER_TASKLOOP_DIRECTIVE,
+      STMT_OMP_PARALLEL_MASTER_TASKLOOP_SIMD_DIRECTIVE,
       STMT_OMP_DISTRIBUTE_DIRECTIVE,
       STMT_OMP_TARGET_UPDATE_DIRECTIVE,
       STMT_OMP_DISTRIBUTE_PARALLEL_FOR_DIRECTIVE,
@@ -1964,6 +1936,8 @@ namespace serialization {
       STMT_OMP_TARGET_TEAMS_DISTRIBUTE_PARALLEL_FOR_SIMD_DIRECTIVE,
       STMT_OMP_TARGET_TEAMS_DISTRIBUTE_SIMD_DIRECTIVE,
       EXPR_OMP_ARRAY_SECTION,
+      EXPR_OMP_ARRAY_SHAPING,
+      EXPR_OMP_ITERATOR,
 
       // ARC
       EXPR_OBJC_BRIDGED_CAST,     // ObjCBridgedCastExpr
@@ -1975,6 +1949,9 @@ namespace serialization {
       EXPR_COAWAIT,
       EXPR_COYIELD,
       EXPR_DEPENDENT_COAWAIT,
+
+      // FixedPointLiteral
+      EXPR_FIXEDPOINT_LITERAL,
     };
 
     /// The kinds of designators that can occur in a
@@ -2002,6 +1979,9 @@ namespace serialization {
       CTOR_INITIALIZER_MEMBER,
       CTOR_INITIALIZER_INDIRECT_MEMBER
     };
+
+    /// Kinds of cleanup objects owned by ExprWithCleanups.
+    enum CleanupObjectKind { COK_Block, COK_CompoundLiteral };
 
     /// Describes the redeclarations of a declaration.
     struct LocalRedeclarationsInfo {

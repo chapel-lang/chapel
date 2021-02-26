@@ -7,7 +7,7 @@
   .. contents:: Table of Contents
 
 */
-use LinearAlgebra, Norm;
+use LinearAlgebra;
 
 /*
 
@@ -24,7 +24,7 @@ use LinearAlgebra, Norm;
 
   .. code-block:: bash
 
-    chpl --set blasImpl=none --set lapackImpl=none myProgram.chpl
+    chpl --set blasImpl=off --set lapackImpl=off myProgram.chpl
 
   This will result in a cleaner compiler error when using a procedure that is
   only available with :mod:`BLAS` or :mod:`LAPACK`.
@@ -537,9 +537,9 @@ var M4 = CSRMatrix(I);              // From a dense matrix
 // Setup some sparse domains and arrays
 { // Operations scope
 
-var Adom = CSRDomain(100, 100),
-    Bdom = CSRDomain(100, 100),
-    Cdom = CSRDomain(100, 100);
+var Adom = CSRDomain(1..100, 1..100),
+    Bdom = CSRDomain(1..100, 1..100),
+    Cdom = CSRDomain(1..100, 1..100);
 
 Adom += (1,1);
 Bdom += (2,2);

@@ -1,9 +1,8 @@
 //===- PrintSCC.cpp - Enumerate SCCs in some key graphs -------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -77,10 +76,11 @@ bool CFGSCC::runOnFunction(Function &F) {
   for (scc_iterator<Function*> SCCI = scc_begin(&F); !SCCI.isAtEnd(); ++SCCI) {
     const std::vector<BasicBlock *> &nextSCC = *SCCI;
     errs() << "\nSCC #" << ++sccNum << " : ";
-    for (std::vector<BasicBlock*>::const_iterator I = nextSCC.begin(),
-           E = nextSCC.end(); I != E; ++I)
-      errs() << (*I)->getName() << ", ";
-    if (nextSCC.size() == 1 && SCCI.hasLoop())
+    for (BasicBlock *BB : nextSCC) {
+      BB->printAsOperand(errs(), false);
+      errs() << ", ";
+    }
+    if (nextSCC.size() == 1 && SCCI.hasCycle())
       errs() << " (Has self-loop).";
   }
   errs() << "\n";
@@ -102,7 +102,7 @@ bool CallGraphSCC::runOnModule(Module &M) {
            E = nextSCC.end(); I != E; ++I)
       errs() << ((*I)->getFunction() ? (*I)->getFunction()->getName()
                                      : "external node") << ", ";
-    if (nextSCC.size() == 1 && SCCI.hasLoop())
+    if (nextSCC.size() == 1 && SCCI.hasCycle())
       errs() << " (Has self-loop).";
   }
   errs() << "\n";

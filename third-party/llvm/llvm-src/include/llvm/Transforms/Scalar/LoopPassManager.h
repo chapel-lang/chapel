@@ -1,9 +1,8 @@
 //===- LoopPassManager.h - Loop pass management -----------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 /// \file
@@ -45,6 +44,7 @@
 #include "llvm/Analysis/GlobalsModRef.h"
 #include "llvm/Analysis/LoopAnalysisManager.h"
 #include "llvm/Analysis/LoopInfo.h"
+#include "llvm/Analysis/MemorySSA.h"
 #include "llvm/Analysis/ScalarEvolution.h"
 #include "llvm/Analysis/ScalarEvolutionAliasAnalysis.h"
 #include "llvm/Analysis/TargetLibraryInfo.h"
@@ -53,6 +53,7 @@
 #include "llvm/IR/PassManager.h"
 #include "llvm/Transforms/Utils/LCSSA.h"
 #include "llvm/Transforms/Utils/LoopSimplify.h"
+#include "llvm/Transforms/Utils/LoopUtils.h"
 
 namespace llvm {
 
@@ -101,40 +102,6 @@ template <typename AnalysisT>
 using RequireAnalysisLoopPass =
     RequireAnalysisPass<AnalysisT, Loop, LoopAnalysisManager,
                         LoopStandardAnalysisResults &, LPMUpdater &>;
-
-namespace internal {
-/// Helper to implement appending of loops onto a worklist.
-///
-/// We want to process loops in postorder, but the worklist is a LIFO data
-/// structure, so we append to it in *reverse* postorder.
-///
-/// For trees, a preorder traversal is a viable reverse postorder, so we
-/// actually append using a preorder walk algorithm.
-template <typename RangeT>
-inline void appendLoopsToWorklist(RangeT &&Loops,
-                                  SmallPriorityWorklist<Loop *, 4> &Worklist) {
-  // We use an internal worklist to build up the preorder traversal without
-  // recursion.
-  SmallVector<Loop *, 4> PreOrderLoops, PreOrderWorklist;
-
-  // We walk the initial sequence of loops in reverse because we generally want
-  // to visit defs before uses and the worklist is LIFO.
-  for (Loop *RootL : reverse(Loops)) {
-    assert(PreOrderLoops.empty() && "Must start with an empty preorder walk.");
-    assert(PreOrderWorklist.empty() &&
-           "Must start with an empty preorder walk worklist.");
-    PreOrderWorklist.push_back(RootL);
-    do {
-      Loop *L = PreOrderWorklist.pop_back_val();
-      PreOrderWorklist.append(L->begin(), L->end());
-      PreOrderLoops.push_back(L);
-    } while (!PreOrderWorklist.empty());
-
-    Worklist.insert(std::move(PreOrderLoops));
-    PreOrderLoops.clear();
-  }
-}
-}
 
 template <typename LoopPassT> class FunctionToLoopPassAdaptor;
 
@@ -191,7 +158,7 @@ public:
                                                   "the current loop!");
 #endif
 
-    internal::appendLoopsToWorklist(NewChildLoops, Worklist);
+    appendLoopsToWorklist(NewChildLoops, Worklist);
 
     // Also skip further processing of the current loop--it will be revisited
     // after all of its newly added children are accounted for.
@@ -211,7 +178,7 @@ public:
              "All of the new loops must be siblings of the current loop!");
 #endif
 
-    internal::appendLoopsToWorklist(NewSibLoops, Worklist);
+    appendLoopsToWorklist(NewSibLoops, Worklist);
 
     // No need to skip the current loop or revisit it, as sibling loops
     // shouldn't impact anything.
@@ -264,8 +231,10 @@ template <typename LoopPassT>
 class FunctionToLoopPassAdaptor
     : public PassInfoMixin<FunctionToLoopPassAdaptor<LoopPassT>> {
 public:
-  explicit FunctionToLoopPassAdaptor(LoopPassT Pass, bool DebugLogging = false)
-      : Pass(std::move(Pass)), LoopCanonicalizationFPM(DebugLogging) {
+  explicit FunctionToLoopPassAdaptor(LoopPassT Pass, bool UseMemorySSA = false,
+                                     bool DebugLogging = false)
+      : Pass(std::move(Pass)), LoopCanonicalizationFPM(DebugLogging),
+        UseMemorySSA(UseMemorySSA) {
     LoopCanonicalizationFPM.addPass(LoopSimplifyPass());
     LoopCanonicalizationFPM.addPass(LCSSAPass());
   }
@@ -294,7 +263,7 @@ public:
       return PA;
 
     // Get the analysis results needed by loop passes.
-    MemorySSA *MSSA = EnableMSSALoopDependency
+    MemorySSA *MSSA = UseMemorySSA
                           ? (&AM.getResult<MemorySSAAnalysis>(F).getMSSA())
                           : nullptr;
     LoopStandardAnalysisResults LAR = {AM.getResult<AAManager>(F),
@@ -311,8 +280,10 @@ public:
     // LoopStandardAnalysisResults object. The loop analyses cached in this
     // manager have access to those analysis results and so it must invalidate
     // itself when they go away.
-    LoopAnalysisManager &LAM =
-        AM.getResult<LoopAnalysisManagerFunctionProxy>(F).getManager();
+    auto &LAMFP = AM.getResult<LoopAnalysisManagerFunctionProxy>(F);
+    if (UseMemorySSA)
+      LAMFP.markMSSAUsed();
+    LoopAnalysisManager &LAM = LAMFP.getManager();
 
     // A postorder worklist of loops to process.
     SmallPriorityWorklist<Loop *, 4> Worklist;
@@ -321,13 +292,9 @@ public:
     // update them when they mutate the loop nest structure.
     LPMUpdater Updater(Worklist, LAM);
 
-    // Add the loop nests in the reverse order of LoopInfo. For some reason,
-    // they are stored in RPO w.r.t. the control flow graph in LoopInfo. For
-    // the purpose of unrolling, loop deletion, and LICM, we largely want to
-    // work forward across the CFG so that we visit defs before uses and can
-    // propagate simplifications from one loop nest into the next.
-    // FIXME: Consider changing the order in LoopInfo.
-    internal::appendLoopsToWorklist(reverse(LI), Worklist);
+    // Add the loop nests in the reverse order of LoopInfo. See method
+    // declaration.
+    appendLoopsToWorklist(LI, Worklist);
 
     do {
       Loop *L = Worklist.pop_back_val();
@@ -350,7 +317,12 @@ public:
       // false).
       if (!PI.runBeforePass<Loop>(Pass, *L))
         continue;
-      PreservedAnalyses PassPA = Pass.run(*L, LAM, LAR, Updater);
+
+      PreservedAnalyses PassPA;
+      {
+        TimeTraceScope TimeScope(Pass.name());
+        PassPA = Pass.run(*L, LAM, LAR, Updater);
+      }
 
       // Do not pass deleted Loop into the instrumentation.
       if (Updater.skipCurrentLoop())
@@ -383,7 +355,7 @@ public:
     PA.preserve<DominatorTreeAnalysis>();
     PA.preserve<LoopAnalysis>();
     PA.preserve<ScalarEvolutionAnalysis>();
-    if (EnableMSSALoopDependency)
+    if (UseMemorySSA)
       PA.preserve<MemorySSAAnalysis>();
     // FIXME: What we really want to do here is preserve an AA category, but
     // that concept doesn't exist yet.
@@ -398,14 +370,18 @@ private:
   LoopPassT Pass;
 
   FunctionPassManager LoopCanonicalizationFPM;
+
+  bool UseMemorySSA = false;
 };
 
 /// A function to deduce a loop pass type and wrap it in the templated
 /// adaptor.
 template <typename LoopPassT>
 FunctionToLoopPassAdaptor<LoopPassT>
-createFunctionToLoopPassAdaptor(LoopPassT Pass, bool DebugLogging = false) {
-  return FunctionToLoopPassAdaptor<LoopPassT>(std::move(Pass), DebugLogging);
+createFunctionToLoopPassAdaptor(LoopPassT Pass, bool UseMemorySSA = false,
+                                bool DebugLogging = false) {
+  return FunctionToLoopPassAdaptor<LoopPassT>(std::move(Pass), UseMemorySSA,
+                                              DebugLogging);
 }
 
 /// Pass for printing a loop's contents as textual IR.

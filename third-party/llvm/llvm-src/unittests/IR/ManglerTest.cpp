@@ -1,9 +1,8 @@
 //===- llvm/unittest/IR/ManglerTest.cpp - Mangler unit tests --------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -135,6 +134,26 @@ TEST(ManglerTest, WindowsX64) {
   EXPECT_EQ(mangleFunc("?vectorcall", llvm::GlobalValue::ExternalLinkage,
                        llvm::CallingConv::X86_VectorCall, Mod, Mang),
             "?vectorcall");
+}
+
+TEST(ManglerTest, XCOFF) {
+  LLVMContext Ctx;
+  DataLayout DL("m:a"); // XCOFF/AIX
+  Module Mod("test", Ctx);
+  Mod.setDataLayout(DL);
+  Mangler Mang;
+  EXPECT_EQ(mangleStr("foo", Mang, DL), "foo");
+  EXPECT_EQ(mangleStr("\01foo", Mang, DL), "foo");
+  EXPECT_EQ(mangleStr("?foo", Mang, DL), "?foo");
+  EXPECT_EQ(mangleFunc("foo", llvm::GlobalValue::ExternalLinkage,
+                       llvm::CallingConv::C, Mod, Mang),
+            "foo");
+  EXPECT_EQ(mangleFunc("?foo", llvm::GlobalValue::ExternalLinkage,
+                       llvm::CallingConv::C, Mod, Mang),
+            "?foo");
+  EXPECT_EQ(mangleFunc("foo", llvm::GlobalValue::PrivateLinkage,
+                       llvm::CallingConv::C, Mod, Mang),
+            "L..foo");
 }
 
 } // end anonymous namespace

@@ -1,1 +1,2 @@
+directCall.chpl:2: In function 'foo':
 directCall.chpl:5: error: Attempt to inline a function, 'foo', that calls itself

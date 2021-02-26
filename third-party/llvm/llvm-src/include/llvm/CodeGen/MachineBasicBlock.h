@@ -1,9 +1,8 @@
 //===- llvm/CodeGen/MachineBasicBlock.h -------------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -16,16 +15,13 @@
 
 #include "llvm/ADT/GraphTraits.h"
 #include "llvm/ADT/ilist.h"
-#include "llvm/ADT/ilist_node.h"
 #include "llvm/ADT/iterator_range.h"
-#include "llvm/ADT/simple_ilist.h"
+#include "llvm/ADT/SparseBitVector.h"
 #include "llvm/CodeGen/MachineInstr.h"
 #include "llvm/CodeGen/MachineInstrBundleIterator.h"
 #include "llvm/IR/DebugLoc.h"
 #include "llvm/MC/LaneBitmask.h"
-#include "llvm/MC/MCRegisterInfo.h"
 #include "llvm/Support/BranchProbability.h"
-#include "llvm/Support/Printable.h"
 #include <cassert>
 #include <cstdint>
 #include <functional>
@@ -40,11 +36,43 @@ class MachineFunction;
 class MCSymbol;
 class ModuleSlotTracker;
 class Pass;
+class Printable;
 class SlotIndexes;
 class StringRef;
 class raw_ostream;
 class TargetRegisterClass;
 class TargetRegisterInfo;
+
+// This structure uniquely identifies a basic block section.
+// Possible values are
+//  {Type: Default, Number: (unsigned)} (These are regular section IDs)
+//  {Type: Exception, Number: 0}  (ExceptionSectionID)
+//  {Type: Cold, Number: 0}  (ColdSectionID)
+struct MBBSectionID {
+  enum SectionType {
+    Default = 0, // Regular section (these sections are distinguished by the
+                 // Number field).
+    Exception,   // Special section type for exception handling blocks
+    Cold,        // Special section type for cold blocks
+  } Type;
+  unsigned Number;
+
+  MBBSectionID(unsigned N) : Type(Default), Number(N) {}
+
+  // Special unique sections for cold and exception blocks.
+  const static MBBSectionID ColdSectionID;
+  const static MBBSectionID ExceptionSectionID;
+
+  bool operator==(const MBBSectionID &Other) const {
+    return Type == Other.Type && Number == Other.Number;
+  }
+
+  bool operator!=(const MBBSectionID &Other) const { return !(*this == Other); }
+
+private:
+  // This is only used to construct the special cold and exception sections.
+  MBBSectionID(SectionType T) : Type(T), Number(0) {}
+};
 
 template <> struct ilist_traits<MachineInstr> {
 private:
@@ -104,9 +132,9 @@ private:
   using LiveInVector = std::vector<RegisterMaskPair>;
   LiveInVector LiveIns;
 
-  /// Alignment of the basic block. Zero if the basic block does not need to be
-  /// aligned. The alignment is specified as log2(bytes).
-  unsigned Alignment = 0;
+  /// Alignment of the basic block. One if the basic block does not need to be
+  /// aligned.
+  Align Alignment;
 
   /// Indicate that this basic block is entered via an exception handler.
   bool IsEHPad = false;
@@ -114,6 +142,10 @@ private:
   /// Indicate that this basic block is potentially the target of an indirect
   /// branch.
   bool AddressTaken = false;
+
+  /// Indicate that this basic block needs its symbol be emitted regardless of
+  /// whether the flow just falls-through to it.
+  bool LabelMustBeEmitted = false;
 
   /// Indicate that this basic block is the entry block of an EH scope, i.e.,
   /// the block that used to have a catchpad or cleanuppad instruction in the
@@ -126,9 +158,24 @@ private:
   /// Indicate that this basic block is the entry block of a cleanup funclet.
   bool IsCleanupFuncletEntry = false;
 
+  /// With basic block sections, this stores the Section ID of the basic block.
+  MBBSectionID SectionID{0};
+
+  // Indicate that this basic block begins a section.
+  bool IsBeginSection = false;
+
+  // Indicate that this basic block ends a section.
+  bool IsEndSection = false;
+
+  /// Indicate that this basic block is the indirect dest of an INLINEASM_BR.
+  bool IsInlineAsmBrIndirectTarget = false;
+
   /// since getSymbol is a relatively heavy-weight operation, the symbol
   /// is only computed once and is cached.
   mutable MCSymbol *CachedMCSymbol = nullptr;
+
+  /// Used during basic block sections to mark the end of a basic block.
+  MCSymbol *EndMCSymbol = nullptr;
 
   // Intrusive list support
   MachineBasicBlock() = default;
@@ -158,6 +205,13 @@ public:
   /// Set this block to reflect that it potentially is the target of an indirect
   /// branch.
   void setHasAddressTaken() { AddressTaken = true; }
+
+  /// Test whether this block must have its label emitted.
+  bool hasLabelMustBeEmitted() const { return LabelMustBeEmitted; }
+
+  /// Set this block to reflect that, regardless how we flow to it, we need
+  /// its label be emitted.
+  void setLabelMustBeEmitted() { LabelMustBeEmitted = true; }
 
   /// Return the MachineFunction containing this basic block.
   const MachineFunction *getParent() const { return xParent; }
@@ -302,7 +356,7 @@ public:
   /// Adds the specified register as a live in. Note that it is an error to add
   /// the same register to the same set more than once unless the intention is
   /// to call sortUniqueLiveIns after all registers are added.
-  void addLiveIn(MCPhysReg PhysReg,
+  void addLiveIn(MCRegister PhysReg,
                  LaneBitmask LaneMask = LaneBitmask::getAll()) {
     LiveIns.push_back(RegisterMaskPair(PhysReg, LaneMask));
   }
@@ -321,7 +375,7 @@ public:
   /// Add PhysReg as live in to this block, and ensure that there is a copy of
   /// PhysReg to a virtual register of class RC. Return the virtual register
   /// that is a copy of the live in PhysReg.
-  unsigned addLiveIn(MCPhysReg PhysReg, const TargetRegisterClass *RC);
+  Register addLiveIn(MCRegister PhysReg, const TargetRegisterClass *RC);
 
   /// Remove the specified register from the live in set.
   void removeLiveIn(MCPhysReg Reg,
@@ -362,13 +416,11 @@ public:
   /// \see getBeginClobberMask()
   const uint32_t *getEndClobberMask(const TargetRegisterInfo *TRI) const;
 
-  /// Return alignment of the basic block. The alignment is specified as
-  /// log2(bytes).
-  unsigned getAlignment() const { return Alignment; }
+  /// Return alignment of the basic block.
+  Align getAlignment() const { return Alignment; }
 
-  /// Set alignment of the basic block. The alignment is specified as
-  /// log2(bytes).
-  void setAlignment(unsigned Align) { Alignment = Align; }
+  /// Set alignment of the basic block.
+  void setAlignment(Align A) { Alignment = A; }
 
   /// Returns true if the block is a landing pad. That is this basic block is
   /// entered via an exception handler.
@@ -400,6 +452,43 @@ public:
   /// Indicates if this is the entry block of a cleanup funclet.
   void setIsCleanupFuncletEntry(bool V = true) { IsCleanupFuncletEntry = V; }
 
+  /// Returns true if this block begins any section.
+  bool isBeginSection() const { return IsBeginSection; }
+
+  /// Returns true if this block ends any section.
+  bool isEndSection() const { return IsEndSection; }
+
+  void setIsBeginSection(bool V = true) { IsBeginSection = V; }
+
+  void setIsEndSection(bool V = true) { IsEndSection = V; }
+
+  /// Returns the section ID of this basic block.
+  MBBSectionID getSectionID() const { return SectionID; }
+
+  /// Returns the unique section ID number of this basic block.
+  unsigned getSectionIDNum() const {
+    return ((unsigned)MBBSectionID::SectionType::Cold) -
+           ((unsigned)SectionID.Type) + SectionID.Number;
+  }
+
+  /// Sets the section ID for this basic block.
+  void setSectionID(MBBSectionID V) { SectionID = V; }
+
+  /// Returns true if this block may have an INLINEASM_BR (overestimate, by
+  /// checking if any of the successors are indirect targets of any inlineasm_br
+  /// in the function).
+  bool mayHaveInlineAsmBr() const;
+
+  /// Returns true if this is the indirect dest of an INLINEASM_BR.
+  bool isInlineAsmBrIndirectTarget() const {
+    return IsInlineAsmBrIndirectTarget;
+  }
+
+  /// Indicates if this is the indirect dest of an INLINEASM_BR.
+  void setIsInlineAsmBrIndirectTarget(bool V = true) {
+    IsInlineAsmBrIndirectTarget = V;
+  }
+
   /// Returns true if it is legal to hoist instructions into this block.
   bool isLegalToHoistInto() const;
 
@@ -411,11 +500,18 @@ public:
   void moveBefore(MachineBasicBlock *NewAfter);
   void moveAfter(MachineBasicBlock *NewBefore);
 
-  /// Update the terminator instructions in block to account for changes to the
-  /// layout. If the block previously used a fallthrough, it may now need a
-  /// branch, and if it previously used branching it may now be able to use a
-  /// fallthrough.
-  void updateTerminator();
+  /// Returns true if this and MBB belong to the same section.
+  bool sameSection(const MachineBasicBlock *MBB) const {
+    return getSectionID() == MBB->getSectionID();
+  }
+
+  /// Update the terminator instructions in block to account for changes to
+  /// block layout which may have been made. PreviousLayoutSuccessor should be
+  /// set to the block which may have been used as fallthrough before the block
+  /// layout was modified.  If the block previously fell through to that block,
+  /// it may now need a branch. If it previously branched to another block, it
+  /// may now be able to fallthrough to the current layout successor.
+  void updateTerminator(MachineBasicBlock *PreviousLayoutSuccessor);
 
   // Machine-CFG mutators
 
@@ -580,7 +676,9 @@ public:
   ///
   /// This function updates LiveVariables, MachineDominatorTree, and
   /// MachineLoopInfo, as applicable.
-  MachineBasicBlock *SplitCriticalEdge(MachineBasicBlock *Succ, Pass &P);
+  MachineBasicBlock *
+  SplitCriticalEdge(MachineBasicBlock *Succ, Pass &P,
+                    std::vector<SparseBitVector<>> *LiveInSets = nullptr);
 
   /// Check if the edge between this block and the given successor \p
   /// Succ, can be split. If this returns true a subsequent call to
@@ -624,6 +722,18 @@ public:
     assert(!MI->isBundledWithPred() && !MI->isBundledWithSucc() &&
            "Cannot insert instruction with bundle flags");
     return Insts.insertAfter(I.getInstrIterator(), MI);
+  }
+
+  /// If I is bundled then insert MI into the instruction list after the end of
+  /// the bundle, otherwise insert MI immediately after I.
+  instr_iterator insertAfterBundle(instr_iterator I, MachineInstr *MI) {
+    assert((I == instr_end() || I->getParent() == this) &&
+           "iterator points outside of basic block");
+    assert(!MI->isBundledWithPred() && !MI->isBundledWithSucc() &&
+           "Cannot insert instruction with bundle flags");
+    while (I->isBundledWithSucc())
+      ++I;
+    return Insts.insertAfter(I, MI);
   }
 
   /// Remove an instruction from the instruction list and delete it.
@@ -713,15 +823,9 @@ public:
   /// CFG so that it branches to 'New' instead.
   void ReplaceUsesOfBlockWith(MachineBasicBlock *Old, MachineBasicBlock *New);
 
-  /// Various pieces of code can cause excess edges in the CFG to be inserted.
-  /// If we have proven that MBB can only branch to DestA and DestB, remove any
-  /// other MBB successors from the CFG. DestA and DestB can be null. Besides
-  /// DestA and DestB, retain other edges leading to LandingPads (currently
-  /// there can be only one; we don't check or require that here). Note it is
-  /// possible that DestA and/or DestB are LandingPads.
-  bool CorrectExtraCFGEdges(MachineBasicBlock *DestA,
-                            MachineBasicBlock *DestB,
-                            bool IsCond);
+  /// Update all phi nodes in this basic block to refer to basic block \p New
+  /// instead of basic block \p Old.
+  void replacePhiUsesWith(MachineBasicBlock *Old, MachineBasicBlock *New);
 
   /// Find the next valid DebugLoc starting at MBBI, skipping any DBG_VALUE
   /// and DBG_LABEL instructions.  Return UnknownLoc if there is none.
@@ -757,7 +861,7 @@ public:
   ///
   /// \p Reg must be a physical register.
   LivenessQueryResult computeRegisterLiveness(const TargetRegisterInfo *TRI,
-                                              unsigned Reg,
+                                              MCRegister Reg,
                                               const_iterator Before,
                                               unsigned Neighborhood = 10) const;
 
@@ -900,11 +1004,11 @@ class MachineInstrSpan {
   MachineBasicBlock::iterator I, B, E;
 
 public:
-  MachineInstrSpan(MachineBasicBlock::iterator I)
-    : MBB(*I->getParent()),
-      I(I),
-      B(I == MBB.begin() ? MBB.end() : std::prev(I)),
-      E(std::next(I)) {}
+  MachineInstrSpan(MachineBasicBlock::iterator I, MachineBasicBlock *BB)
+      : MBB(*BB), I(I), B(I == MBB.begin() ? MBB.end() : std::prev(I)),
+        E(std::next(I)) {
+    assert(I == BB->end() || I->getParent() == BB);
+  }
 
   MachineBasicBlock::iterator begin() {
     return B == MBB.end() ? MBB.begin() : std::next(B);
@@ -922,7 +1026,7 @@ public:
 template<typename IterT>
 inline IterT skipDebugInstructionsForward(IterT It, IterT End) {
   while (It != End && It->isDebugInstr())
-    It++;
+    ++It;
   return It;
 }
 
@@ -933,8 +1037,29 @@ inline IterT skipDebugInstructionsForward(IterT It, IterT End) {
 template<class IterT>
 inline IterT skipDebugInstructionsBackward(IterT It, IterT Begin) {
   while (It != Begin && It->isDebugInstr())
-    It--;
+    --It;
   return It;
+}
+
+/// Increment \p It, then continue incrementing it while it points to a debug
+/// instruction. A replacement for std::next.
+template <typename IterT> inline IterT next_nodbg(IterT It, IterT End) {
+  return skipDebugInstructionsForward(std::next(It), End);
+}
+
+/// Decrement \p It, then continue decrementing it while it points to a debug
+/// instruction. A replacement for std::prev.
+template <typename IterT> inline IterT prev_nodbg(IterT It, IterT Begin) {
+  return skipDebugInstructionsBackward(std::prev(It), Begin);
+}
+
+/// Construct a range iterator which begins at \p It and moves forwards until
+/// \p End is reached, skipping any debug instructions.
+template <typename IterT>
+inline auto instructionsWithoutDebug(IterT It, IterT End) {
+  return make_filter_range(make_range(It, End), [](const MachineInstr &MI) {
+    return !MI.isDebugInstr();
+  });
 }
 
 } // end namespace llvm

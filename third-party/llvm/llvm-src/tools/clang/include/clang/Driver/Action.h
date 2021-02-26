@@ -1,9 +1,8 @@
 //===- Action.h - Abstract compilation steps --------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -66,15 +65,18 @@ public:
     BackendJobClass,
     AssembleJobClass,
     LinkJobClass,
+    IfsMergeJobClass,
     LipoJobClass,
     DsymutilJobClass,
     VerifyDebugInfoJobClass,
     VerifyPCHJobClass,
     OffloadBundlingJobClass,
     OffloadUnbundlingJobClass,
+    OffloadWrapperJobClass,
+    StaticLibJobClass,
 
     JobClassFirst = PreprocessJobClass,
-    JobClassLast = OffloadUnbundlingJobClass
+    JobClassLast = StaticLibJobClass
   };
 
   // The offloading kind determines if this action is binded to a particular
@@ -486,6 +488,17 @@ public:
   }
 };
 
+class IfsMergeJobAction : public JobAction {
+  void anchor() override;
+
+public:
+  IfsMergeJobAction(ActionList &Inputs, types::ID Type);
+
+  static bool classof(const Action *A) {
+    return A->getKind() == IfsMergeJobClass;
+  }
+};
+
 class LinkJobAction : public JobAction {
   void anchor() override;
 
@@ -611,6 +624,28 @@ public:
 
   static bool classof(const Action *A) {
     return A->getKind() == OffloadUnbundlingJobClass;
+  }
+};
+
+class OffloadWrapperJobAction : public JobAction {
+  void anchor() override;
+
+public:
+  OffloadWrapperJobAction(ActionList &Inputs, types::ID Type);
+
+  static bool classof(const Action *A) {
+    return A->getKind() == OffloadWrapperJobClass;
+  }
+};
+
+class StaticLibJobAction : public JobAction {
+  void anchor() override;
+
+public:
+  StaticLibJobAction(ActionList &Inputs, types::ID Type);
+
+  static bool classof(const Action *A) {
+    return A->getKind() == StaticLibJobClass;
   }
 };
 

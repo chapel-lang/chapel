@@ -41,6 +41,7 @@ module OuterModule {
   } }
 
   use C;
+  use CPtr;
 
   var a: C.st;
   a.c = "a string".c_str();

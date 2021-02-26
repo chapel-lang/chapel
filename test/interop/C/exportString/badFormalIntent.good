@@ -1,5 +1,5 @@
-badFormalIntent.chpl:5: error: Formal 's' of type 'string' in exported routine 'badFormalIntentIn' may not have the 'in' intent
+badFormalIntent.chpl:1: error: Formal 's' of type 'string' in exported routine 'badFormalIntentDefault' may not have the default intent
+badFormalIntent.chpl:3: error: Formal 's' of type 'string' in exported routine 'badFormalIntentConstRef' may not have the 'const ref' intent
 badFormalIntent.chpl:7: error: Formal 's' of type 'string' in exported routine 'badFormalIntentOut' may not have the 'out' intent
 badFormalIntent.chpl:9: error: Formal 's' of type 'string' in exported routine 'badFormalIntentInOut' may not have the 'inout' intent
 badFormalIntent.chpl:11: error: Formal 's' of type 'string' in exported routine 'badFormalIntentRef' may not have the 'ref' intent
-badFormalIntent.chpl:13: error: Formal 's' of type 'string' in exported routine 'badFormalIntentConstIn' may not have the 'const in' intent

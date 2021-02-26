@@ -1,6 +1,8 @@
 tblgen - Target Description To C++ Code Generator
 =================================================
 
+.. program:: tblgen
+
 SYNOPSIS
 --------
 
@@ -96,7 +98,7 @@ OPTIONS
 
 .. option:: -gen-dag-isel
 
- Generate a DAG (Directed Acycle Graph) instruction selector.
+ Generate a DAG (Directed Acyclic Graph) instruction selector.
 
 .. option:: -gen-asm-matcher
 

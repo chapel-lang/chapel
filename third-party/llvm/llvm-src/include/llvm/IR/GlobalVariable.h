@@ -1,9 +1,8 @@
 //===-- llvm/GlobalVariable.h - GlobalVariable class ------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -20,7 +19,6 @@
 #ifndef LLVM_IR_GLOBALVARIABLE_H
 #define LLVM_IR_GLOBALVARIABLE_H
 
-#include "llvm/ADT/PointerUnion.h"
 #include "llvm/ADT/Twine.h"
 #include "llvm/ADT/ilist_node.h"
 #include "llvm/IR/Attributes.h"
@@ -244,6 +242,7 @@ public:
   bool hasImplicitSection() const {
     return getAttributes().hasAttribute("bss-section") ||
            getAttributes().hasAttribute("data-section") ||
+           getAttributes().hasAttribute("relro-section") ||
            getAttributes().hasAttribute("rodata-section");
   }
 

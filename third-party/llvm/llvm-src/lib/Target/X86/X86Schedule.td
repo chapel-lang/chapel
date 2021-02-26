@@ -1,9 +1,8 @@
 //===-- X86Schedule.td - X86 Scheduling Definitions --------*- tablegen -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -17,6 +16,12 @@ def ReadAfterLd : SchedRead;
 def ReadAfterVecLd : SchedRead;
 def ReadAfterVecXLd : SchedRead;
 def ReadAfterVecYLd : SchedRead;
+
+// Instructions that move data between general purpose registers and vector
+// registers may be subject to extra latency due to data bypass delays.
+// This SchedRead describes a bypass delay caused by data being moved from the
+// integer unit to the floating point unit.
+def ReadInt2Fpu : SchedRead;
 
 // Instructions with both a load and a store folded are modeled as a folded
 // load + WriteRMW.
@@ -97,6 +102,12 @@ class X86SchedWriteMoveLS<SchedWrite MoveRR,
   SchedWrite MR = StoreMR;
 }
 
+// Multiclass that wraps masked load/store writes for a vector width.
+class X86SchedWriteMaskMove<SchedWrite LoadRM, SchedWrite StoreMR> {
+  SchedWrite RM = LoadRM;
+  SchedWrite MR = StoreMR;
+}
+
 // Multiclass that wraps X86SchedWriteMoveLS for each vector width.
 class X86SchedWriteMoveLSWidths<X86SchedWriteMoveLS sScl,
                                 X86SchedWriteMoveLS s128,
@@ -158,7 +169,6 @@ defm WritePOPCNT : X86SchedWritePair; // Bit population count.
 defm WriteLZCNT : X86SchedWritePair; // Leading zero count.
 defm WriteTZCNT : X86SchedWritePair; // Trailing zero count.
 defm WriteCMOV  : X86SchedWritePair; // Conditional move.
-defm WriteCMOV2 : X86SchedWritePair; // Conditional (CF + ZF flag) move.
 def  WriteFCMOV : SchedWrite; // X87 conditional move.
 def  WriteSETCC : SchedWrite; // Set register based on condition code.
 def  WriteSETCCStore : SchedWrite;
@@ -214,8 +224,12 @@ def  WriteFStoreY       : SchedWrite;
 def  WriteFStoreNT      : SchedWrite;
 def  WriteFStoreNTX     : SchedWrite;
 def  WriteFStoreNTY     : SchedWrite;
-def  WriteFMaskedStore  : SchedWrite;
-def  WriteFMaskedStoreY : SchedWrite;
+
+def  WriteFMaskedStore32  : SchedWrite;
+def  WriteFMaskedStore64  : SchedWrite;
+def  WriteFMaskedStore32Y : SchedWrite;
+def  WriteFMaskedStore64Y : SchedWrite;
+
 def  WriteFMove         : SchedWrite;
 def  WriteFMoveX        : SchedWrite;
 def  WriteFMoveY        : SchedWrite;
@@ -236,7 +250,8 @@ defm WriteFCmp64  : X86SchedWritePair<ReadAfterVecLd>;  // Floating point double
 defm WriteFCmp64X : X86SchedWritePair<ReadAfterVecXLd>; // Floating point double compare (XMM).
 defm WriteFCmp64Y : X86SchedWritePair<ReadAfterVecYLd>; // Floating point double compare (YMM).
 defm WriteFCmp64Z : X86SchedWritePair<ReadAfterVecYLd>; // Floating point double compare (ZMM).
-defm WriteFCom    : X86SchedWritePair<ReadAfterVecLd>;  // Floating point compare to flags.
+defm WriteFCom    : X86SchedWritePair<ReadAfterVecLd>;  // Floating point compare to flags (X87).
+defm WriteFComX   : X86SchedWritePair<ReadAfterVecLd>;  // Floating point compare to flags (SSE).
 defm WriteFMul    : X86SchedWritePair<ReadAfterVecLd>;  // Floating point multiplication.
 defm WriteFMulX   : X86SchedWritePair<ReadAfterVecXLd>; // Floating point multiplication (XMM).
 defm WriteFMulY   : X86SchedWritePair<ReadAfterVecYLd>; // Floating point multiplication (YMM).
@@ -326,8 +341,10 @@ def  WriteVecStoreX       : SchedWrite;
 def  WriteVecStoreY       : SchedWrite;
 def  WriteVecStoreNT      : SchedWrite;
 def  WriteVecStoreNTY     : SchedWrite;
-def  WriteVecMaskedStore  : SchedWrite;
-def  WriteVecMaskedStoreY : SchedWrite;
+def  WriteVecMaskedStore32  : SchedWrite;
+def  WriteVecMaskedStore64  : SchedWrite;
+def  WriteVecMaskedStore32Y : SchedWrite;
+def  WriteVecMaskedStore64Y : SchedWrite;
 def  WriteVecMove         : SchedWrite;
 def  WriteVecMoveX        : SchedWrite;
 def  WriteVecMoveY        : SchedWrite;
@@ -525,6 +542,24 @@ def WriteVecMoveLSNTY
 def SchedWriteVecMoveLSNT
   : X86SchedWriteMoveLSWidths<WriteVecMoveLSNT, WriteVecMoveLSNTX,
                               WriteVecMoveLSNTY, WriteVecMoveLSNTY>;
+
+// Conditional SIMD Packed Loads and Stores wrappers.
+def WriteFMaskMove32
+  : X86SchedWriteMaskMove<WriteFMaskedLoad, WriteFMaskedStore32>;
+def WriteFMaskMove64
+  : X86SchedWriteMaskMove<WriteFMaskedLoad, WriteFMaskedStore64>;
+def WriteFMaskMove32Y
+  : X86SchedWriteMaskMove<WriteFMaskedLoadY, WriteFMaskedStore32Y>;
+def WriteFMaskMove64Y
+  : X86SchedWriteMaskMove<WriteFMaskedLoadY, WriteFMaskedStore64Y>;
+def WriteVecMaskMove32
+  : X86SchedWriteMaskMove<WriteVecMaskedLoad, WriteVecMaskedStore32>;
+def WriteVecMaskMove64
+  : X86SchedWriteMaskMove<WriteVecMaskedLoad, WriteVecMaskedStore64>;
+def WriteVecMaskMove32Y
+  : X86SchedWriteMaskMove<WriteVecMaskedLoadY, WriteVecMaskedStore32Y>;
+def WriteVecMaskMove64Y
+  : X86SchedWriteMaskMove<WriteVecMaskedLoadY, WriteVecMaskedStore64Y>;
 
 // Vector width wrappers.
 def SchedWriteFAdd

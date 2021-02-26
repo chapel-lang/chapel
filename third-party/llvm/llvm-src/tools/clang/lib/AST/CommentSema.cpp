@@ -1,9 +1,8 @@
 //===--- CommentSema.cpp - Doxygen comment semantic analysis --------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -13,6 +12,7 @@
 #include "clang/AST/CommentDiagnostic.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclTemplate.h"
+#include "clang/Basic/LLVM.h"
 #include "clang/Basic/SourceManager.h"
 #include "clang/Lex/Preprocessor.h"
 #include "llvm/ADT/SmallString.h"
@@ -135,7 +135,9 @@ void Sema::checkContainerDeclVerbatimLine(const BlockCommandComment *Comment) {
   unsigned DiagSelect;
   switch (Comment->getCommandID()) {
     case CommandTraits::KCI_class:
-      DiagSelect = (!isClassOrStructDecl() && !isClassTemplateDecl()) ? 1 : 0;
+      DiagSelect =
+          (!isClassOrStructOrTagTypedefDecl() && !isClassTemplateDecl()) ? 1
+                                                                         : 0;
       // Allow @class command on @interface declarations.
       // FIXME. Currently, \class and @class are indistinguishable. So,
       // \class is also allowed on an @interface declaration
@@ -149,7 +151,7 @@ void Sema::checkContainerDeclVerbatimLine(const BlockCommandComment *Comment) {
       DiagSelect = !isObjCProtocolDecl() ? 3 : 0;
       break;
     case CommandTraits::KCI_struct:
-      DiagSelect = !isClassOrStructDecl() ? 4 : 0;
+      DiagSelect = !isClassOrStructOrTagTypedefDecl() ? 4 : 0;
       break;
     case CommandTraits::KCI_union:
       DiagSelect = !isUnionDecl() ? 5 : 0;
@@ -589,6 +591,8 @@ void Sema::checkReturnsCommand(const BlockCommandComment *Command) {
   if (isObjCPropertyDecl())
     return;
   if (isFunctionDecl() || isFunctionOrBlockPointerVarLikeDecl()) {
+    assert(!ThisDeclInfo->ReturnType.isNull() &&
+           "should have a valid return type");
     if (ThisDeclInfo->ReturnType->isVoidType()) {
       unsigned DiagKind;
       switch (ThisDeclInfo->CommentDecl->getKind()) {
@@ -675,9 +679,8 @@ void Sema::checkDeprecatedCommand(const BlockCommandComment *Command) {
       D->hasAttr<UnavailableAttr>())
     return;
 
-  Diag(Command->getLocation(),
-       diag::warn_doc_deprecated_not_sync)
-    << Command->getSourceRange();
+  Diag(Command->getLocation(), diag::warn_doc_deprecated_not_sync)
+      << Command->getSourceRange() << Command->getCommandMarker();
 
   // Try to emit a fixit with a deprecation attribute.
   if (const FunctionDecl *FD = dyn_cast<FunctionDecl>(D)) {
@@ -688,24 +691,41 @@ void Sema::checkDeprecatedCommand(const BlockCommandComment *Command) {
         FD->doesThisDeclarationHaveABody())
       return;
 
-    StringRef AttributeSpelling = "__attribute__((deprecated))";
+    const LangOptions &LO = FD->getLangOpts();
+    const bool DoubleSquareBracket = LO.CPlusPlus14 || LO.C2x;
+    StringRef AttributeSpelling =
+        DoubleSquareBracket ? "[[deprecated]]" : "__attribute__((deprecated))";
     if (PP) {
-      TokenValue Tokens[] = {
-        tok::kw___attribute, tok::l_paren, tok::l_paren,
-        PP->getIdentifierInfo("deprecated"),
-        tok::r_paren, tok::r_paren
-      };
-      StringRef MacroName = PP->getLastMacroWithSpelling(FD->getLocation(),
-                                                         Tokens);
-      if (!MacroName.empty())
-        AttributeSpelling = MacroName;
+      // Try to find a replacement macro:
+      // - In C2x/C++14 we prefer [[deprecated]].
+      // - If not found or an older C/C++ look for __attribute__((deprecated)).
+      StringRef MacroName;
+      if (DoubleSquareBracket) {
+        TokenValue Tokens[] = {tok::l_square, tok::l_square,
+                               PP->getIdentifierInfo("deprecated"),
+                               tok::r_square, tok::r_square};
+        MacroName = PP->getLastMacroWithSpelling(FD->getLocation(), Tokens);
+        if (!MacroName.empty())
+          AttributeSpelling = MacroName;
+      }
+
+      if (MacroName.empty()) {
+        TokenValue Tokens[] = {
+            tok::kw___attribute, tok::l_paren,
+            tok::l_paren,        PP->getIdentifierInfo("deprecated"),
+            tok::r_paren,        tok::r_paren};
+        StringRef MacroName =
+            PP->getLastMacroWithSpelling(FD->getLocation(), Tokens);
+        if (!MacroName.empty())
+          AttributeSpelling = MacroName;
+      }
     }
 
-    SmallString<64> TextToInsert(" ");
-    TextToInsert += AttributeSpelling;
-    Diag(FD->getEndLoc(), diag::note_add_deprecation_attr)
-        << FixItHint::CreateInsertion(FD->getEndLoc().getLocWithOffset(1),
-                                      TextToInsert);
+    SmallString<64> TextToInsert = AttributeSpelling;
+    TextToInsert += " ";
+    SourceLocation Loc = FD->getSourceRange().getBegin();
+    Diag(Loc, diag::note_add_deprecation_attr)
+        << FixItHint::CreateInsertion(Loc, TextToInsert);
   }
 }
 
@@ -874,6 +894,12 @@ bool Sema::isFunctionOrBlockPointerVarLikeDecl() {
   // can be ignored.
   if (QT->getAs<TypedefType>())
     return false;
+  if (const auto *P = QT->getAs<PointerType>())
+    if (P->getPointeeType()->getAs<TypedefType>())
+      return false;
+  if (const auto *P = QT->getAs<BlockPointerType>())
+    if (P->getPointeeType()->getAs<TypedefType>())
+      return false;
   return QT->isFunctionPointerType() || QT->isBlockPointerType();
 }
 
@@ -912,15 +938,50 @@ bool Sema::isUnionDecl() {
     return RD->isUnion();
   return false;
 }
+static bool isClassOrStructDeclImpl(const Decl *D) {
+  if (auto *record = dyn_cast_or_null<RecordDecl>(D))
+    return !record->isUnion();
+
+  return false;
+}
 
 bool Sema::isClassOrStructDecl() {
   if (!ThisDeclInfo)
     return false;
   if (!ThisDeclInfo->IsFilled)
     inspectThisDecl();
-  return ThisDeclInfo->CurrentDecl &&
-         isa<RecordDecl>(ThisDeclInfo->CurrentDecl) &&
-         !isUnionDecl();
+
+  if (!ThisDeclInfo->CurrentDecl)
+    return false;
+
+  return isClassOrStructDeclImpl(ThisDeclInfo->CurrentDecl);
+}
+
+bool Sema::isClassOrStructOrTagTypedefDecl() {
+  if (!ThisDeclInfo)
+    return false;
+  if (!ThisDeclInfo->IsFilled)
+    inspectThisDecl();
+
+  if (!ThisDeclInfo->CurrentDecl)
+    return false;
+
+  if (isClassOrStructDeclImpl(ThisDeclInfo->CurrentDecl))
+    return true;
+
+  if (auto *ThisTypedefDecl = dyn_cast<TypedefDecl>(ThisDeclInfo->CurrentDecl)) {
+    auto UnderlyingType = ThisTypedefDecl->getUnderlyingType();
+    if (auto ThisElaboratedType = dyn_cast<ElaboratedType>(UnderlyingType)) {
+      auto DesugaredType = ThisElaboratedType->desugar();
+      if (auto *DesugaredTypePtr = DesugaredType.getTypePtrOrNull()) {
+        if (auto *ThisRecordType = dyn_cast<RecordType>(DesugaredTypePtr)) {
+          return isClassOrStructDeclImpl(ThisRecordType->getAsRecordDecl());
+        }
+      }
+    }
+  }
+
+  return false;
 }
 
 bool Sema::isClassTemplateDecl() {
@@ -1120,6 +1181,7 @@ Sema::getInlineCommandRenderKind(StringRef Name) const {
       .Case("b", InlineCommandComment::RenderBold)
       .Cases("c", "p", InlineCommandComment::RenderMonospaced)
       .Cases("a", "e", "em", InlineCommandComment::RenderEmphasized)
+      .Case("anchor", InlineCommandComment::RenderAnchor)
       .Default(InlineCommandComment::RenderNormal);
 }
 

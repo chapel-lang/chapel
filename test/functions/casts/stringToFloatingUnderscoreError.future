@@ -1,1 +1,0 @@
-bug: string to real/imag cast with a bad string is allowed

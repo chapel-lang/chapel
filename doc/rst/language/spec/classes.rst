@@ -1,3 +1,5 @@
+.. default-domain:: chpl
+
 .. _Chapter-Classes:
 
 Classes
@@ -33,7 +35,7 @@ A class is defined with the following syntax:
 .. code-block:: syntax
 
    class-declaration-statement:
-     `class' identifier class-inherit[OPT] { class-statement-list[OPT] }
+     'class' identifier class-inherit[OPT] { class-statement-list[OPT] }
 
    class-inherit:
      : basic-class-type
@@ -63,11 +65,12 @@ contains a variable or constant without a specified type and without an
 initialization expression, then it declares a generic class type.
 Generic classes are described in :ref:`Generic_Types`.
 
-   *Future*.
+   .. note::
+      *Future:*.
 
-   Privacy controls for classes and records are currently not specified,
-   as discussion is needed regarding its impact on inheritance, for
-   instance.
+      Privacy controls for classes and records are currently not specified,
+      as discussion is needed regarding its impact on inheritance, for
+      instance.
 
 .. _Class_Lifetime_and_Borrows:
 
@@ -82,17 +85,15 @@ Each allocation of a class instance specifies a *memory management
 strategy*. Four memory management strategies are available: ``owned``,
 ``shared``, ``borrowed``, and ``unmanaged``.
 
-| ``owned`` and ``shared`` class instances always have their lifetime
-  managed by the compiler. In other words, the compiler automatically
-  calls ``delete`` on these instances to reclaim their memory. For these
-  instances, ``=`` and copy initialization can result in the transfer or
-  sharing of ownership. See
-| https://chapel-lang.org/docs/builtins/OwnedObject.html
-| and
-| https://chapel-lang.org/docs/builtins/SharedObject.html
-| When ``borrowed`` is used as a memory management strategy in a
-  ``new-expression``, it also creates an instance that has its lifetime
-  managed by the compiler (:ref:`Class_New`).
+``owned`` and ``shared`` class instances always have their lifetime
+managed by the compiler. In other words, the compiler automatically calls
+``delete`` on these instances to reclaim their memory. For these
+instances, ``=`` and copy initialization can result in the transfer or
+sharing of ownership. See the module documentation for :mod:`owned
+<OwnedObject>` and :mod:`shared <SharedObject>`.  When ``borrowed`` is
+used as a memory management strategy in a ``new-expression``, it also
+creates an instance that has its lifetime managed by the compiler
+(:ref:`Class_New`).
 
 Class instances that are ``unmanaged`` have their lifetime managed
 explicitly and ``delete`` must be used to reclaim their memory.
@@ -148,11 +149,13 @@ a component called the lifetime checker. It identifies some cases where
 a borrowing variable can be accessed beyond the lifetime of an instance
 it refers to.
 
-   *Future*.
+  .. note::
+      
+      *Future:*
 
-   The details of lifetime checking are not yet finalized or specified.
-   Additional syntax to specify the lifetimes of function returns will
-   probably be needed.
+      The details of lifetime checking are not yet finalized or specified.
+      Additional syntax to specify the lifetimes of function returns will
+      probably be needed.
 
 .. _Class_Types:
 
@@ -168,16 +171,15 @@ memory management strategy.
 
    class-type:
      basic-class-type
-     `owned' basic-class-type
-     `shared' basic-class-type
-     `borrowed' basic-class-type
-     `unmanaged' basic-class-type
+     'owned' basic-class-type
+     'shared' basic-class-type
+     'borrowed' basic-class-type
+     'unmanaged' basic-class-type
 
 A basic class type is given simply by the class name for non-generic
 classes. Generic classes must be instantiated to serve as a
 fully-specified type, for example to declare a variable. This is done
-with type constructors, which are defined in
-Section \ `24.3.6 <#Type_Constructors>`__.
+with type constructors, which are defined in Section :ref:`Type_Constructors`.
 
 
 
@@ -199,14 +201,14 @@ nilable (:ref:`Nilable_Classes`).
 
 The memory management strategies have the following meaning:
 
--  | ``owned`` the instance will be deleted automatically when the
-     ``owned`` variable goes out of scope, but only one ``owned``
-     variable can refer to the instance at a time. See
-   | https://chapel-lang.org/docs/builtins/OwnedObject.html
+-  ``owned`` the instance will be deleted automatically when the
+   ``owned`` variable goes out of scope, but only one ``owned`` variable
+   can refer to the instance at a time. See the module documentation for
+   :mod:`owned <OwnedObject>`.
 
--  | ``shared`` will be deleted when all of the ``shared`` variables
-     referring to the instance go out of scope. See
-   | https://chapel-lang.org/docs/builtins/SharedObject.html.
+-  ``shared`` will be deleted when all of the ``shared`` variables
+   referring to the instance go out of scope. See
+   the module documentation for :mod:`shared <SharedObject>`.
 
 -  ``borrowed`` refers to a class instance that has a lifetime managed
    by another variable.
@@ -369,12 +371,6 @@ non-nilable classes are not currently supported.
       // the C and D instances allocated above will be reclaimed
       // at the end of this block.
 
-   
-
-   .. BLOCK-test-chapelcompopts
-
-      --no-warnings
-
    When the variable ``c`` is declared, it initially has the value of
    ``nil``. The next statement assigned to it an instance of the class
    ``C``. The declaration of variable ``c2`` shows that these steps can
@@ -398,12 +394,6 @@ field. Such a use is disallowed when the declared type of the
 formal/variable/field is non-nilable or generic, including generic
 memory management.
 
-
-
-.. code-block:: syntax
-
-   nil-expression:
-     `nil'
 
 .. _Class_Fields:
 
@@ -436,26 +426,26 @@ within that class. Each class instance consists of one variable per each
 
 Field access is described in :ref:`Class_Field_Accesses`.
 
-   *Future*.
-
-   ``ref`` fields, which are fields corresponding to variable
-   declarations with ``ref`` or ``const ref`` keywords, are an area of
-   future work.
+  .. note::
+      
+      *Future:*
+      
+      ``ref`` fields, which are fields corresponding to variable
+      declarations with ``ref`` or ``const ref`` keywords, are an area of
+      future work.
 
 .. _Class_Methods:
 
 Class Methods
 ~~~~~~~~~~~~~
 
-Methods on classes are referred to as to as *class methods*. See the
-methods section :ref:`Chapter-Methods` for more information about
-methods.
+Methods on classes are referred to as *class methods*.
+See :ref:`Chapter-Methods` for more information about methods.
 
 Within a class method, the type of ``this`` is generally the non-nilable
 ``borrowed`` variant of the class type. It is different for type methods
 (see below) and it might be a different type if the class method is
-declared as a secondary method with a type expression
-(see `[Secondary_Methods_with_Type_Expressions] <#Secondary_Methods_with_Type_Expressions>`__).
+declared as a secondary method with a type expression.
 
 For example:
 
@@ -578,8 +568,8 @@ parent class.
 It is possible for a class to inherit from a generic class. Suppose for
 example that a class ``C`` inherits from class ``ParentC``. In this
 situation, ``C`` will have type constructor arguments based upon generic
-fields in the ``ParentC`` as described in
- `24.3.6 <#Type_Constructors>`__. Furthermore, a fully specified ``C``
+fields in the ``ParentC`` as described
+in :ref:`Type_Constructors`. Furthermore, a fully specified ``C``
 will be a subclass of a corresponding fully specified ``ParentC``.
 
 .. _The_object_Class:
@@ -688,20 +678,14 @@ To create an instance of a class, use a ``new`` expression. For example:
       }
       var instance = new C(1);
 
-   
-
-   .. BLOCK-test-chapelcompopts
-
-      --no-warnings
 
 The new expression can be defined by the following syntax:
-
 
 
 .. code-block:: syntax
 
    new-expression:
-     `new' type-expression ( argument-list )
+     'new' type-expression ( argument-list )
 
 An initializer for a given class is called by placing the ``new``
 operator in front of a type expression. Any initializer arguments follow
@@ -777,7 +761,7 @@ are initialized must be initialized in declaration order.
 Initializers for generic classes (:ref:`Generic_Types`) handle
 generic fields without default values differently and may need to
 satisfy additional requirements. See
-Section \ `24.3.9 <#Generic_User_Initializers>`__ for details.
+Section :ref:`Generic_User_Initializers` for details.
 
    *Example (simpleInitializers.chpl)*.
 
@@ -814,13 +798,6 @@ Section \ `24.3.9 <#Generic_User_Initializers>`__ for details.
       writeln(mp1);
       writeln(mp2);
 
-   
-
-   .. BLOCK-test-chapelcompopts
-
-      --no-warnings
-
-   
 
    .. BLOCK-test-chapeloutput
 
@@ -868,13 +845,6 @@ will invoke regular assignment as defined by the language.
 
       writeln(p);
 
-   
-
-   .. BLOCK-test-chapelcompopts
-
-      --no-warnings
-
-   
 
    .. BLOCK-test-chapeloutput
 
@@ -909,11 +879,6 @@ be issued.
       var p = new Point(1.0, 2.0);
 
    
-
-   .. BLOCK-test-chapelcompopts
-
-      --no-warnings
-
    The first statement in the initializer reads the value of
    uninitialized field ``x``, so the compiler will issue an error:
 
@@ -969,13 +934,6 @@ default values.
       writeln(A);
       writeln(B);
 
-   
-
-   .. BLOCK-test-chapelcompopts
-
-      --no-warnings
-
-   
 
    .. BLOCK-test-chapeloutput
 
@@ -1022,13 +980,6 @@ initialized out of order, a compile-time error will be issued.
       var A = new Point3D(1.0);
       var B = new Point3D(1.0, 2.0, 3.0);
 
-   
-
-   .. BLOCK-test-chapelcompopts
-
-      --no-warnings
-
-   
 
    .. BLOCK-test-chapeloutput
 
@@ -1149,13 +1100,6 @@ initializer.
       writeln(B);
 
    
-
-   .. BLOCK-test-chapelcompopts
-
-      --no-warnings
-
-   
-
    .. BLOCK-test-chapeloutput
 
       {x = 1.0, y = 2.0, max = 10.0, msg = Unlabeled}
@@ -1210,13 +1154,6 @@ after such a call to ``init``.
 
       var A = new Point3D(1.0);
 
-   
-
-   .. BLOCK-test-chapelcompopts
-
-      --no-warnings
-
-   
 
    .. BLOCK-test-chapeloutput
 
@@ -1273,14 +1210,7 @@ needed.
 
       writeln(A);
       writeln(B);
-
-   
-
-   .. BLOCK-test-chapelcompopts
-
-      --no-warnings
-
-   
+  
 
    .. BLOCK-test-chapeloutput
 
@@ -1333,14 +1263,7 @@ at the end of the conditional statement.
    .. BLOCK-test-chapelpost
 
       writeln(c);
-
-   
-
-   .. BLOCK-test-chapelcompopts
-
-      --no-warnings
-
-   
+  
 
    .. BLOCK-test-chapeloutput
 
@@ -1397,14 +1320,6 @@ value of the corresponding actual argument.
       var c4 = new C(2, z="");
       var c5 = new C(0, 0.0, "");
       writeln((c1, c2, c3, c4, c5));
-
-   
-
-   .. BLOCK-test-chapelcompopts
-
-      --no-warnings
-
-   
 
    .. BLOCK-test-chapeloutput
 
@@ -1476,11 +1391,6 @@ return anything. Otherwise, this method behaves like any other method.
       var D = new Point3D(50.0, 50.0);
 
    
-
-   .. BLOCK-test-chapelcompopts
-
-      --no-warnings
-
    Each of the ``new`` expressions invokes the compiler-generated
    initializer, then invokes the ``verify`` method via the ``postinit``
    method: 
@@ -1559,13 +1469,6 @@ arguments at the start of the initializer.
       writeln(b2);
 
    
-
-   .. BLOCK-test-chapelcompopts
-
-      --no-warnings
-
-   
-
    .. BLOCK-test-chapeloutput
 
       {a = 4.0, b = 8.0, x = 1.0, y = 2.0}
@@ -1620,13 +1523,6 @@ be accessed before explicit calls to ``init``.
 
       writeln(c);
 
-   
-
-   .. BLOCK-test-chapelcompopts
-
-      --no-warnings
-
-   
 
    .. BLOCK-test-chapeloutput
 
@@ -1695,11 +1591,6 @@ functions as though it were of the parent type.
 
       writeln(c);
 
-   
-
-   .. BLOCK-test-chapelcompopts
-
-      --no-warnings
 
    Once the parent’s initializer is finished, the parent method ``foo``
    may be called. After the ``complete`` method is invoked, a call to
@@ -1749,13 +1640,6 @@ formals for the child type.
       writeln(B);
       writeln(C);
 
-   
-
-   .. BLOCK-test-chapelcompopts
-
-      --no-warnings
-
-   
 
    .. BLOCK-test-chapeloutput
 
@@ -1803,11 +1687,6 @@ parent’s ``postinit`` method.
 
       var c = new Child(1.0, 2.0, 3.0, 4.0);
 
-   
-
-   .. BLOCK-test-chapelcompopts
-
-      --no-warnings
 
    The compiler inserts a call to the parent’s ``postinit`` method in
    the child’s ``postinit`` method, and invokes the child’s ``postinit``
@@ -1938,13 +1817,6 @@ the default getter, which simply returns the field, is provided.
       writeln(c.x);
       writeln(c.setCount);
 
-   
-
-   .. BLOCK-test-chapelcompopts
-
-      --no-warnings
-
-   
 
    .. BLOCK-test-chapeloutput
 
@@ -2040,7 +1912,7 @@ with the ``delete`` statement:
 .. code-block:: syntax
 
    delete-statement:
-     `delete' expression-list ;
+     'delete' expression-list ;
 
 where the expression-list specifies the class objects whose memory will
 be reclaimed. Prior to releasing their memory, the deinitialization
@@ -2092,15 +1964,6 @@ behavior is undefined.
    .. BLOCK-test-chapeloutput
 
       DONE
-
-      ====================
-      Leaked Memory Report
-      ==============================================================
-      Number of leaked allocations
-                 Total leaked memory (bytes)
-                            Description of allocation
-      ==============================================================
-      ==============================================================
 
 .. _Class_Deinitializer:
 

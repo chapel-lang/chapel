@@ -1,9 +1,8 @@
 //===- OrcMCJITReplacement.h - Orc based MCJIT replacement ------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -155,7 +154,8 @@ class OrcMCJITReplacement : public ExecutionEngine {
           M.reportError(std::move(Err));
           return SymbolNameSet();
         } else {
-          if (auto Sym2 = M.ClientResolver->findSymbolInLogicalDylib(*S)) {
+          if (auto Sym2 =
+                  M.ClientResolver->findSymbolInLogicalDylib(std::string(*S))) {
             if (!Sym2.getFlags().isStrong())
               Result.insert(S);
           } else if (auto Err = Sym2.takeError()) {
@@ -177,8 +177,8 @@ class OrcMCJITReplacement : public ExecutionEngine {
       for (auto &S : Symbols) {
         if (auto Sym = M.findMangledSymbol(*S)) {
           if (auto Addr = Sym.getAddress()) {
-            Query->resolve(S, JITEvaluatedSymbol(*Addr, Sym.getFlags()));
-            Query->notifySymbolReady();
+            Query->notifySymbolMetRequiredState(
+                S, JITEvaluatedSymbol(*Addr, Sym.getFlags()));
             NewSymbolsResolved = true;
           } else {
             M.ES.legacyFailQuery(*Query, Addr.takeError());
@@ -188,10 +188,10 @@ class OrcMCJITReplacement : public ExecutionEngine {
           M.ES.legacyFailQuery(*Query, std::move(Err));
           return SymbolNameSet();
         } else {
-          if (auto Sym2 = M.ClientResolver->findSymbol(*S)) {
+          if (auto Sym2 = M.ClientResolver->findSymbol(std::string(*S))) {
             if (auto Addr = Sym2.getAddress()) {
-              Query->resolve(S, JITEvaluatedSymbol(*Addr, Sym2.getFlags()));
-              Query->notifySymbolReady();
+              Query->notifySymbolMetRequiredState(
+                  S, JITEvaluatedSymbol(*Addr, Sym2.getFlags()));
               NewSymbolsResolved = true;
             } else {
               M.ES.legacyFailQuery(*Query, Addr.takeError());
@@ -205,11 +205,8 @@ class OrcMCJITReplacement : public ExecutionEngine {
         }
       }
 
-      if (NewSymbolsResolved && Query->isFullyResolved())
-        Query->handleFullyResolved();
-
-      if (NewSymbolsResolved && Query->isFullyReady())
-        Query->handleFullyReady();
+      if (NewSymbolsResolved && Query->isComplete())
+        Query->handleComplete();
 
       return UnresolvedSymbols;
     }
@@ -236,24 +233,24 @@ public:
   OrcMCJITReplacement(std::shared_ptr<MCJITMemoryManager> MemMgr,
                       std::shared_ptr<LegacyJITSymbolResolver> ClientResolver,
                       std::unique_ptr<TargetMachine> TM)
-      : ExecutionEngine(TM->createDataLayout()),
-        TM(std::move(TM)),
+      : ExecutionEngine(TM->createDataLayout()), TM(std::move(TM)),
         MemMgr(
             std::make_shared<MCJITReplacementMemMgr>(*this, std::move(MemMgr))),
         Resolver(std::make_shared<LinkingORCResolver>(*this)),
         ClientResolver(std::move(ClientResolver)), NotifyObjectLoaded(*this),
         NotifyFinalized(*this),
         ObjectLayer(
-            ES,
+            AcknowledgeORCv1Deprecation, ES,
             [this](VModuleKey K) {
               return ObjectLayerT::Resources{this->MemMgr, this->Resolver};
             },
             NotifyObjectLoaded, NotifyFinalized),
-        CompileLayer(ObjectLayer, SimpleCompiler(*this->TM),
+        CompileLayer(AcknowledgeORCv1Deprecation, ObjectLayer,
+                     SimpleCompiler(*this->TM),
                      [this](VModuleKey K, std::unique_ptr<Module> M) {
                        Modules.push_back(std::move(M));
                      }),
-        LazyEmitLayer(CompileLayer) {}
+        LazyEmitLayer(AcknowledgeORCv1Deprecation, CompileLayer) {}
 
   static void Register() {
     OrcMCJITReplacementCtor = createOrcMCJITReplacement;
@@ -382,9 +379,9 @@ public:
 
 private:
   JITSymbol findMangledSymbol(StringRef Name) {
-    if (auto Sym = LazyEmitLayer.findSymbol(Name, false))
+    if (auto Sym = LazyEmitLayer.findSymbol(std::string(Name), false))
       return Sym;
-    if (auto Sym = ClientResolver->findSymbol(Name))
+    if (auto Sym = ClientResolver->findSymbol(std::string(Name)))
       return Sym;
     if (auto Sym = scanArchives(Name))
       return Sym;

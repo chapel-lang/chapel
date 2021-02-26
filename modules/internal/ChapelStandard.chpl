@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -22,51 +22,56 @@
 //
 pragma "export init"
 module ChapelStandard {
-  private use startInitCommDiags;
+  use startInitCommDiags;
   // Internal, but uses standard/CommDiagnostics
 
   // Internal modules.
-  use CString;
-  use Bytes;
-  use String;
-  use OwnedObject;
-  use SharedObject;
-  use ChapelEnv;
-  use ChapelBase;
-  use Atomics;
-  use NetworkAtomics;
-  use NetworkAtomicTypes;
-  use AtomicsCommon;
-  use ChapelIteratorSupport;
-  use ChapelThreads;
-  use ChapelTuple;
-  use ChapelRange;
-  use ChapelReduce;
-  use ChapelSyncvar;
-  use ChapelTaskDataHelp;
-  use LocaleModel;
-  use ChapelLocale;
-  use DefaultRectangular; // This might be able to go just after Atomics
-  use LocalesArray;
-  use ChapelArray;
-  use ChapelDistribution;
-  use ChapelIO;
-  use LocaleTree;
-  use DefaultAssociative;
-  use DefaultSparse;
-  use ChapelTaskID;
-  use ChapelTaskTable;
-  use MemTracking;
-  use ChapelUtil;
-  use ChapelError;
-  use ChapelTaskData;
-  use ChapelSerializedBroadcast;
-  use ExportWrappers;
+  public use CString;
+  public use Bytes;
+  public use String;
+  public use OwnedObject;
+  public use SharedObject;
+  public use ChapelEnv;
+  public use ChapelBase;
+  public use Atomics;
+  public use NetworkAtomics;
+  public use NetworkAtomicTypes;
+  public use AtomicsCommon;
+  public use ChapelIteratorSupport;
+  public use ChapelThreads;
+  public use ChapelTuple;
+  public use ChapelRange;
+  public use ChapelReduce;
+  public use ChapelSyncvar;
+  public use ChapelTaskDataHelp;
+  public use LocaleModel;
+  public use ChapelLocale;
+  public use ChapelPrivatization;
+  public use DefaultRectangular; // This might be able to go just after Atomics
+  public use LocalesArray;
+  public use ChapelArray;
+  public use ChapelDistribution;
+  public use ChapelAutoLocalAccess;
+  public use ChapelIO;
+  public use LocaleTree;
+  public use ChapelHashing;
+  public use DefaultAssociative;
+  public use DefaultSparse;
+  public use ChapelTaskID;
+  public use ChapelTaskTable;
+  public use MemTracking;
+  public use ChapelUtil;
+  public use ChapelError;
+  public use ChapelTaskData;
+  public use ChapelSerializedBroadcast;
+  public use ExportWrappers;
+  public use ChapelAutoAggregation;
 
   // Standard modules.
-  use Assert;
-  use Types;
-  use Math;
+  public use Builtins;
+  public use Types;
+  public use Math;
+  public use VectorizingIterator;
 
-  private use stopInitCommDiags;  // Internal, but uses standard/CommDiagnostics
+  use stopInitCommDiags;  // Internal, but uses standard/CommDiagnostics
 }

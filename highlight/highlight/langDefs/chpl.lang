@@ -18,7 +18,7 @@ Keywords={
          "delete", "dmapped", "do",
          "else", "enum", "except", "export", "extern",
          "false", "for", "forall",
-         "if", "in", "index", "inline", "inout", "iter",
+         "if", "import", "in", "index", "inline", "inout", "iter",
          "label", "lambda", "let", "lifetime", "local",
          "module",
          "new", "nil", "noinit",

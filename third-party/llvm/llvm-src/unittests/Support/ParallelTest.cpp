@@ -1,9 +1,8 @@
 //===- llvm/unittest/Support/ParallelTest.cpp -----------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 ///
@@ -31,8 +30,8 @@ TEST(Parallel, sort) {
   for (auto &i : array)
     i = dist(randEngine);
 
-  sort(parallel::par, std::begin(array), std::end(array));
-  ASSERT_TRUE(std::is_sorted(std::begin(array), std::end(array)));
+  parallelSort(std::begin(array), std::end(array));
+  ASSERT_TRUE(llvm::is_sorted(array));
 }
 
 TEST(Parallel, parallel_for) {
@@ -41,7 +40,7 @@ TEST(Parallel, parallel_for) {
   // writing.
   uint32_t range[2050];
   std::fill(range, range + 2050, 1);
-  for_each_n(parallel::par, 0, 2049, [&range](size_t I) { ++range[I]; });
+  parallelForEachN(0, 2049, [&range](size_t I) { ++range[I]; });
 
   uint32_t expected[2049];
   std::fill(expected, expected + 2049, 2);

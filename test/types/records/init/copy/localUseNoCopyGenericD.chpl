@@ -35,7 +35,7 @@ module Foo {
 
     // For 's = r' below, the compiler does actually insert the default copy
     // initializer.
-    var r : R(Inner,Inner,Inner);
+    var r = new R(new Inner(), new Inner(), new Inner());
     var s = r;
 
     writeln(r);

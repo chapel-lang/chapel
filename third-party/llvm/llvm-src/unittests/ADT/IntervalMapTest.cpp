@@ -1,9 +1,8 @@
 //===---- ADT/IntervalMapTest.cpp - IntervalMap unit tests ------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -50,6 +49,16 @@ TEST(IntervalMapTest, EmptyMap) {
   UUMap::iterator I2;
   I2 = map.end();
   EXPECT_TRUE(I2 == CI);
+}
+
+// Test one-element closed ranges.
+TEST(IntervalMapTest, OneElementRanges) {
+  UUMap::Allocator allocator;
+  UUMap map(allocator);
+  map.insert(1, 1, 1);
+  map.insert(2, 2, 2);
+  EXPECT_EQ(1u, map.lookup(1));
+  EXPECT_EQ(2u, map.lookup(2));
 }
 
 // Single entry map tests

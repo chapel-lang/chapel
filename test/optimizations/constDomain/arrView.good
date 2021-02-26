@@ -1,0 +1,25 @@
+Slice with tuple of ranges
+{2..3, 2..3}
+true
+true
+Slice with domain literal
+true
+true
+Slice with var domain
+false
+false
+Slice with const domain
+true
+true
+Reindex with tuple of ranges
+true
+true
+Reindex with domain literal
+true
+true
+Reindex with var domain
+true
+true
+Rank change with tuple of ranges
+true
+true

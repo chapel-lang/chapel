@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -26,6 +26,7 @@
 #include "expr.h"
 
 IntentTag blankIntentForType(Type* t);
+IntentTag constIntentForType(Type* t);
 IntentTag concreteIntent(IntentTag existingIntent, Type* t);
 IntentTag concreteIntentForArg(ArgSymbol* arg);
 void resolveArgIntent(ArgSymbol* arg);

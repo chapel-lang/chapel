@@ -1,9 +1,8 @@
 //===--- FormatToken.h - Format C++ code ------------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 ///
@@ -55,21 +54,27 @@ namespace format {
   TYPE(InheritanceComma)                                                       \
   TYPE(InlineASMBrace)                                                         \
   TYPE(InlineASMColon)                                                         \
+  TYPE(InlineASMSymbolicNameLSquare)                                           \
   TYPE(JavaAnnotation)                                                         \
   TYPE(JsComputedPropertyName)                                                 \
   TYPE(JsExponentiation)                                                       \
   TYPE(JsExponentiationEqual)                                                  \
   TYPE(JsFatArrow)                                                             \
   TYPE(JsNonNullAssertion)                                                     \
+  TYPE(JsNullishCoalescingOperator)                                            \
+  TYPE(JsNullPropagatingOperator)                                              \
+  TYPE(JsPrivateIdentifier)                                                    \
   TYPE(JsTypeColon)                                                            \
   TYPE(JsTypeOperator)                                                         \
   TYPE(JsTypeOptionalQuestion)                                                 \
   TYPE(LambdaArrow)                                                            \
+  TYPE(LambdaLBrace)                                                           \
   TYPE(LambdaLSquare)                                                          \
   TYPE(LeadingJavaAnnotation)                                                  \
   TYPE(LineComment)                                                            \
   TYPE(MacroBlockBegin)                                                        \
   TYPE(MacroBlockEnd)                                                          \
+  TYPE(NamespaceMacro)                                                         \
   TYPE(ObjCBlockLBrace)                                                        \
   TYPE(ObjCBlockLParen)                                                        \
   TYPE(ObjCDecl)                                                               \
@@ -95,9 +100,22 @@ namespace format {
   TYPE(TrailingAnnotation)                                                     \
   TYPE(TrailingReturnArrow)                                                    \
   TYPE(TrailingUnaryOperator)                                                  \
+  TYPE(TypenameMacro)                                                          \
   TYPE(UnaryOperator)                                                          \
+  TYPE(UntouchableMacroFunc)                                                   \
+  TYPE(CSharpStringLiteral)                                                    \
+  TYPE(CSharpNamedArgumentColon)                                               \
+  TYPE(CSharpNullable)                                                         \
+  TYPE(CSharpNullCoalescing)                                                   \
+  TYPE(CSharpNullConditional)                                                  \
+  TYPE(CSharpNullConditionalLSquare)                                           \
+  TYPE(CSharpGenericTypeConstraint)                                            \
+  TYPE(CSharpGenericTypeConstraintColon)                                       \
+  TYPE(CSharpGenericTypeConstraintComma)                                       \
   TYPE(Unknown)
 
+/// Determines the semantic type of a syntactic token, e.g. whether "<" is a
+/// template opener or binary operator.
 enum TokenType {
 #define TYPE(X) TT_##X,
   LIST_TOKEN_TYPES
@@ -177,7 +195,10 @@ struct FormatToken {
   /// Contains the kind of block if this token is a brace.
   BraceBlockKind BlockKind = BK_Unknown;
 
-  TokenType Type = TT_Unknown;
+  /// Returns the token's type, e.g. whether "<" is a template opener or
+  /// binary operator.
+  TokenType getType() const { return Type; }
+  void setType(TokenType T) { Type = T; }
 
   /// The number of spaces that should be inserted before this token.
   unsigned SpacesRequiredBefore = 0;
@@ -322,6 +343,11 @@ struct FormatToken {
   }
   template <typename T> bool isNot(T Kind) const { return !is(Kind); }
 
+  bool isIf(bool AllowConstexprMacro = true) const {
+    return is(tok::kw_if) || endsSequence(tok::kw_constexpr, tok::kw_if) ||
+           (endsSequence(tok::identifier, tok::kw_if) && AllowConstexprMacro);
+  }
+
   bool closesScopeAfterBlock() const {
     if (BlockKind == BK_Block)
       return true;
@@ -339,6 +365,10 @@ struct FormatToken {
 
   /// \c true if this token ends a sequence with the given tokens in order,
   /// following the ``Previous`` pointers, ignoring comments.
+  /// For example, given tokens [T1, T2, T3], the function returns true if
+  /// 3 tokens ending at this (ignoring comments) are [T3, T2, T1]. In other
+  /// words, the tokens passed to this function need to the reverse of the
+  /// order the tokens appear in code.
   template <typename A, typename... Ts>
   bool endsSequence(A K1, Ts... Tokens) const {
     return endsSequenceInternal(K1, Tokens...);
@@ -391,7 +421,7 @@ struct FormatToken {
   bool isMemberAccess() const {
     return isOneOf(tok::arrow, tok::period, tok::arrowstar) &&
            !isOneOf(TT_DesignatedInitializerPeriod, TT_TrailingReturnArrow,
-                    TT_LambdaArrow);
+                    TT_LambdaArrow, TT_LeadingJavaAnnotation);
   }
 
   bool isUnaryOperator() const {
@@ -488,10 +518,12 @@ struct FormatToken {
   /// Returns \c true if this tokens starts a block-type list, i.e. a
   /// list that should be indented with a block indent.
   bool opensBlockOrBlockTypeList(const FormatStyle &Style) const {
+    // C# Does not indent object initialisers as continuations.
+    if (is(tok::l_brace) && BlockKind == BK_BracedInit && Style.isCSharp())
+      return true;
     if (is(TT_TemplateString) && opensScope())
       return true;
-    return is(TT_ArrayInitializerLSquare) ||
-           is(TT_ProtoExtensionLSquare) ||
+    return is(TT_ArrayInitializerLSquare) || is(TT_ProtoExtensionLSquare) ||
            (is(tok::l_brace) &&
             (BlockKind == BK_Block || is(TT_DictLiteral) ||
              (!Style.Cpp11BracedListStyle && NestingLevel == 0))) ||
@@ -528,8 +560,10 @@ struct FormatToken {
     // Detect "(inline|export)? namespace" in the beginning of a line.
     if (NamespaceTok && NamespaceTok->isOneOf(tok::kw_inline, tok::kw_export))
       NamespaceTok = NamespaceTok->getNextNonComment();
-    return NamespaceTok && NamespaceTok->is(tok::kw_namespace) ? NamespaceTok
-                                                               : nullptr;
+    return NamespaceTok &&
+                   NamespaceTok->isOneOf(tok::kw_namespace, TT_NamespaceMacro)
+               ? NamespaceTok
+               : nullptr;
   }
 
 private:
@@ -562,6 +596,8 @@ private:
       return Previous->endsSequenceInternal(K1, Tokens...);
     return is(K1) && Previous && Previous->endsSequenceInternal(Tokens...);
   }
+
+  TokenType Type = TT_Unknown;
 };
 
 class ContinuationIndenter;
@@ -671,8 +707,10 @@ struct AdditionalKeywords {
     kw_override = &IdentTable.get("override");
     kw_in = &IdentTable.get("in");
     kw_of = &IdentTable.get("of");
+    kw_CF_CLOSED_ENUM = &IdentTable.get("CF_CLOSED_ENUM");
     kw_CF_ENUM = &IdentTable.get("CF_ENUM");
     kw_CF_OPTIONS = &IdentTable.get("CF_OPTIONS");
+    kw_NS_CLOSED_ENUM = &IdentTable.get("NS_CLOSED_ENUM");
     kw_NS_ENUM = &IdentTable.get("NS_ENUM");
     kw_NS_OPTIONS = &IdentTable.get("NS_OPTIONS");
 
@@ -724,10 +762,55 @@ struct AdditionalKeywords {
     kw_slots = &IdentTable.get("slots");
     kw_qslots = &IdentTable.get("Q_SLOTS");
 
-    // Keep this at the end of the constructor to make sure everything here is
+    // C# keywords
+    kw_dollar = &IdentTable.get("dollar");
+    kw_base = &IdentTable.get("base");
+    kw_byte = &IdentTable.get("byte");
+    kw_checked = &IdentTable.get("checked");
+    kw_decimal = &IdentTable.get("decimal");
+    kw_delegate = &IdentTable.get("delegate");
+    kw_event = &IdentTable.get("event");
+    kw_fixed = &IdentTable.get("fixed");
+    kw_foreach = &IdentTable.get("foreach");
+    kw_implicit = &IdentTable.get("implicit");
+    kw_internal = &IdentTable.get("internal");
+    kw_lock = &IdentTable.get("lock");
+    kw_null = &IdentTable.get("null");
+    kw_object = &IdentTable.get("object");
+    kw_out = &IdentTable.get("out");
+    kw_params = &IdentTable.get("params");
+    kw_ref = &IdentTable.get("ref");
+    kw_string = &IdentTable.get("string");
+    kw_stackalloc = &IdentTable.get("stackalloc");
+    kw_sbyte = &IdentTable.get("sbyte");
+    kw_sealed = &IdentTable.get("sealed");
+    kw_uint = &IdentTable.get("uint");
+    kw_ulong = &IdentTable.get("ulong");
+    kw_unchecked = &IdentTable.get("unchecked");
+    kw_unsafe = &IdentTable.get("unsafe");
+    kw_ushort = &IdentTable.get("ushort");
+    kw_when = &IdentTable.get("when");
+    kw_where = &IdentTable.get("where");
+
+    // Keep this at the end of the constructor to make sure everything here
+    // is
     // already initialized.
     JsExtraKeywords = std::unordered_set<IdentifierInfo *>(
         {kw_as, kw_async, kw_await, kw_declare, kw_finally, kw_from,
+         kw_function, kw_get, kw_import, kw_is, kw_let, kw_module, kw_readonly,
+         kw_set, kw_type, kw_typeof, kw_var, kw_yield,
+         // Keywords from the Java section.
+         kw_abstract, kw_extends, kw_implements, kw_instanceof, kw_interface});
+
+    CSharpExtraKeywords = std::unordered_set<IdentifierInfo *>(
+        {kw_base, kw_byte, kw_checked, kw_decimal, kw_delegate, kw_event,
+         kw_fixed, kw_foreach, kw_implicit, kw_in, kw_interface, kw_internal,
+         kw_is, kw_lock, kw_null, kw_object, kw_out, kw_override, kw_params,
+         kw_readonly, kw_ref, kw_string, kw_stackalloc, kw_sbyte, kw_sealed,
+         kw_uint, kw_ulong, kw_unchecked, kw_unsafe, kw_ushort, kw_when,
+         kw_where,
+         // Keywords from the JavaScript section.
+         kw_as, kw_async, kw_await, kw_declare, kw_finally, kw_from,
          kw_function, kw_get, kw_import, kw_is, kw_let, kw_module, kw_readonly,
          kw_set, kw_type, kw_typeof, kw_var, kw_yield,
          // Keywords from the Java section.
@@ -739,8 +822,10 @@ struct AdditionalKeywords {
   IdentifierInfo *kw_override;
   IdentifierInfo *kw_in;
   IdentifierInfo *kw_of;
+  IdentifierInfo *kw_CF_CLOSED_ENUM;
   IdentifierInfo *kw_CF_ENUM;
   IdentifierInfo *kw_CF_OPTIONS;
+  IdentifierInfo *kw_NS_CLOSED_ENUM;
   IdentifierInfo *kw_NS_ENUM;
   IdentifierInfo *kw_NS_OPTIONS;
   IdentifierInfo *kw___except;
@@ -797,17 +882,171 @@ struct AdditionalKeywords {
   IdentifierInfo *kw_slots;
   IdentifierInfo *kw_qslots;
 
+  // C# keywords
+  IdentifierInfo *kw_dollar;
+  IdentifierInfo *kw_base;
+  IdentifierInfo *kw_byte;
+  IdentifierInfo *kw_checked;
+  IdentifierInfo *kw_decimal;
+  IdentifierInfo *kw_delegate;
+  IdentifierInfo *kw_event;
+  IdentifierInfo *kw_fixed;
+  IdentifierInfo *kw_foreach;
+  IdentifierInfo *kw_implicit;
+  IdentifierInfo *kw_internal;
+
+  IdentifierInfo *kw_lock;
+  IdentifierInfo *kw_null;
+  IdentifierInfo *kw_object;
+  IdentifierInfo *kw_out;
+
+  IdentifierInfo *kw_params;
+
+  IdentifierInfo *kw_ref;
+  IdentifierInfo *kw_string;
+  IdentifierInfo *kw_stackalloc;
+  IdentifierInfo *kw_sbyte;
+  IdentifierInfo *kw_sealed;
+  IdentifierInfo *kw_uint;
+  IdentifierInfo *kw_ulong;
+  IdentifierInfo *kw_unchecked;
+  IdentifierInfo *kw_unsafe;
+  IdentifierInfo *kw_ushort;
+  IdentifierInfo *kw_when;
+  IdentifierInfo *kw_where;
+
   /// Returns \c true if \p Tok is a true JavaScript identifier, returns
   /// \c false if it is a keyword or a pseudo keyword.
-  bool IsJavaScriptIdentifier(const FormatToken &Tok) const {
-    return Tok.is(tok::identifier) &&
-           JsExtraKeywords.find(Tok.Tok.getIdentifierInfo()) ==
-               JsExtraKeywords.end();
+  /// If \c AcceptIdentifierName is true, returns true not only for keywords,
+  // but also for IdentifierName tokens (aka pseudo-keywords), such as
+  // ``yield``.
+  bool IsJavaScriptIdentifier(const FormatToken &Tok,
+                              bool AcceptIdentifierName = true) const {
+    // Based on the list of JavaScript & TypeScript keywords here:
+    // https://github.com/microsoft/TypeScript/blob/master/src/compiler/scanner.ts#L74
+    switch (Tok.Tok.getKind()) {
+    case tok::kw_break:
+    case tok::kw_case:
+    case tok::kw_catch:
+    case tok::kw_class:
+    case tok::kw_continue:
+    case tok::kw_const:
+    case tok::kw_default:
+    case tok::kw_delete:
+    case tok::kw_do:
+    case tok::kw_else:
+    case tok::kw_enum:
+    case tok::kw_export:
+    case tok::kw_false:
+    case tok::kw_for:
+    case tok::kw_if:
+    case tok::kw_import:
+    case tok::kw_module:
+    case tok::kw_new:
+    case tok::kw_private:
+    case tok::kw_protected:
+    case tok::kw_public:
+    case tok::kw_return:
+    case tok::kw_static:
+    case tok::kw_switch:
+    case tok::kw_this:
+    case tok::kw_throw:
+    case tok::kw_true:
+    case tok::kw_try:
+    case tok::kw_typeof:
+    case tok::kw_void:
+    case tok::kw_while:
+      // These are JS keywords that are lexed by LLVM/clang as keywords.
+      return false;
+    case tok::identifier: {
+      // For identifiers, make sure they are true identifiers, excluding the
+      // JavaScript pseudo-keywords (not lexed by LLVM/clang as keywords).
+      bool IsPseudoKeyword =
+          JsExtraKeywords.find(Tok.Tok.getIdentifierInfo()) !=
+          JsExtraKeywords.end();
+      return AcceptIdentifierName || !IsPseudoKeyword;
+    }
+    default:
+      // Other keywords are handled in the switch below, to avoid problems due
+      // to duplicate case labels when using the #include trick.
+      break;
+    }
+
+    switch (Tok.Tok.getKind()) {
+      // Handle C++ keywords not included above: these are all JS identifiers.
+#define KEYWORD(X, Y) case tok::kw_##X:
+#include "clang/Basic/TokenKinds.def"
+      // #undef KEYWORD is not needed -- it's #undef-ed at the end of
+      // TokenKinds.def
+      return true;
+    default:
+      // All other tokens (punctuation etc) are not JS identifiers.
+      return false;
+    }
+  }
+
+  /// Returns \c true if \p Tok is a C# keyword, returns
+  /// \c false if it is a anything else.
+  bool isCSharpKeyword(const FormatToken &Tok) const {
+    switch (Tok.Tok.getKind()) {
+    case tok::kw_bool:
+    case tok::kw_break:
+    case tok::kw_case:
+    case tok::kw_catch:
+    case tok::kw_char:
+    case tok::kw_class:
+    case tok::kw_const:
+    case tok::kw_continue:
+    case tok::kw_default:
+    case tok::kw_do:
+    case tok::kw_double:
+    case tok::kw_else:
+    case tok::kw_enum:
+    case tok::kw_explicit:
+    case tok::kw_extern:
+    case tok::kw_false:
+    case tok::kw_float:
+    case tok::kw_for:
+    case tok::kw_goto:
+    case tok::kw_if:
+    case tok::kw_int:
+    case tok::kw_long:
+    case tok::kw_namespace:
+    case tok::kw_new:
+    case tok::kw_operator:
+    case tok::kw_private:
+    case tok::kw_protected:
+    case tok::kw_public:
+    case tok::kw_return:
+    case tok::kw_short:
+    case tok::kw_sizeof:
+    case tok::kw_static:
+    case tok::kw_struct:
+    case tok::kw_switch:
+    case tok::kw_this:
+    case tok::kw_throw:
+    case tok::kw_true:
+    case tok::kw_try:
+    case tok::kw_typeof:
+    case tok::kw_using:
+    case tok::kw_virtual:
+    case tok::kw_void:
+    case tok::kw_volatile:
+    case tok::kw_while:
+      return true;
+    default:
+      return Tok.is(tok::identifier) &&
+             CSharpExtraKeywords.find(Tok.Tok.getIdentifierInfo()) ==
+                 CSharpExtraKeywords.end();
+    }
   }
 
 private:
   /// The JavaScript keywords beyond the C++ keyword set.
   std::unordered_set<IdentifierInfo *> JsExtraKeywords;
+
+  /// The C# keywords beyond the C++ keyword set
+  std::unordered_set<IdentifierInfo *> CSharpExtraKeywords;
 };
 
 } // namespace format

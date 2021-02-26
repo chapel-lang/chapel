@@ -1,3 +1,5 @@
+.. default-domain:: chpl
+
 .. _Chapter-Data_Parallelism:
 
 Data Parallelism
@@ -16,6 +18,7 @@ This chapter details data parallelism as follows:
 
 -  :ref:`Forall_Intents` specifies how variables from outer
    scopes are handled within forall statements and expressions.
+   :ref:`Task_Private_Variables` provide a related functionality.
 
 -  :ref:`Promotion` describes promotion.
 
@@ -48,11 +51,11 @@ The syntax of the forall statement is given by
 .. code-block:: syntax
 
    forall-statement:
-     `forall' index-var-declaration `in' iteratable-expression task-intent-clause[OPT] `do' statement
-     `forall' index-var-declaration `in' iteratable-expression task-intent-clause[OPT] block-statement
-     `forall' iteratable-expression task-intent-clause[OPT] `do' statement
-     `forall' iteratable-expression task-intent-clause[OPT] block-statement
-     [ index-var-declaration `in' iteratable-expression task-intent-clause[OPT] ] statement
+     'forall' index-var-declaration 'in' iteratable-expression task-intent-clause[OPT] 'do' statement
+     'forall' index-var-declaration 'in' iteratable-expression task-intent-clause[OPT] block-statement
+     'forall' iteratable-expression task-intent-clause[OPT] 'do' statement
+     'forall' iteratable-expression task-intent-clause[OPT] block-statement
+     [ index-var-declaration 'in' iteratable-expression task-intent-clause[OPT] ] statement
      [ iteratable-expression task-intent-clause[OPT] ] statement
 
 As with the for statement, the indices may be omitted if they are
@@ -78,7 +81,7 @@ yielded by the ``iteratable-expression``. Each instance of the forall
 loop’s body may be executed concurrently with the others, but this is
 not guaranteed. In particular, the loop must be serializable. Details
 regarding concurrency and iterator implementation are described
-in \ `23.4 <#Parallel_Iterators>`__.
+in :ref:`Parallel_Iterators`.
 
 This differs from the semantics of the ``coforall`` loop, discussed
 in :ref:`Coforall`, where each iteration is guaranteed to run
@@ -91,12 +94,12 @@ In practice, the number of tasks that will be used to evaluate a
 *leading* the execution of the loop, as is the mapping of iterations to
 tasks.
 
-| This concept will be formalized in future drafts of the Chapel
-  specification. For now, the primer on parallel iterators in the online
-  documentation provides a brief introduction:
-| https://chapel-lang.org/docs/primers/parIters.html
-| Please also refer to *User-Defined Parallel Zippered Iterators in
-  Chapel*, published in the PGAS 2011 workshop.
+This concept will be formalized in future drafts of the Chapel
+specification. For now, the
+:ref:`primer on parallel iterators <primers-parIters>`
+provides a brief introduction.
+Please also refer to *User-Defined Parallel Zippered Iterators in
+Chapel*, published in the PGAS 2011 workshop.
 
 Control continues with the statement following the forall loop only
 after every iteration has been completely evaluated. At this point, all
@@ -176,9 +179,9 @@ The syntax of a forall expression is given by
 .. code-block:: syntax
 
    forall-expression:
-     `forall' index-var-declaration `in' iteratable-expression task-intent-clause[OPT] `do' expression
-     `forall' iteratable-expression task-intent-clause[OPT] `do' expression
-     [ index-var-declaration `in' iteratable-expression task-intent-clause[OPT] ] expression
+     'forall' index-var-declaration 'in' iteratable-expression task-intent-clause[OPT] 'do' expression
+     'forall' iteratable-expression task-intent-clause[OPT] 'do' expression
+     [ index-var-declaration 'in' iteratable-expression task-intent-clause[OPT] ] expression
      [ iteratable-expression task-intent-clause[OPT] ] expression
 
 As with the for expression, the indices may be omitted if they are
@@ -233,7 +236,7 @@ the zipper case :ref:`Zipper_Promotion`.
    of the indices in the range ``1..10``.
 
 The forall expression follows the semantics of the forall statement as
-described in \ `27.1.2 <#forall_semantics>`__.
+described in :ref:`forall_semantics`.
 
 Zipper Iteration
 ~~~~~~~~~~~~~~~~
@@ -254,7 +257,7 @@ iterations for which the condition does not hold are not reflected in
 the result of the forall expression.
 
 When a forall expression with a filtering predicate is captured into a
-variable, the resulting array has a 1-based one-dimensional domain.
+variable, the resulting array has a 0-based one-dimensional domain.
 
    *Example (forallFilter.chpl)*.
 
@@ -278,12 +281,14 @@ variable, the resulting array has a 1-based one-dimensional domain.
 
       ;
       writeln(result);
+      writeln(result.domain);
 
    
 
    .. BLOCK-test-chapeloutput
 
       1 3 5 7 9
+      {0..4}
 
 .. _Forall_Intents:
 
@@ -293,17 +298,19 @@ Forall Intents
 If a variable is referenced within the lexical scope of a forall
 statement or expression and is declared outside that forall construct,
 it is subject to *forall intents*, analogously to task intents
-(:ref:`Task_Intents`) for task-parallel constructs. That is, the
-variable is considered to be passed as an actual argument to each task
-function created by the object or iterator leading the execution of the
-loop. If no tasks are created, it is considered to be an actual argument
-to the leader or standalone iterator itself. All references to the
+for task-parallel constructs (see :ref:`Task_Intents`). That is, the
+outer variable is considered to be passed as an actual argument to an
+implicit formal of the iterator leading the execution of the loop.
+From there, it is passed down to each task created by that iterator,
+if any, as an actual argument to an implicit formal of the corresponding
+task function. A top-level task passes it down recursively to its
+child tasks, if any. All references to the 
 variable within the forall construct implicitly refer to a *shadow
 variable*, i.e. the corresponding formal argument of the task function
-or the leader/standalone iterator.
+or the leading iterator.
 
 When the forall construct is inside a method on a record and accesses a
-field of ``this``, the field is treated as a regular variable. That is,
+field of ``this``, the field is treated as an outer variable. That is,
 it is subject to forall intents and all references to this field within
 the forall construct implicitly refer to the corresponding shadow
 variable.
@@ -315,17 +322,23 @@ creation time. Within the lexical scope of the forall construct, the
 variable name references the captured value instead of the original
 value.
 
-| A formal can be given another intent explicitly by listing it with
-  that intent in the optional ``task-intent-clause``. For example, for
-  variables of most types, the ``ref`` intent allows the body of the
-  forall loop to modify the corresponding original variable or to read
-  its updated value after concurrent modifications. The ``in`` intent is
-  an alternative way to obtain task-private variables
-  (:ref:`Task_Private_Variables`). A ``reduce`` intent can be used
-  to reduce values across iterations of a forall or coforall loop.
-  Reduce intents are described in the *Reduce Intents* technical note in
-  the online documentation:
-| https://chapel-lang.org/docs/technotes/reduceIntents.html
+A formal can be given another intent explicitly by listing it with
+that intent in the optional ``task-intent-clause``. For example, for
+variables of most types, the ``ref`` intent allows the body of the
+forall loop to modify the corresponding original variable or to read
+its updated value after concurrent modifications. The ``in`` intent is
+an alternative way to obtain task-private variables
+(see :ref:`Task_Private_Variables`).
+
+A ``reduce`` forall intent can be used to reduce values across iterations
+of a forall loop. While it is similar to the ``reduce`` task intent
+(see :ref:`Task_Intents`), there is a difference in how values
+are combined at the end of a task. With a ``reduce`` forall intent,
+each child task combines its accumulated value into its parent task
+rather than into an outer variable.
+The ``reduce=`` operator accumulates its right-hand side values
+computed for all iterations executed by a given task into the same
+shadow variable for that task.
 
    *Rationale*.
 
@@ -367,9 +380,9 @@ statement’s with-clause is:
      task-private-var-kind identifier type-part[OPT] initialization-part[OPT]
 
    task-private-var-kind:
-     `const'
-     `var'
-     `ref'
+     'const'
+     'var'
+     'ref'
 
 The declaration of a ``const`` or ``var`` task-private variable must
 have at least one of ``type-part`` and ``initialization-part``. A
@@ -468,13 +481,15 @@ input expression resulting array’s domain
 array            that array’s domain
 domain           that domain
 range            one-dimensional domain built from that range
-iterator         1-based one-dimensional domain
+iterator         0-based one-dimensional domain
 ================ ============================================
 
 ..
 
-   *Future*.
-
+.. note::
+      
+   *Future*
+   
    We would like to allow the iterator author to specify the shape of
    the iterator, i.e. the domain of the array that would capture the
    result of the corresponding promoted expression, such as 
@@ -497,7 +512,7 @@ iterator         1-based one-dimensional domain
    and the function 
 
    .. code-block:: chapel
-
+   
       proc square(x: int) return x**2;
 
    then the call ``square(A)`` results in the promotion of the
@@ -746,24 +761,29 @@ The syntax for a reduction expression is given by:
 .. code-block:: syntax
 
    reduce-expression:
-     reduce-scan-operator `reduce' iteratable-expression
-     class-type `reduce' iteratable-expression
+     reduce-scan-operator 'reduce' iteratable-expression
+     class-type 'reduce' iteratable-expression
 
    reduce-scan-operator: one of
-     + * && || & | ^ `min' `max' `minloc' `maxloc'
+     + * && || & | ^ 'min' 'max' 'minmax' 'minloc' 'maxloc'
 
 Chapel’s predefined reduction operators are defined by
 ``reduce-scan-operator`` above. In order, they are: sum, product,
 logical-and, logical-or, bitwise-and, bitwise-or, bitwise-exclusive-or,
-minimum, maximum, minimum-with-location, and maximum-with-location. The
+minimum, maximum, minimum-and-maximum,
+minimum-with-location, and maximum-with-location. The
 minimum reduction returns the minimum value as defined by the ``<``
 operator. The maximum reduction returns the maximum value as defined by
-the ``>`` operator. The minimum-with-location reduction returns the lowest
+the ``>`` operator. The minimum-and-maximum reduction returns a tuple
+with the first component being the result of the minimum reduction
+and the second component being the result of the maximum reduction.
+The minimum-with-location reduction returns the lowest
 index position with the minimum value (as defined by the ``<`` operator).
 The maximum-with-location reduction returns the lowest index position
 with the maximum value (as defined by the ``>`` operator). When a minimum,
-maximum, minimum-with-location, or maximum-with-location reduction
-encounters a NaN, the result is a NaN.
+maximum, minimum-and-maximum, minimum-with-location,
+or maximum-with-location reduction encounters a NaN, the result
+is or contains a NaN.
 
 The expression on the right-hand side of the ``reduce`` keyword can be
 of any type that can be iterated over, provided the reduction operator
@@ -838,8 +858,8 @@ The syntax for a scan expression is given by:
 .. code-block:: syntax
 
    scan-expression:
-     reduce-scan-operator `scan' iteratable-expression
-     class-type `scan' iteratable-expression
+     reduce-scan-operator 'scan' iteratable-expression
+     class-type 'scan' iteratable-expression
 
 The predefined scans are defined by ``reduce-scan-operator``. These are
 identical to the predefined reductions and are described
@@ -871,8 +891,8 @@ that can be iterated over and to which the operator can be applied.
       1 2 3
 
 User-defined scans are specified by preceding the keyword ``scan`` by
-the class type that implements the scan interface as described in
-Chapter \ `[User_Defined_Reductions_and_Scans] <#User_Defined_Reductions_and_Scans>`__.
+the class type that implements the scan interface as described
+in :ref:`Chapter-User_Defined_Reductions_and_Scans`.
 
 .. _data_parallel_knobs:
 

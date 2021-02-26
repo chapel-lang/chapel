@@ -262,6 +262,36 @@ TEST_F(SortImportsTestJava, NoNewlineAtEnd) {
                  "import org.a;"));
 }
 
+TEST_F(SortImportsTestJava, ImportNamedFunction) {
+  EXPECT_EQ("import X;\n"
+            "class C {\n"
+            "  void m() {\n"
+            "    importFile();\n"
+            "  }\n"
+            "}\n",
+            sort("import X;\n"
+                 "class C {\n"
+                 "  void m() {\n"
+                 "    importFile();\n"
+                 "  }\n"
+                 "}\n"));
+}
+
+TEST_F(SortImportsTestJava, NoReplacementsForValidImports) {
+  // Identical #includes have led to a failure with an unstable sort.
+  std::string Code = "import org.a;\n"
+                     "import org.b;\n";
+  EXPECT_TRUE(
+      sortIncludes(FmtStyle, Code, GetCodeRange(Code), "input.java").empty());
+}
+
+TEST_F(SortImportsTestJava, NoReplacementsForValidImportsWindows) {
+  std::string Code = "import org.a;\r\n"
+                     "import org.b;\r\n";
+  EXPECT_TRUE(
+      sortIncludes(FmtStyle, Code, GetCodeRange(Code), "input.java").empty());
+}
+
 } // end namespace
 } // end namespace format
 } // end namespace clang

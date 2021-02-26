@@ -1,9 +1,8 @@
 //===--- llvm-as.cpp - The low-level LLVM assembler -----------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -31,38 +30,43 @@
 #include <memory>
 using namespace llvm;
 
+cl::OptionCategory AsCat("llvm-as Options");
+
 static cl::opt<std::string> InputFilename(cl::Positional,
                                           cl::desc("<input .llvm file>"),
                                           cl::init("-"));
 
 static cl::opt<std::string> OutputFilename("o",
                                            cl::desc("Override output filename"),
-                                           cl::value_desc("filename"));
+                                           cl::value_desc("filename"),
+                                           cl::cat(AsCat));
 
-static cl::opt<bool> Force("f", cl::desc("Enable binary output on terminals"));
+static cl::opt<bool> Force("f", cl::desc("Enable binary output on terminals"),
+                           cl::cat(AsCat));
 
 static cl::opt<bool> DisableOutput("disable-output", cl::desc("Disable output"),
-                                   cl::init(false));
+                                   cl::init(false), cl::cat(AsCat));
 
 static cl::opt<bool> EmitModuleHash("module-hash", cl::desc("Emit module hash"),
-                                    cl::init(false));
+                                    cl::init(false), cl::cat(AsCat));
 
 static cl::opt<bool> DumpAsm("d", cl::desc("Print assembly as parsed"),
-                             cl::Hidden);
+                             cl::Hidden, cl::cat(AsCat));
 
 static cl::opt<bool>
     DisableVerify("disable-verify", cl::Hidden,
-                  cl::desc("Do not run verifier on input LLVM (dangerous!)"));
+                  cl::desc("Do not run verifier on input LLVM (dangerous!)"),
+                  cl::cat(AsCat));
 
 static cl::opt<bool> PreserveBitcodeUseListOrder(
     "preserve-bc-uselistorder",
     cl::desc("Preserve use-list order when writing LLVM bitcode."),
-    cl::init(true), cl::Hidden);
+    cl::init(true), cl::Hidden, cl::cat(AsCat));
 
 static cl::opt<std::string> ClDataLayout("data-layout",
                                          cl::desc("data layout string to use"),
                                          cl::value_desc("layout-string"),
-                                         cl::init(""));
+                                         cl::init(""), cl::cat(AsCat));
 
 static void WriteOutputFile(const Module *M, const ModuleSummaryIndex *Index) {
   // Infer the output filename if needed.
@@ -78,17 +82,19 @@ static void WriteOutputFile(const Module *M, const ModuleSummaryIndex *Index) {
 
   std::error_code EC;
   std::unique_ptr<ToolOutputFile> Out(
-      new ToolOutputFile(OutputFilename, EC, sys::fs::F_None));
+      new ToolOutputFile(OutputFilename, EC, sys::fs::OF_None));
   if (EC) {
     errs() << EC.message() << '\n';
     exit(1);
   }
 
-  if (Force || !CheckBitcodeOutputToConsole(Out->os(), true)) {
+  if (Force || !CheckBitcodeOutputToConsole(Out->os())) {
     const ModuleSummaryIndex *IndexToWrite = nullptr;
-    // Don't attempt to write a summary index unless it contains any entries.
-    // Otherwise we get an empty summary section.
-    if (Index && Index->begin() != Index->end())
+    // Don't attempt to write a summary index unless it contains any entries or
+    // has non-zero flags. The latter is used to assemble dummy index files for
+    // skipping modules by distributed ThinLTO backends. Otherwise we get an empty
+    // summary section.
+    if (Index && (Index->begin() != Index->end() || Index->getFlags()))
       IndexToWrite = Index;
     if (!IndexToWrite || (M && (!M->empty() || !M->global_empty())))
       // If we have a non-empty Module, then we write the Module plus
@@ -110,12 +116,24 @@ static void WriteOutputFile(const Module *M, const ModuleSummaryIndex *Index) {
 int main(int argc, char **argv) {
   InitLLVM X(argc, argv);
   LLVMContext Context;
+  cl::HideUnrelatedOptions(AsCat);
   cl::ParseCommandLineOptions(argc, argv, "llvm .ll -> .bc assembler\n");
 
   // Parse the file now...
   SMDiagnostic Err;
-  auto ModuleAndIndex = parseAssemblyFileWithIndex(
-      InputFilename, Err, Context, nullptr, !DisableVerify, ClDataLayout);
+  auto SetDataLayout = [](StringRef) -> Optional<std::string> {
+    if (ClDataLayout.empty())
+      return None;
+    return ClDataLayout;
+  };
+  ParsedModuleAndIndex ModuleAndIndex;
+  if (DisableVerify) {
+    ModuleAndIndex = parseAssemblyFileWithIndexNoUpgradeDebugInfo(
+        InputFilename, Err, Context, nullptr, SetDataLayout);
+  } else {
+    ModuleAndIndex = parseAssemblyFileWithIndex(InputFilename, Err, Context,
+                                                nullptr, SetDataLayout);
+  }
   std::unique_ptr<Module> M = std::move(ModuleAndIndex.Mod);
   if (!M.get()) {
     Err.print(argv[0], errs());

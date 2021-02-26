@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -29,6 +29,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 
+BlockStmt*                         rootBlock             = NULL;
 ModuleSymbol*                      rootModule            = NULL;
 ModuleSymbol*                      theProgram            = NULL;
 ModuleSymbol*                      baseModule            = NULL;
@@ -234,12 +235,6 @@ ModuleSymbol::ModuleSymbol(const char* iName,
   gModuleSymbols.add(this);
 }
 
-
-ModuleSymbol::~ModuleSymbol() {
-
-}
-
-
 void ModuleSymbol::verify() {
   Symbol::verify();
 
@@ -364,44 +359,57 @@ void ModuleSymbol::printDocs(std::ostream* file,
     *file << std::endl;
   }
 
-  if (fDocsTextOnly == false) {
-    *file << "**Usage**" << std::endl << std::endl;
-    *file << ".. code-block:: chapel" << std::endl << std::endl;
+  if (!this->hasFlag(FLAG_MODULE_INCLUDED_BY_DEFAULT)) {
 
+    if (fDocsTextOnly == false) {
+      *file << "**Usage**" << std::endl << std::endl;
+      *file << ".. code-block:: chapel" << std::endl << std::endl;
+
+    } else {
+      *file << std::endl;
+      *file << "Usage:" << std::endl;
+    }
+
+    this->printTabs(file, tabs + 1);
+
+    *file << "use ";
+
+    if (parentName != "") {
+      *file << parentName << ".";
+    }
+
+    *file << name << ";" << std::endl << std::endl;
+
+    if (!fDocsTextOnly) {
+      *file << std::endl;
+    }
+
+    *file  << "or" << std::endl << std::endl;
+
+    if (fDocsTextOnly == false) {
+      *file << ".. code-block:: chapel" << std::endl << std::endl;
+    }
+
+    this->printTabs(file, tabs + 1);
+
+    *file << "import ";
+
+    if (parentName != "") {
+      *file << parentName << ".";
+    }
+
+    *file << name << ";" << std::endl << std::endl;
   } else {
+    *file << ".. note::" << std::endl << std::endl;
+    this->printTabs(file, tabs + 1);
+    *file <<
+      "All Chapel programs automatically ``use`` this module by default.";
     *file << std::endl;
-    *file << "Usage:" << std::endl;
-  }
-
-  this->printTabs(file, tabs + 1);
-
-  *file << "use ";
-
-  if (parentName != "") {
-    *file << parentName << ".";
-  }
-
-  *file << name << ";" << std::endl << std::endl;
-
-  if (!fDocsTextOnly) {
+    this->printTabs(file, tabs + 1);
+    *file << "An explicit ``use`` statement is not necessary.";
+    *file << std::endl;
     *file << std::endl;
   }
-
-  *file  << "or" << std::endl << std::endl;
-   
-  if (fDocsTextOnly == false) {
-    *file << ".. code-block:: chapel" << std::endl << std::endl;
-  }
-
-  this->printTabs(file, tabs + 1);
-
-  *file << "import ";
-
-  if (parentName != "") {
-    *file << parentName << ".";
-  }
-
-  *file << name << ";" << std::endl << std::endl;
 
   // If we had submodules, be sure to link to them
   if (hasTopLevelModule() == true) {
@@ -749,12 +757,11 @@ void ModuleSymbol::deadCodeModuleUseRemove(ModuleSymbol* mod) {
 }
 
 void initRootModule() {
-  rootModule           = new ModuleSymbol("_root",
-                                          MOD_INTERNAL,
-                                          new BlockStmt());
+  rootBlock  = new BlockStmt();
+  rootModule = new ModuleSymbol("_root", MOD_INTERNAL, rootBlock);
 
   rootModule->filename = astr("<internal>");
-  rootModule->block->parentSymbol = rootModule;
+  rootBlock->parentSymbol = rootModule;
 }
 
 void initStringLiteralModule() {

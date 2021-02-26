@@ -1,9 +1,16 @@
-import ListTest;
+import List.list;
 
 class T {
   var value = 0;
 }
 
-type t = borrowed T?;
+var l = new list(borrowed T?);
 
-ListTest.testList(t);
+var a = new T();
+var b: borrowed T? = a.borrow();
+l.append(b);
+
+assert(l.size == 1);
+
+var value = l.pop();
+assert(l.size == 0);

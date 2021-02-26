@@ -1,9 +1,8 @@
 //===- Rewriter.h - Code rewriting interface --------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -47,6 +46,17 @@ public:
 
     /// If true and removing some text leaves a blank line
     /// also remove the empty line (false by default).
+    ///
+    /// FIXME: This sometimes corrupts the file's rewrite buffer due to
+    /// incorrect indexing in the implementation (see the FIXME in
+    /// clang::RewriteBuffer::RemoveText).  Moreover, it's inefficient because
+    /// it must scan the buffer from the beginning to find the start of the
+    /// line.  When feasible, it's better for the caller to check for a blank
+    /// line and then, if found, expand the removal range to include it.
+    /// Checking for a blank line is easy if, for example, the caller can
+    /// guarantee this is the first edit of a line.  In that case, it can just
+    /// scan before and after the removal range until the next newline or
+    /// begin/end of the input.
     bool RemoveLineIfEmpty = false;
 
     RewriteOptions() {}
@@ -85,7 +95,16 @@ public:
   /// in different buffers, this returns an empty string.
   ///
   /// Note that this method is not particularly efficient.
-  std::string getRewrittenText(SourceRange Range) const;
+  std::string getRewrittenText(CharSourceRange Range) const;
+
+  /// getRewrittenText - Return the rewritten form of the text in the specified
+  /// range.  If the start or end of the range was unrewritable or if they are
+  /// in different buffers, this returns an empty string.
+  ///
+  /// Note that this method is not particularly efficient.
+  std::string getRewrittenText(SourceRange Range) const {
+    return getRewrittenText(CharSourceRange::getTokenRange(Range));
+  }
 
   /// InsertText - Insert the specified string at the specified location in the
   /// original buffer.  This method returns true (and does nothing) if the input
@@ -138,6 +157,13 @@ public:
   /// operation.
   bool ReplaceText(SourceLocation Start, unsigned OrigLength,
                    StringRef NewStr);
+
+  /// ReplaceText - This method replaces a range of characters in the input
+  /// buffer with a new string.  This is effectively a combined "remove/insert"
+  /// operation.
+  bool ReplaceText(CharSourceRange range, StringRef NewStr) {
+    return ReplaceText(range.getBegin(), getRangeSize(range), NewStr);
+  }
 
   /// ReplaceText - This method replaces a range of characters in the input
   /// buffer with a new string.  This is effectively a combined "remove/insert"

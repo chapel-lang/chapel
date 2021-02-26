@@ -13,15 +13,15 @@ record UselessKeyPartComparator {
   proc keyPart(x, i:int) {
     if isTuple(x) {
       type tt = x(0).type;
-      if i <= x.size then
-        return (0, x(i-1));  // JUST CHANGED THIS
+      if i < x.size then
+        return (0, x(i));
       else
         return (-1, 0:tt);
 
     } else if x.type == string {
       return defaultComparator.keyPart(x, i);
     } else if isNumericType(x.type) {
-      if i == 1 then
+      if i == 0 then
         return (0, x);
       else
         return (-1, x);

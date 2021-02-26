@@ -1,9 +1,8 @@
 //===-- XCoreMachineFunctionInfo.cpp - XCore machine function info --------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -44,7 +43,7 @@ int XCoreFunctionInfo::createLRSpillSlot(MachineFunction &MF) {
     LRSpillSlot = MFI.CreateFixedObject(TRI.getSpillSize(RC), 0, true);
   } else {
     LRSpillSlot = MFI.CreateStackObject(TRI.getSpillSize(RC),
-                                        TRI.getSpillAlignment(RC), true);
+                                        TRI.getSpillAlign(RC), true);
   }
   LRSpillSlotSet = true;
   return LRSpillSlot;
@@ -57,8 +56,8 @@ int XCoreFunctionInfo::createFPSpillSlot(MachineFunction &MF) {
   const TargetRegisterClass &RC = XCore::GRRegsRegClass;
   const TargetRegisterInfo &TRI = *MF.getSubtarget().getRegisterInfo();
   MachineFrameInfo &MFI = MF.getFrameInfo();
-  FPSpillSlot = MFI.CreateStackObject(TRI.getSpillSize(RC),
-                                      TRI.getSpillAlignment(RC), true);
+  FPSpillSlot =
+      MFI.CreateStackObject(TRI.getSpillSize(RC), TRI.getSpillAlign(RC), true);
   FPSpillSlotSet = true;
   return FPSpillSlot;
 }
@@ -71,9 +70,9 @@ const int* XCoreFunctionInfo::createEHSpillSlot(MachineFunction &MF) {
   const TargetRegisterInfo &TRI = *MF.getSubtarget().getRegisterInfo();
   MachineFrameInfo &MFI = MF.getFrameInfo();
   unsigned Size = TRI.getSpillSize(RC);
-  unsigned Align = TRI.getSpillAlignment(RC);
-  EHSpillSlot[0] = MFI.CreateStackObject(Size, Align, true);
-  EHSpillSlot[1] = MFI.CreateStackObject(Size, Align, true);
+  Align Alignment = TRI.getSpillAlign(RC);
+  EHSpillSlot[0] = MFI.CreateStackObject(Size, Alignment, true);
+  EHSpillSlot[1] = MFI.CreateStackObject(Size, Alignment, true);
   EHSpillSlotSet = true;
   return EHSpillSlot;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -112,7 +112,8 @@ Curl Support Types and Functions
 
  */
 module Curl {
-  public use IO, SysCTypes;
+  public use IO, SysCTypes, CPtr;
+  use Sys;
 
   require "curl/curl.h";
   require "-lcurl";
@@ -393,10 +394,11 @@ module Curl {
   pragma "no doc"
   module CurlQioIntegration {
 
-    import Sys;
     import Time;
-    private use IO;
+    use IO;
     use Curl;
+    use Sys;
+    use CPtr;
 
     class CurlFile : QioPluginFile {
 

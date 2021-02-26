@@ -121,7 +121,7 @@ sub startMailHeader {
 
 sub endMailHeader {
     my $mystr =
-        "===============================================================\n\n";
+        "=== End Summary ===============================================\n\n";
 
     $mystr;
 }
@@ -134,8 +134,7 @@ sub endMailChplenv {
     my $chplenv = `$ch/util/printchplenv --all --anonymize`;
 
     my $mystr =
-        "===============================================================\n" .
-        "Chapel Environment:\n" .
+        "=== Chapel Environment ========================================\n" .
         $chplenv . "\n";
 
     $mystr;

@@ -1,0 +1,4 @@
+sort-check-comparator.chpl:26: In function 'quickSort':
+sort-check-comparator.chpl:27: error: success
+  sort-check-comparator.chpl:15: called as quickSort(Data: int(64)) from function 'sort'
+  sort-check-comparator.chpl:9: called as sort(Data: int(64))

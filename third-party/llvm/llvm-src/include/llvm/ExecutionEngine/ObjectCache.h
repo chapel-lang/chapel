@@ -1,20 +1,20 @@
 //===-- ObjectCache.h - Class definition for the ObjectCache ----*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
 #ifndef LLVM_EXECUTIONENGINE_OBJECTCACHE_H
 #define LLVM_EXECUTIONENGINE_OBJECTCACHE_H
 
-#include "llvm/Support/MemoryBuffer.h"
 #include <memory>
 
 namespace llvm {
 
+class MemoryBuffer;
+class MemoryBufferRef;
 class Module;
 
 /// This is the base ObjectCache type which can be provided to an

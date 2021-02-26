@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -33,6 +33,9 @@ config const debugSpecParser=false;
   retrieve information from the spec listed in the
   Mason.toml file under the [external] table.
 
+  This parser expects a resolved spec, such that there
+  are no version ranges.
+
   This parser is not meant to retrieve all information
   from the spec as we only need the following to use
   packages from Spack
@@ -53,7 +56,7 @@ proc getSpecFields(spec: string) {
   try! {
     var tokenList = readSpec(spec);
     const specInfo = parseSpec(tokenList);
-    var compiler = specInfo[3];
+    var compiler = specInfo[2];
     if compiler.size < 1 {
       compiler = inferCompiler();
     }
@@ -76,33 +79,24 @@ private proc inferCompiler() throws {
 }
 
 
-proc readSpec(spec: string) {
-  const pkg = "([A-Za-z0-9\\-]+)",
-        vers = "(\\@[0-9]+.[0-9]+.[0-9]+[a-zA-Z]*)",
-        compiler = "(\\%[A-Za-z0-9\\-\\_]+[\\-a-zA-Z]*)",
+/* Tokenize spec into list of tokens */
+private proc readSpec(spec: string): list(string) {
+  const pkgVersion = "([A-Za-z0-9\\-\\@\\.\\:]+)",
+        compilerVersion = "(\\%[A-Za-z0-9\\_\\@\\.\\-]+)",
         variantInclude = "(\\+[A-Za-z0-9\\-\\_]+)",
         variantExclude = "(\\~[A-Za-z0-9\\-\\_]+)",
         dependency = "(\\^[a-zA-Z]*?[0-9]*?)",
         arch = "([A-Za-z0-9\\-\\_]+\\=[A-Za-z0-9\\-\\_]+)",
-        emptyArch = "([A-Za-z0-9\\-\\_]+\\=)",
-        versRange = "(\\@[0-9]+.[0-9]+.[0-9]+[a-zA-Z]*\\:[0-9]+.[0-9]+.[0-9]+[a-zA-Z]*)",
-        minVers = "(\\@[0-9]+.[0-9]+.[0-9]+[a-zA-Z]*\\:)",
-        maxVers = "(\\@\\:[0-9]+.[0-9]+.[0-9]+[a-zA-Z]*)";
-    
-  
+        emptyArch = "([A-Za-z0-9\\-\\_]+\\=)";
 
   var tokenList: list(string);
-  const pattern = compile("|".join(versRange,
-                                   vers,
-                                   minVers,
-                                   maxVers,
-                                   compiler,
+  const pattern = compile("|".join(pkgVersion,
+                                   compilerVersion,
                                    variantInclude,
                                    variantExclude,
                                    dependency,
                                    emptyArch,
-                                   arch,
-                                   pkg));
+                                   arch));
 
 
   if debugSpecParser then writeln(spec);
@@ -119,21 +113,18 @@ proc readSpec(spec: string) {
 }
 
 
-proc parseSpec(ref tokenList: list(string)) throws {
+private proc parseSpec(ref tokenList: list(string)): 4*string throws {
 
-  const rVers = compile("(\\@[0-9]+.[0-9]+.[0-9]+[a-zA-Z]*)");
-  const rCompiler = compile("(\\%[A-Za-z0-9\\-\\_]+[\\-a-zA-Z]*)");
-  const rMinVers = compile("(\\@[0-9]+.[0-9]+.[0-9]+[a-zA-Z]*\\:)");
-  const rMaxVers = compile("(\\@\\:[0-9]+.[0-9]+.[0-9]+[a-zA-Z]*)");
-  const rVersRange = compile("(\\@[0-9]+.[0-9]+.[0-9]+[a-zA-Z]*\\:{1}\\[0-9]+.[0-9]+.[0-9]+[a-zA-Z]*)");
+  const reCompilerVersion = compile("(\\%[A-Za-z0-9\\_\\@\\.\\-]+)");
 
   // required fields
   //   - package name
   //   - version
   var package: string;
-  var pkgVersion: string;
+  var packageVersion: string;
   var compiler: string;
-  var compVersion: string;
+  var compilerVersion: string;
+
   // This includes more than just variants
   // variants, arch, dependencies etc...
   var variants: list(string);
@@ -142,53 +133,27 @@ proc parseSpec(ref tokenList: list(string)) throws {
     throw new owned MasonError("Empty spec in Mason.toml");
   }
   while tokenList.size > 0 {
-    var toke = tokenList.pop(1);
+    var toke = tokenList.pop(0);
 
-    // get package name (should always be first token)
-    if package.size < 1 {
-      package = toke;
-    }
-    // Match a package, compiler or dep version
-    // could be version, version range, min version or max version
-    else if rVers.match(toke).matched == true
-      || rVersRange.match(toke).matched == true
-      || rMinVers.match(toke).matched == true
-      || rMaxVers.match(toke).matched == true {
-                                               
-      if pkgVersion.size < 1 {
-        pkgVersion = toke.strip("@");
-      }
-      else if compVersion.size < 1 {
-        compVersion = toke;
-        compiler = "".join(compiler, compVersion);
-      }
-      else {
-        variants.append(toke);
-      }
-    }
-    else if rCompiler.match(toke) {
-      // throw an error if we reach a compiler without seeing
-      // a package version.
-      if pkgVersion.size < 1 {
-        throw new owned MasonError("No package version found in spec");
-      }
-      // Match package compiler if one hasnt been matched
-      if compiler.size < 1 {
-        compiler = toke.strip("%");
-      }
-      else {
-        variants.append(toke);
+    // Package should be first token
+    if package == '' {
+      const pkgSplit = toke.split('@');
+      package = pkgSplit[0];
+      packageVersion = pkgSplit[1];
+    } else if reCompilerVersion.match(toke).matched && compilerVersion == '' {
+      const strippedToke = toke.strip('%');
+      const compilerSplit = strippedToke.split('@');
+      compiler = compilerSplit[0];
+      if compilerSplit.size > 1 {
+        // Note: This is currently unused
+        compilerVersion = compilerSplit[1];
       }
     }
     else {
-      // catch corner case where some compilers like "-"
-      // include non-spec characters e.g. clang@9.0.0-apple
-      if !toke.startsWith("-") {
-        variants.append(toke);
-      }
+      variants.append(toke);
     }
   }
-  return (package, pkgVersion, compiler, " ".join(variants.these()).strip());
+  return (package, packageVersion, compiler, " ".join(variants.these()).strip());
 }
 
 

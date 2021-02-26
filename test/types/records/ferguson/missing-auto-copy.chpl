@@ -4,7 +4,7 @@ record R {
 // I'd like this to be ref, but that breaks
 //    var outerX: R; begin { var x = outerX; }
 pragma "init copy fn"
-proc chpl__initCopy(arg: R) {
+proc chpl__initCopy(arg: R, definedConst: bool) {
   // TODO - is no auto destroy necessary here?
   pragma "no auto destroy"
   var ret: R;

@@ -1,0 +1,73 @@
+.TH qt_dictionary_create 3 "AUGUST 2012" libqthread "libqthread"
+.SH NAME
+.B qt_dictionary_create
+\- allocate a concurrent dictionary
+.SH SYNOPSIS
+.B #include <qthread/dictionary.h>
+
+.I qt_dictionary *
+.br
+.B qt_dictionary_create
+.RI "(qt_dict_key_equals_f " eq ,
+.br
+.ti +22
+.RI "qt_dict_hash_f " hash ,
+.br
+.ti +22
+.RI "qt_dict_tag_cleanup_f " cleanup );
+
+.SH DESCRIPTION
+This function creates a dictionary data structure. The dictionary uses the
+.I eq
+function to compare keys, the
+.I hash
+function to convert a key into an integer, and the
+.I cleanup
+function to deallocate tags when the dictionary is destroyed.
+.PP
+The prototype of the key comparison function is:
+.RS
+.PP
+int eq(void *key1, void *key2);
+.RE
+.PP
+The
+.I eq 
+function should return one if the keys are equal and zero otherwise. The prototype of the key conversion function is:
+.RS
+.PP
+int hash(void *key);
+.RE
+.PP
+The
+.I hash
+function may return any value. The following property MUST be maintained:
+.RS
+.PP
+.RI "if (" eq "(A, B) == 1) then " hash "(A) == " hash "(B)"
+.RE
+.PP
+The prototype of the cleanup function is:
+.RS
+.PP
+void cleanup(void *key);
+.RE
+.PP
+The
+.I cleanup
+function is intended to provide a hook to deallocate keys as necessary. The function pointer may be NULL.
+.SH RETURN VALUES
+Returns an initialized qt_dictionary object.
+.SH SEE ALSO
+.BR qt_dictionary_delete (3),
+.BR qt_dictionary_destroy (3),
+.BR qt_dictionary_end (3),
+.BR qt_dictionary_get (3),
+.BR qt_dictionary_iterator_copy (3),
+.BR qt_dictionary_iterator_create (3),
+.BR qt_dictionary_iterator_destroy (3),
+.BR qt_dictionary_iterator_equals (3),
+.BR qt_dictionary_iterator_get (3),
+.BR qt_dictionary_iterator_next (3),
+.BR qt_dictionary_put (3),
+.BR qt_dictionary_put_if_absent (3)

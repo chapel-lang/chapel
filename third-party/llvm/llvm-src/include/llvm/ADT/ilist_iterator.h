@@ -1,9 +1,8 @@
 //===- llvm/ADT/ilist_iterator.h - Intrusive List Iterator ------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -89,15 +88,14 @@ public:
   // This is templated so that we can allow constructing a const iterator from
   // a nonconst iterator...
   template <bool RHSIsConst>
-  ilist_iterator(
-      const ilist_iterator<OptionsT, IsReverse, RHSIsConst> &RHS,
-      typename std::enable_if<IsConst || !RHSIsConst, void *>::type = nullptr)
+  ilist_iterator(const ilist_iterator<OptionsT, IsReverse, RHSIsConst> &RHS,
+                 std::enable_if_t<IsConst || !RHSIsConst, void *> = nullptr)
       : NodePtr(RHS.NodePtr) {}
 
   // This is templated so that we can allow assigning to a const iterator from
   // a nonconst iterator...
   template <bool RHSIsConst>
-  typename std::enable_if<IsConst || !RHSIsConst, ilist_iterator &>::type
+  std::enable_if_t<IsConst || !RHSIsConst, ilist_iterator &>
   operator=(const ilist_iterator<OptionsT, IsReverse, RHSIsConst> &RHS) {
     NodePtr = RHS.NodePtr;
     return *this;

@@ -13,8 +13,8 @@ static_library("Index") {
     "//llvm/lib/Support",
   ]
   sources = [
-    "CodegenNameGenerator.cpp",
     "CommentToXML.cpp",
+    "FileIndexRecord.cpp",
     "IndexBody.cpp",
     "IndexDecl.cpp",
     "IndexSymbol.cpp",

@@ -1,7 +1,7 @@
---cpp-lines
---devel --cpp-lines
---cpp-lines --savec output
---devel --cpp-lines --savec output
--g
+--no-llvm --cpp-lines
+--no-llvm --devel --cpp-lines
+--no-llvm --cpp-lines --savec output
+--no-llvm --devel --cpp-lines --savec output
+--no-llvm -g
 # this isn't intended to work... developers debug c lines by default
-#-g --devel
+#--no-llvm -g --devel

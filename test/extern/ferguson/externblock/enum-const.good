@@ -1,1 +1,1 @@
-enum-const.chpl:9: error: illegal lvalue in assignment
+enum-const.chpl:9: error: cannot assign to const variable

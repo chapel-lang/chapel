@@ -22,7 +22,6 @@ the GNU MP Library test suite.  If not, see https://www.gnu.org/licenses/.  */
 #include <iostream>
 #include <string>
 
-#include "gmp.h"
 #include "gmpxx.h"
 #include "gmp-impl.h"
 #include "tests.h"
@@ -172,7 +171,7 @@ check_mpz (void)
       mpz_class b;
       b = a;
       ASSERT_ALWAYS (0);  /* should not be reached */
-    } catch (invalid_argument) {
+    } catch (invalid_argument&) {
     }
   }
 
@@ -183,7 +182,7 @@ check_mpz (void)
       mpz_class b;
       b = a;
       ASSERT_ALWAYS (0);  /* should not be reached */
-    } catch (invalid_argument) {
+    } catch (invalid_argument&) {
     }
   }
 
@@ -358,7 +357,7 @@ check_mpq (void)
       mpq_class b;
       b = a;
       ASSERT_ALWAYS (0);  /* should not be reached */
-    } catch (invalid_argument) {
+    } catch (invalid_argument&) {
     }
   }
 
@@ -369,7 +368,7 @@ check_mpq (void)
       mpq_class b;
       b = a;
       ASSERT_ALWAYS (0);  /* should not be reached */
-    } catch (invalid_argument) {
+    } catch (invalid_argument&) {
     }
   }
 
@@ -544,7 +543,7 @@ check_mpf (void)
       mpf_class b;
       b = a;
       ASSERT_ALWAYS (0);  /* should not be reached */
-    } catch (invalid_argument) {
+    } catch (invalid_argument&) {
     }
   }
 
@@ -555,7 +554,7 @@ check_mpf (void)
       mpf_class b;
       b = a;
       ASSERT_ALWAYS (0);  /* should not be reached */
-    } catch (invalid_argument) {
+    } catch (invalid_argument&) {
     }
   }
 

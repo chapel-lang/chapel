@@ -1,9 +1,8 @@
 //===-- Mips16RegisterInfo.h - Mips16 Register Information ------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -17,7 +16,6 @@
 #include "MipsRegisterInfo.h"
 
 namespace llvm {
-class Mips16InstrInfo;
 
 class Mips16RegisterInfo : public MipsRegisterInfo {
 public:
@@ -30,10 +28,10 @@ public:
   bool useFPForScavengingIndex(const MachineFunction &MF) const override;
 
   bool saveScavengerRegister(MachineBasicBlock &MBB,
-                                     MachineBasicBlock::iterator I,
-                                     MachineBasicBlock::iterator &UseMI,
-                                     const TargetRegisterClass *RC,
-                                     unsigned Reg) const override;
+                             MachineBasicBlock::iterator I,
+                             MachineBasicBlock::iterator &UseMI,
+                             const TargetRegisterClass *RC,
+                             Register Reg) const override;
 
   const TargetRegisterClass *intRegClass(unsigned Size) const override;
 

@@ -1,0 +1,3 @@
+inSubmodule.chpl:8: warning: This file-scope code is outside of any explicit module declarations (e.g., module A), so an implicit module named 'inSubmodule' is being introduced to contain the file's contents.
+0
+0

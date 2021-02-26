@@ -10,17 +10,17 @@ define([cv_prefix],[gasnet_cv_])
 
 dnl Public release version packaging identifier:
 define([GASNET_RELEASE_VERSION_MAJOR_D],[2020])
-define([GASNET_RELEASE_VERSION_MINOR_D],[3])
+define([GASNET_RELEASE_VERSION_MINOR_D],[10])
 define([GASNET_RELEASE_VERSION_PATCH_D],[0])
 dnl GASNet-EX spec version:
 define([GASNETEX_SPEC_VERSION_MAJOR_D],[0])
-define([GASNETEX_SPEC_VERSION_MINOR_D],[8])
+define([GASNETEX_SPEC_VERSION_MINOR_D],[10])
 dnl GASNet-1 spec version:
 define([GASNET_SPEC_VERSION_MAJOR_D],[1])
 define([GASNET_SPEC_VERSION_MINOR_D],[8])
 dnl GASNet tools spec version:
 define([GASNETT_SPEC_VERSION_MAJOR_D],[1])
-define([GASNETT_SPEC_VERSION_MINOR_D],[15])
+define([GASNETT_SPEC_VERSION_MINOR_D],[16])
 
 define([GASNET_RELEASE_VERSION_D],
          [GASNET_RELEASE_VERSION_MAJOR_D.GASNET_RELEASE_VERSION_MINOR_D.GASNET_RELEASE_VERSION_PATCH_D])
@@ -769,7 +769,7 @@ case "$CC_FAMILY" in
        # PGI 20.1 introduced fine-grained warning control at the same time as
        # default-enabling a large number of useless warnings (on the level of
        # -Wextra in other compilers).
-       GASNET_TRY_CFLAG([--diag_suppress177],
+       GASNET_TRY_CFLAG([[-Wc,--diag_suppress=177]],
                         [MISC_CFLAGS="-w $MISC_CFLAGS"])
        ;;
   Sun) if test "$target_cpu" = "sparc"; then 
@@ -907,6 +907,30 @@ GASNET_MSG_WARN([
     BUILDCONFIG="optimize"
     enabled_debug=no])
 AM_CONDITIONAL(BUILDCONFIG_DEBUG, test "$enabled_debug" = yes)
+
+GASNET_IF_ENABLED(valgrind, [Build a valgrind-friendly library, disabling some optimizations. Implies --disable-debug-malloc], [
+    if test -z "$GASNET_SUPPRESS_DEBUG_WARNING" ; then
+       GASNET_MSG_WARN([Enabling valgrind-friendly codegen, disabling some optimizations.])
+    fi
+    AC_DEFINE(GASNETI_VALGRIND)
+    enable_debug_malloc=no # debug mallocator obfuscates heap activity and confuses valgrind
+    if test x"$enable_pshm_xpmem" = xyes && test x"$enable_pshm" != xno; then 
+      # valgrind fundamentally incompatible with XPMEM, issuing errors on every access
+      case "$target" in
+        *-cnl-*) 
+           GASNET_MSG_WARN([Valgrind (--enable-valgrind) does not interoperate with XPMEM (--enable-pshm-xpmem).
+               This appears to be a Cray, so converting to --enable-pshm-hugetlbfs instead])
+           enable_pshm_xpmem=no
+           enable_pshm_hugetlbfs=yes
+        ;;
+        *) GASNET_MSG_ERROR([Valgrind (--enable-valgrind) does not interoperate with XPMEM (--enable-pshm-xpmem).
+               Please select a different PSHM protocol (e.g. --disable-pshm-xpmem --enable-pshm-posix) or disable PSHM (--disable-pshm) ])
+        ;;
+      esac
+    fi
+    enabled_valgrind=yes
+], [ enabled_valgrind=no ])
+AM_CONDITIONAL(VALGRIND, test "$enabled_valgrind" = yes)
 
 GASNET_IF_ENABLED_WITH_AUTO(dev-warnings, Build GASNet with developer compiler warnings for the library and tests (default: yes), 
   enabled_dev_warnings=yes, enabled_dev_warnings=no, enabled_dev_warnings=yes)
@@ -1123,7 +1147,7 @@ XLC)
 GNU|Intel|Pathscale|Open64|Clang|PGI|TINY)
     # Currently believe all of these support GCC-style inline ASM on all CPUs
     # where we use it.  If that is ever *not* the case then one should split
-    # off the case for the relevant compiler and apply blacklists or probes.
+    # off the case for the relevant compiler and apply banlists or probes.
     # NOTE: be sure to keep gasnet_asm.h in-sync with any changes made here.
     AC_DEFINE(GASNETI_HAVE_[]uppername[]_GCC_ASM)
   ;;
@@ -1179,7 +1203,7 @@ dnl
 dnl This is only probing CC, this is only applicable to GASNet
 dnl library builds, not clients.
 dnl
-CHECK_TENTATIVE_BASE=conftest_tent
+CHECK_TENTATIVE_BASE=gasnet_conftest_tent
 CHECK_TENTATIVE_SRC=$CHECK_TENTATIVE_BASE.c
 CHECK_TENTATIVE_OBJ=$CHECK_TENTATIVE_BASE.o
 dnl helper:  GASNET_CHECK_TENTATIVE_TRY_RUN(msg,cv_var,extra,on_success)
@@ -1227,6 +1251,7 @@ if test "${GASNETI_COMMON+set}" = set; then
 else
   AC_MSG_ERROR(could not determine how to use tentative definitions)
 fi
+rm -f $CHECK_TENTATIVE_SRC $CHECK_TENTATIVE_OBJ
 
 ########################################################################
 # hunt for 16-, 32-, and 64-bit integer types
@@ -1504,7 +1529,11 @@ AC_DEFUN([GASNET_PACKAGE_CFLAGS],[
   dnl TODO - strengthen this if we can determine compiler's default search path:
   case "$the_home" in
     /usr|/) the_guess='$2';;
-         *) the_guess="-I$the_home/include[]extra_flags";;
+         *) if test -d "$the_home/include/."; then
+              the_guess="-I$the_home/include[]extra_flags"
+            else
+              the_guess='$2'
+            fi;;
   esac
   ifelse(len([$3]),[0],[GASNET_ENV_DEFAULT(the_var, $the_guess)],[the_var=$the_guess])
   unset the_guess
@@ -1547,6 +1576,30 @@ AC_DEFUN([GASNET_PACKAGE_LDFLAGS],[
   popdef([the_var])
   popdef([the_home])
   GASNET_FUN_END([$0])
+])
+
+########################################################################
+##
+## Modify CRAY_[LIB]_POST_LINK_OPTS envvars to reference the 'default'
+##
+AC_DEFUN([GASNET_CRAY_POST_LINK_OPTS],[
+  pushdef([varname],CRAY_[]translit($1,'a-z','A-Z')[]_POST_LINK_OPTS)
+  if test -n x"$varname"; then
+    cplo_tmp=`$PERL -e "\\\$_='$varname'; s,/$1/[[^/]]*/lib,/$1/default/lib,; print;"`
+    cplo_dir=`$PERL -e "\\\$_='$cplo_tmp'; m,-L(/opt/cray/$1/[[^ ]]*),; print \\\$[]1;"`
+    if test -d "$cplo_dir/."; then
+      varname="$cplo_tmp"
+    else
+      GASNET_MSG_WARN([Directory $cplo_dir missing - disabling rewrite of varname])
+    fi
+  fi
+  popdef([varname])
+])
+GASNET_IF_DISABLED_NOHELP(cray-post-link-rewrite,[],[
+  GASNET_CRAY_POST_LINK_OPTS([pmi])
+  GASNET_CRAY_POST_LINK_OPTS([udreg])
+  GASNET_CRAY_POST_LINK_OPTS([ugni])
+  GASNET_CRAY_POST_LINK_OPTS([xpmem])
 ])
 
 ########################################################################
@@ -1707,6 +1760,15 @@ case "$CACHE_LINE_BYTES" in
 esac
 AC_DEFINE_UNQUOTED(GASNETI_CACHE_LINE_SHIFT,$GASNETI_CACHE_LINE_SHIFT)
           
+if test x"$enabled_valgrind" = x"yes" ; then
+  GASNETI_TM0_ALIGN=0 # team disalignment optimization leads to "possible leak" reports for every non-primordial gex_TM_t
+elif test $CACHE_LINE_BYTES -lt 8; then
+  GASNETI_TM0_ALIGN=16
+else
+  GASNETI_TM0_ALIGN=`expr 2 \* $CACHE_LINE_BYTES`
+fi
+AC_DEFINE_UNQUOTED(GASNETI_TM0_ALIGN,$GASNETI_TM0_ALIGN)
+
 AM_CONDITIONAL(HAVE_PTHREAD, test "$have_pthread" = yes)
 PTHREADS="$have_pthread"
 AC_SUBST(PTHREADS)
@@ -2341,8 +2403,11 @@ GASNET_TRY_CACHE_CHECK(for clock_gettime(), cc_has_clock_gettime, [
                  ], AC_MSG_RESULT(entry point not found - disabled)))
 
 # Timer configuration
-# No current exceptions
 use_timers=native
+if test x"$enabled_valgrind" = x"yes" ; then
+  # valgrind emulation degrades timer calibration and reliability, default to posixrt
+  use_timers=posixrt
+fi
 
 AC_DEFUN([GASNET_CHECK_TIMER_OPTION],[
   if test -n "$force_timers" ; then
@@ -2566,6 +2631,9 @@ ifelse(CONDUIT_IMPLEMENTED,[no],[ enabled_[]$1=no ],[
   ])
 ])
 dnl GASNET_TOOLSONLY_FALSE_END
+dnl GASNET_TOOLSONLY_TRUE_BEGIN
+dnl enabled_[]$1=no
+dnl GASNET_TOOLSONLY_TRUE_END
 ])
 dnl CONDUIT_DISALLOW_SEGMENT(segment_type)
 AC_DEFUN([CONDUIT_DISALLOW_SEGMENT],[
@@ -2796,7 +2864,7 @@ dnl GASNET_LINKHELPER-*:
 dnl   GASNET_LINKHELPER_SETUP(lang-decr)
 dnl   GASNET_LINKHELPER_TRY_{RUN,LINK}(msg,cv_var,includes,body,on_success,on_failure)
 dnl   GASNET_LINKHELPER_CLEANUP()
-LINKHELPER_BASE=conftest_cfunc
+LINKHELPER_BASE=gasnet_conftest_cfunc
 LINKHELPER_SRC=$LINKHELPER_BASE.c
 LINKHELPER_OBJ=$LINKHELPER_BASE.o
 LINKHELPER_LIBS="$LINKHELPER_OBJ $LIBM"
@@ -2835,7 +2903,7 @@ _GASNET_EOF
     GASNET_MSG_ERROR(failed while building $1 helper object)
   fi
 ])
-AC_DEFUN([GASNET_LINKHELPER_CLEANUP],[ rm -f $LINKHELPER_OBJ ])
+AC_DEFUN([GASNET_LINKHELPER_CLEANUP],[ rm -f $LINKHELPER_SRC $LINKHELPER_OBJ ])
 AC_DEFUN([GASNET_LINKHELPER_TRY_INNER],[
   GASNET_PUSHVAR(LIBS,"$LINKHELPER_LIBS $LIBS")
   ]GASNET_TRY_CACHE_[$1][($2,$3,[
@@ -2926,7 +2994,7 @@ AC_DEFUN([GASNET_LINKHELPER_TRY_RUN],[GASNET_LINKHELPER_TRY_INNER([RUN_WITHCC],$
            # because it's not a valid option for PGI C compilation.
            GASNET_TRY_CXXFLAG([--display_error_number], [DEVWARN_CXXFLAGS="--display_error_number"])
 
-           GASNET_TRY_CXXFLAG([--diag_suppress177], [ 
+           GASNET_TRY_CXXFLAG([[-Wc,--diag_suppress=177]], [ 
              # Intentionally empty - this is just to test whether surgical warning suppresion is available
            ], [
              MISC_CXXFLAGS="-w $MISC_CXXFLAGS" # old versions of pgc++ have no way to indep control warnings
@@ -3474,6 +3542,7 @@ AM_CONDITIONAL(USE_SMP_CONDUIT, test "$enabled_smp" = yes)
 #
 
 CONDUIT_BEGIN(ucx,exp,[Unified Communication X conduit (ucx)])
+CONDUIT_DISALLOW_SEGMENT(everything)
 if test "$enabled_ucx" = no; then
     :
 elif test "$have_fork" = no; then
@@ -3760,15 +3829,37 @@ if test "$enabled_aries" = yes; then
   GNI_LIBS=
 
   # Look for pmi_cray.h, allowing for the possibility we are not using the wrapper compiler
-  # Setting $have_pmi_cray squashes a later probe for pmi.h:
+  # Setting $have_pmi_cray squashes a later probe for pmi.h.
+  # Therefore we perform the equivalent (but not quite identical) work here
+  pushdef([with_expanded_PMI_HOME],1)    dnl suppress help here, but permit later
+  pushdef([with_expanded_PMI_LDFLAGS],1)
+  pushdef([with_expanded_PMI_LIBS],1)
+  GASNET_ENV_DEFAULT(PMI_HOME, )
+  if test -n "$PMI_HOME"; then
+    GASNET_PACKAGE_CFLAGS(PMI, [], noenv)
+    GASNET_PACKAGE_LDFLAGS(PMI, pmi, [], noenv)
+  else
+    GASNET_ENV_DEFAULT(PMI_LDFLAGS, "$CRAY_PMI_POST_LINK_OPTS")
+  fi
+  GASNET_ENV_DEFAULT(PMI_LIBS, "-lpmi")
+  popdef([with_expanded_PMI_LIBS])
+  popdef([with_expanded_PMI_LDFLAGS])
+  popdef([with_expanded_PMI_HOME])
+
+  PMI_SPAWNER_CFLAGS=$PMI_CFLAGS;    unset PMI_CFLAGS
+  PMI_SPAWNER_LDFLAGS=$PMI_LDFLAGS;  unset PMI_LDFLAGS
+  PMI_SPAWNER_LIBS=$PMI_LIBS;        unset PMI_LIBS
+  GASNET_SPLIT_LINKER_OPTS(PMI_SPAWNER_LDFLAGS, PMI_SPAWNER_LIBS)
+
+  GASNET_PUSHVAR(CPPFLAGS,"$CPPFLAGS $PMI_SPAWNER_CFLAGS")
   GASNET_CHECK_CRAY_HEADER([pmi_cray.h],[CRAY_PMI_INCLUDE_OPTS],[
       have_pmi_cray_h=yes
+      # Found in header search path (possibly due to PMI_SPAWNER_CFLAGS)
     ],[
       have_pmi_cray_h=yes
-      GNI_CFLAGS="$GNI_CFLAGS $CRAY_PMI_INCLUDE_OPTS"
+      PMI_SPAWNER_CFLAGS="$PMI_SPAWNER_CFLAGS $CRAY_PMI_INCLUDE_OPTS"
     ])
-  GNI_LDFLAGS="$GNI_LDFLAGS $CRAY_PMI_POST_LINK_OPTS"
-  GNI_LIBS="$GNI_LIBS -lpmi"
+  GASNET_POPVAR(CPPFLAGS)
 
   # Look for gni_pub.h, allowing for the possibility we are not using the wrapper compiler
   GASNET_CHECK_CRAY_HEADER([gni_pub.h],[CRAY_GNI_HEADERS_INCLUDE_OPTS],[:],[
@@ -3800,9 +3891,9 @@ if test "$enabled_aries" = yes; then
 
   if test $have_aries = yes; then
     GASNET_SPLIT_LINKER_OPTS(GNI_LDFLAGS,GNI_LIBS)
-    GASNET_PUSHVAR(LDFLAGS,"$LDFLAGS ${GNI_LDFLAGS}")
-    GASNET_PUSHVAR(LIBS,"$LIBS ${GNI_LIBS}")
-    GASNET_PUSHVAR(CPPFLAGS,"$CPPFLAGS $GNI_CFLAGS")
+    GASNET_PUSHVAR(LDFLAGS,"$LDFLAGS ${GNI_LDFLAGS} $PMI_SPAWNER_LDFLAGS")
+    GASNET_PUSHVAR(LIBS,"$LIBS ${GNI_LIBS} $PMI_SPAWNER_LIBS")
+    GASNET_PUSHVAR(CPPFLAGS,"$CPPFLAGS $GNI_CFLAGS $PMI_SPAWNER_CFLAGS")
     GASNET_TRY_CACHE_LINK(for working Aries configuration, aries_works, [
       #include <stddef.h>
       #include <stdint.h>
@@ -4201,6 +4292,19 @@ AM_CONDITIONAL(HAVE_BOOTSTRAP_SSH, test "$have_fork" = yes)
 GASNET_IF_ENABLED_WITH_AUTO(pmi, [Enable/disable PMI support for job spawning],
   [enable_pmi=yes; force_pmi=yes], [enable_pmi=no], [enable_pmi=probe])
 
+# Check for header matching the selected lib
+# TODO: fragile if multiple PMI libs are installed
+AC_DEFUN([GASNET_PMI_SPAWNER_CFLAGS], [
+    for pmi_headers in "$PMI_HOME/include/slurm" "$PMI_HOME/include/portals4" "$PMI_HOME/include" 'no'; do
+      test -f "${pmi_headers}/$1" && break
+    done
+    if test "${pmi_headers}" = no; then
+      have_pmi=no
+    elif test "${pmi_headers}" != '/usr/include'; then
+      PMI_SPAWNER_CFLAGS="-I${pmi_headers}"
+    fi
+])
+
 have_pmi=no
 if test -n "$have_pmi_cray_h"; then
   with_pmi='no'
@@ -4250,12 +4354,37 @@ elif test "$enable_pmi" != 'no'; then
       AC_CHECK_FUNC(PMIx_Init, [have_pmi=yes])
     fi
     if test "$have_pmi" = 'yes'; then
+      GASNET_PMI_SPAWNER_CFLAGS([pmix.h])
+    fi
+    if test "$have_pmi" = 'yes'; then
+      AC_CHECK_HEADERS([stdbool.h])
+      # We support PMIx API versions 2 and 3
+      # At least some version 1 headers did not define PMIX_VERSION_MAJOR at all
+      GASNET_PUSHVAR(CFLAGS,"$PMI_SPAWNER_CFLAGS")
+      GASNET_TRY_CACHE_CHECK(for PMIx API version 2 or newer,PMIX_API,[
+        #include <sys/time.h>
+        #include <sys/types.h>
+        #include <unistd.h>
+        #if HAVE_STDBOOL_H
+          #include <stdbool.h>
+        #endif
+        #include <pmix.h>
+        #ifndef PMIX_VERSION_MAJOR
+          #error not defined
+        #elif PMIX_VERSION_MAJOR < 2
+          #error too old
+        #endif
+      ],[],[],[
+        GASNET_MSG_WARN([Ignoring libpmix implementing API version 1 because version 2 or newer is required.])
+        have_pmi=no
+      ])
+      GASNET_POPVAR(CFLAGS)
+    fi
+    if test "$have_pmi" = 'yes'; then
       use_pmix=yes
-      pmi_suffix='x'
       pmi_version=' (version=x)'
       AC_DEFINE(HAVE_PMIX_H)
       PMI_SPAWNER_LIBS="$LIBS"
-      AC_CHECK_HEADERS([stdbool.h])  # TODO: see if bool really works
     fi
     GASNET_POPVAR(LIBS)
   fi
@@ -4268,8 +4397,10 @@ elif test "$enable_pmi" != 'no'; then
       AC_CHECK_FUNC(PMI2_Init, [have_pmi=yes])
     fi
     if test "$have_pmi" = 'yes'; then
+      GASNET_PMI_SPAWNER_CFLAGS([pmi2.h])
+    fi
+    if test "$have_pmi" = 'yes'; then
       use_pmi2=yes
-      pmi_suffix='2'
       pmi_version=' (version=2)'
       AC_DEFINE(HAVE_PMI2_H)
       PMI_SPAWNER_LIBS="$LIBS"
@@ -4287,8 +4418,10 @@ elif test "$enable_pmi" != 'no'; then
       AC_CHECK_FUNC(PMI_Init, [have_pmi=yes])
     fi
     if test "$have_pmi" = 'yes'; then
+      GASNET_PMI_SPAWNER_CFLAGS([pmi.h])
+    fi
+    if test "$have_pmi" = 'yes'; then
       use_pmi1=yes
-      pmi_suffix=''
       pmi_version=' (version=1)'
       AC_DEFINE(HAVE_PMI_H)
       PMI_SPAWNER_LIBS="$LIBS"
@@ -4299,19 +4432,7 @@ elif test "$enable_pmi" != 'no'; then
   GASNET_POPVAR(LDFLAGS)
   GASNET_SPLIT_LINKER_OPTS(PMI_SPAWNER_LDFLAGS,PMI_SPAWNER_LIBS)
 
-  # Check for header matching the selected lib
-  # TODO: fragile if multiple PMI libs are installed
   # TODO: add a link test for a working PMI configuration
-  if test "$have_pmi" = yes; then
-    for pmi_headers in "$PMI_HOME/include/slurm" "$PMI_HOME/include/portals4" "$PMI_HOME/include" 'no'; do
-      test -f "${pmi_headers}/pmi${pmi_suffix}.h" && break
-    done
-    if test "${pmi_headers}" = no; then
-      have_pmi=no
-    elif test "${pmi_headers}" != '/usr/include'; then
-      PMI_SPAWNER_CFLAGS="-I${pmi_headers}"
-    fi
-  fi
 
   # Look for use of malloc/free in the corresponding PMIx header if any
   if test "$have_pmi" = yes; then
@@ -4331,7 +4452,7 @@ if test "$have_pmi" = yes; then
   # These have not bee seen outside of Cray PMI, but we can hope:
   GASNET_PUSHVAR(LDFLAGS,"$LDFLAGS $PMI_SPAWNER_LDFLAGS")
   GASNET_PUSHVAR(LIBS,"$LIBS $PMI_SPAWNER_LIBS")
-  AC_CHECK_FUNCS([PMI_Allgather PMI_Bcast])
+  AC_CHECK_FUNCS([PMI_Allgather PMI_Allgather_on_smp PMI_Bcast])
   GASNET_POPVAR(LIBS)
   GASNET_POPVAR(LDFLAGS)
 
@@ -4825,6 +4946,8 @@ GASNET_TRY_CACHE_LINK(for ptmalloc, malloc_is_ptmalloc,
     mallopt(M_MMAP_MAX, 0);
   ],[ AC_DEFINE(HAVE_PTMALLOC) ])
 
+AC_CHECK_FUNCS(posix_memalign)
+
 DEBUGMALLOC_VAR=GASNET_unused
 DEBUGMALLOC_VAL=0
 case "$target" in
@@ -5008,71 +5131,7 @@ dnl GASNET_TOOLSONLY_FALSE_BEGIN
 ########################################################################
 # Optional "third-party" libraries
 
-##                        BLCR SUPPORT
-have_blcr=no
-pushdef([GASNET_SUPPRESSHELP],1)
-GASNET_IF_ENABLED(blcr, [Enable BLCR for process checkpoints (default is no)], [enable_blcr=yes], [enable_blcr=no])
-if test "$enable_blcr" = 'yes'; then
-  case "$target_os" in
-    linux*) GASNET_MSG_WARN([BLCR integration support is officially deprecated. See other/blcr/README-blcr for details.])
-    ;;
-    *) GASNET_MSG_WARN([Ignoring --enable-blcr on a non-linux platform])
-       enable_blcr=no
-    ;;
-  esac
-fi
-if test "$enable_blcr" = 'yes'; then
-  if test "$with_pshm" != 'no'; then
-    GASNET_MSG_ERROR([User requested --enable-blcr but BLCR support and PSHM are not compatible.  Please configure with --disable-pshm or without --enable-blcr.])
-  fi
-
-  have_blcr=yes
-  GASNET_PACKAGE_HOME([BLCR],[BLCR library],[cr_checkpoint],[/usr/local],[include/libcr.h])
-  GASNET_PACKAGE_CFLAGS([BLCR],[],0)
-  GASNET_PACKAGE_LDFLAGS([BLCR],[cr],[],0)
-  BLCR_LIBS='-lcr'
-  GASNET_SPLIT_LINKER_OPTS(BLCR_LDFLAGS,BLCR_LIBS)
-
-  AC_MSG_CHECKING([for BLCR bin directory])
-  blcrbin="$BLCR_HOME/bin"
-  if test -x "${blcrbin}/cr_checkpoint"; then
-    : # OK
-  else
-    blcrbin='not found'
-    have_blcr=no
-  fi
-  AC_MSG_RESULT([$blcrbin])
-
-  if test "$have_blcr" = yes; then
-    # Try to compile and link a basic BLCR program
-    GASNET_PUSHVAR(CFLAGS,"$CFLAGS $BLCR_CFLAGS")
-    GASNET_PUSHVAR(LDFLAGS,"$LDFLAGS $BLCR_LDFLAGS")
-    GASNET_PUSHVAR(LIBS,"$LIBS $BLCR_LIBS")
-      GASNET_TRY_CACHE_LINK(for working BLCR configuration, blcr_works,
-        [#include <libcr.h>], [cr_client_id_t my_id = cr_init();],
-        [ : ], [ have_blcr=no; GASNET_ERR_SAVE() ] )
-    GASNET_POPVAR(CFLAGS)
-    GASNET_POPVAR(LDFLAGS)
-    GASNET_POPVAR(LIBS)
-  fi
-fi
-if test "$have_blcr" = yes; then
-    BLCR_BINDIR="${blcrbin}"
-    AC_DEFINE(GASNETI_BLCR_ENABLED)
-elif test "$enable_blcr" = 'yes'; then
-    GASNET_MSG_ERROR([User requested --enable-blcr but BLCR support could not be found.  Perhaps you need to pass --with-blcr-home=/path/to/blcr ?])
-else
-    BLCR_CFLAGS=
-    BLCR_LDFLAGS=
-    BLCR_LIBS=
-    BLCR_BINDIR=
-fi
-AC_SUBST(BLCR_CFLAGS)
-AC_SUBST(BLCR_LDFLAGS)
-AC_SUBST(BLCR_LIBS)
-AC_SUBST(BLCR_BINDIR)
-AM_CONDITIONAL(BLCR_ENABLED, test "$have_blcr" = "yes")
-popdef([GASNET_SUPPRESSHELP])
+## This section is currently empty
 
 dnl GASNET_TOOLSONLY_FALSE_END
 
@@ -5101,7 +5160,6 @@ cat >>$CONDUIT_LIST <<EOF
   Pthreads support:       $have_pthread
   Segment config:         $segconfig
   PSHM support:           $with_pshm
-  BLCR support:           $have_blcr
   Atomics support:        $atomics_config
   PMI support:            $have_pmi$pmi_version
 EOF
@@ -5160,8 +5218,7 @@ other/contrib/Makefile
 other/contrib/gasnet_trace
 other/firehose/Makefile
 other/firehose/firehose.mak
-other/blcr/Makefile
-other/blcr/blcr.mak
+other/valgrind/Makefile
 
  dnl Conduit Makefiles and scripts
 

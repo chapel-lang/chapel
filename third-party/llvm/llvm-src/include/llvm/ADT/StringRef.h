@@ -1,9 +1,8 @@
 //===- StringRef.h - Constant String Reference Wrapper ----------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -19,8 +18,17 @@
 #include <cstring>
 #include <limits>
 #include <string>
+#if __cplusplus > 201402L
+#include <string_view>
+#endif
 #include <type_traits>
 #include <utility>
+
+// Declare the __builtin_strlen intrinsic for MSVC so it can be used in
+// constexpr context.
+#if defined(_MSC_VER)
+extern "C" size_t __builtin_strlen(const char *);
+#endif
 
 namespace llvm {
 
@@ -46,9 +54,9 @@ namespace llvm {
   /// situations where the character data resides in some other buffer, whose
   /// lifetime extends past that of the StringRef. For this reason, it is not in
   /// general safe to store a StringRef.
-  class StringRef {
+  class LLVM_GSL_POINTER StringRef {
   public:
-    static const size_t npos = ~size_t(0);
+    static constexpr size_t npos = ~size_t(0);
 
     using iterator = const char *;
     using const_iterator = const char *;
@@ -63,10 +71,24 @@ namespace llvm {
 
     // Workaround memcmp issue with null pointers (undefined behavior)
     // by providing a specialized version
-    LLVM_ATTRIBUTE_ALWAYS_INLINE
     static int compareMemory(const char *Lhs, const char *Rhs, size_t Length) {
       if (Length == 0) { return 0; }
       return ::memcmp(Lhs,Rhs,Length);
+    }
+
+    // Constexpr version of std::strlen.
+    static constexpr size_t strLen(const char *Str) {
+#if __cplusplus > 201402L
+      return std::char_traits<char>::length(Str);
+#elif __has_builtin(__builtin_strlen) || defined(__GNUC__) || \
+    (defined(_MSC_VER) && _MSC_VER >= 1916)
+      return __builtin_strlen(Str);
+#else
+      const char *Begin = Str;
+      while (*Str != '\0')
+        ++Str;
+      return Str - Begin;
+#endif
     }
 
   public:
@@ -81,19 +103,22 @@ namespace llvm {
     StringRef(std::nullptr_t) = delete;
 
     /// Construct a string ref from a cstring.
-    LLVM_ATTRIBUTE_ALWAYS_INLINE
-    /*implicit*/ StringRef(const char *Str)
-        : Data(Str), Length(Str ? ::strlen(Str) : 0) {}
+    /*implicit*/ constexpr StringRef(const char *Str)
+        : Data(Str), Length(Str ? strLen(Str) : 0) {}
 
     /// Construct a string ref from a pointer and length.
-    LLVM_ATTRIBUTE_ALWAYS_INLINE
     /*implicit*/ constexpr StringRef(const char *data, size_t length)
         : Data(data), Length(length) {}
 
     /// Construct a string ref from an std::string.
-    LLVM_ATTRIBUTE_ALWAYS_INLINE
     /*implicit*/ StringRef(const std::string &Str)
       : Data(Str.data()), Length(Str.length()) {}
+
+#if __cplusplus > 201402L
+    /// Construct a string ref from an std::string_view.
+    /*implicit*/ constexpr StringRef(std::string_view Str)
+        : Data(Str.data()), Length(Str.size()) {}
+#endif
 
     static StringRef withNullAsEmpty(const char *data) {
       return StringRef(data ? data : "");
@@ -124,17 +149,14 @@ namespace llvm {
     /// data - Get a pointer to the start of the string (which may not be null
     /// terminated).
     LLVM_NODISCARD
-    LLVM_ATTRIBUTE_ALWAYS_INLINE
     const char *data() const { return Data; }
 
     /// empty - Check if the string is empty.
     LLVM_NODISCARD
-    LLVM_ATTRIBUTE_ALWAYS_INLINE
     bool empty() const { return Length == 0; }
 
     /// size - Get the string size.
     LLVM_NODISCARD
-    LLVM_ATTRIBUTE_ALWAYS_INLINE
     size_t size() const { return Length; }
 
     /// front - Get the first character in the string.
@@ -165,7 +187,6 @@ namespace llvm {
     /// equals - Check for string equality, this is more efficient than
     /// compare() when the relative ordering of inequal strings isn't needed.
     LLVM_NODISCARD
-    LLVM_ATTRIBUTE_ALWAYS_INLINE
     bool equals(StringRef RHS) const {
       return (Length == RHS.Length &&
               compareMemory(Data, RHS.Data, RHS.Length) == 0);
@@ -180,7 +201,6 @@ namespace llvm {
     /// compare - Compare two strings; the result is -1, 0, or 1 if this string
     /// is lexicographically less than, equal to, or greater than the \p RHS.
     LLVM_NODISCARD
-    LLVM_ATTRIBUTE_ALWAYS_INLINE
     int compare(StringRef RHS) const {
       // Check the prefix for a mismatch.
       if (int Res = compareMemory(Data, RHS.Data, std::min(Length, RHS.Length)))
@@ -245,17 +265,20 @@ namespace llvm {
     /// The declaration here is extra complicated so that `stringRef = {}`
     /// and `stringRef = "abc"` continue to select the move assignment operator.
     template <typename T>
-    typename std::enable_if<std::is_same<T, std::string>::value,
-                            StringRef>::type &
+    std::enable_if_t<std::is_same<T, std::string>::value, StringRef> &
     operator=(T &&Str) = delete;
 
     /// @}
     /// @name Type Conversions
     /// @{
 
-    operator std::string() const {
-      return str();
+    explicit operator std::string() const { return str(); }
+
+#if __cplusplus > 201402L
+    operator std::string_view() const {
+      return std::string_view(data(), size());
     }
+#endif
 
     /// @}
     /// @name String Predicates
@@ -263,7 +286,6 @@ namespace llvm {
 
     /// Check if this string starts with the given \p Prefix.
     LLVM_NODISCARD
-    LLVM_ATTRIBUTE_ALWAYS_INLINE
     bool startswith(StringRef Prefix) const {
       return Length >= Prefix.Length &&
              compareMemory(Data, Prefix.Data, Prefix.Length) == 0;
@@ -275,7 +297,6 @@ namespace llvm {
 
     /// Check if this string ends with the given \p Suffix.
     LLVM_NODISCARD
-    LLVM_ATTRIBUTE_ALWAYS_INLINE
     bool endswith(StringRef Suffix) const {
       return Length >= Suffix.Length &&
         compareMemory(end() - Suffix.Length, Suffix.Data, Suffix.Length) == 0;
@@ -294,7 +315,6 @@ namespace llvm {
     /// \returns The index of the first occurrence of \p C, or npos if not
     /// found.
     LLVM_NODISCARD
-    LLVM_ATTRIBUTE_ALWAYS_INLINE
     size_t find(char C, size_t From = 0) const {
       size_t FindBegin = std::min(From, Length);
       if (FindBegin < Length) { // Avoid calling memchr with nullptr.
@@ -317,7 +337,6 @@ namespace llvm {
     /// \returns The index of the first character satisfying \p F starting from
     /// \p From, or npos if not found.
     LLVM_NODISCARD
-    LLVM_ATTRIBUTE_ALWAYS_INLINE
     size_t find_if(function_ref<bool(char)> F, size_t From = 0) const {
       StringRef S = drop_front(From);
       while (!S.empty()) {
@@ -333,7 +352,6 @@ namespace llvm {
     /// \returns The index of the first character not satisfying \p F starting
     /// from \p From, or npos if not found.
     LLVM_NODISCARD
-    LLVM_ATTRIBUTE_ALWAYS_INLINE
     size_t find_if_not(function_ref<bool(char)> F, size_t From = 0) const {
       return find_if([F](char c) { return !F(c); }, From);
     }
@@ -444,19 +462,16 @@ namespace llvm {
     /// Return true if the given string is a substring of *this, and false
     /// otherwise.
     LLVM_NODISCARD
-    LLVM_ATTRIBUTE_ALWAYS_INLINE
     bool contains(StringRef Other) const { return find(Other) != npos; }
 
     /// Return true if the given character is contained in *this, and false
     /// otherwise.
     LLVM_NODISCARD
-    LLVM_ATTRIBUTE_ALWAYS_INLINE
     bool contains(char C) const { return find_first_of(C) != npos; }
 
     /// Return true if the given string is a substring of *this, and false
     /// otherwise.
     LLVM_NODISCARD
-    LLVM_ATTRIBUTE_ALWAYS_INLINE
     bool contains_lower(StringRef Other) const {
       return find_lower(Other) != npos;
     }
@@ -464,7 +479,6 @@ namespace llvm {
     /// Return true if the given character is contained in *this, and false
     /// otherwise.
     LLVM_NODISCARD
-    LLVM_ATTRIBUTE_ALWAYS_INLINE
     bool contains_lower(char C) const { return find_lower(C) != npos; }
 
     /// @}
@@ -493,7 +507,7 @@ namespace llvm {
     /// this returns true to signify the error.  The string is considered
     /// erroneous if empty or if it overflows T.
     template <typename T>
-    typename std::enable_if<std::numeric_limits<T>::is_signed, bool>::type
+    std::enable_if_t<std::numeric_limits<T>::is_signed, bool>
     getAsInteger(unsigned Radix, T &Result) const {
       long long LLVal;
       if (getAsSignedInteger(*this, Radix, LLVal) ||
@@ -504,7 +518,7 @@ namespace llvm {
     }
 
     template <typename T>
-    typename std::enable_if<!std::numeric_limits<T>::is_signed, bool>::type
+    std::enable_if_t<!std::numeric_limits<T>::is_signed, bool>
     getAsInteger(unsigned Radix, T &Result) const {
       unsigned long long ULLVal;
       // The additional cast to unsigned long long is required to avoid the
@@ -527,7 +541,7 @@ namespace llvm {
     /// The portion of the string representing the discovered numeric value
     /// is removed from the beginning of the string.
     template <typename T>
-    typename std::enable_if<std::numeric_limits<T>::is_signed, bool>::type
+    std::enable_if_t<std::numeric_limits<T>::is_signed, bool>
     consumeInteger(unsigned Radix, T &Result) {
       long long LLVal;
       if (consumeSignedInteger(*this, Radix, LLVal) ||
@@ -538,7 +552,7 @@ namespace llvm {
     }
 
     template <typename T>
-    typename std::enable_if<!std::numeric_limits<T>::is_signed, bool>::type
+    std::enable_if_t<!std::numeric_limits<T>::is_signed, bool>
     consumeInteger(unsigned Radix, T &Result) {
       unsigned long long ULLVal;
       if (consumeUnsignedInteger(*this, Radix, ULLVal) ||
@@ -565,7 +579,8 @@ namespace llvm {
     ///
     /// If \p AllowInexact is false, the function will fail if the string
     /// cannot be represented exactly.  Otherwise, the function only fails
-    /// in case of an overflow or underflow.
+    /// in case of an overflow or underflow, or an invalid floating point
+    /// representation.
     bool getAsDouble(double &Result, bool AllowInexact = true) const;
 
     /// @}
@@ -594,7 +609,6 @@ namespace llvm {
     /// exceeds the number of characters remaining in the string, the string
     /// suffix (starting with \p Start) will be returned.
     LLVM_NODISCARD
-    LLVM_ATTRIBUTE_ALWAYS_INLINE
     StringRef substr(size_t Start, size_t N = npos) const {
       Start = std::min(Start, Length);
       return StringRef(Data + Start, std::min(N, Length - Start));
@@ -604,7 +618,6 @@ namespace llvm {
     /// elements remaining.  If \p N is greater than the length of the
     /// string, the entire string is returned.
     LLVM_NODISCARD
-    LLVM_ATTRIBUTE_ALWAYS_INLINE
     StringRef take_front(size_t N = 1) const {
       if (N >= size())
         return *this;
@@ -615,7 +628,6 @@ namespace llvm {
     /// elements remaining.  If \p N is greater than the length of the
     /// string, the entire string is returned.
     LLVM_NODISCARD
-    LLVM_ATTRIBUTE_ALWAYS_INLINE
     StringRef take_back(size_t N = 1) const {
       if (N >= size())
         return *this;
@@ -625,7 +637,6 @@ namespace llvm {
     /// Return the longest prefix of 'this' such that every character
     /// in the prefix satisfies the given predicate.
     LLVM_NODISCARD
-    LLVM_ATTRIBUTE_ALWAYS_INLINE
     StringRef take_while(function_ref<bool(char)> F) const {
       return substr(0, find_if_not(F));
     }
@@ -633,7 +644,6 @@ namespace llvm {
     /// Return the longest prefix of 'this' such that no character in
     /// the prefix satisfies the given predicate.
     LLVM_NODISCARD
-    LLVM_ATTRIBUTE_ALWAYS_INLINE
     StringRef take_until(function_ref<bool(char)> F) const {
       return substr(0, find_if(F));
     }
@@ -641,7 +651,6 @@ namespace llvm {
     /// Return a StringRef equal to 'this' but with the first \p N elements
     /// dropped.
     LLVM_NODISCARD
-    LLVM_ATTRIBUTE_ALWAYS_INLINE
     StringRef drop_front(size_t N = 1) const {
       assert(size() >= N && "Dropping more elements than exist");
       return substr(N);
@@ -650,7 +659,6 @@ namespace llvm {
     /// Return a StringRef equal to 'this' but with the last \p N elements
     /// dropped.
     LLVM_NODISCARD
-    LLVM_ATTRIBUTE_ALWAYS_INLINE
     StringRef drop_back(size_t N = 1) const {
       assert(size() >= N && "Dropping more elements than exist");
       return substr(0, size()-N);
@@ -659,7 +667,6 @@ namespace llvm {
     /// Return a StringRef equal to 'this', but with all characters satisfying
     /// the given predicate dropped from the beginning of the string.
     LLVM_NODISCARD
-    LLVM_ATTRIBUTE_ALWAYS_INLINE
     StringRef drop_while(function_ref<bool(char)> F) const {
       return substr(find_if_not(F));
     }
@@ -667,14 +674,12 @@ namespace llvm {
     /// Return a StringRef equal to 'this', but with all characters not
     /// satisfying the given predicate dropped from the beginning of the string.
     LLVM_NODISCARD
-    LLVM_ATTRIBUTE_ALWAYS_INLINE
     StringRef drop_until(function_ref<bool(char)> F) const {
       return substr(find_if(F));
     }
 
     /// Returns true if this StringRef has the given prefix and removes that
     /// prefix.
-    LLVM_ATTRIBUTE_ALWAYS_INLINE
     bool consume_front(StringRef Prefix) {
       if (!startswith(Prefix))
         return false;
@@ -685,7 +690,6 @@ namespace llvm {
 
     /// Returns true if this StringRef has the given suffix and removes that
     /// suffix.
-    LLVM_ATTRIBUTE_ALWAYS_INLINE
     bool consume_back(StringRef Suffix) {
       if (!endswith(Suffix))
         return false;
@@ -706,7 +710,6 @@ namespace llvm {
     /// will be returned. If this is less than \p Start, an empty string will
     /// be returned.
     LLVM_NODISCARD
-    LLVM_ATTRIBUTE_ALWAYS_INLINE
     StringRef slice(size_t Start, size_t End) const {
       Start = std::min(Start, Length);
       End = std::min(std::max(Start, End), Length);
@@ -894,12 +897,10 @@ namespace llvm {
   /// @name StringRef Comparison Operators
   /// @{
 
-  LLVM_ATTRIBUTE_ALWAYS_INLINE
   inline bool operator==(StringRef LHS, StringRef RHS) {
     return LHS.equals(RHS);
   }
 
-  LLVM_ATTRIBUTE_ALWAYS_INLINE
   inline bool operator!=(StringRef LHS, StringRef RHS) { return !(LHS == RHS); }
 
   inline bool operator<(StringRef LHS, StringRef RHS) {
@@ -927,10 +928,6 @@ namespace llvm {
   /// Compute a hash_code for a StringRef.
   LLVM_NODISCARD
   hash_code hash_value(StringRef S);
-
-  // StringRefs can be treated like a POD type.
-  template <typename T> struct isPodLike;
-  template <> struct isPodLike<StringRef> { static const bool value = true; };
 
 } // end namespace llvm
 

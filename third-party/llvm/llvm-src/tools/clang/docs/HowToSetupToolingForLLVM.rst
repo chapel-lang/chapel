@@ -23,7 +23,7 @@ Setup Clang Tooling Using CMake and Make
 ========================================
 
 If you intend to use make to build LLVM, you should have CMake 2.8.6 or
-later installed (can be found `here <http://cmake.org>`_).
+later installed (can be found `here <https://cmake.org>`_).
 
 First, you need to generate Makefiles for LLVM with CMake. You need to
 make a build directory and run CMake from it:
@@ -37,7 +37,7 @@ make a build directory and run CMake from it:
 If you want to use clang instead of GCC, you can add
 ``-DCMAKE_C_COMPILER=/path/to/clang -DCMAKE_CXX_COMPILER=/path/to/clang++``.
 You can also use ``ccmake``, which provides a curses interface to configure
-CMake variables for lazy people.
+CMake variables.
 
 As a result, the new ``compile_commands.json`` file should appear in the
 current directory. You should link it to the LLVM source tree so that
@@ -140,7 +140,7 @@ Examples:
       return new clang::ASTConsumer();
   }
 
-(Experimental) Using Ninja Build System
+Using Ninja Build System
 =======================================
 
 Optionally you can use the `Ninja <https://github.com/martine/ninja>`_
@@ -197,4 +197,3 @@ Now you are ready to build and test LLVM using Ninja:
   $ ninja check-all
 
 Other target names can be used in the same way as with make.
-

@@ -1,11 +1,11 @@
 const-checking.fields.chpl:36: In function 'main':
-const-checking.fields.chpl:38: error: illegal lvalue in assignment
-const-checking.fields.chpl:40: error: illegal lvalue in assignment
-const-checking.fields.chpl:42: error: illegal lvalue in assignment
-const-checking.fields.chpl:44: error: illegal lvalue in assignment
-const-checking.fields.chpl:47: error: illegal lvalue in assignment
-const-checking.fields.chpl:48: error: illegal lvalue in assignment
-const-checking.fields.chpl:49: error: illegal lvalue in assignment
-const-checking.fields.chpl:51: error: illegal lvalue in assignment
-const-checking.fields.chpl:52: error: illegal lvalue in assignment
-const-checking.fields.chpl:53: error: illegal lvalue in assignment
+const-checking.fields.chpl:38: error: cannot assign to const variable
+const-checking.fields.chpl:40: error: cannot assign to const variable
+const-checking.fields.chpl:42: error: cannot assign to const variable
+const-checking.fields.chpl:44: error: cannot assign to const variable
+const-checking.fields.chpl:47: error: cannot assign to const variable
+const-checking.fields.chpl:48: error: cannot assign to const variable
+const-checking.fields.chpl:49: error: cannot assign to const variable
+const-checking.fields.chpl:51: error: cannot assign to const variable
+const-checking.fields.chpl:52: error: cannot assign to const variable
+const-checking.fields.chpl:53: error: cannot assign to const variable

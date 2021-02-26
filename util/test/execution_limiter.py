@@ -3,13 +3,14 @@ running chpl executables """
 
 import getpass
 import os
+import sys
 import tempfile
 import py3_compat
 
 try:
-    import activate_chpl_test_venv
     import filelock
 except ImportError:
+    sys.stdout.write('[Warning: {0}]\n'.format("could not import filelock"))
     pass
 
 class NoLock():

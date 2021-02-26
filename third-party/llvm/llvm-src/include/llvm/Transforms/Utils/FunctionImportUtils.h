@@ -1,9 +1,8 @@
 //===- FunctionImportUtils.h - Importing support utilities -----*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -40,6 +39,19 @@ class FunctionImportGlobalProcessing {
   /// as part of a different backend compilation process.
   bool HasExportedFunctions = false;
 
+  /// Set to true (only applicatable to ELF -fpic) if dso_local should be
+  /// dropped for a declaration.
+  ///
+  /// On ELF, the assembler is conservative and assumes a global default
+  /// visibility symbol can be interposable. No direct access relocation is
+  /// allowed, if the definition is not in the translation unit, even if the
+  /// definition is available in the linkage unit. Thus we need to clear
+  /// dso_local to disable direct access.
+  ///
+  /// This flag should not be set for -fno-pic or -fpie, which would
+  /// unnecessarily disable direct access.
+  bool ClearDSOLocalOnDeclarations;
+
   /// Set of llvm.*used values, in order to validate that we don't try
   /// to promote any non-renamable values.
   SmallPtrSet<GlobalValue *, 8> Used;
@@ -50,7 +62,7 @@ class FunctionImportGlobalProcessing {
   DenseMap<const Comdat *, Comdat *> RenamedComdats;
 
   /// Check if we should promote the given local value to global scope.
-  bool shouldPromoteLocalToGlobal(const GlobalValue *SGV);
+  bool shouldPromoteLocalToGlobal(const GlobalValue *SGV, ValueInfo VI);
 
 #ifndef NDEBUG
   /// Check if the given value is a local that can't be renamed (promoted).
@@ -68,11 +80,9 @@ class FunctionImportGlobalProcessing {
   /// import SGV as a definition, otherwise import as a declaration.
   bool doImportAsDefinition(const GlobalValue *SGV);
 
-  /// Get the name for SGV that should be used in the linked destination
-  /// module. Specifically, this handles the case where we need to rename
-  /// a local that is being promoted to global scope, which it will always
-  /// do when \p DoPromote is true (or when importing a local).
-  std::string getName(const GlobalValue *SGV, bool DoPromote);
+  /// Get the name for a local SGV that should be promoted and renamed to global
+  /// scope in the linked destination module.
+  std::string getPromotedName(const GlobalValue *SGV);
 
   /// Process globals so that they can be used in ThinLTO. This includes
   /// promoting local variables so that they can be reference externally by
@@ -88,10 +98,11 @@ class FunctionImportGlobalProcessing {
   GlobalValue::LinkageTypes getLinkage(const GlobalValue *SGV, bool DoPromote);
 
 public:
-  FunctionImportGlobalProcessing(
-      Module &M, const ModuleSummaryIndex &Index,
-      SetVector<GlobalValue *> *GlobalsToImport = nullptr)
-      : M(M), ImportIndex(Index), GlobalsToImport(GlobalsToImport) {
+  FunctionImportGlobalProcessing(Module &M, const ModuleSummaryIndex &Index,
+                                 SetVector<GlobalValue *> *GlobalsToImport,
+                                 bool ClearDSOLocalOnDeclarations)
+      : M(M), ImportIndex(Index), GlobalsToImport(GlobalsToImport),
+        ClearDSOLocalOnDeclarations(ClearDSOLocalOnDeclarations) {
     // If we have a ModuleSummaryIndex but no function to import,
     // then this is the primary module being compiled in a ThinLTO
     // backend compilation, and we need to see if it has functions that
@@ -108,15 +119,13 @@ public:
   }
 
   bool run();
-
-  static bool doImportAsDefinition(const GlobalValue *SGV,
-                                   SetVector<GlobalValue *> *GlobalsToImport);
 };
 
 /// Perform in-place global value handling on the given Module for
 /// exported local functions renamed and promoted for ThinLTO.
 bool renameModuleForThinLTO(
     Module &M, const ModuleSummaryIndex &Index,
+    bool ClearDSOLocalOnDeclarations,
     SetVector<GlobalValue *> *GlobalsToImport = nullptr);
 
 /// Compute synthetic function entry counts.

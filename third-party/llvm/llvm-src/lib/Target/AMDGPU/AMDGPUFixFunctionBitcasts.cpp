@@ -1,9 +1,8 @@
 //===-- AMDGPUFixFunctionBitcasts.cpp - Fix function bitcasts -------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 ///
@@ -16,6 +15,7 @@
 
 #include "AMDGPU.h"
 #include "llvm/IR/InstVisitor.h"
+#include "llvm/Pass.h"
 #include "llvm/Transforms/Utils/CallPromotionUtils.h"
 
 using namespace llvm;
@@ -32,12 +32,13 @@ class AMDGPUFixFunctionBitcasts final
   bool Modified;
 
 public:
-  void visitCallSite(CallSite CS) {
-    if (CS.getCalledFunction())
+  void visitCallBase(CallBase &CB) {
+    if (CB.getCalledFunction())
       return;
-    auto Callee = dyn_cast<Function>(CS.getCalledValue()->stripPointerCasts());
-    if (Callee && isLegalToPromote(CS, Callee)) {
-      promoteCall(CS, Callee);
+    auto *Callee =
+        dyn_cast<Function>(CB.getCalledOperand()->stripPointerCasts());
+    if (Callee && isLegalToPromote(CB, Callee)) {
+      promoteCall(CB, Callee);
       Modified = true;
     }
   }

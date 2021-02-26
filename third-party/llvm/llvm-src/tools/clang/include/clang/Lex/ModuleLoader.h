@@ -1,9 +1,8 @@
 //===- ModuleLoader.h - Module Loader Interface -----------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -45,7 +44,10 @@ public:
     MissingExpected,
 
     // The module exists but cannot be imported due to a configuration mismatch.
-    ConfigMismatch
+    ConfigMismatch,
+
+    // We failed to load the module, but we shouldn't cache the failure.
+    OtherUncachedFailure,
   };
   llvm::PointerIntPair<Module *, 2, LoadResultKind> Storage;
 
@@ -54,6 +56,10 @@ public:
   ModuleLoadResult(LoadResultKind Kind) : Storage(nullptr, Kind) {}
 
   operator Module *() const { return Storage.getPointer(); }
+
+  /// Determines whether this is a normal return, whether or not loading the
+  /// module was successful.
+  bool isNormal() const { return Storage.getInt() == Normal; }
 
   /// Determines whether the module, which failed to load, was
   /// actually a submodule that we expected to see (based on implying the
@@ -94,7 +100,8 @@ public:
   /// Attempt to load the given module.
   ///
   /// This routine attempts to load the module described by the given
-  /// parameters.
+  /// parameters.  If there is a module cache, this may implicitly compile the
+  /// module before loading it.
   ///
   /// \param ImportLoc The location of the 'import' keyword.
   ///
@@ -115,15 +122,15 @@ public:
                                       Module::NameVisibilityKind Visibility,
                                       bool IsInclusionDirective) = 0;
 
-  /// Attempt to load the given module from the specified source buffer. Does
-  /// not make any submodule visible; for that, use loadModule or
-  /// makeModuleVisible.
+  /// Attempt to create the given module from the specified source buffer.
+  /// Does not load the module or make any submodule visible; for that, use
+  /// loadModule and makeModuleVisible.
   ///
-  /// \param Loc The location at which the module was loaded.
-  /// \param ModuleName The name of the module to build.
+  /// \param Loc The location at which to create the module.
+  /// \param ModuleName The name of the module to create.
   /// \param Source The source of the module: a (preprocessed) module map.
-  virtual void loadModuleFromSource(SourceLocation Loc, StringRef ModuleName,
-                                    StringRef Source) = 0;
+  virtual void createModuleFromSource(SourceLocation Loc, StringRef ModuleName,
+                                      StringRef Source) = 0;
 
   /// Make the given module visible.
   virtual void makeModuleVisible(Module *Mod,
@@ -153,7 +160,7 @@ public:
   bool HadFatalFailure = false;
 };
 
-/// A module loader that doesn't know how to load modules.
+/// A module loader that doesn't know how to create or load modules.
 class TrivialModuleLoader : public ModuleLoader {
 public:
   ModuleLoadResult loadModule(SourceLocation ImportLoc, ModuleIdPath Path,
@@ -162,8 +169,8 @@ public:
     return {};
   }
 
-  void loadModuleFromSource(SourceLocation ImportLoc, StringRef ModuleName,
-                            StringRef Source) override {}
+  void createModuleFromSource(SourceLocation ImportLoc, StringRef ModuleName,
+                              StringRef Source) override {}
 
   void makeModuleVisible(Module *Mod, Module::NameVisibilityKind Visibility,
                          SourceLocation ImportLoc) override {}

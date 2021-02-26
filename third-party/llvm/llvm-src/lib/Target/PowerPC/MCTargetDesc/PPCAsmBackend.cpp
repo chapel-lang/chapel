@@ -1,9 +1,8 @@
 //===-- PPCAsmBackend.cpp - PPC Assembler Backend -------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -40,11 +39,14 @@ static uint64_t adjustFixupValue(unsigned Kind, uint64_t Value) {
     return Value & 0xfffc;
   case PPC::fixup_ppc_br24:
   case PPC::fixup_ppc_br24abs:
+  case PPC::fixup_ppc_br24_notoc:
     return Value & 0x3fffffc;
   case PPC::fixup_ppc_half16:
     return Value & 0xffff;
   case PPC::fixup_ppc_half16ds:
     return Value & 0xfffc;
+  case PPC::fixup_ppc_pcrel34:
+    return Value & 0x3ffffffff;
   }
 }
 
@@ -63,7 +65,9 @@ static unsigned getFixupKindNumBytes(unsigned Kind) {
   case PPC::fixup_ppc_brcond14abs:
   case PPC::fixup_ppc_br24:
   case PPC::fixup_ppc_br24abs:
+  case PPC::fixup_ppc_br24_notoc:
     return 4;
+  case PPC::fixup_ppc_pcrel34:
   case FK_Data_8:
     return 8;
   case PPC::fixup_ppc_nofixup:
@@ -74,10 +78,12 @@ static unsigned getFixupKindNumBytes(unsigned Kind) {
 namespace {
 
 class PPCAsmBackend : public MCAsmBackend {
-  const Target &TheTarget;
+protected:
+  Triple TT;
 public:
-  PPCAsmBackend(const Target &T, support::endianness Endian)
-      : MCAsmBackend(Endian), TheTarget(T) {}
+  PPCAsmBackend(const Target &T, const Triple &TT)
+      : MCAsmBackend(TT.isLittleEndian() ? support::little : support::big),
+        TT(TT) {}
 
   unsigned getNumFixupKinds() const override {
     return PPC::NumTargetFixupKinds;
@@ -87,23 +93,32 @@ public:
     const static MCFixupKindInfo InfosBE[PPC::NumTargetFixupKinds] = {
       // name                    offset  bits  flags
       { "fixup_ppc_br24",        6,      24,   MCFixupKindInfo::FKF_IsPCRel },
+      { "fixup_ppc_br24_notoc",  6,      24,   MCFixupKindInfo::FKF_IsPCRel },
       { "fixup_ppc_brcond14",    16,     14,   MCFixupKindInfo::FKF_IsPCRel },
       { "fixup_ppc_br24abs",     6,      24,   0 },
       { "fixup_ppc_brcond14abs", 16,     14,   0 },
       { "fixup_ppc_half16",       0,     16,   0 },
       { "fixup_ppc_half16ds",     0,     14,   0 },
+      { "fixup_ppc_pcrel34",     0,      34,   MCFixupKindInfo::FKF_IsPCRel },
       { "fixup_ppc_nofixup",      0,      0,   0 }
     };
     const static MCFixupKindInfo InfosLE[PPC::NumTargetFixupKinds] = {
       // name                    offset  bits  flags
       { "fixup_ppc_br24",        2,      24,   MCFixupKindInfo::FKF_IsPCRel },
+      { "fixup_ppc_br24_notoc",  2,      24,   MCFixupKindInfo::FKF_IsPCRel },
       { "fixup_ppc_brcond14",    2,      14,   MCFixupKindInfo::FKF_IsPCRel },
       { "fixup_ppc_br24abs",     2,      24,   0 },
       { "fixup_ppc_brcond14abs", 2,      14,   0 },
       { "fixup_ppc_half16",      0,      16,   0 },
       { "fixup_ppc_half16ds",    2,      14,   0 },
+      { "fixup_ppc_pcrel34",     0,      34,   MCFixupKindInfo::FKF_IsPCRel },
       { "fixup_ppc_nofixup",     0,       0,   0 }
     };
+
+    // Fixup kinds from .reloc directive are like R_PPC_NONE/R_PPC64_NONE. They
+    // do not require any extra processing.
+    if (Kind >= FirstLiteralRelocationKind)
+      return MCAsmBackend::getFixupKindInfo(FK_NONE);
 
     if (Kind < FirstTargetFixupKind)
       return MCAsmBackend::getFixupKindInfo(Kind);
@@ -119,11 +134,14 @@ public:
                   const MCValue &Target, MutableArrayRef<char> Data,
                   uint64_t Value, bool IsResolved,
                   const MCSubtargetInfo *STI) const override {
-    Value = adjustFixupValue(Fixup.getKind(), Value);
+    MCFixupKind Kind = Fixup.getKind();
+    if (Kind >= FirstLiteralRelocationKind)
+      return;
+    Value = adjustFixupValue(Kind, Value);
     if (!Value) return;           // Doesn't change encoding.
 
     unsigned Offset = Fixup.getOffset();
-    unsigned NumBytes = getFixupKindNumBytes(Fixup.getKind());
+    unsigned NumBytes = getFixupKindNumBytes(Kind);
 
     // For each byte of the fragment that the fixup touches, mask in the bits
     // from the fixup value. The Value has been "split up" into the appropriate
@@ -136,11 +154,13 @@ public:
 
   bool shouldForceRelocation(const MCAssembler &Asm, const MCFixup &Fixup,
                              const MCValue &Target) override {
-    switch ((PPC::Fixups)Fixup.getKind()) {
+    MCFixupKind Kind = Fixup.getKind();
+    switch ((unsigned)Kind) {
     default:
-      return false;
+      return Kind >= FirstLiteralRelocationKind;
     case PPC::fixup_ppc_br24:
     case PPC::fixup_ppc_br24abs:
+    case PPC::fixup_ppc_br24_notoc:
       // If the target symbol has a local entry point we must not attempt
       // to resolve the fixup directly.  Emit a relocation and leave
       // resolution of the final target address to the linker.
@@ -172,8 +192,8 @@ public:
     llvm_unreachable("relaxInstruction() unimplemented");
   }
 
-  void relaxInstruction(const MCInst &Inst, const MCSubtargetInfo &STI,
-                        MCInst &Res) const override {
+  void relaxInstruction(MCInst &Inst,
+                        const MCSubtargetInfo &STI) const override {
     // FIXME.
     llvm_unreachable("relaxInstruction() unimplemented");
   }
@@ -187,59 +207,69 @@ public:
 
     return true;
   }
-
-  unsigned getPointerSize() const {
-    StringRef Name = TheTarget.getName();
-    if (Name == "ppc64" || Name == "ppc64le") return 8;
-    assert(Name == "ppc32" && "Unknown target name!");
-    return 4;
-  }
 };
 } // end anonymous namespace
 
 
 // FIXME: This should be in a separate file.
 namespace {
-  class DarwinPPCAsmBackend : public PPCAsmBackend {
-  public:
-    DarwinPPCAsmBackend(const Target &T) : PPCAsmBackend(T, support::big) { }
 
-    std::unique_ptr<MCObjectTargetWriter>
-    createObjectTargetWriter() const override {
-      bool is64 = getPointerSize() == 8;
-      return createPPCMachObjectWriter(
-          /*Is64Bit=*/is64,
-          (is64 ? MachO::CPU_TYPE_POWERPC64 : MachO::CPU_TYPE_POWERPC),
-          MachO::CPU_SUBTYPE_POWERPC_ALL);
-    }
-  };
+class ELFPPCAsmBackend : public PPCAsmBackend {
+public:
+  ELFPPCAsmBackend(const Target &T, const Triple &TT) : PPCAsmBackend(T, TT) {}
 
-  class ELFPPCAsmBackend : public PPCAsmBackend {
-    uint8_t OSABI;
-  public:
-    ELFPPCAsmBackend(const Target &T, support::endianness Endian,
-                     uint8_t OSABI)
-        : PPCAsmBackend(T, Endian), OSABI(OSABI) {}
+  std::unique_ptr<MCObjectTargetWriter>
+  createObjectTargetWriter() const override {
+    uint8_t OSABI = MCELFObjectTargetWriter::getOSABI(TT.getOS());
+    bool Is64 = TT.isPPC64();
+    return createPPCELFObjectWriter(Is64, OSABI);
+  }
 
-    std::unique_ptr<MCObjectTargetWriter>
-    createObjectTargetWriter() const override {
-      bool is64 = getPointerSize() == 8;
-      return createPPCELFObjectWriter(is64, OSABI);
-    }
-  };
+  Optional<MCFixupKind> getFixupKind(StringRef Name) const override;
+};
+
+class XCOFFPPCAsmBackend : public PPCAsmBackend {
+public:
+  XCOFFPPCAsmBackend(const Target &T, const Triple &TT)
+      : PPCAsmBackend(T, TT) {}
+
+  std::unique_ptr<MCObjectTargetWriter>
+  createObjectTargetWriter() const override {
+    return createPPCXCOFFObjectWriter(TT.isArch64Bit());
+  }
+};
 
 } // end anonymous namespace
+
+Optional<MCFixupKind> ELFPPCAsmBackend::getFixupKind(StringRef Name) const {
+  if (TT.isOSBinFormatELF()) {
+    unsigned Type;
+    if (TT.isPPC64()) {
+      Type = llvm::StringSwitch<unsigned>(Name)
+#define ELF_RELOC(X, Y) .Case(#X, Y)
+#include "llvm/BinaryFormat/ELFRelocs/PowerPC64.def"
+#undef ELF_RELOC
+                 .Default(-1u);
+    } else {
+      Type = llvm::StringSwitch<unsigned>(Name)
+#define ELF_RELOC(X, Y) .Case(#X, Y)
+#include "llvm/BinaryFormat/ELFRelocs/PowerPC.def"
+#undef ELF_RELOC
+                 .Default(-1u);
+    }
+    if (Type != -1u)
+      return static_cast<MCFixupKind>(FirstLiteralRelocationKind + Type);
+  }
+  return None;
+}
 
 MCAsmBackend *llvm::createPPCAsmBackend(const Target &T,
                                         const MCSubtargetInfo &STI,
                                         const MCRegisterInfo &MRI,
                                         const MCTargetOptions &Options) {
   const Triple &TT = STI.getTargetTriple();
-  if (TT.isOSDarwin())
-    return new DarwinPPCAsmBackend(T);
+  if (TT.isOSBinFormatXCOFF())
+    return new XCOFFPPCAsmBackend(T, TT);
 
-  uint8_t OSABI = MCELFObjectTargetWriter::getOSABI(TT.getOS());
-  bool IsLittleEndian = TT.getArch() == Triple::ppc64le;
-  return new ELFPPCAsmBackend(
-      T, IsLittleEndian ? support::little : support::big, OSABI);
+  return new ELFPPCAsmBackend(T, TT);
 }

@@ -1,14 +1,12 @@
 //=======- CaptureTrackingTest.cpp - Unit test for the Capture Tracking ---===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
 #include "llvm/Analysis/CaptureTracking.h"
-#include "llvm/Analysis/OrderedBasicBlock.h"
 #include "llvm/AsmParser/Parser.h"
 #include "llvm/IR/Dominators.h"
 #include "llvm/IR/Instructions.h"
@@ -63,14 +61,13 @@ TEST(CaptureTracking, MaxUsesToExplore) {
 
     BasicBlock *EntryBB = &F->getEntryBlock();
     DominatorTree DT(*F);
-    OrderedBasicBlock OBB(EntryBB);
 
     Instruction *Ret = EntryBB->getTerminator();
     ASSERT_TRUE(isa<ReturnInst>(Ret));
-    ASSERT_FALSE(PointerMayBeCapturedBefore(Arg, true, true, Ret, &DT, false, 
-                                            &OBB, FalseMaxUsesLimit));
+    ASSERT_FALSE(PointerMayBeCapturedBefore(Arg, true, true, Ret, &DT, false,
+                                            FalseMaxUsesLimit));
     ASSERT_TRUE(PointerMayBeCapturedBefore(Arg, true, true, Ret, &DT, false,
-                                           &OBB, TrueMaxUsesLimit));
+                                           TrueMaxUsesLimit));
   };
 
   Test("test_few_uses", 6, 4);

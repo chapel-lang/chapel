@@ -1,9 +1,8 @@
 //===- SystemUtils.cpp - Utilities for low-level system tasks -------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -16,15 +15,12 @@
 #include "llvm/Support/raw_ostream.h"
 using namespace llvm;
 
-bool llvm::CheckBitcodeOutputToConsole(raw_ostream &stream_to_check,
-                                       bool print_warning) {
+bool llvm::CheckBitcodeOutputToConsole(raw_ostream &stream_to_check) {
   if (stream_to_check.is_displayed()) {
-    if (print_warning) {
-      errs() << "WARNING: You're attempting to print out a bitcode file.\n"
-                "This is inadvisable as it may cause display problems. If\n"
-                "you REALLY want to taste LLVM bitcode first-hand, you\n"
-                "can force output with the `-f' option.\n\n";
-    }
+    errs() << "WARNING: You're attempting to print out a bitcode file.\n"
+              "This is inadvisable as it may cause display problems. If\n"
+              "you REALLY want to taste LLVM bitcode first-hand, you\n"
+              "can force output with the `-f' option.\n\n";
     return true;
   }
   return false;

@@ -1,1 +1,1 @@
-constArray.chpl:3: error: illegal lvalue in assignment
+constArray.chpl:3: error: cannot assign to const variable

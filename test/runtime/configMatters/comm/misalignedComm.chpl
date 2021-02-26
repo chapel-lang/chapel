@@ -8,7 +8,8 @@
 
 use BlockDist;
 
-config var n = 600_000_001;
+// without this we are allocating way too much memory for VMs
+config var n = if CHPL_COMM=="ugni" then 600_000_001 else 60_000_001;
 
 var d1 = {0..#n} dmapped Block({0..#n});
 var a1: [d1] bool;

@@ -1,0 +1,3 @@
+COMPOPTS <= --baseline
+CHPL_TEST_VGRND_EXE == on
+

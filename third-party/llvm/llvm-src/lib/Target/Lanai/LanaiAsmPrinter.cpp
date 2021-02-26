@@ -1,9 +1,8 @@
 //===-- LanaiAsmPrinter.cpp - Lanai LLVM assembly writer ------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -12,11 +11,13 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "InstPrinter/LanaiInstPrinter.h"
-#include "Lanai.h"
+#include "MCTargetDesc/LanaiInstPrinter.h"
+#include "LanaiAluCode.h"
+#include "LanaiCondCode.h"
 #include "LanaiInstrInfo.h"
 #include "LanaiMCInstLower.h"
 #include "LanaiTargetMachine.h"
+#include "TargetInfo/LanaiTargetInfo.h"
 #include "llvm/CodeGen/AsmPrinter.h"
 #include "llvm/CodeGen/MachineConstantPool.h"
 #include "llvm/CodeGen/MachineFunctionPass.h"
@@ -49,9 +50,8 @@ public:
 
   void printOperand(const MachineInstr *MI, int OpNum, raw_ostream &O);
   bool PrintAsmOperand(const MachineInstr *MI, unsigned OpNo,
-                       unsigned AsmVariant, const char *ExtraCode,
-                       raw_ostream &O) override;
-  void EmitInstruction(const MachineInstr *MI) override;
+                       const char *ExtraCode, raw_ostream &O) override;
+  void emitInstruction(const MachineInstr *MI) override;
   bool isBlockOnlyReachableByFallthrough(
       const MachineBasicBlock *MBB) const override;
 
@@ -109,7 +109,6 @@ void LanaiAsmPrinter::printOperand(const MachineInstr *MI, int OpNum,
 
 // PrintAsmOperand - Print out an operand for an inline asm expression.
 bool LanaiAsmPrinter::PrintAsmOperand(const MachineInstr *MI, unsigned OpNo,
-                                      unsigned /*AsmVariant*/,
                                       const char *ExtraCode, raw_ostream &O) {
   // Does this asm operand have a single letter operand modifier?
   if (ExtraCode && ExtraCode[0]) {
@@ -134,12 +133,12 @@ bool LanaiAsmPrinter::PrintAsmOperand(const MachineInstr *MI, unsigned OpNo,
       const MachineOperand &MO = MI->getOperand(RegOp);
       if (!MO.isReg())
         return true;
-      unsigned Reg = MO.getReg();
+      Register Reg = MO.getReg();
       O << LanaiInstPrinter::getRegisterName(Reg);
       return false;
     }
     default:
-      return true; // Unknown modifier.
+      return AsmPrinter::PrintAsmOperand(MI, OpNo, ExtraCode, O);
     }
   }
   printOperand(MI, OpNo, O);
@@ -156,7 +155,7 @@ void LanaiAsmPrinter::emitCallInstruction(const MachineInstr *MI) {
   // Insert save rca instruction immediately before the call.
   // TODO: We should generate a pc-relative mov instruction here instead
   // of pc + 16 (should be mov .+16 %rca).
-  OutStreamer->EmitInstruction(MCInstBuilder(Lanai::ADD_I_LO)
+  OutStreamer->emitInstruction(MCInstBuilder(Lanai::ADD_I_LO)
                                    .addReg(Lanai::RCA)
                                    .addReg(Lanai::PC)
                                    .addImm(16),
@@ -164,7 +163,7 @@ void LanaiAsmPrinter::emitCallInstruction(const MachineInstr *MI) {
 
   // Push rca onto the stack.
   //   st %rca, [--%sp]
-  OutStreamer->EmitInstruction(MCInstBuilder(Lanai::SW_RI)
+  OutStreamer->emitInstruction(MCInstBuilder(Lanai::SW_RI)
                                    .addReg(Lanai::RCA)
                                    .addReg(Lanai::SP)
                                    .addImm(-4)
@@ -176,9 +175,9 @@ void LanaiAsmPrinter::emitCallInstruction(const MachineInstr *MI) {
     MCInst TmpInst;
     MCInstLowering.Lower(MI, TmpInst);
     TmpInst.setOpcode(Lanai::BT);
-    OutStreamer->EmitInstruction(TmpInst, STI);
+    OutStreamer->emitInstruction(TmpInst, STI);
   } else {
-    OutStreamer->EmitInstruction(MCInstBuilder(Lanai::ADD_R)
+    OutStreamer->emitInstruction(MCInstBuilder(Lanai::ADD_R)
                                      .addReg(Lanai::PC)
                                      .addReg(MI->getOperand(0).getReg())
                                      .addReg(Lanai::R0)
@@ -192,10 +191,10 @@ void LanaiAsmPrinter::customEmitInstruction(const MachineInstr *MI) {
   MCSubtargetInfo STI = getSubtargetInfo();
   MCInst TmpInst;
   MCInstLowering.Lower(MI, TmpInst);
-  OutStreamer->EmitInstruction(TmpInst, STI);
+  OutStreamer->emitInstruction(TmpInst, STI);
 }
 
-void LanaiAsmPrinter::EmitInstruction(const MachineInstr *MI) {
+void LanaiAsmPrinter::emitInstruction(const MachineInstr *MI) {
   MachineBasicBlock::const_instr_iterator I = MI->getIterator();
   MachineBasicBlock::const_instr_iterator E = MI->getParent()->instr_end();
 
@@ -212,7 +211,7 @@ void LanaiAsmPrinter::EmitInstruction(const MachineInstr *MI) {
 // isBlockOnlyReachableByFallthough - Return true if the basic block has
 // exactly one predecessor and the control transfer mechanism between
 // the predecessor and this block is a fall-through.
-// FIXME: could the overridden cases be handled in AnalyzeBranch?
+// FIXME: could the overridden cases be handled in analyzeBranch?
 bool LanaiAsmPrinter::isBlockOnlyReachableByFallthrough(
     const MachineBasicBlock *MBB) const {
   // The predecessor has to be immediately before this block.
@@ -238,6 +237,6 @@ bool LanaiAsmPrinter::isBlockOnlyReachableByFallthrough(
 }
 
 // Force static initialization.
-extern "C" void LLVMInitializeLanaiAsmPrinter() {
+extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeLanaiAsmPrinter() {
   RegisterAsmPrinter<LanaiAsmPrinter> X(getTheLanaiTarget());
 }

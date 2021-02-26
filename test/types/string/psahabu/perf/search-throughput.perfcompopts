@@ -1,0 +1,3 @@
+-stestType=types.asciiString  # search-throughput
+-stestType=types.utf8String  # search-throughput-utf8
+-stestType=types.byteString  # search-throughput-bytes

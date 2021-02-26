@@ -794,6 +794,7 @@ function. The operand fields are:
   * ``preserve_allcc``: code 15
   * ``swiftcc`` : code 16
   * ``cxx_fast_tlscc``: code 17
+  * ``tailcc`` : code 18
   * ``x86_stdcallcc``: code 64
   * ``x86_fastcallcc``: code 65
   * ``arm_apcscc``: code 66
@@ -1057,6 +1058,16 @@ The integer codes are mapped to well-known attributes as follows.
 * code 56: ``nocf_check``
 * code 57: ``optforfuzzing``
 * code 58: ``shadowcallstack``
+* code 59: ``speculative_load_hardening``
+* code 60: ``immarg``
+* code 61: ``willreturn``
+* code 62: ``nofree``
+* code 63: ``nosync``
+* code 64: ``sanitize_memtag``
+* code 65: ``preallocated``
+* code 66: ``no_merge``
+* code 67: ``null_pointer_is_valid``
+* code 68: ``noundef``
 
 .. note::
   The ``allocsize`` attribute has a special encoding for its arguments. Its two
@@ -1104,6 +1115,14 @@ TYPE_CODE_HALF Record
 
 The ``HALF`` record (code 10) adds a ``half`` (16-bit floating point) type to
 the type table.
+
+TYPE_CODE_BFLOAT Record
+^^^^^^^^^^^^^^^^^^^^^^^
+
+``[BFLOAT]``
+
+The ``BFLOAT`` record (code 23) adds a ``bfloat`` (16-bit brain floating point)
+type to the type table.
 
 TYPE_CODE_FLOAT Record
 ^^^^^^^^^^^^^^^^^^^^^^

@@ -1,6 +1,3 @@
 unhandledType.chpl:1: In function 'takesCstring':
 unhandledType.chpl:1: warning: Unknown Fortran KIND generating interface for C type: c_string
 unhandledType.chpl:1: warning: Unknown Fortran type generating interface for C type: c_string
-unhandledType.chpl:6: In function 'returnsTuple':
-unhandledType.chpl:6: warning: Unknown Fortran KIND generating interface for C type: _ref__tuple_2_star_int64_t_chpl
-unhandledType.chpl:6: warning: Unknown Fortran type generating interface for C type: _ref__tuple_2_star_int64_t_chpl

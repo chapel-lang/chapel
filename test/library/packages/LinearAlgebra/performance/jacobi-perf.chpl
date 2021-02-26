@@ -3,20 +3,20 @@ use LinearAlgebra.Sparse;
 use Math;
 use Time;
 
-config const n = 128, 
+config const n = 128,
              tol = 0.0001,
              maxiter = 1000000,
              threshold = 0.01,
              correctness = false;
-             
+
 
 var t: Timer;
 var itern: int;
 
 // Dense
 
-var Xdom = {1..n};
-var Adom = {1..n, 1..n};
+var Xdom = {0..<n};
+var Adom = {0..<n, 0..<n};
 
 var A: [Adom] real = 0.0;
 

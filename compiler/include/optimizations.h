@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -33,12 +33,17 @@
 #include "map.h"
 #include "vec.h"
 
+#include "flags.h"
+
+#include <set>
 #include <map>
 #include <vector>
 
 class BaseAST;
 class BitVec;
 class BlockStmt;
+class CallExpr;
+class DefExpr;
 class FnSymbol;
 class ForallStmt;
 class Symbol;
@@ -59,6 +64,7 @@ bool outlivesBlock(LifetimeInformation* info, Symbol* sym, BlockStmt* block);
 
 void checkLifetimesForForallUnorderedOps(FnSymbol* fn,
                                          LifetimeInformation* lifetimeInfo);
+std::vector<Expr *> getLastStmtsForForallUnorderedOps(ForallStmt *forall);
 void optimizeForallUnorderedOps();
 
 void liveVariableAnalysis(FnSymbol* fn,
@@ -73,5 +79,13 @@ void remoteValueForwarding();
 void inferConstRefs();
 
 void computeNoAliasSets();
+
+void removeInitOrAutoCopyPostResolution(CallExpr *call);
+void setDefinedConstForDomainSymbol(Symbol *domainSym, Expr *nextExpr,
+                                    Symbol *isConst);
+void setDefinedConstForDefExprIfApplicable(DefExpr* defExpr,
+                                           std::set<Flag>* flags);
+void setDefinedConstForPrimSetMemberIfApplicable(CallExpr *call);
+void setDefinedConstForFieldsInInitializer(FnSymbol *fn);
 
 #endif

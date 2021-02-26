@@ -3,10 +3,10 @@
 #include <stdio.h>
 
 
-#ifdef CHPL_VALGRIND_TEST
-int valgrind = 1;
+#ifdef LIMIT_TESTING
+int limit_testing = 1;
 #else
-int valgrind = 0;
+int limit_testing = 0;
 #endif
 
 int verbose = 0;
@@ -319,8 +319,8 @@ void check_channels(void)
   int nhints = sizeof(hints)/sizeof(qio_hint_t);
   int file_hint, ch_hint;
 
-  if( valgrind ) nlens = 4;
-  if( valgrind ) nchunkszs = 4;
+  if( limit_testing ) nlens = 4;
+  if( limit_testing ) nchunkszs = 4;
 
   for( file_hint = 0; file_hint < nhints; file_hint++ ) {
     for( ch_hint = 0; ch_hint < nhints; ch_hint++ ) {
@@ -338,9 +338,9 @@ void check_channels(void)
         }
       }
     }
-    // only test default chanel hints with valgrind
+    // only test default chanel hints with limit_testing
     // moving over file hints should still give us good coverage.
-    if( valgrind ) break;
+    if( limit_testing ) break;
   }
 
   // check with reopen/seek variations while limiting other configurations

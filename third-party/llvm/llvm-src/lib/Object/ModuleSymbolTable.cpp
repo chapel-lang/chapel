@@ -1,9 +1,8 @@
 //===- ModuleSymbolTable.cpp - symbol table for in-memory IR --------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -24,6 +23,7 @@
 #include "llvm/IR/GlobalAlias.h"
 #include "llvm/IR/GlobalValue.h"
 #include "llvm/IR/GlobalVariable.h"
+#include "llvm/IR/InlineAsm.h"
 #include "llvm/IR/Module.h"
 #include "llvm/MC/MCAsmInfo.h"
 #include "llvm/MC/MCContext.h"
@@ -64,7 +64,8 @@ void ModuleSymbolTable::addModule(Module *M) {
     SymTab.push_back(&GV);
 
   CollectAsmSymbols(*M, [this](StringRef Name, BasicSymbolRef::Flags Flags) {
-    SymTab.push_back(new (AsmSymbols.Allocate()) AsmSymbol(Name, Flags));
+    SymTab.push_back(new (AsmSymbols.Allocate())
+                         AsmSymbol(std::string(Name), Flags));
   });
 }
 
@@ -84,7 +85,8 @@ initializeRecordStreamer(const Module &M,
   if (!MRI)
     return;
 
-  std::unique_ptr<MCAsmInfo> MAI(T->createMCAsmInfo(*MRI, TT.str()));
+  MCTargetOptions MCOptions;
+  std::unique_ptr<MCAsmInfo> MAI(T->createMCAsmInfo(*MRI, TT.str(), MCOptions));
   if (!MAI)
     return;
 
@@ -110,11 +112,14 @@ initializeRecordStreamer(const Module &M,
   std::unique_ptr<MCAsmParser> Parser(
       createMCAsmParser(SrcMgr, MCCtx, Streamer, *MAI));
 
-  MCTargetOptions MCOptions;
   std::unique_ptr<MCTargetAsmParser> TAP(
       T->createMCAsmParser(*STI, *Parser, *MCII, MCOptions));
   if (!TAP)
     return;
+
+  // Module-level inline asm is assumed to use At&t syntax (see
+  // AsmPrinter::doInitialization()).
+  Parser->setAssemblerDialect(InlineAsm::AD_ATT);
 
   Parser->setTargetParser(*TAP);
   if (Parser->Run(false))

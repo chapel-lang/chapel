@@ -1,2 +1,6 @@
 #!/bin/sh
 rm b.out_real
+outfile=$2
+
+sed -e "s;`pwd`;.;" $outfile > $outfile.2
+mv $outfile.2 $outfile

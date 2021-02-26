@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -92,7 +92,7 @@ static Expr* convertPointerToChplType(ModuleSymbol* module,
 
   // Pointers to void (aka void*) convert to c_void_ptr
   if (pointeeType.getTypePtr()->isVoidType()) {
-    return tryCResolveExpr(module, "c_void_ptr");
+    return tryCResolveExpr(module, "chpl__c_void_ptr");
   }
 
   Expr* pointee = convertToChplType(module, pointeeType.getTypePtr());
@@ -142,7 +142,7 @@ Expr* convertStructToChplType(ModuleSymbol* module,
   const char* chpl_name = astr(rd->getNameAsString().c_str());
   const char* cname = chpl_name;
 
-  if (!llvmCodegen) {
+  if (!fLlvmCodegen) {
     cname = astr("struct ", cname);
   }
 
@@ -239,6 +239,22 @@ static Expr* convertToChplType(ModuleSymbol* module,
     // This should be handled in the pointer-to-function case above
     USR_FATAL("C function types (vs pointers to them) not yet supported");
 
+  // complex
+  } else if (type->isComplexType()) {
+    const clang::ComplexType* ct = llvm::dyn_cast<clang::ComplexType>(type);
+
+    clang::QualType eltTypeQ = ct->getElementType();
+    const clang::Type* eltType = eltTypeQ.getTypePtr();
+
+    Type* chapelType = NULL;
+    if (eltType->isSpecificBuiltinType(clang::BuiltinType::Float))
+      chapelType = dtComplex[COMPLEX_SIZE_64];
+    else if (eltType->isSpecificBuiltinType(clang::BuiltinType::Double))
+      chapelType = dtComplex[COMPLEX_SIZE_128];
+    else
+      USR_FATAL("Unsupported complex type in extern \"C\" block.");
+
+    return new SymExpr(chapelType->symbol);
   } else {
     // Check for enum types, which are really some sort of integer type
     if (type->isEnumeralType()) {
@@ -384,7 +400,7 @@ static
 void convertDeclToChpl(ModuleSymbol* module,
                        const char*   cname) {
   INT_ASSERT(cname != NULL);
-  INT_ASSERT(externC);
+  INT_ASSERT(fAllowExternC);
   INT_ASSERT(cname != astrSdot);
   INT_ASSERT(cname[0] != '\0');
   INT_ASSERT(module != NULL);
@@ -483,8 +499,14 @@ void convertDeclToChpl(ModuleSymbol* module,
     for (clang::FunctionDecl::param_iterator it=fd->param_begin(); it < fd->param_end(); ++it) {
       clang::ParmVarDecl* parm = (*it);
       const char* parm_name = astr(parm->getNameAsString().c_str());
-      Expr* parm_type = convertToChplType(module, parm->getType().getTypePtr());
-      f = buildFunctionFormal(f, buildArgDefExpr(INTENT_BLANK, parm_name, parm_type, NULL, NULL));
+      const clang::Type* parmCType = parm->getType().getTypePtr();
+      Expr* parmChapelType = convertToChplType(module, parmCType);
+      IntentTag intent = INTENT_IN;
+      if (parmCType->isArrayType())
+        intent = INTENT_REF;
+      f = buildFunctionFormal(f,
+                              buildArgDefExpr(intent, parm_name,
+                                              parmChapelType, NULL, NULL));
     }
 
     //handle variadic function
@@ -530,7 +552,7 @@ Symbol* tryCResolve(BaseAST* context, const char* name) {
   if (nSymbolsFound != 0)
     return got;
 
-  if (externC == true) {
+  if (fAllowExternC == true) {
     llvm::SmallSet<ModuleSymbol*, 24> visited;
 
     retval = tryCResolve(context, module, name, visited);

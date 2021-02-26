@@ -1,6 +1,0 @@
-bug: writeln() called with a getCommDiagnostics as an argument leads to unexpected output.
-
-This test currently fails during the C compilation step.
-
-It should probably be illegal and give the same compile-time error as
-the other funcPtr*.chpl programs.

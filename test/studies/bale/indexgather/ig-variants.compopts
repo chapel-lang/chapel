@@ -1,1 +1,1 @@
---report-optimized-forall-unordered-ops
+--no-auto-aggregation --report-optimized-forall-unordered-ops

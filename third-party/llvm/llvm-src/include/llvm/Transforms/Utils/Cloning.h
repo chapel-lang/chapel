@@ -1,9 +1,8 @@
 //===- Cloning.h - Clone various parts of LLVM programs ---------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -20,10 +19,8 @@
 
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/Twine.h"
-#include "llvm/Analysis/AliasAnalysis.h"
 #include "llvm/Analysis/AssumptionCache.h"
 #include "llvm/Analysis/InlineCost.h"
-#include "llvm/IR/CallSite.h"
 #include "llvm/IR/ValueHandle.h"
 #include "llvm/Transforms/Utils/ValueMapper.h"
 #include <functional>
@@ -32,6 +29,7 @@
 
 namespace llvm {
 
+class AAResults;
 class AllocaInst;
 class BasicBlock;
 class BlockFrequencyInfo;
@@ -173,19 +171,19 @@ void CloneAndPruneFunctionInto(Function *NewFunc, const Function *OldFunc,
 /// the auxiliary results produced by it.
 class InlineFunctionInfo {
 public:
-  explicit InlineFunctionInfo(CallGraph *cg = nullptr,
-                              std::function<AssumptionCache &(Function &)>
-                                  *GetAssumptionCache = nullptr,
-                              ProfileSummaryInfo *PSI = nullptr,
-                              BlockFrequencyInfo *CallerBFI = nullptr,
-                              BlockFrequencyInfo *CalleeBFI = nullptr)
+  explicit InlineFunctionInfo(
+      CallGraph *cg = nullptr,
+      function_ref<AssumptionCache &(Function &)> GetAssumptionCache = nullptr,
+      ProfileSummaryInfo *PSI = nullptr,
+      BlockFrequencyInfo *CallerBFI = nullptr,
+      BlockFrequencyInfo *CalleeBFI = nullptr)
       : CG(cg), GetAssumptionCache(GetAssumptionCache), PSI(PSI),
         CallerBFI(CallerBFI), CalleeBFI(CalleeBFI) {}
 
   /// If non-null, InlineFunction will update the callgraph to reflect the
   /// changes it makes.
   CallGraph *CG;
-  std::function<AssumptionCache &(Function &)> *GetAssumptionCache;
+  function_ref<AssumptionCache &(Function &)> GetAssumptionCache;
   ProfileSummaryInfo *PSI;
   BlockFrequencyInfo *CallerBFI, *CalleeBFI;
 
@@ -202,7 +200,7 @@ public:
   /// 'InlineFunction' fills this in by scanning the inlined instructions, and
   /// only if CG is null. If CG is non-null, instead the value handle
   /// `InlinedCalls` above is used.
-  SmallVector<CallSite, 8> InlinedCallSites;
+  SmallVector<CallBase *, 8> InlinedCallSites;
 
   void reset() {
     StaticAllocas.clear();
@@ -230,13 +228,7 @@ public:
 /// and all varargs at the callsite will be passed to any calls to
 /// ForwardVarArgsTo. The caller of InlineFunction has to make sure any varargs
 /// are only used by ForwardVarArgsTo.
-InlineResult InlineFunction(CallInst *C, InlineFunctionInfo &IFI,
-                            AAResults *CalleeAAR = nullptr,
-                            bool InsertLifetime = true);
-InlineResult InlineFunction(InvokeInst *II, InlineFunctionInfo &IFI,
-                            AAResults *CalleeAAR = nullptr,
-                            bool InsertLifetime = true);
-InlineResult InlineFunction(CallSite CS, InlineFunctionInfo &IFI,
+InlineResult InlineFunction(CallBase &CB, InlineFunctionInfo &IFI,
                             AAResults *CalleeAAR = nullptr,
                             bool InsertLifetime = true,
                             Function *ForwardVarArgsTo = nullptr);
@@ -268,6 +260,13 @@ BasicBlock *DuplicateInstructionsInSplitBetween(BasicBlock *BB,
                                                 Instruction *StopAt,
                                                 ValueToValueMapTy &ValueMapping,
                                                 DomTreeUpdater &DTU);
+
+/// Updates profile information by adjusting the entry count by adding
+/// entryDelta then scaling callsite information by the new count divided by the
+/// old count. VMap is used during inlinng to also update the new clone
+void updateProfileCallee(
+    Function *Callee, int64_t entryDelta,
+    const ValueMap<const Value *, WeakTrackingVH> *VMap = nullptr);
 
 } // end namespace llvm
 

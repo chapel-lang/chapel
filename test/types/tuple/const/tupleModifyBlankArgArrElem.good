@@ -1,0 +1,15 @@
+tupleModifyBlankArgArrElem.chpl:7: In function 'test1':
+tupleModifyBlankArgArrElem.chpl:12: error: const actual element is passed to 'ref' intent tuple formal 'tup' of 'modifyBlankArgArrInferRef'
+note: tuple element #0 of type '[domain(1,int(64),false)] int(64)'
+tupleModifyBlankArgArrElem.chpl:9: note: const tuple declared here
+tupleModifyBlankArgArrElem.chpl:3: note: formal element has 'ref' intent due to modification, possibly here
+tupleModifyBlankArgArrElem.chpl:18: In function 'test2':
+tupleModifyBlankArgArrElem.chpl:21: error: const actual element is passed to 'ref' intent tuple formal 'tup' of 'modifyBlankArgArrInferRef'
+note: tuple element #0 of type '[domain(1,int(64),false)] int(64)'
+tupleModifyBlankArgArrElem.chpl:19: note: const element declared here
+tupleModifyBlankArgArrElem.chpl:3: note: formal element has 'ref' intent due to modification, possibly here
+tupleModifyBlankArgArrElem.chpl:27: In function 'test3':
+tupleModifyBlankArgArrElem.chpl:36: error: const actual element is passed to 'ref' intent tuple formal 'tup' of 'modifyViaFormal'
+note: tuple element #0 of type '[domain(1,int(64),false)] int(64)'
+tupleModifyBlankArgArrElem.chpl:29: note: const tuple declared here
+tupleModifyBlankArgArrElem.chpl:2: note: formal element has 'ref' intent due to modification, possibly here

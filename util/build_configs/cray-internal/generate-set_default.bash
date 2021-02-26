@@ -21,7 +21,7 @@ source $cwd/common.bash
 
 # Generate the first part of the file with shell expansion
 
-if [ "$chpl_platform" = cray-shasta ]; then
+if [ "$chpl_platform" = hpe-cray-ex ]; then
     platform_prefix=/opt/cray
 else
     platform_prefix=/opt

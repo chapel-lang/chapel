@@ -1,7 +1,0 @@
-These tests are supposed to be skipped if the HDF5 library is not available,
-but on some of our test systems the .skipif file reports that it is available
-even though the module that would make it available is not loaded.
-
-After loading that module, I found that there are differences between it and
-the version I had been using from homebrew.  This file will silence these
-tests until I'm able to investigate the differences further.

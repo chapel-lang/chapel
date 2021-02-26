@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -181,6 +181,7 @@ module LockFreeQueue {
       return (false, retval);
     }
 
+    pragma "not order independent yielding loops"
     iter drain() : objTypeOpt {
       var tok = getToken();
       var (hasElt, elt) = dequeue(tok);
@@ -191,6 +192,7 @@ module LockFreeQueue {
       tryReclaim();
     }
 
+    pragma "not order independent yielding loops"
     iter drain(param tag : iterKind) : objTypeOpt where tag == iterKind.standalone {
       coforall tid in 1..here.maxTaskPar {
         var tok = getToken();

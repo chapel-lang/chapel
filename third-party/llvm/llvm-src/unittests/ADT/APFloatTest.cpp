@@ -1,9 +1,8 @@
 //===- llvm/unittest/ADT/APFloat.cpp - APFloat unit tests ---------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -11,8 +10,8 @@
 #include "llvm/ADT/APSInt.h"
 #include "llvm/ADT/Hashing.h"
 #include "llvm/ADT/SmallVector.h"
+#include "llvm/Support/Error.h"
 #include "llvm/Support/FormatVariadic.h"
-#include "llvm/Support/raw_ostream.h"
 #include "gtest/gtest.h"
 #include <cmath>
 #include <ostream>
@@ -21,9 +20,20 @@
 
 using namespace llvm;
 
-static double convertToDoubleFromString(const char *Str) {
+static std::string convertToErrorFromString(StringRef Str) {
   llvm::APFloat F(0.0);
-  F.convertFromString(Str, llvm::APFloat::rmNearestTiesToEven);
+  auto StatusOrErr =
+      F.convertFromString(Str, llvm::APFloat::rmNearestTiesToEven);
+  EXPECT_TRUE(!StatusOrErr);
+  return toString(StatusOrErr.takeError());
+}
+
+static double convertToDoubleFromString(StringRef Str) {
+  llvm::APFloat F(0.0);
+  auto StatusOrErr =
+      F.convertFromString(Str, llvm::APFloat::rmNearestTiesToEven);
+  EXPECT_FALSE(!StatusOrErr);
+  consumeError(StatusOrErr.takeError());
   return F.convertToDouble();
 }
 
@@ -521,15 +531,32 @@ TEST(APFloatTest, FMA) {
 
   // Test x87 extended precision case from http://llvm.org/PR20728.
   {
-    APFloat M1(APFloat::x87DoubleExtended(), 1.0);
-    APFloat M2(APFloat::x87DoubleExtended(), 1.0);
-    APFloat A(APFloat::x87DoubleExtended(), 3.0);
+    APFloat M1(APFloat::x87DoubleExtended(), 1);
+    APFloat M2(APFloat::x87DoubleExtended(), 1);
+    APFloat A(APFloat::x87DoubleExtended(), 3);
 
     bool losesInfo = false;
     M1.fusedMultiplyAdd(M1, A, APFloat::rmNearestTiesToEven);
     M1.convert(APFloat::IEEEsingle(), APFloat::rmNearestTiesToEven, &losesInfo);
     EXPECT_FALSE(losesInfo);
     EXPECT_EQ(4.0f, M1.convertToFloat());
+  }
+
+  // Regression test that failed an assertion.
+  {
+    APFloat f1(-8.85242279E-41f);
+    APFloat f2(2.0f);
+    APFloat f3(8.85242279E-41f);
+    f1.fusedMultiplyAdd(f2, f3, APFloat::rmNearestTiesToEven);
+    EXPECT_EQ(-8.85242279E-41f, f1.convertToFloat());
+  }
+
+  // Test using only a single instance of APFloat.
+  {
+    APFloat F(1.5);
+
+    F.fusedMultiplyAdd(F, F, APFloat::rmNearestTiesToEven);
+    EXPECT_EQ(3.75, F.convertToDouble());
   }
 }
 
@@ -592,9 +619,9 @@ TEST(APFloatTest, Denormal) {
   {
     const char *MinNormalStr = "1.17549435082228750797e-38";
     EXPECT_FALSE(APFloat(APFloat::IEEEsingle(), MinNormalStr).isDenormal());
-    EXPECT_FALSE(APFloat(APFloat::IEEEsingle(), 0.0).isDenormal());
+    EXPECT_FALSE(APFloat(APFloat::IEEEsingle(), 0).isDenormal());
 
-    APFloat Val2(APFloat::IEEEsingle(), 2.0e0);
+    APFloat Val2(APFloat::IEEEsingle(), 2);
     APFloat T(APFloat::IEEEsingle(), MinNormalStr);
     T.divide(Val2, rdmd);
     EXPECT_TRUE(T.isDenormal());
@@ -604,9 +631,9 @@ TEST(APFloatTest, Denormal) {
   {
     const char *MinNormalStr = "2.22507385850720138309e-308";
     EXPECT_FALSE(APFloat(APFloat::IEEEdouble(), MinNormalStr).isDenormal());
-    EXPECT_FALSE(APFloat(APFloat::IEEEdouble(), 0.0).isDenormal());
+    EXPECT_FALSE(APFloat(APFloat::IEEEdouble(), 0).isDenormal());
 
-    APFloat Val2(APFloat::IEEEdouble(), 2.0e0);
+    APFloat Val2(APFloat::IEEEdouble(), 2);
     APFloat T(APFloat::IEEEdouble(), MinNormalStr);
     T.divide(Val2, rdmd);
     EXPECT_TRUE(T.isDenormal());
@@ -616,9 +643,9 @@ TEST(APFloatTest, Denormal) {
   {
     const char *MinNormalStr = "3.36210314311209350626e-4932";
     EXPECT_FALSE(APFloat(APFloat::x87DoubleExtended(), MinNormalStr).isDenormal());
-    EXPECT_FALSE(APFloat(APFloat::x87DoubleExtended(), 0.0).isDenormal());
+    EXPECT_FALSE(APFloat(APFloat::x87DoubleExtended(), 0).isDenormal());
 
-    APFloat Val2(APFloat::x87DoubleExtended(), 2.0e0);
+    APFloat Val2(APFloat::x87DoubleExtended(), 2);
     APFloat T(APFloat::x87DoubleExtended(), MinNormalStr);
     T.divide(Val2, rdmd);
     EXPECT_TRUE(T.isDenormal());
@@ -628,9 +655,9 @@ TEST(APFloatTest, Denormal) {
   {
     const char *MinNormalStr = "3.36210314311209350626267781732175260e-4932";
     EXPECT_FALSE(APFloat(APFloat::IEEEquad(), MinNormalStr).isDenormal());
-    EXPECT_FALSE(APFloat(APFloat::IEEEquad(), 0.0).isDenormal());
+    EXPECT_FALSE(APFloat(APFloat::IEEEquad(), 0).isDenormal());
 
-    APFloat Val2(APFloat::IEEEquad(), 2.0e0);
+    APFloat Val2(APFloat::IEEEquad(), 2);
     APFloat T(APFloat::IEEEquad(), MinNormalStr);
     T.divide(Val2, rdmd);
     EXPECT_TRUE(T.isDenormal());
@@ -650,26 +677,12 @@ TEST(APFloatTest, Zero) {
 TEST(APFloatTest, DecimalStringsWithoutNullTerminators) {
   // Make sure that we can parse strings without null terminators.
   // rdar://14323230.
-  APFloat Val(APFloat::IEEEdouble());
-  Val.convertFromString(StringRef("0.00", 3),
-                        llvm::APFloat::rmNearestTiesToEven);
-  EXPECT_EQ(Val.convertToDouble(), 0.0);
-  Val.convertFromString(StringRef("0.01", 3),
-                        llvm::APFloat::rmNearestTiesToEven);
-  EXPECT_EQ(Val.convertToDouble(), 0.0);
-  Val.convertFromString(StringRef("0.09", 3),
-                        llvm::APFloat::rmNearestTiesToEven);
-  EXPECT_EQ(Val.convertToDouble(), 0.0);
-  Val.convertFromString(StringRef("0.095", 4),
-                        llvm::APFloat::rmNearestTiesToEven);
-  EXPECT_EQ(Val.convertToDouble(), 0.09);
-  Val.convertFromString(StringRef("0.00e+3", 7),
-                        llvm::APFloat::rmNearestTiesToEven);
-  EXPECT_EQ(Val.convertToDouble(), 0.00);
-  Val.convertFromString(StringRef("0e+3", 4),
-                        llvm::APFloat::rmNearestTiesToEven);
-  EXPECT_EQ(Val.convertToDouble(), 0.00);
-
+  EXPECT_EQ(convertToDoubleFromString(StringRef("0.00", 3)), 0.0);
+  EXPECT_EQ(convertToDoubleFromString(StringRef("0.01", 3)), 0.0);
+  EXPECT_EQ(convertToDoubleFromString(StringRef("0.09", 3)), 0.0);
+  EXPECT_EQ(convertToDoubleFromString(StringRef("0.095", 4)), 0.09);
+  EXPECT_EQ(convertToDoubleFromString(StringRef("0.00e+3", 7)), 0.00);
+  EXPECT_EQ(convertToDoubleFromString(StringRef("0e+3", 4)), 0.00);
 }
 
 TEST(APFloatTest, fromZeroDecimalString) {
@@ -869,6 +882,33 @@ TEST(APFloatTest, fromDecimalString) {
   EXPECT_EQ(2.05e+12,  APFloat(APFloat::IEEEdouble(), "002.05000e+12").convertToDouble());
   EXPECT_EQ(2.05e-12,  APFloat(APFloat::IEEEdouble(), "002.05000e-12").convertToDouble());
 
+  EXPECT_EQ(1.0,      APFloat(APFloat::IEEEdouble(), "1e").convertToDouble());
+  EXPECT_EQ(1.0,      APFloat(APFloat::IEEEdouble(), "+1e").convertToDouble());
+  EXPECT_EQ(-1.0,      APFloat(APFloat::IEEEdouble(), "-1e").convertToDouble());
+
+  EXPECT_EQ(1.0,      APFloat(APFloat::IEEEdouble(), "1.e").convertToDouble());
+  EXPECT_EQ(1.0,      APFloat(APFloat::IEEEdouble(), "+1.e").convertToDouble());
+  EXPECT_EQ(-1.0,      APFloat(APFloat::IEEEdouble(), "-1.e").convertToDouble());
+
+  EXPECT_EQ(0.1,      APFloat(APFloat::IEEEdouble(), ".1e").convertToDouble());
+  EXPECT_EQ(0.1,      APFloat(APFloat::IEEEdouble(), "+.1e").convertToDouble());
+  EXPECT_EQ(-0.1,      APFloat(APFloat::IEEEdouble(), "-.1e").convertToDouble());
+
+  EXPECT_EQ(1.1,      APFloat(APFloat::IEEEdouble(), "1.1e").convertToDouble());
+  EXPECT_EQ(1.1,      APFloat(APFloat::IEEEdouble(), "+1.1e").convertToDouble());
+  EXPECT_EQ(-1.1,      APFloat(APFloat::IEEEdouble(), "-1.1e").convertToDouble());
+
+  EXPECT_EQ(1.0,      APFloat(APFloat::IEEEdouble(), "1e+").convertToDouble());
+  EXPECT_EQ(1.0,      APFloat(APFloat::IEEEdouble(), "1e-").convertToDouble());
+
+  EXPECT_EQ(0.1,      APFloat(APFloat::IEEEdouble(), ".1e").convertToDouble());
+  EXPECT_EQ(0.1,      APFloat(APFloat::IEEEdouble(), ".1e+").convertToDouble());
+  EXPECT_EQ(0.1,      APFloat(APFloat::IEEEdouble(), ".1e-").convertToDouble());
+
+  EXPECT_EQ(1.0,      APFloat(APFloat::IEEEdouble(), "1.0e").convertToDouble());
+  EXPECT_EQ(1.0,      APFloat(APFloat::IEEEdouble(), "1.0e+").convertToDouble());
+  EXPECT_EQ(1.0,      APFloat(APFloat::IEEEdouble(), "1.0e-").convertToDouble());
+
   // These are "carefully selected" to overflow the fast log-base
   // calculations in APFloat.cpp
   EXPECT_TRUE(APFloat(APFloat::IEEEdouble(), "99e99999").isInfinity());
@@ -877,6 +917,119 @@ TEST(APFloatTest, fromDecimalString) {
   EXPECT_TRUE(APFloat(APFloat::IEEEdouble(), "-1e-99999").isNegZero());
 
   EXPECT_EQ(2.71828, convertToDoubleFromString("2.71828"));
+}
+
+TEST(APFloatTest, fromStringSpecials) {
+  const fltSemantics &Sem = APFloat::IEEEdouble();
+  const unsigned Precision = 53;
+  const unsigned PayloadBits = Precision - 2;
+  uint64_t PayloadMask = (uint64_t(1) << PayloadBits) - uint64_t(1);
+
+  uint64_t NaNPayloads[] = {
+      0,
+      1,
+      123,
+      0xDEADBEEF,
+      uint64_t(-2),
+      uint64_t(1) << PayloadBits,       // overflow bit
+      uint64_t(1) << (PayloadBits - 1), // signaling bit
+      uint64_t(1) << (PayloadBits - 2)  // highest possible bit
+  };
+
+  // Convert payload integer to decimal string representation.
+  std::string NaNPayloadDecStrings[array_lengthof(NaNPayloads)];
+  for (size_t I = 0; I < array_lengthof(NaNPayloads); ++I)
+    NaNPayloadDecStrings[I] = utostr(NaNPayloads[I]);
+
+  // Convert payload integer to hexadecimal string representation.
+  std::string NaNPayloadHexStrings[array_lengthof(NaNPayloads)];
+  for (size_t I = 0; I < array_lengthof(NaNPayloads); ++I)
+    NaNPayloadHexStrings[I] = "0x" + utohexstr(NaNPayloads[I]);
+
+  // Fix payloads to expected result.
+  for (uint64_t &Payload : NaNPayloads)
+    Payload &= PayloadMask;
+
+  // Signaling NaN must have a non-zero payload. In case a zero payload is
+  // requested, a default arbitrary payload is set instead. Save this payload
+  // for testing.
+  const uint64_t SNaNDefaultPayload =
+      APFloat::getSNaN(Sem).bitcastToAPInt().getZExtValue() & PayloadMask;
+
+  // Negative sign prefix (or none - for positive).
+  const char Signs[] = {0, '-'};
+
+  // "Signaling" prefix (or none - for "Quiet").
+  const char NaNTypes[] = {0, 's', 'S'};
+
+  const StringRef NaNStrings[] = {"nan", "NaN"};
+  for (StringRef NaNStr : NaNStrings)
+    for (char TypeChar : NaNTypes) {
+      bool Signaling = (TypeChar == 's' || TypeChar == 'S');
+
+      for (size_t J = 0; J < array_lengthof(NaNPayloads); ++J) {
+        uint64_t Payload = (Signaling && !NaNPayloads[J]) ? SNaNDefaultPayload
+                                                          : NaNPayloads[J];
+        std::string &PayloadDec = NaNPayloadDecStrings[J];
+        std::string &PayloadHex = NaNPayloadHexStrings[J];
+
+        for (char SignChar : Signs) {
+          bool Negative = (SignChar == '-');
+
+          std::string TestStrings[5];
+          size_t NumTestStrings = 0;
+
+          std::string Prefix;
+          if (SignChar)
+            Prefix += SignChar;
+          if (TypeChar)
+            Prefix += TypeChar;
+          Prefix += NaNStr;
+
+          // Test without any paylod.
+          if (!Payload)
+            TestStrings[NumTestStrings++] = Prefix;
+
+          // Test with the payload as a suffix.
+          TestStrings[NumTestStrings++] = Prefix + PayloadDec;
+          TestStrings[NumTestStrings++] = Prefix + PayloadHex;
+
+          // Test with the payload inside parentheses.
+          TestStrings[NumTestStrings++] = Prefix + '(' + PayloadDec + ')';
+          TestStrings[NumTestStrings++] = Prefix + '(' + PayloadHex + ')';
+
+          for (size_t K = 0; K < NumTestStrings; ++K) {
+            StringRef TestStr = TestStrings[K];
+
+            APFloat F(Sem);
+            bool HasError = !F.convertFromString(
+                TestStr, llvm::APFloat::rmNearestTiesToEven);
+            EXPECT_FALSE(HasError);
+            EXPECT_TRUE(F.isNaN());
+            EXPECT_EQ(Signaling, F.isSignaling());
+            EXPECT_EQ(Negative, F.isNegative());
+            uint64_t PayloadResult =
+                F.bitcastToAPInt().getZExtValue() & PayloadMask;
+            EXPECT_EQ(Payload, PayloadResult);
+          }
+        }
+      }
+    }
+
+  const StringRef InfStrings[] = {"inf",  "INFINITY",  "+Inf",
+                                  "-inf", "-INFINITY", "-Inf"};
+  for (StringRef InfStr : InfStrings) {
+    bool Negative = InfStr.front() == '-';
+
+    APFloat F(Sem);
+    bool HasError =
+        !F.convertFromString(InfStr, llvm::APFloat::rmNearestTiesToEven);
+    EXPECT_FALSE(HasError);
+    EXPECT_TRUE(F.isInfinity());
+    EXPECT_EQ(Negative, F.isNegative());
+    uint64_t PayloadResult = F.bitcastToAPInt().getZExtValue() & PayloadMask;
+    EXPECT_EQ(UINT64_C(0), PayloadResult);
+  }
 }
 
 TEST(APFloatTest, fromToStringSpecials) {
@@ -1118,205 +1271,175 @@ TEST(APFloatTest, makeNaN) {
 #ifdef GTEST_HAS_DEATH_TEST
 #ifndef NDEBUG
 TEST(APFloatTest, SemanticsDeath) {
-  EXPECT_DEATH(APFloat(APFloat::IEEEsingle(), 0.0f).convertToDouble(), "Float semantics are not IEEEdouble");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), 0.0 ).convertToFloat(),  "Float semantics are not IEEEsingle");
-}
-
-TEST(APFloatTest, StringDecimalDeath) {
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(),  ""), "Invalid string length");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "+"), "String has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "-"), "String has no digits");
-
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), StringRef("\0", 1)), "Invalid character in significand");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), StringRef("1\0", 2)), "Invalid character in significand");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), StringRef("1" "\0" "2", 3)), "Invalid character in significand");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), StringRef("1" "\0" "2e1", 5)), "Invalid character in significand");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), StringRef("1e\0", 3)), "Invalid character in exponent");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), StringRef("1e1\0", 4)), "Invalid character in exponent");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), StringRef("1e1" "\0" "2", 5)), "Invalid character in exponent");
-
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "1.0f"), "Invalid character in significand");
-
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), ".."), "String contains multiple dots");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "..0"), "String contains multiple dots");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "1.0.0"), "String contains multiple dots");
-}
-
-TEST(APFloatTest, StringDecimalSignificandDeath) {
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(),  "."), "Significand has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "+."), "Significand has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "-."), "Significand has no digits");
-
-
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(),  "e"), "Significand has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "+e"), "Significand has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "-e"), "Significand has no digits");
-
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(),  "e1"), "Significand has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "+e1"), "Significand has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "-e1"), "Significand has no digits");
-
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(),  ".e1"), "Significand has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "+.e1"), "Significand has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "-.e1"), "Significand has no digits");
-
-
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(),  ".e"), "Significand has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "+.e"), "Significand has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "-.e"), "Significand has no digits");
-}
-
-TEST(APFloatTest, StringDecimalExponentDeath) {
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(),   "1e"), "Exponent has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(),  "+1e"), "Exponent has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(),  "-1e"), "Exponent has no digits");
-
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(),   "1.e"), "Exponent has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(),  "+1.e"), "Exponent has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(),  "-1.e"), "Exponent has no digits");
-
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(),   ".1e"), "Exponent has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(),  "+.1e"), "Exponent has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(),  "-.1e"), "Exponent has no digits");
-
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(),   "1.1e"), "Exponent has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(),  "+1.1e"), "Exponent has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(),  "-1.1e"), "Exponent has no digits");
-
-
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "1e+"), "Exponent has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "1e-"), "Exponent has no digits");
-
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(),  ".1e"), "Exponent has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), ".1e+"), "Exponent has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), ".1e-"), "Exponent has no digits");
-
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(),  "1.0e"), "Exponent has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "1.0e+"), "Exponent has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "1.0e-"), "Exponent has no digits");
-}
-
-TEST(APFloatTest, StringHexadecimalDeath) {
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(),  "0x"), "Invalid string");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "+0x"), "Invalid string");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "-0x"), "Invalid string");
-
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(),  "0x0"), "Hex strings require an exponent");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "+0x0"), "Hex strings require an exponent");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "-0x0"), "Hex strings require an exponent");
-
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(),  "0x0."), "Hex strings require an exponent");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "+0x0."), "Hex strings require an exponent");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "-0x0."), "Hex strings require an exponent");
-
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(),  "0x.0"), "Hex strings require an exponent");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "+0x.0"), "Hex strings require an exponent");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "-0x.0"), "Hex strings require an exponent");
-
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(),  "0x0.0"), "Hex strings require an exponent");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "+0x0.0"), "Hex strings require an exponent");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "-0x0.0"), "Hex strings require an exponent");
-
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), StringRef("0x\0", 3)), "Invalid character in significand");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), StringRef("0x1\0", 4)), "Invalid character in significand");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), StringRef("0x1" "\0" "2", 5)), "Invalid character in significand");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), StringRef("0x1" "\0" "2p1", 7)), "Invalid character in significand");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), StringRef("0x1p\0", 5)), "Invalid character in exponent");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), StringRef("0x1p1\0", 6)), "Invalid character in exponent");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), StringRef("0x1p1" "\0" "2", 7)), "Invalid character in exponent");
-
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "0x1p0f"), "Invalid character in exponent");
-
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "0x..p1"), "String contains multiple dots");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "0x..0p1"), "String contains multiple dots");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "0x1.0.0p1"), "String contains multiple dots");
-}
-
-TEST(APFloatTest, StringHexadecimalSignificandDeath) {
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(),  "0x."), "Significand has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "+0x."), "Significand has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "-0x."), "Significand has no digits");
-
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(),  "0xp"), "Significand has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "+0xp"), "Significand has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "-0xp"), "Significand has no digits");
-
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(),  "0xp+"), "Significand has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "+0xp+"), "Significand has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "-0xp+"), "Significand has no digits");
-
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(),  "0xp-"), "Significand has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "+0xp-"), "Significand has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "-0xp-"), "Significand has no digits");
-
-
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(),  "0x.p"), "Significand has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "+0x.p"), "Significand has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "-0x.p"), "Significand has no digits");
-
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(),  "0x.p+"), "Significand has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "+0x.p+"), "Significand has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "-0x.p+"), "Significand has no digits");
-
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(),  "0x.p-"), "Significand has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "+0x.p-"), "Significand has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "-0x.p-"), "Significand has no digits");
-}
-
-TEST(APFloatTest, StringHexadecimalExponentDeath) {
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(),  "0x1p"), "Exponent has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "+0x1p"), "Exponent has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "-0x1p"), "Exponent has no digits");
-
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(),  "0x1p+"), "Exponent has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "+0x1p+"), "Exponent has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "-0x1p+"), "Exponent has no digits");
-
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(),  "0x1p-"), "Exponent has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "+0x1p-"), "Exponent has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "-0x1p-"), "Exponent has no digits");
-
-
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(),  "0x1.p"), "Exponent has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "+0x1.p"), "Exponent has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "-0x1.p"), "Exponent has no digits");
-
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(),  "0x1.p+"), "Exponent has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "+0x1.p+"), "Exponent has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "-0x1.p+"), "Exponent has no digits");
-
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(),  "0x1.p-"), "Exponent has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "+0x1.p-"), "Exponent has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "-0x1.p-"), "Exponent has no digits");
-
-
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(),  "0x.1p"), "Exponent has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "+0x.1p"), "Exponent has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "-0x.1p"), "Exponent has no digits");
-
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(),  "0x.1p+"), "Exponent has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "+0x.1p+"), "Exponent has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "-0x.1p+"), "Exponent has no digits");
-
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(),  "0x.1p-"), "Exponent has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "+0x.1p-"), "Exponent has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "-0x.1p-"), "Exponent has no digits");
-
-
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(),  "0x1.1p"), "Exponent has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "+0x1.1p"), "Exponent has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "-0x1.1p"), "Exponent has no digits");
-
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(),  "0x1.1p+"), "Exponent has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "+0x1.1p+"), "Exponent has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "-0x1.1p+"), "Exponent has no digits");
-
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(),  "0x1.1p-"), "Exponent has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "+0x1.1p-"), "Exponent has no digits");
-  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), "-0x1.1p-"), "Exponent has no digits");
+  EXPECT_DEATH(APFloat(APFloat::IEEEsingle(), 0).convertToDouble(), "Float semantics are not IEEEdouble");
+  EXPECT_DEATH(APFloat(APFloat::IEEEdouble(), 0).convertToFloat(),  "Float semantics are not IEEEsingle");
 }
 #endif
 #endif
+
+TEST(APFloatTest, StringDecimalError) {
+  EXPECT_EQ("Invalid string length", convertToErrorFromString(""));
+  EXPECT_EQ("String has no digits", convertToErrorFromString("+"));
+  EXPECT_EQ("String has no digits", convertToErrorFromString("-"));
+
+  EXPECT_EQ("Invalid character in significand", convertToErrorFromString(StringRef("\0", 1)));
+  EXPECT_EQ("Invalid character in significand", convertToErrorFromString(StringRef("1\0", 2)));
+  EXPECT_EQ("Invalid character in significand", convertToErrorFromString(StringRef("1" "\0" "2", 3)));
+  EXPECT_EQ("Invalid character in significand", convertToErrorFromString(StringRef("1" "\0" "2e1", 5)));
+  EXPECT_EQ("Invalid character in exponent", convertToErrorFromString(StringRef("1e\0", 3)));
+  EXPECT_EQ("Invalid character in exponent", convertToErrorFromString(StringRef("1e1\0", 4)));
+  EXPECT_EQ("Invalid character in exponent", convertToErrorFromString(StringRef("1e1" "\0" "2", 5)));
+
+  EXPECT_EQ("Invalid character in significand", convertToErrorFromString("1.0f"));
+
+  EXPECT_EQ("String contains multiple dots", convertToErrorFromString(".."));
+  EXPECT_EQ("String contains multiple dots", convertToErrorFromString("..0"));
+  EXPECT_EQ("String contains multiple dots", convertToErrorFromString("1.0.0"));
+}
+
+TEST(APFloatTest, StringDecimalSignificandError) {
+  EXPECT_EQ("Significand has no digits", convertToErrorFromString( "."));
+  EXPECT_EQ("Significand has no digits", convertToErrorFromString("+."));
+  EXPECT_EQ("Significand has no digits", convertToErrorFromString("-."));
+
+
+  EXPECT_EQ("Significand has no digits", convertToErrorFromString( "e"));
+  EXPECT_EQ("Significand has no digits", convertToErrorFromString("+e"));
+  EXPECT_EQ("Significand has no digits", convertToErrorFromString("-e"));
+
+  EXPECT_EQ("Significand has no digits", convertToErrorFromString( "e1"));
+  EXPECT_EQ("Significand has no digits", convertToErrorFromString("+e1"));
+  EXPECT_EQ("Significand has no digits", convertToErrorFromString("-e1"));
+
+  EXPECT_EQ("Significand has no digits", convertToErrorFromString( ".e1"));
+  EXPECT_EQ("Significand has no digits", convertToErrorFromString("+.e1"));
+  EXPECT_EQ("Significand has no digits", convertToErrorFromString("-.e1"));
+
+
+  EXPECT_EQ("Significand has no digits", convertToErrorFromString( ".e"));
+  EXPECT_EQ("Significand has no digits", convertToErrorFromString("+.e"));
+  EXPECT_EQ("Significand has no digits", convertToErrorFromString("-.e"));
+}
+
+TEST(APFloatTest, StringHexadecimalError) {
+  EXPECT_EQ("Invalid string", convertToErrorFromString( "0x"));
+  EXPECT_EQ("Invalid string", convertToErrorFromString("+0x"));
+  EXPECT_EQ("Invalid string", convertToErrorFromString("-0x"));
+
+  EXPECT_EQ("Hex strings require an exponent", convertToErrorFromString( "0x0"));
+  EXPECT_EQ("Hex strings require an exponent", convertToErrorFromString("+0x0"));
+  EXPECT_EQ("Hex strings require an exponent", convertToErrorFromString("-0x0"));
+
+  EXPECT_EQ("Hex strings require an exponent", convertToErrorFromString( "0x0."));
+  EXPECT_EQ("Hex strings require an exponent", convertToErrorFromString("+0x0."));
+  EXPECT_EQ("Hex strings require an exponent", convertToErrorFromString("-0x0."));
+
+  EXPECT_EQ("Hex strings require an exponent", convertToErrorFromString( "0x.0"));
+  EXPECT_EQ("Hex strings require an exponent", convertToErrorFromString("+0x.0"));
+  EXPECT_EQ("Hex strings require an exponent", convertToErrorFromString("-0x.0"));
+
+  EXPECT_EQ("Hex strings require an exponent", convertToErrorFromString( "0x0.0"));
+  EXPECT_EQ("Hex strings require an exponent", convertToErrorFromString("+0x0.0"));
+  EXPECT_EQ("Hex strings require an exponent", convertToErrorFromString("-0x0.0"));
+
+  EXPECT_EQ("Invalid character in significand", convertToErrorFromString(StringRef("0x\0", 3)));
+  EXPECT_EQ("Invalid character in significand", convertToErrorFromString(StringRef("0x1\0", 4)));
+  EXPECT_EQ("Invalid character in significand", convertToErrorFromString(StringRef("0x1" "\0" "2", 5)));
+  EXPECT_EQ("Invalid character in significand", convertToErrorFromString(StringRef("0x1" "\0" "2p1", 7)));
+  EXPECT_EQ("Invalid character in exponent", convertToErrorFromString(StringRef("0x1p\0", 5)));
+  EXPECT_EQ("Invalid character in exponent", convertToErrorFromString(StringRef("0x1p1\0", 6)));
+  EXPECT_EQ("Invalid character in exponent", convertToErrorFromString(StringRef("0x1p1" "\0" "2", 7)));
+
+  EXPECT_EQ("Invalid character in exponent", convertToErrorFromString("0x1p0f"));
+
+  EXPECT_EQ("String contains multiple dots", convertToErrorFromString("0x..p1"));
+  EXPECT_EQ("String contains multiple dots", convertToErrorFromString("0x..0p1"));
+  EXPECT_EQ("String contains multiple dots", convertToErrorFromString("0x1.0.0p1"));
+}
+
+TEST(APFloatTest, StringHexadecimalSignificandError) {
+  EXPECT_EQ("Significand has no digits", convertToErrorFromString( "0x."));
+  EXPECT_EQ("Significand has no digits", convertToErrorFromString("+0x."));
+  EXPECT_EQ("Significand has no digits", convertToErrorFromString("-0x."));
+
+  EXPECT_EQ("Significand has no digits", convertToErrorFromString( "0xp"));
+  EXPECT_EQ("Significand has no digits", convertToErrorFromString("+0xp"));
+  EXPECT_EQ("Significand has no digits", convertToErrorFromString("-0xp"));
+
+  EXPECT_EQ("Significand has no digits", convertToErrorFromString( "0xp+"));
+  EXPECT_EQ("Significand has no digits", convertToErrorFromString("+0xp+"));
+  EXPECT_EQ("Significand has no digits", convertToErrorFromString("-0xp+"));
+
+  EXPECT_EQ("Significand has no digits", convertToErrorFromString( "0xp-"));
+  EXPECT_EQ("Significand has no digits", convertToErrorFromString("+0xp-"));
+  EXPECT_EQ("Significand has no digits", convertToErrorFromString("-0xp-"));
+
+
+  EXPECT_EQ("Significand has no digits", convertToErrorFromString( "0x.p"));
+  EXPECT_EQ("Significand has no digits", convertToErrorFromString("+0x.p"));
+  EXPECT_EQ("Significand has no digits", convertToErrorFromString("-0x.p"));
+
+  EXPECT_EQ("Significand has no digits", convertToErrorFromString( "0x.p+"));
+  EXPECT_EQ("Significand has no digits", convertToErrorFromString("+0x.p+"));
+  EXPECT_EQ("Significand has no digits", convertToErrorFromString("-0x.p+"));
+
+  EXPECT_EQ("Significand has no digits", convertToErrorFromString( "0x.p-"));
+  EXPECT_EQ("Significand has no digits", convertToErrorFromString("+0x.p-"));
+  EXPECT_EQ("Significand has no digits", convertToErrorFromString("-0x.p-"));
+}
+
+TEST(APFloatTest, StringHexadecimalExponentError) {
+  EXPECT_EQ("Exponent has no digits", convertToErrorFromString( "0x1p"));
+  EXPECT_EQ("Exponent has no digits", convertToErrorFromString("+0x1p"));
+  EXPECT_EQ("Exponent has no digits", convertToErrorFromString("-0x1p"));
+
+  EXPECT_EQ("Exponent has no digits", convertToErrorFromString( "0x1p+"));
+  EXPECT_EQ("Exponent has no digits", convertToErrorFromString("+0x1p+"));
+  EXPECT_EQ("Exponent has no digits", convertToErrorFromString("-0x1p+"));
+
+  EXPECT_EQ("Exponent has no digits", convertToErrorFromString( "0x1p-"));
+  EXPECT_EQ("Exponent has no digits", convertToErrorFromString("+0x1p-"));
+  EXPECT_EQ("Exponent has no digits", convertToErrorFromString("-0x1p-"));
+
+
+  EXPECT_EQ("Exponent has no digits", convertToErrorFromString( "0x1.p"));
+  EXPECT_EQ("Exponent has no digits", convertToErrorFromString("+0x1.p"));
+  EXPECT_EQ("Exponent has no digits", convertToErrorFromString("-0x1.p"));
+
+  EXPECT_EQ("Exponent has no digits", convertToErrorFromString( "0x1.p+"));
+  EXPECT_EQ("Exponent has no digits", convertToErrorFromString("+0x1.p+"));
+  EXPECT_EQ("Exponent has no digits", convertToErrorFromString("-0x1.p+"));
+
+  EXPECT_EQ("Exponent has no digits", convertToErrorFromString( "0x1.p-"));
+  EXPECT_EQ("Exponent has no digits", convertToErrorFromString("+0x1.p-"));
+  EXPECT_EQ("Exponent has no digits", convertToErrorFromString("-0x1.p-"));
+
+
+  EXPECT_EQ("Exponent has no digits", convertToErrorFromString( "0x.1p"));
+  EXPECT_EQ("Exponent has no digits", convertToErrorFromString("+0x.1p"));
+  EXPECT_EQ("Exponent has no digits", convertToErrorFromString("-0x.1p"));
+
+  EXPECT_EQ("Exponent has no digits", convertToErrorFromString( "0x.1p+"));
+  EXPECT_EQ("Exponent has no digits", convertToErrorFromString("+0x.1p+"));
+  EXPECT_EQ("Exponent has no digits", convertToErrorFromString("-0x.1p+"));
+
+  EXPECT_EQ("Exponent has no digits", convertToErrorFromString( "0x.1p-"));
+  EXPECT_EQ("Exponent has no digits", convertToErrorFromString("+0x.1p-"));
+  EXPECT_EQ("Exponent has no digits", convertToErrorFromString("-0x.1p-"));
+
+
+  EXPECT_EQ("Exponent has no digits", convertToErrorFromString( "0x1.1p"));
+  EXPECT_EQ("Exponent has no digits", convertToErrorFromString("+0x1.1p"));
+  EXPECT_EQ("Exponent has no digits", convertToErrorFromString("-0x1.1p"));
+
+  EXPECT_EQ("Exponent has no digits", convertToErrorFromString( "0x1.1p+"));
+  EXPECT_EQ("Exponent has no digits", convertToErrorFromString("+0x1.1p+"));
+  EXPECT_EQ("Exponent has no digits", convertToErrorFromString("-0x1.1p+"));
+
+  EXPECT_EQ("Exponent has no digits", convertToErrorFromString( "0x1.1p-"));
+  EXPECT_EQ("Exponent has no digits", convertToErrorFromString("+0x1.1p-"));
+  EXPECT_EQ("Exponent has no digits", convertToErrorFromString("-0x1.1p-"));
+}
 
 TEST(APFloatTest, exactInverse) {
   APFloat inv(0.0f);
@@ -1402,6 +1525,124 @@ TEST(APFloatTest, roundToIntegral) {
   P = APFloat::getInf(APFloat::IEEEdouble(), true);
   P.roundToIntegral(APFloat::rmTowardZero);
   EXPECT_TRUE(std::isinf(P.convertToDouble()) && P.convertToDouble() < 0.0);
+
+  APFloat::opStatus St;
+
+  P = APFloat::getNaN(APFloat::IEEEdouble());
+  St = P.roundToIntegral(APFloat::rmTowardZero);
+  EXPECT_TRUE(P.isNaN());
+  EXPECT_FALSE(P.isNegative());
+  EXPECT_EQ(APFloat::opOK, St);
+
+  P = APFloat::getNaN(APFloat::IEEEdouble(), true);
+  St = P.roundToIntegral(APFloat::rmTowardZero);
+  EXPECT_TRUE(P.isNaN());
+  EXPECT_TRUE(P.isNegative());
+  EXPECT_EQ(APFloat::opOK, St);
+
+  P = APFloat::getSNaN(APFloat::IEEEdouble());
+  St = P.roundToIntegral(APFloat::rmTowardZero);
+  EXPECT_TRUE(P.isNaN());
+  EXPECT_FALSE(P.isSignaling());
+  EXPECT_FALSE(P.isNegative());
+  EXPECT_EQ(APFloat::opInvalidOp, St);
+
+  P = APFloat::getSNaN(APFloat::IEEEdouble(), true);
+  St = P.roundToIntegral(APFloat::rmTowardZero);
+  EXPECT_TRUE(P.isNaN());
+  EXPECT_FALSE(P.isSignaling());
+  EXPECT_TRUE(P.isNegative());
+  EXPECT_EQ(APFloat::opInvalidOp, St);
+
+  P = APFloat::getInf(APFloat::IEEEdouble());
+  St = P.roundToIntegral(APFloat::rmTowardZero);
+  EXPECT_TRUE(P.isInfinity());
+  EXPECT_FALSE(P.isNegative());
+  EXPECT_EQ(APFloat::opOK, St);
+
+  P = APFloat::getInf(APFloat::IEEEdouble(), true);
+  St = P.roundToIntegral(APFloat::rmTowardZero);
+  EXPECT_TRUE(P.isInfinity());
+  EXPECT_TRUE(P.isNegative());
+  EXPECT_EQ(APFloat::opOK, St);
+
+  P = APFloat::getZero(APFloat::IEEEdouble(), false);
+  St = P.roundToIntegral(APFloat::rmTowardZero);
+  EXPECT_TRUE(P.isZero());
+  EXPECT_FALSE(P.isNegative());
+  EXPECT_EQ(APFloat::opOK, St);
+
+  P = APFloat::getZero(APFloat::IEEEdouble(), false);
+  St = P.roundToIntegral(APFloat::rmTowardNegative);
+  EXPECT_TRUE(P.isZero());
+  EXPECT_FALSE(P.isNegative());
+  EXPECT_EQ(APFloat::opOK, St);
+
+  P = APFloat::getZero(APFloat::IEEEdouble(), true);
+  St = P.roundToIntegral(APFloat::rmTowardZero);
+  EXPECT_TRUE(P.isZero());
+  EXPECT_TRUE(P.isNegative());
+  EXPECT_EQ(APFloat::opOK, St);
+
+  P = APFloat::getZero(APFloat::IEEEdouble(), true);
+  St = P.roundToIntegral(APFloat::rmTowardNegative);
+  EXPECT_TRUE(P.isZero());
+  EXPECT_TRUE(P.isNegative());
+  EXPECT_EQ(APFloat::opOK, St);
+
+  P = APFloat(1E-100);
+  St = P.roundToIntegral(APFloat::rmTowardNegative);
+  EXPECT_TRUE(P.isZero());
+  EXPECT_FALSE(P.isNegative());
+  EXPECT_EQ(APFloat::opInexact, St);
+
+  P = APFloat(1E-100);
+  St = P.roundToIntegral(APFloat::rmTowardPositive);
+  EXPECT_EQ(1.0, P.convertToDouble());
+  EXPECT_FALSE(P.isNegative());
+  EXPECT_EQ(APFloat::opInexact, St);
+
+  P = APFloat(-1E-100);
+  St = P.roundToIntegral(APFloat::rmTowardNegative);
+  EXPECT_TRUE(P.isNegative());
+  EXPECT_EQ(-1.0, P.convertToDouble());
+  EXPECT_EQ(APFloat::opInexact, St);
+
+  P = APFloat(-1E-100);
+  St = P.roundToIntegral(APFloat::rmTowardPositive);
+  EXPECT_TRUE(P.isZero());
+  EXPECT_TRUE(P.isNegative());
+  EXPECT_EQ(APFloat::opInexact, St);
+
+  P = APFloat(10.0);
+  St = P.roundToIntegral(APFloat::rmTowardZero);
+  EXPECT_EQ(10.0, P.convertToDouble());
+  EXPECT_EQ(APFloat::opOK, St);
+
+  P = APFloat(10.5);
+  St = P.roundToIntegral(APFloat::rmTowardZero);
+  EXPECT_EQ(10.0, P.convertToDouble());
+  EXPECT_EQ(APFloat::opInexact, St);
+
+  P = APFloat(10.5);
+  St = P.roundToIntegral(APFloat::rmTowardPositive);
+  EXPECT_EQ(11.0, P.convertToDouble());
+  EXPECT_EQ(APFloat::opInexact, St);
+
+  P = APFloat(10.5);
+  St = P.roundToIntegral(APFloat::rmTowardNegative);
+  EXPECT_EQ(10.0, P.convertToDouble());
+  EXPECT_EQ(APFloat::opInexact, St);
+
+  P = APFloat(10.5);
+  St = P.roundToIntegral(APFloat::rmNearestTiesToAway);
+  EXPECT_EQ(11.0, P.convertToDouble());
+  EXPECT_EQ(APFloat::opInexact, St);
+
+  P = APFloat(10.5);
+  St = P.roundToIntegral(APFloat::rmNearestTiesToEven);
+  EXPECT_EQ(10.0, P.convertToDouble());
+  EXPECT_EQ(APFloat::opInexact, St);
 }
 
 TEST(APFloatTest, isInteger) {
@@ -1599,6 +1840,21 @@ TEST(APFloatTest, convert) {
                &losesInfo);
   EXPECT_TRUE(test.bitwiseIsEqual(X87QNaN));
   EXPECT_FALSE(losesInfo);
+
+  // The payload is lost in truncation, but we must retain NaN, so we set the bit after the quiet bit.
+  APInt payload(52, 1);
+  test = APFloat::getSNaN(APFloat::IEEEdouble(), false, &payload);
+  APFloat::opStatus status = test.convert(APFloat::IEEEsingle(), APFloat::rmNearestTiesToEven, &losesInfo);
+  EXPECT_EQ(0x7fa00000, test.bitcastToAPInt());
+  EXPECT_TRUE(losesInfo);
+  EXPECT_EQ(status, APFloat::opOK);
+
+  // The payload is lost in truncation. QNaN remains QNaN.
+  test = APFloat::getQNaN(APFloat::IEEEdouble(), false, &payload);
+  status = test.convert(APFloat::IEEEsingle(), APFloat::rmNearestTiesToEven, &losesInfo);
+  EXPECT_EQ(0x7fc00000, test.bitcastToAPInt());
+  EXPECT_TRUE(losesInfo);
+  EXPECT_EQ(status, APFloat::opOK);
 }
 
 TEST(APFloatTest, PPCDoubleDouble) {
@@ -1736,17 +1992,12 @@ TEST(APFloatTest, isFiniteNonZero) {
 TEST(APFloatTest, add) {
   // Test Special Cases against each other and normal values.
 
-  // TODOS/NOTES:
-  // 1. Since we perform only default exception handling all operations with
-  // signaling NaNs should have a result that is a quiet NaN. Currently they
-  // return sNaN.
-
   APFloat PInf = APFloat::getInf(APFloat::IEEEsingle(), false);
   APFloat MInf = APFloat::getInf(APFloat::IEEEsingle(), true);
   APFloat PZero = APFloat::getZero(APFloat::IEEEsingle(), false);
   APFloat MZero = APFloat::getZero(APFloat::IEEEsingle(), true);
   APFloat QNaN = APFloat::getNaN(APFloat::IEEEsingle(), false);
-  APFloat SNaN = APFloat::getSNaN(APFloat::IEEEsingle(), false);
+  APFloat SNaN = APFloat(APFloat::IEEEsingle(), "snan123");
   APFloat PNormalValue = APFloat(APFloat::IEEEsingle(), "0x1p+0");
   APFloat MNormalValue = APFloat(APFloat::IEEEsingle(), "-0x1p+0");
   APFloat PLargestValue = APFloat::getLargest(APFloat::IEEEsingle(), false);
@@ -1760,23 +2011,19 @@ TEST(APFloatTest, add) {
 
   const int OverflowStatus = APFloat::opOverflow | APFloat::opInexact;
 
-  const unsigned NumTests = 169;
   struct {
     APFloat x;
     APFloat y;
     const char *result;
     int status;
     int category;
-  } SpecialCaseTests[NumTests] = {
+  } SpecialCaseTests[] = {
     { PInf, PInf, "inf", APFloat::opOK, APFloat::fcInfinity },
     { PInf, MInf, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
     { PInf, PZero, "inf", APFloat::opOK, APFloat::fcInfinity },
     { PInf, MZero, "inf", APFloat::opOK, APFloat::fcInfinity },
     { PInf, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
-#if 0
-    // See Note 1.
-    { PInf, SNaN, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-#endif
+    { PInf, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
     { PInf, PNormalValue, "inf", APFloat::opOK, APFloat::fcInfinity },
     { PInf, MNormalValue, "inf", APFloat::opOK, APFloat::fcInfinity },
     { PInf, PLargestValue, "inf", APFloat::opOK, APFloat::fcInfinity },
@@ -1790,10 +2037,7 @@ TEST(APFloatTest, add) {
     { MInf, PZero, "-inf", APFloat::opOK, APFloat::fcInfinity },
     { MInf, MZero, "-inf", APFloat::opOK, APFloat::fcInfinity },
     { MInf, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
-#if 0
-    // See Note 1.
-    { MInf, SNaN, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-#endif
+    { MInf, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
     { MInf, PNormalValue, "-inf", APFloat::opOK, APFloat::fcInfinity },
     { MInf, MNormalValue, "-inf", APFloat::opOK, APFloat::fcInfinity },
     { MInf, PLargestValue, "-inf", APFloat::opOK, APFloat::fcInfinity },
@@ -1807,10 +2051,7 @@ TEST(APFloatTest, add) {
     { PZero, PZero, "0x0p+0", APFloat::opOK, APFloat::fcZero },
     { PZero, MZero, "0x0p+0", APFloat::opOK, APFloat::fcZero },
     { PZero, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
-#if 0
-    // See Note 1.
-    { PZero, SNaN, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-#endif
+    { PZero, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
     { PZero, PNormalValue, "0x1p+0", APFloat::opOK, APFloat::fcNormal },
     { PZero, MNormalValue, "-0x1p+0", APFloat::opOK, APFloat::fcNormal },
     { PZero, PLargestValue, "0x1.fffffep+127", APFloat::opOK, APFloat::fcNormal },
@@ -1824,10 +2065,7 @@ TEST(APFloatTest, add) {
     { MZero, PZero, "0x0p+0", APFloat::opOK, APFloat::fcZero },
     { MZero, MZero, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
     { MZero, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
-#if 0
-    // See Note 1.
-    { MZero, SNaN, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-#endif
+    { MZero, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
     { MZero, PNormalValue, "0x1p+0", APFloat::opOK, APFloat::fcNormal },
     { MZero, MNormalValue, "-0x1p+0", APFloat::opOK, APFloat::fcNormal },
     { MZero, PLargestValue, "0x1.fffffep+127", APFloat::opOK, APFloat::fcNormal },
@@ -1841,10 +2079,7 @@ TEST(APFloatTest, add) {
     { QNaN, PZero, "nan", APFloat::opOK, APFloat::fcNaN },
     { QNaN, MZero, "nan", APFloat::opOK, APFloat::fcNaN },
     { QNaN, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
-#if 0
-    // See Note 1.
     { QNaN, SNaN, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-#endif
     { QNaN, PNormalValue, "nan", APFloat::opOK, APFloat::fcNaN },
     { QNaN, MNormalValue, "nan", APFloat::opOK, APFloat::fcNaN },
     { QNaN, PLargestValue, "nan", APFloat::opOK, APFloat::fcNaN },
@@ -1853,32 +2088,26 @@ TEST(APFloatTest, add) {
     { QNaN, MSmallestValue, "nan", APFloat::opOK, APFloat::fcNaN },
     { QNaN, PSmallestNormalized, "nan", APFloat::opOK, APFloat::fcNaN },
     { QNaN, MSmallestNormalized, "nan", APFloat::opOK, APFloat::fcNaN },
-#if 0
-    // See Note 1.
-    { SNaN, PInf, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-    { SNaN, MInf, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-    { SNaN, PZero, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-    { SNaN, MZero, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-    { SNaN, QNaN, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-    { SNaN, SNaN, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-    { SNaN, PNormalValue, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-    { SNaN, MNormalValue, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-    { SNaN, PLargestValue, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-    { SNaN, MLargestValue, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-    { SNaN, PSmallestValue, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-    { SNaN, MSmallestValue, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-    { SNaN, PSmallestNormalized, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-    { SNaN, MSmallestNormalized, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-#endif
+    { SNaN, PInf, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, MInf, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, PZero, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, MZero, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, QNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, PNormalValue, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, MNormalValue, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, PLargestValue, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, MLargestValue, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, PSmallestValue, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, MSmallestValue, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, PSmallestNormalized, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, MSmallestNormalized, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
     { PNormalValue, PInf, "inf", APFloat::opOK, APFloat::fcInfinity },
     { PNormalValue, MInf, "-inf", APFloat::opOK, APFloat::fcInfinity },
     { PNormalValue, PZero, "0x1p+0", APFloat::opOK, APFloat::fcNormal },
     { PNormalValue, MZero, "0x1p+0", APFloat::opOK, APFloat::fcNormal },
     { PNormalValue, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
-#if 0
-    // See Note 1.
-    { PNormalValue, SNaN, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-#endif
+    { PNormalValue, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
     { PNormalValue, PNormalValue, "0x1p+1", APFloat::opOK, APFloat::fcNormal },
     { PNormalValue, MNormalValue, "0x0p+0", APFloat::opOK, APFloat::fcZero },
     { PNormalValue, PLargestValue, "0x1.fffffep+127", APFloat::opInexact, APFloat::fcNormal },
@@ -1892,10 +2121,7 @@ TEST(APFloatTest, add) {
     { MNormalValue, PZero, "-0x1p+0", APFloat::opOK, APFloat::fcNormal },
     { MNormalValue, MZero, "-0x1p+0", APFloat::opOK, APFloat::fcNormal },
     { MNormalValue, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
-#if 0
-    // See Note 1.
-    { MNormalValue, SNaN, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-#endif
+    { MNormalValue, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
     { MNormalValue, PNormalValue, "0x0p+0", APFloat::opOK, APFloat::fcZero },
     { MNormalValue, MNormalValue, "-0x1p+1", APFloat::opOK, APFloat::fcNormal },
     { MNormalValue, PLargestValue, "0x1.fffffep+127", APFloat::opInexact, APFloat::fcNormal },
@@ -1909,10 +2135,7 @@ TEST(APFloatTest, add) {
     { PLargestValue, PZero, "0x1.fffffep+127", APFloat::opOK, APFloat::fcNormal },
     { PLargestValue, MZero, "0x1.fffffep+127", APFloat::opOK, APFloat::fcNormal },
     { PLargestValue, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
-#if 0
-    // See Note 1.
-    { PLargestValue, SNaN, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-#endif
+    { PLargestValue, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
     { PLargestValue, PNormalValue, "0x1.fffffep+127", APFloat::opInexact, APFloat::fcNormal },
     { PLargestValue, MNormalValue, "0x1.fffffep+127", APFloat::opInexact, APFloat::fcNormal },
     { PLargestValue, PLargestValue, "inf", OverflowStatus, APFloat::fcInfinity },
@@ -1926,10 +2149,7 @@ TEST(APFloatTest, add) {
     { MLargestValue, PZero, "-0x1.fffffep+127", APFloat::opOK, APFloat::fcNormal },
     { MLargestValue, MZero, "-0x1.fffffep+127", APFloat::opOK, APFloat::fcNormal },
     { MLargestValue, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
-#if 0
-    // See Note 1.
-    { MLargestValue, SNaN, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-#endif
+    { MLargestValue, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
     { MLargestValue, PNormalValue, "-0x1.fffffep+127", APFloat::opInexact, APFloat::fcNormal },
     { MLargestValue, MNormalValue, "-0x1.fffffep+127", APFloat::opInexact, APFloat::fcNormal },
     { MLargestValue, PLargestValue, "0x0p+0", APFloat::opOK, APFloat::fcZero },
@@ -1943,10 +2163,7 @@ TEST(APFloatTest, add) {
     { PSmallestValue, PZero, "0x1p-149", APFloat::opOK, APFloat::fcNormal },
     { PSmallestValue, MZero, "0x1p-149", APFloat::opOK, APFloat::fcNormal },
     { PSmallestValue, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
-#if 0
-    // See Note 1.
-    { PSmallestValue, SNaN, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-#endif
+    { PSmallestValue, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
     { PSmallestValue, PNormalValue, "0x1p+0", APFloat::opInexact, APFloat::fcNormal },
     { PSmallestValue, MNormalValue, "-0x1p+0", APFloat::opInexact, APFloat::fcNormal },
     { PSmallestValue, PLargestValue, "0x1.fffffep+127", APFloat::opInexact, APFloat::fcNormal },
@@ -1960,10 +2177,7 @@ TEST(APFloatTest, add) {
     { MSmallestValue, PZero, "-0x1p-149", APFloat::opOK, APFloat::fcNormal },
     { MSmallestValue, MZero, "-0x1p-149", APFloat::opOK, APFloat::fcNormal },
     { MSmallestValue, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
-#if 0
-    // See Note 1.
-    { MSmallestValue, SNaN, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-#endif
+    { MSmallestValue, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
     { MSmallestValue, PNormalValue, "0x1p+0", APFloat::opInexact, APFloat::fcNormal },
     { MSmallestValue, MNormalValue, "-0x1p+0", APFloat::opInexact, APFloat::fcNormal },
     { MSmallestValue, PLargestValue, "0x1.fffffep+127", APFloat::opInexact, APFloat::fcNormal },
@@ -1977,10 +2191,7 @@ TEST(APFloatTest, add) {
     { PSmallestNormalized, PZero, "0x1p-126", APFloat::opOK, APFloat::fcNormal },
     { PSmallestNormalized, MZero, "0x1p-126", APFloat::opOK, APFloat::fcNormal },
     { PSmallestNormalized, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
-#if 0
-// See Note 1.
-    { PSmallestNormalized, SNaN, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-#endif
+    { PSmallestNormalized, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
     { PSmallestNormalized, PNormalValue, "0x1p+0", APFloat::opInexact, APFloat::fcNormal },
     { PSmallestNormalized, MNormalValue, "-0x1p+0", APFloat::opInexact, APFloat::fcNormal },
     { PSmallestNormalized, PLargestValue, "0x1.fffffep+127", APFloat::opInexact, APFloat::fcNormal },
@@ -1994,10 +2205,7 @@ TEST(APFloatTest, add) {
     { MSmallestNormalized, PZero, "-0x1p-126", APFloat::opOK, APFloat::fcNormal },
     { MSmallestNormalized, MZero, "-0x1p-126", APFloat::opOK, APFloat::fcNormal },
     { MSmallestNormalized, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
-#if 0
-    // See Note 1.
-    { MSmallestNormalized, SNaN, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-#endif
+    { MSmallestNormalized, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
     { MSmallestNormalized, PNormalValue, "0x1p+0", APFloat::opInexact, APFloat::fcNormal },
     { MSmallestNormalized, MNormalValue, "-0x1p+0", APFloat::opInexact, APFloat::fcNormal },
     { MSmallestNormalized, PLargestValue, "0x1.fffffep+127", APFloat::opInexact, APFloat::fcNormal },
@@ -2008,7 +2216,7 @@ TEST(APFloatTest, add) {
     { MSmallestNormalized, MSmallestNormalized, "-0x1p-125", APFloat::opOK, APFloat::fcNormal }
   };
 
-  for (size_t i = 0; i < NumTests; ++i) {
+  for (size_t i = 0; i < array_lengthof(SpecialCaseTests); ++i) {
     APFloat x(SpecialCaseTests[i].x);
     APFloat y(SpecialCaseTests[i].y);
     APFloat::opStatus status = x.add(y, APFloat::rmNearestTiesToEven);
@@ -2016,25 +2224,20 @@ TEST(APFloatTest, add) {
     APFloat result(APFloat::IEEEsingle(), SpecialCaseTests[i].result);
 
     EXPECT_TRUE(result.bitwiseIsEqual(x));
-    EXPECT_TRUE((int)status == SpecialCaseTests[i].status);
-    EXPECT_TRUE((int)x.getCategory() == SpecialCaseTests[i].category);
+    EXPECT_EQ(SpecialCaseTests[i].status, (int)status);
+    EXPECT_EQ(SpecialCaseTests[i].category, (int)x.getCategory());
   }
 }
 
 TEST(APFloatTest, subtract) {
   // Test Special Cases against each other and normal values.
 
-  // TODOS/NOTES:
-  // 1. Since we perform only default exception handling all operations with
-  // signaling NaNs should have a result that is a quiet NaN. Currently they
-  // return sNaN.
-
   APFloat PInf = APFloat::getInf(APFloat::IEEEsingle(), false);
   APFloat MInf = APFloat::getInf(APFloat::IEEEsingle(), true);
   APFloat PZero = APFloat::getZero(APFloat::IEEEsingle(), false);
   APFloat MZero = APFloat::getZero(APFloat::IEEEsingle(), true);
   APFloat QNaN = APFloat::getNaN(APFloat::IEEEsingle(), false);
-  APFloat SNaN = APFloat::getSNaN(APFloat::IEEEsingle(), false);
+  APFloat SNaN = APFloat(APFloat::IEEEsingle(), "snan123");
   APFloat PNormalValue = APFloat(APFloat::IEEEsingle(), "0x1p+0");
   APFloat MNormalValue = APFloat(APFloat::IEEEsingle(), "-0x1p+0");
   APFloat PLargestValue = APFloat::getLargest(APFloat::IEEEsingle(), false);
@@ -2048,23 +2251,19 @@ TEST(APFloatTest, subtract) {
 
   const int OverflowStatus = APFloat::opOverflow | APFloat::opInexact;
 
-  const unsigned NumTests = 169;
   struct {
     APFloat x;
     APFloat y;
     const char *result;
     int status;
     int category;
-  } SpecialCaseTests[NumTests] = {
+  } SpecialCaseTests[] = {
     { PInf, PInf, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
     { PInf, MInf, "inf", APFloat::opOK, APFloat::fcInfinity },
     { PInf, PZero, "inf", APFloat::opOK, APFloat::fcInfinity },
     { PInf, MZero, "inf", APFloat::opOK, APFloat::fcInfinity },
-    { PInf, QNaN, "-nan", APFloat::opOK, APFloat::fcNaN },
-#if 0
-// See Note 1.
-    { PInf, SNaN, "-nan", APFloat::opInvalidOp, APFloat::fcNaN },
-#endif
+    { PInf, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
+    { PInf, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
     { PInf, PNormalValue, "inf", APFloat::opOK, APFloat::fcInfinity },
     { PInf, MNormalValue, "inf", APFloat::opOK, APFloat::fcInfinity },
     { PInf, PLargestValue, "inf", APFloat::opOK, APFloat::fcInfinity },
@@ -2077,11 +2276,8 @@ TEST(APFloatTest, subtract) {
     { MInf, MInf, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
     { MInf, PZero, "-inf", APFloat::opOK, APFloat::fcInfinity },
     { MInf, MZero, "-inf", APFloat::opOK, APFloat::fcInfinity },
-    { MInf, QNaN, "-nan", APFloat::opOK, APFloat::fcNaN },
-#if 0
-// See Note 1.
-    { MInf, SNaN, "-nan", APFloat::opInvalidOp, APFloat::fcNaN },
-#endif
+    { MInf, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
+    { MInf, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
     { MInf, PNormalValue, "-inf", APFloat::opOK, APFloat::fcInfinity },
     { MInf, MNormalValue, "-inf", APFloat::opOK, APFloat::fcInfinity },
     { MInf, PLargestValue, "-inf", APFloat::opOK, APFloat::fcInfinity },
@@ -2094,11 +2290,8 @@ TEST(APFloatTest, subtract) {
     { PZero, MInf, "inf", APFloat::opOK, APFloat::fcInfinity },
     { PZero, PZero, "0x0p+0", APFloat::opOK, APFloat::fcZero },
     { PZero, MZero, "0x0p+0", APFloat::opOK, APFloat::fcZero },
-    { PZero, QNaN, "-nan", APFloat::opOK, APFloat::fcNaN },
-#if 0
-// See Note 1.
-    { PZero, SNaN, "-nan", APFloat::opInvalidOp, APFloat::fcNaN },
-#endif
+    { PZero, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
+    { PZero, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
     { PZero, PNormalValue, "-0x1p+0", APFloat::opOK, APFloat::fcNormal },
     { PZero, MNormalValue, "0x1p+0", APFloat::opOK, APFloat::fcNormal },
     { PZero, PLargestValue, "-0x1.fffffep+127", APFloat::opOK, APFloat::fcNormal },
@@ -2111,11 +2304,8 @@ TEST(APFloatTest, subtract) {
     { MZero, MInf, "inf", APFloat::opOK, APFloat::fcInfinity },
     { MZero, PZero, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
     { MZero, MZero, "0x0p+0", APFloat::opOK, APFloat::fcZero },
-    { MZero, QNaN, "-nan", APFloat::opOK, APFloat::fcNaN },
-#if 0
-// See Note 1.
-    { MZero, SNaN, "-nan", APFloat::opInvalidOp, APFloat::fcNaN },
-#endif
+    { MZero, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
+    { MZero, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
     { MZero, PNormalValue, "-0x1p+0", APFloat::opOK, APFloat::fcNormal },
     { MZero, MNormalValue, "0x1p+0", APFloat::opOK, APFloat::fcNormal },
     { MZero, PLargestValue, "-0x1.fffffep+127", APFloat::opOK, APFloat::fcNormal },
@@ -2129,10 +2319,7 @@ TEST(APFloatTest, subtract) {
     { QNaN, PZero, "nan", APFloat::opOK, APFloat::fcNaN },
     { QNaN, MZero, "nan", APFloat::opOK, APFloat::fcNaN },
     { QNaN, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
-#if 0
-// See Note 1.
     { QNaN, SNaN, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-#endif
     { QNaN, PNormalValue, "nan", APFloat::opOK, APFloat::fcNaN },
     { QNaN, MNormalValue, "nan", APFloat::opOK, APFloat::fcNaN },
     { QNaN, PLargestValue, "nan", APFloat::opOK, APFloat::fcNaN },
@@ -2141,32 +2328,26 @@ TEST(APFloatTest, subtract) {
     { QNaN, MSmallestValue, "nan", APFloat::opOK, APFloat::fcNaN },
     { QNaN, PSmallestNormalized, "nan", APFloat::opOK, APFloat::fcNaN },
     { QNaN, MSmallestNormalized, "nan", APFloat::opOK, APFloat::fcNaN },
-#if 0
-// See Note 1.
-    { SNaN, PInf, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-    { SNaN, MInf, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-    { SNaN, PZero, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-    { SNaN, MZero, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-    { SNaN, QNaN, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-    { SNaN, SNaN, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-    { SNaN, PNormalValue, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-    { SNaN, MNormalValue, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-    { SNaN, PLargestValue, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-    { SNaN, MLargestValue, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-    { SNaN, PSmallestValue, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-    { SNaN, MSmallestValue, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-    { SNaN, PSmallestNormalized, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-    { SNaN, MSmallestNormalized, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-#endif
+    { SNaN, PInf, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, MInf, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, PZero, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, MZero, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, QNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, PNormalValue, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, MNormalValue, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, PLargestValue, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, MLargestValue, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, PSmallestValue, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, MSmallestValue, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, PSmallestNormalized, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, MSmallestNormalized, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
     { PNormalValue, PInf, "-inf", APFloat::opOK, APFloat::fcInfinity },
     { PNormalValue, MInf, "inf", APFloat::opOK, APFloat::fcInfinity },
     { PNormalValue, PZero, "0x1p+0", APFloat::opOK, APFloat::fcNormal },
     { PNormalValue, MZero, "0x1p+0", APFloat::opOK, APFloat::fcNormal },
-    { PNormalValue, QNaN, "-nan", APFloat::opOK, APFloat::fcNaN },
-#if 0
-// See Note 1.
-    { PNormalValue, SNaN, "-nan", APFloat::opInvalidOp, APFloat::fcNaN },
-#endif
+    { PNormalValue, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
+    { PNormalValue, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
     { PNormalValue, PNormalValue, "0x0p+0", APFloat::opOK, APFloat::fcZero },
     { PNormalValue, MNormalValue, "0x1p+1", APFloat::opOK, APFloat::fcNormal },
     { PNormalValue, PLargestValue, "-0x1.fffffep+127", APFloat::opInexact, APFloat::fcNormal },
@@ -2179,11 +2360,8 @@ TEST(APFloatTest, subtract) {
     { MNormalValue, MInf, "inf", APFloat::opOK, APFloat::fcInfinity },
     { MNormalValue, PZero, "-0x1p+0", APFloat::opOK, APFloat::fcNormal },
     { MNormalValue, MZero, "-0x1p+0", APFloat::opOK, APFloat::fcNormal },
-    { MNormalValue, QNaN, "-nan", APFloat::opOK, APFloat::fcNaN },
-#if 0
-// See Note 1.
-    { MNormalValue, SNaN, "-nan", APFloat::opInvalidOp, APFloat::fcNaN },
-#endif
+    { MNormalValue, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
+    { MNormalValue, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
     { MNormalValue, PNormalValue, "-0x1p+1", APFloat::opOK, APFloat::fcNormal },
     { MNormalValue, MNormalValue, "0x0p+0", APFloat::opOK, APFloat::fcZero },
     { MNormalValue, PLargestValue, "-0x1.fffffep+127", APFloat::opInexact, APFloat::fcNormal },
@@ -2196,11 +2374,8 @@ TEST(APFloatTest, subtract) {
     { PLargestValue, MInf, "inf", APFloat::opOK, APFloat::fcInfinity },
     { PLargestValue, PZero, "0x1.fffffep+127", APFloat::opOK, APFloat::fcNormal },
     { PLargestValue, MZero, "0x1.fffffep+127", APFloat::opOK, APFloat::fcNormal },
-    { PLargestValue, QNaN, "-nan", APFloat::opOK, APFloat::fcNaN },
-#if 0
-// See Note 1.
-    { PLargestValue, SNaN, "-nan", APFloat::opInvalidOp, APFloat::fcNaN },
-#endif
+    { PLargestValue, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
+    { PLargestValue, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
     { PLargestValue, PNormalValue, "0x1.fffffep+127", APFloat::opInexact, APFloat::fcNormal },
     { PLargestValue, MNormalValue, "0x1.fffffep+127", APFloat::opInexact, APFloat::fcNormal },
     { PLargestValue, PLargestValue, "0x0p+0", APFloat::opOK, APFloat::fcZero },
@@ -2213,11 +2388,8 @@ TEST(APFloatTest, subtract) {
     { MLargestValue, MInf, "inf", APFloat::opOK, APFloat::fcInfinity },
     { MLargestValue, PZero, "-0x1.fffffep+127", APFloat::opOK, APFloat::fcNormal },
     { MLargestValue, MZero, "-0x1.fffffep+127", APFloat::opOK, APFloat::fcNormal },
-    { MLargestValue, QNaN, "-nan", APFloat::opOK, APFloat::fcNaN },
-#if 0
-// See Note 1.
-    { MLargestValue, SNaN, "-nan", APFloat::opInvalidOp, APFloat::fcNaN },
-#endif
+    { MLargestValue, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
+    { MLargestValue, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
     { MLargestValue, PNormalValue, "-0x1.fffffep+127", APFloat::opInexact, APFloat::fcNormal },
     { MLargestValue, MNormalValue, "-0x1.fffffep+127", APFloat::opInexact, APFloat::fcNormal },
     { MLargestValue, PLargestValue, "-inf", OverflowStatus, APFloat::fcInfinity },
@@ -2230,11 +2402,8 @@ TEST(APFloatTest, subtract) {
     { PSmallestValue, MInf, "inf", APFloat::opOK, APFloat::fcInfinity },
     { PSmallestValue, PZero, "0x1p-149", APFloat::opOK, APFloat::fcNormal },
     { PSmallestValue, MZero, "0x1p-149", APFloat::opOK, APFloat::fcNormal },
-    { PSmallestValue, QNaN, "-nan", APFloat::opOK, APFloat::fcNaN },
-#if 0
-// See Note 1.
-    { PSmallestValue, SNaN, "-nan", APFloat::opInvalidOp, APFloat::fcNaN },
-#endif
+    { PSmallestValue, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
+    { PSmallestValue, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
     { PSmallestValue, PNormalValue, "-0x1p+0", APFloat::opInexact, APFloat::fcNormal },
     { PSmallestValue, MNormalValue, "0x1p+0", APFloat::opInexact, APFloat::fcNormal },
     { PSmallestValue, PLargestValue, "-0x1.fffffep+127", APFloat::opInexact, APFloat::fcNormal },
@@ -2247,11 +2416,8 @@ TEST(APFloatTest, subtract) {
     { MSmallestValue, MInf, "inf", APFloat::opOK, APFloat::fcInfinity },
     { MSmallestValue, PZero, "-0x1p-149", APFloat::opOK, APFloat::fcNormal },
     { MSmallestValue, MZero, "-0x1p-149", APFloat::opOK, APFloat::fcNormal },
-    { MSmallestValue, QNaN, "-nan", APFloat::opOK, APFloat::fcNaN },
-#if 0
-// See Note 1.
-    { MSmallestValue, SNaN, "-nan", APFloat::opInvalidOp, APFloat::fcNaN },
-#endif
+    { MSmallestValue, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
+    { MSmallestValue, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
     { MSmallestValue, PNormalValue, "-0x1p+0", APFloat::opInexact, APFloat::fcNormal },
     { MSmallestValue, MNormalValue, "0x1p+0", APFloat::opInexact, APFloat::fcNormal },
     { MSmallestValue, PLargestValue, "-0x1.fffffep+127", APFloat::opInexact, APFloat::fcNormal },
@@ -2264,11 +2430,8 @@ TEST(APFloatTest, subtract) {
     { PSmallestNormalized, MInf, "inf", APFloat::opOK, APFloat::fcInfinity },
     { PSmallestNormalized, PZero, "0x1p-126", APFloat::opOK, APFloat::fcNormal },
     { PSmallestNormalized, MZero, "0x1p-126", APFloat::opOK, APFloat::fcNormal },
-    { PSmallestNormalized, QNaN, "-nan", APFloat::opOK, APFloat::fcNaN },
-#if 0
-// See Note 1.
-    { PSmallestNormalized, SNaN, "-nan", APFloat::opInvalidOp, APFloat::fcNaN },
-#endif
+    { PSmallestNormalized, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
+    { PSmallestNormalized, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
     { PSmallestNormalized, PNormalValue, "-0x1p+0", APFloat::opInexact, APFloat::fcNormal },
     { PSmallestNormalized, MNormalValue, "0x1p+0", APFloat::opInexact, APFloat::fcNormal },
     { PSmallestNormalized, PLargestValue, "-0x1.fffffep+127", APFloat::opInexact, APFloat::fcNormal },
@@ -2281,11 +2444,8 @@ TEST(APFloatTest, subtract) {
     { MSmallestNormalized, MInf, "inf", APFloat::opOK, APFloat::fcInfinity },
     { MSmallestNormalized, PZero, "-0x1p-126", APFloat::opOK, APFloat::fcNormal },
     { MSmallestNormalized, MZero, "-0x1p-126", APFloat::opOK, APFloat::fcNormal },
-    { MSmallestNormalized, QNaN, "-nan", APFloat::opOK, APFloat::fcNaN },
-#if 0
-// See Note 1.
-    { MSmallestNormalized, SNaN, "-nan", APFloat::opInvalidOp, APFloat::fcNaN },
-#endif
+    { MSmallestNormalized, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
+    { MSmallestNormalized, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
     { MSmallestNormalized, PNormalValue, "-0x1p+0", APFloat::opInexact, APFloat::fcNormal },
     { MSmallestNormalized, MNormalValue, "0x1p+0", APFloat::opInexact, APFloat::fcNormal },
     { MSmallestNormalized, PLargestValue, "-0x1.fffffep+127", APFloat::opInexact, APFloat::fcNormal },
@@ -2296,7 +2456,7 @@ TEST(APFloatTest, subtract) {
     { MSmallestNormalized, MSmallestNormalized, "0x0p+0", APFloat::opOK, APFloat::fcZero }
   };
 
-  for (size_t i = 0; i < NumTests; ++i) {
+  for (size_t i = 0; i < array_lengthof(SpecialCaseTests); ++i) {
     APFloat x(SpecialCaseTests[i].x);
     APFloat y(SpecialCaseTests[i].y);
     APFloat::opStatus status = x.subtract(y, APFloat::rmNearestTiesToEven);
@@ -2304,25 +2464,20 @@ TEST(APFloatTest, subtract) {
     APFloat result(APFloat::IEEEsingle(), SpecialCaseTests[i].result);
 
     EXPECT_TRUE(result.bitwiseIsEqual(x));
-    EXPECT_TRUE((int)status == SpecialCaseTests[i].status);
-    EXPECT_TRUE((int)x.getCategory() == SpecialCaseTests[i].category);
+    EXPECT_EQ(SpecialCaseTests[i].status, (int)status);
+    EXPECT_EQ(SpecialCaseTests[i].category, (int)x.getCategory());
   }
 }
 
 TEST(APFloatTest, multiply) {
   // Test Special Cases against each other and normal values.
 
-  // TODOS/NOTES:
-  // 1. Since we perform only default exception handling all operations with
-  // signaling NaNs should have a result that is a quiet NaN. Currently they
-  // return sNaN.
-
   APFloat PInf = APFloat::getInf(APFloat::IEEEsingle(), false);
   APFloat MInf = APFloat::getInf(APFloat::IEEEsingle(), true);
   APFloat PZero = APFloat::getZero(APFloat::IEEEsingle(), false);
   APFloat MZero = APFloat::getZero(APFloat::IEEEsingle(), true);
   APFloat QNaN = APFloat::getNaN(APFloat::IEEEsingle(), false);
-  APFloat SNaN = APFloat::getSNaN(APFloat::IEEEsingle(), false);
+  APFloat SNaN = APFloat(APFloat::IEEEsingle(), "snan123");
   APFloat PNormalValue = APFloat(APFloat::IEEEsingle(), "0x1p+0");
   APFloat MNormalValue = APFloat(APFloat::IEEEsingle(), "-0x1p+0");
   APFloat PLargestValue = APFloat::getLargest(APFloat::IEEEsingle(), false);
@@ -2330,30 +2485,34 @@ TEST(APFloatTest, multiply) {
   APFloat PSmallestValue = APFloat::getSmallest(APFloat::IEEEsingle(), false);
   APFloat MSmallestValue = APFloat::getSmallest(APFloat::IEEEsingle(), true);
   APFloat PSmallestNormalized =
-    APFloat::getSmallestNormalized(APFloat::IEEEsingle(), false);
+      APFloat::getSmallestNormalized(APFloat::IEEEsingle(), false);
   APFloat MSmallestNormalized =
-    APFloat::getSmallestNormalized(APFloat::IEEEsingle(), true);
+      APFloat::getSmallestNormalized(APFloat::IEEEsingle(), true);
+
+  APFloat MaxQuad(APFloat::IEEEquad(),
+                  "0x1.ffffffffffffffffffffffffffffp+16383");
+  APFloat MinQuad(APFloat::IEEEquad(),
+                  "0x0.0000000000000000000000000001p-16382");
+  APFloat NMinQuad(APFloat::IEEEquad(),
+                   "-0x0.0000000000000000000000000001p-16382");
 
   const int OverflowStatus = APFloat::opOverflow | APFloat::opInexact;
   const int UnderflowStatus = APFloat::opUnderflow | APFloat::opInexact;
 
-  const unsigned NumTests = 169;
   struct {
     APFloat x;
     APFloat y;
     const char *result;
     int status;
     int category;
-  } SpecialCaseTests[NumTests] = {
+    APFloat::roundingMode roundingMode = APFloat::rmNearestTiesToEven;
+  } SpecialCaseTests[] = {
     { PInf, PInf, "inf", APFloat::opOK, APFloat::fcInfinity },
     { PInf, MInf, "-inf", APFloat::opOK, APFloat::fcInfinity },
     { PInf, PZero, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
     { PInf, MZero, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
     { PInf, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
-#if 0
-// See Note 1.
-    { PInf, SNaN, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-#endif
+    { PInf, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
     { PInf, PNormalValue, "inf", APFloat::opOK, APFloat::fcInfinity },
     { PInf, MNormalValue, "-inf", APFloat::opOK, APFloat::fcInfinity },
     { PInf, PLargestValue, "inf", APFloat::opOK, APFloat::fcInfinity },
@@ -2367,10 +2526,7 @@ TEST(APFloatTest, multiply) {
     { MInf, PZero, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
     { MInf, MZero, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
     { MInf, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
-#if 0
-// See Note 1.
-    { MInf, SNaN, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-#endif
+    { MInf, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
     { MInf, PNormalValue, "-inf", APFloat::opOK, APFloat::fcInfinity },
     { MInf, MNormalValue, "inf", APFloat::opOK, APFloat::fcInfinity },
     { MInf, PLargestValue, "-inf", APFloat::opOK, APFloat::fcInfinity },
@@ -2384,10 +2540,7 @@ TEST(APFloatTest, multiply) {
     { PZero, PZero, "0x0p+0", APFloat::opOK, APFloat::fcZero },
     { PZero, MZero, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
     { PZero, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
-#if 0
-// See Note 1.
-    { PZero, SNaN, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-#endif
+    { PZero, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
     { PZero, PNormalValue, "0x0p+0", APFloat::opOK, APFloat::fcZero },
     { PZero, MNormalValue, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
     { PZero, PLargestValue, "0x0p+0", APFloat::opOK, APFloat::fcZero },
@@ -2401,10 +2554,7 @@ TEST(APFloatTest, multiply) {
     { MZero, PZero, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
     { MZero, MZero, "0x0p+0", APFloat::opOK, APFloat::fcZero },
     { MZero, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
-#if 0
-// See Note 1.
-    { MZero, SNaN, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-#endif
+    { MZero, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
     { MZero, PNormalValue, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
     { MZero, MNormalValue, "0x0p+0", APFloat::opOK, APFloat::fcZero },
     { MZero, PLargestValue, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
@@ -2418,10 +2568,7 @@ TEST(APFloatTest, multiply) {
     { QNaN, PZero, "nan", APFloat::opOK, APFloat::fcNaN },
     { QNaN, MZero, "nan", APFloat::opOK, APFloat::fcNaN },
     { QNaN, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
-#if 0
-// See Note 1.
     { QNaN, SNaN, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-#endif
     { QNaN, PNormalValue, "nan", APFloat::opOK, APFloat::fcNaN },
     { QNaN, MNormalValue, "nan", APFloat::opOK, APFloat::fcNaN },
     { QNaN, PLargestValue, "nan", APFloat::opOK, APFloat::fcNaN },
@@ -2430,32 +2577,26 @@ TEST(APFloatTest, multiply) {
     { QNaN, MSmallestValue, "nan", APFloat::opOK, APFloat::fcNaN },
     { QNaN, PSmallestNormalized, "nan", APFloat::opOK, APFloat::fcNaN },
     { QNaN, MSmallestNormalized, "nan", APFloat::opOK, APFloat::fcNaN },
-#if 0
-// See Note 1.
-    { SNaN, PInf, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-    { SNaN, MInf, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-    { SNaN, PZero, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-    { SNaN, MZero, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-    { SNaN, QNaN, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-    { SNaN, SNaN, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-    { SNaN, PNormalValue, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-    { SNaN, MNormalValue, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-    { SNaN, PLargestValue, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-    { SNaN, MLargestValue, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-    { SNaN, PSmallestValue, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-    { SNaN, MSmallestValue, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-    { SNaN, PSmallestNormalized, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-    { SNaN, MSmallestNormalized, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-#endif
+    { SNaN, PInf, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, MInf, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, PZero, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, MZero, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, QNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, PNormalValue, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, MNormalValue, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, PLargestValue, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, MLargestValue, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, PSmallestValue, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, MSmallestValue, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, PSmallestNormalized, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, MSmallestNormalized, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
     { PNormalValue, PInf, "inf", APFloat::opOK, APFloat::fcInfinity },
     { PNormalValue, MInf, "-inf", APFloat::opOK, APFloat::fcInfinity },
     { PNormalValue, PZero, "0x0p+0", APFloat::opOK, APFloat::fcZero },
     { PNormalValue, MZero, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
     { PNormalValue, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
-#if 0
-// See Note 1.
-    { PNormalValue, SNaN, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-#endif
+    { PNormalValue, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
     { PNormalValue, PNormalValue, "0x1p+0", APFloat::opOK, APFloat::fcNormal },
     { PNormalValue, MNormalValue, "-0x1p+0", APFloat::opOK, APFloat::fcNormal },
     { PNormalValue, PLargestValue, "0x1.fffffep+127", APFloat::opOK, APFloat::fcNormal },
@@ -2469,10 +2610,7 @@ TEST(APFloatTest, multiply) {
     { MNormalValue, PZero, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
     { MNormalValue, MZero, "0x0p+0", APFloat::opOK, APFloat::fcZero },
     { MNormalValue, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
-#if 0
-// See Note 1.
-    { MNormalValue, SNaN, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-#endif
+    { MNormalValue, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
     { MNormalValue, PNormalValue, "-0x1p+0", APFloat::opOK, APFloat::fcNormal },
     { MNormalValue, MNormalValue, "0x1p+0", APFloat::opOK, APFloat::fcNormal },
     { MNormalValue, PLargestValue, "-0x1.fffffep+127", APFloat::opOK, APFloat::fcNormal },
@@ -2486,10 +2624,7 @@ TEST(APFloatTest, multiply) {
     { PLargestValue, PZero, "0x0p+0", APFloat::opOK, APFloat::fcZero },
     { PLargestValue, MZero, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
     { PLargestValue, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
-#if 0
-// See Note 1.
-    { PLargestValue, SNaN, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-#endif
+    { PLargestValue, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
     { PLargestValue, PNormalValue, "0x1.fffffep+127", APFloat::opOK, APFloat::fcNormal },
     { PLargestValue, MNormalValue, "-0x1.fffffep+127", APFloat::opOK, APFloat::fcNormal },
     { PLargestValue, PLargestValue, "inf", OverflowStatus, APFloat::fcInfinity },
@@ -2503,10 +2638,7 @@ TEST(APFloatTest, multiply) {
     { MLargestValue, PZero, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
     { MLargestValue, MZero, "0x0p+0", APFloat::opOK, APFloat::fcZero },
     { MLargestValue, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
-#if 0
-// See Note 1.
-    { MLargestValue, SNaN, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-#endif
+    { MLargestValue, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
     { MLargestValue, PNormalValue, "-0x1.fffffep+127", APFloat::opOK, APFloat::fcNormal },
     { MLargestValue, MNormalValue, "0x1.fffffep+127", APFloat::opOK, APFloat::fcNormal },
     { MLargestValue, PLargestValue, "-inf", OverflowStatus, APFloat::fcInfinity },
@@ -2520,10 +2652,7 @@ TEST(APFloatTest, multiply) {
     { PSmallestValue, PZero, "0x0p+0", APFloat::opOK, APFloat::fcZero },
     { PSmallestValue, MZero, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
     { PSmallestValue, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
-#if 0
-// See Note 1.
-    { PSmallestValue, SNaN, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-#endif
+    { PSmallestValue, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
     { PSmallestValue, PNormalValue, "0x1p-149", APFloat::opOK, APFloat::fcNormal },
     { PSmallestValue, MNormalValue, "-0x1p-149", APFloat::opOK, APFloat::fcNormal },
     { PSmallestValue, PLargestValue, "0x1.fffffep-22", APFloat::opOK, APFloat::fcNormal },
@@ -2537,10 +2666,7 @@ TEST(APFloatTest, multiply) {
     { MSmallestValue, PZero, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
     { MSmallestValue, MZero, "0x0p+0", APFloat::opOK, APFloat::fcZero },
     { MSmallestValue, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
-#if 0
-// See Note 1.
-    { MSmallestValue, SNaN, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-#endif
+    { MSmallestValue, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
     { MSmallestValue, PNormalValue, "-0x1p-149", APFloat::opOK, APFloat::fcNormal },
     { MSmallestValue, MNormalValue, "0x1p-149", APFloat::opOK, APFloat::fcNormal },
     { MSmallestValue, PLargestValue, "-0x1.fffffep-22", APFloat::opOK, APFloat::fcNormal },
@@ -2554,10 +2680,7 @@ TEST(APFloatTest, multiply) {
     { PSmallestNormalized, PZero, "0x0p+0", APFloat::opOK, APFloat::fcZero },
     { PSmallestNormalized, MZero, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
     { PSmallestNormalized, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
-#if 0
-// See Note 1.
-    { PSmallestNormalized, SNaN, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-#endif
+    { PSmallestNormalized, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
     { PSmallestNormalized, PNormalValue, "0x1p-126", APFloat::opOK, APFloat::fcNormal },
     { PSmallestNormalized, MNormalValue, "-0x1p-126", APFloat::opOK, APFloat::fcNormal },
     { PSmallestNormalized, PLargestValue, "0x1.fffffep+1", APFloat::opOK, APFloat::fcNormal },
@@ -2571,10 +2694,7 @@ TEST(APFloatTest, multiply) {
     { MSmallestNormalized, PZero, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
     { MSmallestNormalized, MZero, "0x0p+0", APFloat::opOK, APFloat::fcZero },
     { MSmallestNormalized, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
-#if 0
-// See Note 1.
-    { MSmallestNormalized, SNaN, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-#endif
+    { MSmallestNormalized, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
     { MSmallestNormalized, PNormalValue, "-0x1p-126", APFloat::opOK, APFloat::fcNormal },
     { MSmallestNormalized, MNormalValue, "0x1p-126", APFloat::opOK, APFloat::fcNormal },
     { MSmallestNormalized, PLargestValue, "-0x1.fffffep+1", APFloat::opOK, APFloat::fcNormal },
@@ -2582,36 +2702,86 @@ TEST(APFloatTest, multiply) {
     { MSmallestNormalized, PSmallestValue, "-0x0p+0", UnderflowStatus, APFloat::fcZero },
     { MSmallestNormalized, MSmallestValue, "0x0p+0", UnderflowStatus, APFloat::fcZero },
     { MSmallestNormalized, PSmallestNormalized, "-0x0p+0", UnderflowStatus, APFloat::fcZero },
-    { MSmallestNormalized, MSmallestNormalized, "0x0p+0", UnderflowStatus, APFloat::fcZero }
+    { MSmallestNormalized, MSmallestNormalized, "0x0p+0", UnderflowStatus, APFloat::fcZero },
+
+    {MaxQuad, MinQuad, "0x1.ffffffffffffffffffffffffffffp-111", APFloat::opOK,
+     APFloat::fcNormal, APFloat::rmNearestTiesToEven},
+    {MaxQuad, MinQuad, "0x1.ffffffffffffffffffffffffffffp-111", APFloat::opOK,
+     APFloat::fcNormal, APFloat::rmTowardPositive},
+    {MaxQuad, MinQuad, "0x1.ffffffffffffffffffffffffffffp-111", APFloat::opOK,
+     APFloat::fcNormal, APFloat::rmTowardNegative},
+    {MaxQuad, MinQuad, "0x1.ffffffffffffffffffffffffffffp-111", APFloat::opOK,
+     APFloat::fcNormal, APFloat::rmTowardZero},
+    {MaxQuad, MinQuad, "0x1.ffffffffffffffffffffffffffffp-111", APFloat::opOK,
+     APFloat::fcNormal, APFloat::rmNearestTiesToAway},
+
+    {MaxQuad, NMinQuad, "-0x1.ffffffffffffffffffffffffffffp-111", APFloat::opOK,
+     APFloat::fcNormal, APFloat::rmNearestTiesToEven},
+    {MaxQuad, NMinQuad, "-0x1.ffffffffffffffffffffffffffffp-111", APFloat::opOK,
+     APFloat::fcNormal, APFloat::rmTowardPositive},
+    {MaxQuad, NMinQuad, "-0x1.ffffffffffffffffffffffffffffp-111", APFloat::opOK,
+     APFloat::fcNormal, APFloat::rmTowardNegative},
+    {MaxQuad, NMinQuad, "-0x1.ffffffffffffffffffffffffffffp-111", APFloat::opOK,
+     APFloat::fcNormal, APFloat::rmTowardZero},
+    {MaxQuad, NMinQuad, "-0x1.ffffffffffffffffffffffffffffp-111", APFloat::opOK,
+     APFloat::fcNormal, APFloat::rmNearestTiesToAway},
+
+    {MaxQuad, MaxQuad, "inf", OverflowStatus, APFloat::fcInfinity,
+     APFloat::rmNearestTiesToEven},
+    {MaxQuad, MaxQuad, "inf", OverflowStatus, APFloat::fcInfinity,
+     APFloat::rmTowardPositive},
+    {MaxQuad, MaxQuad, "0x1.ffffffffffffffffffffffffffffp+16383",
+     APFloat::opInexact, APFloat::fcNormal, APFloat::rmTowardNegative},
+    {MaxQuad, MaxQuad, "0x1.ffffffffffffffffffffffffffffp+16383",
+     APFloat::opInexact, APFloat::fcNormal, APFloat::rmTowardZero},
+    {MaxQuad, MaxQuad, "inf", OverflowStatus, APFloat::fcInfinity,
+     APFloat::rmNearestTiesToAway},
+
+    {MinQuad, MinQuad, "0", UnderflowStatus, APFloat::fcZero,
+     APFloat::rmNearestTiesToEven},
+    {MinQuad, MinQuad, "0x0.0000000000000000000000000001p-16382",
+     UnderflowStatus, APFloat::fcNormal, APFloat::rmTowardPositive},
+    {MinQuad, MinQuad, "0", UnderflowStatus, APFloat::fcZero,
+     APFloat::rmTowardNegative},
+    {MinQuad, MinQuad, "0", UnderflowStatus, APFloat::fcZero,
+     APFloat::rmTowardZero},
+    {MinQuad, MinQuad, "0", UnderflowStatus, APFloat::fcZero,
+     APFloat::rmNearestTiesToAway},
+
+    {MinQuad, NMinQuad, "-0", UnderflowStatus, APFloat::fcZero,
+     APFloat::rmNearestTiesToEven},
+    {MinQuad, NMinQuad, "-0", UnderflowStatus, APFloat::fcZero,
+     APFloat::rmTowardPositive},
+    {MinQuad, NMinQuad, "-0x0.0000000000000000000000000001p-16382",
+     UnderflowStatus, APFloat::fcNormal, APFloat::rmTowardNegative},
+    {MinQuad, NMinQuad, "-0", UnderflowStatus, APFloat::fcZero,
+     APFloat::rmTowardZero},
+    {MinQuad, NMinQuad, "-0", UnderflowStatus, APFloat::fcZero,
+     APFloat::rmNearestTiesToAway},
   };
 
-  for (size_t i = 0; i < NumTests; ++i) {
+  for (size_t i = 0; i < array_lengthof(SpecialCaseTests); ++i) {
     APFloat x(SpecialCaseTests[i].x);
     APFloat y(SpecialCaseTests[i].y);
-    APFloat::opStatus status = x.multiply(y, APFloat::rmNearestTiesToEven);
+    APFloat::opStatus status = x.multiply(y, SpecialCaseTests[i].roundingMode);
 
-    APFloat result(APFloat::IEEEsingle(), SpecialCaseTests[i].result);
+    APFloat result(x.getSemantics(), SpecialCaseTests[i].result);
 
     EXPECT_TRUE(result.bitwiseIsEqual(x));
-    EXPECT_TRUE((int)status == SpecialCaseTests[i].status);
-    EXPECT_TRUE((int)x.getCategory() == SpecialCaseTests[i].category);
+    EXPECT_EQ(SpecialCaseTests[i].status, (int)status);
+    EXPECT_EQ(SpecialCaseTests[i].category, (int)x.getCategory());
   }
 }
 
 TEST(APFloatTest, divide) {
   // Test Special Cases against each other and normal values.
 
-  // TODOS/NOTES:
-  // 1. Since we perform only default exception handling all operations with
-  // signaling NaNs should have a result that is a quiet NaN. Currently they
-  // return sNaN.
-
   APFloat PInf = APFloat::getInf(APFloat::IEEEsingle(), false);
   APFloat MInf = APFloat::getInf(APFloat::IEEEsingle(), true);
   APFloat PZero = APFloat::getZero(APFloat::IEEEsingle(), false);
   APFloat MZero = APFloat::getZero(APFloat::IEEEsingle(), true);
   APFloat QNaN = APFloat::getNaN(APFloat::IEEEsingle(), false);
-  APFloat SNaN = APFloat::getSNaN(APFloat::IEEEsingle(), false);
+  APFloat SNaN = APFloat(APFloat::IEEEsingle(), "snan123");
   APFloat PNormalValue = APFloat(APFloat::IEEEsingle(), "0x1p+0");
   APFloat MNormalValue = APFloat(APFloat::IEEEsingle(), "-0x1p+0");
   APFloat PLargestValue = APFloat::getLargest(APFloat::IEEEsingle(), false);
@@ -2619,30 +2789,34 @@ TEST(APFloatTest, divide) {
   APFloat PSmallestValue = APFloat::getSmallest(APFloat::IEEEsingle(), false);
   APFloat MSmallestValue = APFloat::getSmallest(APFloat::IEEEsingle(), true);
   APFloat PSmallestNormalized =
-    APFloat::getSmallestNormalized(APFloat::IEEEsingle(), false);
+      APFloat::getSmallestNormalized(APFloat::IEEEsingle(), false);
   APFloat MSmallestNormalized =
-    APFloat::getSmallestNormalized(APFloat::IEEEsingle(), true);
+      APFloat::getSmallestNormalized(APFloat::IEEEsingle(), true);
+
+  APFloat MaxQuad(APFloat::IEEEquad(),
+                  "0x1.ffffffffffffffffffffffffffffp+16383");
+  APFloat MinQuad(APFloat::IEEEquad(),
+                  "0x0.0000000000000000000000000001p-16382");
+  APFloat NMinQuad(APFloat::IEEEquad(),
+                   "-0x0.0000000000000000000000000001p-16382");
 
   const int OverflowStatus = APFloat::opOverflow | APFloat::opInexact;
   const int UnderflowStatus = APFloat::opUnderflow | APFloat::opInexact;
 
-  const unsigned NumTests = 169;
   struct {
     APFloat x;
     APFloat y;
     const char *result;
     int status;
     int category;
-  } SpecialCaseTests[NumTests] = {
+    APFloat::roundingMode roundingMode = APFloat::rmNearestTiesToEven;
+  } SpecialCaseTests[] = {
     { PInf, PInf, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
     { PInf, MInf, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
     { PInf, PZero, "inf", APFloat::opOK, APFloat::fcInfinity },
     { PInf, MZero, "-inf", APFloat::opOK, APFloat::fcInfinity },
     { PInf, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
-#if 0
-// See Note 1.
-    { PInf, SNaN, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-#endif
+    { PInf, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
     { PInf, PNormalValue, "inf", APFloat::opOK, APFloat::fcInfinity },
     { PInf, MNormalValue, "-inf", APFloat::opOK, APFloat::fcInfinity },
     { PInf, PLargestValue, "inf", APFloat::opOK, APFloat::fcInfinity },
@@ -2656,10 +2830,7 @@ TEST(APFloatTest, divide) {
     { MInf, PZero, "-inf", APFloat::opOK, APFloat::fcInfinity },
     { MInf, MZero, "inf", APFloat::opOK, APFloat::fcInfinity },
     { MInf, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
-#if 0
-// See Note 1.
-    { MInf, SNaN, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-#endif
+    { MInf, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
     { MInf, PNormalValue, "-inf", APFloat::opOK, APFloat::fcInfinity },
     { MInf, MNormalValue, "inf", APFloat::opOK, APFloat::fcInfinity },
     { MInf, PLargestValue, "-inf", APFloat::opOK, APFloat::fcInfinity },
@@ -2673,10 +2844,7 @@ TEST(APFloatTest, divide) {
     { PZero, PZero, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
     { PZero, MZero, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
     { PZero, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
-#if 0
-// See Note 1.
-    { PZero, SNaN, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-#endif
+    { PZero, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
     { PZero, PNormalValue, "0x0p+0", APFloat::opOK, APFloat::fcZero },
     { PZero, MNormalValue, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
     { PZero, PLargestValue, "0x0p+0", APFloat::opOK, APFloat::fcZero },
@@ -2690,10 +2858,7 @@ TEST(APFloatTest, divide) {
     { MZero, PZero, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
     { MZero, MZero, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
     { MZero, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
-#if 0
-// See Note 1.
-    { MZero, SNaN, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-#endif
+    { MZero, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
     { MZero, PNormalValue, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
     { MZero, MNormalValue, "0x0p+0", APFloat::opOK, APFloat::fcZero },
     { MZero, PLargestValue, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
@@ -2707,10 +2872,7 @@ TEST(APFloatTest, divide) {
     { QNaN, PZero, "nan", APFloat::opOK, APFloat::fcNaN },
     { QNaN, MZero, "nan", APFloat::opOK, APFloat::fcNaN },
     { QNaN, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
-#if 0
-// See Note 1.
     { QNaN, SNaN, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-#endif
     { QNaN, PNormalValue, "nan", APFloat::opOK, APFloat::fcNaN },
     { QNaN, MNormalValue, "nan", APFloat::opOK, APFloat::fcNaN },
     { QNaN, PLargestValue, "nan", APFloat::opOK, APFloat::fcNaN },
@@ -2719,32 +2881,26 @@ TEST(APFloatTest, divide) {
     { QNaN, MSmallestValue, "nan", APFloat::opOK, APFloat::fcNaN },
     { QNaN, PSmallestNormalized, "nan", APFloat::opOK, APFloat::fcNaN },
     { QNaN, MSmallestNormalized, "nan", APFloat::opOK, APFloat::fcNaN },
-#if 0
-// See Note 1.
-    { SNaN, PInf, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-    { SNaN, MInf, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-    { SNaN, PZero, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-    { SNaN, MZero, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-    { SNaN, QNaN, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-    { SNaN, SNaN, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-    { SNaN, PNormalValue, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-    { SNaN, MNormalValue, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-    { SNaN, PLargestValue, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-    { SNaN, MLargestValue, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-    { SNaN, PSmallestValue, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-    { SNaN, MSmallestValue, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-    { SNaN, PSmallestNormalized, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-    { SNaN, MSmallestNormalized, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-#endif
+    { SNaN, PInf, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, MInf, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, PZero, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, MZero, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, QNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, PNormalValue, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, MNormalValue, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, PLargestValue, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, MLargestValue, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, PSmallestValue, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, MSmallestValue, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, PSmallestNormalized, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, MSmallestNormalized, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
     { PNormalValue, PInf, "0x0p+0", APFloat::opOK, APFloat::fcZero },
     { PNormalValue, MInf, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
     { PNormalValue, PZero, "inf", APFloat::opDivByZero, APFloat::fcInfinity },
     { PNormalValue, MZero, "-inf", APFloat::opDivByZero, APFloat::fcInfinity },
     { PNormalValue, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
-#if 0
-// See Note 1.
-    { PNormalValue, SNaN, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-#endif
+    { PNormalValue, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
     { PNormalValue, PNormalValue, "0x1p+0", APFloat::opOK, APFloat::fcNormal },
     { PNormalValue, MNormalValue, "-0x1p+0", APFloat::opOK, APFloat::fcNormal },
     { PNormalValue, PLargestValue, "0x1p-128", UnderflowStatus, APFloat::fcNormal },
@@ -2758,10 +2914,7 @@ TEST(APFloatTest, divide) {
     { MNormalValue, PZero, "-inf", APFloat::opDivByZero, APFloat::fcInfinity },
     { MNormalValue, MZero, "inf", APFloat::opDivByZero, APFloat::fcInfinity },
     { MNormalValue, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
-#if 0
-// See Note 1.
-    { MNormalValue, SNaN, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-#endif
+    { MNormalValue, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
     { MNormalValue, PNormalValue, "-0x1p+0", APFloat::opOK, APFloat::fcNormal },
     { MNormalValue, MNormalValue, "0x1p+0", APFloat::opOK, APFloat::fcNormal },
     { MNormalValue, PLargestValue, "-0x1p-128", UnderflowStatus, APFloat::fcNormal },
@@ -2775,10 +2928,7 @@ TEST(APFloatTest, divide) {
     { PLargestValue, PZero, "inf", APFloat::opDivByZero, APFloat::fcInfinity },
     { PLargestValue, MZero, "-inf", APFloat::opDivByZero, APFloat::fcInfinity },
     { PLargestValue, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
-#if 0
-// See Note 1.
-    { PLargestValue, SNaN, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-#endif
+    { PLargestValue, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
     { PLargestValue, PNormalValue, "0x1.fffffep+127", APFloat::opOK, APFloat::fcNormal },
     { PLargestValue, MNormalValue, "-0x1.fffffep+127", APFloat::opOK, APFloat::fcNormal },
     { PLargestValue, PLargestValue, "0x1p+0", APFloat::opOK, APFloat::fcNormal },
@@ -2792,10 +2942,7 @@ TEST(APFloatTest, divide) {
     { MLargestValue, PZero, "-inf", APFloat::opDivByZero, APFloat::fcInfinity },
     { MLargestValue, MZero, "inf", APFloat::opDivByZero, APFloat::fcInfinity },
     { MLargestValue, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
-#if 0
-// See Note 1.
-    { MLargestValue, SNaN, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-#endif
+    { MLargestValue, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
     { MLargestValue, PNormalValue, "-0x1.fffffep+127", APFloat::opOK, APFloat::fcNormal },
     { MLargestValue, MNormalValue, "0x1.fffffep+127", APFloat::opOK, APFloat::fcNormal },
     { MLargestValue, PLargestValue, "-0x1p+0", APFloat::opOK, APFloat::fcNormal },
@@ -2809,10 +2956,7 @@ TEST(APFloatTest, divide) {
     { PSmallestValue, PZero, "inf", APFloat::opDivByZero, APFloat::fcInfinity },
     { PSmallestValue, MZero, "-inf", APFloat::opDivByZero, APFloat::fcInfinity },
     { PSmallestValue, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
-#if 0
-// See Note 1.
-    { PSmallestValue, SNaN, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-#endif
+    { PSmallestValue, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
     { PSmallestValue, PNormalValue, "0x1p-149", APFloat::opOK, APFloat::fcNormal },
     { PSmallestValue, MNormalValue, "-0x1p-149", APFloat::opOK, APFloat::fcNormal },
     { PSmallestValue, PLargestValue, "0x0p+0", UnderflowStatus, APFloat::fcZero },
@@ -2826,10 +2970,7 @@ TEST(APFloatTest, divide) {
     { MSmallestValue, PZero, "-inf", APFloat::opDivByZero, APFloat::fcInfinity },
     { MSmallestValue, MZero, "inf", APFloat::opDivByZero, APFloat::fcInfinity },
     { MSmallestValue, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
-#if 0
-// See Note 1.
-    { MSmallestValue, SNaN, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-#endif
+    { MSmallestValue, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
     { MSmallestValue, PNormalValue, "-0x1p-149", APFloat::opOK, APFloat::fcNormal },
     { MSmallestValue, MNormalValue, "0x1p-149", APFloat::opOK, APFloat::fcNormal },
     { MSmallestValue, PLargestValue, "-0x0p+0", UnderflowStatus, APFloat::fcZero },
@@ -2843,10 +2984,7 @@ TEST(APFloatTest, divide) {
     { PSmallestNormalized, PZero, "inf", APFloat::opDivByZero, APFloat::fcInfinity },
     { PSmallestNormalized, MZero, "-inf", APFloat::opDivByZero, APFloat::fcInfinity },
     { PSmallestNormalized, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
-#if 0
-// See Note 1.
-    { PSmallestNormalized, SNaN, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-#endif
+    { PSmallestNormalized, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
     { PSmallestNormalized, PNormalValue, "0x1p-126", APFloat::opOK, APFloat::fcNormal },
     { PSmallestNormalized, MNormalValue, "-0x1p-126", APFloat::opOK, APFloat::fcNormal },
     { PSmallestNormalized, PLargestValue, "0x0p+0", UnderflowStatus, APFloat::fcZero },
@@ -2860,10 +2998,7 @@ TEST(APFloatTest, divide) {
     { MSmallestNormalized, PZero, "-inf", APFloat::opDivByZero, APFloat::fcInfinity },
     { MSmallestNormalized, MZero, "inf", APFloat::opDivByZero, APFloat::fcInfinity },
     { MSmallestNormalized, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
-#if 0
-// See Note 1.
-    { MSmallestNormalized, SNaN, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
-#endif
+    { MSmallestNormalized, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
     { MSmallestNormalized, PNormalValue, "-0x1p-126", APFloat::opOK, APFloat::fcNormal },
     { MSmallestNormalized, MNormalValue, "0x1p-126", APFloat::opOK, APFloat::fcNormal },
     { MSmallestNormalized, PLargestValue, "-0x0p+0", UnderflowStatus, APFloat::fcZero },
@@ -2872,18 +3007,51 @@ TEST(APFloatTest, divide) {
     { MSmallestNormalized, MSmallestValue, "0x1p+23", APFloat::opOK, APFloat::fcNormal },
     { MSmallestNormalized, PSmallestNormalized, "-0x1p+0", APFloat::opOK, APFloat::fcNormal },
     { MSmallestNormalized, MSmallestNormalized, "0x1p+0", APFloat::opOK, APFloat::fcNormal },
+
+    {MaxQuad, NMinQuad, "-inf", OverflowStatus, APFloat::fcInfinity,
+     APFloat::rmNearestTiesToEven},
+    {MaxQuad, NMinQuad, "-0x1.ffffffffffffffffffffffffffffp+16383",
+     APFloat::opInexact, APFloat::fcNormal, APFloat::rmTowardPositive},
+    {MaxQuad, NMinQuad, "-inf", OverflowStatus, APFloat::fcInfinity,
+     APFloat::rmTowardNegative},
+    {MaxQuad, NMinQuad, "-0x1.ffffffffffffffffffffffffffffp+16383",
+     APFloat::opInexact, APFloat::fcNormal, APFloat::rmTowardZero},
+    {MaxQuad, NMinQuad, "-inf", OverflowStatus, APFloat::fcInfinity,
+     APFloat::rmNearestTiesToAway},
+
+    {MinQuad, MaxQuad, "0", UnderflowStatus, APFloat::fcZero,
+     APFloat::rmNearestTiesToEven},
+    {MinQuad, MaxQuad, "0x0.0000000000000000000000000001p-16382",
+     UnderflowStatus, APFloat::fcNormal, APFloat::rmTowardPositive},
+    {MinQuad, MaxQuad, "0", UnderflowStatus, APFloat::fcZero,
+     APFloat::rmTowardNegative},
+    {MinQuad, MaxQuad, "0", UnderflowStatus, APFloat::fcZero,
+     APFloat::rmTowardZero},
+    {MinQuad, MaxQuad, "0", UnderflowStatus, APFloat::fcZero,
+     APFloat::rmNearestTiesToAway},
+
+    {NMinQuad, MaxQuad, "-0", UnderflowStatus, APFloat::fcZero,
+     APFloat::rmNearestTiesToEven},
+    {NMinQuad, MaxQuad, "-0", UnderflowStatus, APFloat::fcZero,
+     APFloat::rmTowardPositive},
+    {NMinQuad, MaxQuad, "-0x0.0000000000000000000000000001p-16382",
+     UnderflowStatus, APFloat::fcNormal, APFloat::rmTowardNegative},
+    {NMinQuad, MaxQuad, "-0", UnderflowStatus, APFloat::fcZero,
+     APFloat::rmTowardZero},
+    {NMinQuad, MaxQuad, "-0", UnderflowStatus, APFloat::fcZero,
+     APFloat::rmNearestTiesToAway},
   };
 
-  for (size_t i = 0; i < NumTests; ++i) {
+  for (size_t i = 0; i < array_lengthof(SpecialCaseTests); ++i) {
     APFloat x(SpecialCaseTests[i].x);
     APFloat y(SpecialCaseTests[i].y);
-    APFloat::opStatus status = x.divide(y, APFloat::rmNearestTiesToEven);
+    APFloat::opStatus status = x.divide(y, SpecialCaseTests[i].roundingMode);
 
-    APFloat result(APFloat::IEEEsingle(), SpecialCaseTests[i].result);
+    APFloat result(x.getSemantics(), SpecialCaseTests[i].result);
 
     EXPECT_TRUE(result.bitwiseIsEqual(x));
-    EXPECT_TRUE((int)status == SpecialCaseTests[i].status);
-    EXPECT_TRUE((int)x.getCategory() == SpecialCaseTests[i].category);
+    EXPECT_EQ(SpecialCaseTests[i].status, (int)status);
+    EXPECT_EQ(SpecialCaseTests[i].category, (int)x.getCategory());
   }
 }
 
@@ -2895,6 +3063,71 @@ TEST(APFloatTest, operatorOverloads) {
   EXPECT_TRUE(One.bitwiseIsEqual(Two - One));
   EXPECT_TRUE(Two.bitwiseIsEqual(One * Two));
   EXPECT_TRUE(One.bitwiseIsEqual(Two / Two));
+}
+
+TEST(APFloatTest, Comparisons) {
+  enum {MNan, MInf, MBig, MOne, MZer, PZer, POne, PBig, PInf, PNan, NumVals};
+  APFloat Vals[NumVals] = {
+    APFloat::getNaN(APFloat::IEEEsingle(), true),
+    APFloat::getInf(APFloat::IEEEsingle(), true),
+    APFloat::getLargest(APFloat::IEEEsingle(), true),
+    APFloat(APFloat::IEEEsingle(), "-0x1p+0"),
+    APFloat::getZero(APFloat::IEEEsingle(), true),
+    APFloat::getZero(APFloat::IEEEsingle(), false),
+    APFloat(APFloat::IEEEsingle(), "0x1p+0"),
+    APFloat::getLargest(APFloat::IEEEsingle(), false),
+    APFloat::getInf(APFloat::IEEEsingle(), false),
+    APFloat::getNaN(APFloat::IEEEsingle(), false),
+  };
+  using Relation = void (*)(const APFloat &, const APFloat &);
+  Relation LT = [](const APFloat &LHS, const APFloat &RHS) {
+    EXPECT_FALSE(LHS == RHS);
+    EXPECT_TRUE(LHS != RHS);
+    EXPECT_TRUE(LHS < RHS);
+    EXPECT_FALSE(LHS > RHS);
+    EXPECT_TRUE(LHS <= RHS);
+    EXPECT_FALSE(LHS >= RHS);
+  };
+  Relation EQ = [](const APFloat &LHS, const APFloat &RHS) {
+    EXPECT_TRUE(LHS == RHS);
+    EXPECT_FALSE(LHS != RHS);
+    EXPECT_FALSE(LHS < RHS);
+    EXPECT_FALSE(LHS > RHS);
+    EXPECT_TRUE(LHS <= RHS);
+    EXPECT_TRUE(LHS >= RHS);
+  };
+  Relation GT = [](const APFloat &LHS, const APFloat &RHS) {
+    EXPECT_FALSE(LHS == RHS);
+    EXPECT_TRUE(LHS != RHS);
+    EXPECT_FALSE(LHS < RHS);
+    EXPECT_TRUE(LHS > RHS);
+    EXPECT_FALSE(LHS <= RHS);
+    EXPECT_TRUE(LHS >= RHS);
+  };
+  Relation UN = [](const APFloat &LHS, const APFloat &RHS) {
+    EXPECT_FALSE(LHS == RHS);
+    EXPECT_TRUE(LHS != RHS);
+    EXPECT_FALSE(LHS < RHS);
+    EXPECT_FALSE(LHS > RHS);
+    EXPECT_FALSE(LHS <= RHS);
+    EXPECT_FALSE(LHS >= RHS);
+  };
+  Relation Relations[NumVals][NumVals] = {
+    //          -N  -I  -B  -1  -0  +0  +1  +B  +I  +N
+    /* MNan */ {UN, UN, UN, UN, UN, UN, UN, UN, UN, UN},
+    /* MInf */ {UN, EQ, LT, LT, LT, LT, LT, LT, LT, UN},
+    /* MBig */ {UN, GT, EQ, LT, LT, LT, LT, LT, LT, UN},
+    /* MOne */ {UN, GT, GT, EQ, LT, LT, LT, LT, LT, UN},
+    /* MZer */ {UN, GT, GT, GT, EQ, EQ, LT, LT, LT, UN},
+    /* PZer */ {UN, GT, GT, GT, EQ, EQ, LT, LT, LT, UN},
+    /* POne */ {UN, GT, GT, GT, GT, GT, EQ, LT, LT, UN},
+    /* PBig */ {UN, GT, GT, GT, GT, GT, GT, EQ, LT, UN},
+    /* PInf */ {UN, GT, GT, GT, GT, GT, GT, GT, EQ, UN},
+    /* PNan */ {UN, UN, UN, UN, UN, UN, UN, UN, UN, UN},
+  };
+  for (unsigned I = 0; I < NumVals; ++I)
+    for (unsigned J = 0; J < NumVals; ++J)
+      Relations[I][J](Vals[I], Vals[J]);
 }
 
 TEST(APFloatTest, abs) {
@@ -2955,6 +3188,17 @@ TEST(APFloatTest, neg) {
   EXPECT_TRUE(Inf.bitwiseIsEqual(neg(NegInf)));
   EXPECT_TRUE(NegQNaN.bitwiseIsEqual(neg(QNaN)));
   EXPECT_TRUE(QNaN.bitwiseIsEqual(neg(NegQNaN)));
+
+  EXPECT_TRUE(NegOne.bitwiseIsEqual(-One));
+  EXPECT_TRUE(One.bitwiseIsEqual(-NegOne));
+  EXPECT_TRUE(NegZero.bitwiseIsEqual(-Zero));
+  EXPECT_TRUE(Zero.bitwiseIsEqual(-NegZero));
+  EXPECT_TRUE(NegInf.bitwiseIsEqual(-Inf));
+  EXPECT_TRUE(Inf.bitwiseIsEqual(-NegInf));
+  EXPECT_TRUE(NegInf.bitwiseIsEqual(-Inf));
+  EXPECT_TRUE(Inf.bitwiseIsEqual(-NegInf));
+  EXPECT_TRUE(NegQNaN.bitwiseIsEqual(-QNaN));
+  EXPECT_TRUE(QNaN.bitwiseIsEqual(-NegQNaN));
 }
 
 TEST(APFloatTest, ilogb) {
@@ -3371,6 +3615,444 @@ TEST(APFloatTest, mod) {
     APFloat f2(APFloat::IEEEdouble(), "2.0");
     APFloat expected(APFloat::IEEEdouble(), "-0.0");
     EXPECT_EQ(f1.mod(f2), APFloat::opOK);
+    EXPECT_TRUE(f1.bitwiseIsEqual(expected));
+  }
+}
+
+TEST(APFloatTest, remainder) {
+  // Test Special Cases against each other and normal values.
+
+  APFloat PInf = APFloat::getInf(APFloat::IEEEsingle(), false);
+  APFloat MInf = APFloat::getInf(APFloat::IEEEsingle(), true);
+  APFloat PZero = APFloat::getZero(APFloat::IEEEsingle(), false);
+  APFloat MZero = APFloat::getZero(APFloat::IEEEsingle(), true);
+  APFloat QNaN = APFloat::getNaN(APFloat::IEEEsingle(), false);
+  APFloat SNaN = APFloat(APFloat::IEEEsingle(), "snan123");
+  APFloat PNormalValue = APFloat(APFloat::IEEEsingle(), "0x1p+0");
+  APFloat MNormalValue = APFloat(APFloat::IEEEsingle(), "-0x1p+0");
+  APFloat PLargestValue = APFloat::getLargest(APFloat::IEEEsingle(), false);
+  APFloat MLargestValue = APFloat::getLargest(APFloat::IEEEsingle(), true);
+  APFloat PSmallestValue = APFloat::getSmallest(APFloat::IEEEsingle(), false);
+  APFloat MSmallestValue = APFloat::getSmallest(APFloat::IEEEsingle(), true);
+  APFloat PSmallestNormalized =
+      APFloat::getSmallestNormalized(APFloat::IEEEsingle(), false);
+  APFloat MSmallestNormalized =
+      APFloat::getSmallestNormalized(APFloat::IEEEsingle(), true);
+
+  APFloat PVal1(APFloat::IEEEsingle(), "0x1.fffffep+126");
+  APFloat MVal1(APFloat::IEEEsingle(), "-0x1.fffffep+126");
+  APFloat PVal2(APFloat::IEEEsingle(), "0x1.fffffep-126");
+  APFloat MVal2(APFloat::IEEEsingle(), "-0x1.fffffep-126");
+  APFloat PVal3(APFloat::IEEEsingle(), "0x1p-125");
+  APFloat MVal3(APFloat::IEEEsingle(), "-0x1p-125");
+  APFloat PVal4(APFloat::IEEEsingle(), "0x1p+127");
+  APFloat MVal4(APFloat::IEEEsingle(), "-0x1p+127");
+  APFloat PVal5(APFloat::IEEEsingle(), "1.5");
+  APFloat MVal5(APFloat::IEEEsingle(), "-1.5");
+  APFloat PVal6(APFloat::IEEEsingle(), "1");
+  APFloat MVal6(APFloat::IEEEsingle(), "-1");
+
+  struct {
+    APFloat x;
+    APFloat y;
+    const char *result;
+    int status;
+    int category;
+  } SpecialCaseTests[] = {
+    { PInf, PInf, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
+    { PInf, MInf, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
+    { PInf, PZero, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
+    { PInf, MZero, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
+    { PInf, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
+    { PInf, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { PInf, PNormalValue, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
+    { PInf, MNormalValue, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
+    { PInf, PLargestValue, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
+    { PInf, MLargestValue, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
+    { PInf, PSmallestValue, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
+    { PInf, MSmallestValue, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
+    { PInf, PSmallestNormalized, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
+    { PInf, MSmallestNormalized, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
+    { MInf, PInf, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
+    { MInf, MInf, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
+    { MInf, PZero, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
+    { MInf, MZero, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
+    { MInf, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
+    { MInf, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { MInf, PNormalValue, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
+    { MInf, MNormalValue, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
+    { MInf, PLargestValue, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
+    { MInf, MLargestValue, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
+    { MInf, PSmallestValue, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
+    { MInf, MSmallestValue, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
+    { MInf, PSmallestNormalized, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
+    { MInf, MSmallestNormalized, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
+    { PZero, PInf, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { PZero, MInf, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { PZero, PZero, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
+    { PZero, MZero, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
+    { PZero, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
+    { PZero, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { PZero, PNormalValue, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { PZero, MNormalValue, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { PZero, PLargestValue, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { PZero, MLargestValue, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { PZero, PSmallestValue, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { PZero, MSmallestValue, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { PZero, PSmallestNormalized, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { PZero, MSmallestNormalized, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MZero, PInf, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MZero, MInf, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MZero, PZero, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
+    { MZero, MZero, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
+    { MZero, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
+    { MZero, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { MZero, PNormalValue, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MZero, MNormalValue, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MZero, PLargestValue, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MZero, MLargestValue, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MZero, PSmallestValue, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MZero, MSmallestValue, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MZero, PSmallestNormalized, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MZero, MSmallestNormalized, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { QNaN, PInf, "nan", APFloat::opOK, APFloat::fcNaN },
+    { QNaN, MInf, "nan", APFloat::opOK, APFloat::fcNaN },
+    { QNaN, PZero, "nan", APFloat::opOK, APFloat::fcNaN },
+    { QNaN, MZero, "nan", APFloat::opOK, APFloat::fcNaN },
+    { QNaN, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
+    { QNaN, SNaN, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
+    { QNaN, PNormalValue, "nan", APFloat::opOK, APFloat::fcNaN },
+    { QNaN, MNormalValue, "nan", APFloat::opOK, APFloat::fcNaN },
+    { QNaN, PLargestValue, "nan", APFloat::opOK, APFloat::fcNaN },
+    { QNaN, MLargestValue, "nan", APFloat::opOK, APFloat::fcNaN },
+    { QNaN, PSmallestValue, "nan", APFloat::opOK, APFloat::fcNaN },
+    { QNaN, MSmallestValue, "nan", APFloat::opOK, APFloat::fcNaN },
+    { QNaN, PSmallestNormalized, "nan", APFloat::opOK, APFloat::fcNaN },
+    { QNaN, MSmallestNormalized, "nan", APFloat::opOK, APFloat::fcNaN },
+    { SNaN, PInf, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, MInf, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, PZero, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, MZero, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, QNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, PNormalValue, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, MNormalValue, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, PLargestValue, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, MLargestValue, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, PSmallestValue, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, MSmallestValue, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, PSmallestNormalized, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { SNaN, MSmallestNormalized, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { PNormalValue, PInf, "0x1p+0", APFloat::opOK, APFloat::fcNormal },
+    { PNormalValue, MInf, "0x1p+0", APFloat::opOK, APFloat::fcNormal },
+    { PNormalValue, PZero, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
+    { PNormalValue, MZero, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
+    { PNormalValue, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
+    { PNormalValue, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { PNormalValue, PNormalValue, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { PNormalValue, MNormalValue, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { PNormalValue, PLargestValue, "0x1p+0", APFloat::opOK, APFloat::fcNormal },
+    { PNormalValue, MLargestValue, "0x1p+0", APFloat::opOK, APFloat::fcNormal },
+    { PNormalValue, PSmallestValue, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { PNormalValue, MSmallestValue, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { PNormalValue, PSmallestNormalized, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { PNormalValue, MSmallestNormalized, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MNormalValue, PInf, "-0x1p+0", APFloat::opOK, APFloat::fcNormal },
+    { MNormalValue, MInf, "-0x1p+0", APFloat::opOK, APFloat::fcNormal },
+    { MNormalValue, PZero, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
+    { MNormalValue, MZero, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
+    { MNormalValue, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
+    { MNormalValue, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { MNormalValue, PNormalValue, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MNormalValue, MNormalValue, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MNormalValue, PLargestValue, "-0x1p+0", APFloat::opOK, APFloat::fcNormal },
+    { MNormalValue, MLargestValue, "-0x1p+0", APFloat::opOK, APFloat::fcNormal },
+    { MNormalValue, PSmallestValue, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MNormalValue, MSmallestValue, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MNormalValue, PSmallestNormalized, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MNormalValue, MSmallestNormalized, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { PLargestValue, PInf, "0x1.fffffep+127", APFloat::opOK, APFloat::fcNormal },
+    { PLargestValue, MInf, "0x1.fffffep+127", APFloat::opOK, APFloat::fcNormal },
+    { PLargestValue, PZero, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
+    { PLargestValue, MZero, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
+    { PLargestValue, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
+    { PLargestValue, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { PLargestValue, PNormalValue, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { PLargestValue, MNormalValue, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { PLargestValue, PLargestValue, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { PLargestValue, MLargestValue, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { PLargestValue, PSmallestValue, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { PLargestValue, MSmallestValue, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { PLargestValue, PSmallestNormalized, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { PLargestValue, MSmallestNormalized, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MLargestValue, PInf, "-0x1.fffffep+127", APFloat::opOK, APFloat::fcNormal },
+    { MLargestValue, MInf, "-0x1.fffffep+127", APFloat::opOK, APFloat::fcNormal },
+    { MLargestValue, PZero, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
+    { MLargestValue, MZero, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
+    { MLargestValue, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
+    { MLargestValue, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { MLargestValue, PNormalValue, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MLargestValue, MNormalValue, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MLargestValue, PLargestValue, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MLargestValue, MLargestValue, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MLargestValue, PSmallestValue, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MLargestValue, MSmallestValue, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MLargestValue, PSmallestNormalized, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MLargestValue, MSmallestNormalized, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { PSmallestValue, PInf, "0x1p-149", APFloat::opOK, APFloat::fcNormal },
+    { PSmallestValue, MInf, "0x1p-149", APFloat::opOK, APFloat::fcNormal },
+    { PSmallestValue, PZero, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
+    { PSmallestValue, MZero, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
+    { PSmallestValue, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
+    { PSmallestValue, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { PSmallestValue, PNormalValue, "0x1p-149", APFloat::opOK, APFloat::fcNormal },
+    { PSmallestValue, MNormalValue, "0x1p-149", APFloat::opOK, APFloat::fcNormal },
+    { PSmallestValue, PLargestValue, "0x1p-149", APFloat::opOK, APFloat::fcNormal },
+    { PSmallestValue, MLargestValue, "0x1p-149", APFloat::opOK, APFloat::fcNormal },
+    { PSmallestValue, PSmallestValue, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { PSmallestValue, MSmallestValue, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { PSmallestValue, PSmallestNormalized, "0x1p-149", APFloat::opOK, APFloat::fcNormal },
+    { PSmallestValue, MSmallestNormalized, "0x1p-149", APFloat::opOK, APFloat::fcNormal },
+    { MSmallestValue, PInf, "-0x1p-149", APFloat::opOK, APFloat::fcNormal },
+    { MSmallestValue, MInf, "-0x1p-149", APFloat::opOK, APFloat::fcNormal },
+    { MSmallestValue, PZero, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
+    { MSmallestValue, MZero, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
+    { MSmallestValue, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
+    { MSmallestValue, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { MSmallestValue, PNormalValue, "-0x1p-149", APFloat::opOK, APFloat::fcNormal },
+    { MSmallestValue, MNormalValue, "-0x1p-149", APFloat::opOK, APFloat::fcNormal },
+    { MSmallestValue, PLargestValue, "-0x1p-149", APFloat::opOK, APFloat::fcNormal },
+    { MSmallestValue, MLargestValue, "-0x1p-149", APFloat::opOK, APFloat::fcNormal },
+    { MSmallestValue, PSmallestValue, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MSmallestValue, MSmallestValue, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MSmallestValue, PSmallestNormalized, "-0x1p-149", APFloat::opOK, APFloat::fcNormal },
+    { MSmallestValue, MSmallestNormalized, "-0x1p-149", APFloat::opOK, APFloat::fcNormal },
+    { PSmallestNormalized, PInf, "0x1p-126", APFloat::opOK, APFloat::fcNormal },
+    { PSmallestNormalized, MInf, "0x1p-126", APFloat::opOK, APFloat::fcNormal },
+    { PSmallestNormalized, PZero, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
+    { PSmallestNormalized, MZero, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
+    { PSmallestNormalized, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
+    { PSmallestNormalized, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { PSmallestNormalized, PNormalValue, "0x1p-126", APFloat::opOK, APFloat::fcNormal },
+    { PSmallestNormalized, MNormalValue, "0x1p-126", APFloat::opOK, APFloat::fcNormal },
+    { PSmallestNormalized, PLargestValue, "0x1p-126", APFloat::opOK, APFloat::fcNormal },
+    { PSmallestNormalized, MLargestValue, "0x1p-126", APFloat::opOK, APFloat::fcNormal },
+    { PSmallestNormalized, PSmallestValue, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { PSmallestNormalized, MSmallestValue, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { PSmallestNormalized, PSmallestNormalized, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { PSmallestNormalized, MSmallestNormalized, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MSmallestNormalized, PInf, "-0x1p-126", APFloat::opOK, APFloat::fcNormal },
+    { MSmallestNormalized, MInf, "-0x1p-126", APFloat::opOK, APFloat::fcNormal },
+    { MSmallestNormalized, PZero, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
+    { MSmallestNormalized, MZero, "nan", APFloat::opInvalidOp, APFloat::fcNaN },
+    { MSmallestNormalized, QNaN, "nan", APFloat::opOK, APFloat::fcNaN },
+    { MSmallestNormalized, SNaN, "nan123", APFloat::opInvalidOp, APFloat::fcNaN },
+    { MSmallestNormalized, PNormalValue, "-0x1p-126", APFloat::opOK, APFloat::fcNormal },
+    { MSmallestNormalized, MNormalValue, "-0x1p-126", APFloat::opOK, APFloat::fcNormal },
+    { MSmallestNormalized, PLargestValue, "-0x1p-126", APFloat::opOK, APFloat::fcNormal },
+    { MSmallestNormalized, MLargestValue, "-0x1p-126", APFloat::opOK, APFloat::fcNormal },
+    { MSmallestNormalized, PSmallestValue, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MSmallestNormalized, MSmallestValue, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MSmallestNormalized, PSmallestNormalized, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MSmallestNormalized, MSmallestNormalized, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+
+    { PVal1, PVal1, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { PVal1, MVal1, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { PVal1, PVal2, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { PVal1, MVal2, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { PVal1, PVal3, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { PVal1, MVal3, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { PVal1, PVal4, "-0x1p+103", APFloat::opOK, APFloat::fcNormal },
+    { PVal1, MVal4, "-0x1p+103", APFloat::opOK, APFloat::fcNormal },
+    { PVal1, PVal5, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { PVal1, MVal5, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { PVal1, PVal6, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { PVal1, MVal6, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MVal1, PVal1, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MVal1, MVal1, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MVal1, PVal2, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MVal1, MVal2, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MVal1, PVal3, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MVal1, MVal3, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MVal1, PVal4, "0x1p+103", APFloat::opOK, APFloat::fcNormal },
+    { MVal1, MVal4, "0x1p+103", APFloat::opOK, APFloat::fcNormal },
+    { MVal1, PVal5, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MVal1, MVal5, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MVal1, PVal6, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MVal1, MVal6, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { PVal2, PVal1, "0x1.fffffep-126", APFloat::opOK, APFloat::fcNormal },
+    { PVal2, MVal1, "0x1.fffffep-126", APFloat::opOK, APFloat::fcNormal },
+    { PVal2, PVal2, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { PVal2, MVal2, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { PVal2, PVal3, "-0x0.000002p-126", APFloat::opOK, APFloat::fcNormal },
+    { PVal2, MVal3, "-0x0.000002p-126", APFloat::opOK, APFloat::fcNormal },
+    { PVal2, PVal4, "0x1.fffffep-126", APFloat::opOK, APFloat::fcNormal },
+    { PVal2, MVal4, "0x1.fffffep-126", APFloat::opOK, APFloat::fcNormal },
+    { PVal2, PVal5, "0x1.fffffep-126", APFloat::opOK, APFloat::fcNormal },
+    { PVal2, MVal5, "0x1.fffffep-126", APFloat::opOK, APFloat::fcNormal },
+    { PVal2, PVal6, "0x1.fffffep-126", APFloat::opOK, APFloat::fcNormal },
+    { PVal2, MVal6, "0x1.fffffep-126", APFloat::opOK, APFloat::fcNormal },
+    { MVal2, PVal1, "-0x1.fffffep-126", APFloat::opOK, APFloat::fcNormal },
+    { MVal2, MVal1, "-0x1.fffffep-126", APFloat::opOK, APFloat::fcNormal },
+    { MVal2, PVal2, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MVal2, MVal2, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MVal2, PVal3, "0x0.000002p-126", APFloat::opOK, APFloat::fcNormal },
+    { MVal2, MVal3, "0x0.000002p-126", APFloat::opOK, APFloat::fcNormal },
+    { MVal2, PVal4, "-0x1.fffffep-126", APFloat::opOK, APFloat::fcNormal },
+    { MVal2, MVal4, "-0x1.fffffep-126", APFloat::opOK, APFloat::fcNormal },
+    { MVal2, PVal5, "-0x1.fffffep-126", APFloat::opOK, APFloat::fcNormal },
+    { MVal2, MVal5, "-0x1.fffffep-126", APFloat::opOK, APFloat::fcNormal },
+    { MVal2, PVal6, "-0x1.fffffep-126", APFloat::opOK, APFloat::fcNormal },
+    { MVal2, MVal6, "-0x1.fffffep-126", APFloat::opOK, APFloat::fcNormal },
+    { PVal3, PVal1, "0x1p-125", APFloat::opOK, APFloat::fcNormal },
+    { PVal3, MVal1, "0x1p-125", APFloat::opOK, APFloat::fcNormal },
+    { PVal3, PVal2, "0x0.000002p-126", APFloat::opOK, APFloat::fcNormal },
+    { PVal3, MVal2, "0x0.000002p-126", APFloat::opOK, APFloat::fcNormal },
+    { PVal3, PVal3, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { PVal3, MVal3, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { PVal3, PVal4, "0x1p-125", APFloat::opOK, APFloat::fcNormal },
+    { PVal3, MVal4, "0x1p-125", APFloat::opOK, APFloat::fcNormal },
+    { PVal3, PVal5, "0x1p-125", APFloat::opOK, APFloat::fcNormal },
+    { PVal3, MVal5, "0x1p-125", APFloat::opOK, APFloat::fcNormal },
+    { PVal3, PVal6, "0x1p-125", APFloat::opOK, APFloat::fcNormal },
+    { PVal3, MVal6, "0x1p-125", APFloat::opOK, APFloat::fcNormal },
+    { MVal3, PVal1, "-0x1p-125", APFloat::opOK, APFloat::fcNormal },
+    { MVal3, MVal1, "-0x1p-125", APFloat::opOK, APFloat::fcNormal },
+    { MVal3, PVal2, "-0x0.000002p-126", APFloat::opOK, APFloat::fcNormal },
+    { MVal3, MVal2, "-0x0.000002p-126", APFloat::opOK, APFloat::fcNormal },
+    { MVal3, PVal3, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MVal3, MVal3, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MVal3, PVal4, "-0x1p-125", APFloat::opOK, APFloat::fcNormal },
+    { MVal3, MVal4, "-0x1p-125", APFloat::opOK, APFloat::fcNormal },
+    { MVal3, PVal5, "-0x1p-125", APFloat::opOK, APFloat::fcNormal },
+    { MVal3, MVal5, "-0x1p-125", APFloat::opOK, APFloat::fcNormal },
+    { MVal3, PVal6, "-0x1p-125", APFloat::opOK, APFloat::fcNormal },
+    { MVal3, MVal6, "-0x1p-125", APFloat::opOK, APFloat::fcNormal },
+    { PVal4, PVal1, "0x1p+103", APFloat::opOK, APFloat::fcNormal },
+    { PVal4, MVal1, "0x1p+103", APFloat::opOK, APFloat::fcNormal },
+    { PVal4, PVal2, "0x0.002p-126", APFloat::opOK, APFloat::fcNormal },
+    { PVal4, MVal2, "0x0.002p-126", APFloat::opOK, APFloat::fcNormal },
+    { PVal4, PVal3, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { PVal4, MVal3, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { PVal4, PVal4, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { PVal4, MVal4, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { PVal4, PVal5, "0.5", APFloat::opOK, APFloat::fcNormal },
+    { PVal4, MVal5, "0.5", APFloat::opOK, APFloat::fcNormal },
+    { PVal4, PVal6, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { PVal4, MVal6, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MVal4, PVal1, "-0x1p+103", APFloat::opOK, APFloat::fcNormal },
+    { MVal4, MVal1, "-0x1p+103", APFloat::opOK, APFloat::fcNormal },
+    { MVal4, PVal2, "-0x0.002p-126", APFloat::opOK, APFloat::fcNormal },
+    { MVal4, MVal2, "-0x0.002p-126", APFloat::opOK, APFloat::fcNormal },
+    { MVal4, PVal3, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MVal4, MVal3, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MVal4, PVal4, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MVal4, MVal4, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MVal4, PVal5, "-0.5", APFloat::opOK, APFloat::fcNormal },
+    { MVal4, MVal5, "-0.5", APFloat::opOK, APFloat::fcNormal },
+    { MVal4, PVal6, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MVal4, MVal6, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { PVal5, PVal1, "1.5", APFloat::opOK, APFloat::fcNormal },
+    { PVal5, MVal1, "1.5", APFloat::opOK, APFloat::fcNormal },
+    { PVal5, PVal2, "0x0.00006p-126", APFloat::opOK, APFloat::fcNormal },
+    { PVal5, MVal2, "0x0.00006p-126", APFloat::opOK, APFloat::fcNormal },
+    { PVal5, PVal3, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { PVal5, MVal3, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { PVal5, PVal4, "1.5", APFloat::opOK, APFloat::fcNormal },
+    { PVal5, MVal4, "1.5", APFloat::opOK, APFloat::fcNormal },
+    { PVal5, PVal5, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { PVal5, MVal5, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { PVal5, PVal6, "-0.5", APFloat::opOK, APFloat::fcNormal },
+    { PVal5, MVal6, "-0.5", APFloat::opOK, APFloat::fcNormal },
+    { MVal5, PVal1, "-1.5", APFloat::opOK, APFloat::fcNormal },
+    { MVal5, MVal1, "-1.5", APFloat::opOK, APFloat::fcNormal },
+    { MVal5, PVal2, "-0x0.00006p-126", APFloat::opOK, APFloat::fcNormal },
+    { MVal5, MVal2, "-0x0.00006p-126", APFloat::opOK, APFloat::fcNormal },
+    { MVal5, PVal3, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MVal5, MVal3, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MVal5, PVal4, "-1.5", APFloat::opOK, APFloat::fcNormal },
+    { MVal5, MVal4, "-1.5", APFloat::opOK, APFloat::fcNormal },
+    { MVal5, PVal5, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MVal5, MVal5, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MVal5, PVal6, "0.5", APFloat::opOK, APFloat::fcNormal },
+    { MVal5, MVal6, "0.5", APFloat::opOK, APFloat::fcNormal },
+    { PVal6, PVal1, "0x1p+0", APFloat::opOK, APFloat::fcNormal },
+    { PVal6, MVal1, "0x1p+0", APFloat::opOK, APFloat::fcNormal },
+    { PVal6, PVal2, "0x0.00004p-126", APFloat::opOK, APFloat::fcNormal },
+    { PVal6, MVal2, "0x0.00004p-126", APFloat::opOK, APFloat::fcNormal },
+    { PVal6, PVal3, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { PVal6, MVal3, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { PVal6, PVal4, "0x1p+0", APFloat::opOK, APFloat::fcNormal },
+    { PVal6, MVal4, "0x1p+0", APFloat::opOK, APFloat::fcNormal },
+    { PVal6, PVal5, "-0.5", APFloat::opOK, APFloat::fcNormal },
+    { PVal6, MVal5, "-0.5", APFloat::opOK, APFloat::fcNormal },
+    { PVal6, PVal6, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { PVal6, MVal6, "0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MVal6, PVal1, "-0x1p+0", APFloat::opOK, APFloat::fcNormal },
+    { MVal6, MVal1, "-0x1p+0", APFloat::opOK, APFloat::fcNormal },
+    { MVal6, PVal2, "-0x0.00004p-126", APFloat::opOK, APFloat::fcNormal },
+    { MVal6, MVal2, "-0x0.00004p-126", APFloat::opOK, APFloat::fcNormal },
+    { MVal6, PVal3, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MVal6, MVal3, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MVal6, PVal4, "-0x1p+0", APFloat::opOK, APFloat::fcNormal },
+    { MVal6, MVal4, "-0x1p+0", APFloat::opOK, APFloat::fcNormal },
+    { MVal6, PVal5, "0.5", APFloat::opOK, APFloat::fcNormal },
+    { MVal6, MVal5, "0.5", APFloat::opOK, APFloat::fcNormal },
+    { MVal6, PVal6, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+    { MVal6, MVal6, "-0x0p+0", APFloat::opOK, APFloat::fcZero },
+  };
+
+  for (size_t i = 0; i < array_lengthof(SpecialCaseTests); ++i) {
+    APFloat x(SpecialCaseTests[i].x);
+    APFloat y(SpecialCaseTests[i].y);
+    APFloat::opStatus status = x.remainder(y);
+
+    APFloat result(x.getSemantics(), SpecialCaseTests[i].result);
+
+    EXPECT_TRUE(result.bitwiseIsEqual(x));
+    EXPECT_EQ(SpecialCaseTests[i].status, (int)status);
+    EXPECT_EQ(SpecialCaseTests[i].category, (int)x.getCategory());
+  }
+
+  {
+    APFloat f1(APFloat::IEEEdouble(), "0x1.3333333333333p-2"); // 0.3
+    APFloat f2(APFloat::IEEEdouble(), "0x1.47ae147ae147bp-7"); // 0.01
+    APFloat expected(APFloat::IEEEdouble(), "-0x1.4p-56");
+    EXPECT_EQ(APFloat::opOK, f1.remainder(f2));
+    EXPECT_TRUE(f1.bitwiseIsEqual(expected));
+  }
+  {
+    APFloat f1(APFloat::IEEEdouble(), "0x1p64"); // 1.8446744073709552e19
+    APFloat f2(APFloat::IEEEdouble(), "1.5");
+    APFloat expected(APFloat::IEEEdouble(), "-0.5");
+    EXPECT_EQ(APFloat::opOK, f1.remainder(f2));
+    EXPECT_TRUE(f1.bitwiseIsEqual(expected));
+  }
+  {
+    APFloat f1(APFloat::IEEEdouble(), "0x1p1000");
+    APFloat f2(APFloat::IEEEdouble(), "0x1p-1000");
+    APFloat expected(APFloat::IEEEdouble(), "0.0");
+    EXPECT_EQ(APFloat::opOK, f1.remainder(f2));
+    EXPECT_TRUE(f1.bitwiseIsEqual(expected));
+  }
+  {
+    APFloat f1 = APFloat::getInf(APFloat::IEEEdouble(), false);
+    APFloat f2(APFloat::IEEEdouble(), "1.0");
+    EXPECT_EQ(f1.remainder(f2), APFloat::opInvalidOp);
+    EXPECT_TRUE(f1.isNaN());
+  }
+  {
+    APFloat f1(APFloat::IEEEdouble(), "-4.0");
+    APFloat f2(APFloat::IEEEdouble(), "-2.0");
+    APFloat expected(APFloat::IEEEdouble(), "-0.0");
+    EXPECT_EQ(APFloat::opOK, f1.remainder(f2));
+    EXPECT_TRUE(f1.bitwiseIsEqual(expected));
+  }
+  {
+    APFloat f1(APFloat::IEEEdouble(), "-4.0");
+    APFloat f2(APFloat::IEEEdouble(), "2.0");
+    APFloat expected(APFloat::IEEEdouble(), "-0.0");
+    EXPECT_EQ(APFloat::opOK, f1.remainder(f2));
     EXPECT_TRUE(f1.bitwiseIsEqual(expected));
   }
 }

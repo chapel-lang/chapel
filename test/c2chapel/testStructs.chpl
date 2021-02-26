@@ -1,5 +1,6 @@
 
 use structGen;
+use CPtr;
 
 proc foo(x : int) {
   writeln("In foo function, given: ", x);

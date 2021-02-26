@@ -1,8 +1,8 @@
 /* mpz_cmp(u,v) -- Compare U, V.  Return positive, zero, or negative
    based on if U > V, U == V, or U < V.
 
-Copyright 1991, 1993, 1994, 1996, 2001, 2002, 2011 Free Software Foundation,
-Inc.
+Copyright 1991, 1993, 1994, 1996, 2001, 2002, 2011, 2020 Free Software
+Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -30,21 +30,20 @@ You should have received copies of the GNU General Public License and the
 GNU Lesser General Public License along with the GNU MP Library.  If not,
 see https://www.gnu.org/licenses/.  */
 
-#include "gmp.h"
 #include "gmp-impl.h"
 
 int
 mpz_cmp (mpz_srcptr u, mpz_srcptr v) __GMP_NOTHROW
 {
-  mp_size_t  usize, vsize, dsize, asize;
+  mp_size_t  usize, vsize, asize;
   mp_srcptr  up, vp;
   int        cmp;
 
   usize = SIZ(u);
   vsize = SIZ(v);
-  dsize = usize - vsize;
-  if (dsize != 0)
-    return dsize;
+  /* Cannot use usize - vsize, may overflow an "int" */
+  if (usize != vsize)
+    return (usize > vsize) ? 1 : -1;
 
   asize = ABS (usize);
   up = PTR(u);

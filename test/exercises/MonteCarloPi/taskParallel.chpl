@@ -23,7 +23,7 @@ coforall tid in 0..#tasks {
   var rs = new owned NPBRandomStream(real, seed, parSafe=false);
   const nPerTask = n/tasks,
         extras = n%tasks;
-  rs.skipToNth(2*(tid*nPerTask + (if tid < extras then tid else extras)) + 1);
+  rs.skipToNth(2*(tid*nPerTask + (if tid < extras then tid else extras)));
 
   var count = 0;
   for i in 1..nPerTask + (tid < extras) do

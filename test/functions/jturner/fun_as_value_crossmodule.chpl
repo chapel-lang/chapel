@@ -8,7 +8,7 @@ module OuterModule {
   }
 
   module mod2 {
-    use mod1;
+    use super.mod1;
 
     proc main {
       proc add1(x: int) {

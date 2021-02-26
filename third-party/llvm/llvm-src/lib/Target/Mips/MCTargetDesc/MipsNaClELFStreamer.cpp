@@ -1,9 +1,8 @@
 //===-- MipsNaClELFStreamer.cpp - ELF Object Output for Mips NaCl ---------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -106,7 +105,7 @@ private:
     MaskInst.addOperand(MCOperand::createReg(AddrReg));
     MaskInst.addOperand(MCOperand::createReg(AddrReg));
     MaskInst.addOperand(MCOperand::createReg(MaskReg));
-    MipsELFStreamer::EmitInstruction(MaskInst, STI);
+    MipsELFStreamer::emitInstruction(MaskInst, STI);
   }
 
   // Sandbox indirect branch or return instruction by inserting mask operation
@@ -114,10 +113,10 @@ private:
   void sandboxIndirectJump(const MCInst &MI, const MCSubtargetInfo &STI) {
     unsigned AddrReg = MI.getOperand(0).getReg();
 
-    EmitBundleLock(false);
+    emitBundleLock(false);
     emitMask(AddrReg, IndirectBranchMaskReg, STI);
-    MipsELFStreamer::EmitInstruction(MI, STI);
-    EmitBundleUnlock();
+    MipsELFStreamer::emitInstruction(MI, STI);
+    emitBundleUnlock();
   }
 
   // Sandbox memory access or SP change.  Insert mask operation before and/or
@@ -125,27 +124,27 @@ private:
   void sandboxLoadStoreStackChange(const MCInst &MI, unsigned AddrIdx,
                                    const MCSubtargetInfo &STI, bool MaskBefore,
                                    bool MaskAfter) {
-    EmitBundleLock(false);
+    emitBundleLock(false);
     if (MaskBefore) {
       // Sandbox memory access.
       unsigned BaseReg = MI.getOperand(AddrIdx).getReg();
       emitMask(BaseReg, LoadStoreStackMaskReg, STI);
     }
-    MipsELFStreamer::EmitInstruction(MI, STI);
+    MipsELFStreamer::emitInstruction(MI, STI);
     if (MaskAfter) {
       // Sandbox SP change.
       unsigned SPReg = MI.getOperand(0).getReg();
       assert((Mips::SP == SPReg) && "Unexpected stack-pointer register.");
       emitMask(SPReg, LoadStoreStackMaskReg, STI);
     }
-    EmitBundleUnlock();
+    emitBundleUnlock();
   }
 
 public:
   /// This function is the one used to emit instruction data into the ELF
   /// streamer.  We override it to mask dangerous instructions.
-  void EmitInstruction(const MCInst &Inst, const MCSubtargetInfo &STI,
-                       bool) override {
+  void emitInstruction(const MCInst &Inst,
+                       const MCSubtargetInfo &STI) override {
     // Sandbox indirect jumps.
     if (isIndirectJump(Inst)) {
       if (PendingCall)
@@ -155,8 +154,8 @@ public:
     }
 
     // Sandbox loads, stores and SP changes.
-    unsigned AddrIdx;
-    bool IsStore;
+    unsigned AddrIdx = 0;
+    bool IsStore = false;
     bool IsMemAccess = isBasePlusOffsetMemoryAccess(Inst.getOpcode(), &AddrIdx,
                                                     &IsStore);
     bool IsSPFirstOperand = isStackPointerFirstOperand(Inst);
@@ -182,25 +181,25 @@ public:
         report_fatal_error("Dangerous instruction in branch delay slot!");
 
       // Start the sandboxing sequence by emitting call.
-      EmitBundleLock(true);
+      emitBundleLock(true);
       if (IsIndirectCall) {
         unsigned TargetReg = Inst.getOperand(1).getReg();
         emitMask(TargetReg, IndirectBranchMaskReg, STI);
       }
-      MipsELFStreamer::EmitInstruction(Inst, STI);
+      MipsELFStreamer::emitInstruction(Inst, STI);
       PendingCall = true;
       return;
     }
     if (PendingCall) {
       // Finish the sandboxing sequence by emitting branch delay.
-      MipsELFStreamer::EmitInstruction(Inst, STI);
-      EmitBundleUnlock();
+      MipsELFStreamer::emitInstruction(Inst, STI);
+      emitBundleUnlock();
       PendingCall = false;
       return;
     }
 
     // None of the sandboxing applies, just emit the instruction.
-    MipsELFStreamer::EmitInstruction(Inst, STI);
+    MipsELFStreamer::emitInstruction(Inst, STI);
   }
 };
 
@@ -271,7 +270,7 @@ MCELFStreamer *createMipsNaClELFStreamer(MCContext &Context,
     S->getAssembler().setRelaxAll(true);
 
   // Set bundle-alignment as required by the NaCl ABI for the target.
-  S->EmitBundleAlignMode(MIPS_NACL_BUNDLE_ALIGN);
+  S->emitBundleAlignMode(Log2(MIPS_NACL_BUNDLE_ALIGN));
 
   return S;
 }

@@ -1,6 +1,6 @@
 use BlockDist;
 use CommDiagnostics;
-use Memory;
+use Memory.Diagnostics;
 use Random;
 use Sort;
 use Time;

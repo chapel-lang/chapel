@@ -10,7 +10,7 @@ module M1 {
 module M2 {
   proc main {
     var r = retRecord();
-    //writeln(r.a);
+    writeln(r.a);
 
     proc retRecord() {
       use M1;

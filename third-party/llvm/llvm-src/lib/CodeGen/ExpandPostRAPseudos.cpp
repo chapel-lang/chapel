@@ -1,9 +1,8 @@
 //===-- ExpandPostRAPseudos.cpp - Pseudo instruction expansion pass -------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -20,6 +19,7 @@
 #include "llvm/CodeGen/TargetInstrInfo.h"
 #include "llvm/CodeGen/TargetRegisterInfo.h"
 #include "llvm/CodeGen/TargetSubtargetInfo.h"
+#include "llvm/InitializePasses.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/raw_ostream.h"
 
@@ -80,17 +80,17 @@ bool ExpandPostRA::LowerSubregToReg(MachineInstr *MI) {
          (MI->getOperand(2).isReg() && MI->getOperand(2).isUse()) &&
           MI->getOperand(3).isImm() && "Invalid subreg_to_reg");
 
-  unsigned DstReg  = MI->getOperand(0).getReg();
-  unsigned InsReg  = MI->getOperand(2).getReg();
+  Register DstReg = MI->getOperand(0).getReg();
+  Register InsReg = MI->getOperand(2).getReg();
   assert(!MI->getOperand(2).getSubReg() && "SubIdx on physreg?");
   unsigned SubIdx  = MI->getOperand(3).getImm();
 
   assert(SubIdx != 0 && "Invalid index for insert_subreg");
-  unsigned DstSubReg = TRI->getSubReg(DstReg, SubIdx);
+  Register DstSubReg = TRI->getSubReg(DstReg, SubIdx);
 
-  assert(TargetRegisterInfo::isPhysicalRegister(DstReg) &&
+  assert(Register::isPhysicalRegister(DstReg) &&
          "Insert destination must be in a physical register");
-  assert(TargetRegisterInfo::isPhysicalRegister(InsReg) &&
+  assert(Register::isPhysicalRegister(InsReg) &&
          "Inserted value must be in a physical register");
 
   LLVM_DEBUG(dbgs() << "subreg: CONVERTING: " << *MI);

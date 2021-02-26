@@ -1,9 +1,8 @@
 //===-- HexagonMCTargetDesc.h - Hexagon Target Descriptions -----*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -14,6 +13,7 @@
 #ifndef LLVM_LIB_TARGET_HEXAGON_MCTARGETDESC_HEXAGONMCTARGETDESC_H
 #define LLVM_LIB_TARGET_HEXAGON_MCTARGETDESC_HEXAGONMCTARGETDESC_H
 
+#include "llvm/MC/MCRegisterInfo.h"
 #include "llvm/Support/CommandLine.h"
 #include <cstdint>
 #include <string>
@@ -47,7 +47,6 @@
 
 namespace llvm {
 
-struct InstrItinerary;
 struct InstrStage;
 class FeatureBitset;
 class MCAsmBackend;
@@ -61,10 +60,7 @@ class MCTargetOptions;
 class Target;
 class Triple;
 class StringRef;
-class raw_ostream;
-class raw_pwrite_stream;
 
-Target &getTheHexagonTarget();
 extern cl::opt<bool> HexagonDisableCompound;
 extern cl::opt<bool> HexagonDisableDuplex;
 extern const InstrStage HexagonStages[];
@@ -80,7 +76,12 @@ namespace Hexagon_MC {
   /// etc. do not need to go through TargetRegistry.
   MCSubtargetInfo *createHexagonMCSubtargetInfo(const Triple &TT, StringRef CPU,
                                                 StringRef FS);
+  MCSubtargetInfo const *getArchSubtarget(MCSubtargetInfo const *STI);
+  void addArchSubtarget(MCSubtargetInfo const *STI,
+                        StringRef FS);
   unsigned GetELFFlags(const MCSubtargetInfo &STI);
+
+  llvm::ArrayRef<MCPhysReg> GetVectRegRev();
 }
 
 MCCodeEmitter *createHexagonMCCodeEmitter(const MCInstrInfo &MCII,
@@ -96,6 +97,7 @@ std::unique_ptr<MCObjectTargetWriter>
 createHexagonELFObjectWriter(uint8_t OSABI, StringRef CPU);
 
 unsigned HexagonGetLastSlot();
+unsigned HexagonConvertUnits(unsigned ItinUnits, unsigned *Lanes);
 
 } // End llvm namespace
 

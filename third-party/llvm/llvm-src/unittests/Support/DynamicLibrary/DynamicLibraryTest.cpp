@@ -1,9 +1,8 @@
 //===- llvm/unittest/Support/DynamicLibrary/DynamicLibraryTest.cpp --------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -28,7 +27,7 @@ std::string LibPath(const std::string Name = "PipSqueak") {
   std::string Path = fs::getMainExecutable(Argv0, Ptr);
   llvm::SmallString<256> Buf(path::parent_path(Path));
   path::append(Buf, (Name + LTDL_SHLIB_EXT).c_str());
-  return Buf.str();
+  return std::string(Buf.str());
 }
 
 #if defined(_WIN32) || (defined(HAVE_DLFCN_H) && defined(HAVE_DLOPEN))

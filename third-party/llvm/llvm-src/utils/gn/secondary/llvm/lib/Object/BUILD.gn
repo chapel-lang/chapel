@@ -9,6 +9,7 @@ static_library("Object") {
     "//llvm/lib/MC",
     "//llvm/lib/MC/MCParser",
     "//llvm/lib/Support",
+    "//llvm/lib/TextAPI",
   ]
 
   sources = [
@@ -26,13 +27,19 @@ static_library("Object") {
     "IRSymtab.cpp",
     "MachOObjectFile.cpp",
     "MachOUniversal.cpp",
+    "Minidump.cpp",
     "ModuleSymbolTable.cpp",
     "Object.cpp",
     "ObjectFile.cpp",
     "RecordStreamer.cpp",
+    "RelocationResolver.cpp",
     "SymbolSize.cpp",
     "SymbolicFile.cpp",
+    "TapiFile.cpp",
+    "TapiUniversal.cpp",
     "WasmObjectFile.cpp",
+    "WindowsMachineFlag.cpp",
     "WindowsResource.cpp",
+    "XCOFFObjectFile.cpp",
   ]
 }

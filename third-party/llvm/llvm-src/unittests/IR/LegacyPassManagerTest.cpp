@@ -1,9 +1,8 @@
 //===- llvm/unittest/IR/LegacyPassManager.cpp - Legacy PassManager tests --===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -27,9 +26,10 @@
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/OptBisect.h"
-#include "llvm/Pass.h"
+#include "llvm/InitializePasses.h"
 #include "llvm/Support/MathExtras.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Transforms/Utils/CallGraphUpdater.h"
 #include "gtest/gtest.h"
 
 using namespace llvm;
@@ -39,7 +39,6 @@ namespace llvm {
   void initializeFPassPass(PassRegistry&);
   void initializeCGPassPass(PassRegistry&);
   void initializeLPassPass(PassRegistry&);
-  void initializeBPassPass(PassRegistry&);
 
   namespace {
     // ND = no deps
@@ -220,47 +219,6 @@ namespace llvm {
     int LPass::initcount=0;
     int LPass::fincount=0;
 
-    struct BPass : public PassTestBase<BasicBlockPass> {
-    private:
-      static int inited;
-      static int fin;
-    public:
-      static void finishedOK(int run, int N) {
-        PassTestBase<BasicBlockPass>::finishedOK(run);
-        EXPECT_EQ(inited, N);
-        EXPECT_EQ(fin, N);
-      }
-      BPass() {
-        inited = 0;
-        fin = 0;
-      }
-      bool doInitialization(Module &M) override {
-        EXPECT_FALSE(initialized);
-        initialized = true;
-        return false;
-      }
-      bool doInitialization(Function &F) override {
-        inited++;
-        return false;
-      }
-      bool runOnBasicBlock(BasicBlock &BB) override {
-        run();
-        return false;
-      }
-      bool doFinalization(Function &F) override {
-        fin++;
-        return false;
-      }
-      bool doFinalization(Module &M) override {
-        EXPECT_FALSE(finalized);
-        finalized = true;
-        EXPECT_EQ(0, allocated);
-        return false;
-      }
-    };
-    int BPass::inited=0;
-    int BPass::fin=0;
-
     struct OnTheFlyTest: public ModulePass {
     public:
       static char ID;
@@ -375,10 +333,6 @@ namespace llvm {
         SCOPED_TRACE("Loop pass");
         MemoryTestHelper<LPass>(2, 1); //2 loops, 1 function
       }
-      {
-        SCOPED_TRACE("Basic block pass");
-        MemoryTestHelper<BPass>(7, 4); //9 basic blocks
-      }
 
     }
 
@@ -401,7 +355,12 @@ namespace llvm {
     struct CustomOptPassGate : public OptPassGate {
       bool Skip;
       CustomOptPassGate(bool Skip) : Skip(Skip) { }
-      bool shouldRunPass(const Pass *P, const Module &U) { return !Skip; }
+      bool shouldRunPass(const Pass *P, StringRef IRDescription) {
+        if (P->getPassKind() == PT_Module)
+          return !Skip;
+        return OptPassGate::shouldRunPass(P, IRDescription);
+      }
+      bool isEnabled() const { return true; }
     };
 
     // Optional module pass.
@@ -500,7 +459,7 @@ namespace llvm {
 
       Function* func_test3 = Function::Create(
         /*Type=*/FuncTy_0,
-        /*Linkage=*/GlobalValue::ExternalLinkage,
+        /*Linkage=*/GlobalValue::InternalLinkage,
         /*Name=*/"test3", mod);
       func_test3->setCallingConv(CallingConv::C);
       AttributeList func_test3_PAL;
@@ -587,6 +546,9 @@ namespace llvm {
             BasicBlock::Create(Context, "return", func_test4, nullptr);
 
         // Block entry (label_entry_11)
+        auto *AI = new AllocaInst(func_test3->getType(), 0, "func3ptr",
+                                  label_entry_11);
+        new StoreInst(func_test3, AI, label_entry_11);
         BranchInst::Create(label_bb, label_entry_11);
 
         // Block bb (label_bb)
@@ -601,6 +563,137 @@ namespace llvm {
       return mod;
     }
 
+    /// Split a simple function which contains only a call and a return into two
+    /// such that the first calls the second and the second whoever was called
+    /// initially.
+    Function *splitSimpleFunction(Function &F) {
+      LLVMContext &Context = F.getContext();
+      Function *SF = Function::Create(F.getFunctionType(), F.getLinkage(),
+                                      F.getName() + "b", F.getParent());
+      F.setName(F.getName() + "a");
+      BasicBlock *Entry = BasicBlock::Create(Context, "entry", SF, nullptr);
+      CallInst &CI = cast<CallInst>(F.getEntryBlock().front());
+      CI.clone()->insertBefore(ReturnInst::Create(Context, Entry));
+      CI.setCalledFunction(SF);
+      return SF;
+    }
+
+    struct CGModifierPass : public CGPass {
+      unsigned NumSCCs = 0;
+      unsigned NumFns = 0;
+      unsigned NumFnDecls = 0;
+      unsigned SetupWorked = 0;
+      unsigned NumExtCalledBefore = 0;
+      unsigned NumExtCalledAfter = 0;
+
+      CallGraphUpdater CGU;
+
+      bool runOnSCC(CallGraphSCC &SCMM) override {
+        ++NumSCCs;
+        for (CallGraphNode *N : SCMM) {
+          if (N->getFunction()){
+            ++NumFns;
+            NumFnDecls += N->getFunction()->isDeclaration();
+          }
+        }
+        CGPass::run();
+
+        CallGraph &CG = const_cast<CallGraph &>(SCMM.getCallGraph());
+        CallGraphNode *ExtCallingNode = CG.getExternalCallingNode();
+        NumExtCalledBefore = ExtCallingNode->size();
+
+        if (SCMM.size() <= 1)
+          return false;
+
+        CallGraphNode *N = *(SCMM.begin());
+        Function *F = N->getFunction();
+        Module *M = F->getParent();
+        Function *Test1F = M->getFunction("test1");
+        Function *Test2aF = M->getFunction("test2a");
+        Function *Test2bF = M->getFunction("test2b");
+        Function *Test3F = M->getFunction("test3");
+
+        auto InSCC = [&](Function *Fn) {
+          return llvm::any_of(SCMM, [Fn](CallGraphNode *CGN) {
+            return CGN->getFunction() == Fn;
+          });
+        };
+
+        if (!Test1F || !Test2aF || !Test2bF || !Test3F || !InSCC(Test1F) ||
+            !InSCC(Test2aF) || !InSCC(Test2bF) || !InSCC(Test3F))
+          return false;
+
+        CallInst *CI = dyn_cast<CallInst>(&Test1F->getEntryBlock().front());
+        if (!CI || CI->getCalledFunction() != Test2aF)
+          return false;
+
+        SetupWorked += 1;
+
+        // Create a replica of test3 and just move the blocks there.
+        Function *Test3FRepl = Function::Create(
+            /*Type=*/Test3F->getFunctionType(),
+            /*Linkage=*/GlobalValue::InternalLinkage,
+            /*Name=*/"test3repl", Test3F->getParent());
+        while (!Test3F->empty()) {
+          BasicBlock &BB = Test3F->front();
+          BB.removeFromParent();
+          BB.insertInto(Test3FRepl);
+        }
+
+        CGU.initialize(CG, SCMM);
+
+        // Replace test3 with the replica. This is legal as it is actually
+        // internal and the "capturing use" is not really capturing anything.
+        CGU.replaceFunctionWith(*Test3F, *Test3FRepl);
+        Test3F->replaceAllUsesWith(Test3FRepl);
+
+        // Rewrite the call in test1 to point to the replica of 3 not test2.
+        CI->setCalledFunction(Test3FRepl);
+
+        // Delete test2a and test2b and reanalyze 1 as we changed calls inside.
+        CGU.removeFunction(*Test2aF);
+        CGU.removeFunction(*Test2bF);
+        CGU.reanalyzeFunction(*Test1F);
+
+        return true;
+      }
+
+      bool doFinalization(CallGraph &CG) override {
+        CGU.finalize();
+        // We removed test2 and replaced the internal test3.
+        NumExtCalledAfter = CG.getExternalCallingNode()->size();
+        return true;
+      }
+    };
+
+    TEST(PassManager, CallGraphUpdater0) {
+      // SCC#1: test1->test2a->test2b->test3->test1
+      // SCC#2: test4
+      // SCC#3: test3 (the empty function declaration as we replaced it with
+      //               test3repl when we visited SCC#1)
+      // SCC#4: test2a->test2b (the empty function declarations as we deleted
+      //                        these functions when we visited SCC#1)
+      // SCC#5: indirect call node
+
+      LLVMContext Context;
+      std::unique_ptr<Module> M(makeLLVMModule(Context));
+      ASSERT_EQ(M->getFunctionList().size(), 4U);
+      Function *F = M->getFunction("test2");
+      Function *SF = splitSimpleFunction(*F);
+      CallInst::Create(F, "", &SF->getEntryBlock());
+      ASSERT_EQ(M->getFunctionList().size(), 5U);
+      CGModifierPass *P = new CGModifierPass();
+      legacy::PassManager Passes;
+      Passes.add(P);
+      Passes.run(*M);
+      ASSERT_EQ(P->SetupWorked, 1U);
+      ASSERT_EQ(P->NumSCCs, 4U);
+      ASSERT_EQ(P->NumFns, 6U);
+      ASSERT_EQ(P->NumFnDecls, 1U);
+      ASSERT_EQ(M->getFunctionList().size(), 3U);
+      ASSERT_EQ(P->NumExtCalledBefore, /* test1, 2a, 2b, 3, 4 */ 5U);
+      ASSERT_EQ(P->NumExtCalledAfter, /* test1, 3repl, 4 */ 3U);
+    }
   }
 }
 
@@ -612,4 +705,3 @@ INITIALIZE_PASS(FPass, "fp","fp", false, false)
 INITIALIZE_PASS_BEGIN(LPass, "lp","lp", false, false)
 INITIALIZE_PASS_DEPENDENCY(LoopInfoWrapperPass)
 INITIALIZE_PASS_END(LPass, "lp","lp", false, false)
-INITIALIZE_PASS(BPass, "bp","bp", false, false)

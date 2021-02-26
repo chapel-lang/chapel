@@ -1,9 +1,8 @@
 //===- Transform/Utils/BasicBlockUtils.h - BasicBlock Utils -----*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -18,9 +17,11 @@
 // FIXME: Move to this file: BasicBlock::removePredecessor, BB::splitBasicBlock
 
 #include "llvm/ADT/ArrayRef.h"
+#include "llvm/ADT/SetVector.h"
+#include "llvm/Analysis/DomTreeUpdater.h"
+#include "llvm/Analysis/LoopInfo.h"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/CFG.h"
-#include "llvm/IR/DomTreeUpdater.h"
 #include "llvm/IR/InstrTypes.h"
 #include <cassert>
 
@@ -36,19 +37,38 @@ class LoopInfo;
 class MDNode;
 class MemoryDependenceResults;
 class MemorySSAUpdater;
+class PostDominatorTree;
 class ReturnInst;
 class TargetLibraryInfo;
 class Value;
 
+/// Replace contents of every block in \p BBs with single unreachable
+/// instruction. If \p Updates is specified, collect all necessary DT updates
+/// into this vector. If \p KeepOneInputPHIs is true, one-input Phis in
+/// successors of blocks being deleted will be preserved.
+void DetatchDeadBlocks(ArrayRef <BasicBlock *> BBs,
+                       SmallVectorImpl<DominatorTree::UpdateType> *Updates,
+                       bool KeepOneInputPHIs = false);
+
 /// Delete the specified block, which must have no predecessors.
-void DeleteDeadBlock(BasicBlock *BB, DomTreeUpdater *DTU = nullptr);
+void DeleteDeadBlock(BasicBlock *BB, DomTreeUpdater *DTU = nullptr,
+                     bool KeepOneInputPHIs = false);
 
 /// Delete the specified blocks from \p BB. The set of deleted blocks must have
 /// no predecessors that are not being deleted themselves. \p BBs must have no
 /// duplicating blocks. If there are loops among this set of blocks, all
 /// relevant loop info updates should be done before this function is called.
-void DeleteDeadBlocks(SmallVectorImpl <BasicBlock *> &BBs,
-                      DomTreeUpdater *DTU = nullptr);
+/// If \p KeepOneInputPHIs is true, one-input Phis in successors of blocks
+/// being deleted will be preserved.
+void DeleteDeadBlocks(ArrayRef <BasicBlock *> BBs,
+                      DomTreeUpdater *DTU = nullptr,
+                      bool KeepOneInputPHIs = false);
+
+/// Delete all basic blocks from \p F that are not reachable from its entry
+/// node. If \p KeepOneInputPHIs is true, one-input Phis in successors of
+/// blocks being deleted will be preserved.
+bool EliminateUnreachableBlocks(Function &F, DomTreeUpdater *DTU = nullptr,
+                                bool KeepOneInputPHIs = false);
 
 /// We know that BB has one predecessor. If there are any single-entry PHI nodes
 /// in it, fold them away. This handles the case when all entries to the PHI
@@ -61,14 +81,36 @@ void FoldSingleEntryPHINodes(BasicBlock *BB,
 /// recursively delete any operands that become dead as a result. This includes
 /// tracing the def-use list from the PHI to see if it is ultimately unused or
 /// if it reaches an unused cycle. Return true if any PHIs were deleted.
-bool DeleteDeadPHIs(BasicBlock *BB, const TargetLibraryInfo *TLI = nullptr);
+bool DeleteDeadPHIs(BasicBlock *BB, const TargetLibraryInfo *TLI = nullptr,
+                    MemorySSAUpdater *MSSAU = nullptr);
 
 /// Attempts to merge a block into its predecessor, if possible. The return
 /// value indicates success or failure.
+/// By default do not merge blocks if BB's predecessor has multiple successors.
+/// If PredecessorWithTwoSuccessors = true, the blocks can only be merged
+/// if BB's Pred has a branch to BB and to AnotherBB, and BB has a single
+/// successor Sing. In this case the branch will be updated with Sing instead of
+/// BB, and BB will still be merged into its predecessor and removed.
 bool MergeBlockIntoPredecessor(BasicBlock *BB, DomTreeUpdater *DTU = nullptr,
                                LoopInfo *LI = nullptr,
                                MemorySSAUpdater *MSSAU = nullptr,
-                               MemoryDependenceResults *MemDep = nullptr);
+                               MemoryDependenceResults *MemDep = nullptr,
+                               bool PredecessorWithTwoSuccessors = false);
+
+/// Merge block(s) sucessors, if possible. Return true if at least two
+/// of the blocks were merged together.
+/// In order to merge, each block must be terminated by an unconditional
+/// branch. If L is provided, then the blocks merged into their predecessors
+/// must be in L. In addition, This utility calls on another utility:
+/// MergeBlockIntoPredecessor. Blocks are successfully merged when the call to
+/// MergeBlockIntoPredecessor returns true.
+bool MergeBlockSuccessorsIntoGivenBlocks(
+    SmallPtrSetImpl<BasicBlock *> &MergeBlocks, Loop *L = nullptr,
+    DomTreeUpdater *DTU = nullptr, LoopInfo *LI = nullptr);
+
+/// Try to remove redundant dbg.value instructions from given basic block.
+/// Returns true if at least one instruction was removed.
+bool RemoveRedundantDbgInstrs(BasicBlock *BB);
 
 /// Replace all uses of an instruction (specified by BI) with a value, then
 /// remove and delete the original instruction.
@@ -92,29 +134,46 @@ void ReplaceInstWithInst(Instruction *From, Instruction *To);
 /// during critical edge splitting.
 struct CriticalEdgeSplittingOptions {
   DominatorTree *DT;
+  PostDominatorTree *PDT;
   LoopInfo *LI;
   MemorySSAUpdater *MSSAU;
   bool MergeIdenticalEdges = false;
-  bool DontDeleteUselessPHIs = false;
+  bool KeepOneInputPHIs = false;
   bool PreserveLCSSA = false;
+  bool IgnoreUnreachableDests = false;
+  /// SplitCriticalEdge is guaranteed to preserve loop-simplify form if LI is
+  /// provided. If it cannot be preserved, no splitting will take place. If it
+  /// is not set, preserve loop-simplify form if possible.
+  bool PreserveLoopSimplify = true;
 
   CriticalEdgeSplittingOptions(DominatorTree *DT = nullptr,
                                LoopInfo *LI = nullptr,
-                               MemorySSAUpdater *MSSAU = nullptr)
-      : DT(DT), LI(LI), MSSAU(MSSAU) {}
+                               MemorySSAUpdater *MSSAU = nullptr,
+                               PostDominatorTree *PDT = nullptr)
+      : DT(DT), PDT(PDT), LI(LI), MSSAU(MSSAU) {}
 
   CriticalEdgeSplittingOptions &setMergeIdenticalEdges() {
     MergeIdenticalEdges = true;
     return *this;
   }
 
-  CriticalEdgeSplittingOptions &setDontDeleteUselessPHIs() {
-    DontDeleteUselessPHIs = true;
+  CriticalEdgeSplittingOptions &setKeepOneInputPHIs() {
+    KeepOneInputPHIs = true;
     return *this;
   }
 
   CriticalEdgeSplittingOptions &setPreserveLCSSA() {
     PreserveLCSSA = true;
+    return *this;
+  }
+
+  CriticalEdgeSplittingOptions &setIgnoreUnreachableDests() {
+    IgnoreUnreachableDests = true;
+    return *this;
+  }
+
+  CriticalEdgeSplittingOptions &unsetPreserveLoopSimplify() {
+    PreserveLoopSimplify = false;
     return *this;
   }
 };
@@ -196,7 +255,8 @@ BasicBlock *SplitEdge(BasicBlock *From, BasicBlock *To,
 /// info is updated.
 BasicBlock *SplitBlock(BasicBlock *Old, Instruction *SplitPt,
                        DominatorTree *DT = nullptr, LoopInfo *LI = nullptr,
-                       MemorySSAUpdater *MSSAU = nullptr);
+                       MemorySSAUpdater *MSSAU = nullptr,
+                       const Twine &BBName = "");
 
 /// This method introduces at least one new basic block into the function and
 /// moves some of the predecessors of BB to be predecessors of the new block.
@@ -259,7 +319,8 @@ ReturnInst *FoldReturnIntoUncondBranch(ReturnInst *RI, BasicBlock *BB,
 ///   SplitBefore
 ///   Tail
 ///
-/// If Unreachable is true, then ThenBlock ends with
+/// If \p ThenBlock is not specified, a new block will be created for it.
+/// If \p Unreachable is true, the newly created block will end with
 /// UnreachableInst, otherwise it branches to Tail.
 /// Returns the NewBasicBlock's terminator.
 ///
@@ -268,7 +329,8 @@ Instruction *SplitBlockAndInsertIfThen(Value *Cond, Instruction *SplitBefore,
                                        bool Unreachable,
                                        MDNode *BranchWeights = nullptr,
                                        DominatorTree *DT = nullptr,
-                                       LoopInfo *LI = nullptr);
+                                       LoopInfo *LI = nullptr,
+                                       BasicBlock *ThenBlock = nullptr);
 
 /// SplitBlockAndInsertIfThenElse is similar to SplitBlockAndInsertIfThen,
 /// but also creates the ElseBlock.
@@ -322,6 +384,81 @@ Value *GetIfCondition(BasicBlock *BB, BasicBlock *&IfTrue,
 bool SplitIndirectBrCriticalEdges(Function &F,
                                   BranchProbabilityInfo *BPI = nullptr,
                                   BlockFrequencyInfo *BFI = nullptr);
+
+/// Given a set of incoming and outgoing blocks, create a "hub" such that every
+/// edge from an incoming block InBB to an outgoing block OutBB is now split
+/// into two edges, one from InBB to the hub and another from the hub to
+/// OutBB. The hub consists of a series of guard blocks, one for each outgoing
+/// block. Each guard block conditionally branches to the corresponding outgoing
+/// block, or the next guard block in the chain. These guard blocks are returned
+/// in the argument vector.
+///
+/// Since the control flow edges from InBB to OutBB have now been replaced, the
+/// function also updates any PHINodes in OutBB. For each such PHINode, the
+/// operands corresponding to incoming blocks are moved to a new PHINode in the
+/// hub, and the hub is made an operand of the original PHINode.
+///
+/// Input CFG:
+/// ----------
+///
+///                    Def
+///                     |
+///                     v
+///           In1      In2
+///            |        |
+///            |        |
+///            v        v
+///  Foo ---> Out1     Out2
+///                     |
+///                     v
+///                    Use
+///
+///
+/// Create hub: Incoming = {In1, In2}, Outgoing = {Out1, Out2}
+/// ----------------------------------------------------------
+///
+///             Def
+///              |
+///              v
+///  In1        In2          Foo
+///   |    Hub   |            |
+///   |    + - - | - - +      |
+///   |    '     v     '      V
+///   +------> Guard1 -----> Out1
+///        '     |     '
+///        '     v     '
+///        '   Guard2 -----> Out2
+///        '           '      |
+///        + - - - - - +      |
+///                           v
+///                          Use
+///
+/// Limitations:
+/// -----------
+/// 1. This assumes that all terminators in the CFG are direct branches (the
+///    "br" instruction). The presence of any other control flow such as
+///    indirectbr, switch or callbr will cause an assert.
+///
+/// 2. The updates to the PHINodes are not sufficient to restore SSA
+///    form. Consider a definition Def, its use Use, incoming block In2 and
+///    outgoing block Out2, such that:
+///    a. In2 is reachable from D or contains D.
+///    b. U is reachable from Out2 or is contained in Out2.
+///    c. U is not a PHINode if U is contained in Out2.
+///
+///    Clearly, Def dominates Out2 since the program is valid SSA. But when the
+///    hub is introduced, there is a new path through the hub along which Use is
+///    reachable from entry without passing through Def, and SSA is no longer
+///    valid. To fix this, we need to look at all the blocks post-dominated by
+///    the hub on the one hand, and dominated by Out2 on the other. This is left
+///    for the caller to accomplish, since each specific use of this function
+///    may have additional information which simplifies this fixup. For example,
+///    see restoreSSA() in the UnifyLoopExits pass.
+BasicBlock *CreateControlFlowHub(DomTreeUpdater *DTU,
+                                 SmallVectorImpl<BasicBlock *> &GuardBlocks,
+                                 const SetVector<BasicBlock *> &Predecessors,
+                                 const SetVector<BasicBlock *> &Successors,
+                                 const StringRef Prefix);
 
 } // end namespace llvm
 

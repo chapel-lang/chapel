@@ -11,7 +11,7 @@ config const tf: string;
 proc main() {
   // In order to avoid updating the .good/lock file every release we store
   // a sentinel 'CHPL_CUR_FULL' representing the current Chapel version. Before
-  // passing anything to UpdateLock we need to replace that sentinel with the
+  // passing anything to updateLock we need to replace that sentinel with the
   // actual current version.
 
   const currentVersion = getChapelVersionStr();
@@ -26,9 +26,7 @@ proc main() {
     w.close();
   }
 
-  var args: list(string);
-  args.append("--no-update");
-  var configs = UpdateLock(args, tf, temp.tryGetPath());
+  var configs = updateLock(true, tf=tf, lf=temp.tryGetPath());
   var lock = open(temp.tryGetPath(), iomode.r);
   var lockFile = parseToml(lock);
   writeln(lockFile);

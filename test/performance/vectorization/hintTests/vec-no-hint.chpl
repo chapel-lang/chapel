@@ -40,7 +40,7 @@ proc kernel8(A) {
 
 proc kernel9(A) {
   // variables declared within a loop inhibit vectorization
-  // if they require stack space
+  // if they require stack space - but loop still has parallel access data
   forall i in 1..n {
     var x = i;
     x *= 2;

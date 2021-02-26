@@ -1,9 +1,8 @@
 //===- RTDyldObjectLinkingLayer.h - RTDyld-based jit linking  ---*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -17,6 +16,7 @@
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/StringMap.h"
 #include "llvm/ADT/StringRef.h"
+#include "llvm/ExecutionEngine/JITEventListener.h"
 #include "llvm/ExecutionEngine/JITSymbol.h"
 #include "llvm/ExecutionEngine/Orc/Core.h"
 #include "llvm/ExecutionEngine/Orc/Layer.h"
@@ -44,21 +44,35 @@ public:
                          const RuntimeDyld::LoadedObjectInfo &)>;
 
   /// Functor for receiving finalization notifications.
-  using NotifyEmittedFunction = std::function<void(VModuleKey)>;
+  using NotifyEmittedFunction =
+      std::function<void(VModuleKey, std::unique_ptr<MemoryBuffer>)>;
 
   using GetMemoryManagerFunction =
       std::function<std::unique_ptr<RuntimeDyld::MemoryManager>()>;
 
   /// Construct an ObjectLinkingLayer with the given NotifyLoaded,
   ///        and NotifyEmitted functors.
-  RTDyldObjectLinkingLayer(
-      ExecutionSession &ES, GetMemoryManagerFunction GetMemoryManager,
-      NotifyLoadedFunction NotifyLoaded = NotifyLoadedFunction(),
-      NotifyEmittedFunction NotifyEmitted = NotifyEmittedFunction());
+  RTDyldObjectLinkingLayer(ExecutionSession &ES,
+                           GetMemoryManagerFunction GetMemoryManager);
+
+  ~RTDyldObjectLinkingLayer();
 
   /// Emit the object.
   void emit(MaterializationResponsibility R,
             std::unique_ptr<MemoryBuffer> O) override;
+
+  /// Set the NotifyLoaded callback.
+  RTDyldObjectLinkingLayer &setNotifyLoaded(NotifyLoadedFunction NotifyLoaded) {
+    this->NotifyLoaded = std::move(NotifyLoaded);
+    return *this;
+  }
+
+  /// Set the NotifyEmitted callback.
+  RTDyldObjectLinkingLayer &
+  setNotifyEmitted(NotifyEmittedFunction NotifyEmitted) {
+    this->NotifyEmitted = std::move(NotifyEmitted);
+    return *this;
+  }
 
   /// Set the 'ProcessAllSections' flag.
   ///
@@ -102,14 +116,23 @@ public:
     return *this;
   }
 
+  /// Register a JITEventListener.
+  void registerJITEventListener(JITEventListener &L);
+
+  /// Unregister a JITEventListener.
+  void unregisterJITEventListener(JITEventListener &L);
+
 private:
   Error onObjLoad(VModuleKey K, MaterializationResponsibility &R,
-                  object::ObjectFile &Obj,
+                  const object::ObjectFile &Obj,
+                  RuntimeDyld::MemoryManager *MemMgr,
                   std::unique_ptr<RuntimeDyld::LoadedObjectInfo> LoadedObjInfo,
                   std::map<StringRef, JITEvaluatedSymbol> Resolved,
                   std::set<StringRef> &InternalSymbols);
 
-  void onObjEmit(VModuleKey K, MaterializationResponsibility &R, Error Err);
+  void onObjEmit(VModuleKey K, MaterializationResponsibility &R,
+                 object::OwningBinary<object::ObjectFile> O,
+                 RuntimeDyld::MemoryManager *MemMgr, Error Err);
 
   mutable std::mutex RTDyldLayerMutex;
   GetMemoryManagerFunction GetMemoryManager;
@@ -119,6 +142,10 @@ private:
   bool OverrideObjectFlags = false;
   bool AutoClaimObjectSymbols = false;
   std::vector<std::unique_ptr<RuntimeDyld::MemoryManager>> MemMgrs;
+  std::vector<JITEventListener *> EventListeners;
+  DenseMap<RuntimeDyld::MemoryManager *,
+           std::unique_ptr<RuntimeDyld::LoadedObjectInfo>>
+      LoadedObjInfos;
 };
 
 class LegacyRTDyldObjectLinkingLayerBase {
@@ -156,7 +183,7 @@ protected:
       if (!SymEntry->second.getFlags().isExported() && ExportedSymbolsOnly)
         return nullptr;
       if (!Finalized)
-        return JITSymbol(getSymbolMaterializer(Name),
+        return JITSymbol(getSymbolMaterializer(std::string(Name)),
                          SymEntry->second.getFlags());
       return JITSymbol(SymEntry->second);
     }
@@ -204,7 +231,7 @@ private:
         : K(std::move(K)),
           Parent(Parent),
           MemMgr(std::move(MemMgr)),
-          PFC(llvm::make_unique<PreFinalizeContents>(
+          PFC(std::make_unique<PreFinalizeContents>(
               std::move(Obj), std::move(Resolver),
               ProcessAllSections)) {
       buildInitialSymbolTable(PFC->Obj);
@@ -222,7 +249,7 @@ private:
 
       JITSymbolResolverAdapter ResolverAdapter(Parent.ES, *PFC->Resolver,
 					       nullptr);
-      PFC->RTDyld = llvm::make_unique<RuntimeDyld>(*MemMgr, ResolverAdapter);
+      PFC->RTDyld = std::make_unique<RuntimeDyld>(*MemMgr, ResolverAdapter);
       PFC->RTDyld->setProcessAllSections(PFC->ProcessAllSections);
 
       Finalized = true;
@@ -277,8 +304,15 @@ private:
   private:
     void buildInitialSymbolTable(const OwnedObject &Obj) {
       for (auto &Symbol : Obj.getBinary()->symbols()) {
-        if (Symbol.getFlags() & object::SymbolRef::SF_Undefined)
+        if (Expected<uint32_t> SymbolFlagsOrErr = Symbol.getFlags()) {
+          if (*SymbolFlagsOrErr & object::SymbolRef::SF_Undefined)
+            continue;
+        } else {
+          // FIXME: Raise an error for bad symbols.
+          consumeError(SymbolFlagsOrErr.takeError());
           continue;
+        }
+
         Expected<StringRef> SymbolName = Symbol.getName();
         // FIXME: Raise an error for bad symbols.
         if (!SymbolName) {
@@ -326,7 +360,7 @@ private:
                      std::shared_ptr<SymbolResolver> Resolver,
                      bool ProcessAllSections) {
     using LOS = ConcreteLinkedObject<MemoryManagerPtrT>;
-    return llvm::make_unique<LOS>(Parent, std::move(K), std::move(Obj),
+    return std::make_unique<LOS>(Parent, std::move(K), std::move(Obj),
                                   std::move(MemMgr), std::move(Resolver),
                                   ProcessAllSections);
   }
@@ -341,17 +375,27 @@ public:
 
   /// Construct an ObjectLinkingLayer with the given NotifyLoaded,
   ///        and NotifyFinalized functors.
+  LLVM_ATTRIBUTE_DEPRECATED(
+      LegacyRTDyldObjectLinkingLayer(
+          ExecutionSession &ES, ResourcesGetter GetResources,
+          NotifyLoadedFtor NotifyLoaded = NotifyLoadedFtor(),
+          NotifyFinalizedFtor NotifyFinalized = NotifyFinalizedFtor(),
+          NotifyFreedFtor NotifyFreed = NotifyFreedFtor()),
+      "ORCv1 layers (layers with the 'Legacy' prefix) are deprecated. Please "
+      "use "
+      "ORCv2 (see docs/ORCv2.rst)");
+
+  // Legacy layer constructor with deprecation acknowledgement.
   LegacyRTDyldObjectLinkingLayer(
-      ExecutionSession &ES, ResourcesGetter GetResources,
+      ORCv1DeprecationAcknowledgement, ExecutionSession &ES,
+      ResourcesGetter GetResources,
       NotifyLoadedFtor NotifyLoaded = NotifyLoadedFtor(),
       NotifyFinalizedFtor NotifyFinalized = NotifyFinalizedFtor(),
       NotifyFreedFtor NotifyFreed = NotifyFreedFtor())
       : ES(ES), GetResources(std::move(GetResources)),
         NotifyLoaded(std::move(NotifyLoaded)),
         NotifyFinalized(std::move(NotifyFinalized)),
-        NotifyFreed(std::move(NotifyFreed)),
-        ProcessAllSections(false) {
-  }
+        NotifyFreed(std::move(NotifyFreed)), ProcessAllSections(false) {}
 
   /// Set the 'ProcessAllSections' flag.
   ///

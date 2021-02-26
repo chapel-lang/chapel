@@ -1,9 +1,8 @@
 //===-- MipsTargetObjectFile.cpp - Mips Object Files ----------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -45,7 +44,6 @@ EmbeddedData("membedded-data", cl::Hidden,
 
 void MipsTargetObjectFile::Initialize(MCContext &Ctx, const TargetMachine &TM){
   TargetLoweringObjectFileELF::Initialize(Ctx, TM);
-  InitializeELF(TM.Options.UseInitArray);
 
   SmallDataSection = getContext().getELFSection(
       ".sdata", ELF::SHT_PROGBITS,
@@ -178,12 +176,13 @@ bool MipsTargetObjectFile::IsConstantInSmallSection(
 MCSection *MipsTargetObjectFile::getSectionForConstant(const DataLayout &DL,
                                                        SectionKind Kind,
                                                        const Constant *C,
-                                                       unsigned &Align) const {
+                                                       Align &Alignment) const {
   if (IsConstantInSmallSection(DL, C, *TM))
     return SmallDataSection;
 
   // Otherwise, we work the same as ELF.
-  return TargetLoweringObjectFileELF::getSectionForConstant(DL, Kind, C, Align);
+  return TargetLoweringObjectFileELF::getSectionForConstant(DL, Kind, C,
+                                                            Alignment);
 }
 
 const MCExpr *

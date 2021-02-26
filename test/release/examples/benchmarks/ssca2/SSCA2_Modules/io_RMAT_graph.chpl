@@ -3,7 +3,7 @@
 // Presently, uses the XMT/KM RMAT graph storage format for SSCA#2.
 //
 use SSCA2_compilation_config_params, Time, ReplicatedDist;
-private use IO;
+private use IO, DSIUtil;
 
 //
 // The data is stored in 5 files per graph.

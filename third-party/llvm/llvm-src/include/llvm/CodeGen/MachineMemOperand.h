@@ -1,9 +1,8 @@
 //==- llvm/CodeGen/MachineMemOperand.h - MachineMemOperand class -*- C++ -*-==//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -19,8 +18,7 @@
 #include "llvm/ADT/BitmaskEnum.h"
 #include "llvm/ADT/PointerUnion.h"
 #include "llvm/CodeGen/PseudoSourceValue.h"
-#include "llvm/IR/Instructions.h"
-#include "llvm/IR/Metadata.h"
+#include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/Value.h" // PointerLikeTypeTraits<Value*>
 #include "llvm/Support/AtomicOrdering.h"
 #include "llvm/Support/DataTypes.h"
@@ -61,8 +59,8 @@ struct MachinePointerInfo {
     AddrSpace = v ? v->getAddressSpace() : 0;
   }
 
-  explicit MachinePointerInfo(unsigned AddressSpace = 0)
-      : V((const Value *)nullptr), Offset(0), StackID(0),
+  explicit MachinePointerInfo(unsigned AddressSpace = 0, int64_t offset = 0)
+      : V((const Value *)nullptr), Offset(offset), StackID(0),
         AddrSpace(AddressSpace) {}
 
   explicit MachinePointerInfo(
@@ -80,10 +78,10 @@ struct MachinePointerInfo {
 
   MachinePointerInfo getWithOffset(int64_t O) const {
     if (V.isNull())
-      return MachinePointerInfo(AddrSpace);
+      return MachinePointerInfo(AddrSpace, Offset + O);
     if (V.is<const Value*>())
-      return MachinePointerInfo(V.get<const Value*>(), Offset+O, StackID);
-    return MachinePointerInfo(V.get<const PseudoSourceValue*>(), Offset+O,
+      return MachinePointerInfo(V.get<const Value*>(), Offset + O, StackID);
+    return MachinePointerInfo(V.get<const PseudoSourceValue*>(), Offset + O,
                               StackID);
   }
 
@@ -172,7 +170,7 @@ private:
   MachinePointerInfo PtrInfo;
   uint64_t Size;
   Flags FlagVals;
-  uint16_t BaseAlignLog2; // log_2(base_alignment) + 1
+  Align BaseAlign;
   MachineAtomicInfo AtomicInfo;
   AAMDNodes AAInfo;
   const MDNode *Ranges;
@@ -184,8 +182,7 @@ public:
   /// atomic operations the atomic ordering requirements when store does not
   /// occur must also be specified.
   MachineMemOperand(MachinePointerInfo PtrInfo, Flags flags, uint64_t s,
-                    uint64_t a,
-                    const AAMDNodes &AAInfo = AAMDNodes(),
+                    Align a, const AAMDNodes &AAInfo = AAMDNodes(),
                     const MDNode *Ranges = nullptr,
                     SyncScope::ID SSID = SyncScope::System,
                     AtomicOrdering Ordering = AtomicOrdering::NotAtomic,
@@ -223,13 +220,24 @@ public:
   /// Return the size in bytes of the memory reference.
   uint64_t getSize() const { return Size; }
 
+  /// Return the size in bits of the memory reference.
+  uint64_t getSizeInBits() const { return Size * 8; }
+
+  LLVM_ATTRIBUTE_DEPRECATED(uint64_t getAlignment() const,
+                            "Use getAlign instead");
+
   /// Return the minimum known alignment in bytes of the actual memory
   /// reference.
-  uint64_t getAlignment() const;
+  Align getAlign() const;
+
+  LLVM_ATTRIBUTE_DEPRECATED(uint64_t getBaseAlignment() const,
+                            "Use getBaseAlign instead") {
+    return BaseAlign.value();
+  }
 
   /// Return the minimum known alignment in bytes of the base address, without
   /// the offset.
-  uint64_t getBaseAlignment() const { return (1u << BaseAlignLog2) >> 1; }
+  Align getBaseAlign() const { return BaseAlign; }
 
   /// Return the AA tags for the memory reference.
   AAMDNodes getAAInfo() const { return AAInfo; }
@@ -267,13 +275,13 @@ public:
   bool isAtomic() const { return getOrdering() != AtomicOrdering::NotAtomic; }
 
   /// Returns true if this memory operation doesn't have any ordering
-  /// constraints other than normal aliasing. Volatile and atomic memory
-  /// operations can't be reordered.
-  ///
-  /// Currently, we don't model the difference between volatile and atomic
-  /// operations. They should retain their ordering relative to all memory
-  /// operations.
-  bool isUnordered() const { return !isVolatile(); }
+  /// constraints other than normal aliasing. Volatile and (ordered) atomic
+  /// memory operations can't be reordered. 
+  bool isUnordered() const {
+    return (getOrdering() == AtomicOrdering::NotAtomic ||
+            getOrdering() == AtomicOrdering::Unordered) &&
+           !isVolatile();
+  }
 
   /// Update this MachineMemOperand to reflect the alignment of MMO, if it has a
   /// greater alignment. This must only be used when the new alignment applies
@@ -293,8 +301,6 @@ public:
 
   /// Support for operator<<.
   /// @{
-  void print(raw_ostream &OS) const;
-  void print(raw_ostream &OS, ModuleSlotTracker &MST) const;
   void print(raw_ostream &OS, ModuleSlotTracker &MST,
              SmallVectorImpl<StringRef> &SSNs, const LLVMContext &Context,
              const MachineFrameInfo *MFI, const TargetInstrInfo *TII) const;
@@ -309,7 +315,7 @@ public:
            LHS.getFlags() == RHS.getFlags() &&
            LHS.getAAInfo() == RHS.getAAInfo() &&
            LHS.getRanges() == RHS.getRanges() &&
-           LHS.getAlignment() == RHS.getAlignment() &&
+           LHS.getAlign() == RHS.getAlign() &&
            LHS.getAddrSpace() == RHS.getAddrSpace();
   }
 
@@ -318,11 +324,6 @@ public:
     return !(LHS == RHS);
   }
 };
-
-inline raw_ostream &operator<<(raw_ostream &OS, const MachineMemOperand &MRO) {
-  MRO.print(OS);
-  return OS;
-}
 
 } // End llvm namespace
 

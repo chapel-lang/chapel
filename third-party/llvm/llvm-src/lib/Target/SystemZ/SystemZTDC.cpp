@@ -1,9 +1,8 @@
 //===-- SystemZTDC.cpp - Utilize Test Data Class instruction --------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -45,14 +44,18 @@
 //===----------------------------------------------------------------------===//
 
 #include "SystemZ.h"
+#include "SystemZSubtarget.h"
 #include "llvm/ADT/MapVector.h"
+#include "llvm/CodeGen/TargetPassConfig.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/InstIterator.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/IntrinsicInst.h"
+#include "llvm/IR/IntrinsicsS390.h"
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/Module.h"
+#include "llvm/Target/TargetMachine.h"
 #include <deque>
 #include <set>
 
@@ -72,6 +75,11 @@ public:
   }
 
   bool runOnFunction(Function &F) override;
+
+  void getAnalysisUsage(AnalysisUsage &AU) const override {
+    AU.addRequired<TargetPassConfig>();
+ }
+
 private:
   // Maps seen instructions that can be mapped to a TDC, values are
   // (TDC operand, TDC mask, worthy flag) triples.
@@ -310,6 +318,12 @@ void SystemZTDCPass::convertLogicOp(BinaryOperator &I) {
 }
 
 bool SystemZTDCPass::runOnFunction(Function &F) {
+  auto &TPC = getAnalysis<TargetPassConfig>();
+  if (TPC.getTM<TargetMachine>()
+          .getSubtarget<SystemZSubtarget>(F)
+          .hasSoftFloat())
+    return false;
+
   ConvertedInsts.clear();
   LogicOpsWorklist.clear();
   PossibleJunk.clear();
@@ -356,8 +370,8 @@ bool SystemZTDCPass::runOnFunction(Function &F) {
       if (!Worthy)
         continue;
       // Call the intrinsic, compare result with 0.
-      Value *TDCFunc = Intrinsic::getDeclaration(&M, Intrinsic::s390_tdc,
-                                                 V->getType());
+      Function *TDCFunc =
+          Intrinsic::getDeclaration(&M, Intrinsic::s390_tdc, V->getType());
       IRBuilder<> IRB(I);
       Value *MaskVal = ConstantInt::get(Type::getInt64Ty(Ctx), Mask);
       Instruction *TDC = IRB.CreateCall(TDCFunc, {V, MaskVal});

@@ -1,9 +1,8 @@
 //=--- RegUsageInfoPropagate.cpp - Register Usage Informartion Propagation --=//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 ///
@@ -27,7 +26,7 @@
 #include "llvm/CodeGen/Passes.h"
 #include "llvm/CodeGen/RegisterUsageInfo.h"
 #include "llvm/IR/Module.h"
-#include "llvm/PassAnalysisSupport.h"
+#include "llvm/Pass.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Target/TargetMachine.h"
@@ -119,8 +118,8 @@ bool RegUsageInfoPropagation::runOnMachineFunction(MachineFunction &MF) {
         continue;
       LLVM_DEBUG(
           dbgs()
-          << "Call Instruction Before Register Usage Info Propagation : \n");
-      LLVM_DEBUG(dbgs() << MI << "\n");
+          << "Call Instruction Before Register Usage Info Propagation : \n"
+          << MI << "\n");
 
       auto UpdateRegMask = [&](const Function &F) {
         const ArrayRef<uint32_t> RegMask = PRUI->getRegUsageInfo(F);
@@ -131,14 +130,19 @@ bool RegUsageInfoPropagation::runOnMachineFunction(MachineFunction &MF) {
       };
 
       if (const Function *F = findCalledFunction(M, MI)) {
-        UpdateRegMask(*F);
+        if (F->isDefinitionExact()) {
+          UpdateRegMask(*F);
+        } else {
+          LLVM_DEBUG(dbgs() << "Function definition is not exact\n");
+        }
       } else {
         LLVM_DEBUG(dbgs() << "Failed to find call target function\n");
       }
 
       LLVM_DEBUG(
-          dbgs() << "Call Instruction After Register Usage Info Propagation : "
-                 << MI << '\n');
+          dbgs()
+          << "Call Instruction After Register Usage Info Propagation : \n"
+          << MI << '\n');
     }
   }
 

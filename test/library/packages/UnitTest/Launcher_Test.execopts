@@ -6,3 +6,4 @@ LauncherTest/ #launcher_Test.folder.good
 test_locales.chpl #launcher_Test.numLocales.good
 test_dependency.chpl #launcher_Test.dependency.good
 test_WithModule.chpl #launcher_Test.WithModule.good
+test_CompileFail.chpl #launcher_Test.CompileFail.good

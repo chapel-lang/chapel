@@ -1,9 +1,8 @@
 //===- llvm/CodeGen/LivePhysRegs.h - Live Physical Register Set -*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -138,6 +137,9 @@ public:
   /// Live out registers are the union of the live-in registers of the successor
   /// blocks and pristine registers. Live out registers of the end block are the
   /// callee saved registers.
+  /// If a register is not added by this method, it is guaranteed to not be
+  /// live out from MBB, although a sub-register may be. This is true
+  /// both before and after regalloc.
   void addLiveOuts(const MachineBasicBlock &MBB);
 
   /// Adds all live-out registers of basic block \p MBB but skips pristine

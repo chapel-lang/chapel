@@ -611,7 +611,7 @@ Intents
      * inout: copy arg in, copy arg out
      * ref: pass arg by reference
 */
-proc intentsProc(in inarg, out outarg, inout inoutarg, ref refarg) {
+proc intentsProc(in inarg, out outarg:int, inout inoutarg, ref refarg) {
   writeln("Inside Before: ", (inarg, outarg, inoutarg, refarg));
   inarg = inarg + 100;
   outarg = outarg + 100;

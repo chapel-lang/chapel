@@ -1,9 +1,8 @@
 //===- HexagonInstPrinter.cpp - Convert Hexagon MCInst to assembly syntax -===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -12,7 +11,6 @@
 //===----------------------------------------------------------------------===//
 
 #include "HexagonInstPrinter.h"
-#include "HexagonAsmPrinter.h"
 #include "MCTargetDesc/HexagonBaseInfo.h"
 #include "MCTargetDesc/HexagonMCInstrInfo.h"
 #include "llvm/MC/MCAsmInfo.h"
@@ -32,8 +30,9 @@ void HexagonInstPrinter::printRegName(raw_ostream &O, unsigned RegNo) const {
   O << getRegisterName(RegNo);
 }
 
-void HexagonInstPrinter::printInst(const MCInst *MI, raw_ostream &OS,
-                                   StringRef Annot, const MCSubtargetInfo &STI) {
+void HexagonInstPrinter::printInst(const MCInst *MI, uint64_t Address,
+                                   StringRef Annot, const MCSubtargetInfo &STI,
+                                   raw_ostream &OS) {
   assert(HexagonMCInstrInfo::isBundle(*MI));
   assert(HexagonMCInstrInfo::bundleSize(*MI) <= HEXAGON_PACKET_SIZE);
   assert(HexagonMCInstrInfo::bundleSize(*MI) > 0);
@@ -41,12 +40,12 @@ void HexagonInstPrinter::printInst(const MCInst *MI, raw_ostream &OS,
   for (auto const &I : HexagonMCInstrInfo::bundleInstructions(*MI)) {
     MCInst const &MCI = *I.getInst();
     if (HexagonMCInstrInfo::isDuplex(MII, MCI)) {
-      printInstruction(MCI.getOperand(1).getInst(), OS);
+      printInstruction(MCI.getOperand(1).getInst(), Address, OS);
       OS << '\v';
       HasExtender = false;
-      printInstruction(MCI.getOperand(0).getInst(), OS);
+      printInstruction(MCI.getOperand(0).getInst(), Address, OS);
     } else
-      printInstruction(&MCI, OS);
+      printInstruction(&MCI, Address, OS);
     HasExtender = HexagonMCInstrInfo::isImmext(MCI);
     OS << "\n";
   }

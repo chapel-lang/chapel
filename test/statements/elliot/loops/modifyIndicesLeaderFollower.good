@@ -1,2 +1,2 @@
-modifyIndicesLeaderFollower.chpl:5: error: illegal lvalue in assignment
-modifyIndicesLeaderFollower.chpl:6: error: illegal lvalue in assignment
+modifyIndicesLeaderFollower.chpl:5: error: cannot assign to const variable
+modifyIndicesLeaderFollower.chpl:6: error: cannot assign to const variable

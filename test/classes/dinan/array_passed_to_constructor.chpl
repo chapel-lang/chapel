@@ -3,7 +3,7 @@
  **   reference?  At present, it is copied.
  **/
  
-use Memory;
+use Memory.Diagnostics;
 
 param M = 2048;
 

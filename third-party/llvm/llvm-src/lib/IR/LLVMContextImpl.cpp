@@ -1,9 +1,8 @@
 //===- LLVMContextImpl.cpp - Implement LLVMContextImpl --------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -12,6 +11,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "LLVMContextImpl.h"
+#include "llvm/ADT/SetVector.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/OptBisect.h"
 #include "llvm/IR/Type.h"
@@ -22,10 +22,11 @@
 using namespace llvm;
 
 LLVMContextImpl::LLVMContextImpl(LLVMContext &C)
-  : DiagHandler(llvm::make_unique<DiagnosticHandler>()),
+  : DiagHandler(std::make_unique<DiagnosticHandler>()),
     VoidTy(C, Type::VoidTyID),
     LabelTy(C, Type::LabelTyID),
     HalfTy(C, Type::HalfTyID),
+    BFloatTy(C, Type::BFloatTyID),
     FloatTy(C, Type::FloatTyID),
     DoubleTy(C, Type::DoubleTyID),
     MetadataTy(C, Type::MetadataTyID),
@@ -104,21 +105,6 @@ LLVMContextImpl::~LLVMContextImpl() {
     delete CDSConstant.second;
   CDSConstants.clear();
 
-  // Destroy attributes.
-  for (FoldingSetIterator<AttributeImpl> I = AttrsSet.begin(),
-         E = AttrsSet.end(); I != E; ) {
-    FoldingSetIterator<AttributeImpl> Elem = I++;
-    delete &*Elem;
-  }
-
-  // Destroy attribute lists.
-  for (FoldingSetIterator<AttributeListImpl> I = AttrsLists.begin(),
-                                             E = AttrsLists.end();
-       I != E;) {
-    FoldingSetIterator<AttributeListImpl> Elem = I++;
-    delete &*Elem;
-  }
-
   // Destroy attribute node lists.
   for (FoldingSetIterator<AttributeSetNode> I = AttrsSetNodes.begin(),
          E = AttrsSetNodes.end(); I != E; ) {
@@ -143,18 +129,19 @@ LLVMContextImpl::~LLVMContextImpl() {
 }
 
 void LLVMContextImpl::dropTriviallyDeadConstantArrays() {
-  bool Changed;
-  do {
-    Changed = false;
+  SmallSetVector<ConstantArray *, 4> WorkList(ArrayConstants.begin(),
+                                              ArrayConstants.end());
 
-    for (auto I = ArrayConstants.begin(), E = ArrayConstants.end(); I != E;) {
-      auto *C = *I++;
-      if (C->use_empty()) {
-        Changed = true;
-        C->destroyConstant();
+  while (!WorkList.empty()) {
+    ConstantArray *C = WorkList.pop_back_val();
+    if (C->use_empty()) {
+      for (const Use &Op : C->operands()) {
+        if (auto *COp = dyn_cast<ConstantArray>(Op))
+          WorkList.insert(COp);
       }
+      C->destroyConstant();
     }
-  } while (Changed);
+  }
 }
 
 void Module::dropTriviallyDeadConstantArrays() {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -25,6 +25,14 @@
 #include "passes.h"
 #include "stringutil.h"
 
+ForallOptimizationInfo::ForallOptimizationInfo():
+  infoGathered(false),
+  autoLocalAccessChecked(false),
+  hasAlignedFollowers(false),
+  cloneType(NOT_CLONE)
+{
+}
+
 /////////////////////////////////////////////////////////////////////////////
 //
 // ForallStmt represents a forall loop statement
@@ -35,6 +43,7 @@ ForallStmt::ForallStmt(BlockStmt* body):
   Stmt(E_ForallStmt),
   fLoopBody(body),
   fZippered(false),
+  fZipCall(NULL),
   fFromForLoop(false),
   fFromReduce(false),
   fOverTupleExpand(false),
@@ -53,6 +62,10 @@ ForallStmt::ForallStmt(BlockStmt* body):
   fIterExprs.parent = this;
   fShadowVars.parent = this;
   INT_ASSERT(fLoopBody != NULL);
+
+
+  optInfo.autoLocalAccessChecked = false;
+  optInfo.hasAlignedFollowers = false;
 
   gForallStmts.add(this);
 }
@@ -80,6 +93,7 @@ ForallStmt* ForallStmt::copyInner(SymbolMap* map) {
   _this->fRecIterICdef        = COPY_INT(fRecIterICdef);
   _this->fRecIterGetIterator  = COPY_INT(fRecIterGetIterator);
   _this->fRecIterFreeIterator = COPY_INT(fRecIterFreeIterator);
+  _this->fZipCall             = COPY_INT(fZipCall);
 
   return _this;
 }
@@ -96,6 +110,8 @@ void ForallStmt::replaceChild(Expr* oldAst, Expr* newAst) {
     fRecIterGetIterator = toCallExpr(newAst);
   else if (oldAst == fRecIterFreeIterator)
     fRecIterFreeIterator = toCallExpr(newAst);
+  else if (oldAst == fZipCall)
+    fZipCall = toCallExpr(newAst);
 
   else
     INT_ASSERT(false);
@@ -154,7 +170,6 @@ void ForallStmt::verify() {
   INT_ASSERT(fLoopBody->blockTag == BLOCK_NORMAL);
   INT_ASSERT(!fLoopBody->blockInfoGet());
   INT_ASSERT(!fLoopBody->isLoopStmt());
-  INT_ASSERT(!fLoopBody->useList);
   INT_ASSERT(!fLoopBody->userLabel);
   INT_ASSERT(!fLoopBody->byrefVars);
 
@@ -173,11 +188,22 @@ void ForallStmt::accept(AstVisitor* visitor) {
     if (fRecIterICdef)        fRecIterICdef->accept(visitor);
     if (fRecIterGetIterator)  fRecIterGetIterator->accept(visitor);
     if (fRecIterFreeIterator) fRecIterFreeIterator->accept(visitor);
+    if (fZipCall)             fZipCall->accept(visitor);
     
     fLoopBody->accept(visitor);
 
     visitor->exitForallStmt(this);
   }
+}
+
+void ForallStmt::setZipCall(CallExpr *call) {
+  INT_ASSERT(!call->inTree());  // iterated expression is not in tree
+  INT_ASSERT(call->isPrimitive(PRIM_ZIP));
+  INT_ASSERT(this->fZipCall == NULL);
+
+  this->fZipCall = call;
+
+  parent_insert_help(this, call);
 }
 
 GenRet ForallStmt::codegen() {
@@ -275,16 +301,28 @@ ForallStmt* isForallIterVarDef(Expr* expr) {
 
 // Return a ForallStmt* if 'expr' is its iterable-expression.
 ForallStmt* isForallIterExpr(Expr* expr) {
-  if (expr->list != NULL)
-    if (ForallStmt* pfs = toForallStmt(expr->parentExpr))
+  if (ForallStmt* pfs = toForallStmt(expr->parentExpr)) {
+    if (expr == pfs->zipCall())
+      return pfs;
+
+    if (expr->list != NULL)
       if (expr->list == &pfs->iteratedExpressions())
         return pfs;
+  }
   return NULL;
 }
 
 // Return a ForallStmt* if 'expr' is its loopBody.
 ForallStmt* isForallLoopBody(Expr* expr) {
   if (ForallStmt* pfs = toForallStmt(expr->parentExpr))
+    if (expr == pfs->loopBody())
+      return pfs;
+  return NULL;
+}
+
+// Return a const ForallStmt* if 'expr' is its loopBody.
+const ForallStmt* isConstForallLoopBody(const Expr* expr) {
+  if (const ForallStmt* pfs = toConstForallStmt(expr->parentExpr))
     if (expr == pfs->loopBody())
       return pfs;
   return NULL;

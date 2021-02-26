@@ -1,3 +1,0 @@
---use-noinit # noinitSkippedCase.base.good
---no-use-noinit # noinitSkippedCase.flag.good
- # noinitSkippedCase.base.good

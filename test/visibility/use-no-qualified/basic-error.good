@@ -1,0 +1,2 @@
+basic-error.chpl:10: In function 'main':
+basic-error.chpl:11: error: 'A' undeclared (first use this function)

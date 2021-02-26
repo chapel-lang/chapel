@@ -16,6 +16,7 @@ set(LLVM_ENABLE_BACKTRACES OFF CACHE BOOL "")
 set(LLVM_ENABLE_MODULES ON CACHE BOOL "")
 set(LLVM_EXTERNALIZE_DEBUGINFO ON CACHE BOOL "")
 set(CLANG_PLUGIN_SUPPORT OFF CACHE BOOL "")
+set(CLANG_SPAWN_CC1 ON CACHE BOOL "")
 set(BUG_REPORT_URL "http://developer.apple.com/bugreporter/" CACHE STRING "")
 
 set(LLVM_BUILD_EXTERNAL_COMPILER_RT ON CACHE BOOL "Build Compiler-RT with just-built clang")
@@ -38,6 +39,7 @@ set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING "")
 set(LIBCXX_INSTALL_LIBRARY OFF CACHE BOOL "")
 set(LIBCXX_INSTALL_HEADERS ON CACHE BOOL "")
 set(LIBCXX_INCLUDE_TESTS OFF CACHE BOOL "")
+set(LIBCXX_USE_COMPILER_RT ON CACHE BOOL "")
 set(LLVM_LTO_VERSION_OFFSET 3000 CACHE STRING "")
 
 # Generating Xcode toolchains is useful for developers wanting to build and use
@@ -60,8 +62,9 @@ set(LLVM_DISTRIBUTION_COMPONENTS
   clang
   LTO
   clang-format
-  clang-headers
+  clang-resource-headers
   cxx-headers
+  Remarks
   ${LLVM_TOOLCHAIN_TOOLS}
   CACHE STRING "")
 

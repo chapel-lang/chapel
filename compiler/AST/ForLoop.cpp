@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -348,15 +348,8 @@ ForLoop::ForLoop(VarSymbol* index,
   mIsForExpr = isForExpr;
 }
 
-ForLoop::~ForLoop()
+ForLoop* ForLoop::copyInner(SymbolMap* map)
 {
-
-}
-
-ForLoop* ForLoop::copy(SymbolMap* mapRef, bool internal)
-{
-  SymbolMap  localMap;
-  SymbolMap* map            = (mapRef != 0) ? mapRef : &localMap;
   ForLoop*   retval         = new ForLoop();
 
   retval->astloc            = astloc;
@@ -376,9 +369,6 @@ ForLoop* ForLoop::copy(SymbolMap* mapRef, bool internal)
 
   for_alist(expr, body)
     retval->insertAtTail(expr->copy(map, true));
-
-  if (internal == false)
-    update_symbols(retval, map);
 
   return retval;
 }
@@ -420,12 +410,6 @@ void ForLoop::copyBodyHelper(Expr* beforeHere, int64_t i, SymbolMap* map,
   map->put(continueSym, continueLabel);
 
   defContinueLabel->insertBefore(copyBody(map));
-}
-
-
-bool ForLoop::isForLoop() const
-{
-  return true;
 }
 
 // TODO (Elliot 03/03/15): coforall loops are currently represented

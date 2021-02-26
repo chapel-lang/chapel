@@ -1,9 +1,8 @@
 //===--- MSP430.h - Declare MSP430 target feature support -------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -34,6 +33,10 @@ public:
     LongWidth = 32;
     LongLongWidth = 64;
     LongAlign = LongLongAlign = 16;
+    FloatWidth = 32;
+    FloatAlign = 16;
+    DoubleWidth = LongDoubleWidth = 64;
+    DoubleAlign = LongDoubleAlign = 16;
     PointerWidth = 16;
     PointerAlign = 16;
     SuitableAlign = 16;
@@ -52,6 +55,8 @@ public:
     return None;
   }
 
+  bool allowsLargerPreferedTypeAlignment() const override { return false; }
+
   bool hasFeature(StringRef Feature) const override {
     return Feature == "msp430";
   }
@@ -59,8 +64,14 @@ public:
   ArrayRef<const char *> getGCCRegNames() const override;
 
   ArrayRef<TargetInfo::GCCRegAlias> getGCCRegAliases() const override {
-    // No aliases.
-    return None;
+    // Make r0 - r3 be recognized by llc (f.e., in clobber list)
+    static const TargetInfo::GCCRegAlias GCCRegAliases[] = {
+        {{"r0"}, "pc"},
+        {{"r1"}, "sp"},
+        {{"r2"}, "sr"},
+        {{"r3"}, "cg"},
+    };
+    return llvm::makeArrayRef(GCCRegAliases);
   }
 
   bool validateAsmConstraint(const char *&Name,

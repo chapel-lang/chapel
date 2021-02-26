@@ -13,7 +13,7 @@ proc makeBlockArray_chpl(): [D] int {
 }
 
 // argument type is getExternalArrayType(printBlock_chpl's x)
-export proc printBlock(x: chpl_opaque_array) {
+export proc printBlock(const ref x: chpl_opaque_array) {
   type x_type = [D] int;
   ref chpl_x = makeArrayFromOpaque(x,
                                    __primitive("static field type", x_type,
@@ -36,7 +36,7 @@ proc printBlock_chpl(x: [D] int) {
   writeln(output);
 }
 
-export proc addEltBlock(x: chpl_opaque_array, idx: int, val: int) {
+export proc addEltBlock(const ref x: chpl_opaque_array, idx: int, val: int) {
   type x_type = [D] int;
   ref chpl_x = makeArrayFromOpaque(x,
                                    __primitive("static field type", x_type,

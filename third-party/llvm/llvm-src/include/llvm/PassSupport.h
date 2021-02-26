@@ -1,9 +1,8 @@
 //===- llvm/PassSupport.h - Pass Support code -------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -17,6 +16,10 @@
 // This file defines Pass registration code and classes used for it.
 //
 //===----------------------------------------------------------------------===//
+
+#if !defined(LLVM_PASS_H) || defined(LLVM_PASSSUPPORT_H)
+#error "Do not include <PassSupport.h>; include <Pass.h> instead"
+#endif
 
 #ifndef LLVM_PASSSUPPORT_H
 #define LLVM_PASSSUPPORT_H

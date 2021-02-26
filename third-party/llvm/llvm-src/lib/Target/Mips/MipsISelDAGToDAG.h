@@ -1,9 +1,8 @@
 //===---- MipsISelDAGToDAG.h - A Dag to Dag Inst Selector for Mips --------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -125,6 +124,11 @@ private:
   /// Select constant vector splats whose value is a run of set bits
   /// starting at bit zero.
   virtual bool selectVSplatMaskR(SDValue N, SDValue &Imm) const;
+
+  /// Convert vector addition with vector subtraction if that allows to encode
+  /// constant as an immediate and thus avoid extra 'ldi' instruction.
+  /// add X, <-1, -1...> --> sub X, <1, 1...>
+  bool selectVecAddAsVecSubIfProfitable(SDNode *Node);
 
   void Select(SDNode *N) override;
 

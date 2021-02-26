@@ -1,9 +1,8 @@
 //===- llvm/ADT/DenseSet.h - Dense probed hash table ------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -66,6 +65,12 @@ public:
   using size_type = unsigned;
 
   explicit DenseSetImpl(unsigned InitialReserve = 0) : TheMap(InitialReserve) {}
+
+  template <typename InputIt>
+  DenseSetImpl(const InputIt &I, const InputIt &E)
+      : DenseSetImpl(PowerOf2Ceil(std::distance(I, E))) {
+    insert(I, E);
+  }
 
   DenseSetImpl(std::initializer_list<ValueT> Elems)
       : DenseSetImpl(PowerOf2Ceil(Elems.size())) {
@@ -131,7 +136,7 @@ public:
 
   class ConstIterator {
     typename MapTy::const_iterator I;
-    friend class DenseSet;
+    friend class DenseSetImpl;
     friend class Iterator;
 
   public:

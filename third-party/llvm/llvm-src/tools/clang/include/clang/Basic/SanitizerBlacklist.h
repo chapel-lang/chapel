@@ -1,9 +1,8 @@
 //===--- SanitizerBlacklist.h - Blacklist for sanitizers --------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -15,14 +14,16 @@
 #define LLVM_CLANG_BASIC_SANITIZERBLACKLIST_H
 
 #include "clang/Basic/LLVM.h"
-#include "clang/Basic/SanitizerSpecialCaseList.h"
-#include "clang/Basic/Sanitizers.h"
 #include "clang/Basic/SourceLocation.h"
-#include "clang/Basic/SourceManager.h"
 #include "llvm/ADT/StringRef.h"
 #include <memory>
+#include <vector>
 
 namespace clang {
+
+class SanitizerMask;
+class SourceManager;
+class SanitizerSpecialCaseList;
 
 class SanitizerBlacklist {
   std::unique_ptr<SanitizerSpecialCaseList> SSCL;
@@ -31,6 +32,7 @@ class SanitizerBlacklist {
 public:
   SanitizerBlacklist(const std::vector<std::string> &BlacklistPaths,
                      SourceManager &SM);
+  ~SanitizerBlacklist();
   bool isBlacklistedGlobal(SanitizerMask Mask, StringRef GlobalName,
                            StringRef Category = StringRef()) const;
   bool isBlacklistedType(SanitizerMask Mask, StringRef MangledTypeName,

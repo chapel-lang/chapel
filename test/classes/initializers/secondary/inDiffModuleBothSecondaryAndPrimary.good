@@ -1,4 +1,2 @@
-inDiffModuleBothSecondaryAndPrimary.chpl:10: warning: initializers defined outside the module where the type was originally defined may cause issues
-inDiffModuleBothSecondaryAndPrimary.chpl:10: note: This will no longer be a problem when constructors are deprecated
 In primary initializer of class Foo
 {x = 3, y = true}

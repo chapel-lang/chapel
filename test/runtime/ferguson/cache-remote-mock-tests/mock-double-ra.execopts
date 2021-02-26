@@ -1,0 +1,7 @@
+--printMissRate --streamTwoUpdateRate=500 # mock-double-ra.missesA.good
+--printMissRate --streamTwoLocales=16 --streamTwoSpacePerLocale=16 --streamTwoUpdateRate=2 # mock-double-ra.missesB.good
+
+# try also some configurations to check correctness
+--streamTwoLocales=1 --streamTwoSpacePerLocale=1073741824
+--streamTwoLocales=4 --streamTwoSpacePerLocale=1073741824
+--streamTwoLocales=1024 --streamTwoSpacePerLocale=16

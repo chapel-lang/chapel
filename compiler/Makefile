@@ -1,4 +1,4 @@
-# Copyright 2020 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2021 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -101,8 +101,8 @@ CHPL_OBJS = \
 
 EXECS = $(CHPL) $(CHPLDOC)
 
-PRETARGETS = $(BUILD_VERSION_FILE) $(CONFIGURED_PREFIX_FILE) llvm $(CLANG_SETTINGS_FILE)
-TARGETS = $(CHPL) $(CHPL_OLD)
+PRETARGETS = $(BUILD_VERSION_FILE) $(CONFIGURED_PREFIX_FILE) $(CLANG_SETTINGS_FILE)
+TARGETS = $(CHPL)
 
 LIBS = -lm
 
@@ -113,7 +113,8 @@ ifndef CHPL_MAKE_THIRD_PARTY
 CHPL_MAKE_THIRD_PARTY = $(CHPL_MAKE_HOME)/third-party
 endif
 
-FIXPATH_CMD := $(CHPL_MAKE_HOME)/util/config/replace-paths.py \
+FIXPATH_CMD := $(CHPL_MAKE_PYTHON) \
+                  $(CHPL_MAKE_HOME)/util/config/replace-paths.py \
                   --fixpath '$$CHPL_THIRD_PARTY' $(CHPL_MAKE_THIRD_PARTY) \
                   --fixpath '$$CHPL_HOME' $(CHPL_MAKE_HOME)
 
@@ -146,11 +147,11 @@ $(CHPL_MAKE_HOME)/configured-prefix:
 
 $(CONFIGURED_PREFIX_FILE): FORCE $(COMPILER_BUILD) $(CHPL_MAKE_HOME)/configured-prefix
 	@echo '"'`cat $(CHPL_MAKE_HOME)/configured-prefix`'"' \ > $(CONFIGURED_PREFIX_FILE).incoming
-	@$(CHPL_MAKE_HOME)/util/config/update-if-different $(CONFIGURED_PREFIX_FILE) $(CONFIGURED_PREFIX_FILE).incoming
+	@$(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/config/update-if-different --update $(CONFIGURED_PREFIX_FILE) $(CONFIGURED_PREFIX_FILE).incoming
 
 $(CLANG_SETTINGS_FILE): FORCE $(COMPILER_BUILD)
 	@echo '{"'$(CLANG_CC)'","'$(CLANG_CXX)'","'`$(CHPL_MAKE_HOME)/util/config/gather-clang-sysroot-arguments $(CLANG_CC)`'"}' | $(FIXPATH_CMD) > $(CLANG_SETTINGS_FILE).incoming
-	@$(CHPL_MAKE_HOME)/util/config/update-if-different $(CLANG_SETTINGS_FILE) $(CLANG_SETTINGS_FILE).incoming
+	@$(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/config/update-if-different --update $(CLANG_SETTINGS_FILE) $(CLANG_SETTINGS_FILE).incoming
 
 $(CHPL_CONFIG_CHECK): | $(CHPL_BIN_DIR)
 	rm -rf $(CHPL_CONFIG_CHECK_PREFIX)
@@ -162,9 +163,6 @@ $(CHPL): $(CHPL_OBJS) $(CHPL_CONFIG_CHECK) | $(CHPL_BIN_DIR)
 	$(CXX) $(LDFLAGS) -o $@ $(CHPL_OBJS) $(LIBS) $(LLVM_LIBS)
 	$(TAGS_COMMAND)
 	$(EBROWSE_COMMAND)
-
-$(CHPL_OLD): $(CHPL) $(CHPL_OLD_BIN_DIR)
-	cp "$(CHPL_MAKE_HOME)/util/config/old-chpl.sh" "$(CHPL_OLD_BIN_DIR)/chpl"
 
 $(CHPLDOC): $(CHPL)
 	rm -f $(CHPLDOC)
@@ -181,22 +179,6 @@ $(COMPILER_BUILD):
 $(CHPL_BIN_DIR):
 	mkdir -p $@
 
-$(CHPL_OLD_BIN_DIR):
-	mkdir -p $@
-
-
-# third-party pkgs could be automatically built with the below.
-#
-#THIRD_PARTY_PKGS = $(shell $(CHPL_MAKE_HOME)/util/chplenv/third-party-pkgs --compiler)
-# NOTE: If any of these builds fail, we won't stop building
-#third-party-pkgs:
-#	@for p in $(THIRD_PARTY_PKGS); do \
-#		$(MAKE) -C $(THIRD_PARTY_DIR) $$p; \
-#	done
-
-llvm: FORCE
-	@echo "Making LLVM..."
-	@$(MAKE) -C $(THIRD_PARTY_DIR) llvm
 
 #
 # include standard footer for compiler

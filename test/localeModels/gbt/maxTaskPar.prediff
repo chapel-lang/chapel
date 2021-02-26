@@ -45,7 +45,7 @@ function cores_from_lscpu_or_proc_cpuinfo() {
 }
 
 case $target in
-  linux*|cray-xc|cray-xe|cygwin*)
+  linux*|cray-xc|cygwin*)
     case $locModel-$tasks in
       numa-qthreads)
         ucp=$( $CHPL_HOME/util/printchplenv --make --all --internal |

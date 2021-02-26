@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -28,7 +28,7 @@
 // duplication. If necessary, a locale model using this file
 // should feel free to reimplement them in some other way.
 module LocaleModelHelpMem {
-  private use ChapelStandard, SysCTypes;
+  private use ChapelStandard, SysCTypes, CPtr;
 
   //////////////////////////////////////////
   //
@@ -58,6 +58,7 @@ module LocaleModelHelpMem {
   }
 
   pragma "allocator"
+  pragma "llvm return noalias"
   pragma "always propagate line file info"
   proc chpl_here_alloc(size:integral, md:chpl_mem_descInt_t): c_void_ptr {
     pragma "fn synchronization free"
@@ -67,6 +68,7 @@ module LocaleModelHelpMem {
   }
 
   pragma "allocator"
+  pragma "llvm return noalias"
   pragma "always propagate line file info"
   proc chpl_here_aligned_alloc(alignment:integral, size:integral,
                                md:chpl_mem_descInt_t): c_void_ptr {
@@ -79,6 +81,7 @@ module LocaleModelHelpMem {
   }
 
   pragma "allocator"
+  pragma "llvm return noalias"
   pragma "always propagate line file info"
   proc chpl_here_calloc(size:integral, number:integral, md:chpl_mem_descInt_t): c_void_ptr {
     pragma "fn synchronization free"

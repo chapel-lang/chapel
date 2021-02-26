@@ -7,5 +7,3 @@ class MyClass {
 var rhs: owned MyClass?;
 
 var lhs: owned MyClass = rhs;
-
-compilerError("done");

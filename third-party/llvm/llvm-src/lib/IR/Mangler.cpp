@@ -1,9 +1,8 @@
 //===-- Mangler.cpp - Self-contained c/asm llvm name mangler --------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -95,15 +94,18 @@ static void addByteCountSuffix(raw_ostream &OS, const Function *F,
                                const DataLayout &DL) {
   // Calculate arguments size total.
   unsigned ArgWords = 0;
+
+  const unsigned PtrSize = DL.getPointerSize();
+
   for (Function::const_arg_iterator AI = F->arg_begin(), AE = F->arg_end();
        AI != AE; ++AI) {
-    Type *Ty = AI->getType();
     // 'Dereference' type in case of byval or inalloca parameter attribute.
-    if (AI->hasByValOrInAllocaAttr())
-      Ty = cast<PointerType>(Ty)->getElementType();
+    uint64_t AllocSize = AI->hasPassPointeeByValueAttr() ?
+      AI->getPassPointeeByValueCopySize(DL) :
+      DL.getTypeAllocSize(AI->getType());
+
     // Size should be aligned to pointer size.
-    unsigned PtrSize = DL.getPointerSize();
-    ArgWords += alignTo(DL.getTypeAllocSize(Ty), PtrSize);
+    ArgWords += alignTo(AllocSize, PtrSize);
   }
 
   OS << '@' << ArgWords;
@@ -187,7 +189,7 @@ void llvm::emitLinkerFlagsForGlobalCOFF(raw_ostream &OS, const GlobalValue *GV,
   if (!GV->hasDLLExportStorageClass() || GV->isDeclaration())
     return;
 
-  if (TT.isKnownWindowsMSVCEnvironment())
+  if (TT.isWindowsMSVCEnvironment())
     OS << " /EXPORT:";
   else
     OS << " -export:";
@@ -206,7 +208,7 @@ void llvm::emitLinkerFlagsForGlobalCOFF(raw_ostream &OS, const GlobalValue *GV,
   }
 
   if (!GV->getValueType()->isFunctionTy()) {
-    if (TT.isKnownWindowsMSVCEnvironment())
+    if (TT.isWindowsMSVCEnvironment())
       OS << ",DATA";
     else
       OS << ",data";
@@ -215,7 +217,7 @@ void llvm::emitLinkerFlagsForGlobalCOFF(raw_ostream &OS, const GlobalValue *GV,
 
 void llvm::emitLinkerFlagsForUsedCOFF(raw_ostream &OS, const GlobalValue *GV,
                                       const Triple &T, Mangler &M) {
-  if (!T.isKnownWindowsMSVCEnvironment())
+  if (!T.isWindowsMSVCEnvironment())
     return;
 
   OS << " /INCLUDE:";

@@ -264,6 +264,7 @@ enum {
   _gc_post_unbounce,
   _gc_post_unregister,
   _gc_post_unprepare,
+  _gc_post_ce_release,
   /* mutually-exclusive signaling actions */
   _gc_post_completion_flag,
   _gc_post_completion_cntr,
@@ -289,6 +290,7 @@ enum {
 #define GC_POST_UNBOUNCE        GC_POST(unbounce)
 #define GC_POST_UNREGISTER      GC_POST(unregister)
 #define GC_POST_UNPREPARE       GC_POST(unprepare)
+#define GC_POST_CE_RELEASE      GC_POST(ce_release)
 #define GC_POST_COMPLETION_FLAG GC_POST(completion_flag)
 #define GC_POST_COMPLETION_CNTR GC_POST(completion_cntr)
 #define GC_POST_COMPLETION_EOP  GC_POST(completion_eop)
@@ -508,6 +510,8 @@ int gasnetc_next_power_of_2(int x) {
   x += 1;
   return x;
 }
+
+#define gasnetc_prev_power_of_2(x) gasnetc_next_power_of_2(1+((x)/2))
 
 extern int gasnetc_send_am(gasnetc_post_descriptor_t *gpd);
 gasnetc_post_descriptor_t *gasnetc_alloc_reply_post_descriptor(gex_Token_t t,

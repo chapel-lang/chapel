@@ -700,7 +700,7 @@ static void gasnete_gdbarrier_init(gasnete_coll_team_t team);
     gasnete_coll_default_barrier_type = GASNETE_COLL_BARRIER_GNIDISSEM;  \
 } while (0)
 
-#define GASNETE_BARRIER_INIT(TEAM, TYPE, NODES, SUPERNODES) do { \
+#define GASNETE_BARRIER_INIT(TEAM, TYPE) do { \
     if ((TYPE) == GASNETE_COLL_BARRIER_GNIDISSEM &&              \
         (TEAM) == GASNET_TEAM_ALL) {                             \
       gasnete_gdbarrier_init(TEAM);                              \
@@ -1141,6 +1141,15 @@ static int gasnete_gdbarrier_result(gasnete_coll_team_t team, int *id) {
 
 void gasnete_gdbarrier_kick_team_all(void) {
   gasnete_gdbarrier_kick(GASNET_TEAM_ALL);
+}
+
+static void gasnete_gdbarrier_fini(gasnete_coll_team_t team) {
+  gasnete_coll_gdbarrier_t *data = team->barrier_data;
+#if GASNETI_PSHM_BARRIER_HIER
+  if (data->barrier_pshm) gasnete_pshmbarrier_fini_inner(data->barrier_pshm);
+#endif
+  gasneti_free(data->barrier_peers);
+  gasneti_free_aligned(data);
 }
 
 static void gasnete_gdbarrier_init(gasnete_coll_team_t team) {

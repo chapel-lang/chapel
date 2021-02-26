@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -23,10 +23,18 @@
 
 #include <inttypes.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 //
 // snprintf() a size as nnn[KMG]
 //
 int chpl_snprintf_KMG_z(char* buf, int bufSize, size_t val);
 int chpl_snprintf_KMG_f(char* buf, int bufSize, double val);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // _chpl_format_h_

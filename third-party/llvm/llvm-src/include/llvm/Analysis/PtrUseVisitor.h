@@ -1,9 +1,8 @@
 //===- PtrUseVisitor.h - InstVisitors over a pointers uses ------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -27,7 +26,6 @@
 #include "llvm/ADT/PointerIntPair.h"
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/ADT/SmallVector.h"
-#include "llvm/IR/CallSite.h"
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/InstVisitor.h"
@@ -223,9 +221,9 @@ public:
     // offsets on this pointer.
     // FIXME: Support a vector of pointers.
     assert(I.getType()->isPointerTy());
-    IntegerType *IntPtrTy = cast<IntegerType>(DL.getIntPtrType(I.getType()));
+    IntegerType *IntIdxTy = cast<IntegerType>(DL.getIndexType(I.getType()));
     IsOffsetKnown = true;
-    Offset = APInt(IntPtrTy->getBitWidth(), 0);
+    Offset = APInt(IntIdxTy->getBitWidth(), 0);
     PI.reset();
 
     // Enqueue the uses of this pointer.
@@ -255,6 +253,10 @@ protected:
 
   void visitBitCastInst(BitCastInst &BC) {
     enqueueUsers(BC);
+  }
+
+  void visitAddrSpaceCastInst(AddrSpaceCastInst &ASC) {
+    enqueueUsers(ASC);
   }
 
   void visitPtrToIntInst(PtrToIntInst &I) {
@@ -292,9 +294,9 @@ protected:
 
   // Generically, arguments to calls and invokes escape the pointer to some
   // other function. Mark that.
-  void visitCallSite(CallSite CS) {
-    PI.setEscaped(CS.getInstruction());
-    Base::visitCallSite(CS);
+  void visitCallBase(CallBase &CB) {
+    PI.setEscaped(&CB);
+    Base::visitCallBase(CB);
   }
 };
 

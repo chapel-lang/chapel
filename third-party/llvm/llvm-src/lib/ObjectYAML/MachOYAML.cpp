@@ -1,9 +1,8 @@
 //===- MachOYAML.cpp - MachO YAMLIO implementation ------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -108,6 +107,8 @@ void MappingTraits<MachOYAML::Object>::mapping(IO &IO,
   Object.DWARF.IsLittleEndian = Object.IsLittleEndian;
 
   IO.mapRequired("FileHeader", Object.Header);
+  Object.DWARF.Is64BitAddrSize = Object.Header.magic == MachO::MH_MAGIC_64 ||
+                                 Object.Header.magic == MachO::MH_CIGAM_64;
   IO.mapOptional("LoadCommands", Object.LoadCommands);
   if(!Object.LinkEdit.isEmpty() || !IO.outputting())
     IO.mapOptional("LinkEditData", Object.LinkEdit);
@@ -274,6 +275,18 @@ void MappingTraits<MachO::dyld_info_command>::mapping(
   IO.mapRequired("export_size", LoadCommand.export_size);
 }
 
+void MappingTraits<MachOYAML::Relocation>::mapping(
+    IO &IO, MachOYAML::Relocation &Relocation) {
+  IO.mapRequired("address", Relocation.address);
+  IO.mapRequired("symbolnum", Relocation.symbolnum);
+  IO.mapRequired("pcrel", Relocation.is_pcrel);
+  IO.mapRequired("length", Relocation.length);
+  IO.mapRequired("extern", Relocation.is_extern);
+  IO.mapRequired("type", Relocation.type);
+  IO.mapRequired("scattered", Relocation.is_scattered);
+  IO.mapRequired("value", Relocation.value);
+}
+
 void MappingTraits<MachOYAML::Section>::mapping(IO &IO,
                                                 MachOYAML::Section &Section) {
   IO.mapRequired("sectname", Section.sectname);
@@ -288,6 +301,16 @@ void MappingTraits<MachOYAML::Section>::mapping(IO &IO,
   IO.mapRequired("reserved1", Section.reserved1);
   IO.mapRequired("reserved2", Section.reserved2);
   IO.mapOptional("reserved3", Section.reserved3);
+  IO.mapOptional("content", Section.content);
+  IO.mapOptional("relocations", Section.relocations);
+}
+
+StringRef
+MappingTraits<MachOYAML::Section>::validate(IO &IO,
+                                            MachOYAML::Section &Section) {
+  if (Section.content && Section.size < Section.content->binary_size())
+    return "Section size must be greater than or equal to the content size";
+  return {};
 }
 
 void MappingTraits<MachO::build_tool_version>::mapping(

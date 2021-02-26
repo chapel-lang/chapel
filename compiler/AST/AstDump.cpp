@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -425,6 +425,17 @@ void AstDump::visitImportStmt(ImportStmt* node) {
 
   node->src->accept(this);
 
+  if (node->isARename()) {
+    fprintf(mFP, " 'as' %s", node->getRename());
+  }
+
+  if (node->providesUnqualifiedAccess()) {
+    fprintf(mFP, ".{");
+    bool first = outputVector(mFP, node->unqualified);
+    outputRenames(mFP, node->renamed, first);
+    fprintf(mFP, "}");
+  }
+
   write(false, ")", true);
 }
 
@@ -484,6 +495,14 @@ bool AstDump::enterForallStmt(ForallStmt* node) {
   }
   --mIndent;
   newline();
+  if (node->zipCall()) {
+    write("zip call");
+    ++mIndent;
+    newline();
+    node->zipCall()->accept(this);
+    --mIndent;
+    newline();
+  }
   write("shadow variables:");
   ++mIndent;
   for_alist(expr, node->shadowVariables()) {

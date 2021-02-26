@@ -92,7 +92,9 @@
 # won't see the value of any arguments the user passed via -D.  Since these are
 # necessary to properly configure MSVC in both the top-level configuration as well as
 # all feature-test invocations, we set environment variables with the values so that
-# these environments get inherited by child invocations.
+# these environments get inherited by child invocations. We can switch to
+# CMAKE_TRY_COMPILE_PLATFORM_VARIABLES once our minimum supported CMake version
+# is 3.6 or greater.
 function(init_user_prop prop)
   if(${prop})
     set(ENV{_${prop}} "${${prop}}")
@@ -188,7 +190,9 @@ else()
 endif()
 
 set(MSVC_INCLUDE "${MSVC_BASE}/include")
+set(ATLMFC_INCLUDE "${MSVC_BASE}/atlmfc/include")
 set(MSVC_LIB "${MSVC_BASE}/lib")
+set(ATLMFC_LIB "${MSVC_BASE}/atlmfc/lib")
 set(WINSDK_INCLUDE "${WINSDK_BASE}/Include/${WINSDK_VER}")
 set(WINSDK_LIB "${WINSDK_BASE}/Lib/${WINSDK_VER}")
 
@@ -244,6 +248,7 @@ set(COMPILE_FLAGS
     -D_CRT_SECURE_NO_WARNINGS
     --target=${TRIPLE_ARCH}-windows-msvc
     -fms-compatibility-version=19.11
+    -imsvc "${ATLMFC_INCLUDE}"
     -imsvc "${MSVC_INCLUDE}"
     -imsvc "${WINSDK_INCLUDE}/ucrt"
     -imsvc "${WINSDK_INCLUDE}/shared"
@@ -280,6 +285,7 @@ set(LINK_FLAGS
     # Prevent CMake from attempting to invoke mt.exe. It only recognizes the slashed form and not the dashed form.
     /manifest:no
 
+    -libpath:"${ATLMFC_LIB}/${WINSDK_ARCH}"
     -libpath:"${MSVC_LIB}/${WINSDK_ARCH}"
     -libpath:"${WINSDK_LIB}/ucrt/${WINSDK_ARCH}"
     -libpath:"${WINSDK_LIB}/um/${WINSDK_ARCH}")

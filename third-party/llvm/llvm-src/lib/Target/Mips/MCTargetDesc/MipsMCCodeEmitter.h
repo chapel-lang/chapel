@@ -1,9 +1,8 @@
 //===- MipsMCCodeEmitter.h - Convert Mips Code to Machine Code --*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -45,7 +44,7 @@ public:
 
   void EmitByte(unsigned char C, raw_ostream &OS) const;
 
-  void EmitInstruction(uint64_t Val, unsigned Size, const MCSubtargetInfo &STI,
+  void emitInstruction(uint64_t Val, unsigned Size, const MCSubtargetInfo &STI,
                        raw_ostream &OS) const;
 
   void encodeInstruction(const MCInst &MI, raw_ostream &OS,

@@ -1,9 +1,8 @@
 //===-- RuntimeDyldCOFF.h - Run-time dynamic linker for MC-JIT ---*- C++ -*-==//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -37,9 +36,22 @@ public:
 
 protected:
   RuntimeDyldCOFF(RuntimeDyld::MemoryManager &MemMgr,
-                  JITSymbolResolver &Resolver)
-    : RuntimeDyldImpl(MemMgr, Resolver) {}
+                  JITSymbolResolver &Resolver, unsigned PointerSize,
+                  uint32_t PointerReloc)
+      : RuntimeDyldImpl(MemMgr, Resolver), PointerSize(PointerSize),
+        PointerReloc(PointerReloc) {
+    assert((PointerSize == 4 || PointerSize == 8) && "Unexpected pointer size");
+  }
+
   uint64_t getSymbolOffset(const SymbolRef &Sym);
+  uint64_t getDLLImportOffset(unsigned SectionID, StubMap &Stubs,
+                              StringRef Name, bool SetSectionIDMinus1 = false);
+
+  static constexpr StringRef getImportSymbolPrefix() { return "__imp_"; }
+
+private:
+  unsigned PointerSize;
+  uint32_t PointerReloc;
 };
 
 } // end namespace llvm

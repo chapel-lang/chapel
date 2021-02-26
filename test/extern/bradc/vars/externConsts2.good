@@ -1,1 +1,1 @@
-externConsts2.chpl:4: error: illegal lvalue in assignment
+externConsts2.chpl:4: error: cannot assign to const variable

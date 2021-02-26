@@ -301,6 +301,7 @@ int main(int argc, char **argv) {
   HFOREACH(HTEST)
   BARRIER();
 
+  test_free(rand_payload);
   MSG("done.");
 
   gasnet_exit(0);

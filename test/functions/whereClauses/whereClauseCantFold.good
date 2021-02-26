@@ -1,4 +1,4 @@
 whereClauseCantFold.chpl:5: error: unresolved call 'foo(1.2)'
 whereClauseCantFold.chpl:1: note: this candidate did not match: foo(param x: uint(8))
-whereClauseCantFold.chpl:5: note: because call actual argument #1 with type real(64)
+whereClauseCantFold.chpl:5: note: because actual argument #1 with type 'real(64)'
 whereClauseCantFold.chpl:1: note: is passed to formal 'param x: uint(8)'

@@ -1,9 +1,8 @@
 //===--- PPC.cpp - PPC Helpers for Tools ------------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -14,6 +13,7 @@
 #include "clang/Driver/Options.h"
 #include "llvm/ADT/StringSwitch.h"
 #include "llvm/Option/ArgList.h"
+#include "llvm/Support/Host.h"
 
 using namespace clang::driver;
 using namespace clang::driver::tools;
@@ -26,7 +26,7 @@ std::string ppc::getPPCTargetCPU(const ArgList &Args) {
     StringRef CPUName = A->getValue();
 
     if (CPUName == "native") {
-      std::string CPU = llvm::sys::getHostCPUName();
+      std::string CPU = std::string(llvm::sys::getHostCPUName());
       if (!CPU.empty() && CPU != "generic")
         return CPU;
       else
@@ -53,10 +53,12 @@ std::string ppc::getPPCTargetCPU(const ArgList &Args) {
         .Case("7450", "7450")
         .Case("G4+", "g4+")
         .Case("750", "750")
+        .Case("8548", "e500")
         .Case("970", "970")
         .Case("G5", "g5")
         .Case("a2", "a2")
         .Case("a2q", "a2q")
+        .Case("e500", "e500")
         .Case("e500mc", "e500mc")
         .Case("e5500", "e5500")
         .Case("power3", "pwr3")
@@ -68,6 +70,8 @@ std::string ppc::getPPCTargetCPU(const ArgList &Args) {
         .Case("power7", "pwr7")
         .Case("power8", "pwr8")
         .Case("power9", "pwr9")
+        .Case("power10", "pwr10")
+        .Case("future", "future")
         .Case("pwr3", "pwr3")
         .Case("pwr4", "pwr4")
         .Case("pwr5", "pwr5")
@@ -77,6 +81,7 @@ std::string ppc::getPPCTargetCPU(const ArgList &Args) {
         .Case("pwr7", "pwr7")
         .Case("pwr8", "pwr8")
         .Case("pwr9", "pwr9")
+        .Case("pwr10", "pwr10")
         .Case("powerpc", "ppc")
         .Case("powerpc64", "ppc64")
         .Case("powerpc64le", "ppc64le")
@@ -88,19 +93,24 @@ std::string ppc::getPPCTargetCPU(const ArgList &Args) {
 
 const char *ppc::getPPCAsmModeForCPU(StringRef Name) {
   return llvm::StringSwitch<const char *>(Name)
-        .Case("pwr7", "-mpower7")
-        .Case("power7", "-mpower7")
-        .Case("pwr8", "-mpower8")
-        .Case("power8", "-mpower8")
-        .Case("ppc64le", "-mpower8")
-        .Case("pwr9", "-mpower9")
-        .Case("power9", "-mpower9")
-        .Default("-many");
+      .Case("pwr7", "-mpower7")
+      .Case("power7", "-mpower7")
+      .Case("pwr8", "-mpower8")
+      .Case("power8", "-mpower8")
+      .Case("ppc64le", "-mpower8")
+      .Case("pwr9", "-mpower9")
+      .Case("power9", "-mpower9")
+      .Case("pwr10", "-mpower10")
+      .Case("power10", "-mpower10")
+      .Default("-many");
 }
 
 void ppc::getPPCTargetFeatures(const Driver &D, const llvm::Triple &Triple,
                                const ArgList &Args,
                                std::vector<StringRef> &Features) {
+  if (Triple.getSubArch() == llvm::Triple::PPCSubArch_spe)
+    Features.push_back("+spe");
+
   handleTargetFeaturesGroup(Args, Features, options::OPT_m_ppc_Features_Group);
 
   ppc::FloatABI FloatABI = ppc::getPPCFloatABI(D, Args);
@@ -116,7 +126,8 @@ ppc::ReadGOTPtrMode ppc::getPPCReadGOTPtrMode(const Driver &D, const llvm::Tripl
                                               const ArgList &Args) {
   if (Args.getLastArg(options::OPT_msecure_plt))
     return ppc::ReadGOTPtrMode::SecurePlt;
-  if (Triple.isOSOpenBSD())
+  if ((Triple.isOSFreeBSD() && Triple.getOSMajorVersion() >= 13) ||
+      Triple.isOSNetBSD() || Triple.isOSOpenBSD() || Triple.isMusl())
     return ppc::ReadGOTPtrMode::SecurePlt;
   else
     return ppc::ReadGOTPtrMode::Bss;

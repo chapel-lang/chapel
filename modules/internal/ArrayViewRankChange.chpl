@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -72,7 +72,7 @@ module ArrayViewRankChange {
         return downDistInst;
     }
 
-    override proc dsiNewRectangularDom(param rank, type idxType, param stridable, inds) {
+    override proc dsiNewRectangularDom(param rank, type idxType, param stridable, inds){
       var newdom = new unmanaged ArrayViewRankChangeDom(rank=rank,
                                               idxType=idxType,
                                               stridable=stridable,
@@ -112,6 +112,12 @@ module ArrayViewRankChange {
 
     override proc dsiIsLayout() param {
       return downDistInst.dsiIsLayout();
+    }
+
+    proc dsiEqualDMaps(that: ArrayViewRankChangeDist(?)) {
+      return (this.collapsedDim == that.collapsedDim && 
+              this.idx == that.idx &&
+              this.downDist.dsiEqualDMaps(that.downDist));
     }
   }
 
@@ -176,9 +182,9 @@ module ArrayViewRankChange {
         return downDomInst!;
     }
 
-    proc dsiBuildArray(type eltType) {
+    proc dsiBuildArray(type eltType, param initElts:bool) {
       pragma "no auto destroy"
-      const downarr = _newArray(downDom.dsiBuildArray(eltType));
+      const downarr = _newArray(downDom.dsiBuildArray(eltType, initElts));
       return new unmanaged ArrayViewRankChangeArr(eltType  =eltType,
                                         _DomPid = this.pid,
                                         dom = _to_unmanaged(this),
@@ -217,6 +223,7 @@ module ArrayViewRankChange {
       chpl_assignDomainWithGetSetIndices(this, rhs);
     }
 
+    pragma "order independent yielding loops"
     iter these() {
       if chpl__isDROrDRView(downDom) {
         for i in upDom do
@@ -236,6 +243,7 @@ module ArrayViewRankChange {
         yield i;
     }
 
+    pragma "order independent yielding loops"
     iter these(param tag: iterKind) where tag == iterKind.standalone
       && !localeModelHasSublocales
       && !chpl__isDROrDRView(downDom)
@@ -257,6 +265,7 @@ module ArrayViewRankChange {
       }
     }
 
+    pragma "order independent yielding loops"
     iter these(param tag: iterKind, followThis)
       where tag == iterKind.follower {
       if chpl__isDROrDRView(downDom) {
@@ -329,7 +338,7 @@ module ArrayViewRankChange {
       return dist;
     }
 
-    proc dsiTargetLocales() {
+    proc dsiTargetLocales() const ref {
       //
       // BLC: there's a bit of a question in my mind about whether
       // rank-change slices (and regular slices for that matter) ought
@@ -419,6 +428,10 @@ module ArrayViewRankChange {
       downDomInst = reprivatizeData(2);
     }
 
+    override proc dsiSupportsAutoLocalAccess() param {
+      return downDomInst!.dsiSupportsAutoLocalAccess();
+    }
+
  } // end of class ArrayViewRankChangeDom
 
   private proc buildIndexCacheHelper(arr, dom, collapsedDim, idx) {
@@ -473,12 +486,12 @@ module ArrayViewRankChange {
     // through the array field above.
     const indexCache;
 
-    const ownsArrInstance;
+    param ownsArrInstance;
 
     proc init(type eltType, const _DomPid, const dom,
               const _ArrPid, const _ArrInstance,
               const collapsedDim, const idx,
-              const ownsArrInstance : bool = false) {
+              param ownsArrInstance : bool) {
       super.init(eltType = eltType);
       this._DomPid         = _DomPid;
       this.dom             = dom;
@@ -488,6 +501,8 @@ module ArrayViewRankChange {
       this.idx             = idx;
       this.indexCache      = buildIndexCacheHelper(_ArrInstance, dom, collapsedDim, idx);
       this.ownsArrInstance = ownsArrInstance;
+      this.complete();
+      __primitive("set aliasing array on type", this.type, !ownsArrInstance);
     }
 
     // Forward all unhandled methods to underlying privatized array
@@ -524,7 +539,7 @@ module ArrayViewRankChange {
     // methods like this...
     //
     override proc isRankChangeArrayView() param {
-      return true;
+      return !ownsArrInstance;
     }
 
 
@@ -547,6 +562,7 @@ module ArrayViewRankChange {
 
     // TODO: We seem to run into compile-time bugs when using multiple yields.
     // For now, work around them by using an if-expr
+    pragma "order independent yielding loops"
     iter these(param tag: iterKind) ref
       where tag == iterKind.standalone && !localeModelHasSublocales &&
            __primitive("method call resolves", privDom, "these", tag) {
@@ -563,6 +579,7 @@ module ArrayViewRankChange {
       }
     }
 
+    pragma "order independent yielding loops"
     iter these(param tag: iterKind, followThis) ref
       where tag == iterKind.follower {
       for i in privDom.these(tag, followThis) {
@@ -697,7 +714,8 @@ module ArrayViewRankChange {
                                         _ArrPid=privatizeData(2),
                                         _ArrInstance=privatizeData(3),
                                         collapsedDim=privatizeData(4),
-                                        idx=privatizeData(5));
+                                        idx=privatizeData(5),
+                                        ownsArrInstance=this.ownsArrInstance);
     }
 
     //
@@ -774,7 +792,11 @@ module ArrayViewRankChange {
       return this;
     }
 
-    override proc dsiDestroyArr() {
+    override proc dsiElementInitializationComplete() {
+      // no elements allocated here, so no action necessary
+    }
+
+    override proc dsiDestroyArr(deinitElts:bool) {
       if ownsArrInstance {
         _delete_arr(_ArrInstance, _isPrivatized(_ArrInstance));
       }

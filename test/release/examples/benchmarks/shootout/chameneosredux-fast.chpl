@@ -26,7 +26,7 @@ proc main() {
   printColorEquations();
 
   const group1 = [i in 1..popSize1] new Chameneos(i, ((i-1)%3):Color);
-  const group2 = [i in 1..popSize2] new Chameneos(i, colors10[i]);
+  const group2 = [i in 1..popSize2] new Chameneos(i, colors10[i-1]);
 
   cobegin {
     holdMeetings(group1, n);

@@ -1,8 +1,7 @@
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===---------------------------------------------------------------------===//
 //
@@ -119,8 +118,12 @@ raw_ostream &MenuResource::log(raw_ostream &OS) const {
 raw_ostream &StringTableResource::log(raw_ostream &OS) const {
   OS << "StringTable:\n";
   OptStatements->log(OS);
-  for (const auto &String : Table)
-    OS << "  " << String.first << " => " << String.second << "\n";
+  for (const auto &String : Table) {
+    OS << "  " << String.first << " =>";
+    for (const auto &S : String.second)
+      OS << " " << S;
+    OS << "\n";
+  }
   return OS;
 }
 

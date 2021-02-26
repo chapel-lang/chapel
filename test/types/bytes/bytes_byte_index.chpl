@@ -12,22 +12,22 @@ writeln();
 
 // bytes.this(range)
 writeln(s[..]);
-writeln(s[..5]);
-writeln(s[7..]);
-writeln(s[4..8]);
+writeln(s[..4]);
+writeln(s[6..]);
+writeln(s[3..7]);
 writeln();
 
 // with stride
-writeln(s[1..11 by 2]);
-writeln(s[1..11 by -1]);
-writeln(s[1..11 by -2]);
+writeln(s[0..10 by 2]);
+writeln(s[0..10 by -1]);
+writeln(s[0..10 by -2]);
+writeln(s[0.. by 3]);
 writeln(s[1.. by 3]);
-writeln(s[2.. by 3]);
 writeln();
 
 // bytes.this(uint)
-writeln(s[3]);
+writeln(s[2]);
 writeln();
 
 // all together now!
-writeln(s[1..s.find(" ":bytes)], "beautifu", s.item(3), s[s.find(" ":bytes)..]);
+writeln(s[0..s.find(" ":bytes)], "beautifu", s.item(2), s[s.find(" ":bytes)..]);

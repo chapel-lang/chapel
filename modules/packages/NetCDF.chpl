@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -47,6 +47,7 @@ module NetCDF {
      https://www.unidata.ucar.edu/software/netcdf/docs
    */
   module C_NetCDF {
+    public use SysCTypes, SysBasic, CPtr;
     // Generated with c2chapel version 0.1.0
 
     // Header given to c2chapel:

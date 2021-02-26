@@ -1,5 +1,3 @@
-use Assert;
-
 config param parSafe = true;
 
 var D1: domain(int, parSafe=parSafe);

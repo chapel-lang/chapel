@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -21,6 +21,10 @@
 #ifndef _chpl_comm_launch_h
 #define _chpl_comm_launch_h
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 //
 // Launch assistance for the ofi communication layer.
 //
@@ -31,5 +35,9 @@
 //
 #define CHPL_COMM_PRELAUNCH() chpl_comm_preLaunch()
 void chpl_comm_preLaunch(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

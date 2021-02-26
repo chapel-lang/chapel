@@ -8,7 +8,7 @@ This document outlines the steps to get started with multilocale Chapel using
 GASNet-based communication.  This configuration is fully functional on every
 platform that supports multilocale Chapel.  However, there are also other
 communication configurations that work in specific situations.  On Cray
-XC/XE/XK systems, using native communication as described in :ref:`Using
+XC systems, using native communication as described in :ref:`Using
 Chapel on Cray Systems <readme-cray>` will probably give the best performance.
 For instructions on using the preliminary OpenFabrics Interfaces
 libfabric-based ``ofi`` communication layer, see :ref:`readme-libfabric`.

@@ -1,9 +1,8 @@
 //===- DWARFDebugArangeSet.h ------------------------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -11,7 +10,8 @@
 #define LLVM_DEBUGINFO_DWARFDEBUGARANGESET_H
 
 #include "llvm/ADT/iterator_range.h"
-#include "llvm/Support/DataExtractor.h"
+#include "llvm/DebugInfo/DWARF/DWARFDataExtractor.h"
+#include "llvm/Support/Error.h"
 #include <cstdint>
 #include <vector>
 
@@ -24,10 +24,12 @@ public:
   struct Header {
     /// The total length of the entries for that set, not including the length
     /// field itself.
-    uint32_t Length;
+    uint64_t Length;
+    /// The DWARF format of the set.
+    dwarf::DwarfFormat Format;
     /// The offset from the beginning of the .debug_info section of the
     /// compilation unit entry referenced by the table.
-    uint32_t CuOffset;
+    uint64_t CuOffset;
     /// The DWARF version number.
     uint16_t Version;
     /// The size in bytes of an address on the target architecture. For segmented
@@ -50,7 +52,7 @@ private:
   using DescriptorColl = std::vector<Descriptor>;
   using desc_iterator_range = iterator_range<DescriptorColl::const_iterator>;
 
-  uint32_t Offset;
+  uint64_t Offset;
   Header HeaderData;
   DescriptorColl ArangeDescriptors;
 
@@ -58,10 +60,10 @@ public:
   DWARFDebugArangeSet() { clear(); }
 
   void clear();
-  bool extract(DataExtractor data, uint32_t *offset_ptr);
+  Error extract(DWARFDataExtractor data, uint64_t *offset_ptr);
   void dump(raw_ostream &OS) const;
 
-  uint32_t getCompileUnitDIEOffset() const { return HeaderData.CuOffset; }
+  uint64_t getCompileUnitDIEOffset() const { return HeaderData.CuOffset; }
 
   const Header &getHeader() const { return HeaderData; }
 

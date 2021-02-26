@@ -2,7 +2,7 @@
 
 # Pluck the execOptsNum out of the execution command line.
 case $(echo $1 | sed "s/^.*=\([0-9]\)/\1/") in
-1) module unload $(module list --terse 2>&1 | grep craype-hugepages);;
+1) module unload $(module -t list 2>&1 | grep craype-hugepages);;
 esac
 
 exec ./$(basename ${0})-2 $*

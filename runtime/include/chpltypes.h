@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -28,9 +28,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h> // for ptrdiff_t
+#include <string.h>
 #include <sys/time.h> // for struct timeval
+
 #ifndef __cplusplus
 #include <complex.h>
+typedef float complex        _complex64;
+typedef double complex       _complex128;
+#else
+#include <complex>
+typedef std::complex<float>  _complex64;
+typedef std::complex<double> _complex128;
+#endif
+
+#ifdef __cplusplus
+extern "C" {
 #endif
 
 // C types usable from Chapel.
@@ -90,6 +102,10 @@ static inline int isActualSublocID(c_sublocid_t subloc) {
   return subloc >= 0;
 }
 
+#ifdef __cplusplus
+}
+#endif
+
 #ifndef LAUNCHER
 
 // The type for wide-pointer-to-void. This is used in the runtime in order to
@@ -120,7 +136,11 @@ typedef wide_ptr_t* ptr_wide_ptr_t;
 typedef void* ptr_wide_ptr_t;
 #endif // LAUNCHER
 
-#define nil 0 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#define nil 0
 typedef void* _nilType;
 typedef void* _nilRefType;
 typedef void* _chpl_object;
@@ -175,10 +195,6 @@ typedef float               _real32;
 typedef double              _real64;
 typedef float               _imag32;
 typedef double              _imag64;
-#ifndef __cplusplus
-typedef float complex       _complex64;
-typedef double complex      _complex128;
-#endif
 typedef int64_t             _symbol;
 
 // macros for Chapel min/max -> C stdint.h or values.h min/max
@@ -205,8 +221,17 @@ typedef int64_t             _symbol;
 #define MAX_FLOAT32         FLT_MAX
 #define MAX_FLOAT64         DBL_MAX
 
-int64_t real2int( _real64 f);       // return the raw bytes of the float
-int64_t object2int( _chpl_object o);  // return the ptr
+// return the raw bytes of the float
+static inline int64_t real2int(_real64 f) {
+  int64_t ret;
+  memcpy(&ret, &f, sizeof(ret));
+  return ret;
+}
+
+// return the raw bytes of the pointer
+static inline int64_t object2int(_chpl_object o) {
+  return (intptr_t) o;
+}
 
 typedef int32_t chpl__class_id;
 
@@ -216,12 +241,19 @@ typedef struct chpl_main_argument_s {
   int32_t return_value;
 } chpl_main_argument;
 
-#ifndef __cplusplus
 static inline _complex128 _chpl_complex128(_real64 re, _real64 im) {
+#ifndef __cplusplus
   return re + im*_Complex_I;
+#else
+  return std::complex<double>(re, im);
+#endif
 }
 static inline _complex64 _chpl_complex64(_real32 re, _real32 im) {
+#ifndef __cplusplus
   return re + im*_Complex_I;
+#else
+  return std::complex<float>(re, im);
+#endif
 }
 
 static inline _real64* complex128GetRealRef(_complex128* cplx) {
@@ -270,10 +302,34 @@ static inline _complex64 complexSubtract64(_complex64 c1, _complex64 c2) {
 static inline _complex64 complexUnaryMinus64(_complex64 c1) {
   return -c1;
 }
-#endif
 
 /* This should be moved somewhere else, but where is the question */
-const char* chpl_get_argument_i(chpl_main_argument* args, int32_t i);
+static inline const char* chpl_get_argument_i(chpl_main_argument* args, int32_t i)
+{
+  if (i < 0 || i >= args->argc) return NULL;
+  return args->argv[i];
+}
+
+//
+// The first member of both the task and on-stmt body function argument
+// bundle header structs is a 'kind' indicator of this type.  This lets
+// us distinguish which kind of header is on the front of the bundle.
+//
+// By convention, arg bundle kind == 0 indicates that the bundle starts
+// with a chpl_task_bundle_t struct, kind == 1 indicates that it starts
+// with a chpl_comm_on_bundle_t struct, and kind > 1 indicates that it
+// is a comm layer defined (implementation-private) bundle.  This also
+// leaves values < 0 for tasking layer (implementation-defined) bundle
+// types, though we don't yet have any of those.
+//
+typedef int8_t chpl_arg_bundle_kind_t;
+
+#define CHPL_ARG_BUNDLE_KIND_TASK 0
+#define CHPL_ARG_BUNDLE_KIND_COMM 1
+
+#ifdef __cplusplus
+}
+#endif
 
 #include "chpl-string-support.h"
 

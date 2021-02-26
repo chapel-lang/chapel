@@ -1,6 +1,6 @@
 /*
 
-Copyright 2011, Free Software Foundation, Inc.
+Copyright 2011, 2018 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library test suite.
 
@@ -26,7 +26,7 @@ enum hex_random_op
     OP_TDIV_Q_2,  OP_TDIV_R_2,
     OP_GCD, OP_LCM, OP_POWM, OP_AND, OP_IOR, OP_XOR,
     OP_SETBIT, OP_CLRBIT, OP_COMBIT,
-    OP_SCAN0, OP_SCAN1,
+    OP_SCAN0, OP_SCAN1
   };
 
 void hex_random_init (void);
@@ -48,3 +48,8 @@ void hex_random_scan_op (enum hex_random_op op, unsigned long maxbits,
 			char **ap, unsigned long *b, unsigned long *r);
 void hex_random_str_op (unsigned long maxbits,
 			int base, char **ap, char **rp);
+void hex_random_lucm_op (unsigned long maxbits,
+			 char **vp, char **qp, char **mp,
+			 long *Q, unsigned long *b0, int *res);
+void hex_mpq_random_str_op (unsigned long maxbits,
+			    int base, char **ap, char **rp);

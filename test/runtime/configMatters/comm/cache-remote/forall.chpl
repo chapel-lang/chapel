@@ -8,7 +8,7 @@ proc doit(a:locale, b:locale, c:locale)
  
   on a {
     if verbose then printf("on %d\n", here.id:c_int);
-    var A = [1,2,3,4,5,6,7,8,9,10];
+    var A: [1..10] int = [1,2,3,4,5,6,7,8,9,10];
     on b {
       forall i in 1..10 {
         A[i] = 2*i;

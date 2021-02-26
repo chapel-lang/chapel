@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -86,6 +86,7 @@ module Crypto {
 
   private use IO;
   private use SysCTypes;
+  private use CPtr;
 
   pragma "no doc"
   proc generateKeys(bits: int) {
@@ -132,7 +133,7 @@ module Crypto {
       if (this._len == 0) {
         halt("Enter a string with length greater than 0 in order to create a buffer");
       }
-      this.buffDomain = {1..this._len};
+      this.buffDomain = {0..<this._len};
       for i in this.buffDomain do {
         this.buff[i] = s.byte(i);
       }
@@ -368,7 +369,7 @@ module Crypto {
   pragma "no doc"
   proc digestPrimitives(digestName: string, hashLen: int, inputBuffer: CryptoBuffer) {
 
-    OpenSSL_add_all_digests();
+    CHPL_OpenSSL_add_all_digests();
 
     var ctx = CHPL_EVP_MD_CTX_new();
 
@@ -919,7 +920,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
   pragma "no doc"
   proc PBKDF2(userKey: string, saltBuff: CryptoBuffer, byteLen: int, iterCount: int, digestName: string) {
 
-    OpenSSL_add_all_digests();
+    CHPL_OpenSSL_add_all_digests();
 
     var key: [0..#byteLen] uint(8);
     var salt = saltBuff.getBuffData();
@@ -1198,6 +1199,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
             "openssl/aes.h", "openssl/rand.h", "openssl/sha.h", "-lcrypto", "-lssl";
 
     use SysCTypes;
+    use CPtr;
 
     extern type EVP_PKEY_CTX;
     extern type EVP_PKEY;
@@ -1207,6 +1209,22 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     extern type EVP_PKEY_PTR = c_ptr(EVP_PKEY);
     extern type CONST_EVP_MD_PTR;
     extern type CONST_EVP_CIPHER_PTR;
+
+    extern type EVP_MD;
+    extern type EVP_MD_CTX;
+    extern type CHPL_EVP_MD_CTX;
+    extern type ENGINE;
+
+    type EVP_MD_PTR = c_ptr(EVP_MD);
+    type EVP_MD_CTX_PTR = c_ptr(EVP_MD_CTX);
+    type ENGINE_PTR = c_ptr(ENGINE);
+
+    extern type EVP_CIPHER;
+    extern type EVP_CIPHER_CTX;
+    extern type CHPL_EVP_CIPHER_CTX;
+
+    type EVP_CIPHER_PTR = c_ptr(EVP_CIPHER);
+    type EVP_CIPHER_CTX_PTR = c_ptr(EVP_CIPHER_CTX);
 
     extern proc EVP_CIPHER_iv_length(e: CONST_EVP_CIPHER_PTR): c_int;
     extern proc EVP_PKEY_size(pkey: EVP_PKEY_PTR): c_int;
@@ -1229,16 +1247,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
                                outl: c_ptr(c_int), inp: c_ptr(c_uchar), inl: c_int): c_int;
     extern proc EVP_OpenFinal(ref ctx: EVP_CIPHER_CTX, outm: c_ptr(c_uchar), outl: c_ptr(c_int)): c_int;
 
-    extern type EVP_MD;
-    extern type EVP_MD_CTX;
-    extern type CHPL_EVP_MD_CTX;
-    extern type ENGINE;
-
-    extern type EVP_MD_PTR = c_ptr(EVP_MD);
-    extern type EVP_MD_CTX_PTR = c_ptr(EVP_MD_CTX);
-    extern type ENGINE_PTR = c_ptr(ENGINE);
-
-    extern proc OpenSSL_add_all_digests();
+    extern proc CHPL_OpenSSL_add_all_digests();
     extern proc EVP_get_digestbyname(name: c_string): CONST_EVP_MD_PTR;
 
     extern proc CHPL_EVP_MD_CTX_new(): CHPL_EVP_MD_CTX;
@@ -1247,13 +1256,6 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     extern proc EVP_DigestInit_ex(ctx: EVP_MD_CTX_PTR, types: CONST_EVP_MD_PTR, impl: ENGINE_PTR): c_int;
     extern proc EVP_DigestUpdate(ctx: EVP_MD_CTX_PTR, const d: c_void_ptr, cnt: size_t): c_int;
     extern proc EVP_DigestFinal_ex(ctx: EVP_MD_CTX_PTR, md: c_ptr(c_uchar), ref s: c_uint): c_int;
-
-    extern type EVP_CIPHER;
-    extern type EVP_CIPHER_CTX;
-    extern type CHPL_EVP_CIPHER_CTX;
-
-    extern type EVP_CIPHER_PTR = c_ptr(EVP_CIPHER);
-    extern type EVP_CIPHER_CTX_PTR = c_ptr(EVP_CIPHER_CTX);
 
     extern proc RAND_bytes(buf: c_ptr(c_uchar), num: c_int) : c_int;
 

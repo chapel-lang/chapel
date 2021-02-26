@@ -1,7 +1,7 @@
-# REQUIRES: python-psutil
+# REQUIRES: lit-max-individual-test-time
 
 # llvm.org/PR33944
-# REQUIRES: nowindows
+# UNSUPPORTED: system-windows
 
 # FIXME: This test is fragile because it relies on time which can
 # be affected by system performance. In particular we are currently
@@ -50,8 +50,8 @@
 
 # CHECK-OUT-COMMON: PASS: per_test_timeout :: short.py
 
-# CHECK-OUT-COMMON: Expected Passes{{ *}}: 1
-# CHECK-OUT-COMMON: Individual Timeouts{{ *}}: 1
+# CHECK-OUT-COMMON: Passed   : 1
+# CHECK-OUT-COMMON: Timed Out: 1
 
 # Test per test timeout via a config file and on the command line.
 # The value set on the command line should override the config file.
@@ -71,5 +71,5 @@
 
 # CHECK-CMDLINE-OVERRIDE-OUT: PASS: per_test_timeout :: short.py
 
-# CHECK-CMDLINE-OVERRIDE-OUT: Expected Passes{{ *}}: 1
-# CHECK-CMDLINE-OVERRIDE-OUT: Individual Timeouts{{ *}}: 1
+# CHECK-CMDLINE-OVERRIDE-OUT: Passed   : 1
+# CHECK-CMDLINE-OVERRIDE-OUT: Timed Out: 1

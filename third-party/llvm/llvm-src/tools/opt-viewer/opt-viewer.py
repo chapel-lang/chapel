@@ -3,10 +3,10 @@
 from __future__ import print_function
 
 import argparse
-import cgi
-import codecs
 import errno
 import functools
+import html
+import io
 from multiprocessing import cpu_count
 import os.path
 import re
@@ -54,12 +54,12 @@ class SourceFileRenderer:
                 existing_filename = fn
 
         self.no_highlight = no_highlight
-        self.stream = codecs.open(os.path.join(output_dir, optrecord.html_file_name(filename)), 'w', encoding='utf-8')
+        self.stream = io.open(os.path.join(output_dir, optrecord.html_file_name(filename)), 'w', encoding='utf-8')
         if existing_filename:
-            self.source_stream = open(existing_filename)
+            self.source_stream = io.open(existing_filename, encoding='utf-8')
         else:
             self.source_stream = None
-            print('''
+            print(u'''
 <html>
 <h1>Unable to locate file {}</h1>
 </html>
@@ -72,10 +72,7 @@ class SourceFileRenderer:
         file_text = stream.read()
 
         if self.no_highlight:
-            if sys.version_info.major >= 3:
-                html_highlighted = file_text
-            else:
-                html_highlighted = file_text.decode('utf-8')
+            html_highlighted = file_text
         else:
             html_highlighted = highlight(
             file_text,
@@ -120,12 +117,26 @@ class SourceFileRenderer:
         indent = line[:max(r.Column, 1) - 1]
         indent = re.sub('\S', ' ', indent)
 
+        # Create expanded message and link if we have a multiline message.
+        lines = r.message.split('\n')
+        if len(lines) > 1:
+            expand_link = '<a style="text-decoration: none;" href="" onclick="toggleExpandedMessage(this); return false;">+</a>'
+            message = lines[0]
+            expand_message = u'''
+<div class="full-info" style="display:none;">
+  <div class="col-left"><pre style="display:inline">{}</pre></div>
+  <div class="expanded col-left"><pre>{}</pre></div>
+</div>'''.format(indent, '\n'.join(lines[1:]))
+        else:
+            expand_link = ''
+            expand_message = ''
+            message = r.message
         print(u'''
 <tr>
 <td></td>
 <td>{r.RelativeHotness}</td>
 <td class=\"column-entry-{r.color}\">{r.PassWithDiffPrefix}</td>
-<td><pre style="display:inline">{indent}</pre><span class=\"column-entry-yellow\"> {r.message}&nbsp;</span></td>
+<td><pre style="display:inline">{indent}</pre><span class=\"column-entry-yellow\">{expand_link} {message}&nbsp;</span>{expand_message}</td>
 <td class=\"column-entry-yellow\">{inlining_context}</td>
 </tr>'''.format(**locals()), file=self.stream)
 
@@ -133,12 +144,29 @@ class SourceFileRenderer:
         if not self.source_stream:
             return
 
-        print('''
+        print(u'''
 <html>
 <title>{}</title>
 <meta charset="utf-8" />
 <head>
 <link rel='stylesheet' type='text/css' href='style.css'>
+<script type="text/javascript">
+/* Simple helper to show/hide the expanded message of a remark. */
+function toggleExpandedMessage(e) {{
+  var FullTextElems = e.parentElement.parentElement.getElementsByClassName("full-info");
+  if (!FullTextElems || FullTextElems.length < 1) {{
+      return false;
+  }}
+  var FullText = FullTextElems[0];
+  if (FullText.style.display == 'none') {{
+    e.innerHTML = '-';
+    FullText.style.display = 'block';
+  }} else {{
+    e.innerHTML = '+';
+    FullText.style.display = 'none';
+  }}
+}}
+</script>
 </head>
 <body>
 <div class="centered">
@@ -155,7 +183,7 @@ class SourceFileRenderer:
 <tbody>'''.format(os.path.basename(self.filename)), file=self.stream)
         self.render_source_lines(self.source_stream, line_remarks)
 
-        print('''
+        print(u'''
 </tbody>
 </table>
 </body>
@@ -164,12 +192,12 @@ class SourceFileRenderer:
 
 class IndexRenderer:
     def __init__(self, output_dir, should_display_hotness, max_hottest_remarks_on_index):
-        self.stream = codecs.open(os.path.join(output_dir, 'index.html'), 'w', encoding='utf-8')
+        self.stream = io.open(os.path.join(output_dir, 'index.html'), 'w', encoding='utf-8')
         self.should_display_hotness = should_display_hotness
         self.max_hottest_remarks_on_index = max_hottest_remarks_on_index
 
     def render_entry(self, r, odd):
-        escaped_name = cgi.escape(r.DemangledFunctionName)
+        escaped_name = html.escape(r.DemangledFunctionName)
         print(u'''
 <tr>
 <td class=\"column-entry-{odd}\"><a href={r.Link}>{r.DebugLocString}</a></td>
@@ -179,7 +207,7 @@ class IndexRenderer:
 </tr>'''.format(**locals()), file=self.stream)
 
     def render(self, all_remarks):
-        print('''
+        print(u'''
 <html>
 <meta charset="utf-8" />
 <head>
@@ -202,13 +230,13 @@ class IndexRenderer:
         for i, remark in enumerate(all_remarks[:max_entries]):
             if not suppress(remark):
                 self.render_entry(remark, i % 2)
-        print('''
+        print(u'''
 </table>
 </body>
 </html>''', file=self.stream)
 
 
-def _render_file(source_dir, output_dir, ctx, no_highlight, entry):
+def _render_file(source_dir, output_dir, ctx, no_highlight, entry, filter_):
     global context
     context = ctx
     filename, remarks = entry
@@ -313,6 +341,11 @@ def main():
         '--demangler',
         help='Set the demangler to be used (defaults to %s)' % optrecord.Remark.default_demangler)
 
+    parser.add_argument(
+        '--filter',
+        default='',
+        help='Only display remarks from passes matching filter expression')
+
     # Do not make this a global variable.  Values needed to be propagated through
     # to individual classes and functions to be portable with multiprocessing across
     # Windows and non-Windows.
@@ -328,7 +361,7 @@ def main():
         sys.exit(1)
 
     all_remarks, file_remarks, should_display_hotness = \
-        optrecord.gather_results(files, args.jobs, print_progress)
+        optrecord.gather_results(files, args.jobs, print_progress, args.filter)
 
     map_remarks(all_remarks)
 

@@ -1,9 +1,8 @@
 //===- MipsFastISel.cpp - Mips FastISel implementation --------------------===//
 //
-// The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 ///
@@ -421,7 +420,7 @@ unsigned MipsFastISel::materializeGV(const GlobalValue *GV, MVT VT) {
   if (IsThreadLocal)
     return 0;
   emitInst(Mips::LW, DestReg)
-      .addReg(MFI->getGlobalBaseReg())
+      .addReg(MFI->getGlobalBaseReg(*MF))
       .addGlobalAddress(GV, 0, MipsII::MO_GOT);
   if ((GV->hasInternalLinkage() ||
        (GV->hasLocalLinkage() && !isa<Function>(GV)))) {
@@ -438,7 +437,7 @@ unsigned MipsFastISel::materializeExternalCallSym(MCSymbol *Sym) {
   const TargetRegisterClass *RC = &Mips::GPR32RegClass;
   unsigned DestReg = createResultReg(RC);
   emitInst(Mips::LW, DestReg)
-      .addReg(MFI->getGlobalBaseReg())
+      .addReg(MFI->getGlobalBaseReg(*MF))
       .addSym(Sym, MipsII::MO_GOT);
   return DestReg;
 }
@@ -796,12 +795,11 @@ bool MipsFastISel::emitLoad(MVT VT, unsigned &ResultReg, Address &Addr,
   }
   if (Addr.isFIBase()) {
     unsigned FI = Addr.getFI();
-    unsigned Align = 4;
     int64_t Offset = Addr.getOffset();
     MachineFrameInfo &MFI = MF->getFrameInfo();
     MachineMemOperand *MMO = MF->getMachineMemOperand(
         MachinePointerInfo::getFixedStack(*MF, FI), MachineMemOperand::MOLoad,
-        MFI.getObjectSize(FI), Align);
+        MFI.getObjectSize(FI), Align(4));
     BuildMI(*FuncInfo.MBB, FuncInfo.InsertPt, DbgLoc, TII.get(Opc), ResultReg)
         .addFrameIndex(FI)
         .addImm(Offset)
@@ -847,12 +845,11 @@ bool MipsFastISel::emitStore(MVT VT, unsigned SrcReg, Address &Addr,
   }
   if (Addr.isFIBase()) {
     unsigned FI = Addr.getFI();
-    unsigned Align = 4;
     int64_t Offset = Addr.getOffset();
     MachineFrameInfo &MFI = MF->getFrameInfo();
     MachineMemOperand *MMO = MF->getMachineMemOperand(
         MachinePointerInfo::getFixedStack(*MF, FI), MachineMemOperand::MOStore,
-        MFI.getObjectSize(FI), Align);
+        MFI.getObjectSize(FI), Align(4));
     BuildMI(*FuncInfo.MBB, FuncInfo.InsertPt, DbgLoc, TII.get(Opc))
         .addReg(SrcReg)
         .addFrameIndex(FI)
@@ -954,21 +951,34 @@ bool MipsFastISel::selectBranch(const Instruction *I) {
   //
   MachineBasicBlock *TBB = FuncInfo.MBBMap[BI->getSuccessor(0)];
   MachineBasicBlock *FBB = FuncInfo.MBBMap[BI->getSuccessor(1)];
-  // For now, just try the simplest case where it's fed by a compare.
+
+  // Fold the common case of a conditional branch with a comparison
+  // in the same block.
+  unsigned ZExtCondReg = 0;
   if (const CmpInst *CI = dyn_cast<CmpInst>(BI->getCondition())) {
-    MVT CIMVT =
-        TLI.getValueType(DL, CI->getOperand(0)->getType(), true).getSimpleVT();
-    if (CIMVT == MVT::i1)
+    if (CI->hasOneUse() && CI->getParent() == I->getParent()) {
+      ZExtCondReg = createResultReg(&Mips::GPR32RegClass);
+      if (!emitCmp(ZExtCondReg, CI))
+        return false;
+    }
+  }
+
+  // For the general case, we need to mask with 1.
+  if (ZExtCondReg == 0) {
+    unsigned CondReg = getRegForValue(BI->getCondition());
+    if (CondReg == 0)
       return false;
 
-    unsigned CondReg = getRegForValue(CI);
-    BuildMI(*BrBB, FuncInfo.InsertPt, DbgLoc, TII.get(Mips::BGTZ))
-        .addReg(CondReg)
-        .addMBB(TBB);
-    finishCondBranch(BI->getParent(), TBB, FBB);
-    return true;
+    ZExtCondReg = emitIntExt(MVT::i1, CondReg, MVT::i32, true);
+    if (ZExtCondReg == 0)
+      return false;
   }
-  return false;
+
+  BuildMI(*BrBB, FuncInfo.InsertPt, DbgLoc, TII.get(Mips::BGTZ))
+      .addReg(ZExtCondReg)
+      .addMBB(TBB);
+  finishCondBranch(BI->getParent(), TBB, FBB);
+  return true;
 }
 
 bool MipsFastISel::selectCmp(const Instruction *I) {
@@ -1150,14 +1160,20 @@ bool MipsFastISel::processCallArgs(CallLoweringInfo &CLI,
       if (ArgVT == MVT::f32) {
         VA.convertToReg(Mips::F12);
       } else if (ArgVT == MVT::f64) {
-        VA.convertToReg(Mips::D6);
+        if (Subtarget->isFP64bit())
+          VA.convertToReg(Mips::D6_64);
+        else
+          VA.convertToReg(Mips::D6);
       }
     } else if (i == 1) {
       if ((firstMVT == MVT::f32) || (firstMVT == MVT::f64)) {
         if (ArgVT == MVT::f32) {
           VA.convertToReg(Mips::F14);
         } else if (ArgVT == MVT::f64) {
-          VA.convertToReg(Mips::D7);
+          if (Subtarget->isFP64bit())
+            VA.convertToReg(Mips::D7_64);
+          else
+            VA.convertToReg(Mips::D7);
         }
       }
     }
@@ -1245,7 +1261,7 @@ bool MipsFastISel::processCallArgs(CallLoweringInfo &CLI,
       Addr.setReg(Mips::SP);
       Addr.setOffset(VA.getLocMemOffset() + BEAlign);
 
-      unsigned Alignment = DL.getABITypeAlignment(ArgVal->getType());
+      Align Alignment = DL.getABITypeAlign(ArgVal->getType());
       MachineMemOperand *MMO = FuncInfo.MF->getMachineMemOperand(
           MachinePointerInfo::getStack(*FuncInfo.MF, Addr.getOffset()),
           MachineMemOperand::MOStore, ArgVT.getStoreSize(), Alignment);
@@ -1710,7 +1726,7 @@ bool MipsFastISel::selectRet(const Instruction *I) {
       return false;
 
     unsigned SrcReg = Reg + VA.getValNo();
-    unsigned DestReg = VA.getLocReg();
+    Register DestReg = VA.getLocReg();
     // Avoid a cross-class copy. This is very unlikely.
     if (!MRI.getRegClass(SrcReg)->contains(DestReg))
       return false;

@@ -1,5 +1,5 @@
 errorFieldMethodInWithClause.chpl:22: error: cannot reference a field or function 'myField' in a with-clause of this cobegin block
-errorFieldMethodInWithClause.chpl:16: In function 'test':
+errorFieldMethodInWithClause.chpl:16: In method 'test':
 errorFieldMethodInWithClause.chpl:26: error: cannot reference a field or function 'myProcc' in a with-clause of this cobegin block
 errorFieldMethodInWithClause.chpl:30: error: cannot reference a field or function 'ourProc' in a with-clause of this cobegin block
 errorFieldMethodInWithClause.chpl:30: error: cannot reference a field or function 'ourIter' in a with-clause of this cobegin block

@@ -1,9 +1,8 @@
 //===------------------------- ItaniumDemangle.cpp ------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is dual licensed under the MIT and the University of Illinois Open
-// Source Licenses. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -90,14 +89,6 @@ struct DumpVisitor {
     else
       printStr("<null>");
   }
-  void print(NodeOrString NS) {
-    if (NS.isNode())
-      print(NS.asNode());
-    else if (NS.isString())
-      print(NS.asString());
-    else
-      printStr("NodeOrString()");
-  }
   void print(NodeArray A) {
     ++Depth;
     printStr("{");
@@ -116,13 +107,11 @@ struct DumpVisitor {
   // Overload used when T is exactly 'bool', not merely convertible to 'bool'.
   void print(bool B) { printStr(B ? "true" : "false"); }
 
-  template <class T>
-  typename std::enable_if<std::is_unsigned<T>::value>::type print(T N) {
+  template <class T> std::enable_if_t<std::is_unsigned<T>::value> print(T N) {
     fprintf(stderr, "%llu", (unsigned long long)N);
   }
 
-  template <class T>
-  typename std::enable_if<std::is_signed<T>::value>::type print(T N) {
+  template <class T> std::enable_if_t<std::is_signed<T>::value> print(T N) {
     fprintf(stderr, "%lld", (long long)N);
   }
 
@@ -173,6 +162,16 @@ struct DumpVisitor {
       return printStr("SpecialSubKind::ostream");
     case SpecialSubKind::iostream:
       return printStr("SpecialSubKind::iostream");
+    }
+  }
+  void print(TemplateParamKind TPK) {
+    switch (TPK) {
+    case TemplateParamKind::Type:
+      return printStr("TemplateParamKind::Type");
+    case TemplateParamKind::NonType:
+      return printStr("TemplateParamKind::NonType");
+    case TemplateParamKind::Template:
+      return printStr("TemplateParamKind::Template");
     }
   }
 

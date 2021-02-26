@@ -1,3 +1,0 @@
-./TupleTest.chpl:1: In function 'test':
-./TupleTest.chpl:4: error: non-lvalue actual is passed to a 'ref' formal of chpl__initCopy()
-testOwned.chpl:8: Function 'test' instantiated as: test(type t = owned T)

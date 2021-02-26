@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -566,7 +566,7 @@ module MPI {
 
    */
    module C_MPI {
-     use SysCTypes;
+     use SysCTypes, SysBasic;
      use MPI;
 
   // Special case MPI_Init -- we will send these null pointers

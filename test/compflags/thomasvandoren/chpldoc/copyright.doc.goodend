@@ -3,6 +3,10 @@ copyright.doc
 Usage:
    use copyright.doc;
 
+or
+
+   import copyright.doc;
+
    proc foo()
       this is a proc 
 

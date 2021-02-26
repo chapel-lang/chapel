@@ -1,6 +1,7 @@
 --sorts='q' --M=24 --correctness=false            # quickSort
 --sorts='h' --M=24 --correctness=false            # heapSort
 --sorts='m' --M=24 --correctness=false            # mergeSort
+--sorts='t' --M=24 --correctness=false            # timSort
 --sorts='i' --M=12 --correctness=false            # insertionSort
 --sorts='s' --M=12 --correctness=false            # selectionSort
 --sorts='b' --M=12 --correctness=false            # bubbleSort

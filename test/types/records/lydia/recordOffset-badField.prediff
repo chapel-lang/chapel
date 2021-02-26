@@ -1,0 +1,6 @@
+#!/bin/bash
+
+outfile=$2
+
+sed -e "s:\CPtr\.chpl\:[0-9]*:CPtr\.chpl\:xyz:g" $outfile > $outfile.tmp
+cp $outfile.tmp $outfile

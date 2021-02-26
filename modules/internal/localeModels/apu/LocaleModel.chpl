@@ -1,6 +1,6 @@
 /*
  * Copyright 2017 Advanced Micro Devices, Inc.
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -28,10 +28,10 @@
 //
 module LocaleModel {
 
-  use LocaleModelHelpAPU;
-  use LocaleModelHelpMem;
+  public use LocaleModelHelpAPU;
+  public use LocaleModelHelpMem;
 
-  private use IO;
+  use IO;
 
   //
   // The task layer calls these to convert between full sublocales and

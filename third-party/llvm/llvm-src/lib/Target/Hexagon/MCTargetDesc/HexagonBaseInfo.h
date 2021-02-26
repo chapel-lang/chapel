@@ -1,9 +1,8 @@
 //===- HexagonBaseInfo.h - Top level definitions for Hexagon ----*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -27,11 +26,6 @@ namespace llvm {
 namespace HexagonII {
   unsigned const TypeCVI_FIRST = TypeCVI_4SLOT_MPY;
   unsigned const TypeCVI_LAST = TypeCVI_ZW;
-
-  enum SubTarget {
-    HasV55SubT    = 0x3c,
-    HasV60SubT    = 0x38,
-  };
 
   enum AddrMode {
     NoAddrMode     = 0,  // No addressing mode
@@ -166,6 +160,9 @@ namespace HexagonII {
 
     CVINewPos = 62,
     CVINewMask = 0x1,
+
+    isCVIPos = 63,
+    isCVIMask = 0x1,
   };
 
   // *** The code above must match HexagonInstrFormat*.td *** //

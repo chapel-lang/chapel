@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -60,6 +60,10 @@
   #define Atomic(T) _Atomic T
 #else
   #error "The cstdlib atomics need at least C11.  Use intrinsics or locks."
+#endif
+
+#ifdef __cplusplus
+extern "C" {
 #endif
 
 typedef Atomic(_real64) atomic__real64;
@@ -273,5 +277,9 @@ static inline void atomic_lock_spinlock_t(atomic_spinlock_t* lock) {
 static inline void atomic_unlock_spinlock_t(atomic_spinlock_t* lock) {
   atomic_store_explicit(lock, false, memory_order_release);
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // _chpl_atomics_h_

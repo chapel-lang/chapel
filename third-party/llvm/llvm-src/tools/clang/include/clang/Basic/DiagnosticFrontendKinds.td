@@ -1,9 +1,8 @@
 //==--- DiagnosticFrontendKinds.td - frontend diagnostics -----------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -38,6 +37,12 @@ def note_fe_backend_plugin: Note<"%0">, BackendInfo;
 def warn_fe_override_module : Warning<
     "overriding the module target triple with %0">,
     InGroup<DiagGroup<"override-module">>;
+def warn_fe_backend_unsupported_fp_rounding : Warning<
+    "overriding currently unsupported rounding mode on this target">,
+    InGroup<UnsupportedFPOpt>;
+def warn_fe_backend_unsupported_fp_exceptions : Warning<
+    "overriding currently unsupported use of floating point exceptions "
+    "on this target">, InGroup<UnsupportedFPOpt>;
 
 def remark_fe_backend_optimization_remark : Remark<"%0">, BackendInfo,
     InGroup<BackendOptimizationRemark>;
@@ -62,11 +67,10 @@ def note_fe_backend_invalid_loc : Note<"could "
   "not determine the original source location for %0:%1:%2">, BackendInfo;
 
 def err_fe_backend_unsupported : Error<"%0">, BackendInfo;
+def warn_fe_backend_unsupported : Warning<"%0">, BackendInfo;
 
 def err_fe_invalid_code_complete_file : Error<
     "cannot locate code-completion file %0">, DefaultFatal;
-def err_fe_stdout_binary : Error<"unable to change standard output to binary">,
-  DefaultFatal;
 def err_fe_dependency_file_requires_MT : Error<
     "-dependency-file requires at least one -MT or -MQ option">;
 def err_fe_invalid_plugin_name : Error<
@@ -108,12 +112,21 @@ def err_fe_invalid_wchar_type
     : Error<"invalid wchar_t type '%0'; must be one of 'char', 'short', 'int'">;
 def err_fe_invalid_exception_model
    : Error<"invalid exception model '%0' for target '%1'">;
+def warn_fe_concepts_ts_flag : Warning<
+  "-fconcepts-ts is deprecated - use '-std=c++20' for Concepts support">,
+  InGroup<Deprecated>;
+
+def err_fe_unable_to_load_basic_block_sections_file : Error<
+    "unable to load basic block sections function list: '%0'">;
 
 def warn_fe_serialized_diag_merge_failure : Warning<
     "unable to merge a subprocess's serialized diagnostics">,
     InGroup<SerializedDiagnostics>;
 def warn_fe_serialized_diag_failure : Warning<
     "unable to open file %0 for serializing diagnostics (%1)">,
+    InGroup<SerializedDiagnostics>;
+def warn_fe_serialized_diag_failure_during_finalisation : Warning<
+    "Received warning after diagnostic serialization teardown was underway: %0">,
     InGroup<SerializedDiagnostics>;
 
 def err_verify_missing_line : Error<
@@ -122,6 +135,12 @@ def err_verify_missing_file : Error<
     "file '%0' could not be located in expected %1">;
 def err_verify_invalid_range : Error<
     "invalid range following '-' in expected %0">;
+def err_verify_ambiguous_marker : Error<
+    "reference to marker '%0' is ambiguous">;
+def note_verify_ambiguous_marker : Note<
+    "ambiguous marker '%0' is defined here">;
+def err_verify_no_such_marker : Error<
+    "use of undefined marker '%0'">;
 def err_verify_missing_start : Error<
     "cannot find start ('{{') of expected %0">;
 def err_verify_missing_end : Error<
@@ -168,10 +187,11 @@ def note_incompatible_analyzer_plugin_api : Note<
 
 def err_module_build_requires_fmodules : Error<
   "module compilation requires '-fmodules'">;
-def err_module_interface_requires_modules_ts : Error<
-  "module interface compilation requires '-fmodules-ts'">;
+def err_module_interface_requires_cpp_modules : Error<
+  "module interface compilation requires '-std=c++20' or '-fmodules-ts'">;
 def err_header_module_requires_modules : Error<
-  "header module compilation requires '-fmodules' or '-fmodules-ts'">;
+  "header module compilation requires '-fmodules', '-std=c++20', or "
+  "'-fmodules-ts'">;
 def warn_module_config_mismatch : Warning<
   "module file %0 cannot be loaded due to a configuration mismatch with the current "
   "compilation">, InGroup<DiagGroup<"module-file-config-mismatch">>, DefaultError;
@@ -211,8 +231,6 @@ def err_modules_embed_file_not_found :
   DefaultFatal;
 def err_module_header_file_not_found :
   Error<"module header file '%0' not found">, DefaultFatal;
-def err_module_header_file_invalid :
-  Error<"unexpected module header file input '%0'">, DefaultFatal;
 
 def err_test_module_file_extension_version : Error<
   "test module file extension '%0' has different version (%1.%2) than expected "
@@ -226,15 +244,16 @@ def err_invalid_vfs_overlay : Error<
 def warn_option_invalid_ocl_version : Warning<
   "OpenCL version %0 does not support the option '%1'">, InGroup<Deprecated>;
 
-def warn_stdlibcxx_not_found : Warning<
-  "include path for stdlibc++ headers not found; pass '-stdlib=libc++' on the "
-  "command line to use the libc++ standard library instead">,
-  InGroup<DiagGroup<"stdlibcxx-not-found">>;
-
 def err_builtin_needs_feature : Error<"%0 needs target feature %1">;
 def err_function_needs_feature : Error<
   "always_inline function %1 requires target feature '%2', but would "
   "be inlined into function %0 that is compiled without support for '%2'">;
+
+def warn_avx_calling_convention
+    : Warning<"AVX vector %select{return|argument}0 of type %1 without '%2' "
+              "enabled changes the ABI">,
+      InGroup<DiagGroup<"psabi">>;
+def err_avx_calling_convention : Error<warn_avx_calling_convention.Text>;
 
 def err_alias_to_undefined : Error<
   "%select{alias|ifunc}0 must point to a defined "
@@ -272,7 +291,12 @@ def warn_profile_data_missing : Warning<
 def warn_profile_data_unprofiled : Warning<
   "no profile data available for file \"%0\"">,
   InGroup<ProfileInstrUnprofiled>;
-
+def warn_profile_data_misexpect : Warning<
+  "Potential performance regression from use of __builtin_expect(): "
+  "Annotation was correct on %0 of profiled executions.">,
+  BackendInfo,
+  InGroup<MisExpect>,
+  DefaultIgnore;
 } // end of instrumentation issue category
 
 }

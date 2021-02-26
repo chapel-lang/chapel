@@ -1,3 +1,4 @@
+use CPtr;
 const myDom = {0..5};
 
 record things {

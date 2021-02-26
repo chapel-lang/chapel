@@ -1,4 +1,4 @@
-# Copyright 2020 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2021 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -43,6 +43,13 @@ ifdef CHPL_GCOV
 CFLAGS += -fprofile-arcs -ftest-coverage
 LDFLAGS += -fprofile-arcs
 endif
+
+include $(CHPL_MAKE_HOME)/make/compiler/Makefile.sanitizers
+CFLAGS += $(SANITIZER_CFLAGS)
+CXXFLAGS += $(SANITIZER_CFLAGS)
+LDFLAGS += $(SANITIZER_LDFLAGS)
+GEN_LFLAGS += $(SANITIZER_LDFLAGS)
+OPT_CFLAGS += $(SANITIZER_OPT_CFLAGS)
 
 #
 # Flags for compiler, runtime, and generated code
@@ -138,6 +145,11 @@ CXX_STD := $(shell test $(DEF_C_VER) -ge 201112 -a $(DEF_CXX_VER) -lt 201103 && 
 # If a compiler uses C++11 or newer by default, CXX11_STD will be blank.
 CXX11_STD := $(shell test $(DEF_CXX_VER) -lt 201103 && echo -std=gnu++11)
 
+ifeq ($(GNU_GPP_MAJOR_VERSION),4)
+  CXX_STD   := -std=gnu++11
+  CXX11_STD := -std=gnu++11
+endif
+
 COMP_CXXFLAGS += $(CXX_STD)
 RUNTIME_CFLAGS += $(C_STD)
 RUNTIME_CXXFLAGS += $(CXX_STD)
@@ -154,6 +166,10 @@ WARN_CXXFLAGS = $(WARN_COMMONFLAGS) -Wno-comment
 WARN_CFLAGS = $(WARN_COMMONFLAGS) -Wmissing-prototypes -Wstrict-prototypes -Wmissing-format-attribute
 WARN_GEN_CFLAGS = $(WARN_CFLAGS)
 SQUASH_WARN_GEN_CFLAGS = -Wno-unused -Wno-uninitialized
+
+ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -gt 5; echo "$$?"),0)
+WARN_CXXFLAGS += -Wsuggest-override
+endif
 
 #
 # Don't warn for signed pointer issues (ex. c_ptr(c_char) )
@@ -186,12 +202,23 @@ SQUASH_WARN_GEN_CFLAGS += -Wno-stringop-overflow
 endif
 
 #
+# Avoid false positives for allocation size, memcpy, and string truncation.
+# Note that we use -Walloc-size-larger-than=SIZE_MAX instead of
+# `-Wno-alloc-size-larger-than` since that did not exist in gcc 8.
+#
+ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -gt 7; echo "$$?"),0)
+WARN_CXXFLAGS += -Walloc-size-larger-than=18446744073709551615
+WARN_CXXFLAGS += -Wno-stringop-truncation
+SQUASH_WARN_GEN_CFLAGS += -Walloc-size-larger-than=18446744073709551615 -Wno-restrict
+endif
+
+#
 # Avoid false positive warnings about class member access and string overflows.
 # The string overflow false positives occur in runtime code unlike gcc 7.
-# Also avoid false positives for allocation size, array bounds, and comments.
+# Also avoid false positives for array bounds and comments.
 #
 ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 8; echo "$$?"),0)
-WARN_CXXFLAGS += -Wno-class-memaccess -Walloc-size-larger-than=18446744073709551615
+WARN_CXXFLAGS += -Wno-class-memaccess
 RUNTIME_CFLAGS += -Wno-stringop-overflow
 SQUASH_WARN_GEN_CFLAGS += -Wno-array-bounds
 endif
@@ -205,6 +232,17 @@ endif
 ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 9; echo "$$?"),0)
 WARN_CXXFLAGS += -Wno-error=init-list-lifetime
 endif
+
+#
+# Avoid false positives for memcmp size. This flag we are adding here is
+# available at least all the way back to gcc 7.3. However, we started seeing
+# errors when we switched to gcc 9.3. Moreover, we don't see it in version 10.
+# So, only throw this flag for major version 9
+#
+ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 9; echo "$$?"),0)
+SQUASH_WARN_GEN_CFLAGS += -Wno-stringop-overflow
+endif
+
 
 #
 # 2016/03/28: Help to protect the Chapel compiler from a partially

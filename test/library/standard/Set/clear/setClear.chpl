@@ -7,7 +7,7 @@ record testRecord {
   proc init(dummy: int=0) { this.dummy = dummy; }
 }
 
-proc _cast(type t: testRecord, x: int) {
+operator :(x: int, type t: testRecord) {
   return new testRecord(x);
 }
 
@@ -60,7 +60,9 @@ proc doTest(type eltType) {
   s2.clear();
   s3.clear();
 
-  assert(s1.size == s2.size == s3.size == 0);
+  assert(s1.size == 0);
+  assert(s2.size == 0);
+  assert(s3.size == 0);
 }
 
 doTest(int);

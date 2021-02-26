@@ -1,3 +1,4 @@
+use CPtr;
 class Foo {
   var x: int;
 }

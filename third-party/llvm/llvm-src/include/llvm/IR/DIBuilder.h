@@ -1,9 +1,8 @@
 //===- DIBuilder.h - Debug Information Builder ------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -136,6 +135,9 @@ namespace llvm {
     ///                              profile collection.
     /// \param NameTableKind  Whether to emit .debug_gnu_pubnames,
     ///                      .debug_pubnames, or no pubnames at all.
+    /// \param SysRoot       The clang system root (value of -isysroot).
+    /// \param SDK           The SDK name. On Darwin, this is the last component
+    ///                      of the sysroot.
     DICompileUnit *
     createCompileUnit(unsigned Lang, DIFile *File, StringRef Producer,
                       bool isOptimized, StringRef Flags, unsigned RV,
@@ -146,7 +148,8 @@ namespace llvm {
                       bool DebugInfoForProfiling = false,
                       DICompileUnit::DebugNameTableKind NameTableKind =
                           DICompileUnit::DebugNameTableKind::Default,
-                      bool RangesBaseAddress = false);
+                      bool RangesBaseAddress = false, StringRef SysRoot = {},
+                      StringRef SDK = {});
 
     /// Create a file descriptor to hold debugging information for a file.
     /// \param Filename  File name.
@@ -238,8 +241,10 @@ namespace llvm {
     /// \param File        File where this type is defined.
     /// \param LineNo      Line number.
     /// \param Context     The surrounding context for the typedef.
+    /// \param AlignInBits Alignment. (optional)
     DIDerivedType *createTypedef(DIType *Ty, StringRef Name, DIFile *File,
-                                 unsigned LineNo, DIScope *Context);
+                                 unsigned LineNo, DIScope *Context,
+                                 uint32_t AlignInBits = 0);
 
     /// Create debugging information entry for a 'friend'.
     DIDerivedType *createFriend(DIType *Ty, DIType *FriendTy);
@@ -441,19 +446,22 @@ namespace llvm {
     /// \param Scope        Scope in which this type is defined.
     /// \param Name         Type parameter name.
     /// \param Ty           Parameter type.
-    DITemplateTypeParameter *
-    createTemplateTypeParameter(DIScope *Scope, StringRef Name, DIType *Ty);
+    /// \param IsDefault    Parameter is default or not
+    DITemplateTypeParameter *createTemplateTypeParameter(DIScope *Scope,
+                                                         StringRef Name,
+                                                         DIType *Ty,
+                                                         bool IsDefault);
 
     /// Create debugging information for template
     /// value parameter.
     /// \param Scope        Scope in which this type is defined.
     /// \param Name         Value parameter name.
     /// \param Ty           Parameter type.
+    /// \param IsDefault    Parameter is default or not
     /// \param Val          Constant parameter value.
-    DITemplateValueParameter *createTemplateValueParameter(DIScope *Scope,
-                                                           StringRef Name,
-                                                           DIType *Ty,
-                                                           Constant *Val);
+    DITemplateValueParameter *
+    createTemplateValueParameter(DIScope *Scope, StringRef Name, DIType *Ty,
+                                 bool IsDefault, Constant *Val);
 
     /// Create debugging information for a template template parameter.
     /// \param Scope        Scope in which this type is defined.
@@ -565,6 +573,8 @@ namespace llvm {
     /// implicitly uniques the values returned.
     DISubrange *getOrCreateSubrange(int64_t Lo, int64_t Count);
     DISubrange *getOrCreateSubrange(int64_t Lo, Metadata *CountNode);
+    DISubrange *getOrCreateSubrange(Metadata *Count, Metadata *LowerBound,
+                                    Metadata *UpperBound, Metadata *Stride);
 
     /// Create a new descriptor for the specified variable.
     /// \param Context     Variable scope.
@@ -573,7 +583,7 @@ namespace llvm {
     /// \param File        File where this variable is defined.
     /// \param LineNo      Line number.
     /// \param Ty          Variable Type.
-    /// \param isLocalToUnit Boolean flag indicate whether this variable is
+    /// \param IsLocalToUnit Boolean flag indicate whether this variable is
     ///                      externally visible or not.
     /// \param Expr        The location of the global relative to the attached
     ///                    GlobalVariable.
@@ -582,16 +592,16 @@ namespace llvm {
     ///                    specified)
     DIGlobalVariableExpression *createGlobalVariableExpression(
         DIScope *Context, StringRef Name, StringRef LinkageName, DIFile *File,
-        unsigned LineNo, DIType *Ty, bool isLocalToUnit,
+        unsigned LineNo, DIType *Ty, bool IsLocalToUnit, bool isDefined = true,
         DIExpression *Expr = nullptr, MDNode *Decl = nullptr,
-        MDTuple *templateParams = nullptr, uint32_t AlignInBits = 0);
+        MDTuple *TemplateParams = nullptr, uint32_t AlignInBits = 0);
 
     /// Identical to createGlobalVariable
     /// except that the resulting DbgNode is temporary and meant to be RAUWed.
     DIGlobalVariable *createTempGlobalVariableFwdDecl(
         DIScope *Context, StringRef Name, StringRef LinkageName, DIFile *File,
-        unsigned LineNo, DIType *Ty, bool isLocalToUnit, MDNode *Decl = nullptr,
-        MDTuple *templateParams = nullptr, uint32_t AlignInBits = 0);
+        unsigned LineNo, DIType *Ty, bool IsLocalToUnit, MDNode *Decl = nullptr,
+        MDTuple *TemplateParams= nullptr, uint32_t AlignInBits = 0);
 
     /// Create a new descriptor for an auto variable.  This is a local variable
     /// that is not a subprogram parameter.
@@ -707,6 +717,16 @@ namespace llvm {
                  DITemplateParameterArray TParams = nullptr,
                  DITypeArray ThrownTypes = nullptr);
 
+    /// Create common block entry for a Fortran common block.
+    /// \param Scope       Scope of this common block.
+    /// \param decl        Global variable declaration.
+    /// \param Name        The name of this common block.
+    /// \param File        The file this common block is defined.
+    /// \param LineNo      Line number.
+    DICommonBlock *createCommonBlock(DIScope *Scope, DIGlobalVariable *decl,
+                                     StringRef Name, DIFile *File,
+                                     unsigned LineNo);
+
     /// This creates new descriptor for a namespace with the specified
     /// parent scope.
     /// \param Scope       Namespace scope
@@ -723,11 +743,15 @@ namespace llvm {
     ///                    A space-separated shell-quoted list of -D macro
     ///                    definitions as they would appear on a command line.
     /// \param IncludePath The path to the module map file.
-    /// \param ISysRoot    The clang system root (value of -isysroot).
+    /// \param APINotesFile The path to an API notes file for this module.
+    /// \param File        Source file of the module declaration. Used for
+    ///                    Fortran modules.
+    /// \param LineNo      Source line number of the  module declaration.
+    ///                    Used for Fortran modules.
     DIModule *createModule(DIScope *Scope, StringRef Name,
-                           StringRef ConfigurationMacros,
-                           StringRef IncludePath,
-                           StringRef ISysRoot);
+                           StringRef ConfigurationMacros, StringRef IncludePath,
+                           StringRef APINotesFile = {}, DIFile *File = nullptr,
+                           unsigned LineNo = 0);
 
     /// This creates a descriptor for a lexical block with a new file
     /// attached. This merely extends the existing

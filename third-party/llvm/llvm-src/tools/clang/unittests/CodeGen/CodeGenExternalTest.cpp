@@ -1,9 +1,8 @@
 //===- unittests/CodeGen/CodeGenExternalTest.cpp - test external CodeGen -===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -200,7 +199,7 @@ static void test_codegen_fns(MyASTConsumer *my) {
           dbgs() << "\n";
         }
 
-        llvm::CompositeType* structTy = dyn_cast<CompositeType>(llvmTy);
+        auto* structTy = dyn_cast<llvm::StructType>(llvmTy);
         ASSERT_TRUE(structTy != NULL);
 
         // Check getLLVMFieldNumber

@@ -1,9 +1,8 @@
 //=- SyntheticCountsPropagation.cpp - Propagate function counts --*- C++ -*-=//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -32,7 +31,6 @@
 #include "llvm/Analysis/CallGraph.h"
 #include "llvm/Analysis/ProfileSummaryInfo.h"
 #include "llvm/Analysis/SyntheticCountsUtils.h"
-#include "llvm/IR/CallSite.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/Module.h"
@@ -111,14 +109,13 @@ PreservedAnalyses SyntheticCountsPropagation::run(Module &M,
     Optional<Scaled64> Res = None;
     if (!Edge.first)
       return Res;
-    assert(isa<Instruction>(Edge.first));
-    CallSite CS(cast<Instruction>(Edge.first));
-    Function *Caller = CS.getCaller();
+    CallBase &CB = *cast<CallBase>(*Edge.first);
+    Function *Caller = CB.getCaller();
     auto &BFI = FAM.getResult<BlockFrequencyAnalysis>(*Caller);
 
     // Now compute the callsite count from relative frequency and
     // entry count:
-    BasicBlock *CSBB = CS.getInstruction()->getParent();
+    BasicBlock *CSBB = CB.getParent();
     Scaled64 EntryFreq(BFI.getEntryFreq(), 0);
     Scaled64 BBCount(BFI.getBlockFreq(CSBB).getFrequency(), 0);
     BBCount /= EntryFreq;

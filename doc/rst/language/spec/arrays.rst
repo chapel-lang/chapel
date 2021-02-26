@@ -1,3 +1,5 @@
+.. default-domain:: chpl
+
 .. _Chapter-Arrays:
 
 Arrays
@@ -129,8 +131,8 @@ corresponding to the underlying domain which defines its indices.
 Rectangular Array Literals
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Rectangular array literals are specified by enclosing a comma separated
-list of expressions representing values in square brackets. A 1-based
+Rectangular array literals are specified by enclosing a comma-separated
+list of expressions representing values in square brackets. A 0-based
 domain will automatically be generated for the given array literal. The
 type of the array’s values will be the type of the first element listed.
 A trailing comma is allowed.
@@ -155,7 +157,7 @@ A trailing comma is allowed.
 
       var A = ["1", "2", "3", "4", "5"];
 
-      for i in 1..5 do
+      for i in 0..4 do
         writeln(A[i]);
 
    
@@ -167,18 +169,21 @@ A trailing comma is allowed.
       3
       4
       5
+   .. note::
 
-   *Future*.
-
-   Provide syntax which allows users to specify the domain for a
-   rectangular array literal.
+      *Future:*
+      
+      Provide syntax which allows users to specify the domain for a
+      rectangular array literal.
 
 ..
 
-   *Future*.
-
-   Determine the type of a rectangular array literal based on the most
-   promoted type, rather than the first element’s type.
+   .. note::
+      
+      *Future:*
+      
+      Determine the type of a rectangular array literal based on the most
+      promoted type, rather than the first element’s type.
 
    *Example (decl-with-anon-domain.chpl)*.
 
@@ -756,8 +761,7 @@ The ``#`` operator can be applied to dense rectangular arrays with a
 tuple argument whose size matches the rank of the array (or optionally
 an integer in the case of a 1D array). The operator is equivalent to
 applying the ``#`` operator to the array’s domain and using the result
-to slice the array as described in
-Section \ `22.6.1 <#Rectangular_Array_Slicing>`__.
+to slice the array as described in Section :ref:`Rectangular_Array_Slicing`.
 
 .. _Array_Arguments_To_Functions:
 
@@ -952,45 +956,35 @@ There is an expectation that this list of predefined methods will grow.
 
 
 
-.. code-block:: chapel
+.. function:: proc Array.eltType type
 
-   proc Array.eltType type
-
-Returns the element type of the array.
+     Returns the element type of the array.
 
 
 
-.. code-block:: chapel
+.. function:: proc Array.rank param
 
-   proc Array.rank param
-
-Returns the rank of the array.
+     Returns the rank of the array.
 
 
 
-.. code-block:: chapel
+.. function:: proc Array.domain: this.domain
 
-   proc Array.domain: this.domain
-
-Returns the domain of the given array. This domain is constant, implying
-that the domain cannot be resized by assigning to its domain field, only
-by modifying the domain directly.
+		 Returns the domain of the given array. This domain is constant, implying
+		 that the domain cannot be resized by assigning to its domain field, only
+		 by modifying the domain directly.
 
 
 
-.. code-block:: chapel
+.. function:: proc reshape(A: Array, D: Domain): Array
 
-   proc reshape(A: Array, D: Domain): Array
-
-Returns a copy of the array containing the same values but in the shape
-of the new domain. The number of indices in the domain must equal the
-number of elements in the array. The elements of the array are copied
-into the new array using the default iteration orders over both arrays.
+		 Returns a copy of the array containing the same values but in the shape
+		 of the new domain. The number of indices in the domain must equal the
+		 number of elements in the array. The elements of the array are copied
+		 into the new array using the default iteration orders over both arrays.
 
 
 
-.. code-block:: chapel
+.. function :: proc Array.size: this.domain.idxType
 
-   proc Array.size: this.domain.idxType
-
-Returns the number of elements in the array.
+   Returns the number of elements in the array.

@@ -1,2 +1,2 @@
-const-errors.chpl:3: error: illegal lvalue in assignment
-const-errors.chpl:4: error: illegal lvalue in assignment
+const-errors.chpl:3: error: cannot assign to const variable
+const-errors.chpl:4: error: cannot assign to const variable

@@ -1,0 +1,10 @@
+MemoryModule.chpl:3: In function 'test':
+MemoryModule.chpl:4: warning: Memory.locale.physicalMemory() is deprecated - please use Memory.Diagnostics.locale.physicalMemory()
+MemoryModule.chpl:5: warning: Memory.memoryUsed() is deprecated - please use Memory.Diagnostics.memoryUsed()
+MemoryModule.chpl:6: warning: Memory.printMemAllocs() is deprecated - please use Memory.Diagnostics.printMemAllocs()
+MemoryModule.chpl:7: warning: Memory.printMemAllocsByType() is deprecated - please use Memory.Diagnostics.printMemAllocsByType()
+MemoryModule.chpl:8: warning: Memory.printMemAllocStats() is deprecated - please use Memory.Diagnostics.printMemAllocStats()
+MemoryModule.chpl:9: warning: Memory.startVerboseMem() is deprecated - please use Memory.Diagnostics.startVerboseMem()
+MemoryModule.chpl:10: warning: Memory.stopVerboseMem() is deprecated - please use Memory.Diagnostics.stopVerboseMem()
+MemoryModule.chpl:11: warning: Memory.startVerboseMemHere() is deprecated - please use Memory.Diagnostics.startVerboseMemHere()
+MemoryModule.chpl:12: warning: Memory.stopVerboseMemHere() is deprecated - please use Memory.Diagnostics.stopVerboseMemHere()

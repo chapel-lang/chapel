@@ -1,6 +1,6 @@
 /* Test locale support, or attempt to do so.
 
-Copyright 2001, 2002, 2011, 2014 Free Software Foundation, Inc.
+Copyright 2001, 2002, 2011, 2014, 2020 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library test suite.
 
@@ -37,7 +37,6 @@ the GNU MP Library test suite.  If not, see https://www.gnu.org/licenses/.  */
 #include <locale.h>    /* for lconv */
 #endif
 
-#include "gmp.h"
 #include "gmp-impl.h"
 #include "tests.h"
 
@@ -58,7 +57,7 @@ localeconv (void)
 #endif
 
 /* Replace the libc nl_langinfo with one we can manipulate. */
-#if HAVE_NL_LANGINFO
+#if HAVE_NL_LANGINFO && ! defined __TERMUX__
 char *
 nl_langinfo (nl_item n)
 #if defined __cplusplus && defined __GLIBC__

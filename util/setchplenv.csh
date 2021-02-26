@@ -9,10 +9,16 @@ if ( ! -d "util" || ! -d "compiler" || ! -d "runtime" || ! -d "modules" ) then
    exit 1
 endif
 
+echo -n "Setting CHPL_HOME "
+setenv CHPL_HOME "$cwd"
+echo "to $CHPL_HOME"
+
+set CHPL_PYTHON = `"$CHPL_HOME"/util/config/find-python.sh`
+
 # Remove any previously existing CHPL_HOME paths
-set MYPATH = `./util/config/fixpath.py "$PATH"`
+set MYPATH = `$CHPL_PYTHON "$CHPL_HOME"/util/config/fixpath.py "$PATH"`
 set exitcode = $?
-set MYMANPATH = `./util/config/fixpath.py "$MANPATH"`
+set MYMANPATH = `$CHPL_PYTHON "$CHPL_HOME"/util/config/fixpath.py "$MANPATH"`
 
 # Double check $MYPATH before overwriting $PATH
 if ( "$MYPATH" == "" || "$exitcode" != 0) then
@@ -21,11 +27,7 @@ if ( "$MYPATH" == "" || "$exitcode" != 0) then
     exit 1
 endif
 
-echo -n "Setting CHPL_HOME "
-setenv CHPL_HOME "$cwd"
-echo "to $CHPL_HOME"
-
-set CHPL_BIN_SUBDIR = `"$CHPL_HOME"/util/chplenv/chpl_bin_subdir.py`
+set CHPL_BIN_SUBDIR = `$CHPL_PYTHON "$CHPL_HOME"/util/chplenv/chpl_bin_subdir.py`
 
 echo -n "Updating PATH "
 setenv PATH "$CHPL_HOME/bin/$CHPL_BIN_SUBDIR":"$CHPL_HOME/util":"$MYPATH"

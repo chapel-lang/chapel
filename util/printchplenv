@@ -6,4 +6,6 @@
 # using a symlink for such a core script makes me nervous for some reason.
 
 CWD=$(cd $(dirname $0) ; pwd)
-"$CWD/chplenv/printchplenv.py" "$@"
+
+PY=`"$CWD/config/find-python.sh"`
+$PY "$CWD/chplenv/printchplenv.py" "$@"

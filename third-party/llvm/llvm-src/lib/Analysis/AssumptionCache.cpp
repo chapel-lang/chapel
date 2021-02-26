@@ -1,9 +1,8 @@
 //===- AssumptionCache.cpp - Cache finding @llvm.assume calls -------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -12,6 +11,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "llvm/Analysis/AssumeBundleQueries.h"
 #include "llvm/Analysis/AssumptionCache.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SmallPtrSet.h"
@@ -24,6 +24,7 @@
 #include "llvm/IR/Intrinsics.h"
 #include "llvm/IR/PassManager.h"
 #include "llvm/IR/PatternMatch.h"
+#include "llvm/InitializePasses.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/CommandLine.h"
@@ -41,7 +42,7 @@ static cl::opt<bool>
                           cl::desc("Enable verification of assumption cache"),
                           cl::init(false));
 
-SmallVector<WeakTrackingVH, 1> &
+SmallVector<AssumptionCache::ResultElem, 1> &
 AssumptionCache::getOrInsertAffectedValues(Value *V) {
   // Try using find_as first to avoid creating extra value handles just for the
   // purpose of doing the lookup.
@@ -50,31 +51,38 @@ AssumptionCache::getOrInsertAffectedValues(Value *V) {
     return AVI->second;
 
   auto AVIP = AffectedValues.insert(
-      {AffectedValueCallbackVH(V, this), SmallVector<WeakTrackingVH, 1>()});
+      {AffectedValueCallbackVH(V, this), SmallVector<ResultElem, 1>()});
   return AVIP.first->second;
 }
 
-void AssumptionCache::updateAffectedValues(CallInst *CI) {
+static void
+findAffectedValues(CallInst *CI,
+                   SmallVectorImpl<AssumptionCache::ResultElem> &Affected) {
   // Note: This code must be kept in-sync with the code in
   // computeKnownBitsFromAssume in ValueTracking.
 
-  SmallVector<Value *, 16> Affected;
-  auto AddAffected = [&Affected](Value *V) {
+  auto AddAffected = [&Affected](Value *V, unsigned Idx =
+                                               AssumptionCache::ExprResultIdx) {
     if (isa<Argument>(V)) {
-      Affected.push_back(V);
+      Affected.push_back({V, Idx});
     } else if (auto *I = dyn_cast<Instruction>(V)) {
-      Affected.push_back(I);
+      Affected.push_back({I, Idx});
 
       // Peek through unary operators to find the source of the condition.
       Value *Op;
       if (match(I, m_BitCast(m_Value(Op))) ||
-          match(I, m_PtrToInt(m_Value(Op))) ||
-          match(I, m_Not(m_Value(Op)))) {
+          match(I, m_PtrToInt(m_Value(Op))) || match(I, m_Not(m_Value(Op)))) {
         if (isa<Instruction>(Op) || isa<Argument>(Op))
-          Affected.push_back(Op);
+          Affected.push_back({Op, Idx});
       }
     }
   };
+
+  for (unsigned Idx = 0; Idx != CI->getNumOperandBundles(); Idx++) {
+    if (CI->getOperandBundleAt(Idx).Inputs.size() > ABA_WasOn &&
+        CI->getOperandBundleAt(Idx).getTagName() != IgnoreBundleTag)
+      AddAffected(CI->getOperandBundleAt(Idx).Inputs[ABA_WasOn], Idx);
+  }
 
   Value *Cond = CI->getArgOperand(0), *A, *B;
   AddAffected(Cond);
@@ -109,12 +117,48 @@ void AssumptionCache::updateAffectedValues(CallInst *CI) {
       AddAffectedFromEq(B);
     }
   }
+}
+
+void AssumptionCache::updateAffectedValues(CallInst *CI) {
+  SmallVector<AssumptionCache::ResultElem, 16> Affected;
+  findAffectedValues(CI, Affected);
 
   for (auto &AV : Affected) {
-    auto &AVV = getOrInsertAffectedValues(AV);
-    if (std::find(AVV.begin(), AVV.end(), CI) == AVV.end())
-      AVV.push_back(CI);
+    auto &AVV = getOrInsertAffectedValues(AV.Assume);
+    if (std::find_if(AVV.begin(), AVV.end(), [&](ResultElem &Elem) {
+          return Elem.Assume == CI && Elem.Index == AV.Index;
+        }) == AVV.end())
+      AVV.push_back({CI, AV.Index});
   }
+}
+
+void AssumptionCache::unregisterAssumption(CallInst *CI) {
+  SmallVector<AssumptionCache::ResultElem, 16> Affected;
+  findAffectedValues(CI, Affected);
+
+  for (auto &AV : Affected) {
+    auto AVI = AffectedValues.find_as(AV.Assume);
+    if (AVI == AffectedValues.end())
+      continue;
+    bool Found = false;
+    bool HasNonnull = false;
+    for (ResultElem &Elem : AVI->second) {
+      if (Elem.Assume == CI) {
+        Found = true;
+        Elem.Assume = nullptr;
+      }
+      HasNonnull |= !!Elem.Assume;
+      if (HasNonnull && Found)
+        break;
+    }
+    assert(Found && "already unregistered or incorrect cache state");
+    if (!HasNonnull)
+      AffectedValues.erase(AVI);
+  }
+
+  AssumeHandles.erase(
+      remove_if(AssumeHandles, [CI](ResultElem &RE) { return CI == RE; }),
+      AssumeHandles.end());
 }
 
 void AssumptionCache::AffectedValueCallbackVH::deleted() {
@@ -124,7 +168,7 @@ void AssumptionCache::AffectedValueCallbackVH::deleted() {
   // 'this' now dangles!
 }
 
-void AssumptionCache::copyAffectedValuesInCache(Value *OV, Value *NV) {
+void AssumptionCache::transferAffectedValuesInCache(Value *OV, Value *NV) {
   auto &NAVV = getOrInsertAffectedValues(NV);
   auto AVI = AffectedValues.find(OV);
   if (AVI == AffectedValues.end())
@@ -133,6 +177,7 @@ void AssumptionCache::copyAffectedValuesInCache(Value *OV, Value *NV) {
   for (auto &A : AVI->second)
     if (std::find(NAVV.begin(), NAVV.end(), A) == NAVV.end())
       NAVV.push_back(A);
+  AffectedValues.erase(OV);
 }
 
 void AssumptionCache::AffectedValueCallbackVH::allUsesReplacedWith(Value *NV) {
@@ -141,7 +186,7 @@ void AssumptionCache::AffectedValueCallbackVH::allUsesReplacedWith(Value *NV) {
 
   // Any assumptions that affected this value now affect the new value.
 
-  AC->copyAffectedValuesInCache(getValPtr(), NV);
+  AC->transferAffectedValuesInCache(getValPtr(), NV);
   // 'this' now might dangle! If the AffectedValues map was resized to add an
   // entry for NV then this object might have been destroyed in favor of some
   // copy in the grown map.
@@ -156,7 +201,7 @@ void AssumptionCache::scanFunction() {
   for (BasicBlock &B : F)
     for (Instruction &II : B)
       if (match(&II, m_Intrinsic<Intrinsic::assume>()))
-        AssumeHandles.push_back(&II);
+        AssumeHandles.push_back({&II, ExprResultIdx});
 
   // Mark the scan as complete.
   Scanned = true;
@@ -175,7 +220,7 @@ void AssumptionCache::registerAssumption(CallInst *CI) {
   if (!Scanned)
     return;
 
-  AssumeHandles.push_back(CI);
+  AssumeHandles.push_back({CI, ExprResultIdx});
 
 #ifndef NDEBUG
   assert(CI->getParent() &&
@@ -236,9 +281,16 @@ AssumptionCache &AssumptionCacheTracker::getAssumptionCache(Function &F) {
   // Ok, build a new cache by scanning the function, insert it and the value
   // handle into our map, and return the newly populated cache.
   auto IP = AssumptionCaches.insert(std::make_pair(
-      FunctionCallbackVH(&F, this), llvm::make_unique<AssumptionCache>(F)));
+      FunctionCallbackVH(&F, this), std::make_unique<AssumptionCache>(F)));
   assert(IP.second && "Scanning function already in the map?");
   return *IP.first->second;
+}
+
+AssumptionCache *AssumptionCacheTracker::lookupAssumptionCache(Function &F) {
+  auto I = AssumptionCaches.find_as(&F);
+  if (I != AssumptionCaches.end())
+    return I->second.get();
+  return nullptr;
 }
 
 void AssumptionCacheTracker::verifyAnalysis() const {

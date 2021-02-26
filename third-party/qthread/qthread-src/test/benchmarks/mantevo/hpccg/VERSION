@@ -1,0 +1,18 @@
+Version 0.1 (Initial version)
+Version 0.2:
+- Fixed bugs related to turning MPI compilation off.
+- Added more text to README to improve understanding.
+- Added new Makfile.x86linux.gcc for non-opteron systems.
+- Made MPI_Wtime the default timer when in MPI mode.
+Version 0.3:
+- Fixed a performance bug in make_local_matrix.cpp that was 
+  very noticeable when the fraction of off-processor grid 
+  points was large.
+Version 0.4:
+- Made total_nnz a "long long" so that MFLOP numbers were valid
+  when the nonzero count is  more than 2^31.
+Version 0.5:
+- Added timing for Allreduce calls in MPI mode, printing min/max/avg times.
+- Set the solver tolerance to zero to make all solves take max_iter iterations.
+- Changed accumulator to a local variable for ddot.  It seems to help dual-core
+  performance.

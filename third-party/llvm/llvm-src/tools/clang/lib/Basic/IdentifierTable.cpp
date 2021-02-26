@@ -1,9 +1,8 @@
 //===- IdentifierTable.cpp - Hash table for identifier lookup -------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -17,6 +16,7 @@
 #include "clang/Basic/LangOptions.h"
 #include "clang/Basic/OperatorKinds.h"
 #include "clang/Basic/Specifiers.h"
+#include "clang/Basic/TargetBuiltins.h"
 #include "clang/Basic/TokenKinds.h"
 #include "llvm/ADT/DenseMapInfo.h"
 #include "llvm/ADT/FoldingSet.h"
@@ -32,6 +32,12 @@
 #include <string>
 
 using namespace clang;
+
+// A check to make sure the ObjCOrBuiltinID has sufficient room to store the
+// largest possible target/aux-target combination. If we exceed this, we likely
+// need to just change the ObjCOrBuiltinIDBits value in IdentifierTable.h.
+static_assert(2 * LargestBuiltinID < (2 << (ObjCOrBuiltinIDBits - 1)),
+              "Insufficient ObjCOrBuiltinID Bits");
 
 //===----------------------------------------------------------------------===//
 // IdentifierTable Implementation
@@ -98,9 +104,10 @@ namespace {
     KEYZVECTOR    = 0x40000,
     KEYCOROUTINES = 0x80000,
     KEYMODULES    = 0x100000,
-    KEYCXX2A      = 0x200000,
+    KEYCXX20      = 0x200000,
     KEYOPENCLCXX  = 0x400000,
-    KEYALLCXX = KEYCXX | KEYCXX11 | KEYCXX2A,
+    KEYMSCOMPAT   = 0x800000,
+    KEYALLCXX = KEYCXX | KEYCXX11 | KEYCXX20,
     KEYALL = (0xffffff & ~KEYNOMS18 &
               ~KEYNOOPENCL) // KEYNOMS18 and KEYNOOPENCL are used to exclude.
   };
@@ -122,10 +129,11 @@ static KeywordStatus getKeywordStatus(const LangOptions &LangOpts,
   if (Flags == KEYALL) return KS_Enabled;
   if (LangOpts.CPlusPlus && (Flags & KEYCXX)) return KS_Enabled;
   if (LangOpts.CPlusPlus11 && (Flags & KEYCXX11)) return KS_Enabled;
-  if (LangOpts.CPlusPlus2a && (Flags & KEYCXX2A)) return KS_Enabled;
+  if (LangOpts.CPlusPlus20 && (Flags & KEYCXX20)) return KS_Enabled;
   if (LangOpts.C99 && (Flags & KEYC99)) return KS_Enabled;
   if (LangOpts.GNUKeywords && (Flags & KEYGNU)) return KS_Extension;
   if (LangOpts.MicrosoftExt && (Flags & KEYMS)) return KS_Extension;
+  if (LangOpts.MSVCCompat && (Flags & KEYMSCOMPAT)) return KS_Enabled;
   if (LangOpts.Borland && (Flags & KEYBORLAND)) return KS_Extension;
   if (LangOpts.Bool && (Flags & BOOLSUPPORT)) return KS_Enabled;
   if (LangOpts.Half && (Flags & HALFSUPPORT)) return KS_Enabled;
@@ -141,10 +149,12 @@ static KeywordStatus getKeywordStatus(const LangOptions &LangOpts,
   // We treat bridge casts as objective-C keywords so we can warn on them
   // in non-arc mode.
   if (LangOpts.ObjC && (Flags & KEYOBJC)) return KS_Enabled;
-  if (LangOpts.ConceptsTS && (Flags & KEYCONCEPTS)) return KS_Enabled;
-  if (LangOpts.CoroutinesTS && (Flags & KEYCOROUTINES)) return KS_Enabled;
+  if (LangOpts.CPlusPlus20 && (Flags & KEYCONCEPTS)) return KS_Enabled;
+  if (LangOpts.Coroutines && (Flags & KEYCOROUTINES)) return KS_Enabled;
   if (LangOpts.ModulesTS && (Flags & KEYMODULES)) return KS_Enabled;
   if (LangOpts.CPlusPlus && (Flags & KEYALLCXX)) return KS_Future;
+  if (LangOpts.CPlusPlus && !LangOpts.CPlusPlus20 && (Flags & CHAR8SUPPORT))
+    return KS_Future;
   return KS_Disabled;
 }
 
@@ -217,7 +227,7 @@ void IdentifierTable::AddKeywords(const LangOptions &LangOpts) {
   if (LangOpts.DeclSpecKeyword)
     AddKeyword("__declspec", tok::kw___declspec, KEYALL, LangOpts, *this);
 
-  // Add the '_experimental_modules_import' contextual keyword.
+  // Add the 'import' contextual keyword.
   get("import").setModulesImport(true);
 }
 
@@ -256,7 +266,7 @@ bool IdentifierInfo::isCPlusPlusKeyword(const LangOptions &LangOpts) const {
   LangOptions LangOptsNoCPP = LangOpts;
   LangOptsNoCPP.CPlusPlus = false;
   LangOptsNoCPP.CPlusPlus11 = false;
-  LangOptsNoCPP.CPlusPlus2a = false;
+  LangOptsNoCPP.CPlusPlus20 = false;
   return !isKeyword(LangOptsNoCPP);
 }
 
@@ -411,6 +421,21 @@ public:
 
 } // namespace clang.
 
+bool Selector::isKeywordSelector(ArrayRef<StringRef> Names) const {
+  assert(!Names.empty() && "must have >= 1 selector slots");
+  if (getNumArgs() != Names.size())
+    return false;
+  for (unsigned I = 0, E = Names.size(); I != E; ++I) {
+    if (getNameForSlot(I) != Names[I])
+      return false;
+  }
+  return true;
+}
+
+bool Selector::isUnarySelector(StringRef Name) const {
+  return isUnarySelector() && getNameForSlot(0) == Name;
+}
+
 unsigned Selector::getNumArgs() const {
   unsigned IIF = getIdentifierInfoFlag();
   if (IIF <= ZeroArg)
@@ -447,7 +472,7 @@ std::string MultiKeywordSelector::getName() const {
     OS << ':';
   }
 
-  return OS.str();
+  return std::string(OS.str());
 }
 
 std::string Selector::getAsString() const {
@@ -460,7 +485,7 @@ std::string Selector::getAsString() const {
     if (getNumArgs() == 0) {
       assert(II && "If the number of arguments is 0 then II is guaranteed to "
                    "not be null.");
-      return II->getName();
+      return std::string(II->getName());
     }
 
     if (!II)

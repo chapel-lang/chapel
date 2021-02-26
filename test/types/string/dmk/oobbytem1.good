@@ -1,1 +1,1 @@
-oobbytem1.chpl:1: error: index out of bounds of string: -1
+oobbytem1.chpl:1: error: index -1 out of bounds for string with 1 bytes

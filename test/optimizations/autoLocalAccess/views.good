@@ -1,0 +1,83 @@
+
+Start analyzing forall (views.chpl:40)
+| Found loop domain (views.chpl:30)
+| Will attempt static and dynamic optimizations (views.chpl:40)
+|
+|  Start analyzing call (views.chpl:41)
+|   Found the domain of the access base (views.chpl:29)
+|  This call is a dynamic optimization candidate (views.chpl:41)
+|
+|  Start analyzing call (views.chpl:42)
+|   Can't determine the domain of access base (views.chpl:35)
+|  This call is a dynamic optimization candidate (views.chpl:42)
+|
+End analyzing forall (views.chpl:40)
+
+
+Start analyzing forall (views.chpl:61)
+| Found loop domain (views.chpl:53)
+| Will attempt static and dynamic optimizations (views.chpl:61)
+|
+|  Start analyzing call (views.chpl:63)
+|   Can optimize: Access base is the iterator's base (views.chpl:63)
+|  This call is a static optimization candidate (views.chpl:63)
+|
+|  Start analyzing call (views.chpl:64)
+|   Can't determine the domain of access base (views.chpl:56)
+|  This call is a dynamic optimization candidate (views.chpl:64)
+|
+End analyzing forall (views.chpl:61)
+
+
+Start analyzing forall (views.chpl:84)
+| Found loop domain (views.chpl:80)
+| Will attempt static and dynamic optimizations (views.chpl:84)
+|
+|  Start analyzing call (views.chpl:86)
+|   Can optimize: Access base is the iterator's base (views.chpl:86)
+|  This call is a static optimization candidate (views.chpl:86)
+|
+End analyzing forall (views.chpl:84)
+
+
+Start analyzing forall (views.chpl:106)
+| Found loop domain (views.chpl:104)
+| Will attempt static and dynamic optimizations (views.chpl:106)
+|
+|  Start analyzing call (views.chpl:107)
+|   Can optimize: Access base is the iterator's base (views.chpl:107)
+|  This call is a static optimization candidate (views.chpl:107)
+|
+End analyzing forall (views.chpl:106)
+
+Static check successful. Using localAccess with dynamic check (views.chpl:41)
+Static check successful. Using localAccess with dynamic check (views.chpl:42)
+Static check successful. Using localAccess (views.chpl:63)
+Static check successful. Using localAccess with dynamic check (views.chpl:64)
+Static check successful. Using localAccess (views.chpl:63)
+Static check successful. Using localAccess (views.chpl:107)
+
+Starting
+Slice: using slicing domain
+0.0 3.0 3.0 3.0 3.0 3.0 3.0 3.0 3.0 0.0
+
+Slice: using the parent domain
+0.0 3.0 3.0 3.0 3.0 3.0 3.0 3.0 3.0 0.0
+
+Reindex
+3.0 3.0 3.0 3.0 3.0 3.0 3.0 3.0 3.0 3.0
+
+Rank change
+0 0 3 0 0 0 0 0 0 0
+0 0 3 0 0 0 0 0 0 0
+0 0 3 0 0 0 0 0 0 0
+0 0 3 0 0 0 0 0 0 0
+0 0 3 0 0 0 0 0 0 0
+0 0 3 0 0 0 0 0 0 0
+0 0 3 0 0 0 0 0 0 0
+0 0 3 0 0 0 0 0 0 0
+0 0 3 0 0 0 0 0 0 0
+0 0 3 0 0 0 0 0 0 0
+
+`this` was called 30 times
+`localAccess` was called 42 times

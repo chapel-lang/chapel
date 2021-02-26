@@ -81,17 +81,21 @@ Here are the steps you can follow to do so:
    buildbot documentation for help.  You may want to restart your computer
    to see if it works.
 
-#. Send a patch which adds your build slave and your builder to zorg.
+#. Send a patch which adds your build slave and your builder to
+   `zorg <https://github.com/llvm/llvm-zorg>`_. Use the typical LLVM 
+   `workflow <https://llvm.org/docs/Contributing.html#how-to-submit-a-patch>`_.
 
    * slaves are added to ``buildbot/osuosl/master/config/slaves.py``
    * builders are added to ``buildbot/osuosl/master/config/builders.py``
 
-   Please make sure your builder name and its builddir are unique through the file.
+   Please make sure your builder name and its builddir are unique through the
+   file.
 
-   It is possible to whitelist email addresses to unconditionally receive notifications
-   on build failure; for this you'll need to add an ``InformativeMailNotifier`` to
-   ``buildbot/osuosl/master/config/status.py``. This is particularly useful for the
-   staging buildmaster which is silent otherwise.
+   It is possible to allow email addresses to unconditionally receive
+   notifications on build failure; for this you'll need to add an
+   ``InformativeMailNotifier`` to ``buildbot/osuosl/master/config/status.py``.
+   This is particularly useful for the staging buildmaster which is silent
+   otherwise.
 
 #. Send the buildslave access name and the access password directly to
    `Galina Kistanova <mailto:gkistanova@gmail.com>`_, and wait till she

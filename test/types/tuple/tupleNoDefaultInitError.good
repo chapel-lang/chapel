@@ -1,0 +1,9 @@
+tupleNoDefaultInitError.chpl:4: In function 'test':
+tupleNoDefaultInitError.chpl:5: error: cannot default initialize the tuple tup1
+note: element 1 of type owned C has no default value
+note: because it is a non-nilable class - consider the type owned C? instead
+tupleNoDefaultInitError.chpl:6: error: cannot default initialize the tuple tup2
+note: element 0 of type shared C has no default value
+note: because it is a non-nilable class - consider the type shared C? instead
+note: element 1 of type owned D has no default value
+note: because it is a non-nilable class - consider the type owned D? instead

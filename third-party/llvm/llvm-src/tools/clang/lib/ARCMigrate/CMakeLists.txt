@@ -34,6 +34,7 @@ add_clang_library(clangARCMigrate
   clangRewrite
   clangSema
   clangSerialization
-  clangStaticAnalyzerCheckers
-  clangStaticAnalyzerCore
+
+  DEPENDS
+  omp_gen
   )

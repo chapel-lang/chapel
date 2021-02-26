@@ -1,9 +1,8 @@
 //===- AMDGPUTargetTransformInfo.h - AMDGPU specific TTI --------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -47,13 +46,24 @@ class AMDGPUTTIImpl final : public BasicTTIImplBase<AMDGPUTTIImpl> {
 
   Triple TargetTriple;
 
+  const GCNSubtarget *ST;
+  const TargetLoweringBase *TLI;
+
+  const TargetSubtargetInfo *getST() const { return ST; }
+  const TargetLoweringBase *getTLI() const { return TLI; }
+
 public:
   explicit AMDGPUTTIImpl(const AMDGPUTargetMachine *TM, const Function &F)
-    : BaseT(TM, F.getParent()->getDataLayout()),
-      TargetTriple(TM->getTargetTriple()) {}
+      : BaseT(TM, F.getParent()->getDataLayout()),
+        TargetTriple(TM->getTargetTriple()),
+        ST(static_cast<const GCNSubtarget *>(TM->getSubtargetImpl(F))),
+        TLI(ST->getTargetLowering()) {}
 
   void getUnrollingPreferences(Loop *L, ScalarEvolution &SE,
                                TTI::UnrollingPreferences &UP);
+
+  void getPeelingPreferences(Loop *L, ScalarEvolution &SE,
+                             TTI::PeelingPreferences &PP);
 };
 
 class GCNTTIImpl final : public BasicTTIImplBase<GCNTTIImpl> {
@@ -63,9 +73,11 @@ class GCNTTIImpl final : public BasicTTIImplBase<GCNTTIImpl> {
   friend BaseT;
 
   const GCNSubtarget *ST;
-  const AMDGPUTargetLowering *TLI;
+  const SITargetLowering *TLI;
   AMDGPUTTIImpl CommonTTI;
   bool IsGraphicsShader;
+  bool HasFP32Denormals;
+  unsigned MaxVGPRs;
 
   const FeatureBitset InlineFeatureIgnoreList = {
     // Codegen control options which don't matter.
@@ -78,13 +90,16 @@ class GCNTTIImpl final : public BasicTTIImplBase<GCNTTIImpl> {
     AMDGPU::FeatureUnalignedScratchAccess,
 
     AMDGPU::FeatureAutoWaitcntBeforeBarrier,
-    AMDGPU::FeatureDebuggerEmitPrologue,
-    AMDGPU::FeatureDebuggerInsertNops,
 
     // Property of the kernel/environment which can't actually differ.
     AMDGPU::FeatureSGPRInitBug,
     AMDGPU::FeatureXNACK,
     AMDGPU::FeatureTrapHandler,
+    AMDGPU::FeatureCodeObjectV3,
+
+    // The default assumption needs to be ecc is enabled, but no directly
+    // exposed operations depend on it, so it can be safely inlined.
+    AMDGPU::FeatureSRAMECC,
 
     // Perf-tuning features
     AMDGPU::FeatureFastFMAF32,
@@ -121,12 +136,21 @@ public:
       ST(static_cast<const GCNSubtarget*>(TM->getSubtargetImpl(F))),
       TLI(ST->getTargetLowering()),
       CommonTTI(TM, F),
-      IsGraphicsShader(AMDGPU::isShader(F.getCallingConv())) {}
+      IsGraphicsShader(AMDGPU::isShader(F.getCallingConv())),
+      HasFP32Denormals(AMDGPU::SIModeRegisterDefaults(F).allFP32Denormals()),
+      MaxVGPRs(ST->getMaxNumVGPRs(
+          std::max(ST->getWavesPerEU(F).first,
+                   ST->getWavesPerEUForWorkGroup(
+                       ST->getFlatWorkGroupSizes(F).second)))) {}
 
   bool hasBranchDivergence() { return true; }
+  bool useGPUDivergenceAnalysis() const;
 
   void getUnrollingPreferences(Loop *L, ScalarEvolution &SE,
                                TTI::UnrollingPreferences &UP);
+
+  void getPeelingPreferences(Loop *L, ScalarEvolution &SE,
+                             TTI::PeelingPreferences &PP);
 
   TTI::PopcntSupportKind getPopcntSupport(unsigned TyWidth) {
     assert(isPowerOf2_32(TyWidth) && "Ty width must be power of 2");
@@ -135,6 +159,7 @@ public:
 
   unsigned getHardwareNumberOfRegisters(bool Vector) const;
   unsigned getNumberOfRegisters(bool Vector) const;
+  unsigned getNumberOfRegisters(unsigned RCID) const;
   unsigned getRegisterBitWidth(bool Vector) const;
   unsigned getMinVectorRegisterBitWidth() const;
   unsigned getLoadVectorFactor(unsigned VF, unsigned LoadSize,
@@ -145,29 +170,41 @@ public:
                                 VectorType *VecTy) const;
   unsigned getLoadStoreVecRegBitWidth(unsigned AddrSpace) const;
 
-  bool isLegalToVectorizeMemChain(unsigned ChainSizeInBytes,
-                                  unsigned Alignment,
+  bool isLegalToVectorizeMemChain(unsigned ChainSizeInBytes, Align Alignment,
                                   unsigned AddrSpace) const;
-  bool isLegalToVectorizeLoadChain(unsigned ChainSizeInBytes,
-                                   unsigned Alignment,
+  bool isLegalToVectorizeLoadChain(unsigned ChainSizeInBytes, Align Alignment,
                                    unsigned AddrSpace) const;
-  bool isLegalToVectorizeStoreChain(unsigned ChainSizeInBytes,
-                                    unsigned Alignment,
+  bool isLegalToVectorizeStoreChain(unsigned ChainSizeInBytes, Align Alignment,
                                     unsigned AddrSpace) const;
+  Type *getMemcpyLoopLoweringType(LLVMContext &Context, Value *Length,
+                                  unsigned SrcAddrSpace, unsigned DestAddrSpace,
+                                  unsigned SrcAlign, unsigned DestAlign) const;
 
+  void getMemcpyLoopResidualLoweringType(SmallVectorImpl<Type *> &OpsOut,
+                                         LLVMContext &Context,
+                                         unsigned RemainingBytes,
+                                         unsigned SrcAddrSpace,
+                                         unsigned DestAddrSpace,
+                                         unsigned SrcAlign,
+                                         unsigned DestAlign) const;
   unsigned getMaxInterleaveFactor(unsigned VF);
 
   bool getTgtMemIntrinsic(IntrinsicInst *Inst, MemIntrinsicInfo &Info) const;
 
   int getArithmeticInstrCost(
-    unsigned Opcode, Type *Ty,
-    TTI::OperandValueKind Opd1Info = TTI::OK_AnyValue,
-    TTI::OperandValueKind Opd2Info = TTI::OK_AnyValue,
-    TTI::OperandValueProperties Opd1PropInfo = TTI::OP_None,
-    TTI::OperandValueProperties Opd2PropInfo = TTI::OP_None,
-    ArrayRef<const Value *> Args = ArrayRef<const Value *>());
+      unsigned Opcode, Type *Ty,
+      TTI::TargetCostKind CostKind = TTI::TCK_RecipThroughput,
+      TTI::OperandValueKind Opd1Info = TTI::OK_AnyValue,
+      TTI::OperandValueKind Opd2Info = TTI::OK_AnyValue,
+      TTI::OperandValueProperties Opd1PropInfo = TTI::OP_None,
+      TTI::OperandValueProperties Opd2PropInfo = TTI::OP_None,
+      ArrayRef<const Value *> Args = ArrayRef<const Value *>(),
+      const Instruction *CxtI = nullptr);
 
-  unsigned getCFInstrCost(unsigned Opcode);
+  unsigned getCFInstrCost(unsigned Opcode, TTI::TargetCostKind CostKind);
+
+  bool isInlineAsmSourceOfDivergence(const CallInst *CI,
+                                     ArrayRef<unsigned> Indices = {}) const;
 
   int getVectorInstrCost(unsigned Opcode, Type *ValTy, unsigned Index);
   bool isSourceOfDivergence(const Value *V) const;
@@ -178,26 +215,37 @@ public:
     // don't use flat addressing.
     if (IsGraphicsShader)
       return -1;
-    return ST->hasFlatAddressSpace() ?
-      AMDGPUAS::FLAT_ADDRESS : AMDGPUAS::UNKNOWN_ADDRESS_SPACE;
+    return AMDGPUAS::FLAT_ADDRESS;
   }
+
+  bool collectFlatAddressOperands(SmallVectorImpl<int> &OpIndexes,
+                                  Intrinsic::ID IID) const;
+  Value *rewriteIntrinsicWithAddressSpace(IntrinsicInst *II, Value *OldV,
+                                          Value *NewV) const;
 
   unsigned getVectorSplitCost() { return 0; }
 
-  unsigned getShuffleCost(TTI::ShuffleKind Kind, Type *Tp, int Index,
-                          Type *SubTp);
+  unsigned getShuffleCost(TTI::ShuffleKind Kind, VectorType *Tp, int Index,
+                          VectorType *SubTp);
 
   bool areInlineCompatible(const Function *Caller,
                            const Function *Callee) const;
 
-  unsigned getInliningThresholdMultiplier() { return 9; }
+  unsigned getInliningThresholdMultiplier() { return 11; }
 
-  int getArithmeticReductionCost(unsigned Opcode,
-                                 Type *Ty,
-                                 bool IsPairwise);
-  int getMinMaxReductionCost(Type *Ty, Type *CondTy,
-                             bool IsPairwiseForm,
-                             bool IsUnsigned);
+  int getInlinerVectorBonusPercent() { return 0; }
+
+  int getArithmeticReductionCost(
+      unsigned Opcode,
+      VectorType *Ty,
+      bool IsPairwise,
+      TTI::TargetCostKind CostKind = TTI::TCK_RecipThroughput);
+
+  int getIntrinsicInstrCost(const IntrinsicCostAttributes &ICA,
+                            TTI::TargetCostKind CostKind);
+  int getMinMaxReductionCost(
+    VectorType *Ty, VectorType *CondTy, bool IsPairwiseForm, bool IsUnsigned,
+    TTI::TargetCostKind CostKind = TTI::TCK_RecipThroughput);
 };
 
 class R600TTIImpl final : public BasicTTIImplBase<R600TTIImpl> {
@@ -215,28 +263,28 @@ public:
     : BaseT(TM, F.getParent()->getDataLayout()),
       ST(static_cast<const R600Subtarget*>(TM->getSubtargetImpl(F))),
       TLI(ST->getTargetLowering()),
-      CommonTTI(TM, F)	{}
+      CommonTTI(TM, F) {}
 
   const R600Subtarget *getST() const { return ST; }
   const AMDGPUTargetLowering *getTLI() const { return TLI; }
 
   void getUnrollingPreferences(Loop *L, ScalarEvolution &SE,
                                TTI::UnrollingPreferences &UP);
+  void getPeelingPreferences(Loop *L, ScalarEvolution &SE,
+                             TTI::PeelingPreferences &PP);
   unsigned getHardwareNumberOfRegisters(bool Vec) const;
   unsigned getNumberOfRegisters(bool Vec) const;
   unsigned getRegisterBitWidth(bool Vector) const;
   unsigned getMinVectorRegisterBitWidth() const;
   unsigned getLoadStoreVecRegBitWidth(unsigned AddrSpace) const;
-  bool isLegalToVectorizeMemChain(unsigned ChainSizeInBytes, unsigned Alignment,
+  bool isLegalToVectorizeMemChain(unsigned ChainSizeInBytes, Align Alignment,
                                   unsigned AddrSpace) const;
-  bool isLegalToVectorizeLoadChain(unsigned ChainSizeInBytes,
-		                   unsigned Alignment,
+  bool isLegalToVectorizeLoadChain(unsigned ChainSizeInBytes, Align Alignment,
                                    unsigned AddrSpace) const;
-  bool isLegalToVectorizeStoreChain(unsigned ChainSizeInBytes,
-                                    unsigned Alignment,
+  bool isLegalToVectorizeStoreChain(unsigned ChainSizeInBytes, Align Alignment,
                                     unsigned AddrSpace) const;
   unsigned getMaxInterleaveFactor(unsigned VF);
-  unsigned getCFInstrCost(unsigned Opcode);
+  unsigned getCFInstrCost(unsigned Opcode, TTI::TargetCostKind CostKind);
   int getVectorInstrCost(unsigned Opcode, Type *ValTy, unsigned Index);
 };
 

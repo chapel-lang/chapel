@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -37,6 +37,10 @@
 
 /* This header file is for routines that are in the generated code */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* defined in chpl_compilation_config.c: */
 extern const char* chpl_compileCommand;
 extern const char* chpl_compileVersion;
@@ -53,6 +57,7 @@ extern const char* CHPL_LOCALE_MODEL;
 extern const char* CHPL_COMM;
 extern const char* CHPL_COMM_SUBSTRATE;
 extern const char* CHPL_GASNET_SEGMENT;
+extern const char* CHPL_LIBFABRIC;
 extern const char* CHPL_TASKS;
 extern const char* CHPL_LAUNCHER;
 extern const char* CHPL_TIMERS;
@@ -101,5 +106,9 @@ extern int64_t chpl_gen_main(chpl_main_argument* const _arg);
 
 /* used for config vars: */
 extern void CreateConfigVarTable(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

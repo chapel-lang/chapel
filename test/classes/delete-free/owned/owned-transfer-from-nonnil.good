@@ -36,10 +36,11 @@ owned-transfer-from-nonnil.chpl:201: error: mention of non-nilable variable afte
 owned-transfer-from-nonnil.chpl:200: note: ownership transfer occurred here
 owned-transfer-from-nonnil.chpl:207: In function 'test10':
 owned-transfer-from-nonnil.chpl:209: error: Cannot transfer ownership from this non-nilable reference variable
-owned-transfer-from-nonnil.chpl:220: In function 'init=':
+owned-transfer-from-nonnil.chpl:220: In method 'init=':
 owned-transfer-from-nonnil.chpl:221: error: Cannot transfer ownership from this non-nilable reference variable
 owned-transfer-from-nonnil.chpl:224: In function '=':
 owned-transfer-from-nonnil.chpl:225: error: Cannot transfer ownership from this non-nilable reference variable
 owned-transfer-from-nonnil.chpl:157: In function 'acceptRefButReturn':
 owned-transfer-from-nonnil.chpl:157: error: Cannot transfer ownership from non-nilable class argument
 owned-transfer-from-nonnil.chpl:157: note: 'arg' is set to nil here
+  owned-transfer-from-nonnil.chpl:162: called as acceptRefButReturn(arg: owned MyClass)

@@ -24,13 +24,13 @@ Usage $( basename "${BASH_SOURCE[0]}" )" '[options]
     -b release_type     : Build/release type (required)
                           == "nightly", "release", or "developer".
     -p chpl_platform    : Chpl target platform, as in $CHPL_HOME/bin/$chpl_platform
-                          ("cray-xc" or "cray-xe")
+                          ("cray-xc" or "hpe-cray-ex")
                           Default: cray-xc
     -T version_tag      : If given, version_tag will become part of the Chapel
                             package version string to be generated in this script.
                           Alphanumeric/underscore chars only.
                           Default value: current hostname. See NOTES below.
-    -R rel_name         : Shasta RPM release name, synthesized if not given
+    -R rel_name         : HPE Cray EX RPM release name, synthesized if not given
     -r rc_number        : Release candidate number (0,1,2,...9)
                           Default: 0
     -o outputs  : Where to deliver the Chapel RPM file created by this script.
@@ -188,8 +188,27 @@ fi
 # Generate modulefile, w versions
 
 log_debug "Generate modulefile-$pkg_version ..."
-$cwd/generate-modulefile.bash > "$rpmbuild_dir/modulefile-$pkg_version"
+$cwd/process-template.py pkg_version="$pkg_version" \
+			 --template $cwd/chapel.modulefile.tcl.template \
+			 --output $rpmbuild_dir/modulefile-$pkg_version
 chmod 644 "$rpmbuild_dir/modulefile-$pkg_version"
+
+# Generate Lua modulefile for PE Lmod Hierarchy.
+
+log_debug "Generate Lua modulefile ..."
+
+(
+    if [ "$chpl_platform" = hpe-cray-ex ]; then
+        platform_prefix=/opt/cray
+    else
+        platform_prefix=/opt
+    fi
+    $cwd/process-template.py pkg_version="$pkg_version" \
+                             platform_prefix="$platform_prefix" \
+        --template $cwd/chapel.modulefile.lua.template \
+        --output $rpmbuild_dir/modulefile-lua-$pkg_version
+    chmod 644 $rpmbuild_dir/modulefile-lua-$pkg_version
+)
 
 # Generate set_default script, w versions
 
@@ -197,10 +216,37 @@ log_debug "Generate set_default_chapel_$pkg_version ..."
 $cwd/generate-set_default.bash > "$rpmbuild_dir/set_default_chapel_$pkg_version"
 chmod 755 "$rpmbuild_dir/set_default_chapel_$pkg_version"
 
-# Generate chapel.spec, w versions
+# Generate RPM spec file.
 
 log_debug "Generate chapel.spec ..."
-$cwd/generate-rpmspec.bash > "$rpmbuild_dir/chapel.spec"
+
+(
+    if [ "$chpl_platform" = hpe-cray-ex ]; then
+        lmod_network=ofi
+        lmod_mpich_compat_ver=8.0
+        platform_prefix=/opt/cray
+        set_def_subdir=admin-pe/set_default_files
+    else
+        lmod_network=aries
+        lmod_mpich_compat_ver=7.0
+        platform_prefix=/opt
+        set_def_subdir=cray/admin-pe/set_default_files
+    fi
+    lmod_prefix=/opt/cray/pe/lmod/modulefiles/mpi
+    lmod_suffix=${lmod_network}/1.0/cray-mpich/${lmod_mpich_compat_ver}
+    $cwd/process-template.py basename_of_CHPL_HOME="${CHPL_HOME##*/}" \
+                             chpl_platform="$chpl_platform" \
+                             lmod_prefix="$lmod_prefix" \
+                             lmod_suffix="$lmod_suffix" \
+                             lmod_tgt_compilers="crayclang/10.0 gnu/8.0" \
+                             pkg_version="$pkg_version" \
+                             platform_prefix="$platform_prefix" \
+                             rpm_release="$rpm_release" \
+                             rpm_version="$rpm_version" \
+                             set_def_subdir="$set_def_subdir" \
+        --template $cwd/chapel.spec.template \
+        --output $rpmbuild_dir/chapel.spec
+)
 
 # Prepare the rpmbuild_dir subdirectory structure, with hardlinked files from CHPL_HOME/...
 

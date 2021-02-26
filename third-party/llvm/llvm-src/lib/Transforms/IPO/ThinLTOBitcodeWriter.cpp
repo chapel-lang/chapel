@@ -1,9 +1,8 @@
 //===- ThinLTOBitcodeWriter.cpp - Bitcode writing pass for ThinLTO --------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -18,6 +17,7 @@
 #include "llvm/IR/Intrinsics.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/PassManager.h"
+#include "llvm/InitializePasses.h"
 #include "llvm/Object/ModuleSymbolTable.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/ScopedPrinter.h"
@@ -25,6 +25,7 @@
 #include "llvm/Transforms/IPO.h"
 #include "llvm/Transforms/IPO/FunctionAttrs.h"
 #include "llvm/Transforms/IPO/FunctionImport.h"
+#include "llvm/Transforms/IPO/LowerTypeTests.h"
 #include "llvm/Transforms/Utils/Cloning.h"
 #include "llvm/Transforms/Utils/ModuleUtils.h"
 using namespace llvm;
@@ -219,10 +220,18 @@ void splitAndWriteThinLTOBitcode(
 
   promoteTypeIds(M, ModuleId);
 
-  // Returns whether a global has attached type metadata. Such globals may
-  // participate in CFI or whole-program devirtualization, so they need to
-  // appear in the merged module instead of the thin LTO module.
+  // Returns whether a global or its associated global has attached type
+  // metadata. The former may participate in CFI or whole-program
+  // devirtualization, so they need to appear in the merged module instead of
+  // the thin LTO module. Similarly, globals that are associated with globals
+  // with type metadata need to appear in the merged module because they will
+  // reference the global's section directly.
   auto HasTypeMetadata = [](const GlobalObject *GO) {
+    if (MDNode *MD = GO->getMetadata(LLVMContext::MD_associated))
+      if (auto *AssocVM = dyn_cast_or_null<ValueAsMetadata>(MD->getOperand(0)))
+        if (auto *AssocGO = dyn_cast<GlobalObject>(AssocVM->getValue()))
+          if (AssocGO->hasMetadata(LLVMContext::MD_type))
+            return true;
     return GO->hasMetadata(LLVMContext::MD_type);
   };
 
@@ -316,9 +325,9 @@ void splitAndWriteThinLTOBitcode(
     SmallVector<Metadata *, 4> Elts;
     Elts.push_back(MDString::get(Ctx, F.getName()));
     CfiFunctionLinkage Linkage;
-    if (!F.isDeclarationForLinker())
+    if (lowertypetests::isJumpTableCanonical(&F))
       Linkage = CFL_Definition;
-    else if (F.isWeakForLinker())
+    else if (F.hasExternalWeakLinkage())
       Linkage = CFL_WeakDeclaration;
     else
       Linkage = CFL_Declaration;
@@ -418,34 +427,53 @@ void splitAndWriteThinLTOBitcode(
   }
 }
 
-// Returns whether this module needs to be split because splitting is
-// enabled and it uses type metadata.
-bool requiresSplit(Module &M) {
-  // First check if the LTO Unit splitting has been enabled.
+// Check if the LTO Unit splitting has been enabled.
+bool enableSplitLTOUnit(Module &M) {
   bool EnableSplitLTOUnit = false;
   if (auto *MD = mdconst::extract_or_null<ConstantInt>(
           M.getModuleFlag("EnableSplitLTOUnit")))
     EnableSplitLTOUnit = MD->getZExtValue();
-  if (!EnableSplitLTOUnit)
-    return false;
+  return EnableSplitLTOUnit;
+}
 
-  // Module only needs to be split if it contains type metadata.
+// Returns whether this module needs to be split because it uses type metadata.
+bool hasTypeMetadata(Module &M) {
   for (auto &GO : M.global_objects()) {
     if (GO.hasMetadata(LLVMContext::MD_type))
       return true;
   }
-
   return false;
 }
 
 void writeThinLTOBitcode(raw_ostream &OS, raw_ostream *ThinLinkOS,
                          function_ref<AAResults &(Function &)> AARGetter,
                          Module &M, const ModuleSummaryIndex *Index) {
-  // Split module if splitting is enabled and it contains any type metadata.
-  if (requiresSplit(M))
-    return splitAndWriteThinLTOBitcode(OS, ThinLinkOS, AARGetter, M);
+  std::unique_ptr<ModuleSummaryIndex> NewIndex = nullptr;
+  // See if this module has any type metadata. If so, we try to split it
+  // or at least promote type ids to enable WPD.
+  if (hasTypeMetadata(M)) {
+    if (enableSplitLTOUnit(M))
+      return splitAndWriteThinLTOBitcode(OS, ThinLinkOS, AARGetter, M);
+    // Promote type ids as needed for index-based WPD.
+    std::string ModuleId = getUniqueModuleId(&M);
+    if (!ModuleId.empty()) {
+      promoteTypeIds(M, ModuleId);
+      // Need to rebuild the index so that it contains type metadata
+      // for the newly promoted type ids.
+      // FIXME: Probably should not bother building the index at all
+      // in the caller of writeThinLTOBitcode (which does so via the
+      // ModuleSummaryIndexAnalysis pass), since we have to rebuild it
+      // anyway whenever there is type metadata (here or in
+      // splitAndWriteThinLTOBitcode). Just always build it once via the
+      // buildModuleSummaryIndex when Module(s) are ready.
+      ProfileSummaryInfo PSI(M);
+      NewIndex = std::make_unique<ModuleSummaryIndex>(
+          buildModuleSummaryIndex(M, nullptr, &PSI));
+      Index = NewIndex.get();
+    }
+  }
 
-  // Otherwise we can just write it out as a regular module.
+  // Write it out as an unsplit ThinLTO module.
 
   // Save the module hash produced for the full bitcode, which will
   // be used in the backends, and use that in the minimized bitcode

@@ -1,9 +1,8 @@
 //===--- TransGCAttrs.cpp - Transformations to ARC mode --------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -69,6 +68,9 @@ public:
         if (handleAttr(Attr, D))
           break;
         TL = Attr.getModifiedLoc();
+      } else if (MacroQualifiedTypeLoc MDTL =
+                     TL.getAs<MacroQualifiedTypeLoc>()) {
+        TL = MDTL.getInnerLoc();
       } else if (ArrayTypeLoc Arr = TL.getAs<ArrayTypeLoc>()) {
         TL = Arr.getElementLoc();
       } else if (PointerTypeLoc PT = TL.getAs<PointerTypeLoc>()) {
@@ -229,8 +231,7 @@ static void checkAllAtProps(MigrationContext &MigrateCtx,
 
   SmallVector<std::pair<AttributedTypeLoc, ObjCPropertyDecl *>, 4> ATLs;
   bool hasWeak = false, hasStrong = false;
-  ObjCPropertyDecl::PropertyAttributeKind
-    Attrs = ObjCPropertyDecl::OBJC_PR_noattr;
+  ObjCPropertyAttribute::Kind Attrs = ObjCPropertyAttribute::kind_noattr;
   for (IndivPropsTy::iterator
          PI = IndProps.begin(), PE = IndProps.end(); PI != PE; ++PI) {
     ObjCPropertyDecl *PD = *PI;
@@ -267,12 +268,12 @@ static void checkAllAtProps(MigrationContext &MigrateCtx,
     StringRef toAttr = "strong";
     if (hasWeak) {
       if (canApplyWeak(MigrateCtx.Pass.Ctx, IndProps.front()->getType(),
-                       /*AllowOnUnkwownClass=*/true))
+                       /*AllowOnUnknownClass=*/true))
         toAttr = "weak";
       else
         toAttr = "unsafe_unretained";
     }
-    if (Attrs & ObjCPropertyDecl::OBJC_PR_assign)
+    if (Attrs & ObjCPropertyAttribute::kind_assign)
       MigrateCtx.rewritePropertyAttribute("assign", toAttr, AtLoc);
     else
       MigrateCtx.addPropertyAttribute(toAttr, AtLoc);
@@ -300,8 +301,8 @@ static void checkAllProps(MigrationContext &MigrateCtx,
   for (unsigned i = 0, e = AllProps.size(); i != e; ++i) {
     ObjCPropertyDecl *PD = AllProps[i];
     if (PD->getPropertyAttributesAsWritten() &
-          (ObjCPropertyDecl::OBJC_PR_assign |
-           ObjCPropertyDecl::OBJC_PR_readonly)) {
+        (ObjCPropertyAttribute::kind_assign |
+         ObjCPropertyAttribute::kind_readonly)) {
       SourceLocation AtLoc = PD->getAtLoc();
       if (AtLoc.isInvalid())
         continue;

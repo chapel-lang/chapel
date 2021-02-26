@@ -11,22 +11,22 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.cray-xc.arkouda"
 source $CWD/common-arkouda.bash
 export ARKOUDA_NUMLOCALES=16
 
+module list
+
 # setup for XC perf (ugni, gnu, 28-core broadwell)
-module unload $(module list --terse 2>&1 | grep PrgEnv-)
+module unload $(module -t list 2>&1 | grep PrgEnv-)
 module load PrgEnv-gnu
-module unload $(module list --terse 2>&1 | grep craype-hugepages)
+module unload $(module -t list 2>&1 | grep craype-hugepages)
 module load craype-hugepages16M
 module unload perftools-base
 module unload atp
+
+module list
 
 export CHPL_LAUNCHER_CONSTRAINT=BW28
 export CHPL_LAUNCHER_CORES_PER_LOCALE=56
 export CHPL_LAUNCHER=slurm-srun
 nightly_args="${nightly_args} -no-buildcheck"
 
-# XC has new enough python, but missing pip
-source /cray/css/users/chapelu/setup_python36.bash
-
-test_release
-test_master
+test_nightly
 sync_graphs

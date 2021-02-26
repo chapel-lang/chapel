@@ -1,0 +1,2 @@
+noinitInFunctionGood.chpl:1: In function 'main':
+noinitInFunctionGood.chpl:2: error: noinit is only supported for arrays

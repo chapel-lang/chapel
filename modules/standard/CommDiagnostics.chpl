@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -33,14 +33,18 @@
 
   All forms of communication reporting and counting are done between
   pairs of function calls that turn it on and off.  On-the-fly
-  reporting across all locales is done like this::
+  reporting across all locales is done like this:
+
+  .. code-block:: chapel
 
     startVerboseComm();
     // between start/stop calls, report comm ops initiated on any locale
     stopVerboseComm();
 
   On-the-fly reporting for just the calling locale is similar.  Only
-  the procedure names change::
+  the procedure names change:
+
+  .. code-block:: chapel
 
     startVerboseCommHere();
     // between start/stop calls, report comm ops initiated on this locale
@@ -51,7 +55,9 @@
   the file associated with the process, not the Chapel channel with the
   same name.)
 
-  Consider this little example program::
+  Consider this little example program:
+
+  .. code-block:: chapel
 
     use CommDiagnostics;
     proc main() {
@@ -64,7 +70,9 @@
     }
 
   Executing this on two locales with the ``-nl 2`` command line
-  option results in the following output::
+  option results in the following output:
+
+  .. code-block:: bash
 
     0: remote task created on 1
     1: t.chpl:6: remote get from 0, 8 bytes
@@ -81,7 +89,9 @@
   reporting them does.  In particular, the counts have to be retrieved
   after they are collected and, if they have been used previously, the
   internal counters have to be reset before counting is turned on.
-  Counting across all locales is done like this::
+  Counting across all locales is done like this:
+
+  .. code-block:: chapel
 
     // (optional) if we counted previously, reset the counters to zero
     resetCommDiagnostics();
@@ -92,7 +102,9 @@
     writeln(getCommDiagnostics());
 
   Counting on just the calling locale is similar.  Just as for
-  on-the-fly reporting, only the procedure names change::
+  on-the-fly reporting, only the procedure names change:
+
+  .. code-block:: chapel
 
     // (optional) if we counted previously, reset the counters to zero
     resetCommDiagnosticsHere();
@@ -114,7 +126,9 @@
   trying to do both at once may lead to surprising turn-on/turn-off
   behavior and/or incorrect results.
 
-  Consider this little example program::
+  Consider this little example program:
+
+  .. code-block:: chapel
 
     use CommDiagnostics;
     proc main() {
@@ -128,7 +142,9 @@
     }
 
   Executing this on two locales with the ``-nl 2`` command line
-  option results in the following output::
+  option results in the following output:
+
+  .. code-block:: bash
 
     (execute_on = 1) (get = 1, put = 1)
 
@@ -168,6 +184,11 @@
  */
 module CommDiagnostics
 {
+  /*
+    Print out stack traces for comm events printed after startVerboseComm
+   */
+  config param commDiagsStacktrace = false;
+
   /*
     If this is `false`, a written `commDiagnostics` value does not
     include "unstable" fields even when they are non-zero.  Unstable
@@ -233,13 +254,18 @@ module CommDiagnostics
      */
     var execute_on_nb: uint(64);
 
+    var cache_get_hits: uint(64);
+    var cache_get_misses: uint(64);
+    var cache_put_hits: uint(64);
+    var cache_put_misses: uint(64);
+
     proc writeThis(c) throws {
       use Reflection;
 
       var first = true;
       c <~> "(";
-      for param i in 1..numFields(chpl_commDiagnostics) {
-        param name = getFieldName(this.type, i);
+      for param i in 0..<numFields(chpl_commDiagnostics) {
+        param name = getFieldName(chpl_commDiagnostics, i);
         const val = getField(this, i);
         if val != 0 {
           if commDiagsPrintUnstable || name != 'amo' {
@@ -258,11 +284,13 @@ module CommDiagnostics
    */
   type commDiagnostics = chpl_commDiagnostics;
 
-  private extern proc chpl_comm_startVerbose(print_unstable: bool);
+  private extern proc chpl_comm_startVerbose(stacktrace: bool,
+                                             print_unstable: bool);
 
   private extern proc chpl_comm_stopVerbose();
 
-  private extern proc chpl_comm_startVerboseHere(print_unstable: bool);
+  private extern proc chpl_comm_startVerboseHere(stacktrace: bool,
+                                                 print_unstable: bool);
 
   private extern proc chpl_comm_stopVerboseHere();
 
@@ -276,13 +304,13 @@ module CommDiagnostics
 
   private extern proc chpl_comm_resetDiagnosticsHere();
 
-  private extern proc chpl_comm_getDiagnosticsHere(out cd: commDiagnostics);
+  private extern proc chpl_comm_getDiagnosticsHere(ref cd: commDiagnostics);
 
   /*
     Start on-the-fly reporting of communication initiated on any locale.
    */
   proc startVerboseComm() {
-    chpl_comm_startVerbose(commDiagsPrintUnstable);
+    chpl_comm_startVerbose(commDiagsStacktrace, commDiagsPrintUnstable);
   }
 
   /*
@@ -294,7 +322,7 @@ module CommDiagnostics
     Start on-the-fly reporting of communication initiated on this locale.
    */
   proc startVerboseCommHere() {
-    chpl_comm_startVerboseHere(commDiagsPrintUnstable);
+    chpl_comm_startVerboseHere(commDiagsStacktrace, commDiagsPrintUnstable);
   }
 
   /*
@@ -371,6 +399,81 @@ module CommDiagnostics
     return cd;
   }
 
+
+  /*
+    Print the current communication counts in a markdown table using a
+    row per locale and a column per operation.  By default, operations
+    for which all locales have a count of zero are not displayed in
+    the table, though an argument can be used to reverse that
+    behavior.
+
+    :arg printEmptyColumns: Indicates whether empty columns should be printed (defaults to ``false``)
+    :type printEmptyColumns: `bool`
+  */
+  proc printCommDiagnosticsTable(printEmptyColumns=false) {
+    use Reflection;
+    param unstable = "unstable";
+
+    // grab all comm diagnostics
+    var CommDiags = getCommDiagnostics();
+
+    // cache number of fields and store vector of whether field is active
+    param nFields = numFields(chpl_commDiagnostics);
+
+    // How wide should the column be for this field?  A negative value
+    // indicates an unstable field.  0 indicates that the field should
+    // be skipped in the table.
+    var fieldWidth: [0..<nFields] int;
+
+    // print column headers while determining which fields are active
+    writef("| %6s ", "locale");
+    for param fieldID in 0..<nFields {
+      param name = getFieldName(chpl_commDiagnostics, fieldID);
+      // We should be able to write this as follows:
+      //
+      //      const maxval = max reduce [locID in LocaleSpace] getField(CommDiags[locID], fieldID);
+      //
+      // except that it doesn't work due to #16042.  So I'm using this
+      // annoying workaround instead:
+
+      var maxval = 0;
+      for locID in LocaleSpace do
+        maxval = max(maxval, getField(CommDiags[locID], fieldID).safeCast(int));
+
+      if printEmptyColumns || maxval != 0 {
+        const width = if commDiagsPrintUnstable == false && name == "amo"
+                        then -unstable.size
+                        else max(name.size, ceil(log10(maxval+1)):int);
+        fieldWidth[fieldID] = width;
+
+        writef("| %*s ", abs(width), name);
+      }
+    }
+    writeln("|");
+
+    writef("| -----: ");
+    for param fieldID in 0..<nFields {
+      const width = abs(fieldWidth[fieldID]);
+      if width != 0 {
+        writef("| %.*s: ", width-1, "------------------");
+      }
+    }
+    writeln("|");
+
+    // print a row per locale showing the active fields
+    for locID in LocaleSpace {
+      writef("| %6s ", locID:string);
+      for param fieldID in 0..<nFields {
+        var width = fieldWidth[fieldID];
+        const count = if width < 0 then unstable
+                                   else getField(CommDiags[locID],
+                                                 fieldID):string;
+        if width != 0 then
+          writef("| %*s ", abs(width), count);
+      }
+      writeln("|");
+    }
+  }
 
   /*
     If this is set, on-the-fly reporting of communication operations

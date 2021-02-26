@@ -1,9 +1,8 @@
 //===- LiveRegUnits.cpp - Register Unit Set -------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -44,41 +43,34 @@ void LiveRegUnits::addRegsInMask(const uint32_t *RegMask) {
 
 void LiveRegUnits::stepBackward(const MachineInstr &MI) {
   // Remove defined registers and regmask kills from the set.
-  for (ConstMIBundleOperands O(MI); O.isValid(); ++O) {
-    if (O->isReg()) {
-      if (!O->isDef() || O->isDebug())
-        continue;
-      unsigned Reg = O->getReg();
-      if (!TargetRegisterInfo::isPhysicalRegister(Reg))
-        continue;
-      removeReg(Reg);
-    } else if (O->isRegMask())
-      removeRegsNotPreserved(O->getRegMask());
+  for (const MachineOperand &MOP : phys_regs_and_masks(MI)) {
+    if (MOP.isRegMask()) {
+      removeRegsNotPreserved(MOP.getRegMask());
+      continue;
+    }
+
+    if (MOP.isDef())
+      removeReg(MOP.getReg());
   }
 
   // Add uses to the set.
-  for (ConstMIBundleOperands O(MI); O.isValid(); ++O) {
-    if (!O->isReg() || !O->readsReg() || O->isDebug())
+  for (const MachineOperand &MOP : phys_regs_and_masks(MI)) {
+    if (!MOP.isReg() || !MOP.readsReg())
       continue;
-    unsigned Reg = O->getReg();
-    if (!TargetRegisterInfo::isPhysicalRegister(Reg))
-      continue;
-    addReg(Reg);
+    addReg(MOP.getReg());
   }
 }
 
 void LiveRegUnits::accumulate(const MachineInstr &MI) {
   // Add defs, uses and regmask clobbers to the set.
-  for (ConstMIBundleOperands O(MI); O.isValid(); ++O) {
-    if (O->isReg()) {
-      unsigned Reg = O->getReg();
-      if (!TargetRegisterInfo::isPhysicalRegister(Reg))
-        continue;
-      if (!O->isDef() && !O->readsReg())
-        continue;
-      addReg(Reg);
-    } else if (O->isRegMask())
-      addRegsInMask(O->getRegMask());
+  for (const MachineOperand &MOP : phys_regs_and_masks(MI)) {
+    if (MOP.isRegMask()) {
+      addRegsInMask(MOP.getRegMask());
+      continue;
+    }
+    if (!MOP.isDef() && !MOP.readsReg())
+      continue;
+    addReg(MOP.getReg());
   }
 }
 
@@ -126,13 +118,15 @@ void LiveRegUnits::addPristines(const MachineFunction &MF) {
 
 void LiveRegUnits::addLiveOuts(const MachineBasicBlock &MBB) {
   const MachineFunction &MF = *MBB.getParent();
-  if (!MBB.succ_empty()) {
-    addPristines(MF);
-    // To get the live-outs we simply merge the live-ins of all successors.
-    for (const MachineBasicBlock *Succ : MBB.successors())
-      addBlockLiveIns(*this, *Succ);
-  } else if (MBB.isReturnBlock()) {
-    // For the return block: Add all callee saved registers.
+
+  addPristines(MF);
+
+  // To get the live-outs we simply merge the live-ins of all successors.
+  for (const MachineBasicBlock *Succ : MBB.successors())
+    addBlockLiveIns(*this, *Succ);
+
+  // For the return block: Add all callee saved registers.
+  if (MBB.isReturnBlock()) {
     const MachineFrameInfo &MFI = MF.getFrameInfo();
     if (MFI.isCalleeSavedInfoValid())
       addCalleeSavedRegs(*this, MF);

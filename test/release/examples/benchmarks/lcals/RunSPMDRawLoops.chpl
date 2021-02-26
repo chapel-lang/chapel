@@ -460,7 +460,7 @@ module RunSPMDRawLoops {
                 for i in chunk(0..#len_minus_coeff, nTasks, tid) {
                   var sum = 0.0;
                   for j in 0..#coefflen {
-                    sum += coeff[j+1]*input[i+j];
+                    sum += coeff[j]*input[i+j];
                   }
                   output[i] = sum;
                 }

@@ -1,0 +1,19 @@
+
+Start analyzing forall (unalignedSameDist.chpl:24)
+| Found loop domain (unalignedSameDist.chpl:19)
+| Will attempt static and dynamic optimizations (unalignedSameDist.chpl:24)
+|
+|  Start analyzing call (unalignedSameDist.chpl:25)
+|   Can't determine the domain of access base (unalignedSameDist.chpl:18)
+|  This call is a dynamic optimization candidate (unalignedSameDist.chpl:25)
+|
+|  Start analyzing call (unalignedSameDist.chpl:26)
+|   Can optimize: Access base is the iterator's base (unalignedSameDist.chpl:26)
+|  This call is a static optimization candidate (unalignedSameDist.chpl:26)
+|
+End analyzing forall (unalignedSameDist.chpl:24)
+
+Static check successful. Using localAccess with dynamic check (unalignedSameDist.chpl:25)
+Static check successful. Using localAccess (unalignedSameDist.chpl:26)
+Static check successful. Using localAccess (unalignedSameDist.chpl:26)
+2 2 2 2 2 2 2 2 2 2

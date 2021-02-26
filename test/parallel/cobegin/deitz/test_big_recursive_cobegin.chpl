@@ -1,4 +1,4 @@
-config const n: int = 768;
+config const n: int = 256;
 
 extern proc printf(fmt:c_string, x...);
 

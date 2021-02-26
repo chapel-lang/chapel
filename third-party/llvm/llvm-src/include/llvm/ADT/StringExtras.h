@@ -1,9 +1,8 @@
 //===- llvm/ADT/StringExtras.h - Useful string functions --------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -106,6 +105,14 @@ inline bool isASCII(llvm::StringRef S) {
 inline bool isPrint(char C) {
   unsigned char UC = static_cast<unsigned char>(C);
   return (0x20 <= UC) && (UC <= 0x7E);
+}
+
+/// Checks whether character \p C is whitespace in the "C" locale.
+///
+/// Locale-independent version of the C standard library isspace.
+inline bool isSpace(char C) {
+  return C == ' ' || C == '\f' || C == '\n' || C == '\r' || C == '\t' ||
+         C == '\v';
 }
 
 /// Returns the corresponding lowercase character if \p x is uppercase.
@@ -238,7 +245,7 @@ inline std::string utostr(uint64_t X, bool isNeg = false) {
 
 inline std::string itostr(int64_t X) {
   if (X < 0)
-    return utostr(static_cast<uint64_t>(-X), true);
+    return utostr(-static_cast<uint64_t>(X), true);
   else
     return utostr(static_cast<uint64_t>(X));
 }
@@ -293,6 +300,18 @@ void printHTMLEscaped(StringRef String, raw_ostream &Out);
 /// printLowerCase - Print each character as lowercase if it is uppercase.
 void printLowerCase(StringRef String, raw_ostream &Out);
 
+/// Converts a string from camel-case to snake-case by replacing all uppercase
+/// letters with '_' followed by the letter in lowercase, except if the
+/// uppercase letter is the first character of the string.
+std::string convertToSnakeFromCamelCase(StringRef input);
+
+/// Converts a string from snake-case to camel-case by replacing all occurrences
+/// of '_' followed by a lowercase letter with the letter in uppercase.
+/// Optionally allow capitalization of the first letter (if it is a lowercase
+/// letter)
+std::string convertToCamelFromSnakeCase(StringRef input,
+                                        bool capitalizeFirst = false);
+
 namespace detail {
 
 template <typename IteratorT>
@@ -346,7 +365,7 @@ inline void join_items_impl(std::string &Result, Sep Separator, const Arg1 &A1,
   join_items_impl(Result, Separator, std::forward<Args>(Items)...);
 }
 
-inline size_t join_one_item_size(char C) { return 1; }
+inline size_t join_one_item_size(char) { return 1; }
 inline size_t join_one_item_size(const char *S) { return S ? ::strlen(S) : 0; }
 
 template <typename T> inline size_t join_one_item_size(const T &Str) {

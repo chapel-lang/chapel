@@ -240,6 +240,8 @@ int main(int argc, char **argv) {
     MSG("*** ERROR - FAILED EP NO-SEGMENT TEST!!!!!");
   }
 
+  assert_always(gex_EP_QueryIndex(myep) == 0);
+
   myrank = gex_TM_QueryRank(myteam);
   numranks = gex_TM_QuerySize(myteam);
 
@@ -679,6 +681,15 @@ void doit(int partner, int *partnerseg) {
   assert_always(myrank < numranks);
   assert_always(numranks < GEX_RANK_INVALID);
 
+  /* ep_index/ep_location tests */
+  assert_unsigned(gex_EP_Index_t);
+  for (gex_Rank_t i = 0; i < numranks; ++i) {
+    gex_EP_Location_t ep_loc = gex_TM_TranslateRankToEP(myteam, i, 0);
+    assert_always(ep_loc.gex_rank == i);
+    assert_always(ep_loc.gex_rank == gex_TM_TranslateRankToJobrank(myteam,i));
+    assert_always(ep_loc.gex_ep_index == 0);
+  }
+
   /* AM limit tests */
   assert_always(gex_AM_MaxArgs() >= 2*MAX(sizeof(int),sizeof(void*)));
   assert_always(gex_AM_LUBRequestMedium() >= 512);
@@ -708,6 +719,7 @@ void doit(int partner, int *partnerseg) {
       if (d == numranks) r = GEX_RANK_INVALID; // min of maxes
       else r = (myrank + d) % numranks;
       amsz_t max;
+      memset(&max,0,sizeof(max)); // avoid a valgrind warning for uninit bytes
       for (int lci = 0; lci < AM_LCOPT_CNT; lci++) {
         for (int flagsi = 0; flagsi < AM_FLAGS_CNT; flagsi++) {
           #define GET_MAX(cat) do {                                                              \
@@ -851,6 +863,13 @@ void doit0(int partner, int *partnerseg) {
 
     GEX_FLAG_TM_SCRATCH_SIZE_MIN,
     GEX_FLAG_TM_SCRATCH_SIZE_RECOMMENDED,
+    GEX_FLAG_TM_GLOBAL_SCRATCH,
+    GEX_FLAG_TM_LOCAL_SCRATCH,
+    GEX_FLAG_TM_SYMMETRIC_SCRATCH,
+    GEX_FLAG_TM_NO_SCRATCH,
+    GEX_FLAG_SCRATCH_SEG_OFFSET,
+
+    GEX_FLAG_GLOBALLY_QUIESCED,
 
     GEX_FLAG_RANK_IS_JOBRANK,
   };
@@ -900,9 +919,14 @@ void doit0(int partner, int *partnerseg) {
     GEX_FLAG_ENABLE_LEAF_LC,
   };
   assert_arr_unaliased(gex_Flags_t, flags_vis);
-  static gex_Flags_t const flags_tm[] = { // gex_TM_Split
+  static gex_Flags_t const flags_tm[] = { // gex_TM_Split, Create, etc.
     GEX_FLAG_TM_SCRATCH_SIZE_MIN,
     GEX_FLAG_TM_SCRATCH_SIZE_RECOMMENDED,
+    GEX_FLAG_TM_GLOBAL_SCRATCH,
+    GEX_FLAG_TM_LOCAL_SCRATCH,
+    GEX_FLAG_TM_SYMMETRIC_SCRATCH,
+    GEX_FLAG_TM_NO_SCRATCH,
+    GEX_FLAG_SCRATCH_SEG_OFFSET,
   };
   assert_arr_unaliased(gex_Flags_t, flags_tm);
 
@@ -1041,6 +1065,9 @@ void doit0(int partner, int *partnerseg) {
   assert_field_int_unspec(gex_Token_Info_t, gex_is_long);
 
   assert_field_constint(gex_RankInfo_t, gex_Rank_t, gex_jobrank, typeisunsigned);
+
+  assert_field_int(gex_EP_Location_t, gex_Rank_t,     gex_rank,     typeisunsigned);
+  assert_field_int(gex_EP_Location_t, gex_EP_Index_t, gex_ep_index, typeisunsigned);
 
   MSG("*** passed object test!!");
 
@@ -1257,8 +1284,9 @@ void doit5(int partner, int *partnerseg) {
           gex_RMA_GetBlocking(myteam, localpos, partner, rsegpos+chunk*elems, sz, 0);
 
           for (int j=0; j < elems; j++) {
-            int ok = (localpos[j] == val[chunk]);
+            int ok;
             if (sz < 8) ok = !memcmp(&(localpos[j]), &val[chunk], sz);
+            else        ok = (localpos[j] == val[chunk]);
             if (!ok) {
               MSG("*** ERROR - FAILED %s-SEG PUT_NB/OVERWRITE TEST!!! sz=%i j=%i (got=%016" PRIx64 " expected=%016" PRIx64 ")",
                   (chunk < INSEGCHUNKS ? "IN" : "OUT-OF"), sz, j, localpos[j], val[chunk]);
@@ -1322,8 +1350,9 @@ void doit5(int partner, int *partnerseg) {
           gex_RMA_GetBlocking(myteam, localpos, partner, rsegpos+chunk*elems, sz, 0);
 
           for (int j=0; j < elems; j++) {
-            int ok = (localpos[j] == val[chunk]);
+            int ok;
             if (sz < 8) ok = !memcmp(&(localpos[j]), &val[chunk], sz);
+            else        ok = (localpos[j] == val[chunk]);
             if (!ok) {
               MSG("*** ERROR - FAILED %s-SEG PUT_NBI/OVERWRITE TEST!!! sz=%i j=%i (got=%016" PRIx64 " expected=%016" PRIx64 ")",
                   (chunk < INSEGCHUNKS ? "IN" : "OUT-OF"), sz, j, localpos[j], val[chunk]);

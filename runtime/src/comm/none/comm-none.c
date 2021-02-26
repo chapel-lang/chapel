@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -259,5 +259,3 @@ void chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
 
   chpl_ftable_call(fid, arg);
 }
-
-void chpl_comm_task_end(void) { }

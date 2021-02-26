@@ -1,3 +1,5 @@
+.. default-domain:: chpl
+
 .. _Chapter-Variables:
 
 Variables
@@ -20,15 +22,15 @@ Variables are declared with the following syntax:
    variable-declaration-statement:
      privacy-specifier[OPT] config-extern-or-export[OPT] variable-kind variable-declaration-list ;
 
-   config-or-extern: one of
-     `config' `extern' `export'
+   config-extern-or-export: one of
+     'config' 'extern' 'export'
 
    variable-kind:
-     `param'
-     `const'
-     `var'
-     `ref'
-     `const ref'
+     'param'
+     'const'
+     'var'
+     'ref'
+     'const ref'
 
    variable-declaration-list:
      variable-declaration
@@ -171,8 +173,9 @@ that variable.
    .. BLOCK-test-chapeloutput
 
       no-split-init.chpl:1: In function 'main':
-      no-split-init.chpl:2: error: variable 'x' is not initialized and has no type
-      no-split-init.chpl:3: note: 'x' use here prevents split-init from establishing the type
+      no-split-init.chpl:2: error: 'x' is not initialized and has no type
+      no-split-init.chpl:2: note: cannot find initialization point to split-init this variable
+      no-split-init.chpl:3: note: 'x' is used here before it is initialized
 
 
    *Example (split-cond-blocks-init.chpl)*
@@ -228,10 +231,6 @@ Split initialization does not apply:
  * when the variable is a field, config variable, or ``extern`` variable.
  * when an applicable assignment statement setting the variable could not
    be identified
- * when the variable is mentioned before the earliest assignment
-   statement(s)
- * when an applicable assignment statement is in a loop, ``on``
-   statement, or ``begin`` statement
  * when an applicable assignment statement is in one branch of a
    conditional but not in the other, and when the other branch
    does not always return or throw. This rule prevents
@@ -245,6 +244,11 @@ In the case that the variable is declared without a ``type-part`` and
 where multiple applicable assignment statements are identified, all of
 the assignment statements need to contain an initialization expression of
 the same type.
+
+Any variables declared in a particular scope that are initialized with
+split init in both the ``then`` and ``else`` branches of a conditional
+must be initialized in the same order in the ``then`` and ``else``
+branches.
 
 .. _Default_Values_For_Types:
 
@@ -628,6 +632,39 @@ Parameter constants and expressions cannot be aliased.
       myArr[3] = 73
       myConstRef = 52
 
+.. _Variable_Conflicts:
+
+Variable Conflicts
+------------------
+
+If multiple variables defined in the same scope share a name, then a compilation
+error will occur when that name is used.
+
+An error will not occur if the would-be conflicting symbols are defined within
+different scopes contained by the same outer scope.  For example, the following
+code will not encounter a conflict when writing the symbol x:
+
+   *Example (conflict1.chpl)*.
+
+   .. code-block:: chapel
+
+      var x: int;
+      writeln(x);
+      {
+        var x = 3; // Does not conflict with the earlier `x`
+        writeln(x);
+      }
+
+   .. BLOCK-test-chapeloutput
+
+      0
+      3
+
+A variable will also conflict with other symbols defined in the same scope that
+share a name with it.  While functions may share the same name (see
+:ref:`Function_Overloading`), a function sharing a name with a variable in the
+same scope will lead to conflicts.
+
 .. _Variable_Lifetimes:
 
 Variable Lifetimes
@@ -667,7 +704,7 @@ The compiler adds temporary local variables to contain the result of
 nested call expressions. ``g()`` in the statement ``f(g());`` is an
 example of a nested call expression. If the containing statement is an
 initialization expression for some variable, such as ``var x = f(g());``,
-then the tempory local variables for that statement are deinitialized at
+then the temporary local variables for that statement are deinitialized at
 the end of the containing block. Otherwise, the temporary local variables
 are deinitialized at the end of the containing statement.
 
@@ -862,12 +899,15 @@ initialization* and the source variable is considered dead. Compile-time
 analysis provides compilation errors when a variable is used after it is
 dead in common cases.
 
-Like split initialization, copy elision considers mentions of variables
-to determine whether or not a copy can be elided. Since a ``return`` or
+Like split initialization, copy elision looks forward from variable
+declaration points and considers mentions of variables to determine
+whether or not a copy can be elided. After a copy, if the source variable
+is not mentioned again, the copy will be elided.  Since a ``return`` or
 ``throw`` exits a function, a copy can be elided if it is followed
-immediately by a ``return`` or ``throw``. Copy elision considers eliding
-copies only within block declarations ``{ }``, ``try`` blocks, ``try!``
-blocks, and conditionals.
+immediately by a ``return`` or ``throw``. When searching forward from
+variable declarations, copy elision considers eliding copies only within
+block declarations ``{ }``, ``try`` blocks, ``try!`` blocks, and
+conditionals.
 
    *Example (copy-elision.chpl)*
 
@@ -969,13 +1009,10 @@ Copy elision does not apply:
 
  * when the source variable is a reference, field, or module-level
    variable
- * when the source variable is mentioned after the copy statement
- * when the copy statement is in a loop, ``on`` statement, or ``begin``
-   statement
  * when the copy statement is in one branch of a conditional but not in
    the other, or when the other branch does not always ``return`` or
    ``throw``.
- * when the copy statament is in a ``try`` or ``try!`` block which has
+ * when the copy statement is in a ``try`` or ``try!`` block which has
    ``catch`` clauses that mention the variable or which has ``catch``
    clauses that do not always ``throw`` or ``return``.
 

@@ -1,9 +1,8 @@
 //===--- ClangCommentHTMLNamedCharacterReferenceEmitter.cpp -----------------=//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -12,6 +11,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "TableGenBackends.h"
 #include "llvm/ADT/SmallString.h"
 #include "llvm/Support/ConvertUTF.h"
 #include "llvm/TableGen/Error.h"
@@ -46,16 +46,15 @@ static bool translateCodePointToUTF8(unsigned CodePoint,
   return true;
 }
 
-namespace clang {
-void EmitClangCommentHTMLNamedCharacterReferences(RecordKeeper &Records,
-                                                  raw_ostream &OS) {
+void clang::EmitClangCommentHTMLNamedCharacterReferences(RecordKeeper &Records,
+                                                         raw_ostream &OS) {
   std::vector<Record *> Tags = Records.getAllDerivedDefinitions("NCR");
   std::vector<StringMatcher::StringPair> NameToUTF8;
   SmallString<32> CLiteral;
   for (std::vector<Record *>::iterator I = Tags.begin(), E = Tags.end();
        I != E; ++I) {
     Record &Tag = **I;
-    std::string Spelling = Tag.getValueAsString("Spelling");
+    std::string Spelling = std::string(Tag.getValueAsString("Spelling"));
     uint64_t CodePoint = Tag.getValueAsInt("CodePoint");
     CLiteral.clear();
     CLiteral.append("return ");
@@ -67,7 +66,7 @@ void EmitClangCommentHTMLNamedCharacterReferences(RecordKeeper &Records,
     }
     CLiteral.append(";");
 
-    StringMatcher::StringPair Match(Spelling, CLiteral.str());
+    StringMatcher::StringPair Match(Spelling, std::string(CLiteral.str()));
     NameToUTF8.push_back(Match);
   }
 
@@ -80,6 +79,3 @@ void EmitClangCommentHTMLNamedCharacterReferences(RecordKeeper &Records,
   OS << "  return StringRef();\n"
      << "}\n\n";
 }
-
-} // end namespace clang
-

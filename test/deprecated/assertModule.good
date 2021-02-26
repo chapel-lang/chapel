@@ -1,0 +1,1 @@
+$CHPL_HOME/modules/standard/Assert.chpl:35: warning: Assert module is deprecated. 'assert' functions are now in the Builtins module, which is 'use'd by default

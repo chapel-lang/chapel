@@ -1,9 +1,8 @@
 //===- MachineBlockFrequencyInfo.h - MBB Frequency Analysis -----*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -39,6 +38,9 @@ public:
   static char ID;
 
   MachineBlockFrequencyInfo();
+  explicit MachineBlockFrequencyInfo(MachineFunction &F,
+                                     MachineBranchProbabilityInfo &MBPI,
+                                     MachineLoopInfo &MLI);
   ~MachineBlockFrequencyInfo() override;
 
   void getAnalysisUsage(AnalysisUsage &AU) const override;
@@ -63,6 +65,8 @@ public:
   Optional<uint64_t> getProfileCountFromFreq(uint64_t Freq) const;
 
   bool isIrrLoopHeader(const MachineBasicBlock *MBB);
+
+  void setBlockFreq(const MachineBasicBlock *MBB, uint64_t Freq);
 
   const MachineFunction *getFunction() const;
   const MachineBranchProbabilityInfo *getMBPI() const;

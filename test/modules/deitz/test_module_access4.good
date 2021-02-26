@@ -1,4 +1,4 @@
 test_module_access4.chpl:8: error: unresolved call 'M.foo(3.0)'
 test_module_access4.chpl:5: note: this candidate did not match: foo(i: int)
-test_module_access4.chpl:8: note: because call actual argument #1 with type real(64)
+test_module_access4.chpl:8: note: because actual argument #1 with type 'real(64)'
 test_module_access4.chpl:5: note: is passed to formal 'i: int(64)'

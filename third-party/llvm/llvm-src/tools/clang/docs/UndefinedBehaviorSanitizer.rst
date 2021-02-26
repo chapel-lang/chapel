@@ -54,6 +54,10 @@ and define the desired behavior for each kind of check:
 * ``-fno-sanitize-recover=...``: print a verbose error report and exit the program;
 * ``-fsanitize-trap=...``: execute a trap instruction (doesn't require UBSan run-time support).
 
+Note that the ``trap`` / ``recover`` options do not enable the corresponding
+sanitizer, and in general need to be accompanied by a suitable ``-fsanitize=``
+flag.
+
 For example if you compile/link your program as:
 
 .. code-block:: console
@@ -77,15 +81,21 @@ Available checks are:
      ``true`` nor ``false``.
   -  ``-fsanitize=builtin``: Passing invalid values to compiler builtins.
   -  ``-fsanitize=bounds``: Out of bounds array indexing, in cases
-     where the array bound can be statically determined.
+     where the array bound can be statically determined. The check includes
+     ``-fsanitize=array-bounds`` and ``-fsanitize=local-bounds``. Note that
+     ``-fsanitize=local-bounds`` is not included in ``-fsanitize=undefined``.
   -  ``-fsanitize=enum``: Load of a value of an enumerated type which
      is not in the range of representable values for that enumerated
      type.
   -  ``-fsanitize=float-cast-overflow``: Conversion to, from, or
      between floating-point types which would overflow the
-     destination.
+     destination. Because the range of representable values for all
+     floating-point types supported by Clang is [-inf, +inf], the only
+     cases detected are conversions from floating point to integer types.
   -  ``-fsanitize=float-divide-by-zero``: Floating point division by
-     zero.
+     zero. This is undefined per the C and C++ standards, but is defined
+     by Clang (and by ISO/IEC/IEEE 60559 / IEEE 754) as producing either an
+     infinity or NaN value, so is not included in ``-fsanitize=undefined``.
   -  ``-fsanitize=function``: Indirect call of a function through a
      function pointer of the wrong type (Darwin/Linux, C++ and x86/x86_64
      only).
@@ -117,6 +127,10 @@ Available checks are:
      is annotated with ``_Nonnull``.
   -  ``-fsanitize=nullability-return``: Returning null from a function with
      a return type annotated with ``_Nonnull``.
+  -  ``-fsanitize=objc-cast``: Invalid implicit cast of an ObjC object pointer
+     to an incompatible type. This is often unintentional, but is not undefined
+     behavior, therefore the check is not a part of the ``undefined`` group.
+     Currently only supported on Darwin.
   -  ``-fsanitize=object-size``: An attempt to potentially use bytes which
      the optimizer can determine are not part of the object being accessed.
      This will also detect some types of undefined behavior that may not
@@ -126,7 +140,8 @@ Available checks are:
      ``__builtin_object_size``, and consequently may be able to detect more
      problems at higher optimization levels.
   -  ``-fsanitize=pointer-overflow``: Performing pointer arithmetic which
-     overflows.
+     overflows, or where either the old or new pointer value is a null pointer
+     (or in C, when they both are).
   -  ``-fsanitize=return``: In C++, reaching the end of a
      value-returning function without returning a value.
   -  ``-fsanitize=returns-nonnull-attribute``: Returning null pointer
@@ -163,8 +178,9 @@ Available checks are:
 
 You can also use the following check groups:
   -  ``-fsanitize=undefined``: All of the checks listed above other than
-     ``unsigned-integer-overflow``, ``implicit-conversion`` and the
-     ``nullability-*`` group of checks.
+     ``float-divide-by-zero``, ``unsigned-integer-overflow``,
+     ``implicit-conversion``, ``local-bounds`` and the ``nullability-*`` group
+     of checks.
   -  ``-fsanitize=undefined-trap``: Deprecated alias of
      ``-fsanitize=undefined``.
   -  ``-fsanitize=implicit-integer-truncation``: Catches lossy integral
@@ -174,16 +190,16 @@ You can also use the following check groups:
      conversions that change the arithmetic value of the integer. Enables
      ``implicit-signed-integer-truncation`` and ``implicit-integer-sign-change``.
   -  ``-fsanitize=implicit-conversion``: Checks for suspicious
-     behaviour of implicit conversions. Enables
+     behavior of implicit conversions. Enables
      ``implicit-unsigned-integer-truncation``,
-     ``implicit-signed-integer-truncation`` and
+     ``implicit-signed-integer-truncation``, and
      ``implicit-integer-sign-change``.
   -  ``-fsanitize=integer``: Checks for undefined or suspicious integer
      behavior (e.g. unsigned integer overflow).
      Enables ``signed-integer-overflow``, ``unsigned-integer-overflow``,
      ``shift``, ``integer-divide-by-zero``,
      ``implicit-unsigned-integer-truncation``,
-     ``implicit-signed-integer-truncation`` and
+     ``implicit-signed-integer-truncation``, and
      ``implicit-integer-sign-change``.
   -  ``-fsanitize=nullability``: Enables ``nullability-arg``,
      ``nullability-assign``, and ``nullability-return``. While violating
@@ -193,7 +209,7 @@ You can also use the following check groups:
 Volatile
 --------
 
-The ``null``, ``alignment``, ``object-size``, and ``vptr`` checks do not apply
+The ``null``, ``alignment``, ``object-size``, ``local-bounds``, and ``vptr`` checks do not apply
 to pointers to types with the ``volatile`` qualifier.
 
 Minimal Runtime
@@ -201,8 +217,8 @@ Minimal Runtime
 
 There is a minimal UBSan runtime available suitable for use in production
 environments. This runtime has a small attack surface. It only provides very
-basic issue logging and deduplication, and does not support ``-fsanitize=vptr``
-checking.
+basic issue logging and deduplication, and does not support
+``-fsanitize=function`` and ``-fsanitize=vptr`` checking.
 
 To use the minimal runtime, add ``-fsanitize-minimal-runtime`` to the clang
 command line options. For example, if you're used to compiling with
@@ -219,6 +235,12 @@ will need to:
 #. Run your program with environment variable
    ``UBSAN_OPTIONS=print_stacktrace=1``.
 #. Make sure ``llvm-symbolizer`` binary is in ``PATH``.
+
+Logging
+=======
+
+The default log file for diagnostics is "stderr". To log diagnostics to another
+file, you can set ``UBSAN_OPTIONS=log_path=...``.
 
 Silencing Unsigned Integer Overflow
 ===================================
@@ -295,7 +317,7 @@ UndefinedBehaviorSanitizer is supported on the following operating systems:
 * NetBSD
 * FreeBSD
 * OpenBSD
-* OS X 10.6 onwards
+* macOS
 * Windows
 
 The runtime library is relatively portable and platform independent. If the OS
@@ -338,4 +360,4 @@ More Information
   <http://blog.llvm.org/2011/05/what-every-c-programmer-should-know.html>`_
 * From John Regehr's *Embedded in Academia* blog:
   `A Guide to Undefined Behavior in C and C++
-  <http://blog.regehr.org/archives/213>`_
+  <https://blog.regehr.org/archives/213>`_

@@ -1,0 +1,53 @@
+
+
+### test1
+
+slice
+to const ref is view:         true
+to var is view:               false
+returned is view:             false
+.domain to const ref is view: false
+.domain to var is view:       false
+
+reindex
+to const ref is view:         true
+to var is view:               false
+returned is view:             false
+.domain to const ref is view: true
+.domain to var is view:       true
+
+rank change
+to const ref is view:         true
+to var is view:               false
+returned is view:             false
+.domain to const ref is view: true
+.domain to var is view:       true
+
+
+### test2
+
+reindex
+to var is view:               false
+var.domain is view:           true
+
+rank change
+to var is view:               false
+var.domain is view:           true
+
+
+### test3
+
+slice
+to const ref behaves view:    1.0
+to var behaves view:          0.0
+returned behaves view:        0.0
+
+reindex
+to const ref behaves view:    1.0
+to var behaves view:          0.0
+returned behaves view:        0.0
+
+rank change
+to const ref behaves view:    1.0
+to var behaves view:          0.0
+returned behaves view:        0.0

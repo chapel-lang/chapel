@@ -1,9 +1,8 @@
 //===-- Interpreter.h ------------------------------------------*- C++ -*--===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -16,7 +15,6 @@
 
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
 #include "llvm/ExecutionEngine/GenericValue.h"
-#include "llvm/IR/CallSite.h"
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/InstVisitor.h"
@@ -62,8 +60,8 @@ struct ExecutionContext {
   Function             *CurFunction;// The currently executing function
   BasicBlock           *CurBB;      // The currently executing BB
   BasicBlock::iterator  CurInst;    // The next instruction to execute
-  CallSite             Caller;     // Holds the call that called subframes.
-                                   // NULL if main func or debugger invoked fn
+  CallBase             *Caller;     // Holds the call that called subframes.
+                                    // NULL if main func or debugger invoked fn
   std::map<Value *, GenericValue> Values; // LLVM values used in this invocation
   std::vector<GenericValue>  VarArgs; // Values passed through an ellipsis
   AllocaHolder Allocas;            // Track memory allocated by alloca
@@ -125,6 +123,7 @@ public:
   void visitSwitchInst(SwitchInst &I);
   void visitIndirectBrInst(IndirectBrInst &I);
 
+  void visitUnaryOperator(UnaryOperator &I);
   void visitBinaryOperator(BinaryOperator &I);
   void visitICmpInst(ICmpInst &I);
   void visitFCmpInst(FCmpInst &I);
@@ -149,10 +148,11 @@ public:
   void visitBitCastInst(BitCastInst &I);
   void visitSelectInst(SelectInst &I);
 
-
-  void visitCallSite(CallSite CS);
-  void visitCallInst(CallInst &I) { visitCallSite (CallSite (&I)); }
-  void visitInvokeInst(InvokeInst &I) { visitCallSite (CallSite (&I)); }
+  void visitVAStartInst(VAStartInst &I);
+  void visitVAEndInst(VAEndInst &I);
+  void visitVACopyInst(VACopyInst &I);
+  void visitIntrinsicInst(IntrinsicInst &I);
+  void visitCallBase(CallBase &I);
   void visitUnreachableInst(UnreachableInst &I);
 
   void visitShl(BinaryOperator &I);

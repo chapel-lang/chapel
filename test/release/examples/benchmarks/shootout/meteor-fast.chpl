@@ -133,17 +133,8 @@ proc initialize() {
           // Skip piece 3 and specific permutations
           if piece != 3 || (currentPermutation/3) % 2 == 0 {
 
-            //
-            // Overload min function to use for reduction of piece coordinates
-            //
-            proc min((x1, y1), (x2, y2)) {
-              if y1 < y2 || (y1 == y2 && x1 < x2) then
-                return (x1, y1);
-              return (x2, y2);
-            }
-
             // Serial reduction to find min coords of a given permutation
-            var (xMin, yMin) = min reduce for c in coords do c;
+            var (yMin, xMin) = min reduce for c in coords do (c(1), c(0));
 
             var mask = 0,       // Bit mask representing piece's permutation
                 fit = true;     // Track if piece's permutation fits board

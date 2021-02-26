@@ -1,3 +1,4 @@
+use CPtr;
 use IO;
 
 config const nRepeat = 10;

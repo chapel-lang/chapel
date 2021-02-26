@@ -7,18 +7,24 @@ class Attr<string S> {
 /// Enum attribute.
 class EnumAttr<string S> : Attr<S>;
 
+/// Int attribute.
+class IntAttr<string S> : Attr<S>;
+
 /// StringBool attribute.
 class StrBoolAttr<string S> : Attr<S>;
+
+/// Type attribute.
+class TypeAttr<string S> : Attr<S>;
 
 /// Target-independent enum attributes.
 
 /// Alignment of parameter (5 bits) stored as log2 of alignment with +1 bias.
 /// 0 means unaligned (different from align(1)).
-def Alignment : EnumAttr<"align">;
+def Alignment : IntAttr<"align">;
 
 /// The result of the function is guaranteed to point to a number of bytes that
 /// we can determine if we know the value of the function's arguments.
-def AllocSize : EnumAttr<"allocsize">;
+def AllocSize : IntAttr<"allocsize">;
 
 /// inline=always.
 def AlwaysInline : EnumAttr<"alwaysinline">;
@@ -31,7 +37,10 @@ def ArgMemOnly : EnumAttr<"argmemonly">;
 def Builtin : EnumAttr<"builtin">;
 
 /// Pass structure by value.
-def ByVal : EnumAttr<"byval">;
+def ByVal : TypeAttr<"byval">;
+
+/// Parameter or return value may not contain uninitialized or poison bits.
+def NoUndef : EnumAttr<"noundef">;
 
 /// Marks function as being in a cold path.
 def Cold : EnumAttr<"cold">;
@@ -40,10 +49,10 @@ def Cold : EnumAttr<"cold">;
 def Convergent : EnumAttr<"convergent">;
 
 /// Pointer is known to be dereferenceable.
-def Dereferenceable : EnumAttr<"dereferenceable">;
+def Dereferenceable : IntAttr<"dereferenceable">;
 
 /// Pointer is either null or dereferenceable.
-def DereferenceableOrNull : EnumAttr<"dereferenceable_or_null">;
+def DereferenceableOrNull : IntAttr<"dereferenceable_or_null">;
 
 /// Function may only access memory that is inaccessible from IR.
 def InaccessibleMemOnly : EnumAttr<"inaccessiblememonly">;
@@ -85,6 +94,9 @@ def NoCapture : EnumAttr<"nocapture">;
 /// Call cannot be duplicated.
 def NoDuplicate : EnumAttr<"noduplicate">;
 
+/// Function does not deallocate memory.
+def NoFree : EnumAttr<"nofree">;
+
 /// Disable implicit floating point insts.
 def NoImplicitFloat : EnumAttr<"noimplicitfloat">;
 
@@ -93,6 +105,9 @@ def NoInline : EnumAttr<"noinline">;
 
 /// Function is called early and/or often, so lazy binding isn't worthwhile.
 def NonLazyBind : EnumAttr<"nonlazybind">;
+
+/// Disable merging for call sites
+def NoMerge : EnumAttr<"nomerge">;
 
 /// Pointer is known to be not null.
 def NonNull : EnumAttr<"nonnull">;
@@ -106,11 +121,17 @@ def NoRedZone : EnumAttr<"noredzone">;
 /// Mark the function as not returning.
 def NoReturn : EnumAttr<"noreturn">;
 
+/// Function does not synchronize.
+def NoSync : EnumAttr<"nosync">;
+
 /// Disable Indirect Branch Tracking.
 def NoCfCheck : EnumAttr<"nocf_check">;
 
 /// Function doesn't unwind stack.
 def NoUnwind : EnumAttr<"nounwind">;
+
+/// Null pointer in address space zero is valid.
+def NullPointerIsValid : EnumAttr<"null_pointer_is_valid">;
 
 /// Select optimizations for best fuzzing signal.
 def OptForFuzzing : EnumAttr<"optforfuzzing">;
@@ -121,6 +142,9 @@ def OptimizeForSize : EnumAttr<"optsize">;
 /// Function must not be optimized.
 def OptimizeNone : EnumAttr<"optnone">;
 
+/// Similar to byval but without a copy.
+def Preallocated : TypeAttr<"preallocated">;
+
 /// Function does not access memory.
 def ReadNone : EnumAttr<"readnone">;
 
@@ -129,6 +153,9 @@ def ReadOnly : EnumAttr<"readonly">;
 
 /// Return value is always equal to this argument.
 def Returned : EnumAttr<"returned">;
+
+/// Parameter is required to be a trivial constant.
+def ImmArg : EnumAttr<"immarg">;
 
 /// Function can return twice.
 def ReturnsTwice : EnumAttr<"returns_twice">;
@@ -144,7 +171,7 @@ def SExt : EnumAttr<"signext">;
 
 /// Alignment of stack for function (3 bits)  stored as log2 of alignment with
 /// +1 bias 0 means unaligned (different from alignstack=(1)).
-def StackAlignment : EnumAttr<"alignstack">;
+def StackAlignment : IntAttr<"alignstack">;
 
 /// Function can be speculated.
 def Speculatable : EnumAttr<"speculatable">;
@@ -176,6 +203,9 @@ def SanitizeMemory : EnumAttr<"sanitize_memory">;
 /// HWAddressSanitizer is on.
 def SanitizeHWAddress : EnumAttr<"sanitize_hwaddress">;
 
+/// MemTagSanitizer is on.
+def SanitizeMemTag : EnumAttr<"sanitize_memtag">;
+
 /// Speculative Load Hardening is enabled.
 ///
 /// Note that this uses the default compatibility (always compatible during
@@ -193,6 +223,9 @@ def SwiftSelf : EnumAttr<"swiftself">;
 /// Function must be in a unwind table.
 def UWTable : EnumAttr<"uwtable">;
 
+/// Function always comes back to callsite.
+def WillReturn : EnumAttr<"willreturn">;
+
 /// Function only writes to memory.
 def WriteOnly : EnumAttr<"writeonly">;
 
@@ -203,9 +236,12 @@ def ZExt : EnumAttr<"zeroext">;
 def LessPreciseFPMAD : StrBoolAttr<"less-precise-fpmad">;
 def NoInfsFPMath : StrBoolAttr<"no-infs-fp-math">;
 def NoNansFPMath : StrBoolAttr<"no-nans-fp-math">;
+def NoSignedZerosFPMath : StrBoolAttr<"no-signed-zeros-fp-math">;
 def UnsafeFPMath : StrBoolAttr<"unsafe-fp-math">;
 def NoJumpTables : StrBoolAttr<"no-jump-tables">;
+def NoInlineLineTables : StrBoolAttr<"no-inline-line-tables">;
 def ProfileSampleAccurate : StrBoolAttr<"profile-sample-accurate">;
+def UseSampleProfile : StrBoolAttr<"use-sample-profile">;
 
 class CompatRule<string F> {
   // The name of the function called to check the attribute of the caller and
@@ -221,8 +257,10 @@ def : CompatRule<"isEqual<SanitizeAddressAttr>">;
 def : CompatRule<"isEqual<SanitizeThreadAttr>">;
 def : CompatRule<"isEqual<SanitizeMemoryAttr>">;
 def : CompatRule<"isEqual<SanitizeHWAddressAttr>">;
+def : CompatRule<"isEqual<SanitizeMemTagAttr>">;
 def : CompatRule<"isEqual<SafeStackAttr>">;
 def : CompatRule<"isEqual<ShadowCallStackAttr>">;
+def : CompatRule<"isEqual<UseSampleProfileAttr>">;
 
 class MergeRule<string F> {
   // The name of the function called to merge the attributes of the caller and
@@ -236,6 +274,7 @@ class MergeRule<string F> {
 def : MergeRule<"setAND<LessPreciseFPMADAttr>">;
 def : MergeRule<"setAND<NoInfsFPMathAttr>">;
 def : MergeRule<"setAND<NoNansFPMathAttr>">;
+def : MergeRule<"setAND<NoSignedZerosFPMathAttr>">;
 def : MergeRule<"setAND<UnsafeFPMathAttr>">;
 def : MergeRule<"setOR<NoImplicitFloatAttr>">;
 def : MergeRule<"setOR<NoJumpTablesAttr>">;

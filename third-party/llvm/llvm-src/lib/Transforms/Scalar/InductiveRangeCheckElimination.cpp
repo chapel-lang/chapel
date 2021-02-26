@@ -1,9 +1,8 @@
 //===- InductiveRangeCheckElimination.cpp - -------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -48,6 +47,7 @@
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/None.h"
 #include "llvm/ADT/Optional.h"
+#include "llvm/ADT/PriorityWorklist.h"
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringRef.h"
@@ -56,8 +56,8 @@
 #include "llvm/Analysis/LoopAnalysisManager.h"
 #include "llvm/Analysis/LoopInfo.h"
 #include "llvm/Analysis/LoopPass.h"
+#include "llvm/Analysis/PostDominators.h"
 #include "llvm/Analysis/ScalarEvolution.h"
-#include "llvm/Analysis/ScalarEvolutionExpander.h"
 #include "llvm/Analysis/ScalarEvolutionExpressions.h"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/CFG.h"
@@ -75,6 +75,7 @@
 #include "llvm/IR/Use.h"
 #include "llvm/IR/User.h"
 #include "llvm/IR/Value.h"
+#include "llvm/InitializePasses.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/BranchProbability.h"
 #include "llvm/Support/Casting.h"
@@ -87,6 +88,7 @@
 #include "llvm/Transforms/Utils/Cloning.h"
 #include "llvm/Transforms/Utils/LoopSimplify.h"
 #include "llvm/Transforms/Utils/LoopUtils.h"
+#include "llvm/Transforms/Utils/ScalarEvolutionExpander.h"
 #include "llvm/Transforms/Utils/ValueMapper.h"
 #include <algorithm>
 #include <cassert>
@@ -115,6 +117,11 @@ static cl::opt<bool> SkipProfitabilityChecks("irce-skip-profitability-checks",
 
 static cl::opt<bool> AllowUnsignedLatchCondition("irce-allow-unsigned-latch",
                                                  cl::Hidden, cl::init(true));
+
+static cl::opt<bool> AllowNarrowLatchCondition(
+    "irce-allow-narrow-latch", cl::Hidden, cl::init(true),
+    cl::desc("If set to true, IRCE may eliminate wide range checks in loops "
+             "with narrow latch condition."));
 
 static const char *ClonedLoopTag = "irce.loop.clone";
 
@@ -237,20 +244,25 @@ public:
   bool run(Loop *L, function_ref<void(Loop *, bool)> LPMAddNewLoop);
 };
 
-class IRCELegacyPass : public LoopPass {
+class IRCELegacyPass : public FunctionPass {
 public:
   static char ID;
 
-  IRCELegacyPass() : LoopPass(ID) {
+  IRCELegacyPass() : FunctionPass(ID) {
     initializeIRCELegacyPassPass(*PassRegistry::getPassRegistry());
   }
 
   void getAnalysisUsage(AnalysisUsage &AU) const override {
     AU.addRequired<BranchProbabilityInfoWrapperPass>();
-    getLoopAnalysisUsage(AU);
+    AU.addRequired<DominatorTreeWrapperPass>();
+    AU.addPreserved<DominatorTreeWrapperPass>();
+    AU.addRequired<LoopInfoWrapperPass>();
+    AU.addPreserved<LoopInfoWrapperPass>();
+    AU.addRequired<ScalarEvolutionWrapperPass>();
+    AU.addPreserved<ScalarEvolutionWrapperPass>();
   }
 
-  bool runOnLoop(Loop *L, LPPassManager &LPM) override;
+  bool runOnFunction(Function &F) override;
 };
 
 } // end anonymous namespace
@@ -260,7 +272,9 @@ char IRCELegacyPass::ID = 0;
 INITIALIZE_PASS_BEGIN(IRCELegacyPass, "irce",
                       "Inductive range check elimination", false, false)
 INITIALIZE_PASS_DEPENDENCY(BranchProbabilityInfoWrapperPass)
-INITIALIZE_PASS_DEPENDENCY(LoopPass)
+INITIALIZE_PASS_DEPENDENCY(DominatorTreeWrapperPass)
+INITIALIZE_PASS_DEPENDENCY(LoopInfoWrapperPass)
+INITIALIZE_PASS_DEPENDENCY(ScalarEvolutionWrapperPass)
 INITIALIZE_PASS_END(IRCELegacyPass, "irce", "Inductive range check elimination",
                     false, false)
 
@@ -532,12 +546,6 @@ class LoopConstrainer {
     Optional<const SCEV *> HighLimit;
   };
 
-  // A utility function that does a `replaceUsesOfWith' on the incoming block
-  // set of a `PHINode' -- replaces instances of `Block' in the `PHINode's
-  // incoming block list with `ReplaceBy'.
-  static void replacePHIBlock(PHINode *PN, BasicBlock *Block,
-                              BasicBlock *ReplaceBy);
-
   // Compute a safe set of limits for the main loop to run in -- effectively the
   // intersection of `Range' and the iteration space of the original loop.
   // Return None if unable to compute the set of subranges.
@@ -638,13 +646,6 @@ public:
 };
 
 } // end anonymous namespace
-
-void LoopConstrainer::replacePHIBlock(PHINode *PN, BasicBlock *Block,
-                                      BasicBlock *ReplaceBy) {
-  for (unsigned i = 0, e = PN->getNumIncomingValues(); i != e; ++i)
-    if (PN->getIncomingBlock(i) == Block)
-      PN->setIncomingBlock(i, ReplaceBy);
-}
 
 /// Given a loop with an deccreasing induction variable, is it possible to
 /// safely calculate the bounds of a new loop using the given Predicate.
@@ -868,13 +869,20 @@ LoopStructure::parseLoopStructure(ScalarEvolution &SE,
 
   assert(!StepCI->isZero() && "Zero step?");
   bool IsIncreasing = !StepCI->isNegative();
-  bool IsSignedPredicate = ICmpInst::isSigned(Pred);
+  bool IsSignedPredicate;
   const SCEV *StartNext = IndVarBase->getStart();
   const SCEV *Addend = SE.getNegativeSCEV(IndVarBase->getStepRecurrence(SE));
   const SCEV *IndVarStart = SE.getAddExpr(StartNext, Addend);
   const SCEV *Step = SE.getSCEV(StepCI);
 
-  ConstantInt *One = ConstantInt::get(IndVarTy, 1);
+  const SCEV *FixedRightSCEV = nullptr;
+
+  // If RightValue resides within loop (but still being loop invariant),
+  // regenerate it as preheader.
+  if (auto *I = dyn_cast<Instruction>(RightValue))
+    if (L.contains(I->getParent()))
+      FixedRightSCEV = RightSCEV;
+
   if (IsIncreasing) {
     bool DecreasedRightValueByOne = false;
     if (StepCI->isOne()) {
@@ -936,10 +944,9 @@ LoopStructure::parseLoopStructure(ScalarEvolution &SE,
     if (LatchBrExitIdx == 0) {
       // We need to increase the right value unless we have already decreased
       // it virtually when we replaced EQ with SGT.
-      if (!DecreasedRightValueByOne) {
-        IRBuilder<> B(Preheader->getTerminator());
-        RightValue = B.CreateAdd(RightValue, One);
-      }
+      if (!DecreasedRightValueByOne)
+        FixedRightSCEV =
+            SE.getAddExpr(RightSCEV, SE.getOne(RightSCEV->getType()));
     } else {
       assert(!DecreasedRightValueByOne &&
              "Right value can be decreased only for LatchBrExitIdx == 0!");
@@ -1003,10 +1010,9 @@ LoopStructure::parseLoopStructure(ScalarEvolution &SE,
     if (LatchBrExitIdx == 0) {
       // We need to decrease the right value unless we have already increased
       // it virtually when we replaced EQ with SLT.
-      if (!IncreasedRightValueByOne) {
-        IRBuilder<> B(Preheader->getTerminator());
-        RightValue = B.CreateSub(RightValue, One);
-      }
+      if (!IncreasedRightValueByOne)
+        FixedRightSCEV =
+            SE.getMinusSCEV(RightSCEV, SE.getOne(RightSCEV->getType()));
     } else {
       assert(!IncreasedRightValueByOne &&
              "Right value can be increased only for LatchBrExitIdx == 0!");
@@ -1020,9 +1026,14 @@ LoopStructure::parseLoopStructure(ScalarEvolution &SE,
 
   assert(!L.contains(LatchExit) && "expected an exit block!");
   const DataLayout &DL = Preheader->getModule()->getDataLayout();
-  Value *IndVarStartV =
-      SCEVExpander(SE, DL, "irce")
-          .expandCodeFor(IndVarStart, IndVarTy, Preheader->getTerminator());
+  SCEVExpander Expander(SE, DL, "irce");
+  Instruction *Ins = Preheader->getTerminator();
+
+  if (FixedRightSCEV)
+    RightValue =
+        Expander.expandCodeFor(FixedRightSCEV, FixedRightSCEV->getType(), Ins);
+
+  Value *IndVarStartV = Expander.expandCodeFor(IndVarStart, IndVarTy, Ins);
   IndVarStartV->setName("indvar.start");
 
   LoopStructure Result;
@@ -1045,11 +1056,23 @@ LoopStructure::parseLoopStructure(ScalarEvolution &SE,
   return Result;
 }
 
+/// If the type of \p S matches with \p Ty, return \p S. Otherwise, return
+/// signed or unsigned extension of \p S to type \p Ty.
+static const SCEV *NoopOrExtend(const SCEV *S, Type *Ty, ScalarEvolution &SE,
+                                bool Signed) {
+  return Signed ? SE.getNoopOrSignExtend(S, Ty) : SE.getNoopOrZeroExtend(S, Ty);
+}
+
 Optional<LoopConstrainer::SubRanges>
 LoopConstrainer::calculateSubRanges(bool IsSignedPredicate) const {
   IntegerType *Ty = cast<IntegerType>(LatchTakenCount->getType());
 
-  if (Range.getType() != Ty)
+  auto *RTy = cast<IntegerType>(Range.getType());
+
+  // We only support wide range checks and narrow latches.
+  if (!AllowNarrowLatchCondition && RTy != Ty)
+    return None;
+  if (RTy->getBitWidth() < Ty->getBitWidth())
     return None;
 
   LoopConstrainer::SubRanges Result;
@@ -1057,8 +1080,10 @@ LoopConstrainer::calculateSubRanges(bool IsSignedPredicate) const {
   // I think we can be more aggressive here and make this nuw / nsw if the
   // addition that feeds into the icmp for the latch's terminating branch is nuw
   // / nsw.  In any case, a wrapping 2's complement addition is safe.
-  const SCEV *Start = SE.getSCEV(MainLoopStructure.IndVarStart);
-  const SCEV *End = SE.getSCEV(MainLoopStructure.LoopExitAt);
+  const SCEV *Start = NoopOrExtend(SE.getSCEV(MainLoopStructure.IndVarStart),
+                                   RTy, SE, IsSignedPredicate);
+  const SCEV *End = NoopOrExtend(SE.getSCEV(MainLoopStructure.LoopExitAt), RTy,
+                                 SE, IsSignedPredicate);
 
   bool Increasing = MainLoopStructure.IndVarIncreasing;
 
@@ -1068,7 +1093,7 @@ LoopConstrainer::calculateSubRanges(bool IsSignedPredicate) const {
 
   const SCEV *Smallest = nullptr, *Greatest = nullptr, *GreatestSeen = nullptr;
 
-  const SCEV *One = SE.getOne(Ty);
+  const SCEV *One = SE.getOne(RTy);
   if (Increasing) {
     Smallest = Start;
     Greatest = End;
@@ -1257,6 +1282,13 @@ LoopConstrainer::RewrittenRangeInfo LoopConstrainer::changeIterationSpaceEnd(
   bool IsSignedPredicate = LS.IsSignedPredicate;
 
   IRBuilder<> B(PreheaderJump);
+  auto *RangeTy = Range.getBegin()->getType();
+  auto NoopOrExt = [&](Value *V) {
+    if (V->getType() == RangeTy)
+      return V;
+    return IsSignedPredicate ? B.CreateSExt(V, RangeTy, "wide." + V->getName())
+                             : B.CreateZExt(V, RangeTy, "wide." + V->getName());
+  };
 
   // EnterLoopCond - is it okay to start executing this `LS'?
   Value *EnterLoopCond = nullptr;
@@ -1264,15 +1296,16 @@ LoopConstrainer::RewrittenRangeInfo LoopConstrainer::changeIterationSpaceEnd(
       Increasing
           ? (IsSignedPredicate ? ICmpInst::ICMP_SLT : ICmpInst::ICMP_ULT)
           : (IsSignedPredicate ? ICmpInst::ICMP_SGT : ICmpInst::ICMP_UGT);
-  EnterLoopCond = B.CreateICmp(Pred, LS.IndVarStart, ExitSubloopAt);
+  Value *IndVarStart = NoopOrExt(LS.IndVarStart);
+  EnterLoopCond = B.CreateICmp(Pred, IndVarStart, ExitSubloopAt);
 
   B.CreateCondBr(EnterLoopCond, LS.Header, RRI.PseudoExit);
   PreheaderJump->eraseFromParent();
 
   LS.LatchBr->setSuccessor(LS.LatchBrExitIdx, RRI.ExitSelector);
   B.SetInsertPoint(LS.LatchBr);
-  Value *TakeBackedgeLoopCond = B.CreateICmp(Pred, LS.IndVarBase,
-                                             ExitSubloopAt);
+  Value *IndVarBase = NoopOrExt(LS.IndVarBase);
+  Value *TakeBackedgeLoopCond = B.CreateICmp(Pred, IndVarBase, ExitSubloopAt);
 
   Value *CondForBranch = LS.LatchBrExitIdx == 1
                              ? TakeBackedgeLoopCond
@@ -1285,7 +1318,8 @@ LoopConstrainer::RewrittenRangeInfo LoopConstrainer::changeIterationSpaceEnd(
   // IterationsLeft - are there any more iterations left, given the original
   // upper bound on the induction variable?  If not, we branch to the "real"
   // exit.
-  Value *IterationsLeft = B.CreateICmp(Pred, LS.IndVarBase, LS.LoopExitAt);
+  Value *LoopExitAt = NoopOrExt(LS.LoopExitAt);
+  Value *IterationsLeft = B.CreateICmp(Pred, IndVarBase, LoopExitAt);
   B.CreateCondBr(IterationsLeft, RRI.PseudoExit, LS.LatchExit);
 
   BranchInst *BranchToContinuation =
@@ -1304,15 +1338,14 @@ LoopConstrainer::RewrittenRangeInfo LoopConstrainer::changeIterationSpaceEnd(
     RRI.PHIValuesAtPseudoExit.push_back(NewPHI);
   }
 
-  RRI.IndVarEnd = PHINode::Create(LS.IndVarBase->getType(), 2, "indvar.end",
+  RRI.IndVarEnd = PHINode::Create(IndVarBase->getType(), 2, "indvar.end",
                                   BranchToContinuation);
-  RRI.IndVarEnd->addIncoming(LS.IndVarStart, Preheader);
-  RRI.IndVarEnd->addIncoming(LS.IndVarBase, RRI.ExitSelector);
+  RRI.IndVarEnd->addIncoming(IndVarStart, Preheader);
+  RRI.IndVarEnd->addIncoming(IndVarBase, RRI.ExitSelector);
 
   // The latch exit now has a branch from `RRI.ExitSelector' instead of
   // `LS.Latch'.  The PHI nodes need to be updated to reflect that.
-  for (PHINode &PN : LS.LatchExit->phis())
-    replacePHIBlock(&PN, LS.Latch, RRI.ExitSelector);
+  LS.LatchExit->replacePhiUsesWith(LS.Latch, RRI.ExitSelector);
 
   return RRI;
 }
@@ -1322,9 +1355,8 @@ void LoopConstrainer::rewriteIncomingValuesForPHIs(
     const LoopConstrainer::RewrittenRangeInfo &RRI) const {
   unsigned PHIIndex = 0;
   for (PHINode &PN : LS.Header->phis())
-    for (unsigned i = 0, e = PN.getNumIncomingValues(); i < e; ++i)
-      if (PN.getIncomingBlock(i) == ContinuationBlock)
-        PN.setIncomingValue(i, RRI.PHIValuesAtPseudoExit[PHIIndex++]);
+    PN.setIncomingValueForBlock(ContinuationBlock,
+                                RRI.PHIValuesAtPseudoExit[PHIIndex++]);
 
   LS.IndVarStart = RRI.IndVarEnd;
 }
@@ -1335,9 +1367,7 @@ BasicBlock *LoopConstrainer::createPreheader(const LoopStructure &LS,
   BasicBlock *Preheader = BasicBlock::Create(Ctx, Tag, &F, LS.Header);
   BranchInst::Create(LS.Header, Preheader);
 
-  for (PHINode &PN : LS.Header->phis())
-    for (unsigned i = 0, e = PN.getNumIncomingValues(); i < e; ++i)
-      replacePHIBlock(&PN, OldPreheader, Preheader);
+  LS.Header->replacePhiUsesWith(OldPreheader, Preheader);
 
   return Preheader;
 }
@@ -1393,7 +1423,7 @@ bool LoopConstrainer::run() {
   SubRanges SR = MaybeSR.getValue();
   bool Increasing = MainLoopStructure.IndVarIncreasing;
   IntegerType *IVTy =
-      cast<IntegerType>(MainLoopStructure.IndVarBase->getType());
+      cast<IntegerType>(Range.getBegin()->getType());
 
   SCEVExpander Expander(SE, F.getParent()->getDataLayout(), "irce");
   Instruction *InsertPt = OriginalPreheader->getTerminator();
@@ -1534,7 +1564,7 @@ bool LoopConstrainer::run() {
   // This function canonicalizes the loop into Loop-Simplify and LCSSA forms.
   auto CanonicalizeLoop = [&] (Loop *L, bool IsOriginalLoop) {
     formLCSSARecursively(*L, DT, &LI, &SE);
-    simplifyLoop(L, &DT, &LI, &SE, nullptr, true);
+    simplifyLoop(L, &DT, &LI, &SE, nullptr, nullptr, true);
     // Pre/post loops are slow paths, we do not need to perform any loop
     // optimizations on them.
     if (!IsOriginalLoop)
@@ -1556,6 +1586,12 @@ Optional<InductiveRangeCheck::Range>
 InductiveRangeCheck::computeSafeIterationSpace(
     ScalarEvolution &SE, const SCEVAddRecExpr *IndVar,
     bool IsLatchSigned) const {
+  // We can deal when types of latch check and range checks don't match in case
+  // if latch check is more narrow.
+  auto *IVType = cast<IntegerType>(IndVar->getType());
+  auto *RCType = cast<IntegerType>(getBegin()->getType());
+  if (IVType->getBitWidth() > RCType->getBitWidth())
+    return None;
   // IndVar is of the form "A + B * I" (where "I" is the canonical induction
   // variable, that may or may not exist as a real llvm::Value in the loop) and
   // this inductive range check is a range check on the "C + D * I" ("C" is
@@ -1579,8 +1615,9 @@ InductiveRangeCheck::computeSafeIterationSpace(
   if (!IndVar->isAffine())
     return None;
 
-  const SCEV *A = IndVar->getStart();
-  const SCEVConstant *B = dyn_cast<SCEVConstant>(IndVar->getStepRecurrence(SE));
+  const SCEV *A = NoopOrExtend(IndVar->getStart(), RCType, SE, IsLatchSigned);
+  const SCEVConstant *B = dyn_cast<SCEVConstant>(
+      NoopOrExtend(IndVar->getStepRecurrence(SE), RCType, SE, IsLatchSigned));
   if (!B)
     return None;
   assert(!B->isZero() && "Recurrence with zero step?");
@@ -1591,7 +1628,7 @@ InductiveRangeCheck::computeSafeIterationSpace(
     return None;
 
   assert(!D->getValue()->isZero() && "Recurrence with zero step?");
-  unsigned BitWidth = cast<IntegerType>(IndVar->getType())->getBitWidth();
+  unsigned BitWidth = RCType->getBitWidth();
   const SCEV *SIntMax = SE.getConstant(APInt::getSignedMaxValue(BitWidth));
 
   // Subtract Y from X so that it does not go through border of the IV
@@ -1729,27 +1766,41 @@ IntersectUnsignedRange(ScalarEvolution &SE,
   return Ret;
 }
 
-PreservedAnalyses IRCEPass::run(Loop &L, LoopAnalysisManager &AM,
-                                LoopStandardAnalysisResults &AR,
-                                LPMUpdater &U) {
-  Function *F = L.getHeader()->getParent();
-  const auto &FAM =
-      AM.getResult<FunctionAnalysisManagerLoopProxy>(L, AR).getManager();
-  auto *BPI = FAM.getCachedResult<BranchProbabilityAnalysis>(*F);
-  InductiveRangeCheckElimination IRCE(AR.SE, BPI, AR.DT, AR.LI);
-  auto LPMAddNewLoop = [&U](Loop *NL, bool IsSubloop) {
+PreservedAnalyses IRCEPass::run(Function &F, FunctionAnalysisManager &AM) {
+  auto &SE = AM.getResult<ScalarEvolutionAnalysis>(F);
+  auto &DT = AM.getResult<DominatorTreeAnalysis>(F);
+  auto &BPI = AM.getResult<BranchProbabilityAnalysis>(F);
+  LoopInfo &LI = AM.getResult<LoopAnalysis>(F);
+
+  InductiveRangeCheckElimination IRCE(SE, &BPI, DT, LI);
+
+  bool Changed = false;
+
+  for (const auto &L : LI) {
+    Changed |= simplifyLoop(L, &DT, &LI, &SE, nullptr, nullptr,
+                            /*PreserveLCSSA=*/false);
+    Changed |= formLCSSARecursively(*L, DT, &LI, &SE);
+  }
+
+  SmallPriorityWorklist<Loop *, 4> Worklist;
+  appendLoopsToWorklist(LI, Worklist);
+  auto LPMAddNewLoop = [&Worklist](Loop *NL, bool IsSubloop) {
     if (!IsSubloop)
-      U.addSiblingLoops(NL);
+      appendLoopsToWorklist(*NL, Worklist);
   };
-  bool Changed = IRCE.run(&L, LPMAddNewLoop);
+
+  while (!Worklist.empty()) {
+    Loop *L = Worklist.pop_back_val();
+    Changed |= IRCE.run(L, LPMAddNewLoop);
+  }
+
   if (!Changed)
     return PreservedAnalyses::all();
-
   return getLoopPassPreservedAnalyses();
 }
 
-bool IRCELegacyPass::runOnLoop(Loop *L, LPPassManager &LPM) {
-  if (skipLoop(L))
+bool IRCELegacyPass::runOnFunction(Function &F) {
+  if (skipFunction(F))
     return false;
 
   ScalarEvolution &SE = getAnalysis<ScalarEvolutionWrapperPass>().getSE();
@@ -1758,10 +1809,27 @@ bool IRCELegacyPass::runOnLoop(Loop *L, LPPassManager &LPM) {
   auto &DT = getAnalysis<DominatorTreeWrapperPass>().getDomTree();
   auto &LI = getAnalysis<LoopInfoWrapperPass>().getLoopInfo();
   InductiveRangeCheckElimination IRCE(SE, &BPI, DT, LI);
-  auto LPMAddNewLoop = [&LPM](Loop *NL, bool /* IsSubLoop */) {
-    LPM.addLoop(*NL);
+
+  bool Changed = false;
+
+  for (const auto &L : LI) {
+    Changed |= simplifyLoop(L, &DT, &LI, &SE, nullptr, nullptr,
+                            /*PreserveLCSSA=*/false);
+    Changed |= formLCSSARecursively(*L, DT, &LI, &SE);
+  }
+
+  SmallPriorityWorklist<Loop *, 4> Worklist;
+  appendLoopsToWorklist(LI, Worklist);
+  auto LPMAddNewLoop = [&](Loop *NL, bool IsSubloop) {
+    if (!IsSubloop)
+      appendLoopsToWorklist(*NL, Worklist);
   };
-  return IRCE.run(L, LPMAddNewLoop);
+
+  while (!Worklist.empty()) {
+    Loop *L = Worklist.pop_back_val();
+    Changed |= IRCE.run(L, LPMAddNewLoop);
+  }
+  return Changed;
 }
 
 bool InductiveRangeCheckElimination::run(

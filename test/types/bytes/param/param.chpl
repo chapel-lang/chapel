@@ -22,7 +22,7 @@ param myByte = shortBytes.toByte();
 writeln(myByte);
 
 
-writeln(b1.byte(3));
+writeln(b1.byte(2));
 
 {
   param flag = b1==b2;

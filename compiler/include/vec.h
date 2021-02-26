@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -54,6 +54,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <cstring>
 #include <stdint.h>
 #include <cstdlib>
+#include <vector>
 
 // Simple Vector class, also supports open hashed sets
 
@@ -117,6 +118,7 @@ class Vec {
   void copy(const Vec<C,S> &v);
   void fill(int n);
   void append(const Vec<C,S> &v);
+  void append(const std::vector<C> &v);
   void remove(int index);
   void insert(int index, C a);
   void reverse();
@@ -314,7 +316,7 @@ Vec<C,S>::move_internal(Vec<C,S> &vv)  {
   i = vv.i;
   v = vv.v;
   if (vv.v == &vv.e[0]) { 
-    memcpy(e, &vv.e[0], sizeof(e));
+    memcpy((void*)e, &vv.e[0], sizeof(e));
     v = e;
   } else
     vv.v = 0;
@@ -331,7 +333,7 @@ Vec<C,S>::copy(const Vec<C,S> &vv)  {
   n = vv.n;
   i = vv.i;
   if (vv.v == &vv.e[0]) { 
-    memcpy(e, &vv.e[0], sizeof(e));
+    memcpy((void*)e, &vv.e[0], sizeof(e));
     v = e;
   } else {
     if (vv.v) 
@@ -352,6 +354,14 @@ Vec<C,S>::append(const Vec<C,S> &vv)  {
   for (C *c = vv.v; c < vv.v + vv.n; c++)
     if (*c)
       add(*c);
+}
+
+// Added to ease the transition from using Vec to std::vector
+template <class C, int S> inline void
+Vec<C,S>::append(const std::vector<C> &v) {
+  for (uint64_t i = 0; i < v.size(); i++) {
+    add(v[i]);
+  }
 }
 
 template <class C, int S> inline void 

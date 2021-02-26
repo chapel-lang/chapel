@@ -1,0 +1,23 @@
+
+Start analyzing forall (interveningForallOrOn.chpl:12)
+| Couldn't determine loop domain: will attempt dynamic optimizations only (interveningForallOrOn.chpl:12)
+|
+|  Start analyzing call (interveningForallOrOn.chpl:13)
+|  This call is a dynamic optimization candidate (interveningForallOrOn.chpl:13)
+|
+End analyzing forall (interveningForallOrOn.chpl:12)
+
+
+Start analyzing forall (interveningForallOrOn.chpl:11)
+| Found loop domain (interveningForallOrOn.chpl:5)
+| Will attempt static and dynamic optimizations (interveningForallOrOn.chpl:11)
+|
+End analyzing forall (interveningForallOrOn.chpl:11)
+
+
+Start analyzing forall (interveningForallOrOn.chpl:25)
+| Found loop domain (interveningForallOrOn.chpl:19)
+| Will attempt static and dynamic optimizations (interveningForallOrOn.chpl:25)
+|
+End analyzing forall (interveningForallOrOn.chpl:25)
+

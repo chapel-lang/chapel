@@ -1,9 +1,8 @@
 //===- Diagnostic.h - C Language Family Diagnostic Handling -----*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -22,6 +21,7 @@
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/IntrusiveRefCntPtr.h"
+#include "llvm/ADT/Optional.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/iterator_range.h"
@@ -36,6 +36,10 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
+
+namespace llvm {
+class Error;
+}
 
 namespace clang {
 
@@ -95,7 +99,7 @@ public:
     FixItHint Hint;
     Hint.RemoveRange =
       CharSourceRange::getCharRange(InsertionLoc, InsertionLoc);
-    Hint.CodeToInsert = Code;
+    Hint.CodeToInsert = std::string(Code);
     Hint.BeforePreviousInsertions = BeforePreviousInsertions;
     return Hint;
   }
@@ -130,7 +134,7 @@ public:
                                      StringRef Code) {
     FixItHint Hint;
     Hint.RemoveRange = RemoveRange;
-    Hint.CodeToInsert = Code;
+    Hint.CodeToInsert = std::string(Code);
     return Hint;
   }
 
@@ -177,6 +181,9 @@ public:
     /// IdentifierInfo
     ak_identifierinfo,
 
+    /// address space
+    ak_addrspace,
+
     /// Qualifiers
     ak_qual,
 
@@ -210,8 +217,8 @@ private:
   // Used by __extension__
   unsigned char AllExtensionsSilenced = 0;
 
-  // Suppress diagnostics after a fatal error?
-  bool SuppressAfterFatalError = true;
+  // Treat fatal errors like errors.
+  bool FatalsAsError = false;
 
   // Suppress all diagnostics.
   bool SuppressAllDiagnostics = false;
@@ -473,6 +480,9 @@ private:
   /// Second string argument for the delayed diagnostic.
   std::string DelayedDiagArg2;
 
+  /// Third string argument for the delayed diagnostic.
+  std::string DelayedDiagArg3;
+
   /// Optional flag value.
   ///
   /// Some flags accept values, for instance: -Wframe-larger-than=<value> and
@@ -615,9 +625,11 @@ public:
   void setErrorsAsFatal(bool Val) { GetCurDiagState()->ErrorsAsFatal = Val; }
   bool getErrorsAsFatal() const { return GetCurDiagState()->ErrorsAsFatal; }
 
-  /// When set to true (the default), suppress further diagnostics after
-  /// a fatal error.
-  void setSuppressAfterFatalError(bool Val) { SuppressAfterFatalError = Val; }
+  /// \brief When set to true, any fatal error reported is made an error.
+  ///
+  /// This setting takes precedence over the setErrorsAsFatal setting above.
+  void setFatalsAsError(bool Val) { FatalsAsError = Val; }
+  bool getFatalsAsError() const { return FatalsAsError; }
 
   /// When set to true mask warnings that come from system headers.
   void setSuppressSystemWarnings(bool Val) {
@@ -630,24 +642,22 @@ public:
   /// Suppress all diagnostics, to silence the front end when we
   /// know that we don't want any more diagnostics to be passed along to the
   /// client
-  void setSuppressAllDiagnostics(bool Val = true) {
-    SuppressAllDiagnostics = Val;
-  }
+  void setSuppressAllDiagnostics(bool Val) { SuppressAllDiagnostics = Val; }
   bool getSuppressAllDiagnostics() const { return SuppressAllDiagnostics; }
 
   /// Set type eliding, to skip outputting same types occurring in
   /// template types.
-  void setElideType(bool Val = true) { ElideType = Val; }
+  void setElideType(bool Val) { ElideType = Val; }
   bool getElideType() { return ElideType; }
 
   /// Set tree printing, to outputting the template difference in a
   /// tree format.
-  void setPrintTemplateTree(bool Val = false) { PrintTemplateTree = Val; }
+  void setPrintTemplateTree(bool Val) { PrintTemplateTree = Val; }
   bool getPrintTemplateTree() { return PrintTemplateTree; }
 
   /// Set color printing, so the type diffing will inject color markers
   /// into the output.
-  void setShowColors(bool Val = false) { ShowColors = Val; }
+  void setShowColors(bool Val) { ShowColors = Val; }
   bool getShowColors() { return ShowColors; }
 
   /// Specify which overload candidates to show when overload resolution
@@ -665,7 +675,7 @@ public:
   /// the middle of another diagnostic.
   ///
   /// This can be used by clients who suppress diagnostics themselves.
-  void setLastDiagnosticIgnored(bool Ignored = true) {
+  void setLastDiagnosticIgnored(bool Ignored) {
     if (LastDiagLevel == DiagnosticIDs::Fatal)
       FatalErrorOccurred = true;
     LastDiagLevel = Ignored ? DiagnosticIDs::Ignored : DiagnosticIDs::Warning;
@@ -874,8 +884,12 @@ public:
   /// \param Arg2 A string argument that will be provided to the
   /// diagnostic. A copy of this string will be stored in the
   /// DiagnosticsEngine object itself.
+  ///
+  /// \param Arg3 A string argument that will be provided to the
+  /// diagnostic. A copy of this string will be stored in the
+  /// DiagnosticsEngine object itself.
   void SetDelayedDiagnostic(unsigned DiagID, StringRef Arg1 = "",
-                            StringRef Arg2 = "");
+                            StringRef Arg2 = "", StringRef Arg3 = "");
 
   /// Clear out the current diagnostic.
   void Clear() { CurDiagID = std::numeric_limits<unsigned>::max(); }
@@ -996,6 +1010,11 @@ protected:
 /// RAII class that determines when any errors have occurred
 /// between the time the instance was created and the time it was
 /// queried.
+///
+/// Note that you almost certainly do not want to use this. It's usually
+/// meaningless to ask whether a particular scope triggered an error message,
+/// because error messages outside that scope can mark things invalid (or cause
+/// us to reach an error limit), which can suppress errors within that scope.
 class DiagnosticErrorTrap {
   DiagnosticsEngine &Diag;
   unsigned NumErrors;
@@ -1125,11 +1144,6 @@ public:
     Emit();
   }
 
-  /// Retrieve an empty diagnostic builder.
-  static DiagnosticBuilder getEmpty() {
-    return {};
-  }
-
   /// Forces the diagnostic to be emitted.
   const DiagnosticBuilder &setForceEmit() const {
     IsForceEmit = true;
@@ -1150,7 +1164,7 @@ public:
     assert(NumArgs < DiagnosticsEngine::MaxArguments &&
            "Too many arguments to diagnostic!");
     DiagObj->DiagArgumentsKind[NumArgs] = DiagnosticsEngine::ak_std_string;
-    DiagObj->DiagArgumentsStr[NumArgs++] = S;
+    DiagObj->DiagArgumentsStr[NumArgs++] = std::string(S);
   }
 
   void AddTaggedVal(intptr_t V, DiagnosticsEngine::ArgumentKind Kind) const {
@@ -1172,7 +1186,7 @@ public:
       DiagObj->DiagFixItHints.push_back(Hint);
   }
 
-  void addFlagValue(StringRef V) const { DiagObj->FlagValue = V; }
+  void addFlagValue(StringRef V) const { DiagObj->FlagValue = std::string(V); }
 };
 
 struct AddFlagValue {
@@ -1212,9 +1226,7 @@ inline const DiagnosticBuilder &operator<<(const DiagnosticBuilder &DB, int I) {
 // We use enable_if here to prevent that this overload is selected for
 // pointers or other arguments that are implicitly convertible to bool.
 template <typename T>
-inline
-typename std::enable_if<std::is_same<T, bool>::value,
-                        const DiagnosticBuilder &>::type
+inline std::enable_if_t<std::is_same<T, bool>::value, const DiagnosticBuilder &>
 operator<<(const DiagnosticBuilder &DB, T I) {
   DB.AddTaggedVal(I, DiagnosticsEngine::ak_sint);
   return DB;
@@ -1244,9 +1256,9 @@ inline const DiagnosticBuilder &operator<<(const DiagnosticBuilder &DB,
 // other arguments that derive from DeclContext (e.g., RecordDecls) will not
 // match.
 template <typename T>
-inline typename std::enable_if<
-    std::is_same<typename std::remove_const<T>::type, DeclContext>::value,
-    const DiagnosticBuilder &>::type
+inline std::enable_if_t<
+    std::is_same<std::remove_const_t<T>, DeclContext>::value,
+    const DiagnosticBuilder &>
 operator<<(const DiagnosticBuilder &DB, T *DC) {
   DB.AddTaggedVal(reinterpret_cast<intptr_t>(DC),
                   DiagnosticsEngine::ak_declcontext);
@@ -1285,6 +1297,29 @@ inline const DiagnosticBuilder &operator<<(const DiagnosticBuilder &DB,
   return DB;
 }
 
+inline const DiagnosticBuilder &
+operator<<(const DiagnosticBuilder &DB,
+           const llvm::Optional<SourceRange> &Opt) {
+  if (Opt)
+    DB << *Opt;
+  return DB;
+}
+
+inline const DiagnosticBuilder &
+operator<<(const DiagnosticBuilder &DB,
+           const llvm::Optional<CharSourceRange> &Opt) {
+  if (Opt)
+    DB << *Opt;
+  return DB;
+}
+
+inline const DiagnosticBuilder &
+operator<<(const DiagnosticBuilder &DB, const llvm::Optional<FixItHint> &Opt) {
+  if (Opt)
+    DB << *Opt;
+  return DB;
+}
+
 /// A nullability kind paired with a bit indicating whether it used a
 /// context-sensitive keyword.
 using DiagNullabilityKind = std::pair<NullabilityKind, bool>;
@@ -1301,6 +1336,9 @@ inline DiagnosticBuilder DiagnosticsEngine::Report(SourceLocation Loc,
   FlagValue.clear();
   return DiagnosticBuilder(this);
 }
+
+const DiagnosticBuilder &operator<<(const DiagnosticBuilder &DB,
+                                    llvm::Error &&E);
 
 inline DiagnosticBuilder DiagnosticsEngine::Report(unsigned DiagID) {
   return Report(SourceLocation(), DiagID);

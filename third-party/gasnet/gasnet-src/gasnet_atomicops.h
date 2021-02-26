@@ -345,16 +345,40 @@
 #define _gasneti_scalar_atomic_init(v)               (v)
 #define _gasneti_scalar_atomic_set(p,v)              (*(p) = (v))
 #define _gasneti_scalar_atomic_read(p)               (*(p))
-#define _gasneti_scalar_atomic_increment(p)          ((*(p))++)
-#define _gasneti_scalar_atomic_decrement(p)          ((*(p))--)
-#define _gasneti_scalar_atomic_decrement_and_test(p) ((--(*(p))) == 0)
+
+/* NOTE: _gasneti_scalar_atomic_compare_and_swap evaluates `p` either once
+ * or twice, depending on the initial value.
+ * However, it is used only in the body of inline functions in which `p` is
+ * a function argument (and thus free of side-effects).
+ */
 #define _gasneti_scalar_atomic_compare_and_swap(p,oval,nval) \
                                                      (*(p) == (oval) ? (*(p) = (nval), 1) : 0)
-#define _gasneti_scalar_atomic_addfetch(p,op)        (*(p) += (op))
-#define _gasneti_scalar_atomic_add(p,op)             (*(p) += (op))
-#define _gasneti_scalar_atomic_subtract(p,op)        (*(p) -= (op))
 
-/* Swap, as above, but not typless due to need for a temporary */
+#if __cplusplus > 201703L
+  // Bug 4060: C++20 deprecates certain "rmw" operations on volatile types
+  #define _gasneti_scalar_atomic_increment(p) \
+    (([=](auto _p) { auto _tmp = *_p; _tmp++; *_p = _tmp; } )(p))
+  #define _gasneti_scalar_atomic_decrement(p) \
+    (([=](auto _p) { auto _tmp = *_p; _tmp--; *_p = _tmp; } )(p))
+  #define _gasneti_scalar_atomic_add(p,op) \
+    (([=](auto _p, auto _op) { auto _tmp = *_p; _tmp += _op; *_p = _tmp; return _tmp;} )(p,op))
+  #define _gasneti_scalar_atomic_subtract(p,op) \
+    (([=](auto _p, auto _op) { auto _tmp = *_p; _tmp -= _op; *_p = _tmp; return _tmp;} )(p,op))
+  #define _gasneti_scalar_atomic_decrement_and_test(p) \
+    (_gasneti_scalar_atomic_subtract(p,1) == 0)
+#else
+  // C or C++ prior to 20
+  #define _gasneti_scalar_atomic_increment(p)          ((*(p))++)
+  #define _gasneti_scalar_atomic_decrement(p)          ((*(p))--)
+  #define _gasneti_scalar_atomic_decrement_and_test(p) ((--(*(p))) == 0)
+  #define _gasneti_scalar_atomic_add(p,op)             (*(p) += (op))
+  #define _gasneti_scalar_atomic_subtract(p,op)        (*(p) -= (op))
+#endif
+
+#define _gasneti_scalar_atomic_addfetch(p,op) \
+        _gasneti_scalar_atomic_add(p,op)
+
+/* Swap, as above, but not typeless due to need for a temporary */
 #define GASNETI_SCALAR_ATOMIC_SWAP_DEFN(func,stem)                      \
   GASNETI_INLINE(func) stem##val_t func(stem##t *_p, stem##val_t _val) {\
     const stem##val_t _retval = *_p; *_p = _val; return _retval;        \
@@ -366,7 +390,7 @@
 
 #if defined(GASNETI_BUILD_GENERIC_ATOMIC32) || defined(GASNETI_BUILD_GENERIC_ATOMIC64)
   /* Fences for the generics */
-  #ifndef GASNETI_GENATOMIC_LOCK
+  #if !GASNETI_GENATOMIC_LOCKS
     /* Not locking, so use full fences */
     #define _gasneti_genatomic_prologue_set(p,f)        /*empty*/
     #define _gasneti_genatomic_prologue_read(p,f)       /*empty*/
@@ -408,7 +432,12 @@
                                           gasneti_genatomic##_sz##_addfetch,          \
                                           _gasneti_scalar_atomic_addfetch,            \
                                           gasneti_genatomic##_sz##_)
-  #else /* Mutex-based (HSL or pthread mutex) versions */
+  #else /* Mutex-based versions */
+    #define GASNETI_GENATOMIC_LOCK_PREP(ptr) \
+                gasnett_mutex_t * const _genatomic_lock = gasneti_mutex_atomic_hash_lookup((uintptr_t)ptr)
+    #define GASNETI_GENATOMIC_LOCK()   gasnett_mutex_lock(_genatomic_lock)
+    #define GASNETI_GENATOMIC_UNLOCK() gasnett_mutex_unlock(_genatomic_lock)
+
     /* The lock acquire includes RMB and release includes WMB */
     #define _gasneti_genatomic_prologue_set(p,f)        GASNETI_GENATOMIC_LOCK_PREP(p);
     #define _gasneti_genatomic_prologue_read(p,f)       /*empty*/
@@ -421,9 +450,9 @@
 							_gasneti_atomic_fence_after((f&~GASNETI_ATOMIC_WMB_POST))\
 							_gasneti_atomic_fence_bool(f,v)
 
-    /* Because HSL's are not yet available (bug 693: avoid header dependency cycle),
+    /* Because mutexes are not yet available (bug 693: avoid header dependency cycle),
      * we don't define the lock-acquiring operations as inlines.
-     * Therefore, we declared them here but define them in gasnet_{internal,tools}.c
+     * Therefore, we declared them here but define them in gasnet_tools.c
      */
     #define _GASNETI_GENATOMIC_DECL_AND_DEFN(_sz)                                            \
       typedef volatile uint##_sz##_t gasneti_genatomic##_sz##_t;                             \
@@ -501,7 +530,7 @@
   #ifdef GASNETI_BUILD_GENERIC_ATOMIC64
     _GASNETI_GENATOMIC_DECL_AND_DEFN(64)
     #define gasneti_genatomic64_init          _gasneti_scalar_atomic_init
-    #ifdef gasneti_genatomic64_read	/* ILP32 or HYBRID for under-aligned ABIs */
+    #if _gasneti_need_genatomic64_read	/* ILP32 or HYBRID for under-aligned ABIs */
       /* Mutex is needed in read to avoid word tearing.
        * Can't use the normal template w/o also forcing a mutex into the 32-bit generics.
        * Note that we use the "rmw" fencing macros here, since the "read" fencing macros

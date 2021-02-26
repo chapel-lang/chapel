@@ -151,12 +151,43 @@ class LocAccumStencilArr {
   param stridable: bool;
   const locDom: unmanaged LocAccumStencilDom(rank, idxType, stridable);
   var locRAD: unmanaged LocRADCache(eltType, rank, idxType, stridable)?; // non-nil if doRADOpt=true
-  pragma "local field"
+
+  pragma "local field" pragma "unsafe"
+  // may be initialized separately
   var myElems: [locDom.myFluff] eltType;
+
   var locRADLock: chpl__processorAtomicType(bool); // only accessed locally
 
   var recvM, recvP : [locDom.recvDom] eltType;
   var recvMFlag, recvPFlag : atomic bool;
+
+  proc init(type eltType,
+            param rank: int,
+            type idxType,
+            param stridable: bool,
+            const locDom: unmanaged LocAccumStencilDom(rank, idxType, stridable),
+            param initElts: bool) {
+    this.eltType = eltType;
+    this.rank = rank;
+    this.idxType = idxType;
+    this.stridable = stridable;
+    this.locDom = locDom;
+    this.myElems = this.locDom.myFluff.buildArray(eltType, initElts=initElts);
+
+    // Even if the array elements don't need to be initialized now,
+    // do initialize the fluff.
+    if initElts == false {
+      if this.locDom.myBlock != this.locDom.myFluff {
+        forall i in this.locDom.myFluff {
+          if !this.locDom.contains(i) {
+            pragma "no auto destroy" pragma "unsafe"
+            var def: eltType;
+            __primitive("=", myElems[i], def);
+          }
+        }
+      }
+    }
+  }
 
   // These functions will always be called on this.locale, and so we do
   // not have an on statement around the while loop below (to avoid
@@ -167,6 +198,26 @@ class LocAccumStencilArr {
 
   inline proc unlockLocRAD() {
     locRADLock.clear();
+  }
+
+  proc deinit() {
+    // Even if the array elements don't need to be de-initialized now,
+    // do de-initialize the fluff.
+    param needsDestroy = __primitive("needs auto destroy", eltType);
+    if needsDestroy {
+      if this.locDom.myBlock != this.locDom.myFluff {
+        forall i in this.locDom.myFluff {
+          if !this.locDom.contains(i) {
+            chpl__autoDestroy(myElems[i]);
+          }
+        }
+      }
+    }
+
+    // Elements in myElems are deinited in dsiDestroyArr if necessary.
+
+    if locRAD != nil then
+      delete locRAD;
   }
 }
 
@@ -642,11 +693,13 @@ proc AccumStencilDom.dsiSerialWrite(x) {
 //
 // how to allocate a new array over this domain
 //
-proc AccumStencilDom.dsiBuildArray(type eltType) {
+proc AccumStencilDom.dsiBuildArray(type eltType, param initElts:bool) {
   const dom = this;
   const creationLocale = here.id;
   const dummyLASD = new unmanaged LocAccumStencilDom(rank, idxType, stridable);
-  const dummyLASA = new unmanaged LocAccumStencilArr(eltType, rank, idxType, stridable, dummyLASD);
+  const dummyLASA = new unmanaged LocAccumStencilArr(eltType, rank, idxType,
+                                                     stridable, dummyLASD,
+                                                     false);
   var locArrTemp: [dom.dist.targetLocDom] unmanaged LocAccumStencilArr(eltType, rank, idxType, stridable) = dummyLASA;
   var myLocArrTemp: unmanaged LocAccumStencilArr(eltType, rank, idxType, stridable)?;
   
@@ -654,7 +707,9 @@ proc AccumStencilDom.dsiBuildArray(type eltType) {
   coforall localeIdx in dom.dist.targetLocDom with (ref myLocArrTemp) {
     on dom.dist.targetLocales(localeIdx) {
       const locDom = dom.getLocDom(localeIdx);
-      const LASA = new unmanaged LocAccumStencilArr(eltType, rank, idxType, stridable, locDom);
+      const LASA = new unmanaged LocAccumStencilArr(eltType, rank, idxType,
+                                                    stridable, locDom,
+                                                    initElts=initElts);
       locArrTemp(localeIdx) = LASA;
       if here.id == creationLocale then
         myLocArrTemp = LASA;
@@ -826,11 +881,46 @@ proc AccumStencilArr.setupRADOpt() {
   }
 }
 
-override proc AccumStencilArr.dsiDestroyArr() {
+override proc AccumStencilArr.dsiElementInitializationComplete() {
   coforall localeIdx in dom.dist.targetLocDom {
     on locArr(localeIdx) {
-      if !ignoreFluff then
-        delete locArr(localeIdx);
+      locArr(localeIdx).myElems.dsiElementInitializationComplete();
+    }
+  }
+}
+
+override proc AccumStencilArr.dsiElementDeinitializationComplete() {
+  coforall localeIdx in dom.dist.targetLocDom {
+    on locArr(localeIdx) {
+      locArr(localeIdx).myElems.dsiElementDeinitializationComplete();
+    }
+  }
+}
+
+override proc AccumStencilArr.dsiDestroyArr(deinitElts:bool) {
+  coforall localeIdx in dom.dist.targetLocDom {
+    on locArr(localeIdx) {
+      var arr = locArr(localeIdx);
+      if !ignoreFluff {
+        if deinitElts {
+          // only deinitialize non-fluff elements
+          // fluff is always deinited in the LocArr deinit
+          param needsDestroy = __primitive("needs auto destroy", eltType);
+          if needsDestroy {
+            if _deinitElementsIsParallel(eltType) {
+              forall i in arr.locDom.myBlock {
+                chpl__autoDestroy(arr.myElems[i]);
+              }
+            } else {
+              for i in arr.locDom.myBlock {
+                chpl__autoDestroy(arr.myElems[i]);
+              }
+            }
+          }
+        }
+        arr.myElems.dsiElementDeinitializationComplete();
+        delete arr;
+      }
     }
   }
 }
@@ -943,6 +1033,9 @@ inline proc AccumStencilArr.dsiAccess(i: idxType...rank) const ref
 where shouldReturnRvalueByConstRef(eltType)
   return dsiAccess(i);
 
+inline proc AccumStencilArr.dsiBoundsCheck(i: rank*idxType) {
+  return dom.wholeFluff.contains(i);
+}
 
 iter AccumStencilArr.these() ref {
   for i in dom do
@@ -1329,6 +1422,14 @@ private proc chopDim(D:domain, dim) {
   return {(...r)};
 }
 
+private proc accumWrapper(ref lhs, rhs) {
+  use Reflection;
+  if canResolve("accum", lhs, rhs) then
+    accum(lhs, rhs);
+  else
+    lhs += rhs;
+}
+
 private proc denseTo1D(idx, dims) {
   var blk : dims.size * int;
   blk(blk.size-1) = 1;
@@ -1361,7 +1462,7 @@ proc AccumStencilArr._unpackElements(srcBuf, destArr, dim, direction) {
 
   if rank == 1 {
     forall (elIdx, bufIdx) in (destDom, srcBuf.domain[1..destDom.size]) {
-      destArr.myElems[elIdx] += srcBuf[bufIdx];
+      accumWrapper(destArr.myElems[elIdx], srcBuf[bufIdx]);
     }
   } else {
     const chopped = chopDim(destDom, rank-1);
@@ -1372,7 +1473,7 @@ proc AccumStencilArr._unpackElements(srcBuf, destArr, dim, direction) {
       const bufSlice = low..#len;
       const tupIdx = chpl__tuplify(idx);
       for (el, buf) in zip(lastDim, bufSlice) {
-        destArr.myElems[(...idx), el] += srcBuf[buf];
+        accumWrapper(destArr.myElems[(...idx), el], srcBuf[buf]);
       }
     }
   }
@@ -1545,7 +1646,7 @@ proc AccumStencilArr.dsiPrivatize(privatizeData) {
   var privdom = chpl_getPrivatizedCopy(dom.type, privatizeData);
 
   const dummyLASD = new unmanaged LocAccumStencilDom(rank, idxType, stridable);
-  const dummyLASA = new unmanaged LocAccumStencilArr(eltType, rank, idxType, stridable, dummyLASD);
+  const dummyLASA = new unmanaged LocAccumStencilArr(eltType, rank, idxType, stridable, dummyLASD, initElts=false);
   var locArrTemp: [privdom.dist.targetLocDom] unmanaged LocAccumStencilArr(eltType, rank, idxType, stridable) = dummyLASA;
   var myLocArrTemp: unmanaged LocAccumStencilArr(eltType, rank, idxType, stridable)?;
   
@@ -1562,15 +1663,15 @@ proc AccumStencilArr.dsiPrivatize(privatizeData) {
   return c;
 }
 
-proc AccumStencilArr.dsiTargetLocales() {
+proc AccumStencilArr.dsiTargetLocales() const ref {
   return dom.dist.targetLocales;
 }
 
-proc AccumStencilDom.dsiTargetLocales() {
+proc AccumStencilDom.dsiTargetLocales() const ref {
   return dist.targetLocales;
 }
 
-proc AccumStencil.dsiTargetLocales() {
+proc AccumStencil.dsiTargetLocales() const ref {
   return targetLocales;
 }
 

@@ -2,10 +2,10 @@ use Math; //doesn't make a difference -- works either way
 writeln(Math.pi);
 writeln(pi);
 
-use Norm;
+use LinearAlgebra;
 var arr: [{0..10}] int;
 writeln(norm(arr));
-writeln(Norm.norm(arr)); //works 
+writeln(LinearAlgebra.norm(arr)); //works 
 
 use Sort;
 writeln(isSorted(arr));

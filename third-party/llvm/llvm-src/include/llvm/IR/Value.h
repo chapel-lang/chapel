@@ -1,9 +1,8 @@
 //===- llvm/Value.h - Definition of the Value class -------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -15,8 +14,10 @@
 #define LLVM_IR_VALUE_H
 
 #include "llvm-c/Types.h"
+#include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/iterator_range.h"
 #include "llvm/IR/Use.h"
+#include "llvm/Support/Alignment.h"
 #include "llvm/Support/CBindingWrapping.h"
 #include "llvm/Support/Casting.h"
 #include <cassert>
@@ -71,8 +72,6 @@ using ValueName = StringMapEntry<Value *>;
 /// objects that watch it and listen to RAUW and Destroy events.  See
 /// llvm/IR/ValueHandle.h for details.
 class Value {
-  // The least-significant bit of the first word of Value *must* be zero:
-  //   http://www.llvm.org/docs/ProgrammersManual.html#the-waymarking-algorithm
   Type *VTy;
   Use *UseList;
 
@@ -293,10 +292,29 @@ public:
   /// "V" instead of "this". This function skips metadata entries in the list.
   void replaceNonMetadataUsesWith(Value *V);
 
+  /// Go through the uses list for this definition and make each use point
+  /// to "V" if the callback ShouldReplace returns true for the given Use.
+  /// Unlike replaceAllUsesWith() this function does not support basic block
+  /// values or constant users.
+  void replaceUsesWithIf(Value *New,
+                         llvm::function_ref<bool(Use &U)> ShouldReplace) {
+    assert(New && "Value::replaceUsesWithIf(<null>) is invalid!");
+    assert(New->getType() == getType() &&
+           "replaceUses of value with new value of different type!");
+
+    for (use_iterator UI = use_begin(), E = use_end(); UI != E;) {
+      Use &U = *UI;
+      ++UI;
+      if (!ShouldReplace(U))
+        continue;
+      U.set(New);
+    }
+  }
+
   /// replaceUsesOutsideBlock - Go through the uses list for this definition and
   /// make each use point to "V" instead of "this" when the use is outside the
   /// block. 'This's use list is expected to have at least one element.
-  /// Unlike replaceAllUsesWith this function does not support basic block
+  /// Unlike replaceAllUsesWith() this function does not support basic block
   /// values or constant users.
   void replaceUsesOutsideBlock(Value *V, BasicBlock *BB);
 
@@ -424,6 +442,34 @@ public:
   /// This is logically equivalent to getNumUses() >= N.
   bool hasNUsesOrMore(unsigned N) const;
 
+  /// Return true if there is exactly one user of this value that cannot be
+  /// dropped.
+  ///
+  /// This is specialized because it is a common request and does not require
+  /// traversing the whole use list.
+  Use *getSingleUndroppableUse();
+
+  /// Return true if there this value.
+  ///
+  /// This is specialized because it is a common request and does not require
+  /// traversing the whole use list.
+  bool hasNUndroppableUses(unsigned N) const;
+
+  /// Return true if this value has N users or more.
+  ///
+  /// This is logically equivalent to getNumUses() >= N.
+  bool hasNUndroppableUsesOrMore(unsigned N) const;
+
+  /// Remove every uses that can safely be removed.
+  ///
+  /// This will remove for example uses in llvm.assume.
+  /// This should be used when performing want to perform a tranformation but
+  /// some Droppable uses pervent it.
+  /// This function optionally takes a filter to only remove some droppable
+  /// uses.
+  void dropDroppableUses(llvm::function_ref<bool(const Use *)> ShouldDrop =
+                             [](const Use *) { return true; });
+
   /// Check if this value is used in the specified basic block.
   bool isUsedInBasicBlock(const BasicBlock *BB) const;
 
@@ -494,36 +540,46 @@ public:
   /// swifterror attribute.
   bool isSwiftError() const;
 
-  /// Strip off pointer casts, all-zero GEPs, and aliases.
+  /// Strip off pointer casts, all-zero GEPs and address space casts.
   ///
   /// Returns the original uncasted value.  If this is called on a non-pointer
   /// value, it returns 'this'.
   const Value *stripPointerCasts() const;
   Value *stripPointerCasts() {
     return const_cast<Value *>(
-                         static_cast<const Value *>(this)->stripPointerCasts());
+        static_cast<const Value *>(this)->stripPointerCasts());
   }
 
-  /// Strip off pointer casts, all-zero GEPs, aliases and invariant group
-  /// info.
+  /// Strip off pointer casts, all-zero GEPs, address space casts, and aliases.
+  ///
+  /// Returns the original uncasted value.  If this is called on a non-pointer
+  /// value, it returns 'this'.
+  const Value *stripPointerCastsAndAliases() const;
+  Value *stripPointerCastsAndAliases() {
+    return const_cast<Value *>(
+        static_cast<const Value *>(this)->stripPointerCastsAndAliases());
+  }
+
+  /// Strip off pointer casts, all-zero GEPs and address space casts
+  /// but ensures the representation of the result stays the same.
+  ///
+  /// Returns the original uncasted value with the same representation. If this
+  /// is called on a non-pointer value, it returns 'this'.
+  const Value *stripPointerCastsSameRepresentation() const;
+  Value *stripPointerCastsSameRepresentation() {
+    return const_cast<Value *>(static_cast<const Value *>(this)
+                                   ->stripPointerCastsSameRepresentation());
+  }
+
+  /// Strip off pointer casts, all-zero GEPs and invariant group info.
   ///
   /// Returns the original uncasted value.  If this is called on a non-pointer
   /// value, it returns 'this'. This function should be used only in
   /// Alias analysis.
   const Value *stripPointerCastsAndInvariantGroups() const;
   Value *stripPointerCastsAndInvariantGroups() {
-    return const_cast<Value *>(
-        static_cast<const Value *>(this)->stripPointerCastsAndInvariantGroups());
-  }
-
-  /// Strip off pointer casts and all-zero GEPs.
-  ///
-  /// Returns the original uncasted value.  If this is called on a non-pointer
-  /// value, it returns 'this'.
-  const Value *stripPointerCastsNoFollowAliases() const;
-  Value *stripPointerCastsNoFollowAliases() {
-    return const_cast<Value *>(
-          static_cast<const Value *>(this)->stripPointerCastsNoFollowAliases());
+    return const_cast<Value *>(static_cast<const Value *>(this)
+                                   ->stripPointerCastsAndInvariantGroups());
   }
 
   /// Strip off pointer casts and all-constant inbounds GEPs.
@@ -536,29 +592,66 @@ public:
               static_cast<const Value *>(this)->stripInBoundsConstantOffsets());
   }
 
-  /// Accumulate offsets from \a stripInBoundsConstantOffsets().
+  /// Accumulate the constant offset this value has compared to a base pointer.
+  /// Only 'getelementptr' instructions (GEPs) are accumulated but other
+  /// instructions, e.g., casts, are stripped away as well.
+  /// The accumulated constant offset is added to \p Offset and the base
+  /// pointer is returned.
   ///
-  /// Stores the resulting constant offset stripped into the APInt provided.
-  /// The provided APInt will be extended or truncated as needed to be the
-  /// correct bitwidth for an offset of this pointer type.
+  /// The APInt \p Offset has to have a bit-width equal to the IntPtr type for
+  /// the address space of 'this' pointer value, e.g., use
+  /// DataLayout::getIndexTypeSizeInBits(Ty).
   ///
-  /// If this is called on a non-pointer value, it returns 'this'.
+  /// If \p AllowNonInbounds is true, offsets in GEPs are stripped and
+  /// accumulated even if the GEP is not "inbounds".
+  ///
+  /// If \p ExternalAnalysis is provided it will be used to calculate a offset
+  /// when a operand of GEP is not constant.
+  /// For example, for a value \p ExternalAnalysis might try to calculate a
+  /// lower bound. If \p ExternalAnalysis is successful, it should return true.
+  ///
+  /// If this is called on a non-pointer value, it returns 'this' and the
+  /// \p Offset is not modified.
+  ///
+  /// Note that this function will never return a nullptr. It will also never
+  /// manipulate the \p Offset in a way that would not match the difference
+  /// between the underlying value and the returned one. Thus, if no constant
+  /// offset was found, the returned value is the underlying one and \p Offset
+  /// is unchanged.
+  const Value *stripAndAccumulateConstantOffsets(
+      const DataLayout &DL, APInt &Offset, bool AllowNonInbounds,
+      function_ref<bool(Value &Value, APInt &Offset)> ExternalAnalysis =
+          nullptr) const;
+  Value *stripAndAccumulateConstantOffsets(const DataLayout &DL, APInt &Offset,
+                                           bool AllowNonInbounds) {
+    return const_cast<Value *>(
+        static_cast<const Value *>(this)->stripAndAccumulateConstantOffsets(
+            DL, Offset, AllowNonInbounds));
+  }
+
+  /// This is a wrapper around stripAndAccumulateConstantOffsets with the
+  /// in-bounds requirement set to false.
   const Value *stripAndAccumulateInBoundsConstantOffsets(const DataLayout &DL,
-                                                         APInt &Offset) const;
+                                                         APInt &Offset) const {
+    return stripAndAccumulateConstantOffsets(DL, Offset,
+                                             /* AllowNonInbounds */ false);
+  }
   Value *stripAndAccumulateInBoundsConstantOffsets(const DataLayout &DL,
                                                    APInt &Offset) {
-    return const_cast<Value *>(static_cast<const Value *>(this)
-        ->stripAndAccumulateInBoundsConstantOffsets(DL, Offset));
+    return stripAndAccumulateConstantOffsets(DL, Offset,
+                                             /* AllowNonInbounds */ false);
   }
 
   /// Strip off pointer casts and inbounds GEPs.
   ///
   /// Returns the original pointer value.  If this is called on a non-pointer
   /// value, it returns 'this'.
-  const Value *stripInBoundsOffsets() const;
-  Value *stripInBoundsOffsets() {
+  const Value *stripInBoundsOffsets(function_ref<void(const Value *)> Func =
+                                        [](const Value *) {}) const;
+  inline Value *stripInBoundsOffsets(function_ref<void(const Value *)> Func =
+                                  [](const Value *) {}) {
     return const_cast<Value *>(
-                      static_cast<const Value *>(this)->stripInBoundsOffsets());
+        static_cast<const Value *>(this)->stripInBoundsOffsets(Func));
   }
 
   /// Returns the number of bytes known to be dereferenceable for the
@@ -573,7 +666,7 @@ public:
   ///
   /// Returns an alignment which is either specified explicitly, e.g. via
   /// align attribute of a function argument, or guaranteed by DataLayout.
-  unsigned getPointerAlignment(const DataLayout &DL) const;
+  Align getPointerAlignment(const DataLayout &DL) const;
 
   /// Translate PHI node to its predecessor from the given basic block.
   ///
@@ -746,7 +839,7 @@ template <class Compare> void Value::sortUseList(Compare Cmp) {
 
   // Fix the Prev pointers.
   for (Use *I = UseList, **Prev = &UseList; I; I = I->Next) {
-    I->setPrev(Prev);
+    I->Prev = Prev;
     Prev = &I->Next;
   }
 }

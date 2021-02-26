@@ -1,9 +1,8 @@
 //===- PassTimingInfo.cpp - LLVM Pass Timing Implementation ---------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -78,7 +77,8 @@ public:
   static void init();
 
   /// Prints out timing information and then resets the timers.
-  void print();
+  /// By default it uses the stream created by CreateInfoOutputFile().
+  void print(raw_ostream *OutStream = nullptr);
 
   /// Returns the timer for the specified pass if it exists.
   Timer *getPassTimer(Pass *, PassInstanceID);
@@ -112,7 +112,9 @@ void PassTimingInfo::init() {
 }
 
 /// Prints out timing information and then resets the timers.
-void PassTimingInfo::print() { TG.print(*CreateInfoOutputFile()); }
+void PassTimingInfo::print(raw_ostream *OutStream) {
+  TG.print(OutStream ? *OutStream : *CreateInfoOutputFile(), true);
+}
 
 Timer *PassTimingInfo::newPassTimer(StringRef PassID, StringRef PassDesc) {
   unsigned &num = PassIDCountMap[PassID];
@@ -154,9 +156,9 @@ Timer *getPassTimer(Pass *P) {
 
 /// If timing is enabled, report the times collected up to now and then reset
 /// them.
-void reportAndResetTimings() {
+void reportAndResetTimings(raw_ostream *OutStream) {
   if (legacy::PassTimingInfo::TheTimeInfo)
-    legacy::PassTimingInfo::TheTimeInfo->print();
+    legacy::PassTimingInfo::TheTimeInfo->print(OutStream);
 }
 
 //===----------------------------------------------------------------------===//
@@ -166,39 +168,54 @@ void reportAndResetTimings() {
 /// Returns the timer for the specified pass invocation of \p PassID.
 /// Each time it creates a new timer.
 Timer &TimePassesHandler::getPassTimer(StringRef PassID) {
-  // Bump counts for each request of the timer.
-  unsigned Count = nextPassID(PassID);
+  // Take a vector of Timers created for this \p PassID and append
+  // one more timer to it.
+  TimerVector &Timers = TimingData[PassID];
+  unsigned Count = Timers.size() + 1;
 
-  // Unconditionally appending description with a pass-invocation number.
   std::string FullDesc = formatv("{0} #{1}", PassID, Count).str();
 
-  PassInvocationID UID{PassID, Count};
   Timer *T = new Timer(PassID, FullDesc, TG);
-  auto Pair = TimingData.try_emplace(UID, T);
-  assert(Pair.second && "should always create a new timer");
-  return *(Pair.first->second.get());
+  Timers.emplace_back(T);
+  assert(Count == Timers.size() && "sanity check");
+
+  return *T;
 }
 
 TimePassesHandler::TimePassesHandler(bool Enabled)
     : TG("pass", "... Pass execution timing report ..."), Enabled(Enabled) {}
 
-void TimePassesHandler::print() { TG.print(*CreateInfoOutputFile()); }
+void TimePassesHandler::setOutStream(raw_ostream &Out) {
+  OutStream = &Out;
+}
+
+void TimePassesHandler::print() {
+  if (!Enabled)
+    return;
+  TG.print(OutStream ? *OutStream : *CreateInfoOutputFile(), true);
+}
 
 LLVM_DUMP_METHOD void TimePassesHandler::dump() const {
   dbgs() << "Dumping timers for " << getTypeName<TimePassesHandler>()
          << ":\n\tRunning:\n";
   for (auto &I : TimingData) {
-    const Timer *MyTimer = I.second.get();
-    if (!MyTimer || MyTimer->isRunning())
-      dbgs() << "\tTimer " << MyTimer << " for pass " << I.first.first << "("
-             << I.first.second << ")\n";
+    StringRef PassID = I.getKey();
+    const TimerVector& MyTimers = I.getValue();
+    for (unsigned idx = 0; idx < MyTimers.size(); idx++) {
+      const Timer* MyTimer = MyTimers[idx].get();
+      if (MyTimer && MyTimer->isRunning())
+        dbgs() << "\tTimer " << MyTimer << " for pass " << PassID << "(" << idx << ")\n";
+    }
   }
   dbgs() << "\tTriggered:\n";
   for (auto &I : TimingData) {
-    const Timer *MyTimer = I.second.get();
-    if (!MyTimer || (MyTimer->hasTriggered() && !MyTimer->isRunning()))
-      dbgs() << "\tTimer " << MyTimer << " for pass " << I.first.first << "("
-             << I.first.second << ")\n";
+    StringRef PassID = I.getKey();
+    const TimerVector& MyTimers = I.getValue();
+    for (unsigned idx = 0; idx < MyTimers.size(); idx++) {
+      const Timer* MyTimer = MyTimers[idx].get();
+      if (MyTimer && MyTimer->hasTriggered() && !MyTimer->isRunning())
+        dbgs() << "\tTimer " << MyTimer << " for pass " << PassID << "(" << idx << ")\n";
+    }
   }
 }
 

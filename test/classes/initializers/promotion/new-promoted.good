@@ -1,38 +1,38 @@
 ===== Concrete Record =====
-CC.init: 1
-CC.postinit: 1
-CC.init: 2
-CC.postinit: 2
-CC.init: 3
-CC.postinit: 3
+CR.init: 1
+CR.postinit: 1
+CR.init: 2
+CR.postinit: 2
+CR.init: 3
+CR.postinit: 3
 [domain(1,int(64),false)] CR
 (x = 1) (x = 2) (x = 3)
 ----- Default Value -----
-CC.init: 1
-CC.postinit: 1
-CC.init: 2
-CC.postinit: 2
-CC.init: 3
-CC.postinit: 3
+CR.init: 1
+CR.postinit: 1
+CR.init: 2
+CR.postinit: 2
+CR.init: 3
+CR.postinit: 3
 [domain(1,int(64),false)] CR
 (x = 1) (x = 2) (x = 3)
 
 ===== Generic Record =====
-GC.init: 1
-GC.postinit: 1
-GC.init: 2
-GC.postinit: 2
-GC.init: 3
-GC.postinit: 3
+GR.init: 1
+GR.postinit: 1
+GR.init: 2
+GR.postinit: 2
+GR.init: 3
+GR.postinit: 3
 [domain(1,int(64),false)] GR(int(64))
 (x = 1) (x = 2) (x = 3)
 ----- Default Value -----
-GC.init: 1
-GC.postinit: 1
-GC.init: 2
-GC.postinit: 2
-GC.init: 3
-GC.postinit: 3
+GR.init: 1
+GR.postinit: 1
+GR.init: 2
+GR.postinit: 2
+GR.init: 3
+GR.postinit: 3
 [domain(1,int(64),false)] GR(int(64))
 (x = 1) (x = 2) (x = 3)
 

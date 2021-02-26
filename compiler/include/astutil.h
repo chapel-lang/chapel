@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -38,10 +38,13 @@ class Expr;
 
 // return vec of CallExprs of FnSymbols (no primitives)
 void collectFnCalls(BaseAST* ast, std::vector<CallExpr*>& calls);
-// specialized helper for IBBs
+// same as above but also allows for virtual function calls
+void collectVirtualAndFnCalls(BaseAST* ast, std::vector<CallExpr*>& calls);
+// specialized helpers
 void collectTreeBoundGotosAndIteratorBreakBlocks(BaseAST* ast,
                                                  std::vector<GotoStmt*>& GOTOs,
                                                  std::vector<CondStmt*>& IBBs);
+void computeHasToplevelYields(BaseAST* ast, bool& result);
 
 // collect Stmts and Exprs in the AST and return them in vectors
 void collect_asts(BaseAST* ast, std::vector<BaseAST*>& asts);
@@ -197,6 +200,8 @@ bool givesType(Symbol* sym);
 
 Symbol* getSvecSymbol(CallExpr* call);
 void collectUsedFnSymbols(BaseAST* ast, std::set<FnSymbol*>& fnSymbols);
+
+void cleanupAfterTypeRemoval();
 
 void convertToQualifiedRefs();
 

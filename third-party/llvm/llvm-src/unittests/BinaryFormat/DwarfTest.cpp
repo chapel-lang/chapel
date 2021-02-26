@@ -1,9 +1,8 @@
 //===- unittest/BinaryFormat/DwarfTest.cpp - Dwarf support tests ----------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -202,5 +201,7 @@ TEST(DwarfTest, format_provider) {
   EXPECT_EQ("DW_IDX_unknown_3fff", formatv("{0}", DW_IDX_hi_user).str());
   EXPECT_EQ("DW_TAG_compile_unit", formatv("{0}", DW_TAG_compile_unit).str());
   EXPECT_EQ("DW_TAG_unknown_ffff", formatv("{0}", DW_TAG_hi_user).str());
+  EXPECT_EQ("DW_OP_lit0", formatv("{0}", DW_OP_lit0).str());
+  EXPECT_EQ("DW_OP_unknown_ff", formatv("{0}", DW_OP_hi_user).str());
 }
 } // end namespace

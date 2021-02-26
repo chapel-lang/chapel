@@ -1,5 +1,1 @@
-# must-init-record disabled because these pass and we want
-# these tests to be futures.
-#-M ../must-init-record
-# --no-warnings to avoid whole domain assignment serialized
--M ../tracking-record -M ../tracking  --no-warnings
+-M ../tracking-record -M ../tracking

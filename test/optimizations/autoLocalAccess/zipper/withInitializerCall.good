@@ -1,0 +1,48 @@
+
+Start analyzing forall (withInitializerCall.chpl:13)
+| Found loop domain (withInitializerCall.chpl:12)
+| Will attempt static and dynamic optimizations (withInitializerCall.chpl:13)
+|
+|  Start analyzing call (withInitializerCall.chpl:14)
+|   Can optimize: Access base is the iterator's base (withInitializerCall.chpl:14)
+|  This call is a static optimization candidate (withInitializerCall.chpl:14)
+|
+End analyzing forall (withInitializerCall.chpl:13)
+
+
+Start analyzing forall (withInitializerCall.chpl:20)
+| Found loop domain (withInitializerCall.chpl:19)
+| Will attempt static and dynamic optimizations (withInitializerCall.chpl:20)
+|
+|  Start analyzing call (withInitializerCall.chpl:21)
+|   Can optimize: Access base is the iterator's base (withInitializerCall.chpl:21)
+|  This call is a static optimization candidate (withInitializerCall.chpl:21)
+|
+End analyzing forall (withInitializerCall.chpl:20)
+
+
+Start analyzing forall (withInitializerCall.chpl:29)
+| Found loop domain (withInitializerCall.chpl:28)
+| Will attempt static and dynamic optimizations (withInitializerCall.chpl:29)
+|
+|  Start analyzing call (withInitializerCall.chpl:30)
+|   Can optimize: Access base is the iterator's base (withInitializerCall.chpl:30)
+|  This call is a static optimization candidate (withInitializerCall.chpl:30)
+|
+End analyzing forall (withInitializerCall.chpl:29)
+
+
+Start analyzing forall (withInitializerCall.chpl:36)
+| Found loop domain (withInitializerCall.chpl:35)
+| Will attempt static and dynamic optimizations (withInitializerCall.chpl:36)
+|
+|  Start analyzing call (withInitializerCall.chpl:37)
+|   Can optimize: Access base is the iterator's base (withInitializerCall.chpl:37)
+|  This call is a static optimization candidate (withInitializerCall.chpl:37)
+|
+End analyzing forall (withInitializerCall.chpl:36)
+
+Static check successful. Using localAccess (withInitializerCall.chpl:14)
+Static check successful. Using localAccess (withInitializerCall.chpl:21)
+Static check successful. Using localAccess (withInitializerCall.chpl:30)
+Static check successful. Using localAccess (withInitializerCall.chpl:37)

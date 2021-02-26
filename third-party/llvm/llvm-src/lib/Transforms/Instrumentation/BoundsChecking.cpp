@@ -1,9 +1,8 @@
 //===- BoundsChecking.cpp - Instrumentation for run-time bounds checking --===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -25,6 +24,7 @@
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/Intrinsics.h"
 #include "llvm/IR/Value.h"
+#include "llvm/InitializePasses.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/CommandLine.h"
@@ -112,7 +112,7 @@ static Value *getBoundsCheckCond(Value *Ptr, Value *InstVal,
 ///
 /// \p GetTrapBB is a callable that returns the trap BB to use on failure.
 template <typename GetTrapBBT>
-static void insertBoundsCheck(Value *Or, BuilderTy IRB, GetTrapBBT GetTrapBB) {
+static void insertBoundsCheck(Value *Or, BuilderTy &IRB, GetTrapBBT GetTrapBB) {
   // check if the comparison is always false
   ConstantInt *C = dyn_cast_or_null<ConstantInt>(Or);
   if (C) {
@@ -143,8 +143,9 @@ static void insertBoundsCheck(Value *Or, BuilderTy IRB, GetTrapBBT GetTrapBB) {
 static bool addBoundsChecking(Function &F, TargetLibraryInfo &TLI,
                               ScalarEvolution &SE) {
   const DataLayout &DL = F.getParent()->getDataLayout();
-  ObjectSizeOffsetEvaluator ObjSizeEval(DL, &TLI, F.getContext(),
-                                           /*RoundToAlign=*/true);
+  ObjectSizeOpts EvalOpts;
+  EvalOpts.RoundToAlign = true;
+  ObjectSizeOffsetEvaluator ObjSizeEval(DL, &TLI, F.getContext(), EvalOpts);
 
   // check HANDLE_MEMORY_INST in include/llvm/Instruction.def for memory
   // touching instructions
@@ -153,17 +154,22 @@ static bool addBoundsChecking(Function &F, TargetLibraryInfo &TLI,
     Value *Or = nullptr;
     BuilderTy IRB(I.getParent(), BasicBlock::iterator(&I), TargetFolder(DL));
     if (LoadInst *LI = dyn_cast<LoadInst>(&I)) {
-      Or = getBoundsCheckCond(LI->getPointerOperand(), LI, DL, TLI,
-                              ObjSizeEval, IRB, SE);
+      if (!LI->isVolatile())
+        Or = getBoundsCheckCond(LI->getPointerOperand(), LI, DL, TLI,
+                                ObjSizeEval, IRB, SE);
     } else if (StoreInst *SI = dyn_cast<StoreInst>(&I)) {
-      Or = getBoundsCheckCond(SI->getPointerOperand(), SI->getValueOperand(),
-                              DL, TLI, ObjSizeEval, IRB, SE);
+      if (!SI->isVolatile())
+        Or = getBoundsCheckCond(SI->getPointerOperand(), SI->getValueOperand(),
+                                DL, TLI, ObjSizeEval, IRB, SE);
     } else if (AtomicCmpXchgInst *AI = dyn_cast<AtomicCmpXchgInst>(&I)) {
-      Or = getBoundsCheckCond(AI->getPointerOperand(), AI->getCompareOperand(),
-                              DL, TLI, ObjSizeEval, IRB, SE);
+      if (!AI->isVolatile())
+        Or =
+            getBoundsCheckCond(AI->getPointerOperand(), AI->getCompareOperand(),
+                               DL, TLI, ObjSizeEval, IRB, SE);
     } else if (AtomicRMWInst *AI = dyn_cast<AtomicRMWInst>(&I)) {
-      Or = getBoundsCheckCond(AI->getPointerOperand(), AI->getValOperand(), DL,
-                              TLI, ObjSizeEval, IRB, SE);
+      if (!AI->isVolatile())
+        Or = getBoundsCheckCond(AI->getPointerOperand(), AI->getValOperand(),
+                                DL, TLI, ObjSizeEval, IRB, SE);
     }
     if (Or)
       TrapInfo.push_back(std::make_pair(&I, Or));
@@ -224,7 +230,7 @@ struct BoundsCheckingLegacyPass : public FunctionPass {
   }
 
   bool runOnFunction(Function &F) override {
-    auto &TLI = getAnalysis<TargetLibraryInfoWrapperPass>().getTLI();
+    auto &TLI = getAnalysis<TargetLibraryInfoWrapperPass>().getTLI(F);
     auto &SE = getAnalysis<ScalarEvolutionWrapperPass>().getSE();
     return addBoundsChecking(F, TLI, SE);
   }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -126,6 +126,8 @@ module DistributedBag {
   public use Collection;
   use BlockDist;
   private use SysCTypes;
+  private use CPtr;
+  use IO only channel;
 
   /*
     Below are segment statuses, which is a way to make visible to outsiders the
@@ -225,11 +227,11 @@ module DistributedBag {
   record DistBag {
     type eltType;
 
+    // This is unused, and merely for documentation purposes. See '_value'.
     /*
       The implementation of the Bag is forwarded. See :class:`DistributedBagImpl` for
       documentation.
     */
-    // This is unused, and merely for documentation purposes. See '_value'.
     var _impl : unmanaged DistributedBagImpl(eltType)?;
 
     // Privatized id...
@@ -254,7 +256,19 @@ module DistributedBag {
       }
       return chpl_getPrivatizedCopy(unmanaged DistributedBagImpl(eltType), _pid);
     }
-
+  
+    pragma "no doc"
+    /* Read/write the contents of DistBag from/to a channel */ 
+    proc readWriteThis(ch: channel) throws {
+      ch <~> "[";
+      var size = this.getSize();
+      for (i,iteration) in zip(this, 0..<size) {
+        ch <~> i;
+        if iteration < size-1 then ch <~> ", ";
+      }
+      ch <~> "]";
+    }
+    
     forwarding _value;
   }
 
@@ -319,6 +333,7 @@ module DistributedBag {
     }
 
     pragma "no doc"
+    pragma "order independent yielding loops"
     iter targetLocalesNotHere() {
       for loc in targetLocales {
         if loc != here {
@@ -382,17 +397,17 @@ module DistributedBag {
       Clear all bags across all nodes in a best-effort approach. Elements added or
       moved around from concurrent additions or removals may be missed while clearing.
     */
-    proc clear() {
+    override proc clear() {
       var localThis = getPrivatizedThis;
       coforall loc in localThis.targetLocales do on loc {
         var instance = getPrivatizedThis;
         forall segmentIdx in 0 .. #here.maxTaskPar {
-          ref segment = instance.bag.segments[segmentIdx];
+          ref segment = instance.bag!.segments[segmentIdx];
           if segment.acquireIfNonEmpty(STATUS_REMOVE) {
             var block = segment.headBlock;
             while block != nil {
               var tmp = block;
-              block = block.next;
+              block = block!.next;
               delete tmp;
             }
 
@@ -531,6 +546,7 @@ module DistributedBag {
         parallel iteration, for both performance and memory benefit.
 
     */
+    pragma "order independent yielding loops"
     override iter these() : eltType {
       for loc in targetLocales {
         for segmentIdx in 0..#here.maxTaskPar {
@@ -595,6 +611,7 @@ module DistributedBag {
       }
     }
 
+    pragma "order independent yielding loops"
     iter these(param tag : iterKind, followThis) where tag == iterKind.follower {
       var (bufferSz, buffer) = followThis;
       for i in 0 .. #bufferSz {

@@ -1,9 +1,8 @@
 //===-- TrigramIndex.h - a heuristic for SpecialCaseList --------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //===----------------------------------------------------------------------===//
 //
 // TrigramIndex implements a heuristic for SpecialCaseList that allows to
@@ -28,7 +27,6 @@
 #define LLVM_SUPPORT_TRIGRAMINDEX_H
 
 #include "llvm/ADT/SmallVector.h"
-#include "llvm/ADT/StringMap.h"
 
 #include <string>
 #include <unordered_map>

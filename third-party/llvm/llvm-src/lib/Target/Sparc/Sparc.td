@@ -1,9 +1,8 @@
 //===-- Sparc.td - Describe the Sparc Target Machine -------*- tablegen -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -151,7 +150,7 @@ def : Processor<"ut699", LEON3Itineraries,
                 [FeatureLeon, InsertNOPLoad, FeatureNoFSMULD, FeatureNoFMULS, FixAllFDIVSQRT]>;
 
 // LEON3 FT (GR712RC). Provides features for the GR712RC processor.
-// - covers all the erratum fixed for LEON3 and support for the CASA instruction. 
+// - covers all the erratum fixed for LEON3 and support for the CASA instruction.
 def : Processor<"gr712rc", LEON3Itineraries,
                 [FeatureLeon, LeonCASA]>;
 
@@ -159,9 +158,9 @@ def : Processor<"gr712rc", LEON3Itineraries,
 def : Processor<"leon4", LEON4Itineraries,
                 [FeatureLeon, UMACSMACSupport, LeonCASA]>;
 
-// LEON 4 FT (GR740) 
+// LEON 4 FT (GR740)
 // TO DO: Place-holder: Processor specific features will be added *very* soon here.
-def : Processor<"gr740", LEON4Itineraries, 
+def : Processor<"gr740", LEON4Itineraries,
                 [FeatureLeon, UMACSMACSupport, LeonCASA, LeonCycleCounter,
                  FeaturePWRPSR]>;
 

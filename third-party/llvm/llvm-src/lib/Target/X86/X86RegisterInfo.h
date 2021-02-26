@@ -1,9 +1,8 @@
 //===-- X86RegisterInfo.h - X86 Register Information Impl -------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -50,14 +49,10 @@ private:
   unsigned BasePtr;
 
 public:
-  X86RegisterInfo(const Triple &TT);
+  explicit X86RegisterInfo(const Triple &TT);
 
   // FIXME: This should be tablegen'd like getDwarfRegNum is
   int getSEHRegNum(unsigned i) const;
-
-  /// Code Generation virtual methods...
-  ///
-  bool trackLivenessAfterRegAlloc(const MachineFunction &MF) const override;
 
   /// getMatchingSuperRegClass - Return a subclass of the specified register
   /// class A so that each register in it has a sub-register of the
@@ -74,6 +69,11 @@ public:
   const TargetRegisterClass *
   getLargestLegalSuperClass(const TargetRegisterClass *RC,
                             const MachineFunction &MF) const override;
+
+  bool shouldRewriteCopySrc(const TargetRegisterClass *DefRC,
+                            unsigned DefSubReg,
+                            const TargetRegisterClass *SrcRC,
+                            unsigned SrcSubReg) const override;
 
   /// getPointerRegClass - Returns a TargetRegisterClass used for pointer
   /// values.
@@ -121,7 +121,7 @@ public:
 
   bool canRealignStack(const MachineFunction &MF) const override;
 
-  bool hasReservedSpillSlot(const MachineFunction &MF, unsigned Reg,
+  bool hasReservedSpillSlot(const MachineFunction &MF, Register Reg,
                             int &FrameIdx) const override;
 
   void eliminateFrameIndex(MachineBasicBlock::iterator MI,
@@ -129,15 +129,16 @@ public:
                            RegScavenger *RS = nullptr) const override;
 
   // Debug information queries.
-  unsigned getFrameRegister(const MachineFunction &MF) const override;
+  Register getFrameRegister(const MachineFunction &MF) const override;
   unsigned getPtrSizedFrameRegister(const MachineFunction &MF) const;
-  unsigned getStackRegister() const { return StackPtr; }
-  unsigned getBaseRegister() const { return BasePtr; }
+  unsigned getPtrSizedStackRegister(const MachineFunction &MF) const;
+  Register getStackRegister() const { return StackPtr; }
+  Register getBaseRegister() const { return BasePtr; }
   /// Returns physical register used as frame pointer.
   /// This will always returns the frame pointer register, contrary to
   /// getFrameRegister() which returns the "base pointer" in situations
   /// involving a stack, frame and base pointer.
-  unsigned getFramePtr() const { return FramePtr; }
+  Register getFramePtr() const { return FramePtr; }
   // FIXME: Move to FrameInfok
   unsigned getSlotSize() const { return SlotSize; }
 };

@@ -6,10 +6,10 @@ record OtherRecord {
 
 proc run() {
   var myR = new OtherRecord();
+  myR.a[0].verify();
   myR.a[1].verify();
-  myR.a[2].verify();
-  assert(myR.a[1].x == 1);
-  assert(myR.a[2].x == 2);
+  assert(myR.a[0].x == 1);
+  assert(myR.a[1].x == 2);
 }
 
 run();

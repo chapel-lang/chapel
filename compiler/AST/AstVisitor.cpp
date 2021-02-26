@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -17,13 +17,3 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#include "AstVisitor.h"
-
-AstVisitor::AstVisitor() {
-
-}
-
-AstVisitor::~AstVisitor() {
-
-}

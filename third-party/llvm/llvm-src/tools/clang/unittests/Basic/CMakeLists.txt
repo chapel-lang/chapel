@@ -7,11 +7,10 @@ add_clang_unittest(BasicTests
   DiagnosticTest.cpp
   FileManagerTest.cpp
   FixedPointTest.cpp
-  MemoryBufferCacheTest.cpp
   SourceManagerTest.cpp
   )
 
-target_link_libraries(BasicTests
+clang_target_link_libraries(BasicTests
   PRIVATE
   clangAST
   clangBasic

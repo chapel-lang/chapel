@@ -1,3 +1,0 @@
-bug: sync variable in loop
-
-This program crashes with a pthreads error.

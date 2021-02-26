@@ -1,9 +1,8 @@
 //===--- Legacy.h -- Adapters for ExecutionEngine API interop ---*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -74,18 +73,14 @@ private:
 ///        function objects.
 template <typename GetResponsibilitySetFn, typename LookupFn>
 std::unique_ptr<LambdaSymbolResolver<
-    typename std::remove_cv<
-        typename std::remove_reference<GetResponsibilitySetFn>::type>::type,
-    typename std::remove_cv<
-        typename std::remove_reference<LookupFn>::type>::type>>
+    std::remove_cv_t<std::remove_reference_t<GetResponsibilitySetFn>>,
+    std::remove_cv_t<std::remove_reference_t<LookupFn>>>>
 createSymbolResolver(GetResponsibilitySetFn &&GetResponsibilitySet,
                      LookupFn &&Lookup) {
   using LambdaSymbolResolverImpl = LambdaSymbolResolver<
-      typename std::remove_cv<
-          typename std::remove_reference<GetResponsibilitySetFn>::type>::type,
-      typename std::remove_cv<
-          typename std::remove_reference<LookupFn>::type>::type>;
-  return llvm::make_unique<LambdaSymbolResolverImpl>(
+      std::remove_cv_t<std::remove_reference_t<GetResponsibilitySetFn>>,
+      std::remove_cv_t<std::remove_reference_t<LookupFn>>>;
+  return std::make_unique<LambdaSymbolResolverImpl>(
       std::forward<GetResponsibilitySetFn>(GetResponsibilitySet),
       std::forward<LookupFn>(Lookup));
 }
@@ -149,8 +144,8 @@ lookupWithLegacyFn(ExecutionSession &ES, AsynchronousSymbolQuery &Query,
   for (auto &S : Symbols) {
     if (JITSymbol Sym = FindSymbol(*S)) {
       if (auto Addr = Sym.getAddress()) {
-        Query.resolve(S, JITEvaluatedSymbol(*Addr, Sym.getFlags()));
-        Query.notifySymbolReady();
+        Query.notifySymbolMetRequiredState(
+            S, JITEvaluatedSymbol(*Addr, Sym.getFlags()));
         NewSymbolsResolved = true;
       } else {
         ES.legacyFailQuery(Query, Addr.takeError());
@@ -163,11 +158,8 @@ lookupWithLegacyFn(ExecutionSession &ES, AsynchronousSymbolQuery &Query,
       SymbolsNotFound.insert(S);
   }
 
-  if (NewSymbolsResolved && Query.isFullyResolved())
-    Query.handleFullyResolved();
-
-  if (NewSymbolsResolved && Query.isFullyReady())
-    Query.handleFullyReady();
+  if (NewSymbolsResolved && Query.isComplete())
+    Query.handleComplete();
 
   return SymbolsNotFound;
 }

@@ -1,3 +1,0 @@
-$CHPL_HOME/modules/internal/ChapelArray.chpl:4244: In function '=':
-$CHPL_HOME/modules/internal/ChapelArray.chpl:4246: error: cannot assign to a record of the type R using the default assignment operator because it has 'const' field(s)
-initArrOfRecConstField2a.chpl:11: Function '=' instantiated as: =(a: [domain(1,int(64),false)] R)

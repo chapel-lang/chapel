@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -271,7 +271,6 @@ bool SafeExprAnalysis::isSafePrimitive(CallExpr* ce) {
     case PRIM_PTR_NOTEQUAL:
     case PRIM_DYNAMIC_CAST:
     case PRIM_ARRAY_GET:
-    case PRIM_ARRAY_GET_VALUE:
     case PRIM_WIDE_MAKE:
     case PRIM_WIDE_GET_LOCALE:
     case PRIM_WIDE_GET_NODE:

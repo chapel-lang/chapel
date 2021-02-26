@@ -5,7 +5,7 @@
 */
 
 require "random_draw.h", "random_draw.c";
-use Time;
+use Time, SysBasic;
 
 // use random_draw library from PRK repo
 extern proc LCG_init();

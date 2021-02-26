@@ -1,1 +1,2 @@
-Conditional jump or move depends on uninitialised value(s)
+(DDD = {1..3}, ARR = 5 5 5)
+with-runtime-types.chpl:11: error: default initialization of type containing array or domain type not yet implemented

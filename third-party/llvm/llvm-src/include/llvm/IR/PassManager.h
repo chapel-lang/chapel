@@ -1,9 +1,8 @@
 //===- PassManager.h - Pass management infrastructure -----------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 /// \file
@@ -46,9 +45,10 @@
 #include "llvm/IR/Module.h"
 #include "llvm/IR/PassInstrumentation.h"
 #include "llvm/IR/PassManagerInternal.h"
+#include "llvm/Pass.h"
 #include "llvm/Support/Debug.h"
+#include "llvm/Support/TimeProfiler.h"
 #include "llvm/Support/TypeName.h"
-#include "llvm/Support/raw_ostream.h"
 #include <algorithm>
 #include <cassert>
 #include <cstring>
@@ -287,6 +287,13 @@ public:
                               PA.PreservedIDs.count(ID));
     }
 
+    /// Return true if the checker's analysis was not abandoned, i.e. it was not
+    /// explicitly invalidated. Even if the analysis is not explicitly
+    /// preserved, if the analysis is known stateless, then it is preserved.
+    bool preservedWhenStateless() {
+      return !IsAbandoned;
+    }
+
     /// Returns true if the checker's analysis was not abandoned and either
     ///  - \p AnalysisSetT is explicitly preserved or
     ///  - all analyses are preserved.
@@ -412,7 +419,7 @@ template <typename PassT, typename IRUnitT, typename AnalysisManagerT,
 typename PassT::Result
 getAnalysisResultUnpackTuple(AnalysisManagerT &AM, IRUnitT &IR,
                              std::tuple<ArgTs...> Args,
-                             llvm::index_sequence<Ns...>) {
+                             std::index_sequence<Ns...>) {
   (void)Args;
   return AM.template getResult<PassT>(IR, std::get<Ns>(Args)...);
 }
@@ -429,7 +436,7 @@ getAnalysisResult(AnalysisManager<IRUnitT, AnalysisArgTs...> &AM, IRUnitT &IR,
                   std::tuple<MainArgTs...> Args) {
   return (getAnalysisResultUnpackTuple<
           PassT, IRUnitT>)(AM, IR, Args,
-                           llvm::index_sequence_for<AnalysisArgTs...>{});
+                           std::index_sequence_for<AnalysisArgTs...>{});
 }
 
 } // namespace detail
@@ -496,9 +503,6 @@ public:
 
     for (unsigned Idx = 0, Size = Passes.size(); Idx != Size; ++Idx) {
       auto *P = Passes[Idx].get();
-      if (DebugLogging)
-        dbgs() << "Running pass: " << P->name() << " on " << IR.getName()
-               << "\n";
 
       // Check the PassInstrumentation's BeforePass callbacks before running the
       // pass, skip its execution completely if asked to (callback returns
@@ -506,7 +510,15 @@ public:
       if (!PI.runBeforePass<IRUnitT>(*P, IR))
         continue;
 
-      PreservedAnalyses PassPA = P->run(IR, AM, ExtraArgs...);
+      if (DebugLogging)
+        dbgs() << "Running pass: " << P->name() << " on " << IR.getName()
+               << "\n";
+
+      PreservedAnalyses PassPA;
+      {
+        TimeTraceScope TimeScope(P->name(), IR.getName());
+        PassPA = P->run(IR, AM, ExtraArgs...);
+      }
 
       // Call onto PassInstrumentation's AfterPass callbacks immediately after
       // running the pass.
@@ -720,9 +732,9 @@ public:
   /// Construct an empty analysis manager.
   ///
   /// If \p DebugLogging is true, we'll log our progress to llvm::dbgs().
-  AnalysisManager(bool DebugLogging = false) : DebugLogging(DebugLogging) {}
-  AnalysisManager(AnalysisManager &&) = default;
-  AnalysisManager &operator=(AnalysisManager &&) = default;
+  AnalysisManager(bool DebugLogging = false);
+  AnalysisManager(AnalysisManager &&);
+  AnalysisManager &operator=(AnalysisManager &&);
 
   /// Returns true if the analysis manager has an empty results cache.
   bool empty() const {
@@ -737,20 +749,7 @@ public:
   /// This doesn't invalidate, but instead simply deletes, the relevant results.
   /// It is useful when the IR is being removed and we want to clear out all the
   /// memory pinned for it.
-  void clear(IRUnitT &IR, llvm::StringRef Name) {
-    if (DebugLogging)
-      dbgs() << "Clearing all analysis results for: " << Name << "\n";
-
-    auto ResultsListI = AnalysisResultLists.find(&IR);
-    if (ResultsListI == AnalysisResultLists.end())
-      return;
-    // Delete the map entries that point into the results list.
-    for (auto &IDAndResult : ResultsListI->second)
-      AnalysisResults.erase({IDAndResult.first, &IR});
-
-    // And actually destroy and erase the results associated with this IR.
-    AnalysisResultLists.erase(ResultsListI);
-  }
+  void clear(IRUnitT &IR, llvm::StringRef Name);
 
   /// Clear all analysis results cached by this AnalysisManager.
   ///
@@ -801,6 +800,16 @@ public:
     return &static_cast<ResultModelT *>(ResultConcept)->Result;
   }
 
+  /// Verify that the given Result cannot be invalidated, assert otherwise.
+  template <typename PassT>
+  void verifyNotInvalidated(IRUnitT &IR, typename PassT::Result *Result) const {
+    PreservedAnalyses PA = PreservedAnalyses::none();
+    SmallDenseMap<AnalysisKey *, bool, 8> IsResultInvalidated;
+    Invalidator Inv(IsResultInvalidated, AnalysisResults);
+    assert(!Result->invalidate(IR, PA, Inv) &&
+           "Cached result cannot be invalidated");
+  }
+
   /// Register an analysis pass with the manager.
   ///
   /// The parameter is a callable whose result is an analysis pass. This allows
@@ -849,67 +858,7 @@ public:
   ///
   /// Walk through all of the analyses pertaining to this unit of IR and
   /// invalidate them, unless they are preserved by the PreservedAnalyses set.
-  void invalidate(IRUnitT &IR, const PreservedAnalyses &PA) {
-    // We're done if all analyses on this IR unit are preserved.
-    if (PA.allAnalysesInSetPreserved<AllAnalysesOn<IRUnitT>>())
-      return;
-
-    if (DebugLogging)
-      dbgs() << "Invalidating all non-preserved analyses for: " << IR.getName()
-             << "\n";
-
-    // Track whether each analysis's result is invalidated in
-    // IsResultInvalidated.
-    SmallDenseMap<AnalysisKey *, bool, 8> IsResultInvalidated;
-    Invalidator Inv(IsResultInvalidated, AnalysisResults);
-    AnalysisResultListT &ResultsList = AnalysisResultLists[&IR];
-    for (auto &AnalysisResultPair : ResultsList) {
-      // This is basically the same thing as Invalidator::invalidate, but we
-      // can't call it here because we're operating on the type-erased result.
-      // Moreover if we instead called invalidate() directly, it would do an
-      // unnecessary look up in ResultsList.
-      AnalysisKey *ID = AnalysisResultPair.first;
-      auto &Result = *AnalysisResultPair.second;
-
-      auto IMapI = IsResultInvalidated.find(ID);
-      if (IMapI != IsResultInvalidated.end())
-        // This result was already handled via the Invalidator.
-        continue;
-
-      // Try to invalidate the result, giving it the Invalidator so it can
-      // recursively query for any dependencies it has and record the result.
-      // Note that we cannot reuse 'IMapI' here or pre-insert the ID, as
-      // Result.invalidate may insert things into the map, invalidating our
-      // iterator.
-      bool Inserted =
-          IsResultInvalidated.insert({ID, Result.invalidate(IR, PA, Inv)})
-              .second;
-      (void)Inserted;
-      assert(Inserted && "Should never have already inserted this ID, likely "
-                         "indicates a cycle!");
-    }
-
-    // Now erase the results that were marked above as invalidated.
-    if (!IsResultInvalidated.empty()) {
-      for (auto I = ResultsList.begin(), E = ResultsList.end(); I != E;) {
-        AnalysisKey *ID = I->first;
-        if (!IsResultInvalidated.lookup(ID)) {
-          ++I;
-          continue;
-        }
-
-        if (DebugLogging)
-          dbgs() << "Invalidating analysis: " << this->lookUpPass(ID).name()
-                 << " on " << IR.getName() << "\n";
-
-        I = ResultsList.erase(I);
-        AnalysisResults.erase({ID, &IR});
-      }
-    }
-
-    if (ResultsList.empty())
-      AnalysisResultLists.erase(&IR);
-  }
+  void invalidate(IRUnitT &IR, const PreservedAnalyses &PA);
 
 private:
   /// Look up a registered analysis pass.
@@ -930,41 +879,7 @@ private:
 
   /// Get an analysis result, running the pass if necessary.
   ResultConceptT &getResultImpl(AnalysisKey *ID, IRUnitT &IR,
-                                ExtraArgTs... ExtraArgs) {
-    typename AnalysisResultMapT::iterator RI;
-    bool Inserted;
-    std::tie(RI, Inserted) = AnalysisResults.insert(std::make_pair(
-        std::make_pair(ID, &IR), typename AnalysisResultListT::iterator()));
-
-    // If we don't have a cached result for this function, look up the pass and
-    // run it to produce a result, which we then add to the cache.
-    if (Inserted) {
-      auto &P = this->lookUpPass(ID);
-      if (DebugLogging)
-        dbgs() << "Running analysis: " << P.name() << " on " << IR.getName()
-               << "\n";
-
-      PassInstrumentation PI;
-      if (ID != PassInstrumentationAnalysis::ID()) {
-        PI = getResult<PassInstrumentationAnalysis>(IR, ExtraArgs...);
-        PI.runBeforeAnalysis(P, IR);
-      }
-
-      AnalysisResultListT &ResultList = AnalysisResultLists[&IR];
-      ResultList.emplace_back(ID, P.run(IR, *this, ExtraArgs...));
-
-      PI.runAfterAnalysis(P, IR);
-
-      // P.run may have inserted elements into AnalysisResults and invalidated
-      // RI.
-      RI = AnalysisResults.find({ID, &IR});
-      assert(RI != AnalysisResults.end() && "we just inserted it!");
-
-      RI->second = std::prev(ResultList.end());
-    }
-
-    return *RI->second->second;
-  }
+                                ExtraArgTs... ExtraArgs);
 
   /// Get a cached analysis result or return null.
   ResultConceptT *getCachedResultImpl(AnalysisKey *ID, IRUnitT &IR) const {
@@ -1158,9 +1073,26 @@ public:
   /// Result proxy object for \c OuterAnalysisManagerProxy.
   class Result {
   public:
-    explicit Result(const AnalysisManagerT &AM) : AM(&AM) {}
+    explicit Result(const AnalysisManagerT &OuterAM) : OuterAM(&OuterAM) {}
 
-    const AnalysisManagerT &getManager() const { return *AM; }
+    /// Get a cached analysis. If the analysis can be invalidated, this will
+    /// assert.
+    template <typename PassT, typename IRUnitTParam>
+    typename PassT::Result *getCachedResult(IRUnitTParam &IR) const {
+      typename PassT::Result *Res =
+          OuterAM->template getCachedResult<PassT>(IR);
+      if (Res)
+        OuterAM->template verifyNotInvalidated<PassT>(IR, Res);
+      return Res;
+    }
+
+    /// Method provided for unit testing, not intended for general use.
+    template <typename PassT, typename IRUnitTParam>
+    bool cachedResultExists(IRUnitTParam &IR) const {
+      typename PassT::Result *Res =
+          OuterAM->template getCachedResult<PassT>(IR);
+      return Res != nullptr;
+    }
 
     /// When invalidation occurs, remove any registered invalidation events.
     bool invalidate(
@@ -1212,7 +1144,7 @@ public:
     }
 
   private:
-    const AnalysisManagerT *AM;
+    const AnalysisManagerT *OuterAM;
 
     /// A map from an outer analysis ID to the set of this IR-unit's analyses
     /// which need to be invalidated.
@@ -1220,14 +1152,15 @@ public:
         OuterAnalysisInvalidationMap;
   };
 
-  OuterAnalysisManagerProxy(const AnalysisManagerT &AM) : AM(&AM) {}
+  OuterAnalysisManagerProxy(const AnalysisManagerT &OuterAM)
+      : OuterAM(&OuterAM) {}
 
   /// Run the analysis pass and create our proxy result object.
-  /// Nothing to see here, it just forwards the \c AM reference into the
+  /// Nothing to see here, it just forwards the \c OuterAM reference into the
   /// result.
   Result run(IRUnitT &, AnalysisManager<IRUnitT, ExtraArgTs...> &,
              ExtraArgTs...) {
-    return Result(*AM);
+    return Result(*OuterAM);
   }
 
 private:
@@ -1236,7 +1169,7 @@ private:
 
   static AnalysisKey Key;
 
-  const AnalysisManagerT *AM;
+  const AnalysisManagerT *OuterAM;
 };
 
 template <typename AnalysisManagerT, typename IRUnitT, typename... ExtraArgTs>
@@ -1298,7 +1231,12 @@ public:
       // false).
       if (!PI.runBeforePass<Function>(Pass, F))
         continue;
-      PreservedAnalyses PassPA = Pass.run(F, FAM);
+
+      PreservedAnalyses PassPA;
+      {
+        TimeTraceScope TimeScope(Pass.name(), F.getName());
+        PassPA = Pass.run(F, FAM);
+      }
 
       PI.runAfterPass(Pass, F);
 

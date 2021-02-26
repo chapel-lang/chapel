@@ -7,5 +7,3 @@ class MyClass {
 
 
 var lhs: shared MyClass = nil;
-
-compilerError("done");

@@ -1,9 +1,8 @@
 //===- AArch64SchedPredicates.td - AArch64 Sched Preds -----*- tablegen -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -42,7 +41,7 @@ let FunctionMapper = "AArch64_AM::getMemExtendType" in {
 
 // Check for scaling in the register offset addressing mode.
 let FunctionMapper = "AArch64_AM::getMemDoShift" in
-def CheckMemScaled                      : CheckImmOperandSimple<3>;
+def CheckMemScaled                      : CheckImmOperandSimple<4>;
 
 // Check the shifting type in arithmetic and logic instructions.
 let FunctionMapper = "AArch64_AM::getShiftType" in {
@@ -60,6 +59,76 @@ foreach I = {0-3, 8} in {
 }
 
 // Generic predicates.
+
+// Identify whether an instruction is the 16-bit NEON form based on its result.
+def CheckHForm             : CheckAll<[CheckIsRegOperand<0>,
+                                       CheckAny<[CheckRegOperand<0, H0>,
+                                                 CheckRegOperand<0, H1>,
+                                                 CheckRegOperand<0, H2>,
+                                                 CheckRegOperand<0, H3>,
+                                                 CheckRegOperand<0, H4>,
+                                                 CheckRegOperand<0, H5>,
+                                                 CheckRegOperand<0, H6>,
+                                                 CheckRegOperand<0, H7>,
+                                                 CheckRegOperand<0, H8>,
+                                                 CheckRegOperand<0, H9>,
+                                                 CheckRegOperand<0, H10>,
+                                                 CheckRegOperand<0, H11>,
+                                                 CheckRegOperand<0, H12>,
+                                                 CheckRegOperand<0, H13>,
+                                                 CheckRegOperand<0, H14>,
+                                                 CheckRegOperand<0, H15>,
+                                                 CheckRegOperand<0, H16>,
+                                                 CheckRegOperand<0, H17>,
+                                                 CheckRegOperand<0, H18>,
+                                                 CheckRegOperand<0, H19>,
+                                                 CheckRegOperand<0, H20>,
+                                                 CheckRegOperand<0, H21>,
+                                                 CheckRegOperand<0, H22>,
+                                                 CheckRegOperand<0, H23>,
+                                                 CheckRegOperand<0, H24>,
+                                                 CheckRegOperand<0, H25>,
+                                                 CheckRegOperand<0, H26>,
+                                                 CheckRegOperand<0, H27>,
+                                                 CheckRegOperand<0, H28>,
+                                                 CheckRegOperand<0, H29>,
+                                                 CheckRegOperand<0, H30>,
+                                                 CheckRegOperand<0, H31>]>]>;
+
+// Identify whether an instruction is the 32-bit NEON form based on its result.
+def CheckSForm             : CheckAll<[CheckIsRegOperand<0>,
+                                       CheckAny<[CheckRegOperand<0, S0>,
+                                                 CheckRegOperand<0, S1>,
+                                                 CheckRegOperand<0, S2>,
+                                                 CheckRegOperand<0, S3>,
+                                                 CheckRegOperand<0, S4>,
+                                                 CheckRegOperand<0, S5>,
+                                                 CheckRegOperand<0, S6>,
+                                                 CheckRegOperand<0, S7>,
+                                                 CheckRegOperand<0, S8>,
+                                                 CheckRegOperand<0, S9>,
+                                                 CheckRegOperand<0, S10>,
+                                                 CheckRegOperand<0, S11>,
+                                                 CheckRegOperand<0, S12>,
+                                                 CheckRegOperand<0, S13>,
+                                                 CheckRegOperand<0, S14>,
+                                                 CheckRegOperand<0, S15>,
+                                                 CheckRegOperand<0, S16>,
+                                                 CheckRegOperand<0, S17>,
+                                                 CheckRegOperand<0, S18>,
+                                                 CheckRegOperand<0, S19>,
+                                                 CheckRegOperand<0, S20>,
+                                                 CheckRegOperand<0, S21>,
+                                                 CheckRegOperand<0, S22>,
+                                                 CheckRegOperand<0, S23>,
+                                                 CheckRegOperand<0, S24>,
+                                                 CheckRegOperand<0, S25>,
+                                                 CheckRegOperand<0, S26>,
+                                                 CheckRegOperand<0, S27>,
+                                                 CheckRegOperand<0, S28>,
+                                                 CheckRegOperand<0, S29>,
+                                                 CheckRegOperand<0, S30>,
+                                                 CheckRegOperand<0, S31>]>]>;
 
 // Identify whether an instruction is the 64-bit NEON form based on its result.
 def CheckDForm             : CheckAll<[CheckIsRegOperand<0>,
@@ -250,9 +319,10 @@ def IsLoadRegOffsetOp      : CheckOpcode<[PRFMroW, PRFMroX,
                                           LDRBroW, LDRBroX,
                                           LDRHroW, LDRHroX,
                                           LDRSroW, LDRSroX,
-                                          LDRDroW, LDRDroX]>;
+                                          LDRDroW, LDRDroX,
+                                          LDRQroW, LDRQroX]>;
 
-// Identify whether an instruction is a load
+// Identify whether an instruction is a store
 // using the register offset addressing mode.
 def IsStoreRegOffsetOp     : CheckOpcode<[STRBBroW, STRBBroX,
                                           STRHHroW, STRHHroX,
@@ -261,65 +331,13 @@ def IsStoreRegOffsetOp     : CheckOpcode<[STRBBroW, STRBBroX,
                                           STRBroW, STRBroX,
                                           STRHroW, STRHroX,
                                           STRSroW, STRSroX,
-                                          STRDroW, STRDroX]>;
+                                          STRDroW, STRDroX,
+                                          STRQroW, STRQroX]>;
 
 // Identify whether an instruction is a load or
 // store using the register offset addressing mode.
 def IsLoadStoreRegOffsetOp : CheckOpcode<!listconcat(IsLoadRegOffsetOp.ValidOpcodes,
                                                      IsStoreRegOffsetOp.ValidOpcodes)>;
-
-// Identify whether an instruction whose result is a long vector
-// operates on the upper half of the input registers.
-def IsLongVectorUpperOp    : CheckOpcode<[FCVTLv8i16, FCVTLv4i32,
-                                          FCVTNv8i16, FCVTNv4i32,
-                                          FCVTXNv4f32,
-                                          PMULLv16i8, PMULLv2i64,
-                                          RADDHNv8i16_v16i8, RADDHNv4i32_v8i16, RADDHNv2i64_v4i32,
-                                          RSHRNv16i8_shift, RSHRNv8i16_shift, RSHRNv4i32_shift,
-                                          RSUBHNv8i16_v16i8, RSUBHNv4i32_v8i16, RSUBHNv2i64_v4i32,
-                                          SABALv16i8_v8i16, SABALv8i16_v4i32, SABALv4i32_v2i64,
-                                          SABDLv16i8_v8i16, SABDLv8i16_v4i32, SABDLv4i32_v2i64,
-                                          SADDLv16i8_v8i16, SADDLv8i16_v4i32, SADDLv4i32_v2i64,
-                                          SADDWv16i8_v8i16, SADDWv8i16_v4i32, SADDWv4i32_v2i64,
-                                          SHLLv16i8, SHLLv8i16, SHLLv4i32,
-                                          SHRNv16i8_shift, SHRNv8i16_shift, SHRNv4i32_shift,
-                                          SMLALv16i8_v8i16, SMLALv8i16_v4i32, SMLALv4i32_v2i64,
-                                          SMLALv8i16_indexed, SMLALv4i32_indexed,
-                                          SMLSLv16i8_v8i16, SMLSLv8i16_v4i32, SMLSLv4i32_v2i64,
-                                          SMLSLv8i16_indexed, SMLSLv4i32_indexed,
-                                          SMULLv16i8_v8i16, SMULLv8i16_v4i32, SMULLv4i32_v2i64,
-                                          SMULLv8i16_indexed, SMULLv4i32_indexed,
-                                          SQDMLALv8i16_v4i32, SQDMLALv4i32_v2i64,
-                                          SQDMLALv8i16_indexed, SQDMLALv4i32_indexed,
-                                          SQDMLSLv8i16_v4i32, SQDMLSLv4i32_v2i64,
-                                          SQDMLSLv8i16_indexed, SQDMLSLv4i32_indexed,
-                                          SQDMULLv8i16_v4i32, SQDMULLv4i32_v2i64,
-                                          SQDMULLv8i16_indexed, SQDMULLv4i32_indexed,
-                                          SQRSHRNv16i8_shift, SQRSHRNv8i16_shift, SQRSHRNv4i32_shift,
-                                          SQRSHRUNv16i8_shift, SQRSHRUNv8i16_shift, SQRSHRUNv4i32_shift,
-                                          SQSHRNv16i8_shift, SQSHRNv8i16_shift, SQSHRNv4i32_shift,
-                                          SQSHRUNv16i8_shift, SQSHRUNv8i16_shift, SQSHRUNv4i32_shift,
-                                          SQXTNv16i8, SQXTNv8i16, SQXTNv4i32,
-                                          SQXTUNv16i8, SQXTUNv8i16, SQXTUNv4i32,
-                                          SSHLLv16i8_shift, SSHLLv8i16_shift, SSHLLv4i32_shift,
-                                          SSUBLv16i8_v8i16, SSUBLv8i16_v4i32, SSUBLv4i32_v2i64,
-                                          SSUBWv16i8_v8i16, SSUBWv8i16_v4i32, SSUBWv4i32_v2i64,
-                                          UABALv16i8_v8i16, UABALv8i16_v4i32, UABALv4i32_v2i64,
-                                          UABDLv16i8_v8i16, UABDLv8i16_v4i32, UABDLv4i32_v2i64,
-                                          UADDLv16i8_v8i16, UADDLv8i16_v4i32, UADDLv4i32_v2i64,
-                                          UADDWv16i8_v8i16, UADDWv8i16_v4i32, UADDWv4i32_v2i64,
-                                          UMLALv16i8_v8i16, UMLALv8i16_v4i32, UMLALv4i32_v2i64,
-                                          UMLALv8i16_indexed, UMLALv4i32_indexed,
-                                          UMLSLv16i8_v8i16, UMLSLv8i16_v4i32, UMLSLv4i32_v2i64,
-                                          UMLSLv8i16_indexed, UMLSLv4i32_indexed,
-                                          UMULLv16i8_v8i16, UMULLv8i16_v4i32, UMULLv4i32_v2i64,
-                                          UMULLv8i16_indexed, UMULLv4i32_indexed,
-                                          UQSHRNv16i8_shift, UQSHRNv8i16_shift, UQSHRNv4i32_shift,
-                                          UQXTNv16i8, UQXTNv8i16, UQXTNv4i32,
-                                          USHLLv16i8_shift, USHLLv8i16_shift, USHLLv4i32_shift,
-                                          USUBLv16i8_v8i16, USUBLv8i16_v4i32, USUBLv4i32_v2i64,
-                                          USUBWv16i8_v8i16, USUBWv8i16_v4i32, USUBWv4i32_v2i64,
-                                          XTNv16i8, XTNv8i16, XTNv4i32]>;
 
 // Target predicates.
 

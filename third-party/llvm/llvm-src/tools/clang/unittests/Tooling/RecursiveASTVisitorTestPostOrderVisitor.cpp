@@ -1,9 +1,8 @@
 //===- unittests/Tooling/RecursiveASTVisitorPostOrderASTVisitor.cpp -------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -32,12 +31,12 @@ public:
   bool shouldTraversePostOrder() const { return VisitPostOrder; }
 
   bool VisitUnaryOperator(UnaryOperator *Op) {
-    VisitedNodes.push_back(Op->getOpcodeStr(Op->getOpcode()));
+    VisitedNodes.push_back(std::string(Op->getOpcodeStr(Op->getOpcode())));
     return true;
   }
 
   bool VisitBinaryOperator(BinaryOperator *Op) {
-    VisitedNodes.push_back(Op->getOpcodeStr());
+    VisitedNodes.push_back(std::string(Op->getOpcodeStr()));
     return true;
   }
 

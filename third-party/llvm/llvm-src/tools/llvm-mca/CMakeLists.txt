@@ -1,7 +1,6 @@
 include_directories(include)
 
 set(LLVM_LINK_COMPONENTS
-  AllTargetsAsmPrinters
   AllTargetsAsmParsers
   AllTargetsDescs
   AllTargetsDisassemblers
@@ -17,6 +16,7 @@ add_llvm_tool(llvm-mca
   CodeRegion.cpp
   CodeRegionGenerator.cpp
   PipelinePrinter.cpp
+  Views/BottleneckAnalysis.cpp
   Views/DispatchStatistics.cpp
   Views/InstructionInfoView.cpp
   Views/RegisterFileStatistics.cpp

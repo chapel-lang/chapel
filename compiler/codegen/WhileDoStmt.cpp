@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -44,12 +44,10 @@ GenRet WhileDoStmt::codegen()
   GenRet   ret;
 
   codegenStmt(this);
-  fixVectorizable();
+  reportVectorizable();
 
   if (outfile)
   {
-    codegenVectorHint();
-
     std::string hdr = "while (" + codegenValue(condExprGet()).c + ") ";
 
     info->cStatements.push_back(hdr);

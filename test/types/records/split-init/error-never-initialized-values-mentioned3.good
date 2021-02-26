@@ -1,0 +1,5 @@
+error-never-initialized-values-mentioned3.chpl:3: In function 'error':
+error-never-initialized-values-mentioned3.chpl:5: error: cannot default-initialize a variable with generic type
+error-never-initialized-values-mentioned3.chpl:5: note: 'c2' has generic type 'C'
+error-never-initialized-values-mentioned3.chpl:5: note: cannot find initialization point to split-init this variable
+error-never-initialized-values-mentioned3.chpl:7: note: 'c2' is used here before it is initialized

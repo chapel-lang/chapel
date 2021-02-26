@@ -1,9 +1,8 @@
 //===--- Comment.h - Comment AST nodes --------------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -95,10 +94,11 @@ protected:
 
     unsigned : NumInlineContentCommentBits;
 
-    unsigned RenderKind : 2;
+    unsigned RenderKind : 3;
+
     unsigned CommandID : CommandInfo::NumCommandIDBits;
   };
-  enum { NumInlineCommandCommentBits = NumInlineContentCommentBits + 2 +
+  enum { NumInlineCommandCommentBits = NumInlineContentCommentBits + 3 +
                                        CommandInfo::NumCommandIDBits };
 
   class HTMLTagCommentBitfields {
@@ -209,9 +209,7 @@ public:
 
   void dump() const;
   void dumpColor() const;
-  void dump(const ASTContext &Context) const;
-  void dump(raw_ostream &OS, const CommandTraits *Traits,
-            const SourceManager *SM) const;
+  void dump(raw_ostream &OS, const ASTContext &Context) const;
 
   SourceRange getSourceRange() const LLVM_READONLY { return Range; }
 
@@ -311,7 +309,8 @@ public:
     RenderNormal,
     RenderBold,
     RenderMonospaced,
-    RenderEmphasized
+    RenderEmphasized,
+    RenderAnchor
   };
 
 protected:

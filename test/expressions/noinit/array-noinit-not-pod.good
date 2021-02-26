@@ -1,0 +1,2 @@
+array-noinit-not-pod.chpl:2: In function 'test1a':
+array-noinit-not-pod.chpl:4: error: noinit is only supported for arrays of trivially copyable types

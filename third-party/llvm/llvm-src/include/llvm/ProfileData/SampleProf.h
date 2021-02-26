@@ -1,9 +1,8 @@
 //===- SampleProf.h - Sampling profiling format support ---------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -19,15 +18,19 @@
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringMap.h"
 #include "llvm/ADT/StringRef.h"
+#include "llvm/ADT/StringSet.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/GlobalValue.h"
 #include "llvm/IR/Module.h"
+#include "llvm/Support/Allocator.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/ErrorOr.h"
 #include "llvm/Support/MathExtras.h"
+#include "llvm/Support/raw_ostream.h"
 #include <algorithm>
 #include <cstdint>
 #include <map>
+#include <set>
 #include <string>
 #include <system_error>
 #include <utility>
@@ -50,7 +53,10 @@ enum class sampleprof_error {
   truncated_name_table,
   not_implemented,
   counter_overflow,
-  ostream_seek_unsupported
+  ostream_seek_unsupported,
+  compress_failed,
+  uncompress_failed,
+  zlib_unavailable
 };
 
 inline std::error_code make_error_code(sampleprof_error E) {
@@ -84,6 +90,7 @@ enum SampleProfileFormat {
   SPF_Text = 0x1,
   SPF_Compact_Binary = 0x2,
   SPF_GCC = 0x3,
+  SPF_Ext_Binary = 0x4,
   SPF_Binary = 0xff
 };
 
@@ -94,17 +101,128 @@ static inline uint64_t SPMagic(SampleProfileFormat Format = SPF_Binary) {
          uint64_t('2') << (64 - 56) | uint64_t(Format);
 }
 
-// Get the proper representation of a string in the input Format.
-static inline StringRef getRepInFormat(StringRef Name,
-                                       SampleProfileFormat Format,
+/// Get the proper representation of a string according to whether the
+/// current Format uses MD5 to represent the string.
+static inline StringRef getRepInFormat(StringRef Name, bool UseMD5,
                                        std::string &GUIDBuf) {
   if (Name.empty())
     return Name;
   GUIDBuf = std::to_string(Function::getGUID(Name));
-  return (Format == SPF_Compact_Binary) ? StringRef(GUIDBuf) : Name;
+  return UseMD5 ? StringRef(GUIDBuf) : Name;
 }
 
 static inline uint64_t SPVersion() { return 103; }
+
+// Section Type used by SampleProfileExtBinaryBaseReader and
+// SampleProfileExtBinaryBaseWriter. Never change the existing
+// value of enum. Only append new ones.
+enum SecType {
+  SecInValid = 0,
+  SecProfSummary = 1,
+  SecNameTable = 2,
+  SecProfileSymbolList = 3,
+  SecFuncOffsetTable = 4,
+  // marker for the first type of profile.
+  SecFuncProfileFirst = 32,
+  SecLBRProfile = SecFuncProfileFirst
+};
+
+static inline std::string getSecName(SecType Type) {
+  switch (Type) {
+  case SecInValid:
+    return "InvalidSection";
+  case SecProfSummary:
+    return "ProfileSummarySection";
+  case SecNameTable:
+    return "NameTableSection";
+  case SecProfileSymbolList:
+    return "ProfileSymbolListSection";
+  case SecFuncOffsetTable:
+    return "FuncOffsetTableSection";
+  case SecLBRProfile:
+    return "LBRProfileSection";
+  }
+  llvm_unreachable("A SecType has no name for output");
+}
+
+// Entry type of section header table used by SampleProfileExtBinaryBaseReader
+// and SampleProfileExtBinaryBaseWriter.
+struct SecHdrTableEntry {
+  SecType Type;
+  uint64_t Flags;
+  uint64_t Offset;
+  uint64_t Size;
+};
+
+// Flags common for all sections are defined here. In SecHdrTableEntry::Flags,
+// common flags will be saved in the lower 32bits and section specific flags
+// will be saved in the higher 32 bits.
+enum class SecCommonFlags : uint32_t {
+  SecFlagInValid = 0,
+  SecFlagCompress = (1 << 0)
+};
+
+// Section specific flags are defined here.
+// !!!Note: Everytime a new enum class is created here, please add
+// a new check in verifySecFlag.
+enum class SecNameTableFlags : uint32_t {
+  SecFlagInValid = 0,
+  SecFlagMD5Name = (1 << 0)
+};
+enum class SecProfSummaryFlags : uint32_t {
+  SecFlagInValid = 0,
+  /// SecFlagPartial means the profile is for common/shared code.
+  /// The common profile is usually merged from profiles collected
+  /// from running other targets.
+  SecFlagPartial = (1 << 0)
+};
+
+// Verify section specific flag is used for the correct section.
+template <class SecFlagType>
+static inline void verifySecFlag(SecType Type, SecFlagType Flag) {
+  // No verification is needed for common flags.
+  if (std::is_same<SecCommonFlags, SecFlagType>())
+    return;
+
+  // Verification starts here for section specific flag.
+  bool IsFlagLegal = false;
+  switch (Type) {
+  case SecNameTable:
+    IsFlagLegal = std::is_same<SecNameTableFlags, SecFlagType>();
+    break;
+  case SecProfSummary:
+    IsFlagLegal = std::is_same<SecProfSummaryFlags, SecFlagType>();
+    break;
+  default:
+    break;
+  }
+  if (!IsFlagLegal)
+    llvm_unreachable("Misuse of a flag in an incompatible section");
+}
+
+template <class SecFlagType>
+static inline void addSecFlag(SecHdrTableEntry &Entry, SecFlagType Flag) {
+  verifySecFlag(Entry.Type, Flag);
+  auto FVal = static_cast<uint64_t>(Flag);
+  bool IsCommon = std::is_same<SecCommonFlags, SecFlagType>();
+  Entry.Flags |= IsCommon ? FVal : (FVal << 32);
+}
+
+template <class SecFlagType>
+static inline void removeSecFlag(SecHdrTableEntry &Entry, SecFlagType Flag) {
+  verifySecFlag(Entry.Type, Flag);
+  auto FVal = static_cast<uint64_t>(Flag);
+  bool IsCommon = std::is_same<SecCommonFlags, SecFlagType>();
+  Entry.Flags &= ~(IsCommon ? FVal : (FVal << 32));
+}
+
+template <class SecFlagType>
+static inline bool hasSecFlag(const SecHdrTableEntry &Entry, SecFlagType Flag) {
+  verifySecFlag(Entry.Type, Flag);
+  auto FVal = static_cast<uint64_t>(Flag);
+  bool IsCommon = std::is_same<SecCommonFlags, SecFlagType>();
+  return Entry.Flags & (IsCommon ? FVal : (FVal << 32));
+}
 
 /// Represents the relative location of an instruction.
 ///
@@ -144,8 +262,18 @@ raw_ostream &operator<<(raw_ostream &OS, const LineLocation &Loc);
 /// will be a list of one or more functions.
 class SampleRecord {
 public:
-  using CallTargetMap = StringMap<uint64_t>;
+  using CallTarget = std::pair<StringRef, uint64_t>;
+  struct CallTargetComparator {
+    bool operator()(const CallTarget &LHS, const CallTarget &RHS) const {
+      if (LHS.second != RHS.second)
+        return LHS.second > RHS.second;
 
+      return LHS.first < RHS.first;
+    }
+  };
+
+  using SortedCallTargetSet = std::set<CallTarget, CallTargetComparator>;
+  using CallTargetMap = StringMap<uint64_t>;
   SampleRecord() = default;
 
   /// Increment the number of samples for this record by \p S.
@@ -180,6 +308,18 @@ public:
 
   uint64_t getSamples() const { return NumSamples; }
   const CallTargetMap &getCallTargets() const { return CallTargets; }
+  const SortedCallTargetSet getSortedCallTargets() const {
+    return SortCallTargets(CallTargets);
+  }
+
+  /// Sort call targets in descending order of call frequency.
+  static const SortedCallTargetSet SortCallTargets(const CallTargetMap &Targets) {
+    SortedCallTargetSet SortedTargets;
+    for (const auto &I : Targets) {
+      SortedTargets.emplace(I.first(), I.second);
+    }
+    return SortedTargets;
+  }
 
   /// Merge the samples in \p Other into this record.
   /// Optionally scale sample counts by \p Weight.
@@ -206,7 +346,7 @@ class FunctionSamples;
 using BodySampleMap = std::map<LineLocation, SampleRecord>;
 // NOTE: Using a StringMap here makes parsed profiles consume around 17% more
 // memory, which is *very* significant for large profiles.
-using FunctionSamplesMap = std::map<std::string, FunctionSamples>;
+using FunctionSamplesMap = std::map<std::string, FunctionSamples, std::less<>>;
 using CallsiteSampleMap = std::map<LineLocation, FunctionSamplesMap>;
 
 /// Representation of the samples collected for a function.
@@ -295,7 +435,7 @@ public:
   const FunctionSamples *findFunctionSamplesAt(const LineLocation &Loc,
                                                StringRef CalleeName) const {
     std::string CalleeGUID;
-    CalleeName = getRepInFormat(CalleeName, Format, CalleeGUID);
+    CalleeName = getRepInFormat(CalleeName, UseMD5, CalleeGUID);
 
     auto iter = CallsiteSamples.find(Loc);
     if (iter == CallsiteSamples.end())
@@ -304,7 +444,10 @@ public:
     if (FS != iter->second.end())
       return &FS->second;
     // If we cannot find exact match of the callee name, return the FS with
-    // the max total count.
+    // the max total count. Only do this when CalleeName is not provided,
+    // i.e., only for indirect calls.
+    if (!CalleeName.empty())
+      return nullptr;
     uint64_t MaxTotalSamples = 0;
     const FunctionSamples *R = nullptr;
     for (const auto &NameFS : iter->second)
@@ -330,21 +473,21 @@ public:
   /// Return the sample count of the first instruction of the function.
   /// The function can be either a standalone symbol or an inlined function.
   uint64_t getEntrySamples() const {
+    uint64_t Count = 0;
     // Use either BodySamples or CallsiteSamples which ever has the smaller
     // lineno.
     if (!BodySamples.empty() &&
         (CallsiteSamples.empty() ||
          BodySamples.begin()->first < CallsiteSamples.begin()->first))
-      return BodySamples.begin()->second.getSamples();
-    if (!CallsiteSamples.empty()) {
-      uint64_t T = 0;
+      Count = BodySamples.begin()->second.getSamples();
+    else if (!CallsiteSamples.empty()) {
       // An indirect callsite may be promoted to several inlined direct calls.
       // We need to get the sum of them.
       for (const auto &N_FS : CallsiteSamples.begin()->second)
-        T += N_FS.second.getEntrySamples();
-      return T;
+        Count += N_FS.second.getEntrySamples();
     }
-    return 0;
+    // Return at least 1 if total sample is not 0.
+    return Count ? Count : TotalSamples > 0;
   }
 
   /// Return all the samples collected in the body of the function.
@@ -353,6 +496,18 @@ public:
   /// Return all the callsite samples collected in the body of the function.
   const CallsiteSampleMap &getCallsiteSamples() const {
     return CallsiteSamples;
+  }
+
+  /// Return the maximum of sample counts in a function body including functions
+  /// inlined in it.
+  uint64_t getMaxCountInside() const {
+    uint64_t MaxCount = 0;
+    for (const auto &L : getBodySamples())
+      MaxCount = std::max(MaxCount, L.second.getSamples());
+    for (const auto &C : getCallsiteSamples())
+      for (const FunctionSamplesMap::value_type &F : C.second)
+        MaxCount = std::max(MaxCount, F.second.getMaxCountInside());
+    return MaxCount;
   }
 
   /// Merge the samples in \p Other into this one.
@@ -384,15 +539,20 @@ public:
                             uint64_t Threshold) const {
     if (TotalSamples <= Threshold)
       return;
-    S.insert(getGUID(Name));
+    auto isDeclaration = [](const Function *F) {
+      return !F || F->isDeclaration();
+    };
+    if (isDeclaration(M->getFunction(getFuncName()))) {
+      // Add to the import list only when it's defined out of module.
+      S.insert(getGUID(Name));
+    }
     // Import hot CallTargets, which may not be available in IR because full
     // profile annotation cannot be done until backend compilation in ThinLTO.
     for (const auto &BS : BodySamples)
       for (const auto &TS : BS.second.getCallTargets())
         if (TS.getValue() > Threshold) {
-          const Function *Callee =
-              M->getFunction(getNameInModule(TS.getKey(), M));
-          if (!Callee || !Callee->getSubprogram())
+          const Function *Callee = M->getFunction(getFuncName(TS.getKey()));
+          if (isDeclaration(Callee))
             S.insert(getGUID(TS.getKey()));
         }
     for (const auto &CS : CallsiteSamples)
@@ -406,25 +566,51 @@ public:
   /// Return the function name.
   StringRef getName() const { return Name; }
 
-  /// Return the original function name if it exists in Module \p M.
-  StringRef getFuncNameInModule(const Module *M) const {
-    return getNameInModule(Name, M);
+  /// Return the original function name.
+  StringRef getFuncName() const { return getFuncName(Name); }
+
+  /// Return the canonical name for a function, taking into account
+  /// suffix elision policy attributes.
+  static StringRef getCanonicalFnName(const Function &F) {
+    static const char *knownSuffixes[] = { ".llvm.", ".part." };
+    auto AttrName = "sample-profile-suffix-elision-policy";
+    auto Attr = F.getFnAttribute(AttrName).getValueAsString();
+    if (Attr == "" || Attr == "all") {
+      return F.getName().split('.').first;
+    } else if (Attr == "selected") {
+      StringRef Cand(F.getName());
+      for (const auto &Suf : knownSuffixes) {
+        StringRef Suffix(Suf);
+        auto It = Cand.rfind(Suffix);
+        if (It == StringRef::npos)
+          return Cand;
+        auto Dit = Cand.rfind('.');
+        if (Dit == It + Suffix.size() - 1)
+          Cand = Cand.substr(0, It);
+      }
+      return Cand;
+    } else if (Attr == "none") {
+      return F.getName();
+    } else {
+      assert(false && "internal error: unknown suffix elision policy");
+    }
+    return F.getName();
   }
 
-  /// Translate \p Name into its original name in Module.
-  /// When the Format is not SPF_Compact_Binary, \p Name needs no translation.
-  /// When the Format is SPF_Compact_Binary, \p Name in current FunctionSamples
-  /// is actually GUID of the original function name. getNameInModule will
-  /// translate \p Name in current FunctionSamples into its original name.
-  /// If the original name doesn't exist in \p M, return empty StringRef.
-  StringRef getNameInModule(StringRef Name, const Module *M) const {
-    if (Format != SPF_Compact_Binary)
+  /// Translate \p Name into its original name.
+  /// When profile doesn't use MD5, \p Name needs no translation.
+  /// When profile uses MD5, \p Name in current FunctionSamples
+  /// is actually GUID of the original function name. getFuncName will
+  /// translate \p Name in current FunctionSamples into its original name
+  /// by looking up in the function map GUIDToFuncNameMap.
+  /// If the original name doesn't exist in the map, return empty StringRef.
+  StringRef getFuncName(StringRef Name) const {
+    if (!UseMD5)
       return Name;
-    // Expect CurrentModule to be initialized by GUIDToFuncNameMapper.
-    if (M != CurrentModule)
-      llvm_unreachable("Input Module should be the same as CurrentModule");
-    auto iter = GUIDToFuncNameMap.find(std::stoull(Name.data()));
-    if (iter == GUIDToFuncNameMap.end())
+
+    assert(GUIDToFuncNameMap && "GUIDToFuncNameMap needs to be popluated first");
+    auto iter = GUIDToFuncNameMap->find(std::stoull(Name.data()));
+    if (iter == GUIDToFuncNameMap->end())
       return StringRef();
     return iter->second;
   }
@@ -445,51 +631,19 @@ public:
   const FunctionSamples *findFunctionSamples(const DILocation *DIL) const;
 
   static SampleProfileFormat Format;
+
+  /// Whether the profile uses MD5 to represent string.
+  static bool UseMD5;
+
   /// GUIDToFuncNameMap saves the mapping from GUID to the symbol name, for
-  /// all the function symbols defined or declared in CurrentModule.
-  static DenseMap<uint64_t, StringRef> GUIDToFuncNameMap;
-  static Module *CurrentModule;
-
-  class GUIDToFuncNameMapper {
-  public:
-    GUIDToFuncNameMapper(Module &M) {
-      if (Format != SPF_Compact_Binary)
-        return;
-
-      for (const auto &F : M) {
-        StringRef OrigName = F.getName();
-        GUIDToFuncNameMap.insert({Function::getGUID(OrigName), OrigName});
-        /// Local to global var promotion used by optimization like thinlto
-        /// will rename the var and add suffix like ".llvm.xxx" to the
-        /// original local name. In sample profile, the suffixes of function
-        /// names are all stripped. Since it is possible that the mapper is
-        /// built in post-thin-link phase and var promotion has been done,
-        /// we need to add the substring of function name without the suffix
-        /// into the GUIDToFuncNameMap.
-        auto pos = OrigName.find('.');
-        if (pos != StringRef::npos) {
-          StringRef NewName = OrigName.substr(0, pos);
-          GUIDToFuncNameMap.insert({Function::getGUID(NewName), NewName});
-        }
-      }
-      CurrentModule = &M;
-    }
-
-    ~GUIDToFuncNameMapper() {
-      if (Format != SPF_Compact_Binary)
-        return;
-
-      GUIDToFuncNameMap.clear();
-      CurrentModule = nullptr;
-    }
-  };
+  /// all the function symbols defined or declared in current module.
+  DenseMap<uint64_t, StringRef> *GUIDToFuncNameMap = nullptr;
 
   // Assume the input \p Name is a name coming from FunctionSamples itself.
-  // If the format is SPF_Compact_Binary, the name is already a GUID and we
+  // If UseMD5 is true, the name is already a GUID and we
   // don't want to return the GUID of GUID.
   static uint64_t getGUID(StringRef Name) {
-    return (Format == SPF_Compact_Binary) ? std::stoull(Name.data())
-                                          : Function::getGUID(Name);
+    return UseMD5 ? std::stoull(Name.data()) : Function::getGUID(Name);
   }
 
 private:
@@ -547,16 +701,56 @@ public:
   SampleSorter(const std::map<LocationT, SampleT> &Samples) {
     for (const auto &I : Samples)
       V.push_back(&I);
-    std::stable_sort(V.begin(), V.end(),
-                     [](const SamplesWithLoc *A, const SamplesWithLoc *B) {
-                       return A->first < B->first;
-                     });
+    llvm::stable_sort(V, [](const SamplesWithLoc *A, const SamplesWithLoc *B) {
+      return A->first < B->first;
+    });
   }
 
   const SamplesWithLocList &get() const { return V; }
 
 private:
   SamplesWithLocList V;
+};
+
+/// ProfileSymbolList records the list of function symbols shown up
+/// in the binary used to generate the profile. It is useful to
+/// to discriminate a function being so cold as not to shown up
+/// in the profile and a function newly added.
+class ProfileSymbolList {
+public:
+  /// copy indicates whether we need to copy the underlying memory
+  /// for the input Name.
+  void add(StringRef Name, bool copy = false) {
+    if (!copy) {
+      Syms.insert(Name);
+      return;
+    }
+    Syms.insert(Name.copy(Allocator));
+  }
+
+  bool contains(StringRef Name) { return Syms.count(Name); }
+
+  void merge(const ProfileSymbolList &List) {
+    for (auto Sym : List.Syms)
+      add(Sym, true);
+  }
+
+  unsigned size() { return Syms.size(); }
+
+  void setToCompress(bool TC) { ToCompress = TC; }
+  bool toCompress() { return ToCompress; }
+
+  std::error_code read(const uint8_t *Data, uint64_t ListSize);
+  std::error_code write(raw_ostream &OS);
+  void dump(raw_ostream &OS = dbgs()) const;
+
+private:
+  // Determine whether or not to compress the symbol list when
+  // writing it into profile. The variable is unused when the symbol
+  // list is read from an existing profile.
+  bool ToCompress = false;
+  DenseSet<StringRef> Syms;
+  BumpPtrAllocator Allocator;
 };
 
 } // end namespace sampleprof

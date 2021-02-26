@@ -12,11 +12,11 @@ proc isNil(x): bool {
     return false;
 }
 
-proc car(x: (?T1, ?T2)) ref: T1 {
+proc car(x: (?T1, ?T2)) const ref: T1 {
   return x(0);
 }
 
-proc cdr(x: (?T1, ?T2)) ref: T2 {
+proc cdr(x: (?T1, ?T2)) const ref: T2 {
   return x(1);
 }
 

@@ -1,9 +1,8 @@
 //===- lib/Tooling/Execution.cpp - Implements tool execution framework. ---===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -64,18 +63,16 @@ createExecutorFromCommandLineArgsImpl(int &argc, const char **argv,
                                   /*Overview=*/Overview);
   if (!OptionsParser)
     return OptionsParser.takeError();
-  for (auto I = ToolExecutorPluginRegistry::begin(),
-            E = ToolExecutorPluginRegistry::end();
-       I != E; ++I) {
-    if (I->getName() != ExecutorName) {
+  for (const auto &TEPlugin : ToolExecutorPluginRegistry::entries()) {
+    if (TEPlugin.getName() != ExecutorName) {
       continue;
     }
-    std::unique_ptr<ToolExecutorPlugin> Plugin(I->instantiate());
+    std::unique_ptr<ToolExecutorPlugin> Plugin(TEPlugin.instantiate());
     llvm::Expected<std::unique_ptr<ToolExecutor>> Executor =
         Plugin->create(*OptionsParser);
     if (!Executor) {
       return llvm::make_error<llvm::StringError>(
-          llvm::Twine("Failed to create '") + I->getName() +
+          llvm::Twine("Failed to create '") + TEPlugin.getName() +
               "': " + llvm::toString(Executor.takeError()) + "\n",
           llvm::inconvertibleErrorCode());
     }

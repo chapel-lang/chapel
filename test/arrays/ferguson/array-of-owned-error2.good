@@ -1,4 +1,0 @@
-array-of-owned-error2.chpl:n: In function 'main':
-array-of-owned-error2.chpl:n: error: invalid implicit copy-initialization
-array-of-owned-error2.chpl:n: error: Cannot copy array with element type that cannot be assigned
-$CHPL_HOME/modules/internal/ChapelArray.chpl:n: note: [domain(1,int(64),false)] owned C does not have a valid init=

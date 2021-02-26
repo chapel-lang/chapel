@@ -1,9 +1,8 @@
 //===-- MCObjectFileInfo.cpp - Object File Information --------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -19,6 +18,7 @@
 #include "llvm/MC/MCSectionELF.h"
 #include "llvm/MC/MCSectionMachO.h"
 #include "llvm/MC/MCSectionWasm.h"
+#include "llvm/MC/MCSectionXCOFF.h"
 
 using namespace llvm;
 
@@ -28,7 +28,7 @@ static bool useCompactUnwind(const Triple &T) {
     return false;
 
   // aarch64 always has it.
-  if (T.getArch() == Triple::aarch64)
+  if (T.getArch() == Triple::aarch64 || T.getArch() == Triple::aarch64_32)
     return true;
 
   // armv7k always has it.
@@ -40,8 +40,7 @@ static bool useCompactUnwind(const Triple &T) {
     return true;
 
   // And the iOS simulator.
-  if (T.isiOS() &&
-      (T.getArch() == Triple::x86_64 || T.getArch() == Triple::x86))
+  if (T.isiOS() && T.isX86())
     return true;
 
   return false;
@@ -57,7 +56,8 @@ void MCObjectFileInfo::initMachOMCObjectFileInfo(const Triple &T) {
           MachO::S_ATTR_STRIP_STATIC_SYMS | MachO::S_ATTR_LIVE_SUPPORT,
       SectionKind::getReadOnly());
 
-  if (T.isOSDarwin() && T.getArch() == Triple::aarch64)
+  if (T.isOSDarwin() &&
+      (T.getArch() == Triple::aarch64 || T.getArch() == Triple::aarch64_32))
     SupportsCompactUnwindWithoutEHFrame = true;
 
   if (T.isWatchABI())
@@ -191,9 +191,9 @@ void MCObjectFileInfo::initMachOMCObjectFileInfo(const Triple &T) {
         Ctx->getMachOSection("__LD", "__compact_unwind", MachO::S_ATTR_DEBUG,
                              SectionKind::getReadOnly());
 
-    if (T.getArch() == Triple::x86_64 || T.getArch() == Triple::x86)
+    if (T.isX86())
       CompactUnwindDwarfEHFrameOnly = 0x04000000;  // UNWIND_X86_64_MODE_DWARF
-    else if (T.getArch() == Triple::aarch64)
+    else if (T.getArch() == Triple::aarch64 || T.getArch() == Triple::aarch64_32)
       CompactUnwindDwarfEHFrameOnly = 0x03000000;  // UNWIND_ARM64_MODE_DWARF
     else if (T.getArch() == Triple::arm || T.getArch() == Triple::thumb)
       CompactUnwindDwarfEHFrameOnly = 0x04000000;  // UNWIND_ARM_MODE_DWARF
@@ -276,6 +276,9 @@ void MCObjectFileInfo::initMachOMCObjectFileInfo(const Triple &T) {
   DwarfMacinfoSection =
       Ctx->getMachOSection("__DWARF", "__debug_macinfo", MachO::S_ATTR_DEBUG,
                            SectionKind::getMetadata(), "debug_macinfo");
+  DwarfMacroSection =
+      Ctx->getMachOSection("__DWARF", "__debug_macro", MachO::S_ATTR_DEBUG,
+                           SectionKind::getMetadata(), "debug_macro");
   DwarfDebugInlineSection =
       Ctx->getMachOSection("__DWARF", "__debug_inlined", MachO::S_ATTR_DEBUG,
                            SectionKind::getMetadata());
@@ -291,6 +294,9 @@ void MCObjectFileInfo::initMachOMCObjectFileInfo(const Triple &T) {
   FaultMapSection = Ctx->getMachOSection("__LLVM_FAULTMAPS", "__llvm_faultmaps",
                                          0, SectionKind::getMetadata());
 
+  RemarksSection = Ctx->getMachOSection(
+      "__LLVM", "__remarks", MachO::S_ATTR_DEBUG, SectionKind::getMetadata());
+
   TLSExtraDataSection = TLSTLVSection;
 }
 
@@ -300,12 +306,19 @@ void MCObjectFileInfo::initELFMCObjectFileInfo(const Triple &T, bool Large) {
   case Triple::mipsel:
   case Triple::mips64:
   case Triple::mips64el:
-    FDECFIEncoding = Ctx->getAsmInfo()->getCodePointerSize() == 4
-                         ? dwarf::DW_EH_PE_sdata4
-                         : dwarf::DW_EH_PE_sdata8;
+    // We cannot use DW_EH_PE_sdata8 for the large PositionIndependent case
+    // since there is no R_MIPS_PC64 relocation (only a 32-bit version).
+    if (PositionIndependent && !Large)
+      FDECFIEncoding = dwarf::DW_EH_PE_pcrel | dwarf::DW_EH_PE_sdata4;
+    else
+      FDECFIEncoding = Ctx->getAsmInfo()->getCodePointerSize() == 4
+                           ? dwarf::DW_EH_PE_sdata4
+                           : dwarf::DW_EH_PE_sdata8;
     break;
   case Triple::ppc64:
   case Triple::ppc64le:
+  case Triple::aarch64:
+  case Triple::aarch64_be:
   case Triple::x86_64:
     FDECFIEncoding = dwarf::DW_EH_PE_pcrel |
                      (Large ? dwarf::DW_EH_PE_sdata8 : dwarf::DW_EH_PE_sdata4);
@@ -419,6 +432,7 @@ void MCObjectFileInfo::initELFMCObjectFileInfo(const Triple &T, bool Large) {
       Ctx->getELFSection(".debug_ranges", DebugSecType, 0);
   DwarfMacinfoSection =
       Ctx->getELFSection(".debug_macinfo", DebugSecType, 0);
+  DwarfMacroSection = Ctx->getELFSection(".debug_macro", DebugSecType, 0);
 
   // DWARF5 Experimental Debug Info
 
@@ -459,6 +473,13 @@ void MCObjectFileInfo::initELFMCObjectFileInfo(const Triple &T, bool Large) {
                                              DebugSecType, ELF::SHF_EXCLUDE);
   DwarfRnglistsDWOSection =
       Ctx->getELFSection(".debug_rnglists.dwo", DebugSecType, ELF::SHF_EXCLUDE);
+  DwarfMacinfoDWOSection =
+      Ctx->getELFSection(".debug_macinfo.dwo", DebugSecType, ELF::SHF_EXCLUDE);
+  DwarfMacroDWOSection =
+      Ctx->getELFSection(".debug_macro.dwo", DebugSecType, ELF::SHF_EXCLUDE);
+
+  DwarfLoclistsDWOSection =
+      Ctx->getELFSection(".debug_loclists.dwo", DebugSecType, ELF::SHF_EXCLUDE);
 
   // DWP Sections
   DwarfCUIndexSection =
@@ -597,6 +618,11 @@ void MCObjectFileInfo::initCOFFMCObjectFileInfo(const Triple &T) {
       COFF::IMAGE_SCN_MEM_DISCARDABLE | COFF::IMAGE_SCN_CNT_INITIALIZED_DATA |
           COFF::IMAGE_SCN_MEM_READ,
       SectionKind::getMetadata(), "section_debug_loc");
+  DwarfLoclistsSection = Ctx->getCOFFSection(
+      ".debug_loclists",
+      COFF::IMAGE_SCN_MEM_DISCARDABLE | COFF::IMAGE_SCN_CNT_INITIALIZED_DATA |
+          COFF::IMAGE_SCN_MEM_READ,
+      SectionKind::getMetadata(), "section_debug_loclists");
   DwarfARangesSection = Ctx->getCOFFSection(
       ".debug_aranges",
       COFF::IMAGE_SCN_MEM_DISCARDABLE | COFF::IMAGE_SCN_CNT_INITIALIZED_DATA |
@@ -607,11 +633,31 @@ void MCObjectFileInfo::initCOFFMCObjectFileInfo(const Triple &T) {
       COFF::IMAGE_SCN_MEM_DISCARDABLE | COFF::IMAGE_SCN_CNT_INITIALIZED_DATA |
           COFF::IMAGE_SCN_MEM_READ,
       SectionKind::getMetadata(), "debug_range");
+  DwarfRnglistsSection = Ctx->getCOFFSection(
+      ".debug_rnglists",
+      COFF::IMAGE_SCN_MEM_DISCARDABLE | COFF::IMAGE_SCN_CNT_INITIALIZED_DATA |
+          COFF::IMAGE_SCN_MEM_READ,
+      SectionKind::getMetadata(), "debug_rnglists");
   DwarfMacinfoSection = Ctx->getCOFFSection(
       ".debug_macinfo",
       COFF::IMAGE_SCN_MEM_DISCARDABLE | COFF::IMAGE_SCN_CNT_INITIALIZED_DATA |
           COFF::IMAGE_SCN_MEM_READ,
       SectionKind::getMetadata(), "debug_macinfo");
+  DwarfMacroSection = Ctx->getCOFFSection(
+      ".debug_macro",
+      COFF::IMAGE_SCN_MEM_DISCARDABLE | COFF::IMAGE_SCN_CNT_INITIALIZED_DATA |
+          COFF::IMAGE_SCN_MEM_READ,
+      SectionKind::getMetadata(), "debug_macro");
+  DwarfMacinfoDWOSection = Ctx->getCOFFSection(
+      ".debug_macinfo.dwo",
+      COFF::IMAGE_SCN_MEM_DISCARDABLE | COFF::IMAGE_SCN_CNT_INITIALIZED_DATA |
+          COFF::IMAGE_SCN_MEM_READ,
+      SectionKind::getMetadata(), "debug_macinfo.dwo");
+  DwarfMacroDWOSection = Ctx->getCOFFSection(
+      ".debug_macro.dwo",
+      COFF::IMAGE_SCN_MEM_DISCARDABLE | COFF::IMAGE_SCN_CNT_INITIALIZED_DATA |
+          COFF::IMAGE_SCN_MEM_READ,
+      SectionKind::getMetadata(), "debug_macro.dwo");
   DwarfInfoDWOSection = Ctx->getCOFFSection(
       ".debug_info.dwo",
       COFF::IMAGE_SCN_MEM_DISCARDABLE | COFF::IMAGE_SCN_CNT_INITIALIZED_DATA |
@@ -708,6 +754,11 @@ void MCObjectFileInfo::initCOFFMCObjectFileInfo(const Triple &T) {
                                          COFF::IMAGE_SCN_MEM_READ,
                                      SectionKind::getMetadata());
 
+  GLJMPSection = Ctx->getCOFFSection(".gljmp$y",
+                                     COFF::IMAGE_SCN_CNT_INITIALIZED_DATA |
+                                         COFF::IMAGE_SCN_MEM_READ,
+                                     SectionKind::getMetadata());
+
   TLSDataSection = Ctx->getCOFFSection(
       ".tls$", COFF::IMAGE_SCN_CNT_INITIALIZED_DATA | COFF::IMAGE_SCN_MEM_READ |
                    COFF::IMAGE_SCN_MEM_WRITE,
@@ -738,7 +789,8 @@ void MCObjectFileInfo::initWasmMCObjectFileInfo(const Triple &T) {
       Ctx->getWasmSection(".debug_ranges", SectionKind::getMetadata());
   DwarfMacinfoSection =
       Ctx->getWasmSection(".debug_macinfo", SectionKind::getMetadata());
-  DwarfAddrSection = Ctx->getWasmSection(".debug_addr", SectionKind::getMetadata());
+  DwarfMacroSection =
+      Ctx->getWasmSection(".debug_macro", SectionKind::getMetadata());
   DwarfCUIndexSection = Ctx->getWasmSection(".debug_cu_index", SectionKind::getMetadata());
   DwarfTUIndexSection = Ctx->getWasmSection(".debug_tu_index", SectionKind::getMetadata());
   DwarfInfoSection =
@@ -747,6 +799,17 @@ void MCObjectFileInfo::initWasmMCObjectFileInfo(const Triple &T) {
   DwarfPubNamesSection = Ctx->getWasmSection(".debug_pubnames", SectionKind::getMetadata());
   DwarfPubTypesSection = Ctx->getWasmSection(".debug_pubtypes", SectionKind::getMetadata());
 
+  DwarfDebugNamesSection =
+      Ctx->getWasmSection(".debug_names", SectionKind::getMetadata());
+  DwarfStrOffSection =
+      Ctx->getWasmSection(".debug_str_offsets", SectionKind::getMetadata());
+  DwarfAddrSection =
+      Ctx->getWasmSection(".debug_addr", SectionKind::getMetadata());
+  DwarfRnglistsSection =
+      Ctx->getWasmSection(".debug_rnglists", SectionKind::getMetadata());
+  DwarfLoclistsSection =
+      Ctx->getWasmSection(".debug_loclists", SectionKind::getMetadata());
+
   // Wasm use data section for LSDA.
   // TODO Consider putting each function's exception table in a separate
   // section, as in -function-sections, to facilitate lld's --gc-section.
@@ -754,6 +817,47 @@ void MCObjectFileInfo::initWasmMCObjectFileInfo(const Triple &T) {
                                     SectionKind::getReadOnlyWithRel());
 
   // TODO: Define more sections.
+}
+
+void MCObjectFileInfo::initXCOFFMCObjectFileInfo(const Triple &T) {
+  // The default csect for program code. Functions without a specified section
+  // get placed into this csect. The choice of csect name is not a property of
+  // the ABI or object file format. For example, the XL compiler uses an unnamed
+  // csect for program code.
+  TextSection = Ctx->getXCOFFSection(
+      ".text", XCOFF::StorageMappingClass::XMC_PR, XCOFF::XTY_SD,
+      XCOFF::C_HIDEXT, SectionKind::getText());
+
+  DataSection = Ctx->getXCOFFSection(
+      ".data", XCOFF::StorageMappingClass::XMC_RW, XCOFF::XTY_SD,
+      XCOFF::C_HIDEXT, SectionKind::getData());
+
+  ReadOnlySection = Ctx->getXCOFFSection(
+      ".rodata", XCOFF::StorageMappingClass::XMC_RO, XCOFF::XTY_SD,
+      XCOFF::C_HIDEXT, SectionKind::getReadOnly());
+
+  TOCBaseSection = Ctx->getXCOFFSection(
+      "TOC", XCOFF::StorageMappingClass::XMC_TC0, XCOFF::XTY_SD,
+      XCOFF::C_HIDEXT, SectionKind::getData());
+
+  // The TOC-base always has 0 size, but 4 byte alignment.
+  TOCBaseSection->setAlignment(Align(4));
+
+  // DWARF sections for XCOFF are not csects. They are special STYP_DWARF
+  // sections, and the individual DWARF sections are distinguished by their
+  // section subtype.
+  // TODO: Populate the DWARF sections appropriately.
+  DwarfAbbrevSection = nullptr;   // SSUBTYP_DWABREV
+  DwarfInfoSection = nullptr;     // SSUBTYP_DWINFO
+  DwarfLineSection = nullptr;     // SSUBTYP_DWLINE
+  DwarfFrameSection = nullptr;    // SSUBTYP_DWFRAME
+  DwarfPubNamesSection = nullptr; // SSUBTYP_DWPBNMS
+  DwarfPubTypesSection = nullptr; // SSUBTYP_DWPBTYP
+  DwarfStrSection = nullptr;      // SSUBTYP_DWSTR
+  DwarfLocSection = nullptr;      // SSUBTYP_DWLOC
+  DwarfARangesSection = nullptr;  // SSUBTYP_DWARNGE
+  DwarfRangesSection = nullptr;   // SSUBTYP_DWRNGES
+  DwarfMacinfoSection = nullptr;  // SSUBTYP_DWMAC
 }
 
 void MCObjectFileInfo::InitMCObjectFileInfo(const Triple &TheTriple, bool PIC,
@@ -802,6 +906,10 @@ void MCObjectFileInfo::InitMCObjectFileInfo(const Triple &TheTriple, bool PIC,
     Env = IsWasm;
     initWasmMCObjectFileInfo(TT);
     break;
+  case Triple::XCOFF:
+    Env = IsXCOFF;
+    initXCOFFMCObjectFileInfo(TT);
+    break;
   case Triple::UnknownObjectFormat:
     report_fatal_error("Cannot initialize MC for unknown object file format.");
     break;
@@ -817,6 +925,7 @@ MCSection *MCObjectFileInfo::getDwarfComdatSection(const char *Name,
   case Triple::MachO:
   case Triple::COFF:
   case Triple::Wasm:
+  case Triple::XCOFF:
   case Triple::UnknownObjectFormat:
     report_fatal_error("Cannot get DWARF comdat section for this object file "
                        "format: not implemented.");
@@ -838,10 +947,7 @@ MCObjectFileInfo::getStackSizesSection(const MCSection &TextSec) const {
     Flags |= ELF::SHF_GROUP;
   }
 
-  const MCSymbol *Link = TextSec.getBeginSymbol();
-  auto It = StackSizesUniquing.insert({Link, StackSizesUniquing.size()});
-  unsigned UniqueID = It.first->second;
-
   return Ctx->getELFSection(".stack_sizes", ELF::SHT_PROGBITS, Flags, 0,
-                            GroupName, UniqueID, cast<MCSymbolELF>(Link));
+                            GroupName, MCSection::NonUniqueID,
+                            cast<MCSymbolELF>(TextSec.getBeginSymbol()));
 }

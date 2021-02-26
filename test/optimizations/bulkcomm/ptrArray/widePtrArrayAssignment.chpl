@@ -9,20 +9,24 @@ type srcType = if mode==0 then unmanaged C?
                else if mode==1 then owned C?
                else if mode==2 then shared C?
                else if mode==3 then R
-               else unmanaged C?;
+               else owned C?;
 
 type dstType = if mode==0 then unmanaged C?
                else if mode==1 then owned C?
                else if mode==2 then shared C?
                else if mode==3 then R
-               else unmanaged C?;
+               else owned C?;
 
 proc createObj(id) {
   if mode == 0 then return new unmanaged C(id);
   else if mode == 1 then return new owned C(id);
   else if mode == 2 then return new shared C(id);
   else if mode == 3 then return new R(id);
-  else return new unmanaged C(id);
+  else return new owned C(id);
+}
+
+proc cleanup(array) {
+  if mode == 0 then delete array;
 }
 
 class C {
@@ -86,6 +90,8 @@ on Locales[1] {
     }
   }
 }
+
+cleanup(a);
 
 proc getWidePtrTup(p) {
   if !__primitive("is wide pointer", p) {

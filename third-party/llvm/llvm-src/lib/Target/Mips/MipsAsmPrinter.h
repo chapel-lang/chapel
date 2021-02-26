@@ -1,9 +1,8 @@
 //===- MipsAsmPrinter.h - Mips LLVM Assembly Printer -----------*- C++ -*--===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -127,40 +126,38 @@ public:
 
   bool runOnMachineFunction(MachineFunction &MF) override;
 
-  void EmitConstantPool() override {
+  void emitConstantPool() override {
     bool UsingConstantPools =
       (Subtarget->inMips16Mode() && Subtarget->useConstantIslands());
     if (!UsingConstantPools)
-      AsmPrinter::EmitConstantPool();
+      AsmPrinter::emitConstantPool();
     // we emit constant pools customly!
   }
 
-  void EmitInstruction(const MachineInstr *MI) override;
+  void emitInstruction(const MachineInstr *MI) override;
   void printSavedRegsBitmask();
   void emitFrameDirective();
   const char *getCurrentABIString() const;
-  void EmitFunctionEntryLabel() override;
-  void EmitFunctionBodyStart() override;
-  void EmitFunctionBodyEnd() override;
-  void EmitBasicBlockEnd(const MachineBasicBlock &MBB) override;
+  void emitFunctionEntryLabel() override;
+  void emitFunctionBodyStart() override;
+  void emitFunctionBodyEnd() override;
+  void emitBasicBlockEnd(const MachineBasicBlock &MBB) override;
   bool isBlockOnlyReachableByFallthrough(
                                    const MachineBasicBlock* MBB) const override;
   bool PrintAsmOperand(const MachineInstr *MI, unsigned OpNo,
-                       unsigned AsmVariant, const char *ExtraCode,
-                       raw_ostream &O) override;
+                       const char *ExtraCode, raw_ostream &O) override;
   bool PrintAsmMemoryOperand(const MachineInstr *MI, unsigned OpNum,
-                             unsigned AsmVariant, const char *ExtraCode,
-                             raw_ostream &O) override;
+                             const char *ExtraCode, raw_ostream &O) override;
   void printOperand(const MachineInstr *MI, int opNum, raw_ostream &O);
   void printMemOperand(const MachineInstr *MI, int opNum, raw_ostream &O);
   void printMemOperandEA(const MachineInstr *MI, int opNum, raw_ostream &O);
   void printFCCOperand(const MachineInstr *MI, int opNum, raw_ostream &O,
                        const char *Modifier = nullptr);
   void printRegisterList(const MachineInstr *MI, int opNum, raw_ostream &O);
-  void EmitStartOfAsmFile(Module &M) override;
-  void EmitEndOfAsmFile(Module &M) override;
+  void emitStartOfAsmFile(Module &M) override;
+  void emitEndOfAsmFile(Module &M) override;
   void PrintDebugValueComment(const MachineInstr *MI, raw_ostream &OS);
-  void EmitDebugValue(const MCExpr *Value, unsigned Size) const override;
+  void emitDebugValue(const MCExpr *Value, unsigned Size) const override;
 };
 
 } // end namespace llvm

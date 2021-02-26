@@ -44,5 +44,5 @@ To debug using valgrind, use the following command
 
 .. code-block:: bash
 
-    % valgrind --trace-children=yes --suppressions=$CHPL_HOME/third-party/gasnet/gasnet-src/other/contrib/gasnet.supp
+    % valgrind --trace-children=yes --suppressions=$CHPL_HOME/third-party/gasnet/gasnet-src/other/valgrind/gasnet.supp
 

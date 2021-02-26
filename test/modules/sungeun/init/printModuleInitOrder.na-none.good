@@ -5,21 +5,22 @@ Initializing Modules:
      MemConsistency
     ChapelThreads
     ChapelTuple
+     DSIUtil
     ChapelRange
+     ChapelDebugPrint
+      ChapelIOStringifyHelper
     ChapelTaskDataHelp
     LocaleModel
      LocaleModelHelpFlat
       LocaleModelHelpSetup
        ChapelLocale
        DefaultRectangular
-        DSIUtil
         ChapelArray
-         ChapelDebugPrint
+         ChapelPrivatization
          Sort
           List
            ChapelLocks
            IO
-            SysError
             FormattedIO
              Regexp
           MSBRadixSort
@@ -29,8 +30,7 @@ Initializing Modules:
            ShallowCopy
            InsertionSort
         ChapelDistribution
-         LinkedLists
-        DefaultAssociative
+         ChapelHashtable
         ExternalArray
         RangeChunk
        ChapelNumLocales
@@ -39,15 +39,16 @@ Initializing Modules:
      LocaleModelHelpMem
     LocalesArray
     ChapelIO
-     LastResortIO
     LocaleTree
     ChapelTaskTable
     MemTracking
     ChapelUtil
     ChapelError
-    ChapelTaskData
-    Assert
+    ExportWrappers
+    ChapelAutoAggregation
+     CopyAggregation
+      AggregationPrimitives
+    Builtins
     AlignedTSupport
-    CPtr
    printModuleInitOrder
     moduleInitTest

@@ -1,9 +1,8 @@
 //===-- AMDGPUISelLowering.h - AMDGPU Lowering Interface --------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -19,6 +18,7 @@
 #include "AMDGPU.h"
 #include "llvm/CodeGen/CallingConvLower.h"
 #include "llvm/CodeGen/TargetLowering.h"
+#include "llvm/Target/TargetMachine.h"
 
 namespace llvm {
 
@@ -39,6 +39,7 @@ private:
 public:
   static unsigned numBitsUnsigned(SDValue Op, SelectionDAG &DAG);
   static unsigned numBitsSigned(SDValue Op, SelectionDAG &DAG);
+  static bool hasDefinedInitializer(const GlobalValue *GV);
 
 protected:
   SDValue LowerEXTRACT_SUBVECTOR(SDValue Op, SelectionDAG &DAG) const;
@@ -52,8 +53,6 @@ protected:
   SDValue LowerFRINT(SDValue Op, SelectionDAG &DAG) const;
   SDValue LowerFNEARBYINT(SDValue Op, SelectionDAG &DAG) const;
 
-  SDValue LowerFROUND32_16(SDValue Op, SelectionDAG &DAG) const;
-  SDValue LowerFROUND64(SDValue Op, SelectionDAG &DAG) const;
   SDValue LowerFROUND(SDValue Op, SelectionDAG &DAG) const;
   SDValue LowerFFLOOR(SDValue Op, SelectionDAG &DAG) const;
   SDValue LowerFLOG(SDValue Op, SelectionDAG &DAG,
@@ -79,6 +78,7 @@ protected:
   SDValue performLoadCombine(SDNode *N, DAGCombinerInfo &DCI) const;
   SDValue performStoreCombine(SDNode *N, DAGCombinerInfo &DCI) const;
   SDValue performAssertSZExtCombine(SDNode *N, DAGCombinerInfo &DCI) const;
+  SDValue performIntrinsicWOChainCombine(SDNode *N, DAGCombinerInfo &DCI) const;
 
   SDValue splitBinaryBitConstantOpImpl(DAGCombinerInfo &DCI, const SDLoc &SL,
                                        unsigned Opc, SDValue LHS,
@@ -111,8 +111,22 @@ protected:
   SDValue getLoHalf64(SDValue Op, SelectionDAG &DAG) const;
   SDValue getHiHalf64(SDValue Op, SelectionDAG &DAG) const;
 
+  /// Split a vector type into two parts. The first part is a power of two
+  /// vector. The second part is whatever is left over, and is a scalar if it
+  /// would otherwise be a 1-vector.
+  std::pair<EVT, EVT> getSplitDestVTs(const EVT &VT, SelectionDAG &DAG) const;
+
+  /// Split a vector value into two parts of types LoVT and HiVT. HiVT could be
+  /// scalar.
+  std::pair<SDValue, SDValue> splitVector(const SDValue &N, const SDLoc &DL,
+                                          const EVT &LoVT, const EVT &HighVT,
+                                          SelectionDAG &DAG) const;
+
   /// Split a vector load into 2 loads of half the vector.
   SDValue SplitVectorLoad(SDValue Op, SelectionDAG &DAG) const;
+
+  /// Widen a vector load from vec3 to vec4.
+  SDValue WidenVectorLoad(SDValue Op, SelectionDAG &DAG) const;
 
   /// Split a vector store into 2 stores of half the vector.
   SDValue SplitVectorStore(SDValue Op, SelectionDAG &DAG) const;
@@ -157,18 +171,28 @@ public:
   bool isZExtFree(EVT Src, EVT Dest) const override;
   bool isZExtFree(SDValue Val, EVT VT2) const override;
 
+  SDValue getNegatedExpression(SDValue Op, SelectionDAG &DAG,
+                               bool LegalOperations, bool ForCodeSize,
+                               NegatibleCost &Cost,
+                               unsigned Depth) const override;
+
   bool isNarrowingProfitable(EVT VT1, EVT VT2) const override;
+
+  EVT getTypeForExtReturn(LLVMContext &Context, EVT VT,
+                          ISD::NodeType ExtendKind) const override;
 
   MVT getVectorIdxTy(const DataLayout &) const override;
   bool isSelectSupported(SelectSupportKind) const override;
 
-  bool isFPImmLegal(const APFloat &Imm, EVT VT) const override;
+  bool isFPImmLegal(const APFloat &Imm, EVT VT,
+                    bool ForCodeSize) const override;
   bool ShouldShrinkFPConstant(EVT VT) const override;
   bool shouldReduceLoadWidth(SDNode *Load,
                              ISD::LoadExtType ExtType,
                              EVT ExtVT) const override;
 
-  bool isLoadBitCastBeneficial(EVT, EVT) const final;
+  bool isLoadBitCastBeneficial(EVT, EVT, const SelectionDAG &DAG,
+                               const MachineMemOperand &MMO) const final;
 
   bool storeOfVectorConstantIsCheap(EVT MemVT,
                                     unsigned NumElem,
@@ -212,15 +236,15 @@ public:
 
   const char* getTargetNodeName(unsigned Opcode) const override;
 
-  // FIXME: Turn off MergeConsecutiveStores() before Instruction Selection
-  // for AMDGPU.
-  // A commit ( git-svn-id: https://llvm.org/svn/llvm-project/llvm/trunk@319036
-  // 91177308-0d34-0410-b5e6-96231b3b80d8 ) turned on
-  // MergeConsecutiveStores() before Instruction Selection for all targets.
-  // Enough AMDGPU compiles go into an infinite loop ( MergeConsecutiveStores()
-  // merges two stores; LegalizeStoreOps() un-merges; MergeConsecutiveStores()
-  // re-merges, etc. ) to warrant turning it off for now.
-  bool mergeStoresAfterLegalization() const override { return false; }
+  // FIXME: Turn off MergeConsecutiveStores() before Instruction Selection for
+  // AMDGPU.  Commit r319036,
+  // (https://github.com/llvm/llvm-project/commit/db77e57ea86d941a4262ef60261692f4cb6893e6)
+  // turned on MergeConsecutiveStores() before Instruction Selection for all
+  // targets.  Enough AMDGPU compiles go into an infinite loop (
+  // MergeConsecutiveStores() merges two stores; LegalizeStoreOps() un-merges;
+  // MergeConsecutiveStores() re-merges, etc. ) to warrant turning it off for
+  // now.
+  bool mergeStoresAfterLegalization(EVT) const override { return false; }
 
   bool isFsqrtCheap(SDValue Operand, SelectionDAG &DAG) const override {
     return true;
@@ -247,6 +271,12 @@ public:
                                            const SelectionDAG &DAG,
                                            unsigned Depth = 0) const override;
 
+  unsigned computeNumSignBitsForTargetInstr(GISelKnownBits &Analysis,
+                                            Register R,
+                                            const APInt &DemandedElts,
+                                            const MachineRegisterInfo &MRI,
+                                            unsigned Depth = 0) const override;
+
   bool isKnownNeverNaNForTargetNode(SDValue Op,
                                     const SelectionDAG &DAG,
                                     bool SNaN = false,
@@ -259,19 +289,19 @@ public:
   /// a copy from the register.
   SDValue CreateLiveInRegister(SelectionDAG &DAG,
                                const TargetRegisterClass *RC,
-                               unsigned Reg, EVT VT,
+                               Register Reg, EVT VT,
                                const SDLoc &SL,
                                bool RawReg = false) const;
   SDValue CreateLiveInRegister(SelectionDAG &DAG,
                                const TargetRegisterClass *RC,
-                               unsigned Reg, EVT VT) const {
+                               Register Reg, EVT VT) const {
     return CreateLiveInRegister(DAG, RC, Reg, VT, SDLoc(DAG.getEntryNode()));
   }
 
   // Returns the raw live in register rather than a copy from it.
   SDValue CreateLiveInRegisterRaw(SelectionDAG &DAG,
                                   const TargetRegisterClass *RC,
-                                  unsigned Reg, EVT VT) const {
+                                  Register Reg, EVT VT) const {
     return CreateLiveInRegister(DAG, RC, Reg, VT, SDLoc(DAG.getEntryNode()), true);
   }
 
@@ -350,6 +380,9 @@ enum NodeType : unsigned {
   // result bit per item in the wavefront.
   SETCC,
   SETREG,
+
+  DENORM_MODE,
+
   // FP ops with input and output chain.
   FMA_W_CHAIN,
   FMUL_W_CHAIN,
@@ -378,14 +411,12 @@ enum NodeType : unsigned {
   // For emitting ISD::FMAD when f32 denormals are enabled because mac/mad is
   // treated as an illegal operation.
   FMAD_FTZ,
-  TRIG_PREOP, // 1 ULP max error for f64
 
   // RCP, RSQ - For f32, 1 ULP max error, no denormal handling.
   //            For f64, max error 2^29 ULP, handles denormals.
   RCP,
   RSQ,
   RCP_LEGACY,
-  RSQ_LEGACY,
   RCP_IFLAG,
   FMUL_LEGACY,
   RSQ_CLAMP,
@@ -413,8 +444,6 @@ enum NodeType : unsigned {
   MUL_LOHI_U24,
   PERM,
   TEXTURE_FETCH,
-  EXPORT, // exp on SI+
-  EXPORT_DONE, // exp on SI+ with done bit set
   R600_EXPORT,
   CONST_ADDRESS,
   REGISTER_LOAD,
@@ -456,21 +485,20 @@ enum NodeType : unsigned {
   BUILD_VERTICAL_VECTOR,
   /// Pointer to the start of the shader's constant data.
   CONST_DATA_PTR,
-  INIT_EXEC,
-  INIT_EXEC_FROM_INPUT,
-  SENDMSG,
-  SENDMSGHALT,
-  INTERP_MOV,
-  INTERP_P1,
-  INTERP_P2,
   PC_ADD_REL_OFFSET,
-  KILL,
+  LDS,
   DUMMY_CHAIN,
   FIRST_MEM_OPCODE_NUMBER = ISD::FIRST_TARGET_MEMORY_OPCODE,
+  LOAD_D16_HI,
+  LOAD_D16_LO,
+  LOAD_D16_HI_I8,
+  LOAD_D16_HI_U8,
+  LOAD_D16_LO_I8,
+  LOAD_D16_LO_U8,
+
   STORE_MSKOR,
   LOAD_CONSTANT,
   TBUFFER_STORE_FORMAT,
-  TBUFFER_STORE_FORMAT_X3,
   TBUFFER_STORE_FORMAT_D16,
   TBUFFER_LOAD_FORMAT,
   TBUFFER_LOAD_FORMAT_D16,
@@ -478,14 +506,20 @@ enum NodeType : unsigned {
   ATOMIC_CMP_SWAP,
   ATOMIC_INC,
   ATOMIC_DEC,
-  ATOMIC_LOAD_FADD,
   ATOMIC_LOAD_FMIN,
   ATOMIC_LOAD_FMAX,
+  ATOMIC_LOAD_CSUB,
   BUFFER_LOAD,
+  BUFFER_LOAD_UBYTE,
+  BUFFER_LOAD_USHORT,
+  BUFFER_LOAD_BYTE,
+  BUFFER_LOAD_SHORT,
   BUFFER_LOAD_FORMAT,
   BUFFER_LOAD_FORMAT_D16,
   SBUFFER_LOAD,
   BUFFER_STORE,
+  BUFFER_STORE_BYTE,
+  BUFFER_STORE_SHORT,
   BUFFER_STORE_FORMAT,
   BUFFER_STORE_FORMAT_D16,
   BUFFER_ATOMIC_SWAP,
@@ -498,7 +532,13 @@ enum NodeType : unsigned {
   BUFFER_ATOMIC_AND,
   BUFFER_ATOMIC_OR,
   BUFFER_ATOMIC_XOR,
+  BUFFER_ATOMIC_INC,
+  BUFFER_ATOMIC_DEC,
   BUFFER_ATOMIC_CMPSWAP,
+  BUFFER_ATOMIC_CSUB,
+  BUFFER_ATOMIC_FADD,
+  BUFFER_ATOMIC_PK_FADD,
+  ATOMIC_PK_FADD,
 
   LAST_AMDGPU_ISD_NUMBER
 };

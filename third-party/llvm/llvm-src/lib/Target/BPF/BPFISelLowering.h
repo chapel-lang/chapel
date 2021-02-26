@@ -1,9 +1,8 @@
 //===-- BPFISelLowering.h - BPF DAG Lowering Interface ----------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -56,6 +55,7 @@ public:
                               MachineBasicBlock *BB) const override;
 
   bool getHasAlu32() const { return HasAlu32; }
+  bool getHasJmp32() const { return HasJmp32; }
   bool getHasJmpExt() const { return HasJmpExt; }
 
   EVT getSetCCResultType(const DataLayout &DL, LLVMContext &Context,
@@ -66,6 +66,7 @@ public:
 private:
   // Control Instruction Selection Features
   bool HasAlu32;
+  bool HasJmp32;
   bool HasJmpExt;
 
   SDValue LowerBR_CC(SDValue Op, SelectionDAG &DAG) const;
@@ -98,16 +99,38 @@ private:
                       const SmallVectorImpl<SDValue> &OutVals, const SDLoc &DL,
                       SelectionDAG &DAG) const override;
 
-  EVT getOptimalMemOpType(uint64_t Size, unsigned DstAlign, unsigned SrcAlign,
-                          bool IsMemset, bool ZeroMemset, bool MemcpyStrSrc,
-                          MachineFunction &MF) const override {
-    return Size >= 8 ? MVT::i64 : MVT::i32;
+  EVT getOptimalMemOpType(const MemOp &Op,
+                          const AttributeList &FuncAttributes) const override {
+    return Op.size() >= 8 ? MVT::i64 : MVT::i32;
   }
 
   bool shouldConvertConstantLoadToIntImm(const APInt &Imm,
                                          Type *Ty) const override {
     return true;
   }
+
+  // Prevent reducing load width during SelectionDag phase.
+  // Otherwise, we may transform the following
+  //   ctx = ctx + reloc_offset
+  //   ... (*(u32 *)ctx) & 0x8000...
+  // to
+  //   ctx = ctx + reloc_offset
+  //   ... (*(u8 *)(ctx + 1)) & 0x80 ...
+  // which will be rejected by the verifier.
+  bool shouldReduceLoadWidth(SDNode *Load, ISD::LoadExtType ExtTy,
+                             EVT NewVT) const override {
+    return false;
+  }
+
+  // isTruncateFree - Return true if it's free to truncate a value of
+  // type Ty1 to type Ty2. e.g. On BPF at alu32 mode, it's free to truncate
+  // a i64 value in register R1 to i32 by referencing its sub-register W1.
+  bool isTruncateFree(Type *Ty1, Type *Ty2) const override;
+  bool isTruncateFree(EVT VT1, EVT VT2) const override;
+
+  // For 32bit ALU result zext to 64bit is free.
+  bool isZExtFree(Type *Ty1, Type *Ty2) const override;
+  bool isZExtFree(EVT VT1, EVT VT2) const override;
 
   unsigned EmitSubregExt(MachineInstr &MI, MachineBasicBlock *BB, unsigned Reg,
                          bool isSigned) const;

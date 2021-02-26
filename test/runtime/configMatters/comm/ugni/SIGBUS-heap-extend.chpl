@@ -1,3 +1,4 @@
+use Sys;
 //
 // This test checks the error message printed by the comm=ugni SIGBUS
 // handler when we run out of memory trying to extend the heap, with

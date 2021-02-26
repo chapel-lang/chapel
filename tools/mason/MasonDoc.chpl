@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -24,14 +24,14 @@ private use MasonHelp;
 private use IO;
 private use MasonUtils;
 
-proc masonDoc(args) throws {
+proc masonDoc(args: [] string) throws {
   try! {
     if args.size > 2 {
       masonDocHelp();
       exit(0);
     }
     const tomlName = 'Mason.toml';
-    const cwd = getEnv("PWD");
+    const cwd = here.cwd();
 
     const projectHome = getProjectHome(cwd, tomlName);
     const tomlPath = projectHome + "/" + tomlName;

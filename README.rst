@@ -1,5 +1,4 @@
-.. image:: https://chapel-lang.org/images/cray-chapel-logo-200.png
-    :align: center
+.. image:: https://chapel-lang.org/images/chapel-logo-200.png
 
 The Chapel Language
 ===================
@@ -35,10 +34,12 @@ Building from source:  https://chapel-lang.org/docs/usingchapel/QUICKSTART.html
 Sample computations:   https://chapel-lang.org/hellos.html
 Learning Chapel:       https://chapel-lang.org/learning.html
 Reporting bugs:        https://chapel-lang.org/bugs.html
-Online documentation:  https://chapel-lang.org/docs/
+Chapel documentation:  https://chapel-lang.org/docs/
 GitHub:                https://github.com/chapel-lang/chapel
-Mailing lists:         https://sourceforge.net/p/chapel/mailman
-Facebook:              https://www.facebook.com/ChapelLanguage
+Discussion forums:     https://chapel.discourse.group
+Gitter chat room:      https://gitter.im/chapel-lang/chapel
+Stack Overflow:        http://stackoverflow.com/questions/tagged/chapel
 Twitter:               https://twitter.com/ChapelLanguage
+Facebook:              https://www.facebook.com/ChapelLanguage
 =====================  ========================================================
 

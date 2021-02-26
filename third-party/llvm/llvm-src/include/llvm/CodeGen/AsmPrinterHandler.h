@@ -1,9 +1,8 @@
 //===-- llvm/CodeGen/AsmPrinterHandler.h -----------------------*- C++ -*--===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -68,6 +67,12 @@ public:
 
   /// Process end of an instruction.
   virtual void endInstruction() = 0;
+
+  /// Process beginning of a basic block during basic block sections.
+  virtual void beginBasicBlock(const MachineBasicBlock &MBB) {}
+
+  /// Process end of a basic block during basic block sections.
+  virtual void endBasicBlock(const MachineBasicBlock &MBB) {}
 };
 } // End of namespace llvm
 

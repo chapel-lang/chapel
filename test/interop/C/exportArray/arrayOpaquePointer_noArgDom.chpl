@@ -8,7 +8,7 @@ export proc makeBlockArray(): [D] int {
 
 // Will generate a different signature than the return type for the previous
 // function
-export proc printBlock(x: [] int) {
+export proc printBlock(const ref x: [] int) {
   var output = "";
   var first = true;
   for idx in x.dom {

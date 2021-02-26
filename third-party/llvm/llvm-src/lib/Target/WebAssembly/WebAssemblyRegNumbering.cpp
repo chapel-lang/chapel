@@ -1,9 +1,8 @@
 //===-- WebAssemblyRegNumbering.cpp - Register Numbering ------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 ///
@@ -67,13 +66,13 @@ bool WebAssemblyRegNumbering::runOnMachineFunction(MachineFunction &MF) {
   WebAssemblyFunctionInfo &MFI = *MF.getInfo<WebAssemblyFunctionInfo>();
   MachineRegisterInfo &MRI = MF.getRegInfo();
 
-  MFI.initWARegs();
+  MFI.initWARegs(MRI);
 
   // WebAssembly argument registers are in the same index space as local
   // variables. Assign the numbers for them first.
   MachineBasicBlock &EntryMBB = MF.front();
   for (MachineInstr &MI : EntryMBB) {
-    if (!WebAssembly::isArgument(MI))
+    if (!WebAssembly::isArgument(MI.getOpcode()))
       break;
 
     int64_t Imm = MI.getOperand(1).getImm();
@@ -90,7 +89,7 @@ bool WebAssemblyRegNumbering::runOnMachineFunction(MachineFunction &MF) {
   // Start the numbering for locals after the arg regs
   unsigned CurReg = MFI.getParams().size();
   for (unsigned VRegIdx = 0; VRegIdx < NumVRegs; ++VRegIdx) {
-    unsigned VReg = TargetRegisterInfo::index2VirtReg(VRegIdx);
+    unsigned VReg = Register::index2VirtReg(VRegIdx);
     // Skip unused registers.
     if (MRI.use_empty(VReg))
       continue;

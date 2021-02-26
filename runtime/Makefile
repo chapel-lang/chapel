@@ -1,4 +1,4 @@
-# Copyright 2020 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2021 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
@@ -35,15 +35,15 @@ all: $(CHPL_ENV_HEADER) third-party-pkgs all.helpme
 depend:
 
 clean: clean.helpme
-	rm -f tags TAGS
+	rm -f tags TAGS $(CHPL_ENV_HEADER)
 
 cleanall: cleanall.helpme
-	rm -f tags TAGS
+	rm -f tags TAGS $(CHPL_ENV_HEADER)
 
 cleandeps: cleandeps.helpme
 
 clobber: clobber.helpme
-	rm -f tags TAGS
+	rm -f tags TAGS $(CHPL_ENV_HEADER)
 
 %.helpme:
 	@$(MAKE) -f Makefile.help MAKE_LAUNCHER=0 CHPL_MAKE_RULE=$* $*
@@ -51,7 +51,7 @@ ifneq ($(CHPL_MAKE_LAUNCHER),none)
 	@$(MAKE) -f Makefile.help MAKE_LAUNCHER=1 CHPL_MAKE_RULE=$* $*
 endif
 
-$(CHPL_ENV_HEADER):
+$(CHPL_ENV_HEADER): $(CHPL_MAKE_HOME)/util/printchplenv $(CHPL_MAKE_HOME)/util/chplenv/*
 	@mkdir -p $(CHPL_ENV_HEADER_DIR)
 	@echo "Generating $(CHPL_ENV_HEADER)"
 	@cp $(CHPL_ENV_HEADER_TEMPLATE) $(CHPL_ENV_HEADER)
@@ -65,7 +65,7 @@ $(CHPL_ENV_HEADER):
           awk '{ print "#define " $$1 "_" toupper($$2) }' >> $(CHPL_ENV_HEADER)
 	@echo "#endif /* _CHPL_ENV_GEN_H_ */" >> $(CHPL_ENV_HEADER)
 
-THIRD_PARTY_PKGS = $(shell $(CHPL_MAKE_HOME)/util/chplenv/third-party-pkgs)
+THIRD_PARTY_PKGS = $(shell $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/chplenv/third-party-pkgs)
 # NOTE: If any of these builds fail, we won't stop building
 third-party-pkgs:
 ifneq (, $(THIRD_PARTY_PKGS))

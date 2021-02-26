@@ -1,0 +1,33 @@
+if HAVE_TCP
+_tcp_files = \
+	prov/tcp/src/tcpx_fabric.c	\
+	prov/tcp/src/tcpx_attr.c	\
+	prov/tcp/src/tcpx_conn_mgr.c	\
+	prov/tcp/src/tcpx_domain.c	\
+	prov/tcp/src/tcpx_rma.c		\
+	prov/tcp/src/tcpx_msg.c		\
+	prov/tcp/src/tcpx_ep.c		\
+	prov/tcp/src/tcpx_shared_ctx.c	\
+	prov/tcp/src/tcpx_cq.c		\
+	prov/tcp/src/tcpx_eq.c		\
+	prov/tcp/src/tcpx_init.c	\
+	prov/tcp/src/tcpx_progress.c	\
+	prov/tcp/src/tcpx_comm.c	\
+	prov/tcp/src/tcpx.h
+
+if HAVE_TCP_DL
+pkglib_LTLIBRARIES += libtcp-fi.la
+libtcp_fi_la_SOURCES = $(_tcp_files) $(common_srcs)
+libtcp_fi_la_LIBADD = $(linkback) $(tcp_shm_LIBS)
+libtcp_fi_la_LDFLAGS = -module -avoid-version -shared -export-dynamic
+libtcp_fi_la_DEPENDENCIES = $(linkback)
+else !HAVE_TCP_DL
+src_libfabric_la_SOURCES += $(_tcp_files)
+src_libfabric_la_LIBADD += $(tcp_shm_LIBS)
+endif !HAVE_TCP_DL
+
+prov_install_man_pages += man/man7/fi_tcp.7
+
+endif HAVE_TCP
+
+prov_dist_man_pages += man/man7/fi_tcp.7

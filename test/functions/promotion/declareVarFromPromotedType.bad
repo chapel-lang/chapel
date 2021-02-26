@@ -1,0 +1,8 @@
+declareVarFromPromotedType.chpl:2: internal error: RES-FUN-ION-10082 chpl version 1.23.0 pre-release (1032009515)
+Note: This source location is a guess.
+
+Internal errors indicate a bug in the Chapel compiler ("It's us, not you"),
+and we're sorry for the hassle.  We would appreciate your reporting this bug -- 
+please see https://chapel-lang.org/bugs.html for instructions.  In the meantime,
+the filename + line number above may be useful in working around the issue.
+

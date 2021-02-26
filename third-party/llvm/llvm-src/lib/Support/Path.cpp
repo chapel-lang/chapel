@@ -1,9 +1,8 @@
 //===-- Path.cpp - Implement OS Path Concept ------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -170,25 +169,6 @@ createUniqueEntity(const Twine &Model, int &ResultFD,
                    SmallVectorImpl<char> &ResultPath, bool MakeAbsolute,
                    unsigned Mode, FSEntity Type,
                    sys::fs::OpenFlags Flags = sys::fs::OF_None) {
-  SmallString<128> ModelStorage;
-  Model.toVector(ModelStorage);
-
-  if (MakeAbsolute) {
-    // Make model absolute by prepending a temp directory if it's not already.
-    if (!sys::path::is_absolute(Twine(ModelStorage))) {
-      SmallString<128> TDir;
-      sys::path::system_temp_directory(true, TDir);
-      sys::path::append(TDir, Twine(ModelStorage));
-      ModelStorage.swap(TDir);
-    }
-  }
-
-  // From here on, DO NOT modify model. It may be needed if the randomly chosen
-  // path already exists.
-  ResultPath = ModelStorage;
-  // Null terminate.
-  ResultPath.push_back(0);
-  ResultPath.pop_back();
 
   // Limit the number of attempts we make, so that we don't infinite loop. E.g.
   // "permission denied" could be for a specific file (so we retry with a
@@ -196,13 +176,7 @@ createUniqueEntity(const Twine &Model, int &ResultFD,
   // Checking which is racy, so we try a number of times, then give up.
   std::error_code EC;
   for (int Retries = 128; Retries > 0; --Retries) {
-    // Replace '%' with random chars.
-    for (unsigned i = 0, e = ModelStorage.size(); i != e; ++i) {
-      if (ModelStorage[i] == '%')
-        ResultPath[i] =
-            "0123456789abcdef"[sys::Process::GetRandomNumber() & 15];
-    }
-
+    sys::fs::createUniquePath(Model, ResultPath, MakeAbsolute);
     // Try to open + create the file.
     switch (Type) {
     case FS_File: {
@@ -323,7 +297,8 @@ reverse_iterator rbegin(StringRef Path, Style style) {
   I.Path = Path;
   I.Position = Path.size();
   I.S = style;
-  return ++I;
+  ++I;
+  return I;
 }
 
 reverse_iterator rend(StringRef Path) {
@@ -521,27 +496,45 @@ void replace_extension(SmallVectorImpl<char> &path, const Twine &extension,
   path.append(ext.begin(), ext.end());
 }
 
-void replace_path_prefix(SmallVectorImpl<char> &Path,
-                         const StringRef &OldPrefix, const StringRef &NewPrefix,
-                         Style style) {
+static bool starts_with(StringRef Path, StringRef Prefix,
+                        Style style = Style::native) {
+  // Windows prefix matching : case and separator insensitive
+  if (real_style(style) == Style::windows) {
+    if (Path.size() < Prefix.size())
+      return false;
+    for (size_t I = 0, E = Prefix.size(); I != E; ++I) {
+      bool SepPath = is_separator(Path[I], style);
+      bool SepPrefix = is_separator(Prefix[I], style);
+      if (SepPath != SepPrefix)
+        return false;
+      if (!SepPath && toLower(Path[I]) != toLower(Prefix[I]))
+        return false;
+    }
+    return true;
+  }
+  return Path.startswith(Prefix);
+}
+
+bool replace_path_prefix(SmallVectorImpl<char> &Path, StringRef OldPrefix,
+                         StringRef NewPrefix, Style style) {
   if (OldPrefix.empty() && NewPrefix.empty())
-    return;
+    return false;
 
   StringRef OrigPath(Path.begin(), Path.size());
-  if (!OrigPath.startswith(OldPrefix))
-    return;
+  if (!starts_with(OrigPath, OldPrefix, style))
+    return false;
 
   // If prefixes have the same size we can simply copy the new one over.
   if (OldPrefix.size() == NewPrefix.size()) {
     llvm::copy(NewPrefix, Path.begin());
-    return;
+    return true;
   }
 
   StringRef RelPath = OrigPath.substr(OldPrefix.size());
   SmallString<256> NewPath;
-  path::append(NewPath, style, NewPrefix);
-  path::append(NewPath, style, RelPath);
+  (Twine(NewPrefix) + RelPath).toVector(NewPath);
   Path.swap(NewPath);
+  return true;
 }
 
 void native(const Twine &path, SmallVectorImpl<char> &result, Style style) {
@@ -566,21 +559,15 @@ void native(SmallVectorImpl<char> &Path, Style style) {
       Path = PathHome;
     }
   } else {
-    for (auto PI = Path.begin(), PE = Path.end(); PI < PE; ++PI) {
-      if (*PI == '\\') {
-        auto PN = PI + 1;
-        if (PN < PE && *PN == '\\')
-          ++PI; // increment once, the for loop will move over the escaped slash
-        else
-          *PI = '/';
-      }
-    }
+    for (auto PI = Path.begin(), PE = Path.end(); PI < PE; ++PI)
+      if (*PI == '\\')
+        *PI = '/';
   }
 }
 
 std::string convert_to_slash(StringRef path, Style style) {
   if (real_style(style) != Style::windows)
-    return path;
+    return std::string(path);
 
   std::string s = path.str();
   std::replace(s.begin(), s.end(), '\\', '/');
@@ -710,43 +697,69 @@ StringRef remove_leading_dotslash(StringRef Path, Style style) {
   return Path;
 }
 
-static SmallString<256> remove_dots(StringRef path, bool remove_dot_dot,
-                                    Style style) {
+// Remove path traversal components ("." and "..") when possible, and
+// canonicalize slashes.
+bool remove_dots(SmallVectorImpl<char> &the_path, bool remove_dot_dot,
+                 Style style) {
+  style = real_style(style);
+  StringRef remaining(the_path.data(), the_path.size());
+  bool needs_change = false;
   SmallVector<StringRef, 16> components;
 
-  // Skip the root path, then look for traversal in the components.
-  StringRef rel = path::relative_path(path, style);
-  for (StringRef C :
-       llvm::make_range(path::begin(rel, style), path::end(rel))) {
-    if (C == ".")
-      continue;
-    // Leading ".." will remain in the path unless it's at the root.
-    if (remove_dot_dot && C == "..") {
+  // Consume the root path, if present.
+  StringRef root = path::root_path(remaining, style);
+  bool absolute = !root.empty();
+  if (absolute)
+    remaining = remaining.drop_front(root.size());
+
+  // Loop over path components manually. This makes it easier to detect
+  // non-preferred slashes and double separators that must be canonicalized.
+  while (!remaining.empty()) {
+    size_t next_slash = remaining.find_first_of(separators(style));
+    if (next_slash == StringRef::npos)
+      next_slash = remaining.size();
+    StringRef component = remaining.take_front(next_slash);
+    remaining = remaining.drop_front(next_slash);
+
+    // Eat the slash, and check if it is the preferred separator.
+    if (!remaining.empty()) {
+      needs_change |= remaining.front() != preferred_separator(style);
+      remaining = remaining.drop_front();
+      // The path needs to be rewritten if it has a trailing slash.
+      // FIXME: This is emergent behavior that could be removed.
+      needs_change |= remaining.empty();
+    }
+
+    // Check for path traversal components or double separators.
+    if (component.empty() || component == ".") {
+      needs_change = true;
+    } else if (remove_dot_dot && component == "..") {
+      needs_change = true;
+      // Do not allow ".." to remove the root component. If this is the
+      // beginning of a relative path, keep the ".." component.
       if (!components.empty() && components.back() != "..") {
         components.pop_back();
-        continue;
+      } else if (!absolute) {
+        components.push_back(component);
       }
-      if (path::is_absolute(path, style))
-        continue;
+    } else {
+      components.push_back(component);
     }
-    components.push_back(C);
   }
 
-  SmallString<256> buffer = path::root_path(path, style);
-  for (StringRef C : components)
-    path::append(buffer, style, C);
-  return buffer;
-}
-
-bool remove_dots(SmallVectorImpl<char> &path, bool remove_dot_dot,
-                 Style style) {
-  StringRef p(path.data(), path.size());
-
-  SmallString<256> result = remove_dots(p, remove_dot_dot, style);
-  if (result == path)
+  // Avoid rewriting the path unless we have to.
+  if (!needs_change)
     return false;
 
-  path.swap(result);
+  SmallString<256> buffer = root;
+  if (!components.empty()) {
+    buffer += components[0];
+    for (StringRef C : makeArrayRef(components).drop_front()) {
+      buffer += preferred_separator(style);
+      buffer += C;
+    }
+  }
+  the_path.swap(buffer);
   return true;
 }
 
@@ -761,6 +774,32 @@ std::error_code getUniqueID(const Twine Path, UniqueID &Result) {
     return EC;
   Result = Status.getUniqueID();
   return std::error_code();
+}
+
+void createUniquePath(const Twine &Model, SmallVectorImpl<char> &ResultPath,
+                      bool MakeAbsolute) {
+  SmallString<128> ModelStorage;
+  Model.toVector(ModelStorage);
+
+  if (MakeAbsolute) {
+    // Make model absolute by prepending a temp directory if it's not already.
+    if (!sys::path::is_absolute(Twine(ModelStorage))) {
+      SmallString<128> TDir;
+      sys::path::system_temp_directory(true, TDir);
+      sys::path::append(TDir, Twine(ModelStorage));
+      ModelStorage.swap(TDir);
+    }
+  }
+
+  ResultPath = ModelStorage;
+  ResultPath.push_back(0);
+  ResultPath.pop_back();
+
+  // Replace '%' with random chars.
+  for (unsigned i = 0, e = ModelStorage.size(); i != e; ++i) {
+    if (ModelStorage[i] == '%')
+      ResultPath[i] = "0123456789abcdef"[sys::Process::GetRandomNumber() & 15];
+  }
 }
 
 std::error_code createUniqueFile(const Twine &Model, int &ResultFd,
@@ -854,11 +893,11 @@ void make_absolute(const Twine &current_directory,
   StringRef p(path.data(), path.size());
 
   bool rootDirectory = path::has_root_directory(p);
-  bool rootName =
-      (real_style(Style::native) != Style::windows) || path::has_root_name(p);
+  bool rootName = path::has_root_name(p);
 
   // Already absolute.
-  if (rootName && rootDirectory)
+  if ((rootName || real_style(Style::native) != Style::windows) &&
+      rootDirectory)
     return;
 
   // All of the following conditions will need the current directory.
@@ -959,6 +998,7 @@ static std::error_code copy_file_internal(int ReadFD, int WriteFD) {
   return std::error_code();
 }
 
+#ifndef __APPLE__
 std::error_code copy_file(const Twine &From, const Twine &To) {
   int ReadFD, WriteFD;
   if (std::error_code EC = openFileForRead(From, ReadFD, OF_None))
@@ -976,6 +1016,7 @@ std::error_code copy_file(const Twine &From, const Twine &To) {
 
   return EC;
 }
+#endif
 
 std::error_code copy_file(const Twine &From, int ToFD) {
   int ReadFD;
@@ -1088,7 +1129,7 @@ void directory_entry::replace_filename(const Twine &Filename, file_type Type,
                                        basic_file_status Status) {
   SmallString<128> PathStr = path::parent_path(Path);
   path::append(PathStr, Filename);
-  this->Path = PathStr.str();
+  this->Path = std::string(PathStr.str());
   this->Type = Type;
   this->Status = Status;
 }
@@ -1116,12 +1157,14 @@ ErrorOr<perms> getPermissions(const Twine &Path) {
 namespace llvm {
 namespace sys {
 namespace fs {
-TempFile::TempFile(StringRef Name, int FD) : TmpName(Name), FD(FD) {}
+TempFile::TempFile(StringRef Name, int FD)
+    : TmpName(std::string(Name)), FD(FD) {}
 TempFile::TempFile(TempFile &&Other) { *this = std::move(Other); }
 TempFile &TempFile::operator=(TempFile &&Other) {
   TmpName = std::move(Other.TmpName);
   FD = Other.FD;
   Other.Done = true;
+  Other.FD = -1;
   return *this;
 }
 
@@ -1129,26 +1172,27 @@ TempFile::~TempFile() { assert(Done); }
 
 Error TempFile::discard() {
   Done = true;
-  std::error_code RemoveEC;
-// On windows closing will remove the file.
-#ifndef _WIN32
-  // Always try to close and remove.
-  if (!TmpName.empty()) {
-    RemoveEC = fs::remove(TmpName);
-    sys::DontRemoveFileOnSignal(TmpName);
-  }
-#endif
-
-  if (!RemoveEC)
-    TmpName = "";
-
   if (FD != -1 && close(FD) == -1) {
     std::error_code EC = std::error_code(errno, std::generic_category());
     return errorCodeToError(EC);
   }
   FD = -1;
 
+#ifdef _WIN32
+  // On windows closing will remove the file.
+  TmpName = "";
+  return Error::success();
+#else
+  // Always try to close and remove.
+  std::error_code RemoveEC;
+  if (!TmpName.empty()) {
+    RemoveEC = fs::remove(TmpName);
+    sys::DontRemoveFileOnSignal(TmpName);
+    if (!RemoveEC)
+      TmpName = "";
+  }
   return errorCodeToError(RemoveEC);
+#endif
 }
 
 Error TempFile::keep(const Twine &Name) {

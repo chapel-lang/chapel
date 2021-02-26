@@ -20,7 +20,7 @@ module HPCC_PTRANS {
 
   param zero = 0.0, one = 1.0, epsilon = 2.2E-16;
 
-  use Norm, 
+  use LinearAlgebra, 
       Time,
       BlockCycDist;
  

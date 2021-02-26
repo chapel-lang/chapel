@@ -1,9 +1,8 @@
 //===--------------------- TimelineView.cpp ---------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 /// \brief
@@ -13,6 +12,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "Views/TimelineView.h"
+#include <numeric>
 
 namespace llvm {
 namespace mca {
@@ -133,25 +133,38 @@ void TimelineView::printWaitTimeEntry(formatted_raw_ostream &OS,
                                       const WaitTimeEntry &Entry,
                                       unsigned SourceIndex,
                                       unsigned Executions) const {
-  OS << SourceIndex << '.';
+  bool PrintingTotals = SourceIndex == Source.size();
+  unsigned CumulativeExecutions = PrintingTotals ? Timeline.size() : Executions;
+
+  if (!PrintingTotals)
+    OS << SourceIndex << '.';
+
   OS.PadToColumn(7);
 
   double AverageTime1, AverageTime2, AverageTime3;
-  AverageTime1 = (double)Entry.CyclesSpentInSchedulerQueue / Executions;
-  AverageTime2 = (double)Entry.CyclesSpentInSQWhileReady / Executions;
-  AverageTime3 = (double)Entry.CyclesSpentAfterWBAndBeforeRetire / Executions;
+  AverageTime1 =
+      (double)Entry.CyclesSpentInSchedulerQueue / CumulativeExecutions;
+  AverageTime2 = (double)Entry.CyclesSpentInSQWhileReady / CumulativeExecutions;
+  AverageTime3 =
+      (double)Entry.CyclesSpentAfterWBAndBeforeRetire / CumulativeExecutions;
 
   OS << Executions;
   OS.PadToColumn(13);
-  int BufferSize = UsedBuffer[SourceIndex].second;
-  tryChangeColor(OS, Entry.CyclesSpentInSchedulerQueue, Executions, BufferSize);
+
+  int BufferSize = PrintingTotals ? 0 : UsedBuffer[SourceIndex].second;
+  if (!PrintingTotals)
+    tryChangeColor(OS, Entry.CyclesSpentInSchedulerQueue, CumulativeExecutions,
+                   BufferSize);
   OS << format("%.1f", floor((AverageTime1 * 10) + 0.5) / 10);
   OS.PadToColumn(20);
-  tryChangeColor(OS, Entry.CyclesSpentInSQWhileReady, Executions, BufferSize);
+  if (!PrintingTotals)
+    tryChangeColor(OS, Entry.CyclesSpentInSQWhileReady, CumulativeExecutions,
+                   BufferSize);
   OS << format("%.1f", floor((AverageTime2 * 10) + 0.5) / 10);
   OS.PadToColumn(27);
-  tryChangeColor(OS, Entry.CyclesSpentAfterWBAndBeforeRetire, Executions,
-                 STI.getSchedModel().MicroOpBufferSize);
+  if (!PrintingTotals)
+    tryChangeColor(OS, Entry.CyclesSpentAfterWBAndBeforeRetire,
+                   CumulativeExecutions, STI.getSchedModel().MicroOpBufferSize);
   OS << format("%.1f", floor((AverageTime3 * 10) + 0.5) / 10);
 
   if (OS.has_colors())
@@ -179,7 +192,7 @@ void TimelineView::printAverageWaitTimes(raw_ostream &OS) const {
   for (const MCInst &Inst : Source) {
     printWaitTimeEntry(FOS, WaitTime[IID], IID, Executions);
     // Append the instruction info at the end of the line.
-    MCIP.printInst(&Inst, InstrStream, "", STI);
+    MCIP.printInst(&Inst, 0, "", STI, InstrStream);
     InstrStream.flush();
 
     // Consume any tabs or spaces at the beginning of the string.
@@ -190,6 +203,24 @@ void TimelineView::printAverageWaitTimes(raw_ostream &OS) const {
     Instruction = "";
 
     ++IID;
+  }
+
+  // If the timeline contains more than one instruction,
+  // let's also print global averages.
+  if (Source.size() != 1) {
+    WaitTimeEntry TotalWaitTime = std::accumulate(
+        WaitTime.begin(), WaitTime.end(), WaitTimeEntry{0, 0, 0},
+        [](const WaitTimeEntry &A, const WaitTimeEntry &B) {
+          return WaitTimeEntry{
+              A.CyclesSpentInSchedulerQueue + B.CyclesSpentInSchedulerQueue,
+              A.CyclesSpentInSQWhileReady + B.CyclesSpentInSQWhileReady,
+              A.CyclesSpentAfterWBAndBeforeRetire +
+                  B.CyclesSpentAfterWBAndBeforeRetire};
+        });
+    printWaitTimeEntry(FOS, TotalWaitTime, IID, Executions);
+    FOS << "   "
+        << "<total>" << '\n';
+    InstrStream.flush();
   }
 }
 
@@ -276,7 +307,7 @@ void TimelineView::printTimeline(raw_ostream &OS) const {
       unsigned SourceIndex = IID % Source.size();
       printTimelineViewEntry(FOS, Entry, Iteration, SourceIndex);
       // Append the instruction info at the end of the line.
-      MCIP.printInst(&Inst, InstrStream, "", STI);
+      MCIP.printInst(&Inst, 0, "", STI, InstrStream);
       InstrStream.flush();
 
       // Consume any tabs or spaces at the beginning of the string.

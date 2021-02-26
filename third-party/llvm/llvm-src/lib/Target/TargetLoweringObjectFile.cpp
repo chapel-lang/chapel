@@ -1,9 +1,8 @@
 //===-- llvm/Target/TargetLoweringObjectFile.cpp - Object File Info -------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -20,10 +19,12 @@
 #include "llvm/IR/Function.h"
 #include "llvm/IR/GlobalVariable.h"
 #include "llvm/IR/Mangler.h"
+#include "llvm/IR/Module.h"
 #include "llvm/MC/MCContext.h"
 #include "llvm/MC/MCExpr.h"
 #include "llvm/MC/MCStreamer.h"
 #include "llvm/MC/MCSymbol.h"
+#include "llvm/MC/SectionKind.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Target/TargetMachine.h"
@@ -39,15 +40,15 @@ using namespace llvm;
 /// lowering implementations a chance to set up their default sections.
 void TargetLoweringObjectFile::Initialize(MCContext &ctx,
                                           const TargetMachine &TM) {
-  Ctx = &ctx;
   // `Initialize` can be called more than once.
   delete Mang;
   Mang = new Mangler();
-  InitMCObjectFileInfo(TM.getTargetTriple(), TM.isPositionIndependent(), *Ctx,
+  InitMCObjectFileInfo(TM.getTargetTriple(), TM.isPositionIndependent(), ctx,
                        TM.getCodeModel() == CodeModel::Large);
 
   // Reset various EH DWARF encodings.
   PersonalityEncoding = LSDAEncoding = TTypeEncoding = dwarf::DW_EH_PE_absptr;
+  CallSiteEncoding = dwarf::DW_EH_PE_uleb128;
 }
 
 TargetLoweringObjectFile::~TargetLoweringObjectFile() {
@@ -121,7 +122,7 @@ MCSymbol *TargetLoweringObjectFile::getSymbolWithGlobalValueBase(
   NameStr += GV->getParent()->getDataLayout().getPrivateGlobalPrefix();
   TM.getNameWithPrefix(NameStr, GV, *Mang);
   NameStr.append(Suffix.begin(), Suffix.end());
-  return Ctx->getOrCreateSymbol(NameStr);
+  return getContext().getOrCreateSymbol(NameStr);
 }
 
 MCSymbol *TargetLoweringObjectFile::getCFIPersonalitySymbol(
@@ -142,11 +143,15 @@ void TargetLoweringObjectFile::emitPersonalityValue(MCStreamer &Streamer,
 /// may be overridden by the target implementation.
 SectionKind TargetLoweringObjectFile::getKindForGlobal(const GlobalObject *GO,
                                                        const TargetMachine &TM){
-  assert(!GO->isDeclaration() && !GO->hasAvailableExternallyLinkage() &&
+  assert(!GO->isDeclarationForLinker() &&
          "Can only be used for global definitions");
 
   // Functions are classified as text sections.
   if (isa<Function>(GO))
+    return SectionKind::getText();
+
+  // Basic blocks are classified as text sections.
+  if (isa<BasicBlock>(GO))
     return SectionKind::getText();
 
   // Global variables require more detailed analysis.
@@ -253,6 +258,7 @@ MCSection *TargetLoweringObjectFile::SectionForGlobal(
     auto Attrs = GVar->getAttributes();
     if ((Attrs.hasAttribute("bss-section") && Kind.isBSS()) ||
         (Attrs.hasAttribute("data-section") && Kind.isData()) ||
+        (Attrs.hasAttribute("relro-section") && Kind.isReadOnlyWithRel()) ||
         (Attrs.hasAttribute("rodata-section") && Kind.isReadOnly()))  {
        return getExplicitSectionGlobal(GO, Kind, TM);
     }
@@ -267,12 +273,21 @@ MCSection *TargetLoweringObjectFile::SectionForGlobal(
   return SelectSectionForGlobal(GO, Kind, TM);
 }
 
+/// This method computes the appropriate section to emit the specified global
+/// variable or function definition. This should not be passed external (or
+/// available externally) globals.
+MCSection *
+TargetLoweringObjectFile::SectionForGlobal(const GlobalObject *GO,
+                                           const TargetMachine &TM) const {
+  return SectionForGlobal(GO, getKindForGlobal(GO, TM), TM);
+}
+
 MCSection *TargetLoweringObjectFile::getSectionForJumpTable(
     const Function &F, const TargetMachine &TM) const {
-  unsigned Align = 0;
+  Align Alignment(1);
   return getSectionForConstant(F.getParent()->getDataLayout(),
                                SectionKind::getReadOnly(), /*C=*/nullptr,
-                               Align);
+                               Alignment);
 }
 
 bool TargetLoweringObjectFile::shouldPutJumpTableInFunctionSection(
@@ -294,11 +309,17 @@ bool TargetLoweringObjectFile::shouldPutJumpTableInFunctionSection(
 /// information, return a section that it should be placed in.
 MCSection *TargetLoweringObjectFile::getSectionForConstant(
     const DataLayout &DL, SectionKind Kind, const Constant *C,
-    unsigned &Align) const {
+    Align &Alignment) const {
   if (Kind.isReadOnly() && ReadOnlySection != nullptr)
     return ReadOnlySection;
 
   return DataSection;
+}
+
+MCSection *TargetLoweringObjectFile::getSectionForMachineBasicBlock(
+    const Function &F, const MachineBasicBlock &MBB,
+    const TargetMachine &TM) const {
+  return nullptr;
 }
 
 /// getTTypeGlobalReference - Return an MCExpr to use for a
@@ -326,7 +347,7 @@ getTTypeReference(const MCSymbolRefExpr *Sym, unsigned Encoding,
     // Emit a label to the streamer for the current position.  This gives us
     // .-foo addressing.
     MCSymbol *PCSym = getContext().createTempSymbol();
-    Streamer.EmitLabel(PCSym);
+    Streamer.emitLabel(PCSym);
     const MCExpr *PC = MCSymbolRefExpr::create(PCSym, getContext());
     return MCBinaryExpr::createSub(Sym, PC, getContext());
   }
@@ -336,7 +357,7 @@ getTTypeReference(const MCSymbolRefExpr *Sym, unsigned Encoding,
 const MCExpr *TargetLoweringObjectFile::getDebugThreadLocalSymbol(const MCSymbol *Sym) const {
   // FIXME: It's not clear what, if any, default this should have - perhaps a
   // null return could mean 'no location' & we should just do that here.
-  return MCSymbolRefExpr::create(Sym, *Ctx);
+  return MCSymbolRefExpr::create(Sym, getContext());
 }
 
 void TargetLoweringObjectFile::getNameWithPrefix(

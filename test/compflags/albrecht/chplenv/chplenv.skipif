@@ -2,6 +2,3 @@ CHPL_TARGET_COMPILER==cray-prgenv-gnu
 CHPL_TARGET_COMPILER==cray-prgenv-cray
 CHPL_TARGET_COMPILER==cray-prgenv-intel
 CHPL_TARGET_COMPILER==cray-prgenv-pgi
-# Skip --llvm builds since these change some environment variables,
-# depend on CHPL_HOME
-COMPOPTS <= --llvm

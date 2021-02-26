@@ -1,9 +1,8 @@
-//===-- R600AsmPrinter.cpp - R600 Assebly printer  ------------------------===//
+//===-- R600AsmPrinter.cpp - R600 Assembly printer ------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -89,15 +88,15 @@ void R600AsmPrinter::EmitProgramInfoR600(const MachineFunction &MF) {
     }
   }
 
-  OutStreamer->EmitIntValue(RsrcReg, 4);
-  OutStreamer->EmitIntValue(S_NUM_GPRS(MaxGPR + 1) |
+  OutStreamer->emitInt32(RsrcReg);
+  OutStreamer->emitIntValue(S_NUM_GPRS(MaxGPR + 1) |
                            S_STACK_SIZE(MFI->CFStackSize), 4);
-  OutStreamer->EmitIntValue(R_02880C_DB_SHADER_CONTROL, 4);
-  OutStreamer->EmitIntValue(S_02880C_KILL_ENABLE(killPixel), 4);
+  OutStreamer->emitInt32(R_02880C_DB_SHADER_CONTROL);
+  OutStreamer->emitInt32(S_02880C_KILL_ENABLE(killPixel));
 
   if (AMDGPU::isCompute(MF.getFunction().getCallingConv())) {
-    OutStreamer->EmitIntValue(R_0288E8_SQ_LDS_ALLOC, 4);
-    OutStreamer->EmitIntValue(alignTo(MFI->getLDSSize(), 4) >> 2, 4);
+    OutStreamer->emitInt32(R_0288E8_SQ_LDS_ALLOC);
+    OutStreamer->emitIntValue(alignTo(MFI->getLDSSize(), 4) >> 2, 4);
   }
 }
 
@@ -105,7 +104,7 @@ bool R600AsmPrinter::runOnMachineFunction(MachineFunction &MF) {
 
 
   // Functions needs to be cacheline (256B) aligned.
-  MF.ensureAlignment(8);
+  MF.ensureAlignment(Align(256));
 
   SetupMachineFunction(MF);
 
@@ -116,7 +115,7 @@ bool R600AsmPrinter::runOnMachineFunction(MachineFunction &MF) {
 
   EmitProgramInfoR600(MF);
 
-  EmitFunctionBody();
+  emitFunctionBody();
 
   if (isVerbose()) {
     MCSectionELF *CommentSection =

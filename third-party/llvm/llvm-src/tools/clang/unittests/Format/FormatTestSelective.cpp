@@ -1,9 +1,8 @@
 //===- unittest/Format/FormatTestSelective.cpp - Formatting unit tests ----===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -99,7 +98,7 @@ TEST_F(FormatTestSelective, ReformatsMovedLines) {
 }
 
 TEST_F(FormatTestSelective, FormatsIfWithoutCompoundStatement) {
-  Style.AllowShortIfStatementsOnASingleLine = true;
+  Style.AllowShortIfStatementsOnASingleLine = FormatStyle::SIS_WithoutElse;
   EXPECT_EQ("if (a) return;", format("if(a)\nreturn;", 7, 1));
   EXPECT_EQ("if (a) return; // comment",
             format("if(a)\nreturn; // comment", 20, 1));
@@ -123,7 +122,8 @@ TEST_F(FormatTestSelective, FormatsCommentsLocally) {
             "int b;",
             format("int   a; // comment\n"
                    "// comment 2\n"
-                   "int b;", 28, 0));
+                   "int b;",
+                   28, 0));
   EXPECT_EQ("int aaaaaa; // comment\n"
             "int b;\n"
             "int c; // unrelated comment",
@@ -586,14 +586,13 @@ TEST_F(FormatTestSelective, StopFormattingWhenLeavingScope) {
 
 TEST_F(FormatTestSelective, SelectivelyRequoteJavaScript) {
   Style = getGoogleStyle(FormatStyle::LK_JavaScript);
-  EXPECT_EQ(
-      "var x = \"a\";\n"
-      "var x = 'a';\n"
-      "var x = \"a\";",
-      format("var x = \"a\";\n"
-             "var x = \"a\";\n"
-             "var x = \"a\";",
-             20, 0));
+  EXPECT_EQ("var x = \"a\";\n"
+            "var x = 'a';\n"
+            "var x = \"a\";",
+            format("var x = \"a\";\n"
+                   "var x = \"a\";\n"
+                   "var x = \"a\";",
+                   20, 0));
 }
 
 TEST_F(FormatTestSelective, KeepsIndentAfterCommentSectionImport) {

@@ -1,9 +1,8 @@
 //===- KaleidoscopeJIT.h - A simple JIT for Kaleidoscope --------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -92,27 +91,28 @@ public:
   KaleidoscopeJIT()
       : Resolver(createLegacyLookupResolver(
             ES,
-            [this](const std::string &Name) -> JITSymbol {
+            [this](StringRef Name) -> JITSymbol {
               if (auto Sym = IndirectStubsMgr->findStub(Name, false))
                 return Sym;
-              if (auto Sym = OptimizeLayer.findSymbol(Name, false))
+              if (auto Sym = OptimizeLayer.findSymbol(std::string(Name), false))
                 return Sym;
               else if (auto Err = Sym.takeError())
                 return std::move(Err);
-              if (auto SymAddr =
-                      RTDyldMemoryManager::getSymbolAddressInProcess(Name))
+              if (auto SymAddr = RTDyldMemoryManager::getSymbolAddressInProcess(
+                      std::string(Name)))
                 return JITSymbol(SymAddr, JITSymbolFlags::Exported);
               return nullptr;
             },
             [](Error Err) { cantFail(std::move(Err), "lookupFlags failed"); })),
         TM(EngineBuilder().selectTarget()), DL(TM->createDataLayout()),
-        ObjectLayer(ES,
+        ObjectLayer(AcknowledgeORCv1Deprecation, ES,
                     [this](VModuleKey K) {
                       return LegacyRTDyldObjectLinkingLayer::Resources{
                           std::make_shared<SectionMemoryManager>(), Resolver};
                     }),
-        CompileLayer(ObjectLayer, SimpleCompiler(*TM)),
-        OptimizeLayer(CompileLayer,
+        CompileLayer(AcknowledgeORCv1Deprecation, ObjectLayer,
+                     SimpleCompiler(*TM)),
+        OptimizeLayer(AcknowledgeORCv1Deprecation, CompileLayer,
                       [this](std::unique_ptr<Module> M) {
                         return optimizeModule(std::move(M));
                       }),
@@ -207,7 +207,7 @@ private:
 
   std::unique_ptr<Module> optimizeModule(std::unique_ptr<Module> M) {
     // Create a function pass manager.
-    auto FPM = llvm::make_unique<legacy::FunctionPassManager>(M.get());
+    auto FPM = std::make_unique<legacy::FunctionPassManager>(M.get());
 
     // Add some optimizations.
     FPM->add(createInstructionCombiningPass());

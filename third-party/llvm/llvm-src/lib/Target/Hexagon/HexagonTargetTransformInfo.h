@@ -1,9 +1,8 @@
 //==- HexagonTargetTransformInfo.cpp - Hexagon specific TTI pass -*- C++ -*-==//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 /// \file
 /// This file implements a TargetTransformInfo analysis pass specific to the
@@ -65,12 +64,15 @@ public:
   void getUnrollingPreferences(Loop *L, ScalarEvolution &SE,
                                TTI::UnrollingPreferences &UP);
 
+  void getPeelingPreferences(Loop *L, ScalarEvolution &SE,
+                             TTI::PeelingPreferences &PP);
+
   /// Bias LSR towards creating post-increment opportunities.
   bool shouldFavorPostInc() const;
 
   // L1 cache prefetch.
-  unsigned getPrefetchDistance() const;
-  unsigned getCacheLineSize() const;
+  unsigned getPrefetchDistance() const override;
+  unsigned getCacheLineSize() const override;
 
   /// @}
 
@@ -102,48 +104,60 @@ public:
     return true;
   }
 
-  unsigned getScalarizationOverhead(Type *Ty, bool Insert, bool Extract);
-  unsigned getOperandsScalarizationOverhead(ArrayRef<const Value*> Args,
-            unsigned VF);
-  unsigned getCallInstrCost(Function *F, Type *RetTy, ArrayRef<Type*> Tys);
-  unsigned getIntrinsicInstrCost(Intrinsic::ID ID, Type *RetTy,
-            ArrayRef<Value*> Args, FastMathFlags FMF, unsigned VF);
-  unsigned getIntrinsicInstrCost(Intrinsic::ID ID, Type *RetTy,
-            ArrayRef<Type*> Tys, FastMathFlags FMF,
-            unsigned ScalarizationCostPassed = UINT_MAX);
+  unsigned getScalarizationOverhead(VectorType *Ty, const APInt &DemandedElts,
+                                    bool Insert, bool Extract);
+  unsigned getOperandsScalarizationOverhead(ArrayRef<const Value *> Args,
+                                            unsigned VF);
+  unsigned getCallInstrCost(Function *F, Type *RetTy, ArrayRef<Type*> Tys,
+                            TTI::TargetCostKind CostKind);
+  unsigned getIntrinsicInstrCost(const IntrinsicCostAttributes &ICA,
+                                 TTI::TargetCostKind CostKind);
   unsigned getAddressComputationCost(Type *Tp, ScalarEvolution *SE,
             const SCEV *S);
-  unsigned getMemoryOpCost(unsigned Opcode, Type *Src, unsigned Alignment,
-            unsigned AddressSpace, const Instruction *I = nullptr);
-  unsigned getMaskedMemoryOpCost(unsigned Opcode, Type *Src, unsigned Alignment,
-            unsigned AddressSpace);
+  unsigned getMemoryOpCost(unsigned Opcode, Type *Src, MaybeAlign Alignment,
+                           unsigned AddressSpace,
+                           TTI::TargetCostKind CostKind,
+                           const Instruction *I = nullptr);
+  unsigned
+  getMaskedMemoryOpCost(unsigned Opcode, Type *Src, Align Alignment,
+                        unsigned AddressSpace,
+                        TTI::TargetCostKind CostKind = TTI::TCK_SizeAndLatency);
   unsigned getShuffleCost(TTI::ShuffleKind Kind, Type *Tp, int Index,
             Type *SubTp);
-  unsigned getGatherScatterOpCost(unsigned Opcode, Type *DataTy, Value *Ptr,
-            bool VariableMask, unsigned Alignment);
-  unsigned getInterleavedMemoryOpCost(unsigned Opcode, Type *VecTy,
-            unsigned Factor, ArrayRef<unsigned> Indices, unsigned Alignment,
-            unsigned AddressSpace, bool UseMaskForCond = false,
-            bool UseMaskForGaps = false);
+  unsigned getGatherScatterOpCost(unsigned Opcode, Type *DataTy,
+                                  const Value *Ptr, bool VariableMask,
+                                  Align Alignment, TTI::TargetCostKind CostKind,
+                                  const Instruction *I);
+  unsigned getInterleavedMemoryOpCost(
+      unsigned Opcode, Type *VecTy, unsigned Factor, ArrayRef<unsigned> Indices,
+      Align Alignment, unsigned AddressSpace,
+      TTI::TargetCostKind CostKind = TTI::TCK_SizeAndLatency,
+      bool UseMaskForCond = false, bool UseMaskForGaps = false);
   unsigned getCmpSelInstrCost(unsigned Opcode, Type *ValTy, Type *CondTy,
-            const Instruction *I);
-  unsigned getArithmeticInstrCost(unsigned Opcode, Type *Ty,
-            TTI::OperandValueKind Opd1Info = TTI::OK_AnyValue,
-            TTI::OperandValueKind Opd2Info = TTI::OK_AnyValue,
-            TTI::OperandValueProperties Opd1PropInfo = TTI::OP_None,
-            TTI::OperandValueProperties Opd2PropInfo = TTI::OP_None,
-            ArrayRef<const Value *> Args = ArrayRef<const Value *>());
+                              TTI::TargetCostKind CostKind,
+                              const Instruction *I = nullptr);
+  unsigned getArithmeticInstrCost(
+      unsigned Opcode, Type *Ty,
+      TTI::TargetCostKind CostKind = TTI::TCK_RecipThroughput,
+      TTI::OperandValueKind Opd1Info = TTI::OK_AnyValue,
+      TTI::OperandValueKind Opd2Info = TTI::OK_AnyValue,
+      TTI::OperandValueProperties Opd1PropInfo = TTI::OP_None,
+      TTI::OperandValueProperties Opd2PropInfo = TTI::OP_None,
+      ArrayRef<const Value *> Args = ArrayRef<const Value *>(),
+      const Instruction *CxtI = nullptr);
   unsigned getCastInstrCost(unsigned Opcode, Type *Dst, Type *Src,
+            TTI::TargetCostKind CostKind,
             const Instruction *I = nullptr);
   unsigned getVectorInstrCost(unsigned Opcode, Type *Val, unsigned Index);
 
-  unsigned getCFInstrCost(unsigned Opcode) {
+  unsigned getCFInstrCost(unsigned Opcode, TTI::TargetCostKind CostKind) {
     return 1;
   }
 
   /// @}
 
-  int getUserCost(const User *U, ArrayRef<const Value *> Operands);
+  int getUserCost(const User *U, ArrayRef<const Value *> Operands,
+                  TTI::TargetCostKind CostKind);
 
   // Hexagon specific decision to generate a lookup table.
   bool shouldBuildLookupTables() const;

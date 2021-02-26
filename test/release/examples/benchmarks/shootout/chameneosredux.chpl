@@ -64,7 +64,7 @@ record Population {
   // an array of chameneos objects representing the population
   //
   var chameneos = [i in 1..size]
-                   new Chameneos(i, if size == 10 then colors10[i]
+                   new Chameneos(i, if size == 10 then colors10[i-1]
                                                   else ((i-1)%3): Color);
 
   //

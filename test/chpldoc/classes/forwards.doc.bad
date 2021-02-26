@@ -10,6 +10,13 @@ forwards.doc
 
    use forwards.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import forwards.doc;
+
 .. class:: A
 
    This class should get the forwarded methods from B 

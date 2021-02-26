@@ -1,0 +1,27 @@
+#!/bin/bash
+
+version_line=$($3 --version | grep "chpl version")
+if [[ $version_line == *pre-release* ]]; then
+    VERSION=$(echo $version_line | sed "s:chpl version \(.*\) pre-release .*:\1:")
+    SHA=$(echo $version_line | sed "s:.* pre-release (\(.*\)):\1:")
+    OFFICIAL=false
+else
+    VERSION=$(echo $version_line | sed "s:chpl version \(.*\):\1:")
+    SHA=""
+    OFFICIAL=true
+fi
+
+MAJOR_VERSION=$(echo $VERSION | cut -f1 -d.)
+MINOR_VERSION=$(echo $VERSION | cut -f2 -d.)
+UPDATE_VERSION=$(echo $VERSION | cut -f3 -d.)
+
+if [[ $version_line == *pre-release* ]]; then
+    echo "version "$MAJOR_VERSION"."$MINOR_VERSION"."$UPDATE_VERSION" ("$SHA")" > testChplVersion.good
+else
+    echo "version "$MAJOR_VERSION"."$MINOR_VERSION"."$UPDATE_VERSION > testChplVersion.good
+fi
+echo $MAJOR_VERSION" : int(64)" >> testChplVersion.good
+echo $MINOR_VERSION" : int(64)" >> testChplVersion.good
+echo $UPDATE_VERSION" : int(64)" >> testChplVersion.good
+echo $SHA" : string" >> testChplVersion.good
+

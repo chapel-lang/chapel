@@ -1,9 +1,8 @@
 //===--- SanitizerBlacklist.cpp - Blacklist for sanitizers ----------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -11,13 +10,22 @@
 // sanitizers.
 //
 //===----------------------------------------------------------------------===//
+
 #include "clang/Basic/SanitizerBlacklist.h"
+#include "clang/Basic/FileManager.h"
+#include "clang/Basic/SanitizerSpecialCaseList.h"
+#include "clang/Basic/Sanitizers.h"
+#include "clang/Basic/SourceManager.h"
 
 using namespace clang;
 
 SanitizerBlacklist::SanitizerBlacklist(
     const std::vector<std::string> &BlacklistPaths, SourceManager &SM)
-    : SSCL(SanitizerSpecialCaseList::createOrDie(BlacklistPaths)), SM(SM) {}
+    : SSCL(SanitizerSpecialCaseList::createOrDie(
+          BlacklistPaths, SM.getFileManager().getVirtualFileSystem())),
+      SM(SM) {}
+
+SanitizerBlacklist::~SanitizerBlacklist() = default;
 
 bool SanitizerBlacklist::isBlacklistedGlobal(SanitizerMask Mask,
                                              StringRef GlobalName,

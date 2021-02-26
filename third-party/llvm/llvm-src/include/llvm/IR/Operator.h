@@ -1,9 +1,8 @@
 //===-- llvm/Operator.h - Operator utility subclass -------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -67,6 +66,7 @@ public:
 class OverflowingBinaryOperator : public Operator {
 public:
   enum {
+    AnyWrap        = 0,
     NoUnsignedWrap = (1 << 0),
     NoSignedWrap   = (1 << 1)
   };
@@ -187,6 +187,12 @@ public:
   };
 
   FastMathFlags() = default;
+
+  static FastMathFlags getFast() {
+    FastMathFlags FMF;
+    FMF.setFast();
+    return FMF;
+  }
 
   bool any() const { return Flags != 0; }
   bool none() const { return Flags == 0; }
@@ -374,15 +380,29 @@ public:
       return false;
 
     switch (Opcode) {
+    case Instruction::FNeg:
+    case Instruction::FAdd:
+    case Instruction::FSub:
+    case Instruction::FMul:
+    case Instruction::FDiv:
+    case Instruction::FRem:
+    // FIXME: To clean up and correct the semantics of fast-math-flags, FCmp
+    //        should not be treated as a math op, but the other opcodes should.
+    //        This would make things consistent with Select/PHI (FP value type
+    //        determines whether they are math ops and, therefore, capable of
+    //        having fast-math-flags).
     case Instruction::FCmp:
       return true;
-    // non math FP Operators (no FMF)
-    case Instruction::ExtractElement:
-    case Instruction::ShuffleVector:
-    case Instruction::InsertElement:
-      return false;
+    case Instruction::PHI:
+    case Instruction::Select:
+    case Instruction::Call: {
+      Type *Ty = V->getType();
+      while (ArrayType *ArrTy = dyn_cast<ArrayType>(Ty))
+        Ty = ArrTy->getElementType();
+      return Ty->isFPOrFPVectorTy();
+    }
     default:
-      return V->getType()->isFPOrFPVectorTy();
+      return false;
     }
   }
 };
@@ -525,15 +545,29 @@ public:
       });
   }
 
+  /// Compute the maximum alignment that this GEP is garranteed to preserve.
+  Align getMaxPreservedAlignment(const DataLayout &DL) const;
+
   /// Accumulate the constant address offset of this GEP if possible.
   ///
-  /// This routine accepts an APInt into which it will accumulate the constant
-  /// offset of this GEP if the GEP is in fact constant. If the GEP is not
-  /// all-constant, it returns false and the value of the offset APInt is
-  /// undefined (it is *not* preserved!). The APInt passed into this routine
-  /// must be at exactly as wide as the IntPtr type for the address space of the
-  /// base GEP pointer.
-  bool accumulateConstantOffset(const DataLayout &DL, APInt &Offset) const;
+  /// This routine accepts an APInt into which it will try to accumulate the
+  /// constant offset of this GEP.
+  ///
+  /// If \p ExternalAnalysis is provided it will be used to calculate a offset
+  /// when a operand of GEP is not constant.
+  /// For example, for a value \p ExternalAnalysis might try to calculate a
+  /// lower bound. If \p ExternalAnalysis is successful, it should return true.
+  ///
+  /// If the \p ExternalAnalysis returns false or the value returned by \p
+  /// ExternalAnalysis results in a overflow/underflow, this routine returns
+  /// false and the value of the offset APInt is undefined (it is *not*
+  /// preserved!).
+  ///
+  /// The APInt passed into this routine must be at exactly as wide as the
+  /// IntPtr type for the address space of the base GEP pointer.
+  bool accumulateConstantOffset(
+      const DataLayout &DL, APInt &Offset,
+      function_ref<bool(Value &, APInt &)> ExternalAnalysis = nullptr) const;
 };
 
 class PtrToIntOperator
@@ -576,6 +610,25 @@ public:
 
   Type *getDestTy() const {
     return getType();
+  }
+};
+
+class AddrSpaceCastOperator
+    : public ConcreteOperator<Operator, Instruction::AddrSpaceCast> {
+  friend class AddrSpaceCastInst;
+  friend class ConstantExpr;
+
+public:
+  Value *getPointerOperand() { return getOperand(0); }
+
+  const Value *getPointerOperand() const { return getOperand(0); }
+
+  unsigned getSrcAddressSpace() const {
+    return getPointerOperand()->getType()->getPointerAddressSpace();
+  }
+
+  unsigned getDestAddressSpace() const {
+    return getType()->getPointerAddressSpace();
   }
 };
 

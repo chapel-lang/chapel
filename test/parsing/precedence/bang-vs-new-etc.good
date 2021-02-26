@@ -5,9 +5,6 @@ bang-vs-new-etc.chpl:75: warning: z11 = new owned (tm())()?  expected: owned C? 
 bang-vs-new-etc.chpl:81: warning: z08 = new (owned tm())?()  expected: owned C?  actual: owned C?
 bang-vs-new-etc.chpl:84: warning: z12 = new (tm())?()  expected: owned C?  actual: owned C?
 bang-vs-new-etc.chpl:90: warning: z10 = new owned (tm()?)()?  expected: owned C?  actual: owned C?
-bang-vs-new-etc.chpl:95: warning: applying the postfix-! operator to a type is deprecated; instead use a cast to 'class' or 'borrowed class', e.g. 'MyType :borrowed class'
-bang-vs-new-etc.chpl:98: warning: applying the postfix-! operator to a type is deprecated; instead use a cast to 'class' or 'borrowed class', e.g. 'MyType :borrowed class'
-bang-vs-new-etc.chpl:102: warning: applying the postfix-! operator to a type is deprecated; instead use a cast to 'class' or 'borrowed class', e.g. 'MyType :borrowed class'
 bang-vs-new-etc.chpl:109: warning: z15b = xx: unmanaged C?  expected: unmanaged C?  actual: unmanaged C?
 bang-vs-new-etc.chpl:118: warning: z16b = xx!: unmanaged C?  expected: unmanaged C?  actual: unmanaged C?
 bang-vs-new-etc.chpl:131: warning: z18a = xx : class : unmanaged class?  expected: unmanaged C?  actual: unmanaged C?

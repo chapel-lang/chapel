@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -29,10 +29,10 @@
 
 class ArgSymbol;
 class CallInfo;
+class VisibilityInfo;
 class FnSymbol;
 class Symbol;
 
-extern std::map<Type*,std::map<Type*,bool>*> actualFormalCoercible;
 void clearCoercibleCache(void);
 
 typedef enum {
@@ -53,6 +53,12 @@ typedef enum {
   // Implicit where clause does not match
   RESOLUTION_CANDIDATE_IMPLICIT_WHERE_FAILED,
 
+  // Could not fulfill interface constraints
+  RESOLUTION_CANDIDATE_INTERFACE_CONSTRAINTS_NOT_SATISFIED,
+
+  // A formal of an interface or CG function as an actual or an UG function
+  RESOLUTION_CANDIDATE_INTERFACE_FORMAL_AS_ACTUAL,
+
   // Types do not match and are in different categories
   RESOLUTION_CANDIDATE_UNRELATED_TYPE,
 
@@ -61,6 +67,9 @@ typedef enum {
 
   // Formal is type but actual is not or vice versa
   RESOLUTION_CANDIDATE_NOT_TYPE,
+
+  // Actual type is not established yet
+  RESOLUTION_CANDIDATE_ACTUAL_TYPE_NOT_ESTABLISHED,
 
   // Too many arguments
   RESOLUTION_CANDIDATE_TOO_MANY_ARGUMENTS,
@@ -84,11 +93,15 @@ class ResolutionCandidate {
 public:
                           ResolutionCandidate(FnSymbol* fn);
 
-  bool                    isApplicable(CallInfo& info);
+  bool                    isApplicable(CallInfo& info,
+                                       VisibilityInfo* visInfo);
 
   FnSymbol*               fn;
   std::vector<Symbol*>    formalIdxToActual;
   std::vector<ArgSymbol*> actualIdxToFormal;
+
+  // One ImplementsStmt per IfcConstraint when 'fn' is CG
+  std::vector<ImplementsStmt*> witnesses;
 
   Symbol*                 failingArgument; // actual or formal
   ResolutionCandidateFailureReason reason;
@@ -96,9 +109,14 @@ public:
 private:
                           ResolutionCandidate();
 
-  bool                    isApplicableConcrete(CallInfo& info);
+  bool                    isApplicableConcrete(CallInfo& info,
+                                               VisibilityInfo* visInfo);
 
-  bool                    isApplicableGeneric(CallInfo& info);
+  bool                    isApplicableGeneric(CallInfo& info,
+                                              VisibilityInfo* visInfo);
+
+  bool                    isApplicableCG(CallInfo& info,
+                                         VisibilityInfo* visInfo);
 
   bool                    computeAlignment(CallInfo& info);
 
@@ -115,7 +133,8 @@ private:
 
   void                    resolveTypedefedArgTypes();
 
-  bool                    checkResolveFormalsWhereClauses(CallInfo& info);
+  bool                    checkResolveFormalsWhereClauses(CallInfo& info,
+                                                    VisibilityInfo* visInfo);
 
   bool                    checkGenericFormals(Expr* ctx);
 

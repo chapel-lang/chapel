@@ -1,9 +1,8 @@
 //===- LazyCallGraph.cpp - Analysis of a Module's call graph --------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -16,8 +15,8 @@
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/iterator_range.h"
 #include "llvm/Analysis/TargetLibraryInfo.h"
+#include "llvm/Analysis/VectorUtils.h"
 #include "llvm/Config/llvm-config.h"
-#include "llvm/IR/CallSite.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/GlobalVariable.h"
 #include "llvm/IR/Instruction.h"
@@ -100,8 +99,8 @@ LazyCallGraph::EdgeSequence &LazyCallGraph::Node::populateSlow() {
   // safety of optimizing a direct call edge.
   for (BasicBlock &BB : *F)
     for (Instruction &I : BB) {
-      if (auto CS = CallSite(&I))
-        if (Function *Callee = CS.getCalledFunction())
+      if (auto *CB = dyn_cast<CallBase>(&I))
+        if (Function *Callee = CB->getCalledFunction())
           if (!Callee->isDeclaration())
             if (Callees.insert(Callee).second) {
               Visited.insert(Callee);
@@ -147,11 +146,15 @@ LLVM_DUMP_METHOD void LazyCallGraph::Node::dump() const {
 static bool isKnownLibFunction(Function &F, TargetLibraryInfo &TLI) {
   LibFunc LF;
 
-  // Either this is a normal library function or a "vectorizable" function.
-  return TLI.getLibFunc(F, LF) || TLI.isFunctionVectorizable(F.getName());
+  // Either this is a normal library function or a "vectorizable"
+  // function.  Not using the VFDatabase here because this query
+  // is related only to libraries handled via the TLI.
+  return TLI.getLibFunc(F, LF) ||
+         TLI.isKnownVectorFunctionInLibrary(F.getName());
 }
 
-LazyCallGraph::LazyCallGraph(Module &M, TargetLibraryInfo &TLI) {
+LazyCallGraph::LazyCallGraph(
+    Module &M, function_ref<TargetLibraryInfo &(Function &)> GetTLI) {
   LLVM_DEBUG(dbgs() << "Building CG for module: " << M.getModuleIdentifier()
                     << "\n");
   for (Function &F : M) {
@@ -160,7 +163,7 @@ LazyCallGraph::LazyCallGraph(Module &M, TargetLibraryInfo &TLI) {
     // If this function is a known lib function to LLVM then we want to
     // synthesize reference edges to it to model the fact that LLVM can turn
     // arbitrary code into a library function call.
-    if (isKnownLibFunction(F, TLI))
+    if (isKnownLibFunction(F, GetTLI(F)))
       LibFunctions.insert(&F);
 
     if (F.hasLocalLinkage())
@@ -171,6 +174,19 @@ LazyCallGraph::LazyCallGraph(Module &M, TargetLibraryInfo &TLI) {
     LLVM_DEBUG(dbgs() << "  Adding '" << F.getName()
                       << "' to entry set of the graph.\n");
     addEdge(EntryEdges.Edges, EntryEdges.EdgeIndexMap, get(F), Edge::Ref);
+  }
+
+  // Externally visible aliases of internal functions are also viable entry
+  // edges to the module.
+  for (auto &A : M.aliases()) {
+    if (A.hasLocalLinkage())
+      continue;
+    if (Function* F = dyn_cast<Function>(A.getAliasee())) {
+      LLVM_DEBUG(dbgs() << "  Adding '" << F->getName()
+                        << "' with alias '" << A.getName()
+                        << "' to entry set of the graph.\n");
+      addEdge(EntryEdges.Edges, EntryEdges.EdgeIndexMap, get(*F), Edge::Ref);
+    }
   }
 
   // Now add entry nodes for functions reachable via initializers to globals.
@@ -196,6 +212,15 @@ LazyCallGraph::LazyCallGraph(LazyCallGraph &&G)
       SCCMap(std::move(G.SCCMap)),
       LibFunctions(std::move(G.LibFunctions)) {
   updateGraphPtrs();
+}
+
+bool LazyCallGraph::invalidate(Module &, const PreservedAnalyses &PA,
+                               ModuleAnalysisManager::Invalidator &) {
+  // Check whether the analysis, all analyses on functions, or the function's
+  // CFG have been preserved.
+  auto PAC = PA.getChecker<llvm::LazyCallGraphAnalysis>();
+  return !(PAC.preserved() || PAC.preservedSet<AllAnalysesOn<Module>>() ||
+           PAC.preservedSet<CFGAnalyses>());
 }
 
 LazyCallGraph &LazyCallGraph::operator=(LazyCallGraph &&G) {
@@ -619,7 +644,7 @@ LazyCallGraph::RefSCC::switchInternalEdgeToCall(
 
   // If the merge range is empty, then adding the edge didn't actually form any
   // new cycles. We're done.
-  if (empty(MergeRange)) {
+  if (MergeRange.empty()) {
     // Now that the SCC structure is finalized, flip the kind to call.
     SourceN->setEdgeKind(TargetN, Edge::Call);
     return false; // No new cycle.
@@ -1540,6 +1565,21 @@ void LazyCallGraph::removeDeadFunction(Function &F) {
   // allocators.
 }
 
+void LazyCallGraph::addNewFunctionIntoSCC(Function &NewF, SCC &C) {
+  addNodeToSCC(C, createNode(NewF));
+}
+
+void LazyCallGraph::addNewFunctionIntoRefSCC(Function &NewF, RefSCC &RC) {
+  Node &N = createNode(NewF);
+
+  auto *C = createSCC(RC, SmallVector<Node *, 1>());
+  addNodeToSCC(*C, N);
+
+  auto Index = RC.SCCIndices.size();
+  RC.SCCIndices[C] = Index;
+  RC.SCCs.push_back(C);
+}
+
 LazyCallGraph::Node &LazyCallGraph::insertInto(Function &F, Node *&MappedN) {
   return *new (MappedN = BPA.Allocate()) Node(*this, F);
 }
@@ -1552,6 +1592,21 @@ void LazyCallGraph::updateGraphPtrs() {
 
   for (auto *RC : PostOrderRefSCCs)
     RC->G = this;
+}
+
+LazyCallGraph::Node &LazyCallGraph::createNode(Function &F) {
+  assert(!lookup(F) && "node already exists");
+
+  Node &N = get(F);
+  NodeMap[&F] = &N;
+  N.DFSNumber = N.LowLink = -1;
+  N.populate();
+  return N;
+}
+
+void LazyCallGraph::addNodeToSCC(LazyCallGraph::SCC &C, Node &N) {
+  C.Nodes.push_back(&N);
+  SCCMap[&N] = &C;
 }
 
 template <typename RootsT, typename GetBeginT, typename GetEndT,
@@ -1739,16 +1794,14 @@ static void printNode(raw_ostream &OS, LazyCallGraph::Node &N) {
 }
 
 static void printSCC(raw_ostream &OS, LazyCallGraph::SCC &C) {
-  ptrdiff_t Size = size(C);
-  OS << "    SCC with " << Size << " functions:\n";
+  OS << "    SCC with " << C.size() << " functions:\n";
 
   for (LazyCallGraph::Node &N : C)
     OS << "      " << N.getFunction().getName() << "\n";
 }
 
 static void printRefSCC(raw_ostream &OS, LazyCallGraph::RefSCC &C) {
-  ptrdiff_t Size = size(C);
-  OS << "  RefSCC with " << Size << " call SCCs:\n";
+  OS << "  RefSCC with " << C.size() << " call SCCs:\n";
 
   for (LazyCallGraph::SCC &InnerC : C)
     printSCC(OS, InnerC);
@@ -1777,11 +1830,12 @@ LazyCallGraphDOTPrinterPass::LazyCallGraphDOTPrinterPass(raw_ostream &OS)
     : OS(OS) {}
 
 static void printNodeDOT(raw_ostream &OS, LazyCallGraph::Node &N) {
-  std::string Name = "\"" + DOT::EscapeString(N.getFunction().getName()) + "\"";
+  std::string Name =
+      "\"" + DOT::EscapeString(std::string(N.getFunction().getName())) + "\"";
 
   for (LazyCallGraph::Edge &E : N.populate()) {
     OS << "  " << Name << " -> \""
-       << DOT::EscapeString(E.getFunction().getName()) << "\"";
+       << DOT::EscapeString(std::string(E.getFunction().getName())) << "\"";
     if (!E.isCall()) // It is a ref edge.
       OS << " [style=dashed,label=\"ref\"]";
     OS << ";\n";

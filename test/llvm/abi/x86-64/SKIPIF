@@ -1,0 +1,3 @@
+CHPL_LLVM==none
+CHPL_TARGET_ARCH!=x86_64
+COMPOPTS <= --baseline

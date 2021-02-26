@@ -1,9 +1,8 @@
 //===- MipsMachineFunctionInfo.h - Private data used for Mips ---*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -25,7 +24,7 @@ namespace llvm {
 /// Mips target-specific information for each MachineFunction.
 class MipsFunctionInfo : public MachineFunctionInfo {
 public:
-  MipsFunctionInfo(MachineFunction &MF) : MF(MF) {}
+  MipsFunctionInfo(MachineFunction &MF) {}
 
   ~MipsFunctionInfo() override;
 
@@ -33,7 +32,12 @@ public:
   void setSRetReturnReg(unsigned Reg) { SRetReturnReg = Reg; }
 
   bool globalBaseRegSet() const;
-  unsigned getGlobalBaseReg();
+  Register getGlobalBaseReg(MachineFunction &MF);
+  Register getGlobalBaseRegForGlobalISel(MachineFunction &MF);
+
+  // Insert instructions to initialize the global base register in the
+  // first MBB of the function.
+  void initGlobalBaseReg(MachineFunction &MF);
 
   int getVarArgsFrameIndex() const { return VarArgsFrameIndex; }
   void setVarArgsFrameIndex(int Index) { VarArgsFrameIndex = Index; }
@@ -49,30 +53,30 @@ public:
   bool callsEhReturn() const { return CallsEhReturn; }
   void setCallsEhReturn() { CallsEhReturn = true; }
 
-  void createEhDataRegsFI();
+  void createEhDataRegsFI(MachineFunction &MF);
   int getEhDataRegFI(unsigned Reg) const { return EhDataRegFI[Reg]; }
   bool isEhDataRegFI(int FI) const;
 
   /// Create a MachinePointerInfo that has an ExternalSymbolPseudoSourceValue
   /// object representing a GOT entry for an external function.
-  MachinePointerInfo callPtrInfo(const char *ES);
+  MachinePointerInfo callPtrInfo(MachineFunction &MF, const char *ES);
 
   // Functions with the "interrupt" attribute require special prologues,
   // epilogues and additional spill slots.
   bool isISR() const { return IsISR; }
   void setISR() { IsISR = true; }
-  void createISRRegFI();
-  int getISRRegFI(unsigned Reg) const { return ISRDataRegFI[Reg]; }
+  void createISRRegFI(MachineFunction &MF);
+  int getISRRegFI(Register Reg) const { return ISRDataRegFI[Reg]; }
   bool isISRRegFI(int FI) const;
 
   /// Create a MachinePointerInfo that has a GlobalValuePseudoSourceValue object
   /// representing a GOT entry for a global function.
-  MachinePointerInfo callPtrInfo(const GlobalValue *GV);
+  MachinePointerInfo callPtrInfo(MachineFunction &MF, const GlobalValue *GV);
 
   void setSaveS2() { SaveS2 = true; }
   bool hasSaveS2() const { return SaveS2; }
 
-  int getMoveF64ViaSpillFI(const TargetRegisterClass *RC);
+  int getMoveF64ViaSpillFI(MachineFunction &MF, const TargetRegisterClass *RC);
 
   std::map<const char *, const Mips16HardFloatInfo::FuncSignature *>
   StubsNeeded;
@@ -80,17 +84,15 @@ public:
 private:
   virtual void anchor();
 
-  MachineFunction& MF;
-
   /// SRetReturnReg - Some subtargets require that sret lowering includes
   /// returning the value of the returned struct in a register. This field
   /// holds the virtual register into which the sret argument is passed.
-  unsigned SRetReturnReg = 0;
+  Register SRetReturnReg;
 
   /// GlobalBaseReg - keeps track of the virtual register initialized for
   /// use as the global base register. This is used for PIC in some PIC
   /// relocation models.
-  unsigned GlobalBaseReg = 0;
+  Register GlobalBaseReg;
 
   /// VarArgsFrameIndex - FrameIndex for start of varargs area.
   int VarArgsFrameIndex = 0;

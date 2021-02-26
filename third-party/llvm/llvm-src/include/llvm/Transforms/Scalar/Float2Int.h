@@ -1,9 +1,8 @@
 //===-- Float2Int.h - Demote floating point ops to work on integers -------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -17,7 +16,9 @@
 
 #include "llvm/ADT/EquivalenceClasses.h"
 #include "llvm/ADT/MapVector.h"
+#include "llvm/ADT/SetVector.h"
 #include "llvm/IR/ConstantRange.h"
+#include "llvm/IR/Dominators.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/PassManager.h"
 
@@ -27,22 +28,22 @@ public:
   PreservedAnalyses run(Function &F, FunctionAnalysisManager &AM);
 
   // Glue for old PM.
-  bool runImpl(Function &F);
+  bool runImpl(Function &F, const DominatorTree &DT);
 
 private:
-  void findRoots(Function &F, SmallPtrSet<Instruction *, 8> &Roots);
+  void findRoots(Function &F, const DominatorTree &DT);
   void seen(Instruction *I, ConstantRange R);
   ConstantRange badRange();
   ConstantRange unknownRange();
   ConstantRange validateRange(ConstantRange R);
-  void walkBackwards(const SmallPtrSetImpl<Instruction *> &Roots);
+  void walkBackwards();
   void walkForwards();
   bool validateAndTransform();
   Value *convert(Instruction *I, Type *ToTy);
   void cleanup();
 
   MapVector<Instruction *, ConstantRange> SeenInsts;
-  SmallPtrSet<Instruction *, 8> Roots;
+  SmallSetVector<Instruction *, 8> Roots;
   EquivalenceClasses<Instruction *> ECs;
   MapVector<Instruction *, Value *> ConvertedInsts;
   LLVMContext *Ctx;

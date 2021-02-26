@@ -1,9 +1,8 @@
 //===- CoverageExporterLcov.cpp - Code coverage export --------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -79,11 +78,12 @@ void renderLineSummary(raw_ostream &OS, const FileCoverageSummary &Summary) {
 
 void renderFile(raw_ostream &OS, const coverage::CoverageMapping &Coverage,
                 const std::string &Filename,
-                const FileCoverageSummary &FileReport, bool ExportSummaryOnly) {
+                const FileCoverageSummary &FileReport, bool ExportSummaryOnly,
+                bool SkipFunctions) {
   OS << "SF:" << Filename << '\n';
 
-  if (!ExportSummaryOnly) {
-    renderFunctions(OS, Coverage.getCoveredFunctions());
+  if (!ExportSummaryOnly && !SkipFunctions) {
+    renderFunctions(OS, Coverage.getCoveredFunctions(Filename));
   }
   renderFunctionSummary(OS, FileReport);
 
@@ -100,9 +100,10 @@ void renderFile(raw_ostream &OS, const coverage::CoverageMapping &Coverage,
 void renderFiles(raw_ostream &OS, const coverage::CoverageMapping &Coverage,
                  ArrayRef<std::string> SourceFiles,
                  ArrayRef<FileCoverageSummary> FileReports,
-                 bool ExportSummaryOnly) {
+                 bool ExportSummaryOnly, bool SkipFunctions) {
   for (unsigned I = 0, E = SourceFiles.size(); I < E; ++I)
-    renderFile(OS, Coverage, SourceFiles[I], FileReports[I], ExportSummaryOnly);
+    renderFile(OS, Coverage, SourceFiles[I], FileReports[I], ExportSummaryOnly,
+               SkipFunctions);
 }
 
 } // end anonymous namespace
@@ -120,6 +121,6 @@ void CoverageExporterLcov::renderRoot(ArrayRef<std::string> SourceFiles) {
   FileCoverageSummary Totals = FileCoverageSummary("Totals");
   auto FileReports = CoverageReport::prepareFileReports(Coverage, Totals,
                                                         SourceFiles, Options);
-  renderFiles(OS, Coverage, SourceFiles, FileReports,
-              Options.ExportSummaryOnly);
+  renderFiles(OS, Coverage, SourceFiles, FileReports, Options.ExportSummaryOnly,
+              Options.SkipFunctions);
 }

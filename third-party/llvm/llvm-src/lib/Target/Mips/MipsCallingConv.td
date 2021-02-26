@@ -1,9 +1,8 @@
 //===-- MipsCallingConv.td - Calling Conventions for Mips --*- tablegen -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 // This describes the calling conventions for Mips architecture.
@@ -140,7 +139,8 @@ def CC_MipsN : CallingConv<[
   CCIfType<[i8, i16, i32], CCIfOrigArgWasNotFloat<CCPromoteToType<i64>>>,
 
   // The only i32's we have left are soft-float arguments.
-  CCIfSubtarget<"useSoftFloat()", CCIfType<[i32], CCDelegateTo<CC_MipsN_SoftFloat>>>,
+  CCIfSubtarget<"useSoftFloat()", CCIfType<[i32],
+                CCDelegateTo<CC_MipsN_SoftFloat>>>,
 
   // Integer arguments are passed in integer registers.
   CCIfType<[i64], CCAssignToRegWithShadow<[A0_64, A1_64, A2_64, A3_64,

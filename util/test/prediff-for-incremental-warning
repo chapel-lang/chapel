@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # This script is a system-wide prediff for use when incremental compilation is enabled.
 # If --incremental is used along with --fast it leads to a warning being generated, this
@@ -33,7 +33,7 @@ try:
       if(line == "warning: Compiling with --incremental along with optimizations enabled may lead to a slower execution time compared to --fast or using -O optimizations directly.\n"):
         sys.exit(0)
 except IOError:
-    print "Can't find "+sys.argv[1]+".good"
+    print("Can't find "+sys.argv[1]+".good")
 
 # Matches the warning we are looking for
 pattern = re.compile("warning: Compiling with --incremental along with optimizations enabled may lead to a slower execution time compared to --fast or using -O optimizations directly.")

@@ -8,10 +8,6 @@
 #include <gasnet_core_internal.h>
 #include <gasnet_am.h>
 
-#if GASNET_BLCR
-#include <gasnet_blcr.h>
-#endif
-
 #include <amudp_spmd.h>
 
 #include <errno.h>
@@ -90,6 +86,10 @@ void gasnetc_bootstrapExchange(void *src, size_t len, void *dest) {
 static void gasnetc_bootstrapSNodeBroadcast(void *src, size_t len, void *dest, int rootnode) {
   void *tmp = gasneti_malloc(len * gasneti_nodes);
   gasneti_assert(NULL != src);
+  if (gasneti_mynode != rootnode) {
+     // silence a harmless valgrind error caused by sending potentially uninitialized bytes
+     memset(src, 0, len);
+  }
   gasnetc_bootstrapExchange(src, len, tmp);
   GASNETI_MEMCPY(dest, (void*)((uintptr_t)tmp + (len * rootnode)), len);
   gasneti_free(tmp);
@@ -239,7 +239,7 @@ static int gasnetc_init(int *argc, char ***argv, gex_Flags_t flags) {
     retval = AMUDP_SPMDStartup(argc, argv, 
       0, 0, NULL, /* dummies */
       &gasnetc_networkpid, &gasnetc_bundle, &gasnetc_endpoint);
-    if (retval != AM_OK) INITERR(RESOURCE, "slave AMUDP_SPMDStartup() failed");
+    if (retval != AM_OK) INITERR(RESOURCE, "worker AMUDP_SPMDStartup() failed");
     gasneti_init_done = 1; /* enable early to allow tracing */
 
     gasneti_getenv_hook = (/* cast drops const */ gasneti_getenv_fn_t*)&AMUDP_SPMDgetenvMaster;
@@ -315,11 +315,6 @@ static int gasnetc_init(int *argc, char ***argv, gex_Flags_t flags) {
 
     /* determine Max{Local,GLobal}SegmentSize */
     gasneti_segmentInit(mmap_limit, &gasnetc_bootstrapExchange, flags);
-
-    #if GASNET_BLCR
-      gasneti_checkpoint_guid = gasnetc_networkpid;
-      gasneti_checkpoint_init(NULL);
-    #endif
 
   AMUNLOCK();
 
@@ -1190,71 +1185,6 @@ extern int  gasnetc_hsl_trylock(gex_HSL_t *hsl) {
   }
 #endif
 
-/* ------------------------------------------------------------------------------------ */
-/*
-  Checkpoint/restart
-  ==================
-  thin wrappers around AMUDP-level support
-*/
-
-#if GASNET_BLCR
-
-/* NON-collective checkpoint request */
-int gasnet_checkpoint(const char *dir) {
-  int i, rc;
-
-  gasneti_flush_streams();
-
-  AMLOCK();
-  rc = AMUDP_SPMDCheckpoint(&gasnetc_bundle, &gasnetc_endpoint, dir);
-  if (rc > 0) {
-    /* Handlers */
-    for (i=0; i<GASNETC_MAX_NUMHANDLERS; i++) {
-      if (gasnetc_handler[i].gex_index) {
-        AM_SetHandler(gasnetc_endpoint, (handler_t)i, gasnetc_handler[i].gex_fnptr);
-        /* BLCR-TODO: error-checking */
-      }
-    }
-
-    /* Segment */
-#if GASNETC_MOCK_EVERYTHING
-    i = AM_SetSeg(gasnetc_endpoint, NULL, (uintptr_t)-1);
-#else
-    i = AM_SetSeg(gasnetc_endpoint, myseg.addr, myseg.size);
-#endif
-    /* BLCR-TODO: error-checking */
-
-    #if GASNET_TRACE || GASNET_DEBUG
-     #if !GASNET_DEBUG
-      if (GASNETI_TRACE_ENABLED(A))
-     #endif
-        GASNETI_AM_SAFE(AMUDP_SetHandlerCallbacks(gasnetc_endpoint,
-          gasnetc_enteringHandler_hook, gasnetc_leavingHandler_hook));
-    #endif
-  }
-  AMUNLOCK();
-
-#if GASNET_DEBUG_VERBOSE
-  fprintf(stderr, "Node %d %s checkpoint\n", gasneti_mynode, rc?"restart from":"continue after");
-#endif
-
-  return rc;
-}
-
-/* Collective checkpoint request */
-
-int gasnet_all_checkpoint(const char *dir_arg) {
-  const char *dir;
-  int rc;
-  dir = gasneti_checkpoint_dir(dir_arg);
-  gasnet_barrier(0, GASNET_BARRIERFLAG_ANONYMOUS);
-  rc = gasnet_checkpoint(dir);
-  if (!dir_arg) gasneti_free((void*)dir);
-  gasnet_barrier(0, GASNET_BARRIERFLAG_ANONYMOUS);
-  return rc;
-}
-
-#endif /* GASNET_BLCR */
 /* ------------------------------------------------------------------------------------ */
 /*
   Private Handlers:

@@ -6,7 +6,7 @@
    SAFE TO REACH IT THROUGH DOCUMENTED INTERFACES.  IN FACT, IT IS ALMOST
    GUARANTEED THAT IT WILL CHANGE OR DISAPPEAR IN A FUTURE GNU MP RELEASE.
 
-Copyright 2009, 2010, 2012 Free Software Foundation, Inc.
+Copyright 2009, 2010, 2012, 2015, 2020 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -35,8 +35,8 @@ GNU Lesser General Public License along with the GNU MP Library.  If not,
 see https://www.gnu.org/licenses/.  */
 
 
-#include "gmp.h"
 #include "gmp-impl.h"
+
 
 #if GMP_NUMB_BITS < 29
 #error Not implemented: Both sublsh_n(,,,28) should be corrected; r2 and r5 need one more LIMB.
@@ -44,6 +44,21 @@ see https://www.gnu.org/licenses/.  */
 
 #if GMP_NUMB_BITS < 28
 #error Not implemented: divexact_by188513325 and _by182712915 will not work.
+#endif
+
+
+/* FIXME: tuneup should decide the best variant */
+#ifndef AORSMUL_FASTER_AORS_AORSLSH
+#define AORSMUL_FASTER_AORS_AORSLSH 1
+#endif
+#ifndef AORSMUL_FASTER_AORS_2AORSLSH
+#define AORSMUL_FASTER_AORS_2AORSLSH 1
+#endif
+#ifndef AORSMUL_FASTER_2AORSLSH
+#define AORSMUL_FASTER_2AORSLSH 1
+#endif
+#ifndef AORSMUL_FASTER_3AORSLSH
+#define AORSMUL_FASTER_3AORSLSH 1
 #endif
 
 
@@ -66,6 +81,7 @@ DO_mpn_sublsh_n(mp_ptr dst, mp_srcptr src, mp_size_t n, unsigned int s, mp_ptr w
 #if HAVE_NATIVE_mpn_addlsh_n
 #define DO_mpn_addlsh_n(dst,src,n,s,ws) mpn_addlsh_n(dst,dst,src,n,s)
 #else
+#if !defined (AORSMUL_FASTER_2AORSLSH) && !defined (AORSMUL_FASTER_AORS_2AORSLSH)
 static mp_limb_t
 DO_mpn_addlsh_n(mp_ptr dst, mp_srcptr src, mp_size_t n, unsigned int s, mp_ptr ws)
 {
@@ -77,6 +93,7 @@ DO_mpn_addlsh_n(mp_ptr dst, mp_srcptr src, mp_size_t n, unsigned int s, mp_ptr w
   return    __cy + mpn_add_n(dst,dst,ws,n);
 #endif
 }
+#endif
 #endif
 
 #if HAVE_NATIVE_mpn_subrsh
@@ -92,20 +109,6 @@ do {									\
 } while (0)
 #endif
 
-
-/* FIXME: tuneup should decide the best variant */
-#ifndef AORSMUL_FASTER_AORS_AORSLSH
-#define AORSMUL_FASTER_AORS_AORSLSH 1
-#endif
-#ifndef AORSMUL_FASTER_AORS_2AORSLSH
-#define AORSMUL_FASTER_AORS_2AORSLSH 1
-#endif
-#ifndef AORSMUL_FASTER_2AORSLSH
-#define AORSMUL_FASTER_2AORSLSH 1
-#endif
-#ifndef AORSMUL_FASTER_3AORSLSH
-#define AORSMUL_FASTER_3AORSLSH 1
-#endif
 
 #if GMP_NUMB_BITS < 43
 #define BIT_CORRECTION 1
@@ -254,7 +257,7 @@ do {									\
    f(2^(GMP_NUMB_BITS * n)) for a polynomial f of degree 15 (or
    14), given the 16 (rsp. 15) values:
 
-     r0 = limit at infinity of f(x) / x^7,
+     r0 = limit at infinity of f(x) / x^15,
      r1 = f(8),f(-8),
      r2 = f(4),f(-4),
      r3 = f(2),f(-2),
@@ -439,16 +442,31 @@ mpn_toom_interpolate_16pts (mp_ptr pp, mp_ptr r1, mp_ptr r3, mp_ptr r5, mp_ptr r
   ASSERT_NOCARRY(mpn_sub_n (r4, r4, r3, n3p1));
   ASSERT_NOCARRY(mpn_sub_n (r4, r4, r2, n3p1));
 
+#ifdef HAVE_NATIVE_mpn_rsh1add_n
+  mpn_rsh1add_n (r6, r2, r6, n3p1);
+  r6 [n3p1 - 1] &= GMP_NUMB_MASK >> 1;
+#else
   mpn_add_n (r6, r2, r6, n3p1);
   ASSERT_NOCARRY(mpn_rshift(r6, r6, n3p1, 1));
+#endif
   ASSERT_NOCARRY(mpn_sub_n (r2, r2, r6, n3p1));
 
+#ifdef HAVE_NATIVE_mpn_rsh1sub_n
+  mpn_rsh1sub_n (r5, r3, r5, n3p1);
+  r5 [n3p1 - 1] &= GMP_NUMB_MASK >> 1;
+#else
   mpn_sub_n (r5, r3, r5, n3p1);
   ASSERT_NOCARRY(mpn_rshift(r5, r5, n3p1, 1));
+#endif
   ASSERT_NOCARRY(mpn_sub_n (r3, r3, r5, n3p1));
 
+#ifdef HAVE_NATIVE_mpn_rsh1add_n
+  mpn_rsh1add_n (r7, r1, r7, n3p1);
+  r7 [n3p1 - 1] &= GMP_NUMB_MASK >> 1;
+#else
   mpn_add_n (r7, r1, r7, n3p1);
   ASSERT_NOCARRY(mpn_rshift(r7, r7, n3p1, 1));
+#endif
   ASSERT_NOCARRY(mpn_sub_n (r1, r1, r7, n3p1));
 
   /* last interpolation steps... */

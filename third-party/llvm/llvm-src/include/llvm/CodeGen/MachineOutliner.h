@@ -1,9 +1,8 @@
 //===---- MachineOutliner.h - Outliner data structures ------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 ///
@@ -38,10 +37,10 @@ enum InstrType { Legal, LegalTerminator, Illegal, Invisible };
 struct Candidate {
 private:
   /// The start index of this \p Candidate in the instruction list.
-  unsigned StartIdx;
+  unsigned StartIdx = 0;
 
   /// The number of instructions in this \p Candidate.
-  unsigned Len;
+  unsigned Len = 0;
 
   // The first instruction in this \p Candidate.
   MachineBasicBlock::iterator FirstInst;
@@ -50,20 +49,20 @@ private:
   MachineBasicBlock::iterator LastInst;
 
   // The basic block that contains this Candidate.
-  MachineBasicBlock *MBB;
+  MachineBasicBlock *MBB = nullptr;
 
   /// Cost of calling an outlined function from this point as defined by the
   /// target.
-  unsigned CallOverhead;
+  unsigned CallOverhead = 0;
 
 public:
   /// The index of this \p Candidate's \p OutlinedFunction in the list of
   /// \p OutlinedFunctions.
-  unsigned FunctionIdx;
+  unsigned FunctionIdx = 0;
 
   /// Identifier denoting the instructions to emit to call an outlined function
   /// from this point. Defined by the target.
-  unsigned CallConstructionID;
+  unsigned CallConstructionID = 0;
 
   /// Contains physical register liveness information for the MBB containing
   /// this \p Candidate.
@@ -172,13 +171,13 @@ public:
 
   /// Represents the size of a sequence in bytes. (Some instructions vary
   /// widely in size, so just counting the instructions isn't very useful.)
-  unsigned SequenceSize;
+  unsigned SequenceSize = 0;
 
   /// Target-defined overhead of constructing a frame for this function.
-  unsigned FrameOverhead;
+  unsigned FrameOverhead = 0;
 
   /// Target-defined identifier for constructing a frame for this function.
-  unsigned FrameConstructionID;
+  unsigned FrameConstructionID = 0;
 
   /// Return the number of candidates for this \p OutlinedFunction.
   unsigned getOccurrenceCount() const { return Candidates.size(); }

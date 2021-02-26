@@ -1,0 +1,2 @@
+printvisibleOptTrue.chpl:2: Printing symbols visible from here:
+  printvisibleOptTrue.chpl:1: xyzSymbol

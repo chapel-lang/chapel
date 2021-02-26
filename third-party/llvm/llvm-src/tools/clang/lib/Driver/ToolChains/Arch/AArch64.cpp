@@ -1,9 +1,8 @@
 //===--- AArch64.cpp - AArch64 (not ARM) Helpers for Tools ------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -13,6 +12,7 @@
 #include "clang/Driver/Options.h"
 #include "llvm/Option/ArgList.h"
 #include "llvm/Support/TargetParser.h"
+#include "llvm/Support/Host.h"
 
 using namespace clang::driver;
 using namespace clang::driver::tools;
@@ -39,21 +39,23 @@ std::string aarch64::getAArch64TargetCPU(const ArgList &Args,
 
   // Handle CPU name is 'native'.
   if (CPU == "native")
-    return llvm::sys::getHostCPUName();
+    return std::string(llvm::sys::getHostCPUName());
   else if (CPU.size())
     return CPU;
 
-  // Make sure we pick "cyclone" if -arch is used or when targetting a Darwin
-  // OS.
+  // Make sure we pick the appropriate Apple CPU if -arch is used or when
+  // targetting a Darwin OS.
   if (Args.getLastArg(options::OPT_arch) || Triple.isOSDarwin())
-    return "cyclone";
+    return Triple.getArch() == llvm::Triple::aarch64_32 ? "apple-s4"
+                                                        : "apple-a7";
 
   return "generic";
 }
 
 // Decode AArch64 features from string like +[no]featureA+[no]featureB+...
 static bool DecodeAArch64Features(const Driver &D, StringRef text,
-                                  std::vector<StringRef> &Features) {
+                                  std::vector<StringRef> &Features,
+                                  llvm::AArch64::ArchKind ArchKind) {
   SmallVector<StringRef, 8> Split;
   text.split(Split, StringRef("+"), -1, false);
 
@@ -65,6 +67,11 @@ static bool DecodeAArch64Features(const Driver &D, StringRef text,
       D.Diag(clang::diag::err_drv_no_neon_modifier);
     else
       return false;
+
+    // +sve implies +f32mm if the base architecture is v8.6A
+    // it isn't the case in general that sve implies both f64mm and f32mm
+    if ((ArchKind == llvm::AArch64::ArchKind::ARMV8_6A) && Feature == "sve")
+      Features.push_back("+f32mm");
   }
   return true;
 }
@@ -75,6 +82,7 @@ static bool DecodeAArch64Mcpu(const Driver &D, StringRef Mcpu, StringRef &CPU,
                               std::vector<StringRef> &Features) {
   std::pair<StringRef, StringRef> Split = Mcpu.split("+");
   CPU = Split.first;
+  llvm::AArch64::ArchKind ArchKind = llvm::AArch64::ArchKind::ARMV8A;
 
   if (CPU == "native")
     CPU = llvm::sys::getHostCPUName();
@@ -82,7 +90,7 @@ static bool DecodeAArch64Mcpu(const Driver &D, StringRef Mcpu, StringRef &CPU,
   if (CPU == "generic") {
     Features.push_back("+neon");
   } else {
-    llvm::AArch64::ArchKind ArchKind = llvm::AArch64::parseCPUArch(CPU);
+    ArchKind = llvm::AArch64::parseCPUArch(CPU);
     if (!llvm::AArch64::getArchFeatures(ArchKind, Features))
       return false;
 
@@ -91,10 +99,11 @@ static bool DecodeAArch64Mcpu(const Driver &D, StringRef Mcpu, StringRef &CPU,
       return false;
    }
 
-  if (Split.second.size() && !DecodeAArch64Features(D, Split.second, Features))
-    return false;
+   if (Split.second.size() &&
+       !DecodeAArch64Features(D, Split.second, Features, ArchKind))
+     return false;
 
-  return true;
+   return true;
 }
 
 static bool
@@ -107,7 +116,8 @@ getAArch64ArchFeaturesFromMarch(const Driver &D, StringRef March,
   llvm::AArch64::ArchKind ArchKind = llvm::AArch64::parseArch(Split.first);
   if (ArchKind == llvm::AArch64::ArchKind::INVALID ||
       !llvm::AArch64::getArchFeatures(ArchKind, Features) ||
-      (Split.second.size() && !DecodeAArch64Features(D, Split.second, Features)))
+      (Split.second.size() &&
+       !DecodeAArch64Features(D, Split.second, Features, ArchKind)))
     return false;
 
   return true;
@@ -138,8 +148,9 @@ getAArch64MicroArchFeaturesFromMtune(const Driver &D, StringRef Mtune,
 
   // Handle CPU name is 'native'.
   if (MtuneLowerCase == "native")
-    MtuneLowerCase = llvm::sys::getHostCPUName();
-  if (MtuneLowerCase == "cyclone") {
+    MtuneLowerCase = std::string(llvm::sys::getHostCPUName());
+  if (MtuneLowerCase == "cyclone" ||
+      StringRef(MtuneLowerCase).startswith("apple")) {
     Features.push_back("+zcm");
     Features.push_back("+zcz");
   }
@@ -195,6 +206,51 @@ void aarch64::getAArch64TargetFeatures(const Driver &D,
     Features.push_back("-neon");
   }
 
+  if (Arg *A = Args.getLastArg(options::OPT_mtp_mode_EQ)) {
+    StringRef Mtp = A->getValue();
+    if (Mtp == "el3")
+      Features.push_back("+tpidr-el3");
+    else if (Mtp == "el2")
+      Features.push_back("+tpidr-el2");
+    else if (Mtp == "el1")
+      Features.push_back("+tpidr-el1");
+    else if (Mtp != "el0")
+      D.Diag(diag::err_drv_invalid_mtp) << A->getAsString(Args);
+  }
+
+  // Enable/disable straight line speculation hardening.
+  if (Arg *A = Args.getLastArg(options::OPT_mharden_sls_EQ)) {
+    StringRef Scope = A->getValue();
+    bool EnableRetBr = false;
+    bool EnableBlr = false;
+    if (Scope != "none" && Scope != "all") {
+      SmallVector<StringRef, 4> Opts;
+      Scope.split(Opts, ",");
+      for (auto Opt : Opts) {
+        Opt = Opt.trim();
+        if (Opt == "retbr") {
+          EnableRetBr = true;
+          continue;
+        }
+        if (Opt == "blr") {
+          EnableBlr = true;
+          continue;
+        }
+        D.Diag(diag::err_invalid_sls_hardening)
+            << Scope << A->getAsString(Args);
+        break;
+      }
+    } else if (Scope == "all") {
+      EnableRetBr = true;
+      EnableBlr = true;
+    }
+
+    if (EnableRetBr)
+      Features.push_back("+harden-sls-retbr");
+    if (EnableBlr)
+      Features.push_back("+harden-sls-blr");
+  }
+
   // En/disable crc
   if (Arg *A = Args.getLastArg(options::OPT_mcrc, options::OPT_mnocrc)) {
     if (A->getOption().matches(options::OPT_mcrc))
@@ -208,7 +264,7 @@ void aarch64::getAArch64TargetFeatures(const Driver &D,
   // TargetParser rewrite.
   const auto ItRNoFullFP16 = std::find(Features.rbegin(), Features.rend(), "-fullfp16");
   const auto ItRFP16FML = std::find(Features.rbegin(), Features.rend(), "+fp16fml");
-  if (std::find(Features.begin(), Features.end(), "+v8.4a") != Features.end()) {
+  if (llvm::is_contained(Features, "+v8.4a")) {
     const auto ItRFullFP16  = std::find(Features.rbegin(), Features.rend(), "+fullfp16");
     if (ItRFullFP16 < ItRNoFullFP16 && ItRFullFP16 < ItRFP16FML) {
       // Only entangled feature that can be to the right of this +fullfp16 is -fp16fml.
@@ -218,8 +274,7 @@ void aarch64::getAArch64TargetFeatures(const Driver &D,
     }
     else
       goto fp16_fml_fallthrough;
-  }
-  else {
+  } else {
 fp16_fml_fallthrough:
     // In both of these cases, putting the 'other' feature on the end of the vector will
     // result in the same effect as placing it immediately after the current feature.
@@ -310,10 +365,16 @@ fp16_fml_fallthrough:
     }
   }
 
+  auto V8_6Pos = llvm::find(Features, "+v8.6a");
+  if (V8_6Pos != std::end(Features))
+    V8_6Pos = Features.insert(std::next(V8_6Pos), {"+i8mm", "+bf16"});
+
   if (Arg *A = Args.getLastArg(options::OPT_mno_unaligned_access,
-                               options::OPT_munaligned_access))
+                               options::OPT_munaligned_access)) {
     if (A->getOption().matches(options::OPT_mno_unaligned_access))
       Features.push_back("+strict-align");
+  } else if (Triple.isOSOpenBSD())
+    Features.push_back("+strict-align");
 
   if (Args.hasArg(options::OPT_ffixed_x1))
     Features.push_back("+reserve-x1");
@@ -336,11 +397,59 @@ fp16_fml_fallthrough:
   if (Args.hasArg(options::OPT_ffixed_x7))
     Features.push_back("+reserve-x7");
 
+  if (Args.hasArg(options::OPT_ffixed_x9))
+    Features.push_back("+reserve-x9");
+
+  if (Args.hasArg(options::OPT_ffixed_x10))
+    Features.push_back("+reserve-x10");
+
+  if (Args.hasArg(options::OPT_ffixed_x11))
+    Features.push_back("+reserve-x11");
+
+  if (Args.hasArg(options::OPT_ffixed_x12))
+    Features.push_back("+reserve-x12");
+
+  if (Args.hasArg(options::OPT_ffixed_x13))
+    Features.push_back("+reserve-x13");
+
+  if (Args.hasArg(options::OPT_ffixed_x14))
+    Features.push_back("+reserve-x14");
+
+  if (Args.hasArg(options::OPT_ffixed_x15))
+    Features.push_back("+reserve-x15");
+
   if (Args.hasArg(options::OPT_ffixed_x18))
     Features.push_back("+reserve-x18");
 
   if (Args.hasArg(options::OPT_ffixed_x20))
     Features.push_back("+reserve-x20");
+
+  if (Args.hasArg(options::OPT_ffixed_x21))
+    Features.push_back("+reserve-x21");
+
+  if (Args.hasArg(options::OPT_ffixed_x22))
+    Features.push_back("+reserve-x22");
+
+  if (Args.hasArg(options::OPT_ffixed_x23))
+    Features.push_back("+reserve-x23");
+
+  if (Args.hasArg(options::OPT_ffixed_x24))
+    Features.push_back("+reserve-x24");
+
+  if (Args.hasArg(options::OPT_ffixed_x25))
+    Features.push_back("+reserve-x25");
+
+  if (Args.hasArg(options::OPT_ffixed_x26))
+    Features.push_back("+reserve-x26");
+
+  if (Args.hasArg(options::OPT_ffixed_x27))
+    Features.push_back("+reserve-x27");
+
+  if (Args.hasArg(options::OPT_ffixed_x28))
+    Features.push_back("+reserve-x28");
+
+  if (Args.hasArg(options::OPT_ffixed_x30))
+    Features.push_back("+reserve-x30");
 
   if (Args.hasArg(options::OPT_fcall_saved_x8))
     Features.push_back("+call-saved-x8");

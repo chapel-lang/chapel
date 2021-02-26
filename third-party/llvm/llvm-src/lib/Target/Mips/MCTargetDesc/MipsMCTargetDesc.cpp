@@ -1,9 +1,8 @@
 //===-- MipsMCTargetDesc.cpp - Mips Target Descriptions -------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -12,12 +11,14 @@
 //===----------------------------------------------------------------------===//
 
 #include "MipsMCTargetDesc.h"
-#include "InstPrinter/MipsInstPrinter.h"
 #include "MipsAsmBackend.h"
+#include "MipsBaseInfo.h"
 #include "MipsELFStreamer.h"
+#include "MipsInstPrinter.h"
 #include "MipsMCAsmInfo.h"
 #include "MipsMCNaCl.h"
 #include "MipsTargetStreamer.h"
+#include "TargetInfo/MipsTargetInfo.h"
 #include "llvm/ADT/Triple.h"
 #include "llvm/MC/MCCodeEmitter.h"
 #include "llvm/MC/MCELFStreamer.h"
@@ -44,7 +45,6 @@ using namespace llvm;
 #include "MipsGenRegisterInfo.inc"
 
 /// Select the Mips CPU for the given triple and cpu name.
-/// FIXME: Merge with the copy in MipsSubtarget.cpp
 StringRef MIPS_MC::selectMipsCPU(const Triple &TT, StringRef CPU) {
   if (CPU.empty() || CPU == "generic") {
     if (TT.getSubArch() == llvm::Triple::MipsSubArch_r6) {
@@ -81,11 +81,12 @@ static MCSubtargetInfo *createMipsMCSubtargetInfo(const Triple &TT,
 }
 
 static MCAsmInfo *createMipsMCAsmInfo(const MCRegisterInfo &MRI,
-                                      const Triple &TT) {
-  MCAsmInfo *MAI = new MipsMCAsmInfo(TT);
+                                      const Triple &TT,
+                                      const MCTargetOptions &Options) {
+  MCAsmInfo *MAI = new MipsMCAsmInfo(TT, Options);
 
   unsigned SP = MRI.getDwarfRegNum(Mips::SP, true);
-  MCCFIInstruction Inst = MCCFIInstruction::createDefCfa(nullptr, SP, 0);
+  MCCFIInstruction Inst = MCCFIInstruction::createDefCfaRegister(nullptr, SP);
   MAI->addInitialFrameState(Inst);
 
   return MAI;
@@ -143,12 +144,15 @@ public:
       return false;
     switch (Info->get(Inst.getOpcode()).OpInfo[NumOps - 1].OperandType) {
     case MCOI::OPERAND_UNKNOWN:
-    case MCOI::OPERAND_IMMEDIATE:
-      // jal, bal ...
-      Target = Inst.getOperand(NumOps - 1).getImm();
+    case MCOI::OPERAND_IMMEDIATE: {
+      // j, jal, jalx, jals
+      // Absolute branch within the current 256 MB-aligned region
+      uint64_t Region = Addr & ~uint64_t(0xfffffff);
+      Target = Region + Inst.getOperand(NumOps - 1).getImm();
       return true;
+    }
     case MCOI::OPERAND_PCREL:
-      // b, j, beq ...
+      // b, beq ...
       Target = Addr + Inst.getOperand(NumOps - 1).getImm();
       return true;
     default:
@@ -162,7 +166,7 @@ static MCInstrAnalysis *createMipsMCInstrAnalysis(const MCInstrInfo *Info) {
   return new MipsMCInstrAnalysis(Info);
 }
 
-extern "C" void LLVMInitializeMipsTargetMC() {
+extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeMipsTargetMC() {
   for (Target *T : {&getTheMipsTarget(), &getTheMipselTarget(),
                     &getTheMips64Target(), &getTheMips64elTarget()}) {
     // Register the MC asm info.

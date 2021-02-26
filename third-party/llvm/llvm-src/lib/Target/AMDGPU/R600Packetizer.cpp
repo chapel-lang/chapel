@@ -1,9 +1,8 @@
 //===----- R600Packetizer.cpp - VLIW packetizer ---------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -91,7 +90,7 @@ private:
       if (DstIdx == -1) {
         continue;
       }
-      unsigned Dst = BI->getOperand(DstIdx).getReg();
+      Register Dst = BI->getOperand(DstIdx).getReg();
       if (isTrans || TII->isTransOnly(*BI)) {
         Result[Dst] = R600::PS;
         continue;
@@ -137,7 +136,7 @@ private:
       int OperandIdx = TII->getOperandIdx(MI.getOpcode(), Ops[i]);
       if (OperandIdx < 0)
         continue;
-      unsigned Src = MI.getOperand(OperandIdx).getReg();
+      Register Src = MI.getOperand(OperandIdx).getReg();
       const DenseMap<unsigned, unsigned>::const_iterator It = PVs.find(Src);
       if (It != PVs.end())
         MI.getOperand(OperandIdx).setReg(It->second);
@@ -187,8 +186,8 @@ public:
     // Does MII and MIJ share the same pred_sel ?
     int OpI = TII->getOperandIdx(MII->getOpcode(), R600::OpName::pred_sel),
         OpJ = TII->getOperandIdx(MIJ->getOpcode(), R600::OpName::pred_sel);
-    unsigned PredI = (OpI > -1)?MII->getOperand(OpI).getReg():0,
-        PredJ = (OpJ > -1)?MIJ->getOperand(OpJ).getReg():0;
+    Register PredI = (OpI > -1)?MII->getOperand(OpI).getReg() : Register(),
+      PredJ = (OpJ > -1)?MIJ->getOperand(OpJ).getReg() : Register();
     if (PredI != PredJ)
       return false;
     if (SUJ->isSucc(SUI)) {

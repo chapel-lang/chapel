@@ -1,9 +1,8 @@
 //===--- llvm-opt-fuzzer.cpp - Fuzzer for instruction selection ----------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -13,16 +12,20 @@
 
 #include "llvm/Bitcode/BitcodeReader.h"
 #include "llvm/Bitcode/BitcodeWriter.h"
-#include "llvm/CodeGen/CommandFlags.inc"
+#include "llvm/CodeGen/CommandFlags.h"
 #include "llvm/FuzzMutate/FuzzerCLI.h"
 #include "llvm/FuzzMutate/IRMutator.h"
 #include "llvm/IR/Verifier.h"
+#include "llvm/InitializePasses.h"
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/TargetRegistry.h"
 #include "llvm/Support/TargetSelect.h"
+#include "llvm/Target/TargetMachine.h"
 
 using namespace llvm;
+
+static codegen::RegisterCodeGenFlags CGF;
 
 static cl::opt<std::string>
     TargetTripleStr("mtriple", cl::desc("Override target triple for module"));
@@ -42,12 +45,12 @@ std::unique_ptr<IRMutator> createOptMutator() {
 
   std::vector<std::unique_ptr<IRMutationStrategy>> Strategies;
   Strategies.push_back(
-      llvm::make_unique<InjectorIRStrategy>(
+      std::make_unique<InjectorIRStrategy>(
           InjectorIRStrategy::getDefaultOps()));
   Strategies.push_back(
-      llvm::make_unique<InstDeleterIRStrategy>());
+      std::make_unique<InstDeleterIRStrategy>());
 
-  return llvm::make_unique<IRMutator>(std::move(Types), std::move(Strategies));
+  return std::make_unique<IRMutator>(std::move(Types), std::move(Strategies));
 }
 
 extern "C" LLVM_ATTRIBUTE_USED size_t LLVMFuzzerCustomMutator(
@@ -124,7 +127,8 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
 
   M->setTargetTriple(TM->getTargetTriple().normalize());
   M->setDataLayout(TM->createDataLayout());
-  setFunctionAttributes(TM->getTargetCPU(), TM->getTargetFeatureString(), *M);
+  codegen::setFunctionAttributes(TM->getTargetCPU(),
+                                 TM->getTargetFeatureString(), *M);
 
   // Create pass pipeline
   //
@@ -214,16 +218,17 @@ extern "C" LLVM_ATTRIBUTE_USED int LLVMFuzzerInitialize(
 
   std::string Error;
   const Target *TheTarget =
-      TargetRegistry::lookupTarget(MArch, TargetTriple, Error);
+      TargetRegistry::lookupTarget(codegen::getMArch(), TargetTriple, Error);
   if (!TheTarget) {
     errs() << *argv[0] << ": " << Error;
     exit(1);
   }
 
-  TargetOptions Options = InitTargetOptionsFromCodeGenFlags();
+  TargetOptions Options = codegen::InitTargetOptionsFromCodeGenFlags();
   TM.reset(TheTarget->createTargetMachine(
-      TargetTriple.getTriple(), getCPUStr(), getFeaturesStr(),
-     Options, getRelocModel(), getCodeModel(), CodeGenOpt::Default));
+      TargetTriple.getTriple(), codegen::getCPUStr(), codegen::getFeaturesStr(),
+      Options, codegen::getExplicitRelocModel(),
+      codegen::getExplicitCodeModel(), CodeGenOpt::Default));
   assert(TM && "Could not allocate target machine!");
 
   // Check that pass pipeline is specified and correct

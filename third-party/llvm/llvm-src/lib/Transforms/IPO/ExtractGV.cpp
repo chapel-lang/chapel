@@ -1,9 +1,8 @@
 //===-- ExtractGV.cpp - Global Value extraction pass ----------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -55,6 +54,7 @@ namespace {
   class GVExtractorPass : public ModulePass {
     SetVector<GlobalValue *> Named;
     bool deleteStuff;
+    bool keepConstInit;
   public:
     static char ID; // Pass identification, replacement for typeid
 
@@ -62,8 +62,9 @@ namespace {
     /// Otherwise, it deletes as much of the module as possible, except for the
     /// global values specified.
     explicit GVExtractorPass(std::vector<GlobalValue*> &GVs,
-                             bool deleteS = true)
-      : ModulePass(ID), Named(GVs.begin(), GVs.end()), deleteStuff(deleteS) {}
+                             bool deleteS = true, bool keepConstInit = false)
+      : ModulePass(ID), Named(GVs.begin(), GVs.end()), deleteStuff(deleteS),
+        keepConstInit(keepConstInit) {}
 
     bool runOnModule(Module &M) override {
       if (skipModule(M))
@@ -84,7 +85,8 @@ namespace {
       for (Module::global_iterator I = M.global_begin(), E = M.global_end();
            I != E; ++I) {
         bool Delete =
-            deleteStuff == (bool)Named.count(&*I) && !I->isDeclaration();
+            deleteStuff == (bool)Named.count(&*I) && !I->isDeclaration() &&
+            (!I->isConstant() || !keepConstInit);
         if (!Delete) {
           if (I->hasAvailableExternallyLinkage())
             continue;
@@ -157,6 +159,6 @@ namespace {
 }
 
 ModulePass *llvm::createGVExtractionPass(std::vector<GlobalValue *> &GVs,
-                                         bool deleteFn) {
-  return new GVExtractorPass(GVs, deleteFn);
+                                         bool deleteFn, bool keepConstInit) {
+  return new GVExtractorPass(GVs, deleteFn, keepConstInit);
 }

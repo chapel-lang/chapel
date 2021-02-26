@@ -1,9 +1,8 @@
 //===-- SystemZSelectionDAGInfo.cpp - SystemZ SelectionDAG Info -----------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -48,7 +47,7 @@ static SDValue emitMemMem(SelectionDAG &DAG, const SDLoc &DL, unsigned Sequence,
 
 SDValue SystemZSelectionDAGInfo::EmitTargetCodeForMemcpy(
     SelectionDAG &DAG, const SDLoc &DL, SDValue Chain, SDValue Dst, SDValue Src,
-    SDValue Size, unsigned Align, bool IsVolatile, bool AlwaysInline,
+    SDValue Size, Align Alignment, bool IsVolatile, bool AlwaysInline,
     MachinePointerInfo DstPtrInfo, MachinePointerInfo SrcPtrInfo) const {
   if (IsVolatile)
     return SDValue();
@@ -75,7 +74,7 @@ static SDValue memsetStore(SelectionDAG &DAG, const SDLoc &DL, SDValue Chain,
 
 SDValue SystemZSelectionDAGInfo::EmitTargetCodeForMemset(
     SelectionDAG &DAG, const SDLoc &DL, SDValue Chain, SDValue Dst,
-    SDValue Byte, SDValue Size, unsigned Align, bool IsVolatile,
+    SDValue Byte, SDValue Size, Align Alignment, bool IsVolatile,
     MachinePointerInfo DstPtrInfo) const {
   EVT PtrVT = Dst.getValueType();
 
@@ -98,20 +97,22 @@ SDValue SystemZSelectionDAGInfo::EmitTargetCodeForMemset(
         unsigned Size1 = Bytes == 16 ? 8 : 1 << findLastSet(Bytes);
         unsigned Size2 = Bytes - Size1;
         SDValue Chain1 = memsetStore(DAG, DL, Chain, Dst, ByteVal, Size1,
-                                     Align, DstPtrInfo);
+                                     Alignment.value(), DstPtrInfo);
         if (Size2 == 0)
           return Chain1;
         Dst = DAG.getNode(ISD::ADD, DL, PtrVT, Dst,
                           DAG.getConstant(Size1, DL, PtrVT));
         DstPtrInfo = DstPtrInfo.getWithOffset(Size1);
-        SDValue Chain2 = memsetStore(DAG, DL, Chain, Dst, ByteVal, Size2,
-                                     std::min(Align, Size1), DstPtrInfo);
+        SDValue Chain2 = memsetStore(
+            DAG, DL, Chain, Dst, ByteVal, Size2,
+            std::min((unsigned)Alignment.value(), Size1), DstPtrInfo);
         return DAG.getNode(ISD::TokenFactor, DL, MVT::Other, Chain1, Chain2);
       }
     } else {
       // Handle one and two bytes using STC.
       if (Bytes <= 2) {
-        SDValue Chain1 = DAG.getStore(Chain, DL, Byte, Dst, DstPtrInfo, Align);
+        SDValue Chain1 =
+            DAG.getStore(Chain, DL, Byte, Dst, DstPtrInfo, Alignment);
         if (Bytes == 1)
           return Chain1;
         SDValue Dst2 = DAG.getNode(ISD::ADD, DL, PtrVT, Dst,
@@ -132,7 +133,7 @@ SDValue SystemZSelectionDAGInfo::EmitTargetCodeForMemset(
 
     // Copy the byte to the first location and then use MVC to copy
     // it to the rest.
-    Chain = DAG.getStore(Chain, DL, Byte, Dst, DstPtrInfo, Align);
+    Chain = DAG.getStore(Chain, DL, Byte, Dst, DstPtrInfo, Alignment);
     SDValue DstPlus1 = DAG.getNode(ISD::ADD, DL, PtrVT, Dst,
                                    DAG.getConstant(1, DL, PtrVT));
     return emitMemMem(DAG, DL, SystemZISD::MVC, SystemZISD::MVC_LOOP,
@@ -210,10 +211,10 @@ std::pair<SDValue, SDValue> SystemZSelectionDAGInfo::EmitTargetCodeForMemchr(
 
   // Now select between End and null, depending on whether the character
   // was found.
-  SDValue Ops[] = {End, DAG.getConstant(0, DL, PtrVT),
-                   DAG.getConstant(SystemZ::CCMASK_SRST, DL, MVT::i32),
-                   DAG.getConstant(SystemZ::CCMASK_SRST_FOUND, DL, MVT::i32),
-                   CCReg};
+  SDValue Ops[] = {
+      End, DAG.getConstant(0, DL, PtrVT),
+      DAG.getTargetConstant(SystemZ::CCMASK_SRST, DL, MVT::i32),
+      DAG.getTargetConstant(SystemZ::CCMASK_SRST_FOUND, DL, MVT::i32), CCReg};
   End = DAG.getNode(SystemZISD::SELECT_CCMASK, DL, PtrVT, Ops);
   return std::make_pair(End, Chain);
 }

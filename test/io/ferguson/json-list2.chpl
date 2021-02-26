@@ -1,4 +1,4 @@
-use IO;
+use IO, LinkedLists;
 
 record MyRecord {
   var numbers:LinkedList(int); // could it be [1..0] int ?

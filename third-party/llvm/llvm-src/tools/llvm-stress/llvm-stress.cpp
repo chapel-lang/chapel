@@ -1,9 +1,8 @@
 //===- llvm-stress.cpp - Generate random LL files to stress-test LLVM -----===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -277,7 +276,7 @@ protected:
 
   /// Pick a random type.
   Type *pickType() {
-    return (getRandom() & 1 ? pickVectorType() : pickScalarType());
+    return (getRandom() & 1) ? pickVectorType() : pickScalarType();
   }
 
   /// Pick a random pointer type.
@@ -301,7 +300,7 @@ protected:
 
     if (len != (unsigned)-1)
       width = len;
-    return VectorType::get(Ty, width);
+    return FixedVectorType::get(Ty, width);
   }
 
   /// Pick a random scalar type.
@@ -344,7 +343,9 @@ struct LoadModifier: public Modifier {
   void Act() override {
     // Try to use predefined pointers. If non-exist, use undef pointer value;
     Value *Ptr = getRandomPointerValue();
-    Value *V = new LoadInst(Ptr, "L", BB->getTerminator());
+    PointerType *Tp = cast<PointerType>(Ptr->getType());
+    Value *V = new LoadInst(Tp->getElementType(), Ptr, "L",
+                            BB->getTerminator());
     PT->push_back(V);
   }
 };
@@ -627,9 +628,10 @@ struct SelectModifier: public Modifier {
 
     // If the value type is a vector, and we allow vector select, then in 50%
     // of the cases generate a vector select.
-    if (Val0->getType()->isVectorTy() && (getRandom() % 1)) {
-      unsigned NumElem = cast<VectorType>(Val0->getType())->getNumElements();
-      CondTy = VectorType::get(CondTy, NumElem);
+    if (isa<FixedVectorType>(Val0->getType()) && (getRandom() % 1)) {
+      unsigned NumElem =
+          cast<FixedVectorType>(Val0->getType())->getNumElements();
+      CondTy = FixedVectorType::get(CondTy, NumElem);
     }
 
     Value *Cond = getRandomValue(CondTy);
@@ -736,7 +738,7 @@ int main(int argc, char **argv) {
   cl::ParseCommandLineOptions(argc, argv, "llvm codegen stress-tester\n");
   llvm_shutdown_obj Y;
 
-  auto M = llvm::make_unique<Module>("/tmp/autogen.bc", Context);
+  auto M = std::make_unique<Module>("/tmp/autogen.bc", Context);
   Function *F = GenEmptyFunction(M.get());
 
   // Pick an initial seed value
@@ -753,7 +755,7 @@ int main(int argc, char **argv) {
     OutputFilename = "-";
 
   std::error_code EC;
-  Out.reset(new ToolOutputFile(OutputFilename, EC, sys::fs::F_None));
+  Out.reset(new ToolOutputFile(OutputFilename, EC, sys::fs::OF_None));
   if (EC) {
     errs() << EC.message() << '\n';
     return 1;

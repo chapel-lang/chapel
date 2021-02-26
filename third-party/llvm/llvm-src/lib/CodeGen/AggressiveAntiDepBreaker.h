@@ -1,9 +1,8 @@
 //==- llvm/CodeGen/AggressiveAntiDepBreaker.h - Anti-Dep Support -*- C++ -*-==//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -17,8 +16,8 @@
 #ifndef LLVM_LIB_CODEGEN_AGGRESSIVEANTIDEPBREAKER_H
 #define LLVM_LIB_CODEGEN_AGGRESSIVEANTIDEPBREAKER_H
 
-#include "AntiDepBreaker.h"
 #include "llvm/ADT/BitVector.h"
+#include "llvm/CodeGen/AntiDepBreaker.h"
 #include "llvm/CodeGen/TargetSubtargetInfo.h"
 #include "llvm/Support/Compiler.h"
 #include <map>

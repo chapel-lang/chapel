@@ -1,0 +1,64 @@
+.TH qthread_writeF 3 "APRIL 2011" libqthread "libqthread"
+.SH NAME
+.BR qthread_writeF ,
+.B qthread_writeF_const
+\- fills an address with data
+.SH SYNOPSIS
+.B #include <qthread.h>
+
+.I int
+.br
+.B qthread_writeF
+.RI "(aligned_t * restrict " dest ", const aligned_t * restrict " src );
+.PP
+.I int
+.br
+.B qthread_writeF_const
+.RI "(aligned_t *" dest ", aligned_t " src );
+.SH DESCRIPTION
+These functions are a cross between
+.BR qthread_fill ()
+and
+.BR qthread_writeEF ().
+They do not wait for memory to become empty, but perform the write and set the
+state to full atomically (with respect to other FEB-based actions). Data is
+read from
+.I src
+and written to
+.IR dest .
+.PP
+The semantics of writeF are:
+.RS
+.PP
+1 - data is copied from
+.I src
+to
+.I dest
+.br
+2 -
+.IR dest 's
+FEB state gets set to "full"
+.RE
+.SH WARNING
+This, and all other FEB-related functions currently operate exclusively on
+aligned data.
+.SH RETURN VALUE
+On success, the memory address
+.I dest
+is marked full, the address
+.I dest
+is filled with the contents of
+.I src
+and 0 is returned. On error, a non-zero error code is returned.
+.SH ERRORS
+.TP 12
+.B ENOMEM
+Not enough memory could be allocated for bookkeeping structures.
+.SH SEE ALSO
+.BR qthread_empty (3),
+.BR qthread_fill (3),
+.BR qthread_writeEF (3),
+.BR qthread_readFF (3),
+.BR qthread_readFE (3),
+.BR qthread_lock (3),
+.BR qthread_unlock (3)

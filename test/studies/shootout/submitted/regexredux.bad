@@ -1,2 +1,0 @@
-regexredux.chpl:10: In function 'main':
-regexredux.chpl:29: error: 'stdin' undeclared (first use this function)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -26,6 +26,11 @@
 
 #include "chpl-atomics.h"
 #include "chpl-comm.h"
+#include "error.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 ////////////////////
 //
@@ -33,6 +38,8 @@
 //
 
 extern int chpl_verbose_comm;     // set via startVerboseComm
+extern int chpl_verbose_comm_stacktrace;
+
 extern int chpl_comm_diagnostics; // set via startCommDiagnostics
 extern int chpl_comm_diags_print_unstable;
 
@@ -47,7 +54,12 @@ extern int chpl_comm_diags_print_unstable;
   MACRO(amo) \
   MACRO(execute_on) \
   MACRO(execute_on_fast) \
-  MACRO(execute_on_nb)
+  MACRO(execute_on_nb) \
+  MACRO(cache_get_hits) \
+  MACRO(cache_get_misses) \
+  MACRO(cache_put_hits) \
+  MACRO(cache_put_misses)
+
 
 typedef struct _chpl_commDiagnostics {
 #define _COMM_DIAGS_DECL(cdv) uint64_t cdv;
@@ -55,9 +67,9 @@ typedef struct _chpl_commDiagnostics {
 #undef _COMM_DIAGS_DECL
 } chpl_commDiagnostics;
 
-void chpl_comm_startVerbose(chpl_bool);
+void chpl_comm_startVerbose(chpl_bool, chpl_bool);
 void chpl_comm_stopVerbose(void);
-void chpl_comm_startVerboseHere(chpl_bool);
+void chpl_comm_startVerboseHere(chpl_bool, chpl_bool);
 void chpl_comm_stopVerboseHere(void);
 
 void chpl_comm_startDiagnostics(chpl_bool);
@@ -78,8 +90,8 @@ typedef struct _chpl_atomic_commDiagnostics {
 #undef _COMM_DIAGS_DECL_ATOMIC
 } chpl_atomic_commDiagnostics;
 
-chpl_atomic_commDiagnostics chpl_comm_diags_counters;
-atomic_int_least16_t chpl_comm_diags_disable_flag;
+extern chpl_atomic_commDiagnostics chpl_comm_diags_counters;
+extern atomic_int_least16_t chpl_comm_diags_disable_flag;
 
 static inline
 void chpl_comm_diags_init(void) {
@@ -126,7 +138,16 @@ int chpl_comm_diags_is_enabled(void) {
     if (chpl_verbose_comm                                          \
         && chpl_comm_diags_is_enabled()                            \
         && (!is_unstable || chpl_comm_diags_print_unstable)) {     \
-      printf("%d: " format "\n", chpl_nodeID, __VA_ARGS__);        \
+      char* stack = NULL;                                          \
+      if (chpl_verbose_comm_stacktrace) {                          \
+        stack = chpl_stack_unwind_to_string(' ');                  \
+      }                                                            \
+      if (stack != NULL) {                                         \
+        printf("%d: " format " <%s>\n", chpl_nodeID, __VA_ARGS__, stack); \
+        chpl_mem_free(stack, 0, 0);                                \
+      } else {                                                     \
+        printf("%d: " format "\n", chpl_nodeID, __VA_ARGS__);      \
+      }                                                            \
     }                                                              \
   } while(0)
 
@@ -158,12 +179,17 @@ int chpl_comm_diags_is_enabled(void) {
                                   + ((strlen(kind) == 0) ? 0 : 1)),     \
                                  kind, (int) node)
 
-#define chpl_comm_diags_incr(_ctr)                                      \
-  do {                                                                  \
-    if (chpl_comm_diagnostics && chpl_comm_diags_is_enabled()) {        \
-      atomic_uint_least64_t* ctrAddr = &chpl_comm_diags_counters._ctr;  \
-      (void) atomic_fetch_add_uint_least64_t(ctrAddr, 1);               \
-    }                                                                   \
+#define chpl_comm_diags_incr(_ctr)                                           \
+  do {                                                                       \
+    if (chpl_comm_diagnostics && chpl_comm_diags_is_enabled()) {             \
+      atomic_uint_least64_t* ctrAddr = &chpl_comm_diags_counters._ctr;       \
+      (void) atomic_fetch_add_explicit_uint_least64_t(ctrAddr, 1,            \
+                                                      memory_order_relaxed); \
+    }                                                                        \
   } while(0)
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

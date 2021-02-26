@@ -1,0 +1,38 @@
+split-init-mentions-decls.chpl:1: In function 'test1':
+split-init-mentions-decls.chpl:3: error: 't1' is used before it is initialized
+split-init-mentions-decls.chpl:2: note: 't1' declared here
+split-init-mentions-decls.chpl:4: note: 't1' initialized here
+split-init-mentions-decls.chpl:11: In function 'test2':
+split-init-mentions-decls.chpl:16: error: 't2' is used before it is initialized
+split-init-mentions-decls.chpl:12: note: 't2' declared here
+split-init-mentions-decls.chpl:17: note: 't2' initialized here
+split-init-mentions-decls.chpl:22: error: module-scope variable 't3' may be used before it is initialized
+split-init-mentions-decls.chpl:21: note: 't3' declared here
+split-init-mentions-decls.chpl:23: note: 't3' initialized here
+split-init-mentions-decls.chpl:22: note: calls function 't3Function'
+split-init-mentions-decls.chpl:26: note: mentions module-scope variable 't3' not initialized yet
+split-init-mentions-decls.chpl:34: error: module-scope variable 't4' may be used before it is initialized
+split-init-mentions-decls.chpl:30: note: 't4' declared here
+split-init-mentions-decls.chpl:35: note: 't4' initialized here
+split-init-mentions-decls.chpl:34: note: calls function 't4Function'
+split-init-mentions-decls.chpl:32: note: mentions module-scope variable 't4' not initialized yet
+split-init-mentions-decls.chpl:39: error: module-scope variable 't5' may be used before it is initialized
+split-init-mentions-decls.chpl:37: note: 't5' declared here
+split-init-mentions-decls.chpl:42: note: 't5' initialized here
+split-init-mentions-decls.chpl:39: note: calls function '_new_default_field'
+split-init-mentions-decls.chpl:39: note: mentions module-scope variable 't5' not initialized yet
+split-init-mentions-decls.chpl:48: error: module-scope variable 't6' may be used before it is initialized
+split-init-mentions-decls.chpl:44: note: 't6' declared here
+split-init-mentions-decls.chpl:46: note: 't6' initialized here
+split-init-mentions-decls.chpl:48: note: calls function '_new_default_field'
+split-init-mentions-decls.chpl:48: note: mentions module-scope variable 't6' not initialized yet
+split-init-mentions-decls.chpl:53: error: module-scope variable 't7' may be used before it is initialized
+split-init-mentions-decls.chpl:51: note: 't7' declared here
+split-init-mentions-decls.chpl:56: note: 't7' initialized here
+split-init-mentions-decls.chpl:53: note: calls function 'init_default_field'
+split-init-mentions-decls.chpl:53: note: mentions module-scope variable 't7' not initialized yet
+split-init-mentions-decls.chpl:63: error: module-scope variable 't8' may be used before it is initialized
+split-init-mentions-decls.chpl:58: note: 't8' declared here
+split-init-mentions-decls.chpl:61: note: 't8' initialized here
+split-init-mentions-decls.chpl:63: note: calls function 'init_default_field'
+split-init-mentions-decls.chpl:63: note: mentions module-scope variable 't8' not initialized yet

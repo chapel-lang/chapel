@@ -1,0 +1,1 @@
+errorWhenBehindPrivateUse.chpl:8: error: Bad identifier in 'only' clause, no known 'x' defined in 'B'

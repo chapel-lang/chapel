@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # encoding: utf-8
 
 """chpl2rst converts a chapel program to an rst file, where all comments are
@@ -71,11 +71,16 @@ def gen_link(link, chapelfile):
     abspath = os.path.realpath(chapelfile)
     filename = os.path.split(chapelfile)[1]
 
-    chpl_home = os.path.realpath(os.getenv('CHPL_HOME'))
-    if not chpl_home:
+    chpl_home_env = os.getenv('CHPL_MAKE_HOME')
+    if not chpl_home_env:
+        chpl_home_env = os.getenv('CHPL_HOME')
+
+    if not chpl_home_env:
         print('Error: --link flag only works when $CHPL_HOME is defined')
         sys.exit(1)
-    elif not chpl_home in abspath:
+
+    chpl_home = os.path.realpath(chpl_home_env)
+    if not chpl_home in abspath:
         print('Error: --link flag only work for files within $CHPL_HOME')
         print('CHPL_HOME: {0}'.format(chpl_home))
         print('file path: {0}'.format(abspath))
@@ -95,7 +100,7 @@ def titlecomment(line):
 
 def gen_title(chapelfile):
     """Generate file title, based on if title comment exists"""
-    with open(chapelfile, 'r') as handle:
+    with open(chapelfile, 'r', encoding='utf-8') as handle:
         line1 = handle.readline()
         if titlecomment(line1):
             title = line1.lstrip('//').strip()
@@ -268,11 +273,11 @@ def write(rstoutput, output):
         sys.stdout.write(rstoutput)
         return
 
-    with open(output, 'w') as handle:
+    with open(output, 'w', encoding='utf-8') as handle:
         handle.write(rstoutput)
 
 
-def main(**kwargs):
+def main_args(**kwargs):
     """Driver function - convert each file to rst and write to output"""
 
     # Parse keyword arguments
@@ -287,7 +292,7 @@ def main(**kwargs):
 
         preamble = gen_preamble(chapelfile, link=link)
 
-        with open(chapelfile, 'r') as handle:
+        with open(chapelfile, 'r', encoding='utf-8') as handle:
             if codeblock:
                 rstoutput = gen_codeblock(handle)
             else:
@@ -306,7 +311,10 @@ def main(**kwargs):
 
         write(rstoutput, fname)
 
-if __name__ == '__main__':
+def main():
     # Parse arguments and cast them into a dictionary
     arguments = vars(get_arguments())
-    main(**arguments)
+    main_args(**arguments)
+
+if __name__ == '__main__':
+    main()

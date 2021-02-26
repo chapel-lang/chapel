@@ -1,9 +1,8 @@
 //===- llvm/ADT/PostOrderIterator.h - PostOrder iterator --------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -19,6 +18,7 @@
 #include "llvm/ADT/GraphTraits.h"
 #include "llvm/ADT/Optional.h"
 #include "llvm/ADT/SmallPtrSet.h"
+#include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/iterator_range.h"
 #include <iterator>
 #include <set>
@@ -102,7 +102,7 @@ class po_iterator
 
   // VisitStack - Used to maintain the ordering.  Top = current block
   // First element is basic block pointer, second is the 'next child' to visit
-  std::vector<std::pair<NodeRef, ChildItTy>> VisitStack;
+  SmallVector<std::pair<NodeRef, ChildItTy>, 8> VisitStack;
 
   po_iterator(NodeRef BB) {
     this->insertEdge(Optional<NodeRef>(), BB);

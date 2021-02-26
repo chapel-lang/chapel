@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -106,7 +106,7 @@ static int getCoresPerLocale(int nomultithread) {
   const int buflen = 1024;
   char buf[buflen];
   char partition_arg[128];
-  char* argv[8];
+  char* argv[7];
   char* numCoresString = getenv("CHPL_LAUNCHER_CORES_PER_LOCALE");
 
   if (numCoresString) {
@@ -121,13 +121,12 @@ static int getCoresPerLocale(int nomultithread) {
   argv[2] = (char *)  "--format=%c %Z"; // format for cpu/node and threads/cpu (%c %Z)
   argv[3] = (char *)  "--sort=+c";      // sort by num cpu (lower to higher)
   argv[4] = (char *)  "--noheader";     // don't show header (hide "CPU" header)
-  argv[5] = (char *)  "--responding";   // only care about online nodes
-  argv[6] = NULL;
+  argv[5] = NULL;
   // Set the partition if it was specified
   if (partition) {
     sprintf(partition_arg, "--partition=%s", partition);
-    argv[6] = partition_arg;
-    argv[7] = NULL;
+    argv[5] = partition_arg;
+    argv[6] = NULL;
   }
 
   memset(buf, 0, buflen);

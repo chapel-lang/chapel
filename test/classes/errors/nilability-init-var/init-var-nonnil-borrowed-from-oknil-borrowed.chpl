@@ -7,5 +7,3 @@ class MyClass {
 var rhs: borrowed MyClass?;
 
 var lhs: borrowed MyClass = rhs;
-
-compilerError("done");

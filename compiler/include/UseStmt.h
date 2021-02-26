@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -25,7 +25,7 @@
 
 class ResolveScope;
 
-class UseStmt : public VisibilityStmt {
+class UseStmt final : public VisibilityStmt {
 public:
   UseStmt(BaseAST* source, const char* modRename, bool isPrivate);
 
@@ -37,16 +37,17 @@ public:
           bool isPrivate);
 
   DECLARE_COPY(UseStmt);
+  UseStmt* copyInner(SymbolMap* map) override;
 
-  virtual Expr*   getFirstExpr();
+  Expr*   getFirstExpr() override;
 
-  virtual void    replaceChild(Expr* oldAst, Expr* newAst);
+  void    replaceChild(Expr* oldAst, Expr* newAst) override;
 
-  virtual void    accept(AstVisitor* visitor);
+  void    accept(AstVisitor* visitor) override;
 
-  virtual void    verify();
+  void    verify() override;
 
-  virtual GenRet  codegen();
+  GenRet  codegen() override;
 
   bool            isPlainUse()                                           const;
 
@@ -59,14 +60,18 @@ public:
   UseStmt*        applyOuterUse(const UseStmt* outer);
   ImportStmt*     applyOuterImport(const ImportStmt* outer);
 
-  bool            skipSymbolSearch(const char* name)                     const;
+  std::set<const char*> typeWasNamed(Type* t) const override;
+
+  bool            skipSymbolSearch(const char* name)            const override;
 
   bool            providesNewSymbols(const UseStmt* other)               const;
   bool            providesNewSymbols(const ImportStmt* other)            const;
 
-  virtual BaseAST* getSearchScope()                                      const;
+  BaseAST*        getSearchScope()                              const override;
 
   void            writeListPredicate(FILE* mFP)                          const;
+
+  bool            canReexport;
 
 private:
   bool            isEnum(const Symbol* sym)                              const;
@@ -80,6 +85,8 @@ private:
   bool            matchedNameOrRename(const char* name)             const;
 
   void            noRepeats()                                            const;
+
+  void typeWasNamed(Type* t, std::set<const char*>* namedTypes) const;
 
 public:
   std::vector<const char*>           named;

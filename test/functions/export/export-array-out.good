@@ -1,0 +1,1 @@
+export-array-out.chpl:3: error: array argument 's' in exported function 'badFormalIntentOut' uses out intent - out intent not yet supported for arrays in export procs

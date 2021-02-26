@@ -5,5 +5,5 @@ record R {
 }
 
 var r:R;
-var i = getFieldRef(r, 2);
+var i = getFieldRef(r, 1);
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """ prints Python cpu_count(), optionally capped by env var CHPL_MAKE_MAX_CPU_COUNT
 """
 import os

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -92,7 +92,7 @@ char* chpl_mli_pull_connection(void) {
   chpl_mli_debugf("Getting %s\n", "expected size");
   chpl_mli_pull(chpl_client.setup_sock, &len, sizeof(len), 0);
   chpl_mli_debugf("Expected size is %d\n", len);
-  char* conn = mli_malloc(len);
+  char* conn = mli_malloc(len+1);
   chpl_mli_debugf("Getting %s\n", "string itself");
   chpl_mli_pull(chpl_client.setup_sock, (void*)conn, len, 0);
   conn[len] = '\0';

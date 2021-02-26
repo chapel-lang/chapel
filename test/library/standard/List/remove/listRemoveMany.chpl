@@ -37,4 +37,24 @@ assert(removed == elemCount / 2);
 assert(lst.size == oldSize - elemCount);
 assert(lst.count(testElem) == 0);
 
+lst.clear();
 
+// Check that remove() handles consecutive runs of elements to remove
+for i in 1..10 {
+  lst.append(testElem);
+}
+for i in 1..10 {
+  lst.append(testElem * 2);
+}
+
+removed = lst.remove(testElem, 0);
+writeln(removed);
+writeln(lst);
+
+var slist: list(string, listLock);
+for w in [ "do", "do", "de", "do" ] do
+  slist.append(w);
+
+removed = slist.remove("do", 0);
+writeln(removed);
+writeln(slist);

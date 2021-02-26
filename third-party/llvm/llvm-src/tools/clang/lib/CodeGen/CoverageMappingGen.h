@@ -1,9 +1,8 @@
 //===---- CoverageMappingGen.h - Coverage mapping generation ----*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -48,17 +47,27 @@ class CodeGenModule;
 /// Organizes the cross-function state that is used while generating
 /// code coverage mapping data.
 class CoverageMappingModuleGen {
+  /// Information needed to emit a coverage record for a function.
+  struct FunctionInfo {
+    uint64_t NameHash;
+    uint64_t FuncHash;
+    std::string CoverageMapping;
+    bool IsUsed;
+  };
+
   CodeGenModule &CGM;
   CoverageSourceInfo &SourceInfo;
   llvm::SmallDenseMap<const FileEntry *, unsigned, 8> FileEntries;
-  std::vector<llvm::Constant *> FunctionRecords;
   std::vector<llvm::Constant *> FunctionNames;
-  llvm::StructType *FunctionRecordTy;
-  std::vector<std::string> CoverageMappings;
+  std::vector<FunctionInfo> FunctionRecords;
+
+  /// Emit a function record.
+  void emitFunctionMappingRecord(const FunctionInfo &Info,
+                                 uint64_t FilenamesRef);
 
 public:
   CoverageMappingModuleGen(CodeGenModule &CGM, CoverageSourceInfo &SourceInfo)
-      : CGM(CGM), SourceInfo(SourceInfo), FunctionRecordTy(nullptr) {}
+      : CGM(CGM), SourceInfo(SourceInfo) {}
 
   CoverageSourceInfo &getSourceInfo() const {
     return SourceInfo;

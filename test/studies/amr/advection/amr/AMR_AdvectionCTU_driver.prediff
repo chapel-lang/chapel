@@ -7,5 +7,5 @@ then
   mv "$2" "$2".save
 
   # the following overwrites "$2" with "ok" or error message(s)
-  exec python ../../lib/python/regression_test.py "$2"
+  exec python3 ../../lib/python/regression_test.py "$2"
 fi

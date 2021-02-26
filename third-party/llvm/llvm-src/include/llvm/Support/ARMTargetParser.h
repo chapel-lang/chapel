@@ -1,9 +1,8 @@
 //===-- ARMTargetParser - Parser for ARM target features --------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -15,17 +14,20 @@
 #ifndef LLVM_SUPPORT_ARMTARGETPARSER_H
 #define LLVM_SUPPORT_ARMTARGETPARSER_H
 
+#include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringRef.h"
-#include "llvm/ADT/Triple.h"
 #include "llvm/Support/ARMBuildAttributes.h"
 #include <vector>
 
 namespace llvm {
+
+class Triple;
+
 namespace ARM {
 
 // Arch extension modifiers for CPUs.
 // Note that this is not the same as the AArch64 list
-enum ArchExtKind : unsigned {
+enum ArchExtKind : uint64_t {
   AEK_INVALID =     0,
   AEK_NONE =        1,
   AEK_CRC =         1 << 1,
@@ -40,18 +42,30 @@ enum ArchExtKind : unsigned {
   AEK_DSP =         1 << 10,
   AEK_FP16 =        1 << 11,
   AEK_RAS =         1 << 12,
-  AEK_SVE =         1 << 13,
-  AEK_DOTPROD =     1 << 14,
-  AEK_SHA2    =     1 << 15,
-  AEK_AES     =     1 << 16,
-  AEK_FP16FML =     1 << 17,
-  AEK_SB      =     1 << 18,
+  AEK_DOTPROD =     1 << 13,
+  AEK_SHA2    =     1 << 14,
+  AEK_AES     =     1 << 15,
+  AEK_FP16FML =     1 << 16,
+  AEK_SB      =     1 << 17,
+  AEK_FP_DP   =     1 << 18,
+  AEK_LOB     =     1 << 19,
+  AEK_BF16    =     1 << 20,
+  AEK_I8MM    =     1 << 21,
+  AEK_CDECP0 =      1 << 22,
+  AEK_CDECP1 =      1 << 23,
+  AEK_CDECP2 =      1 << 24,
+  AEK_CDECP3 =      1 << 25,
+  AEK_CDECP4 =      1 << 26,
+  AEK_CDECP5 =      1 << 27,
+  AEK_CDECP6 =      1 << 28,
+  AEK_CDECP7 =      1 << 29,
+
   // Unsupported extensions.
-  AEK_OS = 0x8000000,
-  AEK_IWMMXT = 0x10000000,
-  AEK_IWMMXT2 = 0x20000000,
-  AEK_MAVERICK = 0x40000000,
-  AEK_XSCALE = 0x80000000,
+  AEK_OS       =    1ULL << 59,
+  AEK_IWMMXT   =    1ULL << 60,
+  AEK_IWMMXT2  =    1ULL << 61,
+  AEK_MAVERICK =    1ULL << 62,
+  AEK_XSCALE   =    1ULL << 63,
 };
 
 // List of Arch Extension names.
@@ -59,7 +73,7 @@ enum ArchExtKind : unsigned {
 struct ExtName {
   const char *NameCStr;
   size_t NameLength;
-  unsigned ID;
+  uint64_t ID;
   const char *Feature;
   const char *NegFeature;
 
@@ -78,7 +92,7 @@ const ExtName ARCHExtNames[] = {
 const struct {
   const char *NameCStr;
   size_t NameLength;
-  unsigned ID;
+  uint64_t ID;
 
   StringRef getName() const { return StringRef(NameCStr, NameLength); }
 } HWDivNames[] = {
@@ -102,7 +116,7 @@ template <typename T> struct CpuNames {
   size_t NameLength;
   T ArchID;
   bool Default; // is $Name the default CPU for $ArchID ?
-  unsigned DefaultExtensions;
+  uint64_t DefaultExtensions;
 
   StringRef getName() const { return StringRef(NameCStr, NameLength); }
 };
@@ -127,7 +141,8 @@ enum class FPUVersion {
   VFPV3,
   VFPV3_FP16,
   VFPV4,
-  VFPV5
+  VFPV5,
+  VFPV5_FULLFP16,
 };
 
 // An FPU name restricts the FPU in one of three ways:
@@ -192,7 +207,7 @@ template <typename T> struct ArchNames {
   const char *SubArchCStr;
   size_t SubArchLength;
   unsigned DefaultFPU;
-  unsigned ArchBaseExtensions;
+  uint64_t ArchBaseExtensions;
   T ID;
   ARMBuildAttrs::CPUArch ArchAttr; // Arch ID in build attributes.
 
@@ -224,31 +239,33 @@ FPURestriction getFPURestriction(unsigned FPUKind);
 
 // FIXME: These should be moved to TargetTuple once it exists
 bool getFPUFeatures(unsigned FPUKind, std::vector<StringRef> &Features);
-bool getHWDivFeatures(unsigned HWDivKind, std::vector<StringRef> &Features);
-bool getExtensionFeatures(unsigned Extensions,
+bool getHWDivFeatures(uint64_t HWDivKind, std::vector<StringRef> &Features);
+bool getExtensionFeatures(uint64_t Extensions,
                           std::vector<StringRef> &Features);
 
 StringRef getArchName(ArchKind AK);
 unsigned getArchAttr(ArchKind AK);
 StringRef getCPUAttr(ArchKind AK);
 StringRef getSubArch(ArchKind AK);
-StringRef getArchExtName(unsigned ArchExtKind);
+StringRef getArchExtName(uint64_t ArchExtKind);
 StringRef getArchExtFeature(StringRef ArchExt);
-StringRef getHWDivName(unsigned HWDivKind);
+bool appendArchExtFeatures(StringRef CPU, ARM::ArchKind AK, StringRef ArchExt,
+                           std::vector<StringRef> &Features);
+StringRef getHWDivName(uint64_t HWDivKind);
 
 // Information by Name
 unsigned getDefaultFPU(StringRef CPU, ArchKind AK);
-unsigned getDefaultExtensions(StringRef CPU, ArchKind AK);
+uint64_t getDefaultExtensions(StringRef CPU, ArchKind AK);
 StringRef getDefaultCPU(StringRef Arch);
 StringRef getCanonicalArchName(StringRef Arch);
 StringRef getFPUSynonym(StringRef FPU);
 StringRef getArchSynonym(StringRef Arch);
 
 // Parser
-unsigned parseHWDiv(StringRef HWDiv);
+uint64_t parseHWDiv(StringRef HWDiv);
 unsigned parseFPU(StringRef FPU);
 ArchKind parseArch(StringRef Arch);
-unsigned parseArchExt(StringRef ArchExt);
+uint64_t parseArchExt(StringRef ArchExt);
 ArchKind parseCPUArch(StringRef CPU);
 ISAKind parseArchISA(StringRef Arch);
 EndianKind parseArchEndian(StringRef Arch);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -23,6 +23,16 @@
 #include "chpl-mem.h"
 
 #include <string.h>
+
+void chpl_byte_buffer_free_server(chpl_byte_buffer cb) {
+  if (!cb.isOwned) { return; }
+
+  if (cb.data != NULL) {
+    chpl_mem_free(cb.data, 0, 0);
+  }
+
+  return;
+}
 
 void chpl_byte_buffer_free(chpl_byte_buffer cb) {
   if (!cb.isOwned) { return; }

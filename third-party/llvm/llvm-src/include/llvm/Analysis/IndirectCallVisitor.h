@@ -1,9 +1,8 @@
 //===-- IndirectCallVisitor.h - indirect call visitor ---------------------===//
 //
-//                      The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -19,7 +18,7 @@
 namespace llvm {
 // Visitor class that finds all indirect call.
 struct PGOIndirectCallVisitor : public InstVisitor<PGOIndirectCallVisitor> {
-  std::vector<Instruction *> IndirectCalls;
+  std::vector<CallBase *> IndirectCalls;
   PGOIndirectCallVisitor() {}
 
   void visitCallBase(CallBase &Call) {
@@ -29,7 +28,7 @@ struct PGOIndirectCallVisitor : public InstVisitor<PGOIndirectCallVisitor> {
 };
 
 // Helper function that finds all indirect call sites.
-inline std::vector<Instruction *> findIndirectCalls(Function &F) {
+inline std::vector<CallBase *> findIndirectCalls(Function &F) {
   PGOIndirectCallVisitor ICV;
   ICV.visit(F);
   return ICV.IndirectCalls;

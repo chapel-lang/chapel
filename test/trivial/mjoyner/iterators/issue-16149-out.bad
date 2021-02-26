@@ -1,0 +1,1 @@
+issue-16149-out.chpl:1: error: out intent is not yet supported for iterators

@@ -1,9 +1,8 @@
 //===- ExprObjC.h - Classes for representing ObjC expressions ---*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -14,8 +13,10 @@
 #ifndef LLVM_CLANG_AST_EXPROBJC_H
 #define LLVM_CLANG_AST_EXPROBJC_H
 
+#include "clang/AST/ComputeDependence.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclObjC.h"
+#include "clang/AST/DependenceFlags.h"
 #include "clang/AST/Expr.h"
 #include "clang/AST/OperationKinds.h"
 #include "clang/AST/SelectorLocationsKind.h"
@@ -54,9 +55,10 @@ class ObjCStringLiteral : public Expr {
 
 public:
   ObjCStringLiteral(StringLiteral *SL, QualType T, SourceLocation L)
-      : Expr(ObjCStringLiteralClass, T, VK_RValue, OK_Ordinary, false, false,
-             false, false),
-        String(SL), AtLoc(L) {}
+      : Expr(ObjCStringLiteralClass, T, VK_RValue, OK_Ordinary), String(SL),
+        AtLoc(L) {
+    setDependence(ExprDependence::None);
+  }
   explicit ObjCStringLiteral(EmptyShell Empty)
       : Expr(ObjCStringLiteralClass, Empty) {}
 
@@ -73,6 +75,10 @@ public:
   // Iterators
   child_range children() { return child_range(&String, &String+1); }
 
+  const_child_range children() const {
+    return const_child_range(&String, &String + 1);
+  }
+
   static bool classof(const Stmt *T) {
     return T->getStmtClass() == ObjCStringLiteralClass;
   }
@@ -85,9 +91,10 @@ class ObjCBoolLiteralExpr : public Expr {
 
 public:
   ObjCBoolLiteralExpr(bool val, QualType Ty, SourceLocation l)
-      : Expr(ObjCBoolLiteralExprClass, Ty, VK_RValue, OK_Ordinary, false, false,
-             false, false),
-        Value(val), Loc(l) {}
+      : Expr(ObjCBoolLiteralExprClass, Ty, VK_RValue, OK_Ordinary), Value(val),
+        Loc(l) {
+    setDependence(ExprDependence::None);
+  }
   explicit ObjCBoolLiteralExpr(EmptyShell Empty)
       : Expr(ObjCBoolLiteralExprClass, Empty) {}
 
@@ -103,6 +110,10 @@ public:
   // Iterators
   child_range children() {
     return child_range(child_iterator(), child_iterator());
+  }
+
+  const_child_range children() const {
+    return const_child_range(const_child_iterator(), const_child_iterator());
   }
 
   static bool classof(const Stmt *T) {
@@ -122,13 +133,11 @@ class ObjCBoxedExpr : public Expr {
 public:
   friend class ASTStmtReader;
 
-  ObjCBoxedExpr(Expr *E, QualType T, ObjCMethodDecl *method,
-                     SourceRange R)
-      : Expr(ObjCBoxedExprClass, T, VK_RValue, OK_Ordinary,
-             E->isTypeDependent(), E->isValueDependent(),
-             E->isInstantiationDependent(),
-             E->containsUnexpandedParameterPack()),
-        SubExpr(E), BoxingMethod(method), Range(R) {}
+  ObjCBoxedExpr(Expr *E, QualType T, ObjCMethodDecl *method, SourceRange R)
+      : Expr(ObjCBoxedExprClass, T, VK_RValue, OK_Ordinary), SubExpr(E),
+        BoxingMethod(method), Range(R) {
+    setDependence(computeDependence(this));
+  }
   explicit ObjCBoxedExpr(EmptyShell Empty)
       : Expr(ObjCBoxedExprClass, Empty) {}
 
@@ -137,6 +146,12 @@ public:
 
   ObjCMethodDecl *getBoxingMethod() const {
     return BoxingMethod;
+  }
+
+  // Indicates whether this boxed expression can be emitted as a compile-time
+  // constant.
+  bool isExpressibleAsConstantInitializer() const {
+    return !BoxingMethod && SubExpr;
   }
 
   SourceLocation getAtLoc() const { return Range.getBegin(); }
@@ -150,6 +165,10 @@ public:
 
   // Iterators
   child_range children() { return child_range(&SubExpr, &SubExpr+1); }
+
+  const_child_range children() const {
+    return const_child_range(&SubExpr, &SubExpr + 1);
+  }
 
   using const_arg_iterator = ConstExprIterator;
 
@@ -229,6 +248,11 @@ public:
                        reinterpret_cast<Stmt **>(getElements()) + NumElements);
   }
 
+  const_child_range children() const {
+    auto Children = const_cast<ObjCArrayLiteral *>(this)->children();
+    return const_child_range(Children.begin(), Children.end());
+  }
+
   static bool classof(const Stmt *T) {
       return T->getStmtClass() == ObjCArrayLiteralClass;
   }
@@ -255,12 +279,6 @@ struct ObjCDictionaryElement {
 };
 
 } // namespace clang
-
-namespace llvm {
-
-template <> struct isPodLike<clang::ObjCDictionaryElement> : std::true_type {};
-
-} // namespace llvm
 
 namespace clang {
 
@@ -375,6 +393,11 @@ public:
             NumElements * 2);
   }
 
+  const_child_range children() const {
+    auto Children = const_cast<ObjCDictionaryLiteral *>(this)->children();
+    return const_child_range(Children.begin(), Children.end());
+  }
+
   static bool classof(const Stmt *T) {
     return T->getStmtClass() == ObjCDictionaryLiteralClass;
   }
@@ -388,14 +411,12 @@ class ObjCEncodeExpr : public Expr {
   SourceLocation AtLoc, RParenLoc;
 
 public:
-  ObjCEncodeExpr(QualType T, TypeSourceInfo *EncodedType,
-                 SourceLocation at, SourceLocation rp)
-      : Expr(ObjCEncodeExprClass, T, VK_LValue, OK_Ordinary,
-             EncodedType->getType()->isDependentType(),
-             EncodedType->getType()->isDependentType(),
-             EncodedType->getType()->isInstantiationDependentType(),
-             EncodedType->getType()->containsUnexpandedParameterPack()),
-        EncodedType(EncodedType), AtLoc(at), RParenLoc(rp) {}
+  ObjCEncodeExpr(QualType T, TypeSourceInfo *EncodedType, SourceLocation at,
+                 SourceLocation rp)
+      : Expr(ObjCEncodeExprClass, T, VK_LValue, OK_Ordinary),
+        EncodedType(EncodedType), AtLoc(at), RParenLoc(rp) {
+    setDependence(computeDependence(this));
+  }
 
   explicit ObjCEncodeExpr(EmptyShell Empty) : Expr(ObjCEncodeExprClass, Empty){}
 
@@ -420,6 +441,10 @@ public:
     return child_range(child_iterator(), child_iterator());
   }
 
+  const_child_range children() const {
+    return const_child_range(const_child_iterator(), const_child_iterator());
+  }
+
   static bool classof(const Stmt *T) {
     return T->getStmtClass() == ObjCEncodeExprClass;
   }
@@ -431,11 +456,12 @@ class ObjCSelectorExpr : public Expr {
   SourceLocation AtLoc, RParenLoc;
 
 public:
-  ObjCSelectorExpr(QualType T, Selector selInfo,
-                   SourceLocation at, SourceLocation rp)
-      : Expr(ObjCSelectorExprClass, T, VK_RValue, OK_Ordinary, false, false,
-             false, false),
-        SelName(selInfo), AtLoc(at), RParenLoc(rp) {}
+  ObjCSelectorExpr(QualType T, Selector selInfo, SourceLocation at,
+                   SourceLocation rp)
+      : Expr(ObjCSelectorExprClass, T, VK_RValue, OK_Ordinary),
+        SelName(selInfo), AtLoc(at), RParenLoc(rp) {
+    setDependence(ExprDependence::None);
+  }
   explicit ObjCSelectorExpr(EmptyShell Empty)
       : Expr(ObjCSelectorExprClass, Empty) {}
 
@@ -456,6 +482,10 @@ public:
   // Iterators
   child_range children() {
     return child_range(child_iterator(), child_iterator());
+  }
+
+  const_child_range children() const {
+    return const_child_range(const_child_iterator(), const_child_iterator());
   }
 
   static bool classof(const Stmt *T) {
@@ -479,11 +509,12 @@ public:
   friend class ASTStmtReader;
   friend class ASTStmtWriter;
 
-  ObjCProtocolExpr(QualType T, ObjCProtocolDecl *protocol,
-                 SourceLocation at, SourceLocation protoLoc, SourceLocation rp)
-      : Expr(ObjCProtocolExprClass, T, VK_RValue, OK_Ordinary, false, false,
-             false, false),
-        TheProtocol(protocol), AtLoc(at), ProtoLoc(protoLoc), RParenLoc(rp) {}
+  ObjCProtocolExpr(QualType T, ObjCProtocolDecl *protocol, SourceLocation at,
+                   SourceLocation protoLoc, SourceLocation rp)
+      : Expr(ObjCProtocolExprClass, T, VK_RValue, OK_Ordinary),
+        TheProtocol(protocol), AtLoc(at), ProtoLoc(protoLoc), RParenLoc(rp) {
+    setDependence(ExprDependence::None);
+  }
   explicit ObjCProtocolExpr(EmptyShell Empty)
       : Expr(ObjCProtocolExprClass, Empty) {}
 
@@ -502,6 +533,10 @@ public:
   // Iterators
   child_range children() {
     return child_range(child_iterator(), child_iterator());
+  }
+
+  const_child_range children() const {
+    return const_child_range(const_child_iterator(), const_child_iterator());
   }
 
   static bool classof(const Stmt *T) {
@@ -525,17 +560,15 @@ class ObjCIvarRefExpr : public Expr {
   bool IsFreeIvar : 1;
 
 public:
-  ObjCIvarRefExpr(ObjCIvarDecl *d, QualType t,
-                  SourceLocation l, SourceLocation oploc,
-                  Expr *base,
-                  bool arrow = false, bool freeIvar = false)
+  ObjCIvarRefExpr(ObjCIvarDecl *d, QualType t, SourceLocation l,
+                  SourceLocation oploc, Expr *base, bool arrow = false,
+                  bool freeIvar = false)
       : Expr(ObjCIvarRefExprClass, t, VK_LValue,
-             d->isBitField() ? OK_BitField : OK_Ordinary,
-             /*TypeDependent=*/false, base->isValueDependent(),
-             base->isInstantiationDependent(),
-             base->containsUnexpandedParameterPack()),
+             d->isBitField() ? OK_BitField : OK_Ordinary),
         D(d), Base(base), Loc(l), OpLoc(oploc), IsArrow(arrow),
-        IsFreeIvar(freeIvar) {}
+        IsFreeIvar(freeIvar) {
+    setDependence(computeDependence(this));
+  }
 
   explicit ObjCIvarRefExpr(EmptyShell Empty)
       : Expr(ObjCIvarRefExprClass, Empty) {}
@@ -566,6 +599,10 @@ public:
 
   // Iterators
   child_range children() { return child_range(&Base, &Base+1); }
+
+  const_child_range children() const {
+    return const_child_range(&Base, &Base + 1);
+  }
 
   static bool classof(const Stmt *T) {
     return T->getStmtClass() == ObjCIvarRefExprClass;
@@ -605,60 +642,56 @@ private:
   /// the location of the 'super' keyword.  When it's an interface,
   /// this is that interface.
   SourceLocation ReceiverLoc;
-  llvm::PointerUnion3<Stmt *, const Type *, ObjCInterfaceDecl *> Receiver;
+  llvm::PointerUnion<Stmt *, const Type *, ObjCInterfaceDecl *> Receiver;
 
 public:
-  ObjCPropertyRefExpr(ObjCPropertyDecl *PD, QualType t,
-                      ExprValueKind VK, ExprObjectKind OK,
-                      SourceLocation l, Expr *base)
-      : Expr(ObjCPropertyRefExprClass, t, VK, OK,
-             /*TypeDependent=*/false, base->isValueDependent(),
-             base->isInstantiationDependent(),
-             base->containsUnexpandedParameterPack()),
-        PropertyOrGetter(PD, false), IdLoc(l), Receiver(base) {
+  ObjCPropertyRefExpr(ObjCPropertyDecl *PD, QualType t, ExprValueKind VK,
+                      ExprObjectKind OK, SourceLocation l, Expr *base)
+      : Expr(ObjCPropertyRefExprClass, t, VK, OK), PropertyOrGetter(PD, false),
+        IdLoc(l), Receiver(base) {
     assert(t->isSpecificPlaceholderType(BuiltinType::PseudoObject));
+    setDependence(computeDependence(this));
   }
 
-  ObjCPropertyRefExpr(ObjCPropertyDecl *PD, QualType t,
-                      ExprValueKind VK, ExprObjectKind OK,
-                      SourceLocation l, SourceLocation sl, QualType st)
-      : Expr(ObjCPropertyRefExprClass, t, VK, OK,
-             /*TypeDependent=*/false, false, st->isInstantiationDependentType(),
-             st->containsUnexpandedParameterPack()),
-        PropertyOrGetter(PD, false), IdLoc(l), ReceiverLoc(sl),
-        Receiver(st.getTypePtr()) {
+  ObjCPropertyRefExpr(ObjCPropertyDecl *PD, QualType t, ExprValueKind VK,
+                      ExprObjectKind OK, SourceLocation l, SourceLocation sl,
+                      QualType st)
+      : Expr(ObjCPropertyRefExprClass, t, VK, OK), PropertyOrGetter(PD, false),
+        IdLoc(l), ReceiverLoc(sl), Receiver(st.getTypePtr()) {
     assert(t->isSpecificPlaceholderType(BuiltinType::PseudoObject));
+    setDependence(computeDependence(this));
   }
 
   ObjCPropertyRefExpr(ObjCMethodDecl *Getter, ObjCMethodDecl *Setter,
                       QualType T, ExprValueKind VK, ExprObjectKind OK,
                       SourceLocation IdLoc, Expr *Base)
-      : Expr(ObjCPropertyRefExprClass, T, VK, OK, false,
-             Base->isValueDependent(), Base->isInstantiationDependent(),
-             Base->containsUnexpandedParameterPack()),
+      : Expr(ObjCPropertyRefExprClass, T, VK, OK),
         PropertyOrGetter(Getter, true), SetterAndMethodRefFlags(Setter, 0),
         IdLoc(IdLoc), Receiver(Base) {
     assert(T->isSpecificPlaceholderType(BuiltinType::PseudoObject));
+    setDependence(computeDependence(this));
   }
 
   ObjCPropertyRefExpr(ObjCMethodDecl *Getter, ObjCMethodDecl *Setter,
                       QualType T, ExprValueKind VK, ExprObjectKind OK,
-                      SourceLocation IdLoc,
-                      SourceLocation SuperLoc, QualType SuperTy)
-      : Expr(ObjCPropertyRefExprClass, T, VK, OK, false, false, false, false),
+                      SourceLocation IdLoc, SourceLocation SuperLoc,
+                      QualType SuperTy)
+      : Expr(ObjCPropertyRefExprClass, T, VK, OK),
         PropertyOrGetter(Getter, true), SetterAndMethodRefFlags(Setter, 0),
         IdLoc(IdLoc), ReceiverLoc(SuperLoc), Receiver(SuperTy.getTypePtr()) {
     assert(T->isSpecificPlaceholderType(BuiltinType::PseudoObject));
+    setDependence(computeDependence(this));
   }
 
   ObjCPropertyRefExpr(ObjCMethodDecl *Getter, ObjCMethodDecl *Setter,
                       QualType T, ExprValueKind VK, ExprObjectKind OK,
-                      SourceLocation IdLoc,
-                      SourceLocation ReceiverLoc, ObjCInterfaceDecl *Receiver)
-      : Expr(ObjCPropertyRefExprClass, T, VK, OK, false, false, false, false),
+                      SourceLocation IdLoc, SourceLocation ReceiverLoc,
+                      ObjCInterfaceDecl *Receiver)
+      : Expr(ObjCPropertyRefExprClass, T, VK, OK),
         PropertyOrGetter(Getter, true), SetterAndMethodRefFlags(Setter, 0),
         IdLoc(IdLoc), ReceiverLoc(ReceiverLoc), Receiver(Receiver) {
     assert(T->isSpecificPlaceholderType(BuiltinType::PseudoObject));
+    setDependence(computeDependence(this));
   }
 
   explicit ObjCPropertyRefExpr(EmptyShell Empty)
@@ -758,6 +791,11 @@ public:
     return child_range(child_iterator(), child_iterator());
   }
 
+  const_child_range children() const {
+    auto Children = const_cast<ObjCPropertyRefExpr *>(this)->children();
+    return const_child_range(Children.begin(), Children.end());
+  }
+
   static bool classof(const Stmt *T) {
     return T->getStmtClass() == ObjCPropertyRefExprClass;
   }
@@ -817,20 +855,14 @@ class ObjCSubscriptRefExpr : public Expr {
   ObjCMethodDecl *SetAtIndexMethodDecl;
 
 public:
-  ObjCSubscriptRefExpr(Expr *base, Expr *key, QualType T,
-                       ExprValueKind VK, ExprObjectKind OK,
-                       ObjCMethodDecl *getMethod,
+  ObjCSubscriptRefExpr(Expr *base, Expr *key, QualType T, ExprValueKind VK,
+                       ExprObjectKind OK, ObjCMethodDecl *getMethod,
                        ObjCMethodDecl *setMethod, SourceLocation RB)
-      : Expr(ObjCSubscriptRefExprClass, T, VK, OK,
-             base->isTypeDependent() || key->isTypeDependent(),
-             base->isValueDependent() || key->isValueDependent(),
-             (base->isInstantiationDependent() ||
-              key->isInstantiationDependent()),
-             (base->containsUnexpandedParameterPack() ||
-              key->containsUnexpandedParameterPack())),
-        RBracket(RB), GetAtIndexMethodDecl(getMethod),
-        SetAtIndexMethodDecl(setMethod) {
-    SubExprs[BASE] = base; SubExprs[KEY] = key;
+      : Expr(ObjCSubscriptRefExprClass, T, VK, OK), RBracket(RB),
+        GetAtIndexMethodDecl(getMethod), SetAtIndexMethodDecl(setMethod) {
+    SubExprs[BASE] = base;
+    SubExprs[KEY] = key;
+    setDependence(computeDependence(this));
   }
 
   explicit ObjCSubscriptRefExpr(EmptyShell Empty)
@@ -865,6 +897,10 @@ public:
 
   child_range children() {
     return child_range(SubExprs, SubExprs+END_EXPR);
+  }
+
+  const_child_range children() const {
+    return const_child_range(SubExprs, SubExprs + END_EXPR);
   }
 
   static bool classof(const Stmt *T) {
@@ -1187,6 +1223,13 @@ public:
   /// sent to.
   ReceiverKind getReceiverKind() const { return (ReceiverKind)Kind; }
 
+  /// \return the return type of the message being sent.
+  /// This is not always the type of the message expression itself because
+  /// of references (the expression would not have a reference type).
+  /// It is also not always the declared return type of the method because
+  /// of `instancetype` (in that case it's an expression type).
+  QualType getCallReturnType(ASTContext &Ctx) const;
+
   /// Source range of the receiver.
   SourceRange getReceiverRange() const;
 
@@ -1402,6 +1445,8 @@ public:
   // Iterators
   child_range children();
 
+  const_child_range children() const;
+
   using arg_iterator = ExprIterator;
   using const_arg_iterator = ConstExprIterator;
 
@@ -1450,11 +1495,10 @@ class ObjCIsaExpr : public Expr {
 public:
   ObjCIsaExpr(Expr *base, bool isarrow, SourceLocation l, SourceLocation oploc,
               QualType ty)
-      : Expr(ObjCIsaExprClass, ty, VK_LValue, OK_Ordinary,
-             /*TypeDependent=*/false, base->isValueDependent(),
-             base->isInstantiationDependent(),
-             /*ContainsUnexpandedParameterPack=*/false),
-        Base(base), IsaMemberLoc(l), OpLoc(oploc), IsArrow(isarrow) {}
+      : Expr(ObjCIsaExprClass, ty, VK_LValue, OK_Ordinary), Base(base),
+        IsaMemberLoc(l), OpLoc(oploc), IsArrow(isarrow) {
+    setDependence(computeDependence(this));
+  }
 
   /// Build an empty expression.
   explicit ObjCIsaExpr(EmptyShell Empty) : Expr(ObjCIsaExprClass, Empty) {}
@@ -1487,6 +1531,10 @@ public:
 
   // Iterators
   child_range children() { return child_range(&Base, &Base+1); }
+
+  const_child_range children() const {
+    return const_child_range(&Base, &Base + 1);
+  }
 
   static bool classof(const Stmt *T) {
     return T->getStmtClass() == ObjCIsaExprClass;
@@ -1532,12 +1580,10 @@ class ObjCIndirectCopyRestoreExpr : public Expr {
 
 public:
   ObjCIndirectCopyRestoreExpr(Expr *operand, QualType type, bool shouldCopy)
-      : Expr(ObjCIndirectCopyRestoreExprClass, type, VK_LValue, OK_Ordinary,
-             operand->isTypeDependent(), operand->isValueDependent(),
-             operand->isInstantiationDependent(),
-             operand->containsUnexpandedParameterPack()),
+      : Expr(ObjCIndirectCopyRestoreExprClass, type, VK_LValue, OK_Ordinary),
         Operand(operand) {
     setShouldCopy(shouldCopy);
+    setDependence(computeDependence(this));
   }
 
   Expr *getSubExpr() { return cast<Expr>(Operand); }
@@ -1548,6 +1594,10 @@ public:
   bool shouldCopy() const { return ObjCIndirectCopyRestoreExprBits.ShouldCopy; }
 
   child_range children() { return child_range(&Operand, &Operand+1); }
+
+  const_child_range children() const {
+    return const_child_range(&Operand, &Operand + 1);
+  }
 
   // Source locations are determined by the subexpression.
   SourceLocation getBeginLoc() const LLVM_READONLY {
@@ -1642,9 +1692,10 @@ class ObjCAvailabilityCheckExpr : public Expr {
 public:
   ObjCAvailabilityCheckExpr(VersionTuple VersionToCheck, SourceLocation AtLoc,
                             SourceLocation RParen, QualType Ty)
-      : Expr(ObjCAvailabilityCheckExprClass, Ty, VK_RValue, OK_Ordinary, false,
-             false, false, false),
-        VersionToCheck(VersionToCheck), AtLoc(AtLoc), RParen(RParen) {}
+      : Expr(ObjCAvailabilityCheckExprClass, Ty, VK_RValue, OK_Ordinary),
+        VersionToCheck(VersionToCheck), AtLoc(AtLoc), RParen(RParen) {
+    setDependence(ExprDependence::None);
+  }
 
   explicit ObjCAvailabilityCheckExpr(EmptyShell Shell)
       : Expr(ObjCAvailabilityCheckExprClass, Shell) {}
@@ -1659,6 +1710,10 @@ public:
 
   child_range children() {
     return child_range(child_iterator(), child_iterator());
+  }
+
+  const_child_range children() const {
+    return const_child_range(const_child_iterator(), const_child_iterator());
   }
 
   static bool classof(const Stmt *T) {

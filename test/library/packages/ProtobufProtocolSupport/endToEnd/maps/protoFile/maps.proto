@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+message mapTest {
+  map<int32, testA> mapfield1 = 1;
+  map<int32, string> mapfield2 = 2;
+}
+
+message testA {
+  bool bo = 1;
+}

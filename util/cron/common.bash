@@ -112,3 +112,8 @@ fi
 if [ -z "$CHPL_TEST_COMP_PERF_DIR" ]; then
     export CHPL_TEST_COMP_PERF_DIR=$PERF_LOGDIR_PREFIX/NightlyPerformance/$CHPL_TEST_PERF_CONFIG_NAME
 fi
+
+# Work-around to remove git submodules
+#   See Cray/chapel-private#1050 for long term solution
+log_info "Clearing out git submodules in test/mason/"
+git clean -ffdx ${CHPL_HOME}/test/mason

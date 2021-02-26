@@ -1,9 +1,8 @@
 //===--- MSP430.cpp - MSP430 Helpers for Tools ------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -144,7 +143,7 @@ std::string MSP430ToolChain::computeSysRoot() const {
   else
     llvm::sys::path::append(Dir, getDriver().Dir, "..", getTriple().str());
 
-  return Dir.str();
+  return std::string(Dir.str());
 }
 
 void MSP430ToolChain::AddClangSystemIncludeArgs(const ArgList &DriverArgs,
@@ -228,6 +227,7 @@ void msp430::Linker::ConstructJob(Compilation &C, const JobAction &JA,
   }
   CmdArgs.push_back("-o");
   CmdArgs.push_back(Output.getFilename());
-  C.addCommand(llvm::make_unique<Command>(JA, *this, Args.MakeArgString(Linker),
-                                          CmdArgs, Inputs));
+  C.addCommand(
+      std::make_unique<Command>(JA, *this, ResponseFileSupport::AtFileCurCP(),
+                                Args.MakeArgString(Linker), CmdArgs, Inputs));
 }

@@ -1,3 +1,5 @@
+.. default-domain:: chpl
+
 .. _Chapter-Locales_Chapter:
 
 Locales
@@ -46,54 +48,44 @@ The locale type supports the following methods:
 
 
 
-.. code-block:: chapel
+.. function:: proc locale.callStackSize: uint(64);
 
-   proc locale.callStackSize: uint(64);
-
-Returns the per-task call stack size used when creating tasks on the
-locale in question. A value of 0 indicates that the call stack size is
-determined by the system.
+   Returns the per-task call stack size used when creating tasks on the
+   locale in question. A value of 0 indicates that the call stack size is
+   determined by the system.
 
 
 
-.. code-block:: chapel
+.. function:: proc locale.id: int;
 
-   proc locale.id: int;
-
-Returns a unique integer for each locale, from 0 to the number of
-locales less one.
+   Returns a unique integer for each locale, from 0 to the number of
+   locales less one.
 
 
 
-.. code-block:: chapel
+.. function:: proc locale.maxTaskPar: int(32);
 
-   proc locale.maxTaskPar: int(32);
-
-Returns an estimate of the maximum parallelism available for tasks on a
-given locale.
+   Returns an estimate of the maximum parallelism available for tasks on a
+   given locale.
 
 
 
-.. code-block:: chapel
+.. function:: proc locale.name: string;
 
-   proc locale.name: string;
-
-Returns the name of the locale.
+   Returns the name of the locale.
 
 
 
-.. code-block:: chapel
+.. function:: proc locale.numPUs(logical: bool = false, accessible: bool = true);
 
-   proc locale.numPUs(logical: bool = false, accessible: bool = true);
-
-Returns the number of processing unit instances available on a given
-locale. Basically these are the things that execute instructions. If
-``logical`` is ``false`` then the count reflects physical instances,
-often referred to as *cores*. Otherwise it reflects logical instances,
-such as hardware threads on multithreaded CPU architectures. If
-``accessible`` is ``true`` then the count includes only those processors
-the OS has made available to the program. Otherwise it includes all
-processors that seem to be present.
+   Returns the number of processing unit instances available on a given
+   locale. Basically these are the things that execute instructions. If
+   ``logical`` is ``false`` then the count reflects physical instances,
+   often referred to as *cores*. Otherwise it reflects logical instances,
+   such as hardware threads on multithreaded CPU architectures. If
+   ``accessible`` is ``true`` then the count includes only those processors
+   the OS has made available to the program. Otherwise it includes all
+   processors that seem to be present.
 
 
 
@@ -182,7 +174,7 @@ program. It refers to the locale that the current task is running on.
 
 The identifier ``here`` is not a keyword and can be overridden.
 
-.. _Querying_the_Locale_of_a_Variable:
+.. _Querying_the_Locale_of_an_Expression:
 
 Querying the Locale of an Expression
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -192,8 +184,8 @@ stored) is queried using the following syntax:
 
 .. code-block:: syntax
 
-   locale-access-expression:
-     expression . `locale'
+   locale-query-expression:
+     expression . 'locale'
 
 When the expression is a class, the access returns the locale on which
 the class object exists rather than the reference to the class. If the
@@ -274,11 +266,11 @@ given by
 .. code-block:: syntax
 
    on-statement:
-     `on' expression `do' statement
-     `on' expression block-statement
+     'on' expression 'do' statement
+     'on' expression block-statement
 
 The locale of the expression is automatically queried as described
-in :ref:`Querying_the_Locale_of_a_Variable`. Execution of the
+in :ref:`Querying_the_Locale_of_an_Expression`. Execution of the
 statement occurs on this specified locale and then continues after the
 ``on-statement``.
 
@@ -301,4 +293,4 @@ keyword and braces. The syntax is given by:
 .. code-block:: syntax
 
    remote-variable-declaration-statement:
-     `on' expression variable-declaration-statement
+     'on' expression variable-declaration-statement

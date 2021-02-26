@@ -1,9 +1,8 @@
 //===- unittest/Support/ProgramTest.cpp -----------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -335,6 +334,31 @@ TEST(ProgramTest, TestWriteWithSystemEncoding) {
   ::close(fd);
   ASSERT_NO_ERROR(fs::remove(file_pathname.str()));
   ASSERT_NO_ERROR(fs::remove(TestDirectory.str()));
+}
+
+TEST_F(ProgramEnvTest, TestExecuteAndWaitStatistics) {
+  using namespace llvm::sys;
+
+  if (getenv("LLVM_PROGRAM_TEST_STATISTICS"))
+    exit(0);
+
+  std::string Executable =
+      sys::fs::getMainExecutable(TestMainArgv0, &ProgramTestStringArg1);
+  StringRef argv[] = {
+      Executable, "--gtest_filter=ProgramEnvTest.TestExecuteAndWaitStatistics"};
+
+  // Add LLVM_PROGRAM_TEST_STATISTICS to the environment of the child.
+  addEnvVar("LLVM_PROGRAM_TEST_STATISTICS=1");
+
+  std::string Error;
+  bool ExecutionFailed;
+  Optional<ProcessStatistics> ProcStat;
+  int RetCode = ExecuteAndWait(Executable, argv, getEnviron(), {}, 0, 0, &Error,
+                               &ExecutionFailed, &ProcStat);
+  ASSERT_EQ(0, RetCode);
+  ASSERT_TRUE(ProcStat);
+  ASSERT_GE(ProcStat->UserTime, std::chrono::microseconds(0));
+  ASSERT_GE(ProcStat->TotalTime, ProcStat->UserTime);
 }
 
 } // end anonymous namespace

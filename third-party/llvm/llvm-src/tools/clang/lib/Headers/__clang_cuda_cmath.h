@@ -1,22 +1,8 @@
 /*===---- __clang_cuda_cmath.h - Device-side CUDA cmath support ------------===
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
+ * Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+ * See https://llvm.org/LICENSE.txt for license information.
+ * SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
  *
  *===-----------------------------------------------------------------------===
  */
@@ -26,7 +12,9 @@
 #error "This file is for CUDA compilation only."
 #endif
 
+#ifndef __OPENMP_NVPTX__
 #include <limits>
+#endif
 
 // CUDA lets us use various std math functions on the device side.  This file
 // works in concert with __clang_cuda_math_forward_declares.h to make this work.
@@ -44,7 +32,11 @@
 // implementation.  Declaring in the global namespace and pulling into namespace
 // std covers all of the known knowns.
 
+#ifdef __OPENMP_NVPTX__
+#define __DEVICE__ static constexpr __attribute__((always_inline, nothrow))
+#else
 #define __DEVICE__ static __device__ __inline__ __attribute__((always_inline))
+#endif
 
 __DEVICE__ long long abs(long long __n) { return ::llabs(__n); }
 __DEVICE__ long abs(long __n) { return ::labs(__n); }
@@ -74,8 +66,10 @@ __DEVICE__ float frexp(float __arg, int *__exp) {
 }
 
 // For inscrutable reasons, the CUDA headers define these functions for us on
-// Windows.
-#ifndef _MSC_VER
+// Windows. For OpenMP we omit these as some old system headers have
+// non-conforming `isinf(float)` and `isnan(float)` implementations that return
+// an `int`. The system versions of these functions should be fine anyway.
+#if !defined(_MSC_VER) && !defined(__OPENMP_NVPTX__)
 __DEVICE__ bool isinf(float __x) { return ::__isinff(__x); }
 __DEVICE__ bool isinf(double __x) { return ::__isinf(__x); }
 __DEVICE__ bool isfinite(float __x) { return ::__finitef(__x); }
@@ -151,6 +145,8 @@ __DEVICE__ float tanh(float __x) { return ::tanhf(__x); }
 // Notably missing above is nexttoward.  We omit it because
 // libdevice doesn't provide an implementation, and we don't want to be in the
 // business of implementing tricky libm functions in this header.
+
+#ifndef __OPENMP_NVPTX__
 
 // Now we've defined everything we promised we'd define in
 // __clang_cuda_math_forward_declares.h.  We need to do two additional things to
@@ -466,6 +462,8 @@ _GLIBCXX_END_NAMESPACE_VERSION
 #endif
 } // namespace std
 #endif
+
+#endif // __OPENMP_NVPTX__
 
 #undef __DEVICE__
 

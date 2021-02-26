@@ -1,9 +1,8 @@
 //===- CSEInfo.cpp ------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -11,11 +10,16 @@
 //===----------------------------------------------------------------------===//
 #include "llvm/CodeGen/GlobalISel/CSEInfo.h"
 #include "llvm/CodeGen/MachineRegisterInfo.h"
+#include "llvm/InitializePasses.h"
 
 #define DEBUG_TYPE "cseinfo"
 
 using namespace llvm;
 char llvm::GISelCSEAnalysisWrapperPass::ID = 0;
+GISelCSEAnalysisWrapperPass::GISelCSEAnalysisWrapperPass()
+    : MachineFunctionPass(ID) {
+  initializeGISelCSEAnalysisWrapperPassPass(*PassRegistry::getPassRegistry());
+}
 INITIALIZE_PASS_BEGIN(GISelCSEAnalysisWrapperPass, DEBUG_TYPE,
                       "Analysis containing CSE Info", false, true)
 INITIALIZE_PASS_END(GISelCSEAnalysisWrapperPass, DEBUG_TYPE,
@@ -28,8 +32,8 @@ void UniqueMachineInstr::Profile(FoldingSetNodeID &ID) {
 }
 /// -----------------------------------------
 
-/// --------- CSEConfig ---------- ///
-bool CSEConfig::shouldCSEOpc(unsigned Opc) {
+/// --------- CSEConfigFull ---------- ///
+bool CSEConfigFull::shouldCSEOpc(unsigned Opc) {
   switch (Opc) {
   default:
     break;
@@ -48,19 +52,32 @@ bool CSEConfig::shouldCSEOpc(unsigned Opc) {
   case TargetOpcode::G_SREM:
   case TargetOpcode::G_CONSTANT:
   case TargetOpcode::G_FCONSTANT:
+  case TargetOpcode::G_IMPLICIT_DEF:
   case TargetOpcode::G_ZEXT:
   case TargetOpcode::G_SEXT:
   case TargetOpcode::G_ANYEXT:
   case TargetOpcode::G_UNMERGE_VALUES:
   case TargetOpcode::G_TRUNC:
+  case TargetOpcode::G_PTR_ADD:
     return true;
   }
   return false;
 }
 
 bool CSEConfigConstantOnly::shouldCSEOpc(unsigned Opc) {
-  return Opc == TargetOpcode::G_CONSTANT;
+  return Opc == TargetOpcode::G_CONSTANT || Opc == TargetOpcode::G_IMPLICIT_DEF;
 }
+
+std::unique_ptr<CSEConfigBase>
+llvm::getStandardCSEConfigForOpt(CodeGenOpt::Level Level) {
+  std::unique_ptr<CSEConfigBase> Config;
+  if (Level == CodeGenOpt::None)
+    Config = std::make_unique<CSEConfigConstantOnly>();
+  else
+    Config = std::make_unique<CSEConfigFull>();
+  return Config;
+}
+
 /// -----------------------------------------
 
 /// -------- GISelCSEInfo -------------//
@@ -139,7 +156,7 @@ MachineInstr *GISelCSEInfo::getMachineInstrIfExists(FoldingSetNodeID &ID,
                                                     void *&InsertPos) {
   handleRecordedInsts();
   if (auto *Inst = getNodeIfExists(ID, MBB, InsertPos)) {
-    LLVM_DEBUG(dbgs() << "CSEInfo: Found Instr " << *Inst->MI << "\n";);
+    LLVM_DEBUG(dbgs() << "CSEInfo::Found Instr " << *Inst->MI;);
     return const_cast<MachineInstr *>(Inst->MI);
   }
   return nullptr;
@@ -158,14 +175,14 @@ void GISelCSEInfo::countOpcodeHit(unsigned Opc) {
 void GISelCSEInfo::recordNewInstruction(MachineInstr *MI) {
   if (shouldCSE(MI->getOpcode())) {
     TemporaryInsts.insert(MI);
-    LLVM_DEBUG(dbgs() << "CSEInfo: Recording new MI" << *MI << "\n";);
+    LLVM_DEBUG(dbgs() << "CSEInfo::Recording new MI " << *MI);
   }
 }
 
 void GISelCSEInfo::handleRecordedInst(MachineInstr *MI) {
   assert(shouldCSE(MI->getOpcode()) && "Invalid instruction for CSE");
   auto *UMI = InstrMapping.lookup(MI);
-  LLVM_DEBUG(dbgs() << "CSEInfo: Handling recorded MI" << *MI << "\n";);
+  LLVM_DEBUG(dbgs() << "CSEInfo::Handling recorded MI " << *MI);
   if (UMI) {
     // Invalidate this MI.
     invalidateUniqueMachineInstr(UMI);
@@ -200,9 +217,6 @@ void GISelCSEInfo::handleRecordedInsts() {
 }
 
 bool GISelCSEInfo::shouldCSE(unsigned Opc) const {
-  // Only GISel opcodes are CSEable
-  if (!isPreISelGenericOpcode(Opc))
-    return false;
   assert(CSEOpt.get() && "CSEConfig not set");
   return CSEOpt->shouldCSEOpc(Opc);
 }
@@ -224,14 +238,14 @@ void GISelCSEInfo::analyze(MachineFunction &MF) {
     for (MachineInstr &MI : MBB) {
       if (!shouldCSE(MI.getOpcode()))
         continue;
-      LLVM_DEBUG(dbgs() << "CSEInfo::Add MI: " << MI << "\n";);
+      LLVM_DEBUG(dbgs() << "CSEInfo::Add MI: " << MI);
       insertInstr(&MI);
     }
   }
 }
 
 void GISelCSEInfo::releaseMemory() {
-  // print();
+  print();
   CSEMap.clear();
   InstrMapping.clear();
   UniqueInstrAllocator.Reset();
@@ -244,12 +258,45 @@ void GISelCSEInfo::releaseMemory() {
 #endif
 }
 
-void GISelCSEInfo::print() {
+Error GISelCSEInfo::verify() {
 #ifndef NDEBUG
-  for (auto &It : OpcodeHitTable) {
-    dbgs() << "CSE Count for Opc " << It.first << " : " << It.second << "\n";
-  };
+  handleRecordedInsts();
+  // For each instruction in map from MI -> UMI,
+  // Profile(MI) and make sure UMI is found for that profile.
+  for (auto &It : InstrMapping) {
+    FoldingSetNodeID TmpID;
+    GISelInstProfileBuilder(TmpID, *MRI).addNodeID(It.first);
+    void *InsertPos;
+    UniqueMachineInstr *FoundNode =
+        CSEMap.FindNodeOrInsertPos(TmpID, InsertPos);
+    if (FoundNode != It.second)
+      return createStringError(std::errc::not_supported,
+                               "CSEMap mismatch, InstrMapping has MIs without "
+                               "corresponding Nodes in CSEMap");
+  }
+
+  // For every node in the CSEMap, make sure that the InstrMapping
+  // points to it.
+  for (auto It = CSEMap.begin(), End = CSEMap.end(); It != End; ++It) {
+    const UniqueMachineInstr &UMI = *It;
+    if (!InstrMapping.count(UMI.MI))
+      return createStringError(std::errc::not_supported,
+                               "Node in CSE without InstrMapping", UMI.MI);
+
+    if (InstrMapping[UMI.MI] != &UMI)
+      return createStringError(std::make_error_code(std::errc::not_supported),
+                               "Mismatch in CSE mapping");
+  }
 #endif
+  return Error::success();
+}
+
+void GISelCSEInfo::print() {
+  LLVM_DEBUG(for (auto &It
+                  : OpcodeHitTable) {
+    dbgs() << "CSEInfo::CSE Hit for Opc " << It.first << " : " << It.second
+           << "\n";
+  };);
 }
 /// -----------------------------------------
 // ---- Profiling methods for FoldingSetNode --- //
@@ -270,7 +317,7 @@ GISelInstProfileBuilder::addNodeIDOpcode(unsigned Opc) const {
 }
 
 const GISelInstProfileBuilder &
-GISelInstProfileBuilder::addNodeIDRegType(const LLT &Ty) const {
+GISelInstProfileBuilder::addNodeIDRegType(const LLT Ty) const {
   uint64_t Val = Ty.getUniqueRAWLLTData();
   ID.AddInteger(Val);
   return *this;
@@ -295,13 +342,13 @@ GISelInstProfileBuilder::addNodeIDImmediate(int64_t Imm) const {
 }
 
 const GISelInstProfileBuilder &
-GISelInstProfileBuilder::addNodeIDRegNum(unsigned Reg) const {
+GISelInstProfileBuilder::addNodeIDRegNum(Register Reg) const {
   ID.AddInteger(Reg);
   return *this;
 }
 
 const GISelInstProfileBuilder &
-GISelInstProfileBuilder::addNodeIDRegType(const unsigned Reg) const {
+GISelInstProfileBuilder::addNodeIDRegType(const Register Reg) const {
   addNodeIDMachineOperand(MachineOperand::CreateReg(Reg, false));
   return *this;
 }
@@ -322,18 +369,20 @@ GISelInstProfileBuilder::addNodeIDFlag(unsigned Flag) const {
 const GISelInstProfileBuilder &GISelInstProfileBuilder::addNodeIDMachineOperand(
     const MachineOperand &MO) const {
   if (MO.isReg()) {
-    unsigned Reg = MO.getReg();
+    Register Reg = MO.getReg();
     if (!MO.isDef())
       addNodeIDRegNum(Reg);
     LLT Ty = MRI.getType(Reg);
     if (Ty.isValid())
       addNodeIDRegType(Ty);
-    auto *RB = MRI.getRegBankOrNull(Reg);
-    if (RB)
-      addNodeIDRegType(RB);
-    auto *RC = MRI.getRegClassOrNull(Reg);
-    if (RC)
-      addNodeIDRegType(RC);
+
+    if (const RegClassOrRegBank &RCOrRB = MRI.getRegClassOrRegBank(Reg)) {
+      if (const auto *RB = RCOrRB.dyn_cast<const RegisterBank *>())
+        addNodeIDRegType(RB);
+      else if (const auto *RC = RCOrRB.dyn_cast<const TargetRegisterClass *>())
+        addNodeIDRegType(RC);
+    }
+
     assert(!MO.isImplicit() && "Unhandled case");
   } else if (MO.isImm())
     ID.AddInteger(MO.getImm());
@@ -349,9 +398,11 @@ const GISelInstProfileBuilder &GISelInstProfileBuilder::addNodeIDMachineOperand(
   return *this;
 }
 
-GISelCSEInfo &GISelCSEAnalysisWrapper::get(std::unique_ptr<CSEConfig> CSEOpt,
-                                           bool Recompute) {
+GISelCSEInfo &
+GISelCSEAnalysisWrapper::get(std::unique_ptr<CSEConfigBase> CSEOpt,
+                             bool Recompute) {
   if (!AlreadyComputed || Recompute) {
+    Info.releaseMemory();
     Info.setCSEConfig(std::move(CSEOpt));
     Info.analyze(*MF);
     AlreadyComputed = true;

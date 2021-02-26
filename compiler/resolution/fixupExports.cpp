@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -102,8 +102,9 @@ static void resolveExportWrapperTypeAliases(void) {
 }
 
 void fixupExportedFunctions(const std::vector<FnSymbol*>& fns) {
-  const bool isLibraryCompile = fLibraryCompile || fMultiLocaleInterop;
-  if (!isLibraryCompile) { return; }
+
+  if (fMinimalModules)
+    return;
 
   //
   // We have to resolve type aliases for export wrapper types even if we
@@ -243,20 +244,21 @@ static bool needsFixup(Type* t) {
 static bool validateFormalIntent(FnSymbol* fn, ArgSymbol* as) {
   Type* t = maybeUnwrapRef(as->type);
 
-  //
   // TODO: If we ever add more types to these fixup routines, we really ought
   // to put these conditions in tables.
   //
   if (t == dtBytes || t == dtString || t == dtStringC
                    || t == dtExternalArray) {
-    IntentTag tag = as->intent;
+    IntentTag tag = as->originalIntent;
 
     bool multiloc = fMultiLocaleInterop || strcmp(CHPL_COMM, "none");
 
     if ((multiloc || fLibraryPython) && isUserRoutine(fn)) {
       // TODO: After resolution, have abstract intents been normalized?
-      if (tag != INTENT_IN &&
-          tag != INTENT_CONST_IN) {
+      if ((t == dtExternalArray && as->intent == INTENT_CONST_REF) || // see #15917
+          tag == INTENT_IN || tag == INTENT_CONST_IN) {
+        // The intent is OK
+      } else {
         std::string libdesc;
         if (multiloc) {
           if (fLibraryPython) {
@@ -286,9 +288,8 @@ static bool validateFormalIntent(FnSymbol* fn, ArgSymbol* as) {
       }
     } else if (t == dtString || t == dtBytes) {
       // TODO: After resolution, have abstract intents been normalized?
-      if (tag != INTENT_CONST &&
-          tag != INTENT_CONST_REF &&
-          tag != INTENT_BLANK) {
+      if (tag != INTENT_IN &&
+          tag != INTENT_CONST_IN) {
         SET_LINENO(fn);
         USR_FATAL_CONT(as,  "Formal \'%s\' of type \'%s\' in exported routine "
                        "\'%s\' may not have the %s",

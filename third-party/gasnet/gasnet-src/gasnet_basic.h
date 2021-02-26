@@ -86,12 +86,12 @@
         PLATFORM_COMPILER_CXX_LANGLVL >= GASNETI_PLATFORM_CXX_CXX_LANGLVL) \
       || (GASNETI_COMPILER_IS_UNKNOWN && _GASNETI_HAS_CXX11_ATTRIBUTE(attrib_token)))
 
-// __has_*() Blacklists
-
+// Platform-specific adjustments to query macros
+//
 // Some compilers have a broken implementation of one or more of the following Gnu/clang extension macros:
 //     __has_builtin()  __has_attribute()  __has_cpp_attribute()
 // where "broken" means providing a definition that incorrectly returns non-zero answers in some cases.
-// We blacklist the use of the relevant macro on those particular compilers to ensure we never use it there.
+// Ban the use of the relevant macro on those particular compilers to ensure we never use it there.
 // Some compilers bitch about redefining these built-in macros, so instead we force our own
 // wrapper to conservatively always returns zero. 
 

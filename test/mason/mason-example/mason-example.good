@@ -4,6 +4,7 @@ compiled depExample.chpl successfully
 compiled example.chpl successfully
 compiled nomodule.chpl successfully
 compiled examplesubdir/subdirExample.chpl successfully
+Updating registry
 Example with dependency Passed!
 Example Passed!
 Example with dependency outside module Passed!

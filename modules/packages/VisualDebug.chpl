@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -77,6 +77,7 @@ module VisualDebug
 pragma "no doc"
   enum vis_op {v_start, v_stop, v_tag, v_pause};
 
+pragma "not order independent yielding loops"
 private iter hc_id2com ( id: int, off: int ) {
    var offset = off;
    var ix = 1;
@@ -110,6 +111,7 @@ private proc VDebugTree (what: vis_op, name: string, time: real, tagno: int,
 }
 
 
+ private var Vdebugstarted: atomic bool = false;
 /*
   Start logging events for VisualDebug.  Open a new set of data
   files, one for each locale, for :ref:`chplvis`.  This routine should be
@@ -121,6 +123,14 @@ private proc VDebugTree (what: vis_op, name: string, time: real, tagno: int,
   :arg rootname:  Directory name and rootname for files.
 */
   proc startVdebug ( rootname : string ) {
+    // startVdebug() currently can't be called multiple times, so
+    // issue an error if it is (calling it multiple times causes all
+    // locales other than #0 to report no stats, and locale #0's
+    // results may be bogus too).
+    if Vdebugstarted.testAndSet() then
+      halt("Calling startVdebug() multiple times is not currently supported; "
+           + "try using the [pause/tag]Vdebug() routines instead");
+
     var now = chpl_now_time();
     if (VisualDebugOn) {
       tagno.write(0);
@@ -151,7 +161,7 @@ private proc VDebugTree (what: vis_op, name: string, time: real, tagno: int,
   }
 
 /*
-  Suspend collection of VisualDebug data.
+  Suspend collection of VisualDebug data.  Use :proc:`tagVdebug` to resume.
 */
   proc pauseVdebug () {
     if (VisualDebugOn) {

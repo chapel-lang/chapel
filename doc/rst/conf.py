@@ -49,6 +49,10 @@ for line in open('../util/nitpick_ignore'):
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['meta/templates']
 
+# Setup CSS files
+def setup(app):
+    app.add_css_file('style.css')
+
 # The suffix of source filenames.
 source_suffix = '.rst'
 
@@ -68,12 +72,13 @@ master_doc = 'index'
 # 'version' adds a redundant version number onto the top of the sidebar
 # automatically (rtd-theme). We also don't use |version| anywhere in rst
 
-chplversion = '1.22'                  # TODO -- parse from `chpl --version`
+chplversion = '1.24'                  # TODO -- parse from `chpl --version`
 shortversion = chplversion.replace('-', '&#8209') # prevent line-break at hyphen, if any
 html_context = {"chplversion":chplversion}
 
 # The full version, including alpha/beta/rc tags.
-release = '1.22.0'
+release = '1.24.0 (pre-release)'
+# release = '1.23.0'
 
 # General information about the project.
 project = u'Chapel Documentation'
@@ -306,16 +311,6 @@ texinfo_documents = [
 #texinfo_no_detailmenu = False
 
 # -- Custom options -------------------------------------------------------
-
-## Patch to disable nonlocal image warning for Chapel logo in README.rst
-original_warn_mode = sphinx.environment.BuildEnvironment.warn_node
-
-def allow_nonlocal_image_warn_node(self, msg, node):
-    if not msg.startswith('nonlocal image URI found:'):
-        original_warn_mode(self, msg, node)
-
-sphinx.environment.BuildEnvironment.warn_node = allow_nonlocal_image_warn_node
-
 
 ### Custom lexers for syntax listings
 from pygments.lexer import RegexLexer

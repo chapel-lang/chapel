@@ -1,0 +1,6 @@
+# we sort the output of these tests to make the result deterministic, there
+# isn't much point in collecting the compiler report
+
+--no-report-auto-local-access --auto-local-access              #flags-full
+--no-report-auto-local-access --no-dynamic-auto-local-access   #flags-staticonly
+--no-report-auto-local-access --no-auto-local-access           #flags-none

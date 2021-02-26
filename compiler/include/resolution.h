@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -23,11 +23,13 @@
 
 #include "baseAST.h"
 #include "symbol.h"
+#include "expr.h"
 
 #include <map>
 #include <vector>
 
 class CallInfo;
+class VisibilityInfo;
 class ResolutionCandidate;
 
 struct Serializers {
@@ -164,13 +166,28 @@ void  setReduceSVars(ShadowVarSymbol*& PRP, ShadowVarSymbol*& PAS,
                      ShadowVarSymbol*& RP, ShadowVarSymbol* AS);
 void setupAndResolveShadowVars(ForallStmt* fs);
 bool preserveShadowVar(Symbol* var);
-void adjustVoidShadowVariables();
+void adjustNothingShadowVariables();
 Expr* lowerPrimReduce(CallExpr* call);
 
 void buildFastFollowerChecksIfNeeded(CallExpr* checkCall);
 
-FnSymbol* instantiate(FnSymbol* fn, SymbolMap& subs);
-FnSymbol* instantiateSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call);
+// interface constraints
+void resolveInterfaceSymbol(InterfaceSymbol* isym);
+void resolveImplementsStmt(ImplementsStmt* istm);
+void resolveConstrainedGenericFun(FnSymbol* fn);
+void resolveConstrainedGenericSymbol(Symbol* sym, bool mustBeCG);
+Expr* resolveCallToAssociatedType(CallExpr* call, ConstrainedType* recv);
+ImplementsStmt* constraintIsSatisfiedAtCallSite(CallExpr* call,
+                                                IfcConstraint* constraint,
+                                                SymbolMap& substitutions);
+void copyIfcRepsToSubstitutions(FnSymbol* fn, int indx,
+                                ImplementsStmt* istm,
+                                SymbolMap& substitutions);
+void adjustForCGinstantiation(FnSymbol* fn, SymbolMap& substitutions);
+
+FnSymbol* instantiateWithoutCall(FnSymbol* fn, SymbolMap& subs);
+FnSymbol* instantiateSignature(FnSymbol* fn, SymbolMap& subs,
+                               VisibilityInfo* info);
 void      instantiateBody(FnSymbol* fn);
 
 // generics support
@@ -225,10 +242,19 @@ FnSymbol* getAutoCopyForType(Type* type);   // requires hasAutoCopyForType()==tr
 void      getAutoCopyTypeKeys(Vec<Type*>& keys);
 FnSymbol* getAutoCopy(Type* t);             // returns NULL if there are none
 FnSymbol* getAutoDestroy(Type* t);          //  "
-FnSymbol* getUnalias(Type* t);
+
+FnSymbol* getInitCopyDuringResolution(Type* t);
+
+// Some types should change to another type when assigned into a variable.
+// This function returns that type.
+// Examples: array view -> array; sync int -> int; iterator -> array
+Type* getCopyTypeDuringResolution(Type* t);
+
+FnSymbol* getCoerceMoveFromCoerceCopy(FnSymbol* coerceCopyFn);
 const char* getErroneousCopyError(FnSymbol* fn);
 void markCopyErroneous(FnSymbol* fn, const char* err);
 
+bool isDefaultInitializable(Type* t);
 
 bool isPOD(Type* t);
 bool recordContainingCopyMutatesField(Type* at);
@@ -253,12 +279,14 @@ void lvalueCheck(CallExpr* call);
 
 void checkForStoringIntoTuple(CallExpr* call, FnSymbol* resolvedFn);
 
-bool signatureMatch(FnSymbol* fn, FnSymbol* gn);
-
 bool isSubtypeOrInstantiation(Type* sub, Type* super, Expr* ctx);
 bool isCoercibleOrInstantiation(Type* sub, Type* super, Expr* ctx);
 
 void printTaskOrForallConstErrorNote(Symbol* aVar);
+
+void adjustRuntimeTypeInitFn(FnSymbol* fn);
+Symbol* getPrimGetRuntimeTypeField_Field(CallExpr* call);
+Type* getPrimGetRuntimeTypeFieldReturnType(CallExpr* call, bool& isType);
 
 // tuples
 FnSymbol* createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call);
@@ -288,8 +316,10 @@ void expandInitFieldPrims();
 
 void removeCopyFns(Type* t);
 
-bool isUnusedClass(Type* t);
+std::set<Type*> getWellKnownTypesSet();
+bool isUnusedClass(Type* t, const std::set<Type*>& wellknown);
 
+void saveGenericSubstitutions();
 void pruneResolvedTree();
 
 void resolveTypeWithInitializer(AggregateType* at, FnSymbol* fn);
@@ -304,7 +334,14 @@ Type* getInstantiationType(Type* actualType, Symbol* actualSym,
                            Type* formalType, Symbol* formalSym,
                            Expr* ctx,
                            bool allowCoercion=true,
-                           bool implicitBang=false);
+                           bool implicitBang=false,
+                           bool inOrOtherValue=false);
+
+// in/out/inout but excluding formals to chpl__coerceMove etc
+bool inOrOutFormalNeedingCopyType(ArgSymbol* formal);
+
+bool isCallExprTemporary(Symbol* fromSym);
+bool isTemporaryFromNoCopyReturn(Symbol* fromSym);
 
 void resolveIfExprType(CondStmt* stmt);
 
@@ -328,4 +365,22 @@ void startGenerousResolutionForErrors();
 bool inGenerousResolutionForErrors();
 void stopGenerousResolutionForErrors();
 
+// In chpl__initCopy etc we have a definedConst argument. This argument can be
+// at different places in the function signature. In various places, we call the
+// function below to make sure it is where we expect it to be.
+static inline void sanityCheckDefinedConstArg(BaseAST *arg) {
+  if(SymExpr* argSE = toSymExpr(arg)) {
+    INT_ASSERT(argSE->symbol()->type == dtBool);
+  }
+  else if (ArgSymbol *argSym = toArgSymbol(arg)) {
+    INT_ASSERT(argSym->type == dtBool);
+  }
+  else {
+    INT_FATAL("Illegal argument was found while looking for definedConst");
+  }
+}
+
+
+// Return the array element type, or NULL if not an array
+Type* arrayElementType(Type* arrayType);
 #endif

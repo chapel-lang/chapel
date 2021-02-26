@@ -1,9 +1,8 @@
 //===- HexagonMCChecker.h - Instruction bundle checking ---------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -73,6 +72,10 @@ class HexagonMCChecker {
   using ReadOnlyIterator = std::set<unsigned>::iterator;
   std::set<unsigned> ReadOnly;
 
+  // Contains the vector-pair-registers with the even number
+  // first ("v0:1", e.g.) used/def'd in this packet.
+  std::set<unsigned> ReversePairs;
+
   void init();
   void init(MCInst const &);
   void initReg(MCInst const &, unsigned, unsigned &PredReg, bool &isTrue);
@@ -95,6 +98,7 @@ class HexagonMCChecker {
   bool checkAXOK();
   bool checkHWLoop();
   bool checkCOFMax1();
+  bool checkLegalVecRegPair();
 
   static void compoundRegisterMap(unsigned &);
 

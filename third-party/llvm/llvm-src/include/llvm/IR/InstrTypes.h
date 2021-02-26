@@ -1,9 +1,8 @@
 //===- llvm/InstrTypes.h - Important Instruction subclasses -----*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -28,6 +27,7 @@
 #include "llvm/IR/CallingConv.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/DerivedTypes.h"
+#include "llvm/IR/Function.h"
 #include "llvm/IR/Instruction.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/OperandTraits.h"
@@ -47,7 +47,7 @@
 namespace llvm {
 
 namespace Intrinsic {
-enum ID : unsigned;
+typedef unsigned ID;
 }
 
 //===----------------------------------------------------------------------===//
@@ -77,7 +77,8 @@ public:
 
   // Methods for support type inquiry through isa, cast, and dyn_cast:
   static bool classof(const Instruction *I) {
-    return I->getOpcode() == Instruction::Alloca ||
+    return I->isUnaryOp() ||
+           I->getOpcode() == Instruction::Alloca ||
            I->getOpcode() == Instruction::Load ||
            I->getOpcode() == Instruction::VAArg ||
            I->getOpcode() == Instruction::ExtractValue ||
@@ -94,6 +95,93 @@ struct OperandTraits<UnaryInstruction> :
 };
 
 DEFINE_TRANSPARENT_OPERAND_ACCESSORS(UnaryInstruction, Value)
+
+//===----------------------------------------------------------------------===//
+//                                UnaryOperator Class
+//===----------------------------------------------------------------------===//
+
+class UnaryOperator : public UnaryInstruction {
+  void AssertOK();
+
+protected:
+  UnaryOperator(UnaryOps iType, Value *S, Type *Ty,
+                const Twine &Name, Instruction *InsertBefore);
+  UnaryOperator(UnaryOps iType, Value *S, Type *Ty,
+                const Twine &Name, BasicBlock *InsertAtEnd);
+
+  // Note: Instruction needs to be a friend here to call cloneImpl.
+  friend class Instruction;
+
+  UnaryOperator *cloneImpl() const;
+
+public:
+
+  /// Construct a unary instruction, given the opcode and an operand.
+  /// Optionally (if InstBefore is specified) insert the instruction
+  /// into a BasicBlock right before the specified instruction.  The specified
+  /// Instruction is allowed to be a dereferenced end iterator.
+  ///
+  static UnaryOperator *Create(UnaryOps Op, Value *S,
+                               const Twine &Name = Twine(),
+                               Instruction *InsertBefore = nullptr);
+
+  /// Construct a unary instruction, given the opcode and an operand.
+  /// Also automatically insert this instruction to the end of the
+  /// BasicBlock specified.
+  ///
+  static UnaryOperator *Create(UnaryOps Op, Value *S,
+                               const Twine &Name,
+                               BasicBlock *InsertAtEnd);
+
+  /// These methods just forward to Create, and are useful when you
+  /// statically know what type of instruction you're going to create.  These
+  /// helpers just save some typing.
+#define HANDLE_UNARY_INST(N, OPC, CLASS) \
+  static UnaryOperator *Create##OPC(Value *V, const Twine &Name = "") {\
+    return Create(Instruction::OPC, V, Name);\
+  }
+#include "llvm/IR/Instruction.def"
+#define HANDLE_UNARY_INST(N, OPC, CLASS) \
+  static UnaryOperator *Create##OPC(Value *V, const Twine &Name, \
+                                    BasicBlock *BB) {\
+    return Create(Instruction::OPC, V, Name, BB);\
+  }
+#include "llvm/IR/Instruction.def"
+#define HANDLE_UNARY_INST(N, OPC, CLASS) \
+  static UnaryOperator *Create##OPC(Value *V, const Twine &Name, \
+                                    Instruction *I) {\
+    return Create(Instruction::OPC, V, Name, I);\
+  }
+#include "llvm/IR/Instruction.def"
+
+  static UnaryOperator *
+  CreateWithCopiedFlags(UnaryOps Opc, Value *V, Instruction *CopyO,
+                        const Twine &Name = "",
+                        Instruction *InsertBefore = nullptr) {
+    UnaryOperator *UO = Create(Opc, V, Name, InsertBefore);
+    UO->copyIRFlags(CopyO);
+    return UO;
+  }
+
+  static UnaryOperator *CreateFNegFMF(Value *Op, Instruction *FMFSource,
+                                      const Twine &Name = "",
+                                      Instruction *InsertBefore = nullptr) {
+    return CreateWithCopiedFlags(Instruction::FNeg, Op, FMFSource, Name,
+                                 InsertBefore);
+  }
+
+  UnaryOps getOpcode() const {
+    return static_cast<UnaryOps>(Instruction::getOpcode());
+  }
+
+  // Methods for support type inquiry through isa, cast, and dyn_cast:
+  static bool classof(const Instruction *I) {
+    return I->isUnaryOp();
+  }
+  static bool classof(const Value *V) {
+    return isa<Instruction>(V) && classof(cast<Instruction>(V));
+  }
+};
 
 //===----------------------------------------------------------------------===//
 //                           BinaryOperator Class
@@ -162,42 +250,37 @@ public:
 
   static BinaryOperator *CreateWithCopiedFlags(BinaryOps Opc,
                                                Value *V1, Value *V2,
-                                               BinaryOperator *CopyBO,
+                                               Instruction *CopyO,
                                                const Twine &Name = "") {
     BinaryOperator *BO = Create(Opc, V1, V2, Name);
-    BO->copyIRFlags(CopyBO);
+    BO->copyIRFlags(CopyO);
     return BO;
   }
 
   static BinaryOperator *CreateFAddFMF(Value *V1, Value *V2,
-                                       BinaryOperator *FMFSource,
+                                       Instruction *FMFSource,
                                        const Twine &Name = "") {
     return CreateWithCopiedFlags(Instruction::FAdd, V1, V2, FMFSource, Name);
   }
   static BinaryOperator *CreateFSubFMF(Value *V1, Value *V2,
-                                       BinaryOperator *FMFSource,
+                                       Instruction *FMFSource,
                                        const Twine &Name = "") {
     return CreateWithCopiedFlags(Instruction::FSub, V1, V2, FMFSource, Name);
   }
   static BinaryOperator *CreateFMulFMF(Value *V1, Value *V2,
-                                       BinaryOperator *FMFSource,
+                                       Instruction *FMFSource,
                                        const Twine &Name = "") {
     return CreateWithCopiedFlags(Instruction::FMul, V1, V2, FMFSource, Name);
   }
   static BinaryOperator *CreateFDivFMF(Value *V1, Value *V2,
-                                       BinaryOperator *FMFSource,
+                                       Instruction *FMFSource,
                                        const Twine &Name = "") {
     return CreateWithCopiedFlags(Instruction::FDiv, V1, V2, FMFSource, Name);
   }
   static BinaryOperator *CreateFRemFMF(Value *V1, Value *V2,
-                                       BinaryOperator *FMFSource,
+                                       Instruction *FMFSource,
                                        const Twine &Name = "") {
     return CreateWithCopiedFlags(Instruction::FRem, V1, V2, FMFSource, Name);
-  }
-  static BinaryOperator *CreateFNegFMF(Value *Op, BinaryOperator *FMFSource,
-                                       const Twine &Name = "") {
-    Value *Zero = ConstantFP::getNegativeZero(Op->getType());
-    return CreateWithCopiedFlags(Instruction::FSub, Zero, Op, FMFSource);
   }
 
   static BinaryOperator *CreateNSW(BinaryOps Opc, Value *V1, Value *V2,
@@ -304,10 +387,6 @@ public:
                                       Instruction *InsertBefore = nullptr);
   static BinaryOperator *CreateNUWNeg(Value *Op, const Twine &Name,
                                       BasicBlock *InsertAtEnd);
-  static BinaryOperator *CreateFNeg(Value *Op, const Twine &Name = "",
-                                    Instruction *InsertBefore = nullptr);
-  static BinaryOperator *CreateFNeg(Value *Op, const Twine &Name,
-                                    BasicBlock *InsertAtEnd);
   static BinaryOperator *CreateNot(Value *Op, const Twine &Name = "",
                                    Instruction *InsertBefore = nullptr);
   static BinaryOperator *CreateNot(Value *Op, const Twine &Name,
@@ -643,41 +722,43 @@ public:
   /// Some passes (e.g. InstCombine) depend on the bit-wise characteristics of
   /// FCMP_* values. Changing the bit patterns requires a potential change to
   /// those passes.
-  enum Predicate {
-    // Opcode              U L G E    Intuitive operation
-    FCMP_FALSE =  0,  ///< 0 0 0 0    Always false (always folded)
-    FCMP_OEQ   =  1,  ///< 0 0 0 1    True if ordered and equal
-    FCMP_OGT   =  2,  ///< 0 0 1 0    True if ordered and greater than
-    FCMP_OGE   =  3,  ///< 0 0 1 1    True if ordered and greater than or equal
-    FCMP_OLT   =  4,  ///< 0 1 0 0    True if ordered and less than
-    FCMP_OLE   =  5,  ///< 0 1 0 1    True if ordered and less than or equal
-    FCMP_ONE   =  6,  ///< 0 1 1 0    True if ordered and operands are unequal
-    FCMP_ORD   =  7,  ///< 0 1 1 1    True if ordered (no nans)
-    FCMP_UNO   =  8,  ///< 1 0 0 0    True if unordered: isnan(X) | isnan(Y)
-    FCMP_UEQ   =  9,  ///< 1 0 0 1    True if unordered or equal
-    FCMP_UGT   = 10,  ///< 1 0 1 0    True if unordered or greater than
-    FCMP_UGE   = 11,  ///< 1 0 1 1    True if unordered, greater than, or equal
-    FCMP_ULT   = 12,  ///< 1 1 0 0    True if unordered or less than
-    FCMP_ULE   = 13,  ///< 1 1 0 1    True if unordered, less than, or equal
-    FCMP_UNE   = 14,  ///< 1 1 1 0    True if unordered or not equal
-    FCMP_TRUE  = 15,  ///< 1 1 1 1    Always true (always folded)
+  enum Predicate : unsigned {
+    // Opcode            U L G E    Intuitive operation
+    FCMP_FALSE = 0, ///< 0 0 0 0    Always false (always folded)
+    FCMP_OEQ = 1,   ///< 0 0 0 1    True if ordered and equal
+    FCMP_OGT = 2,   ///< 0 0 1 0    True if ordered and greater than
+    FCMP_OGE = 3,   ///< 0 0 1 1    True if ordered and greater than or equal
+    FCMP_OLT = 4,   ///< 0 1 0 0    True if ordered and less than
+    FCMP_OLE = 5,   ///< 0 1 0 1    True if ordered and less than or equal
+    FCMP_ONE = 6,   ///< 0 1 1 0    True if ordered and operands are unequal
+    FCMP_ORD = 7,   ///< 0 1 1 1    True if ordered (no nans)
+    FCMP_UNO = 8,   ///< 1 0 0 0    True if unordered: isnan(X) | isnan(Y)
+    FCMP_UEQ = 9,   ///< 1 0 0 1    True if unordered or equal
+    FCMP_UGT = 10,  ///< 1 0 1 0    True if unordered or greater than
+    FCMP_UGE = 11,  ///< 1 0 1 1    True if unordered, greater than, or equal
+    FCMP_ULT = 12,  ///< 1 1 0 0    True if unordered or less than
+    FCMP_ULE = 13,  ///< 1 1 0 1    True if unordered, less than, or equal
+    FCMP_UNE = 14,  ///< 1 1 1 0    True if unordered or not equal
+    FCMP_TRUE = 15, ///< 1 1 1 1    Always true (always folded)
     FIRST_FCMP_PREDICATE = FCMP_FALSE,
     LAST_FCMP_PREDICATE = FCMP_TRUE,
     BAD_FCMP_PREDICATE = FCMP_TRUE + 1,
-    ICMP_EQ    = 32,  ///< equal
-    ICMP_NE    = 33,  ///< not equal
-    ICMP_UGT   = 34,  ///< unsigned greater than
-    ICMP_UGE   = 35,  ///< unsigned greater or equal
-    ICMP_ULT   = 36,  ///< unsigned less than
-    ICMP_ULE   = 37,  ///< unsigned less or equal
-    ICMP_SGT   = 38,  ///< signed greater than
-    ICMP_SGE   = 39,  ///< signed greater or equal
-    ICMP_SLT   = 40,  ///< signed less than
-    ICMP_SLE   = 41,  ///< signed less or equal
+    ICMP_EQ = 32,  ///< equal
+    ICMP_NE = 33,  ///< not equal
+    ICMP_UGT = 34, ///< unsigned greater than
+    ICMP_UGE = 35, ///< unsigned greater or equal
+    ICMP_ULT = 36, ///< unsigned less than
+    ICMP_ULE = 37, ///< unsigned less or equal
+    ICMP_SGT = 38, ///< signed greater than
+    ICMP_SGE = 39, ///< signed greater or equal
+    ICMP_SLT = 40, ///< signed less than
+    ICMP_SLE = 41, ///< signed less or equal
     FIRST_ICMP_PREDICATE = ICMP_EQ,
     LAST_ICMP_PREDICATE = ICMP_SLE,
     BAD_ICMP_PREDICATE = ICMP_SLE + 1
   };
+  using PredicateField =
+      Bitfield::Element<Predicate, 0, 6, LAST_ICMP_PREDICATE>;
 
 protected:
   CmpInst(Type *ty, Instruction::OtherOps op, Predicate pred,
@@ -718,15 +799,15 @@ public:
   }
 
   /// Return the predicate for this instruction.
-  Predicate getPredicate() const {
-    return Predicate(getSubclassDataFromInstruction());
-  }
+  Predicate getPredicate() const { return getSubclassData<PredicateField>(); }
 
   /// Set the predicate for this instruction to the specified value.
-  void setPredicate(Predicate P) { setInstructionSubclassData(P); }
+  void setPredicate(Predicate P) { setSubclassData<PredicateField>(P); }
 
   static bool isFPPredicate(Predicate P) {
-    return P >= FIRST_FCMP_PREDICATE && P <= LAST_FCMP_PREDICATE;
+    assert(FIRST_FCMP_PREDICATE == 0 &&
+           "FIRST_FCMP_PREDICATE is required to be 0");
+    return P <= LAST_FCMP_PREDICATE;
   }
 
   static bool isIntPredicate(Predicate P) {
@@ -889,7 +970,7 @@ public:
   static Type* makeCmpResultType(Type* opnd_type) {
     if (VectorType* vt = dyn_cast<VectorType>(opnd_type)) {
       return VectorType::get(Type::getInt1Ty(opnd_type->getContext()),
-                             vt->getNumElements());
+                             vt->getElementCount());
     }
     return Type::getInt1Ty(opnd_type->getContext());
   }
@@ -953,6 +1034,11 @@ struct OperandBundleUse {
     return getTagID() == LLVMContext::OB_funclet;
   }
 
+  /// Return true if this is a "cfguardtarget" operand bundle.
+  bool isCFGuardTargetOperandBundle() const {
+    return getTagID() == LLVMContext::OB_cfguardtarget;
+  }
+
 private:
   /// Pointer to an entry in LLVMContextImpl::getOrInsertBundleTag.
   StringMapEntry<uint32_t> *Tag;
@@ -975,7 +1061,7 @@ public:
       : Tag(std::move(Tag)), Inputs(Inputs) {}
 
   explicit OperandBundleDefT(const OperandBundleUse &OBU) {
-    Tag = OBU.getTagName();
+    Tag = std::string(OBU.getTagName());
     Inputs.insert(Inputs.end(), OBU.Inputs.begin(), OBU.Inputs.end());
   }
 
@@ -1013,6 +1099,15 @@ using ConstOperandBundleDef = OperandBundleDefT<const Value *>;
 /// as cheap as most other operations on the base class.
 class CallBase : public Instruction {
 protected:
+  // The first two bits are reserved by CallInst for fast retrieval,
+  using CallInstReservedField = Bitfield::Element<unsigned, 0, 2>;
+  using CallingConvField =
+      Bitfield::Element<CallingConv::ID, CallInstReservedField::NextBit, 10,
+                        CallingConv::MaxID>;
+  static_assert(
+      Bitfield::areContiguous<CallInstReservedField, CallingConvField>(),
+      "Bitfields must be contiguous");
+
   /// The last operand is the called operand.
   static constexpr int CalledOperandOpEndIdx = -1;
 
@@ -1033,16 +1128,32 @@ protected:
       return 0;
     case Instruction::Invoke:
       return 2;
+    case Instruction::CallBr:
+      return getNumSubclassExtraOperandsDynamic();
     }
     llvm_unreachable("Invalid opcode!");
   }
 
+  /// Get the number of extra operands for instructions that don't have a fixed
+  /// number of extra operands.
+  unsigned getNumSubclassExtraOperandsDynamic() const;
+
 public:
   using Instruction::getContext;
 
+  /// Create a clone of \p CB with a different set of operand bundles and
+  /// insert it before \p InsertPt.
+  ///
+  /// The returned call instruction is identical \p CB in every way except that
+  /// the operand bundles for the new instruction are set to the operand bundles
+  /// in \p Bundles.
+  static CallBase *Create(CallBase *CB, ArrayRef<OperandBundleDef> Bundles,
+                          Instruction *InsertPt = nullptr);
+
   static bool classof(const Instruction *I) {
     return I->getOpcode() == Instruction::Call ||
-           I->getOpcode() == Instruction::Invoke;
+           I->getOpcode() == Instruction::Invoke ||
+           I->getOpcode() == Instruction::CallBr;
   }
   static bool classof(const Value *V) {
     return isa<Instruction>(V) && classof(cast<Instruction>(V));
@@ -1094,6 +1205,19 @@ public:
   }
   bool isDataOperand(Value::const_user_iterator UI) const {
     return isDataOperand(&UI.getUse());
+  }
+
+  /// Given a value use iterator, return the data operand corresponding to it.
+  /// Iterator must actually correspond to a data operand.
+  unsigned getDataOperandNo(Value::const_user_iterator UI) const {
+    return getDataOperandNo(&UI.getUse());
+  }
+
+  /// Given a use for a data operand, get the data operand number that
+  /// corresponds to it.
+  unsigned getDataOperandNo(const Use *U) const {
+    assert(isDataOperand(U) && "Data operand # out of range!");
+    return U - data_operands_begin();
   }
 
   /// Return the iterator pointing to the beginning of the argument list.
@@ -1161,6 +1285,19 @@ public:
     return isArgOperand(&UI.getUse());
   }
 
+  /// Given a use for a arg operand, get the arg operand number that
+  /// corresponds to it.
+  unsigned getArgOperandNo(const Use *U) const {
+    assert(isArgOperand(U) && "Arg operand # out of range!");
+    return U - arg_begin();
+  }
+
+  /// Given a value use iterator, return the arg operand number corresponding to
+  /// it. Iterator must actually correspond to a data operand.
+  unsigned getArgOperandNo(Value::const_user_iterator UI) const {
+    return getArgOperandNo(&UI.getUse());
+  }
+
   /// Returns true if this CallSite passes the given Value* as an argument to
   /// the called function.
   bool hasArgument(const Value *V) const {
@@ -1168,10 +1305,6 @@ public:
   }
 
   Value *getCalledOperand() const { return Op<CalledOperandOpEndIdx>(); }
-
-  // DEPRECATED: This routine will be removed in favor of `getCalledOperand` in
-  // the near future.
-  Value *getCalledValue() const { return getCalledOperand(); }
 
   const Use &getCalledOperandUse() const { return Op<CalledOperandOpEndIdx>(); }
   Use &getCalledOperandUse() { return Op<CalledOperandOpEndIdx>(); }
@@ -1199,6 +1332,13 @@ public:
     return const_cast<CallBase *>(this)->getCaller();
   }
 
+  /// Tests if this call site must be tail call optimized. Only a CallInst can
+  /// be tail call optimized.
+  bool isMustTailCall() const;
+
+  /// Tests if this call site is marked as a tail call.
+  bool isTailCall() const;
+
   /// Returns the intrinsic ID of the intrinsic called or
   /// Intrinsic::not_intrinsic if the called function is not an intrinsic, or if
   /// this is an indirect call.
@@ -1207,10 +1347,13 @@ public:
   void setCalledOperand(Value *V) { Op<CalledOperandOpEndIdx>() = V; }
 
   /// Sets the function called, including updating the function type.
-  void setCalledFunction(Value *Fn) {
-    setCalledFunction(
-        cast<FunctionType>(cast<PointerType>(Fn->getType())->getElementType()),
-        Fn);
+  void setCalledFunction(Function *Fn) {
+    setCalledFunction(Fn->getFunctionType(), Fn);
+  }
+
+  /// Sets the function called, including updating the function type.
+  void setCalledFunction(FunctionCallee Fn) {
+    setCalledFunction(Fn.getFunctionType(), Fn.getCallee());
   }
 
   /// Sets the function called, including updating to the specified function
@@ -1219,19 +1362,22 @@ public:
     this->FTy = FTy;
     assert(FTy == cast<FunctionType>(
                       cast<PointerType>(Fn->getType())->getElementType()));
+    // This function doesn't mutate the return type, only the function
+    // type. Seems broken, but I'm just gonna stick an assert in for now.
+    assert(getType() == FTy->getReturnType());
     setCalledOperand(Fn);
   }
 
   CallingConv::ID getCallingConv() const {
-    return static_cast<CallingConv::ID>(getSubclassDataFromInstruction() >> 2);
+    return getSubclassData<CallingConvField>();
   }
 
   void setCallingConv(CallingConv::ID CC) {
-    auto ID = static_cast<unsigned>(CC);
-    assert(!(ID & ~CallingConv::MaxID) && "Unsupported calling convention");
-    setInstructionSubclassData((getSubclassDataFromInstruction() & 3) |
-                               (ID << 2));
+    setSubclassData<CallingConvField>(CC);
   }
+
+  /// Check if this call is an inline asm statement.
+  bool isInlineAsm() const { return isa<InlineAsm>(getCalledOperand()); }
 
   /// \name Attribute API
   ///
@@ -1412,10 +1558,12 @@ public:
     return paramHasAttr(ArgNo, Attribute::InAlloca);
   }
 
-  /// Determine whether this argument is passed by value or in an alloca.
-  bool isByValOrInAllocaArgument(unsigned ArgNo) const {
+  /// Determine whether this argument is passed by value, in an alloca, or is
+  /// preallocated.
+  bool isPassPointeeByValueArgument(unsigned ArgNo) const {
     return paramHasAttr(ArgNo, Attribute::ByVal) ||
-           paramHasAttr(ArgNo, Attribute::InAlloca);
+           paramHasAttr(ArgNo, Attribute::InAlloca) ||
+           paramHasAttr(ArgNo, Attribute::Preallocated);
   }
 
   /// Determine if there are is an inalloca argument. Only the last argument can
@@ -1444,12 +1592,39 @@ public:
            dataOperandHasImpliedAttr(OpNo + 1, Attribute::ReadNone);
   }
 
+  LLVM_ATTRIBUTE_DEPRECATED(unsigned getRetAlignment() const,
+                            "Use getRetAlign() instead") {
+    if (const auto MA = Attrs.getRetAlignment())
+      return MA->value();
+    return 0;
+  }
+
   /// Extract the alignment of the return value.
-  unsigned getRetAlignment() const { return Attrs.getRetAlignment(); }
+  MaybeAlign getRetAlign() const { return Attrs.getRetAlignment(); }
 
   /// Extract the alignment for a call or parameter (0=unknown).
-  unsigned getParamAlignment(unsigned ArgNo) const {
+  LLVM_ATTRIBUTE_DEPRECATED(unsigned getParamAlignment(unsigned ArgNo) const,
+                            "Use getParamAlign() instead") {
+    if (const auto MA = Attrs.getParamAlignment(ArgNo))
+      return MA->value();
+    return 0;
+  }
+
+  /// Extract the alignment for a call or parameter (0=unknown).
+  MaybeAlign getParamAlign(unsigned ArgNo) const {
     return Attrs.getParamAlignment(ArgNo);
+  }
+
+  /// Extract the byval type for a call or parameter.
+  Type *getParamByValType(unsigned ArgNo) const {
+    Type *Ty = Attrs.getParamByValType(ArgNo);
+    return Ty ? Ty : getArgOperand(ArgNo)->getType()->getPointerElementType();
+  }
+
+  /// Extract the preallocated type for a call or parameter.
+  Type *getParamPreallocatedType(unsigned ArgNo) const {
+    Type *Ty = Attrs.getParamPreallocatedType(ArgNo);
+    return Ty ? Ty : getArgOperand(ArgNo)->getType()->getPointerElementType();
   }
 
   /// Extract the number of dereferenceable bytes for a call or
@@ -1561,6 +1736,12 @@ public:
   bool cannotDuplicate() const { return hasFnAttr(Attribute::NoDuplicate); }
   void setCannotDuplicate() {
     addAttribute(AttributeList::FunctionIndex, Attribute::NoDuplicate);
+  }
+
+  /// Determine if the call cannot be tail merged.
+  bool cannotMerge() const { return hasFnAttr(Attribute::NoMerge); }
+  void setCannotMerge() {
+    addAttribute(AttributeList::FunctionIndex, Attribute::NoMerge);
   }
 
   /// Determine if the invoke is convergent
@@ -1712,10 +1893,7 @@ public:
   /// OperandBundleUser to a vector of OperandBundleDefs.  Note:
   /// OperandBundeUses and OperandBundleDefs are non-trivially *different*
   /// representations of operand bundles (see documentation above).
-  void getOperandBundlesAsDefs(SmallVectorImpl<OperandBundleDef> &Defs) const {
-    for (unsigned i = 0, e = getNumOperandBundles(); i != e; ++i)
-      Defs.emplace_back(getOperandBundleAt(i));
-  }
+  void getOperandBundlesAsDefs(SmallVectorImpl<OperandBundleDef> &Defs) const;
 
   /// Return the operand bundle for the operand at index OpIdx.
   ///
@@ -1783,7 +1961,7 @@ public:
   /// Is the function attribute S disallowed by some operand bundle on
   /// this operand bundle user?
   bool isFnAttrDisallowedByOpBundle(StringRef S) const {
-    // Operand bundles only possibly disallow readnone, readonly and argmenonly
+    // Operand bundles only possibly disallow readnone, readonly and argmemonly
     // attributes.  All String attributes are fine.
     return false;
   }
@@ -1943,16 +2121,14 @@ public:
   op_iterator populateBundleOperandInfos(ArrayRef<OperandBundleDef> Bundles,
                                          const unsigned BeginIndex);
 
+public:
   /// Return the BundleOpInfo for the operand at index OpIdx.
   ///
   /// It is an error to call this with an OpIdx that does not correspond to an
   /// bundle operand.
+  BundleOpInfo &getBundleOpInfoForOperand(unsigned OpIdx);
   const BundleOpInfo &getBundleOpInfoForOperand(unsigned OpIdx) const {
-    for (auto &BOI : bundle_op_infos())
-      if (BOI.Begin <= OpIdx && OpIdx < BOI.End)
-        return BOI;
-
-    llvm_unreachable("Did not find operand bundle for operand!");
+    return const_cast<CallBase *>(this)->getBundleOpInfoForOperand(OpIdx);
   }
 
 protected:
@@ -1972,7 +2148,7 @@ private:
   bool hasFnAttrOnCalledFunction(StringRef Kind) const;
 
   template <typename AttrKind> bool hasFnAttrImpl(AttrKind Kind) const {
-    if (Attrs.hasAttribute(AttributeList::FunctionIndex, Kind))
+    if (Attrs.hasFnAttribute(Kind))
       return true;
 
     // Operand bundles override attributes on the called function, but don't

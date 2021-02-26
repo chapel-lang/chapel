@@ -1,9 +1,8 @@
 //===- llvm/MC/MCAsmBackend.h - MC Asm Backend ------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -12,36 +11,29 @@
 
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/Optional.h"
-#include "llvm/ADT/StringRef.h"
 #include "llvm/MC/MCDirectives.h"
 #include "llvm/MC/MCFixup.h"
 #include "llvm/MC/MCFragment.h"
 #include "llvm/Support/Endian.h"
 #include <cstdint>
-#include <memory>
 
 namespace llvm {
 
 class MCAsmLayout;
 class MCAssembler;
 class MCCFIInstruction;
-class MCCodePadder;
 struct MCFixupKindInfo;
-class MCFragment;
 class MCInst;
 class MCObjectStreamer;
 class MCObjectTargetWriter;
 class MCObjectWriter;
-struct MCCodePaddingContext;
-class MCRelaxableFragment;
 class MCSubtargetInfo;
 class MCValue;
 class raw_pwrite_stream;
+class StringRef;
 
 /// Generic interface to target specific assembler backends.
 class MCAsmBackend {
-  std::unique_ptr<MCCodePadder> CodePadder;
-
 protected: // Can only create subclasses.
   MCAsmBackend(support::endianness Endian);
 
@@ -51,6 +43,20 @@ public:
   virtual ~MCAsmBackend();
 
   const support::endianness Endian;
+
+  /// Return true if this target might automatically pad instructions and thus
+  /// need to emit padding enable/disable directives around sensative code.
+  virtual bool allowAutoPadding() const { return false; }
+  /// Return true if this target allows an unrelaxable instruction to be
+  /// emitted into RelaxableFragment and then we can increase its size in a
+  /// tricky way for optimization.
+  virtual bool allowEnhancedRelaxation() const { return false; }
+
+  /// Give the target a chance to manipulate state related to instruction
+  /// alignment (e.g. padding for optimization), instruction relaxablility, etc.
+  /// before and after actually emitting the instruction.
+  virtual void emitInstructionBegin(MCObjectStreamer &OS, const MCInst &Inst) {}
+  virtual void emitInstructionEnd(MCObjectStreamer &OS, const MCInst &Inst) {}
 
   /// lifetime management
   virtual void reset() {}
@@ -86,6 +92,30 @@ public:
                                      const MCFixup &Fixup,
                                      const MCValue &Target) {
     return false;
+  }
+
+  /// Hook to check if extra nop bytes must be inserted for alignment directive.
+  /// For some targets this may be necessary in order to support linker
+  /// relaxation. The number of bytes to insert are returned in Size.
+  virtual bool shouldInsertExtraNopBytesForCodeAlign(const MCAlignFragment &AF,
+                                                     unsigned &Size) {
+    return false;
+  }
+
+  /// Hook which indicates if the target requires a fixup to be generated when
+  /// handling an align directive in an executable section
+  virtual bool shouldInsertFixupForCodeAlign(MCAssembler &Asm,
+                                             const MCAsmLayout &Layout,
+                                             MCAlignFragment &AF) {
+    return false;
+  }
+
+  virtual bool evaluateTargetFixup(const MCAssembler &Asm,
+                                   const MCAsmLayout &Layout,
+                                   const MCFixup &Fixup, const MCFragment *DF,
+                                   const MCValue &Target, uint64_t &Value,
+                                   bool &WasForced) {
+    llvm_unreachable("Need to implement hook if target has custom fixups");
   }
 
   /// Apply the \p Value for given \p Fixup into the provided data fragment, at
@@ -131,12 +161,11 @@ public:
 
   /// Relax the instruction in the given fragment to the next wider instruction.
   ///
-  /// \param Inst The instruction to relax, which may be the same as the
-  /// output.
+  /// \param [out] Inst The instruction to relax, which is also the relaxed
+  /// instruction.
   /// \param STI the subtarget information for the associated instruction.
-  /// \param [out] Res On return, the relaxed instruction.
-  virtual void relaxInstruction(const MCInst &Inst, const MCSubtargetInfo &STI,
-                                MCInst &Res) const = 0;
+  virtual void relaxInstruction(MCInst &Inst,
+                                const MCSubtargetInfo &STI) const {};
 
   /// @}
 
@@ -169,40 +198,6 @@ public:
   virtual bool isMicroMips(const MCSymbol *Sym) const {
     return false;
   }
-
-  /// Handles all target related code padding when starting to write a new
-  /// basic block to an object file.
-  ///
-  /// \param OS The streamer used for writing the padding data and function.
-  /// \param Context the context of the padding, Embeds the basic block's
-  /// parameters.
-  void handleCodePaddingBasicBlockStart(MCObjectStreamer *OS,
-                                        const MCCodePaddingContext &Context);
-  /// Handles all target related code padding after writing a block to an object
-  /// file.
-  ///
-  /// \param Context the context of the padding, Embeds the basic block's
-  /// parameters.
-  void handleCodePaddingBasicBlockEnd(const MCCodePaddingContext &Context);
-  /// Handles all target related code padding before writing a new instruction
-  /// to an object file.
-  ///
-  /// \param Inst the instruction.
-  void handleCodePaddingInstructionBegin(const MCInst &Inst);
-  /// Handles all target related code padding after writing an instruction to an
-  /// object file.
-  ///
-  /// \param Inst the instruction.
-  void handleCodePaddingInstructionEnd(const MCInst &Inst);
-
-  /// Relaxes a fragment (changes the size of the padding) according to target
-  /// requirements. The new size computation is done w.r.t a layout.
-  ///
-  /// \param PF The fragment to relax.
-  /// \param Layout Code layout information.
-  ///
-  /// \returns true iff any relaxation occurred.
-  bool relaxFragment(MCPaddingFragment *PF, MCAsmLayout &Layout);
 };
 
 } // end namespace llvm

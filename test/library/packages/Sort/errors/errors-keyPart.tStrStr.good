@@ -1,2 +1,2 @@
 errors-keyPart.chpl:9: In function 'main':
-errors-keyPart.chpl:17: error: The keyPart method in tStrStr must return a tuple with 1st element int(?) when used with int(64) elements
+errors-keyPart.chpl:17: error: The keyPart method in tStrStr must return a tuple with element 0 of type int(?) when used with int(64) elements

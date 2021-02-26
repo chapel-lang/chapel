@@ -1,9 +1,8 @@
 //===----------------------- MipsBranchExpansion.cpp ----------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 /// \file
@@ -343,15 +342,24 @@ void MipsBranchExpansion::replaceBranch(MachineBasicBlock &MBB, Iter Br,
   for (unsigned I = 0, E = Br->getDesc().getNumOperands(); I < E; ++I) {
     MachineOperand &MO = Br->getOperand(I);
 
-    if (!MO.isReg()) {
-      assert(MO.isMBB() && "MBB operand expected.");
+    switch (MO.getType()) {
+    case MachineOperand::MO_Register:
+      MIB.addReg(MO.getReg());
       break;
+    case MachineOperand::MO_Immediate:
+      // Octeon BBIT family of branch has an immediate operand
+      // (e.g. BBIT0 $v0, 3, %bb.1).
+      if (!TII->isBranchWithImm(Br->getOpcode()))
+        llvm_unreachable("Unexpected immediate in branch instruction");
+      MIB.addImm(MO.getImm());
+      break;
+    case MachineOperand::MO_MachineBasicBlock:
+      MIB.addMBB(MBBOpnd);
+      break;
+    default:
+      llvm_unreachable("Unexpected operand type in branch instruction");
     }
-
-    MIB.addReg(MO.getReg());
   }
-
-  MIB.addMBB(MBBOpnd);
 
   if (Br->hasDelaySlot()) {
     // Bundle the instruction in the delay slot to the newly created branch

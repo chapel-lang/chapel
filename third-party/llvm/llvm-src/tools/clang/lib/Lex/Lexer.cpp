@@ -1,9 +1,8 @@
 //===- Lexer.cpp - C Language Family Lexer --------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -30,6 +29,7 @@
 #include "clang/Basic/TokenKinds.h"
 #include "llvm/ADT/None.h"
 #include "llvm/ADT/Optional.h"
+#include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/ADT/StringSwitch.h"
 #include "llvm/ADT/StringRef.h"
@@ -219,6 +219,15 @@ Lexer *Lexer::Create_PragmaLexer(SourceLocation SpellingLoc,
   return L;
 }
 
+bool Lexer::skipOver(unsigned NumBytes) {
+  IsAtPhysicalStartOfLine = true;
+  IsAtStartOfLine = true;
+  if ((BufferPtr + NumBytes) > BufferEnd)
+    return true;
+  BufferPtr += NumBytes;
+  return false;
+}
+
 template <typename T> static void StringifyImpl(T &Str, char Quote) {
   typename T::size_type i = 0, e = Str.size();
   while (i < e) {
@@ -245,7 +254,7 @@ template <typename T> static void StringifyImpl(T &Str, char Quote) {
 }
 
 std::string Lexer::Stringify(StringRef Str, bool Charify) {
-  std::string Result = Str;
+  std::string Result = std::string(Str);
   char Quote = Charify ? '\'' : '"';
   StringifyImpl(Result, Quote);
   return Result;
@@ -688,7 +697,6 @@ PreambleBounds Lexer::ComputePreamble(StringRef Buffer,
       // We only end up here if we didn't recognize the preprocessor
       // directive or it was one that can't occur in the preamble at this
       // point. Roll back the current token to the location of the '#'.
-      InPreprocessorDirective = false;
       TheTok = HashTok;
     }
 
@@ -1424,6 +1432,8 @@ void Lexer::SetByteOffset(unsigned Offset, bool StartOfLine) {
 static bool isAllowedIDChar(uint32_t C, const LangOptions &LangOpts) {
   if (LangOpts.AsmPreprocessor) {
     return false;
+  } else if (LangOpts.DollarIdents && '$' == C) {
+    return true;
   } else if (LangOpts.CPlusPlus11 || LangOpts.C11) {
     static const llvm::sys::UnicodeCharSet C11AllowedIDChars(
         C11AllowedIDCharRanges);
@@ -1852,7 +1862,7 @@ const char *Lexer::LexUDSuffix(Token &Result, const char *CurPtr,
         char Next = getCharAndSizeNoWarn(CurPtr + Consumed, NextSize,
                                          getLangOpts());
         if (!isIdentifierBody(Next)) {
-          // End of suffix. Check whether this is on the whitelist.
+          // End of suffix. Check whether this is on the allowed list.
           const StringRef CompleteSuffix(Buffer, Chars);
           IsUDSuffix = StringLiteralParser::isValidUDSuffix(getLangOpts(),
                                                             CompleteSuffix);
@@ -2073,7 +2083,7 @@ bool Lexer::LexAngledStringLiteral(Token &Result, const char *CurPtr) {
 
   // Update the location of token as well as BufferPtr.
   const char *TokStart = BufferPtr;
-  FormTokenWithChars(Result, CurPtr, tok::angle_string_literal);
+  FormTokenWithChars(Result, CurPtr, tok::header_name);
   Result.setLiteralData(TokStart);
   return true;
 }
@@ -2083,7 +2093,8 @@ void Lexer::codeCompleteIncludedFile(const char *PathStart,
                                      bool IsAngled) {
   // Completion only applies to the filename, after the last slash.
   StringRef PartialPath(PathStart, CompletionPoint - PathStart);
-  auto Slash = PartialPath.find_last_of(LangOpts.MSVCCompat ? "/\\" : "/");
+  llvm::StringRef SlashChars = LangOpts.MSVCCompat ? "/\\" : "/";
+  auto Slash = PartialPath.find_last_of(SlashChars);
   StringRef Dir =
       (Slash == StringRef::npos) ? "" : PartialPath.take_front(Slash);
   const char *StartOfFilename =
@@ -2091,7 +2102,8 @@ void Lexer::codeCompleteIncludedFile(const char *PathStart,
   // Code completion filter range is the filename only, up to completion point.
   PP->setCodeCompletionIdentifierInfo(&PP->getIdentifierTable().get(
       StringRef(StartOfFilename, CompletionPoint - StartOfFilename)));
-  // We should replace the characters up to the closing quote, if any.
+  // We should replace the characters up to the closing quote or closest slash,
+  // if any.
   while (CompletionPoint < BufferEnd) {
     char Next = *(CompletionPoint + 1);
     if (Next == 0 || Next == '\r' || Next == '\n')
@@ -2099,7 +2111,10 @@ void Lexer::codeCompleteIncludedFile(const char *PathStart,
     ++CompletionPoint;
     if (Next == (IsAngled ? '>' : '"'))
       break;
+    if (llvm::is_contained(SlashChars, Next))
+      break;
   }
+
   PP->setCodeCompletionTokenRange(
       FileLoc.getLocWithOffset(StartOfFilename - BufferStart),
       FileLoc.getLocWithOffset(CompletionPoint - BufferStart));
@@ -2543,8 +2558,8 @@ bool Lexer::SkipBlockComment(Token &Result, const char *CurPtr,
         '/', '/', '/', '/',  '/', '/', '/', '/',
         '/', '/', '/', '/',  '/', '/', '/', '/'
       };
-      while (CurPtr+16 <= BufferEnd &&
-             !vec_any_eq(*(const vector unsigned char*)CurPtr, Slashes))
+      while (CurPtr + 16 <= BufferEnd &&
+             !vec_any_eq(*(const __vector unsigned char *)CurPtr, Slashes))
         CurPtr += 16;
 #else
       // Scan for '/' quickly.  Many block comments are very large.
@@ -2649,6 +2664,7 @@ void Lexer::ReadToEndOfLine(SmallVectorImpl<char> *Result) {
   assert(ParsingPreprocessorDirective && ParsingFilename == false &&
          "Must be in a preprocessing directive!");
   Token Tmp;
+  Tmp.startToken();
 
   // CurPtr - Cache BufferPtr in an automatic variable.
   const char *CurPtr = BufferPtr;
@@ -3233,7 +3249,7 @@ LexNextToken:
 
   case '\r':
     if (CurPtr[0] == '\n')
-      Char = getAndAdvanceChar(CurPtr, Result);
+      (void)getAndAdvanceChar(CurPtr, Result);
     LLVM_FALLTHROUGH;
   case '\n':
     // If we are inside a preprocessor directive and we see the end of line,
@@ -3466,7 +3482,9 @@ LexNextToken:
   case '"':
     // Notify MIOpt that we read a non-whitespace/non-comment token.
     MIOpt.ReadToken();
-    return LexStringLiteral(Result, CurPtr, tok::string_literal);
+    return LexStringLiteral(Result, CurPtr,
+                            ParsingFilename ? tok::header_name
+                                            : tok::string_literal);
 
   // C99 6.4.6: Punctuators.
   case '?':
@@ -3682,7 +3700,7 @@ LexNextToken:
     } else if (Char == '=') {
       char After = getCharAndSize(CurPtr+SizeTmp, SizeTmp2);
       if (After == '>') {
-        if (getLangOpts().CPlusPlus2a) {
+        if (getLangOpts().CPlusPlus20) {
           if (!isLexingRawMode())
             Diag(BufferPtr, diag::warn_cxx17_compat_spaceship);
           CurPtr = ConsumeChar(ConsumeChar(CurPtr, SizeTmp, Result),
@@ -3693,7 +3711,7 @@ LexNextToken:
         // Suggest adding a space between the '<=' and the '>' to avoid a
         // change in semantics if this turns up in C++ <=17 mode.
         if (getLangOpts().CPlusPlus && !isLexingRawMode()) {
-          Diag(BufferPtr, diag::warn_cxx2a_compat_spaceship)
+          Diag(BufferPtr, diag::warn_cxx20_compat_spaceship)
             << FixItHint::CreateInsertion(
                    getSourceLocation(CurPtr + SizeTmp, SizeTmp2), " ");
         }

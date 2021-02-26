@@ -1,0 +1,1 @@
+--llvm --fast --force-vectorize --llvm-print-ir loop --llvm-print-ir-stage basic

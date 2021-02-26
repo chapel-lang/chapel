@@ -103,7 +103,7 @@ module TestHelpers {
       assert( dimensions.size <= 2 );
       
       if dimensions.size == 1 {
-        var arrayRange: range = dimensions[1];
+        var arrayRange: range = dimensions[0];
         var shift = arrayRange.low - 1;
         //writeln( "(i, j, idx )" );
         for (i,j) in matrix_domain {
@@ -121,8 +121,8 @@ module TestHelpers {
                       d.dim(array_following).low - this.matrix_domain.dim(1).low );
                       
         for (i,j) in this.matrix_domain {
-          this[i,j] = if arrayIsRowMajor then array[i+trans[1],j+trans[2]] 
-                                         else array[j+trans[1],i+trans[2]] ;
+          this[i,j] = if arrayIsRowMajor then array[i+trans[0],j+trans[1]] 
+                                         else array[j+trans[0],i+trans[1]] ;
         }
       }
     }
@@ -139,7 +139,7 @@ module TestHelpers {
     }
     
     proc this( idx: 2*int ) ref : data_type {
-      return this( idx[1], idx[2] );
+      return this( idx[0], idx[1] );
     }
     
     proc rowRange : range {
@@ -152,8 +152,6 @@ module TestHelpers {
     
     proc toString(): string {
       var retstring: string = "";
-      var leading = if row_major then 1 else 2;
-      var following = 3 - leading;
       for i in this.rowRange{
         retstring += if i == 1 then ( "[ " )
                                else ( "  " );

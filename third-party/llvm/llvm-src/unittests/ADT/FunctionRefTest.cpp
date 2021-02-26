@@ -1,9 +1,8 @@
-//===- llvm/unittest/ADT/MakeUniqueTest.cpp - make_unique unit tests ------===//
+//===- llvm/unittest/ADT/FunctionRefTest.cpp - function_ref unit tests ----===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -39,4 +38,14 @@ TEST(FunctionRefTest, Copy) {
   EXPECT_EQ(1, Y());
 }
 
+TEST(FunctionRefTest, BadCopy) {
+  auto A = [] { return 1; };
+  function_ref<int()> X;
+  function_ref<int()> Y = A;
+  function_ref<int()> Z = static_cast<const function_ref<int()> &&>(Y);
+  X = Z;
+  Y = nullptr;
+  ASSERT_EQ(1, X());
 }
+
+} // namespace

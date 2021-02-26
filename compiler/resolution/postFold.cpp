@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -164,7 +164,8 @@ static Expr* postFoldNormal(CallExpr* call) {
   if (fn->retTag == RET_TYPE) {
     Symbol* ret = fn->getReturnSymbol();
 
-    if (ret->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == false) {
+    if (ret->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == false ||
+        fn->hasFlag(FLAG_IGNORE_RUNTIME_TYPE)) {
       retval = new SymExpr(ret->type->symbol);
 
       call->replace(retval);
@@ -212,7 +213,6 @@ static Expr* postFoldNormal(CallExpr* call) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void insertValueTemp(Expr* insertPoint, Expr* actual);
 static bool isSameTypeOrInstantiation(Type* sub, Type* super, Expr* ctx);
 
 static Expr* postFoldPrimop(CallExpr* call) {
@@ -371,7 +371,13 @@ static Expr* postFoldPrimop(CallExpr* call) {
       INT_FATAL(call, "Unable to resolve type");
     }
 
-    call->get(1)->replace(new SymExpr(t->symbol));
+    SymExpr* se = toSymExpr(call->get(1));
+    if (se && se->symbol() == t->symbol) {
+      // Already OK, nothing to do
+    } else {
+      // Replace the argument with the type
+      call->get(1)->replace(new SymExpr(t->symbol));
+    }
 
   } else if (call->isPrimitive("string_compare") == true) {
     SymExpr* lhs = toSymExpr(call->get(1));
@@ -482,7 +488,7 @@ static Expr* postFoldPrimop(CallExpr* call) {
         bool found_int = get_int(ie, &val);
         INT_ASSERT(found_int);
 
-        idx = static_cast<size_t>(val) - 1;
+        idx = static_cast<size_t>(val);
       }
 
       retval = new SymExpr(new_UIntSymbol((int)unescaped[idx], INT_SIZE_8));
@@ -584,12 +590,6 @@ static Expr* postFoldPrimop(CallExpr* call) {
 
     call->replace(retval);
 
-  } else if (strncmp(call->primitive->name, "_fscan", 6)        == 0    ||
-             strcmp (call->primitive->name, "_readToEndOfLine") == 0    ||
-             strcmp (call->primitive->name, "_now_timer")       == 0)   {
-    for_actuals(actual, call) {
-      insertValueTemp(call->getStmtExpr(), actual);
-    }
   }
 
   return retval;
@@ -643,24 +643,6 @@ bool isCoercibleOrInstantiation(Type* sub, Type* super, Expr* ctx) {
     dispatch = canDispatch(sub, NULL, super, NULL, NULL, &promotes);
 
   return dispatch && !promotes;
-}
-
-
-static void insertValueTemp(Expr* insertPoint, Expr* actual) {
-  if (SymExpr* se = toSymExpr(actual)) {
-    if (se->symbol()->type->refType == NULL) {
-      VarSymbol* tmp = newTemp("_value_tmp_", se->symbol()->getValType());
-
-      insertPoint->insertBefore(new DefExpr(tmp));
-
-      insertPoint->insertBefore(new CallExpr(PRIM_MOVE,
-                                             tmp,
-                                             new CallExpr(PRIM_DEREF,
-                                                          se->symbol())));
-
-      se->setSymbol(tmp);
-    }
-  }
 }
 
 /************************************* | **************************************
@@ -822,8 +804,7 @@ static void updateFlagTypeVariable(CallExpr* call, Symbol* lhsSym) {
 static void postFoldMoveTail(CallExpr* call, Symbol* lhsSym) {
   if (isSymExpr(call->get(2)) == true) {
     if (isReferenceType(lhsSym->type)                          == true  ||
-        lhsSym->type->symbol->hasFlag(FLAG_REF_ITERATOR_CLASS) == true  ||
-        lhsSym->type->symbol->hasFlag(FLAG_ARRAY)              == true) {
+        lhsSym->type->symbol->hasFlag(FLAG_REF_ITERATOR_CLASS) == true) {
       lhsSym->removeFlag(FLAG_EXPR_TEMP);
     }
 
@@ -835,8 +816,7 @@ static void postFoldMoveTail(CallExpr* call, Symbol* lhsSym) {
     }
 
     if (isReferenceType(lhsSym->type)                          == true  ||
-        lhsSym->type->symbol->hasFlag(FLAG_REF_ITERATOR_CLASS) == true  ||
-        lhsSym->type->symbol->hasFlag(FLAG_ARRAY)              == true) {
+        lhsSym->type->symbol->hasFlag(FLAG_REF_ITERATOR_CLASS) == true) {
       lhsSym->removeFlag(FLAG_EXPR_TEMP);
     }
 
@@ -855,6 +835,7 @@ bool requiresImplicitDestroy(CallExpr* call) {
         fn->isIterator()                                      == false &&
         fn->retType->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE) == false &&
         fn->hasFlag(FLAG_AUTO_II)                             == false &&
+        // the below exceptions should be considered workarounds
         fn->name != astrSassign                                        &&
         fn->name != astr_defaultOf) {
       retval = true;

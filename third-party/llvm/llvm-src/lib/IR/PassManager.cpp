@@ -1,15 +1,15 @@
 //===- PassManager.cpp - Infrastructure for managing & running IR passes --===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
 #include "llvm/IR/PassManager.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/PassManagerImpl.h"
 
 using namespace llvm;
 
@@ -89,7 +89,7 @@ bool FunctionAnalysisManagerModuleProxy::Result::invalidate(
   // Return false to indicate that this result is still a valid proxy.
   return false;
 }
-}
+} // namespace llvm
 
 AnalysisSetKey CFGAnalyses::SetKey;
 

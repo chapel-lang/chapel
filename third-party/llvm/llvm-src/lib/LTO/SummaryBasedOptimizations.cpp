@@ -1,9 +1,8 @@
 //==-SummaryBasedOptimizations.cpp - Optimizations based on ThinLTO summary-==//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -16,10 +15,11 @@
 #include "llvm/LTO/SummaryBasedOptimizations.h"
 #include "llvm/Analysis/SyntheticCountsUtils.h"
 #include "llvm/IR/ModuleSummaryIndex.h"
+#include "llvm/Support/CommandLine.h"
 
 using namespace llvm;
 
-cl::opt<bool> ThinLTOSynthesizeEntryCounts(
+static cl::opt<bool> ThinLTOSynthesizeEntryCounts(
     "thinlto-synthesize-entry-counts", cl::init(false), cl::Hidden,
     cl::desc("Synthesize entry counts based on the summary"));
 

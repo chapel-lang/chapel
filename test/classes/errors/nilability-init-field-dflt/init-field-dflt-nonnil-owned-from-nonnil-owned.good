@@ -1,0 +1,1 @@
+init-field-dflt-nonnil-owned-from-nonnil-owned.chpl:8: error: Cannot transfer ownership from a non-nilable outer variable

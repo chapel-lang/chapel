@@ -1,13 +1,13 @@
 //===--- ARCMT.cpp - Migration to ARC mode --------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
 #include "Internals.h"
+#include "clang/ARCMigrate/ARCMT.h"
 #include "clang/AST/ASTConsumer.h"
 #include "clang/Basic/DiagnosticCategories.h"
 #include "clang/Frontend/ASTUnit.h"
@@ -36,10 +36,10 @@ bool CapturedDiagList::clearDiagnostic(ArrayRef<unsigned> IDs,
   while (I != List.end()) {
     FullSourceLoc diagLoc = I->getLocation();
     if ((IDs.empty() || // empty means clear all diagnostics in the range.
-         std::find(IDs.begin(), IDs.end(), I->getID()) != IDs.end()) &&
+         llvm::is_contained(IDs, I->getID())) &&
         !diagLoc.isBeforeInTranslationUnitThan(range.getBegin()) &&
         (diagLoc == range.getEnd() ||
-           diagLoc.isBeforeInTranslationUnitThan(range.getEnd()))) {
+         diagLoc.isBeforeInTranslationUnitThan(range.getEnd()))) {
       cleared = true;
       ListTy::iterator eraseS = I++;
       if (eraseS->getLevel() != DiagnosticsEngine::Note)
@@ -65,10 +65,10 @@ bool CapturedDiagList::hasDiagnostic(ArrayRef<unsigned> IDs,
   while (I != List.end()) {
     FullSourceLoc diagLoc = I->getLocation();
     if ((IDs.empty() || // empty means any diagnostic in the range.
-         std::find(IDs.begin(), IDs.end(), I->getID()) != IDs.end()) &&
+         llvm::find(IDs, I->getID()) != IDs.end()) &&
         !diagLoc.isBeforeInTranslationUnitThan(range.getBegin()) &&
         (diagLoc == range.getEnd() ||
-           diagLoc.isBeforeInTranslationUnitThan(range.getEnd()))) {
+         diagLoc.isBeforeInTranslationUnitThan(range.getEnd()))) {
       return true;
     }
 
@@ -140,7 +140,7 @@ public:
     }
 
     // Non-ARC warnings are ignored.
-    Diags.setLastDiagnosticIgnored();
+    Diags.setLastDiagnosticIgnored(true);
   }
 };
 
@@ -190,7 +190,7 @@ createInvocationForMigration(CompilerInvocation &origCI,
       PPOpts.Includes.insert(PPOpts.Includes.begin(), OriginalFile);
     PPOpts.ImplicitPCHInclude.clear();
   }
-  std::string define = getARCMTMacroName();
+  std::string define = std::string(getARCMTMacroName());
   define += '=';
   CInvok->getPreprocessorOpts().addMacroDef(define);
   CInvok->getLangOpts()->ObjCAutoRefCount = true;
@@ -297,7 +297,7 @@ bool arcmt::checkForManualIssues(
     for (CapturedDiagList::iterator
            I = capturedDiags.begin(), E = capturedDiags.end(); I != E; ++I)
       arcDiags.push_back(*I);
-    writeARCDiagsToPlist(plistOut, arcDiags,
+    writeARCDiagsToPlist(std::string(plistOut), arcDiags,
                          Ctx.getSourceManager(), Ctx.getLangOpts());
   }
 
@@ -454,8 +454,8 @@ public:
   std::unique_ptr<ASTConsumer> CreateASTConsumer(CompilerInstance &CI,
                                                  StringRef InFile) override {
     CI.getPreprocessor().addPPCallbacks(
-               llvm::make_unique<ARCMTMacroTrackerPPCallbacks>(ARCMTMacroLocs));
-    return llvm::make_unique<ASTConsumer>();
+               std::make_unique<ARCMTMacroTrackerPPCallbacks>(ARCMTMacroLocs));
+    return std::make_unique<ASTConsumer>();
   }
 };
 
@@ -515,7 +515,7 @@ MigrationProcess::MigrationProcess(
     IntrusiveRefCntPtr<DiagnosticsEngine> Diags(
       new DiagnosticsEngine(DiagID, &CI.getDiagnosticOpts(),
                             DiagClient, /*ShouldOwnClient=*/false));
-    Remapper.initFromDisk(outputDir, *Diags, /*ignoreIfFilesChanges=*/true);
+    Remapper.initFromDisk(outputDir, *Diags, /*ignoreIfFilesChanged=*/true);
   }
 }
 
@@ -599,7 +599,7 @@ bool MigrationProcess::applyTransform(TransformFn trans,
     RewriteBuffer &buf = I->second;
     const FileEntry *file = Ctx.getSourceManager().getFileEntryForID(FID);
     assert(file);
-    std::string newFname = file->getName();
+    std::string newFname = std::string(file->getName());
     newFname += "-trans";
     SmallString<512> newText;
     llvm::raw_svector_ostream vecOS(newText);

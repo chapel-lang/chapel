@@ -1,9 +1,8 @@
 //===- FDRTraceExpander.cpp -----------------------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 #include "llvm/XRay/FDRTraceExpander.h"
@@ -45,7 +44,7 @@ Error TraceExpander::visit(CustomEventRecord &R) {
     CurrentRecord.PId = PID;
     CurrentRecord.TId = TID;
     CurrentRecord.Type = RecordTypes::CUSTOM_EVENT;
-    CurrentRecord.Data = R.data();
+    CurrentRecord.Data = std::string(R.data());
     BuildingRecord = true;
   }
   return Error::success();
@@ -60,7 +59,7 @@ Error TraceExpander::visit(CustomEventRecordV5 &R) {
     CurrentRecord.PId = PID;
     CurrentRecord.TId = TID;
     CurrentRecord.Type = RecordTypes::CUSTOM_EVENT;
-    CurrentRecord.Data = R.data();
+    CurrentRecord.Data = std::string(R.data());
     BuildingRecord = true;
   }
   return Error::success();
@@ -76,7 +75,7 @@ Error TraceExpander::visit(TypedEventRecord &R) {
     CurrentRecord.TId = TID;
     CurrentRecord.RecordType = R.eventType();
     CurrentRecord.Type = RecordTypes::TYPED_EVENT;
-    CurrentRecord.Data = R.data();
+    CurrentRecord.Data = std::string(R.data());
     BuildingRecord = true;
   }
   return Error::success();

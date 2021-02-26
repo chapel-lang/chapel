@@ -1,0 +1,7 @@
+#!/bin/bash
+
+sed '/from retStringArray.c:[0-9]*/d' $2 > $2.tmp
+sed '/^ *$/d' $2.tmp > $2
+rm $2.tmp
+export PYTHONPATH=lib/
+python3 use_retStringArray.py >> $2

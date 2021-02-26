@@ -38,8 +38,8 @@ class Level {
   // the level.
   //--------------------------------------------------------------
   
-  const possible_cells:       domain(dimension, stridable=true);
-  const possible_ghost_cells: domain(dimension, stridable=true);
+  var possible_cells:       domain(dimension, stridable=true);
+  var possible_ghost_cells: domain(dimension, stridable=true);
 
 
   //==== Child grid info ====
@@ -315,8 +315,8 @@ proc Level.complete ()
 
 class SiblingGhostRegion {
 
-  const neighbors: domain(unmanaged Grid);
-  const overlaps:  [neighbors] domain(dimension,stridable=true);
+  var neighbors: domain(unmanaged Grid);
+  var overlaps:  [neighbors] domain(dimension,stridable=true);
   
   
   //|\''''''''''''''''''''|\

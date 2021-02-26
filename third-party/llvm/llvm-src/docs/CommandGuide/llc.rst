@@ -1,6 +1,8 @@
 llc - LLVM static compiler
 ==========================
 
+.. program:: llc
+
 SYNOPSIS
 --------
 
@@ -40,6 +42,11 @@ End-user Options
 .. option:: -help
 
  Print a summary of command line options.
+
+.. option:: -o <filename>
+
+ Use ``<filename>`` as the output filename. See the summary above for more
+ details.
 
 .. option:: -O=uint
 
@@ -105,6 +112,14 @@ End-user Options
 
  Enable optimizations that assume no NAN values.
 
+.. option:: --enable-no-signed-zeros-fp-math
+
+ Enable FP math optimizations that assume the sign of 0 is insignificant.
+
+.. option:: --enable-no-trapping-fp-math
+
+ Enable setting the FP exceptions build attribute not to use exceptions.
+
 .. option:: --enable-unsafe-fp-math
 
  Enable optimizations that make unsafe assumptions about IEEE math (e.g. that
@@ -140,6 +155,10 @@ End-user Options
  in the function prologue. Functions with dynamic stack allocations are not
  included.
 
+.. option:: -remarks-section
+
+ Emit the __remarks (MachO) section which contains metadata about remark
+ diagnostics.
 
 Tuning/Configuration Options
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -200,5 +219,4 @@ occurs, it will exit with a non-zero value.
 SEE ALSO
 --------
 
-lli
-
+:manpage:`lli(1)`

@@ -1,9 +1,8 @@
 //===- ObjCARCAnalysisUtils.h - ObjC ARC Analysis Utilities -----*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 /// \file
@@ -24,22 +23,12 @@
 #define LLVM_LIB_ANALYSIS_OBJCARCANALYSISUTILS_H
 
 #include "llvm/ADT/Optional.h"
-#include "llvm/ADT/StringSwitch.h"
 #include "llvm/Analysis/AliasAnalysis.h"
 #include "llvm/Analysis/ObjCARCInstKind.h"
-#include "llvm/Analysis/Passes.h"
 #include "llvm/Analysis/ValueTracking.h"
-#include "llvm/IR/CallSite.h"
 #include "llvm/IR/Constants.h"
-#include "llvm/IR/InstIterator.h"
-#include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/ValueHandle.h"
-#include "llvm/Pass.h"
-
-namespace llvm {
-class raw_ostream;
-}
 
 namespace llvm {
 namespace objcarc {
@@ -157,9 +146,7 @@ inline bool IsPotentialRetainableObjPtr(const Value *Op) {
     return false;
   // Special arguments can not be a valid retainable object pointer.
   if (const Argument *Arg = dyn_cast<Argument>(Op))
-    if (Arg->hasByValAttr() ||
-        Arg->hasInAllocaAttr() ||
-        Arg->hasNestAttr() ||
+    if (Arg->hasPassPointeeByValueAttr() || Arg->hasNestAttr() ||
         Arg->hasStructRetAttr())
       return false;
   // Only consider values with pointer types.
@@ -196,13 +183,12 @@ inline bool IsPotentialRetainableObjPtr(const Value *Op,
 
 /// Helper for GetARCInstKind. Determines what kind of construct CS
 /// is.
-inline ARCInstKind GetCallSiteClass(ImmutableCallSite CS) {
-  for (ImmutableCallSite::arg_iterator I = CS.arg_begin(), E = CS.arg_end();
-       I != E; ++I)
+inline ARCInstKind GetCallSiteClass(const CallBase &CB) {
+  for (auto I = CB.arg_begin(), E = CB.arg_end(); I != E; ++I)
     if (IsPotentialRetainableObjPtr(*I))
-      return CS.onlyReadsMemory() ? ARCInstKind::User : ARCInstKind::CallOrUser;
+      return CB.onlyReadsMemory() ? ARCInstKind::User : ARCInstKind::CallOrUser;
 
-  return CS.onlyReadsMemory() ? ARCInstKind::None : ARCInstKind::Call;
+  return CB.onlyReadsMemory() ? ARCInstKind::None : ARCInstKind::Call;
 }
 
 /// Return true if this value refers to a distinct and identifiable

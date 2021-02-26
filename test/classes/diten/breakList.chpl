@@ -1,5 +1,7 @@
 module OuterModule {
+  use LinkedLists;
   module LibGL {
+    use LinkedLists;
     // Hidden in the bowels of some huge but useful Chapel library like LibGL.
     proc LinkedList.append(x: int) {
       halt("I Got you!");

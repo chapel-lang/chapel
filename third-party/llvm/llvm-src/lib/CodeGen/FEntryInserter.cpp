@@ -1,9 +1,8 @@
 //===-- FEntryInsertion.cpp - Patchable prologues for LLVM -------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -20,6 +19,7 @@
 #include "llvm/CodeGen/TargetSubtargetInfo.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/Module.h"
+#include "llvm/InitializePasses.h"
 
 using namespace llvm;
 
@@ -35,8 +35,8 @@ struct FEntryInserter : public MachineFunctionPass {
 }
 
 bool FEntryInserter::runOnMachineFunction(MachineFunction &MF) {
-  const std::string FEntryName =
-      MF.getFunction().getFnAttribute("fentry-call").getValueAsString();
+  const std::string FEntryName = std::string(
+      MF.getFunction().getFnAttribute("fentry-call").getValueAsString());
   if (FEntryName != "true")
     return false;
 

@@ -1,9 +1,8 @@
 //===-- DependenceAnalysis.cpp - DA Implementation --------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -62,6 +61,7 @@
 #include "llvm/IR/InstIterator.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Operator.h"
+#include "llvm/InitializePasses.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/ErrorHandling.h"
@@ -110,6 +110,14 @@ STATISTIC(BanerjeeSuccesses, "Banerjee successes");
 static cl::opt<bool>
     Delinearize("da-delinearize", cl::init(true), cl::Hidden, cl::ZeroOrMore,
                 cl::desc("Try to delinearize array references."));
+static cl::opt<bool> DisableDelinearizationChecks(
+    "da-disable-delinearization-checks", cl::init(false), cl::Hidden,
+    cl::ZeroOrMore,
+    cl::desc(
+        "Disable checks that try to statically verify validity of "
+        "delinearized subscripts. Enabling this option may result in incorrect "
+        "dependence vectors for languages that allow the subscript of one "
+        "dimension to underflow or overflow into another dimension."));
 
 //===----------------------------------------------------------------------===//
 // basics
@@ -134,6 +142,11 @@ INITIALIZE_PASS_END(DependenceAnalysisWrapperPass, "da", "Dependence Analysis",
 
 char DependenceAnalysisWrapperPass::ID = 0;
 
+DependenceAnalysisWrapperPass::DependenceAnalysisWrapperPass()
+    : FunctionPass(ID) {
+  initializeDependenceAnalysisWrapperPassPass(*PassRegistry::getPassRegistry());
+}
+
 FunctionPass *llvm::createDependenceAnalysisWrapperPass() {
   return new DependenceAnalysisWrapperPass();
 }
@@ -157,25 +170,25 @@ void DependenceAnalysisWrapperPass::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequiredTransitive<LoopInfoWrapperPass>();
 }
 
-
 // Used to test the dependence analyzer.
-// Looks through the function, noting loads and stores.
+// Looks through the function, noting instructions that may access memory.
 // Calls depends() on every possible pair and prints out the result.
 // Ignores all other instructions.
 static void dumpExampleDependence(raw_ostream &OS, DependenceInfo *DA) {
   auto *F = DA->getFunction();
   for (inst_iterator SrcI = inst_begin(F), SrcE = inst_end(F); SrcI != SrcE;
        ++SrcI) {
-    if (isa<StoreInst>(*SrcI) || isa<LoadInst>(*SrcI)) {
+    if (SrcI->mayReadOrWriteMemory()) {
       for (inst_iterator DstI = SrcI, DstE = inst_end(F);
            DstI != DstE; ++DstI) {
-        if (isa<StoreInst>(*DstI) || isa<LoadInst>(*DstI)) {
-          OS << "da analyze - ";
+        if (DstI->mayReadOrWriteMemory()) {
+          OS << "Src:" << *SrcI << " --> Dst:" << *DstI << "\n";
+          OS << "  da analyze - ";
           if (auto D = DA->depends(&*SrcI, &*DstI, true)) {
             D->dump(OS);
             for (unsigned Level = 1; Level <= D->getLevels(); Level++) {
               if (D->isSplitable(Level)) {
-                OS << "da analyze - split level = " << Level;
+                OS << "  da analyze - split level = " << Level;
                 OS << ", iteration = " << *DA->getSplitIteration(*D, Level);
                 OS << "!\n";
               }
@@ -247,7 +260,7 @@ FullDependence::FullDependence(Instruction *Source, Instruction *Destination,
       LoopIndependent(PossiblyLoopIndependent) {
   Consistent = true;
   if (CommonLevels)
-    DV = make_unique<DVEntry[]>(CommonLevels);
+    DV = std::make_unique<DVEntry[]>(CommonLevels);
 }
 
 // The rest are simple getters that hide the implementation.
@@ -634,7 +647,7 @@ void Dependence::dump(raw_ostream &OS) const {
 // tbaa, non-overlapping regions etc), then it is known there is no dependecy.
 // Otherwise the underlying objects are checked to see if they point to
 // different identifiable objects.
-static AliasResult underlyingObjectsAlias(AliasAnalysis *AA,
+static AliasResult underlyingObjectsAlias(AAResults *AA,
                                           const DataLayout &DL,
                                           const MemoryLocation &LocA,
                                           const MemoryLocation &LocB) {
@@ -869,53 +882,44 @@ void DependenceInfo::removeMatchingExtensions(Subscript *Pair) {
   }
 }
 
+// Examine the scev and return true iff it's linear.
+// Collect any loops mentioned in the set of "Loops".
+bool DependenceInfo::checkSubscript(const SCEV *Expr, const Loop *LoopNest,
+                                    SmallBitVector &Loops, bool IsSrc) {
+  const SCEVAddRecExpr *AddRec = dyn_cast<SCEVAddRecExpr>(Expr);
+  if (!AddRec)
+    return isLoopInvariant(Expr, LoopNest);
+  const SCEV *Start = AddRec->getStart();
+  const SCEV *Step = AddRec->getStepRecurrence(*SE);
+  const SCEV *UB = SE->getBackedgeTakenCount(AddRec->getLoop());
+  if (!isa<SCEVCouldNotCompute>(UB)) {
+    if (SE->getTypeSizeInBits(Start->getType()) <
+        SE->getTypeSizeInBits(UB->getType())) {
+      if (!AddRec->getNoWrapFlags())
+        return false;
+    }
+  }
+  if (!isLoopInvariant(Step, LoopNest))
+    return false;
+  if (IsSrc)
+    Loops.set(mapSrcLoop(AddRec->getLoop()));
+  else
+    Loops.set(mapDstLoop(AddRec->getLoop()));
+  return checkSubscript(Start, LoopNest, Loops, IsSrc);
+}
 
 // Examine the scev and return true iff it's linear.
 // Collect any loops mentioned in the set of "Loops".
 bool DependenceInfo::checkSrcSubscript(const SCEV *Src, const Loop *LoopNest,
                                        SmallBitVector &Loops) {
-  const SCEVAddRecExpr *AddRec = dyn_cast<SCEVAddRecExpr>(Src);
-  if (!AddRec)
-    return isLoopInvariant(Src, LoopNest);
-  const SCEV *Start = AddRec->getStart();
-  const SCEV *Step = AddRec->getStepRecurrence(*SE);
-  const SCEV *UB = SE->getBackedgeTakenCount(AddRec->getLoop());
-  if (!isa<SCEVCouldNotCompute>(UB)) {
-    if (SE->getTypeSizeInBits(Start->getType()) <
-        SE->getTypeSizeInBits(UB->getType())) {
-      if (!AddRec->getNoWrapFlags())
-        return false;
-    }
-  }
-  if (!isLoopInvariant(Step, LoopNest))
-    return false;
-  Loops.set(mapSrcLoop(AddRec->getLoop()));
-  return checkSrcSubscript(Start, LoopNest, Loops);
+  return checkSubscript(Src, LoopNest, Loops, true);
 }
-
-
 
 // Examine the scev and return true iff it's linear.
 // Collect any loops mentioned in the set of "Loops".
 bool DependenceInfo::checkDstSubscript(const SCEV *Dst, const Loop *LoopNest,
                                        SmallBitVector &Loops) {
-  const SCEVAddRecExpr *AddRec = dyn_cast<SCEVAddRecExpr>(Dst);
-  if (!AddRec)
-    return isLoopInvariant(Dst, LoopNest);
-  const SCEV *Start = AddRec->getStart();
-  const SCEV *Step = AddRec->getStepRecurrence(*SE);
-  const SCEV *UB = SE->getBackedgeTakenCount(AddRec->getLoop());
-  if (!isa<SCEVCouldNotCompute>(UB)) {
-    if (SE->getTypeSizeInBits(Start->getType()) <
-        SE->getTypeSizeInBits(UB->getType())) {
-      if (!AddRec->getNoWrapFlags())
-        return false;
-    }
-  }
-  if (!isLoopInvariant(Step, LoopNest))
-    return false;
-  Loops.set(mapDstLoop(AddRec->getLoop()));
-  return checkDstSubscript(Start, LoopNest, Loops);
+  return checkSubscript(Dst, LoopNest, Loops, false);
 }
 
 
@@ -3260,16 +3264,10 @@ bool DependenceInfo::tryDelinearize(Instruction *Src, Instruction *Dst,
   assert(isLoadOrStore(Dst) && "instruction is not load or store");
   Value *SrcPtr = getLoadStorePointerOperand(Src);
   Value *DstPtr = getLoadStorePointerOperand(Dst);
-
   Loop *SrcLoop = LI->getLoopFor(Src->getParent());
   Loop *DstLoop = LI->getLoopFor(Dst->getParent());
-
-  // Below code mimics the code in Delinearization.cpp
-  const SCEV *SrcAccessFn =
-    SE->getSCEVAtScope(SrcPtr, SrcLoop);
-  const SCEV *DstAccessFn =
-    SE->getSCEVAtScope(DstPtr, DstLoop);
-
+  const SCEV *SrcAccessFn = SE->getSCEVAtScope(SrcPtr, SrcLoop);
+  const SCEV *DstAccessFn = SE->getSCEVAtScope(DstPtr, DstLoop);
   const SCEVUnknown *SrcBase =
       dyn_cast<SCEVUnknown>(SE->getPointerBase(SrcAccessFn));
   const SCEVUnknown *DstBase =
@@ -3277,6 +3275,123 @@ bool DependenceInfo::tryDelinearize(Instruction *Src, Instruction *Dst,
 
   if (!SrcBase || !DstBase || SrcBase != DstBase)
     return false;
+
+  SmallVector<const SCEV *, 4> SrcSubscripts, DstSubscripts;
+
+  if (!tryDelinearizeFixedSize(Src, Dst, SrcAccessFn, DstAccessFn,
+                               SrcSubscripts, DstSubscripts) &&
+      !tryDelinearizeParametricSize(Src, Dst, SrcAccessFn, DstAccessFn,
+                                    SrcSubscripts, DstSubscripts))
+    return false;
+
+  int Size = SrcSubscripts.size();
+  LLVM_DEBUG({
+    dbgs() << "\nSrcSubscripts: ";
+    for (int I = 0; I < Size; I++)
+      dbgs() << *SrcSubscripts[I];
+    dbgs() << "\nDstSubscripts: ";
+    for (int I = 0; I < Size; I++)
+      dbgs() << *DstSubscripts[I];
+  });
+
+  // The delinearization transforms a single-subscript MIV dependence test into
+  // a multi-subscript SIV dependence test that is easier to compute. So we
+  // resize Pair to contain as many pairs of subscripts as the delinearization
+  // has found, and then initialize the pairs following the delinearization.
+  Pair.resize(Size);
+  for (int I = 0; I < Size; ++I) {
+    Pair[I].Src = SrcSubscripts[I];
+    Pair[I].Dst = DstSubscripts[I];
+    unifySubscriptType(&Pair[I]);
+  }
+
+  return true;
+}
+
+bool DependenceInfo::tryDelinearizeFixedSize(
+    Instruction *Src, Instruction *Dst, const SCEV *SrcAccessFn,
+    const SCEV *DstAccessFn, SmallVectorImpl<const SCEV *> &SrcSubscripts,
+    SmallVectorImpl<const SCEV *> &DstSubscripts) {
+
+  // In general we cannot safely assume that the subscripts recovered from GEPs
+  // are in the range of values defined for their corresponding array
+  // dimensions. For example some C language usage/interpretation make it
+  // impossible to verify this at compile-time. As such we give up here unless
+  // we can assume that the subscripts do not overlap into neighboring
+  // dimensions and that the number of dimensions matches the number of
+  // subscripts being recovered.
+  if (!DisableDelinearizationChecks)
+    return false;
+
+  Value *SrcPtr = getLoadStorePointerOperand(Src);
+  Value *DstPtr = getLoadStorePointerOperand(Dst);
+  const SCEVUnknown *SrcBase =
+      dyn_cast<SCEVUnknown>(SE->getPointerBase(SrcAccessFn));
+  const SCEVUnknown *DstBase =
+      dyn_cast<SCEVUnknown>(SE->getPointerBase(DstAccessFn));
+  assert(SrcBase && DstBase && SrcBase == DstBase &&
+         "expected src and dst scev unknowns to be equal");
+
+  // Check the simple case where the array dimensions are fixed size.
+  auto *SrcGEP = dyn_cast<GetElementPtrInst>(SrcPtr);
+  auto *DstGEP = dyn_cast<GetElementPtrInst>(DstPtr);
+  if (!SrcGEP || !DstGEP)
+    return false;
+
+  SmallVector<int, 4> SrcSizes, DstSizes;
+  SE->getIndexExpressionsFromGEP(SrcGEP, SrcSubscripts, SrcSizes);
+  SE->getIndexExpressionsFromGEP(DstGEP, DstSubscripts, DstSizes);
+
+  // Check that the two size arrays are non-empty and equal in length and
+  // value.
+  if (SrcSizes.empty() || SrcSubscripts.size() <= 1 ||
+      SrcSizes.size() != DstSizes.size() ||
+      !std::equal(SrcSizes.begin(), SrcSizes.end(), DstSizes.begin())) {
+    SrcSubscripts.clear();
+    DstSubscripts.clear();
+    return false;
+  }
+
+  Value *SrcBasePtr = SrcGEP->getOperand(0);
+  Value *DstBasePtr = DstGEP->getOperand(0);
+  while (auto *PCast = dyn_cast<BitCastInst>(SrcBasePtr))
+    SrcBasePtr = PCast->getOperand(0);
+  while (auto *PCast = dyn_cast<BitCastInst>(DstBasePtr))
+    DstBasePtr = PCast->getOperand(0);
+
+  // Check that for identical base pointers we do not miss index offsets
+  // that have been added before this GEP is applied.
+  if (SrcBasePtr == SrcBase->getValue() && DstBasePtr == DstBase->getValue()) {
+    assert(SrcSubscripts.size() == DstSubscripts.size() &&
+           SrcSubscripts.size() == SrcSizes.size() + 1 &&
+           "Expected equal number of entries in the list of sizes and "
+           "subscripts.");
+    LLVM_DEBUG({
+      dbgs() << "Delinearized subscripts of fixed-size array\n"
+             << "SrcGEP:" << *SrcGEP << "\n"
+             << "DstGEP:" << *DstGEP << "\n";
+    });
+    return true;
+  }
+
+  SrcSubscripts.clear();
+  DstSubscripts.clear();
+  return false;
+}
+
+bool DependenceInfo::tryDelinearizeParametricSize(
+    Instruction *Src, Instruction *Dst, const SCEV *SrcAccessFn,
+    const SCEV *DstAccessFn, SmallVectorImpl<const SCEV *> &SrcSubscripts,
+    SmallVectorImpl<const SCEV *> &DstSubscripts) {
+
+  Value *SrcPtr = getLoadStorePointerOperand(Src);
+  Value *DstPtr = getLoadStorePointerOperand(Dst);
+  const SCEVUnknown *SrcBase =
+      dyn_cast<SCEVUnknown>(SE->getPointerBase(SrcAccessFn));
+  const SCEVUnknown *DstBase =
+      dyn_cast<SCEVUnknown>(SE->getPointerBase(DstAccessFn));
+  assert(SrcBase && DstBase && SrcBase == DstBase &&
+         "expected src and dst scev unknowns to be equal");
 
   const SCEV *ElementSize = SE->getElementSize(Src);
   if (ElementSize != SE->getElementSize(Dst))
@@ -3300,7 +3415,6 @@ bool DependenceInfo::tryDelinearize(Instruction *Src, Instruction *Dst,
   SE->findArrayDimensions(Terms, Sizes, ElementSize);
 
   // Third step: compute the access functions for each subscript.
-  SmallVector<const SCEV *, 4> SrcSubscripts, DstSubscripts;
   SE->computeAccessFunctions(SrcAR, SrcSubscripts, Sizes);
   SE->computeAccessFunctions(DstAR, DstSubscripts, Sizes);
 
@@ -3309,7 +3423,7 @@ bool DependenceInfo::tryDelinearize(Instruction *Src, Instruction *Dst,
       SrcSubscripts.size() != DstSubscripts.size())
     return false;
 
-  int size = SrcSubscripts.size();
+  size_t Size = SrcSubscripts.size();
 
   // Statically check that the array bounds are in-range. The first subscript we
   // don't have a size for and it cannot overflow into another subscript, so is
@@ -3317,39 +3431,20 @@ bool DependenceInfo::tryDelinearize(Instruction *Src, Instruction *Dst,
   // and dst.
   // FIXME: It may be better to record these sizes and add them as constraints
   // to the dependency checks.
-  for (int i = 1; i < size; ++i) {
-    if (!isKnownNonNegative(SrcSubscripts[i], SrcPtr))
-      return false;
+  if (!DisableDelinearizationChecks)
+    for (size_t I = 1; I < Size; ++I) {
+      if (!isKnownNonNegative(SrcSubscripts[I], SrcPtr))
+        return false;
 
-    if (!isKnownLessThan(SrcSubscripts[i], Sizes[i - 1]))
-      return false;
+      if (!isKnownLessThan(SrcSubscripts[I], Sizes[I - 1]))
+        return false;
 
-    if (!isKnownNonNegative(DstSubscripts[i], DstPtr))
-      return false;
+      if (!isKnownNonNegative(DstSubscripts[I], DstPtr))
+        return false;
 
-    if (!isKnownLessThan(DstSubscripts[i], Sizes[i - 1]))
-      return false;
-  }
-
-  LLVM_DEBUG({
-    dbgs() << "\nSrcSubscripts: ";
-    for (int i = 0; i < size; i++)
-      dbgs() << *SrcSubscripts[i];
-    dbgs() << "\nDstSubscripts: ";
-    for (int i = 0; i < size; i++)
-      dbgs() << *DstSubscripts[i];
-  });
-
-  // The delinearization transforms a single-subscript MIV dependence test into
-  // a multi-subscript SIV dependence test that is easier to compute. So we
-  // resize Pair to contain as many pairs of subscripts as the delinearization
-  // has found, and then initialize the pairs following the delinearization.
-  Pair.resize(size);
-  for (int i = 0; i < size; ++i) {
-    Pair[i].Src = SrcSubscripts[i];
-    Pair[i].Dst = DstSubscripts[i];
-    unifySubscriptType(&Pair[i]);
-  }
+      if (!isKnownLessThan(DstSubscripts[I], Sizes[I - 1]))
+        return false;
+    }
 
   return true;
 }
@@ -3369,6 +3464,19 @@ static void dumpSmallBitVector(SmallBitVector &BV) {
 }
 #endif
 
+bool DependenceInfo::invalidate(Function &F, const PreservedAnalyses &PA,
+                                FunctionAnalysisManager::Invalidator &Inv) {
+  // Check if the analysis itself has been invalidated.
+  auto PAC = PA.getChecker<DependenceAnalysis>();
+  if (!PAC.preserved() && !PAC.preservedSet<AllAnalysesOn<Function>>())
+    return true;
+
+  // Check transitive dependencies.
+  return Inv.invalidate<AAManager>(F, PA) ||
+         Inv.invalidate<ScalarEvolutionAnalysis>(F, PA) ||
+         Inv.invalidate<LoopAnalysis>(F, PA);
+}
+
 // depends -
 // Returns NULL if there is no dependence.
 // Otherwise, return a Dependence with as many details as possible.
@@ -3386,15 +3494,14 @@ DependenceInfo::depends(Instruction *Src, Instruction *Dst,
   if (Src == Dst)
     PossiblyLoopIndependent = false;
 
-  if ((!Src->mayReadFromMemory() && !Src->mayWriteToMemory()) ||
-      (!Dst->mayReadFromMemory() && !Dst->mayWriteToMemory()))
+  if (!(Src->mayReadOrWriteMemory() && Dst->mayReadOrWriteMemory()))
     // if both instructions don't reference memory, there's no dependence
     return nullptr;
 
   if (!isLoadOrStore(Src) || !isLoadOrStore(Dst)) {
     // can only analyze simple loads and stores, i.e., no calls, invokes, etc.
     LLVM_DEBUG(dbgs() << "can only handle simple loads and stores\n");
-    return make_unique<Dependence>(Src, Dst);
+    return std::make_unique<Dependence>(Src, Dst);
   }
 
   assert(isLoadOrStore(Src) && "instruction is not load or store");
@@ -3409,7 +3516,7 @@ DependenceInfo::depends(Instruction *Src, Instruction *Dst,
   case PartialAlias:
     // cannot analyse objects if we don't understand their aliasing.
     LLVM_DEBUG(dbgs() << "can't analyze may or partial alias\n");
-    return make_unique<Dependence>(Src, Dst);
+    return std::make_unique<Dependence>(Src, Dst);
   case NoAlias:
     // If the objects noalias, they are distinct, accesses are independent.
     LLVM_DEBUG(dbgs() << "no alias\n");
@@ -3510,7 +3617,7 @@ DependenceInfo::depends(Instruction *Src, Instruction *Dst,
   // to either Separable or Coupled).
   //
   // Next, we consider 1 and 2. The intersection of the GroupLoops is empty.
-  // Next, 1 and 3. The intersectionof their GroupLoops = {2}, not empty,
+  // Next, 1 and 3. The intersection of their GroupLoops = {2}, not empty,
   // so Pair[3].Group = {0, 1, 3} and Done = false.
   //
   // Next, we compare 2 against 3. The intersection of the GroupLoops is empty.
@@ -3756,10 +3863,8 @@ DependenceInfo::depends(Instruction *Src, Instruction *Dst,
       return nullptr;
   }
 
-  return make_unique<FullDependence>(std::move(Result));
+  return std::make_unique<FullDependence>(std::move(Result));
 }
-
-
 
 //===----------------------------------------------------------------------===//
 // getSplitIteration -

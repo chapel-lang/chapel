@@ -1,0 +1,9 @@
+testBadCallCandidates.chpl:71: In function 'main':
+testBadCallCandidates.chpl:85: error: unresolved call 'owned C.bar(42)'
+testBadCallCandidates.chpl:36: note: this candidate did not match: D.bar(x: int)
+testBadCallCandidates.chpl:85: note: because method call receiver with type 'owned C'
+testBadCallCandidates.chpl:32: note: is passed to formal 'this: borrowed D'
+testBadCallCandidates.chpl:85: note: other candidates are:
+testBadCallCandidates.chpl:8: note:   C.bar(x: string)
+testBadCallCandidates.chpl:11: note:   C.bar(x: D)
+testBadCallCandidates.chpl:65: note:   bar(x: D)

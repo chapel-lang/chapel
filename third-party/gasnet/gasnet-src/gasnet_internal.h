@@ -306,13 +306,19 @@ extern void gasneti_freezeForDebugger(void);
    * Keep in mind that code is permitted call these macros in a GASNET_NDEBUG build.
    */
 #elif !defined(GASNETI_EXPORT_POINTER) && !defined(GASNETI_IMPORT_POINTER)
-  #if GASNET_DEBUG
+  #if GASNETI_VALGRIND && !defined(GASNETI_SWIZZLE)
+    #define GASNETI_SWIZZLE 0 // swizzling leads to "possible leaks" in valgrind
+  #endif
+  #if GASNETI_SWIZZLE || (GASNET_DEBUG && !defined(GASNETI_SWIZZLE))
+    #undef GASNETI_SWIZZLE
+    #define GASNETI_SWIZZLE 1
     /* Default xform is to invert all bits, except that NULL is preserved */
     GASNETI_INLINE(_gasneti_swizzle_pointer)
     uintptr_t _gasneti_swizzle_pointer(uintptr_t _p) { return _p ? ~_p : _p; }
     #define GASNETI_EXPORT_POINTER(type,ptr) ((type)_gasneti_swizzle_pointer((uintptr_t)(ptr)))
     #define GASNETI_IMPORT_POINTER(type,ptr) ((type)_gasneti_swizzle_pointer((uintptr_t)(ptr)))
   #else
+    #undef GASNETI_SWIZZLE
     #define GASNETI_EXPORT_POINTER(type,ptr) ((type)(ptr))
     #define GASNETI_IMPORT_POINTER(type,ptr) ((type)(ptr))
   #endif
@@ -394,11 +400,6 @@ typedef struct {
   void (*Abort)(int exitcode);
   void (*Cleanup)(void);
   void (*Fini)(void);
-#if GASNET_BLCR
-  int (*PreCheckpoint)(int fd);
-  int (*PostCheckpoint)(int fd, int is_restart);
-  int (*Rollback)(const char *dir);
-#endif
 } gasneti_spawnerfn_t;
 
 extern gasneti_spawnerfn_t const *gasneti_spawnerInit(int *argc_p, char ***argv_p,

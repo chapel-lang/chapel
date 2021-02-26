@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -251,14 +251,14 @@ module Futures {
 
   pragma "no doc"
   pragma "init copy fn"
-  proc chpl__initCopy(x: Future) {
+  proc chpl__initCopy(x: Future, definedConst: bool) {
     x.acquire();
     return x;
   }
 
   pragma "no doc"
   pragma "auto copy fn"
-  proc chpl__autoCopy(x: Future) {
+  proc chpl__autoCopy(x: Future, definedConst: bool) {
     x.acquire();
     return x;
   }

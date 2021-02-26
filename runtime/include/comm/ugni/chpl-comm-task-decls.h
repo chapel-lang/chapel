@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -30,6 +30,10 @@
 #include "chpl-cache-task-decls.h"
 #define HAS_CHPL_CACHE_FNS
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct {
   chpl_cache_taskPrvData_t cache_data;
   uint8_t num_comm;
@@ -42,12 +46,22 @@ typedef struct {
 // Comm layer private area within executeOn argument bundles
 // (bundle.comm)
 typedef struct {
+  chpl_bool fast;
   chpl_fn_int_t fid;
-  int caller;
+  c_nodeid_t caller;
+  c_sublocid_t subloc;
+  size_t size;
   void* rf_done; // where to indicate completion on caller
+#ifdef CHPL_COMM_DEBUG
+  uint_least64_t seq;
+#endif
 } chpl_comm_bundleData_t;
 
 // The type of the communication handle.
 typedef void* chpl_comm_nb_handle_t;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

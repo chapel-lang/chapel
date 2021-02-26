@@ -1,9 +1,8 @@
 //===- MCSectionMachO.h - MachO Machine Code Sections -----------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -24,7 +23,6 @@ namespace llvm {
 /// system, these are also described in /usr/include/mach-o/loader.h.
 class MCSectionMachO final : public MCSection {
   char SegmentName[16];  // Not necessarily null terminated!
-  char SectionName[16];  // Not necessarily null terminated!
 
   /// This is the SECTION_TYPE and SECTION_ATTRIBUTES field of a section, drawn
   /// from the enums below.
@@ -44,12 +42,6 @@ public:
     if (SegmentName[15])
       return StringRef(SegmentName, 16);
     return StringRef(SegmentName);
-  }
-  StringRef getSectionName() const {
-    // SectionName is not necessarily null terminated!
-    if (SectionName[15])
-      return StringRef(SectionName, 16);
-    return StringRef(SectionName);
   }
 
   unsigned getTypeAndAttributes() const { return TypeAndAttributes; }

@@ -1,3 +1,4 @@
+use CPtr;
 require 'externCFns.h';
 
 proc foo(x: int) {

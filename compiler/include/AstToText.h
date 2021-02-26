@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -62,14 +62,16 @@ class NamedExpr;
 class SymExpr;
 class UnresolvedSymExpr;
 class VarSymbol;
+class IfExpr;
+class LoopExpr;
 
 #include <string>
 
 class AstToText
 {
 public:
-                         AstToText();
-                        ~AstToText();
+  AstToText() = default;
+ ~AstToText() = default;
 
   // A reference to the generate text
   const std::string&     text()                                        const;
@@ -124,6 +126,11 @@ private:
   bool                   isTypeDefault(Expr* expr)                     const;
 
   //
+  // Helper function for appending domain calls with multiple arguments
+  //
+  void                   appendDomain(CallExpr* expr, bool printingType);
+
+  //
   // Support for selecting formals for functions and methods
   //
   int                    indexForThis(FnSymbol* fn)                    const;
@@ -153,6 +160,12 @@ private:
                                     bool               printingType);
 
   void                   appendExpr(const char*        name);
+
+  void                   appendExpr(IfExpr*            expr,
+                                    bool               printingType);
+
+  void                   appendExpr(LoopExpr*            expr,
+                                    bool               printingType);
 
   void                   appendSpecialExpr(const char* name,
                                            const char* root,

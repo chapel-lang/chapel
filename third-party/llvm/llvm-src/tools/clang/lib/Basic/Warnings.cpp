@@ -1,9 +1,8 @@
 //===--- Warnings.cpp - C-Language Front-end ------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -37,8 +36,9 @@ static void EmitUnknownDiagWarning(DiagnosticsEngine &Diags,
                                    StringRef Opt) {
   StringRef Suggestion = DiagnosticIDs::getNearestOption(Flavor, Opt);
   Diags.Report(diag::warn_unknown_diag_option)
-    << (Flavor == diag::Flavor::WarningOrError ? 0 : 1) << (Prefix.str() += Opt)
-    << !Suggestion.empty() << (Prefix.str() += Suggestion);
+      << (Flavor == diag::Flavor::WarningOrError ? 0 : 1)
+      << (Prefix.str() += std::string(Opt)) << !Suggestion.empty()
+      << (Prefix.str() += std::string(Suggestion));
 }
 
 void clang::ProcessWarningOptions(DiagnosticsEngine &Diags,

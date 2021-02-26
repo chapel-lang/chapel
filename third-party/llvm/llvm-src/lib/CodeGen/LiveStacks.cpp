@@ -1,9 +1,8 @@
 //===-- LiveStacks.cpp - Live Stack Slot Analysis -------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -59,9 +58,10 @@ LiveStacks::getOrCreateInterval(int Slot, const TargetRegisterClass *RC) {
   assert(Slot >= 0 && "Spill slot indice must be >= 0");
   SS2IntervalMap::iterator I = S2IMap.find(Slot);
   if (I == S2IMap.end()) {
-    I = S2IMap.emplace(std::piecewise_construct, std::forward_as_tuple(Slot),
-                       std::forward_as_tuple(
-                           TargetRegisterInfo::index2StackSlot(Slot), 0.0F))
+    I = S2IMap
+            .emplace(
+                std::piecewise_construct, std::forward_as_tuple(Slot),
+                std::forward_as_tuple(Register::index2StackSlot(Slot), 0.0F))
             .first;
     S2RCMap.insert(std::make_pair(Slot, RC));
   } else {

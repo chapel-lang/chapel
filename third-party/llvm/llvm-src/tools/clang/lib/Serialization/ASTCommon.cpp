@@ -1,9 +1,8 @@
 //===--- ASTCommon.cpp - Common stuff for ASTReader/ASTWriter----*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -233,11 +232,28 @@ serialization::TypeIdxFromBuiltin(const BuiltinType *BT) {
   case BuiltinType::OCLReserveID:
     ID = PREDEF_TYPE_RESERVE_ID_ID;
     break;
+#define SVE_TYPE(Name, Id, SingletonId) \
+  case BuiltinType::Id: \
+    ID = PREDEF_TYPE_##Id##_ID; \
+    break;
+#include "clang/Basic/AArch64SVEACLETypes.def"
   case BuiltinType::BuiltinFn:
     ID = PREDEF_TYPE_BUILTIN_FN;
     break;
+  case BuiltinType::IncompleteMatrixIdx:
+    ID = PREDEF_TYPE_INCOMPLETE_MATRIX_IDX;
+    break;
   case BuiltinType::OMPArraySection:
     ID = PREDEF_TYPE_OMP_ARRAY_SECTION;
+    break;
+  case BuiltinType::OMPArrayShaping:
+    ID = PREDEF_TYPE_OMP_ARRAY_SHAPING;
+    break;
+  case BuiltinType::OMPIterator:
+    ID = PREDEF_TYPE_OMP_ITERATOR;
+    break;
+  case BuiltinType::BFloat16:
+    ID = PREDEF_TYPE_BFLOAT16_ID;
     break;
   }
 
@@ -361,6 +377,7 @@ bool serialization::isRedeclarableDeclKind(unsigned Kind) {
   case Decl::IndirectField:
   case Decl::Field:
   case Decl::MSProperty:
+  case Decl::MSGuid:
   case Decl::ObjCIvar:
   case Decl::ObjCAtDefsField:
   case Decl::NonTypeTemplateParm:
@@ -388,12 +405,17 @@ bool serialization::isRedeclarableDeclKind(unsigned Kind) {
   case Decl::ClassScopeFunctionSpecialization:
   case Decl::Import:
   case Decl::OMPThreadPrivate:
+  case Decl::OMPAllocate:
   case Decl::OMPRequires:
   case Decl::OMPCapturedExpr:
   case Decl::OMPDeclareReduction:
+  case Decl::OMPDeclareMapper:
   case Decl::BuiltinTemplate:
   case Decl::Decomposition:
   case Decl::Binding:
+  case Decl::Concept:
+  case Decl::LifetimeExtendedTemporary:
+  case Decl::RequiresExprBody:
     return false;
 
   // These indirectly derive from Redeclarable<T> but are not actually

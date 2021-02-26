@@ -170,7 +170,7 @@ proc restrict(coarse:[?coarseDom] real, fine : [?FineDom]real) {
                     fine.localAccess[i2+1, j2-1, k2+1] +
                     fine.localAccess[i2+1, j2+1, k2-1] +
                     fine.localAccess[i2+1, j2+1, k2+1]);
-    coarse.localAccess[i,j,k] = tmp;
+    coarse[i,j,k] = tmp;
   }
 }
 

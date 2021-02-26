@@ -10,15 +10,13 @@ template("symlink_or_copy") {
     # https://github.com/ninja-build/ninja/issues/1186
     stamp =
         "$target_gen_dir/" + get_path_info(invoker.output, "file") + ".stamp"
-    outputs = [
-      stamp,
-    ]
+    outputs = [ stamp ]
     script = "//llvm/utils/gn/build/symlink_or_copy.py"
     args = [
       "--stamp",
-      rebase_path(stamp, root_out_dir),
+      rebase_path(stamp, root_build_dir),
       invoker.source,
-      rebase_path(invoker.output, root_out_dir),
+      rebase_path(invoker.output, root_build_dir),
     ]
   }
 }

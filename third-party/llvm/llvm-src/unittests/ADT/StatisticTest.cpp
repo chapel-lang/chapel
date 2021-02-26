@@ -1,9 +1,8 @@
 //===- llvm/unittest/ADT/StatisticTest.cpp - Statistic unit tests ---------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -18,6 +17,7 @@ namespace {
 #define DEBUG_TYPE "unittest"
 STATISTIC(Counter, "Counts things");
 STATISTIC(Counter2, "Counts other things");
+ALWAYS_ENABLED_STATISTIC(AlwaysCounter, "Counts things always");
 
 #if LLVM_ENABLE_STATS
 static void
@@ -44,6 +44,12 @@ TEST(StatisticTest, Count) {
 #else
   EXPECT_EQ(Counter, 0u);
 #endif
+
+  AlwaysCounter = 0;
+  EXPECT_EQ(AlwaysCounter, 0u);
+  AlwaysCounter++;
+  ++AlwaysCounter;
+  EXPECT_EQ(AlwaysCounter, 2u);
 }
 
 TEST(StatisticTest, Assign) {
@@ -55,10 +61,15 @@ TEST(StatisticTest, Assign) {
 #else
   EXPECT_EQ(Counter, 0u);
 #endif
+
+  AlwaysCounter = 2;
+  EXPECT_EQ(AlwaysCounter, 2u);
 }
 
 TEST(StatisticTest, API) {
   EnableStatistics();
+  // Reset beforehand to make sure previous tests don't effect this one.
+  ResetStatistics();
 
   Counter = 0;
   EXPECT_EQ(Counter, 0u);

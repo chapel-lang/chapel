@@ -1,0 +1,6 @@
+deinit e
+deinit f
+deinit c
+deinit d
+deinit a
+deinit b

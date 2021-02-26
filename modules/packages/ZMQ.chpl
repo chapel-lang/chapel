@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -267,6 +267,7 @@ module ZMQ {
   private use ExplicitRefCount;
   private use IO;
   private use SysCTypes;
+  private use CPtr;
   use SysError;
 
   private extern proc chpl_macro_int_errno():c_int;
@@ -913,7 +914,7 @@ module ZMQ {
         // Note: the string factory below can throw DecodeError
         var copy = if isString(T) then createStringWithNewBuffer(x=data)
                                   else createBytesWithNewBuffer(x=data);
-        copy.isowned = false;
+        copy.isOwned = false;
 
         // Create the ZeroMQ message from the data buffer
         var msg: zmq_msg_t;
@@ -966,10 +967,10 @@ module ZMQ {
       on classRef.home {
         var copy = data;
         param N = numFields(T);
-        for param i in 1..(N-1) do
+        for param i in 0..<(N-1) do
           try send(getField(copy,i), ZMQ_SNDMORE | flags);
 
-        try send(getField(copy,N), flags);
+        try send(getField(copy,N-1), flags);
       }
     }
 
@@ -1064,7 +1065,7 @@ module ZMQ {
       var ret: T;
       on classRef.home {
         var data: T;
-        for param i in 1..numFields(T) do
+        for param i in 0..<numFields(T) do
           getFieldRef(data,i) = try recv(getField(data,i).type);
         ret = data;
       }

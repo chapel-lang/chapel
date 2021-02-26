@@ -1,9 +1,8 @@
 //===-- X86MCAsmInfo.cpp - X86 asm properties -----------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -72,8 +71,6 @@ X86MCAsmInfoDarwin::X86MCAsmInfoDarwin(const Triple &T) {
   // (actually, must, since otherwise the non-extern relocations we produce
   // overwhelm ld64's tiny little mind and it fails).
   DwarfFDESymbolsUseAbsDiff = true;
-
-  UseIntegratedAssembler = true;
 }
 
 X86_64MCAsmInfoDarwin::X86_64MCAsmInfoDarwin(const Triple &Triple)
@@ -103,10 +100,6 @@ X86ELFMCAsmInfo::X86ELFMCAsmInfo(const Triple &T) {
 
   // Exceptions handling
   ExceptionsType = ExceptionHandling::DwarfCFI;
-
-  // Always enable the integrated assembler by default.
-  // Clang also enabled it when the OS is Solaris but that is redundant here.
-  UseIntegratedAssembler = true;
 }
 
 const MCExpr *
@@ -142,8 +135,16 @@ X86MCAsmInfoMicrosoft::X86MCAsmInfoMicrosoft(const Triple &Triple) {
   TextAlignFillValue = 0x90;
 
   AllowAtInName = true;
+}
 
-  UseIntegratedAssembler = true;
+void X86MCAsmInfoMicrosoftMASM::anchor() { }
+
+X86MCAsmInfoMicrosoftMASM::X86MCAsmInfoMicrosoftMASM(const Triple &Triple)
+    : X86MCAsmInfoMicrosoft(Triple) {
+  DollarIsPC = true;
+  SeparatorString = "\n";
+  CommentString = ";";
+  AllowSymbolAtNameStart = true;
 }
 
 void X86MCAsmInfoGNUCOFF::anchor() { }
@@ -164,5 +165,5 @@ X86MCAsmInfoGNUCOFF::X86MCAsmInfoGNUCOFF(const Triple &Triple) {
 
   TextAlignFillValue = 0x90;
 
-  UseIntegratedAssembler = true;
+  AllowAtInName = true;
 }

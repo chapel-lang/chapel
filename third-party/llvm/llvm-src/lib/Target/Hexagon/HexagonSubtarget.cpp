@@ -1,9 +1,8 @@
 //===- HexagonSubtarget.cpp - Hexagon Subtarget Information ---------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -76,14 +75,14 @@ static cl::opt<bool> EnableCheckBankConflict("hexagon-check-bank-conflict",
   cl::Hidden, cl::ZeroOrMore, cl::init(true),
   cl::desc("Enable checking for cache bank conflicts"));
 
-
 HexagonSubtarget::HexagonSubtarget(const Triple &TT, StringRef CPU,
                                    StringRef FS, const TargetMachine &TM)
     : HexagonGenSubtargetInfo(TT, CPU, FS), OptLevel(TM.getOptLevel()),
-      CPUString(Hexagon_MC::selectHexagonCPU(CPU)),
-      InstrInfo(initializeSubtargetDependencies(CPU, FS)),
+      CPUString(std::string(Hexagon_MC::selectHexagonCPU(CPU))),
+      TargetTriple(TT), InstrInfo(initializeSubtargetDependencies(CPU, FS)),
       RegInfo(getHwMode()), TLInfo(TM, *this),
       InstrItins(getInstrItineraryForCPU(CPUString)) {
+  Hexagon_MC::addArchSubtarget(this, FS);
   // Beware of the default constructor of InstrItineraryData: it will
   // reset all members to 0.
   assert(InstrItins.Itineraries != nullptr && "InstrItins not initialized");
@@ -91,24 +90,16 @@ HexagonSubtarget::HexagonSubtarget(const Triple &TT, StringRef CPU,
 
 HexagonSubtarget &
 HexagonSubtarget::initializeSubtargetDependencies(StringRef CPU, StringRef FS) {
-  static std::map<StringRef, Hexagon::ArchEnum> CpuTable{
-      {"generic", Hexagon::ArchEnum::V60},
-      {"hexagonv5", Hexagon::ArchEnum::V5},
-      {"hexagonv55", Hexagon::ArchEnum::V55},
-      {"hexagonv60", Hexagon::ArchEnum::V60},
-      {"hexagonv62", Hexagon::ArchEnum::V62},
-      {"hexagonv65", Hexagon::ArchEnum::V65},
-      {"hexagonv66", Hexagon::ArchEnum::V66},
-  };
-
-  auto FoundIt = CpuTable.find(CPUString);
-  if (FoundIt != CpuTable.end())
-    HexagonArchVersion = FoundIt->second;
+  Optional<Hexagon::ArchEnum> ArchVer =
+      Hexagon::GetCpu(Hexagon::CpuTable, CPUString);
+  if (ArchVer)
+    HexagonArchVersion = *ArchVer;
   else
     llvm_unreachable("Unrecognized Hexagon processor version");
 
   UseHVX128BOps = false;
   UseHVX64BOps = false;
+  UseAudioOps = false;
   UseLongCalls = false;
 
   UseBSBScheduling = hasV60Ops() && EnableBSBSched;
@@ -118,9 +109,16 @@ HexagonSubtarget::initializeSubtargetDependencies(StringRef CPU, StringRef FS) {
   if (OverrideLongCalls.getPosition())
     UseLongCalls = OverrideLongCalls;
 
+  if (isTinyCore()) {
+    // Tiny core has a single thread, so back-to-back scheduling is enabled by
+    // default.
+    if (!EnableBSBSched.getPosition())
+      UseBSBScheduling = false;
+  }
+
   FeatureBitset Features = getFeatureBits();
   if (HexagonDisableDuplex)
-    setFeatureBits(Features.set(Hexagon::FeatureDuplex, false));
+    setFeatureBits(Features.reset(Hexagon::FeatureDuplex));
   setFeatureBits(Hexagon_MC::completeHVXFeatures(Features));
 
   return *this;
@@ -231,7 +229,7 @@ void HexagonSubtarget::CallMutation::apply(ScheduleDAGInstrs *DAGInstrs) {
     else if (SchedRetvalOptimization) {
       const MachineInstr *MI = DAG->SUnits[su].getInstr();
       if (MI->isCopy() &&
-          TargetRegisterInfo::isPhysicalRegister(MI->getOperand(1).getReg())) {
+          Register::isPhysicalRegister(MI->getOperand(1).getReg())) {
         // %vregX = COPY %r0
         VRegHoldingReg[MI->getOperand(0).getReg()] = MI->getOperand(1).getReg();
         LastVRegUse.erase(MI->getOperand(1).getReg());
@@ -244,8 +242,7 @@ void HexagonSubtarget::CallMutation::apply(ScheduleDAGInstrs *DAGInstrs) {
               VRegHoldingReg.count(MO.getReg())) {
             // <use of %vregX>
             LastVRegUse[VRegHoldingReg[MO.getReg()]] = &DAG->SUnits[su];
-          } else if (MO.isDef() &&
-                     TargetRegisterInfo::isPhysicalRegister(MO.getReg())) {
+          } else if (MO.isDef() && Register::isPhysicalRegister(MO.getReg())) {
             for (MCRegAliasIterator AI(MO.getReg(), &TRI, true); AI.isValid();
                  ++AI) {
               if (LastVRegUse.count(*AI) &&
@@ -318,13 +315,14 @@ bool HexagonSubtarget::useAA() const {
 
 /// Perform target specific adjustments to the latency of a schedule
 /// dependency.
-void HexagonSubtarget::adjustSchedDependency(SUnit *Src, SUnit *Dst,
+void HexagonSubtarget::adjustSchedDependency(SUnit *Src, int SrcOpIdx,
+                                             SUnit *Dst, int DstOpIdx,
                                              SDep &Dep) const {
-  MachineInstr *SrcInst = Src->getInstr();
-  MachineInstr *DstInst = Dst->getInstr();
   if (!Src->isInstr() || !Dst->isInstr())
     return;
 
+  MachineInstr *SrcInst = Src->getInstr();
+  MachineInstr *DstInst = Dst->getInstr();
   const HexagonInstrInfo *QII = getInstrInfo();
 
   // Instructions with .new operands have zero latency.
@@ -346,7 +344,7 @@ void HexagonSubtarget::adjustSchedDependency(SUnit *Src, SUnit *Dst,
   // If it's a REG_SEQUENCE/COPY, use its destination instruction to determine
   // the correct latency.
   if ((DstInst->isRegSequence() || DstInst->isCopy()) && Dst->NumSuccs == 1) {
-    unsigned DReg = DstInst->getOperand(0).getReg();
+    Register DReg = DstInst->getOperand(0).getReg();
     MachineInstr *DDst = Dst->Succs[0].getSUnit()->getInstr();
     unsigned UseIdx = -1;
     for (unsigned OpNum = 0; OpNum < DDst->getNumOperands(); OpNum++) {
@@ -376,15 +374,15 @@ void HexagonSubtarget::adjustSchedDependency(SUnit *Src, SUnit *Dst,
 
 void HexagonSubtarget::getPostRAMutations(
     std::vector<std::unique_ptr<ScheduleDAGMutation>> &Mutations) const {
-  Mutations.push_back(llvm::make_unique<UsrOverflowMutation>());
-  Mutations.push_back(llvm::make_unique<HVXMemLatencyMutation>());
-  Mutations.push_back(llvm::make_unique<BankConflictMutation>());
+  Mutations.push_back(std::make_unique<UsrOverflowMutation>());
+  Mutations.push_back(std::make_unique<HVXMemLatencyMutation>());
+  Mutations.push_back(std::make_unique<BankConflictMutation>());
 }
 
 void HexagonSubtarget::getSMSMutations(
     std::vector<std::unique_ptr<ScheduleDAGMutation>> &Mutations) const {
-  Mutations.push_back(llvm::make_unique<UsrOverflowMutation>());
-  Mutations.push_back(llvm::make_unique<HVXMemLatencyMutation>());
+  Mutations.push_back(std::make_unique<UsrOverflowMutation>());
+  Mutations.push_back(std::make_unique<HVXMemLatencyMutation>());
 }
 
 // Pin the vtable to this file.
@@ -426,8 +424,17 @@ void HexagonSubtarget::restoreLatency(SUnit *Src, SUnit *Dst) const {
     int DefIdx = -1;
     for (unsigned OpNum = 0; OpNum < SrcI->getNumOperands(); OpNum++) {
       const MachineOperand &MO = SrcI->getOperand(OpNum);
-      if (MO.isReg() && MO.isDef() && MO.getReg() == DepR)
-        DefIdx = OpNum;
+      bool IsSameOrSubReg = false;
+      if (MO.isReg()) {
+        unsigned MOReg = MO.getReg();
+        if (Register::isVirtualRegister(DepR)) {
+          IsSameOrSubReg = (MOReg == DepR);
+        } else {
+          IsSameOrSubReg = getRegisterInfo()->isSubRegisterEq(DepR, MOReg);
+        }
+        if (MO.isDef() && IsSameOrSubReg)
+          DefIdx = OpNum;
+      }
     }
     assert(DefIdx >= 0 && "Def Reg not found in Src MI");
     MachineInstr *DstI = Dst->getInstr();

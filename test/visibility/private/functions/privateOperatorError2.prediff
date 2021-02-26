@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+#
+# Ignores line numbers printed upon compilerError in Sort.chpl
+# Note: This is a work around for a bug. The line numbers should not be printed
+#
+
+tmpfile=$2
+
+tmptmp=`mktemp "tmp.XXXXXX"`
+
+regex='\|CHPL_HOME/modules|s/:[0-9:]*:/:nnnn:/'
+
+sed -e "$regex" $tmpfile > $tmptmp
+mv $tmptmp $tmpfile

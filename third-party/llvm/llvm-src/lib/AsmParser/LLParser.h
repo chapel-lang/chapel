@@ -1,9 +1,8 @@
 //===-- LLParser.h - Parser Class -------------------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -17,18 +16,16 @@
 #include "LLLexer.h"
 #include "llvm/ADT/Optional.h"
 #include "llvm/ADT/StringMap.h"
+#include "llvm/AsmParser/Parser.h"
 #include "llvm/IR/Attributes.h"
 #include "llvm/IR/Instructions.h"
-#include "llvm/IR/Module.h"
 #include "llvm/IR/ModuleSummaryIndex.h"
 #include "llvm/IR/Operator.h"
 #include "llvm/IR/Type.h"
-#include "llvm/IR/ValueHandle.h"
 #include <map>
 
 namespace llvm {
   class Module;
-  class OpaqueType;
   class Function;
   class Value;
   class BasicBlock;
@@ -39,7 +36,6 @@ namespace llvm {
   class MDString;
   class MDNode;
   struct SlotMapping;
-  class StructType;
 
   /// ValID - Represents a reference of a definition of some sort with no type.
   /// There are several cases where we have to parse the value but where the
@@ -161,23 +157,17 @@ namespace llvm {
     /// UpgradeDebuginfo so it can generate broken bitcode.
     bool UpgradeDebugInfo;
 
-    /// DataLayout string to override that in LLVM assembly.
-    StringRef DataLayoutStr;
-
     std::string SourceFileName;
 
   public:
     LLParser(StringRef F, SourceMgr &SM, SMDiagnostic &Err, Module *M,
              ModuleSummaryIndex *Index, LLVMContext &Context,
-             SlotMapping *Slots = nullptr, bool UpgradeDebugInfo = true,
-             StringRef DataLayoutString = "")
+             SlotMapping *Slots = nullptr)
         : Context(Context), Lex(F, SM, Err, Context), M(M), Index(Index),
-          Slots(Slots), BlockAddressPFS(nullptr),
-          UpgradeDebugInfo(UpgradeDebugInfo), DataLayoutStr(DataLayoutString) {
-      if (!DataLayoutStr.empty())
-        M->setDataLayout(DataLayoutStr);
-    }
-    bool Run();
+          Slots(Slots), BlockAddressPFS(nullptr) {}
+    bool Run(
+        bool UpgradeDebugInfo,
+        DataLayoutCallbackTy DataLayoutCallback = [](Module *) {});
 
     bool parseStandaloneConstantValue(Constant *&C, const SlotMapping *Slots);
 
@@ -282,14 +272,15 @@ namespace llvm {
     void ParseOptionalVisibility(unsigned &Res);
     void ParseOptionalDLLStorageClass(unsigned &Res);
     bool ParseOptionalCallingConv(unsigned &CC);
-    bool ParseOptionalAlignment(unsigned &Alignment);
+    bool ParseOptionalAlignment(MaybeAlign &Alignment,
+                                bool AllowParens = false);
     bool ParseOptionalDerefAttrBytes(lltok::Kind AttrKind, uint64_t &Bytes);
     bool ParseScopeAndOrdering(bool isAtomic, SyncScope::ID &SSID,
                                AtomicOrdering &Ordering);
     bool ParseScope(SyncScope::ID &SSID);
     bool ParseOrdering(AtomicOrdering &Ordering);
     bool ParseOptionalStackAlignment(unsigned &Alignment);
-    bool ParseOptionalCommaAlign(unsigned &Alignment, bool &AteExtraComma);
+    bool ParseOptionalCommaAlign(MaybeAlign &Alignment, bool &AteExtraComma);
     bool ParseOptionalCommaAddrSpace(unsigned &AddrSpace, LocTy &Loc,
                                      bool &AteExtraComma);
     bool ParseOptionalCommaInAlloca(bool &IsInAlloca);
@@ -307,8 +298,9 @@ namespace llvm {
 
     // Top-Level Entities
     bool ParseTopLevelEntities();
-    bool ValidateEndOfModule();
+    bool ValidateEndOfModule(bool UpgradeDebugInfo);
     bool ValidateEndOfIndex();
+    bool ParseTargetDefinitions();
     bool ParseTargetDefinition();
     bool ParseModuleAsm();
     bool ParseSourceFileName();
@@ -340,6 +332,8 @@ namespace llvm {
     bool ParseFnAttributeValuePairs(AttrBuilder &B,
                                     std::vector<unsigned> &FwdRefAttrGrps,
                                     bool inAttrGrp, LocTy &BuiltinLoc);
+    bool ParseByValWithOptionalType(Type *&Result);
+    bool ParsePreallocated(Type *&Result);
 
     // Module Summary Index Parsing.
     bool SkipModuleSummaryEntry();
@@ -347,6 +341,8 @@ namespace llvm {
     bool ParseModuleEntry(unsigned ID);
     bool ParseModuleReference(StringRef &ModulePath);
     bool ParseGVReference(ValueInfo &VI, unsigned &GVId);
+    bool ParseSummaryIndexFlags();
+    bool ParseBlockCount();
     bool ParseGVEntry(unsigned ID);
     bool ParseFunctionSummary(std::string Name, GlobalValue::GUID, unsigned ID);
     bool ParseVariableSummary(std::string Name, GlobalValue::GUID, unsigned ID);
@@ -369,9 +365,17 @@ namespace llvm {
                          IdToIndexMapType &IdToIndexMap, unsigned Index);
     bool ParseVFuncId(FunctionSummary::VFuncId &VFuncId,
                       IdToIndexMapType &IdToIndexMap, unsigned Index);
+    bool ParseOptionalVTableFuncs(VTableFuncList &VTableFuncs);
+    bool ParseOptionalParamAccesses(
+        std::vector<FunctionSummary::ParamAccess> &Params);
+    bool ParseParamNo(uint64_t &ParamNo);
+    bool ParseParamAccess(FunctionSummary::ParamAccess &Param);
+    bool ParseParamAccessCall(FunctionSummary::ParamAccess::Call &Call);
+    bool ParseParamAccessOffset(ConstantRange &range);
     bool ParseOptionalRefs(std::vector<ValueInfo> &Refs);
     bool ParseTypeIdEntry(unsigned ID);
     bool ParseTypeIdSummary(TypeIdSummary &TIS);
+    bool ParseTypeIdCompatibleVtableEntry(unsigned ID);
     bool ParseTypeTestResolution(TypeTestResolution &TTRes);
     bool ParseOptionalWpdResolutions(
         std::map<uint64_t, WholeProgramDevirtResolution> &WPDResMap);
@@ -446,7 +450,7 @@ namespace llvm {
       /// DefineBB - Define the specified basic block, which is either named or
       /// unnamed.  If there is an error, this returns null otherwise it returns
       /// the block being defined.
-      BasicBlock *DefineBB(const std::string &Name, LocTy Loc);
+      BasicBlock *DefineBB(const std::string &Name, int NameID, LocTy Loc);
 
       bool resolveForwardRefBlockAddresses();
     };
@@ -571,11 +575,12 @@ namespace llvm {
     bool ParseCatchSwitch(Instruction *&Inst, PerFunctionState &PFS);
     bool ParseCatchPad(Instruction *&Inst, PerFunctionState &PFS);
     bool ParseCleanupPad(Instruction *&Inst, PerFunctionState &PFS);
+    bool ParseCallBr(Instruction *&Inst, PerFunctionState &PFS);
 
     bool ParseUnaryOp(Instruction *&Inst, PerFunctionState &PFS, unsigned Opc,
-                      unsigned OperandType);
+                      bool IsFP);
     bool ParseArithmetic(Instruction *&Inst, PerFunctionState &PFS, unsigned Opc,
-                         unsigned OperandType);
+                         bool IsFP);
     bool ParseLogical(Instruction *&Inst, PerFunctionState &PFS, unsigned Opc);
     bool ParseCompare(Instruction *&Inst, PerFunctionState &PFS, unsigned Opc);
     bool ParseCast(Instruction *&Inst, PerFunctionState &PFS, unsigned Opc);
@@ -597,6 +602,7 @@ namespace llvm {
     int ParseGetElementPtr(Instruction *&Inst, PerFunctionState &PFS);
     int ParseExtractValue(Instruction *&Inst, PerFunctionState &PFS);
     int ParseInsertValue(Instruction *&Inst, PerFunctionState &PFS);
+    bool ParseFreeze(Instruction *&I, PerFunctionState &PFS);
 
     // Use-list order directives.
     bool ParseUseListOrder(PerFunctionState *PFS = nullptr);

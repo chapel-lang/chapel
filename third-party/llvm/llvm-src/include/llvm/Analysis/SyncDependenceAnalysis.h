@@ -1,9 +1,8 @@
 //===- SyncDependenceAnalysis.h - Divergent Branch Dependence -*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -38,12 +37,7 @@ using ConstBlockSet = SmallPtrSet<const BasicBlock *, 4>;
 /// This analysis relates points of divergent control to points of converging
 /// divergent control. The analysis requires all loops to be reducible.
 class SyncDependenceAnalysis {
-  void visitSuccessor(const BasicBlock &succBlock, const Loop *termLoop,
-                      const BasicBlock *defBlock);
-
 public:
-  bool inRegion(const BasicBlock &BB) const;
-
   ~SyncDependenceAnalysis();
   SyncDependenceAnalysis(const DominatorTree &DT, const PostDominatorTree &PDT,
                          const LoopInfo &LI);

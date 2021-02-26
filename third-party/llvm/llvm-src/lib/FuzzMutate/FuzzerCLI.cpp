@@ -1,13 +1,13 @@
 //===-- FuzzerCLI.cpp -----------------------------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
 #include "llvm/FuzzMutate/FuzzerCLI.h"
+#include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/Triple.h"
 #include "llvm/Bitcode/BitcodeReader.h"
 #include "llvm/Bitcode/BitcodeWriter.h"
@@ -37,7 +37,7 @@ void llvm::parseFuzzerCLOpts(int ArgC, char *ArgV[]) {
 }
 
 void llvm::handleExecNameEncodedBEOpts(StringRef ExecName) {
-  std::vector<std::string> Args{ExecName};
+  std::vector<std::string> Args{std::string(ExecName)};
 
   auto NameAndArgs = ExecName.split("--");
   if (NameAndArgs.second.empty())
@@ -74,7 +74,7 @@ void llvm::handleExecNameEncodedBEOpts(StringRef ExecName) {
 
 void llvm::handleExecNameEncodedOptimizerOpts(StringRef ExecName) {
   // TODO: Refactor parts common with the 'handleExecNameEncodedBEOpts'
-  std::vector<std::string> Args{ExecName};
+  std::vector<std::string> Args{std::string(ExecName)};
 
   auto NameAndArgs = ExecName.split("--");
   if (NameAndArgs.second.empty())
@@ -111,7 +111,7 @@ void llvm::handleExecNameEncodedOptimizerOpts(StringRef ExecName) {
     } else if (Opt == "indvars") {
       Args.push_back("-passes=indvars");
     } else if (Opt == "strength_reduce") {
-      Args.push_back("-passes=strength-reduce");
+      Args.push_back("-passes=loop-reduce");
     } else if (Opt == "irce") {
       Args.push_back("-passes=irce");
 
@@ -172,7 +172,7 @@ std::unique_ptr<Module> llvm::parseModule(
 
   if (Size <= 1)
     // We get bogus data given an empty corpus - just create a new module.
-    return llvm::make_unique<Module>("M", Context);
+    return std::make_unique<Module>("M", Context);
 
   auto Buffer = MemoryBuffer::getMemBuffer(
       StringRef(reinterpret_cast<const char *>(Data), Size), "Fuzzer input",

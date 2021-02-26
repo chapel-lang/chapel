@@ -1,9 +1,8 @@
 //=== HexagonMCELFStreamer.cpp - Hexagon subclass of MCELFStreamer -------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -59,8 +58,8 @@ HexagonMCELFStreamer::HexagonMCELFStreamer(
     : MCELFStreamer(Context, std::move(TAB), std::move(OW), std::move(Emitter)),
       MCII(createHexagonMCInstrInfo()) {}
 
-void HexagonMCELFStreamer::EmitInstruction(const MCInst &MCB,
-                                           const MCSubtargetInfo &STI, bool) {
+void HexagonMCELFStreamer::emitInstruction(const MCInst &MCB,
+                                           const MCSubtargetInfo &STI) {
   assert(MCB.getOpcode() == Hexagon::BUNDLE);
   assert(HexagonMCInstrInfo::bundleSize(MCB) <= HEXAGON_PACKET_SIZE);
   assert(HexagonMCInstrInfo::bundleSize(MCB) > 0);
@@ -72,7 +71,7 @@ void HexagonMCELFStreamer::EmitInstruction(const MCInst &MCB,
     EmitSymbol(*MCI);
   }
 
-  MCObjectStreamer::EmitInstruction(MCB, STI);
+  MCObjectStreamer::emitInstruction(MCB, STI);
 }
 
 void HexagonMCELFStreamer::EmitSymbol(const MCInst &Inst) {
@@ -111,14 +110,14 @@ void HexagonMCELFStreamer::HexagonMCEmitCommonSymbol(MCSymbol *Symbol,
     SwitchSection(&Section);
 
     if (ELFSymbol->isUndefined()) {
-      EmitValueToAlignment(ByteAlignment, 0, 1, 0);
-      EmitLabel(Symbol);
-      EmitZeros(Size);
+      emitValueToAlignment(ByteAlignment, 0, 1, 0);
+      emitLabel(Symbol);
+      emitZeros(Size);
     }
 
     // Update the maximum alignment of the section if necessary.
-    if (ByteAlignment > Section.getAlignment())
-      Section.setAlignment(ByteAlignment);
+    if (Align(ByteAlignment) > Section.getAlignment())
+      Section.setAlignment(Align(ByteAlignment));
 
     SwitchSection(P.first, P.second);
   } else {

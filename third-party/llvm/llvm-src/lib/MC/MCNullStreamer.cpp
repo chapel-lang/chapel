@@ -1,9 +1,8 @@
 //===- lib/MC/MCNullStreamer.cpp - Dummy Streamer Implementation ----------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -24,19 +23,19 @@ namespace {
     /// @{
 
     bool hasRawTextSupport() const override { return true; }
-    void EmitRawTextImpl(StringRef String) override {}
+    void emitRawTextImpl(StringRef String) override {}
 
-    bool EmitSymbolAttribute(MCSymbol *Symbol,
+    bool emitSymbolAttribute(MCSymbol *Symbol,
                              MCSymbolAttr Attribute) override {
       return true;
     }
 
-    void EmitCommonSymbol(MCSymbol *Symbol, uint64_t Size,
+    void emitCommonSymbol(MCSymbol *Symbol, uint64_t Size,
                           unsigned ByteAlignment) override {}
-    void EmitZerofill(MCSection *Section, MCSymbol *Symbol = nullptr,
+    void emitZerofill(MCSection *Section, MCSymbol *Symbol = nullptr,
                       uint64_t Size = 0, unsigned ByteAlignment = 0,
                       SMLoc Loc = SMLoc()) override {}
-    void EmitGPRel32Value(const MCExpr *Value) override {}
+    void emitGPRel32Value(const MCExpr *Value) override {}
     void BeginCOFFSymbolDef(const MCSymbol *Symbol) override {}
     void EmitCOFFSymbolStorageClass(int StorageClass) override {}
     void EmitCOFFSymbolType(int Type) override {}

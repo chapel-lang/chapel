@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -44,7 +44,7 @@
 // example, when user code does a blocking executeOn (fork), the comm
 // layer on the initiating node needs a "done" flag that the target
 // node can PUT a value into to indicate that the remote executeOn has
-// completed.  Gemini/Aries PUT operations require that the receiving
+// completed. Aries PUT operations require that the receiving
 // address on the remote node be NIC-registered.  Thus the flag may
 // reside on the initiator's call stack if that is NIC-registered, but
 // if it isn't we need to allocate the flag dynamically.  We can't be

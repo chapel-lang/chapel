@@ -1,9 +1,8 @@
 //===-- Target.cpp --------------------------------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -112,11 +111,11 @@ unsigned long long LLVMABISizeOfType(LLVMTargetDataRef TD, LLVMTypeRef Ty) {
 }
 
 unsigned LLVMABIAlignmentOfType(LLVMTargetDataRef TD, LLVMTypeRef Ty) {
-  return unwrap(TD)->getABITypeAlignment(unwrap(Ty));
+  return unwrap(TD)->getABITypeAlign(unwrap(Ty)).value();
 }
 
 unsigned LLVMCallFrameAlignmentOfType(LLVMTargetDataRef TD, LLVMTypeRef Ty) {
-  return unwrap(TD)->getABITypeAlignment(unwrap(Ty));
+  return unwrap(TD)->getABITypeAlign(unwrap(Ty)).value();
 }
 
 unsigned LLVMPreferredAlignmentOfType(LLVMTargetDataRef TD, LLVMTypeRef Ty) {
@@ -125,7 +124,9 @@ unsigned LLVMPreferredAlignmentOfType(LLVMTargetDataRef TD, LLVMTypeRef Ty) {
 
 unsigned LLVMPreferredAlignmentOfGlobal(LLVMTargetDataRef TD,
                                         LLVMValueRef GlobalVar) {
-  return unwrap(TD)->getPreferredAlignment(unwrap<GlobalVariable>(GlobalVar));
+  return unwrap(TD)
+      ->getPreferredAlign(unwrap<GlobalVariable>(GlobalVar))
+      .value();
 }
 
 unsigned LLVMElementAtOffset(LLVMTargetDataRef TD, LLVMTypeRef StructTy,

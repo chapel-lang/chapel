@@ -1,0 +1,20 @@
+var domain inited with literal (low level)
+Using user-variable: false
+Using instance: false
+Array on domain: 0 0 0 0 0 0 0 0 0 0
+
+const domain inited with literal (low level)
+Using user-variable: true
+Using instance: true
+Array on domain: 0 0 0 0 0 0 0 0 0 0
+
+var domain with record initializer
+Using user-variable: false
+Using instance: false
+Array on domain: 
+
+const domain with record initializer
+Using user-variable: true
+Using instance: true
+Array on domain: 
+

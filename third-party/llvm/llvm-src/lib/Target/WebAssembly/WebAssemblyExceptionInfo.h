@@ -1,9 +1,8 @@
 //===-- WebAssemblyExceptionInfo.h - WebAssembly Exception Info -*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 ///
@@ -44,13 +43,12 @@ class WebAssemblyException {
   MachineBasicBlock *EHPad = nullptr;
 
   WebAssemblyException *ParentException = nullptr;
-  std::vector<WebAssemblyException *> SubExceptions;
+  std::vector<std::unique_ptr<WebAssemblyException>> SubExceptions;
   std::vector<MachineBasicBlock *> Blocks;
   SmallPtrSet<const MachineBasicBlock *, 8> BlockSet;
 
 public:
   WebAssemblyException(MachineBasicBlock *EHPad) : EHPad(EHPad) {}
-  ~WebAssemblyException() { DeleteContainerPointers(SubExceptions); }
   WebAssemblyException(const WebAssemblyException &) = delete;
   const WebAssemblyException &operator=(const WebAssemblyException &) = delete;
 
@@ -84,14 +82,16 @@ public:
   unsigned getNumBlocks() const { return Blocks.size(); }
   std::vector<MachineBasicBlock *> &getBlocksVector() { return Blocks; }
 
-  const std::vector<WebAssemblyException *> &getSubExceptions() const {
+  const std::vector<std::unique_ptr<WebAssemblyException>> &getSubExceptions() const {
     return SubExceptions;
   }
-  std::vector<WebAssemblyException *> &getSubExceptions() {
+  std::vector<std::unique_ptr<WebAssemblyException>> &getSubExceptions() {
     return SubExceptions;
   }
-  void addSubException(WebAssemblyException *E) { SubExceptions.push_back(E); }
-  using iterator = typename std::vector<WebAssemblyException *>::const_iterator;
+  void addSubException(std::unique_ptr<WebAssemblyException> E) {
+    SubExceptions.push_back(std::move(E));
+  }
+  using iterator = typename decltype(SubExceptions)::const_iterator;
   iterator begin() const { return SubExceptions.begin(); }
   iterator end() const { return SubExceptions.end(); }
 
@@ -118,7 +118,7 @@ raw_ostream &operator<<(raw_ostream &OS, const WebAssemblyException &WE);
 class WebAssemblyExceptionInfo final : public MachineFunctionPass {
   // Mapping of basic blocks to the innermost exception they occur in
   DenseMap<const MachineBasicBlock *, WebAssemblyException *> BBMap;
-  std::vector<WebAssemblyException *> TopLevelExceptions;
+  std::vector<std::unique_ptr<WebAssemblyException>> TopLevelExceptions;
 
   void discoverAndMapException(WebAssemblyException *WE,
                                const MachineDominatorTree &MDT,
@@ -157,9 +157,9 @@ public:
     BBMap[MBB] = WE;
   }
 
-  void addTopLevelException(WebAssemblyException *WE) {
+  void addTopLevelException(std::unique_ptr<WebAssemblyException> WE) {
     assert(!WE->getParentException() && "Not a top level exception!");
-    TopLevelExceptions.push_back(WE);
+    TopLevelExceptions.push_back(std::move(WE));
   }
 
   void print(raw_ostream &OS, const Module *M = nullptr) const override;

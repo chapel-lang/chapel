@@ -1,3 +1,5 @@
+use LinkedLists;
+
 class R {
   var l: LinkedList(?t);
 }

@@ -1,8 +1,0 @@
-string-bytes-comp.chpl:4: warning: Comparison between bytes and string is deprecated. Cast the string to bytes first
-string-bytes-comp.chpl:5: warning: Comparison between bytes and string is deprecated. Cast the string to bytes first
-string-bytes-comp.chpl:6: warning: Comparison between bytes and string is deprecated. Cast the string to bytes first
-string-bytes-comp.chpl:7: warning: Comparison between bytes and string is deprecated. Cast the string to bytes first
-true
-false
-true
-false

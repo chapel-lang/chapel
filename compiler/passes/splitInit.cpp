@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -35,6 +35,8 @@
 #include "ForallStmt.h"
 #include "expr.h"
 #include "errorHandling.h"
+#include "optimizations.h"
+#include "resolution.h"
 #include "stmt.h"
 #include "symbol.h"
 #include "TryStmt.h"
@@ -128,21 +130,30 @@ bool findInitPoints(CallExpr* defaultInit,
 
 static bool allowSplitInit(Symbol* sym) {
 
-  // don't split init if the flag disabled it
-  if (fNoSplitInit)
+  // don't split init within user code if the flag disabled it;
+  // because we rely on split init in standard/internal modules,
+  // we ignore the flag there.
+  if (fNoSplitInit && sym->defPoint->getModule()->modTag == MOD_USER)
     return false;
 
   // split-init doesn't make sense for extern variables
   if (sym->hasFlag(FLAG_EXTERN))
     return false;
 
-  // For now, disable split init on non-user code
-  // unless there is no alternative
-  if (sym->defPoint->getModule()->modTag != MOD_USER &&
-      !isSplitInitExpr(sym->defPoint->init))
-    return false;
-
   return true;
+}
+
+static bool isFunctionOrTypeDeclaration(Expr* cur) {
+  if (DefExpr* def = toDefExpr(cur)) {
+    if (isFnSymbol(def->sym)) {
+      return true;
+    }
+    if (isTypeSymbol(def->sym)) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 // When 'start' is a return/throw (or a block containing that, e.g),
@@ -259,7 +270,8 @@ static found_init_t doFindInitPoints(Symbol* sym,
     // { x = ... }
     } else if (BlockStmt* block = toBlockStmt(cur)) {
 
-      if (block->isLoopStmt() || block->isRealBlockStmt() == false) {
+      if (block->isLoopStmt() ||
+          (block->isRealBlockStmt() == false && !block->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL))) {
         // Loop / on / begin / etc - just check for uses
         if (SymExpr* se = findSymExprFor(cur, sym)) {
           usePreventingSplitInit = se;
@@ -397,6 +409,22 @@ static found_init_t doFindInitPoints(Symbol* sym,
                                    ignoreFirstEndInBlock);
       }
 
+    } else if (isFunctionOrTypeDeclaration(cur)) {
+      // OK: mentions like `proc f() { ... x ... }` don't change
+      // split init behavior.
+
+      // but do check for uses within outlined task functions
+      if (DefExpr* def = toDefExpr(cur)) {
+        if (FnSymbol* fn = toFnSymbol(def->sym)) {
+          if (isTaskFun(fn)) {
+            // check for uses within the task function
+            if (SymExpr* se = findSymExprFor(cur, sym)) {
+              usePreventingSplitInit = se;
+              return FOUND_USE;
+            }
+          }
+        }
+      }
     } else {
       // Look for uses of 'x' before the first assignment
       if (SymExpr* se = findSymExprFor(cur, sym)) {
@@ -407,14 +435,60 @@ static found_init_t doFindInitPoints(Symbol* sym,
     }
 
     if (fVerify) {
-      // Redundantly check for uses
-      if (!isEndOfStatementMarker(cur))
-        if (findSymExprFor(cur, sym) != NULL)
-          INT_FATAL("use not found above");
+      // Redundantly check for uses, but ignore inner functions
+      if (!isEndOfStatementMarker(cur) && !isFunctionOrTypeDeclaration(cur))
+        if (SymExpr* se = findSymExprFor(cur, sym))
+          if (se->parentSymbol == cur->parentSymbol)
+            INT_FATAL("use not found above");
     }
   }
 
   return FOUND_NOTHING;
+}
+
+void splitInitMissingTypeError(Symbol* sym, Expr* mention, bool unresolved) {
+  const char* name = toString(sym, false);
+  ArgSymbol* arg = toArgSymbol(sym);
+  Type* t = sym->getValType();
+
+  if (unresolved) {
+    if (t == dtSplitInitType || !t->symbol->hasFlag(FLAG_GENERIC)) {
+      USR_PRINT(sym->defPoint,
+                "because '%s' is not initialized and has no type",
+                name);
+    } else {
+      USR_PRINT(sym->defPoint,
+                "because '%s' has generic type '%s'",
+                name, toString(t));
+    }
+  } else {
+    if (t == dtSplitInitType || !t->symbol->hasFlag(FLAG_GENERIC)) {
+      USR_FATAL_CONT(sym->defPoint,
+                     "'%s' is not initialized and has no type",
+                     name);
+    } else {
+      USR_FATAL_CONT(sym->defPoint,
+                     "cannot default-initialize a variable with generic type");
+      USR_PRINT(sym->defPoint, "'%s' has generic type '%s'",
+                name, toString(t));
+    }
+  }
+
+  if (sym->hasFlag(FLAG_FORMAL_TEMP_OUT) ||
+      (arg && arg->originalIntent == INTENT_OUT)) {
+    USR_PRINT(arg, "the type for a generic out-intent formal "
+                   "is inferred in the function body");
+  } else {
+    USR_PRINT(sym->defPoint,
+             "cannot find initialization point to split-init this variable");
+  }
+
+  if (mention && !unresolved) {
+    if (mention->astloc != sym->astloc)
+      USR_PRINT(mention, "'%s' is used here before it is initialized", name);
+  }
+
+  USR_STOP();
 }
 
 /************************************* | **************************************
@@ -465,10 +539,15 @@ static bool findCopyElisionCandidate(CallExpr* call,
   if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
     if (SymExpr* lhsSe = toSymExpr(call->get(1))) {
       if (CallExpr* rhsCall = toCallExpr(call->get(2))) {
-        if (rhsCall->isNamed("chpl__initCopy") ||
-            rhsCall->isNamed("chpl__autoCopy")) {
-          if (rhsCall->numActuals() >= 1) {
-            if (SymExpr* rhsSe = toSymExpr(rhsCall->get(1))) {
+        if (rhsCall->isNamedAstr(astr_initCopy) ||
+            rhsCall->isNamedAstr(astr_autoCopy) ||
+            rhsCall->isNamedAstr(astr_coerceCopy)) {
+          int nActuals = rhsCall->numActuals();
+          if (nActuals >= 2) {  // definedConst argument is the second arg
+            // note that errorLowering can add an argument
+            int rhsIdx = rhsCall->isNamedAstr(astr_coerceCopy) ? 2 : 1;
+            sanityCheckDefinedConstArg(rhsCall->get(rhsIdx+1));
+            if (SymExpr* rhsSe = toSymExpr(rhsCall->get(rhsIdx))) {
               if (lhsSe->getValType() == rhsSe->getValType()) {
                 lhs = lhsSe->symbol();
                 rhs = rhsSe->symbol();
@@ -482,11 +561,17 @@ static bool findCopyElisionCandidate(CallExpr* call,
   }
 
   // a chpl__initCopy / chpl__autoCopy returning through RVV
-  if (call->isNamed("chpl__initCopy") || call->isNamed("chpl__autoCopy")) {
+  if (call->isNamedAstr(astr_initCopy) ||
+      call->isNamedAstr(astr_autoCopy) ||
+      call->isNamedAstr(astr_coerceCopy)) {
     if (FnSymbol* calledFn = call->resolvedFunction()) {
-      if (calledFn->hasFlag(FLAG_FN_RETARG) && call->numActuals() >= 2) {
-        if (SymExpr* rhsSe = toSymExpr(call->get(1))) {
-          if (SymExpr* lhsSe = toSymExpr(call->get(2))) {
+      int nActuals = call->numActuals();
+      // as this is function that returns via RVV, we have something like:
+      // initCopy(rhs, definedConst, retArg)
+      if (calledFn->hasFlag(FLAG_FN_RETARG) && nActuals >= 3) {
+        if (SymExpr* rhsSe = toSymExpr(call->get(nActuals-2))) {
+          sanityCheckDefinedConstArg(call->get(nActuals-1));
+          if (SymExpr* lhsSe = toSymExpr(call->get(nActuals))) {
             if (lhsSe->getValType() == rhsSe->getValType()) {
               lhs = lhsSe->symbol();
               rhs = rhsSe->symbol();
@@ -517,16 +602,83 @@ static void doElideCopies(VarToCopyElisionState &map) {
         ok = findCopyElisionCandidate(call, lhs, rhs);
         INT_ASSERT(ok && rhs == var);
 
+        bool calledInitEq = call->isNamedAstr(astrInitEquals);
+
         SET_LINENO(call);
-        // Change the copy into a move and don't destroy the variable.
-        call->convertToNoop();
-        call->insertBefore(new CallExpr(PRIM_ASSIGN_ELIDED_COPY, lhs, var));
+        if (call->isNamedAstr(astr_coerceCopy)) {
+          // change chpl__coerceCopy into chpl__coerceMove with same args
+          FnSymbol* copyFn = call->resolvedFunction();
+          FnSymbol* moveFn = getCoerceMoveFromCoerceCopy(copyFn);
+          call->baseExpr->replace(new SymExpr(moveFn));
+
+          // Add a PRIM_ASSIGN_ELIDED_COPY to mark that the
+          // variable is dead after this point. Putting it before
+          // the chpl__coerceMove call works with code in addAutoDestroyCalls.
+          VarSymbol* tmp = newTemp("copy_tmp", rhs->getValType());
+          Expr* insertBefore = call->getStmtExpr();
+          insertBefore->insertBefore(new DefExpr(tmp));
+          insertBefore->insertBefore(new CallExpr(PRIM_ASSIGN_ELIDED_COPY,
+                                                  tmp,
+                                                  rhs));
+
+          // Use the result of the PRIM_ASSIGN_ELIDED_COPY in the coerceMove.
+          call->get(2)->replace(new SymExpr(tmp));
+        } else {
+          // Change the copy into a move and don't destroy the variable.
+
+          Symbol *definedConst = NULL;
+          if (call->isPrimitive(PRIM_MOVE)) {
+            if (CallExpr *rhsCall = toCallExpr(call->get(2))) {
+              if (rhsCall->isNamedAstr(astr_initCopy) ||
+                  rhsCall->isNamedAstr(astr_autoCopy)) { // can it be autoCopy?
+                definedConst = toSymExpr(rhsCall->get(2))->symbol();
+                INT_ASSERT(definedConst->getValType() == dtBool);
+              }
+
+            }
+          }
+
+          call->convertToNoop();
+          call->insertBefore(new CallExpr(PRIM_ASSIGN_ELIDED_COPY, lhs, var));
+
+          if (definedConst != NULL) {
+            if (lhs->getValType()->symbol->hasFlag(FLAG_DOMAIN)) {
+              setDefinedConstForDomainSymbol(lhs, call, definedConst);
+            }
+          }
+        }
+
+        if (AggregateType* at = toAggregateType(lhs->getValType())) {
+          if (calledInitEq && at->hasPostInitializer()) {
+            // check for a postinit call following the init=
+            // that has been replaced.
+            Expr* postinit = NULL;
+            for (Expr* cur = call->getStmtExpr()->next;
+                 cur != NULL;
+                 cur = cur->next) {
+              if (CallExpr* curCall = toCallExpr(cur)) {
+                if (curCall->isNamedAstr(astrPostinit)) {
+                  if (SymExpr* se = toSymExpr(curCall->get(1))) {
+                    if (se->symbol() == lhs) {
+                      postinit = cur;
+                      break;
+                    }
+                  }
+                }
+              }
+            }
+            if (postinit == NULL)
+              INT_FATAL("Could not find postinit");
+
+            postinit->remove();
+          }
+        }
+
         var->addFlag(FLAG_MAYBE_COPY_ELIDED);
 
         if (isCheckErrorStmt(call->next)) {
           INT_FATAL("code needs adjustment for throwing initializers");
         }
-
       }
     }
   }
@@ -564,7 +716,8 @@ static bool canCopyElideVar(Symbol* rhs) {
 static bool canCopyElideCall(CallExpr* call, Symbol* lhs, Symbol* rhs) {
   return canCopyElideVar(rhs) &&
          rhs->getValType() == lhs->getValType() &&
-         rhs->defPoint->parentSymbol == call->parentSymbol;
+         rhs->defPoint->parentSymbol == call->parentSymbol &&
+         !(isCallExprTemporary(rhs) && isTemporaryFromNoCopyReturn(rhs));
 }
 
 // returns true if there was an unconditional return
@@ -692,6 +845,11 @@ static bool doFindCopyElisionPoints(Expr* start,
       VariablesSet newEligible;
       doFindCopyElisionPoints(start, map, newEligible);
 
+      // note the uses of symbols in the zip call
+      if (CallExpr *zipCall = forall->zipCall()) {
+        noteUses(zipCall, map);
+      }
+
     // try { ... }
     } else if (isTryStmt(cur)) {
       INT_FATAL("try statement not expected at this point in compilation");
@@ -807,6 +965,8 @@ static bool doFindCopyElisionPoints(Expr* start,
         // no need to handle leftovers (e.g. ifIt not at end)
         // because we marked uses above.
       }
+    } else if (isFunctionOrTypeDeclaration(cur)) {
+      // OK: mentions like `proc f() { ... x ... }` don't count
     } else {
       // Look for uses of 'x'
       noteUses(cur, map);

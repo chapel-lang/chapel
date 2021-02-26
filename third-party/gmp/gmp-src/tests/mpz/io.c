@@ -1,6 +1,7 @@
 /* Test conversion and I/O using mpz_out_str and mpz_inp_str.
 
-Copyright 1993, 1994, 1996, 2000, 2001, 2012 Free Software Foundation, Inc.
+Copyright 1993, 1994, 1996, 2000, 2001, 2012, 2020 Free Software
+Foundation, Inc.
 
 This file is part of the GNU MP Library test suite.
 
@@ -25,7 +26,6 @@ the GNU MP Library test suite.  If not, see https://www.gnu.org/licenses/.  */
 #include <unistd.h>		/* for unlink */
 #endif
 
-#include "gmp.h"
 #include "gmp-impl.h"
 #include "tests.h"
 
@@ -63,6 +63,18 @@ main (int argc, char **argv)
   mpz_init (op2);
 
   fp = fopen (FILENAME, "w+");
+
+  if (mpz_out_str (fp, 63, op1) != 0)
+    {
+      printf ("mpz_out_str did not return 0 (error) with base > 62\n");
+      abort ();
+    }
+
+  if (mpz_out_str (fp, -37, op1) != 0)
+    {
+      printf ("mpz_out_str did not return 0 (error) with base < -37\n");
+      abort ();
+    }
 
   for (i = 0; i < reps; i++)
     {

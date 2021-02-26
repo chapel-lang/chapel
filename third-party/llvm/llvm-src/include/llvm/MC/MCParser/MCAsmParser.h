@@ -1,9 +1,8 @@
 //===- llvm/MC/MCAsmParser.h - Abstract Asm Parser Interface ----*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -130,9 +129,6 @@ protected: // Can only create subclasses.
   /// Flag tracking whether any errors have been encountered.
   bool HadError = false;
 
-  /// Enable print [latency:throughput] in output file.
-  bool EnablePrintSchedInfo = false;
-
   bool ShowParsedOperands = false;
 
 public:
@@ -166,14 +162,22 @@ public:
   bool getShowParsedOperands() const { return ShowParsedOperands; }
   void setShowParsedOperands(bool Value) { ShowParsedOperands = Value; }
 
-  void setEnablePrintSchedInfo(bool Value) { EnablePrintSchedInfo = Value; }
-  bool shouldPrintSchedInfo() const { return EnablePrintSchedInfo; }
-
   /// Run the parser on the input source buffer.
   virtual bool Run(bool NoInitialTextSection, bool NoFinalize = false) = 0;
 
-  virtual void setParsingInlineAsm(bool V) = 0;
-  virtual bool isParsingInlineAsm() = 0;
+  virtual void setParsingMSInlineAsm(bool V) = 0;
+  virtual bool isParsingMSInlineAsm() = 0;
+
+  virtual bool isParsingMasm() const { return false; }
+
+  virtual bool lookUpField(StringRef Name, StringRef &Type,
+                           unsigned &Offset) const {
+    return true;
+  }
+  virtual bool lookUpField(StringRef Base, StringRef Member, StringRef &Type,
+                           unsigned &Offset) const {
+    return true;
+  }
 
   /// Parse MS-style inline assembly.
   virtual bool parseMSInlineAsm(
@@ -257,6 +261,10 @@ public:
   /// characters and return the string contents.
   virtual bool parseEscapedString(std::string &Data) = 0;
 
+  /// Parse an angle-bracket delimited string at the current position if one is
+  /// present, returning the string contents.
+  virtual bool parseAngleBracketString(std::string &Data) = 0;
+
   /// Skip to the end of the current statement, for error recovery.
   virtual void eatToEndOfStatement() = 0;
 
@@ -307,9 +315,13 @@ public:
                                      SMLoc &EndLoc) = 0;
 };
 
-/// Create an MCAsmParser instance.
+/// Create an MCAsmParser instance for parsing assembly similar to gas syntax
 MCAsmParser *createMCAsmParser(SourceMgr &, MCContext &, MCStreamer &,
                                const MCAsmInfo &, unsigned CB = 0);
+
+/// Create an MCAsmParser instance for parsing Microsoft MASM-style assembly
+MCAsmParser *createMCMasmParser(SourceMgr &, MCContext &, MCStreamer &,
+                                const MCAsmInfo &, unsigned CB = 0);
 
 } // end namespace llvm
 

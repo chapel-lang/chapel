@@ -1,0 +1,4 @@
+#!/bin/bash
+
+sed "s/.*\(halt reached\).*\(out of bounds\).*/\1 \2/" <$2 >$2.tmp
+mv $2.tmp $2

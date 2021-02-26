@@ -1,20 +1,27 @@
-add_llvm_library(LLVMTransformUtils
-  ASanStackFrameLayout.cpp
+add_llvm_component_library(LLVMTransformUtils
   AddDiscriminators.cpp
+  AMDGPUEmitPrintf.cpp
+  ASanStackFrameLayout.cpp
+  AssumeBundleBuilder.cpp
   BasicBlockUtils.cpp
   BreakCriticalEdges.cpp
   BuildLibCalls.cpp
   BypassSlowDivision.cpp
   CallPromotionUtils.cpp
+  CallGraphUpdater.cpp
   CanonicalizeAliases.cpp
+  CanonicalizeFreezeInLoops.cpp
   CloneFunction.cpp
   CloneModule.cpp
   CodeExtractor.cpp
+  CodeMoverUtils.cpp
   CtorUtils.cpp
+  Debugify.cpp
   DemoteRegToStack.cpp
   EntryExitInstrumenter.cpp
   EscapeEnumerator.cpp
   Evaluator.cpp
+  FixIrreducible.cpp
   FlattenCFG.cpp
   FunctionComparator.cpp
   FunctionImportUtils.cpp
@@ -22,6 +29,7 @@ add_llvm_library(LLVMTransformUtils
   GuardUtils.cpp
   InlineFunction.cpp
   ImportedFunctionsInliningStatistics.cpp
+  InjectTLIMappings.cpp
   InstructionNamer.cpp
   IntegerDivision.cpp
   LCSSA.cpp
@@ -40,10 +48,12 @@ add_llvm_library(LLVMTransformUtils
   LowerSwitch.cpp
   Mem2Reg.cpp
   MetaRenamer.cpp
+  MisExpect.cpp
   ModuleUtils.cpp
   NameAnonGlobals.cpp
   PredicateInfo.cpp
   PromoteMemoryToRegister.cpp
+  ScalarEvolutionExpander.cpp
   StripGCRelocates.cpp
   SSAUpdater.cpp
   SSAUpdaterBulk.cpp
@@ -51,10 +61,13 @@ add_llvm_library(LLVMTransformUtils
   SimplifyCFG.cpp
   SimplifyIndVar.cpp
   SimplifyLibCalls.cpp
+  SizeOpts.cpp
   SplitModule.cpp
   StripNonLineTableDebugInfo.cpp
   SymbolRewriter.cpp
   UnifyFunctionExitNodes.cpp
+  UnifyLoopExits.cpp
+  UniqueInternalLinkageNames.cpp
   Utils.cpp
   ValueMapper.cpp
   VNCoercion.cpp

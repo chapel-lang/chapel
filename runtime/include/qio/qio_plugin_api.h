@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -22,6 +22,10 @@
 #define _QIO_PLUGIN_API_H_
 
 #include "qio.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // TODO: it would be nicer if these all had "plugin" in their name
 
@@ -48,5 +52,8 @@ syserr chpl_qio_get_locales_for_region(void* file, int64_t start, int64_t end, v
 
 // close a file
 syserr chpl_qio_file_close(void* file);
+#ifdef __cplusplus
+}
+#endif
 
 #endif

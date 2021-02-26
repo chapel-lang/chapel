@@ -17,7 +17,7 @@ fi
 pe_chapel_pkgconfig_libs="$PE_CHAPEL_PKGCONFIG_LIBS"
 
 if [[ "$chpl_comm" != none ]]; then
-  if [[ "$chpl_target_platform" != cray-shasta ]]; then
+  if [[ "$chpl_target_platform" != hpe-cray-ex ]]; then
     pe_chapel_pkgconfig_libs="cray-pmi:$pe_chapel_pkgconfig_libs"
   fi
 
@@ -26,6 +26,10 @@ if [[ "$chpl_comm" != none ]]; then
     if [[ "$chpl_comm" == gasnet && "$chpl_comm_substrate" == aries  ]]; then
       pe_chapel_pkgconfig_libs="cray-udreg:$pe_chapel_pkgconfig_libs"
     fi
+  fi
+
+  if [[ "$chpl_comm" == ofi && $($CHPL_HOME/util/chplenv/chpl_libfabric.py) == system ]]; then
+    pe_chapel_pkgconfig_libs="libfabric:$pe_chapel_pkgconfig_libs"
   fi
 fi
 

@@ -1,2 +1,9 @@
 return-type-function-failure.chpl:4: In function 'valfun':
-return-type-function-failure.chpl:5: error: invalid type specification
+return-type-function-failure.chpl:5: error: could not find a copy initializer ('init=') for type 'shared chpl__fcf_type_void_int64_t' from type 'int(64)'
+$CHPL_HOME/modules/internal/SharedObject.chpl:257: note: this candidate did not match: _shared.init=(pragma"nil from arg"in take: owned )
+return-type-function-failure.chpl:5: note: because actual argument #1 with type 'int(64)'
+$CHPL_HOME/modules/internal/SharedObject.chpl:257: note: is passed to formal 'in take: owned'
+return-type-function-failure.chpl:5: note: other candidates are:
+$CHPL_HOME/modules/internal/SharedObject.chpl:283: note:   _shared.init=(pragma"nil from arg"const ref src: _shared)
+$CHPL_HOME/modules/internal/SharedObject.chpl:305: note:   _shared.init=(src: borrowed )
+note: and 2 other candidates, use --print-all-candidates to see them

@@ -1,9 +1,8 @@
 //===- Error.h - system_error extensions for Object -------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -14,11 +13,13 @@
 #ifndef LLVM_OBJECT_ERROR_H
 #define LLVM_OBJECT_ERROR_H
 
-#include "llvm/ADT/Twine.h"
 #include "llvm/Support/Error.h"
 #include <system_error>
 
 namespace llvm {
+
+class Twine;
+
 namespace object {
 
 class Binary;
@@ -50,7 +51,7 @@ inline std::error_code make_error_code(object_error e) {
 /// Currently inherits from ECError for easy interoperability with
 /// std::error_code, but this will be removed in the future.
 class BinaryError : public ErrorInfo<BinaryError, ECError> {
-  virtual void anchor();
+  void anchor() override;
 public:
   static char ID;
   BinaryError() {
@@ -66,8 +67,8 @@ public:
 class GenericBinaryError : public ErrorInfo<GenericBinaryError, BinaryError> {
 public:
   static char ID;
-  GenericBinaryError(Twine Msg);
-  GenericBinaryError(Twine Msg, object_error ECOverride);
+  GenericBinaryError(const Twine &Msg);
+  GenericBinaryError(const Twine &Msg, object_error ECOverride);
   const std::string &getMessage() const { return Msg; }
   void log(raw_ostream &OS) const override;
 private:

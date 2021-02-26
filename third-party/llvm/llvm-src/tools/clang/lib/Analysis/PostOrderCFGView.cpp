@@ -1,9 +1,8 @@
 //===- PostOrderCFGView.cpp - Post order view of CFG blocks ---------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -30,11 +29,12 @@ PostOrderCFGView::PostOrderCFGView(const CFG *cfg) {
   }
 }
 
-PostOrderCFGView *PostOrderCFGView::create(AnalysisDeclContext &ctx) {
+std::unique_ptr<PostOrderCFGView>
+PostOrderCFGView::create(AnalysisDeclContext &ctx) {
   const CFG *cfg = ctx.getCFG();
   if (!cfg)
     return nullptr;
-  return new PostOrderCFGView(cfg);
+  return std::make_unique<PostOrderCFGView>(cfg);
 }
 
 const void *PostOrderCFGView::getTag() { static int x; return &x; }

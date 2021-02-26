@@ -1,1 +1,6 @@
-test_scope_resolve_classes.chpl:14: error: cannot resolve base type for method 'C.foo'
+test_scope_resolve_classes.chpl:12: In function 'main':
+test_scope_resolve_classes.chpl:17: error: Attempt to 'new' a function or undefined symbol
+test_scope_resolve_classes.chpl:12: In function 'main':
+test_scope_resolve_classes.chpl:14: error: 'C' undeclared (first use this function)
+test_scope_resolve_classes.chpl:12: In function 'main':
+test_scope_resolve_classes.chpl:15: error: 'x' undeclared (first use this function)

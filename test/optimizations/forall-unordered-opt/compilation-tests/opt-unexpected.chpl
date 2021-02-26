@@ -534,3 +534,108 @@ proc tls_signalling2() {
 }
 tls_signalling2();
 
+config const multiplier = 1234567;
+config const increment = 98765;
+
+// An iterator representing a not-order-independent loop
+// similar to RAStream but which updates the cursor with the last
+// operation in the loop.
+// It is not legal to put off the PUT to cursor
+iter rng_iter1() {
+  var cursor = multiplier + increment;
+  for i in 1..M {
+    yield cursor;
+    cursor = cursor * multiplier + increment;
+  }
+}
+iter rng_iter1(param tag: iterKind, followThis) where tag == iterKind.follower {
+  const (followInds,) = followThis;
+  const start = followInds.low;
+  var cursor = multiplier * start + increment;
+  for i in 1..M {
+    yield cursor;
+    cursor = cursor * multiplier + increment;
+  }
+}
+
+proc mini_ra_lf1() {
+  var T: [0..1023] atomic int;
+  var indexMask = 1023;
+  var Updates: [0..#M] int;
+
+  forall (_, r) in zip(Updates, rng_iter1()) do
+    T(r & indexMask).xor(r);
+}
+mini_ra_lf1();
+
+var globalAtomic: atomic int;
+iter rng_iter2() {
+  var cursor = multiplier + increment;
+  for i in 1..M {
+    yield cursor;
+    cursor = cursor * multiplier + increment;
+    globalAtomic.add(1);
+  }
+}
+iter rng_iter2(param tag: iterKind, followThis) where tag == iterKind.follower {
+  const (followInds,) = followThis;
+  const start = followInds.low;
+  var cursor = multiplier * start + increment;
+  for i in 1..M {
+    yield cursor;
+    cursor = cursor * multiplier + increment;
+    globalAtomic.add(1);
+  }
+}
+
+proc mini_ra_lf2() {
+  var T: [0..1023] atomic int;
+  var indexMask = 1023;
+  var Updates: [0..#M] int;
+
+  forall (_, r) in zip(Updates, rng_iter2()) do
+    T(r & indexMask).xor(r);
+}
+mini_ra_lf2();
+
+iter rng_iter3() {
+  var loopAtomic: atomic int;
+  var cursor = multiplier + increment;
+  for i in 1..M {
+    yield cursor;
+    cursor = cursor * multiplier + increment;
+    loopAtomic.add(1);
+  }
+}
+iter rng_iter3(param tag: iterKind, followThis) where tag == iterKind.follower {
+  var loopAtomic: atomic int;
+  const (followInds,) = followThis;
+  const start = followInds.low;
+  var cursor = multiplier * start + increment;
+  for i in 1..M {
+    yield cursor;
+    cursor = cursor * multiplier + increment;
+    loopAtomic.add(1);
+  }
+}
+
+proc mini_ra_lf3() {
+  var T: [0..1023] atomic int;
+  var indexMask = 1023;
+  var Updates: [0..#M] int;
+
+  forall (_, r) in zip(Updates, rng_iter3()) do
+    T(r & indexMask).xor(r);
+}
+mini_ra_lf3();
+
+proc mini_ra_for() {
+  var T: [0..1023] atomic int;
+  var indexMask = 1023;
+  var Updates: [0..#M] int;
+  var RAStream: [0..#M] int;
+
+  for (_, r) in zip(Updates, RAStream) do
+    T(r & indexMask).xor(r);
+}
+mini_ra_for();

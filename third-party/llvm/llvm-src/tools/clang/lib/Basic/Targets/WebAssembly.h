@@ -1,9 +1,8 @@
 //=== WebAssembly.h - Declare WebAssembly target feature support *- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -31,14 +30,21 @@ class LLVM_LIBRARY_VISIBILITY WebAssemblyTargetInfo : public TargetInfo {
     UnimplementedSIMD128,
   } SIMDLevel = NoSIMD;
 
-  bool HasNontrappingFPToInt;
-  bool HasSignExt;
-  bool HasExceptionHandling;
+  bool HasNontrappingFPToInt = false;
+  bool HasSignExt = false;
+  bool HasExceptionHandling = false;
+  bool HasBulkMemory = false;
+  bool HasAtomics = false;
+  bool HasMutableGlobals = false;
+  bool HasMultivalue = false;
+  bool HasTailCall = false;
+  bool HasReferenceTypes = false;
+
+  std::string ABI;
 
 public:
   explicit WebAssemblyTargetInfo(const llvm::Triple &T, const TargetOptions &)
-      : TargetInfo(T), SIMDLevel(NoSIMD), HasNontrappingFPToInt(false),
-        HasSignExt(false), HasExceptionHandling(false) {
+      : TargetInfo(T) {
     NoAsmVariants = true;
     SuitableAlign = 128;
     LargeArrayMinWidth = 128;
@@ -55,18 +61,25 @@ public:
     IntPtrType = SignedLong;
   }
 
+  StringRef getABI() const override;
+  bool setABI(const std::string &Name) override;
+
 protected:
   void getTargetDefines(const LangOptions &Opts,
                         MacroBuilder &Builder) const override;
 
 private:
-  static void setSIMDLevel(llvm::StringMap<bool> &Features, SIMDEnum Level);
+  static void setSIMDLevel(llvm::StringMap<bool> &Features, SIMDEnum Level,
+                           bool Enabled);
 
   bool
   initFeatureMap(llvm::StringMap<bool> &Features, DiagnosticsEngine &Diags,
                  StringRef CPU,
                  const std::vector<std::string> &FeaturesVec) const override;
   bool hasFeature(StringRef Feature) const final;
+
+  void setFeatureEnabled(llvm::StringMap<bool> &Features, StringRef Name,
+                         bool Enabled) const final;
 
   bool handleTargetFeatures(std::vector<std::string> &Features,
                             DiagnosticsEngine &Diags) final;
@@ -111,7 +124,22 @@ private:
                ? (IsSigned ? SignedLongLong : UnsignedLongLong)
                : TargetInfo::getLeastIntTypeByWidth(BitWidth, IsSigned);
   }
+
+  CallingConvCheckResult checkCallingConvention(CallingConv CC) const override {
+    switch (CC) {
+    case CC_C:
+    case CC_Swift:
+      return CCCR_OK;
+    default:
+      return CCCR_Warning;
+    }
+  }
+
+  bool hasExtIntType() const override { return true; }
+
+  bool hasProtectedVisibility() const override { return false; }
 };
+
 class LLVM_LIBRARY_VISIBILITY WebAssembly32TargetInfo
     : public WebAssemblyTargetInfo {
 public:

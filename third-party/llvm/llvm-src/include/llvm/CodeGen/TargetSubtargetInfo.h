@@ -1,9 +1,8 @@
 //===- llvm/CodeGen/TargetSubtargetInfo.h - Target Information --*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -26,10 +25,10 @@
 #include <memory>
 #include <vector>
 
-
 namespace llvm {
 
 class CallLowering;
+class InlineAsmLowering;
 class InstrItineraryData;
 struct InstrStage;
 class InstructionSelector;
@@ -42,8 +41,6 @@ struct MCWriteProcResEntry;
 class RegisterBankInfo;
 class SDep;
 class SelectionDAGTargetInfo;
-struct SubtargetFeatureKV;
-struct SubtargetInfoKV;
 class SUnit;
 class TargetFrameLowering;
 class TargetInstrInfo;
@@ -63,8 +60,7 @@ class TargetSubtargetInfo : public MCSubtargetInfo {
 protected: // Can only create subclasses...
   TargetSubtargetInfo(const Triple &TT, StringRef CPU, StringRef FS,
                       ArrayRef<SubtargetFeatureKV> PF,
-                      ArrayRef<SubtargetFeatureKV> PD,
-                      const SubtargetInfoKV *ProcSched,
+                      ArrayRef<SubtargetSubTypeKV> PD,
                       const MCWriteProcResEntry *WPR,
                       const MCWriteLatencyEntry *WL,
                       const MCReadAdvanceEntry *RA, const InstrStage *IS,
@@ -103,15 +99,17 @@ public:
   }
   virtual const CallLowering *getCallLowering() const { return nullptr; }
 
+  virtual const InlineAsmLowering *getInlineAsmLowering() const {
+    return nullptr;
+  }
+
   // FIXME: This lets targets specialize the selector by subtarget (which lets
   // us do things like a dedicated avx512 selector).  However, we might want
   // to also specialize selectors by MachineFunction, which would let us be
   // aware of optsize/optnone and such.
-  virtual const InstructionSelector *getInstructionSelector() const {
+  virtual InstructionSelector *getInstructionSelector() const {
     return nullptr;
   }
-
-  virtual unsigned getHwMode() const { return 0; }
 
   /// Target can subclass this hook to select a different DAG scheduler.
   virtual RegisterScheduler::FunctionPassCtor
@@ -190,12 +188,12 @@ public:
   /// TargetLowering preference). It does not yet disable the postRA scheduler.
   virtual bool enableMachineScheduler() const;
 
-  /// Support printing of [latency:throughput] comment in output .S file.
-  virtual bool supportPrintSchedInfo() const { return false; }
-
   /// True if the machine scheduler should disable the TLI preference
   /// for preRA scheduling with the source level scheduler.
   virtual bool enableMachineSchedDefaultSched() const { return true; }
+
+  /// True if the subtarget should run MachinePipeliner
+  virtual bool enableMachinePipeliner() const { return true; };
 
   /// True if the subtarget should enable joining global copies.
   ///
@@ -208,6 +206,10 @@ public:
   /// By default this queries the PostRAScheduling bit in the scheduling model
   /// which is the preferred way to influence this.
   virtual bool enablePostRAScheduler() const;
+
+  /// True if the subtarget should run a machine scheduler after register
+  /// allocation.
+  virtual bool enablePostRAMachineScheduler() const;
 
   /// True if the subtarget should run the atomic expansion pass.
   virtual bool enableAtomicExpand() const;
@@ -223,9 +225,13 @@ public:
   virtual void overrideSchedPolicy(MachineSchedPolicy &Policy,
                                    unsigned NumRegionInstrs) const {}
 
-  // Perform target specific adjustments to the latency of a schedule
+  // Perform target-specific adjustments to the latency of a schedule
   // dependency.
-  virtual void adjustSchedDependency(SUnit *def, SUnit *use, SDep &dep) const {}
+  // If a pair of operands is associated with the schedule dependency, DefOpIdx
+  // and UseOpIdx are the indices of the operands in Def and Use, respectively.
+  // Otherwise, either may be -1.
+  virtual void adjustSchedDependency(SUnit *Def, int DefOpIdx, SUnit *Use,
+                                     int UseOpIdx, SDep &Dep) const {}
 
   // For use with PostRAScheduling: get the anti-dependence breaking that should
   // be performed before post-RA scheduling.
@@ -250,6 +256,10 @@ public:
       std::vector<std::unique_ptr<ScheduleDAGMutation>> &Mutations) const {
   }
 
+  /// Default to DFA for resource management, return false when target will use
+  /// ProcResource in InstrSchedModel instead.
+  virtual bool useDFAforSMS() const { return true; }
+
   // For use with PostRAScheduling: get the minimum optimization level needed
   // to enable post-RA scheduling.
   virtual CodeGenOpt::Level getOptLevelToEnablePostRAScheduler() const {
@@ -271,6 +281,12 @@ public:
   /// scheduling, DAGCombine, etc.).
   virtual bool useAA() const;
 
+  /// \brief Sink addresses into blocks using GEP instructions rather than
+  /// pointer casts and arithmetic.
+  virtual bool addrSinkUsingGEPs() const {
+    return useAA();
+  }
+
   /// Enable the use of the early if conversion pass.
   virtual bool enableEarlyIfConversion() const { return false; }
 
@@ -286,12 +302,16 @@ public:
   /// possible.
   virtual bool enableSubRegLiveness() const { return false; }
 
-  /// Returns string representation of scheduler comment
-  std::string getSchedInfoStr(const MachineInstr &MI) const;
-  std::string getSchedInfoStr(MCInst const &MCI) const override;
-
   /// This is called after a .mir file was loaded.
   virtual void mirFileLoaded(MachineFunction &MF) const;
+
+  /// True if the register allocator should use the allocation orders exactly as
+  /// written in the tablegen descriptions, false if it should allocate
+  /// the specified physical register later if is it callee-saved.
+  virtual bool ignoreCSRForAllocationOrder(const MachineFunction &MF,
+                                           unsigned PhysReg) const {
+    return false;
+  }
 };
 
 } // end namespace llvm

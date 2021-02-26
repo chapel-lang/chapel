@@ -1,9 +1,8 @@
 //===- Wasm.h - Wasm object file format -------------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -16,7 +15,9 @@
 #define LLVM_BINARYFORMAT_WASM_H
 
 #include "llvm/ADT/ArrayRef.h"
+#include "llvm/ADT/Optional.h"
 #include "llvm/ADT/SmallVector.h"
+#include "llvm/ADT/StringRef.h"
 
 namespace llvm {
 namespace wasm {
@@ -43,6 +44,17 @@ struct WasmDylinkInfo {
   std::vector<StringRef> Needed; // Shared library depenedencies
 };
 
+struct WasmProducerInfo {
+  std::vector<std::pair<std::string, std::string>> Languages;
+  std::vector<std::pair<std::string, std::string>> Tools;
+  std::vector<std::pair<std::string, std::string>> SDKs;
+};
+
+struct WasmFeatureEntry {
+  uint8_t Prefix;
+  std::string Name;
+};
+
 struct WasmExport {
   StringRef Name;
   uint8_t Kind;
@@ -51,8 +63,8 @@ struct WasmExport {
 
 struct WasmLimits {
   uint8_t Flags;
-  uint32_t Initial;
-  uint32_t Maximum;
+  uint64_t Initial;
+  uint64_t Maximum;
 };
 
 struct WasmTable {
@@ -65,8 +77,8 @@ struct WasmInitExpr {
   union {
     int32_t Int32;
     int64_t Int64;
-    int32_t Float32;
-    int64_t Float64;
+    uint32_t Float32;
+    uint64_t Float64;
     uint32_t Global;
   } Value;
 };
@@ -120,18 +132,20 @@ struct WasmFunction {
   uint32_t CodeSectionOffset;
   uint32_t Size;
   uint32_t CodeOffset;  // start of Locals and Body
+  Optional<StringRef> ExportName; // from the "export" section
   StringRef SymbolName; // from the "linking" section
   StringRef DebugName;  // from the "name" section
   uint32_t Comdat;      // from the "comdat info" section
 };
 
 struct WasmDataSegment {
-  uint32_t MemoryIndex;
-  WasmInitExpr Offset;
+  uint32_t InitFlags;
+  uint32_t MemoryIndex; // present if InitFlags & WASM_SEGMENT_HAS_MEMINDEX
+  WasmInitExpr Offset; // present if InitFlags & WASM_SEGMENT_IS_PASSIVE == 0
   ArrayRef<uint8_t> Content;
   StringRef Name; // from the "segment info" section
   uint32_t Alignment;
-  uint32_t Flags;
+  uint32_t LinkerFlags;
   uint32_t Comdat; // from the "comdat info" section
 };
 
@@ -145,8 +159,8 @@ struct WasmElemSegment {
 // the index of the segment, and the offset and size within the segment.
 struct WasmDataReference {
   uint32_t Segment;
-  uint32_t Offset;
-  uint32_t Size;
+  uint64_t Offset;
+  uint64_t Size;
 };
 
 struct WasmRelocation {
@@ -165,8 +179,12 @@ struct WasmSymbolInfo {
   StringRef Name;
   uint8_t Kind;
   uint32_t Flags;
-  StringRef ImportModule; // For undefined symbols the module of the import
-  StringRef ImportName;   // For undefined symbols the name of the import
+  // For undefined symbols the module of the import
+  Optional<StringRef> ImportModule;
+  // For undefined symbols the name of the import
+  Optional<StringRef> ImportName;
+  // For symbols to be exported from the final module
+  Optional<StringRef> ExportName;
   union {
     // For function or global symbols, the index in function or global index
     // space.
@@ -213,7 +231,8 @@ enum : unsigned {
   WASM_TYPE_F64 = 0x7C,
   WASM_TYPE_V128 = 0x7B,
   WASM_TYPE_FUNCREF = 0x70,
-  WASM_TYPE_EXCEPT_REF = 0x68,
+  WASM_TYPE_EXNREF = 0x68,
+  WASM_TYPE_EXTERNREF = 0x6F,
   WASM_TYPE_FUNC = 0x60,
   WASM_TYPE_NORESULT = 0x40, // for blocks with no result values
 };
@@ -230,16 +249,53 @@ enum : unsigned {
 // Opcodes used in initializer expressions.
 enum : unsigned {
   WASM_OPCODE_END = 0x0b,
+  WASM_OPCODE_CALL = 0x10,
+  WASM_OPCODE_LOCAL_GET = 0x20,
   WASM_OPCODE_GLOBAL_GET = 0x23,
+  WASM_OPCODE_GLOBAL_SET = 0x24,
+  WASM_OPCODE_I32_STORE = 0x36,
+  WASM_OPCODE_I64_STORE = 0x37,
   WASM_OPCODE_I32_CONST = 0x41,
   WASM_OPCODE_I64_CONST = 0x42,
   WASM_OPCODE_F32_CONST = 0x43,
   WASM_OPCODE_F64_CONST = 0x44,
+  WASM_OPCODE_I32_ADD = 0x6a,
+  WASM_OPCODE_I64_ADD = 0x7c,
+  WASM_OPCODE_REF_NULL = 0xd0,
+};
+
+// Opcodes used in synthetic functions.
+enum : unsigned {
+  WASM_OPCODE_IF = 0x04,
+  WASM_OPCODE_ELSE = 0x05,
+  WASM_OPCODE_DROP = 0x1a,
+  WASM_OPCODE_MISC_PREFIX = 0xfc,
+  WASM_OPCODE_MEMORY_INIT = 0x08,
+  WASM_OPCODE_DATA_DROP = 0x09,
+  WASM_OPCODE_ATOMICS_PREFIX = 0xfe,
+  WASM_OPCODE_ATOMIC_NOTIFY = 0x00,
+  WASM_OPCODE_I32_ATOMIC_WAIT = 0x01,
+  WASM_OPCODE_I32_ATOMIC_STORE = 0x17,
+  WASM_OPCODE_I32_RMW_CMPXCHG = 0x48,
 };
 
 enum : unsigned {
+  WASM_LIMITS_FLAG_NONE = 0x0,
   WASM_LIMITS_FLAG_HAS_MAX = 0x1,
   WASM_LIMITS_FLAG_IS_SHARED = 0x2,
+  WASM_LIMITS_FLAG_IS_64 = 0x4,
+};
+
+enum : unsigned {
+  WASM_SEGMENT_IS_PASSIVE = 0x01,
+  WASM_SEGMENT_HAS_MEMINDEX = 0x02,
+};
+
+// Feature policy prefixes used in the custom "target_features" section
+enum : uint8_t {
+  WASM_FEATURE_PREFIX_USED = '+',
+  WASM_FEATURE_PREFIX_REQUIRED = '=',
+  WASM_FEATURE_PREFIX_DISALLOWED = '-',
 };
 
 // Kind codes used in the custom "name" section
@@ -285,7 +341,9 @@ const unsigned WASM_SYMBOL_BINDING_LOCAL = 0x2;
 const unsigned WASM_SYMBOL_VISIBILITY_DEFAULT = 0x0;
 const unsigned WASM_SYMBOL_VISIBILITY_HIDDEN = 0x4;
 const unsigned WASM_SYMBOL_UNDEFINED = 0x10;
+const unsigned WASM_SYMBOL_EXPORTED = 0x20;
 const unsigned WASM_SYMBOL_EXPLICIT_NAME = 0x40;
+const unsigned WASM_SYMBOL_NO_STRIP = 0x80;
 
 #define WASM_RELOC(name, value) name = value,
 
@@ -302,17 +360,18 @@ enum class ValType {
   F32 = WASM_TYPE_F32,
   F64 = WASM_TYPE_F64,
   V128 = WASM_TYPE_V128,
-  EXCEPT_REF = WASM_TYPE_EXCEPT_REF,
+  EXNREF = WASM_TYPE_EXNREF,
+  EXTERNREF = WASM_TYPE_EXTERNREF,
 };
 
 struct WasmSignature {
-  SmallVector<wasm::ValType, 1> Returns;
-  SmallVector<wasm::ValType, 4> Params;
+  SmallVector<ValType, 1> Returns;
+  SmallVector<ValType, 4> Params;
   // Support empty and tombstone instances, needed by DenseMap.
   enum { Plain, Empty, Tombstone } State = Plain;
 
-  WasmSignature(SmallVector<wasm::ValType, 1> &&InReturns,
-                SmallVector<wasm::ValType, 4> &&InParams)
+  WasmSignature(SmallVector<ValType, 1> &&InReturns,
+                SmallVector<ValType, 4> &&InParams)
       : Returns(InReturns), Params(InParams) {}
   WasmSignature() = default;
 };
@@ -335,8 +394,9 @@ inline bool operator!=(const WasmGlobalType &LHS, const WasmGlobalType &RHS) {
   return !(LHS == RHS);
 }
 
-std::string toString(wasm::WasmSymbolType type);
+std::string toString(WasmSymbolType type);
 std::string relocTypetoString(uint32_t type);
+bool relocTypeHasAddend(uint32_t type);
 
 } // end namespace wasm
 } // end namespace llvm

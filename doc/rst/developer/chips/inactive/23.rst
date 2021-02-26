@@ -1,0 +1,776 @@
+.. _initializers:
+
+Initializers :- Experiences, Concerns, Proposals
+================================================
+
+Status:
+  Inactive - Implemented
+
+Authors:
+  Michael Noakes, Brad Chamberlain
+
+
+
+
+
+
+
+
+Abstract
+++++++++
+
+This note reviews the current specification for initializers in Chapel
+in light of feedback from users, and experiences converting tests and
+module code from constructors to initializers.  The primary
+conclusions are
+
+1. there is an important use case that is hard to support with
+   the current specification
+
+2. the current syntax for two-phase initialization, broadly defined,
+   is unappealing and/or confusing to some users
+
+3. there are several smaller issues that require consideration
+
+
+
+The first concern is clearly the most pressing and it is the focus of
+this note.  We propose a key change to deliver the missing
+functionality, and then a few smaller changes to compensate for this
+change.  Beyond the fact that this proposal provides key functionality
+that the current design does not, it is believed that it will be
+easier for some newer users to adopt.
+
+The remainder of this note considers this proposal in more detail.
+
+* `Primary concerns`_
+
+* `Additional concerns`_
+
+* `Initialization vs. assignment`_
+
+* `Two-phase initialization`_
+
+* `Parents before children`_
+
+* `Simple classes`_
+
+* `Class hierarchies`_
+
+* `The postinit() method`_
+
+* `Records`_
+
+* `Transition`_
+
+* `Summary`_
+
+Primary concerns
+++++++++++++++++
+
+The implementation of initializers in Chapel has matured to the point
+that it is practical to write reasonably sophisticated initializers
+and to begin to convert internal module code from constructors.  This
+provides an opportunity for external contributors to explore the
+specification.
+
+Unfortunately we have learned that
+
+1. for classes, the decision to initialize the properties for a
+   derived class before those of the parent classes is inconsistent
+   with Chapel's approach to defining fields that have a type that
+   depends on properties in a parent class.  The most common examples
+   are for generic classes e.g.
+
+   .. code-block:: chapel
+
+      // A contrived variation of BaseRectangularDom
+      class MyClass2 : MyClass1 {
+        param rank : int;
+        type  idxType;
+
+        proc init(param _rank, type _idxType) {
+          rank    = _rank;
+          idxType = _idxType;
+
+          super.init();
+        }
+      }
+
+      // A contrived variation of DefaultRectangularDom
+      class MyClass3 : MyClass2 {
+        var ranges : rank * range(idxType);
+
+        // ***** Unable to initialize omitted field *****
+        proc init(param _rank, type _idxType) {
+          super.init(_rank, _idxType);
+        }
+
+        // ***** Unable to type check initialization *****
+        proc init(_ranges) {
+          ranges = _ranges;
+
+          super.init(_ranges.size, _ranges(1).idxType);
+        }
+      }
+
+   but can also be a problem for non-generic classes e.g.
+
+   .. code-block:: chapel
+
+      class C1 {
+        var D = { 1 .. n };
+        var A : [D] real;
+
+        proc init(_D) {
+          D = _D;
+          super.init();
+        }
+      }
+
+      class C2 : C1 {
+        var B : [D] string;
+
+        // ***** Unable to initialize omitted field *****
+        proc init(_D) {
+          super.init(_D);
+        }
+      }
+
+
+
+
+
+
+
+
+2. some users find some choices to be confusing and/or stylistically
+   unappealing.
+
+   The role of super.init() as the separator between phase 1 and
+   phase 2 remains unclear to some users.
+
+   Chapel allows a developer to omit an explicit call to a parent
+   initializer and rely on the compiler to insert this call.  It
+   is unclear whether it is more natural for an initializer to
+   default to phase 1 or phase 2, i.e. whether the compiler
+   should insert the call at the start of the body or at the end
+   of the body, and it is hard to recall which choice has been made
+   for Chapel.
+
+   The Chapel language has been modified to disallow the potential to
+   support inheritance for records but we continue to rely on a call
+   to super.init() to signal that the type has been fully initialized.
+
+
+
+
+
+
+
+
+
+
+Additional concerns
++++++++++++++++++++
+
+3. The current implementation suppresses the compiler generated
+   initializers if the developer defines at least one
+   initializer. This ensures that a user does not unintentionally
+   rely on a compiler-generated all-fields initializer that fails
+   to meet the necessary semantics, but may require the type designer
+   to explicitly write this initializer even in the simple cases.
+
+   The type designer also becomes responsible for the default
+   copy initializer if the type is a record.
+
+
+
+
+4. It may be unclear how to define a type specifier for a generic
+   type or how to define a minimal initializer.  For example what
+   is the signature for the compiler generated type constructor
+   in the following code fragment
+
+
+   .. code-block:: chapel
+
+      record MyR {
+        param flag  : bool;
+        var   value : int;
+
+        <a user defined initializer>
+      }
+
+      var myR : MyR( ... );
+
+
+   and what is the signature for a user-defined initializer that
+   will satisfy the variable declaration?  Should the answer be
+   different if this were a class instead of a record?
+
+   The compiler implements defensible answers to these questions
+   but it is easy to be momentarily surprised by the answers.
+   Perhaps more so for the user-defined initializer than the
+   compiler generated type constructor.
+
+
+
+
+5. We continue to struggle with copy initializers.  A copy
+   initializer accepts one formal with the same type as the
+   record.  It is not always clear when the compiler will
+   attempt to use a copy initializer or how the user can
+   unambiguously define the copy initializer in the presence
+   of other initializers that accept a single formal.
+
+
+
+
+
+
+
+
+
+
+
+Initialization vs. assignment
++++++++++++++++++++++++++++++
+
+It is important to distinguish between initialization and assignment
+for fields with record type.  Mutable objects must be initialized once
+and may be assigned any number of times after that.  Failing to
+support this requirement correctly may have consequences for
+correctness or performance. Consider the following contrived example
+
+.. code-block:: chapel
+
+   class MyClass : MyParent {
+     var r1 : MyRecord;
+     var r2 : MyRecord;
+     var r3 : MyRecord = new MyRecord(1, 2, false);
+
+     proc init(r : MyRecord) {
+       r1 = new MyRecord(10, 20, true);       // Initialize      r1
+       r2 = r;                                // Copy initialize r2
+                                              // Initialize      r3
+
+       super.init(r);
+
+       r3 = r;                                // Assignment
+     }
+   }
+
+The developer of MyRecord is responsible for overriding the default
+initialization and assignment operators as necessary to implement
+their type correctly and must be confident that the compiler chooses
+the correct operation.
+
+While this issue is critical for record types, the ability to override
+the default assignment operator for primitive types and class types
+implies that a similar level of care is appropriate for these.
+
+
+
+
+
+
+
+
+
+
+
+Two-phase initialization
+++++++++++++++++++++++++
+
+In the first effort we elected to adopt the two-phase initialization
+strategy that Swift uses for classes.  Quoting from "The Swift
+Programming Language" by Apple Inc.
+
+   Class initialization in Swift is a two-phase process.
+   In the first phase, each stored property is assigned
+   an initial value by the class that introduced it.
+   Once the initial state for every stored property
+   has been determined, the second phase begins, and
+   each class is given the opportunity to customize its
+   stored properties further before the new instance is
+   considered ready for use.
+
+   The use of a two-phase initialization process makes
+   initialization safe, while still giving complete
+   flexibility to each class in a class hierarchy.
+   Two-phase initialization prevents property values
+   from being accessed before they are initialized,
+   and prevents property values from being set to a
+   different value by another initializer unexpectedly.
+
+The primary concern here is that the implementation of an initializer
+for a class might be distributed across multiple methods.  It appears
+that the designers of Swift are enforcing certain safety checks in
+an effort to catch a family of potential logic errors.
+
+Additionally we adopted Swift's policy that a single initializer
+implements both phase 1 and phase 2, and that fields are
+initialized from the most-derived class towards the base class.
+
+Consider a hierarchy of the classes A -> B -> C -> D where B inherits
+from A, C from B, and D from C.  In the current implementation an
+initializer for D is selected based on the actuals to the new
+expression.
+
+On entry to D.init(...args...) the instance can be considered to have
+a runtime type of D and every field is uninitialized.  The first step
+is to initialize each field defined by D, implicitly or explicitly.
+D.init() must then delegate to an implementation of C.init().
+
+Consider a subsequent call to an implementation of B.init(...args...).
+At entry to this method we could regard the dynamic type of the
+instance to continue to be D.  The fields for D and C are initialized
+but the fields for A and B are uninitialized.  When the required
+delegation to A.init() returns, the object is a fully initialized
+instance of D.  The remainder of the body can call any method
+that is applicable to a static type of D, and can rely on dynamic
+dispatch for D.
+
+
+
+
+Parents before children
++++++++++++++++++++++++
+
+It appears obvious that the key problem for Chapel was the choice to
+follow Swift's lead and initialize properties for a derived class
+before those of a parent class.  Suppose this choice were reversed so
+that we followed C++'s strategy instead?  It is clear that we could
+modify the compiler to handle the following variation of the earlier
+example
+
+.. code-block:: chapel
+
+   class MyClass2 : MyClass1 {
+     param rank : int;
+     type  idxType;
+
+     proc init(param _rank, type _idxType) {
+       rank    = _rank;
+       idxType = _idxType;
+     }
+   }
+
+   class MyClass3 : MyClass2 {
+     var ranges : rank * range(idxType);
+
+     proc init(_ranges) {
+       super.init(_ranges.size, _ranges(1).idxType);
+       ranges = _ranges;
+     }
+   }
+
+How does this impact our current view of two-phase initialization?
+Consider the initializer for MyClass3.  Upon return from the
+delegated initializer, the object is a fully initialized MyClass2
+but the fields of MyClass3 and any descendents of MyClass3 are
+uninitialized.  Care must be taken to ensure that a developer
+does not accidentally provide a reference to an object with
+partially initialized fields.  What rules are required?
+
+
+
+
+
+Simple classes
+++++++++++++++
+
+We begin by considering a class that inherits only from 'object' and
+consider the initialization of an instance of this class e.g.
+
+.. code-block:: chapel
+
+   class MyClass1 {
+     var x = 1;
+     var y = 2;
+     var z = 3;
+
+     proc init(val : int) {
+       y = val;
+     }
+   }
+
+   var c = new MyClass1(5);
+
+   writeln(c);      // => {x = 1, y = 5, z = 3}
+
+As in the first implementation, fields must be initialized in
+declaration order.  The compiler will insert a field initializer
+for any omitted field.
+
+The compiler will also insert a call to super.init() at the beginning
+of the initializer if the developer does not explicitly do this.
+However in the new proposal a call to super.init(), whether implicit or
+explicit, does not complete the initialization of a class.
+
+In the current draft of this proposal the call to super.init(), if
+present, must occur before any fields are initialized.  [This
+restriction is subject to change].
+
+.. code-block:: chapel
+
+   class MyClass1 {
+     var x = 1;
+     var y = 2;
+     var z = 3;
+
+     proc init(val : int) {
+                    // Compiler inserts super.init();
+
+                    // Continues to be phase 1
+                    // Compiler inserts x = 1;
+       y = val;
+                    // Compiler inserts z = 3;
+                    // Continues to be phase 1
+     }
+   }
+
+Experience with initializers confirms that it is important
+to be able to call methods on MyClass1 within an initializer.
+However it is unwise to allow methods to be invoked until
+every field has been initialized.
+
+It must also be possible to modify fields after they have been
+initialized.  A common use case is to assign values to the
+elements of an array after it has been initialized.
+
+In the first implementation, it was certain that every field
+would be initialized when the call to super.init(..) returned.
+In this proposal, none of the local fields are initialized.
+
+Although the compiler could rely on simple flow analysis to
+determine when every field has been initialized, and hence
+when it is safe to invoke methods or to assign fields, the
+rules for inserting omitted initializations and the current
+syntax choices make this problematic in general.
+
+In this proposal we introduce a new method, currently named
+complete(), that can be inserted by a developer to complete
+initialization.  The compiler will insert omitted initializations
+as necessary and it is then safe to call methods defined on
+MyClass1 and assign local fields e.g.
+
+.. code-block:: chapel
+
+   class MyClass1 {
+     var d : domain(1);
+     var a : [d] int;
+
+     proc init(r) {
+                    // Compiler inserts super.init();
+       d = r;
+                    // Compiler initializes a
+       complete();
+
+       a[2] = 5;
+     }
+   }
+
+   var c = new MyClass1(1 .. 3);
+
+   writeln(c);      // => {d = {1..3}, a = 0 5 0}
+
+
+
+Class hierarchies
++++++++++++++++++
+
+We turn to a simple hierarchy.
+
+.. code-block:: chapel
+
+   class MyClass1 {
+     var d : domain(1);
+     var a : [d] int;
+
+     proc init(r) {
+       d = r;
+
+       complete();
+
+       foo();       // This must be MyClass1.foo()
+     }
+
+     proc foo() {
+       a[3] = 30;
+     }
+   }
+
+   class MyClass2 : MyClass1 {
+     var f : int;
+
+     proc init(r) {
+       super.init(r);
+
+       f    =  5;
+       a[2] = 10;   // Can assign to a parent field
+     }
+
+     proc foo() {
+       a[2] = 20;
+     }
+   }
+
+   var c : MyClass1 = new MyClass2(1 .. 3);
+
+   writeln(c);      // => {d = {1..3}, a = 0 10 30, f = 5}
+
+   c.foo();
+
+   writeln(c);      // => {d = {1..3}, a = 0 20 30, f = 5}
+
+
+After the call to complete() in MyClass1.init() the local fields will
+be initialized but any fields for a derived class, e.g. MyClass2.f,
+remain uninitialized.  This implies that the subsequent call to method
+foo() must treat 'this' as having type MyClass1, both statically and
+dynamically.
+
+In the following variation the initializer for MyClass2 calls foo()
+twice, once before complete() and once afterwards.  A different method
+will be invoked for each call.  After the call to super.init() but
+before the call to complete() it is certain that the fields of
+MyClass1 have been initialized and so we must ensure that the
+call to foo() invokes MyClass1.foo().  Conceptually we treat
+the static type of 'this' as MyClass1 for function resolution
+and ensure that the dynamic type is also MyClass1.  After the
+call to complete() the local fields of MyClass2 are also initialized
+and so we prefer that the call to foo() invokes MyClass2.foo().
+
+.. code-block:: chapel
+
+   class MyClass1 {
+     var d : domain(1);
+     var a : [d] int;
+
+     proc init(r) {
+       d = r;
+     }
+
+     proc foo() {
+       a[3] = 30;
+     }
+   }
+
+   class MyClass2 : MyClass1 {
+     var f : int;
+
+     proc init(r) {
+       super.init(r);
+
+       foo();       // This is MyClass1.foo()
+
+       f = 5;
+
+       complete();
+
+       foo();       // This is MyClass2.foo()
+     }
+
+     proc foo() {
+       a[2] = 20;
+     }
+   }
+
+   var c : MyClass1 = new MyClass2(1 .. 3);
+
+   writeln(c);      // => {d = {1..3}, a = 0 20 30, f = 5}
+
+
+
+
+
+
+The postinit() method
++++++++++++++++++++++
+
+This proposal introduces a new method; postinit() e.g.
+
+.. code-block:: chapel
+
+   class MyClass1 {
+     var d : domain(1);
+     var a : [d] int;
+
+     proc init(r) {
+       d = r;
+     }
+
+     proc postinit() {
+       foo();
+     }
+
+     proc foo() {
+       a[3] = 30;
+     }
+   }
+
+   class MyClass2 : MyClass1 {
+     var f : int;
+
+     proc init(r) {
+       super.init(r);
+
+       f = 5;
+     }
+
+     proc foo() {
+       a[2] = 20;
+     }
+   }
+
+   var c : MyClass1 = new MyClass2(1 .. 3);
+
+   writeln(c);      // => {d = {1..3}, a = 0 20 0, f = 5}
+
+
+A use of the new expression for a class
+
+.. code-block:: chapel
+
+   var x = new MyClass1(...);
+
+acts as if it were equivalent to
+
+.. code-block:: chapel
+
+   var x = allocate(MyClass1);
+
+   x.init(...args...);
+   x.postinit();
+
+i.e. an instance is allocated and then the appropriate overload of the
+MyClass1.init() method is invoked.  When this method returns 'x' is a
+fully initialized instance of MyClass1.  Then the method postinit() is
+invoked.  If this call results in method calls with virtual overloads
+then the dispatch will be for objects of type MyClass1.
+
+In the initial view of the new proposal, the init() method was
+primarily responsible for field initialization i.e. to implement
+phase 1, and postinit() was to be primarily responsible for phase 2.
+
+Early efforts to convert existing initializers to the new proposal
+demonstrated that it was important to support complete().  There
+were many cases in which the phase 2 behavior needed to depend,
+directly or indirectly, on one or more of the actuals to the
+initializer.  This was not well served by relying on postinit()
+for phase 2.
+
+Full support for complete() is likely to reduce the incentive to
+override postinit() for types that override init().  However this
+method remains a component of the new proposal.  Firstly it provides
+the ability to define an initialization protocol that relies on
+dynamic dispatch to methods based on the final type of the
+object.
+
+Perhaps more importantly it also provides a way to customize
+initializers for types that rely on compiler generated initializers.
+This is similar to the motivation for the initialize() method
+for types that use constructors.
+
+
+
+Records
++++++++
+
+Initializers for records are comparable to initializers for
+classes that inherit only from object.  In the first
+implementation of initializers, a record initializer
+invoked super.init() to separate phase 1 and phase 2.
+
+In the new proposal a record initializer that includes
+phase 2 operations will invoke complete() rather than
+super.init().  This is consistent with the view that
+records do not define a super field.
+
+
+
+
+Transition
+++++++++++
+
+There is some urgency to move as rapidly as possible if we want to be
+fully transitioned to the new syntax within the current release.
+However there is also a need to be sensitive to overly large PRs
+within the team, and to provide some notice to early adopters of
+initializers who are tracking master.
+
+We must be able to implement types that rely on the new form of
+initializers as soon as we can and without being required to convert
+all existing initializers as a precondition.  It is also useful if it
+were reasonably convenient to convert old initializers to new
+initializers and to do so incrementally.
+
+
+During the early phases of the transition we will rely on the
+presence of a call to complete() to indicate that an initializer
+intends to rely on features of the new proposal.
+
+
+The new proposal provides a key change that enables certain
+constructors to be converted to initializers when that is
+not possible with the current implementation.  However there
+are relatively few meaningful differences between the
+current implementation and the new proposal for existing
+initializers.
+
+
+Consider any existing initializer that does not include a
+call to this.init() or super.init().  In the current
+implementation the body of the initializer is assumed to
+be phase 2 but in the new proposal it will be phase 1.
+While validating elements of the new proposal we experimented
+with updates that implement this change.  There were approximately
+35 tests that failed because a record initializer in a user module
+is valid as phase 2 but not valid as phase 1. In a few cases
+one initializer impacted multiple tests.  Separately there were
+a few initializers that could be modified to be valid under
+either assumption.  The remaining tests will require the
+insertion of complete().  A similar effort for classes found
+approximately 50 tests that required attention.  There were
+just a few initializers in module code that needed attention.
+
+In the new proposal it will be invalid to use super.init() in
+a record initializer; these will be trivially replaced with
+complete().
+
+In the current implementation any class initializer that invokes
+super.init() transitions from phase 1 to phase 2.  This is not true in
+the new proposal.  This is similar in spirit to altering the default
+for an initializer that does not use super.init().  These initializers
+will require the addition of a call to complete() at an appropriate
+point after the existing super.init().  Once again we experimented
+with a compiler change that applied the new rule, and once again there
+were relatively few initializers that needed to be updated in this
+way.
+
+Much of the work to convert the remaining constructors to initializers
+will rely on the new proposal and hence on the use of complete().  In
+some cases this will require the addition of a call complete() in
+situations that will not require complete() once the transition is
+complete.  Note that, post-transition, the superfluous use of
+complete() is valid but non-idiomatic.  In these cases we will adopt
+the convention of placing complete() as the final statement in the
+body; this will simplify a process of finding these cases and
+removing the unnecessary complete().
+
+These updates can be applied to master in any number of stages
+that is most convenient at a cost of just a few hours per issue.
+
+
+Summary
++++++++
+
+We have summarized early experiences with initializers in Chapel and
+have identified a critical oversight in the initial design.  The key
+to addressing this problem is to initialize parent classes before
+derived classes.  This is a fairly significant change.  We identify
+two modest extensions for initializers that support this
+change.
+

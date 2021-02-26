@@ -1,9 +1,8 @@
 //===- MachO.h - MachO object file implementation ---------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -66,7 +65,7 @@ using dice_iterator = content_iterator<DiceRef>;
 /// ExportEntry encapsulates the current-state-of-the-walk used when doing a
 /// non-recursive walk of the trie data structure.  This allows you to iterate
 /// across all exported symbols using:
-///      Error Err;
+///      Error Err = Error::success();
 ///      for (const llvm::object::ExportEntry &AnExport : Obj->exports(&Err)) {
 ///      }
 ///      if (Err) { report error ...
@@ -134,11 +133,9 @@ public:
   BindRebaseSegInfo(const MachOObjectFile *Obj);
 
   // Used to check a Mach-O Bind or Rebase entry for errors when iterating.
-  const char *checkSegAndOffset(int32_t SegIndex, uint64_t SegOffset,
-                                bool endInvalid);
-  const char *checkCountAndSkip(uint32_t Count, uint32_t Skip,
-                                uint8_t PointerSize, int32_t SegIndex,
-                                uint64_t SegOffset);
+  const char* checkSegAndOffsets(int32_t SegIndex, uint64_t SegOffset,
+                                 uint8_t PointerSize, uint32_t Count=1,
+                                 uint32_t Skip=0);
   // Used with valid SegIndex/SegOffset values from checked entries.
   StringRef segmentName(int32_t SegIndex);
   StringRef sectionName(int32_t SegIndex, uint64_t SegOffset);
@@ -163,7 +160,7 @@ private:
 /// MachORebaseEntry encapsulates the current state in the decompression of
 /// rebasing opcodes. This allows you to iterate through the compressed table of
 /// rebasing using:
-///    Error Err;
+///    Error Err = Error::success();
 ///    for (const llvm::object::MachORebaseEntry &Entry : Obj->rebaseTable(&Err)) {
 ///    }
 ///    if (Err) { report error ...
@@ -207,7 +204,7 @@ using rebase_iterator = content_iterator<MachORebaseEntry>;
 /// MachOBindEntry encapsulates the current state in the decompression of
 /// binding opcodes. This allows you to iterate through the compressed table of
 /// bindings using:
-///    Error Err;
+///    Error Err = Error::success();
 ///    for (const llvm::object::MachOBindEntry &Entry : Obj->bindTable(&Err)) {
 ///    }
 ///    if (Err) { report error ...
@@ -290,19 +287,19 @@ public:
   uint32_t getSymbolAlignment(DataRefImpl Symb) const override;
   uint64_t getCommonSymbolSizeImpl(DataRefImpl Symb) const override;
   Expected<SymbolRef::Type> getSymbolType(DataRefImpl Symb) const override;
-  uint32_t getSymbolFlags(DataRefImpl Symb) const override;
+  Expected<uint32_t> getSymbolFlags(DataRefImpl Symb) const override;
   Expected<section_iterator> getSymbolSection(DataRefImpl Symb) const override;
   unsigned getSymbolSectionID(SymbolRef Symb) const;
   unsigned getSectionID(SectionRef Sec) const;
 
   void moveSectionNext(DataRefImpl &Sec) const override;
-  std::error_code getSectionName(DataRefImpl Sec,
-                                 StringRef &Res) const override;
+  Expected<StringRef> getSectionName(DataRefImpl Sec) const override;
   uint64_t getSectionAddress(DataRefImpl Sec) const override;
   uint64_t getSectionIndex(DataRefImpl Sec) const override;
   uint64_t getSectionSize(DataRefImpl Sec) const override;
-  std::error_code getSectionContents(DataRefImpl Sec,
-                                     StringRef &Res) const override;
+  ArrayRef<uint8_t> getSectionContents(uint32_t Offset, uint64_t Size) const;
+  Expected<ArrayRef<uint8_t>>
+  getSectionContents(DataRefImpl Sec) const override;
   uint64_t getSectionAlignment(DataRefImpl Sec) const override;
   Expected<SectionRef> getSection(unsigned SectionIndex) const;
   Expected<SectionRef> getSection(StringRef SectionName) const;
@@ -312,6 +309,7 @@ public:
   bool isSectionBSS(DataRefImpl Sec) const override;
   bool isSectionVirtual(DataRefImpl Sec) const override;
   bool isSectionBitcode(DataRefImpl Sec) const override;
+  bool isDebugSection(StringRef SectionName) const override;
 
   /// When dsymutil generates the companion file, it strips all unnecessary
   /// sections (e.g. everything in the _TEXT segment) by omitting their body
@@ -413,36 +411,32 @@ public:
                                                  bool is64,
                                                  MachOBindEntry::Kind);
 
-  /// For use with a SegIndex,SegOffset pair in MachOBindEntry::moveNext() to
-  /// validate a MachOBindEntry.
-  const char *BindEntryCheckSegAndOffset(int32_t SegIndex, uint64_t SegOffset,
-                                         bool endInvalid) const {
-    return BindRebaseSectionTable->checkSegAndOffset(SegIndex, SegOffset,
-                                                     endInvalid);
-  }
-  /// For use in MachOBindEntry::moveNext() to validate a MachOBindEntry for
-  /// the BIND_OPCODE_DO_BIND_ULEB_TIMES_SKIPPING_ULEB opcode.
-  const char *BindEntryCheckCountAndSkip(uint32_t Count, uint32_t Skip,
-                                         uint8_t PointerSize, int32_t SegIndex,
-                                         uint64_t SegOffset) const {
-    return BindRebaseSectionTable->checkCountAndSkip(Count, Skip, PointerSize,
-                                                     SegIndex, SegOffset);
+  // Given a SegIndex, SegOffset, and PointerSize, verify a valid section exists
+  // that fully contains a pointer at that location. Multiple fixups in a bind
+  // (such as with the BIND_OPCODE_DO_BIND_ULEB_TIMES_SKIPPING_ULEB opcode) can
+  // be tested via the Count and Skip parameters.
+  //
+  // This is used by MachOBindEntry::moveNext() to validate a MachOBindEntry.
+  const char *BindEntryCheckSegAndOffsets(int32_t SegIndex, uint64_t SegOffset,
+                                         uint8_t PointerSize, uint32_t Count=1,
+                                          uint32_t Skip=0) const {
+    return BindRebaseSectionTable->checkSegAndOffsets(SegIndex, SegOffset,
+                                                     PointerSize, Count, Skip);
   }
 
-  /// For use with a SegIndex,SegOffset pair in MachORebaseEntry::moveNext() to
-  /// validate a MachORebaseEntry.
-  const char *RebaseEntryCheckSegAndOffset(int32_t SegIndex, uint64_t SegOffset,
-                                           bool endInvalid) const {
-    return BindRebaseSectionTable->checkSegAndOffset(SegIndex, SegOffset,
-                                                     endInvalid);
-  }
-  /// For use in MachORebaseEntry::moveNext() to validate a MachORebaseEntry for
-  /// the REBASE_OPCODE_DO_*_TIMES* opcodes.
-  const char *RebaseEntryCheckCountAndSkip(uint32_t Count, uint32_t Skip,
-                                         uint8_t PointerSize, int32_t SegIndex,
-                                         uint64_t SegOffset) const {
-    return BindRebaseSectionTable->checkCountAndSkip(Count, Skip, PointerSize,
-                                                     SegIndex, SegOffset);
+  // Given a SegIndex, SegOffset, and PointerSize, verify a valid section exists
+  // that fully contains a pointer at that location. Multiple fixups in a rebase
+  // (such as with the REBASE_OPCODE_DO_*_TIMES* opcodes) can be tested via the
+  // Count and Skip parameters.
+  //
+  // This is used by MachORebaseEntry::moveNext() to validate a MachORebaseEntry
+  const char *RebaseEntryCheckSegAndOffsets(int32_t SegIndex,
+                                            uint64_t SegOffset,
+                                            uint8_t PointerSize,
+                                            uint32_t Count=1,
+                                            uint32_t Skip=0) const {
+    return BindRebaseSectionTable->checkSegAndOffsets(SegIndex, SegOffset,
+                                                      PointerSize, Count, Skip);
   }
 
   /// For use with the SegIndex of a checked Mach-O Bind or Rebase entry to
@@ -574,11 +568,12 @@ public:
   static StringRef guessLibraryShortName(StringRef Name, bool &isFramework,
                                          StringRef &Suffix);
 
-  static Triple::ArchType getArch(uint32_t CPUType);
+  static Triple::ArchType getArch(uint32_t CPUType, uint32_t CPUSubType);
   static Triple getArchTriple(uint32_t CPUType, uint32_t CPUSubType,
                               const char **McpuDefault = nullptr,
                               const char **ArchFlag = nullptr);
   static bool isValidArch(StringRef ArchFlag);
+  static ArrayRef<StringRef> getValidArchs();
   static Triple getHostArch();
 
   bool isRelocatableObject() const override;
@@ -616,6 +611,7 @@ public:
     case MachO::PLATFORM_TVOS: return "tvos";
     case MachO::PLATFORM_WATCHOS: return "watchos";
     case MachO::PLATFORM_BRIDGEOS: return "bridgeos";
+    case MachO::PLATFORM_MACCATALYST: return "macCatalyst";
     case MachO::PLATFORM_IOSSIMULATOR: return "iossimulator";
     case MachO::PLATFORM_TVOSSIMULATOR: return "tvossimulator";
     case MachO::PLATFORM_WATCHOSSIMULATOR: return "watchossimulator";
@@ -649,7 +645,7 @@ public:
     Version = utostr(major) + "." + utostr(minor);
     if (update != 0)
       Version += "." + utostr(update);
-    return Version.str();
+    return std::string(std::string(Version.str()));
   }
 
 private:

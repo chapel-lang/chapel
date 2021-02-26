@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -23,6 +23,7 @@
 #include "ForallStmt.h"
 #include "ForLoop.h"
 #include "resolution.h"
+#include "view.h"
 
 /* This file implements functions allowing
    late resolution passes (late const checking/cull over references
@@ -645,16 +646,27 @@ void gatherLoopDetails(ForallStmt* fs,
   bool zippered = false;
 
   Symbol* newIterLF = findNewIterLF(fs);
+  
   // copied from the other gatherLoopDetails() TODO -- can we remove?
   if (newIterLF) {
+    // we still use newIterLF for zippered reduce expressions
     isLeader = true;
     if (SymExpr* useSE = newIterLF->getSingleUse())
       if (CallExpr* useCall = toCallExpr(useSE->parentExpr))
         if (useCall->isNamed("_toFollowerZip"))
           zippered = true;
   }
-  if (fs->zippered())
+  if (fs->zippered()) { // TODO this is not true if zip is over tuple expansion?
     zippered = true;
+
+  }
+
+  if (fs->zipCall()) {
+    zippered = true;
+    if (fs->zipCall()->numActuals() > 1) {
+      isLeader = true;  // zipCall implies this
+    }
+  }
 
   INT_ASSERT(isLeader ==
              !strcmp(parIdxVar(fs)->name, "chpl_followThis"));
@@ -701,26 +713,15 @@ void gatherLoopDetails(ForallStmt* fs,
         // Other details set below.
         detailsVector.push_back(details);
       } else {
-        FnSymbol* buildTupleFn = NULL;
-        CallExpr* buildTupleCall = toCallExpr(findExprProducing(newIterLF));
-        if (buildTupleCall)
-          buildTupleFn = buildTupleCall->resolvedOrVirtualFunction();
+        for_actuals(actual, fs->zipCall()) {
+          SET_LINENO(fs);
 
-        if (buildTupleFn && buildTupleFn->hasFlag(FLAG_BUILD_TUPLE)) {
-          // build up the detailsVector
-          for_formals_actuals(formal, actual, buildTupleCall) {
-            // Ignore the RETARG
-            if (formal->hasFlag(FLAG_RETARG))
-              continue;
+          SymExpr *actualSE = toSymExpr(actual);
 
-            SymExpr* actualSe = toSymExpr(actual);
-            INT_ASSERT(actualSe); // otherwise not normalized
-            // actualSe is the iterable in this case
-            IteratorDetails details;
-            details.iterable = actualSe;
-            // Other details set below.
-            detailsVector.push_back(details);
-          }
+          IteratorDetails details;
+          details.iterable = actualSE->copy();
+          // Other details set below.
+          detailsVector.push_back(details);
         }
       }
 

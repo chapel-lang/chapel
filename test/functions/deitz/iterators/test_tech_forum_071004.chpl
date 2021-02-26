@@ -1,6 +1,6 @@
 iter iter_string_chars(s: string) {
-  var i = 1, limit = s.size;
-  while i <= limit {
+  var i = 0, limit = s.size;
+  while i < limit {
     yield s[i];
     i += 1;
   }
@@ -45,16 +45,16 @@ proc IC.next() {
 */
 proc IC.next() {
   if cursor == 1 {
-    i = 1;
+    i = 0;
     limit = s.size;
-    if i <= limit {
+    if i < limit {
       value = s[i];
       cursor = 2;
       return;
     }
   } else if cursor == 2 {
     i += 1;
-    if i <= limit {
+    if i < limit {
       value = s[i];
       cursor = 2;
       return;
@@ -65,9 +65,9 @@ proc IC.next() {
 
 proc special_fun_string_chars(s: string) {
   var ic = new unmanaged IC(cursor=1, s=s);
-  ic.i = 1;
+  ic.i = 0;
   ic.limit = ic.s.size;
-  ic.cursor = ic.i <= ic.limit;
+  ic.cursor = ic.i < ic.limit;
   if ic.cursor then
     ic.value = ic.s[ic.i];
   return ic;
@@ -75,7 +75,7 @@ proc special_fun_string_chars(s: string) {
 
 proc IC.special_next() {
   i += 1;
-  cursor = i <= limit;
+  cursor = i < limit;
   if cursor then
     value = s[i];
 }

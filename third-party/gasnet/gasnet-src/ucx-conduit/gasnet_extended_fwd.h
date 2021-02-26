@@ -1,7 +1,7 @@
 /*   $Source: bitbucket.org:berkeleylab/gasnet.git/ucx-conduit/gasnet_extended_fwd.h $
  * Description: GASNet Extended API Header for ucx Conduit (forward decls)
  * Copyright 2002, Dan Bonachea <bonachea@cs.berkeley.edu>
- * Copyright 2019, Mellanox Technologies LTD. All rights reserved.
+ * Copyright 2019-2020, Mellanox Technologies LTD. All rights reserved.
  * Terms of use are as specified in license.txt
  */
 
@@ -13,7 +13,7 @@
 #define _GASNET_EXTENDED_FWD_H
 
 
-#define GASNET_EXTENDED_VERSION      0.1
+#define GASNET_EXTENDED_VERSION      0.2
 #define GASNET_EXTENDED_VERSION_STR  _STRINGIFY(GASNET_EXTENDED_VERSION)
 #define GASNET_EXTENDED_NAME         UCX
 #define GASNET_EXTENDED_NAME_STR     _STRINGIFY(GASNET_EXTENDED_NAME)
@@ -22,8 +22,13 @@
 
 /* Configure use of AM-based implementation of get/put */
 /* NOTE: Barriers, Collectives, VIS may use GASNETE_USING_REF_* in algorithm selection */
+#if defined(GASNET_SEGMENT_FAST) || defined(GASNET_SEGMENT_LARGE)
 #define GASNETE_USING_REF_EXTENDED_GET      0
 #define GASNETE_USING_REF_EXTENDED_PUT      0
+#else
+#define GASNETE_USING_REF_EXTENDED_GET      1
+#define GASNETE_USING_REF_EXTENDED_PUT      1
+#endif
 
 /* this can be used to add statistical collection values
    specific to the extended API implementation (see gasnet_help.h) */
@@ -73,10 +78,11 @@
 //#define GASNETI_DIRECT_BLOCKING_PUT 1
 
 /* Implement all "base" operations directly via amref: */
-/*#define gasnete_amref_get_nb        gasnete_get_nb
+#if !defined(GASNET_SEGMENT_FAST) && !defined(GASNET_SEGMENT_LARGE)
+#define gasnete_amref_get_nb        gasnete_get_nb
 #define gasnete_amref_put_nb        gasnete_put_nb
 #define gasnete_amref_get_nbi       gasnete_get_nbi
 #define gasnete_amref_put_nbi       gasnete_put_nbi
-*/
+#endif
 
 #endif

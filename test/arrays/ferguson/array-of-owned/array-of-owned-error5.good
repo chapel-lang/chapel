@@ -1,0 +1,3 @@
+array-of-owned-error5.chpl:5: In function 'main':
+array-of-owned-error5.chpl:9: error: invalid copy-initialization
+array-of-owned-error5.chpl:9: error: Cannot copy-initialize array because element type 'owned C' cannot be copy-initialized

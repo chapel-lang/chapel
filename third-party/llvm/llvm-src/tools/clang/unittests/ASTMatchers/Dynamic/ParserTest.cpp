@@ -1,9 +1,8 @@
 //===- unittest/ASTMatchers/Dynamic/ParserTest.cpp - Parser unit tests -===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===-------------------------------------------------------------------===//
 
@@ -29,7 +28,7 @@ public:
     // 'stmt()' to be all the same matcher.
     // Use a more complex expression to prevent that.
     ast_matchers::internal::Matcher<Stmt> M = stmt(stmt(), stmt());
-    ExpectedMatchers.insert(std::make_pair(MatcherName, M));
+    ExpectedMatchers.insert(std::make_pair(std::string(MatcherName), M));
     return M.getID().second;
   }
 
@@ -44,7 +43,7 @@ public:
   llvm::Optional<MatcherCtor>
   lookupMatcherCtor(StringRef MatcherName) override {
     const ExpectedMatchersTy::value_type *Matcher =
-        &*ExpectedMatchers.find(MatcherName);
+        &*ExpectedMatchers.find(std::string(MatcherName));
     return reinterpret_cast<MatcherCtor>(Matcher);
   }
 
@@ -55,7 +54,8 @@ public:
                                         Diagnostics *Error) override {
     const ExpectedMatchersTy::value_type *Matcher =
         reinterpret_cast<const ExpectedMatchersTy::value_type *>(Ctor);
-    MatcherInfo ToStore = { Matcher->first, NameRange, Args, BindID };
+    MatcherInfo ToStore = {Matcher->first, NameRange, Args,
+                           std::string(BindID)};
     Matchers.push_back(ToStore);
     return VariantMatcher::SingleMatcher(Matcher->second);
   }
@@ -208,10 +208,12 @@ Parser::NamedValueMap getTestNamedValues() {
 
 TEST(ParserTest, FullParserTest) {
   Diagnostics Error;
-  llvm::Optional<DynTypedMatcher> VarDecl(Parser::parseMatcherExpression(
+
+  StringRef Code =
       "varDecl(hasInitializer(binaryOperator(hasLHS(integerLiteral()),"
-      "                                      hasOperatorName(\"+\"))))",
-      &Error));
+      "                                      hasOperatorName(\"+\"))))";
+  llvm::Optional<DynTypedMatcher> VarDecl(
+      Parser::parseMatcherExpression(Code, &Error));
   EXPECT_EQ("", Error.toStringFull());
   Matcher<Decl> M = VarDecl->unconditionalConvertTo<Decl>();
   EXPECT_TRUE(matches("int x = 1 + false;", M));
@@ -219,8 +221,18 @@ TEST(ParserTest, FullParserTest) {
   EXPECT_FALSE(matches("int x = 1 - false;", M));
   EXPECT_FALSE(matches("int x = true - 1;", M));
 
-  llvm::Optional<DynTypedMatcher> HasParameter(Parser::parseMatcherExpression(
-      "functionDecl(hasParameter(1, hasName(\"x\")))", &Error));
+  Code = "implicitCastExpr(hasCastKind(\"CK_IntegralToBoolean\"))";
+  llvm::Optional<DynTypedMatcher> implicitIntBooleanCast(
+      Parser::parseMatcherExpression(Code, nullptr, nullptr, &Error));
+  EXPECT_EQ("", Error.toStringFull());
+  Matcher<Stmt> MCastStmt =
+      traverse(TK_AsIs, implicitIntBooleanCast->unconditionalConvertTo<Stmt>());
+  EXPECT_TRUE(matches("bool X = 1;", MCastStmt));
+  EXPECT_FALSE(matches("bool X = true;", MCastStmt));
+
+  Code = "functionDecl(hasParameter(1, hasName(\"x\")))";
+  llvm::Optional<DynTypedMatcher> HasParameter(
+      Parser::parseMatcherExpression(Code, &Error));
   EXPECT_EQ("", Error.toStringFull());
   M = HasParameter->unconditionalConvertTo<Decl>();
 
@@ -229,20 +241,35 @@ TEST(ParserTest, FullParserTest) {
 
   // Test named values.
   auto NamedValues = getTestNamedValues();
+
+  Code = "functionDecl(hasParamA, hasParameter(1, hasName(nameX)))";
   llvm::Optional<DynTypedMatcher> HasParameterWithNamedValues(
-      Parser::parseMatcherExpression(
-          "functionDecl(hasParamA, hasParameter(1, hasName(nameX)))",
-          nullptr, &NamedValues, &Error));
+      Parser::parseMatcherExpression(Code, nullptr, &NamedValues, &Error));
   EXPECT_EQ("", Error.toStringFull());
   M = HasParameterWithNamedValues->unconditionalConvertTo<Decl>();
 
   EXPECT_TRUE(matches("void f(int a, int x);", M));
   EXPECT_FALSE(matches("void f(int x, int a);", M));
 
+  Code = "unaryExprOrTypeTraitExpr(ofKind(\"UETT_SizeOf\"))";
+  llvm::Optional<DynTypedMatcher> UnaryExprSizeOf(
+      Parser::parseMatcherExpression(Code, nullptr, nullptr, &Error));
+  EXPECT_EQ("", Error.toStringFull());
+  Matcher<Stmt> MStmt = UnaryExprSizeOf->unconditionalConvertTo<Stmt>();
+  EXPECT_TRUE(matches("unsigned X = sizeof(int);", MStmt));
+  EXPECT_FALSE(matches("unsigned X = alignof(int);", MStmt));
 
-  EXPECT_TRUE(!Parser::parseMatcherExpression(
-                   "hasInitializer(\n    binaryOperator(hasLHS(\"A\")))",
-                   &Error).hasValue());
+  Code =
+      R"query(namedDecl(matchesName("^::[ABC]*$", "IgnoreCase | BasicRegex")))query";
+  llvm::Optional<DynTypedMatcher> MatchesName(
+      Parser::parseMatcherExpression(Code, nullptr, nullptr, &Error));
+  EXPECT_EQ("", Error.toStringFull());
+  M = MatchesName->unconditionalConvertTo<Decl>();
+  EXPECT_TRUE(matches("unsigned AAACCBB;", M));
+  EXPECT_TRUE(matches("unsigned aaaccbb;", M));
+
+  Code = "hasInitializer(\n    binaryOperator(hasLHS(\"A\")))";
+  EXPECT_TRUE(!Parser::parseMatcherExpression(Code, &Error).hasValue());
   EXPECT_EQ("1:1: Error parsing argument 1 for matcher hasInitializer.\n"
             "2:5: Error parsing argument 1 for matcher binaryOperator.\n"
             "2:20: Error building matcher hasLHS.\n"
@@ -253,9 +280,11 @@ TEST(ParserTest, FullParserTest) {
 
 TEST(ParserTest, VariadicMatchTest) {
   Diagnostics Error;
-  llvm::Optional<DynTypedMatcher> OM(Parser::parseMatcherExpression(
-      "stmt(objcMessageExpr(hasAnySelector(\"methodA\", \"methodB:\")))",
-      &Error));
+
+  StringRef Code =
+      "stmt(objcMessageExpr(hasAnySelector(\"methodA\", \"methodB:\")))";
+  llvm::Optional<DynTypedMatcher> OM(
+      Parser::parseMatcherExpression(Code, &Error));
   EXPECT_EQ("", Error.toStringFull());
   auto M = OM->unconditionalConvertTo<Stmt>();
   EXPECT_TRUE(matchesObjC("@interface I @end "
@@ -314,6 +343,40 @@ TEST(ParserTest, Errors) {
   EXPECT_EQ("Input value has unresolved overloaded type: "
             "Matcher<DoStmt|ForStmt|WhileStmt|CXXForRangeStmt|FunctionDecl>",
             ParseMatcherWithError("hasBody(stmt())"));
+  EXPECT_EQ(
+      "1:1: Error parsing argument 1 for matcher decl.\n"
+      "1:6: Error building matcher hasAttr.\n"
+      "1:14: Unknown value 'attr::Fnal' for arg 1; did you mean 'attr::Final'",
+      ParseMatcherWithError(R"query(decl(hasAttr("attr::Fnal")))query"));
+  EXPECT_EQ("1:1: Error parsing argument 1 for matcher decl.\n"
+            "1:6: Error building matcher hasAttr.\n"
+            "1:14: Unknown value 'Final' for arg 1; did you mean 'attr::Final'",
+            ParseMatcherWithError(R"query(decl(hasAttr("Final")))query"));
+  EXPECT_EQ("1:1: Error parsing argument 1 for matcher decl.\n"
+            "1:6: Error building matcher hasAttr.\n"
+            "1:14: Incorrect type for arg 1. (Expected = string) != (Actual = "
+            "String)",
+            ParseMatcherWithError(R"query(decl(hasAttr("unrelated")))query"));
+  EXPECT_EQ(
+      "1:1: Error parsing argument 1 for matcher namedDecl.\n"
+      "1:11: Error building matcher matchesName.\n"
+      "1:33: Unknown value 'Ignorecase' for arg 2; did you mean 'IgnoreCase'",
+      ParseMatcherWithError(
+          R"query(namedDecl(matchesName("[ABC]*", "Ignorecase")))query"));
+  EXPECT_EQ(
+      "1:1: Error parsing argument 1 for matcher namedDecl.\n"
+      "1:11: Error building matcher matchesName.\n"
+      "1:33: Incorrect type for arg 2. (Expected = string) != (Actual = "
+      "String)",
+      ParseMatcherWithError(
+          R"query(namedDecl(matchesName("[ABC]*", "IgnoreCase & BasicRegex")))query"));
+  EXPECT_EQ(
+      "1:1: Error parsing argument 1 for matcher namedDecl.\n"
+      "1:11: Error building matcher matchesName.\n"
+      "1:33: Unknown value 'IgnoreCase | Basicregex' for arg 2; did you mean "
+      "'IgnoreCase | BasicRegex'",
+      ParseMatcherWithError(
+          R"query(namedDecl(matchesName("[ABC]*", "IgnoreCase | Basicregex")))query"));
 }
 
 TEST(ParserTest, OverloadErrors) {
@@ -325,15 +388,132 @@ TEST(ParserTest, OverloadErrors) {
             ParseWithError("callee(\"A\")"));
 }
 
+TEST(ParserTest, ParseMultiline) {
+  StringRef Code;
+
+  llvm::Optional<DynTypedMatcher> M;
+  {
+    Code = R"matcher(varDecl(
+  hasName("foo")
+  )
+)matcher";
+    Diagnostics Error;
+    EXPECT_TRUE(Parser::parseMatcherExpression(Code, &Error).hasValue());
+  }
+
+  {
+    Code = R"matcher(varDecl(
+  # Internal comment
+  hasName("foo") # Internal comment
+# Internal comment
+  )
+)matcher";
+    Diagnostics Error;
+    EXPECT_TRUE(Parser::parseMatcherExpression(Code, &Error).hasValue());
+  }
+
+  {
+    Code = R"matcher(decl().bind(
+  "paramName")
+)matcher";
+    Diagnostics Error;
+    EXPECT_TRUE(Parser::parseMatcherExpression(Code, &Error).hasValue());
+  }
+
+  {
+    Code = R"matcher(decl().bind(
+  "paramName"
+  )
+)matcher";
+    Diagnostics Error;
+    EXPECT_TRUE(Parser::parseMatcherExpression(Code, &Error).hasValue());
+  }
+
+  {
+    Code = R"matcher(decl(decl()
+, decl()))matcher";
+    Diagnostics Error;
+    EXPECT_TRUE(Parser::parseMatcherExpression(Code, &Error).hasValue());
+  }
+
+  {
+    Code = R"matcher(decl(decl(),
+decl()))matcher";
+    Diagnostics Error;
+    EXPECT_TRUE(Parser::parseMatcherExpression(Code, &Error).hasValue());
+  }
+
+  {
+    Code = "namedDecl(hasName(\"n\"\n))";
+    Diagnostics Error;
+    EXPECT_TRUE(Parser::parseMatcherExpression(Code, &Error).hasValue());
+  }
+
+  {
+    Diagnostics Error;
+
+    auto NamedValues = getTestNamedValues();
+
+    Code = R"matcher(hasParamA.bind
+  ("paramName")
+)matcher";
+    M = Parser::parseMatcherExpression(Code, nullptr, &NamedValues, &Error);
+    EXPECT_FALSE(M.hasValue());
+    EXPECT_EQ("1:15: Malformed bind() expression.", Error.toStringFull());
+  }
+
+  {
+    Diagnostics Error;
+
+    auto NamedValues = getTestNamedValues();
+
+    Code = R"matcher(hasParamA.
+  bind("paramName")
+)matcher";
+    M = Parser::parseMatcherExpression(Code, nullptr, &NamedValues, &Error);
+    EXPECT_FALSE(M.hasValue());
+    EXPECT_EQ("1:11: Malformed bind() expression.", Error.toStringFull());
+  }
+
+  {
+    Diagnostics Error;
+
+    Code = R"matcher(varDecl
+()
+)matcher";
+    M = Parser::parseMatcherExpression(Code, nullptr, nullptr, &Error);
+    EXPECT_FALSE(M.hasValue());
+    EXPECT_EQ("1:8: Error parsing matcher. Found token "
+              "<NewLine> while looking for '('.",
+              Error.toStringFull());
+  }
+
+  // Correct line/column numbers
+  {
+    Diagnostics Error;
+
+    Code = R"matcher(varDecl(
+  doesNotExist()
+  )
+)matcher";
+    M = Parser::parseMatcherExpression(Code, nullptr, nullptr, &Error);
+    EXPECT_FALSE(M.hasValue());
+    StringRef Expected = R"error(1:1: Error parsing argument 1 for matcher varDecl.
+2:3: Matcher not found: doesNotExist)error";
+    EXPECT_EQ(Expected, Error.toStringFull());
+  }
+}
+
 TEST(ParserTest, CompletionRegistry) {
-  std::vector<MatcherCompletion> Comps =
-      Parser::completeExpression("while", 5);
+  StringRef Code = "while";
+  std::vector<MatcherCompletion> Comps = Parser::completeExpression(Code, 5);
   ASSERT_EQ(1u, Comps.size());
   EXPECT_EQ("Stmt(", Comps[0].TypedText);
   EXPECT_EQ("Matcher<Stmt> whileStmt(Matcher<WhileStmt>...)",
             Comps[0].MatcherDecl);
 
-  Comps = Parser::completeExpression("whileStmt().", 12);
+  Code = "whileStmt().";
+  Comps = Parser::completeExpression(Code, 12);
   ASSERT_EQ(1u, Comps.size());
   EXPECT_EQ("bind(\"", Comps[0].TypedText);
   EXPECT_EQ("bind", Comps[0].MatcherDecl);
@@ -381,34 +561,33 @@ TEST(ParserTest, ParseBindOnLet) {
   Diagnostics Error;
 
   {
+    StringRef Code = "hasParamA.bind(\"parmABinding\")";
     llvm::Optional<DynTypedMatcher> TopLevelLetBinding(
-        Parser::parseMatcherExpression("hasParamA.bind(\"parmABinding\")",
-                                       nullptr, &NamedValues, &Error));
+        Parser::parseMatcherExpression(Code, nullptr, &NamedValues, &Error));
     EXPECT_EQ("", Error.toStringFull());
     auto M = TopLevelLetBinding->unconditionalConvertTo<Decl>();
 
     EXPECT_TRUE(matchAndVerifyResultTrue(
         "void foo(int a);", M,
-        llvm::make_unique<VerifyIdIsBoundTo<FunctionDecl>>("parmABinding")));
+        std::make_unique<VerifyIdIsBoundTo<FunctionDecl>>("parmABinding")));
     EXPECT_TRUE(matchAndVerifyResultFalse(
         "void foo(int b);", M,
-        llvm::make_unique<VerifyIdIsBoundTo<FunctionDecl>>("parmABinding")));
+        std::make_unique<VerifyIdIsBoundTo<FunctionDecl>>("parmABinding")));
   }
 
   {
+    StringRef Code = "functionDecl(hasParamA.bind(\"parmABinding\"))";
     llvm::Optional<DynTypedMatcher> NestedLetBinding(
-        Parser::parseMatcherExpression(
-            "functionDecl(hasParamA.bind(\"parmABinding\"))", nullptr,
-            &NamedValues, &Error));
+        Parser::parseMatcherExpression(Code, nullptr, &NamedValues, &Error));
     EXPECT_EQ("", Error.toStringFull());
     auto M = NestedLetBinding->unconditionalConvertTo<Decl>();
 
     EXPECT_TRUE(matchAndVerifyResultTrue(
         "void foo(int a);", M,
-        llvm::make_unique<VerifyIdIsBoundTo<FunctionDecl>>("parmABinding")));
+        std::make_unique<VerifyIdIsBoundTo<FunctionDecl>>("parmABinding")));
     EXPECT_TRUE(matchAndVerifyResultFalse(
         "void foo(int b);", M,
-        llvm::make_unique<VerifyIdIsBoundTo<FunctionDecl>>("parmABinding")));
+        std::make_unique<VerifyIdIsBoundTo<FunctionDecl>>("parmABinding")));
   }
 }
 

@@ -1,9 +1,8 @@
 //===- IPDBRawSymbol.h - base interface for PDB symbol types ----*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -13,18 +12,14 @@
 #include "PDBTypes.h"
 #include "llvm/ADT/BitmaskEnum.h"
 #include "llvm/ADT/SmallVector.h"
-#include "llvm/ADT/StringRef.h"
 #include "llvm/DebugInfo/CodeView/CodeView.h"
 #include <memory>
 
 namespace llvm {
 class raw_ostream;
+class StringRef;
 
 namespace pdb {
-
-class IPDBSession;
-class PDBSymbolTypeVTable;
-class PDBSymbolTypeVTableShape;
 
 enum class PdbSymbolIdField : uint32_t {
   None = 0,

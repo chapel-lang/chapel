@@ -51,7 +51,7 @@ Overview
 The ``llvm/utils/docker`` folder contains Dockerfiles and simple bash scripts to
 serve as a basis for anyone who wants to create their own Docker image with
 LLVM components, compiled from sources. The sources are checked out from the
-upstream svn repository when building the image.
+upstream git repository when building the image.
 
 The resulting image contains only the requested LLVM components and a few extra
 packages to make the image minimally useful for C++ development, e.g. libstdc++
@@ -68,7 +68,7 @@ Usage
 =====
 The ``llvm/utils/build_docker_image.sh`` script provides a rather high degree of
 control on how to run the build. It allows you to specify the projects to
-checkout from svn and provide a list of CMake arguments to use during when
+checkout from git and provide a list of CMake arguments to use during when
 building LLVM inside docker container.
 
 Here's a very simple example of getting a docker image with clang binary,
@@ -79,7 +79,7 @@ compiled by the system compiler in the debian8 image:
     ./llvm/utils/docker/build_docker_image.sh \
 	--source debian8 \
 	--docker-repository clang-debian8 --docker-tag "staging" \
-	-p clang -i install-clang -i install-clang-headers \
+	-p clang -i install-clang -i install-clang-resource-headers \
 	-- \
 	-DCMAKE_BUILD_TYPE=Release
 
@@ -95,11 +95,11 @@ this command will do that:
     ./build_docker_image.sh \
 	--source debian8 \
 	--docker-repository clang-debian8 --docker-tag "staging" \
-	-p clang -i stage2-install-clang -i stage2-install-clang-headers \
+	-p clang -i stage2-install-clang -i stage2-install-clang-resource-headers \
 	-- \
 	-DLLVM_TARGETS_TO_BUILD=Native -DCMAKE_BUILD_TYPE=Release \
 	-DBOOTSTRAP_CMAKE_BUILD_TYPE=Release \
-	-DCLANG_ENABLE_BOOTSTRAP=ON -DCLANG_BOOTSTRAP_TARGETS="install-clang;install-clang-headers"
+	-DCLANG_ENABLE_BOOTSTRAP=ON -DCLANG_BOOTSTRAP_TARGETS="install-clang;install-clang-resource-headers"
 	
 This will produce a new image ``clang-debian8:staging`` from the latest
 upstream revision.
@@ -165,7 +165,7 @@ debian8-based image using the latest ``google/stable`` sources for you:
     ./llvm/utils/docker/build_docker_image.sh \
 	-s debian8 --d clang-debian8 -t "staging" \
 	--branch branches/google/stable \
-	-p clang -i install-clang -i install-clang-headers \
+	-p clang -i install-clang -i install-clang-resource-headers \
 	-- \
 	-DCMAKE_BUILD_TYPE=Release
 

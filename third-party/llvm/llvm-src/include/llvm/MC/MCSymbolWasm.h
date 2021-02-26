@@ -1,9 +1,8 @@
 //===- MCSymbolWasm.h -  ----------------------------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 #ifndef LLVM_MC_MCSYMBOLWASM_H
@@ -19,8 +18,11 @@ class MCSymbolWasm : public MCSymbol {
   bool IsWeak = false;
   bool IsHidden = false;
   bool IsComdat = false;
-  Optional<std::string> ImportModule;
-  Optional<std::string> ImportName;
+  mutable bool IsUsedInInitArray = false;
+  mutable bool IsUsedInGOT = false;
+  Optional<StringRef> ImportModule;
+  Optional<StringRef> ImportName;
+  Optional<StringRef> ExportName;
   wasm::WasmSignature *Signature = nullptr;
   Optional<wasm::WasmGlobalType> GlobalType;
   Optional<wasm::WasmEventType> EventType;
@@ -30,8 +32,6 @@ class MCSymbolWasm : public MCSymbol {
   const MCExpr *SymbolSize = nullptr;
 
 public:
-  // Use a module name of "env" for now, for compatibility with existing tools.
-  // This is temporary, and may change, as the ABI is not yet stable.
   MCSymbolWasm(const StringMapEntry<bool> *Name, bool isTemporary)
       : MCSymbol(SymbolKindWasm, Name, isTemporary) {}
   static bool classof(const MCSymbol *S) { return S->isWasm(); }
@@ -47,6 +47,20 @@ public:
   wasm::WasmSymbolType getType() const { return Type; }
   void setType(wasm::WasmSymbolType type) { Type = type; }
 
+  bool isExported() const {
+    return getFlags() & wasm::WASM_SYMBOL_EXPORTED;
+  }
+  void setExported() const {
+    modifyFlags(wasm::WASM_SYMBOL_EXPORTED, wasm::WASM_SYMBOL_EXPORTED);
+  }
+
+  bool isNoStrip() const {
+    return getFlags() & wasm::WASM_SYMBOL_NO_STRIP;
+  }
+  void setNoStrip() const {
+    modifyFlags(wasm::WASM_SYMBOL_NO_STRIP, wasm::WASM_SYMBOL_NO_STRIP);
+  }
+
   bool isWeak() const { return IsWeak; }
   void setWeak(bool isWeak) { IsWeak = isWeak; }
 
@@ -56,21 +70,35 @@ public:
   bool isComdat() const { return IsComdat; }
   void setComdat(bool isComdat) { IsComdat = isComdat; }
 
-  const StringRef getImportModule() const {
-      if (ImportModule.hasValue()) {
-          return ImportModule.getValue();
-      }
-      return "env";
+  bool hasImportModule() const { return ImportModule.hasValue(); }
+  StringRef getImportModule() const {
+    if (ImportModule.hasValue())
+      return ImportModule.getValue();
+    // Use a default module name of "env" for now, for compatibility with
+    // existing tools.
+    // TODO(sbc): Find a way to specify a default value in the object format
+    // without picking a hardcoded value like this.
+    return "env";
   }
   void setImportModule(StringRef Name) { ImportModule = Name; }
 
-  const StringRef getImportName() const {
-      if (ImportName.hasValue()) {
-          return ImportName.getValue();
-      }
-      return getName();
+  bool hasImportName() const { return ImportName.hasValue(); }
+  StringRef getImportName() const {
+    if (ImportName.hasValue())
+      return ImportName.getValue();
+    return getName();
   }
   void setImportName(StringRef Name) { ImportName = Name; }
+
+  bool hasExportName() const { return ExportName.hasValue(); }
+  StringRef getExportName() const { return ExportName.getValue(); }
+  void setExportName(StringRef Name) { ExportName = Name; }
+
+  void setUsedInGOT() const { IsUsedInGOT = true; }
+  bool isUsedInGOT() const { return IsUsedInGOT; }
+
+  void setUsedInInitArray() const { IsUsedInInitArray = true; }
+  bool isUsedInInitArray() const { return IsUsedInInitArray; }
 
   const wasm::WasmSignature *getSignature() const { return Signature; }
   void setSignature(wasm::WasmSignature *Sig) { Signature = Sig; }

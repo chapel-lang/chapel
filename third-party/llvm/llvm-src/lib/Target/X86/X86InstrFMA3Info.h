@@ -1,9 +1,8 @@
 //===- X86InstrFMA3Info.h - X86 FMA3 Instruction Information ----*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -15,11 +14,7 @@
 #ifndef LLVM_LIB_TARGET_X86_UTILS_X86INSTRFMA3INFO_H
 #define LLVM_LIB_TARGET_X86_UTILS_X86INSTRFMA3INFO_H
 
-#include "X86.h"
-#include "llvm/ADT/DenseMap.h"
-#include <cassert>
 #include <cstdint>
-#include <set>
 
 namespace llvm {
 

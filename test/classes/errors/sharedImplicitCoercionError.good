@@ -1,0 +1,4 @@
+sharedImplicitCoercionError.chpl:8: In function 'test':
+sharedImplicitCoercionError.chpl:10: error: in call to 'print', cannot pass result of coercion by reference
+sharedImplicitCoercionError.chpl:10: note: implicit coercion from 'shared C2' to 'shared C1'
+sharedImplicitCoercionError.chpl:4: note: when passing to 'const ref' intent formal 'val'

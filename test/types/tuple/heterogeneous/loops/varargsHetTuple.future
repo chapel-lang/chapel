@@ -1,0 +1,3 @@
+bug: loops over varargs-created heterogeneous tuples fail with --baseline
+
+Specifically, the string component seems to cause problems.

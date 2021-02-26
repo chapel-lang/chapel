@@ -1,4 +1,5 @@
 bug: forwarding does not work without 'this'
+#5979
 
 In the current compiler, scopeResolve is responsible for adding the
 implicit 'this.' to a method call within a method. That's not happening

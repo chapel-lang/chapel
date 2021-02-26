@@ -1,9 +1,8 @@
 //===-- PPCMCExpr.h - PPC specific MC expression classes --------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -34,33 +33,29 @@ public:
 private:
   const VariantKind Kind;
   const MCExpr *Expr;
-  bool IsDarwin;
 
   int64_t evaluateAsInt64(int64_t Value) const;
 
-  explicit PPCMCExpr(VariantKind Kind, const MCExpr *Expr, bool IsDarwin)
-      : Kind(Kind), Expr(Expr), IsDarwin(IsDarwin) {}
+  explicit PPCMCExpr(VariantKind Kind, const MCExpr *Expr)
+      : Kind(Kind), Expr(Expr) {}
 
 public:
   /// @name Construction
   /// @{
 
   static const PPCMCExpr *create(VariantKind Kind, const MCExpr *Expr,
-                                 bool isDarwin, MCContext &Ctx);
+                                 MCContext &Ctx);
 
-  static const PPCMCExpr *createLo(const MCExpr *Expr,
-                                   bool isDarwin, MCContext &Ctx) {
-    return create(VK_PPC_LO, Expr, isDarwin, Ctx);
+  static const PPCMCExpr *createLo(const MCExpr *Expr, MCContext &Ctx) {
+    return create(VK_PPC_LO, Expr, Ctx);
   }
 
-  static const PPCMCExpr *createHi(const MCExpr *Expr,
-                                   bool isDarwin, MCContext &Ctx) {
-    return create(VK_PPC_HI, Expr, isDarwin, Ctx);
+  static const PPCMCExpr *createHi(const MCExpr *Expr, MCContext &Ctx) {
+    return create(VK_PPC_HI, Expr, Ctx);
   }
 
-  static const PPCMCExpr *createHa(const MCExpr *Expr,
-                                   bool isDarwin, MCContext &Ctx) {
-    return create(VK_PPC_HA, Expr, isDarwin, Ctx);
+  static const PPCMCExpr *createHa(const MCExpr *Expr, MCContext &Ctx) {
+    return create(VK_PPC_HA, Expr, Ctx);
   }
 
   /// @}
@@ -72,10 +67,6 @@ public:
 
   /// getSubExpr - Get the child of this expression.
   const MCExpr *getSubExpr() const { return Expr; }
-
-  /// isDarwinSyntax - True if expression is to be printed using Darwin syntax.
-  bool isDarwinSyntax() const { return IsDarwin; }
-
 
   /// @}
 

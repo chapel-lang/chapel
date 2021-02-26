@@ -1,9 +1,8 @@
 //===-- X86InstrFormats.td - X86 Instruction Formats -------*- tablegen -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -27,22 +26,34 @@ def RawFrmDst     : Format<5>;
 def RawFrmDstSrc  : Format<6>;
 def RawFrmImm8    : Format<7>;
 def RawFrmImm16   : Format<8>;
-def MRMDestMem     : Format<32>;
-def MRMSrcMem      : Format<33>;
-def MRMSrcMem4VOp3 : Format<34>;
-def MRMSrcMemOp4   : Format<35>;
-def MRMXm  : Format<39>;
-def MRM0m  : Format<40>;  def MRM1m  : Format<41>;  def MRM2m  : Format<42>;
-def MRM3m  : Format<43>;  def MRM4m  : Format<44>;  def MRM5m  : Format<45>;
-def MRM6m  : Format<46>;  def MRM7m  : Format<47>;
-def MRMDestReg     : Format<48>;
-def MRMSrcReg      : Format<49>;
-def MRMSrcReg4VOp3 : Format<50>;
-def MRMSrcRegOp4   : Format<51>;
-def MRMXr  : Format<55>;
-def MRM0r  : Format<56>;  def MRM1r  : Format<57>;  def MRM2r  : Format<58>;
-def MRM3r  : Format<59>;  def MRM4r  : Format<60>;  def MRM5r  : Format<61>;
-def MRM6r  : Format<62>;  def MRM7r  : Format<63>;
+def AddCCFrm      : Format<9>;
+def PrefixByte    : Format<10>;
+def MRMr0          : Format<21>;
+def MRMSrcMemFSIB  : Format<22>;
+def MRMDestMemFSIB : Format<23>;
+def MRMDestMem     : Format<24>;
+def MRMSrcMem      : Format<25>;
+def MRMSrcMem4VOp3 : Format<26>;
+def MRMSrcMemOp4   : Format<27>;
+def MRMSrcMemCC    : Format<28>;
+def MRMXmCC: Format<30>;
+def MRMXm  : Format<31>;
+def MRM0m  : Format<32>;  def MRM1m  : Format<33>;  def MRM2m  : Format<34>;
+def MRM3m  : Format<35>;  def MRM4m  : Format<36>;  def MRM5m  : Format<37>;
+def MRM6m  : Format<38>;  def MRM7m  : Format<39>;
+def MRMDestReg     : Format<40>;
+def MRMSrcReg      : Format<41>;
+def MRMSrcReg4VOp3 : Format<42>;
+def MRMSrcRegOp4   : Format<43>;
+def MRMSrcRegCC    : Format<44>;
+def MRMXrCC: Format<46>;
+def MRMXr  : Format<47>;
+def MRM0r  : Format<48>;  def MRM1r  : Format<49>;  def MRM2r  : Format<50>;
+def MRM3r  : Format<51>;  def MRM4r  : Format<52>;  def MRM5r  : Format<53>;
+def MRM6r  : Format<54>;  def MRM7r  : Format<55>;
+def MRM0X  : Format<56>;  def MRM1X  : Format<57>;  def MRM2X  : Format<58>;
+def MRM3X  : Format<59>;  def MRM4X  : Format<60>;  def MRM5X  : Format<61>;
+def MRM6X  : Format<62>;  def MRM7X  : Format<63>;
 def MRM_C0 : Format<64>;  def MRM_C1 : Format<65>;  def MRM_C2 : Format<66>;
 def MRM_C3 : Format<67>;  def MRM_C4 : Format<68>;  def MRM_C5 : Format<69>;
 def MRM_C6 : Format<70>;  def MRM_C7 : Format<71>;  def MRM_C8 : Format<72>;
@@ -206,13 +217,10 @@ class TAPS : TA { Prefix OpPrefix = PS; }
 class TAPD : TA { Prefix OpPrefix = PD; }
 class TAXD : TA { Prefix OpPrefix = XD; }
 class VEX    { Encoding OpEnc = EncVEX; }
-class VEX_W    { bits<2> VEX_WPrefix = 1; }
-class VEX_WIG  { bits<2> VEX_WPrefix = 2; }
+class VEX_W    { bit HasVEX_W = 1; }
+class VEX_WIG  { bit IgnoresVEX_W = 1; }
 // Special version of VEX_W that can be changed to VEX.W==0 for EVEX2VEX.
-// FIXME: We should consider adding separate bits for VEX_WIG and the extra
-// part of W1X. This would probably simplify the tablegen emitters and
-// the TSFlags creation below.
-class VEX_W1X  { bits<2> VEX_WPrefix = 3; }
+class VEX_W1X  { bit HasVEX_W = 1; bit EVEX_W1_VEX_W0 = 1; }
 class VEX_4V : VEX { bit hasVEX_4V = 1; }
 class VEX_L  { bit hasVEX_L = 1; }
 class VEX_LIG { bit ignoresVEX_L = 1; }
@@ -226,6 +234,7 @@ class EVEX_V512 { bit hasEVEX_L2 = 1; bit hasVEX_L = 0; }
 class EVEX_V256 { bit hasEVEX_L2 = 0; bit hasVEX_L = 1; }
 class EVEX_V128 { bit hasEVEX_L2 = 0; bit hasVEX_L = 0; }
 class NOTRACK { bit hasNoTrackPrefix = 1; }
+class SIMD_EXC { list<Register> Uses = [MXCSR]; bit mayRaiseFPException = 1; }
 
 // Specify AVX512 8-bit compressed displacement encoding based on the vector
 // element size in bits (8, 16, 32, 64) and the CDisp8 form.
@@ -296,7 +305,10 @@ class X86Inst<bits<8> opcod, Format f, ImmType i, dag outs, dag ins,
   bit hasREPPrefix = 0;     // Does this inst have a REP prefix?
   Encoding OpEnc = EncNormal; // Encoding used by this instruction
   bits<2> OpEncBits = OpEnc.Value;
-  bits<2> VEX_WPrefix = 0;  // Does this inst set the VEX_W field?
+  bit HasVEX_W = 0;         // Does this inst set the VEX_W field?
+  bit IgnoresVEX_W = 0;     // Does this inst ignore VEX_W field?
+  bit EVEX_W1_VEX_W0 = 0;   // This EVEX inst with VEX.W==1 can become a VEX
+                            // instruction with VEX.W == 0.
   bit hasVEX_4V = 0;        // Does this inst require the VEX.VVVV field?
   bit hasVEX_L = 0;         // Does this inst use large (256-bit) registers?
   bit ignoresVEX_L = 0;     // Does this instruction ignore the L-bit
@@ -311,11 +323,8 @@ class X86Inst<bits<8> opcod, Format f, ImmType i, dag outs, dag ins,
   bit hasEVEX_RC = 0;       // Explicitly specified rounding control in FP instruction.
   bit hasNoTrackPrefix = 0; // Does this inst has 0x3E (NoTrack) prefix?
 
-  bits<2> EVEX_LL;
-  let EVEX_LL{0} = hasVEX_L;
-  let EVEX_LL{1} = hasEVEX_L2;
   // Vector size in bytes.
-  bits<7> VectSize = !shl(16, EVEX_LL);
+  bits<7> VectSize = !if(hasEVEX_L2, 64, !if(hasVEX_L, 32, 16));
 
   // The scaling factor for AVX512's compressed displacement is either
   //   - the size of a  power-of-two number of elements or
@@ -355,7 +364,7 @@ class X86Inst<bits<8> opcod, Format f, ImmType i, dag outs, dag ins,
   let TSFlags{29-28} = OpEncBits;
   let TSFlags{37-30} = Opcode;
   // Currently no need for second bit in TSFlags - W Ignore is equivalent to 0.
-  let TSFlags{38}    = VEX_WPrefix{0};
+  let TSFlags{38}    = HasVEX_W;
   let TSFlags{39}    = hasVEX_4V;
   let TSFlags{40}    = hasVEX_L;
   let TSFlags{41}    = hasEVEX_K;
@@ -440,12 +449,15 @@ class Ii32PCRel<bits<8> o, Format f, dag outs, dag ins, string asm,
 // FPStack Instruction Templates:
 // FPI - Floating Point Instruction template.
 class FPI<bits<8> o, Format F, dag outs, dag ins, string asm>
-  : I<o, F, outs, ins, asm, []> {}
+  : I<o, F, outs, ins, asm, []> {
+  let Defs = [FPSW];
+}
 
 // FpI_ - Floating Point Pseudo Instruction template. Not Predicated.
 class FpI_<dag outs, dag ins, FPFormat fp, list<dag> pattern>
   : PseudoI<outs, ins, pattern> {
   let FPForm = fp;
+  let Defs = [FPSW];
 }
 
 // Templates for instructions that use a 16- or 32-bit segmented address as

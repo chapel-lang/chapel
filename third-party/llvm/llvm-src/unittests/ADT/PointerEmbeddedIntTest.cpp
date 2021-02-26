@@ -1,9 +1,8 @@
 //===- llvm/unittest/ADT/PointerEmbeddedIntTest.cpp -----------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -18,8 +17,8 @@ TEST(PointerEmbeddedIntTest, Basic) {
 
   EXPECT_EQ(42, I);
   EXPECT_EQ(43, I + 1);
-  EXPECT_EQ(sizeof(uintptr_t) * CHAR_BIT - CHAR_BIT,
-            PointerLikeTypeTraits<decltype(I)>::NumLowBitsAvailable);
+  EXPECT_EQ((int)sizeof(uintptr_t) * CHAR_BIT - CHAR_BIT,
+            (int)PointerLikeTypeTraits<decltype(I)>::NumLowBitsAvailable);
 
   EXPECT_FALSE(I == J);
   EXPECT_TRUE(I != J);

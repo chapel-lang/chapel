@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -147,9 +147,9 @@ module ArrayViewReindex {
         return downdomInst;
     }
 
-    proc dsiBuildArray(type eltType) {
+    proc dsiBuildArray(type eltType, param initElts:bool) {
       pragma "no auto destroy"
-      const downarr = _newArray(downdom.dsiBuildArray(eltType));
+      const downarr = _newArray(downdom.dsiBuildArray(eltType, initElts));
       return new unmanaged ArrayViewReindexArr(eltType  =eltType,
                                         _DomPid = this.pid,
                                         dom = _to_unmanaged(this),
@@ -199,6 +199,7 @@ module ArrayViewReindex {
       ownsDownDomInst = true;
     }
 
+    pragma "order independent yielding loops"
     iter these() {
       if chpl__isDROrDRView(downdom) {
         for i in updom do
@@ -209,6 +210,7 @@ module ArrayViewReindex {
       }
     }
 
+    pragma "order independent yielding loops"
     iter these(param tag: iterKind) where tag == iterKind.standalone
       && chpl__isDROrDRView(downdom)
       && __primitive("method call resolves", updom, "these", tag)
@@ -217,6 +219,7 @@ module ArrayViewReindex {
           yield i;
     }
 
+    pragma "order independent yielding loops"
     iter these(param tag: iterKind) where tag == iterKind.standalone
       && !chpl__isDROrDRView(downdom)
       && __primitive("method call resolves", downdom, "these", tag)
@@ -268,7 +271,7 @@ module ArrayViewReindex {
       return dist;
     }
 
-    proc dsiTargetLocales() {
+    proc dsiTargetLocales() const ref {
       return downdom.dsiTargetLocales();
     }
 
@@ -379,11 +382,11 @@ module ArrayViewReindex {
     // through the array field above.
     const indexCache;
 
-    const ownsArrInstance;
+    param ownsArrInstance;
 
     proc init(type eltType, const _DomPid, const dom,
               const _ArrPid, const _ArrInstance,
-              const ownsArrInstance : bool = false) {
+              param ownsArrInstance : bool) {
       super.init(eltType = eltType);
       this._DomPid         = _DomPid;
       this.dom             = dom;
@@ -391,6 +394,8 @@ module ArrayViewReindex {
       this._ArrInstance    = _ArrInstance;
       this.indexCache      = buildIndexCacheHelper(_ArrInstance, dom);
       this.ownsArrInstance = ownsArrInstance;
+      this.complete();
+      __primitive("set aliasing array on type", this.type, !ownsArrInstance);
     }
 
     forwarding arr except these,
@@ -433,7 +438,7 @@ module ArrayViewReindex {
     // methods like this...
     //
     override proc isReindexArrayView() param {
-      return true;
+      return !ownsArrInstance;
     }
 
 
@@ -446,6 +451,7 @@ module ArrayViewReindex {
         yield elem;
     }
 
+    pragma "order independent yielding loops"
     iter these(param tag: iterKind) ref
       where tag == iterKind.standalone && !localeModelHasSublocales &&
            __primitive("method call resolves", privDom, "these", tag) {
@@ -465,6 +471,7 @@ module ArrayViewReindex {
       }
     }
 
+    pragma "order independent yielding loops"
     iter these(param tag: iterKind, followThis) ref
       where tag == iterKind.follower {
       for i in privDom.these(tag, followThis) {
@@ -591,7 +598,8 @@ module ArrayViewReindex {
                                      _DomPid=privatizeData(0),
                                      dom=privatizeData(1),
                                      _ArrPid=privatizeData(2),
-                                     _ArrInstance=privatizeData(3));
+                                     _ArrInstance=privatizeData(3),
+                                     ownsArrInstance=this.ownsArrInstance);
     }
 
     //
@@ -671,7 +679,11 @@ module ArrayViewReindex {
       return this;
     }
 
-    override proc dsiDestroyArr() {
+    override proc dsiElementInitializationComplete() {
+      // no elements allocated here, so no action necessary
+    }
+
+    override proc dsiDestroyArr(deinitElts:bool) {
       if ownsArrInstance {
         _delete_arr(_ArrInstance, _isPrivatized(_ArrInstance));
       }

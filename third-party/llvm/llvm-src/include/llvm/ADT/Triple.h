@@ -1,9 +1,8 @@
 //===-- llvm/ADT/Triple.h - Target triple helper class ----------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -19,6 +18,8 @@
 #undef sparc
 
 namespace llvm {
+
+class VersionTuple;
 
 /// Triple - Helper class for working with autoconf configuration names. For
 /// historical reasons, we also call these 'triples' (they used to contain
@@ -50,6 +51,7 @@ public:
     armeb,          // ARM (big endian): armeb
     aarch64,        // AArch64 (little endian): aarch64
     aarch64_be,     // AArch64 (big endian): aarch64_be
+    aarch64_32,     // AArch64 (little endian) ILP32: aarch64_32
     arc,            // ARC: Synopsys ARC
     avr,            // AVR: Atmel AVR microcontroller
     bpfel,          // eBPF or extended BPF or 64-bit BPF (little endian)
@@ -95,11 +97,13 @@ public:
     wasm64,         // WebAssembly with 64-bit pointers
     renderscript32, // 32-bit RenderScript
     renderscript64, // 64-bit RenderScript
-    LastArchType = renderscript64
+    ve,             // NEC SX-Aurora Vector Engine
+    LastArchType = ve
   };
   enum SubArchType {
     NoSubArch,
 
+    ARMSubArch_v8_6a,
     ARMSubArch_v8_5a,
     ARMSubArch_v8_4a,
     ARMSubArch_v8_3a,
@@ -109,6 +113,7 @@ public:
     ARMSubArch_v8r,
     ARMSubArch_v8m_baseline,
     ARMSubArch_v8m_mainline,
+    ARMSubArch_v8_1m_mainline,
     ARMSubArch_v7,
     ARMSubArch_v7em,
     ARMSubArch_v7m,
@@ -127,7 +132,9 @@ public:
     KalimbaSubArch_v4,
     KalimbaSubArch_v5,
 
-    MipsSubArch_r6
+    MipsSubArch_r6,
+
+    PPCSubArch_spe
   };
   enum VendorType {
     UnknownVendor,
@@ -187,7 +194,8 @@ public:
     HermitCore, // HermitCore Unikernel/Multikernel
     Hurd,       // GNU/Hurd
     WASI,       // Experimental WebAssembly OS
-    LastOSType = WASI
+    Emscripten,
+    LastOSType = Emscripten
   };
   enum EnvironmentType {
     UnknownEnvironment,
@@ -210,8 +218,9 @@ public:
     Itanium,
     Cygnus,
     CoreCLR,
-    Simulator,  // Simulator variants of other systems, e.g., Apple's iOS
-    LastEnvironmentType = Simulator
+    Simulator, // Simulator variants of other systems, e.g., Apple's iOS
+    MacABI, // Mac Catalyst variant of Apple's iOS deployment target.
+    LastEnvironmentType = MacABI
   };
   enum ObjectFormatType {
     UnknownObjectFormat,
@@ -220,6 +229,7 @@ public:
     ELF,
     MachO,
     Wasm,
+    XCOFF,
   };
 
 private:
@@ -415,7 +425,7 @@ public:
     if (LHS[1] != Minor)
       return LHS[1] < Minor;
     if (LHS[2] != Micro)
-      return LHS[1] < Micro;
+      return LHS[2] < Micro;
 
     return false;
   }
@@ -430,17 +440,7 @@ public:
   /// compatibility, which handles supporting skewed version numbering schemes
   /// used by the "darwin" triples.
   bool isMacOSXVersionLT(unsigned Major, unsigned Minor = 0,
-                         unsigned Micro = 0) const {
-    assert(isMacOSX() && "Not an OS X triple!");
-
-    // If this is OS X, expect a sane version number.
-    if (getOS() == Triple::MacOSX)
-      return isOSVersionLT(Major, Minor, Micro);
-
-    // Otherwise, compare to the "Darwin" number.
-    assert(Major == 10 && "Unexpected major version");
-    return isOSVersionLT(Minor + 4, Micro, 0);
-  }
+                         unsigned Micro = 0) const;
 
   /// isMacOSX - Is this a Mac OS X triple. For legacy reasons, we support both
   /// "darwin" and "osx" as OS X triples.
@@ -471,13 +471,17 @@ public:
     return getSubArch() == Triple::ARMSubArch_v7k;
   }
 
-  /// isOSDarwin - Is this a "Darwin" OS (OS X, iOS, or watchOS).
+  /// isOSDarwin - Is this a "Darwin" OS (macOS, iOS, tvOS or watchOS).
   bool isOSDarwin() const {
     return isMacOSX() || isiOS() || isWatchOS();
   }
 
   bool isSimulatorEnvironment() const {
     return getEnvironment() == Triple::Simulator;
+  }
+
+  bool isMacCatalystEnvironment() const {
+    return getEnvironment() == Triple::MacABI;
   }
 
   bool isOSNetBSD() const {
@@ -524,32 +528,36 @@ public:
     return getOS() == Triple::Haiku;
   }
 
-  /// Checks if the environment could be MSVC.
-  bool isWindowsMSVCEnvironment() const {
-    return getOS() == Triple::Win32 &&
-           (getEnvironment() == Triple::UnknownEnvironment ||
-            getEnvironment() == Triple::MSVC);
+  /// Tests whether the OS is Windows.
+  bool isOSWindows() const {
+    return getOS() == Triple::Win32;
   }
 
   /// Checks if the environment is MSVC.
   bool isKnownWindowsMSVCEnvironment() const {
-    return getOS() == Triple::Win32 && getEnvironment() == Triple::MSVC;
+    return isOSWindows() && getEnvironment() == Triple::MSVC;
+  }
+
+  /// Checks if the environment could be MSVC.
+  bool isWindowsMSVCEnvironment() const {
+    return isKnownWindowsMSVCEnvironment() ||
+           (isOSWindows() && getEnvironment() == Triple::UnknownEnvironment);
   }
 
   bool isWindowsCoreCLREnvironment() const {
-    return getOS() == Triple::Win32 && getEnvironment() == Triple::CoreCLR;
+    return isOSWindows() && getEnvironment() == Triple::CoreCLR;
   }
 
   bool isWindowsItaniumEnvironment() const {
-    return getOS() == Triple::Win32 && getEnvironment() == Triple::Itanium;
+    return isOSWindows() && getEnvironment() == Triple::Itanium;
   }
 
   bool isWindowsCygwinEnvironment() const {
-    return getOS() == Triple::Win32 && getEnvironment() == Triple::Cygnus;
+    return isOSWindows() && getEnvironment() == Triple::Cygnus;
   }
 
   bool isWindowsGNUEnvironment() const {
-    return getOS() == Triple::Win32 && getEnvironment() == Triple::GNU;
+    return isOSWindows() && getEnvironment() == Triple::GNU;
   }
 
   /// Tests for either Cygwin or MinGW OS
@@ -561,11 +569,6 @@ public:
   bool isOSMSVCRT() const {
     return isWindowsMSVCEnvironment() || isWindowsGNUEnvironment() ||
            isWindowsItaniumEnvironment();
-  }
-
-  /// Tests whether the OS is Windows.
-  bool isOSWindows() const {
-    return getOS() == Triple::Win32;
   }
 
   /// Tests whether the OS is NaCl (Native Client)
@@ -593,11 +596,21 @@ public:
     return getOS() == Triple::WASI;
   }
 
+  /// Tests whether the OS is Emscripten.
+  bool isOSEmscripten() const {
+    return getOS() == Triple::Emscripten;
+  }
+
   /// Tests whether the OS uses glibc.
   bool isOSGlibc() const {
     return (getOS() == Triple::Linux || getOS() == Triple::KFreeBSD ||
             getOS() == Triple::Hurd) &&
            !isAndroid();
+  }
+
+  /// Tests whether the OS is AIX.
+  bool isOSAIX() const {
+    return getOS() == Triple::AIX;
   }
 
   /// Tests whether the OS uses the ELF binary format.
@@ -618,6 +631,11 @@ public:
   /// Tests whether the OS uses the Wasm binary format.
   bool isOSBinFormatWasm() const {
     return getObjectFormat() == Triple::Wasm;
+  }
+
+  /// Tests whether the OS uses the XCOFF binary format.
+  bool isOSBinFormatXCOFF() const {
+    return getObjectFormat() == Triple::XCOFF;
   }
 
   /// Tests whether the target is the PS4 CPU
@@ -656,9 +674,21 @@ public:
            getEnvironment() == Triple::MuslEABIHF;
   }
 
+  /// Tests whether the target is SPIR (32- or 64-bit).
+  bool isSPIR() const {
+    return getArch() == Triple::spir || getArch() == Triple::spir64;
+  }
+
   /// Tests whether the target is NVPTX (32- or 64-bit).
   bool isNVPTX() const {
     return getArch() == Triple::nvptx || getArch() == Triple::nvptx64;
+  }
+
+  /// Tests whether the target is AMDGCN
+  bool isAMDGCN() const { return getArch() == Triple::amdgcn; }
+
+  bool isAMDGPU() const {
+    return getArch() == Triple::r600 || getArch() == Triple::amdgcn;
   }
 
   /// Tests whether the target is Thumb (little and big endian).
@@ -691,9 +721,39 @@ public:
     return isMIPS32() || isMIPS64();
   }
 
+  /// Tests whether the target is 64-bit PowerPC (little and big endian).
+  bool isPPC64() const {
+    return getArch() == Triple::ppc64 || getArch() == Triple::ppc64le;
+  }
+
+  /// Tests whether the target is RISC-V (32- and 64-bit).
+  bool isRISCV() const {
+    return getArch() == Triple::riscv32 || getArch() == Triple::riscv64;
+  }
+
+  /// Tests whether the target is SystemZ.
+  bool isSystemZ() const {
+    return getArch() == Triple::systemz;
+  }
+
+  /// Tests whether the target is x86 (32- or 64-bit).
+  bool isX86() const {
+    return getArch() == Triple::x86 || getArch() == Triple::x86_64;
+  }
+
+  /// Tests whether the target is VE
+  bool isVE() const {
+    return getArch() == Triple::ve;
+  }
+
+  /// Tests whether the target is wasm (32- and 64-bit).
+  bool isWasm() const {
+    return getArch() == Triple::wasm32 || getArch() == Triple::wasm64;
+  }
+
   /// Tests whether the target supports comdat
   bool supportsCOMDAT() const {
-    return !isOSBinFormatMachO();
+    return !(isOSBinFormatMachO() || isOSBinFormatXCOFF());
   }
 
   /// Tests whether the target uses emulated TLS as default.
@@ -800,6 +860,12 @@ public:
   /// Merge target triples.
   std::string merge(const Triple &Other) const;
 
+  /// Some platforms have different minimum supported OS versions that
+  /// varies by the architecture specified in the triple. This function
+  /// returns the minimum supported OS version for this triple if one an exists,
+  /// or an invalid version tuple if this triple doesn't have one.
+  VersionTuple getMinimumSupportedOSVersion() const;
+
   /// @}
   /// @name Static helpers for IDs.
   /// @{
@@ -834,6 +900,10 @@ public:
   static ArchType getArchTypeForLLVMName(StringRef Str);
 
   /// @}
+
+  /// Returns a canonicalized OS version number for the specified OS.
+  static VersionTuple getCanonicalVersionForOS(OSType OSKind,
+                                               const VersionTuple &Version);
 };
 
 } // End llvm namespace

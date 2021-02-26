@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -24,6 +24,10 @@
 #include <stdint.h>
 
 #include "chpl-threads-impl.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 //
 // Threads are the execution vehicles for tasks.  This file declares the
@@ -121,5 +125,9 @@ chpl_thread_mutex_p chpl_thread_mutexNew(void);
 void chpl_thread_mutexLock(chpl_thread_mutex_p);
 void chpl_thread_mutexUnlock(chpl_thread_mutex_p);
 void chpl_thread_mutexDestroy(chpl_thread_mutex_p);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -24,6 +24,10 @@
 #include <stdlib.h>
 #ifdef __GLIBC__
 #include <malloc.h>  // get memalign
+#endif
+
+#ifdef __cplusplus
+extern "C" {
 #endif
 
 static inline void* sys_calloc(size_t n, size_t size) {
@@ -53,5 +57,9 @@ static inline void* sys_realloc(void* ptr, size_t size) {
 static inline void sys_free(void* ptr) {
   free(ptr);
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

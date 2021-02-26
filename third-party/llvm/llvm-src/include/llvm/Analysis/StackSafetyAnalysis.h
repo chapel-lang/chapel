@@ -1,9 +1,8 @@
 //===- StackSafetyAnalysis.h - Stack memory safety analysis -----*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -14,28 +13,70 @@
 #ifndef LLVM_ANALYSIS_STACKSAFETYANALYSIS_H
 #define LLVM_ANALYSIS_STACKSAFETYANALYSIS_H
 
+#include "llvm/IR/ModuleSummaryIndex.h"
 #include "llvm/IR/PassManager.h"
 #include "llvm/Pass.h"
 
 namespace llvm {
 
+class AllocaInst;
+class ScalarEvolution;
+
 /// Interface to access stack safety analysis results for single function.
 class StackSafetyInfo {
 public:
-  struct FunctionInfo;
+  struct InfoTy;
 
 private:
-  std::unique_ptr<FunctionInfo> Info;
+  Function *F = nullptr;
+  std::function<ScalarEvolution &()> GetSE;
+  mutable std::unique_ptr<InfoTy> Info;
 
 public:
   StackSafetyInfo();
-  StackSafetyInfo(FunctionInfo &&Info);
+  StackSafetyInfo(Function *F, std::function<ScalarEvolution &()> GetSE);
   StackSafetyInfo(StackSafetyInfo &&);
   StackSafetyInfo &operator=(StackSafetyInfo &&);
   ~StackSafetyInfo();
 
+  const InfoTy &getInfo() const;
+
   // TODO: Add useful for client methods.
   void print(raw_ostream &O) const;
+
+  /// Parameters use for a FunctionSummary.
+  /// Function collects access information of all pointer parameters.
+  /// Information includes a range of direct access of parameters by the
+  /// functions and all call sites accepting the parameter.
+  /// StackSafety assumes that missing parameter information means possibility
+  /// of access to the parameter with any offset, so we can correctly link
+  /// code without StackSafety information, e.g. non-ThinLTO.
+  std::vector<FunctionSummary::ParamAccess> getParamAccesses() const;
+};
+
+class StackSafetyGlobalInfo {
+public:
+  struct InfoTy;
+
+private:
+  Module *M = nullptr;
+  std::function<const StackSafetyInfo &(Function &F)> GetSSI;
+  const ModuleSummaryIndex *Index = nullptr;
+  mutable std::unique_ptr<InfoTy> Info;
+  const InfoTy &getInfo() const;
+
+public:
+  StackSafetyGlobalInfo();
+  StackSafetyGlobalInfo(
+      Module *M, std::function<const StackSafetyInfo &(Function &F)> GetSSI,
+      const ModuleSummaryIndex *Index);
+  StackSafetyGlobalInfo(StackSafetyGlobalInfo &&);
+  StackSafetyGlobalInfo &operator=(StackSafetyGlobalInfo &&);
+  ~StackSafetyGlobalInfo();
+
+  bool isSafe(const AllocaInst &AI) const;
+  void print(raw_ostream &O) const;
+  void dump() const;
 };
 
 /// StackSafetyInfo wrapper for the new pass manager.
@@ -73,8 +114,6 @@ public:
   bool runOnFunction(Function &F) override;
 };
 
-using StackSafetyGlobalInfo = std::map<const GlobalValue *, StackSafetyInfo>;
-
 /// This pass performs the global (interprocedural) stack safety analysis (new
 /// pass manager).
 class StackSafetyGlobalAnalysis
@@ -100,20 +139,25 @@ public:
 /// This pass performs the global (interprocedural) stack safety analysis
 /// (legacy pass manager).
 class StackSafetyGlobalInfoWrapperPass : public ModulePass {
-  StackSafetyGlobalInfo SSI;
+  StackSafetyGlobalInfo SSGI;
 
 public:
   static char ID;
 
   StackSafetyGlobalInfoWrapperPass();
+  ~StackSafetyGlobalInfoWrapperPass();
 
-  const StackSafetyGlobalInfo &getResult() const { return SSI; }
+  const StackSafetyGlobalInfo &getResult() const { return SSGI; }
 
   void print(raw_ostream &O, const Module *M) const override;
   void getAnalysisUsage(AnalysisUsage &AU) const override;
 
   bool runOnModule(Module &M) override;
 };
+
+bool needsParamAccessSummary(const Module &M);
+
+void generateParamAccessSummary(ModuleSummaryIndex &Index);
 
 } // end namespace llvm
 

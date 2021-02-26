@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -95,20 +95,6 @@ bool CallInfo::isWellFormed(CallExpr* callExpr) {
     if (t == dtUnknown && sym->hasFlag(FLAG_TYPE_VARIABLE) == false) {
       retval = false;
 
-    } else if (t->symbol->hasFlag(FLAG_GENERIC) == true) {
-      // The _this actual to an initializer may be generic
-      bool isInit = name == astrInit || name == astrInitEquals;
-      if (isInit && i == 2) {
-        actuals.add(sym);
-
-      } else if (sym->hasFlag(FLAG_TYPE_VARIABLE)) {
-        // type formals can be generic
-        actuals.add(sym);
-
-      } else {
-        retval = false;
-      }
-
     } else {
       actuals.add(sym);
     }
@@ -141,14 +127,6 @@ void CallInfo::haltNotWellFormed() const {
                 "type unknown",
                 sym->name);
 
-    } else if (t->symbol->hasFlag(FLAG_GENERIC) == true &&
-               sym->hasFlag(FLAG_TYPE_VARIABLE) == false) {
-      USR_FATAL_CONT(call,
-                "the type of the actual argument '%s' is generic",
-                sym->name);
-      USR_PRINT("generic actual arguments are not currently supported");
-      printUndecoratedClassTypeNote(call, t);
-      USR_STOP();
     }
   }
 }

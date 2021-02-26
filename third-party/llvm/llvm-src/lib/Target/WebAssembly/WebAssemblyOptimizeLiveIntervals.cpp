@@ -1,9 +1,8 @@
 //===--- WebAssemblyOptimizeLiveIntervals.cpp - LiveInterval processing ---===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 ///
@@ -21,6 +20,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "WebAssembly.h"
+#include "WebAssemblyMachineFunctionInfo.h"
 #include "WebAssemblySubtarget.h"
 #include "llvm/CodeGen/LiveIntervals.h"
 #include "llvm/CodeGen/MachineBlockFrequencyInfo.h"
@@ -72,7 +72,7 @@ bool WebAssemblyOptimizeLiveIntervals::runOnMachineFunction(
                     << MF.getName() << '\n');
 
   MachineRegisterInfo &MRI = MF.getRegInfo();
-  LiveIntervals &LIS = getAnalysis<LiveIntervals>();
+  auto &LIS = getAnalysis<LiveIntervals>();
 
   // We don't preserve SSA form.
   MRI.leaveSSA();
@@ -81,12 +81,24 @@ bool WebAssemblyOptimizeLiveIntervals::runOnMachineFunction(
 
   // Split multiple-VN LiveIntervals into multiple LiveIntervals.
   SmallVector<LiveInterval *, 4> SplitLIs;
-  for (unsigned i = 0, e = MRI.getNumVirtRegs(); i < e; ++i) {
-    unsigned Reg = TargetRegisterInfo::index2VirtReg(i);
+  for (unsigned I = 0, E = MRI.getNumVirtRegs(); I < E; ++I) {
+    unsigned Reg = Register::index2VirtReg(I);
+    auto &TRI = *MF.getSubtarget<WebAssemblySubtarget>().getRegisterInfo();
+
     if (MRI.reg_nodbg_empty(Reg))
       continue;
 
     LIS.splitSeparateComponents(LIS.getInterval(Reg), SplitLIs);
+    if (Reg == TRI.getFrameRegister(MF) && SplitLIs.size() > 0) {
+      // The live interval for the frame register was split, resulting in a new
+      // VReg. For now we only support debug info output for a single frame base
+      // value for the function, so just use the last one. It will certainly be
+      // wrong for some part of the function, but until we are able to track
+      // values through live-range splitting and stackification, it will have to
+      // do.
+      MF.getInfo<WebAssemblyFunctionInfo>()->setFrameBaseVreg(
+          SplitLIs.back()->reg);
+    }
     SplitLIs.clear();
   }
 
@@ -104,5 +116,5 @@ bool WebAssemblyOptimizeLiveIntervals::runOnMachineFunction(
     }
   }
 
-  return false;
+  return true;
 }

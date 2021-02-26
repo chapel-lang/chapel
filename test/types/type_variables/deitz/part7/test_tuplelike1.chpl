@@ -15,8 +15,18 @@ record AnonTuple {
   var f;
 }
 
-proc =(ref a:TupleType, b:AnonTuple)
-{ a.f = b.f; }
+proc =(ref a:TupleType, b:AnonTuple) {
+  a.f = b.f;
+}
+proc TupleType.init=(from: AnonTuple) {
+  this.t = from.f.type;
+  this.f = from.f;
+  this.complete();
+}
+operator :(from: AnonTuple, type t: TupleType) {
+  var tmp: t = from;
+  return tmp;
+}
 
 var x = new AnonTuple(f = 1);
 var y : TupleType(int);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -138,6 +138,11 @@ ResolveScope::ResolveScope(ModuleSymbol*       modSymbol,
   // Use modSymbol->block for sScopeMap
   INT_ASSERT(getScopeFor(modSymbol->block) == NULL);
   sScopeMap[modSymbol->block] = this;
+
+  // Give the import progress bar a default state.
+  progress = IUP_NOT_STARTED;
+
+  canReexport = true;
 }
 
 ResolveScope::ResolveScope(BaseAST*            ast,
@@ -147,6 +152,11 @@ ResolveScope::ResolveScope(BaseAST*            ast,
 
   INT_ASSERT(getScopeFor(ast) == NULL);
   sScopeMap[ast] = this;
+
+  // Give the import progress bar a default state.
+  progress = IUP_NOT_STARTED;
+
+  canReexport = true;
 }
 
 /************************************* | **************************************
@@ -271,6 +281,7 @@ void ResolveScope::addBuiltIns() {
   extend(gNilChecking);
   extend(gOverloadSetsChecks);
   extend(gDivZeroChecking);
+  extend(gCacheRemote);
   extend(gPrivatization);
   extend(gLocal);
   extend(gWarnUnstable);
@@ -389,11 +400,6 @@ bool ResolveScope::extend(Symbol* newSym, bool isTopLevel) {
     if (oldFn != NULL && newFn != NULL) {
       retval = true;
 
-    // e.g. record String and proc String(...)
-    } else if (isAggregateTypeAndConstructor(oldSym, newSym) == true ||
-               isAggregateTypeAndConstructor(newSym, oldSym) == true) {
-      retval = true;
-
     // Methods currently leak their scope and can conflict with variables
     } else if (isSymbolAndMethod(oldSym, newSym)             == true ||
                isSymbolAndMethod(newSym, oldSym)             == true) {
@@ -414,9 +420,15 @@ bool ResolveScope::extend(Symbol* newSym, bool isTopLevel) {
       mBindings[name] = newSym;
     }
 
+    this->extendMethodTracking(newFn);
+
   } else {
     mBindings[name] = newSym;
     retval          = true;
+
+    if (FnSymbol* newFn = toFnSymbol(newSym)) {
+      this->extendMethodTracking(newFn);
+    }
   }
 
   return retval;
@@ -425,22 +437,63 @@ bool ResolveScope::extend(Symbol* newSym, bool isTopLevel) {
 bool ResolveScope::extend(VisibilityStmt* stmt) {
   mUseImportList.push_back(stmt);
 
+  if (progress == IUP_NOT_STARTED) {
+    progress = IUP_IN_PROGRESS;
+  }
+
   return true;
 }
 
-bool ResolveScope::isAggregateTypeAndConstructor(Symbol* sym0, Symbol* sym1) {
-  TypeSymbol* typeSym = toTypeSymbol(sym0);
-  FnSymbol*   funcSym = toFnSymbol(sym1);
-  bool        retval  = false;
+// If the new function is a method, track the type on which it is defined, if
+// we can.
+void ResolveScope::extendMethodTracking(FnSymbol* newFn) {
+  if (newFn != NULL) {
+    if (newFn->_this != NULL && newFn->hasFlag(FLAG_PRIVATE) == false) {
+      ArgSymbol* _this = toArgSymbol(newFn->_this);
+      INT_ASSERT(_this);
+      // New function is a method.  The type on which this method is defined
+      // might be listed in a limitation clause on a use or import statement, so
+      // we should track the type on which it is defined, if we can and it isn't
+      // private
+      if (_this->typeInfo() != dtUnknown) {
+        // The type is already known, so just use that information
+        mMethodsOnTypeName.insert(_this->typeInfo()->symbol->name);
 
-  if (typeSym != NULL && funcSym != NULL && funcSym->_this != NULL) {
-    AggregateType* type0 = toAggregateType(typeSym->type);
-    AggregateType* type1 = toAggregateType(funcSym->_this->type);
+      } else {
+        // The type is not already known, so determine it
+        BlockStmt* typeExpr = _this->typeExpr;
+        // Shouldn't be NULL at this point but just in case
+        INT_ASSERT(typeExpr);
 
-    retval = (type0 == type1) ? true : false;
+        if (SymExpr* sType = toSymExpr(typeExpr->body.tail)) {
+          // The typeExpr was just a simple name, so store that name
+          mMethodsOnTypeName.insert(sType->symbol()->name);
+
+        } else if (UnresolvedSymExpr* uType =
+                   toUnresolvedSymExpr(typeExpr->body.tail)) {
+          // The typeExpr was just a simple name, so store that name
+          mMethodsOnTypeName.insert(uType->unresolved);
+
+        } else if (CallExpr* cType = toCallExpr(typeExpr->body.tail)) {
+          // The typeExpr was slightly more complicated.  Our best guess right
+          // now is the name used in the call because it could be a generic
+          // instantiation.
+          if (!cType->isPrimitive()) {
+            // Throw up our hands if the call is actually a primitive.
+            // Otherwise, save the name.
+            if (UnresolvedSymExpr* typeName =
+                toUnresolvedSymExpr(cType->baseExpr)) {
+              mMethodsOnTypeName.insert(typeName->unresolved);
+            }
+          }
+        } else {
+          // Lydia NOTE 01/06/2021: might have just forgotten to test a scenario
+          // We will need to do something in that case, to avoid missing matches
+          INT_FATAL("Unanticipated structure for argument typeExpr");
+        }
+      }
+    }
   }
-
-  return retval;
 }
 
 bool ResolveScope::isSymbolAndMethod(Symbol* sym0, Symbol* sym1) {
@@ -504,15 +557,41 @@ Symbol* ResolveScope::followImportUseChains(const char* name) const {
         }
       }
     } else if (ImportStmt* import = toImportStmt(useImportList[i])) {
-      if (SymExpr* se = toSymExpr(import->src)) {
-        // The import statement has been resolved
-        if (import->isARename() == true) {
-          if (name == import->getRename()) {
-            symbols.push_back(se->symbol());
+      if (import->providesQualifiedAccess()) {
+        if (SymExpr* se = toSymExpr(import->src)) {
+          // The import statement has been resolved
+          if (import->isARename() == true) {
+            if (name == import->getRename()) {
+              symbols.push_back(se->symbol());
+            }
+          } else {
+            if (name == se->symbol()->name) {
+              symbols.push_back(se->symbol());
+            }
           }
-        } else {
-          if (name == se->symbol()->name) {
-            symbols.push_back(se->symbol());
+        }
+      }
+
+      if (import->skipSymbolSearch(name) == false) {
+        BaseAST* scopeToUse = import->getSearchScope();
+        const char* nameToUse  = name;
+
+        if (import->isARenamedSym(name) == true) {
+          nameToUse = import->getRenamedSym(name);
+        }
+
+        if (ResolveScope* next = getScopeFor(scopeToUse)) {
+          if (Symbol* sym = next->lookupNameLocallyForImport(nameToUse)) {
+            if (isRepeat(sym, symbols) == false) {
+              if (FnSymbol* fn = toFnSymbol(sym)) {
+                if (fn->isMethod() == false) {
+                  symbols.push_back(fn);
+                }
+
+              } else {
+                symbols.push_back(sym);
+              }
+            }
           }
         }
       }
@@ -527,6 +606,20 @@ Symbol* ResolveScope::followImportUseChains(const char* name) const {
   if (symbols.size() == 1) {
     return symbols[0];
   } else {
+    // Ensure we check the used module name as well, since those are also
+    // available to us
+    for (size_t i = 0; i < useImportList.size(); i++) {
+      if (UseStmt* use = toUseStmt(useImportList[i])) {
+        if (Symbol* modSym = use->checkIfModuleNameMatches(name)) {
+          if (isRepeat(modSym, symbols) == false) {
+            symbols.push_back(modSym);
+          }
+        }
+      }
+    }
+    if (symbols.size() == 1) {
+      return symbols[0];
+    }
     return NULL;
   }
 }
@@ -545,7 +638,7 @@ static const char* getNameFrom(Expr* e) {
 
 // Finds the first name (other than this/super) in the Expr
 //   name is that name
-//   call is the call contaning the name on the left branch or NULL
+//   call is the call containing the name on the left branch or NULL
 //     (which is the call requiring further processing)
 //   scope is the scope indicated by any this. / super. or NULL
 void ResolveScope::firstImportedModuleName(Expr* expr,
@@ -593,7 +686,8 @@ void ResolveScope::firstImportedModuleName(Expr* expr,
   }
 }
 
-Symbol* ResolveScope::lookupForImport(Expr* expr, bool isUse) const {
+SymAndReferencedName ResolveScope::lookupForImport(Expr* expr,
+                                                   bool isUse) const {
   Symbol* retval = NULL;
 
   const char* stmtType = isUse ? "use" : "import";
@@ -605,19 +699,24 @@ Symbol* ResolveScope::lookupForImport(Expr* expr, bool isUse) const {
   if (name == NULL) {
     if (astrThis == getNameFrom(expr))
       USR_FATAL(expr, "'this.' can only be used as prefix of %s", stmtType);
-    else if (astrSuper == getNameFrom(expr))
-      USR_FATAL(expr, "'super.' can only be used as prefix of %s", stmtType);
-    else
+    else if (astrSuper == getNameFrom(expr)) {
+      if (isUse) {
+        USR_FATAL(expr, "'super.' can only be used as prefix of use");
+      }
+    } else
       INT_FATAL("case not handled");
   }
 
-  INT_ASSERT(name != NULL);
+  ModuleSymbol* outerMod = NULL;
 
-  {
+  if (name != NULL) {
     const ResolveScope* start = relativeScope!=NULL ? relativeScope : this;
     const ResolveScope* ptr = NULL;
     ModuleSymbol* badCloserModule = NULL;
+    ModuleSymbol* thisMod = enclosingModule();
     for (ptr = start; ptr != NULL && retval == NULL; ptr = ptr->mParent) {
+      ModuleSymbol* ptrMod = ptr->enclosingModule();
+      outerMod = ptrMod;
       // Check if the module is defined in this scope
       Symbol* sym = ptr->lookupNameLocallyForImport(name);
       if (ModuleSymbol* mod = toModuleSymbol(sym)) {
@@ -628,6 +727,9 @@ Symbol* ResolveScope::lookupForImport(Expr* expr, bool isUse) const {
           // if we're not in the root module scope or using relative import,
           // this is an improper match
           badCloserModule = mod;
+          if (thisMod != ptrMod) {
+            continue;
+          }
           if (isUse) { // TODO: remove this to disable relative use
             retval = sym;
             break;
@@ -646,9 +748,15 @@ Symbol* ResolveScope::lookupForImport(Expr* expr, bool isUse) const {
         if (isUse)
           USR_FATAL(expr, "use must name a module or enum ('%s' is neither)",
                           sym->name);
-        else
+        else if (relativeScope == NULL || relativeScope == this)
           USR_FATAL(expr, "import must name a module ('%s' is not a module)",
-                          sym->name);
+                    sym->name);
+        else {
+          // It's okay for the symbol following a super to not be a module, so
+          // long as it is the last symbol in the import statement...
+          retval = sym;
+          break;
+        }
       }
 
       // otherwise follow uses/imports only (breadth first)
@@ -670,6 +778,20 @@ Symbol* ResolveScope::lookupForImport(Expr* expr, bool isUse) const {
                       stmtType, stmtType, stmtType);
       USR_STOP();
     }
+  } else {
+    if (astrSuper == getNameFrom(expr) && !isUse) {
+      // This was `import super;`.  We've already handled the case where this
+      // occurs in a top-level module for which there is no super, so we can be
+      // certain this is okay to return
+      retval = toSymbol(relativeScope->mAstRef);
+      INT_ASSERT(retval != NULL);
+      SymAndReferencedName res(retval, astr(""));
+      return res;
+    } else {
+      // Something other than just `import super;` was let through the check of
+      // the first imported module name
+      INT_FATAL("case not handled");
+    }
   }
 
   if (retval == NULL) {
@@ -679,36 +801,108 @@ Symbol* ResolveScope::lookupForImport(Expr* expr, bool isUse) const {
       USR_FATAL(expr, "Cannot find symbol '%s'", name);
   }
 
+  const char* symName = "";
   // Process further portions of import starting from call
   while (call != NULL) {
     INT_ASSERT(call->isNamedAstr(astrSdot));
-    if (!isModuleSymbol(retval))
-      USR_FATAL(call, "cannot make nested %s from non-module '%s'",
-                stmtType, retval->name);
+    if (!isModuleSymbol(retval)) {
+      if (retval == NULL) {
+        USR_FATAL(call, "cannot make nested %s from non-module '%s'",
+                  stmtType, symName);
+      } else {
+        USR_FATAL(call, "cannot make nested %s from non-module '%s'",
+                  stmtType, retval->name);
+      }
+    }
 
-    Symbol* outer = retval;
-    ModuleSymbol* outerMod = toModuleSymbol(outer);
+    outerMod = toModuleSymbol(retval);
 
     const char* rhsName = getNameFrom(call->get(2));
     INT_ASSERT(rhsName != NULL);
 
     ResolveScope* scope = getScopeFor(outerMod->block);
     if (Symbol* symbol = scope->getField(rhsName)) {
+      if (retval == symbol) {
+        USR_FATAL(expr, "duplicate mention of the same module '%s'",
+                  symbol->name);
+      }
       retval = symbol;
 
-    } else if (Symbol *symbol =
-        scope->lookupPublicUnqualAccessSyms(rhsName, call)) {
-      retval = symbol;
+    } else if (scope->matchesTypeWithMethods(rhsName)) {
+      // We would need to resolve further to know the exact type it is defined
+      // on, so for now just clear the symbol being returned and update the
+      // return argument to track this
+      retval = NULL;
+      symName = rhsName;
 
     } else {
-      USR_FATAL(call, "Cannot find symbol '%s' in module '%s'",
-                      rhsName, outerMod->name);
+      if (scope->progress == IUP_NOT_STARTED) {
+        // Don't go into the unprocessed uses and imports now if the scope is in
+        // progress - this should only happen if we're currently in the scope
+        // being processed, or if there's a circular dependency.
+        //
+        // Otherwise, traverse this scope and trigger the resolution of the
+        // uses and imports now
+        for_alist(expr, scope->asBlockStmt()->body) {
+          if (UseStmt* useStmt = toUseStmt(expr)) {
+            BaseAST* astScope = getScope(useStmt);
+            ResolveScope* useScope = getScopeFor(astScope);
+            useStmt->scopeResolve(useScope);
+
+          } else if (ImportStmt* importStmt = toImportStmt(expr)) {
+            BaseAST* astScope = getScope(importStmt);
+            ResolveScope* importScope = getScopeFor(astScope);
+            importStmt->scopeResolve(importScope);
+          }
+          if (scope->progress == IUP_COMPLETED) {
+            // Don't bother continuing to traverse the block's stmts if we've
+            // found all the uses or imports we know about.
+            break;
+          }
+        }
+      }
+      if (Symbol* symbol = scope->lookupPublicVisStmts(rhsName)) {
+        retval = symbol;
+      } else if (Symbol *symbol =
+          scope->lookupPublicUnqualAccessSyms(rhsName, call)) {
+        retval = symbol;
+
+      } else {
+        USR_FATAL(call, "Cannot find symbol '%s' in module '%s'",
+                  rhsName, outerMod->name);
+      }
     }
 
     call = toCallExpr(call->parentExpr);
   }
 
-  return retval;
+  if (retval == NULL) {
+    INT_ASSERT(outerMod != NULL);
+    return SymAndReferencedName(outerMod, symName);
+
+  } else {
+    bool isEnum = false;
+    if (TypeSymbol* typeSym = toTypeSymbol(retval)) {
+      isEnum = isEnumType(typeSym->type);
+    }
+
+    if (isModuleSymbol(retval)) {
+      return SymAndReferencedName(retval, astr(""));
+    } else if (isUse && isEnum) {
+      return SymAndReferencedName(retval, astr(""));
+    } else {
+      // Retval is not a module symbol.  We expect to store the module where
+      // retval is defined (even if it is not outerMod, as may be the case when
+      // retval is a re-exported symbol), so that we can properly resolve
+      // references to retval later.
+      ModuleSymbol* retvalParent =
+        toModuleSymbol(retval->defPoint->parentSymbol);
+      // If the parent symbol of retval is not a module, something has gone
+      // wrong with lookupForImport
+      INT_ASSERT(retvalParent);
+      return SymAndReferencedName(retvalParent, retval->name);
+    }
+  }
 }
 
 /************************************* | **************************************
@@ -932,6 +1126,19 @@ Symbol* ResolveScope::getFieldLocally(const char* fieldName) const {
 *                                                                             *
 ************************************** | *************************************/
 
+bool ResolveScope::matchesTypeWithMethods(const char* name) const {
+  std::set<const char*>::const_iterator it = mMethodsOnTypeName.find(astr(name));
+  // Returns true if we found a method defined on this name in scope, false
+  // if no such method was found
+  return it != mMethodsOnTypeName.end();
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
 // 2017/06/02 Used by scopeResolve.
 Symbol* ResolveScope::lookupNameLocally(const char* name, bool isUse) const {
   Bindings::const_iterator it     = mBindings.find(name);
@@ -949,16 +1156,15 @@ Symbol* ResolveScope::lookupNameLocally(const char* name, bool isUse) const {
   return retval;
 }
 
-Symbol* ResolveScope::lookupPublicImports(const char* name) const {
-  UseImportList useImportList = mUseImportList;
+Symbol* ResolveScope::lookupPublicVisStmts(const char* name) const {
   Symbol *retval = NULL;
 
-  for_vector_allowing_0s(VisibilityStmt, visStmt, useImportList) {
-    if (ImportStmt *is = toImportStmt(visStmt)) {
-      if (!is->isPrivate) {
-        if (Symbol *importSym = visStmt->checkIfModuleNameMatches(name)) {
-          if (isModuleSymbol(importSym)) {
-            retval = importSym;
+  for_vector_allowing_0s(VisibilityStmt, visStmt, mUseImportList) {
+    if (visStmt != NULL) {
+      if (!visStmt->isPrivate) {
+        if (Symbol *sym = visStmt->checkIfModuleNameMatches(name)) {
+          if (isModuleSymbol(sym)) {
+            retval = sym;
             break;
           }
         }
@@ -971,58 +1177,58 @@ Symbol* ResolveScope::lookupPublicImports(const char* name) const {
 
 // This version is used in resolving the calls in an import statement
 Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
-                                                   BaseAST *context) const {
+                                                   BaseAST *context) {
+  if (!this->canReexport) return NULL;
+
   std::map<Symbol *, astlocT *> renameLocs;
-  ModuleSymbol *ms = NULL;
-  Symbol *retval = lookupPublicUnqualAccessSyms(name, ms, context, renameLocs);
+  std::map<Symbol*, VisibilityStmt*> reexportPts;
+  Symbol *retval = lookupPublicUnqualAccessSyms(name, context, renameLocs,
+                                                reexportPts, true);
   return retval;
 }
 
-// This version is used in resolveModuleCall in scope resolution
-Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
-                                                   ModuleSymbol*& modArg,
-                                                   BaseAST *context) const {
-  std::map<Symbol *, astlocT *> renameLocs;
-  Symbol *retval = lookupPublicUnqualAccessSyms(name, modArg, context,
-                                                renameLocs);
-  return retval;
+Symbol*
+ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
+              BaseAST *context, std::map<Symbol*, astlocT*>& renameLocs,
+              std::map<Symbol*, VisibilityStmt*>& reexportPts,
+              bool followUses) {
+  if (!this->canReexport) return NULL;
 
-}
-
-// This version is used in regular unresolvedsymexpr scope resolution
-Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
-            BaseAST *context, std::map<Symbol*, astlocT*>& renameLocs) const {
-  ModuleSymbol *ms = NULL;
-  Symbol *retval = lookupPublicUnqualAccessSyms(name, ms, context, renameLocs);
-  return retval;
-}
-
-Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
-         ModuleSymbol*& modArg, BaseAST *context,
-         std::map<Symbol*, astlocT*>& renameLocs) const {
-
-  UseImportList useImportList = mUseImportList;
   std::vector<Symbol *> symbols;
 
   bool traversedRenames = false;
-  for_vector_allowing_0s(VisibilityStmt, visStmt, useImportList) {
-    if (ImportStmt *impStmt = toImportStmt(visStmt)) {
-      if (!impStmt->isPrivate) {
-        if (!impStmt->skipSymbolSearch(name)) {
+  bool hasPublicVisStmt = false;
+  uint64_t numFuncs = 0;
+  for_vector_allowing_0s(VisibilityStmt, visStmt, mUseImportList) {
+    // Note: assumes that UseStmt and ImportStmt are the only subclasses of
+    // VisibilityStmt
+    if (visStmt != NULL) {
+      if (!visStmt->isPrivate) {
+        hasPublicVisStmt = true;
+        if (isUseStmt(visStmt) && !followUses) {
+          // Mark that we re-export, but don't always follow it
+          continue;
+        }
+        if (!visStmt->skipSymbolSearch(name)) {
           const char *nameToUse = name;
-          const bool isSymRenamed = impStmt->isARenamedSym(name);
+          const bool isSymRenamed = visStmt->isARenamedSym(name);
           if (isSymRenamed) {
-            nameToUse = impStmt->getRenamedSym(name);
+            nameToUse = visStmt->getRenamedSym(name);
           }
-          if (SymExpr *se = toSymExpr(impStmt->src)) {
+          if (SymExpr *se = toSymExpr(visStmt->src)) {
             if (ModuleSymbol *ms = toModuleSymbol(se->symbol())) {
               ResolveScope *scope = ResolveScope::getScopeFor(ms->block);
               if (Symbol *retval = scope->lookupNameLocally(nameToUse)) {
-                modArg = ms;
                 symbols.push_back(retval);
+
+                reexportPts[retval] = visStmt;
+
                 if (isSymRenamed) {
-                  renameLocs[retval] = &impStmt->astloc;
+                  renameLocs[retval] = &visStmt->astloc;
                   traversedRenames = true;
+                }
+                if (isFnSymbol(retval)) {
+                  numFuncs++;
                 }
               }
             }
@@ -1032,14 +1238,25 @@ Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
     }
   }
 
+  if (!hasPublicVisStmt) {
+    this->canReexport = false;
+  }
+
   if (symbols.size() == 1) {
-    // modArg must have been set correctly above
     return symbols[0];
   }
   else if (symbols.size() > 1) {
-    // potentially start the error process here
+    if (numFuncs == symbols.size()) {
+      // All options found were functions, but we found them from different
+      // public imports.  That's okay, though, function resolution will handle
+      // determining which one is the best choice.  Arbitrarily return the
+      // first function
+      return symbols[0];
+    }
+
+    // likely start the error process here
     checkConflictingSymbols(symbols, name, context,
-                            traversedRenames, renameLocs);
+                            traversedRenames, renameLocs, reexportPts);
   }
   return NULL;
 }

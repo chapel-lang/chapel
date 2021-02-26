@@ -1,3 +1,4 @@
 if-object-1.chpl:8: In function 'test':
 if-object-1.chpl:14: error: applying postfix-! to nil
 if-object-1.chpl:9: note: 'obj' is set to nil here
+  if-object-1.chpl:24: called as test(type CT = owned C)

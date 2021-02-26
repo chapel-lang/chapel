@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -91,7 +91,7 @@ module MemTracking
       if memLeaksByDesc.size != 0 {
         var local_memLeaksByDesc = memLeaksByDesc;
         // Intentionally leak the string to persist the underlying buffer
-        local_memLeaksByDesc.isowned = false;
+        local_memLeaksByDesc.isOwned = false;
         ret_memLeaksByDesc = local_memLeaksByDesc.c_str();
       } else {
         ret_memLeaksByDesc = nil;
@@ -100,7 +100,7 @@ module MemTracking
       if memLog.size != 0 {
         var local_memLog = memLog;
         // Intentionally leak the string to persist the underlying buffer
-        local_memLog.isowned = false;
+        local_memLog.isOwned = false;
         ret_memLog = local_memLog.c_str();
       } else {
         ret_memLog = nil;
@@ -109,7 +109,7 @@ module MemTracking
       if memLeaksLog.size != 0 {
         var local_memLeaksLog = memLeaksLog;
         // Intentionally leak the string to persist the underlying buffer
-        local_memLeaksLog.isowned = false;
+        local_memLeaksLog.isOwned = false;
         ret_memLeaksLog = local_memLeaksLog.c_str();
       } else {
         ret_memLeaksLog = nil;

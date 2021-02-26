@@ -1,9 +1,8 @@
 //===-- ExecutionEngineBindings.cpp - C bindings for EEs ------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -184,13 +183,13 @@ LLVMBool LLVMCreateMCJITCompilerForModule(
   std::unique_ptr<Module> Mod(unwrap(M));
 
   if (Mod)
-    // Set function attribute "no-frame-pointer-elim" based on
+    // Set function attribute "frame-pointer" based on
     // NoFramePointerElim.
     for (auto &F : *Mod) {
       auto Attrs = F.getAttributes();
-      StringRef Value(options.NoFramePointerElim ? "true" : "false");
+      StringRef Value = options.NoFramePointerElim ? "all" : "none";
       Attrs = Attrs.addAttribute(F.getContext(), AttributeList::FunctionIndex,
-                                 "no-frame-pointer-elim", Value);
+                                 "frame-pointer", Value);
       F.setAttributes(Attrs);
     }
 
@@ -307,6 +306,18 @@ uint64_t LLVMGetGlobalValueAddress(LLVMExecutionEngineRef EE, const char *Name) 
 
 uint64_t LLVMGetFunctionAddress(LLVMExecutionEngineRef EE, const char *Name) {
   return unwrap(EE)->getFunctionAddress(Name);
+}
+
+LLVMBool LLVMExecutionEngineGetErrMsg(LLVMExecutionEngineRef EE,
+                                      char **OutError) {
+  assert(OutError && "OutError must be non-null");
+  auto *ExecEngine = unwrap(EE);
+  if (ExecEngine->hasError()) {
+    *OutError = strdup(ExecEngine->getErrorMessage().c_str());
+    ExecEngine->clearErrorMessage();
+    return true;
+  }
+  return false;
 }
 
 /*===-- Operations on memory managers -------------------------------------===*/

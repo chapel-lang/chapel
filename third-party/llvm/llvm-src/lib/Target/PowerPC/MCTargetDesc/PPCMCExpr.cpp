@@ -1,9 +1,8 @@
 //===-- PPCMCExpr.cpp - PPC specific MC expression classes ----------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -18,39 +17,44 @@ using namespace llvm;
 
 #define DEBUG_TYPE "ppcmcexpr"
 
-const PPCMCExpr*
-PPCMCExpr::create(VariantKind Kind, const MCExpr *Expr,
-                  bool isDarwin, MCContext &Ctx) {
-  return new (Ctx) PPCMCExpr(Kind, Expr, isDarwin);
+const PPCMCExpr *PPCMCExpr::create(VariantKind Kind, const MCExpr *Expr,
+                                   MCContext &Ctx) {
+  return new (Ctx) PPCMCExpr(Kind, Expr);
 }
 
 void PPCMCExpr::printImpl(raw_ostream &OS, const MCAsmInfo *MAI) const {
-  if (isDarwinSyntax()) {
-    switch (Kind) {
-    default: llvm_unreachable("Invalid kind!");
-    case VK_PPC_LO: OS << "lo16"; break;
-    case VK_PPC_HI: OS << "hi16"; break;
-    case VK_PPC_HA: OS << "ha16"; break;
-    }
+  getSubExpr()->print(OS, MAI);
 
-    OS << '(';
-    getSubExpr()->print(OS, MAI);
-    OS << ')';
-  } else {
-    getSubExpr()->print(OS, MAI);
-
-    switch (Kind) {
-    default: llvm_unreachable("Invalid kind!");
-    case VK_PPC_LO: OS << "@l"; break;
-    case VK_PPC_HI: OS << "@h"; break;
-    case VK_PPC_HA: OS << "@ha"; break;
-    case VK_PPC_HIGH: OS << "@high"; break;
-    case VK_PPC_HIGHA: OS << "@higha"; break;
-    case VK_PPC_HIGHER: OS << "@higher"; break;
-    case VK_PPC_HIGHERA: OS << "@highera"; break;
-    case VK_PPC_HIGHEST: OS << "@highest"; break;
-    case VK_PPC_HIGHESTA: OS << "@highesta"; break;
-    }
+  switch (Kind) {
+  default:
+    llvm_unreachable("Invalid kind!");
+  case VK_PPC_LO:
+    OS << "@l";
+    break;
+  case VK_PPC_HI:
+    OS << "@h";
+    break;
+  case VK_PPC_HA:
+    OS << "@ha";
+    break;
+  case VK_PPC_HIGH:
+    OS << "@high";
+    break;
+  case VK_PPC_HIGHA:
+    OS << "@higha";
+    break;
+  case VK_PPC_HIGHER:
+    OS << "@higher";
+    break;
+  case VK_PPC_HIGHERA:
+    OS << "@highera";
+    break;
+  case VK_PPC_HIGHEST:
+    OS << "@highest";
+    break;
+  case VK_PPC_HIGHESTA:
+    OS << "@highesta";
+    break;
   }
 }
 

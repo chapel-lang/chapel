@@ -1,15 +1,13 @@
 #!/usr/bin/env bash
 #
-# Test --no-local configuration on full suite with compiler performance enabled
-# on linux64.
+# Test --no-local configuration on full suite.
 
 CWD=$(cd $(dirname $0) ; pwd)
 
-export CHPL_TEST_PERF_CONFIG_NAME='comp-no-local'
-
 source $CWD/common.bash
+source $CWD/common-localnode-paratest.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="no-local"
 
-nightly_args="${nightly_args} -no-local -compperformance (--no-local)"
-$CWD/nightly -cron ${nightly_args}
+nightly_args="${nightly_args} -no-local"
+$CWD/nightly -cron ${nightly_args} $(get_nightly_paratest_args)

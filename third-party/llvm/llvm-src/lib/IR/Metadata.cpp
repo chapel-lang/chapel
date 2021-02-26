@@ -1,9 +1,8 @@
 //===- Metadata.cpp - Implement Metadata classes --------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -490,7 +489,9 @@ void *MDNode::operator new(size_t Size, unsigned NumOps) {
   return Ptr;
 }
 
-void MDNode::operator delete(void *Mem) {
+// Repress memory sanitization, due to use-after-destroy by operator
+// delete. Bug report 24578 identifies this issue.
+LLVM_NO_SANITIZE_MEMORY_ATTRIBUTE void MDNode::operator delete(void *Mem) {
   MDNode *N = static_cast<MDNode *>(Mem);
   size_t OpSize = N->NumOperands * sizeof(MDOperand);
   OpSize = alignTo(OpSize, alignof(uint64_t));
@@ -913,7 +914,7 @@ MDNode *MDNode::intersect(MDNode *A, MDNode *B) {
 
   SmallSetVector<Metadata *, 4> MDs(A->op_begin(), A->op_end());
   SmallPtrSet<Metadata *, 4> BSet(B->op_begin(), B->op_end());
-  MDs.remove_if([&](Metadata *MD) { return !is_contained(BSet, MD); });
+  MDs.remove_if([&](Metadata *MD) { return !BSet.count(MD); });
 
   // FIXME: This preserves long-standing behaviour, but is it really the right
   // behaviour?  Or was that an unintended side-effect of node uniquing?
@@ -933,7 +934,7 @@ MDNode *MDNode::getMostGenericFPMath(MDNode *A, MDNode *B) {
 
   APFloat AVal = mdconst::extract<ConstantFP>(A->getOperand(0))->getValueAPF();
   APFloat BVal = mdconst::extract<ConstantFP>(B->getOperand(0))->getValueAPF();
-  if (AVal.compare(BVal) == APFloat::cmpLessThan)
+  if (AVal < BVal)
     return A;
   return B;
 }
@@ -1180,10 +1181,7 @@ void MDGlobalAttachmentMap::getAll(
 
   // Sort the resulting array so it is stable with respect to metadata IDs. We
   // need to preserve the original insertion order though.
-  std::stable_sort(
-      Result.begin(), Result.end(),
-      [](const std::pair<unsigned, MDNode *> &A,
-         const std::pair<unsigned, MDNode *> &B) { return A.first < B.first; });
+  llvm::stable_sort(Result, less_first());
 }
 
 void Instruction::setMetadata(StringRef Kind, MDNode *Node) {
@@ -1264,6 +1262,7 @@ void Instruction::setMetadata(unsigned KindID, MDNode *Node) {
 
 void Instruction::setAAMetadata(const AAMDNodes &N) {
   setMetadata(LLVMContext::MD_tbaa, N.TBAA);
+  setMetadata(LLVMContext::MD_tbaa_struct, N.TBAAStruct);
   setMetadata(LLVMContext::MD_alias_scope, N.Scope);
   setMetadata(LLVMContext::MD_noalias, N.NoAlias);
 }
@@ -1499,6 +1498,27 @@ void GlobalObject::addTypeMetadata(unsigned Offset, Metadata *TypeID) {
                     {ConstantAsMetadata::get(ConstantInt::get(
                          Type::getInt64Ty(getContext()), Offset)),
                      TypeID}));
+}
+
+void GlobalObject::setVCallVisibilityMetadata(VCallVisibility Visibility) {
+  // Remove any existing vcall visibility metadata first in case we are
+  // updating.
+  eraseMetadata(LLVMContext::MD_vcall_visibility);
+  addMetadata(LLVMContext::MD_vcall_visibility,
+              *MDNode::get(getContext(),
+                           {ConstantAsMetadata::get(ConstantInt::get(
+                               Type::getInt64Ty(getContext()), Visibility))}));
+}
+
+GlobalObject::VCallVisibility GlobalObject::getVCallVisibility() const {
+  if (MDNode *MD = getMetadata(LLVMContext::MD_vcall_visibility)) {
+    uint64_t Val = cast<ConstantInt>(
+                       cast<ConstantAsMetadata>(MD->getOperand(0))->getValue())
+                       ->getZExtValue();
+    assert(Val <= 2 && "unknown vcall visibility!");
+    return (VCallVisibility)Val;
+  }
+  return VCallVisibility::VCallVisibilityPublic;
 }
 
 void Function::setSubprogram(DISubprogram *SP) {

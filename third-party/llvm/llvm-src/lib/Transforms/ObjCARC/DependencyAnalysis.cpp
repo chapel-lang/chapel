@@ -1,9 +1,8 @@
 //===- DependencyAnalysis.cpp - ObjC ARC Optimization ---------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 /// \file
@@ -96,10 +95,9 @@ bool llvm::objcarc::CanUse(const Instruction *Inst, const Value *Ptr,
     // of any other dynamic reference-counted pointers.
     if (!IsPotentialRetainableObjPtr(ICI->getOperand(1), *PA.getAA()))
       return false;
-  } else if (auto CS = ImmutableCallSite(Inst)) {
+  } else if (const auto *CS = dyn_cast<CallBase>(Inst)) {
     // For calls, just check the arguments (and not the callee operand).
-    for (ImmutableCallSite::arg_iterator OI = CS.arg_begin(),
-         OE = CS.arg_end(); OI != OE; ++OI) {
+    for (auto OI = CS->arg_begin(), OE = CS->arg_end(); OI != OE; ++OI) {
       const Value *Op = *OI;
       if (IsPotentialRetainableObjPtr(Op, *PA.getAA()) &&
           PA.related(Ptr, Op, DL))

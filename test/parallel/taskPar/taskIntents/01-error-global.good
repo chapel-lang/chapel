@@ -1,126 +1,126 @@
-01-error-global.chpl:70: error: illegal lvalue in assignment
+01-error-global.chpl:70: error: cannot assign to const variable
 01-error-global.chpl:68: note: The shadow variable 'b0' is constant due to task intents in this begin statement
-01-error-global.chpl:71: error: illegal lvalue in assignment
+01-error-global.chpl:71: error: cannot assign to const variable
 01-error-global.chpl:68: note: The shadow variable 'b8' is constant due to task intents in this begin statement
-01-error-global.chpl:72: error: illegal lvalue in assignment
+01-error-global.chpl:72: error: cannot assign to const variable
 01-error-global.chpl:68: note: The shadow variable 'b16' is constant due to task intents in this begin statement
-01-error-global.chpl:73: error: illegal lvalue in assignment
+01-error-global.chpl:73: error: cannot assign to const variable
 01-error-global.chpl:68: note: The shadow variable 'b32' is constant due to task intents in this begin statement
-01-error-global.chpl:74: error: illegal lvalue in assignment
+01-error-global.chpl:74: error: cannot assign to const variable
 01-error-global.chpl:68: note: The shadow variable 'b64' is constant due to task intents in this begin statement
-01-error-global.chpl:75: error: illegal lvalue in assignment
+01-error-global.chpl:75: error: cannot assign to const variable
 01-error-global.chpl:68: note: The shadow variable 'u8' is constant due to task intents in this begin statement
-01-error-global.chpl:76: error: illegal lvalue in assignment
+01-error-global.chpl:76: error: cannot assign to const variable
 01-error-global.chpl:68: note: The shadow variable 'u16' is constant due to task intents in this begin statement
-01-error-global.chpl:77: error: illegal lvalue in assignment
+01-error-global.chpl:77: error: cannot assign to const variable
 01-error-global.chpl:68: note: The shadow variable 'u32' is constant due to task intents in this begin statement
-01-error-global.chpl:78: error: illegal lvalue in assignment
+01-error-global.chpl:78: error: cannot assign to const variable
 01-error-global.chpl:68: note: The shadow variable 'u64' is constant due to task intents in this begin statement
-01-error-global.chpl:79: error: illegal lvalue in assignment
+01-error-global.chpl:79: error: cannot assign to const variable
 01-error-global.chpl:68: note: The shadow variable 'i8' is constant due to task intents in this begin statement
-01-error-global.chpl:80: error: illegal lvalue in assignment
+01-error-global.chpl:80: error: cannot assign to const variable
 01-error-global.chpl:68: note: The shadow variable 'i16' is constant due to task intents in this begin statement
-01-error-global.chpl:81: error: illegal lvalue in assignment
+01-error-global.chpl:81: error: cannot assign to const variable
 01-error-global.chpl:68: note: The shadow variable 'i32' is constant due to task intents in this begin statement
-01-error-global.chpl:82: error: illegal lvalue in assignment
+01-error-global.chpl:82: error: cannot assign to const variable
 01-error-global.chpl:68: note: The shadow variable 'i64' is constant due to task intents in this begin statement
-01-error-global.chpl:83: error: illegal lvalue in assignment
+01-error-global.chpl:83: error: cannot assign to const variable
 01-error-global.chpl:68: note: The shadow variable 'r32' is constant due to task intents in this begin statement
-01-error-global.chpl:84: error: illegal lvalue in assignment
+01-error-global.chpl:84: error: cannot assign to const variable
 01-error-global.chpl:68: note: The shadow variable 'r64' is constant due to task intents in this begin statement
-01-error-global.chpl:85: error: illegal lvalue in assignment
+01-error-global.chpl:85: error: cannot assign to const variable
 01-error-global.chpl:68: note: The shadow variable 'm32' is constant due to task intents in this begin statement
-01-error-global.chpl:86: error: illegal lvalue in assignment
+01-error-global.chpl:86: error: cannot assign to const variable
 01-error-global.chpl:68: note: The shadow variable 'm64' is constant due to task intents in this begin statement
-01-error-global.chpl:87: error: illegal lvalue in assignment
+01-error-global.chpl:87: error: cannot assign to const variable
 01-error-global.chpl:68: note: The shadow variable 'z64' is constant due to task intents in this begin statement
-01-error-global.chpl:88: error: illegal lvalue in assignment
+01-error-global.chpl:88: error: cannot assign to const variable
 01-error-global.chpl:68: note: The shadow variable 'z128' is constant due to task intents in this begin statement
-01-error-global.chpl:90: error: illegal lvalue in assignment
+01-error-global.chpl:90: error: cannot assign to const variable
 01-error-global.chpl:68: note: The shadow variable 'enm' is constant due to task intents in this begin statement
-01-error-global.chpl:93: error: illegal lvalue in assignment
+01-error-global.chpl:93: error: cannot assign to const variable
 01-error-global.chpl:68: note: The shadow variable 'cls' is constant due to task intents in this begin statement
-01-error-global.chpl:102: error: illegal lvalue in assignment
+01-error-global.chpl:102: error: cannot assign to const variable
 01-error-global.chpl:100: note: The shadow variable 'b0' is constant due to task intents in this parallel statement
-01-error-global.chpl:103: error: illegal lvalue in assignment
+01-error-global.chpl:103: error: cannot assign to const variable
 01-error-global.chpl:100: note: The shadow variable 'b8' is constant due to task intents in this parallel statement
-01-error-global.chpl:104: error: illegal lvalue in assignment
+01-error-global.chpl:104: error: cannot assign to const variable
 01-error-global.chpl:100: note: The shadow variable 'b16' is constant due to task intents in this parallel statement
-01-error-global.chpl:105: error: illegal lvalue in assignment
+01-error-global.chpl:105: error: cannot assign to const variable
 01-error-global.chpl:100: note: The shadow variable 'b32' is constant due to task intents in this parallel statement
-01-error-global.chpl:106: error: illegal lvalue in assignment
+01-error-global.chpl:106: error: cannot assign to const variable
 01-error-global.chpl:100: note: The shadow variable 'b64' is constant due to task intents in this parallel statement
-01-error-global.chpl:107: error: illegal lvalue in assignment
+01-error-global.chpl:107: error: cannot assign to const variable
 01-error-global.chpl:100: note: The shadow variable 'u8' is constant due to task intents in this parallel statement
-01-error-global.chpl:108: error: illegal lvalue in assignment
+01-error-global.chpl:108: error: cannot assign to const variable
 01-error-global.chpl:100: note: The shadow variable 'u16' is constant due to task intents in this parallel statement
-01-error-global.chpl:109: error: illegal lvalue in assignment
+01-error-global.chpl:109: error: cannot assign to const variable
 01-error-global.chpl:100: note: The shadow variable 'u32' is constant due to task intents in this parallel statement
-01-error-global.chpl:110: error: illegal lvalue in assignment
+01-error-global.chpl:110: error: cannot assign to const variable
 01-error-global.chpl:100: note: The shadow variable 'u64' is constant due to task intents in this parallel statement
-01-error-global.chpl:111: error: illegal lvalue in assignment
+01-error-global.chpl:111: error: cannot assign to const variable
 01-error-global.chpl:100: note: The shadow variable 'i8' is constant due to task intents in this parallel statement
-01-error-global.chpl:112: error: illegal lvalue in assignment
+01-error-global.chpl:112: error: cannot assign to const variable
 01-error-global.chpl:100: note: The shadow variable 'i16' is constant due to task intents in this parallel statement
-01-error-global.chpl:113: error: illegal lvalue in assignment
+01-error-global.chpl:113: error: cannot assign to const variable
 01-error-global.chpl:100: note: The shadow variable 'i32' is constant due to task intents in this parallel statement
-01-error-global.chpl:114: error: illegal lvalue in assignment
+01-error-global.chpl:114: error: cannot assign to const variable
 01-error-global.chpl:100: note: The shadow variable 'i64' is constant due to task intents in this parallel statement
-01-error-global.chpl:115: error: illegal lvalue in assignment
+01-error-global.chpl:115: error: cannot assign to const variable
 01-error-global.chpl:100: note: The shadow variable 'r32' is constant due to task intents in this parallel statement
-01-error-global.chpl:116: error: illegal lvalue in assignment
+01-error-global.chpl:116: error: cannot assign to const variable
 01-error-global.chpl:100: note: The shadow variable 'r64' is constant due to task intents in this parallel statement
-01-error-global.chpl:117: error: illegal lvalue in assignment
+01-error-global.chpl:117: error: cannot assign to const variable
 01-error-global.chpl:100: note: The shadow variable 'm32' is constant due to task intents in this parallel statement
-01-error-global.chpl:118: error: illegal lvalue in assignment
+01-error-global.chpl:118: error: cannot assign to const variable
 01-error-global.chpl:100: note: The shadow variable 'm64' is constant due to task intents in this parallel statement
-01-error-global.chpl:119: error: illegal lvalue in assignment
+01-error-global.chpl:119: error: cannot assign to const variable
 01-error-global.chpl:100: note: The shadow variable 'z64' is constant due to task intents in this parallel statement
-01-error-global.chpl:120: error: illegal lvalue in assignment
+01-error-global.chpl:120: error: cannot assign to const variable
 01-error-global.chpl:100: note: The shadow variable 'z128' is constant due to task intents in this parallel statement
-01-error-global.chpl:122: error: illegal lvalue in assignment
+01-error-global.chpl:122: error: cannot assign to const variable
 01-error-global.chpl:100: note: The shadow variable 'enm' is constant due to task intents in this parallel statement
-01-error-global.chpl:125: error: illegal lvalue in assignment
+01-error-global.chpl:125: error: cannot assign to const variable
 01-error-global.chpl:100: note: The shadow variable 'cls' is constant due to task intents in this parallel statement
-01-error-global.chpl:134: error: illegal lvalue in assignment
+01-error-global.chpl:134: error: cannot assign to const variable
 01-error-global.chpl:132: note: The shadow variable 'b0' is constant due to task intents in this parallel statement
-01-error-global.chpl:135: error: illegal lvalue in assignment
+01-error-global.chpl:135: error: cannot assign to const variable
 01-error-global.chpl:132: note: The shadow variable 'b8' is constant due to task intents in this parallel statement
-01-error-global.chpl:136: error: illegal lvalue in assignment
+01-error-global.chpl:136: error: cannot assign to const variable
 01-error-global.chpl:132: note: The shadow variable 'b16' is constant due to task intents in this parallel statement
-01-error-global.chpl:137: error: illegal lvalue in assignment
+01-error-global.chpl:137: error: cannot assign to const variable
 01-error-global.chpl:132: note: The shadow variable 'b32' is constant due to task intents in this parallel statement
-01-error-global.chpl:138: error: illegal lvalue in assignment
+01-error-global.chpl:138: error: cannot assign to const variable
 01-error-global.chpl:132: note: The shadow variable 'b64' is constant due to task intents in this parallel statement
-01-error-global.chpl:139: error: illegal lvalue in assignment
+01-error-global.chpl:139: error: cannot assign to const variable
 01-error-global.chpl:132: note: The shadow variable 'u8' is constant due to task intents in this parallel statement
-01-error-global.chpl:140: error: illegal lvalue in assignment
+01-error-global.chpl:140: error: cannot assign to const variable
 01-error-global.chpl:132: note: The shadow variable 'u16' is constant due to task intents in this parallel statement
-01-error-global.chpl:141: error: illegal lvalue in assignment
+01-error-global.chpl:141: error: cannot assign to const variable
 01-error-global.chpl:132: note: The shadow variable 'u32' is constant due to task intents in this parallel statement
-01-error-global.chpl:142: error: illegal lvalue in assignment
+01-error-global.chpl:142: error: cannot assign to const variable
 01-error-global.chpl:132: note: The shadow variable 'u64' is constant due to task intents in this parallel statement
-01-error-global.chpl:143: error: illegal lvalue in assignment
+01-error-global.chpl:143: error: cannot assign to const variable
 01-error-global.chpl:132: note: The shadow variable 'i8' is constant due to task intents in this parallel statement
-01-error-global.chpl:144: error: illegal lvalue in assignment
+01-error-global.chpl:144: error: cannot assign to const variable
 01-error-global.chpl:132: note: The shadow variable 'i16' is constant due to task intents in this parallel statement
-01-error-global.chpl:145: error: illegal lvalue in assignment
+01-error-global.chpl:145: error: cannot assign to const variable
 01-error-global.chpl:132: note: The shadow variable 'i32' is constant due to task intents in this parallel statement
-01-error-global.chpl:146: error: illegal lvalue in assignment
+01-error-global.chpl:146: error: cannot assign to const variable
 01-error-global.chpl:132: note: The shadow variable 'i64' is constant due to task intents in this parallel statement
-01-error-global.chpl:147: error: illegal lvalue in assignment
+01-error-global.chpl:147: error: cannot assign to const variable
 01-error-global.chpl:132: note: The shadow variable 'r32' is constant due to task intents in this parallel statement
-01-error-global.chpl:148: error: illegal lvalue in assignment
+01-error-global.chpl:148: error: cannot assign to const variable
 01-error-global.chpl:132: note: The shadow variable 'r64' is constant due to task intents in this parallel statement
-01-error-global.chpl:149: error: illegal lvalue in assignment
+01-error-global.chpl:149: error: cannot assign to const variable
 01-error-global.chpl:132: note: The shadow variable 'm32' is constant due to task intents in this parallel statement
-01-error-global.chpl:150: error: illegal lvalue in assignment
+01-error-global.chpl:150: error: cannot assign to const variable
 01-error-global.chpl:132: note: The shadow variable 'm64' is constant due to task intents in this parallel statement
-01-error-global.chpl:151: error: illegal lvalue in assignment
+01-error-global.chpl:151: error: cannot assign to const variable
 01-error-global.chpl:132: note: The shadow variable 'z64' is constant due to task intents in this parallel statement
-01-error-global.chpl:152: error: illegal lvalue in assignment
+01-error-global.chpl:152: error: cannot assign to const variable
 01-error-global.chpl:132: note: The shadow variable 'z128' is constant due to task intents in this parallel statement
-01-error-global.chpl:154: error: illegal lvalue in assignment
+01-error-global.chpl:154: error: cannot assign to const variable
 01-error-global.chpl:132: note: The shadow variable 'enm' is constant due to task intents in this parallel statement
-01-error-global.chpl:157: error: illegal lvalue in assignment
+01-error-global.chpl:157: error: cannot assign to const variable
 01-error-global.chpl:132: note: The shadow variable 'cls' is constant due to task intents in this parallel statement

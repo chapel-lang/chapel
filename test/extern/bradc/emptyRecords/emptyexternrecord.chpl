@@ -5,6 +5,6 @@ extern record R {
 
 var myR: R;
 
-extern proc foo(myR:R);
+extern proc foo(in myR:R);
 
 foo(myR);

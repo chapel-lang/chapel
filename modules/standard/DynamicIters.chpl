@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -29,7 +29,7 @@
 */
 module DynamicIters {
 
-  private use ChapelLocks;
+  use ChapelLocks, DSIUtil;
 
 /*
    Toggle debugging output.
@@ -82,10 +82,28 @@ where tag == iterKind.leader
   assert(chunkSize > 0); // caller's responsibility
 
   // # of tasks the range can fill. (fast) ceil so all work is represented
-  const chunkTasks = divceilpos(c.size, chunkSize): int;
+  const numChunks: int;
+
+  // divceilpos() doesn't accept two unsigned ints.
+  // divceil() doesn't accept args of non-matching signedness.
+  //
+  // So we need to call divceil() for the former case, and
+  // divceilpos() for the latter.
+  //
+  // If c.size (of type c.idxType) is uint(64), we can safely cast the
+  // chunkSize (asserted positive above) to uint(64), and can call
+  // divceil() on two unsigned ints.
+  //
+  // Otherwise, it isn't uint(64), and we can safely cast it to
+  // int(64).  Then we can call divceilpos() with it and any chunkSize
+  // type, since then we know at least one arg is signed.
+  if c.idxType == uint(64) then
+    numChunks = divceil(c.size, chunkSize:uint(64)): int;
+  else
+    numChunks = divceilpos(c.size:int(64), chunkSize): int;
 
   // Check if the number of tasks is 0, in that case it returns a default value
-  const nTasks = min(chunkTasks, defaultNumTasks(numTasks));
+  const nTasks = min(numChunks, defaultNumTasks(numTasks));
 
   type rType=c.type;
 
@@ -99,31 +117,37 @@ where tag == iterKind.leader
       writeln("Dynamic Iterator: serial execution because there is not enough work");
     yield (remain,);
   } else {
-    var moreWork : atomic bool;
-    moreWork.write(true);
-    var curIndex : atomic remain.low.type;
-    curIndex.write(remain.low);
+    var moreWork : atomic bool = true;
+    var curChunkIdx : atomic int = 0;
 
     coforall tid in 0..#nTasks with (const in remain) {
       while moreWork.read() {
         // There is local work in remain
-        const low = curIndex.fetchAdd(chunkSize);
-        var high = low + chunkSize-1;
+        const chunkIdx = curChunkIdx.fetchAdd(1);
+        const low = chunkIdx * chunkSize; /* remain.low is 0, stride is 1 */
+        const high: low.type;
 
-        if low > remain.high {
+        if chunkSize >= max(low.type) - low then
+          high = max(low.type);
+        else
+          high = low + chunkSize-1;
+
+        if chunkIdx >= numChunks {
+          /*
+           * Multiple threads passed moreWork.read() at once.
+           * All whose fetchAdd() was after the one
+           * that grabbed the final chunk just break.
+           */
           break;
-        } else if high > remain.high {
-          high = remain.high;
+        } else if high >= remain.high {
           moreWork.write(false);
         }
 
         const current:rType = remain(low .. high);
 
-        if high >= low then {
-          if debugDynamicIters then
-            writeln("Parallel dynamic Iterator. Working at tid ", tid, " with range ", unDensify(current,c), " yielded as ", current);
-          yield (current,);
-        }
+        if debugDynamicIters then
+          writeln("Parallel dynamic Iterator. Working at tid ", tid, " with range ", unDensify(current,c), " yielded as ", current);
+        yield (current,);
       }
     }
   }
@@ -144,6 +168,7 @@ where tag == iterKind.follower
 }
 
 //************************* Dynamic domain iterator
+//This is the serial version of this iterator
 /*
 
   :arg c: The domain to iterate over. The rank of the domain must be greater
@@ -173,7 +198,6 @@ where tag == iterKind.follower
   This iterator can be called in serial and zippered contexts.
 */
 
-//This is the serial version of this iterator
 iter dynamic(c:domain, chunkSize:int=1, numTasks:int=0, parDim:int=0)
 {
   if debugDynamicIters then
@@ -310,7 +334,7 @@ where tag == iterKind.follower
 }
 
 //************************* Guided domain iterator
-
+// Here is the serial version of this iterator.
 /*
 
   :arg c: The domain to iterate over. The rank of the domain must be greater
@@ -340,7 +364,6 @@ where tag == iterKind.follower
   This iterator can be called in serial and zippered contexts.
 
 */
-// Here is the serial version of this iterator.
 iter guided(c:domain, numTasks:int=0, parDim:int=0)
 {
   if debugDynamicIters then
@@ -601,6 +624,7 @@ where tag == iterKind.follower
 }
 
 //************************* Adaptive work-stealing domain iterator
+// Here is the serial version of this iterator.
 /*
 
   :arg c: The domain to iterate over. Must have a length greater than zero.
@@ -631,7 +655,6 @@ where tag == iterKind.follower
 
   This iterator can be called in serial and zippered contexts.
 */
-// Here is the serial version of this iterator.
 iter adaptive(c:domain, numTasks:int=0, parDim:int=0)
 {
   if debugDynamicIters then

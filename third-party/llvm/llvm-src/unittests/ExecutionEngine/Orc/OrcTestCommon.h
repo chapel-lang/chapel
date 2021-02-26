@@ -1,9 +1,8 @@
 //===------ OrcTestCommon.h - Utilities for Orc Unit Tests ------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -48,7 +47,7 @@ class CoreAPIsBasedStandardTest : public testing::Test {
 protected:
   std::shared_ptr<SymbolStringPool> SSP = std::make_shared<SymbolStringPool>();
   ExecutionSession ES{SSP};
-  JITDylib &JD = ES.createJITDylib("JD");
+  JITDylib &JD = ES.createBareJITDylib("JD");
   SymbolStringPtr Foo = ES.intern("foo");
   SymbolStringPtr Bar = ES.intern("bar");
   SymbolStringPtr Baz = ES.intern("baz");
@@ -94,9 +93,11 @@ public:
 
   SimpleMaterializationUnit(
       orc::SymbolFlagsMap SymbolFlags, MaterializeFunction Materialize,
+      orc::SymbolStringPtr InitSym = nullptr,
       DiscardFunction Discard = DiscardFunction(),
       DestructorFunction Destructor = DestructorFunction())
-      : MaterializationUnit(std::move(SymbolFlags), orc::VModuleKey()),
+      : MaterializationUnit(std::move(SymbolFlags), std::move(InitSym),
+                            orc::VModuleKey()),
         Materialize(std::move(Materialize)), Discard(std::move(Discard)),
         Destructor(std::move(Destructor)) {}
 

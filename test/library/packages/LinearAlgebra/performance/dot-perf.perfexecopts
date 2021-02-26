@@ -1,7 +1,1 @@
---n=1000000 --iters=100 -nl 8 --reference=true #n1000000-8
---n=1000000000 --iters=10 -nl 8 --reference=true #n1000000000-8
---n=100000000000 --iters=2 -nl 8 --reference=true #100000000000-8
---n=1000000 --iters=20 -nl 4 --reference=true #n1000000-4
---n=1000000000 --iters=2 -nl 4 --reference=true #n1000000000-4
---n=1000000 --iters=20 -nl 2 --reference=true #n1000000-2
---n=1000000 --iters=10 -nl 1 --reference=true #n1000000-1
+--n=2048 --iters=10

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -166,8 +166,10 @@ See :mod:`GMP` for more information on how to use GMP with Chapel.
 
 module BigInteger {
   use GMP;
-  private use HaltWrappers;
-  private use SysCTypes;
+  use HaltWrappers;
+  use SysCTypes;
+  use SysError;
+  use SysBasic;
 
   enum Round {
     DOWN = -1,
@@ -443,17 +445,17 @@ module BigInteger {
   // Cast operators
   //
   pragma "no doc"
-  inline proc _cast(type toType: bigint, src: integral): bigint {
+  inline operator :(src: integral, type toType: bigint): bigint {
     return new bigint(src);
   }
 
   pragma "no doc"
-  inline proc _cast(type toType: bigint, src: string): bigint {
+  inline operator :(src: string, type toType: bigint): bigint {
     return new bigint(src);
   }
 
   pragma "no doc"
-  inline proc _cast(type t, const ref x: bigint) where isIntType(t) {
+  inline operator :(const ref x: bigint, type t:numeric) where isIntType(t) {
     var ret: c_long;
 
     if _local {
@@ -474,7 +476,7 @@ module BigInteger {
   }
 
   pragma "no doc"
-  inline proc _cast(type t, const ref x: bigint) where isUintType(t) {
+  inline operator :(const ref x: bigint, type t:numeric) where isUintType(t) {
     var ret: c_ulong;
 
     if _local {
@@ -495,7 +497,7 @@ module BigInteger {
   }
 
   pragma "no doc"
-  inline proc _cast(type t, const ref x: bigint) where isRealType(t) {
+  inline operator :(const ref x: bigint, type t:numeric) where isRealType(t) {
     var ret: c_double;
 
     if _local {

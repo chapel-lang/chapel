@@ -1,9 +1,8 @@
 //===- IRObjectFile.cpp - IR object file implementation ---------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -43,13 +42,12 @@ void IRObjectFile::moveSymbolNext(DataRefImpl &Symb) const {
   Symb.p += sizeof(ModuleSymbolTable::Symbol);
 }
 
-std::error_code IRObjectFile::printSymbolName(raw_ostream &OS,
-                                              DataRefImpl Symb) const {
+Error IRObjectFile::printSymbolName(raw_ostream &OS, DataRefImpl Symb) const {
   SymTab.printSymbolName(OS, getSym(Symb));
-  return std::error_code();
+  return Error::success();
 }
 
-uint32_t IRObjectFile::getSymbolFlags(DataRefImpl Symb) const {
+Expected<uint32_t> IRObjectFile::getSymbolFlags(DataRefImpl Symb) const {
   return SymTab.getSymbolFlags(getSym(Symb));
 }
 
@@ -76,10 +74,12 @@ Expected<MemoryBufferRef>
 IRObjectFile::findBitcodeInObject(const ObjectFile &Obj) {
   for (const SectionRef &Sec : Obj.sections()) {
     if (Sec.isBitcode()) {
-      StringRef SecContents;
-      if (std::error_code EC = Sec.getContents(SecContents))
-        return errorCodeToError(EC);
-      return MemoryBufferRef(SecContents, Obj.getFileName());
+      Expected<StringRef> Contents = Sec.getContents();
+      if (!Contents)
+        return Contents.takeError();
+      if (Contents->size() <= 1)
+        return errorCodeToError(object_error::bitcode_section_not_found);
+      return MemoryBufferRef(*Contents, Obj.getFileName());
     }
   }
 
@@ -94,6 +94,7 @@ IRObjectFile::findBitcodeInMemBuffer(MemoryBufferRef Object) {
     return Object;
   case file_magic::elf_relocatable:
   case file_magic::macho_object:
+  case file_magic::wasm_object:
   case file_magic::coff_object: {
     Expected<std::unique_ptr<ObjectFile>> ObjFile =
         ObjectFile::createObjectFile(Object, Type);

@@ -1,0 +1,48 @@
+Testing int(8)
+Upper limit: 127 (must be 127)
+Lower limit: -128 (must be -128)
+Can cast upper limit back?: true
+Can cast lower limit back?: true
+
+Testing int(16)
+Upper limit: 32767 (must be 32767)
+Lower limit: -32768 (must be -32768)
+Can cast upper limit back?: true
+Can cast lower limit back?: true
+
+Testing int(32)
+Upper limit: 2147483647 (must be 2147483647)
+Lower limit: -2147483648 (must be -2147483648)
+Can cast upper limit back?: true
+Can cast lower limit back?: true
+
+Testing int(64)
+Upper limit: 9223372036854775807 (must be 9223372036854775807)
+Lower limit: -9223372036854775808 (must be -9223372036854775808)
+Can cast upper limit back?: true
+Can cast lower limit back?: true
+
+Testing uint(8)
+Upper limit: 255 (must be 255)
+Lower limit: 0 (must be 0)
+Can cast upper limit back?: true
+Can cast lower limit back?: true
+
+Testing uint(16)
+Upper limit: 65535 (must be 65535)
+Lower limit: 0 (must be 0)
+Can cast upper limit back?: true
+Can cast lower limit back?: true
+
+Testing uint(32)
+Upper limit: 4294967295 (must be 4294967295)
+Lower limit: 0 (must be 0)
+Can cast upper limit back?: true
+Can cast lower limit back?: true
+
+Testing uint(64)
+Upper limit: 18446744073709551615 (must be 18446744073709551615)
+Lower limit: 0 (must be 0)
+Can cast upper limit back?: true
+Can cast lower limit back?: true
+

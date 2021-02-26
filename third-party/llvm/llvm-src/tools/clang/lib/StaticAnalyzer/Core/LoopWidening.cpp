@@ -1,9 +1,8 @@
 //===--- LoopWidening.cpp - Widen loops -------------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 ///
@@ -68,8 +67,10 @@ ProgramStateRef getWidenedLoopState(ProgramStateRef PrevState,
   }
 
   // References should not be invalidated.
-  auto Matches = match(findAll(stmt(hasDescendant(varDecl(hasType(referenceType())).bind(MatchRef)))),
-                       *LCtx->getDecl()->getBody(), ASTCtx);
+  auto Matches = match(
+      findAll(stmt(hasDescendant(
+          varDecl(hasType(hasCanonicalType(referenceType()))).bind(MatchRef)))),
+      *LCtx->getDecl()->getBody(), ASTCtx);
   for (BoundNodes Match : Matches) {
     const VarDecl *VD = Match.getNodeAs<VarDecl>(MatchRef);
     assert(VD);

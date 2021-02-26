@@ -2,7 +2,7 @@
 re2 README for Chapel
 =====================
 
-This modified version of re2 is based on the official 2018-10-01(0a6326b)
+This modified version of re2 is based on the official 2021-02-02 (cd026c5)
 release obtained from:
 
   https://github.com/google/re2

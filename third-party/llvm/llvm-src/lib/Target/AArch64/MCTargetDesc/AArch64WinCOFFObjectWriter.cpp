@@ -1,9 +1,8 @@
 //= AArch64WinCOFFObjectWriter.cpp - AArch64 Windows COFF Object Writer C++ =//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===---------------------------------------------------------------------===//
 
@@ -12,6 +11,7 @@
 #include "llvm/ADT/Twine.h"
 #include "llvm/BinaryFormat/COFF.h"
 #include "llvm/MC/MCAsmBackend.h"
+#include "llvm/MC/MCContext.h"
 #include "llvm/MC/MCExpr.h"
 #include "llvm/MC/MCFixup.h"
 #include "llvm/MC/MCFixupKindInfo.h"
@@ -49,10 +49,33 @@ unsigned AArch64WinCOFFObjectWriter::getRelocType(
                                       : Target.getSymA()->getKind();
   const MCExpr *Expr = Fixup.getValue();
 
+  if (const AArch64MCExpr *A64E = dyn_cast<AArch64MCExpr>(Expr)) {
+    AArch64MCExpr::VariantKind RefKind = A64E->getKind();
+    switch (AArch64MCExpr::getSymbolLoc(RefKind)) {
+    case AArch64MCExpr::VK_ABS:
+    case AArch64MCExpr::VK_SECREL:
+      // Supported
+      break;
+    default:
+      Ctx.reportError(Fixup.getLoc(), "relocation variant " +
+                                          A64E->getVariantKindName() +
+                                          " unsupported on COFF targets");
+      return COFF::IMAGE_REL_ARM64_ABSOLUTE; // Dummy return value
+    }
+  }
+
   switch (static_cast<unsigned>(Fixup.getKind())) {
   default: {
-    const MCFixupKindInfo &Info = MAB.getFixupKindInfo(Fixup.getKind());
-    report_fatal_error(Twine("unsupported relocation type: ") + Info.Name);
+    if (const AArch64MCExpr *A64E = dyn_cast<AArch64MCExpr>(Expr)) {
+      Ctx.reportError(Fixup.getLoc(), "relocation type " +
+                                          A64E->getVariantKindName() +
+                                          " unsupported on COFF targets");
+    } else {
+      const MCFixupKindInfo &Info = MAB.getFixupKindInfo(Fixup.getKind());
+      Ctx.reportError(Fixup.getLoc(), Twine("relocation type ") + Info.Name +
+                                          " unsupported on COFF targets");
+    }
+    return COFF::IMAGE_REL_ARM64_ABSOLUTE; // Dummy return value
   }
 
   case FK_Data_4:
@@ -121,7 +144,7 @@ bool AArch64WinCOFFObjectWriter::recordRelocation(const MCFixup &Fixup) const {
 namespace llvm {
 
 std::unique_ptr<MCObjectTargetWriter> createAArch64WinCOFFObjectWriter() {
-  return llvm::make_unique<AArch64WinCOFFObjectWriter>();
+  return std::make_unique<AArch64WinCOFFObjectWriter>();
 }
 
 } // end namespace llvm

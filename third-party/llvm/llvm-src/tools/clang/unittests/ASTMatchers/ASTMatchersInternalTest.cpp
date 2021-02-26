@@ -1,9 +1,8 @@
 // unittests/ASTMatchers/ASTMatchersInternalTest.cpp - AST matcher unit tests //
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -14,10 +13,12 @@
 #include "clang/Tooling/Tooling.h"
 #include "llvm/ADT/Triple.h"
 #include "llvm/Support/Host.h"
+#include "llvm/Testing/Support/SupportHelpers.h"
 #include "gtest/gtest.h"
 
 namespace clang {
 namespace ast_matchers {
+using internal::DynTypedMatcher;
 
 #if GTEST_HAS_DEATH_TEST
 TEST(HasNameDeathTest, DiesOnEmptyName) {
@@ -33,23 +34,15 @@ TEST(HasNameDeathTest, DiesOnEmptyPattern) {
       EXPECT_TRUE(notMatches("class X {};", HasEmptyName));
     }, "");
 }
-
-TEST(IsDerivedFromDeathTest, DiesOnEmptyBaseName) {
-  ASSERT_DEBUG_DEATH({
-    DeclarationMatcher IsDerivedFromEmpty = cxxRecordDecl(isDerivedFrom(""));
-    EXPECT_TRUE(notMatches("class X {};", IsDerivedFromEmpty));
-  }, "");
-}
 #endif
 
 TEST(ConstructVariadic, MismatchedTypes_Regression) {
   EXPECT_TRUE(
-      matches("const int a = 0;",
-              internal::DynTypedMatcher::constructVariadic(
-                  internal::DynTypedMatcher::VO_AnyOf,
-                  ast_type_traits::ASTNodeKind::getFromNodeKind<QualType>(),
-                  {isConstQualified(), arrayType()})
-                  .convertTo<QualType>()));
+      matches("const int a = 0;", internal::DynTypedMatcher::constructVariadic(
+                                      internal::DynTypedMatcher::VO_AnyOf,
+                                      ASTNodeKind::getFromNodeKind<QualType>(),
+                                      {isConstQualified(), arrayType()})
+                                      .convertTo<QualType>()));
 }
 
 // For testing AST_MATCHER_P().
@@ -63,13 +56,13 @@ TEST(AstMatcherPMacro, Works) {
   DeclarationMatcher HasClassB = just(has(recordDecl(hasName("B")).bind("b")));
 
   EXPECT_TRUE(matchAndVerifyResultTrue("class A { class B {}; };",
-      HasClassB, llvm::make_unique<VerifyIdIsBoundTo<Decl>>("b")));
+      HasClassB, std::make_unique<VerifyIdIsBoundTo<Decl>>("b")));
 
   EXPECT_TRUE(matchAndVerifyResultFalse("class A { class B {}; };",
-      HasClassB, llvm::make_unique<VerifyIdIsBoundTo<Decl>>("a")));
+      HasClassB, std::make_unique<VerifyIdIsBoundTo<Decl>>("a")));
 
   EXPECT_TRUE(matchAndVerifyResultFalse("class A { class C {}; };",
-      HasClassB, llvm::make_unique<VerifyIdIsBoundTo<Decl>>("b")));
+      HasClassB, std::make_unique<VerifyIdIsBoundTo<Decl>>("b")));
 }
 
 AST_POLYMORPHIC_MATCHER_P(polymorphicHas,
@@ -77,7 +70,7 @@ AST_POLYMORPHIC_MATCHER_P(polymorphicHas,
                           internal::Matcher<Decl>, AMatcher) {
   return Finder->matchesChildOf(
       Node, AMatcher, Builder,
-      ASTMatchFinder::TK_IgnoreImplicitCastsAndParentheses,
+      TraversalKind::TK_IgnoreImplicitCastsAndParentheses,
       ASTMatchFinder::BK_First);
 }
 
@@ -86,13 +79,13 @@ TEST(AstPolymorphicMatcherPMacro, Works) {
       polymorphicHas(recordDecl(hasName("B")).bind("b"));
 
   EXPECT_TRUE(matchAndVerifyResultTrue("class A { class B {}; };",
-      HasClassB, llvm::make_unique<VerifyIdIsBoundTo<Decl>>("b")));
+      HasClassB, std::make_unique<VerifyIdIsBoundTo<Decl>>("b")));
 
   EXPECT_TRUE(matchAndVerifyResultFalse("class A { class B {}; };",
-      HasClassB, llvm::make_unique<VerifyIdIsBoundTo<Decl>>("a")));
+      HasClassB, std::make_unique<VerifyIdIsBoundTo<Decl>>("a")));
 
   EXPECT_TRUE(matchAndVerifyResultFalse("class A { class C {}; };",
-      HasClassB, llvm::make_unique<VerifyIdIsBoundTo<Decl>>("b")));
+      HasClassB, std::make_unique<VerifyIdIsBoundTo<Decl>>("b")));
 
   StatementMatcher StatementHasClassB =
       polymorphicHas(recordDecl(hasName("B")));
@@ -180,6 +173,26 @@ TEST(Matcher, matchOverEntireASTContext) {
   EXPECT_NE(nullptr, PT);
 }
 
+TEST(DynTypedMatcherTest, TraversalKindForwardsToImpl) {
+  auto M = DynTypedMatcher(decl());
+  EXPECT_FALSE(M.getTraversalKind().hasValue());
+
+  M = DynTypedMatcher(traverse(TK_AsIs, decl()));
+  EXPECT_THAT(M.getTraversalKind(), llvm::ValueIs(TK_AsIs));
+}
+
+TEST(DynTypedMatcherTest, ConstructWithTraversalKindSetsTK) {
+  auto M = DynTypedMatcher(decl()).withTraversalKind(TK_AsIs);
+  EXPECT_THAT(M.getTraversalKind(), llvm::ValueIs(TK_AsIs));
+}
+
+TEST(DynTypedMatcherTest, ConstructWithTraversalKindOverridesNestedTK) {
+  auto M = DynTypedMatcher(decl()).withTraversalKind(TK_AsIs).withTraversalKind(
+      TK_IgnoreUnlessSpelledInSource);
+  EXPECT_THAT(M.getTraversalKind(),
+              llvm::ValueIs(TK_IgnoreUnlessSpelledInSource));
+}
+
 TEST(IsInlineMatcher, IsInline) {
   EXPECT_TRUE(matches("void g(); inline void f();",
                       functionDecl(isInline(), hasName("f"))));
@@ -199,18 +212,18 @@ TEST(Matcher, IsExpansionInMainFileMatcher) {
   M.push_back(std::make_pair("/other", "class X {};"));
   EXPECT_TRUE(matchesConditionally("#include <other>\n",
                                    recordDecl(isExpansionInMainFile()), false,
-                                   "-isystem/", M));
+                                   {"-isystem/"}, M));
 }
 
 TEST(Matcher, IsExpansionInSystemHeader) {
   FileContentMappings M;
   M.push_back(std::make_pair("/other", "class X {};"));
-  EXPECT_TRUE(matchesConditionally(
-      "#include \"other\"\n", recordDecl(isExpansionInSystemHeader()), true,
-      "-isystem/", M));
   EXPECT_TRUE(matchesConditionally("#include \"other\"\n",
                                    recordDecl(isExpansionInSystemHeader()),
-                                   false, "-I/", M));
+                                   true, {"-isystem/"}, M));
+  EXPECT_TRUE(matchesConditionally("#include \"other\"\n",
+                                   recordDecl(isExpansionInSystemHeader()),
+                                   false, {"-I/"}, M));
   EXPECT_TRUE(notMatches("class X {};",
                          recordDecl(isExpansionInSystemHeader())));
   EXPECT_TRUE(notMatches("", recordDecl(isExpansionInSystemHeader())));
@@ -225,13 +238,13 @@ TEST(Matcher, IsExpansionInFileMatching) {
       "#include <bar>\n"
       "class X {};",
       recordDecl(isExpansionInFileMatching("b.*"), hasName("B")), true,
-      "-isystem/", M));
+      {"-isystem/"}, M));
   EXPECT_TRUE(matchesConditionally(
       "#include <foo>\n"
       "#include <bar>\n"
       "class X {};",
       recordDecl(isExpansionInFileMatching("f.*"), hasName("X")), false,
-      "-isystem/", M));
+      {"-isystem/"}, M));
 }
 
 #endif // _WIN32

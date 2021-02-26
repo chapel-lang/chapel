@@ -1,5 +1,5 @@
 module HPCCProblemSize {
-  use Memory, Types;
+  use Memory.Diagnostics, Types;
 
   proc computeProblemSize(
     type elemType, numArrays, returnLog2 = false, memRatio=4)

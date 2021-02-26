@@ -1,24 +1,24 @@
 assignments.chpl:11: In function 'TEST1':
 assignments.chpl:13: error: cannot assign to a record of the type RECTYPE using the default assignment operator because it has 'const' field(s)
 assignments.chpl:16: In function 'TEST2':
-assignments.chpl:18: error: illegal lvalue in assignment
+assignments.chpl:18: error: cannot assign to const variable
 assignments.chpl:31: In function 'TEST5':
-assignments.chpl:33: error: illegal lvalue in assignment
-assignments.chpl:34: error: illegal lvalue in assignment
+assignments.chpl:33: error: cannot assign to const variable
+assignments.chpl:34: error: cannot assign to const variable
 assignments.chpl:37: In function 'TEST6':
-assignments.chpl:40: error: illegal lvalue in assignment
-assignments.chpl:56: error: non-lvalue actual is passed to 'ref' formal 'arg' of TEST8()
+assignments.chpl:40: error: cannot assign to const variable
+assignments.chpl:56: error: const actual is passed to 'ref' formal 'arg' of TEST8()
 assignments.chpl:70: In function 'quest1':
 assignments.chpl:72: error: cannot assign to a record of the type OUTERREC using the default assignment operator because it has 'const' field(s)
 assignments.chpl:75: In function 'quest2':
-assignments.chpl:77: error: illegal lvalue in assignment
+assignments.chpl:77: error: cannot assign to const variable
 assignments.chpl:89: In function 'quest5':
-assignments.chpl:92: error: illegal lvalue in assignment
-assignments.chpl:93: error: illegal lvalue in assignment
-assignments.chpl:94: error: illegal lvalue in assignment
+assignments.chpl:92: error: cannot assign to const variable
+assignments.chpl:93: error: cannot assign to const variable
+assignments.chpl:94: error: cannot assign to const variable
 assignments.chpl:97: In function 'quest6':
-assignments.chpl:99: error: illegal lvalue in assignment
-assignments.chpl:100: error: illegal lvalue in assignment
-assignments.chpl:101: error: illegal lvalue in assignment
-assignments.chpl:102: error: illegal lvalue in assignment
-assignments.chpl:118: error: non-lvalue actual is passed to 'ref' formal 'arg' of quest8()
+assignments.chpl:99: error: cannot assign to const variable
+assignments.chpl:100: error: cannot assign to const variable
+assignments.chpl:101: error: cannot assign to const variable
+assignments.chpl:102: error: cannot assign to const variable
+assignments.chpl:118: error: const actual is passed to 'ref' formal 'arg' of quest8()

@@ -4,7 +4,7 @@ module OuterModule {
   }
 
   module MyModule {
-          use MyTypes;
+          use super.MyTypes;
           class Bar {
                   var thing : Foo;
                   record myR {

@@ -1,0 +1,5 @@
+Running Sphinx v3.2.1
+
+Warning, treated as error:
+html_static_path entry '_static' is placed inside outdir
+error: building html output from chpldoc sphinx project

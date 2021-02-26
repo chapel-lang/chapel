@@ -1,9 +1,8 @@
 //===--- CodeGenOptions.h ---------------------------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -17,6 +16,7 @@
 #include "clang/Basic/DebugInfoOptions.h"
 #include "clang/Basic/Sanitizers.h"
 #include "clang/Basic/XRayInstr.h"
+#include "llvm/ADT/FloatingPointMode.h"
 #include "llvm/Support/CodeGen.h"
 #include "llvm/Support/Regex.h"
 #include "llvm/Target/TargetOptions.h"
@@ -54,6 +54,7 @@ public:
   enum VectorLibrary {
     NoLibrary,  // Don't use any vector library.
     Accelerate, // Use the Accelerate framework.
+    MASSV,      // IBM MASS vector library.
     SVML        // Intel short vector math library.
   };
 
@@ -70,8 +71,6 @@ public:
     InitialExecTLSModel,
     LocalExecTLSModel
   };
-
-  enum DwarfFissionKind { NoFission, SplitFileFission, SingleFileFission };
 
   /// Clang versions with different platform ABI conformance.
   enum class ClangABI {
@@ -101,6 +100,7 @@ public:
     ProfileClangInstr, // Clang instrumentation to generate execution counts
                        // to use with PGO.
     ProfileIRInstr,    // IR level PGO instrumentation in LLVM.
+    ProfileCSIRInstr, // IR level PGO context sensitive instrumentation in LLVM.
   };
 
   enum EmbedBitcodeKind {
@@ -110,13 +110,27 @@ public:
     Embed_Marker    // Embed a marker as a placeholder for bitcode.
   };
 
-  enum SignReturnAddressScope {
-    None,    // No signing for any function
-    NonLeaf, // Sign the return address of functions that spill LR
-    All      // Sign the return address of all functions
-  };
+  // This field stores one of the allowed values for the option
+  // -fbasic-block-sections=.  The allowed values with this option are:
+  // {"labels", "all", "list=<file>", "none"}.
+  //
+  // "labels":      Only generate basic block symbols (labels) for all basic
+  //                blocks, do not generate unique sections for basic blocks.
+  //                Use the machine basic block id in the symbol name to
+  //                associate profile info from virtual address to machine
+  //                basic block.
+  // "all" :        Generate basic block sections for all basic blocks.
+  // "list=<file>": Generate basic block sections for a subset of basic blocks.
+  //                The functions and the machine basic block ids are specified
+  //                in the file.
+  // "none":        Disable sections/labels for basic blocks.
+  std::string BBSections;
 
-  enum SignReturnAddressKeyValue { AKey, BKey };
+  enum class FramePointerKind {
+    None,        // Omit all frame pointers.
+    NonLeaf,     // Keep non-leaf frame pointers.
+    All,         // Keep all frame pointers.
+  };
 
   /// The code model to use (-mcmodel).
   std::string CodeModel;
@@ -158,7 +172,10 @@ public:
   std::string FloatABI;
 
   /// The floating-point denormal mode to use.
-  std::string FPDenormalMode;
+  llvm::DenormalMode FPDenormalMode = llvm::DenormalMode::getIEEE();
+
+  /// The floating-point denormal mode to use, for float.
+  llvm::DenormalMode FP32DenormalMode = llvm::DenormalMode::getIEEE();
 
   /// The float precision limit to use, if non-empty.
   std::string LimitFloatPrecision;
@@ -184,9 +201,12 @@ public:
   /// file, for example with -save-temps.
   std::string MainFileName;
 
-  /// The name for the split debug info file that we'll break out. This is used
-  /// in the backend for setting the name in the skeleton cu.
+  /// The name for the split debug info file used for the DW_AT_[GNU_]dwo_name
+  /// attribute in the skeleton CU.
   std::string SplitDwarfFile;
+
+  /// Output filename for the split debug info, not used in the skeleton CU.
+  std::string SplitDwarfOutput;
 
   /// The name of the relocation model to use.
   llvm::Reloc::Model RelocationModel;
@@ -204,8 +224,8 @@ public:
   /// A list of linker options to embed in the object file.
   std::vector<std::string> LinkerOptions;
 
-  /// Name of the profile file to use as output for -fprofile-instr-generate
-  /// and -fprofile-generate.
+  /// Name of the profile file to use as output for -fprofile-instr-generate,
+  /// -fprofile-generate, and -fcs-profile-generate.
   std::string InstrProfileOutput;
 
   /// Name of the profile file to use with -fprofile-sample-use.
@@ -237,6 +257,17 @@ public:
   /// The name of the file to which the backend should save YAML optimization
   /// records.
   std::string OptRecordFile;
+
+  /// The regex that filters the passes that should be saved to the optimization
+  /// records.
+  std::string OptRecordPasses;
+
+  /// The format used for serializing remarks (default: YAML)
+  std::string OptRecordFormat;
+
+  /// The name of the partition that symbols are assigned to, specified with
+  /// -fsymbol-partition (see https://lld.llvm.org/Partitions.html).
+  std::string SymbolPartition;
 
   /// Regular expression to select optimizations for which we should enable
   /// optimization remarks. Transformation passes whose name matches this
@@ -288,6 +319,24 @@ public:
 
   std::vector<std::string> DefaultFunctionAttrs;
 
+  /// List of dynamic shared object files to be loaded as pass plugins.
+  std::vector<std::string> PassPlugins;
+
+  /// Path to allowlist file specifying which objects
+  /// (files, functions) should exclusively be instrumented
+  /// by sanitizer coverage pass.
+  std::vector<std::string> SanitizeCoverageAllowlistFiles;
+
+  /// Path to blocklist file specifying which objects
+  /// (files, functions) listed for instrumentation by sanitizer
+  /// coverage pass should actually not be instrumented.
+  std::vector<std::string> SanitizeCoverageBlocklistFiles;
+
+  /// Executable and command-line used to create a given CompilerInvocation.
+  /// Most of the time this will be the full -cc1 command.
+  const char *Argv0 = nullptr;
+  ArrayRef<const char *> CommandLineArgs;
+
 public:
   // Define accessors/mutators for code generation options of enumeration type.
 #define CODEGENOPT(Name, Bits, Default)
@@ -316,6 +365,11 @@ public:
     return getProfileInstr() == ProfileIRInstr;
   }
 
+  /// Check if CS IR level profile instrumentation is on.
+  bool hasProfileCSIRInstr() const {
+    return getProfileInstr() == ProfileCSIRInstr;
+  }
+
   /// Check if Clang profile use is on.
   bool hasProfileClangUse() const {
     return getProfileUse() == ProfileClangInstr;
@@ -323,9 +377,17 @@ public:
 
   /// Check if IR level profile use is on.
   bool hasProfileIRUse() const {
-    return getProfileUse() == ProfileIRInstr;
+    return getProfileUse() == ProfileIRInstr ||
+           getProfileUse() == ProfileCSIRInstr;
   }
 
+  /// Check if CSIR profile use is on.
+  bool hasProfileCSIRUse() const { return getProfileUse() == ProfileCSIRInstr; }
+
+  /// Check if type and variable info should be emitted.
+  bool hasReducedDebugInfo() const {
+    return getDebugInfo() >= codegenoptions::DebugInfoConstructor;
+  }
 };
 
 }  // end namespace clang

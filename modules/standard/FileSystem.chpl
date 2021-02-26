@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -92,11 +92,13 @@
  */
 module FileSystem {
 
-  use SysError;
-  private use Path;
-  private use HaltWrappers;
-  private use SysCTypes;
+  public use SysError;
+  use Path;
+  use HaltWrappers;
+  use SysCTypes;
   use IO;
+  use SysBasic;
+  use CPtr;
 
 /* S_IRUSR and the following constants are values of the form
    S_I[R | W | X][USR | GRP | OTH], S_IRWX[U | G | O], S_ISUID, S_ISGID, or
@@ -506,7 +508,8 @@ proc copyMode(out error: syserr, src: string, dest: string) {
 }
 
 /* Will recursively copy the tree which lives under `src` into `dst`,
-   including all contents, permissions, and metadata.  `dst` must not
+   including all contents and permissions. Metadata such as file creation and
+   modification times, uid, and gid will not be preserved.  `dst` must not
    previously exist, this function assumes it can create it and any missing
    parent directories. If `copySymbolically` is `true`, symlinks will be
    copied as symlinks, otherwise their contents and metadata will be copied
@@ -557,7 +560,7 @@ private proc copyTreeHelper(src: string, dest: string, copySymbolically: bool=fa
     } else {
       // Either we didn't find a link, or copy symbolically is false, which
       // means we want the contents of the linked file, not a link itself.
-      try copy(fileSrcName, fileDestName, metadata=true);
+      try copy(fileSrcName, fileDestName, metadata=false);
     }
   }
 
@@ -697,6 +700,7 @@ proc exists(out error: syserr, name: string): bool {
    :yield:  The paths to any files found, relative to `startdir`, as strings
 */
 
+pragma "order independent yielding loops"
 iter findfiles(startdir: string = ".", recursive: bool = false,
                hidden: bool = false): string {
   if (recursive) then
@@ -709,6 +713,7 @@ iter findfiles(startdir: string = ".", recursive: bool = false,
 }
 
 pragma "no doc"
+pragma "order independent yielding loops"
 iter findfiles(startdir: string = ".", recursive: bool = false,
                hidden: bool = false, param tag: iterKind): string
        where tag == iterKind.standalone {
@@ -867,6 +872,7 @@ proc getUID(out error: syserr, name: string): int {
 // of casting and error checking.
 //
 private module GlobWrappers {
+  import HaltWrappers;
   extern type glob_t;
   use SysCTypes;
 
@@ -875,10 +881,7 @@ private module GlobWrappers {
 
   // glob wrapper that takes care of casting and error checking
   inline proc glob_w(pattern: string, ref ret_glob:glob_t): void {
-    // want:
-    //  import FileSystem.unescape;
-    // but see issue #15308, so:
-    use FileSystem;
+    import FileSystem.unescape;
     extern proc chpl_glob(pattern: c_string, flags: c_int,
                           ref ret_glob: glob_t): c_int;
 
@@ -926,6 +929,7 @@ private module GlobWrappers {
 
    :yield: The matching filenames as strings
 */
+pragma "order independent yielding loops"
 iter glob(pattern: string = "*"): string {
   use GlobWrappers;
   var glb : glob_t;
@@ -941,6 +945,7 @@ iter glob(pattern: string = "*"): string {
 
 
 pragma "no doc"
+pragma "order independent yielding loops"
 iter glob(pattern: string = "*", param tag: iterKind): string
        where tag == iterKind.standalone {
   use GlobWrappers;
@@ -982,6 +987,7 @@ iter glob(pattern: string = "*", param tag: iterKind)
 }
 
 pragma "no doc"
+pragma "order independent yielding loops"
 iter glob(pattern: string = "*", followThis, param tag: iterKind): string
        where tag == iterKind.follower {
   use GlobWrappers;
@@ -1191,6 +1197,7 @@ proc isMount(out error:syserr, name: string): bool {
 
    :yield: The names of the specified directory's contents, as strings
 */
+pragma "not order independent yielding loops"
 iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
               files: bool = true, listlinks: bool = true): string {
   extern type DIRptr;
@@ -1217,7 +1224,7 @@ iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
         filename = createStringWithNewBuffer(ent.d_name(),
                                              policy=decodePolicy.escape);
       }
-      if (hidden || filename[1] != '.') {
+      if (hidden || filename[0] != '.') {
         if (filename != "." && filename != "..") {
           const fullpath = path + "/" + filename;
 

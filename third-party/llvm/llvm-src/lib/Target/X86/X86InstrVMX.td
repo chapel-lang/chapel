@@ -1,9 +1,8 @@
 //===-- X86InstrVMX.td - VMX Instruction Set Extension -----*- tablegen -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -38,7 +37,7 @@ def VMCLEARm : I<0xC7, MRM6m, (outs), (ins i64mem:$vmcs),
   "vmclear\t$vmcs", []>, PD;
 
 // OF 01 D4
-def VMFUNC : I<0x01, MRM_D4, (outs), (ins), "vmfunc", []>, TB;
+def VMFUNC : I<0x01, MRM_D4, (outs), (ins), "vmfunc", []>, PS;
 
 // 0F 01 C2
 def VMLAUNCH : I<0x01, MRM_C2, (outs), (ins), "vmlaunch", []>, TB;

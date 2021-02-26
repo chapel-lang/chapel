@@ -1,2 +1,0 @@
-# Skip for --llvm since this test uses a C macro
-COMPOPTS <= --llvm

@@ -1,22 +1,8 @@
 /*===---- xmmintrin.h - SSE intrinsics -------------------------------------===
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
+ * Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+ * See https://llvm.org/LICENSE.txt for license information.
+ * SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
  *
  *===-----------------------------------------------------------------------===
  */
@@ -28,7 +14,9 @@
 
 typedef int __v4si __attribute__((__vector_size__(16)));
 typedef float __v4sf __attribute__((__vector_size__(16)));
-typedef float __m128 __attribute__((__vector_size__(16)));
+typedef float __m128 __attribute__((__vector_size__(16), __aligned__(16)));
+
+typedef float __m128_u __attribute__((__vector_size__(16), __aligned__(1)));
 
 /* Unsigned types */
 typedef unsigned int __v4su __attribute__((__vector_size__(16)));
@@ -1639,7 +1627,7 @@ _mm_loadh_pi(__m128 __a, const __m64 *__p)
   struct __mm_loadh_pi_struct {
     __mm_loadh_pi_v2f32 __u;
   } __attribute__((__packed__, __may_alias__));
-  __mm_loadh_pi_v2f32 __b = ((struct __mm_loadh_pi_struct*)__p)->__u;
+  __mm_loadh_pi_v2f32 __b = ((const struct __mm_loadh_pi_struct*)__p)->__u;
   __m128 __bb = __builtin_shufflevector(__b, __b, 0, 1, 0, 1);
   return __builtin_shufflevector(__a, __bb, 0, 1, 4, 5);
 }
@@ -1666,7 +1654,7 @@ _mm_loadl_pi(__m128 __a, const __m64 *__p)
   struct __mm_loadl_pi_struct {
     __mm_loadl_pi_v2f32 __u;
   } __attribute__((__packed__, __may_alias__));
-  __mm_loadl_pi_v2f32 __b = ((struct __mm_loadl_pi_struct*)__p)->__u;
+  __mm_loadl_pi_v2f32 __b = ((const struct __mm_loadl_pi_struct*)__p)->__u;
   __m128 __bb = __builtin_shufflevector(__b, __b, 0, 1, 0, 1);
   return __builtin_shufflevector(__a, __bb, 4, 5, 2, 3);
 }
@@ -1692,7 +1680,7 @@ _mm_load_ss(const float *__p)
   struct __mm_load_ss_struct {
     float __u;
   } __attribute__((__packed__, __may_alias__));
-  float __u = ((struct __mm_load_ss_struct*)__p)->__u;
+  float __u = ((const struct __mm_load_ss_struct*)__p)->__u;
   return __extension__ (__m128){ __u, 0, 0, 0 };
 }
 
@@ -1714,7 +1702,7 @@ _mm_load1_ps(const float *__p)
   struct __mm_load1_ps_struct {
     float __u;
   } __attribute__((__packed__, __may_alias__));
-  float __u = ((struct __mm_load1_ps_struct*)__p)->__u;
+  float __u = ((const struct __mm_load1_ps_struct*)__p)->__u;
   return __extension__ (__m128){ __u, __u, __u, __u };
 }
 
@@ -1734,7 +1722,7 @@ _mm_load1_ps(const float *__p)
 static __inline__ __m128 __DEFAULT_FN_ATTRS
 _mm_load_ps(const float *__p)
 {
-  return *(__m128*)__p;
+  return *(const __m128*)__p;
 }
 
 /// Loads a 128-bit floating-point vector of [4 x float] from an
@@ -1752,9 +1740,9 @@ static __inline__ __m128 __DEFAULT_FN_ATTRS
 _mm_loadu_ps(const float *__p)
 {
   struct __loadu_ps {
-    __m128 __v;
+    __m128_u __v;
   } __attribute__((__packed__, __may_alias__));
-  return ((struct __loadu_ps*)__p)->__v;
+  return ((const struct __loadu_ps*)__p)->__v;
 }
 
 /// Loads four packed float values, in reverse order, from an aligned
@@ -1931,7 +1919,11 @@ _mm_setzero_ps(void)
 static __inline__ void __DEFAULT_FN_ATTRS
 _mm_storeh_pi(__m64 *__p, __m128 __a)
 {
-  __builtin_ia32_storehps((__v2si *)__p, (__v4sf)__a);
+  typedef float __mm_storeh_pi_v2f32 __attribute__((__vector_size__(8)));
+  struct __mm_storeh_pi_struct {
+    __mm_storeh_pi_v2f32 __u;
+  } __attribute__((__packed__, __may_alias__));
+  ((struct __mm_storeh_pi_struct*)__p)->__u = __builtin_shufflevector(__a, __a, 2, 3);
 }
 
 /// Stores the lower 64 bits of a 128-bit vector of [4 x float] to a
@@ -1948,7 +1940,11 @@ _mm_storeh_pi(__m64 *__p, __m128 __a)
 static __inline__ void __DEFAULT_FN_ATTRS
 _mm_storel_pi(__m64 *__p, __m128 __a)
 {
-  __builtin_ia32_storelps((__v2si *)__p, (__v4sf)__a);
+  typedef float __mm_storeh_pi_v2f32 __attribute__((__vector_size__(8)));
+  struct __mm_storeh_pi_struct {
+    __mm_storeh_pi_v2f32 __u;
+  } __attribute__((__packed__, __may_alias__));
+  ((struct __mm_storeh_pi_struct*)__p)->__u = __builtin_shufflevector(__a, __a, 0, 1);
 }
 
 /// Stores the lower 32 bits of a 128-bit vector of [4 x float] to a
@@ -1987,7 +1983,7 @@ static __inline__ void __DEFAULT_FN_ATTRS
 _mm_storeu_ps(float *__p, __m128 __a)
 {
   struct __storeu_ps {
-    __m128 __v;
+    __m128_u __v;
   } __attribute__((__packed__, __may_alias__));
   ((struct __storeu_ps*)__p)->__v = __a;
 }
@@ -2104,7 +2100,7 @@ _mm_storer_ps(float *__p, __m128 __a)
 ///    be generated. \n
 ///    _MM_HINT_T2: Move data using the T2 hint. The PREFETCHT2 instruction will
 ///    be generated.
-#define _mm_prefetch(a, sel) (__builtin_prefetch((void *)(a), \
+#define _mm_prefetch(a, sel) (__builtin_prefetch((const void *)(a), \
                                                  ((sel) >> 2) & 1, (sel) & 0x3))
 #endif
 
@@ -2185,7 +2181,7 @@ void _mm_sfence(void);
 ///    3: Bits [63:48] are copied to the destination.
 /// \returns A 16-bit integer containing the extracted 16 bits of packed data.
 #define _mm_extract_pi16(a, n) \
-  (int)__builtin_ia32_vec_ext_v4hi((__m64)a, (int)n)
+  (int)__builtin_ia32_vec_ext_v4hi((__v4hi)a, (int)n)
 
 /// Copies data from the 64-bit vector of [4 x i16] to the destination,
 ///    and inserts the lower 16-bits of an integer operand at the 16-bit offset
@@ -2216,7 +2212,7 @@ void _mm_sfence(void);
 /// \returns A 64-bit integer vector containing the copied packed data from the
 ///    operands.
 #define _mm_insert_pi16(a, d, n) \
-  (__m64)__builtin_ia32_vec_set_v4hi((__m64)a, (int)d, (int)n)
+  (__m64)__builtin_ia32_vec_set_v4hi((__v4hi)a, (int)d, (int)n)
 
 /// Compares each of the corresponding packed 16-bit integer values of
 ///    the 64-bit integer vectors, and writes the greater value to the
@@ -2935,31 +2931,31 @@ _mm_movemask_ps(__m128 __a)
 
 #define _MM_SHUFFLE(z, y, x, w) (((z) << 6) | ((y) << 4) | ((x) << 2) | (w))
 
-#define _MM_EXCEPT_INVALID    (0x0001)
-#define _MM_EXCEPT_DENORM     (0x0002)
-#define _MM_EXCEPT_DIV_ZERO   (0x0004)
-#define _MM_EXCEPT_OVERFLOW   (0x0008)
-#define _MM_EXCEPT_UNDERFLOW  (0x0010)
-#define _MM_EXCEPT_INEXACT    (0x0020)
-#define _MM_EXCEPT_MASK       (0x003f)
+#define _MM_EXCEPT_INVALID    (0x0001U)
+#define _MM_EXCEPT_DENORM     (0x0002U)
+#define _MM_EXCEPT_DIV_ZERO   (0x0004U)
+#define _MM_EXCEPT_OVERFLOW   (0x0008U)
+#define _MM_EXCEPT_UNDERFLOW  (0x0010U)
+#define _MM_EXCEPT_INEXACT    (0x0020U)
+#define _MM_EXCEPT_MASK       (0x003fU)
 
-#define _MM_MASK_INVALID      (0x0080)
-#define _MM_MASK_DENORM       (0x0100)
-#define _MM_MASK_DIV_ZERO     (0x0200)
-#define _MM_MASK_OVERFLOW     (0x0400)
-#define _MM_MASK_UNDERFLOW    (0x0800)
-#define _MM_MASK_INEXACT      (0x1000)
-#define _MM_MASK_MASK         (0x1f80)
+#define _MM_MASK_INVALID      (0x0080U)
+#define _MM_MASK_DENORM       (0x0100U)
+#define _MM_MASK_DIV_ZERO     (0x0200U)
+#define _MM_MASK_OVERFLOW     (0x0400U)
+#define _MM_MASK_UNDERFLOW    (0x0800U)
+#define _MM_MASK_INEXACT      (0x1000U)
+#define _MM_MASK_MASK         (0x1f80U)
 
-#define _MM_ROUND_NEAREST     (0x0000)
-#define _MM_ROUND_DOWN        (0x2000)
-#define _MM_ROUND_UP          (0x4000)
-#define _MM_ROUND_TOWARD_ZERO (0x6000)
-#define _MM_ROUND_MASK        (0x6000)
+#define _MM_ROUND_NEAREST     (0x0000U)
+#define _MM_ROUND_DOWN        (0x2000U)
+#define _MM_ROUND_UP          (0x4000U)
+#define _MM_ROUND_TOWARD_ZERO (0x6000U)
+#define _MM_ROUND_MASK        (0x6000U)
 
-#define _MM_FLUSH_ZERO_MASK   (0x8000)
-#define _MM_FLUSH_ZERO_ON     (0x8000)
-#define _MM_FLUSH_ZERO_OFF    (0x0000)
+#define _MM_FLUSH_ZERO_MASK   (0x8000U)
+#define _MM_FLUSH_ZERO_ON     (0x8000U)
+#define _MM_FLUSH_ZERO_OFF    (0x0000U)
 
 #define _MM_GET_EXCEPTION_MASK() (_mm_getcsr() & _MM_MASK_MASK)
 #define _MM_GET_EXCEPTION_STATE() (_mm_getcsr() & _MM_EXCEPT_MASK)

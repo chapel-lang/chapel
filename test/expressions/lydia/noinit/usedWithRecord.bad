@@ -1,5 +1,0 @@
-usedWithRecord.chpl:9: warning: noinit is currently ignored
-I default initialized!
-(bar = 4, baz = true)
-I default initialized!
-(bar = 0, baz = false)

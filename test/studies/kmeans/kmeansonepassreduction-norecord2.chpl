@@ -15,7 +15,7 @@ var data1: [1..n] m*int;
 
 for ii in 1..n do
 {
-    for param jj in 1..m do
+    for param jj in 0..<m do
     {
         if (jj == 1 ) 
         { 
@@ -37,7 +37,7 @@ var old_error, t1: real;
 var hh:int = 1;
 for ii in 1..k
 {
-    for param jj in 1..m
+    for param jj in 0..<m
     {
         c[ii][jj] = data1[hh][jj];
     }
@@ -74,7 +74,7 @@ proc accumulateOntoState (ref state, da: eltType)
     for i in 1..k
     {
         var distance: real = 0;
-        for param j in 1..m
+        for param j in 0..<m
         {
             distance = distance + (da[j] - c[i][j])*(da[j] - c[i][j]);
         }
@@ -88,13 +88,13 @@ proc accumulateOntoState (ref state, da: eltType)
 
     //Add the result into reduction object
 
-    state(1) += min_distance;
+    state(0) += min_distance;
 
-    state(2)[min_disposition] += 1;
+    state(1)[min_disposition] += 1;
     
-    for param j in 1..m
+    for param j in 0..<m
     {
-        state(3)[min_disposition][j] += + da[j];
+        state(2)[min_disposition][j] += + da[j];
     }
 }
 
@@ -105,14 +105,14 @@ proc accumulate (da: eltType)
 
 proc accumulate(km: AccumState)
 {
-    counts += km(2);
-    error += km(1);
+    counts += km(1);
+    error += km(0);
     
     for i in 1..k
     {
-        for param j in 1..m
+        for param j in 0..<m
         {
-            c1[i][j] += km(3)[i][j];
+            c1[i][j] += km(2)[i][j];
         }
     }
 }
@@ -153,7 +153,7 @@ proc clone()
 
     for ii in 1..k
     {
-        for param jj in 1..m
+        for param jj in 0..<m
         {
             if(counts[ii] != 0)
             {

@@ -1,9 +1,8 @@
 //===- CanonicalType.h - C Language Family Type Representation --*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -75,7 +74,7 @@ public:
   /// canonical type pointers.
   template <typename U>
   CanQual(const CanQual<U> &Other,
-          typename std::enable_if<std::is_base_of<T, U>::value, int>::type = 0);
+          std::enable_if_t<std::is_base_of<T, U>::value, int> = 0);
 
   /// Retrieve the underlying type pointer, which refers to a
   /// canonical type.
@@ -265,6 +264,8 @@ public:
   // Type predicates
   LLVM_CLANG_CANPROXY_SIMPLE_ACCESSOR(bool, isObjectType)
   LLVM_CLANG_CANPROXY_SIMPLE_ACCESSOR(bool, isIncompleteType)
+  LLVM_CLANG_CANPROXY_SIMPLE_ACCESSOR(bool, isSizelessType)
+  LLVM_CLANG_CANPROXY_SIMPLE_ACCESSOR(bool, isSizelessBuiltinType)
   LLVM_CLANG_CANPROXY_SIMPLE_ACCESSOR(bool, isIncompleteOrObjectType)
   LLVM_CLANG_CANPROXY_SIMPLE_ACCESSOR(bool, isVariablyModifiedType)
   LLVM_CLANG_CANPROXY_SIMPLE_ACCESSOR(bool, isIntegerType)
@@ -385,7 +386,7 @@ struct PointerLikeTypeTraits<clang::CanQual<T>> {
   }
 
   // qualifier information is encoded in the low bits.
-  enum { NumLowBitsAvailable = 0 };
+  static constexpr int NumLowBitsAvailable = 0;
 };
 
 } // namespace llvm
@@ -510,7 +511,7 @@ struct CanProxyAdaptor<FunctionProtoType>
   }
 
   LLVM_CLANG_CANPROXY_SIMPLE_ACCESSOR(bool, isVariadic)
-  LLVM_CLANG_CANPROXY_SIMPLE_ACCESSOR(Qualifiers, getTypeQuals)
+  LLVM_CLANG_CANPROXY_SIMPLE_ACCESSOR(Qualifiers, getMethodQuals)
 
   using param_type_iterator =
       CanTypeIterator<FunctionProtoType::param_type_iterator>;

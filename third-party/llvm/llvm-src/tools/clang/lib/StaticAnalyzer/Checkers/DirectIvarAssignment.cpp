@@ -1,9 +1,8 @@
 //=- DirectIvarAssignment.cpp - Check rules on ObjC properties -*- C++ ----*-==//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -145,6 +144,8 @@ void DirectIvarAssignment::checkASTDecl(const ObjCImplementationDecl *D,
       continue;
 
     const Stmt *Body = M->getBody();
+    if (M->isSynthesizedAccessorStub())
+      continue;
     assert(Body);
 
     MethodCrawler MC(IvarToPropMap, M->getCanonicalDecl(), InterD, BR, this,
@@ -206,12 +207,6 @@ void DirectIvarAssignment::MethodCrawler::VisitBinaryOperator(
 }
 }
 
-// Register the checker that checks for direct accesses in all functions,
-// except for the initialization and copy routines.
-void ento::registerDirectIvarAssignment(CheckerManager &mgr) {
-  mgr.registerChecker<DirectIvarAssignment>();
-}
-
 // Register the checker that checks for direct accesses in functions annotated
 // with __attribute__((annotate("objc_no_direct_instance_variable_assignment"))).
 static bool AttrFilter(const ObjCMethodDecl *M) {
@@ -221,7 +216,15 @@ static bool AttrFilter(const ObjCMethodDecl *M) {
   return true;
 }
 
-void ento::registerDirectIvarAssignmentForAnnotatedFunctions(
-    CheckerManager &mgr) {
-  mgr.registerChecker<DirectIvarAssignment>()->ShouldSkipMethod = &AttrFilter;
+// Register the checker that checks for direct accesses in all functions,
+// except for the initialization and copy routines.
+void ento::registerDirectIvarAssignment(CheckerManager &mgr) {
+  auto Chk = mgr.registerChecker<DirectIvarAssignment>();
+  if (mgr.getAnalyzerOptions().getCheckerBooleanOption(Chk,
+                                                       "AnnotatedFunctions"))
+    Chk->ShouldSkipMethod = &AttrFilter;
+}
+
+bool ento::shouldRegisterDirectIvarAssignment(const CheckerManager &mgr) {
+  return true;
 }

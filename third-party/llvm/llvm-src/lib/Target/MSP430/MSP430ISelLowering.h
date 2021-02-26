@@ -1,9 +1,8 @@
 //===-- MSP430ISelLowering.h - MSP430 DAG Lowering Interface ----*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -80,6 +79,10 @@ namespace llvm {
       return MVT::i8;
     }
 
+    MVT::SimpleValueType getCmpLibcallReturnType() const override {
+      return MVT::i16;
+    }
+
     /// LowerOperation - Provide custom lowering hooks for some operations.
     SDValue LowerOperation(SDValue Op, SelectionDAG &DAG) const override;
 
@@ -124,6 +127,9 @@ namespace llvm {
     bool isZExtFree(Type *Ty1, Type *Ty2) const override;
     bool isZExtFree(EVT VT1, EVT VT2) const override;
     bool isZExtFree(SDValue Val, EVT VT2) const override;
+
+    bool isLegalICmpImmediate(int64_t) const override;
+    bool shouldAvoidTransformToShift(EVT VT, unsigned Amount) const override;
 
     MachineBasicBlock *
     EmitInstrWithCustomInserter(MachineInstr &MI,

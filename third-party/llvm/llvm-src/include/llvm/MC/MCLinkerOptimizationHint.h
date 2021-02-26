@@ -1,10 +1,9 @@
 //===- MCLinkerOptimizationHint.h - LOH interface ---------------*- C++ -*-===//
 //
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -62,6 +61,7 @@ static inline int MCLOHNameToId(StringRef Name) {
     MCLOHCaseNameToId(AdrpAdd)
     MCLOHCaseNameToId(AdrpLdrGot)
     .Default(-1);
+#undef MCLOHCaseNameToId
 }
 
 static inline StringRef MCLOHIdToName(MCLOHType Kind) {
@@ -77,6 +77,7 @@ static inline StringRef MCLOHIdToName(MCLOHType Kind) {
     MCLOHCaseIdToName(AdrpLdrGot);
   }
   return StringRef();
+#undef MCLOHCaseIdToName
 }
 
 static inline int MCLOHIdToNbArgs(MCLOHType Kind) {

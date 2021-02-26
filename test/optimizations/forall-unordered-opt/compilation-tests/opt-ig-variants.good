@@ -5,4 +5,3 @@ opt-ig-variants.chpl:59: note: Optimized assign to be unordered
 opt-ig-variants.chpl:70: note: Optimized assign to be unordered
 opt-ig-variants.chpl:76: note: Optimized assign to be unordered
 opt-ig-variants.chpl:86: note: Optimized assign to be unordered
-opt-ig-variants.chpl:91: note: Optimized assign to be unordered

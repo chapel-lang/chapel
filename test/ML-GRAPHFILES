@@ -33,7 +33,9 @@ release/examples/benchmarks/hpcc/variants/stream-promoted.ml-perf.graph
 release/examples/benchmarks/ssca2/SSCA2_main.ml-perf.graph
 studies/prk/Stencil/prk-stencil.ml-perf.graph
 studies/bale/histogram/histo-atomics.ml-perf.graph
+studies/bale/histogram/histo-atomics-agg.ml-perf.graph
 studies/bale/indexgather/ig.ml-perf.graph
+studies/bale/indexgather/ig-agg.ml-perf.graph
 studies/bale/indexgather/ig-variants.ml-perf.graph
 
 # suite: - NAS Parallel Benchmarks (perf)
@@ -55,7 +57,9 @@ release/examples/benchmarks/ssca2/SSCA2_main.ml-perf.graph
 studies/prk/Stencil/prk-stencil.ml-perf.graph
 # suite: - Bale (perf)
 studies/bale/histogram/histo-atomics.ml-perf.graph
+studies/bale/histogram/histo-atomics-agg.ml-perf.graph
 studies/bale/indexgather/ig.ml-perf.graph
+studies/bale/indexgather/ig-agg.ml-perf.graph
 studies/bale/indexgather/ig-variants.ml-perf.graph
 
 # suite: <empty>
@@ -111,6 +115,7 @@ release/examples/benchmarks/isx/isx-release.ml-time.graph
 # suite: - PRK (time)
 studies/prk/Stencil/optimized/prk-stencil-opt.ml-time.graph
 studies/prk/Stencil/prk-stencil.ml-time.graph
+studies/prk/DGEMM/SUMMA/summa.ml-time.graph
 # suite: - Bale (time)
 studies/bale/histogram/histo-atomics.ml-time.graph
 studies/bale/indexgather/ig.ml-time.graph
@@ -131,6 +136,7 @@ performance/comm/low-level/remote-amos.ml-perf.graph
 performance/comm/low-level/remote-unordered-amos.ml-perf.graph
 performance/comm/low-level/remote-ons.ml-perf.graph
 performance/comm/low-level/remote-fastOns.ml-perf.graph
+performance/comm/low-level/remote-warmup.ml-perf.graph
 performance/comm/low-level/array-gets.ml-perf.graph
 performance/comm/low-level/array-puts.ml-perf.graph
 runtime/configMatters/comm/unordered/many-to-many-gets.ml-perf.graph
@@ -148,3 +154,5 @@ performance/array/distCreate-small-deinit.ml-perf.graph
 performance/array/distCreate-large-init.ml-perf.graph
 performance/array/distCreate-large-deinit.ml-perf.graph
 library/packages/Sort/performance/dist-performance.ml-perf.graph
+runtime/ferguson/cache-remote-mock-tests/mock-ra-perf.ml-time.graph
+optimizations/autoAggregation/perf/autoAggNegativeImpact.ml-perf.graph

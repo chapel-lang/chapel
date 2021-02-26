@@ -1,9 +1,8 @@
 //===-- ARMMachineFunctionInfo.h - ARM machine function info ----*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -17,6 +16,7 @@
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/CodeGen/MachineFunction.h"
+#include "llvm/IR/GlobalVariable.h"
 #include "llvm/Support/ErrorHandling.h"
 #include <utility>
 
@@ -58,9 +58,9 @@ class ARMFunctionInfo : public MachineFunctionInfo {
   /// emitPrologue.
   bool RestoreSPFromFP = false;
 
-  /// LRSpilledForFarJump - True if the LR register has been for spilled to
-  /// enable far jump.
-  bool LRSpilledForFarJump = false;
+  /// LRSpilled - True if the LR register has been for spilled for
+  /// any reason, so it's legal to emit an ARM::tBfar (i.e. "bl").
+  bool LRSpilled = false;
 
   /// FramePtrSpillOffset - If HasStackFrame, this records the frame pointer
   /// spill stack offset.
@@ -83,6 +83,7 @@ class ARMFunctionInfo : public MachineFunctionInfo {
 
   /// GPRCS1Size, GPRCS2Size, DPRCSSize - Sizes of callee saved register spills
   /// areas.
+  unsigned FPCXTSaveSize = 0;
   unsigned GPRCS1Size = 0;
   unsigned GPRCS2Size = 0;
   unsigned DPRCSAlignGapSize = 0;
@@ -104,6 +105,10 @@ class ARMFunctionInfo : public MachineFunctionInfo {
 
   /// HasITBlocks - True if IT blocks have been inserted.
   bool HasITBlocks = false;
+
+  // Security Extensions
+  bool IsCmseNSEntry;
+  bool IsCmseNSCall;
 
   /// CPEClones - Track constant pool entries clones created by Constant Island
   /// pass.
@@ -127,6 +132,10 @@ class ARMFunctionInfo : public MachineFunctionInfo {
   /// The amount the literal pool has been increasedby due to promoted globals.
   int PromotedGlobalsIncrease = 0;
 
+  /// True if r0 will be preserved by a call to this function (e.g. C++
+  /// con/destructors).
+  bool PreservesR0 = false;
+
 public:
   ARMFunctionInfo() = default;
 
@@ -135,6 +144,9 @@ public:
   bool isThumbFunction() const { return isThumb; }
   bool isThumb1OnlyFunction() const { return isThumb && !hasThumb2; }
   bool isThumb2Function() const { return isThumb && hasThumb2; }
+
+  bool isCmseNSEntryFunction() const { return IsCmseNSEntry; }
+  bool isCmseNSCallFunction() const { return IsCmseNSCall; }
 
   unsigned getStoredByValParamsPadding() const { return StByValParamsPadding; }
   void setStoredByValParamsPadding(unsigned p) { StByValParamsPadding = p; }
@@ -151,8 +163,8 @@ public:
   bool shouldRestoreSPFromFP() const { return RestoreSPFromFP; }
   void setShouldRestoreSPFromFP(bool s) { RestoreSPFromFP = s; }
 
-  bool isLRSpilledForFarJump() const { return LRSpilledForFarJump; }
-  void setLRIsSpilledForFarJump(bool s) { LRSpilledForFarJump = s; }
+  bool isLRSpilled() const { return LRSpilled; }
+  void setLRIsSpilled(bool s) { LRSpilled = s; }
 
   unsigned getFramePtrSpillOffset() const { return FramePtrSpillOffset; }
   void setFramePtrSpillOffset(unsigned o) { FramePtrSpillOffset = o; }
@@ -168,11 +180,13 @@ public:
   void setGPRCalleeSavedArea2Offset(unsigned o) { GPRCS2Offset = o; }
   void setDPRCalleeSavedAreaOffset(unsigned o)  { DPRCSOffset = o; }
 
+  unsigned getFPCXTSaveAreaSize() const       { return FPCXTSaveSize; }
   unsigned getGPRCalleeSavedArea1Size() const { return GPRCS1Size; }
   unsigned getGPRCalleeSavedArea2Size() const { return GPRCS2Size; }
   unsigned getDPRCalleeSavedGapSize() const   { return DPRCSAlignGapSize; }
   unsigned getDPRCalleeSavedAreaSize()  const { return DPRCSSize; }
 
+  void setFPCXTSaveAreaSize(unsigned s)       { FPCXTSaveSize = s; }
   void setGPRCalleeSavedArea1Size(unsigned s) { GPRCS1Size = s; }
   void setGPRCalleeSavedArea2Size(unsigned s) { GPRCS2Size = s; }
   void setDPRCalleeSavedGapSize(unsigned s)   { DPRCSAlignGapSize = s; }
@@ -239,6 +253,12 @@ public:
   void setPromotedConstpoolIncrease(int Sz) {
     PromotedGlobalsIncrease = Sz;
   }
+
+  DenseMap<unsigned, unsigned> EHPrologueRemappedRegs;
+  DenseMap<unsigned, unsigned> EHPrologueOffsetInRegs;
+
+  void setPreservesR0() { PreservesR0 = true; }
+  bool getPreservesR0() const { return PreservesR0; }
 };
 
 } // end namespace llvm

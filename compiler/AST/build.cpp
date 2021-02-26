@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -32,7 +32,9 @@
 #include "ForallStmt.h"
 #include "ForLoop.h"
 #include "ImportStmt.h"
+#include "IfExpr.h"
 #include "LoopExpr.h"
+#include "optimizations.h"
 #include "ParamForLoop.h"
 #include "parser.h"
 #include "stringutil.h"
@@ -165,6 +167,8 @@ BlockStmt* buildPragmaStmt(Vec<const char*>* pragmas,
     if (DefExpr* def = toDefExpr(expr)) {
       addPragmaFlags(def->sym, pragmas);
     } else if (isEndOfStatementMarker(expr)) {
+      // ignore it
+    } else if (isForwardingStmt(expr)) {
       // ignore it
     } else {
       error = true;
@@ -549,30 +553,46 @@ BlockStmt* buildUseStmt(std::vector<PotentialRename*>* args, bool privateUse) {
 }
 
 //
-// Build an 'import' statement
+// Takes a BlockStmt* containing one or more import statements and updates all
+// the import statements to have the specified privacy setting
 //
-BlockStmt* buildImportStmt(Expr* mod, bool privateImport) {
-  ImportStmt* newImport = new ImportStmt(mod, privateImport);
-  addModuleToSearchList(newImport, mod);
-
-  return buildChapelStmt(newImport);
+void setImportPrivacy(BlockStmt* list, bool isPrivate) {
+  INT_ASSERT(list->isRealBlockStmt());
+  for_alist(stmt, list->body) {
+    ImportStmt* import = toImportStmt(stmt);
+    INT_ASSERT(import);
+    import->isPrivate = isPrivate;
+  }
 }
 
 //
 // Build an 'import' statement
 //
-BlockStmt* buildImportStmt(Expr* mod, const char* rename, bool privateImport) {
-  ImportStmt* newImport = new ImportStmt(mod, rename, privateImport);
+ImportStmt* buildImportStmt(Expr* mod) {
+  // Leave the privacy a dummy value until we know what it should be (which
+  // happens when we are done determining how many subexpressions there are)
+  ImportStmt* newImport = new ImportStmt(mod);
   addModuleToSearchList(newImport, mod);
 
-  return buildChapelStmt(newImport);
+  return newImport;
 }
 
 //
 // Build an 'import' statement
 //
-BlockStmt* buildImportStmt(Expr* mod, std::vector<PotentialRename*>* names,
-                           bool privateImport) {
+ImportStmt* buildImportStmt(Expr* mod, const char* rename) {
+  // Leave the privacy a dummy value until we know what it should be (which
+  // happens when we are done determining how many subexpressions there are)
+  ImportStmt* newImport = new ImportStmt(mod, rename);
+  addModuleToSearchList(newImport, mod);
+
+  return newImport;
+}
+
+//
+// Build an 'import' statement
+//
+ImportStmt* buildImportStmt(Expr* mod, std::vector<PotentialRename*>* names) {
   std::vector<const char*> namesList;
   std::map<const char*, const char*> renameMap;
 
@@ -610,13 +630,14 @@ BlockStmt* buildImportStmt(Expr* mod, std::vector<PotentialRename*>* names,
     }
   }
 
-  ImportStmt* newImport = new ImportStmt(mod, privateImport, &namesList,
-                                         &renameMap);
+  // Leave the privacy a dummy value until we know what it should be (which
+  // happens when we are done determining how many subexpressions there are)
+  ImportStmt* newImport = new ImportStmt(mod, &namesList, &renameMap);
   addModuleToSearchList(newImport, mod);
 
   delete names;
 
-  return buildChapelStmt(newImport);
+  return newImport;
 }
 
 //
@@ -755,12 +776,26 @@ buildIfStmt(Expr* condExpr, Expr* thenExpr, Expr* elseExpr) {
   return buildChapelStmt(new CondStmt(new CallExpr("_cond_test", condExpr), thenExpr, elseExpr));
 }
 
+CallExpr* buildIfVar(const char* name, Expr* rhs, bool isConst) {
+  VarSymbol* var = new VarSymbol(name);
+  if (isConst) var->addFlag(FLAG_CONST);
+  DefExpr* def = new DefExpr(var);
+  return new CallExpr(PRIM_IF_VAR, def, rhs);
+}
+
 BlockStmt*
 buildExternBlockStmt(const char* c_code) {
-  BlockStmt* useSysCTypes = buildUseList(new UnresolvedSymExpr("SysCTypes"),
-                                         "", NULL, /* private = */ false);
-  useSysCTypes->insertAtTail(new ExternBlockStmt(c_code));
-  BlockStmt* ret = buildChapelStmt(useSysCTypes);
+  bool privateUse = true;
+
+  // use CPtr, SysBasic, SysCTypes to get c_ptr, c_int, c_double etc.
+  // (System error codes do not need to be part of this).
+  BlockStmt* useBlock = buildUseList(new UnresolvedSymExpr("CPtr"), "",
+                                     NULL, privateUse);
+  buildUseList(new UnresolvedSymExpr("SysCTypes"), "", useBlock, privateUse);
+  buildUseList(new UnresolvedSymExpr("SysBasic"), "", useBlock, privateUse);
+
+  useBlock->insertAtTail(new ExternBlockStmt(c_code));
+  BlockStmt* ret = buildChapelStmt(useBlock);
 
   // Check that the compiler supports extern blocks
   // but skip these checks for chpldoc.
@@ -768,7 +803,7 @@ buildExternBlockStmt(const char* c_code) {
 #ifdef HAVE_LLVM
     // Chapel was built with LLVM
     // Just bring up an error if extern blocks are disabled
-    if (externC == false)
+    if (fAllowExternC == false)
       USR_FATAL(ret, "extern block syntax is turned off. Use "
                      "--extern-c flag to turn on.");
 #else
@@ -884,8 +919,8 @@ BlockStmt* buildSerialStmt(Expr* cond, BlockStmt* body) {
   VarSymbol *serial_state = newTemp();
   sbody->insertAtTail(new DefExpr(serial_state, new CallExpr(PRIM_GET_SERIAL)));
   sbody->insertAtTail(new CondStmt(cond, new CallExpr(PRIM_SET_SERIAL, gTrue)));
+  sbody->insertAtTail(new DeferStmt(new CallExpr(PRIM_SET_SERIAL, serial_state)));
   sbody->insertAtTail(body);
-  sbody->insertAtTail(new CallExpr(PRIM_SET_SERIAL, serial_state));
   return sbody;
 }
 
@@ -1356,9 +1391,9 @@ buildReduceScanPreface1(FnSymbol* fn, Symbol* data, Symbol* eltType,
   fn->insertAtTail(new DefExpr(eltType));
 
   if( !zippered ) {
-    fn->insertAtTail("{TYPE 'move'(%S, 'typeof'(chpl__initCopy(iteratorIndex(_getIterator(%S)))))}", eltType, data);
+    fn->insertAtTail("{TYPE 'move'(%S, 'typeof'(chpl__initCopy(iteratorIndex(_getIterator(%S)), %S)))}", eltType, data, gFalse);
   } else {
-    fn->insertAtTail("{TYPE 'move'(%S, 'typeof'(chpl__initCopy(iteratorIndex(_getIteratorZip(%S)))))}", eltType, data);
+    fn->insertAtTail("{TYPE 'move'(%S, 'typeof'(chpl__initCopy(iteratorIndex(_getIteratorZip(%S)), %S)))}", eltType, data, gFalse);
   }
 }
 
@@ -1427,6 +1462,9 @@ backPropagateInitsTypes(BlockStmt* stmts) {
   Expr* type = NULL;
   DefExpr* prev = NULL;
   for_alist_backward(stmt, stmts->body) {
+    if(isEndOfStatementMarker(stmt)){
+      continue;
+    }
     if (DefExpr* def = toDefExpr(stmt)) {
       if (def->init || def->exprType) {
         init = def->init;
@@ -1448,8 +1486,7 @@ backPropagateInitsTypes(BlockStmt* stmts) {
         def->exprType = type;
       }
       prev = def;
-    } else
-      INT_FATAL(stmt, "expected DefExpr in backPropagateInitsTypes");
+    }
   }
 }
 
@@ -1566,6 +1603,8 @@ BlockStmt* buildVarDecls(BlockStmt* stmts, const char* docs,
           if (cnameExpr != NULL && !firstvar)
             USR_FATAL_CONT(var, "external symbol renaming can only be applied to one symbol at a time");
 
+          setDefinedConstForDefExprIfApplicable(defExpr, flags);
+
           for (std::set<Flag>::iterator it = flags->begin(); it != flags->end(); ++it) {
             var->addFlag(*it);
           }
@@ -1582,7 +1621,6 @@ BlockStmt* buildVarDecls(BlockStmt* stmts, const char* docs,
     }
     INT_FATAL(stmt, "Major error in setVarSymbolAttributes");
   }
-  backPropagateInitsTypes(stmts);
   //
   // If blockInfo is set, this is a tuple variable declaration.
   // Add checks that the expression on the right is a tuple and that
@@ -1691,6 +1729,12 @@ DefExpr* buildClassDefExpr(const char*  name,
     if (inherit != NULL)
       USR_FATAL_CONT(inherit,
                      "External types do not currently support inheritance");
+  }
+
+  for_alist(stmt, decls->body){
+    if(BlockStmt* block = toBlockStmt(stmt)) {
+      backPropagateInitsTypes(block);
+    }
   }
 
   ct->addDeclarations(decls);
@@ -1872,8 +1916,7 @@ buildFunctionSymbol(FnSymbol*   fn,
   fn->cname   = fn->name = astr(name);
   fn->thisTag = thisTag;
 
-  if ((fn->name[0] == '~' && fn->name[1] != '\0') ||
-      (fn->name == astrDeinit))
+  if (fn->name == astrDeinit)
     fn->addFlag(FLAG_DESTRUCTOR);
 
   if (receiver)
@@ -2335,7 +2378,13 @@ buildCobeginStmt(CallExpr* byref_vars, BlockStmt* block) {
 
   if (block->blockTag == BLOCK_SCOPELESS) {
     block = toBlockStmt(block->body.only());
-    INT_ASSERT(block);
+    if (block == NULL) {
+      // Though 'block' should be non-NULL in correct programs, in
+      // cobegins containing syntax errors, it may be NULL.  So we'll
+      // just return the original block statement to make progress
+      // until the compiler exits.
+      return outer;
+    }
     block->remove();
   }
 
@@ -2583,4 +2632,19 @@ void redefiningReservedWordError(const char* name)
 {
   USR_FATAL_CONT(buildErrorStandin(),
                  "attempt to redefine reserved word '%s'", name);
+}
+
+void updateOpThisTagOrErr(FnSymbol* fn) {
+  if (fn->thisTag == INTENT_BLANK) {
+    fn->thisTag = INTENT_TYPE;
+  } else {
+    USR_FATAL_CONT(buildErrorStandin(),
+                   "attempt to declare unsupported this intent tag for operator"
+                   " function '%s'", fn->name);
+  }
+}
+
+BlockStmt* foreachNotImplementedError() {
+  USR_FATAL_CONT(buildErrorStandin(), "foreach is not yet implemented");
+  return new BlockStmt();
 }

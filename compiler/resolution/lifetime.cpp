@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -262,7 +262,7 @@ namespace {
     bool isLifetimeUnspecifiedFormalOrdering(Lifetime a, Lifetime b);
   };
 
-  class DeinitOrderVisitor : public AstVisitorTraverse {
+  class DeinitOrderVisitor final : public AstVisitorTraverse {
 
     public:
       LifetimeState* lifetimes;
@@ -281,53 +281,57 @@ namespace {
       void noteUnconditionalReturnInParentBlocks(Expr* ret);
 
       // these are all just blocks for the analysis
-      virtual bool enterBlockStmt(BlockStmt* node);
-      virtual void exitBlockStmt(BlockStmt* node);
-      virtual bool enterForallStmt(ForallStmt* node);
-      virtual void exitForallStmt(ForallStmt* node);
-      virtual bool enterWhileDoStmt(WhileDoStmt* node);
-      virtual void exitWhileDoStmt(WhileDoStmt* node);
-      virtual bool enterDoWhileStmt(DoWhileStmt* node);
-      virtual void exitDoWhileStmt(DoWhileStmt* node);
-      virtual bool enterCForLoop(CForLoop* node);
-      virtual void exitCForLoop(CForLoop* node);
-      virtual bool enterForLoop(ForLoop* node);
-      virtual void exitForLoop(ForLoop* node);
+      bool enterBlockStmt(BlockStmt* node) override;
+      void exitBlockStmt(BlockStmt* node) override;
+      bool enterForallStmt(ForallStmt* node) override;
+      void exitForallStmt(ForallStmt* node) override;
+      bool enterWhileDoStmt(WhileDoStmt* node) override;
+      void exitWhileDoStmt(WhileDoStmt* node) override;
+      bool enterDoWhileStmt(DoWhileStmt* node) override;
+      void exitDoWhileStmt(DoWhileStmt* node) override;
+      bool enterCForLoop(CForLoop* node) override;
+      void exitCForLoop(CForLoop* node) override;
+      bool enterForLoop(ForLoop* node) override;
+      void exitForLoop(ForLoop* node) override;
 
-      virtual bool enterCondStmt(CondStmt* cond);
-      virtual bool enterCallExpr(CallExpr* call);
-      virtual bool enterGotoStmt(GotoStmt* g);
+      bool enterCondStmt(CondStmt* cond) override;
+      bool enterCallExpr(CallExpr* call) override;
+      bool enterGotoStmt(GotoStmt* g) override;
   };
 
-  class GatherTempsVisitor : public AstVisitorTraverse {
+  class GatherTempsVisitor final : public AstVisitorTraverse {
 
     public:
       LifetimeState* lifetimes;
-      virtual bool enterCallExpr(CallExpr* call);
+      bool enterCallExpr(CallExpr* call) override;
   };
-  class IntrinsicLifetimesVisitor : public AstVisitorTraverse {
+  class IntrinsicLifetimesVisitor final : public AstVisitorTraverse {
 
     public:
       LifetimeState* lifetimes;
-      virtual bool enterDefExpr(DefExpr* def);
-      virtual bool enterCallExpr(CallExpr* call);
+      bool enterDefExpr(DefExpr* def) override;
+      bool enterCallExpr(CallExpr* call) override;
   };
-  class InferLifetimesVisitor : public AstVisitorTraverse {
+  class InferLifetimesVisitor final : public AstVisitorTraverse {
 
     public:
       LifetimeState* lifetimes;
       bool changed;
-      virtual bool enterCallExpr(CallExpr* call);
-      virtual bool enterForLoop(ForLoop* forLoop);
+
+      bool enterCallExpr(CallExpr* call) override;
+      bool enterForLoop(ForLoop* forLoop) override;
+
       void inferLifetimesForConstraint(CallExpr* forCall);
       void inferLifetimesForConstraint(CallExpr* forCall, Expr* constraintExpr);
   };
-  class EmitLifetimeErrorsVisitor : public AstVisitorTraverse {
+  class EmitLifetimeErrorsVisitor final : public AstVisitorTraverse {
 
     public:
       LifetimeState* lifetimes;
       std::set<Symbol*> erroredSymbols; // to avoid duplicate errors
-      virtual bool enterCallExpr(CallExpr* call);
+
+      bool enterCallExpr(CallExpr* call) override;
+
       void emitBadReturnErrors(CallExpr* call);
       void emitBadAssignErrors(CallExpr* call);
       void emitBadSetFieldErrors(CallExpr* call);
@@ -741,8 +745,10 @@ static Symbol* returnLifetimeFromClause(Expr* expr) {
 }
 
 
-static Symbol* returnLifetimeFromClause(FnSymbol* fn) {
-  INT_ASSERT(fn->lifetimeConstraints);
+static Symbol* returnLifetimeFromFnClause(FnSymbol* fn) {
+  if (fn->lifetimeConstraints == NULL)
+    return NULL;
+
   Expr* last = fn->lifetimeConstraints->body.last();
   return returnLifetimeFromClause(last);
 }
@@ -1253,8 +1259,7 @@ LifetimePair LifetimeState::inferredLifetimeForCall(CallExpr* call) {
   returnsBorrow = isSubjectToBorrowLifetimeAnalysis(returnType);
 
   ArgSymbol* theOnlyOneThatMatters = NULL;
-  if (calledFn->lifetimeConstraints) {
-    Symbol* sym = returnLifetimeFromClause(calledFn);
+  if (Symbol* sym = returnLifetimeFromFnClause(calledFn)) {
     // lifetime = outer/global variable -> infinite lifetime
     if (sym->defPoint->getFunction() != calledFn)
       return infiniteLifetimePair();
@@ -1321,7 +1326,6 @@ LifetimePair LifetimeState::inferredLifetimeForPrimitive(CallExpr* call) {
       call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
       call->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
       call->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE) ||
-      call->isPrimitive(PRIM_ARRAY_GET_VALUE) ||
       call->isPrimitive(PRIM_ARRAY_GET)) {
     // Lifetime of a field is the lifetime of the aggregate.
     // Don't get confused by the VarSymbol representing the field
@@ -2507,16 +2511,12 @@ static void emitError(Expr* inExpr,
                       Lifetime relevantLifetime,
                       LifetimeState* lifetimes) {
 
-  char buf[256];
-
   BaseAST* place = findUserPlace(inExpr);
 
   if (relevantSymbol && !relevantSymbol->hasFlag(FLAG_TEMP)) {
-    snprintf(buf, sizeof(buf), "%s %s %s", msg1, relevantSymbol->name, msg2);
-    USR_FATAL_CONT(place, buf);
+    USR_FATAL_CONT(place, "%s %s %s", msg1, relevantSymbol->name, msg2);
   } else {
-    snprintf(buf, sizeof(buf), "%s %s", msg1, msg2);
-    USR_FATAL_CONT(place, buf);
+    USR_FATAL_CONT(place, "%s %s", msg1, msg2);
   }
 
   Symbol* fromSym = relevantLifetime.fromSymbolScope;
@@ -2594,6 +2594,8 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
           INT_ASSERT(actual2se);
           Symbol* actual2sym = actual2se->symbol();
 
+          // Determine if there is a lifetime constraint for these two
+          // formals.
           constraint_t order = orderConstraintFromClause(fn, formal1, formal2);
           if (order != CONSTRAINT_UNKNOWN && order != CONSTRAINT_EQUAL) {
             LifetimePair a1lp =

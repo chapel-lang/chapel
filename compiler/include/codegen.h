@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -39,6 +39,12 @@ namespace llvm {
   }
 }
 
+namespace clang {
+  namespace CodeGen {
+    class CGFunctionInfo;
+  }
+}
+
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/MDBuilder.h"
 #include "llvm/Target/TargetMachine.h"
@@ -57,11 +63,11 @@ class LayeredValueTable;
 struct LoopData
 {
 #ifdef HAVE_LLVM
-  LoopData(llvm::MDNode *loopMetadata, bool parallel)
-    : loopMetadata(loopMetadata), parallel(parallel)
+  LoopData(llvm::MDNode *accessGroup, bool markMemoryOps)
+    : accessGroup(accessGroup), markMemoryOps(markMemoryOps)
   { }
-  llvm::MDNode* loopMetadata;
-  bool parallel; /* There is no dependency between loops */
+  llvm::MDNode* accessGroup;
+  bool markMemoryOps; // mark load/store with the access group
 #endif
 };
 
@@ -103,8 +109,9 @@ struct GenInfo {
   llvm::MDBuilder *mdBuilder;
   llvm::TargetMachine* targetMachine;
 
-  std::stack<LoopData> loopStack;
-  std::vector<std::pair<llvm::Value*, llvm::Type*> > currentStackVariables;
+  std::vector<LoopData> loopStack;
+  std::vector<std::pair<llvm::AllocaInst*, llvm::Type*> > currentStackVariables;
+  const clang::CodeGen::CGFunctionInfo* currentFunctionABI;
 
   llvm::LLVMContext llvmContext;
   llvm::MDNode* tbaaRootNode;
@@ -137,6 +144,7 @@ struct GenInfo {
 extern GenInfo* gGenInfo;
 extern int      gMaxVMT;
 extern int      gStmtCount;
+extern bool     gCodegenGPU;
 
 // Map from filename to an integer that will represent an unique ID for each
 // generated GET/PUT
@@ -161,7 +169,10 @@ void flushStatements(void);
 GenRet codegenCallExpr(const char* fnName);
 GenRet codegenCallExpr(const char* fnName, GenRet a1);
 GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2);
+Type* getNamedTypeDuringCodegen(const char* name);
+void gatherTypesForCodegen(void);
 
 void registerPrimitiveCodegens();
 
+bool localeUsesGPU();
 #endif //CODEGEN_H

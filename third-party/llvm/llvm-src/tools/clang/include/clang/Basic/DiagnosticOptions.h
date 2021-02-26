@@ -1,9 +1,8 @@
 //===- DiagnosticOptions.h --------------------------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -98,6 +97,10 @@ public:
   /// The list of -W... options used to alter the diagnostic mappings, with the
   /// prefixes removed.
   std::vector<std::string> Warnings;
+
+  /// The list of prefixes from -Wundef-prefix=... used to generate warnings
+  /// for undefined macros.
+  std::vector<std::string> UndefPrefixes;
 
   /// The list of -R... options used to alter the diagnostic mappings, with the
   /// prefixes removed.

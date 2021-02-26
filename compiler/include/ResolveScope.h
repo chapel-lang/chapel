@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -42,6 +42,14 @@ class UnresolvedSymExpr;
 class UseStmt;
 class VisibilityStmt;
 
+enum importUseProgress {
+  IUP_NOT_STARTED, // We haven't started resolving use or import statements
+  IUP_IN_PROGRESS, // We started but haven't completed resolving them
+  IUP_COMPLETED    // We've finished resolving use and import statements
+};
+
+typedef std::pair<Symbol*, const char*> SymAndReferencedName;
+
 // A preliminary version of a class to support the scope resolve pass
 // This is currently a thin wrapping over a previous typedef + functions
 class ResolveScope {
@@ -55,6 +63,8 @@ public:
   static void           destroyAstMap();
 
 public:
+  importUseProgress progress;
+
                         ResolveScope(ModuleSymbol*       modSym,
                                      const ResolveScope* parent);
 
@@ -75,30 +85,24 @@ public:
 
   bool                  extend(VisibilityStmt* stmt);
 
-  Symbol*               lookupForImport(Expr* expr, bool isUse) const;
+  SymAndReferencedName  lookupForImport(Expr* expr, bool isUse)          const;
 
   Symbol*               lookup(Expr*       expr, bool isUse=false)       const;
 
   Symbol*               lookupNameLocally(const char* name,
                                           bool isUse=false)              const;
 
-  Symbol*               lookupPublicImports(const char* name)            const;
+  Symbol*               lookupPublicVisStmts(const char* name)           const;
 
   Symbol*               lookupPublicUnqualAccessSyms(const char* name,
-                                                     BaseAST *context)   const;
+                                                     BaseAST *context);
 
-  Symbol*               lookupPublicUnqualAccessSyms(const char* name,
-                          BaseAST *context,
-                          std::map<Symbol *, astlocT *>& renameLocs)      const;
-
-  Symbol*               lookupPublicUnqualAccessSyms(const char* name,
-                          ModuleSymbol*& modArg,
-                          BaseAST *context)                              const;
-
-  Symbol*               lookupPublicUnqualAccessSyms(const char* name,
-                          ModuleSymbol*& modArg,
-                          BaseAST *context,
-                          std::map<Symbol *, astlocT *>& renameLocs)      const;
+  Symbol*
+  lookupPublicUnqualAccessSyms(const char* name,
+                               BaseAST *context,
+                               std::map<Symbol *, astlocT *>& renameLocs,
+                               std::map<Symbol*, VisibilityStmt*>& reexportPts,
+                               bool followUses = false);
 
   // Support for UseStmt with only/except
   // Has the potential to return multiple fields
@@ -106,7 +110,11 @@ public:
   void                  getFields(const char*           fieldName,
                                   std::vector<Symbol*>& symbols)         const;
 
+  bool                  matchesTypeWithMethods(const char* name)         const;
+
   void                  describe()                                       const;
+
+  bool                  canReexport;
 
 private:
   typedef std::vector<VisibilityStmt*>   UseImportList;
@@ -121,11 +129,10 @@ private:
 
   void                  addBuiltIns();
 
-  bool                  isAggregateTypeAndConstructor(Symbol* sym0,
-                                                      Symbol* sym1);
-
   bool                  isSymbolAndMethod(Symbol* sym0,
                                           Symbol* sym1);
+
+  void                  extendMethodTracking(FnSymbol* newFn);
 
   Symbol*               lookup(UnresolvedSymExpr* usymExpr,
                                bool isUse=false)                         const;
@@ -168,6 +175,7 @@ private:
   BaseAST*              mAstRef;
   const ResolveScope*   mParent;
   Bindings              mBindings;
+  std::set<const char*> mMethodsOnTypeName;
   UseImportList         mUseImportList;
 };
 

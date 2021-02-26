@@ -1,9 +1,8 @@
 //===-- MCJIT.h - Class definition for the MCJIT ----------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -13,14 +12,13 @@
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
-#include "llvm/ExecutionEngine/ObjectCache.h"
 #include "llvm/ExecutionEngine/RTDyldMemoryManager.h"
 #include "llvm/ExecutionEngine/RuntimeDyld.h"
-#include "llvm/IR/Module.h"
-#include "llvm/Support/SmallVectorMemoryBuffer.h"
 
 namespace llvm {
 class MCJIT;
+class Module;
+class ObjectCache;
 
 // This is a helper class that the MCJIT execution engine uses for linking
 // functions across modules that it owns.  It aggregates the memory manager

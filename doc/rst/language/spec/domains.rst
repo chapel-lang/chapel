@@ -1,3 +1,5 @@
+.. default-domain:: chpl
+
 .. _Chapter-Domains:
 
 Domains
@@ -135,7 +137,7 @@ The syntax of a rectangular domain type is summarized as follows:
 .. code-block:: syntax
 
    rectangular-domain-type:
-     `domain' ( named-expression-list )
+     'domain' ( named-expression-list )
 
 where ``named-expression-list`` permits the values of ``rank``,
 ``idxType``, and ``stridable`` to be specified using standard type
@@ -179,9 +181,11 @@ expanded (as by an iterator), rectangular domain indices are ordered
 according to the lexicographic order of their values. That is, the index
 with the highest rank is listed first and changes most slowly. [3]_
 
-   *Future*.
+   .. note::
 
-   Domains defined using unbounded ranges may be supported.
+      *Future*
+
+      Domains defined using unbounded ranges may be supported.
 
 Literal rectangular domain values are represented by a comma-separated
 list of range expressions of matching ``idxType`` enclosed in curly
@@ -289,7 +293,7 @@ the indices that it stores. The syntax is as follows:
 .. code-block:: syntax
 
    associative-domain-type:
-     `domain' ( associative-index-type )
+     'domain' ( associative-index-type )
 
    associative-index-type:
      type-expression
@@ -335,10 +339,12 @@ It is required that the types of the values used in constructing an
 associative domain literal value be of the same type. If the types of
 the indices does not match a compiler error will be issued.
 
-   *Future*.
+   .. note::
 
-   Due to implementation of == over arrays it is currently not possible
-   to use arrays as indices within an associative domain.
+      *Future*
+      
+      Due to implementation of ``==`` over arrays it is currently not possible
+      to use arrays as indices within an associative domain.
 
 ..
 
@@ -425,7 +431,7 @@ A simple subdomain type is specified using the following syntax:
 .. code-block:: syntax
 
    simple-subdomain-type:
-     `subdomain' ( domain-expression )
+     'subdomain' ( domain-expression )
 
 This declares that ``domain-expression`` is the parent domain of this
 subdomain type. A simple subdomain specifies a subdomain with the same
@@ -464,7 +470,7 @@ Sparse Subdomain Types and Values
 .. code-block:: syntax
 
    sparse-subdomain-type:
-     `sparse' `subdomain'[OPT] ( domain-expression )
+     'sparse' 'subdomain'[OPT] ( domain-expression )
 
 This declaration creates a sparse subdomain. *Sparse subdomains* are
 irregular domains that describe an arbitrary subset of a domain, even if
@@ -524,7 +530,7 @@ set. Index types are described using the following syntax:
 .. code-block:: syntax
 
    index-type:
-     `index' ( domain-expression )
+     'index' ( domain-expression )
 
 A variable with a given index type is constrained to take on only values
 available within the domain on which it is defined. This restriction
@@ -704,7 +710,7 @@ integral tuple whose size matches the domain’s rank.
 .. code-block:: syntax
 
    domain-striding-expression:
-     domain-expression `by' expression
+     domain-expression 'by' expression
 
 The type of the resulting domain is the same as the original domain but
 with ``stridable`` set to true. In the case of an integer stride value,
@@ -729,7 +735,7 @@ value or an integral tuple whose size matches the domain’s rank.
 .. code-block:: syntax
 
    domain-alignment-expression:
-     domain-expression `align' expression
+     domain-expression 'align' expression
 
 The type of the resulting domain is the same as the original domain but
 with ``stridable`` set to true. In the case of an integer alignment
@@ -834,8 +840,7 @@ The ``#`` operator can be applied to dense rectangular domains with a
 tuple argument whose size matches the rank of the domain (or optionally
 an integer in the case of a 1D domain). The operator is equivalent to
 applying the ``#`` operator to the component ranges of the domain and
-then using them to slice the domain as in
-Section \ `21.8.4.2 <#Range_Based_Slicing>`__.
+then using them to slice the domain as in Section :ref:`Range_Based_Slicing`.
 
 .. _Adding_and_Removing_Domain_Indices:
 
@@ -875,13 +880,11 @@ The methods in this subsection can be applied to any domain.
 
 
 
-.. code-block:: chapel
+.. function:: proc domain.clear()
 
-   proc domain.clear()
+   Resets this domain’s index set to the empty set.
 
-Resets this domain’s index set to the empty set.
-
-   *Example (clearAssociativeDomain)*.
+*Example (clearAssociativeDomain)*.
 
    This function provides a way to produce an empty associative domain.
 
@@ -904,13 +907,11 @@ Resets this domain’s index set to the empty set.
 
 
 
-.. code-block:: chapel
+.. function:: proc domain.dist : dmap
 
-   proc domain.dist : dmap
+	 Returns the domain map that implements this domain
 
-Returns the domain map that implements this domain
-
-   *Example (getDomainMap)*.
+*Example (getDomainMap)*.
 
    In the code 
 
@@ -935,61 +936,49 @@ Returns the domain map that implements this domain
 
 
 
-.. code-block:: chapel
+.. function:: proc domain.idxType type
 
-   proc domain.idxType type
-
-Returns the domain type’s ``idxType``.
+   Returns the domain type’s ``idxType``.
 
 
 
-.. code-block:: chapel
+.. function:: proc domain.indexOrder(i: index(domain)): idxType
 
-   proc domain.indexOrder(i: index(domain)): idxType
-
-If ``i`` is a member of the domain, returns the ordinal value of ``i``
-using a total ordering of the domain’s indices using 0-based indexing.
-Otherwise, it returns ``(-1):idxType``. For rectangular domains, this
-ordering will be based on a row-major ordering of the indices; for other
-domains, the ordering may be implementation-defined and unstable as
-indices are added and removed from the domain.
+   If ``i`` is a member of the domain, returns the ordinal value of ``i``
+   using a total ordering of the domain’s indices using 0-based indexing.
+   Otherwise, it returns ``(-1):idxType``. For rectangular domains, this
+   ordering will be based on a row-major ordering of the indices; for other
+   domains, the ordering may be implementation-defined and unstable as
+   indices are added and removed from the domain.
 
 
 
-.. code-block:: chapel
+.. function:: proc isIrregularDom(d: domain) param
 
-   proc isIrregularDom(d: domain) param
-
-Returns a param ``true`` if the given domain is irregular, false
-otherwise.
+   Returns a param ``true`` if the given domain is irregular, false
+   otherwise.
 
 
 
-.. code-block:: chapel
+.. function:: proc isRectangularDom(d: domain) param
 
-   proc isRectangularDom(d: domain) param
-
-Returns a param ``true`` if the given domain is rectangular, false
-otherwise.
+   Returns a param ``true`` if the given domain is rectangular, false
+   otherwise.
 
 
 
-.. code-block:: chapel
+.. function:: proc isSparseDom(d: domain) param
 
-   proc isSparseDom(d: domain) param
-
-Returns a param ``true`` if the given domain is sparse, false otherwise.
+   Returns a param ``true`` if the given domain is sparse, false otherwise.
 
 
 
-.. code-block:: chapel
+.. function:: proc domain.contains(i)
 
-   proc domain.member(i)
+      Returns true if the given index ``i`` is a member of this domain’s index
+      set, and false otherwise.
 
-Returns true if the given index ``i`` is a member of this domain’s index
-set, and false otherwise.
-
-   *Open issue*.
+*Open issue*.
 
    We would like to call the type of i above idxType, but it’s not true
    for rectangular domains. That observation provides some motivation to
@@ -1006,34 +995,30 @@ domains only.
 
 
 
-.. code-block:: chapel
+.. function:: proc domain.dim(d: int): range
 
-   proc domain.dim(d: int): range
+   Returns the range of indices described by dimension ``d`` of the domain,
+   where ``d`` is a value from ``0`` to ``rank-1``.
 
-Returns the range of indices described by dimension ``d`` of the domain,
-where ``d`` is a value from ``0`` to ``rank-1``.
+*Example*.
 
-   *Example*.
-
-   The code:
-
-   .. code-block:: chapel
-
-      for i in D.dim(0) do
-        for j in D.dim(1) do
-          writeln(A(i,j));
-
-   iterates over the indices of a dense 2D domain ``D`` using two
-   nested loops, one per dimension.
-
-
-
+The code:
 
 .. code-block:: chapel
 
-   proc domain.dims(): rank*range
+   for i in D.dim(0) do
+      for j in D.dim(1) do
+         writeln(A(i,j));
 
-Returns a tuple of ranges describing the dimensions of the domain.
+iterates over the indices of a dense 2D domain ``D`` using two
+nested loops, one per dimension.
+
+
+
+
+.. function:: proc domain.dims(): rank*range
+
+   Returns a tuple of ranges describing the dimensions of the domain.
 
 
 
@@ -1081,37 +1066,29 @@ the dimension; if positive, compute the interior from the high bound.
 
 
 
-.. code-block:: chapel
+.. function:: proc domain.low: index(domain)
 
-   proc domain.low: index(domain)
-
-Returns the low index of the domain as a value of the domain’s index
-type.
+   Returns the low index of the domain as a value of the domain’s index
+   type.
 
 
 
-.. code-block:: chapel
+.. function:: proc domain.rank param : int
 
-   proc domain.rank param : int
-
-Returns the rank of the domain.
+   Returns the rank of the domain.
 
 
 
-.. code-block:: chapel
+.. function:: proc domain.size: capType
 
-   proc domain.size: capType
-
-Returns the number of indices in the domain as a value of the capacity
-type.
+   Returns the number of indices in the domain as a value of the capacity
+   type.
 
 
 
-.. code-block:: chapel
+.. function:: proc domain.stridable param : bool
 
-   proc domain.stridable param : bool
-
-Returns whether or not the domain is stridable.
+   Returns whether or not the domain is stridable.
 
 
 
@@ -1151,37 +1128,29 @@ a member of that domain, it is ignored.
 
 
 
-.. code-block:: chapel
+.. function:: proc +(d1: domain, d2: domain)
 
-   proc +(d1: domain, d2: domain)
-
-Merges the index sets of the two domain arguments.
+   Merges the index sets of the two domain arguments.
 
 
 
-.. code-block:: chapel
+.. function:: proc -(d: domain, i: index(d))
 
-   proc -(d: domain, i: index(d))
-
-Removes the given index from the given domain. It is an error if the
-domain does not contain the given index.
+   Removes the given index from the given domain. It is an error if the
+   domain does not contain the given index.
 
 
 
-.. code-block:: chapel
+.. function:: proc -(d1: domain, d2: domain)
 
-   proc -(d1: domain, d2: domain)
-
-Removes the indices in domain ``d2`` from those in ``d1``. It is an
-error if ``d2`` contains indices which are not also in ``d1``.
+   Removes the indices in domain ``d2`` from those in ``d1``. It is an
+   error if ``d2`` contains indices which are not also in ``d1``.
 
 
 
-.. code-block:: chapel
+.. function:: proc requestCapacity(s: int)
 
-   proc requestCapacity(s: int)
-
-Resizes the domain internal storage to hold at least ``s`` indices.
+   Resizes the domain internal storage to hold at least ``s`` indices.
 
 .. [3]
    This is also known as row-major ordering.

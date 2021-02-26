@@ -145,8 +145,7 @@ OPTIONS
 
     Enables the cache for remote data. This cache can improve communication
     performance for some programs by adding aggregation, write behind, and
-    read ahead. This cache is not enabled by any other optimization
-    *options* such as **--fast**.
+    read ahead.
 
 **--[no-]copy-propagation**
 
@@ -280,21 +279,37 @@ OPTIONS
     Limit on the size of tuples considered for the tuple copy optimization.
     The default value is 8.
 
-**--[no-]use-noinit**
-
-    Enable [disable] ability to skip default initialization through the
-    keyword noinit
-
 **--[no-]infer-local-fields**
 
     Enable [disable] analysis to infer local fields in classes and records
     (experimental)
 
+**--[no-]auto-local-access**
+
+    Enable [disable] an optimization applied to forall loops over domains in
+    which accesses of the form of `A[i]` within the loop are transformed to use
+    local accesses if the array `A` is aligned with the domain and `i` is the
+    loop index variable. With this flag, the compiler does some static analysis
+    and adds calls that can further analyze alignment dynamically during
+    execution time.
+
+**--[no-]dynamic-auto-local-access**
+
+    Enable [disable] the dynamic portion of the analysis described in
+    `--[no-]auto-local-access`.  This dynamic analysis can result in loop
+    duplication that increases executable size and compilation time. There
+    may also be execution time overheads independent of loop domain size.
+
+**--[no-]auto-aggregation**
+
+    Enable [disable] optimization of the last statement in forall statements to
+    use aggregated communication. This optimization is disabled by default.
+
 *Run-time Semantic Check Options* 
 
-**--no-checks**
+**--[no-]checks**
 
-    Turns off all of the run-time checks in this section of the man page.
+    Enable [disable] all of the run-time checks in this section of the man page.
     Currently, it is typically necessary to use this flag (or **--fast**,
     which implies **--no-checks**) to achieve performance competitive with
     hand-coded C or Fortran.
@@ -784,5 +799,5 @@ See $CHPL\_HOME/CONTRIBUTORS.md for a list of contributors to Chapel.
 COPYRIGHT
 ---------
 
-| Copyright 2020 Hewlett Packard Enterprise Development LP
+| Copyright 2020-2021 Hewlett Packard Enterprise Development LP
 | Copyright 2004-2019 Cray Inc.

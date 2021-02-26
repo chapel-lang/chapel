@@ -1,9 +1,8 @@
 //===- BugDriver.h - Top-Level BugPoint class -------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -218,8 +217,7 @@ public:
   /// returning the transformed module on success, or a null pointer on failure.
   std::unique_ptr<Module> runPassesOn(Module *M,
                                       const std::vector<std::string> &Passes,
-                                      unsigned NumExtraArgs = 0,
-                                      const char *const *ExtraArgs = nullptr);
+                                      ArrayRef<std::string> ExtraArgs = {});
 
   /// runPasses - Run the specified passes on Program, outputting a bitcode
   /// file and writting the filename into OutputFile if successful.  If the
@@ -232,8 +230,8 @@ public:
   ///
   bool runPasses(Module &Program, const std::vector<std::string> &PassesToRun,
                  std::string &OutputFilename, bool DeleteOutput = false,
-                 bool Quiet = false, unsigned NumExtraArgs = 0,
-                 const char *const *ExtraArgs = nullptr) const;
+                 bool Quiet = false,
+                 ArrayRef<std::string> ExtraArgs = {}) const;
 
   /// runPasses - Just like the method above, but this just returns true or
   /// false indicating whether or not the optimizer crashed on the specified

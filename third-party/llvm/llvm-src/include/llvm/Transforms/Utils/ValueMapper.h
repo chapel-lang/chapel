@@ -1,9 +1,8 @@
 //===- ValueMapper.h - Remapping for constants and metadata -----*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -23,7 +22,7 @@ namespace llvm {
 
 class Constant;
 class Function;
-class GlobalAlias;
+class GlobalIndirectSymbol;
 class GlobalVariable;
 class Instruction;
 class MDNode;
@@ -121,7 +120,7 @@ inline RemapFlags operator|(RemapFlags LHS, RemapFlags RHS) {
 /// instance:
 /// - \a scheduleMapGlobalInitializer()
 /// - \a scheduleMapAppendingVariable()
-/// - \a scheduleMapGlobalAliasee()
+/// - \a scheduleMapGlobalIndirectSymbol()
 /// - \a scheduleRemapFunction()
 ///
 /// Sometimes a callback needs a different mapping context.  Such a context can
@@ -181,8 +180,9 @@ public:
                                     bool IsOldCtorDtor,
                                     ArrayRef<Constant *> NewMembers,
                                     unsigned MappingContextID = 0);
-  void scheduleMapGlobalAliasee(GlobalAlias &GA, Constant &Aliasee,
-                                unsigned MappingContextID = 0);
+  void scheduleMapGlobalIndirectSymbol(GlobalIndirectSymbol &GIS,
+                                       Constant &Target,
+                                       unsigned MappingContextID = 0);
   void scheduleRemapFunction(Function &F, unsigned MappingContextID = 0);
 };
 

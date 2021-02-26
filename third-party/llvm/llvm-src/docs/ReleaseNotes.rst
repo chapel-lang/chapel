@@ -1,6 +1,6 @@
-========================
-LLVM 8.0.0 Release Notes
-========================
+=========================
+LLVM 11.0.0 Release Notes
+=========================
 
 .. contents::
     :local:
@@ -9,10 +9,10 @@ Introduction
 ============
 
 This document contains the release notes for the LLVM Compiler Infrastructure,
-release 8.0.0.  Here we describe the status of LLVM, including major improvements
+release 11.0.0.  Here we describe the status of LLVM, including major improvements
 from the previous release, improvements in various subprojects of LLVM, and
 some of the current users of the code.  All LLVM releases may be downloaded
-from the `LLVM releases web site <https://releases.llvm.org/>`_.
+from the `LLVM releases web site <https://llvm.org/releases/>`_.
 
 For more information about LLVM, including information about the latest
 release, please check out the `main LLVM web site <https://llvm.org/>`_.  If you
@@ -20,287 +20,385 @@ have questions or comments, the `LLVM Developer's Mailing List
 <https://lists.llvm.org/mailman/listinfo/llvm-dev>`_ is a good place to send
 them.
 
-Minimum Required Compiler Version
-=================================
-As `discussed on the mailing list
-<https://lists.llvm.org/pipermail/llvm-dev/2019-January/129452.html>`_,
-building LLVM will soon require more recent toolchains as follows:
-
-============= ====
-Clang         3.5
-Apple Clang   6.0
-GCC           5.1
-Visual Studio 2017
-============= ====
-
-A new CMake check when configuring LLVM provides a soft-error if your
-toolchain will become unsupported soon. You can opt out of the soft-error by
-setting the ``LLVM_TEMPORARILY_ALLOW_OLD_TOOLCHAIN`` CMake variable to
-``ON``.
-
-
-Known Issues
-============
-
-These are issues that couldn't be fixed before the release. See the bug reports
-for the latest status.
-
-* `PR40547 <https://llvm.org/pr40547>`_ Clang gets miscompiled by trunk GCC.
-
-* `PR40761 <https://llvm.org/pr40761>`_ "asan-dynamic" doesn't work on FreeBSD.
-
+Deprecated and Removed Features/APIs
+=================================================
+* BG/Q support, including QPX, will be removed in the 12.0.0 release.
 
 Non-comprehensive list of changes in this release
 =================================================
 
-* The **llvm-cov** tool can now export lcov trace files using the
-  `-format=lcov` option of the `export` command.
-
-* The ``add_llvm_loadable_module`` CMake macro has been removed.  The
-  ``add_llvm_library`` macro with the ``MODULE`` argument now provides the same
-  functionality.  See `Writing an LLVM Pass
-  <WritingAnLLVMPass.html#setting-up-the-build-environment>`_.
-
-* For MinGW, references to data variables that might need to be imported
-  from a dll are accessed via a stub, to allow the linker to convert it to
-  a dllimport if needed.
-
-* Added support for labels as offsets in ``.reloc`` directive.
-
-* Support for precise identification of X86 instructions with memory operands,
-  by using debug information. This supports profile-driven cache prefetching.
-  It is enabled with the ``-x86-discriminate-memops`` LLVM Flag.
-
-* Support for profile-driven software cache prefetching on X86. This is part of
-  a larger system, consisting of: an offline cache prefetches recommender,
-  AutoFDO tooling, and LLVM. In this system, a binary compiled with
-  ``-x86-discriminate-memops`` is run under the observation of the recommender.
-  The recommender identifies certain memory access instructions by their binary
-  file address, and recommends a prefetch of a specific type (NTA, T0, etc) be
-  performed at a specified fixed offset from such an instruction's memory
-  operand. Next, this information needs to be converted to the AutoFDO syntax
-  and the resulting profile may be passed back to the compiler with the LLVM
-  flag ``-prefetch-hints-file``, together with the exact same set of
-  compilation parameters used for the original binary. More information is
-  available in the `RFC
-  <https://lists.llvm.org/pipermail/llvm-dev/2018-November/127461.html>`_.
-
-* Windows support for libFuzzer (x86_64).
+* The llgo frontend has been removed for now, but may be resurrected in the
+  future.
 
 Changes to the LLVM IR
 ----------------------
 
-* Function attribute ``speculative_load_hardening`` has been introduced to
-  allow indicating that `Speculative Load Hardening
-  <SpeculativeLoadHardening.html>`_ must be enabled for the function body.
+* The callsite attribute `vector-function-abi-variant
+  <https://llvm.org/docs/LangRef.html#call-site-attributes>`_ has been
+  added to describe the mapping between scalar functions and vector
+  functions, to enable vectorization of call sites. The information
+  provided by the attribute is interfaced via the API provided by the
+  ``VFDatabase`` class. When scanning through the set of vector
+  functions associated with a scalar call, the loop vectorizer now
+  relies on ``VFDatabase``, instead of ``TargetLibraryInfo``.
 
+* `dereferenceable` attributes and metadata on pointers no longer imply
+  anything about the alignment of the pointer in question. Previously, some
+  optimizations would make assumptions based on the type of the pointer. This
+  behavior was undocumented. To preserve optimizations, frontends may need to
+  be updated to generate appropriate `align` attributes and metadata.
 
-Changes to the JIT APIs
------------------------
+* The DIModule metadata is extended to contain file and line number
+  information. This information is used to represent Fortran modules debug
+  info at IR level.
 
-The ORC (On Request Compilation) JIT APIs have been updated to support
-concurrent compilation. The existing (non-concurrent) ORC layer classes and
-related APIs are deprecated, have been renamed with a "Legacy" prefix (e.g.
-LegacyIRCompileLayer). The deprecated clasess will be removed in LLVM 9.
+* LLVM IR now supports two distinct ``llvm::FixedVectorType`` and
+  ``llvm::ScalableVectorType`` vector types, both derived from the
+  base class ``llvm::VectorType``. A number of algorithms dealing with
+  IR vector types have been updated to make sure they work for both
+  scalable and fixed vector types. Where possible, the code has been
+  made generic to cover both cases using the base class. Specifically,
+  places that were using the type ``unsigned`` to count the number of
+  lanes of a vector are now using ``llvm::ElementCount``. In places
+  where ``uint64_t`` was used to denote the size in bits of a IR type
+  we have partially migrated the codebase to using ``llvm::TypeSize``.
 
-An example JIT stack using the concurrent ORC APIs, called LLJIT, has been
-added (see include/llvm/ExecutionEngine/Orc/LLJIT.h). The lli tool has been
-updated to use LLJIT.
+* Branching on ``undef``/``poison`` is undefined behavior. It is needed for
+  correctly analyzing value ranges based on branch conditions. This is
+  consistent with MSan's behavior as well.
 
-MCJIT and ExecutionEngine continue to be supported, though ORC should be
-preferred for new projects.
+* ``memset``/``memcpy``/``memmove`` can take ``undef``/``poison`` pointer(s)
+  if the size to fill is zero.
 
+* Passing ``undef``/``poison`` to a standard I/O library function call
+  (`printf`/`fputc`/...) is undefined behavior. The new ``noundef`` attribute
+  is attached to the functions' arguments. The full list is available at
+  ``llvm::inferLibFuncAttributes``.
 
-Changes to the AArch64 Target
------------------------------
+Changes to building LLVM
+------------------------
 
-* Support for Speculative Load Hardening has been added.
+* The LLVM project has started the migration towards Python 3, and the build
+  system now prefers Python 3 whenever available.  If the Python 3 interpreter
+  (or libraries) are not found, the build system will, for the time being, fall
+  back to Python 2.  It is recommended that downstream projects migrate to
+  Python 3 as Python 2 has been end-of-life'd by the Python Software
+  Foundation.
 
-* Initial support for the Tiny code model, where code and its statically
-  defined symbols must live within 1MB of each other.
+Changes to the JIT infrastructure
+---------------------------------
 
-* Added support for the ``.arch_extension`` assembler directive, just like
-  on ARM.
+* LLJIT now supports execution of static inits / deinits via the
+  LLJIT::initialize and LLJIT::deinitialize methods
 
+* Static libraries can now be added to a JITDylib using the
+  StaticLibraryDefinitionGenerator class
 
-Changes to the Hexagon Target
------------------------------
+* A C API has been added for OrcV2 (llvm-project/llvm/include/llvm-c/Orc.h)
 
-* Added support for Hexagon/HVX V66 ISA.
+* Several OrcV2 example projects have been added to
+  llvm-project/llvm/examples/OrcV2Examples
 
+* Many bug fixes and API improvements
 
-Changes to the MIPS Target
+Changes to the AArch64 Backend
+------------------------------
+
+* Back up and restore x18 in functions with windows calling convention on
+  non-windows OSes.
+
+* Clearly error out on unsupported relocations when targeting COFF, instead
+  of silently accepting some (without being able to do what was requested).
+
+* Implemented codegen support for the SVE C-language intrinsics
+  documented in `Arm C Language Extensions (ACLE) for SVE
+  <https://developer.arm.com/documentation/100987/>`_ (version
+  ``00bet5``). For more information, see the ``clang`` 11 release
+  notes.
+
+* Added support for Armv8.6-A:
+
+  Assembly support for the following extensions:
+
+  - Enhanced Counter Virtualization (ARMv8.6-ECV).
+  - Fine Grained Traps (ARMv8.6-FGT).
+  - Activity Monitors virtualization (ARMv8.6-AMU).
+  - Data gathering hint (ARMv8.0-DGH).
+
+  Assembly and intrinsics support for the Armv8.6-A Matrix Multiply extension
+  for Neon and SVE vectors.
+
+  Support for the ARMv8.2-BF16 BFloat16 extension. This includes a new C-level
+  storage-only `__bf16` type, a `BFloat` IR type, a `bf16` MVT, and assembly
+  and intrinsics support.
+
+* Added support for Cortex-A34, Cortex-A77, Cortex-A78 and Cortex-X1 cores.
+
+Changes to the ARM Backend
 --------------------------
 
-* Improved support of GlobalISel instruction selection framework.
+* Implemented C-language intrinsics for the full Arm v8.1-M MVE instruction
+  set. ``<arm_mve.h>`` now supports the complete API defined in the Arm C
+  Language Extensions.
 
-* Implemented emission of ``R_MIPS_JALR`` and ``R_MICROMIPS_JALR``
-  relocations. These relocations provide hints to a linker for optimization
-  of jumps to protected symbols.
+* Added support for assembly for the optional Custom Datapath Extension (CDE)
+  for Arm M-profile targets.
 
-* ORC JIT has been supported for MIPS and MIPS64 architectures.
+* Implemented C-language intrinsics ``<arm_cde.h>`` for the CDE instruction set.
 
-* Assembler now suggests alternative MIPS instruction mnemonics when
-  an invalid one is specified.
+* Clang now defaults to ``-fomit-frame-pointer`` when targeting non-Android
+  Linux for arm and thumb when optimizations are enabled. Users that were
+  previously not specifying a value and relying on the implicit compiler
+  default may wish to specify ``-fno-omit-frame-pointer`` to get the old
+  behavior. This improves compatibility with GCC.
 
-* Improved support for MIPS N32 ABI.
+* Added support for Armv8.6-A:
 
-* Added new instructions (``pll.ps``, ``plu.ps``, ``cvt.s.pu``,
-  ``cvt.s.pl``, ``cvt.ps``, ``sigrie``).
+  Assembly and intrinsics support for the Armv8.6-A Matrix Multiply extension
+  for Neon vectors.
 
-* Numerous bug fixes and code cleanups.
+  Support for the ARMv8.2-AA32BF16 BFloat16 extension. This includes a new
+  C-level storage-only `__bf16` type, a `BFloat` IR type, a `bf16` MVT, and
+  assembly and intrinsics support.
+
+* Added support for CMSE.
+
+* Added support for Cortex-M55, Cortex-A77, Cortex-A78 and Cortex-X1 cores.
+
+* The Machine Outliner is now supported for ARM and Thumb2, it is not
+  turned on by default and can be enabled with the ``-moutline`` clang flag.
 
 
 Changes to the PowerPC Target
 -----------------------------
 
-* Switched to non-PIC default
+Optimization:
 
-* Deprecated Darwin support
+* Improved Loop Unroll-and-Jam legality checks, allowing it to handle more than two level loop nests
+* Improved Loop Unroll to be able to unroll more loops
+* Implemented an option to allow loop fusion to work on loops with different constant trip counts
 
-* Enabled Out-of-Order scheduling for P9
+Codegen:
 
-* Better overload rules for compatible vector type parameter
+* POWER10 support
 
-* Support constraint 'wi', modifier 'x' and VSX registers in inline asm
+  * Added PC Relative addressing
+  * Added __int128 vector bool support
 
-* More ``__float128`` support
+* Security enhancement via probe-stack attribute support to protect against stack clash
+* Floating point support enhancements
 
-* Added new builtins like vector int128 ``pack``/``unpack`` and
-  ``stxvw4x.be``/``stxvd2x.be``
+  * Improved half precision and quad precision support, including GLIBC
+  * constrained FP operation support for arithmetic/rounding/max/min
+  * cleaning up fast math flags checks in DAGCombine, Legalizer, and Lowering
 
-* Provided significant improvements to the automatic vectorizer
+* Performance improvements from instruction exploitation, especially for vector permute on LE
+* Scheduling enhancements
 
-* Code-gen improvements (especially for Power9)
+  * Added MacroFusion for POWER8
+  * Added post-ra heuristics for POWER9
 
-* Fixed some long-standing bugs in the back end
+* Target dependent passes tuning
 
-* Added experimental prologue/epilogue improvements
+  * Updated LoopStrengthReduce to use instruction number as first priority
+  * Enhanced MachineCombiner to expose more ILP
 
-* Enabled builtins tests in compiler-rt
+* Code quality and maintenance enhancements
 
-* Add ``___fixunstfti``/``floattitf`` in compiler-rt to support conversion
-  between IBM double-double and unsigned int128
+  * Enabled more machine verification passes
+  * Added ability to parse and emit additional extended mnemonics
+  * Numerous bug fixes
 
-* Disable randomized address space when running the sanitizers on Linux ppc64le
+AIX Support Improvements:
 
-* Completed support in LLD for ELFv2
+* Enabled compile and link such that a simple <stdio.h> "Hello World" program works with standard headers
+* Added support for the C calling convention for non-vector code
+* Implemented correct stack frame layout for functions
+* In llvm-objdump, added support for relocations, improved selection of symbol labels, and added the --symbol-description option
 
-* Enabled llvm-exegesis latency mode for PPC
 
+Changes to the RISC-V Target
+----------------------------
+
+New features:
+
+* After consultation through an RFC, the RISC-V backend now accepts patches for
+  proposed instruction set extensions that have not yet been ratified.  For these
+  experimental extensions, there is no expectation of ongoing support - the
+  compiler support will continue to change until the specification is finalised.
+  In line with this policy, MC layer and code generation support was added for
+  version 0.92 of the proposed Bit Manipulation Extension and MC layer support
+  was added for version 0.8 of the proposed RISC-V Vector instruction set
+  extension. As these extensions are not yet ratified, compiler support will
+  continue to change to match the specifications until they are finalised.
+* ELF attribute sections are now created, encoding information such as the ISA
+  string.
+* Support for saving/restoring callee-saved registers via libcalls (a code
+  size optimisation).
+* llvm-objdump will now print branch targets as part of disassembly.
+
+Improvements:
+
+* If an immediate can be generated using a pair of `addi` instructions, that
+  pair will be selected rather than materialising the immediate into a
+  separate register with an `lui` and `addi` pair.
+* Multiplication by a constant was optimised.
+* `addi` instructions are now folded into the offset of a load/store instruction
+  even if the load/store itself has a non-zero offset, when it is safe to do
+  so.
+* Additional target hooks were implemented to minimise generation of
+  unnecessary control flow instruction.
+* The RISC-V backend's load/store peephole optimisation pass now supports
+  constant pools, improving code generation for floating point constants.
+* Debug scratch register names `dscratch0` and `dscratch1` are now recognised in
+  addition to the legacy `dscratch` register name.
+* Codegen for checking isnan was improved, removing a redundant `and`.
+* The `dret` instruction is now supported by the MC layer.
+* `.option pic` and `.option nopic` are now supported in assembly and `.reloc`
+  was extended to support arbitrary relocation types.
+* Scheduling info metadata was improved.
+* The `jump` pseudo instruction is now supported.
+
+Bug fixes:
+
+* A failure to insert indirect branches in position independent code
+  was fixed.
+* The calculated expanded size of atomic pseudo operations was fixed, avoiding
+  "fixup value out of range" errors during branch relaxation for some inputs.
+* The `mcountinhibit` CSR is now recognised.
+* The correct libcall is now emitted for converting a float/double to a 32-bit
+  signed or unsigned integer on RV64 targets lacking the F or D extensions.
 
 Changes to the SystemZ Target
 -----------------------------
 
-* A number of bugs related to C/C++ language vector extension support were
-  fixed: the ``-mzvector`` option now actually enables the ``__vector`` and
-  ``__bool`` keywords, the ``vec_step`` intrinsic now works, and the
-  ``vec_insert_and_zero`` and ``vec_orc`` intrinsics now generate correct code.
-
-* The ``__float128`` keyword, which had been accidentally enabled in some
-  earlier releases, is now no longer supported.  On SystemZ, the ``long double``
-  data type itself already uses the IEEE 128-bit floating-point format.
-
-* When the compiler inlines ``strcmp`` or ``memcmp``, the generated code no
-  longer returns ``INT_MIN`` as the negative result value under any
-  circumstances.
-
-* Various code-gen improvements, in particular related to improved
-  auto-vectorization, inlining, and instruction scheduling.
-
+* Added support for the MemorySanitizer and the LeakSanitizer.
+* Added support for the ``-fstack-clash-protection`` command line option.
+* Enhanced the assembler parser to allow using `%r0` even in an address
+  register context, and to allow specifying registers using plain integer
+  numbers instead of register names everywhere.
+* Fixed wrong code generation violating the platform ABI when passing
+  a C++ class (not struct) type having only a single member of
+  floating-point type.
+* Fixed wrong code generation when using the `vec_store_len_r` or
+  `vec_load_len_r` intrinsics with an immediate length argument of
+  16 or larger.
+* Miscellaneous codegen enhancements, in particular to improve vector code.
 
 Changes to the X86 Target
 -------------------------
 
-* Machine model for AMD bdver2 (Piledriver) CPU was added. It is used to support
-  instruction scheduling and other instruction cost heuristics.
+* Functions with the probe-stack attribute set to "inline-asm" are now protected
+  against stack clash without the need of a third-party probing function and
+  with limited impact on performance.
+* -x86-enable-old-knl-abi command line switch has been removed. v32i16/v64i8
+  vectors are always passed in ZMM register when avx512f is enabled and avx512bw
+  is disabled.
+* Vectors larger than 512 bits with i16 or i8 elements will be passed in
+  multiple ZMM registers when avx512f is enabled. Previously this required
+  avx512bw otherwise they would split into multiple YMM registers. This means
+  vXi16/vXi8 vectors are consistently treated the same as
+  vXi32/vXi64/vXf64/vXf32 vectors of the same total width.
+* Support was added for Intel AMX instructions.
+* Support was added for TSXLDTRK instructions.
+* A pass was added for mitigating the Load Value Injection vulnerability.
+* The Speculative Execution Side Effect Suppression pass was added which can
+  be used to as a last resort mitigation for speculative execution related
+  CPU vulnerabilities.
+* Improved recognition of boolean vector reductions with better MOVMSKB/PTEST
+  handling
+* Exteded recognition of rotation patterns to handle funnel shift as well,
+  allowing us to remove the existing x86-specific SHLD/SHRD combine.
 
-* New AVX512F gather and scatter intrinsics were added that take a <X x i1> mask
-  instead of a scalar integer. This removes the need for a bitcast in IR. The
-  new intrinsics are named like the old intrinsics with ``llvm.avx512.``
-  replaced with ``llvm.avx512.mask.``. The old intrinsics will be removed in a
-  future release.
+Changes to the AMDGPU Target
+-----------------------------
 
-* Added ``cascadelake`` as a CPU name for -march. This is ``skylake-avx512``
-  with the addition of the ``avx512vnni`` instruction set.
+* The backend default denormal handling mode has been switched to on
+  for all targets for all compute function types. Frontends wishing to
+  retain the old behavior should explicitly request f32 denormal
+  flushing.
 
-* ADCX instruction will no longer be emitted. This instruction is rarely better
-  than the legacy ADC instruction and just increased code size.
+Changes to the AVR Target
+-----------------------------
 
+* Moved from an experimental backend to an official backend. AVR support is now
+  included by default in all LLVM builds and releases and is available under
+  the "avr-unknown-unknown" target triple.
 
 Changes to the WebAssembly Target
 ---------------------------------
 
-The WebAssembly target is no longer "experimental"! It's now built by default,
-rather than needing to be enabled with LLVM_EXPERIMENTAL_TARGETS_TO_BUILD.
+* Programs which don't have a "main" function, called "reactors" are now
+  properly supported, with a new `-mexec-model=reactor` flag. Programs which
+  previously used `-Wl,--no-entry` to avoid having a main function should
+  switch to this new flag, so that static initialization is properly
+  performed.
 
-The object file format and core C ABI are now considered stable. That said,
-the object file format has an ABI versioning capability, and one anticipated
-use for it will be to add support for returning small structs as multiple
-return values, once the underlying WebAssembly platform itself supports it.
-Additionally, multithreading support is not yet included in the stable ABI.
+* `__attribute__((visibility("protected")))` now evokes a warning, as
+  WebAssembly does not support "protected" visibility.
 
+Changes to the Windows Target
+-----------------------------
 
-Changes to the Nios2 Target
----------------------------
-
-* The Nios2 target was removed from this release.
-
-
-Changes to LLDB
-===============
-
-* Printed source code is now syntax highlighted in the terminal (only for C
-  languages).
-
-* The expression command now supports tab completing expressions.
+* Produce COFF weak external symbols for IR level weak symbols without a comdat
+  (e.g. for `__attribute__((weak))` in C)
 
 
-External Open Source Projects Using LLVM 8
-==========================================
+Changes to the DAG infrastructure
+---------------------------------
 
-LDC - the LLVM-based D compiler
--------------------------------
+* A SelDag-level freeze instruction has landed. It is simply lowered as a copy
+  operation to MachineIR, but to make it fully correct either IMPLICIT_DEF
+  should be fixed or the equivalent FREEZE operation should be added to
+  MachineIR.
 
-`D <http://dlang.org>`_ is a language with C-like syntax and static typing. It
-pragmatically combines efficiency, control, and modeling power, with safety and
-programmer productivity. D supports powerful concepts like Compile-Time Function
-Execution (CTFE) and Template Meta-Programming, provides an innovative approach
-to concurrency and offers many classical paradigms.
+Changes to the Debug Info
+-------------------------
 
-`LDC <http://wiki.dlang.org/LDC>`_ uses the frontend from the reference compiler
-combined with LLVM as backend to produce efficient native code. LDC targets
-x86/x86_64 systems like Linux, OS X, FreeBSD and Windows and also Linux on ARM
-and PowerPC (32/64 bit). Ports to other architectures like AArch64 and MIPS64
-are underway.
+* LLVM now supports the debug entry values (DW_OP_entry_value) production for
+  the x86, ARM, and AArch64 targets by default. Other targets can use
+  the utility by using the experimental option ("-debug-entry-values").
+  This is a debug info feature that allows debuggers to recover the value of
+  optimized-out parameters by going up a stack frame and interpreting the values
+  passed to the callee. The feature improves the debugging user experience when
+  debugging optimized code.
 
-Open Dylan Compiler
--------------------
+Changes to the Gold Plugin
+--------------------------
 
-`Dylan <https://opendylan.org/>`_ is a multi-paradigm functional
-and object-oriented programming language.  It is dynamic while
-providing a programming model designed to support efficient machine
-code generation, including fine-grained control over dynamic and
-static behavior. Dylan also features a powerful macro facility for
-expressive metaprogramming.
+* ``--plugin-opt=whole-program-visibility`` is added to specify that classes have hidden LTO visibility in LTO and ThinLTO links of source files compiled with ``-fwhole-program-vtables``. See `LTOVisibility <https://clang.llvm.org/docs/LTOVisibility.html>`_ for details.
+  (`D71913 <https://reviews.llvm.org/D71913>`_)
 
-The Open Dylan compiler can use LLVM as one of its code-generating
-back-ends, including full support for debug info generation. (Open
-Dylan generates LLVM bitcode directly using a native Dylan IR and
-bitcode library.) Development of a Dylan debugger and interactive REPL
-making use of the LLDB libraries is in progress.
+Changes to the LLVM tools
+---------------------------------
+
+* Added an option (--show-section-sizes) to llvm-dwarfdump to show the sizes
+  of all debug sections within a file.
+
+* llvm-nm now implements the flag ``--special-syms`` and will filter out special
+  symbols, i.e. mapping symbols on ARM and AArch64, by default. This matches
+  the GNU nm behavior.
+
+* llvm-rc now tolerates -1 as menu item ID, supports the language id option
+  and allows string table values to be split into multiple string literals
+
+* llvm-lib supports adding import library objects in addition to regular
+  object files
+
+External Open Source Projects Using LLVM 11
+===========================================
 
 Zig Programming Language
 ------------------------
 
-`Zig <https://ziglang.org>`_  is a system programming language intended to be
-an alternative to C. It provides high level features such as generics, compile
-time function execution, and partial evaluation, while exposing low level LLVM
-IR features such as aliases and intrinsics. Zig uses Clang to provide automatic
-import of .h symbols, including inline functions and simple macros. Zig uses
-LLD combined with lazily building compiler-rt to provide out-of-the-box
-cross-compiling for all supported targets.
-
+`Zig <https://ziglang.org>`_  is a general-purpose programming language and
+toolchain for maintaining robust, optimal, and reusable software. In addition
+to supporting LLVM as an optional backend, Zig links Clang and LLD to provide
+an out-of-the-box cross compilation experience, not only for Zig code but for
+C and C++ code as well. Using a sophisticated caching system, Zig lazily builds
+from source compiler-rt, mingw-w64, musl, glibc, libcxx, libcxxabi, and
+libunwind for the selected target - a "batteries included" drop-in for GCC/Clang
+that works the same on every platform.
 
 Additional Information
 ======================
@@ -308,7 +406,7 @@ Additional Information
 A wide variety of additional information is available on the `LLVM web page
 <https://llvm.org/>`_, in particular in the `documentation
 <https://llvm.org/docs/>`_ section.  The web page also contains versions of the
-API documentation which is up-to-date with the Subversion version of the source
+API documentation which is up-to-date with the Git version of the source
 code.  You can access versions of these documents specific to this release by
 going into the ``llvm/docs/`` directory in the LLVM tree.
 

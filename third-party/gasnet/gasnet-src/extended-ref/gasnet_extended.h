@@ -677,11 +677,30 @@ gex_Event_t _gex_Coll_BarrierNB(gex_TM_t _tm, gex_Flags_t _flags GASNETI_THREAD_
   ======
 */
 
+extern int gasneti_TM_Destroy(
+            gex_TM_t      _tm,
+            gex_Memvec_t  *_scratch_p,
+            gex_Flags_t   _flags
+            GASNETI_THREAD_FARG);
+#define gex_TM_Destroy(tm,sp,fl) gasneti_TM_Destroy(tm,sp,fl GASNETI_THREAD_GET)
+
 extern size_t gasneti_TM_Split(gex_TM_t *_new_tm_p, gex_TM_t _parent_tm,
                                int _color, int _key,
                                void *_addr, size_t _len, gex_Flags_t _flags
                                GASNETI_THREAD_FARG);
 #define gex_TM_Split(n,p,c,k,a,l,f) gasneti_TM_Split(n,p,c,k,a,l,f GASNETI_THREAD_GET)
+
+extern size_t gasneti_TM_Create(
+            gex_TM_t *_new_tms,
+            size_t _num_new_tms,
+            gex_TM_t _parent_tm,
+            gex_EP_Location_t *_args,
+            size_t _numargs,
+            gex_Addr_t *_scratch_addrs,
+            size_t _scratch_size,
+            gex_Flags_t _flags
+            GASNETI_THREAD_FARG);
+#define gex_TM_Create(nt,nnt,p,a,n,sa,ss,f) gasneti_TM_Create(nt,nnt,p,a,n,sa,ss,f GASNETI_THREAD_GET)
 
 // extern gex_Rank_t gex_TM_TranslateRankToJobrank(gex_TM_t tm, gex_Rank_t rank);
 #define gex_TM_TranslateRankToJobrank(tm,rank) \
@@ -690,6 +709,11 @@ extern size_t gasneti_TM_Split(gex_TM_t *_new_tm_p, gex_TM_t _parent_tm,
 // extern gex_Rank_t gex_TM_TranslateJobrankToRank(gex_TM_t tm, gex_Rank_t jobrank);
 #define gex_TM_TranslateJobrankToRank(tm,jobrank) \
         gasneti_e_tm_jobrank_to_rank(tm,jobrank)
+
+// extern gex_EP_Location_t gex_TM_TranslateRankToEP(gex_TM_t tm, gex_Rank_t rank, gex_Flags_t flags);
+#define gex_TM_TranslateRankToEP(tm,rank,flags) \
+        gasneti_e_tm_rank_to_location(tm,rank,flags)
+
 /* ------------------------------------------------------------------------------------ */
 
 // TODO-EX: remove these checks for conduits using legacy internal APIs

@@ -1,0 +1,28 @@
+if HAVE_MRAIL
+_mrail_files = \
+	prov/mrail/src/mrail_init.c	\
+	prov/mrail/src/mrail_attr.c	\
+	prov/mrail/src/mrail_fabric.c	\
+	prov/mrail/src/mrail_domain.c	\
+	prov/mrail/src/mrail_cq.c	\
+	prov/mrail/src/mrail_ep.c	\
+	prov/mrail/src/mrail_av.c	\
+	prov/mrail/src/mrail_rma.c	\
+	prov/mrail/src/mrail.h
+
+if HAVE_MRAIL_DL
+pkglib_LTLIBRARIES += libmrail-fi.la
+libmrail_fi_la_SOURCES = $(_mrail_files) $(common_srcs)
+libmrail_fi_la_LIBADD = $(linkback) $(mrail_shm_LIBS)
+libmrail_fi_la_LDFLAGS = -module -avoid-version -shared -export-dynamic
+libmrail_fi_la_DEPENDENCIES = $(linkback)
+else !HAVE_MRAIL_DL
+src_libfabric_la_SOURCES += $(_mrail_files)
+src_libfabric_la_LIBADD += $(mrail_shm_LIBS)
+endif !HAVE_MRAIL_DL
+
+prov_install_man_pages += man/man7/fi_mrail.7
+
+endif HAVE_MRAIL
+
+prov_dist_man_pages += man/man7/fi_mrail.7

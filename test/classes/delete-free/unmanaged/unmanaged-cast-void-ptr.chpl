@@ -9,6 +9,7 @@ class MyClass : ParentClass {
 }
 
 proc test() {
+  use CPtr;
   var x = new unmanaged MyClass(1);
   var y = x:borrowed ParentClass;
   var z = x:c_void_ptr;

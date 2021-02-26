@@ -1,6 +1,8 @@
 lit - LLVM Integrated Tester
 ============================
 
+.. program:: lit
+
 SYNOPSIS
 --------
 
@@ -36,6 +38,11 @@ Finally, :program:`lit` also supports additional options for only running a
 subset of the options specified on the command line, see
 :ref:`selection-options` for more information.
 
+:program:`lit` parses options from the environment variable ``LIT_OPTS`` after
+parsing options from the command line.  ``LIT_OPTS`` is primarily useful for
+supplementing or overriding the command-line options supplied to :program:`lit`
+by ``check`` targets defined by a project's build system.
+
 Users interested in the :program:`lit` architecture or designing a
 :program:`lit` testing implementation should see :ref:`lit-infrastructure`.
 
@@ -46,7 +53,7 @@ GENERAL OPTIONS
 
  Show the :program:`lit` help message.
 
-.. option:: -j N, --threads=N
+.. option:: -j N, --workers=N
 
  Run ``N`` tests in parallel.  By default, this is automatically chosen to
  match the number of detected available CPUs.
@@ -151,6 +158,12 @@ EXECUTION OPTIONS
 SELECTION OPTIONS
 -----------------
 
+.. option:: --max-failures N
+
+ Stop execution after the given number ``N`` of failures.
+ An integer argument should be passed on the command line
+ prior to execution.
+
 .. option:: --max-tests=N
 
  Run at most ``N`` tests and then terminate.
@@ -158,10 +171,8 @@ SELECTION OPTIONS
 .. option:: --max-time=N
 
  Spend at most ``N`` seconds (approximately) running tests and then terminate.
-
-.. option:: --shuffle
-
- Run the tests in a random order.
+ Note that this is not an alias for :option:`--timeout`; the two are
+ different kinds of maximums.
 
 .. option:: --num-shards=M
 
@@ -169,7 +180,7 @@ SELECTION OPTIONS
  "shards", and run only one of them.  Must be used with the
  ``--run-shard=N`` option, which selects the shard to run. The environment
  variable ``LIT_NUM_SHARDS`` can also be used in place of this
- option. These two options provide a coarse mechanism for paritioning large
+ option. These two options provide a coarse mechanism for partitioning large
  testsuites, for parallel execution on separate machines (say in a large
  testing farm).
 
@@ -179,6 +190,16 @@ SELECTION OPTIONS
  provided. The two options must be used together, and the value of ``N``
  must be in the range ``1..M``. The environment variable
  ``LIT_RUN_SHARD`` can also be used in place of this option.
+
+.. option:: --shuffle
+
+ Run the tests in a random order.
+
+.. option:: --timeout=N
+
+ Spend at most ``N`` seconds (approximately) running each individual test.
+ ``0`` means no time limit, and ``0`` is the default. Note that this is not an
+ alias for :option:`--max-time`; the two are different kinds of maximums.
 
 .. option:: --filter=REGEXP
 
@@ -244,11 +265,16 @@ convenient and flexible support for out-of-tree builds.
 TEST STATUS RESULTS
 -------------------
 
-Each test ultimately produces one of the following six results:
+Each test ultimately produces one of the following eight results:
 
 **PASS**
 
  The test succeeded.
+
+**FLAKYPASS**
+
+ The test succeeded after being re-run more than once. This only applies to
+ tests containing an ``ALLOW_RETRIES:`` annotation.
 
 **XFAIL**
 
@@ -275,6 +301,11 @@ Each test ultimately produces one of the following six results:
 
  The test is not supported in this environment.  This is used by test formats
  which can report unsupported tests.
+
+**TIMEOUT**
+
+ The test was run, but it timed out before it was able to complete. This is
+ considered a failure.
 
 Depending on the test format tests may produce additional information about
 their status (generally only for failures).  See the :ref:`output-options`
@@ -393,27 +424,57 @@ be used to define subdirectories of optional tests, or to change other
 configuration parameters --- for example, to change the test format, or the
 suffixes which identify test files.
 
-PRE-DEFINED SUBSTITUTIONS
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+SUBSTITUTIONS
+~~~~~~~~~~~~~
 
-:program:`lit` provides various patterns that can be used with the RUN command.
-These are defined in TestRunner.py. The base set of substitutions are:
+:program:`lit` allows patterns to be substituted inside RUN commands. It also
+provides the following base set of substitutions, which are defined in
+TestRunner.py:
 
- ========== ==============
-  Macro      Substitution
- ========== ==============
- %s         source path (path to the file currently being run)
- %S         source dir (directory of the file currently being run)
- %p         same as %S
- %{pathsep} path separator
- %t         temporary file name unique to the test
- %T         parent directory of %t (not unique, deprecated, do not use)
- %%         %
- ========== ==============
+ ======================= ==============
+  Macro                   Substitution
+ ======================= ==============
+ %s                      source path (path to the file currently being run)
+ %S                      source dir (directory of the file currently being run)
+ %p                      same as %S
+ %{pathsep}              path separator
+ %t                      temporary file name unique to the test
+ %basename_t             The last path component of %t but without the ``.tmp`` extension
+ %T                      parent directory of %t (not unique, deprecated, do not use)
+ %%                      %
+ %/s                     %s but ``\`` is replaced by ``/``
+ %/S                     %S but ``\`` is replaced by ``/``
+ %/p                     %p but ``\`` is replaced by ``/``
+ %/t                     %t but ``\`` is replaced by ``/``
+ %/T                     %T but ``\`` is replaced by ``/``
+ %{/s:regex_replacement} %/s but escaped for use in the replacement of a ``s@@@`` command in sed
+ %{/S:regex_replacement} %/S but escaped for use in the replacement of a ``s@@@`` command in sed
+ %{/p:regex_replacement} %/p but escaped for use in the replacement of a ``s@@@`` command in sed
+ %{/t:regex_replacement} %/t but escaped for use in the replacement of a ``s@@@`` command in sed
+ %{/T:regex_replacement} %/T but escaped for use in the replacement of a ``s@@@`` command in sed
+ %:s                     On Windows, %/s but a ``:`` is removed if its the second character.
+                         Otherwise, %s but with a single leading ``/`` removed.
+ %:S                     On Windows, %/S but a ``:`` is removed if its the second character.
+                         Otherwise, %S but with a single leading ``/`` removed.
+ %:p                     On Windows, %/p but a ``:`` is removed if its the second character.
+                         Otherwise, %p but with a single leading ``/`` removed.
+ %:t                     On Windows, %/t but a ``:`` is removed if its the second character.
+                         Otherwise, %t but with a single leading ``/`` removed.
+ %:T                     On Windows, %/T but a ``:`` is removed if its the second character.
+                         Otherwise, %T but with a single leading ``/`` removed.
+ ======================= ==============
 
 Other substitutions are provided that are variations on this base set and
 further substitution patterns can be defined by each test module. See the
 modules :ref:`local-configuration-files`.
+
+By default, substitutions are expanded exactly once, so that if e.g. a
+substitution ``%build`` is defined in top of another substitution ``%cxx``,
+``%build`` will expand to ``%cxx`` textually, not to what ``%cxx`` expands to.
+However, if the ``recursiveExpansionLimit`` property of the ``TestingConfig``
+is set to a non-negative integer, substitutions will be expanded recursively
+until that limit is reached. It is an error if the limit is reached and
+expanding substitutions again would yield a different result.
 
 More detailed information on substitutions can be found in the
 :doc:`../TestingGuide`.

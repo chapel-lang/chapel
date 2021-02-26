@@ -1,9 +1,8 @@
 //=- AArch64SchedThunderX2T99.td - Cavium ThunderX T99 ---*- tablegen -*-=//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -26,8 +25,8 @@ def ThunderX2T99Model : SchedMachineModel {
   let PostRAScheduler       =   1; // Using PostRA sched.
   let CompleteModel         =   1;
 
-  list<Predicate> UnsupportedFeatures = [HasSVE];
-
+  list<Predicate> UnsupportedFeatures = !listconcat(SVEUnsupported.F,
+                                                    PAUnsupported.F);
   // FIXME: Remove when all errors have been fixed.
   let FullInstRWOverlapCheck = 0;
 }
@@ -1483,7 +1482,7 @@ def : InstRW<[THX2T99Write_5Cyc_F01], (instregex "^RBITv")>;
 // ASIMD bitwise insert, D-form
 // ASIMD bitwise insert, Q-form
 def : InstRW<[THX2T99Write_5Cyc_F01],
-            (instregex "^BIFv", "^BITv", "^BSLv")>;
+            (instregex "^BIFv", "^BITv", "^BSLv", "^BSPv")>;
 
 // ASIMD count, D-form
 // ASIMD count, Q-form
@@ -1517,25 +1516,6 @@ def : InstRW<[THX2T99Write_5Cyc_F01], (instregex "^MOVIv")>;
 
 // ASIMD move, FP immed
 def : InstRW<[THX2T99Write_5Cyc_F01], (instregex "^FMOVv")>;
-
-// ASIMD table lookup, D-form
-def : InstRW<[THX2T99Write_7Cyc_F01], (instregex "^TB[LX]v8i8One")>;
-def : InstRW<[THX2T99Write_7Cyc_F01], (instregex "^TB[LX]v8i8Two")>;
-def : InstRW<[THX2T99Write_7Cyc_F01], (instregex "^TB[LX]v8i8Three")>;
-def : InstRW<[THX2T99Write_7Cyc_F01], (instregex "^TB[LX]v8i8Four")>;
-
-// ASIMD table lookup, Q-form
-def : InstRW<[THX2T99Write_7Cyc_F01], (instregex "^TB[LX]v16i8One")>;
-def : InstRW<[THX2T99Write_7Cyc_F01], (instregex "^TB[LX]v16i8Two")>;
-def : InstRW<[THX2T99Write_7Cyc_F01], (instregex "^TB[LX]v16i8Three")>;
-def : InstRW<[THX2T99Write_7Cyc_F01], (instregex "^TB[LX]v16i8Four")>;
-
-// ASIMD transpose
-def : InstRW<[THX2T99Write_5Cyc_F01], (instregex "^TRN1", "^TRN2")>;
-
-// ASIMD unzip/zip
-def : InstRW<[THX2T99Write_5Cyc_F01],
-            (instregex "^UZP1", "^UZP2", "^ZIP1", "^ZIP2")>;
 
 // ASIMD reciprocal estimate, D-form
 // ASIMD reciprocal estimate, Q-form

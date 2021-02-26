@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -60,7 +60,7 @@ public:
   FnSymbol* follower;
 
   // Search for a standalone/leader gave a non-iterator/forwarder.
-  bool noniterSA, noniterL;
+  FnSymbol *noniterSA, *noniterL;
 
   IteratorGroup();
 };
@@ -86,4 +86,16 @@ void cleanupPrimIRFieldValByFormal();
 
 void lowerIterator(FnSymbol* fn);
 
+CallExpr *buildFastFollowerCheckCallForZipOrProm(std::vector<SymExpr *> exprs,
+                                                 const char *fnName,
+                                                 const char *boolOp,
+                                                 Symbol *lead);
+CallExpr *generateFastFollowersForZip(CallExpr *iterCall,
+                                      Symbol *leadIdxCopy,
+                                      SymbolMap *map = NULL,
+                                      bool getIterator = true);
+CallExpr *generateRegularFollowersForZip(CallExpr *iterCall,
+                                         Symbol *leadIdxCopy,
+                                         SymbolMap *map = NULL,
+                                         bool getIterator = true);
 #endif

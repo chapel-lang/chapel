@@ -1,1 +1,2 @@
+$CHPL_HOME/modules/standard/IO.chpl:: In function '_read_one_internal':
 $CHPL_HOME/modules/standard/IO.chpl:: error: sync variables cannot currently be read - use writeEF/writeFF instead

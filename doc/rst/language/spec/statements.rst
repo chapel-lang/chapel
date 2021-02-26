@@ -1,3 +1,5 @@
+.. default-domain:: chpl
+
 .. _Chapter-Statements:
 
 Statements
@@ -27,6 +29,7 @@ Chapel provides the following statements:
      continue-statement
      param-for-statement
      use-statement
+     import-statement
      defer-statement
      empty-statement
      return-statement
@@ -306,11 +309,11 @@ The syntax for a conditional statement is given by
 .. code-block:: syntax
 
    conditional-statement:
-     `if' expression `then' statement else-part[OPT]
-     `if' expression block-statement else-part[OPT]
+     'if' expression 'then' statement else-part[OPT]
+     'if' expression block-statement else-part[OPT]
 
    else-part:
-     `else' statement
+     'else' statement
 
 A conditional statement evaluates an expression of bool type. If the
 expression evaluates to true, the first statement in the conditional
@@ -383,17 +386,17 @@ statement. The syntax is given by:
 .. code-block:: syntax
 
    select-statement:
-     `select' expression { when-statements }
+     'select' expression { when-statements }
 
    when-statements:
      when-statement
      when-statement when-statements
 
    when-statement:
-     `when' expression-list `do' statement
-     `when' expression-list block-statement
-     `otherwise' statement
-     `otherwise' `do' statement
+     'when' expression-list 'do' statement
+     'when' expression-list block-statement
+     'otherwise' statement
+     'otherwise' 'do' statement
 
    expression-list:
      expression
@@ -427,15 +430,15 @@ while-do loop is given by:
 .. code-block:: syntax
 
    while-do-statement:
-     `while' expression `do' statement
-     `while' expression block-statement
+     'while' expression 'do' statement
+     'while' expression block-statement
 
 The syntax of the do-while loop is given by: 
 
 .. code-block:: syntax
 
    do-while-statement:
-     `do' statement `while' expression ;
+     'do' statement 'while' expression ;
 
 In both variants, the expression evaluates to a value of type ``bool``
 which determines when the loop terminates and control continues with the
@@ -542,10 +545,10 @@ loop is given by:
 .. code-block:: syntax
 
    for-statement:
-     `for' index-var-declaration `in' iteratable-expression `do' statement
-     `for' index-var-declaration `in' iteratable-expression block-statement
-     `for' iteratable-expression `do' statement
-     `for' iteratable-expression block-statement
+     'for' index-var-declaration 'in' iteratable-expression 'do' statement
+     'for' index-var-declaration 'in' iteratable-expression block-statement
+     'for' iteratable-expression 'do' statement
+     'for' iteratable-expression block-statement
 
    index-var-declaration:
      identifier
@@ -553,7 +556,7 @@ loop is given by:
 
    iteratable-expression:
      expression
-     `zip' ( expression-list )
+     'zip' ( expression-list )
 
 The ``index-var-declaration`` declares new variables for the scope of
 the loop. It may specify a new identifier or may specify multiple
@@ -614,12 +617,12 @@ parameter for loop statement is given by:
 .. code-block:: syntax
 
    param-for-statement:
-     `for' `param' identifier `in' param-iteratable-expression `do' statement
-     `for' `param' identifier `in' param-iteratable-expression block-statement
+     'for' 'param' identifier 'in' param-iteratable-expression 'do' statement
+     'for' 'param' identifier 'in' param-iteratable-expression block-statement
 
    param-iteratable-expression:
      range-literal
-     range-literal `by' integer-literal
+     range-literal 'by' integer-literal
 
 Parameter for loops are restricted to iteration over range literals with
 an optional by expression where the bounds and stride must be
@@ -653,13 +656,13 @@ The syntax for label, break, and continue statements is given by:
 .. code-block:: syntax
 
    break-statement:
-     `break' identifier[OPT] ;
+     'break' identifier[OPT] ;
 
    continue-statement:
-     `continue' identifier[OPT] ;
+     'continue' identifier[OPT] ;
 
    label-statement:
-     `label' identifier statement
+     'label' identifier statement
 
 A ``break`` statement cannot be used to exit a parallel loop
 :ref:`Forall`.
@@ -671,13 +674,16 @@ A ``break`` statement cannot be used to exit a parallel loop
 
 ..
 
-   *Future*.
+.. note::
 
-   We expect to support a *eureka* concept which would enable one or
-   more tasks to stop the execution of all current and future iterations
-   of the loop.
+  *Future:*
+    
+    We expect to support a *eureka* concept which would enable one or
+    more tasks to stop the execution of all current and future iterations
+    of the loop.
 
-   *Example*.
+
+*Example*.
 
    In the following code, the index of the first element in each row of
    ``A`` that is equal to ``findVal`` is printed. Once a match is found,
@@ -706,226 +712,29 @@ qualified name. When using a module, the statement also ensures that the
 module symbol itself is visible within the current scope (top-level
 modules are not otherwise visible without a ``use``).
 
-The syntax of the use statement is given by:
-
-
-
-.. code-block:: syntax
-
-   use-statement:
-     privacy-specifier[OPT] `use' module-or-enum-name-list ;
-
-   module-or-enum-name-list:
-     module-or-enum-name limitation-clause[OPT]
-     module-or-enum-name , module-or-enum-name-list
-
-   module-or-enum-name:
-     rename-base
-     identifier . module-or-enum-name
-
-   limitation-clause:
-     `except' exclude-list
-     `only' rename-list[OPT]
-
-   exclude-list:
-     identifier-list
-     $ * $
-
-   rename-list:
-     rename-base
-     rename-base , rename-list
-
-   rename-base:
-     identifier `as' identifier
-     identifier
-
-For example, the program
-
-   *Example (use1.chpl)*.
-
-   
-
-   .. code-block:: chapel
-
-      module M1 {
-        proc foo() {
-          writeln("In M1's foo.");
-        }
-      }
-
-      module M2 {
-        use M1;
-        proc main() {
-          writeln("In M2's main.");
-          M1.foo();
-        }
-      }
-
-   prints out 
-
-   .. code-block:: printoutput
-
-      In M2's main.
-      In M1's foo.
-
-This program is equivalent to:
-
-   *Example (use2.chpl)*.
-
-   
-
-   .. code-block:: chapel
-
-      module M1 {
-        proc foo() {
-          writeln("In M1's foo.");
-        }
-      }
-
-      module M2 {
-        proc main() {
-          use M1;
-
-          writeln("In M2's main.");
-          foo();
-        }
-      }
-
-   which also prints out 
-
-   .. code-block:: printoutput
-
-      In M2's main.
-      In M1's foo.
-
-The ``module-or-enum-name`` in a ``use`` statement must begin with one of
-the following:
-
- * a top-level module name
- * a submodule of the current module
- * a module name currently in scope due to another ``use`` statement
- * any number of ``super`` components to indicate a number of parents of
-   the current module (e.g. ``super.super.SomeModule``)
- * ``this`` to indicate the requested module is a submodule of the
-   current module
-
-The names that are imported by a use statement are inserted in to a new
-scope that immediately encloses the scope within which the statement
-appears. This implies that the position of the use statement within a
-scope has no effect on its behavior. If a scope includes multiple use
-statements then the imported names are inserted in to a common enclosing
-scope.
-
-An error is signaled if multiple enumeration constants or public
-module-level symbols would be inserted into this enclosing scope with
-the same name, and that name is referenced by other statements in the
-same scope as the use.
-
-A module or enum being used may optionally be given a new name using the ``as``
-keyword.  This new name will be usable from the scope of the use in place of the
-old name.  This new name does not affect uses of that module from other
-contexts.
-
-Use statements may be explicitly delared ``public`` or ``private``.
-By default, uses are ``private``.  Making a use ``public`` causes its
-symbols to be transitively visible: if module A uses module B, and
-module B contains a public use of a module or enumerated type C, then
-C’s public symbols will also be visible to A unless they are shadowed
-by symbols of the same name in B.  Conversely, if B's use of C is
-``private`` then A will not be able to see C's symbols due to that
-``use``.
-
-This notion of transitivity extends to the case in which a scope
-imports symbols from multiple modules or constants from multiple
-enumeration types. For example if a module A uses modules B1, B2, B3
-and modules B1, B2, B3 publicly use modules C1, C2, C3 respectively,
-then all of the public symbols in B1, B2, B3 have the potential to
-shadow the public symbols of C1, C2, and C3. However an error is
-signaled if C1, C2, C3 have conflicting public module-level
-definitions of the same symbol.
-
-An optional ``limitation-clause`` may be provided to limit the symbols
-made available by a given use statement. If an ``except`` list is
-provided, then all the visible but unlisted symbols in the module or
-enumerated type will be made available without prefix. If an ``only``
-list is provided, then just the listed visible symbols in the module or
-enumerated type will be made available without prefix. All visible
-symbols not provided via these limited use statements are still
-accessible by prefixing the access with the name of the module or
-enumerated type. It is an error to provide a name in a
-``limitation-clause`` that does not exist or is not visible in the
-respective module or enumerated type.
-
-If a type is specified in the ``limitation-clause``, then the type’s
-fields and methods are treated similarly to the type name. These fields
-and methods cannot be specified in a ``limitation-clause`` on their own.
-
-If an ``only`` list is left empty or ``except`` is followed by :math:`*`
-then no symbols are made available to the scope without prefix. However,
-any methods or fields defined within a module used in this way will
-still be accessible on instances of the type. For example:
-
-   *Example (limited-access.chpl)*.
-
-   
-
-   .. code-block:: chapel
-
-      module M1 {
-        record A {
-          var x = 1;
-
-          proc foo() {
-            writeln("In A.foo()");
-          }
-        }
-      }
-
-      module M2 {
-        proc main() {
-          use M1 only;
-
-          var a = new M1.A(3); // Only accessible via the module prefix
-          writeln(a.x); // Accessible because we have a record instance
-          a.foo(); // Ditto
-        }
-      }
-
-   will print out 
-
-   .. code-block:: printoutput
-
-      3
-      In A.foo()
-
-Within an ``only`` list, a visible symbol from that module may
-optionally be given a new name using the ``as`` keyword. This new name
-will be usable from the scope of the use in place of the old name unless
-the old name is additionally specified in the ``only`` list. If a use
-which renames a symbol is present at module scope, uses of that module
-will also be able to reference that symbol using the new name instead of
-the old name. Renaming does not affect accesses to that symbol via the
-source module’s or enumerated type’s prefix, nor does it affect uses of
-that module or enumerated type from other contexts. It is an error to
-attempt to rename a symbol that does not exist or is not visible in the
-respective module or enumerated type, or to rename a symbol to a name
-that is already present in the same ``only`` list. It is, however,
-perfectly acceptable to rename a symbol to a name present in the
-respective module or enumerated type which was not specified via that
-``only`` list.
-
-If a use statement mentions multiple modules or enumerated types or a
-mix of these symbols, only the last module or enumerated type can have a
-``limitation-clause``. Limitation clauses are applied transitively as
-well - in the first example, if module A’s use of module B contains an
-``except`` or ``only`` list, that list will also limit which of C’s
-symbols are visible to A.
-
-For more information on enumerated types, please
-see :ref:`Enumerated_Types`. For use statement rules which are
-only applicable to modules, please see :ref:`Using_Modules`.
-For more information on modules in general, please
+Use statements can also restrict or rename the set of module symbols that are
+available within the scope. For further information about ``use`` statements,
+see :ref:`Using_Modules`.  For more information on enumerated types, please
+see :ref:`Enumerated_Types`.  For more information on modules in general, please
 see :ref:`Chapter-Modules`.
+
+.. _The_Import_Statement:
+
+The Import Statement
+--------------------
+
+The ``import`` statement provides one of the two primary ways to access a
+module's symbols from outside of the module, the other being the ``use``
+statement.  Import statements make either the module's name or certain symbols
+within it available for reference within a given scope.  For top-level modules,
+an ``import`` or ``use`` statement is required before referring to the module's
+name or the symbols it contains within a given lexical scope.
+
+Import statements can also rename the set of symbols that they make available
+within the scope.  For further information about ``import`` statements, see
+:ref:`Importing_Modules`.
+
+For more information on modules in general, please see :ref:`Chapter-Modules`.
 
 .. _The_Defer_Statement:
 
@@ -938,18 +747,25 @@ matter how the block is exited.
 
 The syntax is:
 
-
-
 .. code-block:: syntax
 
    defer-statement:
-     `defer' statement
+     'defer' statement
 
-At a given place where control flow exits a block, the in-scope
-``defer`` statements and the local variables will be handled in reverse
-declaration order. Handling a ``defer`` statement consists of executing
-the contained clean-up action. Handling a local variable consists of
-running its deinitializer if it is of record type.
+At each place where control flow exits a block, the compiler will add
+cleanup actions for the in-scope ``defer`` statements that have executed and
+for the local variables that have been initialized in that block.
+
+The cleanup action for a ``defer`` statement is to run its body. The
+cleanup action for a variable is to run its deinitializer. See
+:ref:`Variable_Lifetimes`.
+
+When a block contains multiple defer statements, their cleanup actions
+will be run in reverse declaration order. Additionally, note that cleanup
+actions for defer statements may be interleaved among cleanup actions for
+variables. To understand the interleaving, imagine that the defer
+statement is declaring and initializing a local variable with a
+deinitializer that runs the body of the defer statement.
 
 When an iterator contains a ``defer`` statement at the top level, the
 associated clean-up action will be executed when the loop running the
@@ -1039,7 +855,7 @@ is handled when exiting the block in which it is contained:
       defer action: deleting {x = 1}
       after inner block
 
-Lastly, this example shows that when ``defer`` is used in a loop, the
+The next example shows that when ``defer`` is used in a loop, the
 action will be executed for every loop iteration, whether or not loop
 body is exited early.
 
@@ -1086,6 +902,46 @@ body is exited early.
       created {x = 2}
       {x = 2}
       defer action: deleting {x = 2}
+
+Lastly, this example shows that `defer` statements that have not executed
+have no effect. Only a `defer` statement that has executed will have its
+cleanup action run.
+
+   *Example (defer4.chpl)*.
+
+   
+
+   .. code-block:: chapel
+
+      proc deferControl(condition: bool) {
+        if condition {
+          defer {
+            writeln("Inside if");
+          }
+        }
+        return;
+        defer {
+          writeln("After return");
+        }
+      }
+      writeln("Condition: false");
+      deferControl(false);
+      writeln("Condition: true");
+      deferControl(true);
+
+   produces the output 
+
+   .. BLOCK-test-chapeloutput
+
+      Condition: false
+      Condition: true
+      Inside if
+
+   .. code-block:: bash
+
+      Condition: false
+      Condition: true
+      Inside if
 
 .. _The_Empty_Statement:
 

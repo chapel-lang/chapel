@@ -1,4 +1,4 @@
-use Memory;
+use Memory.Diagnostics;
 
 class C1 {
   var x: int;

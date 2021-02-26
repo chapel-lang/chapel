@@ -1,3 +1,4 @@
 beer-promoted-infer.chpl:53: In function 'describeBottles':
 beer-promoted-infer.chpl:54: error: type '[domain(1,int(64),false)] int(64)' used in if or while condition
-beer-promoted-infer.chpl:46: Function 'describeBottles' instantiated as: describeBottles(bottleNum: [domain(1,int(64),false)] int(64))
+  beer-promoted-infer.chpl:46: called as describeBottles(bottleNum: [domain(1,int(64),false)] int(64), startOfVerse: bool) from function 'computeLyric'
+  beer-promoted-infer.chpl:32: called as computeLyric(verseNum: domain(1,int(64),false))

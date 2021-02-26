@@ -188,7 +188,7 @@ proc BuildTree(pp : []WeightedParticle3D, scr : []WeightedParticle3D, id : int) 
   dx = pmax - pmin; 
   var splitDim = 1;
   for idim in Ddim {
-    if (dx(idim-1) > dx(splitDim)) then splitDim=idim;
+    if (dx(idim-1) > dx(splitDim-1)) then splitDim=idim;
   }
 
   // Split

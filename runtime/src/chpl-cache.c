@@ -1,16 +1,16 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -279,31 +279,34 @@ use.
 #include "chpl-atomics.h"
 #include "chpl-thread-local-storage.h" // CHPL_TLS_DECL etc
 #include "chpl-cache.h"
+#include "chpl-comm-strd-xfer.h"
 #include "chpl-linefile-support.h"
 #include "sys.h" // sys_page_size()
 #include "chpl-comm-compiler-macros.h"
 #include "chpl-comm-no-warning-macros.h" // No warnings for chpl_comm_get etc.
+
+
 #include <string.h> // memcpy, memset, etc.
 #include <assert.h>
 
 
 #ifdef HAS_CHPL_CACHE_FNS
 
-// This is now just set at compile time.
-//int CHPL_CACHE_REMOTE = 1;
+// When testing changes to the cache for correctness, it is a good practice
+// to run tests with these two settings enabled.
+//
+// VERIFY will cause cache structure validiation to be run after each
+// operation.
+//
+// EXTRA_YIELDS will call chpl_task_yield after comm layer calls
+// that could yield.
 #define VERIFY 0
-
-// We try to auto-size the cache so that we
-// can have CACHE_PAGES_PER_NODE cache pages per locale, but we
-// do so within the below bounds.
-#define CACHE_PAGES_PER_NODE 4
-#define MIN_CACHE_DATA_SIZE (1024*1024)
-#define MAX_CACHE_DATA_SIZE (256*1024*1024)
+#define EXTRA_YIELDS 0
 
 // How many pending operations can we have at once?
 #define MAX_PENDING 32
 
-// CACHEPAGE_BITS 
+// CACHEPAGE_BITS
 // Controls the cache page size - the cache manages items of this many bytes
 // but also includes facilities for partial pages (valid and dirty bits).
 //
@@ -315,7 +318,7 @@ use.
 #define CACHEPAGE_SIZE (1 << CACHEPAGE_BITS)
 #define CACHEPAGE_MASK (CACHEPAGE_SIZE-1)
 
-// CACHELINE_BITS 
+// CACHELINE_BITS
 // Controls the cache line size - that is, the minimum number of bytes
 // that are fetched for any 'get' operation.
 //
@@ -326,9 +329,13 @@ use.
 #define CACHELINE_MASK (CACHELINE_SIZE-1)
 
 // What type can store the number of cache lines in a cache page?
-typedef int8_t line_per_page_t; 
+typedef int8_t line_per_page_t;
 // What type for a number of lines to read ahead?
 typedef int16_t readahead_distance_t;
+
+// used to compress top_index_list / bottom_index arrays
+// the entry pointer is entry_base + idx*sizeof(entry type)
+typedef int16_t entry_id_t;
 
 // When prefetching, what is the maximum number of pages
 // we are willing to prefetch? This is also the maximum
@@ -336,14 +343,24 @@ typedef int16_t readahead_distance_t;
 #define MAX_PAGES_PER_PREFETCH 2
 
 // Should we enable sequential readahead?
-// For sequential access If we're reading  
+// For sequential access If we're reading
 #define ENABLE_READAHEAD 1
 #define ENABLE_READAHEAD_TRIGGER_WITHIN_PAGE 1
+
 #define ENABLE_READAHEAD_TRIGGER_SEQUENTIAL 0
+
 #define MAX_SEQUENTIAL_READAHEAD_BYTES (MAX_PAGES_PER_PREFETCH*CACHEPAGE_SIZE)
 
+// These defines can enable different kinds of debugging output.
+
 //#define TIME
+
+//#define TRACE_YIELDS
+//#define TRACE_READAHEAD
+//#define TRACE_NB
 //#define TRACE
+
+//#define TRACE_FENCES
 //#define DEBUG
 //#define DUMP
 //#define INFO
@@ -370,12 +387,36 @@ static long time_duration(const struct timespec* t1, const struct timespec* t2)
 #define TIME_PRINT(x) do {} while(0);
 #endif
 
+#ifdef TRACE_YIELDS
+#define TRACE_YIELD_PRINT(x) printf x
+#else
+#define TRACE_YIELD_PRINT(x) do {} while(0)
+#endif
+
+#ifdef TRACE_READAHEAD
+#define TRACE_READAHEAD_PRINT(x) printf x
+#else
+#define TRACE_READAHEAD_PRINT(x) do {} while(0)
+#endif
+
+#ifdef TRACE_NB
+#define TRACE_NB_PRINT(x) printf x
+#else
+#define TRACE_NB_PRINT(x) do {} while(0)
+#endif
 
 #ifdef TRACE
 #define TRACE_PRINT(x) printf x
 #else
 #define TRACE_PRINT(x) do {} while(0)
 #endif
+
+#ifdef TRACE_FENCES
+#define TRACE_FENCE_PRINT(x) printf x
+#else
+#define TRACE_FENCE_PRINT(x) do {} while(0)
+#endif
+
 
 #ifdef DEBUG
 #define DEBUG_PRINT(x) printf x
@@ -390,8 +431,27 @@ static long time_duration(const struct timespec* t1, const struct timespec* t2)
 #endif
 
 
+// custom assert with stack trace
+#if 0
+#undef assert
 
-// ----------  SUPPORT FUNCTIONS 
+#ifdef NDEBUG
+#define assert(ignore)((void) 0)
+#else
+#define assert(x)                                                 \
+  do {                                                            \
+    if (!x) {                                                     \
+      char* stack = NULL;                                         \
+      stack = chpl_stack_unwind_to_string('\n');                  \
+      if (stack != NULL) {                                        \
+        fprintf(stderr, "assertion failed. Trace: %s", stack);    \
+      }                                                           \
+      __assert_fail(x, __FILE__, __LINE__, __func__);             \
+  } while(0)
+#endif
+#endif
+
+// ----------  SUPPORT FUNCTIONS
 #include "chpl-cache-support.c"
 
 
@@ -403,42 +463,8 @@ struct rdcache_s;
 
 //////////////// REMOTE DATA CACHE IMPLEMENTATION ////////////////////
 
-/*     (big endian diagram)
-
-   |            64-bit address ^ (node_number << 32)                    |
-   +---------------------------------------------------------------------+
-   |    17 bits        | 10 bits  |     17 bits       | 10 bits  |10 bits|
-   +------------------------------+------------------------------+-------+
-         top half                 |      bottom half             |
-
-   The structure defined in this file is a two-level hashtable representing
-   memory, designed to be indexed by 64-bit addresses.  Given a 64-bit
-   address, use the 10 bits from the "top half" of the address to figure
-   out which top-level bucket to examine.  Each bucket contains a linked
-   list, each entry of which is a top_index_entry.  The full 27 bits of the
-   "top half" are matched with the entries in the linked list to find the
-   correct one.
-
-   Once the appropriate top_index_entry has been located, follow its
-   bottom_index element to another hash table organized in the same way.
-   Searching the linked list in the appropriate bucket in the bottom_index
-   array will eventually lead to a bottom_index_entry which contains a 64
-   byte cacheline, and we use the low-order 6 bits to index into this
-   cacheline.  There is a bitmask tracking the validity of each byte in
-   the cacheline.
-   
-   Attempts to read a byte from the cache which is not valid results in
-   failure.
-*/
-
-#define TOP_BITS 10
-#define BOTTOM_BITS 10
-#define OTHER_BITS ((64-TOP_BITS-BOTTOM_BITS-CACHEPAGE_BITS)/2)
-#define HALF_BITS (TOP_BITS+OTHER_BITS)
-
-#define TOP_SIZE (1 << TOP_BITS)
-#define BOTTOM_SIZE (1 << BOTTOM_BITS)
-#define HALF_SIZE (1L << HALF_BITS)
+#define TABLE_BITS 9
+#define TABLE_SIZE (1 << TABLE_BITS)
 
 // How many uint64_t words do we need to create a bitmask for CACHEPAGE_SIZE?
 // Divide # bytes in cache by 64, rounding up.
@@ -451,12 +477,37 @@ struct rdcache_s;
 // ie, a mask recording a bit per cache line?
 #define CACHE_LINES_PER_PAGE_BITMASK_WORDS (((CACHEPAGE_SIZE/CACHELINE_SIZE)+63)/64)
 
-struct cache_entry_base_s {
-  uint32_t index_bits;
+// Storing a remote address (node number is separate).
+typedef uintptr_t raddr_t;
+
+// This type contains the needed entry information to store in a lookup table.
+// 16 bytes.
+struct cache_table_entry_s {
+  raddr_t raddr;   // always aligned to CACHEPAGE_SIZE
   c_nodeid_t node;
-  struct cache_entry_base_s* next; // hashtable collision chaining/freelist.
+  uint32_t offset; // Add this number of bytes to cache base pointer
+                   // to get pointer to struct cache_entry_s.
+                   // Last bit stolen to indicate if more entries in list.
+                   // 0 means no entry here.
 };
 
+// Similar to cache_table_entry_s but this type implements linked list
+// chaining among entries in the case of too many collisions.
+struct cache_list_entry_s {
+  raddr_t raddr;   // always aligned to CACHEPAGE_SIZE
+  c_nodeid_t node;
+  struct cache_list_entry_s* next;
+};
+
+// Table entry. Intended to be 64 bytes.
+#define TABLE_ENTRIES_PER_SLOT 4
+struct cache_table_slot_s {
+  struct cache_table_entry_s m[TABLE_ENTRIES_PER_SLOT];
+};
+
+// List for storing free pages. ~16 bytes/page
+// TODO: could convert many of the next sections to use cache base-relative
+// addressing and as a result save about 1/2 the space.
 struct page_list_s {
   struct page_list_s* next;
   unsigned char* page;
@@ -464,7 +515,7 @@ struct page_list_s {
 
 // this data structure manages dirty pages. It is allocated separately
 // from cache entries, so the majority of pages (which are clean) don't
-// have the big bitmap.
+// have the big bitmap. ~150 bytes/dirty entry.
 struct dirty_entry_s {
   // linked list of currently dirty pages
   struct dirty_entry_s* next;
@@ -480,8 +531,6 @@ struct dirty_entry_s {
 #define QUEUE_AOUT 2
 #define QUEUE_AM 3
 
-// Storing a remote address (node number is separate).
-typedef uintptr_t raddr_t;
 static inline
 raddr_t raddr_max(raddr_t a, raddr_t b)
 {
@@ -493,12 +542,20 @@ raddr_t raddr_min(raddr_t a, raddr_t b)
     return (a<b)?a:b;
 }
 
-// used to be bottom_index_entry.
+// This entry stores the main information for the cache.
+// ~88 bytes. TODO: can we shrink it to 64 bytes?
 struct cache_entry_s {
-  struct cache_entry_base_s base; // contains what we hashed to...
-  raddr_t raddr; // cached data is for (base.node,raddr), aligned to CACHE_PAGESIZE
+  struct cache_list_entry_s base; // contains raddr, node, next offset
   // Queue information. This entry could be in Ain, Aout, or Am queues.
   int queue;
+
+  // Since e.g. with ugni, a comm event can cause the implementation
+  // to switch tasks, only allow one task at a time to manipulate
+  // an entry. This does not need to be set if the entry is used
+  // in code that cannot yield.
+  // Set it to the task_local pointer for the task reserving the entry.
+  chpl_cache_taskPrvData_t* entryReservedByTask;
+
   // Readahead information.
   readahead_distance_t readahead_skip;
   readahead_distance_t readahead_len; // == 0 if this page doesn't trigger readahead.
@@ -523,9 +580,6 @@ struct cache_entry_s {
   // If we try to read data from this cache entry, we need to make sure that
   // we have completed all pending prefetches before the lines are considered valid.
   cache_seqn_t max_prefetch_sequence_number;
-  // If there are dirty bits in this page, what sequence number did
-  // we promise to use in order to complete them?
-  //cache_seqn_t dirty_sequence_number;
 };
 
 // Note skip/len are in line numbers, NOT byte offsets!
@@ -549,31 +603,15 @@ static int set_valid_lines(uint64_t* valid, uintptr_t skip, uintptr_t len)
 static void unset_valid_lines(uint64_t* valid, uintptr_t skip, uintptr_t len)
 {
   uint64_t myvalid[CACHE_LINES_PER_PAGE_BITMASK_WORDS];
-  unset_valids_for_skip_len(valid, myvalid, skip, len, CACHE_LINES_PER_PAGE_BITMASK_WORDS);  
+  unset_valids_for_skip_len(valid, myvalid, skip, len, CACHE_LINES_PER_PAGE_BITMASK_WORDS);
 }
-/*
-static int count_valid_lines_before(uint64_t* valid, uintptr_t at)
-{
-  return count_valid_before(valid, at, CACHE_LINES_PER_PAGE_BITMASK_WORDS);
-}
-static int count_valid_lines_at_after(uint64_t* valid, uintptr_t at)
-{
-  return count_valid_at_after(valid, at, CACHE_LINES_PER_PAGE_BITMASK_WORDS);
-}
-*/
-
-struct top_entry_s {
-  struct cache_entry_base_s base; // contains what we hashed to...
-  size_t num_entries;
-  struct cache_entry_s* bottom_index[BOTTOM_SIZE];
-};
 
 struct rdcache_s {
   // A 2Q cache.
   // See "2Q: A Low Overhead High Performance Buffer Management
   //      Replacement Algorithm"
   //    by Theodore Johnson and Dennis Sasha, Proc 20th VLDB conference, 1994.
-  
+
   // The next request number -- there is currently no request or cache
   // element with this sequence number.
   cache_seqn_t next_request_number;
@@ -584,6 +622,10 @@ struct rdcache_s {
   // to enable sequential readahead.
   c_nodeid_t last_cache_miss_read_node;
   raddr_t last_cache_miss_read_addr;
+
+  // Used with the lookup table. This is the number of bits
+  // for the number of table slots.
+  int table_bits;
 
   // The variable names Ain Aout and Am come from the 2Q paper
 
@@ -612,23 +654,22 @@ struct rdcache_s {
   //
   // Ain and Aout stores entries and pending operations and newly cached data
   // and looks like this:
-  //  <--                  <--                   <--                       <-- 
+  //  <--                  <--                   <--                       <--
   //  tail              complete                 start                     head
   //  "first entry"                                                "last entry"
   //  | completed requests | in-progress requests | write/prefetch requests |
   //                                                not yet started
   //
-  
+
   int max_pages;
   int max_entries;
-  int max_top_nodes;
 
   // Free pages
   struct page_list_s* free_pages_head; // singly-linked list
   // Free page list entries (all page pointers should be NULL)
   struct page_list_s* free_page_list_entries_head; // singly-linked list
   // Free nodes
-  struct cache_entry_base_s* free_entries_head; // singly-linked list with base.next
+  struct cache_list_entry_s* free_entries_head; // singly-linked list
 
   // Ain, a FIFO queue of entries not seen before
   unsigned int ain_max; // maximum; corresponds to Kin
@@ -662,27 +703,69 @@ struct rdcache_s {
   chpl_comm_nb_handle_t *pending;
   cache_seqn_t *pending_sequence_numbers;
 
-  // space for mid-level entries
-  int max_top_entries;
-  struct cache_entry_base_s* free_top_nodes_head; // a linked list.
-
-  // The entry into the 'pointer tree' hashtable structure.
-  struct top_entry_s* top_index_list[TOP_SIZE];
+  // Lookup table
+  __attribute__ ((aligned (64)))
+  struct cache_table_slot_s table[];
 };
 
-static void validate_cache(struct rdcache_s* tree);
+static void validate_cache(struct rdcache_s* tree,
+                           chpl_cache_taskPrvData_t* task_local);
 
+static inline
+uint32_t clear_offset_stolen_bits(uint32_t offset_with_bits) {
+  uint32_t no_last_bit;
+  no_last_bit = 1;
+  no_last_bit = ~no_last_bit;
+  return offset_with_bits & no_last_bit;
+}
 
+static inline
+struct cache_entry_s* offset_to_entry(struct rdcache_s* tree,
+                                      uint32_t offset_with_bits) {
+  uint32_t offset;
+  unsigned char* base;
+  unsigned char* ptr;
+  struct cache_entry_s* ret;
+
+  offset = clear_offset_stolen_bits(offset_with_bits);
+
+  base = (unsigned char*) tree;
+  ptr = base + offset;
+  ret = (struct cache_entry_s*) ptr;
+
+  return (offset!=0)?ret:NULL;
+}
+
+static inline
+uint32_t entry_to_offset(struct rdcache_s* tree, struct cache_entry_s* entry) {
+  uint32_t offset;
+  unsigned char* base;
+  unsigned char* ptr;
+
+  base = (unsigned char*)tree;
+  ptr = (unsigned char*) entry;
+  offset = ptr - base;
+
+  return (entry!=NULL)?offset:0;
+}
+
+static void check_line_aligned(void* ptr)
+{
+  assert(((intptr_t) ptr) % 64 == 0);
+}
+
+// aka create_cache
 static
 struct rdcache_s* cache_create(void) {
   struct rdcache_s* c;
   int cache_pages;
   int ain_pages, aout_pages;
   int dirty_pages;
-  int top_entries;
   int i;
   int n_entries;
-  struct top_entry_s* top_nodes = NULL;
+  int table_entries;
+  int table_slots;
+  int table_bits;
   struct page_list_s* page_list_entries = NULL;
   struct cache_entry_s *entries = NULL;
   struct dirty_entry_s *dirty_nodes = NULL;
@@ -690,51 +773,71 @@ struct rdcache_s* cache_create(void) {
 
   size_t total_size = 0;
   size_t allocated_size = 0;
-  unsigned int pending_len = MAX_PENDING; 
+  unsigned int pending_len = MAX_PENDING;
   unsigned char* buffer;
   unsigned char* pages;
 
-  cache_pages = CACHE_PAGES_PER_NODE * chpl_numNodes;
-  if( cache_pages < MIN_CACHE_DATA_SIZE/CACHEPAGE_SIZE )
-    cache_pages = MIN_CACHE_DATA_SIZE/CACHEPAGE_SIZE;
-  if( cache_pages > MAX_CACHE_DATA_SIZE/CACHEPAGE_SIZE )
-    cache_pages = MAX_CACHE_DATA_SIZE/CACHEPAGE_SIZE;
+  // This used to grow based on the number of locales, but that
+  // would mean increasing memory usage per node, which isn't acceptable.
+  cache_pages = 1024;
 
   ain_pages = cache_pages / 4; // 2Q: "Kin should be 25% of page slots"
+                               // but here we set it smaller so that
+                               // we can have #top_entries == ain
+                               // and still have limited overhead.
   aout_pages = cache_pages / 2; // 2Q: "Kout should hold identifiers for as
                                 // many pages as would fit in 50% of the
                                 // buffer"
   // How many pages can be dirty at once?
-  dirty_pages = 16 + cache_pages / 64; 
-  // How many mid-level elements can we have in our tree? Note each is 8k in the current config..
-  top_entries = cache_pages / 16;
-  // How many cache entries do we need? 
+  dirty_pages = 16 + cache_pages / 64;
+
+  // How many cache entries do we need?
   n_entries = cache_pages + aout_pages;
 
+  // Lookup table size (note each slot is 4 entries, so this is 4x slots)
+  // table_entries and table_slots must both be a power of 2
+  table_entries = 2 * cache_pages;
+  assert((table_entries & (table_entries - 1)) == 0); // check it's a power of 2
+  table_slots = table_entries * sizeof(struct cache_table_entry_s) /
+                                sizeof(struct cache_table_slot_s);
+  assert((table_slots & (table_slots - 1)) == 0); // check it's a power of 2
+  // compute the number of bits in table_slots so that
+  // table_slots == 1 << table_bits
+  table_bits = 0;
+  while ( (1 << table_bits) < table_slots ) {
+    table_bits++;
+  }
+  assert( (1 << table_bits) == table_slots );
+
   total_size += sizeof(struct rdcache_s);
+  total_size += table_slots * sizeof(struct cache_table_slot_s);
   total_size += sizeof(struct page_list_s) * cache_pages;
   total_size += sizeof(struct cache_entry_s) * n_entries;
   total_size += sizeof(struct dirty_entry_s) * dirty_pages;
   total_size += sizeof(chpl_comm_nb_handle_t) * pending_len;
   total_size += sizeof(cache_seqn_t) * pending_len;
-  total_size += sizeof(struct top_entry_s) * top_entries;
   // We allocate an extra page for alignment
   total_size += CACHEPAGE_SIZE + CACHEPAGE_SIZE * cache_pages;
 
   // Now, allocate it all in one go.
-  buffer = chpl_malloc(total_size);
+  buffer = chpl_memalign(64, total_size);
   allocated_size = total_size;
 
   // Now divvy up the portions...
   total_size = 0;
   c = (struct rdcache_s*) (buffer + total_size);
   total_size += sizeof(struct rdcache_s);
+  total_size += table_slots * sizeof(struct cache_table_slot_s);
+  check_line_aligned(c);
+  check_line_aligned(c->table);
+
   // page list entries
   page_list_entries = (struct page_list_s*) (buffer + total_size);
   total_size += sizeof(struct page_list_s) * cache_pages;
   // entries
   entries = (struct cache_entry_s*) (buffer + total_size);
   total_size += sizeof(struct cache_entry_s) * n_entries;
+  assert( (((uintptr_t) entries) & 1) == 0 ); // problems if stolen bit set
   // dirty entries
   dirty_nodes = (struct dirty_entry_s*) (buffer + total_size);
   total_size += sizeof(struct dirty_entry_s) * dirty_pages;
@@ -744,9 +847,6 @@ struct rdcache_s* cache_create(void) {
   // and the pending sequence numbers
   c->pending_sequence_numbers = (cache_seqn_t*) (buffer + total_size);
   total_size += sizeof(cache_seqn_t) * pending_len;
-  // and the top entries
-  top_nodes = (struct top_entry_s*) (buffer + total_size);
-  total_size += sizeof(struct top_entry_s) * top_entries;
   // Now, page-align the page allocations.
   offset = (((uintptr_t) buffer) + total_size) % CACHEPAGE_SIZE;
   if( offset != 0 ) offset = CACHEPAGE_SIZE - offset;
@@ -769,7 +869,6 @@ struct rdcache_s* cache_create(void) {
 
   c->max_pages = cache_pages;
   c->max_entries = n_entries;
-  c->max_top_nodes = top_entries;
 
   // Set up free_pages as a linked list of page list entries
   // pointing to the free pages.
@@ -788,11 +887,12 @@ struct rdcache_s* cache_create(void) {
   // Set up free_entries as a linked list of free entries.
   c->free_entries_head = &entries[0].base;
   for( i = 0; i < n_entries; i++ ) {
-    struct cache_entry_base_s* next;
+    struct cache_list_entry_s* next;
     if( i + 1 < n_entries ) next = &entries[i+1].base;
     else next = NULL;
     entries[i].base.next = next;
     entries[i].queue = QUEUE_FREE;
+    entries[i].entryReservedByTask = NULL;
   }
 
 
@@ -835,21 +935,17 @@ struct rdcache_s* cache_create(void) {
   // already set c->pending to allocated region
   // already set c->pending_sequence_numbers to allocated region
 
-  c->max_top_entries = top_entries;
-  // already set top_nodes
-  // Set up top_nodes in a linked list on the free list.
-  c->free_top_nodes_head = &top_nodes[0].base;
-  for( i = 0; i < top_entries; i++ ) {
-    struct cache_entry_base_s* next;
-    if( i + 1 < top_entries ) next = &top_nodes[i+1].base;
-    else next = NULL;
-    top_nodes[i].base.next = next;
+  // fill in the lookup table
+  c->table_bits = table_bits;
+  for( i = 0; i < table_slots; i++ ) {
+    for (int j = 0; j < TABLE_ENTRIES_PER_SLOT; j++) {
+      c->table[i].m[j].raddr = 0;
+      c->table[i].m[j].node = 0;
+      c->table[i].m[j].offset = 0;
+    }
   }
 
-  // clear top_index_list.
-  memset(&c->top_index_list[0], 0, sizeof(struct top_entry_s*) * TOP_SIZE);
-
-  if( VERIFY ) validate_cache(c);
+  if( VERIFY ) validate_cache(c, NULL);
 
   return c;
 }
@@ -861,17 +957,19 @@ void cache_destroy(struct rdcache_s *cache) {
 
 
 static
-void cache_entry_print(struct cache_entry_s* entry, const char* prefix, int print_data)
+void cache_entry_print(struct rdcache_s* cache, struct cache_entry_s* entry, const char* prefix, int print_data)
 {
   int i,j,line;
   int valid;
   int valid_line;
   int dirty;
-  printf("%scache entry %p index_bits %x node %i next %p\n",
+  printf("%scache entry id %i node %i next %i\n",
          prefix,
-         entry, entry->base.index_bits, entry->base.node, entry->base.next);
+         (int) entry_to_offset(cache, entry),
+         entry->base.node,
+         (int) entry_to_offset(cache, (struct cache_entry_s*)entry->base.next));
   printf("%sraddr %p queue %i readahead_skip %i readahead_len %i next %p prev %p page %p\n",
-         prefix, (void*) entry->raddr, entry->queue, (int) entry->readahead_skip, (int) entry->readahead_len, entry->next, entry->prev, entry->page);
+         prefix, (void*) entry->base.raddr, entry->queue, (int) entry->readahead_skip, (int) entry->readahead_len, entry->next, entry->prev, entry->page);
   printf("%smin_seq %d max_put_seq %d max_prefetch_seq %d\n", prefix,
          (int) entry->min_sequence_number,
          (int) entry->max_put_sequence_number,
@@ -929,162 +1027,242 @@ void rdcache_print(struct rdcache_s* cache) {
   printf("  completed_request_number %d\n", (int) cache->completed_request_number);
   printf("  Ain:\n");
   for( entry = cache->ain_head; entry; entry = entry->next ) {
-    cache_entry_print(entry, "    ain ", 1);
+    cache_entry_print(cache, entry, "    ain ", 1);
   }
   printf("  Aout:\n");
   for( entry = cache->aout_head; entry; entry = entry->next ) {
-    cache_entry_print(entry, "   aout ", 1);
+    cache_entry_print(cache, entry, "   aout ", 1);
   }
   printf("  Am:\n");
   for( entry = cache->am_lru_head; entry; entry = entry->next ) {
-    cache_entry_print(entry, "     am ", 1);
+    cache_entry_print(cache, entry, "     am ", 1);
   }
 
   fflush(stdout);
 }
 
-static
-void validate_cache(struct rdcache_s* tree);
-
-static
-int get_top_bits(raddr_t raddr, int32_t node) {
-  uint64_t val;
-
-  val = raddr;
-  val = val >> (HALF_BITS + CACHEPAGE_BITS);
-  val ^= (node & 0xaaaaaaaa); // spread node variation between top and bottom
-  val &= (TOP_SIZE-1);
-
-  return (int)val;
+static inline
+uint64_t hash_raddr(raddr_t raddr, int32_t node) {
+  uint64_t val = raddr >> CACHEPAGE_BITS;
+  val ^= node;
+  val ^= raddr >> (27 + CACHEPAGE_BITS);
+  return val;
 }
 
-static
-int get_bottom_bits(raddr_t raddr, int32_t node) {
-  uintptr_t val;
-  val = (raddr >> CACHEPAGE_BITS) & (BOTTOM_SIZE-1);
-  val ^= (node & 0x55555555); // spread node variation between top and bottom
-  return (int) val;
+static inline
+int hash_to_slot(uint64_t hash, unsigned int table_bits) {
+  unsigned int h = hash;
+  unsigned int table_mask = (1 << table_bits) - 1;
+  return (int) (h & table_mask);
+}
+static inline
+int hash_to_entry(uint64_t hash, unsigned int table_bits) {
+  unsigned int h = hash >> table_bits;
+  return (int) (h % TABLE_ENTRIES_PER_SLOT);
 }
 
+// Looks up raddr/node in the table and linked lists.
+// Returns an entry that is found to match.
+// If an entry is found, return it and:
+//  *prev_list will store the previous list entry (from entry.base)
+//  *prev_table will store the top level table entry ultimately used
+// If an entry is not found, return NULL and leave prev_table/prev_list NULL.
 static
-uint32_t get_high_bits(raddr_t raddr) {
-  uint64_t val = raddr;
-  return (val >> (HALF_BITS + CACHEPAGE_BITS)) & (HALF_SIZE-1);
-}
+struct cache_entry_s* lookup_entry_prev(struct rdcache_s* tree,
+                                        const int32_t node, const raddr_t raddr,
+                                        struct cache_table_entry_s** prev_table,
+                                        struct cache_entry_s** prev_list) {
 
-static
-uint32_t get_low_bits(raddr_t raddr) {
-  return (raddr >> CACHEPAGE_BITS) & (HALF_SIZE-1);
-}
+  struct cache_table_slot_s* slot;
+  uint64_t hash;
+  int hash_slot;
+  int hash_entry;
+  struct cache_entry_s* prev[TABLE_ENTRIES_PER_SLOT];
+  struct cache_entry_s* cur[TABLE_ENTRIES_PER_SLOT];
 
-static
-struct cache_entry_base_s* list_search(struct cache_entry_base_s *head, 
-    uint32_t target, int32_t node, struct cache_entry_base_s** prev) {
-  struct cache_entry_base_s *ptr;
-  struct cache_entry_base_s *prv = NULL;
+  hash = hash_raddr(raddr, node);
+  hash_slot = hash_to_slot(hash, tree->table_bits);
+  hash_entry = hash_to_entry(hash, tree->table_bits);
 
-  ptr = head;
-  while(ptr) {
-    if (ptr->index_bits == target && ptr->node == node) {
-      if( prev ) *prev = prv;
-      return ptr;
+  slot = &tree->table[hash_slot];
+
+  // Identify any entries in the main table that match and populate cur.
+  // Search starting at the preferred entry.
+  for (int j = 0; j < TABLE_ENTRIES_PER_SLOT; j++) {
+    struct cache_table_entry_s* table_entry;
+    struct cache_entry_s* cache_entry;
+    int idx = (hash_entry+j) % TABLE_ENTRIES_PER_SLOT;
+    table_entry = &slot->m[idx];
+    cache_entry = offset_to_entry(tree, table_entry->offset);
+    if (raddr == table_entry->raddr &&
+        node == table_entry->node &&
+        0 != table_entry->offset) {
+      *prev_table = table_entry;
+      *prev_list = NULL;
+      return cache_entry;
     }
-
-    prv = ptr;
-    ptr = ptr->next;
+    // Track the lists we need to traverse
+    if ((table_entry->offset & 1) == 1)
+      cur[idx] = cache_entry;
+    else
+      cur[idx] = NULL;
   }
 
-  if( prev ) *prev = NULL;
+  // Advance all the lists by one entry since the raddr/node
+  // in the entry is the same as the one in the lookup table.
+  for (int idx = 0; idx < TABLE_ENTRIES_PER_SLOT; idx++) {
+    prev[idx] = cur[idx];
+    if (cur[idx] != NULL)
+      cur[idx] = (struct cache_entry_s*) cur[idx]->base.next;
+  }
+
+  // Traverse the lists
+  while (1) {
+    int any_lists = 0;
+    // Check each cur list for a match and note if all are NULL.
+    for (int idx = 0; idx < TABLE_ENTRIES_PER_SLOT; idx++) {
+      if (cur[idx] != NULL) {
+        any_lists = 1;
+        if (raddr == cur[idx]->base.raddr && node == cur[idx]->base.node) {
+          *prev_table = &slot->m[idx];
+          *prev_list = prev[idx];
+          return cur[idx];
+        }
+      }
+    }
+
+    // Stop if all cur lists are NULL
+    if (any_lists == 0)
+      break;
+
+    // Advance each list to the next
+    for (int idx = 0; idx < TABLE_ENTRIES_PER_SLOT; idx++) {
+      if (cur[idx] != NULL) {
+        prev[idx] = cur[idx];
+        cur[idx] = (struct cache_entry_s*) cur[idx]->base.next;
+      }
+    }
+  }
+
+  // nothing found.
+  *prev_table = NULL;
+  *prev_list = NULL;
   return NULL;
 }
 
-static
-struct top_entry_s* top_list_search(struct top_entry_s* head,
-    uint32_t target, int32_t node, struct cache_entry_base_s ** prev) {
-  return (struct top_entry_s*) list_search((struct cache_entry_base_s*)head,
-                                           target, node,
-                                           (struct cache_entry_base_s**)prev);
+static inline
+struct cache_entry_s* lookup_entry(struct rdcache_s* tree,
+                                   int32_t node, raddr_t raddr) {
+
+  struct cache_table_entry_s* prev_table;
+  struct cache_entry_s* prev_list;
+  return lookup_entry_prev(tree, node, raddr, &prev_table, &prev_list);
 }
 
+// When we know the entry is not in the tree, use this function
+// to find out the table location in which to add it.
 static
-struct cache_entry_s* bottom_list_search(struct cache_entry_s* head,
-    uint32_t target, int32_t node, struct cache_entry_base_s ** prev) {
-  return (struct cache_entry_s*) list_search((struct cache_entry_base_s*)head,
-                                             target, node,
-                                             (struct cache_entry_base_s**)prev);
-}
+struct cache_table_entry_s* lookup_entry_adding(struct rdcache_s* tree,
+                                                int32_t node, raddr_t raddr) {
 
-static
-void top_entry_free(struct rdcache_s* tree, struct top_entry_s* victim)
-{
-  struct cache_entry_base_s* b = &victim->base;
-  // Put the newly free top node into the free list
-  SINGLE_PUSH_HEAD(tree, b, free_top_nodes);
-}
+  struct cache_table_slot_s* slot;
+  uint64_t hash;
+  int hash_slot;
+  int hash_entry;
+  int first_empty_entry;
+  int use_entry;
 
+  hash = hash_raddr(raddr, node);
+  hash_slot = hash_to_slot(hash, tree->table_bits);
+  hash_entry = hash_to_entry(hash, tree->table_bits);
+
+  slot = &tree->table[hash_slot];
+
+  // Find an empty entry, if one exists.
+  first_empty_entry = -1;
+  for (int j = 0; j < TABLE_ENTRIES_PER_SLOT; j++) {
+    struct cache_table_entry_s* table_entry;
+    // Visit entries starting from hash_entry to spread out
+    // where new entries go.
+    int idx = (hash_entry+j) % TABLE_ENTRIES_PER_SLOT;
+    table_entry = &slot->m[idx];
+    if (table_entry->offset == 0 && first_empty_entry == -1) {
+      first_empty_entry = idx;
+      break; // this break could be removed, if it helps
+    }
+  }
+
+  if (first_empty_entry == -1)
+    use_entry = hash_entry; // no empty entries, so use preferred one
+  else
+    use_entry = first_empty_entry;
+
+  return &slot->m[use_entry];
+}
 
 // Removes 'element' from the tree.
 // Does not wait for any operations to complete or free any cache entries
-// (it will return unused top_entries to the free list)
 static
 void tree_remove(struct rdcache_s* tree, struct cache_entry_s* element)
 {
-  struct cache_entry_base_s *prev;
-  struct cache_entry_base_s *prev_top;
-  struct top_entry_s **head;
-  struct top_entry_s *match;
-  struct cache_entry_s **bottom;
-  struct cache_entry_s *bottom_match;
-  int top_idx, bottom_idx;
-  uint32_t high_bits, low_bits;
-  int32_t node = element->base.node;
+  struct cache_table_entry_s* prev_table;
+  struct cache_entry_s* prev_list;
+  struct cache_entry_s* entry;
+  int32_t node;
+  raddr_t raddr;
+  struct cache_entry_s* next;
 
   DEBUG_PRINT(("%d: Removing %p element %p\n", chpl_nodeID,
                (void*) element->raddr, element));
 
-  top_idx = get_top_bits(element->raddr, element->base.node);
-  bottom_idx = get_bottom_bits(element->raddr, element->base.node);
-  high_bits = get_high_bits(element->raddr);
-  low_bits = get_low_bits(element->raddr);
+  raddr = element->base.raddr;
+  node = element->base.node;
+  next = (struct cache_entry_s *) element->base.next;
+  entry = lookup_entry_prev(tree, node, raddr, &prev_table, &prev_list);
 
-  head = &tree->top_index_list[top_idx];
+  // entry should be found in the tree
+  // (redundancy here avoids warning about unused variable)
+  if (entry == NULL) assert(entry);
+  // prev should be set for something in the tree.
+  // prev will need adjustment.
+  assert(prev_table);
 
-  match = top_list_search(*head, high_bits, node, &prev_top);
-
-  assert( match );
-  assert(match->bottom_index);
-
-  prev = NULL;
-  bottom = &match->bottom_index[bottom_idx];
-  bottom_match = bottom_list_search(*bottom, low_bits, node, &prev);
-
-  assert( bottom_match );
-  assert( bottom_match == element );
-
-  // Remove bottom_match (== element) from the list.
-  if( prev ) {
-    prev->next = bottom_match->base.next;
-  } else {
-    // no prev means we are the list head.
-    *bottom = (struct cache_entry_s*) bottom_match->base.next;
-  }
-
-  match->num_entries--; // net loss of one element.
-
-  if( *bottom == NULL ) {
-    // If there are no entries left in the bottom bucket, and
-    // there are no entries left in the top bucket, remove that
-    // top bucket.
-    if( match->num_entries == 0 ) {
-      // Remove match from the list.
-      if( prev_top ) {
-        prev_top->next = match->base.next;
-      } else {
-        // No prev means we are the list head.
-        *head = (struct top_entry_s*) match->base.next;
-      }
-      // Put the newly free top node into the free list
-      top_entry_free(tree, match);
+  if (prev_list) {
+    // our entry was pointed to by another entry
+    if (prev_table &&
+        prev_list->base.raddr == prev_table->raddr &&
+        prev_list->base.node == prev_table->node &&
+        next == NULL) {
+      // e.g., when removing X
+      //      table -> entry -> X (at end of list)
+      // ->   table -> entry  and clear table entry's list bit
+      prev_table->offset &= clear_offset_stolen_bits(prev_table->offset);
+    }
+    // otherwise, just update the offset of the previous list entry
+    prev_list->base.next = (struct cache_list_entry_s*) next;
+  } else if (prev_table) {
+    // our entry was pointed to by the table
+    if (VERIFY) {
+      assert(prev_table->node == entry->base.node);
+      assert(prev_table->raddr == entry->base.raddr);
+      assert(clear_offset_stolen_bits(prev_table->offset) ==
+             entry_to_offset(tree, element));
+    }
+    if (next) {
+      // Store the next entry in the table
+      // Can use the same slot since it was a collision.
+      uint32_t next_offset;
+      next_offset = entry_to_offset(tree, next);
+      if (next->base.next)
+        next_offset |= 1; // set list flag if next entry has an next
+      prev_table->raddr = next->base.raddr;
+      prev_table->node = next->base.node;
+      prev_table->offset = next_offset;
+    } else {
+      // Clear out the table entry
+      prev_table->raddr = 0;
+      prev_table->node = 0;
+      prev_table->offset = 0;
     }
   }
 }
@@ -1110,22 +1288,33 @@ void tree_remove(struct rdcache_s* tree, struct cache_entry_s* element)
 #define FLUSH_PREPARE_PUT (FLUSH_DO_PENDING)
 #define FLUSH_PREPARE_GET (FLUSH_DO_CLEAR_DIRTY|FLUSH_DO_PENDING)
 
-// For the region of this page in raddr,len, we complete any pending/not
-// started operations that possibly overlap with that region.
-// If FLUSH_EVICT or FLUSH_INVALIDATE_PAGE is set, we will ignore the region.
 static
-void flush_entry(struct rdcache_s* cache, struct cache_entry_s* entry, int op,
+void flush_entry(struct rdcache_s* cache,
+                 chpl_cache_taskPrvData_t* task_local,
+                 struct cache_entry_s* entry, int op,
                  raddr_t raddr, int32_t len_in);
+static
+int try_reserve_entry(struct rdcache_s* cache,
+                      chpl_cache_taskPrvData_t* task_local,
+                      struct cache_entry_s* entry);
+
+static
+void unreserve_entry(struct rdcache_s* cache,
+                   chpl_cache_taskPrvData_t* task_local,
+                   struct cache_entry_s* entry);
+
 
 static
 void aout_evict(struct rdcache_s* cache)
 {
   struct cache_entry_s* z;
-  struct cache_entry_base_s* entry;
+  struct cache_list_entry_s* entry;
 
   z = cache->aout_tail;
 
   if( !z ) return;
+
+  assert(z->entryReservedByTask == NULL);
 
   // Remove the tail element from Aout
   DOUBLE_REMOVE_TAIL(cache, aout);
@@ -1142,132 +1331,143 @@ void aout_evict(struct rdcache_s* cache)
 }
 
 static
-void ain_evict(struct rdcache_s* cache, struct cache_entry_s* dont_evict_me)
+void ain_evict(struct rdcache_s* cache,
+               chpl_cache_taskPrvData_t* task_local,
+               int give_up_if_locked)
 {
-  struct cache_entry_s* y;
 
-  y = cache->ain_tail;
+  while (1) {
+    struct cache_entry_s* y = cache->ain_tail;
 
-  if( ! y ) return;
-  if( y == dont_evict_me ) {
-    // Remove dont_evict_me from the tail of ain
-    DOUBLE_REMOVE_TAIL(cache, ain);
-    // Evict the new tail element
-    ain_evict(cache, NULL);
-    // Put dont_evict_me back on the tail.
-    DOUBLE_PUSH_TAIL(cache, dont_evict_me, ain);
-  }
+    if (y==NULL)
+      return;
+
+    assert(y->entryReservedByTask != task_local);
+    // give up if locked
+    if (give_up_if_locked && y->entryReservedByTask != NULL)
+      return;
+
+    if (!try_reserve_entry(cache, task_local, y)) {
+      // could not "lock" entry y so try again
+      TRACE_YIELD_PRINT(("%d: task %d cache %p yielding in ain_evict\n",
+                        chpl_nodeID, (int) chpl_task_getId(), cache));
+
+      chpl_task_yield();
+
+      TRACE_YIELD_PRINT(("%d: task %d cache %p back in ain_evict\n",
+                        chpl_nodeID, (int) chpl_task_getId(), cache));
+      continue;
+    }
+
+    // "lock"ed entry y
 
 #ifdef DEBUG
-  DEBUG_PRINT(("Ain is evicting entry for raddr %p\n", (void*) y->raddr));
-  cache_entry_print( y, " ain evict ", 1);
-  rdcache_print(cache);
+    DEBUG_PRINT(("Ain is evicting entry for raddr %p\n", (void*) y->raddr));
+    cache_entry_print( y, " ain evict ", 1);
+    rdcache_print(cache);
 #endif
 
-  // If the entry in Ain has any pending/dirty requests, we must
-  // immediately wait for them to complete, before we modify the contents
-  // of Ain in any way (or reuse the associated page).
-  flush_entry(cache, y, FLUSH_EVICT, 0, CACHEPAGE_SIZE);
+    // If the entry in Ain has any pending/dirty requests, we must
+    // immediately wait for them to complete, before we modify the contents
+    // of Ain in any way (or reuse the associated page).
+    flush_entry(cache, task_local, y, FLUSH_EVICT, 0, CACHEPAGE_SIZE);
+    assert(y->entryReservedByTask == task_local);
+    assert(y->queue == QUEUE_AIN && y == cache->ain_tail);
 
-  DOUBLE_REMOVE_TAIL(cache, ain);
-  cache->ain_current--;
+    DOUBLE_REMOVE_TAIL(cache, ain);
+    cache->ain_current--;
 
-  y->queue = QUEUE_AOUT;
+    y->queue = QUEUE_AOUT;
 
-  // Since we are kicking entry off of Ain, we have to add it to Aout.
-  DOUBLE_PUSH_HEAD(cache, y, aout);
-  cache->aout_current++;
+    // Since we are kicking entry off of Ain, we have to add it to Aout.
+    DOUBLE_PUSH_HEAD(cache, y, aout);
+    cache->aout_current++;
 
-  if( cache->aout_current > cache->aout_max ) {
-    // Remove the tail element from aout.
-    aout_evict(cache);
+    // "unlock" entry y
+    unreserve_entry(cache, task_local, y);
+
+    if( cache->aout_current > cache->aout_max ) {
+      // Remove the tail element from aout.
+      aout_evict(cache);
+    }
+    return;
   }
 }
 
- 
-static
-void am_evict(struct rdcache_s *cache, struct cache_entry_s* dont_evict_me) {
-  struct cache_entry_s *y;
-  struct cache_entry_base_s* entry;
-    
-  y = cache->am_lru_tail;
-
-  if( !y ) return;
-  if( y == dont_evict_me ) {
-    // Remove dont_evict_me from the tail of am
-    DOUBLE_REMOVE_TAIL(cache, am_lru);
-    // Evict the new tail element
-    am_evict(cache, NULL);
-    // Put dont_evict_me back on the tail.
-    DOUBLE_PUSH_TAIL(cache, dont_evict_me, am_lru);
-  }
-
-  // If the entry in Am has any pending/dirty requests, we must
-  // immediately wait for them to complete, before we modify the contents
-  // of Ain in any way (or reuse the associated page).
-  flush_entry(cache, y, FLUSH_EVICT, 0, CACHEPAGE_SIZE);
-
-  DOUBLE_REMOVE_TAIL(cache, am_lru);
-  cache->am_current--;
-
-  // Remove this entry in Am from the pointer tree.
-  tree_remove(cache, y);
-
-  y->queue = QUEUE_FREE;
-
-  // Add y to the free list
-  entry = &y->base;
-  SINGLE_PUSH_HEAD(cache, entry, free_entries);
-}
- 
 
 static
-struct top_entry_s* top_entry_allocate(struct rdcache_s* tree)
+void am_evict(struct rdcache_s *cache,
+              chpl_cache_taskPrvData_t* task_local,
+              int give_up_if_locked)
 {
-  struct cache_entry_base_s* ret;
 
-  while( ! tree->free_top_nodes_head ) {
-    // If there's nothing in our free list, we have to evict something
-    // from the cache.
-    // Take turns evicting from Aout, Ain, and Am.
+  while (1) {
+    struct cache_entry_s* y = cache->am_lru_tail;
+    struct cache_list_entry_s* entry;
 
-    // Evict from Aout 2x (since evicting Ain adds to Aout)
-    aout_evict(tree);
-    if( tree->free_top_nodes_head ) break; 
-    aout_evict(tree);
-    if( tree->free_top_nodes_head ) break; 
+    if (y==NULL)
+      return;
 
-    // Evict from Ain (will add an entry to aout)
-    ain_evict(tree, NULL);
-    if( tree->free_top_nodes_head ) break; 
+    assert(y->entryReservedByTask != task_local);
+    // give up if locked
+    if (give_up_if_locked && y->entryReservedByTask != NULL)
+      return;
 
-    // Evict from Am
-    am_evict(tree, NULL);
-    if( tree->free_top_nodes_head ) break; 
+    if (!try_reserve_entry(cache, task_local, y)) {
+      // could not "lock" entry y so try again
+      TRACE_YIELD_PRINT(("%d: task %d cache %p yielding in am_evict\n",
+                        chpl_nodeID, (int) chpl_task_getId(), cache));
+
+      chpl_task_yield();
+
+      TRACE_YIELD_PRINT(("%d: task %d cache %p back in am_evict\n",
+                        chpl_nodeID, (int) chpl_task_getId(), cache));
+      continue;
+    }
+
+    // "lock"ed entry y
+
+    // If the entry in Am has any pending/dirty requests, we must
+    // immediately wait for them to complete, before we modify the contents
+    // of Ain in any way (or reuse the associated page).
+    flush_entry(cache, task_local, y, FLUSH_EVICT, 0, CACHEPAGE_SIZE);
+    assert(y->entryReservedByTask == task_local);
+    assert(y->queue == QUEUE_AM && y == cache->am_lru_tail);
+
+    DOUBLE_REMOVE_TAIL(cache, am_lru);
+    cache->am_current--;
+
+    // Remove this entry in Am from the pointer tree.
+    tree_remove(cache, y);
+
+    y->queue = QUEUE_FREE;
+
+    // Add y to the free list
+    entry = &y->base;
+    SINGLE_PUSH_HEAD(cache, entry, free_entries);
+
+    // "unlock" entry y
+    unreserve_entry(cache, task_local, y);
+    return;
   }
-
-  // Remove the top element from the list.
-  assert(tree->free_top_nodes_head);
-  ret = tree->free_top_nodes_head;
-  SINGLE_POP_HEAD(tree, free_top_nodes);
-  ret->next = NULL;
-  return (struct top_entry_s*) ret;
 }
 
 static
-void reclaim(struct rdcache_s* cache, struct cache_entry_s* dont_evict_me)
+void reclaim(struct rdcache_s* cache,
+             chpl_cache_taskPrvData_t* task_local,
+             int give_up_if_locked)
 {
   // This is like 'reclaimfor' in the 2Q paper
   // if the number of elements in Ain > max
   if( cache->ain_current > cache->ain_max ) {
     // Page out the tail of Ain (and record it in Aout)
     // ain_evict will also evict from aout if necessary.
-    ain_evict(cache, dont_evict_me);
+    ain_evict(cache, task_local, give_up_if_locked);
   } else {
     // otherwise
     // page out the tail of Am, call it Y
     // do not put it on Aout, as it hasn't been accessed recently.
-    am_evict(cache, dont_evict_me);
+    am_evict(cache, task_local, give_up_if_locked);
   }
 }
 
@@ -1276,34 +1476,34 @@ struct cache_entry_s* allocate_entry(struct rdcache_s* cache)
 {
   struct cache_entry_s* ret;
 
-  //printf("alloc entry ain %i aout %i am %i\n", 
-  //       cache->ain_current, cache->aout_current, cache->am_current);
-
   // Make sure we have a free entry..
-  if( ! cache->free_entries_head ) reclaim(cache, NULL);
+  assert(cache->free_entries_head != NULL); // caller's responsibility
 
   ret = (struct cache_entry_s*) cache->free_entries_head;
 
   // Remove it from the single-linked list.
   SINGLE_POP_HEAD(cache, free_entries);
 
-  return ret; 
+  return ret;
 }
 
 
 // Make sure there is a free page on the free list,
 // but don't evict a page with an ongoing operation..
 static
-void ensure_free_page(struct rdcache_s* cache, struct cache_entry_s* dont_evict_me)
+void ensure_free_page(struct rdcache_s* cache,
+                      chpl_cache_taskPrvData_t* task_local,
+                      int give_up_if_locked)
 {
   // If there are free page slots, then use a free page slot.
   if( cache->free_pages_head ) {
     return;
   }
 
-  reclaim(cache, dont_evict_me);
+  reclaim(cache, task_local, give_up_if_locked);
 
-  assert( cache->free_pages_head );
+  if (!give_up_if_locked)
+    assert( cache->free_pages_head && cache->free_pages_head->page );
 }
 
 static
@@ -1312,7 +1512,7 @@ unsigned char* allocate_page(struct rdcache_s* cache)
   struct page_list_s* page_list_entry;
   unsigned char* ret;
 
-  if( ! cache->free_pages_head ) ensure_free_page(cache, NULL);
+  assert(cache->free_pages_head != NULL); // caller's responsibility.
 
   page_list_entry = cache->free_pages_head;
   SINGLE_POP_HEAD(cache, free_pages);
@@ -1325,26 +1525,47 @@ unsigned char* allocate_page(struct rdcache_s* cache)
 }
 
 static
-void ensure_free_dirty(struct rdcache_s* cache)
+void ensure_free_dirty(struct rdcache_s* cache,
+                       chpl_cache_taskPrvData_t* task_local)
 {
-  assert( cache->dirty_lru_tail );
+  assert(cache->dirty_lru_tail);
 
-  if( cache->dirty_lru_tail->entry ) {
-    flush_entry(cache, cache->dirty_lru_tail->entry, FLUSH_DO_PAGE|FLUSH_DO_CLEAR_DIRTY,
-                0, CACHEPAGE_SIZE);
+  while (1) {
+    struct cache_entry_s* entry = cache->dirty_lru_tail->entry;
+    if (entry == NULL)
+      return;
+
+    if (!try_reserve_entry(cache, task_local, entry)) {
+      // could not "lock" entry so try again
+      TRACE_YIELD_PRINT(("%d: task %d cache %p yielding in ensure_free_dirty\n",
+                        chpl_nodeID, (int) chpl_task_getId(), cache));
+
+      chpl_task_yield();
+
+      TRACE_YIELD_PRINT(("%d: task %d cache %p back in ensure_free_dirty\n",
+                        chpl_nodeID, (int) chpl_task_getId(), cache));
+      continue;
+    }
+
+    // "lock"ed entry
+    flush_entry(cache, task_local, entry,
+              FLUSH_DO_PAGE|FLUSH_DO_CLEAR_DIRTY, 0, CACHEPAGE_SIZE);
+    unreserve_entry(cache, task_local, entry);
   }
 }
 
 
-static struct dirty_entry_s* allocate_dirty(struct rdcache_s* cache,
-                                            struct cache_entry_s* for_entry)
+static
+struct dirty_entry_s* allocate_dirty(struct rdcache_s* cache,
+                                     chpl_cache_taskPrvData_t* task_local,
+                                     struct cache_entry_s* for_entry)
 {
   struct dirty_entry_s* dirty;
 
   // We never remove from dirty_lru, just reorder...
   assert( cache->dirty_lru_tail );
 
-  if( cache->dirty_lru_tail->entry ) ensure_free_dirty(cache);
+  if( cache->dirty_lru_tail->entry ) ensure_free_dirty(cache, task_local);
 
   dirty = cache->dirty_lru_tail;
   DOUBLE_REMOVE_TAIL(cache, dirty_lru);
@@ -1388,12 +1609,12 @@ cache_seqn_t pending_push(struct rdcache_s* cache, chpl_comm_nb_handle_t handle)
                fifo_circleb_count(cache->pending_first_entry, cache->pending_last_entry, cache->pending_len),
                cache->pending_len));
 
-  if( fifo_circleb_isfull(cache->pending_first_entry, cache->pending_last_entry, cache->pending_len) ) {
+  while (fifo_circleb_isfull(cache->pending_first_entry,
+                             cache->pending_last_entry,
+                             cache->pending_len) ) {
     index = cache->pending_first_entry;
     wait_sn = cache->pending_sequence_numbers[index];
     wait_for(cache, wait_sn);
-    // We should have completed at least the operation at index.
-    assert( cache->pending[index] == NULL );
   }
 
   sn = cache->next_request_number;
@@ -1403,37 +1624,14 @@ cache_seqn_t pending_push(struct rdcache_s* cache, chpl_comm_nb_handle_t handle)
   index = cache->pending_last_entry;
   cache->pending[index] = handle;
   cache->pending_sequence_numbers[index] = sn;
- 
-  DEBUG_PRINT(("in pending_push added pending[%i]=%p sn=%i\n",
-               index, (void*) handle, (int) sn));
+
+  TRACE_NB_PRINT(("%d: task %d pending_push added "
+                  "pending[%i]=%p sn=%i completed=%i\n",
+                  chpl_nodeID, (int)chpl_task_getId(),
+                  index, (void*) handle, (int) sn,
+                  (int) cache->completed_request_number));
 
   return sn;
-}
-
-static
-struct cache_entry_s* find_in_tree(struct rdcache_s* tree,
-                                   c_nodeid_t node, raddr_t raddr)
-{
-  int top_idx, bottom_idx;
-  uint32_t high_bits;
-  uint32_t low_bits;
-  struct top_entry_s **head, *top_match;
-  struct cache_entry_s **bottom, *bottom_match;
-  struct cache_entry_base_s* bottom_prev;
-
-  assert(raddr != 0);
-
-  top_idx = get_top_bits(raddr, node);
-  bottom_idx = get_bottom_bits(raddr, node);
-  high_bits = get_high_bits(raddr);
-  low_bits = get_low_bits(raddr);
-
-  head = &tree->top_index_list[top_idx];
-  top_match = top_list_search(*head, high_bits, node, NULL);
-  if (!top_match) return NULL;
-  bottom = &top_match->bottom_index[bottom_idx];
-  bottom_match = bottom_list_search(*bottom, low_bits, node, &bottom_prev);
-  return bottom_match;
 }
 
 #if VERIFY
@@ -1459,7 +1657,11 @@ int find_in_queue(struct cache_entry_s* head, struct cache_entry_s* entry)
 }
 
 static
-int validate_queue(struct rdcache_s* tree, struct cache_entry_s* head, struct cache_entry_s* tail, int queue)
+int validate_queue(struct rdcache_s* tree,
+                   chpl_cache_taskPrvData_t* task_local,
+                   struct cache_entry_s* head,
+                   struct cache_entry_s* tail,
+                   int queue)
 {
   struct cache_entry_s* cur;
   struct cache_entry_s* found;
@@ -1474,7 +1676,7 @@ int validate_queue(struct rdcache_s* tree, struct cache_entry_s* head, struct ca
 
     // and check some additional properties. In tree?
     if( queue != QUEUE_FREE ) {
-      found = find_in_tree(tree, cur->base.node, cur->raddr);
+      found = lookup_entry(tree, cur->base.node, cur->base.raddr);
       assert(found == cur);
     }
 
@@ -1492,6 +1694,11 @@ int validate_queue(struct rdcache_s* tree, struct cache_entry_s* head, struct ca
       assert(! cur->page);
       assert(! cur->dirty);
     }
+
+    // Check that a cache operation hasn't left anything "locked"
+    if (task_local) assert(cur->entryReservedByTask != task_local);
+    else assert(cur->entryReservedByTask == NULL);
+
     forward_count++;
   }
   for( cur = tail; cur; cur = cur->prev ) {
@@ -1502,61 +1709,104 @@ int validate_queue(struct rdcache_s* tree, struct cache_entry_s* head, struct ca
   assert(forward_count == reverse_count);
   return forward_count;
 }
-#endif
 
 static
-void validate_cache(struct rdcache_s* tree)
+void validate_pending(struct rdcache_s* cache)
+{
+  int i = 0;
+  int count = fifo_circleb_count(cache->pending_first_entry,
+                                 cache->pending_last_entry,
+                                 cache->pending_len);
+  unsigned int len_mask = cache->pending_len - 1;
+
+  cache_seqn_t last_sn = NO_SEQUENCE_NUMBER;
+
+  // check len_mask is a power of 2
+  assert( !(cache->pending_len & len_mask));
+  for (i = 0; i < count; i++) {
+    unsigned int idx = (cache->pending_first_entry + i) & len_mask;
+    cache_seqn_t cur_sn = cache->pending_sequence_numbers[idx];
+    if (i != 0) {
+      assert(last_sn <= cur_sn);
+    }
+    last_sn = cur_sn;
+  }
+}
+#endif // if VERIFY
+
+// aka verify_cache cache_verify cache_validate
+static
+void validate_cache(struct rdcache_s* tree,
+                    chpl_cache_taskPrvData_t* task_local)
 {
 #if VERIFY
-  int top, bottom;
-  struct top_entry_s* top_cur;
-  struct cache_entry_s* bottom_cur;
   int count;
   int in_ain;
   int in_aout;
   int in_am;
   int num_used_pages = 0;
-  int num_used_top_nodes = 0;
   int num_dirty = 0;
+  int table_slots;
+  raddr_t raddr_mask;
+
+  raddr_mask = CACHEPAGE_MASK;
+  raddr_mask = ~raddr_mask;
+
+  table_slots = 1 << tree->table_bits;
 
   // 0: All tree entries must be in either Ain, Aout, or Am,
   //    and num_entries is correct for each top entry.
-  for(top = 0; top < TOP_SIZE; top++) {
-    top_cur = tree->top_index_list[top];
-    while (top_cur) {
-      num_used_top_nodes++;
-      count = 0;
-      for( bottom = 0; bottom < BOTTOM_SIZE; bottom++ ) {
-        bottom_cur = top_cur->bottom_index[bottom];
-        while(bottom_cur) {
-          // Check that it is in ain, aout, or am.
-          in_ain = find_in_queue(tree->ain_head, bottom_cur);
-          in_aout = find_in_queue(tree->aout_head, bottom_cur);
-          in_am = find_in_queue(tree->am_lru_head, bottom_cur);
-          assert( in_ain || in_aout || in_am );
-          if( in_ain ) assert( bottom_cur->queue == QUEUE_AIN );
-          if( in_aout ) assert( bottom_cur->queue == QUEUE_AOUT );
-          if( in_am ) assert( bottom_cur->queue == QUEUE_AM );
-          if( bottom_cur->page ) num_used_pages++;
-          if( bottom_cur->dirty ) num_dirty++;
-          bottom_cur = (struct cache_entry_s*)bottom_cur->base.next;
-          count++;
-        }
+  for (int i = 0; i < table_slots; i++) {
+    struct cache_table_slot_s* slot = &tree->table[i];
+    for (int j = 0; j < TABLE_ENTRIES_PER_SLOT; j++) {
+      struct cache_table_entry_s* entry = &slot->m[j];
+      struct cache_entry_s* bottom_cur = offset_to_entry(tree, entry->offset);
+
+      // check that the address matches the entry
+      if (bottom_cur) {
+        assert(entry->raddr == bottom_cur->base.raddr);
+        assert(entry->node == bottom_cur->base.node);
       }
-      // Check that the count is correct.
-      assert(count == top_cur->num_entries);
-      top_cur = (struct top_entry_s*)top_cur->base.next;
+
+      // check that the table entry's list bit is set appropriately
+      if (bottom_cur && bottom_cur->base.next) {
+        assert((entry->offset & 1) == 1);
+      } else {
+        assert((entry->offset & 1) == 0);
+      }
+
+      while(bottom_cur) {
+        // check raddr is page-aligned
+        assert(bottom_cur->base.raddr == (bottom_cur->base.raddr & raddr_mask));
+
+        // Check that it is in ain, aout, or am.
+        in_ain = find_in_queue(tree->ain_head, bottom_cur);
+        in_aout = find_in_queue(tree->aout_head, bottom_cur);
+        in_am = find_in_queue(tree->am_lru_head, bottom_cur);
+        assert( in_ain || in_aout || in_am );
+        if( in_ain ) assert( bottom_cur->queue == QUEUE_AIN );
+        if( in_aout ) assert( bottom_cur->queue == QUEUE_AOUT );
+        if( in_am ) assert( bottom_cur->queue == QUEUE_AM );
+        assert( bottom_cur->queue != QUEUE_FREE );
+        if( bottom_cur->page ) num_used_pages++;
+        if( bottom_cur->dirty ) num_dirty++;
+        bottom_cur = (struct cache_entry_s*) bottom_cur->base.next;
+        count++;
+      }
     }
   }
 
   // 1: Entries in Ain must be in the tree
-  in_ain = validate_queue(tree, tree->ain_head, tree->ain_tail, QUEUE_AIN);
+  in_ain = validate_queue(tree, task_local,
+                          tree->ain_head, tree->ain_tail, QUEUE_AIN);
   assert( in_ain == tree->ain_current );
   // 2: Entries in Aout must be in the tree
-  in_aout = validate_queue(tree, tree->aout_head, tree->aout_tail, QUEUE_AOUT);
+  in_aout = validate_queue(tree, task_local,
+                           tree->aout_head, tree->aout_tail, QUEUE_AOUT);
   assert( in_aout == tree->aout_current );
   // 3: Entries in Am must be in the tree
-  in_am = validate_queue(tree, tree->am_lru_head, tree->am_lru_tail, QUEUE_AM);
+  in_am = validate_queue(tree, task_local,
+                         tree->am_lru_head, tree->am_lru_tail, QUEUE_AM);
   assert( in_am == tree->am_current );
 
   // 4: dirty list must be well-formed
@@ -1583,13 +1833,13 @@ void validate_cache(struct rdcache_s* tree)
     assert(num_dirty == tree->num_dirty_pages);
     assert(with_entry_count == tree->num_dirty_pages);
   }
-  
+
   // 5: must not lose entries. Check that the entry free list
-  // contains the right number of entries. 
+  // contains the right number of entries.
   {
-    struct cache_entry_base_s* cur;
+    struct cache_list_entry_s* cur;
     int num_free_entries = 0;
-    for( cur = tree->free_entries_head; cur; cur = cur->next ) {
+    for (cur = tree->free_entries_head; cur; cur = cur->next) {
       num_free_entries++;
     }
     assert( in_ain + in_aout + in_am + num_free_entries == tree->max_entries );
@@ -1606,78 +1856,145 @@ void validate_cache(struct rdcache_s* tree)
     assert( num_used_pages + num_free_pages == tree->max_pages );
   }
 
-  // 7: must not lose top nodes
-  {
-    struct cache_entry_base_s* cur;
-    int num_free_top_nodes = 0;
-    for( cur = tree->free_top_nodes_head; cur; cur = cur->next ) {
-      num_free_top_nodes++;
-    }
-    assert( num_used_top_nodes + num_free_top_nodes == tree->max_top_nodes );
-  }
+  // 7: pending queue must have sequence numbers in order
+  // (or else do_wait_for would need updating to check all pending
+  //  sequence numbers)
+  validate_pending(tree);
+
 #endif
 }
 
 static
 void do_wait_for(struct rdcache_s* cache, cache_seqn_t sn)
 {
-  int index;
-  cache_seqn_t at;
-  cache_seqn_t max_completed = cache->completed_request_number;
-  int last;
 
-  DEBUG_PRINT(("wait_for(%i) completed=%i\n", (int) sn, (int) max_completed));
+  TRACE_NB_PRINT(("%d: task %d wait_for(%i) completed=%i\n",
+                  chpl_nodeID, (int)chpl_task_getId(),
+                  (int) sn, (int) cache->completed_request_number));
 
   // Do nothing if there are no pending entries.
-  if( cache->pending_first_entry < 0 || cache->pending_last_entry < 0 ) return;
+  if (cache->pending_first_entry < 0 || cache->pending_last_entry < 0) {
+    return;
+  }
 
   // Do nothing if we don't have a valid sequence number to wait for.
-  if( sn == NO_SEQUENCE_NUMBER ) return;
+  if (sn == NO_SEQUENCE_NUMBER) {
+    return;
+  }
 
   // Do nothing if we have already completed sn.
-  if( sn <= max_completed ) return;
+  if (sn <= cache->completed_request_number) {
+    return;
+  }
 
-  // Note: chpl_comm_wait_nb_some could cause a different task body to run...
+#if VERIFY
+  validate_pending(cache);
+#endif
 
   // If we have any pending requests with sequence number <= sn,
   // wait for them to complete.
-  while( 1 ) {
+  while (1) {
+    int index;
+    int last;
+
     index = cache->pending_first_entry;
-    if( index == -1 ) break;
-    at = cache->pending_sequence_numbers[index];
-    if( at <= sn ) {
+    if (index == -1) break;
+
+    // If the first entry's sequence number is earlier than sn
+    // and that comm event isn't complete yet, then wait for some
+    if (cache->pending_sequence_numbers[index] <= sn &&
+        !chpl_comm_test_nb_complete(cache->pending[index])) {
       // Wait for some requests
       last = cache->pending_last_entry;
-      if( last < index ) last = cache->pending_len - 1;
-      while( cache->pending[index] ) {
-        DEBUG_PRINT(("wait_for waiting %i..%i\n", index, last));
-        // Wait for some requests to complete.
-        chpl_comm_wait_nb_some(&cache->pending[index], last - index + 1);
+      if (last < index) last = cache->pending_len - 1;
+
+      // Wait for some requests to complete.
+      // (this could cause a different task body to run)
+      chpl_comm_wait_nb_some(&cache->pending[index], last - index + 1);
+
+      if (EXTRA_YIELDS) {
+        TRACE_YIELD_PRINT(("%d: task %d cache %p yielding in do_wait_for "
+                           "for chpl_comm_wait_nb_some\n",
+                           chpl_nodeID, (int) chpl_task_getId(), cache));
+
+        chpl_task_yield();
+
+        TRACE_YIELD_PRINT(("%d: task %d cache %p back in do_wait_for\n",
+                          chpl_nodeID, (int) chpl_task_getId(), cache));
       }
-      // cache->pending[index] == NULL now
+
+      // continue the loop
     }
-    if( chpl_comm_test_nb_complete(cache->pending[index]) ) {
-      // we completed cache->pending[index], so remove the entry from the queue.
-      DEBUG_PRINT(("wait_for removing %i\n", index));
-      fifo_circleb_pop( &cache->pending_first_entry, &cache->pending_last_entry, cache->pending_len);
-      max_completed = seqn_max(max_completed, at);
-    } else if( at > sn ) {
-      // Stop if we have an uncompleted request for a later sequence number
+
+    // Whether we waited above or not, if the first entry's event
+    // is already complete, then remove it from the queue.
+    if (chpl_comm_test_nb_complete(cache->pending[index])) {
+      fifo_circleb_pop(&cache->pending_first_entry,
+                       &cache->pending_last_entry,
+                       cache->pending_len);
+      cache->completed_request_number =
+        seqn_max(cache->completed_request_number,
+                 cache->pending_sequence_numbers[index]);
+
+      TRACE_NB_PRINT(("%d: task %d wait_for popped %i completed=%i\n",
+                      chpl_nodeID, (int)chpl_task_getId(),
+                      (int) cache->pending_sequence_numbers[index],
+                      (int) cache->completed_request_number));
+    }
+
+    // Stop if we have an uncompleted request for a later sequence number
+    if (cache->pending_sequence_numbers[index] > sn) {
       DEBUG_PRINT(("wait_for stopped at %i\n", index));
       break;
     }
   }
-
-  cache->completed_request_number = max_completed;
 }
 
+
+// try to "lock" the entry
+//  * if entry->entryReservedByTask is NULL, set it to task_local
+//    and return 1 (indicating the lock was taken)
+//
+//  * otherwise, return 0
+//    (and assert that this task doesn't already have the lock).
+//    If 0 is returned, the caller should loop calling chpl_task_yield.
+//
+// This lock protects the entry from being evicted by another task
+// in the same pthread.
+static
+int try_reserve_entry(struct rdcache_s* cache,
+                      chpl_cache_taskPrvData_t* task_local,
+                      struct cache_entry_s* entry) {
+
+  if (entry->entryReservedByTask != NULL) {
+    assert(entry->entryReservedByTask != task_local);
+    return 0;
+  } else {
+    // now entry->entryReservedByTask == NULL
+    entry->entryReservedByTask = task_local; // "lock"
+    return 1;
+  }
+}
+
+// "unlock" the entry
+static
+void unreserve_entry(struct rdcache_s* cache,
+                   chpl_cache_taskPrvData_t* task_local,
+                   struct cache_entry_s* entry) {
+  assert(entry->entryReservedByTask == task_local);
+  entry->entryReservedByTask = NULL;
+}
 
 
 // For the region of this page in raddr,len, we complete any pending/not
 // started operations that possibly overlap with that region.
 // If FLUSH_EVICT or FLUSH_INVALIDATE_PAGE is set, we will ignore the region.
+//
+// assumes that the entry is already locked
 static
-void flush_entry(struct rdcache_s* cache, struct cache_entry_s* entry, int op,
+void flush_entry(struct rdcache_s* cache,
+                 chpl_cache_taskPrvData_t* task_local,
+                 struct cache_entry_s* entry, int op,
                  raddr_t raddr, int32_t len_in)
 {
   struct page_list_s* free_page_list_entry;
@@ -1691,14 +2008,15 @@ void flush_entry(struct rdcache_s* cache, struct cache_entry_s* entry, int op,
   uintptr_t num_lines, skip_lines;
   chpl_comm_nb_handle_t handle;
   uintptr_t got_skip, got_len;
-  
+
+  assert(entry->entryReservedByTask == task_local);
+
   DEBUG_PRINT(("flush_entry(%p, %i, %p, %i)\n",
                entry, op, (void*) raddr, (int) len));
 #ifdef DUMP
   printf("starting flush_entry, entry is:\n");
   cache_entry_print(entry, " toflush ", 1);
 #endif
-
 
   if( op & FLUSH_DO_PAGE ) {
     // Ignore the passed-in raddr/len.
@@ -1732,13 +2050,23 @@ void flush_entry(struct rdcache_s* cache, struct cache_entry_s* entry, int op,
                  page+start, entry->base.node, (void*) (entry->raddr+start),
                  (int) got_len));
 
-          // Note: chpl_comm_put_nb could cause a different task body to run.
+          // Note: chpl_comm_put_nb, pending_push can yield
           handle =
             chpl_comm_put_nb(page+start, /*local addr*/
                              entry->base.node,
-                             (void*)(entry->raddr+start),
+                             (void*)(entry->base.raddr+start),
                              got_len /*size*/,
                              CHPL_COMM_UNKNOWN_ID, -1, 0);
+          if (EXTRA_YIELDS) {
+            TRACE_YIELD_PRINT(("%d: task %d cache %p yielding in flush_entry "
+                               "for chpl_comm_put_nb\n",
+                               chpl_nodeID, (int) chpl_task_getId(), cache));
+
+            chpl_task_yield();
+
+            TRACE_YIELD_PRINT(("%d: task %d cache %p back in flush_entry\n",
+                               chpl_nodeID, (int) chpl_task_getId(), cache));
+          }
 
           // Save the handle in the list of pending requests.
           entry->max_put_sequence_number = pending_push(cache, handle);
@@ -1791,81 +2119,73 @@ void flush_entry(struct rdcache_s* cache, struct cache_entry_s* entry, int op,
     // But, our entry no longer can have a page associated with it.
     page = entry->page;
     entry->page = NULL;
-    free_page_list_entry = cache->free_page_list_entries_head;
-    free_page_list_entry->page = page;
-    SINGLE_POP_HEAD(cache, free_page_list_entries);
-    SINGLE_PUSH_HEAD(cache, free_page_list_entry, free_pages);
+    if (page) {
+      free_page_list_entry = cache->free_page_list_entries_head;
+      SINGLE_POP_HEAD(cache, free_page_list_entries);
+      free_page_list_entry->page = page;
+      SINGLE_PUSH_HEAD(cache, free_page_list_entry, free_pages);
+    }
   }
 
 #ifdef DUMP
   printf("after flush_entry, entry is:\n");
   cache_entry_print(entry, " flushed ", 1);
 #endif
-
 }
 
 // Call this function to tell the cache that we are 'use'ing an entry;
 // it will move it to the front of any LRU queue
 // (particularly for the Am queue).
 static
-void use_entry(struct rdcache_s* cache, struct cache_entry_s* entry)
+void use_entry(struct rdcache_s* cache,
+               struct cache_entry_s* entry)
 {
-  // If X is in Am then move it to the head of Am
   // If it's on the Am queue, move it to the front of the Am queue.
   if( entry->queue == QUEUE_AM ) {
     DOUBLE_REMOVE(cache, entry, am_lru);
     DOUBLE_PUSH_HEAD(cache, entry, am_lru);
-  } 
-  // Otherwise, leave it where it is.
-  // Else If X is in A1in then do nothing
+  }
+  // Otherwise (it is in Ain) so leave it where it is.
 }
 
-// Plumb a cache entry into the tree. We might need to replace something
-// in Aout in the process, but we should not be calling this function
-// to replace something in Ain or Am (ie anything with entry->page
-// already set).
+// Plumb a cache entry into the tree.
+// If aout_entry is not NULL, we will replace an existing entry from Aout
+// if one is present (and aout_entry is probably such an entry, but
+// cache manipulations might have removed it, e.g.). If the entry from Aout
+// exists, it will be moved to Am.
+//
+// Otherwise, this will create a new entry in Ain and it will assume
+// that the entry does not currently exist in the cache.
+//
+// Assumes caller has ensured there is a free page and a free entry.
+//
+// The returned entry is always "reserved" i.e. entryInUse = 1.
 static
 struct cache_entry_s* make_entry(struct rdcache_s* tree,
                                  c_nodeid_t node, raddr_t raddr,
-                                 unsigned char* page)
+                                 unsigned char* page,
+                                 struct cache_entry_s* aout_entry)
 {
-  int top_idx, bottom_idx;
-  uint32_t high_bits;
-  uint32_t low_bits;
-  struct top_entry_s **head, *top_match, *top_tmp;
-  struct cache_entry_s **bottom, *bottom_match, *bottom_tmp;
-  struct cache_entry_base_s* bottom_prev;
+  struct cache_table_entry_s* prev_table;
+  struct cache_entry_s *bottom_match;
+  struct cache_entry_s *bottom_tmp;
+  struct cache_entry_s *next;
 
   assert(raddr != 0);
 
-  top_idx = get_top_bits(raddr, node);
-  bottom_idx = get_bottom_bits(raddr, node);
-  high_bits = get_high_bits(raddr);
-  low_bits = get_low_bits(raddr);
-
-  head = &tree->top_index_list[top_idx];
-  top_match = top_list_search(*head, high_bits, node, NULL);
-  if (!top_match) {
-    // create a new entry
-    top_tmp = top_entry_allocate(tree);
-    top_tmp->base.index_bits = high_bits;
-    top_tmp->base.node = node;
-    top_tmp->base.next = (struct cache_entry_base_s*)*head;
-    top_tmp->num_entries = 0;
-    memset(top_tmp->bottom_index, 0, BOTTOM_SIZE*sizeof(struct cache_entry_s*));
-
-    *head = top_tmp;
-    top_match = *head;
-    DEBUG_PRINT(("  added a new top_index_entry: %p\n", top_match));
+  bottom_match = NULL;
+  if (aout_entry) {
+    if (aout_entry->base.raddr == raddr && aout_entry->base.node == node &&
+        aout_entry->queue == QUEUE_AOUT) {
+      // OK to reuse aout_entry - it was not removed.
+      bottom_match = aout_entry;
+    }
   }
 
-  bottom = &top_match->bottom_index[bottom_idx];
-  bottom_match = bottom_list_search(*bottom, low_bits, node, &bottom_prev);
-
   if( bottom_match ) {
-  // If X is in A1out then find space for X and add it to the head of Am
+    // If X is in A1out then find space for X and add it to the head of Am
     assert( bottom_match->base.node == node );
-    assert( bottom_match->raddr == raddr );
+    assert( bottom_match->base.raddr == raddr );
     // We shouldn't be replacing something in Ain or Am; use use_entry instead
     assert(bottom_match->queue == QUEUE_AOUT);
 
@@ -1877,6 +2197,7 @@ struct cache_entry_s* make_entry(struct rdcache_s* tree,
     tree->am_current++;
 
     bottom_match->queue = QUEUE_AM;
+    bottom_match->entryReservedByTask = NULL;
     bottom_match->readahead_skip = 0;
     bottom_match->readahead_len = 0;
     // Set the page to the one the caller already allocated
@@ -1889,20 +2210,22 @@ struct cache_entry_s* make_entry(struct rdcache_s* tree,
     bottom_match->max_put_sequence_number = NO_SEQUENCE_NUMBER;
     bottom_match->max_prefetch_sequence_number = NO_SEQUENCE_NUMBER;
   } else {
-  // Else If X is in no queue then find space for X and add it to A1in
+    // Else If X is in no queue then find space for X and add it to A1in
     DEBUG_PRINT(("%d: Found %p nowhere\n", chpl_nodeID, (void*) raddr));
 
     // This is our new entry...
     bottom_tmp = allocate_entry(tree);
+    // We know that this entry does not exist in the tree,
+    // so we only need to lookup where to add it.
+    prev_table = lookup_entry_adding(tree, node, raddr);
 
     // Fill in the entry...
-    bottom_tmp->base.index_bits = low_bits;
     bottom_tmp->base.node = node;
-    // Link to next hashtable element, adding not replacing.
-    bottom_tmp->base.next = (struct cache_entry_base_s*) *bottom;
+    bottom_tmp->base.raddr = raddr;
+    bottom_tmp->base.next = NULL;
 
-    bottom_tmp->raddr = raddr;
     bottom_tmp->queue = QUEUE_AIN;
+    bottom_tmp->entryReservedByTask = NULL;
     bottom_tmp->readahead_skip = 0;
     bottom_tmp->readahead_len = 0;
 
@@ -1919,45 +2242,299 @@ struct cache_entry_s* make_entry(struct rdcache_s* tree,
     DOUBLE_PUSH_HEAD(tree, bottom_tmp, ain);
     tree->ain_current++;
 
-    // Put it as the first element in the appropriate hashtable bucket.
-    *bottom = bottom_tmp;
+    // Put it as the first element in the appropriate table entry
+    // using the prev_table entry; adjust the next_offset for anything
+    // that was there already.
+
+    // Link to next hashtable element, adding not replacing.
+    next = offset_to_entry(tree, prev_table->offset);
+    bottom_tmp->base.next = &next->base;
+    // Replace the lookup table entry
+    prev_table->raddr = raddr;
+    prev_table->node = node;
+    prev_table->offset = entry_to_offset(tree, bottom_tmp);
+    if (bottom_tmp->base.next)
+      prev_table->offset |= 1; // set list flag
+
     bottom_match = bottom_tmp;
-    top_match->num_entries++; // adding an element.
     DEBUG_PRINT(("  added a new bottom_index_entry: %p\n", bottom_match));
   }
-
 
   return bottom_match;
 }
 
+typedef enum {
+  CACHE_OP_PUT = 1,
+  CACHE_OP_GET = 2,
+  CACHE_OP_PREFETCH = 3,
+  CACHE_OP_MOCK_GET = 4,
+} cache_op_t;
+
+// Reserves an entry, creating it if necessary.
+//  If one is found, "use" it in the cache algorithm.
+//  If none is found, create a new entry and page.
+//
+//  hint_entry is an entry to check first (before traversing the tree)
+//  for a match.
+//
+//  Returns a reserved entry (with entryInUse=1) that needs to
+//  be unreserved at the end of the operation.
 static
-void cache_put(struct rdcache_s* cache,
-                unsigned char* addr,
-                c_nodeid_t node, raddr_t raddr, size_t size,
-                cache_seqn_t last_acquire,
-                int32_t commID, int ln, int32_t fn)
+struct cache_entry_s* get_reserved_entry(struct rdcache_s* cache,
+                                         chpl_cache_taskPrvData_t* task_local,
+                                         struct cache_entry_s* hint_entry,
+                                         c_nodeid_t node, raddr_t ra_page,
+                                         cache_op_t op)
+{
+
+  assert(task_local != NULL);
+
+  while (1) {
+    struct cache_entry_s* entry = NULL;
+    struct cache_entry_s* aout_entry = NULL;
+
+    // If there is a hint entry, it is OK to reuse it
+    // as long as it has the correct raddr and node and
+    // is not in the free queue.
+    // This is only the case because all entries are preallocated
+    // (so if one is freed or reused elsewhere these values will differ).
+    if (hint_entry) {
+      if (hint_entry->base.raddr == ra_page && hint_entry->base.node == node &&
+          hint_entry->queue != QUEUE_FREE) {
+        entry = hint_entry;
+      }
+    }
+
+    // if we don't have an entry yet, look up node/page in the tree
+    if (entry == NULL) {
+      entry = lookup_entry(cache, node, ra_page);
+      hint_entry = entry;
+    }
+
+    // consider Aout entries as a different thing here
+    if (entry && !entry->page) {
+      aout_entry = entry;
+      entry = NULL;
+    }
+
+    if (entry) {
+      // entry was in Ain or Am
+
+      if (!try_reserve_entry(cache, task_local, entry)) {
+        // could not "lock" entry so try again
+        TRACE_YIELD_PRINT(("%d: task %d cache %p yielding in get_reserved0\n",
+                           chpl_nodeID, (int) chpl_task_getId(), cache));
+
+        chpl_task_yield();
+
+        TRACE_YIELD_PRINT(("%d: task %d cache %p back in get_reserved0\n",
+                           chpl_nodeID, (int) chpl_task_getId(), cache));
+        continue;
+      }
+
+      // "lock"ed entry
+
+      // move entry to the front of the cache if needed
+      use_entry(cache, entry);
+      return entry;
+
+    } else if (aout_entry) {
+      // entry was in Aout
+
+      // make sure we have a free page
+      if (cache->free_pages_head == NULL) {
+        // free a page and try again to find the entry
+        ensure_free_page(cache, task_local, /* give_up_if_locked */ 0);
+        // above call may yield, so try everything again
+        continue;
+      }
+
+      {
+        // allocate_page can't yield.
+        // above code ensured a free page exists.
+        unsigned char* page = allocate_page(cache);
+        assert(page);
+        entry = make_entry(cache, node, ra_page, page, aout_entry);
+        assert(entry->entryReservedByTask == NULL); // new, should be unlocked
+
+        if (!try_reserve_entry(cache, task_local, entry)) {
+          assert(0); // unexpected case
+        }
+
+        // "lock"ed entry
+        return entry;
+      }
+    } else {
+      // no entry exists yet
+
+      // make sure we have a free entry if needed
+      if (cache->free_entries_head == NULL) {
+        // free an entry and try again to find the entry
+        reclaim(cache, task_local, /* give_up_if_locked */ 0);
+        // above call may yield, so try everything again
+        continue;
+      }
+
+      // make sure we have a free page if needed
+      if (cache->free_pages_head == NULL) {
+        // free a page and try again to find the entry
+        ensure_free_page(cache, task_local, /* give_up_if_locked */ 0);
+        // above call may yield, so try everything again
+        continue;
+      }
+
+      {
+        // allocate_page and make_entry can't yield.
+        // above code ensured a free page & free entry exist.
+        unsigned char* page = allocate_page(cache);
+        entry = make_entry(cache, node, ra_page, page, aout_entry);
+        assert(entry->entryReservedByTask == NULL); // new, should be unlocked
+
+        if (!try_reserve_entry(cache, task_local, entry)) {
+          assert(0); // unexpected case
+        }
+
+        // "lock"ed entry
+        return entry;
+      }
+    }
+  }
+
+  assert(0); // unexpected case
+  return NULL;
+}
+
+
+// PUT size bytes starting at addr into node,raddr
+// returns 1 if it was a hit, 0 otherwise
+static
+int cache_put_in_page(struct rdcache_s* cache,
+                      chpl_cache_taskPrvData_t* task_local,
+                      unsigned char* addr,
+                      c_nodeid_t node, raddr_t raddr, size_t size,
+                      int32_t commID, int ln, int32_t fn)
 {
   struct cache_entry_s* entry;
+  raddr_t ra_page;
+  int entry_after_acquire;
+  cache_seqn_t sn;
+  int hit;
+
+  TRACE_PRINT(("%d: task %d in put_in_page %s:%d get %d bytes from "
+               "%d:%p to %p\n",
+               chpl_nodeID, (int)chpl_task_getId(), chpl_lookupFilename(fn), ln,
+               (int)size, node, (void*)raddr, addr));
+
+  DEBUG_PRINT(("cache_put_in_page %i:%p from %p len %i\n",
+               (int) node, (void*) raddr, addr, (int) size));
+
+  assert(chpl_nodeID != node); // should be handled in chpl_gen_comm_put
+  assert(size != 0); // should be handled at call site
+
+  // ra_page = raddr of start of the page
+  ra_page = round_down_to_mask(raddr, CACHEPAGE_MASK);
+
+  // We will put from raddr to raddr+size
+
+  // get a "lock"ed entry for raddr.
+  // the "lock" prevents tasks yielded to from updating it.
+  entry = get_reserved_entry(cache, task_local, NULL, node, ra_page,
+                             CACHE_OP_PUT);
+  assert(entry && entry->page && entry->entryReservedByTask);
+
+  // Is this cache line available for use, based on when we
+  // last ran an acquire fence?
+  entry_after_acquire = (entry->min_sequence_number >= task_local->last_acquire);
+
+  // If the cache line contains any overlapping writes or prefetches,
+  // we must wait for them to complete before we store new data.
+  // Nonblocking GETs and PUTs must not have their buffers changed
+  // during operation. And, we don't want an earlier prefetch to overwrite
+  // our later write!
+  // Note, this flush call could yield, but that is OK because
+  // entry is reserved.
+  flush_entry(cache, task_local, entry,
+              entry_after_acquire?FLUSH_PREPARE_PUT:FLUSH_INVALIDATE_PAGE,
+              raddr, size);
+  // note: flush_entry can yield, but entry is locked
+  // no chance of deadlock because above flush might create/wait for comms
+  // but does not try to lock another page.
+  assert(entry->page && entry->entryReservedByTask == task_local);
+  assert(entry->base.raddr == ra_page && entry->base.node == node);
+
+  // Make sure we have a dirty structure.
+  if (!entry->dirty) {
+    allocate_dirty(cache, task_local, entry);
+    // note: allocate_dirty can yield, but entry is locked
+    // and won't deadlock because it doesn't wait on an entry
+    // (it might start comm events and clear out dirty bits)
+    assert(entry->page && entry->entryReservedByTask == task_local);
+    assert(entry->base.raddr == ra_page && entry->base.node == node);
+    assert(entry->dirty);
+    hit = 0;
+  } else {
+    // Make it the most recently use dirty page.
+    use_dirty(cache, entry->dirty);
+    hit = 1;
+  }
+
+  // Now, set the dirty bits.
+  set_valids_for_skip_len(entry->dirty->dirty,
+                          raddr & CACHEPAGE_MASK, size,
+                          CACHEPAGE_BITMASK_WORDS);
+
+  // Op will be started for this in flush_entry for a dirty page.
+
+  // This will increment next request number so cache events are recorded.
+  sn = cache->next_request_number;
+  cache->next_request_number++;
+  // Set the minimum sequence number so an acquire fence before
+  // the next read will cause this write to be disregarded.
+  entry->min_sequence_number = seqn_min(entry->min_sequence_number, sn);
+
+  // Copy the data into page.
+  chpl_memcpy(entry->page + (raddr-ra_page), addr, size);
+
+  unreserve_entry(cache, task_local, entry);
+  entry = NULL; // the below calls can yield & invalidate entry
+
+  // Make sure that there is a dirty page available for next time.
+  ensure_free_dirty(cache, task_local);
+
+  // Make sure that there is an available page for next time.
+  ensure_free_page(cache, task_local, /* give_up_if_locked */ 0);
+
+  return hit;
+}
+
+
+// returns 1 if all of the page operations were "hit"s
+static
+int cache_put(struct rdcache_s* cache,
+              chpl_cache_taskPrvData_t* task_local,
+              unsigned char* addr,
+              c_nodeid_t node, raddr_t raddr, size_t size,
+              int32_t commID, int ln, int32_t fn)
+{
   raddr_t ra_first_page;
   raddr_t ra_last_page;
   raddr_t ra_next_page;
   raddr_t ra_page_end;
   raddr_t ra_page;
   raddr_t requested_start, requested_end, requested_size;
-  unsigned char* page;
-  int entry_after_acquire;
-  cache_seqn_t sn;
+  int hit;
+  int all_hits = 1;
 
   DEBUG_PRINT(("cache_put %i:%p from %p len %i\n",
                (int) node, (void*) raddr, addr, (int) size));
 
   assert(chpl_nodeID != node); // should be handled in chpl_gen_comm_put
 
-  // And don't do anything if it's a zero-length 
+  // And don't do anything if it's a zero-length
   if( size == 0 ) {
-    return;
+    return 1;
   }
- 
+
   // first_page = raddr of start of first needed page
   ra_first_page = round_down_to_mask(raddr, CACHEPAGE_MASK);
   // last_page = raddr of start of last needed page
@@ -1977,103 +2554,23 @@ void cache_put(struct rdcache_s* cache,
     requested_end = raddr_min(raddr+size, ra_page_end);
     requested_size = requested_end - requested_start;
 
-    // Is the page in the tree?
-    entry = find_in_tree(cache, node, ra_page);
-    page = NULL;
+    hit = cache_put_in_page(cache, task_local,
+                            (addr==NULL)?(NULL):(addr+(requested_start-raddr)),
+                            node, requested_start, requested_size,
+                            commID, ln, fn);
 
-    // Ignore entries in Aout for now.
-    if( entry && ! entry->page ) entry = NULL;
-
-    if( entry ) {
-      // Is this cache line available for use, based on when we
-      // last ran an acquire fence?
-      entry_after_acquire = ( entry->min_sequence_number >= last_acquire );
-   
-      // If the cache line contains any overlapping writes or prefetches,
-      // we must wait for them to complete before we store new data.
-      // Nonblocking GETs and PUTs must not have their buffers changed
-      // during operation. And, we don't want an earlier prefetch to overwrite
-      // our later write!
-      flush_entry(cache, entry,
-                  entry_after_acquire?FLUSH_PREPARE_PUT:FLUSH_INVALIDATE_PAGE,
-                  requested_start, requested_size);
-      page = entry->page;
-    }
-
-    if( ! page ) {
-      // get a page from the free list.
-      page = allocate_page(cache);
-    }
-
-    if( entry ) use_entry(cache, entry);
-    else entry = make_entry(cache, node, ra_page, page);
-
-    // Make sure we have a dirty structure.
-    if( ! entry->dirty ) {
-      allocate_dirty(cache, entry);
-    } else {
-      // Make it the most recently use dirty page.
-      use_dirty(cache, entry->dirty);
-    }
-
-    // Now, set the dirty bits.
-    set_valids_for_skip_len(entry->dirty->dirty,
-                            requested_start & CACHEPAGE_MASK, requested_size,
-                            CACHEPAGE_BITMASK_WORDS);
-
-    // Op will be started for this in flush_entry for a dirty page.
-
-    // This will increment next request number so cache events are recorded.
-    sn = cache->next_request_number;
-    cache->next_request_number++;
-    // Set the minimum sequence number so an acquire fence before
-    // the next read will cause this write to be disregarded.
-    entry->min_sequence_number = seqn_min(entry->min_sequence_number, sn);
-
-    // Copy the data into page.
-    chpl_memcpy(page+(requested_start-ra_page),
-                addr+(requested_start-raddr),
-                requested_size);
-
-    // Make sure that there is a dirty page available for next time.
-    ensure_free_dirty(cache);
-    // Make sure that there is an available page for next time.
-    ensure_free_page(cache, NULL);
+    all_hits = all_hits && hit;
   }
 
-  if( VERIFY ) validate_cache(cache);
+  if( VERIFY ) validate_cache(cache, task_local);
 
 #ifdef DUMP
   printf("After cache_put, cache is:\n");
   rdcache_print(cache);
 #endif
 
+  return all_hits;
 }
-
-/*
-    // Handle prefetching. See http://www.ece.eng.wayne.edu/~sjiang/Tsinghua-2010/linux-readahead.pdf
-    // for inspiration.
-    // Here we decide whether or not we are going to prefetch the next page in the forward
-    // or backward direction, and we also increase the request size if access looks sequential.
-    trigger_prefetch = 0;
-    nvalid_before = count_valid_lines_before(entry->valid_lines, ra_line >> CACHELINE_BITS);
-    nvalid_after = count_valid_lines_at_after(entry->valid_lines, ra_line_end >> CACHELINE_BITS);
-    if( nvalid_before >= PREFETCH_TRIGGER_LINES && nvalid_before > nvalid_after ) {
-      trigger_prefetch = 1; // prefetch in the forward direction.
-      // Ask for the rest of the page going forward.
-      ra_line_end = ra_page + CACHEPAGE_SIZE;
-    } else if( nvalid_after >= PREFETCH_TRIGGER_LINES && nvalid_after > nvalid_before ) {
-      trigger_prefetch = -1; // prefetch in the reverse direction.
-      // Ask for the rest of the page going backward.
-      ra_line = ra_page;
-    }
-
-    TODO. use trigger_prefetch. Check page entry's trigger condition.
-
-    // Should we increase what we're getting in order to do synchronous
-    // prefetch, and should we trigger asynchronous prefetch?
-    if( count_valid_lines_before(entry->valid_lines, 
-*/
 
 static inline
 int is_congested(struct rdcache_s* cache)
@@ -2085,24 +2582,31 @@ int is_congested(struct rdcache_s* cache)
 }
 
 static
-void cache_get(struct rdcache_s* cache,
-                unsigned char * addr,
-                c_nodeid_t node, raddr_t raddr, size_t size,
-                cache_seqn_t last_acquire,
-                int sequential_readahead_length,
-                int32_t commID, int ln, int32_t fn);
+int cache_get(struct rdcache_s* cache,
+              chpl_cache_taskPrvData_t* task_local,
+              unsigned char * addr,
+              c_nodeid_t node, raddr_t raddr, size_t size,
+              int sequential_readahead_length,
+              int32_t commID, int ln, int32_t fn);
 
 static
 void cache_get_trigger_readahead(struct rdcache_s* cache,
+                                 chpl_cache_taskPrvData_t* task_local,
                                  c_nodeid_t node,
                                  raddr_t page_raddr,
                                  raddr_t request_raddr, size_t request_size,
                                  // skip < 0 -> reverse, >0 -> forward
                                  readahead_distance_t skip,
                                  readahead_distance_t len,
-                                 cache_seqn_t last_acquire,
                                  int32_t commID, int ln, int32_t fn)
 {
+  // Handle prefetching.
+  // See http://www.ece.eng.wayne.edu/~sjiang/Tsinghua-2010/linux-readahead.pdf
+  // for inspiration.
+  // Here we decide whether or not we are going to prefetch the next page
+  // in the forward or backward direction, and we also increase the request
+  // size if access looks sequential.
+
   int next_ra_length;
   int ok;
   raddr_t prefetch_start, prefetch_end;
@@ -2149,7 +2653,7 @@ void cache_get_trigger_readahead(struct rdcache_s* cache,
     if( ! ok && request_raddr != 0 && request_size != 0 ) {
       // Adjust prefetch_start/prefetch_end so that it lies on the same
       // system page as the requested data.
-      
+
       page_size = sys_page_size();
 
       request_page = round_down_to_mask(request_raddr, page_size-1);
@@ -2177,12 +2681,13 @@ void cache_get_trigger_readahead(struct rdcache_s* cache,
     //       ok, (void*) prefetch_start, (void*) prefetch_end);
 
     if( ok && prefetch_start < prefetch_end ) {
-      INFO_PRINT(("%i starting readahead from %p to %p\n",
-                  (int) chpl_nodeID, (void*) (prefetch_start), (void*) (prefetch_end)));
-      cache_get(cache, NULL /* prefetch */,
-                node,
-                prefetch_start, prefetch_end - prefetch_start,
-                last_acquire,
+      TRACE_READAHEAD_PRINT(("%d: task %d starting readahead from %p to %p\n",
+                             chpl_nodeID, (int)chpl_task_getId(),
+                             (void*) (prefetch_start), (void*) (prefetch_end)));
+
+      cache_get(cache, task_local,
+                /* addr */ NULL /* means prefetch */,
+                node, prefetch_start, prefetch_end - prefetch_start,
                 next_ra_length,
                 commID, ln, fn);
     } else {
@@ -2225,17 +2730,504 @@ int should_readahead_extend(uint64_t* valid,
   return 0;
 }
 
+static
+void cache_get_compute_readahead_extend(struct rdcache_s* cache,
+                                        chpl_cache_taskPrvData_t* task_local,
+                                        struct cache_entry_s* entry,
+                                        c_nodeid_t node, raddr_t ra_page,
+                                        int sequential_readahead_length,
+                                        raddr_t *readahead_skip_inout,
+                                        raddr_t *readahead_len_inout,
+                                        raddr_t *ra_line_inout,
+                                        raddr_t *ra_line_end_inout)
+{
+  int ra = 0;
+  raddr_t readahead_skip = *readahead_skip_inout;
+  raddr_t readahead_len = *readahead_len_inout;
+  raddr_t ra_line = *ra_line_inout;
+  raddr_t ra_line_end = *ra_line_end_inout;
+
+  if( ENABLE_READAHEAD_TRIGGER_WITHIN_PAGE && entry ) {
+    ra = should_readahead_extend(entry->valid_lines,
+                                 (ra_line - ra_page) >> CACHELINE_BITS,
+                                 (ra_line_end - ra_line) >> CACHELINE_BITS);
+    if( ra ) {
+      INFO_PRINT(("%i readahead trigger within-page direction=%i from %p to %p last %p\n",
+           (int) chpl_nodeID, ra, (void*) ra_line, (void*) ra_line_end, (void*) cache->last_cache_miss_read_addr));
+    }
+  }
+
+  // Note that ENABLE_READAHEAD_TRIGGER_SEQUENTIAL is off by default
+  if( ENABLE_READAHEAD_TRIGGER_SEQUENTIAL && ra == 0 &&
+      cache->last_cache_miss_read_node == node ) {
+    if(cache->last_cache_miss_read_addr < ra_line &&
+       ra_line <= cache->last_cache_miss_read_addr + CACHEPAGE_SIZE) {
+      // forward prefetch.
+      ra = 1;
+      INFO_PRINT(("%i readahead trigger forward from %p to %p last %p\n",
+             (int) chpl_nodeID, (void*) ra_line, (void*) ra_line_end, (void*) cache->last_cache_miss_read_addr));
+    } else if(cache->last_cache_miss_read_addr > ra_line &&
+              ra_line >= cache->last_cache_miss_read_addr - CACHEPAGE_SIZE) {
+      // reverse prefetch
+      ra = -1;
+      INFO_PRINT(("readahead trigger reverse from %p to %p last %p\n",
+             (void*) ra_line, (void*) ra_line_end, (void*) cache->last_cache_miss_read_addr));
+    }
+  }
+
+  if( ra == 1 ) {
+    // Extend ra_line_end to the end of the current page.
+    ra_line_end = ra_page + CACHEPAGE_SIZE;
+
+    readahead_skip = CACHEPAGE_SIZE;
+    readahead_len = CACHEPAGE_SIZE;
+  } else if(ra == -1) {
+    // reverse prefetch
+    // Extend ra_line to the start of the current page.
+    ra_line = ra_page;
+
+    readahead_skip = -CACHEPAGE_SIZE;
+    readahead_len = CACHEPAGE_SIZE;
+  }
+
+  *readahead_skip_inout = readahead_skip;
+  *readahead_len_inout = readahead_len;
+  *ra_line_inout = ra_line;
+  *ra_line_end_inout = ra_line_end;
+}
 
 // If addr == NULL, this will prefetch.
+// This call handles only accesses within a page.
+// returns 1 if the request was a "hit"
 static
-void cache_get(struct rdcache_s* cache,
-                unsigned char * addr,
-                c_nodeid_t node, raddr_t raddr, size_t size,
-                cache_seqn_t last_acquire,
-                int sequential_readahead_length,
-                int32_t commID, int ln, int32_t fn)
+int cache_get_in_page(struct rdcache_s* cache,
+                      chpl_cache_taskPrvData_t* task_local,
+                      unsigned char * addr,
+                      c_nodeid_t node, raddr_t raddr, size_t size,
+                      raddr_t ra_first_page, raddr_t ra_last_page,
+                      int sequential_readahead_length,
+                      int32_t commID, int ln, int32_t fn)
 {
   struct cache_entry_s* entry;
+  raddr_t ra_page;
+  raddr_t ra_line;
+  raddr_t ra_line_end;
+  int has_data;
+  cache_seqn_t sn = NO_SEQUENCE_NUMBER;
+  int isprefetch;
+  int entry_after_acquire;
+  chpl_comm_nb_handle_t handle;
+  uintptr_t readahead_len, readahead_skip;
+
+  isprefetch = (addr == NULL);
+
+  TRACE_PRINT(("%d: task %d in get_in_page %s:%d get %d bytes from "
+               "%d:%p to %p\n",
+               chpl_nodeID, (int)chpl_task_getId(), chpl_lookupFilename(fn), ln,
+               (int)size, node, (void*)raddr, addr));
+
+  INFO_PRINT(("%i cache_get_in_page addr %p from %i:%p len %i ra_len %i\n",
+               (int) chpl_nodeID, addr, (int) node, (void*) raddr, (int) size, sequential_readahead_length));
+
+  assert(chpl_nodeID != node); // should be handled in chpl_gen_comm_prefetch.
+  assert(size != 0); // should be handled at call site
+
+  // compute some information about the remote address
+
+  // ra_page = raddr of start of the page
+  ra_page = round_down_to_mask(raddr, CACHEPAGE_MASK);
+  // ra_line = raddr of start of first needed line
+  ra_line = round_down_to_mask(raddr, CACHELINE_MASK);
+  // ra_line_end = ra_last_line + CACHELINE_SIZE
+  // ra_last_line = raddr of start of last needed line
+  ra_line_end = round_down_to_mask(raddr+size-1, CACHELINE_MASK) +
+                CACHELINE_SIZE;
+
+  // Try to find this page data in the cache.
+  // We will need from ra_line to ra_line_end.
+
+  // Find the entry in the cache and "lock" it to keep this
+  // code simpler. (It would be possible to process some cache-hit GETs
+  // without "lock"ing but that would require care about the order in
+  // which entry fields are set in other regions of the code that
+  // are protected by the "lock").
+
+  // The "lock" prevents another operation that occurs within another
+  // task we get to through yielding from doing something with the entry.
+  entry = get_reserved_entry(cache, task_local, NULL, node, ra_page,
+                             isprefetch?CACHE_OP_PREFETCH:CACHE_OP_GET);
+  assert(entry && entry->page && entry->entryReservedByTask);
+  assert(entry->base.raddr == ra_page && entry->base.node == node);
+
+  // Is this cache line available for use, based on when we
+  // last ran an acquire fence?
+  entry_after_acquire = (entry->min_sequence_number >= task_local->last_acquire);
+
+  // Is the relevant data available in the cache line?
+  has_data = check_valid_lines(entry->valid_lines,
+                               (ra_line - ra_page) >> CACHELINE_BITS,
+                               (ra_line_end - ra_line) >> CACHELINE_BITS);
+
+  // If we are doing a GET that is adjacent to the last GET,
+  // fetch the rest of the data in this page.
+  // Adjust readahead_skip, readahead_len, ra_line, and ra_line_end.
+  readahead_skip = 0;
+  readahead_len = 0;
+  if (ENABLE_READAHEAD &&
+      entry_after_acquire &&
+      sequential_readahead_length == 0 &&
+      !has_data &&
+      !(entry && entry->readahead_len)) {
+
+    cache_get_compute_readahead_extend(cache, task_local, entry,
+                                       node, ra_page,
+                                       sequential_readahead_length,
+                                       &readahead_skip, &readahead_len,
+                                       &ra_line, &ra_line_end);
+  }
+
+  // Check for data in the dirty region
+  if( !has_data && entry->dirty ) {
+    has_data = all_set_for_skip_len(entry->dirty->dirty,
+                                    raddr & CACHEPAGE_MASK,
+                                    size,
+                                    CACHEPAGE_BITMASK_WORDS);
+  }
+
+
+  if (entry_after_acquire && has_data) {
+    // Data is already in cache...  but to do a 'get' for previously
+    // prefetched data, we might have to wait for it.
+    if (!isprefetch) {
+      if (entry->max_prefetch_sequence_number >
+          cache->completed_request_number) {
+        wait_for(cache, entry->max_prefetch_sequence_number);
+        // note: wait_for can yield, but entry is locked
+        // no chance of deadlock since wait_for just processes comm events
+        assert(entry->page && entry->entryReservedByTask == task_local);
+        assert(entry->base.raddr == ra_page && entry->base.node == node);
+      }
+
+      // Copy the data out.
+      chpl_memcpy(addr, entry->page + (raddr-ra_page), size);
+
+#ifdef DUMP
+      {
+        // printing out gotten data for debug
+        int i = 0;
+        unsigned char* ptr = entry->page;
+        ptr += (raddr-ra_page);
+
+        printf("%d: task %d cache %p got from %d:%p to %p ",
+               chpl_nodeID, (int) chpl_task_getId(), cache,
+               node, (void*) ptr, addr);
+
+        for (i = 0; i < size; i++ ) {
+          printf("%02x", ptr[i]);
+        }
+        printf("\n");
+      }
+#endif
+
+      // If we are accessing a page that has a readahead condition,
+      // trigger that readahead.
+      if( ENABLE_READAHEAD && entry->readahead_len ) {
+        // Remove the readahead trigger from this page since
+        // we're starting the readahead now.
+        readahead_skip = entry->readahead_skip;
+        readahead_len = entry->readahead_len;
+        entry->readahead_skip = 0;
+        entry->readahead_len = 0;
+
+        // "unlock" the entry
+        unreserve_entry(cache, task_local, entry);
+        entry = NULL;
+
+        // note - triggering readahead can yield
+        cache_get_trigger_readahead(cache, task_local,
+                                    node, ra_page,
+                                    raddr, size,
+                                    readahead_skip, readahead_len,
+                                    commID, ln, fn);
+        return 1;
+      }
+    }
+
+    // "unlock" the entry
+    unreserve_entry(cache, task_local, entry);
+    entry = NULL;
+    return 1;
+  }
+
+  // If we get here, the data was not available, so
+  // Get ready to start a GET !
+
+  // If there was an intervening acquire fence preventing
+  // us from using this cache line, we need to mark everything
+  // as invalid and clear the min and max request numbers.
+  // We also need to wait for pending puts using that data...
+
+  // If the cache line contains any overlapping writes or prefetches,
+  // we must wait for them to complete before we request new data.
+  // Prefetches might not yet have filled in the data according
+  // to the promised valid bits. GETs and PUTs must not have
+  // their buffers changed during operation.
+  flush_entry(cache, task_local, entry,
+              entry_after_acquire?FLUSH_PREPARE_GET:FLUSH_INVALIDATE_PAGE,
+              ra_line, ra_line_end-ra_line);
+  // note: flush_entry can yield, but entry is locked
+  // no chance of deadlock because above flush might create/wait for comms
+  // but does not try to lock another page.
+  assert(entry->page && entry->entryReservedByTask == task_local);
+  assert(entry->base.raddr == ra_page && entry->base.node == node);
+
+  // Now we need to start a get into page.
+  // We'll get within ra_page from ra_line to ra_line_end.
+  INFO_PRINT(("%i chpl_comm_start_get(%p, %i, %p, %i)\n",
+               (int) chpl_nodeID, page+(ra_line-ra_page), node, (void*) ra_line,
+               (int) (ra_line_end - ra_line)));
+
+  // Note: chpl_comm_get_nb could cause a different task body to run.
+  // That should be OK because we marked entry as "reserved".
+  handle = chpl_comm_get_nb(entry->page + (ra_line-ra_page), /*local addr*/
+                            node, (void*) ra_line,
+                            ra_line_end - ra_line /*size*/,
+                            commID, ln, fn);
+  if (EXTRA_YIELDS) {
+    TRACE_YIELD_PRINT(("%d: task %d cache %p yielding in cache_get_in_page "
+                       "for chpl_comm_get_nb\n",
+                       chpl_nodeID, (int) chpl_task_getId(), cache));
+
+    chpl_task_yield();
+
+    TRACE_YIELD_PRINT(("%d: task %d cache %p back in cache_get_in_page\n",
+                       chpl_nodeID, (int) chpl_task_getId(), cache));
+  }
+  // note: chpl_comm_get_nb can yield, but entry is locked
+  assert(entry->page && entry->entryReservedByTask == task_local);
+  assert(entry->base.raddr == ra_page && entry->base.node == node);
+
+  // Set the valid lines
+  set_valid_lines(entry->valid_lines,
+                  (ra_line - ra_page) >> CACHELINE_BITS,
+                  (ra_line_end - ra_line) >> CACHELINE_BITS);
+
+  if (!isprefetch) {
+    // This will increment next request number so cache events are recorded.
+    sn = cache->next_request_number;
+    cache->next_request_number++;
+  } else {
+    // For a prefetch, store sequence number and record operation handle.
+
+    // This will increment next request number so cache events are recorded.
+    sn = pending_push(cache, handle);
+    // note: pending_push can yield, but entry is locked
+    assert(entry->page && entry->entryReservedByTask == task_local);
+    assert(entry->base.raddr == ra_page && entry->base.node == node);
+
+    entry->max_prefetch_sequence_number = seqn_max(entry->max_prefetch_sequence_number, sn);
+  }
+
+  // Set the minimum sequence number
+  entry->min_sequence_number = seqn_min(entry->min_sequence_number, sn);
+
+  // Decide what to store in the readahead trigger for this page
+  // if we are currently doing a readahead.
+  if( ENABLE_READAHEAD ) {
+    if( sequential_readahead_length > 0 && ra_page == ra_first_page ) {
+      // forward readahead
+      readahead_skip = size;
+      readahead_len = sequential_readahead_length;
+    }
+    if( sequential_readahead_length < 0 && ra_page == ra_last_page ) {
+      // reverse readahead
+      readahead_skip = sequential_readahead_length -
+                       (ra_last_page - ra_first_page);
+      readahead_len = -sequential_readahead_length; // positive.
+    }
+  }
+
+  // Save readahead trigger for this page if we have one to set.
+  // It could come from just above or from readahead start.
+  if( ENABLE_READAHEAD && readahead_len ) {
+
+    INFO_PRINT(("%i saving for %i:%p skip %i len %i\n",
+                 (int) chpl_nodeID, (int) node, (void*) entry->raddr,
+                 (int) readahead_skip, (int) readahead_len));
+
+    entry->readahead_skip = readahead_skip;
+    entry->readahead_len = readahead_len;
+  }
+
+  // Update the last read location on a miss
+  // (as long as there was not an intervening acquire)
+  if( entry_after_acquire && sequential_readahead_length == 0 ) {
+    cache->last_cache_miss_read_node = node;
+    cache->last_cache_miss_read_addr = ra_line;
+  }
+
+  // Make sure that there is an available page for next time,
+  // but do it without evicting entry (that we are working with).
+  // This could happen if entry is the last element of Ain.
+  //
+  // To prevent deadlock, this call does nothing if the page we would
+  // reclaim is locked. That is OK because this call is here for performance,
+  // and not correctness, and so be skipped in that event.
+  // It also causes 'entry' not to be reclaimed if it is
+  // the last thing in Ain.
+  ensure_free_page(cache, task_local, /* give_up_if_locked */ 1);
+  // note: ensure_free_page can yield, but entry is locked
+  assert(entry->page && entry->entryReservedByTask == task_local);
+  assert(entry->base.raddr == ra_page && entry->base.node == node);
+
+  if (!isprefetch) {
+    // If we're not prefetching... wait for the get to complete and copy it
+    // back out of the cache.
+
+    chpl_comm_wait_nb_some(&handle, 1);
+    if (EXTRA_YIELDS) {
+      TRACE_YIELD_PRINT(("%d: task %d cache %p yielding in cache_get_in_page "
+                         "for chpl_comm_wait_nb_some\n",
+                         chpl_nodeID, (int) chpl_task_getId(), cache));
+
+      chpl_task_yield();
+
+      TRACE_YIELD_PRINT(("%d: task %d cache %p back in cache_get_in_page\n",
+                         chpl_nodeID, (int) chpl_task_getId(), cache));
+    }
+
+    // note: chpl_comm_wait_nb_some can yield, but entry is locked
+    assert(entry->page && entry->entryReservedByTask == task_local);
+    assert(entry->base.raddr == ra_page && entry->base.node == node);
+
+    // Then, copy it out.
+    chpl_memcpy(addr, entry->page + (raddr-ra_page), size);
+
+#ifdef DUMP
+    {
+      // printing out gotten data for debug
+      int i = 0;
+      unsigned char* ptr = entry->page;
+      ptr += (raddr-ra_page);
+
+      printf("%d: task %d cache %p got from %d:%p to %p ",
+             chpl_nodeID, (int) chpl_task_getId(), cache,
+             node, (void*) ptr, addr);
+
+      for (i = 0; i < size; i++ ) {
+        printf("%02x", ptr[i]);
+      }
+      printf("\n");
+    }
+#endif
+
+  }
+
+  unreserve_entry(cache, task_local, entry);
+  entry = NULL;
+
+  // TODO: is this call necessary?
+  ensure_free_page(cache, task_local, /* give_up_if_locked */ 0);
+
+  return 0;
+}
+
+
+// If addr == NULL, this will prefetch.
+// Returns 1 if all of the data was in the cache.
+static
+int cache_get(struct rdcache_s* cache,
+              chpl_cache_taskPrvData_t* task_local,
+              unsigned char * addr,
+              c_nodeid_t node, raddr_t raddr, size_t size,
+              int sequential_readahead_length,
+              int32_t commID, int ln, int32_t fn)
+{
+  raddr_t ra_first_page;
+  raddr_t ra_last_page;
+  raddr_t ra_page;
+  raddr_t requested_start, requested_end, requested_size;
+  raddr_t ra_last_line;
+  raddr_t ra_next_line;
+  raddr_t ra_line_end;
+  int isprefetch = (addr == NULL);
+#ifdef TIME
+  struct timespec start_get1, start_get2, wait1, wait2;
+#endif
+  int hit;
+  int all_hits = 1;
+
+  INFO_PRINT(("%i cache_get addr %p from %i:%p len %i ra_len %i\n",
+               (int) chpl_nodeID, addr, (int) node, (void*) raddr, (int) size, sequential_readahead_length));
+
+  assert(chpl_nodeID != node); // should be handled in chpl_gen_comm_prefetch.
+
+  // And don't do anything if it's a zero-length
+  if( size == 0 ) {
+    return 1;
+  }
+
+  // first_page = raddr of start of first needed page
+  ra_first_page = round_down_to_mask(raddr, CACHEPAGE_MASK);
+  // last_page = raddr of start of last needed page
+  ra_last_page = round_down_to_mask(raddr+size-1, CACHEPAGE_MASK);
+  // last_line = raddr of start of last needed line
+  ra_last_line = round_down_to_mask(raddr+size-1, CACHELINE_MASK);
+  ra_next_line = ra_last_line + CACHELINE_SIZE;
+
+  // If the request is too large to reasonably fit in the cache, limit
+  // the amount of data prefetched. (or do nothing?)
+  if( isprefetch && (ra_last_page-ra_first_page)/CACHEPAGE_SIZE+1 > MAX_PAGES_PER_PREFETCH ) {
+    ra_last_page = ra_first_page + CACHEPAGE_SIZE*MAX_PAGES_PER_PREFETCH;
+  }
+
+  // Try to find it in the cache. Go through one page at a time.
+  for( ra_page = ra_first_page;
+       ra_page <= ra_last_page;
+       ra_page += CACHEPAGE_SIZE ) {
+
+
+    // We will need from ra_line to ra_line_end.
+    ra_line_end = (ra_page==ra_last_page)?(ra_next_line):(ra_page+CACHEPAGE_SIZE);
+    // Compute the portion of the page that was requested
+    requested_start = raddr_max(raddr,ra_page);
+    requested_end = raddr_min(raddr+size,ra_line_end);
+    requested_size = requested_end - requested_start;
+
+    hit = cache_get_in_page(cache, task_local,
+                            (addr==NULL)?(NULL):(addr+(requested_start-raddr)),
+                            node, requested_start, requested_size,
+                            ra_first_page, ra_last_page,
+                            sequential_readahead_length,
+                            commID, ln, fn);
+
+    all_hits = all_hits && hit;
+  }
+
+  if( VERIFY ) validate_cache(cache, task_local);
+
+#ifdef DUMP
+  printf("After cache_get cache is:\n");
+  rdcache_print(cache);
+#endif
+
+  return all_hits;
+}
+
+// This is intended to match cache_get but
+//  * it will never prefetch
+//  * it doesn't actually GET; just memsets to 0 instead.
+// Returns 1 if the data was in the cache.
+static
+int mock_get(struct rdcache_s* cache,
+             chpl_cache_taskPrvData_t* task_local,
+             c_nodeid_t node, raddr_t raddr, size_t size,
+             cache_seqn_t last_acquire,
+             int sequential_readahead_length,
+             int32_t commID, int ln, int32_t fn)
+{
+  struct cache_entry_s* entry;
+  struct cache_entry_s* aout_entry;
   raddr_t ra_first_page;
   raddr_t ra_last_page;
   raddr_t ra_page;
@@ -2248,24 +3240,24 @@ void cache_get(struct rdcache_s* cache,
   int has_data;
   unsigned char* page;
   cache_seqn_t sn = NO_SEQUENCE_NUMBER;
-  int isprefetch = (addr == NULL);
   int entry_after_acquire;
-  chpl_comm_nb_handle_t handle;
-  uintptr_t readahead_len, readahead_skip;
-  int ra;
 #ifdef TIME
   struct timespec start_get1, start_get2, wait1, wait2;
 #endif
+  int all_in_cache;
 
-  INFO_PRINT(("%i cache_get addr %p from %i:%p len %i ra_len %i\n",
+  INFO_PRINT(("%i mock_get addr %p from %i:%p len %i ra_len %i\n",
                (int) chpl_nodeID, addr, (int) node, (void*) raddr, (int) size, sequential_readahead_length));
 
-  assert(chpl_nodeID != node); // should be handled in chpl_gen_comm_prefetch.
+  if (chpl_nodeID == node)
+    return 1;
 
-  // And don't do anything if it's a zero-length 
+  // And don't do anything if it's a zero-length
   if( size == 0 ) {
-    return;
+    return 1;
   }
+
+  all_in_cache = 1;
 
   // first_page = raddr of start of first needed page
   ra_first_page = round_down_to_mask(raddr, CACHEPAGE_MASK);
@@ -2277,17 +3269,11 @@ void cache_get(struct rdcache_s* cache,
   ra_last_line = round_down_to_mask(raddr+size-1, CACHELINE_MASK);
   ra_next_line = ra_last_line + CACHELINE_SIZE;
 
-  // If the request is too large to reasonably fit in the cache, limit
-  // the amount of data prefetched. (or do nothing?)
-  if( isprefetch && (ra_last_page-ra_first_page)/CACHEPAGE_SIZE+1 > MAX_PAGES_PER_PREFETCH ) {
-    ra_last_page = ra_first_page + CACHEPAGE_SIZE*MAX_PAGES_PER_PREFETCH;
-  }
-
   // Try to find it in the cache. Go through one page at a time.
   for( ra_page = ra_first_page, ra_line = ra_first_line;
        ra_page <= ra_last_page;
        ra_page += CACHEPAGE_SIZE, ra_line = ra_page ) {
-    
+
     // We will need from ra_line to ra_line_end.
     ra_line_end = (ra_page==ra_last_page)?(ra_next_line):(ra_page+CACHEPAGE_SIZE);
     // Compute the portion of the page that was requested
@@ -2296,18 +3282,21 @@ void cache_get(struct rdcache_s* cache,
     requested_size = requested_end - requested_start;
 
     // Is the page in the tree?
-    entry = find_in_tree(cache, node, ra_page);
+    entry = lookup_entry(cache, node, ra_page);
+    aout_entry = NULL;
     page = NULL;
 
-
     // Ignore entries in Aout for now.
-    if( entry && ! entry->page ) entry = NULL;
+    if( entry && ! entry->page ) {
+      aout_entry = entry;
+      entry = NULL;
+    }
 
     if( entry ) {
       // Is this cache line available for use, based on when we
       // last ran an acquire fence?
       entry_after_acquire = ( entry->min_sequence_number >= last_acquire );
-     
+
       // Is the relevant data available in the cache line?
       has_data = check_valid_lines(entry->valid_lines,
                                    (ra_line - ra_page) >> CACHELINE_BITS,
@@ -2318,61 +3307,6 @@ void cache_get(struct rdcache_s* cache,
     }
 
     //printf("%i entry is %p after_acquire %i has_data %i\n", chpl_nodeID, entry, entry_after_acquire, has_data);
-
-    // If we are doing a GET that is adjacent to the last GET,
-    // fetch the rest of the data in this page.
-    readahead_skip = 0;
-    readahead_len = 0;
-    if( ENABLE_READAHEAD &&
-        entry_after_acquire &&
-        sequential_readahead_length == 0 &&
-        ! has_data &&
-        ! (entry && entry->readahead_len) ) {
-      
-      ra = 0;
-
-      if( ENABLE_READAHEAD_TRIGGER_WITHIN_PAGE && entry ) {
-        ra = should_readahead_extend(entry->valid_lines,
-                                 (ra_line - ra_page) >> CACHELINE_BITS,
-                                 (ra_line_end - ra_line) >> CACHELINE_BITS);
-        if( ra ) {
-          INFO_PRINT(("%i readahead trigger within-page direction=%i from %p to %p last %p\n",
-               (int) chpl_nodeID, ra, (void*) ra_line, (void*) ra_line_end, (void*) cache->last_cache_miss_read_addr));
-        }
-      }
-     
-      if( ENABLE_READAHEAD_TRIGGER_SEQUENTIAL && ra == 0 &&
-          cache->last_cache_miss_read_node == node ) {
-        if(cache->last_cache_miss_read_addr < ra_line &&
-           ra_line <= cache->last_cache_miss_read_addr + CACHEPAGE_SIZE) {
-          // forward prefetch.
-          ra = 1;
-          INFO_PRINT(("%i readahead trigger forward from %p to %p last %p\n",
-                 (int) chpl_nodeID, (void*) ra_line, (void*) ra_line_end, (void*) cache->last_cache_miss_read_addr));
-        } else if(cache->last_cache_miss_read_addr > ra_line &&
-                  ra_line >= cache->last_cache_miss_read_addr - CACHEPAGE_SIZE) {
-          // reverse prefetch
-          ra = -1;
-          INFO_PRINT(("readahead trigger reverse from %p to %p last %p\n",
-                 (void*) ra_line, (void*) ra_line_end, (void*) cache->last_cache_miss_read_addr));
-        }
-      }
-
-      if( ra == 1 ) {
-        // Extend ra_line_end to the end of the current page.
-        ra_line_end = ra_page + CACHEPAGE_SIZE;
-        
-        readahead_skip = CACHEPAGE_SIZE;
-        readahead_len = CACHEPAGE_SIZE;
-      } else if(ra == -1) {
-        // reverse prefetch
-        // Extend ra_line to the start of the current page.
-        ra_line = ra_page;
-        
-        readahead_skip = -CACHEPAGE_SIZE;
-        readahead_len = CACHEPAGE_SIZE;
-      }
-    }
 
     if( entry ) {
       page = entry->page;
@@ -2388,56 +3322,17 @@ void cache_get(struct rdcache_s* cache,
       if( entry_after_acquire && has_data ) {
         // Data is already in cache...  but to do a 'get' for previously
         // prefetched data, we might have to wait for it.
-        if( !isprefetch ) {
+        {
           if( entry->max_prefetch_sequence_number > cache->completed_request_number ) {
-#ifdef TIME
-            clock_gettime(CLOCK_REALTIME, &wait1);
-#endif
-
             wait_for(cache, entry->max_prefetch_sequence_number);
-
-#ifdef TIME
-            clock_gettime(CLOCK_REALTIME, &wait2);
-
-            printf("%li ns waiting for %p\n", time_duration(&wait1, &wait2), (void*) ra_page);
-#endif
           }
         }
         // If the cache line is in Am, move it to the front of Am.
         use_entry(cache, entry);
-        if( ! isprefetch ) {
-      
-          //printf("cache hit on page %i:%p %p ra_len %i\n", 
-          //       node, (void*) ra_page, (void*) requested_start,
-          //       (int) entry->readahead_len);
-          // Copy the data out.
-          chpl_memcpy(addr+(requested_start-raddr),
-                      page+(requested_start-ra_page),
-                      requested_size);
-    
-          // If we are accessing a page that has a readahead condition,
-          // trigger that readahead.
-          if( ENABLE_READAHEAD && entry->readahead_len ) {
-            // Remove the readahead trigger from this page since
-            // we're starting the readahead now.
-            readahead_skip = entry->readahead_skip;
-            readahead_len = entry->readahead_len;
-            entry->readahead_skip = 0;
-            entry->readahead_len = 0;
-
-            cache_get_trigger_readahead(cache, node, ra_page,
-                                        raddr, size,
-                                        readahead_skip,
-                                        readahead_len,
-                                        last_acquire,
-                                        commID, ln, fn);
-            entry = NULL; // note trigger readahead could evict entry...
-          }
-        }
-
+        // Would copy the data out here, but not in mock get
         continue; // Move on to the next page.
       }
-   
+
       // Get ready to start a get !
 
       // If there was an intervening acquire fence preventing
@@ -2450,12 +3345,13 @@ void cache_get(struct rdcache_s* cache,
       // Prefetches might not yet have filled in the data according
       // to the promised valid bits. GETs and PUTs must not have
       // their buffers changed during operation.
-      flush_entry(cache, entry,
+      flush_entry(cache, task_local, entry,
                   entry_after_acquire?FLUSH_PREPARE_GET:FLUSH_INVALIDATE_PAGE,
                   ra_line, ra_line_end-ra_line);
     }
 
-    // Otherwise -- start a get !
+    // Otherwise -- pretend to start a "get" !
+    all_in_cache = 0;
 
     if( ! page ) {
       // get a page from the free list.
@@ -2470,25 +3366,14 @@ void cache_get(struct rdcache_s* cache,
                  (int) chpl_nodeID, page+(ra_line-ra_page), node, (void*) ra_line,
                  (int) (ra_line_end - ra_line)));
 
-#ifdef TIME
-    clock_gettime(CLOCK_REALTIME, &start_get1);
-#endif
-    // Note: chpl_comm_get_nb could cause a different task body to run.
-    handle = 
-      chpl_comm_get_nb(page+(ra_line-ra_page), /*local addr*/
-                       node, (void*) ra_line,
-                       ra_line_end - ra_line /*size*/,
-                       commID, ln, fn);
-#ifdef TIME
-    clock_gettime(CLOCK_REALTIME, &start_get2);
-#endif
-
-    // Now, while that get is going, plumb into the tree.
+    memset(page+(ra_line-ra_page), /*local addr*/
+           0,
+           ra_line_end - ra_line /*size*/);
 
     if( entry ) {
       use_entry(cache, entry);
     } else {
-      entry = make_entry(cache, node, ra_page, page);
+      entry = make_entry(cache, node, ra_page, page, aout_entry);
     }
 
     // Set the valid lines
@@ -2496,48 +3381,14 @@ void cache_get(struct rdcache_s* cache,
                     (ra_line - ra_page) >> CACHELINE_BITS,
                     (ra_line_end - ra_line) >> CACHELINE_BITS);
 
-    if( ! isprefetch ) {
+    {
       // This will increment next request number so cache events are recorded.
       sn = cache->next_request_number;
       cache->next_request_number++;
-    } else {
-      // For a prefetch, store sequence number and record operation handle.
-
-      // This will increment next request number so cache events are recorded.
-      sn = pending_push(cache, handle);
-      entry->max_prefetch_sequence_number = seqn_max(entry->max_prefetch_sequence_number, sn);
     }
 
     // Set the minimum sequence number
     entry->min_sequence_number = seqn_min(entry->min_sequence_number, sn);
-
-    // Decide what to store in the readahead trigger for this page
-    // if we are currently doing a readahead.
-    if( ENABLE_READAHEAD ) {
-      if( sequential_readahead_length > 0 && ra_page == ra_first_page ) {
-        // forward readahead
-        readahead_skip = size;
-        readahead_len = sequential_readahead_length;
-      }
-      if( sequential_readahead_length < 0 && ra_page == ra_last_page ) {
-        // reverse readahead
-        readahead_skip = sequential_readahead_length -
-                         (ra_last_page - ra_first_page);
-        readahead_len = -sequential_readahead_length; // positive.
-      }
-    }
-
-    // Save readahead trigger for this page if we have one to set.
-    // It could come from just above or from readahead start.
-    if( ENABLE_READAHEAD && readahead_len ) {
-
-      INFO_PRINT(("%i saving for %i:%p skip %i len %i\n",
-                   (int) chpl_nodeID, (int) node, (void*) entry->raddr,
-                   (int) readahead_skip, (int) readahead_len));
-
-      entry->readahead_skip = readahead_skip;
-      entry->readahead_len = readahead_len;
-    }
 
     // Update the last read location on a miss
     // (as long as there was not an intervening acquire)
@@ -2549,50 +3400,72 @@ void cache_get(struct rdcache_s* cache,
     // Make sure that there is an available page for next time,
     // but do it without evicting entry (that we are working with).
     // This could happen if entry is the last element of Ain..
-    ensure_free_page(cache, entry);
+    ensure_free_page(cache, task_local, /* give_up_if_locked */ 1);
 
-    if( ! isprefetch ) {
-      // If we're not prefetching... wait for the get to complete and copy it
-      // back out of the cache.
-
-#ifdef TIME
-      clock_gettime(CLOCK_REALTIME, &wait1);
-#endif
-
-      chpl_comm_wait_nb_some(&handle, 1);
-
-#ifdef TIME
-      clock_gettime(CLOCK_REALTIME, &wait2);
-
-      printf("after get %p\n%li ns in start_get\n%li ns in wait_some\n%li ns total\n",
-             (void*) ra_line,
-             time_duration(&start_get1, &start_get2),
-             time_duration(&wait1, &wait2),
-             time_duration(&start_get1, &wait2));
-#endif
-
-      // Then, copy it out.
-      chpl_memcpy(addr+(requested_start-raddr),
-                  page+(requested_start-ra_page),
-                  requested_size);
-  
-    }
+    // would copy the data out here, but not in mock get
   }
 
-  if( VERIFY ) validate_cache(cache);
+  if( VERIFY ) validate_cache(cache, task_local);
 
 #ifdef DUMP
-  printf("After cache_get cache is:\n");
+  printf("After mock_get cache is:\n");
   rdcache_print(cache);
 #endif
+
+  return all_in_cache;
 }
 
 
 static
-void cache_invalidate(struct rdcache_s* cache,
-                       c_nodeid_t node, raddr_t raddr, size_t size)
+void cache_invalidate_in_page(struct rdcache_s* cache,
+                              chpl_cache_taskPrvData_t* task_local,
+                              c_nodeid_t node, raddr_t raddr, size_t size)
 {
-  struct cache_entry_s* entry;
+  raddr_t ra_page;
+
+  // ra_page = raddr of start of the page
+  ra_page = round_down_to_mask(raddr, CACHEPAGE_MASK);
+
+  while (1) {
+    // Is the page in the tree?
+    struct cache_entry_s* entry = lookup_entry(cache, node, ra_page);
+
+    if (entry && entry->page) {
+      if (!try_reserve_entry(cache, task_local, entry)) {
+        // couldn't reserve entry - yield and try the lookup again
+        TRACE_YIELD_PRINT(("%d: task %d cache %p yielding in invalidate\n",
+                           chpl_nodeID, (int) chpl_task_getId(), cache));
+
+        chpl_task_yield();
+
+        TRACE_YIELD_PRINT(("%d: task %d cache %p back in invalidate\n",
+                       chpl_nodeID, (int) chpl_task_getId(), cache));
+
+        // try again
+        continue;
+      }
+
+      // "lock"ed entry
+      flush_entry(cache, task_local, entry,
+                  FLUSH_INVALIDATE_REGION, raddr, size);
+
+      // "unlock" the entry
+      unreserve_entry(cache, task_local, entry);
+
+    }
+
+    // all cases other than the 'continue' case above should return now
+    //  * no page was found
+    //  * found page, locked it, and flushed it
+    return;
+  }
+}
+
+static
+void cache_invalidate(struct rdcache_s* cache,
+                      chpl_cache_taskPrvData_t* task_local,
+                      c_nodeid_t node, raddr_t raddr, size_t size)
+{
   raddr_t ra_first_page;
   raddr_t ra_last_page;
   raddr_t ra_next_page;
@@ -2600,7 +3473,7 @@ void cache_invalidate(struct rdcache_s* cache,
   raddr_t ra_page_end;
   raddr_t requested_start, requested_end, requested_size;
 
-  DEBUG_PRINT(("shared_invalidate from %i:%p len %i\n",
+  DEBUG_PRINT(("invalidate from %i:%p len %i\n",
                (int) node, raddr, (int) size));
 
   if (chpl_nodeID == node) {
@@ -2627,25 +3500,44 @@ void cache_invalidate(struct rdcache_s* cache,
     requested_end = raddr_min(raddr+size,ra_page_end);
     requested_size = requested_end - requested_start;
 
-    // Is the page in the tree?
-    entry = find_in_tree(cache, node, ra_page);
-
-    if( entry && entry->page ) {
-      flush_entry(cache, entry, FLUSH_INVALIDATE_REGION, requested_start, requested_size);
-    }
+    // invalidate that portion of the page
+    cache_invalidate_in_page(cache, task_local, node,
+                             requested_start, requested_size);
   }
 }
 
 static
-void cache_clean_dirty(struct rdcache_s* cache)
+void cache_clean_dirty(struct rdcache_s* cache,
+                       chpl_cache_taskPrvData_t* task_local)
 {
-  struct dirty_entry_s* cur;
 
-  while( 1 ) {
+  while (1) {
+    struct dirty_entry_s* cur;
+    struct cache_entry_s* victim;
+
     cur = cache->dirty_lru_head;
     // Dirty records with page entries are before free ones without
     if( ! cur || ! cur->entry ) break;
-    flush_entry(cache, cur->entry, FLUSH_DO_CLEAR_DIRTY, 0, CACHEPAGE_SIZE);
+
+    victim = cur->entry;
+
+    if (!try_reserve_entry(cache, task_local, victim)) {
+      // couldn't reserve entry - yield and try the lookup again
+      TRACE_YIELD_PRINT(("%d: task %d cache %p yielding in clean_dirty\n",
+                         chpl_nodeID, (int) chpl_task_getId(), cache));
+
+      chpl_task_yield();
+
+      TRACE_YIELD_PRINT(("%d: task %d cache %p back in clean_dirty\n",
+                         chpl_nodeID, (int) chpl_task_getId(), cache));
+
+      continue;
+    }
+
+    // "lock"ed entry
+    flush_entry(cache, task_local, victim,
+                FLUSH_DO_CLEAR_DIRTY, 0, CACHEPAGE_SIZE);
+    unreserve_entry(cache, task_local, victim);
   }
 }
 
@@ -2687,8 +3579,9 @@ struct rdcache_s* tls_cache_remote_data(void) {
 static
 chpl_cache_taskPrvData_t* task_private_cache_data(void)
 {
-  chpl_task_prvData_t* task_local = chpl_task_getPrvData();
-  return &task_local->comm_data.cache_data;
+  chpl_task_infoRuntime_t* infoRuntime = chpl_task_getInfoRuntime();
+  assert(infoRuntime);
+  return &infoRuntime->comm_data.cache_data;
 }
 
 static
@@ -2703,12 +3596,7 @@ void chpl_cache_do_init(void)
 {
   static int inited = 0;
   if( ! inited ) {
-  
-    // Quick configuration check...
-    assert(OTHER_BITS+TOP_BITS+OTHER_BITS+BOTTOM_BITS+CACHEPAGE_BITS == 64);
-    assert(HALF_BITS + HALF_BITS + CACHEPAGE_BITS == 64);
-
-    // Otherwise, we will need some thread-local storage.
+    // We will need some thread-local storage.
     // We create two versions: cache_remote_data stores
     // our pointer to the struct rd_cache_s* and is what
     // we normally use, with __thread or CHPL_TLS_GET which is
@@ -2724,6 +3612,8 @@ void chpl_cache_do_init(void)
 // The implementation of functions in chpl-cache.h
 
 void chpl_cache_init(void) {
+
+  chpl_cache_warn_if_disabled();
 
   if( ! chpl_cache_enabled() ) {
     return;
@@ -2748,8 +3638,10 @@ void chpl_cache_fence(int acquire, int release, int ln, int32_t fn)
 
     INFO_PRINT(("%i fence acquire %i release %i %s:%i\n", chpl_nodeID, acquire, release, fn, ln));
 
-    TRACE_PRINT(("%d: task %d in chpl_cache_fence(acquire=%i,release=%i) on cache %p from %s:%d\n", chpl_nodeID, (int) chpl_task_getId(), acquire, release, cache, fn?fn:"", ln));
-    //printf("%d: task %d in chpl_cache_fence(acquire=%i,release=%i) on cache %p from %s:%d\n", chpl_nodeID, (int) chpl_task_getId(), acquire, release, cache, fn?fn:"", ln);
+    TRACE_FENCE_PRINT(("%d: task %d in chpl_cache_fence(acquire=%i,release=%i)"
+                       " on cache %p from %s:%d\n",
+                       chpl_nodeID, (int) chpl_task_getId(), acquire, release,
+                       cache, chpl_lookupFilename(fn), ln));
 
 #ifdef DUMP
     DEBUG_PRINT(("%d: task %d before fence\n", chpl_nodeID, (int) chpl_task_getId()));
@@ -2762,7 +3654,7 @@ void chpl_cache_fence(int acquire, int release, int ln, int32_t fn)
     }
 
     if( release ) {
-      cache_clean_dirty(cache);
+      cache_clean_dirty(cache, task_local);
       wait_all(cache);
     }
 #ifdef DUMP
@@ -2773,10 +3665,27 @@ void chpl_cache_fence(int acquire, int release, int ln, int32_t fn)
   // Do nothing if cache is not enabled.
 }
 
+void chpl_cache_invalidate(c_nodeid_t node, void* raddr, size_t size,
+                           int ln, int32_t fn)
+{
+  struct rdcache_s* cache = tls_cache_remote_data();
+  chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
+
+
+  TRACE_PRINT(("%d: task %d in chpl_cache_invalidate %s:%d %d bytes at %d:%p\n",
+               chpl_nodeID, (int)chpl_task_getId(),
+               chpl_lookupFilename(fn), ln,
+               (int)size, node, raddr, addr));
+
+  cache_invalidate(cache, task_local, node, (raddr_t)raddr, size);
+}
+
 // If a transfer is large enough we should directly initiate it to avoid
 // overheads of going through the cache
+//
+// This is not allowed to modify the cache
 static inline
-int size_merits_direct_comm(struct rdcache_s* cache, size_t size)
+int size_merits_direct_comm(const struct rdcache_s* cache, size_t size)
 {
   return size >= CACHEPAGE_SIZE;
 }
@@ -2784,14 +3693,24 @@ int size_merits_direct_comm(struct rdcache_s* cache, size_t size)
 void chpl_cache_comm_put(void* addr, c_nodeid_t node, void* raddr,
                          size_t size, int32_t commID, int ln, int32_t fn)
 {
-  //printf("put len %d node %d raddr %p\n", (int) len * elemSize, node, raddr);
   struct rdcache_s* cache = tls_cache_remote_data();
+  chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
+  int all_hits;
+
   if (size_merits_direct_comm(cache, size)) {
-    cache_invalidate(cache, node, (raddr_t)raddr, size);
+    cache_invalidate(cache, task_local, node, (raddr_t)raddr, size);
     chpl_comm_put(addr, node, raddr, size, commID, ln, fn);
+    if (EXTRA_YIELDS) {
+      TRACE_YIELD_PRINT(("%d: task %d cache %p yielding for chpl_comm_put\n",
+                         chpl_nodeID, (int) chpl_task_getId(), cache));
+
+      chpl_task_yield();
+
+      TRACE_YIELD_PRINT(("%d: task %d cache %p back from chpl_comm_put\n",
+                         chpl_nodeID, (int) chpl_task_getId(), cache));
+    }
     return;
   }
-  chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
   TRACE_PRINT(("%d: task %d in chpl_cache_comm_put %s:%d put %d bytes to %d:%p "
                "from %p\n",
                chpl_nodeID, (int)chpl_task_getId(), chpl_lookupFilename(fn), ln,
@@ -2802,10 +3721,17 @@ void chpl_cache_comm_put(void* addr, c_nodeid_t node, void* raddr,
   chpl_cache_print();
 #endif
 
-  //saturating_increment(&info->put_since_release);
-  //task_local->last_op = seqn_max(cache, addr, node, raddr, size);
-  cache_put(cache, addr, node, (raddr_t)raddr, size, task_local->last_acquire,
-            commID, ln, fn);
+  all_hits = cache_put(cache, task_local,
+                       addr, node, (raddr_t)raddr, size,
+                       commID, ln, fn);
+
+  if (size != 0) {
+    if (all_hits)
+      chpl_comm_diags_incr(cache_put_hits);
+    else
+      chpl_comm_diags_incr(cache_put_misses);
+  }
+
   return;
 }
 
@@ -2814,12 +3740,23 @@ void chpl_cache_comm_get(void *addr, c_nodeid_t node, void* raddr,
 {
   //printf("get len %d node %d raddr %p\n", (int) len * elemSize, node, raddr);
   struct rdcache_s* cache = tls_cache_remote_data();
+  chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
+  int all_hits;
+
   if (size_merits_direct_comm(cache, size)) {
-    cache_invalidate(cache, node, (raddr_t)raddr, size);
+    cache_invalidate(cache, task_local, node, (raddr_t)raddr, size);
     chpl_comm_get(addr, node, raddr, size, commID, ln, fn);
+    if (EXTRA_YIELDS) {
+      TRACE_YIELD_PRINT(("%d: task %d cache %p yielding for chpl_comm_get\n",
+                         chpl_nodeID, (int) chpl_task_getId(), cache));
+
+      chpl_task_yield();
+
+      TRACE_YIELD_PRINT(("%d: task %d cache %p back from chpl_comm_get\n",
+                         chpl_nodeID, (int) chpl_task_getId(), cache));
+    }
     return;
   }
-  chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
   TRACE_PRINT(("%d: task %d in chpl_cache_comm_get %s:%d get %d bytes from "
                "%d:%p to %p\n",
                chpl_nodeID, (int)chpl_task_getId(), chpl_lookupFilename(fn), ln,
@@ -2830,9 +3767,16 @@ void chpl_cache_comm_get(void *addr, c_nodeid_t node, void* raddr,
   chpl_cache_print();
 #endif
 
-  //saturating_increment(&info->get_since_acquire);
-  cache_get(cache, addr, node, (raddr_t)raddr, size, task_local->last_acquire,
-            0, commID, ln, fn);
+  all_hits = cache_get(cache, task_local,
+                       addr, node, (raddr_t)raddr, size,
+                       0, commID, ln, fn);
+
+  if (size != 0) {
+    if (all_hits)
+      chpl_comm_diags_incr(cache_get_hits);
+    else
+      chpl_comm_diags_incr(cache_get_misses);
+  }
 
   return;
 }
@@ -2842,46 +3786,136 @@ void chpl_cache_comm_prefetch(c_nodeid_t node, void* raddr,
 {
   struct rdcache_s* cache = tls_cache_remote_data();
   chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
+
   TRACE_PRINT(("%d: in chpl_cache_comm_prefetch\n", chpl_nodeID));
+
   chpl_comm_diags_verbose_rdma("prefetch", node, size, ln, fn, commID);
+
   // Always use the cache for prefetches.
-  //saturating_increment(&info->prefetch_since_acquire);
-  cache_get(cache, NULL, node, (raddr_t)raddr, size, task_local->last_acquire,
-            0, CHPL_COMM_UNKNOWN_ID, ln, fn);
+  cache_get(cache, task_local,
+            /* addr */ NULL, node, (raddr_t)raddr, size,
+            /* sequential_readahead_length */ 0,
+            CHPL_COMM_UNKNOWN_ID, ln, fn);
+
+  // TODO: record prefetches somewhere in diagnostic counters
 }
+
+struct cache_strd_callback_ctx {
+  struct rdcache_s* cache;
+  chpl_cache_taskPrvData_t* task_local;
+};
+
+static
+void strd_invalidate_fn(void* addr,
+                        int32_t node,
+                        void* raddr,
+                        size_t size,
+                        void* ctxv,
+                        int32_t commID,
+                        int ln,
+                        int32_t fn)
+{
+
+  struct cache_strd_callback_ctx* ctx = (struct cache_strd_callback_ctx*) ctxv;
+
+  struct rdcache_s* cache = ctx->cache;
+  chpl_cache_taskPrvData_t* task_local = ctx->task_local;
+
+  cache_invalidate(cache, task_local, node, (raddr_t)raddr, size);
+}
+
+static
+void strd_invalidate(void *addr, void *dststr, c_nodeid_t node,
+                     void *raddr, void *srcstr, void *count,
+                     int32_t strlevels, size_t elemSize,
+                     int32_t commID, int ln, int32_t fn) {
+
+  struct rdcache_s* cache = tls_cache_remote_data();
+  chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
+
+  struct cache_strd_callback_ctx ctx;
+  ctx.cache = cache;
+  ctx.task_local = task_local;
+  strd_common_call(addr, dststr, node,
+                   raddr, srcstr, count, strlevels, elemSize,
+                   &ctx, &strd_invalidate_fn, commID, ln, fn);
+}
+
+#define STRIDED_INVALIDATE_ALL 0
+
 void chpl_cache_comm_get_strd(void *addr, void *dststr, c_nodeid_t node,
                               void *raddr, void *srcstr, void *count,
                               int32_t strlevels, size_t elemSize,
                               int32_t commID, int ln, int32_t fn) {
   TRACE_PRINT(("%d: in chpl_cache_comm_get_strd\n", chpl_nodeID));
-  // do a full fence - so that:
-  // 1) any pending writes are completed (in case they were to the
-  //    same location handled by the strided get)
-  // 2) the cache does not have older values than what we're getting now
-  // Alternatively, we could invalidate the requested regions.
-  // Alternatively, the strided get could be done through the cache
-  // system. This is just the current (possibly temporary) solution.
-  chpl_cache_fence(1, 1, ln, fn);
+
+  if (STRIDED_INVALIDATE_ALL) {
+    // do a full fence - so that:
+    // 1) any pending writes are completed (in case they were to the
+    //    same location handled by the strided get)
+    // 2) the cache does not have older values than what we're getting now
+    // Alternatively, we could invalidate the requested regions.
+    // Alternatively, the strided get could be done through the cache
+    // system. This is just the current (possibly temporary) solution.
+    chpl_cache_fence(1, 1, ln, fn);
+  } else {
+    strd_invalidate(addr, dststr, node,
+                    raddr, srcstr, count,
+                    strlevels, elemSize,
+                    commID, ln, fn);
+  }
   // do the strided get.
   chpl_comm_get_strd(addr, dststr, node, raddr, srcstr, count, strlevels,
                      elemSize, commID, ln, fn);
+  if (EXTRA_YIELDS) {
+#ifdef TRACE_YIELDS
+    struct rdcache_s* cache = tls_cache_remote_data();
+#endif
+    TRACE_YIELD_PRINT(("%d: task %d cache %p yielding for chpl_comm_get_strd\n",
+                      chpl_nodeID, (int) chpl_task_getId(), cache));
+
+    chpl_task_yield();
+
+    TRACE_YIELD_PRINT(("%d: task %d cache %p back from chpl_comm_get_strd\n",
+                       chpl_nodeID, (int) chpl_task_getId(), cache));
+  }
 }
 void chpl_cache_comm_put_strd(void *addr, void *dststr, c_nodeid_t node,
                               void *raddr, void *srcstr, void *count,
                               int32_t strlevels, size_t elemSize,
                               int32_t commID, int ln, int32_t fn) {
   TRACE_PRINT(("%d: in chpl_cache_comm_put_strd\n", chpl_nodeID));
-  // do a full fence - so that:
-  // 1) any pending writes are completed (in case they were to the
-  //    same location handled by the strided put and would
-  //    complete in the wrong order)
-  // 2) the cache does not keep older values from before the put.
-  // Alternatively, the strided put could be done through the cache
-  // system. This is just the current (possibly temporary) solution.
-  chpl_cache_fence(1, 1, ln, fn);
+
+  if (STRIDED_INVALIDATE_ALL) {
+    // do a full fence - so that:
+    // 1) any pending writes are completed (in case they were to the
+    //    same location handled by the strided put and would
+    //    complete in the wrong order)
+    // 2) the cache does not keep older values from before the put.
+    // Alternatively, the strided put could be done through the cache
+    // system. This is just the current (possibly temporary) solution.
+    chpl_cache_fence(1, 1, ln, fn);
+  } else {
+    strd_invalidate(addr, dststr, node,
+                    raddr, srcstr, count,
+                    strlevels, elemSize,
+                    commID, ln, fn);
+  }
   // do the strided put.
   chpl_comm_put_strd(addr, dststr, node, raddr, srcstr, count, strlevels,
                      elemSize, commID, ln, fn);
+  if (EXTRA_YIELDS) {
+#ifdef TRACE_YIELDS
+    struct rdcache_s* cache = tls_cache_remote_data();
+#endif
+    TRACE_YIELD_PRINT(("%d: task %d cache %p yielding for chpl_comm_put_strd\n",
+                       chpl_nodeID, (int) chpl_task_getId(), cache));
+
+    chpl_task_yield();
+
+    TRACE_YIELD_PRINT(("%d: task %d cache %p back from chpl_comm_put_strd\n",
+                       chpl_nodeID, (int) chpl_task_getId(), cache));
+  }
 }
 
 //
@@ -2892,17 +3926,36 @@ void chpl_cache_comm_put_unordered(void* addr, c_nodeid_t node, void* raddr,
                                    size_t size, int32_t commID, int ln, int32_t fn)
 {
   struct rdcache_s* cache = tls_cache_remote_data();
-  cache_invalidate(cache, node, (raddr_t)raddr, size);
+  chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
+  cache_invalidate(cache, task_local, node, (raddr_t)raddr, size);
   chpl_comm_put_unordered(addr, node, raddr, size, commID, ln, fn);
+  if (EXTRA_YIELDS) {
+    TRACE_YIELD_PRINT(("%d: task %d cache %p yielding for put_unordered\n",
+                      chpl_nodeID, (int) chpl_task_getId(), cache));
 
+    chpl_task_yield();
+
+    TRACE_YIELD_PRINT(("%d: task %d cache %p back from put_unordered\n",
+                      chpl_nodeID, (int) chpl_task_getId(), cache));
+  }
 }
 
 void chpl_cache_comm_get_unordered(void *addr, c_nodeid_t node, void* raddr,
                                    size_t size, int32_t commID, int ln, int32_t fn)
 {
   struct rdcache_s* cache = tls_cache_remote_data();
-  cache_invalidate(cache, node, (raddr_t)raddr, size);
+  chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
+  cache_invalidate(cache, task_local, node, (raddr_t)raddr, size);
   chpl_comm_get_unordered(addr, node, raddr, size, commID, ln, fn);
+  if (EXTRA_YIELDS) {
+    TRACE_YIELD_PRINT(("%d: task %d cache %p yielding for get_unordered\n",
+                       chpl_nodeID, (int) chpl_task_getId(), cache));
+
+    chpl_task_yield();
+
+    TRACE_YIELD_PRINT(("%d: task %d cache %p back from put_unordered\n",
+                      chpl_nodeID, (int) chpl_task_getId(), cache));
+  }
 }
 
 
@@ -2911,10 +3964,20 @@ void chpl_cache_comm_getput_unordered(c_nodeid_t dstnode, void* dstaddr,
                                       size_t size, int32_t commID,
                                       int ln, int32_t fn)
 {
-    struct rdcache_s* cache = tls_cache_remote_data();
-    cache_invalidate(cache, srcnode, (raddr_t)srcaddr, size);
-    cache_invalidate(cache, dstnode, (raddr_t)dstaddr, size);
-    chpl_comm_getput_unordered(dstnode, dstaddr, srcnode, srcaddr, size, commID, ln, fn);
+  struct rdcache_s* cache = tls_cache_remote_data();
+  chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
+  cache_invalidate(cache, task_local, srcnode, (raddr_t)srcaddr, size);
+  cache_invalidate(cache, task_local, dstnode, (raddr_t)dstaddr, size);
+  chpl_comm_getput_unordered(dstnode, dstaddr, srcnode, srcaddr, size, commID, ln, fn);
+  if (EXTRA_YIELDS) {
+    TRACE_YIELD_PRINT(("%d: task %d cache %p yielding for getput_unordered\n",
+                       chpl_nodeID, (int) chpl_task_getId(), cache));
+
+    chpl_task_yield();
+
+    TRACE_YIELD_PRINT(("%d: task %d cache %p back from put_unordered\n",
+                      chpl_nodeID, (int) chpl_task_getId(), cache));
+  }
 }
 
 void chpl_cache_comm_getput_unordered_task_fence(void)
@@ -2952,16 +4015,84 @@ void chpl_cache_assert_released(void)
   }
 }
 
-/*
-// Turn the cache on or off for debug purposes.
-void chpl_cache_set_enabled(int enabled)
-{
-  chpl_cache_fence(1,1, -1, NULL);
-  if( CHPL_CACHE_REMOTE == 0 && enabled == 1 ) chpl_cache_do_init();
-  CHPL_CACHE_REMOTE = enabled;
+// This is for debugging
+void chpl_cache_print_stats(void) {
+  struct rdcache_s* cache = tls_cache_remote_data();
+  int n_used_slots = 0;
+  int n_full_slots = 0;
+  int n_bottom_entries = 0;
+  int n_colliding_slots = 0;
+  int n_full_subslots = 0;
+  int n_subslots = 0;
+  int table_slots = 1 << cache->table_bits;
+  for (int i = 0; i < table_slots; i++) {
+    struct cache_table_slot_s* slot = &cache->table[i];
+    int full_entries_this_slot = 0;
+    int this_slot_collides = 0;
+    for (int j = 0; j < TABLE_ENTRIES_PER_SLOT; j++) {
+      struct cache_table_entry_s* entry = &slot->m[j];
+      struct cache_entry_s* bottom_cur = offset_to_entry(cache, entry->offset);
+      int bottom_entries_this_entry = 0;
+
+      if (entry->offset != 0)
+        full_entries_this_slot++;
+
+      while(bottom_cur) {
+        bottom_entries_this_entry++;
+        bottom_cur = (struct cache_entry_s*) bottom_cur->base.next;
+      }
+      n_bottom_entries += bottom_entries_this_entry;
+      if (bottom_entries_this_entry > 1)
+        this_slot_collides = 1;
+      n_subslots++;
+    }
+    if (this_slot_collides)
+      n_colliding_slots++;
+    if (full_entries_this_slot == TABLE_ENTRIES_PER_SLOT)
+      n_full_slots++;
+    if (full_entries_this_slot > 0)
+      n_used_slots++;
+    n_full_subslots += full_entries_this_slot;
+  }
+
+  printf("%d: task %d cache statistics "
+         "ain=%i/%i "
+         "aout=%i/%i am=%i "
+         "table=(%i lists/%i full/%i used/%i slots and %i/%i sub-slots) "
+         "entries=%i/%i\n",
+         chpl_nodeID, (int) chpl_task_getId(),
+         cache->ain_current, cache->ain_max,
+         cache->aout_current, cache->aout_max,
+         cache->am_current,
+         n_colliding_slots, n_full_slots, n_used_slots, table_slots,
+         n_full_subslots, n_subslots,
+         n_bottom_entries, cache->max_entries);
 }
-*/
+
+// Returns 1 if the data was already cached
+int chpl_cache_mock_get(c_nodeid_t node, uint64_t raddr, size_t size)
+{
+  struct rdcache_s* cache = tls_cache_remote_data();
+  int ret;
+
+  if (!chpl_cache_enabled())
+    chpl_internal_error("chpl_cache_mock_get called without --cache-remote");
+
+  chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
+  TRACE_PRINT(("%d: task %d in chpl_cache_mock_get from %d:%p\n",
+               chpl_nodeID, (int)chpl_task_getId(), node, (void*)raddr));
+
+#ifdef DUMP
+  chpl_cache_print();
+#endif
+
+  ret = mock_get(cache, task_local, node, (raddr_t)raddr, size,
+                 task_local->last_acquire,
+                 0, 0, 0, 0);
+
+  return ret;
+}
+
 
 #endif
 // end ifdef HAS_CHPL_CACHE_FNS
-

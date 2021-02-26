@@ -1,9 +1,8 @@
 //===- DWARFTypeUnit.h ------------------------------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -35,7 +34,7 @@ public:
                   LS, LE, IsDWO, UnitVector) {}
 
   uint64_t getTypeHash() const { return getHeader().getTypeHash(); }
-  uint32_t getTypeOffset() const { return getHeader().getTypeOffset(); }
+  uint64_t getTypeOffset() const { return getHeader().getTypeOffset(); }
 
   void dump(raw_ostream &OS, DIDumpOptions DumpOpts = {}) override;
   // Enable LLVM-style RTTI.

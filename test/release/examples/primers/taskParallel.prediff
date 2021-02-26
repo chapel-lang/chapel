@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # There are a number of things that matter in this test's output.
 #  We will check them here in this script and output SUCCESS if

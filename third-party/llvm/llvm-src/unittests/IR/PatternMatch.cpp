@@ -1,13 +1,13 @@
 //===---- llvm/unittest/IR/PatternMatch.cpp - PatternMatch unit tests ----===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
 #include "llvm/IR/PatternMatch.h"
+#include "llvm/ADT/APSInt.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/Analysis/ValueTracking.h"
 #include "llvm/IR/BasicBlock.h"
@@ -63,6 +63,491 @@ TEST_F(PatternMatchTest, OneUse) {
 
   EXPECT_FALSE(m_OneUse(m_Value()).match(Two));
   EXPECT_FALSE(m_OneUse(m_Value()).match(Leaf));
+}
+
+TEST_F(PatternMatchTest, SpecificIntEQ) {
+  Type *IntTy = IRB.getInt32Ty();
+  unsigned BitWidth = IntTy->getScalarSizeInBits();
+
+  Value *Zero = ConstantInt::get(IntTy, 0);
+  Value *One = ConstantInt::get(IntTy, 1);
+  Value *NegOne = ConstantInt::get(IntTy, -1);
+
+  EXPECT_TRUE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_EQ, APInt(BitWidth, 0))
+          .match(Zero));
+  EXPECT_FALSE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_EQ, APInt(BitWidth, 0))
+          .match(One));
+  EXPECT_FALSE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_EQ, APInt(BitWidth, 0))
+          .match(NegOne));
+
+  EXPECT_FALSE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_EQ, APInt(BitWidth, 1))
+          .match(Zero));
+  EXPECT_TRUE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_EQ, APInt(BitWidth, 1))
+          .match(One));
+  EXPECT_FALSE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_EQ, APInt(BitWidth, 1))
+          .match(NegOne));
+
+  EXPECT_FALSE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_EQ, APInt(BitWidth, -1))
+          .match(Zero));
+  EXPECT_FALSE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_EQ, APInt(BitWidth, -1))
+          .match(One));
+  EXPECT_TRUE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_EQ, APInt(BitWidth, -1))
+          .match(NegOne));
+}
+
+TEST_F(PatternMatchTest, SpecificIntNE) {
+  Type *IntTy = IRB.getInt32Ty();
+  unsigned BitWidth = IntTy->getScalarSizeInBits();
+
+  Value *Zero = ConstantInt::get(IntTy, 0);
+  Value *One = ConstantInt::get(IntTy, 1);
+  Value *NegOne = ConstantInt::get(IntTy, -1);
+
+  EXPECT_FALSE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_NE, APInt(BitWidth, 0))
+          .match(Zero));
+  EXPECT_TRUE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_NE, APInt(BitWidth, 0))
+          .match(One));
+  EXPECT_TRUE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_NE, APInt(BitWidth, 0))
+          .match(NegOne));
+
+  EXPECT_TRUE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_NE, APInt(BitWidth, 1))
+          .match(Zero));
+  EXPECT_FALSE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_NE, APInt(BitWidth, 1))
+          .match(One));
+  EXPECT_TRUE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_NE, APInt(BitWidth, 1))
+          .match(NegOne));
+
+  EXPECT_TRUE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_NE, APInt(BitWidth, -1))
+          .match(Zero));
+  EXPECT_TRUE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_NE, APInt(BitWidth, -1))
+          .match(One));
+  EXPECT_FALSE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_NE, APInt(BitWidth, -1))
+          .match(NegOne));
+}
+
+TEST_F(PatternMatchTest, SpecificIntUGT) {
+  Type *IntTy = IRB.getInt32Ty();
+  unsigned BitWidth = IntTy->getScalarSizeInBits();
+
+  Value *Zero = ConstantInt::get(IntTy, 0);
+  Value *One = ConstantInt::get(IntTy, 1);
+  Value *NegOne = ConstantInt::get(IntTy, -1);
+
+  EXPECT_FALSE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_UGT, APInt(BitWidth, 0))
+          .match(Zero));
+  EXPECT_TRUE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_UGT, APInt(BitWidth, 0))
+          .match(One));
+  EXPECT_TRUE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_UGT, APInt(BitWidth, 0))
+          .match(NegOne));
+
+  EXPECT_FALSE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_UGT, APInt(BitWidth, 1))
+          .match(Zero));
+  EXPECT_FALSE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_UGT, APInt(BitWidth, 1))
+          .match(One));
+  EXPECT_TRUE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_UGT, APInt(BitWidth, 1))
+          .match(NegOne));
+
+  EXPECT_FALSE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_UGT, APInt(BitWidth, -1))
+          .match(Zero));
+  EXPECT_FALSE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_UGT, APInt(BitWidth, -1))
+          .match(One));
+  EXPECT_FALSE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_UGT, APInt(BitWidth, -1))
+          .match(NegOne));
+}
+
+TEST_F(PatternMatchTest, SignbitZeroChecks) {
+  Type *IntTy = IRB.getInt32Ty();
+
+  Value *Zero = ConstantInt::get(IntTy, 0);
+  Value *One = ConstantInt::get(IntTy, 1);
+  Value *NegOne = ConstantInt::get(IntTy, -1);
+
+  EXPECT_TRUE(m_Negative().match(NegOne));
+  EXPECT_FALSE(m_NonNegative().match(NegOne));
+  EXPECT_FALSE(m_StrictlyPositive().match(NegOne));
+  EXPECT_TRUE(m_NonPositive().match(NegOne));
+
+  EXPECT_FALSE(m_Negative().match(Zero));
+  EXPECT_TRUE(m_NonNegative().match(Zero));
+  EXPECT_FALSE(m_StrictlyPositive().match(Zero));
+  EXPECT_TRUE(m_NonPositive().match(Zero));
+
+  EXPECT_FALSE(m_Negative().match(One));
+  EXPECT_TRUE(m_NonNegative().match(One));
+  EXPECT_TRUE(m_StrictlyPositive().match(One));
+  EXPECT_FALSE(m_NonPositive().match(One));
+}
+
+TEST_F(PatternMatchTest, SpecificIntUGE) {
+  Type *IntTy = IRB.getInt32Ty();
+  unsigned BitWidth = IntTy->getScalarSizeInBits();
+
+  Value *Zero = ConstantInt::get(IntTy, 0);
+  Value *One = ConstantInt::get(IntTy, 1);
+  Value *NegOne = ConstantInt::get(IntTy, -1);
+
+  EXPECT_TRUE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_UGE, APInt(BitWidth, 0))
+          .match(Zero));
+  EXPECT_TRUE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_UGE, APInt(BitWidth, 0))
+          .match(One));
+  EXPECT_TRUE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_UGE, APInt(BitWidth, 0))
+          .match(NegOne));
+
+  EXPECT_FALSE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_UGE, APInt(BitWidth, 1))
+          .match(Zero));
+  EXPECT_TRUE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_UGE, APInt(BitWidth, 1))
+          .match(One));
+  EXPECT_TRUE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_UGE, APInt(BitWidth, 1))
+          .match(NegOne));
+
+  EXPECT_FALSE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_UGE, APInt(BitWidth, -1))
+          .match(Zero));
+  EXPECT_FALSE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_UGE, APInt(BitWidth, -1))
+          .match(One));
+  EXPECT_TRUE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_UGE, APInt(BitWidth, -1))
+          .match(NegOne));
+}
+
+TEST_F(PatternMatchTest, SpecificIntULT) {
+  Type *IntTy = IRB.getInt32Ty();
+  unsigned BitWidth = IntTy->getScalarSizeInBits();
+
+  Value *Zero = ConstantInt::get(IntTy, 0);
+  Value *One = ConstantInt::get(IntTy, 1);
+  Value *NegOne = ConstantInt::get(IntTy, -1);
+
+  EXPECT_FALSE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_ULT, APInt(BitWidth, 0))
+          .match(Zero));
+  EXPECT_FALSE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_ULT, APInt(BitWidth, 0))
+          .match(One));
+  EXPECT_FALSE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_ULT, APInt(BitWidth, 0))
+          .match(NegOne));
+
+  EXPECT_TRUE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_ULT, APInt(BitWidth, 1))
+          .match(Zero));
+  EXPECT_FALSE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_ULT, APInt(BitWidth, 1))
+          .match(One));
+  EXPECT_FALSE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_ULT, APInt(BitWidth, 1))
+          .match(NegOne));
+
+  EXPECT_TRUE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_ULT, APInt(BitWidth, -1))
+          .match(Zero));
+  EXPECT_TRUE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_ULT, APInt(BitWidth, -1))
+          .match(One));
+  EXPECT_FALSE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_ULT, APInt(BitWidth, -1))
+          .match(NegOne));
+}
+
+TEST_F(PatternMatchTest, SpecificIntULE) {
+  Type *IntTy = IRB.getInt32Ty();
+  unsigned BitWidth = IntTy->getScalarSizeInBits();
+
+  Value *Zero = ConstantInt::get(IntTy, 0);
+  Value *One = ConstantInt::get(IntTy, 1);
+  Value *NegOne = ConstantInt::get(IntTy, -1);
+
+  EXPECT_TRUE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_ULE, APInt(BitWidth, 0))
+          .match(Zero));
+  EXPECT_FALSE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_ULE, APInt(BitWidth, 0))
+          .match(One));
+  EXPECT_FALSE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_ULE, APInt(BitWidth, 0))
+          .match(NegOne));
+
+  EXPECT_TRUE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_ULE, APInt(BitWidth, 1))
+          .match(Zero));
+  EXPECT_TRUE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_ULE, APInt(BitWidth, 1))
+          .match(One));
+  EXPECT_FALSE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_ULE, APInt(BitWidth, 1))
+          .match(NegOne));
+
+  EXPECT_TRUE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_ULE, APInt(BitWidth, -1))
+          .match(Zero));
+  EXPECT_TRUE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_ULE, APInt(BitWidth, -1))
+          .match(One));
+  EXPECT_TRUE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_ULE, APInt(BitWidth, -1))
+          .match(NegOne));
+}
+
+TEST_F(PatternMatchTest, SpecificIntSGT) {
+  Type *IntTy = IRB.getInt32Ty();
+  unsigned BitWidth = IntTy->getScalarSizeInBits();
+
+  Value *Zero = ConstantInt::get(IntTy, 0);
+  Value *One = ConstantInt::get(IntTy, 1);
+  Value *NegOne = ConstantInt::get(IntTy, -1);
+
+  EXPECT_FALSE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_SGT, APInt(BitWidth, 0))
+          .match(Zero));
+  EXPECT_TRUE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_SGT, APInt(BitWidth, 0))
+          .match(One));
+  EXPECT_FALSE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_SGT, APInt(BitWidth, 0))
+          .match(NegOne));
+
+  EXPECT_FALSE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_SGT, APInt(BitWidth, 1))
+          .match(Zero));
+  EXPECT_FALSE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_SGT, APInt(BitWidth, 1))
+          .match(One));
+  EXPECT_FALSE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_SGT, APInt(BitWidth, 1))
+          .match(NegOne));
+
+  EXPECT_TRUE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_SGT, APInt(BitWidth, -1))
+          .match(Zero));
+  EXPECT_TRUE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_SGT, APInt(BitWidth, -1))
+          .match(One));
+  EXPECT_FALSE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_SGT, APInt(BitWidth, -1))
+          .match(NegOne));
+}
+
+TEST_F(PatternMatchTest, SpecificIntSGE) {
+  Type *IntTy = IRB.getInt32Ty();
+  unsigned BitWidth = IntTy->getScalarSizeInBits();
+
+  Value *Zero = ConstantInt::get(IntTy, 0);
+  Value *One = ConstantInt::get(IntTy, 1);
+  Value *NegOne = ConstantInt::get(IntTy, -1);
+
+  EXPECT_TRUE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_SGE, APInt(BitWidth, 0))
+          .match(Zero));
+  EXPECT_TRUE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_SGE, APInt(BitWidth, 0))
+          .match(One));
+  EXPECT_FALSE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_SGE, APInt(BitWidth, 0))
+          .match(NegOne));
+
+  EXPECT_FALSE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_SGE, APInt(BitWidth, 1))
+          .match(Zero));
+  EXPECT_TRUE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_SGE, APInt(BitWidth, 1))
+          .match(One));
+  EXPECT_FALSE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_SGE, APInt(BitWidth, 1))
+          .match(NegOne));
+
+  EXPECT_TRUE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_SGE, APInt(BitWidth, -1))
+          .match(Zero));
+  EXPECT_TRUE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_SGE, APInt(BitWidth, -1))
+          .match(One));
+  EXPECT_TRUE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_SGE, APInt(BitWidth, -1))
+          .match(NegOne));
+}
+
+TEST_F(PatternMatchTest, SpecificIntSLT) {
+  Type *IntTy = IRB.getInt32Ty();
+  unsigned BitWidth = IntTy->getScalarSizeInBits();
+
+  Value *Zero = ConstantInt::get(IntTy, 0);
+  Value *One = ConstantInt::get(IntTy, 1);
+  Value *NegOne = ConstantInt::get(IntTy, -1);
+
+  EXPECT_FALSE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_SLT, APInt(BitWidth, 0))
+          .match(Zero));
+  EXPECT_FALSE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_SLT, APInt(BitWidth, 0))
+          .match(One));
+  EXPECT_TRUE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_SLT, APInt(BitWidth, 0))
+          .match(NegOne));
+
+  EXPECT_TRUE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_SLT, APInt(BitWidth, 1))
+          .match(Zero));
+  EXPECT_FALSE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_SLT, APInt(BitWidth, 1))
+          .match(One));
+  EXPECT_TRUE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_SLT, APInt(BitWidth, 1))
+          .match(NegOne));
+
+  EXPECT_FALSE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_SLT, APInt(BitWidth, -1))
+          .match(Zero));
+  EXPECT_FALSE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_SLT, APInt(BitWidth, -1))
+          .match(One));
+  EXPECT_FALSE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_SLT, APInt(BitWidth, -1))
+          .match(NegOne));
+}
+
+TEST_F(PatternMatchTest, SpecificIntSLE) {
+  Type *IntTy = IRB.getInt32Ty();
+  unsigned BitWidth = IntTy->getScalarSizeInBits();
+
+  Value *Zero = ConstantInt::get(IntTy, 0);
+  Value *One = ConstantInt::get(IntTy, 1);
+  Value *NegOne = ConstantInt::get(IntTy, -1);
+
+  EXPECT_TRUE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_SLE, APInt(BitWidth, 0))
+          .match(Zero));
+  EXPECT_FALSE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_SLE, APInt(BitWidth, 0))
+          .match(One));
+  EXPECT_TRUE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_SLE, APInt(BitWidth, 0))
+          .match(NegOne));
+
+  EXPECT_TRUE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_SLE, APInt(BitWidth, 1))
+          .match(Zero));
+  EXPECT_TRUE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_SLE, APInt(BitWidth, 1))
+          .match(One));
+  EXPECT_TRUE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_SLE, APInt(BitWidth, 1))
+          .match(NegOne));
+
+  EXPECT_FALSE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_SLE, APInt(BitWidth, -1))
+          .match(Zero));
+  EXPECT_FALSE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_SLE, APInt(BitWidth, -1))
+          .match(One));
+  EXPECT_TRUE(
+      m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_SLE, APInt(BitWidth, -1))
+          .match(NegOne));
+}
+
+TEST_F(PatternMatchTest, Unless) {
+  Value *X = IRB.CreateAdd(IRB.getInt32(1), IRB.getInt32(0));
+
+  EXPECT_TRUE(m_Add(m_One(), m_Zero()).match(X));
+  EXPECT_FALSE(m_Add(m_Zero(), m_One()).match(X));
+
+  EXPECT_FALSE(m_Unless(m_Add(m_One(), m_Zero())).match(X));
+  EXPECT_TRUE(m_Unless(m_Add(m_Zero(), m_One())).match(X));
+
+  EXPECT_TRUE(m_c_Add(m_One(), m_Zero()).match(X));
+  EXPECT_TRUE(m_c_Add(m_Zero(), m_One()).match(X));
+
+  EXPECT_FALSE(m_Unless(m_c_Add(m_One(), m_Zero())).match(X));
+  EXPECT_FALSE(m_Unless(m_c_Add(m_Zero(), m_One())).match(X));
+}
+
+TEST_F(PatternMatchTest, ZExtSExtSelf) {
+  LLVMContext &Ctx = IRB.getContext();
+
+  Value *One32 = IRB.getInt32(1);
+  Value *One64Z = IRB.CreateZExt(One32, IntegerType::getInt64Ty(Ctx));
+  Value *One64S = IRB.CreateSExt(One32, IntegerType::getInt64Ty(Ctx));
+
+  EXPECT_TRUE(m_One().match(One32));
+  EXPECT_FALSE(m_One().match(One64Z));
+  EXPECT_FALSE(m_One().match(One64S));
+
+  EXPECT_FALSE(m_ZExt(m_One()).match(One32));
+  EXPECT_TRUE(m_ZExt(m_One()).match(One64Z));
+  EXPECT_FALSE(m_ZExt(m_One()).match(One64S));
+
+  EXPECT_FALSE(m_SExt(m_One()).match(One32));
+  EXPECT_FALSE(m_SExt(m_One()).match(One64Z));
+  EXPECT_TRUE(m_SExt(m_One()).match(One64S));
+
+  EXPECT_TRUE(m_ZExtOrSelf(m_One()).match(One32));
+  EXPECT_TRUE(m_ZExtOrSelf(m_One()).match(One64Z));
+  EXPECT_FALSE(m_ZExtOrSelf(m_One()).match(One64S));
+
+  EXPECT_TRUE(m_SExtOrSelf(m_One()).match(One32));
+  EXPECT_FALSE(m_SExtOrSelf(m_One()).match(One64Z));
+  EXPECT_TRUE(m_SExtOrSelf(m_One()).match(One64S));
+
+  EXPECT_FALSE(m_ZExtOrSExt(m_One()).match(One32));
+  EXPECT_TRUE(m_ZExtOrSExt(m_One()).match(One64Z));
+  EXPECT_TRUE(m_ZExtOrSExt(m_One()).match(One64S));
+
+  EXPECT_TRUE(m_ZExtOrSExtOrSelf(m_One()).match(One32));
+  EXPECT_TRUE(m_ZExtOrSExtOrSelf(m_One()).match(One64Z));
+  EXPECT_TRUE(m_ZExtOrSExtOrSelf(m_One()).match(One64S));
+}
+
+TEST_F(PatternMatchTest, Power2) {
+  Value *C128 = IRB.getInt32(128);
+  Value *CNeg128 = ConstantExpr::getNeg(cast<Constant>(C128));
+
+  EXPECT_TRUE(m_Power2().match(C128));
+  EXPECT_FALSE(m_Power2().match(CNeg128));
+
+  EXPECT_FALSE(m_NegatedPower2().match(C128));
+  EXPECT_TRUE(m_NegatedPower2().match(CNeg128));
+
+  Value *CIntMin = IRB.getInt64(APSInt::getSignedMinValue(64).getSExtValue());
+  Value *CNegIntMin = ConstantExpr::getNeg(cast<Constant>(CIntMin));
+
+  EXPECT_TRUE(m_Power2().match(CIntMin));
+  EXPECT_TRUE(m_Power2().match(CNegIntMin));
+
+  EXPECT_TRUE(m_NegatedPower2().match(CIntMin));
+  EXPECT_TRUE(m_NegatedPower2().match(CNegIntMin));
 }
 
 TEST_F(PatternMatchTest, CommutativeDeferredValue) {
@@ -398,7 +883,7 @@ TEST_F(PatternMatchTest, LoadStoreOps) {
   //  store i32 42, i32* %0
 
   Value *Alloca = IRB.CreateAlloca(IRB.getInt32Ty());
-  Value *LoadInst = IRB.CreateLoad(Alloca);
+  Value *LoadInst = IRB.CreateLoad(IRB.getInt32Ty(), Alloca);
   Value *FourtyTwo = IRB.getInt32(42);
   Value *StoreInst = IRB.CreateStore(FourtyTwo, Alloca);
   Value *MatchLoad, *MatchStoreVal, *MatchStorePointer;
@@ -443,9 +928,9 @@ TEST_F(PatternMatchTest, VectorOps) {
   //
   //   SP1 = VectorSplat(2, i8 2)
   //   SP2 = VectorSplat(2, i8 %Val)
-  Type *VecTy = VectorType::get(IRB.getInt8Ty(), 2);
+  Type *VecTy = FixedVectorType::get(IRB.getInt8Ty(), 2);
   Type *i32 = IRB.getInt32Ty();
-  Type *i32VecTy = VectorType::get(i32, 2);
+  Type *i32VecTy = FixedVectorType::get(i32, 2);
 
   Value *Val = IRB.CreateAdd(IRB.getInt8(0), IRB.getInt8(1));
   Value *Val2 = IRB.CreateAdd(Val, IRB.getInt8(3));
@@ -477,66 +962,66 @@ TEST_F(PatternMatchTest, VectorOps) {
   Value *A = nullptr, *B = nullptr, *C = nullptr;
 
   // Test matching insertelement
-  EXPECT_TRUE(match(VI1, m_InsertElement(m_Value(), m_Value(), m_Value())));
+  EXPECT_TRUE(match(VI1, m_InsertElt(m_Value(), m_Value(), m_Value())));
   EXPECT_TRUE(
-      match(VI1, m_InsertElement(m_Undef(), m_ConstantInt(), m_ConstantInt())));
+      match(VI1, m_InsertElt(m_Undef(), m_ConstantInt(), m_ConstantInt())));
   EXPECT_TRUE(
-      match(VI1, m_InsertElement(m_Undef(), m_ConstantInt(), m_Zero())));
+      match(VI1, m_InsertElt(m_Undef(), m_ConstantInt(), m_Zero())));
   EXPECT_TRUE(
-      match(VI1, m_InsertElement(m_Undef(), m_SpecificInt(1), m_Zero())));
-  EXPECT_TRUE(match(VI2, m_InsertElement(m_Value(), m_Value(), m_Value())));
+      match(VI1, m_InsertElt(m_Undef(), m_SpecificInt(1), m_Zero())));
+  EXPECT_TRUE(match(VI2, m_InsertElt(m_Value(), m_Value(), m_Value())));
   EXPECT_FALSE(
-      match(VI2, m_InsertElement(m_Value(), m_Value(), m_ConstantInt())));
+      match(VI2, m_InsertElt(m_Value(), m_Value(), m_ConstantInt())));
   EXPECT_FALSE(
-      match(VI2, m_InsertElement(m_Value(), m_ConstantInt(), m_Value())));
-  EXPECT_FALSE(match(VI2, m_InsertElement(m_Constant(), m_Value(), m_Value())));
-  EXPECT_TRUE(match(VI3, m_InsertElement(m_Value(A), m_Value(B), m_Value(C))));
+      match(VI2, m_InsertElt(m_Value(), m_ConstantInt(), m_Value())));
+  EXPECT_FALSE(match(VI2, m_InsertElt(m_Constant(), m_Value(), m_Value())));
+  EXPECT_TRUE(match(VI3, m_InsertElt(m_Value(A), m_Value(B), m_Value(C))));
   EXPECT_TRUE(A == VI1);
   EXPECT_TRUE(B == Val2);
   EXPECT_TRUE(isa<ConstantInt>(C));
   A = B = C = nullptr; // reset
 
   // Test matching extractelement
-  EXPECT_TRUE(match(EX1, m_ExtractElement(m_Value(A), m_Value(B))));
+  EXPECT_TRUE(match(EX1, m_ExtractElt(m_Value(A), m_Value(B))));
   EXPECT_TRUE(A == VI4);
   EXPECT_TRUE(B == Val);
   A = B = C = nullptr; // reset
-  EXPECT_FALSE(match(EX1, m_ExtractElement(m_Value(), m_ConstantInt())));
-  EXPECT_TRUE(match(EX2, m_ExtractElement(m_Value(), m_ConstantInt())));
-  EXPECT_TRUE(match(EX3, m_ExtractElement(m_Constant(), m_ConstantInt())));
+  EXPECT_FALSE(match(EX1, m_ExtractElt(m_Value(), m_ConstantInt())));
+  EXPECT_TRUE(match(EX2, m_ExtractElt(m_Value(), m_ConstantInt())));
+  EXPECT_TRUE(match(EX3, m_ExtractElt(m_Constant(), m_ConstantInt())));
 
   // Test matching shufflevector
-  EXPECT_TRUE(match(SI1, m_ShuffleVector(m_Value(), m_Undef(), m_Zero())));
-  EXPECT_TRUE(match(SI2, m_ShuffleVector(m_Value(A), m_Value(B), m_Value(C))));
+  ArrayRef<int> Mask;
+  EXPECT_TRUE(match(SI1, m_Shuffle(m_Value(), m_Undef(), m_ZeroMask())));
+  EXPECT_TRUE(match(SI2, m_Shuffle(m_Value(A), m_Value(B), m_Mask(Mask))));
   EXPECT_TRUE(A == VI3);
   EXPECT_TRUE(B == VI4);
-  EXPECT_TRUE(C == IdxVec);
   A = B = C = nullptr; // reset
 
   // Test matching the vector splat pattern
   EXPECT_TRUE(match(
       SI1,
-      m_ShuffleVector(m_InsertElement(m_Undef(), m_SpecificInt(1), m_Zero()),
-                      m_Undef(), m_Zero())));
+      m_Shuffle(m_InsertElt(m_Undef(), m_SpecificInt(1), m_Zero()),
+                m_Undef(), m_ZeroMask())));
   EXPECT_FALSE(match(
-      SI3, m_ShuffleVector(m_InsertElement(m_Undef(), m_Value(), m_Zero()),
-                           m_Undef(), m_Zero())));
+      SI3, m_Shuffle(m_InsertElt(m_Undef(), m_Value(), m_Zero()),
+                     m_Undef(), m_ZeroMask())));
   EXPECT_FALSE(match(
-      SI4, m_ShuffleVector(m_InsertElement(m_Undef(), m_Value(), m_Zero()),
-                           m_Undef(), m_Zero())));
+      SI4, m_Shuffle(m_InsertElt(m_Undef(), m_Value(), m_Zero()),
+                     m_Undef(), m_ZeroMask())));
   EXPECT_TRUE(match(
       SP1,
-      m_ShuffleVector(m_InsertElement(m_Undef(), m_SpecificInt(2), m_Zero()),
-                      m_Undef(), m_Zero())));
+      m_Shuffle(m_InsertElt(m_Undef(), m_SpecificInt(2), m_Zero()),
+                m_Undef(), m_ZeroMask())));
   EXPECT_TRUE(match(
-      SP2, m_ShuffleVector(m_InsertElement(m_Undef(), m_Value(A), m_Zero()),
-                           m_Undef(), m_Zero())));
+      SP2, m_Shuffle(m_InsertElt(m_Undef(), m_Value(A), m_Zero()),
+                     m_Undef(), m_ZeroMask())));
   EXPECT_TRUE(A == Val);
 }
 
 TEST_F(PatternMatchTest, VectorUndefInt) {
   Type *ScalarTy = IRB.getInt8Ty();
-  Type *VectorTy = VectorType::get(ScalarTy, 4);
+  Type *VectorTy = FixedVectorType::get(ScalarTy, 4);
   Constant *ScalarUndef = UndefValue::get(ScalarTy);
   Constant *VectorUndef = UndefValue::get(VectorTy);
   Constant *ScalarZero = Constant::getNullValue(ScalarTy);
@@ -560,15 +1045,54 @@ TEST_F(PatternMatchTest, VectorUndefInt) {
   EXPECT_TRUE(match(ScalarZero, m_Zero()));
   EXPECT_TRUE(match(VectorZero, m_Zero()));
   EXPECT_TRUE(match(VectorZeroUndef, m_Zero()));
+
+  const APInt *C;
+  // Regardless of whether undefs are allowed,
+  // a fully undef constant does not match.
+  EXPECT_FALSE(match(ScalarUndef, m_APInt(C)));
+  EXPECT_FALSE(match(ScalarUndef, m_APIntForbidUndef(C)));
+  EXPECT_FALSE(match(ScalarUndef, m_APIntAllowUndef(C)));
+  EXPECT_FALSE(match(VectorUndef, m_APInt(C)));
+  EXPECT_FALSE(match(VectorUndef, m_APIntForbidUndef(C)));
+  EXPECT_FALSE(match(VectorUndef, m_APIntAllowUndef(C)));
+
+  // We can always match simple constants and simple splats.
+  C = nullptr;
+  EXPECT_TRUE(match(ScalarZero, m_APInt(C)));
+  EXPECT_TRUE(C->isNullValue());
+  C = nullptr;
+  EXPECT_TRUE(match(ScalarZero, m_APIntForbidUndef(C)));
+  EXPECT_TRUE(C->isNullValue());
+  C = nullptr;
+  EXPECT_TRUE(match(ScalarZero, m_APIntAllowUndef(C)));
+  EXPECT_TRUE(C->isNullValue());
+  C = nullptr;
+  EXPECT_TRUE(match(VectorZero, m_APInt(C)));
+  EXPECT_TRUE(C->isNullValue());
+  C = nullptr;
+  EXPECT_TRUE(match(VectorZero, m_APIntForbidUndef(C)));
+  EXPECT_TRUE(C->isNullValue());
+  C = nullptr;
+  EXPECT_TRUE(match(VectorZero, m_APIntAllowUndef(C)));
+  EXPECT_TRUE(C->isNullValue());
+
+  // Whether splats with undef can be matched depends on the matcher.
+  EXPECT_FALSE(match(VectorZeroUndef, m_APInt(C)));
+  EXPECT_FALSE(match(VectorZeroUndef, m_APIntForbidUndef(C)));
+  C = nullptr;
+  EXPECT_TRUE(match(VectorZeroUndef, m_APIntAllowUndef(C)));
+  EXPECT_TRUE(C->isNullValue());
 }
 
 TEST_F(PatternMatchTest, VectorUndefFloat) {
   Type *ScalarTy = IRB.getFloatTy();
-  Type *VectorTy = VectorType::get(ScalarTy, 4);
+  Type *VectorTy = FixedVectorType::get(ScalarTy, 4);
   Constant *ScalarUndef = UndefValue::get(ScalarTy);
   Constant *VectorUndef = UndefValue::get(VectorTy);
   Constant *ScalarZero = Constant::getNullValue(ScalarTy);
   Constant *VectorZero = Constant::getNullValue(VectorTy);
+  Constant *ScalarPosInf = ConstantFP::getInfinity(ScalarTy, false);
+  Constant *ScalarNegInf = ConstantFP::getInfinity(ScalarTy, true);
 
   SmallVector<Constant *, 4> Elems;
   Elems.push_back(ScalarUndef);
@@ -576,6 +1100,13 @@ TEST_F(PatternMatchTest, VectorUndefFloat) {
   Elems.push_back(ScalarUndef);
   Elems.push_back(ScalarZero);
   Constant *VectorZeroUndef = ConstantVector::get(Elems);
+
+  SmallVector<Constant *, 4> InfElems;
+  InfElems.push_back(ScalarPosInf);
+  InfElems.push_back(ScalarNegInf);
+  InfElems.push_back(ScalarUndef);
+  InfElems.push_back(ScalarPosInf);
+  Constant *VectorInfUndef = ConstantVector::get(InfElems);
 
   EXPECT_TRUE(match(ScalarUndef, m_Undef()));
   EXPECT_TRUE(match(VectorUndef, m_Undef()));
@@ -588,6 +1119,387 @@ TEST_F(PatternMatchTest, VectorUndefFloat) {
   EXPECT_TRUE(match(ScalarZero, m_AnyZeroFP()));
   EXPECT_TRUE(match(VectorZero, m_AnyZeroFP()));
   EXPECT_TRUE(match(VectorZeroUndef, m_AnyZeroFP()));
+
+  EXPECT_FALSE(match(ScalarUndef, m_Inf()));
+  EXPECT_FALSE(match(VectorUndef, m_Inf()));
+  EXPECT_FALSE(match(VectorZeroUndef, m_Inf()));
+  EXPECT_TRUE(match(ScalarPosInf, m_Inf()));
+  EXPECT_TRUE(match(ScalarNegInf, m_Inf()));
+  EXPECT_TRUE(match(VectorInfUndef, m_Inf()));
+
+  const APFloat *C;
+  // Regardless of whether undefs are allowed,
+  // a fully undef constant does not match.
+  EXPECT_FALSE(match(ScalarUndef, m_APFloat(C)));
+  EXPECT_FALSE(match(ScalarUndef, m_APFloatForbidUndef(C)));
+  EXPECT_FALSE(match(ScalarUndef, m_APFloatAllowUndef(C)));
+  EXPECT_FALSE(match(VectorUndef, m_APFloat(C)));
+  EXPECT_FALSE(match(VectorUndef, m_APFloatForbidUndef(C)));
+  EXPECT_FALSE(match(VectorUndef, m_APFloatAllowUndef(C)));
+
+  // We can always match simple constants and simple splats.
+  C = nullptr;
+  EXPECT_TRUE(match(ScalarZero, m_APFloat(C)));
+  EXPECT_TRUE(C->isZero());
+  C = nullptr;
+  EXPECT_TRUE(match(ScalarZero, m_APFloatForbidUndef(C)));
+  EXPECT_TRUE(C->isZero());
+  C = nullptr;
+  EXPECT_TRUE(match(ScalarZero, m_APFloatAllowUndef(C)));
+  EXPECT_TRUE(C->isZero());
+  C = nullptr;
+  EXPECT_TRUE(match(VectorZero, m_APFloat(C)));
+  EXPECT_TRUE(C->isZero());
+  C = nullptr;
+  EXPECT_TRUE(match(VectorZero, m_APFloatForbidUndef(C)));
+  EXPECT_TRUE(C->isZero());
+  C = nullptr;
+  EXPECT_TRUE(match(VectorZero, m_APFloatAllowUndef(C)));
+  EXPECT_TRUE(C->isZero());
+
+  // Whether splats with undef can be matched depends on the matcher.
+  EXPECT_FALSE(match(VectorZeroUndef, m_APFloat(C)));
+  EXPECT_FALSE(match(VectorZeroUndef, m_APFloatForbidUndef(C)));
+  C = nullptr;
+  EXPECT_TRUE(match(VectorZeroUndef, m_APFloatAllowUndef(C)));
+  EXPECT_TRUE(C->isZero());
+}
+
+TEST_F(PatternMatchTest, FloatingPointFNeg) {
+  Type *FltTy = IRB.getFloatTy();
+  Value *One = ConstantFP::get(FltTy, 1.0);
+  Value *Z = ConstantFP::get(FltTy, 0.0);
+  Value *NZ = ConstantFP::get(FltTy, -0.0);
+  Value *V = IRB.CreateFNeg(One);
+  Value *V1 = IRB.CreateFSub(NZ, One);
+  Value *V2 = IRB.CreateFSub(Z, One);
+  Value *V3 = IRB.CreateFAdd(NZ, One);
+  Value *Match;
+
+  // Test FNeg(1.0)
+  EXPECT_TRUE(match(V, m_FNeg(m_Value(Match))));
+  EXPECT_EQ(One, Match);
+
+  // Test FSub(-0.0, 1.0)
+  EXPECT_TRUE(match(V1, m_FNeg(m_Value(Match))));
+  EXPECT_EQ(One, Match);
+
+  // Test FSub(0.0, 1.0)
+  EXPECT_FALSE(match(V2, m_FNeg(m_Value(Match))));
+  cast<Instruction>(V2)->setHasNoSignedZeros(true);
+  EXPECT_TRUE(match(V2, m_FNeg(m_Value(Match))));
+  EXPECT_EQ(One, Match);
+
+  // Test FAdd(-0.0, 1.0)
+  EXPECT_FALSE(match(V3, m_FNeg(m_Value(Match))));
+}
+
+TEST_F(PatternMatchTest, CondBranchTest) {
+  BasicBlock *TrueBB = BasicBlock::Create(Ctx, "TrueBB", F);
+  BasicBlock *FalseBB = BasicBlock::Create(Ctx, "FalseBB", F);
+  Value *Br1 = IRB.CreateCondBr(IRB.getTrue(), TrueBB, FalseBB);
+
+  EXPECT_TRUE(match(Br1, m_Br(m_Value(), m_BasicBlock(), m_BasicBlock())));
+
+  BasicBlock *A, *B;
+  EXPECT_TRUE(match(Br1, m_Br(m_Value(), m_BasicBlock(A), m_BasicBlock(B))));
+  EXPECT_EQ(TrueBB, A);
+  EXPECT_EQ(FalseBB, B);
+
+  EXPECT_FALSE(
+      match(Br1, m_Br(m_Value(), m_SpecificBB(FalseBB), m_BasicBlock())));
+  EXPECT_FALSE(
+      match(Br1, m_Br(m_Value(), m_BasicBlock(), m_SpecificBB(TrueBB))));
+  EXPECT_FALSE(
+      match(Br1, m_Br(m_Value(), m_SpecificBB(FalseBB), m_BasicBlock(TrueBB))));
+  EXPECT_TRUE(
+      match(Br1, m_Br(m_Value(), m_SpecificBB(TrueBB), m_BasicBlock(FalseBB))));
+
+  // Check we can use m_Deferred with branches.
+  EXPECT_FALSE(match(Br1, m_Br(m_Value(), m_BasicBlock(A), m_Deferred(A))));
+  Value *Br2 = IRB.CreateCondBr(IRB.getTrue(), TrueBB, TrueBB);
+  A = nullptr;
+  EXPECT_TRUE(match(Br2, m_Br(m_Value(), m_BasicBlock(A), m_Deferred(A))));
+}
+
+TEST_F(PatternMatchTest, WithOverflowInst) {
+  Value *Add = IRB.CreateBinaryIntrinsic(Intrinsic::uadd_with_overflow,
+                                         IRB.getInt32(0), IRB.getInt32(0));
+  Value *Add0 = IRB.CreateExtractValue(Add, 0);
+  Value *Add1 = IRB.CreateExtractValue(Add, 1);
+
+  EXPECT_TRUE(match(Add0, m_ExtractValue<0>(m_Value())));
+  EXPECT_FALSE(match(Add0, m_ExtractValue<1>(m_Value())));
+  EXPECT_FALSE(match(Add1, m_ExtractValue<0>(m_Value())));
+  EXPECT_TRUE(match(Add1, m_ExtractValue<1>(m_Value())));
+  EXPECT_FALSE(match(Add, m_ExtractValue<1>(m_Value())));
+  EXPECT_FALSE(match(Add, m_ExtractValue<1>(m_Value())));
+
+  WithOverflowInst *WOI;
+  EXPECT_FALSE(match(Add0, m_WithOverflowInst(WOI)));
+  EXPECT_FALSE(match(Add1, m_WithOverflowInst(WOI)));
+  EXPECT_TRUE(match(Add, m_WithOverflowInst(WOI)));
+
+  EXPECT_TRUE(match(Add0, m_ExtractValue<0>(m_WithOverflowInst(WOI))));
+  EXPECT_EQ(Add, WOI);
+  EXPECT_TRUE(match(Add1, m_ExtractValue<1>(m_WithOverflowInst(WOI))));
+  EXPECT_EQ(Add, WOI);
+}
+
+TEST_F(PatternMatchTest, IntrinsicMatcher) {
+  Value *Name = IRB.CreateAlloca(IRB.getInt8Ty());
+  Value *Hash = IRB.getInt64(0);
+  Value *Num = IRB.getInt32(1);
+  Value *Index = IRB.getInt32(2);
+  Value *Step = IRB.getInt64(3);
+
+  Value *Ops[] = {Name, Hash, Num, Index, Step};
+  Module *M = BB->getParent()->getParent();
+  Function *TheFn =
+      Intrinsic::getDeclaration(M, Intrinsic::instrprof_increment_step);
+
+  Value *Intrinsic5 = CallInst::Create(TheFn, Ops, "", BB);
+
+  // Match without capturing.
+  EXPECT_TRUE(match(
+      Intrinsic5, m_Intrinsic<Intrinsic::instrprof_increment_step>(
+                      m_Value(), m_Value(), m_Value(), m_Value(), m_Value())));
+  EXPECT_FALSE(match(
+      Intrinsic5, m_Intrinsic<Intrinsic::memmove>(
+                      m_Value(), m_Value(), m_Value(), m_Value(), m_Value())));
+
+  // Match with capturing.
+  Value *Arg1 = nullptr;
+  Value *Arg2 = nullptr;
+  Value *Arg3 = nullptr;
+  Value *Arg4 = nullptr;
+  Value *Arg5 = nullptr;
+  EXPECT_TRUE(
+      match(Intrinsic5, m_Intrinsic<Intrinsic::instrprof_increment_step>(
+                            m_Value(Arg1), m_Value(Arg2), m_Value(Arg3),
+                            m_Value(Arg4), m_Value(Arg5))));
+  EXPECT_EQ(Arg1, Name);
+  EXPECT_EQ(Arg2, Hash);
+  EXPECT_EQ(Arg3, Num);
+  EXPECT_EQ(Arg4, Index);
+  EXPECT_EQ(Arg5, Step);
+
+  // Match specific second argument.
+  EXPECT_TRUE(
+      match(Intrinsic5,
+            m_Intrinsic<Intrinsic::instrprof_increment_step>(
+                m_Value(), m_SpecificInt(0), m_Value(), m_Value(), m_Value())));
+  EXPECT_FALSE(
+      match(Intrinsic5, m_Intrinsic<Intrinsic::instrprof_increment_step>(
+                            m_Value(), m_SpecificInt(10), m_Value(), m_Value(),
+                            m_Value())));
+
+  // Match specific third argument.
+  EXPECT_TRUE(
+      match(Intrinsic5,
+            m_Intrinsic<Intrinsic::instrprof_increment_step>(
+                m_Value(), m_Value(), m_SpecificInt(1), m_Value(), m_Value())));
+  EXPECT_FALSE(
+      match(Intrinsic5, m_Intrinsic<Intrinsic::instrprof_increment_step>(
+                            m_Value(), m_Value(), m_SpecificInt(10), m_Value(),
+                            m_Value())));
+
+  // Match specific fourth argument.
+  EXPECT_TRUE(
+      match(Intrinsic5,
+            m_Intrinsic<Intrinsic::instrprof_increment_step>(
+                m_Value(), m_Value(), m_Value(), m_SpecificInt(2), m_Value())));
+  EXPECT_FALSE(
+      match(Intrinsic5, m_Intrinsic<Intrinsic::instrprof_increment_step>(
+                            m_Value(), m_Value(), m_Value(), m_SpecificInt(10),
+                            m_Value())));
+
+  // Match specific fifth argument.
+  EXPECT_TRUE(
+      match(Intrinsic5,
+            m_Intrinsic<Intrinsic::instrprof_increment_step>(
+                m_Value(), m_Value(), m_Value(), m_Value(), m_SpecificInt(3))));
+  EXPECT_FALSE(
+      match(Intrinsic5, m_Intrinsic<Intrinsic::instrprof_increment_step>(
+                            m_Value(), m_Value(), m_Value(), m_Value(),
+                            m_SpecificInt(10))));
+}
+
+namespace {
+
+struct is_unsigned_zero_pred {
+  bool isValue(const APInt &C) { return C.isNullValue(); }
+};
+
+struct is_float_zero_pred {
+  bool isValue(const APFloat &C) { return C.isZero(); }
+};
+
+template <typename T> struct always_true_pred {
+  bool isValue(const T &) { return true; }
+};
+
+template <typename T> struct always_false_pred {
+  bool isValue(const T &) { return false; }
+};
+
+struct is_unsigned_max_pred {
+  bool isValue(const APInt &C) { return C.isMaxValue(); }
+};
+
+struct is_float_nan_pred {
+  bool isValue(const APFloat &C) { return C.isNaN(); }
+};
+
+} // namespace
+
+TEST_F(PatternMatchTest, ConstantPredicateType) {
+
+  // Scalar integer
+  APInt U32Max = APInt::getAllOnesValue(32);
+  APInt U32Zero = APInt::getNullValue(32);
+  APInt U32DeadBeef(32, 0xDEADBEEF);
+
+  Type *U32Ty = Type::getInt32Ty(Ctx);
+
+  Constant *CU32Max = Constant::getIntegerValue(U32Ty, U32Max);
+  Constant *CU32Zero = Constant::getIntegerValue(U32Ty, U32Zero);
+  Constant *CU32DeadBeef = Constant::getIntegerValue(U32Ty, U32DeadBeef);
+
+  EXPECT_TRUE(match(CU32Max, cst_pred_ty<is_unsigned_max_pred>()));
+  EXPECT_FALSE(match(CU32Max, cst_pred_ty<is_unsigned_zero_pred>()));
+  EXPECT_TRUE(match(CU32Max, cst_pred_ty<always_true_pred<APInt>>()));
+  EXPECT_FALSE(match(CU32Max, cst_pred_ty<always_false_pred<APInt>>()));
+
+  EXPECT_FALSE(match(CU32Zero, cst_pred_ty<is_unsigned_max_pred>()));
+  EXPECT_TRUE(match(CU32Zero, cst_pred_ty<is_unsigned_zero_pred>()));
+  EXPECT_TRUE(match(CU32Zero, cst_pred_ty<always_true_pred<APInt>>()));
+  EXPECT_FALSE(match(CU32Zero, cst_pred_ty<always_false_pred<APInt>>()));
+
+  EXPECT_FALSE(match(CU32DeadBeef, cst_pred_ty<is_unsigned_max_pred>()));
+  EXPECT_FALSE(match(CU32DeadBeef, cst_pred_ty<is_unsigned_zero_pred>()));
+  EXPECT_TRUE(match(CU32DeadBeef, cst_pred_ty<always_true_pred<APInt>>()));
+  EXPECT_FALSE(match(CU32DeadBeef, cst_pred_ty<always_false_pred<APInt>>()));
+
+  // Scalar float
+  APFloat F32NaN = APFloat::getNaN(APFloat::IEEEsingle());
+  APFloat F32Zero = APFloat::getZero(APFloat::IEEEsingle());
+  APFloat F32Pi(3.14f);
+
+  Type *F32Ty = Type::getFloatTy(Ctx);
+
+  Constant *CF32NaN = ConstantFP::get(F32Ty, F32NaN);
+  Constant *CF32Zero = ConstantFP::get(F32Ty, F32Zero);
+  Constant *CF32Pi = ConstantFP::get(F32Ty, F32Pi);
+
+  EXPECT_TRUE(match(CF32NaN, cstfp_pred_ty<is_float_nan_pred>()));
+  EXPECT_FALSE(match(CF32NaN, cstfp_pred_ty<is_float_zero_pred>()));
+  EXPECT_TRUE(match(CF32NaN, cstfp_pred_ty<always_true_pred<APFloat>>()));
+  EXPECT_FALSE(match(CF32NaN, cstfp_pred_ty<always_false_pred<APFloat>>()));
+
+  EXPECT_FALSE(match(CF32Zero, cstfp_pred_ty<is_float_nan_pred>()));
+  EXPECT_TRUE(match(CF32Zero, cstfp_pred_ty<is_float_zero_pred>()));
+  EXPECT_TRUE(match(CF32Zero, cstfp_pred_ty<always_true_pred<APFloat>>()));
+  EXPECT_FALSE(match(CF32Zero, cstfp_pred_ty<always_false_pred<APFloat>>()));
+
+  EXPECT_FALSE(match(CF32Pi, cstfp_pred_ty<is_float_nan_pred>()));
+  EXPECT_FALSE(match(CF32Pi, cstfp_pred_ty<is_float_zero_pred>()));
+  EXPECT_TRUE(match(CF32Pi, cstfp_pred_ty<always_true_pred<APFloat>>()));
+  EXPECT_FALSE(match(CF32Pi, cstfp_pred_ty<always_false_pred<APFloat>>()));
+
+  ElementCount FixedEC(4, false);
+  ElementCount ScalableEC(4, true);
+
+  // Vector splat
+
+  for (auto EC : {FixedEC, ScalableEC}) {
+    // integer
+
+    Constant *CSplatU32Max = ConstantVector::getSplat(EC, CU32Max);
+    Constant *CSplatU32Zero = ConstantVector::getSplat(EC, CU32Zero);
+    Constant *CSplatU32DeadBeef = ConstantVector::getSplat(EC, CU32DeadBeef);
+
+    EXPECT_TRUE(match(CSplatU32Max, cst_pred_ty<is_unsigned_max_pred>()));
+    EXPECT_FALSE(match(CSplatU32Max, cst_pred_ty<is_unsigned_zero_pred>()));
+    EXPECT_TRUE(match(CSplatU32Max, cst_pred_ty<always_true_pred<APInt>>()));
+    EXPECT_FALSE(match(CSplatU32Max, cst_pred_ty<always_false_pred<APInt>>()));
+
+    EXPECT_FALSE(match(CSplatU32Zero, cst_pred_ty<is_unsigned_max_pred>()));
+    EXPECT_TRUE(match(CSplatU32Zero, cst_pred_ty<is_unsigned_zero_pred>()));
+    EXPECT_TRUE(match(CSplatU32Zero, cst_pred_ty<always_true_pred<APInt>>()));
+    EXPECT_FALSE(match(CSplatU32Zero, cst_pred_ty<always_false_pred<APInt>>()));
+
+    EXPECT_FALSE(match(CSplatU32DeadBeef, cst_pred_ty<is_unsigned_max_pred>()));
+    EXPECT_FALSE(
+        match(CSplatU32DeadBeef, cst_pred_ty<is_unsigned_zero_pred>()));
+    EXPECT_TRUE(
+        match(CSplatU32DeadBeef, cst_pred_ty<always_true_pred<APInt>>()));
+    EXPECT_FALSE(
+        match(CSplatU32DeadBeef, cst_pred_ty<always_false_pred<APInt>>()));
+
+    // float
+
+    Constant *CSplatF32NaN = ConstantVector::getSplat(EC, CF32NaN);
+    Constant *CSplatF32Zero = ConstantVector::getSplat(EC, CF32Zero);
+    Constant *CSplatF32Pi = ConstantVector::getSplat(EC, CF32Pi);
+
+    EXPECT_TRUE(match(CSplatF32NaN, cstfp_pred_ty<is_float_nan_pred>()));
+    EXPECT_FALSE(match(CSplatF32NaN, cstfp_pred_ty<is_float_zero_pred>()));
+    EXPECT_TRUE(
+        match(CSplatF32NaN, cstfp_pred_ty<always_true_pred<APFloat>>()));
+    EXPECT_FALSE(
+        match(CSplatF32NaN, cstfp_pred_ty<always_false_pred<APFloat>>()));
+
+    EXPECT_FALSE(match(CSplatF32Zero, cstfp_pred_ty<is_float_nan_pred>()));
+    EXPECT_TRUE(match(CSplatF32Zero, cstfp_pred_ty<is_float_zero_pred>()));
+    EXPECT_TRUE(
+        match(CSplatF32Zero, cstfp_pred_ty<always_true_pred<APFloat>>()));
+    EXPECT_FALSE(
+        match(CSplatF32Zero, cstfp_pred_ty<always_false_pred<APFloat>>()));
+
+    EXPECT_FALSE(match(CSplatF32Pi, cstfp_pred_ty<is_float_nan_pred>()));
+    EXPECT_FALSE(match(CSplatF32Pi, cstfp_pred_ty<is_float_zero_pred>()));
+    EXPECT_TRUE(match(CSplatF32Pi, cstfp_pred_ty<always_true_pred<APFloat>>()));
+    EXPECT_FALSE(
+        match(CSplatF32Pi, cstfp_pred_ty<always_false_pred<APFloat>>()));
+  }
+
+  // Int arbitrary vector
+
+  Constant *CMixedU32 = ConstantVector::get({CU32Max, CU32Zero, CU32DeadBeef});
+  Constant *CU32Undef = UndefValue::get(U32Ty);
+  Constant *CU32MaxWithUndef =
+      ConstantVector::get({CU32Undef, CU32Max, CU32Undef});
+
+  EXPECT_FALSE(match(CMixedU32, cst_pred_ty<is_unsigned_max_pred>()));
+  EXPECT_FALSE(match(CMixedU32, cst_pred_ty<is_unsigned_zero_pred>()));
+  EXPECT_TRUE(match(CMixedU32, cst_pred_ty<always_true_pred<APInt>>()));
+  EXPECT_FALSE(match(CMixedU32, cst_pred_ty<always_false_pred<APInt>>()));
+
+  EXPECT_TRUE(match(CU32MaxWithUndef, cst_pred_ty<is_unsigned_max_pred>()));
+  EXPECT_FALSE(match(CU32MaxWithUndef, cst_pred_ty<is_unsigned_zero_pred>()));
+  EXPECT_TRUE(match(CU32MaxWithUndef, cst_pred_ty<always_true_pred<APInt>>()));
+  EXPECT_FALSE(
+      match(CU32MaxWithUndef, cst_pred_ty<always_false_pred<APInt>>()));
+
+  // Float arbitrary vector
+
+  Constant *CMixedF32 = ConstantVector::get({CF32NaN, CF32Zero, CF32Pi});
+  Constant *CF32Undef = UndefValue::get(F32Ty);
+  Constant *CF32NaNWithUndef =
+      ConstantVector::get({CF32Undef, CF32NaN, CF32Undef});
+
+  EXPECT_FALSE(match(CMixedF32, cstfp_pred_ty<is_float_nan_pred>()));
+  EXPECT_FALSE(match(CMixedF32, cstfp_pred_ty<is_float_zero_pred>()));
+  EXPECT_TRUE(match(CMixedF32, cstfp_pred_ty<always_true_pred<APFloat>>()));
+  EXPECT_FALSE(match(CMixedF32, cstfp_pred_ty<always_false_pred<APFloat>>()));
+
+  EXPECT_TRUE(match(CF32NaNWithUndef, cstfp_pred_ty<is_float_nan_pred>()));
+  EXPECT_FALSE(match(CF32NaNWithUndef, cstfp_pred_ty<is_float_zero_pred>()));
+  EXPECT_TRUE(
+      match(CF32NaNWithUndef, cstfp_pred_ty<always_true_pred<APFloat>>()));
+  EXPECT_FALSE(
+      match(CF32NaNWithUndef, cstfp_pred_ty<always_false_pred<APFloat>>()));
 }
 
 template <typename T> struct MutableConstTest : PatternMatchTest { };
@@ -600,8 +1512,8 @@ TYPED_TEST_CASE(MutableConstTest, MutableConstTestTypes);
 TYPED_TEST(MutableConstTest, ICmp) {
   auto &IRB = PatternMatchTest::IRB;
 
-  typedef typename std::tuple_element<0, TypeParam>::type ValueType;
-  typedef typename std::tuple_element<1, TypeParam>::type InstructionType;
+  typedef std::tuple_element_t<0, TypeParam> ValueType;
+  typedef std::tuple_element_t<1, TypeParam> InstructionType;
 
   Value *L = IRB.getInt32(1);
   Value *R = IRB.getInt32(2);

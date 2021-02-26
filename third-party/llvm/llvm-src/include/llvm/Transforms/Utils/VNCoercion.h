@@ -1,9 +1,8 @@
 //===- VNCoercion.h - Value Numbering Coercion Utilities --------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 /// \file / This file provides routines used by LLVM's value numbering passes to
@@ -21,14 +20,14 @@
 
 #ifndef LLVM_TRANSFORMS_UTILS_VNCOERCION_H
 #define LLVM_TRANSFORMS_UTILS_VNCOERCION_H
-#include "llvm/IR/IRBuilder.h"
 
 namespace llvm {
-class Function;
+class Constant;
 class StoreInst;
 class LoadInst;
 class MemIntrinsic;
 class Instruction;
+class IRBuilderBase;
 class Value;
 class Type;
 class DataLayout;
@@ -45,7 +44,7 @@ bool canCoerceMustAliasedValueToLoad(Value *StoredVal, Type *LoadTy,
 ///
 /// If we can't do it, return null.
 Value *coerceAvailableValueToLoadType(Value *StoredVal, Type *LoadedTy,
-                                      IRBuilder<> &IRB, const DataLayout &DL);
+                                      IRBuilderBase &IRB, const DataLayout &DL);
 
 /// This function determines whether a value for the pointer LoadPtr can be
 /// extracted from the store at DepSI.

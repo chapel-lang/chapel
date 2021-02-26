@@ -1,4 +1,5 @@
 set(LLVM_LINK_COMPONENTS
+  FrontendOpenMP
   Support
   )
 
@@ -18,9 +19,11 @@ add_clang_library(clangAnalysis
   ExprMutationAnalyzer.cpp
   LiveVariables.cpp
   ObjCNoReturn.cpp
+  PathDiagnostic.cpp
   PostOrderCFGView.cpp
   ProgramPoint.cpp
   ReachableCode.cpp
+  RetainSummaryManager.cpp
   ThreadSafety.cpp
   ThreadSafetyCommon.cpp
   ThreadSafetyLogical.cpp
@@ -32,4 +35,9 @@ add_clang_library(clangAnalysis
   clangASTMatchers
   clangBasic
   clangLex
+
+  DEPENDS
+  omp_gen
   )
+
+add_subdirectory(plugins)

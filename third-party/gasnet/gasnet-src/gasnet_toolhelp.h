@@ -231,9 +231,14 @@ GASNETI_NORETURNP(_gasneti_assert_fail)
 #if GASNET_DEBUG
   #define gasneti_assume(cond) gasneti_assert_always(cond)
 #elif GASNETT_USE_BUILTIN_ASSUME
-  #define gasneti_assume(cond) ((void)__builtin_assume(cond))
+  #if PLATFORM_COMPILER_INTEL
+    // workaround Intel's defective implementation of __builtin_assume
+    #define gasneti_assume(cond) ((void)__builtin_assume((cond) != 0))
+  #else
+    #define gasneti_assume(cond) ((void)__builtin_assume(cond))
+  #endif
 #elif GASNETT_USE_ASSUME
-  #define gasneti_assume(cond) ((void)__assume(cond))
+  #define gasneti_assume(cond) ((void)__assume((cond) != 0))
 #else
   #define gasneti_assume(cond) (GASNETT_PREDICT_TRUE(cond) ? (void)0 : gasneti_unreachable())
 #endif
@@ -283,13 +288,28 @@ GASNETI_COLD
 GASNETI_FORMAT_PRINTF(gasneti_console_message,2,3, // output a formatted message with a prefix type
 extern void gasneti_console_message(const char *_prefix, const char *_msg, ...));
 GASNETI_COLD
-GASNETI_FORMAT_PRINTF(gasneti_console_messageVA,2,0,
-extern void gasneti_console_messageVA(const char *_prefix, const char *_msg, va_list _argptr));
+GASNETI_FORMAT_PRINTF(gasneti_console_messageVA,5,0,
+extern void gasneti_console_messageVA(const char *_funcname, const char *_filename, int _linenum,
+                                      const char *_prefix, const char *_msg, va_list _argptr));
 
+// gasneti_fatalerror(format, ...) - print a fatal error with func/file/line info, then abort
 GASNETI_COLD
-GASNETI_FORMAT_PRINTF(gasneti_fatalerror,1,2,
-extern void gasneti_fatalerror(const char *_msg, ...) GASNETI_NORETURN);
-GASNETI_NORETURNP(gasneti_fatalerror)
+GASNETI_FORMAT_PRINTF(_gasneti_fatalerror,1,2,
+extern void _gasneti_fatalerror(const char *_msg, ...) GASNETI_NORETURN);
+GASNETI_NORETURNP(_gasneti_fatalerror)
+extern const char *_gasneti_fatalerror_funcname;
+extern const char *_gasneti_fatalerror_filename;
+extern int         _gasneti_fatalerror_linenum;
+#define gasneti_fatalerror ( \
+  _gasneti_fatalerror_funcname = GASNETI_CURRENT_FUNCTION, \
+  _gasneti_fatalerror_filename = __FILE__, \
+  _gasneti_fatalerror_linenum = __LINE__, \
+  _gasneti_fatalerror)
+// gasneti_fatalerror_nopos(format, ...) - a variant that omits func/file/line info
+GASNETI_COLD
+GASNETI_FORMAT_PRINTF(gasneti_fatalerror_nopos,1,2,
+extern void gasneti_fatalerror_nopos(const char *_msg, ...) GASNETI_NORETURN);
+GASNETI_NORETURNP(gasneti_fatalerror_nopos)
 
 GASNETI_COLD
 extern void gasneti_error_abort(void) GASNETI_NORETURN; // perform pre-abort actions then abort
@@ -1017,7 +1037,7 @@ typedef enum {
 #if !defined(GASNETI_BUG3430_WORKAROUND) && PLATFORM_OS_CYGWIN
   #define GASNETI_BUG3430_WORKAROUND       1
 #endif
-#if GASNETI_THREADS && GASNETI_BUG3430_WORKAROUND
+#if GASNETI_USE_TRUE_MUTEXES && GASNETI_BUG3430_WORKAROUND
   // a workaround for the Cygwin pthread_create vs. sched_yield performance bug
   extern gasneti_mutex_t gasneti_bug3430_lock;
   extern gasneti_cond_t gasneti_bug3430_cond;

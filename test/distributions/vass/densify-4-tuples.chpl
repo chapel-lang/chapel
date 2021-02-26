@@ -1,3 +1,5 @@
+use DSIUtil;
+
 // Testing densifyBounded on tuples,
 // assuming its correctness on ranges.
 

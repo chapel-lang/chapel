@@ -1,0 +1,30 @@
+.TH qthread_worker 3 "JUNE 2011" libqthread "libqthread"
+.SH NAME
+.B qthread_worker
+\- returns the qthread's current worker ID
+.SH SYNOPSIS
+.B #include <qthread.h>
+
+.I qthread_worker_id_t
+.br
+.B qthread_worker
+.RI "(qthread_shepherd_id_t *" shep );
+.SH DESCRIPTION
+This function returns the ID of the worker that the current thread is executing on. If
+.I shep
+is non-NULL, the value of the current shepherd identifier is written to that location.
+.P
+Note that the current worker ID is transient, and is likely to change, for
+example, after a call to
+.BR qthread_yield ().
+This value is dependent on how many workers are currently active.
+.SH RETURN VALUE
+This function either returns the ID number of the current worker of the calling
+function, or returns
+.BR NO_WORKER .
+.SH SEE ALSO
+.BR pthread_getspecific (3),
+.BR qthread_retloc (3),
+.BR pthread_shep (3),
+.BR qthread_stackleft (3),
+.BR qthread_id (3)

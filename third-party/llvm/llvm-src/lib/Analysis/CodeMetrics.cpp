@@ -1,9 +1,8 @@
 //===- CodeMetrics.cpp - Code cost measurements ---------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -12,15 +11,13 @@
 //===----------------------------------------------------------------------===//
 
 #include "llvm/Analysis/CodeMetrics.h"
+#include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/Analysis/AssumptionCache.h"
 #include "llvm/Analysis/LoopInfo.h"
 #include "llvm/Analysis/TargetTransformInfo.h"
 #include "llvm/Analysis/ValueTracking.h"
-#include "llvm/IR/CallSite.h"
-#include "llvm/IR/DataLayout.h"
 #include "llvm/IR/Function.h"
 #include "llvm/Support/Debug.h"
-#include "llvm/Support/raw_ostream.h"
 
 #define DEBUG_TYPE "code-metrics"
 
@@ -126,14 +123,12 @@ void CodeMetrics::analyzeBasicBlock(const BasicBlock *BB,
       continue;
 
     // Special handling for calls.
-    if (isa<CallInst>(I) || isa<InvokeInst>(I)) {
-      ImmutableCallSite CS(&I);
-
-      if (const Function *F = CS.getCalledFunction()) {
+    if (const auto *Call = dyn_cast<CallBase>(&I)) {
+      if (const Function *F = Call->getCalledFunction()) {
         // If a function is both internal and has a single use, then it is
         // extremely likely to get inlined in the future (it was probably
         // exposed by an interleaved devirtualization pass).
-        if (!CS.isNoInline() && F->hasInternalLinkage() && F->hasOneUse())
+        if (!Call->isNoInline() && F->hasInternalLinkage() && F->hasOneUse())
           ++NumInlineCandidates;
 
         // If this call is to function itself, then the function is recursive.
@@ -148,7 +143,7 @@ void CodeMetrics::analyzeBasicBlock(const BasicBlock *BB,
       } else {
         // We don't want inline asm to count as a call - that would prevent loop
         // unrolling. The argument setup cost is still real, though.
-        if (!isa<InlineAsm>(CS.getCalledValue()))
+        if (!Call->isInlineAsm())
           ++NumCalls;
       }
     }
@@ -175,7 +170,7 @@ void CodeMetrics::analyzeBasicBlock(const BasicBlock *BB,
       if (InvI->cannotDuplicate())
         notDuplicatable = true;
 
-    NumInsts += TTI.getUserCost(&I);
+    NumInsts += TTI.getUserCost(&I, TargetTransformInfo::TCK_CodeSize);
   }
 
   if (isa<ReturnInst>(BB->getTerminator()))

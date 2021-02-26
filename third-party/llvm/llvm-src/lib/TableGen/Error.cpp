@@ -1,9 +1,8 @@
 //===- Error.cpp - tblgen error handling helper routines --------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -39,6 +38,8 @@ static void PrintMessage(ArrayRef<SMLoc> Loc, SourceMgr::DiagKind Kind,
     SrcMgr.PrintMessage(Loc[i], SourceMgr::DK_Note,
                         "instantiated from multiclass");
 }
+
+void PrintNote(const Twine &Msg) { WithColor::note() << Msg << "\n"; }
 
 void PrintNote(ArrayRef<SMLoc> NoteLoc, const Twine &Msg) {
   PrintMessage(NoteLoc, SourceMgr::DK_Note, Msg);

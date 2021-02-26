@@ -1,2 +1,2 @@
--suseOwned=true  # bad-managed-init.owned.good
--suseOwned=false # bad-managed-init.shared.good
+--print-callstack-on-error -suseOwned=true  # bad-managed-init.owned.good
+--print-callstack-on-error -suseOwned=false # bad-managed-init.shared.good

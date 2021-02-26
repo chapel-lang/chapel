@@ -1,9 +1,8 @@
 //=======-- PPCInstrSPE.td - The PowerPC SPE Extension -*- tablegen -*-=======//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -159,7 +158,7 @@ def EFDCFSF        : EFXForm_2a<755, (outs sperc:$RT), (ins spe4rc:$RB),
 
 def EFDCFSI        : EFXForm_2a<753, (outs sperc:$RT), (ins gprc:$RB),
                                 "efdcfsi $RT, $RB", IIC_FPDGeneral,
-                                [(set f64:$RT, (sint_to_fp i32:$RB))]>;
+                                [(set f64:$RT, (any_sint_to_fp i32:$RB))]>;
 
 def EFDCFSID       : EFXForm_2a<739, (outs sperc:$RT), (ins gprc:$RB),
                                 "efdcfsid $RT, $RB", IIC_FPDGeneral,
@@ -170,7 +169,7 @@ def EFDCFUF        : EFXForm_2a<754, (outs sperc:$RT), (ins spe4rc:$RB),
 
 def EFDCFUI        : EFXForm_2a<752, (outs sperc:$RT), (ins gprc:$RB),
                                 "efdcfui $RT, $RB", IIC_FPDGeneral,
-                                [(set f64:$RT, (uint_to_fp i32:$RB))]>;
+                                [(set f64:$RT, (any_uint_to_fp i32:$RB))]>;
 
 def EFDCFUID       : EFXForm_2a<738, (outs sperc:$RT), (ins gprc:$RB),
                                 "efdcfuid $RT, $RB", IIC_FPDGeneral,
@@ -198,7 +197,7 @@ def EFDCTSIDZ      : EFXForm_2a<747, (outs gprc:$RT), (ins sperc:$RB),
 
 def EFDCTSIZ       : EFXForm_2a<762, (outs gprc:$RT), (ins sperc:$RB),
                                 "efdctsiz $RT, $RB", IIC_FPDGeneral,
-                                [(set i32:$RT, (fp_to_sint f64:$RB))]>;
+                                [(set i32:$RT, (any_fp_to_sint f64:$RB))]>;
 
 def EFDCTUF        : EFXForm_2a<758, (outs sperc:$RT), (ins spe4rc:$RB),
                                 "efdctuf $RT, $RB", IIC_FPDGeneral, []>;
@@ -213,7 +212,7 @@ def EFDCTUIDZ      : EFXForm_2a<746, (outs gprc:$RT), (ins sperc:$RB),
 
 def EFDCTUIZ       : EFXForm_2a<760, (outs gprc:$RT), (ins sperc:$RB),
                                 "efdctuiz $RT, $RB", IIC_FPDGeneral,
-                                [(set i32:$RT, (fp_to_uint f64:$RB))]>;
+                                [(set i32:$RT, (any_fp_to_uint f64:$RB))]>;
 
 def EFDDIV         : EFXForm_1<745, (outs sperc:$RT), (ins sperc:$RA, sperc:$RB),
                                "efddiv $RT, $RA, $RB", IIC_FPDivD,
@@ -262,14 +261,14 @@ def EFSCFSF        : EFXForm_2a<723, (outs spe4rc:$RT), (ins spe4rc:$RB),
 
 def EFSCFSI        : EFXForm_2a<721, (outs spe4rc:$RT), (ins gprc:$RB),
                                 "efscfsi $RT, $RB", IIC_FPSGeneral,
-                                [(set f32:$RT, (sint_to_fp i32:$RB))]>;
+                                [(set f32:$RT, (any_sint_to_fp i32:$RB))]>;
 
 def EFSCFUF        : EFXForm_2a<722, (outs spe4rc:$RT), (ins spe4rc:$RB),
                                 "efscfuf $RT, $RB", IIC_FPSGeneral, []>;
 
 def EFSCFUI        : EFXForm_2a<720, (outs spe4rc:$RT), (ins gprc:$RB),
                                 "efscfui $RT, $RB", IIC_FPSGeneral,
-                                [(set f32:$RT, (uint_to_fp i32:$RB))]>;
+                                [(set f32:$RT, (any_uint_to_fp i32:$RB))]>;
 
 let isCompare = 1 in {
 def EFSCMPEQ       : EFXForm_3<718, (outs crrc:$crD), (ins spe4rc:$RA, spe4rc:$RB),
@@ -289,7 +288,7 @@ def EFSCTSI        : EFXForm_2a<725, (outs gprc:$RT), (ins spe4rc:$RB),
 
 def EFSCTSIZ       : EFXForm_2a<730, (outs gprc:$RT), (ins spe4rc:$RB),
                                 "efsctsiz $RT, $RB", IIC_FPSGeneral,
-                                [(set i32:$RT, (fp_to_sint f32:$RB))]>;
+                                [(set i32:$RT, (any_fp_to_sint f32:$RB))]>;
 
 def EFSCTUF        : EFXForm_2a<726, (outs sperc:$RT), (ins spe4rc:$RB),
                                 "efsctuf $RT, $RB", IIC_FPSGeneral, []>;
@@ -300,7 +299,7 @@ def EFSCTUI        : EFXForm_2a<724, (outs gprc:$RT), (ins spe4rc:$RB),
 
 def EFSCTUIZ       : EFXForm_2a<728, (outs gprc:$RT), (ins spe4rc:$RB),
                                 "efsctuiz $RT, $RB", IIC_FPSGeneral,
-                                [(set i32:$RT, (fp_to_uint f32:$RB))]>;
+                                [(set i32:$RT, (any_fp_to_uint f32:$RB))]>;
 
 def EFSDIV         : EFXForm_1<713, (outs spe4rc:$RT), (ins spe4rc:$RA, spe4rc:$RB),
                                "efsdiv $RT, $RA, $RB", IIC_FPDivD,
@@ -512,7 +511,7 @@ def EVLWWSPLATX    : EVXForm_1<792, (outs sperc:$RT), (ins memrr:$src),
 
 def EVMERGEHI      : EVXForm_1<556, (outs sperc:$RT), (ins sperc:$RA, sperc:$RB),
                                "evmergehi $RT, $RA, $RB", IIC_VecGeneral, []>;
-def EVMERGELO      : EVXForm_1<557, (outs sperc:$RT), (ins sperc:$RA, sperc:$RB),
+def EVMERGELO      : EVXForm_1<557, (outs sperc:$RT), (ins gprc:$RA, gprc:$RB),
                                "evmergelo $RT, $RA, $RB", IIC_VecGeneral, []>;
 def EVMERGEHILO    : EVXForm_1<558, (outs sperc:$RT), (ins sperc:$RA, sperc:$RB),
                                "evmergehilo $RT, $RA, $RB", IIC_VecGeneral, []>;
@@ -887,4 +886,14 @@ def : Pat<(f64 (selectcc i1:$lhs, i1:$rhs, f64:$tval, f64:$fval, SETUGT)),
           (SELECT_SPE (CRANDC $lhs, $rhs), $tval, $fval)>;
 def : Pat<(f64 (selectcc i1:$lhs, i1:$rhs, f64:$tval, f64:$fval, SETNE)),
           (SELECT_SPE (CRXOR $lhs, $rhs), $tval, $fval)>;
+
+
+def : Pat<(f64 (PPCbuild_spe64 i32:$rB, i32:$rA)),
+          (f64 (COPY_TO_REGCLASS (EVMERGELO $rA, $rB), SPERC))>;
+
+def : Pat<(i32 (PPCextract_spe f64:$rA, 1)),
+          (i32 (EXTRACT_SUBREG (EVMERGEHI $rA, $rA), sub_32))>;
+def : Pat<(i32 (PPCextract_spe f64:$rA, 0)),
+          (i32 (EXTRACT_SUBREG $rA, sub_32))>;
+
 }

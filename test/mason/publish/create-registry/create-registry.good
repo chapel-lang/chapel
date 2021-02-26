@@ -1,0 +1,3 @@
+Initialised local registry at registry
+Add this registry to MASON_REGISTRY environment variable to include it in search path: 
+   export MASON_REGISTRY="mason-registry|https://github.com/chapel-lang/mason-registry,registry|$PWD/registry"

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -19,29 +19,31 @@
  */
 
 
+
 private use List;
 private use Map;
 use TOML;
 use Spawn;
+use Path;
+use FileSystem;
+
 use MasonUtils;
 use MasonHelp;
 use MasonUpdate;
 use MasonBuild;
-use Path;
-use FileSystem;
 use MasonEnv;
 
 /* Runs the .chpl files found within the /example directory */
-proc masonExample(args) {
+proc masonExample(args: [] string) {
 
   var show = false;
   var run = true;
   var build = true;
   var release = false;
   var force = false;
-  var noUpdate = false;
+  var skipUpdate = MASON_OFFLINE;
   var update = false;
-  var examples: list(string); 
+  var examples: list(string);
   for arg in args {
     if arg == '--show' {
       show = true;
@@ -59,10 +61,15 @@ proc masonExample(args) {
       force = true;
     }
     else if arg == '--no-update' {
-      noUpdate = true;
+      skipUpdate = true;
     }
     else if arg == '--update' {
-      update = true;
+      skipUpdate = false;
+    }
+    else if arg.startsWith('--example=') {
+      var exampleProgram = arg.split("=");
+      examples.append(exampleProgram[1]);
+      continue;
     }
     else if arg == '--example' {
       continue;
@@ -74,14 +81,7 @@ proc masonExample(args) {
       examples.append(arg);
     }
   }
-  var uargs: list(string);
-  if (!build || noUpdate) then uargs.append("--no-update");
-  else {
-    if MASON_OFFLINE && update {
-      uargs.append('--update');
-    }
-  }
-  UpdateLock(uargs);
+  updateLock(skipUpdate);
   runExamples(show, run, build, release, force, examples);
 }
 
@@ -114,7 +114,7 @@ private proc getBuildInfo(projectHome: string) {
 
   // Get system, and external compopts
   const compopts = getTomlCompopts(lockFile.borrow(), emptyCompopts);
-  const perExampleOptions = getExampleOptions(tomlFile.borrow(), exampleNames);
+  var perExampleOptions = getExampleOptions(tomlFile.borrow(), exampleNames);
 
   // Close lock and toml
   lock.close();
@@ -195,7 +195,7 @@ private proc runExamples(show: bool, run: bool, build: bool, release: bool,
 
   try! {
 
-    const cwd = getEnv("PWD");
+    const cwd = here.cwd();
     const projectHome = getProjectHome(cwd);
 
     // Get buildInfo: dependencies, path to src code, compopts,
@@ -361,7 +361,7 @@ proc getExamplePath(fullPath: string, examplePath = "") : string {
 // used when user calls `mason run --example` without argument
 proc printAvailableExamples() {
   try! {
-    const cwd = getEnv("PWD");
+    const cwd = here.cwd();
     const projectHome = getProjectHome(cwd);
     const toParse = open(projectHome + "/Mason.toml", iomode.r);
     const toml = owned.create(parseToml(toParse));

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -36,13 +36,14 @@
 module DateTime {
   import HaltWrappers;
   private use SysCTypes;
+  private use CPtr;
 
   /* The minimum year allowed in `date` objects */
   param MINYEAR = 1;
   /* The maximum year allowed in `date` objects */
   param MAXYEAR = 9999;
 
-  private const DAYS_IN_MONTH = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  private const DAYS_IN_MONTH: [1..12] int = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
   private const DAYS_BEFORE_MONTH = init_days_before_month();
 
   /* The Unix Epoch date and time */
@@ -119,7 +120,7 @@ module DateTime {
 
     extern proc localtime_r(const ref t: time_t, ref resultp: tm): void;
 
-    const t1: time_t = __primitive("cast", time_t, t(1));
+    const t1: time_t = __primitive("cast", time_t, t(0));
     var breakDownTime: tm;
 
     localtime_r(t1, breakDownTime);
@@ -1196,7 +1197,42 @@ module DateTime {
     timeStruct.tm_wday = (weekday(): int(32) + 1) % 7; // shift Sunday to 0
     timeStruct.tm_yday = (this.replace(tzinfo=nil) - new datetime(year, 1, 1)).days: int(32);
 
-    strftime(c_ptrTo(buf), bufLen, fmt.c_str(), timeStruct);
+    // Iterate over format specifiers in strftime(), replacing %f with microseconds
+    pragma "not order independent yielding loops"
+    iter strftok(const ref s: string)
+    {
+      var per = "";
+      for c in s {
+        if per == "" {
+          if c == '%' {
+             per = "%";
+          } else {
+             yield c;
+          }
+        } else {
+          per += c;
+
+          // Modifiers - (no padding) 0 (0-padding) _ (space padding) E and O (POSIX extensions)
+          if per != '%-' && per != '%0' && per != '%_' && per != '%E' && per != '%O' {
+            if c == "f" {
+              const fmt = if per == "%-f" then "%i" else if per == "%_f" then "%6i" else "%06i";
+              try! {
+                yield fmt.format(chpl_time.chpl_microsecond);
+              }
+            } else {
+              yield per;
+            }
+            per = "";
+          }
+        }
+      }
+      if per != "" {
+        yield per;
+      }
+    }
+
+    strftime(c_ptrTo(buf), bufLen, "".join(strftok(fmt)).c_str(), timeStruct);
+
     var str: string;
     try! {
       str = createStringWithNewBuffer(c_ptrTo(buf):c_string);
@@ -1631,7 +1667,7 @@ module DateTime {
   }
 
   pragma "no doc"
-  proc _cast(type s, t: timedelta) where s == string {
+  operator :(t: timedelta, type s:string) {
     var str: string;
     if t.days != 0 {
       str = t.days: string + " day";

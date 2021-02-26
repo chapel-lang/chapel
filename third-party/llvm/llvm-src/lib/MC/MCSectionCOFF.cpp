@@ -1,9 +1,8 @@
 //===- lib/MC/MCSectionCOFF.cpp - COFF Code Section Representation --------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -14,8 +13,6 @@
 #include <cassert>
 
 using namespace llvm;
-
-MCSectionCOFF::~MCSectionCOFF() = default; // anchor.
 
 // ShouldOmitSectionDirective - Decides whether a '.section' directive
 // should be printed before the section name
@@ -41,12 +38,12 @@ void MCSectionCOFF::PrintSwitchToSection(const MCAsmInfo &MAI, const Triple &T,
                                          raw_ostream &OS,
                                          const MCExpr *Subsection) const {
   // standard sections don't require the '.section'
-  if (ShouldOmitSectionDirective(SectionName, MAI)) {
-    OS << '\t' << getSectionName() << '\n';
+  if (ShouldOmitSectionDirective(getName(), MAI)) {
+    OS << '\t' << getName() << '\n';
     return;
   }
 
-  OS << "\t.section\t" << getSectionName() << ",\"";
+  OS << "\t.section\t" << getName() << ",\"";
   if (getCharacteristics() & COFF::IMAGE_SCN_CNT_INITIALIZED_DATA)
     OS << 'd';
   if (getCharacteristics() & COFF::IMAGE_SCN_CNT_UNINITIALIZED_DATA)
@@ -64,7 +61,7 @@ void MCSectionCOFF::PrintSwitchToSection(const MCAsmInfo &MAI, const Triple &T,
   if (getCharacteristics() & COFF::IMAGE_SCN_MEM_SHARED)
     OS << 's';
   if ((getCharacteristics() & COFF::IMAGE_SCN_MEM_DISCARDABLE) &&
-      !isImplicitlyDiscardable(SectionName))
+      !isImplicitlyDiscardable(getName()))
     OS << 'D';
   OS << '"';
 
@@ -113,4 +110,8 @@ bool MCSectionCOFF::UseCodeAlign() const {
 
 bool MCSectionCOFF::isVirtualSection() const {
   return getCharacteristics() & COFF::IMAGE_SCN_CNT_UNINITIALIZED_DATA;
+}
+
+StringRef MCSectionCOFF::getVirtualSectionKind() const {
+  return "IMAGE_SCN_CNT_UNINITIALIZED_DATA";
 }

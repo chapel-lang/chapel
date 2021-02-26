@@ -1,9 +1,8 @@
 //===---------- ObjectTransformLayer.cpp - Object Transform Layer ---------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -22,12 +21,18 @@ void ObjectTransformLayer::emit(MaterializationResponsibility R,
                                 std::unique_ptr<MemoryBuffer> O) {
   assert(O && "Module must not be null");
 
-  if (auto TransformedObj = Transform(std::move(O)))
-    BaseLayer.emit(std::move(R), std::move(*TransformedObj));
-  else {
-    R.failMaterialization();
-    getExecutionSession().reportError(TransformedObj.takeError());
+  // If there is a transform set then apply it.
+  if (Transform) {
+    if (auto TransformedObj = Transform(std::move(O)))
+      O = std::move(*TransformedObj);
+    else {
+      R.failMaterialization();
+      getExecutionSession().reportError(TransformedObj.takeError());
+      return;
+    }
   }
+
+  BaseLayer.emit(std::move(R), std::move(O));
 }
 
 } // End namespace orc.

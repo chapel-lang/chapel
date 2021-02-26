@@ -1,5 +1,5 @@
-perfkeys: real
-graphkeys: release
-files: regexdna-release.dat
+perfkeys: real, real, real
+graphkeys: release, submitted-string, submitted-bytes
+files: regexdna-release.dat, regexdnaredux-submitted.dat, regexdnaredux-submitted-bytes.dat
 graphtitle: Submitted Regex-dna Shootout Benchmark
 ylabel: Time (seconds)

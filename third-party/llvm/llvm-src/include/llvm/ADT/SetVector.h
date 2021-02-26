@@ -1,9 +1,8 @@
 //===- llvm/ADT/SetVector.h - Set with insert order iteration ---*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -175,7 +174,7 @@ public:
     set_.erase(V);
 
     // FIXME: No need to use the non-const iterator when built with
-    // std:vector.erase(const_iterator) as defined in C++11. This is for
+    // std::vector.erase(const_iterator) as defined in C++11. This is for
     // compatibility with non-standard libstdc++ up to 4.8 (fixed in 4.9).
     auto NI = vector_.begin();
     std::advance(NI, std::distance<iterator>(NI, I));
@@ -264,6 +263,11 @@ public:
       remove(*SI);
   }
 
+  void swap(SetVector<T, Vector, Set> &RHS) {
+    set_.swap(RHS.set_);
+    vector_.swap(RHS.vector_);
+  }
+
 private:
   /// A wrapper predicate designed for use with std::remove_if.
   ///
@@ -308,5 +312,23 @@ public:
 };
 
 } // end namespace llvm
+
+namespace std {
+
+/// Implement std::swap in terms of SetVector swap.
+template<typename T, typename V, typename S>
+inline void
+swap(llvm::SetVector<T, V, S> &LHS, llvm::SetVector<T, V, S> &RHS) {
+  LHS.swap(RHS);
+}
+
+/// Implement std::swap in terms of SmallSetVector swap.
+template<typename T, unsigned N>
+inline void
+swap(llvm::SmallSetVector<T, N> &LHS, llvm::SmallSetVector<T, N> &RHS) {
+  LHS.swap(RHS);
+}
+
+} // end namespace std
 
 #endif // LLVM_ADT_SETVECTOR_H

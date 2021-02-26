@@ -1,0 +1,5 @@
+#!/bin/bash
+
+output=$2
+cat $output | sed 's@ChapelBase.chpl:[0-9]*:@ChapelBase.chpl::@' > $output.tmp
+mv $output.tmp $output

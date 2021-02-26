@@ -1,9 +1,8 @@
 //===- CallGraph.h - Build a Module's call graph ----------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 /// \file
@@ -48,8 +47,8 @@
 
 #include "llvm/ADT/GraphTraits.h"
 #include "llvm/ADT/STLExtras.h"
-#include "llvm/IR/CallSite.h"
 #include "llvm/IR/Function.h"
+#include "llvm/IR/InstrTypes.h"
 #include "llvm/IR/Intrinsics.h"
 #include "llvm/IR/PassManager.h"
 #include "llvm/IR/ValueHandle.h"
@@ -95,10 +94,6 @@ class CallGraph {
   /// callers from the old function to the new.
   void spliceFunction(const Function *From, const Function *To);
 
-  /// Add a function to the call graph, and link the node to all of the
-  /// functions that it calls.
-  void addToCallGraph(Function *F);
-
 public:
   explicit CallGraph(Module &M);
   CallGraph(CallGraph &&Arg);
@@ -112,6 +107,9 @@ public:
 
   /// Returns the module the call graph corresponds to.
   Module &getModule() const { return M; }
+
+  bool invalidate(Module &, const PreservedAnalyses &PA,
+                  ModuleAnalysisManager::Invalidator &);
 
   inline iterator begin() { return FunctionMap.begin(); }
   inline iterator end() { return FunctionMap.end(); }
@@ -140,6 +138,10 @@ public:
     return CallsExternalNode.get();
   }
 
+  /// Old node has been deleted, and New is to be used in its place, update the
+  /// ExternalCallingNode.
+  void ReplaceExternalCallEdge(CallGraphNode *Old, CallGraphNode *New);
+
   //===---------------------------------------------------------------------
   // Functions to keep a call graph up to date with a function that has been
   // modified.
@@ -156,6 +158,13 @@ public:
   /// Similar to operator[], but this will insert a new CallGraphNode for
   /// \c F if one does not already exist.
   CallGraphNode *getOrInsertFunction(const Function *F);
+
+  /// Populate \p CGN based on the calls inside the associated function.
+  void populateCallGraphNode(CallGraphNode *CGN);
+
+  /// Add a function to the call graph, and link the node to all of the
+  /// functions that it calls.
+  void addToCallGraph(Function *F);
 };
 
 /// A node in the call graph for a module.
@@ -166,13 +175,21 @@ class CallGraphNode {
 public:
   /// A pair of the calling instruction (a call or invoke)
   /// and the call graph node being called.
-  using CallRecord = std::pair<WeakTrackingVH, CallGraphNode *>;
+  /// Call graph node may have two types of call records which represent an edge
+  /// in the call graph - reference or a call edge. Reference edges are not
+  /// associated with any call instruction and are created with the first field
+  /// set to `None`, while real call edges have instruction address in this
+  /// field. Therefore, all real call edges are expected to have a value in the
+  /// first field and it is not supposed to be `nullptr`.
+  /// Reference edges, for example, are used for connecting broker function
+  /// caller to the callback function for callback call sites.
+  using CallRecord = std::pair<Optional<WeakTrackingVH>, CallGraphNode *>;
 
 public:
   using CalledFunctionsVector = std::vector<CallRecord>;
 
   /// Creates a node for the specified function.
-  inline CallGraphNode(Function *F) : F(F) {}
+  inline CallGraphNode(CallGraph *CG, Function *F) : CG(CG), F(F) {}
 
   CallGraphNode(const CallGraphNode &) = delete;
   CallGraphNode &operator=(const CallGraphNode &) = delete;
@@ -230,11 +247,12 @@ public:
   }
 
   /// Adds a function to the list of functions called by this one.
-  void addCalledFunction(CallSite CS, CallGraphNode *M) {
-    assert(!CS.getInstruction() || !CS.getCalledFunction() ||
-           !CS.getCalledFunction()->isIntrinsic() ||
-           !Intrinsic::isLeaf(CS.getCalledFunction()->getIntrinsicID()));
-    CalledFunctions.emplace_back(CS.getInstruction(), M);
+  void addCalledFunction(CallBase *Call, CallGraphNode *M) {
+    assert(!Call || !Call->getCalledFunction() ||
+           !Call->getCalledFunction()->isIntrinsic() ||
+           !Intrinsic::isLeaf(Call->getCalledFunction()->getIntrinsicID()));
+    CalledFunctions.emplace_back(
+        Call ? Optional<WeakTrackingVH>(Call) : Optional<WeakTrackingVH>(), M);
     M->AddRef();
   }
 
@@ -247,7 +265,7 @@ public:
   /// Removes the edge in the node for the specified call site.
   ///
   /// Note that this method takes linear time, so it should be used sparingly.
-  void removeCallEdgeFor(CallSite CS);
+  void removeCallEdgeFor(CallBase &Call);
 
   /// Removes all call edges from this node to the specified callee
   /// function.
@@ -264,11 +282,13 @@ public:
   /// new one.
   ///
   /// Note that this method takes linear time, so it should be used sparingly.
-  void replaceCallEdge(CallSite CS, CallSite NewCS, CallGraphNode *NewNode);
+  void replaceCallEdge(CallBase &Call, CallBase &NewCall,
+                       CallGraphNode *NewNode);
 
 private:
   friend class CallGraph;
 
+  CallGraph *CG;
   Function *F;
 
   std::vector<CallRecord> CalledFunctions;
@@ -402,7 +422,7 @@ public:
 // graphs by the generic graph algorithms.
 //
 
-// Provide graph traits for tranversing call graphs using standard graph
+// Provide graph traits for traversing call graphs using standard graph
 // traversals.
 template <> struct GraphTraits<CallGraphNode *> {
   using NodeRef = CallGraphNode *;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -144,10 +144,6 @@ static void callExprHelper(CallExpr* call, BaseAST* arg) {
   }
 }
 
-CallExpr::~CallExpr() {
-}
-
-
 bool CallExpr::isEmpty() const {
   return primitive == NULL && baseExpr == NULL;
 }
@@ -235,6 +231,8 @@ void CallExpr::verify() {
   }
 
   if (primitive != NULL) {
+    INT_ASSERT(baseExpr == NULL);
+
     switch (primitive->tag) {
     case PRIM_BLOCK_PARAM_LOOP:
     case PRIM_BLOCK_WHILEDO_LOOP:
@@ -261,6 +259,11 @@ void CallExpr::verify() {
     default:
       break; // do nothing
     }
+  } else if (CallExpr* subCall = toCallExpr(baseExpr)) {
+    // Confirm that this is a partial call, but only if the call is not
+    // within a DefExpr (indicated by not having a stmt-expr)
+    if (normalized && subCall->getStmtExpr() != NULL)
+      INT_ASSERT(subCall->partialTag == true);
   }
 
   verifyNotOnList(baseExpr);
@@ -350,55 +353,6 @@ void CallExpr::setUnresolvedFunction(const char* name) {
   }
 }
 
-bool CallExpr::isResolved() const {
-  return (resolvedFunction() != NULL) ? true : false;
-}
-
-FnSymbol* CallExpr::resolvedFunction() const {
-  FnSymbol* retval = NULL;
-
-  // A PRIM-OP
-  if (primitive != NULL) {
-    INT_ASSERT(baseExpr  == NULL);
-
-  // A Chapel call
-  } else if (baseExpr != NULL) {
-    if (isUnresolvedSymExpr(baseExpr) == true) {
-
-    } else if (SymExpr* base = toSymExpr(baseExpr)) {
-      if (FnSymbol* fn = toFnSymbol(base->symbol())) {
-        retval = fn;
-
-      // Probably an array index
-      } else if (isArgSymbol(base->symbol())  == true ||
-                 isVarSymbol(base->symbol())  == true) {
-
-      // A type specifier
-      } else if (isTypeSymbol(base->symbol()) == true) {
-
-      } else {
-        INT_ASSERT(false);
-      }
-
-    } else if (CallExpr* subCall = toCallExpr(baseExpr)) {
-      // Confirm that this is a partial call, but only if the call is not
-      // within a DefExpr (indicated by not having a stmt-expr)
-      if (subCall->getStmtExpr() != NULL) {
-        INT_ASSERT(subCall->partialTag == true);
-      }
-
-    } else {
-      INT_ASSERT(false);
-    }
-
-  // The CallExpr has been purged during resolve
-  } else {
-    INT_ASSERT(false);
-  }
-
-  return retval;
-}
-
 void CallExpr::setResolvedFunction(FnSymbol* fn) {
   // Currently a PRIM_OP
   if (primitive != NULL) {
@@ -435,16 +389,6 @@ FnSymbol* CallExpr::resolvedOrVirtualFunction() const {
 
      retval = toFnSymbol(arg1->symbol());
     }
-  }
-
-  return retval;
-}
-
-FnSymbol* CallExpr::theFnSymbol() const {
-  FnSymbol* retval = NULL;
-
-  if (SymExpr* base = toSymExpr(baseExpr)) {
-    retval = toFnSymbol(base->symbol());
   }
 
   return retval;
@@ -508,23 +452,23 @@ FnSymbol* CallExpr::findFnSymbol() {
 }
 
 bool CallExpr::isCast(void) {
-  return isNamedAstr(astr_cast);
+  return isNamedAstr(astrScolon);
 }
 
 Expr* CallExpr::castFrom(void) {
   INT_ASSERT(isCast());
 
-  return get(2);
+  return get(1);
 }
 
 Expr* CallExpr::castTo(void) {
   INT_ASSERT(isCast());
 
-  return get(1);
+  return get(2);
 }
 
 CallExpr* createCast(BaseAST* src, BaseAST* toType) {
-  return new CallExpr(astr_cast, toType, src);
+  return new CallExpr(astrScolon, src, toType);
 }
 
 QualifiedType CallExpr::qualType(void) {
@@ -847,7 +791,6 @@ bool isInitOrReturn(CallExpr* call, SymExpr*& lhsSe, CallExpr*& initOrCtor)
              call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL) ||
              call->isPrimitive(PRIM_INIT_VAR) ||
              call->isPrimitive(PRIM_INIT_VAR_SPLIT_INIT) ||
-             call->isPrimitive(PRIM_DEFAULT_INIT_FIELD) ||
              call->isPrimitive(PRIM_INIT_FIELD)) {
     lhsSe = toSymExpr(call->get(1));
     initOrCtor = NULL;

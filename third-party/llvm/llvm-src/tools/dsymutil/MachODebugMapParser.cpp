@@ -1,9 +1,8 @@
 //===- tools/dsymutil/MachODebugMapParser.cpp - Parse STABS debug maps ----===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -15,6 +14,7 @@
 #include "llvm/Support/Path.h"
 #include "llvm/Support/WithColor.h"
 #include "llvm/Support/raw_ostream.h"
+#include <vector>
 
 namespace {
 using namespace llvm;
@@ -23,12 +23,14 @@ using namespace llvm::object;
 
 class MachODebugMapParser {
 public:
-  MachODebugMapParser(StringRef BinaryPath, ArrayRef<std::string> Archs,
+  MachODebugMapParser(llvm::IntrusiveRefCntPtr<llvm::vfs::FileSystem> VFS,
+                      StringRef BinaryPath, ArrayRef<std::string> Archs,
                       StringRef PathPrefix = "",
                       bool PaperTrailWarnings = false, bool Verbose = false)
-      : BinaryPath(BinaryPath), Archs(Archs.begin(), Archs.end()),
-        PathPrefix(PathPrefix), PaperTrailWarnings(PaperTrailWarnings),
-        BinHolder(Verbose), CurrentDebugMapObject(nullptr) {}
+      : BinaryPath(std::string(BinaryPath)), Archs(Archs.begin(), Archs.end()),
+        PathPrefix(std::string(PathPrefix)),
+        PaperTrailWarnings(PaperTrailWarnings), BinHolder(VFS, Verbose),
+        CurrentDebugMapObject(nullptr) {}
 
   /// Parses and returns the DebugMaps of the input binary. The binary contains
   /// multiple maps in case it is a universal binary.
@@ -52,6 +54,8 @@ private:
   StringRef MainBinaryStrings;
   /// The constructed DebugMap.
   std::unique_ptr<DebugMap> Result;
+  /// List of common symbols that need to be added to the debug map.
+  std::vector<std::string> CommonSymbols;
 
   /// Map of the currently processed object file symbol addresses.
   StringMap<Optional<uint64_t>> CurrentObjectAddresses;
@@ -81,6 +85,8 @@ private:
     handleStabSymbolTableEntry(STE.n_strx, STE.n_type, STE.n_sect, STE.n_desc,
                                STE.n_value);
   }
+
+  void addCommonSymbols();
 
   /// Dump the symbol table output header.
   void dumpSymTabHeader(raw_ostream &OS, StringRef Arch);
@@ -119,8 +125,28 @@ private:
 /// file. This is to be called after an object file is finished
 /// processing.
 void MachODebugMapParser::resetParserState() {
+  CommonSymbols.clear();
   CurrentObjectAddresses.clear();
   CurrentDebugMapObject = nullptr;
+}
+
+/// Commons symbols won't show up in the symbol map but might need to be
+/// relocated. We can add them to the symbol table ourselves by combining the
+/// information in the object file (the symbol name) and the main binary (the
+/// address).
+void MachODebugMapParser::addCommonSymbols() {
+  for (auto &CommonSymbol : CommonSymbols) {
+    uint64_t CommonAddr = getMainBinarySymbolAddress(CommonSymbol);
+    if (CommonAddr == 0) {
+      // The main binary doesn't have an address for the given symbol.
+      continue;
+    }
+    if (!CurrentDebugMapObject->addSymbol(CommonSymbol, None /*ObjectAddress*/,
+                                          CommonAddr, 0 /*size*/)) {
+      // The symbol is already present.
+      continue;
+    }
+  }
 }
 
 /// Create a new DebugMapObject. This function resets the state of the
@@ -128,6 +154,7 @@ void MachODebugMapParser::resetParserState() {
 /// everything up to add symbols to the new one.
 void MachODebugMapParser::switchToNewDebugMapObject(
     StringRef Filename, sys::TimePoint<std::chrono::seconds> Timestamp) {
+  addCommonSymbols();
   resetParserState();
 
   SmallString<80> Path(PathPrefix);
@@ -156,7 +183,7 @@ void MachODebugMapParser::switchToNewDebugMapObject(
 
 static std::string getArchName(const object::MachOObjectFile &Obj) {
   Triple T = Obj.getArchTriple();
-  return T.getArchName();
+  return std::string(T.getArchName());
 }
 
 std::unique_ptr<DebugMap>
@@ -164,7 +191,8 @@ MachODebugMapParser::parseOneBinary(const MachOObjectFile &MainBinary,
                                     StringRef BinaryPath) {
   loadMainBinarySymbols(MainBinary);
   ArrayRef<uint8_t> UUID = MainBinary.getUuid();
-  Result = make_unique<DebugMap>(MainBinary.getArchTriple(), BinaryPath, UUID);
+  Result =
+      std::make_unique<DebugMap>(MainBinary.getArchTriple(), BinaryPath, UUID);
   MainBinaryStrings = MainBinary.getStringTableData();
   for (const SymbolRef &Symbol : MainBinary.symbols()) {
     const DataRefImpl &DRI = Symbol.getRawDataRefImpl();
@@ -357,7 +385,7 @@ ErrorOr<std::vector<std::unique_ptr<DebugMap>>> MachODebugMapParser::parse() {
 
   auto Objects = ObjectEntry->getObjectsAs<MachOObjectFile>();
   if (!Objects) {
-    return errorToErrorCode(ObjectEntry.takeError());
+    return errorToErrorCode(Objects.takeError());
   }
 
   std::vector<std::unique_ptr<DebugMap>> Results;
@@ -452,7 +480,7 @@ void MachODebugMapParser::loadCurrentObjectFileSymbols(
   CurrentObjectAddresses.clear();
 
   for (auto Sym : Obj.symbols()) {
-    uint64_t Addr = Sym.getValue();
+    uint64_t Addr = cantFail(Sym.getValue());
     Expected<StringRef> Name = Sym.getName();
     if (!Name) {
       // TODO: Actually report errors helpfully.
@@ -467,10 +495,15 @@ void MachODebugMapParser::loadCurrentObjectFileSymbols(
     // relocations will use the symbol itself, and won't need an
     // object file address. The object file address field is optional
     // in the DebugMap, leave it unassigned for these symbols.
-    if (Sym.getFlags() & (SymbolRef::SF_Absolute | SymbolRef::SF_Common))
+    uint32_t Flags = cantFail(Sym.getFlags());
+    if (Flags & SymbolRef::SF_Absolute) {
       CurrentObjectAddresses[*Name] = None;
-    else
+    } else if (Flags & SymbolRef::SF_Common) {
+      CurrentObjectAddresses[*Name] = None;
+      CommonSymbols.push_back(std::string(*Name));
+    } else {
       CurrentObjectAddresses[*Name] = Addr;
+    }
   }
 }
 
@@ -531,7 +564,7 @@ void MachODebugMapParser::loadMainBinarySymbols(
     Section = *SectionOrErr;
     if (Section == MainBinary.section_end() || Section->isText())
       continue;
-    uint64_t Addr = Sym.getValue();
+    uint64_t Addr = cantFail(Sym.getValue());
     Expected<StringRef> NameOrErr = Sym.getName();
     if (!NameOrErr) {
       // TODO: Actually report errors helpfully.
@@ -552,20 +585,22 @@ void MachODebugMapParser::loadMainBinarySymbols(
 namespace llvm {
 namespace dsymutil {
 llvm::ErrorOr<std::vector<std::unique_ptr<DebugMap>>>
-parseDebugMap(StringRef InputFile, ArrayRef<std::string> Archs,
+parseDebugMap(llvm::IntrusiveRefCntPtr<llvm::vfs::FileSystem> VFS,
+              StringRef InputFile, ArrayRef<std::string> Archs,
               StringRef PrependPath, bool PaperTrailWarnings, bool Verbose,
               bool InputIsYAML) {
   if (InputIsYAML)
     return DebugMap::parseYAMLDebugMap(InputFile, PrependPath, Verbose);
 
-  MachODebugMapParser Parser(InputFile, Archs, PrependPath, PaperTrailWarnings,
-                             Verbose);
+  MachODebugMapParser Parser(VFS, InputFile, Archs, PrependPath,
+                             PaperTrailWarnings, Verbose);
   return Parser.parse();
 }
 
-bool dumpStab(StringRef InputFile, ArrayRef<std::string> Archs,
+bool dumpStab(llvm::IntrusiveRefCntPtr<llvm::vfs::FileSystem> VFS,
+              StringRef InputFile, ArrayRef<std::string> Archs,
               StringRef PrependPath) {
-  MachODebugMapParser Parser(InputFile, Archs, PrependPath, false);
+  MachODebugMapParser Parser(VFS, InputFile, Archs, PrependPath, false);
   return Parser.dumpStab();
 }
 } // namespace dsymutil

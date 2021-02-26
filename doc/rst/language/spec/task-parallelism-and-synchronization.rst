@@ -1,3 +1,5 @@
+.. default-domain:: chpl
+
 .. _Chapter-Task_Parallelism_and_Synchronization:
 
 Task Parallelism and Synchronization
@@ -27,6 +29,7 @@ details task parallelism as follows:
 -  :ref:`Task_Intents` specifies how variables from outer scopes
    are handled within ``begin``, ``cobegin`` and ``coforall``
    statements.
+   :ref:`Task_Private_Variables` are also available.
 
 -  :ref:`Sync_Statement` describes the sync statement, a
    structured way to control parallelism.
@@ -85,7 +88,7 @@ for the begin statement is given by
 .. code-block:: syntax
 
    begin-statement:
-     `begin' task-intent-clause[OPT] statement
+     'begin' task-intent-clause[OPT] statement
 
 Control continues concurrently with the statement following the begin
 statement.
@@ -184,14 +187,14 @@ by the following syntax:
 .. code-block:: syntax
 
    sync-type:
-     `sync' type-expression
+     'sync' type-expression
 
    single-type:
-     `single' type-expression
+     'single' type-expression
 
-If a synchronization variable declaration has an initialization
-expression, then the variable is initially full, otherwise it is
-initially empty.
+A default-initialized synchronization variable will be empty. A
+synchronization variable initialized from another expression will be
+full and store the value from that expression.
 
    *Example (beginWithSyncVar.chpl)*.
 
@@ -354,9 +357,9 @@ The following methods are defined for variables of sync and single type.
 
 
 
-::
+   .. code-block:: chapel
 
-   proc (sync t).readFE(): t
+      proc (sync t).readFE(): t
 
 Returns the value of the sync variable. This method blocks until the
 sync variable is full. The state of the sync variable is set to empty
@@ -365,10 +368,10 @@ when this method completes. This method implements the normal read of a
 
 
 
-::
+   .. code-block:: chapel
 
-   proc (sync t).readFF(): t
-   proc (single t).readFF(): t
+      proc (sync t).readFF(): t
+      proc (single t).readFF(): t
 
 Returns the value of the sync or single variable. This method blocks
 until the sync or single variable is full. The state of the sync or
@@ -377,10 +380,10 @@ implements the normal read of a ``single`` variable.
 
 
 
-::
+   .. code-block:: chapel
 
-   proc (sync t).readXX(): t
-   proc (single t).readXX(): t
+      proc (sync t).readXX(): t
+      proc (single t).readXX(): t
 
 Returns the value of the sync or single variable. This method is
 non-blocking and the state of the sync or single variable is unchanged
@@ -388,10 +391,10 @@ when this method completes.
 
 
 
-::
+   .. code-block:: chapel
 
-   proc (sync t).writeEF(v: t)
-   proc (single t).writeEF(v: t)
+      proc (sync t).writeEF(v: t)
+      proc (single t).writeEF(v: t)
 
 Assigns ``v`` to the value of the sync or single variable. This method
 blocks until the sync or single variable is empty. The state of the sync
@@ -400,9 +403,9 @@ method implements the normal write of a ``sync`` or ``single`` variable.
 
 
 
-::
+   .. code-block:: chapel
 
-   proc (sync t).writeFF(v: t)
+      proc (sync t).writeFF(v: t)
 
 Assigns ``v`` to the value of the sync variable. This method blocks
 until the sync variable is full. The state of the sync variable remains
@@ -410,9 +413,9 @@ full when this method completes.
 
 
 
-::
+   .. code-block:: chapel
 
-   proc (sync t).writeXF(v: t)
+      proc (sync t).writeXF(v: t)
 
 Assigns ``v`` to the value of the sync variable. This method is
 non-blocking and the state of the sync variable is set to full when this
@@ -420,9 +423,9 @@ method completes.
 
 
 
-::
+   .. code-block:: chapel
 
-   proc (sync t).reset()
+      proc (sync t).reset()
 
 Assigns the default value of type ``t`` to the value of the sync
 variable. This method is non-blocking and the state of the sync variable
@@ -430,10 +433,10 @@ is set to empty when this method completes.
 
 
 
-::
+   .. code-block:: chapel
 
-   proc (sync t).isFull: bool
-   proc (single t).isFull: bool
+      proc (sync t).isFull: bool
+      proc (single t).isFull: bool
 
 Returns ``true`` if the sync or single variable is full and ``false``
 otherwise. This method is non-blocking and the state of the sync or
@@ -528,7 +531,7 @@ following syntax:
 .. code-block:: syntax
 
    atomic-type:
-     `atomic' type-expression
+     'atomic' type-expression
 
 .. _Functions_on_Atomic_Variables:
 
@@ -554,6 +557,10 @@ values are:
 
 -  memoryOrder.seqCst
 
+See also :ref:`Chapter-Memory_Consistency_Model` and in particular
+:ref:`non_sc_atomics` for more information on the meaning of these memory
+orders.
+
 Unless specified, the default for the memoryOrder parameter is
 memoryOrder.seqCst.
 
@@ -565,35 +572,35 @@ memoryOrder.seqCst.
 
 
 
-::
+   .. code-block:: chapel
 
-   proc (atomic T).read(param order:memoryOrder = memoryOrder.seqCst): T
+      proc (atomic T).read(param order:memoryOrder = memoryOrder.seqCst): T
 
 Reads and returns the stored value. Defined for all atomic types.
 
 
 
-::
+   .. code-block:: chapel
 
-   proc (atomic T).write(v: T, param order:memoryOrder = memoryOrder.seqCst)
+      proc (atomic T).write(v: T, param order:memoryOrder = memoryOrder.seqCst)
 
 Stores ``v`` as the new value. Defined for all atomic types.
 
 
 
-::
+   .. code-block:: chapel
 
-   proc (atomic T).exchange(v: T, param order:memoryOrder = memoryOrder.seqCst): T
+      proc (atomic T).exchange(v: T, param order:memoryOrder = memoryOrder.seqCst): T
 
 Stores ``v`` as the new value and returns the original value. Defined
 for all atomic types.
 
-::
+   .. code-block:: chapel
 
-   proc (atomic T).compareExchange(ref e: T, v: T, param order:memoryOrder = memoryOrder.seqCst): bool
-   proc (atomic T).compareExchange(ref e: T, v: T, param failure:memoryOrder, param success:memoryOrder): bool
-   proc (atomic T).compareExchangeWeak(ref e: T, v: T, param order:memoryOrder = memoryOrder.seqCst): bool
-   proc (atomic T).compareExchangeWeak(ref e: T, v: T, param failure:memoryOrder, param success:memoryOrder): bool
+      proc (atomic T).compareExchange(ref e: T, v: T, param order:memoryOrder = memoryOrder.seqCst): bool
+      proc (atomic T).compareExchange(ref e: T, v: T, param failure:memoryOrder, param success:memoryOrder): bool
+      proc (atomic T).compareExchangeWeak(ref e: T, v: T, param order:memoryOrder = memoryOrder.seqCst): bool
+      proc (atomic T).compareExchangeWeak(ref e: T, v: T, param failure:memoryOrder, param success:memoryOrder): bool
 
 Stores ``v`` as the new value, if and only if the original value is
 equal to ``e``. Returns ``true`` if ``v`` was stored, otherwise
@@ -604,9 +611,9 @@ performance on some platforms. Defined for all atomic types.
 
 
 
-::
+   .. code-block:: chapel
 
-   proc (atomic T).compareAndSwap(e: T, v: T, param order:memoryOrder = memoryOrder.seqCst): bool
+      proc (atomic T).compareAndSwap(e: T, v: T, param order:memoryOrder = memoryOrder.seqCst): bool
 
 Stores ``v`` as the new value, if and only if the original value is
 equal to ``e``. Returns ``true`` if ``v`` was stored, ``false``
@@ -614,13 +621,13 @@ otherwise. Defined for all atomic types.
 
 
 
-::
+   .. code-block:: chapel
 
-   proc (atomic T).add(v: T, param order:memoryOrder = memoryOrder.seqCst)
-   proc (atomic T).sub(v: T, param order:memoryOrder = memoryOrder.seqCst)
-   proc (atomic T).or(v: T, param order:memoryOrder = memoryOrder.seqCst)
-   proc (atomic T).and(v: T, param order:memoryOrder = memoryOrder.seqCst)
-   proc (atomic T).xor(v: T, param order:memoryOrder = memoryOrder.seqCst)
+      proc (atomic T).add(v: T, param order:memoryOrder = memoryOrder.seqCst)
+      proc (atomic T).sub(v: T, param order:memoryOrder = memoryOrder.seqCst)
+      proc (atomic T).or(v: T, param order:memoryOrder = memoryOrder.seqCst)
+      proc (atomic T).and(v: T, param order:memoryOrder = memoryOrder.seqCst)
+      proc (atomic T).xor(v: T, param order:memoryOrder = memoryOrder.seqCst)
 
 Applies the appropriate operator (``+``, ``-``, ``|``, ``&``, ``^``) to
 the original value and ``v`` and stores the result. All of the methods
@@ -628,20 +635,22 @@ are defined for integral atomic types. Only add and sub (``+``, ``-``)
 are defined for ``real`` atomic types. None of the methods are defined
 for the ``bool`` atomic type.
 
-   *Future*.
+   .. note::
+   
+      *Future*.
 
-   In the future we may overload certain operations such as ``+=`` to call
-   the above methods automatically for atomic variables.
+      In the future we may overload certain operations such as ``+=`` to call
+      the above methods automatically for atomic variables.
 
 
 
-::
+   .. code-block:: chapel
 
-   proc (atomic T).fetchAdd(v: T, param order:memoryOrder = memoryOrder.seqCst): T
-   proc (atomic T).fetchSub(v: T, param order:memoryOrder = memoryOrder.seqCst): T
-   proc (atomic T).fetchOr(v: T, param order:memoryOrder = memoryOrder.seqCst): T
-   proc (atomic T).fetchAnd(v: T, param order:memoryOrder = memoryOrder.seqCst): T
-   proc (atomic T).fetchXor(v: T, param order:memoryOrder = memoryOrder.seqCst): T
+      proc (atomic T).fetchAdd(v: T, param order:memoryOrder = memoryOrder.seqCst): T
+      proc (atomic T).fetchSub(v: T, param order:memoryOrder = memoryOrder.seqCst): T
+      proc (atomic T).fetchOr(v: T, param order:memoryOrder = memoryOrder.seqCst): T
+      proc (atomic T).fetchAnd(v: T, param order:memoryOrder = memoryOrder.seqCst): T
+      proc (atomic T).fetchXor(v: T, param order:memoryOrder = memoryOrder.seqCst): T
 
 Applies the appropriate operator (``+``, ``-``, ``|``, ``&``, ``^``) to
 the original value and ``v``, stores the result, and returns the original
@@ -651,27 +660,27 @@ methods are defined for the ``bool`` atomic type.
 
 
 
-::
+   .. code-block:: chapel
 
-   proc (atomic bool).testAndSet(param order:memoryOrder = memoryOrder.seqCst): bool
+      proc (atomic bool).testAndSet(param order:memoryOrder = memoryOrder.seqCst): bool
 
 Stores ``true`` as the new value and returns the old value. Equivalent
 to ``exchange(true)``. Only defined for the ``bool`` atomic type.
 
 
 
-::
+   .. code-block:: chapel
 
-   proc (atomic bool).clear(param order:memoryOrder = memoryOrder.seqCst)
+      proc (atomic bool).clear(param order:memoryOrder = memoryOrder.seqCst)
 
 Stores ``false`` as the new value. Equivalent to ``write(false)``. Only
 defined for the ``bool`` atomic type.
 
 
 
-::
+   .. code-block:: chapel
 
-   proc (atomic T).waitFor(v: T)
+      proc (atomic T).waitFor(v: T)
 
 Waits until the stored value is equal to ``v``. The implementation may
 yield the running task while waiting. Defined for all atomic types.
@@ -687,7 +696,7 @@ The ``cobegin`` statement syntax is
 .. code-block:: syntax
 
    cobegin-statement:
-     `cobegin' task-intent-clause[OPT] block-statement
+     'cobegin' task-intent-clause[OPT] block-statement
 
 A new task and a corresponding task function are created for each
 statement in the ``block-statement``. Control continues when all of the
@@ -748,10 +757,10 @@ The syntax for the coforall loop is given by
 .. code-block:: syntax
 
    coforall-statement:
-     `coforall' index-var-declaration `in' iteratable-expression task-intent-clause[OPT] `do' statement
-     `coforall' index-var-declaration `in' iteratable-expression task-intent-clause[OPT] block-statement
-     `coforall' iteratable-expression task-intent-clause[OPT] `do' statement
-     `coforall' iteratable-expression task-intent-clause[OPT] block-statement
+     'coforall' index-var-declaration 'in' iteratable-expression task-intent-clause[OPT] 'do' statement
+     'coforall' index-var-declaration 'in' iteratable-expression task-intent-clause[OPT] block-statement
+     'coforall' iteratable-expression task-intent-clause[OPT] 'do' statement
+     'coforall' iteratable-expression task-intent-clause[OPT] block-statement
 
 The ``coforall`` loop creates a separate task for each iteration of the
 loop. Control continues with the statement following the ``coforall``
@@ -823,14 +832,15 @@ Task Intents
 
 If a variable is referenced within the lexical scope of a ``begin``,
 ``cobegin``, or ``coforall`` statement and is declared outside that
-statement, it is subject to *task intents*. That is, it is considered to
+statement, it is subject to *task intents*. That is, this *outer variable*
+is considered to
 be passed as an actual argument to the corresponding task function at
 task creation time. All references to the variable within the task
 function implicitly refer to a *shadow variable*, i.e. the task
 function’s corresponding formal argument.
 
 When the task construct is inside a method on a record and accesses a
-field of ``this``, the field is treated as a regular variable. That is,
+field of ``this``, the field itself is treated as an outer variable. That is,
 it is passed as an actual argument to the task function and all
 references to the field within the task function implicitly refer to the
 corresponding shadow variable.
@@ -854,7 +864,7 @@ The syntax of the task intent clause is:
 .. code-block:: syntax
 
    task-intent-clause:
-     `with' ( task-intent-list )
+     'with' ( task-intent-list )
 
    task-intent-list:
      task-intent-item
@@ -862,16 +872,34 @@ The syntax of the task intent clause is:
 
    task-intent-item:
      formal-intent identifier
+     reduce-scan-operator 'reduce' identifier
+     class-type 'reduce' identifier
      task-private-var-decl
 
-| where the following intents can be used as a ``formal-intent``:
-  ``ref``, ``in``, ``const``, ``const in``, ``const ref``.
-  ``task-private-var-decl`` is defined in
-  :ref:`Task_Private_Variables`. In addition,
-  ``task-intent-item`` may define a ``reduce`` intent. Reduce intents
-  are described in the *Reduce Intents* technical note in the online
-  documentation:
-| https://chapel-lang.org/docs/technotes/reduceIntents.html
+where the following intents can be used as a ``formal-intent``:
+``ref``, ``in``, ``const``, ``const in``, ``const ref``.
+``task-private-var-decl`` is defined in :ref:`Task_Private_Variables`.
+
+The ``reduce`` task intent specifies a reduction into the outer variable,
+which is provided to the right of the ``reduce`` keyword.
+The reduction operator is specified by either the ``reduce-scan-operator``
+or the ``class-type`` in the same way as for a Reduction Expressions
+(see :ref:`reduce`). At the start of each task the corresponding shadow
+variable is initialized to the identity value of the reduction operator.
+Within the task it behaves as a regular variable. In addition, it can be
+the left-hand side of the ``reduce=`` operator, which accumulates its
+right-hand side onto the shadow variable.
+At the end of each task its shadow variable is combined into the outer
+variable.
+
+   *Open issue*.
+
+   How should ``reduce`` task intent be defined for ``begin`` tasks?
+   A reduction is legal only when the task completes before the program
+   has exited the dynamic scope of the outer variable.
+
+   Reduce intents are currently work-in-progress. See also
+   :ref:`Reduce Intents technical note <readme-reduceIntents>`.
 
 The implicit treatment of outer scope variables as the task function’s
 formal arguments applies to both module level and local variables. It
@@ -951,11 +979,13 @@ subject to such treatment within nested task constructs, if any.
 
 ..
 
-   *Future*.
+   .. note::
 
-   For a given intent, we would also like to provide a blanket clause,
-   which would apply the intent to all variables. An example of syntax
-   for a blanket ``ref`` intent would be ``ref *``.
+      *Future*.
+
+      For a given intent, we would also like to provide a blanket clause,
+      which would apply the intent to all variables. An example of syntax
+      for a blanket ``ref`` intent would be ``ref *``.
 
 .. _Sync_Statement:
 
@@ -969,8 +999,8 @@ from within a statement. The syntax for the sync statement is given by
 .. code-block:: syntax
 
    sync-statement:
-     `sync' statement
-     `sync' block-statement
+     'sync' statement
+     'sync' block-statement
 
 Return statements are not allowed in sync statement blocks. Yield
 statement may only be lexically enclosed in sync statement blocks in
@@ -1056,8 +1086,8 @@ The syntax is:
 .. code-block:: syntax
 
    serial-statement:
-     `serial' expression[OPT] `do' statement
-     `serial' expression[OPT] block-statement
+     'serial' expression[OPT] 'do' statement
+     'serial' expression[OPT] block-statement
 
 where the optional ``expression`` evaluates to a boolean value. If the
 expression is omitted, it is as though ’true’ were specified. Whatever
@@ -1198,7 +1228,7 @@ The syntax for the atomic statement is given by:
 .. code-block:: syntax
 
    atomic-statement:
-     `atomic' statement
+     'atomic' statement
 
 ..
 

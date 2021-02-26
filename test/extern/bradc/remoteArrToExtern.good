@@ -1,0 +1,1 @@
+remoteArrToExtern.chpl:10: error: halt reached - An array can only be passed to an external routine from the locale on which it lives (array is on locale 0, call was made on locale 1)

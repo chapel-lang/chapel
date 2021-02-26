@@ -29,7 +29,6 @@ You should have received copies of the GNU General Public License and the
 GNU Lesser General Public License along with the GNU MP Library.  If not,
 see https://www.gnu.org/licenses/.  */
 
-#include "gmp.h"
 #include "gmp-impl.h"
 #include "longlong.h"
 
@@ -66,13 +65,14 @@ mpq_cmp_numden (mpq_srcptr op1, mpz_srcptr num_op2, mpz_srcptr den_op2)
   d1h = PTR(DEN(op1))[den1_size - 1];
   d2h = PTR(den_op2)[den2_size - 1];
   op2_is_int = (den2_size | d2h) == 1;
-  if (op2_is_int == (den1_size | d1h)) /* Both ops are integers */
+  if ((unsigned) op2_is_int == (den1_size | d1h)) /* Both ops are integers */
     /* return mpz_cmp (NUM (op1), num_op2); */
     {
       int cmp;
 
+      /* Cannot use num1_sign - num2_size, may overflow an "int" */
       if (num1_sign != num2_size)
-	return num1_sign - num2_size;
+	return (num1_sign > num2_size) ? 1 : -1;
 
       cmp = mpn_cmp (PTR(NUM(op1)), PTR(num_op2), num1_size);
       return (num1_sign > 0 ? cmp : -cmp);

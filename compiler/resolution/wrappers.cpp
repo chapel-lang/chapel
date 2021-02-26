@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -53,6 +53,7 @@
 #include "ForallStmt.h"
 #include "ForLoop.h"
 #include "iterator.h"
+#include "optimizations.h"
 #include "passes.h"
 #include "resolution.h"
 #include "resolveFunction.h"
@@ -61,22 +62,23 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "TransformLogicalShortCircuit.h"
 #include "visibleFunctions.h"
 
 #include <map>
 #include <utility>
 
+static void adjustForOperatorMethod(FnSymbol* fn, CallInfo& info,
+                                    std::vector<ArgSymbol*>& actualFormals);
+
 static void addDefaultTokensAndReorder(FnSymbol *fn,
                                        CallInfo& info,
                                        std::vector<ArgSymbol*>& actualIdxToFml);
-static void addDefaultTokensAndReorder(FnSymbol *fn,
-                                       CallExpr* call,
-                                       std::vector<ArgSymbol*>& actualIdxToFml);
-static void replaceDefaultTokensWithDefaults(FnSymbol *fn,
-                                             CallExpr* call,
-                                             bool resolveNewCode);
-static void replaceDefaultTokensWithDefaults(FnSymbol *fn,
-                                             CallInfo& info);
+
+static void handleDefaultArg(FnSymbol *fn, CallExpr* call,
+                             ArgSymbol* formal, SymExpr* actual,
+                             SymbolMap& copyMap,
+                             bool resolveNewCode);
 
 
 
@@ -84,12 +86,20 @@ static void       reorderActuals(FnSymbol*                fn,
                                  CallInfo&                info,
                                  std::vector<ArgSymbol*>& actualIdxToFormal);
 
-static void       coerceActuals(FnSymbol* fn,
-                                CallInfo& info);
+static void removeNamedExprs(FnSymbol* fn, CallExpr* call);
 
-static void       handleInIntents(FnSymbol* fn, CallInfo& info);
+static void handleCoercion(FnSymbol* fn, CallExpr* call,
+                           ArgSymbol* formal, SymExpr* actual,
+                           SymbolMap& copyMap,
+                           SymbolMap& inTmpToActualMap);
 
-static void       handleOutIntents(FnSymbol* fn, CallInfo& info);
+static void handleInIntent(FnSymbol* fn, CallExpr* call,
+                           ArgSymbol* formal, SymExpr* actual,
+                           SymbolMap& copyMap,
+                           SymbolMap& inTmpToActualMap);
+
+static void handleOutIntents(FnSymbol* fn, CallExpr* call,
+                             SymbolMap& inTmpToActualMap);
 
 bool       isPromotionRequired(FnSymbol* fn, CallInfo& info,
                                std::vector<ArgSymbol*>& actualIdxToFormal);
@@ -102,15 +112,6 @@ static FnSymbol*  promotionWrap(FnSymbol* fn,
 static FnSymbol*  buildEmptyWrapper(FnSymbol* fn);
 
 static ArgSymbol* copyFormalForWrapper(ArgSymbol* formal);
-
-static Symbol* insertRuntimeTypeDefault(FnSymbol* fn,
-                                        ArgSymbol* formal,
-                                        CallExpr* call,
-                                        BlockStmt* body,
-                                        SymbolMap& copyMap,
-                                        Symbol* curActual);
-
-static bool mustUseRuntimeTypeDefault(ArgSymbol* formal);
 
 static bool typeExprReturnsType(ArgSymbol* formal);
 
@@ -170,9 +171,14 @@ FnSymbol* wrapAndCleanUpActuals(FnSymbol*                fn,
 
   if (numActuals < retval->numFormals()) {
     // If we don't have the right number of arguments, add placeholders
-    // for defaulted arguments.
+    // for defaulted arguments and for skipped operator arguments.
+    adjustForOperatorMethod(retval, info, actualIdxToFormal);
     addDefaultTokensAndReorder(retval, info, actualIdxToFormal);
     anyDefault = true;
+  } else if (numActuals > retval->numFormals() && fn->hasFlag(FLAG_OPERATOR)) {
+    // If we don't have the right number of arguments, remove unnecessary
+    // actuals for operator calls
+    adjustForOperatorMethod(retval, info, actualIdxToFormal);
   } else {
     // handle reordering only
     if (actualIdxToFormal.size() > 1) {
@@ -180,26 +186,64 @@ FnSymbol* wrapAndCleanUpActuals(FnSymbol*                fn,
     }
   }
 
-  // handle coercion
-  // in the event of promotion, coercion might be necessary
-  // for non-promoted arguments.
-  if (info.actuals.n > 0) {
-    coerceActuals(retval, info);
-  }
+  // From this point forward, this function no longer uses the CallInfo
+  CallExpr* call = info.call;
 
-  // Fix any gUnknown arguments added by the above defaults and
-  // replace them with the real defaults.
-  if (anyDefault) {
-    replaceDefaultTokensWithDefaults(retval, info);
-    // And then handle coercions again, in case the default expression
-    // needs a coercion to the actual type.
-    coerceActuals(retval, info);
-  }
+  // Remove any NamedExprs since they are no longer needed
+  // now that the arguments are in the correct order
+  removeNamedExprs(retval, call);
 
-  // handle 'in' intent
-  handleInIntents(retval, info);
-  // handle 'out' intent
-  handleOutIntents(retval, info);
+  // Now, consider each argument, and handle:
+  //  coercion
+  //  in intent
+  //  default argument values
+  //  out intent
+  if (call->numActuals() > 0) {
+    // Create a copyMap to handle cases like
+    //   proc f(a, b=a, c:a.type)
+    // where a formal arguments refer to previous formals
+    SymbolMap copyMap;
+    // For inout arguments, a map from the in-copy-temp to the real actual
+    SymbolMap inTmpToActualMap;
+
+    Expr* currActual = call->get(1);
+    Expr* nextActual = NULL;
+    for_formals(formal, retval) {
+      nextActual = currActual->next;
+
+      SET_LINENO(currActual);
+
+      SymExpr* actual = toSymExpr(currActual);
+      INT_ASSERT(actual);
+      // TODO: if named expr, can we remove it above? ordering
+      // should be established by this point.
+
+      if (anyDefault) {
+        // Fix any gUnknown arguments added by the above defaults and
+        // replace them with the real defaults.
+        // Also handles filling in the `out` part for `inout`.
+        handleDefaultArg(retval, call, formal, actual, copyMap, true);
+      }
+
+      // And then handle coercions (in case the default expression
+      // needs a coercion to the actual type).
+      handleCoercion(retval, call, formal, actual, copyMap, inTmpToActualMap);
+
+      // adjust for in intent
+      handleInIntent(retval, call, formal, actual, copyMap, inTmpToActualMap);
+
+      copyMap.put(formal, actual->symbol());
+
+      currActual = nextActual;
+    }
+
+    // Now handle all out intents
+    // These are done in a separate step because their adjusted values
+    // are not available on the way into the function (only on the way out).
+    // Consider e.g. proc g(out x, y = x)
+    // Here 'y = x' should refer to the value of 'x' on the way in to the fn.
+    handleOutIntents(retval, call, inTmpToActualMap);
+  }
 
   return retval;
 }
@@ -219,13 +263,18 @@ static bool      defaultedFormalUsesDefaultForType(ArgSymbol* formal);
 
 static bool      formalDefaultIsVariable(ArgSymbol* formal);
 
-static void      defaultedFormalApplyDefaultForType(ArgSymbol* formal,
-                                                    BlockStmt* wrapFn,
-                                                    VarSymbol* temp);
+static void      copyFormalTypeExpr(ArgSymbol* formal,
+                                    BlockStmt* body,
+                                    Symbol* temp);
+
+static void      defaultedFormalApplyDefault(ArgSymbol* formal,
+                                             BlockStmt* wrapFn,
+                                             VarSymbol* temp,
+                                             Expr*      fromExpr);
 
 static void      defaultedFormalApplyDefaultValue(FnSymbol*  fn,
                                                   ArgSymbol* formal,
-                                                  bool       addAddrOf,
+                                                  IntentTag formalIntent,
                                                   BlockStmt* wrapFn,
                                                   VarSymbol* temp);
 
@@ -235,47 +284,48 @@ static Symbol* createDefaultedActual(FnSymbol*  fn,
                                      BlockStmt* body,
                                      SymbolMap& copyMap);
 
-static
-void addDefaultTokensAndReorder(FnSymbol *fn,
-                                CallExpr* call,
-                                std::vector<ArgSymbol*>& actualFormals) {
-  int numFormals = fn->numFormals();
-  std::vector<Symbol*> newActuals(numFormals);
+static void adjustForOperatorMethod(FnSymbol* fn, CallInfo& info,
+                                    std::vector<ArgSymbol*>& actualFormals) {
+  if (fn->hasFlag(FLAG_OPERATOR)) {
+    if (fn->hasFlag(FLAG_METHOD)) {
+      int numFormals = fn->numFormals();
+      if (numFormals >= info.call->numActuals() + 2) {
+        // Insert an arg for "this" and for the method token, in reverse order
+        // because inserting at the start of the call.
+        info.call->insertAtHead(new SymExpr(fn->_this->typeInfo()->symbol));
+        info.call->insertAtHead(new SymExpr(gMethodToken));
 
-  // Gather the actuals into newActuals with NULLs where
-  // we need to fill in a default. This also happens
-  // to address the need to reorder the actuals.
-  int i = 0;
-  for_formals(formal, fn) {
-    Symbol* actualSym = NULL;
-    int j = 0;
-    for_actuals(actual, call) {
-      if (actualFormals[j] == formal) {
-        SymExpr* se = toSymExpr(actual);
-        INT_ASSERT(se);
-        actualSym = se->symbol();
+        // Update the CallInfo actuals and actualNames fields
+        info.actuals.clear();
+        info.actualNames.clear();
+        for_actuals(actual, info.call) {
+          SymExpr* se = toSymExpr(actual);
+          INT_ASSERT(se);
+          info.actuals.add(se->symbol());
+          info.actualNames.add(NULL);
+        }
+
+        actualFormals.resize(fn->numFormals());
+        int i = 0;
+        for_formals(formal, fn) {
+          actualFormals[i] = formal;
+          i++;
+        }
       }
-      j++;
-    }
-
-    newActuals[i] = actualSym;
-
-    i++;
-  }
-
-  // Remove the actuals from the call
-  // (we'll add them back again in a moment)
-  for_actuals(actual, call) {
-    actual->remove();
-  }
-
-  // Add the actuals back in the call along with gUnknown for
-  // defaulted arguments (we'll fix that in replaceDefaultTokensWithDefaults)
-  for_vector_allowing_0s(Symbol, actual, newActuals) {
-    if (actual != NULL) {
-      call->insertAtTail(actual);
     } else {
-      call->insertAtTail(new SymExpr(gUnknown));
+      bool removeNext = false;
+      for_actuals(actual, info.call) {
+        if (actual->typeInfo() == dtMethodToken && !fn->hasFlag(FLAG_METHOD)) {
+          // Remove the method token and tell ourselves to remove the "this"
+          // actual as well if the function being called is just an operator
+          // rather than an operator method
+          actual->remove();
+          removeNext = true;
+        } else if (removeNext) {
+          actual->remove();
+          removeNext = false;
+        }
+      }
     }
   }
 }
@@ -323,6 +373,7 @@ void addDefaultTokensAndReorder(FnSymbol *fn,
     } else {
       info.call->insertAtTail(new SymExpr(gUnknown));
     }
+    i++;
   }
 
   // Update the CallInfo actuals and actualNames fields
@@ -346,70 +397,31 @@ void addDefaultTokensAndReorder(FnSymbol *fn,
   }
 }
 
-static
-void doReplaceDefaultTokensWithDefaults(FnSymbol *fn,
-                                        CallExpr* call,
-                                        CallInfo* info,
-                                        bool resolveNewCode) {
-
-  int numFormals = fn->numFormals();
-  std::vector<Symbol*> newActuals(numFormals);
-  std::vector<int8_t> newActualDefaulted(numFormals);
-
-  // Gather the call information into newActuals, newActualDefaulted
-  int i = 0;
-  for_actuals(actual, call) {
-    SymExpr* se = toSymExpr(actual);
-    if (se && se->symbol() == gUnknown) {
-      // it's a defaulted argument, gUnknown is the placeholder
-      newActuals[i] = NULL;
-      newActualDefaulted[i] = true;
-    } else {
-      // it's not a defaulted argument
-      newActuals[i] = se->symbol();
-      newActualDefaulted[i] = false;
-    }
-    i++;
+static void handleDefaultArg(FnSymbol *fn, CallExpr* call,
+                             ArgSymbol* formal, SymExpr* actual,
+                             SymbolMap& copyMap,
+                             bool resolveNewCode) {
+  if (actual->symbol() == gUnknown) {
+    // it's a defaulted argument, gUnknown is the placeholder
+  } else {
+    // it's not a defaulted argument
+    return;
   }
-
-  // Create a copyMap to handle cases like
-  //   proc f(a, b=a)
-  // where a formal argument's default value refers to a previous formal
-  SymbolMap copyMap;
 
   // Create a Block to store the default values
   // We'll flatten this back out again in a minute.
   BlockStmt* body = new BlockStmt(BLOCK_SCOPELESS);
   call->getStmtExpr()->insertBefore(body);
 
-  // Fill in the NULLs in newActuals with the appropriate default argument.
-  i = 0;
-  for_formals(formal, fn) {
-    if (formal->hasFlag(FLAG_TYPE_FORMAL_FOR_OUT)) {
-      // leave it for out intent processing
-      newActuals[i] = gTypeDefaultToken;
-    } else if (newActuals[i] == NULL) {
-      // Fill it in with a default argument.
-      newActuals[i] = createDefaultedActual(fn, formal, call, body, copyMap);
-    } else if (formal->intent & INTENT_FLAG_IN &&
-               formal->getValType()->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) &&
-               mustUseRuntimeTypeDefault(formal) &&
-               isNestedNewOrDefault(fn, call) == false) {
-      // In-intent formals with runtime types need to be handled carefully in
-      // order to preserve the correct runtime type.
-      Symbol* newDef = insertRuntimeTypeDefault(fn, formal, call, body, copyMap, newActuals[i]);
-      newActuals[i] = newDef;
-    }
-    // TODO -- should this be adding a reference to the original actual?
-    copyMap.put(formal, newActuals[i]);
-    i++;
-  }
+  // Fill it in with a default argument.
+  Symbol* newActual = createDefaultedActual(fn, formal, call, body, copyMap);
 
   // Apply the map copyMap to the block storing defaults
   update_symbols(body, &copyMap);
 
   // Normalize and resolve the new code in the BlockStmt.
   normalize(body);
+
   if (resolveNewCode) {
     // Resolve the new code
     // This is important in the usual case where we are adding
@@ -420,56 +432,47 @@ void doReplaceDefaultTokensWithDefaults(FnSymbol *fn,
 
     // resolveBlockStmt might remove DefExprs for params
     // in that event, we need to update them here.
-    for (i = 0; i < numFormals; i++) {
-      if (newActualDefaulted[i])
-        if (Symbol* param = paramMap.get(newActuals[i]))
-          newActuals[i] = param;
-    }
+    if (Symbol* param = paramMap.get(newActual))
+      newActual = param;
 
     // Check that newActuals are coercible to the formals
-    i = 0;
-    for_formals(formal, fn) {
-      if (newActualDefaulted[i] &&
-          !formal->hasFlag(FLAG_TYPE_FORMAL_FOR_OUT)) {
-        Symbol* actual = newActuals[i];
-        bool actualIsTypeAlias = actual->hasFlag(FLAG_TYPE_VARIABLE);
-        bool formalIsTypeAlias = formal->hasFlag(FLAG_TYPE_VARIABLE);
-        bool formalIsParam     = formal->hasFlag(FLAG_INSTANTIATED_PARAM) ||
-                                 formal->intent == INTENT_PARAM;
+    bool actualIsTypeAlias = newActual->hasFlag(FLAG_TYPE_VARIABLE);
+    bool formalIsTypeAlias = formal->hasFlag(FLAG_TYPE_VARIABLE);
+    bool formalIsParam     = formal->hasFlag(FLAG_INSTANTIATED_PARAM) ||
+                             formal->intent == INTENT_PARAM;
 
-        // Use the value types to work around issues with string literals.
-        // Value types should be sufficient for the check needed here, though.
-        Type* actualValType = actual->getValType();
-        Type* formalValType = formal->getValType();
+    // Use the value types to work around issues with string literals.
+    // Value types should be sufficient for the check needed here, though.
+    Type* actualValType = newActual->getValType();
+    Type* formalValType = formal->getValType();
 
-        bool promotes = false;
-        bool dispatches = canDispatch(actualValType, actual,
-                                      formalValType, formal, fn,
-                                      &promotes, NULL, formalIsParam);
+    bool promotes = false;
+    bool dispatches = canDispatch(actualValType, newActual,
+                                  formalValType, formal, fn,
+                                  &promotes, NULL, formalIsParam);
 
-        if (actualIsTypeAlias != formalIsTypeAlias ||
-            dispatches == false ||
-            promotes == true) {
-          USR_FATAL_CONT(formal, "Default expression not convertible to formal type");
-        }
+    if (actualIsTypeAlias != formalIsTypeAlias ||
+        dispatches == false ||
+        promotes == true) {
+
+      if (fn->hasFlag(FLAG_COMPILER_GENERATED) &&
+          (fn->name == astrNew ||
+           fn->name == astrInit || fn->name == astrInitEquals)) {
+        USR_FATAL_CONT(call, "cannot initialize %s from %s",
+                       toString(formalValType), toString(actualValType));
+        USR_PRINT(formal, "when initializing %s with default value for %s",
+                  toString(fn->getFormal(1)->getValType()), formal->name);
+      } else {
+        USR_FATAL_CONT(call, "cannot initialize %s from %s",
+                       toString(formalValType), toString(actualValType));
+        USR_PRINT(formal, "when calling %s with a default value for %s",
+                  fn->name, formal->name);
       }
-      i++;
     }
   }
 
-  // Replace any gUnknowns in the call with the new actual
-  i = 0;
-  for_actuals(actual, call) {
-    if (newActuals[i] != NULL) {
-      SymExpr* se = toSymExpr(actual);
-      if (se && se->symbol() != newActuals[i]) {
-        se->setSymbol(newActuals[i]);
-        if (info)
-          info->actuals.v[i] = newActuals[i];
-      }
-    }
-    i++;
-  }
+  // Replace the gUnknown in the call with the new actual
+  actual->setSymbol(newActual);
 
   // Adjust AST location to be call site
   if (fn->getModule()->modTag != MOD_USER)
@@ -477,19 +480,6 @@ void doReplaceDefaultTokensWithDefaults(FnSymbol *fn,
 
   // Flatten body
   body->flattenAndRemove();
-}
-
-static
-void replaceDefaultTokensWithDefaults(FnSymbol *fn,
-                                      CallExpr* call,
-                                      bool resolveNewCode) {
-  doReplaceDefaultTokensWithDefaults(fn, call, NULL, resolveNewCode);
-}
-
-static
-void replaceDefaultTokensWithDefaults(FnSymbol *fn,
-                                      CallInfo& info) {
-  doReplaceDefaultTokensWithDefaults(fn, info.call, &info, true);
 }
 
 static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
@@ -504,7 +494,6 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
   FnSymbol* wrapper = new FnSymbol(astr(fn->name, "_default_", formal->name));
   ret.defaultExprFn = wrapper;
 
-  //wrapper->addFlag(FLAG_WRAPPER);
   wrapper->addFlag(FLAG_INVISIBLE_FN);
   wrapper->addFlag(FLAG_INLINE);
   wrapper->addFlag(FLAG_LINE_NUMBER_OK);
@@ -594,7 +583,8 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
           case INTENT_IN:
           case INTENT_CONST:
           case INTENT_CONST_IN:
-            if (isRecord(fnFormal->typeInfo())) {
+            if (isRecord(fnFormal->typeInfo()) &&
+                !fnFormal->hasFlag(FLAG_TYPE_VARIABLE)) {
               // always use 'const ref' intent in these cases for records
               // (even if the record has e.g. in default intent)
               intent = INTENT_CONST_REF;
@@ -684,8 +674,7 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
 
   IntentTag  formalIntent = formal->intent;
   if (formal->type   != dtTypeDefaultToken &&
-      formal->type   != dtMethodToken      &&
-      formal->intent == INTENT_BLANK) {
+      formal->type   != dtMethodToken) {
     formalIntent = getIntent(formal);
   }
 
@@ -704,21 +693,13 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
   block->insertAtTail(new DefExpr(temp));
 
   if (defaultedFormalUsesDefaultForType(formal) == true) {
-    defaultedFormalApplyDefaultForType(formal, block, temp);
+    defaultedFormalApplyDefault(formal, block, temp, NULL);
 
   } else if (formalIntent == INTENT_OUT) {
-    defaultedFormalApplyDefaultForType(formal, block, temp);
+    defaultedFormalApplyDefault(formal, block, temp, NULL);
 
   } else {
-    // If the default expression is a call or dtNil,
-    // don't use PRIM_ADDR_OF on it.
-    // Instead, we'll set temp to a ref or not based on FLAG_MAYBE_REF.
-    bool addAddrOf = false;
-    if ((formalIntent & INTENT_FLAG_REF) != 0 &&
-        formalDefaultIsVariable(formal))
-      addAddrOf = true;
-
-    defaultedFormalApplyDefaultValue(fn, formal, addAddrOf, block, temp);
+    defaultedFormalApplyDefaultValue(fn, formal, formalIntent, block, temp);
   }
 
   // Update references to previous arguments to use the
@@ -732,7 +713,10 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
   resolveBlockStmt(block);
 
   if (temp->isRef() && (formalIntent & INTENT_FLAG_REF) == 0) {
-    CallExpr* copy = new CallExpr("chpl__initCopy", temp);
+    // we may just pass false for definedConst into initCopy, but this feels
+    // more principled
+    Symbol *definedConst = rvv->hasFlag(FLAG_CONST) ?  gTrue : gFalse;
+    CallExpr* copy = new CallExpr(astr_initCopy, temp, definedConst);
     block->insertAtTail(new CallExpr(PRIM_MOVE, rvv, copy));
     resolveCallAndCallee(copy);
   } else {
@@ -799,7 +783,7 @@ static Symbol* createDefaultedActual(FnSymbol*  fn,
   temp->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
 
   // TODO: do we need to add FLAG_INSERT_AUTO_DESTROY here?
-  if (formal->intent & INTENT_FLAG_IN) {
+  if (formal->intent == INTENT_IN || formal->intent == INTENT_CONST_IN) {
     temp->addFlag(FLAG_NO_AUTO_DESTROY);
   }
 
@@ -883,9 +867,10 @@ static bool formalDefaultIsVariable(ArgSymbol* formal) {
   return false;
 }
 
-static void defaultedFormalApplyDefaultForType(ArgSymbol* formal,
-                                               BlockStmt* body,
-                                               VarSymbol* temp) {
+// sets temp to be the (runtime) type expression in formal's type
+static void copyFormalTypeExpr(ArgSymbol* formal,
+                               BlockStmt* body,
+                               Symbol* temp) {
   if (formal->typeExpr != NULL) {
     BlockStmt* typeExpr = formal->typeExpr->copy();
     Expr*      lastExpr = NULL;
@@ -919,34 +904,67 @@ static void defaultedFormalApplyDefaultForType(ArgSymbol* formal,
       // Compiled with -suseBulkTransferStride
       //
       CallExpr* lastCall = toCallExpr(lastExpr);
-      Expr*     initExpr = NULL;
+      Expr*     move     = NULL;
+      Expr*     typeExpr = NULL;
 
       if (lastCall != NULL && lastCall->isPrimitive(PRIM_MOVE) == true) {
-        initExpr = new CallExpr(PRIM_DEFAULT_INIT_VAR,
-                                temp, lastCall->get(1)->copy());
+        typeExpr = lastCall->get(1)->copy();
 
       } else {
-        initExpr = new CallExpr(PRIM_DEFAULT_INIT_VAR,
-                                temp, lastExpr->remove());
+        typeExpr = lastExpr->remove();
       }
 
-      body->insertAtTail(initExpr);
+      move = new CallExpr(PRIM_MOVE, temp, typeExpr);
+      body->insertAtTail(move);
     }
 
   } else {
-    Expr* expr = new SymExpr(formal->type->symbol);
+    Expr* typeExpr = new SymExpr(formal->type->symbol);
+    Expr* move = new CallExpr(PRIM_MOVE, temp, typeExpr);
+    body->insertAtTail(move);
+  }
+}
 
-    if (formal->hasFlag(FLAG_TYPE_VARIABLE)) {
-      body->insertAtTail(new CallExpr(PRIM_MOVE, temp, expr));
+// Creates the default value for the type if fromExpr=NULL.
+// If fromExpr!=NULL, coerces fromExpr into the type of the formal.
+static void defaultedFormalApplyDefault(ArgSymbol* formal,
+                                        BlockStmt* body,
+                                        VarSymbol* temp,
+                                        Expr* fromExpr) {
+  Symbol* typeTmp = NULL;
+  if (formal->typeExpr != NULL) {
+    typeTmp = newTemp("_formal_type");
+    typeTmp->addFlag(FLAG_TYPE_VARIABLE);
+    body->insertAtTail(new DefExpr(typeTmp));
+    copyFormalTypeExpr(formal, body, typeTmp);
+  } else {
+    typeTmp = formal->type->symbol;
+  }
+
+  if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+    body->insertAtTail(new CallExpr(PRIM_MOVE, temp, typeTmp));
+
+  } else {
+    Expr* initExpr = NULL;
+    if (fromExpr == NULL) {
+      initExpr = new CallExpr(PRIM_DEFAULT_INIT_VAR, temp, typeTmp);
     } else {
-      body->insertAtTail(new CallExpr(PRIM_DEFAULT_INIT_VAR, temp, expr));
+      SymExpr* fromExprSe = toSymExpr(fromExpr);
+      if (fromExprSe && fromExprSe->symbol() == gNoInit) {
+        initExpr = new CallExpr(PRIM_NOINIT_INIT_VAR, temp, typeTmp);
+      } else {
+        initExpr = new CallExpr(PRIM_MOVE,
+                                temp,
+                                new CallExpr(PRIM_COERCE, fromExpr, typeTmp));
+      }
     }
+    body->insertAtTail(initExpr);
   }
 }
 
 static void defaultedFormalApplyDefaultValue(FnSymbol*  fn,
                                              ArgSymbol* formal,
-                                             bool addAddrOf,
+                                             IntentTag formalIntent,
                                              BlockStmt* body,
                                              VarSymbol* temp) {
   BlockStmt* defaultExpr = formal->defaultExpr->copy();
@@ -958,7 +976,12 @@ static void defaultedFormalApplyDefaultValue(FnSymbol*  fn,
 
   fromExpr = body->body.tail->remove();
 
-  if (addAddrOf == true) {
+  // If the default expression is a call or dtNil,
+  // don't use PRIM_ADDR_OF on it.
+  // Instead, we'll set temp to a ref or not based on FLAG_MAYBE_REF.
+  if ((formalIntent & INTENT_FLAG_REF) != 0 &&
+      formalDefaultIsVariable(formal))
+  {
     fromExpr = new CallExpr(PRIM_ADDR_OF, fromExpr);
   }
 
@@ -971,14 +994,14 @@ static void defaultedFormalApplyDefaultValue(FnSymbol*  fn,
   //     var A : [<something>] T;
   //     A = <fromExpr>;
   //
-  if (formal->getValType()->symbol->hasFlag(FLAG_ARRAY) &&
-      formal->intent & INTENT_FLAG_IN &&
+  // This case also handles coercions from the default to the formal type
+  if (formalIntent & INTENT_FLAG_IN &&
       typeExprReturnsType(formal)) {
     VarSymbol* nt = newTemp(temp->type);
-    nt->addFlag(FLAG_INITIALIZED_LATER);
     body->insertAtTail(new DefExpr(nt));
-    defaultedFormalApplyDefaultForType(formal, body, nt);
-    body->insertAtTail(new CallExpr("=", nt, fromExpr));
+
+    // When passing the 'fromExpr' below, the result is a PRIM_COERCE.
+    defaultedFormalApplyDefault(formal, body, nt, fromExpr);
     fromExpr = new SymExpr(nt);
   }
 
@@ -1054,6 +1077,27 @@ static void reorderActuals(FnSymbol*                fn,
   }
 }
 
+static void removeNamedExprs(FnSymbol* fn, CallExpr* call) {
+  if (call->numActuals() > 0) {
+    Expr* currActual = call->get(1);
+    Expr* nextActual = NULL;
+    for_formals(formal, fn) {
+      nextActual = currActual->next;
+
+      if (NamedExpr* named = toNamedExpr(currActual)) {
+        INT_ASSERT(named->name == formal->name);
+        Expr* actual = named->actual->remove();
+        currActual->replace(actual);
+        INT_ASSERT(isSymExpr(actual));
+      } else {
+        INT_ASSERT(isSymExpr(currActual));
+      }
+
+      currActual = nextActual;
+    }
+  }
+}
+
 /************************************* | **************************************
 *                                                                             *
 * add coercions on the actuals                                                *
@@ -1069,11 +1113,14 @@ static bool      needToAddCoercion(Type*      actualType,
 static void      addArgCoercion(FnSymbol*  fn,
                                 CallExpr*  call,
                                 ArgSymbol* formal,
-                                Expr*&     actualExpr,
-                                Symbol*&   actualSym,
+                                SymExpr*   actual,
                                 bool&      checkAgain);
 
-static void coerceActuals(FnSymbol* fn, CallInfo& info) {
+static void handleCoercion(FnSymbol* fn, CallExpr* call,
+                           ArgSymbol* formal, SymExpr* actual,
+                           SymbolMap& copyMap,
+                           SymbolMap& inTmpToActualMap) {
+
   if (fn->retTag == RET_PARAM) {
     //
     // This call will be tossed in postFold(), so why bother with coercions?
@@ -1095,12 +1142,8 @@ static void coerceActuals(FnSymbol* fn, CallInfo& info) {
     return;
   }
 
-  int   j          = -1;
-  Expr* currActual = info.call->get(1);
-
-  for_formals(formal, fn) {
-    j++;
-    Symbol* actualSym  = info.actuals.v[j];
+  {
+    Symbol* origActual = actual->symbol();
     Type*   formalType = formal->type;
     bool    c2         = false;
     int     checksLeft = 6;
@@ -1123,6 +1166,7 @@ static void coerceActuals(FnSymbol* fn, CallInfo& info) {
     //
 
     do {
+      Symbol* actualSym = actual->symbol();
       Type* actualType = actualSym->type;
 
       c2 = false;
@@ -1136,23 +1180,20 @@ static void coerceActuals(FnSymbol* fn, CallInfo& info) {
           // need to use .c_str()) so the common case below does not work.
           VarSymbol*  var       = toVarSymbol(actualSym);
           const char* str       = var->immediate->v_string;
-          SymExpr*    newActual = new SymExpr(new_CStringSymbol(str));
-
-          currActual->replace(newActual);
-
-          currActual = newActual;
-
-          info.actuals.v[j] = newActual->symbol();
+          actual->setSymbol(new_CStringSymbol(str));
         } else {
-          addArgCoercion(fn, info.call, formal, currActual, actualSym, c2);
-          info.actuals.v[j] = actualSym;
+          addArgCoercion(fn, call, formal, actual, c2);
         }
       }
     } while (c2 && --checksLeft > 0);
 
     INT_ASSERT(c2 == false);
 
-    currActual = currActual->next;
+    // record mapping from innermost coercion tmp to original actual
+    if (formal->originalIntent == INTENT_IN ||
+        formal->originalIntent == INTENT_CONST_IN ||
+        formal->originalIntent == INTENT_INOUT)
+      inTmpToActualMap.put(actual->symbol(), origActual);
   }
 }
 
@@ -1168,9 +1209,18 @@ static bool needToAddCoercion(Type*      actualType,
 
   // If we have an actual of ref(formalType) and
   // a REF or CONST REF argument intent, no coercion is necessary.
-  if (actualType == formalType->getRefType() &&
-      (getIntent(formal) & INTENT_FLAG_REF) != 0)
-    return false;
+  // Likewise, a value actual passed to a ref formal
+  // does not require coercion.
+  if (actualType->getRefType() == formalType ||
+      actualType == formalType->getRefType()) {
+    IntentTag formalIntent = getIntent(formal);
+    if ((formalIntent & INTENT_FLAG_REF) != 0 ||
+        // or these that always turn into ref
+        formalIntent == INTENT_OUT ||
+        formalIntent == INTENT_INOUT) {
+      return false;
+    }
+  }
 
   // New in-intents don't require coercion from ref to value
   // since it'll be handled by the initCopy call.
@@ -1187,6 +1237,19 @@ static bool needToAddCoercion(Type*      actualType,
   // errors for some C compilers.
   if (actualType == dtNil && isClassLikeOrPtr(formalType))
     return false;
+
+  if (inOrOutFormalNeedingCopyType(formal)) {
+    Type* toType = getCopyTypeDuringResolution(actualType);
+    if (toType == formal->getValType())
+      return false; // handled by other wrapper code, e.g. handleInIntent
+  }
+
+  // Handle inout argument given a different type (can convert on in,
+  // = on the way back produces error if necessary).
+  if (formal->originalIntent == INTENT_INOUT &&
+      canCoerce(actualType->getValType(), actualSym,
+                formalType->getValType(), formal, fn))
+    return true;
 
   // One day, we shouldn't need coercion if canCoerceAsSubtype
   // returns true. That would cover the above case. However,
@@ -1230,94 +1293,95 @@ static bool argumentCanModifyActual(IntentTag intent) {
   return false;
 }
 
-static void errorIfValueCoercionToRef(CallExpr* call, ArgSymbol* formal) {
+static void errorIfValueCoercionToRef(CallExpr* call, Symbol* actual,
+                                      ArgSymbol* formal) {
   IntentTag intent = getIntent(formal);
+  bool isRefFormal = formal->isRef() || (intent & INTENT_REF);
+  FnSymbol* calledFn = formal->getFunction();
+  Type* atype = actual->getValType();
+  Type* ftype = formal->getValType();
 
+  if (inGenerousResolutionForErrors()) {
+    return;
+  }
+
+  // Ignore this class of error for tuples since the compiler is currently
+  // producing this pattern for chpl__unref. This is a workaround and a
+  // better solution would be preferred.
   if (formal->getValType()->symbol->hasFlag(FLAG_TUPLE)) {
-    // Ignore this class of error for tuples since the
-    // compiler is currently producing this pattern for chpl__unref.
-    // This is a workaround and a better solution would be preferred.
-  } else if (argumentCanModifyActual(intent)) {
-   if (! inGenerousResolutionForErrors()) {
-    // Error for coerce->value passed to ref / out / etc
-    USR_FATAL_CONT(call,
-                   "value from coercion passed to ref formal '%s'",
-                   formal->name);
-    USR_PRINT(formal->getFunction(),
-                   "to function '%s' defined here",
-                   formal->getFunction()->name);
-   }
-  } else {
-    // Error for coerce->value passed to 'const ref' (ref case handled above).
-    // Note that coercing SubClass to ParentClass is theoretically
-    // OK with a 'const ref' but right now there are errors at C
-    // compilation time if this error is left out.
-    // Additionally, if a new value is created for this kind of
-    // coercion, it disrupts the desired semantics (a value passed
-    // by const ref could be modified during the call & the change
-    // visible).
-    bool formalIsRef = formal->isRef() || (intent & INTENT_REF);
+    return;
+  }
 
-    if (formalIsRef && ! inGenerousResolutionForErrors()) {
-      USR_FATAL_CONT(call,
-                     "value from coercion passed to const ref formal '%s'",
-                     formal->name);
-      USR_PRINT(formal->getFunction(),
-                     "to function '%s' defined here",
-                     formal->getFunction()->name);
-    }
+  // Not an error for inout our out intent
+  // (the compiler should be managing the conversion on the way in
+  //  to the function with implicit conversion and on the way out
+  //  of the function with = )
+  if (formal->originalIntent == INTENT_INOUT ||
+      formal->originalIntent == INTENT_OUT)
+    return;
+
+  // Error for coerce->value passed to ref / out / etc
+  if (argumentCanModifyActual(intent) || isRefFormal) {
+    USR_FATAL_CONT(call, "in call to '%s', cannot pass result of coercion "
+                         "by reference",
+                         calledFn->name);
+
+    USR_PRINT(call, "implicit coercion from '%s' to '%s'",
+                    atype->symbol->name,
+                    ftype->symbol->name);
+
+    USR_PRINT(formal, "when passing to %s formal '%s'",
+                      intentDescrString(intent),
+                      formal->name);
+
+
+  } else if (isRefFormal) {
+    USR_FATAL_CONT(call, "in call to '%s', cannot pass result of coercion "
+                         "by reference",
+                         calledFn->name);
+
+    USR_PRINT(call, "implicit coercion from '%s' to '%s'",
+                    atype->symbol->name,
+                    ftype->symbol->name);
+
+    USR_PRINT(formal, "when passing to %s formal '%s'",
+                      intentDescrString(intent),
+                      formal->name);
   }
 }
 
-
-// Add a coercion; replace prevActual and actualSym - the actual to 'call' -
-// with the result of the coercion.
+// Add a coercion; set actual's symbol to a new temp storing the result
+// of a coercion.
 static void addArgCoercion(FnSymbol*  fn,
                            CallExpr*  call,
                            ArgSymbol* formal,
-                           Expr*&     actualExpr,
-                           Symbol*&   actualSym,
+                           SymExpr*   actual,
                            bool&      checkAgain) {
-  SET_LINENO(actualExpr);
+  SET_LINENO(actual);
 
-  Expr*       prevActual = actualExpr;
-  Symbol*     prevActualSym = actualSym;
-  TypeSymbol* ats        = actualSym->type->symbol;
+  Symbol*     prevActual = actual->symbol();
+  TypeSymbol* ats        = prevActual->type->symbol;
   TypeSymbol* fts        = formal->type->symbol;
   CallExpr*   castCall   = NULL;
   bool        addedCast  = false;
-  VarSymbol*  castTemp   = newTemp("coerce_tmp"); // ..., formal->type ?
-  Expr*       newActual  = new SymExpr(castTemp);
+  VarSymbol*  castTemp   = newTemp("coerce_tmp");
 
   castTemp->addFlag(FLAG_COERCE_TEMP);
   castTemp->addFlag(FLAG_INSERT_AUTO_DESTROY);
 
-  if (actualSym->hasFlag(FLAG_ARG_THIS) &&
-      isDispatchParent(actualSym->type, formal->type)) {
+  if (prevActual->hasFlag(FLAG_ARG_THIS) &&
+      isDispatchParent(prevActual->type, formal->type)) {
     castTemp->addFlag(FLAG_ARG_THIS);
   }
 
-  if (NamedExpr* namedActual = toNamedExpr(prevActual)) {
-    // preserve the named portion
-    Expr* newCurrActual = namedActual->actual;
-
-    newCurrActual->replace(newActual);
-
-    newActual  = prevActual;
-    prevActual = newCurrActual;
-
-  } else {
-    prevActual->replace(newActual);
-  }
-
-  // Now 'prevActual' has been removed+replaced and is ready to be passed
-  // as an actual to a cast or some such.
-  // We can update addArgCoercion's caller right away.
-  actualExpr = newActual;
-  actualSym  = castTemp;
+  actual->setSymbol(castTemp);
 
   // Add the Def for castTemp
   call->getStmtExpr()->insertBefore(new DefExpr(castTemp));
+
+  // adjust fts for inout to use the value type
+  if (formal->originalIntent == INTENT_INOUT)
+    fts = fts->getValType()->symbol;
 
   // Here we will often strip the type of its sync-ness.
   // After that we may need another coercion(s), e.g.
@@ -1353,7 +1417,7 @@ static void addArgCoercion(FnSymbol*  fn,
 
     addTupleCoercion(toAggregateType(ats->getValType()),
                      toAggregateType(formal->getValType()),
-                     prevActualSym,
+                     prevActual,
                      castTemp,
                      call->getStmtExpr());
 
@@ -1364,12 +1428,12 @@ static void addArgCoercion(FnSymbol*  fn,
     // Add a PRIM_ADDR_OF to get the ref to the actual
     castCall = new CallExpr(PRIM_ADDR_OF, prevActual);
 
-    if (prevActualSym->hasFlag(FLAG_EXPR_TEMP))
+    if (prevActual->hasFlag(FLAG_EXPR_TEMP))
       castTemp->addFlag(FLAG_EXPR_TEMP); // for lvalue checking
 
-    if (prevActualSym->hasFlag(FLAG_REF_TO_CONST) ||
-        prevActualSym->isConstant() ||
-        prevActualSym->isParameter()) {
+    if (prevActual->hasFlag(FLAG_REF_TO_CONST) ||
+        prevActual->isConstant() ||
+        prevActual->isParameter()) {
       castTemp->addFlag(FLAG_REF_TO_CONST);
     }
 
@@ -1392,7 +1456,12 @@ static void addArgCoercion(FnSymbol*  fn,
     if (typeNeedsCopyInitDeinit(at) && propagateNotPOD(at) &&
         !fn->hasFlag(FLAG_AUTO_COPY_FN) &&
         !fn->hasFlag(FLAG_INIT_COPY_FN)) {
-      castCall = new CallExpr("chpl__initCopy", prevActual);
+
+      bool isConstCopy = formal->intent == INTENT_CONST_IN ||
+                         formal->originalIntent == INTENT_CONST_IN ||
+                         formal->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
+      Symbol *definedConst = isConstCopy ?  gTrue : gFalse;
+      castCall = new CallExpr(astr_initCopy, prevActual, definedConst);
     } else {
       castCall   = new CallExpr(PRIM_DEREF, prevActual);
     }
@@ -1416,7 +1485,7 @@ static void addArgCoercion(FnSymbol*  fn,
   } else {
     // There was code to handle the case when the flag *is* present.
     // I deleted that code. The assert ensures it wouldn't apply anyway.
-    INT_ASSERT(!actualSym->hasFlag(FLAG_INSTANTIATED_PARAM));
+    INT_ASSERT(!actual->symbol()->hasFlag(FLAG_INSTANTIATED_PARAM));
 
     castCall = NULL;
   }
@@ -1460,80 +1529,48 @@ static void addArgCoercion(FnSymbol*  fn,
   // Check for coercions resulting in a value that
   // they are not passed by ref or const ref.
   if (!castTemp->isRef()) {
-    errorIfValueCoercionToRef(call, formal);
+    errorIfValueCoercionToRef(call, prevActual, formal);
   }
 }
 
 // A wrapper that mimics the state during default_arg creation, so that we can
 // share code with that implementation.
-static void insertRuntimeTypeDefaultWrapper(FnSymbol* fn,
-                                            ArgSymbol* formal,
-                                            CallExpr* call,
-                                            SymExpr* curActual) {
-  SymbolMap copyMap;
-  int i = 1;
-  for_formals(form, fn) {
-    if (form != formal) {
-      Expr* actExpr = call->get(i);
-      SymExpr* actSym = NULL;
-      if (SymExpr* se = toSymExpr(actExpr)) {
-        actSym = se;
-      } else if (NamedExpr* ne = toNamedExpr(actExpr)) {
-        actSym = toSymExpr(ne->actual);
-      }
-      copyMap.put(form, actSym->symbol());
-    }
-    i++;
-  }
+static void copyFormalTypeExprWrapper(FnSymbol* fn,
+                                      ArgSymbol* formal,
+                                      VarSymbol* runtimeTypeTemp,
+                                      CallExpr* call,
+                                      Expr* insertBefore,
+                                      SymbolMap& copyMap) {
 
   BlockStmt* body = new BlockStmt(BLOCK_SCOPELESS);
-  call->getStmtExpr()->insertBefore(body);
+  insertBefore->insertBefore(body);
 
-  Symbol* newSym = insertRuntimeTypeDefault(fn, formal, call, body, copyMap, curActual->symbol());
-  copyMap.put(formal, newSym);
+  copyFormalTypeExpr(formal, body, runtimeTypeTemp);
 
   update_symbols(body, &copyMap);
   normalize(body);
   resolveBlockStmt(body);
   reset_ast_loc(body, call);
   body->flattenAndRemove();
-
-  curActual->replace(new SymExpr(newSym));
 }
 
-static Symbol* insertRuntimeTypeDefault(FnSymbol* fn,
-                                        ArgSymbol* formal,
-                                        CallExpr* call,
-                                        BlockStmt* body,
-                                        SymbolMap& copyMap,
-                                        Symbol* curActual) {
-  // Create the defaultExpr if not present
-  // TODO: can't we just use a flag?
-  bool removeDefault = false;
-  if (formal->defaultExpr == NULL) {
-    removeDefault = true;
-    BlockStmt* stmt = new BlockStmt();
-    stmt->insertAtTail(new SymExpr(gTypeDefaultToken));
-    formal->defaultExpr = stmt;
-    insert_help(formal->defaultExpr, NULL, formal);
-  }
-
-  Symbol* ret = createDefaultedActual(fn, formal, call, body, copyMap);
-  body->insertAtTail(new CallExpr("=", ret, curActual));
-
-  if (removeDefault) {
-    formal->defaultExpr->remove();
-  }
-
-  return ret;
-}
-
+// BHARSH 2018-05-02: For a case like 'in D = {1..4}' normalization
+// currently turns the AST into something like:
+//   in D : {1..4} = {1..4}
+// The typeExpr doesn't actually return a type, and is considered invalid in
+// this particular context.
+//
+// Note: typeExpr is assumed to have been resolved during signature
+// instantiation
 static bool typeExprReturnsType(ArgSymbol* formal) {
   if (formal->typeExpr != NULL) {
     Expr* last = formal->typeExpr->body.tail;
     if (CallExpr* call = toCallExpr(last)) {
+      if (call->isPrimitive(PRIM_TYPEOF))
+        return true;
+
       FnSymbol* fn = call->isResolved() ? call->resolvedFunction() : NULL;
-      if (fn->retTag == RET_TYPE) {
+      if (fn && fn->retTag == RET_TYPE) {
         return true;
       }
     } else if (SymExpr* se = toSymExpr(last)) {
@@ -1541,34 +1578,6 @@ static bool typeExprReturnsType(ArgSymbol* formal) {
         return true;
       }
     }
-  }
-
-  return false;
-}
-
-// We have to use the array default if:
-// 1) There is a valid type expr
-//   OR
-// 2) There is a defaultExpr that is not just gTypeDefaultToken
-//
-// We do not want to generate defaults for fully or partially generic cases:
-//   in A : [] real;
-//   in A : []
-//
-// Note: typeExpr is assumed to have been resolved during signature
-// instantiation
-//
-// BHARSH 2018-05-02: For a case like 'in D = {1..4}' normalization
-// currently turns the AST into something like:
-//   in D : {1..4} = {1..4}
-// The typeExpr doesn't actually return a type, and is considered invalid in
-// this particular context.
-static bool mustUseRuntimeTypeDefault(ArgSymbol* formal) {
-  if (typeExprReturnsType(formal)) {
-    return true;
-  }
-  if (formal->defaultExpr != NULL && defaultedFormalUsesDefaultForType(formal) == false) {
-    return true;
   }
 
   return false;
@@ -1588,64 +1597,159 @@ static bool checkAnotherFunctionsFormal(FnSymbol* calleeFn, CallExpr* call,
 
   if (result                                   &&
       propagateNotPOD(actualSym->getValType()) &&
-      ! isLeaderIterator(calleeFn)             )
+      isFollowerIterator(calleeFn)             )
     USR_FATAL_CONT(calleeFn, "follower iterators accepting a non-POD argument by in-intent are not implemented");
 
   return result;
 }
 
-static void handleInIntents(FnSymbol* fn, CallInfo& info) {
+static bool isFormalTempConst(FnSymbol *fn, ArgSymbol *formal) {
+  
+  // Today, if we generate a default initializer for a type with const fields,
+  // the formals that correspond to those fields have `in` intents. However, we
+  // still need to set those temporaries that will be passed to those formals to
+  // be constant before calling the initializer, in case the initializer has
+  // another argument that will use that temporary.
+  //
+  // This comes up in:
+  //
+  // record R {
+  //   const d;
+  //   var a: [d] int;
+  // }
+  //
+  // we ideally want to be able to make such formals have `const in` intent
+  // instead of `in`. But there may be complications with that and we are close
+  // to the release, so, we track the field symbol from the call in case it is a
+  // default initializer
 
-  int j = 0;
-
-  // Function with no actuals can't use in intent
-  // Returning early in that event simplifies the following code.
-  if (info.call->numActuals() == 0)
-    return;
-  // In intents for initializers called within _new or default init functions
-  // are handled by the _new or default init functions.
-  if (isNestedNewOrDefault(fn, info.call)) {
-    return;
+  if (fn->hasFlag(FLAG_COMPILER_GENERATED) && fn->name == astrInit) {
+    Symbol *fieldSym = fn->getReceiverType()->getField(formal->name);
+    return fieldSym->hasFlag(FLAG_CONST);
   }
 
-  Expr* anchor = info.call->getStmtExpr();
+  return formal->intent == INTENT_CONST_IN ||
+         formal->originalIntent == INTENT_CONST_IN ||
+         formal->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
+}
 
-  Expr* currActual = info.call->get(1);
-  Expr* nextActual = NULL;
+static void handleInIntent(FnSymbol* fn, CallExpr* call,
+                           ArgSymbol* formal, SymExpr* actual,
+                           SymbolMap& copyMap,
+                           SymbolMap& inTmpToActualMap) {
 
-  for_formals(formal, fn) {
-    SET_LINENO(currActual);
-    nextActual = currActual->next;
+  bool inout = (formal->intent == INTENT_INOUT ||
+                formal->originalIntent == INTENT_INOUT) &&
+               fn->hasFlag(FLAG_PROMOTION_WRAPPER) == false;
 
-    Symbol* actualSym  = info.actuals.v[j];
+  bool in = (formal->intent == INTENT_IN ||
+             formal->originalIntent == INTENT_IN ||
+             formal->intent == INTENT_CONST_IN ||
+             formal->originalIntent == INTENT_CONST_IN);
 
-    // The result of a default argument for 'in' intent is already owned and
-    // does not need to be copied.
-    if (formalRequiresTemp(formal, fn) &&
-        shouldAddInFormalTempAtCallSite(formal, fn) &&
-        ! checkAnotherFunctionsFormal(fn, info.call, actualSym) &&
-        actualSym->hasFlag(FLAG_DEFAULT_ACTUAL) == false) {
+  if (inout == false && in == false)
+    return;
 
-      Expr* useExpr = currActual;
-      if (NamedExpr* named = toNamedExpr(currActual))
-        useExpr = named->actual;
+  // don't consider inout in promotion wrapper for this purpose,
+  // because it's handled within the body of the function.
 
-      SymExpr* se = toSymExpr(useExpr);
-      INT_ASSERT(actualSym == se->symbol());
+  // In intents for initializers called within _new or default init functions
+  // are handled by the _new or default init functions.
+  if (isNestedNewOrDefault(fn, call) && !inout) {
+    return;
+  }
+  // In intents for chpl__coerceCopy / chpl__coerceMove are fundamental
+  // and shouldn't be adjusted here.
+  if (fn->hasFlag(FLAG_COERCE_FN) && !inout)
+    return;
 
-      // Arrays and domains need special handling in order to preserve their
-      // runtime types.
-      if (actualSym->getValType()->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) &&
-          mustUseRuntimeTypeDefault(formal)) {
-        insertRuntimeTypeDefaultWrapper(fn, formal, info.call, se);
+  Expr* anchor = call->getStmtExpr();
 
-      // A copy might be necessary here but might not.
-      } else if (doesCopyInitializationRequireCopy(useExpr)) {
-        // Add a new formal temp at the call site that mimics variable
-        // initialization from the actual.
-        VarSymbol* tmp = newTemp(astr("_formal_tmp_", formal->name));
-        // "move" from call site to called function, so don't destroy
-        // here. The called function will destroy.
+  Symbol* origActualSym = actual->symbol();
+  Symbol* actualSym = origActualSym;
+  {
+    // update origActualSym to take into account any conversions added
+    Symbol* mapSym = inTmpToActualMap.get(origActualSym);
+    if (mapSym != NULL)
+      origActualSym = mapSym;
+  }
+
+
+  // The result of a default argument for 'in' intent is already owned and
+  // does not need to be copied.
+  if ((formalRequiresTemp(formal, fn) || inout) &&
+      (shouldAddInFormalTempAtCallSite(formal, fn) || inout) &&
+      !checkAnotherFunctionsFormal(fn, call, actualSym) &&
+      actualSym->hasFlag(FLAG_DEFAULT_ACTUAL) == false) {
+
+    // Arrays and domains need special handling in order to preserve their
+    // runtime types.
+    bool rtt = actualSym->getValType()->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE);
+    bool coerceRuntimeTypes = rtt && typeExprReturnsType(formal);
+
+    VarSymbol* runtimeTypeTemp = NULL;
+    if (coerceRuntimeTypes) {
+      runtimeTypeTemp = newTemp("_formal_type_tmp");
+      runtimeTypeTemp->addFlag(FLAG_TYPE_VARIABLE);
+      anchor->insertBefore(new DefExpr(runtimeTypeTemp));
+
+      copyFormalTypeExprWrapper(fn, formal, runtimeTypeTemp,
+                                call, anchor, copyMap);
+    }
+
+    // A copy might be necessary here but might not.
+    if (doesCopyInitializationRequireCopy(actual) || inout) {
+      // Add a new formal temp at the call site that mimics variable
+      // initialization from the actual.
+      VarSymbol* tmp = newTemp(astr("_formal_tmp_in_", formal->name));
+      tmp->addFlag(FLAG_EXPR_TEMP);
+
+      // for in intent,
+      // "move" from call site to called function, so don't destroy
+      // here. The called function will destroy.
+      if (!inout)
+        tmp->addFlag(FLAG_NO_AUTO_DESTROY);
+
+      // for inout intent, need to destroy the temp at the call site
+      // to allow passing in a single argument (otherwise, when we try
+      // to do the write-back after the call, the value would be deinited
+      // already).
+      if (inout) {
+        tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+        tmp->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
+      }
+
+      // Does this need to be here?
+      if (formal->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT)) {
+        tmp->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
+      }
+      
+      CallExpr* copy = NULL;
+
+      Symbol *definedConst = isFormalTempConst(fn, formal) ?  gTrue : gFalse;
+      if (coerceRuntimeTypes)
+        copy = new CallExpr(astr_coerceCopy, runtimeTypeTemp, actualSym,
+                            definedConst);
+      else
+        copy = new CallExpr(astr_initCopy, actualSym, definedConst);
+
+      CallExpr* move = new CallExpr(PRIM_MOVE, tmp, copy);
+      anchor->insertBefore(new DefExpr(tmp));
+      anchor->insertBefore(move);
+
+      resolveCallAndCallee(copy, false); // false - allow unresolved
+      resolveCall(move);
+
+      actual->setSymbol(tmp);
+    } else {
+      // Is actualSym something that owns its value?
+      // Is it a call-temp storing the result of a call?
+      // Then "move" ownership to the called function
+      // (don't destroy it here, it will be destroyed there).
+      actualSym->addFlag(FLAG_NO_AUTO_DESTROY);
+
+      if (coerceRuntimeTypes) {
+        VarSymbol* tmp = newTemp(astr("_formal_tmp_in_", formal->name));
         tmp->addFlag(FLAG_NO_AUTO_DESTROY);
         tmp->addFlag(FLAG_EXPR_TEMP);
 
@@ -1654,7 +1758,10 @@ static void handleInIntents(FnSymbol* fn, CallInfo& info) {
           tmp->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
         }
 
-        CallExpr* copy = new CallExpr("chpl__initCopy", actualSym);
+        Symbol *definedConst = isFormalTempConst(fn, formal) ?  gTrue : gFalse;
+        CallExpr* copy = new CallExpr(astr_coerceMove,
+                                      runtimeTypeTemp, actualSym, definedConst);
+
         CallExpr* move = new CallExpr(PRIM_MOVE, tmp, copy);
         anchor->insertBefore(new DefExpr(tmp));
         anchor->insertBefore(move);
@@ -1662,87 +1769,132 @@ static void handleInIntents(FnSymbol* fn, CallInfo& info) {
         resolveCallAndCallee(copy, false); // false - allow unresolved
         resolveCall(move);
 
-        currActual->replace(new SymExpr(tmp));
-      } else {
-        // Is actualSym something that owns its value?
-        // Is it a call-temp storing the result of a call?
-        // Then "move" ownership to the called function
-        // (don't destroy it here, it will be destroyed there).
-        actualSym->addFlag(FLAG_NO_AUTO_DESTROY);
+        actual->setSymbol(tmp);
+      }
+      else {
+        if (actualSym->getValType()->symbol->hasFlag(FLAG_DOMAIN)) {
+          if (!actualSym->hasFlag(FLAG_TYPE_VARIABLE)) {
+            // we are moving a domain to an `in` formal without coercion. We
+            // should adjust its constness
+            Symbol *definedConst = isFormalTempConst(fn, formal) ? gTrue : gFalse;
+
+
+            Expr *nextExpr = new CallExpr(PRIM_NOOP);
+            anchor->insertBefore(nextExpr);
+            setDefinedConstForDomainSymbol(actualSym, nextExpr, definedConst);
+            nextExpr->remove();
+          }
+        }
       }
     }
+  }
 
-    currActual = nextActual;
-    j++;
+  if (inout) {
+    // temporary is required for inout
+    // the default actual is enough, though.
+    if (actual->symbol()->hasFlag(FLAG_DEFAULT_ACTUAL) == false &&
+        fn->hasFlag(FLAG_PROMOTION_WRAPPER) == false) {
+      INT_ASSERT(actual->symbol() != origActualSym);
+      inTmpToActualMap.put(actual->symbol(), origActualSym);
+    }
   }
 }
 
-static void handleOutIntents(FnSymbol* fn, CallInfo& info) {
+static void handleOutIntents(FnSymbol* fn, CallExpr* call,
+                             SymbolMap& inTmpToActualMap) {
+
   int j = 0;
 
   // Function with no actuals can't use out intent
   // Returning early in that event simplifies the following code.
-  if (info.call->numActuals() == 0)
+  if (call->numActuals() == 0)
     return;
 
-  Expr* anchor = info.call->getStmtExpr();
-  Expr* anchorAfter = info.call->getStmtExpr();
+  Expr* anchor = call->getStmtExpr();
+  Expr* anchorAfter = call->getStmtExpr();
 
-  Expr* currActual = info.call->get(1);
+  Expr* currActual = call->get(1);
   Expr* nextActual = NULL;
 
+  bool anyGenericOut = false;
+  for_formals(formal, fn) {
+    if (formal->intent == INTENT_OUT ||
+        formal->originalIntent == INTENT_OUT)
+      if (formal->getValType()->symbol->hasFlag(FLAG_GENERIC))
+        anyGenericOut = true;
+  }
+  if (anyGenericOut) {
+    // resolve out functions now, to infer any types of out arguments,
+    // so that the call-site temporaries have proper types.
+    resolveFunction(fn, call);
+  }
+
+ 
   for_formals(formal, fn) {
     SET_LINENO(currActual);
     nextActual = currActual->next;
 
-    Symbol* actualSym  = info.actuals.v[j];
+    bool out = formal->intent == INTENT_OUT ||
+               formal->originalIntent == INTENT_OUT;
+    bool inout = formal->intent == INTENT_INOUT ||
+                 formal->originalIntent == INTENT_INOUT;
 
-    // The result of a default argument for 'in' intent is already owned and
-    // does not need to be copied.
-    if (formal->intent == INTENT_OUT || formal->originalIntent == INTENT_OUT) {
+    if (out || inout) {
       Expr* useExpr = currActual;
       if (NamedExpr* named = toNamedExpr(currActual))
         useExpr = named->actual;
 
-      SymExpr* se = toSymExpr(useExpr);
-      INT_ASSERT(actualSym == se->symbol());
+      SymExpr* actualSe = toSymExpr(useExpr);
+      Symbol* assignTo = NULL;
+      Symbol* assignFrom = NULL;
 
+      if (out) {
+        Type* formalType = formal->type->getValType();
 
-      // For untyped formals with runtime types, pass the type
-      // as the previous argument.
-      Type* formalType = formal->type->getValType();
-      if (formal->typeExpr == NULL &&
-          formalType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
-        const char* dummyName = astr("_formal_type_tmp_", formal->name);
-        VarSymbol* typeTmp = newTemp(dummyName, formalType);
-        typeTmp->addFlag(FLAG_MAYBE_TYPE);
-        typeTmp->addFlag(FLAG_TYPE_FORMAL_FOR_OUT);
+        // If the actual argument has generic or dtSplitInitType type,
+        // update it to infer the type from the called function.
+        if (actualSe->symbol()->type == dtSplitInitType ||
+            actualSe->symbol()->type->symbol->hasFlag(FLAG_GENERIC))
+          actualSe->symbol()->type = formalType;
 
-        anchor->insertBefore(new DefExpr(typeTmp));
+        VarSymbol* tmp = newTemp(astr("_formal_tmp_out_", formal->name),
+                                 formal->getValType());
+        tmp->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
+        tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+        tmp->addFlag(FLAG_EXPR_TEMP);
 
-        SymExpr* prevActual = toSymExpr(currActual->prev);
-        INT_ASSERT(prevActual != NULL && j > 0);
-        prevActual->setSymbol(typeTmp);
-        info.actuals.v[j-1] = typeTmp;
+        // Transform  f(x) where x is passed with out intent into
+        //   DefExpr tmp
+        //   f(tmp)
+        //   x = tmp     -> this might turn into split-init of x
+        anchor->insertBefore(new DefExpr(tmp));
+        currActual->replace(new SymExpr(tmp));
+        assignTo = actualSe->symbol();
+        assignFrom = tmp;
+
+      } else {
+        Symbol* mapSym = inTmpToActualMap.get(actualSe->symbol());
+        if (mapSym == NULL) {
+          // e.g. inout with a defaulted actual
+          assignTo = actualSe->symbol();
+          assignFrom = actualSe->symbol();
+        } else {
+          // we have
+          //  in_tmp = copy(x)
+          //  f(in_tmp)
+          //
+          // add assign like
+          //  x = in_tmp
+          assignTo = mapSym;
+          assignFrom = actualSe->symbol();
+        }
       }
 
-      VarSymbol* tmp = newTemp(astr("_formal_tmp_", formal->name),
-                               formal->getValType());
-      tmp->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
-      tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
-      tmp->addFlag(FLAG_EXPR_TEMP);
-
-      // Transform  f(x) where x is passed with out intent into
-      //   DefExpr tmp
-      //   f(tmp)
-      //   x = tmp     -> this might turn into split-init of x
-      anchor->insertBefore(new DefExpr(tmp));
-
-      CallExpr* assign = new CallExpr("=", actualSym, tmp);
-      anchorAfter->insertAfter(assign);
-      anchorAfter = assign;
-
-      currActual->replace(new SymExpr(tmp));
+      if (assignTo != assignFrom) {
+        CallExpr* assign = new CallExpr("=", assignTo, assignFrom);
+        anchorAfter->insertAfter(assign);
+        anchorAfter = assign;
+      }
     }
 
     currActual = nextActual;
@@ -1841,9 +1993,6 @@ static void       collectPromotionFormals(PromotionInfo& promotion,
 static void       fixUnresolvedSymExprsForPromotionWrapper(FnSymbol* wrapper,
                                                            FnSymbol* fn);
 
-static void fixDefaultArgumentsInWrapCall(PromotionInfo& promotion);
-
-
 static Symbol* leadingArg(PromotionInfo& promotion, CallExpr* call) {
   int i = 0;
   for_actuals(actual, call)
@@ -1894,6 +2043,12 @@ bool isPromotionRequired(FnSymbol* fn, CallInfo& info,
 
         INT_ASSERT(actualType);
       }
+
+      // Operator calls are allowed to have actuals for a method token and
+      // "this" argument, even if the best operator match is not a method.
+      // We'll clean it up later and we shouldn't promote based on it.
+      if (formal == NULL && fn->hasFlag(FLAG_OPERATOR))
+        continue;
 
       if (canDispatch(actualType, actual,
                       formal->type, formal, fn, &promotes)) {
@@ -2028,8 +2183,6 @@ static FnSymbol* buildPromotionWrapper(PromotionInfo& promotion,
 
   fixUnresolvedSymExprsForPromotionWrapper(retval, fn);
 
-  fixDefaultArgumentsInWrapCall(promotion);
-
   return retval;
 }
 
@@ -2126,8 +2279,18 @@ static void buildLeaderIterator(PromotionInfo& promotion,
 
   liIterator->addFlag(FLAG_EXPR_TEMP);
 
-  const char* leaderName = zippered ? "_toLeaderZip" : "_toLeader";
-  CallExpr*  toLeader = new CallExpr(leaderName, iterator->copy(&leaderMap));
+  CallExpr *toLeader = NULL;
+  if (zippered) {
+    CallExpr *iterCall = toCallExpr(iterator);
+    INT_ASSERT(iterCall);
+    INT_ASSERT(iterCall->isPrimitive(PRIM_ZIP));
+    
+    toLeader = new CallExpr("_toLeader", iterCall->get(1)->copy(&leaderMap));
+  }
+  else {
+    toLeader = new CallExpr("_toLeader", iterator->copy(&leaderMap));
+  }
+
   BlockStmt* loopBody = new BlockStmt(new CallExpr(PRIM_YIELD, liIndex));
 
   ForallStmt* fs = ForallStmt::buildHelper(new SymExpr(liIndex),
@@ -2234,30 +2397,29 @@ static CondStmt* selectFollower(ArgSymbol* fastFollower,
                                 VarSymbol* followerIterator,
                                 SymbolMap& followerMap,
                                 ArgSymbol* fiFnFollower) {
-  const char* name1 = NULL;
-  CallExpr*   call1 = NULL;
-  CallExpr*   move1 = NULL;
+  CallExpr*   callFast = NULL;
+  CallExpr*   moveFast = NULL;
 
-  const char* name2 = NULL;
-  CallExpr*   call2 = NULL;
-  CallExpr*   move2 = NULL;
+  CallExpr*   callSlow = NULL;
+  CallExpr*   moveSlow = NULL;
 
-  if (isCallExpr(iterator) == true) {
-    name1 = "_toFastFollowerZip";
-    name2 = "_toFollowerZip";
+  if (CallExpr *iterCall = toCallExpr(iterator)) {
+    INT_ASSERT(iterCall->isPrimitive(PRIM_ZIP));
 
+    callFast = generateFastFollowersForZip(iterCall, fiFnFollower, &followerMap,
+                                           /*getIterator=*/false);
+    callSlow = generateRegularFollowersForZip(iterCall, fiFnFollower, &followerMap,
+                                           /*getIterator=*/false);
   } else {
-    name1 = "_toFastFollower";
-    name2 = "_toFollower";
+    callFast = new CallExpr("_toFastFollower", iterator->copy(&followerMap), fiFnFollower);
+    callSlow = new CallExpr("_toFollower", iterator->copy(&followerMap), fiFnFollower);
   }
 
-  call1 = new CallExpr(name1, iterator->copy(&followerMap), fiFnFollower);
-  call2 = new CallExpr(name2, iterator->copy(&followerMap), fiFnFollower);
 
-  move1 = new CallExpr(PRIM_MOVE, followerIterator, call1);
-  move2 = new CallExpr(PRIM_MOVE, followerIterator, call2);
+  moveFast = new CallExpr(PRIM_MOVE, followerIterator, callFast);
+  moveSlow = new CallExpr(PRIM_MOVE, followerIterator, callSlow);
 
-  return new CondStmt(new SymExpr(fastFollower), move1, move2);
+  return new CondStmt(new SymExpr(fastFollower), moveFast, moveSlow);
 }
 
 static BlockStmt* followerForLoop(PromotionInfo& promotion,
@@ -2367,7 +2529,7 @@ static Expr* getIndices(PromotionInfo& promotion) {
 
 static Expr* getIterator(PromotionInfo& promotion) {
   FnSymbol* fn           = promotion.fn;
-  CallExpr* iteratorCall = new CallExpr("_build_tuple");
+  CallExpr* iteratorCall = new CallExpr(PRIM_ZIP);
   Expr*     retval       = NULL;
 
   int i = 0;
@@ -2569,7 +2731,7 @@ static void fixUnresolvedSymExprsForPromotionWrapper(FnSymbol* wrapper,
           collectDefExprs(loop, defs);
 
           for_vector(DefExpr, def, defs) {
-            if (strcmp(def->sym->name, unsym->unresolved) == 0) {
+            if (def->sym->name == unsym->unresolved) {
               unsym->replace(new SymExpr(def->sym));
 
               found = true;
@@ -2584,38 +2746,6 @@ static void fixUnresolvedSymExprsForPromotionWrapper(FnSymbol* wrapper,
   }
 }
 
-static void fixDefaultArgumentsInWrapCall(PromotionInfo& promotion) {
-  bool anyDefaulted = false;
-  for (size_t i = 0; i < promotion.defaulted.size(); i++) {
-    if (promotion.defaulted[i])
-      anyDefaulted = true;
-  }
-  // Handle default arguments, if necessary.
-  if (anyDefaulted) {
-
-    // Set up actualIdxToFormal to indicate which defaults we need
-    std::vector<ArgSymbol*> actualIdxToFormal;
-
-    int i = 0;
-    for_formals(formal, promotion.fn) {
-      if (promotion.defaulted[i] == false) {
-        actualIdxToFormal.push_back(formal);
-      }
-      i++;
-    }
-
-    // Update the calls
-    for_vector(CallExpr, wrapCall, promotion.wrapCalls) {
-
-      addDefaultTokensAndReorder(promotion.fn, wrapCall, actualIdxToFormal);
-
-      // don't resolve it yet since other parts of the promotion
-      // wrapper aren't resolved
-      replaceDefaultTokensWithDefaults(promotion.fn, wrapCall,
-                                       /* resolve it? */ false);
-    }
-  }
-}
 
 //
 // In order for fast followers to trigger, the invoking loop requires a static
@@ -2649,7 +2779,31 @@ static void fixDefaultArgumentsInWrapCall(PromotionInfo& promotion) {
 // exist yet), we use a primitive as a placeholder. When the record is filled
 // in during iterator lowering, we replace the primitive with the actual field.
 //
-static void buildFastFollowerCheck(bool                  isStatic,
+
+enum FastFollowerCheckType {
+  CAN_HAVE_FF,
+  STATIC_FF_CHECK,
+  DYNAMIC_FF_CHECK
+};
+
+static CallExpr *buildFastFollowerCheckForward(std::vector<SymExpr *> exprs,
+                                               const char *fnName,
+                                               const char *boolOp,
+                                               ArgSymbol *lead) {
+  if (exprs.size() == 1) {
+    CallExpr *ret = new CallExpr(fnName, exprs[0]->copy());
+    if (lead != NULL) {
+      ret->insertAtTail(new SymExpr(lead));
+    }
+    return ret;
+  }
+  else {
+    return buildFastFollowerCheckCallForZipOrProm(exprs, fnName, boolOp, lead);
+  }
+  return NULL;
+}
+
+static void buildFastFollowerCheck(FastFollowerCheckType checkType,
                                    bool                  addLead,
                                    FnSymbol*             wrapper,
                                    Type*                 IRtype,
@@ -2659,48 +2813,46 @@ static void buildFastFollowerCheck(bool                  isStatic,
 
   ArgSymbol*  x          = new ArgSymbol(INTENT_BLANK, "x", IRtype);
 
-  CallExpr*   buildTuple = new CallExpr("_build_tuple_always_allow_ref");
+  std::vector<SymExpr *> fieldSymExprs;
 
-  Symbol*     pTup       = newTemp("p_tup");
   Symbol*     returnTmp  = newTemp("p_ret");
   CallExpr*   forward    = NULL;
 
   returnTmp->addFlag(FLAG_EXPR_TEMP);
   returnTmp->addFlag(FLAG_MAYBE_PARAM);
 
-  if (isStatic == true) {
-    fnName          = "chpl__staticFastFollowCheck";
-
-    checkFn         = new FnSymbol(fnName);
-    checkFn->retTag = RET_PARAM;
-
-  } else {
-    fnName          = "chpl__dynamicFastFollowCheck";
-
-    checkFn         = new FnSymbol(fnName);
-    checkFn->retTag = RET_VALUE;
+  const char *boolOp = NULL;
+  switch (checkType) {
+    case CAN_HAVE_FF:
+      fnName          = "chpl__canHaveFastFollowers";
+      checkFn         = new FnSymbol(fnName);
+      checkFn->retTag = RET_PARAM;
+      boolOp           = "||";
+      break;
+    case STATIC_FF_CHECK:
+      fnName          = "chpl__staticFastFollowCheck";
+      checkFn         = new FnSymbol(fnName);
+      checkFn->retTag = RET_PARAM;
+      boolOp           = "&&";
+      break;
+    case DYNAMIC_FF_CHECK:
+      fnName          = "chpl__dynamicFastFollowCheck";
+      checkFn         = new FnSymbol(fnName);
+      checkFn->retTag = RET_VALUE;
+      boolOp           = "&&";
+      break;
+    default:
+      INT_FATAL("Unknown FastFollowerCheckType");
+      break;
   }
 
   checkFn->addFlag(FLAG_COMPILER_GENERATED);
 
   checkFn->insertFormalAtTail(x);
 
-  if (addLead == true) {
-    ArgSymbol* lead = new ArgSymbol(INTENT_BLANK, "lead", dtAny);
-
-    checkFn->insertFormalAtTail(lead);
-
-    forward = new CallExpr(astr(fnName, "Zip"), pTup, lead);
-
-  } else {
-    forward = new CallExpr(astr(fnName, "Zip"), pTup);
-
-    INT_ASSERT(! x->type->symbol->hasFlag(FLAG_GENERIC));
-  }
-
   for_formals(formal, wrapper) {
     if (requiresPromotion.count(formal) > 0) {
-      Symbol*      field       = new VarSymbol(formal->name, formal->type);
+      Symbol*      field       = new VarSymbol(formal->name, formal->getRefType());
 
       PrimitiveTag primTag     = PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL;
       CallExpr*    byFormal    = new CallExpr(primTag,   x,     formal);
@@ -2710,12 +2862,20 @@ static void buildFastFollowerCheck(bool                  isStatic,
 
       checkFn->insertAtTail(moveToField);
 
-      buildTuple->insertAtTail(new SymExpr(field));
+      fieldSymExprs.push_back(new SymExpr(field));
     }
   }
 
-  checkFn->insertAtTail(new DefExpr(pTup));
-  checkFn->insertAtTail(new CallExpr(PRIM_MOVE, pTup, buildTuple));
+  ArgSymbol *lead = NULL;
+  if (addLead == true) {
+    lead = new ArgSymbol(INTENT_BLANK, "lead", dtAny);
+
+    checkFn->insertFormalAtTail(lead);
+  } else {
+    INT_ASSERT(! x->type->symbol->hasFlag(FLAG_GENERIC));
+  }
+
+  forward = buildFastFollowerCheckForward(fieldSymExprs, fnName, boolOp, lead);
 
   checkFn->insertAtTail(new DefExpr(returnTmp));
   checkFn->insertAtTail(new CallExpr(PRIM_MOVE,   returnTmp, forward));
@@ -2723,6 +2883,8 @@ static void buildFastFollowerCheck(bool                  isStatic,
 
   wrapper->defPoint->getModule()->block->insertAtHead(new DefExpr(checkFn));
 
+  TransformLogicalShortCircuit handleAndsOrs;
+  checkFn->accept(&handleAndsOrs);
   normalize(checkFn);
   checkFn->setGeneric(addLead);
   INT_ASSERT(! wrapper->isGeneric()); //fyi
@@ -2745,13 +2907,19 @@ void buildFastFollowerChecksIfNeeded(CallExpr* checkCall) {
   std::set<ArgSymbol*>& requiresPromotion = promotionFormalsMap[wrapFn];
   SET_LINENO(wrapFn);
 
+  // Build "canHaveFastFollowers" check functions -- these don't call DSI
+  // functions. They are called before calling DSI functions and return true for
+  // arrays, false otherwise.
+  buildFastFollowerCheck(CAN_HAVE_FF,  false, wrapFn, ir, requiresPromotion);
+  buildFastFollowerCheck(CAN_HAVE_FF,  true,  wrapFn, ir, requiresPromotion);
+
   // Build static (param) fast follower check functions
-  buildFastFollowerCheck(true,  false, wrapFn, ir, requiresPromotion);
-  buildFastFollowerCheck(true,  true,  wrapFn, ir, requiresPromotion);
+  buildFastFollowerCheck(STATIC_FF_CHECK,  false, wrapFn, ir, requiresPromotion);
+  buildFastFollowerCheck(STATIC_FF_CHECK,  true,  wrapFn, ir, requiresPromotion);
 
   // Build dynamic fast follower check functions
-  buildFastFollowerCheck(false, false, wrapFn, ir, requiresPromotion);
-  buildFastFollowerCheck(false, true,  wrapFn, ir, requiresPromotion);
+  buildFastFollowerCheck(DYNAMIC_FF_CHECK, false, wrapFn, ir, requiresPromotion);
+  buildFastFollowerCheck(DYNAMIC_FF_CHECK, true,  wrapFn, ir, requiresPromotion);
 
   // Done with this wrapFn.
   promotionFormalsMap.erase(wrapFn);

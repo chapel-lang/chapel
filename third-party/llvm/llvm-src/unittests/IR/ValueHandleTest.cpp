@@ -1,9 +1,8 @@
 //===- ValueHandleTest.cpp - ValueHandle tests ----------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -490,6 +489,30 @@ TEST_F(ValueHandle, PoisoningVH_DoesNotFollowRAUW) {
   PoisoningVH<Value> VH(BitcastV.get());
   BitcastV->replaceAllUsesWith(ConstantV);
   EXPECT_TRUE(DenseMapInfo<PoisoningVH<Value>>::isEqual(VH, BitcastV.get()));
+}
+
+TEST_F(ValueHandle, AssertingVH_DenseMap) {
+  DenseMap<AssertingVH<Value>, int> Map;
+  Map.insert({BitcastV.get(), 1});
+  Map.insert({ConstantV, 2});
+  // These will create a temporary AssertingVH during lookup.
+  EXPECT_TRUE(Map.find(BitcastV.get()) != Map.end());
+  EXPECT_TRUE(Map.find(ConstantV) != Map.end());
+  // These will not create a temporary AssertingVH.
+  EXPECT_TRUE(Map.find_as(BitcastV.get()) != Map.end());
+  EXPECT_TRUE(Map.find_as(ConstantV) != Map.end());
+}
+
+TEST_F(ValueHandle, PoisoningVH_DenseMap) {
+  DenseMap<PoisoningVH<Value>, int> Map;
+  Map.insert({BitcastV.get(), 1});
+  Map.insert({ConstantV, 2});
+  // These will create a temporary PoisoningVH during lookup.
+  EXPECT_TRUE(Map.find(BitcastV.get()) != Map.end());
+  EXPECT_TRUE(Map.find(ConstantV) != Map.end());
+  // These will not create a temporary PoisoningVH.
+  EXPECT_TRUE(Map.find_as(BitcastV.get()) != Map.end());
+  EXPECT_TRUE(Map.find_as(ConstantV) != Map.end());
 }
 
 #ifdef NDEBUG

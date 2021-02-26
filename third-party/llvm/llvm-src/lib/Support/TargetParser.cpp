@@ -1,9 +1,8 @@
 //===-- TargetParser - Parser for target features ---------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -12,11 +11,12 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "llvm/Support/ARMBuildAttributes.h"
 #include "llvm/Support/TargetParser.h"
 #include "llvm/ADT/ArrayRef.h"
+#include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/StringSwitch.h"
 #include "llvm/ADT/Twine.h"
+#include "llvm/Support/ARMBuildAttributes.h"
 
 using namespace llvm;
 using namespace AMDGPU;
@@ -63,7 +63,7 @@ constexpr GPUInfo R600GPUs[26] = {
 
 // This table should be sorted by the value of GPUKind
 // Don't bother listing the implicitly true features
-constexpr GPUInfo AMDGCNGPUs[33] = {
+constexpr GPUInfo AMDGCNGPUs[38] = {
   // Name         Canonical    Kind        Features
   //              Name
   {{"gfx600"},    {"gfx600"},  GK_GFX600,  FEATURE_FAST_FMA_F32},
@@ -98,7 +98,12 @@ constexpr GPUInfo AMDGCNGPUs[33] = {
   {{"gfx902"},    {"gfx902"},  GK_GFX902,  FEATURE_FAST_FMA_F32|FEATURE_FAST_DENORMAL_F32},
   {{"gfx904"},    {"gfx904"},  GK_GFX904,  FEATURE_FAST_FMA_F32|FEATURE_FAST_DENORMAL_F32},
   {{"gfx906"},    {"gfx906"},  GK_GFX906,  FEATURE_FAST_FMA_F32|FEATURE_FAST_DENORMAL_F32},
+  {{"gfx908"},    {"gfx908"},  GK_GFX908,  FEATURE_FAST_FMA_F32|FEATURE_FAST_DENORMAL_F32},
   {{"gfx909"},    {"gfx909"},  GK_GFX909,  FEATURE_FAST_FMA_F32|FEATURE_FAST_DENORMAL_F32},
+  {{"gfx1010"},   {"gfx1010"}, GK_GFX1010, FEATURE_FAST_FMA_F32|FEATURE_FAST_DENORMAL_F32|FEATURE_WAVE32},
+  {{"gfx1011"},   {"gfx1011"}, GK_GFX1011, FEATURE_FAST_FMA_F32|FEATURE_FAST_DENORMAL_F32|FEATURE_WAVE32},
+  {{"gfx1012"},   {"gfx1012"}, GK_GFX1012, FEATURE_FAST_FMA_F32|FEATURE_FAST_DENORMAL_F32|FEATURE_WAVE32},
+  {{"gfx1030"},   {"gfx1030"}, GK_GFX1030, FEATURE_FAST_FMA_F32|FEATURE_FAST_DENORMAL_F32|FEATURE_WAVE32},
 };
 
 const GPUInfo *getArchEntry(AMDGPU::GPUKind AK, ArrayRef<GPUInfo> Table) {
@@ -129,7 +134,7 @@ StringRef llvm::AMDGPU::getArchNameR600(GPUKind AK) {
 }
 
 AMDGPU::GPUKind llvm::AMDGPU::parseArchAMDGCN(StringRef CPU) {
-  for (const auto C : AMDGCNGPUs) {
+  for (const auto &C : AMDGCNGPUs) {
     if (CPU == C.Name)
       return C.Kind;
   }
@@ -138,7 +143,7 @@ AMDGPU::GPUKind llvm::AMDGPU::parseArchAMDGCN(StringRef CPU) {
 }
 
 AMDGPU::GPUKind llvm::AMDGPU::parseArchR600(StringRef CPU) {
-  for (const auto C : R600GPUs) {
+  for (const auto &C : R600GPUs) {
     if (CPU == C.Name)
       return C.Kind;
   }
@@ -160,40 +165,108 @@ unsigned AMDGPU::getArchAttrR600(GPUKind AK) {
 
 void AMDGPU::fillValidArchListAMDGCN(SmallVectorImpl<StringRef> &Values) {
   // XXX: Should this only report unique canonical names?
-  for (const auto C : AMDGCNGPUs)
+  for (const auto &C : AMDGCNGPUs)
     Values.push_back(C.Name);
 }
 
 void AMDGPU::fillValidArchListR600(SmallVectorImpl<StringRef> &Values) {
-  for (const auto C : R600GPUs)
+  for (const auto &C : R600GPUs)
     Values.push_back(C.Name);
 }
 
 AMDGPU::IsaVersion AMDGPU::getIsaVersion(StringRef GPU) {
-  if (GPU == "generic")
-    return {7, 0, 0};
-
   AMDGPU::GPUKind AK = parseArchAMDGCN(GPU);
-  if (AK == AMDGPU::GPUKind::GK_NONE)
+  if (AK == AMDGPU::GPUKind::GK_NONE) {
+    if (GPU == "generic-hsa")
+      return {7, 0, 0};
+    if (GPU == "generic")
+      return {6, 0, 0};
     return {0, 0, 0};
+  }
 
   switch (AK) {
-  case GK_GFX600: return {6, 0, 0};
-  case GK_GFX601: return {6, 0, 1};
-  case GK_GFX700: return {7, 0, 0};
-  case GK_GFX701: return {7, 0, 1};
-  case GK_GFX702: return {7, 0, 2};
-  case GK_GFX703: return {7, 0, 3};
-  case GK_GFX704: return {7, 0, 4};
-  case GK_GFX801: return {8, 0, 1};
-  case GK_GFX802: return {8, 0, 2};
-  case GK_GFX803: return {8, 0, 3};
-  case GK_GFX810: return {8, 1, 0};
-  case GK_GFX900: return {9, 0, 0};
-  case GK_GFX902: return {9, 0, 2};
-  case GK_GFX904: return {9, 0, 4};
-  case GK_GFX906: return {9, 0, 6};
-  case GK_GFX909: return {9, 0, 9};
-  default:        return {0, 0, 0};
+  case GK_GFX600:  return {6, 0, 0};
+  case GK_GFX601:  return {6, 0, 1};
+  case GK_GFX700:  return {7, 0, 0};
+  case GK_GFX701:  return {7, 0, 1};
+  case GK_GFX702:  return {7, 0, 2};
+  case GK_GFX703:  return {7, 0, 3};
+  case GK_GFX704:  return {7, 0, 4};
+  case GK_GFX801:  return {8, 0, 1};
+  case GK_GFX802:  return {8, 0, 2};
+  case GK_GFX803:  return {8, 0, 3};
+  case GK_GFX810:  return {8, 1, 0};
+  case GK_GFX900:  return {9, 0, 0};
+  case GK_GFX902:  return {9, 0, 2};
+  case GK_GFX904:  return {9, 0, 4};
+  case GK_GFX906:  return {9, 0, 6};
+  case GK_GFX908:  return {9, 0, 8};
+  case GK_GFX909:  return {9, 0, 9};
+  case GK_GFX1010: return {10, 1, 0};
+  case GK_GFX1011: return {10, 1, 1};
+  case GK_GFX1012: return {10, 1, 2};
+  case GK_GFX1030: return {10, 3, 0};
+  default:         return {0, 0, 0};
   }
 }
+
+namespace llvm {
+namespace RISCV {
+
+struct CPUInfo {
+  StringLiteral Name;
+  CPUKind Kind;
+  unsigned Features;
+  StringLiteral DefaultMarch;
+  bool is64Bit() const { return (Features & FK_64BIT); }
+};
+
+constexpr CPUInfo RISCVCPUInfo[] = {
+#define PROC(ENUM, NAME, FEATURES, DEFAULT_MARCH)                              \
+  {NAME, CK_##ENUM, FEATURES, DEFAULT_MARCH},
+#include "llvm/Support/RISCVTargetParser.def"
+};
+
+bool checkCPUKind(CPUKind Kind, bool IsRV64) {
+  if (Kind == CK_INVALID)
+    return false;
+  return RISCVCPUInfo[static_cast<unsigned>(Kind)].is64Bit() == IsRV64;
+}
+
+CPUKind parseCPUKind(StringRef CPU) {
+  return llvm::StringSwitch<CPUKind>(CPU)
+#define PROC(ENUM, NAME, FEATURES, DEFAULT_MARCH) .Case(NAME, CK_##ENUM)
+#include "llvm/Support/RISCVTargetParser.def"
+      .Default(CK_INVALID);
+}
+
+StringRef getMArchFromMcpu(StringRef CPU) {
+  CPUKind Kind = parseCPUKind(CPU);
+  return RISCVCPUInfo[static_cast<unsigned>(Kind)].DefaultMarch;
+}
+
+void fillValidCPUArchList(SmallVectorImpl<StringRef> &Values, bool IsRV64) {
+  for (const auto &C : RISCVCPUInfo) {
+    if (C.Kind != CK_INVALID && IsRV64 == C.is64Bit())
+      Values.emplace_back(C.Name);
+  }
+}
+
+// Get all features except standard extension feature
+bool getCPUFeaturesExceptStdExt(CPUKind Kind,
+                                std::vector<StringRef> &Features) {
+  unsigned CPUFeatures = RISCVCPUInfo[static_cast<unsigned>(Kind)].Features;
+
+  if (CPUFeatures == FK_INVALID)
+    return false;
+
+  if (CPUFeatures & FK_64BIT)
+    Features.push_back("+64bit");
+  else
+    Features.push_back("-64bit");
+
+  return true;
+}
+
+} // namespace RISCV
+} // namespace llvm

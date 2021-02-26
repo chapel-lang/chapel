@@ -1,9 +1,8 @@
 //===- ArgumentPromotion.h - Promote by-reference arguments -----*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -15,6 +14,7 @@
 #include "llvm/IR/PassManager.h"
 
 namespace llvm {
+class TargetTransformInfo;
 
 /// Argument promotion pass.
 ///
@@ -26,6 +26,17 @@ class ArgumentPromotionPass : public PassInfoMixin<ArgumentPromotionPass> {
 
 public:
   ArgumentPromotionPass(unsigned MaxElements = 3u) : MaxElements(MaxElements) {}
+
+  /// Check if callers and the callee \p F agree how promoted arguments would be
+  /// passed. The ones that they do not agree on are eliminated from the sets but
+  /// the return value has to be observed as well.
+  static bool areFunctionArgsABICompatible(
+      const Function &F, const TargetTransformInfo &TTI,
+      SmallPtrSetImpl<Argument *> &ArgsToPromote,
+      SmallPtrSetImpl<Argument *> &ByValArgsToTransform);
+
+  /// Checks if a type could have padding bytes.
+  static bool isDenselyPacked(Type *type, const DataLayout &DL);
 
   PreservedAnalyses run(LazyCallGraph::SCC &C, CGSCCAnalysisManager &AM,
                         LazyCallGraph &CG, CGSCCUpdateResult &UR);

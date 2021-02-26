@@ -1,16 +1,14 @@
 //===-- GlobalStatus.cpp - Compute status info for globals -----------------==//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
 #include "llvm/Transforms/Utils/GlobalStatus.h"
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/IR/BasicBlock.h"
-#include "llvm/IR/CallSite.h"
 #include "llvm/IR/Constant.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/GlobalValue.h"
@@ -165,8 +163,8 @@ static bool analyzeGlobalAux(const Value *V, GlobalStatus &GS,
         if (MSI->isVolatile())
           return true;
         GS.StoredType = GlobalStatus::Stored;
-      } else if (auto C = ImmutableCallSite(I)) {
-        if (!C.isCallee(&U))
+      } else if (const auto *CB = dyn_cast<CallBase>(I)) {
+        if (!CB->isCallee(&U))
           return true;
         GS.IsLoaded = true;
       } else {

@@ -16,7 +16,7 @@ if command -v module > /dev/null 2>&1 ; then
   fi
 fi
 
-$chplBinDir/chpl mason.chpl
+$chplBinDir/chpl mason.chpl -o $chplBinDir/mason
 EXIT_STATUS=$?
 
 if [ ${EXIT_STATUS} != 0 ] ; then

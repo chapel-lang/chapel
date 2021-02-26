@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -56,6 +56,13 @@ extern bool fMungeUserIdents;
 extern bool fEnableTaskTracking;
 extern bool fLLVMWideOpt;
 
+extern bool fAutoLocalAccess;
+extern bool fDynamicAutoLocalAccess;
+extern bool fReportAutoLocalAccess;
+
+extern bool fAutoAggregation;
+extern bool fReportAutoAggregation;
+
 extern bool fNoRemoteValueForwarding;
 extern bool fNoInferConstRefs;
 extern bool fNoRemoteSerialization;
@@ -107,6 +114,7 @@ extern const char* CHPL_LOCALE_MODEL;
 extern const char* CHPL_COMM;
 extern const char* CHPL_COMM_SUBSTRATE;
 extern const char* CHPL_GASNET_SEGMENT;
+extern const char* CHPL_LIBFABRIC;
 extern const char* CHPL_TASKS;
 extern const char* CHPL_LAUNCHER;
 extern const char* CHPL_TIMERS;
@@ -140,6 +148,7 @@ extern bool fParseOnly;
 extern bool fPrintAllCandidates;
 extern bool fPrintCallGraph;
 extern bool fPrintCallStackOnError;
+extern bool fAutoPrintCallStackOnError;
 extern bool fPrintIDonError;
 extern bool fPrintModuleResolution;
 extern bool fPrintEmittedCodeSize;
@@ -148,26 +157,30 @@ extern bool fPrintDispatch;
 extern bool fPrintUnusedFns;
 extern bool fPrintUnusedInternalFns;
 extern bool fRegionVectorizer;
+extern bool fDetectColorTerminal;
+extern bool fUseColorTerminal;
 extern bool fGenIDS;
 extern bool fLocal;
 extern bool fIgnoreLocalClasses;
+extern bool fAllowNoinitArrayNotPod;
 extern bool fNoLifetimeChecking;
 extern bool fNoSplitInit;
 extern bool fNoEarlyDeinit;
 extern bool fNoCopyElision;
 extern bool fCompileTimeNilChecking;
+extern bool fInferImplementsStmts;
 extern bool fOverrideChecking;
 extern int  ffloatOpt;
 extern int  fMaxCIdentLen;
 
-extern bool llvmCodegen;
+extern bool fLlvmCodegen;
 
 // Is the cache for remote data enabled?
 extern bool fCacheRemote;
 
 // externC allows blocks like extern { } to be parsed
 // with clang and then added to the enclosing module's scope
-extern bool externC;
+extern bool fAllowExternC;
 extern char breakOnCodegenCname[256];
 extern int breakOnCodegenID;
 
@@ -185,7 +198,6 @@ extern bool fLibraryPython;
 extern bool fMultiLocaleInterop;
 extern bool fMultiLocaleLibraryDebug;
 
-extern bool fUseNoinit;
 extern bool no_codegen;
 extern bool developer;
 extern bool fVerify;
@@ -242,5 +254,7 @@ extern bool fIncrementalCompilation;
 
 // LLVM flags (-mllvm)
 extern std::string llvmFlags;
+
+extern bool fPrintAdditionalErrors;
 
 #endif

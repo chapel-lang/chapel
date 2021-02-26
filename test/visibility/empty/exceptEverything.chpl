@@ -8,7 +8,7 @@ module OuterModule {
   module M2 {
     config param qualifiedAccess = false;
 
-    use M except *;  // require all symbols in M to be fully-qualified.
+    use super.M except *;  // require all symbols in M to be fully-qualified.
 
     proc main() {
       if qualifiedAccess then

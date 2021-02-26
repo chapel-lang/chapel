@@ -1,0 +1,129 @@
+ZeroMQ Integration
+==================
+
+Status
+  Inactive - Implemented
+
+Author
+  Michael Ferguson
+
+
+Abstract
+--------
+
+Proposing the development of a Chapel language binding for ZeroMQ (see
+http://zeromq.org/).
+
+Rationale
+---------
+
+The data and task parallelism features of Chapel work well for building
+tightly-coupled parallel programs, but some problems remain:
+
+ * How can a Chapel program fit in to a distributed work-flow?
+ * How can programs in other languages work with Chapel programs?
+ * How can Chapel programs be used to write servers?
+ * How can Chapel programs scale up and down depending on their input?
+
+The answers to these questions are not clear. Naturally, each of these
+questions could be addressed in many ways. The advantage of ZeroMQ integration
+is that will provide one mechanism to enable all of these use cases.
+
+Strategy
+--------
+
+ZeroMQ includes low-level C bindings, higher-level C bindings, as well
+as language bindings for many other languages. The proposed strategy for
+Chapel is to:
+
+ 1) Provide the low-level C bindings as a starting point
+ 2) Develop Chapel-specific ZeroMQ functionality that makes sense on top of the
+    low-level C bindings
+ 3) Provide Chapel-specific message queue functionality that could be
+    implemented with other messaging systems
+
+Low-Level Bindings
+------------------
+
+Every function in the libzmq core library will be available with Chapel's C
+compatibility layer. However, Chapel code will need to use C interoperability
+features to call these functions.
+
+I plan use the extern block syntax to populate Chapel programs with ZeroMQ
+functions. If necessary, I plan to extend the extern block support to print
+out the explicit Chapel function interfaces.
+
+Chapel Bindings
+---------------
+
+Higher-level functionality will be available that integrates nicely with the
+existing functionality for serializing Chapel variables. Chapel already
+includes the idea of a channel which can read or write Chapel objects.
+
+The basic operations in ZeroMQ are:
+
+ * Creating a context. Some language bindings have an idea of a default context.
+ * Creating, configuring, and connecting sockets
+ * Moving data between sockets with send and recv calls.
+
+Functions to work with the context and the sockets can be more or less the same
+as those provided by the core library. The ZeroMQ guide recommends that
+high-level APIs provide some specific features. See
+http://zguide.zeromq.org/page:all#Features-of-a-Higher-Level-API . For Chapel,
+I believe that means we need the following features:
+
+ * Mechanisms closing sockets easier, possibly closing all sockets when closing
+   a context, and possibly automatically handling the linger timeout
+ * Integration with Chapel tasks. Ideally, the ZeroMQ functions should
+   integrate with the Chapel tasking layer so that they can block a task (but
+   not a thread). This has already been done for Python's ZeroMQ binding
+   to support "green threads".
+ * A "reactor" functionality that allows a user of the library to provide
+   event handlers
+ * Make sure that Ctrl-C works properly, since a ZeroMQ application is
+   likely to be a server.
+
+Send, Receive, Multipart Messages, and Message Boundaries
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+One initial integration idea for ZeroMQ is to make a Chapel channel that moves
+data with ZeroMQ send and recv functions. However, doing so would not capture
+one of the key ideas of ZeroMQ - it moves *messages* and not just a stream of
+bytes. The channel interface is really for moving streams of bytes.
+
+There are two approaches to address that mismatch:
+
+ 1) Enhance channels to be aware of message boundaries, or
+ 2) Provide send/recv as functions on ZeroMQ sockets that work
+    analogously to write/read. In this case we would also want
+    to provide a way to do a formatted send or receive (e.g. sendf might
+    work with format strings as does writef).
+
+    a) It would be pretty easy to make a multipart message interface
+       where you'd open a multi-part message and each send/recv call would
+       operate on one part. That would be like zmsg support in the CZMQ library
+       (described here: http://api.zeromq.org/czmq3-0:zmsg ).
+
+    b) If a Chapel programmer needs to use multiple calls to fill in
+       a message but doesn't want a multi-part message, they would need to
+       create a buffer, write to the buffer, and then send the buffer.
+
+We believe that (2) is more intuitive and matches other ZeroMQ programming
+examples. (2a) and (2b) could be left for future work in an initial
+implementation.
+
+Open Questions
+--------------
+
+* Should ZeroMQ be included as a built-in Chapel library? (like RE2 or GASNet)
+
+* Can ZeroMQ integration require extern block support (Chapel built with LLVM)?
+
+* Does Chapel need to support the serialization of circular data structures?
+  (The serialization support provided by write/writef does not currently
+  automatically handle such things, but neither does JSON).
+
+* Can the generalized send/recv support assume IP functionality?
+
+  * I think so; e.g. Infiniband provides IP over IB.
+

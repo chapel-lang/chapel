@@ -1,3 +1,1 @@
-# This file exists soleley for util/chplenv/third-party-pkgs to
-# recognize that clang-included means that we depend on LLVM.
-LLVM_ALIASES=clang-included
+# Exists only for $CHPL_HOME/util/buildRelease/install.sh to work.

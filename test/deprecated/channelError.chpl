@@ -1,4 +1,4 @@
-use IO;
+use IO, SysBasic;
 
 proc main() {
   if stdout.error() then writeln("Impossible!");

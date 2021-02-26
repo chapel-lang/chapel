@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
 
-python verify_setchplenv_scripts.py --verbose && \
+python3 verify_setchplenv_scripts.py --verbose && \
     echo '[Success matching setchplenv.* scripts check.]' || \
         echo '[Error found checking setchplenv.* scripts.]'

@@ -1,0 +1,3 @@
+uncaught IllegalArgumentError: input range must be bounded
+  ifOrThrow2.chpl:8: thrown here
+  ifOrThrow2.chpl:16: uncaught here

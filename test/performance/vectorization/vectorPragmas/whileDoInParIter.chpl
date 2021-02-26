@@ -8,6 +8,7 @@ module iters {
   }
 
   // while do loop in standalone with yield should get vector pragma
+  pragma "order independent yielding loops"
   iter myiter(nn: int, nt: int, param tag: iterKind) where tag == iterKind.standalone {
     coforall i in 0..#nt {
       const followThis = i*nn..#nn;
@@ -30,6 +31,7 @@ module iters {
   // while do loop in follower with yield should get vector pragma
   // Note that zippered iterator inlining will transform the while into a
   // degenerate CForLoop
+  pragma "order independent yielding loops"
   iter myiter(nn:int, nt: int, followThis, param tag: iterKind) where tag == iterKind.follower {
     var  idx = followThis.first;
     const last = followThis.last;

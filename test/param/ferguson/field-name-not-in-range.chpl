@@ -4,5 +4,5 @@ record R {
   var x:int;
 }
 
-var s = getFieldName(R, 2);
+var s = getFieldName(R, 1);
 

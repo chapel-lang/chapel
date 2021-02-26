@@ -1,9 +1,8 @@
 //===- LanaiInstrInfo.h - Lanai Instruction Information ---------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -36,8 +35,8 @@ public:
     return RegisterInfo;
   }
 
-  bool areMemAccessesTriviallyDisjoint(MachineInstr &MIa, MachineInstr &MIb,
-                                       AliasAnalysis *AA) const override;
+  bool areMemAccessesTriviallyDisjoint(const MachineInstr &MIa,
+                                       const MachineInstr &MIb) const override;
 
   unsigned isLoadFromStackSlot(const MachineInstr &MI,
                                int &FrameIndex) const override;
@@ -49,30 +48,33 @@ public:
                               int &FrameIndex) const override;
 
   void copyPhysReg(MachineBasicBlock &MBB, MachineBasicBlock::iterator Position,
-                   const DebugLoc &DL, unsigned DestinationRegister,
-                   unsigned SourceRegister, bool KillSource) const override;
+                   const DebugLoc &DL, MCRegister DestinationRegister,
+                   MCRegister SourceRegister, bool KillSource) const override;
 
   void
   storeRegToStackSlot(MachineBasicBlock &MBB,
                       MachineBasicBlock::iterator Position,
-                      unsigned SourceRegister, bool IsKill, int FrameIndex,
+                      Register SourceRegister, bool IsKill, int FrameIndex,
                       const TargetRegisterClass *RegisterClass,
                       const TargetRegisterInfo *RegisterInfo) const override;
 
   void
   loadRegFromStackSlot(MachineBasicBlock &MBB,
                        MachineBasicBlock::iterator Position,
-                       unsigned DestinationRegister, int FrameIndex,
+                       Register DestinationRegister, int FrameIndex,
                        const TargetRegisterClass *RegisterClass,
                        const TargetRegisterInfo *RegisterInfo) const override;
 
   bool expandPostRAPseudo(MachineInstr &MI) const override;
 
-  bool getMemOperandWithOffset(MachineInstr &LdSt, MachineOperand *&BaseOp,
-                               int64_t &Offset,
-                               const TargetRegisterInfo *TRI) const override;
+  bool getMemOperandsWithOffsetWidth(
+      const MachineInstr &LdSt,
+      SmallVectorImpl<const MachineOperand *> &BaseOps, int64_t &Offset,
+      bool &OffsetIsScalable, unsigned &Width,
+      const TargetRegisterInfo *TRI) const override;
 
-  bool getMemOperandWithOffsetWidth(MachineInstr &LdSt, MachineOperand *&BaseOp,
+  bool getMemOperandWithOffsetWidth(const MachineInstr &LdSt,
+                                    const MachineOperand *&BaseOp,
                                     int64_t &Offset, unsigned &Width,
                                     const TargetRegisterInfo *TRI) const;
 
@@ -93,15 +95,15 @@ public:
   // For a comparison instruction, return the source registers in SrcReg and
   // SrcReg2 if having two register operands, and the value it compares against
   // in CmpValue. Return true if the comparison instruction can be analyzed.
-  bool analyzeCompare(const MachineInstr &MI, unsigned &SrcReg,
-                      unsigned &SrcReg2, int &CmpMask,
+  bool analyzeCompare(const MachineInstr &MI, Register &SrcReg,
+                      Register &SrcReg2, int &CmpMask,
                       int &CmpValue) const override;
 
   // See if the comparison instruction can be converted into something more
   // efficient. E.g., on Lanai register-register instructions can set the flag
   // register, obviating the need for a separate compare.
-  bool optimizeCompareInstr(MachineInstr &CmpInstr, unsigned SrcReg,
-                            unsigned SrcReg2, int CmpMask, int CmpValue,
+  bool optimizeCompareInstr(MachineInstr &CmpInstr, Register SrcReg,
+                            Register SrcReg2, int CmpMask, int CmpValue,
                             const MachineRegisterInfo *MRI) const override;
 
   // Analyze the given select instruction, returning true if it cannot be

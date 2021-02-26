@@ -1,9 +1,8 @@
 //==-- llvm/CodeGen/ExecutionDomainFix.h - Execution Domain Fix -*- C++ -*--==//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -31,7 +30,6 @@
 
 namespace llvm {
 
-class MachineBasicBlock;
 class MachineInstr;
 class TargetInstrInfo;
 
@@ -82,10 +80,20 @@ struct DomainValue {
   }
 
   /// Mark domain as available.
-  void addDomain(unsigned domain) { AvailableDomains |= 1u << domain; }
+  void addDomain(unsigned domain) {
+    assert(domain <
+               static_cast<unsigned>(std::numeric_limits<unsigned>::digits) &&
+           "undefined behavior");
+    AvailableDomains |= 1u << domain;
+  }
 
   // Restrict to a single domain available.
-  void setSingleDomain(unsigned domain) { AvailableDomains = 1u << domain; }
+  void setSingleDomain(unsigned domain) {
+    assert(domain <
+               static_cast<unsigned>(std::numeric_limits<unsigned>::digits) &&
+           "undefined behavior");
+    AvailableDomains = 1u << domain;
+  }
 
   /// Return bitmask of domains that are available and in mask.
   unsigned getCommonDomains(unsigned mask) const {

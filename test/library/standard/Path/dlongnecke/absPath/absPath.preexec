@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Produces the "absPath.good" file containing expected output for the Chapel
 # Path.absPath function. Nothing sophisticated yet, the calls in the Chapel

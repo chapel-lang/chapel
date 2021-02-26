@@ -1,6 +1,6 @@
-taskintents-errors.chpl:22: error: illegal lvalue in assignment
+taskintents-errors.chpl:22: error: cannot assign to const variable
 taskintents-errors.chpl:20: note: The shadow variable 'i' is constant due to task intents in this parallel statement
-taskintents-errors.chpl:46: error: illegal lvalue in assignment
+taskintents-errors.chpl:46: error: cannot assign to const variable
 taskintents-errors.chpl:44: note: The shadow variable 'i' is constant due to task intents in this parallel statement
-taskintents-errors.chpl:58: error: illegal lvalue in assignment
+taskintents-errors.chpl:58: error: cannot assign to const variable
 taskintents-errors.chpl:56: note: The shadow variable 'i' is constant due to task intents in this parallel statement

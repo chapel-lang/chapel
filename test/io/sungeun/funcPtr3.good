@@ -1,1 +1,1 @@
-funcPtr3.chpl:1: error: FIX ME!
+funcPtr3.chpl:1: error: writeln: can not capture overloaded functions as values

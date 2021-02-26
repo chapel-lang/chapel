@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -21,8 +21,8 @@
 // ChapelReduce.chpl
 //
 module ChapelReduce {
-  private use ChapelStandard;
-  private use ChapelLocks;
+  use ChapelStandard;
+  use ChapelLocks;
 
   proc chpl__scanStateResTypesMatch(op) param {
     type resType = op.generate().type;
@@ -209,6 +209,32 @@ module ChapelReduce {
     }
     proc generate() return value;
     proc clone() return new unmanaged MinReduceScanOp(eltType=eltType);
+  }
+
+  class minmax: ReduceScanOp {
+    type eltType;
+    var value = (max(eltType), min(eltType));
+
+    proc identity return (max(eltType), min(eltType));
+    proc accumulateOntoState(ref state, x: eltType) {
+      state[0] = min(state[0], x);
+      state[1] = max(state[1], x);
+    }
+    proc accumulateOntoState(ref state, other: 2*eltType) {
+      state[0] = min(state[0], other[0]);
+      state[1] = max(state[1], other[1]);
+    }
+    inline proc accumulate(x: eltType) {
+      accumulateOntoState(value, x);
+    }
+    inline proc accumulate(state: 2*eltType) {
+      accumulateOntoState(value, state);
+    }
+    inline proc combine(other: minmax(eltType)) {
+      accumulateOntoState(value, other.value);
+    }
+    proc generate() return value;
+    proc clone() return new unmanaged minmax(eltType=eltType);
   }
 
   class LogicalAndReduceScanOp: ReduceScanOp {

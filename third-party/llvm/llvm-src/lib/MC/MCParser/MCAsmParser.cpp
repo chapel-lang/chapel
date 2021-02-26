@@ -1,9 +1,8 @@
 //===-- MCAsmParser.cpp - Abstract Asm Parser Interface -------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -14,12 +13,17 @@
 #include "llvm/MC/MCParser/MCAsmLexer.h"
 #include "llvm/MC/MCParser/MCParsedAsmOperand.h"
 #include "llvm/MC/MCParser/MCTargetAsmParser.h"
+#include "llvm/Support/CommandLine.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/SMLoc.h"
 #include "llvm/Support/raw_ostream.h"
 #include <cassert>
 
 using namespace llvm;
+
+cl::opt<unsigned> AsmMacroMaxNestingDepth(
+    "asm-macro-max-nesting-depth", cl::init(20), cl::Hidden,
+    cl::desc("The maximum nesting depth allowed for assembly macros."));
 
 MCAsmParser::MCAsmParser() {}
 

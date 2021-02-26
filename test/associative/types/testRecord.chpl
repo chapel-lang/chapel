@@ -1,6 +1,6 @@
-import ArrayTest;
+import AssocTest;
 
 record R { var value = 1; }
 type t = R;
 
-ArrayTest.testArray(t);
+AssocTest.testAssoc(t);

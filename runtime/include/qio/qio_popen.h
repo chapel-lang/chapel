@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -68,6 +68,3 @@ qioerr qio_send_signal(int64_t pid, int qio_sig);
 #endif
 
 #endif
-
-
-

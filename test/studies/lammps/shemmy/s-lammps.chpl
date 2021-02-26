@@ -6,7 +6,7 @@
 // Sandia National Laboratory.
 //
 
-use Norm, Time;
+use LinearAlgebra, Time;
 config const perfTest:bool = false;
 const numAtoms:int = 3200;
 const numSteps:int = 20;

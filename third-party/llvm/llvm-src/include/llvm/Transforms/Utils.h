@@ -1,9 +1,8 @@
 //===- llvm/Transforms/Utils.h - Utility Transformations --------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -25,6 +24,12 @@ class Pass;
 // createMetaRenamerPass - Rename everything with metasyntatic names.
 //
 ModulePass *createMetaRenamerPass();
+
+//===----------------------------------------------------------------------===//
+// createUniqueInternalLinkageNamesPass - Make internal linkage symbol names
+// unique.
+//
+ModulePass *createUniqueInternalLinkageNamesPass();
 
 //===----------------------------------------------------------------------===//
 //
@@ -120,6 +125,42 @@ ModulePass *createStripNonLineTableDebugInfoPass();
 // number of conditional branches in the hot paths based on profiles.
 //
 FunctionPass *createControlHeightReductionLegacyPass();
-}
+
+//===----------------------------------------------------------------------===//
+//
+// InjectTLIMappingsLegacy - populates the VFABI attribute with the
+// scalar-to-vector mappings from the TargetLibraryInfo.
+//
+FunctionPass *createInjectTLIMappingsLegacyPass();
+
+//===----------------------------------------------------------------------===//
+//
+// UnifyLoopExits - For each loop, creates a new block N such that all exiting
+// blocks branch to N, and then N distributes control flow to all the original
+// exit blocks.
+//
+FunctionPass *createUnifyLoopExitsPass();
+
+//===----------------------------------------------------------------------===//
+//
+// FixIrreducible - Convert each SCC with irreducible control-flow
+// into a natural loop.
+//
+FunctionPass *createFixIrreduciblePass();
+
+//===----------------------------------------------------------------------===//
+//
+// AssumeSimplify - remove redundant assumes and merge assumes in the same
+// BasicBlock when possible.
+//
+FunctionPass *createAssumeSimplifyPass();
+
+//===----------------------------------------------------------------------===//
+//
+// CanonicalizeFreezeInLoops - Canonicalize freeze instructions in loops so they
+// don't block SCEV.
+//
+Pass *createCanonicalizeFreezeInLoopsPass();
+} // namespace llvm
 
 #endif

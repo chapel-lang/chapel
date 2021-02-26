@@ -11,30 +11,14 @@ clean_venv() {
 }
 
 if [[ ! -f pyzmq-venv/bin/activate ]] ; then
-    # Path to Chapel-installed virtualenv
-    PYTHON_VERSION=$(python $CHPL_HOME/util/chplenv/chpl_python_version.py)
-    CHPL_VIRTUALENV=$(python $CHPL_HOME/util/chplenv/chpl_home_utils.py --venv)/../lib/python${PYTHON_VERSION}/site-packages/virtualenv.py
-
-
-    # If Chapel virtualenv DNE, check for system-installed virtualenv
-    if [[ ! -f ${CHPL_VIRTUALENV} ]]; then
-        which virtualenv 2> /dev/null
-        if [[ $? -eq 0 ]]; then
-            CHPL_VIRTUALENV=$(which virtualenv)
-        else
-            # Abort mission if virtualenv not available
-            exit 1
-        fi
-    fi
-
     # Set the trap to abort and clean up virtualenv if anything goes wrong
     trap clean_venv ERR
 
     # Create virtualenv
-    python ${CHPL_VIRTUALENV} pyzmq-venv
+    python3 -m venv pyzmq-venv
     touch pyzmq-venv.notest
     source pyzmq-venv/bin/activate
-    python -m pip install ${CHPL_PIP_INSTALL_PARAMS} -r requirements.txt
+    python3 -m pip install ${CHPL_PIP_INSTALL_PARAMS} -r requirements.txt
     deactivate
 fi
 

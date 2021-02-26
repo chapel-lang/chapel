@@ -1,9 +1,8 @@
 //===- DbiStreamBuilder.h - PDB Dbi Stream Creation -------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -58,7 +57,6 @@ public:
   void setFlags(uint16_t F);
   void setMachineType(PDB_Machine M);
   void setMachineType(COFF::MachineTypes M);
-  void setSectionMap(ArrayRef<SecMapEntry> SecMap);
 
   // Add given bytes as a new stream.
   Error addDbgStream(pdb::DbgHeaderType Type, ArrayRef<uint8_t> Data);
@@ -85,9 +83,8 @@ public:
     SectionContribs.emplace_back(SC);
   }
 
-  // A helper function to create a Section Map from a COFF section header.
-  static std::vector<SecMapEntry>
-  createSectionMap(ArrayRef<llvm::object::coff_section> SecHdrs);
+  // Populate the Section Map from COFF section headers.
+  void createSectionMap(ArrayRef<llvm::object::coff_section> SecHdrs);
 
 private:
   struct DebugStream {
@@ -134,7 +131,7 @@ private:
   WritableBinaryStreamRef NamesBuffer;
   MutableBinaryByteStream FileInfoBuffer;
   std::vector<SectionContrib> SectionContribs;
-  ArrayRef<SecMapEntry> SectionMap;
+  std::vector<SecMapEntry> SectionMap;
   std::array<Optional<DebugStream>, (int)DbgHeaderType::Max> DbgStreams;
 };
 }

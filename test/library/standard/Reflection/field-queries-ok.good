@@ -2,154 +2,154 @@ field-queries-ok.chpl:20: warning: ===== CCon
 field-queries-ok.chpl:20: warning:   numFields       6
 field-queries-ok.chpl:20: warning:   getFieldName    f6
 field-queries-ok.chpl:20: warning:   hasField        true
-field-queries-ok.chpl:20: warning:   getFieldIndex   6
-field-queries-ok.chpl:20: warning:   isFieldBound 6  true
+field-queries-ok.chpl:20: warning:   getFieldIndex   5
+field-queries-ok.chpl:20: warning:   isFieldBound 5  true
 field-queries-ok.chpl:20: warning:   isFieldBound f6 true
 field-queries-ok.chpl:21: warning: ===== owned CCon
 field-queries-ok.chpl:21: warning:   numFields       6
 field-queries-ok.chpl:21: warning:   getFieldName    f6
 field-queries-ok.chpl:21: warning:   hasField        true
-field-queries-ok.chpl:21: warning:   getFieldIndex   6
-field-queries-ok.chpl:21: warning:   isFieldBound 6  true
+field-queries-ok.chpl:21: warning:   getFieldIndex   5
+field-queries-ok.chpl:21: warning:   isFieldBound 5  true
 field-queries-ok.chpl:21: warning:   isFieldBound f6 true
 field-queries-ok.chpl:22: warning: ===== owned CCon?
 field-queries-ok.chpl:22: warning:   numFields       6
 field-queries-ok.chpl:22: warning:   getFieldName    f6
 field-queries-ok.chpl:22: warning:   hasField        true
-field-queries-ok.chpl:22: warning:   getFieldIndex   6
-field-queries-ok.chpl:22: warning:   isFieldBound 6  true
+field-queries-ok.chpl:22: warning:   getFieldIndex   5
+field-queries-ok.chpl:22: warning:   isFieldBound 5  true
 field-queries-ok.chpl:22: warning:   isFieldBound f6 true
 field-queries-ok.chpl:23: warning: ===== shared CCon
 field-queries-ok.chpl:23: warning:   numFields       6
 field-queries-ok.chpl:23: warning:   getFieldName    f6
 field-queries-ok.chpl:23: warning:   hasField        true
-field-queries-ok.chpl:23: warning:   getFieldIndex   6
-field-queries-ok.chpl:23: warning:   isFieldBound 6  true
+field-queries-ok.chpl:23: warning:   getFieldIndex   5
+field-queries-ok.chpl:23: warning:   isFieldBound 5  true
 field-queries-ok.chpl:23: warning:   isFieldBound f6 true
 field-queries-ok.chpl:24: warning: ===== shared CCon?
 field-queries-ok.chpl:24: warning:   numFields       6
 field-queries-ok.chpl:24: warning:   getFieldName    f6
 field-queries-ok.chpl:24: warning:   hasField        true
-field-queries-ok.chpl:24: warning:   getFieldIndex   6
-field-queries-ok.chpl:24: warning:   isFieldBound 6  true
+field-queries-ok.chpl:24: warning:   getFieldIndex   5
+field-queries-ok.chpl:24: warning:   isFieldBound 5  true
 field-queries-ok.chpl:24: warning:   isFieldBound f6 true
 field-queries-ok.chpl:25: warning: ===== borrowed CCon
 field-queries-ok.chpl:25: warning:   numFields       6
 field-queries-ok.chpl:25: warning:   getFieldName    f6
 field-queries-ok.chpl:25: warning:   hasField        true
-field-queries-ok.chpl:25: warning:   getFieldIndex   6
-field-queries-ok.chpl:25: warning:   isFieldBound 6  true
+field-queries-ok.chpl:25: warning:   getFieldIndex   5
+field-queries-ok.chpl:25: warning:   isFieldBound 5  true
 field-queries-ok.chpl:25: warning:   isFieldBound f6 true
 field-queries-ok.chpl:26: warning: ===== borrowed CCon?
 field-queries-ok.chpl:26: warning:   numFields       6
 field-queries-ok.chpl:26: warning:   getFieldName    f6
 field-queries-ok.chpl:26: warning:   hasField        true
-field-queries-ok.chpl:26: warning:   getFieldIndex   6
-field-queries-ok.chpl:26: warning:   isFieldBound 6  true
+field-queries-ok.chpl:26: warning:   getFieldIndex   5
+field-queries-ok.chpl:26: warning:   isFieldBound 5  true
 field-queries-ok.chpl:26: warning:   isFieldBound f6 true
 field-queries-ok.chpl:27: warning: ===== unmanaged CCon
 field-queries-ok.chpl:27: warning:   numFields       6
 field-queries-ok.chpl:27: warning:   getFieldName    f6
 field-queries-ok.chpl:27: warning:   hasField        true
-field-queries-ok.chpl:27: warning:   getFieldIndex   6
-field-queries-ok.chpl:27: warning:   isFieldBound 6  true
+field-queries-ok.chpl:27: warning:   getFieldIndex   5
+field-queries-ok.chpl:27: warning:   isFieldBound 5  true
 field-queries-ok.chpl:27: warning:   isFieldBound f6 true
 field-queries-ok.chpl:28: warning: ===== unmanaged CCon?
 field-queries-ok.chpl:28: warning:   numFields       6
 field-queries-ok.chpl:28: warning:   getFieldName    f6
 field-queries-ok.chpl:28: warning:   hasField        true
-field-queries-ok.chpl:28: warning:   getFieldIndex   6
-field-queries-ok.chpl:28: warning:   isFieldBound 6  true
+field-queries-ok.chpl:28: warning:   getFieldIndex   5
+field-queries-ok.chpl:28: warning:   isFieldBound 5  true
 field-queries-ok.chpl:28: warning:   isFieldBound f6 true
 field-queries-ok.chpl:35: warning: ===== CGen
 field-queries-ok.chpl:35: warning:   numFields       6
 field-queries-ok.chpl:35: warning:   getFieldName    f6
 field-queries-ok.chpl:35: warning:   hasField        true
-field-queries-ok.chpl:35: warning:   getFieldIndex   6
-field-queries-ok.chpl:35: warning:   isFieldBound 6  false
+field-queries-ok.chpl:35: warning:   getFieldIndex   5
+field-queries-ok.chpl:35: warning:   isFieldBound 5  false
 field-queries-ok.chpl:35: warning:   isFieldBound f6 false
 field-queries-ok.chpl:36: warning: ===== owned CGen
 field-queries-ok.chpl:36: warning:   numFields       6
 field-queries-ok.chpl:36: warning:   getFieldName    f6
 field-queries-ok.chpl:36: warning:   hasField        true
-field-queries-ok.chpl:36: warning:   getFieldIndex   6
-field-queries-ok.chpl:36: warning:   isFieldBound 6  false
+field-queries-ok.chpl:36: warning:   getFieldIndex   5
+field-queries-ok.chpl:36: warning:   isFieldBound 5  false
 field-queries-ok.chpl:36: warning:   isFieldBound f6 false
 field-queries-ok.chpl:37: warning: ===== owned CGen?
 field-queries-ok.chpl:37: warning:   numFields       6
 field-queries-ok.chpl:37: warning:   getFieldName    f6
 field-queries-ok.chpl:37: warning:   hasField        true
-field-queries-ok.chpl:37: warning:   getFieldIndex   6
-field-queries-ok.chpl:37: warning:   isFieldBound 6  false
+field-queries-ok.chpl:37: warning:   getFieldIndex   5
+field-queries-ok.chpl:37: warning:   isFieldBound 5  false
 field-queries-ok.chpl:37: warning:   isFieldBound f6 false
 field-queries-ok.chpl:38: warning: ===== shared CGen
 field-queries-ok.chpl:38: warning:   numFields       6
 field-queries-ok.chpl:38: warning:   getFieldName    f6
 field-queries-ok.chpl:38: warning:   hasField        true
-field-queries-ok.chpl:38: warning:   getFieldIndex   6
-field-queries-ok.chpl:38: warning:   isFieldBound 6  false
+field-queries-ok.chpl:38: warning:   getFieldIndex   5
+field-queries-ok.chpl:38: warning:   isFieldBound 5  false
 field-queries-ok.chpl:38: warning:   isFieldBound f6 false
 field-queries-ok.chpl:39: warning: ===== shared CGen?
 field-queries-ok.chpl:39: warning:   numFields       6
 field-queries-ok.chpl:39: warning:   getFieldName    f6
 field-queries-ok.chpl:39: warning:   hasField        true
-field-queries-ok.chpl:39: warning:   getFieldIndex   6
-field-queries-ok.chpl:39: warning:   isFieldBound 6  false
+field-queries-ok.chpl:39: warning:   getFieldIndex   5
+field-queries-ok.chpl:39: warning:   isFieldBound 5  false
 field-queries-ok.chpl:39: warning:   isFieldBound f6 false
 field-queries-ok.chpl:40: warning: ===== borrowed CGen
 field-queries-ok.chpl:40: warning:   numFields       6
 field-queries-ok.chpl:40: warning:   getFieldName    f6
 field-queries-ok.chpl:40: warning:   hasField        true
-field-queries-ok.chpl:40: warning:   getFieldIndex   6
-field-queries-ok.chpl:40: warning:   isFieldBound 6  false
+field-queries-ok.chpl:40: warning:   getFieldIndex   5
+field-queries-ok.chpl:40: warning:   isFieldBound 5  false
 field-queries-ok.chpl:40: warning:   isFieldBound f6 false
 field-queries-ok.chpl:41: warning: ===== borrowed CGen?
 field-queries-ok.chpl:41: warning:   numFields       6
 field-queries-ok.chpl:41: warning:   getFieldName    f6
 field-queries-ok.chpl:41: warning:   hasField        true
-field-queries-ok.chpl:41: warning:   getFieldIndex   6
-field-queries-ok.chpl:41: warning:   isFieldBound 6  false
+field-queries-ok.chpl:41: warning:   getFieldIndex   5
+field-queries-ok.chpl:41: warning:   isFieldBound 5  false
 field-queries-ok.chpl:41: warning:   isFieldBound f6 false
 field-queries-ok.chpl:42: warning: ===== unmanaged CGen
 field-queries-ok.chpl:42: warning:   numFields       6
 field-queries-ok.chpl:42: warning:   getFieldName    f6
 field-queries-ok.chpl:42: warning:   hasField        true
-field-queries-ok.chpl:42: warning:   getFieldIndex   6
-field-queries-ok.chpl:42: warning:   isFieldBound 6  false
+field-queries-ok.chpl:42: warning:   getFieldIndex   5
+field-queries-ok.chpl:42: warning:   isFieldBound 5  false
 field-queries-ok.chpl:42: warning:   isFieldBound f6 false
 field-queries-ok.chpl:43: warning: ===== unmanaged CGen?
 field-queries-ok.chpl:43: warning:   numFields       6
 field-queries-ok.chpl:43: warning:   getFieldName    f6
 field-queries-ok.chpl:43: warning:   hasField        true
-field-queries-ok.chpl:43: warning:   getFieldIndex   6
-field-queries-ok.chpl:43: warning:   isFieldBound 6  false
+field-queries-ok.chpl:43: warning:   getFieldIndex   5
+field-queries-ok.chpl:43: warning:   isFieldBound 5  false
 field-queries-ok.chpl:43: warning:   isFieldBound f6 false
 field-queries-ok.chpl:50: warning: ===== RCon
 field-queries-ok.chpl:50: warning:   numFields       6
 field-queries-ok.chpl:50: warning:   getFieldName    f6
 field-queries-ok.chpl:50: warning:   hasField        true
-field-queries-ok.chpl:50: warning:   getFieldIndex   6
-field-queries-ok.chpl:50: warning:   isFieldBound 6  true
+field-queries-ok.chpl:50: warning:   getFieldIndex   5
+field-queries-ok.chpl:50: warning:   isFieldBound 5  true
 field-queries-ok.chpl:50: warning:   isFieldBound f6 true
 field-queries-ok.chpl:57: warning: ===== RGen
 field-queries-ok.chpl:57: warning:   numFields       6
 field-queries-ok.chpl:57: warning:   getFieldName    f6
 field-queries-ok.chpl:57: warning:   hasField        true
-field-queries-ok.chpl:57: warning:   getFieldIndex   6
-field-queries-ok.chpl:57: warning:   isFieldBound 6  false
+field-queries-ok.chpl:57: warning:   getFieldIndex   5
+field-queries-ok.chpl:57: warning:   isFieldBound 5  false
 field-queries-ok.chpl:57: warning:   isFieldBound f6 false
 field-queries-ok.chpl:64: warning: ===== UCon
 field-queries-ok.chpl:64: warning:   numFields       6
 field-queries-ok.chpl:64: warning:   getFieldName    f6
 field-queries-ok.chpl:64: warning:   hasField        true
-field-queries-ok.chpl:64: warning:   getFieldIndex   6
-field-queries-ok.chpl:64: warning:   isFieldBound 6  true
+field-queries-ok.chpl:64: warning:   getFieldIndex   5
+field-queries-ok.chpl:64: warning:   isFieldBound 5  true
 field-queries-ok.chpl:64: warning:   isFieldBound f6 true
 field-queries-ok.chpl:71: warning: ===== UGen
 field-queries-ok.chpl:71: warning:   numFields       6
 field-queries-ok.chpl:71: warning:   getFieldName    f6
 field-queries-ok.chpl:71: warning:   hasField        true
-field-queries-ok.chpl:71: warning:   getFieldIndex   6
-field-queries-ok.chpl:71: warning:   isFieldBound 6  false
+field-queries-ok.chpl:71: warning:   getFieldIndex   5
+field-queries-ok.chpl:71: warning:   isFieldBound 5  false
 field-queries-ok.chpl:71: warning:   isFieldBound f6 false
 field-queries-ok.chpl:74: error: === done ===

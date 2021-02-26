@@ -1,9 +1,8 @@
 //===- CFGUpdate.h - Encode a CFG Edge Update. ------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -63,7 +62,7 @@ public:
 template <typename NodePtr>
 void LegalizeUpdates(ArrayRef<Update<NodePtr>> AllUpdates,
                      SmallVectorImpl<Update<NodePtr>> &Result,
-                     bool InverseGraph) {
+                     bool InverseGraph, bool ReverseResultOrder = false) {
   // Count the total number of inserions of each edge.
   // Each insertion adds 1 and deletion subtracts 1. The end number should be
   // one of {-1 (deletion), 0 (NOP), +1 (insertion)}. Otherwise, the sequence
@@ -105,11 +104,11 @@ void LegalizeUpdates(ArrayRef<Update<NodePtr>> AllUpdates,
       Operations[{U.getTo(), U.getFrom()}] = int(i);
   }
 
-  llvm::sort(Result,
-             [&Operations](const Update<NodePtr> &A, const Update<NodePtr> &B) {
-               return Operations[{A.getFrom(), A.getTo()}] >
-                      Operations[{B.getFrom(), B.getTo()}];
-             });
+  llvm::sort(Result, [&](const Update<NodePtr> &A, const Update<NodePtr> &B) {
+    const auto &OpA = Operations[{A.getFrom(), A.getTo()}];
+    const auto &OpB = Operations[{B.getFrom(), B.getTo()}];
+    return ReverseResultOrder ? OpA < OpB : OpA > OpB;
+  });
 }
 
 } // end namespace cfg

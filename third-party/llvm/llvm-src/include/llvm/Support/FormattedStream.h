@@ -1,9 +1,8 @@
 //===-- llvm/Support/FormattedStream.h - Formatted streams ------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -15,6 +14,7 @@
 #ifndef LLVM_SUPPORT_FORMATTEDSTREAM_H
 #define LLVM_SUPPORT_FORMATTEDSTREAM_H
 
+#include "llvm/ADT/SmallString.h"
 #include "llvm/Support/raw_ostream.h"
 #include <utility>
 
@@ -22,8 +22,11 @@ namespace llvm {
 
 /// formatted_raw_ostream - A raw_ostream that wraps another one and keeps track
 /// of line and column position, allowing padding out to specific column
-/// boundaries and querying the number of lines written to the stream.
-///
+/// boundaries and querying the number of lines written to the stream. This
+/// assumes that the contents of the stream is valid UTF-8 encoded text. This
+/// doesn't attempt to handle everything Unicode can do (combining characters,
+/// right-to-left markers, etc), but should cover the cases likely to appear in
+/// source code or diagnostic messages.
 class formatted_raw_ostream : public raw_ostream {
   /// TheStream - The real stream we output to. We set it to be
   /// unbuffered, since we're already doing our own buffering.
@@ -41,6 +44,14 @@ class formatted_raw_ostream : public raw_ostream {
   ///
   const char *Scanned;
 
+  /// PartialUTF8Char - Either empty or a prefix of a UTF-8 code unit sequence
+  /// for a Unicode scalar value which should be prepended to the buffer for the
+  /// next call to ComputePosition. This is needed when the buffer is flushed
+  /// when it ends part-way through the UTF-8 encoding of a Unicode scalar
+  /// value, so that we can compute the display width of the character once we
+  /// have the rest of it.
+  SmallString<4> PartialUTF8Char;
+
   void write_impl(const char *Ptr, size_t Size) override;
 
   /// current_pos - Return the current position within the stream,
@@ -53,9 +64,15 @@ class formatted_raw_ostream : public raw_ostream {
   }
 
   /// ComputePosition - Examine the given output buffer and figure out the new
-  /// position after output.
-  ///
+  /// position after output. This is safe to call multiple times on the same
+  /// buffer, as it records the most recently scanned character and resumes from
+  /// there when the buffer has not been flushed.
   void ComputePosition(const char *Ptr, size_t size);
+
+  /// UpdatePosition - scan the characters in [Ptr, Ptr+Size), and update the
+  /// line and column numbers. Unlike ComputePosition, this must be called
+  /// exactly once on each region of the buffer.
+  void UpdatePosition(const char *Ptr, size_t Size);
 
   void setStream(raw_ostream &Stream) {
     releaseStream();
@@ -106,11 +123,17 @@ public:
   /// \param NewCol - The column to move to.
   formatted_raw_ostream &PadToColumn(unsigned NewCol);
 
-  /// getColumn - Return the column number
-  unsigned getColumn() { return Position.first; }
+  unsigned getColumn() {
+    // Calculate current position, taking buffer contents into account.
+    ComputePosition(getBufferStart(), GetNumBytesInBuffer());
+    return Position.first;
+  }
 
-  /// getLine - Return the line number
-  unsigned getLine() { return Position.second; }
+  unsigned getLine() {
+    // Calculate current position, taking buffer contents into account.
+    ComputePosition(getBufferStart(), GetNumBytesInBuffer());
+    return Position.second;
+  }
 
   raw_ostream &resetColor() override {
     TheStream->resetColor();

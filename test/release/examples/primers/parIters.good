@@ -4,7 +4,7 @@ After serial initialization, A is:
 After negating the middle of A:
 1.0 2.0 -3.0 -4.0 -5.0 -6.0 -7.0 -8.0 -9.0 10.0 11.0 12.0 13.0 14.0 15.0
 
-After reassigning A using zippering:
+After re-assigning A using zippering:
 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5
 
 After parallel initialization, A is:
@@ -13,12 +13,12 @@ After parallel initialization, A is:
 After negating the middle of A in parallel:
 1.0 2.0 -3.0 -4.0 -5.0 -6.0 -7.0 -8.0 -9.0 10.0 11.0 12.0 13.0 14.0 15.0
 
-After reassigning A using parallel zippering:
+After re-assigning A using parallel zippering:
 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5
 
-After reassigning A using parallel zippering and A as the leader:
+After re-assigning A using parallel zippering and A as the leader:
 0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09 0.1 0.11 0.12 0.13 0.14 0.15
 
-After reassigning A using whole-array assignment:
+After re-assigning A using whole-array assignment:
 100.0 101.0 102.0 103.0 104.0 105.0 106.0 107.0 108.0 109.0 110.0 111.0 112.0 113.0 114.0
 

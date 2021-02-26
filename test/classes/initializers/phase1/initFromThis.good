@@ -2,7 +2,7 @@ initFromThis.chpl:6: In initializer:
 initFromThis.chpl:7: error: cannot take a reference to "this" before this.complete()
 initFromThis.chpl:9: error: cannot take a reference to "this" before this.complete()
 initFromThis.chpl:11: error: cannot initialize a variable from "this" before this.complete()
-initFromThis.chpl:15: In function 'init=':
+initFromThis.chpl:15: In method 'init=':
 initFromThis.chpl:16: error: cannot take a reference to "this" before this.complete()
 initFromThis.chpl:18: error: cannot take a reference to "this" before this.complete()
 initFromThis.chpl:20: error: cannot initialize a variable from "this" before this.complete()
