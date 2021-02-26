@@ -442,23 +442,9 @@ void AggregateType::codegenDef() {
             unsigned align = aligns[i];
 #endif
             if ((offset % align) != 0) {
-              // Not aligned. Add padding to make it aligned.
-              // create the padSize*int8 array type and insert it into params
-              unsigned padSize = align - (offset % align);
-              llvm::Type* padType =
-                llvm::ArrayType::get(llvm::IntegerType::get(info->llvmContext,
-                                                            8),
-                                     padSize);
-              params.insert(params.begin()+i, padType);
-
-              // add an alignment field of 1 to aligns vector for the padding
-#if HAVE_LLVM_VER >= 100
-              aligns.insert(aligns.begin()+i, llvm::MaybeAlign(1));
-#else
-              aligns.insert(aligns.begin()+i, 1);
-#endif 
-              // rebuild the struct
-              stype->setBody(params);
+              // Not aligned. Issue an error. In the future, we expect to add
+              // padding to make it aligned.
+              USR_FATAL(this->symbol->defPoint, "unhandled misaligned record member");
             }
           }
         }

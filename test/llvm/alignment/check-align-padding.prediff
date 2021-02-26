@@ -4,5 +4,5 @@ OUTFILE=$2
 
 TMPFILE="$outfile.prediff.tmp"
 mv $OUTFILE $TMPFILE
-cat $TMPFILE | grep '= type' | sort > $OUTFILE
+cat $TMPFILE | grep -e '= type' -e 'error:' | sort > $OUTFILE
 rm $TMPFILE
