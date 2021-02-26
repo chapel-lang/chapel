@@ -723,8 +723,7 @@ module ChapelSyncvar {
     }
 
     proc init=(const ref other : _singlevar) {
-      // TODO: How to enable without breaking arrays of syncs?
-      //      compilerWarning("Initializing a type-inferred variable from a 'single' is deprecated; apply a 'read??()' method to the right-hand side");
+      compilerWarning("Initializing a type-inferred variable from a 'single' is deprecated; apply a 'read??()' method to the right-hand side");
       // Allow initialization from compatible single variables, e.g.:
       //   var x : single int = 5;
       //   var y : single real = x;
