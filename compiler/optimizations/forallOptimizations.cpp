@@ -32,6 +32,18 @@
 #include "stlUtil.h"
 #include "view.h"
 
+enum CallRejectReason {
+  CRR_ACCEPT,
+  CRR_NOT_ARRAY_ACCESS_LIKE,
+  CRR_NO_CLEAN_INDEX_MATCH,
+  CRR_ACCESS_BASE_IS_LOOP_INDEX,
+  CRR_ACCESS_BASE_IS_NOT_OUTER_VAR,
+  CRR_ACCESS_BASE_IS_SHADOW_VAR,
+  CRR_TIGHTER_LOCALITY_DOMINATOR,
+  CRR_UNKNOWN,
+};
+
+
 // This file contains analysis and transformation logic that need to happen
 // before normalization. These transformations help the following optimizations:
 //
@@ -68,7 +80,8 @@ static void gatherForallInfo(ForallStmt *forall);
 static bool loopHasValidInductionVariables(ForallStmt *forall);
 static Symbol *canDetermineLoopDomainStatically(ForallStmt *forall);
 static Symbol *getCallBaseSymIfSuitable(CallExpr *call, ForallStmt *forall,
-                                        bool checkArgs, int *argIdx);
+                                        bool checkArgs, int *argIdx,
+                                        CallRejectReason *reason=NULL);
 static Symbol *getCallBase(CallExpr *call);
 static void generateDynamicCheckForAccess(CallExpr *access,
                                           ForallStmt *forall,
@@ -819,11 +832,40 @@ static Symbol *canDetermineLoopDomainStatically(ForallStmt *forall) {
   return NULL;
 }
 
+static const char *getCallRejectReasonStr(CallRejectReason reason) {
+  switch (reason) {
+    case CRR_NO_CLEAN_INDEX_MATCH:
+      return "call arguments don't match loop indices cleanly";
+      break;
+    case CRR_NOT_ARRAY_ACCESS_LIKE:
+      return "call doesn't look like array access";
+      break;
+    case CRR_ACCESS_BASE_IS_LOOP_INDEX:
+      return "call base is yielded by forall iterator";
+      break;
+    case CRR_ACCESS_BASE_IS_NOT_OUTER_VAR:
+      return "call base is defined within the loop body";
+      break;
+    case CRR_ACCESS_BASE_IS_SHADOW_VAR:
+      return "call base is a defined in a forall intent";
+      break;
+    case CRR_TIGHTER_LOCALITY_DOMINATOR:
+      return "call base is in a nested on and/or forall";
+      break;
+    default:
+      return "";
+      break;
+  }
+
+  return "";
+}
+
 // Bunch of checks to see if `call` is a candidate for optimization within
 // `forall`. Returns the symbol of the `baseExpr` of the `call` if it is
 // suitable. NULL otherwise
 static Symbol *getCallBaseSymIfSuitable(CallExpr *call, ForallStmt *forall,
-                                        bool checkArgs, int *argIdx) {
+                                        bool checkArgs, int *argIdx,
+                                        CallRejectReason *reason) {
   
   // TODO see if you can use getCallBase
   SymExpr *baseSE = toSymExpr(call->baseExpr);
@@ -837,7 +879,12 @@ static Symbol *getCallBaseSymIfSuitable(CallExpr *call, ForallStmt *forall,
     }
 
     // don't analyze further if the call base is a yielded symbol
-    if (accBaseSym->hasFlag(FLAG_INDEX_VAR)) { return NULL; }
+    if (accBaseSym->hasFlag(FLAG_INDEX_VAR)) {
+      if (!accBaseSym->hasFlag(FLAG_TEMP) && reason != NULL) {
+        *reason = CRR_ACCESS_BASE_IS_LOOP_INDEX;
+      }
+      return NULL;
+    }
 
     // give up if the access uses a different symbol than the symbols yielded by
     // one of the iterators
@@ -857,6 +904,7 @@ static Symbol *getCallBaseSymIfSuitable(CallExpr *call, ForallStmt *forall,
       }
 
       if (!found) {
+        if (reason != NULL) *reason = CRR_NO_CLEAN_INDEX_MATCH;
         return NULL;
       }
     }
@@ -867,17 +915,28 @@ static Symbol *getCallBaseSymIfSuitable(CallExpr *call, ForallStmt *forall,
 
     // give up if the symbol we are looking to optimize is defined inside the
     // loop itself
-    if (forall->loopBody()->contains(accBaseSym->defPoint)) { return NULL; }
+    if (forall->loopBody()->contains(accBaseSym->defPoint)) { 
+      if (reason != NULL) *reason = CRR_ACCESS_BASE_IS_NOT_OUTER_VAR;
+      return NULL;
+    }
 
     // similarly, give up if the base symbol is a shadow variable
-    if (isShadowVarSymbol(accBaseSym)) { return NULL; }
+    if (isShadowVarSymbol(accBaseSym)) {
+      if (reason != NULL) *reason = CRR_ACCESS_BASE_IS_SHADOW_VAR;
+      return NULL;
+    }
 
     // this call has another tighter-enclosing stmt that may change locality,
     // don't optimize
-    if (forall != getLocalityDominator(call)) { return NULL; }
+    if (forall != getLocalityDominator(call)) {
+      if (reason != NULL) *reason = CRR_TIGHTER_LOCALITY_DOMINATOR;
+      return NULL;
+    }
 
     return accBaseSym;
   }
+
+  if (reason != NULL) *reason = CRR_NOT_ARRAY_ACCESS_LIKE;
   return NULL;
 }
 
@@ -1236,17 +1295,29 @@ static void autoLocalAccess(ForallStmt *forall) {
 
   for_vector(CallExpr, call, allCallExprs) {
     int iterandIdx = -1;
+    CallRejectReason reason = CRR_UNKNOWN;
     Symbol *accBaseSym = getCallBaseSymIfSuitable(call, forall,
                                                   /*checkArgs=*/true,
-                                                  &iterandIdx);
+                                                  &iterandIdx,
+                                                  &reason);
 
     if (accBaseSym == NULL) {
+      if (reason != CRR_UNKNOWN &&
+          reason != CRR_NOT_ARRAY_ACCESS_LIKE) {
+        LOG_ALA(2, "Start analyzing call", call);
+
+        std::stringstream message;
+        message << "Cannot optimize: ";
+        message << getCallRejectReasonStr(reason);
+
+        LOG_ALA(3, message.str().c_str(), call);
+      }
       continue;
     }
 
-    INT_ASSERT(iterandIdx >= 0);
-
     LOG_ALA(2, "Start analyzing call", call);
+
+    INT_ASSERT(iterandIdx >= 0);
 
     bool canOptimizeStatically = false;
 
