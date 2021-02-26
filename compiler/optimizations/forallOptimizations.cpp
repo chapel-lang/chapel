@@ -408,7 +408,7 @@ void cleanupRemainingAggCondStmts() {
 // during resolution, the output is much more straightforward, and depth 0 is
 // used always
 static void LOG_help(int depth, const char *msg, BaseAST *node,
-                     bool forallDetails, bool flag) {
+                     ForallAutoLocalAccessCloneType cloneType, bool flag) {
   if (flag) {
     bool verbose = (node->getModule()->modTag != MOD_INTERNAL &&
                     node->getModule()->modTag != MOD_STANDARD);
@@ -424,22 +424,18 @@ static void LOG_help(int depth, const char *msg, BaseAST *node,
         std::cout << " ";
       }
       std::cout << msg;
-      if (forallDetails) {
-        if (ForallStmt *forall = toForallStmt(node)) {
-          switch (forall->optInfo.cloneType) {
-            case STATIC_AND_DYNAMIC:
-              std::cout << " [static and dynamic ALA clone] ";
-              break;
-            case STATIC_ONLY:
-              std::cout << " [static only ALA clone] ";
-              break;
-            case NO_OPTIMIZATION:
-              std::cout << " [no ALA clone] ";
-              break;
-            default:
-              break;
-          }
-        }
+      switch (cloneType) {
+        case STATIC_AND_DYNAMIC:
+          std::cout << " [static and dynamic ALA clone] ";
+          break;
+        case STATIC_ONLY:
+          std::cout << " [static only ALA clone] ";
+          break;
+        case NO_OPTIMIZATION:
+          std::cout << " [no ALA clone] ";
+          break;
+        default:
+          break;
       }
       if (node != NULL) {
         std::cout << " (" << node->stringLoc() << ")";
@@ -468,7 +464,11 @@ static void LOGLN_help(BaseAST *node, bool flag) {
 }
 
 static void LOG_AA(int depth, const char *msg, BaseAST *node) {
-  LOG_help(depth, msg, node, /*forallDetails=*/true,
+  ForallAutoLocalAccessCloneType cloneType = NOT_CLONE;
+  if (ForallStmt *forall = toForallStmt(node)) {
+    cloneType = forall->optInfo.cloneType;
+  }
+  LOG_help(depth, msg, node, cloneType,
            fAutoAggregation && fReportAutoAggregation);
 }
 
@@ -476,8 +476,26 @@ static void LOGLN_AA(BaseAST *node) {
   LOGLN_help(node, fAutoAggregation && fReportAutoAggregation);
 }
 
+static void LOG_ALA(int depth, const char *msg, BaseAST *node,
+                    bool forallDetails) {
+  ForallAutoLocalAccessCloneType cloneType = NOT_CLONE;
+
+  if (forallDetails) {
+    CallExpr *call = toCallExpr(node);
+    INT_ASSERT(call);
+
+    ForallStmt *forall = enclosingForallStmt(call);
+    INT_ASSERT(forall);
+
+    cloneType = forall->optInfo.cloneType;
+  }
+  LOG_help(depth, msg, node, cloneType,
+           fAutoLocalAccess && fReportAutoLocalAccess);
+}
+
 static void LOG_ALA(int depth, const char *msg, BaseAST *node) {
-  LOG_help(depth, msg, node, /*forallDetails=*/false,
+  ForallAutoLocalAccessCloneType cloneType = NOT_CLONE;
+  LOG_help(depth, msg, node, cloneType,
            fAutoLocalAccess && fReportAutoLocalAccess);
 }
 
@@ -1415,7 +1433,8 @@ static CallExpr *revertAccess(CallExpr *call) {
 
 static CallExpr *confirmAccess(CallExpr *call) {
   if (toSymExpr(call->get(call->argList.length))->symbol() == gTrue) {
-    LOG_ALA(0, "Static check successful. Using localAccess", call);
+    LOG_ALA(0, "Static check successful. Using localAccess", call,
+            /*forallDetails=*/true);
   }
   else {
     LOG_ALA(0, "Static check successful. Using localAccess with dynamic check", call);
