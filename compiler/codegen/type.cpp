@@ -43,6 +43,7 @@
 
 #ifdef HAVE_LLVM
 #include "llvm/IR/Module.h"
+#include "llvm/IR/DataLayout.h"
 #endif
 
 
@@ -315,6 +316,11 @@ void AggregateType::codegenDef() {
 #ifdef HAVE_LLVM
       int paramID = 0;
       std::vector<llvm::Type*> params;
+#if HAVE_LLVM_VER >= 100
+      std::vector<llvm::MaybeAlign> aligns;
+#else
+      std::vector<unsigned> aligns;
+#endif
 
       if ((symbol->hasFlag(FLAG_OBJECT_CLASS) && aggregateTag == AGGREGATE_CLASS)) {
         llvm::Type* cidType = info->lvt->getType("chpl__class_id");
@@ -370,6 +376,7 @@ void AggregateType::codegenDef() {
             fieldType = info->lvt->getType(ct->classStructName(true));
           INT_ASSERT(fieldType);
           params.push_back(fieldType);
+          aligns.push_back(getAlignment(field->type));
           GEPMap.insert(std::pair<std::string, int>(field->cname, paramID++));
         }
       }
@@ -423,9 +430,38 @@ void AggregateType::codegenDef() {
                                           symbol->cname);
         }
 
-
         llvm::StructType* stype = llvm::cast<llvm::StructType>(type);
         stype->setBody(params);
+
+        if (aligns.size() == params.size()) {
+          for (int i = 0; i < params.size(); i++) {
+            unsigned offset = info->module->getDataLayout().getStructLayout(stype)->getElementOffset(i);
+#if HAVE_LLVM_VER >= 100
+            unsigned align = 1 << Log2(aligns[i].valueOrOne());
+#else
+            unsigned align = aligns[i];
+#endif
+            if ((offset % align) != 0) {
+              // Not aligned. Add padding to make it aligned.
+              // create the padSize*int8 array type and insert it into params
+              unsigned padSize = align - (offset % align);
+              llvm::Type* padType =
+                llvm::ArrayType::get(llvm::IntegerType::get(info->llvmContext,
+                                                            8),
+                                     padSize);
+              params.insert(params.begin()+i, padType);
+
+              // add an alignment field of 1 to aligns vector for the padding
+#if HAVE_LLVM_VER >= 100
+              aligns.insert(aligns.begin()+i, llvm::MaybeAlign(1));
+#else
+              aligns.insert(aligns.begin()+i, 1);
+#endif 
+              // rebuild the struct
+              stype->setBody(params);
+            }
+          }
+        }
 
         if (aggregateTag == AGGREGATE_CLASS) {
           type = stype->getPointerTo();
