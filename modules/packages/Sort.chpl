@@ -1241,7 +1241,7 @@ module QuickSort {
         var mid = lo + (hi - lo + 1) / 2;
         var piv = mid;
 
-        if hi - lo < 0 { // minlen {
+        if hi - lo < minlen { // minlen {
           // base case -- use insertion sort
           InsertionSort.insertionSortMoveElts(Data, comparator=comparator, lo, hi);
           return;
