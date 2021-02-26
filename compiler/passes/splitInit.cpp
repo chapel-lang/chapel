@@ -819,7 +819,9 @@ static bool doFindCopyElisionPoints(Expr* start,
     // { ... }  (nested block)
     } else if (BlockStmt* block = toBlockStmt(cur)) {
 
-      if (block->isLoopStmt() || block->isRealBlockStmt() == false) {
+      if (block->isLoopStmt() ||
+          (block->isRealBlockStmt() == false &&
+           !block->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL))) {
         // Loop / on / begin / etc - just check for uses
         Expr* start = block->body.first();
         VariablesSet newEligible;
