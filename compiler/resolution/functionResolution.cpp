@@ -6948,12 +6948,42 @@ void resolveInitVar(CallExpr* call) {
     targetType = srcType;
   }
 
+  bool srcSyncSingle = isSyncType(srcType->getValType()) ||
+                       isSingleType(srcType->getValType());
+
+  // This is a workaround to avoid deprecation warnings for sync/single
+  // variables within compiler-generated initializers.
+  FnSymbol* inFn = call->getFunction();
+  if (srcSyncSingle &&
+      inFn->hasFlag(FLAG_COMPILER_GENERATED) &&
+      (inFn->name == astrInit || inFn->name == astrInitEquals) &&
+      targetType->getValType() == srcType->getValType()) {
+
+    targetType = targetType->getValType();
+
+    // change
+    //   PRIM_INIT_VAR lhsSync, rhsSync
+    // to
+    //   PRIM_MOVE lhsSync, chpl__cloneSyncSingle(rhsSync)
+
+    call->primitive = primitives[PRIM_MOVE];
+    srcExpr->remove();
+    CallExpr* clone = new CallExpr("chpl__cloneSyncSingle", srcExpr);
+    call->insertAtTail(clone);
+    resolveExpr(clone);
+    resolveMove(call);
+
+    return;
+  }
+
+
+
   // 'var x = new _domain(...)' should not bother going through chpl__initCopy
   // logic so that the result of the 'new' is MOVE'd and not copy-initialized,
   // which is handled in the 'init=' branch.
   bool isDomainWithoutNew = targetType->getValType()->symbol->hasFlag(FLAG_DOMAIN) &&
                             src->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW) == false;
-  bool initCopySyncSingle = inferType && (isSyncType(srcType->getValType()) || isSingleType(srcType->getValType()));
+  bool initCopySyncSingle = inferType && srcSyncSingle;
   bool initCopyIter = inferType && srcType->getValType()->symbol->hasFlag(FLAG_ITERATOR_RECORD);
 
   if (dst->hasFlag(FLAG_NO_COPY) ||

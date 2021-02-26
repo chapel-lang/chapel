@@ -4299,6 +4299,12 @@ module ChapelArray {
   }
 
   inline proc =(ref a: [], b) /* b is not an array nor a domain nor a tuple */ {
+    /*
+    if isSyncType(a.eltType) {
+      compilerWarning("Direct assignment to an array of 'sync' elements is deprecated; apply '.writeEF()' to set the elements");
+    } else if isSingleType(a.eltType) {
+      compilerWarning("Direct assignment to an array of 'single' elements is deprecated; apply '.writeEF()' to set the elements");
+    }*/
     chpl__transferArray(a, b);
   }
 

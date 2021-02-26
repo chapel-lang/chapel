@@ -281,8 +281,7 @@ module ChapelSyncvar {
   }
 
   proc   = (ref lhs : _syncvar(?t), rhs : t) {
-    if chpl_warnUnstable then
-      compilerWarning("Direct assignment to 'sync' variables is deprecated; apply a 'write??()' method to modify one");
+    compilerWarning("Direct assignment to 'sync' variables is deprecated; apply a 'write??()' method to modify one");
     lhs.wrapped.writeEF(rhs);
   }
 
@@ -348,6 +347,12 @@ module ChapelSyncvar {
   proc <<= (ref lhs : _syncvar(?t), rhs : t) {
     compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() << rhs);
+  }
+
+  proc chpl__cloneSyncSingle(ref sv : _syncvar(?)) {
+    // TODO: this should probably clone the value and full/empty state instead
+    var ret: sv.type = sv.readFE();
+    return ret;
   }
 
   pragma "init copy fn"
@@ -810,8 +815,7 @@ module ChapelSyncvar {
   }
 
   proc =(ref lhs : _singlevar(?t), rhs : t) {
-    if chpl_warnUnstable then
-      compilerWarning("Direct assignment to 'single' variables is deprecated; apply '.writeEF()' to modify one");
+    compilerWarning("Direct assignment to 'single' variables is deprecated; apply '.writeEF()' to modify one");
     lhs.wrapped.writeEF(rhs);
   }
 
@@ -823,6 +827,11 @@ module ChapelSyncvar {
     return new _singlevar(from);
   }
 
+  proc chpl__cloneSyncSingle(ref sv : _singlevar(?)) {
+    // TODO: this should probably clone the value and full/empty state instead
+    var ret: sv.type = sv.readFF();
+    return ret;
+  }
 
   pragma "init copy fn"
   proc chpl__initCopy(ref sv : _singlevar(?t), definedConst: bool) {
