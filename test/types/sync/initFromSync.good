@@ -1,2 +1,3 @@
-initFromSync.chpl:2: error: invalid copy-initialization
-initFromSync.chpl:2: error: Can't initialize a type-inferred variable from a sync
+initFromSync.chpl:2: warning: Initializing a type-inferred variable from a 'sync' is deprecated; apply a '.read??()' method to the right-hand side
+0
+int(64)

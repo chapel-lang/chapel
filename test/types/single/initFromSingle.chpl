@@ -1,4 +1,4 @@
 var x$: single int = 0;
-var y = x$.readFF();
+var y = x$;
 writeln(y);
 writeln(y.type:string);

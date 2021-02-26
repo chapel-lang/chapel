@@ -1,1 +1,10 @@
+record3.chpl:12: warning: implicitly reading from a sync is deprecated; apply a 'read??()' method to the actual
+record3.chpl:13: warning: implicitly reading from a sync is deprecated; apply a 'read??()' method to the actual
+record3.chpl:14: warning: implicitly reading from a sync is deprecated; apply a 'read??()' method to the actual
+record3.chpl:15: warning: implicitly reading from a sync is deprecated; apply a 'read??()' method to the actual
+record3.chpl:16: warning: implicitly reading from a sync is deprecated; apply a 'read??()' method to the actual
+record3.chpl:17: warning: implicitly reading from a sync is deprecated; apply a 'read??()' method to the actual
+record3.chpl:18: warning: implicitly reading from a sync is deprecated; apply a 'read??()' method to the actual
+record3.chpl:18: warning: implicitly reading from a sync is deprecated; apply a 'read??()' method to the actual
+record3.chpl:18: warning: implicitly reading from a sync is deprecated; apply a 'read??()' method to the actual
 record3.chpl:10: error: sync/single types cannot contain type 'R'

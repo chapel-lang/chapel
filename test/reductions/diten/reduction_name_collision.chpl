@@ -16,9 +16,9 @@ class R {
   var count: sync int = 0;  // TODO: initializer
 
   proc next() {
-    var c = count + 1;
+    var c = count.readFE() + 1;
 
-    count = c;
+    count.writeEF(c);
 
     return c;
   }

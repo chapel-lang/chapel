@@ -1,4 +1,2 @@
-int-method-on-sync-int2.chpl:12: error: unresolved call 'sync int(64).methodOnInt()'
-int-method-on-sync-int2.chpl:6: note: this candidate did not match: int.methodOnInt()
-int-method-on-sync-int2.chpl:12: note: because method call receiver with type sync int(64)
-int-method-on-sync-int2.chpl:6: note: is passed to formal 'this: int(64)'
+int-method-on-sync-int2.chpl:12: warning: implicitly reading from a sync is deprecated; apply a 'read??()' method to the actual
+in methodOnInt: 55

@@ -1,1 +1,2 @@
-if-sync-int2.chpl:6: error: type 'sync int(64)' used in if or while condition
+if-sync-int2.chpl:6: warning: direct reads of sync variables are deprecated; please apply a 'read??' method
+yes

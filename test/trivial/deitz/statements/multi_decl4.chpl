@@ -12,8 +12,8 @@ var y: x.type;
 //   var x: sync int, y: sync int;
 
 
-x = 1;
-y = 2;
+x.writeEF(1);
+y.writeEF(2);
 
 writeln(x.readFE());
 writeln(y.readFF());

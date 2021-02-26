@@ -45,23 +45,24 @@ sy$.reset();  // value = 0, state = empty
 // The ``isFull`` method returns ``true`` if the sync or single variable is
 // in the ``full`` state, ``false`` otherwise.
 //
-writeln(sy$.isFull);
-writeln(si$.isFull);
+writeln("sy$.isFull ", sy$.isFull);
+writeln("si$.isFull ", si$.isFull);
 
 // The ``writeEF()`` method, defined for sync and single variables,
 // blocks until the state is ``empty`` and then assigns the value argument
 // to the variable and then sets the state to ``full``.  Assignment of
 // sync and single variables are performed using ``writeEF()``.
 //
-sy$.writeEF(2*n); // equivalent to: sy$ = 2*n;
+sy$.writeEF(2*n);
+si$.writeEF(true);
 
 // The ``readFE()`` method, defined for sync variables, blocks until the
 // state is ``full`` and then reads the value of the variable, sets the
 // state to ``empty``, and then returns the value.  Normal reads of sync
 // variables are performed using ``readFE()``.
 //
-var sy2 = sy$.readFE(); // equivalent to: var sy2 = sy$;
-writeln(sy2);
+var sy2 = sy$.readFE();
+writeln("sy2 ", sy2);
 
 // The ``readFF()`` method, defined for sync and single variables, blocks
 // until the state is ``full`` and then reads the value of the variable
@@ -69,7 +70,7 @@ writeln(sy2);
 // single variables are performed using ``readFF()``.
 //
 var si2 = si$.readFF();
-writeln(si2);
+writeln("si2 ", si2);
 
 // The ``writeXF()`` method, defined for sync variables, assigns the
 // value argument to the variable and then sets the state to ``full``.
@@ -83,8 +84,8 @@ sy$.writeXF(3*n);
 //
 var sy3 = sy$.readXX();
 var si3 = si$.readXX();
-writeln(sy3);
-writeln(si3);
+writeln("sy3 ", sy3);
+writeln("si3 ", si3);
 
 // The ``writeFF()`` method, defined for sync variables, blocks until the
 // state is ``full`` and then and then assigns the value argument to the
@@ -144,9 +145,9 @@ sy$.reset();
 // Sync and single arguments are passed by reference.  As a result,
 // the state of the variable does not change.
 //
-writeln(sy$.isFull);
+writeln("sy$.isFull ", sy$.isFull, " - now passing to f_withSyncIntFormal");
 f_withSyncIntFormal(sy$);
-writeln(si$.isFull);
+writeln("si$.isFull ", si$.isFull, " - now passing to f_withSingleBoolFormal");
 f_withSingleBoolFormal(si$);
 
 sy$.writeEF(4*n);
@@ -161,6 +162,7 @@ f_withGenericDefaultIntentFormal(si$);
 f_withGenericRefFormal(sy$);
 f_withGenericRefFormal(si$);
 
+sy$.reset();
 sy$.writeEF(5*n);
 
 // Currently, sync and single variables cannot be written out directly.
@@ -171,19 +173,11 @@ writeln(si$.readFF());
 
 // Definitions of functions used above
 proc f_withSyncIntFormal(x: sync int) {
-  writeln(x.isFull);
+  writeln("the full bit is: ", x.isFull);
 }
 
 proc f_withSingleBoolFormal(x: single bool) {
-  writeln(x.isFull);
-}
-
-proc f_withIntFormal(x: int) {
-  writeln(x);
-}
-
-proc f_withBoolFormal(x: bool) {
-  writeln(x);
+  writeln("the full bit is: ", x.isFull);
 }
 
 proc f_withGenericDefaultIntentFormal(x) {

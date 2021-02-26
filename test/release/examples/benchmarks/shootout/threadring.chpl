@@ -19,7 +19,7 @@ proc main() {
   // Write the number of token passes so far (0) to task 1's mailbox,
   // giving it the token by making it 'full'.
   //
-  mailbox$[1] = 0;
+  mailbox$[1].writeEF(0);
 
   //
   // Create tasks using a 'coforall' loop.  Index 'tid' stores the
@@ -40,7 +40,7 @@ proc passTokens(tid) {
     // incremented value to the next task's mailbox, making it 'full'.
     //
     const numPasses = mailbox$[tid].readFE();
-    mailbox$[tid%ntasks+1] = numPasses+1;
+    mailbox$[tid%ntasks+1].writeEF(numPasses+1);
 
     if numPasses == n then
       writeln(tid);

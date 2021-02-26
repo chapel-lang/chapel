@@ -1,1 +1,9 @@
-sync-copy-init-other-sync.chpl:2: error: Cannot initialize one sync var directly from another; try applying a method like .readFE(), .readFF(), etc. to the pre-existing variable
+sync-copy-init-other-sync.chpl:2: warning: Initializing a type-inferred variable from a 'sync' is deprecated; apply a 'read??()' method to the right-hand side
+sync-copy-init-other-sync.chpl:7: warning: Initializing a type-inferred variable from a 'sync' is deprecated; apply a 'read??()' method to the right-hand side
+sync int(64)
+true
+false
+sync real(64)
+1.0
+true
+false

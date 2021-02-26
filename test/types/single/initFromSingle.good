@@ -1,2 +1,3 @@
-initFromSingle.chpl:2: error: invalid copy-initialization
-initFromSingle.chpl:2: error: Can't initialize a type-inferred variable from a single
+initFromSingle.chpl:2: warning: Initializing a type-inferred variable from a 'single' is deprecated; apply '.readFF()' to the right-hand side
+0
+int(64)

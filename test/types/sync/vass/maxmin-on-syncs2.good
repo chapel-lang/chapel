@@ -1,6 +1,12 @@
-maxmin-on-syncs2.chpl:6: error: Cannot directly compare sync vars; apply a .read??() method first
-$CHPL_HOME/modules/standard/IO.chpl:3226: error: sync variables cannot currently be written - apply readFE/readFF() to those variables first
-maxmin-on-syncs2.chpl:7: error: Cannot directly compare single vars; apply a .read??() method first
-$CHPL_HOME/modules/standard/IO.chpl:3226: error: single variables cannot currently be written - apply readFF() to those variables first
-maxmin-on-syncs2.chpl:12: error: Cannot directly compare sync vars; apply a .read??() method first
-maxmin-on-syncs2.chpl:13: error: Cannot directly compare single vars; apply a .read??() method first
+maxmin-on-syncs2.chpl:6: warning: implicitly reading from a sync is deprecated; apply a 'read??()' method to the actual
+maxmin-on-syncs2.chpl:6: warning: implicitly reading from a sync is deprecated; apply a 'read??()' method to the actual
+maxmin-on-syncs2.chpl:7: warning: implicitly reading from a single is deprecated; apply a 'read??()' method to the actual
+maxmin-on-syncs2.chpl:7: warning: implicitly reading from a single is deprecated; apply a 'read??()' method to the actual
+maxmin-on-syncs2.chpl:12: warning: implicitly reading from a sync is deprecated; apply a 'read??()' method to the actual
+maxmin-on-syncs2.chpl:12: warning: implicitly reading from a sync is deprecated; apply a 'read??()' method to the actual
+maxmin-on-syncs2.chpl:13: warning: implicitly reading from a single is deprecated; apply a 'read??()' method to the actual
+maxmin-on-syncs2.chpl:13: warning: implicitly reading from a single is deprecated; apply a 'read??()' method to the actual
+1
+1
+2
+2
