@@ -96,7 +96,7 @@ DefExpr* InterfaceSymbol::buildDef(const char* name,
         USR_FATAL_CONT(expr, "associated types at present are not allowed"
                        " for multi-argument interfaces");
       // replace with a fresh ConstrainedType
-      TypeSymbol* ACT = ConstrainedType::build(AT->name, CT_IFC_ASSOC_TYPE);
+      TypeSymbol* ACT = ConstrainedType::buildSym(AT->name, CT_IFC_ASSOC_TYPE);
       isym->associatedTypes[ACT->name] = (ConstrainedType*)ACT->type;
       reset_ast_loc(ACT, expr);
       AT->defPoint->replace(new DefExpr(ACT));
@@ -124,7 +124,7 @@ DefExpr* InterfaceSymbol::buildFormal(const char* name,
 {
   Symbol* formal = NULL;
   if (intent == INTENT_TYPE) {
-    formal = ConstrainedType::build(name, CT_IFC_FORMAL);
+    formal = ConstrainedType::buildSym(name, CT_IFC_FORMAL);
   } else {
     INT_FATAL(formal, "unexpected intent");
   }
@@ -351,7 +351,7 @@ void introduceConstrainedTypes(FnSymbol* fn) {
       SET_LINENO(def);
       Symbol* queryT = def->sym;
       // introduce a ConstrainedType
-      TypeSymbol* CT = ConstrainedType::build(queryT->name, CT_CGFUN_FORMAL);
+      TypeSymbol* CT = ConstrainedType::buildSym(queryT->name, CT_CGFUN_FORMAL);
       fn->interfaceInfo->addConstrainedType(new DefExpr(CT));
 
       // replace queryT with CT throughout
@@ -383,8 +383,8 @@ Type* desugarInterfaceAsType(ArgSymbol* arg, SymExpr* se,
   SET_LINENO(se);
 
   // introduce a ConstrainedType
-  TypeSymbol* CT = ConstrainedType::build(astr("t_", isym->name),
-                                          CT_CGFUN_FORMAL);
+  TypeSymbol* CT = ConstrainedType::buildSym(astr("t_", isym->name),
+                                             CT_CGFUN_FORMAL);
   ifcInfo->addConstrainedType(new DefExpr(CT));
 
   // add an interface constraint

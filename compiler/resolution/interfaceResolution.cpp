@@ -84,8 +84,8 @@ static std::set<Type*>  standinInstantiations;
 
 void createGenericStandins() {
   cgprint("\n");
-  dtGenericStandin = ConstrainedType::buildT("GenericStandinType",
-                                             CT_GENERIC_STANDIN);
+  dtGenericStandin = ConstrainedType::buildType("GenericStandinType",
+                                                CT_GENERIC_STANDIN);
   // We need a defPoint for verify / isAlive.
   // However we do not want it inTree() to avoid dealing with it later.
   new DefExpr(dtGenericStandin->symbol);
@@ -312,8 +312,8 @@ static void createRepsForIfcSymbols(FnSymbol* fn, InterfaceInfo* ifcInfo) {
     // because those can reference associated types.
     for (auto& elem: isym->associatedTypes) {
       ConstrainedType* required = elem.second;
-      TypeSymbol*  instantiated = ConstrainedType::build(elem.first,
-                                                         CT_CGFUN_ASSOC_TYPE);
+      TypeSymbol*  instantiated = ConstrainedType::buildSym(elem.first,
+                                                    CT_CGFUN_ASSOC_TYPE);
       ifcInfo->constrainedTypes.insertAtTail(new DefExpr(instantiated));
       INT_ASSERT(instantiated->inTree()); //CG TODO: this assert is not needed
       reps.put(required->symbol, instantiated);
@@ -860,7 +860,9 @@ static bool isGenericMatch(Type* consT, Type* implT) {
 }
 
 class MatchResult { public:
-  ImplementsStmt* istm; bool isSuccess; bool isConcrete; 
+  ImplementsStmt* istm;
+  bool            isSuccess;
+  bool            isConcrete; 
   MatchResult(ImplementsStmt* is, bool ss, bool con):
     istm(is), isSuccess(ss), isConcrete(con) { }
 };

@@ -1,6 +1,6 @@
 /*
 This is generic-implements-1.chpl
-that adds or assumes an incorrect implements-statement.
+modified to introduce or infer an incorrect implements-statement.
 
 Within the error-generic-implements-* family:
 error upon: NotherRec implements IFC1;

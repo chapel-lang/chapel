@@ -1,11 +1,12 @@
 /*
 This is generic-implements-1.chpl
-with explicit **generic** implements statements added.
+with added explicit **generic** implements statements.
 Here "generic" means that in "MyRec implements IFC1;" MyRec is generic.
 
 The constraints that rely on these statements could also be satisfied
 by inferring their concrete counterparts.
-In subsequent tests that will no longer be true.
+The subsequent tests will "hide" implementations in a module
+so that this will no longer be the case.
 */
 
 //---------------------------------------------------------------------------

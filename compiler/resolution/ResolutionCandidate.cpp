@@ -957,13 +957,18 @@ bool ResolutionCandidate::checkGenericFormals(Expr* ctx) {
         return false;
       }
 
-      if (Type* cat = toConstrainedType(actual->getValType()))
+      if (ConstrainedType* cat = toConstrainedType(actual->getValType()))
         // a CT actual matches only against itself
-        if (cat != formal->type) {
-          failingArgument = actual;
-          reason = RESOLUTION_CANDIDATE_INTERFACE_FORMAL_AS_ACTUAL;
-          return false;
-        }
+        if (cat != formal->type)
+          // allow stand-in types to match any generic formal at this point
+          if (! (cat->ctUse == CT_GENERIC_STANDIN &&
+                 (formal->type == dtUnknown ||
+                  formal->type == dtAny     ||
+                  formal->type->symbol->hasFlag(FLAG_GENERIC))) ) {
+            failingArgument = actual;
+            reason = RESOLUTION_CANDIDATE_INTERFACE_FORMAL_AS_ACTUAL;
+            return false;
+          }
 
       if (formalIsTypeAlias == false &&
           isInitThis == false &&

@@ -1,7 +1,7 @@
 /*
 This is generic-implements-2.chpl
-with the implementations hidden in a module
-so that the needed implements statements cannot be inferred.
+modified to hide the implementations in a module
+so that the needed implements statements cannot be inferred implicitly.
 */
 
 //-----------
