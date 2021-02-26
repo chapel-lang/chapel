@@ -22,3 +22,4 @@ typedef struct {
 } fnUnion;
 
 void fnUnion_call(fnUnion f);
+

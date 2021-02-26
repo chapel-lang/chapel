@@ -19,3 +19,4 @@ void fnUnion_call(fnUnion f) {
   printf("Calling fnUnion.fn(42):\n");
   f.fn(42);
 }
+
