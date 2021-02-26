@@ -9,18 +9,26 @@ sync-direct-access.chpl:44: In function 'test4':
 sync-direct-access.chpl:48: warning: Initializing a type-inferred variable from a 'sync' is deprecated; apply a '.read??()' method to the right-hand side
 sync-direct-access.chpl:54: In function 'test5':
 sync-direct-access.chpl:60: warning: implicitly reading from a sync is deprecated; apply a 'read??()' method to the actual
+sync-direct-access.chpl:60: warning: Direct assignment to 'sync' variables is deprecated; apply a 'write??()' method to modify one
 sync-direct-access.chpl:68: In function 'test6':
 sync-direct-access.chpl:72: warning: Initializing a type-inferred variable from a 'sync' is deprecated; apply a '.read??()' method to the right-hand side
+sync-direct-access.chpl:74: warning: Direct assignment to 'sync' variables is deprecated; apply a 'write??()' method to modify one
 sync-direct-access.chpl:80: In function 'test7':
 sync-direct-access.chpl:84: warning: Initializing a type-inferred variable from a 'sync' is deprecated; apply a 'read??()' method to the right-hand side
+sync-direct-access.chpl:96: warning: implicitly reading from a sync is deprecated; apply a 'read??()' method to the actual
+sync-direct-access.chpl:110: warning: implicitly reading from a sync is deprecated; apply a 'read??()' method to the actual
+sync-direct-access.chpl:118: In function 'test10':
+sync-direct-access.chpl:123: warning: Direct assignment to 'sync' variables is deprecated; apply a 'write??()' method to modify one
 sync-direct-access.chpl:129: In function 'test11':
 sync-direct-access.chpl:133: warning: implicitly reading from a sync is deprecated; apply a '.read??()' method
-sync-direct-access.chpl:145: In function 'test13':
-sync-direct-access.chpl:149: warning: 'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one
-sync-direct-access.chpl:157: warning: implicitly reading from a sync is deprecated; apply a 'read??()' method to the actual
-sync-direct-access.chpl:161: In function 'test15':
-sync-direct-access.chpl:165: warning: direct reads of sync variables are deprecated; please apply a 'read??' method
-sync-direct-access.chpl:157: warning: implicitly reading from a sync is deprecated; apply a 'read??()' method to the actual
+sync-direct-access.chpl:137: In function 'test12':
+sync-direct-access.chpl:142: warning: Direct assignment to 'sync' variables is deprecated; apply a 'write??()' method to modify one
+sync-direct-access.chpl:146: In function 'test13':
+sync-direct-access.chpl:150: warning: 'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one
+sync-direct-access.chpl:158: warning: implicitly reading from a sync is deprecated; apply a 'read??()' method to the actual
+sync-direct-access.chpl:162: In function 'test15':
+sync-direct-access.chpl:166: warning: direct reads of sync variables are deprecated; please apply a 'read??' method
+sync-direct-access.chpl:158: warning: implicitly reading from a sync is deprecated; apply a 'read??()' method to the actual
 test2
 a = 2 : int(64)
 test2
@@ -49,6 +57,7 @@ test10
 a$ = 1 : sync int(64)
 test11
 test12
+{1..2}
 test13
 test14
 in f arg = 1 : int(64)

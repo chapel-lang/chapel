@@ -93,7 +93,7 @@ proc test8() {
   writeln("test8");
   var a$: sync int = 1;
 
-  var b: int = a$; ///
+  var b: int = a$; /// warning
 
   a$.writeEF(1);
   writeln("a$ = ", a$.readFF(), " : ", a$.type:string);
@@ -107,7 +107,7 @@ proc test9() {
   a$.readFE();
   a$.writeEF(1);
 
-  var b: int = a$; ///
+  var b: int = a$; /// warning
 
   a$.writeEF(1);
   writeln("a$ = ", a$.readFF(), " : ", a$.type:string);
@@ -120,7 +120,7 @@ proc test10() {
   var a$: sync int = 1;
   a$.readFE();
 
-  a$ = 1; ///
+  a$ = 1; /// warning
 
   writeln("a$ = ", a$.readFF(), " : ", a$.type:string);
 }
@@ -137,8 +137,9 @@ test11();
 proc test12() {
   writeln("test12");
   var A: [1..2] sync int;
+  writeln(A.domain); // to avoid split init
 
-  A = 1; ///
+  A = 1; /// warning
 }
 test12();
 
