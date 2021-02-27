@@ -1,0 +1,5 @@
+error-generic-implements-4.chpl:119: error: unresolved call 'cgFun(MyRec(string,int(64),false), NotherRec(1.78,string,string))'
+error-generic-implements-4.chpl:106: note: this candidate did not match: cgFun(cgArg1: ?Q1, cgArg2: ?Q2)
+error-generic-implements-4.chpl:106: note: because interface constraint(s) were not satisfied
+error-generic-implements-4.chpl:119: note: other candidates are:
+error-generic-implements-4.chpl:82: note:   cgFun(cgArg: ?Q)

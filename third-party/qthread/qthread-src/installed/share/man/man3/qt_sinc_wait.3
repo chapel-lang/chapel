@@ -1,0 +1,29 @@
+.TH qt_sinc_wait 3 "AUGUST 2012" libqthread "libqthread"
+.SH NAME
+.B qt_sinc_wait
+\- block caller until all expected submissions are submitted
+.SH SYNOPSIS
+.B #include <qthread/sinc.h>
+
+.I void
+.br
+.B qt_sinc_wait
+.RI "(qt_sinc_t *restrict " sinc,
+.br
+.ti +15
+.RI " void *restrict " target);
+
+.SH DESCRIPTION
+This functions blocks the calling task until the specified
+.I sinc
+has received all of the submissions it expects. The number of expected submissions is permitted to increase while the calling thread is blocked, and will only increase the length of time the caller will block. Just before the calling task is released, if the sinc was initialized to perform a reduction operation, the result of that operation will be copied into the memory specified by
+.IR target .
+The number of bytes copied was specified when the sinc was initialized.
+.SH SEE ALSO
+.BR qt_sinc_create (3),
+.BR qt_sinc_destroy (3),
+.BR qt_sinc_expect (3),
+.BR qt_sinc_fini (3),
+.BR qt_sinc_init (3),
+.BR qt_sinc_reset (3),
+.BR qt_sinc_submit (3)

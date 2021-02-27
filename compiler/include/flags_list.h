@@ -170,6 +170,7 @@ symbolFlag( FLAG_GET_MODULE_NAME, ypr, "get module name", "replace calls to this
 
 symbolFlag( FLAG_GLOBAL_TYPE_SYMBOL, ypr, "global type symbol", "is accessible through a global type variable")
 symbolFlag( FLAG_GLOBAL_VAR_BUILTIN, ypr, "global var builtin", "is accessible through a global symbol variable")
+symbolFlag( FLAG_GPU_CODEGEN , ypr, "codegen for GPU" , "generate GPU code" )
 symbolFlag( FLAG_HAS_POSTINIT , ypr, "has postinit" , "type that has a postinit method" )
 symbolFlag( FLAG_HAS_RUNTIME_TYPE , ypr, "has runtime type" , "type that has an associated runtime type" )
 
@@ -282,6 +283,7 @@ symbolFlag( FLAG_NO_BORROW_CONVERT , ypr, "no borrow convert", "arguments that a
 symbolFlag( FLAG_NO_CAPTURE_FOR_TASKING , npr, "no capture for tasking", "does not need to be captured before spawning tasks" )
 symbolFlag( FLAG_NO_CODEGEN , ypr, "no codegen" , "do not generate e.g. C code defining this symbol" )
 symbolFlag( FLAG_NO_COPY , ypr, "no copy" , "do not apply chpl__initCopy to initialization of a variable" )
+symbolFlag( FLAG_ERROR_ON_COPY, ypr, "error on copy", "error if actual is copied at callsite" )
 symbolFlag( FLAG_NO_COPY_RETURN, ypr, "no copy return", ncm)
 symbolFlag( FLAG_NO_COPY_RETURNS_OWNED, ypr, "no copy returns owned", ncm)
 symbolFlag( FLAG_NO_DEFAULT_FUNCTIONS , ypr, "no default functions" , ncm )
@@ -459,7 +461,6 @@ symbolFlag( FLAG_TYPE_CUSTOM_INIT_EQUAL , npr, "type uses custom init=" , "type 
 symbolFlag( FLAG_TYPE_DEFAULT_ASSIGN , npr, "type uses default =" , "type uses compiler-generated default =" )
 symbolFlag( FLAG_TYPE_CUSTOM_ASSIGN , npr, "type uses custom =" , "type has user-provided custom =" )
 
-symbolFlag( FLAG_TYPE_FORMAL_FOR_OUT , npr, "type formal for out" , "stores the runtime type for an untyped out argument" )
 symbolFlag( FLAG_TYPE_VARIABLE , npr, "type variable" , "contains a type instead of a value" )
 symbolFlag( FLAG_UNCHECKED_THROWS,  ypr, "unchecked throws" , "function throws but handling the errors is not required even in strict mode")
 symbolFlag( FLAG_UNREF_FN,  ypr, "unref fn" , "function to remove reference fields from tuples or copy array slices when returning")

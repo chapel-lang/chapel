@@ -16,7 +16,7 @@ record R {
   }
 }
 
-proc _cast(type t: R(?T), other: T) {
+operator :(other: ?T, type t: R(T)) {
   var tmp: t = other;
   return tmp;
 }

@@ -271,7 +271,7 @@ void initTypeHelperNames() {
   typeHelperNames.insert(astrSlt);
   typeHelperNames.insert(astrSlte);
   typeHelperNames.insert(astrSswap); // ?
-  typeHelperNames.insert(astr_cast);
+  typeHelperNames.insert(astrScolon);
   typeHelperNames.insert(astr_defaultOf);
   typeHelperNames.insert(astrNew);
   typeHelperNames.insert(astr_initCopy);

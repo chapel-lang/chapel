@@ -15,7 +15,7 @@ module list
 
 # setup for CS perf (gasnet-large, gnu, 128-core Rome)
 source $CWD/common-cray-cs.bash
-export CHPL_LAUNCHER_PARTITION=rome64
+export CHPL_LAUNCHER_PARTITION=rome64Share
 export CHPL_TARGET_CPU=none
 
 module list

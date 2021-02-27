@@ -616,7 +616,7 @@ iter BlockCyclic1locdom.dsiMyDensifiedRangeForSingleTask1d(globDD) {
 
   // Right now explicit cast range(64) to range(32) is not implemented.
   // We are doing it by hand here. Cf. proc =(range, range).
-  proc rangecast(out r1: range(?), r2: range(?)): void {
+  proc rangecast(ref r1: range(?), r2: range(?)): void {
     compilerAssert(r1.boundedType == r2.boundedType);
     if !r1.stridable && r2.stridable && r2._stride != 1 then
       halt("range with non-unit stride is cast to non-stridable range");

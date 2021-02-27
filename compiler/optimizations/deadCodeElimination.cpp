@@ -369,66 +369,45 @@ static void removeDeadStringLiteral(DefExpr* defExpr) {
 
 static bool isDeadModule(ModuleSymbol* mod) {
   AList body   = mod->block->body;
-  bool  retval = false;
 
   // The main module should never be considered dead; the init function
   // can be explicitly called from the runtime or other c code
-  if (mod == ModuleSymbol::mainModule()) {
-    retval = false;
+  if (mod == ModuleSymbol::mainModule())
+    return false;
 
   // Ditto for an exported module
-  } else if (mod->hasFlag(FLAG_EXPORT_INIT) == true) {
-    retval = false;
+  if (mod->hasFlag(FLAG_EXPORT_INIT))
+    return false;
 
   // Because of the way modules are initialized, we never consider a nested
   // module to be dead.
-  } else if (mod->defPoint->getModule() != rootModule &&
-             mod->defPoint->getModule() != theProgram) {
-    retval = false;
+  if (mod->defPoint->getModule() != rootModule &&
+      mod->defPoint->getModule() != theProgram)
+    return false;
 
-  // Any module with more than 1 module-level statement is assumed to be live
-  } else if (body.length >= 2) {
-    retval = false;
+  // Now go through the module evaluating module-level statements.
+  for_alist(expr, body) {
+    if (DefExpr* defExpr = toDefExpr(expr)) {
+      // A 1-stmt module init function doesn't prevent the module being dead
+      if (FnSymbol* fn = toFnSymbol(defExpr->sym)) {
+        if (mod->initFn == NULL)
+          INT_FATAL("Expected initFn for module '%s', but was null", mod->name);
 
-  // A module might be considered to be dead if it has exactly 1 defExpr
-  } else if (body.length == 1) {
-    Expr* item = body.only();
-
-    if (DefExpr* defExpr = toDefExpr(item)) {
-      // A module is not dead if the sole definition is a type declaration
-      if (isTypeSymbol(defExpr->sym) == true) {
-        retval = false;
-
-      // A module is dead if the sole definition is an "empty" init function
-      } else if (FnSymbol* fn = toFnSymbol(defExpr->sym)) {
-        if (mod->initFn == NULL) {
-          INT_FATAL("Expected initFn for module '%s', but was null",
-                    mod->name);
-
-        } else if (mod->initFn == fn) {
-          retval = mod->initFn->body->body.length == 1;
-
-        } else {
-          INT_ASSERT(false);
-        }
-
-      // The single definition is a nested module.  This module is not dead.
-      } else if (isModuleSymbol(defExpr->sym) == true) {
-        retval = false;
-
-      } else {
-        INT_ASSERT(false);
+        // ignore the init function
+        if (mod->initFn == fn)
+          if (mod->initFn->body->body.length == 1)
+            continue;
       }
 
-    } else {
-      INT_ASSERT(false);
-    }
+      // Any other DefExpr means the module is not dead
+      return false;
 
-  } else {
-    retval = false;
+    } else {
+      INT_FATAL("unexpected AST");
+    }
   }
 
-  return retval;
+  return true;
 }
 
 

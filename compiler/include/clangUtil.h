@@ -112,6 +112,7 @@ bool setAlreadyConvertedExtern(ModuleSymbol* module, const char* name);
 void checkAdjustedDataLayout();
 
 extern fileinfo gAllExternCode;
+extern std::string ggpuFatbinPath;
 
 void print_clang(clang::Decl* d);
 void print_clang(clang::TypeDecl* td);

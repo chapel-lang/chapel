@@ -1,0 +1,39 @@
+.TH qt_connect 3 "AUGUST 2012" libqthread "libqthread"
+.SH NAME
+.B qt_connect
+\- initiate a connection on a socket
+.SH SYNOPSIS
+.B #include <qthread/qt_syscalls.h>
+
+.I int
+.br
+.B qt_connect
+.RI "(int " socket ,
+.br
+.ti +12
+.RI "struct sockaddr *restrict " address ,
+.br
+.ti +12
+.RI "socklen_t *restrict " address_len );
+
+.SH DESCRIPTION
+This is a wrapper around the standard
+.BR connect ()
+system call function. Instead of executing this blocking system call directly, the operation is enqueued in the internal system call queue to be handled.
+.PP
+The system call queue provides a way to perform blocking system calls without impeding parallel computation. Operations are enqueued in an internal queue which is serviced by a dynamic number of dedicated system call threads. This set of threads is capped at a user-configurable limit, specified with the
+.B QT_MAX_IO_WORKERS
+environment variable at initialization time. When there are no more operations in the system call queue, these workers are persistent for a configurable amount of time, specified with the
+.B QT_IO_TIMEOUT
+environment variable at initialization time, before they exit. This is to reduce the overhead involved in scaling up the number of worker threads to respond to newly enqueued system calls.
+.SH SEE ALSO
+.BR connect (2),
+.BR qt_accept (3),
+.BR qt_poll (3),
+.BR qt_pread (3),
+.BR qt_pwrite (3),
+.BR qt_read (3),
+.BR qt_select (3),
+.BR qt_system (3),
+.BR qt_wait4 (3),
+.BR qt_write (3)

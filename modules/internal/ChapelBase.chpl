@@ -1360,73 +1360,73 @@ module ChapelBase {
            isIntegralType(t) ||
            isRealType(t);
 
-  inline proc _cast(type t:chpl_anybool, x:chpl_anybool)
+  inline operator :(x:chpl_anybool, type t:chpl_anybool)
     return __primitive("cast", t, x);
-  inline proc _cast(type t:integral, x:chpl_anybool)
+  inline operator :(x:chpl_anybool, type t:integral)
     return __primitive("cast", t, x);
-  inline proc _cast(type t:chpl_anyreal, x:chpl_anybool)
-    return __primitive("cast", t, x);
-
-  inline proc _cast(type t:chpl_anybool, x:integral)
-    return __primitive("cast", t, x);
-  inline proc _cast(type t:integral, x:integral)
-    return __primitive("cast", t, x);
-  inline proc _cast(type t:chpl_anyreal, x:integral)
+  inline operator :(x:chpl_anybool, type t:chpl_anyreal)
     return __primitive("cast", t, x);
 
-  inline proc _cast(type t:chpl_anybool, x:chpl_anyreal)
+  inline operator :(x:integral, type t:chpl_anybool)
     return __primitive("cast", t, x);
-  inline proc _cast(type t:integral, x:chpl_anyreal)
+  inline operator :(x:integral, type t:integral)
     return __primitive("cast", t, x);
-  inline proc _cast(type t:chpl_anyreal, x:chpl_anyreal)
+  inline operator :(x:integral, type t:chpl_anyreal)
     return __primitive("cast", t, x);
 
-  inline proc _cast(type t:chpl_anybool, x:enum) throws {
+  inline operator :(x:chpl_anyreal, type t:chpl_anybool)
+    return __primitive("cast", t, x);
+  inline operator :(x:chpl_anyreal, type t:integral)
+    return __primitive("cast", t, x);
+  inline operator :(x:chpl_anyreal, type t:chpl_anyreal)
+    return __primitive("cast", t, x);
+
+  inline operator :(x:enum, type t:chpl_anybool) throws {
     if chpl_warnUnstable {
       compilerWarning("enum-to-bool casts are likely to be deprecated in the future");
     }    return x: int: bool;
   }
-  // _cast(type t:integral, x:enum)
+  // operator :(x: enum, type t:integral)
   // is generated for each enum in buildDefaultFunctions
-  inline proc _cast(type t:enum, x:enum) where x.type == t
+  inline operator :(x: enum, type t:enum) where x.type == t
     return x;
-  inline proc _cast(type t:chpl_anyreal, x:enum) throws {
+  inline operator :(x: enum, type t:chpl_anyreal) throws {
     if chpl_warnUnstable {
       compilerWarning("enum-to-float casts are likely to be deprecated in the future");
     }
     return x: int: real;
   }
 
-  inline proc _cast(type t:unmanaged class, x:_nilType)
+  inline operator :(x:_nilType, type t:unmanaged class)
   {
       compilerError("cannot cast nil to " + t:string);
   }
-  inline proc _cast(type t:borrowed class, x:_nilType)
+  inline operator :(x:_nilType, type t:borrowed class)
   {
     compilerError("cannot cast nil to " + t:string);
   }
 
   // casting to unmanaged?, no class downcast
-  inline proc _cast(type t:unmanaged class?, x:borrowed class?)
+  inline operator :(x:borrowed class?, type t:unmanaged class?)
     where isSubtype(_to_unmanaged(x.type),t)
   {
     return __primitive("cast", t, x);
   }
-  inline proc _cast(type t:unmanaged class?, x:borrowed class)
+  inline operator :(x:borrowed class, type t:unmanaged class?)
     where isSubtype(_to_nonnil(_to_unmanaged(x.type)),t)
   {
     return __primitive("cast", t, x);
   }
 
   // casting to unmanaged, no class downcast
-  inline proc _cast(type t:unmanaged class, x:borrowed class)
+  inline operator :(x:borrowed class, type t:unmanaged class)
     where isSubtype(_to_unmanaged(x.type),t)
   {
     return __primitive("cast", t, x);
   }
 
   // casting away nilability, no class downcast
-  inline proc _cast(type t:borrowed class, x:unmanaged class?) throws
+  inline operator :(x:unmanaged class?, type t:borrowed class) throws
     where isSubtype(_to_nonnil(x.type),t)
   {
     if x == nil {
@@ -1437,7 +1437,7 @@ module ChapelBase {
 
 
   // casting away nilability, no class downcast
-  inline proc _cast(type t:borrowed class, x:borrowed class?) throws
+  inline operator :(x:borrowed class?, type t:borrowed class)  throws
     where isSubtype(_to_nonnil(x.type),t)
   {
     if x == nil {
@@ -1447,7 +1447,7 @@ module ChapelBase {
   }
 
   // casting away nilability, no class downcast
-  inline proc _cast(type t:unmanaged class, x:borrowed class?) throws
+  inline operator :(x:borrowed class?, type t:unmanaged class)  throws
     where isSubtype(_to_nonnil(_to_unmanaged(x.type)),t)
   {
     if x == nil {
@@ -1457,7 +1457,7 @@ module ChapelBase {
   }
 
   // this version handles downcast to non-nil borrowed
-  inline proc _cast(type t:borrowed class, x:borrowed class?) throws
+  inline operator :(x:borrowed class?, type t:borrowed class)  throws
     where isProperSubtype(t,_to_nonnil(x.type))
   {
     if x == nil {
@@ -1472,7 +1472,7 @@ module ChapelBase {
   }
 
   // this version handles downcast to nilable borrowed
-  inline proc _cast(type t:borrowed class?, x:borrowed class?)
+  inline operator :(x:borrowed class?, type t:borrowed class?)
     where isProperSubtype(t,x.type)
   {
     if x == nil {
@@ -1484,7 +1484,7 @@ module ChapelBase {
 
 
   // this version handles downcast to non-nil unmanaged
-  inline proc _cast(type t:unmanaged class, x:borrowed class?) throws
+  inline operator :(x:borrowed class?, type t:unmanaged class) throws
     where isProperSubtype(t,_to_nonnil(_to_unmanaged(x.type)))
   {
     if x == nil {
@@ -1499,7 +1499,7 @@ module ChapelBase {
   }
 
   // this version handles downcast to nilable unmanaged
-  inline proc _cast(type t:unmanaged class?, x:borrowed class?)
+  inline operator :(x:borrowed class?, type t:unmanaged class?)
     where isProperSubtype(t,_to_unmanaged(x.type))
   {
     if x == nil {
@@ -1510,7 +1510,7 @@ module ChapelBase {
   }
 
   // this version handles downcast to nilable unmanaged
-  inline proc _cast(type t:unmanaged class?, x:borrowed class)
+  inline operator :(x:borrowed class, type t:unmanaged class?)
     where isProperSubtype(_to_nonnil(_to_borrowed(t)),x.type)
   {
     if x == nil {
@@ -1525,54 +1525,54 @@ module ChapelBase {
   //
   // casts to complex
   //
-  inline proc _cast(type t:chpl_anycomplex, x: bool)
+  inline operator :(x: bool, type t:chpl_anycomplex)
     return (x, 0):t;
 
-  inline proc _cast(type t:chpl_anycomplex, x: integral)
+  inline operator :(x: integral, type t:chpl_anycomplex)
     return (x, 0):t;
 
-  inline proc _cast(type t:chpl_anycomplex, x: chpl_anyreal)
+  inline operator :(x: chpl_anyreal, type t:chpl_anycomplex)
     return (x, 0):t;
 
-  inline proc _cast(type t:chpl_anycomplex, x: chpl_anyimag)
+  inline operator :(x: chpl_anyimag, type t:chpl_anycomplex)
     return (0, _i2r(x)):t;
 
-  inline proc _cast(type t:chpl_anycomplex, x: chpl_anycomplex)
+  inline operator :(x: chpl_anycomplex, type t:chpl_anycomplex)
     return (x.re, x.im):t;
 
-  inline proc _cast(type t:chpl_anycomplex, x: enum) throws
+  inline operator :(x: enum, type t:chpl_anycomplex) throws
     return (x:real, 0):t;
 
   //
   // casts to imag
   //
-  inline proc _cast(type t:chpl_anyimag, x: bool)
+  inline operator :(x: bool, type t:chpl_anyimag)
     return if x then 1i:t else 0i:t;
 
-  inline proc _cast(type t:chpl_anyimag, x: integral)
+  inline operator :(x: integral, type t:chpl_anyimag)
     return __primitive("cast", t, x);
 
-  inline proc _cast(type t:chpl_anyimag, x: chpl_anyreal)
+  inline operator :(x: chpl_anyreal, type t:chpl_anyimag)
     return __primitive("cast", t, x);
 
-  inline proc _cast(type t:chpl_anyimag, x: chpl_anyimag)
+  inline operator :(x: chpl_anyimag, type t:chpl_anyimag)
     return __primitive("cast", t, x);
 
-  inline proc _cast(type t:chpl_anyimag, x: chpl_anycomplex)
+  inline operator :(x: chpl_anycomplex, type t:chpl_anyimag)
     return __primitive("cast", t, x.im);
 
-  inline proc _cast(type t:chpl_anyimag, x: enum) throws
+  inline operator :(x: enum, type t:chpl_anyimag)  throws
     return x:real:imag;
 
   //
   // casts from complex
   //
-  inline proc _cast(type t:chpl_anyreal, x: chpl_anycomplex) {
+  inline operator :(x: chpl_anycomplex, type t:chpl_anyreal)  {
     var y: t;
     y = x.re:t;
     return y;
   }
-  inline proc _cast(type t:integral, x: chpl_anycomplex) {
+  inline operator :(x: chpl_anycomplex, type t:integral)  {
     var y: t;
     y = x.re:t;
     return y;
@@ -1581,12 +1581,12 @@ module ChapelBase {
   //
   // casts from imag
   //
-  inline proc _cast(type t:chpl_anyreal, x: chpl_anyimag)
+  inline operator :(x: chpl_anyimag, type t:chpl_anyreal)
     return __primitive("cast", t, x);
-  inline proc _cast(type t:integral, x: chpl_anyimag)
+  inline operator :(x: chpl_anyimag, type t:integral)
     return __primitive("cast", t, x);
 
-  inline proc _cast(type t:chpl_anybool, x: chpl_anyimag)
+  inline operator :(x: chpl_anyimag, type t:chpl_anybool)
     return if x != 0i then true else false;
 
   pragma "init copy fn"
@@ -2255,7 +2255,7 @@ module ChapelBase {
     const moduleName: c_string;          // for debugging; non-null, not owned
     const deinitFun:  c_fn_ptr;          // module deinit function
     const prevModule: unmanaged chpl_ModuleDeinit?; // singly-linked list / LIFO queue
-    proc writeThis(ch) throws { 
+    proc writeThis(ch) throws {
       try {
       ch.writef("chpl_ModuleDeinit(%s)",createStringWithNewBuffer(moduleName));
       }

@@ -67,6 +67,7 @@ bool       isTupleContainingAnyReferences(Type* t);
 void       ensureEnumTypeResolved(EnumType* etype);
 
 void       resolveFnForCall(FnSymbol* fn, CallExpr* call);
+FnSymbol*  tryResolveFunction(FnSymbol* fn);
 
 bool       canInstantiate(Type* actualType, Type* formalType);
 
@@ -171,7 +172,7 @@ Expr* lowerPrimReduce(CallExpr* call);
 
 void buildFastFollowerChecksIfNeeded(CallExpr* checkCall);
 
-// interface constraints
+// constrained generics
 void resolveInterfaceSymbol(InterfaceSymbol* isym);
 void resolveImplementsStmt(ImplementsStmt* istm);
 void resolveConstrainedGenericFun(FnSymbol* fn);
@@ -184,6 +185,8 @@ void copyIfcRepsToSubstitutions(FnSymbol* fn, int indx,
                                 ImplementsStmt* istm,
                                 SymbolMap& substitutions);
 void adjustForCGinstantiation(FnSymbol* fn, SymbolMap& substitutions);
+void createGenericStandins();
+void cleanupGenericStandins();
 
 FnSymbol* instantiateWithoutCall(FnSymbol* fn, SymbolMap& subs);
 FnSymbol* instantiateSignature(FnSymbol* fn, SymbolMap& subs,
@@ -278,8 +281,6 @@ void checkMoveIntoClass(CallExpr* call, Type* lhs, Type* rhs);
 void lvalueCheck(CallExpr* call);
 
 void checkForStoringIntoTuple(CallExpr* call, FnSymbol* resolvedFn);
-
-bool signatureMatch(FnSymbol* fn, FnSymbol* gn);
 
 bool isSubtypeOrInstantiation(Type* sub, Type* super, Expr* ctx);
 bool isCoercibleOrInstantiation(Type* sub, Type* super, Expr* ctx);

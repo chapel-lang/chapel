@@ -217,4 +217,6 @@ void redefiningReservedWordError(const char* name);
 // when defining an explicit operator.
 void updateOpThisTagOrErr(FnSymbol* fn);
 
+BlockStmt* foreachNotImplementedError();
+
 #endif

@@ -134,7 +134,7 @@ module NetworkAtomics {
 
   }
 
-  proc _cast(type t:RAtomicBool, rhs: bool) {
+  operator :(rhs: bool, type t:RAtomicBool) {
     var lhs: RAtomicBool = rhs; // use init=
     return lhs;
   }
@@ -334,8 +334,9 @@ module NetworkAtomics {
 
   }
 
-  proc _cast(type t:RAtomicT(?T), rhs: T) {
-    var lhs: RAtomicT(T) = rhs; // use init=
+  operator :(rhs, type t:RAtomicT)
+  where rhs.type == t.T {
+    var lhs: t = rhs; // use init=
     return lhs;
   }
 

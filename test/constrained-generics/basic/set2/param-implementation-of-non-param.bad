@@ -1,9 +1,6 @@
-param-implementation-of-non-param.chpl:16: In function 'cgFun':
-param-implementation-of-non-param.chpl:17: internal error: AST-EXP-nnnn chpl version mmmm
-
-Internal errors indicate a bug in the Chapel compiler ("It's us, not you"),
-and we're sorry for the hassle.  We would appreciate your reporting this bug -- 
-please see https://chapel-lang.org/bugs.html for instructions.  In the meantime,
-the filename + line number above may be useful in working around the issue.
-
-  param-implementation-of-non-param.chpl:20: called as cgFun(arg: [domain(1,int(64),false)] locale)
+param-implementation-of-non-param.chpl:11: In 'implements MyArray' statement:
+param-implementation-of-non-param.chpl:11: error: when checking this implements statement
+$CHPL_HOME/modules/internal/ChapelArray.chpl:nnnn: note: this implementation of the required function rank
+$CHPL_HOME/modules/internal/ChapelArray.chpl:nnnn: note: has return intent 'param'
+param-implementation-of-non-param.chpl:8: note: which does not match the required intent 'value'
+param-implementation-of-non-param.chpl:8: note: the required function rank in the interface MyArray is declared here

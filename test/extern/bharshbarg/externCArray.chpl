@@ -1,3 +1,6 @@
+use SysCTypes, CPtr;
+
+require "helper.h";
 
 config const n = 2;
 

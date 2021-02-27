@@ -597,7 +597,7 @@ public:
   std::map<const char*, ConstrainedType*> associatedTypes;
 
   // constraints to be checked for each implementation
-  std::vector<ImplementsStmt*> associatedConstraints;
+  std::vector<IfcConstraint*> associatedConstraints;
 
   // each FnSymbol for the interface's required function is mapped
   //  - to itself, if there is a default implementation
@@ -747,6 +747,7 @@ extern const char* astrSgte;    // >=
 extern const char* astrSlt;     // <
 extern const char* astrSlte;    // <=
 extern const char* astrSswap;   // <=>
+extern const char* astrScolon;  // :
 extern const char* astr_cast;
 extern const char* astr_defaultOf;
 extern const char* astrInit;
@@ -773,6 +774,8 @@ extern const char* astr_initCopy;
 extern const char* astr_coerceCopy;
 extern const char* astr_coerceCopy;
 extern const char* astr_coerceMove;
+
+bool isAstrOpName(const char* name);
 
 void initAstrConsts();
 
@@ -883,7 +886,8 @@ void printLlvmIr(const char* name, llvm::Function *func, llvmStageNum_t numStage
 void preparePrintLlvmIrForCodegen();
 void completePrintLlvmIrStage(llvmStageNum_t numStage);
 
-const char* toString(ArgSymbol* arg, bool withType);
+const char* toString(ArgSymbol* arg, bool withTypeAndIntent);
 const char* toString(VarSymbol* var, bool withType);
+const char* toString(Symbol* sym, bool withTypeAndIntent);
 
 #endif

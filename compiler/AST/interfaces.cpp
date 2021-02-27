@@ -79,8 +79,12 @@ DefExpr* InterfaceSymbol::buildDef(const char* name,
   for_alist(expr, isym->ifcBody->body) {
     SET_LINENO(expr); // does not matter since we are parsing?
 
-    if (toInterfaceFunDecl(expr) != NULL) {
-      // ok
+    if (FnSymbol* ifun = toInterfaceFunDecl(expr)) {
+      if (ifun->isIterator())
+        // Iterators bring along a lot of complications,
+        // which we do not handle at the moment.
+        USR_FATAL_CONT(ifun, "iterators at present are not allowed"
+                             " in an interface");
 
     } else if (VarSymbol* AT = toAssociatedTypeDecl(expr)) {
       // not allowing defaults for now
@@ -92,7 +96,7 @@ DefExpr* InterfaceSymbol::buildDef(const char* name,
         USR_FATAL_CONT(expr, "associated types at present are not allowed"
                        " for multi-argument interfaces");
       // replace with a fresh ConstrainedType
-      TypeSymbol* ACT = ConstrainedType::build(AT->name, CT_IFC_ASSOC_TYPE);
+      TypeSymbol* ACT = ConstrainedType::buildSym(AT->name, CT_IFC_ASSOC_TYPE);
       isym->associatedTypes[ACT->name] = (ConstrainedType*)ACT->type;
       reset_ast_loc(ACT, expr);
       AT->defPoint->replace(new DefExpr(ACT));
@@ -101,7 +105,7 @@ DefExpr* InterfaceSymbol::buildDef(const char* name,
       if (istm->implBody->body.length != 0)
         USR_FATAL_CONT(istm, "an associated constraint is not allowed"
                        " to have a block statement");
-      isym->associatedConstraints.push_back(istm);
+      isym->associatedConstraints.push_back(istm->iConstraint);
 
     } else {
       USR_FATAL_CONT(expr,
@@ -120,7 +124,7 @@ DefExpr* InterfaceSymbol::buildFormal(const char* name,
 {
   Symbol* formal = NULL;
   if (intent == INTENT_TYPE) {
-    formal = ConstrainedType::build(name, CT_IFC_FORMAL);
+    formal = ConstrainedType::buildSym(name, CT_IFC_FORMAL);
   } else {
     INT_FATAL(formal, "unexpected intent");
   }
@@ -347,7 +351,7 @@ void introduceConstrainedTypes(FnSymbol* fn) {
       SET_LINENO(def);
       Symbol* queryT = def->sym;
       // introduce a ConstrainedType
-      TypeSymbol* CT = ConstrainedType::build(queryT->name, CT_CGFUN_FORMAL);
+      TypeSymbol* CT = ConstrainedType::buildSym(queryT->name, CT_CGFUN_FORMAL);
       fn->interfaceInfo->addConstrainedType(new DefExpr(CT));
 
       // replace queryT with CT throughout
@@ -379,8 +383,8 @@ Type* desugarInterfaceAsType(ArgSymbol* arg, SymExpr* se,
   SET_LINENO(se);
 
   // introduce a ConstrainedType
-  TypeSymbol* CT = ConstrainedType::build(astr("t_", isym->name),
-                                          CT_CGFUN_FORMAL);
+  TypeSymbol* CT = ConstrainedType::buildSym(astr("t_", isym->name),
+                                             CT_CGFUN_FORMAL);
   ifcInfo->addConstrainedType(new DefExpr(CT));
 
   // add an interface constraint
@@ -429,27 +433,27 @@ const char* interfaceNameForWrapperFn(FnSymbol* fn) {
 }
 
 // isSuccess=false when 'wrapFn' is a result of a failed attempt to infer.
-ImplementsStmt* implementsStmtForWrapperFn(FnSymbol* wrapFn, bool& isSuccess) {
+IstmAndSuccess implementsStmtForWrapperFn(FnSymbol* wrapFn) {
   INT_ASSERT(wrapFn->hasFlag(FLAG_IMPLEMENTS_WRAPPER));
-  isSuccess = true;
+  IstmAndSuccess result = {nullptr, true};
 
   // wrapFn body can contain computations of the actuals of its implements
   // stmt, due to normalization and resolution. Skip those.
   for_alist(expr, wrapFn->body->body) {
-    if (ImplementsStmt* istm = toImplementsStmt(expr))
-      return istm; // found it
+    if ((result.istm = toImplementsStmt(expr)))
+      return result; // found it
 
     if (CallExpr* call = toCallExpr(expr)) {
       if (call->isPrimitive(PRIM_ERROR)) {
         INT_ASSERT(call->numActuals() == 0); // we inserted it
-        isSuccess = false;
+        result.isSuccess = false;
       }
     }
   }
 
   // We should have found the ImplementsStmt.
   INT_FATAL(wrapFn, "invalid implements wrapper function");
-  return NULL; //dummy
+  return result; //dummy
 }
 
 FnSymbol* wrapperFnForImplementsStmt(ImplementsStmt* istm) {
@@ -458,14 +462,14 @@ FnSymbol* wrapperFnForImplementsStmt(ImplementsStmt* istm) {
 
 // Verify that the above functions work correctly.
 static void verifyWrapImplementsStmt(FnSymbol* wrapFn, ImplementsStmt* istm,
-                                     bool successful) {
+                                     bool isSuccess) {
   InterfaceSymbol* isym = istm->ifcSymbol();
 
   INT_ASSERT(wrapFn->name == implementsStmtWrapperName(isym));
   INT_ASSERT(interfaceNameForWrapperFn(wrapFn) == isym->name);
-  bool isSuccess;
-  INT_ASSERT(implementsStmtForWrapperFn(wrapFn, isSuccess) == istm);
-  INT_ASSERT(isSuccess == successful);
+  IstmAndSuccess iss = implementsStmtForWrapperFn(wrapFn);
+  INT_ASSERT(iss.istm == istm);
+  INT_ASSERT(iss.isSuccess == isSuccess);
   INT_ASSERT(wrapperFnForImplementsStmt(istm) == wrapFn);
 }
 

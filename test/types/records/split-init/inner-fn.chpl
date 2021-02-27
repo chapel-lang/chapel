@@ -58,12 +58,12 @@ proc test3() {
 }
 test3();
 
-proc acceptsOut(out arg) { }
+proc acceptsOut(type t, out arg:t) { }
 
 proc test4() {
   var x4:R;
   inner4();
-  acceptsOut(x4);
+  acceptsOut(R, x4);
 
   proc inner4() {
     writeln(x4);
@@ -74,7 +74,7 @@ test4();
 proc test5() {
   var x5:int;
   inner5();
-  acceptsOut(x5);
+  acceptsOut(int, x5);
 
   proc inner5() {
     writeln(x5);

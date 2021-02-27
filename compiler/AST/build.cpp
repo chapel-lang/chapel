@@ -2643,3 +2643,8 @@ void updateOpThisTagOrErr(FnSymbol* fn) {
                    " function '%s'", fn->name);
   }
 }
+
+BlockStmt* foreachNotImplementedError() {
+  USR_FATAL_CONT(buildErrorStandin(), "foreach is not yet implemented");
+  return new BlockStmt();
+}

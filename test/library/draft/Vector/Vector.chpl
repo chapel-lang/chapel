@@ -1268,17 +1268,17 @@ module Vector {
   }
 
   pragma "no doc"
-  proc _cast(type t: vector, rhs:list) {
+  operator :(rhs:list, type t: vector) {
     var tmp: t = rhs;
     return rhs;
   }
   pragma "no doc"
-  proc _cast(type t: vector, rhs:[]) {
+  operator :(rhs:[], type t: vector) {
     var tmp: t = rhs;
     return rhs;
   }
   pragma "no doc"
-  proc _cast(type t: vector, rhs:range(?)) {
+  operator :(rhs:range(?), type t: vector) {
     var tmp: t = rhs;
     return rhs;
   }

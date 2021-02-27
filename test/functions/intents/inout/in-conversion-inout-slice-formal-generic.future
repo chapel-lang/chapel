@@ -1,0 +1,2 @@
+bug: core dump when passing a slice to a generic inout formal
+#17241 

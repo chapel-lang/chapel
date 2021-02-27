@@ -284,6 +284,8 @@ class GotoStmt final : public Stmt {
 *                                                                             *
 ************************************** | *************************************/
 
+typedef std::map<IfcConstraint*, ImplementsStmt*> aconsWitnMap;
+
 class ImplementsStmt final : public Stmt {
 public:
   static ImplementsStmt* build(const char* name,
@@ -313,12 +315,16 @@ public:
   // for each associated type or required function in the interface,
   // the map points to its implementation for this ImplementsStmt
   SymbolMap      witnesses;
+
+  // each associated constraint in the ifc --> its implementation
+  aconsWitnMap   aconsWitnesses;
 };
 
 // support for implements wrapper functions
+class IstmAndSuccess { public: ImplementsStmt* istm; bool isSuccess; };
 const char*     implementsStmtWrapperName(InterfaceSymbol* isym);
 const char*     interfaceNameForWrapperFn(FnSymbol* fn);
-ImplementsStmt* implementsStmtForWrapperFn(FnSymbol* wrapFn, bool& isSuccess);
+IstmAndSuccess  implementsStmtForWrapperFn(FnSymbol* wrapFn);
 FnSymbol*       wrapperFnForImplementsStmt(ImplementsStmt* istm);
 
 /************************************* | **************************************

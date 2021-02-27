@@ -2364,13 +2364,13 @@ module String {
   //
 
   pragma "no doc"
-  inline proc _cast(type t: bufferType, cs: c_string) {
+  inline operator :(cs: c_string, type t: bufferType)  {
     return __primitive("cast", t, cs);
   }
 
   // Cast from c_string to string
   pragma "no doc"
-  proc _cast(type t: string, cs: c_string) {
+  operator :(cs: c_string, type t: string)  {
     try {
       return createStringWithNewBuffer(cs);
     }
@@ -2381,13 +2381,13 @@ module String {
 
   // Cast from byteIndex to int
   pragma "no doc"
-  inline proc _cast(type t: int, cpi: byteIndex) {
+  inline operator :(cpi: byteIndex, type t: int)  {
     return cpi._bindex;
   }
 
   // Cast from int to byteIndex
   pragma "no doc"
-  inline proc _cast(type t: byteIndex, i: int) {
+  inline operator :(i: int, type t: byteIndex)  {
     var cpi: byteIndex;
     cpi._bindex = i;
     return cpi;
@@ -2395,13 +2395,13 @@ module String {
 
   // Cast from codepointIndex to int
   pragma "no doc"
-  inline proc _cast(type t: int, cpi: codepointIndex) {
+  inline operator :(cpi: codepointIndex, type t: int)  {
     return cpi._cpindex;
   }
 
   // Cast from int to codepointIndex
   pragma "no doc"
-  inline proc _cast(type t: codepointIndex, i: int) {
+  inline operator :(i: int, type t: codepointIndex) {
     var cpi: codepointIndex;
     cpi._cpindex = i;
     return cpi;

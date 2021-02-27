@@ -156,7 +156,7 @@ Expr* preFold(CallExpr* call) {
 
       callExpr->replace(callExpr->baseExpr->remove());
 
-      if (Expr* tmp = preFoldNamed(callExpr)) {
+      if (Expr* tmp = preFoldNamed(call)) {
         retval = tmp;
       }
 
@@ -2230,9 +2230,19 @@ static Expr* preFoldNamed(CallExpr* call) {
 
   // BHARSH TODO: Move the dtUninstantiated stuff over to resolveTypeComparisonCall
   } else if (call->isNamed("==")) {
-    if (isTypeExpr(call->get(1)) && isTypeExpr(call->get(2))) {
-      Type* lt = call->get(1)->getValType();
-      Type* rt = call->get(2)->getValType();
+    bool isMethodCall = false;
+    if (call->partialTag == false) {
+      if (SymExpr* se = toSymExpr(call->get(1))) {
+        if (se->symbol() == gMethodToken) {
+          isMethodCall = true;
+        }
+      }
+    }
+    int lhsNum = isMethodCall ? 3 : 1;
+    int rhsNum = isMethodCall ? 4 : 2;
+    if (isTypeExpr(call->get(lhsNum)) && isTypeExpr(call->get(rhsNum))) {
+      Type* lt = call->get(lhsNum)->getValType();
+      Type* rt = call->get(rhsNum)->getValType();
 
       if (lt                                != dtUnknown &&
           rt                                != dtUnknown &&
@@ -2241,24 +2251,34 @@ static Expr* preFoldNamed(CallExpr* call) {
         retval = (lt == rt) ? new SymExpr(gTrue) : new SymExpr(gFalse);
         call->replace(retval);
       }
-    } else if (call->get(2)->getValType() == dtUninstantiated) {
-      retval = (call->get(1)->getValType() == dtUninstantiated) ? new SymExpr(gTrue) : new SymExpr(gFalse);
+    } else if (call->get(rhsNum)->getValType() == dtUninstantiated) {
+      retval = (call->get(lhsNum)->getValType() == dtUninstantiated) ? new SymExpr(gTrue) : new SymExpr(gFalse);
       call->replace(retval);
     }
 
 
   } else if (call->isNamed("!=")) {
-    if (isTypeExpr(call->get(1)) && isTypeExpr(call->get(2))) {
-      Type* lt = call->get(1)->getValType();
-      Type* rt = call->get(2)->getValType();
+    bool isMethodCall = false;
+    if (call->partialTag == false) {
+      if (SymExpr* se = toSymExpr(call->get(1))) {
+        if (se->symbol() == gMethodToken) {
+          isMethodCall = true;
+        }
+      }
+    }
+    int lhsNum = isMethodCall ? 3 : 1;
+    int rhsNum = isMethodCall ? 4 : 2;
+    if (isTypeExpr(call->get(lhsNum)) && isTypeExpr(call->get(rhsNum))) {
+      Type* lt = call->get(lhsNum)->getValType();
+      Type* rt = call->get(rhsNum)->getValType();
 
       if (lt                                != dtUnknown &&
           rt                                != dtUnknown) {
         retval = (lt != rt) ? new SymExpr(gTrue) : new SymExpr(gFalse);
         call->replace(retval);
       }
-    } else if (call->get(2)->getValType() == dtUninstantiated) {
-      retval = (call->get(1)->getValType() != dtUninstantiated) ? new SymExpr(gTrue) : new SymExpr(gFalse);
+    } else if (call->get(rhsNum)->getValType() == dtUninstantiated) {
+      retval = (call->get(lhsNum)->getValType() != dtUninstantiated) ? new SymExpr(gTrue) : new SymExpr(gFalse);
       call->replace(retval);
     }
 

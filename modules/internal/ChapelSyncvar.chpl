@@ -283,8 +283,13 @@ module ChapelSyncvar {
     lhs.wrapped.writeEF(rhs);
   }
 
-  inline proc _cast(type t:_syncvar(?valType), rhs:valType) {
-    return new _syncvar(rhs);
+  inline operator :(from, type t:_syncvar)
+  where from.type == t.valType {
+    return new _syncvar(from);
+  }
+
+  inline operator :(from: _syncvar, type toType:_syncvar) {
+    return new _syncvar(from);
   }
 
   proc  += (ref lhs : _syncvar(?t), rhs : t) {
@@ -790,9 +795,14 @@ module ChapelSyncvar {
     lhs.wrapped.writeEF(rhs);
   }
 
-  inline proc _cast(type t:_singlevar(?valType), rhs:valType) {
-    return new _singlevar(rhs);
+  inline operator :(from, type t:_singlevar)
+  where from.type == t.valType {
+    return new _singlevar(from);
   }
+  inline operator :(from: _singlevar, type toType:_singlevar) {
+    return new _singlevar(from);
+  }
+
 
   pragma "init copy fn"
   proc chpl__initCopy(ref sv : _singlevar(?t), definedConst: bool) {
@@ -1022,16 +1032,16 @@ private module AlignedTSupport {
     return isIntegralType(t) || isBoolType(t);
   }
 
-  inline proc _cast(type t:aligned_t, x : integral) {
+  inline operator :(x : integral, type t:aligned_t) {
     return __primitive("cast", t, x);
   }
-  inline proc _cast(type t:aligned_t, x : bool) {
+  inline operator :(x: bool, type t:aligned_t) {
     return __primitive("cast", t, x);
   }
-  inline proc _cast(type t:chpl_anybool, x : aligned_t) {
+  inline operator :(x : aligned_t, type t:chpl_anybool) {
     return __primitive("cast", t, x);
   }
-  inline proc _cast(type t:integral, x : aligned_t) {
+  inline operator :(x : aligned_t, type t:integral) {
     return __primitive("cast", t, x);
   }
 

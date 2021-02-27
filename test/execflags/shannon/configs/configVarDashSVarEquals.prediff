@@ -11,7 +11,7 @@ if len(lines) == 1:
    if lines[0].find('<command-line arg>') == 0:
       l = lines[0].split(':')
       l[1] = '2'
-      newl = string.join(l, ':')
+      newl = ':'.join(l)
       f = open(logfile, 'w')
       f.write(newl)
       f.close()

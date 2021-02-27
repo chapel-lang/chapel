@@ -29,6 +29,7 @@
 #include "expr.h"
 #include "resolution.h"
 #include "resolveFunction.h"
+#include "splitInit.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
@@ -242,41 +243,39 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
         }
 
         if (fn->hasFlag(FLAG_OPERATOR)) {
-          if (formal->typeInfo() == dtMethodToken &&
-              info.actuals.v[i]->typeInfo() != dtMethodToken) {
-            // Formal is a method token and the actual is not (but this was an
-            // operator call so that's okay)
+          if (formal->typeInfo() == dtMethodToken) {
+            // Don't care about method token arguments to operator functions,
+            // or the next argument (which should be "this")
             formal = next_formal(formal);
             j++;
             skipNextFormal = true;
-            continue;
+          }
 
-          } else if (skipNextFormal) {
+          if (skipNextFormal) {
             INT_ASSERT(formal->hasFlag(FLAG_ARG_THIS));
             formal = next_formal(formal);
             j++;
             skipNextFormal = false; // clear
             continue;
 
-          } else if (formal->typeInfo() != dtMethodToken &&
-                     info.actuals.v[i]->typeInfo() == dtMethodToken) {
-            // actual is a method token but the formal is not (but this was an
-            // operator call so that's okay)
+          }
+
+          if (info.actuals.v[i]->typeInfo() == dtMethodToken) {
+            // Don't care about method token actuals to operator calls, or
+            // the next actual (which should correspond to the "this" argument)
             skippedThisActual = true;
             skipNextActual = true;
             break;
-          } else if (skipNextActual) {
-            // previous actual was a method token, so this is intended to be for
-            // a "this" argument that doesn't exist (but that's okay because
-            // this is an operator call).
+          }
+
+          if (skipNextActual) {
             skippedThisActual = true;
-            skipNextActual = false;
+            skipNextActual = false; // clear
             break;
           }
         }
 
-        if (formalIdxToActual[j] == NULL &&
-            !formal->hasFlag(FLAG_TYPE_FORMAL_FOR_OUT)) {
+        if (formalIdxToActual[j] == NULL) {
           match                = true;
           actualIdxToFormal[i] = formal;
           formalIdxToActual[j] = info.actuals.v[i];
@@ -313,8 +312,7 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
   // Make sure that any remaining formals are matched by name
   // or have a default value.
   while (formal) {
-    if (formalIdxToActual[j] == NULL && formal->defaultExpr == NULL &&
-        !formal->hasFlag(FLAG_TYPE_FORMAL_FOR_OUT)) {
+    if (formalIdxToActual[j] == NULL && formal->defaultExpr == NULL) {
       if (fn->hasFlag(FLAG_OPERATOR) && (formal->typeInfo() == dtMethodToken ||
                                          formal->hasFlag(FLAG_ARG_THIS))) {
       // Operator calls are allowed to skip matching the method token and "this"
@@ -352,8 +350,12 @@ bool ResolutionCandidate::computeSubstitutions(Expr* ctx) {
   int nIgnored = 0;
   int i = 1;
   for_formals(formal, fn) {
-    if (formal->intent                              == INTENT_PARAM ||
-        formal->type->symbol->hasFlag(FLAG_GENERIC) == true) {
+    // Don't compute substitutions for out intent arguments
+    // since the type comes from the function body rather than the call site.
+    // Do compute substitutions for param or generic typed formals.
+    if (formal->originalIntent != INTENT_OUT &&
+        (formal->intent == INTENT_PARAM ||
+         formal->type->symbol->hasFlag(FLAG_GENERIC))) {
 
       if (Symbol* actual = formalIdxToActual[i - 1]) {
         computeSubstitution(formal, actual, ctx);
@@ -621,7 +623,6 @@ bool inOrOutFormalNeedingCopyType(ArgSymbol* formal) {
 
   return (formal->originalIntent == INTENT_IN ||
           formal->originalIntent == INTENT_CONST_IN ||
-          formal->originalIntent == INTENT_OUT ||
           formal->originalIntent == INTENT_INOUT);
 }
 
@@ -867,6 +868,14 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses(CallInfo& info,
         return false;
 
 
+      } else if (formal->originalIntent != INTENT_OUT &&
+                 (actual->getValType() == dtSplitInitType ||
+                  (formalIsTypeAlias == false && isInitThis == false &&
+                   actual->getValType()->symbol->hasFlag(FLAG_GENERIC)))) {
+        failingArgument = actual;
+        reason = RESOLUTION_CANDIDATE_ACTUAL_TYPE_NOT_ESTABLISHED;
+        return false;
+
       // MPF TODO: one day, this should use actual/formal getValType,
       // and canCoerce should be adjusted to consider intents,
       // rather than depending on ref types at this stage in compilation.
@@ -877,7 +886,8 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses(CallInfo& info,
                              fn,
                              &promotes,
                              NULL,
-                             formalIsParam) == false) {
+                             formalIsParam) == false &&
+                 formal->originalIntent != INTENT_OUT) {
         failingArgument = actual;
         reason = classifyTypeMismatch(actual->type, formal->type);
         return false;
@@ -930,8 +940,9 @@ bool ResolutionCandidate::checkGenericFormals(Expr* ctx) {
     if (Symbol* actual = formalIdxToActual[coindex]) {
       bool actualIsTypeAlias = actual->hasFlag(FLAG_TYPE_VARIABLE);
       bool formalIsTypeAlias = formal->hasFlag(FLAG_TYPE_VARIABLE);
-
-      bool formalIsParam = formal->intent == INTENT_PARAM;
+      bool formalIsParam     = formal->intent == INTENT_PARAM;
+      bool isInitThis        = (fn->isInitializer() || fn->isCopyInit()) &&
+                               formal->hasFlag(FLAG_ARG_THIS);
 
       // type independent checks
       if (actualIsTypeAlias != formalIsTypeAlias) {
@@ -946,16 +957,31 @@ bool ResolutionCandidate::checkGenericFormals(Expr* ctx) {
         return false;
       }
 
-      if (Type* cat = toConstrainedType(actual->getValType()))
+      if (ConstrainedType* cat = toConstrainedType(actual->getValType()))
         // a CT actual matches only against itself
-        if (cat != formal->type) {
-          failingArgument = actual;
-          reason = RESOLUTION_CANDIDATE_INTERFACE_FORMAL_AS_ACTUAL;
-          return false;
-        }
+        if (cat != formal->type)
+          // allow stand-in types to match any generic formal at this point
+          if (! (cat->ctUse == CT_GENERIC_STANDIN &&
+                 (formal->type == dtUnknown ||
+                  formal->type == dtAny     ||
+                  formal->type->symbol->hasFlag(FLAG_GENERIC))) ) {
+            failingArgument = actual;
+            reason = RESOLUTION_CANDIDATE_INTERFACE_FORMAL_AS_ACTUAL;
+            return false;
+          }
+
+      if (formalIsTypeAlias == false &&
+          isInitThis == false &&
+          formal->originalIntent != INTENT_OUT &&
+          (actual->type == dtSplitInitType ||
+           actual->type->symbol->hasFlag(FLAG_GENERIC))) {
+        failingArgument = actual;
+        reason = RESOLUTION_CANDIDATE_ACTUAL_TYPE_NOT_ESTABLISHED;
+        return false;
+      }
 
       // type dependent checks
-      if (formal->type != dtUnknown) {
+      if (formal->type != dtUnknown && formal->originalIntent != INTENT_OUT) {
         if (formal->type->symbol->hasFlag(FLAG_GENERIC)) {
           Type* t = getInstantiationType(actual, formal, ctx);
           if (t == NULL) {
@@ -1103,9 +1129,6 @@ void explainCandidateRejection(CallInfo& info, FnSymbol* fn) {
       // so no point in trying to find one.
     }
 
-    if (formal->hasFlag(FLAG_TYPE_FORMAL_FOR_OUT))
-      continue;
-
     if (formal->type == dtMethodToken)
       fnIsMethod = true;
 
@@ -1190,6 +1213,17 @@ void explainCandidateRejection(CallInfo& info, FnSymbol* fn) {
           USR_PRINT(fn, "but is passed to non-type formal '%s'",
                     toString(failingFormal, true));
         }
+      }
+      break;
+    case RESOLUTION_CANDIDATE_ACTUAL_TYPE_NOT_ESTABLISHED:
+      if (failingActual->getValType() == dtSplitInitType) {
+        splitInitMissingTypeError(failingActual, call, /*unresolved*/ true);
+      } else {
+        USR_PRINT(call,
+                  "actual argument '%s' has generic type '%s'",
+                  toString(failingActual, false),
+                  toString(failingActual->getValType()));
+        printUndecoratedClassTypeNote(call, failingActual->getValType());
       }
       break;
     case RESOLUTION_CANDIDATE_TOO_MANY_ARGUMENTS:

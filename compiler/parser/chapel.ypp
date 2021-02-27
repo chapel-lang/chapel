@@ -318,7 +318,7 @@
 %token TCATCH TCLASS TCOBEGIN TCOFORALL TCOMPLEX TCONFIG TCONST TCONTINUE
 %token TDEFER TDELETE TDMAPPED TDO TDOMAIN
 %token TELSE TENUM TEXCEPT TEXPORT TEXTERN
-%token TFALSE TFOR TFORALL TFORWARDING
+%token TFALSE TFOR TFORALL TFOREACH TFORWARDING
 %token TIF TIMAG TIMPORT TIN TINCLUDE
 %token TINDEX TINLINE TINOUT TINT TITER TINITEQUALS
 %token TIMPLEMENTS TINTERFACE
@@ -369,7 +369,7 @@
 %left TNOELSE
 %left TELSE
 %left TCOMMA
-%left TFOR TFORALL TIF TATOMIC TSYNC TSINGLE
+%left TFOR TFORALL TFOREACH TIF TATOMIC TSYNC TSINGLE
 // %left TOWNED TUNMANAGED TSHARED
 %left TIN
 %left TALIGN TBY THASH
@@ -1024,6 +1024,14 @@ loop_stmt:
 | TFORALL          expr              forall_intent_clause do_stmt  { $$ = ForallStmt::build(NULL, $2, $3,   $4, false, false); }
 | TFORALL          zippered_iterator                      do_stmt  { $$ = ForallStmt::build(NULL, $2, NULL, $3, true,  false); }
 | TFORALL          zippered_iterator forall_intent_clause do_stmt  { $$ = ForallStmt::build(NULL, $2, $3,   $4, true,  false); }
+| TFOREACH expr TIN expr                                   do_stmt { $$ = foreachNotImplementedError(); }
+| TFOREACH expr TIN expr              forall_intent_clause do_stmt { $$ = foreachNotImplementedError(); }
+| TFOREACH expr TIN zippered_iterator                      do_stmt { $$ = foreachNotImplementedError(); }
+| TFOREACH expr TIN zippered_iterator forall_intent_clause do_stmt { $$ = foreachNotImplementedError(); }
+| TFOREACH          expr                                   do_stmt { $$ = foreachNotImplementedError(); }
+| TFOREACH          expr              forall_intent_clause do_stmt { $$ = foreachNotImplementedError(); }
+| TFOREACH          zippered_iterator                      do_stmt { $$ = foreachNotImplementedError(); }
+| TFOREACH          zippered_iterator forall_intent_clause do_stmt { $$ = foreachNotImplementedError(); }
 | TLSBR expr_ls TIN expr TRSBR stmt
     {
       if ($2->argList.length != 1)
@@ -1501,6 +1509,7 @@ fn_ident:
 | TSWAP          { $$ = "<=>"; }
 | TIO            { $$ = "<~>"; }
 | TINITEQUALS    { $$ = "init="; }
+| TCOLON         { $$ = ":"; }
 | ident_def TBANG { $$ = astr($1, "!"); }
 ;
 
