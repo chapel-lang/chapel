@@ -29,6 +29,9 @@
 #include "visibleFunctions.h"
 #include "view.h" // for debugging
 
+
+/*********** debugging support ***********/
+
 // uncomment the following to turn on tracking printouts
 //#define PRINT_CG 1
 #ifdef PRINT_CG
@@ -73,10 +76,113 @@ static void cgprintAssocConstraint(IfcConstraint* icon) {
 #endif
 
 
-static void resolveIStmActuals(FnSymbol* wrapFn, ImplementsStmt* istm);
+/*********** stand-in types ***********/
+
+static ConstrainedType* dtGenericStandin = nullptr;
+static VarSymbol*       gGenericParam    = nullptr;
+static std::set<Type*>  standinInstantiations;
+
+void createGenericStandins() {
+  cgprint("\n");
+  dtGenericStandin = ConstrainedType::buildType("GenericStandinType",
+                                                CT_GENERIC_STANDIN);
+  // We need a defPoint for verify / isAlive.
+  // However we do not want it inTree() to avoid dealing with it later.
+  new DefExpr(dtGenericStandin->symbol);
+
+  gGenericParam = new VarSymbol("GenericStandinParam");
+  gGenericParam->immediate = new Immediate;  // also a stand-in
+  new DefExpr(gGenericParam);
+}
+
+// Remove generic types instantiated with dtGenericStandin / gGenericParam
+// to avoid compiler-generated init() et al. on these.
+void cleanupGenericStandins() {
+  for (Type* instType: standinInstantiations) {
+    cgprint("cleanup  %s[%d]\n", instType->symbol->name, instType->id);
+    instType->symbol->defPoint->remove();
+    if (instType->refType != nullptr) {
+      cgprint("  also ref [%d]\n", instType->refType->id);
+      instType->refType->symbol->defPoint->remove();
+    }
+  }
+
+  // dtGenericStandin->defPoint is not inTree. However,
+  // if dtGenericStandin->refType gets created, that one will be inTree.
+  INT_ASSERT(! dtGenericStandin->symbol->defPoint->inTree());
+  if (Type* gsRef = dtGenericStandin->refType) {
+    cgprint("cleanup  dtGenericStandin->refType [%d]\n", gsRef->id);
+    gsRef->symbol->defPoint->remove();
+  }
+
+  cgprint("\n");
+}
+
+static void addArgForGenericField(CallExpr* genCall, Symbol* gf) {
+  // CG TODO: cater to restricted generics, ex. 'var gf: MyGenericRec;'
+  //
+  // Also, consider a separate "generic standin" for each generic field.
+  // The same set of standins could be reused across required functions.
+  // However, if we create a fresh standin for each generic field,
+  // we lose the potential benefit of genericsCache.
+
+  Symbol* instSym = nullptr;
+
+  if (gf->hasFlag(FLAG_TYPE_VARIABLE))                 // 'type' field
+    instSym = dtGenericStandin->symbol;
+  else if (isVarSymbol(gf) && gf->hasFlag(FLAG_PARAM)) // 'param' field
+    instSym = gGenericParam;
+  else if (isVarSymbol(gf))                            // 'var' field
+    instSym = dtGenericStandin->symbol;
+  else {
+    // how to handle this case?
+    Symbol* baseType = toSymExpr(genCall->baseExpr)->symbol();
+    USR_FATAL_CONT(genCall, "generic types with fields like %s.%s"
+                            " are currently not supported",
+                            baseType->name, gf->name);
+    USR_PRINT(gf, "the field %s.%s is declared here",
+                            baseType->name, gf->name);
+    USR_STOP();
+  }
+
+  genCall->insertAtTail(new NamedExpr(gf->name, new SymExpr(instSym)));
+}
+
+static bool applyStandinsToGenerics(BlockStmt* holder, SymbolMap& fml2act) {
+  bool gotGenerics = false;
+  form_Map(SymbolMapElem, elem, fml2act) {
+    Type* targetOrig = elem->value->type;
+    Type* targetVal  = targetOrig->getValType();
+    // CG TODO: also handle DecoratedClassType
+    if (AggregateType* at = toAggregateType(targetVal)) {
+      if (! at->isGeneric()) continue;
+      gotGenerics = true;
+
+      CallExpr* genCall = new CallExpr(at->symbol); // for at->generateType()
+      holder->insertAtHead(genCall);
+      for (Symbol* gf: at->genericFields)
+        addArgForGenericField(genCall, gf);
+
+      AggregateType* instType = at->generateType(genCall, "<internal error>");
+      standinInstantiations.insert(instType);
+
+      if (targetVal != targetOrig && instType->refType != nullptr)
+        instType = instType->refType;
+
+      elem->value = instType->symbol; // aka fml2act.put(elem->key, instType);
+      genCall->remove();
+    }
+  }
+
+  return gotGenerics;
+}
+
+
 
 
 /*********** resolveInterfaceSymbol ***********/
+
+static void resolveIStmActuals(FnSymbol* wrapFn, ImplementsStmt* istm);
 
 // An associated type. Nothing to do.
 static void resolveISymAssocType(InterfaceSymbol* isym, TypeSymbol* at) {
@@ -88,12 +194,13 @@ static void resolveISymAssocType(InterfaceSymbol* isym, TypeSymbol* at) {
 // an ImplementsStmt.
 static void resolveISymAssocConstraint(InterfaceSymbol* isym,
                                        FnSymbol* wrapFn) {
-  bool isSuccess;
-  ImplementsStmt* istm = implementsStmtForWrapperFn(wrapFn, isSuccess);
-  INT_ASSERT(isSuccess && istm->implBody->body.length == 0);
-  cgprintAssocConstraint(istm->iConstraint);
+  IstmAndSuccess iss = implementsStmtForWrapperFn(wrapFn);
 
-  resolveIStmActuals(wrapFn, istm);
+  INT_ASSERT(iss.isSuccess);
+  INT_ASSERT(iss.istm->implBody->body.length == 0);
+  cgprintAssocConstraint(iss.istm->iConstraint);
+
+  resolveIStmActuals(wrapFn, iss.istm);
 }
 
 // A function required by the interface.
@@ -121,8 +228,12 @@ static void resolveISymRequiredFun(InterfaceSymbol* isym, FnSymbol* fn) {
 }
 
 void resolveInterfaceSymbol(InterfaceSymbol* isym) {
+  if (isym->hasFlag(FLAG_RESOLVED)) return;
+  isym->addFlag(FLAG_RESOLVED);
+
   cgprint("resolving interface declaration %s  %s\n",
           symstring(isym), debugLoc(isym));
+  if (isym->id == breakOnResolveID) gdbShouldBreakHere();
 
   for_alist(stmt, isym->ifcBody->body) {
    if (FnSymbol* fn = toFnSymbol(toDefExpr(stmt)->sym))
@@ -190,6 +301,8 @@ static void createRepsForIfcSymbols(FnSymbol* fn, InterfaceInfo* ifcInfo) {
   for_alist(iconExpr, ifcInfo->interfaceConstraints) {
     IfcConstraint* icon = toIfcConstraint(iconExpr);
     InterfaceSymbol* isym = icon->ifcSymbol();
+    resolveInterfaceSymbol(isym);
+
     SymbolMap reps;
     SymbolMap fml2act;
     buildAndCheckFormals2Actuals(isym, icon, "interface constraint", fml2act);
@@ -199,8 +312,8 @@ static void createRepsForIfcSymbols(FnSymbol* fn, InterfaceInfo* ifcInfo) {
     // because those can reference associated types.
     for (auto& elem: isym->associatedTypes) {
       ConstrainedType* required = elem.second;
-      TypeSymbol*  instantiated = ConstrainedType::build(elem.first,
-                                                         CT_CGFUN_ASSOC_TYPE);
+      TypeSymbol*  instantiated = ConstrainedType::buildSym(elem.first,
+                                                    CT_CGFUN_ASSOC_TYPE);
       ifcInfo->constrainedTypes.insertAtTail(new DefExpr(instantiated));
       INT_ASSERT(instantiated->inTree()); //CG TODO: this assert is not needed
       reps.put(required->symbol, instantiated);
@@ -224,7 +337,9 @@ void resolveConstrainedGenericFun(FnSymbol* fn) {
   if (fn->isResolved()) return;
   InterfaceInfo* ifcInfo = fn->interfaceInfo;
   if (ifcInfo == NULL) return;  // not a CG
+
   cgprint("resolving CG function early %s  %s\n", symstring(fn), debugLoc(fn));
+  if (fn->id == breakOnResolveID) gdbShouldBreakHere();
 
   createRepsForIfcSymbols(fn, ifcInfo);
 
@@ -272,6 +387,25 @@ static void cleanupHolder(BlockStmt* holder) {
   do { holder->body.tail->remove(); } while (holder->body.tail != NULL);
 }
 
+static void handleGenericImplementation(FnSymbol*& target,
+                                        const char* indent) {
+  // The required function is implemented with a generic, of which 'target'
+  // is an instantiation. Store the original generic in istm->witnesses
+  // and resolve it when checking whether a constraint is satisfied.
+  target = target->instantiatedFrom; // CG TODO: does this cover all cases?
+  INT_ASSERT(target != nullptr);
+  cgprint("%s   generic -> %s  %s\n", indent,
+            symstring(target), debugLoc(target));
+}
+
+static bool hasStandinArgs(CallExpr* call) {
+  for_actuals(actual, call)
+    if (SymExpr* ase = toSymExpr(actual))
+      if (standinInstantiations.count(ase->symbol()->type))
+        return true;
+  return false;
+}
+
 // resolveAssociatedTypes() and helpers
 
 // Computes and stores the associated type for this implementations
@@ -283,10 +417,10 @@ static void cleanupHolder(BlockStmt* holder) {
 //   ===> AssocType -> int
 //
 // Returns whether this was successful.
-static bool resolveOneAssocType(InterfaceSymbol* isym, ImplementsStmt* istm,
-                                SymbolMap& fml2act, BlockStmt* holder,
-                                const char* indent, bool reportErrors,
-                                ConstrainedType* ifcAT) {
+static bool resolveOneAssocType(InterfaceSymbol* isym,  ImplementsStmt*   istm,
+                                SymbolMap&    fml2act,  BlockStmt*      holder,
+                                const char*    indent,  ConstrainedType* ifcAT,
+                                bool      gotGenerics,  bool    reportErrors) {
   INT_ASSERT(holder->body.empty());
   INT_ASSERT(ifcAT->ctUse == CT_IFC_ASSOC_TYPE);
   cgprint("%s  assoc type  %s\n", indent, symstring(ifcAT->symbol));
@@ -296,18 +430,41 @@ static bool resolveOneAssocType(InterfaceSymbol* isym, ImplementsStmt* istm,
   Symbol* ifcFormal = toDefExpr(isym->ifcFormals.head)->sym;
   Type* recvType = fml2act.get(ifcFormal)->typeInfo();
 
-  VarSymbol* recv = newTemp("atype_tmp", recvType);
-  CallExpr* call = new CallExpr(ifcAT->symbol->name, gMethodToken, recv);
+  VarSymbol*  recv = newTemp("atype_tmp", recvType);
+  CallExpr*   call = new CallExpr(ifcAT->symbol->name, gMethodToken, recv);
+
   holder->insertAtTail(call);
   FnSymbol* target = tryResolveCall(call);
-  Type* gcfunAT = NULL;
-  if (target != NULL) {
+  Type* implAT = nullptr;
+  if (target != nullptr) {
     if (target->retTag == RET_TYPE) {
-      resolveFunction(target); // aborts if there are errors
-      gcfunAT = target->retType;
-      cgprint("%s           -> %s  %s\n", indent,
-              symstring(gcfunAT->symbol), gcfunAT->symbol->getModule()
-              ->modTag == MOD_INTERNAL ? "" : debugLoc(gcfunAT));
+      bool standinArgs = gotGenerics && hasStandinArgs(call);
+      if (standinArgs) {
+        // Only simple cases will resolve with standin args.
+        FnSymbol* resolvedTarget = tryResolveFunction(target);
+        if (resolvedTarget == nullptr) {
+          USR_FATAL_CONT(istm, "when checking this implements statement");
+          USR_PRINT(istm, "current limitations for generic implements-"
+                    "statements may have cause the following error");
+          USR_PRINT(target, "could not resolve this implementation"
+                    " of the associated type %s", ifcAT->symbol->name);
+          USR_PRINT(ifcAT->symbol, "the associated type %s in the interface %s"
+                    " is declared here", ifcAT->symbol->name, isym->name);
+          USR_STOP();
+        } else
+          INT_ASSERT(resolvedTarget == target);
+        
+        implAT = target->retType;
+        cgprint("%s   generic -> %s\n", indent, symstring(implAT->symbol));
+
+      } else {
+        // A concrete implementing type given by 'target'.
+        resolveFunction(target); // aborts if there are errors
+        implAT = target->retType;
+        cgprint("%s           -> %s  %s\n", indent,
+                symstring(implAT->symbol), implAT->symbol->getModule()
+                ->modTag == MOD_INTERNAL ? "" : debugLoc(implAT));
+      }
     } else {
       if (reportErrors) {
         USR_FATAL_CONT(istm, "when checking this implements statement");
@@ -328,37 +485,38 @@ static bool resolveOneAssocType(InterfaceSymbol* isym, ImplementsStmt* istm,
   }
 
   cleanupHolder(holder);
-  if (gcfunAT != NULL) {
-    fml2act.put(ifcAT->symbol, gcfunAT->symbol);
-    istm->witnesses.put(ifcAT->symbol, gcfunAT->symbol);
-    if (gcfunAT->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE))
+  if (implAT != nullptr) {
+    fml2act.put(ifcAT->symbol, implAT->symbol);
+    istm->witnesses.put(ifcAT->symbol, implAT->symbol);
+    if (implAT->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE))
       USR_FATAL_CONT(istm, "the associated type %s is instantiated with a"
                      " runtime type '%s', which is currently not implemented",
-                     ifcAT->symbol->name, toString(gcfunAT));
+                     ifcAT->symbol->name, toString(implAT));
   }
 
-  return gcfunAT != NULL;
+  return implAT != nullptr;
 }
 
 static bool resolveAssociatedTypes(InterfaceSymbol* isym, ImplementsStmt* istm,
-                                   SymbolMap& fml2act, BlockStmt* holder,
-                                   bool nested, const char* indent,
-                                   bool reportErrors) {
+                                   SymbolMap&    fml2act, BlockStmt*    holder,
+                                   bool           nested, const char*   indent,
+                                   bool      gotGenerics, bool  reportErrors) {
   bool atSuccess = true;
 
   for (auto& elem: isym->associatedTypes)
-    atSuccess &= resolveOneAssocType(isym, istm, fml2act, holder,
-                                     indent, reportErrors, elem.second);
+    atSuccess &= resolveOneAssocType(isym, istm, fml2act, holder, indent,
+                                     elem.second, gotGenerics, reportErrors);
 
   return atSuccess;
 }
 
 // checkAssocConstraints()
 
-static bool checkAssocConstraints(InterfaceSymbol* isym, ImplementsStmt* istm,
-                                  SymbolMap& fml2act, BlockStmt* holder,
+static bool checkAssocConstraints(InterfaceSymbol* isym,  ImplementsStmt* istm,
+                                  SymbolMap&    fml2act,  BlockStmt*    holder,
                                   //bool nested, const char* indent,
-                                  CallExpr* callsite, bool reportErrors) {
+                                  CallExpr*    callsite,
+                                  bool      gotGenerics,  bool  reportErrors) {
   bool acSuccess = true;
 
   for (IfcConstraint* assocCons: isym->associatedConstraints) {
@@ -386,11 +544,11 @@ static bool checkAssocConstraints(InterfaceSymbol* isym, ImplementsStmt* istm,
   return acSuccess;
 }
 
-// resolveWitnesses() and helpers
+// resolveRequiredFns() and helpers
 
-static bool checkNonemptyHolder(InterfaceSymbol* isym, ImplementsStmt* istm,
-                                BlockStmt* holder, FnSymbol* target,
-                                FnSymbol* reqFn, bool reportErrors) {
+static bool checkNonemptyHolder(InterfaceSymbol* isym,  ImplementsStmt* istm,
+                                BlockStmt*     holder,  FnSymbol*     target,
+                                FnSymbol*       reqFn,  bool  reportErrors) {
   if (holder->body.tail != NULL) {
     if (reportErrors) {
       USR_FATAL_CONT(istm, "when checking this implements statement");
@@ -406,9 +564,9 @@ static bool checkNonemptyHolder(InterfaceSymbol* isym, ImplementsStmt* istm,
   return true;
 }
 
-static bool checkReturnType(InterfaceSymbol* isym, ImplementsStmt* istm,
-                            FnSymbol* target, SymbolMap& fml2act,
-                            FnSymbol* reqFn, bool reportErrors) {
+static bool checkReturnType(InterfaceSymbol* isym,  ImplementsStmt* istm,
+                            FnSymbol*      target,  SymbolMap&   fml2act,
+                            FnSymbol*       reqFn,  bool  reportErrors) {
   Type* implType = target->retType->getValType();
   Type* reqType = reqFn->retType->getValType();
   if (Symbol* actualType = fml2act.get(reqType->symbol))
@@ -419,9 +577,13 @@ static bool checkReturnType(InterfaceSymbol* isym, ImplementsStmt* istm,
       USR_FATAL_CONT(istm, "when checking this implements statement");
       USR_PRINT(target, "this implementation of the required function %s",
                         reqFn->name);
-      USR_PRINT(target, "has return type '%s'", toString(implType));
-      USR_PRINT(reqFn, "which does not match the expected return type '%s'",
-                        toString(reqType));
+      if (implType == dtUnknown)
+        USR_PRINT(target, "needs to specify its return type");
+      else {
+        USR_PRINT(target, "has return type '%s'", toString(implType));
+        USR_PRINT(reqFn, "which does not match the expected return type '%s'",
+                          toString(reqType));
+      }
       USR_PRINT(reqFn, "the required function %s in the interface %s"
                        " is declared here", reqFn->name, isym->name);
     }
@@ -430,9 +592,9 @@ static bool checkReturnType(InterfaceSymbol* isym, ImplementsStmt* istm,
   return true;
 }
 
-static bool checkReturnIntent(InterfaceSymbol* isym, ImplementsStmt* istm,
-                              FnSymbol* target, FnSymbol* reqFn,
-                              bool reportErrors) {
+static bool checkReturnIntent(InterfaceSymbol* isym,  ImplementsStmt* istm,
+                              FnSymbol*      target,  FnSymbol*      reqFn,
+                              bool   reportErrors) {
   if (target->retTag != reqFn->retTag) {
     if (reportErrors) {
       USR_FATAL_CONT(istm, "when checking this implements statement");
@@ -450,12 +612,15 @@ static bool checkReturnIntent(InterfaceSymbol* isym, ImplementsStmt* istm,
   return true;
 }
 
-// Returns whether a witness has been established successfully.
-static bool resolveOneWitness(InterfaceSymbol* isym, ImplementsStmt* istm,
-                              SymbolMap& fml2act, BlockStmt* holder,
-                              std::vector<FnSymbol*>& instantiatedDefaults,
-                              const char* indent, bool reportErrors,
-                              FnSymbol* reqFn, Symbol*& implRef) {
+// Returns whether an implementation of 'reqFn has been established
+// successfully. If so, store it in 'implRef'.
+static bool resolveOneRequiredFn(InterfaceSymbol* isym,  ImplementsStmt*  istm,
+                                 SymbolMap&    fml2act,  bool      gotGenerics,
+                                 std::vector<FnSymbol*>  &instantiatedDefaults,
+                                 BlockStmt*     holder,
+                                 const char*    indent,  bool     reportErrors,
+                                 FnSymbol*       reqFn,  Symbol*      &implRef)
+{
   INT_ASSERT(holder->body.empty());
   cgprint("%s  required fn %s\n", indent, symstring(reqFn));
 
@@ -463,23 +628,40 @@ static bool resolveOneWitness(InterfaceSymbol* isym, ImplementsStmt* istm,
   CallExpr* call = new CallExpr(reqFn->name);
   for_formals(formal, reqFn)
     call->insertAtTail(formal->copy(&fml2act));
-  holder->insertAtTail(call);
+  bool standinArgs = gotGenerics && hasStandinArgs(call);
 
-  // Resolve the call and see if we got a witness.
+  // Resolve the call and see if we got an implementation.
+  holder->insertAtTail(call);
+  callStack.add(call);
   FnSymbol* target = tryResolveCall(call);
-  call->remove();
 
   if (target != NULL) {
     cgprint("%s           -> %s  %s\n", indent,
             symstring(target), debugLoc(target));
-    resolveFunction(target); // aborts if there are errors
+
+    INT_ASSERT(! target->isGeneric());
+    bool genericTarget = target->instantiatedFrom ? standinArgs : false;
+
+    if (genericTarget) {
+      // Need the return type for checkReturnType() below.
+      // Will resolve the body when instantiating this istm.
+      if (target->retExprType != NULL && target->retType == dtUnknown)
+        resolveSpecifiedReturnType(target);  // like in isApplicable()
+    } else
+      resolveFunction(target); // aborts if there are errors
+
+    call->remove(); // need 'call' inTree if resolveFunction() has errors
 
     if (!( checkNonemptyHolder(isym, istm, holder, target, reqFn, reportErrors)
            & checkReturnType(isym, istm, target, fml2act, reqFn, reportErrors)
            & checkReturnIntent(isym, istm, target, reqFn, reportErrors) ))
       target = NULL;  // if one or more of the above checks fail
+    else if (genericTarget)
+      handleGenericImplementation(target, indent);
 
   } else {
+    // the call did not resolve
+    call->remove();
     if (implRef == gDummyWitness) {
       if (reportErrors) {
         USR_FATAL_CONT(istm, "when checking this implements statement");
@@ -488,7 +670,16 @@ static bool resolveOneWitness(InterfaceSymbol* isym, ImplementsStmt* istm,
         USR_PRINT(reqFn, "the required function %s in the interface %s"
                   " is declared here", reqFn->name, isym->name);
       }
+    } else if (standinArgs) {
+      // todo: fall back on the default implementation in the generic case
+      if (reportErrors) {
+        USR_FATAL_CONT(istm, "when checking this implements statement");
+        USR_PRINT(istm, "default implementations are currently not supported in generic implements statements");
+        USR_PRINT(reqFn, "the required function %s in the interface %s"
+                  " is declared here", reqFn->name, isym->name);
+      }
     } else {
+      // fall back on the default implementation
       SymbolMap fml2actDup = fml2act; // avoid fml2act updates by copy()
       target = toFnSymbol(implRef->copy(&fml2actDup));
       holder->insertBefore(new DefExpr(target));
@@ -498,33 +689,37 @@ static bool resolveOneWitness(InterfaceSymbol* isym, ImplementsStmt* istm,
               symstring(target), debugLoc(target));
     }
   }
+  CallExpr* popped = callStack.pop();
+  INT_ASSERT(popped == call);
 
   implRef = target; // aka istm->witnesses.put(reqFn, target)
   return target != NULL;
 }
 
-static bool resolveWitnesses(InterfaceSymbol* isym, ImplementsStmt* istm,
-                             SymbolMap& fml2act, BlockStmt* holder,
-                             const char* indent, bool reportErrors) {
-  bool witSuccess = true;
+static bool resolveRequiredFns(InterfaceSymbol* isym,  ImplementsStmt* istm,
+                               SymbolMap&    fml2act,  BlockStmt*    holder,
+                               const char*    indent,
+                               bool      gotGenerics,  bool  reportErrors) {
+  bool rfSuccess = true;
   std::vector<FnSymbol*> instantiatedDefaults;
 
   form_Map(SymbolMapElem, wit, istm->witnesses) {
     if (FnSymbol* reqFn = toFnSymbol(wit->key))
-      witSuccess &= resolveOneWitness(isym, istm, fml2act, holder,
-        instantiatedDefaults, indent, reportErrors, reqFn, wit->value);
+      rfSuccess &= resolveOneRequiredFn(isym, istm, fml2act, gotGenerics,
+                                        instantiatedDefaults, holder, indent,
+                                        reportErrors, reqFn, wit->value);
     else
       INT_ASSERT(isConstrainedTypeSymbol(wit->key, CT_IFC_ASSOC_TYPE));
   }
 
-  if (witSuccess) {
+  if (rfSuccess) {
     for(FnSymbol* iDflt: instantiatedDefaults)
       // Update references to now-instantiated required functions
       // within default implementations.
       update_symbols(iDflt, &(istm->witnesses));
   }
 
-  return witSuccess;
+  return rfSuccess;
 }
 
 
@@ -536,11 +731,11 @@ static bool resolveWitnesses(InterfaceSymbol* isym, ImplementsStmt* istm,
 // * resolve each witness
 // Returns true if so, false otherwise.
 //
-static bool resolveImplementsStmt(FnSymbol* wrapFn,
-                                  ImplementsStmt* istm,
+static bool resolveImplementsStmt(FnSymbol* wrapFn, ImplementsStmt* istm,
                                   bool nested, //used only for debugging output
                                   bool reportErrors) {
   if (istm->id == breakOnResolveID) gdbShouldBreakHere();
+
   IfcConstraint* icon = istm->iConstraint;
   InterfaceSymbol* isym = icon->ifcSymbol();
 
@@ -554,10 +749,9 @@ static bool resolveImplementsStmt(FnSymbol* wrapFn,
     // If so, we return successful implementation, i.e. we break recursion
     // by assuming success.
 
-    bool isSuccess;
-    implementsStmtForWrapperFn(wrapFn, isSuccess);
+    IstmAndSuccess iss = implementsStmtForWrapperFn(wrapFn);
     // if isSuccess can legitimately be false, return it and remove the assert
-    INT_ASSERT(isSuccess);
+    INT_ASSERT(iss.isSuccess);
     return true;
   }
 
@@ -582,16 +776,18 @@ static bool resolveImplementsStmt(FnSymbol* wrapFn,
 
   SymbolMap fml2act; // isym formal -> istm actual
   buildAndCheckFormals2Actuals(isym, icon, "implements statement", fml2act);
+  // need to stash away the original fml2act?
+  bool gotGenerics = applyStandinsToGenerics(holder, fml2act);
 
   // check each category of istm contents
 
   bool success =
      resolveAssociatedTypes(isym, istm, fml2act, holder, nested, indent,
-                                reportErrors)
+                                gotGenerics, reportErrors)
      && checkAssocConstraints(isym, istm, fml2act, holder, callsite,
-                                reportErrors)
-     && resolveWitnesses(isym, istm, fml2act, holder, indent,
-                                reportErrors);
+                                gotGenerics, reportErrors)
+     && resolveRequiredFns(isym, istm, fml2act, holder, indent,
+                                gotGenerics, reportErrors);
 
   cgprint(nested ? "    ...done\n" : "\n");
   holder->remove();
@@ -639,53 +835,153 @@ static void gatherVisibleWrapperFns(CallExpr* callsite,
   call2wf->remove();
 }
 
-// Returns the istm within 'wrapFn' if it matches the constraint
-// represented by 'call2wf', i.e. if their arguments are pair-wise equal.
-// Otherwise returns NULL.
-// isSuccess=false when 'wrapFn' is a result of a failed attempt to infer.
-static ImplementsStmt* matchingImplStm(FnSymbol* wrapFn,
-                                       CallExpr* call2wf,
-                                       bool& isSuccess) {
-  ImplementsStmt* istm = implementsStmtForWrapperFn(wrapFn, isSuccess);
-  if (isSuccess) // do we need this restriction?
-    resolveImplementsStmt(wrapFn, istm, true, true);
+// Follows ImplementsStmt::build().
+// Clears the arglist of 'call2wf'.
+static ImplementsStmt* buildInferredImplStmt(InterfaceSymbol* isym,
+                                             CallExpr* call2wf) {
+  IfcConstraint* icon = new IfcConstraint(new SymExpr(isym));
+  for_alist(actual, call2wf->argList)
+    icon->consActuals.insertAtTail(actual->remove());
 
-  for (Expr *consArg = call2wf->argList.head,
-            *implArg = istm->iConstraint->consActuals.head;
-       consArg != NULL;
-       consArg = consArg->next, implArg = implArg->next)
-
-    if (toSymExpr(consArg)->symbol()->type !=
-        toSymExpr(implArg)->symbol()->type)
-      // istm does not match
-      return NULL;
-
-  return istm;
+ return new ImplementsStmt(icon, new BlockStmt());
 }
 
-static void pickMatchingImplementsStmt(Vec<FnSymbol*>&  visibleFns,
-                                       CallExpr*        call2wf,
-                                       ImplementsStmt*& firstSuccess,
-                                       FnSymbol*&       firstFailure) {
+static bool isGenericMatch(Type* consT, Type* implT) {
+  if (AggregateType* consAT = toAggregateType(consT))
+    if (AggregateType* implAT = toAggregateType(implT))
+      do {
+        consAT = consAT->instantiatedFrom;
+        if (consAT == implAT)
+          return true;
+      }
+      while (consAT != NULL);
+
+  return false;
+}
+
+class MatchResult { public:
+  ImplementsStmt* istm;
+  bool            isSuccess;
+  bool            isConcrete; 
+  MatchResult(ImplementsStmt* is, bool ss, bool con):
+    istm(is), isSuccess(ss), isConcrete(con) { }
+};
+
+//
+// Returns a MatchResult tuple with the following components:
+// * istm: the istm within wrapFn, if it matches the constraint
+//   represented by 'call2wf', NULL otherwise
+// If istm is non-NULL:
+// * isSuccess: true, unless wrapFn is marked as failure
+// * isConcrete: true when the arguments of the constraint
+//   and the istm pare pair-wise equal; otherwise a generic match
+//   can occur.
+//
+static MatchResult matchingImplStm(FnSymbol* wrapFn, CallExpr* call2wf) {
+  
+  IstmAndSuccess iss = implementsStmtForWrapperFn(wrapFn);
+  if (iss.isSuccess) // do we need this restriction?
+    resolveImplementsStmt(wrapFn, iss.istm, false, true);
+
+  bool isConcrete = true;
+
+  for (Expr *consArg = call2wf->argList.head,
+            *implArg = iss.istm->iConstraint->consActuals.head;
+       consArg != NULL;
+       consArg = consArg->next, implArg = implArg->next)
+  {
+    Type* consT = toSymExpr(consArg)->symbol()->type;
+    Type* implT = toSymExpr(implArg)->symbol()->type;
+
+    if (consT == implT)
+      continue; // so far it is a match
+
+    if (isGenericMatch(consT, implT)) {
+      isConcrete = false;
+      continue;
+    }
+
+    // the two types are different, so istm does not match at all
+    return MatchResult(nullptr, false, false);
+  }
+
+  return MatchResult(iss.istm, iss.isSuccess, isConcrete);
+}
+
+class FirstPick { public:
+  ImplementsStmt* conSuccess; // concrete
+  ImplementsStmt* genSuccess; // generic
+  FnSymbol*       failure;    // wrapFn
+  FirstPick(ImplementsStmt* con, ImplementsStmt* gen, FnSymbol* wfn):
+    conSuccess(con), genSuccess(gen), failure(wfn) { }
+};
+
+// Note:
+//  * A generic istm is always successful:
+//   - It is never created implicitly, so it is always user-provided.
+//   - It is resolved before being used; any errors would abort compilation.
+//  * A failure wrapFn / istm is always concrete:
+//   - It cannot be written by the user, so it is always created implicitly.
+//   - We create an istm implicitly only when checking a concrete constraint.
+
+static FirstPick pickMatchingImplementsStmts(Vec<FnSymbol*> &visibleFns,
+                                             CallExpr*       call2wf) {
+  ImplementsStmt* firstGenSuccess = nullptr;
+  FnSymbol*       firstFailure    = nullptr;
+
   forv_Vec(FnSymbol, wrapFn, visibleFns) {
-    bool isSuccess;
-    if (ImplementsStmt* match = matchingImplStm(wrapFn, call2wf, isSuccess)) {
-      if (isSuccess) {
-        firstSuccess = match;
-        return;
+    MatchResult match = matchingImplStm(wrapFn, call2wf);
+    if (match.istm != nullptr) {
+      // got a match, what kind?
+      if (match.isSuccess) {
+        if (match.isConcrete)
+          // got the first successfull concrete istm
+          return FirstPick(match.istm, nullptr, nullptr);
+        else
+          if (firstGenSuccess == nullptr)
+            firstGenSuccess = match.istm;
       } else {
-        if (firstFailure == NULL)
+        if (firstFailure == nullptr)
           firstFailure = wrapFn;
       }
     }
   }
+
+  return FirstPick(nullptr, firstGenSuccess, firstFailure);
 }
 
-static void cgprintCheckedConstraint(InterfaceSymbol* isym,
-                                     IfcConstraint* constraint,
-                                     CallExpr* callsite,
-                                     ImplementsStmt *bestIstm) {
+//
+// We found a generic istm, which we have checked/resolved successfully
+// (as much as that is doable for a generic istm).
+// Now we need to apply it to satisfy a concrete constraint.
+//
+// Implementation-wise, instead of properly instantiating this generic istm,
+// which would require more implementation complexity, we pretend that
+// the user wrote a corresponding concrete istm, and resolve that.
+//
+static ImplementsStmt* useGenericImplementsStmt(CallExpr*        callsite,
+                                                InterfaceSymbol* isym,
+                                                CallExpr*        call2wf,
+                                                ImplementsStmt*  genIstm) {
+  // follow parts of checkInferredImplStmt()
+  SET_LINENO(genIstm);
+  ImplementsStmt* conIstm = buildInferredImplStmt(isym, call2wf);
+  genIstm->insertAfter(conIstm);
+  cgprint("instantiated generic implements statement%s",
+    idstring("", genIstm)); cgprint("%s\n", idstring("  ->", conIstm));
+
+  FnSymbol* wrapFn = wrapOneImplementsStatement(conIstm);
+  bool success = resolveImplementsStmt(wrapFn, conIstm, false, true);
+
+  return success ? conIstm : nullptr;
+}
+
 #ifdef PRINT_CG
+static void cgprintCheckedConstraint(InterfaceSymbol* isym,
+                                     IfcConstraint*   constraint,
+                                     CallExpr*        callsite,
+                                     ImplementsStmt*  bestIstm,
+                                     bool             maybeUserDefined) {
   cgprint("checked constraint for %s  %s\n",
           symstring(isym), debugLoc(constraint));
 
@@ -702,12 +998,15 @@ static void cgprintCheckedConstraint(InterfaceSymbol* isym,
   }
 
   if (bestIstm)
-    cgprint("  satisfied with implements stmt%s  %s\n\n",
+    cgprint("  satisfied with %simplements stmt%s  %s\n\n",
+            maybeUserDefined ? "" : "inferred ",
             idstring("", bestIstm), debugLoc(bestIstm));
   else
     cgprint("  not satisfied\n\n");
-#endif
 }
+#else
+#define cgprintCheckedConstraint(...)
+#endif
 
 // Traverse lexical scopes starting with callsite's.
 // If the scope of 'wrapFn' is found first, return NULL.
@@ -755,21 +1054,15 @@ static Expr* closestInterestingScopeAnchor(CallExpr* callsite,
   }
 }
 
-// Follows ImplementsStmt::build().
-// Clears 'call2wf'.
-static ImplementsStmt* buildInferredImplStmt(InterfaceSymbol* isym,
-                                             CallExpr* call2wf) {
-  IfcConstraint* icon = new IfcConstraint(new SymExpr(isym));
-  for_alist(actual, call2wf->argList)
-    icon->consActuals.insertAtTail(actual->remove());
-
- return new ImplementsStmt(icon, new BlockStmt());
-}
-
+// 'failureWrapFn' is the wrapFn for a negative outcome of an earlier attempt
+// to infer this constraint, if found, otherwise NULL.
 static ImplementsStmt* checkInferredImplStmt(CallExpr* callsite,
                                              InterfaceSymbol* isym,
                                              CallExpr* call2wf,
                                              FnSymbol* failureWrapFn) {
+  cgprint("checking for inferred implements statement for ifc %s  %s\n",
+          symstring(isym), debugLoc(callsite));
+
   if (isym->requiredFns.n == 0)
     // Do not infer for an empty interface.
     return NULL;
@@ -784,10 +1077,11 @@ static ImplementsStmt* checkInferredImplStmt(CallExpr* callsite,
   // Try to infer as if we are in anchor's scope.
   // Retain the outcome - positive or negative - next to 'anchor'.
 
+  SET_LINENO(callsite);
   ImplementsStmt* istm = buildInferredImplStmt(isym, call2wf);
   anchor->insertBefore(istm);
   FnSymbol* wrapFn = wrapOneImplementsStatement(istm);
-  bool success = resolveImplementsStmt(wrapFn, istm, true, false);
+  bool success = resolveImplementsStmt(wrapFn, istm, false, false);
 
   return success ? istm : NULL;
 }
@@ -816,9 +1110,9 @@ Efficiency:
    so it can be reused in more cases.
    Ex. place it in the innermost scope that defines any functions or has POI.
 */
-ImplementsStmt* constraintIsSatisfiedAtCallSite(CallExpr* callsite,
+ImplementsStmt* constraintIsSatisfiedAtCallSite(CallExpr*      callsite,
                                                 IfcConstraint* constraint,
-                                                SymbolMap& substitutions) {
+                                                SymbolMap&     substitutions) {
   if (callsite->id == breakOnResolveID  ||
       constraint->id == breakOnResolveID ) gdbShouldBreakHere();
 
@@ -841,25 +1135,24 @@ ImplementsStmt* constraintIsSatisfiedAtCallSite(CallExpr* callsite,
   Vec<FnSymbol*> visibleFns;
   gatherVisibleWrapperFns(callsite, call2wf, visibleFns);
 
-  ImplementsStmt *firstSuccess = NULL,
-                 *bestIstm = NULL;
-  FnSymbol* firstFailure = NULL;
+  FirstPick pick = pickMatchingImplementsStmts(visibleFns, call2wf);
+  ImplementsStmt* bestIstm = NULL;
 
-  pickMatchingImplementsStmt(visibleFns, call2wf,
-                             firstSuccess, firstFailure); // it sets these
-
-  if (firstSuccess != NULL)
-    // yippee, found a satisfying istm
-    bestIstm = firstSuccess;
+  if (ImplementsStmt* conSuccess = pick.conSuccess)
+    // yippee, found a satisfying concrete istm
+    bestIstm = conSuccess;
+  
+  else if (ImplementsStmt* genSuccess = pick.genSuccess)
+    // instantiate a generic istm
+    bestIstm = useGenericImplementsStmt(callsite, isym, call2wf, genSuccess);
 
   else if (fInferImplementsStmts)
-    // We found either a negative outcome of an earlier attempt to infer
-    // in 'firstFailure', or nothing at all.
-    bestIstm = checkInferredImplStmt(callsite, isym, call2wf,  firstFailure);
+    bestIstm = checkInferredImplStmt(callsite, isym, call2wf, pick.failure);
 
-  call2wf = NULL; // call2wf is cleared in checkInferredImplStmt
+  call2wf = nullptr; // call2wf may now be useless
 
-  cgprintCheckedConstraint(isym, constraint, callsite, bestIstm);
+  cgprintCheckedConstraint(isym, constraint, callsite, bestIstm,
+        pick.conSuccess != nullptr || pick.genSuccess != nullptr);
 
   // It is resolved, if non-null.
   return bestIstm;
@@ -930,10 +1223,9 @@ void adjustForCGinstantiation(FnSymbol* fn, SymbolMap& substitutions) {
 void resolveConstrainedGenericSymbol(Symbol* sym, bool mustBeCG) {
   if (FnSymbol* fn = toFnSymbol(sym)) {
     if (fn->hasFlag(FLAG_IMPLEMENTS_WRAPPER)) {
-      bool isSuccess;
-      ImplementsStmt* istm = implementsStmtForWrapperFn(fn, isSuccess);
-      INT_ASSERT(isSuccess); // remove this if there is a legitimate case
-      resolveImplementsStmt(fn, istm, false, true);
+      IstmAndSuccess iss = implementsStmtForWrapperFn(fn);
+      INT_ASSERT(iss.isSuccess); // remove this if there is a legitimate case
+      resolveImplementsStmt(fn, iss.istm, false, true);
       return;
     }
     if (fn->isConstrainedGeneric()) {

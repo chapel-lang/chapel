@@ -869,12 +869,14 @@ bool FnSymbol::hasGenericFormals(SymbolMap* map) const {
     } else if (formal->intent == INTENT_PARAM) {
       isGeneric = true;
 
-    } else if (toConstrainedType(formal->type)) {
+    } else if (ConstrainedType* ct = toConstrainedType(formal->type)) {
       // A CG function is known to be generic, so we should not be
-      // querying hasGenericFormals(). The only other functions
-      // with CT formals are those in 'interface' declarations.
+      // querying hasGenericFormals().
       INT_ASSERT(! isConstrainedGeneric());
-      INT_ASSERT(isInterfaceSymbol(defPoint->parentSymbol));
+      // Otherwise either it is a required fn in an 'interface' declaration
+      // or a generic implementation instantiated with a standin type.
+      INT_ASSERT(ct->ctUse == CT_GENERIC_STANDIN          ||
+                 isInterfaceSymbol(defPoint->parentSymbol));
 
     } else if (formal->type->symbol->hasFlag(FLAG_GENERIC) == true) {
       bool formalInstantiated = false;

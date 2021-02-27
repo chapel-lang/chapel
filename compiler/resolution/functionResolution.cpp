@@ -237,12 +237,10 @@ static bool useLegacyNilability(Symbol* at) {
   return false;
 }
 
-/************************************* | **************************************
-*                                                                             *
-* Invoke resolveFunction(fn) with 'call' on top of 'callStack'.               *
-*                                                                             *
-************************************** | *************************************/
 
+//
+// Invoke resolveFunction(fn) with 'call' on top of 'callStack'.
+//
 void resolveFnForCall(FnSymbol* fn, CallExpr* call) {
   // If 'call' is already on the call stack, do not add it.
   // If this assertion fails, change it to 'if'.
@@ -279,6 +277,29 @@ void resolveCallAndCallee(CallExpr* call, bool allowUnresolved) {
   } else if (!allowUnresolved) {
     INT_ASSERT(false);
   }
+}
+
+//
+// Resolve 'fn' and return it upon success.
+// If there are errors, DO NOT report then, just return NULL.
+//
+FnSymbol* tryResolveFunction(FnSymbol* fn) {
+  inTryResolve++;
+  tryResolveStates.push_back(CHECK_BODY_RESOLVES);
+  tryResolveFunctions.push_back(fn);
+
+  resolveFunction(fn);
+
+  check_state_t state = tryResolveStates.back();
+
+  tryResolveFunctions.pop_back();
+  tryResolveStates.pop_back();
+  inTryResolve--;
+
+  if (state == CHECK_FAILED)
+    return nullptr;
+  else
+    return fn;
 }
 
 
@@ -9122,6 +9143,8 @@ static void adjustInternalSymbols() {
   gDummyRef->qual = QUAL_REF;
   gDummyRef->addFlag(FLAG_REF);
   gDummyRef->removeFlag(FLAG_CONST);
+
+  createGenericStandins();
 }
 
 
@@ -9221,6 +9244,8 @@ void resolve() {
   resolveSupportForModuleDeinits();
 
   USR_STOP();
+
+  cleanupGenericStandins();  // should happen before resolveAutoCopies
 
   resolveExports();
 

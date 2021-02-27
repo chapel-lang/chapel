@@ -321,9 +321,10 @@ public:
 };
 
 // support for implements wrapper functions
+class IstmAndSuccess { public: ImplementsStmt* istm; bool isSuccess; };
 const char*     implementsStmtWrapperName(InterfaceSymbol* isym);
 const char*     interfaceNameForWrapperFn(FnSymbol* fn);
-ImplementsStmt* implementsStmtForWrapperFn(FnSymbol* wrapFn, bool& isSuccess);
+IstmAndSuccess  implementsStmtForWrapperFn(FnSymbol* wrapFn);
 FnSymbol*       wrapperFnForImplementsStmt(ImplementsStmt* istm);
 
 /************************************* | **************************************
