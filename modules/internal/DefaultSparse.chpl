@@ -57,8 +57,8 @@ module DefaultSparse {
                                             initElts=initElts);
     }
 
-	// ?FromMMS: this doesn't appear to be an order independent yielding loop, why
-	// is it marked as such
+    // ?FromMMS: this doesn't appear to be an order independent yielding loop, why
+    // is it marked as such
     pragma "order independent yielding loops"
     iter dsiIndsIterSafeForRemoving() {
       for i in 0..#_nnz by -1 {
@@ -258,7 +258,7 @@ module DefaultSparse {
       }
     }
 
-	// this returns the position for the last sparse index added
+    // this returns the position for the last sparse index added
     override proc bulkAdd_help(inds: [?indsDom] index(rank, idxType),
         dataSorted=false, isUnique=false, addOn=nilLocale){
       import Sort;
@@ -271,7 +271,7 @@ module DefaultSparse {
       }
 
       bulkAdd_prepareInds(inds, dataSorted, isUnique, Sort.defaultComparator);
-
+//writeln("DEBUG: bulkAdd, inds = ", inds);
       if _nnz == 0 {
 
         const dupCount = if isUnique then 0 else _countDuplicates(inds);
@@ -300,6 +300,7 @@ module DefaultSparse {
 
       const (actualInsertPts, actualAddCnt) =
         __getActualInsertPts(this, inds, isUnique);
+//writeln("DEBUG: bulkAdd, actualInsertPts = ", actualInsertPts, ", actualAddCnt=", actualAddCnt);
 
       const oldnnz = _nnz;
       _nnz += actualAddCnt;
@@ -309,18 +310,20 @@ module DefaultSparse {
 
       //linearly fill the new colIdx from backwards
       var newIndIdx = indsDom.high; //index into new indices
-      var oldIndIdx = oldnnz; //index into old indices
+      var oldIndIdx = oldnnz-1; //index into old indices
       var newLoc = actualInsertPts[newIndIdx]; //its position-to-be in new dom
       while newLoc == -1 {
         newIndIdx -= 1;
         if newIndIdx == indsDom.low-1 then break; //there were duplicates -- now done
         newLoc = actualInsertPts[newIndIdx];
       }
-
+//writeln("DEBUG: bulkAdd, newLoc = ", newLoc);
       var arrShiftMap: [{0..#oldnnz}] int; //to map where data goes
 
       for i in 0..#_nnz by -1 {
-        if oldIndIdx >= 1 && i > newLoc {
+//writeln("DEBUG: bulkAdd, i = ", i, ", _indices=", _indices);
+//writeln("DEBUG: bulkAdd, oldIndIdx = ", oldIndIdx, ", newLoc=", newLoc,", indsDom =", indsDom);
+        if oldIndIdx >= 0 && i > newLoc {
           //shift from old values
           _indices[i] = _indices[oldIndIdx];
           arrShiftMap[oldIndIdx] = i;
@@ -330,7 +333,7 @@ module DefaultSparse {
           //put the new guy in
           _indices[i] = inds[newIndIdx];
           newIndIdx -= 1;
-          if newIndIdx >= indsDom.low then 
+          if newIndIdx >= indsDom.low then
             newLoc = actualInsertPts[newIndIdx];
           else
             newLoc = -2; //finished new set
@@ -343,7 +346,7 @@ module DefaultSparse {
         else halt("Something went wrong");
       }
 
-      for a in _arrs do 
+      for a in _arrs do
         a.sparseBulkShiftArray(arrShiftMap, oldnnz);
 
       return actualAddCnt;
@@ -368,7 +371,7 @@ module DefaultSparse {
     }
 
     proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
-      if _to_borrowed(rhs._instance.type) == this.type && 
+      if _to_borrowed(rhs._instance.type) == this.type &&
          canDoDirectAssignment(rhs) {
 
         // ENGIN: We cannot use bulkGrow here, because rhs might be grown using

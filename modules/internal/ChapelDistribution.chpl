@@ -495,7 +495,8 @@ module ChapelDistribution {
       }
     }
 
-    // this is a helper function for bulkAdd functions in sparse subdomains.
+    // this is a helper function for bulkAdd functions in sparse subdomains that
+    // store the nonzeros in order based on their major and minor index
     // NOTE:it assumes that nnz array of the sparse domain has non-negative
     // indices. If, for some reason it changes, this function and bulkAdds have to
     // be refactored. (I think it is a safe assumption at this point and keeps the
@@ -514,8 +515,10 @@ module ChapelDistribution {
         for (i, p) in zip(inds, indivInsertPts)  {
           if i == lastInd then p = -1;
           else lastInd = i;
-        }
+       }
       }
+//writeln("DEBUG: __getActualInsertPts, isUnique = ", isUnique);
+//writeln("DEBUG: __getActualInsertPts, indivInsertPts = ", indivInsertPts);
 
       forall (i,p) in zip(inds, indivInsertPts) {
         if isUnique || p != -1 { //don't do anything if it's duplicate
@@ -523,7 +526,7 @@ module ChapelDistribution {
           p = if found then -1 else insertPt; //mark as duplicate
         }
       }
-
+//writeln("DEBUG: __getActualInsertPts, after find, indivInsertPts = ", indivInsertPts);
       //shift insert points for bulk addition
       //previous indexes that are added will cause a shift in the next indexes
       var actualAddCnt = 0;
@@ -536,6 +539,7 @@ module ChapelDistribution {
         }
         else ap = ip;
       }
+//writeln("DEBUG: __getActualInsertPts, after 'scan', actualInsertPts = ", actualInsertPts);
 
       return (actualInsertPts, actualAddCnt);
     }
