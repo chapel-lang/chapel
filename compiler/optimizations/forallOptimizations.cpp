@@ -33,27 +33,6 @@
 #include "stringutil.h"
 #include "view.h"
 
-enum CallRejectReason {
-  CRR_ACCEPT,
-  CRR_NOT_ARRAY_ACCESS_LIKE,
-  CRR_NO_CLEAN_INDEX_MATCH,
-  CRR_ACCESS_BASE_IS_LOOP_INDEX,
-  CRR_ACCESS_BASE_IS_NOT_OUTER_VAR,
-  CRR_ACCESS_BASE_IS_SHADOW_VAR,
-  CRR_TIGHTER_LOCALITY_DOMINATOR,
-  CRR_UNKNOWN,
-};
-
-struct ConstCharCmp {
-  bool operator() (const char *lhs, const char *rhs) const {
-    return strcmp(lhs, rhs) < 0;
-  }
-};
-
-std::set<const char *, ConstCharCmp> primMaybeLocalThisLocations;
-std::set<const char *, ConstCharCmp> primMaybeAggregateAssignLocations;
-
-
 // This file contains analysis and transformation logic that need to happen
 // before normalization. These transformations help the following optimizations:
 //
@@ -449,6 +428,32 @@ void finalizeForallOptimizationsResolution() {
   }
   primMaybeAggregateAssignLocations.clear();
 }
+
+// Support for reporting calls that are not optimized for different reasons
+enum CallRejectReason {
+  CRR_ACCEPT,
+  CRR_NOT_ARRAY_ACCESS_LIKE,
+  CRR_NO_CLEAN_INDEX_MATCH,
+  CRR_ACCESS_BASE_IS_LOOP_INDEX,
+  CRR_ACCESS_BASE_IS_NOT_OUTER_VAR,
+  CRR_ACCESS_BASE_IS_SHADOW_VAR,
+  CRR_TIGHTER_LOCALITY_DOMINATOR,
+  CRR_UNKNOWN,
+};
+
+struct ConstCharCmp {
+  bool operator() (const char *lhs, const char *rhs) const {
+    return strcmp(lhs, rhs) < 0;
+  }
+};
+
+// we store all the locations where we have added these primitives. When we
+// report finalizing an optimization (either positively or negatively) we remove
+// those locations from the set. Towards the end of resolution, if there are
+// still items left in these sets, those indicate that we reverted the
+// optimization by completely removing the block that those primitives are in.
+std::set<const char *, ConstCharCmp> primMaybeLocalThisLocations;
+std::set<const char *, ConstCharCmp> primMaybeAggregateAssignLocations;
 
 //
 // logging support for --report-auto-local-access and --report-auto-aggregation
