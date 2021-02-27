@@ -30,6 +30,7 @@
 #include "optimizations.h"
 #include "resolution.h"
 #include "stlUtil.h"
+#include "stringutil.h"
 #include "view.h"
 
 enum CallRejectReason {
@@ -42,6 +43,8 @@ enum CallRejectReason {
   CRR_TIGHTER_LOCALITY_DOMINATOR,
   CRR_UNKNOWN,
 };
+
+std::set<const char *> primMaybeLocalThisLocations;
 
 
 // This file contains analysis and transformation logic that need to happen
@@ -58,10 +61,10 @@ enum CallRejectReason {
 //                          applicable last statements within `forall` bodies
 
 static int curLogDepth = 0;
-static void LOG_ALA(int depth, const char *msg, BaseAST *node);
+static bool LOG_ALA(int depth, const char *msg, BaseAST *node);
 static void LOGLN_ALA(BaseAST *node);
 
-static void LOG_AA(int depth, const char *msg, BaseAST *node);
+static bool LOG_AA(int depth, const char *msg, BaseAST *node);
 static void LOGLN_AA(BaseAST *node);
 
 static bool callHasSymArguments(CallExpr *ce, const std::vector<Symbol *> &syms);
@@ -208,6 +211,8 @@ Expr *preFoldMaybeLocalThis(CallExpr *call) {
   if (fAutoAggregation) {
     findAndUpdateMaybeAggAssign(call, confirmed);
   }
+
+  primMaybeLocalThisLocations.erase(call->stringLoc());
 
   return ret;
 }
@@ -397,6 +402,33 @@ void cleanupRemainingAggCondStmts() {
     }
   }
 }
+
+void finalizeForallOptimizationsResolution() {
+  if (fVerify) {
+    forv_Vec (CallExpr, callExpr, gCallExprs) {
+      if (callExpr->isPrimitive(PRIM_MAYBE_LOCAL_THIS) ||
+          callExpr->isPrimitive(PRIM_MAYBE_LOCAL_ARR_ELEM) ||
+          callExpr->isPrimitive(PRIM_MAYBE_AGGREGATE_ASSIGN)) {
+        INT_FATAL(callExpr, "This primitive should have disappeared by now");
+      }
+    }
+  }
+  
+  if (fReportAutoLocalAccess) {
+    std::set<const char *>::iterator it;
+    for (it = primMaybeLocalThisLocations.begin() ;
+         it != primMaybeLocalThisLocations.end();
+         ++it) {
+      std::stringstream message;
+      message << "Optimization reverted. All static checks failed or code is unreachable.";
+      message << "(" << *it << ")";
+      LOG_ALA(0, message.str().c_str(), NULL);
+    }
+  }
+
+  primMaybeLocalThisLocations.clear();
+}
+
 //
 // logging support for --report-auto-local-access and --report-auto-aggregation
 // during the first analysis phase depth is used roughly in the following way
@@ -407,10 +439,13 @@ void cleanupRemainingAggCondStmts() {
 //
 // during resolution, the output is much more straightforward, and depth 0 is
 // used always
-static void LOG_help(int depth, const char *msg, BaseAST *node,
+static bool LOG_help(int depth, const char *msg, BaseAST *node,
                      ForallAutoLocalAccessCloneType cloneType, bool flag) {
+
+  bool reportedLoc = false;
   if (flag) {
-    bool verbose = (node->getModule()->modTag != MOD_INTERNAL &&
+    bool verbose = node == NULL ||  // to support wholesale reversion reporting
+                   (node->getModule()->modTag != MOD_INTERNAL &&
                     node->getModule()->modTag != MOD_STANDARD);
 
     const bool veryVerbose = false;
@@ -442,12 +477,12 @@ static void LOG_help(int depth, const char *msg, BaseAST *node,
         if (veryVerbose) {
           nprint_view(node);
         }
-        else {
-          std::cout << std::endl;
-        }
+        reportedLoc = true;
       }
+      std::cout << std::endl;
     }
   }
+  return reportedLoc;
 }
 
 static void LOGLN_help(BaseAST *node, bool flag) {
@@ -463,20 +498,20 @@ static void LOGLN_help(BaseAST *node, bool flag) {
   }
 }
 
-static void LOG_AA(int depth, const char *msg, BaseAST *node) {
+static bool LOG_AA(int depth, const char *msg, BaseAST *node) {
   ForallAutoLocalAccessCloneType cloneType = NOT_CLONE;
   if (ForallStmt *forall = toForallStmt(node)) {
     cloneType = forall->optInfo.cloneType;
   }
-  LOG_help(depth, msg, node, cloneType,
-           fAutoAggregation && fReportAutoAggregation);
+  return LOG_help(depth, msg, node, cloneType,
+                  fAutoAggregation && fReportAutoAggregation);
 }
 
 static void LOGLN_AA(BaseAST *node) {
   LOGLN_help(node, fAutoAggregation && fReportAutoAggregation);
 }
 
-static void LOG_ALA(int depth, const char *msg, BaseAST *node,
+static bool LOG_ALA(int depth, const char *msg, BaseAST *node,
                     bool forallDetails) {
   ForallAutoLocalAccessCloneType cloneType = NOT_CLONE;
 
@@ -489,13 +524,13 @@ static void LOG_ALA(int depth, const char *msg, BaseAST *node,
 
     cloneType = forall->optInfo.cloneType;
   }
-  LOG_help(depth, msg, node, cloneType,
+  return LOG_help(depth, msg, node, cloneType,
            fAutoLocalAccess && fReportAutoLocalAccess);
 }
 
-static void LOG_ALA(int depth, const char *msg, BaseAST *node) {
+static bool LOG_ALA(int depth, const char *msg, BaseAST *node) {
   ForallAutoLocalAccessCloneType cloneType = NOT_CLONE;
-  LOG_help(depth, msg, node, cloneType,
+  return LOG_help(depth, msg, node, cloneType,
            fAutoLocalAccess && fReportAutoLocalAccess);
 }
 
@@ -1373,8 +1408,14 @@ static void autoLocalAccess(ForallStmt *forall) {
       }
 
       if (canOptimizeStatically) {
-        LOG_ALA(2, "This call is a static optimization candidate", call);
+        bool reportedLoc = LOG_ALA(2,
+                                   "This call is a static optimization candidate",
+                                   call);
         LOGLN_ALA(call);
+
+        if (reportedLoc) {
+          primMaybeLocalThisLocations.insert(call->stringLoc());
+        }
 
         std::pair<CallExpr *, int> candidate;
         candidate.first = call;
@@ -1394,8 +1435,14 @@ static void autoLocalAccess(ForallStmt *forall) {
       // determine the symbol of the loop domain. But this call that I am
       // looking at still has potential because it is `A(i)` where `i` is
       // the loop index. So, add this call to dynamic candidates
-      LOG_ALA(2, "This call is a dynamic optimization candidate", call);
+      bool reportedLoc = LOG_ALA(2,
+                                 "This call is a dynamic optimization candidate",
+                                 call);
       LOGLN_ALA(call);
+
+      if (reportedLoc) {
+        primMaybeLocalThisLocations.insert(call->stringLoc());
+      }
 
       std::pair<CallExpr *, int> candidate;
       candidate.first = call;
