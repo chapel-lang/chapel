@@ -53,6 +53,33 @@ static void LOGLN_ALA(BaseAST *node);
 static bool LOG_AA(int depth, const char *msg, BaseAST *node);
 static void LOGLN_AA(BaseAST *node);
 
+// Support for reporting calls that are not optimized for different reasons
+enum CallRejectReason {
+  CRR_ACCEPT,
+  CRR_NOT_ARRAY_ACCESS_LIKE,
+  CRR_NO_CLEAN_INDEX_MATCH,
+  CRR_ACCESS_BASE_IS_LOOP_INDEX,
+  CRR_ACCESS_BASE_IS_NOT_OUTER_VAR,
+  CRR_ACCESS_BASE_IS_SHADOW_VAR,
+  CRR_TIGHTER_LOCALITY_DOMINATOR,
+  CRR_UNKNOWN,
+};
+
+struct ConstCharCmp {
+  bool operator() (const char *lhs, const char *rhs) const {
+    return strcmp(lhs, rhs) < 0;
+  }
+};
+
+// we store all the locations where we have added these primitives. When we
+// report finalizing an optimization (either positively or negatively) we remove
+// those locations from the set. Towards the end of resolution, if there are
+// still items left in these sets, those indicate that we reverted the
+// optimization by completely removing the block that those primitives are in.
+std::set<const char *, ConstCharCmp> primMaybeLocalThisLocations;
+std::set<const char *, ConstCharCmp> primMaybeAggregateAssignLocations;
+
+
 static bool callHasSymArguments(CallExpr *ce, const std::vector<Symbol *> &syms);
 static Symbol *getDotDomBaseSym(Expr *expr);
 static Expr *getDomExprFromTypeExprOrQuery(Expr *e);
@@ -428,32 +455,6 @@ void finalizeForallOptimizationsResolution() {
   }
   primMaybeAggregateAssignLocations.clear();
 }
-
-// Support for reporting calls that are not optimized for different reasons
-enum CallRejectReason {
-  CRR_ACCEPT,
-  CRR_NOT_ARRAY_ACCESS_LIKE,
-  CRR_NO_CLEAN_INDEX_MATCH,
-  CRR_ACCESS_BASE_IS_LOOP_INDEX,
-  CRR_ACCESS_BASE_IS_NOT_OUTER_VAR,
-  CRR_ACCESS_BASE_IS_SHADOW_VAR,
-  CRR_TIGHTER_LOCALITY_DOMINATOR,
-  CRR_UNKNOWN,
-};
-
-struct ConstCharCmp {
-  bool operator() (const char *lhs, const char *rhs) const {
-    return strcmp(lhs, rhs) < 0;
-  }
-};
-
-// we store all the locations where we have added these primitives. When we
-// report finalizing an optimization (either positively or negatively) we remove
-// those locations from the set. Towards the end of resolution, if there are
-// still items left in these sets, those indicate that we reverted the
-// optimization by completely removing the block that those primitives are in.
-std::set<const char *, ConstCharCmp> primMaybeLocalThisLocations;
-std::set<const char *, ConstCharCmp> primMaybeAggregateAssignLocations;
 
 //
 // logging support for --report-auto-local-access and --report-auto-aggregation
@@ -1383,7 +1384,7 @@ static void autoLocalAccess(ForallStmt *forall) {
     if (accBaseSym == NULL) {
       if (reason != CRR_UNKNOWN &&
           reason != CRR_NOT_ARRAY_ACCESS_LIKE) {
-        LOG_ALA(2, "Start analyzing call", call);
+        LOG_ALA(2, "Start analyzing call", call, /*forallDetails=*/true);
 
         std::stringstream message;
         message << "Cannot optimize: ";
