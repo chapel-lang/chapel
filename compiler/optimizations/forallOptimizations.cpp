@@ -44,8 +44,14 @@ enum CallRejectReason {
   CRR_UNKNOWN,
 };
 
-std::set<const char *> primMaybeLocalThisLocations;
-std::set<const char *> primMaybeAggregateAssignLocations;
+struct ConstCharCmp {
+  bool operator() (const char *lhs, const char *rhs) const {
+    return strcmp(lhs, rhs) < 0;
+  }
+};
+
+std::set<const char *, ConstCharCmp> primMaybeLocalThisLocations;
+std::set<const char *, ConstCharCmp> primMaybeAggregateAssignLocations;
 
 
 // This file contains analysis and transformation logic that need to happen
