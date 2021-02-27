@@ -60,6 +60,7 @@ Static check successful. Using localAccess [static and dynamic ALA clone]  (view
 Static check successful. Using localAccess with dynamic check (views.chpl:64)
 Static check successful. Using localAccess [static only ALA clone]  (views.chpl:63)
 Static check successful. Using localAccess [static only ALA clone]  (views.chpl:107)
+Local access attempt reverted. All static checks failed or code is unreachable.(views.chpl:86)
 
 Starting
 Slice: using slicing domain
