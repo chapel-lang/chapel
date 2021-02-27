@@ -45,6 +45,7 @@ enum CallRejectReason {
 };
 
 std::set<const char *> primMaybeLocalThisLocations;
+std::set<const char *> primMaybeAggregateAssignLocations;
 
 
 // This file contains analysis and transformation logic that need to happen
@@ -414,6 +415,8 @@ void finalizeForallOptimizationsResolution() {
     }
   }
   
+  // the following chunks can be refactored into a helper, but there are slight
+  // differences, and it may be dirtier if we do that.
   if (fReportAutoLocalAccess) {
     std::set<const char *>::iterator it;
     for (it = primMaybeLocalThisLocations.begin() ;
@@ -425,8 +428,20 @@ void finalizeForallOptimizationsResolution() {
       LOG_ALA(0, message.str().c_str(), NULL);
     }
   }
-
   primMaybeLocalThisLocations.clear();
+
+  if (fAutoAggregation) {
+    std::set<const char *>::iterator it;
+    for (it = primMaybeAggregateAssignLocations.begin() ;
+         it != primMaybeAggregateAssignLocations.end();
+         ++it) {
+      std::stringstream message;
+      message << "Optimization reverted. All static checks failed or code is unreachable.";
+      message << "(" << *it << ")";
+      LOG_AA(0, message.str().c_str(), NULL);
+    }
+  }
+  primMaybeAggregateAssignLocations.clear();
 }
 
 //
@@ -1585,16 +1600,20 @@ static void autoAggregation(ForallStmt *forall) {
         if (lastCall->isNamedAstr(astrSassign)) {
           // no need to do anything if it is array access
           if (assignmentSuitableForAggregation(lastCall, forall)) {
-            LOG_AA(1, "Found an aggregation candidate", lastCall);
+            reportedLoc = LOG_AA(1, "Found an aggregation candidate", lastCall);
 
             insertAggCandidate(lastCall, forall);
           }
           // we need special handling if it is a symbol that is an array element
           else if (handleYieldedArrayElementsInAssignment(lastCall, forall)) {
-            LOG_AA(1, "Found an aggregation candidate", lastCall);
+            reportedLoc = LOG_AA(1, "Found an aggregation candidate", lastCall);
 
             insertAggCandidate(lastCall, forall);
           }
+        }
+
+        if (reportedLoc) {
+          primMaybeAggregateAssignLocations.insert(lastCall->stringLoc());
         }
       }
     }
@@ -1881,6 +1900,8 @@ Expr *preFoldMaybeAggregateAssign(CallExpr *call) {
     }
     replacement = assign;
   }
+
+  primMaybeAggregateAssignLocations.erase(call->stringLoc());
 
   return replacement;
 }
