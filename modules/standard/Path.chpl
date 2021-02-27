@@ -387,12 +387,13 @@ proc splitExt(path:string): (string, string) {
     lead += 1;
   }
 
-  var lastIdx = path[lead..].rfind(".") + lead;
+  var lastIdx = path[lead..].rfind(".");
 
   if(lead == path.size || lastIdx == -1) {
     return (path, "");
   }
   else {
+    lastIdx += lead;
     return (path[..(lastIdx - 1)], path[lastIdx..]);
   }
 }

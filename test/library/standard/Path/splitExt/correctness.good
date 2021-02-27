@@ -1,0 +1,8 @@
+(foo, .tmp)
+(bar/foo, .tmp)
+(bar/foo, )
+(/bar/foo/, )
+(./foo, )
+(../foo, )
+(../foo, .tmp)
+(.foo, )
