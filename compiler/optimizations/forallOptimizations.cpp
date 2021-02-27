@@ -429,7 +429,7 @@ void finalizeForallOptimizationsResolution() {
          it != primMaybeLocalThisLocations.end();
          ++it) {
       std::stringstream message;
-      message << "Optimization reverted. All static checks failed or code is unreachable.";
+      message << "Local access attempt reverted. All static checks failed or code is unreachable.";
       message << "(" << *it << ")";
       LOG_ALA(0, message.str().c_str(), NULL);
     }
@@ -442,7 +442,7 @@ void finalizeForallOptimizationsResolution() {
          it != primMaybeAggregateAssignLocations.end();
          ++it) {
       std::stringstream message;
-      message << "Optimization reverted. All static checks failed or code is unreachable.";
+      message << "Aggregation attempt reverted. Could not prove that exactly one side of the assignment is local.";
       message << "(" << *it << ")";
       LOG_AA(0, message.str().c_str(), NULL);
     }
