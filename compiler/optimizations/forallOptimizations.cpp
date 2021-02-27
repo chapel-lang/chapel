@@ -405,7 +405,7 @@ void cleanupRemainingAggCondStmts() {
 
 void finalizeForallOptimizationsResolution() {
   if (fVerify) {
-    forv_Vec (CallExpr, callExpr, gCallExprs) {
+    for_alive_in_Vec (CallExpr, callExpr, gCallExprs) {
       if (callExpr->isPrimitive(PRIM_MAYBE_LOCAL_THIS) ||
           callExpr->isPrimitive(PRIM_MAYBE_LOCAL_ARR_ELEM) ||
           callExpr->isPrimitive(PRIM_MAYBE_AGGREGATE_ASSIGN)) {
