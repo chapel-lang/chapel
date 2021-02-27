@@ -1384,7 +1384,7 @@ static void autoLocalAccess(ForallStmt *forall) {
     if (accBaseSym == NULL) {
       if (reason != CRR_UNKNOWN &&
           reason != CRR_NOT_ARRAY_ACCESS_LIKE) {
-        LOG_ALA(2, "Start analyzing call", call, /*forallDetails=*/true);
+        LOG_ALA(2, "Start analyzing call", call);
 
         std::stringstream message;
         message << "Cannot optimize: ";
