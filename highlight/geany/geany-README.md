@@ -17,11 +17,11 @@ Instructions:
       2.  Include the following two lines into `~/.config/geany/filetype_extensions.conf`, if it     already exists:
         * under `[Extensions]:`
 
-               `Chapel=*.chpl;`
+               Chapel=*.chpl;
 
         * under `[Groups]:`
 
-               `Programming=Chapel;`
+               Programming=Chapel;
 
 3. Close and reload Geany.
 
