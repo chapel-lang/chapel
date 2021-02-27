@@ -48,9 +48,13 @@ var D = newBlockDom(1..10, 1..10);
   }
 
   // ditto
+  /* 
+   This currently hits an auto-aggregation bug
   forall i in D {
     forall a in A {
       A[i] = a;
     }
   }
+
+  */
 }

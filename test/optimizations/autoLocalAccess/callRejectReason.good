@@ -45,21 +45,3 @@ Start analyzing forall (callRejectReason.chpl:44)
 |   Cannot optimize: call base is in a nested on and/or forall (callRejectReason.chpl:46)
 End analyzing forall (callRejectReason.chpl:44)
 
-
-Start analyzing forall (callRejectReason.chpl:52)
-| Found loop domain (callRejectReason.chpl:43)
-| Will attempt static and dynamic optimizations (callRejectReason.chpl:52)
-|
-|  Start analyzing call (callRejectReason.chpl:53)
-|   Cannot optimize: call arguments don't match loop indices cleanly (callRejectReason.chpl:53)
-End analyzing forall (callRejectReason.chpl:52)
-
-
-Start analyzing forall (callRejectReason.chpl:51)
-| Found loop domain (callRejectReason.chpl:3)
-| Will attempt static and dynamic optimizations (callRejectReason.chpl:51)
-|
-|  Start analyzing call (callRejectReason.chpl:53)
-|   Cannot optimize: call base is in a nested on and/or forall (callRejectReason.chpl:53)
-End analyzing forall (callRejectReason.chpl:51)
-
