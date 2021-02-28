@@ -509,7 +509,7 @@ static void markTypesWithDefaultInitEqOrAssign(FnSymbol* fn);
 static void resolveAlsoConversions(FnSymbol* fn, CallExpr* forCall);
 
 void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
-  if (fn->isResolved() == false) {
+  if (! fn->isResolved() && ! fn->hasFlag(FLAG_CG_INTERIM_INST)) {
     if (fn->id == breakOnResolveID) {
       printf("breaking on resolve fn %s[%d] (%d args)\n",
              fn->name, fn->id, fn->numFormals());
