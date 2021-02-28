@@ -2470,9 +2470,11 @@ module ChapelArray {
     if d1._value == d2._value then return true;
     if d1.size != d2.size then return false;
     if d1._value.parentDom != d2._value.parentDom then return false;
+
     // Should eventually be a forall+reduction
     for idx in d1 do
       if !d2.contains(idx) then return false;
+
     return true;
   }
 

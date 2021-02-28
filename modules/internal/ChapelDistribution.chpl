@@ -517,8 +517,6 @@ module ChapelDistribution {
           else lastInd = i;
        }
       }
-//writeln("DEBUG: __getActualInsertPts, isUnique = ", isUnique);
-//writeln("DEBUG: __getActualInsertPts, indivInsertPts = ", indivInsertPts);
 
       forall (i,p) in zip(inds, indivInsertPts) {
         if isUnique || p != -1 { //don't do anything if it's duplicate
@@ -526,7 +524,7 @@ module ChapelDistribution {
           p = if found then -1 else insertPt; //mark as duplicate
         }
       }
-//writeln("DEBUG: __getActualInsertPts, after find, indivInsertPts = ", indivInsertPts);
+
       //shift insert points for bulk addition
       //previous indexes that are added will cause a shift in the next indexes
       var actualAddCnt = 0;
@@ -539,7 +537,6 @@ module ChapelDistribution {
         }
         else ap = ip;
       }
-//writeln("DEBUG: __getActualInsertPts, after 'scan', actualInsertPts = ", actualInsertPts);
 
       return (actualInsertPts, actualAddCnt);
     }
