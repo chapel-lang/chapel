@@ -60,9 +60,50 @@ module ChapelAutoAggregation {
     return nil;  // return type signals that we shouldn't aggregate
   }
 
+  private proc isHeterogeneousTuple(type t) param {
+    if (isTuple(t) && !isHomogeneousTuple(t)) {
+      return true;
+    }
+    else {
+      return false;
+    }
+  }
+
+  private proc elemTypeSupportsAggregation(type t) param {
+    if (t == int || t == uint || t == real || t == bool) {
+      return true;
+    }
+    if (isHomogeneousTuple(t)) {
+      for param i in 0..<t.size {
+        if (!elemTypeSupportsAggregation(t[i])) {
+          return false;
+        }
+      }
+      return true;
+    }
+    if (isHeterogeneousTuple(t)) {
+      return elemTypeSupportsAggregation(t, 0);
+    }
+    
+    return false;
+  }
+
+  private proc elemTypeSupportsAggregation(type t, param dim: int) param
+      where isHeterogeneousTuple(t) {
+
+    if (dim+1 == t.size) {
+      return elemTypeSupportsAggregation(t[dim]);
+    }
+    else {
+      return elemTypeSupportsAggregation(t[dim]) &&
+             elemTypeSupportsAggregation(t, dim+1);
+
+    }
+  }
+
   proc chpl__arrayIteratorYieldsLocalElements(x) param {
     if isArray(x) {
-      if !isClass(x.eltType) { // I have no idea if we can do this for wide pointers
+      if elemTypeSupportsAggregation(x.eltType) { // I have no idea if we can do this for wide pointers
         return x.iteratorYieldsLocalElements();
       }
     }

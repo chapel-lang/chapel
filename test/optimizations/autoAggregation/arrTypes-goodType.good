@@ -1,0 +1,19 @@
+Start analyzing forall for automatic aggregation (arrTypes.chpl:7)
+| Found an aggregation candidate (arrTypes.chpl:8)
+|  Potential source aggregation (arrTypes.chpl:8)
+End analyzing forall for automatic aggregation (arrTypes.chpl:7)
+
+Aggregation candidate has confirmed local child  (arrTypes.chpl:8)
+LHS is local, RHS is nonlocal. Will use source aggregation  (arrTypes.chpl:8)
+Replaced assignment with aggregation (arrTypes.chpl:8)
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called

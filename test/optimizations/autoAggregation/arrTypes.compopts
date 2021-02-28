@@ -1,0 +1,9 @@
+-selemType=int            # arrTypes-goodType
+-selemType=real           # arrTypes-goodType
+-selemType=bool           # arrTypes-goodType
+-selemType=uint           # arrTypes-goodType
+-selemType=(int,int)      # arrTypes-goodType
+-selemType=(int,real)     # arrTypes-goodType
+
+-selemType=string         # arrTypes-badType
+-selemType=(int,string)   # arrTypes-badType
