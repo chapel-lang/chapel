@@ -118,10 +118,10 @@ class CSDom: BaseSparseDomImpl {
 
   /* (row|col) start */
   pragma "local field"
-  var startIdx: [startIdxDom] idxType;      // would like index(nnzDom)
+  var startIdx: [startIdxDom] idxType;    // would like index(nnzDom)
   /* (row|col) idx */
   pragma "local field"
-  var idx: [nnzDom] idxType;        // would like index(parentDom.dim(0))
+  var idx: [nnzDom] idxType;      // would like index(parentDom.dim(0))
 
   /* Initializer */
   proc init(param rank, type idxType, param compressRows, param sortedIndices, param stridable, dist: unmanaged CS(compressRows,sortedIndices), parentDom: domain) {

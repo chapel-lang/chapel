@@ -37,37 +37,42 @@ use IO;
   /* Rows */
   {
     var D = CSRDomain(3);
-
+//writeln("line 40");
     assertEqual(D, Dom0, "CSRDomain(3)");
   }
 
   /* Dimensions */
   {
     var D = CSRDomain(3, 3);
+//writeln("line 48");
     assertEqual(D, Dom0, "CSRDomain(3, 3)");
   }
 
   /* Range */
   {
     var D = CSRDomain(1..3);
+//writeln("line 54");
     assertEqual(D, Dom, "CSRDomain(1..3)");
   }
 
   /* Ranges */
   {
     var D = CSRDomain(1..4, 1..6);
+//writeln("line 62");
     assertEqual(D, Dom2, "CSRDomain(1..4, 1..6)");
   }
 
   /* Domain - CSR */
   {
     var D = CSRDomain(Dom);
+//writeln("line 69");
     assertEqual(D, Dom, "CSRDomain(Dom)");
   }
 
   /* Domain - Dense */
   {
     var D = CSRDomain(parentDom);
+//writeln("line 76");
     assertEqual(D, Dom, "CSRDomain(parentDom)");
   }
 
@@ -75,6 +80,7 @@ use IO;
   {
     var I = LinearAlgebra.eye(3,3);
     var A = CSRMatrix(I);
+//writeln("line 83");
     assertEqual(A.domain, IDom0, "CSRMatrix(I)");
   }
 
@@ -82,6 +88,7 @@ use IO;
   {
     var A: [Dom] real;
     var M = CSRMatrix(A);
+//writeln("line 92");
     assertEqual(M.domain, Dom, "CSRDomain(A)");
   }
 
@@ -89,6 +96,7 @@ use IO;
   {
     var A: [Dom] real;
     var M = CSRMatrix(A, eltType=int);
+//writeln("line 100");
     assertEqual(M.domain, Dom, "CSRMatrix(A)");
     assertTrue(isIntType(M.eltType), "CSRMatrix(A, eltType=int)");
   }
@@ -97,7 +105,7 @@ use IO;
   {
     var A = eye(IDom);
     var B: [IDom] real = 1;
-
+//writeln("line 109");
     assertEqual(A.domain, B.domain, 'LinearAlgebra.Sparse.eye(IDom) // domain');
     assertEqual(A, B, 'LinearAlgebra.Sparse.eye(IDom) // array');
   }
@@ -133,7 +141,7 @@ use IO;
         csrAmB = csrA.minus(csrB),
         csrAtB = csrA.times(csrB),
         csrAdC = csrA.elementDiv(csrC);
-
+//writeln("line 144");
     assertEqual(csrApB, CSRMatrix(ApB), "csrA.plus(csrB)");
     assertEqual(csrAmB, CSRMatrix(AmB), "csrA.minus(csrB)");
     assertEqual(csrAtB, CSRMatrix(AtB), "csrA.times(csrB)");
@@ -151,10 +159,12 @@ use IO;
 
     // Sparse dot
     var csrA = CSRMatrix(A);
+//writeln("csrA.dom=", csrA.dom);
     var csrAAT = csrA.dot(csrA.T);
-
+//writeln("csrAAT.dom=", csrAAT.dom);
     var csrAT = csrA.T;
-
+//writeln("line 166: csrAT=", csrAT, ", csrA = ", csrA, ", AAT=", AAT);
+//writeln("csrAAT = ", csrAAT, ", CSRMatrix(AAT)=", CSRMatrix(AAT));
     assertEqual(csrAAT, CSRMatrix(AAT), "csrA.dot(csrA.T)");
   }
 
@@ -167,7 +177,7 @@ use IO;
     var csrA = CSRMatrix(A);
     var csrB = CSRMatrix(B);
     var csrAB = csrA.dot(csrB);
-
+//writeln("line 178");
     assertEqual(csrAB, CSRMatrix(AB), "csrA.dot(csrB)");
   }
 
@@ -175,7 +185,9 @@ use IO;
   {
     var A: [Dom] real;
     var I: [IDom] real;
+//writeln("A.dom = ", A.dom);
     var AI = dot(A, I);
+//writeln("AI.dom = ", AI.dom);
     assertEqual(AI, A, "dot(A, I)");
   }
 

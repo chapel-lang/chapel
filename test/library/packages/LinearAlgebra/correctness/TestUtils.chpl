@@ -35,6 +35,10 @@ proc assertEqual(X: [], Y: [], msg) {
 
 proc assertEqual(X: [], Y: [], msg) where isSparseArr(X) && isSparseArr(Y) {
   if !correctness then writeln(msg);
+//writeln("TestUtils,assertEqual: X=", X);
+//writeln("TestUtils,assertEqual: Y=", Y);
+//writeln("TestUtils,assertEqual: X.shape=", X.shape, ", Y.shape=", Y.shape);
+//writeln("TestUtils,assertEqual: X.dom=", X.dom, ", Y.dom=", Y.dom);
   if X.shape != Y.shape {
     writeFailure(X.shape, Y.shape, msg);
     return;
