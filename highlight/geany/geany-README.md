@@ -14,7 +14,7 @@ Instructions:
 
    2. Either:
       1.  Copy filetype_extensions.conf to `~/.config/geany/` OR
-      2.  Include the following two lines into `~/.config/geany/filetype_extensions.conf`, if it     already exists:
+      2.  Include the following two lines into `~/.config/geany/filetype_extensions.conf`, if it already exists:
         * under `[Extensions]:`
 
                Chapel=*.chpl;
