@@ -8,7 +8,7 @@ var s$: sync int;
 writeln(i, "  blank intent");
 cobegin with (i) {
   {
-    s$ = 1;
+    s$.writeEF(1);
   }{
     s$;
     writeln(i, "    inside");
@@ -19,9 +19,9 @@ cobegin with (i) {
 writeln(i, "  const intent");
 cobegin with (const i) {
   {
-    s$ = 1;
+    s$.writeEF(1);
   }{
-    s$;
+    s$.readFE();
     writeln(i, "    inside");
   }
 }
@@ -32,9 +32,9 @@ cobegin with (in i) {
   {
     i = 666;
     writeln(i, "    inside1");
-    s$ = 1;
+    s$.writeEF(1);
   }{
-    s$;
+    s$.readFE();
     writeln(i, "    inside2");
   }
 }
@@ -43,9 +43,9 @@ cobegin with (in i) {
 writeln(i, "  const in intent");
 cobegin with (const in i) {
   {
-    s$ = 1;
+    s$.writeEF(1);
   }{
-    s$;
+    s$.readFE();
     writeln(i, "    inside");
   }
 }
@@ -54,9 +54,9 @@ cobegin with (const in i) {
 writeln(i, "  const ref intent");
 cobegin with (const ref i) {
   {
-    s$ = 1;
+    s$.writeEF(1);
   }{
-    s$;
+    s$.readFE();
     writeln(i, "    inside");
   }
 }
@@ -67,9 +67,9 @@ cobegin with (ref i) {
   {
     i = 666;
     writeln(i, "    inside1");
-    s$ = 1;
+    s$.writeEF(1);
   }{
-    s$;
+    s$.readFE();
     writeln(i, "    inside2");
   }
 }

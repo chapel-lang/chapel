@@ -3202,17 +3202,20 @@ static Type* resolveTypeSpecifier(CallInfo& info) {
 }
 
 static
-void resolveNormalCallAdjustAssignType(CallExpr* call) {
+void resolveNormalCallAdjustAssign(CallExpr* call) {
   if (call->isNamedAstr(astrSassign)) {
     int i = 1;
     if (call->get(1)->typeInfo() == dtMethodToken) {
       i += 2; // pass method token and (type) this arg
     }
     if (i <= call->numActuals()) {
+      Expr* lhsExpr = call->get(i);
+      Expr* rhsExpr = call->get(i+1);
+      Type* targetType = lhsExpr->typeInfo();
+      Type* srcType = rhsExpr->getValType();
+
       // Adjust the type for formal_temp_out before trying to resolve '='
-      if (SymExpr* lhsSe = toSymExpr(call->get(i))) {
-        Type* targetType = lhsSe->symbol()->type;
-        Type* srcType = call->get(i+1)->getValType();
+      if (SymExpr* lhsSe = toSymExpr(lhsExpr)) {
         if (targetType == dtSplitInitType) {
           targetType = srcType;
         } else if (targetType->symbol->hasFlag(FLAG_GENERIC)) {
@@ -3223,6 +3226,29 @@ void resolveNormalCallAdjustAssignType(CallExpr* call) {
                                             /* inOrOtherValue */ true);
         }
         lhsSe->symbol()->type = targetType;
+      }
+
+      // This is a workaround to avoid deprecation warnings for sync/single
+      // variables within compiler-generated assignment functions.
+      FnSymbol* inFn = call->getFunction();
+      if (isUnresolvedSymExpr(call->baseExpr) &&
+          inFn->name == astrSassign &&
+          inFn->hasFlag(FLAG_COMPILER_GENERATED) &&
+          (isSyncType(srcType) || isSingleType(srcType)) &&
+          targetType->getValType() == srcType) {
+
+        // if we are in a compiler-generated assign, rewrite sync/single
+        // assignment to avoid deprecation warnings.
+
+        // remove this and method token if this was a method invocation of =
+        for (int j = 1; j < i; j++) {
+          call->get(1)->remove();
+        }
+        INT_ASSERT(call->numActuals() == 2);
+
+        Expr* newBase =
+          new UnresolvedSymExpr("chpl__compilerGeneratedAssignSyncSingle");
+        call->baseExpr->replace(newBase);
       }
     }
   }
@@ -3247,7 +3273,7 @@ FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState) {
 
   resolveGenericActuals(call);
 
-  resolveNormalCallAdjustAssignType(call);
+  resolveNormalCallAdjustAssign(call);
 
   if (isGenericRecordInit(call) == true) {
     retval = resolveInitializer(call);
@@ -6972,12 +6998,43 @@ void resolveInitVar(CallExpr* call) {
     targetType = srcType;
   }
 
+  bool srcSyncSingle = isSyncType(srcType->getValType()) ||
+                       isSingleType(srcType->getValType());
+
+  // This is a workaround to avoid deprecation warnings for sync/single
+  // variables within compiler-generated initializers.
+  FnSymbol* inFn = call->getFunction();
+  if (srcSyncSingle &&
+      inFn->hasFlag(FLAG_COMPILER_GENERATED) &&
+      (inFn->name == astrInit || inFn->name == astrInitEquals) &&
+      targetType->getValType() == srcType->getValType()) {
+
+    targetType = targetType->getValType();
+
+    // change
+    //   PRIM_INIT_VAR lhsSync, rhsSync
+    // to
+    //   PRIM_MOVE lhsSync, chpl__compilerGeneratedCopySyncSingle(rhsSync)
+
+    call->primitive = primitives[PRIM_MOVE];
+    srcExpr->remove();
+    CallExpr* clone = new CallExpr("chpl__compilerGeneratedCopySyncSingle",
+                                   srcExpr);
+    call->insertAtTail(clone);
+    resolveExpr(clone);
+    resolveMove(call);
+
+    return;
+  }
+
+
+
   // 'var x = new _domain(...)' should not bother going through chpl__initCopy
   // logic so that the result of the 'new' is MOVE'd and not copy-initialized,
   // which is handled in the 'init=' branch.
   bool isDomainWithoutNew = targetType->getValType()->symbol->hasFlag(FLAG_DOMAIN) &&
                             src->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW) == false;
-  bool initCopySyncSingle = inferType && (isSyncType(srcType->getValType()) || isSingleType(srcType->getValType()));
+  bool initCopySyncSingle = inferType && srcSyncSingle;
   bool initCopyIter = inferType && srcType->getValType()->symbol->hasFlag(FLAG_ITERATOR_RECORD);
 
   if (dst->hasFlag(FLAG_NO_COPY) ||

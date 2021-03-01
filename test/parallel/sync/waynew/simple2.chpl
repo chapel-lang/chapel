@@ -11,7 +11,7 @@ begin {
   j = 0;
   while (j < ITERATIONS) {
     for w in 1..WAIT do;
-    r = s;
+    r = s.readFE();
     writeln( "2: got ", r);
     j += 1;
   }
@@ -20,6 +20,6 @@ begin {
 var k: int;
 k = 0;
 while (k < ITERATIONS) {
-  s = k;
+  s.writeEF(k);
   k += 1;
 }

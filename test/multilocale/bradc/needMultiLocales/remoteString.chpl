@@ -7,13 +7,13 @@ extern proc printf(fmt:c_string, x...);
 proc main() {
   s1 = "foo";
   on Locales(1) do begin with (ref s1) {
-    const tmp = flag1;
+    const tmp = flag1.readFE();
     printf("%s\n", ("s1 is: " + s1).c_str());
-    done = true;
+    done.writeEF(true);
   }
   s1 = "boohoo";
-  flag1 = true;
-  done;
+  flag1.writeEF(true);
+  done.readFE();
 
   var s2: string;
   var flag2: sync bool;
@@ -21,10 +21,10 @@ proc main() {
   sync {
     s2 = "foo";
     on Locales(1) do begin with (ref s2) {
-        const tmp = flag2;
+        const tmp = flag2.readFE();
         printf("%s\n", ("s2 is: " + s2).c_str());
       }
     s2 = "boohoo";
-    flag2 = true;
+    flag2.writeEF(true);
   }
 }

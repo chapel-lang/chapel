@@ -1763,7 +1763,7 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
 
       // save our local scan total away and signal that it's ready
       elemPerLoc[1] = tot;
-      inputReady$[1] = true;
+      inputReady$[1].writeEF(true);
 
       // the "first" locale scans the per-locale contributions as they
       // become ready
@@ -1773,12 +1773,12 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
         var next: resType = metaop.identity;
         for locid in dom.dist.targetLocDom {
           const targetloc = targetLocs[locid];
-          const locready = inputReady$.replicand(targetloc)[1];
+          const locready = inputReady$.replicand(targetloc)[1].readFE();
 
           // store the scan value and mark that it's ready
           ref locVal = elemPerLoc.replicand(targetloc)[1];
           locVal <=> next;
-          outputReady$.replicand(targetloc)[1] = true;
+          outputReady$.replicand(targetloc)[1].writeEF(true);
 
           // accumulate to prep for the next iteration
           metaop.accumulateOntoState(next, locVal);
@@ -1788,7 +1788,7 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
 
       // block until someone tells us that our local value has been updated
       // and then read it
-      const resready = outputReady$[1];
+      const resready = outputReady$[1].readFE();
       const myadjust = elemPerLoc[1];
       if debugBlockScan then
         writeln(locid, ": myadjust = ", myadjust);

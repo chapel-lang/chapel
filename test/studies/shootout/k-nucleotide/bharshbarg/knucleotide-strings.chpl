@@ -62,10 +62,10 @@ proc calculate(data : string, size : int) {
       privMap[hash(data[i:byteIndex..#size])] += 1;
     }
 
-    lock$;                                  // read to acquire lock
+    lock$.readFE();                         // read to acquire lock
     for (k,v) in privMap.items() do
       freqs[k] += v;                        // accumulate into returned array
-    lock$ = true;                           // write to release lock
+    lock$.writeEF(true);                    // write to release lock
   }
 
   return freqs;

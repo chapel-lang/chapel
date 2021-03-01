@@ -11,8 +11,8 @@ iter count() {
   var done = false;
     
   while (!done) {
-    const myLocIndex = currIndex;  // read currIndex, leave empty;
-    currIndex = myLocIndex + 1;    // write currIndex, leave full;
+    const myLocIndex = currIndex.readFE();  // read currIndex, leave empty;
+    currIndex.writeEF(myLocIndex + 1);    // write currIndex, leave full;
     if myLocIndex <= numIters then
       yield myLocIndex;
     else

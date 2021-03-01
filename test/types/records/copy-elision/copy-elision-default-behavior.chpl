@@ -155,9 +155,9 @@ proc test3c() {
     writeln(y.toString());
     assert(y.locale == here);
     assert(y.ptr.xx.locale == here);
-    s = 1;
+    s.writeEF(1);
   }
-  s;
+  s.readFE();
 }
 sync { test3c(); }
 

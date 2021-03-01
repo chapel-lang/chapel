@@ -176,10 +176,10 @@ proc test5d() {
   var done: sync int;
   begin {
     var y = x;
-    done = 1;
+    done.writeEF(1);
   }
 
-  done; // wait for task
+  done.readFE(); // wait for task
 }
 test5d();
 

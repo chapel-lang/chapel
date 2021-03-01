@@ -12,8 +12,8 @@ module OuterModule {
     proc M1init() {
       if (!raninit) {
         raninit = true;
-        lock1 = false;
-        lock2;
+        lock1.writeEF(false);
+        lock2.readFE();
         a = new unmanaged C(1);
       }
     }
@@ -26,13 +26,13 @@ module OuterModule {
       begin with (ref a) {
         use M1;
         M1init();
-        b = a;
+        b.writeEF(a);
       }
-      lock1;
+      lock1.readFE();
       use M1;
       M1init();
       c = a;
-      lock2 = false;
+      lock2.writeEF(false);
 
       writeln(b.readFF());
       writeln(c.readFF());

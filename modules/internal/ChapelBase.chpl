@@ -698,8 +698,14 @@ module ChapelBase {
   // explicitly captured.
   //
   inline proc chpl_statementLevelSymbol(a) { }
-  inline proc chpl_statementLevelSymbol(a: sync)  { a.readFE(); }
-  inline proc chpl_statementLevelSymbol(a: single) { a.readFF(); }
+  inline proc chpl_statementLevelSymbol(a: sync)  {
+    compilerWarning("implicitly reading from a sync is deprecated; apply a '.read??()' method");
+    a.readFE();
+  }
+  inline proc chpl_statementLevelSymbol(a: single) {
+    compilerWarning("implicitly reading from a single is deprecated; apply a '.read??()' method");
+    a.readFF();
+  }
   // param and type args are handled in the compiler
 
   //
@@ -728,6 +734,10 @@ module ChapelBase {
   inline proc _cond_test(x: bool) return x;
   inline proc _cond_test(x: int) return x != 0;
   inline proc _cond_test(x: uint) return x != 0;
+  inline proc _cond_test(x: sync(?t)) where isBoolType(t) || isIntegralType(t) {
+    compilerWarning("direct reads of sync variables are deprecated; please apply a 'read??' method");
+    return _cond_test(x.readFE());
+  }
 
   inline proc _cond_test(param x: bool) param return x;
   inline proc _cond_test(param x: integral) param return x != 0:x.type;
