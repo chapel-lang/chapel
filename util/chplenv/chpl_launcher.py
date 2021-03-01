@@ -3,14 +3,24 @@ from distutils.spawn import find_executable
 import sys
 
 import chpl_comm, chpl_comm_substrate, chpl_platform, overrides
-from utils import memoize
+from utils import error, memoize
 
 
 @memoize
 def get():
     launcher_val = overrides.get('CHPL_LAUNCHER')
+
+    comm_val = chpl_comm.get()
+    substrate_val = chpl_comm_substrate.get()
+    if comm_val == 'gasnet' and substrate_val == 'udp':
+        if not launcher_val:
+            launcher_val = 'amudprun'
+        elif launcher_val not in ('none', 'amudprun'):
+            error('CHPL_LAUNCHER={} is not supported for CHPL_COMM=gasnet '
+		  'CHPL_COMM_SUBSTRATE=udp, CHPL_LAUNCHER=amudprun is '
+                  'required'.format(launcher_val))
+
     if not launcher_val:
-        comm_val = chpl_comm.get()
         platform_val = chpl_platform.get('target')
 
         if platform_val.startswith('cray-') or platform_val.startswith('hpe-cray-'):
@@ -35,11 +45,8 @@ def get():
                     'Warning: Cannot detect launcher on this system. Please '
                     'set CHPL_LAUNCHER in the environment.\n')
         elif comm_val == 'gasnet':
-            substrate_val = chpl_comm_substrate.get()
             if substrate_val == 'smp':
                 launcher_val = 'smp'
-            elif substrate_val == 'udp':
-                launcher_val = 'amudprun'
             elif substrate_val == 'mpi':
                 launcher_val = 'gasnetrun_mpi'
             elif substrate_val == 'ibv':
