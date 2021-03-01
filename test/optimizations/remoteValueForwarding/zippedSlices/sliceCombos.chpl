@@ -115,7 +115,7 @@ proc endDiag(str) {
   writeln(str);
 
   // we want no get/put
-  var numGetsPuts = 0:uint;
+  var numGetsPuts = 0;
   numGetsPuts += + reduce diags.get;
   numGetsPuts += + reduce diags.get_nb;
   numGetsPuts += + reduce diags.put;
@@ -124,7 +124,7 @@ proc endDiag(str) {
   else writeln("\tExcess comm detected");
 
   // we want no slow on
-  var numOns = 0:uint;
+  var numOns = 0;
   numOns += + reduce diags.execute_on;
   if numOns == 0 then writeln("\tNo excess slow on");
   else writeln("\tExcess slow on detected");
