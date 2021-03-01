@@ -225,15 +225,15 @@ proc determineWinner (player1, player2) {
   else if player1 == choices.rock then
     if player2 == choices.paper then
       declareWinner("Player 2 wins!");
-  else declareWinner("Player 1 wins!");
+    else declareWinner("Player 1 wins!");
   else if player1 == choices.paper then
     if player2 == choices.scissors then
       declareWinner("Player 2 wins!");
-  else declareWinner("Player 1 wins!");
+    else declareWinner("Player 1 wins!");
   else if player1 == choices.scissors then
     if player2 == choices.rock then
       declareWinner("Player 2 wins!");
-  else declareWinner("Player 1 wins!");
+    else declareWinner("Player 1 wins!");
 }
 
 proc declareWinner (w) {
