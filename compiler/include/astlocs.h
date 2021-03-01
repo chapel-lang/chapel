@@ -21,6 +21,8 @@
 #ifndef _ASTLOCS_H_
 #define _ASTLOCS_H_
 
+#include <cstring>
+
 #include "stringutil.h"
 
 class BaseAST;
