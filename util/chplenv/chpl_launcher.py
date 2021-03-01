@@ -63,7 +63,7 @@ def get():
             elif substrate_val == 'psm':
                 launcher_val = 'gasnetrun_psm'
         else:
-            if find_executable('srun'):
+            if platform_val == 'cray-cs' and find_executable('srun'):
                 launcher_val = 'slurm-srun'
             else:
                 launcher_val = 'none'
