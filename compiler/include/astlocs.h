@@ -21,6 +21,8 @@
 #ifndef _ASTLOCS_H_
 #define _ASTLOCS_H_
 
+#include "stringutil.h"
+
 class BaseAST;
 class Expr;
 
@@ -40,6 +42,14 @@ public:
   }
   inline bool operator!=(const astlocT other) const {
     return this->filename != other.filename || this->lineno != other.lineno;
+  }
+
+  inline const char* stringLoc() const {
+    const int tmpBuffSize = 256;
+    char tmpBuff[tmpBuffSize];
+
+    snprintf(tmpBuff, tmpBuffSize, "%s:%d", filename, lineno);
+    return astr(tmpBuff);
   }
 };
 
