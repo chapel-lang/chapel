@@ -65,19 +65,13 @@ enum CallRejectReason {
   CRR_UNKNOWN,
 };
 
-struct ConstCharCmp {
-  bool operator() (astlocT lhs, astlocT rhs) const {
-    return strcmp(lhs.stringLoc(), rhs.stringLoc()) < 0;
-  }
-};
-
 // we store all the locations where we have added these primitives. When we
 // report finalizing an optimization (either positively or negatively) we remove
 // those locations from the set. Towards the end of resolution, if there are
 // still items left in these sets, those indicate that we reverted the
 // optimization by completely removing the block that those primitives are in.
-std::set<astlocT, ConstCharCmp> primMaybeLocalThisLocations;
-std::set<astlocT, ConstCharCmp> primMaybeAggregateAssignLocations;
+std::set<astlocT> primMaybeLocalThisLocations;
+std::set<astlocT> primMaybeAggregateAssignLocations;
 
 
 static bool callHasSymArguments(CallExpr *ce, const std::vector<Symbol *> &syms);

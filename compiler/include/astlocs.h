@@ -43,6 +43,42 @@ public:
   inline bool operator!=(const astlocT other) const {
     return this->filename != other.filename || this->lineno != other.lineno;
   }
+  inline bool operator<(const astlocT other) const {
+    int strResult = strcmp(this->filename, other.filename);
+    if (strResult == 0) {
+      return this->lineno < other.lineno;
+    }
+    else {
+      return strResult < 0;
+    }
+  }
+  inline bool operator>(const astlocT other) const {
+    int strResult = strcmp(this->filename, other.filename);
+    if (strResult == 0) {
+      return this->lineno > other.lineno;
+    }
+    else {
+      return strResult > 0;
+    }
+  }
+  inline bool operator<=(const astlocT other) const {
+    int strResult = strcmp(this->filename, other.filename);
+    if (strResult == 0) {
+      return this->lineno <= other.lineno;
+    }
+    else {
+      return strResult <= 0;
+    }
+  }
+  inline bool operator>=(const astlocT other) const {
+    int strResult = strcmp(this->filename, other.filename);
+    if (strResult == 0) {
+      return this->lineno >= other.lineno;
+    }
+    else {
+      return strResult >= 0;
+    }
+  }
 
   inline const char* stringLoc() const {
     const int tmpBuffSize = 256;
