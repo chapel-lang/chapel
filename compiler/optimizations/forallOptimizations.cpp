@@ -175,12 +175,28 @@ Expr *preFoldMaybeLocalArrElem(CallExpr *call) {
 
   SymExpr *controlSymExpr = toSymExpr(call->get(2));
   INT_ASSERT(controlSymExpr);
+  bool iterableTypeSuitable = (controlSymExpr->symbol() == gTrue);
 
   SymExpr *ffControlSymExpr = toSymExpr(call->get(3));
   INT_ASSERT(ffControlSymExpr);
+  bool fastFollowerSuitable = (ffControlSymExpr->symbol() == gTrue);
 
-  bool confirmed = (controlSymExpr->symbol() == gTrue &&
-                    ffControlSymExpr->symbol() == gTrue);
+  bool confirmed = (iterableTypeSuitable && fastFollowerSuitable);
+
+  if (confirmed) {
+    LOG_AA(0, "Confirmed that this symbol is a local array element", call);
+  }
+  else {
+    if (!iterableTypeSuitable) {
+      LOG_AA(0, "Iterable type not suitable for aggregation", call);
+    }
+    else if (!fastFollowerSuitable) {
+      LOG_AA(0, "Could not prove locality outside of a fast follower body", call);
+    }
+    else {
+      INT_FATAL("Unexpected failure");
+    }
+  }
 
   if (fAutoAggregation) {
     findAndUpdateMaybeAggAssign(call, confirmed);
