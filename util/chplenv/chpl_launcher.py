@@ -5,6 +5,11 @@ import sys
 import chpl_comm, chpl_comm_substrate, chpl_platform, overrides
 from utils import error, memoize
 
+def slurm_prefix(base_launcher):
+    """ If salloc is available, prefix with slurm-"""
+    if find_executable('salloc'):
+        return 'slurm-{}'.format(base_launcher)
+    return base_launcher
 
 @memoize
 def get():
@@ -23,7 +28,7 @@ def get():
     if not launcher_val:
         platform_val = chpl_platform.get('target')
 
-        if platform_val.startswith('cray-') or platform_val.startswith('hpe-cray-'):
+        if platform_val.startswith('cray-x') or platform_val.startswith('hpe-cray-'):
             has_aprun = find_executable('aprun')
             has_slurm = find_executable('srun')
             if has_aprun and has_slurm:
@@ -48,17 +53,20 @@ def get():
             if substrate_val == 'smp':
                 launcher_val = 'smp'
             elif substrate_val == 'mpi':
-                launcher_val = 'gasnetrun_mpi'
+                launcher_val = slurm_prefix('gasnetrun_mpi')
             elif substrate_val == 'ibv':
-                launcher_val = 'gasnetrun_ibv'
+                launcher_val = slurm_prefix('gasnetrun_ibv')
             elif substrate_val == 'ucx':
-                launcher_val = 'gasnetrun_ucx'
+                launcher_val = slurm_prefix('gasnetrun_ucx')
             elif substrate_val == 'ofi':
                 launcher_val = 'gasnetrun_ofi'
             elif substrate_val == 'psm':
                 launcher_val = 'gasnetrun_psm'
         else:
-            launcher_val = 'none'
+            if find_executable('srun'):
+                launcher_val = 'slurm-srun'
+            else:
+                launcher_val = 'none'
 
     if launcher_val is None:
         launcher_val = 'none'
