@@ -1761,9 +1761,6 @@ module List {
     :arg rhs: The list to assign from.
   */
   proc =(ref lhs: list(?t, ?), rhs: list(t, ?)) {
-    if !isCopyableType(rhs.eltType) then
-      compilerError("Cannot copy list from array with element type " +
-                    "that cannot be copied");
     lhs.clear();
     lhs.extend(rhs);
   }
