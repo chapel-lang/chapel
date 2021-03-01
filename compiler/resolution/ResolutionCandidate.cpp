@@ -964,11 +964,11 @@ bool ResolutionCandidate::checkGenericFormals(Expr* ctx) {
       }
 
       if (ConstrainedType* actCT = toConstrainedType(actual->getValType())) {
-        if (actCT == formal->type)
+        if (actCT == formal->type) {
           ; // ok: a CG actual matches against the same type
-        else if (cgActualCanMatch(fn, formal->getValType(), actCT))
+        } else if (cgActualCanMatch(fn, formal->getValType(), actCT)) {
           ; // other matching cases
-        else {
+        } else {
           // cannot pass a CG actual to an unconstrained-generic formal
           failingArgument = actual;
           reason = RESOLUTION_CANDIDATE_INTERFACE_FORMAL_AS_ACTUAL;
