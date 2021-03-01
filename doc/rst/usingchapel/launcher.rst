@@ -88,7 +88,6 @@ If ``CHPL_LAUNCHER`` is left unset, a default is picked as follows:
   =======================  ==============================================
   CHPL_COMM_SUBSTRATE=ibv  gasnetrun_ibv
   CHPL_COMM_SUBSTRATE=mpi  gasnetrun_mpi
-  CHPL_COMM_SUBSTRATE=mxm  gasnetrun_ibv
   CHPL_COMM_SUBSTRATE=smp  smp
   CHPL_COMM_SUBSTRATE=udp  amudprun
   otherwise                none
