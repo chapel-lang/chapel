@@ -31,6 +31,6 @@ foo(real(32), 8.0: real(32), "real(32)");
 foo(real(64), 9.0, "real(64)");
 //foo(complex(64), 10.0: complex(64), "complex(64)");
 //foo(complex(128), 11.0: complex(128), "complex(128)");
-foo(string, "Hello!", "string");
+//foo(string, "Hello!", "string");
 //type r = range;
 //foo(r, 1..3, "range");
