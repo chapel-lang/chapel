@@ -2188,9 +2188,9 @@ A common usage of this interface might look like this:
   // var A: [D] int;
 
   // Add indices to the sparse domain along the diagonal
+  D += (0,0);
   D += (1,1);
   D += (2,2);
-  D += (3,3);
 
   // Set all nonzero indices to the value of 1
   A = 1;
