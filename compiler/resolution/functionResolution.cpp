@@ -3490,9 +3490,12 @@ static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState) {
     }
   }
 
-  if (! overloadSetsOK(info.call, checkState, candidates,
-                       bestRef, bestCref, bestVal)) {
-    return NULL; // overloadSetsOK() found an error
+  if (numMatches > 0) {
+    if (! overloadSetsOK(info.call, checkState, candidates,
+                         bestRef, bestCref, bestVal))
+      return NULL; // overloadSetsOK() found an error
+
+    recordCGInterimInstantiations(info.call, bestRef, bestCref, bestVal);
   }
 
   if (numMatches == 0) {

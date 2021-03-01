@@ -428,24 +428,32 @@ symbolFlag( FLAG_RUNTIME_TYPE_VALUE , npr, "runtime type value" , "associated ru
 symbolFlag( FLAG_SAFE, ypr, "safe", "safe (activate lifetime checking)")
 symbolFlag( FLAG_SCOPE, npr, "scope", "scoped (lifetime checking like a local variable)")
 symbolFlag( FLAG_SHOULD_NOT_PASS_BY_REF, npr, "should not pass by ref", "this symbol should be passed by value (not by reference) for performance, not for correctness")
-symbolFlag( FLAG_SINGLE , ypr, "single" , ncm )
-// Based on how this is used, I suggest renaming it to return_value_has_initializer
-// or something similar <hilde>.
-symbolFlag( FLAG_STAR_TUPLE , ypr, "star tuple" , "mark tuple types as star tuple types" )
-symbolFlag( FLAG_STAR_TUPLE_ACCESSOR , ypr, "star tuple accessor" , "this function for star tuple types" )
+
 symbolFlag( FLAG_SUPER_CLASS , npr, "super class" , ncm )
 symbolFlag( FLAG_SUPER_TEMP, npr, "temporary of super field", ncm)
 symbolFlag( FLAG_SUPPRESS_LVALUE_ERRORS , ypr, "suppress lvalue error" , "do not report an lvalue error if it occurs in a function with this flag" )
+
+// represents an interface formal, assoc. type, or required function
+// within a constrained generic function
+symbolFlag( FLAG_CG_REPRESENTATIVE, npr, "cg representative", ncm )
+// this instantiation does not need to be resolved
+symbolFlag( FLAG_CG_INTERIM_INST, npr, "cg interim instantiation", ncm)
+
+symbolFlag( FLAG_SINGLE , ypr, "single" , ncm )
 symbolFlag( FLAG_SYNC , ypr, "sync" , ncm )
+
 symbolFlag( FLAG_SYNTACTIC_DISTRIBUTION , ypr, "syntactic distribution" , ncm )
 symbolFlag( FLAG_TASK_FN_FROM_ITERATOR_FN , npr, "task fn from iterator fn" , ncm )
 symbolFlag( FLAG_TASK_SPAWN_IMPL_FN , ypr, "task spawn impl fn" , ncm )
 symbolFlag( FLAG_TASK_COMPLETE_IMPL_FN , ypr, "task complete impl fn" , ncm )
 symbolFlag( FLAG_TASK_JOIN_IMPL_FN , ypr, "task join impl fn" , ncm )
 symbolFlag( FLAG_TEMP , npr, "temp" , "compiler-inserted temporary" )
+
 symbolFlag( FLAG_TUPLE , ypr, "tuple" , ncm )
 symbolFlag( FLAG_TUPLE_CAST_FN , ypr, "tuple cast fn" , ncm )
 symbolFlag( FLAG_TUPLE_WITH_REF , npr, "tuple contains ref" , ncm )
+symbolFlag( FLAG_STAR_TUPLE , ypr, "star tuple" , "mark tuple types as star tuple types" )
+symbolFlag( FLAG_STAR_TUPLE_ACCESSOR , ypr, "star tuple accessor" , "this function for star tuple types" )
 
 symbolFlag( FLAG_TYPE_ASSIGN_FROM_CONST, npr, "type has = from const", "type supports assignment from a const rhs" )
 symbolFlag( FLAG_TYPE_ASSIGN_FROM_REF, npr, "type has = from ref", "type supports assignment from a potentially non-const rhs" )

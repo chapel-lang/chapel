@@ -496,6 +496,10 @@ void FnSymbol::finalizeCopy() {
       substituteVarargTupleRefs(this, pci);
     }
 
+    // For CG fns calling to other CG fns.
+    if (InterfaceInfo* ifcInfo = partialCopySource->interfaceInfo)
+      handleCallsToOtherCGfuns(partialCopySource, ifcInfo, this);
+
     // Clean up book keeping information.
     clearPartialCopyData(this);
   }
@@ -869,14 +873,14 @@ bool FnSymbol::hasGenericFormals(SymbolMap* map) const {
     } else if (formal->intent == INTENT_PARAM) {
       isGeneric = true;
 
-    } else if (ConstrainedType* ct = toConstrainedType(formal->type)) {
+    } else if (isConstrainedType(formal->type)) {
       // A CG function is known to be generic, so we should not be
       // querying hasGenericFormals().
       INT_ASSERT(! isConstrainedGeneric());
-      // Otherwise either it is a required fn in an 'interface' declaration
-      // or a generic implementation instantiated with a standin type.
-      INT_ASSERT(ct->ctUse == CT_GENERIC_STANDIN          ||
-                 isInterfaceSymbol(defPoint->parentSymbol));
+      // It can be:
+      // - a required fn in an 'interface' declaration
+      // - a generic implementation instantiated with a standin type
+      // - an interim instantiation of a CG function
 
     } else if (formal->type->symbol->hasFlag(FLAG_GENERIC) == true) {
       bool formalInstantiated = false;

@@ -102,6 +102,8 @@ public:
 
   // One ImplementsStmt per IfcConstraint when 'fn' is CG
   std::vector<ImplementsStmt*> witnesses;
+  // Is this a CG "interim instantiation"?
+  bool                    isInterimInstantiation;
 
   Symbol*                 failingArgument; // actual or formal
   ResolutionCandidateFailureReason reason;
