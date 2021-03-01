@@ -1,4 +1,4 @@
-use Time, Memory, BlockDist;
+use Time, Memory.Diagnostics, BlockDist;
 
 // compute a target problem size if one is not specified; assume homogeneity
 config const memFraction = 0;

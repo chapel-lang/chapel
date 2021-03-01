@@ -6,7 +6,7 @@ use Sort;
 config const testIters = 128;
 
 /* Find upperBound in sorted arr */
-proc upperBound(arr: [?d] int, target: int, out result): bool {
+proc upperBound(arr: [?d] int, target: int, out result:int): bool {
   for x in arr {
     if x > target {
       result = x;

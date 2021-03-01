@@ -1275,7 +1275,7 @@ fh_init_plugin(uintptr_t max_pinnable_memory,
 #if 0  /* UNUSED - see param_RS computation for explanation */
 	int med_regions;
 #endif
-	int b_prepinned = 0;
+	uintptr_t b_prepinned = 0;
 	gex_Rank_t num_nodes = gasneti_nodes;
 	int dflt_M, dflt_VM;
 	int dflt_R, dflt_VR;
@@ -1589,7 +1589,7 @@ fh_init_plugin(uintptr_t max_pinnable_memory,
 		}
 
 		GASNETI_TRACE_PRINTF(C, 
-		    ("Firehose M=%"PRIuPTR" (fh=%d)\tprepinned=%"PRIuPTR" (buckets=%d)",
+		    ("Firehose M=%"PRIuPTR" (fh=%d)\tprepinned=%"PRIuPTR" (buckets=%"PRIuPTR")",
 		    param_M, firehoses, m_prepinned, b_prepinned));
 		GASNETI_TRACE_PRINTF(C, ("Firehose Maxvictim=%"PRIuPTR" (fh=%d)",
 		    param_VM, fhc_MaxVictimBuckets));

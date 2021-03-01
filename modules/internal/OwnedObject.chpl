@@ -205,18 +205,18 @@ module OwnedObject {
                     else _to_borrowed(src.type);
 
       if isCoercible(src.chpl_t, this.type.chpl_t) == false then
-        compilerError("cannot coerce '", src.type:string, "' to '", this.type:string, "' in initialization");
+        compilerError("cannot initialize '", this.type:string, "' from a '", src.type:string, "'");
 
       this.chpl_p = src.release();
       this.complete();
 
       if isNonNilableClass(this.type) && isNilableClass(src) then
-        compilerError("cannot create a non-nilable owned variable from a nilable class instance");
+        compilerError("cannot initialize '", this.type:string, "' from a '", src.type:string, "'");
     }
 
     pragma "no doc"
     proc init=(src: shared) {
-      compilerError("cannot create an owned variable from a shared class instance");
+      compilerError("cannot initialize '", this.type:string, "' from a '", src.type:string, "'");
       this.chpl_t = if this.type.chpl_t != ?
                     then this.type.chpl_t
                     else _to_borrowed(src.type);
@@ -224,7 +224,7 @@ module OwnedObject {
 
     pragma "no doc"
     proc init=(src: borrowed) {
-      compilerError("cannot create an owned variable from a borrowed class instance");
+      compilerError("cannot initialize '", this.type:string, "' from a '", src.type:string, "'");
       this.chpl_t = if this.type.chpl_t != ?
                     then this.type.chpl_t
                     else _to_borrowed(src.type);
@@ -232,7 +232,7 @@ module OwnedObject {
 
     pragma "no doc"
     proc init=(src: unmanaged) {
-      compilerError("cannot create an owned variable from an unmanaged class instance");
+      compilerError("cannot initialize '", this.type:string, "' from a '", src.type:string, "'");
       this.chpl_t = if this.type.chpl_t != ?
                     then this.type.chpl_t
                     else _to_borrowed(src.type);
@@ -242,12 +242,12 @@ module OwnedObject {
     pragma "leaves this nil"
     proc init=(src : _nilType) {
       if this.type.chpl_t == ? then
-        compilerError("Cannot establish type of owned when initializing with  nil");
+        compilerError("Cannot establish type of owned when initializing with 'nil'");
 
       this.init(this.type.chpl_t);
 
       if isNonNilableClass(chpl_t) then
-        compilerError("Assigning non-nilable owned to nil");
+        compilerError("cannot initialize '", this.type:string, "' from 'nil'");
     }
 
     // Copy-init implementation to allow for 'new _owned(foo)' in module code
@@ -460,8 +460,7 @@ module OwnedObject {
 
   // cast to owned?, no class downcast
   pragma "no doc"
-  inline proc _cast(type t:owned class?, pragma "nil from arg" in x:owned class)
-    where isSubtype(x.chpl_t,_to_nonnil(t.chpl_t))
+  inline operator :(pragma "nil from arg" in x:owned class, type t:owned class?)    where isSubtype(x.chpl_t,_to_nonnil(t.chpl_t))
   {
     var castPtr = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
     x.chpl_p = nil;
@@ -471,7 +470,7 @@ module OwnedObject {
 
   // cast to owned?, no class downcast
   pragma "no doc"
-  inline proc _cast(type t:owned class?, pragma "nil from arg" in x:owned class?)
+  inline operator :(pragma "nil from arg" in x:owned class?, type t:owned class?)
     where isSubtype(x.chpl_t,t.chpl_t)
   {
     var castPtr = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
@@ -482,7 +481,7 @@ module OwnedObject {
 
   // cast to owned!, no class downcast, no casting away nilability
   pragma "no doc"
-  inline proc _cast(type t:owned class, pragma "nil from arg" in x:owned class)
+  inline operator :(pragma "nil from arg" in x:owned class, type t:owned class)
     where isSubtype(x.chpl_t,t.chpl_t)
   {
     var castPtr = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
@@ -493,7 +492,7 @@ module OwnedObject {
 
   // cast to owned!, no class downcast, casting away nilability
   pragma "no doc"
-  inline proc _cast(type t:owned class, in x:owned class?) throws
+  inline operator :(in x:owned class?, type t:owned class) throws
     where isSubtype(_to_nonnil(x.chpl_t),t.chpl_t)
   {
     var castPtr = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
@@ -507,7 +506,7 @@ module OwnedObject {
 
   // this version handles downcast to non-nil owned
   pragma "no doc"
-  inline proc _cast(type t:owned class, ref x:owned class?) throws
+  inline operator :(ref x:owned class?, type t:owned class) throws
     where isProperSubtype(t.chpl_t,_to_nonnil(x.chpl_t))
   {
     if x.chpl_p == nil {
@@ -519,7 +518,7 @@ module OwnedObject {
     return new _owned(castPtr);
   }
   pragma "no doc"
-  inline proc _cast(type t:owned class, ref x:owned class) throws
+  inline operator :(ref x:owned class, type t:owned class) throws
     where isProperSubtype(t.chpl_t,x.chpl_t)
   {
     // the following line can throw ClassCastError
@@ -531,7 +530,7 @@ module OwnedObject {
 
   // this version handles downcast to nilable owned
   pragma "no doc"
-  inline proc _cast(type t:owned class?, pragma "nil from arg" ref x:owned class?)
+  inline operator :(pragma "nil from arg" ref x:owned class?, type t:owned class?)
     where isProperSubtype(t.chpl_t,x.chpl_t)
   {
     // this cast returns nil if the dynamic type is not compatible
@@ -543,7 +542,7 @@ module OwnedObject {
   }
   // this version handles downcast to nilable owned
   pragma "no doc"
-  inline proc _cast(type t:owned class?, ref x:owned class)
+  inline operator :(ref x:owned class, type t:owned class?)
     where isProperSubtype(_to_nonnil(t.chpl_t),x.chpl_t)
   {
     // this cast returns nil if the dynamic type is not compatible
@@ -556,7 +555,7 @@ module OwnedObject {
 
   // cast from nil to owned
   pragma "no doc"
-  inline proc _cast(type t:_owned, pragma "nil from arg" x:_nilType) {
+  inline operator :(pragma "nil from arg" x:_nilType, type t:_owned)  {
     if isNonNilableClass(t.chpl_t) then
       compilerError("Illegal cast from nil to non-nilable owned type");
 

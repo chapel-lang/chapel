@@ -1,0 +1,13 @@
+error message: improve error message for field access of nilable
+
+#17102
+
+The source of the error here is that I didn't apply '!' to access the
+class object, but the error message here isn't particularly clear,
+particularly given that an array accessor does accept 1 argument, but
+the error talks in terms of 0 arguments.
+
+The error in the .good file is based off of what we print for a normal
+field access in a case like this, though I think we could arguably do
+even better by specializing the error message in terms of objects and
+fields rather than "calls" since that's where things go bad.

@@ -1266,4 +1266,20 @@ module Vector {
   proc !=(a: vector(?t, ?), b: vector(t, ?)): bool {
     return !(a == b);
   }
+
+  pragma "no doc"
+  operator :(rhs:list, type t: vector) {
+    var tmp: t = rhs;
+    return rhs;
+  }
+  pragma "no doc"
+  operator :(rhs:[], type t: vector) {
+    var tmp: t = rhs;
+    return rhs;
+  }
+  pragma "no doc"
+  operator :(rhs:range(?), type t: vector) {
+    var tmp: t = rhs;
+    return rhs;
+  }
 }

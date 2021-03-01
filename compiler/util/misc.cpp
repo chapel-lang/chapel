@@ -411,8 +411,13 @@ static void printCallstack(FnSymbol* errFn, FnSymbol* prevFn,
       if (hideErrFn == false) {
         std::string nameAndArgs = errFn->nameAndArgsToString(", ", true,
                                                              printedUnderline);
+        if (errFn->hasFlag(FLAG_IMPLEMENTS_WRAPPER)) {
+          print_error("  %s:%d: resolving 'implements %s' statement",
+                      cleanFilename(bestPoint),
+                      bestPoint->linenum(),
+                      interfaceNameForWrapperFn(errFn));
 
-        if (nameAndArgs.empty()) {
+        } else if (nameAndArgs.empty()) {
           print_error("  %s:%d: %s called",
                       cleanFilename(bestPoint),
                       bestPoint->linenum(),

@@ -312,9 +312,6 @@ static int AMUDP_AllocateEndpointBuffers(ep_t ep) {
 static int AMUDP_FreeEndpointResource(ep_t ep) {
   AMX_assert(ep != NULL);
   /*  close UDP port */
-  #ifdef AMUDP_BLCR_ENABLED
-    if (AMUDP_SPMDRestartActive) { /* it is already gone */ } else
-  #endif
 
   if (ep->translation) AMX_free(ep->translation);
 

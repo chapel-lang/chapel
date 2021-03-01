@@ -13,6 +13,10 @@ proc R.init=(param p : this.type.T) {
   this.T = p.type;
   this.p = p;
 }
+operator :(from, type t: R(from.type)) {
+  var tmp: t = from;
+  return tmp;
+}
 
 record W {
   type T;

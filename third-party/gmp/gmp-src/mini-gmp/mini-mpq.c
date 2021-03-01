@@ -5,7 +5,7 @@
    Acknowledgment: special thanks to Bradley Lucier for his comments
    to the preliminary version of this code.
 
-Copyright 2018, 2019 Free Software Foundation, Inc.
+Copyright 2018-2020 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -107,10 +107,10 @@ mpq_clear (mpq_t x)
 static void
 mpq_canonical_sign (mpq_t r)
 {
-  int cmp = mpq_denref (r)->_mp_size;
-  if (cmp <= 0)
+  mp_size_t ds = mpq_denref (r)->_mp_size;
+  if (ds <= 0)
     {
-      if (cmp == 0)
+      if (ds == 0)
 	gmp_die("mpq: Fraction with zero denominator.");
       mpz_neg (mpq_denref (r), mpq_denref (r));
       mpz_neg (mpq_numref (r), mpq_numref (r));
@@ -515,6 +515,8 @@ mpq_out_str (FILE *stream, int base, const mpq_t x)
   void (*gmp_free_func) (void *, size_t);
 
   str = mpq_get_str (NULL, base, x);
+  if (!str)
+    return 0;
   len = strlen (str);
   len = fwrite (str, 1, len, stream);
   mp_get_memory_functions (NULL, NULL, &gmp_free_func);

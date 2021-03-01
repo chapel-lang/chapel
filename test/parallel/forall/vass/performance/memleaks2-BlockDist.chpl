@@ -1,4 +1,4 @@
-use Memory;
+use Memory.Diagnostics;
 use BlockDist;
 
 const SPACE = {1..2, 1..2};

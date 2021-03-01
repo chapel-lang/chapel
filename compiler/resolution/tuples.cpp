@@ -709,8 +709,8 @@ static void instantiate_tuple_cast(FnSymbol* fn, CallExpr* context) {
   // Adjust any formals for blank-intent tuple behavior now
   resolveSignature(fn);
 
-  AggregateType* toT   = toAggregateType(fn->getFormal(1)->type);
-  ArgSymbol*     arg   = fn->getFormal(2);
+  AggregateType* toT   = toAggregateType(fn->getFormal(2)->type);
+  ArgSymbol*     arg   = fn->getFormal(1);
   AggregateType* fromT = toAggregateType(arg->type);
 
   BlockStmt* block = new BlockStmt(BLOCK_SCOPELESS);
@@ -1074,8 +1074,8 @@ fixupTupleFunctions(FnSymbol* fn,
   }
 
   if (fn->hasFlag(FLAG_TUPLE_CAST_FN) &&
-      newFn->getFormal(1)->getValType()->symbol->hasFlag(FLAG_TUPLE) &&
-      fn->getFormal(2)->getValType()->symbol->hasFlag(FLAG_TUPLE) ) {
+      newFn->getFormal(2)->getValType()->symbol->hasFlag(FLAG_TUPLE) &&
+      fn->getFormal(1)->getValType()->symbol->hasFlag(FLAG_TUPLE) ) {
     instantiate_tuple_cast(newFn, instantiatedForCall);
     return true;
   }
@@ -1170,7 +1170,9 @@ FnSymbol* createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
             IntentTag intent = concreteIntentForArg(arg);
 
             if ((intent & INTENT_FLAG_REF) != 0) {
-              t = t->getRefType();
+              Type* refType = t->getRefType();
+              INT_ASSERT(refType != NULL);
+              t = refType;
             }
           }
         }

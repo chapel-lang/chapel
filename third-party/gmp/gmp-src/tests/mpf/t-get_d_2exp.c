@@ -1,6 +1,6 @@
 /* Test mpf_get_d_2exp.
 
-Copyright 2002, 2003, 2017 Free Software Foundation, Inc.
+Copyright 2002, 2003, 2017, 2020 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library test suite.
 
@@ -38,6 +38,16 @@ check_data (void)
   };
 
   mpf_init2 (f, 3);
+
+  got = mpf_get_d_2exp (&got_exp, f);
+  if (got != 0 || got_exp != 0)
+    {
+      printf    ("mpf_get_d_2exp wrong on zero\n");
+      mpf_trace ("   f    ", f);
+      d_trace   ("   got  ", got);
+      printf    ("   got exp  %ld\n", got_exp);
+      abort();
+    }
 
   for (exp = -513; exp <= 513; exp++)
     {

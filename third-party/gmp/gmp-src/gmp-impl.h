@@ -289,13 +289,13 @@ typedef struct {mp_limb_t inv21, inv32, inv53;} gmp_pi2_t;
 #endif
 
 #if ! HAVE_MEMSET
-#define memset(p, c, n)			\
-  do {					\
-    ASSERT ((n) >= 0);			\
-    char *__memset__p = (p);		\
-    int	 __i;				\
-    for (__i = 0; __i < (n); __i++)	\
-      __memset__p[__i] = (c);		\
+#define memset(p, c, n)						\
+  do {								\
+    unsigned char *__memset__p = (unsigned char *) (p);		\
+    int	 __i;							\
+    ASSERT ((n) >= 0);						\
+    for (__i = 0; __i < (n); __i++)				\
+      __memset__p[__i] = (c);					\
   } while (0)
 #endif
 

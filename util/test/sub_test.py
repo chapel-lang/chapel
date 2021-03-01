@@ -952,7 +952,7 @@ if (os.getenv('CHPL_TEST_VGRND_EXE')=='on' and vgrbin):
     if (chplcomm!='none'):
         valgrindbinopts+=['--trace-children=yes']
         if (chplcomm=='gasnet'):
-            valgrindbinopts+=['--suppressions=%s/third-party/gasnet/gasnet-src/other/contrib/gasnet.supp'%(chpl_home)]
+            valgrindbinopts+=['--suppressions=%s/third-party/gasnet/gasnet-src/other/valgrind/gasnet.supp'%(chpl_home)]
 else:
     valgrindbin = None
     valgrindbinopts = None

@@ -1,0 +1,4 @@
+standaloneConflict.chpl:13: In function 'main':
+standaloneConflict.chpl:16: error: ambiguous call '+(Foo, Foo)'
+standaloneConflict.chpl:4: note: candidates are: Foo.+(lhs: Foo, rhs: Foo)
+standaloneConflict.chpl:8: note:                 +(lhs: Foo, rhs: Foo)

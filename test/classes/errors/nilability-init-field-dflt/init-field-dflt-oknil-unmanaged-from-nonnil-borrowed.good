@@ -1,1 +1,2 @@
-init-field-dflt-oknil-unmanaged-from-nonnil-borrowed.chpl:8: error: Cannot initialize 'lhs' of type unmanaged MyClass? from a 'borrowed MyClass'
+init-field-dflt-oknil-unmanaged-from-nonnil-borrowed.chpl:8: error: cannot initialize 'lhs' of type 'unmanaged MyClass?' from a 'borrowed MyClass'
+init-field-dflt-oknil-unmanaged-from-nonnil-borrowed.chpl:13: error: done

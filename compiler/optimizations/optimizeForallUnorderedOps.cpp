@@ -180,7 +180,13 @@ static void helpGetLastStmts(Expr* last, std::vector<Expr*>& stmts) {
   stmts.push_back(last);
 }
 
-
+std::vector<Expr *> getLastStmtsForForallUnorderedOps(ForallStmt *forall) {
+  std::vector<Expr *> lastStmts;
+  for_vector(BlockStmt, block, forall->loopBodies()) {
+    getLastStmts(block, lastStmts);
+  }
+  return lastStmts;
+}
 
 // ---- mark optimizable foralls during lifetime checking
 
@@ -264,12 +270,12 @@ static bool forallNoTaskPrivate(ForallStmt* forall) {
   return true;
 }
 
-class MarkOptimizableForallLastStmts : public AstVisitorTraverse {
+class MarkOptimizableForallLastStmts final : public AstVisitorTraverse {
 
   public:
     LifetimeInformation* lifetimeInfo;
 
-    virtual bool enterForallStmt(ForallStmt* forall);
+    bool enterForallStmt(ForallStmt* forall) override;
     void markLoopsInForall(ForallStmt* forall);
 };
 
@@ -439,7 +445,7 @@ static const char* blockStateString(MayBlockState state) {
 
 static std::map<FnSymbol*, MayBlockState> fnMayBlock;
 
-class GatherBlockingFunctions : public AstVisitorTraverse {
+class GatherBlockingFunctions final : public AstVisitorTraverse {
 
   public:
     std::stack<MayBlockState> blockingLoopStack;
@@ -452,17 +458,17 @@ class GatherBlockingFunctions : public AstVisitorTraverse {
     void beginLoop();
     void endLoop();
 
-    virtual bool enterCallExpr(CallExpr* node);
-    virtual void exitCallExpr(CallExpr* node);
+    bool enterCallExpr(CallExpr* node) override;
+    void exitCallExpr(CallExpr* node) override;
 
-    virtual bool enterWhileDoStmt(WhileDoStmt* node);
-    virtual void exitWhileDoStmt(WhileDoStmt* node);
-    virtual bool enterDoWhileStmt(DoWhileStmt* node);
-    virtual void exitDoWhileStmt(DoWhileStmt* node);
-    virtual bool enterCForLoop(CForLoop* node);
-    virtual void exitCForLoop(CForLoop* node);
-    virtual bool enterForLoop(ForLoop* node);
-    virtual void exitForLoop(ForLoop* node);
+    bool enterWhileDoStmt(WhileDoStmt* node) override;
+    void exitWhileDoStmt(WhileDoStmt* node) override;
+    bool enterDoWhileStmt(DoWhileStmt* node) override;
+    void exitDoWhileStmt(DoWhileStmt* node) override;
+    bool enterCForLoop(CForLoop* node) override;
+    void exitCForLoop(CForLoop* node) override;
+    bool enterForLoop(ForLoop* node) override;
+    void exitForLoop(ForLoop* node) override;
 };
 
 static bool loopContainsBlocking(BlockStmt* block) {

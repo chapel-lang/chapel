@@ -895,8 +895,30 @@ void VarSymbol::codegenDef() {
       }
       info->lvt->addGlobalValue(cname, globalValue, GEN_VAL, ! is_signed(type));
     }
+
+#if HAVE_LLVM_VER >= 100
+    llvm::MaybeAlign alignment;
+#else
+    unsigned alignment = 0;
+#endif
+
+    alignment = getAlignment(type);
+
     llvm::Type *varType = type->codegen().type;
-    llvm::Value *varAlloca = createVarLLVM(varType, cname);
+    llvm::AllocaInst *varAlloca = createVarLLVM(varType, cname);
+
+    // Update the alignment if necessary
+#if HAVE_LLVM_VER >= 100
+    if (alignment.hasValue()) {
+      varAlloca->setAlignment(alignment.getValue());
+    }
+#else
+    if (alignment > 1) {
+      varAlloca->setAlignment(alignment);
+    }
+#endif
+
+
     info->lvt->addValue(cname, varAlloca, GEN_PTR, ! is_signed(type));
 
     if(AggregateType *ctype = toAggregateType(type)) {
@@ -2102,6 +2124,9 @@ void FnSymbol::codegenPrototype() {
 
   if (hasFlag(FLAG_EXTERN) && !hasFlag(FLAG_GENERATE_SIGNATURE)) return;
   if (hasFlag(FLAG_NO_CODEGEN))   return;
+  if (gCodegenGPU == true) {
+    if (hasFlag(FLAG_GPU_CODEGEN) == false) return;
+  }
 
   if( id == breakOnCodegenID ||
       (breakOnCodegenCname[0] &&
@@ -2155,6 +2180,11 @@ void FnSymbol::codegenPrototype() {
     llvm::Function *func = llvm::Function::Create(fTy, linkage, cname,
                                                   info->module);
 
+    if (gCodegenGPU && hasFlag(FLAG_GPU_CODEGEN)) {
+      func->setConvergent();
+      func->setCallingConv(llvm::CallingConv::PTX_Kernel);
+    }
+
     func->setDSOLocal(true);
 
     func->setAttributes(argAttrs);
@@ -2195,11 +2225,11 @@ namespace {
     MarkNonStackVisitor() : outermostOrderIndependentLoop(NULL) { }
     void handleLoopStmt(LoopStmt* loop);
     bool exprPointsToNonStack(Expr* e);
-    bool enterCallExpr(CallExpr* call);
-    bool enterWhileDoStmt(WhileDoStmt* loop);
-    bool enterDoWhileStmt(DoWhileStmt* loop);
-    bool enterCForLoop(CForLoop* loop);
-    bool enterForLoop(ForLoop* loop);
+    bool enterCallExpr(CallExpr* call) override;
+    bool enterWhileDoStmt(WhileDoStmt* loop) override;
+    bool enterDoWhileStmt(DoWhileStmt* loop) override;
+    bool enterCForLoop(CForLoop* loop) override;
+    bool enterForLoop(ForLoop* loop) override;
   };
 }
 
@@ -2296,6 +2326,8 @@ void FnSymbol::codegenDef() {
 
   if( hasFlag(FLAG_NO_CODEGEN) ) return;
 
+  if( hasFlag(FLAG_GPU_CODEGEN) != gCodegenGPU ) return;
+
   info->cStatements.clear();
   info->cLocalDecls.clear();
 
@@ -2358,6 +2390,8 @@ void FnSymbol::codegenDef() {
 
     llvm::BasicBlock *block =
       llvm::BasicBlock::Create(info->module->getContext(), "entry", func);
+
+    if (!(info->irBuilder)) return;
 
     info->irBuilder->SetInsertPoint(block);
 

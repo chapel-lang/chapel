@@ -1,0 +1,4 @@
+feature request: can a CG function invoke a non-CG generic function?
+#16985 is related
+
+.good is written assuming the answer is "yes"

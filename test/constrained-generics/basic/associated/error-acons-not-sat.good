@@ -1,0 +1,3 @@
+error-acons-not-sat.chpl:36: In 'implements IFC' statement:
+error-acons-not-sat.chpl:36: error: when checking this implements statement
+error-acons-not-sat.chpl:7: note: this associated constraint is not satisfied

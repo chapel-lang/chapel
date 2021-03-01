@@ -28,14 +28,22 @@ ifneq ($(CHPL_MAKE_HWLOC),none)
   # Have Qthreads get its hwloc topology from the Chapel runtime,
   # unless directed not to.
   ifeq (, $(call isTrue, $(CHPL_QTHREAD_DONT_GET_TOPO_FROM_RT)))
-    CHPL_QTHREAD_CFG_OPTIONS += --with-topology=hwloc_via_chapel
+    TOPOLOGY = hwloc_via_chapel
     CFLAGS_NEEDS_RT_INCLUDES = y
   else
-    CHPL_QTHREAD_CFG_OPTIONS += --with-topology=hwloc
+    TOPOLOGY = hwloc
   endif
   ifeq ($(CHPL_MAKE_HWLOC),bundled)
     CHPL_QTHREAD_CFG_OPTIONS += --with-hwloc=$(HWLOC_INSTALL_DIR)
   endif
+endif
+
+ifneq (, $(CHPL_QTHREAD_TOPOLOGY))
+TOPOLOGY = $(CHPL_QTHREAD_TOPOLOGY)
+endif
+
+ifneq (, $(TOPOLOGY))
+CHPL_QTHREAD_CFG_OPTIONS += --with-topology=$(TOPOLOGY)
 endif
 
 

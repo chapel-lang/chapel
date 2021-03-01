@@ -1,4 +1,4 @@
-interface I(type T) {
+interface I(T) {
   proc inc(x:T):bool;
 }
 

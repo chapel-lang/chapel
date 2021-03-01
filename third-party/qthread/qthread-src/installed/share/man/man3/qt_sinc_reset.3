@@ -1,0 +1,24 @@
+.TH qt_sinc_reset 3 "AUGUST 2012" libqthread "libqthread"
+.SH NAME
+.B qt_sinc_reset
+\- restarts a sinc
+.SH SYNOPSIS
+.B #include <qthread/sinc.h>
+
+.I void
+.br
+.B qt_sinc_reset
+.RI "(qt_sinc_t *" sinc, " size_t " expect);
+
+.SH DESCRIPTION
+This function restarts an existing qt_sinc_t object, regardless of what state it is in. Any partially accumulated values are discarded and replaced with the originally-specified initial value. Any remaining submissions that were expected are forgotten. The sinc is prepared to receive
+.I expect
+submissions.
+.SH SEE ALSO
+.BR qt_sinc_create (3),
+.BR qt_sinc_destroy (3),
+.BR qt_sinc_expect (3),
+.BR qt_sinc_fini (3),
+.BR qt_sinc_init (3),
+.BR qt_sinc_submit (3),
+.BR qt_sinc_wait (3)

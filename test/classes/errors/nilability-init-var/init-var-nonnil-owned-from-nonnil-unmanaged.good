@@ -1,2 +1,2 @@
 init-var-nonnil-owned-from-nonnil-unmanaged.chpl:9: error: invalid copy-initialization
-init-var-nonnil-owned-from-nonnil-unmanaged.chpl:9: error: cannot create an owned variable from an unmanaged class instance
+init-var-nonnil-owned-from-nonnil-unmanaged.chpl:9: error: cannot initialize 'owned MyClass' from a 'unmanaged MyClass'

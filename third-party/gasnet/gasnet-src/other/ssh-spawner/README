@@ -4,6 +4,7 @@ README file for ssh-spawner
 @ TOC: @
 @ Section: Overview @
 @ Section: Basic Usage @
+@ Section: Process Layout @
 @ Section: Build-time Configuration @
 @ Section: Runtime Configuration @
 @ Section: Troubleshooting Connection Problems @
@@ -48,6 +49,33 @@ spawner when MPI support is not present (or is disabled).
      + Setting GASNET_[CONDUIT]_SPAWNER=ssh in the environment
      + If ssh-spawner was established as the default at configure time (see
        Build-time Configuration, below).
+
+@ Section: Process Layout @
+
+The ssh-spawner will layout processes in a "balanced" distribution and
+"blocked" order on a list of hosts (such as obtained from the
+GASNET_SSH_SERVERS environment variable).
+
+For P processes and N hosts, "balanced" distribution places ceil(P/N)
+processes on the first (P%N) hosts and floor(P/N) on the remainder.
+For P divisible by N, this yields P/N processes on every host, while
+for other all cases the last (N-P%N) hosts each have one fewer than
+the others.
+
+The "blocked" order means the processes on each host are numbered
+consecutively, with the first host holding processes starting from rank 0,
+the second holding processes starting from rank ceil(P/N), etc.
+
+By default the GASNET_SSH_SERVERS environment variable (or equivalent) is
+subject to de-duplication. However, by disabling this behavior (see
+GASNET_SSH_KEEPDUP environment variable below) one can exercise additional
+control over the placement of process though duplication of hostnames.  For
+instance, with P=8, GASNET_SSH_SERVERS="node1 node2 node1 node2" and
+GASNET_SSH_KEEPDUP=1, the host "node1" will hold processes with ranks 0, 1, 4
+and 5, rather than 0, 1, 2 and 3 as would be the case without setting
+GASNET_SSH_KEEPDUP.  In the extreme case, populating GASNET_SSH_SERVERS with P
+entries allows for precise control over placement of every process, when
+de-duplication is disabled via GASNET_SSH_KEEPDUP=1.
 
 @ Section: Build-time Configuration @
 
@@ -149,6 +177,16 @@ Environment Variables:
   the master (spawning) node.  By default the master node will pass
   the result of gethostname() to the worker nodes, which will then
   resolve that to an IP address using gethostbynname().
+
++ The environment variable GASNET_SSH_KEEPDUP controls the treatment
+  of duplicate entries in GASNET_SSH_NODEFILE, GASNET_SSH_SERVERS
+  and other sources of host lists.
+  By default, GASNET_SSH_KEEPDUP=0 and duplicates are removed, keeping
+  only the first instance of any given name.  Note that this is based
+  on string comparison only and does not consider multiple valid names
+  for the same host to be duplicates.
+  Setting GASNET_SSH_KEEPDUP=1 preserves the host list without any
+  changes.
 
 @ Section: Troubleshooting Connection Problems @
 

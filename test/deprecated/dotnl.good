@@ -1,0 +1,3 @@
+dotnl.chpl:2: warning: Regexp.compile: 'dotnl' is deprecated. Use 'dotAll' instead.
+true
+true

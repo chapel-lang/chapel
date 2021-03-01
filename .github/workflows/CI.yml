@@ -23,7 +23,7 @@ jobs:
     - uses: actions/checkout@v2
     - name: make check
       run: |
-        ./util/buildRelease/smokeTest
+        CHPL_LLVM=none ./util/buildRelease/smokeTest
 
   make_doc:
     runs-on: ubuntu-latest
@@ -33,7 +33,7 @@ jobs:
     - uses: actions/checkout@v2
     - name: make check-chpldoc && make docs
       run: |
-        ./util/buildRelease/smokeTest
+        CHPL_LLVM=none ./util/buildRelease/smokeTest
     - name: upload docs
       uses: actions/upload-artifact@v2
       with:
@@ -48,7 +48,7 @@ jobs:
     - uses: actions/checkout@v2
     - name: make mason
       run: |
-        ./util/buildRelease/smokeTest
+        CHPL_LLVM=none ./util/buildRelease/smokeTest
 
   check_annotations:
     runs-on: ubuntu-latest

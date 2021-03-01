@@ -30,6 +30,10 @@ static double gasnetc_exittimeout = GASNETC_DEFAULT_EXITTIMEOUT_MAX;
 
 static int gasnetc_exit_init(void);
 
+#if GASNET_PAR
+struct gasnetc_ofi_locks_ gasnetc_ofi_locks;
+#endif
+
 /* ------------------------------------------------------------------------------------ */
 /*
   Initialization
@@ -146,6 +150,11 @@ static int gasnetc_attach_primary(void) {
 
   /* ensure extended API is initialized across nodes */
   gasneti_spawner->Barrier();
+
+  /* (###) Optionally (but recommended) free spawner's idle resources.
+   * Safe even if spawner collectives are used after attach
+   */
+  gasneti_spawner->Cleanup();
 
   return GASNET_OK;
 }

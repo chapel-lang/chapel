@@ -439,7 +439,7 @@ class BadRegexpError : Error {
                    of a line instead of just the beginning and end of the text.
                    Note that this can be set inside a regular expression
                    with ``(?m)``.
-   :arg dotnl: (optional, default false) set to true in order to allow ``.``
+   :arg dotAll: (optional) set to true in order to allow ``.``
                to match a newline. Note that this can be set inside the
                regular expression with ``(?s)``.
    :arg nonGreedy: (optional) set to true in order to prefer shorter matches for
@@ -452,7 +452,7 @@ class BadRegexpError : Error {
 
  */
 proc compile(pattern: ?t, posix=false, literal=false, noCapture=false,
-             /*i*/ ignoreCase=false, /*m*/ multiLine=false, /*s*/ dotnl=false,
+             /*i*/ ignoreCase=false, /*m*/ multiLine=false, /*s*/ dotAll=false,
              /*U*/ nonGreedy=false): regexp(t) throws where t==string || t==bytes {
 
   if CHPL_REGEXP == "none" {
@@ -470,7 +470,7 @@ proc compile(pattern: ?t, posix=false, literal=false, noCapture=false,
   opts.nocapture = noCapture;
   opts.ignorecase = ignoreCase;
   opts.multiline = multiLine;
-  opts.dotnl = dotnl;
+  opts.dotnl = dotAll;
   opts.nongreedy = nonGreedy;
 
   var ret: regexp(t);
@@ -481,12 +481,21 @@ proc compile(pattern: ?t, posix=false, literal=false, noCapture=false,
     var err_str = qio_regexp_error(ret._regexp);
     var err_msg: string;
     try! {
-      err_msg = createStringWithNewBuffer(err_str) + 
+      err_msg = createStringWithNewBuffer(err_str) +
                   " when compiling regexp '" + patternStr + "'";
     }
     throw new owned BadRegexpError(err_msg);
   }
   return ret;
+}
+
+pragma "no doc"
+pragma "last resort"
+proc compile(pattern: ?t, posix=false, literal=false, noCapture=false,
+             /*i*/ ignoreCase=false, /*m*/ multiLine=false, /*s*/ dotnl=false,
+             /*U*/ nonGreedy=false): regexp(t) throws where t==string || t==bytes {
+  compilerWarning("Regexp.compile: 'dotnl' is deprecated. Use 'dotAll' instead.");
+  return compile(pattern, posix, literal, noCapture, ignoreCase, multiLine, dotnl, nonGreedy);
 }
 
 /*  The reMatch record records a regular expression search match
@@ -589,16 +598,20 @@ record regexp {
   }
 
   /* did this regular expression compile ? */
+  pragma "no doc"
   proc ok:bool {
+    compilerWarning("regexp: 'ok' is deprecated; errors are used to detect regexp compile errors");
     return qio_regexp_ok(_regexp);
   }
   /*
-
-     :returns: a string describing any error encountered when compiling this
+     returns a string describing any error encountered when compiling this
                regular expression
    */
+  pragma "no doc"
   proc error():string {
-    return qio_regexp_error(_regexp):string;
+    param msg = "regexp: 'error()' is deprecated; errors are used to detect regexp compile errors";
+    compilerWarning(msg);
+    return msg;
   }
 
   // note - more = overloads are below.
@@ -659,54 +672,15 @@ record regexp {
     */
   proc search(text: exprType, ref captures ...?k):reMatch
   {
-    var ret:reMatch;
-    on this.home {
-      var pos:byteIndex;
-      var endpos:byteIndex;
-
-      pos = 0;
-      endpos = pos + text.numBytes;
-
-      var matches:_ddata(qio_regexp_string_piece_t);
-      var nmatches = 1 + captures.size;
-      matches = _ddata_allocate(qio_regexp_string_piece_t, nmatches);
-      var got:bool;
-      got = qio_regexp_match(_regexp, text.localize().c_str(), text.numBytes,
-                             pos:int, endpos:int, QIO_REGEXP_ANCHOR_UNANCHORED,
-                             matches, nmatches);
-      // Now try to coerce the read strings into the captures.
-      _handle_captures(text, matches, nmatches, captures);
-      // Now return where we matched.
-      ret = new reMatch(got, matches[0].offset:byteIndex, matches[0].len);
-      _ddata_free(matches, nmatches);
-    }
-    return ret;
+    return _search_match(text, QIO_REGEXP_ANCHOR_UNANCHORED, true, captures);
   }
 
   // documented in the captures version
   pragma "no doc"
   proc search(text: exprType):reMatch
   {
-    var ret:reMatch;
-    on this.home {
-      var pos:byteIndex;
-      var endpos:byteIndex;
-
-      pos = 0;
-      endpos = pos + text.numBytes;
-
-      var matches:_ddata(qio_regexp_string_piece_t);
-      var nmatches = 1;
-      matches = _ddata_allocate(qio_regexp_string_piece_t, nmatches);
-      var got:bool;
-      got = qio_regexp_match(_regexp, text.localize().c_str(), text.numBytes,
-                             pos:int, endpos:int, QIO_REGEXP_ANCHOR_UNANCHORED,
-                             matches, nmatches);
-      // Now return where we matched.
-      ret = new reMatch(got, matches[0].offset:byteIndex, matches[0].len);
-      _ddata_free(matches, nmatches);
-    }
-    return ret;
+    var dummy: int;
+    return _search_match(text, QIO_REGEXP_ANCHOR_UNANCHORED, false, dummy);
   }
 
   /*
@@ -733,33 +707,49 @@ record regexp {
    */
   proc match(text: exprType, ref captures ...?k):reMatch
   {
-    var ret:reMatch;
-    on this.home {
-      var pos:byteIndex;
-      var endpos:byteIndex;
-
-      pos = 0;
-      endpos = pos + text.numBytes;
-
-      var matches:_ddata(qio_regexp_string_piece_t);
-      var nmatches = 1 + captures.size;
-      matches = _ddata_allocate(qio_regexp_string_piece_t, nmatches);
-      var got:bool;
-      got = qio_regexp_match(_regexp, text.localize().c_str(), text.numBytes,
-                             pos:int, endpos:int, QIO_REGEXP_ANCHOR_START,
-                             matches, nmatches);
-      // Now try to coerce the read strings into the captures.
-      _handle_captures(text, matches, nmatches, captures);
-      // Now return where we matched.
-      ret = new reMatch(got, matches[0].offset:byteIndex, matches[0].len);
-      _ddata_free(matches, nmatches);
-    }
-    return ret;
+    return _search_match(text, QIO_REGEXP_ANCHOR_START, true, captures);
   }
 
   // documented in the version taking captures.
   pragma "no doc"
   proc match(text: exprType):reMatch
+  {
+    var dummy: int;
+    return _search_match(text, QIO_REGEXP_ANCHOR_START, false, dummy);
+  }
+
+  /*
+     Check for a match to this regular expression in the full passed text.
+     If a capture group was not matched, the corresponding argument will
+     get the default value for its type.
+
+     :arg text: a string or bytes to search
+     :arg captures: what to capture from the regular expression.
+                    If the class:`regexp` was based on string, then, these
+                    should be strings or types that strings can cast to. Same
+                    applies for bytes.
+     :returns: an :record:`reMatch` object representing the offset in text
+               where a match occurred
+
+  proc fullmatch(text: exprType, ref captures ...?k):reMatch
+  {
+    return _search_match(text, QIO_REGEXP_ANCHOR_BOTH, true, captures);
+  }
+
+  // documented in the version taking captures.
+  pragma "no doc"
+  proc fullmatch(text: exprType):reMatch
+  {
+    var dummy: int;
+    return _search_match(text, QIO_REGEXP_ANCHOR_BOTH, false, dummy);
+  }
+   */
+
+  // Note - we would not need to use has_captures
+  // if we had args ...?k supporting 0 args, or if tuples support zero length
+
+  pragma "no doc"
+  proc _search_match(text: exprType, anchor: c_int, param has_captures, ref captures):reMatch
   {
     var ret:reMatch;
     on this.home {
@@ -770,19 +760,20 @@ record regexp {
       endpos = pos + text.numBytes;
 
       var matches:_ddata(qio_regexp_string_piece_t);
-      var nmatches = 1;
+      param nmatches = if has_captures then 1 + captures.size else 1;
       matches = _ddata_allocate(qio_regexp_string_piece_t, nmatches);
       var got:bool;
       got = qio_regexp_match(_regexp, text.localize().c_str(), text.numBytes,
-                             pos:int, endpos:int, QIO_REGEXP_ANCHOR_START,
+                             pos:int, endpos:int, anchor,
                              matches, nmatches);
+      // Now try to coerce the read strings into the captures.
+      if has_captures then _handle_captures(text, matches, nmatches, captures);
       // Now return where we matched.
       ret = new reMatch(got, matches[0].offset:byteIndex, matches[0].len);
       _ddata_free(matches, nmatches);
     }
     return ret;
   }
-
 
   /*
      Split the text by occurrences of this regular expression.
@@ -968,7 +959,7 @@ record regexp {
         try! {
           pattern = createStringWithNewBuffer(patternTemp);
         }
-      } 
+      }
       else {
         pattern = createBytesWithNewBuffer(patternTemp);
       }
@@ -1028,7 +1019,7 @@ proc =(ref ret:regexp(?t), x:regexp(t))
 
 // Cast regexp to string.
 pragma "no doc"
-inline proc _cast(type t: string, x: regexp(string)) {
+inline operator :(x: regexp(string), type t: string) {
   var pattern: t;
   on x.home {
     var cs: c_string;
@@ -1044,7 +1035,7 @@ inline proc _cast(type t: string, x: regexp(string)) {
 
 // Cast regexp to bytes.
 pragma "no doc"
-inline proc _cast(type t:bytes, x: regexp(bytes)) {
+inline operator :(x: regexp(bytes), type t: bytes) {
   var pattern: t;
   on x.home {
     var cs: c_string;
@@ -1057,13 +1048,13 @@ inline proc _cast(type t:bytes, x: regexp(bytes)) {
 
 // Cast string to regexp
 pragma "no doc"
-inline proc _cast(type t: regexp(string), x: string) throws {
+inline operator :(x: string, type t: regexp(string)) throws {
   return compile(x);
 }
 
 // Cast bytes to regexp
 pragma "no doc"
-inline proc _cast(type t: regexp(bytes), x: bytes) throws {
+inline operator :(x: bytes, type t: regexp(bytes)) throws {
   return compile(x);
 }
 

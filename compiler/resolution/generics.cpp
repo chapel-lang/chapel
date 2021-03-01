@@ -61,11 +61,6 @@ static bool            fixupDefaultInitCopy(FnSymbol* fn,
                                             FnSymbol* newFn,
                                             CallExpr* call);
 
-static void            fixupUntypedOutArgRTTs(FnSymbol* fn,
-                                              FnSymbol* newFn,
-                                              CallExpr* call);
-
-
 static void
 explainInstantiation(FnSymbol* fn) {
   if (strcmp(fn->name, fExplainInstantiation) != 0)
@@ -458,9 +453,6 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
       resolveSignature(newFn);
       newFn->tagIfGeneric(&subs);
 
-      // Fix up out intent arguments
-      fixupUntypedOutArgRTTs(fn, newFn, call);
-
       explainAndCheckInstantiation(newFn, fn);
 
       return newFn;
@@ -500,11 +492,7 @@ static bool fixupDefaultInitCopy(FnSymbol* fn,
         DefExpr*  def      = new DefExpr(thisTmp);
         CallExpr* initCall = NULL;
 
-        if (initFn->name == astrInit) {
-          initCall = new CallExpr(initFn, gMethodToken, thisTmp, arg);
-        } else {
-          initCall = new CallExpr(initFn, gMethodToken, thisTmp, arg);
-        }
+        initCall = new CallExpr(initFn, gMethodToken, thisTmp, arg);
 
         newFn->insertBeforeEpilogue(def);
 
@@ -562,31 +550,6 @@ static bool fixupDefaultInitCopy(FnSymbol* fn,
   }
 
   return retval;
-}
-
-static void fixupUntypedOutArgRTTs(FnSymbol* fn,
-                                   FnSymbol* newFn,
-                                   CallExpr* call) {
-  // Add an associated argument for out arguments that are
-  // untyped for types with runtime types
-
-  // This argument passes the runtime type from the call site
-  // to the function for use when constructing the out value.
-  for_formals(formal, newFn) {
-    if (formal->typeExpr == NULL &&
-        (formal->intent == INTENT_OUT ||
-         formal->originalIntent == INTENT_OUT)) {
-      Type* formalType = formal->type->getValType();
-      if (formalType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
-        ArgSymbol* newFormal = new ArgSymbol(INTENT_BLANK,
-                                             astr("chpl_type_", formal->name),
-                                             formalType);
-        newFormal->addFlag(FLAG_TYPE_FORMAL_FOR_OUT);
-        newFormal->addFlag(FLAG_TYPE_VARIABLE);
-        formal->defPoint->insertBefore(new DefExpr(newFormal));
-      }
-    }
-  }
 }
 
 //

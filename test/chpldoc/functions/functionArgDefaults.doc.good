@@ -37,6 +37,8 @@ or
 
 .. function:: proc notNilDefault(arg = c!)
 
+.. function:: proc isNilDefault(arg = nil)
+
 .. function:: proc plusDefault(arg = x+y)
 
 .. function:: proc minusDefault(arg = x-y)
@@ -88,6 +90,8 @@ or
 .. function:: proc maxDefault(arg = max(int))
 
 .. function:: proc castDefault(arg = x: int(32))
+
+.. function:: proc tuple1Default(arg = (x,))
 
 .. function:: proc tuple2Default(arg = (x, y))
 
@@ -154,4 +158,28 @@ or
 .. function:: proc R2TypedArgDefault(arg: R2(1, 2) = new R2(1, 2))
 
 .. function:: proc R3TypedArgDefault(arg: R3(1, 2, 3) = new R3(1, 2, 3))
+
+.. function:: proc boundedRange(arg = 1..10)
+
+.. function:: proc lowBoundedRange(arg = 1..)
+
+.. function:: proc highBoundedRange(arg = ..10)
+
+.. function:: proc unboundedRange(arg = ..)
+
+.. function:: proc boundedRangeBy(arg = 1..10 by 2)
+
+.. function:: proc lowBoundedRangeBy(arg = 1.. by 2)
+
+.. function:: proc highBoundedRangeBy(arg = ..10 by 2)
+
+.. function:: proc unboundedRangeBy(arg = .. by 2)
+
+.. function:: proc boundedRangeByAlign(arg = 1..10 by 2 align 1)
+
+.. function:: proc lowBoundedRangeByAlign(arg = 1.. by 2 align 1)
+
+.. function:: proc highBoundedRangeByAlign(arg = ..10 by 2 align 1)
+
+.. function:: proc unboundedRangeByAlign(arg = .. by 2 align 1)
 

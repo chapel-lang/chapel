@@ -21,7 +21,6 @@ module list
 
 export GASNET_PHYSMEM_MAX=83G
 export GASNET_ODP_VERBOSE=0
-export CHPL_LAUNCHER=slurm-gasnetrun_ibv
 nightly_args="${nightly_args} -no-buildcheck"
 
 # workaround for https://github.com/Cray/chapel-private/issues/1598

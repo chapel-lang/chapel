@@ -235,7 +235,17 @@ static void removeRandomPrimitives() {
 }
 
 
-static void removeInterfaceCode() {
+// remove ASTs that supported CG (constrained generics / interfaces)
+// see also cleanupGenericStandins()
+static void cleanupConstrainedGenerics() {
+  // This should be done before removing InterfaceSymbols
+  // so we can get at and remove refTypes.
+  for_alive_in_Vec(ConstrainedType, ct, gConstrainedTypes) {
+    ct->symbol->defPoint->remove();
+    if (Type* ctRef = ct->refType)
+      ctRef->symbol->defPoint->remove();
+  }
+
   for_alive_in_Vec(InterfaceSymbol, isym, gInterfaceSymbols)
     isym->defPoint->remove();
 
@@ -247,12 +257,6 @@ static void removeInterfaceCode() {
     for_alist(impl, istm->implBody->body)
       wrapFnDef->insertBefore(impl->remove());
     wrapFnDef->remove();
-  }
-
-  for_alive_in_Vec(ConstrainedType, ct, gConstrainedTypes) {
-    ct->symbol->defPoint->remove();
-    if (Type* ctRef = ct->refType)
-      ctRef->symbol->defPoint->remove();
   }
 }
 
@@ -969,7 +973,7 @@ void saveGenericSubstitutions() {
 }
 
 void pruneResolvedTree() {
-  removeInterfaceCode();
+  cleanupConstrainedGenerics();
 
   removeTiMarks();
 

@@ -3,19 +3,19 @@ use LinearAlgebra.Sparse;
 use Math;
 use Time;
 
-config const n = 16, 
+config const n = 16,
              tol = 0.000001,
              maxiter = 10000,
              threshold = 0.00001;
-             
+
 
 var t: Timer;
 var itern: int;
 
 // Dense
 
-var Xdom = {1..n};
-var Adom = {1..n, 1..n};
+var Xdom = {0..<n};
+var Adom = {0..<n, 0..<n};
 
 var A: [Adom] real = 0.0;
 

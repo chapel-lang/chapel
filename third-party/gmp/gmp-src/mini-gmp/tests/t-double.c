@@ -1,6 +1,6 @@
 /*
 
-Copyright 2012, 2013, 2018 Free Software Foundation, Inc.
+Copyright 2012, 2013, 2018, 2020 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library test suite.
 
@@ -117,6 +117,10 @@ test_matissa (void)
   mpz_clear (x);
   mpz_clear (y);
 }
+
+#ifndef M_PI
+#define M_PI 3.141592653589793238462643383279502884
+#endif
 
 static const struct
 {

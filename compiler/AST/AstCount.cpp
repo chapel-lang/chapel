@@ -38,9 +38,6 @@ AstCount::AstCount() {
   numParamForLoop = 0;
 }
 
-AstCount::~AstCount() {
-}
-
 int AstCount::total() {
   int sum = 0;
 

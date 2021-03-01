@@ -39,6 +39,10 @@ proc R.init=(other : this.type.T) {
   this.T = this.type.T;
   this.x = other;
 }
+operator :(other, type t: R(other.type)) {
+  var tmp: t = other;
+  return tmp;
+}
 
 {
   var A : R(int) = 5;

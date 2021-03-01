@@ -200,6 +200,7 @@ uint32_t gasnete_hashtable_insert(gasnete_hashtable_t * ht, uint32_t key, void *
     gasneti_assert(new_table != NULL);
     gasnete_table_copy(table, new_table);
     ht->buckets[i] = new_table;
+    gasnete_table_free(table);
     table = new_table;
   }
 

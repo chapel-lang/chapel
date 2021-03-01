@@ -1802,5 +1802,24 @@ module List {
     return !(a == b);
   }
 
+  operator :(rhs:list, type t:list) {
+    var lst: list = rhs; // use init=
+    return lst;
+  }
+  operator :(rhs:[], type t:list) {
+    var lst: list = rhs; // use init=
+    return lst;
+  }
+  operator :(rhs:range(?), type t:list) {
+    var lst: list = rhs; // use init=
+    return lst;
+  }
+  operator :(rhs:_iteratorRecord, type t:list) {
+    var lst: list = rhs; // use init=
+    return lst;
+  }
+
+
+
 } // End module "Lists".
 

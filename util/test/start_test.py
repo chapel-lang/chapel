@@ -1033,6 +1033,7 @@ def set_up_executables():
 
     comm = chpl_comm.get()
     network_atomics = chpl_atomics.get('network')
+    comm_substrate = chpl_comm_substrate.get()
     launcher = chpl_launcher.get()
     locale_model = chpl_locale_model.get()
 
@@ -1116,11 +1117,22 @@ def set_up_executables():
                         "{0}".format(prediff))
                 finish()
             chpl_system_prediff.append(prediff)
-    if launcher == "slurm-srun":
-        # With Slurm-based launcher, auto-run prediff-for-slurm-srun.
-        prediff_for_slurm = os.path.join(util_dir, "test", "prediff-for-slurm-srun")
+    if "slurm" in launcher:
+        # With Slurm-based launcher, auto-run prediff-for-slurm.
+        prediff_for_slurm = os.path.join(util_dir, "test", "prediff-for-slurm")
         if prediff_for_slurm not in chpl_system_prediff:
             chpl_system_prediff.append(prediff_for_slurm)
+    if 'lsf-' in launcher:
+        # With lsf-based launcher, auto-run prediff-for-lsf.
+        prediff_for_lsf = os.path.join(util_dir, "test", "prediff-for-lsf")
+        if prediff_for_lsf not in chpl_system_prediff:
+            chpl_system_prediff.append(prediff_for_lsf)
+    if 'ucx' in comm_substrate:
+        # With ucx-based launcher, auto-run prediff-for-ucx.
+        prediff_for_ucx = os.path.join(util_dir, "test", "prediff-for-ucx")
+        if prediff_for_ucx not in chpl_system_prediff:
+            chpl_system_prediff.append(prediff_for_ucx)
+
     if chpl_system_prediff:
         os.environ["CHPL_SYSTEM_PREDIFF"] = ','.join(chpl_system_prediff)
 

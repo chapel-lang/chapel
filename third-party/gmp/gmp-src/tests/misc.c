@@ -49,10 +49,17 @@ void
 tests_start (void)
 {
   char version[10];
-  snprintf (version, 10, "%u.%u.%u",
+#if __STDC_VERSION__ >= 199901L
+  snprintf (version, sizeof version, "%u.%u.%u",
 	    __GNU_MP_VERSION,
 	    __GNU_MP_VERSION_MINOR,
 	    __GNU_MP_VERSION_PATCHLEVEL);
+#else
+  sprintf (version, "%u.%u.%u",
+	    __GNU_MP_VERSION,
+	    __GNU_MP_VERSION_MINOR,
+	    __GNU_MP_VERSION_PATCHLEVEL);
+#endif
 
   if (strcmp (gmp_version, version) != 0)
     {

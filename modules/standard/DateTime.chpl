@@ -1667,7 +1667,7 @@ module DateTime {
   }
 
   pragma "no doc"
-  proc _cast(type s, t: timedelta) where s == string {
+  operator :(t: timedelta, type s:string) {
     var str: string;
     if t.days != 0 {
       str = t.days: string + " day";

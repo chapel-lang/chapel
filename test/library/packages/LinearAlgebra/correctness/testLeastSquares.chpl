@@ -46,9 +46,9 @@ use TestUtils;
 // Basic test: m <= n
 {
 
-  var y: [1..3] real = [0.0, 1.0, 8.0];
-  var x: [1..3] real = [1.0, 2.0, 3.0];
-  var M: [1..3, 1..3] real = vander(x, 3);
+  var y = Vector(0.0, 1.0, 8.0);
+  var x = Vector(1.0, 2.0, 3.0);
+  var M = vander(x, 3);
 
   // Debug output
   if !TestUtils.correctness {

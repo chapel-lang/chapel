@@ -34,5 +34,5 @@ main ()
   {
     throw_expr();
   }
-  catch (invalid_argument) { }
+  catch (invalid_argument&) { }
 }

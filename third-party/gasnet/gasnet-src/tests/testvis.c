@@ -121,7 +121,7 @@ test_memvec_list *rand_memvec_list(void *addr, size_t elemlen, int allowoverlap)
   size_t per = 0;
   if (TEST_RAND_ONEIN(20)) count = 0;
   if (count > 0) per = elemlen / count; 
-  mv = test_malloc(sizeof(test_memvec_list)+count*sizeof(gex_Memvec_t));
+  mv = test_calloc(1,sizeof(test_memvec_list)+count*sizeof(gex_Memvec_t));
   mv->count = count;
   mv->list = (gex_Memvec_t *)(mv+1);
   mv->totalsz = 0;
@@ -187,7 +187,7 @@ test_memvec_list *rand_memvec_list(void *addr, size_t elemlen, int allowoverlap)
 
 
 test_memvec_list *buildcontig_memvec_list(void *addr, size_t elemlen, size_t areasz) {
-  test_memvec_list *mv = test_malloc(sizeof(test_memvec_list)+sizeof(gex_Memvec_t));
+  test_memvec_list *mv = test_calloc(1,sizeof(test_memvec_list)+sizeof(gex_Memvec_t));
   mv->count = 1;
   mv->list = (gex_Memvec_t*)(mv+1);
   mv->totalsz = ((uintptr_t)elemlen)*VEC_SZ;
@@ -318,7 +318,7 @@ test_addr_list *rand_addr_list(void *addr, size_t chunkelem, size_t elemlen, int
   count = TEST_RAND_PICK(TEST_RAND(1, maxchunks),
                          TEST_RAND(1, TEST_RAND(1, TEST_RAND(1, maxchunks))));
   if (TEST_RAND_ONEIN(20)) count = 0;
-  al = test_malloc(sizeof(test_addr_list)+count*sizeof(void *));
+  al = test_calloc(1,sizeof(test_addr_list)+count*sizeof(void *));
   al->count = count;
   al->list = (void **)(al+1);
 
@@ -351,7 +351,7 @@ test_addr_list *rand_addr_list(void *addr, size_t chunkelem, size_t elemlen, int
 }
 
 test_addr_list *buildcontig_addr_list(void *addr, size_t elemlen, size_t areasz) {
-  test_addr_list *al = test_malloc(sizeof(test_addr_list)+sizeof(void *));
+  test_addr_list *al = test_calloc(1,sizeof(test_addr_list)+sizeof(void *));
   al->list = (void **)(al+1);
   al->list[0] = ((VEC_T*)addr) + TEST_RAND(0,areasz-elemlen);
   if (elemlen == 0) {
@@ -507,7 +507,7 @@ test_strided_desc *rand_strided_desc(void *srcaddr, void *dstaddr, void *contiga
   size_t i;
   if (TEST_RAND_ONEIN(10)) dim = 1; /* 1-dim (fully contiguous) */
   sz = sizeof(test_strided_desc)+6*dim*sizeof(size_t);
-  sd = test_malloc(sz);
+  sd = test_calloc(1,sz);
   sd->_descsz = sz;
   sd->srcstrides =    (size_t *)(sd+1);
   sd->dststrides =    ((size_t *)(sd+1))+dim;
@@ -759,7 +759,7 @@ void _verify_xpose_desc(test_xpose_desc const *xd, const char *file, int line) {
 test_xpose_desc *rand_xpose_desc(void *srcaddr, void *dstaddr, void *contigaddr, size_t elemlen) {
   size_t dim = TEST_RAND(2, TEST_RAND(2, max_stridedim));
   size_t sz = sizeof(test_xpose_desc)+10*dim*MAX(sizeof(ptrdiff_t),sizeof(size_t));
-  test_xpose_desc *xd = test_malloc(sz);
+  test_xpose_desc *xd = test_calloc(1,sz);
   xd->_descsz = sz;
   xd->stridelevels = dim;
   size_t vecs_per_elem = TEST_RAND(1,TEST_RAND(1,16));
@@ -1823,7 +1823,7 @@ void doit(int iters, int runtests) {
           assert(ops[i].xdesc);
           verify_xpose_desc_data(ops[i].xdesc, "gasnet_puts_bulk/gasnet_gets_bulk test");
 
-          test_free(ops[i].sdesc);
+          test_free(ops[i].xdesc);
         }
       }
       test_free(events);
@@ -1916,7 +1916,7 @@ int main(int argc, char **argv) {
 
   if (seedoffset == 0) {
     seedoffset = (((unsigned int)TIME()) & 0xFFFF);
-    TEST_BCAST(&seedoffset, 0, &seedoffset, sizeof(&seedoffset));
+    TEST_BCAST(&seedoffset, 0, &seedoffset, sizeof(seedoffset));
   }
   TEST_SRAND(mynode+seedoffset);
   char segstr[64];
@@ -1936,6 +1936,7 @@ int main(int argc, char **argv) {
   if (halfduplex && mynode % 2 == 1) runtests = 0; /* odd nodes passive */
 
   doit(iters, runtests);
+  test_free(heapseg);
   MSG("done.");
 
   gasnet_exit(0);

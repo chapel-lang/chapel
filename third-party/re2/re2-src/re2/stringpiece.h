@@ -19,14 +19,24 @@
 //
 // Arghh!  I wish C++ literals were "string".
 
+// Doing this simplifies the logic below.
+#ifndef __has_include
+#define __has_include(x) 0
+#endif
+
 #include <stddef.h>
 #include <string.h>
 #include <algorithm>
 #include <iosfwd>
 #include <iterator>
 #include <string>
+#if __has_include(<string_view>) && __cplusplus >= 201703L
+#include <string_view>
+#endif
 
 namespace re2 {
+
+class Prog; // forward declare
 
 class StringPiece {
  public:
@@ -58,6 +68,10 @@ class StringPiece {
   // expected.
   StringPiece()
       : data_(NULL), size_(0) {}
+#if __has_include(<string_view>) && __cplusplus >= 201703L
+  StringPiece(const std::string_view& str)
+      : data_(str.data()), size_(str.size()) {}
+#endif
   StringPiece(const std::string& str)
       : data_(str.data()), size_(str.size()) {}
   StringPiece(const char* str)
@@ -132,12 +146,9 @@ class StringPiece {
     set(data, static_cast<size_t>(end - data));
   }
 
-  // Find the position where c occurs (ie memchr)
-  // uses begin, end pointers
-  const char* find_c(const char* s, const char* end, int c) const
-  {
-    return reinterpret_cast<const char*>(memchr(s, c, end - s));
-  }
+  // Accelerates to the first likely occurrence of the prefix.
+  // Returns a pointer to the first byte or NULL if not found.
+  const char* prefix_accel(Prog* prog, const char* s, ssize_t len) const;
 
   // Also define begin_reading
   const_iterator begin_reading() const { return data_; }

@@ -118,6 +118,7 @@ void cleanupExternC(void) {
 
 using namespace clang;
 using namespace llvm;
+using namespace CodeGen;
 
 #define GLOBAL_PTR_SPACE 100
 #define WIDE_PTR_SPACE 101
@@ -1168,7 +1169,7 @@ void readMacrosClang(void) {
 // 3: keep the code generator open until we finish generating Chapel code,
 //    since we might need to code generate called functions.
 // 4: get LLVM values for code generated C things (e.g. types, function ptrs)
-class CCodeGenConsumer : public ASTConsumer {
+class CCodeGenConsumer final : public ASTConsumer {
   private:
     GenInfo* info;
     clang::DiagnosticsEngine* Diags;
@@ -1205,7 +1206,7 @@ class CCodeGenConsumer : public ASTConsumer {
       }
     }
 
-    ~CCodeGenConsumer() { }
+    ~CCodeGenConsumer() override = default;
 
     // Start ASTVisitor Overrides
     void Initialize(ASTContext &Context) override {
@@ -1397,12 +1398,12 @@ class CCodeGenConsumer : public ASTConsumer {
 };
 
 
-class CCodeGenAction : public ASTFrontendAction {
+class CCodeGenAction final : public ASTFrontendAction {
  public:
   CCodeGenAction() { }
  protected:
   std::unique_ptr<ASTConsumer>
-  CreateASTConsumer(CompilerInstance &CI, StringRef InFile);
+  CreateASTConsumer(CompilerInstance &CI, StringRef InFile) override;
 };
 
 std::unique_ptr<ASTConsumer>
@@ -1496,12 +1497,43 @@ void setupClang(GenInfo* info, std::string mainFile)
 
   std::unique_ptr<clang::driver::Compilation> C(TheDriver.BuildCompilation(clangArgs));
 
-  INT_ASSERT(C->getJobs().size() == 1);
+  clang::driver::Command* job = NULL;
 
-  clang::driver::Command& j = *C->getJobs().begin();
+  if (localeUsesGPU() == false) {
+    // Not a CPU+GPU compilation, so just use first job.
+    job = &*C->getJobs().begin();
+  } else {
+    // CPU+GPU compilation
+    //  1st cc1 command is for the GPU
+    //  2nd cc1 command is for the CPU
+    for (auto &command : C->getJobs()) {
+      bool isCC1 = false;
+      for (auto arg : command.getArguments()) {
+        if (0 == strcmp(arg, "-cc1")) {
+          isCC1 = true;
+          break;
+        }
+      }
+      if (isCC1) {
+
+        if (gCodegenGPU) {
+          // For GPU, set job to 1st cc1 command
+          if (job == NULL) job = &command;
+        } else {
+          // For CPU, set job to last cc1 command
+          job = &command;
+        }
+      }
+    }
+  }
+
+
+  if (job == NULL)
+    USR_FATAL("Could not find cc1 command from clang driver");
+
   if( printSystemCommands && developer ) {
     printf("<internal clang cc> ");
-    for ( auto a : j.getArguments() ) {
+    for ( auto a : job->getArguments() ) {
       printf("%s ", a);
     }
     printf("\n");
@@ -1516,12 +1548,12 @@ void setupClang(GenInfo* info, std::string mainFile)
 #if HAVE_LLVM_VER >= 100
   bool success = CompilerInvocation::CreateFromArgs(
             Clang->getInvocation(),
-            j.getArguments(),
+            job->getArguments(),
             *Diags);
 #else
   bool success = CompilerInvocation::CreateFromArgs(
             Clang->getInvocation(),
-            &j.getArguments().front(), (&j.getArguments().back())+1,
+            &job->getArguments().front(), (&job->getArguments().back())+1,
             *Diags);
 #endif
 
@@ -1898,7 +1930,9 @@ void prepareCodegenLLVM()
     // --ieee-float
     FM.setAllowContract(true);
   }
-  info->irBuilder->setFastMathFlags(FM);
+  if (gCodegenGPU == false) {
+    info->irBuilder->setFastMathFlags(FM);
+  }
 
   checkAdjustedDataLayout();
 }
@@ -1913,7 +1947,7 @@ struct ExternBlockInfo {
   GenInfo* gen_info;
   fileinfo file;
   ExternBlockInfo() : gen_info(NULL), file() { }
-  ~ExternBlockInfo() { }
+ ~ExternBlockInfo() = default;
 };
 
 typedef std::set<ModuleSymbol*> module_set_t;
@@ -2024,6 +2058,23 @@ void runClang(const char* just_parse_filename) {
     }
   }
 
+  // Remove -DCHPL_DEBUG, -DCHPL_OPTIMIZE, -DNDEBUG from the args
+  // They are settings from the runtime build and we want to
+  // use flags appropriate to the compilation instead of the runtime build
+  std::vector<std::string>::iterator pos =
+    std::find(args.begin(), args.end(), "-DCHPL_DEBUG");
+  if (pos != args.end())
+    args.erase(pos);
+
+  pos = std::find(args.begin(), args.end(), "-DCHPL_OPTIMIZE");
+  if (pos != args.end())
+    args.erase(pos);
+
+
+  pos = std::find(args.begin(), args.end(), "-DNDEBUG");
+  if (pos != args.end())
+    args.erase(pos);
+
   std::string dashImodules = "-I";
   dashImodules += CHPL_HOME;
   dashImodules += "/modules";
@@ -2054,11 +2105,15 @@ void runClang(const char* just_parse_filename) {
     }
   }
 
-  if (debugCCode)
+  if (debugCCode) {
     args.push_back(clang_debug);
+    args.push_back("-DCHPL_DEBUG");
+  }
 
-  if (optimizeCCode)
+  if (optimizeCCode) {
     args.push_back(clang_opt);
+    args.push_back("-DCHPL_OPTIMIZE");
+  }
 
   if (specializeCCode &&
       CHPL_TARGET_CPU_FLAG != NULL &&
@@ -2112,6 +2167,16 @@ void runClang(const char* just_parse_filename) {
   // library directories/files and ldflags are handled during linking later.
 
   clangCCArgs.push_back("-DCHPL_GEN_CODE");
+
+  // tell clang to use CUDA support
+  if (localeUsesGPU()) {
+    // Need to pass this flag so atomics header will compile
+    clangOtherArgs.push_back("--std=c++11");
+    // Need to select CUDA mode in embedded clang to
+    // activate the GPU target
+    clangOtherArgs.push_back("-x");
+    clangOtherArgs.push_back("cuda");
+  }
 
   // Always include sys_basic because it might change the
   // behaviour of macros!
@@ -2208,7 +2273,6 @@ void runClang(const char* just_parse_filename) {
         USR_FATAL("error running clang during code generation");
       }
     }
-
     if( ! parseOnly ) {
       // LLVM module should have been created by CCodeGenConsumer
       INT_ASSERT(gGenInfo->module);
@@ -2372,22 +2436,13 @@ llvm::Type* codegenCType(const TypeDecl* td)
   clang::CodeGenerator* cCodeGen = clangInfo->cCodeGen;
   INT_ASSERT(cCodeGen);
 
-  //CodeGen::CodeGenTypes & cdt = info->cgBuilder->getTypes();
   QualType qType;
 
   // handle TypedefDecl
   if( const TypedefNameDecl* tnd = dyn_cast<TypedefNameDecl>(td) ) {
     qType = tnd->getCanonicalDecl()->getUnderlyingType();
-    // had const Type *ctype = td->getUnderlyingType().getTypePtrOrNull();
-    //could also do:
-    //  qType =
-    //   tnd->getCanonicalDecl()->getTypeForDecl()->getCanonicalTypeInternal();
   } else if( const EnumDecl* ed = dyn_cast<EnumDecl>(td) ) {
     qType = ed->getCanonicalDecl()->getIntegerType();
-    // could also use getPromotionType()
-    //could also do:
-    //  qType =
-    //   tnd->getCanonicalDecl()->getTypeForDecl()->getCanonicalTypeInternal();
   } else if( const RecordDecl* rd = dyn_cast<RecordDecl>(td) ) {
     RecordDecl *def = rd->getDefinition();
     INT_ASSERT(def);
@@ -2966,6 +3021,66 @@ getCGArgInfo(const clang::CodeGen::CGFunctionInfo* CGI, int curCArg)
   return argInfo;
 }
 
+static unsigned helpGetCTypeAlignment(const clang::QualType& qType) {
+  GenInfo* info = gGenInfo;
+  INT_ASSERT(info);
+  ClangInfo* clangInfo = info->clangInfo;
+  INT_ASSERT(clangInfo);
+
+  unsigned alignInBits = clangInfo->Ctx->getTypeAlignIfKnown(qType);
+
+  unsigned alignInBytes = alignInBits / 8;
+  // round it up to a power of 2
+  unsigned rounded = 1;
+  while (rounded < alignInBytes) rounded *= 2;
+
+  return rounded;
+}
+
+static unsigned helpGetCTypeAlignment(const clang::TypeDecl* td) {
+  QualType qType;
+
+  if (const TypedefNameDecl* tnd = dyn_cast<TypedefNameDecl>(td)) {
+    qType = tnd->getCanonicalDecl()->getUnderlyingType();
+  } else if (const EnumDecl* ed = dyn_cast<EnumDecl>(td)) {
+    qType = ed->getCanonicalDecl()->getIntegerType();
+  } else if (const RecordDecl* rd = dyn_cast<RecordDecl>(td)) {
+    RecordDecl *def = rd->getDefinition();
+    INT_ASSERT(def);
+    qType=def->getCanonicalDecl()->getTypeForDecl()->getCanonicalTypeInternal();
+  } else {
+    INT_FATAL("Unknown clang type declaration");
+  }
+
+  return helpGetCTypeAlignment(qType);
+}
+static unsigned helpGetAlignment(::Type* type) {
+  GenInfo* info = gGenInfo;
+  INT_ASSERT(info);
+
+  if (type->symbol->hasFlag(FLAG_EXTERN)) {
+    clang::TypeDecl* cType = NULL;
+    clang::ValueDecl* cVal = NULL;
+    info->lvt->getCDecl(type->symbol->cname, &cType, &cVal);
+    if (cType) {
+      return helpGetCTypeAlignment(cType);
+    }
+  }
+
+  // use the maximum alignment of all the fields
+  unsigned maxAlign = 1;
+
+  if (isRecord(type) || isUnion(type)) {
+    AggregateType* at = toAggregateType(type);
+    for_fields(field, at) {
+      unsigned fieldAlign = helpGetAlignment(field->type);
+      if (maxAlign < fieldAlign)
+        maxAlign = fieldAlign;
+    }
+  }
+
+  return maxAlign;
+}
 
 #if HAVE_LLVM_VER >= 100
 llvm::MaybeAlign getPointerAlign(int addrSpace) {
@@ -2977,6 +3092,31 @@ llvm::MaybeAlign getPointerAlign(int addrSpace) {
   uint64_t align = clangInfo->Clang->getTarget().getPointerAlign(0);
   return llvm::MaybeAlign(align);
 }
+llvm::MaybeAlign getCTypeAlignment(const clang::TypeDecl* td) {
+  unsigned rounded = helpGetCTypeAlignment(td);
+  if (rounded > 1) {
+    return llvm::MaybeAlign(rounded);
+  } else {
+    return llvm::MaybeAlign();
+  }
+}
+llvm::MaybeAlign getCTypeAlignment(const clang::QualType& qt) {
+  unsigned rounded = helpGetCTypeAlignment(qt);
+  if (rounded > 1) {
+    return llvm::MaybeAlign(rounded);
+  } else {
+    return llvm::MaybeAlign();
+  }
+}
+llvm::MaybeAlign getAlignment(::Type* type) {
+  unsigned rounded = helpGetAlignment(type);
+  if (rounded > 1) {
+    return llvm::MaybeAlign(rounded);
+  } else {
+    return llvm::MaybeAlign();
+  }
+}
+
 #else
 uint64_t getPointerAlign(int addrSpace) {
   GenInfo* info = gGenInfo;
@@ -2987,7 +3127,17 @@ uint64_t getPointerAlign(int addrSpace) {
   uint64_t align = clangInfo->Clang->getTarget().getPointerAlign(0);
   return align;
 }
+unsigned getCTypeAlignment(const clang::TypeDecl* td) {
+  return helpGetCTypeAlignment(td);
+}
+unsigned getCTypeAlignment(const clang::QualType& qt) {
+  return helpGetCTypeAlignment(qt);
+}
+unsigned getAlignment(::Type* type) {
+  return helpGetAlignment(type);
+}
 #endif
+
 
 bool isBuiltinExternCFunction(const char* cname)
 {
@@ -3238,10 +3388,28 @@ void makeBinaryLLVM(void) {
   ClangInfo* clangInfo = info->clangInfo;
   INT_ASSERT(clangInfo);
 
-  std::string moduleFilename = genIntermediateFilename("chpl__module.o");
-  std::string preOptFilename = genIntermediateFilename("chpl__module-nopt.bc");
-  std::string opt1Filename = genIntermediateFilename("chpl__module-opt1.bc");
-  std::string opt2Filename = genIntermediateFilename("chpl__module-opt2.bc");
+  std::string moduleFilename;
+  std::string preOptFilename;
+  std::string opt1Filename;
+  std::string opt2Filename;
+  std::string asmFilename;
+  std::string ptxObjectFilename;
+  std::string fatbinFilename;
+
+  if (gCodegenGPU == false) {
+    moduleFilename = genIntermediateFilename("chpl__module.o");
+    preOptFilename = genIntermediateFilename("chpl__module-nopt.bc");
+    opt1Filename = genIntermediateFilename("chpl__module-opt1.bc");
+    opt2Filename = genIntermediateFilename("chpl__module-opt2.bc");
+  } else {
+    moduleFilename = genIntermediateFilename("chpl__gpu_module.o");
+    preOptFilename = genIntermediateFilename("chpl__gpu_module-nopt.bc");
+    opt1Filename = genIntermediateFilename("chpl__gpu_module-opt1.bc");
+    opt2Filename = genIntermediateFilename("chpl__gpu_module-opt2.bc");
+    asmFilename = genIntermediateFilename("chpl__gpu_ptx.s");
+    ptxObjectFilename = genIntermediateFilename("chpl__gpu_ptx.o");
+    fatbinFilename = genIntermediateFilename("chpl__gpu.fatbin");
+  }
 
   if( saveCDir[0] != '\0' ) {
     std::error_code tmpErr;
@@ -3278,10 +3446,6 @@ void makeBinaryLLVM(void) {
   // Open the output file
   std::error_code error;
   llvm::sys::fs::OpenFlags flags = llvm::sys::fs::F_None;
-
-  llvm::raw_fd_ostream outputOfile(moduleFilename, error, flags);
-  if (error || outputOfile.has_error())
-    USR_FATAL("Could not open output file %s", moduleFilename.c_str());
 
   static bool addedGlobalExts = false;
   if( ! addedGlobalExts ) {
@@ -3435,37 +3599,100 @@ void makeBinaryLLVM(void) {
   // Emit the .o file for linking with clang
   // Setup and run LLVM passes to emit a .o file to outputOfile
   {
-    llvm::legacy::PassManager emitPM;
 
-    emitPM.add(createTargetTransformInfoWrapperPass(
-               info->targetMachine->getTargetIRAnalysis()));
+    bool disableVerify = !developer;
+
+    if (gCodegenGPU == false) {
+      llvm::raw_fd_ostream outputOfile(moduleFilename, error, flags);
+      if (error || outputOfile.has_error())
+        USR_FATAL("Could not open output file %s", moduleFilename.c_str());
 
 #if HAVE_LLVM_VER >= 100
-    llvm::CodeGenFileType FileType = llvm::CGFT_ObjectFile;
+      llvm::CodeGenFileType FileType = llvm::CGFT_ObjectFile;
 #else
-    llvm::TargetMachine::CodeGenFileType FileType =
-      llvm::TargetMachine::CGFT_ObjectFile;
+      llvm::TargetMachine::CodeGenFileType FileType =
+        llvm::TargetMachine::CGFT_ObjectFile;
 #endif
 
-    bool disableVerify = ! developer;
+      {
+        llvm::legacy::PassManager emitPM;
+
+        emitPM.add(createTargetTransformInfoWrapperPass(
+                   info->targetMachine->getTargetIRAnalysis()));
+
 #if HAVE_LLVM_VER > 60
-    info->targetMachine->addPassesToEmitFile(emitPM, outputOfile,
-                                             nullptr,
-                                             FileType,
-                                             disableVerify);
+        info->targetMachine->addPassesToEmitFile(emitPM, outputOfile,
+                                                 nullptr,
+                                                 FileType,
+                                                 disableVerify);
 #else
-    info->targetMachine->addPassesToEmitFile(emitPM, outputOfile,
-                                             FileType,
-                                             disableVerify);
+        info->targetMachine->addPassesToEmitFile(emitPM, outputOfile,
+                                                 FileType,
+                                                 disableVerify);
 #endif
 
-    // Run the passes to emit the .o file now!
-    emitPM.run(*info->module);
-    outputOfile.close();
+        emitPM.run(*info->module);
+
+      }
+      outputOfile.close();
+
+    } else {
+
+      llvm::CodeGenFileType asmFileType =
+        llvm::CodeGenFileType::CGFT_AssemblyFile;
+
+      llvm::raw_fd_ostream outputASMfile(asmFilename, error, flags);
+
+      {
+
+        llvm::legacy::PassManager emitPM;
+
+        emitPM.add(createTargetTransformInfoWrapperPass(
+                   info->targetMachine->getTargetIRAnalysis()));
+
+        info->targetMachine->addPassesToEmitFile(emitPM, outputASMfile,
+                                                 nullptr,
+                                                 asmFileType,
+                                                 disableVerify);
+
+        emitPM.run(*info->module);
+
+      }
+
+      outputASMfile.close();
+
+      if (mysystem("which ptxas > /dev/null 2>&1", "Check to see if ptxas command can be found", true)) {
+        USR_FATAL("Command 'ptxas' not found\n");
+      }
+
+      if (mysystem("which fatbinary > /dev/null 2>&1", "Check to see if fatbinary command can be found", true)) {
+        USR_FATAL("Command 'fatbinary' not found\n");
+      }
+
+
+      std::string ptxCmd = std::string("ptxas -m64 --gpu-name ") +
+                           std::string("sm_60 --output-file ") + ptxObjectFilename.c_str() +
+                           " " + asmFilename.c_str();
+
+      mysystem(ptxCmd.c_str(), "PTX to  object file");
+
+      std::string fatbinaryCmd = std::string("fatbinary -64 ") +
+                                 std::string("--create ") + fatbinFilename.c_str() +
+                                 std::string(" --image=profile=sm_60,file=") + ptxObjectFilename.c_str() +
+                                 std::string(" --image=profile=compute_60,file=") + asmFilename.c_str();
+
+      mysystem(fatbinaryCmd.c_str(), "object file to fatbinary");
+
+    }
   }
 
   //finishClang is before the call to the debug finalize
   deleteClang(clangInfo);
+
+  // Just make the .o file for GPU code
+  if (gCodegenGPU) {
+    return;
+  }
 
   std::string options = "";
 
@@ -3906,6 +4133,23 @@ static void moveGeneratedLibraryFile(const char* tmpbinname) {
 }
 
 void print_clang(clang::Decl* d) {
+  if (d == NULL)
+    fprintf(stderr, "NULL");
+  else
+    d->print(llvm::dbgs());
+
+  fprintf(stderr, "\n");
+}
+
+void print_clang(clang::TypeDecl* d) {
+  if (d == NULL)
+    fprintf(stderr, "NULL");
+  else
+    d->print(llvm::dbgs());
+
+  fprintf(stderr, "\n");
+}
+void print_clang(clang::ValueDecl* d) {
   if (d == NULL)
     fprintf(stderr, "NULL");
   else

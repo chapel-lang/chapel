@@ -14,8 +14,7 @@ module variableDefaultValues {
   var bitwiseNegDefault = ~x;
 
   var notNilDefault = c!;
-
-  //var isNilDefault: C? = nil;
+  var isNilDefault: C? = nil;
 
   var plusDefault = x+y;
   var minusDefault = x-y;
@@ -50,7 +49,7 @@ module variableDefaultValues {
 
   var castDefault = x:int(32);
 
-  //var tuple1Default = (x,);
+  var tuple1Default = (x,);
   var tuple2Default = (x,y);
   var tuple3Default = (x,y,z);
 
@@ -84,4 +83,20 @@ module variableDefaultValues {
   var R1TypedArgDefault:R1(1) = new R1(1);
   var R2TypedArgDefault:R2(1,2) = new R2(1,2);
   var R3TypedArgDefault:R3(1,2,3) = new R3(1,2,3);
+
+  var boundedRange = 1..10;
+  var lowBoundedRange = 1..;
+  var highBoundedRange = ..10;
+  var unboundedRange = ..;
+
+  var boundedRangeBy = 1..10 by 2;
+  var lowBoundedRangeBy = 1.. by 2;
+  var highBoundedRangeBy = ..10 by 2;
+  var unboundedRangeBy = .. by 2;
+
+  var boundedRangeByAlign = 1..10 by 2 align 1;
+  var lowBoundedRangeByAlign = 1.. by 2 align 1;
+  var highBoundedRangeByAlign = ..10 by 2 align 1;
+  var unboundedRangeByAlign = .. by 2 align 1;
+
 }

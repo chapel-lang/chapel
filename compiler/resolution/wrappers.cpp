@@ -62,10 +62,14 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "TransformLogicalShortCircuit.h"
 #include "visibleFunctions.h"
 
 #include <map>
 #include <utility>
+
+static void adjustForOperatorMethod(FnSymbol* fn, CallInfo& info,
+                                    std::vector<ArgSymbol*>& actualFormals);
 
 static void addDefaultTokensAndReorder(FnSymbol *fn,
                                        CallInfo& info,
@@ -86,7 +90,8 @@ static void removeNamedExprs(FnSymbol* fn, CallExpr* call);
 
 static void handleCoercion(FnSymbol* fn, CallExpr* call,
                            ArgSymbol* formal, SymExpr* actual,
-                           SymbolMap& copyMap);
+                           SymbolMap& copyMap,
+                           SymbolMap& inTmpToActualMap);
 
 static void handleInIntent(FnSymbol* fn, CallExpr* call,
                            ArgSymbol* formal, SymExpr* actual,
@@ -166,9 +171,14 @@ FnSymbol* wrapAndCleanUpActuals(FnSymbol*                fn,
 
   if (numActuals < retval->numFormals()) {
     // If we don't have the right number of arguments, add placeholders
-    // for defaulted arguments.
+    // for defaulted arguments and for skipped operator arguments.
+    adjustForOperatorMethod(retval, info, actualIdxToFormal);
     addDefaultTokensAndReorder(retval, info, actualIdxToFormal);
     anyDefault = true;
+  } else if (numActuals > retval->numFormals() && fn->hasFlag(FLAG_OPERATOR)) {
+    // If we don't have the right number of arguments, remove unnecessary
+    // actuals for operator calls
+    adjustForOperatorMethod(retval, info, actualIdxToFormal);
   } else {
     // handle reordering only
     if (actualIdxToFormal.size() > 1) {
@@ -217,7 +227,7 @@ FnSymbol* wrapAndCleanUpActuals(FnSymbol*                fn,
 
       // And then handle coercions (in case the default expression
       // needs a coercion to the actual type).
-      handleCoercion(retval, call, formal, actual, copyMap);
+      handleCoercion(retval, call, formal, actual, copyMap, inTmpToActualMap);
 
       // adjust for in intent
       handleInIntent(retval, call, formal, actual, copyMap, inTmpToActualMap);
@@ -273,6 +283,52 @@ static Symbol* createDefaultedActual(FnSymbol*  fn,
                                      CallExpr*  call,
                                      BlockStmt* body,
                                      SymbolMap& copyMap);
+
+static void adjustForOperatorMethod(FnSymbol* fn, CallInfo& info,
+                                    std::vector<ArgSymbol*>& actualFormals) {
+  if (fn->hasFlag(FLAG_OPERATOR)) {
+    if (fn->hasFlag(FLAG_METHOD)) {
+      int numFormals = fn->numFormals();
+      if (numFormals >= info.call->numActuals() + 2) {
+        // Insert an arg for "this" and for the method token, in reverse order
+        // because inserting at the start of the call.
+        info.call->insertAtHead(new SymExpr(fn->_this->typeInfo()->symbol));
+        info.call->insertAtHead(new SymExpr(gMethodToken));
+
+        // Update the CallInfo actuals and actualNames fields
+        info.actuals.clear();
+        info.actualNames.clear();
+        for_actuals(actual, info.call) {
+          SymExpr* se = toSymExpr(actual);
+          INT_ASSERT(se);
+          info.actuals.add(se->symbol());
+          info.actualNames.add(NULL);
+        }
+
+        actualFormals.resize(fn->numFormals());
+        int i = 0;
+        for_formals(formal, fn) {
+          actualFormals[i] = formal;
+          i++;
+        }
+      }
+    } else {
+      bool removeNext = false;
+      for_actuals(actual, info.call) {
+        if (actual->typeInfo() == dtMethodToken && !fn->hasFlag(FLAG_METHOD)) {
+          // Remove the method token and tell ourselves to remove the "this"
+          // actual as well if the function being called is just an operator
+          // rather than an operator method
+          actual->remove();
+          removeNext = true;
+        } else if (removeNext) {
+          actual->remove();
+          removeNext = false;
+        }
+      }
+    }
+  }
+}
 
 // info is used to handle out-of-order named arguments
 // if there aren't any out-of-order arguments (as with promotion)
@@ -352,12 +408,6 @@ static void handleDefaultArg(FnSymbol *fn, CallExpr* call,
     return;
   }
 
-  if (formal->hasFlag(FLAG_TYPE_FORMAL_FOR_OUT)) {
-    // leave it for out intent processing
-    actual->setSymbol(gTypeDefaultToken);
-    return;
-  }
-
   // Create a Block to store the default values
   // We'll flatten this back out again in a minute.
   BlockStmt* body = new BlockStmt(BLOCK_SCOPELESS);
@@ -408,12 +458,12 @@ static void handleDefaultArg(FnSymbol *fn, CallExpr* call,
       if (fn->hasFlag(FLAG_COMPILER_GENERATED) &&
           (fn->name == astrNew ||
            fn->name == astrInit || fn->name == astrInitEquals)) {
-        USR_FATAL_CONT(call, "Cannot initialize %s from %s",
+        USR_FATAL_CONT(call, "cannot initialize %s from %s",
                        toString(formalValType), toString(actualValType));
         USR_PRINT(formal, "when initializing %s with default value for %s",
                   toString(fn->getFormal(1)->getValType()), formal->name);
       } else {
-        USR_FATAL_CONT(call, "Cannot initialize %s from %s",
+        USR_FATAL_CONT(call, "cannot initialize %s from %s",
                        toString(formalValType), toString(actualValType));
         USR_PRINT(formal, "when calling %s with a default value for %s",
                   fn->name, formal->name);
@@ -1068,7 +1118,8 @@ static void      addArgCoercion(FnSymbol*  fn,
 
 static void handleCoercion(FnSymbol* fn, CallExpr* call,
                            ArgSymbol* formal, SymExpr* actual,
-                           SymbolMap& copyMap) {
+                           SymbolMap& copyMap,
+                           SymbolMap& inTmpToActualMap) {
 
   if (fn->retTag == RET_PARAM) {
     //
@@ -1092,6 +1143,7 @@ static void handleCoercion(FnSymbol* fn, CallExpr* call,
   }
 
   {
+    Symbol* origActual = actual->symbol();
     Type*   formalType = formal->type;
     bool    c2         = false;
     int     checksLeft = 6;
@@ -1136,6 +1188,12 @@ static void handleCoercion(FnSymbol* fn, CallExpr* call,
     } while (c2 && --checksLeft > 0);
 
     INT_ASSERT(c2 == false);
+
+    // record mapping from innermost coercion tmp to original actual
+    if (formal->originalIntent == INTENT_IN ||
+        formal->originalIntent == INTENT_CONST_IN ||
+        formal->originalIntent == INTENT_INOUT)
+      inTmpToActualMap.put(actual->symbol(), origActual);
   }
 }
 
@@ -1185,6 +1243,13 @@ static bool needToAddCoercion(Type*      actualType,
     if (toType == formal->getValType())
       return false; // handled by other wrapper code, e.g. handleInIntent
   }
+
+  // Handle inout argument given a different type (can convert on in,
+  // = on the way back produces error if necessary).
+  if (formal->originalIntent == INTENT_INOUT &&
+      canCoerce(actualType->getValType(), actualSym,
+                formalType->getValType(), formal, fn))
+    return true;
 
   // One day, we shouldn't need coercion if canCoerceAsSubtype
   // returns true. That would cover the above case. However,
@@ -1247,6 +1312,14 @@ static void errorIfValueCoercionToRef(CallExpr* call, Symbol* actual,
     return;
   }
 
+  // Not an error for inout our out intent
+  // (the compiler should be managing the conversion on the way in
+  //  to the function with implicit conversion and on the way out
+  //  of the function with = )
+  if (formal->originalIntent == INTENT_INOUT ||
+      formal->originalIntent == INTENT_OUT)
+    return;
+
   // Error for coerce->value passed to ref / out / etc
   if (argumentCanModifyActual(intent) || isRefFormal) {
     USR_FATAL_CONT(call, "in call to '%s', cannot pass result of coercion "
@@ -1305,6 +1378,10 @@ static void addArgCoercion(FnSymbol*  fn,
 
   // Add the Def for castTemp
   call->getStmtExpr()->insertBefore(new DefExpr(castTemp));
+
+  // adjust fts for inout to use the value type
+  if (formal->originalIntent == INTENT_INOUT)
+    fts = fts->getValType()->symbol;
 
   // Here we will often strip the type of its sync-ness.
   // After that we may need another coercion(s), e.g.
@@ -1590,6 +1667,13 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
 
   Symbol* origActualSym = actual->symbol();
   Symbol* actualSym = origActualSym;
+  {
+    // update origActualSym to take into account any conversions added
+    Symbol* mapSym = inTmpToActualMap.get(origActualSym);
+    if (mapSym != NULL)
+      origActualSym = mapSym;
+  }
+
 
   // The result of a default argument for 'in' intent is already owned and
   // does not need to be copied.
@@ -1732,6 +1816,20 @@ static void handleOutIntents(FnSymbol* fn, CallExpr* call,
   Expr* currActual = call->get(1);
   Expr* nextActual = NULL;
 
+  bool anyGenericOut = false;
+  for_formals(formal, fn) {
+    if (formal->intent == INTENT_OUT ||
+        formal->originalIntent == INTENT_OUT)
+      if (formal->getValType()->symbol->hasFlag(FLAG_GENERIC))
+        anyGenericOut = true;
+  }
+  if (anyGenericOut) {
+    // resolve out functions now, to infer any types of out arguments,
+    // so that the call-site temporaries have proper types.
+    resolveFunction(fn, call);
+  }
+
+ 
   for_formals(formal, fn) {
     SET_LINENO(currActual);
     nextActual = currActual->next;
@@ -1751,23 +1849,13 @@ static void handleOutIntents(FnSymbol* fn, CallExpr* call,
       Symbol* assignFrom = NULL;
 
       if (out) {
-        // For untyped out formals with runtime types, pass the type
-        // as the previous argument.
         Type* formalType = formal->type->getValType();
-        if (formal->typeExpr == NULL &&
-            inout == false &&
-            formalType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
-          const char* dummyName = astr("_formal_type_tmp_", formal->name);
-          VarSymbol* typeTmp = newTemp(dummyName, formalType);
-          typeTmp->addFlag(FLAG_MAYBE_TYPE);
-          typeTmp->addFlag(FLAG_TYPE_FORMAL_FOR_OUT);
 
-          anchor->insertBefore(new DefExpr(typeTmp));
-
-          SymExpr* prevActual = toSymExpr(currActual->prev);
-          INT_ASSERT(prevActual != NULL && j > 0);
-          prevActual->setSymbol(typeTmp);
-        }
+        // If the actual argument has generic or dtSplitInitType type,
+        // update it to infer the type from the called function.
+        if (actualSe->symbol()->type == dtSplitInitType ||
+            actualSe->symbol()->type->symbol->hasFlag(FLAG_GENERIC))
+          actualSe->symbol()->type = formalType;
 
         VarSymbol* tmp = newTemp(astr("_formal_tmp_out_", formal->name),
                                  formal->getValType());
@@ -1955,6 +2043,12 @@ bool isPromotionRequired(FnSymbol* fn, CallInfo& info,
 
         INT_ASSERT(actualType);
       }
+
+      // Operator calls are allowed to have actuals for a method token and
+      // "this" argument, even if the best operator match is not a method.
+      // We'll clean it up later and we shouldn't promote based on it.
+      if (formal == NULL && fn->hasFlag(FLAG_OPERATOR))
+        continue;
 
       if (canDispatch(actualType, actual,
                       formal->type, formal, fn, &promotes)) {
@@ -2185,8 +2279,18 @@ static void buildLeaderIterator(PromotionInfo& promotion,
 
   liIterator->addFlag(FLAG_EXPR_TEMP);
 
-  const char* leaderName = zippered ? "_toLeaderZip" : "_toLeader";
-  CallExpr*  toLeader = new CallExpr(leaderName, iterator->copy(&leaderMap));
+  CallExpr *toLeader = NULL;
+  if (zippered) {
+    CallExpr *iterCall = toCallExpr(iterator);
+    INT_ASSERT(iterCall);
+    INT_ASSERT(iterCall->isPrimitive(PRIM_ZIP));
+    
+    toLeader = new CallExpr("_toLeader", iterCall->get(1)->copy(&leaderMap));
+  }
+  else {
+    toLeader = new CallExpr("_toLeader", iterator->copy(&leaderMap));
+  }
+
   BlockStmt* loopBody = new BlockStmt(new CallExpr(PRIM_YIELD, liIndex));
 
   ForallStmt* fs = ForallStmt::buildHelper(new SymExpr(liIndex),
@@ -2293,30 +2397,29 @@ static CondStmt* selectFollower(ArgSymbol* fastFollower,
                                 VarSymbol* followerIterator,
                                 SymbolMap& followerMap,
                                 ArgSymbol* fiFnFollower) {
-  const char* name1 = NULL;
-  CallExpr*   call1 = NULL;
-  CallExpr*   move1 = NULL;
+  CallExpr*   callFast = NULL;
+  CallExpr*   moveFast = NULL;
 
-  const char* name2 = NULL;
-  CallExpr*   call2 = NULL;
-  CallExpr*   move2 = NULL;
+  CallExpr*   callSlow = NULL;
+  CallExpr*   moveSlow = NULL;
 
-  if (isCallExpr(iterator) == true) {
-    name1 = "_toFastFollowerZip";
-    name2 = "_toFollowerZip";
+  if (CallExpr *iterCall = toCallExpr(iterator)) {
+    INT_ASSERT(iterCall->isPrimitive(PRIM_ZIP));
 
+    callFast = generateFastFollowersForZip(iterCall, fiFnFollower, &followerMap,
+                                           /*getIterator=*/false);
+    callSlow = generateRegularFollowersForZip(iterCall, fiFnFollower, &followerMap,
+                                           /*getIterator=*/false);
   } else {
-    name1 = "_toFastFollower";
-    name2 = "_toFollower";
+    callFast = new CallExpr("_toFastFollower", iterator->copy(&followerMap), fiFnFollower);
+    callSlow = new CallExpr("_toFollower", iterator->copy(&followerMap), fiFnFollower);
   }
 
-  call1 = new CallExpr(name1, iterator->copy(&followerMap), fiFnFollower);
-  call2 = new CallExpr(name2, iterator->copy(&followerMap), fiFnFollower);
 
-  move1 = new CallExpr(PRIM_MOVE, followerIterator, call1);
-  move2 = new CallExpr(PRIM_MOVE, followerIterator, call2);
+  moveFast = new CallExpr(PRIM_MOVE, followerIterator, callFast);
+  moveSlow = new CallExpr(PRIM_MOVE, followerIterator, callSlow);
 
-  return new CondStmt(new SymExpr(fastFollower), move1, move2);
+  return new CondStmt(new SymExpr(fastFollower), moveFast, moveSlow);
 }
 
 static BlockStmt* followerForLoop(PromotionInfo& promotion,
@@ -2426,7 +2529,7 @@ static Expr* getIndices(PromotionInfo& promotion) {
 
 static Expr* getIterator(PromotionInfo& promotion) {
   FnSymbol* fn           = promotion.fn;
-  CallExpr* iteratorCall = new CallExpr("_build_tuple");
+  CallExpr* iteratorCall = new CallExpr(PRIM_ZIP);
   Expr*     retval       = NULL;
 
   int i = 0;
@@ -2683,6 +2786,23 @@ enum FastFollowerCheckType {
   DYNAMIC_FF_CHECK
 };
 
+static CallExpr *buildFastFollowerCheckForward(std::vector<SymExpr *> exprs,
+                                               const char *fnName,
+                                               const char *boolOp,
+                                               ArgSymbol *lead) {
+  if (exprs.size() == 1) {
+    CallExpr *ret = new CallExpr(fnName, exprs[0]->copy());
+    if (lead != NULL) {
+      ret->insertAtTail(new SymExpr(lead));
+    }
+    return ret;
+  }
+  else {
+    return buildFastFollowerCheckCallForZipOrProm(exprs, fnName, boolOp, lead);
+  }
+  return NULL;
+}
+
 static void buildFastFollowerCheck(FastFollowerCheckType checkType,
                                    bool                  addLead,
                                    FnSymbol*             wrapper,
@@ -2693,30 +2813,33 @@ static void buildFastFollowerCheck(FastFollowerCheckType checkType,
 
   ArgSymbol*  x          = new ArgSymbol(INTENT_BLANK, "x", IRtype);
 
-  CallExpr*   buildTuple = new CallExpr("_build_tuple_always_allow_ref");
+  std::vector<SymExpr *> fieldSymExprs;
 
-  Symbol*     pTup       = newTemp("p_tup");
   Symbol*     returnTmp  = newTemp("p_ret");
   CallExpr*   forward    = NULL;
 
   returnTmp->addFlag(FLAG_EXPR_TEMP);
   returnTmp->addFlag(FLAG_MAYBE_PARAM);
 
+  const char *boolOp = NULL;
   switch (checkType) {
     case CAN_HAVE_FF:
       fnName          = "chpl__canHaveFastFollowers";
       checkFn         = new FnSymbol(fnName);
       checkFn->retTag = RET_PARAM;
+      boolOp           = "||";
       break;
     case STATIC_FF_CHECK:
       fnName          = "chpl__staticFastFollowCheck";
       checkFn         = new FnSymbol(fnName);
       checkFn->retTag = RET_PARAM;
+      boolOp           = "&&";
       break;
     case DYNAMIC_FF_CHECK:
       fnName          = "chpl__dynamicFastFollowCheck";
       checkFn         = new FnSymbol(fnName);
       checkFn->retTag = RET_VALUE;
+      boolOp           = "&&";
       break;
     default:
       INT_FATAL("Unknown FastFollowerCheckType");
@@ -2727,22 +2850,9 @@ static void buildFastFollowerCheck(FastFollowerCheckType checkType,
 
   checkFn->insertFormalAtTail(x);
 
-  if (addLead == true) {
-    ArgSymbol* lead = new ArgSymbol(INTENT_BLANK, "lead", dtAny);
-
-    checkFn->insertFormalAtTail(lead);
-
-    forward = new CallExpr(astr(fnName, "Zip"), pTup, lead);
-
-  } else {
-    forward = new CallExpr(astr(fnName, "Zip"), pTup);
-
-    INT_ASSERT(! x->type->symbol->hasFlag(FLAG_GENERIC));
-  }
-
   for_formals(formal, wrapper) {
     if (requiresPromotion.count(formal) > 0) {
-      Symbol*      field       = new VarSymbol(formal->name, formal->type);
+      Symbol*      field       = new VarSymbol(formal->name, formal->getRefType());
 
       PrimitiveTag primTag     = PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL;
       CallExpr*    byFormal    = new CallExpr(primTag,   x,     formal);
@@ -2752,12 +2862,20 @@ static void buildFastFollowerCheck(FastFollowerCheckType checkType,
 
       checkFn->insertAtTail(moveToField);
 
-      buildTuple->insertAtTail(new SymExpr(field));
+      fieldSymExprs.push_back(new SymExpr(field));
     }
   }
 
-  checkFn->insertAtTail(new DefExpr(pTup));
-  checkFn->insertAtTail(new CallExpr(PRIM_MOVE, pTup, buildTuple));
+  ArgSymbol *lead = NULL;
+  if (addLead == true) {
+    lead = new ArgSymbol(INTENT_BLANK, "lead", dtAny);
+
+    checkFn->insertFormalAtTail(lead);
+  } else {
+    INT_ASSERT(! x->type->symbol->hasFlag(FLAG_GENERIC));
+  }
+
+  forward = buildFastFollowerCheckForward(fieldSymExprs, fnName, boolOp, lead);
 
   checkFn->insertAtTail(new DefExpr(returnTmp));
   checkFn->insertAtTail(new CallExpr(PRIM_MOVE,   returnTmp, forward));
@@ -2765,6 +2883,8 @@ static void buildFastFollowerCheck(FastFollowerCheckType checkType,
 
   wrapper->defPoint->getModule()->block->insertAtHead(new DefExpr(checkFn));
 
+  TransformLogicalShortCircuit handleAndsOrs;
+  checkFn->accept(&handleAndsOrs);
   normalize(checkFn);
   checkFn->setGeneric(addLead);
   INT_ASSERT(! wrapper->isGeneric()); //fyi

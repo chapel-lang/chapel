@@ -1,0 +1,3 @@
+unstable-extern-eq.chpl:9: warning: unstable assignment with extern LHS
+note: an init= may also be required in the future
+in = 

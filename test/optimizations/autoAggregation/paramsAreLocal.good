@@ -1,0 +1,60 @@
+Start analyzing forall for automatic aggregation (paramsAreLocal.chpl:13)
+| Found an aggregation candidate (paramsAreLocal.chpl:14)
+|  Potential destination aggregation (paramsAreLocal.chpl:14)
+End analyzing forall for automatic aggregation (paramsAreLocal.chpl:13)
+
+Start analyzing forall for automatic aggregation [static only ALA clone]  (paramsAreLocal.chpl:22)
+End analyzing forall for automatic aggregation [static only ALA clone]  (paramsAreLocal.chpl:22)
+
+Start analyzing forall for automatic aggregation [static only ALA clone]  (paramsAreLocal.chpl:32)
+End analyzing forall for automatic aggregation [static only ALA clone]  (paramsAreLocal.chpl:32)
+
+Start analyzing forall for automatic aggregation [static only ALA clone]  (paramsAreLocal.chpl:43)
+End analyzing forall for automatic aggregation [static only ALA clone]  (paramsAreLocal.chpl:43)
+
+Start analyzing forall for automatic aggregation [no ALA clone]  (paramsAreLocal.chpl:22)
+| Found an aggregation candidate (paramsAreLocal.chpl:23)
+|  Potential destination aggregation (paramsAreLocal.chpl:23)
+End analyzing forall for automatic aggregation [no ALA clone]  (paramsAreLocal.chpl:22)
+
+Start analyzing forall for automatic aggregation [no ALA clone]  (paramsAreLocal.chpl:32)
+| Found an aggregation candidate (paramsAreLocal.chpl:34)
+|  Potential destination aggregation (paramsAreLocal.chpl:34)
+End analyzing forall for automatic aggregation [no ALA clone]  (paramsAreLocal.chpl:32)
+
+Start analyzing forall for automatic aggregation [no ALA clone]  (paramsAreLocal.chpl:43)
+| Found an aggregation candidate (paramsAreLocal.chpl:45)
+|  Potential destination aggregation (paramsAreLocal.chpl:45)
+End analyzing forall for automatic aggregation [no ALA clone]  (paramsAreLocal.chpl:43)
+
+LHS is nonlocal, RHS is local. Will use destination aggregation  (paramsAreLocal.chpl:14)
+Replaced assignment with aggregation (paramsAreLocal.chpl:14)
+
+Loop 1 -- expecting destination aggregation
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+End Loop 1
+1 1 1 1 1 1 1 1 1 1 1
+
+Loop 2 -- expecting no aggregation
+End Loop 2
+1 1 1 1 1 1 1 1 1 1 1
+
+Loop 3 -- expecting no aggregation
+End Loop 3
+1 1 1 1 1 1 1 1 1 1 1
+
+Loop 4 -- expecting no aggregation
+End Loop 4
+1 1 1 1 1 1 1 1 1 1 1
+5 5 5 5 5 5 5 5 5 5 5
+

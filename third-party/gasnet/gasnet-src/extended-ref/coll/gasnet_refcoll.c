@@ -25,7 +25,6 @@
 
 size_t gasnete_coll_p2p_eager_min = 0;
 size_t gasnete_coll_p2p_eager_scale = 0;
-size_t gasnete_coll_p2p_eager_buffersz = 0;
 /*set a std segment size of 1024 bytes*/
 
 /*---------------------------------------------------------------------------------*/
@@ -93,13 +92,13 @@ void gasnete_coll_validate(gasnet_team_handle_t team,
   /* Bounds check any local portion of dst which user claims is in-segment */
   gasneti_assert(dstlen > 0);
   if ((dstrank == team->myrank) && (flags & GASNET_COLL_DST_IN_SEGMENT)) {
-      gasneti_boundscheck(NULL/*team*/, gasneti_mynode, dst, dstlen);
+      gasneti_boundscheck(team->e_tm, dstrank, dst, dstlen);
   }
 
   /* Bounds check any local portion of src which user claims is in-segment */
   gasneti_assert(srclen > 0);
   if ((srcrank == team->myrank) && (flags & GASNET_COLL_SRC_IN_SEGMENT)) {
-      gasneti_boundscheck(NULL/*team*/, gasneti_mynode, src, srclen);
+      gasneti_boundscheck(team->e_tm, srcrank, src, srclen);
   }
 
   /* XXX: TO DO
@@ -131,6 +130,7 @@ extern gasnete_coll_eop_t gasnete_coll_eop_create(GASNETI_THREAD_FARG_ALONE) {
   } else {
     /* XXX: allocate in large chunks and scatter across cache lines (and update gasnete_coll_cleanup_threaddata) */
     result = (gasnete_coll_eop_t)gasneti_malloc(sizeof(*result));
+    GASNETI_STAT_EVENT_VAL(W, COLL_EOP_ALLOC, sizeof(*result));
   }
 
     result->next = NULL;
@@ -336,27 +336,37 @@ gasnete_coll_active_fini(void) {
 #endif
 
 /*---------------------------------------------------------------------------------*/
-static void gasnete_coll_cleanup_freelist(void **head) {
+static int gasnete_coll_cleanup_freelist(void **head) {
   void **next;
+  int count = 0;
   while ((next = (void **)*head) != NULL) {
     *head = *next;
     gasneti_free(next);
+    count++;
   }
+  return count;
 }
 static void gasnete_coll_cleanup_threaddata(void *_td) {
+  int count;
+
   gasnete_coll_threaddata_t *td = (gasnete_coll_threaddata_t *)_td;
 
   /* these free lists are all linked by initial pointer */
-  gasnete_coll_cleanup_freelist((void **)&(td->op_freelist));
-  gasnete_coll_cleanup_freelist((void **)&(td->generic_data_freelist));
+  count = gasnete_coll_cleanup_freelist((void **)&(td->op_freelist));
+  GASNETI_STAT_EVENT_VAL(W, COLL_OP_FREE, count * sizeof(gasnete_coll_op_t));
+  count = gasnete_coll_cleanup_freelist((void **)&(td->generic_data_freelist));
+  GASNETI_STAT_EVENT_VAL(W, COLL_GDATA_FREE, count * sizeof(gasnete_coll_generic_data_t));
 
 #ifndef GASNETE_COLL_HANDLE_OVERRIDE
 #if GASNET_PAR
+  count = 0;
   while (td->eop_freelist) {
     gasnete_coll_eop_t next = td->eop_freelist->next;
     gasneti_free((void *)td->eop_freelist);
     td->eop_freelist = next;
+    count++;
   }
+  GASNETI_STAT_EVENT_VAL(W, COLL_EOP_FREE, count * sizeof(gasnete_coll_eop_t));
 #endif
 #endif
 
@@ -417,6 +427,7 @@ gasnete_coll_op_create(gasnete_coll_team_t team, uint32_t sequence, int flags GA
     /* XXX: allocate in chunks and scatter across cache lines */
     /* XXX: destroy freelist at exit */
     op = (gasnete_coll_op_t *)gasneti_malloc(sizeof(gasnete_coll_op_t));
+    GASNETI_STAT_EVENT_VAL(W, COLL_OP_ALLOC, sizeof(gasnete_coll_op_t));
   }
 
     gasnete_coll_active_new(op);
@@ -493,9 +504,8 @@ extern void gasneti_coll_progressfn(void) {
 }
 #endif
 
-static gasnet_seginfo_t *gasnete_coll_auxseg_save = NULL;
-
-
+size_t gasnete_coll_auxseg_size = 0;
+size_t gasnete_coll_auxseg_offset = 0;
 
 /* AuxSeg setup for distributed scratch space*/
 gasneti_auxseg_request_t gasnete_coll_auxseg_alloc(gasnet_seginfo_t *auxseg_info) {
@@ -509,10 +519,10 @@ gasneti_auxseg_request_t gasnete_coll_auxseg_alloc(gasnet_seginfo_t *auxseg_info
     return retval; /* initial query */
   }	
   else { /* auxseg granted */
-    gasneti_assert(!gasnete_coll_auxseg_save);
-    gasnete_coll_auxseg_save = gasneti_malloc(gasneti_nodes*sizeof(gasnet_seginfo_t));
-    gasneti_leak(gasnete_coll_auxseg_save);
-    memcpy(gasnete_coll_auxseg_save, auxseg_info, gasneti_nodes*sizeof(gasnet_seginfo_t));
+    gasneti_assert(!gasnete_coll_auxseg_size);
+    gasnete_coll_auxseg_size   = auxseg_info[0].size;
+    gasnete_coll_auxseg_offset = (uintptr_t)auxseg_info[0].addr -
+                                 (uintptr_t)gasneti_seginfo_aux[0].addr;
   }
 
   return retval;
@@ -528,8 +538,6 @@ extern void gasnete_coll_init_subsystem(void)
                                                                 GASNETE_COLL_P2P_EAGER_MIN_DEFAULT, 0);
     gasnete_coll_p2p_eager_scale = gasneti_getenv_int_withdefault("GASNET_COLL_P2P_EAGER_SCALE",
                                                                   GASNETE_COLL_P2P_EAGER_SCALE_DEFAULT, 0);
-    gasnete_coll_p2p_eager_buffersz = MAX(gasnete_coll_p2p_eager_min,
-                                          gasneti_nodes * gasnete_coll_p2p_eager_scale);
 
     gasnete_coll_active_init();
 
@@ -539,9 +547,7 @@ extern void gasnete_coll_init_subsystem(void)
 #endif
 
     /* setup information for TM0 */
-    gasnete_coll_team_init(GASNET_TEAM_ALL, 0, gasneti_nodes, gasneti_mynode,
-                           GASNET_TEAM_ALL->rel2act_map, gasnete_coll_auxseg_save,
-                           NULL GASNETI_THREAD_PASS);
+    gasnete_coll_team_init(GASNET_TEAM_ALL, 0, NULL, 0 GASNETI_THREAD_PASS);
     gasneti_import_tm(gasneti_THUNK_TM)->_coll_team = GASNET_TEAM_ALL;
     GASNET_TEAM_ALL->e_tm = gasneti_THUNK_TM;
 
@@ -657,9 +663,8 @@ void gasnete_coll_consensus_do_notify(gasnete_coll_team_t team) {
 
 extern int gasnete_coll_consensus_try(gasnete_coll_team_t team, gasnete_coll_consensus_t id) {
 #if GASNET_DEBUG
-  // This function is neither thread-safe nor recursion-safe
-  static gasneti_mutex_t lock = GASNETI_MUTEX_INITIALIZER;
-  gasneti_assert_always_int(gasneti_mutex_trylock(&lock) ,==, GASNET_OK);
+  // With respect to any given team, this function is neither thread-safe nor recursion-safe
+  gasneti_assert_always_int(gasneti_mutex_trylock(&team->barrier_lock) ,==, GASNET_OK);
 #endif
 
   gasneti_assert(! (id & 1)); // always even
@@ -698,7 +703,7 @@ extern int gasnete_coll_consensus_try(gasnete_coll_team_t team, gasnete_coll_con
   int done = GASNETE_COLL_SEQ32_GE(team->consensus_id, id + 2);
 
 #if GASNET_DEBUG
-  gasneti_mutex_unlock(&lock);
+  gasneti_mutex_unlock(&team->barrier_lock);
 #endif
 
   return done ? GASNET_OK : GASNET_ERR_NOT_READY;
@@ -771,8 +776,11 @@ gasnete_coll_p2p_t *gasnete_coll_p2p_get(uint32_t team_id, uint32_t sequence) {
     if_pf (p2p == NULL) {
       /* Round to 8-byte alignment of entry array */
       size_t alloc_size = GASNETI_ALIGNUP(sizeof(gasnete_coll_p2p_t) + statesz + countersz,8)
-        + gasnete_coll_p2p_eager_buffersz;
-      uintptr_t p = (uintptr_t)gasneti_malloc(alloc_size);
+        + team->p2p_eager_buffersz;
+      void *alloc_ptr = gasneti_malloc(alloc_size);
+      gasneti_leak(alloc_ptr);
+      uintptr_t p = (uintptr_t)alloc_ptr;
+      GASNETI_STAT_EVENT_VAL(W, COLL_P2P_ALLOC, alloc_size);
           
       p2p = (gasnete_coll_p2p_t *)p;
       p += sizeof(gasnete_coll_p2p_t);
@@ -790,13 +798,11 @@ gasnete_coll_p2p_t *gasnete_coll_p2p_get(uint32_t team_id, uint32_t sequence) {
     }
         
     memset((void *)p2p->state, 0, statesz);
-    memset(p2p->data, 0, gasnete_coll_p2p_eager_buffersz);
+    memset(p2p->data, 0, team->p2p_eager_buffersz);
     for(i=0; i<2*team->total_ranks; i++) {
       gasneti_weakatomic_set(&p2p->counter[i], 0, 0);
     }
     gasneti_sync_writes();
-    /*allocate an empty interval for the free list */
-    p2p->seg_intervals = NULL;
         
 #if GASNET_DEBUG
     p2p->team_id = team_id;
@@ -856,119 +862,22 @@ void gasnete_coll_p2p_free(gasnete_coll_team_t team, gasnete_coll_p2p_t *p2p) {
   gex_HSL_Unlock(&team->p2p_lock);
 }
 
-/*Management of the Intervals for Segments*/
-/* We use 32 bit ints to represent the segment ID*/
-/* If we need more than 2^32 segments (which should be rare)
-   The collective will need to get broken up into multiple collectives
-*/
-static gex_HSL_t gasnete_coll_p2p_seg_free_list_lock = GEX_HSL_INITIALIZER;
-static gasnete_coll_seg_interval_t *gasnet_coll_p2p_seg_interval_free_list = NULL;
+void gasnete_coll_p2p_purge(gasnete_coll_team_t team) {
+  gex_HSL_Lock(&team->p2p_lock);
 
+  gasnete_coll_p2p_t *p2p = team->p2p_freelist;
+  team->p2p_freelist = NULL;
 
-gasnete_coll_seg_interval_t *gasnet_coll_p2p_alloc_seg_interval(void) {
-  gasnete_coll_seg_interval_t *curr_interval;
-
-           
-  gex_HSL_Lock(&gasnete_coll_p2p_seg_free_list_lock);
-  if(gasnet_coll_p2p_seg_interval_free_list == NULL) {
-    /*if the free list is empty allocate a new one*/
-    curr_interval = gasneti_malloc(sizeof(gasnete_coll_seg_interval_t));
-  } else {
-    /* if there are extra on the free list grab it off the head of the free list*/
-    curr_interval = gasnet_coll_p2p_seg_interval_free_list;
-    gasnet_coll_p2p_seg_interval_free_list = gasnet_coll_p2p_seg_interval_free_list->next;
+  while (p2p) {
+    gasnete_coll_p2p_t *next = p2p->p2p_next;
+    gasneti_free(p2p);
+    p2p = next;
   }
-  gex_HSL_Unlock(&gasnete_coll_p2p_seg_free_list_lock);
-  return curr_interval;
+
+  gex_HSL_Unlock(&team->p2p_lock);
 }
+
     
-void gasnete_coll_p2p_free_seg_interval(gasnete_coll_seg_interval_t* interval) {
-  gex_HSL_Lock(&gasnete_coll_p2p_seg_free_list_lock);
-  interval->next = gasnet_coll_p2p_seg_interval_free_list;
-  gasnet_coll_p2p_seg_interval_free_list = interval;
-  gex_HSL_Unlock(&gasnete_coll_p2p_seg_free_list_lock);
-}
-
-extern void gasnete_coll_p2p_add_seg_interval(gasnete_coll_p2p_t *p2p, uint32_t seg_id) {
-      
-  gasnete_coll_seg_interval_t *curr_interval,*new_interval,*prev;
-  gasneti_assert(p2p !=NULL);
-  gex_HSL_Lock(&p2p->lock);
-  if(p2p->seg_intervals==NULL) {
-    /*head of the current interval list is empty*/
-    curr_interval = gasnet_coll_p2p_alloc_seg_interval();
-    curr_interval->start = seg_id;
-    curr_interval->end = seg_id;
-    curr_interval->next = NULL;
-    /*make this new interval the head of the interval list*/
-    p2p->seg_intervals = curr_interval;
-  } else {
-    curr_interval = p2p->seg_intervals;
-    prev = NULL;
-    /*march through the intervals looking where to insert this value*/
-    /*we are guaranteed to have at least onoe since we made the check above*/
-    while(curr_interval!=NULL) {
-      if(curr_interval->start - 1 == seg_id) {
-        curr_interval->start = seg_id;
-        break;
-      } else if(curr_interval->end + 1 == seg_id) {
-        /*attach it to the end of the current interval and */
-        curr_interval->end = seg_id;
-        break;
-      } else if(seg_id < curr_interval->start) {
-        /*add the new element in to the middle of the list*/
-        new_interval = gasnet_coll_p2p_alloc_seg_interval();
-        new_interval->start = seg_id;
-        new_interval->end = seg_id;
-        if(prev == NULL) {
-          /* add to the head*/
-          p2p->seg_intervals = new_interval;
-        } else {
-          /*add to the middle*/
-          prev->next = new_interval;
-        }
-        new_interval->next = curr_interval;
-        break;
-      } else if(seg_id > curr_interval->end && curr_interval->next == NULL){
-        new_interval = gasnet_coll_p2p_alloc_seg_interval();
-        new_interval->start = seg_id;
-        new_interval->end = seg_id;
-        new_interval->next = NULL;
-        curr_interval->next = new_interval;
-        break;
-      }  else {
-        prev = curr_interval;
-        curr_interval = curr_interval->next;
-      }
-    }
-  }
-  gex_HSL_Unlock(&p2p->lock);
-}
-/*return the next segment interval in the list*/
-/*results are undefined if the seg_intervals list null*/
-extern uint32_t gasnete_coll_p2p_next_seg_interval(gasnete_coll_p2p_t *p2p) {
-  gasnete_coll_seg_interval_t *curr_interval;
-  size_t ret;
-  gasneti_assert(p2p!=NULL);
-  gasneti_assert(p2p->seg_intervals !=NULL);
-  /*march through the intervals to find the next interval*/
-  gex_HSL_Lock(&p2p->lock);
-  if(p2p->seg_intervals->start != p2p->seg_intervals->end) {
-    /* the interval contains information for more than one segment*/
-    /*read a segment and return it*/
-    ret = p2p->seg_intervals->start;
-    p2p->seg_intervals->start +=1; 
-  } else {
-    /*the interval contains exactly one segment*/
-    /*read the value in it and return it*/
-    ret = p2p->seg_intervals->start;
-    curr_interval = p2p->seg_intervals;
-    p2p->seg_intervals = p2p->seg_intervals->next;
-    gasnete_coll_p2p_free_seg_interval(curr_interval);
-  }
-  gex_HSL_Unlock(&p2p->lock);
-  return ret;
-}
 /* Delivers a long payload and updates 1 or more states
    count: number of states to update
    offset: index of first state to update
@@ -1094,28 +1003,6 @@ extern void gasnete_coll_p2p_put_and_advance_reqh(gex_Token_t token, void *buf, 
   gasneti_weakatomic_increment(&p2p->counter[idx], 0);
 }
 
-extern void gasnete_coll_p2p_seg_put_reqh(gex_Token_t token, void *buf, size_t nbytes,
-                                          gex_AM_Arg_t team_id,
-                                          gex_AM_Arg_t sequence,
-                                          gex_AM_Arg_t seg_id) {
-  
-  
-  gasnete_coll_p2p_t *p2p;
-        
-  if (nbytes) {
-    gasneti_sync_writes();
-  }
-      
-  p2p = gasnete_coll_p2p_get(team_id, sequence);
-
-  /*add this new segment to the ops list of segments*/
-  /*This function takes care of any locking that is needed*/
-  gasnete_coll_p2p_add_seg_interval(p2p, seg_id);
-      
-  /*increment P2P counter*/
-  gasneti_weakatomic_increment(&p2p->counter[0], 0);
-      
-}
 /* Memcopy payload and then decrement atomic counter if requested */
 GASNETI_INLINE(gasnete_coll_p2p_memcpy_reqh_inner)
      void gasnete_coll_p2p_memcpy_reqh_inner(gex_Token_t token, void *buf, size_t nbytes,
@@ -1136,53 +1023,38 @@ MEDIUM_HANDLER(gasnete_coll_p2p_memcpy_reqh,4,5,
 
 /* Put up to gex_AM_LUBRequestLong() bytes, signalling the recipient */
 /* Returns as soon as local buffer is reusable */
-void gasnete_coll_p2p_counting_put(gasnete_coll_op_t *op, gex_Rank_t dstnode, void *dst,
-                                   void *src, size_t nbytes, uint32_t idx) {
-      
+void gasnete_tm_p2p_counting_put(gasnete_coll_op_t *op, gex_Rank_t dstrank, void *dst,
+                                 void *src, size_t nbytes, uint32_t idx
+                                 GASNETI_THREAD_FARG)
+{
   uint32_t seq_num = op->sequence;
   const uint32_t team_id = op->team->team_id;
 
   gasneti_assert(nbytes <= gex_AM_LUBRequestLong());
   
-  gex_AM_RequestLong(gasneti_THUNK_TM, dstnode, gasneti_handleridx(gasnete_coll_p2p_put_and_advance_reqh),
+  gex_AM_RequestLong(op->e_tm, dstrank, gasneti_handleridx(gasnete_coll_p2p_put_and_advance_reqh),
                          src, nbytes, dst, GEX_EVENT_NOW, 0, team_id, seq_num, idx);
 }
 /* Put up to gex_AM_LUBRequestLong() bytes, signalling the recipient */
 /* Returns immediately even if the local buffer is not yet reusable */
-void gasnete_coll_p2p_counting_putAsync(gasnete_coll_op_t *op, gex_Rank_t dstnode, void *dst,
-                                        void *src, size_t nbytes, uint32_t idx) {
-  
+void gasnete_tm_p2p_counting_putAsync(gasnete_coll_op_t *op, gex_Rank_t dstrank, void *dst,
+                                      void *src, size_t nbytes, uint32_t idx
+                                      GASNETI_THREAD_FARG)
+{
   uint32_t seq_num = op->sequence;
   const uint32_t team_id = op->team->team_id;
   
   gasneti_assert(nbytes <= gex_AM_LUBRequestLong());
   
   // TODO-EX: restore "Async"
-  gex_AM_RequestLong(gasneti_THUNK_TM, dstnode, gasneti_handleridx(gasnete_coll_p2p_put_and_advance_reqh),
+  gex_AM_RequestLong(op->e_tm, dstrank, gasneti_handleridx(gasnete_coll_p2p_put_and_advance_reqh),
                          src, nbytes, dst, GEX_EVENT_NOW, 0, team_id, seq_num, idx);
 }
     
-/*
-  Signalling Segmented Put 
-  Takes a Segment ID as an argument and sends the message such that it will be put in the right location
-  and update the list of active intervals indicating which chunk of the message has arrived
-*/
-void gasnete_coll_p2p_sig_seg_put(gasnete_coll_op_t *op, gex_Rank_t dstnode, void *dst,
-                                  void *src, size_t nbytes, size_t seg_id) {
-  uint32_t seq_num = op->sequence;
-  const uint32_t team_id = op->team->team_id;
-
-  gasneti_assert(nbytes <= gex_AM_LUBRequestLong());
-      
-  gex_AM_RequestLong(gasneti_THUNK_TM, dstnode, gasneti_handleridx(gasnete_coll_p2p_seg_put_reqh),
-                         src, nbytes, dst, GEX_EVENT_NOW, 0, team_id, seq_num, seg_id);
-}
-
-
 /* Send data to be buffered by the recipient */
 int gasnete_tm_p2p_eager_putM(
                         gasnete_coll_op_t *op,
-                        gex_TM_t tm, gex_Rank_t rank,
+                        gex_Rank_t rank,
                         const void *src, uint32_t count, size_t size,
                         gex_Event_t *lc_opt, gex_Flags_t flags,
                         uint32_t offset, uint32_t state
@@ -1197,7 +1069,7 @@ int gasnete_tm_p2p_eager_putM(
     flags &= ~GEX_FLAG_IMMEDIATE; // TODO-EX: support maybe IMMEDIATE for multi-AM case?
     do {
       gasneti_assert_zeroret(
-         gex_AM_RequestMedium6(tm, rank, gasneti_handleridx(gasnete_coll_p2p_med_reqh),
+         gex_AM_RequestMedium6(op->e_tm, rank, gasneti_handleridx(gasnete_coll_p2p_med_reqh),
                                (void*)src, nbytes, GEX_EVENT_NOW, flags,
                                team_id, sequence, chunk, offset, state, size));
       offset += chunk;
@@ -1205,7 +1077,7 @@ int gasnete_tm_p2p_eager_putM(
       count -= chunk;
     } while (count > chunk);
   }
-  return gex_AM_RequestMedium6(tm, rank, gasneti_handleridx(gasnete_coll_p2p_med_reqh),
+  return gex_AM_RequestMedium6(op->e_tm, rank, gasneti_handleridx(gasnete_coll_p2p_med_reqh),
                                (void*)src, count * size, lc_opt, flags,
                                team_id, sequence, count, offset, state, size);
 }
@@ -1213,15 +1085,15 @@ int gasnete_tm_p2p_eager_putM(
 /* a simplification for eager putM so that we send less bits on the wire*/ 
 /* we hardcode the assumption that we want to send to state 0 and set a value of 1*/
 /* for cases in which we are just sending down the tree (such as a broadcast) this is sufficient*/
-void gasnete_coll_p2p_eager_put_tree(gasnete_coll_op_t *op, gex_Rank_t dstnode,
-                                     void *src, size_t size) {
+void gasnete_tm_p2p_eager_put_tree(gasnete_coll_op_t *op, gex_Rank_t dstrank,
+                                   void *src, size_t size GASNETI_THREAD_FARG)
+{
   uint32_t seq_num = op->sequence;
   const uint32_t team_id = op->team->team_id;
 
   gasneti_assert(size <= gex_AM_LUBRequestMedium());
-  gex_AM_RequestMedium(gasneti_THUNK_TM, dstnode, gasneti_handleridx(gasnete_coll_p2p_med_tree_reqh),
+  gex_AM_RequestMedium(op->e_tm, dstrank, gasneti_handleridx(gasnete_coll_p2p_med_tree_reqh),
                            src, size, GEX_EVENT_NOW, 0, team_id, seq_num);
-      
 }
 
 /* Memcpy up to gex_AM_LUBRequestMedium() bytes, signalling the recipient */
@@ -1238,11 +1110,13 @@ int gasnete_tm_p2p_memcpy(gasnete_coll_op_t *op, gex_Rank_t rank, void *dst,
 }
 
 
-extern void gasnete_coll_p2p_counting_eager_put(gasnete_coll_op_t *op, gex_Rank_t dstnode,
-                                                void *src, size_t nbytes, size_t offset_size, uint32_t offset, uint32_t idx){
+extern void gasnete_tm_p2p_counting_eager_put(gasnete_coll_op_t *op, gex_Rank_t dstrank,
+                                              void *src, size_t nbytes, size_t offset_size,
+                                              uint32_t offset, uint32_t idx GASNETI_THREAD_FARG)
+{
   const uint32_t team_id = op->team->team_id;
   
-  gex_AM_RequestMedium(gasneti_THUNK_TM, dstnode, gasneti_handleridx(gasnete_coll_p2p_med_counting_reqh),
+  gex_AM_RequestMedium(op->e_tm, dstrank, gasneti_handleridx(gasnete_coll_p2p_med_counting_reqh),
                            src, nbytes, GEX_EVENT_NOW, 0, team_id, op->sequence, offset, idx, offset_size);
 }
 
@@ -1259,7 +1133,7 @@ int gasnete_tm_p2p_send_rtr(
   tmp.sent = 0;
   /* TODO: we send addr+"0", when only the addr is needed (need custom AM instead of eager_put). */
   int retval =
-    gasnete_tm_p2p_eager_put(op, op->e_tm, rank, &tmp, sizeof(tmp),
+    gasnete_tm_p2p_eager_put(op, rank, &tmp, sizeof(tmp),
                              GEX_EVENT_NOW, flags, offset, 1 GASNETI_THREAD_PASS);
   if (retval) {
     // back pressure
@@ -1326,6 +1200,7 @@ extern gasnete_coll_generic_data_t *gasnete_coll_generic_alloc(GASNETI_THREAD_FA
     /* XXX: allocate in chunks and scatter across cache lines */
     /* XXX: destroy freelist at exit */
     result = (gasnete_coll_generic_data_t *)gasneti_calloc(1, sizeof(gasnete_coll_generic_data_t));
+    GASNETI_STAT_EVENT_VAL(W, COLL_GDATA_ALLOC, sizeof(gasnete_coll_generic_data_t));
   }
 
   memset(result, 0, sizeof(*result));
@@ -1797,7 +1672,7 @@ gasnete_coll_generic_broadcast_nb(gasnet_team_handle_t team,
     gasnete_coll_generic_data_t *data = gasnete_coll_generic_alloc(GASNETI_THREAD_PASS_ALONE);
     GASNETE_COLL_GENERIC_SET_TAG(data, broadcast);
     data->args.broadcast.dst        = dst;
-    data->args.broadcast.srcnode    = srcimage;
+    data->args.broadcast.srcrank    = srcimage;
     data->args.broadcast.src        = src;
     data->args.broadcast.nbytes     = nbytes;
     data->options = options;
@@ -1879,7 +1754,7 @@ gasnete_coll_generic_scatter_nb(gasnet_team_handle_t team,
     gasnete_coll_generic_data_t *data = gasnete_coll_generic_alloc(GASNETI_THREAD_PASS_ALONE);
     GASNETE_COLL_GENERIC_SET_TAG(data, scatter);
     data->args.scatter.dst        = dst;
-    data->args.scatter.srcnode    = srcimage;
+    data->args.scatter.srcrank    = srcimage;
     data->args.scatter.src        = src;
     data->args.scatter.nbytes     = nbytes;
     data->args.scatter.dist     = dist;
@@ -1960,7 +1835,7 @@ gasnete_coll_generic_gather_nb(gasnet_team_handle_t team,
   if_pt (first_thread) {
     gasnete_coll_generic_data_t *data = gasnete_coll_generic_alloc(GASNETI_THREAD_PASS_ALONE);
     GASNETE_COLL_GENERIC_SET_TAG(data, gather);
-    data->args.gather.dstnode    = dstimage;
+    data->args.gather.dstrank    = dstimage;
     data->args.gather.dst        = dst;
     data->args.gather.src        = src;
     data->args.gather.nbytes     = nbytes;
@@ -2480,22 +2355,26 @@ gasnete_tm_reduce_nb_default(
   }
 
   // TODO-EX: LUB can be relaxed (potentially significantly) for pshm-only teams
+  gasnete_coll_team_t team = i_tm->_coll_team;
   const size_t nbytes = dt_sz * dt_cnt;
   gasnete_coll_local_tree_geom_t *geom = NULL;
   gasnete_tm_reduce_fn_ptr_t alg;
   const int binomial_root_radix = 1 + gasnete_coll_log2_rank(i_tm->_size - 1);
-  if ((nbytes * binomial_root_radix <= gasnete_coll_p2p_eager_buffersz) &&
+  if ((nbytes * binomial_root_radix <= team->p2p_eager_buffersz) &&
       (nbytes <= gex_AM_LUBRequestMedium())) {
     alg = &gasnete_tm_reduce_BinomialEager;
   } else {
     gasnete_coll_team_t team = i_tm->_coll_team;
-    const size_t smallest_scratch = team->smallest_scratch_seg;
+    const size_t smallest_scratch = team->scratch_size;
     geom = gasnete_coll_local_tree_geom_fetch(gasnetc_tm_reduce_tree_type, root, team);
     const gex_Rank_t max_radix = geom->max_radix;
     if ((nbytes * max_radix <= smallest_scratch) && (nbytes <= gex_AM_LUBRequestLong())) {
       alg = &gasnete_tm_reduce_TreePut;
     } else if ((dt_sz * (max_radix + 1) <= smallest_scratch) && (dt_sz <= gex_AM_LUBRequestLong())) {
       alg = &gasnete_tm_reduce_TreePutSeg;
+    } else if ((dt_sz * binomial_root_radix <= team->p2p_eager_buffersz) &&
+               (dt_sz <= gex_AM_LUBRequestMedium())) {
+      alg = &gasnete_tm_reduce_BinomialEagerSeg;
     } else {
       gasneti_assert(dt == GEX_DT_USER);
       gasneti_fatalerror("gex_Coll_ReduceToOneNB: (dt_sz == %"PRIuSZ") is TOO LARGE for this implementation",

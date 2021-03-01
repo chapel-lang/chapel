@@ -32,14 +32,14 @@
 // This takes the form YEAR.MONTH.PATCH in GASNet-EX releases,
 // providing a clear distinction from GASNet-1 with MAJOR==1.
 #define GASNET_RELEASE_VERSION_MAJOR 2020
-#define GASNET_RELEASE_VERSION_MINOR 3
+#define GASNET_RELEASE_VERSION_MINOR 10
 #define GASNET_RELEASE_VERSION_PATCH 0
 
 // Major and Minor versions of the GASNet-EX specification.
 //
 // This is currently a version number for *this* document.
 #define GEX_SPEC_VERSION_MAJOR 0
-#define GEX_SPEC_VERSION_MINOR 8
+#define GEX_SPEC_VERSION_MINOR 10
 
 // Major and Minor versions of the GASNet-1 specification.
 //
@@ -53,7 +53,7 @@
 //
 // This is the spec version for the GASNet Tools
 #define GASNETT_SPEC_VERSION_MAJOR 1
-#define GASNETT_SPEC_VERSION_MINOR 15
+#define GASNETT_SPEC_VERSION_MINOR 16
 
 //
 // Relationship to GASNet-1 APIs:
@@ -438,6 +438,35 @@ typedef [some integer type] gex_Flags_t;
 #define GEX_FLAG_SELF_SEG_OFFSET  ((gex_Flags_t)???) [UNIMPLEMENTED]
 #define GEX_FLAG_PEER_SEG_OFFSET  ((gex_Flags_t)???) [UNIMPLEMENTED]
 
+// COLLECTIVE SCRATCH ALLOCATION [PROPOSED]
+//
+// The following family of flags control the interpretation of address ranges
+// provided to team construction APIs to describe collective scratch spaces.
+//
+// TM_{GLOBAL,LOCAL,SYMMETRIC,NO}_SCRATCH
+//   This mutually-exclusive group indicates the number and meaning of
+//   a gex_Addr_t specified to certain team construction APIs.
+//      GLOBAL: gex_Addr_t per member of the output team
+//       LOCAL: gex_Addr_t per local member of the output team
+//   SYMMETRIC: single gex_Addr_t used for all members of the output team
+//          NO: no gex_Addr_t (and no scratch space is allocated).
+//
+#define GEX_FLAG_TM_GLOBAL_SCRATCH     ((gex_Flags_t)???) // gex_TM_Create only
+#define GEX_FLAG_TM_LOCAL_SCRATCH      ((gex_Flags_t)???) // gex_TM_Create only
+#define GEX_FLAG_TM_SYMMETRIC_SCRATCH  ((gex_Flags_t)???) // gex_TM_Create only
+#define GEX_FLAG_TM_NO_SCRATCH         ((gex_Flags_t)???) [UNIMPLEMENTED]
+//
+// SCRATCH_SEG_OFFSET
+//
+// This flag bit indicates that the corresponding gex_Addr_t argument(s)
+// are byte *offsets* relative to the bound segment base address.
+// Implies that the respective endpoint has a bound segment, and
+// that the specified range(s) are contained entirely within that segment.
+#define GEX_FLAG_SCRATCH_SEG_OFFSET  ((gex_Flags_t)???) [UNIMPLEMENTED]
+
+// MISC [PROPOSED]
+#define GEX_FLAG_GLOBALLY_QUIESCED   ((gex_Flags_t)???)
+
 // A "token" is an opaque scalar type
 // This type is interoperable with gasnet_token_t
 typedef ... gex_Token_t;
@@ -461,6 +490,14 @@ typedef [some unsigned integer type] gex_RMA_Value_t;
 // Synonymous with SIZEOF_GASNET_REGISTER_VALUE_T
 #define SIZEOF_GEX_RMA_VALUE_T ...
 
+// gex_Addr_t [PROPOSED]
+// Type which is suitable to hold both addresses and offsets.
+//
+// This is always an alias for `void*`, but is given a distinct type to make
+// prototypes self-documenting with respect to arguments which may (with the
+// proper flags) be interepreted alternatively as addresses or offsets.
+typedef void* gex_Addr_t;
+
 // Memvec
 // A "memvec" describes a tuple of memory address and length
 // gex_Memvec_t is guaranteed to have the same in-memory representation as gasnet_memvec_t;
@@ -475,6 +512,29 @@ typedef struct {
 // gex_EP_t is an opaque scalar handle to an Endpoint (EP),
 // a local representative of an isolated communication context
 typedef ... gex_EP_t;
+
+// gex_EP_Index_t is an unsigned integer type.
+// [PROPOSED]
+// Every EP within a given gex_Client_t can be uniquely identified by
+// the jobrank of a process and an endpoint index.
+// The primordial endpoint, created by gex_Client_Init(), will always have
+// an index of 0.  At this time, there are no other guarantees regarding how
+// endpoint indices are allocated/assigned.
+typedef ... gex_EP_Index_t;
+
+// Max supported number of endpoints per client in each process.
+// This is an optimistic compile-time constant which cannot account
+// for limitations due to scarcity of network resources and/or memory.
+// The value is implementation-defined and may be conduit-specific.
+// [PROPOSED]
+#define GASNET_MAXEPS ...
+
+// gex_EP_Location_t is a (rank, ep_index) tuple
+// [PROPOSED]
+typedef struct {
+  gex_Rank_t     gex_rank;
+  gex_EP_Index_t gex_ep_index;
+} gex_EP_Location_t;
 
 // gex_Client_t is an opaque scalar handle to a Client,
 // an instance of the client interface to the GASNet library
@@ -673,8 +733,9 @@ gex_Rank_t   gex_TM_QuerySize(gex_TM_t tm);
 //
 // This is a collective call over the team named by the 'parent_tm' argument
 // that creates zero or more new teams.  While this call is collective, the
-// arguments are NOT required to be single-valued except as noted for certain
-// bits in 'flags'.
+// arguments are NOT required to be single-valued over the parent team, except
+// as noted for certain bits in 'flags'.  However, the value of 'scratch_size'
+// must be collective over callers passing the same 'color'.
 //
 // + When passing any of the GEX_FLAG_TM_SCRATCH_SIZE_* family of flags, this
 //   call is a collective query to determine the minimum or recommended value
@@ -715,18 +776,21 @@ gex_Rank_t   gex_TM_QuerySize(gex_TM_t tm);
 //            If scratch_addr is non-NULL, then the memory
 //               [scratch_addr, scratch_addr+scratch_size)
 //            is granted to the implementation for internal use.
+//            The value of 'scratch_size' must be single-valued over the members
+//            of each new team to be created (non-NULL 'new_tm_p' and same 'color').
 // flags:
 //   Single valued:
 //       GEX_FLAG_TM_SCRATCH_SIZE_*
 //         These mutually exclusive flags convert this call into a collective query.
 //         No team is created in the presence of any flag in this family.
-//         Note that the return value is not guaranteed to be single-valued.
 //         - GEX_FLAG_TM_SCRATCH_SIZE_{MIN,RECOMMENDED} queries and returns the           
 //           {minimum permissible, recommended optimal} value to be passed in 
 //           'scratch_size' for a subsequent call to gex_TM_Split() with the same 
 //           value for the other arguments.  In particular, a NULL value of the
 //           'new_tm_p' indicates the caller will not be a member of any team
 //           created by the subsequent split (and thus the return will be zero).
+//           Return values are guaranteed to be single-valued over the members
+//           of each new team to be created (non-NULL 'new_tm_p' and same 'color').
 //   Non-single valued:
 //        None currently defined 
 //
@@ -755,6 +819,28 @@ size_t gex_TM_Split(gex_TM_t *new_tm_p, gex_TM_t parent_tm, int color, int key,
 gex_Rank_t gex_TM_TranslateRankToJobrank(gex_TM_t tm, gex_Rank_t rank);
 gex_Rank_t gex_TM_TranslateJobrankToRank(gex_TM_t tm, gex_Rank_t jobrank);
 
+// Translation from (tm,rank) to gex_EP_Location_t
+// [PROPOSED]
+//
+// This function provides translation from a (tm,rank) pair to a
+// gex_EP_Location_t, which is a (jobrank,epidx) pair.
+//
+// tm:      A valid gex_TM_t
+// rank:    The rank of some member of tm.
+//          Requires 0 <= rank < gex_TM_QuerySize(tm).
+// flags:   Flags are reserved for future use and must currently be zero
+//
+// Returns: A gex_EP_Location_t describing the given member of tm.
+//
+// This query MAY communicate.
+// [TBD: exception for 'self' in one both directions?]
+// This call is not legal in contexts which prohibit communication,
+// including (but not limited to) AM Handler context or when holding an HSL.
+//
+gex_EP_Location_t gex_TM_TranslateRankToEP(
+                gex_TM_t        tm,
+                gex_Rank_t      rank,
+                gex_Flags_t     flags);
 
 //
 // Operations on gex_EP_t
@@ -771,6 +857,10 @@ gex_Flags_t   gex_EP_QueryFlags(gex_EP_t ep);
 // Query the bound segment
 // Newly-created EPs have no bound segment and will yield GEX_SEGMENT_INVALID.
 gex_Segment_t gex_EP_QuerySegment(gex_EP_t ep);
+
+// Query the endpoint index
+// [PROPOSED]
+gex_EP_Index_t gex_EP_QueryIndex(gex_EP_t ep);
 
 // Create an endpoint [UNIMPLEMENTED]
 extern int gex_EP_Create(
@@ -3029,6 +3119,42 @@ gex_Event_t gex_Coll_ReduceToAllNB(
 
 
 // End of section describing APIs provided by gasnet_coll.h
+//----------------------------------------------------------------------
+
+// [PROPOSED]
+// The remainder of this document is for APIs described in more detail in
+//   GASNet-EX API Proposal: Multi-EP, Revision 2020.6.1
+// Only prototypes and supported flags are provided here.
+//
+// Copies of the most recent revision of that document are available on
+// request from gasnet-staff@lbl.gov.
+
+size_t gex_TM_Create(
+            gex_TM_t *new_tms,         // OUT
+            size_t num_new_tms,        // Length of new_tms
+            gex_TM_t parent_tm,
+            gex_EP_Location_t *args,   // IN
+            size_t numargs,            // single-valued over output team
+            gex_Addr_t *scratch_addrs, // IN
+            size_t scratch_size        // single-valued over output team
+            gex_Flags_t flags);        // Flags (partially single-valued)
+      // Valid flags:
+      //   GEX_FLAG_RANK_IS_JOBRANK
+      //   GEX_FLAG_SCRATCH_SEG_OFFSET
+      //   GEX_FLAG_TM_SYMMETRIC_SCRATCH \
+      //   GEX_FLAG_TM_LOCAL_SCRATCH     | mutually-exclusive group
+      //   GEX_FLAG_TM_GLOBAL_SCRATCH    |
+      //   GEX_FLAG_TM_NO_SCRATCH        /
+      //   GEX_FLAG_TM_SCRATCH_SIZE_MIN         \
+      //   GEX_FLAG_TM_SCRATCH_SIZE_RECOMMENDED / mutually-exclusive pair
+
+int gasneti_TM_Destroy(
+            gex_TM_t      tm,
+            gex_Memvec_t  *scratch_p,
+            gex_Flags_t   flags);
+      // Valid flags:
+      //   GEX_FLAG_GLOBALLY_QUIESCED
+
 //----------------------------------------------------------------------
 
 // vim: syntax=c
