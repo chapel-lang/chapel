@@ -9,11 +9,6 @@ extern {
     uint64_t x;
     uint64_t a __attribute__((aligned (16)));
   };
-
-  int64_t getOffset(void* base, void* field);
-  int64_t getOffset(void* base, void* field) {
-    return (int64_t)((char*)field-(char*)base);
-  }
 }
 
 record int8int64 {
@@ -43,18 +38,8 @@ record int64aligned16b {
   var field2: aligned16test;
 }
 
-proc compute(ref arg) {
+proc compute(arg) {
   writeln(arg);
-  printFieldOffsets(arg);
-}
-
-extern proc getOffset(const ref base, const ref field): int(64);
-
-proc printFieldOffsets(ref base: ?t) {
-  use Reflection;
-  for param i in 0..numFields(t)-1 {
-    writeln(getFieldName(base.type, i), ": ", getField(base, i).type:string, " = ", getOffset(base, getField(base, i)));
-  }
 }
 
 proc main() {
@@ -69,7 +54,5 @@ proc main() {
   var v5: int8int16int64;
   compute(v5);
   var v6: int64aligned16b;
-  v6.field2.x = 0;
-  v6.field2.a = 0;
   compute(v6);
 }

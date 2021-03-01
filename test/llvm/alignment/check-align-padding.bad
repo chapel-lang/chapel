@@ -1,1 +1,1 @@
-check-align-padding.chpl:47: error: unhandled misaligned record member
+check-align-padding.chpl:41: error: unhandled misaligned record member

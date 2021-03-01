@@ -1,7 +1,20 @@
-%int32int64_chpl = type { i32, [4 x i8], i64 }
-%int64aligned16b_chpl = type { i64, [8 x i8], %struct.aligned16test }
-%int8int16int64_chpl = type { i8, [1 x i8], i16, [4 x i8], i64 }
-%int8int32_chpl = type { i8, [3 x i8], i32 }
-%int8int64_chpl = type { i8, [7 x i8], i64 }
-%int8int8int64_chpl = type { i8, i8, [6 x i8], i64 }
-%struct.aligned16test = type { i64, [8 x i8], i64, [8 x i8] }
+(field1 = 0, field2 = 0)
+field1: int(8) = 0
+field2: int(64) = 8
+(field1 = 0, field2 = 0)
+field1: int(8) = 0
+field2: int(32) = 4
+(field1 = 0, field2 = 0)
+field1: int(32) = 0
+field2: int(64) = 8
+(field1 = 0, field2 = 0, field3 = 0)
+field1: int(8) = 0
+field2: int(8) = 1
+field3: int(64) = 8
+(field1 = 0, field2 = 0, field3 = 0)
+field1: int(8) = 0
+field2: int(16) = 2
+field3: int(64) = 8
+(field1 = 0, field2 = (x = 0, a = 0))
+field1: int(64) = 0
+field2: aligned16test = 16

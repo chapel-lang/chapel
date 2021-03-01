@@ -1,8 +1,0 @@
-#!/bin/sh
-TESTNAME=$1
-OUTFILE=$2
-
-TMPFILE="$outfile.prediff.tmp"
-mv $OUTFILE $TMPFILE
-cat $TMPFILE | grep -e '= type' -e 'error:' | sort > $OUTFILE
-rm $TMPFILE
