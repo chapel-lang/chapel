@@ -1609,6 +1609,7 @@ static void autoAggregation(ForallStmt *forall) {
 
     for_vector(Expr, lastStmt, lastStmts) {
       if (CallExpr *lastCall = toCallExpr(lastStmt)) {
+        bool reportedLoc = false;
         if (lastCall->isNamedAstr(astrSassign)) {
           // no need to do anything if it is array access
           if (assignmentSuitableForAggregation(lastCall, forall)) {
@@ -1864,11 +1865,11 @@ Expr *preFoldMaybeAggregateAssign(CallExpr *call) {
 
   Expr *replacement = NULL;
 
+  std::stringstream message;
+
   // either side is local, but not both
   if (lhsLocal != rhsLocal) {
     Symbol *aggregator = NULL;
-
-    std::stringstream message;
 
     // aggregator can be nil in two cases:
     // (1) we couldn't determine what the code looks like statically on one side of
@@ -1889,16 +1890,22 @@ Expr *preFoldMaybeAggregateAssign(CallExpr *call) {
     }
 
     if (aggregator != NULL) {
-      if (fReportAutoAggregation) {
-        message << getForallCloneTypeStr(aggMarkerSE->symbol());
-        LOG_AA(0, message.str().c_str(), call);
-      }
-
       replacement = createAggCond(assign, aggregator, aggMarkerSE);
     }
   }
   
   if (replacement == NULL) {
+    if (fReportAutoAggregation) {
+      if (lhsLocal && rhsLocal) {
+        message << "Both sides of the assignment looks local. Will not use aggregation";
+      }
+      else if (!lhsLocal && !rhsLocal) {
+        message << "Could not prove the locality of either side. Will not use aggregation";
+      }
+      else {
+        message << "Will not use aggregation for unknown reasons. Type doesn't support aggregation?";
+      }
+    }
     aggMarkerSE->symbol()->defPoint->remove();
 
     FnSymbol *parentFn = toFnSymbol(call->parentSymbol);
@@ -1911,6 +1918,11 @@ Expr *preFoldMaybeAggregateAssign(CallExpr *call) {
       removeAggregatorFromFunction(dstAggregator, parentFn);
     }
     replacement = assign;
+  }
+
+  if (fReportAutoAggregation) {
+    message << getForallCloneTypeStr(aggMarkerSE->symbol());
+    LOG_AA(0, message.str().c_str(), call);
   }
 
   primMaybeAggregateAssignLocations.erase(call->stringLoc());
