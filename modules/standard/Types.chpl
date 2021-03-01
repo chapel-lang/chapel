@@ -235,8 +235,7 @@ pragma "no doc"
 proc isPrimitiveValue(e) param  return isPrimitiveType(e.type);
 pragma "no doc"
 proc isEnumValue(e)      param  return isEnumType(e.type);
-pragma "no doc"
-proc isNothingValue(e)   param return isNothingType(e.type);
+
 
 //Defined elsewhere:
 // isTupleValue
@@ -393,6 +392,13 @@ pragma "no doc"
 proc isConstAssignable(type t) param  return isConstAssignableType(t);
 pragma "no doc"
 proc isDefaultInitializable(type t) param return isDefaultInitializableType(t);
+
+/* Returns `true` if the argument is a Nothing type, 
+the only value of nothing type is 'none'.
+*/
+pragma "no doc"
+proc isNothing(type t)  param return isNothingType(t);
+
 
 // Set 2 - values.
 /*
