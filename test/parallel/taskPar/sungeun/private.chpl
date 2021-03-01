@@ -27,7 +27,7 @@ class localePrivateData {
   else dataParTasksPerLocale;
   var slot: sync bool;
   var r = {0..#numTasks};
-  var temps: [r] myStuff;  // TODO: initializer
+  var temps: [r] myStuff;
   proc gettid() {
     extern proc chpl_task_getId(): chpl_taskID_t;
     var mytid = chpl_task_getId();

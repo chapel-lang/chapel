@@ -13,7 +13,7 @@ delete s;
 delete r;
 
 class R {
-  var count: sync int = 0;  // TODO: initializer
+  var count: sync int = 0;
 
   proc next() {
     var c = count.readFE() + 1;
