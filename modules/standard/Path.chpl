@@ -382,20 +382,22 @@ proc dirname(name: string): string {
 */
 
 proc splitExt(path:string): (string, string) {
-  var lead = 0;
-  while lead < path.size && (path[lead] == "." || path[lead] == "/") {
-    lead += 1;
-  }
-
-  var lastIdx = path[lead..].rfind(".");
-
-  if(lead == path.size || lastIdx == -1) {
+  var lastIdx = path.rfind(".");
+  var lastSep = path.rfind("/");
+  if(lastIdx == -1 || lastSep > lastIdx) {
     return (path, "");
   }
-  else {
-    lastIdx += lead;
-    return (path[..(lastIdx - 1)], path[lastIdx..]);
+  var idx = lastIdx - 1;
+  while(true) {
+    if(idx < 0 || path[idx] == "/") {
+      return (path, "");
+    }
+    else if(path[idx] == ".") {
+      idx -= 1;
+    }
+    else break;
   }
+  return (path[..(lastIdx - 1)], path[lastIdx..]);
 }
 
 /* Expands any environment variables in the path of the form ``$<name>`` or

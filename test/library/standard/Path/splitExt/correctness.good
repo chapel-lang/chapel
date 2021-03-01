@@ -6,3 +6,7 @@
 (../foo, )
 (../foo, .tmp)
 (.foo, )
+(bar/../foo, )
+(bar/foo.c/, )
+(/../../foo, )
+(/../../foo, .tmp)

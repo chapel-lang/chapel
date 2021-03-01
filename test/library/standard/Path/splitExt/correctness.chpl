@@ -15,3 +15,11 @@ writeln(splitExt("../foo"));
 writeln(splitExt("../foo.tmp"));
 
 writeln(splitExt(".foo"));
+
+writeln(splitExt("bar/../foo"));
+
+writeln(splitExt("bar/foo.c/"));
+
+writeln(splitExt("/../../foo"));
+
+writeln(splitExt("/../../foo.tmp"));
