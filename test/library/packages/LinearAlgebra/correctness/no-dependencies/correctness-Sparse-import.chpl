@@ -44,35 +44,30 @@ use IO;
   /* Dimensions */
   {
     var D = CSRDomain(3, 3);
-
     assertEqual(D, Dom0, "CSRDomain(3, 3)");
   }
 
   /* Range */
   {
     var D = CSRDomain(1..3);
-
     assertEqual(D, Dom, "CSRDomain(1..3)");
   }
 
   /* Ranges */
   {
     var D = CSRDomain(1..4, 1..6);
-
     assertEqual(D, Dom2, "CSRDomain(1..4, 1..6)");
   }
 
   /* Domain - CSR */
   {
     var D = CSRDomain(Dom);
-
     assertEqual(D, Dom, "CSRDomain(Dom)");
   }
 
   /* Domain - Dense */
   {
     var D = CSRDomain(parentDom);
-
     assertEqual(D, Dom, "CSRDomain(parentDom)");
   }
 
@@ -80,7 +75,6 @@ use IO;
   {
     var I = LinearAlgebra.eye(3,3);
     var A = CSRMatrix(I);
-
     assertEqual(A.domain, IDom0, "CSRMatrix(I)");
   }
 
@@ -88,7 +82,6 @@ use IO;
   {
     var A: [Dom] real;
     var M = CSRMatrix(A);
-
     assertEqual(M.domain, Dom, "CSRDomain(A)");
   }
 
@@ -96,7 +89,6 @@ use IO;
   {
     var A: [Dom] real;
     var M = CSRMatrix(A, eltType=int);
-
     assertEqual(M.domain, Dom, "CSRMatrix(A)");
     assertTrue(isIntType(M.eltType), "CSRMatrix(A, eltType=int)");
   }
@@ -160,6 +152,7 @@ use IO;
     // Sparse dot
     var csrA = CSRMatrix(A);
     var csrAAT = csrA.dot(csrA.T);
+
     var csrAT = csrA.T;
 
     assertEqual(csrAAT, CSRMatrix(AAT), "csrA.dot(csrA.T)");
@@ -183,7 +176,6 @@ use IO;
     var A: [Dom] real;
     var I: [IDom] real;
     var AI = dot(A, I);
-
     assertEqual(AI, A, "dot(A, I)");
   }
 

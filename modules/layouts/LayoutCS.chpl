@@ -306,11 +306,10 @@ class CSDom: BaseSparseDomImpl {
 
     var ret: (bool, idxType);
     if this.compressRows {
-      if this.sortedIndices {
+      if this.sortedIndices then
         ret = binarySearch(idx, col, lo=startIdx(row), hi=stopIdx(row));
-      } else {
+      else
         ret = linearSearch(idx, col, lo=startIdx(row), hi=stopIdx(row));
-      }
     } else {
       if this.sortedIndices then
         ret = binarySearch(idx, row, lo=startIdx(col), hi=stopIdx(col));
@@ -335,12 +334,12 @@ class CSDom: BaseSparseDomImpl {
     var _low = idx[_low_idx];
     // find the corresponding index into startIdx
     for i in startIdxDom {
-        if startIdx[i] > _low_idx {
-          if this.compressRows then
-              return (i-1, _low);
-          else
-              return (_low, i-1);
-        }
+      if startIdx[i] > _low_idx {
+        if this.compressRows then
+          return (i-1, _low);
+        else
+          return (_low, i-1);
+      }
     }
     halt("Something went wrong in dsiFirst");
     return (0, 0);
@@ -357,9 +356,9 @@ class CSDom: BaseSparseDomImpl {
         if startIdx[i] > _last_idx then _last_major = i-1;
     }
     if this.compressRows then
-        return (_last_major, _last_minor);
+      return (_last_major, _last_minor);
     else
-        return (_last_minor, _last_major);
+      return (_last_minor, _last_major);
   }
 
   proc dsiAdd(ind: rank*idxType) {
@@ -506,10 +505,11 @@ class CSDom: BaseSparseDomImpl {
       }
       else if newIndIdx >= indsDom.low && i == newLoc {
         // Put the new nonzero in
-        if this.compressRows then
+        if this.compressRows {
           idx[i] = inds[newIndIdx][1];
-        else
+        } else {
           idx[i] = inds[newIndIdx][0];
+        }
         newIndIdx -= 1;
         if newIndIdx >= indsDom.low then
           newLoc = actualInsertPts[newIndIdx];
