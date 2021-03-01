@@ -187,7 +187,6 @@ class CSDom: BaseSparseDomImpl {
                                initElts=initElts);
   }
 
-  // ?fromMMS: this does appear to be order dependent
   pragma "not order independent yielding loops"
   iter dsiIndsIterSafeForRemoving() {
     var cursor = if this.compressRows then rowRange.high else colRange.high;
@@ -211,11 +210,10 @@ class CSDom: BaseSparseDomImpl {
       while (startIdx(cursor+1) <= i) {
         cursor+= 1;
       }
-      if this.compressRows {
+      if this.compressRows then
         yield (cursor, idx(i));
-      } else {
+      else
         yield (idx(i), cursor);
-      }
     }
   }
 
@@ -228,13 +226,11 @@ class CSDom: BaseSparseDomImpl {
       writeln("CSDom leader: ", numChunks, " chunks, ", numElems, " elems");
 
     // split our numElems elements over numChunks tasks
-    if numChunks == 1 {
+    if numChunks == 1 then
       yield (this, 0, numElems-1);
-    } else {
-      coforall chunk in RangeChunk.chunks(0..#numElems, numChunks) {
+    else
+      coforall chunk in RangeChunk.chunks(0..#numElems, numChunks) do
         yield (this, chunk.first, chunk.last);
-      }
-    }
     // TODO: to handle large numElems and numChunks faster, it would be great
     // to run the binary search in _private_findStart smarter, e.g.
     // pass to the tasks created in 'coforall' smaller ranges to search over.
@@ -243,10 +239,9 @@ class CSDom: BaseSparseDomImpl {
   pragma "not order independent yielding loops"
   iter these(param tag: iterKind, followThis: (?,?,?)) where tag == iterKind.follower {
     var (followThisDom, startIx, endIx) = followThis;
-//writeln("DEBUG: these, followThis=", followThis, ", startIx=", startIx, ", endIx=", endIx);
-    if boundsChecking {
+
+    if boundsChecking then
       assert(startIx <= endIx, "CSDom follower - got nothing to iterate over");
-    }
 
     // TODO: Allow zippering sparse domains of equal length some day...
     if (followThisDom != this) then
@@ -255,18 +250,16 @@ class CSDom: BaseSparseDomImpl {
     // This loop is identical to the serial iterator, except for the iteration
     // space and finding the initial 'cursorRow'.
     var cursor = _private_findStart(startIx);
-    if debugCS {
+    if debugCS then
       writeln("CSDom follower: ", startIx, "..", endIx,
               "  startIdx(", cursor, ")=", startIdx(cursor));
-    }
 
     for i in startIx..endIx {
       while (startIdx(cursor+1) <= i) do cursor+= 1;
-      if this.compressRows {
+      if this.compressRows then
         yield (cursor, idx(i));
-      } else {
+      else
         yield (idx(i), cursor);
-      }
     }
   }
 
@@ -289,10 +282,9 @@ class CSDom: BaseSparseDomImpl {
     while h > l + approx {
       var m = (h + l) / 2;
       if startIdx(m) <= startIx then l = m; else h = m;
-//writeln("DEBUG: _private_findStart, m=", m, ", l=", l, ", h=", h);
     }
     var hh = min(l+approx, high);
-//writeln("DEBUG: _private_findStart, low=",low,", high=",high,", startIx=",startIx,", startIdxDom=", startIdxDom,", startIdx=",startIdx, ", l=",l,", hh=",hh,", idx=",idx);
+
     if boundsChecking then {
       assert(startIdx(l) <= startIx, "CSDom.findStart-1");
       assert(startIx < startIdx(hh), "CSDom.findStart-2");
@@ -320,11 +312,10 @@ class CSDom: BaseSparseDomImpl {
         ret = linearSearch(idx, col, lo=startIdx(row), hi=stopIdx(row));
       }
     } else {
-      if this.sortedIndices {
+      if this.sortedIndices then
         ret = binarySearch(idx, row, lo=startIdx(col), hi=stopIdx(col));
-      } else {
+      else
         ret = linearSearch(idx, row, lo=startIdx(col), hi=stopIdx(col));
-      }
     }
 
     return ret;
@@ -340,23 +331,15 @@ class CSDom: BaseSparseDomImpl {
 
   proc dsiFirst {
     if _nnz == 0 then return (parentDom.low) - (1,1);
-
     const _low_idx = nnzDom.low;
     var _low = idx[_low_idx];
-
     // find the corresponding index into startIdx
     for i in startIdxDom {
         if startIdx[i] > _low_idx {
-          /*if !sortedIndices {
-              for i in startIdx[i-1]..startIdx[i]-1 {
-                  if idx[i]<_low then _low = idx[i];
-              }
-          } MMS, doesn't mean first lexicographically*/
-          if this.compressRows {
+          if this.compressRows then
               return (i-1, _low);
-          } else {
+          else
               return (_low, i-1);
-          }
         }
     }
     halt("Something went wrong in dsiFirst");
@@ -373,19 +356,10 @@ class CSDom: BaseSparseDomImpl {
     for i in startIdxDom.low..startIdxDom.high by -1 {
         if startIdx[i] > _last_idx then _last_major = i-1;
     }
-
-/* MMS, doesn't mean first lexicographically
-    if ! sortedIndices {
-        for i in startIdx[_last_major]..startIdx[_last_major+1]-1 {
-            if idx[i]>_last_minor then _last_minor = idx[i];
-        }
-    }
-*/
-    if this.compressRows {
+    if this.compressRows then
         return (_last_major, _last_minor);
-    } else {
+    else
         return (_last_minor, _last_major);
-    }
   }
 
   proc dsiAdd(ind: rank*idxType) {
@@ -393,7 +367,6 @@ class CSDom: BaseSparseDomImpl {
 
     // find position in nnzDom to insert new index
     const (found, insertPt) = find(ind);
-//writeln("DEBUG: dsiAdd, found=",found,", insertPt=",insertPt);
 
     // if the index already existed, then return
     if found then return 0;
@@ -406,7 +379,6 @@ class CSDom: BaseSparseDomImpl {
     _grow(_nnz);
 
     const (row,col) = ind;
-//writeln("DEBUG: dsiAdd, row=",row,", col=",col);
 
     // shift row|column indices up
     for i in insertPt.._nnz-2 by -1 {
@@ -449,12 +421,11 @@ class CSDom: BaseSparseDomImpl {
       }
     }
 
-    if this.compressRows {
+    if this.compressRows then
       bulkAdd_prepareInds(inds, dataSorted, isUnique, cmp=Sort.defaultComparator);
-    } else {
+    else
       bulkAdd_prepareInds(inds, dataSorted, isUnique, cmp=_columnComparator);
-    }
-//writeln("DEBUG: bulkAdd, inds = ", inds);
+
     if _nnz == 0 {
 
       const dupCount = if isUnique then 0 else _countDuplicates(inds);
@@ -474,17 +445,14 @@ class CSDom: BaseSparseDomImpl {
 
       // Update startIdx && idx
       for (i,j) in inds {
-//writeln("DEBUG: (i,j)=",(i,j));
         if !isUnique && (i,j) == prevIdx then continue;
         else prevIdx = (i,j);
 
         if this.compressRows {
           while i != current {
-//writeln("DEBUG: i=",i,", current=",current);
             current += 1;
             startIdx[current+1] = startIdx[current];
           }
-//writeln("DEBUG: i=",i,", idxIdx=",idxIdx);
           startIdx[i+1] += 1;
           idx[idxIdx] = j;
           idxIdx += 1;
@@ -503,7 +471,6 @@ class CSDom: BaseSparseDomImpl {
       // make sure startIdx[i]>startIdx[j] for i>j for possibly
       // untouched part of startIdx
       const startIdxHigh = startIdx[current+1];
-//writeln("DEBUG: startIdxHigh=",startIdxHigh," startIdx=",startIdx,", current+2=",current+2,", startIdx.domain.high=",startIdx.domain.high);
       for r in current+2..startIdx.domain.high {
         startIdx[r] = startIdxHigh;
       }
@@ -513,8 +480,6 @@ class CSDom: BaseSparseDomImpl {
 
     const (actualInsertPts, actualAddCnt) =
       __getActualInsertPts(this, inds, isUnique);
-//writeln("DEBUG: bulkAdd, startIdx = ", startIdx, ", idx=", idx);
-//writeln("DEBUG: bulkAdd, actualInsertPts = ", actualInsertPts, ", actualAddCnt=", actualAddCnt);
     const oldnnz = _nnz;
     _nnz += actualAddCnt;
 
@@ -530,14 +495,9 @@ class CSDom: BaseSparseDomImpl {
       if newIndIdx == indsDom.low-1 then break; // there were duplicates -- now done
       newLoc = actualInsertPts[newIndIdx];
     }
-//writeln("DEBUG: bulkAdd, newIndIdx = ", newIndIdx, ", newLoc=", newLoc);
-//writeln("DEBUG: bulkAdd, this.compressRows = ", this.compressRows);
-//writeln("DEBUG: bulkAdd, indsDom = ", indsDom);
 
     var arrShiftMap: [{0..#oldnnz}] int; //to map where data goes
-// FIXME: rest of this function still needs checked
     for i in 0..#_nnz by -1 {
-//writeln("DEBUG: bulkAdd, in loop, arrShiftMap = ", arrShiftMap, ", idx = ",idx);
       if oldIndIdx >= 0 && i > newLoc {
         // Shift from old values
         idx[i] = idx[oldIndIdx];
@@ -546,11 +506,10 @@ class CSDom: BaseSparseDomImpl {
       }
       else if newIndIdx >= indsDom.low && i == newLoc {
         // Put the new nonzero in
-        if this.compressRows {
+        if this.compressRows then
           idx[i] = inds[newIndIdx][1];
-        } else {
+        else
           idx[i] = inds[newIndIdx][0];
-        }
         newIndIdx -= 1;
         if newIndIdx >= indsDom.low then
           newLoc = actualInsertPts[newIndIdx];
@@ -564,7 +523,6 @@ class CSDom: BaseSparseDomImpl {
       }
       else halt("Something went wrong");
     }
-//writeln("DEBUG: bulkAdd, idx = ", idx);
 
     // Aggregated row || col shift
     var prevCursor = if this.compressRows then parentDom.dim(0).low else parentDom.dim(1).low;
@@ -572,11 +530,10 @@ class CSDom: BaseSparseDomImpl {
     var cursorCnt = 0;
     for (ind, p) in zip(inds, actualInsertPts)  {
       if p == -1 then continue;
-      if this.compressRows {
+      if this.compressRows then
         cursor = ind[0];
-      } else {
+      else
         cursor = ind[1];
-      }
       if cursor == prevCursor then cursorCnt += 1;
       else {
         startIdx[prevCursor+1] += cursorCnt;
@@ -592,7 +549,7 @@ class CSDom: BaseSparseDomImpl {
     for i in prevCursor+1..startIdxDom.high {
       startIdx[i] += cursorCnt;
     }
-//writeln("DEBUG: bulkAdd, startIdx = ", startIdx);
+
     for a in _arrs do
       a.sparseBulkShiftArray(arrShiftMap, oldnnz);
 
@@ -602,7 +559,6 @@ class CSDom: BaseSparseDomImpl {
   proc dsiRemove(ind: rank*idxType) {
     // find position in nnzDom to remove old index
     const (found, insertPt) = find(ind);
-//writeln("DEBUG: dsiRemove, startIdx=",startIdx, "idx=", idx," found=",found,", insertPt=",insertPt);
 
     // if the index doesn't already exist, then return
     if (!found) then return 0;
@@ -613,7 +569,6 @@ class CSDom: BaseSparseDomImpl {
     _shrink(_nnz);
 
     const (row,col) = ind;
-//writeln("DEBUG: dsiRemove, row=",row, ", col=", col);
 
     // shift column indices down
     for i in insertPt.._nnz-1 {
@@ -630,7 +585,7 @@ class CSDom: BaseSparseDomImpl {
         startIdx(r) -= 1;
       }
     }
-//writeln("DEBUG: dsiRemove, startIdx=",startIdx, "idx=", idx);
+
     // shift all of the arrays up and initialize nonzeroes if
     // necessary
     //
