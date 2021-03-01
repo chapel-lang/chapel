@@ -3207,6 +3207,8 @@ void resolveNormalCallAdjustAssign(CallExpr* call) {
         lhsSe->symbol()->type = targetType;
       }
 
+      // This is a workaround to avoid deprecation warnings for sync/single
+      // variables within compiler-generated assignment functions.
       FnSymbol* inFn = call->getFunction();
       if (isUnresolvedSymExpr(call->baseExpr) &&
           inFn->name == astrSassign &&

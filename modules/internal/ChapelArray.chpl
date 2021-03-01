@@ -4377,8 +4377,7 @@ module ChapelArray {
      are a fixed number
   proc _desync(type t: atomic int) type {
     return int;
-  }
-*/
+  } */
 
   proc _desync(type t:_array) type {
     type eltType = chpl__eltTypeFromArrayRuntimeType(t);
