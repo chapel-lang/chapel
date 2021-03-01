@@ -3831,7 +3831,7 @@ module ChapelArray {
     return false;
   }
 
-  // these functions avoid spurios warnings related to sync variable
+  // these functions avoid spurious warnings related to sync variable
   // deprecation, so once the deprecation has completed these can be removed.
   private proc isCopyableOrSyncSingle(type t) param {
     return isSyncType(t) || isSingleType(t) || isCopyableType(t);
@@ -4299,12 +4299,6 @@ module ChapelArray {
   }
 
   inline proc =(ref a: [], b) /* b is not an array nor a domain nor a tuple */ {
-    /*
-    if isSyncType(a.eltType) {
-      compilerWarning("Direct assignment to an array of 'sync' elements is deprecated; apply '.writeEF()' to set the elements");
-    } else if isSingleType(a.eltType) {
-      compilerWarning("Direct assignment to an array of 'single' elements is deprecated; apply '.writeEF()' to set the elements");
-    }*/
     chpl__transferArray(a, b);
   }
 
@@ -4373,30 +4367,6 @@ module ChapelArray {
     var x: t;
     return x.valType;
   }
-
-  /*
-  proc _desync_warn(type t:_syncvar) type {
-    if chpl_warnUnstable then
-      compilerWarning("In an upcoming release, compiler-generated default initializers for objects containing 'sync' fields will change from taking a formal of type 'sync t' to simply 't'.  You can stabilize your code from such changes by adding an explicit default initializer now.");
-    return t;
-  }
-
-  proc _desync_warn(type t:_singlevar) type {
-    if chpl_warnUnstable then
-      compilerWarning("In an upcoming release, compiler-generated default initializers for objects containing 'single' fields will change from taking a formal of type 'single t' to simply 't'.  You can insultate your code from this change by adding an explicit default initializer now.");
-    return t;
-  }
-
-  proc _desync_warn(type t) type where isAtomicType(t) {
-    if chpl_warnUnstable then
-      compilerWarning("In an upcoming release, compiler-generated default initializers for objects containing 'atomic' fields will change from taking a formal of type 'atomic t' to simply 't'.  You can insulate your code from this change by adding an explicit default initializer now.");
-    return t;
-  }
-
-  proc _desync_warn(type t) type {
-    return t;
-  }
-  */
 
   proc _desync(type t) type where isAtomicType(t) {
     var x: t;
