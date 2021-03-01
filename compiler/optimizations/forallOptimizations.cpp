@@ -66,8 +66,8 @@ enum CallRejectReason {
 };
 
 struct ConstCharCmp {
-  bool operator() (const char *lhs, const char *rhs) const {
-    return strcmp(lhs, rhs) < 0;
+  bool operator() (astlocT lhs, astlocT rhs) const {
+    return strcmp(lhs.stringLoc(), rhs.stringLoc()) < 0;
   }
 };
 
@@ -76,8 +76,8 @@ struct ConstCharCmp {
 // those locations from the set. Towards the end of resolution, if there are
 // still items left in these sets, those indicate that we reverted the
 // optimization by completely removing the block that those primitives are in.
-std::set<const char *, ConstCharCmp> primMaybeLocalThisLocations;
-std::set<const char *, ConstCharCmp> primMaybeAggregateAssignLocations;
+std::set<astlocT, ConstCharCmp> primMaybeLocalThisLocations;
+std::set<astlocT, ConstCharCmp> primMaybeAggregateAssignLocations;
 
 
 static bool callHasSymArguments(CallExpr *ce, const std::vector<Symbol *> &syms);
@@ -225,7 +225,7 @@ Expr *preFoldMaybeLocalThis(CallExpr *call) {
     findAndUpdateMaybeAggAssign(call, confirmed);
   }
 
-  primMaybeLocalThisLocations.erase(call->stringLoc());
+  primMaybeLocalThisLocations.erase(call->astloc);
 
   return ret;
 }
@@ -430,26 +430,26 @@ void finalizeForallOptimizationsResolution() {
   // the following chunks can be refactored into a helper, but there are slight
   // differences, and it may be dirtier if we do that.
   if (fReportAutoLocalAccess) {
-    std::set<const char *>::iterator it;
+    std::set<astlocT>::iterator it;
     for (it = primMaybeLocalThisLocations.begin() ;
          it != primMaybeLocalThisLocations.end();
          ++it) {
       std::stringstream message;
       message << "Local access attempt reverted. All static checks failed or code is unreachable.";
-      message << "(" << *it << ")";
+      message << "(" << it->stringLoc() << ")";
       LOG_ALA(0, message.str().c_str(), NULL);
     }
   }
   primMaybeLocalThisLocations.clear();
 
   if (fAutoAggregation) {
-    std::set<const char *>::iterator it;
+    std::set<astlocT>::iterator it;
     for (it = primMaybeAggregateAssignLocations.begin() ;
          it != primMaybeAggregateAssignLocations.end();
          ++it) {
       std::stringstream message;
       message << "Aggregation attempt reverted. Could not prove that exactly one side of the assignment is local.";
-      message << "(" << *it << ")";
+      message << "(" << it->stringLoc() << ")";
       LOG_AA(0, message.str().c_str(), NULL);
     }
   }
@@ -1441,7 +1441,7 @@ static void autoLocalAccess(ForallStmt *forall) {
         LOGLN_ALA(call);
 
         if (reportedLoc) {
-          primMaybeLocalThisLocations.insert(call->stringLoc());
+          primMaybeLocalThisLocations.insert(call->astloc);
         }
 
         std::pair<CallExpr *, int> candidate;
@@ -1468,7 +1468,7 @@ static void autoLocalAccess(ForallStmt *forall) {
       LOGLN_ALA(call);
 
       if (reportedLoc) {
-        primMaybeLocalThisLocations.insert(call->stringLoc());
+        primMaybeLocalThisLocations.insert(call->astloc);
       }
 
       std::pair<CallExpr *, int> candidate;
@@ -1626,7 +1626,7 @@ static void autoAggregation(ForallStmt *forall) {
         }
 
         if (reportedLoc) {
-          primMaybeAggregateAssignLocations.insert(lastCall->stringLoc());
+          primMaybeAggregateAssignLocations.insert(lastCall->astloc);
         }
       }
     }
@@ -1925,7 +1925,7 @@ Expr *preFoldMaybeAggregateAssign(CallExpr *call) {
     LOG_AA(0, message.str().c_str(), call);
   }
 
-  primMaybeAggregateAssignLocations.erase(call->stringLoc());
+  primMaybeAggregateAssignLocations.erase(call->astloc);
 
   return replacement;
 }
