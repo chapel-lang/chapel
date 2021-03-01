@@ -10,10 +10,10 @@ var A, B: [Dom] real;
 var s$: sync int = 1;
 
 forall (a,b) in zip(A,B) {
-  const ss = s$;
+  const ss = s$.readFE();
   a = ss;
   b = ss + 1;
-  s$ = ss + 2;
+  s$.writeEF(ss + 2);
 }
 
 if verbose {

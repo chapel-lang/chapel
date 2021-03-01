@@ -5,18 +5,18 @@ proc main {
   sync {
     on Locales(1) {
       begin {
-        s1;
+        s1.readFE();
         on Locales(0) {
           begin {
-            s2;
+            s2.readFE();
             writeln("executing on locale ", here.id);
           }
         }
         writeln("executing on locale ", here.id);
-        s2 = true;
+        s2.writeEF(true);
       }
     }
     writeln("executing on locale ", here.id);
-    s1 = true;
+    s1.writeEF(true);
   }
 }

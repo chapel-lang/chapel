@@ -7,7 +7,7 @@ proc foo() {
   on Locales(1) {
     begin {
       writeln(here.id, " x=", x);
-      i$ = 1;
+      i$.writeEF(1);
     }
   }
   writeln(i$.readFF()); // wait for it to become full
