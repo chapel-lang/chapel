@@ -495,7 +495,7 @@ module ChapelDistribution {
       }
     }
 
-    // this is a helper function for bulkAdd functions in sparse subdomains that
+    // this is a helper function for bulkAdd functions in sparse subdomains, which
     // store the nonzeros in order based on their major and minor index
     // NOTE:it assumes that nnz array of the sparse domain has non-negative
     // indices. If, for some reason it changes, this function and bulkAdds have to
@@ -515,7 +515,7 @@ module ChapelDistribution {
         for (i, p) in zip(inds, indivInsertPts)  {
           if i == lastInd then p = -1;
           else lastInd = i;
-       }
+        }
       }
 
       forall (i,p) in zip(inds, indivInsertPts) {

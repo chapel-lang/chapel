@@ -601,7 +601,6 @@ proc dot(a, B: []) where isNumeric(a) {
 
 /* Explicit matrix-(matrix|vector) multiplication */
 private proc matMult(A: [?Adom] ?eltType, B: [?Bdom] eltType) {
-//writeln("matMult: Adom.rank = ", Adom.rank, ", Bdom.rank=", Bdom.rank);
   // matrix-vector
   if Adom.rank == 2 && Bdom.rank == 1 then
     return _matvecMult(A, B);
@@ -2247,7 +2246,6 @@ module Sparse {
   */
   proc CSRDomain(Dom: domain) where Dom.rank == 2 && isCSDom(Dom) {
     var csrDom: sparse subdomain(Dom.parentDom) dmapped CS(sortedIndices=false);
-//writeln("CSRDomain in LA 2250, csrDom = ", csrDom, ", Dom = ", Dom);
     csrDom += Dom;
     return csrDom;
   }
@@ -2315,45 +2313,32 @@ module Sparse {
 
   /* Return a CSR matrix constructed from internal representation:
 
-    - ``rowRange``: index ranges for rows
-    - ``colRange``: index ranges for cols
+    - ``shape``: index ranges for rows and columns
     - ``data``: non-zero element values
     - ``indices``: non-zero row pointers
     - ``indptr``: index pointers
 
   */
+  // ?fromMMS: do we need to deprecate the shape: 2*int version of this
   proc CSRMatrix(shape: 2*range, data: [?nnzDom] ?eltType, indices: [nnzDom], indptr: [?indDom])
-//  proc CSRMatrix(rowRange: range, colRange: range, data: [?nnzDom] ?eltType,
-//                 indices: [nnzDom], indptr: [?indDom])
         where indDom.rank == 1 && nnzDom.rank == 1 {
-//writeln("LA, 2326, CSRMatrix, nnzDom=",nnzDom,", indices=", indices, ", indptr=",indptr);
     var ADom = CSRDomain(shape, indices, indptr);
-//writeln("LA, 2326, CSRMatrix, ADom=",ADom);
     var A: [ADom] eltType;
     A.data = data;
     return A;
   }
 
   /* Return a CSR domain constructed from internal representation */
+  // ?fromMMS: do we need to deprecate the shape: 2*int version of this
   proc CSRDomain(shape: 2*range, indices: [?nnzDom], indptr: [?indDom])
         where indDom.rank == 1 && nnzDom.rank == 1 {
-//writeln("LA, 2335, CSRDomain, nnzDom=",nnzDom);
     const (row_range, col_range) = shape;
     const D = {row_range, col_range};
     var ADom: sparse subdomain(D) dmapped CS(sortedIndices=false);
 
     ADom.startIdxDom = {row_range.low..row_range.high+1};
     ADom.startIdx = indptr;
-/* MMS, take out
-    const (hasZero, zeroIndex) = indices.find(0);
-    if hasZero {
-      ADom._nnz = zeroIndex-1;
-    } else {
-      ADom._nnz = indices.size;
-    }
-*/
     ADom._nnz = indices.size;
-//writeln("    ADom._nnz=", ADom._nnz);
     ADom.nnzDom = {0..#indices.size};
     ADom.idx = indices;
 
@@ -2450,14 +2435,6 @@ module Sparse {
     }
     return Y;
   }
-/* MMS
-proc writeSpsArr(A: [?ADom] ?eltType) where isCSArr(A) {
-  for (i,j) in ADom {
-    write(A(i,j), " ");
-    if (j == ADom.dim(1).high) then writeln();
-  }
-  writeln();
-}*/
 
   /* Sparse matrix-matrix multiplication.
 
@@ -2475,28 +2452,15 @@ proc writeSpsArr(A: [?ADom] ?eltType) where isCSArr(A) {
     where isCSArr(A) && isCSArr(B)
   {
     type idxType = ADom.idxType;
-/*writeln("_csrmatmatMult: A=");
-writeSpsArr(A);
-writeln("_csrmatmatMult: B=");
-writeSpsArr(B);
-*/
 
     // The ranges for the inner dimensions need to match up
-//writeln("_csrmatmatMult: ADom.dim(0) = ", ADom.dim(0));
-//writeln("_csrmatmatMult: A.dom = ", A.dom);
-//writeln("    B.dom=", B.dom);
+    const row_range = ADom.dim(0);
+    const inner_Arange = ADom.dim(1);
+    const inner_Brange = BDom.dim(0);
+    const col_range = BDom.dim(1);
 
-    const row_range = ADom.dim(0);     // MMS: used to be M with assumptions on range
-    const inner_Arange = ADom.dim(1);  // used to be K1
-    const inner_Brange = BDom.dim(0);  // used to be K2
-    const col_range = BDom.dim(1);     // used to be N
-
-//writeln("_csrmatmatMult: inner_Arange = ", inner_Arange, ", inner_Brange=", inner_Brange);
     if inner_Arange != inner_Brange then
         halt("Mismatched shape in sparse matrix-matrix multiplication");
-
-//    const (M, K1) = A.shape,
-//          (K2, N) = B.shape;
 
     // TODO: Return empty (row_range, col_range) sparse array if A or B size == 0
 
@@ -2507,7 +2471,6 @@ writeSpsArr(B);
      */
 
     // major axis (or row) for result matrix
-    //var indPtr: [1..M+1] idxType;
     var indPtr: [row_range.low..row_range.high+1] idxType;
 
     pass1(A, B, indPtr);
@@ -2517,7 +2480,7 @@ writeSpsArr(B);
     var data: [0..#nnz] eltType;
 
     pass2(A, B, indPtr, ind, data);
-//writeln("DEBUG, LA, after pass2, indPtr=",indPtr,", ind=",ind,", data=", data);
+
     var C = CSRMatrix((row_range, col_range), data, ind, indPtr);
 
     if C.domain.sortedIndices {
@@ -2537,24 +2500,19 @@ writeSpsArr(B);
     proc _array.indPtr ref return this.dom.startIdx;
     proc _array.ind ref return this.dom.idx;
 
-    const row_range = ADom.dim(0);     // MMS: used to be M with assumptions on range
-    const inner_Arange = ADom.dim(1);  // used to be K1
-    const inner_Brange = BDom.dim(0);  // used to be K2
-    const col_range = BDom.dim(1);     // used to be N
+    const row_range = ADom.dim(0);
+    const inner_Arange = ADom.dim(1);
+    const inner_Brange = BDom.dim(0);
+    const col_range = BDom.dim(1);
 
-//    const (M, K1) = A.shape,
-//          (K2, N) = B.shape;
     type idxType = ADom.idxType;
-//    var mask: [1..N] idxType;
+
     var mask: [col_range.low..col_range.high] idxType;
-    mask = col_range.low-1;  // init to something not in col range
-//    indPtr[1] = 1;
+    mask = col_range.low-1;    // init to something not in col range
     indPtr[col_range.low] = 0; // col indices definitely start at 0
-//    var nnz = 1: idxType;
     var nnz = 0: idxType;
 
     // Rows of output matrix C
-//    for i in 1..M {
     for i in row_range {
       var row_nnz = 0;
       const Apos_range = A.indPtr[i]..A.indPtr[i+1]-1;  // nonzero position range
@@ -2577,7 +2535,6 @@ writeSpsArr(B);
       nnz = nnz + row_nnz;
       indPtr[i+1] = nnz;
     }
-//writeln("DEBUG: LA, end of pass1, indPtr = ", indPtr);
   }
 
   /* Populate indices and data */
@@ -2590,12 +2547,10 @@ writeSpsArr(B);
 
     type idxType = ADom.idxType;
 
-    const row_range = ADom.dim(0);     // MMS: used to be M with assumptions on range
-    const inner_Arange = ADom.dim(1);  // used to be K1
-    const inner_Brange = BDom.dim(0);  // used to be K2
-    const col_range = BDom.dim(1);     // used to be N
-//    const (M, K1) = A.shape,
-//          (K2, N) = B.shape;
+    const row_range = ADom.dim(0);
+    const inner_Arange = ADom.dim(1);
+    const inner_Brange = BDom.dim(0);
+    const col_range = BDom.dim(1);
 
     const cols = col_range;
 
@@ -2623,6 +2578,7 @@ writeSpsArr(B);
 
           sums[k] += v*B.data[kk];
 
+          // ?fromMMS: what is all of this pushing about?
           // push k to stack
           if next[k] == -1 {
             next[k] = head;
@@ -2631,7 +2587,7 @@ writeSpsArr(B);
           }
         }
       }
-//writeln("DEBUG, LA, pass2, length=",length,", head=",head,", next=", next);
+
       // Recounting is faster than accessing 'nnz in indPtr[i]..indPtr[i+1]-1'
       for 1..length {
         ind[nnz] = head;
@@ -2655,9 +2611,7 @@ writeSpsArr(B);
   private proc sortIndices(ref A: [?Dom] ?eltType) where isCSArr(A) {
     use Sort;
 
-    const row_range = Dom.dim(0);  // MMS: M
-//    const col_range = ADom.dim(1);  // MMS: N
-//    const (M, N) = A.shape;
+    const row_range = Dom.dim(0);
 
     proc _array.indPtr ref return this.dom.startIdx;
     proc _array.ind return this.dom.idx;
@@ -2692,7 +2646,6 @@ writeSpsArr(B);
 
   /* Transpose CSR matrix */
   proc transpose(A: [?Adom] ?eltType) where isCSArr(A) {
-//writeln("DEBUG: executing transpose");
     var Dom = transpose(Adom);
     var B: [Dom] eltType;
 

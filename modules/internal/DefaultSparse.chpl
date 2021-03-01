@@ -43,6 +43,7 @@ module DefaultSparse {
     proc init(param rank, type idxType, dist: unmanaged DefaultDist,
         parentDom: domain) {
       super.init(rank, idxType, parentDom);
+
       this.dist = dist;
     }
 
@@ -271,7 +272,7 @@ module DefaultSparse {
       }
 
       bulkAdd_prepareInds(inds, dataSorted, isUnique, Sort.defaultComparator);
-//writeln("DEBUG: bulkAdd, inds = ", inds);
+
       if _nnz == 0 {
 
         const dupCount = if isUnique then 0 else _countDuplicates(inds);
@@ -300,7 +301,6 @@ module DefaultSparse {
 
       const (actualInsertPts, actualAddCnt) =
         __getActualInsertPts(this, inds, isUnique);
-//writeln("DEBUG: bulkAdd, actualInsertPts = ", actualInsertPts, ", actualAddCnt=", actualAddCnt);
 
       const oldnnz = _nnz;
       _nnz += actualAddCnt;
@@ -317,12 +317,9 @@ module DefaultSparse {
         if newIndIdx == indsDom.low-1 then break; //there were duplicates -- now done
         newLoc = actualInsertPts[newIndIdx];
       }
-//writeln("DEBUG: bulkAdd, newLoc = ", newLoc);
       var arrShiftMap: [{0..#oldnnz}] int; //to map where data goes
 
       for i in 0..#_nnz by -1 {
-//writeln("DEBUG: bulkAdd, i = ", i, ", _indices=", _indices);
-//writeln("DEBUG: bulkAdd, oldIndIdx = ", oldIndIdx, ", newLoc=", newLoc,", indsDom =", indsDom);
         if oldIndIdx >= 0 && i > newLoc {
           //shift from old values
           _indices[i] = _indices[oldIndIdx];
