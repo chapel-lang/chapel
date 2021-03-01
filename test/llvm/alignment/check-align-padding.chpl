@@ -44,7 +44,7 @@ record int64aligned16b {
 }
 
 proc compute(ref arg) {
-  writeln(arg);
+  writeln("Working with ", arg.type:string, " = ", arg);
   printFieldOffsets(arg);
 }
 

@@ -1,20 +1,20 @@
-(field1 = 0, field2 = 0)
+Working with int8int64 = (field1 = 0, field2 = 0)
 field1: int(8) = 0
 field2: int(64) = 8
-(field1 = 0, field2 = 0)
+Working with int8int32 = (field1 = 0, field2 = 0)
 field1: int(8) = 0
 field2: int(32) = 4
-(field1 = 0, field2 = 0)
+Working with int32int64 = (field1 = 0, field2 = 0)
 field1: int(32) = 0
 field2: int(64) = 8
-(field1 = 0, field2 = 0, field3 = 0)
+Working with int8int8int64 = (field1 = 0, field2 = 0, field3 = 0)
 field1: int(8) = 0
 field2: int(8) = 1
 field3: int(64) = 8
-(field1 = 0, field2 = 0, field3 = 0)
+Working with int8int16int64 = (field1 = 0, field2 = 0, field3 = 0)
 field1: int(8) = 0
 field2: int(16) = 2
 field3: int(64) = 8
-(field1 = 0, field2 = (x = 0, a = 0))
+Working with int64aligned16b = (field1 = 0, field2 = (x = 0, a = 0))
 field1: int(64) = 0
 field2: aligned16test = 16
