@@ -83,6 +83,7 @@ public:
   }
 
   inline const char* stringLoc() const {
+    // FIXME why 256 characters?
     const int tmpBuffSize = 256;
     char tmpBuff[tmpBuffSize];
 
