@@ -2294,7 +2294,8 @@ static void transformIfVar(CallExpr* primIfVar) {
 
   VarSymbol* borrow = newTemp("ifvar_borrow");
   cond->insertBefore(new DefExpr(borrow));
-  cond->insertBefore("'move'(%S,chpl_checkBorrowIfVar(%E))", borrow, rhsExpr);
+  cond->insertBefore("'move'(%S,chpl_checkBorrowIfVar(%E,%S))",
+                     borrow, rhsExpr, gFalse);
 
   primIfVar->replace(new SymExpr(borrow));
 

@@ -1,0 +1,8 @@
+cl = {elm = 100, next = {elm = 101, next = {elm = 102, next = nil}}}
+c0 = nil
+gl = {elm = hi, next = {elm = there, next = {elm = world, next = nil}}}
+g0 = nil
+consume cl: 100 101 102
+consume c0:
+consume gl: hi there world
+consume g0:
