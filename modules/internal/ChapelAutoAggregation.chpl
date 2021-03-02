@@ -60,15 +60,6 @@ module ChapelAutoAggregation {
     return nil;  // return type signals that we shouldn't aggregate
   }
 
-  private proc isHeterogeneousTuple(type t) param {
-    if (isTuple(t) && !isHomogeneousTuple(t)) {
-      return true;
-    }
-    else {
-      return false;
-    }
-  }
-
   private proc elemTypeSupportsAggregation(type t) param {
     return isPODType(t);
   }
