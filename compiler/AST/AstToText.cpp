@@ -932,6 +932,20 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
         appendExpr(expr->castTo(), printingType);
       }
 
+      else if (strcmp(fnName, "chpl_by")                      == 0)
+      {
+        appendExpr(expr->get(1), printingType);
+        mText += " by ";
+        appendExpr(expr->get(2), printingType);
+      }
+
+      else if (strcmp(fnName, "chpl_align")                   == 0)
+      {
+        appendExpr(expr->get(1), printingType);
+        mText += " align ";
+        appendExpr(expr->get(2), printingType);
+      }
+
       else if (strcmp(fnName, "chpl__atomicType")             == 0)
       {
         mText += "atomic ";

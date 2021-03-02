@@ -1,0 +1,4 @@
+r2 = (y = {loc = LOCALE0}, yloc = LOCALE0)
+r2 has locale LOCALE0
+r2.y = {loc = LOCALE0}
+r2.y has locale LOCALE0

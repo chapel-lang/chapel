@@ -15,12 +15,12 @@ proc typeFunUse(i:int)    type  return [1..i] int;
 
 var sv1, sv2, sv3: sync int;
 
-writeln(paramFun(sv1));
+writeln(paramFun(sv1.readXX()));
 
-sv2 = 2;
-type t2 = typeFunNoUse(sv2);
+sv2.writeEF(2);
+type t2 = typeFunNoUse(sv2.readFE());
 writeln(t2:string);
 
 sv3 = 3;
-type t3 = typeFunUse(sv3);
+type t3 = typeFunUse(sv3.readFE());
 writeln(t3:string);

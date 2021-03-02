@@ -89,10 +89,10 @@ proc calculate(data, param nclSize) {
     for i in tid..(data.size-nclSize) by numTasks do
       myFreqs[hash(data, i, nclSize)] += 1;
 
-    lock$;        // acquire lock
+    lock$.readFE();        // acquire lock
     for (k,v) in myFreqs.items() do
       freqs[k] += v;
-    lock$ = true; // release lock
+    lock$.writeEF(true)  ; // release lock
   }
 
   return freqs;

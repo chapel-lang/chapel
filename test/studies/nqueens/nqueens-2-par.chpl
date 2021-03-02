@@ -34,7 +34,7 @@ proc main() {
 // and print their count.
 //
 proc countSolutions(boardSize: int, showEachSoln: bool) {
-  solutionCount$ = 0;
+  solutionCount$.writeEF(0);
   showEachSolution = showEachSoln;
   if showEachSoln then
     writeln("Solving N Queens for N=", boardSize,
@@ -64,7 +64,7 @@ proc tryQueenInNextRow(board: unmanaged Board): void {
     if board.placeNextIfLegal(col) {
       if board.lastfilled == board.boardSize {
         // found a complete solution
-        solutionCount$ += 1;
+        solutionCount$.writeEF(solutionCount$.readFE() + 1);
         if showEachSolution then writeln(board);
       } else if board.lastfilled == parRow {
         taskCount += 1;

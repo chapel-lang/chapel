@@ -27,8 +27,8 @@ proc set_then_sync() {
 
   forall i in 0..#N {
     tmp.localAccess[i] = A[rindex.localAccess[i]];
-    x = 1;      // don't optimize -- other thread could assume tmp updated
-                // after x is set
+    x.writeEF(1); // don't optimize -- other thread could assume tmp updated
+                  // after x is set
   }
 }
 set_then_sync();
@@ -41,8 +41,8 @@ proc set_then_single() {
 
   forall i in 0..#N {
     tmp.localAccess[i] = A[rindex.localAccess[i]];
-    x = 1;      // don't optimize -- other thread could assume tmp updated
-                // after x is set
+    x.writeEF(1); // don't optimize -- other thread could assume tmp updated
+                  // after x is set
   }
 }
 set_then_single();
@@ -314,9 +314,9 @@ proc mini_sync() {
 
   forall r in 1..M {
     // Acquire the lock
-    myLock = 1;
+    myLock.writeEF(1);
     // Release the lock
-    myLock = 0;
+    myLock.writeEF(0);
     // release the lock
     count.add(1);
   }
@@ -330,9 +330,9 @@ proc mini_single() {
 
   forall r in 1..M {
     // Acquire the lock
-    myLock = 1;
+    myLock.writeEF(1);
     // Release the lock
-    myLock = 0;
+    myLock.writeEF(0);
     // release the lock
     count.add(1);
   }

@@ -11,12 +11,12 @@ module Main {
 
   proc main {
     coforall 1..2 {
-      s$ = 1; // grab the lock
+      s$.writeEF(1); // grab the lock
       writeln("globaLib   = ", globalLib);
       writeln("globalMain = ", globalMain);
       updateLib();
       updateMain();
-      s$;
+      s$.readFE();
     }
   }
 }

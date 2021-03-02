@@ -509,7 +509,7 @@ static void markTypesWithDefaultInitEqOrAssign(FnSymbol* fn);
 static void resolveAlsoConversions(FnSymbol* fn, CallExpr* forCall);
 
 void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
-  if (fn->isResolved() == false) {
+  if (! fn->isResolved() && ! fn->hasFlag(FLAG_CG_INTERIM_INST)) {
     if (fn->id == breakOnResolveID) {
       printf("breaking on resolve fn %s[%d] (%d args)\n",
              fn->name, fn->id, fn->numFormals());
@@ -2709,12 +2709,17 @@ static void insertInitConversion(Symbol* to, Symbol* toType, Symbol* from,
       insertBefore->insertBefore(new DefExpr(tmp));
 
       CallExpr* readCall = NULL;
-      if (isSyncType(fromValType))
+      if (isSyncType(fromValType)) {
         readCall = new CallExpr("readFE", gMethodToken, from);
-      else if (isSingleType(fromValType))
+        USR_WARN(to, "implicitly reading from a sync is deprecated; "
+                     "apply a 'read\?\?()' method to the actual");
+      } else if (isSingleType(fromValType)) {
         readCall = new CallExpr("readFF", gMethodToken, from);
-      else
+        USR_WARN(to, "implicitly reading from a single is deprecated; "
+                     "apply a 'read\?\?()' method to the actual");
+      } else {
         INT_FATAL("not handled");
+      }
 
       newCalls.push_back(readCall);
       CallExpr* setTmp = new CallExpr(PRIM_ASSIGN, tmp, readCall);

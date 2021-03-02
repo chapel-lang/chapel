@@ -25,7 +25,7 @@ showCs();
 for i in Cs.domain {
   if var c = Cs[i] {
     c.show();
-    c = globalC.borrow(); // does not affect Cs
+    c = globalC; // borrows; does not affect Cs
     c.show();
   }
 }

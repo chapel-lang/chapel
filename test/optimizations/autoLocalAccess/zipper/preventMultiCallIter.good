@@ -13,6 +13,9 @@ Start analyzing forall (preventMultiCallIter.chpl:47)
 |
 End analyzing forall (preventMultiCallIter.chpl:47)
 
+Local access attempt reverted. All static checks failed or code is unreachable.(preventMultiCallIter.chpl:48)
+Local access attempt reverted. All static checks failed or code is unreachable.(preventMultiCallIter.chpl:49)
+Local access attempt reverted. All static checks failed or code is unreachable.(preventMultiCallIter.chpl:50)
 leader iterator invoked
 follower iterator invoked
 Custom this was called

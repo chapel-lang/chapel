@@ -1784,6 +1784,8 @@ static void checkForErroneousInitCopies() {
     if (!fn->inTree())
       continue;
 
+    computeAllCallSites(fn);
+
     forv_Vec(CallExpr, call, *fn->calledBy) {
       if (SymExpr* actual = getActualBeforeCopyInit(call, formal)) {
 

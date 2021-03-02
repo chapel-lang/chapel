@@ -70,6 +70,10 @@ public:
   // when the same interface is implemented by different ConstrainedTypes
   //
   std::vector<SymbolMap> repsForIfcSymbols;
+
+  // "Interim instantiation" copies of CG functions invoked from this function
+  // for those calls that rely on this function's interfaceConstraints.
+  std::set<FnSymbol*> invokedCGfns;
 };
 
 class FnSymbol final : public Symbol {

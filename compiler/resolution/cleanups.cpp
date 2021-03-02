@@ -235,7 +235,9 @@ static void removeRandomPrimitives() {
 }
 
 
-static void removeInterfaceCode() {
+// remove ASTs that supported CG (constrained generics / interfaces)
+// see also cleanupGenericStandins()
+static void cleanupConstrainedGenerics() {
   // This should be done before removing InterfaceSymbols
   // so we can get at and remove refTypes.
   for_alive_in_Vec(ConstrainedType, ct, gConstrainedTypes) {
@@ -971,7 +973,7 @@ void saveGenericSubstitutions() {
 }
 
 void pruneResolvedTree() {
-  removeInterfaceCode();
+  cleanupConstrainedGenerics();
 
   removeTiMarks();
 

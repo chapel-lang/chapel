@@ -23,7 +23,7 @@ sync {
   sleep( 3);
 
   writeln( "1: woke up. writing ", i);
-  d.s = i;
+  d.s.writeEF(i);
 
   sleep( 1);
 

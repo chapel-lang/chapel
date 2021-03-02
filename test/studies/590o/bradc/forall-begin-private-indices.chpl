@@ -9,19 +9,19 @@ var lock: sync int = 0;
 proc main {
   forall z in AllIndices with (ref StartIndices, ref EndIndices) do {
     if sourceText[z] == '<' then {
-      lock;
+      lock.readFE();
       StartIndices += z;
       if z > 0 && sourceText[z-1] != ">" then
       EndIndices += z-1;
-      lock = 0;
+      lock.writeEF(0);
     }
     else if sourceText[z] == '>' then {
-      lock;
+      lock.readFE();
       EndIndices += z;
       if z < (sourceText.size-1) &&
       sourceText[z+1] != "<"  then StartIndices +=
       z+1;
-      lock = 0;
+      lock.writeEF(0);
     }
   }
 

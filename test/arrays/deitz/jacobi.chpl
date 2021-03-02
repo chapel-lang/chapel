@@ -25,13 +25,13 @@ if (verbose) {
 var iteration : int = 0;
 var delta : sync real = 1.0;
 
-while (delta > epsilon) {
+while (delta.readFE() > epsilon) {
   forall (i,j) in R {
     Temp(i,j) = (A(i-1,j) + A(i+1,j) + A(i,j-1) + A(i,j+1)) / 4.0;
   }
-  delta = 0.0;
+  delta.writeEF(0.0);
   forall (i,j) in R {
-    delta = max(delta.readFE(), Temp(i,j)-A(i,j));
+    delta.writeEF(max(delta.readFE(), Temp(i,j)-A(i,j)));
     A(i,j) = Temp(i,j);
   }
   iteration += 1;

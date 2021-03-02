@@ -5,10 +5,10 @@ class LastOp: ReduceScanOp {
 
   proc init(type eltType) {
     this.eltType = eltType;
-    count$ += 1;
+    count$.writeEF(count$.readFE() + 1);
   }
   proc deinit() {
-    count$ -= 1;
+    count$.writeEF(count$.readFE() -  1);
   }
   proc identity {
     return last;
@@ -35,7 +35,7 @@ proc main {
   var x: int;
   x = LastOp reduce A;
 
-  if count$ == 0 then
+  if count$.readFE() == 0 then
     writeln("Deleted every reduction class.");
   else
     halt("didn't delete every reduction class");

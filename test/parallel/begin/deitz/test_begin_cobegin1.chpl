@@ -6,10 +6,10 @@ proc main {
     begin with (ref x) {
       x = 2;
       writeln((x, z));
-      s = 1;
+      s.writeEF(1);
     }
     {
-      s;
+      s.readFE();
       z = x;
     }
   }

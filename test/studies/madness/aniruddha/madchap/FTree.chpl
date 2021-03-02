@@ -82,28 +82,28 @@ class LocTree {
 
      */
     proc this(node: Node) ref {
-        oneAtATime$;
+        oneAtATime$.readFE();
         if !nodes.contains(node) {
             nodes += node;
         }
        
         ref c = coeffs[node];
-        oneAtATime$ = true;
+        oneAtATime$.writeEF(true);
         return c;
     }
     proc this(node: Node) const ref {
-        oneAtATime$;
+        oneAtATime$.readFE();
         if !nodes.contains(node) {
           // This is a getter so it shouldn't be modifying what
           // we return, should be safe to return the zero vector.
           // FIXME: Zeroes should really be a const, but can't
           //        return const from a var fcn.
-          oneAtATime$ = true;
+          oneAtATime$.writeEF(true);
           return zeroes;
         }
        
         ref c = coeffs[node];
-        oneAtATime$ = true;
+        oneAtATime$.writeEF(true);
         return c;
     }
  
@@ -140,9 +140,9 @@ class LocTree {
     /** Check if there are coefficients in box (lvl, idx)
      */
     proc has_coeffs(node: Node) {
-        oneAtATime$;
+        oneAtATime$.readFE();
         const b = nodes.contains(node);
-        oneAtATime$ = true;
+        oneAtATime$.writeEF(true);
         return b;
     }
 
@@ -150,9 +150,9 @@ class LocTree {
         does not exist, it is ignored.
      */
     proc remove(node: Node) {
-        oneAtATime$;
+        oneAtATime$.readFE();
         if nodes.contains(node) then nodes.remove(node);
-        oneAtATime$ = true;
+        oneAtATime$.writeEF(true);
     }
 
     iter node_iter(lvl: int) {

@@ -153,3 +153,27 @@ or
 
 .. data:: var R3TypedArgDefault: R3(1, 2, 3) = new R3(1, 2, 3)
 
+.. data:: var boundedRange = 1..10
+
+.. data:: var lowBoundedRange = 1..
+
+.. data:: var highBoundedRange = ..10
+
+.. data:: var unboundedRange = ..
+
+.. data:: var boundedRangeBy = 1..10 by 2
+
+.. data:: var lowBoundedRangeBy = 1.. by 2
+
+.. data:: var highBoundedRangeBy = ..10 by 2
+
+.. data:: var unboundedRangeBy = .. by 2
+
+.. data:: var boundedRangeByAlign = 1..10 by 2 align 1
+
+.. data:: var lowBoundedRangeByAlign = 1.. by 2 align 1
+
+.. data:: var highBoundedRangeByAlign = ..10 by 2 align 1
+
+.. data:: var unboundedRangeByAlign = .. by 2 align 1
+
