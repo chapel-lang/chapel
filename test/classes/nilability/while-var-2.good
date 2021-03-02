@@ -1,0 +1,17 @@
+showU1 cl: 100 101 102
+showU1 c0:
+showU1 gl: hi there world
+showU1 g0:
+showU2 cl: 100 101 102
+showU2 c0:
+showU2 gl: hi there world
+showU2 g0:
+cl = {elm = 100, next = {elm = 101, next = {elm = 102, next = nil}}}
+c0 = nil
+gl = {elm = hi, next = {elm = there, next = {elm = world, next = nil}}}
+g0 = nil
+consume cl: 100 101 102
+consume c0:
+consume gl: hi there world
+consume g0:
+consume globalCL: 30 31 32
