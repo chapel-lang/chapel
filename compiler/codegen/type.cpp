@@ -434,7 +434,7 @@ void AggregateType::codegenDef() {
         stype->setBody(params);
 
         if (aligns.size() == params.size()) {
-          for (int i = 0; i < params.size(); i++) {
+          for (size_t i = 0; i < params.size(); i++) {
             unsigned offset = info->module->getDataLayout().getStructLayout(stype)->getElementOffset(i);
 #if HAVE_LLVM_VER >= 100
             unsigned align = 1 << Log2(aligns[i].valueOrOne());
