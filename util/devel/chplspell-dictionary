@@ -3184,6 +3184,7 @@ bufit
 
 FILEID: f8d11ee0-1f2f-11e6-a3a6-10ddb1d4c3d5
 ffff
+fullmatch
 splitted
 
 FILEID: e9347814-1f30-11e6-a3a6-10ddb1d4c3d5
@@ -3723,6 +3724,7 @@ parenthesesless
 FILEID: b4520e6e-5076-11e6-b83e-bc5ff4765d0d
 adaptative
 afee
+argsort
 binarytrees
 chapcs
 chplgmp
@@ -4526,6 +4528,7 @@ vandermonde
 vlcplx
 vrcplx
 xdom
+xref
 ydom
 
 FILEID: 0e29860c-1a83-11e7-980e-10ddb1d4c3d5
@@ -4593,6 +4596,7 @@ inddef
 svdef
 tcall
 tpvs
+tupler
 wmikanik
 xtra
 
@@ -4613,6 +4617,8 @@ subnext
 todelete
 
 FILEID: a4c82866-83ce-11e7-ad1f-10ddb1d4c3d5
+csat
+indx
 multipledestructor
 
 FILEID: 733029d2-8aba-11e7-b3f1-10ddb1d4c3d5
@@ -4752,6 +4758,7 @@ cqes
 cswap
 ctok
 ctxs
+dlvr
 dsrd
 dupinfo
 enocq
@@ -4773,6 +4780,7 @@ ofiwg
 olen
 opnd
 pkey
+pmem
 pmichkret
 pmichksuccess
 procid
@@ -4787,6 +4795,7 @@ rmaunord
 rmawrite
 rxed
 schpl
+sdesirable
 spages
 sread
 statsnodes
@@ -4949,6 +4958,7 @@ maxiters
 FILEID: f765ca54-d1a9-11e8-954d-10ddb1d4c3d5
 bdynamic
 casttype
+dndebug
 ffast
 fsin
 fsyntax
@@ -4959,8 +4969,10 @@ ipra
 isysroot
 lessless
 maino
+mfile
 mpicxx
 ploc
+ptxas
 qunused
 srcm
 tlii
@@ -5365,9 +5377,13 @@ FILEID: 7356b18e-62e2-11eb-a43d-6f93f4244f4b
 logln
 
 FILEID: 94331c44-62e2-11eb-a43d-6f93f4244f4b
+arglist
+atype
+csat
 idstring
 impls
 indx
+simplements
 symstring
 
 FILEID: b89daf54-62e2-11eb-a43d-6f93f4244f4b
@@ -5383,6 +5399,17 @@ strval
 FILEID: 87c9eef0-62e3-11eb-a43d-6f93f4244f4b
 elemsper
 
+FILEID: a8be55e8-7b38-11eb-91c9-15da80cfac4b
+ginstantiation
+indx
+
+FILEID: 5853ce2a-7b39-11eb-91c9-15da80cfac4b
+xnext
+xprev
+
+FILEID: 622c50fc-7b39-11eb-91c9-15da80cfac4b
+maxlargc
+
 NATURAL:
 aarch
 abcd
@@ -5391,6 +5418,7 @@ ablock
 accumgen
 achtung
 acknowledgements
+acons
 acosh
 acqs
 actuals
@@ -5666,6 +5694,7 @@ celsius
 certinfo
 cfgfile
 cflags
+cgfun
 cgprint
 chad
 chameneos
@@ -5784,6 +5813,7 @@ copyleft
 copyout
 copypostfields
 cory
+covariant
 coverity
 cppflags
 cppreference
@@ -6189,6 +6219,8 @@ fannkuch
 fannkuchredux
 fasta
 fastaredux
+fatbin
+fatbinary
 faux
 fbody
 fcntl
@@ -6325,9 +6357,13 @@ gettimeofday
 gettimer
 getvalid
 gflop
+gfns
 gfun
+gfuns
+ggpu
 ghangas
 gilbert
+ginstantiation
 github
 gitignore
 gitter
@@ -6465,6 +6501,7 @@ iface
 ifdefs
 ified
 ifneq
+ifun
 ignorecase
 igroup
 iifc
@@ -7612,6 +7649,7 @@ schneier
 schubert
 schur
 sclean
+scolon
 sconfig
 scontrol
 scopeless
@@ -7791,6 +7829,7 @@ stackoverflow
 stacksize
 stacktrace
 stallman
+standins
 stanford
 starkey
 startbit

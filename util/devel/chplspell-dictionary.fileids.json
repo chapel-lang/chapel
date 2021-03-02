@@ -146,6 +146,9 @@
   "ed3f86d6-1d7f-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/include/parser.h"
   ],
+  "a8be55e8-7b38-11eb-91c9-15da80cfac4b": [
+    "compiler/include/resolution.h"
+  ],
   "7e01f6c6-4110-11e8-af7e-10ddb1d4c3d5": [
     "compiler/include/symbol.h"
   ],
@@ -550,6 +553,9 @@
   "ce35097e-8645-11e8-ad82-10ddb1d4c3d5": [
     "modules/internal/ChapelBase.chpl"
   ],
+  "5853ce2a-7b39-11eb-91c9-15da80cfac4b": [
+    "modules/internal/ChapelDistribution.chpl"
+  ],
   "6f2ab8ea-83ce-11e7-ad1f-10ddb1d4c3d5": [
     "modules/internal/ChapelError.chpl"
   ],
@@ -795,6 +801,9 @@
   ],
   "a37c5ce4-f6a4-11e8-8d7e-10ddb1d4c3d5": [
     "runtime/src/launch/gasnetrun_common/gasnetrun_common.h"
+  ],
+  "622c50fc-7b39-11eb-91c9-15da80cfac4b": [
+    "runtime/src/launch/lsf-gasnetrun_ibv/launch-lsf-gasnetrun_ibv.c"
   ],
   "b7c60ac2-2403-11e6-a3a6-10ddb1d4c3d5": [
     "runtime/src/launch/mpirun/launch-mpirun.c"
