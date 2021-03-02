@@ -70,35 +70,7 @@ module ChapelAutoAggregation {
   }
 
   private proc elemTypeSupportsAggregation(type t) param {
-    if (t == int || t == uint || t == real || t == bool) {
-      return true;
-    }
-    if (isHomogeneousTuple(t)) {
-      for param i in 0..<t.size {
-        if (!elemTypeSupportsAggregation(t[i])) {
-          return false;
-        }
-      }
-      return true;
-    }
-    if (isHeterogeneousTuple(t)) {
-      return elemTypeSupportsAggregation(t, 0);
-    }
-    
-    return false;
-  }
-
-  private proc elemTypeSupportsAggregation(type t, param dim: int) param
-      where isHeterogeneousTuple(t) {
-
-    if (dim+1 == t.size) {
-      return elemTypeSupportsAggregation(t[dim]);
-    }
-    else {
-      return elemTypeSupportsAggregation(t[dim]) &&
-             elemTypeSupportsAggregation(t, dim+1);
-
-    }
+    return isPODType(t);
   }
 
   proc chpl__arrayIteratorYieldsLocalElements(x) param {
