@@ -72,6 +72,7 @@ extern "C" {
   m(MR,                     "mem reg: regions")                         \
   m(MR_DESC,                "mem reg: local region descs")              \
   m(MR_KEY,                 "mem reg: remote region keys")              \
+  m(MR_BB,                  "mem reg: bounce buffers")                  \
   m(HUGEPAGES,              "hugepages")                                \
   m(TCIPS,                  "tx context alloc/free")                    \
   m(OOB,                    "out-of-band calls")                        \
