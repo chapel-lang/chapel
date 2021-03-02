@@ -19,8 +19,10 @@ End analyzing forall for automatic aggregation [no ALA clone]  (basicSourceAgg.c
 
 Aggregation candidate has confirmed local child [static only ALA clone] (basicSourceAgg.chpl:14)
 LHS is local, RHS is nonlocal. Will use source aggregation [static only ALA clone] (basicSourceAgg.chpl:14)
+Confirmed that this symbol is a local array element (basicSourceAgg.chpl:35)
 Aggregation candidate has confirmed local child  (basicSourceAgg.chpl:35)
 LHS is local, RHS is nonlocal. Will use source aggregation  (basicSourceAgg.chpl:35)
+Confirmed that this symbol is a local array element (basicSourceAgg.chpl:35)
 Aggregation candidate has confirmed local child  (basicSourceAgg.chpl:35)
 LHS is local, RHS is nonlocal. Will use source aggregation  (basicSourceAgg.chpl:35)
 Replaced assignment with aggregation (basicSourceAgg.chpl:35)

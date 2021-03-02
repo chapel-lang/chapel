@@ -28,6 +28,9 @@ Start analyzing forall for automatic aggregation [no ALA clone]  (paramsAreLocal
 End analyzing forall for automatic aggregation [no ALA clone]  (paramsAreLocal.chpl:43)
 
 LHS is nonlocal, RHS is local. Will use destination aggregation  (paramsAreLocal.chpl:14)
+Aggregation attempt reverted. Could not prove that exactly one side of the assignment is local.(paramsAreLocal.chpl:23)
+Aggregation attempt reverted. Could not prove that exactly one side of the assignment is local.(paramsAreLocal.chpl:34)
+Aggregation attempt reverted. Could not prove that exactly one side of the assignment is local.(paramsAreLocal.chpl:45)
 Replaced assignment with aggregation (paramsAreLocal.chpl:14)
 
 Loop 1 -- expecting destination aggregation

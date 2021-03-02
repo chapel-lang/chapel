@@ -373,11 +373,7 @@ const char* BaseAST::fname() const {
 }
 
 const char* BaseAST::stringLoc(void) const {
-  const int tmpBuffSize = 256;
-  char tmpBuff[tmpBuffSize];
-
-  snprintf(tmpBuff, tmpBuffSize, "%s:%d", fname(), linenum());
-  return astr(tmpBuff);
+  return astloc.stringLoc();
 }
 
 

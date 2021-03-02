@@ -38,6 +38,7 @@
 #include "DeferStmt.h"
 #include "driver.h"
 #include "fixupExports.h"
+#include "forallOptimizations.h"
 #include "ForallStmt.h"
 #include "ForLoop.h"
 #include "ImportStmt.h"
@@ -9358,6 +9359,8 @@ void resolve() {
   pruneResolvedTree();
 
   resolveForallStmts2();
+
+  finalizeForallOptimizationsResolution();
 
   freeCache(genericsCache);
   freeCache(promotionsCache);
