@@ -1,12 +1,12 @@
-interface I(type T) {
+interface I(T) {
   proc f(x:T):T;
 }
 
-proc g(x:?U):U where I(U) {
+proc g(x:?U):U where implements I(U) {
   return f(x);
 }
 
-proc h(x:?Z):Z where I(Z) {
+proc h(x:?Z):Z where implements I(Z) {
   return g(x);
 }
 

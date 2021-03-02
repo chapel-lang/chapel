@@ -1,3 +1,12 @@
 where-mixed-override.chpl:8: error: Child.f override keyword present but no superclass method matches signature to override
+where-mixed-override.chpl:8: note: type for argument 'p' does not match
+where-mixed-override.chpl:2: note: base method uses '<any type>'
+where-mixed-override.chpl:8: note: overriding method uses 'int(64)'
 where-mixed-override.chpl:9: error: Child.g override keyword present but no superclass method matches signature to override
+where-mixed-override.chpl:9: note: type for argument 't' does not match
+where-mixed-override.chpl:3: note: base method uses '<any type>'
+where-mixed-override.chpl:9: note: overriding method uses 'string'
 where-mixed-override.chpl:10: error: Child.h override keyword present but no superclass method matches signature to override
+where-mixed-override.chpl:10: note: type for argument 'x' does not match
+where-mixed-override.chpl:4: note: base method uses '<any type>'
+where-mixed-override.chpl:10: note: overriding method uses 'string'

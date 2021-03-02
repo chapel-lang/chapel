@@ -1,0 +1,4 @@
+in outFn, output has type R(int(64))
+x has type R(int(64)) and value (x = 1)
+in outFn, output has type R(int(64))
+x has type R(int(64)) and value (x = 2)

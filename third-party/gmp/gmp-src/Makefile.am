@@ -90,6 +90,7 @@
 #        6.1.1   13:1:3    9:1:5     -
 #        6.1.2   13:2:3    9:2:5     -
 #        6.2.0   14:0:4   10:0:6     -
+#        6.2.1   14:1:4   10:1:6     -
 #
 # Starting at 3:0:0 is a slight abuse of the versioning system, but it
 # ensures we're past soname libgmp.so.2, which was used on Debian GNU/Linux
@@ -103,11 +104,11 @@
 # libgmpxx.so.3.0.4) incrementing, to make it clear which GMP it's from.
 
 LIBGMP_LT_CURRENT    = 14
-LIBGMP_LT_REVISION   = 0
+LIBGMP_LT_REVISION   = 1
 LIBGMP_LT_AGE        = 4
 
 LIBGMPXX_LT_CURRENT  = 10
-LIBGMPXX_LT_REVISION = 0
+LIBGMPXX_LT_REVISION = 1
 LIBGMPXX_LT_AGE      = 6
 
 
@@ -412,7 +413,7 @@ EXTRA_DIST += gen-psqr.c
 
 # Distribute mini-gmp. Test sources copied by dist-hook.
 EXTRA_DIST += mini-gmp/README mini-gmp/mini-gmp.c mini-gmp/mini-gmp.h \
-	      mini-gmp/mini-mpq.c mini-gmp/mini-mpq.h \
+	      mini-gmp/ChangeLog mini-gmp/mini-mpq.c mini-gmp/mini-mpq.h \
 	      mini-gmp/tests/Makefile mini-gmp/tests/run-tests
 
 # Avoid: CVS - cvs directories
@@ -436,7 +437,7 @@ check-mini-gmp:
 	abs_srcdir="`cd $(srcdir) && pwd`" ; \
 	$(MKDIR_P) mini-gmp/tests \
 	&& cd mini-gmp/tests \
-	&& TEST_LIBRARY_PATH="../../.libs"  \
+	&& TEST_SHLIB_DIR="${abs_top_builddir}/.libs" \
 	   $(MAKE) -f "$$abs_srcdir/mini-gmp/tests/Makefile" \
 		VPATH="$$abs_srcdir/mini-gmp/tests" \
 		srcdir="$$abs_srcdir/mini-gmp/tests" \

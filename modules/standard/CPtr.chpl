@@ -36,14 +36,16 @@ module CPtr {
 
 
   /* A Chapel version of a C NULL pointer. */
-  inline proc c_nil:c_void_ptr {
-    return __primitive("cast", c_void_ptr, nil);
+  inline proc c_nil {
+    // TODO: this routine should be deprecated
+    return nil;
   }
 
   /*
      :returns: true if the passed value is a NULL pointer (ie 0).
    */
   inline proc is_c_nil(x):bool {
+    // TODO: this routine should be deprecated
     return __primitive("cast", c_void_ptr, x) == c_nil;
   }
 
@@ -229,7 +231,9 @@ module CPtr {
       lhs[i] = rhs[i];
     }
   }
-  proc =(ref lhs:c_ptr, ref rhs:c_array) where lhs.eltType == rhs.eltType {
+  proc =(ref lhs:c_ptr, ref rhs:c_array) {
+    if lhs.eltType != rhs.eltType then
+      compilerError("element type mismatch in c_array assignment");
     lhs = c_ptrTo(rhs[0]);
   }
 
@@ -239,53 +243,60 @@ module CPtr {
   }
 
   pragma "no doc"
-  inline proc =(ref a:c_ptr, b:c_ptr) { __primitive("=", a, b); }
+  inline proc =(ref lhs:c_ptr, rhs:c_ptr) {
+    if lhs.eltType != rhs.eltType then
+      compilerError("element type mismatch in c_ptr assignment");
+    __primitive("=", lhs, rhs);
+  }
 
   pragma "no doc"
-  inline proc =(ref a: c_ptr, b: c_void_ptr) { __primitive("=", a, b); }
+  inline proc =(ref lhs:c_ptr, rhs:_nilType) {
+    __primitive("=", lhs, nil);
+  }
+
 
   pragma "no doc"
-  inline proc _cast(type t:c_void_ptr, x:c_fn_ptr) {
+  inline operator :(x:c_fn_ptr, type t:c_void_ptr) {
     return __primitive("cast", c_void_ptr, x);
   }
 
   // Note: we rely from nil to pointer types for ptr = nil, nil:ptr cases
 
   pragma "no doc"
-  inline proc _cast(type t:c_ptr, x:c_ptr) {
+  inline operator :(x:c_ptr, type t:c_ptr) {
     return __primitive("cast", t, x);
   }
   pragma "no doc"
-  inline proc _cast(type t:c_ptr(?e), ref x:c_array) where x.eltType == e {
+  inline operator :(ref x:c_array, type t:c_ptr(?e)) where x.eltType == e {
     return c_ptrTo(x[0]);
   }
   pragma "no doc"
-  inline proc _cast(type t:c_void_ptr, ref x:c_array) {
+  inline operator :(ref x:c_array, type t:c_void_ptr) {
     return c_ptrTo(x[0]):c_void_ptr;
   }
   pragma "no doc"
-  inline proc _cast(type t:c_void_ptr, x:c_ptr) {
+  inline operator :(x:c_ptr, type t:c_void_ptr) {
     return __primitive("cast", t, x);
   }
   pragma "no doc"
-  inline proc _cast(type t:c_ptr, x:c_void_ptr) {
+  inline operator :(x:c_void_ptr, type t:c_ptr) {
     return __primitive("cast", t, x);
   }
   pragma "no doc"
-  inline proc _cast(type t:string, x:c_void_ptr) {
+  inline operator :(x:c_void_ptr, type t:string) {
     try! {
       return createStringWithOwnedBuffer(__primitive("ref to string", x));
     }
   }
   pragma "no doc"
-  inline proc _cast(type t:string, x:c_ptr) {
+  inline operator :(x:c_ptr, type t:string) {
     try! {
       return createStringWithOwnedBuffer(__primitive("ref to string", x));
     }
   }
   pragma "last resort"
   pragma "no doc"
-  inline proc _cast(type t:_anyManagementAnyNilable, x:c_void_ptr) {
+  inline operator :(x:c_void_ptr, type t:_anyManagementAnyNilable) {
     if isUnmanagedClass(t) || isBorrowedClass(t) {
       compilerError("invalid cast from c_void_ptr to "+ t:string +
                     " - cast to "+ _to_nilable(t):string +" instead");
@@ -296,60 +307,60 @@ module CPtr {
   }
 
   pragma "no doc"
-  inline proc _cast(type t:unmanaged class?, x:c_void_ptr) {
+  inline operator :(x:c_void_ptr, type t:unmanaged class?) {
     return __primitive("cast", t, x);
   }
   pragma "no doc"
-  inline proc _cast(type t:borrowed class?, x:c_void_ptr) {
-    return __primitive("cast", t, x);
-  }
-
-  pragma "no doc"
-  inline proc _cast(type t:c_void_ptr, x:borrowed) {
-    return __primitive("cast", t, x);
-  }
-  pragma "no doc"
-  inline proc _cast(type t:c_void_ptr, x:unmanaged) {
+  inline operator :(x:c_void_ptr, type t:borrowed class?) {
     return __primitive("cast", t, x);
   }
 
   pragma "no doc"
-  inline proc _cast(type t:_ddata, x:c_ptr) where t.eltType == x.eltType {
+  inline operator :(x:borrowed, type t:c_void_ptr) {
     return __primitive("cast", t, x);
   }
   pragma "no doc"
-  inline proc _cast(type t:_ddata, x:c_void_ptr) {
-    return __primitive("cast", t, x);
-  }
-  pragma "no doc"
-  inline proc _cast(type t:c_void_ptr, x:_ddata) {
+  inline operator :(x:unmanaged, type t:c_void_ptr) {
     return __primitive("cast", t, x);
   }
 
   pragma "no doc"
-  inline proc _cast(type t:c_intptr, x:c_void_ptr)
+  inline operator :(x:c_ptr, type t:_ddata) where t.eltType == x.eltType {
+    return __primitive("cast", t, x);
+  }
+  pragma "no doc"
+  inline operator :(x:c_void_ptr, type t:_ddata) {
+    return __primitive("cast", t, x);
+  }
+  pragma "no doc"
+  inline operator :(x:_ddata, type t:c_void_ptr) {
+    return __primitive("cast", t, x);
+  }
+
+  pragma "no doc"
+  inline operator :(x:c_void_ptr, type t:c_intptr)
     return __primitive("cast", t, x);
   pragma "no doc"
-  inline proc _cast(type t:c_uintptr, x:c_void_ptr)
+  inline operator :(x:c_void_ptr, type t:c_uintptr)
     return __primitive("cast", t, x);
   pragma "no doc"
-  inline proc _cast(type t:int(64), x:c_void_ptr) where c_uintptr != int(64)
+  inline operator :(x:c_void_ptr, type t:int(64)) where c_uintptr != int(64)
     return __primitive("cast", t, x);
   pragma "no doc"
-  inline proc _cast(type t:uint(64), x:c_void_ptr) where c_uintptr != uint(64)
+  inline operator :(x:c_void_ptr, type t:uint(64)) where c_uintptr != uint(64)
     return __primitive("cast", t, x);
 
   pragma "no doc"
-  inline proc _cast(type t:c_intptr, x:c_ptr)
+  inline operator :(x:c_ptr, type t:c_intptr)
     return __primitive("cast", t, x);
   pragma "no doc"
-  inline proc _cast(type t:c_uintptr, x:c_ptr)
+  inline operator :(x:c_ptr, type t:c_uintptr)
     return __primitive("cast", t, x);
   pragma "no doc"
-  inline proc _cast(type t:int(64), x:c_ptr) where c_intptr != int(64)
+  inline operator :(x:c_ptr, type t:int(64)) where c_intptr != int(64)
     return __primitive("cast", t, x);
   pragma "no doc"
-  inline proc _cast(type t:uint(64), x:c_ptr) where c_uintptr != int(64)
+  inline operator :(x:c_ptr, type t:uint(64)) where c_uintptr != int(64)
     return __primitive("cast", t, x);
 
   pragma "no doc"

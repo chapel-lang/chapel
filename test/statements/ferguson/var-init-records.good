@@ -28,6 +28,8 @@ R int init 1
 R copy init from 1
 R copy init from 1
 R copy init from 1
+R copy init from 1
+R deinit 1
 R deinit 1
 R deinit 1
 R deinit 1
@@ -67,6 +69,8 @@ R int init 1
 R copy init from 1
 R copy init from 1
 R copy init from 1
+R copy init from 1
+R deinit 1
 R deinit 1
 R deinit 1
 R deinit 1

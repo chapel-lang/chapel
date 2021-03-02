@@ -5,7 +5,7 @@ use Sort;
 
 config const testIters = 128;
 
-proc lowerBound(arr: [?d] int, target: int, out result): bool {
+proc lowerBound(arr: [?d] int, target: int, out result:int ): bool {
   for x in arr {
     if x >= target {
       result = x;

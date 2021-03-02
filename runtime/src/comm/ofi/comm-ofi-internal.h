@@ -118,6 +118,13 @@ char* chpl_comm_ofi_dbg_val(const void*, enum fi_datatype);
     }                                                                   \
   } while (0)
 
+#define DBG_PRINTF_NODE0(mask, fmt, ...)                                \
+    do {                                                                \
+      if (chpl_nodeID == 0) {                                           \
+        DBG_PRINTF(mask, fmt, ## __VA_ARGS__);                          \
+      }                                                                 \
+    } while (0)
+
 #define DBG_VAL(pV, typ) chpl_comm_ofi_dbg_val(pV, typ)
 
 //#define DEBUG_CRC_MSGS
@@ -131,6 +138,7 @@ char* chpl_comm_ofi_dbg_val(const void*, enum fi_datatype);
 #define DBG_DO_PRINTF(fmt, ...) do { } while (0)
 #define DBG_TEST_MASK(mask) 0
 #define DBG_PRINTF(mask, fmt, ...) do { } while (0)
+#define DBG_PRINTF_NODE0(mask, fmt, ...) do { } while (0)
 
 #endif // CHPL_COMM_DEBUG
 
@@ -151,6 +159,16 @@ extern int chpl_comm_ofi_abort_on_error;
                             __FILE__, (int) __LINE__, ## __VA_ARGS__);  \
     }                                                                   \
   } while (0)
+
+#define INTERNAL_ERROR_V_NODE0(fmt, ...)                                \
+    do {                                                                \
+      if (chpl_nodeID == 0) {                                           \
+        INTERNAL_ERROR_V(fmt, ## __VA_ARGS__);                          \
+      } else {                                                          \
+        chpl_comm_ofi_oob_fini();                                       \
+        chpl_exit_any(0);                                               \
+      }                                                                 \
+    } while (0)
 
 #define CHK_TRUE(expr)                                                  \
     do {                                                                \

@@ -16,6 +16,11 @@ proc =(ref lhs: R, rhs: int) {
   lhs.x = rhs;
 }
 
+operator :(from: int, type t:R) {
+  var tmp: R = from;
+  return tmp;
+}
+
 proc bar() {
   return (78, 45);
 }

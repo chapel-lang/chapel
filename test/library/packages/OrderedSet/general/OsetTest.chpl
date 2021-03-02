@@ -6,7 +6,7 @@ proc <(lhs: testRecord, rhs: testRecord) {
   return lhs.dummy < rhs.dummy;
 }
 
-proc _cast(type t: testRecord, x: int) {
+operator :(x:int, type t: testRecord) {
   return new testRecord(x);
 }
 

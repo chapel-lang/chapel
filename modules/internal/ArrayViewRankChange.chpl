@@ -113,6 +113,12 @@ module ArrayViewRankChange {
     override proc dsiIsLayout() param {
       return downDistInst.dsiIsLayout();
     }
+
+    proc dsiEqualDMaps(that: ArrayViewRankChangeDist(?)) {
+      return (this.collapsedDim == that.collapsedDim && 
+              this.idx == that.idx &&
+              this.downDist.dsiEqualDMaps(that.downDist));
+    }
   }
 
   private proc downDomType(param rank : int,
@@ -420,6 +426,10 @@ module ArrayViewRankChange {
       //      distInst = other.distInst;
       downDomPid = reprivatizeData(1);
       downDomInst = reprivatizeData(2);
+    }
+
+    override proc dsiSupportsAutoLocalAccess() param {
+      return downDomInst!.dsiSupportsAutoLocalAccess();
     }
 
  } // end of class ArrayViewRankChangeDom

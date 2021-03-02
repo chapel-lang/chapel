@@ -86,8 +86,10 @@ void gasnete_coll_alloc_new_scratch_status(gasnete_coll_team_t team) {
 }
 
 
-void gasnete_coll_free_scratch_status(gasnete_coll_scratch_status_t *in GASNETI_THREAD_FARG) {
- /* do nothing for now*/
+void gasnete_coll_free_scratch_status(gasnete_coll_team_t team) {
+  gasnete_coll_scratch_status_t *stat = team->scratch_status;
+  gasneti_free(stat->node_status);
+  gasneti_free(stat);
 }
 
 
@@ -272,8 +274,7 @@ void gasnete_coll_scratch_reconfigure(gasnete_coll_scratch_status_t *stat,
 GASNETI_INLINE(gasnete_coll_scratch_check_local_alloc)
 uint8_t gasnete_coll_scratch_check_local_alloc(gasnete_coll_scratch_req_t *req,
                                                gasnete_coll_scratch_status_t *stat) {
-  return (req->incoming_size + stat->node_status[req->team->myrank].head <= 
-          req->team->scratch_segs[req->team->myrank].size);
+  return (req->incoming_size + stat->node_status[req->team->myrank].head <= req->team->scratch_size);
 }
 
 GASNETI_INLINE(gasnete_coll_scratch_make_local_alloc)
@@ -314,8 +315,7 @@ uint8_t gasnete_coll_scratch_check_remote_alloc(gasnete_coll_scratch_req_t *req,
   const int is_dissem = (req->op_type == GASNETE_COLL_DISSEM_OP);
   for (gex_Rank_t i = 0; i < n; i++) {
     const gex_Rank_t peer = req->out_peers[i];
-    if (stat->node_status[peer].head + req->out_sizes[is_dissem ? 0 : i] >
-        req->team->scratch_segs[peer].size) {
+    if (stat->node_status[peer].head + req->out_sizes[is_dissem ? 0 : i] > req->team->scratch_size) {
       /* remote space is full */
       if (gasneti_weakatomic_read(&(stat->node_status[peer].reset_signal_sent),0) ==
           stat->node_status[peer].reset_signal_recv) {
@@ -352,11 +352,11 @@ int8_t gasnete_coll_scratch_alloc_nb(gasnete_coll_op_t* op GASNETI_THREAD_FARG) 
   
   /*if the incoming size is greater than the total allocated scratch space signal an error*/
   if_pf (!op->waiting_scratch_op &&
-         scratch_req->incoming_size > scratch_req->team->scratch_segs[scratch_req->team->myrank].size) {
+         scratch_req->incoming_size > scratch_req->team->scratch_size) {
     gasneti_fatalerror("%d> collective requires temporary storage (%"PRIuPTR" bytes) which is greater than total scratch space (%"PRIuPTR" bytes)\nIncrease size of collective scratch space through GASNET_COLL_SCRATCH_SIZE environment variable to at least %"PRIuPTR" bytes\n", 
                        (int)scratch_req->team->myrank, 
                        (uintptr_t)scratch_req->incoming_size,
-                       (uintptr_t)scratch_req->team->scratch_segs[0].size,
+                       (uintptr_t)scratch_req->team->scratch_size,
                        (uintptr_t)scratch_req->incoming_size);
   }
 
@@ -523,4 +523,13 @@ void gasnete_coll_free_scratch(gasnete_coll_op_t *op) {
 
   gasnete_coll_scratch_free_inlines(scratch_req);
   gasnete_coll_scratch_free_req(scratch_req);
+}
+
+void gasnete_coll_scratch_req_purge(gasnete_coll_team_t team) {
+  gasnete_coll_scratch_req_t *req = team->scratch_free_list;
+  while (req) {
+    gasnete_coll_scratch_req_t *next = req->next;
+    gasneti_free(req);
+    req = next;
+  }
 }

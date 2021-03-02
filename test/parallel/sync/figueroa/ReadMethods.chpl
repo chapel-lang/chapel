@@ -5,29 +5,29 @@ var done: sync bool = true;
 proc foo(type t, u: t, v: t, name) {
   var s: sync t;
 
-  if done then // wait until all prior invocations have finished
+  if done.readFE() then // wait until all prior invocations have finished
   writeln("1: going to sleep ... ");
 
   sync {
     begin {
       writeln("2: initial value is ", s.readXX(), " of type ", name);
-      done = true;
+      done.writeEF(true);
       write  ("2: value is now ", s.readFE());
       writeln(" and it is ", if s.isFull then "full" else "empty");
-      done = true;
+      done.writeEF(true);
       write  ("2: value has changed to ", s.readFF());
       writeln(" and it is ", if s.isFull then "full" else "empty");
       chpl_task_yield();
       writeln("2: after sleeping, value is still ", s.readXX());
       s.reset();
       writeln("2: value has been reset to ", s.readFE());
-      done = true;
+      done.writeEF(true);
     }
     done.readFE();
     writeln("1: woke up. writing ", u);
-    s = u;
-    if done then s = v;
-    s = u;
+    s.writeEF(u);
+    if done.readFE() then s.writeEF(v);
+    s.writeEF(u);
   }
 }
 

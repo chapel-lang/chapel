@@ -14,6 +14,7 @@ proc negDefault(arg=-x) {}
 proc bitwiseNegDefault(arg=~x) {}
 
 proc notNilDefault(arg=c!) {}
+proc isNilDefault(arg=nil) {}
 
 proc plusDefault(arg=x+y) {}
 proc minusDefault(arg=x-y) {}
@@ -48,7 +49,7 @@ proc maxDefault(arg=max(int)) {}
 
 proc castDefault(arg=x:int(32)) {}
 
-//proc tuple1Default(arg=(x,)) {}
+proc tuple1Default(arg=(x,)) {}
 proc tuple2Default(arg=(x,y)) {}
 proc tuple3Default(arg=(x,y,z)) {}
 
@@ -85,3 +86,18 @@ proc R0TypedArgDefault(arg:R0 = new R0()) {}
 proc R1TypedArgDefault(arg:R1(1) = new R1(1)) {}
 proc R2TypedArgDefault(arg:R2(1,2) = new R2(1,2)) {}
 proc R3TypedArgDefault(arg:R3(1,2,3) = new R3(1,2,3)) {}
+
+proc boundedRange( arg = 1..10) {}
+proc lowBoundedRange(arg = 1..) {}
+proc highBoundedRange(arg = ..10) {}
+proc unboundedRange(arg = ..) {}
+
+proc boundedRangeBy(arg = 1..10 by 2) {}
+proc lowBoundedRangeBy(arg = 1.. by 2) {}
+proc highBoundedRangeBy(arg = ..10 by 2) {}
+proc unboundedRangeBy(arg = .. by 2) {}
+
+proc boundedRangeByAlign(arg = 1..10 by 2 align 1) {}
+proc lowBoundedRangeByAlign(arg = 1.. by 2 align 1) {}
+proc highBoundedRangeByAlign(arg = ..10 by 2 align 1) {}
+proc unboundedRangeByAlign(arg = .. by 2 align 1) {}

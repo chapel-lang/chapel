@@ -1,4 +1,4 @@
-interface LessThan(type T) {
+interface LessThan(T) {
   proc LT(a:T, b:T):bool;
 }
 

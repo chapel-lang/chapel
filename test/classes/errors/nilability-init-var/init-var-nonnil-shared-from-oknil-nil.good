@@ -1,2 +1,2 @@
 init-var-nonnil-shared-from-oknil-nil.chpl:9: error: invalid copy-initialization
-init-var-nonnil-shared-from-oknil-nil.chpl:9: error: Assigning non-nilable shared to nil
+init-var-nonnil-shared-from-oknil-nil.chpl:9: error: cannot initialize 'shared MyClass' from 'nil'

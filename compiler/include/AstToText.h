@@ -70,8 +70,8 @@ class LoopExpr;
 class AstToText
 {
 public:
-                         AstToText();
-                        ~AstToText();
+  AstToText() = default;
+ ~AstToText() = default;
 
   // A reference to the generate text
   const std::string&     text()                                        const;

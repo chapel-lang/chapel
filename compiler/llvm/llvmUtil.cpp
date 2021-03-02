@@ -105,7 +105,7 @@ llvm::AllocaInst* makeAlloca(llvm::Type* type,
   return tempVar;
 }
 
-llvm::Value* createLLVMAlloca(llvm::IRBuilder<>* irBuilder, llvm::Type* type, const char* name)
+llvm::AllocaInst* createLLVMAlloca(llvm::IRBuilder<>* irBuilder, llvm::Type* type, const char* name)
 {
   // It's important to alloca at the front of the function in order
   // to avoid having an alloca in a loop which is a good way to achieve
@@ -117,7 +117,7 @@ llvm::Value* createLLVMAlloca(llvm::IRBuilder<>* irBuilder, llvm::Type* type, co
     irBuilder->SetInsertPoint(&func->getEntryBlock());
   }
 
-  llvm::AllocaInst *tempVar = irBuilder->CreateAlloca(type, 0, name);
+  llvm::AllocaInst *tempVar = irBuilder->CreateAlloca(type, nullptr, name);
   irBuilder->SetInsertPoint(&func->back());
   return tempVar;
 }
@@ -326,12 +326,12 @@ void makeLifetimeStart(llvm::IRBuilder<>* irBuilder,
   irBuilder->CreateLifetimeStart(addr, size);
 }
 
-llvm::Value* makeAllocaAndLifetimeStart(llvm::IRBuilder<>* irBuilder,
+llvm::AllocaInst* makeAllocaAndLifetimeStart(llvm::IRBuilder<>* irBuilder,
                                         const llvm::DataLayout& layout,
                                         llvm::LLVMContext &ctx,
                                         llvm::Type* type, const char* name) {
 
-  llvm::Value* val = createLLVMAlloca(irBuilder, type, name);
+  llvm::AllocaInst* val = createLLVMAlloca(irBuilder, type, name);
   makeLifetimeStart(irBuilder, layout, ctx, type, val);
 
   return val;
@@ -422,7 +422,7 @@ llvm::Value *convertValueToType(llvm::IRBuilder<>* irBuilder,
                                 const llvm::DataLayout& layout,
                                 llvm::LLVMContext &ctx,
                                 llvm::Value *value, llvm::Type *newType,
-                                llvm::Value **alloca,
+                                llvm::AllocaInst **alloca,
                                 bool isSigned, bool force) {
 
   llvm::Type *curType = value->getType();
@@ -498,7 +498,7 @@ llvm::Value *convertValueToType(llvm::IRBuilder<>* irBuilder,
     if( isTypeEquivalent(layout, curType, newType, force) ) {
       // We turn it into a store/load to convert the type
       // since LLVM does not allow bit casts on structure types.
-      llvm::Value* tmp_alloc;
+      llvm::AllocaInst* tmp_alloc;
       llvm::Type* useTy = NULL;
 
       if( layout.getTypeStoreSize(newType) >=

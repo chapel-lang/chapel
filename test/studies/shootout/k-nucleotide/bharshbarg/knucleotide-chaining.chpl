@@ -101,9 +101,9 @@ proc calculate(data : [] uint(8), size : int) {
     for i in tid .. data.size-size by here.maxTaskPar {
       curArr[hash(data, i, sizeRange)] += 1;
     }
-    lock; // acquire lock
+    lock.readFE(); // acquire lock
     for (k,v) in curArr do freqs[k] += v;
-    lock = true; // free lock
+    lock.writeEF(true); // free lock
     delete curArr;
   }
 

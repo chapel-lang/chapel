@@ -37,6 +37,9 @@ see https://www.gnu.org/licenses/.  */
 #include <stdio.h>
 #include "gmp-impl.h"
 
+
+#if HAVE_NATIVE_mpn_rsblsh1_n || HAVE_NATIVE_mpn_sublsh1_n
+#else
 /* Stores |{ap,n}-{bp,n}| in {rp,n},
    returns the sign of {ap,n}-{bp,n}. */
 static int
@@ -65,6 +68,7 @@ abs_sub_n (mp_ptr rp, mp_srcptr ap, mp_srcptr bp, mp_size_t n)
     }
   return 0;
 }
+#endif
 
 /* Computes at most count terms of the sequence needed by the
    Lucas-Lehmer-Riesel test, indexing backward:

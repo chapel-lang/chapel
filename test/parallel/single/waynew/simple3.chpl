@@ -8,13 +8,13 @@ proc jam( i: int) {
   writeln( i, " Pizza!");
 }
 
-begin jam( go);
-begin jam( go);
-begin jam( go);
-begin jam( go);
-begin jam( go);
+begin jam( go.readFF());
+begin jam( go.readFF());
+begin jam( go.readFF());
+begin jam( go.readFF());
+begin jam( go.readFF());
 
 writeln( "I'm sleepy");
 sleep( 3);
 writeln( "I'm awake");
-go = 9;
+go.writeEF(9);

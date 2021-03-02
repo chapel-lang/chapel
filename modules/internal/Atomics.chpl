@@ -352,6 +352,11 @@ module Atomics {
 
   }
 
+  operator :(rhs: bool, type t:AtomicBool) {
+    var lhs: AtomicBool = rhs; // use init=
+    return lhs;
+  }
+
   pragma "atomic type"
   pragma "ignore noinit"
   record AtomicT {
@@ -677,6 +682,12 @@ module Atomics {
       x <~> read();
     }
 
+  }
+
+  operator :(rhs, type t:AtomicT)
+  where rhs.type == t.T {
+    var lhs: t = rhs; // use init=
+    return lhs;
   }
 
   //

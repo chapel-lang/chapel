@@ -1,4 +1,8 @@
 proc f(out a: [] int, out b: [] int) {
+  var tmp: [1..4] int;
+  a = tmp;
+  b = tmp;
+
   a = 1;
   b = 2;
 }

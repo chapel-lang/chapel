@@ -113,7 +113,7 @@ module dataflow_block_cholesky {
       for row_block in vector_block_partition (col_indices (J ..)) do {
         const I = row_block.low;
         if mods_necessary == 0 then
-          all_schur_complement_mods_done$ (I, J) = true;
+          all_schur_complement_mods_done$ (I, J).writeEF(true);
 	else
 	  schur_complement_mods_to_be_done$ (I, J) . writeEF (mods_necessary);
       }
@@ -330,7 +330,7 @@ module dataflow_block_cholesky {
 
 	// yes -- mark as ready for next task
 
-        all_schur_complement_mods_done$ ( I, J) = true;
+        all_schur_complement_mods_done$ ( I, J).writeEF(true);
     
       else
 

@@ -15,26 +15,26 @@ proc dobegin() {
 
       begin {
         if debug then writeln("task 1 before wait");
-        order$; // wait for order to be set below
+        order$.readFE(); // wait for order to be set below
         if debug then writeln("task 1 after wait");
       }
       
       begin {
         if debug then writeln("task 2 before wait");
-        order$; // wait for order to be set below
+        order$.readFE(); // wait for order to be set below
         if debug then writeln("task 2 after wait");
       }
 
       if debug then writeln("first write");
       // Run a begin
-      order$ = true;
+      order$.writeEF(true);
       if debug then writeln("second write");
       // Run another begin
-      order$ = true;
+      order$.writeEF(true);
       if debug then writeln("after writes");
 
       // wait for order$ to be empty again
-      order$ = true;
+      order$.writeEF(true);
     }
     if debug then writeln("end of loop");
   }

@@ -24,6 +24,18 @@
 GASNETI_IDENT(gasnetc_IdentString_Providers,
               "$GASNetSupportedOFIProviders: " GASNETC_OFI_PROVIDER_LIST " $");
 
+struct fid_fabric*    gasnetc_ofi_fabricfd;
+struct fid_domain*    gasnetc_ofi_domainfd;
+struct fid_av*        gasnetc_ofi_avfd;
+struct fid_cq*        gasnetc_ofi_tx_cqfd; /* CQ for both AM and RDMA tx ops */
+struct fid_ep*        gasnetc_ofi_rdma_epfd;
+struct fid_mr*        gasnetc_ofi_rdma_mrfd;
+struct fid_ep*        gasnetc_ofi_request_epfd;
+struct fid_ep*        gasnetc_ofi_reply_epfd;
+struct fid_cq*        gasnetc_ofi_request_cqfd;
+struct fid_cq*        gasnetc_ofi_reply_cqfd;
+size_t gasnetc_ofi_bbuf_threshold;
+
 typedef struct gasnetc_ofi_recv_metadata {
     struct iovec iov;
     struct fi_msg am_buff_msg;

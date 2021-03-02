@@ -151,6 +151,16 @@ bool AggregateType::isUnion() const {
   return aggregateTag == AGGREGATE_UNION;
 }
 
+const char* AggregateType::aggregateString() const {
+  switch (aggregateTag) {
+  case AGGREGATE_CLASS:   return "class";
+  case AGGREGATE_RECORD:  return "record";
+  case AGGREGATE_UNION:   return "union";
+  }
+  INT_FATAL(this, "unknown AggregateType tag");
+  return NULL;
+}
+
 bool AggregateType::isGeneric() const {
   return mIsGeneric;
 }
@@ -621,6 +631,10 @@ void AggregateType::addDeclaration(DefExpr* defExpr) {
       }
 
       fn->_this = arg;
+
+      if (fn->hasFlag(FLAG_OPERATOR)) {
+        updateOpThisTagOrErr(fn);
+      }
 
       if (fn->thisTag == INTENT_TYPE) {
         arg->intent = INTENT_BLANK;

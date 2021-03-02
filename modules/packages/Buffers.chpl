@@ -66,19 +66,19 @@ module Buffers {
   private extern proc qbytes_len(qb:qbytes_ptr_t):int(64);
   private extern proc qbytes_data(qb:qbytes_ptr_t):c_void_ptr;
 
-  private extern proc qbytes_create_iobuf(out ret:qbytes_ptr_t):syserr;
-  private extern proc qbytes_create_calloc(out ret:qbytes_ptr_t, len:int(64)):syserr;
+  private extern proc qbytes_create_iobuf(ref ret:qbytes_ptr_t):syserr;
+  private extern proc qbytes_create_calloc(ref ret:qbytes_ptr_t, len:int(64)):syserr;
 
   private extern proc qbuffer_iter_null():qbuffer_iter_t;
 
-  private extern proc qbuffer_create(out buf:qbuffer_ptr_t):syserr;
+  private extern proc qbuffer_create(ref buf:qbuffer_ptr_t):syserr;
   private extern proc qbuffer_retain(buf:qbuffer_ptr_t);
   private extern proc qbuffer_release(buf:qbuffer_ptr_t);
 
   private extern proc qbuffer_append(buf:qbuffer_ptr_t, bytes_buf:qbytes_ptr_t, skip_bytes:int(64), len_bytes:int(64)):syserr;
   private extern proc qbuffer_append_buffer(buf:qbuffer_ptr_t, src:qbuffer_ptr_t, src_start:qbuffer_iter_t, src_end:qbuffer_iter_t):syserr;
   private extern proc qbuffer_prepend(buf:qbuffer_ptr_t, bytes_buf:qbytes_ptr_t, skip_bytes:int(64), len_bytes:int(64)):syserr;
-  private extern proc qbuffer_flatten(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, out bytes_out):syserr;
+  private extern proc qbuffer_flatten(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, ref bytes_out):syserr;
   private extern proc qbuffer_copyout(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, ref x, size):syserr;
   private extern proc qbuffer_copyout(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, x: c_ptr, size):syserr;
   private extern proc qbuffer_copyout(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, x: c_void_ptr, size):syserr;
@@ -93,9 +93,9 @@ module Buffers {
   private extern proc qbuffer_iter_advance(buf:qbuffer_ptr_t, ref it:qbuffer_iter_t, amt:int(64));
 
   private extern proc qbuffer_iter_get(it: qbuffer_iter_t, end:qbuffer_iter_t,
-                                out bytes_out:qbytes_ptr_t,
-                                out skip_out:int(64),
-                                out len_out:int(64));
+                                       ref bytes_out:qbytes_ptr_t,
+                                       ref skip_out:int(64),
+                                       ref len_out:int(64));
   private extern proc qbuffer_iter_num_bytes(start:qbuffer_iter_t, end:qbuffer_iter_t):int(64);
 
   private extern proc qbuffer_len(buf:qbuffer_ptr_t):int(64);
@@ -660,7 +660,7 @@ module Buffers {
      :returns: a buffer iterator storing the position immediately after
                the read value.
   */
-  proc buffer.copyout(it:buffer_iterator, out value: ?T):buffer_iterator throws where isNumericType(T) {
+  proc buffer.copyout(it:buffer_iterator, ref value: ?T):buffer_iterator throws where isNumericType(T) {
     var ret:buffer_iterator;
     var err:syserr = ENOERR;
     ret.home = this.home;
@@ -678,7 +678,7 @@ module Buffers {
   }
 
   pragma "no doc"
-  proc buffer.copyout(it:buffer_iterator, out value: string):buffer_iterator throws {
+  proc buffer.copyout(it:buffer_iterator, ref value: string):buffer_iterator throws {
     var ret:buffer_iterator;
     var err:syserr = ENOERR;
     ret.home = this.home;
@@ -708,7 +708,7 @@ module Buffers {
   }
 
   pragma "no doc"
-  proc buffer.copyout(it:buffer_iterator, out value, out error:syserr):buffer_iterator {
+  proc buffer.copyout(it:buffer_iterator, ref value, out error:syserr):buffer_iterator {
     compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
     var ret: buffer_iterator;
     try {

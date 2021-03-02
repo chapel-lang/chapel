@@ -614,9 +614,9 @@ proc _CurrentLocaleToLocIDs(targetLocales): (targetLocales.rank*locIdT, bool)
     if loc == here {
       // if we get multiple matches, we do not specify which is returned
       // could add a pre-test if it were cheap: if !gotresult$.readXX()
-      gotresult$;
+      gotresult$.readFE();
       result = lls;
-      gotresult$ = true;
+      gotresult$.writeEF(true);
     }
   // instead of crashing right away, return a flag
   //if !gotresult$.readXX() then halt("DimensionalDist2D: the current locale ", here, " is not among the target locales ", targetLocales);

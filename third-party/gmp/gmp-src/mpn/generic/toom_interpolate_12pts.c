@@ -6,7 +6,7 @@
    SAFE TO REACH IT THROUGH DOCUMENTED INTERFACES.  IN FACT, IT IS ALMOST
    GUARANTEED THAT IT WILL CHANGE OR DISAPPEAR IN A FUTURE GNU MP RELEASE.
 
-Copyright 2009, 2010, 2012, 2015 Free Software Foundation, Inc.
+Copyright 2009, 2010, 2012, 2015, 2020 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -38,6 +38,34 @@ see https://www.gnu.org/licenses/.  */
 #include "gmp-impl.h"
 
 
+#if GMP_NUMB_BITS < 21
+#error Not implemented: Both sublsh_n(,,,20) should be corrected.
+#endif
+
+#if GMP_NUMB_BITS < 16
+#error Not implemented: divexact_by42525 needs splitting.
+#endif
+
+#if GMP_NUMB_BITS < 12
+#error Not implemented: Hard to adapt...
+#endif
+
+
+/* FIXME: tuneup should decide the best variant */
+#ifndef AORSMUL_FASTER_AORS_AORSLSH
+#define AORSMUL_FASTER_AORS_AORSLSH 1
+#endif
+#ifndef AORSMUL_FASTER_AORS_2AORSLSH
+#define AORSMUL_FASTER_AORS_2AORSLSH 1
+#endif
+#ifndef AORSMUL_FASTER_2AORSLSH
+#define AORSMUL_FASTER_2AORSLSH 1
+#endif
+#ifndef AORSMUL_FASTER_3AORSLSH
+#define AORSMUL_FASTER_3AORSLSH 1
+#endif
+
+
 #if HAVE_NATIVE_mpn_sublsh_n
 #define DO_mpn_sublsh_n(dst,src,n,s,ws) mpn_sublsh_n(dst,dst,src,n,s)
 #else
@@ -57,6 +85,7 @@ DO_mpn_sublsh_n(mp_ptr dst, mp_srcptr src, mp_size_t n, unsigned int s, mp_ptr w
 #if HAVE_NATIVE_mpn_addlsh_n
 #define DO_mpn_addlsh_n(dst,src,n,s,ws) mpn_addlsh_n(dst,dst,src,n,s)
 #else
+#if !defined (AORSMUL_FASTER_2AORSLSH) && !defined (AORSMUL_FASTER_AORS_2AORSLSH)
 static mp_limb_t
 DO_mpn_addlsh_n(mp_ptr dst, mp_srcptr src, mp_size_t n, unsigned int s, mp_ptr ws)
 {
@@ -68,6 +97,7 @@ DO_mpn_addlsh_n(mp_ptr dst, mp_srcptr src, mp_size_t n, unsigned int s, mp_ptr w
   return    __cy + mpn_add_n(dst,dst,ws,n);
 #endif
 }
+#endif
 #endif
 
 #if HAVE_NATIVE_mpn_subrsh
@@ -83,32 +113,6 @@ do {									\
 } while (0)
 #endif
 
-
-#if GMP_NUMB_BITS < 21
-#error Not implemented: Both sublsh_n(,,,20) should be corrected.
-#endif
-
-#if GMP_NUMB_BITS < 16
-#error Not implemented: divexact_by42525 needs splitting.
-#endif
-
-#if GMP_NUMB_BITS < 12
-#error Not implemented: Hard to adapt...
-#endif
-
-/* FIXME: tuneup should decide the best variant */
-#ifndef AORSMUL_FASTER_AORS_AORSLSH
-#define AORSMUL_FASTER_AORS_AORSLSH 1
-#endif
-#ifndef AORSMUL_FASTER_AORS_2AORSLSH
-#define AORSMUL_FASTER_AORS_2AORSLSH 1
-#endif
-#ifndef AORSMUL_FASTER_2AORSLSH
-#define AORSMUL_FASTER_2AORSLSH 1
-#endif
-#ifndef AORSMUL_FASTER_3AORSLSH
-#define AORSMUL_FASTER_3AORSLSH 1
-#endif
 
 #define BINVERT_9 \
   ((((GMP_NUMB_MAX / 9) << (6 - GMP_NUMB_BITS % 6)) * 8 & GMP_NUMB_MAX) | 0x39)

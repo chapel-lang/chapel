@@ -30,16 +30,6 @@ LoopStmt::LoopStmt(BlockStmt* initBody) : BlockStmt(initBody)
   mParallelAccessVectorizationHazard = false;
 }
 
-LoopStmt::~LoopStmt()
-{
-
-}
-
-bool LoopStmt::isLoopStmt() const
-{
-  return true;
-}
-
 LabelSymbol* LoopStmt::breakLabelGet() const
 {
   return mBreakLabel;

@@ -142,13 +142,6 @@ typedef struct {
 #define GASNET_BLOCKUNTIL(cond) gasneti_polluntil(cond)
 
 /* ------------------------------------------------------------------------------------ */
-#ifdef GASNETI_BLCR_ENABLED
-/* Collective and non-collective checkpoints */
-extern int gasnet_all_checkpoint(const char *dir);
-extern int gasnet_checkpoint(const char *dir);
-#define GASNET_BLCR 1
-#endif
-/* ------------------------------------------------------------------------------------ */
 
 #endif
 

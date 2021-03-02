@@ -33,15 +33,15 @@ or
 
    .. attribute:: param a: int
 
-   .. attribute:: param b: a.type 
+   .. attribute:: param b: a.type
 
 .. record:: R3
 
    .. attribute:: param a: int
 
-   .. attribute:: param b: a.type 
+   .. attribute:: param b: a.type
 
-   .. attribute:: param c: b.type 
+   .. attribute:: param c: b.type
 
 .. record:: R
 
@@ -56,6 +56,8 @@ or
    .. attribute:: var bitwiseNegDefault = ~x
 
    .. attribute:: var notNilDefault = c!
+
+   .. attribute:: var isNilDefault: nilable C = nil
 
    .. attribute:: var plusDefault = x+y
 
@@ -109,11 +111,13 @@ or
 
    .. attribute:: var castDefault = x: int(32)
 
+   .. attribute:: var tuple1Default = (x,)
+
    .. attribute:: var tuple2Default = (x, y)
 
    .. attribute:: var tuple3Default = (x, y, z)
 
-   .. attribute:: var dotTypeDefault = x.type 
+   .. attribute:: var dotTypeDefault = x.type
 
    .. attribute:: var dotFieldDefault = c!.aField
 

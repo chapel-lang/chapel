@@ -245,6 +245,9 @@
 /* have ptmalloc's mallopt() options */
 #undef HAVE_PTMALLOC
 
+/* has posix_memalign() */
+#undef HAVE_POSIX_MEMALIGN
+
 /* have declarations/definitions */
 #undef HAVE_SETENV_DECL
 #undef HAVE_UNSETENV_DECL
@@ -281,9 +284,6 @@
 
 /* hugetlbfs support enabled */
 #undef GASNETI_USE_HUGETLBFS
-
-/* BLCR support, path and features */
-#undef GASNETI_BLCR_ENABLED
 
 /* support for backtracing */
 #undef HAVE_EXECINFO_H
@@ -399,6 +399,9 @@
 #undef GASNETI_CACHE_LINE_BYTES
 #undef GASNETI_CACHE_LINE_SHIFT
 
+/* minimum alignment of "tm0" */
+#undef GASNETI_TM0_ALIGN
+
 /* udp-conduit default custom spawn command */
 #undef GASNET_CSPAWN_CMD
 
@@ -434,6 +437,7 @@
 #undef GASNET_DEBUGMALLOC
 #undef GASNET_SRCLINES
 #undef GASNET_DEBUG_VERBOSE
+#undef GASNETI_VALGRIND
 
 /* GASNet segment definition */
 #undef GASNET_SEGMENT_FAST
@@ -584,6 +588,9 @@
 /* Define to 1 if you have the `PMI_Allgather' function. */
 #undef HAVE_PMI_ALLGATHER
 
+/* Define to 1 if you have the `PMI_Allgather_on_smp' function. */
+#undef HAVE_PMI_ALLGATHER_ON_SMP
+
 /* Define to 1 if you have the `PMI_Bcast' function. */
 #undef HAVE_PMI_BCAST
 
@@ -592,6 +599,9 @@
 
 /* Define to 1 if you have the `popen' function. */
 #undef HAVE_POPEN
+
+/* Define to 1 if you have the `posix_memalign' function. */
+#undef HAVE_POSIX_MEMALIGN
 
 /* Define to 1 if you have the <pthread.h> header file. */
 #undef HAVE_PTHREAD_H

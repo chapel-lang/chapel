@@ -34,10 +34,10 @@ proc test() {
     dom2 = init2dom;
     arr1 = init1arr;
     arr2 = init2arr;
-    s$ = 1;
+    s$.writeEF(1);
   }
 
-  s$;
+  s$.readFE();
   writeln("after begin");
   writeln("dom1", " ", dom1, ".");
   writeln("dom2", " ", dom2, ".");

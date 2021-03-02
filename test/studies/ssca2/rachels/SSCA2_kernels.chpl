@@ -26,7 +26,7 @@ module SSCA2_kernels
   // edges, all of which have the largest weight.
   // ========================================================
   
-  proc largest_edges ( G, heavy_edge_list :domain )
+  proc largest_edges ( G, ref heavy_edge_list :domain )
     
     // edge_weights can be either an array over an associative
     // domain or over a sparse domain.  the output  heavy_edge_list
@@ -132,9 +132,9 @@ module SSCA2_kernels
   
 	for path_length in 1 .. max_path_length do {
 	    
-	  forall v in Active_Level do {
+	  forall v in Active_Level with(ref Next_Level) do {
 
-	    forall w in G.Neighbors (v) do {
+	    forall w in G.Neighbors (v) with(ref Next_Level) do {
 
 
               if min_distance(w).compareAndSwap(-1, path_length) then {
@@ -368,7 +368,8 @@ module SSCA2_kernels
 	      if useAtomicReal then
                 BCaux[v].path_count$.add(BCaux[u].path_count$.read());
               else
-                BCaux[v].path_count$ += BCaux[u].path_count$.readFF();
+                BCaux[v].path_count$.writeEF(BCaux[v].path_count$.readFE() +
+                                             BCaux[u].path_count$.readFF());
             }
 
             forall u in ALhere.Members do {
@@ -435,7 +436,7 @@ module SSCA2_kernels
 
           if here.id==0 {
             if VALIDATE_BC then
-              Sum_Min_Dist$ += Lcl_Sum_Min_Dist;
+              Sum_Min_Dist$.writeEF(Sum_Min_Dist$.readFE() + Lcl_Sum_Min_Dist);
           }
 
           // -------------------------------------------------------------
@@ -464,7 +465,7 @@ module SSCA2_kernels
               ( BCaux[u].path_count$.readFF() / 
                 BCaux[v].path_count$.readFF() )      *
               ( 1.0 + BCaux[v].depend );
-            Between_Cent$ (u) += BCaux[u].depend;
+              Between_Cent$ (u).writeEF(Between_Cent$ (u).readFE() + BCaux[u].depend);
           }
 
           // back up to last level
@@ -513,9 +514,9 @@ module SSCA2_kernels
       }
 
       if VALIDATE_BC then
-	Sum_Min_Dist = Sum_Min_Dist$;
+	      Sum_Min_Dist = Sum_Min_Dist$.readFE();
       
-      Between_Cent = Between_Cent$;
+      Between_Cent = Between_Cent$.readFE();
 
       if DELETE_KERNEL4_DS {
         coforall t in TPVSpace do on t {

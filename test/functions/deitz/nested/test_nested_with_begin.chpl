@@ -10,7 +10,7 @@ proc foo() {
   }
 
   begin {
-    s;
+    s.readFE();
     bar(i);
   }
 }
@@ -22,4 +22,4 @@ proc goo() {
 
 foo();
 goo();
-s = true;
+s.writeEF(true);

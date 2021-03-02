@@ -16,6 +16,7 @@
   extern char **environ; 
 #endif
 #include <string.h>
+#include <signal.h>
 
 #include <amudp_spmd.h>
 
@@ -162,10 +163,10 @@ extern int AMUDP_SPMDLocalSpawn(int nproc, int argc, char **argv, char **extra_e
         #endif
 
         /*  exec the program, with the given arguments  */
-        execv(argv[0], argv);
+        execvp(argv[0], argv);
 
         /*  if execv returns, an error occurred */
-        perror("execv");
+        perror("execvp");
         _exit(1); /*  use _exit() to prevent corrupting parent's io buffers */
       } /*  child */
     #endif
@@ -194,7 +195,6 @@ extern int AMUDP_SPMDLocalSpawn(int nproc, int argc, char **argv, char **extra_e
  * prompted for passwords. You also need to set the environment variables below
  */
 /* this implementation of ssh spawn has the following compile-time constants: */
-#define SSH_PARALLELSPAWN        1        /* spawn jobs in parallel for faster startups */
 #define SSH_SUPRESSNEWKEYPROMPT  1        /* suppress the trust-first-time connection prompt */
 #define SSH_PREVENTRSHFALLBACK   1        /* prevent falling back on rsh if ssh connection fails */
 #define SSH_SERVERS_DELIM_CHARS  " ,/;:"  /* legal delimiter characters for SSH_SERVERS */
@@ -312,22 +312,28 @@ int AMUDP_SPMDSshSpawn(int nproc, int argc, char **argv, char **extra_env) {
 
   p = ssh_servers;
   for (i = 0; i < nproc; i++) {
-    char ssh_server[255];
-    const char *end;
-    while (*p && strchr(SSH_SERVERS_DELIM_CHARS, *p)) p++;
-    end = p + strcspn(p, SSH_SERVERS_DELIM_CHARS);
-    AMX_assert(p != end);
+   char ssh_server[255];
+   const char *end;
+   while (*p && strchr(SSH_SERVERS_DELIM_CHARS, *p)) p++;
+   end = p + strcspn(p, SSH_SERVERS_DELIM_CHARS);
+   AMX_assert(p != end);
+   strncpy(ssh_server, p, (end-p));
+   ssh_server[end-p] = '\0'; 
+   if (*end) p = end+1;
+   else p = end;
 
-    strncpy(ssh_server, p, (end-p));
-    ssh_server[end-p] = '\0'; 
+   int forkRet = fork(); // fork a new process to hold ssh command
 
+   if (forkRet == -1) {
+      perror("fork");
+      return FALSE;
+   } else if (forkRet != 0) { // parent
+      continue;
+   } else {  // this is the child
     /* build the ssh command */
-    snprintf(cmd2, cmd2_sz, "%s %s%s%s%s %s \"%scd %s ; %s\" "
-      " || ( echo \"connection to %s failed.\" ; kill %i ) "
-      "%s", 
+    snprintf(cmd2, cmd2_sz, "%s %s%s%s %s \"%scd %s ; %s\" "
+      " < /dev/null || kill %i 2>/dev/null",
       ssh_cmd,
-
-      (isOpenSSH?"-f ":""),    /* go into background and nullify stdin */
 
       #if SSH_SUPRESSNEWKEYPROMPT
         (isOpenSSH?"-o 'StrictHostKeyChecking no' ":""),
@@ -341,29 +347,25 @@ int AMUDP_SPMDSshSpawn(int nproc, int argc, char **argv, char **extra_env) {
         "",
       #endif
 
-      ssh_options, ssh_server, 
+      ssh_options, ssh_server,
       
       (AMX_SilentMode?"":"echo connected to \\$HOST... ; "),
 
-      ssh_remote_path, cmd1, ssh_server, pid,
-
-      #if SSH_PARALLELSPAWN
-        "&"
-      #else
-        ""
-      #endif
+      ssh_remote_path, cmd1, pid
     );
 
-    if (!AMX_SilentMode) 
-      AMX_Info("system(%s)", cmd2);
-    if (system(cmd2) == -1) {
-      AMX_Err("Failed to call system() to spawn");
-      AMX_free(cmd1);
-      AMX_free(cmd2);
-      return FALSE;
-    }
-    if (*end) p = end+1;
-    else p = end;
+    // This is currently written to keep a local shell process alive as a parent for the ssh command,
+    // mostly to ensure that ssh connection/authentication failure results in immediate job teardown.
+    // Keeping our process tree intact simplifies clean exit synchronization via wait().
+    // On modern Linux we could potentially background the ssh process (openssh -f),
+    // allow the intermediate shell process to exit, and preserve our process tree using a
+    // prctl(PR_SET_CHILD_SUBREAPER) call, but that approach is not portable.
+    if (!AMX_SilentMode) AMX_Info("exec(/bin/sh -c '%s')", cmd2);
+    int status = execlp("/bin/sh","/bin/sh", "-c", cmd2, NULL);
+    AMX_Err("Failed to call exec() to spawn, status=%i, error=%s",status,strerror(errno));
+    kill(pid,15);
+    _exit(127);
+   } // child process
   } 
 
   AMX_free(cmd1);

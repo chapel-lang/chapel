@@ -145,7 +145,8 @@ module ChapelSyncvar {
       this.isOwned = false;
     }
 
-    proc init=(const ref other : _syncvar) {
+    proc init=(const ref other: _syncvar(?)) {
+      compilerWarning("Initializing a type-inferred variable from a 'sync' is deprecated; apply a 'read??()' method to the right-hand side");
       // Allow initialization from compatible sync variables, e.g.:
       //   var x : sync int = 5;
       //   var y : sync real = x;
@@ -280,55 +281,89 @@ module ChapelSyncvar {
   }
 
   proc   = (ref lhs : _syncvar(?t), rhs : t) {
+    compilerWarning("Direct assignment to 'sync' variables is deprecated; apply a 'write??()' method to modify one");
     lhs.wrapped.writeEF(rhs);
   }
 
+  inline operator :(from, type t:_syncvar)
+  where from.type == t.valType {
+    return new _syncvar(from);
+  }
+
+  inline operator :(from: _syncvar, type toType:_syncvar) {
+    return new _syncvar(from);
+  }
+
   proc  += (ref lhs : _syncvar(?t), rhs : t) {
+    compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() +  rhs);
   }
 
   proc  -= (ref lhs : _syncvar(?t), rhs : t) {
+    compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() -  rhs);
   }
 
   proc  *= (ref lhs : _syncvar(?t), rhs : t) {
+    compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() *  rhs);
   }
 
   proc  /= (ref lhs : _syncvar(?t), rhs : t) {
+    compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() /  rhs);
   }
 
   proc  %= (ref lhs : _syncvar(?t), rhs : t) {
+    compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() %  rhs);
   }
 
   proc **= (ref lhs : _syncvar(?t), rhs : t) {
+    compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() ** rhs);
   }
 
   proc  &= (ref lhs : _syncvar(?t), rhs : t) {
+    compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() &  rhs);
   }
 
   proc  |= (ref lhs : _syncvar(?t), rhs : t) {
+    compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() |  rhs);
   }
 
   proc  ^= (ref lhs : _syncvar(?t), rhs : t) {
+    compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() ^  rhs);
   }
 
   proc >>= (ref lhs : _syncvar(?t), rhs : t) {
+    compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() >> rhs);
   }
 
   proc <<= (ref lhs : _syncvar(?t), rhs : t) {
+    compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() << rhs);
+  }
+
+  proc chpl__compilerGeneratedAssignSyncSingle(ref lhs: _syncvar(?),
+                                               ref rhs: _syncvar(?)) {
+    // TODO: Should this clone the value and the full/empty state instead?
+    lhs.writeEF(rhs.readFE());
+  }
+
+  proc chpl__compilerGeneratedCopySyncSingle(ref sv : _syncvar(?)) {
+    // TODO: this should probably clone the value and full/empty state instead
+    var ret: sv.type = sv.readFE();
+    return ret;
   }
 
   pragma "init copy fn"
   proc chpl__initCopy(ref sv : _syncvar(?t), definedConst: bool) {
+    compilerWarning("Initializing a type-inferred variable from a 'sync' is deprecated; apply a '.read??()' method to the right-hand side");
     return sv.readFE();
   }
 
@@ -367,10 +402,10 @@ module ChapelSyncvar {
   }
 
   proc <=>(lhs : _syncvar, rhs : _syncvar) {
-    const tmp = lhs;
-
-    lhs = rhs;
-    rhs = tmp;
+    compilerWarning("Swapping 'sync' variables is deprecated; perform the swap manually using explicit '.read??'/'.write??' methods");
+    const tmp = lhs.readFE();
+    lhs.writeEF(rhs.readFE());
+    rhs.writeEF(tmp);
   }
 
   /************************************ | *************************************
@@ -688,6 +723,7 @@ module ChapelSyncvar {
     }
 
     proc init=(const ref other : _singlevar) {
+      compilerWarning("Initializing a type-inferred variable from a 'single' is deprecated; apply a 'read??()' method to the right-hand side");
       // Allow initialization from compatible single variables, e.g.:
       //   var x : single int = 5;
       //   var y : single real = x;
@@ -783,11 +819,33 @@ module ChapelSyncvar {
   }
 
   proc =(ref lhs : _singlevar(?t), rhs : t) {
+    compilerWarning("Direct assignment to 'single' variables is deprecated; apply '.writeEF()' to modify one");
     lhs.wrapped.writeEF(rhs);
+  }
+
+  inline operator :(from, type t:_singlevar)
+  where from.type == t.valType {
+    return new _singlevar(from);
+  }
+  inline operator :(from: _singlevar, type toType:_singlevar) {
+    return new _singlevar(from);
+  }
+
+  proc chpl__compilerGeneratedAssignSyncSingle(ref lhs : _singlevar(?),
+                                               ref rhs : _singlevar(?)) {
+    // TODO: Should this clone the value and the full/empty state instead?
+    lhs.writeEF(rhs.readFF());
+  }
+
+  proc chpl__compilerGeneratedCopySyncSingle(ref sv : _singlevar(?)) {
+    // TODO: this should probably clone the value and full/empty state instead
+    var ret: sv.type = sv.readFF();
+    return ret;
   }
 
   pragma "init copy fn"
   proc chpl__initCopy(ref sv : _singlevar(?t), definedConst: bool) {
+    compilerWarning("Initializing a type-inferred variable from a 'single' is deprecated; apply '.readFF()' to the right-hand side");
     return sv.readFF();
   }
 
@@ -1014,16 +1072,16 @@ private module AlignedTSupport {
     return isIntegralType(t) || isBoolType(t);
   }
 
-  inline proc _cast(type t:aligned_t, x : integral) {
+  inline operator :(x : integral, type t:aligned_t) {
     return __primitive("cast", t, x);
   }
-  inline proc _cast(type t:aligned_t, x : bool) {
+  inline operator :(x: bool, type t:aligned_t) {
     return __primitive("cast", t, x);
   }
-  inline proc _cast(type t:chpl_anybool, x : aligned_t) {
+  inline operator :(x : aligned_t, type t:chpl_anybool) {
     return __primitive("cast", t, x);
   }
-  inline proc _cast(type t:integral, x : aligned_t) {
+  inline operator :(x : aligned_t, type t:integral) {
     return __primitive("cast", t, x);
   }
 

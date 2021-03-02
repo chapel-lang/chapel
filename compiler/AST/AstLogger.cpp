@@ -21,15 +21,6 @@
 #include "AstLogger.h"
 #include "stlUtil.h"
 
-
-
-AstLogger::AstLogger() {
-
-}
-
-AstLogger::~AstLogger() {
-}
-
 bool AstLogger::enterAggrType(AggregateType* node) {
   return true;
 }

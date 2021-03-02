@@ -48,7 +48,7 @@ int main(int argc, char **argv) {
     DEFVAR("ABC","ABC")
     DEFVAR("AReallyLongEnvironmentName","A Really Long Environment Value")
   };
-  for (i=0; i < sizeof(envvars)/sizeof(envvars[0]); i++) {
+  for (i=0; i < (int)(sizeof(envvars)/sizeof(envvars[0])); i++) {
     putenv((char*)(envvars[i][2]));
   }
 #endif
@@ -182,7 +182,7 @@ int main(int argc, char **argv) {
   }
 
 #if defined(AMUDP)
-  for (i=0; i < sizeof(envvars)/sizeof(envvars[0]); i++) {
+  for (i=0; i < (int)(sizeof(envvars)/sizeof(envvars[0])); i++) {
     const char *key = envvars[i][0];
     const char *val = envvars[i][1];
     const char *actual = AMX_SPMDgetenvMaster(key);
@@ -192,7 +192,7 @@ int main(int argc, char **argv) {
   }
 #endif
 
-  printf("Slave %i done.\n", MYPROC);
+  printf("Worker %i done.\n", MYPROC);
   fflush(stdout);
 
   /* barrier */

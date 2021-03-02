@@ -112,9 +112,6 @@ void setDefinedConstForFieldsInInitializer(FnSymbol *fn) {
 void removeInitOrAutoCopyPostResolution(CallExpr *call) {
   Expr *parentExpr = call->parentExpr;
 
-  bool createdNoop;
-  Expr *nextExpr = getNextExprOrCreateNoop(parentExpr, createdNoop);
-
   Symbol *argSym = NULL;
   Type *argType = NULL;
   if (SymExpr *se = toSymExpr(call->get(1))) {
@@ -123,6 +120,9 @@ void removeInitOrAutoCopyPostResolution(CallExpr *call) {
   }
   INT_ASSERT(argSym);
   INT_ASSERT(argType);
+
+  if (argSym->hasFlag(FLAG_INSERT_AUTO_DESTROY))
+    argSym->removeFlag(FLAG_INSERT_AUTO_DESTROY);
 
   call->replace(call->get(1)->remove());
 
@@ -135,6 +135,10 @@ void removeInitOrAutoCopyPostResolution(CallExpr *call) {
   INT_ASSERT(isConst->type == dtBool);
 
   if (argType->symbol->hasFlag(FLAG_DOMAIN)) {
+
+    bool createdNoop;
+    Expr *nextExpr = getNextExprOrCreateNoop(parentExpr, createdNoop);
+
     Symbol *lhs = NULL;
     if (CallExpr *parentCall = toCallExpr(parentExpr)) {
       if (parentCall->isPrimitive(PRIM_MOVE)) {
@@ -181,7 +185,7 @@ static Expr* getNextExprOrCreateNoop(Expr *baseExpr, bool &createdNoop) {
 
   return nextExpr;
 }
-                
+
 static void setDefinedConstForDefExprWithIfExprs(Expr* e) {
   if (CallExpr *initCall = toCallExpr(e)) {
     if (initCall->isNamed("chpl__buildDomainExpr")) {
@@ -209,7 +213,7 @@ static VarSymbol *addFieldAccess(Symbol *receiver, const char *fieldName,
 
   Symbol *fieldSym = aggType->getField(fieldName);
   Type *fieldType = asRef ? fieldSym->type->getRefType() : fieldSym->type;
-  
+
   VarSymbol *fieldRef = newTemp(fieldName, fieldType);
   fieldRef->addFlag(FLAG_UNSAFE);  // this is a short-lived temp
   insBefore->insertBefore(new DefExpr(fieldRef));
@@ -238,6 +242,7 @@ static void setDefinedConstForDomainSymbol(Symbol *domainSym,
                                                 insBeforeMarker, insAfterMarker,
                                                 /*asRef=*/ true);
 
+  // TODO: this would be clearer with PRIM_ASSIGN since the LHS is a ref
   CallExpr *setDefinedConst = new CallExpr(PRIM_MOVE, refToDefinedConst,
                                            isConst);
 

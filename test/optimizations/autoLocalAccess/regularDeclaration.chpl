@@ -27,7 +27,7 @@ use common;
   B = 3;
   C = 7;
 
-  // this only optimizes `A[i]` can do more static tracing to optimize others
+
   forall i in A.domain {
     A[i] = B[i] + C[i];
   }

@@ -7,10 +7,19 @@ record Wrap {
 proc Wrap.init=(ref other: Wrap) {
   this._value = other._value;
 }
+proc Wrap.init=(other) {
+  this._value = other;
+}
 
 proc =(ref lhs:Wrap, rhs) {
   lhs._value.clearHelp();
 }
+
+operator :(rhs, type t: Wrap) {
+  var tmp: t = rhs;
+  return tmp;
+}
+
 
 class Abstract {
   proc clear() {

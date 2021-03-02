@@ -7,7 +7,7 @@
 namespace re2 {
 
 
-// 1374 groups, 2778 pairs, 349 ranges
+// 1384 groups, 2798 pairs, 358 ranges
 const CaseFold unicode_casefold[] = {
 	{ 65, 90, 32 },
 	{ 97, 106, -32 },
@@ -122,6 +122,7 @@ const CaseFold unicode_casefold[] = {
 	{ 629, 629, -214 },
 	{ 637, 637, 10727 },
 	{ 640, 640, -218 },
+	{ 642, 642, 42307 },
 	{ 643, 643, -218 },
 	{ 647, 647, 42282 },
 	{ 648, 648, -218 },
@@ -228,6 +229,7 @@ const CaseFold unicode_casefold[] = {
 	{ 7357, 7359, -3008 },
 	{ 7545, 7545, 35332 },
 	{ 7549, 7549, 3814 },
+	{ 7566, 7566, 35384 },
 	{ 7680, 7776, EvenOdd },
 	{ 7777, 7777, 58 },
 	{ 7778, 7829, EvenOdd },
@@ -331,6 +333,7 @@ const CaseFold unicode_casefold[] = {
 	{ 42891, 42892, OddEven },
 	{ 42893, 42893, -42280 },
 	{ 42896, 42899, EvenOdd },
+	{ 42900, 42900, 48 },
 	{ 42902, 42921, EvenOdd },
 	{ 42922, 42922, -42308 },
 	{ 42923, 42923, -42319 },
@@ -341,7 +344,13 @@ const CaseFold unicode_casefold[] = {
 	{ 42929, 42929, -42282 },
 	{ 42930, 42930, -42261 },
 	{ 42931, 42931, 928 },
-	{ 42932, 42937, EvenOdd },
+	{ 42932, 42943, EvenOdd },
+	{ 42946, 42947, EvenOdd },
+	{ 42948, 42948, -48 },
+	{ 42949, 42949, -42307 },
+	{ 42950, 42950, -35384 },
+	{ 42951, 42954, OddEven },
+	{ 42997, 42998, OddEven },
 	{ 43859, 43859, -928 },
 	{ 43888, 43967, -38864 },
 	{ 65313, 65338, 32 },
@@ -359,9 +368,9 @@ const CaseFold unicode_casefold[] = {
 	{ 125184, 125217, 34 },
 	{ 125218, 125251, -34 },
 };
-const int num_unicode_casefold = 349;
+const int num_unicode_casefold = 358;
 
-// 1374 groups, 1404 pairs, 194 ranges
+// 1384 groups, 1414 pairs, 200 ranges
 const CaseFold unicode_tolower[] = {
 	{ 65, 90, 32 },
 	{ 181, 181, 775 },
@@ -548,7 +557,13 @@ const CaseFold unicode_tolower[] = {
 	{ 42929, 42929, -42282 },
 	{ 42930, 42930, -42261 },
 	{ 42931, 42931, 928 },
-	{ 42932, 42936, EvenOddSkip },
+	{ 42932, 42942, EvenOddSkip },
+	{ 42946, 42946, EvenOdd },
+	{ 42948, 42948, -48 },
+	{ 42949, 42949, -42307 },
+	{ 42950, 42950, -35384 },
+	{ 42951, 42953, OddEvenSkip },
+	{ 42997, 42997, OddEven },
 	{ 43888, 43967, -38864 },
 	{ 65313, 65338, 32 },
 	{ 66560, 66599, 40 },
@@ -558,7 +573,7 @@ const CaseFold unicode_tolower[] = {
 	{ 93760, 93791, 32 },
 	{ 125184, 125217, 34 },
 };
-const int num_unicode_tolower = 194;
+const int num_unicode_tolower = 200;
 
 
 

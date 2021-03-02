@@ -1,0 +1,4 @@
+error-atype-not-impl.chpl:21: In 'implements IFC' statement:
+error-atype-not-impl.chpl:21: error: when checking this implements statement
+error-atype-not-impl.chpl:21: note: the associated type AT is not implemented
+error-atype-not-impl.chpl:6: note: the associated type AT in the interface IFC is declared here

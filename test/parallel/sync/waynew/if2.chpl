@@ -9,8 +9,8 @@ cobegin with (ref data) {
   { 
     sleep( 2);
     data = 5;
-    done = true;
+    done.writeEF(true);
   }
-  if done then
+  if done.readFE() then
     writeln( data);
 }

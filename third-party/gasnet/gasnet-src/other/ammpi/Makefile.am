@@ -16,13 +16,19 @@ else
   BUILDCONFIG_DEFINES = -DAMMPI_NDEBUG=1
 endif
 
+if VALGRIND
+  VALGRIND_DEFINES = -DUSE_CLEAR_UNUSED_SPACE
+else
+  VALGRIND_DEFINES =
+endif
+
 CC = @MPI_CC@
 CFLAGS =  @DEVWARN_MPI_CFLAGS@ @MPI_CFLAGS@ $(MANUAL_MPICFLAGS) $(apputils_flags)
 LDFLAGS = @LDFLAGS@ $(MANUAL_LDFLAGS)
 
 PERL = @PERL@
 
-platform_defines = @GASNET_EXTRA_DEFINES@ $(BUILDCONFIG_DEFINES) @INTTYPES_DEFINES@ -DAMMPI_DISABLE_AMTAGS $(MANUAL_DEFINES)
+platform_defines = @GASNET_EXTRA_DEFINES@ $(BUILDCONFIG_DEFINES) $(VALGRIND_DEFINES) @INTTYPES_DEFINES@ -DAMMPI_DISABLE_AMTAGS $(MANUAL_DEFINES)
 
 platform_libraries = -L$(top_builddir) -lgasnet_tools-seq @LIBS@ @MPI_LIBS@
 
@@ -117,7 +123,7 @@ check-exports: libammpi.a
             grep -v -e ' [\._]*ammpi_' -e ' [\._]*AMMPI_' -e ' [\._]*AM_'           \
 	            -e ' [\._]*amx_' -e ' [\._]*AMX_'                               \
                     -e ' [\._]*gasnett_' -e ' [\._]*gasneti_'                       \
-                    -e ' [\._][\._]*debug_' -e 'get_pc_thunk'                       \
+                    -e ' [\._][\._]*debug_' -e 'get_pc_thunk' -e ' smpi_'           \
                     -e __FUNCTION__ -e __PRETTY_FUNCTION__ -e debug_info_seg |      \
             @PERL@ -n -e 'print if /^[0-9a-fA-F]+\s+[A-Z]\s+/' > .$$lib.exp;        \
           if test -s .$$lib.exp ; then                                              \

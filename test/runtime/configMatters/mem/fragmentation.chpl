@@ -4,7 +4,7 @@
 // thread from then using it. This isn't exact because how threads might retain
 // memory is implementation specific, but if we have fragmentation this would
 // fail under a comm that uses a fixed heap along with qthreads+jemalloc.
-use Memory;
+use Memory.Diagnostics;
 
 const totalMem = availMem();
 config const memFraction = 4;

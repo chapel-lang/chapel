@@ -145,6 +145,11 @@ CXX_STD := $(shell test $(DEF_C_VER) -ge 201112 -a $(DEF_CXX_VER) -lt 201103 && 
 # If a compiler uses C++11 or newer by default, CXX11_STD will be blank.
 CXX11_STD := $(shell test $(DEF_CXX_VER) -lt 201103 && echo -std=gnu++11)
 
+ifeq ($(GNU_GPP_MAJOR_VERSION),4)
+  CXX_STD   := -std=gnu++11
+  CXX11_STD := -std=gnu++11
+endif
+
 COMP_CXXFLAGS += $(CXX_STD)
 RUNTIME_CFLAGS += $(C_STD)
 RUNTIME_CXXFLAGS += $(CXX_STD)
@@ -161,6 +166,10 @@ WARN_CXXFLAGS = $(WARN_COMMONFLAGS) -Wno-comment
 WARN_CFLAGS = $(WARN_COMMONFLAGS) -Wmissing-prototypes -Wstrict-prototypes -Wmissing-format-attribute
 WARN_GEN_CFLAGS = $(WARN_CFLAGS)
 SQUASH_WARN_GEN_CFLAGS = -Wno-unused -Wno-uninitialized
+
+ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -gt 5; echo "$$?"),0)
+WARN_CXXFLAGS += -Wsuggest-override
+endif
 
 #
 # Don't warn for signed pointer issues (ex. c_ptr(c_char) )

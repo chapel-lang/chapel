@@ -3,12 +3,12 @@ var count: sync int = n;
 var barrier: single bool;
 
 proc work(i) {
-  var c: int = count-1;
+  var c: int = count.readFE()-1;
   if c != 0 {
-    count = c;
-    barrier;
+    count.writeEF(c);
+    barrier.readFF();
   } else {
-    barrier = true;
+    barrier.writeEF(true);
   }
   writeln(i);
 }

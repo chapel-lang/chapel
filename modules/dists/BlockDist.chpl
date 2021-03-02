@@ -1005,6 +1005,10 @@ override proc BlockArr.dsiIteratorYieldsLocalElements() param {
   return true;
 }
 
+override proc BlockDom.dsiIteratorYieldsLocalElements() param {
+  return true;
+}
+
 //
 // NOTE: Each locale's myElems array must be initialized prior to
 // setting up the RAD cache.
@@ -1071,8 +1075,9 @@ inline proc BlockArr.dsiLocalAccess(i: rank*idxType) ref {
 //
 inline proc BlockArr.dsiAccess(const in idx: rank*idxType) ref {
   local {
-    if myLocArr != nil && _to_nonnil(myLocArr).locDom.contains(idx) then
-      return _to_nonnil(myLocArr).this(idx);
+    if const myLocArrNN = myLocArr then
+      if myLocArrNN.locDom.contains(idx) then
+        return myLocArrNN.this(idx);
   }
   return nonLocalAccess(idx);
 }
@@ -1084,8 +1089,7 @@ inline proc BlockArr.dsiBoundsCheck(i: rank*idxType) {
 pragma "fn unordered safe"
 proc BlockArr.nonLocalAccess(i: rank*idxType) ref {
   if doRADOpt {
-    if this.myLocArr {
-      const myLocArr = _to_nonnil(this.myLocArr);
+    if const myLocArr = this.myLocArr {
       var rlocIdx = dom.dist.targetLocsIdx(i);
       if !disableBlockLazyRAD {
         if myLocArr.locRAD == nil {
@@ -1475,8 +1479,8 @@ proc BlockDom.dsiHasSingleLocalSubdomain() param return true;
 proc BlockArr.dsiLocalSubdomain(loc: locale) {
   if (loc == here) {
     // quick solution if we have a local array
-    if myLocArr != nil then
-      return _to_nonnil(myLocArr).locDom.myBlock;
+    if const myLocArrNN = myLocArr then
+      return myLocArrNN.locDom.myBlock;
     // if not, we must not own anything
     var d: domain(rank, idxType, stridable);
     return d;
@@ -1759,7 +1763,7 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
 
       // save our local scan total away and signal that it's ready
       elemPerLoc[1] = tot;
-      inputReady$[1] = true;
+      inputReady$[1].writeEF(true);
 
       // the "first" locale scans the per-locale contributions as they
       // become ready
@@ -1769,12 +1773,12 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
         var next: resType = metaop.identity;
         for locid in dom.dist.targetLocDom {
           const targetloc = targetLocs[locid];
-          const locready = inputReady$.replicand(targetloc)[1];
+          const locready = inputReady$.replicand(targetloc)[1].readFE();
 
           // store the scan value and mark that it's ready
           ref locVal = elemPerLoc.replicand(targetloc)[1];
           locVal <=> next;
-          outputReady$.replicand(targetloc)[1] = true;
+          outputReady$.replicand(targetloc)[1].writeEF(true);
 
           // accumulate to prep for the next iteration
           metaop.accumulateOntoState(next, locVal);
@@ -1784,7 +1788,7 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
 
       // block until someone tells us that our local value has been updated
       // and then read it
-      const resready = outputReady$[1];
+      const resready = outputReady$[1].readFE();
       const myadjust = elemPerLoc[1];
       if debugBlockScan then
         writeln(locid, ": myadjust = ", myadjust);

@@ -28,13 +28,13 @@ iter myiter() {
 iter myiter(param tag: iterKind) where tag == iterKind.standalone {
   var cnt$: sync int = 1;
   coforall curloc in MyLocales do on curloc {
-    const current = cnt$;
+    const current = cnt$.readFE();
     writef("myiter start %t\n", current);
     for jjj in 1..mm {
       yield current * 100 + jjj;
     }
     writef("myiter done  %t\n", current);
-    cnt$ = current + 1;
+    cnt$.writeEF(current + 1);
   }
 }
 

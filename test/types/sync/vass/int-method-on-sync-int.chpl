@@ -9,4 +9,4 @@ proc int.methodOnInt() {
 
 var i$: sync int = 55;
 
-i$.methodOnInt();
+i$.readFE().methodOnInt();

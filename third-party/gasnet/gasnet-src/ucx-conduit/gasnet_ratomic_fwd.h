@@ -1,7 +1,7 @@
 /*   $Source: bitbucket.org:berkeleylab/gasnet.git/ucx-conduit/gasnet_ratomic_fwd.h $
  * Description: GASNet Remote Atomics API Header (forward decls)
  * Copyright 2017, The Regents of the University of California
- * Copyright 2019, Mellanox Technologies LTD. All rights reserved.
+ * Copyright 2019-2020, Mellanox Technologies LTD. All rights reserved.
  * Terms of use are as specified in license.txt
  */
 
@@ -33,9 +33,10 @@
 // only in the absence of conduit-specific atomics.
 //
 // (###) Conduits cloning the file *must* remove (or comment-out) this define!
-//#if GASNETE_BUILD_AMRATOMIC
-//  #define GASNETE_RATOMIC_AMONLY 1
-//#endif
+#if !defined(GASNET_SEGMENT_FAST) && !defined(GASNET_SEGMENT_LARGE)
+  #define GASNETE_RATOMIC_AMONLY 1
+#endif
+
 
 // 1b. GASNETE_AMRATOMIC_USE_RMA_gex_dt_*
 //
@@ -105,11 +106,20 @@
 // HOWEVER, that is almost never a safe determination to make, since
 // Tools may use mutexes, etc.   TL;DR: use 0 for offloadable types.
 //
+#if defined(GASNET_SEGMENT_FAST) || defined(GASNET_SEGMENT_LARGE)
 #define GASNETE_RATOMIC_ALWAYS_TOOLS_SAFE_gex_dt_I32 0
 #define GASNETE_RATOMIC_ALWAYS_TOOLS_SAFE_gex_dt_U32 0
 #define GASNETE_RATOMIC_ALWAYS_TOOLS_SAFE_gex_dt_I64 0
 #define GASNETE_RATOMIC_ALWAYS_TOOLS_SAFE_gex_dt_U64 0
 #define GASNETE_RATOMIC_ALWAYS_TOOLS_SAFE_gex_dt_FLT 1
 #define GASNETE_RATOMIC_ALWAYS_TOOLS_SAFE_gex_dt_DBL 1
+#else
+#define GASNETE_RATOMIC_ALWAYS_TOOLS_SAFE_gex_dt_I32 1
+#define GASNETE_RATOMIC_ALWAYS_TOOLS_SAFE_gex_dt_U32 1
+#define GASNETE_RATOMIC_ALWAYS_TOOLS_SAFE_gex_dt_I64 1
+#define GASNETE_RATOMIC_ALWAYS_TOOLS_SAFE_gex_dt_U64 1
+#define GASNETE_RATOMIC_ALWAYS_TOOLS_SAFE_gex_dt_FLT 1
+#define GASNETE_RATOMIC_ALWAYS_TOOLS_SAFE_gex_dt_DBL 1
+#endif
 
 #endif // _GASNET_RATOMIC_FWD_H

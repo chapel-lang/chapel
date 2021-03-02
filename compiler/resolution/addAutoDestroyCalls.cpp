@@ -720,7 +720,7 @@ static void gatherIgnoredVariablesForYield(
   }
 }
 
-class ComputeLastSymExpr : public AstVisitorTraverse
+class ComputeLastSymExpr final : public AstVisitorTraverse
 {
   public:
     std::vector<VarSymbol*>& inited;
@@ -729,11 +729,11 @@ class ComputeLastSymExpr : public AstVisitorTraverse
     ComputeLastSymExpr(std::vector<VarSymbol*>& inited,
                        std::map<VarSymbol*, Expr*>& last)
       : inited(inited), last(last) { }
-    virtual bool enterDefExpr(DefExpr* node);
     void noteRecordInit(VarSymbol* v, CallExpr* call);
-    virtual bool enterCallExpr(CallExpr* node);
-    virtual void visitSymExpr(SymExpr* node);
-    virtual void exitForallStmt(ForallStmt* node);
+    bool enterDefExpr(DefExpr* node) override;
+    bool enterCallExpr(CallExpr* node) override;
+    void visitSymExpr(SymExpr* node) override;
+    void exitForallStmt(ForallStmt* node) override;
 };
 
 static Expr* findLastExprInStatement(Expr* e, VarSymbol* v);
@@ -981,7 +981,8 @@ SymExpr* findSourceOfYield(CallExpr* yield) {
   // autoCopy call.
   while (expr != NULL && needle != NULL) {
     if (CallExpr* move = toCallExpr(expr)) {
-      if (move->isPrimitive(PRIM_MOVE) == true) {
+      if (move->isPrimitive(PRIM_MOVE) ||
+          move->isPrimitive(PRIM_ASSIGN)) {
         SymExpr*   lhs    = toSymExpr(move->get(1));
         VarSymbol* lhsVar = toVarSymbol(lhs->symbol());
 

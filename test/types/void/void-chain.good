@@ -1,0 +1,2 @@
+void-chain.chpl:5: In function 'bar':
+void-chain.chpl:7: error: illegal use of function that does not return a value: 'foo'

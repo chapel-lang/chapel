@@ -68,20 +68,26 @@ This distribution may perform unnecessary communication
 between locales.
 */
 class Private: BaseDist {
-  override proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool, inds) {
+  override proc dsiNewRectangularDom(param rank: int, type idxType,
+                                     param stridable: bool, inds) {
     for i in inds do
       if i.size != 0 then
         halt("Tried to create a privateDom with a specific index set");
-    return new unmanaged PrivateDom(rank=rank, idxType=idxType, stridable=stridable, dist=_to_unmanaged(this));
+
+    return new unmanaged PrivateDom(rank=rank, idxType=idxType,
+                                    stridable=stridable,
+                                    dist=_to_unmanaged(this));
   }
 
   proc writeThis(x) throws {
     x <~> "Private Distribution\n";
   }
+
   // acts like a singleton
   proc dsiClone() return _to_unmanaged(this);
 
   proc trackDomains() param return false;
+
   override proc dsiTrackDomains()    return false;
 
   override proc singleton() param return true;
@@ -108,7 +114,11 @@ class PrivateDom: BaseRectangularDom {
   proc dsiSerialWrite(x) { x <~> "Private Domain"; }
 
   proc dsiBuildArray(type eltType, param initElts:bool) {
-    return new unmanaged PrivateArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=_to_unmanaged(this), initElts=initElts);
+    return new unmanaged PrivateArr(eltType=eltType, rank=rank,
+                                    idxType=idxType,
+                                    stridable=stridable,
+                                    dom=_to_unmanaged(this),
+                                    initElts=initElts);
   }
 
   proc dsiNumIndices return numLocales;
@@ -117,9 +127,11 @@ class PrivateDom: BaseRectangularDom {
   proc dsiStride return 0;
   proc dsiSetIndices(x: domain) { halt("cannot reassign private domain"); }
   proc dsiGetIndices() { return {0..numLocales-1}; }
+
   proc dsiDim(d : int) {
     return dsiLow..dsiHigh;
   }
+
   proc dsiDims() {
     return (dsiLow..dsiHigh,);
   }
@@ -130,19 +142,23 @@ class PrivateDom: BaseRectangularDom {
 
   override proc dsiRequiresPrivatization() param return true;
   override proc linksDistribution() param return false;
-  override proc dsiLinksDistribution()     return false;
+
+  override proc dsiLinksDistribution() return false;
 
   proc dsiGetPrivatizeData() return 0;
 
   proc dsiPrivatize(privatizeData) {
-    return new unmanaged PrivateDom(rank=rank, idxType=idxType, stridable=stridable, dist=dist);
+    return new unmanaged PrivateDom(rank=rank, idxType=idxType,
+                                    stridable=stridable,
+                                    dist=dist);
   }
 
   proc dsiGetReprivatizeData() return 0;
 
   proc dsiReprivatize(other, reprivatizeData) { }
 
-  proc dsiMember(i) return 0 <= i && i <= numLocales-1;
+  proc dsiMember(i) return (0 <= i && i <= numLocales-1);
+
   override proc dsiMyDist() return dist;
 }
 
@@ -151,11 +167,12 @@ private proc checkCanMakeDefaultValue(type eltType) param {
 }
 
 class PrivateArr: BaseRectangularArr {
+
   var dom: unmanaged PrivateDom(rank, idxType, stridable);
 
-  pragma "no init" pragma "unsafe" pragma "no auto destroy"
   // may be initialized separately
   // always destroyed explicitly (to control deiniting elts)
+  pragma "no init" pragma "unsafe" pragma "no auto destroy"
   var data: eltType;
 
   var isPrivatizedCopy: bool;
@@ -180,10 +197,10 @@ class PrivateArr: BaseRectangularArr {
       __primitive("=", this.data, default);
     }
   }
+
   proc init(toPrivatize: PrivateArr) {
     var privdom = chpl_getPrivatizedCopy(toPrivatize.dom.type,
                                          toPrivatize.dom.pid);
-
     super.init(eltType=toPrivatize.eltType, rank=toPrivatize.rank,
                idxType=toPrivatize.idxType, stridable=toPrivatize.stridable);
     this.dom = privdom;
@@ -192,8 +209,8 @@ class PrivateArr: BaseRectangularArr {
     this.defaultInitDataOnPrivatize = toPrivatize.defaultInitDataOnPrivatize;
     this.complete();
 
-    if toPrivatize.defaultInitDataOnPrivatize {
-      pragma "no auto destroy"
+    if defaultInitDataOnPrivatize {
+      pragma "no auto destroy" pragma "unsafe"
       var default: eltType;
       __primitive("=", this.data, default);
     }
@@ -202,6 +219,10 @@ class PrivateArr: BaseRectangularArr {
   proc deinit() {
     // data is deinited in dsiDestroyArr if necessary.
 
+  }
+
+  override proc dsiIteratorYieldsLocalElements() param {
+    return true;
   }
 }
 

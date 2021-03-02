@@ -5,7 +5,7 @@ config const thresh=1.0e-10;
 
 // Modified sinMatrix function
 proc sinMatrix(n) {
-  var A = Matrix(n);
+  var A = Matrix({1..n, 1..n});
   const fac0 = 1.0/(n+1.0);
   const fac1 = sqrt(2.0*fac0);
   for (i,j) in {1..n,1..n} {

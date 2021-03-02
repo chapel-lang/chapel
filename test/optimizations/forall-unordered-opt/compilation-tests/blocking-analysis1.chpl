@@ -46,23 +46,23 @@ blocking_loop_bool_waitfor();
 
 // sync and single
 proc blocking_sync_write() {
-  globalSync = 1;
+  globalSync.writeEF(1);
 }
 blocking_sync_write();
 
 proc blocking_sync_read() {
-  var x = globalSync;
+  var x = globalSync.readFE();
   return x;
 }
 blocking_sync_read();
 
 proc blocking_single_write() {
-  globalSingle = 1;
+  globalSingle.writeEF(1);
 }
 blocking_single_write();
 
 proc blocking_single_read() {
-  var x = globalSingle;
+  var x = globalSingle.readFF();
   return x;
 }
 blocking_single_read();

@@ -1,10 +1,10 @@
-interface I(type T) {
+interface I(T) {
   proc foo(T):T;
 }
 
 implements I(int);
 
-proc foo(x?U):U {
+proc foo(x:?U):U {
   return x;
 }
 

@@ -690,6 +690,13 @@ module ChapelLocale {
   pragma "no doc"
   class localesSignal {
     var s: atomic bool;
+
+    // Override default initializer; this could go away when the
+    // compiler's default initializer creates a version that takes a
+    // bool rather than an 'atomic bool' (which generates a
+    // '--warn-unstable' warning otherwise)
+    proc init() {
+    }
   }
   pragma "no doc"
   record localesBarrier {

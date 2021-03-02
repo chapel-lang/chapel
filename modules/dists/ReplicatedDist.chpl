@@ -451,6 +451,12 @@ class ReplicatedArr : AbsBaseArr {
   proc replicand(loc: locale) ref {
     return localArrs[loc.id]!.arrLocalRep;
   }
+
+  // scan the local locale's replicand
+  proc doiScan(op, dom) where ((rank == 1) &&
+                               chpl__scanStateResTypesMatch(op)) {
+    return localArrs[here.id]!.arrLocalRep._instance.doiScan(op, dom);
+  }
 }
 
 pragma "no doc"

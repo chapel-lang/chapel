@@ -241,8 +241,8 @@ module ChapelDistribution {
         _arrs_containing_dom -=1;
         if rmFromList && trackArrays() {
           if _arrs_head == x then _arrs_head = x.next;
-          if x.next != nil then x.next!.prev = x.prev;
-          if x.prev != nil then x.prev!.next = x.next;
+          if const xnext = x.next then xnext.prev = x.prev;
+          if const xprev = x.prev then xprev.next = x.next;
         }
         cnt = _arrs_containing_dom;
         // add one for the main domain record
@@ -266,9 +266,9 @@ module ChapelDistribution {
         _arrs_containing_dom += 1;
         if addToList && trackArrays() {
           assert (x.prev == nil && x.next == nil);
-          if _arrs_head != nil {
-            x.next = _arrs_head;
-            _arrs_head!.prev = x;
+          if const ahead = _arrs_head {
+            x.next = ahead;
+            ahead.prev = x;
           }
           _arrs_head = x;
         }
@@ -320,6 +320,10 @@ module ChapelDistribution {
     proc dsiDisplayRepresentation() { writeln("<no way to display representation>"); }
 
     proc dsiSupportsAutoLocalAccess() param {
+      return false;
+    }
+
+    proc dsiIteratorYieldsLocalElements() param {
       return false;
     }
 

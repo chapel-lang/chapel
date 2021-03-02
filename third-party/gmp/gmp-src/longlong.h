@@ -436,7 +436,7 @@ long __MPN(count_leading_zeros) (UDItype);
     && W_TYPE_SIZE == 32
 #define add_ssaaaa(sh, sl, ah, al, bh, bl) \
   do {									\
-    if (__builtin_constant_p (bl) && -(USItype)(bl) < 0x100)		\
+    if (__builtin_constant_p (bl) && -(USItype)(bl) < (USItype)(bl))	\
       __asm__ ("subs\t%1, %4, %5\n\tadc\t%0, %2, %3"			\
 	   : "=r" (sh), "=&r" (sl)					\
 	       : "r" (ah), "rI" (bh),					\
@@ -447,8 +447,8 @@ long __MPN(count_leading_zeros) (UDItype);
 	   : "r" (ah), "rI" (bh), "%r" (al), "rI" (bl) __CLOBBER_CC);	\
   } while (0)
 /* FIXME: Extend the immediate range for the low word by using both ADDS and
-   SUBS, since they set carry in the same way.  Note: We need separate
-   definitions for thumb and non-thumb to to th absense of RSC under thumb.  */
+   SUBS, since they set carry in the same way.  We need separate definitions
+   for thumb and non-thumb since thumb lacks RSC.  */
 #if defined (__thumb__)
 #define sub_ddmmss(sh, sl, ah, al, bh, bl) \
   do {									\
@@ -504,7 +504,7 @@ long __MPN(count_leading_zeros) (UDItype);
       __asm__ ("subs\t%1, %4, %5\n\tsbc\t%0, %2, %3"			\
 	       : "=r" (sh), "=&r" (sl)					\
 	       : "r" (ah), "rI" (bh), "r" (al), "rI" (bl) __CLOBBER_CC); \
-    else /* only bh might be a constant */				\
+    else								\
       __asm__ ("subs\t%1, %4, %5\n\tsbc\t%0, %2, %3"			\
 	       : "=r" (sh), "=&r" (sl)					\
 	       : "r" (ah), "rI" (bh), "r" (al), "rI" (bl) __CLOBBER_CC); \
@@ -560,11 +560,9 @@ extern UWtype __MPN(udiv_qrnnd) (UWtype *, UWtype, UWtype, UWtype);
 #endif /* __arm__ */
 
 #if defined (__aarch64__) && W_TYPE_SIZE == 64
-/* FIXME: Extend the immediate range for the low word by using both
-   ADDS and SUBS, since they set carry in the same way.  */
 #define add_ssaaaa(sh, sl, ah, al, bh, bl) \
   do {									\
-    if (__builtin_constant_p (bl) && -(UDItype)(bl) < 0x1000)		\
+    if (__builtin_constant_p (bl) && ~(UDItype)(bl) <= (UDItype)(bl))	\
       __asm__ ("subs\t%1, %x4, %5\n\tadc\t%0, %x2, %x3"			\
 	       : "=r" (sh), "=&r" (sl)					\
 	       : "rZ" ((UDItype)(ah)), "rZ" ((UDItype)(bh)),		\
@@ -577,7 +575,7 @@ extern UWtype __MPN(udiv_qrnnd) (UWtype *, UWtype, UWtype, UWtype);
   } while (0)
 #define sub_ddmmss(sh, sl, ah, al, bh, bl) \
   do {									\
-    if (__builtin_constant_p (bl) && -(UDItype)(bl) < 0x1000)		\
+    if (__builtin_constant_p (bl) && ~(UDItype)(bl) <= (UDItype)(bl))	\
       __asm__ ("adds\t%1, %x4, %5\n\tsbc\t%0, %x2, %x3"			\
 	       : "=r,r" (sh), "=&r,&r" (sl)				\
 	       : "rZ,rZ" ((UDItype)(ah)), "rZ,rZ" ((UDItype)(bh)),	\
@@ -1056,7 +1054,7 @@ extern UWtype __MPN(udiv_qrnnd) (UWtype *, UWtype, UWtype, UWtype);
    && (HAVE_HOST_CPU_haswell || HAVE_HOST_CPU_broadwell \
        || HAVE_HOST_CPU_skylake || HAVE_HOST_CPU_bd4 || HAVE_HOST_CPU_zen)
 #define umul_ppmm(w1, w0, u, v) \
-  __asm__ ("mulx\t%3, %0, %1"						\
+  __asm__ ("mulx\t%3, %q0, %q1"						\
 	   : "=r" (w0), "=r" (w1)					\
 	   : "%d" ((UDItype)(u)), "rm" ((UDItype)(v)))
 #else
@@ -1494,36 +1492,37 @@ extern UWtype __MPN(udiv_qrnnd) (UWtype *, UWtype, UWtype, UWtype);
    This might seem strange, but gcc folds away the dead code late.  */
 #define sub_ddmmss(sh, sl, ah, al, bh, bl) \
   do {									\
-    if (__builtin_constant_p (bl) && bl > -0x8000 && bl <= 0x8000) {	\
+    if (__builtin_constant_p (bl)					\
+	&& (bl) > -0x8000 && (bl) <= 0x8000 && (bl) != 0) {		\
 	if (__builtin_constant_p (ah) && (ah) == 0)			\
 	  __asm__ ("addic %1,%3,%4\n\tsubfze %0,%2"			\
 		   : "=r" (sh), "=&r" (sl)				\
 		   :                       "r" ((UDItype)(bh)),		\
-		     "rI" ((UDItype)(al)), "*rI" (-((UDItype)(bl)))	\
+		     "r" ((UDItype)(al)), "*rI" (-((UDItype)(bl)))	\
 		     __CLOBBER_CC);					\
 	else if (__builtin_constant_p (ah) && (ah) == ~(UDItype) 0)	\
 	  __asm__ ("addic %1,%3,%4\n\tsubfme %0,%2"			\
 		   : "=r" (sh), "=&r" (sl)				\
 		   :                       "r" ((UDItype)(bh)),		\
-		     "rI" ((UDItype)(al)), "*rI" (-((UDItype)(bl)))	\
+		     "r" ((UDItype)(al)), "*rI" (-((UDItype)(bl)))	\
 		     __CLOBBER_CC);					\
 	else if (__builtin_constant_p (bh) && (bh) == 0)		\
 	  __asm__ ("addic %1,%3,%4\n\taddme %0,%2"			\
 		   : "=r" (sh), "=&r" (sl)				\
-		   : "r"  ((UDItype)(ah)),				\
-		     "rI" ((UDItype)(al)), "*rI" (-((UDItype)(bl)))	\
+		   : "r" ((UDItype)(ah)),				\
+		     "r" ((UDItype)(al)), "*rI" (-((UDItype)(bl)))	\
 		     __CLOBBER_CC);					\
 	else if (__builtin_constant_p (bh) && (bh) == ~(UDItype) 0)	\
 	  __asm__ ("addic %1,%3,%4\n\taddze %0,%2"			\
 		   : "=r" (sh), "=&r" (sl)				\
-		   : "r"  ((UDItype)(ah)),				\
-		     "rI" ((UDItype)(al)), "*rI" (-((UDItype)(bl)))	\
+		   : "r" ((UDItype)(ah)),				\
+		     "r" ((UDItype)(al)), "*rI" (-((UDItype)(bl)))	\
 		     __CLOBBER_CC);					\
 	else								\
 	  __asm__ ("addic %1,%4,%5\n\tsubfe %0,%3,%2"			\
 		   : "=r" (sh), "=&r" (sl)				\
-		   : "r"  ((UDItype)(ah)), "r" ((UDItype)(bh)),		\
-		     "rI" ((UDItype)(al)), "*rI" (-((UDItype)(bl)))	\
+		   : "r" ((UDItype)(ah)), "r" ((UDItype)(bh)),		\
+		     "r" ((UDItype)(al)), "*rI" (-((UDItype)(bl)))	\
 		     __CLOBBER_CC);					\
     } else {								\
 	if (__builtin_constant_p (ah) && (ah) == 0)			\
@@ -2056,8 +2055,10 @@ extern __longlong_h_C UWtype mpn_udiv_qrnnd_r (UWtype, UWtype, UWtype, UWtype *)
 #define add_ssaaaa(sh, sl, ah, al, bh, bl) \
   do {									\
     UWtype __x;								\
-    __x = (al) + (bl);							\
-    (sh) = (ah) + (bh) + (__x < (al));					\
+    UWtype __al = (al);							\
+    UWtype __bl = (bl);							\
+    __x = __al + __bl;							\
+    (sh) = (ah) + (bh) + (__x < __al);					\
     (sl) = __x;								\
   } while (0)
 #endif
@@ -2066,8 +2067,10 @@ extern __longlong_h_C UWtype mpn_udiv_qrnnd_r (UWtype, UWtype, UWtype, UWtype *)
 #define sub_ddmmss(sh, sl, ah, al, bh, bl) \
   do {									\
     UWtype __x;								\
-    __x = (al) - (bl);							\
-    (sh) = (ah) - (bh) - ((al) < (bl));					\
+    UWtype __al = (al);							\
+    UWtype __bl = (bl);							\
+    __x = __al - __bl;							\
+    (sh) = (ah) - (bh) - (__al < __bl);					\
     (sl) = __x;								\
   } while (0)
 #endif

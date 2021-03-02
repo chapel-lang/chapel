@@ -9,6 +9,7 @@ Start analyzing forall (elemAsIndex.chpl:19)
 |
 End analyzing forall (elemAsIndex.chpl:19)
 
+Local access attempt reverted. All static checks failed or code is unreachable.(elemAsIndex.chpl:20)
 Custom this was called
 Custom this was called
 Custom this was called

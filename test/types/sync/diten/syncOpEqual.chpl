@@ -1,10 +1,10 @@
 proc main {
   var s$: sync int = 0;
 
-  s$ += 1;
-  s$ *= 2;
-  s$ **= 3;
-  s$ >>= 2;
-  s$ -= 1;
+  s$.writeEF(s$.readFE() + 1);
+  s$.writeEF(s$.readFE() * 2);
+  s$.writeEF(s$.readFE() ** 3);
+  s$.writeEF(s$.readFE() >> 2);
+  s$.writeEF(s$.readFE() - 1);
   writeln(s$.readFF());
 }

@@ -19,8 +19,10 @@ End analyzing forall for automatic aggregation [no ALA clone]  (basicDestAgg.chp
 
 Aggregation candidate has confirmed local child [static only ALA clone] (basicDestAgg.chpl:14)
 LHS is nonlocal, RHS is local. Will use destination aggregation [static only ALA clone] (basicDestAgg.chpl:14)
+Confirmed that this symbol is a local array element (basicDestAgg.chpl:34)
 Aggregation candidate has confirmed local child  (basicDestAgg.chpl:34)
 LHS is nonlocal, RHS is local. Will use destination aggregation  (basicDestAgg.chpl:34)
+Confirmed that this symbol is a local array element (basicDestAgg.chpl:34)
 Aggregation candidate has confirmed local child  (basicDestAgg.chpl:34)
 LHS is nonlocal, RHS is local. Will use destination aggregation  (basicDestAgg.chpl:34)
 Replaced assignment with aggregation (basicDestAgg.chpl:34)

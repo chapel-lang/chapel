@@ -5,7 +5,6 @@ are wrapped in one module and "user" code in another.
 
 This way reqFun() implementation is not visible
 at call site within the CG function.
-TODO: when this works, switch the other similar tests to using modules.
 */
 module Library {
   interface IFC(T) {
@@ -23,6 +22,8 @@ module Library {
 }
 
 module User {
+  use Library;
+
   proc reqFun(arg1: real, arg2: int) {
     writeln("in reqFun/real*int", (arg1, arg2));
   }

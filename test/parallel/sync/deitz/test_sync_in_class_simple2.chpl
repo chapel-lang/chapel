@@ -4,15 +4,15 @@ class C {
 
 var c = new unmanaged C();
 
-c.s = 2;
+c.s.writeEF(2);
 
-var r: int = c.s;
+var r: int = c.s.readFE();
 
 writeln(r);
 
-c.s = 3;
+c.s.writeEF(3);
 
-r = c.s;
+r = c.s.readFE();
 
 writeln(r);
 
