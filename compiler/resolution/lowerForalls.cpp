@@ -706,7 +706,7 @@ static ArgSymbol* newExtraFormal(ShadowVarSymbol* svar, int ix,
       // If _build_tuple_always_allow_ref's actual has a non-ref type,
       // even if it is an ArgSymbol with a ref intent, the corresponding
       // component of the resulting tuple will be non-ref, which will break
-      // SSCA2 and test/parallel/forall/vass/intents-all-int.chpl.
+      // SSCA2 and test/parallel/forall/vass/other/intents-all-int.chpl.
       // Todo: fix resolution of _build_tuple_always_allow_ref.
       // Or, create a _build_tuple specifically when it is known
       // which formals/components should be by ref.

@@ -35,8 +35,8 @@
 
 // flags to be added to the aggregation markers
 symbolFlag ( FLAG_AGG_MARKER, npr, "aggregation marker", ncm)
-symbolFlag ( FLAG_AGG_IN_STATIC_ONLY_CLONE, npr, "static only aggregation marker", " this aggreagation is happening in a static only forall clone")
-symbolFlag ( FLAG_AGG_IN_STATIC_AND_DYNAMIC_CLONE, npr, "static and dynamic aggregation marker", " this aggreagation is happening in a static and dynamic forall clone")
+symbolFlag ( FLAG_AGG_IN_STATIC_ONLY_CLONE, npr, "static only aggregation marker", " this aggregation is happening in a static only forall clone")
+symbolFlag ( FLAG_AGG_IN_STATIC_AND_DYNAMIC_CLONE, npr, "static and dynamic aggregation marker", " this aggregation is happening in a static and dynamic forall clone")
 symbolFlag ( FLAG_AGG_GENERATOR, ypr, "aggregator generator", " this function generates and returns an aggregator")
 
 // Indicates an array implementation class can alias other array implementations

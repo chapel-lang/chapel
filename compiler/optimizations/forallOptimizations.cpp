@@ -341,7 +341,7 @@ void cleanupRemainingAggCondStmts() {
         aggregatorToRemove->defPoint->remove();
 
         // search for the aggregator in the parent function and scrub it clean.
-        // We expect 3 occurances of the symbol after the else block is gone
+        // We expect 3 occurrences of the symbol after the else block is gone
         std::vector<SymExpr *> symExprs;
         collectSymExprs(fn->body, symExprs);
 
@@ -2139,7 +2139,7 @@ static bool handleYieldedArrayElementsInAssignment(CallExpr *call,
 
   // We want the `fastFollowerControl` flag to be false for the non-fast
   // follower, and true elsewhere. So, if `onlyIfFastFollower` is set, we
-  // initally set `fastFollowerControl` to be `false`. We will switch it to
+  // initially set `fastFollowerControl` to be `false`. We will switch it to
   // `true` when we copy the fast follower body, later on.
   //
   // If `onlyIfFastFollower` is unset, this flag shouldn't hinder the

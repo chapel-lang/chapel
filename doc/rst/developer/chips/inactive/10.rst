@@ -672,7 +672,7 @@ For more details on when the copy initializer would be called, please refer to
 `CHIP 13 - When Do Records and Array Copies Occur`_
 
 .. _CHIP 13 - When Do Records and Array Copies Occur:
-   https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/chips/13.rst
+   https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/chips/inactive/13.rst
 
 
 Deinitialization

@@ -140,7 +140,7 @@ static void resolveFormals(FnSymbol* fn) {
     //
     // If the formal has void type, and its parent symbol is compiler-
     // generated, and the parent symbol is astrInit, then it is an aggregate
-    // field intialization, such as new c(); and the field cannot be void.
+    // field initialization, such as new c(); and the field cannot be void.
     if (formal->type == dtVoid && !formal->hasFlag(FLAG_TYPE_VARIABLE)) {
       Symbol* ps = formal->defPoint->parentSymbol;
       if (ps) {
@@ -2739,7 +2739,7 @@ static void insertInitConversion(Symbol* to, Symbol* toType, Symbol* from,
     } else {
       // for types where it's not yet possible to write init=,
       // use PRIM_ASSIGN and PRIM_CAST.
-      // This should only be occuring for types that are
+      // This should only be occurring for types that are
       // either extern or for non-record types when the coercion is legal.
 
       // (TODO: use tertiary initializers to remove the exception for

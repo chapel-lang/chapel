@@ -533,7 +533,7 @@ module ChapelLocale {
   // Returns a reference to a singleton array (stored in AbstractLocaleModel)
   // storing this locale.
   //
-  // This singleton array is useful for some array/domain implementaitons
+  // This singleton array is useful for some array/domain implementations
   // (such as DefaultRectangular) to help the targetLocales call return
   // by 'const ref' without requiring the array/domain implementation
   // to store another array.

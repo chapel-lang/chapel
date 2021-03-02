@@ -283,7 +283,7 @@ void handleCallsToOtherCGfuns(FnSymbol* origFn, InterfaceInfo* ifcInfo,
         resolveNormalCall(call);
         
       } else {
-        // cgCallee was created for 'origFn'. It gets refernced in 'newFn'
+        // cgCallee was created for 'origFn'. It gets referenced in 'newFn'
         // because newFn is a copy of origFn. Once handleCallsToOtherCGfuns
         // finishes, there should remain no references in newFn.
         INT_ASSERT(cgCalleeSE->parentSymbol == origFn);
@@ -1274,10 +1274,10 @@ ConstraintSat constraintIsSatisfiedAtCallSite(CallExpr*      callsite,
   InterfaceSymbol* isym = constraint->ifcSymbol();
 
   // 'call2wf' represents 'constraint' throughout this function
-  // because it contains proiperly instantiated arguments.
+  // because it contains properly instantiated arguments.
   CallExpr* call2wf = buildCall2wf(isym, constraint, substitutions);
 
-  // If the cosntraint is satisfied by the enclosing CG fn's constraint,
+  // If the constraint is satisfied by the enclosing CG fn's constraint,
   // look no further.
   // CG TODO: handle callsite being in a fn that's nested in a CG fn.
   if (FnSymbol* enclFn = interimParentFn(callsite))

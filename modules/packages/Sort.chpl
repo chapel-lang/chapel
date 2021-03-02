@@ -832,7 +832,7 @@ module TimSort {
   private proc _TimSort(Data: [?Dom], lo:int, hi:int, blockSize=16, comparator:?rec=defaultComparator) {
     import Sort.InsertionSort;
 
-    /*Parallely apply insertionSort on each block of size `blockSize`
+    /*Parallelly apply insertionSort on each block of size `blockSize`
      using forall loop*/
 
     const stride = if Dom.stridable then abs(Dom.stride) else 1;
@@ -845,7 +845,7 @@ module TimSort {
 
     /* apply merge operations on each block
     *as the merges at a level are independent of each other
-    *they can be applied parallely 
+    *they can be applied parallelly
     */
 
     var numSize = blockSize;
