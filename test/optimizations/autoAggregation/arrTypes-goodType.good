@@ -3,6 +3,7 @@ Start analyzing forall for automatic aggregation (arrTypes.chpl:7)
 |  Potential source aggregation (arrTypes.chpl:8)
 End analyzing forall for automatic aggregation (arrTypes.chpl:7)
 
+Confirmed that this symbol is a local array element (arrTypes.chpl:8)
 Aggregation candidate has confirmed local child  (arrTypes.chpl:8)
 LHS is local, RHS is nonlocal. Will use source aggregation  (arrTypes.chpl:8)
 Replaced assignment with aggregation (arrTypes.chpl:8)
