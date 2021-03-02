@@ -42,6 +42,7 @@
 #include "stringutil.h"
 #include "TransformLogicalShortCircuit.h"
 #include "typeSpecifier.h"
+#include "view.h"
 #include "wellknown.h"
 
 #include <cctype>
@@ -2021,6 +2022,49 @@ static void normalizeCallToConstructor(CallExpr* call) {
   }
 }
 
+static IfExpr* getParentIfExpr(CallExpr* call) {
+  if (BlockStmt* parentBlock = toBlockStmt(call->parentExpr)) {
+    if (parentBlock->length() == 1) {
+      if (IfExpr* parentIf = toIfExpr(parentBlock->parentExpr)) {
+        if (parentIf->getThenStmt() == parentBlock ||
+            parentIf->getElseStmt() == parentBlock) {
+          return parentIf;
+        }
+      }
+    }
+  }
+
+  return NULL;
+}
+
+static bool callNeedsAnOwner(CallExpr* call) {
+  INT_ASSERT(call->isPrimitive(PRIM_NEW));
+
+  bool hasOwner = true;
+  if (IfExpr* parentIf = getParentIfExpr(call)) {
+    if (parentIf == parentIf->getStmtExpr()) {
+      hasOwner = false;
+    }
+  }
+  else {
+    if (call == call->getStmtExpr()) {
+      hasOwner = false;
+    }
+  }
+
+  if (hasOwner) return false;
+
+  if (call->numActuals() >= 1) {
+    if (SymExpr *typeSE = toSymExpr(call->get(1))) {
+      if (isDecoratedClassType(typeSE->symbol()->type)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
 static void fixPrimNew(CallExpr* primNewToFix) {
   SET_LINENO(primNewToFix);
 
@@ -2060,6 +2104,13 @@ static void fixPrimNew(CallExpr* primNewToFix) {
   if (exprModToken != NULL) {
     newNew->insertAtHead(exprMod);
     newNew->insertAtHead(exprModToken);
+  }
+
+  if (callNeedsAnOwner(newNew)) {
+    CallExpr *noop = new CallExpr(PRIM_NOOP);
+    newNew->insertBefore(noop);
+    insertCallTempsWithStmt(newNew, noop);
+    noop->remove();
   }
 }
 
