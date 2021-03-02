@@ -91,7 +91,7 @@ DefExpr* InterfaceSymbol::buildDef(const char* name,
       if (AT->defPoint->init != NULL || AT->defPoint->exprType != NULL)
         USR_FATAL_CONT(expr, "an associated type at present cannot have"
                              " a default value");
-      // support for multi-argument inferfaces is pending #17008
+      // support for multi-argument interfaces is pending #17008
       if (isym->ifcFormals.length > 1)
         USR_FATAL_CONT(expr, "associated types at present are not allowed"
                        " for multi-argument interfaces");
