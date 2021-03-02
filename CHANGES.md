@@ -1,10 +1,127 @@
 Release Changes List
 ====================
 
+version 1.24.0
+==============
+
+Twenty-seventh public release of Chapel, March 18, 2021
+
+Highlights (see subsequent sections for further details)
+--------------------------------------------------------
+
+Syntactic / Naming Changes
+--------------------------
+
+Semantic Changes / Changes to Chapel Language
+---------------------------------------------
+
+New Features
+------------
+
+Feature Improvements
+--------------------
+
+Deprecated / Unstable / Removed Language Features
+-------------------------------------------------
+
+Deprecated / Removed Library Features
+-------------------------------------
+
+Standard Library Modules
+------------------------
+
+Package Modules
+---------------
+
+Standard Domain Maps (Layouts and Distributions)
+------------------------------------------------
+
+Mason Improvements
+------------------
+
+New Tools / Tool Changes
+------------------------
+
+Interoperability Improvements
+-----------------------------
+
+Performance Optimizations / Improvements
+----------------------------------------
+
+Compilation-Time / Generated Code Improvements
+----------------------------------------------
+
+Memory Improvements
+-------------------
+
+Documentation
+-------------
+
+Syntax Highlighting
+-------------------
+
+Example Codes
+-------------
+
+Portability
+-----------
+
+Compiler Flags
+--------------
+
+Runtime Library Changes
+-----------------------
+
+Launchers
+---------
+
+Generated Executable Flags
+--------------------------
+
+Error Messages / Semantic Checks
+--------------------------------
+
+Execution-time Checks
+---------------------
+
+Bug Fixes
+---------
+
+Platform-specific bug fixes
+---------------------------
+
+Packaging / Configuration Changes
+---------------------------------
+
+Third-Party Software Changes
+----------------------------
+
+Developer-oriented changes: Documentation improvements
+------------------------------------------------------
+
+Developer-oriented changes: Module changes
+------------------------------------------
+
+Developer-oriented changes: Makefile improvements
+-------------------------------------------------
+
+Developer-oriented changes: Compiler Flags
+------------------------------------------
+
+Developer-oriented changes: Compiler improvements/changes
+---------------------------------------------------------
+
+Developer-oriented changes: Runtime improvements
+------------------------------------------------
+
+Developer-oriented changes: Testing System
+------------------------------------------
+
+
 version 1.23.0
 ==============
 
-Twenty-sixth public release of Chapel, October 15, 2020  
+Twenty-sixth public release of Chapel, October 15, 2020
 
 Highlights (see subsequent sections for further details)
 --------------------------------------------------------
