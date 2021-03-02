@@ -988,7 +988,7 @@ module ChapelDistribution {
         prevNewIdx = newIdx;
       }
       //fill the initial added space with IRV
-      for i in 0..prevNewIdx-1 do data[i] = irv;
+      for i in 0..prevNewIdx-2 do data[i] = irv;
     }
 
     // shift data array after single index addition. Fills the new index with irv
