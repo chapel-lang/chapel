@@ -2058,9 +2058,9 @@ static bool callNeedsAnOwner(CallExpr* call) {
 
   if (call->numActuals() >= 1) {
     if (SymExpr *typeSE = toSymExpr(call->get(1))) {
-      if (isDecoratedClassType(typeSE->symbol()->type)) {
+      //if (isDecoratedClassType(typeSE->symbol()->type)) {
         return true;
-      }
+      //}
     }
   }
 
