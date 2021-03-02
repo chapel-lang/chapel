@@ -63,6 +63,24 @@ or
 
 .. data:: var unarynp = ~(a+b)
 
+.. data:: var binpunarym = a+-b
+
+.. data:: var andub = a&&!b
+
+.. data:: var andubor = a&&!(b||c)
+
+.. data:: var unarympow = -a**b
+
+.. data:: var Unarympow = (-a)**b
+
+.. data:: var powunarym = a**-b
+
+.. data:: var powunarymP = a**-(b+c)
+
+.. data:: var unarymcast = -a: uint
+
+.. data:: var Unarymcast = (-a): uint
+
 .. data:: var tp = a*b+c
 
 .. data:: var Tp = a*b+c
@@ -164,4 +182,12 @@ or
 .. data:: var bXaX = (a^b)&(c^d)
 
 .. data:: var bxAx = a^b&c^d
+
+.. function:: proc foo(x)
+
+.. data:: var addfoo = a+foo(b)
+
+.. data:: var fooadd = foo(a)+b
+
+.. data:: var fooAdd = foo(a+b)
 

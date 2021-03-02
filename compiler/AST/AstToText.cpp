@@ -769,7 +769,6 @@ void AstToText::appendExpr(Expr* expr, bool printingType, const char *outer,
   }
 }
 
-
 void AstToText::appendExpr(UnresolvedSymExpr* expr)
 {
   if (strcmp(expr->unresolved, "_shared") == 0) {
@@ -912,7 +911,7 @@ static int opToPrecedence(const char *op, bool unary, bool postfix) {
   // new is precedence 19, but doesn't come through this path.
   if (postfix && (strcmp(op, "?") == 0 || strcmp(op, "!") == 0))
     return 18;
-  else if (strcmp(op, ":") == 0)
+  else if (strcmp(op, ":") == 0 || op == astr_cast)
     return 17;
   else if (strcmp(op, "**") == 0)
     return 16;
@@ -936,10 +935,10 @@ static int opToPrecedence(const char *op, bool unary, bool postfix) {
   else if (strcmp(op, "+") == 0 || strcmp(op, "-") == 0)
     return 7;
   // .. and ..< are precedence 6, but don't come through this path.
-  else if (strcmp(op, "<") == 0 || strcmp(op, "<=") == 0 ||
-           strcmp(op, ">") == 0 || strcmp(op, ">=") == 0)
+  else if (op == astrSlt || op == astrSlte ||
+           op == astrSgt || op == astrSgte)
     return 5;
-  else if (strcmp(op, "==") == 0 || strcmp(op, "!=") == 0)
+  else if (op == astrSeq || op == astrSne)
     return 4;
   else if (strcmp(op, "&&") == 0)
     return 3;
@@ -948,7 +947,7 @@ static int opToPrecedence(const char *op, bool unary, bool postfix) {
   // by and align are precedence 1 too, but don't come through this path.
   else if (strcmp(op, "#") == 0)
     return 1;
-  printf("unknown op %s", op);
+  INT_FATAL("unknown op %s", op);
   return 0;
 }
 
@@ -985,9 +984,12 @@ static int opToPrecedence(const char *op, bool unary, bool postfix) {
  * The innerIsRHS flag is needed because we need parens to express
  * a-(b-c) where inner- is the RHS of the outer-.  But we can emit
  * a-b-c instead of (a-b)-c -- when inner- is the LHS of outer-.
+ * Also, to distinguish (-1)**2 (parens needed) from 1**(-2) (not needed).
  */
 static bool needParens(const char *outer, const char *inner,
-                       bool outerUnary, bool outerPostfix, bool innerIsRHS) {
+                       bool outerUnary, bool outerPostfix,
+                       bool innerUnary, bool innerPostfix,
+                       bool innerIsRHS) {
   bool ret = false;
   int outerprec, innerprec;
 
@@ -995,7 +997,12 @@ static bool needParens(const char *outer, const char *inner,
     return false;
 
   outerprec = opToPrecedence(outer, outerUnary, outerPostfix);
-  innerprec = opToPrecedence(inner, false, false); // inner is a binary op
+  innerprec = opToPrecedence(inner, innerUnary, innerPostfix);
+
+  // We never need parens around the unary expression on the RHS:
+  // 1**-2 vs 1**(-2)
+  if (innerUnary && innerIsRHS)
+    return false;
 
   if (outerprec > innerprec)
     ret = true;
@@ -1041,45 +1048,84 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType, const char *outer,
       // UnaryOp not
       if     (strcmp(fnName, "!")                            == 0)
       {
+        bool needsParens = needParens(outer, fnName, unary, postfix,
+                                      true, false, isRHS);
+
+        if (needsParens)
+          mText += "(";
         mText += "!";
         appendExpr(expr->get(1), printingType, fnName, true, false, false);
+        if (needsParens)
+          mText += ")";
       }
 
       // postfix!
       else if (fnName == astrPostfixBang                     &&
                expr->numActuals()                            == 1)
       {
+        bool needsParens = needParens(outer, fnName, unary, postfix,
+                                      true, true, isRHS);
+
+        if (needsParens)
+          mText += "(";
         appendExpr(expr->get(1), printingType, fnName, true, true, false);
         mText += "!";
+        if (needsParens)
+          mText += ")";
       }
 
       // UnaryOp bitwise negate
       else if (strcmp(fnName, "~")                           == 0 &&
                expr->numActuals()                            == 1)
       {
+        bool needsParens = needParens(outer, fnName, unary, postfix,
+                                      true, false, isRHS);
+
+        if (needsParens)
+          mText += "(";
         mText += "~";
         appendExpr(expr->get(1), printingType, fnName, true, false, false);
+        if (needsParens)
+          mText += ")";
       }
 
       // UnaryOp negate
       else if (strcmp(fnName, "-")                           == 0 &&
                expr->numActuals()                            == 1)
       {
+        bool needsParens = needParens(outer, fnName, unary, postfix,
+                                      true, false, isRHS);
+        if (needsParens)
+          mText += "(";
         mText += "-";
         appendExpr(expr->get(1), printingType, fnName, true, false, false);
+        if (needsParens)
+          mText += ")";
       }
 
       // UnaryOp plus
       else if (strcmp(fnName, "+")                           == 0 &&
                expr->numActuals()                            == 1)
       {
+        bool needsParens = needParens(outer, fnName, unary, postfix,
+                                      true, false, isRHS);
+        if (needsParens)
+          mText += "(";
         mText += "+";
         appendExpr(expr->get(1), printingType, fnName, true, false, false);
+        if (needsParens)
+          mText += ")";
       }
 
       else if (expr->isCast())
       {
+        bool needsParens = needParens(outer, fnName, unary, postfix,
+                                      false, false, isRHS);
+        if (needsParens)
+          mText += "(";
         appendExpr(expr->castFrom(), printingType, ":", false, false, false);
+        if (needsParens)
+          mText += ")";
         mText += ": ";
         appendExpr(expr->castTo(), printingType);
       }
@@ -1334,7 +1380,8 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType, const char *outer,
         else
         {
           // Binary operator, infix notation
-          bool needsParens = needParens(outer, fnName, unary, postfix, isRHS);
+          bool needsParens = needParens(outer, fnName, unary, postfix,
+                                        false, false, isRHS);
           if (needsParens)
             mText += "(";
           appendExpr(expr->get(1), printingType, fnName, false, false, false);

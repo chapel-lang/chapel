@@ -36,6 +36,18 @@ module variablePrecedence {
 
   var unarynp = ~(a+b);
 
+  var binpunarym = a + (-b);
+  var andub = a && !b;
+  var andubor = a && ! (b || c);
+
+  var unarympow = -a**b;
+  var Unarympow = (-a)**b;
+  var powunarym = a**-b;
+  var powunarymP = a**-(b+c);
+
+  var unarymcast = -a:uint;
+  var Unarymcast = (-a):uint;
+
   var tp = a*b+c;
   var Tp = (a*b)+c;
   var tP = a*(b+c);
@@ -81,7 +93,6 @@ module variablePrecedence {
   var unarybo = !a||b;
   var unarybO = !(a||b);
 
-
   var booo = a | b | c | d;
   var boao = a | b & c | d;
   var bOao = (a|b) & c | d;
@@ -101,4 +112,9 @@ module variablePrecedence {
   var bXax = (a ^ b) & c ^ d;
   var bXaX = (a ^ b) & (c ^ d);
   var bxAx = a ^ (b & c) ^ d;
+
+  proc foo(x) { return x + 5; }
+  var addfoo = a + foo(b);
+  var fooadd = foo(a) + b;
+  var fooAdd = foo(a+b);
 }
