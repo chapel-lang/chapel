@@ -162,7 +162,7 @@ module DefaultSparse {
       const (found, insertPt) = find(ind);
 
       // if the index already existed, then return
-      if (found) then return 0;  // ?fromMMS: magic number for dsiAdd retval?
+      if (found) then return 0;  // 0 additions because already in there
 
       if boundsChecking then
         this.boundsCheck(ind);
@@ -281,7 +281,7 @@ module DefaultSparse {
         _bulkGrow();
 
         var indIdx = _indices.domain.low;
-        var prevIdx = parentDom.low;
+        var prevIdx = parentDom.low-1;
 
         if isUnique {
           _indices[_indices.domain.low..#inds.size]=inds;
