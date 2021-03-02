@@ -5,9 +5,9 @@ import sys
 import chpl_comm, chpl_comm_substrate, chpl_platform, overrides
 from utils import error, memoize
 
-def slurm_prefix(base_launcher):
-    """ If salloc is available, prefix with slurm-"""
-    if find_executable('salloc'):
+def slurm_prefix(base_launcher, platform_val):
+    """ If salloc is available and we're on a cray-cs, prefix with slurm-"""
+    if platform_val == 'cray-cs' and find_executable('salloc'):
         return 'slurm-{}'.format(base_launcher)
     return base_launcher
 
@@ -53,11 +53,11 @@ def get():
             if substrate_val == 'smp':
                 launcher_val = 'smp'
             elif substrate_val == 'mpi':
-                launcher_val = slurm_prefix('gasnetrun_mpi')
+                launcher_val = slurm_prefix('gasnetrun_mpi', platform_val)
             elif substrate_val == 'ibv':
-                launcher_val = slurm_prefix('gasnetrun_ibv')
+                launcher_val = slurm_prefix('gasnetrun_ibv', platform_val)
             elif substrate_val == 'ucx':
-                launcher_val = slurm_prefix('gasnetrun_ucx')
+                launcher_val = slurm_prefix('gasnetrun_ucx', platform_val)
             elif substrate_val == 'ofi':
                 launcher_val = 'gasnetrun_ofi'
             elif substrate_val == 'psm':
