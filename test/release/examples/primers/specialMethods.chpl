@@ -25,6 +25,10 @@ record ExampleRecord2 {
 }
 proc ExampleRecord2.secondaryMethod() { }
 
+// Methods declared outside of a class or record and outside of the scope where
+// the type is defined are called tertiary methods.  Tertiary methods follow the
+// same declaration syntax as secondary methods.
+
 // This primer will use the secondary method form, but all of the special
 // methods can also be written as primary methods.
 
