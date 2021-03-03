@@ -720,6 +720,22 @@ static bool canCopyElideCall(CallExpr* call, Symbol* lhs, Symbol* rhs) {
          !(isCallExprTemporary(rhs) && isTemporaryFromNoCopyReturn(rhs));
 }
 
+// Promote local variables within a block to the parent map.
+static void promoteLocalVars(VarToCopyElisionState& parentMap,
+                             VarToCopyElisionState& blockMap,
+                             VariablesSet& parentSet,
+                             VariablesSet& blockSet) {
+  VarToCopyElisionState::iterator it;
+  for (it = blockMap.begin(); it != blockMap.end(); ++it) {
+    VarSymbol* var = toVarSymbol(it->first);
+    if (blockSet.find(var) != blockSet.end()) {
+      if (parentSet.find(var) == parentSet.end()) {
+        parentMap[var] = blockMap[var];
+      }
+    }
+  }
+}
+
 // returns true if there was an unconditional return
 static bool doFindCopyElisionPoints(Expr* start,
                                     VarToCopyElisionState& map,
@@ -879,27 +895,28 @@ static bool doFindCopyElisionPoints(Expr* start,
       VarToCopyElisionState ifMap;
       VarToCopyElisionState elseMap;
 
+      VariablesSet ifEligible = eligible;
+      VariablesSet elseEligible = eligible;
+
       bool ifRet = false;
       bool elseRet = false;
-      {
-        VariablesSet ifEligible = eligible;
-        ifRet = doFindCopyElisionPoints(ifStart, ifMap, ifEligible);
-      }
 
-      if (elseStart != NULL) {
-        VariablesSet elseEligible = eligible;
+      ifRet = doFindCopyElisionPoints(ifStart, ifMap, ifEligible);
+
+      promoteLocalVars(map, ifMap, eligible, ifEligible);
+
+      if (elseStart) {
         elseRet = doFindCopyElisionPoints(elseStart, elseMap, elseEligible);
+        promoteLocalVars(map, elseMap, eligible, elseEligible);
       }
 
       // If both blocks return, then they have already been copy elided.
       if (ifRet && elseRet) {
         return true;
 
-      // Neither if nor else block returns. Migrate elision points from 
+      // Neither if nor else block returns. Promote elision points from 
       // each block into the parent copy elision map. If a variable is
-      // defined in a higher scope and not copied in both blocks, then we
-      // cannot migrate it. If it is local to a block, then we can migrate
-      // it freely.
+      // not copied in both blocks, then we cannot promote it.
       } else if (!ifRet && !elseRet) {
 
         // The loop below relies on the maps being ordered.
@@ -912,16 +929,10 @@ static bool doFindCopyElisionPoints(Expr* start,
           VarSymbol* elseVar = elseIt->first;
 
           if (comp(ifVar, elseVar)) {
-            // Migrate var if local, then advance if iterator.
-            if (cond->thenStmt->contains(ifVar->defPoint)) {
-              map[ifVar] = ifIt->second;
-            }
+            // if element was less, so advance if iterator
             ++ifIt;
           } else if (comp(elseVar, ifVar)) {
-            // Migrate var if local, then advance else iterator.
-            if (cond->elseStmt->contains(elseVar->defPoint)) {
-              map[elseVar] = elseIt->second;
-            }
+            // else element was less, so advance else iterator  
             ++elseIt;
           } else {
             // ifVar == elseVar
@@ -947,21 +958,7 @@ static bool doFindCopyElisionPoints(Expr* start,
           }
         }
 
-        // Migrate remaining local vars in if block to local map.
-        for (; ifIt != ifMap.end(); ++ifIt) {
-          if (cond->thenStmt->contains(ifIt->first->defPoint)) {
-            map[ifIt->first] = ifIt->second;
-          }
-        }
-
-        // Migrate remaining local vars in else block to local map.
-        for (; elseIt != elseMap.end(); ++ elseIt) {
-          if (cond->elseStmt->contains(elseIt->first->defPoint)) {
-            map[elseIt->first] = elseIt->second;
-          }
-        }
-
-      // One block hasn't returned. Figure out which one it is, and migrate
+      // One block hasn't returned. Figure out which one it is, and promote 
       // all its elision points into the parent map.
       } else {
         VarToCopyElisionState::iterator it, end;
