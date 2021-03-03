@@ -906,6 +906,9 @@ static bool looksLikeInfixOperator(const char *fnName)
  *
  * postfix flag is needed because postfix ! has higher precedence than
  * prefix !.
+ *
+ * Returns precedence: higher is tighter-binding.
+ * Returns -1 for unhandled operator -- caller should respond conservatively.
  */
 static int opToPrecedence(const char *op, bool unary, bool postfix) {
   // new is precedence 19, but doesn't come through this path.
@@ -947,8 +950,8 @@ static int opToPrecedence(const char *op, bool unary, bool postfix) {
   // by and align are precedence 1 too, but don't come through this path.
   else if (strcmp(op, "#") == 0)
     return 1;
-  INT_FATAL("unknown op %s", op);
-  return 0;
+
+  return -1;
 }
 
 /*
@@ -998,6 +1001,12 @@ static bool needParens(const char *outer, const char *inner,
 
   outerprec = opToPrecedence(outer, outerUnary, outerPostfix);
   innerprec = opToPrecedence(inner, innerUnary, innerPostfix);
+
+  // -1 means opToPrecedence wasn't expecting one of these operators.
+  // Conservatively wrap parentheses around the representation of this
+  // AST node.
+  if (outerprec == -1 || innerprec == -1)
+    return true;
 
   // We never need parens around the unary expression on the RHS:
   // 1**-2 vs 1**(-2)
