@@ -235,8 +235,6 @@ pragma "no doc"
 proc isPrimitiveValue(e) param  return isPrimitiveType(e.type);
 pragma "no doc"
 proc isEnumValue(e)      param  return isEnumType(e.type);
-
-
 //Defined elsewhere:
 // isTupleValue
 // isHomogeneousTupleValue
