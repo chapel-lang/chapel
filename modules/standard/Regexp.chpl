@@ -481,7 +481,7 @@ proc compile(pattern: ?t, posix=false, literal=false, noCapture=false,
     var err_str = qio_regexp_error(ret._regexp);
     var err_msg: string;
     try! {
-      err_msg = createStringWithNewBuffer(err_str) +
+      err_msg = createStringWithOwnedBuffer(err_str) +
                   " when compiling regexp '" + patternStr + "'";
     }
     throw new owned BadRegexpError(err_msg);
