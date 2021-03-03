@@ -113,6 +113,14 @@ module DifferentArguments {
   }
 } // end of DifferentArguments module
 
+module RecMoreMethods {
+  private use modToUse;
+
+  proc Rec.method3() {
+    writeln("In Rec.method3()");
+  }
+} // end of RecMoreMethods module
+
 module MainModule {
   proc main() {
     writeln("Access from outside a module");
@@ -558,8 +566,14 @@ module MainModule {
       // writeln(bar);        // this won't resolve since bar isn't available
     }
 
-    /* When any of these are present, any instances of classes or records
-       will be able to access their symbols defined in that module.
+    /* Class and record instances obtained in scopes where the type is not
+       otherwise visible can still access any fields and any methods defined in
+       their original scope.
+
+       To impact the visibility of methods defined in modules other than where
+       the type was defined, the type itself can be listed in an ``only`` or
+       ``except`` list for ``use`` statements, or as one of the symbols listed
+       in an ``import`` statement.
     */
     {
       use modToUse only;
@@ -567,6 +581,9 @@ module MainModule {
       writeln(rec.field);            // Accessible because we have an instance
       rec.method1();                 // Ditto to the field case
       rec.method2();
+
+      use RecMoreMethods only Rec;
+      rec.method3();                 // Enabled by previous use statement
     }
 
     writeln();
