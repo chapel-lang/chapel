@@ -922,6 +922,13 @@ static bool doFindCopyElisionPoints(Expr* start,
       } else {
         // neither if nor else returns
 
+        // Handle case where there is only an if block that does not return.
+        // We need to elide copies local to the block.
+        if (!elseStart && !ifRet && ifMap.size()) {
+          doElideCopies(ifMap);
+          return false;
+        }
+
         // Look for variables copy-inited from in both the if and else
         // and adjust the main map accordingly.
 
@@ -932,9 +939,15 @@ static bool doFindCopyElisionPoints(Expr* start,
         VarToCopyElisionState::iterator ifIt = ifMap.begin();
         VarToCopyElisionState::iterator elseIt = elseMap.begin();
 
+        // Migrate elision points common to both blocks into the parent
+        // copy elision map. When an elision point common to both blocks is
+        // migrated, mark it as 'lastIsCopy = false' in the ifMap and
+        // elseMap. This way we can elide copies local to the 'if' and 'else'
+        // blocks without touching migrated elision points.
         while (ifIt != ifMap.end() && elseIt != elseMap.end()) {
           VarSymbol* ifVar = ifIt->first;
           VarSymbol* elseVar = elseIt->first;
+
           if (comp(ifVar, elseVar)) {
             // if element was less, so advance if iterator
             ++ifIt;
@@ -959,13 +972,27 @@ static bool doFindCopyElisionPoints(Expr* start,
               for_vector (CallExpr, point, elseState.points) {
                 state.points.push_back(point);
               }
+
+              // Elision point has been migrated, so mark 'lastIsCopy' in
+              // each original map as 'false' to prevent it from being
+              // elided down below.
+              ifState.lastIsCopy = false;
+              elseState.lastIsCopy = false;
             }
             ++ifIt;
             ++elseIt;
           }
         }
-        // no need to handle leftovers (e.g. ifIt not at end)
-        // because we marked uses above.
+
+        // Elide copies local to the if block.
+        if (ifMap.size()) {
+          doElideCopies(ifMap);
+        }
+
+        // Elide copies local to the else block.
+        if (elseMap.size()) {
+          doElideCopies(elseMap);
+        }
       }
     } else if (isFunctionOrTypeDeclaration(cur)) {
       // OK: mentions like `proc f() { ... x ... }` don't count
