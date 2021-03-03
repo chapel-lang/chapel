@@ -4,6 +4,5 @@
     "chpl",
     "inited",
     "rtype"
-  ],
-  "git.ignoreLimitWarning": true
+  ]
 }
