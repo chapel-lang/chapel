@@ -1,4 +1,103 @@
 use List;
+use Map;
+
+/*
+
+this is a start at making something with an API like Python argparse
+
+class ArgumentError : Error {
+  var msg:string;
+  proc init(msg:string) {
+    this.msg = msg;
+  }
+  override proc message() {
+    return msg;
+  }
+}
+
+// indicates a result of argument parsing
+class Argument {
+  var present: bool;
+  var values: list(string);
+
+  proc boolValue() throws {
+    if values.size == 0 {
+      return false;
+    } else if values.size == 1 {
+      if values.first == 'true' then
+        return true;
+      else if values.first == 'false' || values.first == '' then
+        return false;
+      else
+        throw new ArgumentError("boolValue called on non-bool Argument");
+    } else { 
+      throw new ArgumentError("boolValue called on non-bool Argument");
+    }
+    return false;
+  }
+  proc listValue() {
+    return values;
+  }
+  proc stringValue() throws {
+    if values.size != 1 {
+      throw new ArgumentError("stringValue called on non-string Argument");
+    }
+    return values.first;
+  }
+}
+
+class ArgumentHandler {
+  proc noteMatch(startIndex: int) {
+    present = true;
+    this.startIndex = startIndex;
+  }
+
+  // consumes matching arguments starting at args[i]
+  // possibly by appending some to otherArgs
+  // returns the number of arguments consumed
+  proc consume(const args: list(string),
+               i: int,
+               ref result:map(string, Argument),
+               out nconsumed:int) throws {
+    return 0;
+  }
+}
+
+record argumentParser {
+  var handlers: list(ArgumentHandler);
+  var result:map(string, Argument);
+
+  // store_true
+  proc addFlag(names:string...,
+               value:string='true',
+               dest:string="");
+
+  proc addValue
+  // this is what argparse would do
+  proc addArgument(names:string...,
+                   // store store_true store_false
+                   // append
+                   // help
+                   // store_const append_const
+                   // count version extend
+                   action:string = '',
+                   nargs:int = -1, // 0 if arg starts with - and 1 otherwise
+                   storeValue:string = '', // argparse calls it const
+                   default:string = '',
+                   // argparse has type
+                   // argparse has choices
+                   required:bool = false,
+                   help:string = "",
+                   metavar:string = "",
+                   dest:string = "") {
+  }
+
+
+                 flags: borrowed Flag ...) throws {
+  present
+    value
+}
+*/
 
 /*
 
