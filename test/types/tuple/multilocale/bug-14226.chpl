@@ -1,7 +1,9 @@
+use CPtr;
+
 proc getAddr(obj) {
-  return __primitive("cast", uint(64), __primitive("_wide_get_addr", obj));
+  return __primitive("_wide_get_addr", obj);
 }
-proc getAddrAndLocality(obj) : (locale, uint(64)) {
+proc getAddrAndLocality(obj) : (locale, c_void_ptr) {
   return (obj.locale, getAddr(obj));
 }
 class A {
@@ -14,7 +16,7 @@ class A {
  
 record B {
   var y : unmanaged A?;
-  var yinfo :(locale, uint(64));
+  var yinfo :(locale, c_void_ptr);
  
   proc init() {
 
@@ -45,4 +47,8 @@ on Locales[numLocales-1] {
     assert(x.y!.loc == Locales[0], "Bad object: ", x.y, ", locality info is ", getAddrAndLocality(x.y), " but should be ", x.yinfo);
   }
 }
+
+for b in buff do
+  delete b.y;
+
 writeln("Nothing to see here");
