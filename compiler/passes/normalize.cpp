@@ -43,7 +43,6 @@
 #include "TransformLogicalShortCircuit.h"
 #include "typeSpecifier.h"
 #include "wellknown.h"
-#include "view.h"
 
 #include <cctype>
 #include <set>
@@ -2042,26 +2041,13 @@ static bool callNeedsAnOwner(CallExpr* call) {
 
   if (isArgSymbol(call->parentSymbol)) return false;
 
-  bool hasOwner = true;
   if (IfExpr* parentIf = getParentIfExpr(call)) {
     if (parentIf == parentIf->getStmtExpr()) {
-      hasOwner = false;
+      return true;
     }
   }
-  else {
-    if (call == call->getStmtExpr()) {
-      hasOwner = false;
-    }
-  }
-
-  if (hasOwner) return false;
-
-  if (call->numActuals() >= 1) {
-    if (SymExpr *typeSE = toSymExpr(call->get(1))) {
-      //if (isDecoratedClassType(typeSE->symbol()->type)) {
-        return true;
-      //}
-    }
+  else if (call == call->getStmtExpr()) {
+    return true;
   }
 
   return false;
