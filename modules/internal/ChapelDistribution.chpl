@@ -974,7 +974,7 @@ module ChapelDistribution {
     // at the end of bulkAdd, it is almost certain that oldnnz!=data.size
     override proc sparseBulkShiftArray(shiftMap, oldnnz){
       var newIdx: int;
-      var prevNewIdx = 1;
+      var prevNewIdx = 0;
 
       // fill all new indices i s.t. i > indices[oldnnz]
       forall i in shiftMap.domain.high+1..dom.nnzDom.high do data[i] = irv;
@@ -988,7 +988,7 @@ module ChapelDistribution {
         prevNewIdx = newIdx;
       }
       //fill the initial added space with IRV
-      for i in 0..prevNewIdx-2 do data[i] = irv;
+      for i in 0..prevNewIdx-1 do data[i] = irv;
     }
 
     // shift data array after single index addition. Fills the new index with irv

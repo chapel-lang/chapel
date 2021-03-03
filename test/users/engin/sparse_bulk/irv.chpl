@@ -9,7 +9,7 @@ var csrDom: sparse subdomain(ParentDom) dmapped CS(compressRows=true);
 var cscDom: sparse subdomain(ParentDom) dmapped CS(compressRows=false);
 var cooDom: sparse subdomain(ParentDom);
 
-var SparseDom = if layoutType == layoutTypes.csr then 
+var SparseDom = if layoutType == layoutTypes.csr then
                   csrDom
                else if layoutType == layoutTypes.csc then
                   cscDom
