@@ -898,30 +898,29 @@ static bool doFindCopyElisionPoints(Expr* start,
       // Neither if nor else block returns. Migrate variables copied in
       // both blocks into the parent copy elision map. If a variable is
       // defined in a higher scope and not copied in both blocks, then we
-      // cannot elide it. If it is local to a block, then we will elide
-      // it later.
+      // cannot elide it. If it is local to a block, then we can migrate
+      // it freely and it will be elided later. 
       } else if (!ifRet && !elseRet) {
 
         // The loop below relies on the maps being ordered.
         VarToCopyElisionState::key_compare comp = map.key_comp();
         VarToCopyElisionState::iterator ifIt = ifMap.begin();
         VarToCopyElisionState::iterator elseIt = elseMap.begin();
-        VarToCopyElisionState localToBlock;
 
         while (ifIt != ifMap.end() && elseIt != elseMap.end()) {
           VarSymbol* ifVar = ifIt->first;
           VarSymbol* elseVar = elseIt->first;
 
           if (comp(ifVar, elseVar)) {
-            // Add var to local map if local, then advance if iterator.
+            // Migrate var if local, then advance if iterator.
             if (cond->thenStmt->contains(ifVar->defPoint)) {
-              localToBlock[ifVar] = ifIt->second;
+              map[ifVar] = ifIt->second;
             }
             ++ifIt;
           } else if (comp(elseVar, ifVar)) {
-            // Add var to local map if local, then advance else iterator.
+            // Migrate var if local, then advance else iterator.
             if (cond->elseStmt->contains(elseVar->defPoint)) {
-              localToBlock[elseVar] = elseIt->second;
+              map[elseVar] = elseIt->second;
             }
             ++elseIt;
           } else {
@@ -948,25 +947,20 @@ static bool doFindCopyElisionPoints(Expr* start,
           }
         }
 
-        // Add remaining local vars in if block to local map.
+        // Migrate remaining local vars in if block to local map.
         for (; ifIt != ifMap.end(); ++ifIt) {
           if (cond->thenStmt->contains(ifIt->first->defPoint)) {
-            localToBlock[ifIt->first] = ifIt->second;
+            map[ifIt->first] = ifIt->second;
           }
         }
 
-        // Add remaining local vars in else block to local map.
+        // Migrate remaining local vars in else block to local map.
         for (; elseIt != elseMap.end(); ++ elseIt) {
           if (cond->elseStmt->contains(elseIt->first->defPoint)) {
-            localToBlock[elseIt->first] = elseIt->second;
+            map[elseIt->first] = elseIt->second;
           }
         }
 
-        // Elide copies for local variables in the if and else blocks.
-        if (localToBlock.size()) {
-          doElideCopies(localToBlock);
-        }
-        
       // One block hasn't returned. Figure out which one it is, and migrate
       // all its elision points into the parent map.
       } else {
