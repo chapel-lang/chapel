@@ -891,59 +891,21 @@ static bool doFindCopyElisionPoints(Expr* start,
         elseRet = doFindCopyElisionPoints(elseStart, elseMap, elseEligible);
       }
 
-      if (ifRet || elseRet) {
-        if (ifRet == false) {
-          // elseRet == true, so just note any copy inits from if
-          for (VarToCopyElisionState::iterator it = ifMap.begin();
-               it != ifMap.end();
-               ++it) {
-            VarSymbol* var = it->first;
-            CopyElisionState& state = it->second;
-            if (state.lastIsCopy)
-              map[var] = state;
-          }
-        }
-        if (elseRet == false) {
-          // ifRet == true, so just note any copy inits from else
-          for (VarToCopyElisionState::iterator it = elseMap.begin();
-               it != elseMap.end();
-               ++it) {
-            VarSymbol* var = it->first;
-            CopyElisionState& state = it->second;
-            if (state.lastIsCopy)
-              map[var] = state;
-          }
-        }
+      // If both blocks return, then they have already been copy elided.
+      if (ifRet && elseRet) {
+        return true;
 
-        // if both if and else return, the conditional returns.
-        if (ifRet && elseRet)
-          return true;
-
-      } else {
-        // neither if nor else returns
-
-        // Handle case where there is only an if block that does not return.
-        // We need to elide copies local to the block.
-        if (!elseStart && !ifRet && ifMap.size()) {
-          doElideCopies(ifMap);
-          return false;
-        }
-
-        // Look for variables copy-inited from in both the if and else
-        // and adjust the main map accordingly.
-
-        // Note that uses are already noted above.
+      // Neither if nor else block returns. Migrate variables copied in
+      // both blocks into the parent copy elision map, and then elide
+      // copies for variables local to each block. Note that uses are
+      // already noted above.
+      } else if (!ifRet && !elseRet) {
 
         // The loop below relies on the maps being ordered.
         VarToCopyElisionState::key_compare comp = map.key_comp();
         VarToCopyElisionState::iterator ifIt = ifMap.begin();
         VarToCopyElisionState::iterator elseIt = elseMap.begin();
 
-        // Migrate elision points common to both blocks into the parent
-        // copy elision map. When an elision point common to both blocks is
-        // migrated, mark it as 'lastIsCopy = false' in the ifMap and
-        // elseMap. This way we can elide copies local to the 'if' and 'else'
-        // blocks without touching migrated elision points.
         while (ifIt != ifMap.end() && elseIt != elseMap.end()) {
           VarSymbol* ifVar = ifIt->first;
           VarSymbol* elseVar = elseIt->first;
@@ -974,8 +936,8 @@ static bool doFindCopyElisionPoints(Expr* start,
               }
 
               // Elision point has been migrated, so mark 'lastIsCopy' in
-              // each original map as 'false' to prevent it from being
-              // elided down below.
+              // the if/else maps as 'false' to prevent the migrated
+              // variable from being elided down below.
               ifState.lastIsCopy = false;
               elseState.lastIsCopy = false;
             }
@@ -985,13 +947,22 @@ static bool doFindCopyElisionPoints(Expr* start,
         }
 
         // Elide copies local to the if block.
-        if (ifMap.size()) {
-          doElideCopies(ifMap);
-        }
+        if (ifMap.size()) doElideCopies(ifMap);
 
         // Elide copies local to the else block.
-        if (elseMap.size()) {
-          doElideCopies(elseMap);
+        if (elseMap.size()) doElideCopies(elseMap);
+
+      // One block hasn't returned. Figure out which one it is, and migrate
+      // all its elision points into the parent map.
+      } else {
+        VarToCopyElisionState::iterator it, end;
+        it = ifRet ? elseMap.begin() : ifMap.begin();
+        end = ifRet ? elseMap.end() : ifMap.end();
+        for (; it != end; ++it) {
+          VarSymbol* var = it->first;
+          CopyElisionState& state = it->second;
+          if (state.lastIsCopy)
+            map[var] = state;
         }
       }
     } else if (isFunctionOrTypeDeclaration(cur)) {
