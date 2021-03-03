@@ -1270,9 +1270,13 @@ module QuickSort {
 
         if hi-lo < 300 {
           // stay sequential
-          quickSortImpl(Data, minlen, comparator, lo, eqStart-1);
-          lo = eqEnd+1;
-          // quickSortImpl(Data, minlen, comparator, eqEnd+1, hi);
+          if(eqStart - lo > hi - eqEnd){
+            quickSortImpl(Data, minlen, comparator, eqEnd+1, hi);
+            hi = eqStart - 1;
+          } else {
+            quickSortImpl(Data, minlen, comparator, lo, eqStart-1);
+            lo = eqEnd + 1;
+          }
         } else {
           // do the subproblems in parallel
           forall i in 1..2 {
