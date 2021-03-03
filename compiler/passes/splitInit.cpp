@@ -895,11 +895,11 @@ static bool doFindCopyElisionPoints(Expr* start,
       if (ifRet && elseRet) {
         return true;
 
-      // Neither if nor else block returns. Migrate variables copied in
-      // both blocks into the parent copy elision map. If a variable is
+      // Neither if nor else block returns. Migrate elision points from 
+      // each block into the parent copy elision map. If a variable is
       // defined in a higher scope and not copied in both blocks, then we
-      // cannot elide it. If it is local to a block, then we can migrate
-      // it freely and it will be elided later. 
+      // cannot migrate it. If it is local to a block, then we can migrate
+      // it freely.
       } else if (!ifRet && !elseRet) {
 
         // The loop below relies on the maps being ordered.
