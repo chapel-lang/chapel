@@ -38,4 +38,7 @@ proc main() {
    writeln("r2.y = ", r2.y);
    writeln("r2.y has locale ", r2.y.locale);
   }
+
+  delete r.y;
+  delete buff[0].y;
 }
