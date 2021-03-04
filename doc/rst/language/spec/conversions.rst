@@ -41,9 +41,9 @@ conversion is allowed from type ``T1`` to ``T2`` and from ``T2`` to
 ``T3``, that by itself does not allow an implicit conversion from ``T1``
 to ``T3``.
 
-Implicit conversion for both function calls and initialization are are
-allowed between the following source and target types, as defined in the
-referenced subsections:
+Implicit conversion for function calls, initialization, and assignment
+are allowed between the following source and target types, as defined in
+the referenced subsections:
 
 -  numeric and boolean
    types (:ref:`Implicit_NumBool_Conversions`),
@@ -54,8 +54,13 @@ referenced subsections:
 
 -  class types (:ref:`Implicit_Class_Conversions`), and
 
--  generic target types
+-  when the source type is a subtype of the target type (including when
+   the target type is generic)
    (:ref:`Subtype_Arg_Conversions`)
+
+Additionally, implicit conversions for initialization and assignment can
+be defined for record types, as specified in
+:ref:`Implicit_Conversion_Init_Assign`.
 
 .. _Implicit_NumBool_Conversions:
 
@@ -179,39 +184,26 @@ Any combination of these three conversions is allowed.
 Implicit Subtype Conversions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-An implicit subtype conversion applies when the type being converted to
-is a subtype of the type of the value. In particular, it can apply when
-the type of an actual argument is a subtype of the type of the formal
-argument. In that case, we might say that type ``T1`` is the type
-of the actual argument and type ``T2`` is the type of the formal.
+An implicit subtype conversion is allowed when the source type is a
+subtype of the target type.
 
 Given any two types ``T1`` and ``T2``, the type ``T1`` is considered to be a
 subtype of a type ``T2`` if:
 
  * ``T2`` is a generic type (:ref:`Generic_Types`) and
    the ``T1`` is an instantiation that type
- * ``T1`` is a class type that inherits from the type ``T2``
+ * ``T1`` is a class type that inherits from the the class ``T2``
  * or a combination of the two.
 
-When a type actual is passed to a formal with ``type`` intent and a
-declared type, an implicit subtype conversion occurs from the actual type
-to the formal type argument if and only if the actual type is a subtype
-of the declared formal type.
-
-Additionally, when an actual is passed to a formal with generic type, an
-implicit conversion is allowed when the actual type is a subtype of the
-generic type. Normally the situation here is that instantiation occurs
-with the actual type. Note that this case can even apply to formals
-with ``ref`` intent because the implicit conversion does not create a
-copy.
+The below examples with the ``type`` intent demonstrate implicit subtype
+conversions.
 
    *Example (type-argument-conversion-error.chpl)*
 
    The following code defines a function ``f`` accepting ``type t: int``
    and then tries to pass ``int(8)`` to it. This will not compile,
    because while an ``int(8)`` value can be implicitly converted to
-   ``int``, ``int(8)`` is not a subtype of ``int`` according to the above
-   definition.
+   ``int``, ``int(8)`` is not a subtype of ``int``.
 
    .. code-block:: chapel
 
@@ -268,21 +260,27 @@ the following program locations:
    type of the corresponding actual argument when setting that actual
    with assignment or initialization (see :ref:`The_Out_Intent`).
 
-These implicit conversions can be implemented for record types by
-implementing ``init=`` and possibly ``=`` between two types as described in
-:ref:`Advanced_Copy_Initialization` and :ref:`Function_Overloading`.
-``init=`` will be called for initialization as
-described in :ref:`Split_Initialization` and other uses of ``=`` will
-invoke the ``=`` operator.
+Implicit conversions for initialization or assignment are allowed between
+numeric and boolean types (:ref:`Implicit_NumBool_Conversions`), numeric
+types in the special case when the expression’s value is a compile-time
+constant (:ref:`Implicit_Compile_Time_Constant_Conversions`), class types
+(:ref:`Implicit_Class_Conversions`), and for generic target types
+(:ref:`Subtype_Arg_Conversions`).
+
+In addition, these implicit conversions can be defined for record types
+by implementing ``init=`` and possibly the ``=`` operator between two
+types as described in :ref:`Advanced_Copy_Initialization` and
+:ref:`Function_Overloading`.  ``init=`` will be called for initialization
+as described in :ref:`Split_Initialization` and the ``=`` operator will
+be invoked for other uses of assignment.
 
 In the event that an ``=`` overload is provided to support assignment
 between two types, the compiler will check that a corresponding ``init=``
 also exists and emit an error if not.  Additionally, if ``init=`` is
-provided to initialize one type from another, the compiler will check
-that a corresponding ``:`` overload exists and will emit an error if not.
-See also :ref:`Explicit_Conversions` for more information on the ``:``
-operator. It is possible to provide ``:`` without ``init=`` or to provide
-``init=`` without ``=``.
+provided to initialize one type from another, the corresponding ``:``
+overload must also exist. See also :ref:`Explicit_Conversions` for more
+information on the ``:`` operator. It is possible to provide ``:``
+without ``init=`` or to provide ``init=`` without ``=``.
 
    *Example (implementing-assignment.chpl)*
 
@@ -310,8 +308,10 @@ operator. It is possible to provide ``:`` without ``init=`` or to provide
         return tmp;
       }
 
-   All three of these functions are required if we wish to support
-   assignment. We can invoke these functions like this:
+   Since we defined ``operator =``, it is necessary to also define
+   ``init=`` and ``operator :`` between these types.
+
+   We can invoke these functions like this:
 
    .. code-block:: chapel
 
@@ -349,8 +349,13 @@ occurs when the actual argument of a function call is converted to the
 type of the corresponding formal argument, if the formal’s intent is
 ``param``, ``in``, ``const in``, or an abstract intent
 (:ref:`Abstract_Intents`) with the semantics of ``in`` or ``const in``.
-These coercions are available among built-in types as described in
-:ref:`Implicit_Conversions`.
+
+Implicit conversions for function calls are allowed between numeric
+and boolean types (:ref:`Implicit_NumBool_Conversions`), numeric types
+in the special case when the expression’s value is a compile-time
+constant (:ref:`Implicit_Compile_Time_Constant_Conversions`), class
+types (:ref:`Implicit_Class_Conversions`), and for generic target
+types (:ref:`Subtype_Arg_Conversions`).
 
 Additionally, an implicit conversion for a function call occurs when the
 actual type is a subtype of the formal type. This rule applies to ``in``,
@@ -685,8 +690,8 @@ resultant ``string`` is the name of the type.
 User-Defined Casts
 ~~~~~~~~~~~~~~~~~~
 
-An explicit conversion can be implemented by ``operator :`` (see also
-:ref:`Function_Overloading`). An ``operator :`` should accept two
+An explicit conversion can be defined by implementing ``operator :`` (see
+also :ref:`Function_Overloading`). An ``operator :`` should accept two
 arguments: the value to convert and the type to convert it to.
 
    *Example (implementing-cast.chpl)*
