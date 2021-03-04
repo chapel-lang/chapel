@@ -144,20 +144,21 @@ module Set {
     // Returns true if the key was added to the hashtable.
     pragma "no doc"
     proc _addElem(pragma "no auto destroy" in elem: eltType): bool {
-      import Memory.Initialization.moveToValue;
+      use Memory.Initialization;
 
       var result = false;
 
       on this {
-        // Potentially move across locales without a copy.
-        var moved = moveToValue(elem);
-        var (isFullSlot, idx) = _htb.findAvailableSlot(moved);
+
+        // TODO: If we try to move onto this too early, and then call the
+        // 'findAvailableSlot' method on 'moved' instead of 'elem', we'll
+        // get lifetime errors in '.../Set/types/testNilableTuple.chpl'.
+        var (isFullSlot, idx) = _htb.findAvailableSlot(elem);
+
         if !isFullSlot {
+          var moved = moveToValue(elem);
           _htb.fillSlot(idx, moved, none);
           result = true;
-        } else {
-          // Trigger copy elision for moved.
-          var unused = moved;
         }
       }
 
