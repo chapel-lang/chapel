@@ -495,6 +495,8 @@ static void convertClassTypes(Type* (*convert)(Type*)) {
 }
 
 void convertClassTypesToCanonical() {
+  USR_STOP();
+
   // Anything that has unmanaged pointer type should be using the canonical
   // type instead.
   convertClassTypes(convertToCanonical);
