@@ -232,7 +232,7 @@ module DefaultSparse {
         a.sparseShiftArrayBack(insertPt.._nnz-1);
       }
 
-      return 1;  // ?fromMMS: magic return value for dsiRemove?
+      return 1; // number of items removed
     }
 
     proc dsiAdd(ind: idxType) where rank == 1 {
