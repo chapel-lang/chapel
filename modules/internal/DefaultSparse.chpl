@@ -317,7 +317,7 @@ module DefaultSparse {
         if newIndIdx == indsDom.low-1 then break; //there were duplicates -- now done
         newLoc = actualInsertPts[newIndIdx];
       }
-      var arrShiftMap: [{0..#oldnnz}] int; //to map where data goes
+      var arrShiftMap: [0..#oldnnz] int; //to map where data goes
 
       for i in 0..#_nnz by -1 {
         if oldIndIdx >= 0 && i > newLoc {
