@@ -125,7 +125,7 @@ Procedures are defined with the following syntax:
      operator-name
 
    operator-name: one of
-     + - * / % ** ! == != <= >= < > << >> & | ^ ~
+     + - * / % ** : ! == != <= >= < > << >> & | ^ ~
      = += -= *= /= %= **= &= |= ^= <<= >>= <=> <~>
 
    argument-list:
@@ -1180,7 +1180,7 @@ listed in the following table:
 arity    operators
 ======== ===============================
 unary    ``&`` ``+`` ``-`` ``!`` ``~``
-binary   ``+`` ``-`` ``*`` ``/`` ``%`` ``**``
+binary   ``+`` ``-`` ``*`` ``/`` ``%`` ``**`` ``:``
 binary   ``==`` ``<=`` ``>=`` ``<`` ``>``
 binary   ``<<`` ``>>`` ``&`` ``|`` ``^`` ``by``
 binary   ``=`` ``+=`` ``-=`` ``*=`` ``/=`` ``%=`` ``**=``
@@ -1351,6 +1351,8 @@ according to the concrete intent of :math:`F_X`:
    In the event that setting :math:`T_A` from :math:`F_X` is not
    possible then a compilation error will be emitted if this function
    is chosen as the best candidate.
+ * if :math:`F_X` uses the ``type`` intent, then :math:`T_A`
+   must be the same type or a subtype of :math:`T_X`.
 
 Finally, if the above compatibility cannot be established, the mapping is
 checked for promotion. If :math:`T_A` is scalar promotable to :math:`T_X`
