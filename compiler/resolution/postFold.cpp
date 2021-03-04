@@ -830,7 +830,7 @@ bool requiresImplicitDestroy(CallExpr* call) {
 
   if (FnSymbol* fn = call->resolvedFunction()) {
 
-    if (isRecord(fn->retType)                                 == true  &&
+    if ((isRecord(fn->retType) || isConstrainedType(fn->retType))      &&
         fn->hasFlag(FLAG_NO_IMPLICIT_COPY)                    == false &&
         fn->isIterator()                                      == false &&
         fn->retType->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE) == false &&
