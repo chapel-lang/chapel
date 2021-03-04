@@ -22,174 +22,11 @@ without an explicit specification in the program. Implicit conversions
 fall into the following categories:
 
  * implicit conversions for initialization and assignment
+   (:ref:`Implicit_Conversion_Init_Assign`)
  * implicit conversions for function calls
+   (:ref:`Implicit_Conversion_Call`)
  * implicit conversions for conditionals
-
-.. _Implicit_Conversion_Init_Assign:
-
-Implicit Conversions for Initialization and Assignment
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-An implicit conversion for initialization or assignment occurs at each of
-the following program locations:
-
--  In an assignment, the expression on the right-hand side of the
-   assignment is converted to the type of the expresssion on the
-   left-hand side of the assignment.
-
--  In a variable or field declaration that is not a ref variable,
-   the initializing expression is converted to the type of the variable
-   or field. The initializing expression is the right-hand side of the
-   ``=`` in the declaration, if present, or in the field initialization
-   statement in an initializer.
-
--  The return or yield expression within a function without a ``ref`` or
-   ``const ref`` return intent is converted to the return type of that
-   function.
-
--  If the formal argument’s intent is ``out`` or ``inout``, then a
-   conversion is possible upon function return. The value of the formal
-   argument is converted to the type of the corresponding actual argument
-   when setting that actual with assignment or initialization (see
-   :ref:`_The_Out_Intent`).
-
-These implicit conversions can be implemented for record types by
-implementing ``init=`` and possibly ``=`` between two types as described in
-:ref:`Advanced_Copy_Initialization` and :ref:`Function_Overloading`.
-``init=`` will be called for initialization as
-described in :ref:`Split_Initialization` and other uses of ``=`` will
-invoke the ``=`` operator.
-
-In the event that an ``=`` overload is provided to support assignment
-between two types, the compiler will check that a corresponding ``init=``
-also exists and emit an error if not.  Additionally, if ``init=`` is
-provided to initialize one type from another, the compiler will check
-that a corresponding ``:`` overload exists and will emit an error if not.
-See also :ref:`Explicit_Conversions` for more information on the ``:``
-operator. It is possible to provide ``:`` without ``init=`` or to provide
-``init=`` without ``=``.
-
-   *Example (implementing-assignment.chpl)*
-
-   Suppose that we have defined a record type to wrap an integer:
-
-   .. code-block:: chapel
-
-      record myInteger {
-        var intValue: int;
-      }
-
-   We might wish to support assignments setting a ``myInteger`` from
-   ``int``. In that event, we can provide the following functions:
-
-   .. code-block:: chapel
-
-      operator =(ref lhs: myInteger, rhs: int) {
-        lhs.intValue = rhs;
-      }
-      proc myInteger.init=(rhs: int) {
-        this.intValue = rhs;
-      }
-      operator :(from: int, type toType: myInteger) {
-        var tmp: myInteger = from; // invoke the init= above
-        return tmp;
-      }
-
-   All three of these functions are required if we wish to support
-   assignment. We can invoke these functions like this:
-
-   .. code-block:: chapel
-
-      var a = 1:myInteger;  // cast -- invokes operator :
-
-      var b: myInteger = 2; // initialization -- invokes init=
-
-      var c: myInteger;
-      c = 3;                // split-initialization -- invokes init=
-
-      var d = new myInteger();
-      d = 4;                // assignment -- invokes operator =
-
-   .. BLOCK-test-chapelnoprint
-
-      writeln("a is ", a, " : ", a.type:string);
-      writeln("b is ", b, " : ", b.type:string);
-      writeln("c is ", c, " : ", c.type:string);
-      writeln("d is ", d, " : ", d.type:string);
-
-   .. BLOCK-test-chapeloutput
-
-      a is (intValue = 1) : myInteger
-      b is (intValue = 2) : myInteger
-      c is (intValue = 3) : myInteger
-      d is (intValue = 4) : myInteger
-
-.. _Implicit_Conversion_Call:
-
-Implicit Conversions for Function Calls
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-An implicit conversion for a function call - also called a *coercion* -
-occurs when the actual argument of a function call is converted to the
-type of the corresponding formal argument, if the formal’s intent is
-``param``, ``in``, ``const in``, or an abstract intent
-(:ref:`Abstract_Intents`) with the semantics of ``in`` or ``const in``.
-These coercions are available among built-in types as described in
-:ref:`Implicit_Conversion_for_Primitive_Types`.
-
-Additionally, an implicit conversion occurs when the actual type is a
-subtype of the formal type. This rule applies to ``in``, ``const in``,
-``const ref``, and ``type`` intent formals and includes generic formal
-types. See:ref:`Subtype_Arg_Conversions`.
-
-Implicit conversions are not applied for actual arguments passed to
-``ref`` formal arguments.
-
-   *Open issue*.
-
-   For the ``const ref`` intent, subtype conversions can be allowed while
-   keeping the ``const ref`` formal referring to the original actual
-   argument's value. However, this feature is still under discussion.
-
-   *Open issue*.
-
-   Should Chapel allow user-defined implicit conversions for function
-   calls?  If so, how would the user define them?
-
-.. _Implicit_Conversion_Conditionals:
-.. _Implicit_Statement_Bool_Conversions:
-
-Implicit Conversions for Conditionals
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-An implicit conversion for a conditional occurs for the condition of:
-
-  - a conditional expression,
-  - a conditional statement,
-  - a while-do loop, or
-  - a do-while loop.
-
-In such a condition, the following implicit conversions to ``bool`` are
-supported:
-
--  An expression of integral type is taken to be ``false`` if it is ``0`` and
-   is ``true`` otherwise.
-
--  An expression of a class type is taken to be ``false`` if it is ``nil`` and
-   is ``true`` otherwise.
-
-Other standard types also allow implicit conversion for conditionals as
-indicated in their documentation.
-
-   *Open issue*.
-
-   Should Chapel allow user-defined implicit conversions for
-   conditionals? If so, how would the user define them?
-
-.. _Implicit_Conversion_for_Primitive_Types:
-
-Implicit Conversions for Primitive Types
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   (:ref:`Implicit_Conversion_Conditionals`)
 
 Implicit conversion for both function calls and initialization are are
 allowed between the following source and target types, as defined in the
@@ -200,9 +37,9 @@ referenced subsections:
 
 -  numeric types in the special case when the expression’s value is a
    compile-time
-   constant (:ref:`Implicit_Compile_Time_Constant_Conversions`), and
+   constant (:ref:`Implicit_Compile_Time_Constant_Conversions`),
 
--  class types (:ref:`Implicit_Class_Conversions`),
+-  class types (:ref:`Implicit_Class_Conversions`), and
 
 -  generic target types
    (:ref:`Implicit_Generic_Type_Conversions`)
@@ -396,6 +233,168 @@ copy.
 
      proc g(type t: ParentClass) { }
      g(owned ChildClass);
+
+
+.. _Implicit_Conversion_Init_Assign:
+
+Implicit Conversions for Initialization and Assignment
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+An implicit conversion for initialization or assignment occurs at each of
+the following program locations:
+
+-  In an assignment, the expression on the right-hand side of the
+   assignment is converted to the type of the expresssion on the
+   left-hand side of the assignment.
+
+-  In a variable or field declaration that is not a ref variable,
+   the initializing expression is converted to the type of the variable
+   or field. The initializing expression is the right-hand side of the
+   ``=`` in the declaration, if present, or in the field initialization
+   statement in an initializer.
+
+-  The return or yield expression within a function without a ``ref`` or
+   ``const ref`` return intent is converted to the return type of that
+   function.
+
+-  If the formal argument’s intent is ``out`` or ``inout``, then a
+   conversion is possible upon function return. The value of the formal
+   argument is converted to the type of the corresponding actual argument
+   when setting that actual with assignment or initialization (see
+   :ref:`_The_Out_Intent`).
+
+These implicit conversions can be implemented for record types by
+implementing ``init=`` and possibly ``=`` between two types as described in
+:ref:`Advanced_Copy_Initialization` and :ref:`Function_Overloading`.
+``init=`` will be called for initialization as
+described in :ref:`Split_Initialization` and other uses of ``=`` will
+invoke the ``=`` operator.
+
+In the event that an ``=`` overload is provided to support assignment
+between two types, the compiler will check that a corresponding ``init=``
+also exists and emit an error if not.  Additionally, if ``init=`` is
+provided to initialize one type from another, the compiler will check
+that a corresponding ``:`` overload exists and will emit an error if not.
+See also :ref:`Explicit_Conversions` for more information on the ``:``
+operator. It is possible to provide ``:`` without ``init=`` or to provide
+``init=`` without ``=``.
+
+   *Example (implementing-assignment.chpl)*
+
+   Suppose that we have defined a record type to wrap an integer:
+
+   .. code-block:: chapel
+
+      record myInteger {
+        var intValue: int;
+      }
+
+   We might wish to support assignments setting a ``myInteger`` from
+   ``int``. In that event, we can provide the following functions:
+
+   .. code-block:: chapel
+
+      operator =(ref lhs: myInteger, rhs: int) {
+        lhs.intValue = rhs;
+      }
+      proc myInteger.init=(rhs: int) {
+        this.intValue = rhs;
+      }
+      operator :(from: int, type toType: myInteger) {
+        var tmp: myInteger = from; // invoke the init= above
+        return tmp;
+      }
+
+   All three of these functions are required if we wish to support
+   assignment. We can invoke these functions like this:
+
+   .. code-block:: chapel
+
+      var a = 1:myInteger;  // cast -- invokes operator :
+
+      var b: myInteger = 2; // initialization -- invokes init=
+
+      var c: myInteger;
+      c = 3;                // split-initialization -- invokes init=
+
+      var d = new myInteger();
+      d = 4;                // assignment -- invokes operator =
+
+   .. BLOCK-test-chapelnoprint
+
+      writeln("a is ", a, " : ", a.type:string);
+      writeln("b is ", b, " : ", b.type:string);
+      writeln("c is ", c, " : ", c.type:string);
+      writeln("d is ", d, " : ", d.type:string);
+
+   .. BLOCK-test-chapeloutput
+
+      a is (intValue = 1) : myInteger
+      b is (intValue = 2) : myInteger
+      c is (intValue = 3) : myInteger
+      d is (intValue = 4) : myInteger
+
+.. _Implicit_Conversion_Call:
+
+Implicit Conversions for Function Calls
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+An implicit conversion for a function call - also called a *coercion* -
+occurs when the actual argument of a function call is converted to the
+type of the corresponding formal argument, if the formal’s intent is
+``param``, ``in``, ``const in``, or an abstract intent
+(:ref:`Abstract_Intents`) with the semantics of ``in`` or ``const in``.
+These coercions are available among built-in types as described in
+:ref:`Implicit_Conversions`.
+
+Additionally, an implicit conversion occurs when the actual type is a
+subtype of the formal type. This rule applies to ``in``, ``const in``,
+``const ref``, and ``type`` intent formals and includes generic formal
+types. See:ref:`Subtype_Arg_Conversions`.
+
+Implicit conversions are not applied for actual arguments passed to
+``ref`` formal arguments.
+
+   *Open issue*.
+
+   For the ``const ref`` intent, subtype conversions can be allowed while
+   keeping the ``const ref`` formal referring to the original actual
+   argument's value. However, this feature is still under discussion.
+
+   *Open issue*.
+
+   Should Chapel allow user-defined implicit conversions for function
+   calls?  If so, how would the user define them?
+
+.. _Implicit_Conversion_Conditionals:
+.. _Implicit_Statement_Bool_Conversions:
+
+Implicit Conversions for Conditionals
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+An implicit conversion for a conditional occurs for the condition of:
+
+  - a conditional expression,
+  - a conditional statement,
+  - a while-do loop, or
+  - a do-while loop.
+
+In such a condition, the following implicit conversions to ``bool`` are
+supported:
+
+-  An expression of integral type is taken to be ``false`` if it is ``0`` and
+   is ``true`` otherwise.
+
+-  An expression of a class type is taken to be ``false`` if it is ``nil`` and
+   is ``true`` otherwise.
+
+Other standard types also allow implicit conversion for conditionals as
+indicated in their documentation.
+
+   *Open issue*.
+
+   Should Chapel allow user-defined implicit conversions for
+   conditionals? If so, how would the user define them?
 
 
 .. _Explicit_Conversions:
