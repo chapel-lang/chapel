@@ -2454,7 +2454,7 @@ module Sparse {
     type idxType = ADom.idxType;
 
     // The ranges for the inner dimensions need to match up
-    const row_range = ADom.dim(0);
+    const rowRange = ADom.dim(0);
     const inner_Arange = ADom.dim(1);
     const inner_Brange = BDom.dim(0);
     const col_range = BDom.dim(1);
