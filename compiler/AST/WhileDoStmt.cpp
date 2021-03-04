@@ -31,6 +31,13 @@
 *                                                                           *
 ************************************* | ************************************/
 
+static CallExpr* isPrimIfVar(Expr* cond) {
+  if (CallExpr* call = toCallExpr(cond))
+    if (call->isPrimitive(PRIM_IF_VAR))
+      return call;
+  return nullptr;
+}
+
 BlockStmt* WhileDoStmt::build(Expr* cond, BlockStmt* body)
 {
   BlockStmt* retval = NULL;
@@ -39,7 +46,59 @@ BlockStmt* WhileDoStmt::build(Expr* cond, BlockStmt* body)
   {
     retval = CForLoop::buildCForLoop(toCallExpr(cond), body);
   }
+  else if (CallExpr* condIV = isPrimIfVar(cond))
+  {
+    // while var X = condExpr do ...
+    DefExpr* varDef = toDefExpr(condIV->get(1)->remove());
+    Expr*  condExpr = condIV->get(1)->remove();
+    INT_ASSERT(! varDef->init && ! varDef->exprType); // from parser
+    
+    // The construction follows the non-IfVar case below, adding the following:
+    //
+    //  // at start of 'retval' block
+    //  def while_borrow = chpl_checkBorrowIfVar(condExpr, true)
+    //  ... use 'while_borrow' where the non-IfVar cases uses 'cond' ...
+    //
+    //  // at start of 'loop' body
+    //  def X
+    //  move X <- PRIM_TO_NON_NILABLE_CLASS(while_borrow)
+    //
+    //  // at end of 'loop' body
+    //  move while_borrow, chpl_checkBorrowIfVar(condExpr, true)
+    //  ... use 'while_borrow' where the non-IfVar cases uses 'cond' ...
 
+    // todo: share code with the non-IfVar case (below)  -vass 2021-03
+
+    VarSymbol*   borrow        = newTemp("while_borrow");
+    CallExpr*    initBorrow    = new CallExpr("chpl_checkBorrowIfVar",
+                                              condExpr, gTrue);
+    VarSymbol*   condVar       = newTemp();
+    CallExpr*    condTest      = new CallExpr("_cond_test", borrow);
+
+    LabelSymbol* continueLabel = new LabelSymbol("_continueLabel");
+    LabelSymbol* breakLabel    = new LabelSymbol("_breakLabel");
+
+    WhileDoStmt* loop          = new WhileDoStmt(condVar, body);
+
+    loop->mContinueLabel = continueLabel;
+    loop->mBreakLabel    = breakLabel;
+
+    loop->insertAtHead(varDef);
+    varDef->init = new CallExpr(PRIM_TO_NON_NILABLE_CLASS, borrow);
+
+    loop->insertAtTail(new DefExpr(continueLabel));
+    loop->insertAtTail(new CallExpr(PRIM_MOVE, borrow, initBorrow->copy()));
+    loop->insertAtTail(new CallExpr(PRIM_MOVE, condVar, condTest->copy()));
+
+    retval = new BlockStmt();
+
+    retval->insertAtTail(new DefExpr(borrow));
+    borrow->defPoint->init = initBorrow;
+    retval->insertAtTail(new DefExpr(condVar));
+    retval->insertAtTail(new CallExpr(PRIM_MOVE, condVar, condTest->copy()));
+    retval->insertAtTail(loop);
+    retval->insertAtTail(new DefExpr(breakLabel));
+  }
   else
   {
     VarSymbol*   condVar       = newTemp();

@@ -1,0 +1,83 @@
+C.init
+C.deinit
+C.init
+C.deinit
+C.init
+C.deinit
+
+Begin anonymous scope
+C.init
+C.init
+C.init
+{x = 10}
+{x = 10}
+{x = 10}
+C.deinit
+C.deinit
+C.deinit
+End anonymous scope
+
+Begin anonymous scope -- ifexpr
+C.init
+C.init
+C.init
+{x = 10}
+{x = 10}
+{x = 10}
+C.deinit
+C.deinit
+C.deinit
+End anonymous scope -- ifexpr
+
+Begin: Record -- ifexpr in field declaration
+C.init
+C.init
+C.init
+(field1 = {x = 10}, field2 = {x = 10}, field3 = {x = 10})
+C.deinit
+C.deinit
+C.deinit
+End: Record -- ifexpr in field declaration
+
+Begin: Record -- ifexpr in init
+C.init
+C.init
+C.init
+(field1 = {x = 10}, field2 = {x = 10}, field3 = {x = 10})
+C.deinit
+C.deinit
+C.deinit
+End: Record -- ifexpr in init
+
+Begin: Function local scope
+C.init
+C.deinit
+C.init
+C.deinit
+C.init
+C.deinit
+1
+End: Function local scope
+
+Begin: Function local scope -- local type
+2
+End: Function local scope -- local type
+
+Begin: forall expr
+C.init
+C.init
+C.init
+C.init
+C.init
+C.init
+{x = 10} {x = 10}
+{x = 10} {x = 10}
+{x = 10} {x = 10}
+C.deinit
+C.deinit
+C.deinit
+C.deinit
+C.deinit
+C.deinit
+End: forall expr
+

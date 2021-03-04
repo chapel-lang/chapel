@@ -41,11 +41,11 @@ Start analyzing forall (regularDeclaration.chpl:31)
 |
 End analyzing forall (regularDeclaration.chpl:31)
 
-Static check successful. Using localAccess (regularDeclaration.chpl:15)
-Static check successful. Using localAccess (regularDeclaration.chpl:15)
-Static check successful. Using localAccess (regularDeclaration.chpl:15)
-Static check successful. Using localAccess (regularDeclaration.chpl:32)
-Static check successful. Using localAccess (regularDeclaration.chpl:32)
-Static check successful. Using localAccess (regularDeclaration.chpl:32)
+Static check successful. Using localAccess [static only ALA clone]  (regularDeclaration.chpl:15)
+Static check successful. Using localAccess [static only ALA clone]  (regularDeclaration.chpl:15)
+Static check successful. Using localAccess [static only ALA clone]  (regularDeclaration.chpl:15)
+Static check successful. Using localAccess [static only ALA clone]  (regularDeclaration.chpl:32)
+Static check successful. Using localAccess [static only ALA clone]  (regularDeclaration.chpl:32)
+Static check successful. Using localAccess [static only ALA clone]  (regularDeclaration.chpl:32)
 10.0 17.0 24.0 31.0 38.0 45.0 52.0 59.0 66.0 73.0
 10.0 17.0 24.0 31.0 38.0 45.0 52.0 59.0 66.0 73.0

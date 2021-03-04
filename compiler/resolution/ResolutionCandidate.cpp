@@ -50,6 +50,7 @@ std::map<Type*,std::map<Type*,bool> > actualFormalCoercible;
 
 ResolutionCandidate::ResolutionCandidate(FnSymbol* function) {
   fn = function;
+  isInterimInstantiation = false;
   failingArgument = NULL;
   reason = RESOLUTION_CANDIDATE_MATCH;
 }
@@ -138,7 +139,7 @@ bool ResolutionCandidate::isApplicableGeneric(CallInfo& info,
    * filtering and disambiguation processes.
    */
   fn = instantiateSignature(fn, substitutions, visInfo);
-  adjustForCGinstantiation(fn, substitutions);
+  adjustForCGinstantiation(fn, substitutions, isInterimInstantiation);
 
   if (fn == NULL) {
     reason = RESOLUTION_CANDIDATE_OTHER;
@@ -160,14 +161,19 @@ bool ResolutionCandidate::isApplicableCG(CallInfo& info,
                                          VisibilityInfo* visInfo) {
   int indx = 0;
   for_alist(iconExpr, fn->interfaceInfo->interfaceConstraints) {
-    IfcConstraint* icon = toIfcConstraint(iconExpr);
-    if (ImplementsStmt* istm =
-          constraintIsSatisfiedAtCallSite(info.call, icon, substitutions))
-    {
-      // success
-      witnesses.push_back(istm);
-      copyIfcRepsToSubstitutions(fn, indx++, istm, substitutions);
+    ConstraintSat csat = constraintIsSatisfiedAtCallSite(info.call,
+                             toIfcConstraint(iconExpr), substitutions);
+    if (csat.istm != nullptr) {
+      // satisfied with an implements statement
+      witnesses.push_back(csat.istm);
+      copyIfcRepsToSubstitutions(fn, indx++, csat.istm, substitutions);
+
+    } else if (csat.icon != nullptr) {
+      // satisfied with a constraint of the enclosing GC function
+      isInterimInstantiation = true;
+
     } else {
+      // not satisfied, making this CG fn not applicable
       return false;
     }
   }
@@ -572,8 +578,15 @@ Type* getInstantiationType(Type* actualType, Symbol* actualSym,
 
   // memoize unaliasing for in/inout/out/value return
   if (inOrOtherValue) {
-    if (Type* copyType = getCopyTypeDuringResolution(actualType)) {
-      actualType = copyType;
+    Type* valType = actualType->getValType();
+    if (Type* copyType = getCopyTypeDuringResolution(valType)) {
+      if (isReferenceType(actualType)) {
+        // make the new actual type also a reference type
+        INT_ASSERT(copyType->refType);
+        actualType = copyType->refType;
+      } else {
+        actualType = copyType;
+      }
     }
   }
 
@@ -957,13 +970,18 @@ bool ResolutionCandidate::checkGenericFormals(Expr* ctx) {
         return false;
       }
 
-      if (Type* cat = toConstrainedType(actual->getValType()))
-        // a CT actual matches only against itself
-        if (cat != formal->type) {
+      if (ConstrainedType* actCT = toConstrainedType(actual->getValType())) {
+        if (actCT == formal->type) {
+          ; // ok: a CG actual matches against the same type
+        } else if (cgActualCanMatch(fn, formal->getValType(), actCT)) {
+          ; // other matching cases
+        } else {
+          // cannot pass a CG actual to an unconstrained-generic formal
           failingArgument = actual;
           reason = RESOLUTION_CANDIDATE_INTERFACE_FORMAL_AS_ACTUAL;
           return false;
         }
+      }
 
       if (formalIsTypeAlias == false &&
           isInitThis == false &&

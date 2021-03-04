@@ -295,7 +295,7 @@ use.
 // When testing changes to the cache for correctness, it is a good practice
 // to run tests with these two settings enabled.
 //
-// VERIFY will cause cache structure validiation to be run after each
+// VERIFY will cause cache structure validation to be run after each
 // operation.
 //
 // EXTRA_YIELDS will call chpl_task_yield after comm layer calls

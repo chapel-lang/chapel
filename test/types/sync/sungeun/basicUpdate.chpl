@@ -8,7 +8,7 @@ proc foo(type myType) {
   var A = T:myType;
   var x: sync myType = 0:myType;
   forall i in 1..n do
-    x += A[i];
+    x.writeEF(x.readFE() + A[i]);
   var sum: myType;
   sum = + reduce A;
   if x.readXX() != sum then

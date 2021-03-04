@@ -19,8 +19,8 @@ inline iter myIter(vass1, const in vass2) {
 
 inline proc asdfasdf(vass1, const in vass2) {
   writeln("starting asdfasdf: ", (vass1,vass2));
-  SSS1 = 1;
-  SSS2;
+  SSS1.writeEF(1);
+  SSS2.readFE();
   writeln("finishing asdfasdf: ", (vass1,vass2));
 }
 
@@ -36,10 +36,10 @@ proc main {
       fdsa(AAA);
     }
     {
-      SSS1;
+      SSS1.readFE();
       AAA = 888;
       writeln("set AAA to ", AAA);
-      SSS2 = 1;
+      SSS2.writeEF(1);
     }
   }
 

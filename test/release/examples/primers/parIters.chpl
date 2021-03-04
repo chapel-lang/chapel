@@ -470,7 +470,7 @@ Closing notes
 // (``elemsPerChunk+ 1``) indices and the rest (chunks ``rem`` to
 // ``numChunks-1``) get ``elemsPerChunk`` indices. For simplicity, this
 // routine works only for unstrided ranges with the default index type
-// of ``int``.  These contraints could be relaxed with more effort.
+// of ``int``.  These constraints could be relaxed with more effort.
 // 
 proc computeChunk(r: range, myChunk, numChunks) where r.stridable == false {
   const numElems = r.size;

@@ -25,14 +25,14 @@
 var started_1, started_2: sync bool;
 cobegin {
   {
-    started_1 = true;
+    started_1.writeEF(true);
   }
   {
-    started_1;
-    started_2 = true;
+    started_1.readFE();
+    started_2.writeEF(true);
   }
   {
-    started_2;
+    started_2.readFE();
   }
 }
 
@@ -55,16 +55,16 @@ proc recursive_sum(n: uint(64)): uint(64) {
 //
 cobegin {
   {
-    started_1 = true;
-    sum2$ = recursive_sum(depth);
+    started_1.writeEF(true);
+    sum2$.writeEF(recursive_sum(depth));
   }
   {
-    started_1;
-    started_2 = true;
-    sum1$ = recursive_sum(depth);
+    started_1.readFE();
+    started_2.writeEF(true);
+    sum1$.writeEF(recursive_sum(depth));
   }
   {
-    started_2;
+    started_2.readFE();
   }
 }
 

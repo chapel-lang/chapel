@@ -32,6 +32,13 @@ module ChapelLocks {
   record chpl_LocalSpinlock {
     var l: chpl__processorAtomicType(bool);
 
+    // override compiler-generated default initializer because we don't
+    // ever want/need to pass an atomic into it (and someday it'll
+    // just take bool rather than atomic bool, and until then, we get
+    // a --warn-unstable error)
+    proc init() {
+    }
+
     inline proc lock() {
       on this do
         while l.read() || l.testAndSet(memoryOrder.acquire) do

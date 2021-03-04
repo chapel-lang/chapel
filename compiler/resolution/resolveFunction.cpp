@@ -140,7 +140,7 @@ static void resolveFormals(FnSymbol* fn) {
     //
     // If the formal has void type, and its parent symbol is compiler-
     // generated, and the parent symbol is astrInit, then it is an aggregate
-    // field intialization, such as new c(); and the field cannot be void.
+    // field initialization, such as new c(); and the field cannot be void.
     if (formal->type == dtVoid && !formal->hasFlag(FLAG_TYPE_VARIABLE)) {
       Symbol* ps = formal->defPoint->parentSymbol;
       if (ps) {
@@ -509,7 +509,7 @@ static void markTypesWithDefaultInitEqOrAssign(FnSymbol* fn);
 static void resolveAlsoConversions(FnSymbol* fn, CallExpr* forCall);
 
 void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
-  if (fn->isResolved() == false) {
+  if (! fn->isResolved() && ! fn->hasFlag(FLAG_CG_INTERIM_INST)) {
     if (fn->id == breakOnResolveID) {
       printf("breaking on resolve fn %s[%d] (%d args)\n",
              fn->name, fn->id, fn->numFormals());
@@ -2709,12 +2709,17 @@ static void insertInitConversion(Symbol* to, Symbol* toType, Symbol* from,
       insertBefore->insertBefore(new DefExpr(tmp));
 
       CallExpr* readCall = NULL;
-      if (isSyncType(fromValType))
+      if (isSyncType(fromValType)) {
         readCall = new CallExpr("readFE", gMethodToken, from);
-      else if (isSingleType(fromValType))
+        USR_WARN(to, "implicitly reading from a sync is deprecated; "
+                     "apply a 'read\?\?()' method to the actual");
+      } else if (isSingleType(fromValType)) {
         readCall = new CallExpr("readFF", gMethodToken, from);
-      else
+        USR_WARN(to, "implicitly reading from a single is deprecated; "
+                     "apply a 'read\?\?()' method to the actual");
+      } else {
         INT_FATAL("not handled");
+      }
 
       newCalls.push_back(readCall);
       CallExpr* setTmp = new CallExpr(PRIM_ASSIGN, tmp, readCall);
@@ -2734,7 +2739,7 @@ static void insertInitConversion(Symbol* to, Symbol* toType, Symbol* from,
     } else {
       // for types where it's not yet possible to write init=,
       // use PRIM_ASSIGN and PRIM_CAST.
-      // This should only be occuring for types that are
+      // This should only be occurring for types that are
       // either extern or for non-record types when the coercion is legal.
 
       // (TODO: use tertiary initializers to remove the exception for

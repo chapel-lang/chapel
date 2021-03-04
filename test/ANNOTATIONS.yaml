@@ -606,6 +606,8 @@ binarytrees-submitted:
 blackscholes:
   10/21/16:
     - Improvements to scalarReplace, refPropagation and copyPropagation (#4761)
+  01/06/21:
+    - Remove lots of inlines in IO.chpl for non-trivial procedures (#16887)
 
 blackscholes_promote:
   10/21/16:
@@ -865,6 +867,8 @@ fastaredux:
     - Optimize enum->int casts for concrete types (#10308)
   01/29/20:
     - Propagate user thrown errors out of IO routines (#14739)
+  01/06/21:
+    - Remove lots of inlines in IO.chpl for non-trivial procedures (#16887)
 
 fft:
   05/15/19:
@@ -1932,6 +1936,8 @@ time_iterate:
 time-write:
   03/05/15:
     - no strings with externs update
+  01/06/21:
+    - Remove lots of inlines in IO.chpl for non-trivial procedures (#16887)
 
 timeMapMinusEqual:
   07/10/20:

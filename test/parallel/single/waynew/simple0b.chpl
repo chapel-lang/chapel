@@ -8,6 +8,6 @@ var s: single borrowed C?;
 var t: borrowed C?;
 
 s = new borrowed C();
-s = t;
+s.writeEF(t);
 
 

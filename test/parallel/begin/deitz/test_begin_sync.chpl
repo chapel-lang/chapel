@@ -5,7 +5,7 @@ proc main {
   begin {
     sleep(1);
     writeln("I am here");
-    s = 1;
+    s.writeEF(1);
   }
   s.readFE();
   writeln("And now I am here");

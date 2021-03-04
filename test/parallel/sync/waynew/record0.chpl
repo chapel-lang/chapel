@@ -7,8 +7,8 @@ record D {
 var d: D;
 var i: int;
 
-d.s = 4;
-i = d.s;
+d.s.writeEF(4);
+i = d.s.readFE();
 writeln( "i is ", i);
 
 
@@ -19,6 +19,6 @@ record E {
 var e: E;
 var f: real;
 
-e.sf = 1.2;
-f = e.sf;
+e.sf.writeEF(1.2);
+f = e.sf.readFE();
 writeln( "f is ", f);

@@ -3,7 +3,7 @@
 var aaa: sync int; // -> empty
 
 proc test1(ref bbb) {
-  bbb = 1; // -> full
+  bbb.writeEF(1); // -> full
 }
 
 proc test2(ref ccc: sync int) {
