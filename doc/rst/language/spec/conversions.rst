@@ -599,7 +599,7 @@ When at run time the source expression refers to an instance of ``D`` or
 it subclass, its value is not changed. Otherwise, the cast fails and the
 result depends on whether or not the destination type is nilable. If the
 cast fails and the destination type is not nilable, the cast expression
-will throw a ``classCastError``. If the cast fails and the destination
+will throw a ``ClassCastError``. If the cast fails and the destination
 type is nilable, as with ``D?``, then the result will be ``nil``.
 
 An expression of class type can also be converted to a different
