@@ -2017,7 +2017,10 @@ static Symbol* leadingArg(PromotionInfo& promotion, CallExpr* call) {
   return NULL;
 }
 
-// Returns true if we do not know how to handle this pattern.
+// getMoveToIRtemp(): returns the PRIM_MOVE of 'call' into a temp,
+// which we expect to hold the iterator record (IR).
+// Returns NULL if we do not know how to handle this pattern.
+//
 // Handles a corner case of a "nested call", for example "A.foo()"
 // where A.foo is a promoted call to a paren-less function foo. Ex.
 //   test/functions/promotion/issue-12736-ok.chpl
@@ -2030,33 +2033,33 @@ static Symbol* leadingArg(PromotionInfo& promotion, CallExpr* call) {
 //
 // We will go ahead and set the shape for 'irTemp' right away from the shape
 // of the inner call. We will also remember 'irTemp' to avoid setting its
-// shape the second time, which would not work. See dontSetIteratorShape2().
+// shape the second time, which would not work, in isDuplicateSetIteratorShape.
 //
-static bool dontSetIteratorShape1(CallExpr* &move, CallExpr* call,
-                                  bool &isNestedCall) {
-  if (move == NULL)
+static CallExpr* getMoveToIRtemp(CallExpr* call, bool &isNestedCall) {
+  CallExpr* move = toCallExpr(call->parentExpr);
+
+  if (move == nullptr)
     // If call's result is not used, do not set the shape.
     // This happens, for example, during resolveSerializeDeserialize().
-    return true;
+    return nullptr;
 
   if (move->isPrimitive(PRIM_MOVE))
-    return false; // this is the normal case
+    return move; // this is the normal case
 
   CallExpr* parent2 = toCallExpr(move->parentExpr);
   if (call != move->baseExpr ||
       parent2 == nullptr     ||
       ! parent2->isPrimitive(PRIM_MOVE))
-    return true; // dunno how to handle this case
+    return nullptr; // dunno how to handle this case
 
   // Otherwise, this is a nested call, see the comments above.
   isNestedCall = true;
-  move = parent2;
-  return false;
+  return parent2;
 }
 
 // Returns true if we should not be setting this IR's shape.
-// See the comment on dontSetIteratorShape1().
-static bool dontSetIteratorShape2(Symbol* irTemp, bool isNestedCall) {
+// See the comment on getMoveToIRtemp().
+static bool isDuplicateSetIteratorShape(Symbol* irTemp, bool isNestedCall) {
   static std::set<Symbol*> outIRtemps;
   auto it = outIRtemps.find(irTemp);
 
@@ -2074,12 +2077,12 @@ static bool dontSetIteratorShape2(Symbol* irTemp, bool isNestedCall) {
 // insert PRIM_ITERATOR_RECORD_SET_SHAPE(iterRecord,shapeSource)
 static void addSetIteratorShape(PromotionInfo& promotion, CallExpr* call) {
   bool isNestedCall = false;
-  CallExpr* move = toCallExpr(call->parentExpr);
-  if (dontSetIteratorShape1(move, call, isNestedCall)) // sets move, isN.
+  CallExpr* move = getMoveToIRtemp(call, isNestedCall); // sets isNestedCall
+  if (move == nullptr)
     return;
 
   Symbol* irTemp = toSymExpr(move->get(1))->symbol();
-  if (dontSetIteratorShape2(irTemp, isNestedCall))
+  if (isDuplicateSetIteratorShape(irTemp, isNestedCall))
     return;
 
   // The first promoted argument argument determines the shape.
