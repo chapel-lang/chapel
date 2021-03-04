@@ -29,11 +29,8 @@ fall into the following categories:
    (:ref:`Implicit_Conversion_Conditionals`)
 
 If implicit conversion for a function call is allowed from type ``T1`` to
-type ``T2`` then implicit conversion for initialization and assignment
-must also be allowed. Otherwise, compiler will raise an error. In
-contrast, the availability of an implicit conversions for initialization
-or assignment does not imply the availability of the corresponding
-conversion for a function call.
+type ``T2`` then implicit conversion for initialization and assignment is
+allowed.
 
 In addition, an implicit conversion from a type to the same type is
 allowed for any type. Such conversion does not change the value of the
