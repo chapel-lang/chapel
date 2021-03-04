@@ -143,14 +143,21 @@ module Set {
 
     // Returns true if the key was added to the hashtable.
     pragma "no doc"
-    proc _addElem(in elem: eltType): bool {
+    proc _addElem(pragma "no auto destroy" in elem: eltType): bool {
+      import Memory.Initialization.moveToValue;
+
       var result = false;
 
       on this {
-        var (isFullSlot, idx) = _htb.findAvailableSlot(elem);
+        // Potentially move across locales without a copy.
+        var moved = moveToValue(elem);
+        var (isFullSlot, idx) = _htb.findAvailableSlot(moved);
         if !isFullSlot {
-          _htb.fillSlot(idx, elem, none);
+          _htb.fillSlot(idx, moved, none);
           result = true;
+        } else {
+          // Trigger copy elision for moved.
+          var unused = moved;
         }
       }
 
