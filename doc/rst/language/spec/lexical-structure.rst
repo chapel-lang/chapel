@@ -166,11 +166,13 @@ The following identifiers are reserved as keywords:
    forwarding
    if
    imag
+   implements
    in
    index
    inline
    inout
    int
+   interface
    iter
    label
    let

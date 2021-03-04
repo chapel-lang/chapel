@@ -6,7 +6,7 @@ Conversions
 ===========
 
 A *conversion* converts an expression of one type to another type,
-possibly changing its value. In certain cases noted below the source
+possibly producing a new value. In certain cases noted below the source
 expression can be a type expression. We refer to these two types the
 *source* and *target* types. Conversions can be either
 implicit (:ref:`Implicit_Conversions`) or
@@ -37,17 +37,21 @@ the following program locations:
    assignment is converted to the type of the expresssion on the
    left-hand side of the assignment.
 
--  In a variable or field declaration, the initializing expression is
-   converted to the type of the variable or field. The initializing
-   expression is the right-hand side of the ``=`` in the declaration, if
-   present, or in the field initialization statement in an initializer.
+-  In a variable or field declaration that is not a ref variable,
+   the initializing expression is converted to the type of the variable
+   or field. The initializing expression is the right-hand side of the
+   ``=`` in the declaration, if present, or in the field initialization
+   statement in an initializer.
 
--  The return or yield expression within a function without a ``ref``
-   return intent is converted to the return type of that function.
+-  The return or yield expression within a function without a ``ref`` or
+   ``const ref`` return intent is converted to the return type of that
+   function.
 
--  If the formal argument’s intent is ``out``, the formal argument is
-   converted to the type of the corresponding actual argument upon
-   function return using assignment or initialization.
+-  If the formal argument’s intent is ``out`` or ``inout``, then a
+   conversion is possible upon function return. The value of the formal
+   argument is converted to the type of the corresponding actual argument
+   when setting that actual with assignment or initialization (see
+   :ref:`_The_Out_Intent`).
 
 These implicit conversions can be implemented for record types by
 implementing ``init=`` and possibly ``=`` between two types as described in
@@ -130,20 +134,22 @@ occurs when the actual argument of a function call is converted to the
 type of the corresponding formal argument, if the formal’s intent is
 ``param``, ``in``, ``const in``, or an abstract intent
 (:ref:`Abstract_Intents`) with the semantics of ``in`` or ``const in``.
+These coercions are available among built-in types as described in
+:ref:`Implicit_Conversion_for_Primitive_Types`.
 
-Additionally, the formal argument is considered to apply - without making
-a copy of the actual argument - when the actual type is a subtype of the
-formal type. This rule applies to ``in``, ``const in``, ``const ref``,
-and ``type`` intent formals and includes generic formal types.
-See:ref:`Subtype_Arg_Conversions`.
+Additionally, an implicit conversion occurs when the actual type is a
+subtype of the formal type. This rule applies to ``in``, ``const in``,
+``const ref``, and ``type`` intent formals and includes generic formal
+types. See:ref:`Subtype_Arg_Conversions`.
 
 Implicit conversions are not applied for actual arguments passed to
 ``ref`` formal arguments.
 
    *Open issue*.
 
-   Subtype conversions are not yet implemented for formals with
-   ``const ref`` intent. However this feature is planned.
+   For the ``const ref`` intent, subtype conversions can be allowed while
+   keeping the ``const ref`` formal referring to the original actual
+   argument's value. However, this feature is still under discussion.
 
    *Open issue*.
 
@@ -156,11 +162,12 @@ Implicit conversions are not applied for actual arguments passed to
 Implicit Conversions for Conditionals
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-An implicit conversion for a conditional occurs at each of the following
-program locations:
+An implicit conversion for a conditional occurs for the condition of:
 
--  The condition of a conditional expression, conditional statement,
-   while-do or do-while loop statement is converted to the boolean type.
+  - a conditional expression,
+  - a conditional statement,
+  - a while-do loop, or
+  - a do-while loop.
 
 In such a condition, the following implicit conversions to ``bool`` are
 supported:
@@ -170,6 +177,9 @@ supported:
 
 -  An expression of a class type is taken to be ``false`` if it is ``nil`` and
    is ``true`` otherwise.
+
+Other standard types also allow implicit conversion for conditionals as
+indicated in their documentation.
 
    *Open issue*.
 
@@ -398,9 +408,8 @@ in :ref:`Casts`. Explicit conversions are supported between more
 types than implicit conversions, but not between all types.
 
 An explicit conversion can be implemented by ``operator :`` (see also
-:ref:`Function_Overloading`. An ``operator :`` should accept two
-arguments: two arguments: the value to convert and the type to convert it
-to.
+:ref:`Function_Overloading`). An ``operator :`` should accept two
+arguments: the value to convert and the type to convert it to.
 
    *Example (implementing-cast.chpl)*
 
