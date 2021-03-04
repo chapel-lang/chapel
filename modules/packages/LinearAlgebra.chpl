@@ -2313,30 +2313,27 @@ module Sparse {
 
   /* Return a CSR matrix constructed from internal representation:
 
-    - ``shape``: index ranges for rows and columns
+    - ``parentDom``: parent domain for sparse matrix, bounding box for nonzeros indices
     - ``data``: non-zero element values
     - ``indices``: non-zero row pointers
     - ``indptr``: index pointers
 
   */
-  // ?fromMMS: do we need to deprecate the shape: 2*int version of this
-  proc CSRMatrix(shape: 2*range, data: [?nnzDom] ?eltType, indices: [nnzDom], indptr: [?indDom])
+  proc CSRMatrix(parentDom: domain(2), data: [?nnzDom] ?eltType, indices: [nnzDom], indptr: [?indDom])
         where indDom.rank == 1 && nnzDom.rank == 1 {
-    var ADom = CSRDomain(shape, indices, indptr);
+    var ADom = CSRDomain(parentDom, indices, indptr);
     var A: [ADom] eltType;
     A.data = data;
     return A;
   }
 
   /* Return a CSR domain constructed from internal representation */
-  // ?fromMMS: do we need to deprecate the shape: 2*int version of this
-  proc CSRDomain(shape: 2*range, indices: [?nnzDom], indptr: [?indDom])
+  proc CSRDomain(parentDom: domain(2), indices: [?nnzDom], indptr: [?indDom])
         where indDom.rank == 1 && nnzDom.rank == 1 {
-    const (row_range, col_range) = shape;
-    const D = {row_range, col_range};
-    var ADom: sparse subdomain(D) dmapped CS(sortedIndices=false);
+    const rowRange = parentDom.dim(0).low..parentDom.dim(0).high;
+    var ADom: sparse subdomain(parentDom) dmapped CS(sortedIndices=false);
 
-    ADom.startIdxDom = {row_range.low..row_range.high+1};
+    ADom.startIdxDom = {rowRange.low..rowRange.high+1};
     ADom.startIdx = indptr;
     ADom._nnz = indices.size;
     ADom.nnzDom = {0..#indices.size};
@@ -2344,6 +2341,55 @@ module Sparse {
 
     return ADom;
   }
+
+  /* Warning
+     This method has been deprecated.  Please use
+       CSRMatrix(parentDom: domain(2), data: [?nnzDom] ?eltType, indices: [nnzDom], indptr: [?indDom])
+     instead.
+
+     Return a CSR matrix constructed from internal representation:
+    - ``shape``: bounding box dimensions
+    - ``data``: non-zero element values
+    - ``indices``: non-zero row pointers
+    - ``indptr``: index pointers
+  */
+  proc CSRMatrix(shape: 2*int, data: [?nnzDom] ?eltType, indices: [nnzDom], indptr: [?indDom])
+    where indDom.rank == 1 && nnzDom.rank == 1 {
+    halt("CSRMatrix only given the matrix extents is deprecated.  Please use the CSRMatrix that takes a domain(2) as first parameter instead.");
+    var ADom = CSRDomain(shape, indices, indptr);
+    var A: [ADom] eltType;
+    A.data = data;
+    return A;
+  }
+
+  /* Warning
+     This method has been deprecated.  Please use
+       CSRDomain(parentDom: domain(2), indices: [?nnzDom], indptr: [?indDom])
+     instead.
+
+     Return a CSR domain constructed from internal representation */
+  proc CSRDomain(shape: 2*int, indices: [?nnzDom], indptr: [?indDom])
+    where indDom.rank == 1 && nnzDom.rank == 1 {
+    halt("CSRDomain only given the matrix extents is deprecated.  Please use the CSRDomain that takes a domain(2) as first parameter instead.");
+    const (M, N) = shape;
+    // TODO: Update to 0-based indices
+    const D = {1..M, 1..N};
+    var ADom: sparse subdomain(D) dmapped CS(sortedIndices=false);
+
+    ADom.startIdxDom = {1..indptr.size};
+    ADom.startIdx = indptr;
+    const (hasZero, zeroIndex) = indices.find(0);
+    if hasZero {
+      ADom._nnz = zeroIndex-1;
+    } else {
+      ADom._nnz = indices.size;
+    }
+    ADom.nnzDom = {1..indices.size};
+    ADom.idx = indices;
+
+    return ADom;
+  }
+
 
   /*
       Generic matrix multiplication, ``A`` and ``B`` can be a scalar, dense
@@ -2454,15 +2500,15 @@ module Sparse {
     type idxType = ADom.idxType;
 
     // The ranges for the inner dimensions need to match up
-    const row_range = ADom.dim(0);
-    const inner_Arange = ADom.dim(1);
-    const inner_Brange = BDom.dim(0);
-    const col_range = BDom.dim(1);
+    const rowRange = ADom.dim(0);
+    const innerARange = ADom.dim(1);
+    const innerBRange = BDom.dim(0);
+    const colRange = BDom.dim(1);
 
-    if inner_Arange != inner_Brange then
+    if innerARange != innerBRange then
         halt("Mismatched shape in sparse matrix-matrix multiplication");
 
-    // TODO: Return empty (row_range, col_range) sparse array if A or B size == 0
+    // TODO: Return empty (rowRange, colRange) sparse array if A or B size == 0
 
     /* Note on compressed sparse (CS) internals:
        - startIdx.domain (indPtr) can start with any index
@@ -2471,7 +2517,7 @@ module Sparse {
      */
 
     // major axis (or row) for result matrix
-    var indPtr: [row_range.low..row_range.high+1] idxType;
+    var indPtr: [rowRange.low..rowRange.high+1] idxType;
 
     pass1(A, B, indPtr);
 
@@ -2481,7 +2527,7 @@ module Sparse {
 
     pass2(A, B, indPtr, ind, data);
 
-    var C = CSRMatrix((row_range, col_range), data, ind, indPtr);
+    var C = CSRMatrix({rowRange, colRange}, data, ind, indPtr);
 
     if C.domain.sortedIndices {
       sortIndices(C);
@@ -2611,7 +2657,7 @@ module Sparse {
   private proc sortIndices(ref A: [?Dom] ?eltType) where isCSArr(A) {
     use Sort;
 
-    const row_range = Dom.dim(0);
+    const rowRange = Dom.dim(0);
 
     proc _array.indPtr ref return this.dom.startIdx;
     proc _array.ind return this.dom.idx;
@@ -2620,7 +2666,7 @@ module Sparse {
     var temp: [0..#A.ind.size] (idxType, eltType);
     temp = for (idx, datum) in zip(A.ind, A.data) do (idx, datum);
 
-    for i in row_range {
+    for i in rowRange {
       const rowStart = A.indPtr[i],
             rowEnd = A.indPtr[i+1]-1;
       if rowEnd - rowStart > 0 {
