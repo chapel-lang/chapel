@@ -49,6 +49,7 @@ proc test3() {
 }
 test3();
 
+// Check copy elision for locals in conditional blocks.
 proc test4() {
   writeln('T4');
   var doBlock = true;
@@ -62,6 +63,7 @@ proc test4() {
 }
 test4();
 
+// Same as above, but from other direction.
 proc test5() {
   writeln('T5');
   var doBlock = false;
@@ -74,4 +76,27 @@ proc test5() {
   }
 }
 test5();
+
+proc test6() {
+  writeln('T6');
+
+  proc innerTest6(doBlock: bool) {
+    var branchName = if doBlock then "if" else "else";
+    writeln(branchName);
+
+    var x = new r();
+    if doBlock {
+      var a = x;
+      consumeElement(a);
+    } else {
+      var b = x;
+      return b;
+    }
+    return new r();
+  }
+
+  var x1 = innerTest6(doBlock=true);
+  var x2 = innerTest6(doBlock=false);
+}
+test6();
 

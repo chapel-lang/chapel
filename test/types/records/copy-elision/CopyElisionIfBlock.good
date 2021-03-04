@@ -13,3 +13,12 @@ deinit
 T5
 default init
 deinit
+T6
+if
+default init
+deinit
+default init
+else
+default init
+deinit
+deinit
