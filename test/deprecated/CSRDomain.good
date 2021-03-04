@@ -1,1 +1,0 @@
-CSRDomain.chpl:9: error: halt reached - CSRDomain only given the matrix extents is deprecated.  Please use the CSRDomain that takes a domain(2) as first parameter instead.

@@ -1,1 +1,0 @@
-CSRMatrix.chpl:10: error: halt reached - CSRMatrix only given the matrix extents is deprecated.  Please use the CSRMatrix that takes a domain(2) as first parameter instead.

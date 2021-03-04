@@ -346,17 +346,17 @@ class CSDom: BaseSparseDomImpl {
   proc dsiLast {
     if _nnz == 0 then return (parentDom.low) - (1,1);
 
-    const _last_idx = _nnz-1;
-    var _last_minor = idx[_last_idx];
-    var _last_major = parentDom.low[1] - 1;
+    const _lastIdx = _nnz-1;
+    var _lastMinor = idx[_lastIdx];
+    var _lastMajor = parentDom.low[1] - 1;
 
     for i in startIdxDom.low..startIdxDom.high by -1 {
-        if startIdx[i] > _last_idx then _last_major = i-1;
+        if startIdx[i] > _lastIdx then _lastMajor = i-1;
     }
     if this.compressRows then
-      return (_last_major, _last_minor);
+      return (_lastMajor, _lastMinor);
     else
-      return (_last_minor, _last_major);
+      return (_lastMinor, _lastMajor);
   }
 
   proc dsiAdd(ind: rank*idxType) {

@@ -2342,54 +2342,24 @@ module Sparse {
     return ADom;
   }
 
-  /* Warning
-     This method has been deprecated.  Please use
-       CSRMatrix(parentDom: domain(2), data: [?nnzDom] ?eltType, indices: [nnzDom], indptr: [?indDom])
-     instead.
-
-     Return a CSR matrix constructed from internal representation:
-    - ``shape``: bounding box dimensions
+  /* Return a CSR matrix constructed from internal representation:
+    - ``shape``: (M,N) bounding box will be {0..#M,0..#N}
     - ``data``: non-zero element values
     - ``indices``: non-zero row pointers
     - ``indptr``: index pointers
   */
   proc CSRMatrix(shape: 2*int, data: [?nnzDom] ?eltType, indices: [nnzDom], indptr: [?indDom])
-    where indDom.rank == 1 && nnzDom.rank == 1 {
-    halt("CSRMatrix only given the matrix extents is deprecated.  Please use the CSRMatrix that takes a domain(2) as first parameter instead.");
-    var ADom = CSRDomain(shape, indices, indptr);
-    var A: [ADom] eltType;
-    A.data = data;
-    return A;
-  }
-
-  /* Warning
-     This method has been deprecated.  Please use
-       CSRDomain(parentDom: domain(2), indices: [?nnzDom], indptr: [?indDom])
-     instead.
-
-     Return a CSR domain constructed from internal representation */
-  proc CSRDomain(shape: 2*int, indices: [?nnzDom], indptr: [?indDom])
-    where indDom.rank == 1 && nnzDom.rank == 1 {
-    halt("CSRDomain only given the matrix extents is deprecated.  Please use the CSRDomain that takes a domain(2) as first parameter instead.");
+        where indDom.rank == 1 && nnzDom.rank == 1 {
     const (M, N) = shape;
-    // TODO: Update to 0-based indices
-    const D = {1..M, 1..N};
-    var ADom: sparse subdomain(D) dmapped CS(sortedIndices=false);
-
-    ADom.startIdxDom = {1..indptr.size};
-    ADom.startIdx = indptr;
-    const (hasZero, zeroIndex) = indices.find(0);
-    if hasZero {
-      ADom._nnz = zeroIndex-1;
-    } else {
-      ADom._nnz = indices.size;
-    }
-    ADom.nnzDom = {1..indices.size};
-    ADom.idx = indices;
-
-    return ADom;
+    return CSRMatrix({0..#M, 0..#N}, data, indices, indptr);
   }
 
+  /* Return a CSR domain constructed from internal representation */
+  proc CSRDomain(shape: 2*int, indices: [?nnzDom], indptr: [?indDom])
+        where indDom.rank == 1 && nnzDom.rank == 1 {
+    const (M, N) = shape;
+    return CSRDomain({0..#M, 0..#N}, indices, indptr);
+  }
 
   /*
       Generic matrix multiplication, ``A`` and ``B`` can be a scalar, dense
