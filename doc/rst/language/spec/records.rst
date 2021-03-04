@@ -620,8 +620,8 @@ following signatures for a record ``R``:
 
 .. code-block:: chapel
 
-   proc ==(lhs:R, rhs:R) : bool where lhs.type == rhs.type;
-   proc !=(lhs:R, rhs:R) : bool where lhs.type == rhs.type;
+   operator ==(lhs:R, rhs:R) : bool where lhs.type == rhs.type;
+   operator !=(lhs:R, rhs:R) : bool where lhs.type == rhs.type;
 
 Other comparison operator overloads (namely ``<``, ``<=``, ``>``, and ``>=``)
 have similar signatures but their where clauses also check whether the relevant

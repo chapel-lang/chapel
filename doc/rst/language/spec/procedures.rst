@@ -111,7 +111,9 @@ Procedures are defined with the following syntax:
 .. code-block:: syntax
 
    procedure-declaration-statement:
-     privacy-specifier[OPT] procedure-kind[OPT] 'proc' function-name argument-list[OPT] return-intent[OPT] return-type[OPT] where-clause[OPT]
+     privacy-specifier[OPT] procedure-kind[OPT] 'proc' identifier argument-list[OPT] return-intent[OPT] return-type[OPT] where-clause[OPT]
+       function-body
+     privacy-specifier[OPT] procedure-kind[OPT] 'operator' operator-name argument-list return-intent[OPT] return-type[OPT] where-clause[OPT]
        function-body
 
    procedure-kind:
@@ -120,13 +122,10 @@ Procedures are defined with the following syntax:
      'extern'
      'override'
 
-   function-name:
-     identifier
-     operator-name
-
    operator-name: one of
      + - * / % ** : ! == != <= >= < > << >> & | ^ ~
      = += -= *= /= %= **= &= |= ^= <<= >>= <=> <~>
+     'by' 'align'
 
    argument-list:
      ( formals[OPT] )
@@ -1173,10 +1172,11 @@ called overloaded functions. Function calls to overloaded functions are
 resolved according to the function resolution algorithm
 in :ref:`Function_Resolution`.
 
-Operator overloading is achieved by defining a function with a name
-specified by that operator. The operators that may be overloaded are
-listed in the following table:
+Operator overloading is achieved by defining a function with a name specified by
+that operator.  This function is declared with the ``operator`` keyword.  The
+operators that may be overloaded are listed in the following table:
 
+======== ===============================
 arity    operators
 ======== ===============================
 unary    ``+`` ``-`` ``!`` ``~``
@@ -1185,6 +1185,7 @@ binary   ``==`` ``<=`` ``>=`` ``<`` ``>``
 binary   ``<<`` ``>>`` ``&`` ``|`` ``^`` ``#`` ``align`` ``by``
 binary   ``=`` ``+=`` ``-=`` ``*=`` ``/=`` ``%=`` ``**=``
 binary   ``&=`` ``|=`` ``^=`` ``<<=`` ``>>=`` ``<=>`` ``<~>``
+======== ==============================
 
 The arity and precedence of the operator must be maintained when it is
 overloaded. Operator resolution follows the same algorithm as function
