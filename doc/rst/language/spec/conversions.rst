@@ -28,6 +28,22 @@ fall into the following categories:
  * implicit conversions for conditionals
    (:ref:`Implicit_Conversion_Conditionals`)
 
+If implicit conversion for a function call is allowed from type ``T1`` to
+type ``T2`` then implicit conversion for initialization and assignment
+must also be allowed. Otherwise, compiler will raise an error. In
+contrast, the availability of an implicit conversions for initialization
+or assignment does not imply the availability of the corresponding
+conversion for a function call.
+
+In addition, an implicit conversion from a type to the same type is
+allowed for any type. Such conversion does not change the value of the
+expression.
+
+Implicit conversion is not transitive. That is, if an implicit
+conversion is allowed from type ``T1`` to ``T2`` and from ``T2`` to
+``T3``, that by itself does not allow an implicit conversion from ``T1``
+to ``T3``.
+
 Implicit conversion for both function calls and initialization are are
 allowed between the following source and target types, as defined in the
 referenced subsections:
@@ -42,16 +58,7 @@ referenced subsections:
 -  class types (:ref:`Implicit_Class_Conversions`), and
 
 -  generic target types
-   (:ref:`Implicit_Generic_Type_Conversions`)
-
-In addition, an implicit conversion from a type to the same type is
-allowed for any type. Such conversion does not change the value of the
-expression.
-
-Implicit conversion is not transitive. That is, if an implicit
-conversion is allowed from type ``T1`` to ``T2`` and from ``T2`` to
-``T3``, that by itself does not allow an implicit conversion from ``T1``
-to ``T3``.
+   (:ref:`Subtype_Arg_Conversions`)
 
 .. _Implicit_NumBool_Conversions:
 
@@ -175,22 +182,24 @@ Any combination of these three conversions is allowed.
 Implicit Subtype Conversions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-An implicit subtype conversion applies when the type of an actual
-argument is a subtype of the type of the formal argument.
-For this purpose, let us consider type ``A`` to be the type of the actual
-argument and type ``F`` to be the type of the formal.
+An implicit subtype conversion applies when the type being converted to
+is a subtype of the type of the value. In particular, it can apply when
+the type of an actual argument is a subtype of the type of the formal
+argument. In that case, we might say that type ``T1`` is the type
+of the actual argument and type ``T2`` is the type of the formal.
 
-A type ``A`` is considered to be a subtype of a type ``F`` if:
+Given any two types ``T1`` and ``T2``, the type ``T1`` is considered to be a
+subtype of a type ``T2`` if:
 
- * ``F`` is a generic type (:ref:`Generic_Types`) and
-   the actual type is an instantiation that type
- * ``A`` is a class type that inherits from the type ``F``
+ * ``T2`` is a generic type (:ref:`Generic_Types`) and
+   the ``T1`` is an instantiation that type
+ * ``T1`` is a class type that inherits from the type ``T2``
  * or a combination of the two.
 
 When a type actual is passed to a formal with ``type`` intent and a
-declared type, an implicit subtype conversion occurs for the type
-argument formal if the actual type is a subtype of the declared formal
-type.
+declared type, an implicit subtype conversion occurs from the actual type
+to the formal type argument if and only if the actual type is a subtype
+of the declared formal type.
 
 Additionally, when an actual is passed to a formal with generic type, an
 implicit conversion is allowed when the actual type is a subtype of the
@@ -257,11 +266,10 @@ the following program locations:
    ``const ref`` return intent is converted to the return type of that
    function.
 
--  If the formal argument’s intent is ``out`` or ``inout``, then a
-   conversion is possible upon function return. The value of the formal
-   argument is converted to the type of the corresponding actual argument
-   when setting that actual with assignment or initialization (see
-   :ref:`_The_Out_Intent`).
+-  For a call to a function with a formal argument with ``out`` or
+   ``inout`` intent. The value of the formal argument is converted to the
+   type of the corresponding actual argument when setting that actual
+   with assignment or initialization (see :ref:`The_Out_Intent`).
 
 These implicit conversions can be implemented for record types by
 implementing ``init=`` and possibly ``=`` between two types as described in
@@ -347,10 +355,10 @@ type of the corresponding formal argument, if the formal’s intent is
 These coercions are available among built-in types as described in
 :ref:`Implicit_Conversions`.
 
-Additionally, an implicit conversion occurs when the actual type is a
-subtype of the formal type. This rule applies to ``in``, ``const in``,
-``const ref``, and ``type`` intent formals and includes generic formal
-types. See:ref:`Subtype_Arg_Conversions`.
+Additionally, an implicit conversion for a function call occurs when the
+actual type is a subtype of the formal type. This rule applies to ``in``,
+``const in``, ``const ref``, and ``type`` intent formals and includes
+generic formal types. See :ref:`Subtype_Arg_Conversions`.
 
 Implicit conversions are not applied for actual arguments passed to
 ``ref`` formal arguments.
@@ -406,6 +414,36 @@ Explicit conversions require a cast in the code. Casts are defined
 in :ref:`Casts`. Explicit conversions are supported between more
 types than implicit conversions, but not between all types.
 
+The allowed explicit conversions are described in the following sections:
+
+ * conversions among primitive numeric and bool types (see
+   :ref:`Explicit_Numeric_Conversions`)
+ * tuple to complex (see :ref:`Explicit_Tuple_to_Complex_Conversion`)
+ * enumerated types (see :ref:`Explicit_Enumeration_Conversions`)
+ * class conversions (see :ref:`Explicit_Class_Conversions`)
+ * range conversions (see :ref:`Explicit_Range_Conversions`)
+ * domain conversions (see :ref:`Explicit_Domain_Conversions`)
+ * string to bytes conversions (see
+   :ref:`Explicit_String_to_Bytes_Conversions`)
+ * type to string conversions (see
+   :ref:`Explicit_Type_to_String_Conversions`)
+ * user-defined explicit conversions (see :ref:`User_Defined_Casts`).
+
+The available explicit conversions are a superset of the available
+implicit conversions for initialization and assignment
+(:ref:`Implicit_Conversion_Init_Assign`), which, in turn, are a superset
+of the implicit conversions for function calls.  As a result, the
+implicit conversions described in :ref:`Implicit_Conversions` are also
+available as explicit conversions.
+
+An explicit conversion from a type to the same type is allowed for any
+type. Such a conversion does not change the value of the expression.
+
+.. _User_Defined_Casts:
+
+User-Defined Casts
+~~~~~~~~~~~~~~~~~~
+
 An explicit conversion can be implemented by ``operator :`` (see also
 :ref:`Function_Overloading`). An ``operator :`` should accept two
 arguments: the value to convert and the type to convert it to.
@@ -447,10 +485,6 @@ arguments: the value to convert and the type to convert it to.
       y is 1 : int(64)
 
 
-The explicit conversions are a superset of the implicit conversions. In
-addition to the following definitions, an explicit conversion from a
-type to the same type is allowed for any type. Such conversion does not
-change the value of the expression.
 
 .. _Explicit_Numeric_Conversions:
 
