@@ -424,8 +424,8 @@ proc radixSortOk(Data: [?Dom] ?eltType, comparator) param {
 
 /*
 
-Sort the elements in an array. It is up to the implementation to choose
-the sorting algorithm.
+Sort the elements in a 1D rectangular array.  The choice of sorting
+algorithm used is made by the implementation.
 
 .. note::
   This function currently either uses a parallel radix sort or a serial
