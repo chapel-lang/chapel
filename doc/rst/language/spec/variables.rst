@@ -128,11 +128,11 @@ expression for a variable to be in a statement after the variable
 declaration statement.
 
 If the ``initialization-part`` of a local variable declaration is
-omitted, the compiler will search forward in the function for the
-earliest assignment statement(s) setting that variable that occur before
+omitted, the compiler will search forward in that scope for the
+earliest assignment statement(s) setting that variable that occurs before
 the variable is otherwise mentioned. It will consider the variable passed
 to an ``out`` intent argument as an assignment statement for this
-purpose.  It will search only within block declarations ``{ }``,
+purpose.  It will search only within block statements ``{ }``,
 ``local`` blocks, ``serial`` blocks, ``try`` blocks, ``try!`` blocks, and
 conditionals.  These assignment statements and calls to functions with
 ``out`` intent are called applicable assignment statements.  They perform
@@ -906,7 +906,7 @@ is not mentioned again, the copy will be elided.  Since a ``return`` or
 ``throw`` exits a function, a copy can be elided if it is followed
 immediately by a ``return`` or ``throw``. When searching forward from
 variable declarations, copy elision considers eliding copies only within
-block declarations ``{ }``, ``local`` blocks, ``serial`` blocks, ``try``
+block statements ``{ }``, ``local`` blocks, ``serial`` blocks, ``try``
 blocks, ``try!`` blocks, and conditionals.
 
    *Example (copy-elision.chpl)*
