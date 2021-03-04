@@ -234,6 +234,7 @@ static Expr* walkBlockStmt(FnSymbol*         fn,
 
     // Collect defer statements to run during cleanup
     } else if (DeferStmt* defer = toDeferStmt(stmt)) {
+      walkBlock(fn, &scope, defer->body(), ignoredVariables, lmm);
       scope.deferAdd(defer);
 
     // AutoDestroy primary locals at start of function epilogue (2)
