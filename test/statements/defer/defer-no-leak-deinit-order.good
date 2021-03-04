@@ -1,0 +1,33 @@
+Start foo
+R: (desc = Outer 3)
+R: (desc = Inner 2)
+R: (desc = Outer 2)
+R: (desc = Inner 1)
+R: (desc = Outer 1)
+End foo
+
+Start bar
+R: (desc = Outer 2)
+R: (desc = Inner 2)
+R: (desc = InnerInner 1)
+R: (desc = Inner 1)
+R: (desc = Outer 1)
+End bar
+
+Start baz
+R: (desc = Outer 2)
+C: {}
+R: (desc = Inner 2)
+R: (desc = InnerInner 1)
+R: (desc = Inner 1)
+R: (desc = Outer 1)
+End baz
+
+Start bat
+R: (desc = Outer 2)
+C: {}
+R: (desc = Inner 1)
+R: (desc = Outer 1)
+Caught error from bat
+End bat
+
