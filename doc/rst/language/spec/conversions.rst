@@ -439,52 +439,6 @@ available as explicit conversions.
 An explicit conversion from a type to the same type is allowed for any
 type. Such a conversion does not change the value of the expression.
 
-.. _User_Defined_Casts:
-
-User-Defined Casts
-~~~~~~~~~~~~~~~~~~
-
-An explicit conversion can be implemented by ``operator :`` (see also
-:ref:`Function_Overloading`). An ``operator :`` should accept two
-arguments: the value to convert and the type to convert it to.
-
-   *Example (implementing-cast.chpl)*
-
-   Suppose that we have defined a record type to wrap an integer:
-
-   .. code-block:: chapel
-
-      record myInteger {
-        var intValue: int;
-      }
-
-   We might wish to support casts from ``myInteger`` to ``int``. In that
-   event, we can provide this cast operator:
-
-   .. code-block:: chapel
-
-      operator :(from: myInteger, type toType: int) {
-        return from.intValue;
-      }
-
-   and we can invoke it using the cast syntax like this:
-
-   .. code-block:: chapel
-
-      var x = new myInteger(1);
-      var y = x:int;
-
-   .. BLOCK-test-chapelnoprint
-
-      writeln("x is ", x, " : ", x.type:string);
-      writeln("y is ", y, " : ", y.type:string);
-
-   .. BLOCK-test-chapeloutput
-
-      x is (intValue = 1) : myInteger
-      y is 1 : int(64)
-
-
 
 .. _Explicit_Numeric_Conversions:
 
@@ -727,6 +681,54 @@ resultant ``string`` is the name of the type.
       real(64)
 
    This program will print out the string ``"real(64)"``.
+
+
+.. _User_Defined_Casts:
+
+User-Defined Casts
+~~~~~~~~~~~~~~~~~~
+
+An explicit conversion can be implemented by ``operator :`` (see also
+:ref:`Function_Overloading`). An ``operator :`` should accept two
+arguments: the value to convert and the type to convert it to.
+
+   *Example (implementing-cast.chpl)*
+
+   Suppose that we have defined a record type to wrap an integer:
+
+   .. code-block:: chapel
+
+      record myInteger {
+        var intValue: int;
+      }
+
+   We might wish to support casts from ``myInteger`` to ``int``. In that
+   event, we can provide this cast operator:
+
+   .. code-block:: chapel
+
+      operator :(from: myInteger, type toType: int) {
+        return from.intValue;
+      }
+
+   and we can invoke it using the cast syntax like this:
+
+   .. code-block:: chapel
+
+      var x = new myInteger(1);
+      var y = x:int;
+
+   .. BLOCK-test-chapelnoprint
+
+      writeln("x is ", x, " : ", x.type:string);
+      writeln("y is ", y, " : ", y.type:string);
+
+   .. BLOCK-test-chapeloutput
+
+      x is (intValue = 1) : myInteger
+      y is 1 : int(64)
+
+
 
 .. [1]
    For the IEEE 754 format, :math:`mant(32)=24` and :math:`mant(64)=53`.
