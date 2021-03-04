@@ -15,11 +15,20 @@ Syntactic / Naming Changes
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
 
+Namespace Changes
+-----------------
+* `c_void_ptr` is no longer automatically available, as intended
+  (e.g., type `use CPtr;`/`import CPtr.c_void_ptr;` to refer to `c_void_ptr`)
+
 New Features
 ------------
 
 Feature Improvements
 --------------------
+* extended tuples to support indexing by boolean expressions
+  (e.g., `("hi", "there")[myBoolExpr]` is now supported)
+* extended split initialization to support `local` blocks
+  (e.g., `var x; local { x = 1; }` now works for '--no-local' compilations)
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
@@ -32,6 +41,10 @@ Standard Library Modules
 
 Package Modules
 ---------------
+* extended sort() to work with arrays with indices other than default `int`
+* explicitly restricted sort() to only support 1D rectangular arrays
+  (see https://chapel-lang.org/docs/1.24/modules/packages/Sort.html#Sort.sort)
+* fixed the implementation of `DistBag.clear()` in the 'DistributedBag' package
 
 Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
@@ -47,6 +60,7 @@ Interoperability Improvements
 
 Performance Optimizations / Improvements
 ----------------------------------------
+* parallelized scan operations on 1D `Replicated` arrays
 
 Compilation-Time / Generated Code Improvements
 ----------------------------------------------
@@ -56,12 +70,21 @@ Memory Improvements
 
 Documentation
 -------------
+* reorganized the list of standard Chapel modules into categories
+  (see https://chapel-lang.org/docs/1.24/modules/standard.html)
+* other general fixes and improvements to the language specification
+* added documentation for `sys_getenv()`
+  (see https://chapel-lang.org/docs/1.24/modules/standard/Sys.html#Sys.sys_getenv)
+* improved the formatting of code blocks in the 'CommDiagnostics' documentation
+  (see https://chapel-lang.org/docs/1.24/modules/standard/CommDiagnostics.html)
 
 Syntax Highlighting
 -------------------
 
 Example Codes
 -------------
+* refreshed the 'Parallel Iterators' primer with respect to content and order
+  (see https://chapel-lang.org/docs/1.24/primers/parIters.html)
 
 Portability
 -----------
@@ -80,12 +103,19 @@ Generated Executable Flags
 
 Error Messages / Semantic Checks
 --------------------------------
+* improved the error when a 'type' actual is passed to a value varargs formal
+* improved the wording and formatting of resolution-oriented error messages
+* squashed method vs. standalone mismatches when printing function candidates
+* added a clearer compiler error when 'SysCTypes.chpl' is missing
+* added a compilation error in the HDF5 package for unsupported types
 
 Execution-time Checks
 ---------------------
 
 Bug Fixes
 ---------
+* fixed an internal error when `cobegin` statements contained syntax errors
+* fixed an internal error related to casting arrays to borrowed classes
 
 Platform-specific bug fixes
 ---------------------------
@@ -96,14 +126,28 @@ Packaging / Configuration Changes
 Third-Party Software Changes
 ----------------------------
 
-Developer-oriented changes: Documentation improvements
-------------------------------------------------------
+Developer-oriented changes: Process
+-----------------------------------
+* switched from having developers sign CLAs to using DCO-based commits
+
+Developer-oriented changes: Documentation
+-----------------------------------------
+* refreshed the information in our 'GettingStarted' documentation
+  (see https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/bestPractices/GettingStarted.rst)
+* refactored our 'ContributorInfo' documentation w.r.t. DCOs, git tips, etc.
+  (see https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/bestPractices/ContributorInfo.rst,
+   https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/bestPractices/DCO.rst, and
+   https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/bestPractices/git.rst)
+* updated the docs to reflect our use of Discourse rather than mailing lists
+* switched to a non-Cray version of the Chapel logo in the project's README
 
 Developer-oriented changes: Module changes
 ------------------------------------------
+* fixed a bug where `chpl_nodeID` wasn't generating shadow variables properly
+* removed `inline` from a number of nontrivial IO routines
 
-Developer-oriented changes: Makefile improvements
--------------------------------------------------
+Developer-oriented changes: Makefiles
+-------------------------------------
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
