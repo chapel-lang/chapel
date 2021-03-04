@@ -266,7 +266,7 @@ can be described in Chapel using
 
 .. _Referring_to_External_C_Structs:
 
-Referring to External C Structs and C Unions
+Referring to External C Structs and Unions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 External C struct and union types can be referred to within Chapel by prefixing a
@@ -361,9 +361,11 @@ for non-typedef'd C ``union`` would be like this:
 
 .. code-block:: chapel
 
-     union Vec3 {
-       double x, y, z;
-     };
+      union _sample_union {
+         float x;
+         double y;
+         int64_t z;
+      };
 
 referring to this ``union`` would be allowed in Chapel, via:
 
@@ -371,8 +373,10 @@ referring to this ``union`` would be allowed in Chapel, via:
 
 .. code-block:: chapel
 
-     extern "union Vec3" record Vec3 {
-       var x, y, z: real(64);
+     extern "union _sample_union" record sampleUnion {
+         var x: real(32);
+         var y: real(64);
+         var z: int(64);
      }
 
 
