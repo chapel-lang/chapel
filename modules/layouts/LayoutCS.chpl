@@ -330,15 +330,13 @@ class CSDom: BaseSparseDomImpl {
 
   proc dsiFirst {
     if _nnz == 0 then return (parentDom.low) - (1,1);
-    const _low_idx = nnzDom.low;
-    var _low = idx[_low_idx];
     // find the corresponding index into startIdx
     for i in startIdxDom {
-      if startIdx[i] > _low_idx {
+      if startIdx[i] > idx.domain.low {
         if this.compressRows then
-          return (i-1, _low);
+          return (i-1, idx[idx.domain.low]);
         else
-          return (_low, i-1);
+          return (idx[idx.domain.low], i-1);
       }
     }
     halt("Something went wrong in dsiFirst");
