@@ -1782,8 +1782,12 @@ findFollowingCheckErrorBlock(SymExpr* se, LabelSymbol*& outHandlerLabel,
         // handling label, to make sure that the end count is not leaked.
         else if (CallExpr* call = toCallExpr(cur)) {
           if (call->isNamed("_endCountFree")) {
-            INT_ASSERT(endCountFree == NULL);
-            endCountFree = call;
+            if (endCountFree == NULL) {
+              endCountFree = call;
+            }
+            else {
+              USR_WARN(call, "An unexpected pattern encountered. Your application may leak memory");
+            }
           }
         }
       }
