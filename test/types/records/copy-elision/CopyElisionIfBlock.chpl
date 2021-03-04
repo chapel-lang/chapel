@@ -100,3 +100,23 @@ proc test6() {
 }
 test6();
 
+proc test7() {
+  use Memory.Initialization;
+
+  writeln('T7');
+
+  pragma "no auto destroy"
+  var x = new r();
+
+  on Locales[0] {
+    var moved = moveToValue(x);
+    var doBlock = true;
+    if doBlock {
+      consumeElement(moved);
+    } else {
+      var last = moved;
+    }
+  }
+}
+test7();
+

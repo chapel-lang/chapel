@@ -22,3 +22,6 @@ else
 default init
 deinit
 deinit
+T7
+default init
+deinit
