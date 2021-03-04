@@ -2611,7 +2611,7 @@ module Sparse {
   private proc sortIndices(ref A: [?Dom] ?eltType) where isCSArr(A) {
     use Sort;
 
-    const row_range = Dom.dim(0);
+    const rowRange = Dom.dim(0);
 
     proc _array.indPtr ref return this.dom.startIdx;
     proc _array.ind return this.dom.idx;
