@@ -444,40 +444,56 @@ The In Intent
 ^^^^^^^^^^^^^
 
 When ``in`` is specified as the intent, the formal argument represents a
-variable that is copy-initialized with the value of the actual argument.
-For example, for integer arguments, the formal argument will store a
-copy of the actual argument. An implicit conversion occurs from the
-actual argument to the type of the formal. The formal can be modified
-within the function, but such changes are local to the function and not
-reflected back to the call site.
+variable that is initialized from the value of the actual argument.
+This initialization will be copy-initialization or move-initialization
+according to :ref:`Copy_and_Move_Initialization`.
+
+For example, for integer arguments, the formal argument will store a copy
+of the actual argument.
+
+An implicit conversion for a function call occurs from the actual
+argument to the type of the formal.
+
+The formal can be modified within the function, but such changes are
+local to the function and not reflected back to the call site.
 
 .. _The_Out_Intent:
 
 The Out Intent
 ^^^^^^^^^^^^^^
 
-When ``out`` is specified as the intent, the actual argument is ignored
-when the call is made, but when the function returns, the actual argument
-is assigned to the value of the formal argument. The actual argument must
-be a valid lvalue. Within the function body, the formal argument is
-initialized according :ref:`Split_Initialization`.  It will start with
-its default value if one is supplied and can use the type's default value
-if no initialization point is found.  The formal argument can be modified
-within the function.
+The ``out`` intent on a formal argument supports return-like behavior.
+As such, the type of an ``out`` formal is not considered when determining
+candidate functions or choosing the best candidate (see
+:ref:`Function_Resolution`).
 
-The assignment implementing the ``out`` intent is a candidate for
-:ref:`Split_Initialization`. As a result, an actual argument might be
-initialized by a call passing the actual by ``out`` intent.
+When a function with the ``out`` intent returns, the actual argument is
+set to the formal argument using assignment or possibly initialized
+from the formal argument according to :ref:`Split_Initialization`.
+
+Within the function body, an ``out`` formal argument is initialized
+according :ref:`Split_Initialization`. It will start with its default
+value if one is supplied and can use the default value for the declared
+type if no initialization point is found. The formal argument can be
+modified within the function.
 
 .. _The_Inout_Intent:
 
 The Inout Intent
 ^^^^^^^^^^^^^^^^
 
-When ``inout`` is specified as the intent, the actual argument is copied
-into the formal argument as with the ``in`` intent and then copied back
-out as with the ``out`` intent. The actual argument must be a valid
-lvalue. The formal argument can be modified within the function.
+When ``inout`` is specified as the intent, the actual argument is
+copy-initialized into the formal argument, the called function body is
+run, and then the actual argument is set to the formal argument with
+assignment. As a result the behavior of the ``inout`` intent is a
+combination of the ``in`` and ``out`` intents.
+
+``inout`` intent formals behave the same as ``in`` formals for the
+purposes of determining candidate functions and choosing the best
+candidate (see :ref:`Function_Resolution`).
+
+The actual argument must be a valid lvalue. The formal argument can be
+modified within the function.
 
 .. _The_Ref_Intent:
 
@@ -529,8 +545,8 @@ intents:
 ================================ ====== ========= ========= =========== ============ =============
 \                                ``in`` ``out``   ``inout`` ``ref``     ``const in`` ``const ref``
 ================================ ====== ========= ========= =========== ============ =============
-can copy in on function call?    yes    no        yes       no          yes          no
-can copy out on function return? no     yes       yes       no          no           no
+initializes formal from actual?  yes    no        yes       no          yes          no
+sets actual from formal?         no     yes       yes       no          no           no
 refers to actual argument?       no     no        no        yes         no           yes
 formal can be read?              yes    yes       yes       yes         yes          yes
 formal can be modified?          yes    yes       yes       yes         no           no
@@ -1332,7 +1348,7 @@ according to the concrete intent of :math:`F_X`:
    :math:`T_X`.
  * if :math:`F_X` uses  the ``out`` intent, it is always a legal
    argument mapping regardless of the type of the actual and formal.
-   In the event that assignment to :math:`T_A` from :math:`F_X` is not
+   In the event that setting :math:`T_A` from :math:`F_X` is not
    possible then a compilation error will be emitted if this function
    is chosen as the best candidate.
 
@@ -1418,6 +1434,9 @@ mapping for :math:`Y`.
 
 The level of preference for one of these argument mappings is determined
 by the first of the following steps that applies:
+
+-  If :math:`F_X` or :math:`F_Y` uses the ``out`` intent, then neither
+   argument mapping is preferred.
 
 -  If :math:`T_X` and :math:`T_Y` are the same type, :math:`F_X` is
    an instantiated parameter, and :math:`F_Y` is not an instantiated
