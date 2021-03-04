@@ -141,6 +141,11 @@ static fi_addr_t* ofi_rxAddrs;          // table of remote endpoint addresses
 static int numTxCtxs;
 static int numRxCtxs;
 
+enum lastOp_t {
+  opClassRmaWrite,
+  opClassAmo,
+};
+
 struct perTxCtxInfo_t {
   atomic_bool allocated;        // true: in use; false: available
   chpl_bool bound;              // true: bound to an owner (usually a thread)
@@ -153,7 +158,9 @@ struct perTxCtxInfo_t {
                                 // fn: ensure progress
   void (*ensureProgressFn)(struct perTxCtxInfo_t*);
   uint64_t numTxnsOut;          // number of transactions in flight now
+                                // (and for which we expect CQ events)
   uint64_t numTxnsSent;         // number of transactions ever initiated
+  enum lastOp_t lastOp;         // last operation we did
   void* putVisBitmap;           // PUT target nodes, for forcing vis. later
 };
 
@@ -216,6 +223,30 @@ static int ofi_msg_i;
 // These are the major modes in which we can operate in order to
 // achieve Chapel MCM conformance.
 //
+// To conform to the Chapel MCM we need the following within each task:
+// - Atomics have to be seen to occur strictly in program order.
+// - A PUT followed by a GET from the same address must return the PUT
+//   data.
+// - When a write (AMO or RMA) is following by a tasking construct or an
+//   on-stmt, the written data must be visible to the statement body.
+//
+// With libfabric we can meet these requirements using one of a few
+// different combinations of message ordering settings or, as a last
+// resort because it performs poorly, the delivery-complete completion
+// level.  Most of the ordering issues have to do with visibility for
+// the effects of writes, since libfabric's default completion level
+// for reads (AMO or RMA) guarantees that the retrieved data is stored
+// before the completion is delivered.  When using message orderings we
+// use fenced operations and/or non-programmatic reads to ensure write
+// visibility when needed.  Such non-programmatic reads may be done
+// immediately after the writes they to which they apply or may be
+// delayed until just before the next operation that could depend on
+// the write visibility.  The latter is preferred for performance but
+// can only be done if the task has a bound transmit context, because
+// libfabric message ordering applies only to operations on a given
+// endpoint (or context) pair.  Additional commentary throughout the
+// code has more details where needed.
+//
 enum mcmMode_t {
   mcmm_undef,
   mcmm_msgOrdFence,                     // ATOMIC_{RAW,WAR,WAW}, SAS, fences
@@ -245,6 +276,7 @@ static inline struct perTxCtxInfo_t* tciAllocForAmHandler(void);
 static inline chpl_bool tciAllocTabEntry(struct perTxCtxInfo_t*);
 static inline void tciFree(struct perTxCtxInfo_t*);
 static inline void waitForCQSpace(struct perTxCtxInfo_t*, size_t);
+static void setup_ofi_put(void);
 static inline chpl_comm_nb_handle_t ofi_put(const void*, c_nodeid_t,
                                             void*, size_t);
 static inline void ofi_put_ll(const void*, c_nodeid_t,
@@ -1564,31 +1596,19 @@ void init_ofiFabricDomain(void) {
                    "====================");
 
   //
-  // To enable adhering to the Chapel MCM we need the following (within
-  // each task, not across tasks):
-  // - A PUT followed by a GET from the same address must return the
-  //   PUT data.  For this we need read-after-write ordering or else
-  //   delivery-complete.  Note that the RxM provider advertises
-  //   delivery-complete but doesn't actually do it.
-  // - When a PUT is following by an on-stmt, the on-stmt body must see
-  //   the PUT data.  For this we need either send-after-write ordering
-  //   or delivery-complete.
-  // - Atomics have to be ordered if either is a write, whether they're
-  //   done directly or via internal AMs.
+  // Look for a provider that can do one of our message ordering sets
+  // or one that can do delivery-complete.  We can't just get all the
+  // providers that match our fundamental needs and then look through
+  // the list to find one that can do what we want, though, because
+  // capabilities that aren't in our hints might not be expressed by
+  // any returned provider.  (Providers will not typically volunteer
+  // capabilities that aren't asked for, especially capabilities that
+  // have performance costs.)  So here, first see if we get a "good"
+  // core provider using the various hint sets and if that doesn't
+  // succeed, settle for a not-so-good provider.  "Good" here means
+  // "neither tcp nor sockets".
   //
-  // What we're hunting for is either a provider that can do all of the
-  // above transaction orderings, or one that can do delivery-complete.
-  // But we can't just get all the providers that match our fundamental
-  // needs and then look through the list to find the first one that can
-  // do either our transaction orderings or delivery-complete, because
-  // if those weren't in our original hints they might not be expressed
-  // by any of the returned providers.  Providers will not typically
-  // "volunteer" capabilities that aren't asked for, especially if those
-  // capabilities have performance costs.  So here, first see if we get
-  // a "good" core provider when we hint at delivery-complete and then
-  // (if needed) message ordering.  Then, if that doesn't succeed, we
-  // settle for a not-so-good provider.  "Good" here means "neither tcp
-  // nor sockets".  There are some wrinkles:
+  // There are some wrinkles:
   // - Setting either the transaction orderings or the completion type
   //   in manually overridden hints causes those hints to be used as-is,
   //   turning off both the good-provider check and any attempt to find
@@ -2234,6 +2254,8 @@ void init_ofiForRma(void) {
   // initialize its internals.  The datatype here doesn't matter.
   //
   (void) isAtomicValid(FI_INT32);
+
+  setup_ofi_put();
 }
 
 
@@ -3094,7 +3116,8 @@ static const char* am_reqDoneStr(amRequest_t*);
 static void amRequestExecOn(c_nodeid_t, c_sublocid_t, chpl_fn_int_t,
                             chpl_comm_on_bundle_t*, size_t,
                             chpl_bool, chpl_bool);
-static void amRequestRMA(c_nodeid_t, amOp_t, void*, void*, size_t);
+static void amRequestRMAPut(c_nodeid_t, void*, void*, size_t);
+static void amRequestRMAGet(c_nodeid_t, void*, void*, size_t);
 static void amRequestAMO(c_nodeid_t, void*, const void*, const void*, void*,
                          int, enum fi_datatype, size_t);
 static void amRequestFree(c_nodeid_t, void*);
@@ -3241,17 +3264,54 @@ void amRequestExecOn(c_nodeid_t node, c_sublocid_t subloc,
 
 
 static inline
-void amRequestRMA(c_nodeid_t node, amOp_t op,
-                  void* addr, void* raddr, size_t size) {
+void amRequestRMAPut(c_nodeid_t node, void* addr, void* raddr, size_t size) {
   assert(!isAmHandler);
-  amRequest_t req = { .rma = { .b = { .op = op,
+
+  retireDelayedAmDone(false /*taskIsEnding*/);
+
+  //
+  // Make sure the local address is remotely accessible.
+  //
+  void* myAddr = mrLocalizeSourceRemote(addr, size, "RMA via AM");
+
+  DBG_PRINTF(DBG_RMA | DBG_RMA_WRITE,
+             "PUT %d:%p <= %p, size %zd, via AM GET",
+             (int) node, raddr, myAddr, size);
+  amRequest_t req = { .rma = { .b = { .op = am_opGet, // remote node does GET
                                       .node = chpl_nodeID, },
                                .addr = raddr,
-                               .raddr = addr,
+                               .raddr = myAddr,
                                .size = size, }, };
-  retireDelayedAmDone(false /*taskIsEnding*/);
   amRequestCommon(node, &req, sizeof(req.rma),
                   &req.b.pAmDone, true /*yieldDuringTxnWait*/, NULL);
+
+  mrUnLocalizeSource(myAddr, addr);
+}
+
+
+static inline
+void amRequestRMAGet(c_nodeid_t node, void* addr, void* raddr, size_t size) {
+  assert(!isAmHandler);
+
+  retireDelayedAmDone(false /*taskIsEnding*/);
+
+  //
+  // Make sure the local address is remotely accessible.
+  //
+  void* myAddr = mrLocalizeTargetRemote(addr, size, "RMA via AM");
+
+  DBG_PRINTF(DBG_RMA | DBG_RMA_READ,
+             "GET %p <= %d:%p, size %zd, via AM PUT",
+             myAddr, (int) node, raddr, size);
+  amRequest_t req = { .rma = { .b = { .op = am_opPut, // remote node does PUT
+                                      .node = chpl_nodeID, },
+                               .addr = raddr,
+                               .raddr = myAddr,
+                               .size = size, }, };
+  amRequestCommon(node, &req, sizeof(req.rma),
+                  &req.b.pAmDone, true /*yieldDuringTxnWait*/, NULL);
+
+  mrUnLocalizeTarget(myAddr, addr, size);
 }
 
 
@@ -4489,6 +4549,238 @@ void waitForCQSpace(struct perTxCtxInfo_t* tcip, size_t len) {
 
 
 static inline
+chpl_comm_nb_handle_t rmaWrite(void* addr, void* mrDesc,
+                               c_nodeid_t node,
+                               uint64_t mrRaddr, uint64_t mrKey,
+                               size_t size, void* ctx,
+                               struct perTxCtxInfo_t* tcip) {
+  DBG_PRINTF(DBG_RMA | DBG_RMA_WRITE,
+             "tx write: %d:%#" PRIx64 " <= %p, size %zd, ctx %p",
+             (int) node, mrRaddr, addr, size, ctx);
+  OFI_RIDE_OUT_EAGAIN(tcip,
+                      fi_write(tcip->txCtx, addr, size,
+                               mrDesc, rxRmaAddr(tcip, node),
+                               mrRaddr, mrKey, ctx));
+  tcip->numTxnsOut++;
+  tcip->numTxnsSent++;
+  return NULL;
+}
+
+
+static inline
+chpl_comm_nb_handle_t rmaWriteInject(void* addr,
+                                     c_nodeid_t node,
+                                     uint64_t mrRaddr, uint64_t mrKey,
+                                     size_t size,
+                                     struct perTxCtxInfo_t* tcip) {
+  DBG_PRINTF(DBG_RMA | DBG_RMA_WRITE,
+             "tx write inject: %d:%#" PRIx64 " <= %p, size %zd",
+             (int) node, mrRaddr, addr, size);
+  OFI_RIDE_OUT_EAGAIN(tcip,
+                      fi_inject_write(tcip->txCtx, addr, size,
+                                      rxRmaAddr(tcip, node),
+                                      mrRaddr, mrKey));
+  tcip->numTxnsSent++;
+  return NULL;
+}
+
+
+static inline
+chpl_comm_nb_handle_t rmaWriteMsg(void* addr, void* mrDesc,
+                                  c_nodeid_t node,
+                                  uint64_t mrRaddr, uint64_t mrKey,
+                                  size_t size, void* ctx, uint64_t flags,
+                                  struct perTxCtxInfo_t* tcip) {
+  struct iovec msg_iov = (struct iovec)
+                         { .iov_base = addr,
+                           .iov_len = size };
+  struct fi_rma_iov rma_iov = (struct fi_rma_iov)
+                              { .addr = (uint64_t) mrRaddr,
+                                .len = size,
+                                .key = mrKey };
+  struct fi_msg_rma msg = (struct fi_msg_rma)
+                          { .msg_iov = &msg_iov,
+                            .desc = mrDesc,
+                            .iov_count = 1,
+                            .addr = rxRmaAddr(tcip, node),
+                            .rma_iov = &rma_iov,
+                            .rma_iov_count = 1,
+                            .context = ctx };
+  DBG_PRINTF(DBG_RMA | DBG_RMA_WRITE,
+             "tx write msg: %d:%#" PRIx64 " <= %p, size %zd, ctx %p, "
+             "flags %#" PRIx64,
+             (int) node, mrRaddr, addr, size, ctx, flags);
+  OFI_RIDE_OUT_EAGAIN(tcip, fi_writemsg(tcip->txCtx, &msg, flags));
+  tcip->numTxnsOut++;
+  tcip->numTxnsSent++;
+  return NULL;
+}
+
+
+typedef chpl_comm_nb_handle_t (rmaPutFn_t)(void* myAddr, void* mrDesc,
+                                           c_nodeid_t node,
+                                           uint64_t mrRaddr, uint64_t mrKey,
+                                           size_t size,
+                                           struct perTxCtxInfo_t* tcip);
+static rmaPutFn_t rmaPutFn_msgOrdFence;
+static rmaPutFn_t rmaPutFn_msgOrd;
+static rmaPutFn_t rmaPutFn_dlvrCmplt;
+
+static rmaPutFn_t* rmaPutFn = NULL;
+static pthread_once_t rmaPutFnOnce = PTHREAD_ONCE_INIT;
+
+static
+void init_rmaPutFn(void) {
+  switch (mcmMode) {
+  case mcmm_msgOrdFence:  rmaPutFn = rmaPutFn_msgOrdFence;  break;
+  case mcmm_msgOrd:       rmaPutFn = rmaPutFn_msgOrd;       break;
+  case mcmm_dlvrCmplt:    rmaPutFn = rmaPutFn_dlvrCmplt;    break;
+  default:
+    INTERNAL_ERROR_V("unexpected mcmMode %d", mcmMode);
+    break;
+  }
+}
+
+static
+void setup_ofi_put(void) {
+  PTHREAD_CHK(pthread_once(&rmaPutFnOnce, init_rmaPutFn));
+}
+
+
+static
+chpl_comm_nb_handle_t rmaPutFn_msgOrdFence(void* myAddr, void* mrDesc,
+                                           c_nodeid_t node,
+                                           uint64_t mrRaddr, uint64_t mrKey,
+                                           size_t size,
+                                           struct perTxCtxInfo_t* tcip) {
+  //
+  // When using message ordering we have to do something after the PUT
+  // to force it into visibility, and on the same tx context as the PUT
+  // itself because libfabric message ordering is specific to endpoint
+  // pairs.  With a bound tx context we can do it later, when needed.
+  // Otherwise we have to do it here, before we release the tx context.
+  //
+
+  chpl_comm_nb_handle_t ret;
+
+  if (tcip->lastOp != opClassAmo
+      && tcip->bound
+      && size <= ofi_info->tx_attr->inject_size) {
+    //
+    // Special case: write injection has the least latency.  We can use
+    // that if this PUT doesn't need a fence, its size doesn't exceed
+    // the injection size limit, and we have a bound tx context so we
+    // can delay forcing the memory visibility until later.
+    //
+    ret = rmaWriteInject(myAddr, node, mrRaddr, mrKey, size, tcip);
+  } else {
+    atomic_bool txnDone;
+    atomic_init_bool(&txnDone, false);
+    void* ctx = txnTrkEncodeDone(&txnDone);
+
+    if (tcip->lastOp == opClassAmo) {
+      //
+      // Special case: If our last operation was an AMO (which can only
+      // be true with a bound tx context) then we need to do a fenced
+      // PUT to force the AMO to complete before this PUT.  We may still
+      // be able to inject the PUT, though.
+      //
+      uint64_t flags = FI_FENCE;
+      if (size <= ofi_info->tx_attr->inject_size) {
+        flags |= FI_INJECT;
+      }
+      ret = rmaWriteMsg(myAddr, mrDesc, node, mrRaddr, mrKey, size,
+                        ctx, flags, tcip);
+    } else {
+      //
+      // General case.
+      //
+      ret = rmaWrite(myAddr, mrDesc, node, mrRaddr, mrKey, size,
+                     ctx, tcip);
+    }
+
+    waitForTxnComplete(tcip, ctx);
+    atomic_destroy_bool(&txnDone);
+  }
+
+  tcip->lastOp = opClassRmaWrite;
+
+  if (tcip->bound) {
+    bitmapSet(tcip->putVisBitmap, node);
+  } else {
+    mcmReleaseOneNode(node, tcip, "PUT");
+  }
+
+  return ret;
+}
+
+
+static
+chpl_comm_nb_handle_t rmaPutFn_msgOrd(void* myAddr, void* mrDesc,
+                                      c_nodeid_t node,
+                                      uint64_t mrRaddr, uint64_t mrKey,
+                                      size_t size,
+                                      struct perTxCtxInfo_t* tcip) {
+  //
+  // When using message ordering we have to do something after the PUT
+  // to force it into visibility, and on the same tx context as the PUT
+  // itself because libfabric message ordering is specific to endpoint
+  // pairs.  With a bound tx context we can do it later, when needed.
+  // Otherwise we have to do it here, before we release the tx context.
+  //
+
+  chpl_comm_nb_handle_t ret;
+
+  if (tcip->bound
+      && size <= ofi_info->tx_attr->inject_size) {
+    //
+    // Special case: write injection has the least latency.  We can use
+    // that if this PUT's size doesn't exceed the injection size limit
+    // and we have a bound tx context so we can delay forcing the
+    // memory visibility until later.
+    //
+    ret = rmaWriteInject(myAddr, node, mrRaddr, mrKey, size, tcip);
+  } else {
+    //
+    // General case.
+    //
+    atomic_bool txnDone;
+    atomic_init_bool(&txnDone, false);
+    void* ctx = txnTrkEncodeDone(&txnDone);
+    ret = rmaWrite(myAddr, mrDesc, node, mrRaddr, mrKey, size,
+                   ctx, tcip);
+    waitForTxnComplete(tcip, ctx);
+    atomic_destroy_bool(&txnDone);
+  }
+
+  if (tcip->bound) {
+    bitmapSet(tcip->putVisBitmap, node);
+  } else {
+    mcmReleaseOneNode(node, tcip, "PUT");
+  }
+
+  return ret;
+}
+
+
+static
+chpl_comm_nb_handle_t rmaPutFn_dlvrCmplt(void* myAddr, void* mrDesc,
+                                         c_nodeid_t node,
+                                         uint64_t mrRaddr, uint64_t mrKey,
+                                         size_t size,
+                                         struct perTxCtxInfo_t* tcip) {
+  atomic_bool txnDone;
+  atomic_init_bool(&txnDone, false);
+  void* ctx = txnTrkEncodeDone(&txnDone);
+  chpl_comm_nb_handle_t ret = rmaWrite(myAddr, mrDesc, node, mrRaddr, mrKey,
+                                       size, ctx, tcip);
+  waitForTxnComplete(tcip, ctx);
+  atomic_destroy_bool(&txnDone);
+  return ret;
+}
+
+
+static inline
 chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
                               void* raddr, size_t size) {
   //
@@ -4515,90 +4807,28 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
              "PUT %d:%p <= %p, size %zd",
              (int) node, raddr, addr, size);
 
-  void* myAddr = (void*) addr;
-
+  //
+  // If the remote address is directly accessible do an RMA from this
+  // side; otherwise do the opposite RMA from the other side.
+  //
   uint64_t mrKey;
   uint64_t mrRaddr;
   if (mrGetKey(&mrKey, &mrRaddr, node, raddr, size)) {
-    //
-    // The remote address is RMA-accessible; PUT directly to it.
-    //
-    void* mrDesc;
-    myAddr = mrLocalizeSource(&mrDesc, addr, size, "PUT src");
-
     struct perTxCtxInfo_t* tcip;
     CHK_TRUE((tcip = tciAlloc()) != NULL);
-
-    //
-    // If we're using delivery-complete for MCM conformance we just
-    // write the data and wait for the CQ event.  If we're using message
-    // ordering we have to force the data into visibility by following
-    // the PUT with a dummy GET from the same node, taking advantage of
-    // our asserted read-after-write ordering.  If we don't have bound
-    // tx contexts we have to do that immediately, here, because message
-    // ordering only works within endpoint pairs.  But if we do have
-    // bound tx contexts we can delay that dummy GET or even avoid it
-    // altogether, if a real GET happens to come along after this.  A
-    // wrinkle is that we don't currently delay the GET if the PUT data
-    // is too big to inject, because we want to return immediately and
-    // that isn't safe until the source buffer has been injected.  But
-    // this could be dealt with in the future by using fi_writemsg() and
-    // asking for injection completion.
-    //
     assert(tcip->txCQ != NULL);  // PUTs require a CQ, at least for now
+    waitForCQSpace(tcip, 1);
 
-    if (mcmMode == mcmm_dlvrCmplt
-        || !tcip->bound
-        || size > ofi_info->tx_attr->inject_size) {
-      atomic_bool txnDone;
-      atomic_init_bool(&txnDone, false);
-      void* ctx = txnTrkEncodeDone(&txnDone);
+    void* mrDesc;
+    void* myAddr = mrLocalizeSource(&mrDesc, addr, size, "PUT src");
 
-      DBG_PRINTF(DBG_RMA | DBG_RMA_WRITE,
-                 "tx write: %d:%p <= %p, size %zd, key 0x%" PRIx64 ", ctx %p",
-                 (int) node, raddr, myAddr, size, mrKey, ctx);
-      OFI_RIDE_OUT_EAGAIN(tcip,
-                          fi_write(tcip->txCtx, myAddr, size,
-                                   mrDesc, rxRmaAddr(tcip, node),
-                                   mrRaddr, mrKey,
-                                   (mcmMode == mcmm_dlvrCmplt) ? ctx : NULL));
-      tcip->numTxnsOut++;
-      tcip->numTxnsSent++;
+    (*rmaPutFn)(myAddr, mrDesc, node, mrRaddr, mrKey, size, tcip);
 
-      if (mcmMode != mcmm_dlvrCmplt) {
-        DBG_PRINTF(DBG_ORDER,
-                   "dummy GET from %d for PUT ordering", (int) node);
-        ofi_get_ll(orderDummy, node, orderDummyMap[node], 1, ctx, tcip);
-      }
-
-      waitForTxnComplete(tcip, ctx);
-      atomic_destroy_bool(&txnDone);
-    } else {
-      DBG_PRINTF(DBG_RMA | DBG_RMA_WRITE,
-                 "tx write inject: %d:%p <= %p, size %zd, key 0x%" PRIx64,
-                 (int) node, raddr, myAddr, size, mrKey);
-      OFI_RIDE_OUT_EAGAIN(tcip,
-                          fi_inject_write(tcip->txCtx, myAddr, size,
-                                          rxRmaAddr(tcip, node),
-                                          mrRaddr, mrKey));
-      tcip->numTxnsSent++;
-      bitmapSet(tcip->putVisBitmap, node);
-    }
-
+    mrUnLocalizeSource(myAddr, addr);
     tciFree(tcip);
   } else {
-    //
-    // The remote address is not RMA-accessible.  Make sure that the
-    // local one is, then do the opposite RMA from the remote side.
-    //
-    myAddr = mrLocalizeSourceRemote(myAddr, size, "PUT via AM GET tgt");
-    DBG_PRINTF(DBG_RMA | DBG_RMA_WRITE,
-               "PUT %d:%p <= %p, size %zd, via AM GET",
-               (int) node, raddr, myAddr, size);
-    amRequestRMA(node, am_opGet, myAddr, raddr, size);
+    amRequestRMAPut(node, (void*) addr, raddr, size);
   }
-
-  mrUnLocalizeSource(myAddr, addr);
 
   return NULL;
 }
@@ -4612,10 +4842,6 @@ void ofi_put_ll(const void* addr, c_nodeid_t node,
   uint64_t mrRaddr = 0;
   CHK_TRUE(mrGetKey(&mrKey, &mrRaddr, node, raddr, size));
 
-  void* myAddr = (void*) addr;
-  void* mrDesc;
-  CHK_TRUE(mrGetDesc(&mrDesc, myAddr, size));
-
   struct perTxCtxInfo_t* myTcip = tcip;
   if (myTcip == NULL) {
     CHK_TRUE((myTcip = tciAlloc()) != NULL);
@@ -4625,25 +4851,13 @@ void ofi_put_ll(const void* addr, c_nodeid_t node,
   // Inject if we can, otherwise do a regular write.  Don't count inject
   // as an outstanding operation, because it won't generate a CQ event.
   //
+  void* myAddr = (void*) addr;
   if (useInject && size <= ofi_info->tx_attr->inject_size) {
-    DBG_PRINTF(DBG_RMA | DBG_RMA_WRITE,
-               "tx write ll inject: %d:%p <= %p, size %zd, key 0x%" PRIx64,
-               (int) node, raddr, myAddr, size, mrKey);
-    OFI_RIDE_OUT_EAGAIN(myTcip,
-                        fi_inject_write(myTcip->txCtx, myAddr, size,
-                                        rxRmaAddr(myTcip, node),
-                                        mrRaddr, mrKey));
-    myTcip->numTxnsSent++;
+    rmaWriteInject(myAddr, node, mrRaddr, mrKey, size, myTcip);
   } else {
-    DBG_PRINTF(DBG_RMA | DBG_RMA_WRITE,
-               "tx write ll: %d:%p <= %p, size %zd, key 0x%" PRIx64 ", ctx %p",
-               (int) node, raddr, myAddr, size, mrKey, ctx);
-    OFI_RIDE_OUT_EAGAIN(myTcip,
-                        fi_write(myTcip->txCtx, myAddr, size,
-                                 mrDesc, rxRmaAddr(myTcip, node),
-                                 mrRaddr, mrKey, ctx));
-    myTcip->numTxnsOut++;
-    myTcip->numTxnsSent++;
+    void* mrDesc;
+    CHK_TRUE(mrGetDesc(&mrDesc, myAddr, size));
+    rmaWrite(myAddr, mrDesc, node, mrRaddr, mrKey, size, ctx, myTcip);
   }
 
   if (myTcip != tcip) {
@@ -4681,35 +4895,10 @@ void ofi_put_V(int v_len, void** addr_v, void** local_mr_v,
   }
 
   for (int vi = 0; vi < v_len; vi++) {
-    struct iovec msg_iov = (struct iovec)
-                           { .iov_base = addr_v[vi],
-                             .iov_len = size_v[vi] };
-    struct fi_rma_iov rma_iov = (struct fi_rma_iov)
-                                { .addr = (uint64_t) raddr_v[vi],
-                                  .len = size_v[vi],
-                                  .key = remote_mr_v[vi] };
-    struct fi_msg_rma msg = (struct fi_msg_rma)
-                            { .msg_iov = &msg_iov,
-                              .desc = &local_mr_v[vi],
-                              .iov_count = 1,
-                              .addr = rxRmaAddr(tcip, locale_v[vi]),
-                              .rma_iov = &rma_iov,
-                              .rma_iov_count = 1,
-                              .context = txnTrkEncodeId(__LINE__),
-                              .data = 0 };
-    DBG_PRINTF(DBG_RMA | DBG_RMA_WRITE,
-               "tx writemsg: %d:%p <= %p, size %zd, key 0x%" PRIx64,
-               (int) locale_v[vi], (void*) msg.rma_iov->addr,
-               msg.msg_iov->iov_base, msg.msg_iov->iov_len, msg.rma_iov->key);
-    //
-    // Add another transaction to the group and go on without waiting.
-    // Throw FI_MORE except for the last one in the batch.
-    //
-    OFI_RIDE_OUT_EAGAIN(tcip,
-                        fi_writemsg(tcip->txCtx, &msg,
-                                    (vi < v_len - 1) ? FI_MORE : 0));
-    tcip->numTxnsOut++;
-    tcip->numTxnsSent++;
+    (void) rmaWriteMsg(addr_v[vi], &local_mr_v[vi],
+                       locale_v[vi], (uint64_t) raddr_v[vi], remote_mr_v[vi],
+                       size_v[vi], txnTrkEncodeId(__LINE__),
+                       ((vi < v_len - 1) ? FI_MORE : 0), tcip);
     bitmapSet(tcip->putVisBitmap, locale_v[vi]);
   }
 
@@ -4811,8 +5000,15 @@ chpl_comm_nb_handle_t ofi_get(void* addr, c_nodeid_t node,
              "GET %p <= %d:%p, size %zd",
              addr, (int) node, raddr, size);
 
+  // MCM TODO: Here I think for mcmm_msgOrdFence we have to do a fenced
+  //           operation iff the last thing we did was a PUT.
+
   void* myAddr = addr;
 
+  //
+  // If the remote address is directly accessible do an RMA from this
+  // side; otherwise do the opposite RMA from the other side.
+  //
   uint64_t mrKey;
   uint64_t mrRaddr;
   if (mrGetKey(&mrKey, &mrRaddr, node, raddr, size)) {
@@ -4853,19 +5049,15 @@ chpl_comm_nb_handle_t ofi_get(void* addr, c_nodeid_t node,
     waitForTxnComplete(tcip, ctx);
     atomic_destroy_bool(&txnDone);
     tciFree(tcip);
+
+    mrUnLocalizeTarget(myAddr, addr, size);
   } else {
     //
-    // The remote address is not RMA-accessible.  Make sure that the
-    // local one is, then do the opposite RMA from the remote side.
+    // The remote address is not RMA-accessible.  Do the opposite RMA
+    // from the remote side.
     //
-    myAddr = mrLocalizeTargetRemote(myAddr, size, "GET via AM PUT src");
-    DBG_PRINTF(DBG_RMA | DBG_RMA_READ,
-               "GET %p <= %d:%p, size %zd, via AM PUT",
-               myAddr, (int) node, raddr, size);
-    amRequestRMA(node, am_opPut, myAddr, raddr, size);
+    amRequestRMAGet(node, myAddr, raddr, size);
   }
-
-  mrUnLocalizeTarget(myAddr, addr, size);
 
   return NULL;
 }
@@ -5344,6 +5536,9 @@ void waitForTxnComplete(struct perTxCtxInfo_t* tcip, void* ctx) {
 
 static inline
 void waitForPutsVisOneNode(c_nodeid_t node, struct perTxCtxInfo_t* tcip) {
+  // MCM TODO: Here I think for mcmm_msgOrdFence we have to do a fenced
+  //           operation iff the last thing we did was a PUT.
+
   //
   // Enforce MCM: at the end of a task, make sure all our outstanding
   // PUTs have actually completed on their target nodes.  We can only
