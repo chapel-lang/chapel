@@ -451,6 +451,11 @@ class BadRegexpError : Error {
                    ``(?U)``.
 
  */
+
+/*
+  throws: SystemError: If CHPL_REGEXP is set to none.
+*/
+
 proc compile(pattern: ?t, posix=false, literal=false, noCapture=false,
              /*i*/ ignoreCase=false, /*m*/ multiLine=false, /*s*/ dotAll=false,
              /*U*/ nonGreedy=false): regexp(t) throws where t==string || t==bytes {

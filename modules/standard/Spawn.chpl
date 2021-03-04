@@ -253,6 +253,9 @@ module Spawn {
       }
     }
 
+    /*
+      :throws SystemError: If the subprocess does not launch
+    */
 
     pragma "no doc"
     proc _throw_on_launch_error() throws {
