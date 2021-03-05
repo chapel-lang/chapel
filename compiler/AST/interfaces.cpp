@@ -345,7 +345,8 @@ Expr* ImplementsStmt::getNextExpr(Expr* expr) {
 //
 void introduceConstrainedTypes(FnSymbol* fn) {
   for_formals(formal, fn)
-   if (BlockStmt* typeExpr = formal->typeExpr)
+{
+   if (BlockStmt* typeExpr = formal->typeExpr) {
     if (DefExpr* def = toDefExpr(typeExpr->body.tail)) {
       INT_ASSERT(formal->type == dtUnknown); //fyi
       SET_LINENO(def);
@@ -365,7 +366,23 @@ void introduceConstrainedTypes(FnSymbol* fn) {
         USR_FATAL(typeExpr, "this formal's type query expression"
           " is currently not supported for constrained generic functions");
       typeExpr->remove();
+    } else {
+      std::vector<DefExpr*> defExprs;
+      collectDefExprs(typeExpr, defExprs);
+      if (! defExprs.empty())
+        USR_FATAL(defExprs[0], "this formal's type query expression"
+          " is currently not supported for constrained generic functions");
     }
+   } else {
+     // No declared type. Make it a ConstrainedType.
+     if (formal->type == dtUnknown || formal->type == dtAny) {
+       const char* ctName = astr(formal->name, "_t");
+       TypeSymbol* CT = ConstrainedType::buildSym(ctName, CT_CGFUN_FORMAL);
+       fn->interfaceInfo->addConstrainedType(new DefExpr(CT));
+       formal->type = CT->type;
+     }
+   }
+}
 }
 
 //
@@ -383,7 +400,7 @@ Type* desugarInterfaceAsType(ArgSymbol* arg, SymExpr* se,
   SET_LINENO(se);
 
   // introduce a ConstrainedType
-  TypeSymbol* CT = ConstrainedType::buildSym(astr("t_", isym->name),
+  TypeSymbol* CT = ConstrainedType::buildSym(astr(isym->name, "_t"),
                                              CT_CGFUN_FORMAL);
   ifcInfo->addConstrainedType(new DefExpr(CT));
 

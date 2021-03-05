@@ -113,6 +113,9 @@ static void removeUnusedFunctions() {
               fatalErrorsEncountered() == false) {
             removeUnusedFunction(fn);
           }
+        } else if (fn->isConstrainedGeneric()) {
+          INT_ASSERT(fn->firstSymExpr() == nullptr);  // these better be unused
+          removeUnusedFunction(fn);
         }
       }
     }
