@@ -1,3 +1,0 @@
-tier_2_increasing_constraints.chpl:37: error: unresolved call 'writeln(T)'
-tier_2_increasing_constraints.chpl:37: note: because actual argument #1 of an interface type T
-tier_2_increasing_constraints.chpl:37: note: other candidates are:
