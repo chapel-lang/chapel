@@ -1185,7 +1185,7 @@ binary   ``==`` ``<=`` ``>=`` ``<`` ``>``
 binary   ``<<`` ``>>`` ``&`` ``|`` ``^`` ``#`` ``align`` ``by``
 binary   ``=`` ``+=`` ``-=`` ``*=`` ``/=`` ``%=`` ``**=``
 binary   ``&=`` ``|=`` ``^=`` ``<<=`` ``>>=`` ``<=>`` ``<~>``
-======== ==============================
+======== ===============================
 
 The arity and precedence of the operator must be maintained when it is
 overloaded. Operator resolution follows the same algorithm as function
