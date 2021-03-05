@@ -424,7 +424,7 @@ Type* desugarInterfaceAsType(ArgSymbol* arg, SymExpr* se,
 // and did not succeed.
 //
 
-const char* implementsStmtWrapperName(InterfaceSymbol* isym) {
+const char* implementsWrapperName(InterfaceSymbol* isym) {
   return astr("|", isym->name);
 }
 
@@ -465,7 +465,7 @@ static void verifyWrapImplementsStmt(FnSymbol* wrapFn, ImplementsStmt* istm,
                                      bool isSuccess) {
   InterfaceSymbol* isym = istm->ifcSymbol();
 
-  INT_ASSERT(wrapFn->name == implementsStmtWrapperName(isym));
+  INT_ASSERT(wrapFn->name == implementsWrapperName(isym));
   INT_ASSERT(interfaceNameForWrapperFn(wrapFn) == isym->name);
   IstmAndSuccess iss = implementsStmtForWrapperFn(wrapFn);
   INT_ASSERT(iss.istm == istm);
@@ -488,7 +488,7 @@ FnSymbol* wrapOneImplementsStatement(ImplementsStmt* istm) {
     return NULL;
   }
   InterfaceSymbol* isym = istm->ifcSymbol();
-  FnSymbol* wrapFn = new FnSymbol(implementsStmtWrapperName(isym));
+  FnSymbol* wrapFn = new FnSymbol(implementsWrapperName(isym));
   wrapFn->addFlag(FLAG_IMPLEMENTS_WRAPPER);
   istm->insertBefore(new DefExpr(wrapFn));
   wrapFn->insertAtTail(istm->remove());
