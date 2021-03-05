@@ -573,15 +573,15 @@ enumerated type (unless the module has been renamed to ``_``, as described
 earlier). It is an error to provide a name in a ``limitation-clause`` that does
 not exist or is not visible in the respective module or enumerated type.
 
-If an ``only`` list is left empty or an ``except`` list is followed by :math:`*`
+If an ``only`` list is left empty or an ``except`` is followed by :math:`*`
 then no symbols are made available to the scope without prefix.
 
 When the ``limitation-clause`` for a use of a module contains a type, the
-visibility of its tertiary methods that are defined in that module, if any, are
-affected in the same way as the visibility of the type itself.  Methods cannot
-be specified in a ``limitation-clause`` on their own.  Fields, and primary and
-secondary methods are visible to any instance of the type regardless of use
-statements, see :ref:`Method_Calls`.
+visibility of its tertiary methods that are defined in that module, if any, is
+affected in the same way as the visibility of the type itself.  Fields and
+methods cannot be specified in a ``limitation-clause`` on their own.  Fields,
+and primary and secondary methods are visible to any instance of the type
+regardless of use statements, see :ref:`Method_Calls`.
 
 Within an ``only`` list, a visible symbol from that module may optionally be
 given a new name using the ``as`` keyword. This new name will be usable from the
@@ -769,10 +769,10 @@ module.
 
 When the ``unqualified-list`` for an import of a module contains a type, its
 tertiary methods that are defined in that module, if any, are visible in the
-scopes where the ``import`` statement is visible.  Methods cannot be specified
-in an ``unqualified-list`` on their own.  Fields, and primary and secondary
-methods are visible to any instance of the type regardless of import statements,
-see :ref:`Method_Calls`.
+scopes where the ``import`` statement is visible.  Fields and methods cannot be
+specified in an ``unqualified-list`` on their own.  Fields, and primary and
+secondary methods are visible to any instance of the type regardless of import
+statements, see :ref:`Method_Calls`.
 
 Within an ``unqualified-list``, a visible symbol from that module may optionally
 be given a new name using the ``as`` keyword.  This new name will be usable from
