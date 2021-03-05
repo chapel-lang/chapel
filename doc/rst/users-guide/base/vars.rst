@@ -26,13 +26,13 @@ Compiling and running this program results in:
   :language: text
 
 As we will see in the following sections, a variable declaration may
-omit its initializer or its type, but not both.
+omit its initial value or its type, but not both.
 
 
 Auto-initialized Variables
 --------------------------
 
-If a variable declaration does not contain an initializer, the
+If a variable declaration does not contain an initial value, the
 compiler will initialize the variable to a default value based on its
 type.  For example, the default value for integers is zero, so if we
 had instead declared *x* as:
@@ -51,7 +51,7 @@ We would get:
 Type-inferred Variables
 -----------------------
 
-Alternatively, a variable declaration with an initializer may omit its
+Alternatively, a variable declaration with an initial value may omit its
 type specification.  In this case, the compiler will infer the
 variable's type to be the same as its initialization expression's.
 Thus, we could have written the original program simply as:
@@ -123,11 +123,11 @@ linefeeds in this example is simply for readability and has no
 practical impact).
 
 The rule of thumb is that any variable which has neither a type
-specification nor an initializer will share the type and/or
+specification nor an initial value will share the type and/or
 initializer expressions of the next variable which has one or both.
 Thus, in the example above, *a* and *b* share *c*'s type and
-initializer; *i* and *j* share *k*'s type; *s* shares *t*'s
-initializer; and *x* and *y* share *z*'s initializer.
+initial value; *i* and *j* share *k*'s type; *s* shares *t*'s
+initial value; and *x* and *y* share *z*'s initial value.
 
 Needless to say, the last variable in a compound declaration must have
-a type and/or initializer.
+a type and/or initial value.
