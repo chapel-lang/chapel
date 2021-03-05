@@ -4624,17 +4624,23 @@ module ChapelArray {
     }
   }
 
+  // This function exists to avoid communication from computing _value when
+  // the result is param.
+  private proc domainDistIsLayout(d: domain) param {
+    return d.dist._value.dsiIsLayout();
+  }
+
   pragma "find user line"
   pragma "coerce fn"
   proc chpl__coerceCopy(type dstType:_domain, rhs:_domain, definedConst: bool) {
-    param rhsIsLayout = rhs.dist._value.dsiIsLayout();
+    param rhsIsLayout = domainDistIsLayout(rhs);
 
     pragma "no copy"
     var lhs = chpl__coerceHelp(dstType, definedConst);
     lhs = rhs;
 
     // Error for assignment between local and distributed domains.
-    if lhs.dist._value.dsiIsLayout() && !rhsIsLayout then
+    if domainDistIsLayout(lhs) && !rhsIsLayout then
       compilerWarning("initializing a non-distributed domain from a distributed domain. If you didn't mean to do that, add a dmapped clause to the type expression or remove the type expression altogether");
 
     return lhs;
@@ -4643,7 +4649,7 @@ module ChapelArray {
   pragma "coerce fn"
   proc chpl__coerceMove(type dstType:_domain, in rhs:_domain,
                         definedConst: bool) {
-    param rhsIsLayout = rhs.dist._value.dsiIsLayout();
+    param rhsIsLayout = domainDistIsLayout(rhs);
 
     // TODO: just return rhs
     // if the domain types are the same and their runtime types
@@ -4654,7 +4660,7 @@ module ChapelArray {
     lhs = rhs;
 
     // Error for assignment between local and distributed domains.
-    if lhs.dist._value.dsiIsLayout() && !rhsIsLayout then
+    if domainDistIsLayout(lhs) && !rhsIsLayout then
       compilerWarning("initializing a non-distributed domain from a distributed domain. If you didn't mean to do that, add a dmapped clause to the type expression or remove the type expression altogether");
 
     return lhs;
@@ -5367,7 +5373,7 @@ module ChapelArray {
   // 'castToVoidStar' says whether we should cast the result to c_void_ptr
   pragma "no doc"
   proc chpl_arrayToPtr(arr: [], param castToVoidStar: bool = false) {
-    if (!isRectangularArr(arr) || !arr.domain.dist._value.dsiIsLayout()) then
+    if (!isRectangularArr(arr) || !domainDistIsLayout(arr.domain)) then
       compilerError("Only single-locale rectangular arrays can be passed to an external routine argument with array type", errorDepth=2);
 
     if (arr._value.locale != here) then
