@@ -483,10 +483,18 @@ proc Block.init(boundingBox: domain,
   // Instead of 'dummyLB', we could give 'locDistTemp' a nilable element type.
   const dummyLB = new unmanaged LocBlock(rank, idxType, dummy=true);
   var locDistTemp: [targetLocDom] unmanaged LocBlock(rank, idxType) = dummyLB;
-  coforall locid in targetLocDom do
-    on this.targetLocales(locid) do
-      locDistTemp(locid) = new unmanaged LocBlock(rank, idxType, locid,
-                                                  boundingBox, targetLocDom);
+
+  // Store a const copy of the dims for RVF
+  // Use a zippered coforall to get nonblocking ons but create
+  // the reference into locDistTemp before launching the remote task.
+  const boundingBoxDims = boundingBox.dims();
+  coforall (locid, loc, locDistTempElt)
+           in zip(targetLocDom, targetLocales, locDistTemp) do on loc {
+    locDistTempElt = new unmanaged LocBlock(rank, idxType, locid,
+                                            boundingBox, boundingBoxDims,
+                                            targetLocDom);
+  }
+
   delete dummyLB;
   this.locDist = locDistTemp; //make this a serial loop instead?
 
@@ -698,20 +706,21 @@ iter Block.activeTargetLocales(const space : domain = boundingBox) {
   //
   // The subset {1..10 by 4} will involve locales 0, 1, and 3.
   for i in {(...dims)} {
-    const chunk = chpl__computeBlock(i, targetLocDom, boundingBox);
+    const chunk = chpl__computeBlock(i, targetLocDom, boundingBox, boundingBox.dims());
     // TODO: Want 'contains' for a domain. Slicing is a workaround.
     if locSpace[(...chunk)].size > 0 then
       yield i;
   }
 }
 
-proc chpl__computeBlock(locid, targetLocBox, boundingBox) {
+proc chpl__computeBlock(locid, targetLocBox:domain, boundingBox:domain,
+                        boundingBoxDims /* boundingBox.dims() */) {
   param rank = targetLocBox.rank;
-  type idxType = chpl__tuplify(boundingBox)(0).idxType;
+  type idxType = boundingBox.idxType;
   var inds: rank*range(idxType);
   for param i in 0..rank-1 {
-    const lo = boundingBox.dim(i).low;
-    const hi = boundingBox.dim(i).high;
+    const lo = boundingBoxDims(i).low;
+    const hi = boundingBoxDims(i).high;
     const numelems = hi - lo + 1;
     const numlocs = targetLocBox.dim(i).size;
     const (blo, bhi) = _computeBlock(numelems, numlocs, chpl__tuplify(locid)(i),
@@ -724,11 +733,12 @@ proc chpl__computeBlock(locid, targetLocBox, boundingBox) {
 proc LocBlock.init(param rank: int,
                    type idxType,
                    locid, // the locale index from the target domain
-                   boundingBox,
+                   boundingBox: domain,
+                   boundingBoxDims /* boundingBox.dims() */,
                    targetLocDom: domain(rank)) {
   this.rank = rank;
   this.idxType = idxType;
-  const inds = chpl__computeBlock(chpl__tuplify(locid), targetLocDom, boundingBox);
+  const inds = chpl__computeBlock(chpl__tuplify(locid), targetLocDom, boundingBox, boundingBoxDims);
   myChunk = {(...inds)};
 }
 
@@ -1491,7 +1501,7 @@ proc BlockArr.dsiLocalSubdomain(loc: locale) {
 proc BlockDom.dsiLocalSubdomain(loc: locale) {
   const (gotit, locid) = dist.chpl__locToLocIdx(loc);
   if (gotit) {
-    var inds = chpl__computeBlock(locid, dist.targetLocDom, dist.boundingBox);
+    var inds = chpl__computeBlock(locid, dist.targetLocDom, dist.boundingBox, dist.boundingBox.dims());
     return whole[(...inds)];
   } else {
     var d: domain(rank, idxType, stridable);
