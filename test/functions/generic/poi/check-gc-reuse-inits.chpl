@@ -19,8 +19,8 @@ module Lib {
   proc MyRecord.init(param p) { workIN(); rp = 0; }
   proc MyRecord.init=(other)  { workIE(); rp = 0; }
   proc MyRecord.deinit()      { workDI(); }
-  operator =(ref lhs:MyRecord, rhs:MyRecord) { workAS(); }
-  operator <(lhs:MyRecord,     rhs:MyRecord) { workLT(); return true; }
+  operator MyRecord.=(ref lhs:MyRecord, rhs:MyRecord) { workAS(); }
+  operator MyRecord.<(lhs:MyRecord, rhs:MyRecord) { workLT(); return true; }
   operator :(rhs:MyRecord, type t:int)      { workCF(); return 1; }
   operator :(rhs: int,     type t:MyRecord) { workCT(); return new MyRecord(0); }
 }
