@@ -31,19 +31,12 @@ module User {
   use Lib;
   proc MyRecord.init(param p)            { note("User.init", 2); rp = 0; }
   proc MyRecord.init=(other)             { note("User.init=", 2); rp = 0; }
-<<<<<<< HEAD
-  proc =(ref lhs:MyRecord, rhs:MyRecord) { note("User.=", 2); }
-  proc <(lhs:MyRecord,     rhs:MyRecord) { note("User.<", 2);  return true; }
-  operator :(rhs:MyRecord, type t:int)   { note("User._castF", 2); return 1; }
-  operator :(rhs:int,      type t:MyRecord) { note("User._castT", 2);
-=======
-  operator =(ref lhs:MyRecord, rhs:MyRecord) { note("User.=", 2); }
+  operator MyRecord.=(ref lhs:MyRecord, rhs:MyRecord) { note("User.=", 2); }
   operator MyRecord.<(lhs:MyRecord, rhs:MyRecord) { note("User.<", 2);
                                                     return true; }
-  proc _cast(type t:int,   rhs:MyRecord) { note("User._castF", 2); return 1; }
-  proc _cast(type t:MyRecord,   rhs:int) { note("User._castT", 2);
->>>>>>> 01eff9913a... Update these tests and helper files to use the new operator keyword
-                                           return new MyRecord(0); }
+  operator :(rhs:MyRecord, type t:int)   { note("User._castF", 2); return 1; }
+  operator :(rhs:int,      type t:MyRecord) { note("User._castT", 2);
+                                              return new MyRecord(0); }
   proc u1() {
     note("User.u1", 1);
     libIN(1);      // create a cache entry
