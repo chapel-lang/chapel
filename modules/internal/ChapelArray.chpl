@@ -239,9 +239,9 @@ module ChapelArray {
     const hereID = here.id;
     const privatizeData = value.dsiGetPrivatizeData();
     on Locales[0] do
-      _newPrivatizedClassHelp(value, value, n, hereID, privatizeData);
+      _newPrivatizedClassHelp(value, value, n, hereID);
 
-    proc _newPrivatizedClassHelp(parentValue, originalValue, n, hereID, privatizeData) {
+    proc _newPrivatizedClassHelp(parentValue, originalValue, n, hereID) {
       var newValue = originalValue;
       if hereID != here.id {
         newValue = parentValue.dsiPrivatize(privatizeData);
@@ -257,10 +257,10 @@ module ChapelArray {
       cobegin {
         if chpl_localeTree.left._instance != nil then
           on chpl_localeTree.left do
-            _newPrivatizedClassHelp(newValue, originalValue, n, hereID, privatizeData);
+            _newPrivatizedClassHelp(newValue, originalValue, n, hereID);
         if chpl_localeTree.right._instance != nil then
           on chpl_localeTree.right do
-            _newPrivatizedClassHelp(newValue, originalValue, n, hereID, privatizeData);
+            _newPrivatizedClassHelp(newValue, originalValue, n, hereID);
       }
     }
 
