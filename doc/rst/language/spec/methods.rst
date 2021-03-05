@@ -125,15 +125,16 @@ arguments in the method declaration following the rules specified for
 procedures (:ref:`Chapter-Procedures`). The exception is the
 receiver :ref:`Method_receiver_and_this`.
 
-Primary or secondary methods can be called wherever an instance of the type is
-available.  Tertiary methods are only available if the module which defines them
-has been imported or used in such a way that allows these methods to be called
-(see :ref:`Using_Modules` and :ref:`Importing_Modules`).
+A primary or secondary method is always visible when the receiver is of the type
+to which the method is bound or of a subtype of such type.  Tertiary methods are
+only visible if the module which defines them has been imported or used in such
+a way that allows these methods to be called (see :ref:`Using_Modules` and
+:ref:`Importing_Modules`).
 
 .. note::
 
-   Future work: privacy specifiers for methods are still under discussion and
-   will impact their visibility when implemented.
+   Future work: the semantics of privacy specifiers for methods are still under
+   discussion.
 
 .. _Method_receiver_and_this:
 

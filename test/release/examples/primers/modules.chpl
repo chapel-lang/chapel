@@ -116,6 +116,7 @@ module DifferentArguments {
 module RecMoreMethods {
   private use modToUse;
 
+  /* ``method3`` is a tertiary method defined on ``Rec`` */
   proc Rec.method3() {
     writeln("In Rec.method3()");
   }
@@ -566,14 +567,14 @@ module MainModule {
       // writeln(bar);        // this won't resolve since bar isn't available
     }
 
-    /* Class and record instances obtained in scopes where the type is not
+    /* Class and record instances obtained in scopes where their type is not
        otherwise visible can still access any fields and any methods defined in
-       their original scope.
+       their type's original scope.
 
        To impact the visibility of methods defined in modules other than where
-       the type was defined, the type itself can be listed in an ``only`` or
-       ``except`` list for ``use`` statements, or as one of the symbols listed
-       in an ``import`` statement.
+       the type was defined, known as "tertiary methods", the type itself can be
+       listed in an ``only`` or ``except`` list for ``use`` statements, or as
+       one of the symbols listed in an ``import`` statement.
     */
     {
       use modToUse only;
