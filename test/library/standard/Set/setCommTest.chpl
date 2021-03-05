@@ -1,11 +1,23 @@
 use Set;
 
 record r {
+  var doPrint = false;
   var x = 0;
-  proc init() { writeln('default init'); }
-  proc init(id: int) { x = id; writeln('init int'); }
-  proc init=(other: r) { writeln('init='); }
-  proc deinit() { writeln('deinit'); }
+
+  proc init() { if doPrint then writeln('default init'); }
+  proc init(id: int, doPrint: bool=false) {
+    this.doPrint = doPrint;
+    this.x = id;
+    this.complete();
+    if doPrint then writeln('init int');
+  }
+  proc init=(rhs: r) {
+    this.doPrint = rhs.doPrint;
+    this.x = rhs.x;
+    this.complete();
+    if doPrint then writeln('init=');
+  }
+  proc deinit() { if doPrint then writeln('deinit'); }
 }
 
 proc =(ref lhs: r, rhs: r) { writeln('assign'); }
@@ -19,16 +31,12 @@ proc test1() {
   var st = new set(r);
 
   // Interested in the number of copies made here.
-  writeln('adding');
   for loc in Locales do on loc {
-    writeln('loc=', here.id);
     var x = new r(here.id);
     st.add(x);
   }
 
-  writeln('contains');
   for loc in Locales do on loc {
-    writeln('loc=', here.id);
     var x = new r(here.id);
     assert(st.contains(x));
     st.remove(x);
@@ -55,4 +63,22 @@ proc test2() {
   assert(st.size == 0);
 }
 test2();
+
+// Test local and remote add.
+proc test3() {
+  writeln('T3');
+
+  var st = new set(r);
+
+  // Local add...
+  st.add(new r(here.id, doPrint=true));
+
+  // Remote add...
+  on Locales[1] {
+    st.add(new r(here.id, doPrint=true));
+  }
+
+  assert(st.size == 2);
+}
+test3();
 

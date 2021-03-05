@@ -150,9 +150,12 @@ module Set {
 
       on this {
 
-        // TODO: If we try to move onto this too early, and then call the
-        // 'findAvailableSlot' method on 'moved' instead of 'elem', we'll
-        // get lifetime errors in '.../Set/types/testNilableTuple.chpl'.
+        // TODO: The following variation gets lifetime errors in
+        // '.../Set/types/testNilableTuple.chpl':
+        //
+        // var moved = moveToValue(elem);
+        // var (isFullSlot, idx) = _htb.findAvailableSlot(moved);
+        //
         var (isFullSlot, idx) = _htb.findAvailableSlot(elem);
 
         if !isFullSlot {
