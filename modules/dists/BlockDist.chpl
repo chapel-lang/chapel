@@ -468,7 +468,7 @@ proc Block.init(boundingBox: domain,
     compilerError("specified Block rank != rank of specified bounding box");
   if idxType != boundingBox.idxType then
     compilerError("specified Block index type != index type of specified bounding box");
-  if rank != 2 && isCSType(sparseLayoutType) then 
+  if rank != 2 && isCSType(sparseLayoutType) then
     compilerError("CS layout is only supported for 2 dimensional domains");
 
   if boundingBox.size == 0 then
@@ -1600,12 +1600,12 @@ proc BlockArr.canDoOptimizedSwap(other) {
 //
 // TODO: stridability causes issues with RAD swap, and somehow isn't captured by
 // the formal type when we check whether this resolves.
-proc BlockArr.doiOptimizedSwap(other: this.type)  
+proc BlockArr.doiOptimizedSwap(other: this.type)
   where this.stridable == other.stridable {
 
   if(canDoOptimizedSwap(other)) {
     if debugOptimizedSwap {
-      writeln("BlockArr doing optimized swap. Domains: ", 
+      writeln("BlockArr doing optimized swap. Domains: ",
               this.dom.whole, " ", other.dom.whole, " Bounding boxes: ",
               this.dom.dist.boundingBox, " ", other.dom.dist.boundingBox);
     }
@@ -1618,7 +1618,7 @@ proc BlockArr.doiOptimizedSwap(other: this.type)
     return true;
   } else {
     if debugOptimizedSwap {
-      writeln("BlockArr doing unoptimized swap. Domains: ", 
+      writeln("BlockArr doing unoptimized swap. Domains: ",
               this.dom.whole, " ", other.dom.whole, " Bounding boxes: ",
               this.dom.dist.boundingBox, " ", other.dom.dist.boundingBox);
     }
