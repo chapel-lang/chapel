@@ -489,10 +489,12 @@ proc Block.init(boundingBox: domain,
   // the reference into locDistTemp before launching the remote task.
   const boundingBoxDims = boundingBox.dims();
   coforall (locid, loc, locDistTempElt)
-           in zip(targetLocDom, targetLocales, locDistTemp) do on loc {
-    locDistTempElt = new unmanaged LocBlock(rank, idxType, locid,
-                                            boundingBox, boundingBoxDims,
-                                            targetLocDom);
+           in zip(targetLocDom, targetLocales, locDistTemp) {
+    on loc {
+      locDistTempElt = new unmanaged LocBlock(rank, idxType, locid,
+                                              boundingBox, boundingBoxDims,
+                                              targetLocDom);
+    }
   }
 
   delete dummyLB;
@@ -518,9 +520,13 @@ proc Block.init(boundingBox: domain,
 }
 
 proc Block.dsiAssign(other: this.type) {
-  coforall locid in targetLocDom do
-    on targetLocales(locid) do
-      delete locDist(locid);
+
+  coforall (locid, loc, locDistElt)
+           in zip(targetLocDom, targetLocales, locDist) {
+    on loc {
+      delete locDistElt;
+    }
+  }
   boundingBox = other.boundingBox;
   targetLocDom = other.targetLocDom;
   targetLocales = other.targetLocales;
@@ -528,10 +534,13 @@ proc Block.dsiAssign(other: this.type) {
   dataParIgnoreRunningTasks = other.dataParIgnoreRunningTasks;
   dataParMinGranularity = other.dataParMinGranularity;
 
-  coforall locid in targetLocDom do
-    on targetLocales(locid) do
-      locDist(locid) = new unmanaged LocBlock(rank, idxType, locid, boundingBox,
-                                    targetLocDom);
+  coforall (locid, loc, locDistElt)
+           in zip(targetLocDom, targetLocales, locDist) {
+    on loc {
+      locDistElt = new unmanaged LocBlock(rank, idxType, locid, boundingBox,
+                                          targetLocDom);
+    }
+  }
 }
 
 //
@@ -590,10 +599,13 @@ override proc Block.dsiNewRectangularDom(param rank: int, type idxType,
   const dummyLBD = new unmanaged LocBlockDom(rank, idxType, stridable);
   var locDomsTemp: [this.targetLocDom]
                   unmanaged LocBlockDom(rank, idxType, stridable) = dummyLBD;
-  coforall localeIdx in this.targetLocDom do
-   on this.targetLocales(localeIdx) do
-    locDomsTemp(localeIdx) = new unmanaged LocBlockDom(rank, idxType, stridable,
-                                             this.getChunk(whole, localeIdx));
+  coforall (localeIdx, loc, locDomsTempElt)
+           in zip(this.targetLocDom, this.targetLocales, locDomsTemp) {
+    on loc {
+      locDomsTempElt = new unmanaged LocBlockDom(rank, idxType, stridable,
+                                                 this.getChunk(whole, localeIdx));
+    }
+  }
   delete dummyLBD;
 
   var dom = new unmanaged BlockDom(rank, idxType, stridable, sparseLayoutType,
@@ -895,12 +907,14 @@ proc BlockDom.dsiBuildArray(type eltType, param initElts:bool) {
   var myLocArrTemp: unmanaged LocBlockArr(eltType, rank, idxType, stridable)?;
 
   // formerly in BlockArr.setup()
-  coforall localeIdx in dom.dist.targetLocDom with (ref myLocArrTemp) {
-    on dom.dist.targetLocales(localeIdx) {
+  coforall (localeIdx, loc, locArrTempElt)
+           in zip(dom.dist.targetLocDom, dom.dist.targetLocales, locArrTemp)
+           with (ref myLocArrTemp) {
+    on loc {
       const LBA = new unmanaged LocBlockArr(eltType, rank, idxType, stridable,
                                             dom.getLocDom(localeIdx),
                                             initElts=initElts);
-      locArrTemp(localeIdx) = LBA;
+      locArrTempElt = LBA;
       if here.id == creationLocale then
         myLocArrTemp = LBA;
     }
@@ -972,16 +986,19 @@ proc BlockDom.dsiLocalSlice(param stridable: bool, ranges) {
 }
 
 proc BlockDom.setup() {
-    coforall localeIdx in dist.targetLocDom do {
-      on dist.targetLocales(localeIdx) do
-        locDoms(localeIdx).myBlock = dist.getChunk(whole, localeIdx);
+  coforall (localeIdx, loc, locDomsElt)
+           in zip(dist.targetLocDom, dist.targetLocales, locDoms) {
+    on loc {
+      locDomsElt.myBlock = dist.getChunk(whole, localeIdx);
     }
+  }
 }
 
 override proc BlockDom.dsiDestroyDom() {
-  coforall localeIdx in dist.targetLocDom do {
-    on locDoms(localeIdx) do
-      delete locDoms(localeIdx);
+  coforall (localeIdx, locDomsElt) in zip(dist.targetLocDom, locDoms) {
+    on locDomsElt {
+      delete locDomsElt;
+    }
   }
 }
 
@@ -1044,25 +1061,25 @@ proc BlockArr.setupRADOpt() {
 }
 
 override proc BlockArr.dsiElementInitializationComplete() {
-  coforall localeIdx in dom.dist.targetLocDom {
-    on locArr(localeIdx) {
-      locArr(localeIdx).myElems.dsiElementInitializationComplete();
+  coforall (localeIdx, locArrElt) in zip(dom.dist.targetLocDom, locArr) {
+    on locArrElt {
+      locArrElt.myElems.dsiElementInitializationComplete();
     }
   }
 }
 
 override proc BlockArr.dsiElementDeinitializationComplete() {
-  coforall localeIdx in dom.dist.targetLocDom {
-    on locArr(localeIdx) {
-      locArr(localeIdx).myElems.dsiElementDeinitializationComplete();
+  coforall (localeIdx, locArrElt) in zip(dom.dist.targetLocDom, locArr) {
+    on locArrElt {
+      locArrElt.myElems.dsiElementDeinitializationComplete();
     }
   }
 }
 
 override proc BlockArr.dsiDestroyArr(deinitElts:bool) {
-  coforall localeIdx in dom.dist.targetLocDom {
-    on locArr(localeIdx) {
-      var arr = locArr(localeIdx);
+  coforall (localeIdx, locArrElt) in zip(dom.dist.targetLocDom, locArr) {
+    on locArrElt {
+      var arr = locArrElt;
       if deinitElts then
         _deinitElements(arr.myElems);
       arr.myElems.dsiElementDeinitializationComplete();
