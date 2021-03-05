@@ -124,7 +124,7 @@ practical impact).
 
 The rule of thumb is that any variable which has neither a type
 specification nor an initial value will share the type and/or
-initializer expressions of the next variable which has one or both.
+initial value of the next variable which has one or both.
 Thus, in the example above, *a* and *b* share *c*'s type and
 initial value; *i* and *j* share *k*'s type; *s* shares *t*'s
 initial value; and *x* and *y* share *z*'s initial value.
