@@ -15,8 +15,8 @@ Defining Operators
 ------------------
 
 Operators may be overloaded to support new behavior on one or more types using
-the `operator` keyword.  Such overloads may be defined as standalone functions,
-e.g.
+the ``operator`` keyword.  Such overloads may be defined as standalone
+functions, e.g.
 
 .. code-block:: chapel
 
