@@ -1,0 +1,4 @@
+feature request: disallow CG type as a formal's name
+
+This declaration of the required function should cause
+an error, at least a warning, about the reuse of an interface type's name.
