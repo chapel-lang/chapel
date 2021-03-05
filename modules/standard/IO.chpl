@@ -2218,7 +2218,7 @@ proc channel._ch_ioerror(errstr:string, msg:string) throws {
 
    :throws SystemError: Thrown if the lock could not be acquired.
  */
-proc channel.lock() throws {
+inline proc channel.lock() throws {
   var err:syserr = ENOERR;
 
   if is_c_nil(_channel_internal) then
@@ -2235,7 +2235,7 @@ proc channel.lock() throws {
 /*
    Release a channel's lock.
  */
-proc channel.unlock() {
+inline proc channel.unlock() {
   if locking {
     on this.home {
       qio_channel_unlock(_channel_internal);
@@ -3574,7 +3574,7 @@ private proc _args_to_proto(const args ...?k, preArg:string) {
 
 // better documented in the style= version
 /* returns true if read successfully, false if we encountered EOF */
-proc channel.read(ref args ...?k):bool throws {
+inline proc channel.read(ref args ...?k):bool throws {
   if writing then compilerError("read on write-only channel");
   const origLocale = this.getLocaleOfIoRequest();
 
@@ -3989,7 +3989,7 @@ proc channel.read(type t ...?numTypes) throws where numTypes > 1 {
 
 // documented in style= error= version
 pragma "no doc"
-proc channel.write(const args ...?k):bool throws {
+inline proc channel.write(const args ...?k):bool throws {
   if !writing then compilerError("write on read-only channel");
 
   const origLocale = this.getLocaleOfIoRequest();
@@ -5211,7 +5211,7 @@ proc _toIntegral(x:?t) where isIntegralType(t)
 {
   return (x, true);
 }
-private
+private inline
 proc _toIntegral(x:?t) throws where _isIoPrimitiveType(t) && !isIntegralType(t)
 {
   var ret: (int, bool);
@@ -5253,7 +5253,7 @@ proc _toSigned(x:uint(64))
   return (x:int(64), true);
 }
 
-private
+private inline
 proc _toSigned(x:?t) throws where _isIoPrimitiveType(t) && !isIntegralType(t)
 {
   var ret: (int, bool);
@@ -5296,7 +5296,7 @@ proc _toUnsigned(x:int(64))
 }
 
 
-private
+private inline
 proc _toUnsigned(x:?t) throws where _isIoPrimitiveType(t) && !isIntegralType(t)
 {
   var ret: (uint, bool);
@@ -5318,7 +5318,7 @@ proc _toReal(x:?t) where isRealType(t)
 {
   return (x, true);
 }
-private
+private inline
 proc _toReal(x:?t) throws where _isIoPrimitiveType(t) && !isRealType(t)
 {
   var ret: (real, bool);
@@ -5339,7 +5339,7 @@ proc _toImag(x:?t) where isImagType(t)
 {
   return (x, true);
 }
-private
+private inline
 proc _toImag(x:?t) throws where _isIoPrimitiveType(t) && !isImagType(t)
 {
   var ret: (imag, bool);
@@ -5361,7 +5361,7 @@ proc _toComplex(x:?t) where isComplexType(t)
 {
   return (x, true);
 }
-private
+private inline
 proc _toComplex(x:?t) throws where _isIoPrimitiveType(t) && !isComplexType(t)
 {
   var ret: (complex, bool);
@@ -5403,7 +5403,7 @@ proc _toNumeric(x:?t) where isNumericType(t)
 {
   return (x, true);
 }
-private
+private inline
 proc _toNumeric(x:?t) throws where _isIoPrimitiveType(t) && !isNumericType(t)
 {
   // enums, bools get cast to int.
