@@ -53,6 +53,8 @@ or
 
    .. attribute:: var negDefault = -x
 
+   .. attribute:: var plusDefault = +x
+
    .. attribute:: var bitwiseNegDefault = ~x
 
    .. attribute:: var notNilDefault = c!

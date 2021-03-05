@@ -1,0 +1,2 @@
+issue-12736-error1.chpl:3: error: unresolved call 'DefaultAssociativeDom(string,true).length'
+issue-12736-error1.chpl:3: note: because no functions named length found in scope

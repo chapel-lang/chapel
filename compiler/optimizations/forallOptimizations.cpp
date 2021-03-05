@@ -240,12 +240,28 @@ Expr *preFoldMaybeLocalThis(CallExpr *call) {
   return ret;
 }
 
+// we record the aggregators that we actually end up being used, so that we can
+// avoid removing their declarations/destructions
+std::set<Symbol *> usedAggregators;
+
 // called during LICM to restructure a conditional aggregation to direct
 // aggregation
 void transformConditionalAggregation(CondStmt *cond) {
+
   // move the aggregation call before the conditional (at this point in
   // compilation it must be inlined)
+  bool foundAggregator = false;
   for_alist(expr, cond->elseStmt->body) {
+    if (!foundAggregator) {
+      std::vector<SymExpr *> symExprs;
+      collectSymExprs(expr, symExprs);
+      for_vector(SymExpr, symExpr, symExprs) {
+        if (symExpr->symbol()->hasFlag(FLAG_COMPILER_ADDED_AGGREGATOR)) {
+          usedAggregators.insert(symExpr->symbol());
+          foundAggregator = true;
+        }
+      }
+    }
     cond->insertBefore(expr->remove());
   }
   
@@ -329,7 +345,9 @@ void cleanupRemainingAggCondStmts() {
                 // remove the remaining conditional
                 condStmt->remove();
 
-                aggregatorsToRemove.insert(aggregatorToRemove);
+                if (usedAggregators.count(aggregatorToRemove) == 0) {
+                  aggregatorsToRemove.insert(aggregatorToRemove);
+                }
               }
             }
           }

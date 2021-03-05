@@ -1,5 +1,6 @@
 entering foo
 init(1)
+deinit(1)
 exiting foo
 returned from foo()
 
@@ -11,10 +12,6 @@ returned from bar()
 
 entering baz
 init(3)
+deinit(3)
 exiting baz
 returned from baz()
-
-entering qux
-init(4)
-exiting qux
-returned from qux()

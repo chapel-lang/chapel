@@ -1382,6 +1382,12 @@ memleaksfull:
     - Support fixed sized arrays of tuples containing non-nilable classes (#16802)
   02/21/21:
     - CG enable return types and calling required functions (#17197)
+  02/25/21:
+    - Deprecate regexp ok and error() methods (#17245)
+  03/02/21:
+    - File tests locking in fixes to issue #14226 (#17291)
+  03/03/21:
+    - Fix some issues with new tests locking in bug fixes (#17320)
 # End memleaksfull
 
 meteor:

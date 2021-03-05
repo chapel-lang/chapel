@@ -1,0 +1,2 @@
+confused-arg-error.chpl:3: error: the required function formal's name 'T' is the same as the interface formal's name
+confused-arg-error.chpl:2: note: the interface I is declared here

@@ -906,7 +906,7 @@ static bool resolveImplementsStmt(FnSymbol* wrapFn, ImplementsStmt* istm,
      && resolveRequiredFns(isym, istm, fml2act, holder, indent,
                                 gotGenerics, reportErrors);
 
-  cgprint("}%s\n", nested ? "    ...done" : "n");
+  cgprint("}%s\n", nested ? "    ...done" : "\n");
   holder->remove();
   INT_ASSERT(wrapFn->hasFlag(FLAG_RESOLVED));
   CallExpr* popped = callStack.pop();
@@ -932,14 +932,18 @@ void resolveImplementsStmt(ImplementsStmt* istm) {
 // Build a call to the wrapper function.
 static CallExpr* buildCall2wf(InterfaceSymbol* isym, IfcConstraint* constraint,
                               SymbolMap& substitutions) {
-  CallExpr* call2wf = new CallExpr(implementsStmtWrapperName(isym));
+  CallExpr* call2wf = new CallExpr(implementsWrapperName(isym));
   for_alist(act, constraint->consActuals)
     call2wf->insertAtTail(act->copy(&substitutions));
   return call2wf;
 }
 
-static bool constraintMatches(CallExpr* call2wf,
-                              IfcConstraint* icon) {
+static bool enclConstraintMatches(InterfaceSymbol* isym,
+                                  CallExpr*     call2wf,
+                                  IfcConstraint*   icon) {
+  if (icon->ifcSymbol() != isym)
+    return false; // the constraint is for a different interface
+
   // todo: reuse code in matchingImplStm()
 
   for (Expr *consArg = call2wf->argList.head,
@@ -961,17 +965,18 @@ static bool constraintMatches(CallExpr* call2wf,
 
 // Return a constraint from ifcInfo that matches call2wf,
 // or NULL if none of them matched.
-static IfcConstraint* satisfyingEnclConstraint(CallExpr* call2wf,
+static IfcConstraint* satisfyingEnclConstraint(InterfaceSymbol*  isym,
+                                               CallExpr*      call2wf,
                                                InterfaceInfo* ifcInfo) {
   for_alist(iconExpr, ifcInfo->interfaceConstraints)
     if (IfcConstraint* icon =toIfcConstraint(iconExpr))
-      if (constraintMatches(call2wf, icon))
+      if (enclConstraintMatches(isym, call2wf, icon))
         return icon;
   return nullptr;
 }
 
-static void gatherVisibleWrapperFns(CallExpr* callsite,
-                                    CallExpr* call2wf,
+static void gatherVisibleWrapperFns(CallExpr*         callsite,
+                                    CallExpr*          call2wf,
                                     Vec<FnSymbol*>& visibleFns) {
   callsite->insertBefore(call2wf);
 
@@ -987,7 +992,7 @@ static void gatherVisibleWrapperFns(CallExpr* callsite,
 // Follows ImplementsStmt::build().
 // Clears the arglist of 'call2wf'.
 static ImplementsStmt* buildInferredImplStmt(InterfaceSymbol* isym,
-                                             CallExpr* call2wf) {
+                                             CallExpr*     call2wf) {
   IfcConstraint* icon = new IfcConstraint(new SymExpr(isym));
   for_alist(actual, call2wf->argList)
     icon->consActuals.insertAtTail(actual->remove());
@@ -1282,7 +1287,8 @@ ConstraintSat constraintIsSatisfiedAtCallSite(CallExpr*      callsite,
   // CG TODO: handle callsite being in a fn that's nested in a CG fn.
   if (FnSymbol* enclFn = interimParentFn(callsite))
     if (InterfaceInfo* ifcInfo = enclFn->interfaceInfo)
-      if (IfcConstraint* enclICon = satisfyingEnclConstraint(call2wf, ifcInfo))
+      if (IfcConstraint* enclICon = satisfyingEnclConstraint(isym, call2wf,
+                                                             ifcInfo))
         return ConstraintSat(nullptr, enclICon);
 
   // An earlier version resolved 'call2wf' completely.
@@ -1391,6 +1397,11 @@ void adjustForCGinstantiation(FnSymbol* fn, SymbolMap& substitutions,
     return; // already finalizeCopy-ed
   if (! pci->partialCopySource->isConstrainedGeneric())
     return; // works fine as-is
+
+  // Substitute the return type.
+  if (Symbol* retSymSub = substitutions.get(fn->retType->symbol))
+    if (TypeSymbol* retTypeSymSub = toTypeSymbol(retSymSub))
+      fn->retType = retTypeSymSub->type;
 
   if (isInterimInstantiation) {
     fn->addFlag(FLAG_CG_INTERIM_INST);

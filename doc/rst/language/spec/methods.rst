@@ -36,21 +36,22 @@ are referred to as *primary methods*. For such methods, the
 ``type-binding`` is omitted and is taken to be the innermost class,
 record, or union in which the method is defined.
 
-Methods defined outside of such scopes are known as *secondary methods*
-and must have a ``type-binding`` (otherwise, they would simply be
-standalone functions rather than methods). Note that secondary methods
-can be defined not only for classes, records, and unions, but also for
-any other type (e.g., integers, reals, strings).
+Methods defined outside of the lexical scope of a class, record, or union,
+but within the scope where the type itself is defined are known as
+*secondary methods*.  Methods defined outside of both the lexical scope and
+the scope where the type itself is defined are known as *tertiary methods*.
+Both secondary and tertiary methods must have a ``type-binding`` (otherwise,
+they would simply be standalone functions rather than methods). Note that
+secondary and tertiary methods can be defined not only for classes, records,
+and unions, but also for any other type (e.g., integers, reals, strings).
 
-.. _Secondary_Methods_with_Type_Expressions:
+.. _Secondary_And_Tertiary_Methods_with_Type_Expressions:
 
-Secondary methods can be
-declared with a type expression instead of a type identifier. In
-particular, if the ``type-binding`` is a parenthesized expression, the
-compiler will evaluate that expression to find the receiver type for the
-method. In that case, the method applies only to receivers of that type.
-See also
-:ref:`Creating_General_and_Specialized_Versions_of_a_Function`.
+Secondary and tertiary methods can be declared with a type expression instead of
+a type identifier. In particular, if the ``type-binding`` is a parenthesized
+expression, the compiler will evaluate that expression to find the receiver type
+for the method. In that case, the method applies only to receivers of that type.
+See also :ref:`Creating_General_and_Specialized_Versions_of_a_Function`.
 
 Method calls are described in :ref:`Method_Calls`.
 
@@ -123,6 +124,17 @@ The actual arguments supplied in the method call are bound to the formal
 arguments in the method declaration following the rules specified for
 procedures (:ref:`Chapter-Procedures`). The exception is the
 receiver :ref:`Method_receiver_and_this`.
+
+A primary or secondary method is always visible when the receiver is of the type
+to which the method is bound or of a subtype of such type.  Tertiary methods are
+only visible if the module which defines them has been imported or used in such
+a way that allows these methods to be called (see :ref:`Using_Modules` and
+:ref:`Importing_Modules`).
+
+.. note::
+
+   Future work: the semantics of privacy specifiers for methods are still under
+   discussion.
 
 .. _Method_receiver_and_this:
 

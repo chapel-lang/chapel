@@ -60,9 +60,13 @@ module ChapelAutoAggregation {
     return nil;  // return type signals that we shouldn't aggregate
   }
 
+  private proc elemTypeSupportsAggregation(type t) param {
+    return isPODType(t);
+  }
+
   proc chpl__arrayIteratorYieldsLocalElements(x) param {
     if isArray(x) {
-      if !isClass(x.eltType) { // I have no idea if we can do this for wide pointers
+      if elemTypeSupportsAggregation(x.eltType) { // I have no idea if we can do this for wide pointers
         return x.iteratorYieldsLocalElements();
       }
     }
