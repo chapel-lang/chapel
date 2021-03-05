@@ -72,8 +72,8 @@ Operator Method Visibility
 --------------------------
 
 The visibility of operator methods is the same as the visibility of other
-methods defined on the type.  The type definition point and inherited type
-definition point of each argument will be searched for operator methods defined
+methods defined on the type.  The type definition point and any inherited type
+definition points of each argument will be searched for operator methods defined
 on it, and ``import`` and ``use`` statements can be used to control the
 visibility of tertiary operator methods.
 
