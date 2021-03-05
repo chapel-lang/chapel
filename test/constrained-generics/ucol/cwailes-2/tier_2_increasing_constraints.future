@@ -1,0 +1,5 @@
+bug: incorrect compiler reasoning with cgfun calling cgfun
+
+This test exposes at least two issues:
+* early compilation of 'minFn' succeeds when it shouldn't
+* writeln() gets invoked on a GC type, which it shouldn't
