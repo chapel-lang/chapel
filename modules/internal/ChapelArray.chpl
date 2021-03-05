@@ -302,9 +302,9 @@ module ChapelArray {
     const hereID = here.id;
     const reprivatizeData = value.dsiGetReprivatizeData();
     on Locales[0] do
-      _reprivatizeHelp(value, value, pid, hereID, reprivatizeData);
+      _reprivatizeHelp(value, value, pid, hereID);
 
-    proc _reprivatizeHelp(parentValue, originalValue, pid, hereID, reprivatizeData) {
+    proc _reprivatizeHelp(parentValue, originalValue, pid, hereID) {
       var newValue = originalValue;
       if hereID != here.id {
         newValue = chpl_getPrivatizedCopy(newValue.type, pid);
@@ -313,10 +313,10 @@ module ChapelArray {
       cobegin {
         if chpl_localeTree.left._instance != nil then
           on chpl_localeTree.left do
-            _reprivatizeHelp(newValue, originalValue, pid, hereID, reprivatizeData);
+            _reprivatizeHelp(newValue, originalValue, pid, hereID);
         if chpl_localeTree.right._instance != nil then
           on chpl_localeTree.right do
-            _reprivatizeHelp(newValue, originalValue, pid, hereID, reprivatizeData);
+            _reprivatizeHelp(newValue, originalValue, pid, hereID);
       }
     }
   }
