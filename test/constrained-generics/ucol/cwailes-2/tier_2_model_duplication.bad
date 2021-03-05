@@ -1,5 +1,4 @@
-tier_2_model_lookup_w_scope.chpl:1: warning: This file-scope code is outside of any explicit module declarations (e.g., module B), so an implicit module named 'tier_2_model_lookup_w_scope' is being introduced to contain the file's contents.
-tier_2_model_lookup_w_scope.chpl:20: internal error: UTI-MIS-nnnn chpl version mmmm
+tier_2_model_duplication.chpl:26: internal error: UTI-MIS-0894 chpl version 1.24.0 pre-release (81371c9883)
 Note: This source location is a guess.
 
 Internal errors indicate a bug in the Chapel compiler ("It's us, not you"),

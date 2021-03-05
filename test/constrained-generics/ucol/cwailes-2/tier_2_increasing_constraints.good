@@ -1,1 +1,3 @@
-Error: minFnPrime places more constraints on type T than minFn
+tier_2_increasing_constraints.chpl:31: error: unresolved call 'minFnPrime(T, T, T)'
+tier_2_increasing_constraints.chpl:17: note: this candidate did not match: minFnPrime(x: ?T, y: T, ifeq: T)
+tier_2_increasing_constraints.chpl:17: note: because interface constraint(s) were not satisfied
