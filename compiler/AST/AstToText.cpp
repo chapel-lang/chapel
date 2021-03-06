@@ -1026,6 +1026,18 @@ static bool needParens(const char *outer, const char *inner,
 }
 
 /*
+ * Do we want to print spaces around this binary operator?
+ */
+static bool wantSpaces(const char *op, bool printingType)
+{
+  if (strcmp(op, "**") == 0)
+    return false;
+  if (printingType)
+    return false;
+  return true;
+}
+
+/*
  * Args needed just for needsParens() call above, described in more
  * detail there:
  *
@@ -1395,10 +1407,18 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType, const char *outer,
           // Binary operator, infix notation
           bool needsParens = needParens(outer, fnName, unary, postfix,
                                         false, false, isRHS);
+          bool wantsSpaces = wantSpaces(fnName, printingType);
+
           if (needsParens)
             mText += "(";
           appendExpr(expr->get(1), printingType, fnName, false, false, false);
+
+          if (wantsSpaces)
+            mText += " ";
           appendExpr(expr->baseExpr, printingType);
+          if (wantsSpaces)
+            mText += " ";
+
           appendExpr(expr->get(2), printingType, fnName, false, false, true);
           if (needsParens)
             mText += ")";

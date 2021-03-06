@@ -39,51 +39,51 @@ or
 
 .. data:: var isNilDefault: nilable C = nil
 
-.. data:: var plusDefault = x+y
+.. data:: var plusDefault = x + y
 
-.. data:: var minusDefault = x-y
+.. data:: var minusDefault = x - y
 
-.. data:: var multDefault = x*y
+.. data:: var multDefault = x * y
 
-.. data:: var divDefault = x/y
+.. data:: var divDefault = x / y
 
-.. data:: var modDefault = x%y
+.. data:: var modDefault = x % y
 
-.. data:: var orDefault = x||y
+.. data:: var orDefault = x || y
 
-.. data:: var binOrDefault = x|y
+.. data:: var binOrDefault = x | y
 
-.. data:: var andDefault = x&&y
+.. data:: var andDefault = x && y
 
-.. data:: var binAndDefault = x&y
+.. data:: var binAndDefault = x & y
 
-.. data:: var binXorDefault = x^y
+.. data:: var binXorDefault = x ^ y
 
-.. data:: var threeOrDefault = x||y||z
+.. data:: var threeOrDefault = x || y || z
 
-.. data:: var threeBinOrDefault = x|y|z
+.. data:: var threeBinOrDefault = x | y | z
 
-.. data:: var threeAndDefault = x&&y&&z
+.. data:: var threeAndDefault = x && y && z
 
-.. data:: var threeBinAndDefault = x&y&z
+.. data:: var threeBinAndDefault = x & y & z
 
 .. data:: var powDefault = x**y
 
-.. data:: var lshiftDefault = x<<y
+.. data:: var lshiftDefault = x << y
 
-.. data:: var rshiftDefault = x>>y
+.. data:: var rshiftDefault = x >> y
 
-.. data:: var eqDefault = x==y
+.. data:: var eqDefault = x == y
 
-.. data:: var neqDefault = x!=y
+.. data:: var neqDefault = x != y
 
-.. data:: var lessDefault = x<y
+.. data:: var lessDefault = x < y
 
-.. data:: var gtDefault = x>y
+.. data:: var gtDefault = x > y
 
-.. data:: var lessEqDefault = x<=y
+.. data:: var lessEqDefault = x <= y
 
-.. data:: var gtEqDefault = x>=y
+.. data:: var gtEqDefault = x >= y
 
 .. data:: var minDefault = min(int)
 
