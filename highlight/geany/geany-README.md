@@ -13,7 +13,7 @@ where "user" is your username.
 
 Instructions:
 
-   1. Copy `filetype.Chapel.conf` to `~/.config/geany/filedefs/`
+   1. Copy `filetypes.Chapel.conf` to `~/.config/geany/filedefs/`
 
    2. Either:
       1.  Copy filetype_extensions.conf to `~/.config/geany/` OR
