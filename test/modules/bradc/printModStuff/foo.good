@@ -49,6 +49,9 @@ end of module search dirs
   $CHPL_HOME/modules/layouts/LayoutCS.chpl
   $CHPL_HOME/modules/dists/SparseBlockDist.chpl
   $CHPL_HOME/modules/dists/ReplicatedDist.chpl
+  $CHPL_HOME/modules/standard/Memory.chpl
+  $CHPL_HOME/modules/standard/Memory/Diagnostics.chpl
+  $CHPL_HOME/modules/standard/Memory/Initialization.chpl
 In bar
 In baz
 In bak

@@ -143,12 +143,29 @@ module Set {
 
     // Returns true if the key was added to the hashtable.
     pragma "no doc"
-    proc _addElem(in elem: eltType): bool {
-      var (isFullSlot, idx) = _htb.findAvailableSlot(elem);
+    proc _addElem(pragma "no auto destroy" in elem: eltType): bool {
+      use Memory.Initialization;
 
-      if isFullSlot then return false;
-      _htb.fillSlot(idx, elem, none);
-      return true;
+      var result = false;
+
+      on this {
+
+        // TODO: The following variation gets lifetime errors in
+        // '.../Set/types/testNilableTuple.chpl':
+        //
+        // var moved = moveToValue(elem);
+        // var (isFullSlot, idx) = _htb.findAvailableSlot(moved);
+        //
+        var (isFullSlot, idx) = _htb.findAvailableSlot(elem);
+
+        if !isFullSlot {
+          var moved = moveToValue(elem);
+          _htb.fillSlot(idx, moved, none);
+          result = true;
+        }
+      }
+
+      return result;
     }
 
     /*
