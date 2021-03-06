@@ -266,10 +266,10 @@ can be described in Chapel using
 
 .. _Referring_to_External_C_Structs:
 
-Referring to External C Structs
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Referring to External C Structs and Unions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-External C struct types can be referred to within Chapel by prefixing a
+External C struct and union types can be referred to within Chapel by prefixing a
 Chapel ``record`` definition with the ``extern`` keyword. 
 
 .. code-block:: syntax
@@ -299,8 +299,27 @@ This type could be referred to within a Chapel program using
 
 and defined by supplying ``foo.h`` on the ``chpl`` command line.
 
+The same applies for a C union. An example would be such:
+
+.. code-block:: chapel
+
+       typedef union _someUnion {
+         float x;
+         double y;
+       } someUnion;
+
+and this type could be referred to within a Chapel program using
+
+
+.. code-block:: chapel
+
+      extern record someUnion {
+        var x: real(32);
+        var y: real(64);
+      }
+
 Within the Chapel declaration, some or all of the fields from the C
-structure may be omitted. The order of these fields need not match the
+structure or union may be omitted. The order of these fields need not match the
 order they were specified within the C code. Any fields that are not
 specified (or that cannot be specified because there is no equivalent
 Chapel type) cannot be referenced within the Chapel code. Some effort is
@@ -311,12 +330,12 @@ fields of which it has no knowledge.
 If the optional ``external-name`` is supplied, then it is used verbatim
 as the exported struct symbol.
 
-A C header file containing the struct’s definition in C must be
+A C header file containing the struct’s (or union's) definition in C must be
 specified on the chpl compiler command line. Note that only typdef’d C
-structures are supported by default. That is, in the C header file, the
-``struct`` must be supplied with a type name through a ``typedef``
+structures or unions are supported by default. That is, in the C header file, the
+``struct`` or ``union`` must be supplied with a type name through a ``typedef``
 declaration. If this is not true, you can use the ``external-name`` part
-to apply the ``struct`` specifier. As an example of this, given a C
+to apply the ``struct`` (or ``union``) specifier. As an example of this, given a C
 declaration of:
 
 
@@ -336,6 +355,30 @@ in Chapel you would refer to this ``struct`` via
      extern "struct Vec3" record Vec3 {
        var x, y, z: real(64);
      }
+
+Note that the above examples apply for C unions as well, so an example
+for non-typedef'd C ``union`` would be like this:
+
+.. code-block:: chapel
+
+      union noTypedefUnion {
+         float x;
+         double y;
+         int64_t z;
+      };
+
+referring to this ``union`` would be allowed in Chapel, via:
+
+
+
+.. code-block:: chapel
+
+     extern "union noTypedefUnion" record noTypedefUnion {
+         var x: real(32);
+         var y: real(64);
+         var z: int(64);
+     }
+
 
 .. _Opaque_Types:
 
