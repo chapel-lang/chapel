@@ -12,11 +12,11 @@ Highlighting for Editors
 * geany/ : support for highlighting in geany (see `geany/geany-README.md`)
 * vim/ : support for highlighting in 'vim' (see `vim/README.rst`)
 
-Both the emacs and vim modes for Chapel were created by modifying
-existing language formatting modes for the respective editors and are
-therefore licensed according to the agreements of those packages
-(i.e., the GPL for emacs and the VIM license for vim).  See the
-LICENSE files in the emacs/ and vim/ subdirectories for details.
+The emacs and vim modes for Chapel were created by modifying existing
+language formatting modes for the respective editors and are therefore
+licensed according to the agreements of those packages (i.e., the GPL
+for emacs and the VIM license for vim).  See the LICENSE files in the
+emacs/ and vim/ subdirectories for details.
 
 Other Highlighting Options
 --------------------------
