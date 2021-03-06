@@ -12,6 +12,7 @@ Contributors to the Chapel 1.24 release
 * R Chinmay, individual contributor
 * Soohoon Choi, [HPE]
 * Garvit Dewan, [GSoC 2020] mentor, [GSoC 2019] student from [Indian Institute of Technology Roorkee]
+* Nelson Luís Dias, individual contributor
 * Lydia Duncan, [HPE]
 * Prashanth Duvvuri, individual contributor
 * Michael Ferguson, [HPE]
