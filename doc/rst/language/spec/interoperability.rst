@@ -306,14 +306,14 @@ The same applies for a C union. An example would be such:
        typedef union _someUnion {
          float x;
          double y;
-       } _someUnion;
+       } someUnion;
 
 and this type could be referred to within a Chapel program using
 
 
 .. code-block:: chapel
 
-      extern record _someUnion {
+      extern record someUnion {
         var x: real(32);
         var y: real(64);
       }
@@ -361,7 +361,7 @@ for non-typedef'd C ``union`` would be like this:
 
 .. code-block:: chapel
 
-      union _noTypedefUnion {
+      union noTypedefUnion {
          float x;
          double y;
          int64_t z;
@@ -373,7 +373,7 @@ referring to this ``union`` would be allowed in Chapel, via:
 
 .. code-block:: chapel
 
-     extern "union _noTypedefUnion" record _noTypedefUnion {
+     extern "union noTypedefUnion" record noTypedefUnion {
          var x: real(32);
          var y: real(64);
          var z: int(64);

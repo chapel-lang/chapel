@@ -1,6 +1,6 @@
-/**********************************************************
-/* This union example is also provided in
-/* $CHPL_HOME/doc/rst/language/spec/interoperability.rst
+/**********************************************************/
+/* This union example is also provided in                 */
+/* $CHPL_HOME/doc/rst/language/spec/interoperability.rst  */
 /**********************************************************/
 
 extern "union _noTypedefUnion" record _noTypedefUnion {
