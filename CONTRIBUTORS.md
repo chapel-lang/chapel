@@ -6,7 +6,7 @@ Chapel release:
 
 Contributors to the Chapel 1.24 release
 ---------------------------------------
-* Sourish Ash, individual contributor
+* Souris Ash, individual contributor
 * Ben Albrecht, [HPE]
 * Paul Cassella, [HPE]
 * [Brad Chamberlain], [HPE]
