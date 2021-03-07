@@ -27,7 +27,7 @@ bool intentsResolved = false;
 
 static bool isConstrainedTypeWrapper(Type* t) {
   bool result = isConstrainedType(t);
-  if (result) INT_FATAL("CG case"); // used for testing
+  //if (result) INT_FATAL("CG case"); // used for testing
   return result;
 }
 

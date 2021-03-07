@@ -482,7 +482,7 @@ static Type* instantiateOneAggregateType(SymbolMap &fml2act,
                                          Expr*       anchor,
                                          Type*        origT,
                                          bool        markRm) {
-  INT_FATAL("CG case"); // used for testing
+  //INT_FATAL("CG case"); // used for testing
 
   if (isPrimitiveType(origT))
     return nullptr; // a common case
@@ -1138,7 +1138,7 @@ static bool resolveImplementsStmt(FnSymbol* wrapFn, ImplementsStmt* istm,
                                 gotGenerics, reportErrors);
 
   cgprint("}%s\n", nested ? "    ...done" : "");
-  INT_FATAL("CG case"); // used for testing
+  //INT_FATAL("CG case"); // used for testing
   // cannot remove holder - some instantiationPoints may point to it
   INT_ASSERT(wrapFn->hasFlag(FLAG_RESOLVED));
   CallExpr* popped = callStack.pop();
@@ -1601,7 +1601,7 @@ void copyIfcRepsToSubstitutions(FnSymbol* fn, Expr* anchor, int indx,
 
   // fn->retType and standalone SymExpr in typeExpr blocks do not have DefExpr
   instantiateOneAggregateType(substitutions, anchor, fn->retType, false);
-  INT_FATAL("CG case"); // used for testing
+  //INT_FATAL("CG case"); // used for testing
   for_formals(formal, fn)
    if (formal->type == dtUnknown) {
     if (BlockStmt* typeExpr = formal->typeExpr)
@@ -1640,7 +1640,7 @@ bool cgActualCanMatch(FnSymbol* fn, Type* formalT, ConstrainedType* actualCT) {
 bool cgFormalCanMatch(FnSymbol* fn, Type* formalT) {
   ConstrainedType* ct = toConstrainedType(formalT->getValType());
   if (ct == nullptr) return false;
-  INT_FATAL("CG case"); // used for testing
+  //INT_FATAL("CG case"); // used for testing
 
   INT_ASSERT(fn->isConstrainedGeneric());
   INT_ASSERT(ct->ctUse == CT_CGFUN_FORMAL ||
@@ -1660,7 +1660,7 @@ bool cgFormalCanMatch(FnSymbol* fn, Type* formalT) {
 }
 
 static void adjustCGtype(SymbolMap &substitutions, Type* &type) {
-  INT_FATAL("CG case"); // used for testing
+  //INT_FATAL("CG case"); // used for testing
   if (isPrimitiveType(type))
     return;
   if (Symbol* sub = substitutions.get(type->symbol))
