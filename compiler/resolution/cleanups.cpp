@@ -246,7 +246,11 @@ static void cleanupConstrainedGenerics() {
   for_alive_in_Vec(ConstrainedType, ct, gConstrainedTypes) {
     ct->symbol->defPoint->remove();
     if (Type* ctRef = ct->refType)
-      ctRef->symbol->defPoint->remove();
+    {
+      INT_FATAL("CG case"); // used for testing
+      if (ctRef->symbol->defPoint->inTree())
+        ctRef->symbol->defPoint->remove();
+    }
   }
 
   for_alive_in_Vec(InterfaceSymbol, isym, gInterfaceSymbols)

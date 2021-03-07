@@ -482,10 +482,15 @@ static Type* instantiateOneAggregateType(SymbolMap &fml2act,
                                          Expr*       anchor,
                                          Type*        origT,
                                          bool        markRm) {
+  INT_FATAL("CG case"); // used for testing
+
+  if (isPrimitiveType(origT))
+    return nullptr; // a common case
+
   if (Symbol* replacement = fml2act.get(origT->symbol))
     return replacement->type; // already handled
 
-  AggregateType* at = toAggregateType(origT->getValType());
+  AggregateType* at = toAggregateType(origT);
   // CG TODO: also handle DecoratedClassType
   if (at == nullptr) return nullptr; // there will be nothing interesting
 
@@ -1133,7 +1138,8 @@ static bool resolveImplementsStmt(FnSymbol* wrapFn, ImplementsStmt* istm,
                                 gotGenerics, reportErrors);
 
   cgprint("}%s\n", nested ? "    ...done" : "");
-  holder->remove();
+  INT_FATAL("CG case"); // used for testing
+  // cannot remove holder - some instantiationPoints may point to it
   INT_ASSERT(wrapFn->hasFlag(FLAG_RESOLVED));
   CallExpr* popped = callStack.pop();
   INT_ASSERT(popped == callsite);
@@ -1595,12 +1601,17 @@ void copyIfcRepsToSubstitutions(FnSymbol* fn, Expr* anchor, int indx,
 
   // fn->retType and standalone SymExpr in typeExpr blocks do not have DefExpr
   instantiateOneAggregateType(substitutions, anchor, fn->retType, false);
+  INT_FATAL("CG case"); // used for testing
   for_formals(formal, fn)
-   if (formal->type == dtUnknown)
+   if (formal->type == dtUnknown) {
     if (BlockStmt* typeExpr = formal->typeExpr)
      if (SymExpr* last = toSymExpr(typeExpr->body.tail))
       instantiateOneAggregateType(substitutions, anchor,
                                   last->symbol()->type, false);
+   } else {
+      instantiateOneAggregateType(substitutions, anchor,
+                                  formal->type, false);
+   }
 }
 
 // Can an actual of type 'actualCT' possibly match a formal of type 'formalT' ?
@@ -1625,7 +1636,33 @@ bool cgActualCanMatch(FnSymbol* fn, Type* formalT, ConstrainedType* actualCT) {
   return false; // should not happen
 }
 
+// Is 'type' a CG type that can possibly match?
+bool cgFormalCanMatch(FnSymbol* fn, Type* formalT) {
+  ConstrainedType* ct = toConstrainedType(formalT->getValType());
+  if (ct == nullptr) return false;
+  INT_FATAL("CG case"); // used for testing
+
+  INT_ASSERT(fn->isConstrainedGeneric());
+  INT_ASSERT(ct->ctUse == CT_CGFUN_FORMAL ||
+             ct->ctUse == CT_CGFUN_ASSOC_TYPE);
+
+  // If it is a CT_CGFUN_FORMAL, it is generic and can match anything,
+  // satisfaction of interface constraints will be checked later.
+
+  // If it is a CT_CGFUN_ASSOC_TYPE:
+  // At this point we have not yet recorded the instantiations for
+  // interface types. So we cannot compute their associated types.
+  // So allow anything to match an associated type for now.
+  // Correctness will be checked later in isApplicableConcrete().
+
+  // Either way, it is matchable.
+  return true;
+}
+
 static void adjustCGtype(SymbolMap &substitutions, Type* &type) {
+  INT_FATAL("CG case"); // used for testing
+  if (isPrimitiveType(type))
+    return;
   if (Symbol* sub = substitutions.get(type->symbol))
     if (TypeSymbol* tsub = toTypeSymbol(sub))
       type = tsub->type;

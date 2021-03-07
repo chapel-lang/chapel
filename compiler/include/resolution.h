@@ -191,6 +191,7 @@ void recordCGInterimInstantiations(CallExpr* call, ResolutionCandidate* best1,
 void adjustForCGinstantiation(FnSymbol* fn, SymbolMap& substitutions,
                               bool isInterimInstantiation);
 bool cgActualCanMatch(FnSymbol* fn, Type* formalT, ConstrainedType* actualCT);
+bool cgFormalCanMatch(FnSymbol* fn, Type* formalT);
 void createGenericStandins();
 void cleanupGenericStandins();
 
