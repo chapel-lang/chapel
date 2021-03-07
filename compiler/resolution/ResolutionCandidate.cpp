@@ -166,7 +166,8 @@ bool ResolutionCandidate::isApplicableCG(CallInfo& info,
     if (csat.istm != nullptr) {
       // satisfied with an implements statement
       witnesses.push_back(csat.istm);
-      copyIfcRepsToSubstitutions(fn, indx++, csat.istm, substitutions);
+      copyIfcRepsToSubstitutions(fn, info.call, indx++,
+                                 csat.istm, substitutions);
 
     } else if (csat.icon != nullptr) {
       // satisfied with a constraint of the enclosing GC function

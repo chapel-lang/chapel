@@ -183,7 +183,7 @@ class ConstraintSat { public: ImplementsStmt* istm; IfcConstraint* icon;
 ConstraintSat constraintIsSatisfiedAtCallSite(CallExpr* call,
                                                 IfcConstraint* constraint,
                                                 SymbolMap& substitutions);
-void copyIfcRepsToSubstitutions(FnSymbol* fn, int indx,
+void copyIfcRepsToSubstitutions(FnSymbol* fn, Expr* anchor, int indx,
                                 ImplementsStmt* istm,
                                 SymbolMap& substitutions);
 void recordCGInterimInstantiations(CallExpr* call, ResolutionCandidate* best1,
