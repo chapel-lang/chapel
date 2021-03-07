@@ -840,7 +840,8 @@ class InstWrapAndCons { public: FnSymbol* wrapFn; IfcConstraint* icon;
 
 // For assoc. constraints with records, ex. "implements MyRecord(AssocType)"
 // need to invoke copy() on wrapFn, not just icon.
-InstWrapAndCons instantiateAssocCons(IfcConstraint* icon, SymbolMap& map) {
+static InstWrapAndCons instantiateAssocCons(IfcConstraint* icon,
+                                            SymbolMap      &map) {
   ImplementsStmt* istm = toImplementsStmt(icon->parentExpr);
   FnSymbol* wrapFn = wrapperFnForImplementsStmt(istm);
   FnSymbol* wfCopy = toFnSymbol(wrapFn->copy(&map));
