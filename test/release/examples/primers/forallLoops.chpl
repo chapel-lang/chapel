@@ -102,11 +102,11 @@ writeln();
 Using the following must-parallel loop instead would cause
 a "parallel iterator is not found" error:
 
-.. code-block:: chapel
+  .. code-block:: chapel
 
-    forall i in onlySerial(n) {
-      writeln("in iteration #", i);
-    }
+      forall i in onlySerial(n) {
+        writeln("in iteration #", i);
+      }
 
 "May-parallel" forall expression
 --------------------------------

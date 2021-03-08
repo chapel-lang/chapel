@@ -97,33 +97,35 @@ coforall i in 1..n {
 // The order of output is undefined.
 writeln("5: output from main task");
 
-// .. _primers-taskparallel-task-intents:
-//
-// Task Intents
-// ------------
-//
-// The body of a task construct name some variables declared outside,
-// or "outer variables". If so, "shadow variables" are introduced.
-// Each task created by the task construct gets its own set of
-// shadow variables, one per outer variable.
-//
-//  - Each shadow variable behaves as if it were a formal argument
-//    of the task function for the task. The outer variable is passed
-//    to this formal argument according to the argument intent
-//    associated with the shadow variable, which is called a "task intent".
-//
-//  - The name of an outer variable lexically in the task construct
-//    implicitly refers to the corresonding shadow variable.
-//
-//  - Each shadow variable is deallocated at the end of its task.
-//
-// The default argument intent is used by default. For numeric types,
-// this implies capturing the value of the outer variable by the time
-// the task starts executing. Arrays are passed by reference, and so are
-// sync, single, and atomic variables. For ``begin`` statements, for example,
-// this means that the captured value of an outer numeric variable
-// can be accessed even after its scope exits, while an outer array variable
-// cannot.
+/*
+.. _primers-taskparallel-task-intents:
+
+Task Intents
+------------
+
+The body of a task construct name some variables declared outside,
+or "outer variables". If so, "shadow variables" are introduced.
+Each task created by the task construct gets its own set of
+shadow variables, one per outer variable.
+
+ - Each shadow variable behaves as if it were a formal argument
+   of the task function for the task. The outer variable is passed
+   to this formal argument according to the argument intent
+   associated with the shadow variable, which is called a "task intent".
+
+ - The name of an outer variable lexically in the task construct
+   implicitly refers to the corresonding shadow variable.
+
+ - Each shadow variable is deallocated at the end of its task.
+
+The default argument intent is used by default. For numeric types,
+this implies capturing the value of the outer variable by the time
+the task starts executing. Arrays are passed by reference, and so are
+sync, single, and atomic variables. For ``begin`` statements, for example,
+this means that the captured value of an outer numeric variable
+can be accessed even after its scope exits, while an outer array variable
+cannot.
+*/
 var outerIntVariable = 2;  
 begin assert(outerIntVariable == 2);
 
