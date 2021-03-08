@@ -60,7 +60,10 @@ Interoperability Improvements
 
 Performance Optimizations / Improvements
 ----------------------------------------
+* enabled `--cache-remote` by default, reducing communication in many programs
+* improved the performance of scans on 1D local and `Block` arrays
 * parallelized scan operations on 1D `Replicated` arrays
+* reduced overheads for managing arrays declared over `var` domains
 
 Compilation-Time / Generated Code Improvements
 ----------------------------------------------
@@ -101,6 +104,10 @@ Runtime Library Changes
 
 Launchers
 ---------
+* added a `lsf-gasnetrun_ibv` launcher for running on LSF(bsub) over InfiniBand
+* improved `slurm-srun` support for AWS auto-scaling
+* improved launcher auto-detection on Cray CS systems
+* improved launcher auto-detection for GASNet's `udp` substrate
 
 Generated Executable Flags
 --------------------------
@@ -123,12 +130,18 @@ Bug Fixes
 
 Platform-specific bug fixes
 ---------------------------
+* fixed a race under GASNet's `ibv` substrate on PowerPC
 
 Packaging / Configuration Changes
 ---------------------------------
 
 Third-Party Software Changes
 ----------------------------
+* upgraded GASNet-EX to version 2020.10.0
+* upgraded Qthreads to version 1.16
+* upgraded LLVM to version 11.0.1
+* upgraded GMP to version 6.2.1
+* upgraded RE2 to version 2021-02-02
 
 Developer-oriented changes: Process
 -----------------------------------
@@ -161,6 +174,7 @@ Developer-oriented changes: Compiler improvements/changes
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
+* added initial support for GASNet's `ucx` substrate
 
 Developer-oriented changes: Testing System
 ------------------------------------------
