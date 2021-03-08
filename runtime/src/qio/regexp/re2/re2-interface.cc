@@ -260,6 +260,7 @@ int64_t qio_regexp_get_ncaptures(const qio_regexp_t* regexp)
   RE2* re2 = (RE2*) regexp->regexp;
   return re2->NumberOfCapturingGroups();
 }
+
 qio_bool qio_regexp_ok(const qio_regexp_t* regexp)
 {
   RE2* re2 = (RE2*) regexp->regexp;
@@ -378,7 +379,6 @@ void qio_regexp_channel_discard(qio_channel_s* ch, int64_t cur, int64_t min)
   // error checking.
   assert( qio_channel_offset_unlocked(ch) == off );
 }
-
 
 qioerr qio_regexp_channel_match(const qio_regexp_t* regexp, const int threadsafe, struct qio_channel_s* ch, int64_t maxlen, int anchor, qio_bool can_discard, qio_bool keep_unmatched, qio_bool keep_whole_pattern, qio_regexp_string_piece_t* captures, int64_t ncaptures)
 {
