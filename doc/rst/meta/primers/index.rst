@@ -64,6 +64,7 @@ Data Parallelism
    Reductions <reductions>
    Distributions <distributions>
    Replicated Distribution <replicated>
+   Forall Loops <forallLoops>
 
 Library Utilities
 -----------------

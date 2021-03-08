@@ -21,7 +21,7 @@ two varieties, "must-parallel" and "may-parallel".
    iterator. For example, it can execute serially, in which case
    the "must-parallel" loop that invokes it also executes serially.
 
- - The may-parallel forms are written using ``[ ]``.
+ - The may-parallel forms are written using brackets ``[ ]``.
    They invoke the parallel iterator if the leader provides it,
    otherwise fall back on the serial iterator.
 
@@ -126,8 +126,8 @@ As with must-parallel loops, if A were a distributed array,
 iteration locality while computing the above expression
 would be determined by A's domain map.
 
-Forall Intents and Shadow Variables
------------------------------------
+Task Intents and Shadow Variables
+---------------------------------
 
 A forall loop may name some variables declared outside the loop,
 or "outer variables". If so, "shadow variables" are introduced.
@@ -137,14 +137,13 @@ shadow variables, one per outer variable.
  - Each shadow variable behaves as if it were a formal argument
    of the task function for the task. The outer variable is passed
    to this formal argument according to the argument intent
-   associated with the shadow variable, which is called a
-   "forall intent".
+   associated with the shadow variable, which is called a "task intent".
 
- - The name of an outer variable lexically in the loop body implicitly
-   refers to the corresonding shadow variable. If the parallel iterator
-   causes multiple iterations of the loop to be executed by the
-   same task, these iterations refer to the same set of shadow
-   variables.
+ - The name of an outer variable within the lexical scope of the loop
+   body refers implicitly to the corresonding shadow variable. If the
+   parallel iterator causes multiple iterations of the loop to be
+   executed by the same task, these iterations refer to the same set
+   of shadow variables.
 
  - Each shadow variable is deallocated at the end of its task.
 
@@ -180,7 +179,7 @@ writeln("outerAtomicVariable is: ", outerAtomicVariable.read());
 writeln();
 
 /*
-The forall intents ``in``, ``const in``, ``ref``, ``const ref``,
+The task intents ``in``, ``const in``, ``ref``, ``const ref``,
 and ``reduce`` can be specified explicitly using a ``with`` clause.
 
 An ``in`` or ``const in`` intent creates a copy of the outer variable
@@ -208,7 +207,7 @@ A reduce intent can be used to compute reductions.
 The values of each reduce-intent shadow variable at the end of its task
 is combined onto its outer variable according to the specified reduction
 operation. Within loop body, the shadow variable represents the
-accumulation state produced so far by this task, starting from
+accumulation state produced by this task so far, starting from
 the reduction identity value at task startup. Values can be
 combined onto this accumulation state using the reduction-specific
 operation or the ``reduce=`` operator.
@@ -273,12 +272,14 @@ writeln("outerIntVariable is: ", outerIntVariable);
 writeln();
 
 /*
-Forall Intents Inside Record Methods
-------------------------------------
+Task Intents Inside Record Methods
+----------------------------------
 
 When the forall loop occurs inside a method on a record,
 the fields of the receiver record are represented in the loop body
 with shadow variables as if they were outer variables.
+This, for example, allows the forall loop body to update
+record fields of array types.
 
 At present, the record fields, as well as the method receiver ``this``,
 are always passed by default intent and cannot be listed in a with-clause.
