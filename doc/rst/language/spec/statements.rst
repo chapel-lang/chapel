@@ -311,9 +311,15 @@ The syntax for a conditional statement is given by
    conditional-statement:
      'if' expression 'then' statement else-part[OPT]
      'if' expression block-statement else-part[OPT]
+     'if' ctrl-decl 'then' statement else-part[OPT]
+     'if' ctrl-decl block-statement else-part[OPT]
 
    else-part:
      'else' statement
+
+   ctrl-decl:
+     'var' identifier '=' expression
+     'const' identifier '=' expression
 
 A conditional statement evaluates an expression of bool type. If the
 expression evaluates to true, the first statement in the conditional
@@ -330,6 +336,18 @@ statement is removed.
 
 Each statement embedded in the *conditional-statement* has its own scope
 whether or not an explicit block surrounds it.
+
+The control-flow declaration *ctrl-decl*, when used, declares a variable
+whose scope is the then-clause of the conditional statement, and stores
+the value of its *expression* in the variable. The expression must be
+of a class type. The then-clause is executed if its value is not ``nil``.
+If the expression's type is ``borrowed`` or  ``unmanaged``,
+the variable's type is its non-nilable variant (:ref:`Nilable_Classes`).
+Otherwise the variable stores a borrow of the expression's value
+(:ref:`Class_Lifetime_and_Borrows`), and its type is the non-nillable
+``borrowed`` counterpart of the expression's type.
+The variable can be modified within the then-clause if it is declared
+with the ``var`` keyword.
 
 If the statement that immediately follows the optional ``then`` keyword
 is a conditional statement and it is not in a block, the else-clause is
@@ -432,6 +450,8 @@ while-do loop is given by:
    while-do-statement:
      'while' expression 'do' statement
      'while' expression block-statement
+     'while' ctrl-decl 'do' statement
+     'while' ctrl-decl block-statement
 
 The syntax of the do-while loop is given by: 
 
@@ -532,6 +552,21 @@ termination expression.
       3
       4
       5
+
+The control-flow declaration *ctrl-decl*, when used in a while-do loop,
+works similarly to how it does in a conditional statement.
+It declares a variable whose scope is the loop body.
+Its *expression* must be of a class type and is considered to evaluate
+to ``true`` when its value is not ``nil``.
+If the expression's type is ``borrowed`` or  ``unmanaged``,
+the variable being declared stores the expression's value and
+the variable's type is the non-nilable variant (:ref:`Nilable_Classes`)
+of the expression's type.  Otherwise the variable stores a borrow of
+the expression's value (:ref:`Class_Lifetime_and_Borrows`) and has the
+non-nillable ``borrowed`` counterpart of the expression's type.  The
+variable can be modified within the loop body if it is declared with
+the ``var`` keyword.  The expression may be evaluated repeatedly as if
+it were used as the while-expression without the declaration.
 
 .. _The_For_Loop:
 
