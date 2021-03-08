@@ -70,7 +70,10 @@ A specific launcher can be explicitly requested by setting the
 If ``CHPL_LAUNCHER`` is left unset, a default is picked as follows:
 
 
-* if ``CHPL_PLATFORM`` is cray-xc:
+* if ``CHPL_COMM`` is gasnet and ``CHPL_COMM_SUBSTRATE`` is udp
+  ``CHPL_LAUNCHER`` is set to amudprun
+
+* otherwise, if ``CHPL_PLATFORM`` is cray-xc or hpe-cray-ex:
 
   ==================================  ===================================
   If                                  CHPL_LAUNCHER
@@ -81,6 +84,19 @@ If ``CHPL_LAUNCHER`` is left unset, a default is picked as follows:
   otherwise                           none
   ==================================  ===================================
 
+* otherwise, if ``CHPL_PLATFORM`` is cray-cs and ``CHPL_COMM`` is gasnet and
+  salloc is in the user's path:
+
+  =======================  ==============================================
+  If                       CHPL_LAUNCHER
+  =======================  ==============================================
+  CHPL_COMM_SUBSTRATE=ibv  slurm-gasnetrun_ibv
+  CHPL_COMM_SUBSTRATE=mpi  slurm-gasnetrun_mpi
+  =======================  ==============================================
+
+* otherwise, if ``CHPL_PLATFORM`` is cray-cs and srun is in the users path
+  ``CHPL_LAUNCHER`` is set to slurm-srun
+
 * otherwise, if ``CHPL_COMM`` is gasnet:
 
   =======================  ==============================================
@@ -89,7 +105,6 @@ If ``CHPL_LAUNCHER`` is left unset, a default is picked as follows:
   CHPL_COMM_SUBSTRATE=ibv  gasnetrun_ibv
   CHPL_COMM_SUBSTRATE=mpi  gasnetrun_mpi
   CHPL_COMM_SUBSTRATE=smp  smp
-  CHPL_COMM_SUBSTRATE=udp  amudprun
   otherwise                none
   =======================  ==============================================
 
