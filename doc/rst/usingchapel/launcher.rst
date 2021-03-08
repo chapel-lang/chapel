@@ -52,8 +52,9 @@ amudprun             GASNet launcher for programs running over UDP
 aprun                Cray application launcher using aprun                
 gasnetrun_ibv        GASNet launcher for programs running over Infiniband 
 gasnetrun_mpi        GASNet launcher for programs using the MPI conduit   
-mpirun4ofi           provisional launcher for ``CHPL_COMM=ofi`` on non-Cray X* systems
+mpirun4ofi           provisional launcher for ``CHPL_COMM=ofi`` on non-Cray systems
 lsf-gasnetrun_ibv    GASNet launcher using LSF (bsub) over Infiniband
+pals                 Cray application launcher using PALS on HPE Cray EX systems
 pbs-aprun            Cray application launcher using PBS (qsub) + aprun   
 pbs-gasnetrun_ibv    GASNet launcher using PBS (qsub) over Infiniband     
 slurm-gasnetrun_ibv  GASNet launcher using SLURM over Infiniband          

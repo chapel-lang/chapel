@@ -105,6 +105,7 @@ CHPL_HOST_PLATFORM
         sunos        SunOS platforms
         cray-cs      Cray CS\ |trade|
         cray-xc      Cray XC\ |trade|
+        hpe-cray-ex  HPE Cray EX\ |trade|
         ===========  ==================================
 
    Platform-specific documentation is available for most of these platforms in
@@ -200,15 +201,16 @@ CHPL_*_COMPILER
         ============  ==================================================
         Platform      Compiler
         ============  ==================================================
-        cray-x*       - gnu (for ``CHPL_HOST_COMPILER``)
-                      - cray-prgenv-$PE_ENV (for ``CHPL_TARGET_COMPILER``,
+        cray-x*,      - gnu (for ``CHPL_HOST_COMPILER``)
+        hpe-cray-ex   - cray-prgenv-$PE_ENV (for ``CHPL_TARGET_COMPILER``,
                         where PE_ENV is set by PrgEnv-* modules)
         darwin        clang if available, otherwise gnu
         pwr6          ibm
         other         gnu
         ============  ==================================================
 
-   If ``CHPL_HOST_PLATFORM == CHPL_TARGET_PLATFORM`` and is not ``cray-x*``,
+   If ``CHPL_HOST_PLATFORM == CHPL_TARGET_PLATFORM`` and is not ``cray-x*``
+   or ``hpe-cray-ex``,
    ``CHPL_TARGET_COMPILER`` will default to the same value as ``CHPL_HOST_COMPILER``.
 
    .. note::
@@ -390,7 +392,7 @@ CHPL_COMM
         ======= ============================================
         none    only supports single-locale execution
         gasnet  use the GASNet-based communication layer
-        ofi     use the (preliminary) libfabric-based communication layer
+        ofi     use the libfabric-based communication layer
         ugni    Cray-specific native communication layer
         ======= ============================================
 
