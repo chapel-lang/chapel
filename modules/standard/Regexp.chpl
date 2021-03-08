@@ -450,7 +450,7 @@ class BadRegexpError : Error {
                    this flag can be set inside the regular expression with
                    ``(?U)``.
 
-   :throws: BadRegexError: If CHPL_REGEXP is set to none rather than re2.
+   :throws BadRegexError: If RE2 is not created properly.
  */
 
 proc compile(pattern: ?t, posix=false, literal=false, noCapture=false,
