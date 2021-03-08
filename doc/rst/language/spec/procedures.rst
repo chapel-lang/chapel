@@ -121,10 +121,9 @@ Procedures are defined with the following syntax:
      'override'
 
    operator-name: one of
+     'align' 'by'
      + - * / % ** : ! == != <= >= < > << >> & | ^ ~
      = += -= *= /= %= **= &= |= ^= <<= >>= <=> <~> #
-     'by'
-     'align'
 
    argument-list:
      ( formals[OPT] )
