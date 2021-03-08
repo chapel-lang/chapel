@@ -92,7 +92,14 @@ void createGenericStandins() {
   new DefExpr(dtGenericStandin->symbol);
 
   gGenericParam = new VarSymbol("GenericStandinParam");
+  // We want a well-initialized Immediate so that snprint_imm()
+  // complies with valgrind. At the same time we don't want a canonical
+  // immediate, so it does not behave as a specific kind.
+  // We make it look like a string to provide text for snprint_imm().
   gGenericParam->immediate = new Immediate;  // also a stand-in
+  gGenericParam->immediate->const_kind = CONST_KIND_STRING;
+  gGenericParam->immediate->string_kind = STRING_KIND_STRING;
+  gGenericParam->immediate->v_string = astr("<GenericStandinParam>");
   new DefExpr(gGenericParam);
 }
 
