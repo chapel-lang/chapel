@@ -101,6 +101,8 @@ Compiler Flags
 
 Runtime Library Changes
 -----------------------
+* significantly improved `ofi` portability and performance
+* improved detection of a system libfabric for use with `ofi` communication
 
 Launchers
 ---------
@@ -134,6 +136,9 @@ Platform-specific bug fixes
 
 Packaging / Configuration Changes
 ---------------------------------
+* added a Lua/Lmod modulefile for Chapel on HPE Cray XC and EX systems
+* expanded support for HPE Cray EX systems
+  (see https://chapel-lang.org/docs/1.24/platforms/cray.html#getting-started-with-chapel-on-hpe-cray-ex-systems)
 
 Third-Party Software Changes
 ----------------------------
@@ -175,6 +180,7 @@ Developer-oriented changes: Compiler improvements/changes
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
 * added initial support for GASNet's `ucx` substrate
+* fixed a race in counting running tasks
 
 Developer-oriented changes: Testing System
 ------------------------------------------
