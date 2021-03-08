@@ -568,6 +568,28 @@ void ReturnByRef::transform()
   transformFunction(mFunction);
 }
 
+// Check for a =, PRIM_MOVE, or PRIM_ASSIGN
+// with a RHS that is marked with FLAG_FORMAL_TEMP_OUT_CALLSITE.
+// This reflects the writeback pattern added at the callsite
+// for out/inout formals (see wrappers.cpp).
+static bool isFormalTmpWriteback(Expr* e) {
+  if (CallExpr* call = toCallExpr(e)) {
+    if (call->isNamedAstr(astrSassign) ||
+        call->isPrimitive(PRIM_MOVE) ||
+        call->isPrimitive(PRIM_ASSIGN)) {
+      int nActuals = call->numActuals();
+      if (nActuals >= 2) {
+        // check if the last argument has the appropriate flag.
+        if (SymExpr* se = toSymExpr(call->get(nActuals))) {
+          if (se->symbol()->hasFlag(FLAG_FORMAL_TEMP_OUT_CALLSITE))
+            return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
 //
 // Transform a call to a function that returns a record to be a call
 // to a revised function that does not return a value and that accepts
@@ -627,7 +649,9 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
   //
   // Also ignore a DefExpr which might e.g. define a user variable
   // which is = initCopy(call_tmp).
-  while (nextExpr && (isCheckErrorStmt(nextExpr) || isDefExpr(nextExpr)))
+  while (nextExpr &&
+         (isCheckErrorStmt(nextExpr) || isDefExpr(nextExpr) ||
+          isFormalTmpWriteback(nextExpr)))
     nextExpr = nextExpr->next;
 
   CallExpr* copyExpr  = NULL;

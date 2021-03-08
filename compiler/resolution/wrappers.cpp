@@ -1721,6 +1721,7 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
       if (inout) {
         tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
         tmp->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
+        tmp->addFlag(FLAG_FORMAL_TEMP_OUT_CALLSITE);
       }
 
       // Does this need to be here?
@@ -1866,6 +1867,7 @@ static void handleOutIntents(FnSymbol* fn, CallExpr* call,
         tmp->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
         tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
         tmp->addFlag(FLAG_EXPR_TEMP);
+        tmp->addFlag(FLAG_FORMAL_TEMP_OUT_CALLSITE);
 
         // Transform  f(x) where x is passed with out intent into
         //   DefExpr tmp
