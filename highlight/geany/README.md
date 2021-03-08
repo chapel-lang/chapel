@@ -2,10 +2,6 @@
 
 Nelson Luís Dias (<nelsonluisdias@gmail.com>; <https://nldias.github.io>).  
 
-2021-02-27T12:14:00
-
-2021-03-01T11:52:30 including DCO in pull resquest
-
 Here is a small but usable Geany ([https://geany.org](URL))  syntax highlighting scheme for Chapel.  It was directly modified from the standard Geany (version 1.36) syntax highlighting for C.
 
 **Windows users**: Replace `~/.config/geany/` with `C:\Users\"user"\AppData\Roaming\geany\`,
@@ -13,7 +9,7 @@ where "user" is your username.
 
 Instructions:
 
-   1. Copy `filetype.Chapel.conf` to `~/.config/geany/filedefs/`
+   1. Copy `filetypes.Chapel.conf` to `~/.config/geany/filedefs/`
 
    2. Either:
       1.  Copy filetype_extensions.conf to `~/.config/geany/` OR
