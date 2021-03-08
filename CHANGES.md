@@ -77,9 +77,13 @@ Documentation
   (see https://chapel-lang.org/docs/1.24/modules/standard/Sys.html#Sys.sys_getenv)
 * improved the formatting of code blocks in the 'CommDiagnostics' documentation
   (see https://chapel-lang.org/docs/1.24/modules/standard/CommDiagnostics.html)
+* documented the ability to interact with `extern` C unions
+  (see https://chapel-lang.org/docs/1.24/language/spec/interoperability.html#referring-to-external-c-structs-and-unions)
 
 Syntax Highlighting
 -------------------
+* added Chapel syntax highlighting support for the 'geany' editor
+  (see `$CHPL_HOME/highlight/geany/README.md`)
 
 Example Codes
 -------------
@@ -144,7 +148,7 @@ Developer-oriented changes: Documentation
 Developer-oriented changes: Module changes
 ------------------------------------------
 * fixed a bug where `chpl_nodeID` wasn't generating shadow variables properly
-* removed `inline` from a number of nontrivial IO routines
+* removed `inline` from some nontrivial IO routines
 
 Developer-oriented changes: Makefiles
 -------------------------------------
