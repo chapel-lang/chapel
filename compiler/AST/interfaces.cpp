@@ -158,11 +158,13 @@ void InterfaceSymbol::accept(AstVisitor* visitor) {
 }
 
 InterfaceSymbol* InterfaceSymbol::copyInner(SymbolMap* map) {
-  if (this->defPoint && isGlobal(this))
-    INT_FATAL(this, "unexpected");
+  if (this->defPoint && !isGlobal(this))
+    USR_FATAL(this,
+      "only module-level interfaces are currently supported");
   else
-    USR_FATAL_CONT(this,
-                   "only module-level interfaces are currently implemented");
+    USR_FATAL(this,
+      "interface declarations in this context are currently unsupported");
+
   return this; //dummy
 }
 
@@ -271,8 +273,10 @@ ImplementsStmt::ImplementsStmt(IfcConstraint* con, BlockStmt* body)
 }
 
 ImplementsStmt* ImplementsStmt::copyInner(SymbolMap* map) {
-  if (witnesses.n > 0) // this is a non-empty map
-    INT_FATAL(this, "copying of witnesses is to be implemented");
+  if (witnesses.n > 0 || aconsWitnesses.size() > 0)
+    USR_FATAL(this,
+      "implements statements in this context are currently unsupported");
+
   return new ImplementsStmt(COPY_INT(iConstraint),
                             COPY_INT(implBody));
 }
