@@ -194,5 +194,4 @@ proc R.readWriteThis(ch: channel) throws {
 // Operators can be overloaded for record types to support
 // assignment (``=``), comparisons, (``<``, ``<=``, ``>``, ``>=``, ``==``,
 // ``!=``), and other general operators (``+``, ``-``, ``*``, ``/``, ...).
-// These are declared as regular functions with two arguments, not as methods
-// on the record.
+// These are declared as regular functions using the ``operator`` keyword.
