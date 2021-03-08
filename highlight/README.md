@@ -9,7 +9,7 @@ Highlighting for Editors
 ------------------------
 
 * emacs/ : support for highlighting in emacs (see `emacs/README.rst`
-* geany/ : support for highlighting in geany (see `geany/geany-README.md`)
+* geany/ : support for highlighting in geany (see `geany/README.md`)
 * vim/ : support for highlighting in 'vim' (see `vim/README.rst`)
 
 The emacs and vim modes for Chapel were created by modifying existing
