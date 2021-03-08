@@ -22,10 +22,23 @@ functions, e.g.
 
    operator +(lhs: t1, rhs: t2) { ... }
 
-or as methods defined on a particular type.  Operator methods are equivalent to
-type methods - their behavior is not tied to a particular instance of the type
-with which they are associated unless such an instance is provided as one of the
-arguments to the method.
+or as methods defined on a particular type, e.g.
+
+.. code-block:: chapel
+
+   record R {
+     var intField: int;
+
+     operator +(lhs: R, rhs: R) {
+       return new R(lhs.intField + rhs.intField);
+     }
+   }
+
+This README will focus on operator methods.
+
+Operator methods are equivalent to type methods - the type on which the operator
+is declared causes the operator to have method-like visibility for that type,
+and the ``this`` receiver is a ``type``.
 
 Operator methods may be defined as primary, secondary, or tertiary methods.  For
 example, the following code defines a primary ``+`` operator and a secondary
@@ -46,50 +59,50 @@ example, the following code defines a primary ``+`` operator and a secondary
    }
 
 
-.. warning::
+The method receiver for an operator method will be used to determine when that
+operator is visible.  This behavior is most useful when the method receiver
+matches the type of at least one of the other arguments to the operator.
+However, it is possible to define an operator method where the receiver type
+does not match the type for any other argument.
 
-   Standalone operator overloads defined without the ``operator`` keyword are
-   expected to be deprecated soon.  Operator methods may not be defined without
-   the ``operator`` keyword.
-
-There is no required relationship between the argument types and the method
-receiver.  An operator method can be associated with a type that matches the
-type of every argument, or that matches the type of only some of the
-arguments, or even a type that does not match the type of any argument (though
-the latter case may be of limited value).
-
-Operator methods are not required to be defined on concrete types.  They may be
-defined on generic types, or on particular instantiations of generic types.
+Operator methods can be defined on concrete types, generic types, or particular
+instantiations of generic types.
 
 Calling Operator Methods
 ------------------------
 
-An operator method call is identical to a call to a standalone operator
-overload.  The compiler will distinguish which operator overload is most
-appropriate and adjust the call accordingly, if necessary.
+A call to an operator - such as ``a + b`` which calls ``+`` - may resolve to any
+visible operator method or standalone operator function.
 
 Operator Method Visibility
 --------------------------
 
-The visibility of operator methods is the same as the visibility of other
-methods defined on the type.  The type definition point and any inherited type
-definition points of each argument will be searched for operator methods defined
-on it, and ``import`` and ``use`` statements can be used to control the
-visibility of tertiary operator methods.
+Primary and secondary operator methods have similar visibility to other primary
+and secondary methods.  In both cases, these methods can be viewed as part of
+the type and will be available along with the type.  For regular methods, the
+compiler searches for the method using the receiver's type (e.g. ``R`` in
+``myR.method()`` supposing ``myR`` has type ``R``) definition point as well as
+any type definition points for parent classes.  However, operator invocations
+(such as ``a + b``) don't have a method receiver in the same way.  Instead, the
+compiler uses te types of all the operator's arguments to find operator methods
+defined along with the type.
+
+As with tertiary methods, ``import`` and ``use`` statements can be used to
+control the visibility of tertiary operator methods.
 
 Determining Operator Candidate Functions
 ----------------------------------------
 
 When determining if an operator method or function is an appropriate candidate,
 only the arguments to the operator method or function will be considered.  The
-presence or absence of a type receiver is only used to determine visibility, it
-will not eliminate an overload from candidate consideration.
+presence or absence of a type receiver is only used to determine visibility, and
+it will not eliminate an overload from candidate consideration.
 
 Determining More Specific Operators
 -----------------------------------
 
 When determining which operator method or function is more specific, only the
 arguments to the operator method or function will be considered.  The presence
-or absence of a type receiver is only used to determine visibility, it will not
-make a particular operator method or function be deemed more specific than
-another.
+or absence of a type receiver is only used to determine visibility and does not
+impact the process of determining the best function (see
+:ref:`Determining_Best_Functions`).

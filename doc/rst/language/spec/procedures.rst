@@ -111,10 +111,8 @@ Procedures are defined with the following syntax:
 .. code-block:: syntax
 
    procedure-declaration-statement:
-     privacy-specifier[OPT] procedure-kind[OPT] 'proc' identifier argument-list[OPT] return-intent[OPT] return-type[OPT] where-clause[OPT]
-       function-body
-     privacy-specifier[OPT] procedure-kind[OPT] 'operator' operator-name argument-list return-intent[OPT] return-type[OPT] where-clause[OPT]
-       function-body
+     privacy-specifier[OPT] procedure-kind[OPT] 'proc' identifier argument-list[OPT] return-intent[OPT] return-type[OPT] where-clause[OPT] function-body
+     privacy-specifier[OPT] procedure-kind[OPT] 'operator' operator-name argument-list return-intent[OPT] return-type[OPT] where-clause[OPT] function-body
 
    procedure-kind:
      'inline'
@@ -124,8 +122,9 @@ Procedures are defined with the following syntax:
 
    operator-name: one of
      + - * / % ** : ! == != <= >= < > << >> & | ^ ~
-     = += -= *= /= %= **= &= |= ^= <<= >>= <=> <~>
-     'by' 'align'
+     = += -= *= /= %= **= &= |= ^= <<= >>= <=> <~> #
+     'by'
+     'align'
 
    argument-list:
      ( formals[OPT] )
@@ -1172,9 +1171,9 @@ called overloaded functions. Function calls to overloaded functions are
 resolved according to the function resolution algorithm
 in :ref:`Function_Resolution`.
 
-Operator overloading is achieved by defining a function with a name specified by
-that operator.  This function is declared with the ``operator`` keyword.  The
-operators that may be overloaded are listed in the following table:
+To define an overloaded operator, use the ``operator`` keyword to define a
+function with the same name as the operator.  The operators that may be
+overloaded are listed in the following table:
 
 ======== ===============================
 arity    operators
