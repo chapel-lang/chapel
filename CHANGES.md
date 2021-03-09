@@ -41,6 +41,8 @@ New Features
   (see https://chapel-lang.org/docs/1.24/technotes/operatorMethods.html)
 * added user-defined cast operations via `operator :`
   (see https://chapel-lang.org/docs/1.24/language/spec/conversions.html#user-defined-casts)
+* added support for directly indexing `string` and `bytes` literals
+  (e.g., `var s = "Chapel"[0];` and `var b = b"is great!"[0];` now work)
 
 Feature Improvements
 --------------------
@@ -59,6 +61,7 @@ Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
 * deprecated support for implicit reads and writes of `sync`/`single` variables
   (DOC TODO)
+* deprecated assignments to `string` from `c_string`
 * removed support for casts from `c_void_ptr` to non-nilable class types
 * removed support for `domain.member` and `range.member`
 * removed old warning about constructors to initializers transition
@@ -67,6 +70,7 @@ Deprecated / Removed Library Features
 -------------------------------------
 * deprecated use of `regexp.ok` and `regexp.error()` in favor of thrown errors
 * deprecated the `dotnl` option in `Regexp.compile()`, replacing with `dotAll`
+* removed features that had previously been deprecated from 'Regexp'
 * removed an old warning related to changing from constructors to initializers
 
 Standard Library Modules
@@ -85,6 +89,8 @@ Standard Library Modules
 
 Package Modules
 ---------------
+* added a new `UnrolledLinkedList` module
+  (see https://chapel-lang.org/docs/1.24/modules/packages/UnrolledLinkedList.html)
 * extended `sort()` to work with arrays with indices other than default `int`
 * explicitly restricted `sort()` to only support 1D rectangular arrays
   (see https://chapel-lang.org/docs/1.24/modules/packages/Sort.html#Sort.sort)
@@ -107,17 +113,33 @@ Performance Optimizations / Improvements
 * improved the scalability and performance of the `--cache-remote` option
   (see `--cache-remote` in https://chapel-lang.org/docs/1.24/usingchapel/man.html)
 * enabled `--cache-remote` by default, reducing communication in many programs
+* added a new copy aggregation optimization, enabled by `--auto-aggregation`
+  (e.g. `forall i in A.domain { A[i] = A[foo(i)]; }` will use aggregation)
+* expanded the automatic local access optimization to support additional cases:
+  - array slices (rank-preserving or changing)
+    (e.g. `forall i in ASlice.domain { ASlice[i] = 5; }` will be optimized)
+  - indices yielded from follower iterators
+    (e.g. `forall (a,i) in zip(A, A.domain) { A[i] = 5; }` will be optimized)
+* improved the output of the `--report-auto-local-access` flag
 * improved the performance of scans on 1D local and `Block` arrays
 * parallelized scan operations on 1D `Replicated` arrays
 * reduced overheads for managing arrays declared over `var` domains
 
 Compilation-Time / Generated Code Improvements
 ----------------------------------------------
+* reduced the compilation time of zippered `forall` loops
 
 Memory Improvements
 -------------------
 * fixed a memory leak for type aliases of arrays of arrays
   (e.g. `type arrOfArr = [1..2][100..200] int;`)
+* closed a memory leak for unnamed array type expressions
+* closed a memory leak for arrays returned from empty `for` expressions
+* closed a memory leak for `owned` values that are not captured in a variable
+* closed a memory leak for `forall` loops that throw errors
+* closed a memory leak for `defer` statements that contain initializations
+* closed a memory leak that happened when `Regexp.compile()` fails and throws
+
 
 Documentation
 -------------
@@ -125,6 +147,7 @@ Documentation
   (see https://chapel-lang.org/docs/1.24/language/spec/methods.html)
 * reorganized the list of standard Chapel modules into categories
   (see https://chapel-lang.org/docs/1.24/modules/standard.html)
+* fixed some highligting issues around secondary methods in the specification
 * other general fixes and improvements to the language specification
 * added documentation for `min` and `max` to the 'Math' module documentation
   (see https://chapel-lang.org/docs/1.24/modules/standard/Math.html#Math.max)
@@ -138,6 +161,7 @@ Documentation
    and https://chapel-lang.org/docs/1.24/modules/standard/VectorizingIterator.html)
 * improved the formatting of code blocks in the 'CommDiagnostics' documentation
   (see https://chapel-lang.org/docs/1.24/modules/standard/CommDiagnostics.html)
+* improved some of the explanations in the 'Path' module documentation
 * documented the ability to interact with `extern` C unions
   (see https://chapel-lang.org/docs/1.24/language/spec/interoperability.html#referring-to-external-c-structs-and-unions)
 * updated the Quickstart instructions to no longer reference its old location
@@ -150,7 +174,8 @@ Syntax Highlighting
   (see `$CHPL_HOME/highlight/geany/README.md`)
 * added LaTeX syntax highlighting for Chapel via the `lstlisting` package
   (see `$CHPL_HOME/highlight/latex/`)
-
+* created an improved and independently-maintained pygments highlighter
+  (see https://github.com/chapel-lang/sphinxcontrib-chapeldomain)
 
 Example Codes
 -------------
@@ -211,9 +236,12 @@ Bug Fixes
 * fixed several problems with I/O of `owned` and `shared` classes
 * fixed a bug in generic functions that `import` non-module symbols
 * fixed several bugs due to missing `use` and `import` statements
+* fixed an internal error with certain sparse subdomain declarations
+* fixed a bug in which the array swap optimization was applied too broadly
 * fixed a bug where a nested function call in a type alias was invoked twice
 * fixed a bug when `compilerError()` appeared in an unused copy initializer
 * fixed a problem with stack allocation for aligned types with `--llvm`
+* fixed a bug where non-POD `in` formals failed to compile in some scenarios
 * fixed a problem passing an array slice to an `inout` formal argument
 * fixed a bug in which `chpldoc` dropped parentheses, changing code's meaning
 * fixed several bugs relating to how `chpldoc` renders initializing expressions
@@ -284,6 +312,11 @@ Developer-oriented changes: Compiler improvements/changes
 * adjusted the code generator to add initial support for GPU code generation
 * made use of virtual destructors and `= default` constructors/destructors
 
+Developer-oriented changes: Performance improvements
+----------------------------------------------------
+* extended `-sserialize_slices` to support array slices within `zip()` exprs
+  (e.g. `forall (a,b) in zip(A[2..5], B[2..5])` is optimized with the flag)
+
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
 * added initial support for GASNet's `ucx` substrate
@@ -294,7 +327,10 @@ Developer-oriented changes: Runtime improvements
 Developer-oriented changes: Testing System
 ------------------------------------------
 * updated testing system to rely on, and be compatible with, Python 3
+* added a `-python2` flag to `nightly` to run with Python 2
 * fixed issue with including additional binary files when comparing test output
+* fixed a bug in nightly memory leak testing
+
 
 version 1.23.0
 ==============
