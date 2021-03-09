@@ -47,6 +47,7 @@ Feature Improvements
 * improved handling of methods with respect to `use` and `import` statements
   (see https://chapel-lang.org/docs/1.24/language/spec/modules.html#except-and-only-lists
    and https://chapel-lang.org/docs/1.24/language/spec/modules.html#importing-modules)
+* tightened up functions that modify domains to error for `const` domain values
 * extended tuples to support indexing by boolean expressions
   (e.g., `("hi", "there")[myBoolExpr]` is now supported)
 * extended split initialization to support `local` blocks
@@ -64,6 +65,8 @@ Deprecated / Unstable / Removed Language Features
 
 Deprecated / Removed Library Features
 -------------------------------------
+* deprecated use of `regexp.ok` and `regexp.error()` in favor of thrown errors
+* deprecated the `dotnl` option in `Regexp.compile()`, replacing with `dotAll`
 * removed an old warning related to changing from constructors to initializers
 
 Standard Library Modules
@@ -74,6 +77,7 @@ Standard Library Modules
   (e.g., `var x: list(int) = for i in 1..10 do i;` is now supported)
 * `isSubtype()` and related functions now appear in the 'Types' module
   (see https://chapel-lang.org/docs/1.24/modules/standard/Types.html#Types.isSubtype)
+* added support for `%f` formatting to `datetime.strftime()` in 'DateTime'
 * added a new `splitExt()` routine to the 'Path' module
   (see https://chapel-lang.org/docs/1.24/modules/standard/Path.html#Path.splitExt)
 * added counters for `--cache-remote` hits and misses to 'CommDiagnostics'
@@ -188,6 +192,8 @@ Error Messages / Semantic Checks
 * improved the error when a 'type' actual is passed to a value varargs formal
 * improved the wording and formatting of resolution-oriented error messages
 * squashed method vs. standalone mismatches when printing function candidates
+* improved error messages for illegal uses of `void`, such as `void` variables
+* improved errors for assignment between `nothing` and non-`nothing` variables
 * improved the error message when split initialization is used with `noinit`
   (e.g. `var x; x = noinit;`)
 * improved error messages to better distinguish initialization and assignment
@@ -258,6 +264,7 @@ Developer-oriented changes: Module changes
 ------------------------------------------
 * improved the performance of the undocumented two-array radix sorts
 * fixed a bug where `chpl_nodeID` wasn't generating shadow variables properly
+* refactored 'Regexp' methods to avoid code duplication
 * removed `inline` from some nontrivial IO routines
 
 Developer-oriented changes: Makefiles
@@ -275,12 +282,14 @@ Developer-oriented changes: Compiler improvements/changes
 * added a pragma to allow a function to exist only for `chpldoc`
 * added a pragma to indicate to `chpldoc` when a module is included by default
 * adjusted the code generator to support experimental GPU code generation
+* made use of virtual destructors and `= default` constructors/destructors
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
 * added initial support for GASNet's `ucx` substrate
 * fixed a race in counting running tasks
 * adjusted the runtime headers to compile as C++
+* switched the runtime shim for re2 to use C++11 `thread_local` over pthreads
 
 Developer-oriented changes: Testing System
 ------------------------------------------
