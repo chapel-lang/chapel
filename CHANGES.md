@@ -281,7 +281,7 @@ Developer-oriented changes: Compiler improvements/changes
 * type conversions no longer fall back on default-init and then assign
 * added a pragma to allow a function to exist only for `chpldoc`
 * added a pragma to indicate to `chpldoc` when a module is included by default
-* adjusted the code generator to support experimental GPU code generation
+* adjusted the code generator to add initial support for GPU code generation
 * made use of virtual destructors and `= default` constructors/destructors
 
 Developer-oriented changes: Runtime improvements
