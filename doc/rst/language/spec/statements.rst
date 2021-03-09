@@ -311,9 +311,15 @@ The syntax for a conditional statement is given by
    conditional-statement:
      'if' expression 'then' statement else-part[OPT]
      'if' expression block-statement else-part[OPT]
+     'if' ctrl-decl 'then' statement else-part[OPT]
+     'if' ctrl-decl block-statement else-part[OPT]
 
    else-part:
      'else' statement
+
+   ctrl-decl:
+     'var' identifier '=' expression
+     'const' identifier '=' expression
 
 A conditional statement evaluates an expression of bool type. If the
 expression evaluates to true, the first statement in the conditional
@@ -330,6 +336,19 @@ statement is removed.
 
 Each statement embedded in the *conditional-statement* has its own scope
 whether or not an explicit block surrounds it.
+
+The control-flow declaration *ctrl-decl*, when used, declares a variable
+whose scope is the then-clause of the conditional statement.
+The expression must be of a class type. 
+If it evaluates to ``nil``, the else-clause is executed if present. Otherwise 
+its value is stored in the declared variable and the then-clause is executed.
+If the expression's type is ``borrowed`` or  ``unmanaged``,
+the variable's type is its non-nilable variant (:ref:`Nilable_Classes`).
+Otherwise the variable stores a borrow of the expression's value
+(:ref:`Class_Lifetime_and_Borrows`), and its type is the non-nilable
+``borrowed`` counterpart of the expression's type.
+The variable can be modified within the then-clause if it is declared
+with the ``var`` keyword.
 
 If the statement that immediately follows the optional ``then`` keyword
 is a conditional statement and it is not in a block, the else-clause is
@@ -432,6 +451,8 @@ while-do loop is given by:
    while-do-statement:
      'while' expression 'do' statement
      'while' expression block-statement
+     'while' ctrl-decl 'do' statement
+     'while' ctrl-decl block-statement
 
 The syntax of the do-while loop is given by: 
 
@@ -532,6 +553,22 @@ termination expression.
       3
       4
       5
+
+The control-flow declaration *ctrl-decl*, when used in a while-do loop,
+works similarly to how it does in a conditional statement
+(:ref:`The_Conditional_Statement`).
+It declares a variable whose scope is the loop body.
+Its *expression* must be of a class type.
+If it evaluates to ``nil``, the loop exits. Otherwise
+its value is stored in the declared variable, the loop body is executed,
+and the control returns to evaluating the expression again.
+If the expression's type is ``borrowed`` or  ``unmanaged``,
+the variable's type is its non-nilable variant (:ref:`Nilable_Classes`).
+Otherwise the variable stores a borrow of the expression's value
+(:ref:`Class_Lifetime_and_Borrows`), and its type is the non-nilable
+``borrowed`` counterpart of the expression's type.
+The variable can be modified within the loop body if it is declared
+with the ``var`` keyword.
 
 .. _The_For_Loop:
 
