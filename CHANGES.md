@@ -1,6 +1,12 @@
 Release Changes List
 ====================
 
+TODO:
+o add late-breaking entries
+o re-read rendered version with fresh eyes
+o check that hyperlinks work
+o re-spellcheck
+
 version 1.24.0
 ==============
 
@@ -53,7 +59,7 @@ Semantic Changes / Changes to Chapel Language
 * changed type inference for `out` intent to be more similar to `return`  
   (see https://chapel-lang.org/docs/1.24/language/spec/procedures.html#the-out-intent)
 * updated copy elision and split initialization to apply within local blocks  
-  (see https://chapel-lang.org/docs/1.24/language/spec/variables.html#split-inialization  
+  (see https://chapel-lang.org/docs/1.24/language/spec/variables.html#split-initialization  
    and https://chapel-lang.org/docs/1.24/language/spec/variables.html#copy-elision)
 * method calls now respect privacy and limitation clauses of `use`/`import`  
   (see https://chapel-lang.org/docs/1.24/language/spec/modules.html#except-and-only-lists  
@@ -257,7 +263,7 @@ Launchers
 Error Messages / Semantic Checks
 --------------------------------
 * improved the callstack for error messages with respect to inline functions
-* improved the callstack for error messages occuring later in compilation
+* improved the callstack for error messages occurring later in compilation
 * improved the error when a 'type' actual is passed to a value varargs formal
 * improved the wording and formatting of resolution-oriented error messages
 * squashed method vs. standalone mismatches when printing function candidates
@@ -317,7 +323,7 @@ Platform-specific bug fixes
 Packaging / Configuration Changes
 ---------------------------------
 * added `bundled` options for several `CHPL_*` environment variables
-* added a Lua/Lmod modulefile for Chapel on HPE Cray XC and EX systems
+* added a Lua/Lmod module file for Chapel on HPE Cray XC and EX systems
 * expanded support for HPE Cray EX systems  
   (see https://chapel-lang.org/docs/1.24/platforms/cray.html#getting-started-with-chapel-on-hpe-cray-ex-systems)
 
