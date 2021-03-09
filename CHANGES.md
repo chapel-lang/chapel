@@ -11,6 +11,7 @@ Highlights (see subsequent sections for further details)
 
 Syntactic / Naming Changes
 --------------------------
+* `interface` is now reserved as a keyword to specify constrained generics
 * `foreach` is now reserved as a keyword for future use
   (see https://chapel-lang.org/docs/1.24/language/spec/lexical-structure.html#keywords)
 
@@ -41,6 +42,11 @@ New Features
   (see https://chapel-lang.org/docs/1.24/technotes/operatorMethods.html)
 * added user-defined cast operations via `operator :`
   (see https://chapel-lang.org/docs/1.24/language/spec/conversions.html#user-defined-casts)
+* added support for non-nilable declarations to `if` and `while` statements
+  (e.g., `if const obj = foo() then obj.bar();` guarantees non-nilable `obj`)
+  (see TODO)
+* added initial support for constrained generic interfaces
+  (see https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/chips/2.rst)
 * added support for directly indexing `string` and `bytes` literals
   (e.g., `var s = "Chapel"[0];` and `var b = b"is great!"[0];` now work)
 
@@ -192,6 +198,7 @@ Portability
 
 Compiler Flags
 --------------
+* removed previously deprecated `--legacy-classes` flag
 
 Runtime Library Changes
 -----------------------
@@ -306,6 +313,7 @@ Developer-oriented changes: Compiler Flags
 
 Developer-oriented changes: Compiler improvements/changes
 ---------------------------------------------------------
+* C++11 features can now be used / are now a requirement for the compiler
 * type conversions no longer fall back on default-init and then assign
 * added a pragma to allow a function to exist only for `chpldoc`
 * added a pragma to indicate to `chpldoc` when a module is included by default
