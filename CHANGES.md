@@ -44,6 +44,14 @@ Highlights (see subsequent sections for further details)
   - removed Python 2 dependences in favor of Python 3
   - improved several launcher choices and options
 
+Packaging / Configuration Changes
+---------------------------------
+* a C++11 compiler is now required to build the Chapel compiler
+* added `bundled` options for several `CHPL_*` environment variables
+* added a Lua/Lmod module file for Chapel on HPE Cray XC and EX systems
+* expanded support for HPE Cray EX systems  
+  (see https://chapel-lang.org/docs/1.24/platforms/cray.html#getting-started-with-chapel-on-hpe-cray-ex-systems)
+
 Syntactic / Naming Changes
 --------------------------
 * `operator` is now reserved for defining operator overloads
@@ -58,7 +66,8 @@ Semantic Changes / Changes to Chapel Language
   (see https://chapel-lang.org/docs/1.24/language/spec/conversions.html#implicit-conversions-for-initialization-and-assignment)
 * changed type inference for `out` intent to be more similar to `return`  
   (see https://chapel-lang.org/docs/1.24/language/spec/procedures.html#the-out-intent)
-* updated copy elision and split initialization to apply within local blocks  
+* updated copy elision and split initialization to apply within `local` blocks  
+  (e.g., `var x; local { x = 1; }` now works for '--no-local' compilations)  
   (see https://chapel-lang.org/docs/1.24/language/spec/variables.html#split-initialization  
    and https://chapel-lang.org/docs/1.24/language/spec/variables.html#copy-elision)
 * method calls now respect privacy and limitation clauses of `use`/`import`  
@@ -67,7 +76,7 @@ Semantic Changes / Changes to Chapel Language
 
 Namespace Changes
 -----------------
-* `c_void_ptr` is no longer automatically available, as intended  
+* `c_void_ptr` is no longer automatically available, but defined in 'CPtr'
   (e.g., use `import CPtr.c_void_ptr;`/`use CPtr;` to refer to `c_void_ptr`)
 
 New Features
@@ -86,7 +95,7 @@ New Features
   (see https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/chips/2.rst)
 * added support for directly indexing `string` and `bytes` literals  
   (e.g., `var s = "Chapel"[0];` and `var b = b"is great!"[0];` now work)
-* added `domain.orderToIndex()` to get the ith index in a rectangular domain  
+* added `domain.orderToIndex(i)` to get the ith index in a rectangular domain  
   (see https://chapel-lang.org/docs/1.24/builtins/ChapelArray.html#ChapelArray.orderToIndex)
 
 Feature Improvements
@@ -99,8 +108,6 @@ Feature Improvements
 * improved array literal creation to use moves rather than default-init and `=`
 * extended tuples to support indexing by boolean expressions  
   (e.g., `("hi", "there")[myBoolExpr]` is now supported)
-* extended split initialization to support `local` blocks  
-  (e.g., `var x; local { x = 1; }` now works for '--no-local' compilations)
 * extended copy elision to support local variables within `if`/`else` blocks
 * adjusted `.targetLocales` on arrays and domains to return a reference  
   (see https://chapel-lang.org/docs/1.24/builtins/ChapelArray.html#ChapelArray.targetLocales)
@@ -222,8 +229,6 @@ Syntax Highlighting
   (see `$CHPL_HOME/highlight/geany/README.md`)
 * added LaTeX syntax highlighting for Chapel via the `lstlisting` package  
   (see `$CHPL_HOME/highlight/latex/`)
-* created an improved and independently-maintained pygments highlighter  
-  (see https://github.com/chapel-lang/sphinxcontrib-chapeldomain)
 
 Example Codes
 -------------
@@ -242,9 +247,8 @@ Portability
 
 Compiler Flags
 --------------
-* added a new `--[no-]auto-aggregation flag to control a new optimization  
+* added a new `--[no-]auto-aggregation` flag to control a new optimization  
   (see its entry at https://chapel-lang.org/docs/1.24/usingchapel/man.html)
-* removed previously deprecated `--legacy-classes` flag
 
 Runtime Library Changes
 -----------------------
@@ -320,13 +324,6 @@ Platform-specific bug fixes
 * fixed the `protobuf` plug-in to build on OSX
 * fixed a race under GASNet's `ibv` substrate on PowerPC
 
-Packaging / Configuration Changes
----------------------------------
-* added `bundled` options for several `CHPL_*` environment variables
-* added a Lua/Lmod module file for Chapel on HPE Cray XC and EX systems
-* expanded support for HPE Cray EX systems  
-  (see https://chapel-lang.org/docs/1.24/platforms/cray.html#getting-started-with-chapel-on-hpe-cray-ex-systems)
-
 Third-Party Software Changes
 ----------------------------
 * upgraded GASNet-EX to version 2020.10.0
@@ -351,6 +348,8 @@ Developer-oriented changes: Documentation
    https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/bestPractices/DCO.rst, and
    https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/bestPractices/git.rst)
 * switched to a non-Cray version of the Chapel logo in the project's README
+* created an improved and independently-maintained pygments highlighter  
+  (see https://github.com/chapel-lang/sphinxcontrib-chapeldomain)
 
 Developer-oriented changes: Module changes
 ------------------------------------------
@@ -373,7 +372,7 @@ Developer-oriented changes: Compiler Flags
 * added a `--[no-]infer-implements-decls` flag for inferring `implements`
 * added a `--print-additional-errors` flag for post-`compilerError()` errors
 * improved the output of the `--report-auto-local-access` flag
-* removed the outdated `--[no-]legacy-classes` flag
+* removed previously deprecated `--[no-]legacy-classes` flag
 
 Developer-oriented changes: Compiler improvements/changes
 ---------------------------------------------------------
