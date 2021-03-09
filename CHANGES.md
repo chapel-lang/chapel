@@ -1,10 +1,10 @@
 Release Changes List
 ====================
 
-TODO:
+TODO:  
 o add late-breaking entries  
 o re-read rendered version with fresh eyes  
-o check that hyperlinks work  
+* check that hyperlinks work  
 o re-spellcheck
 
 version 1.24.0
@@ -66,7 +66,7 @@ Semantic Changes / Changes to Chapel Language
   (see https://chapel-lang.org/docs/1.24/language/spec/conversions.html#implicit-conversions-for-initialization-and-assignment)
 * changed type inference for `out` intent to be more similar to `return`  
   (see https://chapel-lang.org/docs/1.24/language/spec/procedures.html#the-out-intent)
-* made `out` argument types no longer impact function resolution
+* made `out` argument types no longer impact function resolution  
   (see https://chapel-lang.org/docs/master/language/spec/procedures.html#function-resolution)
 * updated copy elision and split initialization to apply within `local` blocks  
   (e.g., `var x; local { x = 1; }` now works for `--no-local` compilations)  
@@ -111,7 +111,7 @@ Feature Improvements
 * extended tuples to support indexing by boolean expressions  
   (e.g., `("hi", "there")[myBoolExpr]` is now supported)
 * extended copy elision to support local variables within `if`/`else` blocks
-* adjusted `.targetLocales` on arrays and domains to return a reference  
+* adjusted `.targetLocales` on arrays and domains to return by reference  
   (see https://chapel-lang.org/docs/1.24/builtins/ChapelArray.html#ChapelArray.targetLocales)
 
 Deprecated / Unstable / Removed Language Features
@@ -164,7 +164,7 @@ Standard Domain Maps (Layouts and Distributions)
 Performance Optimizations / Improvements
 ----------------------------------------
 * improved the scalability and performance of the `--cache-remote` option  
-  (see `--cache-remote` in https://chapel-lang.org/docs/1.24/usingchapel/man.html)
+  (see `--[no-]cache-remote` in https://chapel-lang.org/docs/1.24/usingchapel/man.html)
 * enabled `--cache-remote` by default, reducing communication in many programs
 * added a new copy aggregation optimization, enabled by `--auto-aggregation`  
   (e.g. `forall i in A.domain { A[i] = A[foo(i)]; }` will use aggregation)
