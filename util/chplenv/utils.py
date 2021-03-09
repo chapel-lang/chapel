@@ -45,7 +45,7 @@ def try_run_command(command, cmd_input=None):
                                    stderr=subprocess.PIPE,
                                    stdin=subprocess.PIPE)
     except OSError:
-        return False, 0, None, None
+        return (False, 0, None, None)
     byte_cmd_input = str.encode(cmd_input, "utf-8") if cmd_input else None
     output = process.communicate(input=byte_cmd_input)
     return (True, process.returncode, output[0].decode("utf-8"),
