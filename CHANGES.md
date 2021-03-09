@@ -14,6 +14,8 @@ Syntactic / Naming Changes
 
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
+* method calls now respect privacy and limitation clauses of `use`/`import`
+  (see TODO)
 
 Namespace Changes
 -----------------
@@ -22,9 +24,16 @@ Namespace Changes
 
 New Features
 ------------
+* added an `operator` keyword for defining operator overloads
+  (see https://chapel-lang.org/docs/1.24/language/spec/procedures.html#procedure-definitions)
+* added the ability to define operators as methods on a type
+  (see TODO)
 
 Feature Improvements
 --------------------
+* improved handling of methods with respect to `use` and `import` statements
+  (see https://chapel-lang.org/docs/1.24/language/spec/modules.html#except-and-only-lists
+   and https://chapel-lang.org/docs/1.24/language/spec/modules.html#importing-modules)
 * extended tuples to support indexing by boolean expressions
   (e.g., `("hi", "there")[myBoolExpr]` is now supported)
 * extended split initialization to support `local` blocks
@@ -32,17 +41,21 @@ Feature Improvements
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
+* removed old warning about constructors to initializers transition
 
 Deprecated / Removed Library Features
 -------------------------------------
+* removed an old warning related to changing from constructors to initializers
 
 Standard Library Modules
 ------------------------
+* added a new `splitExt()` routine to the `Path` module
+  (see https://chapel-lang.org/docs/1.24/modules/standard/Path.html#Path.splitExt)
 
 Package Modules
 ---------------
-* extended sort() to work with arrays with indices other than default `int`
-* explicitly restricted sort() to only support 1D rectangular arrays
+* extended `sort()` to work with arrays with indices other than default `int`
+* explicitly restricted `sort()` to only support 1D rectangular arrays
   (see https://chapel-lang.org/docs/1.24/modules/packages/Sort.html#Sort.sort)
 * fixed the implementation of `DistBag.clear()` in the 'DistributedBag' package
 
@@ -73,6 +86,8 @@ Memory Improvements
 
 Documentation
 -------------
+* documented the concept of tertiary methods
+  (see https://chapel-lang.org/docs/1.24/language/spec/methods.html)
 * reorganized the list of standard Chapel modules into categories
   (see https://chapel-lang.org/docs/1.24/modules/standard.html)
 * other general fixes and improvements to the language specification
@@ -82,6 +97,9 @@ Documentation
   (see https://chapel-lang.org/docs/1.24/modules/standard/CommDiagnostics.html)
 * documented the ability to interact with `extern` C unions
   (see https://chapel-lang.org/docs/1.24/language/spec/interoperability.html#referring-to-external-c-structs-and-unions)
+* updated the Quickstart instructions to no longer reference its old location
+  (see https://chapel-lang.org/docs/1.24/usingchapel/QUICKSTART.html)
+
 
 Syntax Highlighting
 -------------------
@@ -95,6 +113,7 @@ Example Codes
 
 Portability
 -----------
+* added support for Python 3 in cases where we'd previously relied on Python 2
 
 Compiler Flags
 --------------
@@ -127,11 +146,20 @@ Execution-time Checks
 
 Bug Fixes
 ---------
+* fixed a bug in generic functions that `import` non-module symbols
+* fixed several bugs due to missing `use` and `import` statements
+* fixed a bug in which `chpldoc` dropped parentheses, changing code's meaning
+* fixed several bugs relating to how `chpldoc` renders initializing expressions
+* fixed a bug in `chpldoc` with `nil` default values
+* fixed a bug in `chpldoc` with generic type instantiations
+* fixed the rendering of 1-tuples in `chpldoc`
+* fixed a bug in which `chpldoc` would output an extra space after `.type`
 * fixed an internal error when `cobegin` statements contained syntax errors
 * fixed an internal error related to casting arrays to borrowed classes
 
 Platform-specific bug fixes
 ---------------------------
+* fixed the `protobuf` plugin to build on OSX
 * fixed a race under GASNet's `ibv` substrate on PowerPC
 
 Packaging / Configuration Changes
@@ -147,6 +175,8 @@ Third-Party Software Changes
 * upgraded LLVM to version 11.0.1
 * upgraded GMP to version 6.2.1
 * upgraded RE2 to version 2021-02-02
+* updated Python packages used for `chpldoc` to Python 3-compatible versions
+* returned to downloading Chapel's Sphinx domain from PyPI rather than bundling
 
 Developer-oriented changes: Process
 -----------------------------------
@@ -170,6 +200,7 @@ Developer-oriented changes: Module changes
 
 Developer-oriented changes: Makefiles
 -------------------------------------
+* updated Makefiles to use Python 3 where possible, or fall back on Python 2
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
@@ -184,7 +215,8 @@ Developer-oriented changes: Runtime improvements
 
 Developer-oriented changes: Testing System
 ------------------------------------------
-
+* updated testing system to rely on, and be compatible with, Python 3
+* fixed issue with including additional binary files when comparing test output
 
 version 1.23.0
 ==============
