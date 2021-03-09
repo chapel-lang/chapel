@@ -194,6 +194,7 @@ Memory Improvements
 * closed a memory leak for `defer` statements that contain initializations
 * closed a memory leak that happened when `Regexp.compile()` fails and throws
 * closed a memory leak in `ReplicatedDist`
+* closed a memory leak when combining `out` intents and array returns
 
 Documentation
 -------------
@@ -234,6 +235,10 @@ Syntax Highlighting
 
 Example Codes
 -------------
+* added a new primer for `forall` loops  
+  (see https://chapel-lang.org/docs/1.24/primers/forallLoops.html)
+* added a description of task intents to the 'Task Parallelism' primer  
+  (see https://chapel-lang.org/docs/1.24/primers/taskParallel.html#task-intents)
 * refreshed the 'Parallel Iterators' primer with respect to content and order  
   (see https://chapel-lang.org/docs/1.24/primers/parIters.html)
 * updated the example codes to use explicit reads/writes on `sync`/`single`
