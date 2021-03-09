@@ -33,7 +33,7 @@ class CommandError(Exception):
     pass
 
 
-def try_run_command(command, stdout=True, stderr=False, cmd_input=None):
+def try_run_command(command, cmd_input=None):
     """Command subprocess wrapper tolerating failure to find or run the cmd.
        For normal usage the vanilla run_command() may be simpler to use.
        This should be the only invocation of subprocess in all chplenv scripts.
@@ -45,37 +45,30 @@ def try_run_command(command, stdout=True, stderr=False, cmd_input=None):
                                    stderr=subprocess.PIPE,
                                    stdin=subprocess.PIPE)
     except OSError:
-        return False, 0, ''
+        return False, 0, None, None
     byte_cmd_input = str.encode(cmd_input, "utf-8") if cmd_input else None
     output = process.communicate(input=byte_cmd_input)
-    output = (output[0].decode("utf-8"), output[1].decode("utf-8"))
-    if stdout and stderr:
-        return True, process.returncode, output
-    elif stdout:
-        return True, process.returncode, output[0]
-    elif stderr:
-        return True, process.returncode, output[1]
-    else:
-        return True, process.returncode, ''
+    return (True, process.returncode, output[0].decode("utf-8"),
+            output[1].decode("utf-8"))
 
 
 def run_command(command, stdout=True, stderr=False, cmd_input=None):
     """Command subprocess wrapper.
        This is the usual way to run a command and collect its output."""
-    exists, returncode, myOutput = try_run_command(command, True, True,
-                                                   cmd_input)
+    exists, returncode, my_stdout, my_stderr = try_run_command(command,
+                                                               cmd_input)
     if not exists:
         error("command not found: {0}".format(command[0]), OSError)
     if returncode != 0:
         error("command failed: {0}\noutput was:\n{1}".format(command,
-                                                             myOutput[1]),
+                                                             my_stderr),
               CommandError)
     if stdout and stderr:
-        return myOutput
+        return my_stdout, my_stderr
     elif stdout:
-        return myOutput[0]
+        return my_stdout
     elif stderr:
-        return myOutput[1]
+        return my_stderr
     else:
         return None
 
