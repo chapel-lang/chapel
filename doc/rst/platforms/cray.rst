@@ -25,7 +25,9 @@ installed, do the following:
 
 1) Ensure this required module is loaded.  Normally it will be loaded
    for you, but under some circumstances you may need to load or
-   restore it yourself::
+   restore it yourself:
+
+   .. code-block:: sh
 
       PrgEnv-cray or PrgEnv-gnu
 
