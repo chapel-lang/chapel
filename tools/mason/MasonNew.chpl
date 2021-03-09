@@ -20,6 +20,7 @@
 
 
 use ArgumentParser;
+use FileHashing;
 use FileSystem;
 use IO;
 use MasonEnv;
@@ -28,7 +29,10 @@ use MasonModify;
 use MasonUpdate;
 use MasonUtils;
 use Path;
+use Sort;
 use Subprocess;
+use TOML;
+
 
 
 /*
@@ -271,6 +275,7 @@ proc InitProject(dirName, packageName, vcs, show,
     makeModule(dirName, fileName=packageName);
     makeTestDir(dirName);
     makeExampleDir(dirName);
+    updateTomlWithChecksum(path=dirName);
     writeln("Created new library project: " + dirName);
   }
   else {
@@ -292,6 +297,19 @@ proc addGitIgnore(dirName: string) {
   var GIwriter = gitIgnore.writer();
   GIwriter.write(toIgnore);
   GIwriter.close();
+}
+
+/* Recursively finds the files & directories and adds
+   the candidate files to the `paths` set.
+ */
+proc getPaths(dirName: string, ref paths: domain(string)) {
+  if isDir(dirName) {
+    for path in findfiles(dirName, recursive=true) {
+      paths += relativeRealPath(path);
+    }
+  } else {
+    writeln("Error: not a directory ", dirName);
+  }
 }
 
 proc getBaseTomlString(packageName: string, version: string, chapelVersion: string, license: string) {
@@ -324,6 +342,19 @@ proc makeBasicToml(dirName: string, path: string, version: string,
   var tomlWriter = tomlFile.writer();
   tomlWriter.write(baseToml);
   tomlWriter.close();
+}
+
+/* Updates the Mason.toml with checksum */
+proc updateTomlWithChecksum(path: string) {
+  var paths: domain(string);
+  // Find files based on arguments and store them in paths
+  getPaths(dirName=path, paths);
+  var hash = computeHash(paths);
+  var tomlPath = path+"/Mason.toml";
+  const toParse = open(tomlPath, iomode.r);
+  const tomlFile = owned.create(parseToml(toParse));
+  tomlFile["brick"]!.set("CheckSum", hash);
+  generateToml(tomlFile, tomlPath);
 }
 
 /* Creates the src directory */
