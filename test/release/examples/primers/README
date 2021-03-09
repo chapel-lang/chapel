@@ -15,6 +15,7 @@ demonstrate Chapel feature areas in detail.
      errorHandling.chpl          : Error handling system
      FFTWlib.chpl                : the FFTW standard library
      fileIO.chpl                 : File I/O example using arrays
+     forallLoops.chpl            : Forall loops - data parallel constructs
      genericClasses.chpl         : Defining and using generic classes
      iterators.chpl              : Iterator examples
      LAPACKlib.chpl              : the LAPACK standard library
