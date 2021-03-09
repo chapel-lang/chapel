@@ -163,31 +163,31 @@ Task Intents and Shadow Variables
 ---------------------------------
 
 A forall loop may refer to some variables declared outside the loop,
-known as "outer variables". If so, "shadow variables" are introduced.
-Each task created by the parallel iterator gets its own set of
-shadow variables, one per outer variable.
+known as "outer variables". When it does, "shadow variables" are
+introduced. Each task created by the parallel iterator gets its own set
+of shadow variables, one per outer variable.
 
  - Each shadow variable behaves as if it were a formal argument
-   of the task function for the task. (Task functions are described in
-   :ref:`the language spec <Chapter-Task_Parallelism_and_Synchronization>`).
+   of a function that implements the task's work. (These "task
+   functions" are described in :ref:`the language spec
+   <Chapter-Task_Parallelism_and_Synchronization>`).
    The outer variable is passed to this formal argument according to
-   the :ref:`argument intent <Argument_Intents>`  associated with
+   the :ref:`argument intent <Argument_Intents>` associated with
    the shadow variable, which is called a "task intent".
 
- - The name of an outer variable within the lexical scope of the loop
-   body refers implicitly to the corresponding shadow variable. If the
-   parallel iterator causes multiple iterations of the loop to be
-   executed by the same task, these iterations refer to the same set
-   of shadow variables.
+ - References within a task that seem to refer to an outer variable
+   will actually be referring to the corresponding shadow variable
+   owned by the task. If the parallel iterator causes multiple
+   iterations of the loop to be executed by the same task, these
+   iterations refer to the same set of shadow variables.
 
  - Each shadow variable is deallocated at the end of its task.
 
 The default argument intent (:ref:`The_Default_Intent`) is used by default.
 For numeric types, this implies capturing the value of the outer
 variable by the time the task starts executing. Arrays are passed by
-reference, and so are sync, single, and atomic variables
+reference, as are sync, single, and atomic variables
 (:ref:`primers-syncsingle`, :ref:`primers-atomics`).
-
 */
 
 var outerIntVariable = 0;
