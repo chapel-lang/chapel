@@ -1,12 +1,6 @@
 Release Changes List
 ====================
 
-TODO:  
-o add late-breaking entries  
-o re-read rendered version with fresh eyes  
-* check that hyperlinks work  
-o re-spellcheck
-
 version 1.24.0
 ==============
 
