@@ -11,9 +11,19 @@ Highlights (see subsequent sections for further details)
 
 Syntactic / Naming Changes
 --------------------------
+* `foreach` is now reserved as a keyword for future use
+  (see https://chapel-lang.org/docs/1.24/language/spec/lexical-structure.html#keywords)
 
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
+* added errors for missing conversions between types
+  (e.g. if `=` is provided then `init=` and `:` must be as well)
+  (see https://chapel-lang.org/docs/1.24/language/spec/conversions.html#implicit-conversions-for-initialization-and-assignment)
+* changed type inference for `out` intent to be more similar to `return`
+  (see https://chapel-lang.org/docs/1.24/language/spec/procedures.html#the-out-intent)
+* updated copy elision and split initialization to apply within local blocks
+  (see https://chapel-lang.org/docs/1.24/language/spec/variables.html#split-inialization
+   and https://chapel-lang.org/docs/1.24/language/spec/variables.html#copy-elision)
 * method calls now respect privacy and limitation clauses of `use`/`import`
   (see https://chapel-lang.org/docs/1.24/language/spec/modules.html#except-and-only-lists
    and https://chapel-lang.org/docs/1.24/language/spec/modules.html#importing-modules)
@@ -29,6 +39,8 @@ New Features
   (see https://chapel-lang.org/docs/1.24/language/spec/procedures.html#procedure-definitions)
 * added the ability to define operators as methods on a type
   (see https://chapel-lang.org/docs/1.24/technotes/operatorMethods.html)
+* added user-defined cast operations via `operator :`
+  (see https://chapel-lang.org/docs/1.24/language/spec/conversions.html#user-defined-casts)
 
 Feature Improvements
 --------------------
@@ -39,9 +51,15 @@ Feature Improvements
   (e.g., `("hi", "there")[myBoolExpr]` is now supported)
 * extended split initialization to support `local` blocks
   (e.g., `var x; local { x = 1; }` now works for '--no-local' compilations)
+* adjusted `.targetLocales` on arrays and domains to return a reference
+  (see https://chapel-lang.org/docs/1.24/builtins/ChapelArray.html#ChapelArray.targetLocales)
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
+* deprecated support for implicit reads and writes of `sync`/`single` variables
+  (DOC TODO)
+* removed support for casts from `c_void_ptr` to non-nilable class types
+* removed support for `domain.member` and `range.member`
 * removed old warning about constructors to initializers transition
 
 Deprecated / Removed Library Features
@@ -50,8 +68,16 @@ Deprecated / Removed Library Features
 
 Standard Library Modules
 ------------------------
-* added a new `splitExt()` routine to the `Path` module
+* added support for initializing a `list` with no declared element type
+  (e.g., `var x: list = 1..2;` is now supported)
+* added support for initializing a `list` using an iterator expression
+  (e.g., `var x: list(int) = for i in 1..10 do i;` is now supported)
+* `isSubtype()` and related functions now appear in the 'Types' module
+  (see https://chapel-lang.org/docs/1.24/modules/standard/Types.html#Types.isSubtype)
+* added a new `splitExt()` routine to the 'Path' module
   (see https://chapel-lang.org/docs/1.24/modules/standard/Path.html#Path.splitExt)
+* added counters for `--cache-remote` hits and misses to 'CommDiagnostics'
+  (see https://chapel-lang.org/docs/1.24/modules/standard/CommDiagnostics.html#CommDiagnostics.chpl_commDiagnostics.cache_get_hits)
 
 Package Modules
 ---------------
@@ -74,6 +100,8 @@ Interoperability Improvements
 
 Performance Optimizations / Improvements
 ----------------------------------------
+* improved the scalability and performance of the `--cache-remote` option
+  (see `--cache-remote` in https://chapel-lang.org/docs/1.24/usingchapel/man.html)
 * enabled `--cache-remote` by default, reducing communication in many programs
 * improved the performance of scans on 1D local and `Block` arrays
 * parallelized scan operations on 1D `Replicated` arrays
@@ -84,6 +112,8 @@ Compilation-Time / Generated Code Improvements
 
 Memory Improvements
 -------------------
+* fixed a memory leak for type aliases of arrays of arrays
+  (e.g. `type arrOfArr = [1..2][100..200] int;`)
 
 Documentation
 -------------
@@ -92,8 +122,16 @@ Documentation
 * reorganized the list of standard Chapel modules into categories
   (see https://chapel-lang.org/docs/1.24/modules/standard.html)
 * other general fixes and improvements to the language specification
+* added documentation for `min` and `max` to the 'Math' module documentation
+  (see https://chapel-lang.org/docs/1.24/modules/standard/Math.html#Math.max)
 * added documentation for `sys_getenv()`
   (see https://chapel-lang.org/docs/1.24/modules/standard/Sys.html#Sys.sys_getenv)
+* `vectorizeOnly()` is now documented in its own page 'VectorizingIterator'
+  (see https://chapel-lang.org/docs/1.24/modules/standard/VectorizingIterator.html)
+* moved several modules out of the 'Built-in Types and Functions' category
+  (see https://chapel-lang.org/docs/1.24/modules/standard/ChapelEnv.html,
+       https://chapel-lang.org/docs/1.24/modules/standard/ChapelIO.html,
+   and https://chapel-lang.org/docs/1.24/modules/standard/VectorizingIterator.html)
 * improved the formatting of code blocks in the 'CommDiagnostics' documentation
   (see https://chapel-lang.org/docs/1.24/modules/standard/CommDiagnostics.html)
 * documented the ability to interact with `extern` C unions
@@ -106,6 +144,9 @@ Syntax Highlighting
 -------------------
 * added Chapel syntax highlighting support for the 'geany' editor
   (see `$CHPL_HOME/highlight/geany/README.md`)
+* added LaTeX syntax highlighting for Chapel via the `lstlisting` package
+  (see `$CHPL_HOME/highlight/latex/`)
+
 
 Example Codes
 -------------
@@ -115,6 +156,10 @@ Example Codes
 Portability
 -----------
 * added support for Python 3 in cases where we'd previously relied on Python 2
+  - updated Python support scripts to work on systems with only `python3`
+  - improved compatibility of support scripts with Python 3
+  - `chpldoc` and `c2chapel` now require Python 3
+  - migrated Python dependencies from `virtualenv` to a Python application
 
 Compiler Flags
 --------------
@@ -138,9 +183,15 @@ Generated Executable Flags
 
 Error Messages / Semantic Checks
 --------------------------------
+* improved the callstack for error messages with respect to inline functions
+* improved the callstack for error messages occuring later in compilation
 * improved the error when a 'type' actual is passed to a value varargs formal
 * improved the wording and formatting of resolution-oriented error messages
 * squashed method vs. standalone mismatches when printing function candidates
+* improved the error message when split initialization is used with `noinit`
+  (e.g. `var x; x = noinit;`)
+* improved error messages to better distinguish initialization and assignment
+* report an error for default initialization of a record with typeless fields
 * added a clearer compiler error when 'SysCTypes.chpl' is missing
 * added a compilation error in the HDF5 package for unsupported types
 
@@ -149,8 +200,15 @@ Execution-time Checks
 
 Bug Fixes
 ---------
+* fixed an error that occurred when printing out certain `real` numbers
+* fixed a bug handling end-of-file when matching a regular expression
+* fixed several problems with I/O of `owned` and `shared` classes
 * fixed a bug in generic functions that `import` non-module symbols
 * fixed several bugs due to missing `use` and `import` statements
+* fixed a bug where a nested function call in a type alias was invoked twice
+* fixed a bug when `compilerError()` appeared in an unused copy initializer
+* fixed a problem with stack allocation for aligned types with `--llvm`
+* fixed a problem passing an array slice to an `inout` formal argument
 * fixed a bug in which `chpldoc` dropped parentheses, changing code's meaning
 * fixed several bugs relating to how `chpldoc` renders initializing expressions
 * fixed a bug in `chpldoc` with `nil` default values
@@ -198,11 +256,14 @@ Developer-oriented changes: Documentation
 
 Developer-oriented changes: Module changes
 ------------------------------------------
+* improved the performance of the undocumented two-array radix sorts
 * fixed a bug where `chpl_nodeID` wasn't generating shadow variables properly
 * removed `inline` from some nontrivial IO routines
 
 Developer-oriented changes: Makefiles
 -------------------------------------
+* adjusted `make docs` to do an incremental build
+* updated `make docs` to create the `chpl` man page
 * updated Makefiles to use Python 3 where possible, or fall back on Python 2
 
 Developer-oriented changes: Compiler Flags
@@ -210,11 +271,16 @@ Developer-oriented changes: Compiler Flags
 
 Developer-oriented changes: Compiler improvements/changes
 ---------------------------------------------------------
+* type conversions no longer fall back on default-init and then assign
+* added a pragma to allow a function to exist only for `chpldoc`
+* added a pragma to indicate to `chpldoc` when a module is included by default
+* adjusted the code generator to support experimental GPU code generation
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
 * added initial support for GASNet's `ucx` substrate
 * fixed a race in counting running tasks
+* adjusted the runtime headers to compile as C++
 
 Developer-oriented changes: Testing System
 ------------------------------------------
