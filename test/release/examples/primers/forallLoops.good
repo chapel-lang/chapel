@@ -1,51 +1,44 @@
 After setting up, A is:
-1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0
+1.0 2.0 3.0 4.0 5.0
 
 After initialization, B is:
-3.0 6.0 9.0 12.0 15.0 18.0 21.0 24.0 27.0
+3.0 6.0 9.0 12.0 15.0
 
 After a zippered loop, C is:
-10.301 20.602 30.903 41.204 51.505 61.806 72.107 82.408 92.709
+10.301 20.602 30.903 41.204 51.505
 
 in onlySerial iteration #1
 in onlySerial iteration #2
 in onlySerial iteration #3
 in onlySerial iteration #4
 in onlySerial iteration #5
-in onlySerial iteration #6
-in onlySerial iteration #7
-in onlySerial iteration #8
-in onlySerial iteration #9
 
 The result of may-parallel expression, D is:
-8.301 16.602 24.903 33.204 41.505 49.806 58.107 66.408 74.709
+8.301 16.602 24.903 33.204 41.505
 
-shadow outerIntVariable is: 1
-shadow outerIntVariable is: 1
-shadow outerIntVariable is: 1
-shadow outerIntVariable is: 1
-shadow outerIntVariable is: 1
-shadow outerIntVariable is: 1
-shadow outerIntVariable is: 1
-shadow outerIntVariable is: 1
-shadow outerIntVariable is: 1
+shadow outerIntVariable is: 0
+shadow outerIntVariable is: 0
+shadow outerIntVariable is: 0
+shadow outerIntVariable is: 0
+shadow outerIntVariable is: 0
 
 After a loop with default intents, D is:
-8.801 17.102 25.403 33.704 42.005 50.306 58.607 66.908 75.209
-outerIntVariable is: 2
-outerAtomicVariable is: 27
+8.801 17.102 25.403 33.704 42.005
+outerIntVariable is: 1
+outerAtomicVariable is: 5
 
 After a loop with explicit intents:
-outerIntVariable is: 2
+outerIntVariable is: 1
 outerRealVariable is: 2.0
 
+outerIntVariable before the loop is: 1
 After a loop with reduce intents:
-outerIntVariable = 47
-outerMaxVariable = 8
+outerIntVariable = 16
+outerMaxVariable = 4
 
 After a loop with task-private variables:
-outerIntVariable is: 141
+outerIntVariable is: 48
 
 After MyRecord.myMethod, myR is:
-(arrField = 2 4 6 8 10 12 14 16 18, intField = 0)
+(arrField = 2 4 6 8 10, intField = 0)
 
