@@ -145,6 +145,8 @@ Performance Optimizations / Improvements
 Compilation-Time / Generated Code Improvements
 ----------------------------------------------
 * reduced the compilation time of zippered `forall` loops
+* improved generated code for `--llvm` to reduce communication for `+=` ops
+* set CHPL_OPTIMIZE/DEBUG based on user settings, not to match the runtime
 
 Memory Improvements
 -------------------
@@ -246,6 +248,7 @@ Error Messages / Semantic Checks
 * report an error for default initialization of a record with typeless fields
 * added a clearer compiler error when 'SysCTypes.chpl' is missing
 * added a compilation error in the HDF5 package for unsupported types
+* added an error for record fields that would be misaligned for `--llvm`
 
 Execution-time Checks
 ---------------------
@@ -259,6 +262,9 @@ Bug Fixes
 * fixed several bugs due to missing `use` and `import` statements
 * fixed an internal error with certain sparse subdomain declarations
 * fixed a bug in which the array swap optimization was applied too broadly
+* fixed a potential deadlock in `map.toArray()` methods
+* fixed a bug involving incorrect sign extensions on `uint`s with `--llvm`
+* fixed a bug in debugging support for programs compiled with `--llvm`
 * fixed a bug where a nested function call in a type alias was invoked twice
 * fixed a bug when `compilerError()` appeared in an unused copy initializer
 * fixed a problem with stack allocation for aligned types with `--llvm`
@@ -280,6 +286,7 @@ Platform-specific bug fixes
 
 Packaging / Configuration Changes
 ---------------------------------
+* added `bundled` options for several `CHPL_*` environment variables
 * added a Lua/Lmod modulefile for Chapel on HPE Cray XC and EX systems
 * expanded support for HPE Cray EX systems
   (see https://chapel-lang.org/docs/1.24/platforms/cray.html#getting-started-with-chapel-on-hpe-cray-ex-systems)
