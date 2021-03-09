@@ -8,6 +8,35 @@ Twenty-seventh public release of Chapel, March 18, 2021
 
 Highlights (see subsequent sections for further details)
 --------------------------------------------------------
+* language:
+  - significantly improved the syntax and semantics of overloading operators
+  - clarified the relationship between various type conversion mechanisms
+  - improved ergonomics for using nilable classes within conditionals and loops
+  - improved the definition and handling of tertiary methods
+  - unified the handling of `out` intents and `return` statements
+  - added initial support for defining constrained generic interfaces
+* performance:
+  - improved the performance of `--cache-remote` and enabled it by default
+  - added a new optimization that automatically aggregates communications
+  - improved the generality and reporting of the auto-local-access optimization
+  - dramatically reduced the overheads of tracking a domain's arrays
+  - improved performance for various scan operations on 1D arrays
+  - improved compile times for programs using zippered `forall` loops
+* libraries:
+  - refactored the 'Memory' module and added a new 'Initialization' sub-module
+  - added a new 'UnrolledLinkedList' module
+  - improved the flexibility of initializing lists
+  - added support for 'PrivateDist' arrays of non-nilable classes
+  - updated the 'LinearAlgebra' module to use 0-based indexing
+  - improved the generality of `sort()` in the 'Sort' module
+  - refactored the documentation and organization of the standard libraries
+* misc:
+  - added syntax highlighting for 'geany' and LaTeX
+  - significantly improved `ofi` portability, performance, and selection
+  - closed all remaining known memory leaks
+  - significantly improved the readiness of the LLVM-based compiler back-end
+  - removed Python 2 dependences in favor of Python 3
+  - improved several launcher choices and options
 
 Syntactic / Naming Changes
 --------------------------
@@ -129,10 +158,9 @@ Performance Optimizations / Improvements
     (e.g. `forall i in ASlice.domain { ASlice[i] = 5; }` will be optimized)  
   - indices yielded from follower iterators  
     (e.g. `forall (a,i) in zip(A, A.domain) { A[i] = 5; }` will be optimized)
-* improved the output of the `--report-auto-local-access` flag
+* reduced overheads for managing arrays declared over `var` domains
 * improved the performance of scans on 1D local and `Block` arrays
 * parallelized scan operations on 1D `Replicated` arrays
-* reduced overheads for managing arrays declared over `var` domains
 
 Compilation-Time / Generated Code Improvements
 ----------------------------------------------
@@ -338,6 +366,7 @@ Developer-oriented changes: Compiler Flags
 * added a `--[no-]report-auto-aggregation` flag for auto-aggr. opt. output
 * added a `--[no-]infer-implements-decls` flag for inferring `implements`
 * added a `--print-additional-errors` flag for post-`compilerError()` errors
+* improved the output of the `--report-auto-local-access` flag
 * removed the outdated `--[no-]legacy-classes` flag
 
 Developer-oriented changes: Compiler improvements/changes
