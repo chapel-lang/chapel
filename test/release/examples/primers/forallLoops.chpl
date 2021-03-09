@@ -36,7 +36,7 @@ In the following example, the forall loop iterates over the array indices
 in parallel:
 */
 
-config const n = 9;
+config const n = 5;
 var A: [1..n] real;
 
 forall i in 1..n {
@@ -66,7 +66,7 @@ writeln(B);
 writeln();
 
 /*
-.. primers-forallLoops-must-parallel-zippered:
+.. _primers-forallLoops-must-parallel-zippered:
 
 Zippered "must-parallel" forall statement
 -----------------------------------------
@@ -96,7 +96,7 @@ writeln();
 The leader iterable in this example is ``A``. Since this array is not
 distributed, all loop iterations will be executed on the current locale.
 
-.. primers-forallLoops-may-parallel:
+.. _primers-forallLoops-may-parallel:
 
 "May-parallel" forall statement
 -------------------------------
@@ -153,7 +153,7 @@ would also determine iteration locality.
 Domains declared without a ``dmapped`` clause, including
 default rectangular and default associative domains, as well as
 arrays over such domains, provide both serial and parallel
-iterators. So do domain distributed over standard distributions,
+iterators. So do domains distributed over standard distributions,
 such as Block and Cyclic (:ref:`primers-distributions`), and
 arrays over such domains. The parallel iterators provided
 by standard distributions place each loop iteration on the
@@ -162,52 +162,60 @@ locale where the corresponding index or array element is placed.
 Task Intents and Shadow Variables
 ---------------------------------
 
-A forall loop may name some variables declared outside the loop,
-or "outer variables". If so, "shadow variables" are introduced.
+A forall loop may refer to some variables declared outside the loop,
+known as "outer variables". If so, "shadow variables" are introduced.
 Each task created by the parallel iterator gets its own set of
 shadow variables, one per outer variable.
 
  - Each shadow variable behaves as if it were a formal argument
-   of the task function for the task. The outer variable is passed
-   to this formal argument according to the argument intent
-   associated with the shadow variable, which is called a "task intent".
+   of the task function for the task. (Task functions are described in
+   :ref:`the language spec <Chapter-Task_Parallelism_and_Synchronization>`).
+   The outer variable is passed to this formal argument according to
+   the :ref:`argument intent <Argument_Intents>`  associated with
+   the shadow variable, which is called a "task intent".
 
  - The name of an outer variable within the lexical scope of the loop
-   body refers implicitly to the corresonding shadow variable. If the
+   body refers implicitly to the corresponding shadow variable. If the
    parallel iterator causes multiple iterations of the loop to be
    executed by the same task, these iterations refer to the same set
    of shadow variables.
 
  - Each shadow variable is deallocated at the end of its task.
 
-The default argument intent is used by default. For numeric types,
-this implies capturing the value of the outer variable by the time
-the task starts executing. Arrays are passed by reference, and so are
-sync, single, and atomic variables.
+The default argument intent (:ref:`The_Default_Intent`) is used by default.
+For numeric types, this implies capturing the value of the outer
+variable by the time the task starts executing. Arrays are passed by
+reference, and so are sync, single, and atomic variables
+(:ref:`primers-syncsingle`, :ref:`primers-atomics`).
+
 */
 
-var outerIntVariable = 1;
+var outerIntVariable = 0;
 proc updateOuterVariable() {
   outerIntVariable += 1;  // always refers to the outer variable
 }
 var outerAtomicVariable: atomic int;
 
 forall i in 1..n {
-  if i == 1 then
-    updateOuterVariable();     // beware of potential for data races
+
+  D[i] += 0.5; // if multiple iterations of the loop update the same
+               // array element, it could lead to a data race
+
+  outerAtomicVariable.add(1);  // ok: concurrent updates are atomic
+
+  if i == 1 then           // ensure only one task updates outerIntVariable
+    updateOuterVariable(); // to avoid the risk of a data race
 
   // the shadow variable always contains the value as of loop start
   writeln("shadow outerIntVariable is: ", outerIntVariable);
-
-  D[i] += 0.5;                 // beware of potential for data races
-
-  outerAtomicVariable.add(3);  // ok: concurrent updates are atomic
 }
 
 writeln();
 writeln("After a loop with default intents, D is:");
 writeln(D);
+ // This variable is updated exactly once, so its value is 1.
 writeln("outerIntVariable is: ", outerIntVariable);
+ // This variable is incremented atomically n times, so its value is n.
 writeln("outerAtomicVariable is: ", outerAtomicVariable.read());
 writeln();
 
@@ -217,28 +225,31 @@ and ``reduce`` can be specified explicitly using a ``with`` clause.
 
 An ``in`` or ``const in`` intent creates a copy of the outer variable
 for each task. A ``ref`` or ``const ref`` makes the
-shadow variable an aliass for the outer variable.
+shadow variable an alias for the outer variable. Updates to a ``ref``
+shadow variable are reflected in the corresponding outer variable.
 */
 
 var outerRealVariable = 1.0;
 
 forall i in 1..n with (in outerIntVariable,
                        ref outerRealVariable) {
-  outerIntVariable += 1; // a per-task copy, never accessed concurrently
+  outerIntVariable += 1;    // a per-task copy, never accessed concurrently
 
-  if i == 1 then
-    outerRealVariable *= 2;  // beware of potential for data races
+  if i == 1 then            // ensure only one task accesses outerIntVariable
+    outerRealVariable *= 2; // to avoid the risk of a data race
 }
 
 writeln("After a loop with explicit intents:");
+ // This outer variable's value is unaffected by the loop
+ // because its shadow variables have the 'in' intent.
 writeln("outerIntVariable is: ", outerIntVariable);
 writeln("outerRealVariable is: ", outerRealVariable);
 writeln();
 
 /*
 A reduce intent can be used to compute reductions.
-The values of each reduce-intent shadow variable at the end of its task
-is combined onto its outer variable according to the specified reduction
+The value of each reduce-intent shadow variable at the end of its task
+is combined into its outer variable according to the specified reduction
 operation. Within loop body, the shadow variable represents the
 accumulation state produced by this task so far, starting from
 the reduction identity value at task startup. Values can be
@@ -246,8 +257,10 @@ combined onto this accumulation state using the reduction-specific
 operation or the ``reduce=`` operator.
 */
 
+ // The values of the outer variables before the loop will be included
+ // in the reduction result.
+writeln("outerIntVariable before the loop is: ", outerIntVariable);
 var outerMaxVariable = 0;
-// outerIntVariable's value before the loop will be included in the sum
 
 forall i in 1..n with (+ reduce outerIntVariable,
                        max reduce outerMaxVariable) {
@@ -273,16 +286,15 @@ Task-Private Variables
 
 A task-private variable is similar to an in-intent or ref-intent
 shadow variable in that it is initialized at the beginning of its
-task, shared by all loop iterations executed by the task, and
-deallocated at the end of the task. However, a task-private
+task and deallocated at the end of the task. However, a task-private
 variable is initialized without regard to any outer variable.
 
-A task-private variable is introduce using a with-clause
+A task-private variable is introduced using a with-clause
 in a way similar to a regular ``var``, ``const``, ``ref``,
 or ``const ref`` variable. A ``var`` or ``const`` variable
-must provide its type or initializing expression or both.
+must provide either its type or initializing expression, or both.
 As with a regular variable, it will be initialized
-to the default value of its type the initializing expression
+to the default value of its type if the initializing expression
 is not given. A ``ref`` or ``const ref`` variable must
 have the initializing expression and cannot declare its type.
 
@@ -296,11 +308,12 @@ forall i in 1..n with (var myReal: real,  // starts at 0 for each task
 
   myReal += 0.1;   // ok: never accessed concurrently
 
-  if i == 1 then
-    myRef *= 3;    // beware of potential for data races
+  if i == 1 then   // ensure only one task accesses outerIntVariable
+    myRef *= 3;    // to avoid the risk of a data race
 }
 
 writeln("After a loop with task-private variables:");
+ // outerIntVariable was updated through the task-private reference 'myRef'
 writeln("outerIntVariable is: ", outerIntVariable);
 writeln();
 
