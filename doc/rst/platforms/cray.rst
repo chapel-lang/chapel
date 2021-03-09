@@ -617,7 +617,7 @@ The gasnet communication layer has not yet been built or tested on EX
 systems.  We expect to provide it in the pre-built module no later than
 the 1.25.0 release.
 
-The new PALS launcher for EX systems is supported by CHapel 1.24.0, but
+The new PALS launcher for EX systems is supported by Chapel 1.24.0, but
 it has to be selected manually, by setting ``CHPL_LAUNCHER=pals``.  The
 default launcher selection cannot pick it by default.  We expect to add
 that support as soon as possible.
