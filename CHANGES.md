@@ -20,7 +20,7 @@ Highlights (see subsequent sections for further details)
   - improved ergonomics for using nilable classes within conditionals and loops
   - improved the definition and handling of tertiary methods
   - unified the handling of `out` intents and `return` statements
-  - added initial support for defining constrained generic interfaces
+  - added initial support for constrained generic interfaces
 * performance:
   - improved the performance of `--cache-remote` and enabled it by default
   - added a new optimization that automatically aggregates communications
@@ -55,7 +55,7 @@ Packaging / Configuration Changes
 Syntactic / Naming Changes
 --------------------------
 * `operator` is now reserved for defining operator overloads
-* `interface` is now reserved as a keyword to specify constrained generics
+* `interface`/`implements` are now reserved keywords for constrained generics
 * `foreach` is now reserved as a keyword for future use  
   (see https://chapel-lang.org/docs/1.24/language/spec/lexical-structure.html#keywords)
 
@@ -66,6 +66,8 @@ Semantic Changes / Changes to Chapel Language
   (see https://chapel-lang.org/docs/1.24/language/spec/conversions.html#implicit-conversions-for-initialization-and-assignment)
 * changed type inference for `out` intent to be more similar to `return`  
   (see https://chapel-lang.org/docs/1.24/language/spec/procedures.html#the-out-intent)
+* made `out` argument types no longer impact function resolution
+  (see https://chapel-lang.org/docs/master/language/spec/procedures.html#function-resolution)
 * updated copy elision and split initialization to apply within `local` blocks  
   (e.g., `var x; local { x = 1; }` now works for `--no-local` compilations)  
   (see https://chapel-lang.org/docs/1.24/language/spec/variables.html#split-initialization  
@@ -179,7 +181,7 @@ Compilation-Time / Generated Code Improvements
 ----------------------------------------------
 * reduced the compilation time of zippered `forall` loops
 * improved generated code for `--llvm` to reduce communication for `+=` ops
-* set CHPL_OPTIMIZE/DEBUG based on user settings, not to match the runtime
+* set `CHPL_OPTIMIZE`/`CHPL_DEBUG` based on user settings, not the runtime's
 
 Memory Improvements
 -------------------
