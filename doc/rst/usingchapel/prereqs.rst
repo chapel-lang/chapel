@@ -29,7 +29,7 @@ about your environment for using Chapel:
   * You have access to standard C and C++11 compilers. We test our code
     using a range of compilers on a nightly basis; these include
     relatively recent versions of gcc/g++, clang, and compilers from
-    Cray and Intel. If using GCC, we recommend GCC version 5 or newer.
+    HPE Cray and Intel. If using GCC, we recommend GCC version 5 or newer.
 
   * Building GMP requires an M4 macro processor.
 
