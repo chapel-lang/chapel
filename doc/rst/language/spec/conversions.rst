@@ -242,7 +242,7 @@ An implicit conversion for initialization or assignment occurs at each of
 the following program locations:
 
 -  In an assignment, the expression on the right-hand side of the
-   assignment is converted to the type of the expresssion on the
+   assignment is converted to the type of the expression on the
    left-hand side of the assignment.
 
 -  In a variable or field declaration that is not a ref variable,
