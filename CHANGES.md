@@ -126,9 +126,11 @@ Runtime Library Changes
 Launchers
 ---------
 * added a `lsf-gasnetrun_ibv` launcher for running on LSF(bsub) over InfiniBand
-* improved `slurm-srun` support for AWS auto-scaling
+  (see https://chapel-lang.org/docs/1.24/usingchapel/launcher.html#currently-supported-launchers)
 * improved launcher auto-detection on Cray CS systems
-* improved launcher auto-detection for GASNet's `udp` substrate
+  (see https://chapel-lang.org/docs/1.24/usingchapel/launcher.html#currently-supported-launchers)
+* improved `slurm-srun` support for AWS auto-scaling
+* improved auto-detection to always use `amudprun` for GASNet's `udp` substrate
 
 Generated Executable Flags
 --------------------------
