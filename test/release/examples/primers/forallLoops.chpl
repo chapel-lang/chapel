@@ -250,7 +250,7 @@ writeln();
 A reduce intent can be used to compute reductions.
 The value of each reduce-intent shadow variable at the end of its task
 is combined into its outer variable according to the specified reduction
-operation. Within loop body, the shadow variable represents the
+operation. Within the loop body, the shadow variable represents the
 accumulation state produced by this task so far, starting from
 the reduction identity value at task startup. Values can be
 combined onto this accumulation state using the reduction-specific
