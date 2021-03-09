@@ -5,7 +5,7 @@ After initialization, B is:
 3.0 6.0 9.0 12.0 15.0 18.0 21.0 24.0 27.0
 
 After a zippered loop, C is:
-10.3 20.6 30.9 41.2 51.5 61.8 72.1 82.4 92.7
+10.301 20.602 30.903 41.204 51.505 61.806 72.107 82.408 92.709
 
 in onlySerial iteration #1
 in onlySerial iteration #2
@@ -18,7 +18,7 @@ in onlySerial iteration #8
 in onlySerial iteration #9
 
 The result of may-parallel expression, D is:
-8.3 16.6 24.9 33.2 41.5 49.8 58.1 66.4 74.7
+8.301 16.602 24.903 33.204 41.505 49.806 58.107 66.408 74.709
 
 shadow outerIntVariable is: 1
 shadow outerIntVariable is: 1
@@ -31,7 +31,7 @@ shadow outerIntVariable is: 1
 shadow outerIntVariable is: 1
 
 After a loop with default intents, D is:
-8.8 17.1 25.4 33.7 42.0 50.3 58.6 66.9 75.2
+8.801 17.102 25.403 33.704 42.005 50.306 58.607 66.908 75.209
 outerIntVariable is: 2
 outerAtomicVariable is: 27
 

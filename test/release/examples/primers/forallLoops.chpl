@@ -7,26 +7,27 @@ data parallelism or engage :ref:`user-defined parallel iterators
 
 Like serial for-loops, forall loops can iterate over a data structure,
 an iterator, or a zippered combination of these. Unlike for-loops,
-multiple iterations of a forall-loop can potentially execute in parallel.
+multiple iterations of a forall loop can potentially execute in parallel.
 Parallelism is determined by the data structure or iterator being iterated
-over. For a zippered forall loop, parallelism is determined by the "leader",
-which is the first data structure or iterator in the zippered list.
+over.
 
 Chapel has forall statements and forall expressions. Each form has
-two varieties, "must-parallel" and "may-parallel".
+two varieties: "must-parallel" and "may-parallel".
 
  - The must-parallel forms are written using the ``forall`` keyword.
-   They require that the leader iterable provide a parallel iterator.
+   They require that the iterable provide a parallel iterator.
    Note that there are no requirements on the behavior of the parallel
    iterator. For example, it can execute serially, in which case
    the "must-parallel" loop that invokes it also executes serially.
 
- - The may-parallel forms are written using brackets ``[ ]``.
-   They invoke the parallel iterator if the leader provides it,
-   otherwise fall back on the serial iterator.
+ - The may-parallel forms are written using brackets ``[ ]``
+   (:ref:`primers-forallLoops-may-parallel`).
+   They invoke the parallel iterator if the iterable provides it,
+   and otherwise will fall back on the serial iterator.
 
 As with for-loops, the body of a forall statement is a statement or a
 a block statement, whereas the body of a forall expression is an expression.
+Both kinds are shown in the following sections.
 
 "Must-parallel" forall statement
 --------------------------------
@@ -47,13 +48,14 @@ writeln(A);
 writeln();
 
 /*
-If ``A`` were a distributed array, each loop iteration would be
-executed on the locale where the corresponding array element resides.
+If ``A`` were a distributed array (:ref:`primers-distributions`),
+each loop iteration would typically be executed on the locale where
+the corresponding array element resides.
 
 "Must-parallel" forall expression
 ---------------------------------
 
-The following forall-expression produces new values in parallel.
+The following forall expression produces new values in parallel.
 We store these values in a new array.
 */
 
@@ -64,28 +66,44 @@ writeln(B);
 writeln();
 
 /*
+.. primers-forallLoops-must-parallel-zippered:
+
 Zippered "must-parallel" forall statement
 -----------------------------------------
 
-We can iterate over multiple arrays in parallel with a zippered loop.
+Forall loops support zippered iteration over multiple iterables
+similarly to serial for-loops. For a zippered forall loop, parallelism
+is determined by the "leader" iterable, which is the first data structure
+or iterator in the zippered list.
+
+A zippered "must-parallel" forall loop requires that the leader iterable
+provide a "leader" iterator and all iterables provide "follower" iterators.
+These are described in the :ref:`parallel iterators primer
+<primers-parIters-leader-follower>`.
+
 Here we illustrate zippering arrays and domains:
 */
 
 var C: [1..n] real;
 forall (a, b, i) in zip(A, B, C.domain) do
-  C[i] = a * 10 + b / 10;
+  C[i] = a * 10 + b / 10 + i * 0.001;
 
 writeln("After a zippered loop, C is:");
 writeln(C);
 writeln();
 
 /*
+The leader iterable in this example is ``A``. Since this array is not
+distributed, all loop iterations will be executed on the current locale.
+
+.. primers-forallLoops-may-parallel:
+
 "May-parallel" forall statement
 -------------------------------
 
 The iterator ``onlySerial`` defined below does not have any parallel
-forms. Therefore the may-parallel loop ``[i in onlySerial(n)]``
-will accept it, executing its iterations serially:
+forms. Since ``[i in onlySerial(n)]`` is a may-parallel loop, it
+will accept the iterator, executing its iterations serially:
 */
 
 iter onlySerial(m: int) {
@@ -99,20 +117,24 @@ iter onlySerial(m: int) {
 writeln();
 
 /*
-Using the following must-parallel loop instead would cause
-a "parallel iterator is not found" error:
+If the user had supplied a parallel overload of the onlySerial() iterator,
+the above loop would invoke it instead.
+
+Using the following must-parallel loop would cause an error
+if onlySerial() does not have any parallel overloads:
 
   .. code-block:: chapel
 
-      forall i in onlySerial(n) {
+      forall i in onlySerial(n) { // error: a parallel iterator is not found
         writeln("in iteration #", i);
       }
 
 "May-parallel" forall expression
 --------------------------------
 
-Given that these arrays provide parallel iteration, the following
-may-parallel expression will be computed in parallel:
+Given that these are default rectangular arrays and therefore
+provide parallel iterators, the following may-parallel expression
+will be computed in parallel:
 */
 
 var D = [(a,b,c) in zip(A,B,C)] a + c - b;
@@ -122,9 +144,20 @@ writeln(D);
 writeln();
 
 /*
-As with must-parallel loops, if A were a distributed array,
-iteration locality while computing the above expression
-would be determined by A's domain map.
+As with must-parallel zippered loops, here A is the leader iterable
+(:ref:`primers-forallLoops-must-parallel-zippered`).
+Its parallel iterator will determine how this loop is parallelized.
+if A were a distributed array, its leader iterator, if defined,
+would also determine iteration locality.
+
+Domains declared without a ``dmapped`` clause, including
+default rectangular and default associative domains, as well as
+arrays over such domains, provide both serial and parallel
+iterators. So do domain distributed over standard distributions,
+such as Block and Cyclic (:ref:`primers-distributions`), and
+arrays over such domains. The parallel iterators provided
+by standard distributions place each loop iteration on the
+locale where the corresponding index or array element is placed.
 
 Task Intents and Shadow Variables
 ---------------------------------
