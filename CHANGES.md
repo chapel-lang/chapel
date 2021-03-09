@@ -327,6 +327,7 @@ Developer-oriented changes: Module changes
 ------------------------------------------
 * improved the performance of the undocumented two-array radix sorts
 * added private `TimSort` module and `timSort()` implementation to `Sort`
+* removed several annoying functions from the `ChapelIteratorSupport` module
 * fixed a bug where `chpl_nodeID` wasn't generating shadow variables properly
 * refactored 'Regexp' methods to avoid code duplication
 * removed `inline` from some nontrivial IO routines
@@ -343,6 +344,7 @@ Developer-oriented changes: Compiler Flags
 Developer-oriented changes: Compiler improvements/changes
 ---------------------------------------------------------
 * C++11 features can now be used / are now a requirement for the compiler
+* stopped using tuples for `zip` clauses in `forall` loops
 * type conversions no longer fall back on default-init and then assign
 * added a pragma to allow a function to exist only for `chpldoc`
 * added a pragma to indicate to `chpldoc` when a module is included by default
