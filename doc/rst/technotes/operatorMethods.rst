@@ -84,7 +84,7 @@ compiler searches for the method using the receiver's type (e.g. ``R`` in
 ``myR.method()`` supposing ``myR`` has type ``R``) definition point as well as
 any type definition points for parent classes.  However, operator invocations
 (such as ``a + b``) don't have a method receiver in the same way.  Instead, the
-compiler uses te types of all the operator's arguments to find operator methods
+compiler uses the types of all the operator's arguments to find operator methods
 defined along with the type.
 
 As with tertiary methods, ``import`` and ``use`` statements can be used to
