@@ -15,7 +15,8 @@ Syntactic / Naming Changes
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
 * method calls now respect privacy and limitation clauses of `use`/`import`
-  (see TODO)
+  (see https://chapel-lang.org/docs/1.24/language/spec/modules.html#except-and-only-lists
+   and https://chapel-lang.org/docs/1.24/language/spec/modules.html#importing-modules)
 
 Namespace Changes
 -----------------
@@ -27,7 +28,7 @@ New Features
 * added an `operator` keyword for defining operator overloads
   (see https://chapel-lang.org/docs/1.24/language/spec/procedures.html#procedure-definitions)
 * added the ability to define operators as methods on a type
-  (see TODO)
+  (see https://chapel-lang.org/docs/1.24/technotes/operatorMethods.html)
 
 Feature Improvements
 --------------------
