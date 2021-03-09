@@ -49,6 +49,8 @@ New Features
   (see https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/chips/2.rst)
 * added support for directly indexing `string` and `bytes` literals
   (e.g., `var s = "Chapel"[0];` and `var b = b"is great!"[0];` now work)
+* added `domain.orderToIndex()` to get the ith index in a rectangular domain
+  (see https://chapel-lang.org/docs/1.24/builtins/ChapelArray.html#ChapelArray.orderToIndex)
 
 Feature Improvements
 --------------------
@@ -101,6 +103,7 @@ Standard Library Modules
   (see https://chapel-lang.org/docs/1.24/modules/standard/Path.html#Path.splitExt)
 * added counters for `--cache-remote` hits and misses to 'CommDiagnostics'
   (see https://chapel-lang.org/docs/1.24/modules/standard/CommDiagnostics.html#CommDiagnostics.chpl_commDiagnostics.cache_get_hits)
+* fixed a bug where `FileSystem.copyTree()` failed if target not owned by user
 
 Package Modules
 ---------------
@@ -109,6 +112,7 @@ Package Modules
 * extended `sort()` to work with arrays with indices other than default `int`
 * explicitly restricted `sort()` to only support 1D rectangular arrays
   (see https://chapel-lang.org/docs/1.24/modules/packages/Sort.html#Sort.sort)
+* updated the 'LinearAlgebra' module to default to 0-based indexing
 * fixed the implementation of `DistBag.clear()` in the 'DistributedBag' package
 
 Standard Domain Maps (Layouts and Distributions)
@@ -168,6 +172,8 @@ Documentation
   (see https://chapel-lang.org/docs/1.24/language/spec/syntax.html)
 * reorganized the list of standard Chapel modules into categories
   (see https://chapel-lang.org/docs/1.24/modules/standard.html)
+* added mason packages landing page to documentation hierarchy
+  (see https://chapel-lang.org/docs/1.24/mason-packages.html)
 * fixed some highligting issues around secondary methods in the specification
 * other general fixes and improvements to the language specification
 * added documentation for `min` and `max` to the 'Math' module documentation
@@ -187,7 +193,7 @@ Documentation
   (see https://chapel-lang.org/docs/1.24/language/spec/interoperability.html#referring-to-external-c-structs-and-unions)
 * updated the Quickstart instructions to no longer reference its old location
   (see https://chapel-lang.org/docs/1.24/usingchapel/QUICKSTART.html)
-
+* fixed some broken cross-references in the `chpldoc` documentation
 
 Syntax Highlighting
 -------------------
@@ -276,6 +282,7 @@ Bug Fixes
 * fixed a bug in `chpldoc` with generic type instantiations
 * fixed the rendering of 1-tuples in `chpldoc`
 * fixed a bug in which `chpldoc` would output an extra space after `.type`
+* fixed a bug where `mason update` failed if no `[dependencies]` table exists
 * fixed an internal error when `cobegin` statements contained syntax errors
 * fixed an internal error related to casting arrays to borrowed classes
 
@@ -319,6 +326,7 @@ Developer-oriented changes: Documentation
 Developer-oriented changes: Module changes
 ------------------------------------------
 * improved the performance of the undocumented two-array radix sorts
+* added private `TimSort` module and `timSort()` implementation to `Sort`
 * fixed a bug where `chpl_nodeID` wasn't generating shadow variables properly
 * refactored 'Regexp' methods to avoid code duplication
 * removed `inline` from some nontrivial IO routines
