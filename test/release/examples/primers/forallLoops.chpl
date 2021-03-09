@@ -9,7 +9,7 @@ Like serial for-loops, forall loops can iterate over a data structure,
 an iterator, or a zippered combination of these. Unlike for-loops,
 multiple iterations of a forall loop can potentially execute in parallel.
 Parallelism is determined by the data structure or iterator being iterated
-over.
+over, also known as the "iterable".
 
 Chapel has forall statements and forall expressions. Each form has
 two varieties: "must-parallel" and "may-parallel".
@@ -23,11 +23,11 @@ two varieties: "must-parallel" and "may-parallel".
  - The may-parallel forms are written using brackets ``[ ]``
    (:ref:`primers-forallLoops-may-parallel`).
    They invoke the parallel iterator if the iterable provides it,
-   and otherwise will fall back on the serial iterator.
+   and otherwise fall back on the serial iterator.
 
-As with for-loops, the body of a forall statement is a statement or a
-a block statement, whereas the body of a forall expression is an expression.
-Both kinds are shown in the following sections.
+As with for-loops, the body of a forall statement is a statement
+or a block statement, whereas the body of a forall expression is
+an expression. Both kinds are shown in the following sections.
 
 "Must-parallel" forall statement
 --------------------------------
@@ -147,8 +147,8 @@ writeln();
 As with must-parallel zippered loops, here A is the leader iterable
 (:ref:`primers-forallLoops-must-parallel-zippered`).
 Its parallel iterator will determine how this loop is parallelized.
-if A were a distributed array, its leader iterator, if defined,
-would also determine iteration locality.
+if A were a distributed array, its parallel iterator would also
+determine iteration locality.
 
 Domains declared without a ``dmapped`` clause, including
 default rectangular and default associative domains, as well as

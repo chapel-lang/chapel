@@ -163,7 +163,7 @@ var outerMinVariable = 0;
 coforall i in 1..n with (+ reduce outerIntVariable,
                          max reduce outerMaxVariable,
                          min reduce outerMinVariable) {
-  outerIntVariable += i;
+  outerIntVariable = i;
 
   if i % 2 == 0 then
     outerMaxVariable = i;  // compute the max of even indices
