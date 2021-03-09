@@ -2,9 +2,9 @@ Release Changes List
 ====================
 
 TODO:
-o add late-breaking entries
-o re-read rendered version with fresh eyes
-o check that hyperlinks work
+o add late-breaking entries  
+o re-read rendered version with fresh eyes  
+o check that hyperlinks work  
 o re-spellcheck
 
 version 1.24.0
@@ -15,7 +15,7 @@ Twenty-seventh public release of Chapel, March 18, 2021
 Highlights (see subsequent sections for further details)
 --------------------------------------------------------
 * language:
-  - significantly improved the syntax and semantics of overloading operators
+  - significantly improved the syntax and semantics of operator overloads
   - clarified the relationship between various type conversion mechanisms
   - improved ergonomics for using nilable classes within conditionals and loops
   - improved the definition and handling of tertiary methods
@@ -67,7 +67,7 @@ Semantic Changes / Changes to Chapel Language
 * changed type inference for `out` intent to be more similar to `return`  
   (see https://chapel-lang.org/docs/1.24/language/spec/procedures.html#the-out-intent)
 * updated copy elision and split initialization to apply within `local` blocks  
-  (e.g., `var x; local { x = 1; }` now works for '--no-local' compilations)  
+  (e.g., `var x; local { x = 1; }` now works for `--no-local` compilations)  
   (see https://chapel-lang.org/docs/1.24/language/spec/variables.html#split-initialization  
    and https://chapel-lang.org/docs/1.24/language/spec/variables.html#copy-elision)
 * method calls now respect privacy and limitation clauses of `use`/`import`  
@@ -76,7 +76,7 @@ Semantic Changes / Changes to Chapel Language
 
 Namespace Changes
 -----------------
-* `c_void_ptr` is no longer automatically available, but defined in 'CPtr'
+* `c_void_ptr` is no longer automatically available, but defined in 'CPtr'  
   (e.g., use `import CPtr.c_void_ptr;`/`use CPtr;` to refer to `c_void_ptr`)
 
 New Features
@@ -88,14 +88,14 @@ New Features
 * added user-defined cast operations via `operator :`  
   (see https://chapel-lang.org/docs/1.24/language/spec/conversions.html#user-defined-casts)
 * added support for non-nilable declarations to `if` and `while` statements  
-  (e.g., `if const obj = foo() then obj.bar();` guarantees non-nilable `obj`)  
+  (e.g., `if const obj = foo() then obj.bar();` ensures `obj` is non-nilable)  
   (see https://chapel-lang.org/docs/1.24/language/spec/statements.html#the-conditional-statement  
    and https://chapel-lang.org/docs/1.24/language/spec/statements.html#the-while-do-and-do-while-loops)
 * added initial support for constrained generic interfaces  
   (see https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/chips/2.rst)
 * added support for directly indexing `string` and `bytes` literals  
   (e.g., `var s = "Chapel"[0];` and `var b = b"is great!"[0];` now work)
-* added `domain.orderToIndex(i)` to get the ith index in a rectangular domain  
+* added `domain.orderToIndex(i)` to get the `i`th index in a rectangular domain  
   (see https://chapel-lang.org/docs/1.24/builtins/ChapelArray.html#ChapelArray.orderToIndex)
 
 Feature Improvements
@@ -118,15 +118,15 @@ Deprecated / Unstable / Removed Language Features
 * deprecated assignments to `string` from `c_string`
 * removed support for casts from `c_void_ptr` to non-nilable `class` types
 * removed support for `domain.member` and `range.member`
-* removed old warning about constructors to initializers transition
+* removed an old warning about the transition from constructors to initializers
 
 Deprecated / Removed Library Features
 -------------------------------------
 * deprecated `regexp.ok` and `regexp.error()` in favor of thrown errors
-* deprecated the `dotnl` option in `Regexp.compile()`, replacing with `dotAll`
+* deprecated the `dotnl` option in `Regexp.compile()`, replaced by `dotAll`
 * removed support for `Replicated` arrays of non-default-initializable elements
 * removed features that had previously been deprecated from 'Regexp'
-* removed an old warning related to changing from constructors to initializers
+* removed the deprecated 'Assert' module
 
 Standard Library Modules
 ------------------------
@@ -148,7 +148,7 @@ Standard Library Modules
 
 Package Modules
 ---------------
-* added a new `UnrolledLinkedList` module  
+* added a new 'UnrolledLinkedList' module  
   (see https://chapel-lang.org/docs/1.24/modules/packages/UnrolledLinkedList.html)
 * extended `sort()` to work with arrays with indices other than default `int`
 * explicitly restricted `sort()` to only support 1D rectangular arrays  
@@ -266,9 +266,9 @@ Launchers
 
 Error Messages / Semantic Checks
 --------------------------------
-* improved the callstack for error messages with respect to inline functions
+* improved the callstack for error messages with respect to `inline` functions
 * improved the callstack for error messages occurring later in compilation
-* improved the error when a 'type' actual is passed to a value varargs formal
+* improved the error when a `type` actual is passed to a value varargs formal
 * improved the wording and formatting of resolution-oriented error messages
 * squashed method vs. standalone mismatches when printing function candidates
 * improved the error message for passing a coercion value to a `ref` formal
@@ -278,7 +278,7 @@ Error Messages / Semantic Checks
   (e.g. `var x; x = noinit;`)
 * improved error messages to better distinguish initialization and assignment
 * report an error for default initialization of a record with typeless fields
-* added a clearer compiler error when 'SysCTypes.chpl' is missing
+* added a clearer compiler error when the 'SysCTypes' module is missing
 * added a compilation error in the HDF5 package for unsupported types
 * added an error for record fields that would be misaligned for `--llvm`
 
@@ -336,7 +336,8 @@ Third-Party Software Changes
 
 Developer-oriented changes: Process
 -----------------------------------
-* switched from having developers sign CLAs to using DCO-based commits
+* switched from having developers sign CLAs to using DCO-based commits  
+  (see https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/bestPractices/DCO.rst)
 
 Developer-oriented changes: Documentation
 -----------------------------------------
@@ -345,8 +346,8 @@ Developer-oriented changes: Documentation
   (see https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/bestPractices/GettingStarted.rst)
 * refactored our 'ContributorInfo' documentation w.r.t. DCOs, git tips, etc.  
   (see https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/bestPractices/ContributorInfo.rst,
-   https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/bestPractices/DCO.rst, and
-   https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/bestPractices/git.rst)
+   https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/bestPractices/DCO.rst,  
+   and https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/bestPractices/git.rst)
 * switched to a non-Cray version of the Chapel logo in the project's README
 * created an improved and independently-maintained pygments highlighter  
   (see https://github.com/chapel-lang/sphinxcontrib-chapeldomain)
@@ -354,21 +355,21 @@ Developer-oriented changes: Documentation
 Developer-oriented changes: Module changes
 ------------------------------------------
 * improved the performance of the undocumented two-array radix sorts
-* added private `TimSort` module and `timSort()` implementation to `Sort`
-* removed several annoying functions from the `ChapelIteratorSupport` module
+* added a private 'TimSort' module and `timSort()` implementation to `Sort`
+* reduced reliance on, and removed, many functions from 'ChapelIteratorSupport'
 * fixed a bug where `chpl_nodeID` wasn't generating shadow variables properly
-* refactored 'Regexp' methods to avoid code duplication
-* removed `inline` from some nontrivial IO routines
+* refactored 'Regexp' module methods to avoid code duplication
+* removed `inline` from some nontrivial 'IO' module routines
 
 Developer-oriented changes: Makefiles
 -------------------------------------
-* adjusted `make docs` to do an incremental build
+* adjusted `make docs` to do an incremental build in most cases
 * updated `make docs` to create the `chpl` man page
 * updated Makefiles to use Python 3 where possible, or fall back on Python 2
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
-* added a `--[no-]report-auto-aggregation` flag for auto-aggr. opt. output
+* added a `--[no-]report-auto-aggregation` flag for auto-aggr. opt. reports
 * added a `--[no-]infer-implements-decls` flag for inferring `implements`
 * added a `--print-additional-errors` flag for post-`compilerError()` errors
 * improved the output of the `--report-auto-local-access` flag
@@ -376,12 +377,12 @@ Developer-oriented changes: Compiler Flags
 
 Developer-oriented changes: Compiler improvements/changes
 ---------------------------------------------------------
-* C++11 features can now be used / are now a requirement for the compiler
+* C++11 features can now be used within the compiler source code
 * stopped using tuples for `zip` clauses in `forall` loops
 * type conversions no longer fall back on default-init and then assign
 * added a pragma to allow a function to exist only for `chpldoc`
 * added a pragma to indicate to `chpldoc` when a module is included by default
-* adjusted the code generator to add initial support for GPU code generation
+* adjusted the code generator to add initial support for targeting GPUs
 * made use of virtual destructors and `= default` constructors/destructors
 
 Developer-oriented changes: Performance improvements
@@ -394,7 +395,7 @@ Developer-oriented changes: Runtime improvements
 * added initial support for GASNet's `ucx` substrate
 * fixed a race in counting running tasks
 * adjusted the runtime headers to compile as C++
-* switched the runtime shim for re2 to use C++11 `thread_local` over pthreads
+* switched the runtime shim for RE2 to use C++11 `thread_local` over pthreads
 
 Developer-oriented changes: Testing System
 ------------------------------------------
