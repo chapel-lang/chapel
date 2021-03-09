@@ -62,14 +62,22 @@ def try_run_command(command, stdout=True, stderr=False, cmd_input=None):
 def run_command(command, stdout=True, stderr=False, cmd_input=None):
     """Command subprocess wrapper.
        This is the usual way to run a command and collect its output."""
-    exists, returncode, output = try_run_command(command, stdout, stderr,
-                                                 cmd_input)
+    exists, returncode, myOutput = try_run_command(command, True, True,
+                                                   cmd_input)
     if not exists:
         error("command not found: {0}".format(command[0]), OSError)
     if returncode != 0:
-        error("command failed: {0}\noutput was:\n{1}".format(
-            command, output[1]), CommandError)
-    return output
+        error("command failed: {0}\noutput was:\n{1}".format(command,
+                                                             myOutput[1]),
+              CommandError)
+    if stdout and stderr:
+        return myOutput
+    elif stdout:
+        return myOutput[0]
+    elif stderr:
+        return myOutput[1]
+    else:
+        return None
 
 
 def run_live_command(command):
