@@ -56,10 +56,13 @@ Feature Improvements
   (see https://chapel-lang.org/docs/1.24/language/spec/modules.html#except-and-only-lists
    and https://chapel-lang.org/docs/1.24/language/spec/modules.html#importing-modules)
 * tightened up functions that modify domains to error for `const` domain values
+* added support for fixed-size arrays of tuples of non-nilable classes
+* improved array literal creation to use moves rather than default-init and `=`
 * extended tuples to support indexing by boolean expressions
   (e.g., `("hi", "there")[myBoolExpr]` is now supported)
 * extended split initialization to support `local` blocks
   (e.g., `var x; local { x = 1; }` now works for '--no-local' compilations)
+* extended copy elision to support local variables within `if`/`else` blocks
 * adjusted `.targetLocales` on arrays and domains to return a reference
   (see https://chapel-lang.org/docs/1.24/builtins/ChapelArray.html#ChapelArray.targetLocales)
 
@@ -76,15 +79,21 @@ Deprecated / Removed Library Features
 -------------------------------------
 * deprecated use of `regexp.ok` and `regexp.error()` in favor of thrown errors
 * deprecated the `dotnl` option in `Regexp.compile()`, replacing with `dotAll`
+* removed support for Replicated arrays of non-default-initializable elements
 * removed features that had previously been deprecated from 'Regexp'
 * removed an old warning related to changing from constructors to initializers
 
 Standard Library Modules
 ------------------------
+* moved the contents of the 'Memory' module into 'Memory.Diagnostics'
+  (see https://chapel-lang.org/docs/1.24/modules/standard/Memory/Diagnostics.html)
+* added a new 'Memory.Initialization' module for low-level moves, deinits
+  (see https://chapel-lang.org/docs/1.24/modules/standard/Memory/Initialization.html)
 * added support for initializing a `list` with no declared element type
   (e.g., `var x: list = 1..2;` is now supported)
 * added support for initializing a `list` using an iterator expression
   (e.g., `var x: list(int) = for i in 1..10 do i;` is now supported)
+* fixed a bug in which `set.add()` segfaulted when called remotely
 * `isSubtype()` and related functions now appear in the 'Types' module
   (see https://chapel-lang.org/docs/1.24/modules/standard/Types.html#Types.isSubtype)
 * added support for `%f` formatting to `datetime.strftime()` in 'DateTime'
@@ -104,6 +113,7 @@ Package Modules
 
 Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
+* added support for `PrivateDist` arrays of non-nilable classes
 
 Mason Improvements
 ------------------
@@ -113,6 +123,7 @@ New Tools / Tool Changes
 
 Interoperability Improvements
 -----------------------------
+* fixed a bug that caused crashes when `begin` was used in exported functions
 
 Performance Optimizations / Improvements
 ----------------------------------------
@@ -137,7 +148,7 @@ Compilation-Time / Generated Code Improvements
 
 Memory Improvements
 -------------------
-* fixed a memory leak for type aliases of arrays of arrays
+* closed a memory leak for type aliases of arrays of arrays
   (e.g. `type arrOfArr = [1..2][100..200] int;`)
 * closed a memory leak for unnamed array type expressions
 * closed a memory leak for arrays returned from empty `for` expressions
@@ -145,12 +156,14 @@ Memory Improvements
 * closed a memory leak for `forall` loops that throw errors
 * closed a memory leak for `defer` statements that contain initializations
 * closed a memory leak that happened when `Regexp.compile()` fails and throws
-
+* closed a memory leak in `ReplicatedDist`
 
 Documentation
 -------------
 * documented the concept of tertiary methods
   (see https://chapel-lang.org/docs/1.24/language/spec/methods.html)
+* restored the 'Syntax' section of the language spec, summarizing productions
+  (see https://chapel-lang.org/docs/1.24/language/spec/syntax.html)
 * reorganized the list of standard Chapel modules into categories
   (see https://chapel-lang.org/docs/1.24/modules/standard.html)
 * fixed some highligting issues around secondary methods in the specification
@@ -224,6 +237,7 @@ Error Messages / Semantic Checks
 * improved the error when a 'type' actual is passed to a value varargs formal
 * improved the wording and formatting of resolution-oriented error messages
 * squashed method vs. standalone mismatches when printing function candidates
+* improved the error message for passing a coercion value to a `ref` formal
 * improved error messages for illegal uses of `void`, such as `void` variables
 * improved errors for assignment between `nothing` and non-`nothing` variables
 * improved the error message when split initialization is used with `noinit`
