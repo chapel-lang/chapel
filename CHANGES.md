@@ -33,8 +33,8 @@ Highlights (see subsequent sections for further details)
 * misc:
   - added syntax highlighting for 'geany' and LaTeX
   - significantly improved `ofi` portability, performance, and selection
-  - closed all remaining known memory leaks
   - significantly improved the readiness of the LLVM-based compiler back-end
+  - closed the vast majority of known memory leaks
   - removed Python 2 dependences in favor of Python 3
   - improved several launcher choices and options
 
