@@ -50,7 +50,7 @@ Packaging / Configuration Changes
 * added `bundled` options for several `CHPL_*` environment variables
 * added a Lua/Lmod module file for Chapel on HPE Cray XC and EX systems
 * expanded support for HPE Cray EX systems  
-  (see https://chapel-lang.org/docs/1.24/platforms/cray.html#getting-started-with-chapel-on-hpe-cray-ex-systems)
+  (see https://chapel-lang.org/docs/1.24/platforms/cray.html#getting-started-with-chapel-on-cray-xc-or-hpe-cray-ex-systems)
 
 Syntactic / Naming Changes
 --------------------------
