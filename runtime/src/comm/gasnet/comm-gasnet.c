@@ -726,17 +726,16 @@ int32_t chpl_comm_getMaxThreads(void) {
 static volatile int pollingRunning;
 static volatile int pollingQuit;
 static chpl_bool pollingRequired;
-static atomic_bool pollingLock;
+static atomic_spinlock_t pollingLock;
 
 static inline void am_poll_try(void) {
   // Serialize polling for IBV, UCX, and Aries. Concurrent polling causes
   // contention in these configurations. For other configurations that are
   // AM-based (udp/amudp, mpi/ammpi) serializing can hurt performance.
 #if defined(GASNET_CONDUIT_IBV) || defined(GASNET_CONDUIT_UCX) || defined(GASNET_CONDUIT_ARIES)
-  if (!atomic_load_explicit_bool(&pollingLock, memory_order_acquire) &&
-      !atomic_exchange_explicit_bool(&pollingLock, true, memory_order_acquire)) {
+  if (atomic_try_lock_spinlock_t(&pollingLock)) {
     (void) gasnet_AMPoll();
-    atomic_store_explicit_bool(&pollingLock, false, memory_order_release);
+    atomic_unlock_spinlock_t(&pollingLock);
   }
 #else
     (void) gasnet_AMPoll();
@@ -755,7 +754,7 @@ static void polling(void* x) {
 }
 
 static void setup_polling(void) {
-  atomic_init_bool(&pollingLock, false);
+  atomic_init_spinlock_t(&pollingLock);
 #if defined(GASNET_CONDUIT_IBV)
   pollingRequired = false;
   chpl_env_set("GASNET_RCV_THREAD", "1", 1);
