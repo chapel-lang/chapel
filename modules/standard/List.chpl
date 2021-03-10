@@ -764,6 +764,7 @@ module List {
 
       return result;
     }
+    
     proc const ref first() const ref {
       if parSafe then
         compilerWarning('Calling `first()` on a list initialized with ' +
