@@ -729,10 +729,10 @@ static chpl_bool pollingRequired;
 static atomic_bool pollingLock;
 
 static inline void am_poll_try(void) {
-  // Serialize polling for IBV and Aries. Concurrent polling causes contention
-  // in these configurations. For other configurations that are AM-based
-  // (udp/amudp, mpi/ammpi) serializing can hurt performance.
-#if defined(GASNET_CONDUIT_IBV) || defined(GASNET_CONDUIT_ARIES)
+  // Serialize polling for IBV, UCX, and Aries. Concurrent polling causes
+  // contention in these configurations. For other configurations that are
+  // AM-based (udp/amudp, mpi/ammpi) serializing can hurt performance.
+#if defined(GASNET_CONDUIT_IBV) || defined(GASNET_CONDUIT_UCX) || defined(GASNET_CONDUIT_ARIES)
   if (!atomic_load_explicit_bool(&pollingLock, memory_order_acquire) &&
       !atomic_exchange_explicit_bool(&pollingLock, true, memory_order_acquire)) {
     (void) gasnet_AMPoll();
