@@ -299,18 +299,6 @@ proc addGitIgnore(dirName: string) {
   GIwriter.close();
 }
 
-/* Recursively finds the files & directories and adds
-   the candidate files to the `paths` set.
- */
-proc getPaths(dirName: string, ref paths: domain(string)) {
-  if isDir(dirName) {
-    for path in findfiles(dirName, recursive=true) {
-      paths += relativeRealPath(path);
-    }
-  } else {
-    writeln("Error: not a directory ", dirName);
-  }
-}
 
 proc getBaseTomlString(packageName: string, version: string, chapelVersion: string, license: string) {
   const baseToml = """[brick]
