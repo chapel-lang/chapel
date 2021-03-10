@@ -764,6 +764,25 @@ module List {
 
       return result;
     }
+    proc const ref first() const ref {
+      if parSafe then
+        compilerWarning('Calling `first()` on a list initialized with ' +
+                        '`parSafe=true` has been deprecated, consider ' +
+                        'using `set()` or `update()` instead');
+      _enter();
+
+      if boundsChecking && _size == 0 {
+        _leave();
+        boundsCheckHalt("Called \"list.first\" on an empty list.");
+      }
+
+      // TODO: How to make this work with on clauses?
+      ref result = _getRef(0);
+      _leave();
+
+      return result;
+    }
+    
 
     /*
       Returns a reference to the last item in this list.
@@ -796,6 +815,25 @@ module List {
       return result;
     }
 
+    proc const ref last() ref {
+      if parSafe then
+        compilerWarning('Calling `last()` on a list initialized with ' +
+                        '`parSafe=true` has been deprecated, consider ' +
+                        'using `set()` or `update()` instead');
+      _enter();
+
+      if boundsChecking && _size == 0 {
+        _leave();
+        boundsCheckHalt("Called \"list.last\" on an empty list.");
+      }
+
+      // TODO: How to make this work with on clauses?
+      ref result = _getRef(_size-1);
+      _leave();
+
+      return result;
+    }
+    
     pragma "no doc"
     inline proc ref _extendGeneric(collection) {
 
