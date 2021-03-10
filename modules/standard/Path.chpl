@@ -53,6 +53,7 @@
    :proc:`joinPath`
    :proc:`replaceDirname`
    :proc:`replaceBasename`
+   :proc:`replaceExt`
    :proc:`splitExt`
    :proc:`splitPath`
 
@@ -850,6 +851,43 @@ proc replaceBasename(const path:string,const newBasename:string):string throws {
       throw new owned IllegalArgumentError(newBasename,"is not a invalid basename");
     }
     return joinPath(dirname,newBasename);
+}
+
+/*
+  Returns the provided path with extension replaced with the provided
+  new argument of extension. If path had no extension the argument is
+  added to the path if it had one then it is replaced. extension has to
+  be of form `.name` or it can be an empty string.
+
+  :arg path: `string` Original Path.
+  :newExt path: `string` for the new extension
+
+  :returns: The new path after replacing extension if valid argument is
+            provided else throws illegal argument error is either basename
+            is missing or extension is not valid.
+  :rtype: `string`
+
+*/
+proc replaceExt(in path:string,in newExt:string):string throws {
+    const (extLessPath, ext) = splitExt(path);
+    const (dirname, basename) = splitPath(extLessPath);
+    // altsep for windows only future
+    const altsep = "", sep = "/";
+
+    // Check for empty basename as extension can't be appended
+    if (basename.isEmpty()){
+      throw new owned IllegalArgumentError(path,"has an empty basename");
+    }
+    // check is extension contains spearator.
+    else if(newExt.find(sep) != -1 || (!altsep.isEmpty() && newExt.find(altsep) != -1)){
+      throw new owned IllegalArgumentError(newExt,"is an invalid suffix");
+    }
+    // if extension is not blank then check it starts with ''.' and isn't just '.'
+    else if(!newExt.isEmpty() && !newExt.startsWith(".") || newExt == ".") {
+      throw new owned IllegalArgumentError(newExt,"is an invalid suffix");
+    }
+
+    return replaceBasename(path,basename+newExt);
 }
 
 /*
