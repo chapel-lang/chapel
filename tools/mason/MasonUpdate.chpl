@@ -75,6 +75,21 @@ proc masonUpdate(args: [?d] string) {
   return updateLock(skipUpdate, tf, lf);
 }
 
+proc removeHash(projectHome: string, tf: string){
+  var hash = "";
+  var tomlPath = projectHome + "/" + tf;
+  if isFile(tomlPath) {
+    const toParse = open(tomlPath, iomode.r);
+    const tomlFile = owned.create(parseToml(toParse));
+    if tomlFile.pathExists("brick.CheckSum") {
+      hash = tomlFile["brick"]!["CheckSum"]!.s;
+      tomlFile["brick"]!.A.remove("CheckSum");
+    }
+    generateToml(tomlFile, tomlPath);
+  }
+  return hash;
+}
+
 /* Finds a Mason.toml file and updates the Mason.lock
    generating one if it doesnt exist */
 proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock") {
@@ -84,6 +99,7 @@ proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock") {
     const projectHome = getProjectHome(cwd, tf);
     const tomlPath = projectHome + "/" + tf;
     const lockPath = projectHome + "/" + lf;
+    var previousHash = removeHash(projectHome, tf);
     const openFile = openreader(tomlPath);
     const TomlFile = parseToml(openFile);
     var updated = false;
@@ -119,7 +135,10 @@ proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock") {
     openFile.close();
     delete TomlFile;
     delete lockFile;
-
+    var newHash = updateTomlWithChecksum(projectHome);
+    if previousHash != "" && previousHash != newHash {
+      writeln("Project has some changes, computing the new Hash");
+    }
   }
   catch e: MasonError {
     stderr.writeln(e.message());
@@ -516,4 +535,3 @@ private proc getDependencies(tomlTbl: unmanaged Toml) {
   }
   return deps;
 }
-

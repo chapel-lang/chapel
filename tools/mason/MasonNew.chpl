@@ -28,13 +28,6 @@ use MasonUtils;
 use MasonUpdate;
 use MasonHelp;
 use MasonEnv;
-use SHA256Implementation;
-use FileHashing;
-use Sort;
-use TOML;
-use DateTime;
-use FileSystem;
-
 /*
   Creates a new library project at a given directory
   mason new <projectName/directoryName>
@@ -314,18 +307,6 @@ proc addGitIgnore(dirName: string) {
   GIwriter.close();
 }
 
-/* Recursively finds the files & directories and adds
-   the candidate files to the `paths` set.
- */
-proc getPaths(dirName: string, ref paths: domain(string)) {
-  if isDir(dirName) {
-    for path in findfiles(dirName, recursive=true) {
-      paths += relativeRealPath(path);
-    }
-  } else {
-    writeln("Error: not a directory ", dirName);
-  }
-}
 
 proc getBaseTomlString(packageName: string, version: string, chapelVersion: string, license: string) {
   const baseToml = """[brick]
@@ -357,59 +338,6 @@ proc makeBasicToml(dirName: string, path: string, version: string,
   var tomlWriter = tomlFile.writer();
   tomlWriter.write(baseToml);
   tomlWriter.close();
-}
-
-/* Given the paths of the files, this method sorts all the paths
-   lexicographically, computes hash of all the files & its path
-   combined and returns the hash.
- */
-proc computeHash(ref paths: domain(string)){
-  // Preprocess and generate a file.. use this file to compute hash
-  // output of paths {example-files/c2, example-files/all-bytes1, example-files/all-bytes2, example-files/all-bytes-twice, example-files/d1, example-files/a3, example-files/a2, example-files/a1, example-files/b1, example-files/c1}
-  var sortedPaths:[0..<paths.size] string;
-  for (str, path) in zip(sortedPaths, paths) {
-    str = path;
-  }
-  sort(sortedPaths);
-  writeln(sortedPaths);
-
-  var s = datetime.gettimestamp():string;
-  var fout = open("temp_" + s + ".txt", iomode.cwr);
-  var wout = fout.writer();
-  for path in sortedPaths{
-    var f = open(path, iomode.r);
-    var r = f.reader();
-    var line = "";
-    wout.write(path);
-    while (r.readline(line)) {
-      wout.write(line);
-    }
-    r.close();
-    f.close();
-  }
-  var absPath = fout.absPath();
-  wout.close();
-  fout.close();
-  var hash = computeFileHash(absPath);
-  var hash_string = "";
-  for component in hash.hash {
-    hash_string += try! "%08xu".format(component);
-  }
-  remove(absPath);
-  return hash_string;
-}
-
-/* Updates the Mason.toml with checksum */
-proc updateTomlWithChecksum(path: string) {
-  var paths: domain(string);
-  // Find files based on arguments and store them in paths
-  getPaths(dirName=path, paths);
-  var hash = computeHash(paths);
-  var tomlPath = path+"/Mason.toml";
-  const toParse = open(tomlPath, iomode.r);
-  const tomlFile = owned.create(parseToml(toParse));
-  tomlFile["brick"]!.set("CheckSum", hash);
-  generateToml(tomlFile, tomlPath);
 }
 
 /* Creates the src directory */
