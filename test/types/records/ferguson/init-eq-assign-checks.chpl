@@ -2,11 +2,11 @@ record InitEqOnly { }
 proc InitEqOnly.init=(other:InitEqOnly) { }
 
 record AssignOnly { }
-proc =(ref lhs:AssignOnly, rhs:AssignOnly) { }
+operator =(ref lhs:AssignOnly, rhs:AssignOnly) { }
 
 record Both { }
 proc Both.init=(other:Both) { }
-proc =(ref lhs:Both, rhs:Both) { }
+operator =(ref lhs:Both, rhs:Both) { }
 
 record Neither { }
 
