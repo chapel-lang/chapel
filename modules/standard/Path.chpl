@@ -51,6 +51,7 @@
    :proc:`file.absPath`
    :proc:`expandVars`
    :proc:`joinPath`
+   :proc:`replaceDirname`
    :proc:`splitExt`
    :proc:`splitPath`
 
@@ -810,6 +811,22 @@ proc file.relPath(start:string=curDir): string throws {
   return Path.relPath(this.path, start);
 }
 
+/*
+  Returns the provided path with dirname replaced with the provided
+  new argument of dirname. If path had no dirname the argument is
+  added to the path if it had one then it is replaced.
+
+  :arg path: `string` Original Path.
+  :newDirname path: `string` for the new dirname
+
+  :returns: The new path after replacing dirname.
+  :rtype: `string`
+
+*/
+proc replaceDirname(path:string,newDirname:string):string {
+    const (dirname, basename) = splitPath(path);
+    return joinPath(newDirname,basename);
+}
 
 /*
   Splits the given path into its root and extension.
