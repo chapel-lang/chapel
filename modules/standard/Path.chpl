@@ -52,6 +52,7 @@
    :proc:`expandVars`
    :proc:`joinPath`
    :proc:`replaceDirname`
+   :proc:`replaceBasename`
    :proc:`splitExt`
    :proc:`splitPath`
 
@@ -826,6 +827,29 @@ proc file.relPath(start:string=curDir): string throws {
 proc replaceDirname(path:string,newDirname:string):string {
     const (dirname, basename) = splitPath(path);
     return joinPath(newDirname,basename);
+}
+
+/*
+  Returns the provided path with basename replaced with the provided
+  new argument of basename. If path had no basename the argument is
+  added to the path if it had one then it is replaced if the provided
+  new basename is empty string then basename is removed from path.
+
+  :arg path: `string` Original Path.
+  :newBasename path: `string` for the new dirname
+
+  :returns: The new path after replacing basename if valid basename is
+            provided else throws illegal argument error.
+  :rtype: `string`
+
+*/
+proc replaceBasename(const path:string,const newBasename:string):string throws {
+    const (dirname, basename) = splitPath(path);
+    const sep = "/";
+    if(newBasename.endsWith(sep)) {
+      throw new owned IllegalArgumentError(newBasename,"is not a invalid basename");
+    }
+    return joinPath(dirname,newBasename);
 }
 
 /*
