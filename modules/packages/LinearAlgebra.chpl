@@ -1984,6 +1984,18 @@ proc svd(A: [?Adom] ?t) throws
   return (u, s, vt);
 }
 
+/*
+  This procedure computes the Moore-Penrose inverse(pseudo inverse) of
+  a given `m x n` matrix ``A`` using its singular-value Decomposition
+  ``svd`` and including all large singular values.
+
+  The parameter ``rcond`` is used to set the cutoff for the singular values.
+
+  ..note ::
+    This procedure depends on :mod: `LAPACK` and :mod: `BLAS` module,
+    and will generate compiler error if ``blasImpl`` and ``blasImp``
+    are ``off``
+*/
 
 proc pinv(A: [?Adom] ?t, rcond: real = 0.000000000000001) throws
   where isLAPACKType(t) && usingLAPACK{
@@ -1995,7 +2007,7 @@ proc pinv(A: [?Adom] ?t, rcond: real = 0.000000000000001) throws
   const k = min(m, n);
   var (u, s, vt) = try! svd(A);
 
-  var cutoff = rcond;
+  var cutoff = rcond * BLAS.amax(s);
 
   u = transpose(u);
   var ut = u[0..#k, ..];
