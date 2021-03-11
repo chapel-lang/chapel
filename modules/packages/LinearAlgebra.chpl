@@ -1984,6 +1984,37 @@ proc svd(A: [?Adom] ?t) throws
   return (u, s, vt);
 }
 
+
+proc pinv(A: [?Adom] ?t, rcond: real = 0.000000000000001) throws
+  where isLAPACKType(t) && usingLAPACK{
+
+  if Adom.rank != 2 then
+    compilerError("Pseudo inverse not possible for non-rectangular matrix");
+
+  const (m, n) = A.shape;
+  const k = min(m, n);
+  var (u, s, vt) = try! svd(A);
+
+  var cutoff = rcond;
+
+  u = transpose(u);
+  var ut = u[0..#k, ..];
+
+  vt = transpose(vt);
+  var v = vt[.., 0..#k];
+
+  forall i in 0..#k {
+    if(s[i] > cutoff) {
+      ut[i, ..] /= s[i];
+    }
+    else ut[i, ..] = 0;
+  }
+
+  var B = dot(v, ut);
+
+  return B;
+}
+
 /*
   Compute the approximate solution to ``A * x = b`` using the Jacobi method.
   iteration will stop when ``maxiter`` is reached or error is smaller than
