@@ -1993,7 +1993,7 @@ proc svd(A: [?Adom] ?t) throws
 
   ..note ::
     This procedure depends on :mod: `LAPACK` and :mod: `BLAS` module,
-    and will generate compiler error if ``blasImpl`` and ``blasImp``
+    and will generate compiler error if ``lapackImpl`` and ``blasImp``
     are ``off``
 */
 
