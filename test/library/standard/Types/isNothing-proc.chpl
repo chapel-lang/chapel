@@ -13,7 +13,6 @@ type bytesType = bytes;
 type isReal = real;
 type isRecord = imag;
 type isComplex = complex;
-
 myassert(nothingType);
 myassert(intType);
 myassert(stringType);
