@@ -234,7 +234,7 @@ proc isNumericValue(e)   param  return isNumericType(e.type);
 pragma "no doc"
 proc isPrimitiveValue(e) param  return isPrimitiveType(e.type);
 pragma "no doc"
-proc isNothingValue(type e)  param return isNothingType(e.type);
+proc isNothingValue(e)  param return isNothingType(e.type);
 pragma "no doc"
 proc isEnumValue(e)      param  return isEnumType(e.type);
 //Defined elsewhere:
