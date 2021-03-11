@@ -613,7 +613,7 @@ CHPL_HWLOC
 CHPL_REGEXP
 ~~~~~~~~~~~
    Optionally, the ``CHPL_REGEXP`` environment variable can be used to enable
-   regular expression operations as defined in :chpl:mod:`Regexp`.  Current
+   regular expression operations as defined in :chpl:mod:`Regex`.  Current
    options are:
 
        ======= ==============================================

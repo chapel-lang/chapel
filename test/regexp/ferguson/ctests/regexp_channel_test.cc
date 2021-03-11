@@ -1,6 +1,5 @@
-
 #include "qio.h"
-#include "qio_regexp.h"
+#include "qio_regex.h"
 #include <assert.h>
 #include <stdio.h>
 
@@ -145,7 +144,7 @@ int64_t n_keep_test_cases = sizeof(keep_test_cases)/sizeof(keep_test_case);
 // test channel RE search with large files,
 //   check that memory is not balooning
 //
-// see qio_regexp.h
+// see qio_regex.h
 
 void check_channel(qio_hint_t file_hints, qio_hint_t ch_hints, char unbounded_channels, char reopen, int discard_check_mask, int allow_buffer_search, struct base_test_case *test)
 {
@@ -298,18 +297,18 @@ void check_channel(qio_hint_t file_hints, qio_hint_t ch_hints, char unbounded_ch
   // TODO -- do regular expression search instead.
 
   {
-    qio_regexp_t compiled;
+    qio_regex_t compiled;
     const char* pattern = test->pattern;
     const char* flags = "";
     bool isUtf8 = false;
     // maximum to match a RE to
     int64_t maxlen = std::numeric_limits<int64_t>::max();
     // TODO -- try different anchorings.
-    int anchor = QIO_REGEXP_ANCHOR_UNANCHORED; // QIO_REGEXP_ANCHOR_START, QIO_REGEXP_ANCHOR_BOTH
+    int anchor = QIO_REGEX_ANCHOR_UNANCHORED; // QIO_REGEX_ANCHOR_START, QIO_REGEX_ANCHOR_BOTH
     bool can_discard = true;
     bool keep_unmatched = false;
     bool keep_whole_pattern = false;
-    qio_regexp_string_piece_t submatches[1024];
+    qio_regex_string_piece_t submatches[1024];
 
     if (TEST_KEEP == test->kind)
     {
@@ -318,13 +317,13 @@ void check_channel(qio_hint_t file_hints, qio_hint_t ch_hints, char unbounded_ch
       keep_unmatched = (keep_test->keep_flags & KEEP_UNMATCHED) > 0;
       keep_whole_pattern = (keep_test->keep_flags & KEEP_WHOLE_PATTERN) > 0;
     }
- 
 
-    qio_regexp_create_compile_flags(pattern, strlen(pattern), flags, strlen(flags), isUtf8, &compiled);
+
+    qio_regex_create_compile_flags(pattern, strlen(pattern), flags, strlen(flags), isUtf8, &compiled);
 
     qio_channel_mark(threadsafe, reading);
 
-    err = qio_regexp_channel_match(&compiled, threadsafe, reading, maxlen, anchor, can_discard, keep_unmatched, keep_whole_pattern, submatches, 1024);
+    err = qio_regex_channel_match(&compiled, threadsafe, reading, maxlen, anchor, can_discard, keep_unmatched, keep_whole_pattern, submatches, 1024);
     // TODO -- check ENOERR if we matched or EFORMAT if we didn't
     //         possibly check submatches
 
