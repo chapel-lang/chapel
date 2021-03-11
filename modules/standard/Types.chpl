@@ -392,7 +392,7 @@ pragma "no doc"
 proc isConstAssignable(type t) param  return isConstAssignableType(t);
 pragma "no doc"
 proc isDefaultInitializable(type t) param return isDefaultInitializableType(t);
-/* Returns `true` if the argument is a nothing type or none.*/
+/* Returns `true` if the argument is `none` or the type `nothing`*/
 pragma "no doc"
 proc isNothing(type t)  param return isNothingType(t);
 pragma "no doc"
