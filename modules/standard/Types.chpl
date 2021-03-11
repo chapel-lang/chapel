@@ -234,9 +234,9 @@ proc isNumericValue(e)   param  return isNumericType(e.type);
 pragma "no doc"
 proc isPrimitiveValue(e) param  return isPrimitiveType(e.type);
 pragma "no doc"
+proc isEnumValue(e)      param  return isEnumType(e.type);
 pragma "no doc"
 proc isNothingValue(e)   param return isNothingType(e.type);
-proc isEnumValue(e)      param  return isEnumType(e.type);
 //Defined elsewhere:
 // isTupleValue
 // isHomogeneousTupleValue
@@ -391,16 +391,14 @@ proc isAssignable(type t)    param  return isAssignableType(t);
 pragma "no doc"
 proc isConstAssignable(type t) param  return isConstAssignableType(t);
 pragma "no doc"
-proc isNothing(type t)  param return isNothingType(t);
-
 proc isDefaultInitializable(type t) param return isDefaultInitializableType(t);
+/* Returns `true` if the argument is a nothing type or none.*/
+pragma "no doc"
+proc isNothing(type t)  param return isNothingType(t);
+pragma "no doc"
+proc isNothing(e) param return isNothingValue(e.type);
 
 // Set 2 - values.
-/*
-Returns `true` if the argument is a primitive type,
-as defined by the language specification, or a value of a primitive type.
-*/
-proc isNothing(e) param return isNothingValue(e.type);
 /*
 Returns `true` if the argument is a primitive type,
 as defined by the language specification, or a value of a primitive type.
