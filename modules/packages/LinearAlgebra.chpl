@@ -2005,6 +2005,10 @@ proc pinv(A: [?Adom] ?t, rcond: real = 0.000000000000001) throws
 
   const (m, n) = A.shape;
   const k = min(m, n);
+
+  if isComplexType(t) then
+    A = conjg(A);
+
   var (u, s, vt) = try! svd(A);
 
   var cutoff = rcond * BLAS.amax(s);
