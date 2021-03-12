@@ -567,7 +567,7 @@ module DefaultRectangular {
       return ranges(d);
 
     proc dsiNumIndices {
-      var sum = 1:intIdxType;
+      var sum = 1;
       for param i in 0..rank-1 do
         sum *= ranges(i).size;
       return sum;
@@ -992,10 +992,10 @@ module DefaultRectangular {
     var dom : unmanaged DefaultRectangularDom(rank=rank, idxType=idxType,
                                            stridable=stridable);
     var off: rank*idxType;
-    var blk: rank*chpl__idxTypeToIntIdxType(idxType);
-    var sizesPerDim: rank*chpl__idxTypeToIntIdxType(idxType);
+    var blk: rank*int;
+    var sizesPerDim: rank*int;
     var str: rank*idxSignedType;
-    var factoredOffs: chpl__idxTypeToIntIdxType(idxType);
+    var factoredOffs: int;
 
     pragma "alias scope from this"
     pragma "local field"
@@ -1087,7 +1087,7 @@ module DefaultRectangular {
         }
       } else {
         var numInd = dom.dsiNumIndices;
-        var numElts:intIdxType = numInd;
+        var numElts = numInd;
         if deinitElts && this.deinitElts && numInd > 0 {
           param needsDestroy = __primitive("needs auto destroy",
                                            __primitive("deref", data[0]));
@@ -1272,7 +1272,7 @@ module DefaultRectangular {
         if (rank == 1 && wantShiftedIndex) {
           return chpl__idxToInt(ind(0));
         } else {
-          var sum = 0:intIdxType;
+          var sum = 0;
           var useInd = ind;
           var useOffset:int = 0;
           var useSizesPerDim = sizesPerDim;
@@ -2084,7 +2084,7 @@ module DefaultRectangular {
     assert(inferredRank <= minRank, "complex DR transfer: computed rank greater than minimum rank!");
 
     // Compute a 'blk' tuple for the LHS and RHS based on their view-domains
-    var LBlk, RBlk : minRank*intIdxType;
+    var LBlk, RBlk : minRank*int;
 
     {
       // For each array, compute a valid 'blk' with 'inferredRank' values
