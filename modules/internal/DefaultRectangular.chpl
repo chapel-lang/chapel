@@ -21,6 +21,9 @@
 // DefaultRectangular.chpl
 //
 module DefaultRectangular {
+//  proc debug(param s) compilerWarning(s);
+  proc debug(param s) { }
+  
   config const dataParTasksPerLocale = 0;
   config const dataParIgnoreRunningTasks = false;
   config const dataParMinGranularity: int = 1;
@@ -507,15 +510,21 @@ module DefaultRectangular {
                 fSignedStride = followThis(i).stride:strType;
           if rStride > 0 {
             const riStride = rStride:intIdxType;
+            debug("A: " + followThis(i).low.type:string + ", " +
+                            riStride.type:string);
             const low = ranges(i).alignedLowAsInt + followThis(i).low*riStride,
                   high = ranges(i).alignedLowAsInt + followThis(i).high*riStride,
                   stride = (rSignedStride * fSignedStride):strType;
+            debug("A Done");
             block(i) = low..high by stride;
           } else {
             const irStride = (-rStride):intIdxType;
+            debug("B: " + followThis(i).high.type:string + ", " +
+                            irStride.type:string);
             const low = ranges(i).alignedHighAsInt - followThis(i).high*irStride,
                   high = ranges(i).alignedHighAsInt - followThis(i).low*irStride,
                   stride = (rSignedStride * fSignedStride):strType;
+            debug("B Done");
             block(i) = low..high by stride;
           }
         }
@@ -549,8 +558,10 @@ module DefaultRectangular {
         const orderD = ranges(d).indexOrder(ind(d));
         // NOTE: This follows from the implementation of indexOrder()
         if (orderD == (-1):intIdxType) then return orderD;
+        debug("C: " + orderD.type:string + ", " + blk.type:string);
         totOrder += orderD * blk;
         blk *= ranges(d).size;
+        debug("C Done");
       }
       return totOrder;
     }
@@ -781,6 +792,7 @@ module DefaultRectangular {
   // Copied from DefaultRectangularArr.getDataIndex
   //
   inline proc _remoteAccessData.getDataIndex(ind: rank*idxType) {
+    debug("D: In RAD code");
     if stridable {
       var sum = origin;
       for param i in 0..rank-1 do
@@ -822,6 +834,7 @@ module DefaultRectangular {
   }
 
   proc _remoteAccessData.computeFactoredOffs() {
+    debug("E: In RAD code");
     factoredOffs = 0;
     for param i in 0..rank-1 do {
       factoredOffs = factoredOffs + blk(i) * chpl__idxToInt(off(i));
@@ -837,9 +850,11 @@ module DefaultRectangular {
     }
   }
 
-  proc _remoteAccessData.strideAlignUp(lo, r)
+  proc _remoteAccessData.strideAlignUp(lo, r) {
+  debug("F: In RAD code");
     return r.low + (lo - r.low + abs(r.stride):idxType - 1)
-           / abs(r.stride):idxType * abs(r.stride):idxType;
+      / abs(r.stride):idxType * abs(r.stride):idxType;
+  }
 
   proc _remoteAccessData.strideAlignDown(hi, r)
     return hi - (hi - r.low) % abs(r.stride):idxType;
@@ -864,6 +879,7 @@ module DefaultRectangular {
     rad.off         = chpl__tuplify(newDom.dsiLow);
     rad.str         = chpl__tuplify(newDom.dsiStride);
 
+    debug("G: In RAD code");
     for param i in 0..rank-1 {
       const shift = this.blk(i) * (chpl__idxToInt(newDom.dsiDim(i).low) - chpl__idxToInt(this.off(i))) / abs(this.str(i)) : rad.idxType;
       if this.str(i) > 0 {
@@ -1176,10 +1192,12 @@ module DefaultRectangular {
     }
 
     proc computeFactoredOffs() {
-      factoredOffs = 0:intIdxType;
+      factoredOffs = 0;
+      debug("H: " + blk(0).type:string + ", " + chpl__idxToInt(off(0)).type:string);
       for param i in 0..rank-1 do {
-        factoredOffs = factoredOffs + blk(i) * chpl__idxToInt(off(i));
+        factoredOffs = factoredOffs + blk(i) * chpl__idxToInt(off(i)).safeCast(int);
       }
+      debug("H done");
     }
 
     inline proc initShiftedData() {
@@ -1206,14 +1224,18 @@ module DefaultRectangular {
         str(dim) = dom.dsiDim(dim).stride;
       }
       if storageOrder == ArrayStorageOrder.RMO {
-        blk(rank-1) = 1:intIdxType;
+        blk(rank-1) = 1;
+        debug("I: " + blk(0).type:string + ", " + dom.dsiDim(0).size.type:string);
         for param dim in 0..(rank-2) by -1 do
           blk(dim) = blk(dim+1) * dom.dsiDim(dim+1).size;
+        debug("I done");
       } else if storageOrder == ArrayStorageOrder.CMO {
-        blk(0) = 1:intIdxType;
+        blk(0) = 1;
+        debug("J: " + blk(0).type:string + ", " + dom.dsiDim(0).size:string);
         for param dim in 1..rank-1 {
           blk(dim) = blk(dim-1) * dom.dsiDim(dim-1).size;
         }
+        debug("J done");
       } else {
         halt("unknown array storage order");
       }
@@ -1261,16 +1283,16 @@ module DefaultRectangular {
     inline proc getDataIndex(ind: rank*idxType,
                              param getShifted = true) {
       if stridable {
-        var sum = 0:intIdxType;
+        var sum = 0;
         for param i in 0..rank-1 do
-          sum += (chpl__idxToInt(ind(i)) - chpl__idxToInt(off(i))) * blk(i) / abs(str(i)):intIdxType;
+          sum += (chpl__idxToInt(ind(i)) - chpl__idxToInt(off(i))).safeCast(int) * blk(i) / abs(str(i));
         return sum;
       } else {
         param wantShiftedIndex = getShifted && earlyShiftData;
 
         // optimize common case to get cleaner generated code
         if (rank == 1 && wantShiftedIndex) {
-          return chpl__idxToInt(ind(0));
+          return chpl__idxToInt(ind(0)).safeCast(int);
         } else {
           var sum = 0;
           var useInd = ind;
@@ -1290,14 +1312,14 @@ module DefaultRectangular {
           } else {
             if storageOrder == ArrayStorageOrder.RMO {
               for param i in 0..rank-2 {
-                sum += chpl__idxToInt(ind(i)) * blk(i);
+                sum += chpl__idxToInt(ind(i)).safeCast(int) * blk(i);
               }
-              sum += chpl__idxToInt(ind(rank-1));
+              sum += chpl__idxToInt(ind(rank-1)).safeCast(int);
             } else {
               for param i in 1..rank-1 {
-                sum += chpl__idxToInt(ind(i)) * blk(i);
+                sum += chpl__idxToInt(ind(i)).safeCast(int) * blk(i);
               }
-              sum += chpl__idxToInt(ind(0));
+              sum += chpl__idxToInt(ind(0)).safeCast(int);
             }
             if !wantShiftedIndex then sum -= factoredOffs;
             return sum;
@@ -1574,8 +1596,8 @@ module DefaultRectangular {
               second = info.getDataIndex(viewDom.chpl_intToIdx(viewDomDim.firstAsInt + stride));
 
         var   first  = info.getDataIndex(start);
-        const step   = (second-first):chpl__signedType(viewDom.intIdxType);
-        var   last   = first + (viewDomDim.size-1) * step:viewDom.intIdxType;
+        const step   = (second-first).safeCast(int);
+        var   last   = first + (viewDomDim.size-1) * step;
 
         if step < 0 then
           last <=> first;
@@ -2091,10 +2113,10 @@ module DefaultRectangular {
       // over the array's original data by skipping over rank-changed dims.
       for idx in 1..inferredRank by -1 {
         const li = LeftActives(idx-1);
-        LBlk(idx-1) = LHS.blk(li) * (LeftDims(li).stride / LHS.dom.dsiDim(li).stride):intIdxType;
+        LBlk(idx-1) = LHS.blk(li) * (LeftDims(li).stride / LHS.dom.dsiDim(li).stride).safeCast(int);
 
         const ri = RightActives(idx-1);
-        RBlk(idx-1) = RHS.blk(ri) * (RightDims(ri).stride / RHS.dom.dsiDim(ri).stride):intIdxType;
+        RBlk(idx-1) = RHS.blk(ri) * (RightDims(ri).stride / RHS.dom.dsiDim(ri).stride).safeCast(int);
       }
     }
 
