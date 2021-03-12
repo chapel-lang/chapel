@@ -999,6 +999,13 @@ module DateTime {
                       second=second, microsecond=microsecond);
   }
 
+  /* Get the `time` since Unix Epoch in seconds
+  */
+  proc type datetime.timeSinceEpoch():int(64) {
+    const timedelta = getTimeOfDay();
+    return timedelta(0);
+  }
+
   /* Get the `time` portion of the `datetime` value including the
      `tzinfo` field
    */
