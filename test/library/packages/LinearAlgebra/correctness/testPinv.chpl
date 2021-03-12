@@ -15,11 +15,11 @@ use TestUtils;
         [ 0.20350877, -0.07719298]
     );
 
-    assertAlmostEqual(B, npB, "Yes1");
+    assertAlmostEqual(npB, B, "real: pinv(A)");
 
     var Acalc = dot(A, dot(B, A));
 
-    assertAlmostEqual(A, Acalc, "Yes2");
+    assertAlmostEqual(Acalc, A, "real: A * pinv(A) * A");
 }
 
 {
@@ -42,11 +42,11 @@ use TestUtils;
     );
 
     var B = pinv(A);
-    assertAlmostEqual(B, npB, "Yes3");
+    assertAlmostEqual(npB, B, "real: pinv(A)");
 
     var Acalc = dot(A, dot(B, A));
 
-    assertAlmostEqual(A, Acalc, "Yes4");
+    assertAlmostEqual(Acalc, A, "real: A * pinv(A) * A");
 }
 
 //For complex types
@@ -68,5 +68,9 @@ use TestUtils;
             5.00000000e-01-4.16333634e-17i], eltType = complex(128)
     );
 
-    assertAlmostEqual(npB, B, "Yes6");
+    assertAlmostEqual(npB, B, "complex: pinv(A)");
+
+    var Acalc = dot(A, dot(B, A));
+
+    assertAlmostEqual(Acalc, A, "complex: A * pinv(A) * A");
 }
