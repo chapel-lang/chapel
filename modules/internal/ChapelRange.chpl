@@ -640,22 +640,37 @@ module ChapelRange {
   }
 
 
-  /* Returns the number of elements in this range, cast to the index type.
+  /* Returns the number of elements in this range as an integer.
 
-     Note: The result is undefined if the index is signed
-     and the low and high bounds differ by more than ``max(``:proc:`range.intIdxType` ``)``.
+     If the size exceeds `max(int)`, this procedure will halt when
+     bounds checks are on.
    */
-  proc range.size: intIdxType {
+  proc range.size: int {
+    return this.sizeAs(int);
+  }
+
+  /* Returns the number of elements in this range as the specified
+     integer type.
+
+     If the size exceeds the maximal value of that type, this
+     procedure will halt when bounds checks are on.
+   */
+  proc range.sizeAs(type t: integral): t {
     if ! isBoundedRange(this) then
       compilerError("'size' is not defined on unbounded ranges");
 
     // assumes alignedHigh/alignedLow always work, even for an empty range
     const ah = this.alignedHighAsInt,
           al = this.alignedLowAsInt;
-    if al > ah then return 0: intIdxType;
-    const s = abs(this.stride): intIdxType;
-    return (ah - al) / s + 1:intIdxType;
+    if al > ah then return 0;
+    const s = abs(this.stride): uint;
+    const lenAsUint = ((ah - al):uint / s + 1);
+    if boundsChecking && (lenAsUint > max(t)) then
+      HaltWrappers.boundsCheckHalt("range.size exceeds max("+t:string+")");
+    return lenAsUint: t;
   }
+  
+
 
   /* Return true if the range has a first index, false otherwise */
   proc range.hasFirst() param where !stridable && !hasHighBound()
