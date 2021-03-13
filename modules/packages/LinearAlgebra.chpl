@@ -1997,7 +1997,7 @@ proc svd(A: [?Adom] ?t) throws
     are ``off``
 */
 
-proc pinv(A: [?Adom] ?t, rcond: real = 0.000000000000001) throws
+proc pinv(in A: [?Adom] ?t, rcond: real = 0.000000000000001) throws
   where isLAPACKType(t) && usingLAPACK{
 
   if Adom.rank != 2 then

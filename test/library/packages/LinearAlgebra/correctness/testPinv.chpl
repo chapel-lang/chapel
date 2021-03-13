@@ -74,3 +74,27 @@ use TestUtils;
 
     assertAlmostEqual(Acalc, A, "complex: A * pinv(A) * A");
 }
+
+{
+    var A = Matrix(
+        [4.3 + 2.2i, 5.3 - 5i],
+        [7.6 - 3.8i, 8.8 + 4i],
+        [5.5 -3.2i, 4.8 + 6.3i],
+        [8.2 + 2.6i, 9.9 + 2i], eltType = complex(64)
+    );
+
+    var B = pinv(A);
+
+    var npB = Matrix(
+        [ 0.02416431-0.05132241i,  0.01967425+0.03283327i,  0.01428943+0.04557465i,
+            0.02406656-0.0335065i],
+        [ 0.01667378+0.04733845i,  0.01087928-0.02480544i, -0.00219163-0.03981815i,
+            0.02741716+0.01589353i], eltType = complex(64)
+    );
+
+    assertAlmostEqual(npB, B, "complex: pinv(A)");
+
+    var Acalc = dot(A, dot(B, A));
+
+    assertAlmostEqual(Acalc, A, "complex: A * pinv(A) * A");
+}
