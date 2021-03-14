@@ -32,8 +32,6 @@ public use FileHashing;
 public use Sort;
 
 
-
-
 /* Gets environment variables for spawn commands */
 extern proc getenv(name : c_string) : c_string;
 proc getEnv(name: string): string {
@@ -496,16 +494,19 @@ iter allFields(tomlTbl: unmanaged Toml) {
 }
 
 /* Recursively finds the files & directories and adds
-   the candidate files to the `paths` set.
+   the candidate files to the `paths` set. Exludes all
+   the files in /target subdirectory.
  */
-proc getPaths(dirName: string, ref paths: domain(string)) {
-  if isDir(dirName) {
-    for path in findfiles(dirName, recursive=true) {
-      paths += relativeRealPath(path);
-    }
-  } else {
-    writeln("Error: not a directory ", dirName);
-  }
+proc getPathExcludingTargetFolder(dirName: string, ref paths: domain(string)) {
+ if isDir(dirName) {
+   for path in findfiles(dirName, recursive=true) {
+     // exclude files from target folder
+     if (!path.startsWith(dirName + "/target/")) then
+       paths += relativeRealPath(path);
+   }
+ } else {
+   writeln("Error: not a directory ", dirName);
+ }
 }
 
 /* Given the paths of the files, this method sorts all the paths
@@ -552,7 +553,7 @@ proc computeHash(ref paths: domain(string)){
 proc updateTomlWithChecksum(path: string, tf="Mason.toml") {
   var paths: domain(string);
   // Find files based on arguments and store them in paths
-  getPaths(dirName=path, paths);
+  getPathExcludingTargetFolder(dirName=path, paths);
   var hash = computeHash(paths);
   var tomlPath = path+ "/" + tf;
   const toParse = open(tomlPath, iomode.r);
