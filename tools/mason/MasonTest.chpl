@@ -167,7 +167,7 @@ proc masonTest(args: [] string) throws {
       }
     }
 
-    updateLock(skipUpdate);
+    updateLock(skipUpdate, checksum);
     compopts.append("".join("--comm=",comm));
     runTests(show, run, parallel, compopts);
   }

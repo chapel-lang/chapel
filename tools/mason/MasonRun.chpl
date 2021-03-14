@@ -188,6 +188,8 @@ private proc masonBuildRun(args: [?d] string) {
       if release then buildArgs.append("--release");
       if force then buildArgs.append("--force");
       if show then buildArgs.append("--show");
+      if !checksum then buildArgs.append("--no-checksum");
+
       masonBuild(buildArgs.toArray());
       for val in passArgs.values() do execopts.append(val);
       runProjectBinary(show, release, execopts);
@@ -197,5 +199,3 @@ private proc masonBuildRun(args: [?d] string) {
     stderr.writeln(e.message());
   }
 }
-
-

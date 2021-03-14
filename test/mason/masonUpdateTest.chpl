@@ -15,6 +15,7 @@ proc main() {
   // actual current version.
 
   const currentVersion = getChapelVersionStr();
+  var checksum = true;
 
   // file.good -> file.lock
   const lf = goodLock.replace('good', 'lock');
@@ -26,7 +27,7 @@ proc main() {
     w.close();
   }
 
-  var configs = updateLock(true, tf=tf, lf=temp.tryGetPath());
+  var configs = updateLock(true, checksum, tf=tf, lf=temp.tryGetPath());
   var lock = open(temp.tryGetPath(), iomode.r);
   var lockFile = parseToml(lock);
   writeln(lockFile);

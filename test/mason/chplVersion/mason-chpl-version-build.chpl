@@ -5,7 +5,7 @@ use IO;
 
 proc main() {
 
-  
+  var checksum = true;
   const toml = open("Mason.toml", iomode.cw);
   var s      = toml.writer();
 
@@ -34,5 +34,5 @@ proc main() {
 
   var compopts: list(string);
   compopts.append("");
-  buildProgram(false, false, false, compopts, "Mason.toml", "Mason.lock");
+  buildProgram(false, false, false, compopts, checksum, "Mason.toml", "Mason.lock");
 }
