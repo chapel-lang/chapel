@@ -51,6 +51,7 @@ proc masonUpdate(args: [?d] string) {
   var tf = "Mason.toml";
   var lf = "Mason.lock";
   var skipUpdate = MASON_OFFLINE;
+  var checksum = true;
 
   var listArgs: list(string);
   for arg in args {
@@ -70,9 +71,12 @@ proc masonUpdate(args: [?d] string) {
       when '--update' {
         skipUpdate = false;
       }
+      when '--no-checksum' {
+        checksum = false;
+      }
     }
   }
-  return updateLock(skipUpdate, tf, lf);
+  return updateLock(skipUpdate, checksum, tf, lf);
 }
 
 /*
@@ -89,22 +93,25 @@ proc removeHash(projectHome: string, tf: string){
     if tomlFile.pathExists("brick.CheckSum") {
       hash = tomlFile["brick"]!["CheckSum"]!.s;
       tomlFile["brick"]!.A.remove("CheckSum");
+      generateToml(tomlFile, tomlPath);
     }
-    generateToml(tomlFile, tomlPath);
   }
   return hash;
 }
 
 /* Finds a Mason.toml file and updates the Mason.lock
    generating one if it doesnt exist */
-proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock") {
+proc updateLock(skipUpdate: bool, checksum: bool, tf="Mason.toml", lf="Mason.lock") {
 
   try! {
     const cwd = here.cwd();
     const projectHome = getProjectHome(cwd, tf);
     const tomlPath = projectHome + "/" + tf;
     const lockPath = projectHome + "/" + lf;
-    var previousHash = removeHash(projectHome, tf);
+    var previousHash = "";
+    if checksum then {
+      previousHash = removeHash(projectHome, tf);
+    }
     const openFile = openreader(tomlPath);
     const TomlFile = parseToml(openFile);
     var updated = false;
@@ -140,9 +147,11 @@ proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock") {
     openFile.close();
     delete TomlFile;
     delete lockFile;
-    var newHash = updateTomlWithChecksum(projectHome);
-    if previousHash != "" && previousHash != newHash {
-      writeln("Project had some updates, computing the new Hash");
+    if checksum then {
+      var newHash = updateTomlWithChecksum(projectHome);
+      if previousHash != "" && previousHash != newHash {
+        writeln("Project had some updates, computing the new Hash");
+      }
     }
   }
   catch e: MasonError {

@@ -7,10 +7,11 @@ use IO;
 use FileSystem;
 
 config const toml = "";
+var checksum = true;
 
 proc main() {
 
-  updateLock(true, tf=toml);
+  updateLock(true, checksum, tf=toml);
 
   if exists("Mason.lock") {
     writeln("----- lock file -----");

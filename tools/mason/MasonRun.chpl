@@ -155,6 +155,7 @@ private proc masonBuildRun(args: [?d] string) {
     var skipUpdate = MASON_OFFLINE;
     var execopts: list(string);
     var exampleProgram='';
+    var checksum = true;
     for arg in args[2..] {
       if exec == true {
         execopts.append(arg);
@@ -189,6 +190,9 @@ private proc masonBuildRun(args: [?d] string) {
       else if arg == '--update' {
         skipUpdate = false;
       }
+      else if arg == '--no-checksum' {
+        checksum = false;
+      }
       else {
         // could be examples or execopts
         execopts.append(arg);
@@ -210,6 +214,7 @@ private proc masonBuildRun(args: [?d] string) {
       if release then buildArgs.append("--release");
       if force then buildArgs.append("--force");
       if show then buildArgs.append("--show");
+      if !checksum then buildArgs.append("--no-checksum");
 
       masonBuild(buildArgs.toArray());
       runProjectBinary(show, release, execopts);
@@ -219,5 +224,3 @@ private proc masonBuildRun(args: [?d] string) {
     stderr.writeln(e.message());
   }
 }
-
-

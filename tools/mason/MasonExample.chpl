@@ -44,6 +44,7 @@ proc masonExample(args: [] string) {
   var skipUpdate = MASON_OFFLINE;
   var update = false;
   var examples: list(string);
+  var checksum = true;
   for arg in args {
     if arg == '--show' {
       show = true;
@@ -77,11 +78,14 @@ proc masonExample(args: [] string) {
     else if arg == '--build' {
       continue;
     }
+    else if arg == '--no-checksum' {
+      checksum = false;
+    }
     else {
       examples.append(arg);
     }
   }
-  updateLock(skipUpdate);
+  updateLock(skipUpdate, checksum);
   runExamples(show, run, build, release, force, examples);
 }
 
@@ -93,7 +97,7 @@ private proc getBuildInfo(projectHome: string) {
   const toml = open(projectHome + "/Mason.toml", iomode.r);
   const lockFile = owned.create(parseToml(lock));
   const tomlFile = owned.create(parseToml(toml));
-  
+
   // Get project source code and dependencies
   const sourceList = genSourceList(lockFile);
 
@@ -207,7 +211,7 @@ private proc runExamples(show: bool, run: bool, build: bool, release: bool,
     const exampleNames = buildInfo[3];
     const perExampleOptions = buildInfo[4];
     const projectName = basename(stripExt(projectPath, ".chpl"));
-    
+
     var numExamples = exampleNames.size;
     var examplesToRun = determineExamples(exampleNames, examplesRequested);
 
@@ -220,15 +224,15 @@ private proc runExamples(show: bool, run: bool, build: bool, release: bool,
         const examplePath = "".join(projectHome, '/example/', example);
         const exampleName = basename(stripExt(example, ".chpl"));
 
-        // retrieves compopts and execopts found per example in the toml file      
+        // retrieves compopts and execopts found per example in the toml file
         const optsFromToml = perExampleOptions[exampleName];
         var exampleCompopts = optsFromToml[0];
         var exampleExecopts = optsFromToml[1];
 
         if release then exampleCompopts += " --fast";
 
-        if build {  
-          if exampleModified(projectHome, projectName, example) || force { 
+        if build {
+          if exampleModified(projectHome, projectName, example) || force {
 
             // remove old binary
             removeExampleBinary(projectHome, exampleName);
@@ -294,7 +298,7 @@ private proc runExampleBinary(projectHome: string, exampleName: string,
     "Try running: mason build --example " + exampleName + ".chpl\n" +
     "         or: mason run --example " + exampleName + ".chpl --build");
   }
-}  
+}
 
 
 private proc getMasonDependencies(sourceList: list(3*string),
