@@ -1,0 +1,6 @@
+type-tests.isSubtype-records.chpl:1: error: inheritance is not currently supported for records
+type-tests.isSubtype-records.chpl:1: note: thoughts on what record inheritance should entail can be added to https://github.com/chapel-lang/chapel/issues/6851
+type-tests.isSubtype-records.chpl:1: error: inheritance is not currently supported for records
+type-tests.isSubtype-records.chpl:1: note: thoughts on what record inheritance should entail can be added to https://github.com/chapel-lang/chapel/issues/6851
+type-tests.isSubtype-records.chpl:1: error: inheritance is not currently supported for records
+type-tests.isSubtype-records.chpl:1: note: thoughts on what record inheritance should entail can be added to https://github.com/chapel-lang/chapel/issues/6851

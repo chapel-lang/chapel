@@ -1,0 +1,13 @@
+#!/usr/bin/env python3
+""" prints Python cpu_count(), optionally capped by env var CHPL_MAKE_MAX_CPU_COUNT
+"""
+import os
+import multiprocessing
+cpus = multiprocessing.cpu_count()
+try:
+  max = os.getenv('CHPL_MAKE_MAX_CPU_COUNT', '0')
+  if int(max) > 0:
+    cpus = min(int(max), cpus)
+except:
+  pass
+print(cpus)

@@ -1,0 +1,24 @@
+Tests of slicing -2..10 and 2..11:
+R[RU] = 2..10: range(int(64),bounded,false)
+RU[R] = 2..10: range(uint(64),bounded,false)
+
+Tests of slicing -5..-2 and 2..11:
+R[RU] = 2..-2: range(int(64),bounded,false)
+RU[R] = 1..0: range(uint(64),bounded,false)
+
+Tests of slicing -5..-2 and 18446744073709551605..18446744073709551610:
+R[RU] = 1..0: range(int(64),bounded,false)
+RU[R] = 1..0: range(uint(64),bounded,false)
+
+Tests of slicing -2..10 and 18446744073709551605..18446744073709551610:
+R[RU] = 1..0: range(int(64),bounded,false)
+RU[R] = 18446744073709551605..10: range(uint(64),bounded,false)
+
+Tests of slicing 2..11 and 4..18446744073709551610:
+R[RU] = 4..11: range(int(64),bounded,false)
+RU[R] = 4..11: range(uint(64),bounded,false)
+
+Tests of slicing 2..11 and 13..18446744073709551610:
+R[RU] = 13..11: range(int(64),bounded,false)
+RU[R] = 13..11: range(uint(64),bounded,false)
+

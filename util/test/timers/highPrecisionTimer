@@ -1,0 +1,17 @@
+#!/usr/bin/env python3
+import subprocess, sys, timeit
+
+# high precision timer that uses the timeit module. Only reports real time, and
+# not cpu or sys time. Subprocess call adds a negligible amount of time.
+
+if __name__ == '__main__':
+    timer = timeit.default_timer
+    return_code = 1
+    start_time = timer()
+    try:
+        return_code = subprocess.call(sys.argv[1:])
+    except KeyboardInterrupt:
+        pass
+    end_time = timer()
+    sys.stdout.write("real {0:0.4}\n\n\n".format(end_time - start_time))
+    sys.exit(return_code)

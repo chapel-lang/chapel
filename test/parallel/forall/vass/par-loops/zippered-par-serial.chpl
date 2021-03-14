@@ -1,0 +1,46 @@
+// Like zippered-serial.chpl, except in the opposite order
+var DOM = {1..4};
+var ARR = [555, 222, 222, 333];
+
+proc writeme(arg1:int, arg2:int) { writeln(arg1, " w ", arg2); }
+
+iter iterator() {
+  for elm in ARR {
+    yield elm;
+  }
+}
+
+proc main {
+  // simple loop, 1 index var
+  writeln("AAA");
+  [ idx in zip(DOM,iterator()) ] {
+    writeln(idx);
+  }
+
+  // simple loop, 2 index vars
+  writeln("BBB");
+  [ (idx1,idx2) in zip(DOM,iterator()) ] {
+    writeln(idx1,",",idx2);
+  }
+
+  // Ben's original code.
+  writeln("CCC");
+  const (bestVal, bestIndex) = minloc reduce zip(DOM,iterator());
+  writeln(bestVal, "@", bestIndex);
+
+  writeln("DDD");
+  // Rewritten as a forall loop.
+  var bestResult = max(2*int);
+  [idx in zip(DOM,iterator()) with (minloc reduce bestResult)] {
+    writeln(idx);
+    bestResult reduce= idx;
+  }
+
+  // Write the result.
+  writeln("EEE");
+  writeln(bestResult);
+
+  // How about promotion?
+  writeln("FFF");
+  writeme(DOM,iterator());
+}

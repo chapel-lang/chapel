@@ -1,0 +1,19 @@
+scanViewsBlock.chpl:3: In function 'scanArr':
+scanViewsBlock.chpl:4: warning: scan has been serialized (see issue #12482)
+  scanViewsBlock.chpl:12: called as scanArr(X: [ArrayViewReindexDom(1,int(64),false,int(64),unmanaged BlockDom(1,int(64),false,unmanaged DefaultDist),int(64),unmanaged ArrayViewReindexDist(unmanaged Block(1,int(64),unmanaged DefaultDist),unmanaged domain(1,int(64),false),int(64),unmanaged BlockDom(1,int(64),false,unmanaged DefaultDist)))] int(64))
+scanViewsBlock.chpl:3: In function 'scanArr':
+scanViewsBlock.chpl:4: warning: scan has been serialized (see issue #12482)
+  scanViewsBlock.chpl:13: called as scanArr(X: [ArrayViewReindexDom(1,int(64),false,int(64),unmanaged BlockDom(1,int(64),false,unmanaged DefaultDist),int(64),unmanaged ArrayViewReindexDist(unmanaged Block(1,int(64),unmanaged DefaultDist),unmanaged domain(1,int(64),false),int(64),unmanaged BlockDom(1,int(64),false,unmanaged DefaultDist)))] int(64))
+scanViewsBlock.chpl:3: In function 'scanArr':
+scanViewsBlock.chpl:4: warning: scan has been serialized (see issue #12482)
+  scanViewsBlock.chpl:14: called as scanArr(X: [ArrayViewReindexDom(1,int(64),false,int(64),unmanaged BlockDom(1,int(64),false,unmanaged DefaultDist),int(64),unmanaged ArrayViewReindexDist(unmanaged Block(1,int(64),unmanaged DefaultDist),unmanaged domain(1,int(64),false),int(64),unmanaged BlockDom(1,int(64),false,unmanaged DefaultDist)))] int(64))
+scanViewsBlock.chpl:3: In function 'scanArr':
+scanViewsBlock.chpl:4: warning: scan has been serialized (see issue #12482)
+  scanViewsBlock.chpl:18: called as scanArr(X: [ArrayViewRankChangeDom(1,int(64),false,2*bool,2*int(64),int(64),unmanaged ArrayViewRankChangeDist(unmanaged DefaultDist,2*bool,2*int(64)))] int(64))
+1 3 6 10 15 21 28 36 45 55: [{1..10}]
+3 7 12: [{3..5}]
+1 3 6 10 15 21 28 36 45 55: [{0..9}]
+3 7 12: [{-1..1}]
+1 3 6: [{0..2}]
+21 43 66: [{1..3}]
+13 36 69: [{1..3}]

@@ -1,0 +1,2 @@
+condReturn2.chpl:4: In method 'foo':
+condReturn2.chpl:4: error: tuple size must be known at compile-time

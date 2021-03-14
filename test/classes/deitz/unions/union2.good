@@ -1,0 +1,2 @@
+x: (-1)
+union2.chpl:14: error: halt reached - illegal union access

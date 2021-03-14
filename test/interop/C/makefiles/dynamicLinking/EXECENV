@@ -1,0 +1,10 @@
+#!/bin/bash
+
+# If we don't do this then the dynamic linker will fail to load our library
+# when on Linux.
+unamestr=`uname`
+
+if [[ $unamestr == "Linux" ]]; then
+  echo LD_LIBRARY_PATH=$CHPL_HOME/test/interop/C/makefiles/dynamicLinking/lib:$LD_LIBRARY_PATH
+fi
+

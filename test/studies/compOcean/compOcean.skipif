@@ -1,0 +1,21 @@
+#!/usr/bin/env python3
+
+# The NetCDF package requires the netCDF library.
+#
+# Installation of the netCDF library is detected with the find_library function,
+# which looks for the appropriate dynamic library (e.g. libnetcdf.so).
+# Note that if the dynamic library is found, this test assumes that the
+# header and static library are available.
+
+# On systems with Cray modules, this finds the library inside a module even
+# though the module is not loaded.  Avoid those "false positive" systems.
+
+from __future__ import print_function
+from ctypes.util import find_library
+from os import getenv, path
+from socket import gethostname
+
+foundLib = not (find_library('netcdf') is None)
+isXC = getenv('CHPL_TARGET_PLATFORM') == 'cray-xc'
+
+print((not foundLib) or isXC)

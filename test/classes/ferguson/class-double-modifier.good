@@ -1,0 +1,36 @@
+class-double-modifier.chpl:6: In function 'doit':
+class-double-modifier.chpl:8: error: duplicate decorators - unmanaged unmanaged A(int(64))
+  class-double-modifier.chpl:41: called as doit(type C = unmanaged A(int(64)))
+class-double-modifier.chpl:6: In function 'doit':
+class-double-modifier.chpl:8: error: duplicate decorators - unmanaged owned A(int(64))
+  class-double-modifier.chpl:42: called as doit(type C = owned A(int(64)))
+class-double-modifier.chpl:6: In function 'doit':
+class-double-modifier.chpl:8: error: duplicate decorators - unmanaged shared A(int(64))
+  class-double-modifier.chpl:43: called as doit(type C = shared A(int(64)))
+class-double-modifier.chpl:6: In function 'doit':
+class-double-modifier.chpl:8: error: duplicate decorators - unmanaged borrowed A(int(64))
+  class-double-modifier.chpl:44: called as doit(type C = borrowed A(int(64)))
+class-double-modifier.chpl:15: In function 'doit2':
+class-double-modifier.chpl:17: error: duplicate decorators - owned unmanaged A(int(64))
+  class-double-modifier.chpl:48: called as doit2(type C = unmanaged A(int(64)))
+class-double-modifier.chpl:15: In function 'doit2':
+class-double-modifier.chpl:17: error: duplicate decorators - owned owned A(int(64))
+  class-double-modifier.chpl:49: called as doit2(type C = owned A(int(64)))
+class-double-modifier.chpl:15: In function 'doit2':
+class-double-modifier.chpl:17: error: duplicate decorators - owned shared A(int(64))
+  class-double-modifier.chpl:50: called as doit2(type C = shared A(int(64)))
+class-double-modifier.chpl:15: In function 'doit2':
+class-double-modifier.chpl:17: error: duplicate decorators - owned borrowed A(int(64))
+  class-double-modifier.chpl:51: called as doit2(type C = borrowed A(int(64)))
+class-double-modifier.chpl:23: In function 'doit3':
+class-double-modifier.chpl:24: error: duplicate decorators - shared unmanaged A(int(64))
+  class-double-modifier.chpl:55: called as doit3(type C = unmanaged A(int(64)))
+class-double-modifier.chpl:23: In function 'doit3':
+class-double-modifier.chpl:24: error: duplicate decorators - shared owned A(int(64))
+  class-double-modifier.chpl:56: called as doit3(type C = owned A(int(64)))
+class-double-modifier.chpl:23: In function 'doit3':
+class-double-modifier.chpl:24: error: duplicate decorators - shared shared A(int(64))
+  class-double-modifier.chpl:57: called as doit3(type C = shared A(int(64)))
+class-double-modifier.chpl:23: In function 'doit3':
+class-double-modifier.chpl:24: error: duplicate decorators - shared borrowed A(int(64))
+  class-double-modifier.chpl:58: called as doit3(type C = borrowed A(int(64)))

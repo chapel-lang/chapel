@@ -1,0 +1,2 @@
+multipleParamInitErrors.chpl:3: error: Initializing parameter 'n' to value not known at compile time
+multipleParamInitErrors.chpl:4: error: Initializing parameter 'quarterN' to value not known at compile time

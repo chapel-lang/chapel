@@ -1,0 +1,11 @@
+Updating registry
+Downloading dependency: _MasonTest1-0.2.0
+compiled depExample.chpl successfully
+compiled example.chpl successfully
+compiled nomodule.chpl successfully
+compiled examplesubdir/subdirExample.chpl successfully
+Updating registry
+Example with dependency Passed!
+Example Passed!
+Example with dependency outside module Passed!
+Example within subdirectory Passed!

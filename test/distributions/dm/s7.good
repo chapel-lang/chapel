@@ -1,0 +1,17 @@
+s7.chpl:104: In function 'copyToDF':
+s7.chpl:106: warning: initializing a non-distributed domain from a distributed domain. If you didn't mean to do that, add a dmapped clause to the type expression or remove the type expression altogether
+s7.chpl:106: warning: initializing a non-distributed domain from a distributed domain. If you didn't mean to do that, add a dmapped clause to the type expression or remove the type expression altogether
+s7.chpl:104: In function 'copyToDF':
+s7.chpl:106: warning: initializing a non-distributed domain from a distributed domain. If you didn't mean to do that, add a dmapped clause to the type expression or remove the type expression altogether
+s7.chpl:106: warning: initializing a non-distributed domain from a distributed domain. If you didn't mean to do that, add a dmapped clause to the type expression or remove the type expression altogether
+n 8  blkSize 2  locales 3*3
+
+11000101 12000102 1011000103 1012000104 2011000105 2012000106 11000107 12000108 0
+21000201 22000202 1021000203 1022000204 2021000205 2022000206 21000207 22000208 0
+31001101 32001102 1031001103 1032001104 2031001105 2032001106 31001107 32001108 0
+41001201 42001202 1041001203 1042001204 2041001205 2042001206 41001207 42001208 0
+51002101 52002102 1051002103 1052002104 2051002105 2052002106 51002107 52002108 0
+61002201 62002202 1061002203 1062002204 2061002205 2062002206 61002207 62002208 0
+71000101 72000102 1071000103 1072000104 2071000105 2072000106 71000107 72000108 0
+81000201 82000202 1081000203 1082000204 2081000205 2082000206 81000207 82000208 0
+DONE

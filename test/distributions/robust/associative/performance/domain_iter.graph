@@ -1,0 +1,4 @@
+perfkeys: Serial:, Parallel:
+graphkeys: Serial (for), Parallel (forall)
+graphtitle: Associative Domain Iteration
+ylabel: Time (seconds)

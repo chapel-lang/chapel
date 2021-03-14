@@ -1,0 +1,5 @@
+many-errors.chpl:3: syntax error: near '}'
+many-errors.chpl:9: syntax error: near ';'
+many-errors.chpl:17: syntax error: near ';'
+many-errors.chpl:22: syntax error: near 'int'
+many-errors.chpl:30: syntax error: near '}'

@@ -1,0 +1,39 @@
+.. default-domain:: chpl
+
+.. module:: typeMethods.doc
+
+typeMethods.doc
+===============
+**Usage**
+
+.. code-block:: chapel
+
+   use typeMethods.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import typeMethods.doc;
+
+.. class:: Foo
+
+   .. method:: proc type biff()
+
+      A type method declared inside the class Foo 
+
+.. method:: proc type Foo.blah()
+
+   A type method declared outside the class Foo 
+
+.. record:: Bar
+
+   .. method:: proc type biff()
+
+      A type method declared inside the record Bar 
+
+.. method:: proc type Bar.blah()
+
+   A type method declared outside the record Bar 
+

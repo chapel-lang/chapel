@@ -1,0 +1,14 @@
+in callin, x is: a
+re-assigned to be: ab
+back at callsite, a is: a
+
+in callout, x is: 
+re-assigned to be: c
+back at callsite, a is: c
+
+in callinout, x is: c
+re-assigned to be: cd
+back at callsite, a is: cd
+
+in callblank, x is: cd
+back at callsite, a is: cd

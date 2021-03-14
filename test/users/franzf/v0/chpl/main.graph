@@ -1,0 +1,3 @@
+perfkeys: fft_2:, fft_4:, fft_8:, fft_16:, fft_32:, fft_64:, fft_128:, fft_256:, fft_512:, fft_1024:, fft_2048:
+ylabel: Time (us)
+graphtitle: Spiral 5.0 Chapel FFT example

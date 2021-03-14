@@ -1,0 +1,1 @@
+mixedEnumRange.chpl:4: error: ranges of enums must use a single enum type

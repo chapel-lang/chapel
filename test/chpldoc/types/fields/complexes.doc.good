@@ -1,0 +1,39 @@
+.. default-domain:: chpl
+
+.. module:: complexes.doc
+
+complexes.doc
+=============
+**Usage**
+
+.. code-block:: chapel
+
+   use complexes.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import complexes.doc;
+
+.. record:: Foo
+
+   .. attribute:: var aComplex: complex = 1.0+2.0i
+
+   .. attribute:: const bar = 0.0+1.0i
+
+   .. attribute:: param baz: complex
+
+   .. attribute:: var aComplex2: complex = 1.0+2.0i
+
+      This one has a comment 
+
+   .. attribute:: const bar2 = 0.0+1.0i
+
+      So does this one 
+
+   .. attribute:: param baz2: complex
+
+      And this one 
+

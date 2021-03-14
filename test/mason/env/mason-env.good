@@ -1,0 +1,31 @@
+MASON_HOME: $PWD *
+MASON_REGISTRY: mason-registry|https://github.com/chapel-lang/mason-registry
+MASON_OFFLINE: false
+SPACK_ROOT: $PWD/mason_home/spack *
+----------
+MASON_HOME: $PWD *
+MASON_REGISTRY: foobar|foobar *
+MASON_OFFLINE: false
+SPACK_ROOT: $PWD/mason_home/spack *
+----------
+MASON_HOME: $PWD *
+MASON_REGISTRY: mason-registry|https://github.com/chapel-lang/mason-registry
+MASON_OFFLINE: true *
+SPACK_ROOT: $PWD/mason_home/spack *
+---------
+MASON_HOME: $PWD *
+MASON_REGISTRY: mason-registry|https://github.com/chapel-lang/mason-registry
+MASON_OFFLINE: false
+SPACK_ROOT: $PWD/mason_home/spack *
+MASON_CACHED_REGISTRY: $PWD/mason-registry
+----------
+Print environment variables recognized by mason
+
+Usage:
+    mason env [options]
+
+Options:
+    -h, --help                  Display this message
+
+Environment variables set by the user will be printed with an
+asterisk at the end of the line.

@@ -1,0 +1,2 @@
+accessPrivateUsedSibling2a.chpl:18: In function 'main':
+accessPrivateUsedSibling2a.chpl:20: error: 'secretVariable' undeclared (first use this function)

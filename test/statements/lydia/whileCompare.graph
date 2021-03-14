@@ -1,0 +1,6 @@
+perfkeys: While loop underwent 1000000 iterations 10000 times in, C while loop took
+graphkeys: Chapel while loop, C while loop
+files: forVersusWhilePerf.dat, forVersusWhilePerf.dat
+graphtitle: While Loop Time Compare
+ylabel: Time (seconds)
+graphname: whileLoopCompare

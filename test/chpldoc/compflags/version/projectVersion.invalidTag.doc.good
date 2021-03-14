@@ -1,0 +1,2 @@
+error: Invalid version format: 21.0.3-invalid due to: Tag not supported, supported tags are alpha/beta/rc
+cat: docs/_static/documentation_options.js: No such file or directory

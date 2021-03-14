@@ -1,0 +1,17 @@
+==================================
+Chapel Developer Utility Directory
+==================================
+
+This directory contains utility scripts that are useful mostly to developers.
+For example:
+
+  chpl-run         : compiles a Chapel program and runs it right away
+  fnhtml.pl        : Views a single function throughout compilation output
+                     generated from compiling with '--html' flag
+  receive_patch    : two scripts useful for moving patches between trees
+  send_patch
+  chplspell        : helper script for spell checking the Chapel repo
+  test/
+    cat_futures    : prints all the futures to the console with name/lineno
+    compileTest    : compiles a single test using appropriate COMPOPTS/.compopts
+    list_futures   : lists all the futures by printing the first line in .future

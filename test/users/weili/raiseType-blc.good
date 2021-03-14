@@ -1,0 +1,3 @@
+raiseType-blc.chpl:1: In function 'raiseType':
+raiseType-blc.chpl:3: error: illegal return of type where value is expected
+  raiseType-blc.chpl:7: called as raiseType(type x = bool)

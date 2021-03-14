@@ -1,0 +1,10 @@
+
+[servers]
+
+[servers.alpha]
+
+[servers.alpha.it]
+inline = "yes"
+table = "yes"
+
+

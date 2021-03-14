@@ -1,0 +1,4 @@
+Attempting dynamic cast to Child
+{x = 1, y = 1, z = 1}
+Attempting dynamic cast to Grandchild
+{x = 1, y = 1, z = 1}

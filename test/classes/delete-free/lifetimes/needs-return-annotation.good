@@ -1,0 +1,23 @@
+needs-return-annotation.chpl:9: In function 'bad1':
+needs-return-annotation.chpl:14: error: Scoped variable would outlive the value it is set to
+needs-return-annotation.chpl:12: note: consider scope of own
+needs-return-annotation.chpl:14: error: Scoped variable bb reachable after lifetime ends
+needs-return-annotation.chpl:12: note: consider scope of own
+needs-return-annotation.chpl:24: In function 'bad2':
+needs-return-annotation.chpl:26: error: Reference to scoped variable cannot be returned
+needs-return-annotation.chpl:25: note: consider scope of key
+needs-return-annotation.chpl:39: In function 'bad3':
+needs-return-annotation.chpl:45: error: Scoped variable would outlive the value it is set to
+needs-return-annotation.chpl:43: note: consider scope of innerOwn
+needs-return-annotation.chpl:45: error: Scoped variable bb reachable after lifetime ends
+needs-return-annotation.chpl:43: note: consider scope of innerOwn
+needs-return-annotation.chpl:54: In function 'bad4':
+needs-return-annotation.chpl:59: error: Scoped variable would outlive the value it is set to
+needs-return-annotation.chpl:57: note: consider scope of own
+needs-return-annotation.chpl:59: error: Scoped variable bb reachable after lifetime ends
+needs-return-annotation.chpl:57: note: consider scope of own
+needs-return-annotation.chpl:68: In function 'bad5':
+needs-return-annotation.chpl:74: error: Scoped variable would outlive the value it is set to
+needs-return-annotation.chpl:72: note: consider scope of innerOwn
+needs-return-annotation.chpl:74: error: Scoped variable bb reachable after lifetime ends
+needs-return-annotation.chpl:72: note: consider scope of innerOwn

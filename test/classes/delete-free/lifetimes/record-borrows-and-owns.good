@@ -1,0 +1,15 @@
+record-borrows-and-owns.chpl:34: In function 'badMyFun':
+record-borrows-and-owns.chpl:38: error: Scoped variable lhs would outlive the value it is set to
+record-borrows-and-owns.chpl:35: note: consider scope of tmp
+record-borrows-and-owns.chpl:41: In function 'badF2':
+record-borrows-and-owns.chpl:43: error: Scoped variable cannot be returned
+record-borrows-and-owns.chpl:42: note: consider scope of r
+record-borrows-and-owns.chpl:47: In function 'badF3':
+record-borrows-and-owns.chpl:53: error: Scoped variable r2 cannot be returned
+record-borrows-and-owns.chpl:48: note: consider scope of own
+record-borrows-and-owns.chpl:63: In function 'badF6':
+record-borrows-and-owns.chpl:65: error: Scoped variable cannot be returned
+record-borrows-and-owns.chpl:64: note: consider scope of a
+record-borrows-and-owns.chpl:70: In function 'badF8':
+record-borrows-and-owns.chpl:75: error: Scoped variable cannot be returned
+record-borrows-and-owns.chpl:71: note: consider scope of a

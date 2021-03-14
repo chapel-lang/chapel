@@ -1,0 +1,25 @@
+String Implementation Test Suite
+================================
+
+The tests in this suite are intended to test string implementations.
+Any string implementation can be plugged in by changing the config
+type 'string_impl' (and including the proper module for the
+implementation).
+
+The suite it is particularly heavy on testing memory leaks using the
+existing string interface.  As the interface grows and changes, new
+tests should be added.
+
+Files
+=====
+
+ common/           : Files common to all directories
+   impl.chpl       : String implementation config declaration
+   memTrackSupport : Helper functions for tracking memory, especially
+                    in the multilocale case
+
+ memLeaks/         : Unit tests checking of memory leaks of string operations
+
+
+ stress/ : Tests intended to stress the string implementation (these
+           may also do memory tracking)

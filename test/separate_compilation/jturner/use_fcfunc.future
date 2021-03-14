@@ -1,0 +1,3 @@
+bug: first-class functions suffer from separate compilation + subclassing support
+
+Because first-class functions under the hood use the object system in Chapel, they can not be used as types of formal arguments in separately compiled functions.  Once subclassing of library types works, this should (hopefully) start to work as well.

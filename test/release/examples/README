@@ -1,0 +1,85 @@
+====================
+Chapel Example Codes
+====================
+
+This directory contains a few simple "Hello, world!" example codes to
+get started with Chapel program structure:
+
+     hello.chpl               : a one-line Chapel "Hello, world!" program
+     hello2-module.chpl       : a more structured "Hello, world!" program
+     hello3-datapar.chpl      : a data parallel version of "Hello, World!"
+     hello4-datapar-dist.chpl : a distributed data parallel version
+     hello5-taskpar.chpl      : a task parallel version of "Hello, World!"
+     hello6-taskpar-dist.chpl : a distributed task parallel version
+
+It also contains subdirectories that contain more interesting
+examples:
+
+     benchmarks/  : contains standard benchmarks written in Chapel
+     patterns/    : examples demonstrating common tasks
+     primers/     : introduce Chapel concepts narratively for new users
+     spec/        : example codes from the Chapel Specification (see below)
+     users-guide/ : example codes from the Chapel Users Guide
+
+Each subdirectory (except users-guide and spec) includes its own README file
+with additional information on those examples.
+
+
+------------------------
+The spec directory tests
+------------------------
+
+The tests in the spec directory are automatically extracted from
+selected examples in the Chapel Specification.  The examples for a
+particular chapter are in a directory specified by the chapter name
+(e.g., Arrays) and the name of the test is in parenthesis after the
+word "Example" in the spec.  Often times, additional code has been
+added to make the code a complete, testable program.
+
+
+------------------
+Building the tests
+------------------
+
+Most of the examples can be compiled without explicitly listing any
+additional source files.  For example, the canonical "Hello, world!"
+program can be compiled as follows:
+
+     chpl -o hello hello.chpl
+
+We provide Makefiles in each directory that can be used to build a
+single test in that directory by name:
+
+     gmake hello
+
+Alternatively, you can build all the tests in a directory and its
+subdirectories by simply using:
+
+     gmake
+
+
+-----------
+Other files
+-----------
+
+This directory:
+  README.testing  : provides an introduction to using the Chapel testing system
+  start_test      : the main script for the Chapel testing system
+  Logs/           : directory created by the test system to store logs
+
+This directory and subdirectories:
+  *.chpl          : the Chapel example programs
+  Makefile        : Makefile for compiling the examples
+  COMPOPTS        : used by the Chapel testing system -- see README.testing
+  NUMLOCALES      : "
+  PREDIFF         : "
+  *.compopts      : "
+  *.execopts      : "
+  *.good          : "
+  *.graph         : "
+  *.notest        : "
+  *.numlocales    : "
+  *.prediff       : "
+  *.perfkeys      : "
+  *.skipif        : "
+  *.timeout       : "

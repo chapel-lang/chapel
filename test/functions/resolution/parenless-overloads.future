@@ -1,0 +1,2 @@
+bug: incorrect resolution of overloaded paren-less functions
+#11216

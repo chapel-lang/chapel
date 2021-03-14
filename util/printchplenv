@@ -1,0 +1,11 @@
+#!/usr/bin/env sh
+
+# Bash wrapper for printchplenv.py. In order to make relative imports easier we
+# want the real printchplenv.py to live in the chplenv dir. This wrapper just
+# exists to call the real script. It's possible this could be a symlink, but
+# using a symlink for such a core script makes me nervous for some reason.
+
+CWD=$(cd $(dirname $0) ; pwd)
+
+PY=`"$CWD/config/find-python.sh"`
+$PY "$CWD/chplenv/printchplenv.py" "$@"

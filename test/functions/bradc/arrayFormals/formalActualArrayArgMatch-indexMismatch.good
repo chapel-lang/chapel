@@ -1,0 +1,4 @@
+In foo!
+formalActualArrayArgMatch.chpl:15: error: halt reached - Domain mismatch passing array argument:
+  Formal domain is: {1..10}
+  Actual domain is: {0..9}

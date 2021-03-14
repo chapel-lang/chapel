@@ -1,0 +1,47 @@
+use MyNorm;
+
+proc main() {
+  const D1 = {1..5};
+  var a:[D1] real;
+  a = 2.0;
+  writeln("Test of vector norms.  x = ");
+  writeln(a);
+  writeln("1-norm = ",norm(a,'1'));
+  writeln("2-norm = " , norm(a,'2'));
+  writeln("infinity norm = ",norm(a,'inf'));
+  writeln("default norm = ",norm(a));
+  const D2 = {1..2,1..2};
+  var b:[D2] real;
+  b = 2.0;
+  writeln("Test of matrix norms.  A = ");
+  writeln(b);
+  writeln("1-norm = ", norm(b,'1'));
+  writeln("infinity norm = ", norm(b,'inf'));
+  writeln("frobenius norm = ",norm(b,'frob'));
+  writeln("default norm = ",norm(b));
+  const D3 = {1..3,1..2};
+  var c:[D3] real;
+  c = 2.0;
+  writeln("Test of matrix norms.  A = ");
+  writeln(c);
+  writeln("1-norm = " , norm(c,'1'));
+  writeln("infinity norm = ", norm(c,'inf'));
+  writeln("frobenius norm = ", norm(c,'frob'));
+  writeln("default norm = ", norm(c));
+  var d:[D2] int;
+  d = 1;
+  writeln("Test of matrix norms.  A = ");
+  writeln(d);
+  writeln("1-norm = ",norm(d,'1'));
+  writeln("infinity norm = ", norm(d,'inf'));
+  writeln("frobenius norm = ",norm(d,'frob'));
+  writeln("default norm = ",norm(d));
+  var e:[D2] complex;
+  e = 1.0 + 1.0i;
+  writeln("Test of matrix norms.  A = ");
+  writeln(e);
+  writeln("1-norm = ",norm(e,'1'));
+  writeln("infinity norm = ", norm(e,'inf'));
+  writeln("frobenius norm = ",norm(e,'frob'));
+  writeln("default norm = ",norm(e));
+}

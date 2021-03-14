@@ -1,0 +1,2 @@
+chplspell-venv: FORCE
+	cd chpl-venv && $(MAKE) chplspell-venv

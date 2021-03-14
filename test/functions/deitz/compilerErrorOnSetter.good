@@ -1,0 +1,1 @@
+compilerErrorOnSetter.chpl:11: error: foo() used in value context!

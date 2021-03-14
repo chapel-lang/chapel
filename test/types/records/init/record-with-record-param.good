@@ -1,0 +1,1 @@
+record-with-record-param.chpl:4: error: 'r' is not of a supported param type

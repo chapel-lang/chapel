@@ -1,0 +1,14 @@
+#!/bin/bash
+
+outfile=$2
+
+case $outfile in
+  (sparse-mismatch-dom-err*)
+     # remove the possible duplicates of the "can't be zippered" message
+     sort $outfile | uniq > $outfile.tmp
+     mv $outfile.tmp $outfile
+     ;;
+  (*)
+     # nothing so far
+     true ;;
+esac

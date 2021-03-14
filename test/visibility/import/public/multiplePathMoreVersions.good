@@ -1,0 +1,4 @@
+B.foo
+A.foo (3)
+A.foo "blah"
+B.foo (3, 2)

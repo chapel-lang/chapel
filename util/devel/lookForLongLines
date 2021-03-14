@@ -1,0 +1,18 @@
+#!/bin/sh
+
+#
+# either CHPL_HOME must be set or this must be run from the root chapel
+# directory
+#
+
+pushd $CHPL_HOME >& /dev/null
+
+find compiler -wholename "*/.svn" -prune -o -name flex-chapel.cpp -prune -o -name bison-chapel.cpp -prune -o -name bison-chapel.h -prune -o \( -name \*.lex -o -name \*.y -o -name \*.ypp -o -name \*.h -o -name \*.c -o -name \*.cpp \) -exec grep -n --with-filename -P '^.{81,}' {} \;
+
+find runtime -wholename "*/.svn" -prune -o \( -name \*.h -o -name \*.c -o -name \*.cpp \) -exec grep -n --with-filename -P '^.{81,}' {} \;
+
+find modules -wholename "*/.svn" -prune -o -name \*.chpl  -exec grep -n --with-filename -P '^.{81,}' {} \;
+
+popd >& /dev/null
+
+exit

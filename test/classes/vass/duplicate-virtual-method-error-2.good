@@ -1,0 +1,2 @@
+duplicate-virtual-method-error-2.chpl:2: error: ambiguous virtual method 'D.dup()'
+duplicate-virtual-method-error-2.chpl:2: note: conflicting with: D.dup()

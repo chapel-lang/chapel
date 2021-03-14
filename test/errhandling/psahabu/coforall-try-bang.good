@@ -1,0 +1,3 @@
+coforall-try-bang.chpl:6: In function 'test':
+coforall-try-bang.chpl:9: error: call to throwing function throwme without throws, try, or try! (relaxed mode)
+coforall-try-bang.chpl:2: note: throwing function throwme defined here

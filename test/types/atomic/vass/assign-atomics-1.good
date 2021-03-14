@@ -1,0 +1,1 @@
+assign-atomics-1.chpl:3: error: Cannot directly assign atomic variables

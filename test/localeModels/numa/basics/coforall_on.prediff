@@ -1,0 +1,35 @@
+#!/usr/bin/env python3
+
+import sys;
+
+logfile = sys.argv[2]
+
+f = open(logfile)
+lines = f.readlines()
+f.close()
+
+newlines = list()
+sorted = list()
+count = 0
+for l in lines:
+    if l != '\n':
+        count += 1
+        sorted.append(l)
+        if l.strip() == '==========':
+            sorted.sort()
+            newlines += sorted
+            for i in range(0,count):
+                sorted.pop()
+            count = 0
+
+newlines += sorted
+
+f = open(logfile, 'w')
+count = 0
+for l in newlines:
+    f.write('%s'%(l))
+
+f.close()
+
+sys.exit(0)
+

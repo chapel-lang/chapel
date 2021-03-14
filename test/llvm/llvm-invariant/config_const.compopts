@@ -1,0 +1,1 @@
+--llvm --fast --llvm-print-ir chpl__init_config_const --llvm-print-ir-stage none

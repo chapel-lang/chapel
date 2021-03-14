@@ -1,0 +1,21 @@
+.. default-domain:: chpl
+
+.. module:: Foo
+
+Foo
+===
+**Usage**
+
+.. code-block:: chapel
+
+   use Foo;
+
+
+or
+
+.. code-block:: chapel
+
+   import Foo;
+
+.. function:: proc deinit()
+

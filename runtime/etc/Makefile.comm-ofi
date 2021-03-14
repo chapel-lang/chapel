@@ -1,0 +1,51 @@
+# Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+# Copyright 2004-2019 Cray Inc.
+# Other additional copyright holders may be indicated within.
+# 
+# The entirety of this work is licensed under the Apache License,
+# Version 2.0 (the "License"); you may not use this file except
+# in compliance with the License.
+# 
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#
+# Conservatively use CXX as the linker, in case regexp (or other C++
+# code) is being linked in.
+#
+LD = $(CXX)
+
+ifneq (, $(findstring mpi, $(CHPL_MAKE_LAUNCHER) $(CHPL_COMM_OFI_OOB)))
+  MPI_LIB_NAME = mpi
+  ifneq ($(MPI_DIR),)
+    ifneq ($(wildcard $(MPI_DIR)/lib64),)
+      MPI_LIB_DIR := $(MPI_DIR)/lib64
+    else ifneq ($(wildcard $(MPI_DIR)/lib),)
+      MPI_LIB_DIR := $(MPI_DIR)/lib
+    endif
+    ifneq ($(MPI_LIB_DIR),)
+      GEN_LFLAGS += -L$(MPI_LIB_DIR) -Wl,-rpath,$(MPI_LIB_DIR)
+      ifneq ($(wildcard $(MPI_LIB_DIR)/libmpich.*),)
+        MPI_LIB_NAME = mpich
+      endif
+    endif
+  endif
+  LIBS += -l$(MPI_LIB_NAME)
+endif
+
+#
+# If we're using the slurm PMI2 out-of-band support we have to
+# reference that library explicitly.
+#
+ifneq (, $(findstring hpe-cray-ex,$(CHPL_MAKE_TARGET_PLATFORM)))
+  LIBS += -lpmi2
+else ifneq (, $(findstring slurm-pmi2, $(CHPL_COMM_OFI_OOB)))
+  LIBS += -lpmi2
+endif

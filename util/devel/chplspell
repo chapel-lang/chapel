@@ -1,0 +1,308 @@
+#!/usr/bin/env bash
+
+# Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+# Copyright 2004-2019 Cray Inc.
+# Other additional copyright holders may be indicated within.
+#
+# The entirety of this work is licensed under the Apache License,
+# Version 2.0 (the "License"); you may not use this file except
+# in compliance with the License.
+#
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# chplspell is a utility to spell check the Chapel source code -- the
+# documentation, compiler, modules, runtime, and select other files as
+# specified below.
+#
+# It's a wrapper script around scspell, providing four conveniences
+# over invoking scspell directly:
+#
+# 1. It has a built-in list of directories and files to spell check.
+# 2. It passes scspell the right options to use the project's
+#    $CHAPEL_HOME/util/devel/chplspell-dictionary.
+# 3. It recurses through directories given on the command line.
+# 4. It invokes the scspell that's installed in the Chapel virtualenv.
+
+
+VENVBIN="$CHPL_HOME/third-party/chpl-venv/build/build-venv/bin"
+SCSPELL="$VENVBIN/scspell"
+
+# Check that scspell exists in the venv
+if [ ! -f "$SCSPELL" ]; then
+    echo "Error: chplspell virtualenv is not available." >&2
+    echo "Run \`make chplspell-venv\` from $CHPL_HOME" >&2
+    exit 1
+fi
+
+# Check that scspell can be run
+if ! "$SCSPELL" --version > /dev/null 2> /dev/null; then
+    echo "Error: chplspell virtualenv is not available." >&2
+    echo "Run \`make chplspell-venv\` from $CHPL_HOME" >&2
+    exit 1
+fi
+
+CHPL_DICT=$CHPL_HOME/util/devel/chplspell-dictionary
+
+# Normal files to look for when searching directories.
+# This is used to build a commandline for /usr/bin/find.
+NORMALGLOBS=("-name" "*.chpl"  "-o"
+             "-name" "*.cpp"   "-o"
+             "-name" "*.c"     "-o"
+             "-name" "*.h"     "-o"
+             "-name" "README*" "-o"
+             "-name" "*.md"    "-o"
+             "-name" "*.rst" )
+
+# Latex files to look for when recursing through directories.
+# These are tracked separately because scspell needs --no-c-escapes for them.
+LATEXGLOBS=("-name" "*.tex")
+
+DEFAULTDIRS=(
+	     compiler doc man modules runtime
+	     test/release
+	     .github
+)
+
+# DEFAULTFILES are just files in $CHPL_HOME or in a directory
+# otherwise not suited for DEFAULTDIRS.  (The latter must have their
+# paths fully specified.  We don't search for these; just a straight-up
+# match in $CHPL_HOME.)
+DEFAULTFILES=("COPYRIGHT" "LICENSE*" "README*" "*.md" "*.rst"
+	      "test/ANNOTATIONS.yaml" "doc/README.rst")
+
+# Filter out files we don't want to spellcheck.
+
+# This includes generated files (generated from files that are
+# spellechecked), and files with "too much noise": LAPACK.chpl is
+# over 20k lines of unique tokens.
+#
+# Any files whose full path relative to $CHPL_HOME has one of these as
+# a prefix will be skipped.  This setting has no impact on files
+# specified specifically on the command line.
+FILTEROUT="compiler/include/bison-chapel.h  \
+           compiler/include/flex-chapel.h   \
+           compiler/parser/bison-chapel.cpp \
+           compiler/parser/flex-chapel.cpp  \
+           doc/rst/builtins                 \
+           doc/rst/modules                  \
+           doc/rst/primers                  \
+           doc/rst/examples                 \
+           modules/packages/HDF5.chpl       \
+           modules/packages/LAPACK.chpl     \
+           modules/packages/NetCDF.chpl"
+
+
+# Here endeth the configuration options.  The rest of the script
+# carries out what's been configured.
+
+NORMALFILES=()
+LATEXFILES=()
+
+TARGETDIRS=()
+ARGS=()
+JUSTARGS=0
+DELETE_INVOKED=0
+
+
+# Simple command line preprocessing for scspell:
+
+# For each argument that doesn't start with -, if it names a
+# directory, replace it with the regular files matching $NORMALGLOBS
+# and $LATEXGLOBS within that directory, recursively.
+
+# Complication: We want to invoke scspell once for all the .chpl,
+# .cpp, .h, README* files (etc.), and again with --no-c-escapes for
+# all the .tex files.
+
+# This is all a hack.  Longer term, the work done by this script should
+# be mostly done by scspell, so this won't be needed.  In the meantime,
+# - Identify directories to be spell checked, so we can generate the
+#   flat file list that scspell wants.
+# - Certain scspell options require us to take care not to reorder
+#   their args (--merge-file-ids and --rename-file).
+# - If any files or directories are specified, spell check only those.
+# - Otherwise, check all the $DEFAULTFILES, and the globbed files under
+#   the $DEFAULTDIRS.
+
+while true; do
+    case "$1" in
+	--help)
+	    $SCSPELL --help
+	    echo;
+	    echo "chplspell sets --override-dictionary to $CHPL_DICT"
+	    echo "and --relative-to to $CHPL_HOME"
+	    echo "and passes the file contents of named directories to scspell"
+	    echo "Use -- to have chplspell pass the remainder of its args"
+	    echo "unchanged."
+	    exit 0
+	    ;;
+
+	# Pass-through args with no parameter handled by -*) case below
+
+	# No support for these through chplspell
+	--override-dictionary|-set-dictionary|--relative-to)
+	    echo "No support for $1 via chplspell." >&2
+	    exit 1
+	    ;;
+
+	# Pass-through args with two parameters.  Pass via $ARGS to preserve
+	# ordering and not attempt directory expansion
+	--copy-file|--merge-file-ids|--rename-file)
+	    ARGS+=("$1" "$2" "$3")
+	    shift 3
+	    JUSTARGS=1
+	    ;;
+	--add-to-dict)
+	    # --add-to-dict takes 2 or 3 args
+	    ARGS+=("$1" "$2" "$3")
+	    shift 3
+	    JUSTARGS=1
+	    if [ -n "$1" ]; then
+		ARGS+=("$1")
+		shift
+	    fi
+	    ;;
+	--delete-files)
+	    DELETE_INVOKED=1
+	    JUSTARGS=1
+	    ARGS+=("--delete-files")
+	    shift
+	    ;;
+
+	--) shift
+	    # Remaining args remain in "$@", and "$#" will be non-zero.
+	    break
+	    ;;
+	-*) ARGS+=("$1"); shift;;  # just pass through e.g. --report-only
+	"") break;;
+	*)
+	    if [ $DELETE_INVOKED == 1 ]; then
+		# delete goes through JUSTARGS case at end, so we need
+		# the files to be deleted to be in ARGS.
+		ARGS+=("$1")
+	    elif [ -f "$1" ]; then
+		# User is responsible for specifying --no-c-escapes
+		# as needed when listing regular files; we'll pick it up
+		# via ARGS.
+		NORMALFILES+=("$1")
+	    elif [ -d "$1" ]; then
+		TARGETDIRS+=("$1")
+	    else
+		# Non-existing files, etc, pass through.  Especially as
+		# scspell requires a "filename" even for e.g. -i.
+		ARGS+=("$1")
+	    fi
+	    shift
+	    ;;
+	esac
+done
+
+if [ $JUSTARGS == 0 ]; then
+    # If nothing was specified on the command line, use our default lists.
+    if [ ${#TARGETDIRS} == 0 -a ${#NORMALFILES} == 0 -a $# == 0 ]; then
+	cd $CHPL_HOME
+	# Now that we're in $CHPL_HOME, use [*] to expand the globs in
+	# $DEFAULTFILES.  This is ok since DEFAULTFILES doesn't
+	# contain any filenames with spaces etc.  DEFAULTDIRS has no
+	# globs.
+	NORMALFILES=(${DEFAULTFILES[*]})
+	TARGETDIRS=("${DEFAULTDIRS[@]}")
+    fi
+
+    if [ ${#TARGETDIRS} != 0 ]; then
+	NFILES=() LFILES=()
+
+	# Get the results of the find into a shell array.  Use find
+	# -print0 to avoid problems with spaces and special
+	# characters.  The "IFS=" and -d $'\0' allow 'read' to consume
+	# -print0 output.
+	while IFS= read -r -d $'\0' F; do
+	    NFILES+=("$F")
+	done < <(find "${TARGETDIRS[@]}" \( "${NORMALGLOBS[@]}" \) -print0)
+
+	while IFS= read -r -d $'\0' F; do
+	    LFILES+=("$F")
+	done < <(find "${TARGETDIRS[@]}" \( "${LATEXGLOBS[@]}" \) -print0)
+
+	# Filter out files listed in $FILTEROUT
+	for file in "${NFILES[@]}"; do
+	    KEEP=1
+	    for filter in $FILTEROUT; do
+		if [ "$file" != "${file#$filter}" ]; then
+		    KEEP=0
+		    break;
+		fi
+	    done
+	    if [ $KEEP == 1 ]; then
+		NORMALFILES+=("$file")
+	    fi
+	done
+
+	for file in "${LFILES[@]}"; do
+	    KEEP=1
+	    for filter in $FILTEROUT; do
+		if [ "$file" != "${file#$filter}" ]; then
+		    KEEP=0
+		    break;
+		fi
+	    done
+	    if [ $KEEP == 1 ]; then
+		LATEXFILES+=("$file")
+	    fi
+	done
+    fi
+fi
+
+if [ ${#NORMALFILES[@]} != 0 -a  \
+     ${#LATEXFILES[@]} != 0 -a   \
+     $# != 0 ]; then
+    echo "Specified normal files and latex files and --" >&2
+    echo "I don't know what to do." 2>&1
+    exit 1
+fi
+
+nrval=0  # normal rval
+if [ $JUSTARGS == 0 -a ${#NORMALFILES[@]} != 0 ]; then
+    $SCSPELL --use-builtin-base-dict --override-dictionary $CHPL_DICT \
+	     --relative-to $CHPL_HOME \
+	     "${ARGS[@]}" "${NORMALFILES[@]}" "$@"
+    nrval=$?
+fi
+
+lrval=0  # latex rval
+if [ $JUSTARGS == 0 -a ${#LATEXFILES[@]} != 0 ]; then
+    $SCSPELL --use-builtin-base-dict --override-dictionary $CHPL_DICT \
+	     --relative-to $CHPL_HOME \
+	     "${ARGS[@]}" --no-c-escapes "${LATEXFILES[@]}" "$@"
+    lrval=$?
+fi
+
+orval=0 # other rval
+if [ $JUSTARGS == 1 -o ${#NORMALFILES[@]} == 0 -a ${#LATEXFILES[@]} == 0 ]; then
+    if [ $# != 0 -o ${#ARGS[@]} != 0 ]; then
+	# Can't sort these, or we'd break the relationship or ordering
+	# of --rename-file or --merge-fileids and their arguments
+	$SCSPELL --use-builtin-base-dict --override-dictionary \
+		 $CHPL_DICT --relative-to $CHPL_HOME \
+		 "${ARGS[@]}" "$@"
+	orval=$?
+    fi
+fi
+
+if [ $nrval != 0 ]; then
+    exit $nrval
+elif [ $lrval != 0 ]; then
+    exit $lrval
+elif [ $orval != 0 ]; then
+    exit $orval
+else
+    exit 0
+fi

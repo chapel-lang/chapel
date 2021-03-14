@@ -1,0 +1,11 @@
+perfkeys: Elapsed time for Kernel 4:
+files: SSCA2-16.4.dat
+graphkeys: ssca2 kernel 4 runtime
+graphtitle: SSCA: SSCA#2 Kernel 4 (sec) - size 16, 2^4 vertices
+ylabel: Time (seconds)
+
+perfkeys: Elapsed time for Kernel 4:
+files: SSCA2-22.4.dat
+graphkeys: ssca2 kernel 4 runtime
+graphtitle: SSCA: SSCA#2 Kernel 4 (sec) - size 22, 2^4 vertices
+ylabel: Time (seconds)

@@ -1,0 +1,5 @@
+perfkeys: Elapsed time:, Elapsed time:, Elapsed time:, Elapsed time:, Elapsed time:, Elapsed time:
+graphkeys: serialized forall, serialized coforall, serialized for+begin, serialized omp parallel-for, serialized chpl-like qthreads, serialized chpl-opt qthreads
+files: empty-serial-forall.dat, empty-serial-coforall.dat, empty-serial-for+begin.dat, empty-omp-serial-parallel-for.dat, empty-qthreads-serial-chpl-like.dat, empty-qthreads-serial-chpl-opt.dat
+graphtitle: Empty Serialized Task Spawn Timings (500,000 x maxTaskPar)
+ylabel: Time (seconds)

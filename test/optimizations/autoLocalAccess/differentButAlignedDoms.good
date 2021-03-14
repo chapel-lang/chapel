@@ -1,0 +1,183 @@
+
+Start analyzing forall (differentButAlignedDoms.chpl:21)
+| Found loop domain (differentButAlignedDoms.chpl:20)
+| Will attempt static and dynamic optimizations (differentButAlignedDoms.chpl:21)
+|
+|  Start analyzing call (differentButAlignedDoms.chpl:22)
+|   Found the domain of the access base (differentButAlignedDoms.chpl:3)
+|  This call is a dynamic optimization candidate (differentButAlignedDoms.chpl:22)
+|
+End analyzing forall (differentButAlignedDoms.chpl:21)
+
+
+Start analyzing forall (differentButAlignedDoms.chpl:31)
+| Couldn't determine loop domain: will attempt dynamic optimizations only (differentButAlignedDoms.chpl:31)
+|
+|  Start analyzing call (differentButAlignedDoms.chpl:32)
+|  This call is a dynamic optimization candidate (differentButAlignedDoms.chpl:32)
+|
+End analyzing forall (differentButAlignedDoms.chpl:31)
+
+
+Start analyzing forall (differentButAlignedDoms.chpl:44)
+| Couldn't determine loop domain: will attempt dynamic optimizations only (differentButAlignedDoms.chpl:44)
+|
+|  Start analyzing call (differentButAlignedDoms.chpl:45)
+|  This call is a dynamic optimization candidate (differentButAlignedDoms.chpl:45)
+|
+End analyzing forall (differentButAlignedDoms.chpl:44)
+
+
+Start analyzing forall (differentButAlignedDoms.chpl:50)
+| Found loop domain (differentButAlignedDoms.chpl:48)
+| Will attempt static and dynamic optimizations (differentButAlignedDoms.chpl:50)
+|
+|  Start analyzing call (differentButAlignedDoms.chpl:51)
+|   Found the domain of the access base (differentButAlignedDoms.chpl:3)
+|  This call is a dynamic optimization candidate (differentButAlignedDoms.chpl:51)
+|
+End analyzing forall (differentButAlignedDoms.chpl:50)
+
+
+Start analyzing forall (differentButAlignedDoms.chpl:55)
+| Found loop domain (differentButAlignedDoms.chpl:54)
+| Will attempt static and dynamic optimizations (differentButAlignedDoms.chpl:55)
+|
+|  Start analyzing call (differentButAlignedDoms.chpl:56)
+|   Found the domain of the access base (differentButAlignedDoms.chpl:3)
+|  This call is a dynamic optimization candidate (differentButAlignedDoms.chpl:56)
+|
+End analyzing forall (differentButAlignedDoms.chpl:55)
+
+
+Start analyzing forall (differentButAlignedDoms.chpl:44)
+| Couldn't determine loop domain: will attempt dynamic optimizations only (differentButAlignedDoms.chpl:44)
+|
+|  Start analyzing call (differentButAlignedDoms.chpl:45)
+|  This call is a dynamic optimization candidate (differentButAlignedDoms.chpl:45)
+|
+End analyzing forall (differentButAlignedDoms.chpl:44)
+
+
+Start analyzing forall (differentButAlignedDoms.chpl:50)
+| Found loop domain (differentButAlignedDoms.chpl:48)
+| Will attempt static and dynamic optimizations (differentButAlignedDoms.chpl:50)
+|
+|  Start analyzing call (differentButAlignedDoms.chpl:51)
+|   Found the domain of the access base (differentButAlignedDoms.chpl:3)
+|  This call is a dynamic optimization candidate (differentButAlignedDoms.chpl:51)
+|
+End analyzing forall (differentButAlignedDoms.chpl:50)
+
+
+Start analyzing forall (differentButAlignedDoms.chpl:55)
+| Found loop domain (differentButAlignedDoms.chpl:54)
+| Will attempt static and dynamic optimizations (differentButAlignedDoms.chpl:55)
+|
+|  Start analyzing call (differentButAlignedDoms.chpl:56)
+|   Found the domain of the access base (differentButAlignedDoms.chpl:3)
+|  This call is a dynamic optimization candidate (differentButAlignedDoms.chpl:56)
+|
+End analyzing forall (differentButAlignedDoms.chpl:55)
+
+
+Start analyzing forall (differentButAlignedDoms.chpl:67)
+| Couldn't determine loop domain: will attempt dynamic optimizations only (differentButAlignedDoms.chpl:67)
+|
+|  Start analyzing call (differentButAlignedDoms.chpl:68)
+|  This call is a dynamic optimization candidate (differentButAlignedDoms.chpl:68)
+|
+End analyzing forall (differentButAlignedDoms.chpl:67)
+
+
+Start analyzing forall (differentButAlignedDoms.chpl:73)
+| Found loop domain (differentButAlignedDoms.chpl:71)
+| Will attempt static and dynamic optimizations (differentButAlignedDoms.chpl:73)
+|
+|  Start analyzing call (differentButAlignedDoms.chpl:74)
+|   Found the domain of the access base (differentButAlignedDoms.chpl:3)
+|  This call is a dynamic optimization candidate (differentButAlignedDoms.chpl:74)
+|
+End analyzing forall (differentButAlignedDoms.chpl:73)
+
+Static check successful. Using localAccess with dynamic check (differentButAlignedDoms.chpl:22)
+Static check successful. Using localAccess with dynamic check (differentButAlignedDoms.chpl:32)
+Static check successful. Using localAccess with dynamic check (differentButAlignedDoms.chpl:45)
+Static check successful. Using localAccess with dynamic check (differentButAlignedDoms.chpl:51)
+Static check successful. Using localAccess with dynamic check (differentButAlignedDoms.chpl:56)
+Static check successful. Using localAccess with dynamic check (differentButAlignedDoms.chpl:68)
+Static check successful. Using localAccess with dynamic check (differentButAlignedDoms.chpl:74)
+Iterand is a different symbol
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+0 2 3 4 5 6 7 8 9 0
+
+Iterand is a call
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+0 2 3 4 5 6 7 8 9 0
+
+Local subdomain patterns
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+1 4 6 8 10 12 14 16 18 10
+
+Count based domain slices
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+1 2 3 4 5 6 7 8 9 10
+

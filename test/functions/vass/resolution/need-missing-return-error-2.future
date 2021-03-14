@@ -1,0 +1,5 @@
+bug: a function with a declared return type but no return statements is not flagged with an error
+
+This is the same as need-missing-return-error-1.future,
+except the error should be reported even if the return value
+is not used.

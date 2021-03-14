@@ -1,0 +1,1 @@
+scspell3k>=2

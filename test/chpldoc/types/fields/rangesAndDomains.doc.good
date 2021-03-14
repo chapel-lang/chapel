@@ -1,0 +1,65 @@
+.. default-domain:: chpl
+
+.. module:: rangesAndDomains.doc
+
+rangesAndDomains.doc
+====================
+**Usage**
+
+.. code-block:: chapel
+
+   use rangesAndDomains.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import rangesAndDomains.doc;
+
+.. record:: R
+
+   .. attribute:: var isRange: range
+
+   .. attribute:: var boundedRange = 1..10
+
+   .. attribute:: var lowBoundedRange = 1..
+
+   .. attribute:: var highBoundedRange = ..10
+
+   .. attribute:: var unboundedRange = ..
+
+   .. attribute:: var boundedRangeBy = 1..10 by 2
+
+   .. attribute:: var lowBoundedRangeBy = 1.. by 2
+
+   .. attribute:: var highBoundedRangeBy = ..10 by 2
+
+   .. attribute:: var unboundedRangeBy = .. by 2
+
+   .. attribute:: var boundedRangeByAlign = 1..10 by 2 align 1
+
+   .. attribute:: var lowBoundedRangeByAlign = 1.. by 2 align 1
+
+   .. attribute:: var highBoundedRangeByAlign = ..10 by 2 align 1
+
+   .. attribute:: var unboundedRangeByAlign = .. by 2 align 1
+
+.. record:: D
+
+   .. attribute:: var is1DDomain: domain(1)
+
+   .. attribute:: var is2DDomain: domain(2)
+
+   .. attribute:: var is3DDomain: domain(3)
+
+   .. attribute:: var bounded1DDomain = {1..10}
+
+   .. attribute:: var bounded2DDomain = {1..10, 1..10}
+
+   .. attribute:: var bounded3DDomain = {1..10, 1..10, 1..10}
+
+   .. attribute:: var bounded1DDomainBy = {1..10 by 2}
+
+   .. attribute:: var bounded1DDomainByAlign = {1..10 by 2 align 1}
+

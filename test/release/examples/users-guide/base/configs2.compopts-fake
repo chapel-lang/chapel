@@ -1,0 +1,9 @@
+chpl -sverbose=true configs2.chpl
+chpl -sverbose configs2.chpl
+chpl -sbitMask=0b00001111 -ssize=16 -sage='uint(16)' configs2.chpl
+chpl -sage='real(32)' configs2.chpl
+chpl -sbitMask='1 << 10' -ssize='numBits(bitMask.type)/2' configs2.chpl
+chpl -sage='if verbose then uint(32) else uint(16)' configs2.chpl
+chpl -sage='int(size)'
+chpl -sepsilon=1.0/n configs2.chpl
+chpl -s verbose=true configs2.chpl

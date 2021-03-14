@@ -1,0 +1,5 @@
+bug: the header string for a parenthesis-less function is incorrect
+
+... in the case where the body of the function is not enclosed in { }.
+Seems like the parser unputs "return" when parsing the function header
+but does not remove "return" from the header string it is accumulating.

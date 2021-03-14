@@ -1,0 +1,4 @@
+# This test exercises bounds checking.
+# Skip it when bounds checking is off.
+COMPOPTS <= --fast
+COMPOPTS <= --no-bounds-checks

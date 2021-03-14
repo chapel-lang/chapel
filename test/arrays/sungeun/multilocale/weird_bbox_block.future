@@ -1,0 +1,4 @@
+bug: Array assignment fails for Block distributions with bounding boxes that don't overlap with the bounds of the domain.
+
+This is currently failing for gasnet nightly tests (numlocales > 1).
+

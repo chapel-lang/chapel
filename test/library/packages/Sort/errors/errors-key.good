@@ -1,0 +1,2 @@
+errors-key.chpl:9: In function 'main':
+errors-key.chpl:17: error: The key method in rec must return an object that supports the '<' function when used with int(64) elements

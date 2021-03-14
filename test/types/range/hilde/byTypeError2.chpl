@@ -1,0 +1,12 @@
+var i16 = 10:int(16);  writeln((1:int(8).. by i16).type:string);
+var i32 = 10:int(32);  writeln((1:int(8).. by i32).type:string);
+var u16 = 10:uint(16); writeln((1:int(8).. by u16).type:string);
+var u32 = 10:uint(32); writeln((1:int(8).. by u32).type:string);
+                       writeln((1:int(16).. by i32).type:string);
+                       writeln((1:int(16).. by u32).type:string);
+                       writeln((1:uint(8).. by i16).type:string);
+                       writeln((1:uint(8).. by i32).type:string);
+                       writeln((1:uint(8).. by u16).type:string);
+                       writeln((1:uint(8).. by u32).type:string);
+                       writeln((1:uint(16).. by i32).type:string);
+                       writeln((1:uint(16).. by u32).type:string);

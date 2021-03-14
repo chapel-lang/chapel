@@ -1,0 +1,167 @@
+intents.doc.chpl:78: warning: This file-scope code is outside of any explicit module declarations (e.g., module Inner), so an implicit module named 'intents.doc' is being introduced to contain the file's contents.
+.. default-domain:: chpl
+
+.. module:: intents.doc
+
+intents.doc
+===========
+**Usage**
+
+.. code-block:: chapel
+
+   use intents.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import intents.doc;
+
+**Submodules**
+
+.. toctree::
+   :maxdepth: 1
+   :glob:
+
+   intents.doc/*
+
+.. function:: proc one(in val)
+
+   This function has an argument with the in intent 
+
+.. function:: proc two(out val)
+
+   This function has an argument with the out intent 
+
+.. function:: proc three(inout val)
+
+   This function has an argument with the inout intent 
+
+.. function:: proc four(param val)
+
+   This function has an argument with the param intent 
+
+.. function:: proc five(type val)
+
+   This function has an argument with the type intent 
+
+.. function:: proc fiveA(const val)
+
+   This function has an argument with the const intent 
+
+.. function:: proc fiveB(ref val)
+
+   This function has an argument with the ref intent 
+
+.. function:: proc six(in val: int)
+
+   This function has an argument with an intent and a type 
+
+.. function:: proc seven() ref
+
+   This function has a return intent of ref 
+
+.. function:: proc eight()
+
+   This function has a return intent of const 
+
+.. function:: proc nine() param
+
+   This function has a return intent of param 
+
+.. function:: proc ten() type
+
+   This function has a return intent of type 
+
+.. function:: proc twelve(val: int) param
+
+   This function has both an argument and a return intent 
+
+.. function:: proc thirteen(inout val) param
+
+   This function has both an argument intent and a return intent 
+
+.. function:: proc fourteen()
+
+   This function has a return intent (other than ref) and a body 
+
+.. default-domain:: chpl
+
+.. module:: Inner
+
+Inner
+=====
+**Usage**
+
+.. code-block:: chapel
+
+   use intents.doc.Inner;
+
+
+or
+
+.. code-block:: chapel
+
+   import intents.doc.Inner;
+
+.. function:: proc one(in val)
+
+   This function has an argument with the in intent 
+
+.. function:: proc two(out val)
+
+   This function has an argument with the out intent 
+
+.. function:: proc three(inout val)
+
+   This function has an argument with the inout intent 
+
+.. function:: proc four(param val)
+
+   This function has an argument with the param intent 
+
+.. function:: proc five(type val)
+
+   This function has an argument with the type intent 
+
+.. function:: proc fiveA(const val)
+
+   This function has an argument with the const intent 
+
+.. function:: proc fiveB(ref val)
+
+   This function has an argument with the ref intent 
+
+.. function:: proc six(in val: int)
+
+   This function has an argument with an intent and a type 
+
+.. function:: proc seven() ref
+
+   This function has a return intent of ref 
+
+.. function:: proc eight()
+
+   This function has a return intent of const 
+
+.. function:: proc nine() param
+
+   This function has a return intent of param 
+
+.. function:: proc ten() type
+
+   This function has a return intent of type 
+
+.. function:: proc twelve(val: int) param
+
+   This function has both an argument and a return intent 
+
+.. function:: proc thirteen(inout val) param
+
+   This function has both an argument intent and a return intent 
+
+.. function:: proc fourteen()
+
+   This function has a return intent (other than ref) and a body 
+

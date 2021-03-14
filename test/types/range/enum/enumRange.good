@@ -1,0 +1,137 @@
+---
+red..violet
+range(color,bounded,false)
+
+red
+orange
+yellow
+green
+blue
+indigo
+violet
+
+size = 7
+first = red
+last = violet
+low = red
+high = violet
+alignedLow = red
+alignedHigh = violet
+isEmpty = false
+hasFirst = true
+hasLast = true
+isNaturallyAligned = true
+isAmbiguous = false
+contains(blue) = true
+contains(red) = true
+ident(color.red..color.violet) = true
+ident(color.yellow..color.indigo) = false
+indexOrder(color.yellow) = 2
+indexOrder(color.green) = 3
+orderToIndex(1) = orange
+interior(1) = violet..violet
+interior(-1) = red..red
+
+red
+orange
+yellow
+green
+blue
+indigo
+violet
+
+---
+yellow..indigo
+range(color,bounded,false)
+
+yellow
+green
+blue
+indigo
+
+size = 4
+first = yellow
+last = indigo
+low = yellow
+high = indigo
+alignedLow = yellow
+alignedHigh = indigo
+isEmpty = false
+hasFirst = true
+hasLast = true
+isNaturallyAligned = true
+isAmbiguous = false
+contains(blue) = true
+contains(red) = false
+ident(color.red..color.violet) = false
+ident(color.yellow..color.indigo) = true
+indexOrder(color.yellow) = 0
+indexOrder(color.green) = 1
+orderToIndex(1) = green
+r.translate(1) = green..violet
+interior(1) = indigo..indigo
+interior(-1) = yellow..yellow
+r.exterior(1) = violet..violet
+r.exterior(-1) = orange..orange
+r.expand(1) = orange..violet
+r.offset(1) = yellow..indigo
+
+yellow
+green
+blue
+indigo
+
+---
+green..green
+range(color,bounded,false)
+
+green
+
+size = 1
+first = green
+last = green
+low = green
+high = green
+alignedLow = green
+alignedHigh = green
+isEmpty = false
+hasFirst = true
+hasLast = true
+isNaturallyAligned = true
+isAmbiguous = false
+contains(blue) = false
+contains(red) = false
+ident(color.red..color.violet) = false
+ident(color.yellow..color.indigo) = false
+indexOrder(color.yellow) = -1
+indexOrder(color.green) = 0
+r.translate(1) = blue..blue
+
+green
+
+---
+blue..green
+range(color,bounded,false)
+
+
+size = 0
+first = blue
+last = green
+low = blue
+high = green
+alignedLow = blue
+alignedHigh = green
+isEmpty = true
+hasFirst = false
+hasLast = false
+isNaturallyAligned = true
+isAmbiguous = false
+contains(blue) = false
+contains(red) = false
+ident(color.red..color.violet) = false
+ident(color.yellow..color.indigo) = false
+indexOrder(color.yellow) = -1
+indexOrder(color.green) = -1
+r.translate(1) = indigo..blue
+
+

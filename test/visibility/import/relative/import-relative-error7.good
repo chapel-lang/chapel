@@ -1,0 +1,1 @@
+import-relative-error7.chpl:2: error: cannot use/import super from a toplevel module

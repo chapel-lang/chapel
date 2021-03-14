@@ -1,0 +1,3 @@
+uncaught NotADirectoryError: Not a directory (in moveDir(foo, existed.txt))
+  moveOverFile.chpl:14: thrown here
+  moveOverFile.chpl:14: uncaught here

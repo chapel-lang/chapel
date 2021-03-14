@@ -1,0 +1,812 @@
+Testing 'atomic bool':
+  init        a=false
+  init=       a=false, i=true
+  init=(v)    a=false, i=true
+  init=(v)    a=false, i=true
+  read        a=false, i=false
+  write       a=true
+  xchg        a=false, i=true
+  expected    x=true
+  cmpxchg     a=false, b=false, x=false
+  cmpxchg     a=true, b=true, x=false
+  cmpxchgW    a=true, b=false, x=true
+  cmpxchgW    a=false, b=true, x=true
+  cas         a=false, b=false
+  cas         a=true, b=true
+  test&Set    a=true, i=true
+  clear       a=false
+  waitFor     a=true
+
+Testing 'atomic bool' with order 'seqCst':
+  init        a=false
+  init=       a=false, i=true
+  init=(v)    a=false, i=true
+  init=(v)    a=false, i=true
+  read        a=false, i=false
+  write       a=true
+  xchg        a=false, i=true
+  expected    x=true
+  cmpxchg     a=false, b=false, x=false
+  cmpxchg     a=true, b=true, x=false
+  cmpxchg     a=true, b=false, x=true
+  cmpxchg     a=false, b=true, x=true
+  cmpxchgW    a=false, b=false, x=false
+  cmpxchgW    a=true, b=true, x=false
+  cmpxchgW    a=true, b=false, x=true
+  cmpxchgW    a=false, b=true, x=true
+  cas         a=false, b=false
+  cas         a=true, b=true
+  test&Set    a=true, i=true
+  clear       a=false
+  waitFor     a=true
+
+Testing 'atomic int(8)':
+  init        a=0
+  init=       a=0, i=1
+  init=(v)    a=0, i=1
+  init=(v)    a=0, i=1
+  read        a=0, i=0
+  write       a=1
+  xchg        a=2, i=1
+  expected    x=3
+  cmpxchg     a=2, b=false, x=2
+  cmpxchg     a=4, b=true, x=2
+  cmpxchgW    a=4, b=false, x=4
+  cmpxchgW    a=2, b=true, x=4
+  cas         a=2, b=false
+  cas         a=5, b=true
+  fetchAdd    a=6, i=5
+  add         a=7
+  fetchSub    a=6, i=7
+  sub         a=5
+  fetchOr     a=13, i=5
+  or          a=15
+  fetchAnd    a=7, i=15
+  and         a=5
+  fetchXor    a=0, i=5
+  xor         a=5
+  waitFor     a=6
+
+Testing 'atomic int(8)' with order 'seqCst':
+  init        a=0
+  init=       a=0, i=1
+  init=(v)    a=0, i=1
+  init=(v)    a=0, i=1
+  read        a=0, i=0
+  write       a=1
+  xchg        a=2, i=1
+  expected    x=3
+  cmpxchg     a=2, b=false, x=2
+  cmpxchg     a=4, b=true, x=2
+  cmpxchg     a=4, b=false, x=4
+  cmpxchg     a=2, b=true, x=4
+  cmpxchgW    a=2, b=false, x=2
+  cmpxchgW    a=4, b=true, x=2
+  cmpxchgW    a=4, b=false, x=4
+  cmpxchgW    a=2, b=true, x=4
+  cas         a=2, b=false
+  cas         a=5, b=true
+  fetchAdd    a=6, i=5
+  add         a=7
+  fetchSub    a=6, i=7
+  sub         a=5
+  fetchOr     a=13, i=5
+  or          a=15
+  fetchAnd    a=7, i=15
+  and         a=5
+  fetchXor    a=0, i=5
+  xor         a=5
+  waitFor     a=6
+
+Testing 'atomic int(16)':
+  init        a=0
+  init=       a=0, i=1
+  init=(v)    a=0, i=1
+  init=(v)    a=0, i=1
+  read        a=0, i=0
+  write       a=1
+  xchg        a=2, i=1
+  expected    x=3
+  cmpxchg     a=2, b=false, x=2
+  cmpxchg     a=4, b=true, x=2
+  cmpxchgW    a=4, b=false, x=4
+  cmpxchgW    a=2, b=true, x=4
+  cas         a=2, b=false
+  cas         a=5, b=true
+  fetchAdd    a=6, i=5
+  add         a=7
+  fetchSub    a=6, i=7
+  sub         a=5
+  fetchOr     a=13, i=5
+  or          a=15
+  fetchAnd    a=7, i=15
+  and         a=5
+  fetchXor    a=0, i=5
+  xor         a=5
+  waitFor     a=6
+
+Testing 'atomic int(16)' with order 'seqCst':
+  init        a=0
+  init=       a=0, i=1
+  init=(v)    a=0, i=1
+  init=(v)    a=0, i=1
+  read        a=0, i=0
+  write       a=1
+  xchg        a=2, i=1
+  expected    x=3
+  cmpxchg     a=2, b=false, x=2
+  cmpxchg     a=4, b=true, x=2
+  cmpxchg     a=4, b=false, x=4
+  cmpxchg     a=2, b=true, x=4
+  cmpxchgW    a=2, b=false, x=2
+  cmpxchgW    a=4, b=true, x=2
+  cmpxchgW    a=4, b=false, x=4
+  cmpxchgW    a=2, b=true, x=4
+  cas         a=2, b=false
+  cas         a=5, b=true
+  fetchAdd    a=6, i=5
+  add         a=7
+  fetchSub    a=6, i=7
+  sub         a=5
+  fetchOr     a=13, i=5
+  or          a=15
+  fetchAnd    a=7, i=15
+  and         a=5
+  fetchXor    a=0, i=5
+  xor         a=5
+  waitFor     a=6
+
+Testing 'atomic int(32)':
+  init        a=0
+  init=       a=0, i=1
+  init=(v)    a=0, i=1
+  init=(v)    a=0, i=1
+  read        a=0, i=0
+  write       a=1
+  xchg        a=2, i=1
+  expected    x=3
+  cmpxchg     a=2, b=false, x=2
+  cmpxchg     a=4, b=true, x=2
+  cmpxchgW    a=4, b=false, x=4
+  cmpxchgW    a=2, b=true, x=4
+  cas         a=2, b=false
+  cas         a=5, b=true
+  fetchAdd    a=6, i=5
+  add         a=7
+  fetchSub    a=6, i=7
+  sub         a=5
+  fetchOr     a=13, i=5
+  or          a=15
+  fetchAnd    a=7, i=15
+  and         a=5
+  fetchXor    a=0, i=5
+  xor         a=5
+  waitFor     a=6
+
+Testing 'atomic int(32)' with order 'seqCst':
+  init        a=0
+  init=       a=0, i=1
+  init=(v)    a=0, i=1
+  init=(v)    a=0, i=1
+  read        a=0, i=0
+  write       a=1
+  xchg        a=2, i=1
+  expected    x=3
+  cmpxchg     a=2, b=false, x=2
+  cmpxchg     a=4, b=true, x=2
+  cmpxchg     a=4, b=false, x=4
+  cmpxchg     a=2, b=true, x=4
+  cmpxchgW    a=2, b=false, x=2
+  cmpxchgW    a=4, b=true, x=2
+  cmpxchgW    a=4, b=false, x=4
+  cmpxchgW    a=2, b=true, x=4
+  cas         a=2, b=false
+  cas         a=5, b=true
+  fetchAdd    a=6, i=5
+  add         a=7
+  fetchSub    a=6, i=7
+  sub         a=5
+  fetchOr     a=13, i=5
+  or          a=15
+  fetchAnd    a=7, i=15
+  and         a=5
+  fetchXor    a=0, i=5
+  xor         a=5
+  waitFor     a=6
+
+Testing 'atomic int(64)':
+  init        a=0
+  init=       a=0, i=1
+  init=(v)    a=0, i=1
+  init=(v)    a=0, i=1
+  read        a=0, i=0
+  write       a=1
+  xchg        a=2, i=1
+  expected    x=3
+  cmpxchg     a=2, b=false, x=2
+  cmpxchg     a=4, b=true, x=2
+  cmpxchgW    a=4, b=false, x=4
+  cmpxchgW    a=2, b=true, x=4
+  cas         a=2, b=false
+  cas         a=5, b=true
+  fetchAdd    a=6, i=5
+  add         a=7
+  fetchSub    a=6, i=7
+  sub         a=5
+  fetchOr     a=13, i=5
+  or          a=15
+  fetchAnd    a=7, i=15
+  and         a=5
+  fetchXor    a=0, i=5
+  xor         a=5
+  waitFor     a=6
+
+Testing 'atomic int(64)' with order 'seqCst':
+  init        a=0
+  init=       a=0, i=1
+  init=(v)    a=0, i=1
+  init=(v)    a=0, i=1
+  read        a=0, i=0
+  write       a=1
+  xchg        a=2, i=1
+  expected    x=3
+  cmpxchg     a=2, b=false, x=2
+  cmpxchg     a=4, b=true, x=2
+  cmpxchg     a=4, b=false, x=4
+  cmpxchg     a=2, b=true, x=4
+  cmpxchgW    a=2, b=false, x=2
+  cmpxchgW    a=4, b=true, x=2
+  cmpxchgW    a=4, b=false, x=4
+  cmpxchgW    a=2, b=true, x=4
+  cas         a=2, b=false
+  cas         a=5, b=true
+  fetchAdd    a=6, i=5
+  add         a=7
+  fetchSub    a=6, i=7
+  sub         a=5
+  fetchOr     a=13, i=5
+  or          a=15
+  fetchAnd    a=7, i=15
+  and         a=5
+  fetchXor    a=0, i=5
+  xor         a=5
+  waitFor     a=6
+
+Testing 'atomic int(64)':
+  init        a=0
+  init=       a=0, i=1
+  init=(v)    a=0, i=1
+  init=(v)    a=0, i=1
+  read        a=0, i=0
+  write       a=1
+  xchg        a=2, i=1
+  expected    x=3
+  cmpxchg     a=2, b=false, x=2
+  cmpxchg     a=4, b=true, x=2
+  cmpxchgW    a=4, b=false, x=4
+  cmpxchgW    a=2, b=true, x=4
+  cas         a=2, b=false
+  cas         a=5, b=true
+  fetchAdd    a=6, i=5
+  add         a=7
+  fetchSub    a=6, i=7
+  sub         a=5
+  fetchOr     a=13, i=5
+  or          a=15
+  fetchAnd    a=7, i=15
+  and         a=5
+  fetchXor    a=0, i=5
+  xor         a=5
+  waitFor     a=6
+
+Testing 'atomic int(64)' with order 'seqCst':
+  init        a=0
+  init=       a=0, i=1
+  init=(v)    a=0, i=1
+  init=(v)    a=0, i=1
+  read        a=0, i=0
+  write       a=1
+  xchg        a=2, i=1
+  expected    x=3
+  cmpxchg     a=2, b=false, x=2
+  cmpxchg     a=4, b=true, x=2
+  cmpxchg     a=4, b=false, x=4
+  cmpxchg     a=2, b=true, x=4
+  cmpxchgW    a=2, b=false, x=2
+  cmpxchgW    a=4, b=true, x=2
+  cmpxchgW    a=4, b=false, x=4
+  cmpxchgW    a=2, b=true, x=4
+  cas         a=2, b=false
+  cas         a=5, b=true
+  fetchAdd    a=6, i=5
+  add         a=7
+  fetchSub    a=6, i=7
+  sub         a=5
+  fetchOr     a=13, i=5
+  or          a=15
+  fetchAnd    a=7, i=15
+  and         a=5
+  fetchXor    a=0, i=5
+  xor         a=5
+  waitFor     a=6
+
+Testing 'atomic uint(8)':
+  init        a=0
+  init=       a=0, i=1
+  init=(v)    a=0, i=1
+  init=(v)    a=0, i=1
+  read        a=0, i=0
+  write       a=1
+  xchg        a=2, i=1
+  expected    x=3
+  cmpxchg     a=2, b=false, x=2
+  cmpxchg     a=4, b=true, x=2
+  cmpxchgW    a=4, b=false, x=4
+  cmpxchgW    a=2, b=true, x=4
+  cas         a=2, b=false
+  cas         a=5, b=true
+  fetchAdd    a=6, i=5
+  add         a=7
+  fetchSub    a=6, i=7
+  sub         a=5
+  fetchOr     a=13, i=5
+  or          a=15
+  fetchAnd    a=7, i=15
+  and         a=5
+  fetchXor    a=0, i=5
+  xor         a=5
+  waitFor     a=6
+
+Testing 'atomic uint(8)' with order 'seqCst':
+  init        a=0
+  init=       a=0, i=1
+  init=(v)    a=0, i=1
+  init=(v)    a=0, i=1
+  read        a=0, i=0
+  write       a=1
+  xchg        a=2, i=1
+  expected    x=3
+  cmpxchg     a=2, b=false, x=2
+  cmpxchg     a=4, b=true, x=2
+  cmpxchg     a=4, b=false, x=4
+  cmpxchg     a=2, b=true, x=4
+  cmpxchgW    a=2, b=false, x=2
+  cmpxchgW    a=4, b=true, x=2
+  cmpxchgW    a=4, b=false, x=4
+  cmpxchgW    a=2, b=true, x=4
+  cas         a=2, b=false
+  cas         a=5, b=true
+  fetchAdd    a=6, i=5
+  add         a=7
+  fetchSub    a=6, i=7
+  sub         a=5
+  fetchOr     a=13, i=5
+  or          a=15
+  fetchAnd    a=7, i=15
+  and         a=5
+  fetchXor    a=0, i=5
+  xor         a=5
+  waitFor     a=6
+
+Testing 'atomic uint(16)':
+  init        a=0
+  init=       a=0, i=1
+  init=(v)    a=0, i=1
+  init=(v)    a=0, i=1
+  read        a=0, i=0
+  write       a=1
+  xchg        a=2, i=1
+  expected    x=3
+  cmpxchg     a=2, b=false, x=2
+  cmpxchg     a=4, b=true, x=2
+  cmpxchgW    a=4, b=false, x=4
+  cmpxchgW    a=2, b=true, x=4
+  cas         a=2, b=false
+  cas         a=5, b=true
+  fetchAdd    a=6, i=5
+  add         a=7
+  fetchSub    a=6, i=7
+  sub         a=5
+  fetchOr     a=13, i=5
+  or          a=15
+  fetchAnd    a=7, i=15
+  and         a=5
+  fetchXor    a=0, i=5
+  xor         a=5
+  waitFor     a=6
+
+Testing 'atomic uint(16)' with order 'seqCst':
+  init        a=0
+  init=       a=0, i=1
+  init=(v)    a=0, i=1
+  init=(v)    a=0, i=1
+  read        a=0, i=0
+  write       a=1
+  xchg        a=2, i=1
+  expected    x=3
+  cmpxchg     a=2, b=false, x=2
+  cmpxchg     a=4, b=true, x=2
+  cmpxchg     a=4, b=false, x=4
+  cmpxchg     a=2, b=true, x=4
+  cmpxchgW    a=2, b=false, x=2
+  cmpxchgW    a=4, b=true, x=2
+  cmpxchgW    a=4, b=false, x=4
+  cmpxchgW    a=2, b=true, x=4
+  cas         a=2, b=false
+  cas         a=5, b=true
+  fetchAdd    a=6, i=5
+  add         a=7
+  fetchSub    a=6, i=7
+  sub         a=5
+  fetchOr     a=13, i=5
+  or          a=15
+  fetchAnd    a=7, i=15
+  and         a=5
+  fetchXor    a=0, i=5
+  xor         a=5
+  waitFor     a=6
+
+Testing 'atomic uint(32)':
+  init        a=0
+  init=       a=0, i=1
+  init=(v)    a=0, i=1
+  init=(v)    a=0, i=1
+  read        a=0, i=0
+  write       a=1
+  xchg        a=2, i=1
+  expected    x=3
+  cmpxchg     a=2, b=false, x=2
+  cmpxchg     a=4, b=true, x=2
+  cmpxchgW    a=4, b=false, x=4
+  cmpxchgW    a=2, b=true, x=4
+  cas         a=2, b=false
+  cas         a=5, b=true
+  fetchAdd    a=6, i=5
+  add         a=7
+  fetchSub    a=6, i=7
+  sub         a=5
+  fetchOr     a=13, i=5
+  or          a=15
+  fetchAnd    a=7, i=15
+  and         a=5
+  fetchXor    a=0, i=5
+  xor         a=5
+  waitFor     a=6
+
+Testing 'atomic uint(32)' with order 'seqCst':
+  init        a=0
+  init=       a=0, i=1
+  init=(v)    a=0, i=1
+  init=(v)    a=0, i=1
+  read        a=0, i=0
+  write       a=1
+  xchg        a=2, i=1
+  expected    x=3
+  cmpxchg     a=2, b=false, x=2
+  cmpxchg     a=4, b=true, x=2
+  cmpxchg     a=4, b=false, x=4
+  cmpxchg     a=2, b=true, x=4
+  cmpxchgW    a=2, b=false, x=2
+  cmpxchgW    a=4, b=true, x=2
+  cmpxchgW    a=4, b=false, x=4
+  cmpxchgW    a=2, b=true, x=4
+  cas         a=2, b=false
+  cas         a=5, b=true
+  fetchAdd    a=6, i=5
+  add         a=7
+  fetchSub    a=6, i=7
+  sub         a=5
+  fetchOr     a=13, i=5
+  or          a=15
+  fetchAnd    a=7, i=15
+  and         a=5
+  fetchXor    a=0, i=5
+  xor         a=5
+  waitFor     a=6
+
+Testing 'atomic uint(64)':
+  init        a=0
+  init=       a=0, i=1
+  init=(v)    a=0, i=1
+  init=(v)    a=0, i=1
+  read        a=0, i=0
+  write       a=1
+  xchg        a=2, i=1
+  expected    x=3
+  cmpxchg     a=2, b=false, x=2
+  cmpxchg     a=4, b=true, x=2
+  cmpxchgW    a=4, b=false, x=4
+  cmpxchgW    a=2, b=true, x=4
+  cas         a=2, b=false
+  cas         a=5, b=true
+  fetchAdd    a=6, i=5
+  add         a=7
+  fetchSub    a=6, i=7
+  sub         a=5
+  fetchOr     a=13, i=5
+  or          a=15
+  fetchAnd    a=7, i=15
+  and         a=5
+  fetchXor    a=0, i=5
+  xor         a=5
+  waitFor     a=6
+
+Testing 'atomic uint(64)' with order 'seqCst':
+  init        a=0
+  init=       a=0, i=1
+  init=(v)    a=0, i=1
+  init=(v)    a=0, i=1
+  read        a=0, i=0
+  write       a=1
+  xchg        a=2, i=1
+  expected    x=3
+  cmpxchg     a=2, b=false, x=2
+  cmpxchg     a=4, b=true, x=2
+  cmpxchg     a=4, b=false, x=4
+  cmpxchg     a=2, b=true, x=4
+  cmpxchgW    a=2, b=false, x=2
+  cmpxchgW    a=4, b=true, x=2
+  cmpxchgW    a=4, b=false, x=4
+  cmpxchgW    a=2, b=true, x=4
+  cas         a=2, b=false
+  cas         a=5, b=true
+  fetchAdd    a=6, i=5
+  add         a=7
+  fetchSub    a=6, i=7
+  sub         a=5
+  fetchOr     a=13, i=5
+  or          a=15
+  fetchAnd    a=7, i=15
+  and         a=5
+  fetchXor    a=0, i=5
+  xor         a=5
+  waitFor     a=6
+
+Testing 'atomic uint(64)':
+  init        a=0
+  init=       a=0, i=1
+  init=(v)    a=0, i=1
+  init=(v)    a=0, i=1
+  read        a=0, i=0
+  write       a=1
+  xchg        a=2, i=1
+  expected    x=3
+  cmpxchg     a=2, b=false, x=2
+  cmpxchg     a=4, b=true, x=2
+  cmpxchgW    a=4, b=false, x=4
+  cmpxchgW    a=2, b=true, x=4
+  cas         a=2, b=false
+  cas         a=5, b=true
+  fetchAdd    a=6, i=5
+  add         a=7
+  fetchSub    a=6, i=7
+  sub         a=5
+  fetchOr     a=13, i=5
+  or          a=15
+  fetchAnd    a=7, i=15
+  and         a=5
+  fetchXor    a=0, i=5
+  xor         a=5
+  waitFor     a=6
+
+Testing 'atomic uint(64)' with order 'seqCst':
+  init        a=0
+  init=       a=0, i=1
+  init=(v)    a=0, i=1
+  init=(v)    a=0, i=1
+  read        a=0, i=0
+  write       a=1
+  xchg        a=2, i=1
+  expected    x=3
+  cmpxchg     a=2, b=false, x=2
+  cmpxchg     a=4, b=true, x=2
+  cmpxchg     a=4, b=false, x=4
+  cmpxchg     a=2, b=true, x=4
+  cmpxchgW    a=2, b=false, x=2
+  cmpxchgW    a=4, b=true, x=2
+  cmpxchgW    a=4, b=false, x=4
+  cmpxchgW    a=2, b=true, x=4
+  cas         a=2, b=false
+  cas         a=5, b=true
+  fetchAdd    a=6, i=5
+  add         a=7
+  fetchSub    a=6, i=7
+  sub         a=5
+  fetchOr     a=13, i=5
+  or          a=15
+  fetchAnd    a=7, i=15
+  and         a=5
+  fetchXor    a=0, i=5
+  xor         a=5
+  waitFor     a=6
+
+Testing 'atomic real(32)':
+  init        a=0.0
+  init=       a=0.0, i=1.0
+  init=(v)    a=0.0, i=1.0
+  init=(v)    a=0.0, i=1.0
+  read        a=0.0, i=0.0
+  write       a=1.0
+  xchg        a=2.0, i=1.0
+  expected    x=3.0
+  cmpxchg     a=2.0, b=false, x=2.0
+  cmpxchg     a=4.0, b=true, x=2.0
+  cmpxchgW    a=4.0, b=false, x=4.0
+  cmpxchgW    a=2.0, b=true, x=4.0
+  cas         a=2.0, b=false
+  cas         a=5.0, b=true
+  fetchAdd    a=6.0, i=5.0
+  add         a=7.0
+  fetchSub    a=6.0, i=7.0
+  sub         a=5.0
+  waitFor     a=6.0
+
+Testing 'atomic real(32)' with order 'seqCst':
+  init        a=0.0
+  init=       a=0.0, i=1.0
+  init=(v)    a=0.0, i=1.0
+  init=(v)    a=0.0, i=1.0
+  read        a=0.0, i=0.0
+  write       a=1.0
+  xchg        a=2.0, i=1.0
+  expected    x=3.0
+  cmpxchg     a=2.0, b=false, x=2.0
+  cmpxchg     a=4.0, b=true, x=2.0
+  cmpxchg     a=4.0, b=false, x=4.0
+  cmpxchg     a=2.0, b=true, x=4.0
+  cmpxchgW    a=2.0, b=false, x=2.0
+  cmpxchgW    a=4.0, b=true, x=2.0
+  cmpxchgW    a=4.0, b=false, x=4.0
+  cmpxchgW    a=2.0, b=true, x=4.0
+  cas         a=2.0, b=false
+  cas         a=5.0, b=true
+  fetchAdd    a=6.0, i=5.0
+  add         a=7.0
+  fetchSub    a=6.0, i=7.0
+  sub         a=5.0
+  waitFor     a=6.0
+
+Testing 'atomic real(64)':
+  init        a=0.0
+  init=       a=0.0, i=1.0
+  init=(v)    a=0.0, i=1.0
+  init=(v)    a=0.0, i=1.0
+  read        a=0.0, i=0.0
+  write       a=1.0
+  xchg        a=2.0, i=1.0
+  expected    x=3.0
+  cmpxchg     a=2.0, b=false, x=2.0
+  cmpxchg     a=4.0, b=true, x=2.0
+  cmpxchgW    a=4.0, b=false, x=4.0
+  cmpxchgW    a=2.0, b=true, x=4.0
+  cas         a=2.0, b=false
+  cas         a=5.0, b=true
+  fetchAdd    a=6.0, i=5.0
+  add         a=7.0
+  fetchSub    a=6.0, i=7.0
+  sub         a=5.0
+  waitFor     a=6.0
+
+Testing 'atomic real(64)' with order 'seqCst':
+  init        a=0.0
+  init=       a=0.0, i=1.0
+  init=(v)    a=0.0, i=1.0
+  init=(v)    a=0.0, i=1.0
+  read        a=0.0, i=0.0
+  write       a=1.0
+  xchg        a=2.0, i=1.0
+  expected    x=3.0
+  cmpxchg     a=2.0, b=false, x=2.0
+  cmpxchg     a=4.0, b=true, x=2.0
+  cmpxchg     a=4.0, b=false, x=4.0
+  cmpxchg     a=2.0, b=true, x=4.0
+  cmpxchgW    a=2.0, b=false, x=2.0
+  cmpxchgW    a=4.0, b=true, x=2.0
+  cmpxchgW    a=4.0, b=false, x=4.0
+  cmpxchgW    a=2.0, b=true, x=4.0
+  cas         a=2.0, b=false
+  cas         a=5.0, b=true
+  fetchAdd    a=6.0, i=5.0
+  add         a=7.0
+  fetchSub    a=6.0, i=7.0
+  sub         a=5.0
+  waitFor     a=6.0
+
+Testing 'atomic real(64)':
+  init        a=0.0
+  init=       a=0.0, i=1.0
+  init=(v)    a=0.0, i=1.0
+  init=(v)    a=0.0, i=1.0
+  read        a=0.0, i=0.0
+  write       a=1.0
+  xchg        a=2.0, i=1.0
+  expected    x=3.0
+  cmpxchg     a=2.0, b=false, x=2.0
+  cmpxchg     a=4.0, b=true, x=2.0
+  cmpxchgW    a=4.0, b=false, x=4.0
+  cmpxchgW    a=2.0, b=true, x=4.0
+  cas         a=2.0, b=false
+  cas         a=5.0, b=true
+  fetchAdd    a=6.0, i=5.0
+  add         a=7.0
+  fetchSub    a=6.0, i=7.0
+  sub         a=5.0
+  waitFor     a=6.0
+
+Testing 'atomic real(64)' with order 'seqCst':
+  init        a=0.0
+  init=       a=0.0, i=1.0
+  init=(v)    a=0.0, i=1.0
+  init=(v)    a=0.0, i=1.0
+  read        a=0.0, i=0.0
+  write       a=1.0
+  xchg        a=2.0, i=1.0
+  expected    x=3.0
+  cmpxchg     a=2.0, b=false, x=2.0
+  cmpxchg     a=4.0, b=true, x=2.0
+  cmpxchg     a=4.0, b=false, x=4.0
+  cmpxchg     a=2.0, b=true, x=4.0
+  cmpxchgW    a=2.0, b=false, x=2.0
+  cmpxchgW    a=4.0, b=true, x=2.0
+  cmpxchgW    a=4.0, b=false, x=4.0
+  cmpxchgW    a=2.0, b=true, x=4.0
+  cas         a=2.0, b=false
+  cas         a=5.0, b=true
+  fetchAdd    a=6.0, i=5.0
+  add         a=7.0
+  fetchSub    a=6.0, i=7.0
+  sub         a=5.0
+  waitFor     a=6.0
+
+Promotion -- Testing 'atomic int(64)':
+  init        a=0 0 0
+  read        a=0 0 0, i=0 0 0
+  write       a=1 1 1
+  xchg        a=2 2 2, i=1 1 1
+  expected    x=3 3 3
+  cmpxchg     a=2 2 2, b=false false false, x=2 2 2
+  cmpxchg     a=4 4 4, b=true true true, x=2 2 2
+  cmpxchgW    a=4 4 4, b=false false false, x=4 4 4
+  cmpxchgW    a=2 2 2, b=true true true, x=4 4 4
+  cas         a=2 2 2, b=false false false
+  cas         a=5 5 5, b=true true true
+  fetchAdd    a=6 6 6, i=5 5 5
+  add         a=7 7 7
+  fetchSub    a=6 6 6, i=7 7 7
+  sub         a=5 5 5
+  fetchOr     a=13 13 13, i=5 5 5
+  or          a=15 15 15
+  fetchAnd    a=7 7 7, i=15 15 15
+  and         a=5 5 5
+  fetchXor    a=0 0 0, i=5 5 5
+  xor         a=5 5 5
+  waitFor     a=6 6 6
+
+Testing 'atomic int(64)' with order 'seqCst':
+  init        a=0 0 0
+  read        a=0 0 0, i=0 0 0
+  write       a=1 1 1
+  xchg        a=2 2 2, i=1 1 1
+  expected    x=3 3 3
+  cmpxchg     a=2 2 2, b=false false false, x=2 2 2
+  cmpxchg     a=4 4 4, b=true true true, x=2 2 2
+  cmpxchg     a=4 4 4, b=false false false, x=4 4 4
+  cmpxchg     a=2 2 2, b=true true true, x=4 4 4
+  cmpxchgW    a=2 2 2, b=false false false, x=2 2 2
+  cmpxchgW    a=4 4 4, b=true true true, x=2 2 2
+  cmpxchgW    a=4 4 4, b=false false false, x=4 4 4
+  cmpxchgW    a=2 2 2, b=true true true, x=4 4 4
+  cas         a=2 2 2, b=false false false
+  cas         a=5 5 5, b=true true true
+  fetchAdd    a=6 6 6, i=5 5 5
+  add         a=7 7 7
+  fetchSub    a=6 6 6, i=7 7 7
+  sub         a=5 5 5
+  fetchOr     a=13 13 13, i=5 5 5
+  or          a=15 15 15
+  fetchAnd    a=7 7 7, i=15 15 15
+  and         a=5 5 5
+  fetchXor    a=0 0 0, i=5 5 5
+  xor         a=5 5 5
+  waitFor     a=6 6 6
+

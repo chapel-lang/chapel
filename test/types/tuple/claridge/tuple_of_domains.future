@@ -1,0 +1,7 @@
+bug: Tuples of domains cannot be default-initialized
+
+The compiler-generated _defaultOf() function for a tuple that includes
+1 or more domains is incorrect.  The elements with domain type will be
+uninitialized. This is the result of a confluence of multiple problems
+in normalize and resolution especially for PRIM_INIT in the face of the
+specialized internal support for domains.

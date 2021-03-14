@@ -1,0 +1,3 @@
+bug: should be able to use the result of sorted without having to first assign to a variable
+
+sorted_access.chpl:3: error: illegal access of iterator or promoted expression

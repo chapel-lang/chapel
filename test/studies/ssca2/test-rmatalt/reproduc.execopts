@@ -1,0 +1,5 @@
+--newEG       --parEG       --parGC        # rmatalt.default.good
+--newEG=false --parEG       --parGC        # rmatalt.noNewEG.good
+--newEG       --parEG=false --parGC        # rmatalt.noParEG.good
+--newEG       --parEG       --parGC=false  # rmatalt.noParGC.good
+--rmatEdgeGenFile=rmatalt.weights --rmatGraphConFile=rmatalt.neis  # rmatalt.graphIO.good

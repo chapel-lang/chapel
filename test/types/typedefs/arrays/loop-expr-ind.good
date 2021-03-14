@@ -1,0 +1,1 @@
+loop-expr-ind.chpl:2: error: unimplemented feature: if you are attempting to use skyline arrays, they are not yet supported; if not, remove the index expression from this array type specification

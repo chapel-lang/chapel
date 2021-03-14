@@ -1,0 +1,16 @@
+Skipping registry update since no dependency found in manifest file.
+
+[root]
+name = "zlib"
+version = "0.1.0"
+chplVersion = "CHPL_CUR_FULL..CHPL_CUR_FULL"
+
+[system]
+
+[system.zlib]
+name = "zlib"
+version = "zlibversion"
+libs = "zlibflags"
+include = "/usr/include"
+
+

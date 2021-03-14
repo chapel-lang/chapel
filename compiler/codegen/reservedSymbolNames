@@ -1,0 +1,286 @@
+  // reserved words in C
+  auto
+  bool
+  break
+  case
+  char
+  const
+  continue
+  default
+  do
+  double
+  else
+  enum
+  extern
+  float
+  for
+  goto
+  if
+  inline
+  int
+  long
+  register
+  restrict
+  return
+  short
+  signed
+  sizeof
+  static
+  struct
+  switch
+  typedef
+  union
+  unsigned
+  void
+  volatile
+  while
+  // all symbol names beginning with _ followed by an uppercase letter
+  // need to be mangled; this should be done with custom code
+
+  abs
+  cos
+  sin
+  tan
+  acos
+  asin
+  atan
+  chdir
+  chown
+  cwd
+  floor
+  sqrt
+  conjg
+  exit
+  _init
+  stdin
+  close
+  fwrite
+  fread
+  fsync
+  main
+  open
+  pow
+  printf
+  remove
+  rename
+  scanf
+  sync
+  quad
+  read
+  sleep
+  stderr
+  stdout
+  wait
+  write
+  j0 // the following 6 are in /usr/include/bits/mathcalls.h - ridiculous
+  j1
+  jn
+  y0
+  y1 // this is ridiculous...
+  yn
+  log2
+  remove
+  fprintf
+  fscanf
+  clone
+  new
+  delete
+  register
+  signal
+  ceil
+  acosh
+  asinh
+  atan2
+  atanh
+  cbrt
+  cosh
+  erf
+  erfc
+  exp
+  exp2
+  expm1
+  lgamma
+  log10
+  log1p
+  log
+  rint
+  sinh
+  tanh
+  ascii
+  isnan
+  random
+  truncate
+  time
+  nearbyint
+  round
+  tgamma
+  trunc
+  div
+  max
+  min
+  malloc
+  free
+
+  unlink
+
+  // symbols in stdint.h
+  int8_t
+  int16_t
+  int32_t
+  int64_t
+  uint8_t
+  uint16_t
+  uint32_t
+  uint64_t
+  int_least8_t
+  int_least16_t
+  int_least32_t
+  int_least64_t
+  uint_least8_t
+  uint_least16_t
+  uint_least32_t
+  uint_least64_t
+  int_fast8_t
+  int_fast16_t
+  int_fast32_t
+  int_fast64_t
+  uint_fast8_t
+  uint_fast16_t
+  uint_fast32_t
+  uint_fast64_t
+  intptr_t
+  uintptr_t
+  intmax_t
+  uintmax_t
+  INT8_MAX
+  INT16_MAX
+  INT32_MAX
+  INT64_MAX
+  INT8_MIN
+  INT16_MIN
+  INT32_MIN
+  INT64_MIN
+  UINT8_MAX
+  UINT16_MAX
+  UINT32_MAX
+  UINT64_MAX
+  INT_LEAST8_MIN
+  INT_LEAST16_MIN
+  INT_LEAST32_MIN
+  INT_LEAST64_MIN
+  INT_LEAST8_MAX
+  INT_LEAST16_MAX
+  INT_LEAST32_MAX
+  INT_LEAST64_MAX
+  UINT_LEAST8_MAX
+  UINT_LEAST16_MAX
+  UINT_LEAST32_MAX
+  UINT_LEAST64_MAX
+  INT_FAST8_MIN
+  INT_FAST16_MIN
+  INT_FAST32_MIN
+  INT_FAST64_MIN
+  INT_FAST8_MAX
+  INT_FAST16_MAX
+  INT_FAST32_MAX
+  INT_FAST64_MAX
+  UINT_FAST8_MAX
+  UINT_FAST16_MAX
+  UINT_FAST32_MAX
+  UINT_FAST64_MAX
+  INTPTR_MIN
+  INTPTR_MAX
+  UINTPTR_MAX
+  INTMAX_MIN
+  INTMAX_MAX
+  UINTMAX_MAX
+  PTRDIFF_MIN
+  PTRDIFF_MAX
+  SIZE_MAX
+  WCHAR_MAX
+  WCHAR_MIN
+  WINT_MIN
+  WINT_MAX
+  SIG_ATOMIC_MIN
+  SIG_ATOMIC_MAX
+  INT8_C
+  INT16_C
+  INT32_C
+  INT64_C
+  UINT8_C
+  UINT16_C
+  UINT32_C
+  UINT64_C
+  INTMAX_C
+  UINTMAX_C
+
+  // symbols from stdio.h
+  EOF
+  puts
+  gets
+
+  // symbols from QIO
+  EEOF
+  ESHORT
+  EFORMAT
+
+  // reserved words in c++
+  this
+  template
+  assert
+
+  flag
+
+  // New additions from the PGI 13.3 C runtime libpgc.a (relaxedmath.o):
+  alloca
+  add128
+  add192
+  eq128
+  le128
+  lt128
+  ne128
+  sub128
+  sub192
+  a1
+  a2
+  a3
+  inc
+  inv32
+  invln2
+  isign
+  ln2
+  pi
+  table
+  ten23
+  ts
+  two
+
+  // reserved on darwin
+  fls
+  wait2
+  wait3
+  wait4
+
+  // symbols in wordexp.h
+  wordexp
+
+  // symbols in glob.h
+  glob
+
+  // symbols in math.h
+  isinf
+  isfinite
+  NAN
+  INFINITY
+
+  // symbols from stat.h
+  chmod
+  fchmod
+  fstat
+  lstat
+  mkdir
+  mkfifo
+  mknod
+  stat
+  symlink
+  umask

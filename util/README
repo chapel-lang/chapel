@@ -1,0 +1,29 @@
+========================
+Chapel Utility Directory
+========================
+
+This directory contains utility scripts that are intended to be useful
+to end-users or the Chapel build/test itself.
+
+The following are designed for beginning users
+(see $CHPL_HOME/doc/rst/usingchapel/QUICKSTART.rst for details):
+
+   quickstart/      :
+     setchplenv.*   : quick-start source scripts for minimal Chapel environments
+
+The following are for more experienced users:
+
+   ./
+     chpltags       : a script to generate tags files for Chapel source code
+     printchplenv   : a script to print your set/inferred Chapel environment
+     setchplenv.*   : commands for setting up a production Chapel environment
+     start_test     : the script for invoking the Chapel testing system
+
+
+The following are for use by developers or other Chapel scripts:
+
+   build_configs/   : helper scripts to build Chapel in multiple configurations
+   chplenv/         : helper scripts for inferring CHPL_* variables if unset
+   config/          : helper scripts for configuring the Chapel build
+   docs/            : helper scripts for chpldocs mode
+   test/            : helper scripts for the testing system

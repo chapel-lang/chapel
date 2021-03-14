@@ -1,0 +1,2124 @@
+# The format for this file is as follows:
+#
+# all:
+#   mm/dd/yy:
+#     - example annotation text 1 (#PR)
+#
+# group:
+#   mm/dd/yy:
+#     - example annotation text 2 (#PR)
+#     - example annotation text 3 (#PR)
+#   mm/dd/yy:
+#     - text: example annotation text 4 (#PR)
+#       config: [config1, config2]
+#
+#
+# where 'group' is the base name of the .graph file that attached set
+# of annotations should apply to.  'all' is a special group where any
+# annotations are added to to every single graph.
+#
+# When the long form of an annotation is used (where 'text:' and
+# 'config:' are specified), the annotation is only added to the graphs
+# if the current configuration is in the configuration list. Note
+# that in this form, the 'config:' line does not (cannot) have a
+# leading '-' sign.
+#
+# The date listed should be day the impact of a change is seen, not
+# the day of the commit. e.g. if a commit was made on 11/11/11, the
+# date listed should be 11/12/11 (assuming testing ran successfully
+# that night, otherwise use the first day when testing runs again.)
+#
+
+all:
+  10/14/13:
+    - locale ID changes
+  10/17/13:
+    - initial sync var change
+    - variety of multilocale performance changes
+  10/29/13:
+    - reversion of sync change to threads
+  02/04/14:
+    - flipped default value of dataParIgnoreRunningTasks
+  02/27/14:
+    - copy propagation rework r22796
+  03/28/14:
+    - Add static flag for performance testing (22992)
+  05/08/14:
+    - switched to gcc-4.7
+  07/19/14:
+    - no testing occurred, machine update
+  08/26/14:
+    - switched default tasking layer to qthreads from fifo
+  09/06/14:
+    - switch default memory allocator from cstdlib to tcmalloc
+  09/12/14:
+    - switch default memory allocator back to cstdlib
+  11/05/14:
+    - fix overlapping memcpy() reported by valgrind
+  12/18/14:
+    - change mult in array indexing to conditional, then revert
+  12/22/14:
+    - simplify some locale model interactions with the runtime
+  01/16/15:
+    - move chpl_getLocaleID into the modules
+  02/12/15:
+    - text: zombie process on chap04 was causing noise
+      config: chap04
+  07/19/15:
+    - new 1-pass implementation of widening
+  08/13/15:
+    - text: remove restriction of soft-threads to 16 only
+      config: 16-node-xc
+  08/18/15:
+    - fix task counting for coforall+on
+  08/26/15:
+    - text: re-enable optimization of op= in local blocks
+      config: 16-node-xc
+  09/01/15:
+    - parallel array initialization
+  09/02/15:
+    - malloc vs. calloc
+  09/07/15:
+    - domains of formal array args no longer mean reindex
+  09/08/15:
+    - text: localization optimization for endcounts
+      config: 16-node-xc
+  09/09/15:
+    - text: ubuntu update to 15.04 (gcc upgraded to 4.9.2)
+      config: shootout
+  10/19/15:
+    - text: can't repro old performance
+      config: 16-node-xc
+  10/29/15:
+    - PR 2850 to split up and inline BlockArr.dsiAccess
+  11/19/15:
+    - text: ubuntu update to 15.10 (gcc upgraded to 5.2)
+      config: shootout
+  12/05/15:
+    - text: improve comm=ugni comm domain handling
+      config: 16-node-xc
+  12/08/15:
+    - text: default to qthreads+hwloc for cce (#2972)
+      config: 1-node-xc
+  12/09/15:
+    - Added record-based strings (#2884)
+  12/17/15:
+    - Enable the Qthreads tasking shim (#3040)
+  01/07/16:
+    - Replace filenames with indices into a lookup table (#3049)
+  02/14/16:
+    - text: Default to jemalloc for gasnet configurations (#3287)
+      config: 16-node-xc
+  02/17/16:
+    - text: Remove origin check to improve bulk transfer (#3301)
+      config: 16-node-xc
+  02/19/16:
+    - text: Default to jemalloc for comm=ugni (#3321)
+      config: 16-node-xc
+  02/22/16:
+    - Default to jemalloc for comm=none (#3333)
+  03/04/16:
+    - implemented doubling/halving for array-as-vec (#3380)
+  03/17/16:
+    - text: Switched gen compiler to gcc 5.1.0
+      config: 16-node-xc, 1-node-xc
+  04/27/16:
+    - text: Optimization for returning wide pointers (#3742)
+      config: 1-node-xc, 16-node-xc
+  05/05/16:
+    - text: ubuntu update to 16.04 (gcc upgraded to 5.3)
+      config: shootout
+  05/12/16:
+    - KACE removed from systems.  Should see less noise after this day.
+  05/31/16:
+    - Enable jemalloc's decay-based purging (#3926)
+  06/07/16:
+    - Avoid allocating arg bundles for local on statements (#3890)
+    - Upgrade target compiler versions (#218, internal)
+  06/24/16:
+    - text: Improve optimizeOnClauses optimization (#4008)
+      config: 16-node-xc
+  07/19/16:
+    - Disable jemalloc's stat gathering by default (#4180)
+  07/20/16:
+    - Generated code changes in preparation for incremental compilation (#4177)
+  08/02/16:
+    - Restore static to normal compilation generated code (#4233)
+  08/03/16:
+    - text: Hardware upgrade
+      config: 16-node-xc, 1-node-xc
+  08/04/16:
+    - Updates to Search module, required array slicing (partially reverted) (#4273)
+  08/19/16:
+    - Turn denormalization on by default (reverted the next night) (#4360)
+  08/28/16:
+    - text: Upgraded chap* (except chap03) and chapcs* machines from gcc 4.7 to gcc 6.2
+      config: chap04, chapcs
+  09/01/16:
+    - Turn denormalization on by default (#4434)
+  09/04/16:
+    - use standard atomics rather than intrinsics for gcc (reverted the next night) (#4443)
+  09/09/16:
+    - convert more reductions to use reduce intents (#4396)
+  09/13/16:
+    - remove volatile on real atomics, make atomic_load atomic (#4491)
+    - use "distrib" scheduler for numa instead of "sherwood" (#4505)
+  09/14/16:
+    - enable native qthreads sync vars (#4506)
+  09/15/16:
+    - use atomic spin-lock instead of sync for reductions (#4532)
+  09/16/16:
+    - Turn denormalization off by default (#4545)
+  09/18/16:
+    - Added optimization to remove inner multiply in dsiAccess (#4510)
+  09/20/16:
+    - Add promoted fast follower support (#4558)
+  10/08/16:
+    - text: upgrade Intel target compiler from 15.0.3.187 to 17.0.0.098
+      config: 1-node-xc
+  10/11/16:
+    - text: Fix of races in the ugni comm layer (internal #253 and #258)
+      config: 16-node-xc
+  10/18/16:
+    - First step to transition to qualified references (#4745)
+  10/27/16:
+    - Improve Array Memory Management (#4762)
+  11/01/16:
+    - text: upgrade Cray target compiler version from 8.4.0 to 8.5.3
+      config: 1-node-xc
+    - text: upgrade gnu target compiler from 5.3.0 to 6.2.0
+      config: 1-node-xc, 16-node-xc
+  11/02/16:
+    - text: remove usesOuterVars from virtual method call resolution due to bug in application (#4794)
+      config: 1-node-xc
+  11/04/16:
+    - text: Improve RVF by inferring const-refs (#4814)
+      config: 16-node-xc
+    - text: downgrade Cray target compiler from 8.5.3 to 8.4.6
+      config: 1-node-xc
+  11/08/16:
+    - text: RVF arrays in records (#4821)
+      config: 16-node-xc
+  11/26/16:
+    - Use hybrid spin/condwait (#4902)
+  12/07/16:
+    - Stack allocate on and task function argument bundles (#4074)
+  12/08/16:
+    - Re-enable denormalization (#4547)
+  12/13/16:
+    - text: inferConst improvements related to _retArg (#4969)
+      config: 16-node-xc
+  12/14/16:
+    - Reduce task creation time for "bounded" coforalls (#5018)
+    - text: Ugni comm layer improvements for forks and the heap (internal #276)
+      config: 16-node-xc
+  12/22/16:
+    - multi-ddata (#5047)
+  01/11/17:
+    - Move the multi-ddata metadata fields, checking cache effects for 'flat'. (#5145)
+  02/19/17:
+    - text: Turned hyperthreading on for our testing machine
+      config: chapcs
+  03/03/17:
+    - Array views (#5338)
+  03/06/17:
+    - Wide-pointer optimization for arrays (#5487)
+  03/07/17:
+    - make blank intent for arrays "ref-if-modified" (#5134)
+  03/13/17:
+    - Have qthreads use Chapel's allocator (#5637)
+  03/15/17:
+    - text: Increase QT_SPINCOUNT when running on a Cray (#5646)
+      config: 16-node-xc
+  03/16/17:
+    - text: Stop limiting the number of ugni communication domains under slurm (#5653)
+      config: 16-node-xc
+  03/17/17:
+    - Allow fields and vars to be 'void', make range.stride void if not stridable (#5681)
+  03/20/17:
+    - Make the multi-ddata specific fields in DR arrays 'void' when not using them (#5723)
+  05/03/17:
+    - Flag some compiler temps as const (#6154)
+  06/08/17:
+    - text: upgrade gnu target compiler from 6.3.0 to 7.1.0
+      config: 1-node-xc, 16-node-xc
+  06/10/17:
+    - text: bounded-coforall optimization for remote coforalls (#6419)
+      config: 16-node-xc
+  06/14/17:
+    - text: upgrade gnu target compiler from 6.3.0 to 7.1.0
+      config: chapcs, chap04
+  06/16/17:
+    - text: revert gnu target compiler from 7.1.0 to 6.3.0
+      config: chapcs, chap04
+  06/20/17:
+    - text: revert gnu target compiler from 7.1.0 to 6.3.0
+      config: 1-node-xc, 16-node-xc
+  06/21/17:
+    - change tmp directory
+  07/26/17:
+    - Add dsiAssignDomain (#6722)
+    - Move EndCount to task local storage (#6765)
+  07/31/17:
+    - text: Enable GASNet's multi-comm-domain support for gemini/aries (#6893)
+      config: 16-node-xc
+  08/08/17:
+    - text: With comm=ugni, register large arrays dynamically (#6947)
+      config: 16-node-xc
+  08/15/17:
+    - add error handling to the IO module (#6890)
+  09/06/17:
+    - text: Improve the accuracy of our running task counter (#7193)
+      config: 16-node-xc
+  09/19/17:
+    - Fix LICM bug (#7371)
+  10/21/17:
+    - Reduce wide pointer overhead for sparse domains/arrays (#7627)
+  11/21/17:
+    - New bulk transfer interface (#7775)
+  12/08/17:
+    - text: Machine upgraded to CLE6
+      config: 16-node-xc
+  12/12/17:
+    - (no-local) QualifiedType ref improvements (#7990)
+  01/16/18:
+    - rework iterator memory management (#8073)
+  01/17/18:
+    - text: support dynamically extendable heap w/ ugni (#7700)
+      config: 16-node-xc
+  01/25/18:
+    - text: Do nonblocking responses in the polling task (#8297)
+      config: 16-node-xc
+  02/07/18:
+    - text: machine operating system update to SLES12
+      config: chapcs
+  02/13/18:
+    - Change default intent for range to const in (#8368)
+  02/22/18:
+    - text: Put the main process to sleep while waiting to shutdown (#8533)
+      config: 16-node-xc
+  03/03/18:
+    - text: add error handling to casts from string #8547
+      config: chapcs
+  03/04/18:
+    - text: system update
+      config: 16-node-xc
+  03/16/18:
+    - text: QSBR (#8182)
+      config: 16-node-xc
+  03/18/18:
+    - text: QSBR reverted (#8841)
+      config: 16-node-xc
+  03/20/18:
+    - text: upgrade default LLVM to LLVM 6 (#8869)
+      config: chapcs 
+  04/03/18:
+    - text: Reduce contention from ugni's polling thread (#9068)
+      config: 16-node-xc
+  04/08/18:
+    - move lowering of ForallStmts at resolution (#8785)
+  04/11/18:
+    - Convert BaseDom and its derived classes to use initializers (#9113)
+  04/14/18:
+    - Update BaseArr to use initializers (#9160)
+  04/17/18:
+    - Workaround for StencilDom performance (#9231)
+  04/18/18:
+    - Update strings to use initializers (#9217)
+  04/19/19:
+    - Use zero-arg initializer in BaseDom (#9250)
+  05/17/18:
+    - text: ubuntu update to 18.04 (gcc upgraded to 7.3)
+      config: shootout
+  06/01/18:
+    - Represent if-expressions with IfExpr node instead of if-function (#9649)
+  06/04/18:
+    - text: Use the block transfer engine for large transfers under ugni (#9683)
+      config: 16-node-xc
+  06/20/18:
+    - text: Optimize non-fetching network atomics (#9876)
+      config: 16-node-xc
+  06/29/18:
+    - Avoid using syncvar_t in the qthreads shim (#10082)
+  07/04/18:
+    - Remove spinwaiting from qthreads chpl_sync_lock() (#10133)
+  08/01/18:
+    - text: cannot reproduce old numbers for gn+aries
+      config: 16-node-xc
+  08/15/18:
+    - text: Revert to stack-allocated rfDone indicators. (#10728)
+      config: 16-node-xc
+  09/16/18:
+    - text: chapcs rebooted
+      config: chapcs
+  09/25/18:
+    - text: Optimize blocking puts/gets and fetching network AMOs (#11176)
+      config: 16-node-xc
+  12/04/18:
+    - Set up gcc 8.2 as default gcc for nightly testing (#11762)
+  12/07/18:
+    - text: Optimize remote task spawning under ugni (#11799)
+      config: 16-node-xc
+  12/13/18:
+    - text: Decrement the CQ counter when we consume the CQ event in ugni (#11875)
+      config: 16-node-xc
+  01/04/19:
+    - text: Improve how we align and pad comm domains in ugni (#11973)
+      config: 16-node-xc
+  01/07/19:
+    - Default to cstdlib atomics for gcc >= 5 (#11963)
+  01/18/19:
+    - text: Use acquire/release memory orders for buffered AMO/GET locks (#12089)
+      config: 16-node-xc
+  02/06/19:
+    - text: Reduce contention on ugni's comm domains (#12240)
+      config: 16-node-xc
+  02/07/19:
+    - text: Simplify how we acquire comm domains in ugni (#12258)
+      config: 16-node-xc
+  02/08/19:
+    - replace PRIM_INIT with PRIM_DEFAULT_INIT_VAR (#12154)
+  03/02/19:
+    - Improve performance of cast from tuple to complex (#12429)
+  03/07/19:
+    - text: chapcs rebooted
+      config: chapcs
+  03/21/19:
+    - Stop throwing `--static` for performance testing (#12652)
+  04/24/19:
+    - Improve task placement for local bounded coforalls (#12868)
+  05/06/19:
+    - text: Enable the unordered compiler optimization by default (#12952)
+      config: 16-node-xc
+  05/30/19:
+    - Change LocalSpinLock to a test-and-testAndSet lock (#13116)
+  07/12/19:
+    - Stop pinning the progress thread to the last CPU (#13423)
+  07/16/19:
+    - text: Use a blocking progress thread for gasnet-infiniband (#13473)
+      config: 16-node-cs
+  08/08/19:
+    - text: Machine upgraded to CLE7
+      config: 16-node-xc
+  10/02/19:
+    - text: system update
+      config: 16-node-xc
+  10/10/19:
+    - text: Optimize unorderedCopy for types larger than 8 bytes (#14255)
+      config: 16-node-xc
+  12/04/19:
+    - Warm up the runtime before entering user code (#14567)
+  01/17/20:
+    - Adjust point of deinitialization based on expiring value analysis (#14691)
+  02/07/20:
+    - text: machine update (McAfee)
+      config: chapcs
+  02/19/20:
+    - text:  Serialize calls to gasnet_AMPoll for IBV/Aries (#14912)
+      config: 16-node-xc, 16-node-cs
+  02/21/20:
+    - text: Poll for AMs on every call to gasnet_AMPoll for Aries (#14938)
+      config: 16-node-xc
+  02/28/20:
+    - Add a spinlock to the atomic runtime interface. (#15015)
+  03/05/20:
+    - Allow bulk transfer of some wide pointer arrays (#15049)
+  03/20/20:
+    - text: Make --cache-remote readahead less aggressive (#15267)
+      config: chapcs.comm-counts
+  05/26/20:
+    - Adjust array copy initialization to avoid default-init/assign (#15239)
+  05/28/20:
+    - text: machine update (McAfee)
+      config: chapcs
+  06/06/20:
+    - text: Don't GET domain's dimensions unless needed (#15777)
+      config: 16-node-xc, 16-node-cs, chapcs.comm-counts
+  06/16/20:
+    - text: Support third-party CHPL_LIBFABRIC=libfabric (#15729)
+      config: 16-node-cs
+    - text: Warm up the comm layer, in the many-to-one test (#15798)
+      config: 16-node-cs
+  06/21/20:
+    - Switch the domain's list of arrays to a hashtable (#15895)
+  06/25/20:
+    - Avoid allocating memory for empty hashtables (#15918)
+  09/18/20:
+    - Remove the single task specialization from parallel iterators (#16401)
+    - text: Upgrade XC-x86 gcc gen compiler to 8.3.0 (#16407)
+      config: 16-node-xc
+  09/22/20:
+    - Parallelize large DefaultRectangular assignments (#16418)
+  09/29/20:
+    - text: Do sequential DR assignment if GETs are to be used (#16488)
+      config: 16-node-xc, 16-node-cs
+  11/19/20:
+    - Improve the speed of tracking arrays declared over a domain (#16740)
+  02/01/21:
+    - Enable the cache for remote data by default (#17044)
+# End all
+
+AllCompTime: &timecomp-base
+  11/09/14:
+    - disable the task table by default
+  01/17/16:
+    - add dead string literal elimination (#3120)
+  09/09/16:
+    - disable function resolution optimization (#4476)
+  09/14/16:
+    - re-enable function resolution optimization (#4517)
+  02/03/17:
+    - Fix parse slowdown (#5257)
+  02/07/17:
+    - Loop over Defs and Uses with SymbolSymExprs (#5285)
+  05/16/18:
+    - Faster 'fixStringLiteralInit' implementation (#9506)
+  05/23/18:
+    - Fix problems with tuples (#9572)
+  06/01/18:
+    - Represent if-expressions with IfExpr node instead of if-functions (#9649)
+  07/10/18:
+    - use isSubtype in preference to ':' in where clauses (#10143)
+    - Refactor codegenPrimitive, add limit to denormalize (#10187)
+  07/14/18:
+    - Improve the speed of codegenPrimitive (#10321)
+  10/05/18:
+    - Compiler error for dereferencing a nil value (#11238)
+  10/19/18:
+    - Fix compiler performance issues in nilChecking (#11396)
+  08/30/19:
+    - Add factory functions for string and bytes (#13914)
+  11/05/19:
+    - Remove standardModuleSet and all code involving it from the compiler (#14270)
+  11/20/19:
+    - Simplify visible function determination of use visibility (#14481)
+  02/19/20:
+    - Improve handling for tryResolve and errors to handle a bad init= (#14887)
+  03/03/20:
+    - Remove calls to getUserInstantiationPoint (#15051)
+  06/11/20:
+    - Fix split init of const variables and update lvalue errors (#15800)
+  02/17/21:
+    - GPU code generation (#17116)
+  02/25/21:
+    - Restore timing for makeBinary (#17253)
+    - Stop converting PRIM_ZIP to tuples for forall statements (#17212)
+
+allocate:
+  06/11/20:
+    - Add a field to the string record to store a cached size (#15758)
+  07/29/20:
+    - Optimize ASCII strings (#16092)
+
+arguments:
+  09/20/17:
+    - Adjust string pass/return test (#7360)
+
+arrayPerformance-1d:
+  03/19/15:
+    - text: memory related, qthreads memory pool bug fix
+      config: chap03
+  03/22/17:
+    - Inline DefaultRectangular 1D strided iter (#5771)
+
+arrayPerformance-2d:
+  10/21/16:
+    - Improvements to scalarReplace, refPropagation and copyPropagation (#4761)
+
+array-assign-get:
+  11/13/19:
+    - Improve performance for large transfers under --cache-remote (#14352)
+
+array-of-strings-read:
+  04/14/16:
+    - string changes to bounds checking, isUpper (#3718)
+  12/11/18:
+    - Turn off some range halts for --no-checks (#11780)
+  05/24/19:
+    - make codepoint indexing/iteration the default (#12899)
+  08/01/19:
+    - Take advantage of known UTF-8 encoding to speed up strings (#13580)
+  05/05/20:
+    - Rework the helper for string/bytes slicing (#15615)
+  05/20/20:
+    - Remove string.indices from getView (#15653)
+  06/11/20:
+    - Add a field to the string record to store a cached size (#15758)
+
+arr-forall:
+  03/24/15:
+    - with CCE, bug fix to avoid vectorizing when not valid
+
+array_iter:
+  06/19/17:
+    - Reduce amount of locking in associative array dsiAccess (#6244)
+
+arguments:
+  03/10/17:
+    - Three way refpair (#5561)
+
+assign.1024:
+  01/22/15:
+    - optimize range follower so it can be directly inlined (#1160)
+  05/23/19:
+    - Execute defer actions in an iterator upon break from its loop (#12963)
+  05/30/19:
+    - Respect "always rvf" for module-scope variables (#13092)
+
+bfs:
+  09/25/14:
+    - addition of octal to, reformatting of format printing.
+  10/29/15:
+    - Difficult to consistently replicate
+
+binary-trees: &binary-trees-base
+  12/05/14:
+    - introduce "library mode"
+  01/26/16:
+    - Optimize iteration over anonymous low-bounded counted ranges (#3154)
+  03/14/16:
+    - upgrade jemalloc to 4.1.0 (#3447)
+  03/16/16:
+    - revert jemalloc to 4.0.4 (#3477)
+  05/28/16:
+    - upgrade jemalloc to 4.2.0 (#3919)
+  06/13/16:
+    - polish to binary-trees versions (#4017)
+  09/21/16:
+    - switch from type method factory to init()-based implementation (#4598)
+  09/22/16:
+    - simplify init()-based implementation (#4609)
+  10/10/16:
+    - Brad's fix of off-by-one error in checksum (#4734)
+  01/31/17:
+    - upgrade jemalloc to 4.4.0 (#5278)
+  04/03/17:
+    - Updated to n=21 problem size and new rules (#5907)
+  06/23/18:
+    - Update more tests to compile with --warn-unstable (#9986)
+  09/06/18:
+    - Make performance tests make better use of managed classes (#10945)
+  09/19/18:
+    - Switch study version of binary trees from owned to unmanaged (#11128)
+binarytrees-submitted:
+  <<: *binary-trees-base
+
+blackscholes:
+  10/21/16:
+    - Improvements to scalarReplace, refPropagation and copyPropagation (#4761)
+  01/06/21:
+    - Remove lots of inlines in IO.chpl for non-trivial procedures (#16887)
+
+blackscholes_promote:
+  10/21/16:
+    - Improvements to scalarReplace, refPropagation and copyPropagation (#4761)
+
+build-associative:
+  07/14/17:
+    - Extend parallel array initialization to POD arrays (#6675)
+  06/03/20:
+    - Factor hashtable used by DefaultAssociative out of it (#15739)
+
+cast-from-string:
+  12/14/18:
+    - Allow underscores in the number when casting from string to integral (#11880)
+  01/20/19:
+    - Update string-to-int cast functions to look for a 0x style prefix (#12097)
+
+chameneos-redux:
+  07/08/13:
+    - altered output order for chameneos data, old data incompatible
+  09/15/17:
+    - Chameneos initializer updates (#7328)
+  10/31/18:
+    - Enable parallelism for shape-ful expressions over ranges (#11501)
+  03/20/20:
+    - Fix up chameneos benchmarks (#15250)
+
+CoMD:
+  07/26/17:
+    - Update PR 5296 (#6722)
+  06/25/19:
+    - Simplify standalone iterator for DefaultRectangular domains/arrays (#13189)
+  08/05/20:
+    - Adjust target compiler versions for some Cray configs (#16196)
+
+CoMD-elegant-aos:
+  06/12/18:
+    - Convert blocking calls in Spawn module to yielding non-blocking loops (#9507)
+
+compSampler-timecomp:
+  <<: *timecomp-base
+
+cg:
+  09/20/16:
+    - Strided Array Support in Sort/Search Modules (#4569)
+  09/22/16:
+    - Added overloaded compileErrors for Sort/Search (#4621)
+
+cg-a:
+  04/05/18:
+    - Convert BaseDist-inheriting classes to use initializers (#9075)
+
+cg-sparse-timecomp:
+  <<: *timecomp-base
+
+c-ray:
+  10/11/16:
+    - Parallelized C-ray and transposed array (#4743)
+  11/09/16:
+    - Code cleanups in preparation for SC16 (#4830 and others)
+
+create-views:
+  04/05/18:
+    - Convert BaseDist-inheriting classes to use initializers (#9075)
+  04/19/18:
+    - Use zero-arg initializer in BaseDom (#9250)
+  06/30/18:
+    - text: Could not repro old numbers (later "fixed" by reboot)
+      config: chapcs
+  08/04/18:
+    - text: chapcs rebooted
+      config: chapcs
+  11/10/18:
+    - Improve timing and stability of the create-views performance test (#11609)
+  05/03/19:
+    - Govern slice expressions by slicing domain (#12931)
+  11/27/19:
+    - Close some multilocale distribution and privatization memleaks (#14510)
+  12/10/19:
+    - Guard privatization checks with param flag (#14604)
+  04/16/20:
+    - Close a leak with creating iterator records with domain shapes (#15512)
+  04/29/20:
+    - Put param conditionals before others in domain record initialization (#15591)
+  09/17/20:
+    - Fix some issues with constant domain optimization (#16397)
+  10/02/20:
+    - Only reference count a distribution's domains (#16528)
+
+
+cs-resize:
+  03/05/19:
+    - Add radix sort to Sort package module (#12452)
+
+dist-performance.cc:
+  04/29/20:
+    - Use workaround to enable lifetime checking for lists of borrowed classes (#15575)
+  06/27/20:
+    - Revert changes to `list._commonInitFromIterable` (#15943)
+  12/16/20:
+    - Distributed sort improvements (#16871)
+
+dist-performance.ml-perf:
+  07/01/20:
+    - Optimize repeated insertions/deletions from chpl__hashtable (#15982)
+  12/16/20:
+    - Distributed sort improvements (#16871)
+
+distCreate-arrays-deinit.cc-perf: &distCreate-base
+  02/12/20:
+    - Use --no-early-deinit in array creation/destruction benchmark (#14876)
+  03/13/20:
+    - Reallocate 1D arrays in place, when possible (#15177)
+  03/18/20:
+    -  Record-wrap `locale` (#15149)
+  03/22/20:
+    - Rewrite ddata_allocate() to avoid inadvertent widening of init_elts() (#15275)
+  03/26/20:
+    - Make locale-related comm improvements (#15288)
+  06/02/20:
+    - Address performance issues with stencil and block-cyclic array init (#15741)
+
+distCreate-arrays-init.cc-perf:
+  <<: *distCreate-base
+distCreate-domains-deinit.cc-perf:
+  <<: *distCreate-base
+distCreate-domains-deinit.ml-perf:
+  <<: *distCreate-base
+distCreate-domains-init.cc-perf:
+  <<: *distCreate-base
+distCreate-domains-init.ml-perf:
+  <<: *distCreate-base
+distCreate-large-deinit.ml-perf:
+  <<: *distCreate-base
+distCreate-large-init.ml-perf:
+  <<: *distCreate-base
+distCreate-small-deinit.ml-perf:
+  <<: *distCreate-base
+distCreate-small-init.ml-perf:
+  <<: *distCreate-base
+distCreate-tiny-deinit.ml-perf:
+  <<: *distCreate-base
+distCreate-tiny-init.ml-perf:
+  <<: *distCreate-base
+
+domainAssignment-similar: &domainAssign-base
+  10/26/19:
+    - Add optimized COO->CSR/CSC sparse domain assignment (#14272)
+domainAssignment-dissimilar:
+  <<: *domainAssign-base
+
+dgemm.128:
+  09/06/13:
+    - LICM bug fixes
+
+dgemm.64:
+  09/06/13:
+    - LICM bug fixes
+
+ep: &ep-base
+  11/18/14:
+    - added -E to tests which would benefit from it
+  11/22/14:
+    - revert -E use for nightly on 21st (which failed, unrelatedly)
+  08/25/19:
+    - Min/max with NaNs and imag inequalities (#13824)
+ep-b:
+  <<: *ep-base
+
+ep.ml-perf: &ep-ml-base
+  07/26/17:
+    - Update PR 5296 (#6722)
+  05/23/18:
+    - Fix problems with tuples (#9572)
+  06/26/18:
+    - Make associative domains of enums more standard (#9978)
+  1/28/19:
+    - Represent reduce expressions using ForallStmt (#12131)
+  08/25/19:
+    - Min/max with NaNs and imag inequalities (#13824)
+  07/31/20:
+    - Make observable inout copy/writeback/deinit orders more consistent (#16143)
+  09/09/20:
+    - Adjust inout to be implemented with a single argument (#16180)
+
+ep.ml-time:
+  <<: *ep-ml-base
+
+empty-chpl-barrier.ml-time:
+  08/02/18:
+    - Optimize the atomic barrier implementation for network atomics (#10633)
+  11/03/20:
+    - Do fewer GETs to force PUTs into a visible state, and do them later (#16634)
+
+
+exchange:
+  04/18/19:
+    - Enable bulk-transfer for BlockDist by default (#12797)
+  09/17/20:
+    - Fix some issues with constant domain optimization (#16397)
+  09/29/20:
+    - Remove an unneeded assignment from array view slice initializer (#16477)
+
+fannkuch-redux:
+  07/22/14:
+    - Error due to cleaning up file incompletely
+  09/04/14:
+    - LICM no longer hoisting globals (bug fix related to hoisting wide things)
+  03/10/15:
+    - Allow LICM to hoist some global variable (#1524)
+  10/17/15:
+    - text: Plain Old Data type improvement (#2752)
+      config: chap04
+  06/29/16:
+    - replacement with more elegant version (#4089)
+
+fasta:
+  10/24/16:
+    - Convert bradc version from fastaredux to fasta (#4765)
+  10/26/16:
+    - Switch release fasta from random floats to ints (#4773)
+    - Switch bradc fasta to use linear search (#4769)
+  10/31/16:
+    - Switch release fasta to use linear search (#4796)
+  11/18/16:
+    - Replace queried domain iterations with range iterations (#4886)
+  12/09/16:
+    - Change linear search to avoid 'break' (#4994)
+  12/10/16:
+    - Switch from 'sync' to 'atomic'-based coordination (#5004)
+  12/15/16:
+    - Parallelize release version, make more use of randType and refactor for CLBG submissions (#5024)
+  12/19/16:
+    - Switch max number of tasks from 3 to 4 (#5078)
+  03/10/17:
+    - text: Re-enable binary IO optimization on NUMA (#5572)
+      config: chapcs
+  08/02/17:
+    - Remove handling of references from copyPropagation (#6779)
+  07/04/18:
+    - Disable enum->int casts for enums without values (#10114)
+  07/14/18:
+    - Optimize enum->int casts for concrete types (#10308)
+
+fastaredux:
+  01/14/14:
+    - enabled unlocked I/O on fasta and fasta-printf
+  10/07/14:
+    - Add c_string_copy type
+  01/14/16:
+    - optimize certain functions that return with ref-intent (#3101)
+  03/12/16:
+    - implemented good_alloc_size for jemalloc(#3446)
+  07/04/18:
+    - Disable enum->int casts for enums without values (#10114)
+  07/14/18:
+    - Optimize enum->int casts for concrete types (#10308)
+  01/29/20:
+    - Propagate user thrown errors out of IO routines (#14739)
+  01/06/21:
+    - Remove lots of inlines in IO.chpl for non-trivial procedures (#16887)
+
+fft:
+  05/15/19:
+    - Optimize all gets out of each Cyclic forall loop / leverage DR iterators (#13020)
+  03/05/20:
+    - Use simpler rule for deinit point (#15041)
+
+fft-timecomp:
+  <<: *timecomp-base
+
+forall-dom-range:
+  01/22/15:
+    - optimize range follower so it can be directly inlined (#1160)
+  01/24/15:
+    - optimize range follower for non-strided ranges (#1164)
+  03/10/15:
+    - optimize range follower so it can be zippered inlined (#1530)
+
+ft:
+  09/05/14:
+    - switched uses of locale.numCores to locale.maxTaskPar
+
+ft-a:
+  09/05/14:
+    - switched uses of locale.numCores to locale.maxTaskPar
+hpl:
+  12/11/15:
+    - Fixed string leak in DimensionalDist2D (#3013)
+  03/21/17:
+    - Rank change dom dist view (#5694)
+
+hpl_performance:
+  12/11/15:
+    - Fixed string leak in DimensionalDist2D (#3013)
+  11/30/16:
+    - text: Improvements to inferConstRefs (#4904)
+      config: 16-node-xc
+
+ig-variants.ml-perf:
+  01/30/20:
+    - Address deinit point and param loops and conditionals (#14825)
+  03/23/20:
+    - Fix forall-unordered-opt for ig-variants (#15286)
+init:
+  05/03/16:
+    - Fix ref-return intent bugs (#3795)
+
+isx:
+  02/26/16:
+    - ISx ref to array (#3365)
+  01/10/17:
+    - text: Use comm primitive in ISx study version (#5131)
+      config: 16-node-xc
+
+isx-bucket-spmd:
+  02/26/16:
+    - ISx ref to array (#3365)
+
+isx-no-return:
+  02/26/16:
+    - ISx ref to array (#3365)
+
+isx-release:
+  01/23/18:
+    - Fix memory leak introduced in PR #8073 (#8268)
+
+isx.ml-time: &isx-ml-base
+  02/26/16:
+    - ISx ref to array (#3365)
+  04/23/16:
+    - Switched to PCG random number generator (#3764)
+  12/22/16:
+    - Increased isx problem size (internal #279)
+  01/12/18:
+    - Avoid task yielding during ugni memory registration (#8162)
+  01/24/18:
+    - Stop forcing serial initialization for isx-hand-optimized (#8290)
+  08/02/18:
+    - Optimize the atomic barrier implementation for network atomics (#10633)
+isx-hand-optimized.ml-time:
+  <<: *isx-ml-base
+isx-release.ml-time:
+  <<: *isx-ml-base
+
+jacobi:
+  03/07/14:
+    - Added a "trivial assignment" optimization to replace field-by-field assignment with a bulk copy.
+  08/19/14:
+    - C for loops initial commit
+  08/20/14:
+    - Tom's use of user-defined default constructors
+  08/26/14:
+    - Kyle's ref temp peephole optimization
+  11/09/14:
+    - disable the task table by default
+  01/30/15:
+    - param protect all calls to chpl__testPar (#1200)
+  01/17/16:
+    - add dead string literal elimination (#3120)
+  04/01/16:
+    - casting bug fix (#3615)
+  08/12/16:
+    - Improve and enable strided bulk transfer optimization as default (#4318)
+  08/13/16:
+    - Fix bulk transfer stride failure, cast to size_t for 32-bit support (#4329)
+  10/07/16:
+    - Vass's PARTIAL_COPY related flags to hash_table improvement (#4709)
+  11/02/16:
+    - work around visible fns issue (#4804)
+    - Remove usesOuterVars from virtual method call resolution (#4794)
+    - Allow casts between c_void_ptr and object types (#4802)
+  11/10/16:
+    - Make each Symbol keep a list of SymExprs (#4827)
+  01/07/17:
+    - add param versions of min/max for ints (#5073)
+  01/13/17:
+    - refactoring of rectangular IO (#5157)
+  08/02/17:
+    - Remove handling of references from copyPropagation (#6779)
+  03/13/18:
+    - Enable phase one dynamic dispatch (#8790)
+  07/10/18:
+    - use isSubtype in preference to ':' in where clauses (#10143)
+  07/19/18:
+    - Do not introduce ref temps (#10010)
+  10/16/18:
+    - No-alias hints for LLVM (no compiler perf impact) (#11324)
+  12/14/18:
+    - Allow underscores in the number when casting from string to integral (#11880)
+  01/22/19:
+    - Catch blocks catch owned, test code throws owned (#12090)
+  04/23/19:
+    - Denormalize the test in CondStmts (#12867)
+  01/26/21:
+    - Automatically aggregate some communication in foralls (#16965)
+
+knucleotide: &knucleotide-base
+  10/17/15:
+    - text: Plain Old Data type improvement (#2752)
+      config: chap04
+  06/16/17:
+    - Let parSafe revert to default in blc study version (#6475)
+  06/19/17:
+    - Remove locking from associative array accesses (#6244)
+  11/21/17:
+    - Clear associative array elements when created by dsiAdd (#7828)
+  09/05/19:
+    - Deprecate adding to associative domain by assigning to array (#13945)
+  09/11/19:
+    - Optimize the method map.this(k) (#14065)
+  07/29/20:
+    - Optimize ASCII strings (#16092)
+knucleotide-submitted:
+  <<: *knucleotide-base
+
+LCALS-raw-short: &lcals-base
+  10/20/16:
+    - Clean up to HYDRO_2D kernel (#4757)
+    - update to TRAP_INT serial kernel (#4756)
+  11/30/16:
+    - Stop throwing --dataParMinGranularity=1000 (#4917)
+  12/10/16:
+    - Throw --no-ieee-float for LCALS (#5001)
+  10/24/17:
+    - Fix LCALS inner_prod kernel (#7632)
+  08/25/19:
+    - Task intents to operate on fields of 'this' (#13840)
+  09/10/19:
+    - Restrict applicability of field intents (#14057)
+LCALS-raw-medium:
+  <<: *lcals-base
+LCALS-raw-long:
+  <<: *lcals-base
+LCALS-parallel-short:
+  <<: *lcals-base
+LCALS-parallel-medium:
+  <<: *lcals-base
+LCALS-parallel-long:
+  <<: *lcals-base
+
+listBenchmark1:
+  05/04/20:
+    - Change lists to use 0-based indexing (#14684)
+  06/03/20:
+    - List _collapse remove shift arg (#15693)
+
+lulesh:
+  03/15/14:
+    - improved constness of de-nested functions, improved remove value forwarding
+  12/05/14:
+    - introduce "library mode"
+
+lulesh-dense:
+  03/15/14:
+    - improved constness of de-nested functions, improved remove value forwarding
+  07/15/20:
+    - Enable parallel array init for all types (#16070)
+
+mandelbrot:
+  01/03/14:
+    - Chapel level improvement by using a nonlocking writer
+  03/19/14:
+    - Bulk IO optimization
+  09/05/14:
+    - maxTaskPar change delayed fifo->qthreads performance hit
+  11/11/15:
+    - Initial commit of C complexes
+  06/16/16:
+    - Change complex getter functions for .re and .im into "static inline" (#4033)
+  07/01/16:
+    - Start using C99 functions for operations such as abs() on complex numbers (#4098)
+  07/08/16:
+    - Added compiler option --no-ieee-float to mandelbrot-complex (#4134)
+  01/15/17:
+    - Implement a Swift-like version of mandelbrot (#5168)
+  01/19/17:
+    - Mandelbrot tweaks (#5188)
+
+mandelbrot-extras:
+  01/03/14:
+    - Chapel level improvement by using a nonlocking writer
+  09/05/14:
+    - maxTaskPar change delayed fifo->qthreads performance hit
+  11/11/15:
+    - Initial commit of C complexes
+  09/21/17:
+    - Restore string perf (#7416)
+
+many-to-many-puts.ml-perf:
+  06/01/19:
+    - Optimize unorderedCopy for the PUT case (#13140)
+
+memleaks:
+  11/13/13:
+    - Plugged the massive memory leak in fileIO.chpl
+  11/26/13:
+    - Fixed valgrind regression and some associated memory leaks
+  12/03/13:
+    - Made some tests leak-free
+  12/07/13:
+    - Fixed leakage of sync and single array elements
+  04/08/14:
+    - Enabled GMP in nightly testing, allowing pidigits to run in memory leaks
+  07/09/14:
+    - Included tests that leak only string data in the Number of Tests with Leaks (r23785).
+  05/04/15:
+    - Changed tracking of internal memory descriptor types
+  05/20/15:
+    - Closed sync/single leaks
+  06/05/15:
+    - Nikhil's k-d tests added to repository
+  12/11/15:
+    - Fixed string leak in DimensionalDist2D (#3013)
+  12/13/15:
+    - Fixed string memory leak resulting from redundant autoCopies (#3023)
+  01/14/16:
+    - optimize certain functions that return with ref-intent (#3101)
+  03/10/16:
+    - Cleanups to miniMD (#3436)
+  08/11/16:
+    - Sync as record (#4309)
+  08/17/16:
+    - Single as record (#4350)
+  01/05/17:
+    - Maybe "adding support for params without initializers"(#5069)?
+  01/07/17:
+    - new test verifying the user's guide type aliases section (#5075)
+  01/17/17:
+    - new test of Sparse domain block clear functionality (#5173)
+  03/21/17:
+    - Rank change dom dist view (#5694)
+  03/23/17:
+    - Fix some memory leaks in ArrayViewRankChange (#5789)
+  06/19/17:
+    - Close some user-level memory leaks in SSCA2 (#6494)
+  06/22/17:
+    - Close strings leaked by regular expressions (#6509)
+  06/27/17:
+    - Close leaks in DimensionalDist2D (#6541)
+  07/06/17:
+    - Close more leaks in DimensionalDist2D (#6590)
+  07/14/17:
+    - Have reindex domains/distributions preserve locality (#5757)
+  07/25/17:
+    - fix leaks introduced by reindex views in PR 5757 (#6776)
+  07/24/18:
+    - Initializers on by default (#10459)
+  07/25/18:
+    - Fix size of loop expr in LCALS (#10499)
+  09/06/18:
+    - Enable usage of LinearAlgebra without BLAS/LAPACK (#10929)
+  09/19/18:
+    - Use runtime type field in chpl__distributed for sparse domains (#11140)
+  10/09/18:
+    - Resolve some global array-of-array leaks (#11307)
+  09/15/20:
+    - Fix problem with new applied to a borrowed nilable type argument (#16380)
+  09/17/20:
+    - Fix some issues with constant domain optimization (#16397)
+# End memleaks
+
+memleaksfull:
+  07/08/14:
+    - Conversion of knucleotide-forall and -coforall to read input line-by-line (23733).
+  07/10/14:
+    - Included tests that leak only string data in the Number of Tests with Leaks (r23785).
+  12/11/15:
+    - Fixed string leak in DimensionalDist2D (#3013)
+  12/13/15:
+    - Fixed string memory leak resulting from redundant autoCopies (#3023)
+  01/14/16:
+    - optimize certain functions that return with ref-intent (#3101)
+  08/11/16:
+    - Sync as record (#4309)
+  08/23/16:
+    - Fix gasnet config for recent memory leak updates (#4375)
+  02/08/17:
+    - Add Futures package module - lambda functions leaking (#5135)
+  03/21/17:
+    - Rank change dom dist view (#5694)
+  03/23/17:
+    - Fix some memory leaks in ArrayViewRankChange (#5789)
+  06/19/17:
+    - Close some user-level memory leaks in SSCA2 (#6494)
+  06/22/17:
+    - Close strings leaked by regular expressions (#6509)
+  06/27/17:
+    - Close leaks in DimensionalDist2D (#6541)
+  07/04/17:
+    - LLNL version of CoMD added, leaks memory (#6553)
+  07/06/17:
+    - skip LLNL CoMD for memory leaks (#6611)
+    - Close more leaks in DimensionalDist2D (#6590)
+  07/14/17:
+    - Have reindex domains/distributions preserve locality (#5757)
+  07/25/17:
+    - fix leaks introduced by reindex views in PR 5757 (#6776)
+  09/17/17:
+    - close test code leaks (#7348 and #7349)
+  09/18/17:
+    - allow Mason testing to compile again after change (#7350)
+  09/19/17:
+    - close additional graph 500 leaks (#7357)
+  09/20/17:
+    - close more test code leaks (#7406, #7399, #7395, #7364, and #7400)
+  11/15/17:
+    - Delete classes in some tests (#7791)
+  12/19/17:
+    - Rewrite default argument handling (#7858)
+  01/23/18:
+    - Fix memory leak introduced in PR #8073 (#8268)
+  03/14/18:
+    - Convert RecordParser over from constructors to initializers (#8810)
+  04/04/18:
+    - Update a slew of tests with initialize() methods to use postinit() instead (#8988)
+  04/07/18:
+    - Fix some initializer leaks (#9111)
+  04/10/18:
+    - Partial reduction straw man (#9158)
+  04/19/18:
+    - New test for warn-unstable (#9229)
+    - Partial reductions for LayoutCS (#9269)
+  04/20/18:
+    - Adjust partial-reduction tests (#9284)
+  05/16/18:
+    - deprecate 'out error' pattern from modules (#9450)
+  05/17/18:
+    - Enable fields with generic declared type (#9489)
+  05/24/18:
+    - Migrate tests to use decorated new(#9499)
+  06/05/18:
+    - Create an array/domain/distribution class for external arrays (#9694)
+    - DataFrame ADT (#9696)
+  06/13/18:
+    - Fix several memory leaks (#9796)
+    - Fix regexp leak (#9799)
+    - Close some memory leaks in these tests (#9802)
+  06/19/18:
+    - Remove origin field from DefaultRectangular (#9863)
+    - Allow basic usage of nested types with initializers (#9886)
+  07/20/18:
+    - Fix leak in locale.cwd() (#10411)
+  07/24/18:
+    - Initializers on by default (#10459)
+  07/25/18:
+    - Fix size of loop expr in LCALS (#10499)
+  07/26/18:
+    - Close DataFrame leaks (#10514)
+    - Fix leak in cast to string from c_ptr (#10523)
+  08/01/18:
+    - Additional SparseBlockDom/Arr dsi methods to support bale-toposort (#10604)
+  09/06/18:
+    - Enable usage of LinearAlgebra without BLAS/LAPACK (#10929)
+  09/19/18:
+    - Use runtime type field in chpl__distributed for sparse domains (#11140)
+  09/27/18:
+    - Fix some SparseBlockDist leaks (#11227)
+  10/09/18:
+    - Resolve some global array-of-array leaks (#11307)
+  10/11/18:
+    - Resolve some leaks in user code (#11321)
+    - Free the result of '_build_tuple_always_allow_ref' for index vars (#11334)
+  10/16/18:
+    - Adding an exercise about finding duplicate files (#11358)
+  10/25/18:
+    - Fix reduction leak for identity() method (#11458)
+  01/28/19:
+    - Represent reduce expressions using ForallStmt (#12131)
+  02/01/19:
+    - TaskErrors now contains owned errors (#12225)
+  02/28/19:
+    - Add Path.absPath, file.absPath and associated tests (#12394)
+  03/05/19:
+    - Add relPath and file.relPath to the Path standard module (#12421)
+  03/07/19:
+    - Give in intent to varargs formals in joinPath, commonPath (#12512)
+    - Reduce memory leaks due to reduce expressions (#12500)
+  03/08/19:
+    - Delete nested task errors when folding them (#12516)
+    - Close a user-level leak in this test (#12527)
+  03/09/19:
+    - Close user leaks in linked list tests (#12531)
+  03/12/19:
+    - Close a memory leak in linkedlist test (#12551)
+    - Close leak in tdata-test (#12554)
+    - Close leaks in CoMD (#12552)
+  04/16/19:
+    - Add VectorList collection (#12791)
+  04/17/19:
+    - Fix bugs in mason search and buildMason (#12785)
+  05/23/19:
+    - Execute defer actions in an iterator upon break from its loop (#12963)
+  06/29/19:
+    - Change to type constructors caused new leak in stream-block1dclass.chpl (#13315)
+  07/04/19:
+    - New assertion tests in Unit Test framework leak FCFs (#13288)
+  07/11/19:
+    - New test inside-field.chpl leaks 3 domains (#13416)
+  07/25/19:
+    - Add two-array radix and sample sorts and a distributed sort (#13347)
+  08/02/19:
+    - Fix memory leaks in test-radix-bucketizer.chpl (#13604)
+  08/06/19:
+    - Close memory leaks in bytes type and tests (#13660)
+  08/09/19:
+    - fix another deletion size mismatch error (introduced leaks) (#13671)
+  09/26/19:
+    - Fix memory leak caused by use of first class functions (#14163)
+  10/17/19:
+    - Rework several sparse tests (#14283)
+  10/22/19:
+    - Starting running mason as part of memleak testing
+  11/01/19:
+    - Fix a leak in masonModify (#14375)
+  11/12/19:
+    - Move the essentials of IO.chpl into ChapelIO (#14145)
+  12/04/19:
+    - Access param, type fields without postfix-! (#14549)
+  12/06/19:
+    - Close user-level leaks in some new tests (#14586)
+    - Fix quicksort to work with owned array elements (#14204)
+  12/10/19:
+    - Allow messages in new Errors (#14545)
+  01/09/20:
+    - Resolve memory leaks with quicksort with array-of-arrays (#14635)
+  01/29/20:
+    - Propagate user thrown errors out of IO routines (#14739)
+  01/30/20:
+    - Adjust split init to allow some try, if with returns (#14814)
+  02/20/20:
+    - Use escaped strings in paths (#14907)
+  02/26/20:
+    - Closes memory leaks introduced by 14907 (#14959)
+  02/28/20:
+    - mason init (#14820)
+  02/29/20:
+    - Improve out intent (#14917)
+  03/01/20:
+    - Fix remote I/O error and a memory leak (#15025)
+  03/07/20:
+    - Close some memory leaks in mason init (#15099)
+  03/21/20:
+    - mason new --moduleName (#14997)
+  03/27/20:
+    - Close mason init memory leaks (#15325)
+  04/05/20:
+    - Make array literals start counting at zero (#14521)
+  04/11/20:
+    - Close a leak in addAndGetAndClearPrivatizedInParallel.chpl (#15484)
+  04/18/20:
+    - Close some multilocale test leaks (#15406)
+  04/19/20:
+    - no new leaks, multiple tests used to be registered as one
+  06/16/20:
+    - Use `localAccess` automatically (#15713)
+  06/18/20:
+    - Close a trivial test leak (#15871)
+  07/14/20:
+    - Add tests for set, map, list of arrays (#16034)
+  10/23/20:
+    - Close leaks coming from unnamed array types (#16600)
+  11/04/20:
+    - Deallocate the RTT memory returned from empty for expressions (#16628)
+  11/20/20:
+    - Fix memory leak in reduceLoopOfPromoted.chpl (#16691)
+  01/09/21:
+    - Add tests and futures looking at I/O on class hierarchies (#16920)
+  01/15/21:
+    - Fix memory leak for classes/io/classToString (#16949)
+  01/26/21:
+    - Support fixed sized arrays of tuples containing non-nilable classes (#16802)
+  02/21/21:
+    - CG enable return types and calling required functions (#17197)
+  02/25/21:
+    - Deprecate regexp ok and error() methods (#17245)
+  03/02/21:
+    - File tests locking in fixes to issue #14226 (#17291)
+  03/03/21:
+    - Fix some issues with new tests locking in bug fixes (#17320)
+# End memleaksfull
+
+meteor:
+  12/18/13:
+    - Chapel level improvement by using implicit domains
+  08/10/16:
+    - Updated meteor's lock to yield less frequently (#4300)
+  11/08/18:
+    - Module-scope code gets module scope temps, fix lifetime checking (#11570)
+
+mg: &mg-base
+  05/23/17:
+    - Fix NPB MG (#6284)
+  06/13/17:
+    - Optimize updateFluff (#6418)
+  06/22/17:
+    - Only perform packed updateFluff when there are multiple locales (#6512)
+  06/22/18:
+    - Make 'for' loop in dsiReallocate parallel (#9895)
+  09/20/18:
+    -  Move strided bulk transfer into common code (#11197)
+  09/21/18:
+    -  Restore comm=none performance lost in PR 11197 (#11206)
+  03/13/20:
+    -  Reallocate 1D arrays in place, when possible (#15177)
+
+mg-b:
+  <<: *mg-base
+
+mg.ml-time:
+  05/11/17:
+    - Move chpl_getPrivatizedClass() into chpl-privatization.h (#6212)
+  05/23/17:
+    - Fix NPB MG (#6284)
+  06/13/17:
+    - Optimize updateFluff (#6418)
+
+miniMD:
+  12/21/13:
+    - clean up of noRefCount related code in modules/internal (22473)
+  11/04/14:
+    - surprising regression from cast in DefaultRectangular (df8c3172cc9c)
+  01/30/15:
+    - param protect all calls to chpl__testPar -- resolve DefaultRect cast regression (#1200)
+  03/18/15:
+    - Avoid shallow record copies in miniMD (#1643)
+  03/19/16:
+    - Increase parallelism, decrease comm (#3483)
+  12/02/16:
+    - RVF reference fields with record-wrapped type (#4925)
+  03/10/17:
+    - Three way refpair (#5561)
+  12/05/17:
+    - Enforce qualified refs after inlining (#7906)
+  04/19/18:
+    - Use zero-arg initializer in BaseDom (#9250)
+  04/24/18:
+    - Update miniMD problem size (#9296)
+  04/18/19:
+    - Enable bulk-transfer for BlockDist by default (#12797)
+  03/13/20:
+    -  Reallocate 1D arrays in place, when possible (#15177)
+
+miniMD.ml-time:
+  09/14/17:
+    - Introduce ShadowVarSymbol for forall intents (#7307)
+  09/22/17:
+    - Manually hoist loop-invariant array access in miniMD (#7432)
+  09/26/17:
+    - Prevent certain data races upon 'in' forall intents (#7467)
+
+ml-memleaksfull:
+  04/04/20:
+    - Close a few multilocale string/bytes leaks (#15386)
+  04/16/20:
+    - Avoid postinit in SparseBlockDom that was causing unnecessary allocations (#15385)
+    - Add proper privatization in Hashed distribution (#15390)
+  04/17/20:
+    - Close some multilocale test leaks (#15406)
+
+nbody:
+  03/17/14:
+    - removed extra formal temps
+  07/24/14:
+    - chap04 Subtest random glitch
+  01/17/16:
+    - add dead string literal elimination (#3120)
+  03/14/16:
+    - upgrade jemalloc to 4.1.0 (#3447)
+  03/16/16:
+    - revert jemalloc to 4.0.4 (#3477)
+  05/28/16:
+    - upgrade jemalloc to 4.2.0 (#3919)
+  04/19/18:
+    - Use zero-arg initializer in BaseDom (#9250)
+  08/31/18:
+    - Refactor PRIM_NEW resolution to enable promotion (#10919)
+  05/03/19:
+    - Govern slice expressions by slicing domain (#12931)
+
+no-op:
+  02/24/17:
+    - upgrade hwloc to 1.11.6 (#5411)
+
+one-locale-parallel-amos.ml-perf:
+  06/02/20:
+    - Improve MCM enforcement for AM-mediated nonfetching AMOs (#15712)
+
+one-locale-serial-amos.ml-perf:
+  06/02/20:
+    - Improve MCM enforcement for AM-mediated nonfetching AMOs (#15712)
+
+parOpEquals:
+  09/06/13:
+    - (no-local) chpl_localeID_t's ignore_subloc field minimized to 1 bit
+  09/27/13:
+    - (no-local) Reversion of chpl_localeID_t's ignore subloc field being minimized to 1 bit
+  02/28/15:
+    - (no-local) Move the check for src==dst from comm_get to array op= (#1410)
+  05/24/19:
+    - Increased usage of initializers for domains and distributions (#13018)
+
+pidigits: &pidigits-base
+  05/16/16:
+    - switched release version to use ledrug algorithm
+  09/24/16:
+    - rearranged pidigits; release versions now use bigints (#4655) (#4656)
+  05/01/18:
+    - Move chplgmp.c out of runtime (#8944)
+  05/14/19:
+    - Fix build issue where GCC's GMP was used instead of Chapel's
+pidigits-submitted:
+  <<: *pidigits-base
+
+primes:
+  07/01/20:
+    - Optimize repeated insertions/deletions from chpl__hashtable (#15982)
+
+prk-stencil:
+  02/14/16:
+    - Improved performance on PRK-stencil (#3288)
+  04/08/16:
+    - Looping over range instead of domain for weight matrix (#3500)
+  04/09/16:
+    - blockDist for useStencilDist output matrix and more (#3705)
+  05/06/16:
+    - Problem size increased from --order=1000 to --order=32000 (#3813)
+  06/13/17:
+    - Optimize updateFluff (#6418)
+
+prk-stencil.ml-perf:
+  04/08/16:
+    - Looping over range instead of domain for weight matrix (#3500)
+  04/09/16:
+    - blockDist for useStencilDist output matrix and more (#3705)
+  05/06/16:
+    - Problem size increased from --order=1000 to --order=32000 (#3813)
+  08/12/16:
+    - Improve and enable strided bulk transfer optimization as default (#4318)
+  05/11/17:
+    - Move chpl_getPrivatizedClass() into chpl-privatization.h (#6212)
+  05/18/17:
+    - Use nonblocking transactions for strided transfers (#6262)
+  06/06/17:
+    - Increase the PRK stencil problem size (#6380)
+  06/13/17:
+    - Optimize updateFluff (#6418)
+  07/26/17:
+    - Update PR 5296 (#6722)
+  12/02/17:
+    - Stop doing a task-yield while forking remote tasks under ugni (#7915)
+  01/31/20:
+    - Fix timeout identification for Cray-CS testing (#14838)
+  06/02/20:
+    - Address performance issues with stencil and block-cyclic array init (#15741)
+
+prk-stencil-time:
+  05/11/17:
+    - Move chpl_getPrivatizedClass() into chpl-privatization.h (#6212)
+  06/13/17:
+    - Optimize updateFluff (#6418)
+
+prk-transpose: &transpose-base
+  05/04/17:
+    - Update benchmark to track latest reference version (#6152)
+prk-transpose-time:
+  <<: *transpose-base
+
+ptrans: &ptrans-base
+  01/11/17:
+    - Replace temporary array in BlockCycDist with tuple (#5139)
+  01/24/17:
+    - Make BlockCyclic more parallel (#5224)
+  01/27/17:
+    - Fix bug in BlockCyclic indexing, convert arrays to tuples(#5229)
+  07/07/20:
+    - Distribution improvements for automatic localAccess (#15959)
+ptrans.ml-perf:
+  <<: *ptrans-base
+ptrans.ml-time:
+  <<: *ptrans-base
+
+ra:
+  05/13/16:
+    - text: stridable ranges and domains safeCasts, compiler error, etc. (#3778)
+      config: 1-node-xc
+  03/21/17:
+    - Rank change dom dist view (#5694)
+  04/05/18:
+    - Convert BaseDist-inheriting classes to use initializers (#9075)
+  07/15/20:
+    - Enable parallel array init for all types (#16070)
+
+ra.ml-perf:
+  09/19/17:
+    - machine changes, cannot reproduce old numbers
+  02/28/20:
+    - Use localAccess for ra-on (#15001)
+
+ra-atomics.ml-perf:
+  10/03/17:
+    - Increase the number of updates for RA to stabilize performance timings (#7522)
+  09/06/20:
+    - Improve LLVM vectorization support (#16152)
+  09/26/20:
+    - Do not check for order independence in forall-unordered opt (#16455)
+
+RBC:
+  02/22/17:
+    - update logic for pruning unused module level variables (#5395)
+
+regexdna: &regexdna-base
+  10/07/14:
+    - Add c_string_copy type
+  11/29/15:
+    - started building re2 with optimizations (#2930)
+  12/13/15:
+    - Fixed string memory leak resulting from redundant autoCopies (#3023)
+  03/12/16:
+    - implemented good_alloc_size for jemalloc(#3446)
+  04/20/17:
+    - Update RE2 (#6024)
+  06/22/17:
+    - Free strings leaked by Regex.subn() / qio_regexp_replace() (#6509)
+  08/09/19:
+    - Change string.length to measure in codepoints (#13675)
+  12/17/19:
+    - Add UTF8 validation for strings (#14384)
+  01/23/20:
+    - Add support for escaping non-UTF8 sequences in strings (#14743)
+  06/11/20:
+    - Add a field to the string record to store a cached size (#15758)
+  02/24/21:
+    - Upgrade to re2 2021-02-02 (#17230)
+regexdna-redux:
+  <<: *regexdna-base
+regexdna-submitted:
+  <<: *regexdna-base
+regexdnaredux-submitted:
+  <<: *regexdna-base
+
+remote-puts.ml-perf:
+  11/03/20:
+    - Do fewer GETs to force PUTs into a visible state, and do them later (#16634)
+
+remote-fetchAmos.ml-perf:
+  11/03/20:
+    - Do fewer GETs to force PUTs into a visible state, and do them later (#16634)
+
+remote-ons.ml-perf:
+  05/17/19:
+    - Avoid comm/compute overlap for short-lived tasks (#12964)
+  05/13/20:
+    - Reorganize arg bundles in the runtime (#15660)
+
+remote-record-read-copy:
+  11/15/18:
+    - Invoke 'init' directly for init-var instead of chpl__initCopy (#11629)
+  03/07/19:
+    - Avoid init= for POD types (#12439)
+
+remote-unordered-gets.ml-perf:
+  02/04/20:
+    - Add unordered GET/PUT support in comm=ofi. (#14810)
+
+return-array-8: &return-array-base
+  03/04/17:
+    - remove unnecessary return from array-return tests (#5486)
+  05/01/18:
+    - Enable variables declared with generic type (#9355)
+return-array-20000000:
+  <<: *return-array-base
+return-array-40000000:
+  <<: *return-array-base
+
+revcomp: &revcomp-base
+  05/12/15:
+    - various qio changes motivated by cygwin failures (#1943)
+  10/29/15:
+    - Difficult to consistently replicate
+  08/14/16:
+    - text: Discontinued performance testing (data invalid) (#4333)
+      config: 1-node-xc
+  03/10/17:
+    - text: Re-enable binary IO optimization on NUMA (#5572)
+      config: chapcs
+  03/15/18:
+    - Brad version overhauled, based on mark-skip-read-begin (#8815)
+  03/31/18:
+    - Update revcomp problem size; filenames for fasta-based inputs (#9043)
+  04/19/18:
+    - Use zero-arg initializer in BaseDom (#9250)
+  10/30/18:
+    - Improve string comparisons (#11479)
+  02/05/19:
+    - Make stdout, stderr ordering predictable in test output (#12236)
+  08/30/19:
+    - Add channel seek and default to pread (#13862)
+  09/06/19:
+    - Turn "array-as-vec" deprecation warnings on (#13999)
+  09/10/19:
+    - Restore reverse-complement performance with qio hint (#14045)
+  02/04/20:
+    - Improve const/ref this decorators (and update revcomp) (#14809)
+revcomp-submitted:
+  <<: *revcomp-base
+
+ri-a2-AoA:
+  06/05/20:
+    - Remove unnecessary array temporaries for arrays-of-arrays (#15767)
+  08/24/20:
+    - Propagate constness of domain variables into the instance implementation (#16218)
+
+sad:
+  05/03/16:
+    - inconclusive due to noise
+
+scanPerf:
+  03/05/19:
+    - Support optionally parallel 1D scans on default rectangular (#12469)
+  01/14/21:
+    - Optimize scans by using noinit for the result array (#16919)
+
+scanPerf.ml-time:
+  03/06/19:
+    - First good draft of parallel Block-distributed scan (#12481)
+  01/12/21:
+    - Increase the problem size for the multi-locale scan performance test (#16918)
+  01/14/21:
+    - Optimize scans by using noinit for the result array (#16919)
+
+search:
+  04/20/17:
+    - Update RE2 (#6024)
+  04/26/18:
+    - Update tuples to use special function instead of constructors (#9317)
+  12/14/18:
+    - Tuple iteration yields (const) refs (#11866)
+  09/04/19:
+    - Inline small wrappers in string and bytes implementations (#13971)
+  10/25/19:
+    - Support the Chapel bytes type in single locale Python interop (#14310)
+  11/01/19:
+    - Avoid 'use'ing ByteBufferHelpers ExportWrappers (#14377)
+  11/05/19:
+    - Remove standardModuleSet and all code involving it from the compiler (#14270)
+  12/10/19:
+    - Allow messages in new Errors (#14545)
+  09/03/20:
+    - Improve string to numerical casts' compilation and execution performance (#16278)
+
+search-throughput:
+  07/29/20:
+    - Optimize ASCII strings (#16092)
+  09/03/20:
+    - Improve string to numerical casts' compilation and execution performance (#16278)
+
+spectralnorm:
+  01/21/15:
+    - qthreads updated to yield every ~100 uncontested sync var locks
+  12/18/18:
+    - brad version changed to serial implementation (#11904)
+
+spectral-norm-specify-step:
+  01/21/15:
+    - qthreads updated to yield every ~100 uncontested sync var locks
+
+split-whitespace-perf:
+  11/02/16:
+    - fix bugs when reading null bytes (#4806)
+  06/11/20:
+    - Add a field to the string record to store a cached size (#15758)
+  08/25/20:
+    - Refactor string iterators to reduce generated code size (#16266)
+
+SSCA2_main:
+  06/12/13:
+    - Initial support for hierarchical locales (21480)
+
+STREAM_study_fragmented:
+  09/06/13:
+    - chpl_localeID_t's ignore_subloc field minimized to 1 bit
+  09/27/13:
+    - Reversion of chpl_localeID_t's ignore subloc field being minimized to 1 bit
+
+STREAM_study_performance:
+  09/06/13:
+    - chpl_localeID_t's ignore_subloc field minimized to 1 bit
+  09/27/13:
+    - Reversion of chpl_localeID_t's ignore subloc field being minimized to 1 bit
+
+stream-promoted.ml-perf:
+  12/02/16:
+    - text: RVF reference fields with record-wrapped type (#4925)
+      config: 16-node-xc
+  03/17/17:
+    - text: Improve cullOverReferences and enable late const checking (#5624)
+      config: 16-node-xc
+  03/21/17:
+    - text: Improve const inference for chpl__iterLF (#5736)
+      config: 16-node-xc
+
+STREAM_study:
+  10/21/16:
+    - Improvements to scalarReplace, refPropagation and copyPropagation (#4761)
+  03/16/17:
+    - Optimize serial iteration for ArrayViews (#5668)
+
+STREAM_study_promote:
+  10/21/16:
+    - Improvements to scalarReplace, refPropagation and copyPropagation (#4761)
+
+stencil:
+  07/21/14:
+    - machine related (no commits on the day before)
+  03/24/15:
+    - with CCE, bug fix to avoid vectorizing when not valid
+  08/13/20:
+    - Optimize array swap operator for basic cases (#16209)
+
+stream:
+  05/13/16:
+    - text: stridable ranges and domains safeCasts, compiler error, etc. (#3778)
+      config: 1-node-xc
+  03/18/17:
+    - text: Improve inferConstRefs' canRHSBeConstRef helper function (#5710)
+      config: 16-node-xc
+
+stream-spmd-barrier:
+  06/07/18:
+    - Prevent serialization from qthread sync vars (#9737)
+
+substring:
+  05/24/19:
+    - make codepoint indexing/iteration the default (#12899)
+  08/01/19:
+    - Take advantage of known UTF-8 encoding to speed up strings (#13580)
+  05/05/20:
+    - Rework the helper for string/bytes slicing (#15615)
+  05/20/20:
+    - Remove string.indices from getView (#15653)
+  06/11/20:
+    - Add a field to the string record to store a cached size (#15758)
+  07/29/20:
+    - Optimize ASCII strings (#16092)
+
+taskSpawn:
+  07/24/16:
+    - Stopped performing remote value forwarding on task functions (#4240)
+  03/21/17:
+    - Limit the maximum size of qthreads memory pools to 65MB (#5748)
+
+temporary-copies:
+  01/14/17:
+    - Likely cache effects
+  04/20/17:
+    - Update RE2 (#6024)
+  12/11/18:
+    - Turn off some range halts for --no-checks (#11780)
+  05/24/19:
+    - make codepoint indexing/iteration the default (#12899)
+  08/01/19:
+    - Take advantage of known UTF-8 encoding to speed up strings (#13580)
+  02/20/20:
+    - Add 1st draft of copy elision (#14903)
+  05/05/20:
+    - Rework the helper for string/bytes slicing (#15615)
+  05/20/20:
+    - Remove string.indices from getView (#15653)
+  06/11/20:
+    - Add a field to the string record to store a cached size (#15758)
+  07/29/20:
+    - Optimize ASCII strings (#16092)
+
+twopt-paircount:
+  06/22/17:
+    - Free strings leaked by Regex.subn() / qio_regexp_replace() (#6509)
+  04/03/20:
+    - Change tuples (and related queries) to use 0-based indexing (#14522)
+
+testSerialReductions:
+  08/16/14:
+    - result of Greg's commit to let the tasking layer determine parallelism
+  12/19/18:
+    - Merge ExternArr and friends into DefaultRectangular (#11893)
+  07/15/20:
+    - Enable parallel array init for all types (#16070)
+
+thread-ring:
+  03/19/15:
+    - text: memory related, qthreads memory pool bug fix
+      config: chap03
+  03/21/17:
+    - Limit the maximum size of qthreads memory pools to 65MB (#5748)
+  12/05/17:
+    - Enforce qualified refs after inlining (#7906)
+  06/07/18:
+    - Prevent serialization from qthread sync vars (#9737)
+  08/30/18:
+    - Reduce hugepage waste from call stacks (#10254)
+
+time_array_vs_ddata:
+  05/31/14:
+    - specializing binaries to target architectures
+  01/26/16:
+    - Optimize iteration over anonymous low-bounded counted ranges (#3154)
+  03/01/16:
+    - Extend early string-as-rec work to cover more sub-types of record (#3386)
+  10/05/17:
+    - Fix the anonymous range optimization for low-bounded counted ranges (#7422)
+
+time_array_vs_ref:
+  09/13/16:
+    - stop converting "ref" variables to values in cullOverReferences (#4485)
+
+time_array_vs_ref_forall:
+  09/13/16:
+    - stop converting "ref" variables to values in cullOverReferences (#4485)
+
+time_array_vs_ref_multidim:
+  09/13/16:
+    - stop converting "ref" variables to values in cullOverReferences (#4485)
+
+time_array_vs_tuple:
+  08/19/14:
+    - C for loops initial commit
+
+time_iterate:
+  11/13/13:
+    - disabled optimizations based on no arithmetic flow (22290)
+
+time-write:
+  03/05/15:
+    - no strings with externs update
+  01/06/21:
+    - Remove lots of inlines in IO.chpl for non-trivial procedures (#16887)
+
+timeMapMinusEqual:
+  07/10/20:
+    - Optimize map -= operation (#16038)
+
+views-forall-iter:
+  10/12/17:
+    - Switch from these(tag) to foralls for some standalone iters (#7578)
+  10/14/17:
+    - Pass Iterator Classes by Value (#7596)
+
+dynamic:
+  02/28/17:
+    - Bring in upstream fixes for qthreads sleep interception bug (#5446)
+  03/04/17:
+    - Use Time.sleep so that these tests play nice with qthreads (#5483)
+
+distAdaptativeWSv1:
+  02/28/17:
+    - Bring in upstream fixes for qthreads sleep interception bug (#5446)
+  03/04/17:
+    - Use Time.sleep so that these tests play nice with qthreads (#5483)
+
+distAdaptativeWSv2:
+  02/28/17:
+    - Bring in upstream fixes for qthreads sleep interception bug (#5446)
+  03/04/17:
+    - Use Time.sleep so that these tests play nice with qthreads (#5483)
+
+getNextPerf:
+  05/16/19:
+    - Improve the speed of parallel safe random streams (#13013)
+
+guided:
+  02/28/17:
+    - Bring in upstream fixes for qthreads sleep interception bug (#5446)
+  03/04/17:
+    - Use Time.sleep so that these tests play nice with qthreads (#5483)
+
+distAdaptativeWS:
+  02/28/17:
+    - Bring in upstream fixes for qthreads sleep interception bug (#5446)
+  03/04/17:
+    - Use Time.sleep so that these tests play nice with qthreads (#5483)
+
+
+# Compiler performance annotations
+compilerAndTestingStats: &compiler-perf-base
+  07/25/19:
+    - Add two-array radix and sample sorts and a distributed sort (#13347)
+  07/30/19:
+    - Undecorated classes have generic management (#13447)
+  07/31/19:
+    - Add record _bytes to the internal modules (#13519)
+  08/25/19:
+    - Enable compile-time nil-checking for internal modules (#13843)
+  08/30/19:
+    - Add factory functions for string and bytes (#13914)
+  08/31/19:
+    - Require 'use' of top level modules rather than lexical scoping (#13930)
+  09/06/19:
+    - Turn "array-as-vec" deprecation warnings on (#13999)
+  10/30/19:
+    - Switched test machine
+  11/05/19:
+    - Remove standardModuleSet and all code involving it from the compiler (#14270)
+  11/20/19:
+    - Simplify visible function determination of use visibility (#14481)
+  11/21/19:
+    - Only check visibility once per scope instead of once per private function (#14492)
+  12/04/19:
+    - pinned test machine for linux64, --fast, and --no-local
+  12/10/19:
+    - Switched test machine for --fast and --no-local
+  12/13/19:
+    - Switched test machine for --no-local
+  02/19/20:
+    - Improve handling for tryResolve and errors to handle a bad init= (#14887)
+  03/03/20:
+    - Remove calls to getUserInstantiationPoint (#15051)
+  03/26/20:
+    - Give errors in reexporting ambiguities (#15316)
+  04/16/20:
+    - Cache whether a ResolveScope or UseStmt can reexport (#15517)
+  04/28/20:
+    - Move compiler performance jobs to chapcs04
+  06/15/20:
+    - machine update (McAfee)
+  07/27/20:
+    - Replace some where-clauses with formals types (#16130)
+    - Handle bool tests in the compiler (#16062)
+  07/29/20:
+    - Optimize ASCII strings (#16092)
+  08/25/20:
+    - Refactor string iterators to reduce generated code size (#16266)
+  09/03/20:
+    - Improve string to numerical casts' compilation and execution performance (#16278)
+  02/17/21:
+    - GPU code generation (#17116)
+  02/25/21:
+    - Restore timing for makeBinary (#17253)
+    - Stop converting PRIM_ZIP to tuples for forall statements (#17212)
+
+allTotalTime:
+  <<: *compiler-perf-base
+allPasses:
+  <<: *compiler-perf-base
+topTotalTime:
+  <<: *compiler-perf-base
+topPasses:
+  <<: *compiler-perf-base
+
+arkouda: &arkouda-base
+  04/22/20:
+    - Optimize coargsort for numeric arrays (mhmerrill/arkouda#330)
+  04/28/20:
+    - text: Improve comm=none build and execution speed (mhmerrill/arkouda#358)
+      config: chapcs
+    - text: Move XC testing from login to elogin node
+      config: 16-node-xc
+  05/20/20:
+    - Upgrade Arkouda release testing from 1.20 to 1.22 (#15690)
+  07/01/20:
+    - Translate pdarray setops to server-side operations (mhmerrill/arkouda#392)
+  07/02/20:
+    - Reduce fragmentation for large allocations (#15992)
+  09/23/20:
+    - text: Optimize DstAggregator by caching remote allocations (mhmerrill/arkouda#485)
+      config: 16-node-cs, 16-node-xc
+  10/02/20:
+    - text: Optimize SrcAggregator by caching remote allocations (mhmerrill/arkouda#503)
+      config: 16-node-cs
+  10/03/20:
+    - text: Enable SrcAggregator under ugni (mhmerrill/arkouda#507)
+      config: 16-node-xc
+    - text: Move XC testing from elogin back to login node
+      config: 16-node-xc
+  10/06/20:
+    - text: Optimize aggregators by yielding more often (mhmerrill/arkouda#509)
+      config: 16-node-cs, 16-node-xc
+  10/21/20:
+    - Upgrade Arkouda release testing from 1.22 to 1.23 (#16599)
+  01/08/21:
+    - Benchmark improvements (mhmerrill/arkouda#616)
+  01/14/21:
+    - Optimize scans by using noinit for the result array (#16919)
+  01/15/21:
+    - Optimize int64 prod reduce (mhmerrill/arkouda#628)
+  02/12/21:
+    - 624 convert message format to json (mhmerrill/arkouda#639)
+  02/16/21:
+    - Optimize string argsort (mhmerrill/arkouda#671)
+  02/18/21:
+    - Increase the problem size for string benchmarks (mhmerrill/arkouda#676)
+  02/19/21:
+    - Skip long string partitioning in string argsort (mhmerrill/arkouda#681)
+
+arkouda-string:
+  <<: *arkouda-base
+
+arkouda-comp:
+  <<: *arkouda-base
+  07/29/20:
+    - Optimize ASCII strings (#16092)
+  08/25/20:
+    - Refactor string iterators to reduce generated code size (#16266)
+  09/01/20:
+    - Stop inlining chpl__delete (#16314)
+  09/04/20:
+    - Improve string to numerical casts' compilation and execution performance (#16278)
+  09/09/20:
+    - Adjust inout to be implemented with a single argument (#16180)
+  09/10/20:
+    - Stop inlining many string casts (#16355)
+  09/17/20:
+    - Fix some issues with constant domain optimization (#16397)
+  02/25/21:
+    - Stop converting PRIM_ZIP to tuples for forall statements (#17212)

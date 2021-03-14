@@ -1,0 +1,2 @@
+fieldRecordTypeMismatch.chpl:12: In initializer:
+fieldRecordTypeMismatch.chpl:10: error: 'R' undeclared (first use this function)

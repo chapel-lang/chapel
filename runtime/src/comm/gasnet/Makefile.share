@@ -1,0 +1,50 @@
+# Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+# Copyright 2004-2019 Cray Inc.
+# Other additional copyright holders may be indicated within.
+# 
+# The entirety of this work is licensed under the Apache License,
+# Version 2.0 (the "License"); you may not use this file except
+# in compliance with the License.
+# 
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+COMM_LAUNCHER_SRCS = \
+        comm-gasnet-launch.c \
+        comm-gasnet-locales.c \
+
+COMM_SRCS = \
+	comm-gasnet.c \
+	comm-gasnet-locales.c \
+
+SRCS = \
+  comm-gasnet.c \
+  comm-gasnet-launch.c \
+  comm-gasnet-locales.c \
+
+
+COMM_OBJS = \
+	$(COMM_SRCS:%.c=$(COMM_OBJDIR)/%.o)
+
+COMM_LAUNCHER_OBJS = \
+	$(COMM_LAUNCHER_SRCS:%.c=$(COMM_LAUNCHER_OBJDIR)/%.o)
+
+ifneq ($(MAKE_LAUNCHER), 1)
+ifneq ($(CHPL_MAKE_RULE),clean)
+ifneq ($(CHPL_MAKE_RULE),clobber)
+# get CHPL_GASNET_CFLAGS
+-include $(GASNET_SETUP_MAKEFILE)
+endif
+endif
+endif
+
+$(RUNTIME_OBJ_DIR)/comm-gasnet.o: comm-gasnet.c $(RUNTIME_OBJ_DIR_STAMP)
+	$(CC) -c $(RUNTIME_CFLAGS) $(CHPL_GASNET_CFLAGS) $(RUNTIME_INCLS) -o $@ $<
+

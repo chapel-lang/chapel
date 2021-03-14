@@ -1,0 +1,175 @@
+Usage: chpl [flags] [source files]
+
+Module Processing Options:
+      --[no-]count-tokens             [Don't] count tokens in main modules
+      --main-module <module>          Specify entry point module
+  -M, --module-dir <directory>        Add directory to module search path
+      --[no-]print-code-size          [Don't] print code size of main modules
+      --print-module-files            Print module file locations
+      --[no-]print-search-dirs        [Don't] print module search path
+
+Warning and Language Control Options:
+      --[no-]permit-unhandled-module-errors
+                                      Permit unhandled errors in explicit
+                                      modules; such errors halt at runtime
+      --[no-]warn-unstable            Enable [disable] warnings for uses of
+                                      language features that are in flux
+      --[no-]warnings                 Enable [disable] output of warnings
+
+Parallelism Control Options:
+      --[no-]local                    Target one [many] locale[s]
+
+Optimization Control Options:
+      --baseline                      Disable all Chapel optimizations
+      --[no-]cache-remote             [Don't] enable cache for remote data
+      --[no-]copy-propagation         Enable [disable] copy propagation
+      --[no-]dead-code-elimination    Enable [disable] dead code elimination
+      --fast                          Disable checks; optimize/specialize code
+      --[no-]fast-followers           Enable [disable] fast followers
+      --[no-]ieee-float               Generate code that is strict [lax] with
+                                      respect to IEEE compliance
+      --[no-]ignore-local-classes     Disable [enable] local classes
+      --[no-]inline                   Enable [disable] function inlining
+      --[no-]inline-iterators         Enable [disable] iterator inlining
+      --inline-iterators-yield-limit <limit>
+                                      Limit number of yields permitted in
+                                      inlined iterators
+      --[no-]live-analysis            Enable [disable] live variable analysis
+      --[no-]loop-invariant-code-motion
+                                      Enable [disable] loop invariant code
+                                      motion
+      --[no-]optimize-forall-unordered-ops
+                                      Enable [disable] optimization of foralls
+                                      to unordered operations
+      --[no-]optimize-range-iteration Enable [disable] optimization of
+                                      iteration over anonymous ranges
+      --[no-]optimize-loop-iterators  Enable [disable] optimization of
+                                      iterators composed of a single loop
+      --[no-]optimize-on-clauses      Enable [disable] optimization of on
+                                      clauses
+      --optimize-on-clause-limit <limit>
+                                      Limit recursion depth of on clause
+                                      optimization search
+      --[no-]privatization            Enable [disable] privatization of
+                                      distributed arrays and domains
+      --[no-]remote-value-forwarding  Enable [disable] remote value forwarding
+      --[no-]remote-serialization     Enable [disable] serialization for
+                                      remote consts
+      --[no-]remove-copy-calls        Enable [disable] remove copy calls
+      --[no-]scalar-replacement       Enable [disable] scalar replacement
+      --scalar-replace-limit <limit>  Limit on the size of tuples being
+                                      replaced during scalar replacement
+      --[no-]tuple-copy-opt           Enable [disable] tuple (memcpy)
+                                      optimization
+      --tuple-copy-limit <limit>      Limit on the size of tuples considered
+                                      for optimization
+      --[no-]infer-local-fields       Enable [disable] analysis to infer local
+                                      fields in classes and records
+      --[no-]vectorize                Enable [disable] generation of
+                                      vectorization hints
+      --[no-]auto-local-access        Enable [disable] using local access
+                                      automatically
+      --[no-]dynamic-auto-local-access
+                                      Enable [disable] using local access
+                                      automatically (dynamic only)
+      --[no-]auto-aggregation         Enable [disable] automatically
+                                      aggregating remote accesses in foralls
+
+Run-time Semantic Check Options:
+      --[no-]checks                   Enable [disable] all following run-time
+                                      checks
+      --[no-]bounds-checks            Enable [disable] bounds checking
+      --[no-]cast-checks              Enable [disable] safeCast() value checks
+      --[no-]div-by-zero-checks       Enable [disable] divide-by-zero checks
+      --[no-]formal-domain-checks     Enable [disable] formal domain checking
+      --[no-]local-checks             Enable [disable] local block checking
+      --[no-]nil-checks               Enable [disable] runtime nil checking
+      --[no-]stack-checks             Enable [disable] stack overflow checking
+
+C Code Generation Options:
+      --[no-]codegen                  [Don't] Do code generation
+      --[no-]cpp-lines                [Don't] Generate #line annotations
+      --max-c-ident-len               Maximum length of identifiers in
+                                      generated code, 0 for unlimited
+      --[no-]munge-user-idents        [Don't] Munge user identifiers to avoid
+                                      naming conflicts with external code
+      --savec <directory>             Save generated C code in directory
+
+C Code Compilation Options:
+      --ccflags <flags>               Back-end C compiler flags (can be
+                                      specified multiple times)
+  -g, --[no-]debug                    [Don't] Support debugging of generated C
+                                      code
+      --dynamic                       Generate a dynamically linked binary
+  -I, --hdr-search-path <directory>   C header search path
+      --ldflags <flags>               Back-end C linker flags (can be
+                                      specified multiple times)
+  -l, --lib-linkage <library>         C library linkage
+  -L, --lib-search-path <directory>   C library search path
+  -O, --[no-]optimize                 [Don't] Optimize generated C code
+      --[no-]specialize               [Don't] Specialize generated C code for
+                                      CHPL_TARGET_CPU
+  -o, --output <filename>             Name output executable
+      --static                        Generate a statically linked binary
+
+LLVM Code Generation Options:
+      --[no-]llvm                     [Don't] use the LLVM code generator
+      --[no-]llvm-wide-opt            Enable [disable] LLVM wide pointer
+                                      optimizations
+      --mllvm <flags>                 LLVM flags (can be specified multiple
+                                      times)
+
+Compilation Trace Options:
+      --[no-]print-commands           [Don't] print system commands
+      --[no-]print-passes             [Don't] print compiler passes
+      --print-passes-file <filename>  Print compiler passes to <filename>
+
+Miscellaneous Options:
+      --[no-]devel                    Compile as a developer [user]
+      --explain-call <call>[:<module>][:<line>]
+                                      Explain resolution of call
+      --explain-instantiation <function|type>[:<module>][:<line>]
+                                      Explain instantiation of type
+      --[no-]explain-verbose          Enable [disable] tracing of
+                                      disambiguation with 'explain' options
+      --instantiate-max <max>         Limit number of instantiations
+      --[no-]print-all-candidates     [Don't] print all candidates for a
+                                      resolution failure
+      --[no-]print-callgraph          [Don't] print a representation of the
+                                      callgraph for the program
+      --[no-]print-callstack-on-error [Don't] print the Chapel call stack
+                                      leading to each error or warning
+      --[no-]print-unused-functions   [Don't] print the name and location of
+                                      unused functions
+  -s, --set <name>[=<value>]          Set config value
+      --[no-]task-tracking            Enable [disable] runtime task tracking
+
+Compiler Configuration Options:
+      --home <path>                   Path to Chapel's home directory
+      --atomics <atomics-impl>        Specify atomics implementation
+      --network-atomics <network>     Specify network atomics implementation
+      --aux-filesys <aio-system>      Specify auxiliary I/O system
+      --comm <comm-impl>              Specify communication implementation
+      --comm-substrate <conduit>      Specify communication conduit
+      --gasnet-segment <segment>      Specify GASNet memory segment
+      --gmp <gmp-version>             Specify GMP library
+      --hwloc <hwloc-impl>            Specify whether to use hwloc
+      --launcher <launcher-system>    Specify how to launch programs
+      --locale-model <locale-model>   Specify locale model to use
+      --make <make utility>           Make utility for generated code
+      --mem <mem-impl>                Specify the memory manager
+      --regexp <regexp>               Specify whether to use regexp support
+      --target-arch <architecture>    Target architecture / machine type
+      --target-compiler <compiler>    Compiler for generated code
+      --target-cpu <cpu>              Target cpu model for specialization
+      --target-platform <platform>    Platform for cross-compilation
+      --tasks <task-impl>             Specify tasking implementation
+      --timers <timer-impl>           Specify timer implementation
+
+Compiler Information Options:
+      --copyright                     Show copyright
+  -h, --help                          Help (show this list)
+      --help-env                      Environment variable help
+      --help-settings                 Current flag settings
+      --license                       Show license
+      --version                       Show version

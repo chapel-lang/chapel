@@ -1,0 +1,1 @@
+getNextTestHalts.chpl:8: error: halt reached - Cannot generate random numbers within empty range: [2, 1]

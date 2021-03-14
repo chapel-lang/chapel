@@ -1,0 +1,1 @@
+enumCastErrors.chpl:49: error: can't cast from int(64) to an abstract enum type ('color3')

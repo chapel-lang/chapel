@@ -1,0 +1,5 @@
+perfkeys: Elapsed time:, Elapsed time:, Elapsed time:, Elapsed time:, Elapsed time:, Elapsed time:
+graphkeys: forall, coforall, for+begin, omp parallel-for, chpl-like qthreads, chpl-opt qthreads
+files: empty-forall.dat, empty-coforall.dat, empty-for+begin.dat, empty-omp-parallel-for.dat, empty-qthreads-chpl-like.dat, empty-qthreads-chpl-opt.dat
+graphtitle: Empty Task Spawn Timings (500,000 x maxTaskPar)
+ylabel: Time (seconds)

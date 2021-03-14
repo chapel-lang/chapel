@@ -1,0 +1,149 @@
+inlineTest.doc.chpl:74: warning: This file-scope code is outside of any explicit module declarations (e.g., module Other), so an implicit module named 'inlineTest.doc' is being introduced to contain the file's contents.
+.. default-domain:: chpl
+
+.. module:: inlineTest.doc
+
+inlineTest.doc
+==============
+**Usage**
+
+.. code-block:: chapel
+
+   use inlineTest.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import inlineTest.doc;
+
+**Submodules**
+
+.. toctree::
+   :maxdepth: 1
+   :glob:
+
+   inlineTest.doc/*
+
+.. function:: proc method1()
+
+   Comment for method1 
+
+.. function:: proc uncommented()
+
+.. function:: proc body()
+
+   Comment for method with a body 
+
+.. function:: proc bodyCommentless()
+
+.. function:: proc hasArg(val: int)
+
+   Comment for method with an argument 
+
+.. function:: proc hasArgCommentless(val: int)
+
+.. function:: proc argAndBody(val: int)
+
+   Comment for method with argument and body 
+
+.. function:: proc argAndBodyCommentless(val: int)
+
+.. function:: proc longComment()
+
+   This is an rather long comment 
+   It goes on for many lines
+   But says very little 
+
+.. function:: proc hasReturnType(): int
+
+   This method has a return type 
+
+.. function:: proc hasReturnTypeCommentless(): int
+
+.. function:: proc hasReturnTypeAndArg(val: int): int
+
+   This method has a return type and an argument 
+
+.. function:: proc hasReturnTypeAndArgCommentless(val: int): int
+
+.. function:: proc returnTypeAndBody(): int
+
+   This method has both a return type and a body 
+
+.. function:: proc returnTypeAndBodyCommentless(): int
+
+.. function:: proc allThree(val: int): int
+
+   This method has a return type, an argument, and a function body 
+
+.. function:: proc allThreeCommentless(val: int): int
+
+.. default-domain:: chpl
+
+.. module:: Other
+
+Other
+=====
+**Usage**
+
+.. code-block:: chapel
+
+   use inlineTest.doc.Other;
+
+
+or
+
+.. code-block:: chapel
+
+   import inlineTest.doc.Other;
+
+.. function:: proc inside
+
+   Comment for inline method inside module 
+
+.. function:: proc commentless()
+
+.. function:: proc body()
+
+   Comment for inline method with a body inside module 
+
+.. function:: proc bodyCommentless()
+
+.. function:: proc hasArg(val: int)
+
+   Comment for method with an argument inside module 
+
+.. function:: proc hasArgCommentless(val: int)
+
+.. function:: proc argAndBody(val: int)
+
+   Comment for method with argument and body inside module 
+
+.. function:: proc argAndBodyCommentless(val: int)
+
+.. function:: proc hasReturnType(): int
+
+   This method has a return type 
+
+.. function:: proc hasReturnTypeCommentless(): int
+
+.. function:: proc hasReturnTypeAndArg(val: int): int
+
+   This method has a return type and an argument 
+
+.. function:: proc hasReturnTypeAndArgCommentless(val: int): int
+
+.. function:: proc returnTypeAndBody(): int
+
+   This method has both a return type and a body 
+
+.. function:: proc returnTypeAndBodyCommentless(): int
+
+.. function:: proc allThree(val: int): int
+
+   This method has a return type, an argument, and a function body 
+
+.. function:: proc allThreeCommentless(val: int): int
+

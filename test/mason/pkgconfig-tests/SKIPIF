@@ -1,0 +1,41 @@
+#!/bin/bash
+
+
+has_zlib="False"
+has_ssl="False"
+correct_config="False"
+
+# Check for zlib via pkg-config
+# Skip test if not found
+zlibcall= $(pkg-config zlib --exists)
+zlib=$?
+if  [ $zlib = 0 ] ; then
+    has_zlib="True"
+else
+    has_zlib="False"
+fi
+
+# Check for openssl via pkg-config
+# skip test if not found
+opensslCall= $(pkg-config openssl --exists)
+openssl=$?
+
+if [ $openssl = 0 ] ; then
+    has_ssl="True"
+else
+    has_ssl="False"
+fi
+
+if [ "$CHPL_COMM" = 'none' ] && [ "$CHPL_REGEXP" = 're2' ] ; then
+    correct_config="True"
+else
+    correct_config="False"
+fi
+
+if [ "$has_zlib" = 'True' ] && [ "$has_ssl" = 'True' ] && [ "$correct_config" = 'True' ] ; then
+    echo "False"
+else
+    echo "True"
+fi
+
+

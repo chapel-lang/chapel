@@ -1,0 +1,33 @@
+
+testBO start
+testBO before begin
+testBO after begin
+{1..3}
+testBO finished begin
+testBO done
+
+testOB start
+testOB before begin
+testOB after begin
+{1..3}
+testOB finished begin
+testOB done
+
+testBwO start
+testBwO before begin
+
+{1..3}
+testBwO finished begin
+testBwO after begin
+{1..3}
+testBwO done
+
+testOwB start
+testOwB before begin
+
+{1..3}
+testOwB finished begin
+testOwB after begin
+{1..3}
+testOwB done
+

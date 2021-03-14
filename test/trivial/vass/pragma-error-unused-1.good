@@ -1,0 +1,2 @@
+pragma-error-unused-1.chpl:1: error: cannot attach pragmas to this statement
+pragma-error-unused-1.chpl:1: note:    pragma "this pragma does not apply to any symbols"

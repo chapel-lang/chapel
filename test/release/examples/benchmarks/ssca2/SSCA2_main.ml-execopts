@@ -1,0 +1,14 @@
+#!/usr/bin/env python3
+
+import os
+
+size16 = "--SCALE=16 --LOW_APPROX_SCALE=4 --TOP_APPROX_SCALE=4   # SSCA2-16.4"
+size22 = "--SCALE=22 --LOW_APPROX_SCALE=4 --TOP_APPROX_SCALE=4   # SSCA2-22.4"
+
+# Always perf-test size16
+print(size16)
+
+# size22 for gasnet+x takes over 30 minutes to complete (as of 2015-08-08), so
+# only perf-test under ugni.
+if os.getenv('CHPL_COMM') == 'ugni':
+  print(size22)

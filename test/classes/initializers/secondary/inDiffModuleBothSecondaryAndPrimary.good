@@ -1,0 +1,2 @@
+In primary initializer of class Foo
+{x = 3, y = true}

@@ -1,0 +1,1 @@
+callNilClassesMethod.chpl:13: error: attempt to dereference nil

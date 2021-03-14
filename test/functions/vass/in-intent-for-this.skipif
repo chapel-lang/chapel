@@ -1,0 +1,4 @@
+# This works correctly under nolocal and --baseline.
+CHPL_COMM != none
+COMPOPTS <= --no-local
+COMPOPTS <= --baseline

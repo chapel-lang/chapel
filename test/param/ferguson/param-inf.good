@@ -1,0 +1,18 @@
+real(64)           zero          0          0.0
+real(64)          nzero         -0         -0.0 negative
+real(64)            one          1          1.0
+real(64)           huge     1e+300       1e+300
+real(64)           tiny     1e-300       1e-300
+real(64)           inf0        inf     INFINITY
+real(64)            inf        inf     INFINITY
+real(64)         neginf       -inf    -INFINITY negative
+real(64)        neginf0       -inf    -INFINITY negative
+real(64)       neginf0n       -inf    -INFINITY negative
+real(64)       nanzeros        nan         -NAN
+real(64)    negnanzeros        nan          NAN
+real(64)         naninf        nan         -NAN
+real(64)      negnaninf        nan          NAN
+real(64)            NAN        nan          NAN
+real(64)           -NAN        nan         -NAN negative
+real(64)       INFINITY        inf     INFINITY
+real(64)      -INFINITY       -inf    -INFINITY negative

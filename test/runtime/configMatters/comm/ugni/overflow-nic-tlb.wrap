@@ -1,0 +1,16 @@
+#! /usr/bin/env bash
+
+#
+# Unload the existing hugepages module and replace it with the
+# smallest-page one for the given architecture.  Then, set the
+# heap size so that it's just big enough to cause the message
+# we're testing here.
+#
+hpm=$(module -t list 2>&1 | grep craype-hugepages)
+if [[ -n "$hpm" ]] ; then module unload $hpm ; fi
+
+export CHPL_RT_CALL_STACK_SIZE=128K
+module load craype-hugepages2M
+export CHPL_RT_MAX_HEAP_SIZE=1025M
+
+exec ./$(basename ${0})-2 $*

@@ -1,0 +1,111 @@
+#!/usr/bin/env python3
+#
+# Clean a directory or the files associated with a particular test
+#
+
+import os, sys, time, glob, shutil
+
+# return True if f has .chpl or test.c extension
+def getExecname(f):
+    if ((f.count('.') != 0) and (len(f) >= 6) and (len(f)-f.find('.chpl')==5)):
+        return f[:len(f)-5]
+    elif ((f.count('.') > 1) and (len(f) >= 8) and (len(f)-f.find('.test.c')==7)):
+        return f[:len(f)-7]
+    elif ((f.count('.') > 1) and (len(f) >= 11) and (len(f)-f.find('.ml-test.c')==10)):
+        return f[:len(f)-10]
+    return None
+
+# read a cleanfiles file (with comments)
+def ReadCleanfiles(f, ignoreLeadingSpace=True):
+    myfile = open(f, 'r')
+    mylines = myfile.readlines()
+    myfile.close()
+    mylist=list()
+    for line in mylines:
+        line=line.rstrip()
+        # ignore blank lines
+        if not line.strip(): continue
+        # ignore comments
+        if ignoreLeadingSpace:
+            if line.lstrip()[0] == '#': continue
+        else:
+            if line[0] == '#': continue
+        tlist = line.split()
+        for t in tlist:
+            if t[0] == '#':
+                break
+            mylist.append(t)
+    return mylist
+
+# Clean the files associated with a Chapel test program
+def cleanChapelTest(f):
+    execname = getExecname(f)
+    if execname:
+        print('Cleaning test: '+execname)
+        globfiles = glob.glob(execname+'.*.out.tmp')
+        for g in globfiles:
+            try:
+                os.unlink(g)
+            except:
+                pass
+        try:
+            os.unlink(execname)
+            os.unlink(execname+'_real')
+        except:
+            pass
+        cleanCleanfiles(None, execname+'.cleanfiles', False)
+
+# Clean files listed in the file c, in the directory d (if given)
+def cleanCleanfiles(d, c, rmCore):
+    if d:
+        cleanfile = os.path.join(d,c)
+    else:
+        cleanfile = c
+    if os.access(cleanfile,os.R_OK):
+        cleanfiles = ReadCleanfiles(cleanfile)
+        if rmCore:
+            cleanfiles += ['core']
+        for f in cleanfiles:
+            if d:
+                globfiles = glob.glob(os.path.join(d,f))
+            else:
+                globfiles = glob.glob(f)
+            for g in globfiles:
+                print('Removing '+g)
+                try:
+                    if os.path.isdir(g):
+                        shutil.rmtree(g)
+                    else:
+                        os.unlink(g)
+                except:
+                    pass
+
+
+#
+# Cleaning..
+#
+sys.stdout.write('[Starting sub_clean - %s]\n'%(time.strftime('%a %b %d %H:%M:%S %Z %Y', time.localtime())))
+sys.stdout.write('[pwd: '+os.getcwd()+']\n')
+
+if len(sys.argv) == 1:
+    clean = ['.'];
+else:
+    clean = sys.argv[1:]
+
+for f in clean:
+    if os.path.isdir(f):
+        print('Cleaning directory: '+f)
+        dirlist = glob.glob(f+'/*.chpl')
+        dirlist += glob.glob(f+'/*.test.c')
+        dirlist += glob.glob(f+'/*.ml-test.c')
+        dirlist.sort()
+        for file in dirlist:
+            cleanChapelTest(file)
+        cleanCleanfiles(f, 'CLEANFILES', True)
+    else:
+        cleanChapelTest(f)
+        cleanCleanfiles(os.path.dirname(f), 'CLEANFILES', True)
+
+sys.exit(0);
+
+

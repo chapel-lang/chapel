@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+CWD=$(cd $(dirname $0) ; pwd)
+
+$CWD/../../bradc/printstuff/copyrighthelp.sh $@ > ${1}.good
+cat ${1}.goodend >> ${1}.good

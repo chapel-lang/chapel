@@ -1,0 +1,19 @@
+bang-vs-new-etc.chpl:46: In function 'main':
+bang-vs-new-etc.chpl:63: warning: z03 = new C?()?  expected: owned C?  actual: owned C?
+bang-vs-new-etc.chpl:72: warning: z06 = new (owned tm())()?  expected: owned C?  actual: owned C?
+bang-vs-new-etc.chpl:75: warning: z11 = new owned (tm())()?  expected: owned C?  actual: owned C?
+bang-vs-new-etc.chpl:81: warning: z08 = new (owned tm())?()  expected: owned C?  actual: owned C?
+bang-vs-new-etc.chpl:84: warning: z12 = new (tm())?()  expected: owned C?  actual: owned C?
+bang-vs-new-etc.chpl:90: warning: z10 = new owned (tm()?)()?  expected: owned C?  actual: owned C?
+bang-vs-new-etc.chpl:109: warning: z15b = xx: unmanaged C?  expected: unmanaged C?  actual: unmanaged C?
+bang-vs-new-etc.chpl:118: warning: z16b = xx!: unmanaged C?  expected: unmanaged C?  actual: unmanaged C?
+bang-vs-new-etc.chpl:131: warning: z18a = xx : class : unmanaged class?  expected: unmanaged C?  actual: unmanaged C?
+bang-vs-new-etc.chpl:134: warning: z18b = xx : class? : unmanaged C?  expected: unmanaged C?  actual: unmanaged C?
+bang-vs-new-etc.chpl:142: warning: z19b = new C()? : unmanaged  expected: unmanaged C?  actual: unmanaged C?
+bang-vs-new-etc.chpl:145: warning: z19c = new C?() :unmanaged  expected: unmanaged C?  actual: unmanaged C?
+bang-vs-new-etc.chpl:150: warning: z19d = new C(): unmanaged class?  expected: unmanaged C?  actual: unmanaged C?
+bang-vs-new-etc.chpl:153: warning: z19e = new borrowed C() :unmanaged class?  expected: unmanaged C?  actual: unmanaged C?
+bang-vs-new-etc.chpl:200: warning: z24 = tm().tmeth?  expected: D(int(64))?  actual: D(int(64))?
+bang-vs-new-etc.chpl:203: warning: z25a = shared D(int)?  expected: shared D(int(64))?  actual: shared D(int(64))?
+bang-vs-new-etc.chpl:206: warning: z25b = unmanaged D?(string)  expected: unmanaged D(string)?  actual: unmanaged D(string)?
+bang-vs-new-etc.chpl:208: error: done

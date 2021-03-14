@@ -1,0 +1,45 @@
+Start analyzing forall for automatic aggregation [static and dynamic ALA clone]  (bothLocal.chpl:19)
+End analyzing forall for automatic aggregation [static and dynamic ALA clone]  (bothLocal.chpl:19)
+
+Start analyzing forall for automatic aggregation [static and dynamic ALA clone]  (bothLocal.chpl:29)
+End analyzing forall for automatic aggregation [static and dynamic ALA clone]  (bothLocal.chpl:29)
+
+Start analyzing forall for automatic aggregation [no ALA clone]  (bothLocal.chpl:19)
+End analyzing forall for automatic aggregation [no ALA clone]  (bothLocal.chpl:19)
+
+Start analyzing forall for automatic aggregation [static only ALA clone]  (bothLocal.chpl:19)
+| Found an aggregation candidate (bothLocal.chpl:20)
+|  Potential source aggregation (bothLocal.chpl:20)
+End analyzing forall for automatic aggregation [static only ALA clone]  (bothLocal.chpl:19)
+
+Start analyzing forall for automatic aggregation [no ALA clone]  (bothLocal.chpl:29)
+End analyzing forall for automatic aggregation [no ALA clone]  (bothLocal.chpl:29)
+
+Start analyzing forall for automatic aggregation [static only ALA clone]  (bothLocal.chpl:29)
+| Found an aggregation candidate (bothLocal.chpl:30)
+|  Potential source aggregation (bothLocal.chpl:30)
+End analyzing forall for automatic aggregation [static only ALA clone]  (bothLocal.chpl:29)
+
+Aggregation candidate has confirmed local child [static only ALA clone] (bothLocal.chpl:20)
+LHS is local, RHS is nonlocal. Will use source aggregation [static only ALA clone] (bothLocal.chpl:20)
+Aggregation candidate has confirmed local child [static only ALA clone] (bothLocal.chpl:30)
+LHS is local, RHS is nonlocal. Will use source aggregation [static only ALA clone] (bothLocal.chpl:30)
+Replaced assignment with aggregation [static only ALA clone]  (bothLocal.chpl:20)
+Replaced assignment with aggregation [static only ALA clone]  (bothLocal.chpl:30)
+Beginning forall 1
+Ending forall 1
+0 1 2 3 4 5 6 7 8 9 10
+Beginning forall 2
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+Ending forall 2
+0 0 0 0 0 0 0 0 0 0 0

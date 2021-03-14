@@ -1,0 +1,6 @@
+-staskingMode=forBeginT
+-staskingMode=coforallT
+-staskingMode=forallT
+-staskingMode=serialForBeginT
+-staskingMode=serialCoforallT
+-staskingMode=serialForallT

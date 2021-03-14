@@ -1,0 +1,8 @@
+#!/usr/bin/env python3
+
+with open('UTF8-test.txt', 'rb') as in_file:
+  with open('stress.good', 'w') as out_file:
+    for l in in_file:
+        b = bytes(l).decode(errors='replace')
+        out_file.write(b)
+    out_file.write('\n')

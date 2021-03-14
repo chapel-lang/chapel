@@ -1,0 +1,306 @@
+#!/usr/bin/env python3
+#
+# COMPUTE PERFORMANCE STATISTTICS
+# This is used by sub_test if start_test is called with the -performance flag.
+# 
+# For every performance run on a particular file, this script maintains a .dat
+# by searching the output of the run for values of performance keys specified
+# in .perfkeys. It then writes these values to the .dat for every run.
+
+from __future__ import print_function
+import argparse
+import os
+import time
+import re
+import sys
+import difflib
+import string
+
+test_output = None
+test_output_raw = None
+data_file = None
+fatal_errors = None
+
+def main():
+    parser = parser_setup()
+    args = parser.parse_args()
+
+    setup(args)
+    (keys, verify_keys) = read_key_file(args.keys_file, args.output_dir)
+
+    if not args.verify_keys:
+        valid_output = validate_output(verify_keys, args.test_output_file)
+
+        found_everything = True
+        if (valid_output):
+            create_data_file(keys)
+            verify_data_file(keys, args.keys_file)
+            log_timeouts(keys, args.exec_time_out, args.perf_date)
+            found_everything = find_keys(keys, args.perf_date)
+
+        if not (valid_output and found_everything) and not args.exec_time_out:
+            cleanup()
+    else:
+        create_data_file(keys)
+        verify_data_file(keys, args.keys_file)
+        print("Valid data file.")
+
+
+def find_keys(keys, date):
+    found_everything = True
+    with open(data_file, "a") as file:
+        file.write("{0} ".format(date))
+        for key in keys:
+            sys.stdout.write("Looking for {0}...".format(key))
+            file.write("\t")
+            found = False
+            regex = r"(\s|\S)*" + re.escape(key) + r"\s*(\S*)"
+            # scan through output, looking for key
+            for line in test_output:
+                m = re.match(regex, line)
+                if m and not found:
+                    print("found it: {0}".format(m.group(2)))
+                    file.write(m.group(2))
+                    found = True
+                    break
+
+            if not found:
+                file.write("-")
+                print("didn't find it")
+                found_everything = False
+        
+        file.write("\n")
+
+    return found_everything
+
+
+def log_timeouts(keys, time_out, date): # if we timed out
+    if time_out:
+        print("ERROR")
+        with open(data_file, "a") as file:
+            file.write("#{0} ".format(date))
+            for key in keys:
+                file.write("\t-")
+            file.write(" ### EXECUTION TIMED OUT ###\n")
+        exit(1)
+
+
+def validate_output(verify_keys, output_file):
+    # read output from file
+    global test_output, test_output_raw
+    with open(output_file, "r", encoding="utf-8", errors="surrogateescape") as file:
+        test_output_raw = file.read()
+        test_output = test_output_raw.split("\n")
+
+    # check for valid output
+    valid_output = True
+    for key in verify_keys:
+        # match verify keys
+        m = re.match("(verify|reject):(?:(-?[1-9][0-9]*):)? ?(.+)", key)
+        if not m:
+            print("[Error: invalid verify/reject line '{0}']".format(key))
+            exit(1)
+        # set parts of match to variables
+        type = m.group(1)
+        num = m.group(2)
+        regex = m.group(3)
+        if num:
+            num_real = int(num) - 1
+
+        regex_real = r"(\s|\S)*" + regex
+        is_reject = type == "reject"
+
+        # depending on whether we're asked to verify or reject
+        if not is_reject:
+            search_msg = "Checking for"
+            found_msg = "SUCCESS"
+            not_found_msg = "FAILURE"
+        else:
+            search_msg = "Checking for absence of"
+            found_msg = "FAILURE"
+            not_found_msg = "SUCCESS"
+        
+        # MATCH
+        if num: # if there's a line number
+            print("{0} /{1}/ on line {2}... ".format(search_msg, regex, num))
+            if re.match(regex_real, test_output[num_real]):
+                valid_output &= not is_reject
+                print(found_msg)
+            else:
+                valid_output &= is_reject
+                print(not_found_msg)
+        else: # no line number
+            print("{0} /{1}/ on any line... ".format(search_msg, regex))
+            found = False
+            for line in test_output:
+                if re.match(regex_real, line):
+                    found = True
+                    print(found_msg)
+                    valid_output &= not is_reject
+                    break
+            if not found:
+                valid_output &= is_reject
+                print(not_found_msg)
+
+        if not valid_output:
+            print("Error: Invalid output found in {0}".format(output_file))
+    
+    return valid_output
+
+
+def read_key_file(keys_file, output_dir):
+    # read keys from .perfkeys (or other) file
+    verify_keys = []
+    keys = []
+    with open(keys_file, "r") as file:
+        for line in file:
+            key = line.strip()
+            if not key[0] == "#": # not a comment
+                st_key = key.strip()[0:6]
+                if "verify" == st_key or "reject" == st_key:
+                    verify_keys.append(key)
+                else:
+                    keys.append(key)
+            else: # ignore comments unless they specify .dat
+                comment = key[1:].strip()
+                if comment[0:5] == "file:":
+                    global data_file
+                    data_file = os.path.join(output_dir, comment.split()[1])
+
+    return (keys, verify_keys)
+
+
+def create_data_file(keys):
+    # create and setup .dat file if not done already
+    if not os.path.isfile(data_file):
+        with open(data_file, "a") as file:
+            file.write("# Date")
+            for key in keys:
+                file.write("\t" + key)
+            file.write("\n")
+
+
+def verify_data_file(keys_exp, keys_file):
+    with open(data_file, "r") as file:
+        header = None
+        for line in file:
+            parsed = line.strip().split("\t")
+            if header == None and "# Date" in parsed[0]: # look for header line
+                header = parsed
+                columns = len(header)
+                keys_actual = header[1:]
+                continue
+            # ignore comments and empty lines
+            if parsed[0] == "" or "#" in parsed[0]:
+                continue
+            if header == None:
+                print("[Error: data entry prior to header or missing header in {0}]".format(data_file))
+                exit(2)
+            if len(parsed) != columns:
+                print("[Error: {0} entry for {1} doesn't match header length.]"
+                      .format(data_file, parsed[0]))
+                exit(2)
+
+        if header == None: # not found
+            print("[Error: {0} has no header.]".format(data_file))
+            exit(2)
+
+    
+    keys_actual = [k.strip() for k in keys_actual]
+    keys_exp = [k.strip() for k in keys_exp]
+
+    s = difflib.SequenceMatcher(None, keys_actual, keys_exp)
+    diff = s.get_opcodes()
+
+    # the two aren't equal
+    if len(diff) > 1 or (len(diff) == 1 and diff[0][0] != "equal"):        
+        print("[Error: key mismatch between {0} and {1}]"
+                .format(keys_file, data_file))
+        print("Changes since creation of .dat file:")
+        for d in diff:
+            type = d[0]
+            if type == "equal":
+                continue
+            elif type == "delete":
+                for i in range(d[1], d[2]):
+                    print("\t'{0}' has been removed.".format(keys_actual[i]))
+            elif type == "insert":
+                for i in range(d[3], d[4]):
+                    print("\t'{0}' has been added.".format(keys_exp[i]))
+            elif type == "replace":
+                if d[2] - d[1] == 1: # singlular
+                    print("\t'{0}' has been replaced with '{1}'.".format(
+                            keys_actual[d[1]], ", ".join(keys_exp[d[3]:d[4]])))
+                else: # plural
+                    print("\t'{0}' have been replaced with '{1}'.".format(
+                        ", ".join(keys_actual[d[1]:d[2]]), 
+                        ", ".join(keys_exp[d[3]:d[4]])))
+
+        exit(2)
+
+
+def setup(args):
+    # finish setting up command line args
+    if not args.keys_file:
+        args.keys_file = "{0}.perfkeys".format(args.test_name)
+    if not args.test_output_file:
+        args.test_output_file = "{0}.exec.out.tmp".format(args.test_name)
+    if not args.perf_date:
+        args.perf_date = time.strftime("%m/%d/%y")
+        print("Using default date {0}".format(args.perf_date))
+    else:
+        print("Using set date {0}".format(args.perf_date))
+
+    if args.exec_time_out == "True":
+        args.exec_time_out == True
+    else:
+        args.exec_time_out == False
+    
+    global data_file, fatal_errors
+    data_file = "{0}/{1}.dat".format(args.output_dir, args.test_name)
+    fatal_errors = 0
+    
+
+def cleanup():
+    print("output was: ")
+    # if test output was too long, only print first and last 1000 characters
+    if len(test_output_raw) > 2000: 
+        print("(first 1000 followed by last 1000)")
+        head = test_output_raw[:1000].strip()
+        tail = test_output_raw[-1000:].strip()
+        head = ''.join(x if x in string.printable else "~" for x in head)
+        tail = ''.join(x if x in string.printable else "~" for x in tail)
+        print(head)
+        print(" <truncated> ")
+        print(tail)
+    else:
+        out = test_output_raw.strip()
+        out = ''.join(x if x in string.printable else "~" for x in out)
+        print(out)
+
+    exit(1)
+
+
+def parser_setup():
+    parser = argparse.ArgumentParser(description="Compute performance"
+            "statistics")
+    parser.add_argument("test_name")
+    parser.add_argument("output_dir")
+    parser.add_argument("keys_file", nargs="?", default=False)
+    parser.add_argument("test_output_file", nargs="?", default=False)
+    parser.add_argument("exec_time_out", nargs="?", default=False, type=t_or_f)
+    parser.add_argument("perf_date", nargs="?", default=False)
+    parser.add_argument("-verify-keys", "--verify-keys", action="store_true",
+            dest="verify_keys")
+
+    return parser
+
+# UTILITY FUNCTION FOR ARGUMENT PARSING
+def t_or_f(arg):
+    ua = str(arg).upper()
+    if "TRUE" in ua: return True
+    elif "FALSE" in ua: return False
+    else: return False
+
+if __name__ == "__main__":
+    main()

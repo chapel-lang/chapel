@@ -1,0 +1,118 @@
+# Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+# Copyright 2004-2019 Cray Inc.
+# Other additional copyright holders may be indicated within.
+# 
+# The entirety of this work is licensed under the Apache License,
+# Version 2.0 (the "License"); you may not use this file except
+# in compliance with the License.
+# 
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#
+# settings for the build
+#
+DEPEND=1
+ifdef CHPL_DEVELOPER
+DEBUG=1
+WARNINGS=1
+TAGS=1
+else
+OPTIMIZE=1
+endif
+
+
+#
+# include the standard Chapel Makefile.base
+#
+
+# CHAPEL_SUBDIR = runtime/$(RUNTIME_SUBDIR)
+
+ifneq ($(MAKE_LAUNCHER),1)
+CHPL_MAKE_HOST_TARGET = --target
+endif
+include $(RUNTIME_ROOT)/../make/Makefile.base
+
+RANLIB ?= ranlib
+
+LAUNCHER_CFLAGS = $(RUNTIME_CFLAGS) -DLAUNCHER
+LAUNCHER_INCLS = \
+        -I$(RUNTIME_ROOT)/include/comm/$(CHPL_MAKE_COMM) \
+        -I$(RUNTIME_ROOT)/include/comm \
+        -I$(RUNTIME_ROOT)/include \
+        -I$(THIRD_PARTY_DIR)/whereami/whereami-src
+
+ifeq ($(CHPL_MAKE_HWLOC),none)
+  CHPL_MAKE_TOPO = none
+else
+  CHPL_MAKE_TOPO = hwloc
+endif
+
+ifneq ($(MAKE_LAUNCHER),1)
+  ifeq ($(CHPL_MAKE_TARGET_MEM),jemalloc)
+    LAUNCHER_CFLAGS += -DCHPL_TARGET_MEM_JEMALLOC
+    LAUNCHER_INCLS += -I$(RUNTIME_ROOT)/include/mem/$(CHPL_MAKE_TARGET_MEM)
+  endif
+endif
+
+# Get runtime headers and required -D flags.
+# sets RUNTIME_INCLUDE_ROOT RUNTIME_CFLAGS RUNTIME_INCLS
+include $(RUNTIME_ROOT)/make/Makefile.runtime.include
+
+RUNTIME_OBJ_DIR = $(RUNTIME_BUILD)/$(RUNTIME_SUBDIR)
+RUNTIME_OBJ_DIR_STAMP = $(RUNTIME_OBJ_DIR)/.timestamp
+
+LAUNCHER_OBJ_DIR = $(LAUNCHER_BUILD)/$(RUNTIME_SUBDIR)
+LAUNCHER_OBJ_DIR_STAMP = $(LAUNCHER_OBJ_DIR)/.timestamp
+
+ifneq ($(MAKE_LAUNCHER),1)
+DEPEND_DIR = $(RUNTIME_OBJ_DIR)
+else
+DEPEND_DIR = $(LAUNCHER_OBJ_DIR)
+endif
+
+#
+# platform-specific subdirectory targets
+#
+DEPENDS = ./$(DEPEND_DIR)/*.d
+
+
+#
+# clean and clobber targets
+#
+CLEAN_TARGS = \
+	./$(RUNTIME_OBJ_DIR)/*.o \
+	./$(RUNTIME_OBJ_DIR)/*.d \
+	./$(LAUNCHER_OBJ_DIR)/*.o \
+	./$(LAUNCHER_OBJ_DIR)/*.d \
+	core \
+	*.core \
+	*.gmon \
+        $(GEN_HEADERS) \
+	$(GEN_SRCS) \
+
+CLEANALL_TARGS = \
+	$(CLEAN_TARGS) \
+	./$(GEN_SUBDIR)
+
+CLOBBER_TARGS = \
+	$(CLEANALL_TARGS) \
+	$(EXECS) \
+	*.a \
+	*~
+
+
+
+
+MAKEALLSUBDIRS = $(SUBDIRS:%=%.makedir)
+CLEANSUBDIRS = $(SUBDIRS:%=%.cleandir)
+CLEANALLSUBDIRS = $(SUBDIRS:%=%.cleanalldir)
+CLEANSUBDIRDEPS = $(SUBDIRS:%=%.cleandirdeps)
+CLOBBERSUBDIRS = $(SUBDIRS:%=%.clobberdir)

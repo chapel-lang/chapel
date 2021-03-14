@@ -1,0 +1,80 @@
+#!/bin/sh
+
+uname=$(uname -n)
+tasks=$($CHPL_HOME/util/chplenv/chpl_tasks.py)
+launcher=$($CHPL_HOME/util/chplenv/chpl_launcher.py)
+target=$($CHPL_HOME/util/chplenv/chpl_platform.py --target)
+
+# Build a .good file; the lines are:
+# - either:
+#   - if the .launcher-$CHPL_LAUNCHER.goodstart file is executable, its
+#     output, otherwise
+#   - the .launcher-$CHPL_LAUNCHER.goodstart contents, with ' EXECOPTS'
+#     replaced with $EXECOPTS (the leading space allows separating this
+#     from the command line in the .goodstart, for readability).  We
+#     then remove any resulting trailing space.
+# - .comm-$CHPL_COMM, with 'UNAME' replaced by the result of 'uname -n'
+# - .goodprog, which is the expected program output
+# - if .launcher-$CHPL_LAUNCHER.goodstop exists, its contents
+if [[ -x $1.launcher-$launcher.goodstart ]] ; then
+  ./$1.launcher-$launcher.goodstart > $1.good
+else
+  sed -e "s# EXECOPTS#$EXECOPTS#" -e 's/ $//' \
+      < $1.launcher-$launcher.goodstart > $1.good
+fi
+sed "s/UNAME/$uname/" < $1.comm-$CHPL_COMM.goodcont >> $1.good
+cat $1.goodprog >> $1.good
+if [[ -r $1.launcher-$launcher.goodstop ]] ; then
+  cat $1.launcher-$launcher.goodstop >> $1.good
+fi
+
+# For all configurations that use a launcher, replace environment
+# variable settings on the front of the 1st output line (the launcher
+# one) with a placeholder.
+if [[ $launcher != none ]] ; then
+  sed '1 s/^\([a-zA-Z0-9_]\{1,\}=[^ ]* \)*/EVARS=vals /' < $2 > $2.tmp && \
+  mv $2.tmp $2
+fi
+
+# Address program output variations peculiar to the various configuation
+# settings.
+
+# On Cray CS, X*, and HPE Cray EX systems, compute node system names
+# aren't meaningful.
+case $target in
+  cray-cs|cray-x*|hpe-cray-ex)
+     sed "s/\(executing on node 0 of 1 node(s): \).*/\1$uname/" \
+         < $2 > $2.tmp &&
+     mv $2.tmp $2;;
+esac
+
+# With Qthreads, -v results in some lines of QTHREADS info we don't need.
+case $tasks in
+  qthreads) grep -v '^QTHREADS' $2 > $2.tmp &&
+            mv $2.tmp $2;;
+esac
+
+# If we use the amudprun launcher, there's a path on the front of it.
+# If we use the aprun launcher, the depth (-d) value may vary, and also
+# there is a resource usage line with varying contents.
+# If we use the slurm-srun launcher, the depth (--cpus-per-task) and
+# partition values may vary, and there may be a --time option and some
+# some trailing white space.
+case $launcher in
+  amudprun) sed -e "s/[^ ]*amudprun/amudprun/" \
+                -e "/QTHREADS/d" $2 > $2.tmp &&
+            mv $2.tmp $2;;
+  aprun) sed -e "s/ -d[1-9][0-9]* / -dN /" \
+             -e "s/^\(Application\) .* \(resources\): .*/\1 APID \2: .../" \
+             $2 > $2.tmp &&
+         mv $2.tmp $2;;
+  slurm-srun) sed -e "s/ \(--cpus-per-task\)=[1-9][0-9]* / \1=N /" \
+                  -e "s/ \(--partition\)=[^ ]* / \1=P /" \
+                  -e "s/ --time=[^ ]*//" \
+                  -e 's/ *$//' \
+                  $2 > $2.tmp &&
+              mv $2.tmp $2;;
+esac
+
+sed -e "s;`pwd`;.;" $2 > $2.tmp
+mv $2.tmp $2

@@ -1,0 +1,5 @@
+-stest=1 # opequals2.1.good
+-stest=2 # opequals2.2.good
+-stest=3 # opequals2.3.good
+-stest=4 # opequals2.4.good
+

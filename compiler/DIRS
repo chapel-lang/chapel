@@ -1,0 +1,23 @@
+code directories:
+
+AST/            : high-level AST & symboltable classes
+adt/            : abstract data types (vector, map, etc.)
+analysis/       : low-level analysis code
+  make_prims/   : makes prim_data stuff
+backend/        : back-end stuff (codegen, dump, graph output)
+include/        : public interface header files
+main/           : main compiler control (main, passlist, etc.)
+parser/         : new parser
+passes/         : pass classes
+traversals/     : traversal classes
+util/           : utility code
+vparser/        : bootstrap parser
+  cast/         : cast stuff
+
+
+other directories:
+
+etc/            : miscellaneous non-code stuff (web, lowlevel cg help)
+make/           : common makefile stuff
+test/           : unit tests (perhaps should be moved under a source dir?)
+

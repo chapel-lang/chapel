@@ -1,0 +1,6 @@
+perfkeys: real, real, real, real
+graphkeys: for-begin, coforall, coforall-begin, release
+files: thread-ring-for-begin.dat, thread-ring-coforall.dat, thread-ring-coforall-begin.dat, threadring.dat
+graphtitle: Thread Ring Shootout Benchmark (n=50,000,000)
+ylabel: Time (seconds)
+graphname: thread-ring

@@ -1,0 +1,19 @@
+error message: array method candidates
+
+At the time of this writing, this test yields the following output:
+
+denseIRV.chpl:4: error: unresolved call ':[domain(2,int,0)] int.IRV() = :int'
+$CHPL_HOME/modules/standard/ChapelArray.chpl:351: note: candidates are: :_array.IRV
+$CHPL_HOME/modules/standard/ChapelArray.chpl:351: note:                 :_array.IRV_st: _ST, _lvalue: _any
+$CHPL_HOME/modules/standard/SingleLocaleSparse.chpl:164: note:                 :SingleLocaleSparseArray.IRV
+$CHPL_HOME/modules/standard/SingleLocaleSparse.chpl:164: note:                 :SingleLocaleSparseArray.IRV_st: _ST, _lvalue: _any
+
+
+It seems to me that the ChapelArray candidates should not be listed
+because they're part of an internal module -- something the user
+should not be reasoning about.  I don't have a huge problem with the
+SingleLocaleSparseArray candidates being printed out, but if they
+could be filtered as well (based on the type of the "this" pointer),
+that would be even better.  In short, calling x.foo() for a class x
+that doesn't have a method named foo() doesn't seem like it should
+result in every foo() in the program being printed out as a candidate.

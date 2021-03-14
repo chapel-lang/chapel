@@ -1,0 +1,532 @@
+--- 1.16 (current) ---
+
+Improvements:
+ - Add support for Spack testing (spack test run qthreads)
+ - Add support for hwloc2.x (minimal required version is hwloc1.5)
+
+Documentation:
+ - User guide for basic Qthreads usage (see userguide subdirectory for LaTex and included code source files)
+ 
+--- 1.15 ---
+
+New Features:
+ - Add experimental support for Thread Local Storage and new Condition variable initializers
+ - Non-blocking FEB functions are now exposed (e.g. qthread_readFF_nb), other runtimes (e.g. MPI) require access.
+ 
+Improvements:
+ - Remove the deprecated register keyword
+ - Fix automake machinery so that "make dist" works as expected
+ 
+--- 1.14 ---
+
+New Features:
+ - Incorporate minor features requested by Chapel team
+ - Add experimental support for the MPI finepoints interface in test/benchmarks/finepoints
+ - Added a new thread feature flag for "network tasks", allowing schedulers to treat communication tasks differently
+ - Added a RUNTIME_DATA_SIZE flag to qthread_readstate (Courtesy of the Chapel team)
+ 
+Improvements:
+ - Read the "no" topology (fix proposed by the Chapel team)
+ - Updated SINC implementations to use modern Qthreads APIs
+ - Removed deprecated ROSE support
+ - Removed deprecated RCRtool support
+ 
+--- 1.13 ---
+
+New Features:
+ - Performance Monitoring: use --enable-performance-monitoring
+ 
+--- 1.12 ---
+
+New Features:
+ - Pluggable allocators: use --with-alloc={base,chapel} to choose
+ 
+Improvements:
+ - Do condwait/backoff in nemesis when getting threads to improve task spawning performance.
+ 
+Bugfixes:
+ - Change sleep() and nanosleep() implementation to qt_sleep() and qt_nanosleep() to avoid confusing PMI.
+ 
+--- 1.11 ---
+
+New Features:
+ - Distib scheduler: lower contention numa-aware scheduling
+ - Binders affinity layer: more control over affinity
+ - Updated Portals4 runtime support
+ - Added missing XMT FEB operations
+ 
+--- 1.10 ---
+
+New Features:
+ - Task queue subsystem
+ - Task-level barrier for SPR
+ - Environment option to toggle use of guard pages
+ 
+Improvements:
+ - Fixed loop constructs to use all workers
+ - Unified (and simplified) internal handling of multi-threaded vs single-threaded scheduling regimes
+ - Removed defunct SST support, to avoid confusing people
+ - Removed futurelib
+ - Cleans up affinity subsytem interface and hwloc implementation
+ - Added support for Chapel launcher.
+ - Added configuration option to enable eureka support; marked as _experimental_
+ - Added support for improved compatibility with DUMA tool
+ 
+Bugfixes:
+ - Fix various memory leaks associated with spawncache, sincs, preconds, timers.
+ - Fix SPR put/get handle bug.
+ 
+--- 1.9 ---
+
+New Features:
+ - Eurekas within a team
+ - Manual spawn cache flushing (qthread_flushsc())
+ - Preliminary Chapel SPR support
+ - Unified task-barrier APIs
+ 
+Improvements:
+ - Direct context swapping in "direct-yield", used in qt_loop()
+ - Better Chapel integration
+ - Cleaned up Chapel multinode compilation
+ - Detect and work around Apple compiler bugs
+ - Qtimer OMP compatibility
+ - Can reset a sinc with outstanding submits
+ - Compatibility with older libtool versions
+ - Reorganized code to make it easier for new developers to understand
+ - Better TLS handling
+ - Add the ability to query more runtime state (e.g. WORKER_OCCUPATION); fleshes out Chapel support
+ - Add HPCCG benchmarks (both pure and via ROSE)
+ - Add LULESH benchmark (via ROSE)
+ - Better handling of MPI runtime (for multinode)
+ - Support for MPICC and MPICXX environment variables (for multinode)
+ - Better topology handling
+ 
+Bugfixes:
+ - Fix 32-bit fastcontext (broken in 1.8.1)
+ - Fix handling of QT_WORKER_UNIT and QT_SHEPHERD_BOUNDARY that are caches (hwloc-only)
+ - Properly initialize worker information when QT_NUM_SHEPHERDS has been specified (hwloc-only)
+ - OMP barrier nesting improved
+ - Correct detection of CMPXCHG16B
+ - A bunch of minor bugfixes
+ 
+--- 1.8.1 ---
+
+Improvements:
+ - Improved integration with Chapel build system
+ - Support for Chapel's blockreport debugging
+ - Cheaper context swap on x86(_64)
+ 
+Bugfixes:
+ - Support for libnumaV2 fixed
+ - Build system avoids obsolete macros
+ - Tilera affinity support compiles again (was missing a #include)
+ 
+--- 1.8 ---
+
+New Features:
+ - Concurrent lock-free hash table (dictionary); three alternate designs
+ - New "simple" tasks: reduced context swap overhead, no stack size limit, but cannot block or yield
+ - qthread_spawn() function exposed to simplify complex task creation
+ - Arbitrary blocking functions now public (BE CAREFUL)
+ - Optional (experimental) lock-free hash table implementation of FEBs (very fast)
+ - ARM support
+ - Tasks can use a sinc as a return value location
+ - spr_init() can replace MPI_Init()
+ - spr_unify() converts SPMD to single-flow-of-control
+ - C++ version of qt_loopaccum_balance and SPR interface
+ - QT_HWPAR environment variable simplifies concurrency management
+ 
+Improvements:
+ - LOTS of performance improvements
+ - Massive improvement to memory pooling
+ - Handle buggy versions of hwloc without crashing
+ - Terse multinode documentation
+ - Public memory pool now front-end for internal memory pool
+ - Scribbling in memory pool (debugging assist)
+ - Reduced memory footprint
+ - Additional (micro-)benchmarks, including Cilk, TBB, and OpenMP implementations
+ - Better checking of compile requirements
+ - Faster precondition handling
+ - Better Tilera support
+ - Configure-time define default stack size
+ - Task teams are now reliable
+ - Better PPC support (detect all 3 ABIs)
+ - Use compiler ("native") TLS when practical
+ - Better behavior when topology information is unavailable
+ - Use PMI runtime API for multinode
+ - Hazardptr implementation works under high load
+ - Matt Baker's Chapel syncvar idea
+ - Add configure-time "oversubscription" mode; avoids spinlocks, uses sched_yield() when necessary
+ - More man pages
+ 
+Bugfixes:
+ - Fix distance support with hwloc
+ - Fix alignment error in C++ futurelib (old bug)
+ - Fix rare hang in Sherwood scheduler
+ - Fix pwrite() define (Issue #11)
+ - Improve floating-point tests
+ - Fix fincr/dincr synchronization bug (some compilers created two reads)
+ - Fix BOTS benchmark string handling
+ - Fix reinitialization race condition
+ - Many minor fixes
+ 
+--- 1.7.1 ---
+
+New Features:
+ - New experimental scheduler: loxley
+ - Experimental task team support
+ - Provide QTHREAD_VERSION in qthread.h
+ 
+Improvements:
+ - Significant performance improvements in the scheduler
+ - Task-spawn caching
+ - More benchmarks in the tests tree
+ - Improved memory pool (still not perfect, but now more reliable)
+ - Lots of OpenMP support improvements
+ - Removed 'volatile' in favor of explicit memory fences (for speed)
+ - TilePro/TileGX support
+ - Experimental signal-based task termination
+ - Updates task ID support with distinct NULL and "not really a qthread" identifiers
+ 
+Bugfixes:
+ - Fixed cross-compilation behavior
+ - Lots of minor fixes
+ 
+--- 1.7 ---
+
+New Features:
+ - Experimental multi-node support with Portals4
+ - Task-local data
+ - Preconditioned task spawning
+ - More control with hwloc: QTHREAD_WORKER_UNIT
+ - Several new schedulers: mutexfifo, mtsfifo, nemesis, nottingham
+ - Experimental sinc support (counting synchronization, proto-thread-teams)
+ 
+Improvements:
+ - Default scheduler: sherwood
+ - Updated to new Chapel tasking API
+ - Works with Chapel multi-node
+ - Better Chapel behavior (e.g. bigger default stack)
+ - Faster qsort
+ - Even faster thread spawns
+ - Better syncvar behavior under contention
+ - qthread_num_workers() works independent of scheduler
+ - Better debug-output control
+ - Tree-based qloop spawning
+ - Better behavior in shepherd over-subscription case
+ - Use hash to improve qtimer_fastrand() output (still not cryptographically sound)
+ - Suppress "Forced X" messages unless QTHREAD_INFO is set
+ - Prevents errors if qthread_finalize() is called from the wrong thread
+ 
+Bugfixes:
+ - Fix 64-bit increment detection on 32-bit architectures
+ - Fix valgrind building
+ - Fix PPC building
+ - Fix I/O subsystem queueing
+ - Many stability improvements
+ 
+--- 1.6 ---
+
+New Features:
+ - Brand new C++ qloop interface
+ - Supports multi-locale Chapel
+ - New scheduling queue options (faster FIFO, and new LIFO)
+ - Experimental support for RCRDaemon
+ - Experimental support for OpenMP affinity extensions
+ - Experimental support for system call intercepting
+ 
+Improvements:
+ - Support for external threads using qthread blocking operations
+ - Renamed internal context functions, to improve dynamic library loading
+ - Chapel interface built as a secondary (static-only) library
+ - Reduced exported symbols
+ - Updated documentation
+ 
+Bugfixes:
+ - Fixed critical fastcontext bug on 32-bit x86
+ - Fixed incorrect rounding in atomic operations on old compilers in 32-bit systems
+ - Eliminated the faulty test_internal_mod test
+ - Fixed qloop memory leak
+ - Fixed compiling on 32-bit SparcV9
+ 
+--- 1.5.1 ---
+
+New Features:
+ - Chapel shims
+ 
+Improvements:
+ - Compiles under Cygwin
+ - Better OpenMP nested loop behavior (more efficient barriers)
+ - Use memory affinity interface in hwloc (if available)
+ - Better CPU affinity behavior for non-default shepherd counts
+ 
+Bugfixes:
+ - Better behavior when void functions are used as syncvar-returning threads
+ - Pthread_id() now does not change between qthread_initialize() and qthread_finalize()
+ - Affinity of calling thread restored during qthread_finalize()
+ 
+--- 1.5 ---
+
+New Features:
+ - Multithreaded shepherds (non-default)
+ - Qtimer-based fast "random" function
+ - Syncvar_t incrF function
+ - New qthread_readstate() function, helps support Chapel
+ - Convenience functions for storing data in syncvar_t's
+ - Removed all library API reliance on qthread_t
+ 
+Improvements:
+ - Speed up the qt_feb_barrier with syncvar_t's
+ - Speed up context switch on x86/ppc Linux with handwritten one
+ - Semi-non-native mode in SST
+ - Remove external dependency on C++ and/or cprops
+ - Stop using setrlimit unnecessarily on Linux
+ - Built-in cache-aware hash for speed and portability
+ - Syncvar_t initializers (static and dynamic)
+ - Faster thread creation and lower memory footprint
+ - MANY improvements to ROSE OpenMP code
+ - Faster syncvar_t performance under load
+ - Removed deprecated functions
+ 
+Bugfixes:
+ - Fixed the race condition in the qt_feb_barrier
+ - Fixed C++ headers
+ - Match new SST layout
+ - Fixed syncvar_t bugs, race-conditions, corner-cases
+ - Better behavior with CPU subsets, workaround libnuma bugs
+ 
+--- 1.4 ---
+
+New Features:
+ - qarray_dist_like() to match one qarray to another
+ - qarray_set_shepof() to specify a qarray segment's location
+ - qarray_iter_loopaccum() to accumulate a function over a qarray
+ - qt_feb_barrier() to allow threads to engage in a basic barrier
+ - qtimer functions, for high-resolution low-overhead cross-platform timing
+ - qt_loop_queue* functions, for self-schedule loops
+ - syncvar_t datatype can support high-speed asynchronous FEB operations (but
+   cannot be treated as a generic integer type); with C++ wrapper
+   
+Improvements:
+ - Renamed DIST_REG_FIELDS and DIST_REG_STRIPES qarray distributions
+ - Added FIXED_FIELDS to qarray distributions
+ - Increased size of qthread_shepherd_id_t
+ - Fixed qthread_dincr() on ppc32
+ - Fixed qt_cas() on ppc64
+ - Better workaround for broken MacOS X swapcontext()
+ - Fixed logic in debug output to avoid floating point
+ - Fixed bug in lock profiling code (credit to David Evensky)
+ - Better detection of compiler options
+ - More ROSE support
+ - More valgrind support
+ - Work around libnuma brokenness
+ - Speed up FEB operations in single-thread case
+ - Reworked qt_loop* interface to support loop increments of >1
+ - Speed up qloop functions
+ - Support hwloc
+ - Improved support for parallel build
+ 
+Bugfixes:
+ - Fixed the profiling code
+ - Fixed the race condition in some qt_loop functions.
+ - Properly handle heterogeneous node layouts
+ 
+--- 1.3.1 ---
+
+Improvements:
+ - Documentation
+ - Fix GCC 4.4 compiler error
+ - More ROSE support
+ - Better compiler detection
+ 
+--- 1.3 ---
+
+New Features:
+ - Optional guard pages, to assist in debugging
+ - No longer need to call qthread_finalize()
+ - Environment variable QTHREAD_NUM_SHEPHERDS to force a specific number of
+   shepherds
+ - Shepherds an be enabled/disabled at runtime; threads are forcibly evicted
+   from disabled shepherds
+ - Support for Tilera systems and Tilera locality libraries
+ - A primitive queue-based for-loop to handle imbalanced loop iterations, the qqloop
+ 
+Improvements:
+ - Significant speed improvements (and full support) for systems without
+   hardware atomic operations
+ - Now prefer qthread_initialize(), which doesn't take arguments;
+   qthread_init() is deprecated (but still supported)
+ - Threads have second-order affinity, only established via explicit programmer
+   placement
+ - Better detection of insufficient compile environment
+ - Better detection of cacheline size
+ - Better detection of CPUs on MacOS X and Linux, via sysctl and sysconf
+ - Better compatibility with Intel compiler
+ - Better Sun Studio ASM support (still fighting ICE)
+ - Better interaction with libnuma to detect desired number of shepherds
+ - Added a more lightweight qsort() implementation
+ - Test codes use environment variables instead of arguments
+ - Compatibility with glibc's new qsort_r() function
+ - Use autoconf 2.64's C++ "restrict" tests, rather than the broken 2.59 ones
+ - Removed small qarray memory leak
+ - Standardized C++ detection of integer arguments
+ - Fixed error detection in qthread_fork_to()
+ - Additional documentation
+ - Restored ability to avoid C++ by using cprops library
+ - Can now be re-initialized safely
+ - No longer relies on PTHREAD_RECURSIVE
+ - Use clock_gettime() for timing, if available, instead of gettimeofday()
+ 
+--- 1.2 ---
+
+New Features:
+ - Distributed Data Structures: array (qarray), queue (qdqueue), memory pool (qpool)
+ - Lock-free Data Structures: queue (qlfqueue)
+ - CPU Affinity for shepherds/threads on most systems (not OSX 10.4)
+ - Machine topology information can be queried
+   - qthread_num_shepherds()
+   - qthread_distance()
+   - qthread_sorted_sheps()/_remote()
+   - qthread_init(0) creates 1 shepherd per location
+ - Portable CAS
+ - future_fork_to()
+ - qthread_cacheline() returns the machine's cache line size in bytes
+ 
+Improvements:
+ - Portability improvements
+ - Several bugs in queue management fixed
+ - Workarounds for bad compiler management of volatile operations
+ - Avoid ABA problems in lock-free memory pools
+ - Better memory barriers on Sparc
+ - Better valgrind support
+ - Removed dependency on external cprops library by depending on C++ hash maps
+ 
+--- 1.1.20090123 ---
+
+New Features:
+ - Can now force 64-bit alignment
+ - Can now migrate threads between shepherds
+ - More atomic increments (floating point)
+ - Aligned_t qsort()
+ - C++ template wrappers to standard FEB functions
+ - Environment variable controls stack size
+ - SST support
+ - High-resolution timers for profiling
+ 
+Improvements:
+ - Lock-free internal memory pooling
+ - Lock-free thread queueing
+ - Better Apple PPC64/PPC/x86/x86_64 support
+ - Better Sparc support
+ - Better architecture detection
+ - Documentation fixes
+ - Detects more makecontext() irregularities
+ - Better C++ portability/compatibility
+ - Better compatibility with unusual compilers
+ - Better test cases
+ - Uses compiler-builtin atomic operations when available
+ - Better 64-bit support
+ - Real serial mode
+ - Faster qt_loop_balance synchronization
+ - Fixed atomic increment volatility declaration
+ - Thread counting also checks hash stripe balance
+ 
+--- 1.0 ---
+
+New Features:
+ - Added error handling.
+ 
+Improvements:
+ - Reorganized osx_compat stuff
+ - Released under BSD OSS license with Sandia's blessing!
+ - Fixed some portability issues with increment functions.
+ 
+--- 0.8 ---
+
+New Features:
+ - Added qloop functions to provide precisely balanced loop spawning. Still
+   relatively primitive, but the interface allows for bare-minimum overhead (in
+   terms of context-swaps and memory footprint) with more advanced scheduling.
+ - Configurable setrlimit and atomic increment use
+ 
+Improvements:
+ - Atomic increments are more widely used throughout library.
+ - Added qutil documentation
+ - Improved futurelib documentation
+ - Added workaround for GCC's broken gcse
+ - Bugfixes and portability improvements on architectures/environments where
+   atomic increments are unsupported
+ - Minor improvements to qalloc (from Vitus)
+ - Eliminated memory imbalancing by reintroducing locks. (Basic testing shows
+   it does not dramatically increase overhead.)
+   
+--- 0.7 ---
+
+New Features:
+ - qthread_incr() can be used for atomic increments
+ 
+--- 0.6 ---
+
+Improvements:
+ - Threads now use pthread thread-local (TSD) memory instead of doing lookups
+   into bottleneck data-structures
+ - Futurelib and qthreads are now more tightly coupled, which obviates some
+   bottleneck data-structures
+ - Removed locks when spawning qthreads and/or futures from a qthread (locks
+   are now only needed in special cases)
+ - qthread_lock() and qthread_unlock() are more parallel
+ - Better futurelib documentation (see README)
+ 
+--- 0.5 ---
+
+New Features:
+ - Threads can have return values, which obey FEB semantics
+ - qthread_stackleft() returns the number of bytes left in the stack (with some
+   inaccuracy)
+
+Improvements:
+ - Functions are now anonymous, and there is no major distinction between
+   detached and undetached threads
+ - Removed qthread_join(); use qthread_readFF on a thread's return value
+   instead
+ - FutureLib uses behavior-templates rather than type-templates
+
+Bugfixes:
+ - Corrected a race condition in the FEB handling that could lead to deadlock
+ 
+--- 0.4 ---
+
+New Features:
+ - man pages for all major functions
+ - added qthread_feb_status()
+
+Improvements:
+ - changed the qthread_f prototype to be easier to use
+ 
+--- 0.3 ---
+
+New Features:
+ - added qthread_writeF(), which as the same arguments and effect as writeEF,
+   but does not block
+ - added qthread_prepare(), qthread_schedule(), and associated functions to
+   decouple thread creation from thread scheduling
+
+Improvements:
+ - added information about compiling with the PGI compiler
+ - added support for "make check" to test most of the major functionality in
+   the library
+ - made qthread_fork() (and related functions) significantly faster if called
+   from within a qthread by making it possible to avoid using mutexes to
+   protect memory pools
+ - qthread_shep() may now take a NULL if you don't have a qthread_t handy
+   (qthread_shep(NULL) is faster than qthread_shep(qthread_self()))
+
+Bug fixes:
+ - corrected the behavior of qthread_readFF() and readFE() (they were
+   dereferencing things too many times)
+ - qthread_unlock() will now function correctly if unlocking something that's
+   already unlocked (it could get into a deadlock situation before, because it
+   wasn't cleaning up after itself)
+ - fixed a typo in qalloc_dynmalloc() that could cause deadlock on some
+   architectures
+ - corrected memory pooling to eliminate assertion failures

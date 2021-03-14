@@ -1,0 +1,48 @@
+$CHPL_HOME/modules/standard/IO.chpl:n: warning: printing _ddata class
+$CHPL_HOME/modules/standard/IO.chpl:n: In function '_write_one_internal':
+Distribution Representation
+
+boundingBox = {1..4, 1..4}
+targetLocDom = {0..1, 0..1}
+targetLocales = 0 1 2 3
+dataParTasksPerLocale = 2
+dataParIgnoreRunningTasks = true
+dataParMinGranularity = 1
+locDist[(0, 0)].myChunk = {-9223372036854775808..2, -9223372036854775808..2}
+locDist[(0, 1)].myChunk = {-9223372036854775808..2, 3..9223372036854775807}
+locDist[(1, 0)].myChunk = {3..9223372036854775807, -9223372036854775808..2}
+locDist[(1, 1)].myChunk = {3..9223372036854775807, 3..9223372036854775807}
+
+Domain
+
+{1..4, 1..4}
+
+Domain Representation
+
+whole = {1..4, 1..4}
+locDoms[(0, 0)].myBlock = {1..2, 1..2}
+locDoms[(0, 1)].myBlock = {1..2, 3..4}
+locDoms[(1, 0)].myBlock = {3..4, 1..2}
+locDoms[(1, 1)].myBlock = {3..4, 3..4}
+
+Array
+
+0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0
+
+Array Representation
+
+locArr[(0, 0)].myElems = 0.0 0.0 0.0 0.0
+locArr[(0, 0)].locRAD = (off = (0, 0), blk = (0, 0), str = (0, 0), origin = 0, factoredOffs = 0, data = nil, shiftedData = nil) (off = (1, 3), blk = (2, 1), str = (1, 1), origin = 0, factoredOffs = 5, data = <_ddata class cannot be printed>, shiftedData = <_ddata class cannot be printed>)
+(off = (3, 1), blk = (2, 1), str = (1, 1), origin = 0, factoredOffs = 7, data = <_ddata class cannot be printed>, shiftedData = <_ddata class cannot be printed>) (off = (3, 3), blk = (2, 1), str = (1, 1), origin = 0, factoredOffs = 9, data = <_ddata class cannot be printed>, shiftedData = <_ddata class cannot be printed>)
+locArr[(0, 1)].myElems = 0.0 0.0 0.0 0.0
+locArr[(0, 1)].locRAD = (off = (1, 1), blk = (2, 1), str = (1, 1), origin = 0, factoredOffs = 3, data = <_ddata class cannot be printed>, shiftedData = <_ddata class cannot be printed>) (off = (0, 0), blk = (0, 0), str = (0, 0), origin = 0, factoredOffs = 0, data = nil, shiftedData = nil)
+(off = (3, 1), blk = (2, 1), str = (1, 1), origin = 0, factoredOffs = 7, data = <_ddata class cannot be printed>, shiftedData = <_ddata class cannot be printed>) (off = (3, 3), blk = (2, 1), str = (1, 1), origin = 0, factoredOffs = 9, data = <_ddata class cannot be printed>, shiftedData = <_ddata class cannot be printed>)
+locArr[(1, 0)].myElems = 0.0 0.0 0.0 0.0
+locArr[(1, 0)].locRAD = (off = (1, 1), blk = (2, 1), str = (1, 1), origin = 0, factoredOffs = 3, data = <_ddata class cannot be printed>, shiftedData = <_ddata class cannot be printed>) (off = (1, 3), blk = (2, 1), str = (1, 1), origin = 0, factoredOffs = 5, data = <_ddata class cannot be printed>, shiftedData = <_ddata class cannot be printed>)
+(off = (0, 0), blk = (0, 0), str = (0, 0), origin = 0, factoredOffs = 0, data = nil, shiftedData = nil) (off = (3, 3), blk = (2, 1), str = (1, 1), origin = 0, factoredOffs = 9, data = <_ddata class cannot be printed>, shiftedData = <_ddata class cannot be printed>)
+locArr[(1, 1)].myElems = 0.0 0.0 0.0 0.0
+locArr[(1, 1)].locRAD = (off = (1, 1), blk = (2, 1), str = (1, 1), origin = 0, factoredOffs = 3, data = <_ddata class cannot be printed>, shiftedData = <_ddata class cannot be printed>) (off = (1, 3), blk = (2, 1), str = (1, 1), origin = 0, factoredOffs = 5, data = <_ddata class cannot be printed>, shiftedData = <_ddata class cannot be printed>)
+(off = (3, 1), blk = (2, 1), str = (1, 1), origin = 0, factoredOffs = 7, data = <_ddata class cannot be printed>, shiftedData = <_ddata class cannot be printed>) (off = (0, 0), blk = (0, 0), str = (0, 0), origin = 0, factoredOffs = 0, data = nil, shiftedData = nil)

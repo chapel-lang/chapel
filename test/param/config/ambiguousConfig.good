@@ -1,0 +1,3 @@
+ambiguousConfig.chpl:6: error: ambiguous config name (PV)
+ambiguousConfig.chpl:3: note: also defined here
+ambiguousConfig.chpl:3: note: (disambiguate using -s<modulename>.PV...)

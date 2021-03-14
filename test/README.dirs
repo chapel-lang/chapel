@@ -1,0 +1,119 @@
+%% README.dirs
+%%--------------------------------------------------------------------------------
+%% Test directory hierarchy (DRAFT)
+%%--------------------------------------------------------------------------------
+
+%% Keeping the spec chapters at the top level seems to make the root node too
+%% fat, so I propose categorizing these according to the main language function
+%% addressed by that chapter or test section.  Spec sections are shown
+%% capitalized and without a trailing slash.  Existing test directories have
+%% also been folded in and are marked with a trailing slash.  If the existing
+%% directory seems to map to a spec section, they are shown on the same line,
+%% separated by a comma.  New directories being proposed by me are prefixed by a
+%% star. <hilde>
+
+%% Open Issues:
+%%  Should tests corresponding to spec chapters be merged with standalone tests?
+%%  Are there other directories whose contents should be distributed?
+%%  What's the target number of subdirectories or tests in each directory?
+
+
+demo/
+*environment
+    compflags/
+    execflags/
+    exits/ (or possibly under parallelism?)
+     *Internal Modules
+    interpreter/ (not sure about this one ...)
+    link/ (rename to linker?)
+    optimzations/
+    performance/
+    portability/
+    stress/
+*framework
+    External Modules, extern/
+    Input and Output, io/
+    Standard Modules
+    *Third-Party Modules
+parallel/
+    Data Parallelism
+    Domain Maps
+    Locales
+        multilocale/
+    distributions/
+        Standard Distributions
+        gpu/
+    reductions/
+    Standard Layouts
+    Task Parallelism and Synchronization
+    User Defined Reductions and Scans
+    User Defined Domain Maps
+release/
+*structure
+    Expressions, expressions/
+        lowlevelcg/
+    Iterators, iterators/ (currently under functions)
+    Lexical_Structure
+    Modules, modules/
+    parsing/
+    Procedures, functions/ (to be renamed)
+        dispatch/
+    Statements, statements/
+        flowanalysis/
+*storage
+    memory/
+    param/
+    Variables
+studies/
+    exercises/
+    nbp/
+    puzzles/
+    ssca/
+types/
+    Arrays, arrays/
+        associative/
+        sparse/
+    Classes, classes/
+    Conversions
+    Domains, domains/
+    generic/
+    Ranges, ranges/
+    Records
+    Unions
+    Tuples
+    Types (top level)
+*util (things used by tests but not tests themselves)
+    no-infer/
+
+Leftovers: (I didn't know how to categorize these,
+        or some work is required to distribute them among existing directories.)
+    reviews/
+    Samples/
+    spec/
+    trivial/
+    users/
+
+--end--
+
+
+%%--------------------------------------------------------------------------------
+%% The old contents of the DIRS file:
+%%--------------------------------------------------------------------------------
+
+test/           -- regression tests
+  Bin/          -- binaries used in running the test system
+  Logs/         -- default location for log files to be written out
+  Samples/      -- sample tests
+  -----------
+  classes/      -- tests using classes/OO
+  compflags/    -- tests that make sure compiler flags are working properly
+  dispatch/     -- tests of dispatching
+  execcflags/   -- tests of different executable flags
+  flowanalysis/ -- tests of the low-level flow analaysis stuff
+  functions/    -- tests of function calls
+  lowlevelcg/   -- tests of the low-level code generation
+  modules/      -- tests of using multiple modules
+  parsing/      -- tests of parsing
+  reviews/      -- code used in government reviews
+  trivial/      -- tests that we will one day be embarrassed by
+  types/        -- tests related to different Chapel types

@@ -1,0 +1,13 @@
+NAS Parallel Benchmarks 2.4 -- IS Benchmark
+ Size:                           65536  (class S)
+ Iterations:                        10
+ Number of tasks per locale:         2
+ 
+
+
+ IS Benchmark Completed
+ Class           =                         S
+ Size            =                     65536
+ Iterations      =                        10
+ Operation type  =               keys ranked
+ Verification    =                SUCCESSFUL

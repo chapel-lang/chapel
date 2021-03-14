@@ -1,0 +1,2 @@
+
+proc foo(x : int);

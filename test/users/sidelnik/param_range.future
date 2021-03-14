@@ -1,0 +1,6 @@
+unimplemented feature: param ranges and domains
+
+The compiler should allow the creation of param ranges so that the
+low/high/stride values can be infered at compile time. Multiple
+performance benefits could result from having support for this.
+

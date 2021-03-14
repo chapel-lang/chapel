@@ -1,0 +1,2 @@
+-scase=0 # dependent.simple.good
+-scase=1 # dependent.inherit.good

@@ -1,0 +1,19 @@
+{x = 1}
+(ABA){cnt=0, obj={x = 1}}
+true
+{x = 1}
+(ABA){cnt=0, obj={x = 1}}
+true
+{x = 2}
+(ABA){cnt=1, obj={x = 2}}
+true
+{x = 1}
+(ABA){cnt=1, obj={x = 1}}
+{x = 1}
+nil
+(ABA){cnt=1, obj=nil}
+
+true
+true
+false
+1048576

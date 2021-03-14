@@ -1,0 +1,9 @@
+error message: Use of multiple modules which each define a symbol of same name
+
+If two modules define a symbol 'foo' and both are used by a single module, if
+that module tries to access 'foo' without specifying which 'foo' is meant, this
+will correctly cause a naming conflict.  However, the complaint in the current
+error message seems to imply that it is wrong for the same name to be used in
+multiple modules, which would be confusing to the user.  We would like the
+blame to instead be given to the use statements which caused these two symbols
+to come into conflict.

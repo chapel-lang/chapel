@@ -1,0 +1,1 @@
+test_string_shuffle.chpl:3: error: string slicing doesn't support stridable codepoint ranges

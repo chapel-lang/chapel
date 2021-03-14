@@ -1,0 +1,60 @@
+#!/usr/bin/env python3
+
+import sys, os, shutil, re
+
+expectedGenCodeFile = sys.argv[1]+'.expectedGenCode'
+genCodeDir = 'genCode'
+actualGenCodeFile = os.path.join(genCodeDir, sys.argv[1]+'.c')
+testOutputFile = sys.argv[2]
+
+def normalize(ln):
+  ret = re.sub(r'[0-9]+', '#', ln)
+  return ret.strip()
+
+# open the expected generated code, and grab all the non-empty and non-comment
+# lines
+expectedGeneratedCodeLines = []
+fromLineNumbers = []
+with open(expectedGenCodeFile, 'r') as f:
+    linenum = 0;
+    for line in f:
+        line = line.rstrip()
+        linenum += 1
+        if line != '' and line.startswith('#') == False:
+           expectedGeneratedCodeLines.append(normalize(line))
+           fromLineNumbers.append(linenum)
+
+# grab the actual generated code
+actualLines = []
+with open (actualGenCodeFile) as f:
+    actualLines = [normalize(i) for i in f.readlines()]
+
+# add whether the line was found or not to test output
+with open (testOutputFile, 'a') as f:
+    index = 0
+    nActualLines = len(actualLines)
+    for expectedLine,linenum in zip(expectedGeneratedCodeLines, fromLineNumbers):
+        found = False
+        startindex = index
+        while index < nActualLines:
+            actualLine = actualLines[index]
+            index += 1;
+
+            if re.search(r'build[a-zA-Z_]*range', actualLine):
+              f.write('Found build range\n')
+
+            if expectedLine == actualLine:
+              found = True
+              break
+
+        if found:
+            f.write('Found expected line\n')
+        else:
+            f.write('{0} is missing line {1}: {2}'.format(actualGenCodeFile, linenum, expectedLine))
+            f.write('(started searching on line {0} in the generated code)\n'.format(startindex+1))
+            break
+
+
+shutil.rmtree(genCodeDir)
+
+

@@ -1,0 +1,183 @@
+
+VARIABLE INITIALIZATION -- VALUE CALL
+ variable initialization / value call
+   blank return intent, untyped variable
+   const return intent, untyped variable
+   blank return intent, typed variable
+   const return intent, typed variable
+ call in arg / call
+ field initialization / value call
+   default constructor
+
+VARIABLE INITIALIZATION -- LOCAL VAR
+ variable initialization / local var last mention
+   untyped variable
+   typed variable
+ variable initialization / local var not last mention
+   untyped variable
+    R.init=(R)
+   typed variable
+    R.init=(R)
+ field initialization / local var last mention
+   default constructor
+ field initialization / local var not last mention
+   default constructor
+    R.init=(R)
+
+VARIABLE INITIALIZATION -- IN ARG (GLOBAL)
+    R.init=(R)
+ variable initialization / in-intent arg not last mention
+   untyped variable
+    R.init=(R)
+   typed variable
+    R.init=(R)
+
+    R.init=(R)
+ variable initialization / in-intent arg last mention
+   untyped variable
+
+    R.init=(R)
+ variable initialization / in-intent arg last mention
+   typed variable
+
+    R.init=(R)
+ variable initialization / const-in-intent arg not last mention
+   untyped variable
+    R.init=(R)
+   typed variable
+    R.init=(R)
+
+    R.init=(R)
+ variable initialization / const-in-intent arg last mention
+   untyped variable
+
+    R.init=(R)
+ variable initialization / const-in-intent arg last mention
+   typed variable
+
+VARIABLE INITIALIZATION -- IN ARG (IN ARG (CALL-EXPR)))
+ passing in intent arg to in intent arg
+ variable initialization / in-intent arg last mention
+   untyped variable
+ passing const in intent arg to const in intent arg
+ variable initialization / const-in-intent arg last mention
+   untyped variable
+
+VARIABLE INITIALIZATION -- OUTER VAR
+ variable initialization / outer var
+   untyped variable
+    R.init=(R)
+   typed variable
+    R.init=(R)
+
+VARIABLE INITIALIZATION -- GLOBAL / REF
+ variable initialization / global var
+   untyped variable
+    R.init=(R)
+   typed variable
+    R.init=(R)
+ variable initialization / global ref
+   untyped variable
+    R.init=(R)
+   typed variable
+    R.init=(R)
+ variable initialization / local ref
+   untyped variable
+    R.init=(R)
+   typed variable
+    R.init=(R)
+ variable initialization / blank-intent arg
+   untyped variable
+    R.init=(R)
+   typed variable
+    R.init=(R)
+ variable initialization / const-ref arg
+   untyped variable
+    R.init=(R)
+   typed variable
+    R.init=(R)
+ variable initialization / ref arg
+   untyped variable
+    R.init=(R)
+   typed variable
+    R.init=(R)
+    R.init=(R)
+ variable initialization / inout-intent arg
+   untyped variable
+    R.init=(R)
+   typed variable
+    R.init=(R)
+   function epilogue
+    assign
+
+FIELD INITIALIZATION
+ field initialization / global var
+   default constructor
+    R.init=(R)
+ field initialization / global ref
+   default constructor
+    R.init=(R)
+ field initialization / local ref
+   default constructor
+    R.init=(R)
+ field initialization / blank-intent arg
+   default constructor
+    R.init=(R)
+ field initialization / const-ref arg
+   default constructor
+    R.init=(R)
+ field initialization / ref arg
+   default constructor
+    R.init=(R)
+    R.init=(R)
+ field initialization / in arg
+   default constructor
+    R.init=(R)
+ field initialization / inout arg
+   default constructor
+    R.init=(R)
+    assign
+
+VALUE RETURN -- VALUE CALL
+ return / value call
+ return / value call const
+
+VALUE RETURN -- LOCAL VAR
+ return / local variable
+
+VALUE RETURN -- OUTER VAR
+ return / outer variable
+    R.init=(R)
+
+VALUE RETURN -- IN ARG (GLOBAL)
+    R.init=(R)
+ return / in arg
+
+    R.init=(R)
+ return / const in arg
+
+VALUE RETURN -- IN ARG (CALL-EXPR)
+ return / in arg
+ return / const in arg
+
+VALUE RETURN -- GLOBAL/REF
+ return / global variable
+    R.init=(R)
+ return / ref global variable
+    R.init=(R)
+ return / blank intent arg
+    R.init=(R)
+ return / ref intent arg
+    R.init=(R)
+ return / const ref intent arg
+    R.init=(R)
+ return / call returning ref
+    R.init=(R)
+ return / call returning const ref
+    R.init=(R)
+
+REF USE -- REF VALUE
+ return ref / global variable
+ return ref / global variable
+ return const ref / global variable
+ return ref / ref arg

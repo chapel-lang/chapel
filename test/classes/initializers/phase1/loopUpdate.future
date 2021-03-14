@@ -1,0 +1,12 @@
+feature request: omitted initialization insertion point
+
+Brad suggested that it might be good to have code like this be valid.  The
+compiler is already inserting omitted initialization for the array, but the
+current implementation places the omitted initialization right before the
+super.init() call, making the `for` loop access a field before it has been
+initialized.  If the omitted initialization was placed right after the last
+initialized field, then the `for` loop would be valid.
+
+Is this desirable, or letting users write a bug?  Should this be part of the
+specification, or left as an implementation detail (and so maybe undefined
+behavior)?  See discussion in https://github.com/chapel-lang/chapel/issues/6568

@@ -1,0 +1,2 @@
+useOtherSibling.chpl:9: In function 'main':
+useOtherSibling.chpl:10: error: 'foo' undeclared (first use this function)

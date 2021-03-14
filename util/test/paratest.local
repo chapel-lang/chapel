@@ -1,0 +1,97 @@
+#!/usr/bin/env python3
+
+"""
+local paratest wrapper - runs tests in parallel on a single machine.
+
+To use this script:
+  cd test
+  ../util/test/paratest.local
+
+start_test options can be passed as additional command-line arguments
+(e.g. -compopts --llvm).
+"""
+
+import os.path
+import sys
+import timeit
+import multiprocessing
+
+chplenv_dir = os.path.join(os.path.dirname(__file__), '..', 'chplenv')
+sys.path.insert(0, os.path.abspath(chplenv_dir))
+
+import chpl_comm
+import utils
+
+
+def run_command_wrapper(command):
+    """
+    Run a command, returning the output as a list of strings with quotes and
+    whitespace stripped out.
+    """
+    output = utils.run_command(command)
+    output_lines = [line.strip().strip('"') for line in output.splitlines()]
+    return output_lines
+
+
+def get_good_nodepara():
+    """
+    Get a "good" nodepara value: default to 2 for comm=none testing, and
+    # cores / 4GB per run otherwise.
+    """
+
+    nodepara = multiprocessing.cpu_count()
+    if chpl_comm.get() != 'none':
+        nodepara = 2
+
+    # also limit based an amount of available memory
+    # in my experiments, 2GB/instance was not enough.
+    gb_per_tester = 4;
+
+    if os.access("/proc/meminfo", os.R_OK):
+      with open("/proc/meminfo", 'r') as f:
+        firstline = f.readline()
+        key, value, unit = firstline.split()
+        if key == "MemTotal:" and unit == "kB":
+          mem_gb = int(value) / 1000 / 1000
+          nodepara_max = int(mem_gb / gb_per_tester)
+          if nodepara > nodepara_max:
+            nodepara = nodepara_max
+        else:
+          print('Warning: error reading /proc/meminfo. using nodepara {0}'.format(nodepara))
+
+    elif nodepara > 2:
+      print('Warning: not checking total memory. using nodepara {0}'.format(nodepara))
+
+    return nodepara
+
+
+def run_paratest(args):
+    """
+    Run paratest on a single machine.
+    """
+    nodepara = get_good_nodepara()
+    para_env = ['-env', 'CHPL_TEST_LIMIT_RUNNING_EXECUTABLES=yes', '-env',
+                'CHPL_RT_OVERSUBSCRIBED=yes']
+
+    paratest_path = os.path.join(os.path.dirname(__file__), 'paratest.server')
+
+    paratest_cmd = [paratest_path] + para_env
+    paratest_cmd += ['-nodepara', str(nodepara)] + args
+    print('running "{0}"'.format(' '.join(paratest_cmd)))
+
+
+    start_time = timeit.default_timer()
+    for line in utils.run_live_command(paratest_cmd):
+        sys.stdout.write(line)
+        sys.stdout.flush()
+    elapsed = int(timeit.default_timer() - start_time)
+    minutes, seconds = divmod(elapsed, 60)
+    print('paratest took {0} minutes and {1} seconds'.format(minutes, seconds))
+
+
+def main(paratest_args):
+    run_paratest(paratest_args)
+
+
+if __name__ == '__main__':
+    main(sys.argv[1:])

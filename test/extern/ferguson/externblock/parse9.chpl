@@ -1,0 +1,3 @@
+extern { static int x; // }
+}
+

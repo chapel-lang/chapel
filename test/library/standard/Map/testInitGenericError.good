@@ -1,0 +1,3 @@
+testInitGenericError.chpl:7: warning: creating a map with key type C
+testInitGenericError.chpl:7: warning: which now means class type with generic management
+testInitGenericError.chpl:7: error: map key type cannot currently be generic

@@ -1,0 +1,29 @@
+declaring owned1 storing C(1)
+owned1 = {x = 1}
+declaring owned2 storing nil
+owned2 = nil
+after assigning owned2 = owned1
+owned2 = {x = 1}
+owned1 = nil
+declaring owned3 storing C(3)
+owned3 = {x = 3}
+after assigning owned1 = owned3
+owned1 = {x = 3}
+owned3 = nil
+declaring owned4 storing C(4)
+owned4 = {x = 4}
+after assigning owned1 = owned4
+owned1 = {x = 4}
+owned4 = nil
+declaring owned5 storing C(5)
+owned5 = {x = 5}
+after owned5.clear()
+owned5 = nil
+after owned1.retain C(100)
+owned1 = {x = 100}
+after owned1.release()
+owned1 = nil
+owned1.release() returned = {x = 100}
+declaring owned6 storing C(6)
+in takesOwnership, arg = {x = 6}
+owned6 = nil

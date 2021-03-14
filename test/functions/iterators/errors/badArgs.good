@@ -1,0 +1,2 @@
+badArgs.chpl:11: error: user invocation of a parallel iterator should not supply tag arguments -- they are added implicitly by the compiler
+badArgs.chpl:11: note: actual argument 1 of the iterator call

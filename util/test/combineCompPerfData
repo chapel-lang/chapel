@@ -1,0 +1,197 @@
+#!/usr/bin/env python3
+
+# This script is used for compiler performance testing.
+# Each tests outputs its .dat files with the timing per pass and this script
+# takes all of those dat files and combines them into averaged dat files.
+# It also creates a separate dat file that contains some additional testing and
+# compilation stats.
+
+import sys, os, os.path
+from optparse import OptionParser
+from pprint import pprint
+import py3_compat
+
+parser = OptionParser()
+parser.add_option('-t', '--tempDatDir', dest='tempDatDir',
+                  help='the directory of temp files to combine', metavar='DIR')
+parser.add_option('-O', '--outDir', dest='outDir',
+                  help='output directory for the average', metavar='DIR' ,
+                  default=None)
+parser.add_option('-e', '--elapsedTestTime', dest='elapsedTestTime',
+                  help='The number of seconds that all of testing took',
+                  default=1.0)
+parser.add_option('-d', '--debug', dest='debug',
+                  action='store_true', default=False)
+
+def main():
+    # setup options and input/output directories
+    (options, args) = parser.parse_args()
+
+    chpl_home = os.environ.get('CHPL_HOME', '')
+    configName = os.environ.get('CHPL_TEST_PERF_CONFIG_NAME',
+                                os.uname()[1].split('.', 1)[0])
+    compPerfDir = os.path.join(chpl_home, 'test/compperfdat/', configName)
+
+    debug = options.debug
+
+    if options.tempDatDir != None:
+        tempDatDir = options.tempDatDir
+    else:
+        tempDatDir = os.path.join(compPerfDir, 'tempCompPerfDatFiles/')
+
+    if options.outDir != None:
+        outDir = options.outDir
+    else:
+        outDir = compPerfDir
+
+    if options.elapsedTestTime != None:
+        elapsedTestTime = float(options.elapsedTestTime)
+
+    # in subtest, test names are changed so that folder separation is changed to
+    # something other than '/' This is so that all the files can be stored at
+    # the same level
+    folderSeperator = '~~'
+
+    # get all the .dat files in the temp data directory
+    tempFiles = os.listdir(tempDatDir)
+    datFiles = []
+    for tempFile in tempFiles:
+        if tempFile.endswith('.dat'):
+            datFiles.append(tempFile)
+
+    numCompiles = len(datFiles)
+    numReleaseExampleCompiles = 0
+
+    if len(datFiles) <= 0:
+        sys.stderr.write('[Error: there were no dat files to combine in %s]\n'%(tempDatDir))
+        return -1
+
+    # Right now we just delete the temp .dat files (timings per test) between
+    # test runs and only save the averages. This makes it easy to assume that
+    # each .dat has the same number of perfkeys and that we're not looking at
+    # any old data. As such, this script assumes each temp .dat contains 2
+    # lines where the first line in the perf keys and the second is the values
+    # for each key
+
+    # open the first file to figure some meta information about passes and
+    # setup the running totals
+    try:
+        firstFile = open(tempDatDir + datFiles[0], 'r')
+        lines = firstFile.readlines()
+        # get the perfkeys out of the first line, first line starts with a '#'
+        perfKeysString = lines[0]
+        perfKeys = [ l.strip() for l in perfKeysString.replace('#', '').split('\t') ]
+        # There are as many passes are there are keys (-1 for the date)
+        numPasses = len(perfKeys) - 1
+        # grab the date
+        date = lines[1].split('\t')[0]
+        # create two lists to keep track of the combined results. One for the
+        # tests in the release/examples directory and one for all tests
+        allCombinedValues = [ float(0) for i in range(numPasses) ]
+        releaseExampleCombinedValues = [ float(0) for i in range(numPasses) ]
+        firstFile.close()
+
+    except IOError:
+        sys.stderr.write('[ERROR: Could not open first dat file: %s]\n'%(tempDatDir + datFiles[0]))
+        return -1
+
+    # for each dat file add each key to the running total for the key
+    # also make sure the number of keys matches the first file
+    for datFile in datFiles:
+        if datFile.startswith('release' + folderSeperator + 'examples'):
+            isReleaseExample = True
+            numReleaseExampleCompiles += 1
+        else:
+            isReleaseExample = False
+        try:
+            f = open(tempDatDir + datFile, 'r')
+            lines = f.readlines()
+            # read in the actual values and remove the date
+            perfValues = [ l.strip() for l in lines[1].split('\t')[1:] ]
+            # check that we had the right number of passes
+            if len(perfValues)  != numPasses:
+                sys.stderr.write('[ERROR: num passes is not the same for all files: %s]\n' %(tempDatDir + datFile))
+                continue
+            # for each value add it to the running total and maybe the release
+            # example running total if it was in that dir
+            for valueIndex in range(len(perfValues)):
+               value = float(perfValues[valueIndex])
+               allCombinedValues[valueIndex] += value;
+               if isReleaseExample:
+                   releaseExampleCombinedValues[valueIndex] += value;
+            f.close()
+
+        except IOError:
+            sys.stderr.write('[ERROR: Could not open dat file: %s]\n'%(datFile))
+            return -1
+
+    # get the total time compiling, which is the last "pass"
+    totalTimeCompiling = allCombinedValues[numPasses - 1]
+
+    # compute the average for each value and truncate to two decimal places
+    allCombinedValues = [ '%1.2f'%(i/numCompiles) for i in allCombinedValues ]
+    releaseExampleCombinedValues = [ '%1.2f'%(i/numReleaseExampleCompiles) for i in releaseExampleCombinedValues ]
+
+    # calculate percent of time compiling
+    percentTimeCompiling = (totalTimeCompiling/elapsedTestTime) * 100
+
+    # remove the colons in the compiler pass keys
+    perfKeysString = perfKeysString.rstrip().replace(' :', '')
+    # combine the date, and each averaged value
+    allOutputPerfValues = date + '\t' + '\t'.join(allCombinedValues)
+    releaseExampleOutputPerfValues = date + '\t' + '\t'.join(releaseExampleCombinedValues)
+
+    # create the dat file for the timings for all tests
+    datFile = os.path.join(outDir, 'all', 'compilerPerformance.dat')
+    writeToDatFile(datFile, perfKeysString, allOutputPerfValues)
+
+    # create the dat file for the timings for release/examples tests
+    datFile = os.path.join(outDir, 'examples', 'compilerPerformance.dat')
+    writeToDatFile(datFile, perfKeysString, releaseExampleOutputPerfValues)
+
+    # convert elapsedTestTime and totalTimeCompiling to hours from seconds
+    totalTimeCompiling /= 3600.0
+    elapsedTestTime /= 3600.0
+
+    # create the keys and values for the compiling and testing stats
+    miscOutputPerfKeys = '# Date\tnumSuccessfulCompiles\tnumPasses\ttotalTimeCompiling\telapsedTestTime\tpercentTimeCompiling'
+    miscOutputPerfValues = format('%s\t%d\t%d\t%.2f\t%.2f\t%.1f'%(date, numCompiles, numPasses, totalTimeCompiling, elapsedTestTime, percentTimeCompiling))
+
+    # create the compiling testing stats file that contains the above stats
+    datFile = os.path.join(outDir, 'compilerAndTestingStats.dat')
+    writeToDatFile(datFile, miscOutputPerfKeys, miscOutputPerfValues)
+
+    if debug:
+        sys.stdout.write('There are %d passes\n'%(numPasses))
+        sys.stdout.write('The date is %s\n' %(date))
+        sys.stdout.write('There are %s successful compiles\n'%(numCompiles))
+        sys.stdout.write('The total time spent compiling was %1.1f seconds \n'%(totalTimeCompiling))
+        sys.stdout.write('The total time spent testing was %1.1f seconds \n'%(elapsedTestTime))
+        sys.stdout.write('Spent %.1f percent of the total time testing in compiling\n'%(percentTimeCompiling))
+        pprint(allCombinedValues)
+        pprint(releaseExampleCombinedValues)
+
+# helper function to write perfkeys and perfvalues out to a file. Create the
+# file if it does not exist and append if it does
+def writeToDatFile (datFile, perfKeys, perfValues):
+    basedir = os.path.dirname(datFile)
+    if not os.path.isdir(basedir):
+        py3_compat.makedirs(basedir, exist_ok=True)
+    try:
+        if os.path.exists(datFile) :
+            outfile = open(datFile, 'a+')
+            outfile.write(perfValues + '\n')
+            outfile.close()
+        else :
+            outfile = open(datFile, 'w+')
+            outfile.write(perfKeys + '\n')
+            outfile.write(perfValues + '\n')
+            outfile.close()
+
+    except IOError:
+        sys.stderr.write('[ERROR: Could not open dat file to write to: %s]\n'%(datFile))
+        sys.exit(-1)
+
+
+if __name__ == '__main__':
+    sys.exit(main())

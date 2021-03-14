@@ -1,0 +1,21 @@
+.. default-domain:: chpl
+
+.. module:: loseComments.doc
+
+loseComments.doc
+================
+**Usage**
+
+.. code-block:: chapel
+
+   use loseComments.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import loseComments.doc;
+
+.. function:: proc found()
+

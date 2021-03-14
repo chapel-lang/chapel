@@ -1,0 +1,4 @@
+refToGetFieldType.chpl:14: error: Cannot set a reference to a type variable.
+refToGetFieldType.chpl:19: error: Cannot set a reference to a type variable.
+refToGetFieldType.chpl:19: error: Cannot set a reference to a type variable.
+refToGetFieldType.chpl:19: error: Cannot set a reference to a param variable.

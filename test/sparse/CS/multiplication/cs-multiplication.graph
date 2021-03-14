@@ -1,0 +1,5 @@
+perfkeys: CSR . CSC - optimized:
+files: performance.dat
+graphkeys: 1000*1000 (1%)
+graphtitle: CSR-CSC multiplication
+ylabel: Time (seconds)

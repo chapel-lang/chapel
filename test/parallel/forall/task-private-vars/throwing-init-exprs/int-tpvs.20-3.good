@@ -1,0 +1,11 @@
+nt 3   nt2 20
+uncaught TaskErrors: 2 errors: IllegalArgumentError: 20 ... IllegalArgumentError: 3
+  int-tpvs.chpl:44: thrown here
+  int-tpvs.chpl:44: uncaught here
+asdf(1), returning
+asdf(10), returning
+asdf(1000), returning
+1101000
+asdf(2), returning
+asdf(20), throwing
+asdf(3), throwing

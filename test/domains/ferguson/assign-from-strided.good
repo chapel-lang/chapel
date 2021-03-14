@@ -1,0 +1,1 @@
+assign-from-strided.chpl:7: error: cannot assign from a stridable domain to an unstridable domain without an explicit cast

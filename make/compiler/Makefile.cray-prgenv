@@ -1,0 +1,84 @@
+# Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+# Copyright 2004-2019 Cray Inc.
+# Other additional copyright holders may be indicated within.
+# 
+# The entirety of this work is licensed under the Apache License,
+# Version 2.0 (the "License"); you may not use this file except
+# in compliance with the License.
+# 
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# PrgEnv settings for Cray XC machines
+
+# This file is not used for Cray CS machines
+
+#
+# tools.
+#
+
+CC = cc
+CXX = CC
+
+RANLIB = ranlib
+
+
+#
+# flags
+#
+
+DEBUG_CFLAGS = -g
+OPT_CFLAGS = -O3
+
+COMP_CXXFLAGS = $(CPPFLAGS) $(CXXFLAGS) $(CRAYPE_COMP_CXXFLAGS)
+RUNTIME_CFLAGS += $(CPPFLAGS) $(CFLAGS)
+RUNTIME_CXXFLAGS += $(CPPFLAGS) $(CXXFLAGS)
+GEN_CFLAGS += $(CFLAGS) $(CRAYPE_GEN_CFLAGS)
+GEN_LFLAGS += $(LFLAGS)
+GEN_STATIC_FLAG = -static
+GEN_DYNAMIC_FLAG = -dynamic
+LIB_STATIC_FLAG =
+LIB_DYNAMIC_FLAG = -shared
+
+#
+# Normally we let the PrgEnv compilers choose the linking mode, but in
+# some circumstances we push dynamic linking as the default.
+#
+ifneq ($(CHPL_MAKE_LOCALE_MODEL), flat)
+# With locale models other than 'flat' we will need libnuma.  That is
+# so far available only in .so form, so override them in this case.
+RUNTIME_LFLAGS += -dynamic
+else ifeq ($(CHPL_MAKE_COMM), ofi)
+# libfabric calls dlopen() and getaddrinfo().  With static linking, the
+# references to these cause link-time warnings that the corresponding
+# dynamic libraries will be required at execution time, so default to
+# dynamic linking to avoid these warnings.
+RUNTIME_LFLAGS += -dynamic
+else ifeq ($(CHPL_MAKE_COMM), ugni)
+ifneq ($(UGNI_PERFSTATS),)
+# Want to use vDSO for faster timers
+RUNTIME_LFLAGS += -dynamic
+endif
+endif
+
+# Don't throw e.g. -march with a PrgEnv compiler since the PrgEnv environment
+# will take care of that. Since we want to be able to get other flags from e.g.
+# Makefile.intel, here we replace SPECIALIZE_CFLAGS with nothing.
+SPECIALIZE_CFLAGS =
+
+
+#
+# The CC and cc drivers use pkg-config to determine several things including
+# which libraries to link in. Set the appropriate libs based on our config:
+#
+
+export PE_PKGCONFIG_PRODUCTS := PE_CHAPEL:$(PE_PKGCONFIG_PRODUCTS)
+export PE_CHAPEL_MODULE_NAME := chapel
+export PE_CHAPEL_PKGCONFIG_LIBS := $(shell $(CHPL_MAKE_HOME)/util/config/gather-pe-chapel-pkgconfig-libs.bash "$(CHPL_MAKE_TARGET_PLATFORM)" "$(CHPL_MAKE_COMM)" "$(CHPL_MAKE_COMM_SUBSTRATE)" "$(CHPL_MAKE_AUXFS)")

@@ -1,0 +1,4 @@
+var_decl_strange3.chpl:1: error: 'x' used before defined
+var_decl_strange3.chpl:2: note: defined here
+var_decl_strange3.chpl:2: error: 'y' used before defined
+var_decl_strange3.chpl:3: note: defined here

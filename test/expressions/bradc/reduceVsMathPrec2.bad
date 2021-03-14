@@ -1,0 +1,1 @@
+reduceVsMathPrec2.chpl:12: error: cannot initialize 'total' of type 'int(64)' from a 'iterator'

@@ -1,0 +1,12 @@
+r = ..9 by -2
+r.indexOrder(0) = -1
+r.indexOrder(1) = 4
+r.indexOrder(2) = -1
+r.indexOrder(3) = 3
+r.indexOrder(4) = -1
+r.indexOrder(5) = 2
+r.indexOrder(6) = -1
+r.indexOrder(7) = 1
+r.indexOrder(8) = -1
+r.indexOrder(9) = 0
+r.indexOrder(10) = -1

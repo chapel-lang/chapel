@@ -1,0 +1,5 @@
+perfkeys: total =, input =, bucket count =, bucket offset =, bucketize =, exchange =, count keys =
+repeat-files: isx-per-task.dat
+graphkeys: total time, input time, bucket count time, bucket offset time, bucketize time, exchange time, count keys time
+ylabel: Time (seconds)
+graphtitle: ISx (Pure SPMD)

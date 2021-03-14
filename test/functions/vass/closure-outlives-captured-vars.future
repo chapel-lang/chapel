@@ -1,0 +1,16 @@
+bug: cannot C-compile chpl-generated code
+
+I get this when chpl-compiling the program:
+
+In file included from /tmp/chpl-vass-3018.deleteme/_main.c:1:
+/tmp/chpl-vass-3018.deleteme/chpl__header.h:779: error: conflicting types for ‘chpl_main’
+/users/vass/chapel/runtime/include/chplcgfns.h:15: error: previous declaration of ‘chpl_main’ was here
+In file included from /tmp/chpl-vass-3018.deleteme/_main.c:22:
+/tmp/chpl-vass-3018.deleteme/closure-outlives-captured-vars.c:115: error: conflicting types for ‘chpl_main’
+/users/vass/chapel/runtime/include/chplcgfns.h:15: error: previous declaration of ‘chpl_main’ was here
+
+---------------------------------
+feature request: allow closures to outlive, at run time,
+the function invocations that contain local variables captured by the closure.
+
+(Just recording one issue with the current first class functions.)

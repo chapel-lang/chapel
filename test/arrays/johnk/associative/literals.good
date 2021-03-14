@@ -1,0 +1,15 @@
+A  String => Int Map
+A (five, 5)
+A (four, 4)
+A (six, 6)
+B  Sparse Int => String Map
+B (1, one)
+B (11, eleven)
+B (13, thirteen)
+B (17, seventeen)
+B (19, nineteen)
+B (2, two)
+B (23, twenty-three)
+B (3, three)
+B (5, five)
+B (7, seven)

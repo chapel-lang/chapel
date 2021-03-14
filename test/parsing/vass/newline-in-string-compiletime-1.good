@@ -1,0 +1,8 @@
+newline-in-string-compiletime-1.chpl:1: warning: I'd like
+ a multi-line string in
+ my compiler message.  
+Preferably, with 'single' and "double" quotes.
+newline-in-string-compiletime-1.chpl:1: error: I'd like
+ a multi-line string in
+ my compiler message.  
+Preferably, with 'single' and "double" quotes.

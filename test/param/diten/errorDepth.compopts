@@ -1,0 +1,3 @@
+-sdepth=0 # errorDepth.depth0.good
+-sdepth=1 # errorDepth.depth1.good
+-sdepth=2 # errorDepth.depth2.good

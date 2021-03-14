@@ -1,0 +1,337 @@
+# suite: Release examples
+release/examples/benchmarks/ssca2/SSCA2_main.graph
+release/examples/benchmarks/ssca2/edge_generation.graph
+release/examples/benchmarks/ssca2/total_time.graph
+release/examples/benchmarks/lcals/LCALS-raw-short.graph
+release/examples/benchmarks/lcals/LCALS-raw-medium.graph
+release/examples/benchmarks/lcals/LCALS-raw-long.graph
+release/examples/benchmarks/lcals/LCALS-parallel-short.graph
+release/examples/benchmarks/lcals/LCALS-parallel-medium.graph
+release/examples/benchmarks/lcals/LCALS-parallel-long.graph
+release/examples/benchmarks/lulesh/lulesh.graph
+release/examples/benchmarks/hpcc/stream.graph
+release/examples/benchmarks/hpcc/ra.graph
+release/examples/benchmarks/hpcc/stream-ep.graph
+release/examples/benchmarks/hpcc/ptrans.graph
+release/examples/benchmarks/hpcc/fft.graph
+release/examples/benchmarks/hpcc/hpl.graph
+studies/shootout/binary-trees/binary-trees.graph
+studies/shootout/chameneos-redux/chameneos-redux.graph
+studies/shootout/fannkuch-redux/fannkuch-redux.graph
+studies/shootout/fasta/fasta.graph
+studies/shootout/k-nucleotide/knucleotide.graph
+studies/shootout/mandelbrot/mandelbrot.graph
+studies/shootout/meteor/kbrady/meteor.graph
+studies/shootout/nbody/nbody.graph
+studies/shootout/pidigits/pidigits.graph
+studies/shootout/regex-dna/regexdna.graph
+studies/shootout/regexdna-redux/regexdna-redux.graph
+studies/shootout/reverse-complement/revcomp.graph
+studies/shootout/spectral-norm/spectralnorm.graph
+studies/shootout/thread-ring/thread-ring.graph
+# suite: Performance tracking
+release/examples/benchmarks/ssca2/total_time.graph
+release/examples/benchmarks/lulesh/lulesh.graph
+release/examples/benchmarks/miniMD/miniMD.graph
+studies/comd/llnl/CoMD.graph
+studies/comd/elegant/arrayOfStructs/CoMD-elegant-aos.graph
+studies/isx/isx.graph
+release/examples/benchmarks/isx/isx-release.graph
+studies/hpcc/STREAM_study.graph
+studies/hpcc/STREAM_study_fragmented.graph
+release/examples/benchmarks/hpcc/ra.graph
+release/examples/benchmarks/hpcc/ptrans.graph
+release/examples/benchmarks/hpcc/fft.graph
+release/examples/benchmarks/hpcc/hpl.graph
+release/examples/benchmarks/lcals/LCALS-raw-long.graph
+release/examples/benchmarks/lcals/LCALS-parallel-short.graph
+release/examples/benchmarks/lcals/LCALS-parallel-long.graph
+studies/shootout/binary-trees/binary-trees.graph
+studies/shootout/chameneos-redux/chameneos-redux.graph
+studies/shootout/fannkuch-redux/fannkuch-redux.graph
+studies/shootout/fasta/fasta.graph
+studies/shootout/k-nucleotide/knucleotide.graph
+studies/shootout/mandelbrot/mandelbrot.graph
+studies/shootout/meteor/kbrady/meteor.graph
+studies/shootout/nbody/nbody.graph
+studies/shootout/pidigits/pidigits.graph
+studies/shootout/regex-dna/regexdna.graph
+studies/shootout/regexdna-redux/regexdna-redux.graph
+studies/shootout/reverse-complement/revcomp.graph
+studies/shootout/spectral-norm/spectralnorm.graph
+studies/shootout/thread-ring/thread-ring.graph
+npb/cg/cg-a.graph
+npb/ep/ep-b.graph
+npb/ft/ft-a.graph
+users/npadmana/npb-mg/mg-b.graph
+arrays/diten/time_iterate.graph
+arrays/diten/time_array_vs_tuple.graph
+arrays/diten/time_array_vs_ddata.graph
+arrays/ferguson/return-array-40000000.graph
+arrays/lydia/time_access.graph
+domains/ferguson/build-associative.graph
+domains/elliot/primes.graph
+types/atomic/ferguson/atomictest.graph
+performance/bradc/parOpEquals.graph
+performance/sungeun/assign.1024.graph
+performance/sungeun/init.graph
+performance/thomasvandoren/matrix-multiply.graph
+distributions/robust/associative/performance/array_iter.graph
+performance/elliot/no-op.graph
+performance/bharshbarg/forall-dom-range.graph
+performance/bharshbarg/arr-forall.graph
+performance/bharshbarg/views-forall-index.graph
+performance/bharshbarg/views-forall-iter.graph
+performance/bharshbarg/create-views.graph
+studies/prk/Stencil/prk-stencil-time.graph
+types/string/ferguson/temporary-copies.graph
+types/string/psahabu/perf/arguments.graph
+types/string/psahabu/perf/search.graph
+users/franzf/v0/chpl/main.graph
+reductions/diten/testSerialReductions.graph
+reductions/vass/reductions-perf.graph
+studies/rbc/tvandoren/RBC.graph
+exercises/c-ray/old/c-ray.graph
+users/npadmana/twopt/twopt-buildtrees.graph
+users/npadmana/twopt/twopt-paircount.graph
+performance/compiler/bradc/AllCompTime.graph
+memleaksfull.graph
+studies/jacobi/jacobi.graph
+library/standard/List/perf/listBenchmark1.graph
+# suite: HPC Challenge
+studies/hpcc/STREAM_study_fragmented.graph
+studies/hpcc/STREAM_study.graph
+studies/hpcc/STREAM_study_promote.graph
+# suite: Performance Graphs (TEPS, GB/s, etc.)
+release/examples/benchmarks/hpcc/stream_performance.graph
+release/examples/benchmarks/hpcc/ra_performance.graph
+release/examples/benchmarks/hpcc/stream-ep_performance.graph
+release/examples/benchmarks/hpcc/ptrans_performance.graph
+release/examples/benchmarks/hpcc/fft_performance.graph
+release/examples/benchmarks/hpcc/hpl_performance.graph
+studies/hpcc/STREAM_study_performance.graph
+release/examples/benchmarks/ssca2/performance.graph
+# suite: DOE proxy apps
+studies/lulesh/bradc/lulesh-dense.graph
+release/examples/benchmarks/miniMD/miniMD.graph
+studies/comd/llnl/CoMD.graph
+studies/comd/elegant/arrayOfStructs/CoMD-elegant-aos.graph
+release/examples/benchmarks/lcals/LCALS-raw-short.graph
+release/examples/benchmarks/lcals/LCALS-raw-medium.graph
+release/examples/benchmarks/lcals/LCALS-raw-long.graph
+release/examples/benchmarks/lcals/LCALS-parallel-short.graph
+release/examples/benchmarks/lcals/LCALS-parallel-medium.graph
+release/examples/benchmarks/lcals/LCALS-parallel-long.graph
+# suite: Shootout benchmarks
+studies/shootout/binary-trees/binary-trees.graph
+studies/shootout/chameneos-redux/chameneos-redux.graph
+studies/shootout/fannkuch-redux/fannkuch-redux.graph
+studies/shootout/fasta/fasta.graph
+studies/shootout/k-nucleotide/knucleotide.graph
+studies/shootout/mandelbrot/mandelbrot.graph
+studies/shootout/meteor/kbrady/meteor.graph
+studies/shootout/nbody/nbody.graph
+studies/shootout/pidigits/pidigits.graph
+studies/shootout/regex-dna/regexdna.graph
+studies/shootout/regexdna-redux/regexdna-redux.graph
+studies/shootout/reverse-complement/revcomp.graph
+studies/shootout/spectral-norm/spectralnorm.graph
+studies/shootout/thread-ring/thread-ring.graph
+# suite: Submitted Shootout benchmarks
+studies/shootout/submitted/binarytrees-submitted.graph
+studies/shootout/submitted/fannkuchredux-submitted.graph
+studies/shootout/submitted/fasta-submitted.graph
+studies/shootout/submitted/knucleotide-submitted.graph
+studies/shootout/submitted/mandelbrot-submitted.graph
+studies/shootout/submitted/nbody-submitted.graph
+studies/shootout/submitted/pidigits-submitted.graph
+studies/shootout/submitted/regexdna-submitted.graph
+studies/shootout/submitted/regexdnaredux-submitted.graph
+studies/shootout/submitted/revcomp-submitted.graph
+studies/shootout/submitted/spectralnorm-submitted.graph
+# suite: Shootout extras
+studies/shootout/fasta/fasta-extras.graph
+studies/shootout/fasta/fastaredux.graph
+studies/shootout/mandelbrot/mandelbrot-extras.graph
+studies/shootout/spectral-norm/lydia/spectral-norm-specify-step.graph
+# suite: Parboil benchmarks
+studies/parboil/BFS/bfs.graph
+studies/parboil/histo/histo.graph
+studies/parboil/SAD/sad.graph
+studies/parboil/stencil/stencil.graph
+# suite: PARSEC benchmarks
+studies/parsec/blackscholes.graph
+studies/parsec/blackscholes_promote.graph
+# suite: ISx benchmark
+studies/isx/isx.graph
+studies/isx/isx-bucket-spmd.graph
+studies/isx/isx-hand-optimized.graph
+studies/isx/isx-no-return.graph
+studies/isx/isx-per-task.graph
+release/examples/benchmarks/isx/isx-release.graph
+# suite: PRK benchmarks
+studies/prk/Synch_p2p/prk-synch_p2p.graph
+studies/prk/Synch_p2p/prk-synch_p2p-time.graph
+studies/prk/Stencil/prk-stencil.graph
+studies/prk/Stencil/prk-stencil-time.graph
+studies/prk/Transpose/prk-transpose.graph
+studies/prk/Transpose/prk-transpose-time.graph
+# suite: NAS Parallel benchmarks
+npb/cg/cg.graph
+npb/cg/cg-a.graph
+npb/ep/ep.graph
+npb/ep/ep-b.graph
+npb/ft/ft.graph
+npb/ft/ft-a.graph
+users/npadmana/npb-mg/mg.graph
+users/npadmana/npb-mg/mg-b.graph
+# suite: Array/Domain performance
+arrays/diten/arrayPerformance-2d.graph
+arrays/diten/arrayPerformance-1d.graph
+arrays/diten/time_iterate.graph
+arrays/diten/time_array_vs_tuple.graph
+arrays/diten/time_array_vs_ddata.graph
+arrays/diten/time_array_vs_ref.graph
+arrays/diten/time_array_vs_ref_forall.graph
+arrays/diten/time_array_vs_ref_multidim.graph
+performance/bharshbarg/forall-dom-range.graph
+performance/bharshbarg/arr-forall.graph
+arrays/lydia/time_access.graph
+performance/bradc/parOpEquals.graph
+performance/sungeun/copy_to_local.graph
+performance/sungeun/assign.256.graph
+performance/sungeun/dgemm.128.graph
+performance/sungeun/assign.1024.graph
+performance/sungeun/assign_across_locales.256.graph
+performance/sungeun/dgemm.64.graph
+performance/sungeun/assign_across_locales.1024.graph
+performance/sungeun/init.graph
+distributions/robust/associative/performance/array_iter.graph
+distributions/robust/associative/performance/domain_iter.graph
+domains/bradc/domEqualityPerf.graph
+performance/thomasvandoren/matrix-multiply.graph
+types/string/ferguson/array-of-strings-read.graph
+arrays/ferguson/return-array-8.graph
+arrays/ferguson/return-array-20000000.graph
+arrays/ferguson/return-array-40000000.graph
+domains/ferguson/build-associative.graph
+performance/sparse/domainAssignment-similar.graph
+performance/sparse/domainAssignment-dissimilar.graph
+# suite: Atomic performance
+types/atomic/ferguson/atomictest.graph
+# suite: Dynamic iterators
+functions/iterators/angeles/dynamic.graph
+functions/iterators/angeles/distAdaptativeWSv1.graph
+functions/iterators/angeles/distAdaptativeWSv2.graph
+functions/iterators/angeles/guided.graph
+functions/iterators/angeles/distAdaptativeWS.graph
+# suite: Parallel Statement Comparisons
+parallel/taskCompare/lydia/forBeginCompare.graph
+parallel/taskCompare/lydia/coforallCompare.graph
+parallel/taskCompare/lydia/coforallBeginCompare.graph
+parallel/taskCompare/lydia/loopCompare.graph
+# suite: Task Spawning
+parallel/taskCompare/elliot/taskSpawn.graph
+parallel/taskCompare/elliot/serialTaskSpawn.graph
+studies/hpcc/STREAMS/elliot/stream-task-placement.graph
+# suite: Barrier
+performance/comm/barrier/empty-chpl-barrier.graph
+studies/hpcc/STREAMS/elliot/stream-spmd-barrier.graph
+# suite: Compiler performance
+performance/compiler/bradc/fft-timecomp.graph
+performance/compiler/bradc/compSampler-timecomp.graph
+performance/compiler/bradc/cg-sparse-timecomp.graph
+performance/compiler/bradc/AllCompTime.graph
+# suite: Memory tracking
+memleaks.graph
+memleaksfull.graph
+ml-memleaksfull.graph
+# suite: Memory allocation
+memory/lifetime/allocation.graph
+# suite: Code size tracking
+studies/jacobi/jacobi.graph
+# suite: Startup tracking
+performance/elliot/no-op.graph
+# suite: MAX_LOGICAL comparison
+npb/ep/ep.graph
+npb/ep/ep-b.graph
+release/examples/benchmarks/hpcc/hpl.graph
+studies/hpcc/STREAM_study_fragmented.graph
+studies/shootout/fannkuch-redux/fannkuch-redux.graph
+studies/shootout/spectral-norm/spectralnorm.graph
+studies/shootout/mandelbrot/mandelbrot.graph
+# suite: String perf tests
+types/string/cassella/cast-from-string.graph
+types/string/ferguson/temporary-copies.graph
+types/string/psahabu/split-whitespace-perf.graph
+types/string/psahabu/perf/allocate.graph
+types/string/psahabu/perf/arguments.graph
+types/string/psahabu/perf/search.graph
+types/string/psahabu/perf/search-throughput.graph
+types/string/psahabu/perf/substring.graph
+# suite: Standard Library
+library/packages/Sort/performance/sorts-linearithmic.graph
+library/packages/Sort/performance/sorts-quadratic.graph
+library/packages/LinearAlgebra/performance/dot-perf.graph
+library/packages/LinearAlgebra/performance/linearalgebra-perf.graph
+sparse/CS/multiplication/cs-multiplication.graph
+sparse/CS/resize/cs-resize.graph
+library/packages/Sort/RadixSort/radixsortMSB.graph
+# suite: Misc
+users/franzf/v0/chpl/main.graph
+reductions/diten/testSerialReductions.graph
+reductions/vass/reductions-perf.graph
+parallel/forall/reduce-intents/ri-a2-AoA.graph
+studies/paracr/asenjo/PARACR-BC.graph
+library/standard/BitOps/c-tests/performance/bitops.graph
+library/standard/Random/performance/getNextPerf.graph
+studies/rbc/tvandoren/RBC.graph
+exercises/c-ray/old/c-ray.graph
+scan/scanPerf.graph
+# suite: Colorado State University
+studies/colostate/Jacobi1D.graph
+studies/colostate/Jacobi2D.graph
+studies/colostate/cfd-mini.graph
+# suite: Nikhil Padmanabhan
+users/npadmana/twopt/twopt-buildtrees.graph
+users/npadmana/twopt/twopt-paircount.graph
+# suite: Elegance
+studies/elegance/elegance.graph
+# suite: Bale
+studies/bale/toposort/toposort.perf.graph
+studies/bale/toposort/toposort.time.graph
+# suite: Serial Performance
+patterns/primality/prime.graph
+statements/lydia/forCompare.graph
+statements/lydia/whileCompare.graph
+io/vass/time-write.graph
+arrays/diten/time_iterate.graph
+arrays/lydia/time_access.graph
+statements/lydia/externMethodCallPerf.graph
+statements/lydia/forVersusWhilePerf.graph
+statements/lydia/ifVersusSelect.graph
+statements/lydia/ifVersusSelect.random.graph
+statements/lydia/ifVersusSelect.alternates.graph
+statements/lydia/moduleVersusFunctionBaseline.graph
+statements/lydia/moduleVersusFunctionDifAccess.graph
+statements/lydia/moduleVersusFunction.graph
+library/standard/Map/timeMapMinusEqual.graph
+# suite: - Chapel versus C Comparisons
+patterns/primality/prime.graph
+statements/lydia/forCompare.graph
+statements/lydia/whileCompare.graph
+io/vass/time-write.graph
+arrays/diten/time_iterate.graph
+arrays/lydia/time_access.graph
+statements/lydia/externMethodCallPerf.graph
+# suite: - Statement Comparisons
+statements/lydia/forVersusWhilePerf.graph
+statements/lydia/ifVersusSelect.graph
+statements/lydia/ifVersusSelect.random.graph
+statements/lydia/ifVersusSelect.alternates.graph
+statements/lydia/moduleVersusFunctionBaseline.graph
+statements/lydia/moduleVersusFunctionDifAccess.graph
+statements/lydia/moduleVersusFunction.graph
+# suite: Samples (bogus)
+Samples/Performance/foo.graph
+Samples/Performance/cleanCopy/foobar.graph

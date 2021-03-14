@@ -1,0 +1,3 @@
+partially-generic-tuple-ambiguity.chpl:7: error: ambiguous call 'f(2*real(64))'
+partially-generic-tuple-ambiguity.chpl:3: note: candidates are: f(tuple: _tuple)
+partially-generic-tuple-ambiguity.chpl:5: note:                 f(tuple: _tuple)

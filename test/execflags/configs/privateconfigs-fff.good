@@ -1,0 +1,1 @@
+<command-line arg>:1: error: Configuration variable 'fff' is defined in more than one module.  Use '--help' for a list of configuration variables and '-s<module>.fff' to disambiguate.

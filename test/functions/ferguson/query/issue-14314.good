@@ -1,0 +1,2 @@
+addEdge matches owned Sender(int(64)) and owned Receiver(int(64),real(64))
+addEdge matches owned Sender(int(64)) and owned Receiver(real(64),int(64))

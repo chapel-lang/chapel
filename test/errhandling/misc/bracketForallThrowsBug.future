@@ -1,0 +1,2 @@
+bug: try block check does not work for bracketed forall expression
+#14233

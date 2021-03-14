@@ -1,0 +1,1 @@
+opequals2.chpl:8: error: Cannot assign to imag(64) from real(64)

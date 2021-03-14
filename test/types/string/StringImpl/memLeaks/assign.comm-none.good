@@ -1,0 +1,26 @@
+=== assignment
+s0
+s0
+=== assignment with shorter string
+s0
+s1long
+s0
+=== assignment with longer string
+s0long
+s1
+s0long
+=== assignment to empty string
+s0
+
+=== remote assignment
+(0, s0)
+(0, s2)
+(0, s0)
+(0, sr)
+(0, sr)
+(0, s2)
+(0, sr)
+(0, )
+(0, )
+(0, sr)
+(0, )

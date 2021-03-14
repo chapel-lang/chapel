@@ -1,0 +1,2 @@
+# It may print different debugDataPar diagnostics under NUMA.
+CHPL_LOCALE_MODEL != flat

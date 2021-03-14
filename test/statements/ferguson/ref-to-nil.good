@@ -1,0 +1,1 @@
+ref-to-nil.chpl:2: error: Cannot create a non-const reference to nil

@@ -1,0 +1,2 @@
+-s allowStandalone=true   # ri-1.sa.good
+-s allowStandalone=false  # ri-1.lf.good

@@ -1,0 +1,47 @@
+blank owned
+ coforall
+  borrowed MyClass
+  borrowed MyClass
+  borrowed MyClass
+  borrowed MyClass
+ cobegin
+  borrowed MyClass
+  borrowed MyClass
+blank shared
+ coforall
+  borrowed MyClass
+  borrowed MyClass
+  borrowed MyClass
+  borrowed MyClass
+ cobegin
+  borrowed MyClass
+  borrowed MyClass
+const ref owned
+ coforall
+  owned MyClass
+  owned MyClass
+  owned MyClass
+  owned MyClass
+ref owned
+ coforall
+  owned MyClass
+  owned MyClass
+  owned MyClass
+  owned MyClass
+blank begin
+  borrowed MyClass
+  borrowed MyClass
+const ref begin
+  owned MyClass
+  shared MyClass
+ref begin
+  owned MyClass
+  shared MyClass
+in begin
+  owned MyClass?
+  shared MyClass
+nil
+const in begin
+  owned MyClass?
+  shared MyClass
+nil

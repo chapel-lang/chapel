@@ -1,0 +1,1 @@
+invalid_reindex1a.chpl:14: error: rank mismatch: cannot reindex() from 3 dimension(s) to 4

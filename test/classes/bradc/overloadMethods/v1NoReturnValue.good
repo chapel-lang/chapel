@@ -1,0 +1,1 @@
+v1NoReturnValue.chpl:24: error: illegal use of function that does not return a value: 'bbox'

@@ -1,0 +1,3 @@
+uncaught IllegalArgumentError: bad cast from string '-1' to uint(64)
+  badstring2uint64-2.chpl:3: thrown here
+  badstring2uint64-2.chpl:3: uncaught here

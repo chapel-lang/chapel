@@ -1,0 +1,13 @@
+#!/bin/sh
+
+# Ignore line numbers, reduce multiple 'printing _ddata class' to single.
+TESTNAME=$1
+OUTFILE=$2
+TMPFILE1=$OUTFILE.prediff.tmp.1
+TMPFILE2=$OUTFILE.prediff.tmp.2
+sed 's/:[0-9]*:/:n:/g' < $OUTFILE | grep    'printing _ddata class' | uniq \
+  > $TMPFILE1
+sed 's/:[0-9]*:/:n:/g' < $OUTFILE | grep -v 'printing _ddata class' \
+  > $TMPFILE2
+cat $TMPFILE1 $TMPFILE2 > $OUTFILE
+rm $TMPFILE1 $TMPFILE2

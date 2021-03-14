@@ -1,0 +1,4 @@
+tier_1_class_type.chpl:9: In 'implements LessThan' statement:
+tier_1_class_type.chpl:9: error: when checking this implements statement
+tier_1_class_type.chpl:9: note: the required function LT is not implemented
+tier_1_class_type.chpl:2: note: the required function LT in the interface LessThan is declared here

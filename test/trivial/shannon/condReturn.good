@@ -1,0 +1,4 @@
+In foo()
+{m = 2.3}
+In foo()
+condReturn.chpl:14: error: halt reached - not enough args

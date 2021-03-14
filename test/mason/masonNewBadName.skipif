@@ -1,0 +1,20 @@
+#!/bin/bash
+
+# Skip this test for SuSE 11 and earlier. It requires an OpenSSL version that
+# is newer than is available on SuSe 11 due to github requirements.
+skip="False"
+if [ -f /etc/SuSE-release ] ; then
+    slesVersion=`sed -n -e 's/VERSION = //p' /etc/SuSE-release`
+    if [ $slesVersion -le 11 ] ; then
+        skip="True"
+    fi
+fi
+
+# Also skip for memleaks testing
+if [ "$CHPL_MEM_LEAK_TESTING" = "true" ]; then
+    skip="True"
+fi
+
+echo "$skip"
+
+

@@ -1,0 +1,4 @@
+-M helpers -sdisableAliasedBulkTransfer=false # miniMD.simple.perfkeys
+-M helpers -sdisableAliasedBulkTransfer=false --no-local  # miniMD.simple-nolocal.perfkeys
+-M helpers -sdisableAliasedBulkTransfer=false --no-local -suseBlockDist=true # miniMD.simple-block.perfkeys
+-M helpers -suseStencilDist=true -sdefaultDoRADOpt=false -sdisableAliasedBulkTransfer=false --no-local # miniMD.stencil.perfkeys

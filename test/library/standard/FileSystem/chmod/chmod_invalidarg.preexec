@@ -1,0 +1,4 @@
+#!/bin/bash
+if [ ! -e file ]; then
+    touch file
+fi

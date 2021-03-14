@@ -1,0 +1,1 @@
+assign-nonnil-unmanaged-from-oknil-owned.chpl:8: error: Cannot assign to unmanaged MyClass from owned MyClass?

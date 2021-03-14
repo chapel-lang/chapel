@@ -1,0 +1,22 @@
+#!/usr/bin/env python3
+
+# Run ra with n=33 and 10 million updates. ugni is much faster for ra-atomics,
+# so bump the number of updates to 1 billion to get stable timings. We get
+# unordered ops by default, but we want to track ordered and oversubscribed
+# ordered for ugni as well.
+import os
+
+comm = os.getenv('CHPL_COMM')
+ugni = comm == 'ugni'
+
+nu = 10000000
+if ugni:
+  nu = 1000000000
+
+common = '-sn=33:indexType -sN_U={0}:indexType -sverify=false'.format(nu)
+
+print('{0} # ra.atomic-n33'.format(common))
+
+if ugni:
+  print('{0} --no-optimize-forall-unordered-ops # ra.ordered-atomic-n33'.format(common))
+  print('{0} --no-optimize-forall-unordered-ops -stasksPerCore=4 # ra.atomic-oversub4-n33'.format(common))

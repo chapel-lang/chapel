@@ -1,0 +1,2 @@
+deeper.chpl:24: In function 'main':
+deeper.chpl:25: error: 'first' undeclared (first use this function)

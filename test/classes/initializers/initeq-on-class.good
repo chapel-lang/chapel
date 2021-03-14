@@ -1,0 +1,1 @@
+initeq-on-class.chpl:3: error: init= may not be defined on class types

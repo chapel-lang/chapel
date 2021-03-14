@@ -1,0 +1,31 @@
+series:
+A    1
+B    2
+C    3
+D    4
+E    5
+dtype: int(64)
+scalar:
+12
+
+sum:
+A    13
+B    14
+C    15
+D    16
+E    17
+dtype: int(64)
+difference:
+A    -11
+B    -10
+C    -9
+D    -8
+E    -7
+dtype: int(64)
+product:
+A    12
+B    24
+C    36
+D    48
+E    60
+dtype: int(64)

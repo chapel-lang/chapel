@@ -1,0 +1,6 @@
+error message: CHPL_GMP=none compilerError does not point to user line number
+#8191
+
+When trying to use GMP or BigInteger with CHPL_GMP=none, the error message that
+we emit points to the GMP line number instead of the user line number that's
+using the module.

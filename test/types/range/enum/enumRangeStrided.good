@@ -1,0 +1,123 @@
+---
+red..violet by 2
+range(color,bounded,true)
+
+red
+yellow
+blue
+violet
+
+size = 4
+first = red
+last = violet
+low = red
+high = violet
+alignedLow = red
+alignedHigh = violet
+isEmpty = false
+hasFirst = true
+hasLast = true
+isNaturallyAligned = true
+isAmbiguous = false
+contains(blue) = true
+contains(red) = true
+ident(color.red..color.violet by 2) = true
+ident(color.yellow..color.indigo by 2) = false
+indexOrder(color.yellow) = 1
+indexOrder(color.green) = -1
+orderToIndex(1) = yellow
+interior(1) = violet..violet by 2
+interior(-1) = red..red by 2
+red
+yellow
+blue
+violet
+
+---
+yellow..indigo by 2
+range(color,bounded,true)
+
+yellow
+blue
+
+size = 2
+first = yellow
+last = blue
+low = yellow
+high = indigo
+alignedLow = yellow
+alignedHigh = blue
+isEmpty = false
+hasFirst = true
+hasLast = true
+isNaturallyAligned = true
+isAmbiguous = false
+contains(blue) = true
+contains(red) = false
+ident(color.red..color.violet by 2) = false
+ident(color.yellow..color.indigo by 2) = true
+indexOrder(color.yellow) = 0
+indexOrder(color.green) = -1
+orderToIndex(1) = blue
+r.translate(1) = green..violet by 2
+interior(1) = indigo..indigo by 2 align red
+interior(-1) = yellow..yellow by 2
+r.exterior(1) = violet..violet by 2
+r.exterior(-1) = orange..orange by 2 align red
+r.expand(1) = orange..violet by 2 align red
+r.offset(1) = yellow..indigo by 2 align orange
+yellow
+blue
+
+---
+green..green by 2
+range(color,bounded,true)
+
+green
+
+size = 1
+first = green
+last = green
+low = green
+high = green
+alignedLow = green
+alignedHigh = green
+isEmpty = false
+hasFirst = true
+hasLast = true
+isNaturallyAligned = true
+isAmbiguous = false
+contains(blue) = false
+contains(red) = false
+ident(color.red..color.violet by 2) = false
+ident(color.yellow..color.indigo by 2) = false
+indexOrder(color.yellow) = -1
+indexOrder(color.green) = 0
+r.translate(1) = blue..blue by 2
+green
+
+---
+blue..green by 2
+range(color,bounded,true)
+
+
+size = 0
+first = blue
+last = yellow
+low = blue
+high = green
+alignedLow = blue
+alignedHigh = yellow
+isEmpty = true
+hasFirst = false
+hasLast = false
+isNaturallyAligned = true
+isAmbiguous = false
+contains(blue) = false
+contains(red) = false
+ident(color.red..color.violet by 2) = false
+ident(color.yellow..color.indigo by 2) = false
+indexOrder(color.yellow) = -1
+indexOrder(color.green) = -1
+r.translate(1) = indigo..blue by 2
+

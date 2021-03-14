@@ -1,0 +1,5 @@
+perfkeys: Rows/second:
+files: toposort.dat
+graphkeys: Bale-Toposort
+graphtitle: Bale: Toposort Perf (Rows/s)
+ylabel: Performance (Rows/s)

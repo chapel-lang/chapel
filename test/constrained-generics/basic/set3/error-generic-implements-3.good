@@ -1,0 +1,4 @@
+error-generic-implements-3.chpl:117: In 'implements IFC2' statement:
+error-generic-implements-3.chpl:117: error: when checking this implements statement
+error-generic-implements-3.chpl:117: note: the required function reqFun is not implemented
+error-generic-implements-3.chpl:100: note: the required function reqFun in the interface IFC2 is declared here

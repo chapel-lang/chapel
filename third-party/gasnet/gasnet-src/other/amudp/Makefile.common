@@ -1,0 +1,38 @@
+#   $Source: bitbucket.org:berkeleylab/gasnet.git/other/amudp/Makefile.common $
+# Description: Platform-independent variable init, overridden by pre-baked makefiles
+# Copyright 2000, Dan Bonachea <bonachea@cs.berkeley.edu>
+
+# variables added here should also go in Makefile.titanium.in, and vice-versa
+
+srcdir = .
+altincdir = $(srcdir)
+amxdir = $(srcdir)
+
+# compiler
+CC = gcc 
+CXX = g++ 
+#CC = /project/cs/titanium/srs/i686-pc-linux-gnu/bin/gcc-3.0.2 -static
+#CXX = /project/cs/titanium/srs/i686-pc-linux-gnu/bin/g++-3.0.2 -static
+
+#otherflags := $(otherflags) -pg
+#otherflags := $(otherflags) -DFREEZE_WORKER=1
+#otherflags := $(otherflags) -static
+
+#ccdebugflags = -O0 -g3 -ansi -Wall -Wno-unused-variable -Wno-unused-function $(otherflags)
+ccdebugflags = -O0 -g3 $(otherflags)
+ccoptflags = -O3 $(otherflags)
+
+#cxxdebugflags = -O0 -g3 -ansi -Wall -Wno-unused-variable -Wno-unused-function $(otherflags)
+cxxdebugflags = -O0 -g3 $(otherflags)
+cxxoptflags = -O3 $(otherflags)
+
+# system utilities
+ranlib = ranlib
+ar = ar
+PERL = perl
+
+# To be set by pre-baked makefiles:
+platform_defines = 
+platform_ldflags =
+platform_libraries = 
+

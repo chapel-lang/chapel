@@ -1,0 +1,3 @@
+bug: Homogenous tuples of domains declared with a type result in null pointer dereference at runtime.
+
+We are trying to free the domains, which were never allocated.

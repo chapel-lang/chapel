@@ -1,0 +1,4 @@
+warnConstructors.chpl:4: note: Constructors have been deprecated as of Chapel 1.18. Please use initializers instead.
+warnConstructors.chpl:4: error: Type 'C' defines a constructor here
+warnConstructors.chpl:9: error: Type 'C' defines a constructor here
+warnConstructors.chpl:16: error: Type 'D' defines a constructor here

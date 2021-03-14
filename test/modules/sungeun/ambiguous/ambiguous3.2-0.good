@@ -1,0 +1,15 @@
+module search dirs:
+  modules/d5
+  .
+  modules/d6
+  $CHPL_HOME/modules/standard/gen/...
+  $CHPL_HOME/modules/standard
+  $CHPL_HOME/modules/packages
+  $CHPL_HOME/modules/layouts
+  $CHPL_HOME/modules/dists
+  $CHPL_HOME/modules/dists/dims
+end of module search dirs
+warning: Ambiguous module source file -- using modules/d5/b.chpl over modules/d6/b.chpl
+In d5/a
+In d5/b
+In main

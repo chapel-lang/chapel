@@ -1,0 +1,3 @@
+#!/bin/bash
+echo Compiling receiveExternRecord.chpl
+$3 --llvm --library --static receiveExternRecord.chpl defineRecord.h

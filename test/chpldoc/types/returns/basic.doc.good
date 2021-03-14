@@ -1,0 +1,125 @@
+basic.doc.chpl:54: warning: This file-scope code is outside of any explicit module declarations (e.g., module Other), so an implicit module named 'basic.doc' is being introduced to contain the file's contents.
+.. default-domain:: chpl
+
+.. module:: basic.doc
+
+basic.doc
+=========
+**Usage**
+
+.. code-block:: chapel
+
+   use basic.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import basic.doc;
+
+**Submodules**
+
+.. toctree::
+   :maxdepth: 1
+   :glob:
+
+   basic.doc/*
+
+.. function:: proc method1(): string
+
+   Comment for method1 
+
+.. function:: proc method1Commentless(): string
+
+.. function:: proc body(): complex
+
+   Comment for method with a body 
+
+.. function:: proc bodyCommentless(): complex
+
+.. function:: proc hasArg(val: int): uint
+
+   Comment for method with an argument 
+
+.. function:: proc hasArgCommentless(val: int): uint
+
+.. function:: proc argAndBody(val: int): imag
+
+   Comment for method with argument and body 
+
+.. function:: proc argAndBodyCommentless(val: int): imag
+
+.. function:: proc longComment(): int
+
+   This comment is rather long
+   And spans for
+   Multiple lines 
+
+.. function:: proc implicit()
+
+   This proc has an implicit return type 
+
+.. function:: proc implicitCommentless()
+
+.. function:: proc returnStatement()
+
+   This proc has an implicit return type and a return statement 
+
+.. function:: proc returnCommentless()
+
+.. default-domain:: chpl
+
+.. module:: Other
+
+Other
+=====
+**Usage**
+
+.. code-block:: chapel
+
+   use basic.doc.Other;
+
+
+or
+
+.. code-block:: chapel
+
+   import basic.doc.Other;
+
+.. function:: proc inside(): int
+
+   Comment for method inside module 
+
+.. function:: proc insideCommentless(): int
+
+.. function:: proc body(): real
+
+   Comment for method with a body inside module 
+
+.. function:: proc bodyCommentless(): real
+
+.. function:: proc hasArg(val: int): real
+
+   Comment for method with an argument inside module 
+
+.. function:: proc hasArgCommentless(val: int): real
+
+.. function:: proc argAndBody(val: int): bool
+
+   Comment for method with argument and body inside module 
+
+.. function:: proc argAndBodyCommentless(val: int): bool
+
+.. function:: proc implicit()
+
+   This proc has an implicit return type 
+
+.. function:: proc implicitCommentless()
+
+.. function:: proc returnStatement()
+
+   This proc has an implicit return type and a return statement 
+
+.. function:: proc returnCommentless()
+

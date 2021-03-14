@@ -1,0 +1,72 @@
+=====================
+Chapel Testing System
+=====================
+
+In addition to the code files themselves, this directory contains
+files used by our regression testing infrastructure to automatically
+compile, run, and test sample codes.  For a test foo.chpl, the
+following files may also exist:
+
+     foo.compopts       : command-line options for compiling the test
+     foo.comm-none.good : the expected output for CHPL_COMM=none testing,
+                          if it differs from the output when multiple
+                          locales are enabled (e.g. CHPL_COMM=gasnet);
+                          (see also foo.good)
+     foo.execopts       : command-line options for executing the test
+     foo.good           : the expected output for the test
+                          (foo.good does not apply when CHPL_COMM=none
+                          if foo.comm-none.good is also present)
+     foo.graph          : specifies how to draw graphs from the results of
+                          performance-oriented runs
+     foo.notest         : indicates that foo.chpl should not be tested
+                          on its own (e.g., because it is a helper module)
+     foo.numlocales     : number of locales on which to test foo.chpl
+     foo.perfkeys       : indicates keys that are used to identify values of
+                          interest in performance-oriented runs
+     foo.prediff        : script that is run before test output is compared
+     foo.skipif         : conditions under which this test should be skipped
+     foo.timeout        : kill the test if this much time passes
+
+     foo.ml-*           : files similar to those listed above, but used for
+                          multilocale performance testing
+
+
+---------------------
+Using the test system
+---------------------
+
+To launch the test system, make sure you're in the examples directory
+and run:
+
+     ./start_test
+
+This will cause all of the tests in this directory to be compiled and
+executed in a correctness-testing mode, printing out a summary at the
+end and creating log files for the test run in a Logs/ subdirectory.
+
+You can also run the testing system in a performance-oriented mode
+using:
+
+     ./start_test -performance
+
+This executes tests that have a .perfkeys file and places the
+performance results flagged by the list of keys into a file under the
+test's directory named perfdat/<machine_name>/<test_name>.dat.
+
+Some other useful ways to run the test system are:
+
+     ./start_test <list of files to test> <list of directories to test>
+
+These commands run the test system starting from a single directory,
+or on a single test, respectively.
+
+For a list of other test system options, use:
+
+     ./start_test -help
+
+
+--------------------
+For more information
+--------------------
+
+See file: $CHPL_HOME/doc/rst/developer/bestPractices/TestSystem.rst

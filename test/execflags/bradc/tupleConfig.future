@@ -1,0 +1,6 @@
+error message: config vars of non-primitive types
+
+A future showing that config vars of tuples are not
+currently permitted (and that the error message is
+confusing).  It would be nice to support these, but
+in either case, this needs to be cleaned up.

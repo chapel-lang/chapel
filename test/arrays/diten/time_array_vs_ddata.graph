@@ -1,0 +1,5 @@
+perfkeys: array, ddata
+files: time_array_vs_ddata.dat, time_array_vs_ddata.dat
+ylabel: Time (seconds)
+graphname: time_array_vs_ddata
+graphtitle: array vs ddata serial accesses

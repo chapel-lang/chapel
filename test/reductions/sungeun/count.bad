@@ -1,0 +1,1 @@
+count.chpl:33: error: 'reduce' expressions where the reduction is defined by a value, not a type, are currently not implemented; a workaround is to replace it with a forall loop with a reduce intent

@@ -1,0 +1,13 @@
+0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
+0 0 0 0 0
+0 0 0 0 0
+0 0 0 0 0
+0 0 0 0 0
+0 0 0 0 0
+0 0 0 0 0
+0 0 0 0 0
+0 0 0 0 0
+0 0 0 0 0
+0 0 0 0 0
+negStrideArr.chpl:1: warning: arrays with negatively strided dimensions are not particularly stable
+negStrideArr.chpl:2: warning: arrays with negatively strided dimensions are not particularly stable

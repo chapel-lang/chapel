@@ -1,0 +1,12 @@
+color red red red
+color green green green
+color blue blue blue
+size small small small 1 small
+size medium medium medium 2 medium
+size large large large 3 large
+gender female female female 2 female
+gender male male male 1 male
+gender decline decline decline
+mode rw rw rw 6 rw
+mode read read read 4 read
+mode write write write 2 write

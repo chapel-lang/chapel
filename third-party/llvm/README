@@ -1,0 +1,72 @@
+=======================
+LLVM for Chapel release
+=======================
+
+This copy of LLVM 11.0.1 is being released with Chapel for
+convenience and was obtained from
+
+https://www.llvm.org/
+
+Two Chapel-related changes were made to this copy of the code.
+The LLVM test subdirectories were deleted, and the CMakeLists.txt file
+was edited not to require the deleted tests.
+
+Any Chapel issues that seem to be related to LLVM should be directed
+to the Chapel team at https://chapel-lang.org/bugs.html.
+
+Using LLVM with Chapel
+======================
+
+Chapel can be built (by setting CHPL_LLVM=bundled) to include LLVM
+in order to enable extern block support and LLVM code generation.
+
+For more information on the current support for LLVM within Chapel,
+please refer to $CHPL_HOME/doc/rst/technotes/llvm.rst.  For more
+information about LLVM itself, please refer to the website above or to
+the README in the llvm-src/ subdirectory of this directory.
+
+Chapel modifications to LLVM
+============================
+
+The modifications that we have made to the official LLVM release are
+as follows:
+
+* The llvm-src/test and llvm-src/tools/clang/test directories were
+  deleted because we do not use them.  Their deletion saves
+  significant space and checkout time.
+
+Our deletion of the test directories as noted above makes the
+following patch necessary.
+
+* The llvm-src/CMakeLists.txt file was edited to set
+  LLVM_INCLUDE_TESTS to OFF by default instead of ON.  It is necessary
+  to make this change instead of passing -DLLVM_INCLUDE_TESTS=OFF to
+  cmake because Clang's build procedure does not always preserve this
+  flag.  With this change made, the appropriate line in
+  llvm-src/CMakeLists.txt looks like the following:
+option(LLVM_INCLUDE_TESTS "Generate build targets for the LLVM unit tests." OFF)
+
+Upgrading LLVM versions
+=======================
+
+The directory $CHPL_HOME/third-party/llvm/llvm-src/ contains the
+un-tarballed LLVM package contents.  Version updates should be done as
+follows, assuming CWD is $CHPL_HOME/third-party/llvm/:
+
+1.  un-tarball the new LLVM version into the directory it specifies,
+    for example llvm-11.0.1.src
+2.  un-tarball the new Clang version into the directory it specifies,
+    for example clang-11.0.1.src
+3.  mv clang-11.0.1.src llvm-11.0.1.src/tools/clang
+4.  git rm -r llvm-src
+5.  mv llvm-11.0.1.src llvm-src
+6.  rm -r llvm-src/test llvm-src/tools/clang/test
+7.  git add --force llvm-src
+    ('--force' is needed to ensure git adds all files in the subdirectory)
+8.  update the LLVM_VERSION file to contain the first two components
+    of the new LLVM version number, e.g. 11.0
+9. update $CHPL_HOME/doc/rst/usingchapel/chplenv.rst for the new LLVM version
+10. commit
+11. update the new sources by re-applying any needed patches (see above)
+    and commit
+12. PR, merge, etc.

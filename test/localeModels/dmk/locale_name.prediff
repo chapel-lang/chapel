@@ -1,0 +1,11 @@
+#! /usr/bin/env bash
+COMM=`$CHPL_HOME/util/chplenv/chpl_comm.py`
+SUB=`$CHPL_HOME/util/chplenv/chpl_comm_substrate.py`
+COMM_SUB="$COMM-$SUB"
+if [ "$COMM_SUB" = "gasnet-udp" -a "$GASNET_SPAWNFN" = "L" ]; then
+    echo "matches nodeName-nodeID" >$1.good
+elif [ "$COMM_SUB" = "gasnet-smp" ]; then
+    echo "matches nodeName-nodeID" >$1.good
+else
+    echo "matches nodeName" >$1.good
+fi

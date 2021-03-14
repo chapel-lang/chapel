@@ -1,0 +1,1 @@
+scalarArrMismatch.chpl:4: error: cannot initialize a value of type 'real(32)' from a 'real(64)'

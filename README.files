@@ -1,0 +1,32 @@
+=====================================================
+Chapel Compiler Release Directory Structure and Files
+=====================================================
+
+The following list gives an overview of $CHPL_HOME's directory
+structure.  Most subdirectories contain a README file to provide
+further information about the files and directories that they contain.
+
+./
+  README.rst           : top-level README
+  ACKNOWLEDGEMENTS.md  : organizations who have supported this work
+  CHANGES.md           : a list of changes in each release
+  CONTRIBUTORS.md      : a list of contributors to the Chapel project
+  COPYRIGHT            : copyright information
+  LICENSE              : license information for the Chapel release as a whole
+  LICENSE.chapel       : license statement for the Chapel implementation itself
+  README.files         : this file
+  Makefile             : top-level Makefile for building things
+  bin/                 : location of the compiler (chpl) once it's been built
+  compiler/            : source code for the compiler
+  configure            : autotools-like configure script, used with make install
+  doc/                 : documentation and READMEs
+  examples/            : example Chapel codes
+  highlight/           : syntax coloring modes for emacs, vim, source-highlight
+  lib/                 : stores the runtime and launcher libraries, once built
+  make/                : Makefile settings for various compilers and platforms
+  man/                 : man pages for the Chapel compiler (chpl)
+  modules/             : standard and internal Chapel modules
+  runtime/             : source code for Chapel's runtime libraries
+  third-party/         : third-party software used by Chapel
+  tools/               : tools that can be used with Chapel programs
+  util/                : utility scripts

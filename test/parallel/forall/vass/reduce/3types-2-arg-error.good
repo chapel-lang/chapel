@@ -1,0 +1,2 @@
+3types-2-arg-error.chpl:43: In function 'main':
+3types-2-arg-error.chpl:46: error: for a reduce intent, the 'reduce' keyword must be preceded by the reduction operator or the name of the reduction class with the single optional argument indicating the type of the reduction input

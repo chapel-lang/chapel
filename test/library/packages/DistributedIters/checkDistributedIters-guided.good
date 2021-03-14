@@ -1,0 +1,238 @@
+Default tests, serial:
+Testing a range, non-strided (serial)...
+Result: pass
+Testing a range, strided (serial)...
+Result: pass
+Testing a domain, non-strided (serial)...
+Result: pass
+Testing a domain, strided (serial)...
+Result: pass
+
+Default tests, zippered:
+Testing a range, non-strided (zippered)...
+DistributedIters: distributedGuided:
+  coordinated = false
+  numLocales = 4
+  numWorkerLocales = 4
+  numActualWorkerLocales = 4
+  masterLocale.id = 0
+  actualWorkerLocaleIds = [ 0, 1, 2, 3 ]
+Result: pass
+Testing a range, strided (zippered)...
+DistributedIters: distributedGuided:
+  coordinated = false
+  numLocales = 4
+  numWorkerLocales = 4
+  numActualWorkerLocales = 4
+  masterLocale.id = 0
+  actualWorkerLocaleIds = [ 0, 1, 2, 3 ]
+Result: pass
+Testing a domain, non-strided (zippered)...
+DistributedIters: distributedGuided:
+  coordinated = false
+  numLocales = 4
+  numWorkerLocales = 4
+  numActualWorkerLocales = 4
+  masterLocale.id = 0
+  actualWorkerLocaleIds = [ 0, 1, 2, 3 ]
+Result: pass
+Testing a domain, strided (zippered)...
+DistributedIters: distributedGuided:
+  coordinated = false
+  numLocales = 4
+  numWorkerLocales = 4
+  numActualWorkerLocales = 4
+  masterLocale.id = 0
+  actualWorkerLocaleIds = [ 0, 1, 2, 3 ]
+Result: pass
+
+Default tests, coordinated mode:
+Testing a range, non-strided (zippered)...
+DistributedIters: distributedGuided:
+  coordinated = true
+  numLocales = 4
+  numWorkerLocales = 4
+  numActualWorkerLocales = 3
+  masterLocale.id = 0
+  actualWorkerLocaleIds = [ 1, 2, 3 ]
+Result: pass
+Testing a range, strided (zippered)...
+DistributedIters: distributedGuided:
+  coordinated = true
+  numLocales = 4
+  numWorkerLocales = 4
+  numActualWorkerLocales = 3
+  masterLocale.id = 0
+  actualWorkerLocaleIds = [ 1, 2, 3 ]
+Result: pass
+Testing a domain, non-strided (zippered)...
+DistributedIters: distributedGuided:
+  coordinated = true
+  numLocales = 4
+  numWorkerLocales = 4
+  numActualWorkerLocales = 3
+  masterLocale.id = 0
+  actualWorkerLocaleIds = [ 1, 2, 3 ]
+Result: pass
+Testing a domain, strided (zippered)...
+DistributedIters: distributedGuided:
+  coordinated = true
+  numLocales = 4
+  numWorkerLocales = 4
+  numActualWorkerLocales = 3
+  masterLocale.id = 0
+  actualWorkerLocaleIds = [ 1, 2, 3 ]
+Result: pass
+
+Even locales only:
+Testing a range, non-strided (zippered)...
+DistributedIters: distributedGuided:
+  coordinated = false
+  numLocales = 4
+  numWorkerLocales = 2
+  numActualWorkerLocales = 2
+  masterLocale.id = 0
+  actualWorkerLocaleIds = [ 0, 2 ]
+Result: pass
+Testing a range, strided (zippered)...
+DistributedIters: distributedGuided:
+  coordinated = false
+  numLocales = 4
+  numWorkerLocales = 2
+  numActualWorkerLocales = 2
+  masterLocale.id = 0
+  actualWorkerLocaleIds = [ 0, 2 ]
+Result: pass
+Testing a domain, non-strided (zippered)...
+DistributedIters: distributedGuided:
+  coordinated = false
+  numLocales = 4
+  numWorkerLocales = 2
+  numActualWorkerLocales = 2
+  masterLocale.id = 0
+  actualWorkerLocaleIds = [ 0, 2 ]
+Result: pass
+Testing a domain, strided (zippered)...
+DistributedIters: distributedGuided:
+  coordinated = false
+  numLocales = 4
+  numWorkerLocales = 2
+  numActualWorkerLocales = 2
+  masterLocale.id = 0
+  actualWorkerLocaleIds = [ 0, 2 ]
+Result: pass
+
+Odd locales only:
+Testing a range, non-strided (zippered)...
+DistributedIters: distributedGuided:
+  coordinated = false
+  numLocales = 4
+  numWorkerLocales = 2
+  numActualWorkerLocales = 2
+  masterLocale.id = 0
+  actualWorkerLocaleIds = [ 1, 3 ]
+Result: pass
+Testing a range, strided (zippered)...
+DistributedIters: distributedGuided:
+  coordinated = false
+  numLocales = 4
+  numWorkerLocales = 2
+  numActualWorkerLocales = 2
+  masterLocale.id = 0
+  actualWorkerLocaleIds = [ 1, 3 ]
+Result: pass
+Testing a domain, non-strided (zippered)...
+DistributedIters: distributedGuided:
+  coordinated = false
+  numLocales = 4
+  numWorkerLocales = 2
+  numActualWorkerLocales = 2
+  masterLocale.id = 0
+  actualWorkerLocaleIds = [ 1, 3 ]
+Result: pass
+Testing a domain, strided (zippered)...
+DistributedIters: distributedGuided:
+  coordinated = false
+  numLocales = 4
+  numWorkerLocales = 2
+  numActualWorkerLocales = 2
+  masterLocale.id = 0
+  actualWorkerLocaleIds = [ 1, 3 ]
+Result: pass
+
+Even locales only, coordinated mode:
+Testing a range, non-strided (zippered)...
+DistributedIters: distributedGuided:
+  coordinated = true
+  numLocales = 4
+  numWorkerLocales = 2
+  numActualWorkerLocales = 1
+  masterLocale.id = 0
+  actualWorkerLocaleIds = [ 2 ]
+Result: pass
+Testing a range, strided (zippered)...
+DistributedIters: distributedGuided:
+  coordinated = true
+  numLocales = 4
+  numWorkerLocales = 2
+  numActualWorkerLocales = 1
+  masterLocale.id = 0
+  actualWorkerLocaleIds = [ 2 ]
+Result: pass
+Testing a domain, non-strided (zippered)...
+DistributedIters: distributedGuided:
+  coordinated = true
+  numLocales = 4
+  numWorkerLocales = 2
+  numActualWorkerLocales = 1
+  masterLocale.id = 0
+  actualWorkerLocaleIds = [ 2 ]
+Result: pass
+Testing a domain, strided (zippered)...
+DistributedIters: distributedGuided:
+  coordinated = true
+  numLocales = 4
+  numWorkerLocales = 2
+  numActualWorkerLocales = 1
+  masterLocale.id = 0
+  actualWorkerLocaleIds = [ 2 ]
+Result: pass
+
+Odd locales only, coordinated mode:
+Testing a range, non-strided (zippered)...
+DistributedIters: distributedGuided:
+  coordinated = true
+  numLocales = 4
+  numWorkerLocales = 2
+  numActualWorkerLocales = 2
+  masterLocale.id = 0
+  actualWorkerLocaleIds = [ 1, 3 ]
+Result: pass
+Testing a range, strided (zippered)...
+DistributedIters: distributedGuided:
+  coordinated = true
+  numLocales = 4
+  numWorkerLocales = 2
+  numActualWorkerLocales = 2
+  masterLocale.id = 0
+  actualWorkerLocaleIds = [ 1, 3 ]
+Result: pass
+Testing a domain, non-strided (zippered)...
+DistributedIters: distributedGuided:
+  coordinated = true
+  numLocales = 4
+  numWorkerLocales = 2
+  numActualWorkerLocales = 2
+  masterLocale.id = 0
+  actualWorkerLocaleIds = [ 1, 3 ]
+Result: pass
+Testing a domain, strided (zippered)...
+DistributedIters: distributedGuided:
+  coordinated = true
+  numLocales = 4
+  numWorkerLocales = 2
+  numActualWorkerLocales = 2
+  masterLocale.id = 0
+  actualWorkerLocaleIds = [ 1, 3 ]
+Result: pass
+

@@ -1,0 +1,2 @@
+-M../../../release/examples/benchmarks/hpcc -suseLCG=false
+-M../../../release/examples/benchmarks/hpcc                  # testRAStream-LCG.good

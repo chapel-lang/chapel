@@ -1,0 +1,2 @@
+mismatched-param-type-error.chpl:6: In function 'main':
+mismatched-param-type-error.chpl:10: error: Cannot assign to borrowed G1(1) from borrowed G1(1:uint(64))

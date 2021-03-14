@@ -1,0 +1,23 @@
+.. default-domain:: chpl
+
+.. module:: specifiedDefault.doc
+
+specifiedDefault.doc
+====================
+**Usage**
+
+.. code-block:: chapel
+
+   use specifiedDefault.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import specifiedDefault.doc;
+
+.. function:: proc found()
+
+   This comment should be seen 
+

@@ -1,0 +1,67 @@
+.. default-domain:: chpl
+
+.. module:: basic.doc
+
+basic.doc
+=========
+**Usage**
+
+.. code-block:: chapel
+
+   use basic.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import basic.doc;
+
+.. data:: config var isInt: int
+
+   Comment for config var that is an int 
+
+.. data:: config var isIntCommentless: int
+
+.. data:: config var isReal: real
+
+   Comment for config var that is a real 
+
+.. data:: config var isRealCommentless: real
+
+.. data:: config var isBool: bool
+
+   Comment for config var that is a bool 
+
+.. data:: config var isBoolCommentless: bool
+
+.. data:: config var isString: string
+
+   Comment for config var that is a string 
+
+.. data:: config var isStringCommentless: string
+
+.. data:: config var isComplex: complex
+
+   Comment for config var that is a complex number 
+
+.. data:: config var isComplexCommentless: complex
+
+.. data:: config var isUint: uint
+
+   Comment for config var that is a uint 
+
+.. data:: config var isUintCommentless: uint
+
+.. data:: config var isImag: imag
+
+   Comment for config var that is an imaginary number 
+
+.. data:: config var isImagCommentless: imag
+
+.. data:: config var longComment: int
+
+   This comment is rather long
+   And spans for
+   Multiple lines 
+

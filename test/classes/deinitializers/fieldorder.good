@@ -1,0 +1,41 @@
+checking helpers F1-F4
+F4.deinit()
+F3.deinit()
+F2.deinit()
+F1.deinit()
+checking field order in RR
+F2.deinit()
+F1.deinit()
+checking field order in CC
+F2.deinit()
+F1.deinit()
+checking field order in DD, child of CC
+ dd1
+F4.deinit()
+F3.deinit()
+F2.deinit()
+F1.deinit()
+ dd2
+F4.deinit()
+F3.deinit()
+F2.deinit()
+F1.deinit()
+ dd3 - true
+F4.deinit()
+F3.deinit()
+F2.deinit()
+F1.deinit()
+ dd3 - false
+F2.deinit()
+F1.deinit()
+checking field and deinit order in EE
+EE.deinit()
+F2.deinit()
+F1.deinit()
+checking field and deinit order in FF, child of EE
+FF.deinit()
+F4.deinit()
+F3.deinit()
+EE.deinit()
+F2.deinit()
+F1.deinit()

@@ -1,0 +1,27 @@
+feature request: Protect user from integer overflow oddities.
+
+Chapel should have well-specified behavior w.r.t. integer overflow, so that this
+can be implemented consistently across all platforms.  Some options are:
+ 1. Always roll over silently
+     max(int(64)) + 1 == min(int(64))
+     max(uint(64)) + 1 == min(uint(64)), etc.
+ 2. Check for integer overflow after each integer operation.
+ 3. Throw an integer overflow exception (very future).
+
+The choice among these could be made in response to compiler options, e.g. warn
+the user if integer overflow actually occurs at runtime if debug mode is set,
+and simply accept the behavior of the underlying C implementation and/or runtime
+if optimizations are enabled (--fast).
+
+Option 2 is very intrusive, but a possible intermediate step before exceptions
+are available in the language.  Most processors generate an overflow bit that
+can be checked (e.g. by an intrinsic instruction) within the thread of
+execution.
+
+Option 3 is enabled if the hardware supports the generation of an integer
+overflow exception.  The OS must further support installing a signal handler to
+capture these execeptions and deliver them to the running thread.  It is far
+less intrusive, since the exception only happens if integer overflow actually
+occurs (but might be difficult for integer widths other than the processor's
+register width).
+

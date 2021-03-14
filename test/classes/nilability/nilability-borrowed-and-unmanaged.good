@@ -1,0 +1,25 @@
+
+cu:unmanaged Child
+cuq:unmanaged Child?
+cb:borrowed Child
+cbq:borrowed Child?
+
+Passing cu
+abd borrowed Child
+abq borrowed Child?
+abb borrowed Child
+aud unmanaged Child
+auq unmanaged Child?
+aub unmanaged Child
+Passing cuq
+abd borrowed Child?
+abq borrowed Child?
+aud unmanaged Child?
+auq unmanaged Child?
+Passing cb
+abd borrowed Child
+abq borrowed Child?
+abb borrowed Child
+Passing cbq
+abd borrowed Child?
+abq borrowed Child?

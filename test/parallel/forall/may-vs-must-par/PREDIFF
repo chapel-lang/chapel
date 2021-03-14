@@ -1,0 +1,11 @@
+#!/bin/bash
+
+# 
+case "$2" in
+  (f5-promo-e*)
+    grep -v ': note: ' $2 > $2.tmp
+    mv $2.tmp $2
+    ;;
+
+  (*) true;;
+esac

@@ -1,0 +1,3 @@
+uncaught IllegalArgumentError: Infinite iteration not supported for parallel loops.
+  check_infinite_halt.chpl:6: thrown here
+  check_infinite_halt.chpl:6: uncaught here

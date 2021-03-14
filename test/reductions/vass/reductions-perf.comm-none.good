@@ -1,0 +1,6 @@
+1 locale(s)   dist: DR  sizes: 1000000 4096 4096 4096  reps: 10
+success  single reduction 1d: 
+success  multiple reductions 1d: 
+success  multiple reductions 2d: 
+success  multiple reductions 3d: 
+all tests succeeded

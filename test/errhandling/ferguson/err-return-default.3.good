@@ -1,0 +1,5 @@
+(y = (x = 1))
+(y = (x = 2))
+deinit 2
+deinit 1
+StringError: test error

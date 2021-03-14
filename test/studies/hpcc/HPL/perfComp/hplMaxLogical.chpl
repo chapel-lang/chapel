@@ -1,0 +1,1 @@
+../../../../release/examples/benchmarks/hpcc/hpl.chpl

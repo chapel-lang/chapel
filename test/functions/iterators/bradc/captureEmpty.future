@@ -1,0 +1,4 @@
+bug: capturing yield-less iterators causes compiler segfault
+
+This test shows that when an iterator with no yields is captured as an
+array, we get a segfault in the compiler.

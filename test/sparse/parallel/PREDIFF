@@ -1,0 +1,24 @@
+#!/bin/bash
+
+outfile=$2
+
+case $outfile in
+  (sparseArray5.*)
+     # sort it
+     sort $outfile > $outfile.tmp
+     mv $outfile.tmp $outfile
+     ;;
+  (sparse-iter-performance.*)
+     # smooth out the timings
+     cat $outfile | sed 's@ -*[0-9][0-9.]* ms@ XXX ms@' > $outfile.tmp
+     mv $outfile.tmp $outfile
+     ;;
+  (sparse-csr-simple-dom-manips.* | sparse-default-simple-dom-manips.*)
+     # sort it and remove the line number from the out-of-bounds error
+     sort -n $outfile | sed 's@^.*halt reached@halt reached@' > $outfile.tmp
+     mv $outfile.tmp $outfile
+     ;;
+  (*)
+     # nothing so far
+     true ;;
+esac

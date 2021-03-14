@@ -1,0 +1,1 @@
+-sbarrierMode=LocalAtomic -snumTrials=500000 -sprintTimings=true  # empty-local-atomic-barrier

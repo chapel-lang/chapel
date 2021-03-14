@@ -1,0 +1,19 @@
+C(): borrowed C
+new C(): {x = 1, y = 2}
+new C():D: {x = 1, y = 2}
+new C():D**2: 1..2
++ reduce new C():D**2: 3
+~ + reduce new C():D**2: -4
+~ + reduce new C():D**2 * 4: -16
+- ~ + reduce new C():D**2 * 4: 16
+- ~ + reduce new C():D**2 * 4 + 5: 21
+- ~ + reduce new C():D**2 * 4 + 5 << 2: 36
+- ~ + reduce new C():D**2 * 4 + 5 << 2 <= 85: true
+- ~ + reduce new C():D**2 * 4 + 5 << 2 <= 85 == false: false
+- ~ + reduce new C():D**2 * 4 + 5 << 2 <= 85 == false | true: true
+- ~ + reduce new C():D**2 * 4 + 5 << 2 <= 85 == false | true && false: false
+- ~ + reduce new C():D**2 * 4 + 5 << 2 <= 85 == false | true && false || true: true
+(- ~ + reduce new C():D**2 * 4 + 5 << 2 <= 85 == false | true && false || true) .. 5: 1..5
+(- ~ + reduce new C():D**2 * 4 + 5 << 2 <= 85 == false | true && false || true) .. 5 by 2: 1..5 by 2
+for i in (- ~ + reduce new C():D**2 * 4 + 5 << 2 <= 85 == false | true && false || true) .. 5 by 2 do i: 1 3 5
+for i in (- ~ + reduce new C():D**2 * 4 + 5 << 2 <= 85 == false | true && false || true) .. 5 by 2 do i, 0: 1 3 50

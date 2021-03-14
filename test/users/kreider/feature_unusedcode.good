@@ -1,0 +1,2 @@
+bug_unusedcode.chpl:3: In function 'unused':
+bug_unusedcode.chpl:4: error: type mismatch in assignment from int(64) to bool

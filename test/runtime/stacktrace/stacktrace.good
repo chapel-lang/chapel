@@ -1,0 +1,8 @@
+stacktrace.chpl:2: error: halt reached
+Stacktrace
+
+halt() at $CHPL_HOME/modules/internal/ChapelIO.chpl:nnnn
+a() at stacktrace.chpl:1
+b() at stacktrace.chpl:5
+c() at stacktrace.chpl:9
+chpl__init_stacktrace() at stacktrace.chpl:1

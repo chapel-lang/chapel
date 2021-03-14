@@ -1,0 +1,2 @@
+wrongArgCount.chpl:2: error: C.init= must have exactly one argument
+wrongArgCount.chpl:4: error: C.init= must have exactly one argument

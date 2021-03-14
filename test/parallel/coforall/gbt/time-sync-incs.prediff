@@ -1,0 +1,14 @@
+#!/usr/bin/env python3
+import sys, re, shutil
+
+test_name = sys.argv[1]
+out_file = sys.argv[2]
+tmp_file = out_file+'.prediff.tmp'
+
+with open(tmp_file, 'w') as tf:
+    with open(out_file) as of:
+        for line in of:
+            line = re.sub(r'^[0-9]+ ([a-z ]*) [0-9.e+]+ ([a-z ]*)$', r'N \1 T1 \2', line)
+            line = re.sub(r'^[0-9.e+]+ ([a-z ]*)$', r'T2 \1', line)
+            tf.write(line)
+shutil.move(tmp_file, out_file)

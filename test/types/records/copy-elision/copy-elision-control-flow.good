@@ -1,0 +1,157 @@
+test1a
+init 1 1
+(1 1)
+deinit 1 1
+test1b
+init 1 1
+(1 1)
+deinit 1 1
+test2
+init 1 1
+deinit 1 1
+test3
+init 1 1
+deinit 1 1
+test4a
+init 1 1
+init= 1 1
+deinit 1 1
+deinit 1 1
+test4b
+init 1 1
+init= 1 1
+deinit 1 1
+deinit 1 1
+test4c
+init 1 1
+init= 1 1
+deinit 1 1
+deinit 1 1
+test4d
+init 1 1
+init= 1 1
+deinit 1 1
+deinit 1 1
+test4e
+init 1 1
+init= 1 1
+deinit 1 1
+deinit 1 1
+test5a
+init 1 1
+init= 1 1
+deinit 1 1
+deinit 1 1
+test5b
+init 1 1
+init= 1 1
+deinit 1 1
+deinit 1 1
+test5c
+init 1 1
+init= 1 1
+deinit 1 1
+deinit 1 1
+test5d
+init 1 1
+init= 1 1
+deinit 1 1
+deinit 1 1
+test6a
+init 1 1
+deinit 1 1
+test6b
+init 1 1
+deinit 1 1
+test7a
+init 1 1
+deinit 1 1
+test7b
+init 1 1
+deinit 1 1
+test7c
+init 1 1
+deinit 1 1
+test7d
+init 1 1
+deinit 1 1
+test8a
+init 1 1
+deinit 1 1
+Error: 
+test8b
+init 1 1
+deinit 1 1
+Error: 
+test8c
+init 1 1
+deinit 1 1
+test8d
+init 1 1
+deinit 1 1
+test9a
+init 1 1
+deinit 1 1
+test9b
+init 1 1
+deinit 1 1
+test9c
+init 1 1
+deinit 1 1
+test9d
+init 1 1
+deinit 1 1
+test11
+init 1 1
+deinit 1 1
+test12
+init 1 1
+init= 1 1
+deinit 1 1
+deinit 1 1
+test13a
+init 1 1
+deinit 1 1
+test13b
+init 1 1
+deinit 1 1
+test13c
+init 1 1
+deinit 1 1
+Error: 
+test13d
+init 1 1
+deinit 1 1
+test14a
+init 1 1
+deinit 1 1
+test14b
+init 1 1
+deinit 1 1
+test14c
+init 1 1
+deinit 1 1
+Error: 
+test14d
+init 1 1
+deinit 1 1
+Error: 
+test15
+init 1 1
+deinit 1 1
+test16a
+init 1 1
+init= 1 1
+deinit 1 1
+deinit 1 1
+test16b
+init 1 1
+deinit 1 1
+test16c
+init 1 1
+deinit 1 1
+test16d
+init 1 1
+init= 1 1
+deinit 1 1
+deinit 1 1

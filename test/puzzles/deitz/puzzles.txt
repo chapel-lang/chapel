@@ -1,0 +1,95 @@
+All Ireland Schools Programming Competition (1994)
+
+Problem 1. Horizontal Histogram
+
+Write a program that accepts a set of digits (0 to 9) as input and
+prints a horizontal histogram representing the occurrences of each
+digit.
+
+Test your program with the set of 13 digits:
+1, 7, 2 ,9 ,6, 7, 1, 3, 7, 5, 7, 9, 0
+
+Example
+
+Enter a Number : 12
+Enter 12 digits:
+1,7,2,9,6,7,1,3,7,5,7,9
+ 
+0
+1 **
+2 *
+3 *
+4
+5 *
+6 *
+7 ****
+8
+9 **
+
+Problem 2. Vertical Histogram
+
+Write a program that accepts a set of digits (0 to 9) as input and
+prints a vertical histogram representing the occurrences of each
+digit.
+
+Test your program with the set of 13 digits:
+1, 7, 2 ,9 ,6, 7, 1, 3, 7, 5, 7, 9, 0
+
+Example
+
+Enter a Number : 12
+Enter 12 digits:
+1,7,2,9,6,7,1,3,7,5,7,9
+
+       *
+       *
+ *     * *
+ *** *** *
+0123456789
+
+Problem 3. Roman Numerals
+
+Write a program that reads in a roman numeral and converts the number
+to normal decimal. The roman characters are :
+
+M = 1000, D = 500, C = 100, L = 50, X = 10, V = 5, I = 1
+
+Test your program with the following values : V (5), IV (4), VIII (8),
+MM (2000), MCM (1900), MCMXCIV (1994).
+
+Example
+
+Enter a roman numeral : VIII
+VIII is 8.
+
+ACS Australian Programming Competition (1995)
+
+Problem 1. Digits
+
+If you take the number 6174, and arrange its digits to form the
+biggest and smallest numbers, and then subtract these two, you get the
+number 6174 back again. That is, 7641 - 1467 = 6174. Other four digit
+numbers whose digits are not all the same will form other
+numbers. However, if you apply this process multiple times to any of
+these numbers, you will eventually end up with the number 6174.
+
+Transformations such as the one described above, when applied
+repeatedly in this manner, will eventually hit upon repeating
+sequences of numbers. In the case of the transformation described
+above applied to 4 digit numbers whose digits are not all the same,
+repeated application results in striking the single element sequence
+containing 6174. If we used 6 digit numbers, some starting numbers
+would result in the repeating sequence 840852, 860832, 862632, 642654,
+420876, 851742, 750843, and other starting numbers would result in the
+single element sequence 631764.
+
+Your task is to determine all sequences in 8 digit numbers whose
+digits are not all the same, when the transformation described above
+is applied repeatedly. Your output should consist of a line containing
+the number of sequences, followed by each sequence on a line. The
+sequences should be listed in ascending numerical order, with the
+ordering done on the smallest number in each sequence. Each sequence
+line should contain the smallest number in the sequence, and the
+length of each sequence including the first number.
+
+There is no input required for this problem.

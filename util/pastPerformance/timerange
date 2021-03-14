@@ -1,0 +1,23 @@
+#!/usr/bin/env perl
+
+if (@ARGV) {
+    $numdays = shift @ARGV;
+    if (@ARGV) {
+        $startback = shift @ARGV;
+    } else {
+        $startback = 0;
+    }
+} else {
+    print "countrange <numdays> [<startback>]\n";
+    exit 1;
+}
+
+$i = $numdays;
+for ($i = 0; $i < $numdays; $i++) {
+    $day = $i + $startback;
+    $date = `date --date="$day days ago" +%D`; chomp($date);
+#    print "$date\n";
+    print "Running getoldperf $date\n";
+    system("getoldperf $date");
+}
+

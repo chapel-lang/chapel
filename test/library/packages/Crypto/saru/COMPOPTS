@@ -1,0 +1,15 @@
+#!/usr/bin/env python3
+
+import subprocess
+
+pkg, opts = 'libcrypto', ''
+cflags = subprocess.check_output('pkg-config --cflags %s' % pkg, shell=True).rstrip()
+lflags = subprocess.check_output('pkg-config --libs %s' % pkg, shell=True).rstrip()
+
+if cflags:
+    opts += '--ccflags %s ' % cflags
+
+if lflags:
+    opts += '--ldflags %s ' % lflags
+
+print(opts)

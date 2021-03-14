@@ -1,0 +1,4 @@
+init serial:
+init nested forall:
+init for-forall:
+init forall-for:

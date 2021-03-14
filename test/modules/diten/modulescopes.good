@@ -1,0 +1,2 @@
+modulescopes.chpl:11: In function 'main':
+modulescopes.chpl:13: error: Symbol 'a' undeclared in module 'M3'

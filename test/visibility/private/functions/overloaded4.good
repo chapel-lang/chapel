@@ -1,0 +1,2 @@
+overloaded4.chpl:14: In function 'main':
+overloaded4.chpl:15: error: Cannot access 'aproc', 'aproc' is private to 'A'

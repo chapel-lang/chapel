@@ -1,0 +1,8 @@
+leadingUnderscore.chpl:11: warning: Symbol names with leading underscores (_Underscore_) are unstable.
+leadingUnderscore.chpl:2: warning: Symbol names with leading underscores (_t) are unstable.
+leadingUnderscore.chpl:4: In function '_myPrivateFn':
+leadingUnderscore.chpl:4: warning: Symbol names with leading underscores (_myPrivateFn) are unstable.
+leadingUnderscore.chpl:5: warning: Symbol names with leading underscores (_doNotLookAtMe) are unstable.
+leadingUnderscore.chpl:6: warning: Symbol names with leading underscores (_nope) are unstable.
+leadingUnderscore.chpl:7: warning: Symbol names with leading underscores (_____a) are unstable.
+leadingUnderscore.chpl:8: warning: Symbol names with leading underscores (_____b) are unstable.

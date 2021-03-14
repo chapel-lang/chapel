@@ -1,0 +1,1 @@
+test_min_and_max_range_iteration.chpl:30: error: halt reached - Iteration over a bounded range may be incorrect due to overflow.

@@ -1,0 +1,3 @@
+#!/bin/bash
+output=$2
+sort -u test.dat > $output

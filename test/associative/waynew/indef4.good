@@ -1,0 +1,8 @@
+contains(2) = true
+contains(49998) = true
+contains(49999) = false
+contains(50000) = false
+contains(99999) = false
+contains(100000) = false
+contains(100001) = false
+contains(25000) = true

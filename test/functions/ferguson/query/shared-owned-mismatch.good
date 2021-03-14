@@ -1,0 +1,3 @@
+shared-owned-mismatch.chpl:16: error: unresolved call 'g(Wrapper(shared GenericClass(int(64))))'
+shared-owned-mismatch.chpl:10: note: this candidate did not match: g(x: Wrapper(owned GenericClass))
+shared-owned-mismatch.chpl:10: note: because an argument was incompatible

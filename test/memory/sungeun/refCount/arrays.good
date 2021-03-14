@@ -1,0 +1,36 @@
+Calling create_literal():
+	0 bytes leaked
+Calling return_literal():
+	0 bytes leaked
+Calling return_literal() with assignment:
+	0 bytes leaked
+Calling create_alias():
+	0 bytes leaked
+Calling return_alias():
+	0 bytes leaked
+Calling return_alias() with assignment:
+	0 bytes leaked
+Calling create_slice():
+	0 bytes leaked
+Calling return_slice():
+	0 bytes leaked
+Calling return_slice() with assignment:
+	0 bytes leaked
+Calling pass_original() for slice:
+	0 bytes leaked
+Calling return_original() for slice:
+	0 bytes leaked
+Calling return_original for slice with assignment:
+	0 bytes leaked
+Calling pass_original() with reindex:
+	0 bytes leaked
+Calling return_original() with reindex:
+	0 bytes leaked
+Calling return_original() with reindex and assignment:
+	0 bytes leaked
+Calling create_reindex():
+	0 bytes leaked
+Calling return_reindex():
+	0 bytes leaked
+Calling return_reindex() with assignment:
+	0 bytes leaked

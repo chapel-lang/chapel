@@ -1,0 +1,5 @@
+perfkeys: Elapsed time:
+graphkeys: local atomic barrier
+files: empty-local-atomic-barrier.dat
+graphtitle: Empty Barrier Timings (500,000 x maxTaskPar)
+ylabel: Time (seconds)

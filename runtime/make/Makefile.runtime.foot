@@ -1,0 +1,75 @@
+# Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+# Copyright 2004-2019 Cray Inc.
+# Other additional copyright holders may be indicated within.
+# 
+# The entirety of this work is licensed under the Apache License,
+# Version 2.0 (the "License"); you may not use this file except
+# in compliance with the License.
+# 
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#
+# recursive subdirectory rules
+#
+
+STARS = \*\*\*\*\*
+
+echoruntimedir:
+	@echo $(STARS) $(RUNTIME_SUBDIR)/ $(STARS)
+
+%.makedir:
+	@cd $* && $(MAKE)
+
+%.cleandir:
+	@cd $* && $(MAKE) clean
+
+%.cleanalldir:
+	@cd $* && $(MAKE) cleanall
+
+%.cleandirdeps:
+	@cd $* && $(MAKE) cleandeps
+
+%.clobberdir:
+	@cd $* && $(MAKE) clobber
+
+
+
+#
+# dependences and misc. stuff
+#
+
+-include $(DEPENDS)
+
+#
+# pattern-based rules
+#
+
+#
+# The "$($(<:.c=)_CFLAGS)" construct lets your Makefile.share define,
+# say, a whatever_CFLAGS variable that contains command line options
+# to be used only when compiling whatever.c.  Note that this is a bit
+# fragile, however, since the only consideration given for filename
+# characters not legal in Makefile variable names is that we change
+# dash ("-") to underbar ("_").
+#
+$(RUNTIME_OBJ_DIR)/%.o: %.c $(RUNTIME_OBJ_DIR_STAMP)
+	@if [ `grep "chplrt.h" $< | wc -l` -ne 1 ]; then echo "PROBLEM:  $< does not include 'chplrt.h'."; exit 1; fi
+	$(CC) -c $(RUNTIME_CFLAGS) $($(subst -,_,$(<:.c=))_CFLAGS) $(RUNTIME_INCLS) -o $@ $<
+
+$(LAUNCHER_OBJ_DIR)/%.o: %.c $(LAUNCHER_OBJ_DIR_STAMP)
+	$(CC) -c $(LAUNCHER_CFLAGS) $(LAUNCHER_INCLS) -o $@ $<
+
+FORCE:
+
+.PHONY: all clean cleandeps clobber depend test echoruntimedir FORCE
+.SUFFIXES:
+.SUFFIXES: .cpp .o .h .makedir .cleandir .cleandirdeps .clobberdir
+.SECONDARY: $(RUNTIME_OBJ_DIR_STAMP) $(LAUNCHER_OBJ_DIR_STAMP)

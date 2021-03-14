@@ -1,0 +1,1 @@
+bug: non-nillable owned classes can be nil

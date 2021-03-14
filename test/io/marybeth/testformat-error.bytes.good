@@ -1,0 +1,3 @@
+uncaught SystemError: Invalid argument: Too many arguments for format string (in bytes.format)
+  testformat-error.chpl:4: thrown here
+  testformat-error.chpl:4: uncaught here

@@ -1,0 +1,2 @@
+generic-var-const-field-error.chpl:5: error: the generic field 'cst' must be instantiated or initialized explicitly
+generic-var-const-field-error.chpl:12: error: the generic field 'vbl' must be instantiated or initialized explicitly

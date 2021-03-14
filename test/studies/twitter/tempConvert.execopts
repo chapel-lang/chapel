@@ -1,0 +1,5 @@
+        # tempConvert.good
+--f=32  # tempConvert-freeze.good
+--c=100 # tempConvert-boil.good
+--c=-40 # tempConvert-same.good
+

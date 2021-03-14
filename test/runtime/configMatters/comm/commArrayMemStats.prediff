@@ -1,0 +1,12 @@
+#! /usr/bin/env bash
+
+#
+# Test should use just over 3 gb of memory.
+#
+# The 'LC_ALL=C' standardizes to "traditional sort order", avoiding
+# locale-mediated variation across environments; see sort(1).
+#
+grep '^memStats:' < $2 | \
+  sed 's/3[0-9]\{9\}/3gb/g' | \
+  LC_ALL=C sort > $2.prediff.tmp \
+&& mv $2.prediff.tmp $2

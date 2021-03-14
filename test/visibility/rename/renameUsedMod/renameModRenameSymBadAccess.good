@@ -1,0 +1,2 @@
+renameModRenameSymBadAccess.chpl:8: In function 'main':
+renameModRenameSymBadAccess.chpl:9: error: 'x' undeclared (first use this function)

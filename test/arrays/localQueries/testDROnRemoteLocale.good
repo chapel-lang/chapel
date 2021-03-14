@@ -1,0 +1,30 @@
+testing D from locale 0
+targetLocales = LOCALE0
+local subdomain = {1..10}
+local subdomains = {1..10}
+
+testing A from locale 0
+targetLocales = LOCALE0
+local subdomain = {1..10}
+local subdomains = {1..10}
+
+testing D from locale 1
+targetLocales = LOCALE0
+local subdomain = {1..0}
+local subdomains = {1..0}
+
+testing A from locale 1
+targetLocales = LOCALE0
+local subdomain = {1..0}
+local subdomains = {1..0}
+
+testing B from locale 1
+targetLocales = LOCALE1
+local subdomain = {1..10}
+local subdomains = {1..10}
+
+testing B from locale 0
+targetLocales = LOCALE1
+local subdomain = {1..0}
+local subdomains = {1..0}
+

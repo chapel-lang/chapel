@@ -1,0 +1,7 @@
+reserved-complex.chpl:1: error: attempt to redefine reserved type 'complex'
+reserved-complex.chpl:3: error: attempt to redefine reserved type 'complex'
+reserved-complex.chpl:6: error: attempt to redefine reserved type 'complex'
+reserved-complex.chpl:7: error: attempt to redefine reserved type 'complex'
+reserved-complex.chpl:10: error: attempt to redefine reserved type 'complex'
+reserved-complex.chpl:12: error: attempt to redefine reserved type 'complex'
+reserved-complex.chpl:17: error: attempt to redefine reserved type 'complex'

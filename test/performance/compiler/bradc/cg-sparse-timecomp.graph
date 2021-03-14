@@ -1,0 +1,3 @@
+perfkeys: parse :, checkParsed :, cleanup :, scopeResolve :, flattenClasses :, normalize :, checkNormalized :, buildDefaultFunctions :, resolve :, checkResolved :, flattenFunctions :, cullOverReferences :, parallel :, lowerIterators :, inlineFunctions :, scalarReplace :, copyPropagation :, deadCodeElimination :, prune :, insertLineNumbers :, codegen :, refPropagation :
+graphtitle: CG-sparse Compilation time by Pass
+ylabel: Time (seconds)

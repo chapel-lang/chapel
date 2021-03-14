@@ -1,0 +1,4 @@
+configVar-Dash config vars:
+                       x: int(64) (configured to 111)
+                       y: string (configured to i wanted to see it work again)
+                       z: real(64) (configured to 99.9)

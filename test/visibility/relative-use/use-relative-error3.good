@@ -1,0 +1,1 @@
+use-relative-error3.chpl:5: error: Cannot find symbol 'this' in module 'K'

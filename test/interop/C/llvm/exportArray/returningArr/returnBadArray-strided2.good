@@ -1,0 +1,1 @@
+returnBadArray-strided2.chpl:3: error: cannot return a strided array

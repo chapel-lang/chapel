@@ -1,0 +1,14 @@
+nt 3000   nt2 20
+uncaught TaskErrors: 2 errors: IllegalArgumentError: 20 ... IllegalArgumentError: 3000
+  pod-tpvs.chpl:48: thrown here
+  pod-tpvs.chpl:48: uncaught here
+starting task
+asdf(1), returning
+asdf(10), returning
+asdf(1000), returning
+1101000
+asdf(2), returning
+asdf(20), throwing
+asdf(3), returning
+asdf(30), returning
+asdf(3000), throwing

@@ -1,0 +1,1 @@
+reduce-assign-3-lhs-error.chpl:7: error: The l.h.s. of a reduce= operator must be just a variable

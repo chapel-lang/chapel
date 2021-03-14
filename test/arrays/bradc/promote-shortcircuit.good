@@ -1,0 +1,1 @@
+promote-shortcircuit.chpl:13: error: cannot promote short-circuiting && operator

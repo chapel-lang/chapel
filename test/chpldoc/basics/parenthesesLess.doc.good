@@ -1,0 +1,31 @@
+.. default-domain:: chpl
+
+.. module:: parenthesesLess.doc
+
+parenthesesLess.doc
+===================
+**Usage**
+
+.. code-block:: chapel
+
+   use parenthesesLess.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import parenthesesLess.doc;
+
+.. function:: proc foo
+
+.. function:: proc bar: bool
+
+.. function:: proc foo2
+
+   Check to make sure they keep comments 
+
+.. function:: proc bar2: bool
+
+   Check to make sure this also keeps its comment 
+

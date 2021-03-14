@@ -1,0 +1,8 @@
+Calling leader iterator (which is actually serial)
+Trying to promote foo:
+1 4.0
+2 5.0
+3 6.0
+4 1.0
+5 2.0
+6 3.0

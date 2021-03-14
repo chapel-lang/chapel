@@ -1,0 +1,4 @@
+perfkeys: COO to COO:, COO to CSR:, CSR to COO:, CSR to CSR:, CSC to CSC:
+repeat-files: spsDomAssign-5M.dat
+graphtitle: Sparse Domain Assignment (similar layouts, ~5M indices)
+ylabel: Time (seconds)

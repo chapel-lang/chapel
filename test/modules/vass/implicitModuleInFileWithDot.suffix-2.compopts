@@ -1,0 +1,1 @@
+implicitModuleInFileWithDot.chpl --main-module implicitModuleInFileWithDot.suffix-2

@@ -1,0 +1,2 @@
+-I$FFTW_INC -L$FFTW_DIR -lfftw3 -schpl_serializeSlices -susePrimitiveComm=false # npb-ft-transposed-D
+-I$FFTW_INC -L$FFTW_DIR -lfftw3 -schpl_serializeSlices -susePrimitiveComm=true  # npb-ft-transposed-prim-comm-D

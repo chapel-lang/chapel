@@ -1,0 +1,212 @@
+#!/usr/bin/env bash
+#
+# Currently, this is the old checkChplInstall, but will be converted to a 
+# Doc test, checkChplDocs.
+#
+#
+#
+# Portable script to validate chapel installation by compiling and executing
+# the hello world examples. Exits with zero status code when compilation and
+# execution work as expected. Expects that chpl is available on the PATH and
+# that CHPL_HOME is set correctly.
+#
+# This is morally equivalent to running start_test against the
+# examples/hello*.chpl tests. It works by copying the tests from $CHPL_HOME,
+# which can either be an installation from source/rpm or a working copy of the
+# source repo, to a temporary directory in $HOME/.chpl/. start_test is then run
+# from that temporary directory.
+#
+# Using a temporary directory is necessary for most installations, since the
+# user running the tests will not have the permissions to modify $CHPL_HOME
+# (e.g. a system wide chapel installation) nor would they want to clutter it
+# with test artifacts.
+#
+# $HOME/.chpl/ is used instead of something like $TMPDIR (or /tmp) to improve
+# the likelihood that multi locale tests will succeed. $HOME tends to be
+# consistent and available on all nodes in distributed systems, unlike $TMPDIR
+# which tends to be an in-memory filesystem exclusive to each node.
+#
+# To use something other than $HOME/.chpl, set the CHPL_CHECK_INSTALL_DIR
+# environment variable.
+#
+# To have the start_test logs printed when one or more tests fail, set
+# CHPL_CHECK_INSTALL_PRINT_ERROR to "true". The log file will be kept in
+# $CHPL_CHECK_INSTALL_DIR when there are failures, regardless of the print
+# error setting.
+#
+# There is an undocumented --debug flag, which is useful for development. It
+# produces more verbose output and does not delete the temporary working
+# directory when the script exits.
+
+function log_debug()
+{
+    local msg=$@
+    if [ -n "${debug_chpl_test}" ] ; then
+        echo "[DEBUG] ${msg}"
+    fi
+}
+function log_error()
+{
+    local msg=$@
+    echo "[ERROR] ${msg}" 1>&2
+}
+
+# Test chpldoc with the chpldoc primer, instead of the chpl.
+bin_name=chpldoc
+
+CHPL_BIN=$(which ${bin_name} 2> /dev/null)
+
+# Verify chpl binary exists and is executable.
+if [ -z "${CHPL_BIN}" ] ; then
+    log_error "${bin_name} not found. Make sure it available in the current PATH."
+    exit 1
+elif [ ! -x $CHPL_BIN ] ; then
+    log_error "Found ${bin_name} at ${CHPL_BIN} but it is not executable."
+    exit 1
+else
+    log_debug "Found ${bin_name} at: ${CHPL_BIN}"
+fi
+
+# Verify CHPL_HOME is correctly set.
+if [ -z "${CHPL_HOME+x}" ] ; then
+    log_error "CHPL_HOME is not set in environment."
+    exit 1
+elif [ ! -d $CHPL_HOME ] ; then
+    log_error "CHPL_HOME is not a directory: ${CHPL_HOME}"
+    exit 1
+else
+    log_debug "CHPL_HOME is set to: ${CHPL_HOME}"
+fi
+
+# Find examples test directory.
+if [ -d $CHPL_HOME/test/release/examples ] ; then
+    TEST_DIR=$CHPL_HOME/test/release/examples
+elif [ -d $CHPL_HOME/examples ] ; then
+    TEST_DIR=$CHPL_HOME/examples
+else
+    log_error "Could not find test cases in CHPL_HOME: ${CHPL_HOME}."
+    exit 1
+fi
+
+# For chpldoc, only test the primers/chpldoc.doc.chpl test.
+if [ "${bin_name}" = "chpldoc" ] ; then
+    test_name="chpldoc"
+    TESTS=$TEST_DIR/primers/chpldoc.doc.*
+
+# List all the files in the examples dir. Do not list any subdirectories,
+# though.
+else
+    test_name="hello world"
+    TESTS=$(find $TEST_DIR -maxdepth 1 -mindepth 1 -type f)
+fi
+
+# Copy these tests to a temp file.
+
+chpl_dir=${CHPL_CHECK_INSTALL_DIR:-$HOME/.chpl}
+if [ ! -d $chpl_dir ] ; then
+    log_debug "${chpl_dir} does not exist. Creating it."
+    mkdir -p $chpl_dir || { log_error "Failed to create ${chpl_dir}." && exit 10 ; }
+fi
+
+TMP_TEST_DIR=$(mktemp -d ${chpl_dir}/chapel-test-XXXXX)
+log_debug "TMP_TEST_DIR: ${TMP_TEST_DIR}"
+
+# Ensure the tmp dir is deleted when script exits.
+function cleanup_tmp_dir()
+{
+    # Leave the directory when using --debug.
+    if [ -z "${debug_chpl_test}" ] ; then
+        rm -rf $TMP_TEST_DIR || :
+    else
+        log_debug "Leaving tmp test dir: ${TMP_TEST_DIR}"
+    fi
+}
+trap cleanup_tmp_dir EXIT
+
+test_output_log=$TMP_TEST_DIR/test_output.log
+cp $TESTS $TMP_TEST_DIR/
+
+# Move to the temp directory and run the tests!
+(
+    cd $TMP_TEST_DIR
+    export CHPL_TEST_UTIL_DIR=$CHPL_HOME/util
+
+    # Run the tests.
+    echo "Running the ${test_name} tests found in: $TEST_DIR"
+
+    $CHPL_HOME/util/start_test --no-chpl-home-warn --progress $CHPL_START_TEST_ARGS *.chpl > $test_output_log
+
+    test_status=$?
+    log_debug "start_test exit code: ${test_status}"
+)
+
+# Vars for capturing status info.
+success_key="^\[Success matching"
+error_key="^\[Error"
+warning_key="^\[Warning"
+summary_key="^\[Summary"
+summary_start_key="^\[Test Summary"
+
+function find_test_lines()
+{
+    local key="${1}"
+    local count_arg="${2}"
+
+    # Find the "[Start Summary ...]" line, then grep for $key after it. 100000
+    # is an arbitrarily large number that should include the rest of the file
+    # after [Start Summary ...].
+    grep -A100000 -E "${summary_start_key}" $test_output_log | \
+        grep $count_arg -E "${key}"
+}
+
+successes=$(grep -c -E "${success_key}" $test_output_log)
+errors=$(find_test_lines "${error_key}" -c)
+warnings=$(find_test_lines "${warning_key}" -c)
+
+log_debug "successes: ${successes}"
+log_debug "errors: ${errors}"
+log_debug "warnings: ${warnings}"
+
+# First, check for errors and warnings. Then make sure there was at least one success.
+if (( $errors )) && (( $errors > 0 )) ; then
+    log_error "${errors} tests failed:"
+    find_test_lines "${error_key}"
+    success=false
+elif (( $warnings )) && (( $warnings > 0 )) ; then
+    log_error "${warnings} tests produced warnings:"
+    find_test_lines "${warning_key}"
+    success=false
+elif (( $successes < 1 )) ; then
+    log_error "No tests ran."
+    success=false
+else
+    success=true
+fi
+
+# Print out the summary line.
+log_debug $(grep -E "${summary_key}" $test_output_log)
+
+case $success in
+    true)
+        echo "${bin_name} installation works as expected!"
+        exit 0
+        ;;
+    false|*)
+        # Print the log file if CHPL_CHECK_INSTALL_PRINT_ERROR is set to true.
+        if [ "${CHPL_CHECK_INSTALL_PRINT_ERROR}" = "true" ] ; then
+            cat $test_output_log
+        fi
+
+        echo "Found issues with ${bin_name} installation."
+        echo "  ${bin_name} path: ${CHPL_BIN}"
+        echo "  CHPL_HOME: ${CHPL_HOME}"
+
+        # Copy the output log file to a non-temp location to make it available
+        # for the user.
+        failure_log=$chpl_dir/$(basename $0)-failure.log
+        cp $test_output_log $failure_log
+        echo "Storing complete log in ${failure_log}"
+
+        exit 10
+        ;;
+esac

@@ -1,0 +1,6 @@
+#!/bin/bash
+diff bfs.output.dat output.dat > /dev/null
+ret=$?
+if [ $ret != 0 ] ; then
+  echo results differed >> $2
+fi

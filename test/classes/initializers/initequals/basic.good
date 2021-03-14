@@ -1,0 +1,19 @@
+----- Classic Initialization -----
+Initialize from integer
+Initialize from integer
+(x = 0)
+(x = 5)
+
+
+
+----- User-Defined Copy Initialization -----
+Initialize from integer
+classic copy initialization
+(x = 10)
+(x = 10)
+
+
+
+----- Init= from integer -----
+init= from integer
+(x = 5)

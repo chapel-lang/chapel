@@ -1,0 +1,3 @@
+--report --pat=Elegant # exchange-elegant
+--report --pat=DestLocal # exchange-destLocal
+--report --pat=BothLocal # exchange-bothLocal

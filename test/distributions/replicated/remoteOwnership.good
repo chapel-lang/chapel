@@ -1,0 +1,364 @@
+Testing domain D: {1..11, 1..11}
+From locale 0
+  locale 0 owns: {1..11, 1..11}
+  locale 0 owns: {1..11, 1..11}
+  locale 1 owns: {1..11, 1..11}
+  locale 1 owns: {1..11, 1..11}
+  locale 2 owns: {1..11, 1..11}
+  locale 2 owns: {1..11, 1..11}
+  locale 3 owns: {1..11, 1..11}
+  locale 3 owns: {1..11, 1..11}
+(<no communication>)
+
+From locale 1
+  locale 0 owns: {1..11, 1..11}
+  locale 0 owns: {1..11, 1..11}
+  locale 1 owns: {1..11, 1..11}
+  locale 1 owns: {1..11, 1..11}
+  locale 2 owns: {1..11, 1..11}
+  locale 2 owns: {1..11, 1..11}
+  locale 3 owns: {1..11, 1..11}
+  locale 3 owns: {1..11, 1..11}
+(<no communication>)
+
+From locale 2
+  locale 0 owns: {1..11, 1..11}
+  locale 0 owns: {1..11, 1..11}
+  locale 1 owns: {1..11, 1..11}
+  locale 1 owns: {1..11, 1..11}
+  locale 2 owns: {1..11, 1..11}
+  locale 2 owns: {1..11, 1..11}
+  locale 3 owns: {1..11, 1..11}
+  locale 3 owns: {1..11, 1..11}
+(<no communication>)
+
+From locale 3
+  locale 0 owns: {1..11, 1..11}
+  locale 0 owns: {1..11, 1..11}
+  locale 1 owns: {1..11, 1..11}
+  locale 1 owns: {1..11, 1..11}
+  locale 2 owns: {1..11, 1..11}
+  locale 2 owns: {1..11, 1..11}
+  locale 3 owns: {1..11, 1..11}
+  locale 3 owns: {1..11, 1..11}
+(<no communication>)
+
+
+Testing array A (declared over D):
+From locale 0
+  locale 0 owns: {1..11, 1..11}
+  locale 0 owns: {1..11, 1..11}
+  locale 1 owns: {1..11, 1..11}
+  locale 1 owns: {1..11, 1..11}
+  locale 2 owns: {1..11, 1..11}
+  locale 2 owns: {1..11, 1..11}
+  locale 3 owns: {1..11, 1..11}
+  locale 3 owns: {1..11, 1..11}
+(<no communication>)
+
+From locale 1
+  locale 0 owns: {1..11, 1..11}
+  locale 0 owns: {1..11, 1..11}
+  locale 1 owns: {1..11, 1..11}
+  locale 1 owns: {1..11, 1..11}
+  locale 2 owns: {1..11, 1..11}
+  locale 2 owns: {1..11, 1..11}
+  locale 3 owns: {1..11, 1..11}
+  locale 3 owns: {1..11, 1..11}
+(<no communication>)
+
+From locale 2
+  locale 0 owns: {1..11, 1..11}
+  locale 0 owns: {1..11, 1..11}
+  locale 1 owns: {1..11, 1..11}
+  locale 1 owns: {1..11, 1..11}
+  locale 2 owns: {1..11, 1..11}
+  locale 2 owns: {1..11, 1..11}
+  locale 3 owns: {1..11, 1..11}
+  locale 3 owns: {1..11, 1..11}
+(<no communication>)
+
+From locale 3
+  locale 0 owns: {1..11, 1..11}
+  locale 0 owns: {1..11, 1..11}
+  locale 1 owns: {1..11, 1..11}
+  locale 1 owns: {1..11, 1..11}
+  locale 2 owns: {1..11, 1..11}
+  locale 2 owns: {1..11, 1..11}
+  locale 3 owns: {1..11, 1..11}
+  locale 3 owns: {1..11, 1..11}
+(<no communication>)
+
+Testing domain D: {1..11, 1..11}
+From locale 0
+  locale 0 owns: {1..11, 1..11}
+  locale 0 owns: {1..11, 1..11}
+  locale 1 owns: {1..11, 1..11}
+  locale 1 owns: {1..11, 1..11}
+  locale 2 owns: {1..11, 1..11}
+  locale 2 owns: {1..11, 1..11}
+  locale 3 owns: {1..11, 1..11}
+  locale 3 owns: {1..11, 1..11}
+(<no communication>)
+
+From locale 1
+  locale 0 owns: {1..11, 1..11}
+  locale 0 owns: {1..11, 1..11}
+  locale 1 owns: {1..11, 1..11}
+  locale 1 owns: {1..11, 1..11}
+  locale 2 owns: {1..11, 1..11}
+  locale 2 owns: {1..11, 1..11}
+  locale 3 owns: {1..11, 1..11}
+  locale 3 owns: {1..11, 1..11}
+(<no communication>)
+
+From locale 2
+  locale 0 owns: {1..11, 1..11}
+  locale 0 owns: {1..11, 1..11}
+  locale 1 owns: {1..11, 1..11}
+  locale 1 owns: {1..11, 1..11}
+  locale 2 owns: {1..11, 1..11}
+  locale 2 owns: {1..11, 1..11}
+  locale 3 owns: {1..11, 1..11}
+  locale 3 owns: {1..11, 1..11}
+(<no communication>)
+
+From locale 3
+  locale 0 owns: {1..11, 1..11}
+  locale 0 owns: {1..11, 1..11}
+  locale 1 owns: {1..11, 1..11}
+  locale 1 owns: {1..11, 1..11}
+  locale 2 owns: {1..11, 1..11}
+  locale 2 owns: {1..11, 1..11}
+  locale 3 owns: {1..11, 1..11}
+  locale 3 owns: {1..11, 1..11}
+(<no communication>)
+
+
+Testing array A (declared over D):
+From locale 0
+  locale 0 owns: {1..11, 1..11}
+  locale 0 owns: {1..11, 1..11}
+  locale 1 owns: {1..11, 1..11}
+  locale 1 owns: {1..11, 1..11}
+  locale 2 owns: {1..11, 1..11}
+  locale 2 owns: {1..11, 1..11}
+  locale 3 owns: {1..11, 1..11}
+  locale 3 owns: {1..11, 1..11}
+(<no communication>)
+
+From locale 1
+  locale 0 owns: {1..11, 1..11}
+  locale 0 owns: {1..11, 1..11}
+  locale 1 owns: {1..11, 1..11}
+  locale 1 owns: {1..11, 1..11}
+  locale 2 owns: {1..11, 1..11}
+  locale 2 owns: {1..11, 1..11}
+  locale 3 owns: {1..11, 1..11}
+  locale 3 owns: {1..11, 1..11}
+(<no communication>)
+
+From locale 2
+  locale 0 owns: {1..11, 1..11}
+  locale 0 owns: {1..11, 1..11}
+  locale 1 owns: {1..11, 1..11}
+  locale 1 owns: {1..11, 1..11}
+  locale 2 owns: {1..11, 1..11}
+  locale 2 owns: {1..11, 1..11}
+  locale 3 owns: {1..11, 1..11}
+  locale 3 owns: {1..11, 1..11}
+(<no communication>)
+
+From locale 3
+  locale 0 owns: {1..11, 1..11}
+  locale 0 owns: {1..11, 1..11}
+  locale 1 owns: {1..11, 1..11}
+  locale 1 owns: {1..11, 1..11}
+  locale 2 owns: {1..11, 1..11}
+  locale 2 owns: {1..11, 1..11}
+  locale 3 owns: {1..11, 1..11}
+  locale 3 owns: {1..11, 1..11}
+(<no communication>)
+
+Testing domain D: {2..3, 1..11}
+From locale 0
+  locale 0 owns: {2..3, 1..11}
+  locale 0 owns: {2..3, 1..11}
+  locale 1 owns: {2..3, 1..11}
+  locale 1 owns: {2..3, 1..11}
+  locale 2 owns: {2..3, 1..11}
+  locale 2 owns: {2..3, 1..11}
+  locale 3 owns: {2..3, 1..11}
+  locale 3 owns: {2..3, 1..11}
+(<no communication>)
+
+From locale 1
+  locale 0 owns: {2..3, 1..11}
+  locale 0 owns: {2..3, 1..11}
+  locale 1 owns: {2..3, 1..11}
+  locale 1 owns: {2..3, 1..11}
+  locale 2 owns: {2..3, 1..11}
+  locale 2 owns: {2..3, 1..11}
+  locale 3 owns: {2..3, 1..11}
+  locale 3 owns: {2..3, 1..11}
+(<no communication>)
+
+From locale 2
+  locale 0 owns: {2..3, 1..11}
+  locale 0 owns: {2..3, 1..11}
+  locale 1 owns: {2..3, 1..11}
+  locale 1 owns: {2..3, 1..11}
+  locale 2 owns: {2..3, 1..11}
+  locale 2 owns: {2..3, 1..11}
+  locale 3 owns: {2..3, 1..11}
+  locale 3 owns: {2..3, 1..11}
+(<no communication>)
+
+From locale 3
+  locale 0 owns: {2..3, 1..11}
+  locale 0 owns: {2..3, 1..11}
+  locale 1 owns: {2..3, 1..11}
+  locale 1 owns: {2..3, 1..11}
+  locale 2 owns: {2..3, 1..11}
+  locale 2 owns: {2..3, 1..11}
+  locale 3 owns: {2..3, 1..11}
+  locale 3 owns: {2..3, 1..11}
+(<no communication>)
+
+
+Testing array A (declared over D):
+From locale 0
+  locale 0 owns: {2..3, 1..11}
+  locale 0 owns: {2..3, 1..11}
+  locale 1 owns: {2..3, 1..11}
+  locale 1 owns: {2..3, 1..11}
+  locale 2 owns: {2..3, 1..11}
+  locale 2 owns: {2..3, 1..11}
+  locale 3 owns: {2..3, 1..11}
+  locale 3 owns: {2..3, 1..11}
+(<no communication>)
+
+From locale 1
+  locale 0 owns: {2..3, 1..11}
+  locale 0 owns: {2..3, 1..11}
+  locale 1 owns: {2..3, 1..11}
+  locale 1 owns: {2..3, 1..11}
+  locale 2 owns: {2..3, 1..11}
+  locale 2 owns: {2..3, 1..11}
+  locale 3 owns: {2..3, 1..11}
+  locale 3 owns: {2..3, 1..11}
+(<no communication>)
+
+From locale 2
+  locale 0 owns: {2..3, 1..11}
+  locale 0 owns: {2..3, 1..11}
+  locale 1 owns: {2..3, 1..11}
+  locale 1 owns: {2..3, 1..11}
+  locale 2 owns: {2..3, 1..11}
+  locale 2 owns: {2..3, 1..11}
+  locale 3 owns: {2..3, 1..11}
+  locale 3 owns: {2..3, 1..11}
+(<no communication>)
+
+From locale 3
+  locale 0 owns: {2..3, 1..11}
+  locale 0 owns: {2..3, 1..11}
+  locale 1 owns: {2..3, 1..11}
+  locale 1 owns: {2..3, 1..11}
+  locale 2 owns: {2..3, 1..11}
+  locale 2 owns: {2..3, 1..11}
+  locale 3 owns: {2..3, 1..11}
+  locale 3 owns: {2..3, 1..11}
+(<no communication>)
+
+Testing domain D: {1..11, 1..11}
+From locale 0
+  locale 0 owns: {1..0, 1..0}
+  locale 0 owns: {1..0, 1..0}
+  locale 1 owns: {1..11, 1..11}
+  locale 1 owns: {1..11, 1..11}
+  locale 2 owns: {1..0, 1..0}
+  locale 2 owns: {1..0, 1..0}
+  locale 3 owns: {1..11, 1..11}
+  locale 3 owns: {1..11, 1..11}
+(<no communication>)
+
+From locale 1
+  locale 0 owns: {1..0, 1..0}
+  locale 0 owns: {1..0, 1..0}
+  locale 1 owns: {1..11, 1..11}
+  locale 1 owns: {1..11, 1..11}
+  locale 2 owns: {1..0, 1..0}
+  locale 2 owns: {1..0, 1..0}
+  locale 3 owns: {1..11, 1..11}
+  locale 3 owns: {1..11, 1..11}
+(<no communication>)
+
+From locale 2
+  locale 0 owns: {1..0, 1..0}
+  locale 0 owns: {1..0, 1..0}
+  locale 1 owns: {1..11, 1..11}
+  locale 1 owns: {1..11, 1..11}
+  locale 2 owns: {1..0, 1..0}
+  locale 2 owns: {1..0, 1..0}
+  locale 3 owns: {1..11, 1..11}
+  locale 3 owns: {1..11, 1..11}
+(<no communication>)
+
+From locale 3
+  locale 0 owns: {1..0, 1..0}
+  locale 0 owns: {1..0, 1..0}
+  locale 1 owns: {1..11, 1..11}
+  locale 1 owns: {1..11, 1..11}
+  locale 2 owns: {1..0, 1..0}
+  locale 2 owns: {1..0, 1..0}
+  locale 3 owns: {1..11, 1..11}
+  locale 3 owns: {1..11, 1..11}
+(<no communication>)
+
+
+Testing array A (declared over D):
+From locale 0
+  locale 0 owns: {1..0, 1..0}
+  locale 0 owns: {1..0, 1..0}
+  locale 1 owns: {1..11, 1..11}
+  locale 1 owns: {1..11, 1..11}
+  locale 2 owns: {1..0, 1..0}
+  locale 2 owns: {1..0, 1..0}
+  locale 3 owns: {1..11, 1..11}
+  locale 3 owns: {1..11, 1..11}
+(<no communication>)
+
+From locale 1
+  locale 0 owns: {1..0, 1..0}
+  locale 0 owns: {1..0, 1..0}
+  locale 1 owns: {1..11, 1..11}
+  locale 1 owns: {1..11, 1..11}
+  locale 2 owns: {1..0, 1..0}
+  locale 2 owns: {1..0, 1..0}
+  locale 3 owns: {1..11, 1..11}
+  locale 3 owns: {1..11, 1..11}
+(<no communication>)
+
+From locale 2
+  locale 0 owns: {1..0, 1..0}
+  locale 0 owns: {1..0, 1..0}
+  locale 1 owns: {1..11, 1..11}
+  locale 1 owns: {1..11, 1..11}
+  locale 2 owns: {1..0, 1..0}
+  locale 2 owns: {1..0, 1..0}
+  locale 3 owns: {1..11, 1..11}
+  locale 3 owns: {1..11, 1..11}
+(<no communication>)
+
+From locale 3
+  locale 0 owns: {1..0, 1..0}
+  locale 0 owns: {1..0, 1..0}
+  locale 1 owns: {1..11, 1..11}
+  locale 1 owns: {1..11, 1..11}
+  locale 2 owns: {1..0, 1..0}
+  locale 2 owns: {1..0, 1..0}
+  locale 3 owns: {1..11, 1..11}
+  locale 3 owns: {1..11, 1..11}
+(<no communication>)
+

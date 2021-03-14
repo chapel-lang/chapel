@@ -1,0 +1,942 @@
+Function Hijacking
+==================
+
+Status
+  Partially Implemented - Need to check which cases are not
+
+Authors
+  Lydia Duncan
+  Michael Ferguson
+
+
+Abstract
+--------
+
+This document discusses problems the Chapel language currently has when a
+library might unintentionally change behavior based upon changes in other
+libraries or in code using that library.
+
+Function Hijacking
+------------------
+
+The term function hijacking refers to the situation in which a program
+using a library is working, but then a later change in another library
+causes that original program to no longer work as expected.
+
+Many of the following examples are based upon the discussion for the D
+language at https://dlang.org/hijack.html
+
+In the discussion, we will suppose that LibraryX is written by company X,
+LibraryY is written by company Y, and an application using both of these
+libraries is written by an application programmer at a third company.
+
+Hijacking a Concrete Fn Called in a Generic
++++++++++++++++++++++++++++++++++++++++++++
+
+Suppose that Company X develops the following module in which the generic
+function named ``run`` makes a call to an auxiliary
+function named ``setup``.
+
+.. code-block:: chapel
+
+  module LibraryX1 {
+    var global:int;
+    proc setup() {
+      writeln("in LibraryX.setup()");
+      global = 1;
+    }
+    proc run(x) {
+      setup();
+      writeln("Global is ", global);
+    }
+  }
+
+Then suppose that an application programmer uses LibraryX1
+in the following program:
+
+.. code-block:: chapel
+
+  module Application1 {
+    use LibraryX1;
+
+    proc main() {
+      run(1);
+    }
+  }
+
+So far so good; the program prints out:
+
+::
+
+  in LibraryX.setup()
+  Global is 1
+
+Now suppose that the application programmer updates the application and
+happens to create a function named ``setup`` in the process:
+
+.. code-block:: chapel
+
+  module Application2 {
+    use LibraryX1;
+
+    proc setup() {
+      writeln("in Application2.setup");
+    }
+    proc main() {
+      run(1);
+    }
+  }
+
+Now when this program is run, it prints out:
+
+::
+
+  in Application2.setup
+  Global is 0
+
+Oh no! The variable ``global`` from LibraryX1 is never set appropriately!
+
+What's going wrong? The isMoreVisible rule in function resolution uses
+point-of-instantiation to determine visibility.
+
+Solution: remove point-of-instantiation from consideration in
+determination of more visible function in disambiguation. This solution has
+been adopted as of Chapel 1.18.
+
+Hijacking a Generic Fn Called in a Generic
+++++++++++++++++++++++++++++++++++++++++++
+
+Let's consider a related example. This time, ``setup`` will take an
+argument.
+
+.. code-block:: chapel
+
+  module LibraryX2 {
+    var global:int;
+    proc setup(x) {
+      writeln("in LibraryX.setup()");
+      global = x:int;
+    }
+    proc run(x) {
+      setup(x);
+      writeln("Global is ", global);
+    }
+  }
+
+.. code-block:: chapel
+
+  module Application3 {
+    use LibraryX2;
+
+    proc main() {
+      run("1");
+    }
+  }
+
+As expected this application prints:
+
+::
+
+  in LibraryX.setup()
+  Global is 1
+
+Now again suppose that the application developer happens to add a
+``setup`` method, this time with a string argument.
+
+.. code-block:: chapel
+
+  module Application4 {
+    use LibraryX2;
+
+    proc setup(x:string) {
+      writeln("in Application4.setup");
+    }
+    proc main() {
+      run("1");
+    }
+  }
+
+This one outputs:
+
+::
+
+  in Application4.setup
+  Global is 0
+
+Uh-oh! Once again Global is not initialized properly, and we can expect
+the application author to file bug reports with LibraryX2.
+
+What's going wrong? Function disambiguation rules will choose ``proc
+setup(x:string)``. It is visible to the generic function ``run``
+by the point-of-instantiation rule. It is preferred to the generic ``proc
+setup(x)`` because it's more specific. The more specific function is
+chosen above the more visible function according to the disambiguation
+rules.
+
+Solution: override sets or similar idea; see below.
+
+Generics do not even need to be present for this problem to appear, as
+a later example shows.
+
+getVisibleFns
++++++++++++++
+
+Let's understand a little bit more about how visible functions are
+gathered within the compiler, as it is related to the above two problems. Consider the following program:
+
+.. code-block:: chapel
+
+  module M1 {
+    private proc helper(x:int) {
+      writeln("Hello World");
+    }
+    proc print_hello_world(x) {
+      helper(x);
+    }
+  }
+  module Main {
+    use M1;
+    proc main() {
+      print_hello_world(1);
+    }
+  }
+
+When finding what functions are visible for the call to ``helper`` in
+``print_hello_world``, ``getVisibleFns`` looks at the blocks in this order:
+
+ * print_hello_world
+ * Main
+ * standard modules
+ * M1
+
+This order might present problems for ``private use``. However, since the
+precedence of these functions will be determined later in disambiguation, the
+visible functions could consider the point of instantiation *after* considering
+the parent scope of the generic.
+
+
+Duplicate Instantiations in Different Scopes
+********************************************
+
+Let's consider a case in which there are 3 libraries.
+
+Company Z has developed a library offering some generic functions:
+
+.. code-block:: chapel
+
+  module GenericLibraryZ {
+    // uses foo()
+    proc callFoo(param x) {
+      foo();
+    }
+  }
+
+Company X uses that library in a concrete function:
+
+.. code-block:: chapel
+
+  module LibraryXA {
+    use GenericLibraryZ;
+    proc foo() {
+      writeln("In A.foo()");
+    }
+    proc runXA() {
+      callFoo(1);
+    }
+  }
+
+The application makes use of LibraryXA:
+
+.. code-block:: chapel
+
+  module ApplicationA {
+    use LibraryXA;
+    proc main() {
+      runXA();
+    }
+  }
+
+Now that program outputs
+
+::
+
+  In A.foo()
+
+as expected.
+
+Let's suppose that the application developer decides to also use another
+library, LibraryYA, which also uses GenericLibraryZ:
+
+.. code-block:: chapel
+
+  module LibraryYA {
+    use GenericLibraryZ;
+    proc foo() {
+      writeln("In B.foo()");
+    }
+    proc runYA() {
+      callFoo(1);
+    }
+  }
+
+.. code-block:: chapel
+
+  module ApplicationB {
+    use LibraryXA;
+    use LibraryYA;
+    proc main() {
+      runXA();
+      runYA();
+    }
+  }
+
+Now that program outputs
+
+::
+
+  In A.foo()
+  In A.foo()
+
+surprisingly. When LibraryXA and LibraryYA are combined in the same
+application, one of them does not work the way it did independently.
+
+What's going wrong? As described in Spec section 22.2, an arbitrary point of
+instantiation is chosen for an instantiation of a generic function and that
+instantiation is used any time that generic function is supplied with the same
+generic arguments (types and params). Within the compiler, this is implemented
+with a cache of generic instantiations. The arbitrary point of instantiation
+recipe does not allow for different scopes where a generic functions is called
+to instantiate differently, which is what the example is trying to do.
+
+Solution: Can generic instantiation consider the implied functions that will be
+required to resolve the generic function & where those functions are drawn from,
+as part of the type/param? Alternatively, can generic functions in different
+scopes be instantiated separately?
+
+Overloads
++++++++++
+
+Let's now suppose that we have two libraries from different companies:
+LibraryX3 and LibraryY1.
+
+.. code-block:: chapel
+
+  module LibraryX3 {
+    var global:real;
+    proc setup(x:real) {
+      writeln("in LibraryX.setup()");
+      global = x;
+    }
+    proc run() {
+      writeln("Global is ", global);
+    }
+  }
+
+.. code-block:: chapel
+
+  module LibraryY1 {
+    proc go() { }
+  }
+
+The application uses both of these libraries:
+
+.. code-block:: chapel
+
+  module Application5 {
+    use LibraryX3;
+    use LibraryY1;
+
+    proc main() {
+      var x:int = 1;
+      setup(x); // from LibraryX
+      run(); // from LibraryX
+      go(); // from LibraryY
+    }
+  }
+
+This program outputs
+
+::
+
+  in LibraryX.setup()
+  Global is 1.0
+
+
+Now suppose that later, after the application is in maintenance mode,
+Company Y adds a new function to LibraryY:
+
+.. code-block:: chapel
+
+  module LibraryY2 {
+    proc setup(x:int) {
+      writeln("in LibraryY.setup");
+    }
+    proc go() { }
+  }
+
+The application maintainer updates the application to use LibraryY2:
+
+.. code-block:: chapel
+
+  module Application6 {
+    use LibraryX3;
+    use LibraryY2;
+
+    proc main() {
+      var x:int = 1;
+      setup(x); // from LibraryX
+      run(); // from LibraryX
+      go(); // from LibraryY
+    }
+  }
+
+Oh dear!
+
+::
+
+  in LibraryY.setup
+  Global is 0.0
+
+What's going wrong? Function disambiguation rules prefer a more specific
+match, so the call setup(x) that used to rely on a coercion from int to
+real now resolves to the function in the other library that doesn't
+require a coercion. Note that in this case, the two candidate setup
+functions are equally visible.
+
+Solution: D's overload sets solve this problem by making it an error to
+combine overloads for a particular function name from different sources
+unless you opt-in.
+
+Scoping of Generic Instantiations
++++++++++++++++++++++++++++++++++
+
+Let's take a break from talking about specific problems to understand the
+*point-of-instantiation* rule a little bit better.
+
+Consider a program that uses the ``Sort`` module. One would like to be able
+to provide a sorting function that can be called. For example:
+
+.. code-block:: chapel
+
+  module Sort {
+
+    proc sort(A) {
+       ... A[i] < B[i] ...
+    }
+  }
+
+  module Test {
+    use Sort;
+    record MyType { ... }
+    proc < (a:MyType, b:MyType) { ... }
+    var A:[1..100] MyType;
+    ...
+    sort(A); // programmer intends it to call < declared above
+  }
+
+However, neither the ``<`` function or the type ``MyType`` are visible to
+the definition point of ``proc sort`` as these are declared in ``Test``.
+(It wouldn't make sense to expect the ``Sort`` module to ``use Test``
+since that would prevent it from being an independent library.)
+In order to enable patterns like this, the generic
+instantiation process uses a *point of instantiation* rule in which the generic
+instantiation of ``sort`` can use symbols available only at the call site. That
+enables the ``<`` function to be found and resolved.
+
+At the same time, a generic function might want to use helper functions
+from the same module:
+
+.. code-block:: chapel
+
+  module Sort {
+
+    proc isSorted(A) {
+      ...
+    }
+    proc sort(A) {
+       ... isSorted(A) ...
+    }
+  }
+
+  module Test {
+    use Sort;
+    // what if Test declared a proc isSorted?
+    sort(A);
+  }
+
+In that event, even though ``sort`` is generic, it might be surprising if
+in some cases ``isSorted`` might resolve to something in the caller. This
+problem was explored in some of the above examples, including Hijacking a
+Concrete Fn Called in a Generic.
+
+Solution: While the compiler has the ability to find types and functions
+through the point of instantiation rule, it is much easier to
+reason about programs that use other means. In particular,
+the preferred answer should be:
+
+   * use an implements clause (as described in CHIP 2)
+   * use a first-class function or function object argument
+
+Unexpected Base Class Additions
++++++++++++++++++++++++++++++++
+
+A new company on the scene, Company Z, likes to make object-oriented class libraries. In that setting, it's typical to expect library users to extend a class from the library.
+
+.. code-block:: chapel
+
+  module LibraryZ1 {
+    class Base {
+    }
+  }
+
+In the application code, the developer extends Base and adds a method
+``run`` that is used by the application:
+
+.. code-block:: chapel
+
+  module Application7 {
+    use LibraryZ1;
+
+    class Widget : Base {
+      proc run(x:real) {
+        writeln("In Application.Widget.run");
+      }
+    }
+
+    proc main() {
+      var instance = new Widget();
+      var x = 1;
+      instance.run(x);
+      delete instance;
+    }
+  }
+
+When this program is run, it prints out:
+
+::
+
+  In Application.Widget.run
+
+Now suppose that Company Z decides to update their library by adding a new
+feature to ``class Base``:
+
+.. code-block:: chapel
+
+  module LibraryZ2 {
+    class Base {
+      proc run(x:int) {
+        writeln("starting LibraryZ.Base.run!");
+      }
+    }
+  }
+
+The application developer updates to the latest LibraryZ:
+
+.. code-block:: chapel
+
+  module Application8 {
+    use LibraryZ2;
+
+    class Widget : Base {
+      proc run(x:real) {
+        writeln("In Application.Widget.run");
+      }
+    }
+
+    proc main() {
+      var instance:Base = new Widget();
+      var x = 1;
+      instance.run(x);
+      delete instance;
+    }
+  }
+
+It outputs
+
+::
+
+  starting LibraryZ.Base.run!
+
+which might be surprising. In particular, it might be confusing to the
+user whether or not they were overriding ``proc run``. The following
+sections cover potential solutions to this problem, including an
+``override`` keyword.
+
+New Method is Accidentally Overridden
++++++++++++++++++++++++++++++++++++++
+
+Let's consider another example where Company Z offers a class library.
+
+.. code-block:: chapel
+
+  module LibraryZ3 {
+    class Base {
+      proc setup() {
+        writeln("starting LibraryZ.Base.setup!");
+      }
+    }
+  }
+
+The application developer creates a class inheriting from Base:
+
+.. code-block:: chapel
+
+  module Application9 {
+    use LibraryZ3;
+
+    class Widget : Base {
+      proc run(x:int) {
+        writeln("In Application.Widget.run");
+      }
+    }
+
+    proc main() {
+      var instance = new Widget();
+      var x = 1;
+      instance.setup(); // calls Base.setup()
+      instance.run(x); // calls Widget.run()
+      delete instance;
+    }
+  }
+
+::
+
+  starting LibraryZ.Base.setup!
+  In Application.Widget.run
+
+
+Now Company Z extends ``class Base`` by adding ``proc run(x:int)``.
+
+.. code-block:: chapel
+
+  module LibraryZ4 {
+    class Base {
+      proc setup() {
+        writeln("starting LibraryZ.Base.setup!");
+
+        run(1); // calls Base.run
+
+        writeln("completed LibraryZ.Base.setup!");
+      }
+      proc run(x:int) {
+        writeln("in LibraryZ.Base.run!");
+      }
+    }
+  }
+
+and then the application is updated to use the new library:
+
+.. code-block:: chapel
+
+  module Application10 {
+    use LibraryZ4;
+
+    class Widget : Base {
+      proc run(x:int) {
+        writeln("In Application.Widget.run");
+      }
+    }
+
+    proc main() {
+      var instance = new Widget();
+      var x = 1;
+      instance.setup(); // calls Base.setup()
+      instance.run(x); // calls Widget.run()
+      delete instance;
+    }
+  }
+
+The update results in the following output:
+
+::
+
+  starting LibraryZ.Base.setup!
+  In Application.Widget.run
+  completed LibraryZ.Base.setup!
+  In Application.Widget.run
+
+But uh-oh, now Base.setup() calls Widget.run!
+
+What's going wrong? A method that was expected not to be virtually dispatched
+was overridden - causing it to be virtually dispatched.
+
+Solutions: require an 'override' keyword to mark functions that should be
+overriding a base class method. In that event, ``Widget.run`` would not have an
+override when the library is updated and a compiler error would alert the user
+to the issue. It might also be reasonable to be able to mark functions as
+non-overrideable - but that one is probably harder to rely upon.  As of 1.18,
+Chapel now requires the 'override' keyword.
+
+Unexpected new Overload for an Overridden method
+++++++++++++++++++++++++++++++++++++++++++++++++
+
+Let's suppose now that LibraryZ expects classes extending Base to override a setup helper function:
+
+.. code-block:: chapel
+
+  module LibraryZ4 {
+    class Base {
+      proc setup() {
+        writeln("starting LibraryZ.Base.setup!");
+
+        helpSetup(1); // expected to call derived class
+
+        writeln("completed LibraryZ.Base.setup!");
+      }
+      proc helpSetup(x:real) {
+        writeln("LibraryZ.Base Default setup helper");
+      }
+    }
+  }
+
+Now the application might use that library like so:
+
+.. code-block:: chapel
+
+  module Application11 {
+    use LibraryZ4;
+
+    class Widget : Base {
+      proc helpSetup(x:real) {
+        writeln("In Application.Widget.helpSetup");
+      }
+    }
+
+    proc main() {
+      var instance = new Widget();
+      instance.setup(); // calls Base.setup() and that runs Widget.helpSetup
+      delete instance;
+    }
+  }
+
+That outputs:
+
+::
+
+  starting LibraryZ.Base.setup!
+  In Application.Widget.helpSetup
+  completed LibraryZ.Base.setup!
+
+as expected.
+
+Now suppose that the designer of LibraryZ realizes that they can make the library significantly faster if they use ``int`` in more places. So, they add an overload of  ``helpSetup`` accepting an ``int``.
+
+.. code-block:: chapel
+
+  module LibraryZ5 {
+    class Base {
+      proc setup() {
+        writeln("starting LibraryZ.Base.setup!");
+
+        helpSetup(1); // may call derived class
+
+	// calls helpSetup(1.0) elsewhere...
+
+        writeln("completed LibraryZ.Base.setup!");
+      }
+      proc helpSetup(x:real) {
+        writeln("LibraryZ.Base Default real setup helper");
+      }
+      proc helpSetup(x:int) {
+        writeln("LibraryZ.Base Default int setup helper");
+      }
+    }
+  }
+
+When the application is updated to use LibraryZ5, the application developer
+might be surprised that their helpSetup is no longer being called in all of the situations.
+
+.. code-block:: chapel
+
+  module Application12 {
+    use LibraryZ5;
+
+    class Widget : Base {
+      proc helpSetup(x:real) {
+        writeln("In Application.Widget.helpSetup");
+      }
+    }
+
+    proc main() {
+      var instance = new Widget();
+      instance.setup(); // calls Base.setup() and that runs Widget.helpSetup
+      delete instance;
+    }
+  }
+
+::
+
+  starting LibraryZ.Base.setup!
+  LibraryZ.Base Default int setup helper
+  completed LibraryZ.Base.setup!
+
+
+The user might have been imagining that they'd override *all* overloads of ``helpSetup``. The combination of override and overload is a frequently challenging concept, and different languages operate differently with it.
+
+Solutions: Consider adding a compile-time warning and/or an execution error in
+this case. Additionally, if we have a concept of "pure" virtual methods, the
+library could enforce that the subclasses of Base have overridden the
+appropriate methods.
+
+
+Summary of Solutions
+++++++++++++++++++++
+
+* remove point-of-instantiation from consideration in determination of
+  more visible function in disambiguation: **DONE**
+* consider changing the traversal order of getVisibleFns to visit the
+  point-of-instantiation block after considering the parent scope of a
+  generic
+* prefer other means instead of the point-of-instantiation rule for
+  making types and functions available inside of a generic function:
+
+  * use an implements clause (as described in CHIP 2)
+  * use a first-class function or function object argument
+
+* adjust the resolution cache to allow for different instantiations of
+  the same generic function that is used in different scopes.
+* adjust the priority of a more specific match over a more visible match
+
+  * could try simply making more visible be more important than more specific
+  * could try something inspired by the D overload sets idea
+
+* Require an 'override' keyword to mark functions that should be
+  overriding a base class method: **DONE**
+
+  * Consider allowing 'pure virtual' or non-overrideable methods
+
+* Consider adding some sort of error in the event that some overloads of
+  a method are overridden but some are not.
+
+What is this overload sets idea?
+
+* an "overload sets" is a group of functions with the same name declared
+  in the same scope.
+
+  * perform overload resolution independently on each overload set
+  * no match in any overload set, then error
+  * match in one overload set, OK
+  * match in multiple overload sets, error
+
+* introduce a language mechanism to opt-in to merging overload sets. In
+  D, this is the 'alias' keyword.
+
+
+Why does public/private interact with point-of-instantiation?
+-------------------------------------------------------------
+
+.. code-block:: chapel
+
+  module Test {
+    private use Sort;
+    record MyType { ... }
+    private proc < (a:MyType, b:MyType) { ... }
+    var A:[1..100] MyType;
+    ...
+    sort(A); // programmer intends it to call < declared above
+  }
+
+In this example, should the ``sort`` call be able to find the ``<`` routine?
+Certainly the instantiation of ``sort`` should have access to any private
+symbols in the ``Sort`` module. One might argue that it additionally should
+have access to private symbols from the call site. However, enabling such
+access would mean that instantiations can use private symbols from the point of
+instantiation, which causes new problems as discussed below.
+
+Consider the following program:
+
+.. code-block:: chapel
+
+  module DefineFoo {
+    proc foo(param a) {
+      writeln(x());
+    }
+  }
+
+  module UseFoo {
+    use DefineFoo;
+
+    proc x() {
+      return 22;
+    }
+
+    proc main() {
+      foo(6);
+    }
+  }
+
+This program compiles and runs with Chapel 1.15. The ``x()`` call in
+``DefineFoo`` resolves to the ``proc x()`` in ``UseFoo``. But what would happen
+if ``proc x()`` were declared as private? Would the program be valid?
+
+.. code-block:: chapel
+
+  module DefineFoo {
+    proc foo(param a) {
+      writeln(x());
+    }
+  }
+
+  module UseFoo {
+    use DefineFoo;
+
+    private proc x() {
+      return 22;
+    }
+
+    proc main() {
+      foo(6);
+    }
+  }
+
+
+In 1.16, it results in a compilation error. That might make sense: if ``proc
+x()`` is private, it is not visible outside of the module it is declared in. In
+particular, it is not visible in ``DefineFoo``. However, one might interpret the
+point-of-instantiation rule as indicating that such a call to a ``private proc
+x()`` should be valid.  The main drawback to interpreting the
+point-of-instantiation rule in that manner is that ``private proc x()`` would no
+longer make ``x`` actually private; it could be called from any generic function
+called from the module in which it is declared.
+
+This is not a problem if the caller was aware that ``foo`` would rely on its
+private functions, but having this reliance depend on function calls is very
+subtle - if the writer of the function wanted to depend on outside functions, it
+is best to specify that dependency explicitly as part of ``foo`` s declaration,
+either via an interface requirement (see CHIP 2) or by taking the function it
+relies upon in as a function object or a first-class function argument.
+
+More About Point-of-instantiation Proposal
+------------------------------------------
+
+As we have seen above, point-of-instantiation is problematic because:
+
+ * it can result in surprising behavior
+ * it interferes with improvements to ``private``
+
+Here, we propose that point-of-instantiation be ignored in function resolution
+when choosing more specific functions. It would continue to be the case that a
+``private`` function cannot be made implicitly available to a generic function
+by the point-of-instantiation rule.
+
+The expectation would be that functions that need the calling
+context to provide functions for use during generic instantiation would
+either:
+
+ 1. Be public, defined either at the point of definition or the point of
+    instantiation.
+ 2. Use ``implements`` clauses to explicitly provide the functions
+    to the generic function - see CHIP 2.
+ 3. Require these dependencies as function objects or first-class
+    function arguments.
+
+Implications
+++++++++++++
+
+The ``<`` function is still passable to the ``Sort`` module, including when
+multiple ``<`` functions are declared at different scopes at the point of
+instantiation.
+
+The caching strategy for generic instantiations would need to be improved
+to take into account scoping in any case where the generic function
+relied on the point-of-instantiation rule.

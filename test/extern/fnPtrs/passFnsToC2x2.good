@@ -1,0 +1,4 @@
+foo() got: 42
+C callsite got 43
+foo() got: 42
+C callsite got 43

@@ -1,0 +1,4 @@
+semantic: detection of parallel zippering unequal length iterators
+
+sjd: my thought is we shouldn't detect this in the general case but can provide
+an optional interface via the iterator tag to run a test.

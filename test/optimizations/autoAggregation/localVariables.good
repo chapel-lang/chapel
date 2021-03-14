@@ -1,0 +1,17 @@
+Start analyzing forall for automatic aggregation [static only ALA clone]  (localVariables.chpl:5)
+End analyzing forall for automatic aggregation [static only ALA clone]  (localVariables.chpl:5)
+
+Start analyzing forall for automatic aggregation [static only ALA clone]  (localVariables.chpl:12)
+End analyzing forall for automatic aggregation [static only ALA clone]  (localVariables.chpl:12)
+
+Start analyzing forall for automatic aggregation (localVariables.chpl:21)
+End analyzing forall for automatic aggregation (localVariables.chpl:21)
+
+Start analyzing forall for automatic aggregation [no ALA clone]  (localVariables.chpl:5)
+End analyzing forall for automatic aggregation [no ALA clone]  (localVariables.chpl:5)
+
+Start analyzing forall for automatic aggregation [no ALA clone]  (localVariables.chpl:12)
+End analyzing forall for automatic aggregation [no ALA clone]  (localVariables.chpl:12)
+
+0 0 0 0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0 0

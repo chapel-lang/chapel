@@ -1,0 +1,43 @@
+A[i].locale = LOCALE0
+A[i].locale = LOCALE0
+A[i].locale = LOCALE0
+A[i].locale = LOCALE0
+A[i].locale = LOCALE1
+A[i].locale = LOCALE1
+A[i].locale = LOCALE1
+A[i].locale = LOCALE2
+A[i].locale = LOCALE2
+A[i].locale = LOCALE2
+--------------------
+A[i].locale = LOCALE0
+A[i].locale = LOCALE0
+A[i].locale = LOCALE0
+A[i].locale = LOCALE0
+A[i].locale = LOCALE1
+A[i].locale = LOCALE1
+A[i].locale = LOCALE1
+A[i].locale = LOCALE2
+A[i].locale = LOCALE2
+A[i].locale = LOCALE2
+--------------------
+B[i].locale = LOCALE0
+B[i].locale = LOCALE0
+B[i].locale = LOCALE0
+B[i].locale = LOCALE0
+B[i].locale = LOCALE1
+B[i].locale = LOCALE1
+B[i].locale = LOCALE1
+B[i].locale = LOCALE2
+B[i].locale = LOCALE2
+B[i].locale = LOCALE2
+--------------------
+B[i].locale = LOCALE0
+B[i].locale = LOCALE0
+B[i].locale = LOCALE0
+B[i].locale = LOCALE0
+B[i].locale = LOCALE1
+B[i].locale = LOCALE1
+B[i].locale = LOCALE1
+B[i].locale = LOCALE2
+B[i].locale = LOCALE2
+B[i].locale = LOCALE2

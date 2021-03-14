@@ -1,0 +1,8 @@
+scope-param-offset-concrete.chpl:3: In function 'enumScopeTest':
+scope-param-offset-concrete.chpl:4: internal error: RES-FUN-ION-7288 chpl version 1.21.0 pre-release (4ff308738a)
+
+Internal errors indicate a bug in the Chapel compiler ("It's us, not you"),
+and we're sorry for the hassle.  We would appreciate your reporting this bug -- 
+please see https://chapel-lang.org/bugs.html for instructions.  In the meantime,
+the filename + line number above may be useful in working around the issue.
+

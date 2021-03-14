@@ -1,0 +1,8 @@
+test1
+range(int(64),bounded,false) 1..0
+range(int(64),bounded,false) 1..10
+range(int(64),bounded,true) 2..20 by 2
+range(int(64),bounded,false) 3..30
+test2
+range(int(64),bounded,true) 4..40 by 2
+range(int(64),bounded,true) 5..50 by 2

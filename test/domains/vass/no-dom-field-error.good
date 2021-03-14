@@ -1,0 +1,1 @@
+no-dom-field-error.chpl:17: error: missing the field 'dom' in class 'GlobalArray', required in domain map implementations

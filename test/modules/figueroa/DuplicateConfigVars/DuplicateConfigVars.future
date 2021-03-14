@@ -1,0 +1,10 @@
+semantic: warning for module use shadowing variable in outer scope
+
+really?  Does Java or C# give a warning?
+
+feature request: compiler should warn about shadowing variables via use statement
+If two modules define the same symbol, and both are in scope at the point
+at which this symbol is used, the compiler should complain instead of
+silently using the one introduced at the innermost scope (through a use
+statement).  In this test case, both seed and arraySize are defined
+in both source files.

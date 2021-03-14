@@ -1,0 +1,1 @@
+array-size-length.chpl:2: error: tuple size must be known at compile-time

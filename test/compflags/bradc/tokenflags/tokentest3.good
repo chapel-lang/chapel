@@ -1,0 +1,39 @@
+tokentest3.chpl
+=============================================================
+  7 |  var x : int = 1 ;
+  5 |  writeln ( "test1" ) ;
+  5 |  writeln ( 'test2' ) ;
+  5 |  writeln ( '\"test3\"' ) ;
+*C* |  //  here is a single line comment on its own
+  5 |  writeln ( "test4" ) ; //  here is a single line comment with code
+*C* |  /*  here is a multiline comment on its own on one line  */
+  5 |  writeln ( "test5" ) ; /*  here is a 1-line multiline comment  */
+  5 |  writeln ( "test6" ) ; /*  here is a multiline comment */
+*C* |  /*  */
+*C* |  /* that continues */
+*C* |  /*  */
+*C* |  /* for several lines  */
+*B* | 
+*C* |  /*  here is another multiline comment */
+*C* |  /*  */
+*C* |  /* that continues  */
+*C* |  /*  */
+*C* |  /* for several lines  */
+*C* |  //  Here is a single-line comment that has an EOF
+=============================================================
+TOKENS = 37
+LINES  = 7 code, 12 comment, 1 blank
+MAX TOKENS/LINE = 7
+AVG TOKENS/CODE LINE = 5.29
+HISTOGRAM:
+  0:  13
+  1:   0
+  2:   0
+  3:   0
+  4:   0
+  5:   6
+  6:   0
+  7:   1
+=============================================================
+
+GRAND TOTAL = 37

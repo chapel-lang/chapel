@@ -1,0 +1,3 @@
+infer_nil.chpl:8: warning: object
+infer_nil.chpl:9: error: unresolved call 'object.x'
+infer_nil.chpl:2: note: candidates are: C.x

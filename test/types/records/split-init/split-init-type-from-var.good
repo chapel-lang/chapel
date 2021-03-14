@@ -1,0 +1,2 @@
+split-init-type-from-var.chpl:1: In function 'main':
+split-init-type-from-var.chpl:4: error: illegal assignment of value to type

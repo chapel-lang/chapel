@@ -1,0 +1,75 @@
+GASNet smp-conduit documentation
+Dan Bonachea <bonachea@cs.berkeley.edu>
+
+User Information:
+-----------------
+
+smp-conduit provides a single-node loopback GASNet implementation for 
+smp or uniprocessor systems lacking network hardware, or where
+all the cores to be used coexist within a hardware-shared memory.
+
+Where this conduit runs:
+-----------------------
+
+smp-conduit is extremely portable and should run anywhere with a POSIX-like
+environment and hardware-shared memory.
+
+smp-conduit jobs can be launched directly in the same manner as normal
+POSIX executables - ie on the command line, no spawner script required.
+
+Optional compile-time settings:
+------------------------------
+
+* All the compile-time settings from extended-ref (see the extended-ref README)
+
+Recognized environment variables:
+---------------------------------
+
+* GASNET_PSHM_NODES 
+  When process-shared memory (PSHM) support is enabled at configure time, this
+  variable controls the number of GASNet smp-conduit processes to fork at job
+  launch within gasnet_init (ie the degree of process parallelism). These
+  processes will communicate through shared memory using PSHM. For more details
+  on enabling and using PSHM support, see the top-level README.
+  If PSHM is disabled, this variable is ignored and smp-conduit jobs consist of
+  only a single process (but the client may still utilize thread-level
+  parallelism within that process, in GASNET_PAR mode).
+
+* GASNET_BARRIER=PSHM (default when PSHM support is enabled)
+  Enables shared-memory implementation of GASNet barriers
+
+* All the standard GASNet environment variables (see top-level README)
+
+Known problems:
+---------------
+
+* Bug 3480
+  It has been observed on Cray systems running CLE6 that following a call to
+  munmap(), there may be a delay before the physical page frames are available
+  for reallocation.  For more details see aries-conduit/README (source), or
+  share/doc/gasnet/README-aries (installed).
+
+* Bug 3727
+  The smp-conduit support for remote atomics is limited to certain datatypes.
+  In general, support encompasses all datatypes on LP64 platforms but is limited
+  to 32-bit datatypes on ILP32 platforms.  However, there are exceptions on both
+  types of platform, many of which are compiler dependent.
+  The most up-to-date information on this bug is maintained at:
+    https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=3727
+  That bug report describes the problem in more detail.
+
+* See the GASNet Bugzilla server for details on other known bugs:
+  https://gasnet-bugs.lbl.gov/
+
+Future work:
+------------
+
+===============================================================================
+
+Design Overview:
+----------------
+
+All puts/gets are local accesses (with the locality check removed at compile
+time).  When PSHM is not in use all AM handlers execute synchronously on the
+calling thread, and segment alignment is trivially guaranteed.
+

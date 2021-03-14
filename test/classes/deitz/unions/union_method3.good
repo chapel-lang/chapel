@@ -1,0 +1,4 @@
+x: (2.2)
+x: (-1)
+Hello
+union_method3.chpl:8: error: halt reached - illegal union access

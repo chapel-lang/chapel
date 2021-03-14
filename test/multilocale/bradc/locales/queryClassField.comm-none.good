@@ -1,0 +1,5 @@
+x is: {myid = 0}
+x[0] is on locale: 0
+x[0].myid is on locale: 0
+y[0] is on locale: 0
+y[0].myid is on locale: 0

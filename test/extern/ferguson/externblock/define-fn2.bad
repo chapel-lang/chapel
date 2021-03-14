@@ -1,0 +1,2 @@
+define-fn2.chpl:6: error: unresolved call 'MYFUN(1)'
+define-fn2.chpl:6: note: because no functions named MYFUN found in scope

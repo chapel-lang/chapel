@@ -1,0 +1,5 @@
+capture-2-refs-to-blank.chpl:6: In function 'test':
+capture-2-refs-to-blank.chpl:7: error: const actual is passed to 'ref' formal 'a' of =
+note: to formal of type int(64)
+capture-2-refs-to-blank.chpl:8: error: const actual is passed to 'ref' formal 'a' of =
+note: to formal of type int(64)

@@ -1,0 +1,11 @@
+defaultinit1a.chpl:1: In function 'main':
+defaultinit1a.chpl:3: error: 'a' used before defined
+defaultinit1a.chpl:10: note: defined here
+defaultinit1a.chpl:4: error: 'b' used before defined
+defaultinit1a.chpl:11: note: defined here
+defaultinit1a.chpl:5: error: 'c' used before defined
+defaultinit1a.chpl:12: note: defined here
+defaultinit1a.chpl:6: error: 'd' used before defined
+defaultinit1a.chpl:13: note: defined here
+defaultinit1a.chpl:7: error: 'e' used before defined
+defaultinit1a.chpl:14: note: defined here

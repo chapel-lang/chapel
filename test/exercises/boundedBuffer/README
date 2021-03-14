@@ -1,0 +1,32 @@
+Bounded Buffer Exercise: Task Parallelism
+
+This file contains a bounded buffer computation in which a producer
+and a consumer task are created, and they exchange values by [writing
+to / reading from] a bounded buffer, wrapping around when they reach
+the end.
+
+In more detail, this program's main() procedure uses a cobegin to
+launch a single producer task and a single consumer task.  The
+producer writes 'numItems' to a bounded buffer of size 'bufferSize'
+and then writes a sentinel value per consumer.  The consumer reads
+items from the bounded buffer until it sees a sentinel value.  The
+boundedBuffer is itself implemented as a class storing an array of
+sync variables ('buff$') to prevent overrun/underrun (we don't want
+the producer to overwrite values that have not yet been consumed; nor
+do we want to consumer trying to read values that have not yet been
+written).  The class also stores a head/tail cursor indicating where
+the producer/consumer should [write to/read from].
+
+Your goal is to extend this program to work with multiple producers
+and consumers without (a) deadlock or livelock, (b) causing any
+reads/writes to be lost or values to be read/written more than once.
+To do this you will need to add more producers and consumers and to
+modify the implementation of the head/tail cursors (and their
+advance() function) to make sure that the tasks don't race as they
+read/write them.
+
+Check the comments in the program for more detailed instructions.
+
+The only file you should need for this exercise is
+'boundedBuffer.chpl'.  A trivial Makefile is also included for your
+convenience.

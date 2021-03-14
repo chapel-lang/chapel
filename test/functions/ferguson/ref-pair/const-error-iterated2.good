@@ -1,0 +1,16 @@
+const-error-iterated2.chpl:28: error: const actual is passed to 'ref' formal 'A' of writeForAZip()
+note: to formal of type [domain(1,int(64),false)] int(64)
+const-error-iterated2.chpl:11: note: to ref formal here
+const-error-iterated2.chpl:12: note: passed as ref here
+const-error-iterated2.chpl:13: note: passed as ref here
+const-error-iterated2.chpl:29: error: const actual is passed to 'ref' formal 'A' of writeForallAZip()
+note: to formal of type [domain(1,int(64),false)] int(64)
+const-error-iterated2.chpl:16: note: to ref formal here
+const-error-iterated2.chpl:17: note: passed as ref here
+const-error-iterated2.chpl:18: note: passed as ref here
+const-error-iterated2.chpl:30: error: const actual is passed to 'ref' formal 'A' of writeCoforallAZip()
+note: to formal of type [domain(1,int(64),false)] int(64)
+const-error-iterated2.chpl:22: note: to ref formal here
+const-error-iterated2.chpl:23: note: passed as ref here
+const-error-iterated2.chpl:24: note: passed as ref here
+const-error-iterated2.chpl:7: note: to ref formal here

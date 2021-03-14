@@ -1,0 +1,77 @@
+a
+R int init 1
+R deinit 1
+b
+R int init 1
+R copy init from 1
+R deinit 1
+R deinit 1
+c
+R int init 1
+R deinit 1
+d
+R int init 1
+R deinit 1
+e
+R int init 1
+R copy init from 1
+R copy init from 1
+R copy init from 1
+R copy init from 1
+R deinit 1
+R deinit 1
+R deinit 1
+R deinit 1
+R deinit 1
+f
+R int init 1
+R copy init from 1
+R copy init from 1
+R copy init from 1
+R copy init from 1
+R deinit 1
+R deinit 1
+R deinit 1
+R deinit 1
+R deinit 1
+g
+R int init 1
+R copy init from 1
+R copy init from 1
+R copy init from 1
+R copy init from 1
+R copy init from 1
+R deinit 1
+R deinit 1
+R deinit 1
+R deinit 1
+R deinit 1
+R deinit 1
+h1
+R int init 1
+R copy init from 1
+R copy init from 1
+R copy init from 1
+R copy init from 1
+R deinit 1
+R deinit 1
+R deinit 1
+R deinit 1
+R deinit 1
+h2
+R default init 0
+R int init 1
+R = lhs 0 rhs 1
+R deinit 1
+R deinit 1
+i
+R int init 1
+R copy init from 1
+R copy init from 1
+R copy init from 1
+R copy init from 1
+R deinit 1
+R deinit 1
+R deinit 1
+R deinit 1
+R deinit 1

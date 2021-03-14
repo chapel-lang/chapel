@@ -1,0 +1,124 @@
+body {
+    font-family: "Arial";
+}
+
+#graphdisplay {
+    margin-left: 375px;
+}
+
+#graphSelectionPane {
+    padding-left: 20px;
+    padding-right: 20px;
+    position:fixed;
+    vertical-align: top;
+    border-right: 1px solid black;
+    height: 100%;
+}
+
+#graphlist {
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: inline-block;
+}
+
+#titleDiv {
+  margin-bottom: 30px;
+}
+
+#homeLink {
+  margin-left: 10px;
+  margin-top: 10px;
+  font-size: 20px;
+}
+
+#buttonMenu {
+  width: 300px;
+}
+#buttonMenu .grayButton {
+  min-width: 85px;
+}
+
+.graph {
+    vertical-align: top;
+    white-space: nowrap;
+    font-size: 11px;
+}
+div.graphContainer {
+  /* width of graph + legend */
+  width: 1100px;
+  display: inline-block;
+}
+div.perfGraph {
+    vertical-align: top;
+    width: 700px;
+    height: 300px;
+    float: left;
+}
+div.gspacer {
+    display: inline-block;
+    width: 700px;
+    height: 30px;
+    margin-bottom: 20px;
+}
+div.perfLegend {
+    float:left;
+    vertical-align: top;
+    width: 400px;
+    height: 300px;
+    overflow: auto;
+}
+span.highlight {
+    border: 1px solid grey;
+}
+
+.toggle {
+    height: 20px;
+    border: 1px solid grey;
+    padding: 0px 5px;
+    margin: 5px 10px 0px 0px;
+}
+.toggle:focus {
+  outline: 0;
+}
+
+.blackAnnotation {
+  color: black !important;
+  border-color: black !important;
+}
+
+.annotationInfo {
+  position: absolute;
+  background-color: white;
+  border: 1px solid black;
+  padding: 4px;
+  font-size: 14px;
+  z-index: 1000;
+}
+
+.grayButton {
+  background-color: #d8d8d8;
+  border: 1px solid black;
+  font-size: 13px;
+  text-align: center;
+  padding: 3px 3px;
+  margin: 2px;
+}
+
+.grayButton:hover {
+  background-color: #b7b8bc;
+}
+.grayButton:active {
+  transform: scale(.9);
+}
+.grayButton:focus {
+  outline: 0;
+}
+
+.simpleLink {
+  color: black;
+  text-decoration: none;
+}
+.simpleLink:visited {
+  color: black;
+  text-decoration: none;
+}

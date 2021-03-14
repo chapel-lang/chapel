@@ -1,0 +1,6 @@
+-M../../../release/examples/benchmarks/lulesh --fast
+-M../../../release/examples/benchmarks/lulesh -suseSparseMaterials=false --fast
+#
+# Normally we don't like --fast in correctness compopts, but here we
+# do it to expose the intel bug we're trying to isolate.
+#

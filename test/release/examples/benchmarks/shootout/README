@@ -1,0 +1,266 @@
+==============================================
+Chapel Computer Language Benchmarks Game Codes
+==============================================
+
+This directory contains Chapel versions of the Computer Language
+Benchmarks Game programs (http://benchmarksgame.alioth.debian.org/)
+written in Chapel.  In these versions, we strive for a combination of
+elegant use of Chapel and performance.  Most of these codes are
+written for serial or parallel single-locale (shared-memory)
+execution, following the lead of the competition.
+
+At present, this directory contains the following codes:
+
+    binarytrees.chpl    : Allocates and deallocates many, many binary trees
+    chameneosredux.chpl : Simulates meetings between color-changing Chameneos
+    chameneosredux-fast.chpl : A tuned version of chameneosredux.chpl
+    fannkuchredux.chpl  : Performs many operations on small arrays
+    knucleotide.chpl    : Count the frequencies of specific nucleotide sequences
+    mandelbrot.chpl     : Plots the mandelbrot set [-1.5-i,0.5+i] on a bitmap
+    mandelbrot-fast.chpl: An uglier but faster version of mandelbrot.chpl
+    meteor.chpl         : Performs a parallel search for all solutions to a
+                          puzzle
+    meteor-fast.chpl    : A less readable, but much faster version of meteor.
+    nbody.chpl          : Performs an n-body simulation of the Jovian planets
+    pidigits.chpl       : Computes digits of pi using bigints (if available)
+    pidigits-fast.chpl  : An optimized version of the above
+    regexdna.chpl       : Performs DNA matching
+    regexdna-redux.chpl : Performs DNA matching
+    revcomp.chpl        : Calculate the strand to bind with a given DNA strand
+    revcomp-fast.chpl   : An optimized version of the above
+    spectralnorm.chpl   : Calculates the spectral norm of an infinite matrix
+    threadring.chpl     : Passes a token between a large number of threads
+    fasta.chpl          : Generates DNA with different nucleotide distributions
+                          and a random number generator
+
+Note that chameneosredux.chpl has non-deterministic output.
+
+Over time, we plan to create versions of all the benchmarks and to
+enter Chapel into the competition.  Draft versions of other benchmarks
+that have not yet been promoted to the release can be found in our git
+repository under the test/studies/shootout/ directory.
+
+The provided Makefile can be used to compile the programs, or they can
+be run in correctness or performance modes using the Chapel testing
+system.  (See doc/rst/developer/bestPractices/TestSystem.rst in the Chapel
+git repository: http://github.com/chapel-lang/chapel)
+
+Other files with the same base filenames as the Chapel test programs but
+different filename extensions, are for use by the automated test system.
+For example, file fasta.execopts supports automated testing of fasta.chpl.
+$CHPL_HOME/examples/README.testing contains more information.
+
+Future work / TODO
+==================
+The following are a list of planned improvements to Chapel and/or our
+implementations that would benefit the codes:
+
+
+binarytrees
+-----------
+o no current TODOs
+
+
+chameneosredux
+--------------
+o once we map to C11 atomics/utilize memory order arguments, can
+  performance be improved via different memory orders?
+
+o should the language support local enums?  If so, move 'digit' into
+  spellInt().  Currently, it seems to break the cast operator within
+  the function (maybe a point-of-instantiation issue?  or where default
+  functions are inserted?)
+
+o once Chapel has initializers distinct from assignment, add support
+  for initialization of atomic types, which would remove the need for
+  the MeetingPlace constructor; and/or add support for direct
+  assignment to atomics which would accomplish the same thing even
+  before initializers come on-line.
+
+o would we want to have a digiterator in the standard library?  An
+  iterator that yields digits for a number?  (in base b)?
+
+o add support for compiler analysis that switch statements on enums
+  cover all cases in order to be able to replace 'otherwise' with
+  'when yellow' and not get a compiler error.
+
+o Chapel has discussed supporting some standard record-wrapped class
+  types in order to avoid the need to use 'new' and 'delete' while
+  still supporting "single logical instance" semantics.  It seems that
+  both the meeting place and chameneos population would benefit from
+  this in terms of avoiding the cleanup steps.
+
+
+fannkuchredux
+-------------
+o optimize slice assignment such that pp[0..i] = p[0..i] can be
+  written without penalty
+
+o create better story for serializing array assignments by default
+  when arrays are short? or parallelism is already full-throttle?
+
+o as part of DynamicIters and/or chunking library, create version
+  of dynamic iterator that will return chunk directly
+
+o improve magic number default for nChunks?
+
+o make scans not generate warnings and use them to compute/initialize
+  fact?
+
+o should globals be allowed to be declared below main()?  If so, move
+  fact[] to the bottom of the file?
+
+
+fasta
+-----
+o We should introduce local "static" variables (using some other
+  keyword) and use it to define some of the variables that are
+  currently at global or outer scopes unnecessarily
+
+o It seems like a param uint(8) whose value is known to fit in an
+  int(8) should be assignable without a cast, but currently it isn't.
+
+o Multiple config types can't currently be declared with a current
+  statement it seems.  If they were, I'd alias int(8) to 'char'
+  but don't care about it enough to have two config type statements
+  (which seems lame).
+
+o Seems like we should have an iterator that does the block-cyclic
+  round robin dealing out of chunks of a given size from a range...
+
+
+knucleotide
+-----------
+o We currently combine per-task associative domains into the shared
+  one an element at a time, but using the new bulk-add interface for
+  irregular domains, we should be able to do this faster (at present
+  time, however, bulk-add is only supported by sparse, not associative
+  :( ).
+
+o I find myself wondering whether the coforall + chunking could be
+  converted into a forall with a '+ reduce' intent on associative
+  domains.  Does that make sense?  What would it take for it to work?
+  
+o Consider the difference in performance between associative and chaining;
+  tighten up associative domain to try and close this gap
+  - support user-defined hashes to avoid double-hashing
+  - BHarsh thinks there's an extraneous % operation?
+  - what else...?
+
+o Good motivation for optimizing 1D array reallocations with a common
+  low bound?
+
+o Why does '(data:[] uint(8)) op= 0x20' not work?
+
+o Should readline() support an overload that takes an array of int(8)?
+
+o Could we use a 'sorted' iterator to print freqs rather than storing into
+  an array?
+
+o Shouldn't we be able to do a param for loop over a lo..#size param range
+
+
+mandelbrot
+----------
+o add an 'unroll' capability to loops and use it to unroll the 'for
+  off ...' loop which is about twice as fast with manual unrolling.
+  (we weren't willing to unroll it manually in this version)
+
+o have the compiler automatically optimize writes to 'stdout' in
+  serial code segments to avoid the need to manually get a lock-free
+  channel to it.
+
+
+meteor /meteor-fast
+-------------------
+o would using 1-based arrays rather than 0-based clean anything up?
+
+o It would be nice to be able to write:
+    var x = min reduce for x in X do x;
+  as:
+    serial var x = min reduce X;
+  or (preferably):
+    var x = serial min reduce X;
+  this suggests either adding a serial expression or permitting
+  reductions or variable declarations to be prefixed by 'serial'.
+
+
+nbody
+-----
+o explore possibility of enabling vectorization (perhaps by applying
+  'vectorizeOnly() to tuple operations?)
+  - explore padding to better align velocity field
+
+o support sum-of-squares library function for all tuples?  (collections?)
+  Improve and lean on Norm module more?  Optimize reductions so that
+  they could be used for sum of squares without penalty?
+
+o moving 'ref b1 = bodies[i]' up to outer loop doesn't seem to help,
+  why is that?  Also const vs. ref for bodies[i] in energy computation?
+
+o have compiler eliminate and hoist common subexpressions better so
+  that b1/b2 refs/consts aren't necessary for good performance.
+
+o as initializers are enabled, change 'mass' from 'var' to 'const'
+  field
+
+
+pidigits
+--------
+o we are currently losing performance when calling binary operators
+  on bigints and assigning the result to a third bigint because
+  the operator creates a value to store the result and then (deep)
+  copies it into the result.  It would be nice to be able to use
+  this form without taking a hit relative to the method-based form.
+
+o tmp1/tmp2 could be declared in extract_digit(), but with a
+  performance penalty.  Another use of local static variables?
+
+
+regexdna
+--------
+o no current TODOs
+
+
+regexdna-redux
+--------------
+o no current TODOs
+
+
+revcomp
+-------
+o Should we be able to support a param loop over lo..hi by 2?
+
+o Each time I use readline() I'm sad that I have to declare a
+  'numRead' variable ahead of it.  Could this return a tuple
+  or something to avoid having to pass in this argument?
+
+
+spectralnorm
+------------
+o spectral norm really wants partial reductions... :(
+
+o What could we do to not pass 'tmp' in as an input argument?  Should
+  Chapel support static variables?
+
+o open question: What would it take to (efficiently) have the helper
+  routines return the result they're computing rather than taking it
+  in as an input argument?  This is related to ongoing questions
+  about returning arrays and records and optimizing such returns...
+
+o do we have an opportunity to take advantage of vectorization?
+  (could it be as simple as 'vectorizeOnly-ing' the reduction loops?
+  Or unrolling them?)
+
+o are our reductions overly heavyweight in the serial case?  (e.g., do
+  we still use synchronized values?)  Is there more we could do to
+  improve them?
+
+o are the domain queries costing us more than we'd like?
+
+o should Chapel's dynamic() iterators default to a chunksize of 1?
+
+
+threadring
+----------
+o no current TODOs

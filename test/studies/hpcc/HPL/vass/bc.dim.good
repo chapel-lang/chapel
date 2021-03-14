@@ -1,0 +1,9 @@
+setting up for 2*2 locales
+n = 62
+blkSize = 8
+AbD = {1..62, 1..63}
+starting offsets = 1, 1
+
+initABref is using a random seed
+DONE 
+verification OK

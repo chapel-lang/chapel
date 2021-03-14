@@ -1,0 +1,1 @@
+implementation-unavailable.chpl:5: error: cholesky() requires LAPACK

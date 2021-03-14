@@ -1,0 +1,1068 @@
+=========================================================
+Problem Dimensions
+Scale: 6
+Number of Vertices: 64
+Kernel 3 Path Length: 3
+Kernel 4 Starting Set range
+low scale: 4
+high scale: 6
+
+Code Characteristics
+Filtering Edges by Weight
+Reproducible problem
+No additional work for bounds computation
+Not collecting timing statistics
+Vertex domain is block distributed
+=========================================================
+
+Two D Torus: all nodes should have exact betweenness centrality: 193.0
+(upper bound on approximate or filtered betweenness centrality)
+
+--------------------------------
+Two D Torus with 8 x 8 nodes
+explicit stencil representation
+--------------------------------
+
+
+Two Dimension Torus
+index lower bounds: 1, 1
+index upper bounds: 8, 8
+
+vertex    Neighbors
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+maximum edge weight:64
+
+vertex:   weights
+(1, 1): 2
+32 40
+22
+
+(1, 2): 55
+40 54
+21
+
+(1, 3): 11
+14 48
+25
+
+(1, 4): 60
+39 26
+61
+
+(1, 5): 50
+24 46
+41
+
+(1, 6): 59
+13 8
+56
+
+(1, 7): 5
+61 52
+49
+
+(1, 8): 11
+41 44
+1
+
+(2, 1): 44
+42 24
+56
+
+(2, 2): 17
+46 2
+64
+
+(2, 3): 64
+62 29
+8
+
+(2, 4): 23
+31 49
+22
+
+(2, 5): 35
+45 12
+4
+
+(2, 6): 2
+34 22
+60
+
+(2, 7): 54
+57 8
+2
+
+(2, 8): 52
+32 50
+46
+
+(3, 1): 7
+19 30
+19
+
+(3, 2): 44
+30 56
+41
+
+(3, 3): 24
+44 30
+40
+
+(3, 4): 9
+3 6
+16
+
+(3, 5): 23
+4 38
+9
+
+(3, 6): 52
+13 26
+14
+
+(3, 7): 32
+30 28
+64
+
+(3, 8): 51
+35 24
+61
+
+(4, 1): 58
+13 53
+45
+
+(4, 2): 64
+11 4
+33
+
+(4, 3): 19
+3 60
+19
+
+(4, 4): 22
+22 35
+57
+
+(4, 5): 58
+33 33
+35
+
+(4, 6): 46
+63 48
+52
+
+(4, 7): 32
+47 61
+43
+
+(4, 8): 56
+24 38
+59
+
+(5, 1): 19
+33 62
+20
+
+(5, 2): 51
+19 32
+35
+
+(5, 3): 12
+54 29
+44
+
+(5, 4): 21
+17 44
+53
+
+(5, 5): 63
+2 9
+53
+
+(5, 6): 3
+6 23
+1
+
+(5, 7): 10
+22 14
+31
+
+(5, 8): 35
+29 36
+4
+
+(6, 1): 46
+24 30
+56
+
+(6, 2): 1
+16 18
+62
+
+(6, 3): 59
+61 52
+22
+
+(6, 4): 31
+20 31
+50
+
+(6, 5): 20
+7 47
+26
+
+(6, 6): 16
+27 17
+4
+
+(6, 7): 55
+24 56
+49
+
+(6, 8): 33
+21 61
+10
+
+(7, 1): 57
+22 35
+10
+
+(7, 2): 64
+3 41
+11
+
+(7, 3): 17
+57 56
+60
+
+(7, 4): 27
+11 19
+2
+
+(7, 5): 57
+12 15
+47
+
+(7, 6): 56
+38 5
+15
+
+(7, 7): 57
+53 36
+34
+
+(7, 8): 44
+38 30
+44
+
+(8, 1): 30
+53 44
+55
+
+(8, 2): 15
+49 5
+1
+
+(8, 3): 60
+23 25
+50
+
+(8, 4): 56
+10 62
+53
+
+(8, 5): 64
+45 63
+60
+
+(8, 6): 64
+54 37
+13
+
+(8, 7): 46
+2 52
+44
+
+(8, 8): 51
+44 32
+36
+
+
+Heaviest weight      : 64
+Number of heavy edges:7
+
+Edges with largest weight and other neighbors:
+
+
+starting vertices for Betweenness Centrality
+{
+(1, 2) (1, 5)
+(2, 1) (2, 6) (2, 8)
+(3, 1) (3, 4) (3, 6) (3, 8)
+(4, 8)
+(5, 1) (5, 4) (5, 8)
+(6, 3) (6, 4) (6, 8)
+}
+
+
+Between Centrality:
+BC((1, 1)) = 50.4457
+BC((1, 2)) = 15.159
+BC((1, 3)) = 26.6237
+BC((1, 4)) = 22.6206
+BC((1, 5)) = 13.5992
+BC((1, 6)) = 29.8149
+BC((1, 7)) = 44.4337
+BC((1, 8)) = 68.8538
+BC((2, 1)) = 37.564
+BC((2, 2)) = 42.0989
+BC((2, 3)) = 27.9019
+BC((2, 4)) = 63.8611
+BC((2, 5)) = 78.7987
+BC((2, 6)) = 38.6748
+BC((2, 7)) = 25.3691
+BC((2, 8)) = 74.0046
+BC((3, 1)) = 51.1122
+BC((3, 2)) = 53.9771
+BC((3, 3)) = 37.9363
+BC((3, 4)) = 38.4126
+BC((3, 5)) = 100.66
+BC((3, 6)) = 94.6069
+BC((3, 7)) = 74.1093
+BC((3, 8)) = 102.789
+BC((4, 1)) = 120.867
+BC((4, 2)) = 60.8516
+BC((4, 3)) = 53.6578
+BC((4, 4)) = 50.1088
+BC((4, 5)) = 70.5292
+BC((4, 6)) = 69.879
+BC((4, 7)) = 10.9388
+BC((4, 8)) = 79.6258
+BC((5, 1)) = 53.9187
+BC((5, 2)) = 48.9748
+BC((5, 3)) = 49.8595
+BC((5, 4)) = 38.9341
+BC((5, 5)) = 62.4662
+BC((5, 6)) = 80.5957
+BC((5, 7)) = 90.3391
+BC((5, 8)) = 108.347
+BC((6, 1)) = 41.1585
+BC((6, 2)) = 60.6363
+BC((6, 3)) = 55.3049
+BC((6, 4)) = 52.6876
+BC((6, 5)) = 43.0893
+BC((6, 6)) = 25.2043
+BC((6, 7)) = 32.8221
+BC((6, 8)) = 47.6285
+BC((7, 1)) = 41.2609
+BC((7, 2)) = 51.0871
+BC((7, 3)) = 52.4822
+BC((7, 4)) = 30.1887
+BC((7, 5)) = 24.2884
+BC((7, 6)) = 30.0623
+BC((7, 7)) = 53.4602
+BC((7, 8)) = 66.4672
+BC((8, 1)) = 66.1829
+BC((8, 2)) = 75.5478
+BC((8, 3)) = 54.3435
+BC((8, 4)) = 37.6329
+BC((8, 5)) = 37.8784
+BC((8, 6)) = 37.9352
+BC((8, 7)) = 52.7028
+BC((8, 8)) = 46.6277
+
+Max Betweenness Centrality: 120.867
+Min Betweenness Centrality: 10.9388
+
+Computed betweenness centrality satisfies vertex count constraint
+All betweenness centrality scores should be in range [0, 4032.0]
+
+
+starting vertices for Betweenness Centrality
+{
+(1, 2) (1, 5) (1, 6)
+(2, 1) (2, 3) (2, 5) (2, 6) (2, 8)
+(3, 1) (3, 2) (3, 3) (3, 4) (3, 6) (3, 7) (3, 8)
+(4, 2) (4, 8)
+(5, 1) (5, 3) (5, 4) (5, 5) (5, 6) (5, 8)
+(6, 2) (6, 3) (6, 4) (6, 7) (6, 8)
+(7, 1) (7, 7)
+(8, 4) (8, 6)
+}
+
+
+Between Centrality:
+BC((1, 1)) = 66.7853
+BC((1, 2)) = 45.3938
+BC((1, 3)) = 44.1906
+BC((1, 4)) = 68.758
+BC((1, 5)) = 82.3002
+BC((1, 6)) = 48.4632
+BC((1, 7)) = 79.7697
+BC((1, 8)) = 105.766
+BC((2, 1)) = 72.4602
+BC((2, 2)) = 104.006
+BC((2, 3)) = 46.236
+BC((2, 4)) = 167.802
+BC((2, 5)) = 159.601
+BC((2, 6)) = 83.8152
+BC((2, 7)) = 46.13
+BC((2, 8)) = 108.607
+BC((3, 1)) = 103.505
+BC((3, 2)) = 108.856
+BC((3, 3)) = 73.7105
+BC((3, 4)) = 124.659
+BC((3, 5)) = 212.272
+BC((3, 6)) = 171.932
+BC((3, 7)) = 90.3975
+BC((3, 8)) = 155.621
+BC((4, 1)) = 184.059
+BC((4, 2)) = 116.689
+BC((4, 3)) = 126.801
+BC((4, 4)) = 106.157
+BC((4, 5)) = 162.434
+BC((4, 6)) = 123.242
+BC((4, 7)) = 23.6518
+BC((4, 8)) = 115.506
+BC((5, 1)) = 110.328
+BC((5, 2)) = 112.022
+BC((5, 3)) = 84.0205
+BC((5, 4)) = 104.028
+BC((5, 5)) = 123.427
+BC((5, 6)) = 136.103
+BC((5, 7)) = 180.961
+BC((5, 8)) = 171.712
+BC((6, 1)) = 70.9874
+BC((6, 2)) = 91.1004
+BC((6, 3)) = 132.286
+BC((6, 4)) = 104.904
+BC((6, 5)) = 94.6301
+BC((6, 6)) = 55.2103
+BC((6, 7)) = 67.9022
+BC((6, 8)) = 76.7566
+BC((7, 1)) = 86.5616
+BC((7, 2)) = 112.289
+BC((7, 3)) = 103.818
+BC((7, 4)) = 52.2994
+BC((7, 5)) = 65.0559
+BC((7, 6)) = 79.3997
+BC((7, 7)) = 142.499
+BC((7, 8)) = 149.293
+BC((8, 1)) = 106.285
+BC((8, 2)) = 126.798
+BC((8, 3)) = 124.445
+BC((8, 4)) = 83.4492
+BC((8, 5)) = 105.089
+BC((8, 6)) = 103.087
+BC((8, 7)) = 162.405
+BC((8, 8)) = 91.2676
+
+Max Betweenness Centrality: 212.272
+Min Betweenness Centrality: 23.6518
+
+Computed betweenness centrality satisfies vertex count constraint
+All betweenness centrality scores should be in range [0, 4032.0]
+
+
+Computing Betweenness Centrality exactly
+
+Between Centrality:
+BC((1, 1)) = 111.519
+BC((1, 2)) = 119.41
+BC((1, 3)) = 108.825
+BC((1, 4)) = 141.295
+BC((1, 5)) = 172.459
+BC((1, 6)) = 88.8544
+BC((1, 7)) = 192.705
+BC((1, 8)) = 195.903
+BC((2, 1)) = 144.264
+BC((2, 2)) = 151.32
+BC((2, 3)) = 127.953
+BC((2, 4)) = 306.378
+BC((2, 5)) = 310.985
+BC((2, 6)) = 178.786
+BC((2, 7)) = 112.501
+BC((2, 8)) = 190.493
+BC((3, 1)) = 172.05
+BC((3, 2)) = 157.037
+BC((3, 3)) = 142.864
+BC((3, 4)) = 251.725
+BC((3, 5)) = 337.241
+BC((3, 6)) = 295.467
+BC((3, 7)) = 158.872
+BC((3, 8)) = 239.138
+BC((4, 1)) = 277.232
+BC((4, 2)) = 198.738
+BC((4, 3)) = 210.402
+BC((4, 4)) = 198.634
+BC((4, 5)) = 302.032
+BC((4, 6)) = 216.066
+BC((4, 7)) = 44.4654
+BC((4, 8)) = 187.029
+BC((5, 1)) = 236.657
+BC((5, 2)) = 162.752
+BC((5, 3)) = 181.677
+BC((5, 4)) = 201.23
+BC((5, 5)) = 257.08
+BC((5, 6)) = 259.387
+BC((5, 7)) = 307.098
+BC((5, 8)) = 291.881
+BC((6, 1)) = 148.507
+BC((6, 2)) = 197.975
+BC((6, 3)) = 331.995
+BC((6, 4)) = 249.718
+BC((6, 5)) = 212.908
+BC((6, 6)) = 99.8652
+BC((6, 7)) = 165.861
+BC((6, 8)) = 163.855
+BC((7, 1)) = 266.684
+BC((7, 2)) = 236.461
+BC((7, 3)) = 273.027
+BC((7, 4)) = 111.829
+BC((7, 5)) = 169.923
+BC((7, 6)) = 178.01
+BC((7, 7)) = 336.358
+BC((7, 8)) = 316.769
+BC((8, 1)) = 256.506
+BC((8, 2)) = 277.881
+BC((8, 3)) = 295.715
+BC((8, 4)) = 225.261
+BC((8, 5)) = 194.495
+BC((8, 6)) = 205.943
+BC((8, 7)) = 316.031
+BC((8, 8)) = 226.02
+
+Max Betweenness Centrality: 337.241
+Min Betweenness Centrality: 44.4654
+
+Computed betweenness centrality satisfies vertex count constraint
+All betweenness centrality scores should be in range [0, 4032.0]
+
+
+=========================================================
+
+
+[0] (1, 1)
+[0] (1, 1) (1, 3)
+[0] (1, 1):    (8, 1)
+[0] (1, 2)
+[0] (1, 2) (1, 4)
+[0] (1, 2):    (8, 2)
+[0] (1, 3)
+[0] (1, 3) (1, 5)
+[0] (1, 3):    (8, 3)
+[0] (1, 4)
+[0] (1, 4) (1, 6)
+[0] (1, 4):    (8, 4)
+[0] (1, 5)
+[0] (1, 5) (1, 7)
+[0] (1, 5):    (8, 5)
+[0] (1, 6)
+[0] (1, 6) (1, 8)
+[0] (1, 6):    (8, 6)
+[0] (1, 7)
+[0] (1, 7) (1, 1)
+[0] (1, 7):    (8, 7)
+[0] (1, 8)
+[0] (1, 8) (1, 2)
+[0] (1, 8):    (8, 8)
+[0] (2, 1)
+[0] (2, 1) (2, 3)
+[0] (2, 1):    (1, 1)
+[0] (2, 2)
+[0] (2, 2) (2, 4)
+[0] (2, 2):    (1, 2)
+[0] (2, 3)
+[0] (2, 3) (2, 5)
+[0] (2, 3):    (1, 3)
+[0] (2, 4)
+[0] (2, 4) (2, 6)
+[0] (2, 4):    (1, 4)
+[0] (2, 5)
+[0] (2, 5) (2, 7)
+[0] (2, 5):    (1, 5)
+[0] (2, 6)
+[0] (2, 6) (2, 8)
+[0] (2, 6):    (1, 6)
+[0] (2, 7)
+[0] (2, 7) (2, 1)
+[0] (2, 7):    (1, 7)
+[0] (2, 8)
+[0] (2, 8) (2, 2)
+[0] (2, 8):    (1, 8)
+[0] (3, 1)
+[0] (3, 1) (3, 3)
+[0] (3, 1):    (2, 1)
+[0] (3, 2)
+[0] (3, 2) (3, 4)
+[0] (3, 2):    (2, 2)
+[0] (3, 3)
+[0] (3, 3) (3, 5)
+[0] (3, 3):    (2, 3)
+[0] (3, 4)
+[0] (3, 4) (3, 6)
+[0] (3, 4):    (2, 4)
+[0] (3, 5)
+[0] (3, 5) (3, 7)
+[0] (3, 5):    (2, 5)
+[0] (3, 6)
+[0] (3, 6) (3, 8)
+[0] (3, 6):    (2, 6)
+[0] (3, 7)
+[0] (3, 7) (3, 1)
+[0] (3, 7):    (2, 7)
+[0] (3, 8)
+[0] (3, 8) (3, 2)
+[0] (3, 8):    (2, 8)
+[0] (4, 1)
+[0] (4, 1) (4, 3)
+[0] (4, 1):    (3, 1)
+[0] (4, 2)
+[0] (4, 2) (4, 4)
+[0] (4, 2):    (3, 2)
+[0] (4, 3)
+[0] (4, 3) (4, 5)
+[0] (4, 3):    (3, 3)
+[0] (4, 4)
+[0] (4, 4) (4, 6)
+[0] (4, 4):    (3, 4)
+[0] (4, 5)
+[0] (4, 5) (4, 7)
+[0] (4, 5):    (3, 5)
+[0] (4, 6)
+[0] (4, 6) (4, 8)
+[0] (4, 6):    (3, 6)
+[0] (4, 7)
+[0] (4, 7) (4, 1)
+[0] (4, 7):    (3, 7)
+[0] (4, 8)
+[0] (4, 8) (4, 2)
+[0] (4, 8):    (3, 8)
+[0] (5, 1)
+[0] (5, 1) (5, 3)
+[0] (5, 1):    (4, 1)
+[0] (5, 2)
+[0] (5, 2) (5, 4)
+[0] (5, 2):    (4, 2)
+[0] (5, 3)
+[0] (5, 3) (5, 5)
+[0] (5, 3):    (4, 3)
+[0] (5, 4)
+[0] (5, 4) (5, 6)
+[0] (5, 4):    (4, 4)
+[0] (5, 5)
+[0] (5, 5) (5, 7)
+[0] (5, 5):    (4, 5)
+[0] (5, 6)
+[0] (5, 6) (5, 8)
+[0] (5, 6):    (4, 6)
+[0] (5, 7)
+[0] (5, 7) (5, 1)
+[0] (5, 7):    (4, 7)
+[0] (5, 8)
+[0] (5, 8) (5, 2)
+[0] (5, 8):    (4, 8)
+[0] (6, 1)
+[0] (6, 1) (6, 3)
+[0] (6, 1):    (5, 1)
+[0] (6, 2)
+[0] (6, 2) (6, 4)
+[0] (6, 2):    (5, 2)
+[0] (6, 3)
+[0] (6, 3) (6, 5)
+[0] (6, 3):    (5, 3)
+[0] (6, 4)
+[0] (6, 4) (6, 6)
+[0] (6, 4):    (5, 4)
+[0] (6, 5)
+[0] (6, 5) (6, 7)
+[0] (6, 5):    (5, 5)
+[0] (6, 6)
+[0] (6, 6) (6, 8)
+[0] (6, 6):    (5, 6)
+[0] (6, 7)
+[0] (6, 7) (6, 1)
+[0] (6, 7):    (5, 7)
+[0] (6, 8)
+[0] (6, 8) (6, 2)
+[0] (6, 8):    (5, 8)
+[0] (7, 1)
+[0] (7, 1) (7, 3)
+[0] (7, 1):    (6, 1)
+[0] (7, 2)
+[0] (7, 2) (7, 4)
+[0] (7, 2):    (6, 2)
+[0] (7, 3)
+[0] (7, 3) (7, 5)
+[0] (7, 3):    (6, 3)
+[0] (7, 4)
+[0] (7, 4) (7, 6)
+[0] (7, 4):    (6, 4)
+[0] (7, 5)
+[0] (7, 5) (7, 7)
+[0] (7, 5):    (6, 5)
+[0] (7, 6)
+[0] (7, 6) (7, 8)
+[0] (7, 6):    (6, 6)
+[0] (7, 7)
+[0] (7, 7) (7, 1)
+[0] (7, 7):    (6, 7)
+[0] (7, 8)
+[0] (7, 8) (7, 2)
+[0] (7, 8):    (6, 8)
+[0] (8, 1)
+[0] (8, 1) (8, 3)
+[0] (8, 1):    (7, 1)
+[0] (8, 2)
+[0] (8, 2) (8, 4)
+[0] (8, 2):    (7, 2)
+[0] (8, 3)
+[0] (8, 3) (8, 5)
+[0] (8, 3):    (7, 3)
+[0] (8, 4)
+[0] (8, 4) (8, 6)
+[0] (8, 4):    (7, 4)
+[0] (8, 5)
+[0] (8, 5) (8, 7)
+[0] (8, 5):    (7, 5)
+[0] (8, 6)
+[0] (8, 6) (8, 8)
+[0] (8, 6):    (7, 6)
+[0] (8, 7)
+[0] (8, 7) (8, 1)
+[0] (8, 7):    (7, 7)
+[0] (8, 8)
+[0] (8, 8) (8, 2)
+[0] (8, 8):    (7, 8)
+[0] Building heavy edge subgraph from pair:((2, 2), (3, 2))
+[0] Building heavy edge subgraph from pair:((2, 3), (1, 3))
+[0] Building heavy edge subgraph from pair:((3, 7), (4, 7))
+[0] Building heavy edge subgraph from pair:((4, 2), (3, 2))
+[0] Building heavy edge subgraph from pair:((7, 2), (6, 2))
+[0] Building heavy edge subgraph from pair:((8, 5), (7, 5))
+[0] Building heavy edge subgraph from pair:((8, 6), (7, 6))
+[0] (1, 2) 17
+[0] (1, 3) 64
+[0] (1, 5) 60
+[0] (1, 6) 13
+[0] (2, 1) 46
+[0] (2, 2) 62
+[0] (2, 3) 2
+[0] (2, 4) 29
+[0] (2, 7) 32
+[0] (3, 2) 64
+[0] (3, 2) 64
+[0] (3, 3) 8
+[0] (3, 6) 30
+[0] (3, 8) 28
+[0] (4, 1) 11
+[0] (4, 3) 4
+[0] (4, 7) 64
+[0] (5, 2) 33
+[0] (6, 2) 64
+[0] (7, 1) 3
+[0] (7, 3) 41
+[0] (7, 5) 64
+[0] (7, 6) 64
+[0] (8, 2) 11
+[0] (8, 4) 45
+[0] (8, 5) 54
+[0] (8, 6) 63
+[0] (8, 7) 37
+[0] edge   ((2, 2), (3, 2))
+[0] edge   ((2, 3), (1, 3))
+[0] edge   ((3, 7), (4, 7))
+[0] edge   ((4, 2), (3, 2))
+[0] edge   ((7, 2), (6, 2))
+[0] edge   ((8, 5), (7, 5))
+[0] edge   ((8, 6), (7, 6))
+[0] expanding from starting node (1, 1)
+[0] expanding from starting node (1, 2)
+[0] expanding from starting node (1, 2)
+[0] expanding from starting node (1, 2)
+[0] expanding from starting node (1, 3)
+[0] expanding from starting node (1, 4)
+[0] expanding from starting node (1, 5)
+[0] expanding from starting node (1, 5)
+[0] expanding from starting node (1, 5)
+[0] expanding from starting node (1, 6)
+[0] expanding from starting node (1, 6)
+[0] expanding from starting node (1, 7)
+[0] expanding from starting node (1, 8)
+[0] expanding from starting node (2, 1)
+[0] expanding from starting node (2, 1)
+[0] expanding from starting node (2, 1)
+[0] expanding from starting node (2, 2)
+[0] expanding from starting node (2, 3)
+[0] expanding from starting node (2, 3)
+[0] expanding from starting node (2, 4)
+[0] expanding from starting node (2, 5)
+[0] expanding from starting node (2, 5)
+[0] expanding from starting node (2, 6)
+[0] expanding from starting node (2, 6)
+[0] expanding from starting node (2, 6)
+[0] expanding from starting node (2, 7)
+[0] expanding from starting node (2, 8)
+[0] expanding from starting node (2, 8)
+[0] expanding from starting node (2, 8)
+[0] expanding from starting node (3, 1)
+[0] expanding from starting node (3, 1)
+[0] expanding from starting node (3, 1)
+[0] expanding from starting node (3, 2)
+[0] expanding from starting node (3, 2)
+[0] expanding from starting node (3, 3)
+[0] expanding from starting node (3, 3)
+[0] expanding from starting node (3, 4)
+[0] expanding from starting node (3, 4)
+[0] expanding from starting node (3, 4)
+[0] expanding from starting node (3, 5)
+[0] expanding from starting node (3, 6)
+[0] expanding from starting node (3, 6)
+[0] expanding from starting node (3, 6)
+[0] expanding from starting node (3, 7)
+[0] expanding from starting node (3, 7)
+[0] expanding from starting node (3, 8)
+[0] expanding from starting node (3, 8)
+[0] expanding from starting node (3, 8)
+[0] expanding from starting node (4, 1)
+[0] expanding from starting node (4, 2)
+[0] expanding from starting node (4, 2)
+[0] expanding from starting node (4, 3)
+[0] expanding from starting node (4, 4)
+[0] expanding from starting node (4, 5)
+[0] expanding from starting node (4, 6)
+[0] expanding from starting node (4, 7)
+[0] expanding from starting node (4, 8)
+[0] expanding from starting node (4, 8)
+[0] expanding from starting node (4, 8)
+[0] expanding from starting node (5, 1)
+[0] expanding from starting node (5, 1)
+[0] expanding from starting node (5, 1)
+[0] expanding from starting node (5, 2)
+[0] expanding from starting node (5, 3)
+[0] expanding from starting node (5, 3)
+[0] expanding from starting node (5, 4)
+[0] expanding from starting node (5, 4)
+[0] expanding from starting node (5, 4)
+[0] expanding from starting node (5, 5)
+[0] expanding from starting node (5, 5)
+[0] expanding from starting node (5, 6)
+[0] expanding from starting node (5, 6)
+[0] expanding from starting node (5, 7)
+[0] expanding from starting node (5, 8)
+[0] expanding from starting node (5, 8)
+[0] expanding from starting node (5, 8)
+[0] expanding from starting node (6, 1)
+[0] expanding from starting node (6, 2)
+[0] expanding from starting node (6, 2)
+[0] expanding from starting node (6, 3)
+[0] expanding from starting node (6, 3)
+[0] expanding from starting node (6, 3)
+[0] expanding from starting node (6, 4)
+[0] expanding from starting node (6, 4)
+[0] expanding from starting node (6, 4)
+[0] expanding from starting node (6, 5)
+[0] expanding from starting node (6, 6)
+[0] expanding from starting node (6, 7)
+[0] expanding from starting node (6, 7)
+[0] expanding from starting node (6, 8)
+[0] expanding from starting node (6, 8)
+[0] expanding from starting node (6, 8)
+[0] expanding from starting node (7, 1)
+[0] expanding from starting node (7, 1)
+[0] expanding from starting node (7, 2)
+[0] expanding from starting node (7, 3)
+[0] expanding from starting node (7, 4)
+[0] expanding from starting node (7, 5)
+[0] expanding from starting node (7, 6)
+[0] expanding from starting node (7, 7)
+[0] expanding from starting node (7, 7)
+[0] expanding from starting node (7, 8)
+[0] expanding from starting node (8, 1)
+[0] expanding from starting node (8, 2)
+[0] expanding from starting node (8, 3)
+[0] expanding from starting node (8, 4)
+[0] expanding from starting node (8, 4)
+[0] expanding from starting node (8, 5)
+[0] expanding from starting node (8, 6)
+[0] expanding from starting node (8, 6)
+[0] expanding from starting node (8, 7)
+[0] expanding from starting node (8, 8)
+[0] graph diameter from starting node (1, 1)  is 8
+[0] graph diameter from starting node (1, 2)  is 8
+[0] graph diameter from starting node (1, 2)  is 8
+[0] graph diameter from starting node (1, 2)  is 8
+[0] graph diameter from starting node (1, 3)  is 9
+[0] graph diameter from starting node (1, 4)  is 8
+[0] graph diameter from starting node (1, 5)  is 8
+[0] graph diameter from starting node (1, 5)  is 8
+[0] graph diameter from starting node (1, 5)  is 8
+[0] graph diameter from starting node (1, 6)  is 8
+[0] graph diameter from starting node (1, 6)  is 8
+[0] graph diameter from starting node (1, 7)  is 8
+[0] graph diameter from starting node (1, 8)  is 8
+[0] graph diameter from starting node (2, 1)  is 8
+[0] graph diameter from starting node (2, 1)  is 8
+[0] graph diameter from starting node (2, 1)  is 8
+[0] graph diameter from starting node (2, 2)  is 8
+[0] graph diameter from starting node (2, 3)  is 8
+[0] graph diameter from starting node (2, 3)  is 8
+[0] graph diameter from starting node (2, 4)  is 8
+[0] graph diameter from starting node (2, 5)  is 8
+[0] graph diameter from starting node (2, 5)  is 8
+[0] graph diameter from starting node (2, 6)  is 8
+[0] graph diameter from starting node (2, 6)  is 8
+[0] graph diameter from starting node (2, 6)  is 8
+[0] graph diameter from starting node (2, 7)  is 8
+[0] graph diameter from starting node (2, 8)  is 8
+[0] graph diameter from starting node (2, 8)  is 8
+[0] graph diameter from starting node (2, 8)  is 8
+[0] graph diameter from starting node (3, 1)  is 8
+[0] graph diameter from starting node (3, 1)  is 8
+[0] graph diameter from starting node (3, 1)  is 8
+[0] graph diameter from starting node (3, 2)  is 8
+[0] graph diameter from starting node (3, 2)  is 8
+[0] graph diameter from starting node (3, 3)  is 8
+[0] graph diameter from starting node (3, 3)  is 8
+[0] graph diameter from starting node (3, 4)  is 8
+[0] graph diameter from starting node (3, 4)  is 8
+[0] graph diameter from starting node (3, 4)  is 8
+[0] graph diameter from starting node (3, 5)  is 8
+[0] graph diameter from starting node (3, 6)  is 8
+[0] graph diameter from starting node (3, 6)  is 8
+[0] graph diameter from starting node (3, 6)  is 8
+[0] graph diameter from starting node (3, 7)  is 8
+[0] graph diameter from starting node (3, 7)  is 8
+[0] graph diameter from starting node (3, 8)  is 8
+[0] graph diameter from starting node (3, 8)  is 8
+[0] graph diameter from starting node (3, 8)  is 8
+[0] graph diameter from starting node (4, 1)  is 8
+[0] graph diameter from starting node (4, 2)  is 8
+[0] graph diameter from starting node (4, 2)  is 8
+[0] graph diameter from starting node (4, 3)  is 8
+[0] graph diameter from starting node (4, 4)  is 8
+[0] graph diameter from starting node (4, 5)  is 8
+[0] graph diameter from starting node (4, 6)  is 8
+[0] graph diameter from starting node (4, 7)  is 8
+[0] graph diameter from starting node (4, 8)  is 8
+[0] graph diameter from starting node (4, 8)  is 8
+[0] graph diameter from starting node (4, 8)  is 8
+[0] graph diameter from starting node (5, 1)  is 8
+[0] graph diameter from starting node (5, 1)  is 8
+[0] graph diameter from starting node (5, 1)  is 8
+[0] graph diameter from starting node (5, 2)  is 8
+[0] graph diameter from starting node (5, 3)  is 8
+[0] graph diameter from starting node (5, 3)  is 8
+[0] graph diameter from starting node (5, 4)  is 8
+[0] graph diameter from starting node (5, 4)  is 8
+[0] graph diameter from starting node (5, 4)  is 8
+[0] graph diameter from starting node (5, 5)  is 8
+[0] graph diameter from starting node (5, 5)  is 8
+[0] graph diameter from starting node (5, 6)  is 8
+[0] graph diameter from starting node (5, 6)  is 8
+[0] graph diameter from starting node (5, 7)  is 8
+[0] graph diameter from starting node (5, 8)  is 8
+[0] graph diameter from starting node (5, 8)  is 8
+[0] graph diameter from starting node (5, 8)  is 8
+[0] graph diameter from starting node (6, 1)  is 8
+[0] graph diameter from starting node (6, 2)  is 8
+[0] graph diameter from starting node (6, 2)  is 8
+[0] graph diameter from starting node (6, 3)  is 8
+[0] graph diameter from starting node (6, 3)  is 8
+[0] graph diameter from starting node (6, 3)  is 8
+[0] graph diameter from starting node (6, 4)  is 8
+[0] graph diameter from starting node (6, 4)  is 8
+[0] graph diameter from starting node (6, 4)  is 8
+[0] graph diameter from starting node (6, 5)  is 8
+[0] graph diameter from starting node (6, 6)  is 8
+[0] graph diameter from starting node (6, 7)  is 8
+[0] graph diameter from starting node (6, 7)  is 8
+[0] graph diameter from starting node (6, 8)  is 8
+[0] graph diameter from starting node (6, 8)  is 8
+[0] graph diameter from starting node (6, 8)  is 8
+[0] graph diameter from starting node (7, 1)  is 8
+[0] graph diameter from starting node (7, 1)  is 8
+[0] graph diameter from starting node (7, 2)  is 8
+[0] graph diameter from starting node (7, 3)  is 8
+[0] graph diameter from starting node (7, 4)  is 8
+[0] graph diameter from starting node (7, 5)  is 8
+[0] graph diameter from starting node (7, 6)  is 8
+[0] graph diameter from starting node (7, 7)  is 8
+[0] graph diameter from starting node (7, 7)  is 8
+[0] graph diameter from starting node (7, 8)  is 8
+[0] graph diameter from starting node (8, 1)  is 8
+[0] graph diameter from starting node (8, 2)  is 8
+[0] graph diameter from starting node (8, 3)  is 8
+[0] graph diameter from starting node (8, 4)  is 8
+[0] graph diameter from starting node (8, 4)  is 8
+[0] graph diameter from starting node (8, 5)  is 8
+[0] graph diameter from starting node (8, 6)  is 8
+[0] graph diameter from starting node (8, 6)  is 8
+[0] graph diameter from starting node (8, 7)  is 8
+[0] graph diameter from starting node (8, 8)  is 8

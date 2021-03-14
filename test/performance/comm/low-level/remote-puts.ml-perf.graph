@@ -1,0 +1,5 @@
+perfkeys: Performance (mOps/sec) =
+files: many-to-one-puts.dat
+graphkeys: PUTs to 1 node
+graphtitle: Remote PUT Performance
+ylabel: Performance (10**6 ops/sec)

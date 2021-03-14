@@ -1,0 +1,2 @@
+error-return-parentclass.chpl:14: In function 'f':
+error-return-parentclass.chpl:15: error: cannot initialize return value of type 'borrowed Child' from a 'borrowed Parent'

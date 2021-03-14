@@ -1,0 +1,2 @@
+issue-11846-b.chpl:7: error: Cannot replace an instantiated field with another type
+issue-11846-b.chpl:7: note: field 'data1' has type '2*3*int(64)' but is set to '_uninstantiated'

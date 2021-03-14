@@ -1,0 +1,106 @@
+.TH "hwlocality_object_strings" 3 "Mon Jun 3 2019" "Version 1.11.13" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+hwlocality_object_strings
+.SH SYNOPSIS
+.br
+.PP
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "const char * \fBhwloc_obj_type_string\fP (\fBhwloc_obj_type_t\fP type)"
+.br
+.ti -1c
+.RI "int \fBhwloc_obj_type_snprintf\fP (char *restrict string, size_t size, \fBhwloc_obj_t\fP obj, int verbose)"
+.br
+.ti -1c
+.RI "int \fBhwloc_obj_attr_snprintf\fP (char *restrict string, size_t size, \fBhwloc_obj_t\fP obj, const char *restrict separator, int verbose)"
+.br
+.ti -1c
+.RI "int \fBhwloc_obj_cpuset_snprintf\fP (char *restrict str, size_t size, size_t nobj, const \fBhwloc_obj_t\fP *restrict objs)"
+.br
+.ti -1c
+.RI "int \fBhwloc_obj_type_sscanf\fP (const char *string, \fBhwloc_obj_type_t\fP *typep, int *depthattrp, void *typeattrp, size_t typeattrsize)"
+.br
+.in -1c
+.SH "Detailed Description"
+.PP 
+
+.SH "Function Documentation"
+.PP 
+.SS "int hwloc_obj_attr_snprintf (char *restrict string, size_t size, \fBhwloc_obj_t\fP obj, const char *restrict separator, int verbose)"
+
+.PP
+Stringify the attributes of a given topology object into a human-readable form\&. Attribute values are separated by \fCseparator\fP\&.
+.PP
+Only the major attributes are printed in non-verbose mode\&.
+.PP
+If \fCsize\fP is 0, \fCstring\fP may safely be \fCNULL\fP\&.
+.PP
+\fBReturns:\fP
+.RS 4
+the number of character that were actually written if not truncating, or that would have been written (not including the ending \\0)\&. 
+.RE
+.PP
+
+.SS "int hwloc_obj_cpuset_snprintf (char *restrict str, size_t size, size_t nobj, const \fBhwloc_obj_t\fP *restrict objs)"
+
+.PP
+Stringify the cpuset containing a set of objects\&. If \fCsize\fP is 0, \fCstring\fP may safely be \fCNULL\fP\&.
+.PP
+\fBReturns:\fP
+.RS 4
+the number of character that were actually written if not truncating, or that would have been written (not including the ending \\0)\&. 
+.RE
+.PP
+
+.SS "int hwloc_obj_type_snprintf (char *restrict string, size_t size, \fBhwloc_obj_t\fP obj, int verbose)"
+
+.PP
+Stringify the type of a given topology object into a human-readable form\&. Contrary to \fBhwloc_obj_type_string()\fP, this function includes object-specific attributes (such as the Group depth, the Bridge type, or OS device type) in the output, and it requires the caller to provide the output buffer\&.
+.PP
+The output is guaranteed to be the same for all objects of a same topology level\&.
+.PP
+If \fCsize\fP is 0, \fCstring\fP may safely be \fCNULL\fP\&.
+.PP
+\fBReturns:\fP
+.RS 4
+the number of character that were actually written if not truncating, or that would have been written (not including the ending \\0)\&. 
+.RE
+.PP
+
+.SS "int hwloc_obj_type_sscanf (const char * string, \fBhwloc_obj_type_t\fP * typep, int * depthattrp, void * typeattrp, size_t typeattrsize)"
+
+.PP
+Return an object type and attributes from a type string\&. Convert strings such as 'Package' or 'Cache' into the corresponding types\&. Matching is case-insensitive, and only the first letters are actually required to match\&.
+.PP
+This function is guaranteed to match any string returned by \fBhwloc_obj_type_string()\fP or \fBhwloc_obj_type_snprintf()\fP\&.
+.PP
+Types that have specific attributes, for instance caches and groups, may be returned in \fCdepthattrp\fP and \fCtypeattrp\fP\&. They are ignored when these pointers are \fCNULL\fP\&.
+.PP
+For instance 'L2i' or 'L2iCache' would return type HWLOC_OBJ_CACHE in \fCtypep\fP, 2 in \fCdepthattrp\fP, and HWLOC_OBJ_CACHE_TYPE_INSTRUCTION in \fCtypeattrp\fP (this last pointer should point to a hwloc_obj_cache_type_t)\&. 'Group3' would return type HWLOC_OBJ_GROUP type and 3 in \fCdepthattrp\fP\&. Attributes that are not specified in the string (for instance 'Group' without a depth, or 'L2Cache' without a cache type) are set to -1\&.
+.PP
+\fCtypeattrp\fP is only filled if the size specified in \fCtypeattrsize\fP is large enough\&. It is currently only used for caches, and the required size is at least the size of hwloc_obj_cache_type_t\&.
+.PP
+\fBReturns:\fP
+.RS 4
+0 if a type was correctly identified, otherwise -1\&.
+.RE
+.PP
+\fBNote:\fP
+.RS 4
+This is an extended version of the now deprecated hwloc_obj_type_of_string() 
+.RE
+.PP
+
+.SS "const char* hwloc_obj_type_string (\fBhwloc_obj_type_t\fP type)"
+
+.PP
+Return a constant stringified object type\&. This function is the basic way to convert a generic type into a string\&.
+.PP
+\fBhwloc_obj_type_snprintf()\fP may return a more precise output for a specific object, but it requires the caller to provide the output buffer\&. 
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Hardware Locality (hwloc) from the source code\&.

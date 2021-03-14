@@ -1,0 +1,9 @@
+bug: Chapel ignores unused code when compiling.
+
+The compiler ignores code that isn't in use.  This means that there can be
+latent errors that go undetected.  You could argue that there should always
+be a test case to exercise the code, in which case the errors would be found.
+But it is handy to run checks stand-alone (to catch typos or syntax errors,
+for example).  There is also no warning about what code has been ignored, 
+which might be another approach.
+

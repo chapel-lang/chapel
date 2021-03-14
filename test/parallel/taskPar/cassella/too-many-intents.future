@@ -1,0 +1,1 @@
+bug: Specifying one variable multiple times in a with clause should be an error

@@ -1,0 +1,4 @@
+--printTiming --n=8192 # copy_to_local.8192.perfkeys
+--printTiming --n=16384 # copy_to_local.16384.perfkeys
+--printTiming --n=32768 # copy_to_local.32768.perfkeys
+--printTiming --n=65536 # copy_to_local.65536.perfkeys

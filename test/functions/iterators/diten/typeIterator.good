@@ -1,0 +1,1 @@
+typeIterator.chpl:1: error: iterators may not yield or return types

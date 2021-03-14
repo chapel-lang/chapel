@@ -1,0 +1,22 @@
+const-error-iterated.chpl:32: error: const actual is passed to 'ref' formal 'A' of writeForA()
+note: to formal of type [domain(1,int(64),false)] int(64)
+const-error-iterated.chpl:11: note: to ref formal here
+const-error-iterated.chpl:12: note: passed as ref here
+const-error-iterated.chpl:13: note: passed as ref here
+const-error-iterated.chpl:3: note: to ref formal here
+const-error-iterated.chpl:33: error: const actual is passed to 'ref' formal 'A' of writeForallA()
+note: to formal of type [domain(1,int(64),false)] int(64)
+const-error-iterated.chpl:16: note: to ref formal here
+const-error-iterated.chpl:17: note: passed as ref here
+const-error-iterated.chpl:18: note: passed as ref here
+const-error-iterated.chpl:3: note: to ref formal here
+const-error-iterated.chpl:34: error: const actual is passed to 'ref' formal 'A' of promotedAssign()
+note: to formal of type [domain(1,int(64),false)] int(64)
+const-error-iterated.chpl:21: note: to ref formal here
+const-error-iterated.chpl:22: note: passed as ref here
+const-error-iterated.chpl:35: error: const actual is passed to 'ref' formal 'A' of writeCoforallA()
+note: to formal of type [domain(1,int(64),false)] int(64)
+const-error-iterated.chpl:25: note: to ref formal here
+const-error-iterated.chpl:26: note: passed as ref here
+const-error-iterated.chpl:27: note: passed as ref here
+const-error-iterated.chpl:3: note: to ref formal here

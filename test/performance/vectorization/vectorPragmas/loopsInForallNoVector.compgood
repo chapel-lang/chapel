@@ -1,0 +1,2 @@
+loopsInForallNoVector.chpl:10: note: loop vectorization (with parallel access) hinted for CForLoop
+loopsInForallNoVector.chpl:18: note: loop vectorization (with parallel access) hinted for CForLoop

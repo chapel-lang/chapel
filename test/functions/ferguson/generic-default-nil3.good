@@ -1,0 +1,6 @@
+generic-default-nil3.chpl:3: In function 'foo':
+generic-default-nil3.chpl:3: error: cannot default-initialize a variable with generic type
+generic-default-nil3.chpl:3: note: 'x' has generic type 'C?'
+generic-default-nil3.chpl:3: note: cannot find initialization point to split-init this variable
+generic-default-nil3.chpl:4: note: 'x' is used here before it is initialized
+  generic-default-nil3.chpl:7: called as foo(x: C?)

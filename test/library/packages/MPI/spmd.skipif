@@ -1,0 +1,24 @@
+#!/usr/bin/env python3
+
+
+import os
+retval = True
+
+# Only support the GNU compilers for now
+# except on Crays.
+compiler=os.environ['CHPL_TARGET_COMPILER']
+retval = ((compiler !="mpi-gnu")
+          & (compiler!="cray-prgenv-gnu")
+          & (compiler!='cray-prgenv-intel'))
+
+# Only support fifo 
+retval |= (os.environ['CHPL_TASKS']!="fifo")
+
+# Only support none
+retval |= (os.environ['CHPL_COMM']!="none")
+
+# Require CHPL_LAUNCHER=mpirun
+retval |= (os.environ['CHPL_LAUNCHER']!="mpirun")
+
+print(retval)
+

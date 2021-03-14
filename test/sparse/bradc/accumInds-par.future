@@ -1,0 +1,9 @@
+feature request: thread-safe sparse distributions
+
+We should make our sparse distributions reader/writer thread-safe by
+default in order to improve sanity for parallel operations on them
+while also providing the user with the ability to turn this off if
+they know they're using them in a thread-safe manner.
+
+I forced this to fail because it was a race-y future otherwise,
+which generated a lot of noise.

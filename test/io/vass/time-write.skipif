@@ -1,0 +1,11 @@
+#!/usr/bin/env python3
+
+import os
+
+"""
+This test measures performance writes, where we only care about on-node
+performance, so we skip performance testing when launching onto another
+node
+"""
+print(os.getenv('CHPL_TEST_PERF') == 'on' and
+      os.getenv('CHPL_LAUNCHER') != 'none')

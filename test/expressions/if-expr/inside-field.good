@@ -1,0 +1,12 @@
+(data = 0 0)
+
+(data = nil nil)
+
+(one = 0 0, two = 0 0 0 0, three = 0 0 0 0 0 0 0 0)
+
+(one = nil nil, two = nil nil nil nil, three = nil nil nil nil nil nil nil nil)
+
+(multiple = (0, 0) (0, 0))
+
+(multiple = nil nil nil nil)
+

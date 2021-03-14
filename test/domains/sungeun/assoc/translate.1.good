@@ -1,0 +1,4 @@
+translate.chpl:7: In function 'my_translate':
+translate.chpl:8: error: translate not supported on associative domains
+  translate.chpl:14: called as my_translate(D: DefaultAssociativeDom(int(64),true), off: int(64)) from function 'dit'
+  translate.chpl:24: called as dit(D: DefaultAssociativeDom(int(64),true), lo: int(64), hi: int(64))

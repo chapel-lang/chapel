@@ -1,0 +1,3 @@
+deeperNesting-noUnqualified2.chpl:16: In function 'main':
+deeperNesting-noUnqualified2.chpl:17: error: unresolved call 'foo()'
+deeperNesting-noUnqualified2.chpl:17: note: because no functions named foo found in scope

@@ -1,0 +1,10 @@
+Skipping registry update since no dependency found in manifest file.
+Invalid chplVersion in package 'badRangeFormat-0.1.0': 1.1..1.2..1.3
+Details: Expecting 1 or 2 versions in chplVersion range.
+
+chplVersion format must be '<version>..<version>' or '<version>'
+A <version> must be in one of the following formats:
+  x.x.x
+  x.x
+where 'x' is a positive integer.
+

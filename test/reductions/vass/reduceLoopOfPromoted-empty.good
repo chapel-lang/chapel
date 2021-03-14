@@ -1,0 +1,1 @@
+reduceLoopOfPromoted-empty.chpl:3: error: halt reached - the expression being reduced contains no elements, which is currently not supported

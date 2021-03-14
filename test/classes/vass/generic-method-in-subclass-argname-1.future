@@ -1,0 +1,15 @@
+feature request: method overriding not to depend on arguments' names
+
+At the moment, a method in the subclass overrides a method in the
+superclass if "the names, types, and order of the formal arguments [are]
+identical".
+
+Requiring identical names seems unintuitive for people who have done
+object-oriented programming before, as the popular OO languages e.g. Java
+do not impose this requirement (AFAIK).
+
+The non-intuitive-ness leads to code not working as expected.
+Furthermore figuring out the cause is really non-trivial except
+in simplest cases. Even if the programmer suspects a problem
+with method overriding, the compiler at the moment offers no way
+to investigate the issue.

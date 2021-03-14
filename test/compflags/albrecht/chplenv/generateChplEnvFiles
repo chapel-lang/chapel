@@ -1,0 +1,118 @@
+#!/bin/sh
+
+# generateChplEnvFiles
+# Called by chplenv.good and chplenv.compopts to dynamically create contents
+
+
+generateGood() {
+    # Generate Good file from printchplenv variables
+
+    printchplenv=$(../../../../util/printchplenv --simple --no-tidy --anonymize | grep -v CHPL_ORIG_TARGET_COMPILER | grep -v SUBDIR)
+
+    good=""
+    for var in ${printchplenv}; do
+        good="${good}${var}\n"
+    done
+
+    good="${good}CHPL_HOME=${CHPL_HOME}\n"
+
+    # Use print so that newlines (\n) are recognized
+    printf "${good}"
+}
+
+
+generateCompopts() {
+    # Generate Compopts file from printchplenv variables
+
+    printchplenv=$(../../../../util/printchplenv --simple --anonymize --no-tidy)
+
+    compopts="--home=${CHPL_HOME}"
+
+    # llvm codegen changes some of the environment variables
+    compopts="$compopts --no-llvm"
+
+    for var in ${printchplenv}; do
+
+        # Princhplenv format: "env=value"
+        env=$(echo "${var}" | awk -F'=' '{print $1}')
+        value=$(echo "${var}" | awk -F'=' '{print $2}')
+
+        # Lowercased envs without CHPL_ prefix and  "_" replaced by "-"
+        flag=$(echo "${env}" | sed 's/CHPL_//' | sed 's/_/-/g' | awk '{print tolower($0)}')
+
+        # Explicitly listed, because not all CHPL_vars are compopts!
+        case $env in
+            "CHPL_TARGET_PLATFORM")
+                compopts="$compopts --$flag=$value"
+                ;;
+            "CHPL_TARGET_COMPILER")
+                compopts="$compopts --$flag=$value"
+                ;;
+            "CHPL_TARGET_CPU")
+                compopts="$compopts --$flag=$value"
+                ;;
+            "CHPL_LOCALE_MODEL")
+                compopts="$compopts --$flag=$value"
+                ;;
+            "CHPL_COMM")
+                compopts="$compopts --$flag=$value"
+                ;;
+            "CHPL_COMM_SUBSTRATE")
+                compopts="$compopts --$flag=$value"
+                ;;
+            "CHPL_GASNET_SEGMENT")
+                compopts="$compopts --$flag=$value"
+                ;;
+            "CHPL_TASKS")
+                compopts="$compopts --$flag=$value"
+                ;;
+            "CHPL_LAUNCHER")
+                compopts="$compopts --$flag=$value"
+                ;;
+            "CHPL_TIMERS")
+                compopts="$compopts --$flag=$value"
+                ;;
+            "CHPL_MEM")
+                compopts="$compopts --$flag=$value"
+                ;;
+            "CHPL_ATOMICS")
+                compopts="$compopts --$flag=$value"
+                ;;
+            "CHPL_NETWORK_ATOMICS")
+                compopts="$compopts --$flag=$value"
+                ;;
+            "CHPL_GMP")
+                compopts="$compopts --$flag=$value"
+                ;;
+            "CHPL_HWLOC")
+                compopts="$compopts --$flag=$value"
+                ;;
+            "CHPL_REGEXP")
+                compopts="$compopts --$flag=$value"
+                ;;
+            "CHPL_AUX_FILESYS")
+                compopts="$compopts --$flag=$value"
+                ;;
+        esac
+    done
+
+    echo "${compopts}"
+
+}
+
+
+# Main Script
+case $1 in
+    "--compopts")
+        generateCompopts
+    ;;
+
+    "--good")
+        generateGood
+    ;;
+
+    *)
+        echo "Error: $1 is not a valid argument"
+        exit 1
+    ;;
+esac

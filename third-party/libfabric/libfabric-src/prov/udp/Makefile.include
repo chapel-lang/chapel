@@ -1,0 +1,26 @@
+if HAVE_UDP
+_udp_files = \
+	prov/udp/src/udpx_attr.c	\
+	prov/udp/src/udpx_cq.c	\
+	prov/udp/src/udpx_domain.c	\
+	prov/udp/src/udpx_ep.c		\
+	prov/udp/src/udpx_fabric.c	\
+	prov/udp/src/udpx_init.c	\
+	prov/udp/src/udpx.h
+
+if HAVE_UDP_DL
+pkglib_LTLIBRARIES += libudp-fi.la
+libudp_fi_la_SOURCES = $(_udp_files) $(common_srcs)
+libudp_fi_la_LIBADD = $(linkback) $(udp_shm_LIBS)
+libudp_fi_la_LDFLAGS = -module -avoid-version -shared -export-dynamic
+libudp_fi_la_DEPENDENCIES = $(linkback)
+else !HAVE_UDP_DL
+src_libfabric_la_SOURCES += $(_udp_files)
+src_libfabric_la_LIBADD += $(udp_shm_LIBS)
+endif !HAVE_UDP_DL
+
+prov_install_man_pages += man/man7/fi_udp.7
+
+endif HAVE_UDP
+
+prov_dist_man_pages += man/man7/fi_udp.7

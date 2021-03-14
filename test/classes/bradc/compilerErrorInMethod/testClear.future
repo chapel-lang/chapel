@@ -1,0 +1,17 @@
+bug: compilerError being incorrectly encountered (?)
+
+I'm almost certain that this is a bug.  I don't think that the
+compilerError() should be encountered during function resolution
+based on the given code.  See testClear-snap1.chpl and -snap2.chpl
+for simpler versions of this test that work as expected.  In
+particular, note that moving methods from the abstract to concrete
+class (moving from -snap2.chpl to this version) is what causes
+the problem.  It seemed to me that we might be overly conservative
+about exploring what methods can be called.  It would be exciting if
+this resulted in the compiler killing more dead code during
+compilation...
+
+Once this is fixed, a couple of halts in the changes to
+ChapelArray.chpl that I should be checking in soon should
+be able to be converted to compilerError() which would
+be helpful to the user.

@@ -1,0 +1,3 @@
+globalRecord is (element = 0)
+setting returnGlobalRecord().element = 2
+0

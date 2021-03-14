@@ -1,0 +1,42 @@
+\section{Future Work}\label{s:future}
+
+Future work in this area has a couple different areas.
+
+\subsection{Locality}
+
+Right now, it is up to the programmer to create the ability to query where data is
+stored as well how they wish to represent this data and make it viewable in Chapel.
+However in the future it would be nice to have a locality API much like the current 
+file IO API and therefore make it easier for the library writer to interface with Chapel 
+level programs in such a way that they can leverage as much benefit from a different 
+filesystem as possible. 
+
+Also, it would be nice to have a way to deal only with data on a
+certain locale when dealing with regular filesystems (such as LUSTRE, or other RAID 0
+type filesystems) the goal being so you could do something along the lines of 
+\begin{lstlisting}
+// Connect to, and open a filesystem here
+...
+forall stripe in file.stripes by 3 {
+  // Do something with every third stripe
+}
+\end{lstlisting}
+Which gives the ability to easily reason about and use concurrency in RAID
+0 type filesystems.
+
+\subsection{Replication of Files}
+Right now due to the way HDFS is structured, when {\tt hdfsOpen} is called, it creates a
+file per locale. This is not ideal, but at least at this point the only way to be
+able to handle all cases in HDFS since we do not know beforehand where the various
+blocks of the file will reside.
+
+On other filesystems, this could be different, and therefore the possibility to
+minimize the number of files created becomes a possibility. As well as this also might
+allow us to represent this information in a more compact and meaningful way. 
+
+Along with these options is the option to make this file creation and replication
+lazy in the sense that files will only be created on a locale iff a file is needed
+on that locale. Otherwise, that locale will not get a file. This coupled with
+caching the file once we've opened it on a locale would also offer a speed
+improvement.
+

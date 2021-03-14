@@ -1,0 +1,103 @@
+Testing 'atomic int(8)':
+  init        a=0
+  add         a=8
+  sub         a=7
+  or          a=15
+  and         a=5
+  xor         a=0
+
+Testing 'atomic int(16)':
+  init        a=0
+  add         a=8
+  sub         a=7
+  or          a=15
+  and         a=5
+  xor         a=0
+
+Testing 'atomic int(32)':
+  init        a=0
+  add         a=8
+  sub         a=7
+  or          a=15
+  and         a=5
+  xor         a=0
+
+Testing 'atomic int(64)':
+  init        a=0
+  add         a=8
+  sub         a=7
+  or          a=15
+  and         a=5
+  xor         a=0
+
+Testing 'atomic int(64)':
+  init        a=0
+  add         a=8
+  sub         a=7
+  or          a=15
+  and         a=5
+  xor         a=0
+
+Testing 'atomic uint(8)':
+  init        a=0
+  add         a=8
+  sub         a=7
+  or          a=15
+  and         a=5
+  xor         a=0
+
+Testing 'atomic uint(16)':
+  init        a=0
+  add         a=8
+  sub         a=7
+  or          a=15
+  and         a=5
+  xor         a=0
+
+Testing 'atomic uint(32)':
+  init        a=0
+  add         a=8
+  sub         a=7
+  or          a=15
+  and         a=5
+  xor         a=0
+
+Testing 'atomic uint(64)':
+  init        a=0
+  add         a=8
+  sub         a=7
+  or          a=15
+  and         a=5
+  xor         a=0
+
+Testing 'atomic uint(64)':
+  init        a=0
+  add         a=8
+  sub         a=7
+  or          a=15
+  and         a=5
+  xor         a=0
+
+Testing 'atomic real(32)':
+  init        a=0.0
+  add         a=8.0
+  sub         a=7.0
+
+Testing 'atomic real(64)':
+  init        a=0.0
+  add         a=8.0
+  sub         a=7.0
+
+Testing 'atomic real(64)':
+  init        a=0.0
+  add         a=8.0
+  sub         a=7.0
+
+Promotion -- Testing 'atomic int(64)':
+  init        a=0 0 0
+  add         a=8 8 8
+  sub         a=7 7 7
+  or          a=15 15 15
+  and         a=5 5 5
+  xor         a=0 0 0
+

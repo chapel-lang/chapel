@@ -1,0 +1,1 @@
+assignUintNegative.chpl:3: error: cannot initialize 'x' of type 'uint(64)' from '-2'

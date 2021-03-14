@@ -1,0 +1,156 @@
+.. default-domain:: chpl
+
+.. module:: lifetimeChecking.doc
+
+lifetimeChecking.doc
+====================
+**Usage**
+
+.. code-block:: chapel
+
+   use lifetimeChecking.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import lifetimeChecking.doc;
+
+.. class:: Foo
+
+   Used to demonstrate the behavior of lifetime checking and documentation 
+
+
+   .. attribute:: var a: unmanaged Foo
+
+   .. attribute:: var b: shared Foo
+
+   .. attribute:: var c: owned Foo
+
+   .. attribute:: var d: borrowed Foo
+
+   .. attribute:: var w: borrowed Foo
+
+      Validates when there is documentation 
+
+   .. attribute:: var x: unmanaged Foo
+
+      Validates when there is documentation 
+
+   .. attribute:: var y: shared Foo
+
+      Validates when there is documentation 
+
+   .. attribute:: var z: owned Foo
+
+      Validates when there is documentation 
+
+   .. method:: proc takesOwned(x: owned Foo)
+
+   .. method:: proc takesShared(x: shared Foo)
+
+   .. method:: proc takesUnmanaged(x: unmanaged Foo)
+
+   .. method:: proc takesBorrowed(x: borrowed Foo)
+
+   .. method:: proc returnsOwned(): owned Foo
+
+   .. method:: proc returnsShared(): shared Foo
+
+   .. method:: proc returnsUnmanaged(): unmanaged Foo
+
+   .. method:: proc returnsBorrowed(): borrowed Foo
+
+   .. method:: proc mixNMatch(x: shared Foo): unmanaged Foo
+
+   .. method:: proc takesOwnedDoc(x: owned Foo)
+
+      Validates when there is documentation 
+
+   .. method:: proc takesSharedDoc(x: shared Foo)
+
+      Validates when there is documentation 
+
+   .. method:: proc takesUnmanagedDoc(x: unmanaged Foo)
+
+      Validates when there is documentation 
+
+   .. method:: proc takesBorrowedDoc(x: borrowed Foo)
+
+      Validates when there is documentation 
+
+   .. method:: proc returnsOwnedDoc(): owned Foo
+
+      Validates when there is documentation 
+
+   .. method:: proc returnsSharedDoc(): shared Foo
+
+      Validates when there is documentation 
+
+   .. method:: proc returnsUnmanagedDoc(): unmanaged Foo
+
+      Validates when there is documentation 
+
+   .. method:: proc returnsBorrowedDoc(): borrowed Foo
+
+      Validates when there is documentation 
+
+   .. method:: proc mixNMatchDoc(x: shared Foo): unmanaged Foo
+
+      Validates when there is documentation 
+
+.. function:: proc takesOwned(x: owned Foo)
+
+.. function:: proc takesShared(x: shared Foo)
+
+.. function:: proc takesUnmanaged(x: unmanaged Foo)
+
+.. function:: proc takesBorrowed(x: borrowed Foo)
+
+.. function:: proc returnsOwned(): owned Foo
+
+.. function:: proc returnsShared(): shared Foo
+
+.. function:: proc returnsUnmanaged(): unmanaged Foo
+
+.. function:: proc returnsBorrowed(): borrowed Foo
+
+.. function:: proc mixNMatch(x: shared Foo): unmanaged Foo
+
+.. function:: proc takesOwnedDoc(x: owned Foo)
+
+   Validates when there is documentation 
+
+.. function:: proc takesSharedDoc(x: shared Foo)
+
+   Validates when there is documentation 
+
+.. function:: proc takesUnmanagedDoc(x: unmanaged Foo)
+
+   Validates when there is documentation 
+
+.. function:: proc takesBorrowedDoc(x: borrowed Foo)
+
+   Validates when there is documentation 
+
+.. function:: proc returnsOwnedDoc(): owned Foo
+
+   Validates when there is documentation 
+
+.. function:: proc returnsSharedDoc(): shared Foo
+
+   Validates when there is documentation 
+
+.. function:: proc returnsUnmanagedDoc(): unmanaged Foo
+
+   Validates when there is documentation 
+
+.. function:: proc returnsBorrowedDoc(): borrowed Foo
+
+   Validates when there is documentation 
+
+.. function:: proc mixNMatchDoc(x: shared Foo): unmanaged Foo
+
+   Validates when there is documentation 
+

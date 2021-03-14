@@ -1,0 +1,30 @@
+specified-formal-order-primary-methods.chpl:29: In method 'setCbad':
+specified-formal-order-primary-methods.chpl:30: error: Scoped variable this would outlive the value it is set to
+specified-formal-order-primary-methods.chpl:29: note: consider scope of rhs
+specified-formal-order-primary-methods.chpl:34: In function 'badlt':
+specified-formal-order-primary-methods.chpl:38: error: Actual argument does not meet called function lifetime constraint
+specified-formal-order-primary-methods.chpl:37: note: consider scope of own
+specified-formal-order-primary-methods.chpl:4: note: called function ref C.setClt(rhs: borrowed C)
+specified-formal-order-primary-methods.chpl:4: note: includes lifetime constraint this < rhs
+specified-formal-order-primary-methods.chpl:44: In function 'badlt2':
+specified-formal-order-primary-methods.chpl:48: error: Actual argument does not meet called function lifetime constraint
+specified-formal-order-primary-methods.chpl:47: note: consider scope of own
+specified-formal-order-primary-methods.chpl:7: note: called function ref C.setClt2(rhs: borrowed C)
+specified-formal-order-primary-methods.chpl:7: note: includes lifetime constraint this < rhs
+specified-formal-order-primary-methods.chpl:7: note: called function ref C.setClt2(rhs: borrowed C)
+specified-formal-order-primary-methods.chpl:7: note: includes lifetime constraint this < rhs
+specified-formal-order-primary-methods.chpl:54: In function 'badlte':
+specified-formal-order-primary-methods.chpl:58: error: Actual argument does not meet called function lifetime constraint
+specified-formal-order-primary-methods.chpl:57: note: consider scope of own
+specified-formal-order-primary-methods.chpl:15: note: called function ref C.setClte(rhs: borrowed C)
+specified-formal-order-primary-methods.chpl:15: note: includes lifetime constraint this <= rhs
+specified-formal-order-primary-methods.chpl:64: In function 'badgt':
+specified-formal-order-primary-methods.chpl:68: error: Actual argument does not meet called function lifetime constraint
+specified-formal-order-primary-methods.chpl:67: note: consider scope of own
+specified-formal-order-primary-methods.chpl:23: note: called function ref C.setCgt(rhs: borrowed C)
+specified-formal-order-primary-methods.chpl:23: note: includes lifetime constraint rhs > this
+specified-formal-order-primary-methods.chpl:74: In function 'badgte':
+specified-formal-order-primary-methods.chpl:78: error: Actual argument does not meet called function lifetime constraint
+specified-formal-order-primary-methods.chpl:77: note: consider scope of own
+specified-formal-order-primary-methods.chpl:26: note: called function ref C.setCgte(rhs: borrowed C)
+specified-formal-order-primary-methods.chpl:26: note: includes lifetime constraint rhs >= this

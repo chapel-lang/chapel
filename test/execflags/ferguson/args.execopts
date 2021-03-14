@@ -1,0 +1,11 @@
+-nl 1 --foobar
+-nl 1 --foobar --memTrack=true --memMax=12345678
+-nl 1 --foobar --memTrack=true -- --memMax=12345678
+-nl 1 --foobar -- --memTrack=true --memMax=12345678
+-nl 1 --help
+-nl 1 -d
+-nl 1 -c
+-nl 1 a
+-nl 1 b
+-nl 1 c
+-nl 1 a b c

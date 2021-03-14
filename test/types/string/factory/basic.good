@@ -1,0 +1,26 @@
+Initialize from string
+A Chapel string
+A Chapel string
+A Chapel string
+
+Initialize from c_string
+ABC
+ABC
+ABC
+
+Initialize from c_ptr(uint(8))
+ABC
+ABC
+ABC
+ABC
+A C
+A C
+
+Initialize from c_ptr(c_char)
+ABC
+ABC
+ABC
+ABC
+A C
+A C
+

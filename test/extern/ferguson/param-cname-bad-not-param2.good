@@ -1,0 +1,1 @@
+param-cname-bad-not-param2.chpl:3: error: extern name expression must be param

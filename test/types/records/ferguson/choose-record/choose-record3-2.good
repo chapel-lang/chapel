@@ -1,0 +1,2 @@
+choose-record3-2.chpl:31: error: non-lvalue actual is passed to 'ref' formal 'C' of updateAndPrint()
+choose-record3-2.chpl:31: error: non-lvalue actual is passed to 'ref' formal 'D' of updateAndPrint()

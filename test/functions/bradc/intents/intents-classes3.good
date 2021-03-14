@@ -1,0 +1,21 @@
+in callin, x is: 10 2.3
+a and x are the same on the way in
+a and x differ on the way out
+re-assigned to be new instance: 11 3.4
+back at callsite, a is: 10 2.3
+
+in callout, x should be nil
+a and x differ on the way in
+a and x differ on the way out
+re-assigned to be new instance: 12 4.5
+back at callsite, a is: 12 4.5
+
+in callinout, x is: 12 4.5
+a and x are the same on the way in
+a and x differ on the way out
+re-assigned to be new instance: 13 5.6
+back at callsite, a is: 13 5.6
+
+in callblank, x is: 13 5.6
+a and x are the same on the way in
+back at callsite, a is: 13 5.6

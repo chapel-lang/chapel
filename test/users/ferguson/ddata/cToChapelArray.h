@@ -1,0 +1,2 @@
+void cProc(int* arr);
+

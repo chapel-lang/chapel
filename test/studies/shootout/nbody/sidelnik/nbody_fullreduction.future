@@ -1,0 +1,11 @@
+bug: reduction over the arrays in an array of class objects does not work
+
+The current bad output is a nil deference.  I don't know if the
+behavior described in the original text below still holds.
+
+ORIGINAL TEXT:
+We are seeing a strange bug in where performing a reduction
+on an array element type, AND, traversing the outer array in a
+for loop is causing a floating point error exception. If we take
+out the traversing of the outer array, the output is correct.
+

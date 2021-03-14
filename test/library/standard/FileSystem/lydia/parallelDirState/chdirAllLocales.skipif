@@ -1,0 +1,3 @@
+# We need inlining to handle the error-throwing iterators
+# that are the result of promoting chdir().
+COMPOPTS <= --baseline

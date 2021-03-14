@@ -1,0 +1,60 @@
+ProblemDist =
+BradsBlock1DPar
+---------------
+distributes: {1..10}
+across locales: LOCALE0 LOCALE1 LOCALE2
+indexed via: {0..2}
+resulting in: 
+  [0] locale 0 owns chunk: {-9223372036854775808..4}
+  [1] locale 1 owns chunk: {5..7}
+  [2] locale 2 owns chunk: {8..9223372036854775807}
+
+
+locale LOCALE0 is being asked to follow {0..4}
+ijk = (0, 1, -1)
+ijk = (1, 2, 0)
+ijk = (2, 3, 1)
+ijk = (3, 4, 2)
+ijk = (4, 5, 3)
+locale LOCALE0 is being asked to follow {5..7}
+ijk = (5, 6, 4)
+ijk = (6, 7, 5)
+ijk = (7, 8, 6)
+locale LOCALE0 is being asked to follow {8..11}
+ijk = (8, 9, 7)
+ijk = (9, 10, 8)
+ijk = (10, 11, 9)
+ijk = (11, 12, 10)
+
+locale LOCALE0 is being asked to follow {0..3}
+ijk = (0, 1, -1)
+ijk = (1, 2, 0)
+ijk = (2, 3, 1)
+ijk = (3, 4, 2)
+locale LOCALE0 is being asked to follow {4..6}
+ijk = (4, 5, 3)
+ijk = (5, 6, 4)
+ijk = (6, 7, 5)
+locale LOCALE0 is being asked to follow {7..11}
+ijk = (7, 8, 6)
+ijk = (8, 9, 7)
+ijk = (9, 10, 8)
+ijk = (10, 11, 9)
+ijk = (11, 12, 10)
+
+locale LOCALE0 is being asked to follow {0..5}
+ijk = (0, 1, -1)
+ijk = (1, 2, 0)
+ijk = (2, 3, 1)
+ijk = (3, 4, 2)
+ijk = (4, 5, 3)
+ijk = (5, 6, 4)
+locale LOCALE0 is being asked to follow {6..8}
+ijk = (6, 7, 5)
+ijk = (7, 8, 6)
+ijk = (8, 9, 7)
+locale LOCALE0 is being asked to follow {9..11}
+ijk = (9, 10, 8)
+ijk = (10, 11, 9)
+ijk = (11, 12, 10)
+

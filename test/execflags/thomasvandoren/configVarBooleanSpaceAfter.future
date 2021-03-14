@@ -1,0 +1,13 @@
+bug: argument parser fails to parse boolean var with name and value space delimited on command line
+
+This does not parse correctly:
+
+  ./configVarBooleanSpaceAfter --x true
+
+These forms do work for booleans:
+
+  ./configVarBooleanSpaceAfter --x=true
+  ./configVarBooleanSpaceAfter --x
+
+The space delimited form does work for other types that do not support the
+implicit value (--<var name> is a special case for booleans).

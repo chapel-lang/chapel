@@ -1,0 +1,52 @@
+%{!?configopts: %global configopts LDFLAGS=-Wl,--build-id}
+%{!?provider: %define provider usnic}
+%{!?provider_formal: %define provider_formal usNIC}
+
+Name: libfabric-%{provider}
+Version: @VERSION@
+Release: 1%{?dist}
+Summary: Dynamic %{provider_formal} provider for user-space RDMA Fabric Interfaces
+Group: System Environment/Libraries
+License: GPLv2 or BSD
+Url: http://www.github.com/ofiwg/libfabric
+Source: http://www.github.org/ofiwg/%{name}/releases/download/v{%version}/libfabric-%{version}.tar.bz2
+BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+Requires: libfabric
+BuildRequires: libfabric
+
+%description
+libfabric provides a user-space API to access high-performance fabric
+services, such as RDMA.
+
+This RPM provides the %{provider_formal} provider as a "plugin" to an existing
+Libfabric installation.  This plugin will override any existing %{provider_formal}
+provider functionality in the existing Libfabric installation.
+
+%prep
+%setup -q -n libfabric-%{version}
+
+%build
+%configure %{configopts} --enable-%{provider}=dl
+make %{?_smp_mflags}
+
+%install
+rm -rf %{buildroot}
+%makeinstall installdirs
+
+%clean
+rm -rf %{buildroot}
+
+%files
+%defattr(-,root,root,-)
+%{_libdir}/libfabric/*.so
+
+%exclude %{_libdir}/libfabric.*
+%exclude %{_libdir}/libfabric/*.la
+%exclude %{_libdir}/pkgconfig
+%exclude %{_bindir}
+%exclude %{_mandir}
+%exclude %{_includedir}
+
+%changelog
+* Wed May 24 2017 Open Fabrics Interfaces Working Group <ofiwg@lists.openfabrics.org>
+- First release of specfile for packaging a single dl provider.

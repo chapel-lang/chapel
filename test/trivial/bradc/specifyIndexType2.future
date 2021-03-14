@@ -1,0 +1,13 @@
+semantic: explicit type on indices
+
+should we allow these?
+
+how does this interact with var iterators since we are not doing an
+assignment here?  does the type have to match exactly?  this is
+similar to return type specifications.  how is this done?
+
+unimplemented feature: explicit typing of for/forall index variable
+
+We should allow the type of a for/forall index variable to be
+specified if the user wants it to be.  This used to be in the spec,
+not sure whether it is anymore or not.

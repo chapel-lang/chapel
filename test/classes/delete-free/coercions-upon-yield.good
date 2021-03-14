@@ -1,0 +1,1 @@
+coercions-upon-yield.chpl:9: error: Could not coerce Gen(real(64)) to unmanaged Gen upon yield

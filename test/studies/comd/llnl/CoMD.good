@@ -1,0 +1,5 @@
+Simulation Validation:
+   Initial energy  : SUCCESS
+   Final energy    : SUCCESS
+   eFinal/eInitial : SUCCESS
+   Final atom count : 32000, no atoms lost

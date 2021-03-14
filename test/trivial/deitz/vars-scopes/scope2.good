@@ -1,0 +1,3 @@
+scope2.chpl:5: In function 'bar':
+scope2.chpl:6: error: 'foo' used before defined
+scope2.chpl:11: note: defined here

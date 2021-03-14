@@ -1,0 +1,157 @@
+#!/usr/bin/env perl
+
+
+if (!defined $ENV{'CHPL_HOME_REPOSITORY'}) {
+    print "ERROR: CHPL_HOME_REPOSITORY must be set to use getoldperf\n";
+    exit(1);
+}
+$svnroot = $ENV{'CHPL_HOME_REPOSITORY'};
+
+$printusage = 0;
+if (@ARGV) {
+    $statdate = shift @ARGV;
+    $svndate = `date +%F -d$statdate`; chomp($svndate);
+} else {
+    $printusage = 1;
+}
+
+$month = substr($statdate, 0, 2);
+$date = substr($statdate, 3, 2);
+$year = substr($statdate, 6, 2);
+$shortdate = "$month$date$year";
+
+$onetest = "";
+if (@ARGV) {
+    $onetest = shift @ARGV;
+}
+
+if ($printusage == 1) {
+    print "nightly <date> [<testname>]\n";
+    exit 1;
+}
+
+
+#
+# get uniquifiers
+#
+$pid = getpgrp();
+$user = `whoami`;
+chomp($user);
+$today = `date +%w-%a`; chomp($today);
+
+
+#
+# directory locations
+#
+$here = dirname(__FILE__);
+$tmpdir = "/tmp/chapel-getoldperf.$user.$pid.deleteme";
+$chapeldir = "$tmpdir/chapel";
+$logdir = "~bradc/chapel/test/Logs/Nightly";
+$statdir = "$logdir/Stats";
+$tokctdir = "~bradc/chapel/util/tokencount";
+$tokctr = "$tokctdir/tokencount.cron";
+$compdir = "$tmpdir/chapel/compiler";
+$binsubdir = `$here/../chplenv/chpl_bin_subdir.py --host`;
+$bindir = "$tmpdir/chapel/bin/$binsubdir";
+$currhome = "$ENV{'CHPL_HOME'}";
+$perfdir = "$ENV{'CHPL_TEST_PERF_DIR'}";
+if ($perfdir eq "") {
+    print "Error: CHPL_TEST_PERF_DIR must be set to indicate where .dat files should go\n";
+    exit(1);
+}
+
+
+$somethingfailed = 0;
+
+# Number of logical processes on current system. Will be used as number of jobs
+# when calling make with parallel execution.
+$num_procs = `$here/../buildRelease/chpl-make-cpu_count`;
+chomp($num_procs);
+
+#
+# make temp directory
+#
+mysystem("mkdir $tmpdir > /dev/null", "creating temp dir", 1, 1);
+
+#
+# checkout sources
+#
+
+# FIXME: Update this to use git version of perf data repo.
+#        (thomasvandoren, 2014-07-10)
+mysystem("cd $tmpdir && svn export -q -r '{$svndate}' $svnroot chapel", "svn checkout", 1, 1);
+
+#
+# copy current perf-related files over
+#
+#mysystem("cd $currhome/test/$testdir && ls *.perf*", "listing perf files", 0, 0);
+#mysystem("cd $currhome/test/$testdir && cp *.perf* $chapeldir/test/$testdir", "copying .perf files", 1, 1);
+#mysystem("cp $currhome/test/start_test $chapeldir/test", "copying start_test", 1, 1);
+#mysystem("cp $currhome/test/Bin/sub_test $chapeldir/test/Bin", "copying sub_test", 1, 1);
+#mysystem("cp $currhome/test/Bin/computePerfStats.pl $chapeldir/test/Bin", "copying sub_test", 1, 1);
+
+#
+# make compiler
+#
+mysystem("cd $chapeldir && make -j$num_procs", "making compiler", 1, 1);
+
+#
+# run tests
+#
+if ($onetest eq "") {
+    mysystem("cd $chapeldir/test && start_test -compopts \"--chplhome $chapeldir\" -performance", "running performance tests", 1, 1);
+} else {
+    mysystem("cd $chapeldir/test && start_test -compopts \"--chplhome $chapeldir\" -performance -onetest $onetest", "running performance tests", 1, 1);
+}
+mysystem("mv ./stream.dat ./stream.$shortdate.dat", "copying data files back", 0, 0);
+mysystem("mv ./ra.dat ./ra.$shortdate.dat", "copying data files back", 0, 0);
+mysystem("mv ./cg-sparse-timecomp.dat ./cg-sparse-timecomp.$shortdate.dat", "copying data files back", 0, 0);
+mysystem("mv ./cg-sparse.dat ./cg-sparse.$shortdate.dat", "copying data files back", 0, 0);
+mysystem("mv ./compSampler-timecomp.dat ./compSampler-timecomp.$shortdate.dat", 0, 0);
+mysystem("mv ./fft-timecomp.dat ./fft-timecomp.$shortdate.dat", 0, 0);
+
+
+
+#
+# clean up
+#
+if (1 || $somethingfailed == 0) {
+    mysystem("rm -rf $tmpdir", "removing temp dir", 0, 1);
+}
+
+exit 0;
+
+
+#
+# subroutines
+#
+
+sub mysystem {
+    $command = $_[0];
+    $errorname = $_[1];
+    $fatal = $_[2];
+    $mailmsg = $_[3];
+
+    $status = system($command);
+    if ($status != 0) {
+	$somethingfailed = 1;
+        $status = $status / 256;
+	print "Error $_[1]: $status\n";
+
+    if ($mailmsg != 0) {
+        if (!exists($ENV{"CHPL_TEST_NOMAIL"}) or grep {$ENV{"CHPL_TEST_NOMAIL"} =~ /^$_$/i} ('','\s*','0','f(alse)?','no?')) {
+            open(MAIL, $mailcommand);
+            print MAIL "=== Summary ===================================================\n";
+            print MAIL "ERROR $_[1]: $status\n";
+            print MAIL "(workspace left at $tmpdir)\n";
+            print MAIL "=== End Summary ===============================================\n";
+            close(MAIL);
+        } else {
+            print "CHPL_TEST_NOMAIL: No $mailcommand\n";
+        }
+    }
+
+#	    exit 1;
+	}
+    $status;
+}

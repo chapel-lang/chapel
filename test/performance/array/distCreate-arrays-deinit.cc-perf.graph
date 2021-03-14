@@ -1,0 +1,5 @@
+perfkeys: arrDeinit-GETS:, arrDeinit-PUTS:, arrDeinit-ONS:, arrDeinit-GETS:, arrDeinit-PUTS:, arrDeinit-ONS:, arrDeinit-GETS:, arrDeinit-PUTS:, arrDeinit-ONS:, arrDeinit-GETS:, arrDeinit-PUTS:, arrDeinit-ONS:
+graphkeys: blockArrDeinit-GETS:, blockArrDeinit-PUTS:, blockArrDeinit-ONS:, cyclicArrDeinit-GETS:, cyclicArrDeinit-PUTS:, cyclicArrDeinit-ONS:, blockCycArrDeinit-GETS:, blockCycArrDeinit-PUTS:, blockCycArrDeinit-ONS:, stencilArrDeinit-GETS:, stencilArrDeinit-PUTS:, stencilArrDeinit-ONS:
+repeat-files: distCreate-cc-block.dat, distCreate-cc-cyclic.dat, distCreate-cc-blockCyc.dat, distCreate-cc-stencil.dat
+ylabel: Count
+graphtitle: Destroying distributed arrays

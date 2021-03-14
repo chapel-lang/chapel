@@ -1,0 +1,1 @@
+You cannot publish to a remote repository when MASON_OFFLINE is set to true or "--no-update" is passed, override with --update

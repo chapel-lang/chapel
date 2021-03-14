@@ -1,0 +1,2 @@
+dontLeakSymbols1.chpl:14: In function 'main':
+dontLeakSymbols1.chpl:15: error: Symbol 'x' undeclared in module 'C'

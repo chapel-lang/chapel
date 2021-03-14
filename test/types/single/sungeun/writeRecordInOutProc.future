@@ -1,0 +1,16 @@
+bug: Sync/single vars in records not properly copied when they are out or inout arguments
+
+When passing records with sync/single var fields to functions with out
+or inout intent, we copy the pointer to the sync/single field.  When
+we copy the record out (which we do by value), the sync/single var may
+be in a state that causes deadlock for the sync var case or an invalid
+additional write for the single var case.
+
+Note that the single var out argument test case works simply because
+we can't write the variable again to test that it's the same instance.
+We could try to compare the C pointers using C extern functions.
+
+FYI, we do not currently enforce writing to variables that have const
+(default) intent or in intent, so similar tests that use these two
+intents types will fail, but that is another bug that I believe is
+documented elsewhere (maybe).

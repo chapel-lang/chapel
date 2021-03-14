@@ -1,0 +1,1 @@
+iterateOverArrayType.chpl:5: error: unable to iterate over type '[domain(1,int(64),false)] real(64)'

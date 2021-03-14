@@ -1,0 +1,3 @@
+--printOutput=false --printTiming=true --n=64 --m=64 --o=64 # dgemm.64.perfkeys
+--printOutput=false --printTiming=true --n=128 --m=128 --o=128 # dgemm.128.perfkeys
+

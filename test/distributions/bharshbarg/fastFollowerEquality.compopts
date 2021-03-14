@@ -1,0 +1,2 @@
+-sCyclicDist.testFastFollowerOptimization -sBlockDist.testFastFollowerOptimization -sdataParTasksPerLocale=2 -szipRange=false
+-sCyclicDist.testFastFollowerOptimization -sBlockDist.testFastFollowerOptimization -sdataParTasksPerLocale=2 -szipRange=true

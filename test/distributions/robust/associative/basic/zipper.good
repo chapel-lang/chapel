@@ -1,0 +1,16 @@
+Parallel domain-domain zipping (int(64), int(64)) : SUCCESS
+Parallel domain-domain zipping (uint(64), uint(64)) : SUCCESS
+Parallel domain-domain zipping (real(32), real(32)) : SUCCESS
+Parallel domain-domain zipping (string, string) : SUCCESS
+Parallel domain-array zipping (int(64), int(64)) : SUCCESS
+Parallel domain-array zipping (uint(64), uint(64)) : SUCCESS
+Parallel domain-array zipping (real(32), real(32)) : SUCCESS
+Parallel domain-array zipping (string, string) : SUCCESS
+Parallel array-domain zipping (int(64), int(64)) : SUCCESS
+Parallel array-domain zipping (uint(64), uint(64)) : SUCCESS
+Parallel array-domain zipping (real(32), real(32)) : SUCCESS
+Parallel array-domain zipping (string, string) : SUCCESS
+Parallel array-array zipping (int(64), int(64)) : SUCCESS
+Parallel array-array zipping (uint(64), uint(64)) : SUCCESS
+Parallel array-array zipping (real(32), real(32)) : SUCCESS
+Parallel array-array zipping (string, string) : SUCCESS

@@ -1,0 +1,2 @@
+# Skip with --no-local because we were getting false positives
+COMPOPTS <= --no-local

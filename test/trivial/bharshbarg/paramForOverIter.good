@@ -1,0 +1,1 @@
+paramForOverIter.chpl:7: error: param for-loops currently only support range expressions with well-defined param integral bounds

@@ -1,0 +1,5 @@
+bug: aliasing arrays through arguments can cause issues with references
+
+Aliasing arrays through function arguments can cause issues with the
+interaction between --replace-array-accesses-with-ref-temps and
+cullOverReferences.

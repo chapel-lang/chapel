@@ -1,0 +1,3 @@
+init-field-arg-nonnil-unmanaged-from-nonnil-borrowed.chpl:9: In initializer:
+init-field-arg-nonnil-unmanaged-from-nonnil-borrowed.chpl:10: error: cannot initialize field MyRecord.lhs of type 'unmanaged MyClass' from a 'borrowed MyClass'
+  init-field-arg-nonnil-unmanaged-from-nonnil-borrowed.chpl:14: called as MyRecord.init(rhs: borrowed MyClass)

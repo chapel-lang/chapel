@@ -1,0 +1,5 @@
+perfkeys: Time:, Time:
+files: arr-forall.dat, arr-forall-zip.dat
+graphkeys: DefaultRect, Zip-DefaultRect
+graphtitle: 1D Array Parallel Iteration
+ylabel: Time (seconds)

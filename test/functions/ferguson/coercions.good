@@ -1,0 +1,298 @@
+Test0 uses only RealComplexImag32Foos
+foo(u8)
+    r32 0.0
+foo(i8)
+    r32 0.0
+foo(u16)
+    r32 0.0
+foo(i16)
+    r32 0.0
+foo(r32)
+    r32 0.0
+foo(c64)
+    c64 0.0 + 0.0i
+foo(1)
+    r32 1.0
+foo(-1)
+    r32 -1.0
+foo(1000)
+    r32 1000.0
+foo(-1000)
+    r32 -1000.0
+foo(100000)
+    r32 1e+05
+foo(-100000)
+    r32 -1e+05
+foo(0.0)
+    r32 0.0
+Test1 uses only RealFoos
+foo(u8)
+    r64 0.0
+foo(i8)
+    r64 0.0
+foo(u16)
+    r64 0.0
+foo(i16)
+    r64 0.0
+foo(u32)
+    r64 0.0
+foo(i32)
+    r64 0.0
+foo(u64)
+    r64 0.0
+foo(i64)
+    r64 0.0
+foo(r32)
+    r32 0.0
+foo(r64)
+    r64 0.0
+foo(c64)
+    c64 0.0 + 0.0i
+foo(c128)
+    c128 0.0 + 0.0i
+foo(1)
+    r64 1.0
+foo(-1)
+    r64 -1.0
+foo(1000)
+    r64 1000.0
+foo(-1000)
+    r64 -1000.0
+foo(100000)
+    r64 1e+05
+foo(-100000)
+    r64 -1e+05
+foo(10000000000)
+    r64 1e+10
+foo(-10000000000)
+    r64 -1e+10
+foo(0.0)
+    r64 0.0
+foo(0.0+0.0i)
+    c128 0.0 + 0.0i
+Test2 uses only RealFoos and Int16_32Foos
+foo(u8)
+    i16 0
+foo(i8)
+    i16 0
+foo(u16)
+    u16 0
+foo(i16)
+    i16 0
+foo(u32)
+    u32 0
+foo(i32)
+    i32 0
+foo(u64)
+    r64 0.0
+foo(i64)
+    r64 0.0
+foo(r32)
+    r32 0.0
+foo(r64)
+    r64 0.0
+foo(c64)
+    c64 0.0 + 0.0i
+foo(c128)
+    c128 0.0 + 0.0i
+foo(1)
+    i16 1
+foo(-1)
+    i16 -1
+foo(1000)
+    i16 1000
+foo(-1000)
+    i16 -1000
+foo(100000)
+    i32 100000
+foo(-100000)
+    i32 -100000
+foo(10000000000)
+    r64 1e+10
+foo(-10000000000)
+    r64 -1e+10
+foo(0.0)
+    r64 0.0
+foo(0.0+0.0i)
+    c128 0.0 + 0.0i
+Test2a uses only RealFoos Int16_32Foos and Int64Foos
+foo(u8)
+    i16 0
+foo(i8)
+    i16 0
+foo(u16)
+    u16 0
+foo(i16)
+    i16 0
+foo(u32)
+    u32 0
+foo(i32)
+    i32 0
+foo(u64)
+    u64 0
+foo(i64)
+    i64 0
+foo(r32)
+    r32 0.0
+foo(r64)
+    r64 0.0
+foo(c64)
+    c64 0.0 + 0.0i
+foo(c128)
+    c128 0.0 + 0.0i
+foo(1)
+    i64 1
+foo(-1)
+    i64 -1
+foo(1000)
+    i64 1000
+foo(-1000)
+    i64 -1000
+foo(100000)
+    i64 100000
+foo(-100000)
+    i64 -100000
+foo(10000000000)
+    i64 10000000000
+foo(-10000000000)
+    i64 -10000000000
+foo(0.0)
+    r64 0.0
+foo(0.0+0.0i)
+    c128 0.0 + 0.0i
+Test3 uses only RealFoos Int8Foos and Int16_32Foos
+foo(u8)
+    u8 0
+foo(i8)
+    i8 0
+foo(u16)
+    u16 0
+foo(i16)
+    i16 0
+foo(u32)
+    u32 0
+foo(i32)
+    i32 0
+foo(u64)
+    r64 0.0
+foo(i64)
+    r64 0.0
+foo(r32)
+    r32 0.0
+foo(r64)
+    r64 0.0
+foo(c64)
+    c64 0.0 + 0.0i
+foo(c128)
+    c128 0.0 + 0.0i
+foo(1)
+    i8 1
+foo(-1)
+    i8 -1
+foo(1000)
+    i16 1000
+foo(-1000)
+    i16 -1000
+foo(100000)
+    i32 100000
+foo(-100000)
+    i32 -100000
+foo(10000000000)
+    r64 1e+10
+foo(-10000000000)
+    r64 -1e+10
+foo(0.0)
+    r64 0.0
+foo(0.0+0.0i)
+    c128 0.0 + 0.0i
+Test4 uses only RealFoos Int8Foos Int16_32Foos and Int64Foos
+foo(u8)
+    u8 0
+foo(i8)
+    i8 0
+foo(u16)
+    u16 0
+foo(i16)
+    i16 0
+foo(u32)
+    u32 0
+foo(i32)
+    i32 0
+foo(u64)
+    u64 0
+foo(i64)
+    i64 0
+foo(r32)
+    r32 0.0
+foo(r64)
+    r64 0.0
+foo(c64)
+    c64 0.0 + 0.0i
+foo(c128)
+    c128 0.0 + 0.0i
+foo(1)
+    i64 1
+foo(-1)
+    i64 -1
+foo(1000)
+    i64 1000
+foo(-1000)
+    i64 -1000
+foo(100000)
+    i64 100000
+foo(-100000)
+    i64 -100000
+foo(10000000000)
+    i64 10000000000
+foo(-10000000000)
+    i64 -10000000000
+foo(0.0)
+    r64 0.0
+foo(0.0+0.0i)
+    c128 0.0 + 0.0i
+Test5 uses only complex foos
+foo(u8)
+    c128 0.0 + 0.0i
+foo(i8)
+    c128 0.0 + 0.0i
+foo(u16)
+    c128 0.0 + 0.0i
+foo(i16)
+    c128 0.0 + 0.0i
+foo(u32)
+    c128 0.0 + 0.0i
+foo(i32)
+    c128 0.0 + 0.0i
+foo(u64)
+    c128 0.0 + 0.0i
+foo(i64)
+    c128 0.0 + 0.0i
+foo(r32)
+    c64 0.0 + 0.0i
+foo(r64)
+    c128 0.0 + 0.0i
+foo(c64)
+    c64 0.0 + 0.0i
+foo(c128)
+    c128 0.0 + 0.0i
+foo(1)
+    c128 1.0 + 0.0i
+foo(-1)
+    c128 -1.0 + 0.0i
+foo(1000)
+    c128 1000.0 + 0.0i
+foo(-1000)
+    c128 -1000.0 + 0.0i
+foo(100000)
+    c128 1e+05 + 0.0i
+foo(-100000)
+    c128 -1e+05 + 0.0i
+foo(10000000000)
+    c128 1e+10 + 0.0i
+foo(-10000000000)
+    c128 -1e+10 + 0.0i
+foo(0.0)
+    c128 0.0 + 0.0i
+foo(0.0+0.0i)
+    c128 0.0 + 0.0i
+DONE

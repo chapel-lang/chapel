@@ -1,0 +1,21 @@
+Hi Brad,
+
+I've attached the sudoku solver for 590o.  Some thoughts:
+
+1.  It appears that this works mostly only for easy Sudoku.... *grumble 
+grumble*  The harder puzzles don't seem to work with my method...I hope 
+that is okay. 
+
+2.  The box indexing and box remainder stuff feels awkward and long and 
+blah...any suggestions?  If not, no big deal.
+
+3.  When I added parallelism, (i.e. instead of for (i, j) in TableSpace 
+became coforall (i, j) in TableSpace) I end up with race conditions of 
+some sort.  Running the solver 4 or 5 times on the input works...except 
+for when it dies.  My understanding (which could be wrong) is that 
+Chapel is supposed to automatically take care of these things 
+intelligently, but I'm not sure. 
+
+Anyway, enjoy!
+
+Kate

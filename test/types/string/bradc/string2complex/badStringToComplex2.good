@@ -1,0 +1,3 @@
+uncaught IllegalArgumentError: bad cast from string '1.2+3.4' to complex(64)
+  badStringToComplex2.chpl:3: thrown here
+  badStringToComplex2.chpl:3: uncaught here

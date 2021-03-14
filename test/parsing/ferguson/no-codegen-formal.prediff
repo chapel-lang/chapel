@@ -1,0 +1,9 @@
+#!/bin/bash
+
+TESTNAME=$1
+OUTFILE=$2
+
+rm $OUTFILE
+echo "grep test_no_codegen_arg savedc/$TESTNAME.c > $OUTFILE"
+grep test_no_codegen_arg savedc/$TESTNAME.c > $OUTFILE
+rm -Rf savedc

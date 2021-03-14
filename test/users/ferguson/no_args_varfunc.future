@@ -1,0 +1,9 @@
+feature request: allow zero actual arguments for a vararg, i.e. a variable-number-of-arguments formal
+
+The spec seems to indicate that variable argument functions
+can have any number of arguments, but they cannot have zero
+arguments.
+
+I would like them to allow zero arguments, partly so that
+writeln() works without needing an overload.
+

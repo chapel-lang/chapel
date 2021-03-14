@@ -1,0 +1,468 @@
+
+\section{API}\label{s:API}
+
+There are four APIs exposed. 
+\begin{itemize}
+\item A Systems Level API that is the glue code between the Chapel runtime
+and the filesystem. ({\tt qio\_plugin\_hdfs.c/h})
+\item A user-level IO API that interfaces with the system API, as well as
+provides the interface for the MapReduce API.
+({\tt HDFS.chpl})
+\item A way to parse from the IO interface in Chapel to records in Chapel.
+({\tt RecordParser.chpl})
+\item A MapReduce API that interfaces with the IO system and
+RecordParser in Chapel. ({\tt HDFSiterator.chpl})
+\end{itemize}
+%
+\subsection{Runtime API}
+Throughout this section, the names that we use in the description of the function pointer are the names of those
+function pointers in the {\tt qio\_file\_functions\_t} struct.
+The Runtime API currently consists of Several functions:
+\begin{itemize}
+\item {\tt readv} Implements a function that has the same semantics as {\tt readv} in
+\href{http://pubs.opengroup.org/onlinepubs/9699919799/}{POSIX.1-2008}. It takes
+in a user defined filesystem struct which contains all the information that the file system needs
+in order to work. The {\tt iovec} argument is already allocated.
+\begin{lstlisting}
+typedef qioerr (*qio_readv_fptr)
+                (void*, // plugin file pointer
+                const struct iovec*,   
+                // Data to write into
+                int,                    
+                // number of elements in iovec
+                ssize_t*);              
+                // Amount that was written into iovec
+\end{lstlisting}
+\item {\tt writev} Implements the same semantics as {\tt writev} in
+\href{http://pubs.opengroup.org/onlinepubs/9699919799/}{POSIX.1-2008}. 
+\begin{lstlisting}
+typedef qioerr (*qio_writev_fptr) 
+                (void*, // plugin fp
+                const struct iovec*,      
+                // data to write from
+                int,                      
+                // Number of elements in iovec
+                ssize_t*);                
+                // Amount written on return
+\end{lstlisting}
+\item {\tt preadv} Implements a function which does a positional read of the file 
+and puts the results in the {\tt iovec} argument which is already allocated. 
+\begin{lstlisting}
+typedef qioerr (*qio_preadv_fptr) 
+                (void*, // plugin fp
+                const struct iovec*,      
+                // Data to write into
+                int,                      
+                // number of elements in iovec
+                off_t,                    
+                // Offset to read from
+                ssize_t*);                
+                // Amount that was written into iovec
+\end{lstlisting}
+\item {\tt pwritev} does a positional write of the file that is referenced by the plugin
+filepointer from the contents stored in the argument to {\tt iovec}. It returns the
+number of bytes written on return.
+\begin{lstlisting}
+typedef qioerr (*qio_pwritev_fptr) 
+                (void*,//plugin fp
+                const struct iovec*,      
+                // data to write from
+                int,                      
+                // Number of elements in iovec 
+                off_t,                    
+                // offset to write 
+                ssize_t*);                
+                // Amount written on return
+\end{lstlisting}
+\item {\tt seek} Implements the semantics of {\tt lseek} in 
+\href{http://pubs.opengroup.org/onlinepubs/9699919799/}{POSIX.1-2008}.
+\begin{lstlisting}
+typedef qioerr (*qio_seek_fptr)
+                (void*,  // plugin fp
+                 off_t,  // offset to seek from
+                 int,    // Amount to seek
+                 off_t*);// Offset on return from seek
+\end{lstlisting}
+\item {\tt filelength} Returns the length of the file in bytes that is referenced by the
+plugin filepointer.
+\begin{lstlisting}
+typedef qioerr (*qio_filelength_fptr)
+                (void*,     // file information 
+                 int64_t*); // length on return
+\end{lstlisting}
+\item {\tt getpath} Returns the path to the file that is referenced by the plugin
+filepointer.
+\begin{lstlisting}
+typedef qioerr (*qio_getpath_fptr)
+                (void*, // file information
+                 const char**);// string/path on return
+\end{lstlisting}
+\item {\tt open} Opens the file on the configured filesystem pointed to by the path passed in as
+the second argument. The plugin filepointer (which is user defined) is finished being
+populated here. The user also at this point needs to also set the flags for the file
+(for more information see ~\ref{s:flags} and ~\ref{s:hints}). {\tt open} expects a configured filesystem
+passed in as the last argument to the function.
+\begin{lstlisting}
+typedef qioerr (*qio_open_fptr)
+                (void**,  // the plugin fp on return
+                 const char*, // pathname to file
+                 int*, // flags out
+                 mode_t,  // mode
+                 qio_hint_t, // Hints for opening the file
+                 void*);  // The configured filesystem
+\end{lstlisting}
+\item {\tt close} Closes the file pointed to by the plugin filepointer. Has the same
+semantics as {\tt close} in
+\href{http://pubs.opengroup.org/onlinepubs/9699919799/}{POSIX.1-2008}.
+\begin{lstlisting}
+typedef qioerr (*qio_close_fptr)
+                (void*); // file fp
+\end{lstlisting}
+\item {\tt fsync} Provides the same functionality as {\tt fsync} in 
+\href{http://pubs.opengroup.org/onlinepubs/9699919799/}{POSIX.1-2008}.
+\begin{lstlisting}
+typedef qioerr (*qio_fsync_fptr)
+                (void*); // file information
+\end{lstlisting}
+\item {\tt getcwd} replicates the semantics of {\tt getcwd} in 
+\href{http://pubs.opengroup.org/onlinepubs/9699919799/}{POSIX.1-2008}.
+\begin{lstlisting}
+typedef qioerr (*qio_getcwd_fptr)
+                (void*, // file information
+                 const char**); // path on return
+\end{lstlisting}
+\item The struct {\tt qio\_file\_functions\_t} represents all the functions needed within
+QIO in order to implement the functionality needed for file IO in Chapel. This is
+loaded into the QIO representation of the file at initialization and the user is
+responsible for populating this struct before passing it into the QIO runtime code.
+\begin{lstlisting}
+typedef struct qio_file_functions_s {
+  qio_writev_fptr  writev; 
+  qio_readv_fptr   readv;
+
+  qio_pwritev_fptr pwritev;
+  qio_preadv_fptr  preadv;
+
+  qio_close_fptr   close;
+  qio_open_fptr    open;
+
+  qio_seek_fptr   seek;
+
+  qio_filelength_fptr filelength;
+  qio_getpath_fptr getpath;
+
+  qio_fsync_fptr fsync;
+  qio_getcwd_fptr getcwd;
+
+  void* fs; // Holds the configured filesystem
+
+} qio_file_functions_t;
+\end{lstlisting}
+\end{itemize}
+Where the {\tt void* fs} in {\tt qio\_file\_functions\_t} holds the configured file system. This way we can support
+calling functions that are not dependent upon opening the file on a file system (\eg
+calling {\tt getpath} or {\tt getcwd}). 
+
+The various types of information needed by the file system in order to read and write
+files is passed around as a user defined struct in a {\tt void*} (the plugin fp). This way we can support
+any filesystem since we no longer have to worry about the number of
+arguments to these functions. Therefore the library writer is responsible for packing
+the arguments into - and extracting the arguments from - the plugin fp. 
+
+The library writer is also responsible for writing the wrapper functions
+around the calls to the filesystem so that it conforms with this API.
+This way we can report appropriate errors as well as supporting as many
+filesystems as possible.
+
+The only other function needed in order to create an interface with QIO is to
+implement a function that populates the {\tt qio\_file\_functions\_t} struct (the number of
+arguments to such a function can be arbitrary and user defined). Hereafter we will
+call this function {\tt create\_qio\_functions}. This will then be an
+interface to the module level code. The way in which we pass this information through to the QIO runtime is via the function
+in runtime called {\tt qio\_file\_open\_access\_usr} which is called by {\tt open} in the Chapel
+module level code and is the last argument to the function
+(the rest of the arguments are the same as {\tt qio\_file\_open\_access}). 
+
+This now brings us to a discussion of the module level API to the runtime.
+
+The module-level API for the runtime is almost trivial and depends only on
+{\tt create\_qio\_functions}. The way the library writer would interface with the runtime 
+at the module level would be along the lines of 
+\begin{lstlisting}
+extern proc create_qio_functions(...):
+                 qio_file_functions_t;
+
+proc myOpen(...): file {
+  var err: syserr = ENOERR;
+  ...
+  var fsfns = create_qio_functions(...);
+  ...
+  err = qio_file_open_access(..., fsfns);
+  ...
+  }
+\end{lstlisting}
+
+\subsection{User API for HDFS}
+\subsubsection{Types}
+The types defined by the HDFS module are as follows:
+
+\begin{lstlisting}
+record hdfsChapelFile {
+  var files: [rcDomain] file;
+}
+\end{lstlisting}
+Which is a wrapper around a replicated array of files; one per locale. (\ie a
+``Global file'' in a sense)
+
+\begin{lstlisting}
+record hdfsChapelFileSystem {
+  var home: locale;
+  var _internal_file: [rcDomain] c_ptr; 
+  // contains hdfsFS
+}
+\end{lstlisting}
+This is almost the same as {\tt hdfsChapelFile}, except this time instead of replicating
+a file across each locale, it replicates the configured file system across each locale.
+
+\begin{lstlisting}
+record hdfsChapelFile_local {
+  var home: locale = here;
+  var _internal_:qio_locale_map_ptr_t 
+      = QIO_LOCALE_MAP_PTR_T_NULL;
+}
+\end{lstlisting}
+Represents a mapping of a localeId to a specific byte range in the file.
+
+\begin{lstlisting}
+record hdfsChapelFileSystem_local {
+  var home: locale;
+  var _internal_: c_ptr;
+}
+\end{lstlisting}
+Represents a configured file system pointer. 
+
+\subsubsection{Functions}
+\begin{lstlisting}
+hdfsChapelConnect(name: string, port: int): fs;
+\end{lstlisting}
+Connects to HDFS with name {\tt name} and port {\tt port} and replicates across all locales
+on the machine. This way there is a valid way to reference this other then from the
+locale it was called on.
+
+\begin{lstlisting}
+fs.hdfsChapelDisconnect();
+\end{lstlisting}
+Disconnects (on each locale) from the file system {\tt fs} connected to
+by {\tt hdfsChapelConnect}
+
+\begin{lstlisting}
+fs.hdfsOpen(filename: string, 
+                flags: iomode): hdfsChapelFile;
+\end{lstlisting}
+Opens a file with path {\tt pathname} and in mode {\tt flags} on each locale from the file system
+that was connected to via {\tt hdfsConnect}. The only possible iomodes are
+{\tt iomode.r} and {\tt iomode.cw} (due to HDFS constraints).
+
+\begin{lstlisting}
+hdfsChapelFile.hdfsClose();
+\end{lstlisting}
+Closes the files created by {\tt fs.hdfsOpen}.
+
+\begin{lstlisting}
+hdfsChapelFile.getLocal: file;
+\end{lstlisting}
+Returns the file for the current locale that you are on when this function is called.
+
+\begin{lstlisting}
+hdfs_chapel_connect(path:string, port: int): 
+                  hdfsChapelFileSystem_local;
+\end{lstlisting}
+Same as {\tt hdfsChapelConnect} except that this only creates a valid file system on the
+locale it was on when it was called.
+
+\begin{lstlisting}
+hdfsChapelFileSystem_local.hdfs_chapel_disconnect();
+\end{lstlisting}
+Disconnects from HDFS.
+
+\begin{lstlisting}
+getHosts(f: file);
+\end{lstlisting}
+Returns a C array of structs of the form 
+\begin{lstlisting}
+{(locale_id, start_byte, length), ...}
+\end{lstlisting}
+which can be accessed via 
+\begin{lstlisting}
+getLocaleBytes(g: hdfsChapelFile_locale, i: int);
+\end{lstlisting}
+The only other things added to the current IO functionality is a convenience function
+\begin{lstlisting}
+hdfsChapelFile.hdfsReader(...): channel;
+\end{lstlisting}
+Which takes in the same arguments as the standard {\tt file.reader} function.
+
+After this, all other functionality is supported. An example of this is:
+\begin{lstlisting}{chapel}
+use HDFS;
+
+var gfl: hdfsChapelFile;
+var hdfs: fs;
+
+hdfs = hdfsChapelConnect("default", 0);
+gfl  = hdfs.hdfsOpen("/tmp/advo.txt", iomode.r);
+
+for loc in Locales {
+  on loc {
+    var r = gfl.hdfsReader(start=50);
+    // same as:
+    // var r = gfl.getLocal.reader(start=50);
+    var str: string;
+    r.readline(str);
+    writeln("on locale ", here.id, " string: " + str);
+    r.close();
+  }
+}
+on Locales[2] {
+  gfl.hdfsClose();
+}
+
+on Locales[1] {
+  hdfs.hdfsChapelDisconnect();
+}
+
+/* outputs:
+
+   on locale 0 string: 0325
+
+   on locale 1 string: 0325
+
+   on locale 2 string: 0325
+
+   on locale 3 string: 0325
+
+ */
+\end{lstlisting}
+
+\subsection{Record parser API}
+The API for the record parser works with the IO interface in Chapel and
+\emph{is not} dependent upon using HDFS or anything else except for the
+functions provided in {\tt IO.chpl} and regexp support. The API is as follows:
+\begin{lstlisting}
+new recordReader(type recordType, reader: channel, 
+                 regex: string): recordReader;
+\end{lstlisting}
+Creates a record reader that parses into the record of type {\tt recordType}
+from the channel {\tt reader} using the regexp {\tt regex}
+\begin{lstlisting}
+new recordReader(type recordType, 
+                 reader: channel): recordReader;
+\end{lstlisting}
+The same as the first one, however this time the regex is inferred from the
+field names in the record {\tt recordType}. The regex created this way is very
+lax in terms of how much whitespace there is between records. This could lead to naming problems as
+well as there might be problems parsing into the record. 
+
+\begin{lstlisting}
+recordReader.get(): recordType
+\end{lstlisting}
+Returns one record and advances the position in the file to the end of
+where it read. Will return error if it cannot return one.
+
+\begin{lstlisting}
+recordReader.stream(): iter(recordType)
+\end{lstlisting}
+Returns a stream of records of type {\tt recordType} until the regex no longer
+matches. At end, leaves the channel position at the place where it read to.  
+
+An example of how to use this is as follows:
+\begin{lstlisting}
+use RecordParser;
+
+var fl = open("test.txt", iomode.r);
+var ch = fl.reader();
+
+record Test {
+  var name: string;
+  var id:   int;
+}
+
+var regex = "Name: (.*)\\s*Id: (.*)\\n\\n";
+
+var M = new RecordReader(Test, ch, regex);
+
+writeln("get() = ", M.get());
+
+writeln("Now testing stream()");
+
+for m in M.stream {
+  writeln(m);
+}
+
+ch.close();
+fl.close();
+
+/*  Outputs: 
+    get() = (name = one, id = 1)
+    Now testing stream
+    (name = two, id = 2)
+    (name = three, id = 3)
+
+    For test.txt = 
+    Name: one
+    Id: 1
+
+    Name: two
+    Id: 2
+
+    Name: three
+    Id: 3
+*/
+\end{lstlisting}
+
+\subsection{MapReduce API}
+The API here is the simplest of them all and consists of only one function
+\begin{lstlisting}
+HDFSiter(path: string, type recordType,
+         regex: string): iter(RecordType)
+\end{lstlisting}
+This is a leader-follower iterator that is locale aware in terms of data
+locality (\eg  if blocks 0 and 1 reside on locales 0 and 1 respectively,
+it will read on and work on locales 0 and 1 while using those blocks).
+
+Many times what things might look like is:
+\begin{lstlisting}
+use HDFSiterator;
+
+record someRecord {
+  var id1: real;
+  var id2: real;
+}
+
+var regex = "ID1(.*)\\s*ID2(.*)\\n";
+
+forall r in HDFSiter("/tmp/test.txt", someRecord, regex) {
+  <do something with r in here>
+}
+\end{lstlisting}
+
+\subsection{Flags in QIO}\label{s:flags}
+The flags for QIO are fairly straightforward and consist of:
+\begin{itemize}
+\item {\tt QIO\_FDFLAG\_READABLE} Specifies that this file has been opened in a mode that
+supports reading. 
+\item {\tt QIO\_FDFLAG\_WRITABLE} Specifies that this file has been opened in a mode that
+supports writing
+\item {\tt QIO\_FDFLAG\_SEEKABLE} Specifies that this file is seekable.
+\end{itemize}
+
+\subsection{Hints in QIO}\label{s:hints}
+There are 5 types of hints:
+\begin{itemize}
+\item {\tt IOHINT\_NONE} Normal operation. We expect to use this most of the time.
+\item {\tt QIO\_HINT\_RANDOM} We expect random access to this file.
+\item {\tt QIO\_HINT\_SEQUENTIAL} We expect sequential access to this file.
+\item {\tt QIO\_HINT\_CACHED} We expect the entire file to be cached and/or pulled in all
+at once.
+\item {\tt QIO\_HINT\_PARALLEL} We expect many channels to work on this file concurrently.
+\end{itemize}

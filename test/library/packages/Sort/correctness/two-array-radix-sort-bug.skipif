@@ -1,0 +1,11 @@
+# This test runs too long for valgrind
+# Not worth customizing the problem size
+# since valgrind will test smaller problems
+# elsewhere.
+CHPL_TEST_VGRND_EXE == on
+#
+# Once the single-task specialization was removed (PR #16401), it also
+# runs too long on cygwin64, presumably due to higher overheads in
+# allocating the task end-count, so skip it there.
+#
+CHPL_TARGET_PLATFORM == cygwin64

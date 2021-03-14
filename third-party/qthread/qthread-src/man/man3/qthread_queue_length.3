@@ -1,0 +1,21 @@
+.TH qthread_queue_length 3 "AUGUST 2013" libqthread "libqthread"
+.SH NAME
+.B qthread_queue_length 
+\- return the length of the queue
+.SH SYNOPSIS
+.B #include <qthread.h>
+
+.I aligned_t
+.br
+.B qthread_queue_length
+.RI "(qthread_queue_t " q ");"
+
+.SH DESCRIPTION
+This function returns the number of tasks waiting in the queue. If the queue is not configured to keep track of the number of waiting tasks, it will return 0.
+
+.SH SEE ALSO
+.BR qthread_queue_create (3),
+.BR qthread_queue_destroy (3),
+.BR qthread_queue_join (3),
+.BR qthread_queue_release_all (3),
+.BR qthread_queue_release_one (3)

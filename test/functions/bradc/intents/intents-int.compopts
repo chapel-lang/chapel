@@ -1,0 +1,7 @@
+-swritelocals=true                      
+-stestConstAssigns=1  # intents-int.error1.good
+-stestConstAssigns=2  # intents-int.error2.good
+-stestConstAssigns=3  # intents-int.error3.good
+-stestConstAssigns=4  # intents-int.error4.good
+-swritelocals=false  # intents-int.nolocprint.good
+

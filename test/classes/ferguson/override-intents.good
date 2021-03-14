@@ -1,0 +1,224 @@
+override-intents.chpl:80: error: Child.in_out override keyword present but no superclass method matches signature to override
+override-intents.chpl:80: note: intent for argument 'arg' does not match
+override-intents.chpl:6: note: base method uses 'in' intent
+override-intents.chpl:80: note: overriding method uses 'out' intent
+override-intents.chpl:81: error: Child.in_inout override keyword present but no superclass method matches signature to override
+override-intents.chpl:81: note: intent for argument 'arg' does not match
+override-intents.chpl:7: note: base method uses 'in' intent
+override-intents.chpl:81: note: overriding method uses 'inout' intent
+override-intents.chpl:82: error: Child.in_const override keyword present but no superclass method matches signature to override
+override-intents.chpl:82: note: intent for argument 'arg' does not match
+override-intents.chpl:8: note: base method uses 'in' intent
+override-intents.chpl:82: note: overriding method uses 'const' intent
+override-intents.chpl:83: error: Child.in_const_in override keyword present but no superclass method matches signature to override
+override-intents.chpl:83: note: intent for argument 'arg' does not match
+override-intents.chpl:9: note: base method uses 'in' intent
+override-intents.chpl:83: note: overriding method uses 'const in' intent
+override-intents.chpl:84: error: Child.in_ref override keyword present but no superclass method matches signature to override
+override-intents.chpl:84: note: intent for argument 'arg' does not match
+override-intents.chpl:10: note: base method uses 'in' intent
+override-intents.chpl:84: note: overriding method uses 'ref' intent
+override-intents.chpl:85: error: Child.in_const_ref override keyword present but no superclass method matches signature to override
+override-intents.chpl:85: note: intent for argument 'arg' does not match
+override-intents.chpl:11: note: base method uses 'in' intent
+override-intents.chpl:85: note: overriding method uses 'const ref' intent
+override-intents.chpl:86: error: Child.in_blank override keyword present but no superclass method matches signature to override
+override-intents.chpl:86: note: intent for argument 'arg' does not match
+override-intents.chpl:12: note: base method uses 'in' intent
+override-intents.chpl:86: note: overriding method uses default intent
+override-intents.chpl:88: error: Child.out_in override keyword present but no superclass method matches signature to override
+override-intents.chpl:88: note: intent for argument 'arg' does not match
+override-intents.chpl:14: note: base method uses 'out' intent
+override-intents.chpl:88: note: overriding method uses 'in' intent
+override-intents.chpl:90: error: Child.out_inout override keyword present but no superclass method matches signature to override
+override-intents.chpl:90: note: intent for argument 'arg' does not match
+override-intents.chpl:16: note: base method uses 'out' intent
+override-intents.chpl:90: note: overriding method uses 'inout' intent
+override-intents.chpl:91: error: Child.out_const override keyword present but no superclass method matches signature to override
+override-intents.chpl:91: note: intent for argument 'arg' does not match
+override-intents.chpl:17: note: base method uses 'out' intent
+override-intents.chpl:91: note: overriding method uses 'const' intent
+override-intents.chpl:92: error: Child.out_const_in override keyword present but no superclass method matches signature to override
+override-intents.chpl:92: note: intent for argument 'arg' does not match
+override-intents.chpl:18: note: base method uses 'out' intent
+override-intents.chpl:92: note: overriding method uses 'const in' intent
+override-intents.chpl:93: error: Child.out_ref override keyword present but no superclass method matches signature to override
+override-intents.chpl:93: note: intent for argument 'arg' does not match
+override-intents.chpl:19: note: base method uses 'out' intent
+override-intents.chpl:93: note: overriding method uses 'ref' intent
+override-intents.chpl:94: error: Child.out_const_ref override keyword present but no superclass method matches signature to override
+override-intents.chpl:94: note: intent for argument 'arg' does not match
+override-intents.chpl:20: note: base method uses 'out' intent
+override-intents.chpl:94: note: overriding method uses 'const ref' intent
+override-intents.chpl:95: error: Child.out_blank override keyword present but no superclass method matches signature to override
+override-intents.chpl:95: note: intent for argument 'arg' does not match
+override-intents.chpl:21: note: base method uses 'out' intent
+override-intents.chpl:95: note: overriding method uses default intent
+override-intents.chpl:97: error: Child.inout_in override keyword present but no superclass method matches signature to override
+override-intents.chpl:97: note: intent for argument 'arg' does not match
+override-intents.chpl:23: note: base method uses 'inout' intent
+override-intents.chpl:97: note: overriding method uses 'in' intent
+override-intents.chpl:98: error: Child.inout_out override keyword present but no superclass method matches signature to override
+override-intents.chpl:98: note: intent for argument 'arg' does not match
+override-intents.chpl:24: note: base method uses 'inout' intent
+override-intents.chpl:98: note: overriding method uses 'out' intent
+override-intents.chpl:100: error: Child.inout_const override keyword present but no superclass method matches signature to override
+override-intents.chpl:100: note: intent for argument 'arg' does not match
+override-intents.chpl:26: note: base method uses 'inout' intent
+override-intents.chpl:100: note: overriding method uses 'const' intent
+override-intents.chpl:101: error: Child.inout_const_in override keyword present but no superclass method matches signature to override
+override-intents.chpl:101: note: intent for argument 'arg' does not match
+override-intents.chpl:27: note: base method uses 'inout' intent
+override-intents.chpl:101: note: overriding method uses 'const in' intent
+override-intents.chpl:102: error: Child.inout_ref override keyword present but no superclass method matches signature to override
+override-intents.chpl:102: note: intent for argument 'arg' does not match
+override-intents.chpl:28: note: base method uses 'inout' intent
+override-intents.chpl:102: note: overriding method uses 'ref' intent
+override-intents.chpl:103: error: Child.inout_const_ref override keyword present but no superclass method matches signature to override
+override-intents.chpl:103: note: intent for argument 'arg' does not match
+override-intents.chpl:29: note: base method uses 'inout' intent
+override-intents.chpl:103: note: overriding method uses 'const ref' intent
+override-intents.chpl:104: error: Child.inout_blank override keyword present but no superclass method matches signature to override
+override-intents.chpl:104: note: intent for argument 'arg' does not match
+override-intents.chpl:30: note: base method uses 'inout' intent
+override-intents.chpl:104: note: overriding method uses default intent
+override-intents.chpl:106: error: Child.const_in override keyword present but no superclass method matches signature to override
+override-intents.chpl:106: note: intent for argument 'arg' does not match
+override-intents.chpl:32: note: base method uses 'const' intent
+override-intents.chpl:106: note: overriding method uses 'in' intent
+override-intents.chpl:107: error: Child.const_out override keyword present but no superclass method matches signature to override
+override-intents.chpl:107: note: intent for argument 'arg' does not match
+override-intents.chpl:33: note: base method uses 'const' intent
+override-intents.chpl:107: note: overriding method uses 'out' intent
+override-intents.chpl:108: error: Child.const_inout override keyword present but no superclass method matches signature to override
+override-intents.chpl:108: note: intent for argument 'arg' does not match
+override-intents.chpl:34: note: base method uses 'const' intent
+override-intents.chpl:108: note: overriding method uses 'inout' intent
+override-intents.chpl:110: error: Child.const_const_in override keyword present but no superclass method matches signature to override
+override-intents.chpl:110: note: intent for argument 'arg' does not match
+override-intents.chpl:36: note: base method uses 'const' intent
+override-intents.chpl:110: note: overriding method uses 'const in' intent
+override-intents.chpl:111: error: Child.const_ref override keyword present but no superclass method matches signature to override
+override-intents.chpl:111: note: intent for argument 'arg' does not match
+override-intents.chpl:37: note: base method uses 'const' intent
+override-intents.chpl:111: note: overriding method uses 'ref' intent
+override-intents.chpl:112: error: Child.const_const_ref override keyword present but no superclass method matches signature to override
+override-intents.chpl:112: note: intent for argument 'arg' does not match
+override-intents.chpl:38: note: base method uses 'const' intent
+override-intents.chpl:112: note: overriding method uses 'const ref' intent
+override-intents.chpl:113: error: Child.const_blank override keyword present but no superclass method matches signature to override
+override-intents.chpl:113: note: intent for argument 'arg' does not match
+override-intents.chpl:39: note: base method uses 'const' intent
+override-intents.chpl:113: note: overriding method uses default intent
+override-intents.chpl:115: error: Child.const_in_in override keyword present but no superclass method matches signature to override
+override-intents.chpl:115: note: intent for argument 'arg' does not match
+override-intents.chpl:41: note: base method uses 'const in' intent
+override-intents.chpl:115: note: overriding method uses 'in' intent
+override-intents.chpl:116: error: Child.const_in_out override keyword present but no superclass method matches signature to override
+override-intents.chpl:116: note: intent for argument 'arg' does not match
+override-intents.chpl:42: note: base method uses 'const in' intent
+override-intents.chpl:116: note: overriding method uses 'out' intent
+override-intents.chpl:117: error: Child.const_in_inout override keyword present but no superclass method matches signature to override
+override-intents.chpl:117: note: intent for argument 'arg' does not match
+override-intents.chpl:43: note: base method uses 'const in' intent
+override-intents.chpl:117: note: overriding method uses 'inout' intent
+override-intents.chpl:118: error: Child.const_in_const override keyword present but no superclass method matches signature to override
+override-intents.chpl:118: note: intent for argument 'arg' does not match
+override-intents.chpl:44: note: base method uses 'const in' intent
+override-intents.chpl:118: note: overriding method uses 'const' intent
+override-intents.chpl:120: error: Child.const_in_ref override keyword present but no superclass method matches signature to override
+override-intents.chpl:120: note: intent for argument 'arg' does not match
+override-intents.chpl:46: note: base method uses 'const in' intent
+override-intents.chpl:120: note: overriding method uses 'ref' intent
+override-intents.chpl:121: error: Child.const_in_const_ref override keyword present but no superclass method matches signature to override
+override-intents.chpl:121: note: intent for argument 'arg' does not match
+override-intents.chpl:47: note: base method uses 'const in' intent
+override-intents.chpl:121: note: overriding method uses 'const ref' intent
+override-intents.chpl:122: error: Child.const_in_blank override keyword present but no superclass method matches signature to override
+override-intents.chpl:122: note: intent for argument 'arg' does not match
+override-intents.chpl:48: note: base method uses 'const in' intent
+override-intents.chpl:122: note: overriding method uses default intent
+override-intents.chpl:124: error: Child.ref_in override keyword present but no superclass method matches signature to override
+override-intents.chpl:124: note: intent for argument 'arg' does not match
+override-intents.chpl:50: note: base method uses 'ref' intent
+override-intents.chpl:124: note: overriding method uses 'in' intent
+override-intents.chpl:125: error: Child.ref_out override keyword present but no superclass method matches signature to override
+override-intents.chpl:125: note: intent for argument 'arg' does not match
+override-intents.chpl:51: note: base method uses 'ref' intent
+override-intents.chpl:125: note: overriding method uses 'out' intent
+override-intents.chpl:126: error: Child.ref_inout override keyword present but no superclass method matches signature to override
+override-intents.chpl:126: note: intent for argument 'arg' does not match
+override-intents.chpl:52: note: base method uses 'ref' intent
+override-intents.chpl:126: note: overriding method uses 'inout' intent
+override-intents.chpl:127: error: Child.ref_const override keyword present but no superclass method matches signature to override
+override-intents.chpl:127: note: intent for argument 'arg' does not match
+override-intents.chpl:53: note: base method uses 'ref' intent
+override-intents.chpl:127: note: overriding method uses 'const' intent
+override-intents.chpl:128: error: Child.ref_const_in override keyword present but no superclass method matches signature to override
+override-intents.chpl:128: note: intent for argument 'arg' does not match
+override-intents.chpl:54: note: base method uses 'ref' intent
+override-intents.chpl:128: note: overriding method uses 'const in' intent
+override-intents.chpl:130: error: Child.ref_const_ref override keyword present but no superclass method matches signature to override
+override-intents.chpl:130: note: intent for argument 'arg' does not match
+override-intents.chpl:56: note: base method uses 'ref' intent
+override-intents.chpl:130: note: overriding method uses 'const ref' intent
+override-intents.chpl:131: error: Child.ref_blank override keyword present but no superclass method matches signature to override
+override-intents.chpl:131: note: intent for argument 'arg' does not match
+override-intents.chpl:57: note: base method uses 'ref' intent
+override-intents.chpl:131: note: overriding method uses default intent
+override-intents.chpl:133: error: Child.const_ref_in override keyword present but no superclass method matches signature to override
+override-intents.chpl:133: note: intent for argument 'arg' does not match
+override-intents.chpl:59: note: base method uses 'const ref' intent
+override-intents.chpl:133: note: overriding method uses 'in' intent
+override-intents.chpl:134: error: Child.const_ref_out override keyword present but no superclass method matches signature to override
+override-intents.chpl:134: note: intent for argument 'arg' does not match
+override-intents.chpl:60: note: base method uses 'const ref' intent
+override-intents.chpl:134: note: overriding method uses 'out' intent
+override-intents.chpl:135: error: Child.const_ref_inout override keyword present but no superclass method matches signature to override
+override-intents.chpl:135: note: intent for argument 'arg' does not match
+override-intents.chpl:61: note: base method uses 'const ref' intent
+override-intents.chpl:135: note: overriding method uses 'inout' intent
+override-intents.chpl:136: error: Child.const_ref_const override keyword present but no superclass method matches signature to override
+override-intents.chpl:136: note: intent for argument 'arg' does not match
+override-intents.chpl:62: note: base method uses 'const ref' intent
+override-intents.chpl:136: note: overriding method uses 'const' intent
+override-intents.chpl:137: error: Child.const_ref_const_in override keyword present but no superclass method matches signature to override
+override-intents.chpl:137: note: intent for argument 'arg' does not match
+override-intents.chpl:63: note: base method uses 'const ref' intent
+override-intents.chpl:137: note: overriding method uses 'const in' intent
+override-intents.chpl:138: error: Child.const_ref_ref override keyword present but no superclass method matches signature to override
+override-intents.chpl:138: note: intent for argument 'arg' does not match
+override-intents.chpl:64: note: base method uses 'const ref' intent
+override-intents.chpl:138: note: overriding method uses 'ref' intent
+override-intents.chpl:140: error: Child.const_ref_blank override keyword present but no superclass method matches signature to override
+override-intents.chpl:140: note: intent for argument 'arg' does not match
+override-intents.chpl:66: note: base method uses 'const ref' intent
+override-intents.chpl:140: note: overriding method uses default intent
+override-intents.chpl:142: error: Child.blank_in override keyword present but no superclass method matches signature to override
+override-intents.chpl:142: note: intent for argument 'arg' does not match
+override-intents.chpl:68: note: base method uses default intent
+override-intents.chpl:142: note: overriding method uses 'in' intent
+override-intents.chpl:143: error: Child.blank_out override keyword present but no superclass method matches signature to override
+override-intents.chpl:143: note: intent for argument 'arg' does not match
+override-intents.chpl:69: note: base method uses default intent
+override-intents.chpl:143: note: overriding method uses 'out' intent
+override-intents.chpl:144: error: Child.blank_inout override keyword present but no superclass method matches signature to override
+override-intents.chpl:144: note: intent for argument 'arg' does not match
+override-intents.chpl:70: note: base method uses default intent
+override-intents.chpl:144: note: overriding method uses 'inout' intent
+override-intents.chpl:145: error: Child.blank_const override keyword present but no superclass method matches signature to override
+override-intents.chpl:145: note: intent for argument 'arg' does not match
+override-intents.chpl:71: note: base method uses default intent
+override-intents.chpl:145: note: overriding method uses 'const' intent
+override-intents.chpl:146: error: Child.blank_const_in override keyword present but no superclass method matches signature to override
+override-intents.chpl:146: note: intent for argument 'arg' does not match
+override-intents.chpl:72: note: base method uses default intent
+override-intents.chpl:146: note: overriding method uses 'const in' intent
+override-intents.chpl:147: error: Child.blank_ref override keyword present but no superclass method matches signature to override
+override-intents.chpl:147: note: intent for argument 'arg' does not match
+override-intents.chpl:73: note: base method uses default intent
+override-intents.chpl:147: note: overriding method uses 'ref' intent
+override-intents.chpl:148: error: Child.blank_const_ref override keyword present but no superclass method matches signature to override
+override-intents.chpl:148: note: intent for argument 'arg' does not match
+override-intents.chpl:74: note: base method uses default intent
+override-intents.chpl:148: note: overriding method uses 'const ref' intent

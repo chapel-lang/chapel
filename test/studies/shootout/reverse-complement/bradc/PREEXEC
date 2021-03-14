@@ -1,0 +1,22 @@
+#!/bin/bash
+
+set -e
+
+# Note: This is not safe for parallel testing
+
+# Only run this script when doing a perf run
+if [ -n "$CHPL_TEST_PERF" ] && [ ! -f $CHPL_TEST_TMP_DIR/fasta.rvcmp ]; then
+  # '$3' is the compiler given to us by sub_test
+  $3 ${CHPL_TEST_ROOT_DIR:-$CHPL_HOME/test}/studies/shootout/fasta/kbrady/fasta-printf.chpl --fast -o tmpFasta
+
+  # needed by reverse-complement: n = 100 million
+  ./tmpFasta --n=100000000 -nl 1 > $CHPL_TEST_TMP_DIR/fasta.rvcmp
+
+  # needed by k-nucleotide: n = 25 million
+  ./tmpFasta --n=25000000 -nl 1 > $CHPL_TEST_TMP_DIR/fasta.knucl
+
+  # needed by regex-dna: n = 5 million
+  ./tmpFasta --n=5000000 -nl 1 > $CHPL_TEST_TMP_DIR/fasta.regex
+
+  rm ./tmpFasta
+fi

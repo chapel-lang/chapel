@@ -1,0 +1,2 @@
+do_smu_soa-error.chpl:294: In function 'doPairs':
+do_smu_soa-error.chpl:299: error: Cannot transfer ownership from this non-nilable reference variable

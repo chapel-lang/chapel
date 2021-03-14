@@ -1,0 +1,2 @@
+setInitGenericError.chpl:8: warning: creating a set with element type R
+setInitGenericError.chpl:8: error: set element type cannot currently be generic

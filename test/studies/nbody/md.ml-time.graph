@@ -1,0 +1,5 @@
+perfkeys: with caching:
+files: md-300k.dat
+graphkeys: time in try2()
+graphtitle: Studies: MD-inspired nbody-like test Time (sec) - n=300,000
+ylabel: Time (seconds)

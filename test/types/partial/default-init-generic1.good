@@ -1,0 +1,5 @@
+default-init-generic1.chpl:21: In function 'main':
+default-init-generic1.chpl:22: error: cannot default-initialize a variable with generic type
+default-init-generic1.chpl:22: note: 'D' has generic type 'S'
+default-init-generic1.chpl:22: note: cannot find initialization point to split-init this variable
+default-init-generic1.chpl:23: note: 'D' is used here before it is initialized

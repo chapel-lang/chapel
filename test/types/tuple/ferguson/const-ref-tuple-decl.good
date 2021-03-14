@@ -1,0 +1,29 @@
+init (default)
+init (default)
+init 1
+= 0 1
+deinit 1
+init 2
+= 0 2
+deinit 2
+init (default)
+init (default)
+init (default)
+init 10
+= 0 10
+deinit 10
+init 20
+= 0 20
+deinit 20
+init 30
+= 0 30
+deinit 30
+in commonPrefixLength
+(x = 1, ptr = {})
+(x = 2, ptr = {})
+end commonPrefixLength
+deinit 10
+deinit 20
+deinit 30
+deinit 1
+deinit 2

@@ -1,0 +1,9 @@
+----- integer -----
+borrowed Parent(int(64)).inheritedMethod()
+foobar(Parent(int))
+borrowed Child(int(64)).inheritedMethod()
+
+----- real -----
+borrowed Parent(real(64)).inheritedMethod()
+foobar(Parent(other))
+borrowed Child(real(64)).inheritedMethod()

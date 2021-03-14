@@ -1,0 +1,5 @@
+bug: issue when creating the generic instantiation
+
+The default value for this type has been overwritten, modifying the type that
+was created for the call.  Adjustments to the handling of generic fields should
+be made.

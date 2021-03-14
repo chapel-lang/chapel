@@ -1,0 +1,30 @@
+#!/usr/bin/perl
+# Usage "gasnetrun_mic [-v] [-t] [-E envvar1,envvar2] app [args]"
+#
+# This script can be used to launch smp-conduit programs on Intel Phi
+# coprocessors using the micnativeloadex loader.
+#
+# When installing one may need to edit the path to the perl interpreter in the
+# first line, and may need a fullpath to micnativeloadex in the line below.
+my $cmd = 'micnativeloadex';
+my ($verbose, $dryrun);
+my @env_vars = grep {m/^GASNET_/} (keys %ENV);
+while ($#ARGV && (substr($ARGV[0],0,1) eq '-')) {
+  my $opt = shift;
+     if ($opt eq '-E') { push @env_vars, split(',', shift); }
+  elsif ($opt eq '-v') { $verbose = 1; }
+  elsif ($opt eq '-t') { $verbose = $dryrun = 1; }
+  elsif ($opt eq '--') { last; }
+  else  { die "$0: unknown option $opt\n"; }
+}
+my @cmd = ($cmd, shift);
+push(@cmd, '-e', join(' ', map {"$_=".gasnet_encode($ENV{$_})} @env_vars)) if (@env_vars);
+push(@cmd, '-a', join(' ', map {gasnet_encode($_)} @ARGV)) if (@ARGV);
+print(join(' ', @cmd), "\n") if $verbose;
+exec @cmd or die "failed to exec $cmd" unless $dryrun;
+sub gasnet_encode {
+  $_ = shift;
+  s!%(0[0-9A-Fa-f]{2})!%025$1!g;
+  s!([^A-Za-z0-9%_,\./:+=@^-])!'%0'.unpack("H2",$1)!ge;
+  $_;
+}

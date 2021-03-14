@@ -1,0 +1,5 @@
+#!/bin/bash
+
+make checkRequire2 >> $2 2>&1
+sed '/checkRequire2.c:/d' $2 > $2.tmp
+mv $2.tmp $2

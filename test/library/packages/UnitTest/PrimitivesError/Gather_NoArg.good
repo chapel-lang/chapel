@@ -1,0 +1,1 @@
+Gather_NoArg.chpl:17: error: illegal call of 'gather tests'. Expected an argument of type 'Test'

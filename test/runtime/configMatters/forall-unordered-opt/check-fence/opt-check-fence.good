@@ -1,0 +1,3 @@
+../needsFence.chpl:14: note: Optimized atomic call to be unordered
+atomic_fence_chpl;
+chpl_comm_atomic_add_unordered_int64;

@@ -1,0 +1,9 @@
+1..3
+range(codepointIndex,bounded,false)
+1
+2
+3
+1..4 by 2
+range(codepointIndex,bounded,true)
+1
+3

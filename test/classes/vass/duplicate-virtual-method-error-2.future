@@ -1,0 +1,16 @@
+bug: compiler seg faults
+
+Currently I get:
+  error: seg fault [misc.cpp:259]
+which is caused by an invalid 'child' when compute_call_sites() iterates at:
+  forv_Vec(FnSymbol, child, *children)
+
+The crash ensues when two virtual methods in a subclass override a
+method in the superclass. In this case the ones in the subclass are ambiguous.
+
+The test code can be slimmed a bit and still cause the crash, as long as
+the compiler does not optimize things away:
+
+  class C     { proc dup(){} }
+  class D : C { proc dup(){} proc dup(){} }
+  ((new D()):C).dup();

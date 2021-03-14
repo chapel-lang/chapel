@@ -1,0 +1,7 @@
+This copy of LULESH has been getting different/wrong answers with icc
+ever since we turned on the --vectorize capability, for the loop on
+line 1077.  Removing the 'param' keywords on the for loops fixes the
+issue and is probably what we want for LULESH anyway, so we updated
+the release version with this change, but are tucking this version
+away to see whether it resolves with future versions of icc, or so
+that we can explore the question further if need be.

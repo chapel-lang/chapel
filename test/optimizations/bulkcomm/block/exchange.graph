@@ -1,0 +1,5 @@
+perfkeys: GETS: , PUTS: , ONS: , GETS: , PUTS: , ONS: , GETS: , PUTS: , ONS: 
+files: exchange-elegant.dat, exchange-elegant.dat, exchange-elegant.dat, exchange-destLocal.dat, exchange-destLocal.dat, exchange-destLocal.dat, exchange-bothLocal.dat, exchange-bothLocal.dat, exchange-bothLocal.dat
+graphkeys: elegant GETs, elegant PUTs, elegant ONs, destLocal GETs, destLocal PUTs, destLocal ONs, bothLocal GETs, bothLocal PUTs, bothLocal ONs
+ylabel: Count
+graphtitle: BlockDist Transfer (n=10,000)

@@ -1,0 +1,6 @@
+bug: unresolved init call for fully-qualified 'new' when type/module share name
+
+This test shows that when a module and type share a name, a 'new' call
+to the fully-qualified module.type name doesn't resolve.  Removing the
+full qualification or renaming the type (as shown in
+modTypeDiffName.chpl) seems to work.

@@ -1,0 +1,1 @@
+badfile.chpl:1: error: 'thisVariableDoesntExist' undeclared (first use this function)

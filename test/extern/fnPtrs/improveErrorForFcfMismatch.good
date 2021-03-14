@@ -1,0 +1,3 @@
+improveErrorForFcfMismatch.chpl:13: error: unresolved call 'bar(chpl__fcf_type_void_void)'
+improveErrorForFcfMismatch.chpl:7: note: candidates are: bar(f: c_fn_ptr)
+improveErrorForFcfMismatch.chpl:7: note: perhaps you need to add a 'c_ptrTo()'?

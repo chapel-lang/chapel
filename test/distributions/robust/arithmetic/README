@@ -1,0 +1,40 @@
+The robustness tests are contained in the following directories based
+on functionality tested:
+
+  basics/      basic domain and array functionality, e.g., iteration
+  collapsing/  rank change slicing in which dimensions are collapsed
+  composite/   combinations of functionality in other directories
+  kernels/     small kernels, e.g., jacobi
+  modules/     tests of calling standard module functions on arrays and domains
+  reindexing/  reindexing
+  resizing/    changing a domain so that the array is resized
+  slicing/     slicing
+  stress/      stress tests, e.g., creating many distributed arrays in a loop
+  trivial/     trivial domain and array functionality, e.g., A.eltType
+
+Each directory should contain a NUMLOCALES file with the value 4 (or
+some other appropriate value) and a COMPOPTS file with the line
+"-M../" so that the test can use the driver module located in this
+directory.
+
+
+USING AND RUNNING THE SUITE
+
+The top-level file driver.chpl defines an enum type called DistType.
+Currently, default, block, cyclic, and blockcylic are supported.
+By default, the test suite uses the default (single locale) distribution
+when $CHPL_COMM is 'none', and Block distribution otherwise.
+
+To test a new distribution:
+* add a new enum constant to DistType
+* add the appropriate initialization for your distribution to
+  setupDistributions()
+
+To run a test for a particular distribution, say Cyclic,
+add these compiler options:
+
+  -sdistType=DistType.cyclic -M$CHPL_HOME/test/distributions/robust/arithmetic
+
+To run tests for Cyclic using start_test or paratest.server, pass:
+
+  -compopts -sdistType=DistType.cyclic

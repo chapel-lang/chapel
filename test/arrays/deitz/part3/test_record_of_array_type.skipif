@@ -1,0 +1,3 @@
+# For predictable comparison against .bad,
+# run this only under valgrind for now.
+CHPL_TEST_VGRND_EXE != on

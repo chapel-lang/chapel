@@ -1,0 +1,5 @@
+perfkeys: arrDeinit:, arrDeinit:, arrDeinit:, arrDeinit:
+graphkeys: blockArrDeinit:, cyclicArrDeinit:, blockCyclicArrDeinit:, stencilArrDeinit:
+files: distCreate-small-block.dat, distCreate-small-cyclic.dat, distCreate-small-blockCyc.dat, distCreate-small-stencil.dat
+ylabel: Time (seconds)
+graphtitle: Destroying distributed arrays (1M elements)

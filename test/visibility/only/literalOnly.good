@@ -1,0 +1,1 @@
+literalOnly.chpl:6: error: incorrect expression in 'only' list, identifier expected

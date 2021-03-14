@@ -1,0 +1,15 @@
+A simple demonstration of accessing the GSL routines using
+the extern block functionality of Chapel.
+
+This test requires:
+  * CHPL_LLVM!=none (since the test uses extern blocks)
+and a GSL installation detected like so:
+  * GSL_DIR environment variable is set, OR
+  * GSL dynamic library is detected
+
+Note that if the dynamic library is found, this
+test assumes that the header and static library are available.
+
+GSL_DIR can be set, such that $GSL_DIR/include and
+$GSL_DIR/lib point to the location of the headers and libraries.
+

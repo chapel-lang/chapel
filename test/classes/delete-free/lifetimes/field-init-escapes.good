@@ -1,0 +1,2 @@
+field-init-escapes.chpl:16: In initializer:
+field-init-escapes.chpl:17: error: Field x would outlive the value it is set to

@@ -1,0 +1,2 @@
+type-value-subtype.chpl:1: error: Subtype queries require two types
+type-value-subtype.chpl:1: error: true

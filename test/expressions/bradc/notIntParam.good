@@ -1,0 +1,32 @@
+notIntParam.chpl:43: warning: ti is nonzero
+notIntParam.chpl:43: warning: tu is nonzero
+notIntParam.chpl:43: warning: fi is zero
+notIntParam.chpl:43: warning: fu is zero
+notIntParam.chpl:44: warning: ti is nonzero
+notIntParam.chpl:44: warning: tu is nonzero
+notIntParam.chpl:44: warning: fi is zero
+notIntParam.chpl:44: warning: fu is zero
+notIntParam.chpl:45: warning: ti is nonzero
+notIntParam.chpl:45: warning: tu is nonzero
+notIntParam.chpl:45: warning: fi is zero
+notIntParam.chpl:45: warning: fu is zero
+notIntParam.chpl:46: warning: ti is nonzero
+notIntParam.chpl:46: warning: tu is nonzero
+notIntParam.chpl:46: warning: fi is zero
+notIntParam.chpl:46: warning: fu is zero
+ti is nonzero
+tu is nonzero
+fi is zero
+fu is zero
+ti is nonzero
+tu is nonzero
+fi is zero
+fu is zero
+ti is nonzero
+tu is nonzero
+fi is zero
+fu is zero
+ti is nonzero
+tu is nonzero
+fi is zero
+fu is zero

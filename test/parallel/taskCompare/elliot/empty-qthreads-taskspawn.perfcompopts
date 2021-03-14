@@ -1,0 +1,4 @@
+qtTaskSpawn.h -staskingMode=qtChplLikeT       # empty-qthreads-chpl-like
+qtTaskSpawn.h -staskingMode=qtChplOptT        # empty-qthreads-chpl-opt
+qtTaskSpawn.h -staskingMode=qtSerialChplLikeT # empty-qthreads-serial-chpl-like
+qtTaskSpawn.h -staskingMode=qtSerialChplOptT  # empty-qthreads-serial-chpl-opt

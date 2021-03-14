@@ -1,0 +1,7 @@
+#!/usr/bin/env sh
+# This prediff exists to avoid underscores in the output
+# which confuse tex
+testname=$1
+outfile=$2
+head -n 3 $outfile > $outfile.2
+mv $outfile.2 $outfile

@@ -1,0 +1,66 @@
+# Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+# Copyright 2004-2019 Cray Inc.
+# Other additional copyright holders may be indicated within.
+#
+# The entirety of this work is licensed under the Apache License,
+# Version 2.0 (the "License"); you may not use this file except
+# in compliance with the License.
+#
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+COMM_LAUNCHER_SRCS = \
+        comm-ugni-launch.c \
+        comm-ugni-locales.c \
+        comm-ugni-heap-pages.c \
+
+COMM_SRCS = \
+        comm-ugni.c \
+        comm-ugni-mem.c \
+        comm-ugni-locales.c \
+        comm-ugni-heap-pages.c \
+
+SRCS = \
+        comm-ugni.c \
+        comm-ugni-launch.c \
+        comm-ugni-locales.c \
+        comm-ugni-heap-pages.c \
+
+
+COMM_OBJS = \
+	$(COMM_SRCS:%.c=$(COMM_OBJDIR)/%.o)
+
+COMM_LAUNCHER_OBJS = \
+	$(COMM_LAUNCHER_SRCS:%.c=$(COMM_LAUNCHER_OBJDIR)/%.o)
+
+
+ifeq ($(CHPL_MAKE_COMPILER), clang-included)
+  ifneq (, $(filter cray-prgenv-%,$(CHPL_MAKE_ORIG_TARGET_COMPILER)))
+    # if we're clang-included for a cray-prgenv-* build,
+    # gather some extra include paths
+
+    # only run gather-cray-prgenv-argumenst.bash once, as an optimization
+    ifndef CHPL_UGNI_PRGENV_CFLAGS
+      export CHPL_UGNI_PRGENV_CFLAGS := $(shell $(CHPL_MAKE_HOME)/util/config/gather-cray-prgenv-arguments.bash compile "$(CHPL_MAKE_TARGET_PLATFORM)" "$(CHPL_MAKE_COMM)" "$(CHPL_MAKE_COMM_SUBSTRATE)" "$(CHPL_MAKE_AUXFS)")
+    endif
+  endif
+endif
+
+# Get system headers...
+comm_ugni_CFLAGS = $(CHPL_UGNI_PRGENV_CFLAGS)
+
+ifneq ($(UGNI_PERFSTATS),)
+comm_ugni_CFLAGS += -DPERFSTATS_COMM_UGNI
+endif
+
+# Enable -c11 to get __thread support for pgi
+ifneq (, $(findstring pgi,$(CHPL_MAKE_TARGET_COMPILER)))
+comm_ugni_CFLAGS += -c11
+endif

@@ -1,0 +1,6 @@
+nt 10
+uncaught TaskErrors: 1 errors: IllegalArgumentError: 10
+  :0: thrown here
+  pod-tpvs.chpl:48: uncaught here
+asdf(1), returning
+asdf(10), throwing

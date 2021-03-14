@@ -1,0 +1,8 @@
+feature request: RandomStream follower iterator
+
+I'm backing out the support that I'd added for RandomStream follower
+iterators because we don't have sufficient machinery in the leader/
+follower story to be able to update the global cursor in a sufficiently
+race-safe way.  This would be nice to continue to develop after the
+release when we have more time.
+

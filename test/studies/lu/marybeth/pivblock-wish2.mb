@@ -1,0 +1,101 @@
+// Block LU with pivoting.
+// Magic square of dimension 10, is used as test matrix A.
+
+// Close to final version.  I improved the names of the subdomains
+// and iterator as suggested by John.  I took out the test in the
+// iterator for checking if hi+1 > n.  I took out the tests for
+// checking if TrailingBlockInds was an empty domain.  I added
+// a subdomain, UnfactoredInds to the tuple of domains that is
+// yielded by IterateByBlocks.  UnfactoredInds = CurrentBlockInds +
+// TrailingBlockInds.  (Since there isn't a domain union operator,
+// I had to yield UnfactoredInds explicitly.)  I changed the
+// view definitions to A1 and A2 during the LU factorization of
+// the CurrentBlockInds columns.  A1 is factored at this step.
+// A2 is needed only for swapping rows as the pivots are computed.
+// After the factor step, then A12 and A22 are defined and the
+// elimination proceeds.
+//
+// To do:  spawning a task to swap rows of A22 while A12 is being
+// factored.
+
+param n = 10;
+param blk = 5;
+
+const A1D = [1..n];
+const A2D = [A1D,A1D]; 
+var A: [A2D] real;
+var piv: [i in A1D] index(A1D) = i;
+var int;
+
+initA(A,'Adata.dat');
+
+writeln("Unfactored Matrix:");
+writeln(A);
+
+for (UnfactoredInds,CurrentBlockInds,TrailingBlockInds) 
+  in IterateByBlocks(A1D,blk) {
+  
+  A1 -> A[UnfactoredInds,CurrentBlockInds];
+  A2 -> A[UnfactoredInds,TrailingBlockInds];
+  A12 -> A[CurrentBlockInds,TrailingBlockInds];
+  A22 -> A[TrailingBlockInds,TrailingBlockInds];
+
+// LU factorization of A1 
+  for k in CurrentBlockInds {
+    ind = maxIndex reduce abs(A1(..,k));
+    if (ind != k) {
+      piv(k) <==> piv(ind);
+      A1(k,..) <==> A1(ind,..);
+      A2(k,..) <==> A2(ind,..);
+    } 
+    if (A1(k,k) != 0.0) {
+      forall i in UnfactoredInds(k+1..) {
+        A1(i,k) = A1(i,k)/A1(k,k);
+      }
+      forall (i,j) in [UnfactoredInds(k+1..),CurrentBlockInds(k+1..)] {
+        A1(i,j) -= A1(i,k)*A11(k,j);
+      }
+    } 
+    else halt("zero pivot encountered");
+  }
+
+// Update of A12.
+  forall j in TrailingBlockInds {
+    for k in CurrentBlockInds {
+      forall i in CurrentBlockInds(k+1..) {
+        A12(i,j) -= A11(i,k)*A21(k,j);
+      }
+    }
+  }
+// Update of A22 -= A12*A21.
+  forall (i,j) in [TrailingBlockInds, TrailingBlockInds] {
+    for k in CurrentBlockInds {
+      A22(i,j) -= A12(i,k)*A21(k,j);
+    }
+  }
+}
+writeln();
+writeln("Factored Matrix:");
+writeln(A);
+
+iterator IterateByBlocks(D,blksize) {
+  var n = D.size;
+  var lo,hi: int;
+
+  for i in D by blksize {
+    lo = i;
+    hi = min(i + blksize-1,n);
+    yield (D(lo..n),D(i..hi),D(h+1..n)) 
+  }   
+}
+  
+def initA(A,filename:string){
+
+  var Adat = file(filename,path='./',mode='r');
+
+  Adat.open;
+  for ij in A.domain {
+    Adat.read(A(ij));
+  }
+  Adat.close;
+}

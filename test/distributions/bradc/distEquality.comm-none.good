@@ -1,0 +1,40 @@
+Block comparisons:
+true
+false
+true
+true
+false
+true
+true
+
+Cyclic comparisons:
+true
+true
+true
+true
+true
+true
+true
+true
+true
+true
+true
+
+Block-Cyclic comparisons:
+true
+false
+false
+true
+true
+false
+false
+true
+false
+true
+true
+
+Replicated comparisons:
+true
+true
+true
+true

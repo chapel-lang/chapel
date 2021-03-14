@@ -1,0 +1,8 @@
+
+[brick]
+name = "simpleDep"
+version = "0.1.0"
+chplVersion = "1.16.0"
+
+[dependencies]
+simpleGoodDep = "0.1.0"

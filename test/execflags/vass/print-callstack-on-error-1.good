@@ -1,0 +1,5 @@
+print-callstack-on-error-1.chpl:13: In function 'test3':
+print-callstack-on-error-1.chpl:14: error: error from test3, depth=0
+  print-callstack-on-error-1.chpl:10: called as test3(z: string) from function 'test2'
+  print-callstack-on-error-1.chpl:6: called as test2(y: string) from function 'test1'
+  print-callstack-on-error-1.chpl:3: called as test1(x: string) from module 'print-callstack-on-error-1'

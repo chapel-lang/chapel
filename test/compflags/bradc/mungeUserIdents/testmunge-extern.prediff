@@ -1,0 +1,51 @@
+#!/usr/bin/env python3
+
+#
+# This test ensures that the generated code contains instances of certain
+# identifiers that should not be munged, and that their '_chpl' counterparts
+# are not present.
+#
+
+import sys, os, shutil
+
+genCodeDir = 'genCode'
+actualGenCodeFile = os.path.join(genCodeDir, sys.argv[1]+'.c')
+genHeader         = os.path.join(genCodeDir, 'chpl__header.h')
+testOutputFile = sys.argv[2]
+
+names = ["bar", "baz", "globStruct"]
+names = names + [n + "_chpl" for n in names]
+counts = {n:0 for n in names}
+
+for line in open(actualGenCodeFile):
+    for key in counts:
+        if key in line:
+            refkey = "_ref_" + key
+            heapkey = "heap_" + key
+            if not refkey in line:
+                if not heapkey in line:
+                    counts[key] += 1
+
+for line in open(genHeader):
+    for key in counts:
+        if key in line:
+            refkey = "_ref_" + key
+            heapkey = "heap_" + key
+            if not refkey in line:
+                if not heapkey in line:
+                    counts[key] += 1
+
+with open(testOutputFile, 'a') as f:
+    success = True
+    for key in counts:
+        if key.endswith("_chpl"):
+            if counts[key] != 0:
+                f.write("ERROR: Found {}'s in output\n".format(key))
+                success = False
+        elif counts[key] == 0:
+            f.write("ERROR: Didn't find {}'s in output\n".format(key))
+            success = False
+    if success:
+        f.write("Success!\n")
+
+shutil.rmtree(genCodeDir)

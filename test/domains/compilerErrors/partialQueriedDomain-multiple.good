@@ -1,0 +1,3 @@
+partialQueriedDomain-multiple.chpl:21: In method 'c_l':
+partialQueriedDomain-multiple.chpl:21: error: cannot query part of a domain
+partialQueriedDomain-multiple.chpl:21: error: cannot query part of a domain

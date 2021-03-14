@@ -1,0 +1,13 @@
+declaredGenericReturnTuple.chpl:11: In function 'p2':
+declaredGenericReturnTuple.chpl:11: error: cannot initialize return value of type '1*VectorListElement' from a '1*VectorListElement(int(64))'
+$CHPL_HOME/modules/standard/ChapelIO.chpl:728: In method 'readWriteThis':
+$CHPL_HOME/modules/standard/ChapelIO.chpl:753: error: cannot default-initialize a variable with generic type
+$CHPL_HOME/modules/standard/ChapelIO.chpl:753: note: '<temporary>' has generic type 'VectorListElement'
+$CHPL_HOME/modules/standard/ChapelIO.chpl:753: note: cannot find initialization point to split-init this variable
+  <internal>:0: called as 1*VectorListElement.readWriteThis(f: channel(true,dynamic,false))
+  within internal functions (use --print-callstack-on-error to see)
+  $CHPL_HOME/modules/standard/IO.chpl:3084: called as _write_one_internal(_channel_internal: qio_channel_ptr_t, param kind = 0: iokind, x: 1*VectorListElement, loc: locale) from method '_writeOne'
+  $CHPL_HOME/modules/standard/IO.chpl:3999: called as (channel(true,dynamic,true))._writeOne(param kind = 0: iokind, x: 1*VectorListElement, loc: locale) from method 'write'
+  $CHPL_HOME/modules/standard/IO.chpl:4048: called as (channel(true,dynamic,true)).write(args(0): 1*VectorListElement, args(1): ioNewline) from method 'writeln'
+  $CHPL_HOME/modules/standard/ChapelIO.chpl:842: called as (channel(true,dynamic,true)).writeln(args(0): 1*VectorListElement) from function 'writeln'
+  declaredGenericReturnTuple.chpl:12: called as writeln(args(0): 1*VectorListElement)

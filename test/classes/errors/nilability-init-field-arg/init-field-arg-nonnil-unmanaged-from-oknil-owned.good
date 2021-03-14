@@ -1,0 +1,3 @@
+init-field-arg-nonnil-unmanaged-from-oknil-owned.chpl:9: In initializer:
+init-field-arg-nonnil-unmanaged-from-oknil-owned.chpl:10: error: cannot initialize field MyRecord.lhs of non-nilable type 'unmanaged MyClass' from a nilable 'owned MyClass?'
+  init-field-arg-nonnil-unmanaged-from-oknil-owned.chpl:14: called as MyRecord.init(rhs: owned MyClass?)

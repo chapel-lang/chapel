@@ -1,0 +1,4 @@
+error message: attempting to coerce param imag to real leaves out "i" in error
+
+Attempting to pass a parameter imaginary value 1.1i to foo(:real) results in
+an error message involving foo(1.1) with no "i".

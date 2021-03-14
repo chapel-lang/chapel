@@ -1,0 +1,1 @@
+<command-line arg>:1: error: When specifying a configuration variable or constant on a command line followed by an '=', an initialization value must be given after that '='.

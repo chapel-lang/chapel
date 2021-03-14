@@ -1,0 +1,56 @@
+from libc.stdint cimport *
+from chplrt cimport *
+
+cdef extern from "arrayAndExternArrayType.h":
+	void chpl__init_arrayAndExternArrayType(int64_t _ln, int32_t _fn);
+	void takesArrays(chpl_external_array * x, chpl_external_array * otherVal);
+	chpl_external_array returnsExternArray();
+from chplrt cimport chpl_library_init, chpl_library_finalize, chpl_external_array, chpl_make_external_array, chpl_make_external_array_ptr, chpl_free_external_array, chpl_external_array
+from chpl_arrayAndExternArrayType cimport chpl__init_arrayAndExternArrayType, takesArrays as chpl_takesArrays, returnsExternArray as chpl_returnsExternArray
+
+import numpy
+cimport numpy
+
+cdef class ExternalArray:
+	cdef chpl_external_array _extern_arr
+
+	def __cinit__(self, numpy.uint64_t eltSize, numpy.uint64_t numElts):
+		self._extern_arr = chpl_make_external_array(eltSize, numElts)
+
+	def __cinit__(self):
+		self
+
+	def freeExternalArray(self):
+		chpl_free_external_array(self._extern_arr)
+
+def chpl_setup():
+	cdef char** args = ['arrayAndExternArrayType']
+	chpl_library_init(1, args)
+	chpl__init_arrayAndExternArrayType(1, 1)
+
+def chpl_cleanup():
+	chpl_library_finalize()
+
+def takesArrays(x, ExternalArray otherVal):
+	cdef chpl_external_array chpl_x = chpl_make_external_array(sizeof(numpy.int64_t), len(x))
+	for i in range(len(x)):
+		(<numpy.int64_t*>chpl_x.elts)[i] = x[i]
+	chpl_takesArrays(&chpl_x, &(otherVal._extern_arr))
+	chpl_free_external_array(chpl_x)
+
+def returnsExternArray():
+	cdef chpl_external_array ret_arr = chpl_returnsExternArray()
+	ret = ExternalArray()
+	ret._extern_arr = ret_arr
+	return ret
+from distutils.core import setup
+from distutils.core import Extension
+from Cython.Build import cythonize
+import numpy
+
+setup(name = 'arrayAndExternArrayType library',
+	ext_modules = cythonize(
+		Extension("arrayAndExternArrayType",
+			include_dirs=[numpy.get_include()],
+			sources=["arrayAndExternArrayType.pyx"],
+			libraries=["arrayAndExternArrayType"] + chpl_libraries)))

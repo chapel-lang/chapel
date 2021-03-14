@@ -1,0 +1,52 @@
+# Description: Makefile fragment for GASNet_tools, GASNET_#THREAD_MODEL# mode
+# #AUTOGEN#
+# @configure_input@
+# Copyright 2011, Dan Bonachea <bonachea@cs.berkeley.edu>
+# Terms of use are as specified in license.txt
+
+# ----------------------------------------------------------------------
+# Usage instructions:
+#
+# Clients should include this file in their Makefile, using: (no leading '#')
+#     include ###INSTALL_INCLUDE###/gasnet_tools-#thread_model#.mak
+# or alternatively, just:
+#     include gasnet_tools-#thread_model#.mak  
+# and use a -I###INSTALL_INCLUDE###
+# command-line option when invoking make
+#
+# Then in the Makefile, use a compile line something like this:
+#  $(GASNETTOOLS_CC) $(GASNETTOOLS_CPPFLAGS) $(GASNETTOOLS_CFLAGS) -c myfile.c
+#
+# and a link line something like this:
+#  $(GASNETTOOLS_LD) $(GASNETTOOLS_LDFLAGS) -o myfile myfile.o $(GASNETTOOLS_LIBS)
+# ----------------------------------------------------------------------
+
+GASNET_PREFIX = ###INSTALL_PREFIX###
+
+GASNETTOOLS_INCLUDES = -I###INSTALL_INCLUDE###
+GASNETTOOLS_INCLUDES = -I@TOP_SRCDIR@ -I@TOP_SRCDIR@/other -I@TOP_BUILDDIR@ ###NOINSTALL###
+
+GASNETTOOLS_LIBDIR = ###INSTALL_LIB###
+GASNETTOOLS_LIBDIR = @TOP_BUILDDIR@  ###NOINSTALL###
+
+@BUILDCONFIG_DEBUG_FALSE@GASNETTOOLS_DEBUGFLAGS = -DNDEBUG
+
+GASNETTOOLS_THREADFLAGS_PAR = -DGASNETT_THREAD_SAFE @GASNET_THREAD_DEFINES@
+GASNETTOOLS_THREADFLAGS_SEQ = -DGASNETT_THREAD_SINGLE
+GASNETTOOLS_THREADFLAGS = $(GASNETTOOLS_THREADFLAGS_#THREAD_MODEL#)
+
+GASNETTOOLS_THREADLIBS_PAR = @GASNET_THREAD_LIBS@ 
+GASNETTOOLS_THREADLIBS_SEQ = 
+GASNETTOOLS_THREADLIBS = $(GASNETTOOLS_THREADLIBS_#THREAD_MODEL#)
+
+GASNETTOOLS_TOOLLIB_NAME = gasnet_tools-#thread_model#
+
+GASNETTOOLS_CC = @CC@
+GASNETTOOLS_CPPFLAGS = $(GASNETTOOLS_DEBUGFLAGS) $(GASNETTOOLS_THREADFLAGS) @GASNET_EXTRA_DEFINES@ @MISC_CPPFLAGS@ $(GASNETTOOLS_INCLUDES) $(MANUAL_DEFINES)
+GASNETTOOLS_CFLAGS = @GASNET_OPT_CFLAGS@ @MISC_CFLAGS@ $(KEEPTMP_CFLAGS) $(MANUAL_CFLAGS)
+GASNETTOOLS_LD = @CC@
+GASNETTOOLS_LDFLAGS = @GASNET_OPT_CFLAGS@ @MISC_CFLAGS@ @LDFLAGS@ $(MANUAL_LDFLAGS)
+GASNETTOOLS_LIBS = -L$(GASNETTOOLS_LIBDIR) -l$(GASNETTOOLS_TOOLLIB_NAME) $(GASNETTOOLS_THREADLIBS) @LIBS@ @LIBM@ $(MANUAL_LIBS)
+GASNETTOOLS_CXX = @CXX@
+GASNETTOOLS_CXXFLAGS = @GASNET_OPT_CXXFLAGS@ @MISC_CXXFLAGS@ $(MANUAL_CXXFLAGS)
+

@@ -1,0 +1,73 @@
+#!/usr/bin/env python3
+
+import sys, os, shutil, re
+
+test_name = sys.argv[1]
+out_file  = sys.argv[2]
+tmp_file  = out_file + ".prediff.tmp"
+
+EPSILON = 1e-6
+vals = {}
+vals['   Initial energy  :'] = -1.166063303477
+vals['   Final energy    :'] = -1.166049767266
+vals['   eFinal/eInitial :'] = 0.999988
+
+found = dict.fromkeys(vals.keys(), False)
+
+def verify(line):
+    info = line.split(' ')
+    pre = ' '.join(info[:-1])
+    if pre in vals:
+        last = float(info[-1])
+        found[pre] = True # indicate pattern was found
+        if abs(last - vals[pre]) < EPSILON:
+            pre += ' SUCCESS\n'
+        else:
+            pre += ' FAILURE\n'
+        return pre
+    else:
+        return line
+
+def printChunk(start, numAfter):
+    ret = ""
+
+    with open(out_file) as outf:
+        started = False
+        numRead = 0
+        for line in outf:
+            if start in line:
+                ret += line
+                started = True
+            elif started and numRead < numAfter:
+                ret += verify(line)
+                numRead += 1
+            elif numRead == numAfter:
+                break
+
+    if numRead == numAfter:
+        return ret
+    else:
+        return ""
+
+text = printChunk("Simulation Validation:", 4)
+
+if os.getenv('CHPL_TEST_PERF') == 'on':
+    perfText = printChunk("Timings", 16)
+    if perfText == "":
+      text = "" # error during processing of timings output
+    else:
+      text += perfText
+
+if text != "" and all(found.values()):
+    with open(tmp_file, 'a') as tf:
+        tf.write(text)
+    shutil.move(tmp_file, out_file)
+else:
+    with open(tmp_file, 'a') as tf:
+        with open(out_file) as outf:
+            tf.write(outf.read())
+        if text == "":
+            tf.write("\nPREDIFF ERROR: Unexpected number of lines\n")
+        if all(found.values()) == False:
+            tf.write("\nPREDIFF ERROR: Unable to find validation values\n")
+        shutil.move(tmp_file, out_file)

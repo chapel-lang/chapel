@@ -1,0 +1,55 @@
+array sent from C
+----------------
+eltType is: real(64)
+idxType is: int(64)
+rank is: 1
+
+size is: 5
+shape is: (5)
+
+X is:
+1.0 2.0 3.0 4.0 5.0
+
+X is:
+1.1 2.1 3.1 4.1 5.1
+
+low element is: 1.1
+
+X is:
+1.2 2.2 3.2 4.2 5.2
+
+low element is: 1.2
+
+X is:
+1.3 2.3 3.3 4.3 5.3
+
+X is:
+1.4 2.4 3.4 4.4 5.4
+
+X is:
+1.5 2.5 3.5 4.5 5.5
+
+X is:
+1.6 2.6 3.6 4.6 5.6
+
+target locales: LOCALE0
+local subdomain: {0..4}
+local subdomains:
+{0..4}
+
+is empty: false
+head: 1.6
+tail: 5.6
+find last: (true, 4)
+count last: 1
+equals same: true
+equals diff: false
+
+slice by {0..3}:
+1.6 2.6 3.6 4.6
+reindexed X[0] = 1.6
+reindexed X[2] = 2.6
+reindexed X[4] = 3.6
+reindexed X[6] = 4.6
+reindexed X[8] = 5.6
+

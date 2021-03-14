@@ -1,0 +1,8 @@
+fetchAdd:
+  old values = 42, 3.14
+  returned values (should equal old values) = 42, 3.14
+  new values = 89, 6.28
+fetchSub:
+  old values = 89, 6.28
+  returned values (should equal old values) = 89, 6.28
+  new values = 42, 3.14

@@ -1,0 +1,133 @@
+AMUDP Documentation
+===================
+Author: Dan Bonachea and Dan Hettena
+Contact email: gasnet-devel@lbl.gov
+Home page: https://gasnet.lbl.gov/amudp
+
+AMUDP is an implementation of the AM-2 specification over UDP/IP. 
+
+AMUDP is a portable implementation of the AM-2 specification that runs on UDP,
+a standard component of the TCP/IP protocol suite that is ubiquitous across
+platforms and operating systems.  The intent is a fully-portable implementation
+that will work on any POSIX-like system.  We don't expect to achieve latency
+performance competitive with a native implementation of AM optimized for
+special purpose hardware, instead we seek to provide a compatibility layer that
+will allow AM-based systems to quickly get up and running on virtually any
+platform. The motivation for choosing UDP over other protocols (such as TCP) is
+that it typically provides the lowest overhead access to the network with
+little or no internal buffering, and the connectionless model is best suited
+for scaling up the number of distributed processors. Because UDP occasionally
+drops packets, we add a thin reliability layer that provides the guaranteed
+delivery required by AM-2, hopefully providing this fault tolerance with better
+performance than full-blown TCP. 
+
+Design documentation for the original AMUDP implementation is available from
+the website above. The current version of AMUDP strictly targets the BSD/POSIX
+sockets layer - it no longer supports UFXP or native MS Windows sockets,
+although Windows support is available via the Cygwin POSIX environment for
+Windows (http://cygwin.com).
+
+AMUDP includes an extension interface called AMUDP_SPMD that performs job
+spawning and initialization services, using either ssh or a provided
+site-specific job spawner. See the paper above and test code for details.
+
+AMUDP is used to implement the GASNet communication system (https://gasnet.lbl.gov). 
+Further documentation about using AMUDP is available in the udp-conduit
+documentation: https://gasnet.lbl.gov/dist/udp-conduit/README
+
+Requirements
+------------
+
+* C99 and C++98 compilers. The C++ STL is not used in any way.
+
+* A POSIX-like environment, including BSD/POSIX sockets and file descriptors
+
+* GNU Make and basic UNIX tools for the provided Makefiles
+
+Limitations
+-----------
+
+AMUDP has a few notable departures from the AM-2 specification:
+
+* The client must call AM_SetExpectedResources() exactly once on an endpoint
+  after setting up the translation table and before making any calls to the
+  transport functions (AM_Poll, AM_Reply* or AM_Request*). It is also an error to
+  call AM_Map, AM_MapAny or AM_Unmap (which change the translation table) after
+  the call to AM_SetExpectedResources().
+
+* AM_PAR bundle/endpoint access is not implemented - this means AMUDP does
+  not provide thread safety, but can be used in a thread-funnelled mode with
+  locking at the client level.
+
+* The nbytes argument to Medium and Long AM handlers has type `size_t`
+
+* AM_GetXferM is not implemented.
+
+* Clients should not take the address of AM_ entry point "functions", because
+  many are implemented as macros.
+
+Change Log
+----------
+AMUDP 3.17 (10/2020)
+- Remove BLCR support
+- This version breaks compatibility of the amudprun spawner with prior versions
+
+AMUDP 3.16 (03/2020)
+- Improved startup error checking and reporting for DNS misconfigurations
+
+AMUDP 3.15 (06/2018)
+- Medium and Long AM handlers change in signature on 64-bit platforms: 
+  the nbytes argument now has type size_t instead of int
+- New AMUDP_LIBRARY_VERSION_{MAJOR,MINOR} defines
+- Fix compatibility issues with PGI C++ 17+
+- Significant rearrangement of internal files and utilities
+- AM Handler dispatching code is now strictly spec-compliant
+- AMX_ENV_PREFIX_STR is now the preferred define for setting a client ENV prefix
+- Several pseudo-public programmatic knobs renamed into the AMX_ namespace
+- Bug 2774: source_addr to Med/Long injection is now ignored for nbytes=0
+- Fix an unreported cosmetic output bug in AMX_RETURN error reporting
+
+AMUDP 3.14 (03/2017)
+- Fix AM_{Get,Set}NumHandlers and AM_MoveEndpoint
+- Fix bug 3379: workaround a PGI optimizer bug on Darwin
+- Export AMUDP_enEqual
+- make run-tests now outputs summary results at the end
+- Fix some harmless warnings about unused variables
+- Renamed portable_platform.h
+- Remove Makefile.darwin (no longer necessary)
+- Fix compilation errors in verbose debug mode
+- Update contact email
+
+AMUDP 3.13 (10/2016)
+- Restructure network buffer management to provide scalable
+  buffer memory utilization to thousands of nodes and beyond.
+- Adjust the set of available environment tuning knobs for better control of
+  transfer performance at scale.
+- Adjust default transfer parameters for better performance on 1GbE
+- Numerous misc changes to improve performance
+- Restructure AMUDP headers to reduce namespace clutter
+- Expose AMUDP_SetTranslationTag
+- Fix possible syntax errors with AM expression arguments
+- Fix a compatibility issue with Cray CNL
+- Fix a use-after-free bug in argument processing
+- Fix a data corruption issue on 64-bit OSX on PowerPC
+- Use realloc when appropriate to manage internal state
+
+AMUDP 3.12 (06/2016)
+- Add BLCR support
+- Improve stdout/stderr routing to be more robust and use fewer descriptors
+- Add AMUDP_ENV_CMD and AMUDP_LINEBUFFERSZ
+- Remove UETH/UFXP support
+- Remove GLUNIX and REXEC spawn support
+- Remove support for HPUX, SuperUX, MTX, Catamount, and native Win32 (use cygwin instead)
+- Remove some obsolete files
+Fix three significant bugs:
+- Out-of-order delivery of UDP messages (which can occur on networks
+  with multiple paths) was going undetected and could lead to silent
+  loss and/or erroneous redelivery of AMs in the presence of
+  retransmissions (caused by packet loss or high network load).
+- On Cygwin 2.5 (2016-04-11 and later), ioctl(FIONREAD) always returns
+  failure, was rendering AMUDP entirely unusable on that platform.
+- On FreeBSD, ioctl(FIONREAD) may truncate long datagrams to around
+  600 bytes, was rendering AMUDP unusable on that platform.
+

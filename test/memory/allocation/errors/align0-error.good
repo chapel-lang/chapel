@@ -1,0 +1,1 @@
+align0-error.chpl:3: error: halt reached - c_aligned_alloc called with alignment of 0

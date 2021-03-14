@@ -1,0 +1,5 @@
+perfkeys: max (seconds) =, avg (seconds) =, min (seconds) =
+repeat-files: stream.ep.dat
+graphkeys: max stream-ep runtime, avg stream-ep runtime, min stream-ep runtime
+graphtitle: HPCC: STREAM-EP Time (sec) - n=5,723,827,200
+ylabel: Time (seconds)

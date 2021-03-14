@@ -1,0 +1,2 @@
+configNotModScope.chpl:5: error: Configuration variables are allowed only at module scope.
+configNotModScope.chpl:10: error: Configuration variables are allowed only at module scope.

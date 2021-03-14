@@ -1,0 +1,4 @@
+#!/bin/bash
+
+echo "Checking moved tree structure is the same as original source" >> $2
+diff -r complexSrc/ complexDest/ >> $2

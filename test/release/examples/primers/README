@@ -1,0 +1,45 @@
+==============
+Chapel Primers
+==============
+
+These primers are small Chapel program with narrative comments that
+demonstrate Chapel feature areas in detail.
+
+     arrays.chpl                 : Rectangular arrays/domains
+     associative.chpl            : Associative arrays/domains and set operations
+     atomics.chpl                : Atomic variables
+     chpldoc.doc.chpl            : The chpldoc feature
+     classes.chpl                : Defining and using classes
+     distributions.chpl          : Chapel standard distributions
+     domains.chpl                : Domains and methods on domains
+     errorHandling.chpl          : Error handling system
+     FFTWlib.chpl                : the FFTW standard library
+     fileIO.chpl                 : File I/O example using arrays
+     forallLoops.chpl            : Forall loops - data parallel constructs
+     genericClasses.chpl         : Defining and using generic classes
+     iterators.chpl              : Iterator examples
+     LAPACKlib.chpl              : the LAPACK standard library
+     LinearAlgebralib.chpl       : LinearAlgebra module
+     learnChapelInYMinutes.chpl  : Chapel's entry for learnxinyminutes.com
+     listOps.chpl                : Using the `list` type
+     locales.chpl                : Chapel Locale types
+     modules.chpl                : Chapel modules and use statements
+     nothingVariables.chpl       : Using nothing for variable and field types
+     parIters.chpl               : Introduction to parallel iterators
+     procedures.chpl             : Procedure examples
+     randomNumbers.chpl          : Usage of the standard module Random
+     ranges.chpl                 : Range types and operations on ranges
+     records.chpl                : Declarations and uses of records
+     reductions.chpl             : Reduction examples
+     replicated.chpl             : Replicated distribution
+     slices.chpl                 : Array slicing and reindexing examples
+     sparse.chpl                 : Sparse domains and arrays
+     specialMethods.chpl         : Class/Record methods treated specially
+     syncsingle.chpl             : Sync and single variables
+     taskParallel.chpl           : Task parallel language concepts
+     timers.chpl                 : Time standard module
+     tuples.chpl                 : Demonstrates the use of tuples in Chapel
+     varargs.chpl                : Variable argument procedures
+     variables.chpl              : Variables, constants, and parameters
+
+     chplvis                     : A directory containing a primer on the chplvis tool

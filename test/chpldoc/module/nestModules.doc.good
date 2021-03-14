@@ -1,0 +1,82 @@
+.. default-domain:: chpl
+
+.. module:: outer
+   :synopsis: This is the outer module's comment 
+
+outer
+=====
+**Usage**
+
+.. code-block:: chapel
+
+   use outer;
+
+
+or
+
+.. code-block:: chapel
+
+   import outer;
+
+**Submodules**
+
+.. toctree::
+   :maxdepth: 1
+   :glob:
+
+   outer/*
+
+This is the outer module's comment 
+
+.. default-domain:: chpl
+
+.. module:: inner
+   :synopsis: This is the inner module's comment 
+
+inner
+=====
+**Usage**
+
+.. code-block:: chapel
+
+   use outer.inner;
+
+
+or
+
+.. code-block:: chapel
+
+   import outer.inner;
+
+**Submodules**
+
+.. toctree::
+   :maxdepth: 1
+   :glob:
+
+   inner/*
+
+This is the inner module's comment 
+
+.. default-domain:: chpl
+
+.. module:: innermost
+   :synopsis: This is the innermost module's comment 
+
+innermost
+=========
+**Usage**
+
+.. code-block:: chapel
+
+   use outer.inner.innermost;
+
+
+or
+
+.. code-block:: chapel
+
+   import outer.inner.innermost;
+
+This is the innermost module's comment 
+

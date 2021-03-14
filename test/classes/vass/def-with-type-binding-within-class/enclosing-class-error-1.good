@@ -1,0 +1,2 @@
+enclosing-class-error-1.chpl:2: error: 'X' undeclared (first use this function)
+enclosing-class-error-1.chpl:6: error: unresolved call 'A.fooA()'

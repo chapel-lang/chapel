@@ -1,0 +1,3 @@
+a is {a = 1, b = 2, x = 3, y = 4}
+writing {b=5,a=4,y=7,x=6}
+a after reading is {a = 4, b = 5, x = 6, y = 7}

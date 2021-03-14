@@ -1,0 +1,3 @@
+forall-calls-throwing-fn.chpl:10: In function 'test':
+forall-calls-throwing-fn.chpl:13: error: call to throwing function throwingFn without throws, try, or try! (relaxed mode)
+forall-calls-throwing-fn.chpl:8: note: throwing function throwingFn defined here

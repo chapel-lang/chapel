@@ -1,0 +1,4 @@
+bug: References in tuples don't work like you would expect
+
+The reference should be placed into the tuple rather than having its value
+get captured.

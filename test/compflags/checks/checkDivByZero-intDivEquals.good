@@ -1,0 +1,1 @@
+checkDivByZero.chpl:28: error: halt reached - Attempt to divide by zero

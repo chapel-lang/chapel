@@ -1,0 +1,67 @@
+#!/usr/bin/env python3
+
+# This script fixes up the test output to remove the compiler version
+# number and then generates a .good file based on the output of
+# printchplenv.
+
+# No error checking, because this should be called from sub_test
+
+import sys, os, subprocess
+
+testname = sys.argv[1]
+outfile = sys.argv[2]
+compflags = sys.argv[4].split(' ')
+genLLVM = False
+for flag in compflags:
+    if flag == '--llvm':
+        genLLVM = True
+    elif flag == '--no-llvm':
+        genLLVM = False
+
+if genLLVM:
+    os.environ['CHPL_LLVM_CODEGEN'] = 'llvm'
+
+goodfile = testname+'.good'
+compver = 'Chapel compiler version:'
+chplhomestr = '  CHPL_HOME:'
+chpl_home=os.getenv('CHPL_HOME')
+printchplenv=os.path.normpath(chpl_home)+'/util/printchplenv'
+
+with open(outfile, 'r') as ofh:
+    myLines = ofh.readlines()
+
+# fix the output file
+with open(outfile, 'w') as ofh:
+    for line in myLines:
+        l = line.rstrip()
+        if l.find(compver) == 0:
+            ofh.write('%s\n'%(compver))
+        else:
+            ofh.write(line)
+
+with open(goodfile, 'w') as gfh:
+    flags_str = ""
+    first_flag = True
+    for flag in compflags:
+        if flag == '':
+            continue
+        if not first_flag:
+            flags_str += " "
+        first_flag = False
+        flags_str += flag
+
+    gfh.write('Compilation command: chpl -o about %s about.chpl \n'%(flags_str))
+    gfh.write('Chapel compiler version:\n')
+    gfh.write('Chapel environment:\n')
+    gfh.write('  CHPL_HOME: %s\n'%(chpl_home))
+    # printchplenv --simple
+    p = subprocess.Popen([printchplenv, '--simple', '--all', '--internal', '--anonymize', '--no-tidy'],
+                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    chplenv = p.communicate()[0].decode()
+    chplenv += "CHPL_RUNTIME_INCL="+chpl_home+"/runtime/include\n"
+    chplenv += "CHPL_RUNTIME_LIB="+chpl_home+"/lib\n"
+    chplenv += "CHPL_THIRD_PARTY="+chpl_home+"/third-party\n"
+    for (env, val) in (e.split('=', 1) for e in sorted(chplenv.split('\n')) if e):
+        gfh.write('  %s: %s\n'%(env, val))
+        if env == 'CHPL_LLVM' and genLLVM:
+            gfh.write('  CHPL_LLVM_CODEGEN: llvm\n')

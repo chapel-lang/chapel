@@ -1,0 +1,667 @@
+   1  
+   1   LOCALE0 LOCALE1 LOCALE2
+   1  mylocs
+   1  setupLocales 1*3
+   2  
+   2  new DimensionalDist2D()
+   3  
+   3  wrapping ddf in dmap
+   4  
+   4  skipping: wrapping ddf in another dmap, without assignment
+   5  
+   5  (1, 1) is on locale:
+   5  LOCALE0: LOCALE2
+   5  LOCALE1: LOCALE2
+   5  LOCALE2: LOCALE2
+   6  
+   6  (1, 2) is on locale:
+   6  LOCALE0: LOCALE0
+   6  LOCALE1: LOCALE0
+   6  LOCALE2: LOCALE0
+   7  
+   7  (2, 4) is on locale:
+   7  LOCALE0: LOCALE1
+   7  LOCALE1: LOCALE1
+   7  LOCALE2: LOCALE1
+   8  
+   8  (3, 6) is on locale:
+   8  LOCALE0: LOCALE2
+   8  LOCALE1: LOCALE2
+   8  LOCALE2: LOCALE2
+  10  
+  10  dmdom - creating
+  11  
+  11  dmdom - assigning
+  11  dmdom = {1..5, 1..7}
+  20  
+  20   (1, 1) (1, 2) (1, 3) (1, 4) (1, 5) (1, 6) (1, 7) (2, 1) (2, 2) (2, 3) (2, 4) (2, 5) (2, 6) (2, 7) (3, 1) (3, 2) (3, 3) (3, 4) (3, 5) (3, 6) (3, 7) (4, 1) (4, 2) (4, 3) (4, 4) (4, 5) (4, 6) (4, 7) (5, 1) (5, 2) (5, 3) (5, 4) (5, 5) (5, 6) (5, 7)
+  20  dmdom - serial iteration on 0
+  21  
+  21   (1, 1)  on 2
+  21   (1, 2)  on 0
+  21   (1, 3)  on 0
+  21   (1, 4)  on 1
+  21   (1, 5)  on 1
+  21   (1, 6)  on 2
+  21   (1, 7)  on 2
+  21   (2, 1)  on 2
+  21   (2, 2)  on 0
+  21   (2, 3)  on 0
+  21   (2, 4)  on 1
+  21   (2, 5)  on 1
+  21   (2, 6)  on 2
+  21   (2, 7)  on 2
+  21   (3, 1)  on 2
+  21   (3, 2)  on 0
+  21   (3, 3)  on 0
+  21   (3, 4)  on 1
+  21   (3, 5)  on 1
+  21   (3, 6)  on 2
+  21   (3, 7)  on 2
+  21   (4, 1)  on 2
+  21   (4, 2)  on 0
+  21   (4, 3)  on 0
+  21   (4, 4)  on 1
+  21   (4, 5)  on 1
+  21   (4, 6)  on 2
+  21   (4, 7)  on 2
+  21   (5, 1)  on 2
+  21   (5, 2)  on 0
+  21   (5, 3)  on 0
+  21   (5, 4)  on 1
+  21   (5, 5)  on 1
+  21   (5, 6)  on 2
+  21   (5, 7)  on 2
+  21  dmdom - parallel iteration on 0
+  22  
+  22   (1, 1) (1, 2) (1, 3) (1, 4) (1, 5) (1, 6) (1, 7) (2, 1) (2, 2) (2, 3) (2, 4) (2, 5) (2, 6) (2, 7) (3, 1) (3, 2) (3, 3) (3, 4) (3, 5) (3, 6) (3, 7) (4, 1) (4, 2) (4, 3) (4, 4) (4, 5) (4, 6) (4, 7) (5, 1) (5, 2) (5, 3) (5, 4) (5, 5) (5, 6) (5, 7)
+  22  dmdom - serial iteration on 1
+  23  
+  23   (1, 1)  on 2
+  23   (1, 2)  on 0
+  23   (1, 3)  on 0
+  23   (1, 4)  on 1
+  23   (1, 5)  on 1
+  23   (1, 6)  on 2
+  23   (1, 7)  on 2
+  23   (2, 1)  on 2
+  23   (2, 2)  on 0
+  23   (2, 3)  on 0
+  23   (2, 4)  on 1
+  23   (2, 5)  on 1
+  23   (2, 6)  on 2
+  23   (2, 7)  on 2
+  23   (3, 1)  on 2
+  23   (3, 2)  on 0
+  23   (3, 3)  on 0
+  23   (3, 4)  on 1
+  23   (3, 5)  on 1
+  23   (3, 6)  on 2
+  23   (3, 7)  on 2
+  23   (4, 1)  on 2
+  23   (4, 2)  on 0
+  23   (4, 3)  on 0
+  23   (4, 4)  on 1
+  23   (4, 5)  on 1
+  23   (4, 6)  on 2
+  23   (4, 7)  on 2
+  23   (5, 1)  on 2
+  23   (5, 2)  on 0
+  23   (5, 3)  on 0
+  23   (5, 4)  on 1
+  23   (5, 5)  on 1
+  23   (5, 6)  on 2
+  23   (5, 7)  on 2
+  23  dmdom - parallel iteration on 1
+  24  
+  24   (1, 1) (1, 2) (1, 3) (1, 4) (1, 5) (1, 6) (1, 7) (2, 1) (2, 2) (2, 3) (2, 4) (2, 5) (2, 6) (2, 7) (3, 1) (3, 2) (3, 3) (3, 4) (3, 5) (3, 6) (3, 7) (4, 1) (4, 2) (4, 3) (4, 4) (4, 5) (4, 6) (4, 7) (5, 1) (5, 2) (5, 3) (5, 4) (5, 5) (5, 6) (5, 7)
+  24  dmdom - serial iteration on 2
+  25  
+  25   (1, 1)  on 2
+  25   (1, 2)  on 0
+  25   (1, 3)  on 0
+  25   (1, 4)  on 1
+  25   (1, 5)  on 1
+  25   (1, 6)  on 2
+  25   (1, 7)  on 2
+  25   (2, 1)  on 2
+  25   (2, 2)  on 0
+  25   (2, 3)  on 0
+  25   (2, 4)  on 1
+  25   (2, 5)  on 1
+  25   (2, 6)  on 2
+  25   (2, 7)  on 2
+  25   (3, 1)  on 2
+  25   (3, 2)  on 0
+  25   (3, 3)  on 0
+  25   (3, 4)  on 1
+  25   (3, 5)  on 1
+  25   (3, 6)  on 2
+  25   (3, 7)  on 2
+  25   (4, 1)  on 2
+  25   (4, 2)  on 0
+  25   (4, 3)  on 0
+  25   (4, 4)  on 1
+  25   (4, 5)  on 1
+  25   (4, 6)  on 2
+  25   (4, 7)  on 2
+  25   (5, 1)  on 2
+  25   (5, 2)  on 0
+  25   (5, 3)  on 0
+  25   (5, 4)  on 1
+  25   (5, 5)  on 1
+  25   (5, 6)  on 2
+  25   (5, 7)  on 2
+  25  dmdom - parallel iteration on 2
+  26  
+  26   (1, 4) (1, 5) (2, 4) (2, 5) (3, 4) (3, 5)
+  26  (1, 4)
+  26  (1, 5)
+  26  (2, 4)
+  26  (2, 5)
+  26  (3, 4)
+  26  (3, 5)
+  26  dmdom slice 1
+  26  {1..3, 4..5}
+  27  
+  27   (1, 2) (1, 5) (3, 2) (3, 5)
+  27  (1, 2)
+  27  (1, 5)
+  27  (3, 2)
+  27  (3, 5)
+  27  dmdom slice 2
+  27  {1..4 by 2, 2..7 by 3}
+  40  
+  40  dmarr - creating
+  41  
+  41  dmarr - initializing with explicit indexing
+  42  
+  42  dmarr - writeln()
+  50  
+  50   11 12 13 14 15 16 17 21 22 23 24 25 26 27 31 32 33 34 35 36 37 41 42 43 44 45 46 47 51 52 53 54 55 56 57
+  50  dmarr - serial iteration on 0
+  51  
+  51   11  eon 2  on 2
+  51   12  eon 0  on 0
+  51   13  eon 0  on 0
+  51   14  eon 1  on 1
+  51   15  eon 1  on 1
+  51   16  eon 2  on 2
+  51   17  eon 2  on 2
+  51   21  eon 2  on 2
+  51   22  eon 0  on 0
+  51   23  eon 0  on 0
+  51   24  eon 1  on 1
+  51   25  eon 1  on 1
+  51   26  eon 2  on 2
+  51   27  eon 2  on 2
+  51   31  eon 2  on 2
+  51   32  eon 0  on 0
+  51   33  eon 0  on 0
+  51   34  eon 1  on 1
+  51   35  eon 1  on 1
+  51   36  eon 2  on 2
+  51   37  eon 2  on 2
+  51   41  eon 2  on 2
+  51   42  eon 0  on 0
+  51   43  eon 0  on 0
+  51   44  eon 1  on 1
+  51   45  eon 1  on 1
+  51   46  eon 2  on 2
+  51   47  eon 2  on 2
+  51   51  eon 2  on 2
+  51   52  eon 0  on 0
+  51   53  eon 0  on 0
+  51   54  eon 1  on 1
+  51   55  eon 1  on 1
+  51   56  eon 2  on 2
+  51   57  eon 2  on 2
+  51  dmarr - parallel iteration on 0
+  52  
+  52  dmarr - assignment to dmhelp on 0
+  53  
+  53   11 12 13 14 15 16 17 21 22 23 24 25 26 27 31 32 33 34 35 36 37 41 42 43 44 45 46 47 51 52 53 54 55 56 57
+  53  dmhelp after assignment on 0
+  54  
+  54   (1, 1) 11  eon 2  on 2
+  54   (1, 2) 12  eon 0  on 0
+  54   (1, 3) 13  eon 0  on 0
+  54   (1, 4) 14  eon 1  on 1
+  54   (1, 5) 15  eon 1  on 1
+  54   (1, 6) 16  eon 2  on 2
+  54   (1, 7) 17  eon 2  on 2
+  54   (2, 1) 21  eon 2  on 2
+  54   (2, 2) 22  eon 0  on 0
+  54   (2, 3) 23  eon 0  on 0
+  54   (2, 4) 24  eon 1  on 1
+  54   (2, 5) 25  eon 1  on 1
+  54   (2, 6) 26  eon 2  on 2
+  54   (2, 7) 27  eon 2  on 2
+  54   (3, 1) 31  eon 2  on 2
+  54   (3, 2) 32  eon 0  on 0
+  54   (3, 3) 33  eon 0  on 0
+  54   (3, 4) 34  eon 1  on 1
+  54   (3, 5) 35  eon 1  on 1
+  54   (3, 6) 36  eon 2  on 2
+  54   (3, 7) 37  eon 2  on 2
+  54   (4, 1) 41  eon 2  on 2
+  54   (4, 2) 42  eon 0  on 0
+  54   (4, 3) 43  eon 0  on 0
+  54   (4, 4) 44  eon 1  on 1
+  54   (4, 5) 45  eon 1  on 1
+  54   (4, 6) 46  eon 2  on 2
+  54   (4, 7) 47  eon 2  on 2
+  54   (5, 1) 51  eon 2  on 2
+  54   (5, 2) 52  eon 0  on 0
+  54   (5, 3) 53  eon 0  on 0
+  54   (5, 4) 54  eon 1  on 1
+  54   (5, 5) 55  eon 1  on 1
+  54   (5, 6) 56  eon 2  on 2
+  54   (5, 7) 57  eon 2  on 2
+  54  dmdom, dmarr - zippered iteration on 0
+  55  
+  55   (1, 1) 11  eon 2  on 2
+  55   (1, 2) 12  eon 0  on 0
+  55   (1, 3) 13  eon 0  on 0
+  55   (1, 4) 14  eon 1  on 1
+  55   (1, 5) 15  eon 1  on 1
+  55   (1, 6) 16  eon 2  on 2
+  55   (1, 7) 17  eon 2  on 2
+  55   (2, 1) 21  eon 2  on 2
+  55   (2, 2) 22  eon 0  on 0
+  55   (2, 3) 23  eon 0  on 0
+  55   (2, 4) 24  eon 1  on 1
+  55   (2, 5) 25  eon 1  on 1
+  55   (2, 6) 26  eon 2  on 2
+  55   (2, 7) 27  eon 2  on 2
+  55   (3, 1) 31  eon 2  on 2
+  55   (3, 2) 32  eon 0  on 0
+  55   (3, 3) 33  eon 0  on 0
+  55   (3, 4) 34  eon 1  on 1
+  55   (3, 5) 35  eon 1  on 1
+  55   (3, 6) 36  eon 2  on 2
+  55   (3, 7) 37  eon 2  on 2
+  55   (4, 1) 41  eon 2  on 2
+  55   (4, 2) 42  eon 0  on 0
+  55   (4, 3) 43  eon 0  on 0
+  55   (4, 4) 44  eon 1  on 1
+  55   (4, 5) 45  eon 1  on 1
+  55   (4, 6) 46  eon 2  on 2
+  55   (4, 7) 47  eon 2  on 2
+  55   (5, 1) 51  eon 2  on 2
+  55   (5, 2) 52  eon 0  on 0
+  55   (5, 3) 53  eon 0  on 0
+  55   (5, 4) 54  eon 1  on 1
+  55   (5, 5) 55  eon 1  on 1
+  55   (5, 6) 56  eon 2  on 2
+  55   (5, 7) 57  eon 2  on 2
+  55  dmarr, dmdom - zippered iteration on 0
+  56  
+  56   11 101  on 2
+  56   12 102  on 0
+  56   13 103  on 0
+  56   14 104  on 1
+  56   15 105  on 1
+  56   16 106  on 2
+  56   17 107  on 2
+  56   21 201  on 2
+  56   22 202  on 0
+  56   23 203  on 0
+  56   24 204  on 1
+  56   25 205  on 1
+  56   26 206  on 2
+  56   27 207  on 2
+  56   31 301  on 2
+  56   32 302  on 0
+  56   33 303  on 0
+  56   34 304  on 1
+  56   35 305  on 1
+  56   36 306  on 2
+  56   37 307  on 2
+  56   41 401  on 2
+  56   42 402  on 0
+  56   43 403  on 0
+  56   44 404  on 1
+  56   45 405  on 1
+  56   46 406  on 2
+  56   47 407  on 2
+  56   51 501  on 2
+  56   52 502  on 0
+  56   53 503  on 0
+  56   54 504  on 1
+  56   55 505  on 1
+  56   56 506  on 2
+  56   57 507  on 2
+  56  dmarr, dmhelp - zippered iteration on 0
+  57  
+  57   11 12 13 14 15 16 17 21 22 23 24 25 26 27 31 32 33 34 35 36 37 41 42 43 44 45 46 47 51 52 53 54 55 56 57
+  57  dmarr - serial iteration on 1
+  58  
+  58   11  eon 2  on 2
+  58   12  eon 0  on 0
+  58   13  eon 0  on 0
+  58   14  eon 1  on 1
+  58   15  eon 1  on 1
+  58   16  eon 2  on 2
+  58   17  eon 2  on 2
+  58   21  eon 2  on 2
+  58   22  eon 0  on 0
+  58   23  eon 0  on 0
+  58   24  eon 1  on 1
+  58   25  eon 1  on 1
+  58   26  eon 2  on 2
+  58   27  eon 2  on 2
+  58   31  eon 2  on 2
+  58   32  eon 0  on 0
+  58   33  eon 0  on 0
+  58   34  eon 1  on 1
+  58   35  eon 1  on 1
+  58   36  eon 2  on 2
+  58   37  eon 2  on 2
+  58   41  eon 2  on 2
+  58   42  eon 0  on 0
+  58   43  eon 0  on 0
+  58   44  eon 1  on 1
+  58   45  eon 1  on 1
+  58   46  eon 2  on 2
+  58   47  eon 2  on 2
+  58   51  eon 2  on 2
+  58   52  eon 0  on 0
+  58   53  eon 0  on 0
+  58   54  eon 1  on 1
+  58   55  eon 1  on 1
+  58   56  eon 2  on 2
+  58   57  eon 2  on 2
+  58  dmarr - parallel iteration on 1
+  59  
+  59  dmarr - assignment to dmhelp on 1
+  60  
+  60   11 12 13 14 15 16 17 21 22 23 24 25 26 27 31 32 33 34 35 36 37 41 42 43 44 45 46 47 51 52 53 54 55 56 57
+  60  dmhelp after assignment on 1
+  61  
+  61   (1, 1) 11  eon 2  on 2
+  61   (1, 2) 12  eon 0  on 0
+  61   (1, 3) 13  eon 0  on 0
+  61   (1, 4) 14  eon 1  on 1
+  61   (1, 5) 15  eon 1  on 1
+  61   (1, 6) 16  eon 2  on 2
+  61   (1, 7) 17  eon 2  on 2
+  61   (2, 1) 21  eon 2  on 2
+  61   (2, 2) 22  eon 0  on 0
+  61   (2, 3) 23  eon 0  on 0
+  61   (2, 4) 24  eon 1  on 1
+  61   (2, 5) 25  eon 1  on 1
+  61   (2, 6) 26  eon 2  on 2
+  61   (2, 7) 27  eon 2  on 2
+  61   (3, 1) 31  eon 2  on 2
+  61   (3, 2) 32  eon 0  on 0
+  61   (3, 3) 33  eon 0  on 0
+  61   (3, 4) 34  eon 1  on 1
+  61   (3, 5) 35  eon 1  on 1
+  61   (3, 6) 36  eon 2  on 2
+  61   (3, 7) 37  eon 2  on 2
+  61   (4, 1) 41  eon 2  on 2
+  61   (4, 2) 42  eon 0  on 0
+  61   (4, 3) 43  eon 0  on 0
+  61   (4, 4) 44  eon 1  on 1
+  61   (4, 5) 45  eon 1  on 1
+  61   (4, 6) 46  eon 2  on 2
+  61   (4, 7) 47  eon 2  on 2
+  61   (5, 1) 51  eon 2  on 2
+  61   (5, 2) 52  eon 0  on 0
+  61   (5, 3) 53  eon 0  on 0
+  61   (5, 4) 54  eon 1  on 1
+  61   (5, 5) 55  eon 1  on 1
+  61   (5, 6) 56  eon 2  on 2
+  61   (5, 7) 57  eon 2  on 2
+  61  dmdom, dmarr - zippered iteration on 1
+  62  
+  62   (1, 1) 11  eon 2  on 2
+  62   (1, 2) 12  eon 0  on 0
+  62   (1, 3) 13  eon 0  on 0
+  62   (1, 4) 14  eon 1  on 1
+  62   (1, 5) 15  eon 1  on 1
+  62   (1, 6) 16  eon 2  on 2
+  62   (1, 7) 17  eon 2  on 2
+  62   (2, 1) 21  eon 2  on 2
+  62   (2, 2) 22  eon 0  on 0
+  62   (2, 3) 23  eon 0  on 0
+  62   (2, 4) 24  eon 1  on 1
+  62   (2, 5) 25  eon 1  on 1
+  62   (2, 6) 26  eon 2  on 2
+  62   (2, 7) 27  eon 2  on 2
+  62   (3, 1) 31  eon 2  on 2
+  62   (3, 2) 32  eon 0  on 0
+  62   (3, 3) 33  eon 0  on 0
+  62   (3, 4) 34  eon 1  on 1
+  62   (3, 5) 35  eon 1  on 1
+  62   (3, 6) 36  eon 2  on 2
+  62   (3, 7) 37  eon 2  on 2
+  62   (4, 1) 41  eon 2  on 2
+  62   (4, 2) 42  eon 0  on 0
+  62   (4, 3) 43  eon 0  on 0
+  62   (4, 4) 44  eon 1  on 1
+  62   (4, 5) 45  eon 1  on 1
+  62   (4, 6) 46  eon 2  on 2
+  62   (4, 7) 47  eon 2  on 2
+  62   (5, 1) 51  eon 2  on 2
+  62   (5, 2) 52  eon 0  on 0
+  62   (5, 3) 53  eon 0  on 0
+  62   (5, 4) 54  eon 1  on 1
+  62   (5, 5) 55  eon 1  on 1
+  62   (5, 6) 56  eon 2  on 2
+  62   (5, 7) 57  eon 2  on 2
+  62  dmarr, dmdom - zippered iteration on 1
+  63  
+  63   11 101  on 2
+  63   12 102  on 0
+  63   13 103  on 0
+  63   14 104  on 1
+  63   15 105  on 1
+  63   16 106  on 2
+  63   17 107  on 2
+  63   21 201  on 2
+  63   22 202  on 0
+  63   23 203  on 0
+  63   24 204  on 1
+  63   25 205  on 1
+  63   26 206  on 2
+  63   27 207  on 2
+  63   31 301  on 2
+  63   32 302  on 0
+  63   33 303  on 0
+  63   34 304  on 1
+  63   35 305  on 1
+  63   36 306  on 2
+  63   37 307  on 2
+  63   41 401  on 2
+  63   42 402  on 0
+  63   43 403  on 0
+  63   44 404  on 1
+  63   45 405  on 1
+  63   46 406  on 2
+  63   47 407  on 2
+  63   51 501  on 2
+  63   52 502  on 0
+  63   53 503  on 0
+  63   54 504  on 1
+  63   55 505  on 1
+  63   56 506  on 2
+  63   57 507  on 2
+  63  dmarr, dmhelp - zippered iteration on 1
+  64  
+  64   11 12 13 14 15 16 17 21 22 23 24 25 26 27 31 32 33 34 35 36 37 41 42 43 44 45 46 47 51 52 53 54 55 56 57
+  64  dmarr - serial iteration on 2
+  65  
+  65   11  eon 2  on 2
+  65   12  eon 0  on 0
+  65   13  eon 0  on 0
+  65   14  eon 1  on 1
+  65   15  eon 1  on 1
+  65   16  eon 2  on 2
+  65   17  eon 2  on 2
+  65   21  eon 2  on 2
+  65   22  eon 0  on 0
+  65   23  eon 0  on 0
+  65   24  eon 1  on 1
+  65   25  eon 1  on 1
+  65   26  eon 2  on 2
+  65   27  eon 2  on 2
+  65   31  eon 2  on 2
+  65   32  eon 0  on 0
+  65   33  eon 0  on 0
+  65   34  eon 1  on 1
+  65   35  eon 1  on 1
+  65   36  eon 2  on 2
+  65   37  eon 2  on 2
+  65   41  eon 2  on 2
+  65   42  eon 0  on 0
+  65   43  eon 0  on 0
+  65   44  eon 1  on 1
+  65   45  eon 1  on 1
+  65   46  eon 2  on 2
+  65   47  eon 2  on 2
+  65   51  eon 2  on 2
+  65   52  eon 0  on 0
+  65   53  eon 0  on 0
+  65   54  eon 1  on 1
+  65   55  eon 1  on 1
+  65   56  eon 2  on 2
+  65   57  eon 2  on 2
+  65  dmarr - parallel iteration on 2
+  66  
+  66  dmarr - assignment to dmhelp on 2
+  67  
+  67   11 12 13 14 15 16 17 21 22 23 24 25 26 27 31 32 33 34 35 36 37 41 42 43 44 45 46 47 51 52 53 54 55 56 57
+  67  dmhelp after assignment on 2
+  68  
+  68   (1, 1) 11  eon 2  on 2
+  68   (1, 2) 12  eon 0  on 0
+  68   (1, 3) 13  eon 0  on 0
+  68   (1, 4) 14  eon 1  on 1
+  68   (1, 5) 15  eon 1  on 1
+  68   (1, 6) 16  eon 2  on 2
+  68   (1, 7) 17  eon 2  on 2
+  68   (2, 1) 21  eon 2  on 2
+  68   (2, 2) 22  eon 0  on 0
+  68   (2, 3) 23  eon 0  on 0
+  68   (2, 4) 24  eon 1  on 1
+  68   (2, 5) 25  eon 1  on 1
+  68   (2, 6) 26  eon 2  on 2
+  68   (2, 7) 27  eon 2  on 2
+  68   (3, 1) 31  eon 2  on 2
+  68   (3, 2) 32  eon 0  on 0
+  68   (3, 3) 33  eon 0  on 0
+  68   (3, 4) 34  eon 1  on 1
+  68   (3, 5) 35  eon 1  on 1
+  68   (3, 6) 36  eon 2  on 2
+  68   (3, 7) 37  eon 2  on 2
+  68   (4, 1) 41  eon 2  on 2
+  68   (4, 2) 42  eon 0  on 0
+  68   (4, 3) 43  eon 0  on 0
+  68   (4, 4) 44  eon 1  on 1
+  68   (4, 5) 45  eon 1  on 1
+  68   (4, 6) 46  eon 2  on 2
+  68   (4, 7) 47  eon 2  on 2
+  68   (5, 1) 51  eon 2  on 2
+  68   (5, 2) 52  eon 0  on 0
+  68   (5, 3) 53  eon 0  on 0
+  68   (5, 4) 54  eon 1  on 1
+  68   (5, 5) 55  eon 1  on 1
+  68   (5, 6) 56  eon 2  on 2
+  68   (5, 7) 57  eon 2  on 2
+  68  dmdom, dmarr - zippered iteration on 2
+  69  
+  69   (1, 1) 11  eon 2  on 2
+  69   (1, 2) 12  eon 0  on 0
+  69   (1, 3) 13  eon 0  on 0
+  69   (1, 4) 14  eon 1  on 1
+  69   (1, 5) 15  eon 1  on 1
+  69   (1, 6) 16  eon 2  on 2
+  69   (1, 7) 17  eon 2  on 2
+  69   (2, 1) 21  eon 2  on 2
+  69   (2, 2) 22  eon 0  on 0
+  69   (2, 3) 23  eon 0  on 0
+  69   (2, 4) 24  eon 1  on 1
+  69   (2, 5) 25  eon 1  on 1
+  69   (2, 6) 26  eon 2  on 2
+  69   (2, 7) 27  eon 2  on 2
+  69   (3, 1) 31  eon 2  on 2
+  69   (3, 2) 32  eon 0  on 0
+  69   (3, 3) 33  eon 0  on 0
+  69   (3, 4) 34  eon 1  on 1
+  69   (3, 5) 35  eon 1  on 1
+  69   (3, 6) 36  eon 2  on 2
+  69   (3, 7) 37  eon 2  on 2
+  69   (4, 1) 41  eon 2  on 2
+  69   (4, 2) 42  eon 0  on 0
+  69   (4, 3) 43  eon 0  on 0
+  69   (4, 4) 44  eon 1  on 1
+  69   (4, 5) 45  eon 1  on 1
+  69   (4, 6) 46  eon 2  on 2
+  69   (4, 7) 47  eon 2  on 2
+  69   (5, 1) 51  eon 2  on 2
+  69   (5, 2) 52  eon 0  on 0
+  69   (5, 3) 53  eon 0  on 0
+  69   (5, 4) 54  eon 1  on 1
+  69   (5, 5) 55  eon 1  on 1
+  69   (5, 6) 56  eon 2  on 2
+  69   (5, 7) 57  eon 2  on 2
+  69  dmarr, dmdom - zippered iteration on 2
+  70  
+  70   11 101  on 2
+  70   12 102  on 0
+  70   13 103  on 0
+  70   14 104  on 1
+  70   15 105  on 1
+  70   16 106  on 2
+  70   17 107  on 2
+  70   21 201  on 2
+  70   22 202  on 0
+  70   23 203  on 0
+  70   24 204  on 1
+  70   25 205  on 1
+  70   26 206  on 2
+  70   27 207  on 2
+  70   31 301  on 2
+  70   32 302  on 0
+  70   33 303  on 0
+  70   34 304  on 1
+  70   35 305  on 1
+  70   36 306  on 2
+  70   37 307  on 2
+  70   41 401  on 2
+  70   42 402  on 0
+  70   43 403  on 0
+  70   44 404  on 1
+  70   45 405  on 1
+  70   46 406  on 2
+  70   47 407  on 2
+  70   51 501  on 2
+  70   52 502  on 0
+  70   53 503  on 0
+  70   54 504  on 1
+  70   55 505  on 1
+  70   56 506  on 2
+  70   57 507  on 2
+  70  dmarr, dmhelp - zippered iteration on 2
+  90  
+  90  (numLocales = 1, lowIdx = -100, blockSize = 3, cycleSizePos = 3)
+  90  (numLocales = 3, lowIdx = -10, blockSize = 2, cycleSizePos = 6)
+  90  dmarr - dimSpecifier()
+  91  
+  91   mylocs(0, 0)  dmarr(1, 2)  expecting 12  on 0
+  91   mylocs(0, 0)  dmarr(1, 3)  expecting 13  on 0
+  91   mylocs(0, 0)  dmarr(3, 2)  expecting 32  on 0
+  91   mylocs(0, 1)  dmarr(1, 5)  expecting 15  on 1
+  91   mylocs(0, 1)  dmarr(2, 4)  expecting 24  on 1
+  91   mylocs(0, 1)  dmarr(3, 4)  expecting 34  on 1
+  91   mylocs(0, 2)  dmarr(2, 7)  expecting 27  on 2
+  91   mylocs(0, 2)  dmarr(4, 6)  expecting 46  on 2
+  91   mylocs(0, 2)  dmarr(5, 1)  expecting 51  on 2
+  91  privatization tests
+11 12 13 14 15 16 17
+21 22 23 24 25 26 27
+31 32 33 34 35 36 37
+41 42 43 44 45 46 47
+51 52 53 54 55 56 57

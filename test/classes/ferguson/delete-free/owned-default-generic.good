@@ -1,0 +1,15 @@
+testing generic (unspecified) argument
+In testa x={x = 1}
+In foo, {x = 1}
+In testa again, x={x = 1}
+Destroying C 1
+testing generic :owned argument
+In testb x={x = 1}
+In bar, {x = 1}
+In testb again, x={x = 1}
+Destroying C 1
+testing generic type, arg pattern
+In testc x={x = 1}
+In baz, {x = 1}
+In testc again, x={x = 1}
+Destroying C 1

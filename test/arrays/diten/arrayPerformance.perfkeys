@@ -1,0 +1,5 @@
+One Dimensional         :
+One Dimensional strided :
+Two Dimensional         :
+Two Dimensional strided :
+verify:-1: Two Dimensional strided : [0-9.]+ milliseconds.

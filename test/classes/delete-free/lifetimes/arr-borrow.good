@@ -1,0 +1,12 @@
+arr-borrow.chpl:21: In function 'badReturnBorrowLocalArrayElement':
+arr-borrow.chpl:25: error: Scoped variable cannot be returned
+arr-borrow.chpl:22: note: consider scope of A
+arr-borrow.chpl:29: In function 'badReturnBorrowLocalArrayElement2':
+arr-borrow.chpl:36: error: Scoped variable ret cannot be returned
+arr-borrow.chpl:30: note: consider scope of A
+arr-borrow.chpl:41: In function 'badReturnBorrowLocalArrayIteration':
+arr-borrow.chpl:52: error: Scoped variable ret cannot be returned
+arr-borrow.chpl:43: note: consider scope of A
+arr-borrow.chpl:56: In function 'badReturnBorrowLocalArrayIteration2':
+arr-borrow.chpl:67: error: Scoped variable ret cannot be returned
+arr-borrow.chpl:58: note: consider scope of A

@@ -1,0 +1,5 @@
+perfkeys: Sort MB/s per node :
+graphkeys: MB/s per node
+files: distibuted-sort-large.dat
+graphtitle: Distributed Sort Perf (Mb/s per node)
+ylabel: Performance (MB/s per node)

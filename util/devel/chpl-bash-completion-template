@@ -1,0 +1,106 @@
+# file: chpl-completion
+# chpl parameter completion
+
+# Tab autocompletion for chpl options and directories/.chpl files in bash
+# Source this file to enable this autocompletion.  To automatically enable
+# autocompletion, source this file from your .bashrc file.
+
+# This file was generated with the script:
+# $CHPL_HOME/util/devel/gen-chpl-bash-completion
+
+# This is modeled after the example at:
+# http://tldp.org/LDP/abs/html/tabexpansion.html
+# and Dennis's answer to this question:
+# https://superuser.com/questions/564716/bash-completion-for-filename-patterns-or-directories
+
+_chpl ()
+{
+  local cur
+  COMPREPLY=()
+  cur=${COMP_WORDS[COMP_CWORD]}
+  case "$cur" in
+    -*)
+      # developer options
+      local devel_opts="\
+OPTS_DEVEL"
+
+      # non-developer options
+      local nodevel_opts="\
+OPTS_NODEVEL"
+
+      # Look for --devel or --no-devel on the command line.
+      # It overrides the CHPL_DEVELOPER environment variable.
+      wordnum=$[$COMP_CWORD-1]
+      developt=""
+      while [ $wordnum -gt 0 ] ; do
+        if [ "${COMP_WORDS[$wordnum]}" == "--devel" ] ; then
+          developt="true"
+          break
+        elif [ "${COMP_WORDS[$wordnum]}" == "--no-devel" ] ; then
+          developt="false"
+          break
+        fi
+        wordnum=$[$wordnum-1]
+      done
+
+      if [ "$developt" == "true" ] ; then
+        COMPREPLY=( $( compgen -W '$devel_opts' -- $cur ))
+      elif [ "$developt" == "false" ] ; then
+        COMPREPLY=( $( compgen -W '$nodevel_opts' -- $cur ))
+      elif [ -z $CHPL_DEVELOPER ] ; then
+        COMPREPLY=( $( compgen -W '$nodevel_opts' -- $cur ))
+      else
+        COMPREPLY=( $( compgen -W '$devel_opts' -- $cur ))
+      fi
+
+      if [ ${#COMPREPLY[@]} = 1 ]; then
+        # Add a space after a fully matching argument
+        COMPREPLY=$(printf %q%s "$COMPREPLY" ' ')
+      fi
+    ;;
+    *)
+      # Add a slash after a directory match and a space after a filename match
+      local IFS=$'\n'
+      local LASTCHAR=' '
+      COMPREPLY=( $( compgen -o plusdirs -f -X '!*.chpl' -- "${COMP_WORDS[COMP_CWORD]}" ) )
+
+      if [ ${#COMPREPLY[@]} = 1 ]; then
+        local expanded=$(expandPath $COMPREPLY)
+        if [ -d $expanded ]; then
+          LASTCHAR='/'
+        fi
+        COMPREPLY=$(printf %s%s "$COMPREPLY" "$LASTCHAR")
+      else
+        for ((i=0; i < ${#COMPREPLY[@]}; i++)); do
+          local expanded=$(expandPath ${COMPREPLY[$i]})
+          if [ -d $expanded ]; then
+            COMPREPLY[$i]=${COMPREPLY[$i]}/
+          fi
+        done
+      fi
+    ;;
+  esac
+  return 0
+}
+
+expandPath() {
+  case $1 in
+    ~[+-]*)
+      local content content_q
+      printf -v content_q '%q' "${1:2}"
+      eval "content=${1:0:2}${content_q}"
+      printf '%s\n' "$content"
+      ;;
+    ~*)
+      local content content_q
+      printf -v content_q '%q' "${1:1}"
+      eval "content=~${content_q}"
+      printf '%s\n' "$content"
+      ;;
+    *)
+      printf '%s\n' "$1"
+      ;;
+  esac
+}
+
+complete -o nospace -F _chpl chpl

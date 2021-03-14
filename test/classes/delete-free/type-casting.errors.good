@@ -1,0 +1,60 @@
+type-casting.chpl:5: In function 'makeBorrowed1':
+type-casting.chpl:6: error: duplicate decorators - borrowed borrowed MyClass
+  type-casting.chpl:34: called as makeBorrowed1(type t = borrowed MyClass)
+type-casting.chpl:5: In function 'makeBorrowed1':
+type-casting.chpl:6: error: duplicate decorators - borrowed unmanaged MyClass
+  type-casting.chpl:35: called as makeBorrowed1(type t = unmanaged MyClass)
+type-casting.chpl:5: In function 'makeBorrowed1':
+type-casting.chpl:6: error: duplicate decorators - borrowed owned MyClass
+  type-casting.chpl:36: called as makeBorrowed1(type t = owned MyClass)
+type-casting.chpl:5: In function 'makeBorrowed1':
+type-casting.chpl:6: error: duplicate decorators - borrowed borrowed MyClass?
+  type-casting.chpl:40: called as makeBorrowed1(type t = borrowed MyClass?)
+type-casting.chpl:5: In function 'makeBorrowed1':
+type-casting.chpl:6: error: duplicate decorators - borrowed unmanaged MyClass?
+  type-casting.chpl:41: called as makeBorrowed1(type t = unmanaged MyClass?)
+type-casting.chpl:5: In function 'makeBorrowed1':
+type-casting.chpl:6: error: duplicate decorators - borrowed owned MyClass?
+  type-casting.chpl:42: called as makeBorrowed1(type t = owned MyClass?)
+type-casting.chpl:12: In function 'makeBorrowedBang1':
+type-casting.chpl:13: error: duplicate decorators - borrowed borrowed MyClass
+  type-casting.chpl:55: called as makeBorrowedBang1(type t = MyClass)
+type-casting.chpl:12: In function 'makeBorrowedBang1':
+type-casting.chpl:13: error: duplicate decorators - borrowed borrowed MyClass
+  type-casting.chpl:56: called as makeBorrowedBang1(type t = borrowed MyClass)
+type-casting.chpl:12: In function 'makeBorrowedBang1':
+type-casting.chpl:13: error: duplicate decorators - borrowed borrowed MyClass
+  type-casting.chpl:57: called as makeBorrowedBang1(type t = unmanaged MyClass)
+type-casting.chpl:12: In function 'makeBorrowedBang1':
+type-casting.chpl:13: error: duplicate decorators - borrowed borrowed MyClass
+  type-casting.chpl:58: called as makeBorrowedBang1(type t = owned MyClass)
+type-casting.chpl:12: In function 'makeBorrowedBang1':
+type-casting.chpl:13: error: duplicate decorators - borrowed borrowed MyClass
+  type-casting.chpl:61: called as makeBorrowedBang1(type t = MyClass?)
+type-casting.chpl:12: In function 'makeBorrowedBang1':
+type-casting.chpl:13: error: duplicate decorators - borrowed borrowed MyClass
+  type-casting.chpl:62: called as makeBorrowedBang1(type t = borrowed MyClass?)
+type-casting.chpl:12: In function 'makeBorrowedBang1':
+type-casting.chpl:13: error: duplicate decorators - borrowed borrowed MyClass
+  type-casting.chpl:63: called as makeBorrowedBang1(type t = unmanaged MyClass?)
+type-casting.chpl:12: In function 'makeBorrowedBang1':
+type-casting.chpl:13: error: duplicate decorators - borrowed borrowed MyClass
+  type-casting.chpl:64: called as makeBorrowedBang1(type t = owned MyClass?)
+type-casting.chpl:19: In function 'makeBorrowedQ1':
+type-casting.chpl:20: error: duplicate decorators - borrowed borrowed MyClass?
+  type-casting.chpl:78: called as makeBorrowedQ1(type t = borrowed MyClass)
+type-casting.chpl:19: In function 'makeBorrowedQ1':
+type-casting.chpl:20: error: duplicate decorators - borrowed unmanaged MyClass?
+  type-casting.chpl:79: called as makeBorrowedQ1(type t = unmanaged MyClass)
+type-casting.chpl:19: In function 'makeBorrowedQ1':
+type-casting.chpl:20: error: duplicate decorators - borrowed owned MyClass?
+  type-casting.chpl:80: called as makeBorrowedQ1(type t = owned MyClass)
+type-casting.chpl:19: In function 'makeBorrowedQ1':
+type-casting.chpl:20: error: duplicate decorators - borrowed borrowed MyClass?
+  type-casting.chpl:84: called as makeBorrowedQ1(type t = borrowed MyClass?)
+type-casting.chpl:19: In function 'makeBorrowedQ1':
+type-casting.chpl:20: error: duplicate decorators - borrowed unmanaged MyClass?
+  type-casting.chpl:85: called as makeBorrowedQ1(type t = unmanaged MyClass?)
+type-casting.chpl:19: In function 'makeBorrowedQ1':
+type-casting.chpl:20: error: duplicate decorators - borrowed owned MyClass?
+  type-casting.chpl:86: called as makeBorrowedQ1(type t = owned MyClass?)

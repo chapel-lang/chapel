@@ -1,0 +1,30 @@
+specified-formal-order-secondary-methods.chpl:28: In method 'setCbad':
+specified-formal-order-secondary-methods.chpl:29: error: Scoped variable this would outlive the value it is set to
+specified-formal-order-secondary-methods.chpl:28: note: consider scope of rhs
+specified-formal-order-secondary-methods.chpl:32: In function 'badlt':
+specified-formal-order-secondary-methods.chpl:36: error: Actual argument does not meet called function lifetime constraint
+specified-formal-order-secondary-methods.chpl:35: note: consider scope of own
+specified-formal-order-secondary-methods.chpl:3: note: called function ref C.setClt(rhs: borrowed C)
+specified-formal-order-secondary-methods.chpl:3: note: includes lifetime constraint this < rhs
+specified-formal-order-secondary-methods.chpl:42: In function 'badlt2':
+specified-formal-order-secondary-methods.chpl:46: error: Actual argument does not meet called function lifetime constraint
+specified-formal-order-secondary-methods.chpl:45: note: consider scope of own
+specified-formal-order-secondary-methods.chpl:6: note: called function ref C.setClt2(rhs: borrowed C)
+specified-formal-order-secondary-methods.chpl:6: note: includes lifetime constraint this < rhs
+specified-formal-order-secondary-methods.chpl:6: note: called function ref C.setClt2(rhs: borrowed C)
+specified-formal-order-secondary-methods.chpl:6: note: includes lifetime constraint this < rhs
+specified-formal-order-secondary-methods.chpl:52: In function 'badlte':
+specified-formal-order-secondary-methods.chpl:56: error: Actual argument does not meet called function lifetime constraint
+specified-formal-order-secondary-methods.chpl:55: note: consider scope of own
+specified-formal-order-secondary-methods.chpl:14: note: called function ref C.setClte(rhs: borrowed C)
+specified-formal-order-secondary-methods.chpl:14: note: includes lifetime constraint this <= rhs
+specified-formal-order-secondary-methods.chpl:62: In function 'badgt':
+specified-formal-order-secondary-methods.chpl:66: error: Actual argument does not meet called function lifetime constraint
+specified-formal-order-secondary-methods.chpl:65: note: consider scope of own
+specified-formal-order-secondary-methods.chpl:22: note: called function ref C.setCgt(rhs: borrowed C)
+specified-formal-order-secondary-methods.chpl:22: note: includes lifetime constraint rhs > this
+specified-formal-order-secondary-methods.chpl:72: In function 'badgte':
+specified-formal-order-secondary-methods.chpl:76: error: Actual argument does not meet called function lifetime constraint
+specified-formal-order-secondary-methods.chpl:75: note: consider scope of own
+specified-formal-order-secondary-methods.chpl:25: note: called function ref C.setCgte(rhs: borrowed C)
+specified-formal-order-secondary-methods.chpl:25: note: includes lifetime constraint rhs >= this

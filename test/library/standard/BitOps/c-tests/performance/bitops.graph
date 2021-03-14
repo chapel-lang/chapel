@@ -1,0 +1,17 @@
+perfkeys: popcount:, popcount:, popcount:, popcount:
+graphkeys: intrinsic (32), C (32), intrinsic (64), C (64)
+files: bitops-32.dat, bitops-32-c.dat, bitops-64.dat, bitops-64-c.dat
+graphtitle: BitOps - popcount - C
+ylabel: Time (seconds)
+
+perfkeys: clz:, clz:, clz:, clz:
+graphkeys: intrinsic (32), C (32), intrinsic (64), C (64)
+files: bitops-32.dat, bitops-32-c.dat, bitops-64.dat, bitops-64-c.dat
+graphtitle: BitOps - clz - C
+ylabel: Time (seconds)
+
+perfkeys: ctz:, ctz:, ctz:, ctz:
+graphkeys: intrinsic (32), C (32), intrinsic (64), C (64)
+files: bitops-32.dat, bitops-32-c.dat, bitops-64.dat, bitops-64-c.dat
+graphtitle: BitOps - ctz - C
+ylabel: Time (seconds)

@@ -1,0 +1,2 @@
+# This test assumes we can use GMP
+CHPL_GMP == none

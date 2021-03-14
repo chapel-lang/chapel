@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+CWD=$(cd $(dirname $0) ; pwd)
+$CWD/../../bradc/printstuff/licensehelp.sh $@ > ${1}.good

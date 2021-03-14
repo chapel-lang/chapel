@@ -1,0 +1,1 @@
+--no-llvm --no-inline --ccflags -Wincompatible-pointer-types

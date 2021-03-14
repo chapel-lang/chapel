@@ -1,0 +1,5 @@
+perfkeys: startsWith:, endsWith:, find:, rfind:
+repeat-files: search.dat
+graphkeys: startsWith, endsWith, find, rfind
+ylabel: Time (seconds)
+graphtitle: Searches over n strings (historical)

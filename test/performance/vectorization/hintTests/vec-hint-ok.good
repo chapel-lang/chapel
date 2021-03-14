@@ -1,0 +1,12 @@
+vec-hint-ok.chpl:24: note: loop vectorization (with parallel access) hinted for CForLoop
+vec-hint-ok.chpl:30: note: loop vectorization (with parallel access) hinted for CForLoop
+vec-hint-ok.chpl:36: note: loop vectorization (with parallel access) hinted for CForLoop
+vec-hint-ok.chpl:42: note: loop vectorization (with parallel access) hinted for CForLoop
+vec-hint-ok.chpl:48: note: loop vectorization (with parallel access) hinted for CForLoop
+vec-hint-ok.chpl:54: note: loop vectorization (with parallel access) hinted for CForLoop
+1.0 10000.0
+1.0 10000.0
+1.0 100.0
+1.0 100.0
+3.0 10002.0
+3.0 10002.0

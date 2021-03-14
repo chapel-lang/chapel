@@ -1,0 +1,3 @@
+#!/bin/bash
+echo Compiling exportFuncWith2Arrays.chpl
+$3 --llvm --library --static exportFuncWith2Arrays.chpl

@@ -1,0 +1,6 @@
+foo of int on 8 bits called with 1
+1
+127
+foo of int on 16 bits called with 2
+2
+32767

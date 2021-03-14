@@ -1,0 +1,2 @@
+writeln(owned 3);
+

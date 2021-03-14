@@ -1,0 +1,5 @@
+# Only some compilers support enums with values larger than int.
+# Technically, such enums are not legal according to the C standard,
+# but it is a common C extension.
+CHPL_TARGET_COMPILER<=pgi
+CHPL_TARGET_COMPILER<=cray

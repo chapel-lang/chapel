@@ -1,0 +1,4 @@
+init-eq-assign-checks.chpl:1: error: Type 'InitEqOnly' uses compiler-generated default '=' but has a custom 'init=' method. Please add a '=' function.
+init-eq-assign-checks.chpl:2: note: 'init=' for 'InitEqOnly' defined here
+init-eq-assign-checks.chpl:4: error: Type 'AssignOnly' uses compiler-generated default 'init=' but has a custom '=' function. Please add an 'init=' method
+init-eq-assign-checks.chpl:5: note: '=' for 'AssignOnly' defined here

@@ -1,0 +1,1 @@
+planDFTmismatch.chpl:36: error: plan_dft_r2c() is only supported for arrays of type real(64) and complex(128)

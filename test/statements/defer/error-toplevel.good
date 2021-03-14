@@ -1,0 +1,3 @@
+error-toplevel.chpl:10: error: defer can only be used within a function
+error-toplevel.chpl:12: error: defer can only be used within a function
+error-toplevel.chpl:14: error: defer can only be used within a function

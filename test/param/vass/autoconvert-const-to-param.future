@@ -1,0 +1,10 @@
+feature request: convert 'const' to 'param' variables automatically when the initial value is a param
+
+When writing generic code, a const may get initialized with a param
+expression for some instantiations and with a non-param expressions
+for others. I would like a const to be treated as a param if it is
+initialized with a param. The purpose is to enable downstream
+optimizations in such a case, for example constant folding, param
+function invocation, etc. The example does not show such
+optimizations, but I have come across cases where they are desired
+in range development.

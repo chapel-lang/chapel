@@ -1,0 +1,9 @@
+Before call to bar()...
+a is on locale: 0
+a.data[1] is on locale: 0
+
+In bar()...
+We're running on locale 1
+x is on locale 1
+x.data[1] is on locale 1
+

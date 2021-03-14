@@ -1,0 +1,46 @@
+#!/usr/bin/env python3
+
+import sys
+logfile = sys.argv[2]
+f = open(logfile)
+lines = f.readlines()
+f.close()
+
+testSections = ['Locales array iteration',
+                'range iteration',
+                'zippered range iteration',
+                'domain iteration',
+                'zippered domain iteration',
+                'array iteration',
+                'zippered array iteration',
+                'done']
+
+s = 0
+slines = list()
+newlines = list()
+error = False
+for l in lines:
+    if l.strip() == testSections[s]:
+        for sl in slines:
+            if error:
+                newlines.append(sl)
+        del slines[:]
+        error = False
+        newlines.append(l)
+        s += 1
+    else:
+        slines.append(l)
+        if l.find('ERROR') != -1:
+            error = True
+    
+for sl in slines:
+    if error:
+        newlines.append(sl)
+    del slines[:]
+
+f = open(logfile, 'w')
+for l in newlines:
+    f.write('%s'%(l))
+f.close()
+
+sys.exit(0)

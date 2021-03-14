@@ -1,0 +1,17 @@
+starting first loop
+after first loop
+xInt 11
+xArr 12 12
+globalArrIdConst 0 0
+globalIntIdConst 0
+globalArrIdVar 0 0
+globalIntIdVar 0
+
+starting second loop
+after second loop
+xInt 17
+xArr 18 18
+globalArrIdConst 0 0
+globalIntIdConst 0
+globalArrIdVar 0 0
+globalIntIdVar 0

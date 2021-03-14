@@ -1,0 +1,41 @@
+Test of vector norms.  Array = 
+2.0 2.0 2.0 2.0
+1-norm = 8.0
+2-norm = 4.0
+infinity norm = 2.0
+frobenius norm = 4.0
+default norm = 4.0
+
+Test of matrix norms.  Array = 
+2.0 2.0
+2.0 2.0
+1-norm = 4.0
+infinity norm = 4.0
+frobenius norm = 4.0
+default norm = 4.0
+
+Test of matrix norms.  Array = 
+2.0 2.0
+2.0 2.0
+2.0 2.0
+1-norm = 6.0
+infinity norm = 4.0
+frobenius norm = 4.89898
+default norm = 4.89898
+
+Test of matrix norms.  Array = 
+1 1
+1 1
+1-norm = 2.0
+infinity norm = 2.0
+frobenius norm = 2.0
+default norm = 2.0
+
+Test of matrix norms.  Array = 
+1.0 + 1.0i 1.0 + 1.0i
+1.0 + 1.0i 1.0 + 1.0i
+1-norm = 2.82843
+infinity norm = 2.82843
+frobenius norm = 2.82843
+default norm = 2.82843
+

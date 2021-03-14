@@ -1,0 +1,45 @@
+bug: compiler crashes with assertion error [callDestructors.cpp:256]
+
+NOTE: It is currently skipif'ed for --no-local/etc.
+Once this test works for --local, enable it for --no-local and re-test.
+
+NOTE: crash1callDestructorsAddon.chpl replicates half of
+crash1callDestructorsMain.chpl *intentionally*.
+
+12/9/2015: the failure mode is:
+
+$CHPL_HOME/modules/internal/ChapelDistribution.chpl:132: In function 'destroyDom':
+$CHPL_HOME/modules/internal/ChapelDistribution.chpl:141: internal error: EXP0492 chpl Version 1.12.0.42c96ad
+
+or, with --devel:
+
+SymExpr::verify      1539462:  var->defPoint is not in AST [expr.cpp:492]
+
+11/19/2014: the failure mode is:
+internal error: assertion error [callDestructors.cpp:671]
+
+Previously:
+The current failure mode under --no-local --devel is:
+$CHPL_HOME/modules/internal/ChapelDistribution.chpl:114: In function 'destroyDom':
+$CHPL_HOME/modules/internal/ChapelDistribution.chpl:123: error: SymExpr::var::defPoint is not in AST [expr.cpp:263]
+
+I did not investigate, but seems like it is due to having the same
+declaration(s) in the current file *and* in a 'use'-ed module
+(see 'use crash1callDestructorsAddon' in the middle of the .chpl file
+- the contents of that module duplicate the first half of the .chpl file).
+
+4/11/2014: running "chpl crash1callDestructorsMain.chpl" under Valgrind,
+I get:
+
+==16255== Invalid read of size 8
+==16255==    at 0x425C96: BaseAST::getValType() (baseAST.cpp:305)
+==16255==    by 0x564DA0: cullOverReferences() (cullOverReferences.cpp:104)
+==16255==    by 0x4C3895: runPass(char const*, void (*)(), void (*)(), char) (runpasses.cpp:69)
+==16255==    by 0x4C3B0D: runPasses() (runpasses.cpp:167)
+==16255==    by 0x4C1073: compile_all() (driver.cpp:854)
+==16255==    by 0x4C2197: main (driver.cpp:880)
+==16255==  Address 0x13dc3ae8 is not stack'd, malloc'd or (recently) free'd
+
+which suggests memory corruption as the cause of the failure.
+
+The reason the failure is so reliably reproducible, I think, is just luck.

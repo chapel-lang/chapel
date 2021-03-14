@@ -1,0 +1,6 @@
+ref-sync-1.chpl:8: In function 'MYPROC':
+ref-sync-1.chpl:9: warning: sync int(64)
+  ref-sync-1.chpl:5: called as MYPROC(FORMAL: sync int(64))
+started MYPROC
+read the FORMAL
+SVAR isFull: true

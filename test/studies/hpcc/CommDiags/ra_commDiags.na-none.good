@@ -1,0 +1,7 @@
+Problem size = 65536 (2**16)
+Bytes per array = 524288
+Total memory required (GB) = 0.000488281
+Number of updates = 4096
+
+(get = 21, execute_on_fast = 773, execute_on_nb = 3) (get = 21, execute_on_fast = 767) (get = 21, execute_on_fast = 781) (get = 21, execute_on_fast = 743)
+Validation: SUCCESS

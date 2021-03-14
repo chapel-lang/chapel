@@ -1,0 +1,7 @@
+semantic: preserve bool widths
+
+It seems as though, for non-default bool widths to be useful, we
+should preserve their widths within operators much as we do for small
+integers.  It doesn't seem like this would be hard to implement, but I
+just ran into it in my previous commit, so wanted to commit a future
+against it.

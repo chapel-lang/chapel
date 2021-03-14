@@ -1,0 +1,1 @@
+--main-module SSCA2_main -M ../../../release/examples/benchmarks/ssca2 -M ../../../release/examples/benchmarks/ssca2/SSCA2_Modules  -sDEBUG_NEIGHBOR_HISTOGRAM -sPRINT_TIMING_STATISTICS=false -sREPRODUCIBLE_PROBLEMS=true -sSERIAL_GRAPH_GEN=false -sVALIDATE_BC=true

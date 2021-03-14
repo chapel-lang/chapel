@@ -1,0 +1,4 @@
+error message: 'owned <non-class type>' results in confusing error messages
+
+This series of tests shows that when 'owned' is applied to something other
+than a class type, the resulting error messages are confusing.

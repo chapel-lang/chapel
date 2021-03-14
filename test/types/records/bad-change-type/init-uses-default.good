@@ -1,0 +1,4 @@
+init-uses-default.chpl:11: error: cannot default-initialize a variable with generic type
+init-uses-default.chpl:11: note: 'xx' has generic type 'R'
+init-uses-default.chpl:11: note: cannot find initialization point to split-init this variable
+init-uses-default.chpl:12: note: 'xx' is used here before it is initialized

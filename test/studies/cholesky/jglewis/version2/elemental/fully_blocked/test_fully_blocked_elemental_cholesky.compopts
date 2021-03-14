@@ -1,0 +1,2 @@
+-M.. --no-warnings
+# --no-warnings avoids warning: Ambiguous module source file

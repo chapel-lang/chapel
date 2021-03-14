@@ -1,0 +1,1 @@
+bug: resolution failure for == between local class and 'nil'

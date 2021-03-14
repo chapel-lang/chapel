@@ -1,0 +1,12 @@
+
+Classifying false:
+it's a(n): bool
+
+Classifying 1:
+it's a(n): int(64)
+
+Classifying 2.3:
+it's a(n): real(64)
+
+Classifying hi:
+Ack, found string!

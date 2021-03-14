@@ -1,0 +1,24 @@
+bug: compiler crashes for a user error in defining a user-defined reduction
+
+This is a trimmed-down version of a test case submitted by Kellen Donohue,
+who is a student in Brad's PMP 524 course.
+
+Currently I get (with --develop):
+
+  userDefReduceSlim.chpl:16: error: the type of the actual argument '_unknown' is unknown or generic [callInfo.cpp:35]
+
+This is an INT_FATAL, whereas the compiler should report a user error instead.
+
+While there are probably other futures on this error already, this one
+occurs in a peculiar scenario, so I feel it's worth capturing separately.
+
+Note that there are two problems in 'mostFrequent.dom':
+
+* mostFrequent is mentioned without supplying an instantiation for
+its 'eltType' generic field, and
+
+* The field access '.dom' is not legal on a type.
+(The programmer meant to write partner.dom.)
+
+I am not sure what error message should be generated here,
+but anything that hints at either of the above problems would be OK.

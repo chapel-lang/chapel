@@ -1,0 +1,12 @@
+bug: c_string variables should not be copied to other locales
+
+Currently this test seg faults.  In the generated code, we actually
+make a call to chpl_gen_comm_put() which is wrong in 2 ways.  The
+string is put in cs (which has no space allocated for it) and it only
+send sizeof(c_string) bytes of the string.
+
+The long term solution is to mark all c_string variables with a
+"local" flag, which is something that we've talked about wanting to
+add to the compiler for other reasons.  Anything marked with
+FLAG_LOCAL could never go wide or be copied to another locale
+automatically.

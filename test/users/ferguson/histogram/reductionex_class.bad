@@ -1,0 +1,2 @@
+reductionex_class.chpl:25: error: Illegal use of identifier 'NBUCKETS' from enclosing type
+Note: This source location is a guess.

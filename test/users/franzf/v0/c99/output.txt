@@ -1,0 +1,27 @@
+Intel C++ Compiler 9.1:
+Spiral 5.0 Chapel FFT example -- C99 version
+fft_2: 4 ns = 2.174 Gflop/s
+fft_4: 10 ns = 3.810 Gflop/s
+fft_8: 26 ns = 4.596 Gflop/s
+fft_16: 64 ns = 4.937 Gflop/s
+fft_32: 156 ns = 5.107 Gflop/s
+fft_64: 402 ns = 4.770 Gflop/s
+fft_128: 904 ns = 4.953 Gflop/s
+fft_256: 2232 ns = 4.586 Gflop/s
+fft_512: 4745 ns = 4.855 Gflop/s
+fft_1024: 11629 ns = 4.403 Gflop/s
+fft_2048: 27387 ns = 4.113 Gflop/s
+
+Cygwin Gnu C compiler 3.4.4:
+Spiral 5.0 Chapel FFT example -- C99 version
+fft_2: 6 ns = 1.587 Gflop/s
+fft_4: 13 ns = 3.077 Gflop/s
+fft_8: 38 ns = 3.086 Gflop/s
+fft_16: 101 ns = 3.156 Gflop/s
+fft_32: 301 ns = 2.652 Gflop/s
+fft_64: 743 ns = 2.583 Gflop/s
+fft_128: 1673 ns = 2.676 Gflop/s
+fft_256: 4243 ns = 2.413 Gflop/s
+fft_512: 9579 ns = 2.405 Gflop/s
+fft_1024: 20927 ns = 2.447 Gflop/s
+fft_2048: 49368 ns = 2.282 Gflop/s

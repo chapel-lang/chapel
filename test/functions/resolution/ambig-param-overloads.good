@@ -1,0 +1,3 @@
+ambig-param-overloads.chpl:13: error: ambiguous call 'R(false).getX'
+ambig-param-overloads.chpl:7: note: candidates are: R.getX
+ambig-param-overloads.chpl:8: note:                 R.getX

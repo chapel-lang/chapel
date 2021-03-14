@@ -1,0 +1,2 @@
+c-array-too-big.chpl:3: In function 'main':
+c-array-too-big.chpl:3: error: c_array is too large

@@ -1,0 +1,1 @@
+test_method_noparens_precedence_mismatch.chpl:11: error: tuple indexing expression is not of integral type

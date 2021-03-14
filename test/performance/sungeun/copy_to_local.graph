@@ -1,0 +1,5 @@
+perfkeys: Copy to local (1 locales):, Copy to local (1 locales):, Copy to local (1 locales):, Copy to local (1 locales):
+graphkeys: n=8192, n=16384, n=32768, n=65536
+files: copy_to_local.8192.dat, copy_to_local.16384.dat, copy_to_local.32768.dat, copy_to_local.65536.dat
+ylabel: Time (seconds)
+graphtitle: Array copy from Global to Local (Cyclic)

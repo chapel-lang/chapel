@@ -1,0 +1,1 @@
+lastResort2.chpl:5: error: foo() can't be called with type: [domain(1,int(64),false)] int(64)

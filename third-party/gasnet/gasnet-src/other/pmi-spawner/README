@@ -1,0 +1,157 @@
+README file for pmi-spawner
+===========================
+
+@ TOC: @
+@ Section: Overview @
+@ Section: Basic Usage @
+@ Section: Compatibility @
+@ Section: Build-time Configuration @
+@ Section: Runtime Configuration @
+
+
+@ Section: Overview @
+
+This document describes pmi-spawner, a component of the GASNet runtime library
+which allows applications using many GASNet conduits to utilize an installed
+PMI-based job spawner.
+
+PMI stands for "Process Management Interface" and it is a standard for
+interaction between a distributed job spawner and the processes they launch.
+Instances of PMI-based spawners include SLURM's "srun", and the
+"mpiexec.hydra" process manager distributed with MPICH and by many of its
+derivatives, including the "yod" distributed with portals4.
+
+On systems where PMI is used as the basis for launching MPI applications, the
+pmi-spawner may be as simple and reliable a mechanism for GASNet job launch as
+mpi-spawner, but without the resource usage associated with initializing the
+MPI runtime (which GASNet will not even use outside of startup and shutdown).
+
+@ Section: Basic Usage @
+
++ Usage summary (option 1):
+  Many languages and libraries built over GASNet provide their own commands
+  for job launch.  These should be used instead of GASNet's whenever possible.
+  They typically wrap the mechanisms described below, while providing
+  additional options specific to the language or library.
+
+  The remaining options are documented here mainly for those who are
+  implementing such a wrapper.
+
++ Usage summary (option 2):
+  Conduits which support pmi-spawner each include a spawner utility named
+  for the conduit:
+    gasnetrun_[conduit] -n <n> [options] [--] prog [program args]
+    options:
+      -n <n>                 number of processes to run (required)
+      -N <N>                 number of nodes to run on (not supported by all MPIs)
+      -E <VAR1[,VAR2...]>    list of environment vars to propagate
+      -v                     be verbose about what is happening
+      -t                     test only, don't execute anything (implies -v)
+      -k                     keep any temporary files created (implies -v)
+      -spawner=(ssh|mpi|pmi) force use of a specific spawner (if available)
+
+  The pmi-spawner described in this README is used if selected by one of the
+  following three mechanisms, in order from greatest to least precedence:
+     + Passing -spawner=pmi to the gasnetrun_[conduit] utility
+     + Setting GASNET_[CONDUIT]_SPAWNER=pmi in the environment
+     + If pmi-spawner was established as the default at configure time (see
+       Build-time Configuration, below).
+
+@ Section: Compatibility @
+
+GASNet's pmi-spawner is believed to be compatible with the PMI1 and PMI2
+libraries provided by MPICH (and its many derivatives), Cray, SLURM and
+Open MPI / Open PMIx.
+
+GASNet's pmi-spawner is believed to be compatible with at least API
+versions 2 and 3 of the PMIx library provided by Open MPI / Open PMIx.
+While API version 1 is not supported, the PMIx distributions which
+implement it are all believed to provide supported libraries for PMI2 and
+PMI1.
+
+Note that compatibility between the client library (which pmi-spawner uses)
+and the server (implemented by a process manager such as hydra, alps,
+slurm, orted, etc.) is also an important requirement.  In general, one
+should use a PMI header and library pair from the same vendor or project as
+the process manager.  Though some inter-product compatibility does exist,
+that topic is outside the scope of this document.
+
+@ Section: Build-time Configuration @
+
+Conduits which support pmi-spawner each accept a configure option of the form
+    --with-[conduit]-spawner=VALUE
+where VALUE is one of "mpi", "ssh", or "pmi".  This sets the default spawner
+used by the corresponding gasnetrun_[conduit] utility, as described in the
+"Basic Usage" section above.  Passing '--with-[conduit]-spawner=pmi' sets the
+default for the corresponding conduit, and additionally ensures that configure
+will fail if the corresponding conduit is to be built but PMI support was not
+found.
+
+In order to use pmi-spawner, a working PMI client library must be identified
+at configure time, and pmi-spawner must be instructed how to execute the
+corresponding PMI server.  The following configure options are used for those
+purposes:
+
+  --{enable,disable}-pmi
+    Enables or disables PMI support. Default is to probe for availability.
+    If '--enable-pmi' is given then configure will fail if a PMI client library
+    cannot be identified.
+
+  --with-pmi-home=DIR
+    Explicitly provide DIR as the install prefix of the PMI support. DIR is taken as
+    the directory containing an "include" subdirectory, and is also searched
+    for "lib", "lib32" or "lib64" (as appropriate) unless the configure option
+    '--with-pmi-ldflags' is also specified.  Without this option configure will
+    search the standard locations for headers and libraries.  
+
+  --with-pmi-ldflags=-L/path/to/pmi/lib
+    This option specifies the linker flags needed to link the PMI client library,
+    overriding the default search. Usually of the form -L/path/to/pmi/lib
+
+  --with-pmi-libs=VALUE
+    This option disables the default search logic for a PMI client library
+    and uses the VALUE of this option as the linker argument to specify the
+    library.  This is useful if one needs to use a PMI implementation not yet
+    recognized by GASNet's configure logic.  Some example values include
+    "-lpmi_runtime" or "/full/path/to/libpmi_static.a".
+    Values such as "-Wl,-rpath=DIR -lpmi" may be used to deal with the case
+    that DIR is not in the default shared library search path at run time
+    (please note that this example is linker-specific).
+
+  --with-pmi-version=VALUE (where VALUE must be 1, 2, or x)
+    If present, this option forces configure to only accept a client library
+    which implements the given version of the PMI specification.  This is
+    normally only required if several are available but the PMI server supports
+    one but not the other.
+
+  --with-pmirun-cmd=VALUE
+    At runtime, the PMIRUN_CMD environment variable (documented below) controls
+    how pmi-spawner executes the PMI server command.  This configure option
+    establishes a default value for that variable.  If this option is not
+    passed then the configure time value of the environment variable PMIRUN_CMD
+    is used.
+    If neither this option nor the PMIRUN_CMD environment variable provides a
+    default value, then the value of MPIRUN_CMD selected by configure will be
+    used.  This is a reasonable behavior on systems where MPI launch is also
+    PMI based.  However, it can sometimes lead to unexpected behaviors (such
+    as delays at startup or shutdown).  For this reason, one is encouraged to
+    pass '--with-pmirun-cmd=VALUE' or set PMIRUN_CMD explicitly if pmi-spawner
+    will be used.
+
+@ Section: Runtime Configuration @
+
+Recognized Environment Variables:
+
+* PMIRUN_CMD - a template for executing the PMI server process.
+  A default value is established at configure time, but a value set at run
+  time will take precedence over that default.
+  The format of this variable is identical to that of MPIRUN_CMD, which is
+  documented in mpi-conduit's README.
+
+* MPIRUN_CMD - a template for executing mpirun, or its equivalent.
+  At configuration time this variable is used to establish a default for
+  PMIRUN_CMD if it is not set.
+  At runtime this variable is ignored *except* by the gasnetrun_aries
+  utility, which uses it when PMIRUN_CMD is not set.  This
+  behavior is *only* for compatibility with scripts written for earlier
+  releases of GASNet.  Users are encourage to use PMIRUN_CMD instead.

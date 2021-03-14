@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+#Note: This is a temporary solution to supporting additional python dependencies
+#      Something integrated with start_test would be preferred in the long term,
+#      such that a test author only needs to specify a requirements.txt file
+
+clean_venv() {
+    echo "Aborted virtualenv build due to errors"
+    rm -rf pyzmq-venv
+    exit 1
+}
+
+if [[ ! -f pyzmq-venv/bin/activate ]] ; then
+    # Set the trap to abort and clean up virtualenv if anything goes wrong
+    trap clean_venv ERR
+
+    # Create virtualenv
+    python3 -m venv pyzmq-venv
+    touch pyzmq-venv.notest
+    source pyzmq-venv/bin/activate
+    python3 -m pip install ${CHPL_PIP_INSTALL_PARAMS} -r requirements.txt
+    deactivate
+fi
+
+

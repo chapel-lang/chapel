@@ -1,0 +1,5 @@
+#!/bin/bash
+
+make envOverrides >> $2 2>&1
+sed '/envOverrides.c:/d' $2 > $2.tmp
+mv $2.tmp $2

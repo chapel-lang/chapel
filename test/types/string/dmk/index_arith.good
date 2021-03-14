@@ -1,0 +1,8 @@
+ba1 2
+ba2 3
+bis 0
+bbs 1
+beq false
+bne true
+bn0 true
+bn1 false

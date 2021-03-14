@@ -1,0 +1,3 @@
+-stestType=types.asciiString  # substring
+-stestType=types.utf8String  # substring-utf8
+-stestType=types.byteString  # substring-bytes

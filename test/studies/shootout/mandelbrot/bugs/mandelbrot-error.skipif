@@ -1,0 +1,4 @@
+COMPOPTS <= --no-local
+COMPOPTS <= --baseline
+CHPL_COMM!=none
+CHPL_TARGET_COMPILER!=gnu

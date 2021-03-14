@@ -1,0 +1,4 @@
+owned-and-borrow-tuple-query.chpl:10: In function 'test1':
+owned-and-borrow-tuple-query.chpl:14: error: unresolved call 'f(2*owned C)'
+owned-and-borrow-tuple-query.chpl:5: note: this candidate did not match: f(tup: (?t, borrowed C))
+owned-and-borrow-tuple-query.chpl:5: note: because an argument was incompatible

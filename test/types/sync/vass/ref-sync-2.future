@@ -1,0 +1,6 @@
+bug: 'ref x: int' formal is applicable to a 'sync int' actual
+#16137
+
+See also - to adjust .good:
+test/classes/delete-free/shared/shared-default-arg-nil-ref.chpl
+test/types/sync/ferguson/sync-coerce-to-ref.chpl

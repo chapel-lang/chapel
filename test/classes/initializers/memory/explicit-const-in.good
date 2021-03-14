@@ -1,0 +1,5 @@
+R.init: 0
+R.init=(R): 1
+c = {r = (x = 1)}
+R.deinit: 1
+R.deinit: 0

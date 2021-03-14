@@ -1,0 +1,5 @@
+feature request: param loop over (heterogeneous) tuple value
+
+It seems that we should support param loops directly over
+(heterogeneous) tuples as a shortcut for having to param-iterate over
+the tuple's size and index into the tuple.

@@ -1,0 +1,4 @@
+#!/bin/bash
+
+output=$2
+perl -pi -e 's/^.*error:/error:/' $output

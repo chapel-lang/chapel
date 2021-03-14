@@ -1,0 +1,6 @@
+(y = (x = 1))
+(y = (x = 2))
+(y = (x = 3))
+deinit 3
+deinit 2
+deinit 1

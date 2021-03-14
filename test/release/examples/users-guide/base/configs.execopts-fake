@@ -1,0 +1,4 @@
+./configs --n 1000
+./configs --n=1000
+./configs --epsilon=0.000001 --debug=true
+./configs --epsilon=0.000001 --debug

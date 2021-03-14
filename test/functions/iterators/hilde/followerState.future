@@ -1,0 +1,15 @@
+feature request: Allow the iteration state in a follower to be named arbitrarily.
+
+Right now, the call to a follower iterator has a stylized signature which is
+enforced by the compiler.  The compiler "knows" that it occupies the first
+"real" argument position (after the param tag argument).  But also insists that
+it be named "follower".  It would be nice to be able to name this arbitrarily.
+
+Brad also suggested encapsulating iterators within a class, so that they contain
+a place to store common state data.  But it is nice to retain the capability of
+defining "loose" iterators.  A great deal of flexibility is retained by using
+positional notation, i.e.:
+ -- the first formal is the iterator state (supplied by the leader).
+ -- the second formal (if present) receives the context state:
+    the object supplied as an argument to the leader.
+

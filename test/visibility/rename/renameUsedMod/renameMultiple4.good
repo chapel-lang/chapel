@@ -1,0 +1,2 @@
+renameMultiple4.chpl:16: In function 'main':
+renameMultiple4.chpl:22: error: 'Third' undeclared (first use this function)

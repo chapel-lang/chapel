@@ -1,0 +1,8 @@
+test1
+init 100
+deinit 100
+Error: 
+test2
+init 100
+deinit 100
+Error: 

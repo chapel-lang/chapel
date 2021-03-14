@@ -1,0 +1,2 @@
+bug: Zippered iteration fails to do size checks
+#14264

@@ -1,0 +1,2 @@
+overload-assign-tuple.chpl:6: error: unsupported = overload to '2*real(64)' from 'Point'
+note: assignment overloads setting array or tuples are not currently supported

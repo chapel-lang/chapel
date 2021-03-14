@@ -1,0 +1,11 @@
+error message: avoid term 'lvalue' in error messages
+
+The term 'lvalue', while reasonably widely known, is not as intuitive
+and approachable as I think we'd like our error messages to be.  To
+that end, this future asks for a kinder, gentler error message for
+cases like this.  The proposed message in the .good file is just a
+placeholder/proposal.  Others would be acceptable as well.
+
+Note that there are probably other contexts in which the compiler uses
+'lvalue' in its error messages as well... I didn't go looking for
+them.

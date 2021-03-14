@@ -1,0 +1,10 @@
+Skipping registry update since no dependency found in manifest file.
+Invalid chplVersion in package 'badFormatNum-0.1.0': 1.x.x
+Details: Invalid Chapel version format: 1.x.x
+
+chplVersion format must be '<version>..<version>' or '<version>'
+A <version> must be in one of the following formats:
+  x.x.x
+  x.x
+where 'x' is a positive integer.
+

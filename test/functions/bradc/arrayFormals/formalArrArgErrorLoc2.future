@@ -1,0 +1,10 @@
+error message: formal-actual array arg errors are on callee, not caller
+
+This test shows that with the work I've just completed on reporting
+mismatches between actual array args and formals that specify a
+domain, any execution-time errors are reported on the callee rather
+than the caller, which is not ideal.  The most straightforward fix to
+this would seem to be to introduce extra arguments in such cases to
+pass the callee filename, line# information down and use it in the
+verification call, but I have not had the chance to implement that
+yet.

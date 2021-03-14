@@ -1,0 +1,58 @@
+# Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+# Copyright 2004-2019 Cray Inc.
+# Other additional copyright holders may be indicated within.
+# 
+# The entirety of this work is licensed under the Apache License,
+# Version 2.0 (the "License"); you may not use this file except
+# in compliance with the License.
+# 
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+COMM_LAUNCHER_SRCS = \
+        comm-ofi-launch.c \
+        comm-ofi-locales.c \
+
+COMM_SRCS = \
+	$(COMM_LAUNCHER_SRCS) \
+	comm-ofi.c
+
+#
+# By default, use PMI out-of-band support on Cray X* systems, else MPI
+# on other Cray systems or with an MPI-based launcher, else "sockets".
+# Use hugepages only on Cray X* systems.
+#
+ifneq (, $(findstring $(CHPL_COMM_OFI_OOB), mpi pmi sockets slurm-pmi2))
+  COMM_SRCS += comm-ofi-oob-$(CHPL_COMM_OFI_OOB).c
+else ifneq (, $(findstring cray-x,$(CHPL_MAKE_TARGET_PLATFORM)))
+  COMM_SRCS += comm-ofi-oob-pmi.c
+else ifneq (, $(findstring hpe-cray-ex,$(CHPL_MAKE_TARGET_PLATFORM)))
+  COMM_SRCS += comm-ofi-oob-slurm-pmi2.c
+else ifneq (, $(filter cray-% hpe-cray-ex,$(CHPL_MAKE_TARGET_PLATFORM)))
+  COMM_SRCS += comm-ofi-oob-mpi.c
+else ifneq (, $(findstring mpi,$(CHPL_MAKE_LAUNCHER)))
+  COMM_SRCS += comm-ofi-oob-mpi.c
+else
+  COMM_SRCS += comm-ofi-oob-sockets.c
+endif
+
+ifneq (, $(findstring cray-x,$(CHPL_MAKE_TARGET_PLATFORM)))
+  COMM_SRCS += comm-ofi-hugepages.c
+else
+  COMM_SRCS += comm-ofi-no-hugepages.c
+endif
+
+SRCS = $(COMM_SRCS)
+
+COMM_OBJS = \
+	$(COMM_SRCS:%.c=$(COMM_OBJDIR)/%.o)
+
+COMM_LAUNCHER_OBJS = \
+	$(COMM_LAUNCHER_SRCS:%.c=$(COMM_LAUNCHER_OBJDIR)/%.o)

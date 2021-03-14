@@ -1,0 +1,34 @@
+.. default-domain:: chpl
+
+.. module:: hasGlobalParams
+   :synopsis: This module has some global scoped params. 
+
+hasGlobalParams
+===============
+**Usage**
+
+.. code-block:: chapel
+
+   use hasGlobalParams;
+
+
+or
+
+.. code-block:: chapel
+
+   import hasGlobalParams;
+
+This module has some global scoped params. 
+
+.. data:: param first = 16
+
+.. data:: param second: bool = false
+
+.. data:: param third = 16
+
+   This param has an associated comment and a value 
+
+.. data:: param fourth: bool = false
+
+   This param has an associated comment, a type, and a value 
+

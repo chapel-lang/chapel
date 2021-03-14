@@ -1,0 +1,7 @@
+#! /usr/bin/env bash
+
+# In general there may be more than one of these messages and we may
+# also get system launcher messages about the non-0 exit status, so
+# prune all that.
+
+grep 'Out of memory' < $2 | uniq > $2.prediff.tmp && mv $2.prediff.tmp $2

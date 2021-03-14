@@ -1,0 +1,4 @@
+# This test only fails on PGI and Intel compilers.
+CHPL_TARGET_COMPILER<=gnu
+CHPL_TARGET_COMPILER<=clang
+CHPL_TARGET_COMPILER==cray-prgenv-cray

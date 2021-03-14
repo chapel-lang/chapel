@@ -1,0 +1,1 @@
+allocBig.chpl:3: error: Attempting to allocate > max(size_t) bytes of memory

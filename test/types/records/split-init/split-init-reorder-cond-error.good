@@ -1,0 +1,16 @@
+split-init-reorder-cond-error.chpl:35: In function 'test1':
+split-init-reorder-cond-error.chpl:39: error: Initialization order in conditional does not match
+split-init-reorder-cond-error.chpl:40: note: then initializes: b a
+split-init-reorder-cond-error.chpl:43: note: else initializes: a b
+split-init-reorder-cond-error.chpl:51: In function 'test1eob':
+split-init-reorder-cond-error.chpl:55: error: Initialization order in conditional does not match
+split-init-reorder-cond-error.chpl:56: note: then initializes: b a
+split-init-reorder-cond-error.chpl:59: note: else initializes: a b
+split-init-reorder-cond-error.chpl:68: In function 'test2':
+split-init-reorder-cond-error.chpl:75: error: Initialization order in conditional does not match
+split-init-reorder-cond-error.chpl:76: note: then initializes: a b c d
+split-init-reorder-cond-error.chpl:81: note: else initializes: a c b d
+split-init-reorder-cond-error.chpl:94: In function 'test2eob':
+split-init-reorder-cond-error.chpl:101: error: Initialization order in conditional does not match
+split-init-reorder-cond-error.chpl:102: note: then initializes: a b c d
+split-init-reorder-cond-error.chpl:107: note: else initializes: a c b d

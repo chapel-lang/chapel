@@ -1,0 +1,78 @@
+starting rcExample
+
+after initialization, myRepVar copies are:
+LOCALE0:
+5.0
+LOCALE1:
+5.0
+LOCALE2:
+5.0
+LOCALE3:
+5.0
+
+on LOCALE0, myRepVar is:
+  before assignment: 5.0
+  after assignment:  33.0
+
+after update, myRepVar copies are:
+LOCALE0:
+33.0
+LOCALE1:
+5.0
+LOCALE2:
+5.0
+LOCALE3:
+5.0
+
+collected copies of myRepVar are:
+33.0 5.0 5.0 5.0
+
+starting rcExample
+
+after initialization, myRepVar copies are:
+LOCALE0:
+6.1
+LOCALE1:
+6.1
+LOCALE2:
+6.1
+LOCALE3:
+6.1
+
+on LOCALE2, myRepVar is:
+  before assignment: 6.1
+  after assignment:  44.0
+
+after update, myRepVar copies are:
+LOCALE0:
+6.1
+LOCALE1:
+6.1
+LOCALE2:
+44.0
+LOCALE3:
+6.1
+
+collected copies of myRepVar are:
+6.1 6.1 44.0 6.1
+
+starting rcExampleOverLocales over LOCALE1 LOCALE3
+
+after initialization, myRepVar copies are:
+LOCALE1:
+7.6
+LOCALE3:
+7.6
+
+on LOCALE3, myRepVar is:
+  before assignment: 7.6
+  after assignment:  55.0
+
+after update, myRepVar copies are:
+LOCALE1:
+7.6
+LOCALE3:
+55.0
+
+collected copies of myRepVar are:
+7.6 55.0

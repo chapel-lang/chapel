@@ -1,0 +1,77 @@
+type-tests.chpl:9: warning: bool is a class:  false
+type-tests.chpl:9: warning: bool is a record: false
+type-tests.chpl:9: warning: bool is a union:  false
+type-tests.chpl:10: warning: int is a class:  false
+type-tests.chpl:10: warning: int is a record: false
+type-tests.chpl:10: warning: int is a union:  false
+type-tests.chpl:11: warning: uint is a class:  false
+type-tests.chpl:11: warning: uint is a record: false
+type-tests.chpl:11: warning: uint is a union:  false
+type-tests.chpl:12: warning: real is a class:  false
+type-tests.chpl:12: warning: real is a record: false
+type-tests.chpl:12: warning: real is a union:  false
+type-tests.chpl:13: warning: complex is a class:  false
+type-tests.chpl:13: warning: complex is a record: false
+type-tests.chpl:13: warning: complex is a union:  false
+type-tests.chpl:14: warning: imag is a class:  false
+type-tests.chpl:14: warning: imag is a record: false
+type-tests.chpl:14: warning: imag is a union:  false
+type-tests.chpl:15: warning: string is a class:  false
+type-tests.chpl:15: warning: string is a record: false
+type-tests.chpl:15: warning: string is a union:  false
+type-tests.chpl:16: warning: class is a class:  true
+type-tests.chpl:16: warning: class is a record: false
+type-tests.chpl:16: warning: class is a union:  false
+type-tests.chpl:17: warning: record is a class:  false
+type-tests.chpl:17: warning: record is a record: true
+type-tests.chpl:17: warning: record is a union:  false
+type-tests.chpl:18: warning: union is a class:  false
+type-tests.chpl:18: warning: union is a record: false
+type-tests.chpl:18: warning: union is a union:  true
+type-tests.chpl:19: warning: dist is a class:  true
+type-tests.chpl:19: warning: dist is a record: false
+type-tests.chpl:19: warning: dist is a union:  false
+type-tests.chpl:20: warning: dmap is a class:  false
+type-tests.chpl:20: warning: dmap is a record: false
+type-tests.chpl:20: warning: dmap is a union:  false
+type-tests.chpl:20: warning: dmap is a dmap
+type-tests.chpl:21: warning: domain is a class:  false
+type-tests.chpl:21: warning: domain is a record: false
+type-tests.chpl:21: warning: domain is a union:  false
+type-tests.chpl:21: warning: domain is a domain
+type-tests.chpl:22: warning: array is a class:  false
+type-tests.chpl:22: warning: array is a record: false
+type-tests.chpl:22: warning: array is a union:  false
+type-tests.chpl:22: warning: array is an array
+type-tests.chpl:23: warning: range is a class:  false
+type-tests.chpl:23: warning: range is a record: false
+type-tests.chpl:23: warning: range is a union:  false
+type-tests.chpl:23: warning: range is a range
+type-tests.chpl:24: warning: tuple-1 is a class:  false
+type-tests.chpl:24: warning: tuple-1 is a record: false
+type-tests.chpl:24: warning: tuple-1 is a union:  false
+type-tests.chpl:24: warning: tuple-1 is a tuple
+type-tests.chpl:25: warning: tuple-2 is a class:  false
+type-tests.chpl:25: warning: tuple-2 is a record: false
+type-tests.chpl:25: warning: tuple-2 is a union:  false
+type-tests.chpl:25: warning: tuple-2 is a tuple
+type-tests.chpl:26: warning: tuple-3 is a class:  false
+type-tests.chpl:26: warning: tuple-3 is a record: false
+type-tests.chpl:26: warning: tuple-3 is a union:  false
+type-tests.chpl:26: warning: tuple-3 is a tuple
+type-tests.chpl:27: warning: atomic is a class:  false
+type-tests.chpl:27: warning: atomic is a record: false
+type-tests.chpl:27: warning: atomic is a union:  false
+type-tests.chpl:27: warning: atomic is an atomic
+type-tests.chpl:28: warning: sync is a class:  false
+type-tests.chpl:28: warning: sync is a record: false
+type-tests.chpl:28: warning: sync is a union:  false
+type-tests.chpl:28: warning: sync is a sync
+type-tests.chpl:29: warning: single is a class:  false
+type-tests.chpl:29: warning: single is a record: false
+type-tests.chpl:29: warning: single is a union:  false
+type-tests.chpl:29: warning: single is a single
+type-tests.chpl:30: warning: owned class is a class:  true
+type-tests.chpl:30: warning: owned class is a record: false
+type-tests.chpl:30: warning: owned class is a union:  false
+type-tests.chpl:31: error: done

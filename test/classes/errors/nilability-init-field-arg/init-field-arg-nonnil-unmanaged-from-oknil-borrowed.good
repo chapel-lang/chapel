@@ -1,0 +1,3 @@
+init-field-arg-nonnil-unmanaged-from-oknil-borrowed.chpl:9: In initializer:
+init-field-arg-nonnil-unmanaged-from-oknil-borrowed.chpl:10: error: cannot initialize field MyRecord.lhs of non-nilable type 'unmanaged MyClass' from a nilable 'borrowed MyClass?'
+  init-field-arg-nonnil-unmanaged-from-oknil-borrowed.chpl:14: called as MyRecord.init(rhs: borrowed MyClass?)

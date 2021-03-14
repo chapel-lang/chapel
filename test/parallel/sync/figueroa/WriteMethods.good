@@ -1,0 +1,60 @@
+going to sleep ... 
+woke up. initial value is false of type bool
+value is now true
+value has changed to false
+The final value is true, but it was reset to false
+going to sleep ... 
+woke up. initial value is 0 of type int(8)
+value is now 1
+value has changed to 5
+The final value is 1, but it was reset to 0
+going to sleep ... 
+woke up. initial value is 0 of type int(16)
+value is now 2
+value has changed to 6
+The final value is 2, but it was reset to 0
+going to sleep ... 
+woke up. initial value is 0 of type int(32)
+value is now 3
+value has changed to 7
+The final value is 3, but it was reset to 0
+going to sleep ... 
+woke up. initial value is 0 of type int(64)
+value is now 4
+value has changed to 8
+The final value is 4, but it was reset to 0
+going to sleep ... 
+woke up. initial value is 0 of type int
+value is now 5
+value has changed to 9
+The final value is 5, but it was reset to 0
+going to sleep ... 
+woke up. initial value is 0 of type uint
+value is now 6
+value has changed to 10
+The final value is 6, but it was reset to 0
+going to sleep ... 
+woke up. initial value is 0.0 of type real
+value is now 7.0
+value has changed to 11.0
+The final value is 7.0, but it was reset to 0.0
+going to sleep ... 
+woke up. initial value is 0.0 of type real(32)
+value is now 8.0
+value has changed to 12.0
+The final value is 8.0, but it was reset to 0.0
+going to sleep ... 
+woke up. initial value is 0.0 of type real(64)
+value is now 9.0
+value has changed to 13.0
+The final value is 9.0, but it was reset to 0.0
+going to sleep ... 
+woke up. initial value is 0.0i of type imag
+value is now 12.0i
+value has changed to 16.0i
+The final value is 12.0i, but it was reset to 0.0i
+going to sleep ... 
+woke up. initial value is  of type string
+value is now Hello,
+value has changed to world!
+The final value is Hello,, but it was reset to 

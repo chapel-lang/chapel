@@ -1,0 +1,5 @@
+newValueNotType4.chpl:9: error: 'new' must be followed by a type expression
+newValueNotType4.chpl:12: error: 'new' must be followed by a type expression
+newValueNotType4.chpl:15: error: 'new' must be followed by a type expression
+newValueNotType4.chpl:18: error: 'new' must be followed by a type expression
+newValueNotType4.chpl:21: error: 'new' must be followed by a type expression

@@ -1,0 +1,27 @@
+#!/usr/bin/env python3
+
+#
+# This test requires:
+#  * CHPL_LLVM!=none (since the test uses extern blocks)
+# and a GSL installation detected like so:
+#  * GSL_DIR environment variable is set, OR
+#  * GSL dynamic library is detected
+#
+# Note that if the dynamic library is found, this
+# test assumes that the header and static library are available.
+
+from __future__ import print_function
+from ctypes.util import find_library
+from os import environ
+
+if environ['CHPL_LLVM'] == 'none':
+  print (True) # Skip if we don't have extern block support
+elif '--baseline' in environ['COMPOPTS']:
+  print (True) # Skip for --baseline
+else:
+  # OK, we have extern block support.
+  if 'GSL_DIR' in environ:
+    print (False) # Don't skip if GSL_DIR is set
+  else:
+    # Don't skip if a GSL library is installed
+    print (find_library('gsl') is None)

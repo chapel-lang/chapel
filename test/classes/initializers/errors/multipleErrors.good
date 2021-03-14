@@ -1,0 +1,6 @@
+multipleErrors.chpl:14: In initializer:
+multipleErrors.chpl:15: error: field "x" used before it is initialized
+multipleErrors.chpl:15: error: field "y" used before it is initialized
+multipleErrors.chpl:15: error: cannot pass a record to a function before this.complete()
+multipleErrors.chpl:15: error: cannot call a method on a record before this.complete()
+multipleErrors.chpl:16: error: cannot pass a record to a function before this.complete()

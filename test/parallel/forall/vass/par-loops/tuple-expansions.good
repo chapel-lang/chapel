@@ -1,0 +1,47 @@
+RRR serial
+10
+20
+QQQ leader
+QQQ follower
+710
+720
+SSS leader
+SSS follower
+790
+780
+RRR serial
+QQQ serial
+(10, -10)
+(20, -20)
+QQQ serial
+RRR serial
+(-10, 10)
+(-20, 20)
+QQQ leader
+QQQ follower
+SSS follower
+(710, 690)
+(720, 680)
+SSS leader
+SSS follower
+QQQ follower
+(790, 810)
+(780, 820)
+RRR serial
+QQQ serial
+10,-10
+20,-20
+QQQ serial
+RRR serial
+-10,10
+-20,20
+QQQ leader
+QQQ follower
+SSS follower
+710,690
+720,680
+SSS leader
+SSS follower
+QQQ follower
+790,810
+780,820

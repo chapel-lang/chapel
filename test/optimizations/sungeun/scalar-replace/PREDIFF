@@ -1,0 +1,121 @@
+#!/usr/bin/env python3
+#
+# Compare scalar replacement in the first run to the second
+#
+# limit: scalar replacement limit
+# types: number of types considered
+# records: records replaced
+# classes: classes replaced
+#
+# if limit from 1st <= limit from 2nd
+#  types, records, and classes from 1st must be <= that of 2nd
+#
+# if limit from 1st >= limit from 2nd
+#  types, records, and classes from 1st must be >= that of 2nd
+#
+
+import sys, os, shutil, string, re
+
+testname=sys.argv[1]
+testout=sys.argv[2]
+compopts=sys.argv[4]
+savefile=testname+'.save'
+
+if (compopts.find('--baseline')!=-1) or (compopts.find('--no-scalar-replacement')!=-1):
+    # do nothing
+    sys.exit(0)
+
+def saveTestOut(testoutsave):
+    shutil.copy(testout, testoutsave)
+
+def cleanTestOut():
+    # Remove the first 3 lines of the output file
+    f = open(testout, 'r')
+    newtestout = testout+'.new'
+    fnew = open(newtestout, 'w')
+    lines = f.readlines()
+    if len(lines) != 4:
+        fnew.write('WARNING: Unexpected number of lines in output file (%d)\n'%len(lines))
+        for l in lines:
+            fnew.write(l)
+    else:
+        for l in lines[3:len(lines)]:
+            fnew.write(l)
+
+    fnew.close()
+
+    # Copy the new output file to the old one
+    shutil.move(newtestout, testout)
+
+    if len(lines) == 4:
+        # Return values of interest
+        l0 = re.findall('[0-9]+', lines[0].strip())
+        l1 = re.findall('[0-9]+', lines[1].strip())
+        l2 = re.findall('[0-9]+', lines[2].strip())
+        return (l0[0],l0[1],l1[0],l2[0])
+    else:
+        # Return error
+        return None
+
+
+#
+# Save the compiler output from the first run to compare to the second
+#
+testnum = testout[len(testname)+1]
+if testnum == '1':
+    # first test to run save output
+    refline = cleanTestOut()
+    if refline == None:
+        sys.exit(-1)
+    f = open(savefile, 'w')
+    f.write('%s %s %s %s'%((refline[0], refline[1], refline[2], refline[3])))
+    f.close()
+else:
+    if not os.path.isfile(savefile):
+        f = open(testout, 'a')
+        f.write('MISSING .save file from previous run.\n')
+        f.close()
+        sys.exit(-1)
+
+    # read output from previous test
+    f = open(savefile, 'r')
+    line = f.readline()
+    f.close()
+    refline = line.split()
+    testoutsave = testout+'.save'
+    saveTestOut(testoutsave)
+    mylines = cleanTestOut()
+    if mylines == None:
+        sys.exit(-1)
+    (limit, types, records, classes) = mylines
+    error = False
+    if int(limit) < int(refline[0]):
+        if int(types) > int(refline[1]):
+            error = True
+        if int(records) > int(refline[2]):
+            error = True
+        if int(classes) > int(refline[3]):
+            error = True
+    else:
+        if int(types) < int(refline[1]):
+            error = True
+        if int(records) < int(refline[2]):
+            error = True
+        if int(classes) < int(refline[3]):
+            error = True
+    if error:
+        # copy original output back
+        shutil.copy(testoutsave, testout)
+        f = open(testout, 'a')
+        f.write('Errors detected between first and second run:\n')
+        f.write('Run 1:\n')
+        f.write('\tlimit=%s, types=%s, records=%s, classes=%s\n'%
+                (refline[0], refline[1], refline[2], refline[3]))
+        f.write('Run 2 (this run):\n')
+        f.write('\tlimit=%s, types=%s, records=%s, classes=%s\n'%
+                (limit, types, records, classes))
+        f.close()
+
+    os.remove(testoutsave)
+    os.remove(savefile)
+

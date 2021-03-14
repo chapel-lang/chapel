@@ -1,0 +1,20 @@
+Passing var domain
+pass by in intent
+false
+false
+pass by const in intent
+true
+true
+pass by default intent
+false
+false
+Passing const domain
+pass by in intent
+false
+false
+pass by const in intent
+true
+true
+pass by default intent
+true
+true

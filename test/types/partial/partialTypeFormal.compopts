@@ -1,0 +1,2 @@
+-serror=false # partialTypeFormal.matches.good
+-serror=true # partialTypeFormal.error.good

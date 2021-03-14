@@ -1,0 +1,101 @@
+#!/usr/bin/env python3
+
+"""
+ Print the names of any third-party packages needed for the current
+ Chapel environment settings
+
+ ASSUMPTIONS:
+ - This script is located in .../chapel/util/chplenv/third-party-pkgs
+ - The format of the output from 'printchplenv' follows the current
+   conventions. Specifically,
+   - Chapel-specific environment variables are prefixed with 'CHPL_' (***)
+   - Any Chapel environment variable ending in '_PLATFORM' describes
+     the hardware/OS combo and will not considered in this script
+   - "Top-level" Chapel environment variables are printed starting
+     in the first column.  Any Chapel environment variables that
+     indented are assumed to be modifiers of the corresponding top-level
+     variable and will not be considered in this script (*** and also
+     do not necessarily have to be prefixed with 'CHPL_')
+ - Any aliases for the package name are defined in generate_subdir_map().
+   The keys take the form of <env_var_name>-<alias_name>. The vals
+   are the directory name.
+ - If the file COMPILERONLY exists in the third party directory,
+   that package is emitted if --compiler is passed,
+   and not by default (which gives dependencies for runtime).
+"""
+
+import optparse
+import os
+import sys
+
+import utils
+from chpl_home_utils import get_chpl_third_party, get_chpl_home
+
+def get_all_pkgs():
+    """ Return the list of all third-party packages """
+    all_pkgs = os.listdir(get_chpl_third_party())
+    return all_pkgs
+
+def generate_subdir_map():
+    """ Find any aliases for third-party packages """
+    pkg_aliases = dict()
+
+    pkg_aliases['CHPL_LLVM-clang-included'] = 'llvm'
+    pkg_aliases['CHPL_TASKS-qthreads'] = 'qthread'
+    pkg_aliases['CHPL_GMP-bundled'] = 'gmp'
+    pkg_aliases['CHPL_HWLOC-bundled'] = 'hwloc'
+    pkg_aliases['CHPL_JEMALLOC-bundled'] = 'jemalloc'
+    pkg_aliases['CHPL_LIBFABRIC-bundled'] = 'libfabric'
+    pkg_aliases['CHPL_LLVM-bundled'] = 'llvm'
+    pkg_aliases['CHPL_UNWIND-bundled'] = 'libunwind'
+
+    return pkg_aliases
+
+def gather_chplenv():
+    """ Run printchplenv and return the output """
+    printchplenv = os.path.join(get_chpl_home(), 'util', 'printchplenv')
+    args = ['--simple', '--internal', '--runtime', '--compiler', '--anonymize', '--no-tidy']
+    return utils.run_command([printchplenv] + args)
+
+def compute_required_pkgs():
+    """ Determine required third-party packages based on the chplenv """
+    chplenv = gather_chplenv()
+    pkg_aliases = generate_subdir_map()
+
+    req_pkgs = set()
+    for line in chplenv.split('\n'):
+        # Consider only lines to that start with 'CHPL_'.
+        if line.startswith('CHPL_'):
+            (var, val) = line.split('=', 1)
+            (var, val) = var.strip(), val.strip()
+            # Ignore platform variables
+            # Ignore CHPL_MEM (use CHPL_JEMALLOC)
+            if not (var.endswith('_PLATFORM') or var == 'CHPL_MEM'):
+                if val in get_all_pkgs():
+                    req_pkgs.add(val)
+                elif var + '-' + val in pkg_aliases:
+                    req_pkgs.add(pkg_aliases[var + '-' + val])
+    return req_pkgs
+
+def comp_only_pkg(pkg):
+    """ Determine if a third-party package is only needed for the compiler """
+    componly = os.path.join(get_chpl_third_party(), pkg, 'COMPILERONLY')
+    return os.path.isfile(componly)
+
+def _main():
+    parser = optparse.OptionParser()
+    parser.add_option('--compiler', dest='compiler', action='store_true',
+                      help='compute compiler packages')
+    (options, _) = parser.parse_args()
+
+    pkgs = compute_required_pkgs()
+
+    if options.compiler:
+        pkgs = [pkg for pkg in pkgs if comp_only_pkg(pkg)]
+    else:
+        pkgs = [pkg for pkg in pkgs if not comp_only_pkg(pkg)]
+
+    sys.stdout.write("{0}\n".format(' '.join(pkgs)))
+
+if __name__ == '__main__':
+    _main()

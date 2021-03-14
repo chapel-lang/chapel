@@ -1,0 +1,22 @@
+(d = Block
+-------
+distributes: [1..2]
+across locales: LOCALE0 LOCALE1 LOCALE2 LOCALE3
+indexed via: [0..3]
+resulting in: 
+  [0] locale 0 owns chunk: [-2147483648..1]
+  [1] locale 1 owns chunk: [2..1]
+  [2] locale 2 owns chunk: [2..2]
+  [3] locale 3 owns chunk: [3..2147483647]
+)
+(d = Block
+-------
+distributes: [2..3]
+across locales: LOCALE0 LOCALE1 LOCALE2 LOCALE3
+indexed via: [0..3]
+resulting in: 
+  [0] locale 0 owns chunk: [-2147483648..2]
+  [1] locale 1 owns chunk: [3..2]
+  [2] locale 2 owns chunk: [3..3]
+  [3] locale 3 owns chunk: [4..2147483647]
+)

@@ -1,0 +1,5 @@
+bad-return-infinite-lifetime-error.chpl:9: In function 'f':
+bad-return-infinite-lifetime-error.chpl:10: error: Reference to return scoped variable arg cannot be returned in function returning infinite lifetime
+bad-return-infinite-lifetime-error.chpl:9: note: consider scope of arg
+bad-return-infinite-lifetime-error.chpl:10: error: Return scope variable arg cannot be returned in function returning infinite lifetime
+bad-return-infinite-lifetime-error.chpl:9: note: consider scope of arg

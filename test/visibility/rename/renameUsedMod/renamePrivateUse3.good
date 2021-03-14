@@ -1,0 +1,2 @@
+renamePrivateUse3.chpl:12: In function 'main':
+renamePrivateUse3.chpl:16: error: 'Foo' undeclared (first use this function)

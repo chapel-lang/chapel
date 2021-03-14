@@ -1,0 +1,3 @@
+-sM1.flag=true -sM2.flag=true -sM3.flag=true # threeModsSameParamName-alltrue.good
+-sflag=true  # threeModsSameParamName-ambig.good
+-sM1.flag=true -sM2.flag=false -sM3.flag=true -sM1.flag=false -sM2.flag=true -sM1.flag=true # threeModsSameParamName-alltrue.good

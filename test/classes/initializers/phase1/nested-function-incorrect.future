@@ -1,0 +1,7 @@
+bug: use of nested functions permits use-before-def within init()
+
+This test shows that when nested functions are used, we can read
+fields before they are initialized in initializers.  The -correct.chpl
+version demonstrates that this pattern can be nice (if, say, the
+computation to initialize the expression is larger than you'd want to
+jam into the initialization expression slot).

@@ -1,0 +1,4 @@
+bug: setting config with shared initializer
+
+When setting a config var with a shared initializer on the command line,
+the value is incorrectly propagated to the subsequent variables.

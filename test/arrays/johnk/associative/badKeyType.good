@@ -1,0 +1,1 @@
+badKeyType.chpl:2: error: Associative array key element 1 expected to be of type string but is of type int(64)

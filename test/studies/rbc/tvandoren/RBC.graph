@@ -1,0 +1,5 @@
+perfkeys: Elapsed time is:, Elapsed time is:
+files: RBC.dat, RBCElegant.dat
+graphkeys: Fast version, Chapelerific version
+graphtitle: RBC benchmark
+ylabel: Time (seconds)

@@ -1,0 +1,15 @@
+test1
+{x = 1}:shared C
+{x = 2}:shared C
+{x = 1}:shared C
+{x = 2}:shared C
+test2
+{x = 1}:shared C
+{x = 2}:shared C
+{x = 1}:shared C
+{x = 2}:shared C
+test3
+{x = 1}:shared C
+{x = 2}:shared C
+{x = 1}:shared C
+{x = 2}:shared C

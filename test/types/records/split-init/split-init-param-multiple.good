@@ -1,0 +1,4 @@
+split-init-param-multiple.chpl:3: In function 'main':
+split-init-param-multiple.chpl:9: error: Split initialization sets parameter to different values
+split-init-param-multiple.chpl:17: error: Split initialization uses multiple types; another initialization has type int(32) but this initialization has type int(64)
+split-init-param-multiple.chpl:17: error: Split initialization sets parameter to different values

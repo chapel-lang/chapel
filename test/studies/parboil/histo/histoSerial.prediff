@@ -1,0 +1,11 @@
+#!/bin/bash
+
+diff output.bin histoSerial.output.bin >> $2
+
+ret=$?
+if [ $ret == 0 ] ; then
+  echo success >> $2
+  rm output.bin
+else
+  echo files differ > $2
+fi

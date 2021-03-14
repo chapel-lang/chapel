@@ -1,0 +1,6 @@
+perfkeys: real, real, real, real, real, real
+files: fasta.25000000.dat, fasta-lines.dat, fasta-printf.dat, fasta-qio.dat, fasta-enum.dat, fastaredux-release.dat
+graphkeys: fasta, fasta-lines, fasta-printf, fasta-qio, fasta-enum, fastaredux-release
+graphtitle: Fasta-redux Shootout Benchmark (n=25,000,000)
+ylabel: Time (seconds)
+graphname: fastaredux.25000000

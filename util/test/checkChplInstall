@@ -1,0 +1,287 @@
+#!/usr/bin/env bash
+
+# Validate Chapel installation by compiling and executing an example job.
+#
+#
+# Exits with zero status code when compilation and execution work as
+# expected. Expects that chpl is available on the PATH and that CHPL_HOME is
+# set correctly.
+#
+# It works by copying the test from $CHPL_HOME, which can  either be an
+# installation from source/rpm or a working copy of the source repo, to a
+# temporary directory in $HOME/.chpl/, then executing the binary and diffing
+# the output with the .good file.
+#
+# Using a temporary directory is necessary for most installations, since the
+# user running the tests will not have the permissions to modify $CHPL_HOME
+# (e.g. a system wide chapel installation) nor would they want to clutter it
+# with test artifacts.
+#
+# $HOME/.chpl/ is used instead of something like $TMPDIR (or /tmp) to improve
+# the likelihood that multi locale tests will succeed. $HOME tends to be
+# consistent and available on all nodes in distributed systems, unlike $TMPDIR
+# which tends to be an in-memory filesystem exclusive to each node.
+#
+# To use something other than $HOME/.chpl, set the CHPL_CHECK_INSTALL_DIR
+# environment variable.
+
+function log_info()
+{
+    local msg=$@
+    echo "[Info] ${msg}"
+}
+
+function log_warning()
+{
+    local msg=$@
+    echo "[Warn] ${msg}"
+}
+
+function log_error()
+{
+    local msg=$@
+    echo "[Fail] ${msg}" >&2
+}
+
+function log_debug()
+{
+    local msg=$@
+    if [ "${CHPL_CHECK_DEBUG}" == "1" ]; then
+        echo "[Debug] ${msg}" >&2
+    fi
+}
+
+log_debug "Starting \"make check\" script."
+log_debug "Debug output is turned on, because \$CHPL_CHECK_DEBUG == 1"
+
+# Base name for test job in examples
+TEST_JOB_BASENAME=hello6-taskpar-dist
+
+# Notify user we are running this script
+log_info "Running minimal test script: \$CHPL_HOME/util/test/checkChplInstall"
+
+BIN_NAME=chpl
+
+CHPL_BIN="$(which ${BIN_NAME} 2> /dev/null)"
+
+# Verify chpl is in $PATH
+if [ -z "${CHPL_BIN}" ] ; then
+    log_error "${BIN_NAME} not found. Make sure it available in the current PATH."
+    exit 1
+elif [ ! -x ${CHPL_BIN} ] ; then
+    log_error "Found ${BIN_NAME} at ${CHPL_BIN} but it is not executable."
+    exit 1
+else
+    log_info "Found executable ${BIN_NAME} in ${CHPL_BIN}."
+fi
+
+if [ -z "${CHPL_HOME}" ] ; then
+  CHPL_HOME=${CHPL_CHECK_HOME}
+fi
+
+# Verify CHPL_HOME is correctly set.
+if [ -z "${CHPL_HOME}" ] ; then
+    log_error "CHPL_HOME is not set in environment."
+    exit 1
+elif [ ! -d ${CHPL_HOME} ] ; then
+    log_error "CHPL_HOME is not a directory: ${CHPL_HOME}"
+    exit 1
+else
+    log_info "Found \$CHPL_HOME directory: ${CHPL_HOME}"
+fi
+
+# Create ~/.chpl directory, if it does not already exist
+CHPL_DIR=${CHPL_CHECK_INSTALL_DIR:-${HOME}/.chpl}
+if [ ! -d ${CHPL_DIR} ] ; then
+    log_info "${CHPL_DIR} does not exist. Creating it."
+    mkdir -p ${CHPL_DIR} || { log_error "Failed to create ${CHPL_DIR}." && exit 1 ; }
+    CHPL_DIR_REMOVE=1
+else
+    log_info "${CHPL_DIR} already exists. Using it."
+    CHPL_DIR_REMOVE=0
+fi
+( cd "${CHPL_DIR}" ) || { log_error "failed cd $CHPL_DIR" ; exit 1 ; }
+
+# Tmp directory for compile output
+TMP_TEST_DIR="$(mktemp -d ${CHPL_DIR}/chapel-test-XXXXX)"
+if [ -z "${TMP_TEST_DIR}" ] ; then
+    log_error "failed mktemp -d ${CHPL_DIR}/chapel-test-XXXXX"
+    exit 1
+fi
+log_info "Temporary test job directory: ${TMP_TEST_DIR}"
+( cd ${TMP_TEST_DIR} ) || { log_error "failed cd ${TMP_TEST_DIR}" ; exit 1 ; }
+
+# Cleanup the tmp directory whenever exit is invoked
+function cleanup_tmp_dir()
+{
+    log_debug "Removing ${TMP_TEST_DIR}"
+    local i
+    # sometimes on an NFS file system, rm needs to wait for the TEST_JOB exe file to close
+    for i in 1 2 3 4 5
+    do
+        rm -rf ${TMP_TEST_DIR} && break
+        log_warning "failed rm -rf ${TMP_TEST_DIR}, wait and try again"
+        ( set -x; ls -la ${TMP_TEST_DIR} ) || : ok
+        sleep 1
+    done
+    rm -rf ${TMP_TEST_DIR} || (
+        log_warning "Failed to remove ${TMP_TEST_DIR}. Please remove this directory manually."
+        set -x; ls -la ${TMP_TEST_DIR}
+    ) || : ok
+    if [ "${CHPL_DIR_REMOVE}" == "1" ]; then
+        log_debug "Removing ${CHPL_DIR}"
+        # rmdir should fail if some other process started using CHPL_DIR after we created it
+        rmdir ${CHPL_DIR} || log_debug "rmdir error ignored"
+    fi
+}
+trap cleanup_tmp_dir EXIT
+
+# Location of test job
+if [ -d ${CHPL_HOME}/test/release/examples ] ; then
+    # Install from source repo.
+    TEST_DIR=${CHPL_HOME}/test/release/examples
+    REL_TEST_DIR=test/release/examples
+elif [ -d ${CHPL_HOME}/examples ] ; then
+    # Install from tarball.
+    TEST_DIR=${CHPL_HOME}/examples
+    REL_TEST_DIR=examples
+else
+    log_error "Could not find test cases in CHPL_HOME: ${CHPL_HOME}."
+    exit 1
+fi
+
+TEST_JOB=${TEST_JOB_BASENAME}
+
+if [ "${CHPL_CHECK_DEBUG}" == 1 ] ; then
+    log_debug "printchplenv, because \$CHPL_CHECK_DEBUG == 1"
+    $CHPL_HOME/util/printchplenv --all --no-tidy
+fi
+
+# Compute python interperet to use for helpers
+chpl_py="$($CHPL_HOME/util/config/find-python.sh)"
+
+# Collect comm protocol environment variables (lowercase to avoid conflicts)
+chpl_comm="$($chpl_py $CHPL_HOME/util/chplenv/chpl_comm.py)"
+chpl_launcher="$($chpl_py $CHPL_HOME/util/chplenv/chpl_launcher.py)"
+
+backend="C"
+if [ ${CHPL_LLVM_CODEGEN:-0} -ne 0 ]; then
+  backend="LLVM"
+fi
+
+# Compile test job into temporary directory
+log_info "Compiling \$CHPL_HOME/${REL_TEST_DIR}/${TEST_JOB}.chpl"
+
+log_info "Compiling with $backend backend"
+
+TEST_COMP_OUT=$( ${CHPL_BIN} ${TEST_DIR}/${TEST_JOB}.chpl ${COMP_FLAGS} -o ${TMP_TEST_DIR}/${TEST_JOB} 2>&1 )
+COMPILE_STATUS=$?
+
+# Check that compile was successful
+log_debug "Compilation exit status was ${COMPILE_STATUS}"
+
+    # exit status 0?
+if [ ${COMPILE_STATUS} -ne 0 ]; then
+    log_error "Test job failed to compile - Chapel is not installed correctly"
+    log_error "Compilation output:"
+    echo "${TEST_COMP_OUT}"
+    log_debug "Exit \"make check\" script with status code 1"
+    exit 1
+fi
+
+    # no errors on stdout/stderr?
+if [ -n "${TEST_COMP_OUT}" ]; then
+    # apply "prediff"-like filter to remove gmake "clock skew detected" warnings, if any
+    TEST_COMP_OUT=$( grep <<<"${TEST_COMP_OUT}" -v \
+        -e '^g*make\(\[[0-9]*\]\)*: Warning: File .* has modification time .* in the future *$' \
+        -e '^g*make\(\[[0-9]*\]\)*: warning:  Clock skew detected\.  Your build may be incomplete\. *$' )
+fi
+
+if [ -n "${TEST_COMP_OUT}" ]; then
+    log_error "Test job compiled with output - Chapel is not installed correctly"
+    log_error "Compilation output:"
+    echo "${TEST_COMP_OUT}"
+    log_debug "Exit \"make check\" script with status code 1"
+    exit 1
+else
+    log_info "Test job compiled into ${TMP_TEST_DIR}/${TEST_JOB}"
+fi
+
+# Find number of locales and .good file
+if [ ${chpl_comm} == "none" ]; then
+    NUMLOCALES=1
+    GOOD=${TEST_DIR}/${TEST_JOB}.comm-none.good
+else
+    NUMLOCALES="$(cat ${TEST_DIR}/NUMLOCALES)"
+    GOOD=${TEST_DIR}/${TEST_JOB}.good
+fi
+
+# Check for valid launchers
+if [ ${chpl_launcher} == "slurm-srun" -o ${chpl_launcher} == "amudprun" -o ${chpl_launcher} == "smp" -o ${chpl_launcher} == "none" ]; then
+    log_info "\$CHPL_LAUNCHER=${chpl_launcher} is compatible with test script."
+else
+    log_warning "\$CHPL_LAUNCHER=${chpl_launcher} is not compatible with test script."
+    log_warning "This does not necessarily indicate that your Chapel installation is incorrect."
+    log_warning "See \$CHPL_HOME/doc/rst/usingchapel/launcher.rst for information on manually launching Chapel programs."
+    # This exit code should be recognized as a failure to complete check, but
+    # not necessarily failure of build
+    log_debug "Exit \"make check\" script with status code 10"
+    exit 10
+fi
+
+TEST_EXEC_OUT=${TEST_JOB}.exec.out
+
+# Run compiled binary with parsed execution options
+(
+    cd ${TMP_TEST_DIR} || { log_error "failed cd ${TMP_TEST_DIR}" ; exit 1 ; }
+
+    EXEC_OPTS="$(cat ${TEST_DIR}/${TEST_JOB}.execopts)"
+
+    log_info "Running test job."
+    ./${TEST_JOB} -nl${NUMLOCALES} ${EXEC_OPTS} 2>&1 | sort > ${TEST_EXEC_OUT}
+    log_info "Test job complete."
+
+    # Check result
+    DIFF_OUTPUT=$(diff ${GOOD} ${TEST_EXEC_OUT})
+
+    # Return success code (0) if diff is good
+    if [ -z "${DIFF_OUTPUT}" ]; then
+        echo "SUCCESS: 'make check' passed!"
+        log_debug "Exit \"make check\" script with status code 0"
+        exit 0
+    else
+        # Rerun test job with -v flag to help user identify discrepancy
+        log_error "There was an issue with the installation, test job output incorrect."
+        if [ "${CHPL_CHECK_DEBUG}" == 1 ] ; then
+            log_debug "Full test output is turned on, because \$CHPL_CHECK_DEBUG == 1"
+            echo ""
+            echo "== Reference Test output $( basename $GOOD ) =="
+            echo ""
+            head -100 $GOOD
+            echo ""
+            echo "== Actual Test Output (sorted to compare v. reference) =="
+            echo ""
+            head -100 ${TEST_EXEC_OUT}
+            echo ""
+            echo "== Difference =="
+            echo ""
+            diff ${GOOD} ${TEST_EXEC_OUT} | head -100
+            echo ""
+        else
+            log_info "To see the test outputs, export CHPL_CHECK_DEBUG=1 and re-run \"make check\""
+        fi
+
+        echo ""
+        echo "== Actual Test Output (raw, with verbose) =="
+
+        ./${TEST_JOB} -nl${NUMLOCALES} ${EXEC_OPTS} -v
+        JOB_STATUS=$?
+
+        log_debug "Test job exit status was ${JOB_STATUS}"
+
+        # This exit code should be recognized as successfully building, but
+        # with some errors
+        log_debug "Exit \"make check\" script with status code 20"
+        exit 20
+    fi
+)

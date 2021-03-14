@@ -1,0 +1,40 @@
+represented sequence = (0)
+
+0..0 by 3 -> 0
+0..0 by 4 -> 0
+EQUAL
+
+0..1 by 3 -> 0
+0..1 by 4 -> 0
+EQUAL
+
+0..0 -> 0
+0..0 by -1 -> 0
+EQUAL
+
+0..1 by 3 -> 0
+-1..0 by -3 align 0 -> 0
+EQUAL
+
+represented sequence is empty
+
+1..0 ->
+1..0 by 2 ->
+EQUAL
+
+1..0 ->
+1..0 by -1 ->
+EQUAL
+
+1..0 ->
+1..0 by -2 ->
+EQUAL
+
+1..0 ->
+2..0 ->
+EQUAL
+
+1..0 ->
+1..-1 ->
+EQUAL
+

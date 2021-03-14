@@ -1,0 +1,3 @@
+error-in-fn-canResolve2.chpl:3: In function 'f':
+error-in-fn-canResolve2.chpl:4: error: I am an error
+error-in-fn-canResolve2.chpl:14: note: in function called here

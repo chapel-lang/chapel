@@ -1,0 +1,25 @@
+semantic: how flexible do we want record assignment to be, really?
+
+In the early days of the language, we proposed that records should
+be very flexibly interoperable, where field name was the most
+important thing -- i.e., if two records had the same field names,
+one should be able to assign them, compare them, etc. by default.
+The argument was that it could be productive in some cases and
+if you didn't like that feature, well then don't use it.  (I.e.,
+why throw an error for a case that could be useful to some users
+and which other users would likely never use).
+
+Over time, we've gotten bitten by this issue, and shied away from it.
+Earlier, Sung retired default comparisons between records, and now Tom
+is looking at retiring default assignments between records.  In part
+the problem has been that the very generic/flexible signatures that
+the procedures we've used to implement these operators end up catching
+other things that they weren't really meant to (e.g., comparing an
+empty record to an integer worked and produced 'true' in Sung's case;
+now in Tom's, the compiler tries to permit 'nil' to be assignment to a
+record).
+
+I'm not strongly in favor of preserving this behavior, but wanted to
+file the issue away for future consideration, so am capturing this
+test that used to work (still works at the time of this commit) to
+record my thoughts before letting it go.

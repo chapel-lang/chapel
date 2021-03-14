@@ -1,0 +1,24 @@
+total time :
+parse :
+checkParsed :
+cleanup :
+scopeResolve :
+flattenClasses :
+normalize :
+checkNormalized :
+buildDefaultFunctions :
+resolve :
+checkResolved :
+flattenFunctions :
+cullOverReferences :
+parallel :
+lowerIterators :
+inlineFunctions :
+cullOverReferences :
+scalarReplace :
+copyPropagation :
+deadCodeElimination :
+prune :
+insertLineNumbers :
+codegen :
+refPropagation :

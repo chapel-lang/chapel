@@ -1,0 +1,1 @@
+override-no-parens.chpl:6: error: Child.foo override keyword present but parentheses-less methods cannot override

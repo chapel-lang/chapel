@@ -1,0 +1,5 @@
+perfkeys: took
+files: scanPerf.dat
+graphtitle: 1D block scan time
+ylabel: Time (seconds)
+graphkeys: 1D Block + scan

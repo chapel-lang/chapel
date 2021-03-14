@@ -1,0 +1,77 @@
+
+======================================================================
+ERROR test_locales.chpl: s10()
+----------------------------------------------------------------------
+test_locales.chpl:55: error: halt reached - array index out of bounds
+note: index was 0 but array bounds are 1..0
+
+======================================================================
+FAIL test_locales.chpl: s4()
+----------------------------------------------------------------------
+UnexpectedLocales: Max Locales is less than Min Locales
+
+======================================================================
+FAIL test_locales.chpl: s8()
+----------------------------------------------------------------------
+UnexpectedLocales: Max Locales is less than 1
+
+======================================================================
+SKIPPED test_locales.chpl: s1()
+----------------------------------------------------------------------
+Not a MultiLocale Environment. $CHPL_COMM = none
+TestIncorrectNumLocales: Required Locales = {16}
+
+======================================================================
+SKIPPED test_locales.chpl: s2()
+----------------------------------------------------------------------
+Not a MultiLocale Environment. $CHPL_COMM = none
+TestIncorrectNumLocales: Required Locales = 2
+
+======================================================================
+SKIPPED test_locales.chpl: s3()
+----------------------------------------------------------------------
+Not a MultiLocale Environment. $CHPL_COMM = none
+TestIncorrectNumLocales: Required Locales = {16, 8}
+
+======================================================================
+SKIPPED test_locales.chpl: s6()
+----------------------------------------------------------------------
+Not a MultiLocale Environment. $CHPL_COMM = none
+TestIncorrectNumLocales: Required Locales = 6
+
+======================================================================
+SKIPPED test_locales.chpl: s7()
+----------------------------------------------------------------------
+Not a MultiLocale Environment. $CHPL_COMM = none
+TestIncorrectNumLocales: Required Locales = {16, 8}
+
+======================================================================
+SKIPPED test_locales.chpl: s9()
+----------------------------------------------------------------------
+Not a MultiLocale Environment. $CHPL_COMM = none
+TestIncorrectNumLocales: Required Locales = {16, 8}
+
+======================================================================
+SKIPPED test_locales.chpl: s14()
+----------------------------------------------------------------------
+s14() skipped because s10() gave an Error
+
+======================================================================
+SKIPPED test_locales.chpl: s11()
+----------------------------------------------------------------------
+s11() skipped because s14() skipped
+
+======================================================================
+SKIPPED test_locales.chpl: s12()
+----------------------------------------------------------------------
+s12() skipped because s2() Skipped
+
+======================================================================
+SKIPPED test_locales.chpl: s13()
+----------------------------------------------------------------------
+s13() skipped because s8() failed
+
+----------------------------------------------------------------------
+Ran 4 tests in n seconds
+
+FAILED (passed = 1 failures = 2 errors = 1 skipped = 10 )

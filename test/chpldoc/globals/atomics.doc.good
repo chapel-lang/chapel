@@ -1,0 +1,21 @@
+.. default-domain:: chpl
+
+.. module:: atomics.doc
+
+atomics.doc
+===========
+**Usage**
+
+.. code-block:: chapel
+
+   use atomics.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import atomics.doc;
+
+.. data:: var x: atomic int
+

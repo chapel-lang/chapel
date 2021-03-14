@@ -1,0 +1,5 @@
+bug: wrong line number reported for uncaught error
+
+This test (as well as initWithTryBang.chpl and tryBangDeeper.chpl) reports the
+uncaught error on the variable initialization line, rather than the try! line
+in the initializer itself.

@@ -1,0 +1,16 @@
+#!/usr/bin/env python3
+
+# The HDF5 package requires the hdf5 library.
+#
+# Installation of the HDF5 library is detected with the find_library function,
+# which looks for the appropriate dynamic library (e.g. libhdf5.so).
+# Note that if the dynamic library is found, this test assumes that the
+# header and static library are available.
+
+from __future__ import print_function
+from ctypes.util import find_library
+import os
+
+llvm=os.getenv('CHPL_LLVM')
+
+print((find_library('hdf5') is None) | (llvm is None) | (llvm == 'none'))

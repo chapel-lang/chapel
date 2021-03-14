@@ -1,0 +1,18 @@
+usage: c2chapel [-h] [--no-typedefs] [--debug] [--no-fake-headers]
+                [--no-comments] [-V]
+                file [cppFlags [cppFlags ...]]
+
+Generate C bindings for Chapel
+
+positional arguments:
+  file               C99 file for which to generate bindings
+  cppFlags           flags forwarded to the C preprocessor (invoked with cc
+                     -E)
+
+optional arguments:
+  -h, --help         show this help message and exit
+  --no-typedefs      do not generate extern types for C typedefs
+  --debug            enable debugging output
+  --no-fake-headers  do not use fake headers included with c2chapel
+  --no-comments      instruct c2chapel to not generate comments
+  -V, --version      show program's version number and exit

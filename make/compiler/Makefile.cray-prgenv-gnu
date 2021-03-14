@@ -1,0 +1,35 @@
+# Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+# Copyright 2004-2019 Cray Inc.
+# Other additional copyright holders may be indicated within.
+# 
+# The entirety of this work is licensed under the Apache License,
+# Version 2.0 (the "License"); you may not use this file except
+# in compliance with the License.
+# 
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# put Cray PE cross-compilation gnu-specific settings here
+
+CRAYPE_GEN_CFLAGS =
+CRAYPE_COMP_CXXFLAGS =
+
+# Don't worry about libmvec.a in PrgEnv-gnu.  It's taken care of.
+WANT_LIBMVEC = no
+
+include $(CHPL_MAKE_HOME)/make/compiler/Makefile.gnu
+
+include $(CHPL_MAKE_HOME)/make/compiler/Makefile.cray-prgenv
+
+# Makefile.cray-prgenv overrides OPT_CLFAGS set in Makefile.gnu
+ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 7; echo "$$?"),0)
+OPT_CFLAGS += -fno-ipa-cp-clone
+endif
+

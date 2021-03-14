@@ -1,0 +1,4 @@
+methodConflict.chpl:19: In function 'main':
+methodConflict.chpl:22: error: ambiguous call '+(A, B)'
+methodConflict.chpl:4: note: candidates are: A.+(lhs: A, rhs: B)
+methodConflict.chpl:13: note:                 B.+(lhs: A, rhs: B)

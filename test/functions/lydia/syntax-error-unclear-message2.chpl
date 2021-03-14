@@ -1,0 +1,3 @@
+proc incomplete(): int;
+
+incomplete();

@@ -1,0 +1,5 @@
+#! /usr/bin/env bash
+# $1 = testname
+# $2 = outfile
+sed 's/\.chpl:[0-9][0-9]*)$/.chpl:LINE)/' < $2 > $2.prediff.tmp \
+&& mv $2.prediff.tmp $2

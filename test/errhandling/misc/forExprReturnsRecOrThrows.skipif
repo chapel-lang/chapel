@@ -1,0 +1,3 @@
+# this test fails with baseline error: throwing non-inlined iterators are not
+# yet supported
+COMPOPTS <= --baseline

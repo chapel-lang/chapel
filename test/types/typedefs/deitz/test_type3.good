@@ -1,0 +1,3 @@
+test_type3.chpl:1: In function 'main':
+test_type3.chpl:2: error: 'b' used before defined
+test_type3.chpl:3: note: defined here

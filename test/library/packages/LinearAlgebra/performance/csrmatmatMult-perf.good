@@ -1,0 +1,9 @@
+CSR Matrix
+n        : 1000
+nnz      : 100
+sparsity : 0.0001
+Creating A
+Membership failures: 0
+Multiplying A*A
+Performing membership test
+Membership failures: 0

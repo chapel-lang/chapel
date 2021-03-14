@@ -1,0 +1,28 @@
+feature request: --run flag for chpl compiler
+
+Adding a --run flag to the compiler will make it more convenient to compile and
+then run chapel source code in a single step. As of 2013-12-10, there is a
+chpl-run bash script in $CHPL_HOME/util/devel that can be used to achieve
+similar functionality (though it does have some limitations).
+
+An a.out file (or whatever was specified in --output) will still be generated,
+so the user could re-run the compiled version. --run is useful for development
+when the source needs to be compiled and run over and over.
+
+An example call might look like:
+
+  chpl --run runFlag.chpl
+  chpl --run runFlag.chpl --name=Cher
+  ./a.out --name=Sonny
+
+Some other things to consider, upon implementing this:
+
+* Should their be an indication of when the compile steps have finished and
+  when the "--run" step has started?
+  - Perhaps a print stmt to stdout that can be supressed with a --quiet (or
+    similar) flag.
+* How are config overrides provided?
+  - Add them to the right of the source file?
+  - Brad thinks they might work with -s/--set already.
+* Support a --[no-]retain-binary flag which would default to retaining for a
+  typical compilation but perhaps not for a --run compilation.

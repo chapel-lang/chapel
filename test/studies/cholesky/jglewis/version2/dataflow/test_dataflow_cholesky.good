@@ -1,0 +1,15 @@
+Data Flow Cholesky Factorization Tests
+   Matrix Dimension: 59
+   Block Size      : 13
+   Indexing Base   : -7
+
+
+
+
+scalar inner product cholesky factorization 
+factorization successful
+
+
+
+block 2D data flow cholesky factorization, block size: 13
+factorization successful

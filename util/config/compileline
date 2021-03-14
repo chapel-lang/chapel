@@ -1,0 +1,7 @@
+#!/usr/bin/env sh
+
+# get the chpl home directory
+CWD=$(cd $(dirname $0) ; cd ..; cd ..; pwd)
+
+PY=`"$CWD/util/config/find-python.sh"`
+$PY "$CWD/util/config/compileline.py" "$@"

@@ -1,0 +1,1 @@
+newArray.chpl:4: error: 'new' must be followed by a type expression

@@ -1,0 +1,4 @@
+retTypeNoRet.chpl:1: In function 'foo':
+retTypeNoRet.chpl:1: error: control reaches end of function that returns a value
+retTypeNoRet.chpl:9: In function 'bar':
+retTypeNoRet.chpl:9: error: control reaches end of function that returns a value

@@ -1,0 +1,3 @@
+typeInsteadOfNew.chpl:10: error: invalid type specifier 'unmanaged C(domain(1,int(64),false))'
+typeInsteadOfNew.chpl:5: note: type 'C' is not generic
+typeInsteadOfNew.chpl:10: note: did you forget the 'new' keyword?

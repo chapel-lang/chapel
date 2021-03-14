@@ -1,0 +1,4 @@
+#!/bin/bash
+
+rev $2 | cut -d"/" -f1,2 | rev > $2.tmp
+mv $2.tmp $2

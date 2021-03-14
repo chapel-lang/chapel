@@ -1,0 +1,1 @@
+writeln("".byte(0));

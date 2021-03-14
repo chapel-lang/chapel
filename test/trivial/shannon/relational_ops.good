@@ -1,0 +1,36 @@
+m = 5
+n = 2
+o = 30
+p = 5
+
+test: m > n
+expected answer = 1
+actual answer = 1
+
+test: m > p
+expected answer = 0
+actual answer = 0
+
+test: o >= m
+expected answer = 1
+actual answer = 1
+
+test: m >= p
+expected answer = 1
+actual answer = 1
+
+test: m < n
+expected answer = 0
+actual answer = 0
+
+test: m < p
+expected answer = 0
+actual answer = 0
+
+test: m <= n
+expected answer = 0
+actual answer = 0
+
+test: m <= p
+expected answer = 1
+actual answer = 0

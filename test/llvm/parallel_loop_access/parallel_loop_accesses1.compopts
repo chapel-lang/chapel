@@ -1,0 +1,1 @@
+--llvm --fast --llvm-print-ir loop1 --llvm-print-ir-stage none

@@ -1,0 +1,3 @@
+-sn=10 -smyConst=4
+-sn=10 -smyConst="7*(n-15)"
+-smyConst='"blah blah blah"'

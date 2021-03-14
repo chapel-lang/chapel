@@ -1,0 +1,1 @@
+inFunc.chpl:4: error: Modules must be declared at module- or file-scope

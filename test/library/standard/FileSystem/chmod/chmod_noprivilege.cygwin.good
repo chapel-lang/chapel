@@ -1,0 +1,3 @@
+uncaught PermissionError: Permission denied (in chmod with path "/")
+  chmod_noprivilege.chpl:7: thrown here
+  chmod_noprivilege.chpl:7: uncaught here

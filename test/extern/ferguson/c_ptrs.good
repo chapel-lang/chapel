@@ -1,0 +1,12 @@
+printme(0)
+printme(0)
+printme(22)
+printme(22)
+printme(99)
+printme(99)
+printme(23)
+printme(23)
+my_ptr is not NULL
+my_ptr is not nil
+my_ptr is now NULL
+my_ptr is now nil

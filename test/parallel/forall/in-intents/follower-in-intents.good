@@ -1,0 +1,45 @@
+
+int
+leader 1000
+follower 1000   following 1100
+1002
+1007
+follower 1000   following 1300
+1002
+1007
+1000
+
+int x2
+leader 1000
+follower 1000   following 1100
+follower 1000   following 1100
+(1002, 1002)
+(1007, 1007)
+follower 1000   following 1300
+follower 1000   following 1300
+(1002, 1002)
+(1007, 1007)
+1000
+
+RR
+leader (xx = 1000)
+follower (xx = 1000)   following 1100
+1002
+1007
+follower (xx = 1000)   following 1300
+1002
+1007
+(xx = 1000)
+
+RR x2
+leader (xx = 1000)
+follower (xx = 1000)   following 1100
+follower (xx = 1000)   following 1100
+(1002, 1002)
+(1007, 1007)
+follower (xx = 1000)   following 1300
+follower (xx = 1000)   following 1300
+(1002, 1002)
+(1007, 1007)
+(xx = 1000)
+

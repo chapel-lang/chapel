@@ -1,0 +1,16 @@
+#!/usr/bin/env python3
+
+import os
+
+comm = os.getenv('CHPL_COMM')
+comm_sub = os.getenv('CHPL_COMM_SUBSTRATE')
+ugni = comm == 'ugni'
+gn_aries = comm == 'gasnet' and comm_sub == 'aries'
+
+# Run default and optimized barrier under all configs for 5,000 trials
+print('  -sbarrierMode=LocalAtomic      -snumTrials=5000   -sprintTimings=true  # empty-local-atomic-barrier')
+print('  -sbarrierMode=GlobalAllLocales -snumTrials=5000   -sprintTimings=true  # empty-all-locales-barrier')
+
+# Run optimized barrier under ugni/gn-aries for 100,000 trials
+if ugni or gn_aries:
+  print('-sbarrierMode=GlobalAllLocales -snumTrials=100000 -sprintTimings=true  # empty-many-all-locales-barrier')

@@ -1,0 +1,7 @@
+reserved-single.chpl:1: error: attempt to redefine reserved type 'single'
+reserved-single.chpl:3: error: attempt to redefine reserved type 'single'
+reserved-single.chpl:6: error: attempt to redefine reserved type 'single'
+reserved-single.chpl:7: error: attempt to redefine reserved type 'single'
+reserved-single.chpl:10: error: attempt to redefine reserved type 'single'
+reserved-single.chpl:12: error: attempt to redefine reserved type 'single'
+reserved-single.chpl:17: error: attempt to redefine reserved type 'single'

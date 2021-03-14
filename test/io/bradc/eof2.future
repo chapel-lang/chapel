@@ -1,0 +1,11 @@
+feature request: eof on QIO channels
+
+Michael argued reasonably that eof is an inherently problematic
+routine in the case of dynamic streams of data and that it's no longer
+strictly necessary since the new read routines generate errors that
+permit one to test for eof without halting the program.  But even so,
+it seems attractive to me to provide an eof for the simple case of
+reading data from a static file until it's all gone, or at least
+comfort, so I'm filing this as a placeholder.  And possibly for the
+read(type t) form of reads in which the return code can't be used to
+indicate eof.

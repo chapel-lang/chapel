@@ -1,0 +1,10 @@
+refInt = 62
+myInt = 73
+myInt = 84
+refExpr = 95
+refArrElm = 62
+myArr[2] = 73
+refClassField = 62
+cField = 73
+refRecField = 62
+myR = (rField = 73)

@@ -1,0 +1,2 @@
+renameAllNoQualified.chpl:13: In function 'main':
+renameAllNoQualified.chpl:14: error: 'M' undeclared (first use this function)

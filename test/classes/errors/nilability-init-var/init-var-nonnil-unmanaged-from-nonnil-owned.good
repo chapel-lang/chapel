@@ -1,0 +1,1 @@
+init-var-nonnil-unmanaged-from-nonnil-owned.chpl:9: error: cannot initialize variable 'lhs' of type 'unmanaged MyClass' from a 'owned MyClass'

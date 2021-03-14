@@ -1,0 +1,4 @@
+methodOnType2.chpl:26: In function 'bar':
+methodOnType2.chpl:28: error: unresolved call 'C.goo()'
+methodOnType2.chpl:28: note: because no functions named goo found in scope
+  methodOnType2.chpl:36: called as bar(c: borrowed C)

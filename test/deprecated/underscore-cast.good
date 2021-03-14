@@ -1,0 +1,3 @@
+underscore-cast.chpl:9: warning: _cast is deprecated syntax for declaring a cast
+note: please change to e.g. 'operator : (from: FromType, type t: ToType)'
+(x = 2)

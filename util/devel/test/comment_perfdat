@@ -1,0 +1,155 @@
+#! /usr/bin/env python3
+#
+# File: comment_perfdat
+#
+# Add a comment to one or more performance data files on a particular date
+#
+
+import os, sys
+
+def isCommentDate(l, comment_date):
+    dindex = l.find(comment_date, 0, 12) # 12 is a bit arbitrary
+    if dindex != -1:
+        if comment_date == l[dindex:dindex+len(comment_date)]:
+            return True
+    return False
+
+def isDotDatFile(filename):
+    dat_ext = filename.rfind('.dat')
+    if dat_ext != -1 and dat_ext == len(filename)-4:
+        return True
+    return False
+
+from datetime import date
+from optparse import OptionParser
+
+parser = OptionParser("usage: %prog [options] [.dat files] [directories]\n\n" +
+  "Adds comments from COMMENT_FILE, according to COMMENT_DATE, to\n" +
+  ".dat files passed as arguments and located in the directory arguments,\n" +
+  "or to all .dat files in the current directory if none are given.\n" +
+  "The resulting files are placed in OUTPUT_DIR (not modified in place).")
+parser.add_option('-d', '--date',
+                  action='store', dest='comment_date',
+                  default=date.today().strftime('%m/%d/%y'),
+                  help="Date associated with the comment.  Comment will be place before that date's entry (default: today's date)")
+parser.add_option('-f', '--filename',
+                  action='store', dest='comment_file', default=None,
+                  help="File from which to read comments (default: stdin). Leading '#' in comments are optional")
+parser.add_option('-o', '--outdir',
+                  action='store', type='string', dest='outdir',
+                  default='./COMMENTED', help="output directory (default: './COMMENTED')",
+                  metavar='OUTPUT_DIR')
+parser.add_option('-v', '--verbose',
+                  action='store_true', dest='verbose', default=False,
+                  help="Print status messages to stdout (default)")
+# -q must follow -v to make verbose=True by default
+parser.add_option('-q', '--quiet',
+                  action='store_false', dest='verbose', default=True,
+                  help="Suppress status messages on stdout")
+
+(options, args) = parser.parse_args()
+
+verbose = options.verbose
+comment_date = options.comment_date
+
+if options.comment_file == None:
+    # read comment from stdin
+    sys.stdout.write("Reading comments from stdin...\n")
+    comment_list = list()
+    comment_list.append(sys.stdin.readline())
+else:
+    try:
+        fh = open(options.comment_file, 'r')
+    except IOError:
+        sys.stderr.write('Error: Could not open COMMENT_FILE %s.\n'%(options.comment_file))
+        sys.exit(1)
+    comment_list = fh.readlines()
+    fh.close()
+
+outdir = os.path.realpath(options.outdir)
+if outdir == os.path.realpath('.'):
+    sys.stdout.write('Warning: Input directory is same as output directory.  Continue (y/n)? ')
+    resp = sys.stdin.read(1)
+    if resp != 'y' and resp != 'Y':
+        sys.exit(1)
+elif not os.path.isdir(outdir):
+    os.mkdir(outdir)
+
+if verbose:
+    sys.stdout.write('Writing new files to directory %s..\n'%(outdir))
+
+myfiles = list()
+
+if len(args) < 1:
+    sys.stdout.write('No files or directories specified.  Using default (all .dat files in the current directory)..\n');
+    thisdir = os.listdir('.')
+    for fn in thisdir:
+        if isDotDatFile(fn):
+            myfiles.append(fn)
+    del thisdir
+else:
+    for a in args:
+        if isDotDatFile(a):
+            myfiles.append(a)
+        else:
+            try:
+                thisdir = os.listdir(a)
+            except OSError:
+                sys.stderr.write('Warning: the argument %s is neither a .dat file nor a directory.\n'%(a))
+                thisdir = ''
+                pass
+            for fn in thisdir:
+                if isDotDatFile(fn):
+                    myfiles.append(a + '/' + fn)
+            del thisdir
+
+num_commented = 0
+num_ignored = 0
+num_errors = 0
+
+for infile in myfiles:
+    sys.stdout.write('Processing %s..\n'%(infile))
+    #
+    # Open the input file
+    #
+    realinfile = os.path.realpath(infile)
+    try:
+        fh = open(realinfile, 'r')
+    except IOError:
+        sys.stdout.write('Warning: Could not open file %s.  Skipping..\n'%(infile))
+        num_ignored += 1
+        continue
+    myLines = fh.readlines()
+    fh.close()
+
+    outfile = outdir+'/'+os.path.basename(realinfile)
+    if verbose:
+        sys.stdout.write('Writing %s..\n'%(outfile))
+
+    try:
+        fh = open(outfile, 'w')
+    except IOError:
+        sys.stderr.write('Error: Could not write file %s..\n'%(infile))
+        num_errors += 1
+        continue
+    found_date = False
+    for line in myLines:
+        if isCommentDate(line, comment_date):
+            num_commented += 1
+            found_date = True
+            for l in comment_list:
+                if l.lstrip().find('#', 0, 1) == -1:
+                    fh.write('# ')
+                fh.write(l)
+        fh.write(line)
+    fh.close()
+    if found_date == False:
+        sys.stdout.write('Warning: %s not found in %s\n'%(comment_date, infile))
+        num_ignored += 1
+
+    del myLines
+
+sys.stdout.write('Added comment to %d files (%d errors, %d ignored)\n'%
+                 (num_commented, num_errors, num_ignored))
+
+sys.exit(0)

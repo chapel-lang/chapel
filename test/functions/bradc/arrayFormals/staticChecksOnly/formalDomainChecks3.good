@@ -1,0 +1,1 @@
+formalDomainChecks3.chpl:7: error: Rank mismatch passing array argument: expected 1 but got 2

@@ -1,0 +1,5 @@
+perfkeys: Performance (Gflop/s) =
+files: hpl-255.32.dat
+graphkeys: hpl Gflop/s
+graphtitle: HPCC: HPL Release Perf (Gflop/s) - n=255, nb=32
+ylabel: Performance (Gflop/sec)

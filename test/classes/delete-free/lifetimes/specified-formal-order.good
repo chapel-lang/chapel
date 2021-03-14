@@ -1,0 +1,30 @@
+specified-formal-order.chpl:28: In function 'setCbad':
+specified-formal-order.chpl:29: error: Scoped variable lhs would outlive the value it is set to
+specified-formal-order.chpl:28: note: consider scope of rhs
+specified-formal-order.chpl:32: In function 'badlt':
+specified-formal-order.chpl:36: error: Actual argument does not meet called function lifetime constraint
+specified-formal-order.chpl:35: note: consider scope of own
+specified-formal-order.chpl:3: note: called function setClt(ref lhs: borrowed C, rhs: borrowed C)
+specified-formal-order.chpl:3: note: includes lifetime constraint lhs < rhs
+specified-formal-order.chpl:42: In function 'badlt2':
+specified-formal-order.chpl:46: error: Actual argument does not meet called function lifetime constraint
+specified-formal-order.chpl:45: note: consider scope of own
+specified-formal-order.chpl:6: note: called function setClt2(ref lhs: borrowed C, rhs: borrowed C)
+specified-formal-order.chpl:6: note: includes lifetime constraint lhs < rhs
+specified-formal-order.chpl:6: note: called function setClt2(ref lhs: borrowed C, rhs: borrowed C)
+specified-formal-order.chpl:6: note: includes lifetime constraint lhs < rhs
+specified-formal-order.chpl:52: In function 'badlte':
+specified-formal-order.chpl:56: error: Actual argument does not meet called function lifetime constraint
+specified-formal-order.chpl:55: note: consider scope of own
+specified-formal-order.chpl:14: note: called function setClte(ref lhs: borrowed C, rhs: borrowed C)
+specified-formal-order.chpl:14: note: includes lifetime constraint lhs <= rhs
+specified-formal-order.chpl:62: In function 'badgt':
+specified-formal-order.chpl:66: error: Actual argument does not meet called function lifetime constraint
+specified-formal-order.chpl:65: note: consider scope of own
+specified-formal-order.chpl:22: note: called function setCgt(ref lhs: borrowed C, rhs: borrowed C)
+specified-formal-order.chpl:22: note: includes lifetime constraint rhs > lhs
+specified-formal-order.chpl:72: In function 'badgte':
+specified-formal-order.chpl:76: error: Actual argument does not meet called function lifetime constraint
+specified-formal-order.chpl:75: note: consider scope of own
+specified-formal-order.chpl:25: note: called function setCgte(ref lhs: borrowed C, rhs: borrowed C)
+specified-formal-order.chpl:25: note: includes lifetime constraint rhs >= lhs

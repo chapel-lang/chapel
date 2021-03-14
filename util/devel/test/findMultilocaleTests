@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+
+if [ ! -z "$CHPL_HOME" ]; then
+    testDir=$CHPL_HOME/test
+else
+    echo >&2 "$CHPL_HOME is not set.  Using '.'"
+    testDir='.'
+fi
+
+pushd $testDir >& /dev/null
+
+mltests=`find . -name .svn -prune -o \( -name NUMLOCALES -o -name \*.numlocales \) -print`
+
+popd $testDir >& /dev/null
+
+dirlist=""
+filelist=""
+suff="numlocales"
+for t in $mltests; do
+    dirname=${t%\/*}
+    # skip NOTEST
+    if [ -e "$dirname/NOTEST" ]; then
+        continue
+    fi
+    t1=${t##*\.}
+    if [ "$t1" == "$suff" ]; then
+        # skip .notest or .future
+        if [ -e "${t%.$suff}.notest" ] || [ -e "${t%.$suff}.future" ]; then
+            continue
+        fi
+        filelist+="${t%.$suff}.chpl "
+    else
+        dirlist+="${t%/*} "
+    fi
+done
+
+for f in $filelist; do
+    echo $f
+done | sort
+
+for d in $dirlist; do
+    echo $d
+done | sort
+

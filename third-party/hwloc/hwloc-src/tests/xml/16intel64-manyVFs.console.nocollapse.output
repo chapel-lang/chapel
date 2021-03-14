@@ -1,0 +1,142 @@
+Machine (P#0 total=134181920KB Architecture=x86_64 hwlocVersion=2.0.0a1-git ProcessName=lt-lstopo-no-graphics)
+  NUMANode L#0 (P#0 local=67073056KB total=67073056KB)
+    Package L#0 (P#0)
+      L3Cache L#0 (size=20480KB linesize=64 ways=20)
+        L2Cache L#0 (size=256KB linesize=64 ways=8)
+          L1dCache L#0 (size=32KB linesize=64 ways=8)
+            L1iCache L#0 (size=32KB linesize=64 ways=8)
+              Core L#0 (P#0)
+                PU L#0 (P#0)
+        L2Cache L#1 (size=256KB linesize=64 ways=8)
+          L1dCache L#1 (size=32KB linesize=64 ways=8)
+            L1iCache L#1 (size=32KB linesize=64 ways=8)
+              Core L#1 (P#1)
+                PU L#1 (P#1)
+        L2Cache L#2 (size=256KB linesize=64 ways=8)
+          L1dCache L#2 (size=32KB linesize=64 ways=8)
+            L1iCache L#2 (size=32KB linesize=64 ways=8)
+              Core L#2 (P#2)
+                PU L#2 (P#2)
+        L2Cache L#3 (size=256KB linesize=64 ways=8)
+          L1dCache L#3 (size=32KB linesize=64 ways=8)
+            L1iCache L#3 (size=32KB linesize=64 ways=8)
+              Core L#3 (P#3)
+                PU L#3 (P#3)
+        L2Cache L#4 (size=256KB linesize=64 ways=8)
+          L1dCache L#4 (size=32KB linesize=64 ways=8)
+            L1iCache L#4 (size=32KB linesize=64 ways=8)
+              Core L#4 (P#4)
+                PU L#4 (P#4)
+        L2Cache L#5 (size=256KB linesize=64 ways=8)
+          L1dCache L#5 (size=32KB linesize=64 ways=8)
+            L1iCache L#5 (size=32KB linesize=64 ways=8)
+              Core L#5 (P#5)
+                PU L#5 (P#5)
+        L2Cache L#6 (size=256KB linesize=64 ways=8)
+          L1dCache L#6 (size=32KB linesize=64 ways=8)
+            L1iCache L#6 (size=32KB linesize=64 ways=8)
+              Core L#6 (P#6)
+                PU L#6 (P#6)
+        L2Cache L#7 (size=256KB linesize=64 ways=8)
+          L1dCache L#7 (size=32KB linesize=64 ways=8)
+            L1iCache L#7 (size=32KB linesize=64 ways=8)
+              Core L#7 (P#7)
+                PU L#7 (P#7)
+    Bridge Host->PCI L#0 (P#0 buses=0000:[00-15])
+      Bridge PCI->PCI (P#17 busid=0000:00:01.1 id=8086:3c03 class=0604(PCI_B) buses=0000:[02-03] PCIVendor="Intel Corporation" PCIDevice="Xeon E5/Core i7 IIO PCI Express Root Port 1b") "Intel Corporation Xeon E5/Core i7 IIO PCI Express Root Port 1b"
+        PCI 8086:1521 (P#8192 busid=0000:02:00.0 class=0200(Ether) PCIVendor="Intel Corporation" PCIDevice="I350 Gigabit Network Connection") "Intel Corporation I350 Gigabit Network Connection"
+          Network L#0 (Address=a4:93:4c:aa:60:1e) "eth0"
+        PCI 8086:1521 (P#8193 busid=0000:02:00.1 class=0200(Ether) PCIVendor="Intel Corporation" PCIDevice="I350 Gigabit Network Connection") "Intel Corporation I350 Gigabit Network Connection"
+          Network L#1 (Address=a4:93:4c:aa:60:1f) "eth1"
+      Bridge PCI->PCI (P#48 busid=0000:00:03.0 id=8086:3c08 class=0604(PCI_B) buses=0000:[06-11] PCIVendor="Intel Corporation" PCIDevice="Xeon E5/Core i7 IIO PCI Express Root Port 3a in PCI Express Mode") "Intel Corporation Xeon E5/Core i7 IIO PCI Express Root Port 3a in PCI Express Mode"
+        Bridge PCI->PCI (P#24576 busid=0000:06:00.0 id=1137:004e class=0604(PCI_B) buses=0000:[07-11] PCIVendor="Cisco Systems Inc" PCIDevice="VIC 82 PCIe Upstream Port") "Cisco Systems Inc VIC 82 PCIe Upstream Port"
+          Bridge PCI->PCI (P#28688 busid=0000:07:01.0 id=1137:0041 class=0604(PCI_B) buses=0000:[09-11] PCIVendor="Cisco Systems Inc" PCIDevice="VIC PCIe Downstream Port") "Cisco Systems Inc VIC PCIe Downstream Port"
+            Bridge PCI->PCI (P#36864 busid=0000:09:00.0 id=1137:0040 class=0604(PCI_B) buses=0000:[0a-11] PCIVendor="Cisco Systems Inc" PCIDevice="VIC PCIe Upstream Port") "Cisco Systems Inc VIC PCIe Upstream Port"
+              Bridge PCI->PCI (P#40960 busid=0000:0a:00.0 id=1137:0041 class=0604(PCI_B) buses=0000:[0b-0b] PCIVendor="Cisco Systems Inc" PCIDevice="VIC PCIe Downstream Port") "Cisco Systems Inc VIC PCIe Downstream Port"
+                PCI 1137:0043 (P#45056 busid=0000:0b:00.0 class=0200(Ether) PCIVendor="Cisco Systems Inc" PCIDevice="VIC Ethernet NIC") "Cisco Systems Inc VIC Ethernet NIC"
+                  Network L#2 (Address=24:57:20:04:20:00 Port=1) "eth4"
+                  OpenFabrics L#3 (NodeGUID=0200:00ff:fe00:0000 SysImageGUID=2657:20ff:fe04:2000 Port1State=4 Port1LID=0x0 Port1LMC=1 Port1GID0=fe80:0000:0a0a:0004:2657:20ff:fe04:2000) "usnic_0"
+                PCI 1137:00cf (P#45057 busid=0000:0b:00.1 class=0200(Ether) PCIVendor="Cisco Systems Inc" PCIDevice="VIC Userspace NIC") "Cisco Systems Inc VIC Userspace NIC"
+                PCI 1137:00cf (P#45058 busid=0000:0b:00.2 class=0200(Ether) PCIVendor="Cisco Systems Inc" PCIDevice="VIC Userspace NIC") "Cisco Systems Inc VIC Userspace NIC"
+                PCI 1137:00cf (P#45059 busid=0000:0b:00.3 class=0200(Ether) PCIVendor="Cisco Systems Inc" PCIDevice="VIC Userspace NIC") "Cisco Systems Inc VIC Userspace NIC"
+              Bridge PCI->PCI (P#40976 busid=0000:0a:01.0 id=1137:0041 class=0604(PCI_B) buses=0000:[0c-0c] PCIVendor="Cisco Systems Inc" PCIDevice="VIC PCIe Downstream Port") "Cisco Systems Inc VIC PCIe Downstream Port"
+                PCI 1137:0043 (P#49152 busid=0000:0c:00.0 class=0200(Ether) PCIVendor="Cisco Systems Inc" PCIDevice="VIC Ethernet NIC") "Cisco Systems Inc VIC Ethernet NIC"
+                  Network L#4 (Address=24:57:20:04:21:00 Port=1) "eth5"
+                  OpenFabrics L#5 (NodeGUID=0200:00ff:fe00:0000 SysImageGUID=2657:20ff:fe04:2100 Port1State=4 Port1LID=0x0 Port1LMC=1 Port1GID0=fe80:0000:0a02:0004:2657:20ff:fe04:2100) "usnic_1"
+                PCI 1137:00cf (P#49153 busid=0000:0c:00.1 class=0200(Ether) PCIVendor="Cisco Systems Inc" PCIDevice="VIC Userspace NIC") "Cisco Systems Inc VIC Userspace NIC"
+                PCI 1138:00cf (P#49154 busid=0000:0c:00.2 class=0200(Ether) PCIVendor="Cisco Systems Inc" PCIDevice="VIC Userspace NIC") "Cisco Systems Inc VIC Userspace NIC"
+                PCI 1138:00cf (P#49155 busid=0000:0c:00.3 class=0200(Ether) PCIVendor="Cisco Systems Inc" PCIDevice="VIC Userspace NIC") "Cisco Systems Inc VIC Userspace NIC"
+                PCI 1137:00cf (P#49156 busid=0000:0c:00.4 class=0200(Ether) PCIVendor="Cisco Systems Inc" PCIDevice="VIC Userspace NIC") "Cisco Systems Inc VIC Userspace NIC"
+  NUMANode L#1 (P#1 local=67108864KB total=67108864KB)
+    Package L#1 (P#1)
+      L3Cache L#1 (size=20480KB linesize=64 ways=20)
+        L2Cache L#8 (size=256KB linesize=64 ways=8)
+          L1dCache L#8 (size=32KB linesize=64 ways=8)
+            L1iCache L#8 (size=32KB linesize=64 ways=8)
+              Core L#8 (P#0)
+                PU L#8 (P#8)
+        L2Cache L#9 (size=256KB linesize=64 ways=8)
+          L1dCache L#9 (size=32KB linesize=64 ways=8)
+            L1iCache L#9 (size=32KB linesize=64 ways=8)
+              Core L#9 (P#1)
+                PU L#9 (P#9)
+        L2Cache L#10 (size=256KB linesize=64 ways=8)
+          L1dCache L#10 (size=32KB linesize=64 ways=8)
+            L1iCache L#10 (size=32KB linesize=64 ways=8)
+              Core L#10 (P#2)
+                PU L#10 (P#10)
+        L2Cache L#11 (size=256KB linesize=64 ways=8)
+          L1dCache L#11 (size=32KB linesize=64 ways=8)
+            L1iCache L#11 (size=32KB linesize=64 ways=8)
+              Core L#11 (P#3)
+                PU L#11 (P#11)
+        L2Cache L#12 (size=256KB linesize=64 ways=8)
+          L1dCache L#12 (size=32KB linesize=64 ways=8)
+            L1iCache L#12 (size=32KB linesize=64 ways=8)
+              Core L#12 (P#4)
+                PU L#12 (P#12)
+        L2Cache L#13 (size=256KB linesize=64 ways=8)
+          L1dCache L#13 (size=32KB linesize=64 ways=8)
+            L1iCache L#13 (size=32KB linesize=64 ways=8)
+              Core L#13 (P#5)
+                PU L#13 (P#13)
+        L2Cache L#14 (size=256KB linesize=64 ways=8)
+          L1dCache L#14 (size=32KB linesize=64 ways=8)
+            L1iCache L#14 (size=32KB linesize=64 ways=8)
+              Core L#14 (P#6)
+                PU L#14 (P#14)
+        L2Cache L#15 (size=256KB linesize=64 ways=8)
+          L1dCache L#15 (size=32KB linesize=64 ways=8)
+            L1iCache L#15 (size=32KB linesize=64 ways=8)
+              Core L#15 (P#7)
+                PU L#15 (P#15)
+    Bridge Host->PCI L#8 (P#2 buses=0000:[80-8c])
+      Bridge PCI->PCI (P#524336 busid=0000:80:03.0 id=8086:3c08 class=0604(PCI_B) buses=0000:[83-8c] PCIVendor="Intel Corporation" PCIDevice="Xeon E5/Core i7 IIO PCI Express Root Port 3a in PCI Express Mode") "Intel Corporation Xeon E5/Core i7 IIO PCI Express Root Port 3a in PCI Express Mode"
+        Bridge PCI->PCI (P#536576 busid=0000:83:00.0 id=1137:004e class=0604(PCI_B) buses=0000:[84-8c] PCIVendor="Cisco Systems Inc" PCIDevice="VIC 82 PCIe Upstream Port") "Cisco Systems Inc VIC 82 PCIe Upstream Port"
+          Bridge PCI->PCI (P#540688 busid=0000:84:01.0 id=1137:0041 class=0604(PCI_B) buses=0000:[86-8c] PCIVendor="Cisco Systems Inc" PCIDevice="VIC PCIe Downstream Port") "Cisco Systems Inc VIC PCIe Downstream Port"
+            Bridge PCI->PCI (P#548864 busid=0000:86:00.0 id=1137:0040 class=0604(PCI_B) buses=0000:[87-8c] PCIVendor="Cisco Systems Inc" PCIDevice="VIC PCIe Upstream Port") "Cisco Systems Inc VIC PCIe Upstream Port"
+              Bridge PCI->PCI (P#552960 busid=0000:87:00.0 id=1137:0041 class=0604(PCI_B) buses=0000:[88-88] PCIVendor="Cisco Systems Inc" PCIDevice="VIC PCIe Downstream Port") "Cisco Systems Inc VIC PCIe Downstream Port"
+                PCI 1137:0043 (P#557056 busid=0000:88:00.0 class=0200(Ether) PCIVendor="Cisco Systems Inc" PCIDevice="VIC Ethernet NIC") "Cisco Systems Inc VIC Ethernet NIC"
+                  Network L#6 (Address=24:57:20:04:50:00 Port=1) "eth6"
+                  OpenFabrics L#7 (NodeGUID=0200:00ff:fe00:0000 SysImageGUID=2657:20ff:fe04:5000 Port1State=4 Port1LID=0x0 Port1LMC=1 Port1GID0=fe80:0000:0a03:0004:2657:20ff:fe04:5000) "usnic_2"
+                PCI 1137:00cf (P#557057 busid=0000:88:00.1 class=0200(Ether) PCIVendor="Cisco Systems Inc" PCIDevice="VIC Userspace NIC") "Cisco Systems Inc VIC Userspace NIC"
+                PCI 1137:00cf (P#557058 busid=0000:88:00.2 class=0200(Ether) PCIVendor="Cisco Systems Inc" PCIDevice="VIC Userspace NIC") "Cisco Systems Inc VIC Userspace NIC"
+                PCI 1137:00cf (P#557059 busid=0000:88:00.3 class=0200(Ether) PCIVendor="Cisco Systems Inc" PCIDevice="VIC Userspace NIC") "Cisco Systems Inc VIC Userspace NIC"
+                PCI 1137:00cf (P#557060 busid=0000:88:00.4 class=0200(Ether) PCIVendor="Cisco Systems Inc" PCIDevice="VIC Userspace NIC") "Cisco Systems Inc VIC Userspace NIC"
+                PCI 1137:00cf (P#557061 busid=0000:88:00.5 class=0200(Ether) PCIVendor="Cisco Systems Inc" PCIDevice="VIC Userspace NIC") "Cisco Systems Inc VIC Userspace NIC"
+              Bridge PCI->PCI (P#552976 busid=0000:87:01.0 id=1137:0041 class=0604(PCI_B) buses=0000:[89-89] PCIVendor="Cisco Systems Inc" PCIDevice="VIC PCIe Downstream Port") "Cisco Systems Inc VIC PCIe Downstream Port"
+                PCI 1137:0043 (P#561152 busid=0000:89:00.0 class=0200(Ether) PCIVendor="Cisco Systems Inc" PCIDevice="VIC Ethernet NIC") "Cisco Systems Inc VIC Ethernet NIC"
+                  Network L#8 (Address=24:57:20:04:51:00) "eth7"
+depth 0:	1 Machine (type #1)
+ depth 1:	2 NUMANode (type #2)
+  depth 2:	2 Package (type #3)
+   depth 3:	2 L3Cache (type #4)
+    depth 4:	16 L2Cache (type #4)
+     depth 5:	16 L1dCache (type #4)
+      depth 6:	16 L1iCache (type #4)
+       depth 7:	16 Core (type #5)
+        depth 8:	16 PU (type #6)
+Special depth -3:	15 Bridge (type #9)
+Special depth -4:	18 PCI Device (type #10)
+Special depth -5:	9 OS Device (type #11)
+Topology not from this system

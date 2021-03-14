@@ -1,0 +1,1 @@
+test_nonvar1_error.chpl:5: error: illegal lvalue in assignment

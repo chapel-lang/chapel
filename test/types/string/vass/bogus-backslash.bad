@@ -1,0 +1,3 @@
+bogus-backslash.chpl:5: warning: owned object?
+bogus-backslash.chpl:6: warning: owned object?
+bogus-backslash.chpl:7: error: false

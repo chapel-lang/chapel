@@ -1,0 +1,276 @@
+# Skip this test on Cygwin
+# due to an apparent Cygwin bug
+# Skip vs suppress because it fails intermittently.
+CHPL_TARGET_PLATFORM <= cygwin 
+#
+# This test spawns a subprocess that echos its input but
+# alternates between stdout and stderr. Then it writes
+# 10000 integers to that subprocess while buffering up all
+# of the output. When reading, we expect to see the even
+# numbers coming from the stderr pipe from the child,
+# and the odd numbers on the stdout pipe.
+# 
+# I think it's a Cygwin bug:
+# - I've never seen Linux or Mac OS X failures of this type
+# - it fails most, but not all, of the time
+# - it fails at a different offset every time
+# - it always seems to fail on stderr (not stdout?)
+# - I have instrumented the QIO code calling 'read' to print
+#    out the result of a low-level read or write call, and
+#    we can see that the low-level read/write calls are
+#    behaving oddly.
+# 
+# For example, I see this
+# 
+# $ ./a.out
+# Logging to log-1944
+# calling communicate
+# reading from stderr
+# got stderr 176 expected 174 at offset 782
+# t1.chpl:37: error: assert failed
+# 
+# 
+# <from log-1944, parent process I/O log>
+# sys_read 166. 168. 170.
+# sys_read 172.         <---- WHERE IS 174 ?
+# sys_read 176. 178.
+# sys_read 180.
+# sys_read 182. 184. 186. 188.
+# 
+# 
+# 
+# <from log-3548, child process I/O log>
+# fwrite fd 2      172.
+# fwrite fd 1      173.
+# fwrite fd 2      174.     <--- we wrote 174 to the pipe here
+# fwrite fd 1      175.
+# fwrite fd 2      176.
+# fwrite fd 1      177.
+# fwrite fd 2      178.
+# fwrite fd 1      179.
+# fwrite fd 2      180.
+# 
+# 
+# 
+# 
+# 
+# 
+# So, you can see that 174 was never read by the parent
+# process even though it was written by the child process,
+# and the surrounding values are handled as expected.
+# 
+# 
+# 
+# I think it would take some work (maybe a day or two)
+# to prepare a C-only version of the problem that could
+# serve as a bug report.
+# 
+# 
+# I tried several things to fix the problem, but it still
+# fails sporadically:
+# * in qio_proc_communicate, only work with ready file descriptors
+#    using select
+# * various experimental changes to how EAGAIN is handled
+# I was able to change the failure frequency by printing
+# more on stdout in the child process...
+# 
+# Here is a patch enabling the logging described
+#   diff --git a/runtime/include/qio/qbuffer.h b/runtime/include/qio/qbuffer.h
+#   index 6c067ac..5d978d4 100644
+#   --- a/runtime/include/qio/qbuffer.h
+#   +++ b/runtime/include/qio/qbuffer.h
+#   @@ -228,7 +228,7 @@ qbuffer_iter_t qbuffer_iter_null(void) {
+#   
+#    void debug_print_qbuffer_iter(qbuffer_iter_t* iter);
+#    void debug_print_qbuffer(qbuffer_t* buf);
+#   -void debug_print_iovec(const struct iovec* iov, int iovcnt, size_t maxbytes);
+#   +void debug_print_iovec(FILE* f, const struct iovec* iov, int iovcnt, size_t maxbytes);
+#   
+#   
+#    static inline
+#   diff --git a/runtime/include/qio/sys.h b/runtime/include/qio/sys.h
+#   index fe9ece8..9d5ed84 100644
+#   --- a/runtime/include/qio/sys.h
+#   +++ b/runtime/include/qio/sys.h
+#   @@ -270,6 +270,8 @@ err_t sys_unlink(const char* path);
+#    // Allocates a string to store the current directory which must be freed.
+#    err_t sys_getcwd(const char** path_out);
+#   
+#   +FILE* LOG;
+#   +
+#    #ifdef __cplusplus
+#    } // end extern "C"
+#    #endif
+#   diff --git a/runtime/src/chpl-init.c b/runtime/src/chpl-init.c
+#   index 94f638a..4e95d27 100644
+#   --- a/runtime/src/chpl-init.c
+#   +++ b/runtime/src/chpl-init.c
+#   @@ -142,6 +142,14 @@ void chpl_rt_init(int argc, char* argv[]) {
+#      // So that use of localtime_r is portable.
+#      tzset();
+#   
+#   +   if (! LOG ) {
+#   +     char fname[100];
+#   +     snprintf(fname, 100, "log-%i", (int)getpid());
+#   +     LOG = fopen(fname, "w");
+#   +     printf("Logging to %s\n", fname);
+#   +     assert(LOG);
+#   +   }
+#   +
+#      //
+#      // Handle options that set the environment before doing any other
+#      // runtime initialization.
+#   diff --git a/runtime/src/qio/qbuffer.c b/runtime/src/qio/qbuffer.c
+#   index ca258db..70a7a53 100644
+#   --- a/runtime/src/qio/qbuffer.c
+#   +++ b/runtime/src/qio/qbuffer.c
+#   @@ -97,7 +97,7 @@ void debug_print_bytes(qbytes_t* b)
+#              b->free_function, b->flags);
+#    }
+#   
+#   -void debug_print_iovec(const struct iovec* iov, int iovcnt, size_t maxbytes)
+#   +void debug_print_iovec(FILE* f, const struct iovec* iov, int iovcnt, size_t maxbytes)
+#    {
+#      int i;
+#      size_t j;
+#   @@ -108,10 +108,10 @@ void debug_print_iovec(const struct iovec* iov, int iovcnt, size_t maxbytes)
+#          char c = '.';
+#          if (isprint(buf[j]))
+#            c = buf[j];
+#   -      printf("%c", c);
+#   +      fprintf(f, "%c", c);
+#        }
+#      }
+#   -  printf("\n");
+#   +  fprintf(f, "\n");
+#    }
+#   
+#    // On return the ref count is 1.
+#   diff --git a/runtime/src/qio/qio.c b/runtime/src/qio/qio.c
+#   index 4b408ad..1ce1ba4 100644
+#   --- a/runtime/src/qio/qio.c
+#   +++ b/runtime/src/qio/qio.c
+#   @@ -94,6 +94,7 @@ bool qio_allow_default_mmap = true;
+#   
+#    #ifdef _chplrt_H_
+#    qioerr qio_lock(qio_lock_t* x) {
+#   +
+#      // recursive mutex based on glibc pthreads implementation
+#      int64_t id = chpl_task_getId();
+#   
+#   @@ -168,6 +169,24 @@ qioerr qio_readv(qio_file_t* file, qbuffer_t* buf, qbuffer_iter_t start, qbuffer
+#          } else QIO_RETURN_CONSTANT_ERROR(ENOSYS, "missing readv");
+#        } else QIO_RETURN_CONSTANT_ERROR(ENOSYS, "no fd or plugin");
+#   
+#   @@ -345,6 +371,12 @@ qioerr qio_fwritev(FILE* fp, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_
+#   
+#      for( i = 0; i < iovcnt; i++ ) {
+#        nwritten = fwrite(iov[i].iov_base, 1, iov[i].iov_len, fp);
+#   +    if( nwritten > 0 ) {
+#   +fprintf(LOG, "fwrite fd %i ", fileno(fp));
+#   +debug_print_iovec(LOG, &iov[i], 1, nwritten);
+#   +fprintf(LOG, "\n");
+#   +    }
+#   +
+#        err = 0;
+#        if( nwritten == 0 ) {
+#          err = qio_int_to_err(ferror(fp));
+#   diff --git a/runtime/src/qio/sys.c b/runtime/src/qio/sys.c
+#   index fa874d1..58927ca 100644
+#   --- a/runtime/src/qio/sys.c
+#   +++ b/runtime/src/qio/sys.c
+#   @@ -88,6 +88,7 @@
+#    #include <sys/cygwin.h> // for cygwin_internal
+#   
+#    #define REPLACE_CYGWIN_PREADWRITE 1
+#   +//#define REPLACE_READV 1
+#   
+#    #endif
+#   
+#   @@ -978,7 +979,11 @@ err_t sys_readv(fd_t fd, const struct iovec* iov, int iovcnt, ssize_t* num_read_
+#      ssize_t got_total;
+#      err_t err_out;
+#      int i;
+#   -  int niovs = IOV_MAX;
+#   +  int max_iovs = IOV_MAX;
+#   +#ifdef REPLACE_READV
+#   +  max_iovs = 1;
+#   +#endif
+#   +  int niovs = max_iovs;
+#   
+#      STARTING_SLOW_SYSCALL;
+#   
+#   @@ -986,12 +991,31 @@ err_t sys_readv(fd_t fd, const struct iovec* iov, int iovc
+#   nt, ssize_t* num_read_
+#      got_total = 0;
+#      for( i = 0; i < iovcnt; i += niovs ) {
+#        niovs = iovcnt - i;
+#   -    if( niovs > IOV_MAX ) niovs = IOV_MAX;
+#   -
+#   -    // Some systems readv doesn't take a const struct iovec*, hence the cast
+#   -    got = readv(fd, (struct iovec*) &iov[i], niovs);
+#   +    if( niovs > max_iovs ) niovs = max_iovs;
+#   +
+#   +    if( niovs > 1 ) {
+#   +      // Some systems readv doesn't take a const struct iovec*, hence the cast
+#   +      got = readv(fd, (struct iovec*) &iov[i], niovs);
+#   +    } else if( niovs == 1 ) {
+#   +      // Use a regular read.
+#   +      got = read(fd, iov[i].iov_base, iov[i].iov_len);
+#   +    } else {
+#   +      assert(0);
+#   +      err_out = EINVAL; // should never be reached.
+#   +      break;
+#   +    }
+#   +
+#        if( got != -1 ) {
+#          got_total += got;
+#   +
+#   +
+#   +if( got > 0 ) {
+#   +//printf("sys_read: %i ", niovs);
+#   +fprintf(LOG, "sys_read ");
+#   +debug_print_iovec(LOG, &iov[i], niovs, got);
+#   +fprintf(LOG, "\n");
+#   +}
+#   +
+#        } else {
+#          err_out = errno;
+#          break;
+#   @@ -1030,6 +1054,13 @@ err_t sys_writev(fd_t fd, const struct iovec* iov, int iovcnt, ssize_t* num_writ
+#        got = writev(fd, (struct iovec*) &iov[i], niovs);
+#        if( got != -1 ) {
+#          got_total += got;
+#   +
+#   +//if( got > 0 ) {
+#   +//printf("sys_read: %i ", niovs);
+#   +//printf("sys_write ");
+#   +//debug_print_iovec(&iov[i], niovs, got);
+#   +//printf("\n");
+#   +//}
+#        } else {
+#          err_out = errno;
+#          break;
+#   diff --git a/test/modules/standard/Spawn/cat-stdout-stderr.chpl b/test/modules/standard/Spawn/cat-stdout-stderr.chpl
+#   index ac1d221..06a637b 100644
+#   --- a/test/modules/standard/Spawn/cat-stdout-stderr.chpl
+#   +++ b/test/modules/standard/Spawn/cat-stdout-stderr.chpl
+#   @@ -1,10 +1,17 @@
+#   +var stdoutF = open("log-stdout", iomode.cwr);
+#   +var stdoutLog = stdoutF.writer();
+#   +var stderrF = open("log-stderr", iomode.cwr);
+#   +var stderrLog = stderrF.writer();
+#   +
+#    var line:string;
+#    var i = 0;
+#    while stdin.readline(line) {
+#      if i & 1 == 0 {
+#        stdout.write(line);
+#   +stdoutLog.write(line);
+#      } else {
+#        stderr.write(line);
+#   +stderrLog.write(line);
+#      }
+#      i += 1;
+#    }
+#   

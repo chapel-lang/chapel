@@ -1,0 +1,7 @@
+x8 is: -1
+x16 is: -1
+x32 is: -1
+x64 is: -1
+uncaught IllegalArgumentError: bad cast from string '-1' to uint(8)
+  string2negval.chpl:15: thrown here
+  string2negval.chpl:15: uncaught here

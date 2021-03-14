@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+
+if [ "$#" != "1" ];
+then
+    echo "usage: sub_test compiler"
+    exit 1;
+fi
+
+# This substitution isn't perfect, but it'll do
+localdir=`echo $PWD | sed "s|$CHPL_HOME|.|g"`
+
+files="blah.c blah.h blah.chpl"
+
+for f in $files; do
+
+    if [ -e $f.future ] && [ "$CHPL_TEST_FUTURES" -eq "0" ]; then
+        echo "[Skipping future test: $localdir/$f]"
+        continue
+    fi
+
+    if [ ! -e $f.future ] && [ "$CHPL_TEST_FUTURES" -eq "2" ]; then
+        continue
+    fi
+
+    if [ -e $f.future ]; then
+        futuretest=`head -n 1 $f.future`
+    else
+        futuretest=""
+    fi
+
+    echo "[Executing $1 $COMPOPTS $f]"
+    $1 $COMPOPTS $f 2>&1 | tee $f.comp.out.tmp
+    diff $f.comp.out.tmp $f.good
+    retval=$?
+
+    if [ "$futuretest" != "" ]; then
+        s="Future ($futuretest) "
+    else
+        s=""
+    fi
+    if [ $retval = 0 ]; then
+        rm $f.comp.out.tmp
+        s="$s[Success"
+    else
+        s="$s[Error"
+    fi
+        
+    echo "$s matching compiler output for $localdir/$f]"
+
+done
+
+exit 0

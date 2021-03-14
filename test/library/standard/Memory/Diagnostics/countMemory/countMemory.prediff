@@ -1,0 +1,35 @@
+#!/usr/bin/env perl
+
+$memfile = "/proc/meminfo";
+$memFreeInBytes = "unknown";
+$platform = `$ENV{CHPL_HOME}/util/chplenv/chpl_platform.py --target`; chomp($platform);
+
+if (-r $memfile) {
+  open MEMFILE, "$memfile" or die "can't open $memfile $!";
+  my @memLines = <MEMFILE>;
+  close (MEMFILE);
+
+  foreach my $line (@memLines) {
+    if ($line =~ m/MemTotal: (\s*)(\S*)/) {
+      $memFreeInBytes = "$2" * 1024;
+    }
+  }
+} else {
+    if ($platform eq "darwin") {
+        $memFreeInBytes = `sysctl -n hw.memsize`; chomp($memFreeInBytes);
+    }
+}
+
+# cygwin32 running on a 64 bit windows can have more than 4GB reported by
+# /proc/meminfo, but only ~4GB is actually accessible
+if ($platform eq "cygwin32") {
+    $maxMemInBytes = 0xffffffff;
+    if ($memFreeInBytes > $maxMemInBytes) {
+        $memFreeInBytes = $maxMemInBytes;
+    }
+}
+
+if ($memFreeInBytes ne "unknown") {
+    $hostname = `hostname -s`; chomp($hostname);
+    system("./countMemory.makegood $memFreeInBytes > countMemory.$hostname.good");
+}

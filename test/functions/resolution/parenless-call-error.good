@@ -1,0 +1,4 @@
+parenless-call-error.chpl:16: error: unresolved call 'owned C.mm'
+parenless-call-error.chpl:10: note: this candidate did not match: C.mm()
+parenless-call-error.chpl:16: note: because call is written without parentheses
+parenless-call-error.chpl:10: note: but candidate function has parentheses

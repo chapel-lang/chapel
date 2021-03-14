@@ -1,0 +1,2 @@
+nested-function-incorrect.chpl:3: In initializer:
+nested-function-incorrect.chpl:4: error: field "y" used before it is initialized

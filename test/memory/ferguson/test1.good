@@ -1,0 +1,25 @@
+Allocating in Chapel
+Freeing in Chapel
+Allocating with malloc in C
+enter c_function_malloc
+exit c_function_malloc
+Freeing in C
+enter c_function_free
+exit c_function_free
+Allocating in Chapel
+Freeing in C
+enter c_function_free
+exit c_function_free
+Allocating with malloc in C
+enter c_function_malloc
+exit c_function_malloc
+Freeing in Chapel
+Allocating with calloc in C
+enter c_function_calloc
+exit c_function_calloc
+Freeing in Chapel
+Allocating with strdup in C
+enter c_function_strdup
+exit c_function_strdup
+Freeing in Chapel
+DONE

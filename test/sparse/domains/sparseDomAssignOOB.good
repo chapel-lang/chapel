@@ -1,0 +1,1 @@
+sparseDomAssignOOB.chpl:12: error: halt reached - Sparse domain/array index out of bounds: 2 (expected to be within {1..0})

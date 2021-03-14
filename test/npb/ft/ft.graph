@@ -1,0 +1,31 @@
+perfkeys:  Time in seconds =
+files: ft.S.dat
+graphkeys: runtime - S
+graphtitle: NAS Parallel Benchmarks: FT timings - size S
+ylabel: Time (seconds)
+
+perfkeys:  Time in seconds =
+files: ft.W.dat
+graphkeys: runtime - W
+graphtitle: NAS Parallel Benchmarks: FT timings - size W
+ylabel: Time (seconds)
+
+#perfkeys:  Time in seconds =
+#files: ft.A.dat
+#graphkeys: runtime - A
+#graphtitle: NAS Parallel Benchmarks: FT timings - size A
+
+#perfkeys:  Time in seconds =
+#files: ft.B.dat
+#graphkeys: runtime - B
+#graphtitle: NAS Parallel Benchmarks: FT timings - size B
+
+#perfkeys:  Time in seconds =
+#files: ft.C.dat
+#graphkeys: runtime - C
+#graphtitle: NAS Parallel Benchmarks: FT timings - size C
+
+#perfkeys:  Time in seconds =
+#files: ft.D.dat
+#graphkeys: runtime - D
+#graphtitle: NAS Parallel Benchmarks: FT timings - size D

@@ -1,0 +1,4 @@
+exterior.chpl:4: In function 'my_exterior':
+exterior.chpl:5: error: exterior not supported on associative domains
+  exterior.chpl:11: called as my_exterior(D: DefaultAssociativeDom(int(64),true), off: int(64)) from function 'dit'
+  exterior.chpl:21: called as dit(D: DefaultAssociativeDom(int(64),true), lo: int(64), hi: int(64))

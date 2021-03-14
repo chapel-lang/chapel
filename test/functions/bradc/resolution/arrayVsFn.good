@@ -1,0 +1,2 @@
+arrayVsFn.chpl:1: error: 'A' has multiple definitions, redefined at:
+  arrayVsFn.chpl:3

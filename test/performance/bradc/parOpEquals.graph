@@ -1,0 +1,13 @@
+perfkeys: Time:
+graphkeys: time
+ylabel: Time (seconds)
+graphtitle: Promoted op= Time (local)
+files: parOpEquals.local.dat
+graphname: parOpEquals.local
+
+perfkeys: Time:
+graphkeys: time
+ylabel: Time (seconds)
+graphtitle: Promoted op= Time (no-local)
+files: parOpEquals.no-local.dat
+graphname: parOpEquals.no-local

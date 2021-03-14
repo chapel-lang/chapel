@@ -1,0 +1,3 @@
+intUint2.chpl:9: error: ambiguous call 'foo(1, 2)'
+intUint2.chpl:1: note: candidates are: foo(x: int, y: uint)
+intUint2.chpl:5: note:                 foo(x: uint, y: int)

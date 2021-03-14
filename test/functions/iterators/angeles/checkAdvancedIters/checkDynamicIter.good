@@ -1,0 +1,12 @@
+Checking a non-strided range
+Dynamic Iterator: Correct
+Checking a non-strided domain
+Dynamic Iterator: Correct
+Checking a strided range
+Dynamic Iterator: Correct
+Checking a strided domain
+Dynamic Iterator: Correct
+Checking a zippered iteration (range)
+Dynamic Iterator: Correct
+Checking a zippered iteration (domain)
+Dynamic Iterator: Correct

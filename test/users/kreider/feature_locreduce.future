@@ -1,0 +1,18 @@
+feature request: minloc/maxloc reduction over array without zipper
+
+A minloc reduction currently requires zipping the array with its domain, ie.
+   minloc reduce zip(A, A.domain)
+instead of just
+   minloc reduce A
+which would return a tuple with the value and the index/indices at the minimum.
+
+This request is in addition to using a zipper, which has its own uses.
+
+
+Brad notes: Given the current interface, this is not possible, because
+user-defined reductions do not take the array in as a whole, but rather
+are fed the array's elements one element at a time by the reduction
+machinery.  Given an array element (e.g., the int '42' from an array of
+integers) it's not possible to determine its index as the context has
+already been lost.  Thus, to support this feature would require a
+reasonably drastic rewrite of how reductions are implemented.

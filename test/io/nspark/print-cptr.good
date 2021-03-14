@@ -1,0 +1,5 @@
+c_nil = nil
+foo = (mem = nil)
+foo = (mem = 0x???)
+bar = (mem = nil)
+bar = (mem = 0x???)

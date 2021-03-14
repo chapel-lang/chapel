@@ -1,0 +1,4 @@
+-staskingMode=emptyCoforallOn                        # empty-coforall-on
+-staskingMode=medCoforallOn                          # med-coforall-on
+-staskingMode=largeCoforallOn                        # large-coforall-on
+-staskingMode=emptyCoforallOn --network-atomics=none # empty-coforall-on-proc-endcount

@@ -1,0 +1,3 @@
+feature request: allow implicit conversion of param u/int(64) to any u/int or real type that the param value fits in
+
+For any conversion that's not allowed, we need to know why not.

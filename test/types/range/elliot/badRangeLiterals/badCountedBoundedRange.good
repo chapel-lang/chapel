@@ -1,0 +1,1 @@
+badCountedBoundedRange.chpl:3: error: can't apply '#' to a range with idxType int(64) using a count of type real(64)

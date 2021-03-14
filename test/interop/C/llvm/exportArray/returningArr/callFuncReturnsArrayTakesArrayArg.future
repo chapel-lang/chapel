@@ -1,0 +1,1 @@
+bug: support returning chpl_external_array with LLVM

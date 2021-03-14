@@ -1,0 +1,3 @@
+use modSameNameAsFileBadRequire;
+
+writeln(inner);

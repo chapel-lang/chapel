@@ -1,0 +1,8 @@
+genericsInstantiationBad.chpl:N: In function 'main':
+genericsInstantiationBad.chpl:N: error: unresolved call '==(Foo(int(64)), Foo(real(64)))'
+genericsInstantiationBad.chpl:N: note: this candidate did not match: ==(_arg1: Foo, _arg2: Foo)
+genericsInstantiationBad.chpl:N: note: because where clause evaluated to false
+genericsInstantiationBad.chpl:N: note: other candidates are:
+$CHPL_HOME/modules/internal/CString.chpl:N: note:   ==(s0: c_string, s1: c_string)
+$CHPL_HOME/modules/internal/Bytes.chpl:N: note:   ==(a: bytes, b: bytes)
+note: and 89 other candidates, use --print-all-candidates to see them

@@ -1,0 +1,3 @@
+semantic: uses domain after it leaves scope
+
+MPF 2016-10-28 - this test should probably result in a compilation error.

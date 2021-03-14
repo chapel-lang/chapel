@@ -1,0 +1,6 @@
+# These tests rely on the range standalone iterator - see
+# iter1SA(), class1SA.these(standalone), etc.
+# The range standalone iterator is not available under NUMA.
+# So, for simplicity, do not run these tests there.
+# Especially that what these tests check is independent of NUMA.
+CHPL_LOCALE_MODEL != flat

@@ -1,0 +1,6 @@
+Rate (MFlops/s): 
+Avg time (s): 
+stencil time = 
+increment time = 
+comm time = 
+verify: Solution validates

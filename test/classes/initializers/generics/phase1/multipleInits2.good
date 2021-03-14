@@ -1,0 +1,2 @@
+multipleInits2.chpl:6: In initializer:
+multipleInits2.chpl:10: error: multiple initializations of field "f2"

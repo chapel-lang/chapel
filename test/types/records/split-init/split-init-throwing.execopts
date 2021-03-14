@@ -1,0 +1,4 @@
+--case=0 # split-init-throwing.0.good
+--case=1 # split-init-throwing.1.good
+--case=2 # split-init-throwing.2.good
+--case=3 # split-init-throwing.3.good

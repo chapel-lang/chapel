@@ -1,0 +1,2 @@
+-stryIllegal=true  # forloops-illegal.good
+-stryIllegal=false # forloops.good

@@ -1,0 +1,9 @@
+bug: When using associative domains and arrays of records with const fields, multiple const-related errors are reported.
+
+For now, the workaround is to avoid making the records' fields 'const'.
+
+Note on .bad: the particular error messages being reported may change
+as the compiler progresses. That should be OK, as long as the new error
+message(s) are still related to cont-ness - just update .bad.
+Ultimately, the program should compile with just the two warnings
+and execute successfully.

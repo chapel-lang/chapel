@@ -1,0 +1,1 @@
+privateSecondaryMethod.chpl:8: error: Can't apply private to the fields or methods of a class or record yet

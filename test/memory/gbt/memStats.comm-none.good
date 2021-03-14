@@ -1,0 +1,4 @@
+memStats: Allocated Now: N
+memStats: Allocation High Water Mark: >=1mb
+memStats: Sum of Allocations: N
+memStats: Sum of Frees: N

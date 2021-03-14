@@ -1,0 +1,69 @@
+#!/usr/bin/env python3
+
+import sys, os, subprocess, string
+
+from distutils.version import LooseVersion
+
+def testFailed(f, output):
+    logfile = file(f, 'a')
+    logfile.write('%s'%(output))
+    logfile.close()
+
+execname=sys.argv[1]
+logfilename=sys.argv[2]
+compopts=sys.argv[4].split()
+
+chpl_home=os.getenv('CHPL_HOME', '.');
+printchplenv = chpl_home+'/util/printchplenv'
+try:
+    p = subprocess.Popen([printchplenv,'--simple', '--all', '--no-tidy', '--anonymize'],
+                         stdout=subprocess.PIPE);
+except:
+    testFailed(logfilename, 'Prediff script: Error executing '+printchplenv);
+    raise
+chpl_env = p.communicate()[0].decode()
+
+defaultLinkStyle = 'dynamically'
+for l in chpl_env.split('\n'):
+    env = l.split('=', 1)
+    var = env[0].strip()
+    if var != '':
+        val = env[1].strip()
+    if var == 'CHPL_TARGET_PLATFORM':
+        if val.find('cray-x') == 0:
+            pe_ver = os.getenv('CRAYPE_VERSION', '0.0.0.0')
+            if LooseVersion(pe_ver) < LooseVersion('2.6.0.1'):
+              defaultLinkStyle = 'statically'
+
+    if var == 'CHPL_COMM':
+        chpl_comm=val
+
+if chpl_comm != 'none':
+    execname += '_real'
+
+
+linkStyle=defaultLinkStyle # the default
+for opt in compopts:
+    if opt=='--static':
+        linkStyle='statically'
+    elif opt=='--dynamic':
+        linkStyle='dynamically'
+
+try:
+    p = subprocess.Popen(['file', execname],
+                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+except:
+    testFailed(logfilename, 'Prediff script: Error executing file command');
+    raise
+
+myoutput = p.communicate()[0].decode()
+
+if p.returncode == 0:
+    if myoutput.find(linkStyle+' linked')==-1:
+        testFailed(logfilename, myoutput)
+    else:
+        with open(logfilename, 'w') as logfile:
+            logfile.write('SUCCESS\n')
+else:
+    testFailed(logfilename, myoutput)
+

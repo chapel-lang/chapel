@@ -1,0 +1,4 @@
+expect 2, get 2
+expect 0, get 0
+expect 7, get 7
+expect 7, get 7

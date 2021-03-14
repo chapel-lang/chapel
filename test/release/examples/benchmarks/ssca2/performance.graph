@@ -1,0 +1,6 @@
+perfkeys: TEPS:, edge count adjusted TEPS:
+graphkeys: TEPS, edge count adjusted TEPS
+files: SSCA2_main.dat, SSCA2_main.dat
+ylabel: Performance (TEPS)
+graphtitle: SSCA#2 Kernel 4 TEPS (SCALE=8)
+graphname: SSCA2-TEPS-for-SCALE=8

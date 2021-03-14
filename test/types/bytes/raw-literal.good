@@ -1,0 +1,10 @@
+Value: some\nbytes, Here are 'some' more escapes:
+            \t \r \xff This literal uses double quotes
+Type: bytes
+some\nbytes, Here are 'some' more escapes:
+            \t \r \xff This literal uses double quotes
+Value: some\nbytes, Here are "some" more escapes:
+            \t \r \xff This literal uses single quotes
+Type: bytes
+some\nbytes, Here are "some" more escapes:
+            \t \r \xff This literal uses single quotes

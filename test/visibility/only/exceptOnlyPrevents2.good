@@ -1,0 +1,1 @@
+exceptOnlyPrevents2.chpl:16: error: Bad identifier in 'except' clause, no known 'd' defined in 'Outer'

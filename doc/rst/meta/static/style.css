@@ -1,0 +1,17 @@
+/* override table width restrictions */
+.wy-table-responsive table td, .wy-table-responsive table th {
+  white-space: normal;
+}
+
+/* actually apply the .lowerroman class */
+.rst-content .section ol.lowerroman, .rst-content .section ol.lowerroman li {
+  list-style: lower-roman;
+}
+
+/* Add color for .mb class that is undefined in Sphinx RTD theme */
+.highlight .mb{ color: #099}
+
+
+/* Inlined code is black (instead of default red) */
+.pre{ color: #000}
+

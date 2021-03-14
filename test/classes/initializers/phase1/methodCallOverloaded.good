@@ -1,0 +1,2 @@
+methodCallOverloaded.chpl:4: In initializer:
+methodCallOverloaded.chpl:6: error: cannot call a method during phase 1 of initialization

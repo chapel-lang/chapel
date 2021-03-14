@@ -1,0 +1,1 @@
+GetByName_NoArgs.chpl:18: error: illegal call of 'get test by name'. Expected a test function name.

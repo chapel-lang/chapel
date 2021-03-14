@@ -1,0 +1,11 @@
+bug: compiler reports an error when a record is declared in another record or class
+
+Currently I get:
+
+  nested-record-with-outer-1.chpl:4: In function 'chpl__initCopy':
+  nested-record-with-outer-1.chpl:4: error: unresolved call 'Q(x=int(64), outer=R)'
+  nested-record-with-outer-1.chpl:4: note: candidates are: Q(_mt: _MT, outer: R, x)
+
+  nested-record-with-outer-1.chpl:20: In function 'chpl__initCopy':
+  nested-record-with-outer-1.chpl:20: error: unresolved call 'D(x=int(64), outer=C)'
+  nested-record-with-outer-1.chpl:20: note: candidates are: D(_mt: _MT, outer: C, x)

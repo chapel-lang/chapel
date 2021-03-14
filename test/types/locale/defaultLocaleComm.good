@@ -1,0 +1,17 @@
+LOCALE0 myLocales values are default : true
+LOCALE0 Comm Diagnostics : (<no communication>)
+LOCALE1 myLocales values are default : true
+LOCALE1 Comm Diagnostics : (<no communication>)
+LOCALE2 myLocales values are default : true
+LOCALE2 Comm Diagnostics : (<no communication>)
+LOCALE3 myLocales values are default : true
+LOCALE3 Comm Diagnostics : (<no communication>)
+
+LOCALE0 isNilLocaleNil : true
+LOCALE0 Comm Diagnostics : (<no communication>)
+LOCALE1 isNilLocaleNil : true
+LOCALE1 Comm Diagnostics : (<no communication>)
+LOCALE2 isNilLocaleNil : true
+LOCALE2 Comm Diagnostics : (<no communication>)
+LOCALE3 isNilLocaleNil : true
+LOCALE3 Comm Diagnostics : (<no communication>)

@@ -1,0 +1,5 @@
+Performance: Wide-pointer analysis should be able to infer wideness of returned classes
+
+This test was working prior to 1.15, but was futurized because:
+1) The analysis was the source of sporadic compile-time bugs
+2) I planned to rewrite IWR entirely

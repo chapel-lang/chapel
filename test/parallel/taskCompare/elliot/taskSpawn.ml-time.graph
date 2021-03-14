@@ -1,0 +1,5 @@
+perfkeys: Elapsed time:, Elapsed time:
+graphkeys: coforall+on, coforall+on (processor EndCount)
+files: empty-coforall-on.dat, empty-coforall-on-proc-endcount.dat
+graphtitle: Empty Remote Task Spawn Time
+ylabel: Time (seconds)

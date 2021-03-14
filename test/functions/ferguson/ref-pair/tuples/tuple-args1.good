@@ -1,0 +1,23 @@
+readsOne
+CONST REF
+CONST REF
+0 0 0 0
+readsComputed
+CONST REF
+CONST REF
+0 0 0 0
+writesOne
+REF
+CONST REF
+readsOne (nested)
+CONST REF
+CONST REF
+CONST REF
+CONST REF
+(1 1 1 1, 1 1 1 1)
+readsComputed (nested)
+CONST REF
+CONST REF
+CONST REF
+CONST REF
+(1 1 1 1, 1 1 1 1)

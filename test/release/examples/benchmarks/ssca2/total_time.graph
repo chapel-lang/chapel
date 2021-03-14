@@ -1,0 +1,6 @@
+perfkeys: Elapsed time for SSCA#2:
+graphkeys: Total time
+files: SSCA2_main.dat
+ylabel: Time (seconds)
+graphtitle: SSCA#2 (SCALE=8)
+graphname: SSCA2-Total-Time-SCALE=8

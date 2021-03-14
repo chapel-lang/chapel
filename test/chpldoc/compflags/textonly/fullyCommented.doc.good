@@ -1,0 +1,45 @@
+fullyCommented.doc.chpl:22: warning: This file-scope code is outside of any explicit module declarations (e.g., module Other), so an implicit module named 'fullyCommented.doc' is being introduced to contain the file's contents.
+fullyCommented.doc
+
+Usage:
+   use fullyCommented.doc;
+
+or
+
+   import fullyCommented.doc;
+
+Submodules for this module are located in the fullyCommented.doc/ directory
+
+   proc method1()
+      Comment for method1 
+
+   proc body()
+      Comment for method with a body 
+
+   proc hasArg(val: int)
+      Comment for method with an argument 
+
+   proc argAndBody(val: int)
+      Comment for method with argument and body 
+
+Other
+
+Usage:
+   use fullyCommented.doc.Other;
+
+or
+
+   import fullyCommented.doc.Other;
+
+   proc inside
+      Comment for method inside module 
+
+   proc body()
+      Comment for method with a body inside module 
+
+   proc hasArg(val: int)
+      Comment for method with an argument inside module 
+
+   proc argAndBody(val: int)
+      Comment for method with argument and body inside module 
+

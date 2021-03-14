@@ -1,0 +1,16 @@
+sgn-1.chpl:2: warning: -1
+sgn-1.chpl:3: warning: 0
+sgn-1.chpl:4: warning: 1
+1
+int(64) -> int(8)
+0
+1
+-1
+uint(64) -> uint(8)
+0
+1
+1
+real(64) -> int(8)
+-1
+1
+0

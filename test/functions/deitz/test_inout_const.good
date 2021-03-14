@@ -1,0 +1,1 @@
+test_inout_const.chpl:9: error: const actual is passed to 'inout' formal 'x' of foo()

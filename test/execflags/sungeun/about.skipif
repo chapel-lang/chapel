@@ -1,0 +1,10 @@
+COMPOPTS <= --baseline
+COMPOPTS <= --no-inline
+COMPOPTS <= --no-local
+COMPOPTS <= --fast
+COMPOPTS <= --verify
+COMPOPTS <= --incremental
+COMPOPTS <= --denormalize
+COMPOPTS <= --warn-unstable
+COMPOPTS <= --lifetime-checking
+COMPOPTS <= ArrayStorageOrder.CMO

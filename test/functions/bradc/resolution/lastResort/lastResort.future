@@ -1,0 +1,58 @@
+feature request: "last resort" resolution priority
+
+This feature request relates to a concept that has come up a few times
+recently about labeling a function as a "last resort" from the
+perspective of function resolution.  The idea behind this is that in
+many cases, we'd like to -- or we do -- generate error messages via
+function overloads.  But in some cases, these cause dispatch patterns
+other than the ones we'd like, or prevent the user from providing
+their own non-erroneous overloads.
+
+The tests in this directory demonstrate some examples of this:
+
+The first (this one) mimics how we provide an error overload for
+adding ints and uints because it's not clear whether the user would
+prefer int (because it's the default; because combining signed and
+unsigned values could result in an unsigned value) or uint (because if
+they went to the trouble to start using uints, maybe they would like
+to stay in that world).  I think flagging this as an ambiguity in the
+base language definition is appropriate, and I like using the
+mechanism of function overloading to express that.  But it'd be nice
+if a given user could create their own overload that did the behavior
+they wanted.  Today they can't because that results in an ambiguity.
+If we could mark our error case overload as a "last resort" it would
+permit other useful overloads to exist, as in the userModule provided
+here.  (Note that if the overload exists in the same module that
+called it, it will be preferred; but this isn't a scalable solution if
+the user wants to define such behavior for use in many files).
+
+The second case (lastResort2.chpl) shows a case where an array
+argument favors a completely generic function intended as an error
+case over a promoted call to a function expecting its element type.
+Again, I think this is the right choice by default -- to call the
+generic case requires nothing special, whereas to call the scalar case
+requires promotion.  The only reason it looks unreasonable in this
+case is that that generic case is an error case rather than doing
+something useful.  So again, if there were a way to mark it as a last
+resort function, the promotion would take precedence and we could
+support error cases like this.  (Note that this would have been useful
+in Sara's member() change last night -- her original patch included an
+error case, but it broke a test that promoted membership testing as a
+result.  If this future were resolved, that error check could be added
+back in, and I suspect many similar examples could be created in other
+contexts.
+
+
+As a shorthand here, I added a "last resort" pragma as one way of
+getting behavior like this (commented out, since the compiler doesn't
+recognize it and I wanted to test against the .bad file behavior).
+I'm not particularly tied to this name or even the pragma-based
+approach.  In fact, I think I'd prefer it not to be a pragma as I'd
+like this to be a concrete language concept intended for use by an
+end-user, but today I don't have a syntactic proposal and this would
+be an easy way to prototype the behavior without parser/ language
+changes. 
+
+Other terms that come to mind that might be more attractive (less
+colloquial) than last resort include "catch-all" and "error case".
+

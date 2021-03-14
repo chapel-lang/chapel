@@ -1,0 +1,5 @@
+semiConcreteEnum.chpl:1: warning: it has been suggested that support for semi-concrete enums like this (in which initial members have no integer values, but later ones do) should be deprecated, so this enum could be considered unstable; if you value such enums, please let the Chapel team know.
+black
+uncaught IllegalArgumentError: bad cast: enum 'color.black' has no integer value
+  semiConcreteEnum.chpl:4: thrown here
+  semiConcreteEnum.chpl:4: uncaught here

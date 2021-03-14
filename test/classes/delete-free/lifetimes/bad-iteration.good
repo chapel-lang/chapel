@@ -1,0 +1,9 @@
+bad-iteration.chpl:9: In function 'badIteration1':
+bad-iteration.chpl:12: error: Scoped variable b would outlive the value it is set to
+bad-iteration.chpl:11: note: consider scope of x
+bad-iteration.chpl:25: In function 'badIteration2':
+bad-iteration.chpl:28: error: Scoped variable b would outlive the value it is set to
+bad-iteration.chpl:27: note: consider scope of x
+bad-iteration.chpl:42: In function 'maybeOkGlobalBorrow':
+bad-iteration.chpl:45: error: Scoped variable b would outlive the value it is set to
+bad-iteration.chpl:44: note: consider scope of x

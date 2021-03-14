@@ -1,0 +1,58 @@
+#!/bin/bash
+# -*- mode: shell-script -*-
+#
+# Compile and run chapel source files. Requires bash 3.0 or higher.
+
+set -eu
+
+function printUsage()
+{
+    cat <<EOF
+Usage: $(basename $0) [--help] [compiler args] chpl_file"
+
+Compiles and runs a chapel source file.
+
+      --help    print this message and exit
+
+Examples:
+
+      Print this message and exit:
+
+        chpl-run --help
+
+      Compile hello.chpl source file and then run it:
+
+        chpl-run hello.chpl
+
+      Arguments can be passed to the compiler with:
+
+        chpl-run --print-module-files --count-token hello.chpl
+
+EOF
+    exit 0
+}
+
+if [ "${1}" == "--help" ] ; then
+    printUsage
+fi
+
+# Chop off the chpl file extension and use that as the output file.
+chpl_file="${BASH_ARGV[0]}"
+output_file=$(echo "${chpl_file}" | sed 's/\.chpl$//')
+
+chpl --output $output_file $@
+
+# Ensure the compiled output file is removed.
+function cleanup()
+{
+    if [ -f "${output_file}" ] ; then
+        rm $output_file
+    fi
+}
+trap cleanup EXIT
+
+echo "Done compiling" 1>&2
+
+# Modify PATH to include . in case output_file is a relative filename.
+PATH=".:${PATH}"
+$output_file

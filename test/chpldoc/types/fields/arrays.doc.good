@@ -1,0 +1,33 @@
+.. default-domain:: chpl
+
+.. module:: arrays.doc
+
+arrays.doc
+==========
+**Usage**
+
+.. code-block:: chapel
+
+   use arrays.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import arrays.doc;
+
+.. class:: fullOfArrays
+
+   .. attribute:: var smallArray: [1..4] bool
+
+      This field contains an array of bools 
+
+   .. attribute:: var multiDimension: [1..3, 2..8] string
+
+      This field contains a multidimensional array of strings 
+
+   .. attribute:: var inception: [1..4] [3..7] int
+
+      This field contains an array of arrays of ints 
+

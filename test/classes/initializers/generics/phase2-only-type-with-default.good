@@ -1,0 +1,2 @@
+phase2-only-type-with-default.chpl:7: In initializer:
+phase2-only-type-with-default.chpl:9: error: cannot update a type field, "t", in phase 2

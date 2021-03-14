@@ -1,0 +1,7 @@
+semantic: should the type of an iterable expression be consistent?
+
+Today, if you save an iterable expression into a local variable, it will get
+turned into an array.  However, if you use an iterable expression as an actual
+to a function, its type will be an iterator and will be treated as such in the
+function body.  Should these types be unified, and if so, what should the
+type be?

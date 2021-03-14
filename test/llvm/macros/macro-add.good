@@ -1,0 +1,1 @@
+macro-add.chpl:3: error: Could not find C variable ADD_CONSTANT - perhaps it is a complex macro?

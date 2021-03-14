@@ -1,0 +1,68 @@
+Error Caught in Array Others Diff Dim
+AssertionError: assert failed - First element is of type [domain(3,int(64),false)] real(64) and Second is of type [domain(2,int(64),false)] real(64)
+================================================================================
+Error Caught in Array Others Equal 1D
+AssertionError: Both Array are equal
+'[1, 2, 5]'=='[1, 2, 5]'
+================================================================================
+Error Caught in Array Others Equal High Dim
+AssertionError: assert failed -
+'0.0 0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0 0.0'
+<=
+'0.0 0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0 0.0'
+================================================================================
+Error Caught in Array Others Diff Shape High Dim
+AssertionError: assert failed - First element is of shape (5, 7) and Second is of shape (7, 5)
+================================================================================
+Error Caught in Array Others Diff Shape 1D
+AssertionError: assert failed - First element is of shape (5) and Second is of shape (3)
+================================================================================
+Error Caught in Unequal Complex Type 1
+AssertionError: assert failed - First element is of type int(64) and Second is of type imag(64)
+================================================================================
+Error Caught in Unequal Complex Type 2
+AssertionError: assert failed - First element is of type complex(128) and Second is of type imag(64)
+================================================================================
+Error Caught in Equal Strings
+AssertionError: Both String are equal
+'equal string'=='equal string'
+================================================================================
+Error Caught in Equal Ranges
+AssertionError: assert failed - '1..6' <= '1..6'
+================================================================================
+Error Caught in Equal Integers
+AssertionError: assert failed - '1.0' <= '1'
+================================================================================
+Error Caught in greater Range
+AssertionError: assert failed - Ranges are not of same length
+================================================================================
+Error Caught in tuple other
+AssertionError: First tuple(3*int(64)) < Second tuple(3*int(64)) :
+'(1, 2, 3)'<'(1, 2, 5)'
+First larger element in second tuple(3*int(64)) is at index 2:
+'3'
+'5'
+
+================================================================================
+Error Caught in tuple list
+AssertionError: assert failed - First element is of type [domain(1,int(64),false)] int(64) and Second is of type 2*int(64)
+================================================================================
+Error Caught in Unequal length String
+AssertionError: assert failed - Strings are not of same length
+================================================================================
+Error Caught in Equal Strings
+AssertionError: First String < Second String :
+'unequalString'<'unequalstring'
+First larger element in second String is at index 7:
+'S'
+'s'
+
+================================================================================

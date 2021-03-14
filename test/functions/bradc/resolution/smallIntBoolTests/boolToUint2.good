@@ -1,0 +1,2 @@
+boolToUint2.chpl:2: error: attempt to redefine reserved word 'false'
+boolToUint2.chpl:3: error: attempt to redefine reserved word 'true'

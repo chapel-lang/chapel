@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+# compile the fortran code and also grab the library paths it is using
+# so we can find libgfortran.a
+libPaths=`gfortran -v fortranProcs.f90 -c 2>&1 | grep 'LIBRARY_PATH=' | sed -e 's/LIBRARY_PATH=//'`
+
+IFS=':'
+for path in $libPaths ; do
+  if [[ -f $path/libgfortran.a ]] ; then
+    export LIBGFORTRAN_PATH=$path
+    break
+  fi
+done
+
+$CHPL_HOME/util/test/sub_test $1
+
+rm -f testCallFortran fortranProcs.o testprocs.mod

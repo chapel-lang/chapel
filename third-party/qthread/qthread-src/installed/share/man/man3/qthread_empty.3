@@ -1,0 +1,66 @@
+.TH qthread_empty/fill 3 "APRIL 2011" libqthread "libqthread"
+.SH NAME
+.BR qthread_empty ,
+.B qthread_fill
+\- sets the given address to either "empty" or "full"
+.SH SYNOPSIS
+.B #include <qthread.h>
+
+.I int
+.br
+.B qthread_empty
+.RI "(const aligned_t *" dest );
+.PP
+.I int
+.br
+.B qthread_fill
+.RI "(const aligned_t *" dest );
+.SH DESCRIPTION
+The
+.BR qthread_empty ()
+and
+.BR qthread_fill ()
+functions assert the empty or full state of the given
+.I dest
+addresses. They do not wait for the addresses to be in any particular state.
+.PP
+The
+.I me
+argument is used for memory pooling purposes. Memory is allocated on a
+per-shepherd basis (to avoid needing to protect the memory pool), thus it needs
+to know which shepherd it is currently on. HOWEVER, this argument is merely an
+optimization; these functions CAN figure out which pools to use without this
+information (i.e. if the
+.I me
+argument is NULL).
+.PP
+Note that
+.RS
+.PP
+.BR qthread_empty (
+.I addr
+)
+.RE
+.PP
+is slightly faster than
+.RS
+.PP
+.BR qthread_empty (
+.I addr
+)
+.RE
+.SH RETURN VALUE
+On success, the full/empty bits are modified and 0 is returned. On error, an
+non-zero error code is returned.
+.SH ERRORS
+.TP 12
+.B ENOMEM
+Not enough memory could be allocated. This may be because a temporary thread
+needed to be created, or because a management structure needed to be created.
+.SH SEE ALSO
+.BR qthread_writeF (3),
+.BR qthread_writeEF (3),
+.BR qthread_readFF (3),
+.BR qthread_readFE (3),
+.BR qthread_lock (3),
+.BR qthread_unlock (3)

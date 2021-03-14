@@ -1,0 +1,2 @@
+choose-record10.chpl:20: error: Cannot set a non-const reference to a const variable.
+choose-record10.chpl:23: error: Cannot set a non-const reference to a const variable.

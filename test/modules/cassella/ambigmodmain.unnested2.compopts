@@ -1,0 +1,3 @@
+                  # ambigmodmain.unnested2.good
+--main-module M   # ambigmodmain.unnested2.M.good
+--main-module X.M # ambigmodmain.unnested2.X.good

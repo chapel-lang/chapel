@@ -1,0 +1,1 @@
+varNotPOD.chpl:4: error: Could not coerce 'R' to 'chpl_anyPOD' in initialization

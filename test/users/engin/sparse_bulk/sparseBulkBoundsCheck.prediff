@@ -1,0 +1,5 @@
+#!/bin/sh
+
+out=$2
+cut -d":" -f1-4 $2  > $out.tmp
+mv $out.tmp $out

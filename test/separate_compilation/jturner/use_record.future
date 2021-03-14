@@ -1,0 +1,3 @@
+bug: function signature changed during compilation for records as return types
+
+When separately compiling a function which uses a record as a return type, the compiler may opt to switch it to a ref type, thus changing the type of the function and invalidating code that separately links and uses it.

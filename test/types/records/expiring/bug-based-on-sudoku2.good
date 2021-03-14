@@ -1,0 +1,25 @@
+init 11
+init 12
+init 21
+init 22
+init= 11
+deinit 11
+init= 12
+deinit 12
+init= 21
+deinit 21
+init= 22
+deinit 22
+init= 11
+deinit 11
+init= 21
+deinit 21
+init= 11
+deinit 11
+init= 12
+deinit 12
+OK
+deinit 11
+deinit 12
+deinit 21
+deinit 22

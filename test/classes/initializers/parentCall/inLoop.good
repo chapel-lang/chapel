@@ -1,0 +1,2 @@
+inLoop.chpl:4: In initializer:
+inLoop.chpl:13: error: use of this.complete() call in loop body

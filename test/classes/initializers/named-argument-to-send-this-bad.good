@@ -1,0 +1,2 @@
+named-argument-to-send-this-bad.chpl:4: In initializer:
+named-argument-to-send-this-bad.chpl:5: error: cannot pass "this" to a function before calling super.init() or this.init()

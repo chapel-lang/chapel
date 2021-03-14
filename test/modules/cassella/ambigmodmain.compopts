@@ -1,0 +1,4 @@
+                  # ambigmodmain.good
+--main-module M   # ambigmodmain.M.good
+--main-module X.M # ambigmodmain.X.good
+--main-module Y.M # ambigmodmain.Y.good

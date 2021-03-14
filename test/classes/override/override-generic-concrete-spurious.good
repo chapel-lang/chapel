@@ -1,0 +1,4 @@
+override-generic-concrete-spurious.chpl:13: error: D(int(64)).foo override keyword present but no superclass method matches signature to override
+override-generic-concrete-spurious.chpl:13: note: type for argument 'x' does not match
+override-generic-concrete-spurious.chpl:5: note: base method uses 'int(64)'
+override-generic-concrete-spurious.chpl:13: note: overriding method uses 'shared A'

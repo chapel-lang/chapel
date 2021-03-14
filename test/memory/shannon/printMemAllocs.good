@@ -1,0 +1,10 @@
+================================================= Memory Leaks ==================================================
+Allocated Memory (Bytes)         Number   Size     Total    Description                      Address             
+=================================================================================================================
+printMemAllocs.chpl:11           484      8        3872     array elements                   0xnnnnnnnn  
+printMemAllocs.chpl:12           400      8        3200     array elements                   0xnnnnnnnn  
+=================================================================================================================
+
+Jacobi computation complete.
+Delta is 9.95649e-06 (< epsilon = 1e-05)
+# of iterations: 545

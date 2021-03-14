@@ -1,0 +1,4 @@
+expand.chpl:3: In function 'my_expand':
+expand.chpl:4: error: expand not supported on sparse domains
+  expand.chpl:10: called as my_expand(D: DefaultSparseDom(1,int(64),domain(1,int(64),false)), off: int(64)) from function 'dit'
+  expand.chpl:22: called as dit(D: DefaultSparseDom(1,int(64),domain(1,int(64),false)), lo: int(64), hi: int(64))

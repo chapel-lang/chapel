@@ -1,0 +1,5 @@
+recursive-leader-errr.chpl:14: In iterator 'asdf':
+recursive-leader-errr.chpl:18: error: the recursion pattern seen in the first iterable in this forall loop is not supported
+recursive-leader-errr.chpl:14: note: the corresponding iterator is here
+recursive-leader-errr.chpl:14: note: try declaring its return type
+  recursive-leader-errr.chpl:6: called as asdf(param tag = iterKind.leader)

@@ -1,0 +1,6 @@
+feature request: supported inferred-size arrays with inferred type
+
+Similar to tupleToArray-inferSize.chpl, but also requests that the
+array type be inferred.
+
+

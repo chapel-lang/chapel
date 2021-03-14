@@ -1,0 +1,4 @@
+memmanage-vs-cast.chpl:8: warning: borrowed C
+memmanage-vs-cast.chpl:9: warning: borrowed C
+memmanage-vs-cast.chpl:10: warning: owned C
+memmanage-vs-cast.chpl:12: error: done

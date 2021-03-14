@@ -1,0 +1,2 @@
+importChain2-qualified-error.chpl:17: In function 'main':
+importChain2-qualified-error.chpl:18: error: 'C' undeclared (first use this function)

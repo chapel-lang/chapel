@@ -1,0 +1,145 @@
+
+Testing array-like methods...
+
+minus... 
+minusEquals conformance check... 
+false
+minusEquals... 
+{m = 4, n = 3, aDom = {1..4, 1..3}, A = 0.0 0.0 0.0
+0.0 0.0 0.0
+0.0 0.0 0.0
+0.0 0.0 0.0}{m = 4, n = 3, aDom = {1..4, 1..3}, A = 0.0 0.0 0.0
+0.0 0.0 0.0
+0.0 0.0 0.0
+0.0 0.0 0.0}
+plus... 
+plusEquals conformance check... 
+{m = 4, n = 3, aDom = {1..4, 1..3}, A = 0.272759 0.192422 0.39718
+0.980939 0.0895016 0.957544
+0.491363 0.967409 0.94783
+0.939291 0.161449 0.115637}{m = 4, n = 3, aDom = {1..4, 1..3}, A = 0.0 0.0 0.0
+0.0 0.0 0.0
+0.0 0.0 0.0
+0.0 0.0 0.0}
+plusEquals... 
+plusEquals... (C = A - B, but C = C + B != A)
+{m = 4, n = 3, aDom = {1..4, 1..3}, A = 0.0 0.0 0.0
+0.0 0.0 0.0
+0.0 0.0 0.0
+0.0 0.0 0.0}{m = 4, n = 3, aDom = {1..4, 1..3}, A = 0.0 0.0 0.0
+0.0 0.0 0.0
+0.0 0.0 0.0
+0.0 0.0 0.0}
+uminus... 
+uminus... (-A + A != zeros)
+arrayLeftDivide conformance check... nonconformance not raised
+arrayLeftDivide conformance check... 
+{m = 4, n = 3, aDom = {1..4, 1..3}, A = 0.0 0.0 0.0
+0.0 0.0 0.0
+0.0 0.0 0.0
+0.0 0.0 0.0}{m = 4, n = 3, aDom = {1..4, 1..3}, A = 1.0 1.0 1.0
+1.0 1.0 1.0
+1.0 1.0 1.0
+1.0 1.0 1.0}
+arrayLeftDivide... 
+arrayLeftDivide... (M.\M != ones)
+arrayLeftDivideEquals conformance check... nonconformance not raised
+arrayLeftDivideEquals conformance check... 
+{m = 4, n = 3, aDom = {1..4, 1..3}, A = nan nan nan
+nan nan nan
+nan nan nan
+nan nan nan}{m = 4, n = 3, aDom = {1..4, 1..3}, A = 1.0 1.0 1.0
+1.0 1.0 1.0
+1.0 1.0 1.0
+1.0 1.0 1.0}
+arrayLeftDivideEquals... 
+arrayLeftDivideEquals... (M.\M != ones)
+arrayRightDivide conformance check... nonconformance not raised
+arrayRightDivide conformance check... 
+{m = 4, n = 3, aDom = {1..4, 1..3}, A = 0.0 0.0 0.0
+0.0 0.0 0.0
+0.0 0.0 0.0
+0.0 0.0 0.0}{m = 4, n = 3, aDom = {1..4, 1..3}, A = 1.0 1.0 1.0
+1.0 1.0 1.0
+1.0 1.0 1.0
+1.0 1.0 1.0}
+arrayRightDivide... 
+arrayRightDivide... (M./M != ones)
+arrayRightDivideEquals conformance check... nonconformance not raised
+arrayRightDivideEquals conformance check... 
+{m = 4, n = 3, aDom = {1..4, 1..3}, A = nan nan nan
+nan nan nan
+nan nan nan
+nan nan nan}{m = 4, n = 3, aDom = {1..4, 1..3}, A = 1.0 1.0 1.0
+1.0 1.0 1.0
+1.0 1.0 1.0
+1.0 1.0 1.0}
+arrayRightDivideEquals... 
+arrayRightDivideEquals... (M./M != ones)
+arrayTimes conformance check... nonconformance not raised
+arrayTimes conformance check... 
+{m = 4, n = 3, aDom = {1..4, 1..3}, A = 0.0 0.0 0.0
+0.0 0.0 0.0
+0.0 0.0 0.0
+0.0 0.0 0.0}{m = 4, n = 3, aDom = {1..4, 1..3}, A = 0.0 0.0 0.0
+0.0 0.0 0.0
+0.0 0.0 0.0
+0.0 0.0 0.0}
+arrayTimes... 
+arrayTimes... (A = R, C = A.*B, but C./B != A)
+arrayTimesEquals conformance check... nonconformance not raised
+arrayTimesEquals conformance check... 
+{m = 4, n = 3, aDom = {1..4, 1..3}, A = 0.0 0.0 0.0
+0.0 0.0 0.0
+0.0 0.0 0.0
+0.0 0.0 0.0}{m = 4, n = 3, aDom = {1..4, 1..3}, A = 0.272759 0.192422 0.39718
+0.980939 0.0895016 0.957544
+0.491363 0.967409 0.94783
+0.939291 0.161449 0.115637}
+arrayTimesEquals... 
+arrayTimesEquals... (A = R, A = A.*B, but A./B != R)
+
+Testing linear algebra methods...
+
+transpose...
+{m = 4, n = 3, aDom = {1..4, 1..3}, A = 1.0 2.0 3.0
+4.0 5.0 6.0
+7.0 8.0 9.0
+10.0 11.0 12.0}{m = 4, n = 3, aDom = {1..4, 1..3}, A = 1.0 2.0 3.0
+4.0 5.0 6.0
+7.0 8.0 9.0
+10.0 11.0 12.0}
+transpose...
+norm1...
+normInf()...
+normF...
+trace()...
+The difference x-y is too large: x = 45.0  y = 15.0
+det()...
+The difference x-y is too large: x = 96.0  y = 0.0
+times(double)...
+times(double)...
+X is good
+QRDecomposition...
+SingularValueDecomposition...
+The difference x-y is too large: x = 3.0  y = 2.0
+rank()...
+The difference x-y is too large: x = 1.0  y = 11.5803
+cond()...
+X is good
+LUDecomposition...
+X is good
+inverse()...
+solve()...
+CholeskyDecomposition...
+X is good
+EigenvalueDecomposition (symmetric)...
+X is good
+EigenvalueDecomposition (nonsymmetric)...
+
+Testing Eigenvalue; If this hangs, we've failed
+
+EigenvalueDecomposition (hang)...
+
+TestMatrix completed.
+

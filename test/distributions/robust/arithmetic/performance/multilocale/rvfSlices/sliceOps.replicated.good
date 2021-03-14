@@ -1,0 +1,32 @@
+create slice (module-scope):
+(<no communication>) (<no communication>) (<no communication>) (<no communication>)
+use slice via assignment (module-scope):
+(<no communication>) (<no communication>) (<no communication>) (<no communication>)
+use slice via random access (module-scope):
+(<no communication>) (<no communication>) (<no communication>) (<no communication>)
+use slice as standalone (module-scope):
+(<no communication>) (<no communication>) (<no communication>) (<no communication>)
+use slice as leader (module-scope):
+(<no communication>) (<no communication>) (<no communication>) (<no communication>)
+use slice as follower (module-scope):
+(<no communication>) (<no communication>) (<no communication>) (<no communication>)
+1-arg promotion (module-scope):
+(<no communication>) (<no communication>) (<no communication>) (<no communication>)
+2-arg promotion (module-scope):
+(<no communication>) (<no communication>) (<no communication>) (<no communication>)
+create slice (local-scope):
+(<no communication>) (<no communication>) (<no communication>) (<no communication>)
+use slice via assignment (local-scope):
+(<no communication>) (<no communication>) (<no communication>) (<no communication>)
+use slice via random access (local-scope):
+(<no communication>) (<no communication>) (<no communication>) (<no communication>)
+use slice as standalone (local-scope):
+(<no communication>) (<no communication>) (<no communication>) (<no communication>)
+use slice as leader (local-scope):
+(<no communication>) (<no communication>) (<no communication>) (<no communication>)
+use slice as follower (local-scope):
+(<no communication>) (<no communication>) (<no communication>) (<no communication>)
+1-arg promotion (local-scope):
+(<no communication>) (<no communication>) (<no communication>) (<no communication>)
+2-arg promotion (local-scope):
+(<no communication>) (<no communication>) (<no communication>) (<no communication>)

@@ -1,0 +1,6 @@
+tuple-from-param-loop.chpl:3: syntax error: near 'param'
+tuple-from-param-loop.chpl:4: syntax error: near 'param'
+tuple-from-param-loop.chpl:6: syntax error: near 'param'
+tuple-from-param-loop.chpl:7: syntax error: near 'param'
+tuple-from-param-loop.chpl:9: syntax error: near 'param'
+tuple-from-param-loop.chpl:10: syntax error: near 'param'

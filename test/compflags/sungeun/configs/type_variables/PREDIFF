@@ -1,0 +1,63 @@
+#!/usr/bin/env python3
+#
+# WARNING: This script is pretty touchy wrt to its input
+#
+#
+
+import sys
+
+testname=sys.argv[1]
+compopts=sys.argv[4]
+
+l = compopts.rfind('myType')
+
+if l != -1:
+    words=compopts[l+7:].split()
+    if words[0] == "'unmanaged":
+      myType = words[1].split("'")[0]
+    else:
+      myType = words[0]
+else:
+    myType=None
+
+l = compopts.rfind('myIdxType')
+if l != -1:
+    myIdxType=compopts[l+10:].split()[0]
+else:
+    myIdxType='int'
+
+if myType==None:
+    myType = myIdxType
+
+def getDefaultValue(type):
+    if type == 'rPair':
+        blah = getDefaultValue(myIdxType)
+        return '(x = '+blah+', y = '+blah+')'
+    elif type == 'cPair':
+        return 'nil'
+    elif type.find('real') != -1:
+        return '0.0'
+    else:
+        return '0'
+
+def getNumBits(idx_type):
+    l = idx_type.find('(')
+    if l != -1:
+        return idx_type[l+1:].split()[0].split(')')[0]
+    elif idx_type == 'real':
+        return '64'
+    else:
+        return '64'
+
+f = open(testname+".good", 'w')
+dvalue = getDefaultValue(myType)
+if testname=='configTypeArray':
+    f.write('p = %s %s %s %s %s\n'%(dvalue,dvalue,dvalue,dvalue,dvalue))
+elif testname=='configTypeClass':
+    f.write('p = {x = %s, y = %s}\n'%(dvalue,dvalue))
+elif testname=='configTypeRecord':
+    f.write('p = (x = %s, y = %s)\n'%(dvalue,dvalue))
+else:
+    f.write('p = %s\n'%(dvalue))
+f.write('numBits(myIdxType) = %s\n'%(getNumBits(myIdxType)))
+f.close()

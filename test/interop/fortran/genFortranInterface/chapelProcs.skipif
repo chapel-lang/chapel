@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+# Skip this test in incompatible environments. The environment needs to be
+# fairly simple and either gnu or clang based.
+
+launcher=`$CHPL_HOME/util/chplenv/chpl_launcher.py`
+
+`command -v gfortran 2>&1 >/dev/null`
+gfortranFound=$?
+
+if [[ $gfortranFound == 0 && $launcher == "none" && \
+      $CHPL_TARGET_PLATFORM != "cray-xc" &&
+      ($CHPL_TARGET_COMPILER == "gnu" ||
+       $CHPL_TARGET_COMPILER == "clang") &&
+       $CHPL_SANITIZE_EXE == "none" ]]; then
+  echo False
+else
+  echo True
+fi

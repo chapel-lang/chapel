@@ -1,0 +1,1 @@
+returnBadArray2.chpl:3: error: halt reached - cannot return an array when the lower bounds is not 0

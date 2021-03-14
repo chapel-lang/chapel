@@ -1,0 +1,5 @@
+perfkeys: Time to build trees :, Time to build trees :
+files: do_smu_aos.dat, do_smu_soa.dat
+graphkeys: Array-of-Struct, Struct-of-Array
+ylabel: Time (seconds)
+graphtitle: Time to build trees

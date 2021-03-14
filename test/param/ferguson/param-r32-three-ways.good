@@ -1,0 +1,6 @@
+param-r32-three-ways.chpl:7: warning: real(32) 1.0
+param-r32-three-ways.chpl:10: warning: real(32) 2.0
+param-r32-three-ways.chpl:13: warning: real(32) 3.0
+x=1.0
+y=2.0
+z=3.0

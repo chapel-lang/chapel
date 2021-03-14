@@ -1,0 +1,4 @@
+interior.chpl:3: In function 'my_interior':
+interior.chpl:4: error: interior not supported on sparse domains
+  interior.chpl:10: called as my_interior(D: DefaultSparseDom(1,int(64),domain(1,int(64),false)), off: int(64)) from function 'dit'
+  interior.chpl:22: called as dit(D: DefaultSparseDom(1,int(64),domain(1,int(64),false)), lo: int(64), hi: int(64))

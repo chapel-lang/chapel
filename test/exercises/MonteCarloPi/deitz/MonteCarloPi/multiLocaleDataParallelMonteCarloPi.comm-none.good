@@ -1,0 +1,5 @@
+Number of locales     = 1
+Number of points      = 100000
+Random number seed    = 314159265
+dataParTasksPerLocale = 2
+Approximation of PI   = 3.1431200

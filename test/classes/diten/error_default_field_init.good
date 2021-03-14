@@ -1,0 +1,1 @@
+error_default_field_init.chpl:7: error: cannot initialize 'xx' of type 'int(64)' from '2.0'

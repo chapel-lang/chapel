@@ -1,0 +1,1 @@
+bug3.chpl:18: Accessing elements of list 'mylist' is not allowed using these iterator

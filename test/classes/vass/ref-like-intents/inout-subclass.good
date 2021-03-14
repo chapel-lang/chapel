@@ -1,0 +1,1 @@
+inout-subclass.chpl:14: error: Cannot assign to borrowed D? from borrowed C?

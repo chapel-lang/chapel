@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+
+if [[ $CHPL_HOST_PLATFORM == *cygwin* \
+      || $CHPL_HOST_PLATFORM == darwin ]] ; then
+  #
+  # Can't do static/dynamic linking on these platforms
+  #
+  echo True
+elif [[ $CHPL_COMM_SUBSTRATE == mpi \
+        || $CHPL_LAUNCHER == mpirun4ofi ]] ; then
+  #
+  # If user programs will be linked with libmpi then skip this test,
+  # because we can't test static linking since libmpi is available
+  # only as a shared object.  Ideally we'd be able to decide this on
+  # a compopts-by-compopts basis, but we can't do that yet.
+  #
+  echo True
+elif [[ $CHPL_SANITIZE_EXE != "none" ]]; then
+  #
+  # -static isn't support with sanitizers
+  #
+  echo True
+elif [[ $CHPL_TARGET_COMPILER == *pgi* ]] ; then
+  #
+  # We pin to an old version of pgi that causes issues for some variants
+  #
+  echo True
+elif $CHPL_HOME/util/printchplenv --make --all --internal \
+     | grep CHPL_MAKE_THIRD_PARTY_LINK_ARGS \
+     | grep -q -e '-lnuma' ; then
+  #
+  # If user programs will be linked with libnuma then skip this test,
+  # because we can't test static linking since libnuma is available
+  # only as a shared object.  Ideally we'd be able to decide this on
+  # a compopts-by-compopts basis, but we can't do that yet.
+  #
+  echo True
+else
+  echo False
+fi

@@ -1,0 +1,4 @@
+CHPL_TASKS != qthreads
+# At present it isn't possible to get this to pass with comm=ofi,
+# so skip it for now.
+CHPL_COMM == ofi

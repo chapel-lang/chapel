@@ -1,0 +1,129 @@
+#!/usr/bin/env perl
+
+# Client-side of the parallel testing script, paratest.server.
+# Used remotely by paratest.server to run start_test locally.
+#
+# Usage: paratest.client id chapeltestdir testdir chplenv futures-mode valgrind memleaks [compopts [execopts]]
+#  
+#  id - used to create a file to synchronize with paratest.server
+#  chapeltestdir - root dir of Chapel test infrastructure
+#  testdir - directory to run start_test on
+#  chplenv - Chapel environment variables
+#  futures-mode - include .futures (0=no, 1=all, 2=futures only, 3=futures with skipifs)
+#  valgrind - run valgrind (0=no, 1=both compiler and executable, 2=executable only)
+#  memleaks - check for memleaks (0=no, 1=use -memleaks, 2=use -memleakslog)
+#  compopts - optional Chapel compiler options
+#  execopts - optional test execution options
+#
+# NOTE: Assumes paratest.client is run from $CHPL_HOME/test
+# 
+
+$debug = 0;  # if setting this, also set $verbose=1 in paratest.server
+$logdir = "Logs";
+$synchdir = "Logs/.synch";
+$testcmd = "nice ../util/start_test";
+$publish_delay = 2;
+$node = "";
+$id = "x";
+
+sub systemd {
+    my ($cmd) = @_;
+    print "$cmd\n" if ($debug);
+    system ($cmd);
+}
+
+sub fatal {
+    print STDERR "Error in paratest.client: [$node] @_\n";
+    sleep $publish_delay;
+    systemd ("echo fatal > " . synchfile(1));  # signal failure
+    exit(2);
+}
+
+sub synchfile {
+   my ($failed) = @_;
+   if ($failed) { $failed = ".failed"; }
+   return "$synchdir/$node.$id$failed";
+}
+
+sub main {
+    my ($logfile, $workingdir, $testdir, $compiler, $platform);
+    $node = `uname -n`;
+    chomp $node;
+    ($node) = split (/\./, $node);
+
+    if ($#ARGV < 6) {
+        fatal("insufficient arguments: '@ARGV'\n" .
+	      "Usage:  paratest.client id chapeltestdir testdir chplenv futures-mode valgrind memleaks [compopts [execopts]]");
+    }
+
+    $id = $ARGV[0];
+    $workingdir = $ARGV[1];
+    $testdir = $ARGV[2];
+    $chplenv = $ARGV[3];
+
+    $futures_mode = "-futures-mode \"" . $ARGV[4] . "\"";
+
+    $valgrind = "";
+    $valgrind = "-valgrind" if ($ARGV[5] == 1);
+    $valgrind = "-valgrindexe" if ($ARGV[5] == 2);
+
+    print "$id $workingdir $testdir $futures_mode $valgrind" if $debug;
+    if ($#ARGV>=7) {
+        $compopts = "-compopts \"" . $ARGV[7] . "\"";
+    }
+    if ($#ARGV>=8) {
+        $execopts = "-execopts \"" . $ARGV[8] . "\"";
+    }
+
+    $synchfile = "$synchdir/$node.$id";
+
+    unless (chdir ($workingdir)) {
+        fatal("cannot change to directory '$workingdir'");
+    }
+    print "\n* $node up @ $workingdir *\n";
+
+    $binpath = `../util/chplenv/chpl_bin_subdir.py`; chomp $binpath;
+    $compiler = "../bin/$binpath/chpl";
+    unless (-e $compiler) {
+        fatal("cannot find or execute the compiler '$compiler'");
+    }
+
+    unless (-e $synchdir and -d $synchdir) {
+        fatal("synch directory $synchdir does not exist");
+    }
+
+    print "$node $workingdir $testdir $compiler\n";
+
+    $dirfname = $testdir;
+    $dirfname =~ s/\//-/g;
+    $logfile = "$logdir/$dirfname.$node.log";
+    unlink $logfile if (-e $logfile);
+
+    $memleaks = "";
+    $memleaks = "-memleaks" if ($ARGV[6] == 1);
+    $memleaks = "-memleakslog $logdir/tmp.$dirfname.$node.memleaks" if ($ARGV[6] == 2);
+
+    $testarg = "-compiler $compiler -logfile $logfile $futures_mode $valgrind $compopts $execopts $memleaks";
+    $testarg = "$testarg $testdir -norecurse";
+
+    # Set up the Chapel environment passed in by paratest.server
+    my @lines = split(/ /, $chplenv);
+    for my $line (@lines) {
+        my ($key,$value) = split(/=/, $line, 2);
+        # Now remove the single quotes in the value.
+        if( $value =~ /^'.+'$/ ) {
+            $value =~ s/^'//;
+            $value =~ s/'$//;
+        }
+        $ENV{$key} = $value;
+    }
+
+    systemd ("$testcmd $testarg");
+
+    sleep $publish_delay;
+
+    systemd ("echo feed me > " . synchfile());  # signal ready for more
+}
+
+
+main ();

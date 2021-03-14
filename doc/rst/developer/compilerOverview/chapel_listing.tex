@@ -1,0 +1,47 @@
+\lstdefinelanguage{chapel}
+  {
+    morekeywords={
+      atomic,
+      begin, bool, break, by,
+      class, cobegin, coforall, complex, config, const, continue,
+      def, delete, dmapped, do, domain,
+      else, enum,
+      false, for, forall,
+      goto,
+      if, imag, in, index, int, inout,
+      label, let, local, locale,
+      module,
+      new, nil,
+      on, opaque, otherwise, out,
+      param,
+      range, real, record, reduce, return,
+      scan, select, serial, single, sparse, string, subdomain, sync,
+      then, true, tuple, type,
+      uint, union, use,
+      var,
+      when, where, while,
+      yield
+    },
+    sensitive=false,
+    mathescape=true,
+    morecomment=[l]{//},
+    morecomment=[s]{/*}{*/},
+    morestring=[b]",
+}
+
+\lstset{
+    basicstyle=\footnotesize\ttfamily,
+    keywordstyle=\bfseries,
+    commentstyle=\em,
+    showstringspaces=false,
+    flexiblecolumns=false,
+    language=chapel,
+  }
+
+\newcommand{\chpl}[1]{\lstinline[language=chapel,basicstyle=\small\ttfamily,keywordstyle=]!#1!}
+
+\lstnewenvironment{chapel}{\lstset{language=chapel,xleftmargin=1pc}}{}
+
+\newcommand{\cc}[1]{\lstinline[language=c++,basicstyle=\small\ttfamily,keywordstyle=]!#1!}
+
+\lstnewenvironment{clang}{\lstset{language=c++,xleftmargin=1pc}}{}

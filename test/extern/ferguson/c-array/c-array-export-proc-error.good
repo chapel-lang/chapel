@@ -1,0 +1,2 @@
+c-array-export-proc-error.chpl:2: error: extern procedures should not return c_array
+c-array-export-proc-error.chpl:3: error: exported procedures should not return c_array

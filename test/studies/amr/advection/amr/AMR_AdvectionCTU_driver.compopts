@@ -1,0 +1,1 @@
+-M ../../lib/misc -M ../../lib/grid -M ../../lib/level -M ../../lib/cfboundary -M ../../lib/amr --set dimension=2 AMRHierarchy_AdvectionCTU.chpl AMRBC_AdvectionCTU.chpl ../grid/GridVariable_AdvectionCTU.chpl ../level/LevelVariable_AdvectionCTU.chpl ../level/LevelSolution_AdvectionCTU.chpl

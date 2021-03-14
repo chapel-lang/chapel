@@ -1,0 +1,2 @@
+FILE:LINE: error: Symbol 'SYM' has been instantiated too many times
+note:   If this is intentional, try increasing the instantiation limit from 256

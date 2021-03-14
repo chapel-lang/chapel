@@ -1,0 +1,3 @@
+0
+1
+uint_uint16.chpl:3: error: halt reached - casting uint(64) with a value greater than the maximum of uint(16) to uint(16)

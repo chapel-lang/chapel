@@ -1,0 +1,11 @@
+paramenums2.chpl:4: In function 'main':
+paramenums2.chpl:5: error: Comparisons between mixed enumerated types not supported by default
+paramenums2.chpl:6: error: Comparisons between mixed enumerated types not supported by default
+paramenums2.chpl:7: error: Comparisons between mixed enumerated types not supported by default
+paramenums2.chpl:8: error: Comparisons between mixed enumerated types not supported by default
+paramenums2.chpl:9: error: Comparisons between mixed enumerated types not supported by default
+paramenums2.chpl:10: error: Comparisons between mixed enumerated types not supported by default
+paramenums2.chpl:11: error: Comparisons between mixed enumerated types not supported by default
+paramenums2.chpl:12: error: Comparisons between mixed enumerated types not supported by default
+paramenums2.chpl:13: error: Comparisons between mixed enumerated types not supported by default
+paramenums2.chpl:14: error: Comparisons between mixed enumerated types not supported by default

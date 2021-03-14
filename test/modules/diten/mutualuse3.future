@@ -1,0 +1,3 @@
+bug: Failure to generate a good error message for use before definition
+
+Please see the comment in mutualuse3.chpl

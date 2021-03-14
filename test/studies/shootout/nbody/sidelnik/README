@@ -1,0 +1,17 @@
+nbody_orig_1.chpl   : currently one of Albert's two best; stores Planet as class
+                      note: uses zippered iteration (as do all of these?)
+
+nbody_record_2.chpl : other best; changes Planet from class to record
+
+nbody_record_domain_2a.chpl : (a) uses explicit domain in formal arguments
+                              (b) uses domain literal in for loops
+
+nbody_forloop_3.chpl : iterates over an array slice rather than a range
+
+nbody_vector_4.chpl : 3-tuples represented using array rather than scalars
+
+nbody_rangesub_5.chpl : like vector but named the ranges
+
+nbody_reductions_6.chpl : uses reductions across 3-element vectors
+
+nbody_iterator_7.chpl : uses a triangular iterator to express the n^2 ops

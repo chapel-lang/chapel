@@ -1,0 +1,3 @@
+unimplemented feature: task pool with repooling on waits
+
+no concurrency, just on statements going back and forth

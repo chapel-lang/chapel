@@ -1,0 +1,3 @@
+$CHPL_HOME/modules/internal/OwnedObject.chpl:417: error: ambiguous call 'owned.init(owned int(64))'
+$CHPL_HOME/modules/internal/OwnedObject.chpl:175: note: candidates are: owned.init(p: borrowed)
+$CHPL_HOME/modules/internal/OwnedObject.chpl:242: note:                 owned.init(src: owned)

@@ -1,0 +1,66 @@
+const-error.chpl:38: In function 'g':
+const-error.chpl:41: error: const actual is passed to 'ref' formal 'x' of setElement()
+note: to formal of type [domain(1,int(64),false)] int(64)
+const-error.chpl:11: note: to ref formal here
+const-error.chpl:12: note: passed as ref here
+const-error.chpl:12: note: passed as ref here
+const-error.chpl:42: error: const actual is passed to 'ref' formal 'x' of callSetElement()
+note: to formal of type [domain(1,int(64),false)] int(64)
+const-error.chpl:15: note: to ref formal here
+const-error.chpl:16: note: passed as ref here
+const-error.chpl:11: note: to ref formal here
+const-error.chpl:12: note: passed as ref here
+const-error.chpl:12: note: passed as ref here
+const-error.chpl:43: error: const actual is passed to 'ref' formal 'x' of callSetElementWithGetter()
+note: to formal of type [domain(1,int(64),false)] int(64)
+const-error.chpl:19: note: to ref formal here
+const-error.chpl:20: note: passed as ref here
+const-error.chpl:3: note: to ref formal here
+const-error.chpl:20: note: passed as ref here
+const-error.chpl:11: note: to ref formal here
+const-error.chpl:12: note: passed as ref here
+const-error.chpl:12: note: passed as ref here
+const-error.chpl:48: error: const actual is passed to 'ref' formal 'x' of setElement()
+note: to formal of type [domain(1,int(64),false)] int(64)
+const-error.chpl:11: note: to ref formal here
+const-error.chpl:12: note: passed as ref here
+const-error.chpl:12: note: passed as ref here
+const-error.chpl:49: error: const actual is passed to 'ref' formal 'x' of callSetElement()
+note: to formal of type [domain(1,int(64),false)] int(64)
+const-error.chpl:15: note: to ref formal here
+const-error.chpl:16: note: passed as ref here
+const-error.chpl:11: note: to ref formal here
+const-error.chpl:12: note: passed as ref here
+const-error.chpl:12: note: passed as ref here
+const-error.chpl:50: error: const actual is passed to 'ref' formal 'x' of callSetElementWithGetter()
+note: to formal of type [domain(1,int(64),false)] int(64)
+const-error.chpl:19: note: to ref formal here
+const-error.chpl:20: note: passed as ref here
+const-error.chpl:3: note: to ref formal here
+const-error.chpl:20: note: passed as ref here
+const-error.chpl:11: note: to ref formal here
+const-error.chpl:12: note: passed as ref here
+const-error.chpl:12: note: passed as ref here
+const-error.chpl:31: In function 'f':
+const-error.chpl:32: error: const actual is passed to 'ref' formal 'x' of setElement()
+note: to formal of type [domain(1,int(64),false)] int(64)
+const-error.chpl:11: note: to ref formal here
+const-error.chpl:12: note: passed as ref here
+const-error.chpl:12: note: passed as ref here
+const-error.chpl:33: error: const actual is passed to 'ref' formal 'x' of callSetElement()
+note: to formal of type [domain(1,int(64),false)] int(64)
+const-error.chpl:15: note: to ref formal here
+const-error.chpl:16: note: passed as ref here
+const-error.chpl:11: note: to ref formal here
+const-error.chpl:12: note: passed as ref here
+const-error.chpl:12: note: passed as ref here
+const-error.chpl:34: error: const actual is passed to 'ref' formal 'x' of callSetElementWithGetter()
+note: to formal of type [domain(1,int(64),false)] int(64)
+const-error.chpl:19: note: to ref formal here
+const-error.chpl:20: note: passed as ref here
+const-error.chpl:3: note: to ref formal here
+const-error.chpl:20: note: passed as ref here
+const-error.chpl:11: note: to ref formal here
+const-error.chpl:12: note: passed as ref here
+const-error.chpl:12: note: passed as ref here
+  const-error.chpl:46: called as f(array: [domain(1,int(64),false)] int(64))

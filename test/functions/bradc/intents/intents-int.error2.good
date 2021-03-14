@@ -1,0 +1,3 @@
+intents-int.chpl:12: In function 'bar':
+intents-int.chpl:15: error: cannot assign to const variable
+  intents-int.chpl:68: called as bar(x: int(64))

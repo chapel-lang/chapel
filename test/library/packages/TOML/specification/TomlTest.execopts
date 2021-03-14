@@ -1,0 +1,5 @@
+--f=example.good                # example.good
+--f=fruit.good                  # fruit.good
+--f=hard.good                   # hard.good
+--f=hard_example_unicode.good   # hard_example_unicode.good
+--f=example-v0.4.0.good         # example-v0.4.0.good

@@ -1,0 +1,23 @@
+feature request: compiler option --explain-types to show the types of local variables and type aliases
+
+This option will help trace types through my code.
+E.g. when I am trying to figure out why I get a compiler error
+about adding an int(64) and a uint(64), I will use this
+to figure out how my code causes such an addition.
+
+--explain-types would let me choose a function, a function call,
+or possibly a module (to examine the types of all its global variables)
+or a given variable.
+
+The syntax of the option can be similar to the syntax of --explain-call.
+
+When I choose a function, every time it is resolved, I would get
+a list of all local variables, including formals, type aliases,
+and the return type, in the order that they are declared in the source.
+A type would be followed with '=' whereas a variable with ':' (see .good).
+
+Getting a listing out of order and/or prefixed with file name/line number
+is less than ideal, but still useful.
+
+Bonus feature: for each listing, show the call stack at the resolution
+time, if --print-callstack-on-error is given.

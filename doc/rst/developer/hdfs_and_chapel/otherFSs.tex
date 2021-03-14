@@ -1,0 +1,15 @@
+\section{Integrating with Other File Systems}\label{s:OFS}
+
+To integrate with other filesystems, the user must modify a couple areas. For
+example if we wanted to add Ceph \cite{ceph}, we would need to edit and change the following:
+\begin{itemize}
+\item Create a plugin {\tt qio\_plugin\_ceph.c} that is placed under {\tt runtime/src/qio/auxFilesys/ceph}
+\item Add the header file {\tt qio\_plugin\_ceph.h} to {\tt runtime/include/qio}
+\item Add a {\tt Makefile.auxFilesys-ceph} to {\tt runtime/etc} that will link in what you need at the compile time of the program (this will normally include include and libraries).
+\item You will need to add and replicate (renaming appropriately)  the various
+makefiles in {\tt runtime/src/qio/auxFilesys/hdfs}
+\item After this you should be able to make the {\tt ceph} plugin by setting {\tt
+CHPL\_AUX\_FILESYS=ceph} and remaking the runtime.
+\end{itemize}
+
+

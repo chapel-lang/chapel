@@ -1,0 +1,12 @@
+feature request: beef up recursive type inference
+
+The example here (based on a test program submitted by Lucas
+M. Shimizu on Aug 3rd) shows that we do much better with recursive
+functions whose return types are declared than those for which it's
+not.  
+
+It seems to me that with a modest amount of work, we could infer the
+return type of any non-recursive code paths in the traditional way and
+then verify that plugging that type in for the recursive case doesn't
+break anything to improve this situation.  Maybe I'm overlooking
+something, so I made this a feature request rather than a bug.

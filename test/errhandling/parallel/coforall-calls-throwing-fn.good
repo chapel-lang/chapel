@@ -1,0 +1,3 @@
+coforall-calls-throwing-fn.chpl:7: In function 'badFn':
+coforall-calls-throwing-fn.chpl:9: error: call to throwing function throwingFn without throws, try, or try! (relaxed mode)
+coforall-calls-throwing-fn.chpl:6: note: throwing function throwingFn defined here

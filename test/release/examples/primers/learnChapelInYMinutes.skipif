@@ -1,0 +1,7 @@
+#!/usr/bin/env python3
+
+# This test writes to both stdout and stderr and expects a particular order.
+# Most launchers buffer stdout but not stderr which defeats the prediff processing.
+
+import os
+print(os.getenv('CHPL_LAUNCHER') not in ['none', 'amudprun', 'mpirun4ofi'])

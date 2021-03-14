@@ -1,0 +1,4 @@
+generic-collection-owned-borrow-error.chpl:11: In function 'test':
+generic-collection-owned-borrow-error.chpl:14: error: invalid type specifier 'Collection(type borrowed MyClass)'
+generic-collection-owned-borrow-error.chpl:14: note: type specifier did not match: Collection(type element: _owned)
+generic-collection-owned-borrow-error.chpl:14: note: unable to instantiate field 'element : _owned' with type 'MyClass'

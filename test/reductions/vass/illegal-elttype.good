@@ -1,0 +1,2 @@
+illegal-elttype.chpl:6: In function 'main':
+illegal-elttype.chpl:7: error: + reduce cannot be used on values of the type RRR

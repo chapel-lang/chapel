@@ -1,0 +1,3 @@
+desirable_syntax.chpl:35: In function 'print_A_reindexed':
+desirable_syntax.chpl:35: error: one of domain's dimensions is not a bounded range
+  desirable_syntax.chpl:25: called as print_A_reindexed(A: [domain(2,int(64),false)] 2*int(64))

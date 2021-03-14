@@ -1,0 +1,7 @@
+Param test passed
+red = 0 = red
+Param test passed
+green = 1 = green
+Param test passed
+blue = 2 = blue
+enumOrder.chpl:20: error: halt reached - enumerated type out of bounds in chpl__orderToEnum()

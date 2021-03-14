@@ -1,0 +1,35 @@
+bug: 'setter' in var iterators
+
+see also test/functions/deitz/iterators/test_promote_var_function_and_iterate.future
+
+  "The setter argument is not correctly set for var functions that are
+   promoted and then iterated over in a zipper context.  This seems to
+   be because cullOverReferences does not cull the reference field in
+   tuples.  To do this, we'll need to clone the tuple.
+
+   My proposed semantics are that the promotion of a var function that
+   is iterated over, should set the setter field to true if the index
+   may be written.  In var functions, since references cannot be
+   captured, the setter=true version is used if the index is written.
+   The distinction has to be more conservative in the iterator case."
+
+Also, note that compiling with baseline breaks everything since the
+iterator class stores a reference.  I think the solution is to lower
+iterators after references are culled.
+
+was:
+
+semantic: can we support 'setter' in var-iterators?
+
+Notes from 04/30/08 meeting
+---------------------------
+* the challenge here is that if an iterator is captured into 
+  index variables, the uses of those variables are far enough
+  from the iterator that it can be difficult to judge whether
+  the iterator is used in gett or setter mode.  For this reason,
+  Steve suggests "no, it cannot be."
+
+* Decided to keep this around and defer until we have more
+  experience with zippered parallel iterators, sparse, etc.
+  and maybe make a better call on the reference semantics
+  of index variables in iterator invocations.

@@ -1,0 +1,3 @@
+out-domain-no-elt.chpl:1: In function 'f':
+out-domain-no-elt.chpl:1: error: 'A' is not initialized and has no type
+note: the type for a generic out-intent formal is inferred in the function body

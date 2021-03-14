@@ -1,0 +1,6 @@
+forwardGenericVirtual.chpl:22: In method 'action':
+forwardGenericVirtual.chpl:24: warning: Rank mismatch between borrowed Rect(3) and borrowed Rect(1)
+forwardGenericVirtual.chpl:26: error: unresolved call 'Rect(1).inner(borrowed Rect(3))'
+forwardGenericVirtual.chpl:18: note: this candidate did not match: Rect.inner(x)
+forwardGenericVirtual.chpl:18: note: because where clause evaluated to false
+  forwardGenericVirtual.chpl:1: called as (Rect(1)).action(a: borrowed Rect(3))

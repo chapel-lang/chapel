@@ -1,0 +1,15 @@
+noAliasSets: no-aliases for function makeArray:
+noAliasSets: no-aliases for function main:
+  A no alias B
+noAliasSets: no-aliases for function deinit:
+noAliasSets: no-aliases for function _new:
+noAliasSets: no-aliases for function acceptsArrays:
+  a no ref alias b
+  <array get pointer> no alias <array get pointer>
+  <array get pointer> no alias <array get pointer>
+noAliasSets: no-aliases for function acceptsClasses:
+noAliasSets: no-aliases for function acceptsIntRefs:
+LICM: may-alias report for a loop in function acceptsArrays:
+LICM: may-alias report for a loop in function acceptsClasses:
+LICM: may-alias report for a loop in function acceptsIntRefs:
+  a may alias b

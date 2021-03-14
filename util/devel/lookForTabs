@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+#
+# either CHPL_HOME must be set or this must be run from the root chapel
+# directory
+#
+
+cd $CHPL_HOME >& /dev/null
+
+git grep -n $'\t' -- ':!*bison-chapel.cpp' ':!*bison-chapel.h' \
+                     ':!*flex-chapel.cpp'  ':!*flex-chapel.h'  \
+                     'compiler/*.lex'      'compiler/*.y'      \
+                     'compiler/*.ypp'      'compiler/*.h'      \
+                     'compiler/*.c'        'compiler/*.cpp'
+
+git grep -n $'\t' -- 'runtime/*.h' 'runtime/*.c' 'runtime/*.cpp'
+
+git grep -n $'\t' -- 'modules/*.chpl'
+
+git grep -n $'\t' -- 'tools/*.c'   'tools/*.h'    'tools/*.H'   \
+                     'tools/*.cxx' 'tools/*.chpl' 'tools/*.rst' \
+                     'tools/*.sh'  'tools/*.py'

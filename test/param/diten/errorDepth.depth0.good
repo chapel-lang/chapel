@@ -1,0 +1,5 @@
+errorDepth.chpl:1: In function 'foo':
+errorDepth.chpl:3: error: error 0
+  errorDepth.chpl:10: called as foo(param d = 0) from function 'bar'
+  errorDepth.chpl:11: called as bar(param d = 0) from function 'baz'
+  errorDepth.chpl:15: called as baz(param d = 0)

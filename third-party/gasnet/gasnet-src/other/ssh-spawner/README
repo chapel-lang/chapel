@@ -1,0 +1,235 @@
+README file for ssh-spawner
+===========================
+
+@ TOC: @
+@ Section: Overview @
+@ Section: Basic Usage @
+@ Section: Process Layout @
+@ Section: Build-time Configuration @
+@ Section: Runtime Configuration @
+@ Section: Troubleshooting Connection Problems @
+
+
+@ Section: Overview @
+
+This document describes ssh-spawner, a component of the GASNet runtime library
+which allows applications using many GASNet conduits to utilize ssh (or rsh)
+to perform job launch.  If installing GASNet on system which allows remote
+shell connections to the compute nodes, this may be a lower-overhead mechanism
+for job launch than use of the default mpi-spawner.  This is also the default
+spawner when MPI support is not present (or is disabled).
+
+@ Section: Basic Usage @
+
++ Usage summary (option 1):
+  Many languages and libraries built over GASNet provide their own commands
+  for job launch.  These should be used instead of GASNet's whenever possible.
+  They typically wrap the mechanisms described below, while providing
+  additional options specific to the language or library.
+
+  The remaining options are documented here mainly for those who are
+  implementing such a wrapper.
+
++ Usage summary (option 2):
+  Conduits which support ssh-spawner each include a spawner utility named
+  for the conduit:
+    gasnetrun_[conduit] -n <n> [options] [--] prog [program args]
+    options:
+      -n <n>                 number of processes to run (required)
+      -N <N>                 number of nodes to run on (not supported by all MPIs)
+      -E <VAR1[,VAR2...]>    list of environment vars to propagate
+      -v                     be verbose about what is happening
+      -t                     test only, don't execute anything (implies -v)
+      -k                     keep any temporary files created (implies -v)
+      -spawner=(ssh|mpi|pmi) force use of a specific spawner (if available)
+
+  The ssh-spawner described in this README is used if selected by one of the
+  following three mechanisms, in order from greatest to least precedence:
+     + Passing -spawner=ssh to the gasnetrun_[conduit] utility
+     + Setting GASNET_[CONDUIT]_SPAWNER=ssh in the environment
+     + If ssh-spawner was established as the default at configure time (see
+       Build-time Configuration, below).
+
+@ Section: Process Layout @
+
+The ssh-spawner will layout processes in a "balanced" distribution and
+"blocked" order on a list of hosts (such as obtained from the
+GASNET_SSH_SERVERS environment variable).
+
+For P processes and N hosts, "balanced" distribution places ceil(P/N)
+processes on the first (P%N) hosts and floor(P/N) on the remainder.
+For P divisible by N, this yields P/N processes on every host, while
+for other all cases the last (N-P%N) hosts each have one fewer than
+the others.
+
+The "blocked" order means the processes on each host are numbered
+consecutively, with the first host holding processes starting from rank 0,
+the second holding processes starting from rank ceil(P/N), etc.
+
+By default the GASNET_SSH_SERVERS environment variable (or equivalent) is
+subject to de-duplication. However, by disabling this behavior (see
+GASNET_SSH_KEEPDUP environment variable below) one can exercise additional
+control over the placement of process though duplication of hostnames.  For
+instance, with P=8, GASNET_SSH_SERVERS="node1 node2 node1 node2" and
+GASNET_SSH_KEEPDUP=1, the host "node1" will hold processes with ranks 0, 1, 4
+and 5, rather than 0, 1, 2 and 3 as would be the case without setting
+GASNET_SSH_KEEPDUP.  In the extreme case, populating GASNET_SSH_SERVERS with P
+entries allows for precise control over placement of every process, when
+de-duplication is disabled via GASNET_SSH_KEEPDUP=1.
+
+@ Section: Build-time Configuration @
+
+The ssh-spawner offers the following configure-time options:
+
+  --with-[conduit]-spawner=ssh
+    Conduits which support ssh-spawner each accept a configure option
+    of this form to set the default spawner used by the corresponding
+    gasnetrun_[conduit] utility, as described in the "Basic Usage"
+    section above.  If this option is not used, the "mpi" is the
+    default if MPI support is found at configure time, and "ssh"
+    otherwise.  However, one may pass this option to make ssh-spawner
+    the default for the corresponding conduit.
+
+  --disable-pdeathsig (auto-detect by default)
+    On Linux, it is possible to request a signal be delivered to a
+    process when its parent process dies.  This can be used by the
+    ssh-based spawner to reduce the possibility of orphan (run away)
+    processes in certain abnormal termination scenarios.
+    Because there are 2.4.x versions of Linux where use of this option
+    can lock up the machine (as the result of a kernel bug), this
+    option is disabled for kernels prior to 2.6.0, and can also be
+    explicitly disabled at configure time.
+
+  --with-ssh-{nodefile,cmd,options}=<VALUE>
+    These control the default values used when the corresponding
+    environment variables are not set.  These environment variables
+    are documented below.
+
+  --with-ssh-out-degree=<VALUE>
+    This establishes a default value for the GASNET_SSH_OUT_DEGREE
+    environment variable, documented below.
+    If your system does not permit remote shell connections among
+    compute nodes, then you should configure using
+      --with-ssh-out-degree=0
+    to ensure that ssh-spawner only attempts to make connections
+    out-bound from the "master node".  Be aware, however, that this
+    may severely limit the size of jobs that one can launch.
+
+@ Section: Runtime Configuration @
+
+Environment Variables:
+
++ A list of hosts is specified using one of the GASNET_SSH_NODEFILE,
+  GASNET_SSH_SERVERS, or GASNET_NODEFILE environment variables (with
+  precedence in that order).
+  If set, variables GASNET_SSH_NODEFILE or GASNET_NODEFILE specify a
+  file with one hostname per line.  Blank lines and comment lines
+  (using '#') are ignored.
+  If set, the variable GASNET_SSH_SERVERS itself contains a list of
+  hostnames, delimited by commas or whitespace.
+  For sites using a static hosts file, a default value for the
+  GASNET_SSH_NODEFILE variable may be set at configure time using the
+  option --with-ssh-nodefile=<FILENAME>.  HOWEVER, if this is done
+  then *only* setting this variable manually can override its default
+  setting (since it has the highest precedence).
+  Note that if starting a job via upcrun or tirun, these variables
+  may be set for you from other sources.
+  The following environment variables set by supported batch systems
+  are also recognized if the GASNET_* variables are not set:
+    PBS:    PBS_NODEFILE
+    LSF:    LSB_HOSTS
+    SGE:    PE_HOSTFILE
+    SLURM:  Use `scontrol show hostname` if SLURM_JOB_ID is set
+
++ The environment variable GASNET_SSH_CMD can be set to specify a
+  specific remote shell (perhaps rsh), without arguments (see below).
+  If the value does not begin with "/" then $PATH will be searched
+  to resolve a full path.  The default value is "ssh", unless an
+  other value has been configured using --with-ssh-cmd=<VALUE>.
+
++ The environment variable GASNET_SSH_OPTIONS can be set to
+  specify options that will precede the hostname in the commands
+  used to spawn jobs.  One example, for OpenSSH, would be
+    GASNET_SSH_OPTIONS="-o 'StrictHostKeyChecking no'"
+  The parsing of the value follows the same rules for quotes (both
+  single and double) and backslash as most shells.  A default
+  value may be configured using --with-ssh-options=<VALUE>.
+
++ The environment variable GASNET_SSH_OUT_DEGREE can be used to
+  limit the number of out-going ssh connections from any given
+  host.  The value 0 means no limit is imposed.
+  The default value is 32 unless an alternate value was set at
+  configure time using --with-ssh-out-degree=<VALUE>.
+
++ The environment variable GASNET_SSH_REMOTE_PATH can be set to
+  specify the working directory (defaults to current).
+
++ Users of OpenSSH should NOT add "-f" to GASNET_SSH_OPTIONS.
+  Doing so causes the spawner to mistakenly believe that a process
+  which it has spawned has exited.
+  However, if agent forwarding or X11 forwarding are normally
+  enabled in your configuration, "-a" and "-x" can be used with
+  OpenSSH to disable them and speed the connection process (except
+  where the agent forwarding is needed for authorization).
+
++ The environment variable GASNET_MASTERIP can be used to specify the
+  exact IP address which the compute nodes should use to connect to
+  the master (spawning) node.  By default the master node will pass
+  the result of gethostname() to the worker nodes, which will then
+  resolve that to an IP address using gethostbynname().
+
++ The environment variable GASNET_SSH_KEEPDUP controls the treatment
+  of duplicate entries in GASNET_SSH_NODEFILE, GASNET_SSH_SERVERS
+  and other sources of host lists.
+  By default, GASNET_SSH_KEEPDUP=0 and duplicates are removed, keeping
+  only the first instance of any given name.  Note that this is based
+  on string comparison only and does not consider multiple valid names
+  for the same host to be duplicates.
+  Setting GASNET_SSH_KEEPDUP=1 preserves the host list without any
+  changes.
+
+@ Section: Troubleshooting Connection Problems @
+
+For the following, the term "compute node" means one of the hosts
+given by GASNET_SSH_NODEFILE, GASNET_SSH_SERVERS, or obtained
+from a variable specific to the batch system.  These are nodes
+which will run application processes.  The term "master node"
+means the node from which the job was spawned.  The master node
+may also be a compute nodes, but this is not required.  The
+term "resolve" means translation of a hostname to an IP address
+using gethostbynname().
+
++ The ssh (or rsh) at your site must be configured to allow logins
+  from the master node to compute nodes.  It is also strongly
+  recommended that logins between compute nodes be permitted (see
+  the description of the --with-ssh-out-degree configure option
+  for the alternative).  These must be achieved without user
+  interaction such as entering a password or accepting hostkeys.
+
+  For OpenSSH users, the following options are used automatically
+    -o 'StrictHostKeyChecking no'
+    -o 'BatchMode yes'
+  which should ensure that ssh does not try to prompt the user.
+  There is no need to specify these in the GASNET_SSH_OPTIONS
+  environment variable.
+
++ Any firewall or port filtering must allow the ssh/rsh connections
+  described above, plus TCP connections on an "untrusted port" (ports
+  with numbers over 1024) from a compute node to the master node (and
+  among compute nodes unless the out-degree has been set to 0).
+
++ Setting of the GASNET_MASTERIP environment variable trivially
+  provides "resolution" of the master node's hostname.
+  Otherwise:
+    - The master node and all compute nodes must be able to resolve
+      the hostname of the master node.
+
++ Providing only numeric IPs for compute nodes (in GASNET_SSH_SERVERS,
+  the file named by GASNET_SSH_NODEFILE, or other source specific to
+  the batch system) trivially provides "resolution" of the hostnames
+  of all compute nodes.
+  Otherwise:
+    - The master node must be able to resolve the hostnames of all
+      compute nodes.
+    - Unless the out-degree has been set to zero, compute nodes must
+      able to resolve the hostnames of the other compute nodes.

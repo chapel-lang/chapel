@@ -1,0 +1,12 @@
+Checking a non-strided range
+Guided Iterator: Correct
+Checking a non-strided domain
+Guided Iterator: Correct
+Checking a strided range
+Guided Iterator: Correct
+Checking a strided domain
+Guided Iterator: Correct
+Checking a zippered iteration (range)
+Guided Iterator: Correct
+Checking a zippered iteration (domain)
+Guided Iterator: Correct

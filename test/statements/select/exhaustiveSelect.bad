@@ -1,0 +1,2 @@
+exhaustiveSelect.chpl:4: In function 'myproc':
+exhaustiveSelect.chpl:4: error: control reaches end of function that returns a value

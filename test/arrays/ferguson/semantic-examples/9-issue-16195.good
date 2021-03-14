@@ -1,0 +1,6 @@
+passing D
+D is {1..3}
+dom is {1..10}
+passing A.domain
+D is {1..3}
+dom is {1..10}

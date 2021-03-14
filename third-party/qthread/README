@@ -1,0 +1,28 @@
+==========================
+Qthreads README for Chapel
+==========================
+
+This copy of Qthreads 1.16 is being released with Chapel for
+convenience and was obtained from:
+
+  https://github.com/qthreads/qthreads
+
+Any Chapel issues that seem to be related to Qthreads should be directed
+to the Chapel team at https://chapel-lang.org/bugs.html.
+
+
+Chapel modifications to Qthreads
+================================
+
+The modifications that we have made to the official Qthreads release are
+as follows:
+
+* We force tasks being woken from sync vars to run on their original
+  shepherd. This is to work around a task serialization bug that stems
+  from us using schedulers that don't support work stealing (nemesis)
+  or running with work stealing disabled (distrib w/ QT_STEAL_RATIO=0)
+
+* We added a simple mechanism to reset the automatic task spawning
+  order for better affinity between consecutive parallel loops.
+
+* We fixed a bug in the binders topology layer.

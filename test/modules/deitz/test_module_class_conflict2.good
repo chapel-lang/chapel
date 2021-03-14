@@ -1,0 +1,1 @@
+test_module_class_conflict2.chpl:13: error: 'use' of non-module/enum symbol MC

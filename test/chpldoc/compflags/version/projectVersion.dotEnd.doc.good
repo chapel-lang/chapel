@@ -1,0 +1,2 @@
+error: Invalid version format: 21.0. due to: Cannot end with dot, can end with either number or tag
+cat: docs/_static/documentation_options.js: No such file or directory

@@ -1,0 +1,1 @@
+-s aint1=7 -s aint2=4 -s abool1 -s abool2=true -s areal1=2.72 -s areal2=2.718 -s ac_string1='"hello"' -s ac_string2='"goodbye"' -s aimag1=4.5i -s aimag2=1i -s acolor1=color.green -s acolor2=color.green

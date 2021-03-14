@@ -1,0 +1,7 @@
+A
+B
+C
+D
+uncaught IllegalArgumentError: illegal argument 'bad cast from int '4' to enum 'myEnum': '
+  varEnumOutOfBounds.chpl:10: thrown here
+  varEnumOutOfBounds.chpl:10: uncaught here

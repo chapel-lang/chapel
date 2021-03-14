@@ -1,0 +1,92 @@
+#!/usr/bin/env python3
+
+# There are a number of things that matter in this test's output.
+#  We will check them here in this script and output SUCCESS if
+#  all is as expected.
+import os, sys
+
+def isSeparator(line):
+    (a, b) = line.split(' ', 1)
+    if b.find('###') == 0:
+        return True
+    else:
+        return False
+
+outfile=sys.argv[2];
+
+fh = open(outfile)
+lines = fh.readlines()
+fh.close();
+
+errs = 0;
+seenMain2 = False
+seenMain2err = False
+seen3 = False
+seen3err = False
+seenMain4 = False;
+seenMain4err = False
+seenIters = list()
+seen5 = False
+seen5err = False
+
+errOutput = list()
+
+for line in lines:
+    (testnum, rest) = line.strip().split(':', 1)
+    if testnum == '2':
+        # all output must be seen before testnum==3
+        if seen3 == True:
+            if seen3err == False:
+                seen3err = True
+                errs += 1
+                errOutput.append("Test 2 (cobegin): output out of order")
+        # "main task" must be seen after others
+        if seenMain2 == True:
+            if seenMain2err == False:
+                seeMain2err = True
+                errs += 1
+                errOutput.append("Test 2 (cobegin): main task output out of order")
+            continue
+        if rest.find('main') != -1:
+            seenMain2 = True;
+    elif testnum == '3':
+        seen3 = True
+    elif testnum == '4':
+        # all output must be seen before testnum==5
+        if seen5:
+            if seen5err == False:
+                seen5err = True
+                errs += 1
+                errOutput.append("Test 4 (coforall): output out of order")
+        # 1 must be seen before 2 for each iteration
+        # "main task" must be seen after others
+        if seenMain4 == True:
+            if seenMain4err == False:
+                seenMain4err = True
+                errs += 1
+                errOutput.append("Test 4 (coforall): main task output out of order")
+            continue
+        if rest.find('main') != -1:
+            seenMain4 = True;
+            continue
+        if isSeparator(line):
+            continue
+        (left, num, iterstr, iter) = rest.rsplit(' ', 3)
+        seenIters.append(iter)
+        if seenIters.count(iter) != int(num):
+            errs += 1
+            errOutput.append("Test 4 (coforall): output out of order "+iterstr+" "+iter)
+    elif testnum == '5':
+        seen5 = True
+
+fh = open(outfile, 'w')
+if errs == 0:
+    fh.write('SUCCESS\n')
+else:
+    errOutput.append("FAILED: "+str(errs)+": found (output follows)")
+    for err in errOutput:
+        fh.write(err+'\n')
+    for line in lines:
+        fh.write(line)
+fh.close()
+sys.exit(errs)

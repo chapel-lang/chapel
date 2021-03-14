@@ -1,0 +1,1 @@
+--replace-array-accesses-with-ref-temps

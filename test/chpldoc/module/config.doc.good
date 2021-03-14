@@ -1,0 +1,43 @@
+.. default-domain:: chpl
+
+.. module:: config.doc
+
+config.doc
+==========
+**Usage**
+
+.. code-block:: chapel
+
+   use config.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import config.doc;
+
+.. data:: config var normal = "hello"
+
+   This is a normal config var 
+
+.. data:: config param other = 1
+
+   This is a config param 
+
+.. data:: config const constant = true
+
+   This is a config const 
+
+.. data:: config var normalTyped: string
+
+   This is a normal config var with a type 
+
+.. data:: config param otherTyped: int = 5
+
+   This is a config param with a type 
+
+.. data:: config const constantTyped: bool
+
+   This is a config const with a type 
+

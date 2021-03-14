@@ -1,0 +1,6 @@
+perfkeys: min =, avg =, min =, avg =, min =, avg =, min =, avg =
+graphkeys: STREAM-(min), STREAM-(avg), STREAM-local-(min), STREAM-local-(avg), MAX_LOGICAL (min), MAX_LOGICAL (avg), MAX_LOGICAL local (min), MAX_LOGICAL local (avg)
+files: ./STREAMS/bradc/stream-fragmented.dat, ./STREAMS/bradc/stream-fragmented.dat, ./STREAMS/diten/stream-fragmented-local.dat, ./STREAMS/diten/stream-fragmented-local.dat, stream-fragmented-MAXLOGICAL.dat, stream-fragmented-MAXLOGICAL.dat, stream-fragmented-local-MAXLOGICAL.dat, stream-fragmented-local-MAXLOGICAL.dat
+ylabel: Time (seconds)
+graphname: STREAM-fragmented-time
+graphtitle: EP STREAM (fragmented)

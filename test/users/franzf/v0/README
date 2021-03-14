@@ -1,0 +1,16 @@
+
+This is the original version of SPIRAL-generated C and Chapel that
+Franz sent us.  There are a few revisions under source control, based
+on some quick feedback we gave him about improving performance.
+
+Inspecting larger problem sizes will show some differences between C
+and Chapel in terms of loop nest structure and the types/sizes of
+global arrays.  This turned out to be a bug in SPIRAL which they 
+have since fixed, resulting in version 1.
+
+Though an apple-to-oranges comparison, here is some timing information
+provided by Franz via email:
+
+"The C99 version reaches 5 Gflop/s with the Intel C++ compiler 9.1 and
+2.4 Gflop/s with the Cygwin gcc 3.4.4. The Chapel version reaches 30
+Mflop/s on a single core of a 2.66 GHz Core2Duo."

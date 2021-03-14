@@ -1,0 +1,6 @@
+creating Container
+creating Thing 100
+in defer for Thing 100
+in Thing.deinit, x=100
+in defer for Container
+in Container.deinit

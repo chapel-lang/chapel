@@ -1,0 +1,22 @@
+--nt=0      # int-tpvs.0
+--nt=1      # int-tpvs.1
+--nt=10     # int-tpvs.10
+--nt=1000   # int-tpvs.1000
+--nt=2      # int-tpvs.2
+--nt=20     # int-tpvs.20
+--nt=2000   # int-tpvs.2000
+--nt=3      # int-tpvs.3
+--nt=30     # int-tpvs.30
+--nt=3000   # int-tpvs.3000
+
+--nt2=2      --nt=3  # int-tpvs.2-3
+--nt2=20     --nt=3  # int-tpvs.20-3
+--nt2=2000   --nt=3  # int-tpvs.2000-3
+
+--nt2=2      --nt=30  # int-tpvs.2-30
+--nt2=20     --nt=30  # int-tpvs.20-30
+--nt2=2000   --nt=30  # int-tpvs.2000-30
+
+--nt2=2      --nt=3000  # int-tpvs.2-3000
+--nt2=20     --nt=3000  # int-tpvs.20-3000
+--nt2=2000   --nt=3000  # int-tpvs.2000-3000

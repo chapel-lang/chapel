@@ -1,0 +1,4 @@
+usage: c2chapel [-h] [--no-typedefs] [--debug] [--no-fake-headers]
+                [--no-comments] [-V]
+                file [cppFlags [cppFlags ...]]
+c2chapel: error: the following arguments are required: file, cppFlags

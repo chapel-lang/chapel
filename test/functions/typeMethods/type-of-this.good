@@ -1,0 +1,11 @@
+type-of-this.chpl:8: warning: C
+type-of-this.chpl:9: warning: owned C
+type-of-this.chpl:10: warning: shared C
+type-of-this.chpl:11: warning: borrowed C
+type-of-this.chpl:12: warning: unmanaged C
+type-of-this.chpl:14: warning: C?
+type-of-this.chpl:15: warning: owned C?
+type-of-this.chpl:16: warning: shared C?
+type-of-this.chpl:17: warning: borrowed C?
+type-of-this.chpl:18: warning: unmanaged C?
+type-of-this.chpl:20: error: done

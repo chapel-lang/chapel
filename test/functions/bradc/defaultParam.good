@@ -1,0 +1,14 @@
+in callin, x is: 100
+re-assigned to be: 101
+back at callsite, a is: 10
+
+in callout, x is: 200
+re-assigned to be: 201
+back at callsite, a is: 10
+
+in callinout, x is: 300
+re-assigned to be: 301
+back at callsite, a is: 10
+
+in callblank, x is: 400
+back at callsite, a is: 10

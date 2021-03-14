@@ -1,0 +1,6 @@
+chapelProcs.chpl:11: In function 'takesArray':
+chapelProcs.chpl:11: warning: Unknown Fortran KIND generating interface for C type: _ref_CFI_cdesc_t_chpl
+chapelProcs.chpl:11: warning: Unknown Fortran type generating interface for C type: _ref_CFI_cdesc_t_chpl
+   101.000000000000        102.000000000000        103.000000000000     
+   201.000000000000        202.000000000000        203.000000000000     
+   301.000000000000        302.000000000000        303.000000000000     

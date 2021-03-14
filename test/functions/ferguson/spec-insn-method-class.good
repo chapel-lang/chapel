@@ -1,0 +1,9 @@
+static C
+in generic C.foo
+in specific C(int).foo
+static Child
+in generic Child.foo
+in specific Child(int).foo
+static C dynamic Child
+in generic Child.foo
+in specific Child(int).foo

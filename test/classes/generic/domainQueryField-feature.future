@@ -1,0 +1,7 @@
+semantic: array fields with domain queries
+
+Should we support array fields that use a domain query syntax (where
+such a field would, presumably, necessarily have to be defined by the
+initializer)?  If so, should the domain ('D' in my example here) be a
+snapshot of the original array's domain or a reference to it?  (i.e.,
+should 'A' and 'X' in this program share a single domain?)

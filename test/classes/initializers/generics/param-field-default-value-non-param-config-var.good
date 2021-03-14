@@ -1,0 +1,2 @@
+param-field-default-value-non-param-config-var.chpl:4: In initializer:
+param-field-default-value-non-param-config-var.chpl:4: error: Initializing parameter 'p' to value not known at compile time

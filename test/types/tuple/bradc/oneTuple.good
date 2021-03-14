@@ -1,0 +1,4 @@
+t is: (1) (type = 1*int(64))
+(...t) is: 1
+In foo(), x is: (1)
+x is: (0)

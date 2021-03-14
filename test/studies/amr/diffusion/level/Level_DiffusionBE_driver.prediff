@@ -1,0 +1,7 @@
+#!/bin/bash --norc
+
+# could save the actual program output, e.g.: mv "$2" "$2".tmp
+mv "$2" "$2".save
+
+# the following overwrites "$2" with "ok" or error message(s)
+exec python3 ../../lib/python/regression_test.py "$2"

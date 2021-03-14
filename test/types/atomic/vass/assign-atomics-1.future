@@ -1,0 +1,7 @@
+feature request: handle assignments to atomic variables consistently
+
+Since we generally disallow direct assignment to an atomic variable,
+we should disallow it even when the r.h.s. is an atomic.
+
+Alternatively (or perhaps even preferably) we should allow direct
+reading/writing of atomic variables, with appropriate atomic semantics.

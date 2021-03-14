@@ -1,0 +1,47 @@
+perfkeys: LinearAlgebra.transpose:, BLAS.transpose:
+files: m10.dat, m10.dat
+graphkeys: native, BLAS
+graphtitle: Transpose 10x10
+ylabel: Time
+
+perfkeys: LinearAlgebra.transpose:, BLAS.transpose:
+files: m1000.dat, m1000.dat
+graphkeys: native, BLAS
+graphtitle: Transpose 1000x1000
+ylabel: Time
+
+perfkeys: LinearAlgebra.lu: 
+files: lu-m1000.dat
+graphkeys: native
+graphtitle: LU factorization - 1000x1000
+ylabel: Time
+
+perfkeys: time (s) : , time (s) : , time (s) : , time (s) : 
+files: csrmatmat-1e-9-big.dat, csrmatmat-1e-7-big.dat, spa-1e-9-big.dat, spa-1e-7-big.dat
+graphkeys: SMMP (sparsity=1e-7%), SMMP (sparsity=1e-5%), SPA (sparsity=1e-7%), SPA (sparsity=1e-5%)
+graphtitle: Sparse matrix-matrix multiplication variations - big (N = 10e7)
+ylabel: Time
+
+perfkeys: time (s) : , time (s) : , time (s) : , time (s) : 
+files: csrmatmat-1e-4-small.dat, csrmatmat-1e-1-small.dat, spa-1e-4-small.dat, spa-1e-1-small.dat
+graphkeys: SMMP (sparsity=0.01%), SMMP (sparsity=10%), SPA (sparsity=0.01%), SPA (sparsity=10%)
+graphtitle: Sparse matrix-matrix multiplication variations - small (N = 10e3)
+ylabel: Time
+
+perfkeys: time (s) : , time (s) : , time (s) : 
+files: csrmatmat-1e-9-big.dat, csrmatmat-1e-8-big.dat, csrmatmat-1e-7-big.dat
+graphkeys: sparsity=1e-7%, sparsity=1e-6%, sparsity=1e-5%
+graphtitle: LinearAlgebra.Sparse.dot() - squaring NxN matrices - big (N = 10e7)
+ylabel: Time
+
+perfkeys: time (s) : , time (s) : , time (s) : , time (s) : 
+files: csrmatmat-1e-4-small.dat, csrmatmat-1e-3-small.dat, csrmatmat-1e-2-small.dat, csrmatmat-1e-1-small.dat
+graphkeys: sparsity=0.01%, sparsity=0.1%, sparsity=1%, sparsity=10%
+graphtitle: LinearAlgebra.Sparse.dot() - squaring NxN matrices - small (N = 10e3)
+ylabel: Time
+
+perfkeys: LinearAlgebra.jacobi:, LinearAlgebra.Sparse.jacobi:
+files: jacobi-n512.dat, jacobi-n512.dat
+graphkeys: Dense, Sparse
+graphtitle: Jacobi method - solving 512 unknowns - dense and sparse
+ylabel: Time

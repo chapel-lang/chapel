@@ -1,0 +1,1 @@
+checkModByZero.chpl:24: error: Attempt to compute a modulus by zero

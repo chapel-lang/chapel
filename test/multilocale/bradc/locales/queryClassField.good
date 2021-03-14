@@ -1,0 +1,17 @@
+x is: {myid = 0} {myid = 1} {myid = 2} {myid = 3}
+x[0] is on locale: 0
+x[0].myid is on locale: 0
+y[0] is on locale: 0
+y[0].myid is on locale: 0
+x[1] is on locale: 1
+x[1].myid is on locale: 1
+y[1] is on locale: 1
+y[1].myid is on locale: 1
+x[2] is on locale: 2
+x[2].myid is on locale: 2
+y[2] is on locale: 2
+y[2].myid is on locale: 2
+x[3] is on locale: 3
+x[3].myid is on locale: 3
+y[3] is on locale: 3
+y[3].myid is on locale: 3

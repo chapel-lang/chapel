@@ -1,0 +1,6 @@
+perfkeys: Performance (Gflop/s) =
+graphkeys: hpl
+files: hpl.dat
+graphtitle: HPCC HPL Performance (Gflop/s)
+ylabel: Performance (Gflop/s)
+graphname: hpcc-hpl-gf

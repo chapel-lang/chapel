@@ -1,0 +1,2 @@
+Invalid read of size 8
+Address xxx is 0 bytes after a block of size 8 alloc'd

@@ -1,0 +1,1 @@
+testPopIndexHaltEmpty.chpl:5: error: halt reached - Called "unrolledLinkedList.pop" on an empty unrolledLinkedList.

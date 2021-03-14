@@ -1,0 +1,6 @@
+error message: report all invalid task+forall intents at once
+
+Currently a single invalid task/forall intent terminates
+compilation. It would be nice to report all invalid intents
+in a single compiler run. Currently the invalid task/forall
+intents are: inout out type param.

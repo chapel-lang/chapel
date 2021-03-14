@@ -1,0 +1,8 @@
+perfkeys: real, real, real, real, real, real
+graphkeys: Casey version, Casey iterator version, release, free while adding version, blc study version, free while adding (with exponent)
+files: binary-trees.dat, binary-trees_iter.dat, binarytrees.dat, binarytrees-freeWhileAdding.dat, binarytrees-blc.dat, binarytrees-freeWhileAdding-exp.dat
+graphtitle: Binary Trees Shootout Benchmark (n=21)
+ylabel: Time (seconds)
+graphname: binary-trees.21
+
+

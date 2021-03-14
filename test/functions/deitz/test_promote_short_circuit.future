@@ -1,0 +1,6 @@
+semantic: should promotion apply to short-circuit operators?
+
+See also:
+
+  test/arrays/bradc/promote-shortcircuit.chpl
+  test/studies/beer/bradc/beer-promoted-infer.chpl

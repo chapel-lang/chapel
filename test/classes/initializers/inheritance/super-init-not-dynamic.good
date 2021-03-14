@@ -1,0 +1,7 @@
+Base.init
+
+Base.init
+Derived.init
+
+{b = 10}
+{b = 10, d = 20}

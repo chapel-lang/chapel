@@ -1,0 +1,18 @@
+
+- main program:0 is active
+- reportsManyThreads.chpl:11 is active
+- reportsManyThreads.chpl:17 is active
+- reportsManyThreads.chpl:3 is active
+- reportsManyThreads.chpl:4 is active
+- reportsManyThreads.chpl:5 is active
+--------------------------------
+Known tasks:
+Pending tasks:
+Program is deadlocked!
+Task report
+Waiting at: reportsManyThreads.chpl:12
+Waiting at: reportsManyThreads.chpl:14
+Waiting at: reportsManyThreads.chpl:18
+Waiting at: reportsManyThreads.chpl:22
+Waiting at: reportsManyThreads.chpl:6
+Waiting at: reportsManyThreads.chpl:8

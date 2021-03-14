@@ -1,0 +1,4 @@
+partialQueriedDomain-inIntent.chpl:21: In method 'c_l':
+partialQueriedDomain-inIntent.chpl:21: error: cannot query part of a domain
+partialQueriedDomain-inIntent.chpl:21: error: 'chpl__buildArrayRuntimeType' undeclared (first use this function)
+partialQueriedDomain-inIntent.chpl:21: error: 'chpl__ensureDomainExpr' undeclared (first use this function)

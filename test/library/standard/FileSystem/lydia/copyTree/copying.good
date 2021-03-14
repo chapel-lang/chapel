@@ -1,0 +1,20 @@
+Checking large, complicated tree structure
+Large, complicated tree structure passed
+
+Checking empty source directory
+Empty source directory passed
+
+Checking dir with only a dir with a file in it
+Dir with only a dir with a file in it passed
+
+Checking dir with only an empty dir in it
+Dir with only an empty dir in it passed
+
+Checking dir with only a file in it
+Dir with only a file in it passed
+
+Checking dir with a file and a child dir with a file in it
+Dir with a file and a child dir with a file in it passed
+
+Checking dir with a file and an empty child dir in it
+Dir with a file and an empty child dir in it passed

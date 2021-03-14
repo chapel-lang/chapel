@@ -1,0 +1,4 @@
+split-init-const-ref-multiple.chpl:3: In function 'main':
+split-init-const-ref-multiple.chpl:9: error: Initializing a reference with another type
+split-init-const-ref-multiple.chpl:4: note: Reference has type real(64)
+split-init-const-ref-multiple.chpl:9: note: Initializing with type int(64)

@@ -1,0 +1,2 @@
+in f (instance = {field = 1}) a=(instance = {field = 2})
+in f (instance = {field = 1.0}) a=(instance = {field = 2.0})

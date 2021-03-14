@@ -1,0 +1,4 @@
+locale 1 owns: -999..2]
+locale 2 owns: 3..5]
+locale 3 owns: 6..7]
+locale 4 owns: 8..999]

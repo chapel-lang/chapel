@@ -1,0 +1,171 @@
+GASNet mpi-conduit documentation
+Dan Bonachea <bonachea@cs.berkeley.edu>
+
+User Information:
+-----------------
+
+mpi-conduit is a portable implementation of GASNet over MPI, the Message
+Passing Interface (http://mpi-forum.org/), which is implemented on most
+HPC systems.
+
+Where this conduit runs:
+-----------------------
+
+mpi-conduit is fully portable and should work correctly on any POSIX-like
+system with a working MPI implementation (compliant with specification MPI 1.1
+or later) and a functional C99 compiler.  mpi-conduit does not exploit the MPI
+RMA interfaces introduced in MPI 2.0/3.0.
+
+mpi-conduit is primarily intended as a migration tool for systems where a native GASNet
+implementation is not yet available.  It is not intended for production use on
+networks that expose a high-performance network API, where an appropriate
+GASNet native conduit implementation should be preferred. It is not intended
+for use on Ethernet hardware, where udp-conduit should usually be preferred.
+
+Configuration-time variables:
+---------------------------------
+
+In order to compile mpi-conduit, and subsequently use it, GASNet must
+know how to invoke your mpicc and mpirun (or equivalents).  GASNet's
+configure script uses some sensible defaults, but these may not work
+on all platforms.  In particular, if you have set CC to a non-default
+C compiler, you will likely need to set mpicc as well.  Here are
+the relevant variables:
+
+MPI_CC		the program to use as the compiler and linker
+MPI_CFLAGS	options passed to MPI_CC when used as a compiler
+MPI_LIBS	options passed to MPI_CC when used as a linker
+MPIRUN_CMD	template for invoking mpirun, or equivalent
+
+GASNet's configure script will test the MPI_CC, MPI_CFLAGS and
+MPI_LIBS variable by trying approximately the following:
+
+	$MPI_CC $MPI_CFLAGS -c foo.c
+	$CC -c bar.c
+	$MPI_CC $MPI_LIBS -o foo foo.o bar.o
+
+Note this test (and mpi-conduit) require that $CC and $MPI_CC
+are ABI- and link-compatible. They need not be the same underlying
+compiler, but that is also recommended when possible, to minimize
+compatibility issues.
+
+GASNet's configure script does not attempt to run MPIRUN_CMD.
+MPIRUN_CMD is a template which tells the gasnetrun_mpi
+script how to invoke your mpirun.  The template may include
+the following strings for variable substitution at run time:
+
+"%N"	The number of MPI processes requested
+"%P"	The GASNet program to run
+"%A"	The arguments to the GASNet program
+"%C"	Alias for "%P %A"
+"%H"	Expands to the value of environment variable GASNET_NODEFILE.
+	This file should be one hostname per line.
+
+The default is "mpirun -np %N %C".  You may need a full path to
+mpirun if the correct version is not in your PATH.  This template
+is also the mechanism to add extra arguments - for instance:
+  MPIRUN_CMD='mpirun -np %N -hostfile my_hosts_file %C'
+or
+  MPIRUN_CMD='mpirun -np %N -hostfile %H %C'
+
+Optional compile-time settings:
+------------------------------
+
+* All the compile-time settings from extended-ref (see the extended-ref README)
+
+Job Spawning
+------------
+
+If using UPC, Titanium, etc. the language-specific commands should be used
+to launch applications.  Otherwise, mpi-conduit applications can be launched 
+like any other MPI program (eg using mpirun directly) or via the gasnetrun_mpi utility:
+  + usage summary:
+    gasnetrun_mpi -n <n> [options] [--] prog [program args]
+    options:
+      -n <n>                number of processes to run
+      -N <n>                number of nodes to run on (not supported on all mpiruns)
+      -c <n>                number of cpus per process (not supported on all mpiruns)
+      -E <VAR1[,VAR2...]>   list of environment vars to propagate
+      -v                    be verbose about what is happening
+      -t                    test only, don't execute anything (implies -v)
+      -k                    keep any temporary files created (implies -v)
+      -(no)encode[-args,-env]   use encoding of args, env or both to help with buggy spawners
+
+Recognized environment variables:
+---------------------------------
+
+* All the standard GASNet environment variables (see top-level README)
+
+* GASNET_NETWORKDEPTH - depth of network buffers to allocate (defaults to 4)
+  can also be set as AMMPI_NETWORKDEPTH (GASNET_NETWORKDEPTH takes precedence)
+  mpi-conduit's max MPI buffer usage at any time is bounded by:
+   4 * depth * 65 KB preposted non-blocking recvs
+   2 * depth * 65 KB non-blocking sends (AMMedium/AMLong)
+   2 * depth * 78 byte non-blocking sends (AMShort)
+
+* AMMPI_CREDITS_PP - number of send credits each node has for each remote target 
+  node in the token-based flow-control. Setting this value too high can increase
+  the incidence of unexpected messages at the target, reducing effective bandwidth.
+  Setting the value too low can induce premature backpressure at the initiator,
+  reducing communication overlap and effective bandwidth. Defaults to depth*2.
+
+* AMMPI_CREDITS_SLACK - number of send credits that may be coalesced at the target
+  during a purely one-way AM messaging stream before forcing a reply to be
+  generated for refunding credits. Defaults to AMMPI_CREDITS_PP*0.75.
+
+* AMMPI_SYNCSEND_THRESH - size threshold above which to use synchronous
+  non-blocking MPI sends, a workaround for buggy MPI implementations on a
+  few platforms. 0 means always use synchronous sends, -1 means never use them
+  (the default on most platforms).
+
+* GASNET_MPI_THREAD - can be set to one of the values:
+    "SINGLE", "FUNNELED", "SERIALIZED" or "MULTIPLE" 
+  to request the MPI library be initialized with a specific threading support
+  level. The default value depends on the GASNet threading mode.
+  + SINGLE - sufficient for mpi-conduit in GASNET_SEQ mode. This MPI thread mode is 
+    only guaranteed to work correctly in a strictly single-threaded process 
+    (ie no threads anywhere in the system). 
+  + FUNNELED - Other threads exist in the process, but never call MPI or GASNet.
+  + SERIALIZED - The default in GASNET_PAR or GASNET_PARSYNC mode, where multiple 
+    client threads may call GASNet, resulting in MPI calls serialized by mpi-conduit. 
+  + MULTIPLE - Multi-threaded GASNet+MPI process that makes direct calls to MPI.
+  See MPI documentation for detailed explanation of the threading levels.
+
+Known problems:
+---------------
+
+* Proper operation of GASNet and its client often depends on environment
+variables passed to all the processes.  Unfortunately, there is no uniform way
+to achieve this across different implementations of mpirun.  The gasnetrun_mpi
+script tries many different things and is known to work correctly for Open MPI
+and for MPICH and most of its derivatives (including MPICH-NT, MVICH and
+MVAPICH).  For assistance with any particular MPI implementation, search the
+GASNet Bugzilla server (URL below) and open a new bug (registration required)
+if you cannot find information on your MPI.
+
+* See the GASNet Bugzilla server for details on other known bugs:
+  https://gasnet-bugs.lbl.gov/
+
+Future work:
+------------
+
+==============================================================================
+
+Design Overview:
+----------------
+
+The core API implementation is a very thin wrapper around the AMMPI
+implementation by Dan Bonachea. See documentation in the other/ammpi directory
+or the AMMPI webpage (https://gasnet.lbl.gov/ammpi) for details.
+AMMPI requires an MPI 1.1 or newer compliant MPI implementation, and performance 
+varies widely across MPI implementations (based primarily on their performance
+for non-blocking sends and recvs - MPI_ISend/MPI_IRecv).
+
+AMMPI performs all its MPI calls on a separate, private MPI communicator, which
+is strongly guaranteed by the MPI spec to isolate it from any other MPI
+communication in the application, so there's never a possibility of deadlock or
+hard-limit resource contention between the two.
+
+The mpi-conduit directly uses the extended-ref implementation for the extended
+API - see the extended-ref directory for details.
+

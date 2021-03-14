@@ -1,0 +1,2 @@
+# Node determination is a bit more complicated if getting run with a launcher
+CHPL_LAUNCHER != none

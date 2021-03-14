@@ -1,0 +1,1 @@
+spsZipper3.chpl:12: error: Sparse iterators can't yet be zippered with others

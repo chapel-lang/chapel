@@ -1,0 +1,177 @@
+# Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+# Copyright 2004-2019 Cray Inc.
+# Other additional copyright holders may be indicated within.
+# 
+# The entirety of this work is licensed under the Apache License,
+# Version 2.0 (the "License"); you may not use this file except
+# in compliance with the License.
+# 
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#
+# settings for clang compiler
+#
+
+#
+# Tools
+#
+
+ifeq ($(CHPL_MAKE_COMPILER), clang-included)
+# handle using the included clang compiler
+ifndef CLANG_SYSROOT_ARGS
+  export CLANG_SYSROOT_ARGS=$(shell cat $(LLVM_CLANG_ARGUMENTS_FILE))
+endif
+CXX = $(CLANG_CXX) $(CLANG_SYSROOT_ARGS)
+CC = $(CLANG_CC) $(CLANG_SYSROOT_ARGS)
+else
+CXX = clang++
+CC = clang
+endif
+
+
+
+RANLIB = ranlib
+
+
+#
+# General Flags
+#
+
+DEBUG_CFLAGS = -g
+DEPEND_CFLAGS = -MMD -MP
+OPT_CFLAGS = -O3
+#PROFILE_CFLAGS = -pg
+#PROFILE_LFLAGS = -pg
+
+#ifdef CHPL_GCOV
+#CFLAGS += -fprofile-arcs -ftest-coverage
+#LDFLAGS += -fprofile-arcs
+#endif
+
+include $(CHPL_MAKE_HOME)/make/compiler/Makefile.sanitizers
+CFLAGS += $(SANITIZER_CFLAGS)
+CXXFLAGS += $(SANITIZER_CFLAGS)
+LDFLAGS += $(SANITIZER_LDFLAGS)
+GEN_LFLAGS += $(SANITIZER_LDFLAGS)
+OPT_CFLAGS += $(SANITIZER_OPT_CFLAGS)
+
+#
+# If the compiler's default C version is less than C99, force C99 mode.
+#
+# If the default C version is at least C11, force the C++ version to
+# be at least C++11 to match.
+#
+DEF_C_VER := $(shell echo __STDC_VERSION__ | $(CC) -E -x c - | sed -e '/^\#/d' -e 's/L$$//' -e 's/__STDC_VERSION__/0/')
+DEF_CXX_VER := $(shell echo __cplusplus | $(CXX) -E -x c++ - | sed -e '/^\#/d' -e 's/L$$//' -e 's/__cplusplus/0/')
+C_STD := $(shell test $(DEF_C_VER) -lt 199901 && echo -std=gnu99)
+CXX_STD := $(shell test $(DEF_C_VER) -ge 201112 -a $(DEF_CXX_VER) -lt 201103 && echo -std=gnu++11)
+CXX11_STD := $(shell test $(DEF_CXX_VER) -lt 201103 && echo -std=gnu++11)
+
+#
+# Flags for compiler, runtime, and generated code
+#
+COMP_CXXFLAGS = $(CXX_STD) $(CPPFLAGS) $(CXXFLAGS)
+COMP_CXXFLAGS_NONCHPL = -Wno-error
+RUNTIME_CFLAGS = $(C_STD) $(CPPFLAGS) $(CFLAGS)
+RUNTIME_CXXFLAGS = $(CXX_STD) $(CPPFLAGS) $(CXXFLAGS)
+GEN_CFLAGS = $(C_STD)
+GEN_STATIC_FLAG = -static
+GEN_DYNAMIC_FLAG =
+LIB_STATIC_FLAG =
+LIB_DYNAMIC_FLAG = -shared
+SHARED_LIB_CFLAGS = -fPIC
+
+# Set the target architecture for optimization
+ifneq ($(CHPL_MAKE_TARGET_CPU), none)
+ifneq ($(CHPL_MAKE_TARGET_CPU), unknown)
+ifneq ($(CHPL_MAKE_TARGET_CPU_FLAG), none)
+SPECIALIZE_CFLAGS = -m$(CHPL_MAKE_TARGET_CPU_FLAG)=$(CHPL_MAKE_TARGET_BACKEND_CPU)
+endif
+endif
+endif
+
+# Set flag for lax or IEEE floating point
+FAST_FLOAT_GEN_CFLAGS = -ffast-math
+IEEE_FLOAT_GEN_CFLAGS = -fno-fast-math
+
+ifeq ($(CHPL_MAKE_PLATFORM), darwin)
+# build 64-bit binaries when on a 64-bit capable PowerPC
+ARCH := $(shell test -x /usr/bin/machine -a `/usr/bin/machine` == ppc970 && echo -arch ppc64)
+RUNTIME_CFLAGS += $(ARCH)
+RUNTIME_CXXFLAGS += $(ARCH)
+GEN_CFLAGS += $(ARCH) -fno-strict-overflow
+GEN_LFLAGS += $(ARCH)
+endif
+
+#ensure that 64 bit binaries are made on AIX
+ifeq ($(CHPL_MAKE_PLATFORM), aix)
+GEN_CFLAGS += -maix64
+RUNTIME_CFLAGS += -maix64
+GEN_CFLAGS += -maix64
+COMP_GEN_LFLAGS += -maix64
+endif
+
+
+#
+# Flags for turning on warnings for C++/C code
+#
+WARN_CXXFLAGS = -Wall -Werror -Wpointer-arith -Wwrite-strings -Wno-strict-aliasing -Wmissing-declarations
+WARN_CFLAGS = $(WARN_CXXFLAGS) -Wmissing-prototypes -Wstrict-prototypes -Wmissing-format-attribute
+WARN_GEN_CFLAGS = $(WARN_CFLAGS)
+SQUASH_WARN_GEN_CFLAGS = -Wno-unused -Wno-uninitialized
+
+#
+# Don't warn for signed pointer issues (ex. c_ptr(c_char) )
+#
+SQUASH_WARN_GEN_CFLAGS += -Wno-pointer-sign
+
+#
+# Don't warn/error for incompatible pointer types (see
+# https://github.com/chapel-lang/chapel/issues/7983)
+#
+SQUASH_WARN_GEN_CFLAGS += -Wno-incompatible-pointer-types
+
+#
+# Don't warn for unsigned pointer comparisons
+#
+# uint32_t i = foo();
+# bool = i < 0; // always false
+#
+SQUASH_WARN_GEN_CFLAGS += -Wno-tautological-compare
+
+#
+# compiler warnings settings
+#
+ifeq ($(WARNINGS), 1)
+COMP_CXXFLAGS += $(WARN_CXXFLAGS)
+RUNTIME_CFLAGS += $(WARN_CFLAGS) -Wno-char-subscripts
+RUNTIME_CXXFLAGS += $(WARN_CXXFLAGS)
+#WARN_GEN_CFLAGS += -Wunreachable-code
+# GEN_CFLAGS gets warnings added via WARN_GEN_CFLAGS in comp-generated Makefile
+
+
+#
+# When compiling GASNet...
+#
+# -Wno-missing-prototypes must be used because
+# gasneti_linkconfig_idiotcheck isn't prototyped before it's used (boo)
+# and is static, so we can't prototype it for them (awwww).
+#
+# -Wno-strict-prototypes has to be used because most GASNet prototypes
+# aren't strict.
+#
+CHPL_GASNET_MORE_CFLAGS = -Wno-strict-prototypes -Wno-missing-prototypes -Wno-unused-variable -Wno-unused-function
+endif
+
+ifdef CHPL_COMM_DEBUG
+CHPL_GASNET_MORE_CFLAGS += -O0 -UNDEBUG
+CHPL_GASNET_MORE_GEN_CFLAGS += -Wno-uninitialized
+endif

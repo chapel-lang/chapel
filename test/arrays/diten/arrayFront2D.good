@@ -1,0 +1,1 @@
+arrayFront2D.chpl:3: error: front() is only supported on 1D rectangular arrays

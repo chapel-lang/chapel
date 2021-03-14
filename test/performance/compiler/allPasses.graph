@@ -1,0 +1,7 @@
+perfkeys: init, parse, checkParsed, docs, readExternC, expandExternArrayCalls, cleanup, scopeResolve, flattenClasses, normalize, checkNormalized, buildDefaultFunctions, createTaskFunctions, resolve, resolveIntents, checkResolved, replaceArrayAccessesWithRefTemps, flattenFunctions, cullOverReferences, lowerErrorHandling, callDestructors, lowerIterators, parallel, prune, bulkCopyRecords, removeUnnecessaryAutoCopyCalls, inlineFunctions, scalarReplace, refPropagation, copyPropagation, deadCodeElimination, removeEmptyRecords, localizeGlobals, loopInvariantCodeMotion, prune2, returnStarTuplesByRefArgs, insertWideReferences, optimizeOnClauses, addInitCalls, insertLineNumbers, denormalize, codegen, makeBinary, driverCleanup
+
+repeat-files: compilerPerformance.dat
+
+graphtitle: Average Compilation Time Per Pass
+ylabel: Time (seconds)
+defaultexpand: true

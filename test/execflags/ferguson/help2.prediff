@@ -1,0 +1,25 @@
+#!/usr/bin/env python3
+
+import sys, re
+
+execout=sys.argv[2]
+
+fh = open(execout, 'r')
+myLines = fh.readlines()
+fh.close()
+
+inConfigs = False
+fh = open(execout, 'w')
+for line in myLines:
+    if inConfigs:
+        if line.strip().find('============') == -1:
+            if line.strip().find(' config vars:') != -1:
+                inConfigs = False
+            else:
+                # Remove "(configured to XXX)" from output
+                line = line.split('(configured to')[0].rstrip()+'\n'
+    if line.strip().find('CONFIG VARS:') != -1:
+        inConfigs = True
+    # replace all white space with a single space
+    fh.write(line)
+fh.close()

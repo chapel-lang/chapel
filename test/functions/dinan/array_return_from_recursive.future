@@ -1,0 +1,37 @@
+unimplemented feature: returning arrays from recursive functions
+
+This test has a recursive function that returns an array.  This can't presently
+be done in Chapel since type inference breaks down on recursive functions and
+array return types are not supported.  This test comes from the get_coeffs()
+function in Madness.
+
+Notes from 04/30/08 meeting
+---------------------------
+* It seems desireable to support some sort of array return types.
+
+* It seems similar to array argument inference, except that it
+  requires combining results from multiple return statements; we do
+  this in some cases, but not for generics generally; yet arrays are a
+  fairly special case of generics in the language that have special
+  support.
+
+* The arrays being returned may have different param characteristics
+  (strided, reindexed, index type) -- how to unify?  
+
+  - In some cases, hard to reconcile -- e.g., if one had an index type
+    of int(32) and the other a uint(32).  Generate a compiler error in
+    this case?
+
+  - In some cases, differences may be able to be reconciled -- strided
+    and non-strided -- *EXCEPT* that it could require the non-strided
+    to be copied into a strided to make things work, which seems
+    contrary to our philosophy of not inserting array temps.
+
+* Note that the above issues also exist even if you don't specify the
+  return type.
+
+* This future is really geared towards "what can you specify in an
+  array return type?"
+
+* In general, there may also be questions about whether arrays
+  returned from functions are copied?

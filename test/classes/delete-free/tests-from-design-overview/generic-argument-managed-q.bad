@@ -1,0 +1,2 @@
+generic-argument-managed-q.chpl:22: In function 'h':
+generic-argument-managed-q.chpl:22: error: 'managed' undeclared (first use this function)

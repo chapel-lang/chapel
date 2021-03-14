@@ -1,0 +1,6 @@
+perfkeys: Total:
+graphkeys: BFS
+files: bfs.dat
+graphtitle: Parboil BFS Execution Time
+ylabel: Time (seconds)
+graphname: ParboilBFS

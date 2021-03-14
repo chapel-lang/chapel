@@ -1,0 +1,5 @@
+LAPACK_zgesv passed
+LAPACKE_zgesv_row_major passed
+LAPACKE_zgesv_col_major passed
+gesv_row_major passed
+gesv_col_major passed

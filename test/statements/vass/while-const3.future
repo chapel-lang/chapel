@@ -1,0 +1,4 @@
+feature request: generate "warning: A while loop with a constant condition" when the condition is an expression with a constant value
+
+Just filing a couple of simple expressions we'd like to recognize as constant
+for the purposes of generating a warning.

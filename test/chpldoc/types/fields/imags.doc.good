@@ -1,0 +1,39 @@
+.. default-domain:: chpl
+
+.. module:: imags.doc
+
+imags.doc
+=========
+**Usage**
+
+.. code-block:: chapel
+
+   use imags.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import imags.doc;
+
+.. record:: Foo
+
+   .. attribute:: var anImag: imag = 2.0i
+
+   .. attribute:: const bar = 1.0i
+
+   .. attribute:: param baz: imag
+
+   .. attribute:: var anImag2: imag = 2.0i
+
+      This one has a comment 
+
+   .. attribute:: const bar2 = 1.0i
+
+      So does this one 
+
+   .. attribute:: param baz2: imag
+
+      And this one 
+

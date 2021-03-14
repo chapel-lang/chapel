@@ -1,0 +1,32 @@
+NOTE: All versions are compiled using basically the same problem size
+module.
+
+STREAM:
+
+Fragmented (no BlockDist):
+
+These versions are like release/examples/benchmarks/hpcc/stream-ep.chpl, 
+*except* that they use whole array assignment.
+
+./STREAMS/bradc/stream-fragmented.chpl       | EXACTLY the same except the
+./STREAMS/diten/stream-fragmented-local.chpl |  -local version has a local
+                                             |  statement around the timed
+                                             |  computation
+
+Global:
+
+These versions are like release/examples/benchmarks/hpcc/stream.chpl.
+
+./STREAMS/bradc/stream-block1d.chpl          | Most like release version
+./STREAMS/bradc/stream-block1d-local.chpl    | Same but compiled with --local
+./STREAMS/bradc/stream-block1d-promote.chpl  | Same but uses whole array
+                                             |  assignment
+./serial-v0.7/stream.chpl                    | Uses whole array assignment
+                                             |  and no BlockDist
+
+
+RA:
+
+./RA/bradc/parallel/ra-dist.graph | No "on" or "local" optimization like the
+                                  |  release version
+./serial-v0.7/ra.graph            | Same and no BlockDist

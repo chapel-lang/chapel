@@ -1,0 +1,1 @@
+GetByIndex_WringArg.chpl:18: error: illegal type for index. Expected an 'int' got 'string'

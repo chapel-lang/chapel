@@ -1,0 +1,1 @@
+plus_equals_illegal_2.chpl:6: error: Cannot add indices to a rectangular domain

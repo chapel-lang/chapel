@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+cd foo && gcc -c foo.c && ar -rc libfoo.a foo.o && cd .. && \
+cd bar && gcc -c bar.c && ar -rc libbar.a bar.o && cd .. && \
+cd baz && gcc -c baz.c && ar -rc libbaz.a baz.o

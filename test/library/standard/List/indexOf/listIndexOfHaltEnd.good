@@ -1,0 +1,1 @@
+listIndexOfHaltEnd.chpl:12: error: halt reached - End index for "list.indexOf" out of bounds: 8

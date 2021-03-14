@@ -1,0 +1,8 @@
+bug: initializing a tuple of ranges requiring a coercion fails
+
+This future shows that when initializing a tuple of ranges that
+requires a coercion, we get an illegal lvalue error (apparently
+due to a compiler-generated coercion temp?).
+
+Upon fixing this, we could remove a hack-y workaround from DSIUtil.chpl
+in bulkCommTranslateDomain().

@@ -1,0 +1,4 @@
+EmptyCobegin.chpl:5: warning: cobegin has no effect if it contains fewer than 2 statements
+EmptyCobegin.chpl:8: warning: cobegin has no effect if it contains fewer than 2 statements
+There is only one statement inside this cobegin!
+I guess that's OK!

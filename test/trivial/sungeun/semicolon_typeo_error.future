@@ -1,0 +1,3 @@
+error message: Use before def error checking results in confusing error message if ':' is accidentally used instead of a ';'
+
+The ':' is interpreted as a cast operator.

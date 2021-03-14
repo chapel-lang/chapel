@@ -1,0 +1,2 @@
+$CHPL_HOME/modules/dists/DSIUtil.chpl:37: In function 'createTuple':
+$CHPL_HOME/modules/dists/DSIUtil.chpl:37: error: tuple must have positive size

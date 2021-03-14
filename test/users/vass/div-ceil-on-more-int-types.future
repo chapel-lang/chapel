@@ -1,0 +1,11 @@
+feature request: enable + / divceil(n,m) on more combinations of integral types
+
+divceil() instantiated for the four type combinations listed in .chpl
+hit typechecking issues because of the type restrictions on + and /.
+The same applies to divfloor().
+
+Most interestingly, + and (probably) / and others need to be defined
+on (uint(32),uint(64)) and (uint(64),uint(32)), which is real straightforward.
+
+After these have been enabled, please uncomment
+the corresponding lines in verify-ceil-floor-mod-1.chpl.

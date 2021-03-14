@@ -1,0 +1,4 @@
+in foo, chpl__isArrayView(A) is false
+in foo, A[1] is 0
+in foo, setting A[1] = 1
+after foo, A[1] is 0

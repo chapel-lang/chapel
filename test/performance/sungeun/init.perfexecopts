@@ -1,0 +1,3 @@
+--n=256 --m=256 --printOutput=false --printTiming=true # init.256
+--n=1024 --m=1024 --printOutput=false --printTiming=true # init.1024
+

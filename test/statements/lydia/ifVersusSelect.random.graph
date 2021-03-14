@@ -1,0 +1,6 @@
+perfkeys: If/else branching took, Select branching took
+files: ifVersusSelect.random.dat, ifVersusSelect.random.dat
+graphkeys: if/else, select
+graphtitle: Conditional Statement Compare (random)
+ylabel: Time (seconds)
+graphname: condCompareRand

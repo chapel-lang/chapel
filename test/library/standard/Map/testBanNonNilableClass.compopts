@@ -1,0 +1,2 @@
+-sTestClass=NilClass          # testBanNonNilableClass.0.good
+-sTestClass=NonNilClass       # testBanNonNilableClass.1.good

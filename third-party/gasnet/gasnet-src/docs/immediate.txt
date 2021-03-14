@@ -1,0 +1,56 @@
+Best Practices for use of GEX_FLAG_IMMEDIATE
+
+Use of GEX_FLAG_IMMEDIATE requests that a call to inject communication return
+without doing so if the necessary (network and implementation dependent)
+resources are not immediately available.  Because a call with
+GEX_FLAG_IMMEDIATE is not required (in general) to run the progress engine, it
+may fail due to an apparent lack of a resource that would be recovered by
+polling of the progress engine.  This has potentially both positive and
+negative impacts for code using it.
+
+Because of the lack of a guaranteed progress call, an IMMEDIATE call my have
+lower overhead when it does succeed than the same call without this flag.
+However, a long-enough series of IMMEDIATE calls back-to-back can easily
+deplete the available resources such that subsequent ones are certain to fail.
+Even with frequent polling, there is no guarantee that a given operation will
+ever succeed with the IMMEDIATE flag set.
+
+When an IMMEDIATE call fails, the reason might be due to either a per-peer or
+global resource shortage, and there is no indication of which.  In the first
+case an IMMEDIATE call with a different rank argument might succeed, while in
+the second case it would not.
+
+No operation should be retried as IMMEDIATE indefinitely.  After some bounded
+number of attempts one must either abandon an operation or issue it without
+the IMMEDIATE flag
+
+Since any GASNet communication (or Poll) operation may consume resources
+needed for communication, a client should arrange that every IMMEDIATE
+operation should eventually follow right after an AMPoll().  This "fairness"
+can reduce the likelihood of starvation due solely to other operations issued
+between the Poll and a given operation.
+
+To achieve a good balance between the benefit and dangers of non-polling calls
+with the IMMEDIATE flag, we recommend a Poll following each failed IMMEDIATE
+call, but not between successful ones.  In this case the "fairness"
+requirement is met by retrying each failed operation once after the Poll.
+Note that since almost every non-trivial GASNet client must Poll periodically
+to process incoming Active Messages, we included a poll at the start of our
+model progress loop.
+
+Below is pseudo code illustrating this idea, for some collection of NBI
+operations.
+
+  gasnet_AMPoll();
+  // This is a logical place to check for side-effects of
+  // inbound AMs and to test gex_Event_t's
+  foreach OP in (some_collection) {
+    int imm_flag = (OP->retries++ < RETRY_LIMIT) ? GEX_FLAG_IMMEDIATE : 0;
+    if (issue_some_NBI(OP, imm_flag)) {
+      // non-zero return from NBI indicates IMMEDIATE injection failed
+      gasnet_AMPoll();
+      imm_flag = (OP->retries++ < RETRY_LIMIT) ? GEX_FLAG_IMMEDIATE : 0;
+      if (issue_some_NBI(OP, imm_flag))) continue;  // second failure
+    }
+    delete(some_collection, OP); // success
+  }

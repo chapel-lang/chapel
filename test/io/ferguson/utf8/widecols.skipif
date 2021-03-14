@@ -1,0 +1,2 @@
+# This test is broken for cygwin.  There is a future for it
+CHPL_HOST_PLATFORM <= cygwin

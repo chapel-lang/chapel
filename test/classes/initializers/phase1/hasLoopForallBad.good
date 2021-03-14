@@ -1,0 +1,2 @@
+hasLoopForallBad.chpl:4: In initializer:
+hasLoopForallBad.chpl:9: error: can't initialize field "field" inside a forall during phase 1 of initialization

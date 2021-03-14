@@ -1,0 +1,69 @@
+#!/usr/bin/env python3
+
+import sys
+
+# sort groups of duplicate files
+
+testBaseName = sys.argv[1]
+testOutput = sys.argv[2]
+goodFile = 'all.good'
+
+def readgroups(filename):
+
+  curgroup = [ ]
+  groups = [ ]
+
+  with open (filename, 'r') as f:
+    for line in f:
+      line = line.rstrip();
+      if not line:
+        groups += [curgroup]
+        curgroup = [ ]
+      else:
+        curgroup += [line]
+
+  if len(curgroup) != 0:
+    groups += [curgroup]
+    curgroup = [ ]
+
+  # now sort within each group
+  for i in range(0, len(groups)):
+    groups[i] = sorted(groups[i])
+
+  # now sort across the groups
+  groups = sorted(groups, key=lambda x: x[0])
+  return groups
+
+good = readgroups(goodFile)
+got  = readgroups(testOutput)
+
+ok = True
+
+with open (testOutput, 'w') as f:
+  if len(good) != len(got):
+    f.write("ERROR: Number of groups does not match\n")
+    ok = False
+  else:
+    for i in range(0, len(good)):
+      curgood = good[i]
+      curgot  = got[i]
+      if len(curgood) != len(curgot):
+        f.write("ERROR: group has different number of elements\n")
+        ok = False
+      else:
+        for j in range(0, len(curgood)):
+          if curgood[j] != curgot[j]:
+            f.write("ERROR: group does not match\n")
+            ok = False
+
+  if ok:
+    f.write("PASS\n")
+  else:
+    f.write("good is: ")
+    f.write(repr(good))
+    f.write("\n")
+    f.write("got  is: ")
+    f.write(repr(got))
+    f.write("\n")
+    f.write("FAIL\n")
+

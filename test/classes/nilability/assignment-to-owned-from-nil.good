@@ -1,0 +1,9 @@
+1a nil
+1b nil
+2a {}
+2b nil
+3a nil
+3b {}
+3c {}
+4a {}
+assignment-to-owned-from-nil.chpl:49: error: halt reached - argument to ! is nil

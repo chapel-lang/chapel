@@ -1,0 +1,3 @@
+listLastParSafeWarning.chpl:3: In function 'test':
+listLastParSafeWarning.chpl:6: warning: Calling `last()` on a list initialized with `parSafe=true` has been deprecated, consider using `set()` or `update()` instead
+0

@@ -1,0 +1,8 @@
+real(64) 8.0 8.0 real(64) 8.0
+real(64) 2.0 2.0 real(64) 2.0
+real(64) -8.0 -8.0 real(64) -8.0
+real(64) 2.0 2.0 real(64) 2.0
+imag(64) 8.0i 8.0i imag(64) 8.0i
+imag(64) -2.0i -2.0i imag(64) -2.0i
+imag(64) 8.0i 8.0i imag(64) 8.0i
+imag(64) 2.0i 2.0i imag(64) 2.0i

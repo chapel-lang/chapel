@@ -1,0 +1,21 @@
+performance: local endCounts for non-0 locale's begin tasks
+
+The implicit sync around user main requires all begins to synchronize
+via the user main's endCount.  Unfortunately, this means that any
+begin not on locale 0 has to do 2 remote updates to the endCount
+variable.
+
+It would be nice if each locale could have a private endCount.  When
+that endCount went to 0, some task could inform locale 0.
+Unfortunately, this might be tricky since non-0 locales don't know
+when user main is done.
+
+In any case, I'm not sure how often this case comes up, but I wanted
+to commit this test since it helped my understanding of variable comm
+counts for some tests.
+
+Note that I had to put the conditional before the begin for this to
+actually happen (any additional statements in the on body made it do
+so also).  I think that some optimization may make it work as I would
+expect in the simple case.
+

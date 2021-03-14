@@ -1,0 +1,2 @@
+accessMulti2.chpl:3: error: unresolved call 'd()'
+accessMulti2.chpl:3: note: because no functions named d found in scope

@@ -1,0 +1,4 @@
+#!/bin/bash
+  
+grep -B 1 chpl_comm_atomic_add_unordered_int64 output/needsFence.c | sed 's|(.*)||g' | sed 's/  *//g' >> $1.1.comp.out.tmp
+

@@ -1,0 +1,2 @@
+EXECOPTS <= memLeaksLog
+EXECOPTS <= memLeaks

@@ -1,0 +1,1 @@
+test_enum6.chpl:7: error: enumerator 'NEG' is not an integer param value

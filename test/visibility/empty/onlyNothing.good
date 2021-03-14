@@ -1,0 +1,3 @@
+onlyNothing.chpl:13: In function 'main':
+onlyNothing.chpl:17: error: unresolved call 'foo()'
+onlyNothing.chpl:17: note: because no functions named foo found in scope

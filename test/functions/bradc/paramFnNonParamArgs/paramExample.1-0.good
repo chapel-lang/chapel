@@ -1,0 +1,2 @@
+paramExample.chpl:16: warning: width of x + y is 64
+x + y is: 6.0

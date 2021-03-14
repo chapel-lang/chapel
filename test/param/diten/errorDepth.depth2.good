@@ -1,0 +1,3 @@
+errorDepth.chpl:11: In function 'baz':
+errorDepth.chpl:11: error: error 2
+  errorDepth.chpl:15: called as baz(param d = 2)

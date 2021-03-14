@@ -1,0 +1,1 @@
+innerExcept.chpl:14: error: Bad identifier in rename, no known 'bar' in 'A'

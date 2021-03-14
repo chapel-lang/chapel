@@ -1,0 +1,3 @@
+modDomQuery.chpl:13: In function 'foo':
+modDomQuery.chpl:14: error: illegal lvalue in assignment
+  modDomQuery.chpl:9: called as foo(X: [domain(1,int(64),false)] real(64))

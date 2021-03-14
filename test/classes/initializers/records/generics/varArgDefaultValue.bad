@@ -1,0 +1,3 @@
+varArgDefaultValue.chpl:12: error: default initialization with type 'Foo(bool)' is not yet supported
+varArgDefaultValue.chpl:5: note: field 'v' is a generic value
+varArgDefaultValue.chpl:5: note: consider separately declaring a type field for it or using a 'new' call

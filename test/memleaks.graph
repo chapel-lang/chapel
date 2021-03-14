@@ -1,0 +1,14 @@
+perfkeys: Total Allocated Memory:, Total Freed Memory:
+files: memleaks.dat, memleaks.dat
+ylabel: bytes
+graphtitle: Memory Usage for examples Tests
+
+perfkeys: Total Leaked Memory:
+files: memleaks.dat
+ylabel: bytes
+graphtitle: Memory Leaks for examples Tests
+
+perfkeys: Number of Tests with Leaks:
+files: memleaks.dat
+ylabel: # tests
+graphtitle: Number of Tests with Leaks (examples only)

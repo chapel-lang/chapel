@@ -1,0 +1,25 @@
+# Comment test (followed by blank line test)
+
+CHPL_HOST_PLATFORM=darwin       # inline comment test
+CHPL_HOST_ARCH=x86_64
+CHPL_HOST_COMPILER=clang
+CHPL_TARGET_PLATFORM=darwin
+CHPL_TARGET_ARCH=x86_64
+CHPL_TARGET_COMPILER=clang
+CHPL_TARGET_CPU=native
+CHPL_LOCALE_MODEL=flat
+CHPL_COMM=none
+CHPL_COMM_SUBSTRATE=none
+CHPL_GASNET_SEGMENT=none
+CHPL_TASKS=qthreads
+CHPL_LAUNCHER=none
+CHPL_TIMERS=generic
+CHPL_UNWIND=none
+CHPL_MEM=jemalloc
+CHPL_ATOMICS=intrinsics
+CHPL_NETWORK_ATOMICS=none
+CHPL_GMP=none
+CHPL_HWLOC=bundled
+CHPL_REGEXP=re2
+CHPL_LLVM=none
+CHPL_AUX_FILESYS=none

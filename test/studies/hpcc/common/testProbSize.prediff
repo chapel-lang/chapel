@@ -1,0 +1,26 @@
+#!/usr/bin/env perl
+
+$hostname = `hostname -s`; chomp($hostname);
+
+$countMemoryDir="../../../library/standard/Memory/Diagnostics/countMemory";
+$countMemoryFile="$countMemoryDir/countMemory.$hostname.good";
+
+system("cd $countMemoryDir && ./countMemory.prediff");
+
+open MEMFILE, "$countMemoryFile" or die "can't open $countMemoryFile $!";
+my @memLines = <MEMFILE>;
+close (MEMFILE);
+
+$MEMINBYTES = 0;
+foreach my $line (@memLines) {
+  if ($MEMINBYTES == 0) {
+    if ($line =~ m/memory is: (\s*)(\S*)/) {
+      $MEMINBYTES = "$2";
+      break;
+    }
+  }
+}
+
+system("./computeProbSize.pl $MEMINBYTES > testProbSize.good");
+
+

@@ -1,0 +1,15 @@
+#! /usr/bin/env bash
+
+#
+# Test should use over 1 mb of memory.  We just check that the high
+# water mark is 7 digits or more.
+#
+# The 'LC_ALL=C' standardizes to "traditional sort order", avoiding
+# locale-mediated variation across environments; see sort(1).
+#
+grep '^memStats:' < $2 | \
+  sed -e 's/\(High Water Mark[^0-9]*\)[0-9]\{7,\}/\1>=1mb/' \
+      -e 's/[0-9]\{1,\}$/N/' \
+      -e 's/ \{1,\}/ /g' | \
+  LC_ALL=C sort > $2.prediff.tmp \
+&& mv $2.prediff.tmp $2

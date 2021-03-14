@@ -1,0 +1,70 @@
+Testing atomic uint(8)
+Increment OK
+Decrement OK
+Add OK
+Subtract OK
+Compare and Swap OK
+
+Testing atomic uint(16)
+Increment OK
+Decrement OK
+Add OK
+Subtract OK
+Compare and Swap OK
+
+Testing atomic uint(32)
+Increment OK
+Decrement OK
+Add OK
+Subtract OK
+Compare and Swap OK
+
+Testing atomic uint(64)
+Increment OK
+Decrement OK
+Add OK
+Subtract OK
+Compare and Swap OK
+
+Testing atomic int(8)
+Increment OK
+Decrement OK
+Add OK
+Subtract OK
+Compare and Swap OK
+
+Testing atomic int(16)
+Increment OK
+Decrement OK
+Add OK
+Subtract OK
+Compare and Swap OK
+
+Testing atomic int(32)
+Increment OK
+Decrement OK
+Add OK
+Subtract OK
+Compare and Swap OK
+
+Testing atomic int(64)
+Increment OK
+Decrement OK
+Add OK
+Subtract OK
+Compare and Swap OK
+
+Testing atomic real(32)
+Increment OK
+Decrement OK
+Add OK
+Subtract OK
+Compare and Swap OK
+
+Testing atomic real(64)
+Increment OK
+Decrement OK
+Add OK
+Subtract OK
+Compare and Swap OK
+

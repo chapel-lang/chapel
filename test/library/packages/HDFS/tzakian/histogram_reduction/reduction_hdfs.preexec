@@ -1,0 +1,3 @@
+#!/usr/bin/env perl
+
+system("hadoop dfs -D dfs.block.size=2370560 -put data/advocate.txt /tmp/advocate.txt");

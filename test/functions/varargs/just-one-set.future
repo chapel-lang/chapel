@@ -1,0 +1,7 @@
+unimplemented feature: No support for multiple typed var-arg sets
+
+The specification does not discuss this opportunity but there is informal
+support for adding in one day.  The current implementation would need
+non-trivial work to do this but this seems like a low priority goal.
+
+Lock in the fact that the compiler will warn about this.

@@ -1,0 +1,2 @@
+onlyNothingField.chpl:1: warning: This file-scope code is outside of any explicit module declarations (e.g., module Other), so an implicit module named 'onlyNothingField' is being introduced to contain the file's contents.
+true

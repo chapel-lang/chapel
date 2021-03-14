@@ -1,0 +1,98 @@
+#
+# Copyright (c) 2018-2020 Amazon.com, Inc. or its affiliates. All rights reserved.
+#
+# This software is available to you under a choice of one of two
+# licenses.  You may choose to be licensed under the terms of the GNU
+# General Public License (GPL) Version 2, available from the file
+# COPYING in the main directory of this source tree, or the
+# BSD license below:
+#
+#     Redistribution and use in source and binary forms, with or
+#     without modification, are permitted provided that the following
+#     conditions are met:
+#
+#      - Redistributions of source code must retain the above
+#        copyright notice, this list of conditions and the following
+#        disclaimer.
+#
+#      - Redistributions in binary form must reproduce the above
+#        copyright notice, this list of conditions and the following
+#        disclaimer in the documentation and/or other materials
+#        provided with the distribution.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+# BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+# ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+# CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+#
+if HAVE_EFA
+_efa_files = \
+	prov/efa/src/efa_device.c \
+	prov/efa/src/efa_av.c \
+	prov/efa/src/efa_domain.c \
+	prov/efa/src/efa_cm.c \
+	prov/efa/src/efa_cq.c \
+	prov/efa/src/efa_ep.c \
+	prov/efa/src/efa_fabric.c \
+	prov/efa/src/efa_msg.c \
+	prov/efa/src/efa_mr.c \
+	prov/efa/src/efa_rma.c \
+	prov/efa/src/rxr/rxr_attr.c	\
+	prov/efa/src/rxr/rxr_init.c	\
+	prov/efa/src/rxr/rxr_fabric.c	\
+	prov/efa/src/rxr/rxr_domain.c	\
+	prov/efa/src/rxr/rxr_cq.c	\
+	prov/efa/src/rxr/rxr_ep.c	\
+	prov/efa/src/rxr/rxr_cntr.c	\
+	prov/efa/src/rxr/rxr_rma.c	\
+	prov/efa/src/rxr/rxr_msg.c	\
+	prov/efa/src/rxr/rxr_pkt_entry.c \
+	prov/efa/src/rxr/rxr_pkt_type_req.c \
+	prov/efa/src/rxr/rxr_pkt_type_data.c \
+	prov/efa/src/rxr/rxr_pkt_type_misc.c \
+	prov/efa/src/rxr/rxr_pkt_cmd.c \
+	prov/efa/src/rxr/rxr_read.c \
+	prov/efa/src/rxr/rxr_atomic.c
+
+_efa_headers = \
+	prov/efa/src/efa.h \
+	prov/efa/src/rxr/efa_cuda.h \
+	prov/efa/src/rxr/rxr.h \
+	prov/efa/src/rxr/rxr_cntr.h \
+	prov/efa/src/rxr/rxr_rma.h \
+	prov/efa/src/rxr/rxr_msg.h \
+	prov/efa/src/rxr/rxr_pkt_entry.h \
+	prov/efa/src/rxr/rxr_pkt_type.h \
+	prov/efa/src/rxr/rxr_pkt_type_req.h \
+	prov/efa/src/rxr/rxr_pkt_cmd.h \
+	prov/efa/src/rxr/rxr_read.h \
+	prov/efa/src/rxr/rxr_atomic.h
+
+efa_CPPFLAGS += \
+	-I$(top_srcdir)/prov/efa/src/ \
+	-I$(top_srcdir)/prov/efa/src/rxr/
+
+if HAVE_EFA_DL
+pkglib_LTLIBRARIES += libefa-fi.la
+libefa_fi_la_SOURCES = $(_efa_files) $(_efa_headers) $(common_srcs)
+libefa_fi_la_CPPFLAGS = $(AM_CPPFLAGS) $(efa_CPPFLAGS)
+libefa_fi_la_LDFLAGS = \
+    -module -avoid-version -shared -export-dynamic $(efa_LDFLAGS)
+libefa_fi_la_LIBADD = $(linkback) $(efa_LIBS)
+libefa_fi_la_DEPENDENCIES = $(linkback)
+else !HAVE_EFA_DL
+src_libfabric_la_SOURCES += $(_efa_files) $(_efa_headers)
+src_libfabric_la_CPPFLAGS += $(efa_CPPFLAGS)
+src_libfabric_la_LDFLAGS += $(efa_LDFLAGS)
+src_libfabric_la_LIBADD += $(efa_LIBS)
+endif !HAVE_EFA_DL
+
+prov_install_man_pages += man/man7/fi_efa.7
+
+endif HAVE_EFA
+
+prov_dist_man_pages += man/man7/fi_efa.7

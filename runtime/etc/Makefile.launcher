@@ -1,0 +1,76 @@
+# Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+# Copyright 2004-2019 Cray Inc.
+# Other additional copyright holders may be indicated within.
+# 
+# The entirety of this work is licensed under the Apache License,
+# Version 2.0 (the "License"); you may not use this file except
+# in compliance with the License.
+# 
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+CHPL_MAKE_HOST_TARGET = --host
+MAKE_LAUNCHER = 1
+REAL_SUFFIX = _real
+
+include $(CHPL_MAKE_HOME)/make/Makefile.base
+
+LD = $(CC)
+
+include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.threads-$(CHPL_MAKE_THREADS)
+include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.comm-$(CHPL_MAKE_COMM)
+include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.mem-$(CHPL_MAKE_MEM)
+
+CHPL_LN_INCS = -I$(CHPL_MAKE_RUNTIME_INCL)/$(subst -sim,,$(CHPL_MAKE_TARGET_PLATFORM)) -I$(CHPL_MAKE_RUNTIME_INCL)
+CHPL_LN_LIB_DIR = $(CHPL_MAKE_RUNTIME_LIB)/$(CHPL_MAKE_LAUNCHER_SUBDIR)
+
+# CHPL_MAKE_RUNTIME_LIB=$(CHPL_MAKE_RUNTIME_LIB)
+# CHPL_MAKE_RUNTIME_INCL=$(CHPL_MAKE_RUNTIME_INCL)
+# CHPL_MAKE_THIRD_PARTY=$(CHPL_MAKE_THIRD_PARTY)
+
+LAUNCHER_SRC_NAME = $(TMPDIRNAME)/launcher_support.c
+REAL_BINARY_NAME = $(BINNAME:%$(EXE_SUFFIX)=%)$(REAL_SUFFIX)
+
+all: FORCE
+	rm -f $(REAL_BINARY_NAME)
+	mv $(TMPBINNAME) $(REAL_BINARY_NAME)
+	echo "#include \"chplcgfns.h\"" > $(LAUNCHER_SRC_NAME)
+	echo "#include \"config.h\"" >> $(LAUNCHER_SRC_NAME)
+	echo "#include \"_config.c\"" >> $(LAUNCHER_SRC_NAME)
+	echo "#include \"chpl_compilation_config.c\"" >> $(LAUNCHER_SRC_NAME)
+	echo "const char launcher_real_suffix[] = \"$(REAL_SUFFIX)\";" >> $(LAUNCHER_SRC_NAME)
+	echo "const char launcher_exe_suffix[] = \"$(EXE_SUFFIX)\";" >> $(LAUNCHER_SRC_NAME)
+	# TODO would be nice to provide ABS path to REAL_BINARY_NAME instead of ./
+	echo "const char* launcher_mli_real_name = \"./$(REAL_BINARY_NAME)\";" >> $(LAUNCHER_SRC_NAME)
+ifneq ($(CHPL_MAKE_IS_MLI),1)
+	echo "const int launcher_is_mli = 0;" >> $(LAUNCHER_SRC_NAME)
+else
+	echo "const int launcher_is_mli = 1;" >> $(LAUNCHER_SRC_NAME)
+endif
+ifneq ($(CHPL_MAKE_IS_MLI),1)
+	$(CC) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) \
+		-c -o $(TMPBINNAME)_launcher.o \
+		-DLAUNCHER $(CHPL_LN_INCS) -I. $(LAUNCHER_SRC_NAME)
+else
+#
+# If we are building launcher object files for a multi-locale library, then
+# we need to make sure that we are generating position independent code,
+# IE with "-fPIC" on GCC.
+#
+	$(CC) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) $(SHARED_LIB_CFLAGS) \
+		-c -o $(TMPBINNAME)_launcher.o \
+		-DLAUNCHER $(CHPL_LN_INCS) -I. $(LAUNCHER_SRC_NAME)
+endif
+ifneq ($(CHPL_MAKE_IS_MLI),1)
+	$(LD) $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) -o $(TMPBINNAME)_launcher -L$(CHPL_LN_LIB_DIR) $(TMPBINNAME)_launcher.o $(CHPL_LN_LIB_DIR)/main_launcher.o -lchpllaunch -lm $(LAUNCH_LIBS)
+	cp $(TMPBINNAME)_launcher $(TMPBINNAME)
+endif
+
+FORCE:

@@ -1,0 +1,8 @@
+The reference version for the largest size of FT we can run (size B) takes
+~100 seconds to complete.  The Chapel version of this size takes roughly 500
+seconds to complete, so we should let it go around 1000 just to be safe.
+
+Note: when the timeout was extended to 1000, on chap03 and bradc-lnx size C and
+size D run out of memory instead of just timing out, although size C completed
+on chap04.  Those problem sizes have now been disabled, in part because of this
+and also because the reference version does not run on those sizes either.

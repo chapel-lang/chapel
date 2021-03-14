@@ -1,0 +1,20 @@
+#!/usr/bin/env sh
+
+# get the chpl home directory
+FIND_CHPL_HOME=$(cd $(dirname $0) ; cd ..; cd ..; pwd)
+
+# Test to see if the test venv is working
+# If so, run genGraphs.py in it
+# Otherwise, run genGraphs.py outside of the venv.
+# : is just a no-op in sh
+if $FIND_CHPL_HOME/util/test/run-in-test-venv.bash \
+     /bin/sh -c : > /dev/null 2>&1
+then
+
+  $FIND_CHPL_HOME/util/test/run-in-test-venv.bash \
+    $FIND_CHPL_HOME/util/test/genGraphs.py "$@"
+
+else
+
+  $FIND_CHPL_HOME/util/test/genGraphs.py "$@"
+fi

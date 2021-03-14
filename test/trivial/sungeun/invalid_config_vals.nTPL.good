@@ -1,0 +1,1 @@
+error: CHPL_RT_NUM_THREADS_PER_LOCALE must be >= 0

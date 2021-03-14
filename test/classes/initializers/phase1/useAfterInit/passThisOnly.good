@@ -1,0 +1,2 @@
+passThisOnly.chpl:10: In initializer:
+passThisOnly.chpl:13: error: cannot pass a record to a function before this.complete()

@@ -1,0 +1,3 @@
+chainInSameUse.chpl:8: warning: identifier 'bleep' is repeated
+note: Did you mean to rename 'a' to 'bloop'?
+chainInSameUse.chpl:8: error: Bad identifier in rename, no known 'bleep' in 'Foo'

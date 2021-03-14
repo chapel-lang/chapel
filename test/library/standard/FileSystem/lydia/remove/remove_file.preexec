@@ -1,0 +1,2 @@
+#!/bin/bash
+echo "This file is not empty" > remove_file.txt 2> remove_file.exec.out.tmp

@@ -1,0 +1,3 @@
+bug: var function returning multiple class types should get compiler error
+
+This is currently allowed, but crashes at runtime.

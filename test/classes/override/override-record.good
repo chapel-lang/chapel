@@ -1,0 +1,1 @@
+override-record.chpl:2: error: Parent.foo override keyword present but record methods cannot override

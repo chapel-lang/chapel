@@ -1,0 +1,2 @@
+-O3 -march=native $CHPL_HOME/runtime/src/chpl-bitops.c $CHPL_HOME/runtime/src/chpl-timers.c -DPRINT_TIMING
+-O3 -march=native $CHPL_HOME/runtime/src/chpl-bitops.c $CHPL_HOME/runtime/src/chpl-timers.c -DPRINT_TIMING -DCHPL_BITOPS_C # bitops-32-c.perfkeys

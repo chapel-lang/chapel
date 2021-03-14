@@ -1,0 +1,83 @@
+This directory and its subfolders contain the various implementations of the
+Computer Language Benchmarks Game benchmark spectral-norm.  Details of each
+version follow, files are listed in order of chronological addition:
+
+./sidelnik
+  A folder containing the original implementations, made by Albert Sidelnik
+
+./sidelnik/spectralnorm.chpl
+  The first implementation.  This is practically an exact translation of the C#
+  version put forth as guidelines on the benchmark website.  It creates a number
+  of threads equal to the number of cores and divides the array between them,
+  forcing each to wait at the end of eval_A(t)_times_u by using a barrier.
+
+./sidelnik/spectralnorm_2.chpl
+  Uses a block distribution, zippering over the array write location and
+  position.  Instead of using a separate thread for each segment of the array,
+  uses a separate task per index and then calls a reduction to get the sum.
+  On machines with less cores, this is significantly slower.
+
+./sidelnik/spectralnorm_reduct_warning.chpl
+./sidelnik/spectralnorm_reduct_ice.chpl
+./sidelnik/spectralnorm_iterator.chpl
+  The above three are not implementations of the spectralnorm benchmark, merely
+  test cases for the tools used in spectralnorm_2.chpl
+
+
+
+./lydia
+  A folder containing the many transformations undergone in an attempt to
+  improve the performance of the benchmark from a code standpoint, made by Lydia
+  Duncan.
+
+./lydia/spectral-norm.chpl
+  Basic structure is the same as sidelnik/spectralnorm_2.chpl, except the block
+  distribution was deemed unnecessary.  Minor cleanups were additionally made,
+  including the inlining of eval_A, and changing the configuration variable and
+  others to constants.  On machines with less cores, this is much faster than
+  spectralnorm_2 and about on par with sidelnik/spectralnorm.chpl
+
+./lydia/spectral-norm-double-time.chpl
+  After looking at the gcc version #4, it was discovered that doubling the
+  number of computations per task and halving the number of tasks resulted in
+  a significant improvement on machines with less cores.  Follows the structure
+  of spectral-norm.chpl otherwise.
+
+./lydia/spectral-norm-barrier.chpl
+  Takes sidelnik/spectralnorm.chpl and performs the same changes to it as
+  undergone by spectral-norm-double-time.chpl to show the difference between
+  using and not using a barrier.  There is little discernable difference in
+  performance between these two versions.
+
+./lydia/spectral-norm-specify-step.chpl
+  Since two computations per task and half the number of tasks was useful, this
+  version was created so that one could specify the number of computations per
+  task, or the step taken through the range.  While specifying --step=2 is
+  significantly slower than spectral-norm-double-time.chpl, various runs showed
+  a high performance increase, with a 87% increase on our 16-core machine and
+  an 53% increase on our 2-core machines as the best value obtained, at
+  --step=problemSize
+
+./lydia/spectral-norm-no-reduct.chpl
+  Because the best value for spectral-norm-specify-step.chpl was obtained at
+  --step=problemSize, or when the reductions were basically serial, this version
+  removed the reductions from eval_A_times_u and eval_At_times_u.  It
+  demonstrates the same performance as spectral-norm-specify-step.chpl with the
+  optimal step size, which as of 11/25/2013 places it at 2x as slow as the
+  fastest reference version.
+
+
+
+./bradc
+  The results of Brad Chamberlain's pass through the release version of
+  spectral norm
+
+./bradc/spectralnorm-blc.chpl
+  Replaces lydia/spectral-norm-no-reduct's serial reduction helper function with
+  a serial statement surrounding the original reduction, utilizes writef()-style
+  output, makes the shift operation division by 2 again, and utilizes promoted
+  multiplication.  Contains other clean-up and stylistic changes as well.
+
+./bradc/spectralnorm-partred.chpl
+  A future that makes use of currently unimplemented partial reductions.  It is
+  otherwise based on spectralnorm-blc.

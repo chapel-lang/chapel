@@ -1,0 +1,1 @@
+arrayIdxType.chpl:1: error: Default Associative domains with idxType=[domain(1,int(64),false)] int(64) are not allowed

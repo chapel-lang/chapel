@@ -1,0 +1,12 @@
+exportGenericArgs.chpl:1: error: exported function `typeArg` can't be generic
+exportGenericArgs.chpl:1: note:    formal argument 't' causes it to be
+exportGenericArgs.chpl:4: error: exported function `paramArg` can't be generic
+exportGenericArgs.chpl:4: note:    formal argument 'p' causes it to be
+exportGenericArgs.chpl:7: error: exported function `noType` can't be generic
+exportGenericArgs.chpl:7: note:    formal argument 'y' causes it to be
+exportGenericArgs.chpl:10: error: exported function `queryType` can't be generic
+exportGenericArgs.chpl:10: note:    formal argument 'y' causes it to be
+exportGenericArgs.chpl:13: error: exported function `twoGenerics` can't be generic
+exportGenericArgs.chpl:13: note:    formal argument 't' causes it to be
+exportGenericArgs.chpl:13: error: exported function `twoGenerics` can't be generic
+exportGenericArgs.chpl:13: note:    formal argument 'p' causes it to be

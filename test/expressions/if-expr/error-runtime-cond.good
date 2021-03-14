@@ -1,0 +1,4 @@
+error-runtime-cond.chpl:8: error: Unable to resolve type of if-expression
+note: if-expression returns type variables, did you mean to use a param conditional?
+note: 'then' branch returns type "int(64)"
+note: 'else' branch returns type "string"

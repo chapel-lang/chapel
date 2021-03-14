@@ -1,0 +1,2 @@
+# This test has a race condition (intentionally)
+--no-vectorize

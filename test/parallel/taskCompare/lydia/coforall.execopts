@@ -1,0 +1,3 @@
+--verbose=true --N=2000 --nthreads=52 # loopCompare.N=2000.nthreads=52.good
+--verbose=true --N=1000 --nthreads=98 # loopCompare.N=1000.nthreads=98.good
+

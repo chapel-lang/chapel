@@ -1,0 +1,2 @@
+wrongRecordArgCount.chpl:2: error: R.init= must have exactly one argument
+wrongRecordArgCount.chpl:4: error: R.init= must have exactly one argument

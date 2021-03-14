@@ -1,0 +1,1 @@
+renameInternField.chpl:3: error: only external types can have external fields

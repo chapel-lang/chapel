@@ -1,0 +1,2 @@
+refvar-compare-nil.chpl:1: error: reference 'rx' is not initialized
+refvar-compare-nil.chpl:3: note: 'rx' use here prevents split-init

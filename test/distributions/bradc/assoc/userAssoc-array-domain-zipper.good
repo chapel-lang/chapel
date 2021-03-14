@@ -1,0 +1,12 @@
+D is:
+1.3
+2.4
+3.5
+A is:
+one point three
+two point four
+three point five
+Checking d locales standalone
+Checking d locales leader/follower
+Checking d/array locales leader/follower
+Checking array/d locales leader/follower

@@ -1,0 +1,29 @@
+# Virtualenv is sensitive to ../../ in the path. Specifically, they are
+# recorded all the way down to the hash bangs in scripts. Removing them here
+# avoids any potential issues when paths are compared (e.g. some things
+# consider a/b/../../a/b/ equal to a/b/, while string matching does not).
+
+CHPL_VENV_DIR=$(shell cd $(THIRD_PARTY_DIR)/chpl-venv && pwd)
+
+CHPL_VENV_TEST_REQUIREMENTS_FILE=$(CHPL_VENV_DIR)/test-requirements.txt
+CHPL_VENV_CHPLDOC_REQUIREMENTS_FILE=$(CHPL_VENV_DIR)/chpldoc-requirements.txt
+CHPL_VENV_C2CHAPEL_REQUIREMENTS_FILE=$(CHPL_VENV_DIR)/c2chapel-requirements.txt
+
+CHPL_VENV_CHPLSPELL_REQUIREMENTS_FILE=$(CHPL_VENV_DIR)/chplspell-requirements.txt
+CHPL_VENV_CHPLSPELL_REQS=$(CHPL_VENV_VIRTUALENV_DIR)/chpl-chplspell-reqs
+
+# Do not include this file from $(CHPL_MAKE_HOME)/make/Makefile.base.
+# Makefile.base gets run by the chpl compiler, but the third-party/chpl-venv
+# stuff is not used by the chpl compiler.
+
+# Python version
+PYTHON=$(CHPL_MAKE_PYTHON)
+PIP=$(PYTHON) -m pip
+
+CHPL_VENV_BUILD=$(CHPL_VENV_DIR)/build
+CHPL_VENV_VIRTUALENV_DIR=$(CHPL_VENV_BUILD)/build-venv
+CHPL_VENV_VIRTUALENV_DIR_OK=$(CHPL_VENV_BUILD)/build-venv/ok
+CHPL_VENV_VIRTUALENV_BIN=$(CHPL_VENV_VIRTUALENV_DIR)/bin
+CHPL_VENV_INSTALL=$(CHPL_VENV_DIR)/install
+CHPL_VENV_CHPLDEPS=$(CHPL_VENV_INSTALL)/chpldeps
+CHPL_VENV_CHPLDEPS_MAIN=$(CHPL_VENV_CHPLDEPS)/__main__.py

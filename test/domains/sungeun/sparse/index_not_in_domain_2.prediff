@@ -1,0 +1,18 @@
+#!/usr/bin/env python3
+
+import sys, re
+
+testname = sys.argv[1]
+outfile =  sys.argv[2]
+
+f = open(outfile)
+lines = f.readlines()
+f.close()
+
+f = open(outfile, 'w')
+for l in lines:
+    s = re.sub(r'(?<=index not in domain: )\d+', '0', l)
+    f.write(s)
+
+f.close()
+

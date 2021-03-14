@@ -1,0 +1,10 @@
+      im: 1.34078e+154i
+ abs(im): 1.34078e+154
+ abs(im).type: real(64)
+fabs(_i2r(im)): 1.34078e+154
+ abs(im:complex): 1.34078e+154
+      im32: 1.84467e+19i
+ abs(im32): 1.84467e+19
+ abs(im32).type: real(32)
+fabsf(_i2r(im32)): 1.84467e+19
+ abs(im32:complex(64)): 1.84467e+19

@@ -1,0 +1,2 @@
+foo called on a sequence of strings: one two three
+foo called on a sequence of ints: 1 2 3

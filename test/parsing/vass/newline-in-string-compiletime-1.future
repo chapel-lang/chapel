@@ -1,0 +1,6 @@
+bug: newlines and double quotes are not displayed properly in compilerWarning/compilerError messages
+
+The compiler prints out the arguments to compilerWarning/compilerError
+the way they are stored in the internal representation. However,
+the internal representation needs to be post-processed, e.g. \n
+should be converted to newline. (See also the commit message around r19228.)

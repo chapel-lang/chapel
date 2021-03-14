@@ -1,0 +1,1 @@
+--no-auto-aggregation --optimize-forall-unordered-ops --report-optimized-forall-unordered-ops -M ../aggregation

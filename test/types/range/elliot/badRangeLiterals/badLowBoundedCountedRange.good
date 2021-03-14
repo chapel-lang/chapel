@@ -1,0 +1,1 @@
+badLowBoundedCountedRange.chpl:3: error: Bound of 'low..' must be an integer

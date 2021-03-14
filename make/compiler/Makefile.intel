@@ -1,0 +1,161 @@
+# Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+# Copyright 2004-2019 Cray Inc.
+# Other additional copyright holders may be indicated within.
+# 
+# The entirety of this work is licensed under the Apache License,
+# Version 2.0 (the "License"); you may not use this file except
+# in compliance with the License.
+# 
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#
+# settings for Intel compiler on Linux
+#
+
+#
+# Tools
+#
+CXX = icpc
+CC = icc
+
+ifeq (, $(MPI_CC))
+MPI_CC = mpiicc
+endif
+ifeq (, $(MPI_CXX))
+MPI_CXX = mpiicpc
+endif
+
+RANLIB = ranlib
+
+
+#
+# General Flags
+#
+
+DEBUG_CFLAGS = -g
+OPT_CFLAGS = -O3
+PROFILE_CFLAGS = -pg
+PROFILE_LFLAGS = -pg
+
+
+#
+# If the compiler's default C version is less than C99, force C99 mode.
+#
+# If the default C version is at least C11, force the C++ version to
+# be at least C++11 to match.
+#
+DEF_C_VER := $(shell echo __STDC_VERSION__ | $(CC) -E -x c - | sed -e '/^\#/d' -e 's/L$$//' -e 's/__STDC_VERSION__/0/')
+DEF_CXX_VER := $(shell echo __cplusplus | $(CXX) -E -x c++ - | sed -e '/^\#/d' -e 's/L$$//' -e 's/__cplusplus/0/')
+C_STD := $(shell test $(DEF_C_VER) -lt 199901 && echo -std=gnu99)
+CXX_STD := $(shell test $(DEF_C_VER) -ge 201112 -a $(DEF_CXX_VER) -lt 201103 && echo -std=gnu++11)
+CXX11_STD := $(shell test $(DEF_CXX_VER) -lt 201103 && echo -std=gnu++11)
+
+#
+# Flags for compiler, runtime, and generated code
+#
+# Warnings squashed for non-Chapel code (bison/flex output):
+# 2215 : definition at end of file not followed by a semicolon or declarator
+# 2259 : non-pointer conversion from "int" to "yytype_int16={short}" may lose bits
+# 170 : pointer points outside outside of underlying object
+#
+# Warnings squashed for generated code:
+#  592 : squelch use-before-def problems -- we'll rely on valgrind to catch them
+
+COMP_CXXFLAGS = $(CXX_STD) $(CPPFLAGS) $(CXXFLAGS)
+COMP_CXXFLAGS_NONCHPL = -wr111,193,1418,1419,2215,2259,170 -Wno-error
+
+RUNTIME_CFLAGS = $(C_STD) $(CPPFLAGS) $(CFLAGS) -wr181,188
+RUNTIME_CXXFLAGS = $(CXX_STD) $(CPPFLAGS) $(CXXFLAGS)
+GEN_CFLAGS = $(C_STD) -wr592
+# NOTE: These are only supported for Linux
+GEN_STATIC_FLAG = -static-intel -static-libgcc -static
+GEN_DYNAMIC_FLAG = -Bdynamic
+LIB_STATIC_FLAG =
+LIB_DYNAMIC_FLAG = -shared
+SHARED_LIB_CFLAGS = -fpic
+
+# Set the target architecture for optimization
+ifneq ($(CHPL_MAKE_TARGET_CPU), none)
+ifneq ($(CHPL_MAKE_TARGET_CPU), unknown)
+ifneq ($(CHPL_MAKE_TARGET_CPU_FLAG), none)
+SPECIALIZE_CFLAGS = -m$(CHPL_MAKE_TARGET_CPU_FLAG)=$(CHPL_MAKE_TARGET_BACKEND_CPU)
+endif
+endif
+endif
+
+# Set flag for lax or IEEE floating point
+FAST_FLOAT_GEN_CFLAGS = -fp-model fast
+IEEE_FLOAT_GEN_CFLAGS = -fp-model precise -fp-model source
+
+#
+# Warnings squashed for flex-/bison-generated code
+#
+#  111 : statement is unreachable
+#  193 : zero used for undefined preprocessing identifier
+# 1418 : external function definition with no prior declaration
+# 1419 : external declaration in primary source file
+
+#
+# Warnings squashed for runtime code
+#
+#  181 : due to warning using PRIu8/PRIu16 to print uint8_t and uint16_t's --
+#        apparently a bug -- filed to intel to see what they say
+
+#
+# Warnings squashed for compiler/runtime C/C++ code
+#
+#  279 : controlling expression is constant
+#  304 : requires inherited classes to specify access control (e.g. public)
+#  593 : variable was set but never used
+#  810 : numeric conversion may lose significant bits (e.g., long double->float)
+#  869 : warns about arguments that are never used
+#  981 : operands are evaluated in unspecified order (mysterious vec.h problems)
+# 1572 : floating point equality and inequality comparisons are unreliable
+# 1599 : one variable shadows another
+
+#
+# Warnings squashed for generated code
+#
+#  111 : warns about unreachable statements
+#  167 : warns about incompatible parameter type (https://github.com/chapel-lang/chapel/issues/7983)
+#  174 : warns about expressions that have no effect
+#  177 : warns about unused variable declarations
+
+WARN_CXXFLAGS = -Wall -Werror -diag-disable remark -wr279,304,593,810,869,981,1572,1599
+WARN_CFLAGS = $(WARN_CXXFLAGS)
+WARN_GEN_CFLAGS = $(WARN_CFLAGS)
+SQUASH_WARN_GEN_CFLAGS = -wr111,167,174,177
+
+#
+# Don't warn for signed pointer issues (ex. c_ptr(c_char) )
+#
+SQUASH_WARN_GEN_CFLAGS += -Wno-pointer-sign
+
+#
+# compiler warnings settings
+#
+ifeq ($(WARNINGS), 1)
+COMP_CXXFLAGS += $(WARN_CXXFLAGS)
+RUNTIME_CFLAGS += $(WARN_CFLAGS)
+# GEN_CFLAGS gets warnings added via WARN_GEN_CFLAGS in comp-generated Makefile
+
+#
+# When compiling GASNet...
+#
+# -Wno-strict-prototypes has to be used because most GASNet prototypes
+# aren't strict.
+#
+CHPL_GASNET_MORE_CFLAGS = -Wno-strict-prototypes
+endif
+
+ifdef CHPL_COMM_DEBUG
+CHPL_GASNET_MORE_CFLAGS += -O0 -UNDEBUG -wr10120
+endif

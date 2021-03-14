@@ -1,0 +1,32 @@
+test1
+init 1
+(x = 1, ptr = {})
+before param conditional
+after param conditional
+deinit 1
+test2
+init 1
+(x = 1, ptr = {})
+before param loop
+(x = 1, ptr = {})
+(x = 1, ptr = {})
+after param loop
+deinit 1
+test3
+init 1
+(x = 1, ptr = {})
+before param loop
+after param loop
+deinit 1
+test4
+init 1
+(x = 1, ptr = {})
+before inlined empty call
+after inlined empty call
+deinit 1
+test5
+init 1
+(x = 1, ptr = {})
+before folded if-expr in call
+after folded if-expr in call
+deinit 1

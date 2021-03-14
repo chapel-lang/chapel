@@ -1,0 +1,14 @@
+c_ptr(int(32))
+17
+1
+2
+3
+4
+5
+6
+7
+8
+9
+byRef(ptr to 7)
+byPtr(ptr to 7)
+byCString(Hello)

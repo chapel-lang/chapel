@@ -1,0 +1,3 @@
+infinite-recursion-arg.chpl:5: In function 'infinite2':
+infinite-recursion-arg.chpl:6: error: unresolved call 'infinite1(int(64))'
+infinite-recursion-arg.chpl:1: note: this candidate did not match: infinite1(x: int, y = infinite2(x))

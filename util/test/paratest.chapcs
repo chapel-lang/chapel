@@ -1,0 +1,197 @@
+#!/usr/bin/env python3
+
+"""
+Simple slurm-aware paratest wrapper for testing on the chapcs cluster. This
+script aims to run parallel testing as quickly as possible without interfering
+with nightly testing or other exclusive reservations (e.g. developers running
+performance experiments.) It also tries to interfere as little as possible with
+other paratests in order to avoid timeouts.
+
+To use this script:
+
+  cd test
+  $CHPL_HOME/util/test/paratest.chapcs
+
+paratest.server options can be passed as additional command-line arguments
+(e.g. -compopts --llvm).
+"""
+
+from __future__ import print_function
+
+import datetime
+import os.path
+import sys
+import timeit
+
+chplenv_dir = os.path.join(os.path.dirname(__file__), '..', 'chplenv')
+sys.path.insert(0, os.path.abspath(chplenv_dir))
+
+import chpl_comm
+import utils
+
+
+def run_command_wrapper(command):
+    """
+    Run a command, returning the output as a list of strings with quotes and
+    whitespace stripped out.
+    """
+    output = utils.run_command(command)
+    output_lines = [line.strip().strip('"') for line in output.splitlines()]
+    return output_lines
+
+
+def expand_hostnames(hostname):
+    """
+    Expand a possibly shorthand nodelist into all the full hostnames. e.g
+    expands 'chapcs[07-08]' to '[chapcs07, chapcs08]'
+    """
+    scontrol_cmd = ['scontrol', 'show', 'hostname', hostname]
+    scontrol_out = run_command_wrapper(scontrol_cmd)
+    return scontrol_out
+
+
+def get_exclusive_nodes():
+    """
+    Get nodes requested for immediate exclusive access on the chapel partition.
+    Returns tuple of (num_exclusive_nodes, exclusive_hostnames)
+    """
+    # Grab "OVER_SUBSCRIBE;NODES;NODELIST;REQ_NODES;REASON" info for all jobs.
+    # For each non-shared (OVER_SUBSCRIBE!=YES) job that wants to run now
+    # (REASON!=BeginTime) track the allocated/requested nodes or the number of
+    # nodes requested if no specific nodes were requested. Consider "draining"
+    # nodes as exclusive since no other jobs will be able to run on them.
+    squeue_cmd = ['squeue',
+                  '--partition=chapel',
+                  '--noheader',
+                  '--format="%h;%D;%N;%n;%r"']
+    squeue_out = run_command_wrapper(squeue_cmd)
+
+    sinfo_cmd = ['sinfo',
+                 '--partition=chapel',
+                 '--noheader',
+                 '--responding',
+                 '--format="NO;%D;%N;%N"',
+                 '--states=DRAINING']
+    sinfo_out = run_command_wrapper(sinfo_cmd)
+
+    num_exclusive_nodes = 0
+    exclusive_hostnames = set()
+    for line in squeue_out + sinfo_out:
+        oversub, num_nodes, nodelist, req_nodes, reason = line.split(';')
+        if oversub.upper() != 'YES' and reason != 'BeginTime':
+            nodes = nodelist or req_nodes
+            if nodes:
+                exclusive_hostnames.update(expand_hostnames(nodes))
+            else:
+                num_exclusive_nodes += int(num_nodes)
+    num_exclusive_nodes += len(exclusive_hostnames)
+    return (num_exclusive_nodes, exclusive_hostnames)
+
+
+def get_num_non_exclusive_nodes():
+    """
+    Get the number of nodes available for testing on the chapel partition
+    (online - exclusive)
+    """
+    online_states = 'ALLOC,ALLOCATED,COMP,COMPLETING,IDLE,MIX,MIXED'
+    sinfo_cmd = ['sinfo',
+                 '--partition=chapel',
+                 '--noheader',
+                 '--responding',
+                 '--format="%D"',
+                 '--states={0}'.format(online_states)]
+    sinfo_out = run_command_wrapper(sinfo_cmd)
+    num_online_nodes = int(sinfo_out[0])
+    num_non_exclusive_nodes = num_online_nodes - get_exclusive_nodes()[0]
+    return num_non_exclusive_nodes
+
+
+def get_num_oversub_jobs():
+    """
+    Get the number of jobs that allow oversubscription (permit node sharing)
+    """
+    squeue_cmd = ['squeue',
+                  '--partition=chapel',
+                  '--noheader',
+                  '--format="%h"']
+    squeue_out = [s.upper() for s in run_command_wrapper(squeue_cmd)]
+    return squeue_out.count('YES')
+
+
+def get_good_nodepara():
+    """
+    Get a "good" nodepara value: default to 4 for comm=none testing, and
+    3 for comm!=none since that's already oversubscribed. If no other shared
+    jobs are running bump the nodepara by 1.
+    """
+
+    nodepara = 4
+    if chpl_comm.get() != 'none':
+        nodepara = 3
+    if get_num_oversub_jobs() == 0:
+        nodepara += 1
+    return nodepara
+
+
+def run_paratest(args):
+    """
+    Run paratest inside an salloc using all nodes that are not reserved
+    exclusively on the chapel partition. Throw `--oversubscribe --nice` and
+    turn off affinity and limit how many executables can run at once so we play
+    nice with other testing going on.
+    """
+    nodepara = get_good_nodepara()
+    num_free_nodes = get_num_non_exclusive_nodes()
+    para_env = ['-env', 'CHPL_TEST_LIMIT_RUNNING_EXECUTABLES=yes', '-env',
+                'CHPL_RT_OVERSUBSCRIBED=yes']
+
+    salloc_cmd = ['salloc',
+                  '--nodes={0}'.format(num_free_nodes),
+                  '--immediate=60',
+                  '--partition=chapel',
+                  '--oversubscribe',
+                  '--nice']
+
+    exclude_set = get_exclusive_nodes()[1]
+    if exclude_set:
+        salloc_cmd.append('--exclude={0}'.format(','.join(exclude_set)))
+
+    paratest_path = os.path.join(os.path.dirname(__file__), 'paratest.server')
+
+    paratest_cmd = salloc_cmd + [paratest_path] + para_env
+    paratest_cmd += ['-nodepara', str(nodepara)] + args
+    print('running "{0}"'.format(' '.join(paratest_cmd)))
+
+
+    start_time = timeit.default_timer()
+    for line in utils.run_live_command(paratest_cmd):
+        sys.stdout.write(line)
+        sys.stdout.flush()
+    elapsed = int(timeit.default_timer() - start_time)
+    minutes, seconds = divmod(elapsed, 60)
+    print('paratest took {0} minutes and {1} seconds'.format(minutes, seconds))
+
+
+def running_during_nightly():
+    """
+    Check if running when nightly has exclusive access (11:30 - ~2:30 PST)
+    Note that chapcs is in CST, and this script can only be run on chapcs, so
+    don't bother adjusting for timezones
+    """
+    nightly_start_exclusive = datetime.time(1, 30, 0)
+    nightly_end_exclusive = datetime.time(4, 30, 0)
+    now = datetime.datetime.now().time()
+    return nightly_start_exclusive <= now <= nightly_end_exclusive
+
+
+def main(paratest_args):
+    """ Just run paratest with the user's args """
+    if running_during_nightly():
+        print('Please avoid running when nightly has exclusive access')
+        exit(1)
+
+    run_paratest(paratest_args)
+
+
+if __name__ == '__main__':
+    main(sys.argv[1:])

@@ -1,0 +1,4 @@
+sizeof(b8) = 1
+sizeof(b16) = 2
+sizeof(b32) = 4
+sizeof(b64) = 8

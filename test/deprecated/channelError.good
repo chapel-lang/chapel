@@ -1,0 +1,4 @@
+channelError.chpl:3: In function 'main':
+channelError.chpl:4: warning: The channel.error method is deprecated. Catch errors instead.
+channelError.chpl:7: warning: The channel.setError method is deprecated. Throw errors instead.
+channelError.chpl:9: warning: The channel.clearError method is deprecated. Throw and catch errors instead.

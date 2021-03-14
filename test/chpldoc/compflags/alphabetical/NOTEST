@@ -1,0 +1,4 @@
+These tests verify the alphabetical ordering option in chpldoc. As of
+2015-02-22, that no longer is supported (though not lost forever).
+Re-enable these tests when support is returned.
+(thomasvandoren, 2015-02-22)

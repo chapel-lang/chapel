@@ -1,0 +1,33 @@
+if HAVE_RXD
+_rxd_files = \
+	prov/rxd/src/rxd_attr.c		\
+	prov/rxd/src/rxd_init.c		\
+	prov/rxd/src/rxd_fabric.c	\
+	prov/rxd/src/rxd_domain.c	\
+	prov/rxd/src/rxd_av.c		\
+	prov/rxd/src/rxd_cq.c		\
+	prov/rxd/src/rxd_cntr.c		\
+	prov/rxd/src/rxd_ep.c		\
+	prov/rxd/src/rxd_msg.c		\
+	prov/rxd/src/rxd_tagged.c	\
+	prov/rxd/src/rxd_rma.c		\
+	prov/rxd/src/rxd_atomic.c	\
+	prov/rxd/src/rxd.h		\
+	prov/rxd/src/rxd_proto.h
+
+if HAVE_RXD_DL
+pkglib_LTLIBRARIES += librxd-fi.la
+librxd_fi_la_SOURCES = $(_rxd_files) $(common_srcs)
+librxd_fi_la_LIBADD = $(linkback) $(rxd_shm_LIBS)
+librxd_fi_la_LDFLAGS = -module -avoid-version -shared -export-dynamic
+librxd_fi_la_DEPENDENCIES = $(linkback)
+else !HAVE_RXD_DL
+src_libfabric_la_SOURCES += $(_rxd_files)
+src_libfabric_la_LIBADD += $(rxd_shm_LIBS)
+endif !HAVE_RXD_DL
+
+#prov_install_man_pages += man/man7/fi_rxd.7
+
+endif HAVE_RXD
+
+#prov_dist_man_pages += man/man7/fi_rxd.7

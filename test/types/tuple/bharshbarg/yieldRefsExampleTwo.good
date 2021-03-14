@@ -1,0 +1,13 @@
+before: (x = 1)
+mutating...
+after:  (x = 10)
+
+before: (x = 2)
+mutating...
+after:  (x = 20)
+
+before: (x = 3)
+mutating...
+after:  (x = 30)
+
+((x = 10), (x = 20), (x = 30))

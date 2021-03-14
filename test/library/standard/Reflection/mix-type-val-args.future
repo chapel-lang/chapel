@@ -1,0 +1,2 @@
+feature request: support canResolve on functions with mix of type and value args
+#11802

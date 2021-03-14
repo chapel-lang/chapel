@@ -1,0 +1,48 @@
+error message: clearer explanation is desired
+
+2018-08: this test most likely needs to be looked at to see
+whether it illustrates an issue and if so, what the issue is.
+While the current error message is "rectangular domains not supported
+by this distribution", it should probably give a hint why
+and point to documentation.
+
+Prior .future contents were:
+
+error message: should indicate that there need to be a 'dom' field in the 'GlobalArray' class; arguably should be a user error
+
+Right now I get (in the user and developer mode, resp.):
+no-dom-field-error.chpl:17: error: internal failure TYP0480 chpl Version 1.2.0.18327
+no-dom-field-error.chpl:17: error: no field 'dom' in class 'GlobalArray' in getField() [type.cpp:480]
+
+Minor: in the developer mode I want to see an indication that this is
+an internal compiler error. (This indication *is* present in the
+non-developer mode.) (This is a more general issue.)
+
+Major: this particular error is not due to a compiler bug. Instead, it is the
+user's fault - they did not declare a field 'dom' in their 'GlobalArray' class.
+The same for 'eltType' field.
+
+Background: the compiler expects certain classes/records to have
+certain fields, e.g. dom on subclasses of BaseArr, _valueType on
+_array and _domain, _val on _ref, chpl_id on ??, 'addr' on __wide_*, etc.
+
+In most cases, these fields are either created by the compiler itself
+or come from our own modules. 'dom' on subclasses of BaseArr is
+different in that it is usually in a domain map code, which
+a user may legitimately write. In such cases this should be
+a user error, not an internal compiler error.
+
+To address that, I was tempted to fix ClassType::getField() to say:
+
+  if (this->getModule()->modTag == MOD_INTERNAL)
+    INT_FATAL(...);
+  else
+    USR_FATAL(...);
+
+but I was not sure whether this test is a good differentiator
+(e.g. what happens for __wide_ or other computer-generated classes?).
+I did not investigate further.
+
+Perhaps the ideal solution is for callers of getField to indicate
+which way to report an error (in addition to the 'fatal' argument,
+which indicates whether to report an error at all).

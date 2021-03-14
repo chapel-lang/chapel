@@ -1,0 +1,2 @@
+yield-borrowed.chpl:3: In iterator 'I':
+yield-borrowed.chpl:3: error: cannot initialize yield value of type 'borrowed C' from a 'borrowed C?'

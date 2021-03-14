@@ -1,0 +1,97 @@
+#!/usr/bin/env python3
+import argparse, sys
+from datetime import date, datetime
+
+def main():
+  parser = argparse.ArgumentParser(
+      description="Splice two .dat files. "
+                  "Provide dates in the form of 'mm/dd/yy'")
+  parser.add_argument('file_a', type=argparse.FileType('r'))
+  parser.add_argument('file_b', type=argparse.FileType('r'))
+  parser.add_argument('-from_a', '-fa', metavar='DATE', type=parse_date,
+                      help='date to start from in file_a')
+  parser.add_argument('-to_a', '-ta', metavar='DATE', type=parse_date,
+                      help='date to end at in file_a')
+  parser.add_argument('-from_b', '-fb', metavar='DATE', type=parse_date,
+                      help='date to start from in file_b')
+  parser.add_argument('-to_b', '-tb', metavar='DATE', type=parse_date,
+                      help='date to end at in file_b')
+
+  args = parser.parse_args()
+  a_line, b_line = None, None
+  a_date, b_date = None, None
+
+  # read from both files so they stay in sync
+  a_line = args.file_a.readline().split('\t')
+  b_line = args.file_b.readline().split('\t')
+  if a_line[0].startswith('#'):
+    print_line(a_line)
+  else:
+    system.stdout.write("Error: {0} missing column header".format(args.file_a.name))
+    sys.exit(1)
+
+  while True:
+    if a_line == None:
+      a_line = args.file_a.readline().split('\t')
+    if b_line == None:
+      b_line = args.file_b.readline().split('\t')
+
+    # skip comments
+    if a_line[0].startswith('#'):
+      a_line = None
+    if b_line[0].startswith('#'):
+      b_line = None
+
+    if a_line and a_line[0]:
+      a_date = parse_date(a_line[0])
+    if b_line and b_line[0]:
+      b_date = parse_date(b_line[0])
+
+    # break out if we go past the 'to_*' dates or if we hit the end of the
+    # files or a combination thereof
+    if a_line and b_line:
+      done_with_a = a_line[0] == ''
+      done_with_b = b_line[0] == ''
+      if args.to_a and not done_with_a:
+        done_with_a = args.to_a < a_date
+      if args.to_b and not done_with_b:
+        done_with_b = args.to_b < b_date
+      if done_with_a and done_with_b:
+        break
+
+    # merge
+    if a_date and leq_than(a_date, b_date):
+      if leq_than(args.from_a, a_date) and leq_than(a_date, args.to_a):
+        print_line(a_line)
+      a_line = None
+      a_date = None
+    else:
+      if leq_than(args.from_b, b_date) and leq_than(b_date, args.to_b):
+        print_line(b_line)
+      b_line = None
+      b_date = None
+
+# performes a < b w/ handling of None
+def leq_than(lhs, rhs):
+  if lhs == None and rhs == None:
+    return False
+  elif lhs == None or rhs == None:
+    return True
+  else:
+    return lhs <= rhs
+
+def print_line(line):
+  if line:
+    sys.stdout.write("{0}".format('\t'.join(line)))
+
+def parse_date(date_string):
+  try:
+    d = datetime.strptime(date_string.strip(), '%m/%d/%y')
+    return d.date()
+  except ValueError:
+    print("Error: invalid date '{0}'".format(date_string))
+    print("Please provide dates in the form of 'mm/dd/yy'")
+    sys.exit(1)
+
+if __name__ == '__main__':
+    main()

@@ -1,0 +1,6 @@
+feature request: multiple inheritance
+
+Do we want to provide multiple inheritance?
+
+Currently the test fails when invoking parent initializer
+from child initializer.

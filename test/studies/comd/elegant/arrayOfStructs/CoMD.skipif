@@ -1,0 +1,22 @@
+#!/usr/bin/env python3
+
+# Skip this test for gasnet+mpi and gasnet+ibv-large performance testing.
+# Also skip this test when using MPI-based launchers in other configs,
+# because mpirun barks at the fork(2) resulting from the spawn().
+# Also skip this test for comm=ofi; we have trouble with the spawn() in
+# that case also, at least with the verbs;ofi_rxm provider.
+import os
+
+comm = os.getenv('CHPL_COMM')
+substrate = os.getenv('CHPL_COMM_SUBSTRATE')
+segment = os.getenv('CHPL_GASNET_SEGMENT')
+launcher = os.getenv('CHPL_LAUNCHER')
+ml_perf = (os.getenv('CHPL_TEST_PERF') == 'on' and
+           os.getenv('CHPL_TEST_PERF_LABEL') == 'ml-')
+
+gn_mpi_perf = ml_perf and comm == 'gasnet' and substrate == 'mpi'
+gn_ibv_lg_perf = ml_perf and comm == 'gasnet' and substrate == 'ibv' and segment == 'large'
+mpi_config = launcher.startswith('mpi')
+comm_ofi = comm == 'ofi'
+
+print(gn_mpi_perf or gn_ibv_lg_perf or mpi_config or comm_ofi)

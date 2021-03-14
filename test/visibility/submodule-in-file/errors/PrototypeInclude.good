@@ -1,0 +1,2 @@
+PrototypeInclude.chpl:1: error: cannot apply prototype to module in include statement
+PrototypeInclude/SubModule.chpl:1: note: put prototype keyword at module declaration here

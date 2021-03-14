@@ -1,0 +1,20 @@
+sy$.isFull false
+si$.isFull false
+sy2 14
+si2 true
+sy3 21
+si3 true
+Launching new task
+After launching new task
+New task unblocked, sy=28
+......done
+sy$.isFull false - now passing to f_withSyncIntFormal
+the full bit is: false
+si$.isFull true - now passing to f_withSingleBoolFormal
+the full bit is: true
+the full bit is: true
+the full bit is: true
+readXX returns: 28
+readXX returns: true
+35
+true

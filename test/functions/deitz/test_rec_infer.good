@@ -1,0 +1,4 @@
+test_rec_infer.chpl:1: error: unable to resolve return type of function 'foo'
+test_rec_infer.chpl:1: In function 'foo':
+test_rec_infer.chpl:2: error: called recursively at this point
+  test_rec_infer.chpl:5: called as foo(i: int(64))

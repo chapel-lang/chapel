@@ -1,0 +1,4 @@
+split-init-ref-multiple.chpl:3: In function 'main':
+split-init-ref-multiple.chpl:10: error: Initializing a reference with another type
+split-init-ref-multiple.chpl:6: note: Reference has type int(64)
+split-init-ref-multiple.chpl:10: note: Initializing with type real(64)

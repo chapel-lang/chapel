@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+# Make the test output directory and a "user" __init__.py file.
+mkdir -p noOverwriteInit
+touch noOverwriteInit/__init__.py

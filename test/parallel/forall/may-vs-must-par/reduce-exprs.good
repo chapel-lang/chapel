@@ -1,0 +1,61 @@
+
+ser serial
+iter1ser
+3
+followers: 0 0
+
+SA standalone
+iter1SA standalone
+3
+followers: 0 0
+
+LF leader+follower
+iter1LF leader
+3
+followers: 2 0
+
+par standalone
+iter1par standalone
+3
+followers: 0 0
+
+LF leader+followers
+iter1LF leader
+(3, -3)
+followers: 2 2
+
+par leader+followers
+iter1par leader
+(3, -3)
+followers: 2 2
+
+ser serial
+class1ser
+3
+followers: 0 0
+
+SA standalone
+class1SA standalone
+3
+followers: 0 0
+
+LF leader+follower
+class1LF leader
+3
+followers: 2 0
+
+par standalone
+class1par standalone
+3
+followers: 0 0
+
+LF leader+followers
+class1LF leader
+(3, -3)
+followers: 2 2
+
+par leader+followers
+class1par leader
+(3, -3)
+followers: 2 2
+

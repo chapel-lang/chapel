@@ -1,0 +1,34 @@
+.. default-domain:: chpl
+
+.. module:: forwards-generic.doc
+
+forwards-generic.doc
+====================
+**Usage**
+
+.. code-block:: chapel
+
+   use forwards-generic.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import forwards-generic.doc;
+
+.. class:: A
+
+   This class should not get the forwarded methods from B 
+
+
+   .. attribute:: var f
+
+.. class:: B
+
+   .. attribute:: var b: int
+
+   .. method:: proc someProc()
+
+   .. method:: proc anotherProc()
+

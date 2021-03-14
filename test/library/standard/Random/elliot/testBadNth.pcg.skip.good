@@ -1,0 +1,3 @@
+uncaught IllegalArgumentError: PCGRandomStream.skipToNth(n) called with negative 'n' value -1
+  testBadNth.chpl:19: thrown here
+  testBadNth.chpl:19: uncaught here

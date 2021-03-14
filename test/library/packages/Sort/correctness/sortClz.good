@@ -1,0 +1,8 @@
+uint(8) 8 4
+uint(16) 8 12
+uint(32) 8 28
+uint(64) 8 60
+uint(32) ffffffff 0
+uint(32) 7fffffff 1
+uint(64) ffffffffffffffff 0
+uint(64) fffffffffffffff 4

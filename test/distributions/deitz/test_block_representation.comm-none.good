@@ -1,0 +1,32 @@
+$CHPL_HOME/modules/standard/IO.chpl:n: warning: printing _ddata class
+$CHPL_HOME/modules/standard/IO.chpl:n: In function '_write_one_internal':
+Distribution Representation
+
+boundingBox = {1..4, 1..4}
+targetLocDom = {0..0, 0..0}
+targetLocales = 0
+dataParTasksPerLocale = 2
+dataParIgnoreRunningTasks = true
+dataParMinGranularity = 1
+locDist[(0, 0)].myChunk = {-9223372036854775808..9223372036854775807, -9223372036854775808..9223372036854775807}
+
+Domain
+
+{1..4, 1..4}
+
+Domain Representation
+
+whole = {1..4, 1..4}
+locDoms[(0, 0)].myBlock = {1..4, 1..4}
+
+Array
+
+0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0
+
+Array Representation
+
+locArr[(0, 0)].myElems = 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
+locArr[(0, 0)].locRAD = (off = (0, 0), blk = (0, 0), str = (0, 0), origin = 0, factoredOffs = 0, data = nil, shiftedData = nil)

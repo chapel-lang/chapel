@@ -1,0 +1,2 @@
+declVarRetNothing.chpl:1: error: function declared 'ref' but does not return anything
+declVarRetNothing.chpl:5: error: function declared 'ref' but does not return anything

@@ -1,0 +1,20 @@
+feature request: range normalizer
+
+The general thrust of this feature request is that it would be nice to
+have a method that put a range into a normalized form.  I'm not
+entirely sure I know what the right normalized form should be, but I'm
+going to assert: (1) aligned low and high bounds; (2) positive stride
+just to get the discussion started.  The idea behind this is that any
+two ranges that describe the same indices should have the same
+representation when they've been normalized.
+
+I'm going a bit back and forth about whether this method should create
+a new range or modify the existing range.  I've taken the latter
+approach under Tom's argument that methods should arguably modify the
+'this' range rather than create a new one.  In which case, we'd
+probably want a standalone normalize routine in a standard
+RangeUtils.chpl module or something like that for people that didn't
+want to (or couldn't) modify the range in question.
+
+A similar capability could/should be added for rectangular domains
+though I haven't written a future for that here.

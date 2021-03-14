@@ -1,0 +1,8 @@
+bug: configs permitted at module sub-scopes
+
+The language spec says that configs are only permitted at module
+scope, which is what I think we want to support, yet this test shows
+that we also permit them within local scopes at module scope.  But I
+don't think this is intended, I think it's just a mistake in the
+implementation of the check that exists for configs that are local to
+procedures (say).

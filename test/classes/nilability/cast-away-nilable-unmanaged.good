@@ -1,0 +1,7 @@
+{x = 1}
+{x = 1}
+{x = 1}
+{x = 1}
+uncaught NilClassError: cannot convert nil class to non nilable type
+  cast-away-nilable-unmanaged.chpl:20: thrown here
+  cast-away-nilable-unmanaged.chpl:4: uncaught here

@@ -1,0 +1,94 @@
+#!/usr/bin/env python3
+#
+# Validate debug output from SSCA2
+#
+# Output order may vary for some of the debug output since we are
+#  iterating in parallel.  Pull out the parts that vary and sort by
+#  graph type.
+#
+# This script may not produce the expected results if the output
+#  strings in non debug output change since some of the non-debug
+#  output are used as markers to find the debug output.
+#
+
+import sys
+
+# 1-4d torus and RMAT
+# This script will work if more than one graph type is run in a single test,
+#  even if we don't do so currently.
+numGraphTypes = 5
+
+# Debug output for graph generation, kernel 2 (heavy edge), kernel 3
+#   (largest weight), & 4 (betweennes centrality)
+vnInfo = list()
+heInfo = list()
+lwInfo = list() # This one is not quite perfects since there are sub lists
+bcInfo = list()
+for i in range(0,numGraphTypes):
+    vnInfo.append(list())
+    heInfo.append(list())
+    lwInfo.append(list())
+    bcInfo.append(list())
+
+if len(sys.argv) < 3:
+    sys.stdout.write('usage: '+sys.argv[0]+' testname logfile');
+    sys.exit(-1)
+
+logfile = sys.argv[2]
+
+f = open(logfile)
+log = f.readlines()
+f.close()
+
+newlog = list()
+
+graphNum = -1
+vertexNeighbors = False
+largestWeights = False
+for l in log:
+    nl = l.strip()
+    if nl=='Problem Dimensions':
+        graphNum += 1
+    if nl[0:39]=='Building heavy edge subgraph from pair:':
+        heInfo[graphNum].append('['+str(graphNum)+'] '+nl)
+    elif (nl[0:28]=='expanding from starting node' or
+          nl[0:33]=='graph diameter from starting node'):
+        bcInfo[graphNum].append('['+str(graphNum)+'] '+nl)
+    elif nl[0:6]=='vertex' and nl[-9:]=='Neighbors':
+        vertexNeighbors = True
+        newlog.append(nl)
+    elif nl[0:19]=='maximum edge weight':
+        vertexNeighbors = False
+        newlog.append(nl)
+    elif nl[0:46]=='Edges with largest weight and other neighbors:':
+        largestWeights = True
+        newlog.append(nl)
+    elif nl[0:36]=='Approximating Betweenness Centrality':
+        largestWeights = False
+    else:
+        if vertexNeighbors and nl!='':
+            vnInfo[graphNum].append('['+str(graphNum)+'] '+nl)
+        elif largestWeights and nl!='':
+            lwInfo[graphNum].append('['+str(graphNum)+'] '+nl)
+        else:
+            newlog.append(nl)
+
+for i in range(0,numGraphTypes):
+    vnInfo[i].sort()
+    heInfo[i].sort()
+    lwInfo[i].sort()
+    bcInfo[i].sort()
+    for l in vnInfo[i]:
+        newlog.append(l)
+    for l in heInfo[i]:
+        newlog.append(l)
+    for l in lwInfo[i]:
+        newlog.append(l)
+    for l in bcInfo[i]:
+        newlog.append(l)
+
+f = open(logfile, 'w')
+for l in newlog:
+    f.write(l+'\n')
+f.close()
+

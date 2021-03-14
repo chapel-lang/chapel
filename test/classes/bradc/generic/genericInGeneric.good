@@ -1,0 +1,3 @@
+genericInGeneric.chpl:14: error: unresolved call 'D()'
+genericInGeneric.chpl:14: note:   instantiated from 'E(type t3, x)'
+genericInGeneric.chpl:5: note: candidates are: D(type t2, x)

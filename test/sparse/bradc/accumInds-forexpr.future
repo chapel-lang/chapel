@@ -1,0 +1,5 @@
+bug: sparse accumulate of for loop
+
+I believe this should be legal but I'm not certain.  If it's not, the
+error message definitely needs to be improved (in which case this
+should be re-filed as an error message future.

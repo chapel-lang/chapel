@@ -1,0 +1,283 @@
+===============================
+Chapel implementation of miniMD
+===============================
+
+This directory contains a Chapel port of the "mini Molecular Dynamics"
+(miniMD) benchmark. (see http://mantevo.org/ for the C++ reference
+version and more details).
+
+------
+Status
+------
+
+The Chapel version of miniMD is a work-in-progress. To the best of our 
+knowledge, the current form is an accurate implementation of most 
+miniMD features. A number of improvements remain, see the TODOs section in 
+this file.
+
+Three versions of miniMD are included in this release and share a single
+source base.
+
+* The first version is a single-locale code. It is compiled by default
+  when CHPL_COMM=none.
+
+* The second version uses the Block distribution, and is compiled by
+  default when CHPL_COMM=gasnet. It is the slowest version by far, as
+  the communication is performed on a very fine-grain, demand-driven
+  manner.
+
+* The third version uses a modified Block distribution
+  (StencilDist.chpl), and is built by compiling with the
+  'useStencilDist' config param set to true. This version optimizes
+  communication by caching remote values on each locale. Thanks to the
+  elegance of Chapel's distributions, most of the changes are hidden
+  from the user. A significant difference is the need to manually call
+  'updateFluff()', which will cache necessary neighboring values (best
+  done after writing to the array).
+
+This version of miniMD is not yet intended for performance
+comparisons, as it was written primarily to exercise the
+mini-application correctly and to explore the expression of stencils
+in Chapel.  Over time, we will be improving its performance, both
+through improvements to the benchmark code itself, and through more
+generally applicable optimizations in Chapel.  At present, users
+should not be surprised to find that this version is significantly
+slower than the reference version.
+
+
+-----
+Files
+-----
+
+This directory's contents are as follows:
+./
+  miniMD.chpl           : entry point for miniMD, contains integration code
+  helpers/
+    initMD.chpl         : code to initialize and handle the system state
+    forces.chpl         : implementations for EAM and LJ force computations
+    thermo.chpl         : calculation of energy, temperature, pressure
+    neighbor.chpl       : calculation and updating of neighbor atoms
+  
+  miniMD.*              : other files used in the Chapel testing system
+
+  Makefile              : builds an optimized miniMD
+
+  README                : this file
+
+
+-----------------------------------
+Compilation Options (config params)
+-----------------------------------
+
+The following are boolean config[uration] param[eter]s for miniMD 
+that can be set on the chpl compiler command line using the flag:
+
+  chpl -s<paramName>=[true|false] ...
+
+  paramName     default   description
+
+* printOriginal [false] : prints the same output as the c++ reference
+
+* printPerf     [true]  : prints the total time of the computation
+
+* printCorrect  [false] : only print the T/U/P information (without timestamp),
+                          useful when automating correctness testing
+
+printPerf is true by default by convention in the Chapel testing system.
+
+To mimic the original C++ output, use the following:
+  -sprintOriginal=true -sprintPerf=false
+
+Chapel-specific optimizations:
+
+* Add the following to enable the BulkTransfer optimization:
+  -sdebugBlockDistBulkTransfer -sdisableAliasedBulkTransfer=false
+
+As with all Chapel benchmarks, for the best performance, compile
+miniMD with the --fast flag.
+
+
+-------
+Running
+-------
+
+While miniMD can read from input files, it does not require them.
+
+For legal reasons, input files available from the C++ are not currently 
+bundled with this release of miniMD. However, you are free to visit 
+the mantevo website, download the reference version, and use those files.
+
+
+-----------------
+Execution Options
+-----------------
+
+The following are config[uration] const[ant]s that can be used to
+modify the execution at program launch time. These can bet set on 
+the execution-time command line using the following flag styles:
+
+  ./miniMD --<constName>=<value>
+  ./miniMD --<constName> <value>
+  ./miniMD -s<constName>=<value>
+  ./miniMD -s<constName> <value>
+
+use the '--pHelp' flag to display a list of command line options:
+
+* input_file: string -- set input file to be used
+
+* numSteps: int -- set number of timesteps for simulation
+
+* size: int -- set linear dimension of systembox
+
+* num_bins: int -- set linear dimension of neighbor bin grid
+
+* units: string -- set units (lj or metal)
+
+* force: string -- set interaction mode (lj or eam)
+
+* data_file: string -- read configuration from LAMMPS data file
+
+
+---------
+Callgraph
+---------
+
+* - global code
+
+entry point
+  -> inputFile
+  -> * initialize problem bounds
+  -> initThermo
+  -> * define bin bounds
+  -> * create force object
+  -> setupComms
+  -> * populate with atoms
+    if generating
+      -> create_atoms
+        -> pmrand
+        -> addatom
+      -> create_velocity
+    else
+      -> * read from data file
+      -> addatom
+  proc main()
+    -> buildNeighbors
+      -> pbc
+      -> binatoms
+      -> updateFluff
+    -> printSim
+    -> Force.compute
+    -> thermo.compute
+      -> temperature
+    -> run
+      -> initialIntegrate
+      -> buildNeighbors <xor> updateFluff
+      -> Force.compute
+      -> finalIntegrate
+      -> thermo.compute
+    -> Force.compute
+    -> thermo.compute
+    -> cleanup
+
+
+----------
+Vocabulary
+----------
+
+Some important vocabulary for understanding the code:
+  - stencil: a fixed pattern that we use to refer to array elements 
+             or data.
+
+  - fluff: if the stencil needs to look at its nearest neighbors, then 
+           on the edges of the array we will encounter an out-of-bounds 
+           error. We can avoid this by extending the array's bounds 
+           by the size of the stencil. The area outside of the portion 
+           of the array we care about is called fluff.
+
+
+---------
+Debugging
+---------
+
+Some tips for resolving bugs when modifying/improving this code. These are 
+mostly based off of experience, and have proved useful.
+
+Problem size:
+  We suggest testing with the arguments '--size 5 -nl 1' to start out with. If
+  you're having problems with 1 locale and such a small sample size, you're 
+  going to have problems with more complex configurations. The advantages of 
+  this smaller configuration are:
+    - debugging output is proportional to problem size, so less to sift through
+    - runs fairly quickly. Compile time is long enough, you don't want to wait
+      too long for execution.
+    - while small, a size of 5 gives just enough to test -nl 2 as well.
+
+A) This code currently relies on the condition that we only need to look at the 
+nearest neighboring locale for ghost bins. This is influenced by simulation 
+settings like problem size and cutoff. You can use the debug flag to add a line 
+that writes the bin distribution and see what the program thinks it needs. 
+
+B) Make sure neighbor lists are correct. Incorrect ghost positions, force 
+computation, or binning can lead to bad neighbor lists. With a bad neighbor 
+list, results can get worse and worse until a segfault.
+
+C) Inspect the position/velocity/force of atoms (requires correct reference)
+
+* Incorrect T/U/P results 
+  - If your force computation is wrong after the 0th iteration, it's 
+    possible atoms didn't end up in their correct positions. If the 
+    0th iteration is wrong, there's probably an issue with buildNeighbors.
+
+  - Make sure you're getting the data from the right Locale. This is
+    more of a problem with the Stencil version, as some of the
+    reading/writing is masked by the Distribution code. Printing the
+    '.locale' of data can help here.
+
+* Segfaults / Bad array accesses - With incorrect code an atom can 'shoot' out 
+of the problem space before boundary conditions can be re-asserted. 
+
+
+-----
+TODOS
+-----
+
+CORRECTNESS TODOs:
+-----------------
+
+* Due to legal concerns, we currently do not include input files for miniMD 
+in our testing system. miniMD's EAM computation relies on such an input file.
+To test and run with EAM you can download the C++ reference and copy the 
+appropriate files into each of the subdirectories
+
+* Ensure command-line options behave in the same way as in c++
+
+* Re-implement half-neighbors
+
+
+PERFORMANCE TODOs:
+------------------
+
+* Identify sections of code that can benefit from a local {} assertion.
+
+* A global 'perBinSpace' is a bit of a bottleneck. Is there a better way to 
+  do this?
+
+* Is bulk transfer firing when we think it is?
+
+* param loops & variables
+
+* Compiler and runtime improvements may yield additional performance increases.
+
+* RADOpt is currently turned off for the stencil distribution version. More 
+  work needs to be done in StencilDist to support this, among some other 
+  features
+
+
+MISCELLANEOUS TODOs:
+--------------------
+
+* Naming isn't the best.
+
+* Are comments clear enough?
+
+* yaml output

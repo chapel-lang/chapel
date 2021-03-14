@@ -1,0 +1,2 @@
+wrong_error_message_april_26_2010.chpl:13: In function 'main':
+wrong_error_message_april_26_2010.chpl:18: error: illegal use of function that does not return a value: 'writeln'

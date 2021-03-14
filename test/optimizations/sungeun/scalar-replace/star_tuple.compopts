@@ -1,0 +1,2 @@
+--report-scalar-replace -ss=20
+--report-scalar-replace -ss=20 --scalar-replace-limit=20

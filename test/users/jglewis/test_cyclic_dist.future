@@ -1,0 +1,10 @@
+bug: cyclic striding
+
+From John Lewis' commit message:
+
+A small test case in which the use of an alias to a STRIDED cyclically
+distributed array causes incorrect memory references.  This may be a known
+problem -- striding in cyclic distributions is stated not to be fully
+supported.  If it is a known problem, someone should just remove this test.
+Fixing it is NOT a high priority!
+

@@ -1,0 +1,2 @@
+use-before-def.chpl:4: error: 'tpv2' used before defined
+use-before-def.chpl:5: note: defined here

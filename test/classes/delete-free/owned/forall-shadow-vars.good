@@ -1,0 +1,25 @@
+forall blank owned
+borrowed MyClass
+borrowed MyClass
+borrowed MyClass
+borrowed MyClass
+forall blank shared
+borrowed MyClass
+borrowed MyClass
+borrowed MyClass
+borrowed MyClass
+forall const owned
+borrowed MyClass
+borrowed MyClass
+borrowed MyClass
+borrowed MyClass
+forall const ref owned
+owned MyClass
+owned MyClass
+owned MyClass
+owned MyClass
+forall ref owned
+owned MyClass
+owned MyClass
+owned MyClass
+owned MyClass

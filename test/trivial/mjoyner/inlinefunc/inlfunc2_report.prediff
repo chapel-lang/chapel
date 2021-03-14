@@ -1,0 +1,5 @@
+#!/bin/sh
+
+grep leaf $2 | grep -v _coerce_ > out.tmp
+tail -4l $2 >> out.tmp
+mv out.tmp $2

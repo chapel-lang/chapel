@@ -1,0 +1,6 @@
+bug: detuple-style declarations in records cause internal error
+#9987 #10340
+
+This test shows that we support detupling-style declarations outside
+of records, and nested tuple fields within records, but that the
+combination of the two results in an internal error.

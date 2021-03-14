@@ -1,0 +1,343 @@
+#!/usr/bin/env perl
+
+use Cwd 'abs_path';
+use File::Basename;
+
+# Mailing lists.
+$failuremail = "chapel+tests\@discoursemail.com";
+$replymail = "";
+
+$tokctdir = abs_path(dirname(__FILE__));
+$tokctr = "$tokctdir/tokencount.cron";
+$chplhomedir = abs_path("$tokctdir/../..");
+
+$printusage = 0;
+if (@ARGV) {
+    $debugflag = shift @ARGV;
+    if ($debugflag eq "-debug") {
+	$debug = 1;
+    } elsif ($debugflag eq "-cron") {
+	$debug = 0;
+    } else {
+	$printusage = 1;
+    }
+} else {
+    $printusage = 1;
+}
+
+if (@ARGV) {
+    $statdate = shift @ARGV;
+    $svndateraw = `date +%F -d$statdate`; chomp($svndateraw);
+} else {
+    $statdate = `date +%D`; chomp($statdate);
+    $svndateraw = `date +%F`; chomp($svndateraw);
+}
+$svndate = "{$svndateraw}";
+
+if ($printusage == 1) {
+    print "nightly [-debug|-cron] {date}\n";
+    exit 1;
+}
+
+
+#
+# get uniquifiers
+#
+$user = `whoami`;
+chomp($user);
+$debugmail = $ENV{'CHPL_NIGHTLY_DEBUG_EMAIL'};
+if ($debug == 1 && $debugmail eq "") {
+    print "Set CHPL_NIGHTLY_DEBUG_EMAIL to use debug mode\n";
+    exit 1;
+}
+$today = `date +%w-%a`; chomp($today);
+
+
+#
+# get build url
+#
+if (exists($ENV{"BUILD_URL"})) {
+    $buildurl = $ENV{"BUILD_URL"};
+} else {
+    $buildurl = "unknown";
+}
+
+
+#
+# set mail options. Default to util/test/send_email.py, if available and
+# working. If not available or not working, default to 'mail'.
+#
+$mailer = $ENV{'CHPL_MAILER'};
+if ($mailer eq "") {
+    $chplsendemail = "$chplhomedir/util/test/send_email.py";
+    `$chplsendemail --help >/dev/null 2>&1`;
+    if ($? == 0) {
+        $header = "";
+        if ($replymail ne "") {
+          $header = "Reply-To=$replymail,";
+        }
+        $header .= "Precedence=bulk";
+        $mailer = "$chplsendemail --header=$header";
+    } else {
+        print "[Error: send_email.py failed to run. Defaulting to 'mail'.]\n";
+        $mailer = "mail";
+    }
+}
+print "\$mailer = $mailer\n";
+
+
+if ($cronrecipient eq "" and exists($ENV{"CHPL_NIGHTLY_CRON_RECIPIENT"})) {
+    $cronrecipient = $ENV{"CHPL_NIGHTLY_CRON_RECIPIENT"};
+}
+
+if ($cronrecipient ne "") {
+    print "Overriding \$failuremail with: $cronrecipient.\n";
+    $failuremail = $cronrecipient;
+    $replymail = $cronrecipient;
+}
+
+
+if ($debug == 1) {
+    $subjectid = "Dbg token count";
+    $recipient = $debugmail;
+} else {
+    $subjectid = "Cron token count";
+    $recipient = "$failuremail";
+}
+
+
+#
+# directory locations
+#
+$logdir = "/data/sea/chapel/Nightly";
+$statdir = "$logdir/Stats";
+if ($debug == 1) {
+    $statfile = "$chplhomedir/tokctnightly.debug.dat";
+} else {
+    $statfile = "$statdir/tokctnightly.cron.dat";
+}
+
+# Number of logical processes on current system. Will be used as number of jobs
+# when calling make with parallel execution.
+$here = dirname(__FILE__);
+$num_procs = `$here/../buildRelease/chpl-make-cpu_count`;
+chomp($num_procs);
+
+mysystem("cd $tokctdir && make > /dev/null", "building token counter", 1, 1);
+
+$somethingfailed = 0;
+
+$allcppfiles = "`find -name '*.cpp'` `find -name '*.c'` `find -name '*.h'`";
+$findflags = "-name '*.cpp' -print -or -name '*.c' -print -or -name '*.h' -print";
+
+$compdir = "$chplhomedir/compiler";
+$binsubdir = `$here/../chplenv/chpl_bin_subdir.py --host`;
+chomp $binsubdir;
+$bindir = "$chplhomedir/bin/$binsubdir";
+
+# remove generated files
+mysystem("cd $compdir && rm -f */*.g.d_parser.cpp vparser/cast_code.cpp analysis/prim_data.h analysis/prim_data.cpp");
+
+@compilerdirs = (
+    "AST",
+    "adt",
+    #"analysis",
+    "ifa",
+    "backend",
+    "include",
+    "main",
+    "optimizations",
+    "resolution",
+    "parser",
+    "passes",
+    #"symtab",
+    #"traversals",
+    "util",
+    #"vparser",
+);
+
+foreach $currentcompilerdir (@compilerdirs) {
+    mysystem("$tokctr `find $compdir/$currentcompilerdir $findflags` > $compdir/$currentcompilerdir.ntoks", "counting $currentcompilerdir tokens", 0, 1);
+}
+
+# Now count tokens in the runtime.
+mysystem("$tokctr `find $chplhomedir/runtime $findflags` > $chplhomedir/runtime/runtime.ntoks", "counting runtime tokens", 0, 1);
+
+mysystem("cd $chplhomedir && make -j$num_procs comprt", "making compiler", 1, 1);
+$ENV{'CHPL_HOME'} = $chplhomedir;
+mysystem("$bindir/chpl --count-tokens $chplhomedir/modules/standard/*.chpl $chplhomedir/modules/internal/*.chpl $chplhomedir/modules/dists/*.chpl $chplhomedir/modules/layouts/*.chpl > $compdir/chpcode.ntoks 2>&1", "counting module tokens", 1, 1);
+
+$asttoks = `cat $compdir/AST.ntoks`; chomp($asttoks);
+$adttoks = `cat $compdir/adt.ntoks`; chomp($adttoks);
+$analysistoks = 0;
+$ifatoks = `cat $compdir/ifa.ntoks`; chomp($ifatoks);
+$backendtoks = `cat $compdir/backend.ntoks`; chomp($backendtoks);
+$includetoks = `cat $compdir/include.ntoks`; chomp($includetoks);
+$maintoks = `cat $compdir/main.ntoks`; chomp($maintoks);
+$opttoks = `cat $compdir/optimizations.ntoks`; chomp($opttoks);
+$parsertoks = `cat $compdir/parser.ntoks`; chomp($parsertoks);
+$passestoks = `cat $compdir/passes.ntoks`; chomp($passestoks);
+$resolutiontoks = `cat $compdir/resolution.ntoks`; chomp($resolutiontoks);
+$symtabtoks = 0;
+$traversalstoks = 0;
+$utiltoks = `cat $compdir/util.ntoks`; chomp($utiltoks);
+$vparsertoks = 0;
+$runtimetoks = `cat $chplhomedir/runtime/runtime.ntoks`; chomp($runtimetoks);
+$chpcodetoks = `cat $compdir/chpcode.ntoks`; chomp($chpcodetoks);
+
+if ($asttoks == "") {
+    $asttoks = 0;
+}
+if ($adttoks == "") {
+    $adttoks = 0;
+}
+if ($analysistoks == "") {
+    $analysistoks = 0;
+}
+if ($ifatoks == "") {
+    $ifatoks = 0;
+}
+$analysistoks += $ifatoks;
+if ($backendtoks == "") {
+    $backendtoks = 0;
+}
+if ($includetoks == "") {
+    $includetoks = 0;
+}
+if ($maintoks == "") {
+    $maintoks = 0;
+}
+if ($opttoks == "") {
+    $opttoks = 0;
+}
+if ($parsertoks == "") {
+    $parsertoks = 0;
+}
+if ($passestoks == "") {
+    $passestoks = 0;
+}
+if ($resolutiontoks == "") {
+    $resolutiontoks = 0;
+}
+if ($symtabtoks == "") {
+    $symtabtoks = 0;
+}
+if ($traversalstoks == "") {
+    $traversalstoks = 0;
+}
+if ($utiltoks == "") {
+    $utiltoks = 0;
+}
+if ($vparsertoks == "") {
+    $vparsertoks = 0;
+}
+if ($runtimetoks == "") {
+    $runtimetoks = 0;
+}
+if ($chpcodetoks == "") {
+    $chpcodetoks = 0;
+}
+$comptoks = 0;
+$fetoks = 0;
+
+open(my $fh, '>>', $statfile);
+print $fh "$statdate";
+print $fh "\t-\t-\t-";
+close($fh);
+
+$tot = 0;
+
+$tot += $utiltoks;
+emit($tot);
+$tot += $adttoks;
+emit($tot);
+$tot += $vparsertoks;
+emit($tot);
+$tot += $maintoks;
+emit($tot);
+$tot += $passestoks;
+emit($tot);
+$tot += $parsertoks;
+emit($tot);
+$tot += $symtabtoks;
+emit($tot);
+$tot += $asttoks;
+emit($tot);
+$tot += $traversalstoks;
+emit($tot);
+$tot += $analysistoks;
+emit($tot);
+$tot += $backendtoks;
+emit($tot);
+$tot += $includetoks;
+emit($tot);
+$tot += $runtimetoks;
+emit($tot);
+$tot += $chpcodetoks;
+emit($tot);
+$tot += $opttoks;
+emit($tot);
+$tot += $resolutiontoks;
+emit($tot);
+
+open(my $fh, '>>', $statfile);
+print $fh "\n";
+close($fh);
+
+exit 0;
+
+
+#
+# subroutines
+#
+
+sub mysystem {
+    $command = $_[0];
+    $errorname = $_[1];
+    $fatal = $_[2];
+    $mailmsg = $_[3];
+
+    $status = system($command);
+    if ($status != 0) {
+	$somethingfailed = 1;
+        $status = $status / 256;
+	print "Error $_[1]: $status\n";
+
+    if ($mailmsg != 0) {
+        $mailsubject = "$subjectid Failure";
+        $mailcommand = "| $mailer -s \"$mailsubject \" $recipient";
+
+        if (!exists($ENV{"CHPL_TEST_NOMAIL"}) or grep {$ENV{"CHPL_TEST_NOMAIL"} =~ /^$_$/i} ('','\s*','0','f(alse)?','no?')) {
+            print "Trying to mail message... using $mailcommand\n";
+            open(MAIL, $mailcommand);
+            print MAIL "=== Summary ===================================================\n";
+            print MAIL "ERROR $_[1]: $status\n";
+            print MAIL "=== End Summary ===============================================\n";
+            print MAIL "Build: ", $buildurl, "\n";
+            close(MAIL);
+        } else {
+            print "CHPL_TEST_NOMAIL: No $mailcommand\n";
+        }
+    }
+
+	if ($fatal != 0) {
+	    `echo "$statdate\t-" >> $statfile`;
+	    `cd $statdir && ./makeplot`;
+	    exit 1;
+	}
+    }
+    $status;
+}
+
+
+sub emit {
+    $toks = $_[0];
+    open(my $fh, '>>', $statfile);
+    print $fh "\t";
+    if ($toks == 0) {
+        print $fh "-";
+    } else {
+        print $fh "$toks";
+    }
+    close($fh);
+}

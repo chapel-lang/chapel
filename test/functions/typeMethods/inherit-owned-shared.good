@@ -1,0 +1,3 @@
+inherit-owned-shared.chpl:7: warning: mOwned
+inherit-owned-shared.chpl:8: warning: mShared
+inherit-owned-shared.chpl:10: error: done

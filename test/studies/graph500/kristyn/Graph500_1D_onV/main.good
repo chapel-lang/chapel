@@ -1,0 +1,25 @@
+Problem Dimensions
+              Scale: 6
+ Number of Vertices: 64
+        Edge factor: 8
+
+Check for valid minimum and maximum vertex IDs 
+Minimum vertex ID 2
+Maximum vertex ID 64
+
+Select candidate root and run BFS if criteria satisfied
+
+Candidate root = 1
+Root not a valid candidate
+Candidate root = 27
+Root =  27
+  Number of traversed edges = 512
+Candidate root = 3
+Root =  3
+  Number of traversed edges = 512
+Candidate root = 19
+Root =  19
+  Number of traversed edges = 512
+Candidate root = 59
+Root =  59
+  Number of traversed edges = 512

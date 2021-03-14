@@ -1,0 +1,2 @@
+bug: can't use array default value if domain arg doesn't start with 1
+#11530

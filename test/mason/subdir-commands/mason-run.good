@@ -1,0 +1,5 @@
+Skipping registry update since no dependency found in manifest file.
+Compiling [debug] target: FizzBuzz
+Build Successful
+
+New library: FizzBuzz

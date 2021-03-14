@@ -1,0 +1,12 @@
+feature request: The List Module does not support accessing elements of a list based on index. I feel that this should be supported.
+
+Explainations:
+
+		bug8.chpl:8: error: unresolved access of 'list(int(64))' by '(2)'
+		
+		Bug Description:
+			The List Module does not support accessing elements of a list based on index. I feel that this should be supported.
+			 
+
+		Explaination:
+			I understand the list is implemented as a record, and the above syntax to access the list elements isn't correct, but I as a programmer would want to access elements of the list in some way using indices.

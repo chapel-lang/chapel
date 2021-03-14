@@ -1,0 +1,42 @@
+duplicate-management.chpl:3: In function 'factory':
+duplicate-management.chpl:4: error: duplicate decorators - owned owned MyClass
+  duplicate-management.chpl:7: called as factory(type t = owned MyClass)
+duplicate-management.chpl:3: In function 'factory':
+duplicate-management.chpl:4: error: duplicate decorators - owned shared MyClass
+  duplicate-management.chpl:9: called as factory(type t = shared MyClass)
+duplicate-management.chpl:3: In function 'factory':
+duplicate-management.chpl:4: error: duplicate decorators - owned unmanaged MyClass
+  duplicate-management.chpl:11: called as factory(type t = unmanaged MyClass)
+duplicate-management.chpl:3: In function 'factory':
+duplicate-management.chpl:4: error: duplicate decorators - owned borrowed MyClass
+  duplicate-management.chpl:13: called as factory(type t = borrowed MyClass)
+duplicate-management.chpl:18: In function 'tu':
+duplicate-management.chpl:19: error: duplicate decorators - unmanaged owned MyClass
+  duplicate-management.chpl:22: called as tu(type t = owned MyClass)
+duplicate-management.chpl:18: In function 'tu':
+duplicate-management.chpl:19: error: duplicate decorators - unmanaged shared MyClass
+  duplicate-management.chpl:24: called as tu(type t = shared MyClass)
+duplicate-management.chpl:18: In function 'tu':
+duplicate-management.chpl:19: error: duplicate decorators - unmanaged unmanaged MyClass
+  duplicate-management.chpl:26: called as tu(type t = unmanaged MyClass)
+duplicate-management.chpl:18: In function 'tu':
+duplicate-management.chpl:19: error: duplicate decorators - unmanaged borrowed MyClass
+  duplicate-management.chpl:28: called as tu(type t = borrowed MyClass)
+duplicate-management.chpl:34: In function 'tb':
+duplicate-management.chpl:35: error: duplicate decorators - borrowed owned MyClass
+  duplicate-management.chpl:38: called as tb(type t = owned MyClass)
+duplicate-management.chpl:34: In function 'tb':
+duplicate-management.chpl:35: error: duplicate decorators - borrowed shared MyClass
+  duplicate-management.chpl:40: called as tb(type t = shared MyClass)
+duplicate-management.chpl:34: In function 'tb':
+duplicate-management.chpl:35: error: duplicate decorators - borrowed unmanaged MyClass
+  duplicate-management.chpl:42: called as tb(type t = unmanaged MyClass)
+duplicate-management.chpl:34: In function 'tb':
+duplicate-management.chpl:35: error: duplicate decorators - borrowed borrowed MyClass
+  duplicate-management.chpl:44: called as tb(type t = borrowed MyClass)
+duplicate-management.chpl:50: In function 'to':
+duplicate-management.chpl:50: error: duplicate decorators - owned owned MyClass
+  duplicate-management.chpl:54: called as to(type t = owned MyClass)
+duplicate-management.chpl:50: In function 'to':
+duplicate-management.chpl:50: error: duplicate decorators - owned shared MyClass
+  duplicate-management.chpl:56: called as to(type t = shared MyClass)

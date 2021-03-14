@@ -1,0 +1,8 @@
+feature request: default initializers for single-init inheritance cases
+#8232
+
+When converting some code from constructors to initializers, it seemed
+natural to me in a case like this that the subclass should get a
+default initializer that was essentially a pass-through to the parent
+class initializer, yet that didn't happen.  From a productivity
+perspective, I think it should.

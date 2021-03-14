@@ -1,0 +1,6 @@
+leaderFollowerConstChecking.chpl:7: error: cannot assign to const variable
+leaderFollowerConstChecking.chpl:8: error: cannot assign to const variable
+leaderFollowerConstChecking.chpl:17: error: cannot assign to const variable
+leaderFollowerConstChecking.chpl:22: error: cannot assign to const variable
+leaderFollowerConstChecking.chpl:28: error: cannot assign to const variable
+leaderFollowerConstChecking.chpl:33: error: cannot assign to const variable

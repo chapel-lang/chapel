@@ -1,0 +1,3 @@
+error: Ambiguous main() function (use --main-module to disambiguate):
+ambigmodmain.unnested.chpl:2: note: in module M
+ambigmodmain.unnested.chpl:7: note: in module M

@@ -1,0 +1,4 @@
+creating Container
+creating Thing 100
+in Thing.deinit, x=100
+in Container.deinit

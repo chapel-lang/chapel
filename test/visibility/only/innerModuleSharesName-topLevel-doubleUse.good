@@ -1,0 +1,2 @@
+innerModuleSharesName-topLevel-doubleUse.chpl:3: error: symbol a is multiply defined
+innerModuleSharesName-topLevel-doubleUse.chpl:6: note: also defined here

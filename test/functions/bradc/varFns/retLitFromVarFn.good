@@ -1,0 +1,2 @@
+retLitFromVarFn.chpl:4: In method 'this':
+retLitFromVarFn.chpl:6: error: function cannot return constant by ref

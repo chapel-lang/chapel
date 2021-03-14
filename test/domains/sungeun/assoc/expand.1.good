@@ -1,0 +1,4 @@
+expand.chpl:4: In function 'my_expand':
+expand.chpl:5: error: expand not supported on associative domains
+  expand.chpl:11: called as my_expand(D: DefaultAssociativeDom(int(64),true), off: int(64)) from function 'dit'
+  expand.chpl:21: called as dit(D: DefaultAssociativeDom(int(64),true), lo: int(64), hi: int(64))

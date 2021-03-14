@@ -1,0 +1,284 @@
+GASNet ofi-conduit documentation
+Copyright 2015-2017, Intel Corporation
+Portions copyright 2018-2020, The Regents of the University of California.
+$Revision: 1.1 $
+
+**** NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE ****
+*                                                               *
+*  This version of ofi-conduit is a work-in-progress port from  *
+*  GASNet-1 to GASNet-EX and is currently disabled by default.  *
+*  Various aspects of this README are either out-of-date or     *
+*  have not been reverified against the current version.        *
+*                                                               *
+**** NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE ****
+
+User Information:
+----------------
+This is the README for ofi-conduit.
+
+OpenFabrics Interfaces (OFI) is a framework focused on exporting fabric
+communication services to applications. OFI is best described as a collection of
+libraries and applications used to export fabric services. 
+
+See more details at: http://ofiwg.github.io/libfabric/
+
+Where this conduit runs:
+-----------------------
+
+The GASNet OFI conduit can run on any OFI provider that supports its
+requirements. At this point in time, it is known to work on the following
+providers (using the provider names in parenthesis):
+  + Sockets (sockets)
+  + Intel(R) Omni-Path Fabric (psm2)
+  + TCP, via "tcp;ofi_rxm", under libfabric 1.7 and higher (tcp)
+  + Verbs, via "verbs;ofi_rxm", under libfabric 1.7 and higher (verbs)
+
+Work has been done to enable the gni provider which runs on Cray XC(TM)
+systems. The author of this conduit has seen good results from the preliminary
+testing of this provider, however has not had enough time to thoroughly
+validate it. As such, the gni provider should be considered experimental.
+
+The fi_info command installed with libfabric can be used to query the available
+OFI providers.
+
+While OFI conduit can be considered as a tech-preview for next-generation fabrics,
+it is the recommended conduit for use on the Intel Omni-Path fabric.
+
+Users with InfiniBand hardware should use the GASNet ibv-conduit, rather than
+ofi-conduit with the verbs OFI provider, as the former may provide better performance.
+
+Users with Ethernet hardware are encouraged to consider the GASNet udp-conduit as an alternative
+to ofi-conduit with the sockets provider, as the former may provide more favorable performance.
+
+Users with Cray XC hardware are encouraged to consider the GASNet aries-conduit
+as an alternative to ofi-conduit with the GNI provider, as the former may provide better performance.
+
+The psm1 provider (for the end-of-life TrueScale product) is no longer supported.
+
+OFI provider requirements to run this conduit:
+-------------------------------------
+Endpoint type: RDM
+Capabilities: FI_RMA and FI_MSG
+Secondary Capabilities: FI_MULTI_RECV
+Memory Registration Mode: FI_MR_SCALABLE (preferred) or FI_MR_BASIC
+    * There is currently no support for providers that require FI_LOCAL_MR
+Threading mode: FI_THREAD_SAFE and/or FI_THREAD_DOMAIN
+    * In GASNET_{SEQ,PARSYNC} mode, all providers use FI_THREAD_DOMAIN as only one thread makes
+      calls into the GASNet library.
+    * In GASNET_PAR mode, FI_THREAD_DOMAIN is used only for the psm2 provider which currently
+      does not support FI_THREAD_SAFE. All other providers use FI_THREAD_SAFE.
+
+Building ofi-conduit
+--------------------
+
+Libfabric is a core component of OFI. To use ofi-conduit, the user firsts needs to 
+locate or build an install of libfabric. The source code of libfabric can be found at:
+
+   https://github.com/ofiwg/libfabric
+
+To build GASNet with ofi-conduit enabled:
+./configure --enable-ofi --with-ofihome=[custom libfabric install directory]
+
+ofi-conduit exposes the following configure script flags for GASNet:
+    * --with-ofi-provider=PROVIDER_NAME: As different providers expose different feature sets,
+      this flags exists to specify a provider to assume for compile-time optimization. If this
+      flag is not present, the configure script will attempt to detect an available
+      provider using the fi_info utility, if available. If fi_info is not available, a
+      supported provider not available, or if the argument to this flag is "default",
+      then provider features will be detected at runtime. While this is flexible as to
+      which providers it supports, it will also add branches in critical paths that 
+      may increase software overheads.
+    * --with-ofi-num-completions=VALUE: Specifies the maximum number of
+      transmit completions to be read from the transmit CQ during each call to the
+      polling function. Default: 64
+    * --with-ofi-max-medium=VALUE: Specify the maximum size of AMMedium messages in
+      ofi-conduit. This may be useful for tuning the conduit to different network
+      hardware. Default: 8192
+
+The following configure flags override options set by provider selection via
+auto-detection or by the --with-ofi-provider=VALUE flag. These are not recommended to be
+used as tuning options.
+    * --enable-ofi-thread-domain: In GASNET_PAR mode, forces the use of FI_THREAD_DOMAIN in the conduit.
+      This results in the use of one global lock to protect calls into libfabric. In GASNET_{SEQ,PARSYNC}
+      mode, this flag has no effect.
+    * --disable-ofi-thread-domain: In GASNET_PAR mode, forces the use of FI_THREAD_SAFE in the conduit.
+      In GASNET_{SEQ,PARSYNC} mode, this flag has no effect.
+        ** Currently, only the psm2 provider requires the use of
+           FI_THREAD_DOMAIN in this conduit. These flags exists to future-proof this
+           version of ofi-conduit against future support for FI_THREAD_SAFE for these
+           providers.
+    * --enable-ofi-mr-scalable: Indicates that FI_MR_SCALABLE memory registration support will be 
+      statically compiled into the conduit. This is the default (and recommended) option for the 
+      psm2 and sockets provider.
+    * --disable-ofi-mr-scalable: Indicates that FI_MR_BASIC memory registration support
+      will be statically compiled into the conduit. This is the default option for the
+      gni provider, which at this time does not support FI_MR_SCALABLE.
+
+The default spawner to be used by the gasnetrun_ofi utility can be
+selected by configuring '--with-ofi-spawner=VALUE', where VALUE is one
+of 'mpi', 'pmi' or 'ssh'.  If this option is not used, mpi is the
+default when available, and ssh otherwise.
+Here are some things to consider when selecting a default spawner:
+  + mpi-spawner is the default when MPI is available precisely because it
+    is so frequently present on systems where GASNet is to be installed.
+    Additionally, very little (if any) configuration is required and the
+    behavior is highly reliable.
+  + pmi-spawner uses the same "Process Management Interface" which forms
+    the basis for many mpirun implementations.  When support is available,
+    this spawner can be as easy to use and as reliable as mpi-spawner, but
+    without the overheads of initializing an MPI runtime.
+  + ssh-spawner depends only on the availability of a remote shell command
+    such as ssh.  For this reason ssh-spawner support is always compiled.
+    However, it can be difficult (or impossible) to use on a cluster which
+    was not setup to allow ssh to (and among) its compute nodes.
+For more information on configuration and use of these spawners, see
+   README-{ssh,mpi,pmi}-spawner (installed)
+or
+   other/{ssh,mpi,pmi}-spawner/README (source).
+
+Depending on the libfabric provider in use, there may be restrictions on how
+mpi-based spawning is used.  In particular, the psm2 provider has the
+property that each process may only open the network adapter once.  If you
+wish to use mpi-spawner, please consult its README for advice on how to set
+your MPIRUN_CMD to use TCP/IP.
+
+Job Spawning
+------------
+
+If using UPC, Titanium, etc. the language-specific commands should be used
+to launch applications.  Otherwise, applications can be launched using
+the gasnetrun_ofi utility:
+  + usage summary:
+    gasnetrun_ofi -n <n> [options] [--] prog [program args]
+    options:
+      -n <n>                 number of processes to run (required)
+      -N <N>                 number of nodes to run on (not supported by all MPIs)
+      -E <VAR1[,VAR2...]>    list of environment vars to propagate
+      -v                     be verbose about what is happening
+      -t                     test only, don't execute anything (implies -v)
+      -k                     keep any temporary files created (implies -v)
+      -spawner=(ssh|mpi|pmi) force use of a specific spawner (if available)
+
+There are as many as three possible methods (ssh, mpi and pmi) by which one
+can launch an ofi-conduit application.  Ssh-based spawning is always
+available, and mpi- and pmi-based spawning are available if the respective
+support was located at configure time.  The default is established at
+configure time (see section "Building ofi-conduit", above).
+
+To select a non-default spawner one may either use the "-spawner=" command-
+line argument or set the environment variable GASNET_OFI_SPAWNER to "ssh",
+"mpi" or "pmi".  If both are used, then the command line argument takes
+precedence.
+
+Recognized environment variables:
+---------------------------------
+
+* GASNET_OFI_SPAWNER
+  To override the default spawner for ofi-conduit jobs, one may set this
+  environment variable as described in the section "Job Spawning", above.
+  There are additional settings which control behaviors of the various
+  spawners, as described in the respective READMEs (listed in section
+  "Building ofi-conduit", above).
+
+* GASNET_QUIET - set to 1 to silence the startup warning indicating
+  the provider in use may deliver suboptimal performance.
+
+* GASNET_OFI_RMA_POLL_FREQ - In order to ensure efficient progress, the conduit polls the RMA
+  transmit completion queue once for every GASNET_OFI_RMA_POLL_FREQ RMA injections. Default: 32
+
+* GASNET_OFI_NUM_BBUFS, GASNET_OFI_BBUF_SIZE, GASNET_OFI_BBUF_THRESHOLD - See the
+  "Non-bulk, Non-blocking Put Functions" section for detail on these environment variables.
+
+* FI_PROVIDER - set to a provider name to override the default OFI provider selection
+
+* FI_PSM2_LOCK_LEVEL - This variable only applies to the psm2 provider and only
+  is available in libfabric v1.5.0. This environment variable controls the
+  internal locking state of the provider and can be set to the following three
+  values:
+    - FI_PSM2_LOCK_LEVEL=0: All locks inside of the provider will be disabled.
+    - FI_PSM2_LOCK_LEVEL=1: Some locks inside of the provider will be disabled,
+      and is suitable for programs that limit the access to each PSM2 context to
+      a single thread.
+    - FI_PSM2_LOCK_LEVEL=2: All locks inside of the provider are enabled.
+  The default setting of this variable is 2. The conduit author recommends using
+  a value of 0 when using GASNet in GASNET_SEQ mode and a value of 1 when running
+  in GASNET_PARSYNC mode. For GASNET_PAR mode, a value of 1 should only be used
+  if GASNet was configured with --enable-ofi-thread-domain, which only will
+  allow a single thread to make calls into libfabric at a time. Otherwise, the
+  default value of 2 should be used. This variable should be used by power users
+  only and should be used at your own risk.
+
+* All the environment variables provided by libfabric (see `fi_info -e`)
+
+* The environment variables described in the "Non-bulk, Non-blocking Put Functions" 
+  section of this file.
+
+* All the standard GASNet environment variables (see top-level README)
+
+Non-bulk, Non-blocking Put Functions
+------------------------------------
+GASNet requires the source buffer used in the gasnet_put_{nb,nbi} functions to be able to be reused as
+soon as the function returns. The ofi-conduit implements this by a hybrid approach that uses
+the FI_INJECT flag, bounce buffers, and blocking operations.
+
+* If the nbytes parameter is less than or equal to the chosen provider's inject_size (see the 
+  fi_endpoint(3) man page), the FI_INJECT flag will be used.
+* If the nbytes parameter is greater than the inject size but less than or equal to a user specifiable
+  threshold (default is 4 times the bounce buffer size) then bounce buffers will be used.
+* If the nbytes parameter is greater than the threshold, the operation will be implemented as a 
+  fully-blocking operation.
+
+The following GASNet statistics counters show the number of times each of these code paths are entered:
+NB_PUT_INJECT, NB_PUT_BOUNCE, NB_PUT_BLOCK.
+
+The following environment variables may be used to tune this behavior:
+* GASNET_OFI_BBUF_SIZE - The size of each bounce buffer. Default is GASNET_PAGESIZE.
+* GASNET_OFI_NUM_BBUFS - The number of bounce buffers to be allocated at initialization. Default: 64
+* GASNET_OFI_BBUF_THRESHOLD - Payload sizes above GASNET_OFI_BBUF_THRESHOLD will be transferred
+  as a blocking operation. This is useful for when the overheads of bounce buffering become too great.
+  Default: (4 * GASNET_OFI_BBUF_SIZE).
+* The following condition must hold: GASNET_OFI_NUM_BBUFS >= GASNET_OFI_BBUF_THRESHOLD/GASNET_OFI_BBUF_SIZE
+* These defaults are chosen to optimize for a 256K L2 cache, assuming 4K pages. It is recommended to 
+  modify these variables so that GASNET_PAGESIZE * GASNET_OFI_NUM_BBUFS == L2-cache-size. However,
+  these tuning parameters only apply to gasnet_put_{nb,nbi}(). They do not apply to get functions, blocking
+  functions, or bulk put functions.
+
+Known problems:
+---------------
+* The following bugs are present in libfabric v1.5.0 and will be addressed in a
+  future libfabric release. Until then, patches to correct these issues are
+  listed with the below descriptions.
+  - sockets provider hang
+        * Under atypical conditions of heavy active messaging flood traffic, the
+          sockets provider will occasionally hang.
+        * This bug was also present in libfabric v1.4.0
+        * This has been fixed in upstream libfabric. The patch that corrects
+          this behavior can be found in the link below.
+        * LBNL Bugzilla link: https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=3597
+        * libfabric GitHub issue link: https://github.com/ofiwg/libfabric/issues/3217
+        * Patch that fixes the bug: https://github.com/ofiwg/libfabric/pull/3223
+    - gni provider segfault
+        * When using FI_MULTI_RECV (as the ofi-conduit does), the gni provider may segfault.
+        * This bug has been fixed in upstream libfabric.
+        * Patch that fixes the bug: https://github.com/ofiwg/libfabric/pull/3208
+
+* See the GASNet Bugzilla server for details on additional known bugs:
+  https://gasnet-bugs.lbl.gov/
+
+* Limits to MPI interoperability
+  Depending on the libfabric provider in use, it may not be possible to have both
+  MPI and GASNet using the native network API in the same application.  In
+  particular, the psm2 provider has the property that each process may only open
+  the network adapter once.  If you wish to use MPI and GASNet in the same
+  application on the Intel Omni-Path fabric, then there are two options:
+    1. GASNet may be configured to use an alternative transport.
+       Options include mpi- and udp-conduits.
+    2. MPI may be configured to use an alternative transport (most likely TCP).
+  The relative performance implications of these options depends strongly on the
+  properties of each application.
+
+
+Future work:
+------------
+
+The OFI community is working on increasing the number of providers that can support GASNet.

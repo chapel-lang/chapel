@@ -1,0 +1,36 @@
+==================================
+Chapel Modules Directory Structure
+==================================
+
+The directory structure of the modules/ directory is as follows:
+
+./
+
+  dists/    : standard domain maps defining distributions that target
+              multiple locales.
+
+  internal/ : Chapel code used to implement the language; modules here
+              should be code that the user either need not be aware
+              of, or would consider to be part of the Chapel language
+              itself (i.e., something you'd document in the language
+              specification rather than as part of a library's
+              documentation).
+
+  layouts/  : standard domain maps for memory layouts targeting a
+              single locale.
+
+  minimal/  : a minimal set of modules designed for developer use when
+              trying to focus on a minimal definition of the language
+              (currently broken in order to focus on getting strings
+              working).
+
+  packages/ : library modules that are not considered part of the
+              standard Chapel library, but which may be useful to end
+              users.  In some cases these are designed to eventually
+              be made standard modules as they receive more attention
+              and mature (e.g., Search, Sort); in other cases, we
+              anticipate them always being something that would be
+              governed by a package manager rather than something you
+              should expect every Chapel implementation to support.
+              
+  standard/ : modules considered part of the standard Chapel library.

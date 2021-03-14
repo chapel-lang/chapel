@@ -1,0 +1,3 @@
+uncaught IllegalArgumentError: bad cast from string 'a1' to int(64)
+  badstring2int2.chpl:3: thrown here
+  badstring2int2.chpl:3: uncaught here

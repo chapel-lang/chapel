@@ -1,0 +1,52 @@
+Creating new Block distribution:
+boundingBox = {1..10}
+targetLocDom = {0..2}
+targetLocales = 0 0 0
+dataParTasksPerLocale = 1
+dataParIgnoreRunningTasks = false
+dataParMinGranularity = 1
+locDist[0].myChunk = {-9223372036854775808..4}
+locDist[1].myChunk = {5..7}
+locDist[2].myChunk = {8..9223372036854775807}
+Creating new Block domain:
+whole = {1..0}
+locDoms[0].myBlock = {1..0}
+locDoms[1].myBlock = {5..0}
+locDoms[2].myBlock = {8..0}
+Setting indices of Block domain:
+whole = {0..11}
+locDoms[0].myBlock = {0..4}
+locDoms[1].myBlock = {5..7}
+locDoms[2].myBlock = {8..11}
+Creating new Block domain:
+whole = {1..0}
+locDoms[0].myBlock = {1..0}
+locDoms[1].myBlock = {5..0}
+locDoms[2].myBlock = {8..0}
+Setting indices of Block domain:
+whole = {1..12}
+locDoms[0].myBlock = {1..4}
+locDoms[1].myBlock = {5..7}
+locDoms[2].myBlock = {8..12}
+Creating new Block domain:
+whole = {1..0}
+locDoms[0].myBlock = {1..0}
+locDoms[1].myBlock = {5..0}
+locDoms[2].myBlock = {8..0}
+Setting indices of Block domain:
+whole = {-1..10}
+locDoms[0].myBlock = {-1..4}
+locDoms[1].myBlock = {5..7}
+locDoms[2].myBlock = {8..10}
+ProblemDist =
+Block
+-------
+distributes: {1..10}
+across locales: LOCALE0 LOCALE0 LOCALE0
+indexed via: {0..2}
+resulting in: 
+  [0] locale 0 owns chunk: {-9223372036854775808..4}
+  [1] locale 0 owns chunk: {5..7}
+  [2] locale 0 owns chunk: {8..9223372036854775807}
+
+

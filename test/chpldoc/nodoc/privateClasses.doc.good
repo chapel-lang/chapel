@@ -1,0 +1,23 @@
+.. default-domain:: chpl
+
+.. module:: privateClasses.doc
+
+privateClasses.doc
+==================
+**Usage**
+
+.. code-block:: chapel
+
+   use privateClasses.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import privateClasses.doc;
+
+.. class:: bar
+
+   .. attribute:: var showMe: bool
+

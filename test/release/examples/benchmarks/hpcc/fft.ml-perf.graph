@@ -1,0 +1,5 @@
+perfkeys: Performance (Gflop/s) =
+files: fft-20.dat
+graphkeys: fft Gflop/s
+graphtitle: HPCC: FFT Perf (Gflop/s) - n=2^20
+ylabel: Performance (Gflop/sec)

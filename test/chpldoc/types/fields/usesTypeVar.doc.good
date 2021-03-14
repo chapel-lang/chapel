@@ -1,0 +1,40 @@
+.. default-domain:: chpl
+
+.. module:: usesTypeVar.doc
+
+usesTypeVar.doc
+===============
+**Usage**
+
+.. code-block:: chapel
+
+   use usesTypeVar.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import usesTypeVar.doc;
+
+.. class:: Bar
+
+   This class uses the type field as the type of another field 
+
+
+   .. attribute:: type t
+
+      To be used 
+
+   .. attribute:: var a: t
+
+      User #1 
+
+   .. attribute:: const b: t
+
+      User #2 
+
+   .. attribute:: param c: t
+
+      User #3 
+

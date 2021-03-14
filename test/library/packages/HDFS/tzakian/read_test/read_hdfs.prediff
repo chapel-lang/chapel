@@ -1,0 +1,7 @@
+#!/usr/bin/env perl
+
+system("hadoop dfs -rm /tmp/beer.txt");
+system("hadoop dfs -rm /tmp/foo.txt");
+system("hadoop dfs -rm /tmp/uly.txt");
+
+

@@ -1,0 +1,176 @@
+#!/usr/bin/env python3
+
+# Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+# Copyright 2004-2019 Cray Inc.
+# Other additional copyright holders may be indicated within.
+#
+# The entirety of this work is licensed under the Apache License,
+# Version 2.0 (the "License"); you may not use this file except
+# in compliance with the License.
+#
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+"""Try to identify references to non-existent files, e.g. doc/foo
+instead of doc/rst/foo.  This script recognizes potential file
+references by recognizing certain strings as likely to be the prefix
+of a path in the Chapel repository, e.g., "doc/" or "modules/" or
+"test/".
+"""
+
+import os.path
+import sys
+import argparse
+
+chplenv_dir = os.path.join(os.path.dirname(__file__), '..', 'chplenv')
+sys.path.insert(0, os.path.abspath(chplenv_dir))
+
+from utils import memoize
+
+def check_path(p):
+    """returns True if p exists, False if it doesn't"""
+
+    # These are common written-out alternatives, not paths
+    if p == "compiler/runtime":
+        return True
+    if p == "compiler/module":
+        return True
+
+    # These show up in generated html files relative to a "modules"
+    # directory that isn't the top-level one we're going to look in.
+    if p == "modules/chpldoc.doc.html":
+        return True
+    if p == "modules/chpldoc.doc/Defined.html":
+        return True
+    # Or in generated .js
+    if p == "modules/chpldoc.doc" or p == "modules/chpldoc.doc/Defined":
+        return True
+    # jquery .js file means a different test/ directory too
+    if p == "test/unit/core.js":
+        return True
+
+    return os.path.isfile(p) or os.path.isdir(p)
+
+@memoize
+def check_token(t):
+    """If t "looks like" a path but doesn't exist, return False.
+    Otherwise, return True."""
+
+    # Skip everything that doesn't look like something
+    if  not (t.startswith("doc/") or
+             t.startswith("test/") or
+             t.startswith("compiler/") or
+             t.startswith("runtime/") or
+             t.startswith("modules/") or
+             t.startswith("spec/") or
+             t.startswith("util/") or
+             t.startswith("tools/") or
+             t.startswith("third-party/") or
+             t.startswith("CHPL_HOME/") or
+             t.startswith("//github.com/chapel-lang/chapel/blob/master/")):
+        return True
+
+    # Strip off these two prefixes to get a path relative to $CHPL_HOME
+    if t.startswith("CHPL_HOME/"):
+        t = t[10:]
+    elif t.startswith("//github.com/chapel-lang/chapel/blob/master/"):
+        t = t[44:]
+
+    # People like to say: "For details, see the README...".
+    while t.endswith("."):
+        t = t[:-1]
+
+    # Don't worry if it was "CHPL_HOME/..."
+    if t == "":
+        return True
+
+    # "*": often see foo/bar/*/baz, or foo/bar/baz-*
+    # We could just chop everything off after the * for the first case,
+    # But we'd need to do something about the basename, or expand the
+    # * for the second.  So just punt for now.
+    if "*" in t:
+        return True
+
+    firstcheck = check_path(t)
+
+    # Hack to check e.g. "util/files.cpp" against "compiler/utils/files.cpp"
+    if not firstcheck and t.startswith("util/"):
+        return check_path("compiler/" + t)
+
+    return firstcheck
+
+def special_exception(filename, token):
+    """Exception is a synonym of hack"""
+    if filename == "doc/rst/developer/adding-a-tasking-model.txt":
+        # Allow this file's wonderful paths
+        if "wonderful" in token:
+            return True
+    elif filename == "doc/rst/developer/adding-a-comm-layer.txt":
+        # And this one's speedy paths
+        if "speedy" in token:
+            return True
+    return False
+
+def check_line(filename, lineno, l):
+    """Split l into tokens.  Report any for which check_token() is false."""
+
+    # Replace punctuation with spaces for the l.split() call below
+    splitters = [ ",", ":", "\"", "\'", "`", "(", ")", "[", "]", "{", "}",
+                  "#", ";", "$" ]
+    for s in splitters:
+        l = l.replace(s, " ")
+
+    tokens = l.split()
+    for t in tokens:
+        if special_exception(filename, t):
+            continue
+        try:
+            if not check_token(t):
+                print("{fn}:{l}: {t} not found".format(
+                    fn=filename, l=lineno, t=t))
+        except:
+            # If we pulled a "string" out of an object file, it's the
+            # wrong kind of string to call os.path.isfile() on, and it
+            # raises an exception.  Report what the string was, and
+            # where it came from.
+            print("{fn}:{l}: {t}: Can't check!".format(
+                fn=filename, l=lineno, t=t))
+            raise
+
+def check_file(fn):
+    """Check every line in file"""
+    try:
+        with open(fn, "r") as f:
+            for lineno, line in enumerate(f, 1):
+                check_line(fn, lineno, line)
+    except:
+        print("Can't open: {fn}".format(fn=fn))
+
+def main():
+    """The main routine"""
+    epilog = """For example, to check all files in the doc/ directory,
+    run this shell command:
+       for i in `find doc -type f`; do check_paths -f $i; done"""
+    parser = argparse.ArgumentParser(description=__doc__, epilog=epilog)
+    parser.add_argument("-l", "--line") # For testing of this script
+    parser.add_argument("-f", "--file", required=True)
+    args = parser.parse_args()
+
+    if args.line is not None:
+        check_line("stdin", "1", args.line)
+    elif args.file is not None:
+        check_file(args.file)
+
+    # TODO: directory-walking
+
+
+if __name__ == "__main__":
+    main()

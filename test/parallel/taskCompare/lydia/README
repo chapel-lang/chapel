@@ -1,0 +1,8 @@
+When experimenting with test/studies/shootout/thread-ring, it was discovered
+that using a coforall loop + begin statements to start tasks was faster than
+using only a coforall loop, the latter of which performed roughly similar to
+just using a for loop with begin statements.  This case is not easily
+demonstrated using trivial code (i.e. the problem becomes noticable only when
+the tasks being performed are more than just spinning for an arbitrary amount
+of time), so the thread-ring code has been copied for the purpose of this test.
+(accurate as of revision 21783)

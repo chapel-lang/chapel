@@ -1,0 +1,1 @@
+-sautoInitFFTW_MT=true -M../../../release/examples/primers -lfftw3_threads -lfftw3

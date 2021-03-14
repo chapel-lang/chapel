@@ -1,0 +1,5 @@
+perfkeys: domInit:, domInit:, domInit:, domInit:
+graphkeys: blockDomInit:, cyclicDomInit:, blockCyclicDomInit:, stencilDomInit:
+files: distCreate-tiny-block.dat, distCreate-tiny-cyclic.dat, distCreate-tiny-blockCyc.dat, distCreate-tiny-stencil.dat
+ylabel: Time (seconds)
+graphtitle: Creating distributed domains

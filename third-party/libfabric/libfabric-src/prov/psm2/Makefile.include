@@ -1,0 +1,139 @@
+if HAVE_PSM2
+_psm2_files = \
+	prov/psm2/src/version.h \
+	prov/psm2/src/psmx2.h \
+	prov/psm2/src/psmx2_trigger.h \
+	prov/psm2/src/psmx2_attr.c \
+	prov/psm2/src/psmx2_init.c \
+	prov/psm2/src/psmx2_fabric.c \
+	prov/psm2/src/psmx2_domain.c \
+	prov/psm2/src/psmx2_trx_ctxt.c \
+	prov/psm2/src/psmx2_cq.c \
+	prov/psm2/src/psmx2_cntr.c \
+	prov/psm2/src/psmx2_av.c \
+	prov/psm2/src/psmx2_ep.c \
+	prov/psm2/src/psmx2_cm.c \
+	prov/psm2/src/psmx2_tagged.c \
+	prov/psm2/src/psmx2_msg.c \
+	prov/psm2/src/psmx2_rma.c \
+	prov/psm2/src/psmx2_atomic.c \
+	prov/psm2/src/psmx2_am.c \
+	prov/psm2/src/psmx2_mr.c \
+	prov/psm2/src/psmx2_wait.c \
+	prov/psm2/src/psmx2_util.c
+
+if HAVE_PSM2_SRC
+_psm2_files += \
+	prov/psm2/src/psm2_revision.c
+
+_psm2_nodist_files = \
+	prov/psm2/src/psm2/psm_am.c \
+	prov/psm2/src/psm2/psm.c \
+	prov/psm2/src/psm2/psm_context.c \
+	prov/psm2/src/psm2/psm_diags.c \
+	prov/psm2/src/psm2/psm_ep.c \
+	prov/psm2/src/psm2/psm_ep_connect.c \
+	prov/psm2/src/psm2/psm_error.c \
+	prov/psm2/src/psm2/psm_memcpy.c \
+	prov/psm2/src/psm2/psm_mock.c \
+	prov/psm2/src/psm2/psm_mpool.c \
+	prov/psm2/src/psm2/psm_mq.c \
+	prov/psm2/src/psm2/psm_mq_recv.c \
+	prov/psm2/src/psm2/psm_mq_utils.c \
+	prov/psm2/src/psm2/psm_perf.c \
+	prov/psm2/src/psm2/psm_stats.c \
+	prov/psm2/src/psm2/psm_sysbuf.c \
+	prov/psm2/src/psm2/psm_timer.c \
+	prov/psm2/src/psm2/psm_utils.c \
+	prov/psm2/src/psm2/psmi_wrappers.c \
+	prov/psm2/src/psm2/psm2_hal.c \
+	prov/psm2/src/psm2/ptl_am/am_cuda_memhandle_cache.c \
+	prov/psm2/src/psm2/ptl_am/am_reqrep.c \
+	prov/psm2/src/psm2/ptl_am/am_reqrep_shmem.c \
+	prov/psm2/src/psm2/ptl_am/cmarwu.c \
+	prov/psm2/src/psm2/ptl_am/ptl.c \
+	prov/psm2/src/psm2/ptl_ips/ips_crc32.c \
+	prov/psm2/src/psm2/ptl_ips/ips_epstate.c \
+	prov/psm2/src/psm2/ptl_ips/ips_opp_path_rec.c \
+	prov/psm2/src/psm2/ptl_ips/ips_path_rec.c \
+	prov/psm2/src/psm2/ptl_ips/ips_proto.c \
+	prov/psm2/src/psm2/ptl_ips/ips_proto_am.c \
+	prov/psm2/src/psm2/ptl_ips/ips_proto_connect.c \
+	prov/psm2/src/psm2/ptl_ips/ips_proto_dump.c \
+	prov/psm2/src/psm2/ptl_ips/ips_proto_expected.c \
+	prov/psm2/src/psm2/ptl_ips/ips_proto_mq.c \
+	prov/psm2/src/psm2/ptl_ips/ips_proto_recv.c \
+	prov/psm2/src/psm2/ptl_ips/ips_recvhdrq.c \
+	prov/psm2/src/psm2/ptl_ips/ips_recvq.c \
+	prov/psm2/src/psm2/ptl_ips/ips_scb.c \
+	prov/psm2/src/psm2/ptl_ips/ips_tid.c \
+	prov/psm2/src/psm2/ptl_ips/ips_tidcache.c \
+	prov/psm2/src/psm2/ptl_ips/ips_tidflow.c \
+	prov/psm2/src/psm2/ptl_ips/ips_writehdrq.c \
+	prov/psm2/src/psm2/ptl_ips/ptl.c \
+	prov/psm2/src/psm2/ptl_ips/ptl_rcvthread.c \
+	prov/psm2/src/psm2/ptl_self/ptl.c \
+	prov/psm2/src/psm2/libuuid/psm_uuid.c \
+	prov/psm2/src/psm2/libuuid/parse.c \
+	prov/psm2/src/psm2/libuuid/pack.c \
+	prov/psm2/src/psm2/libuuid/unpack.c \
+	prov/psm2/src/psm2/libuuid/unparse.c \
+	prov/psm2/src/psm2/opa/opa_debug.c \
+	prov/psm2/src/psm2/opa/opa_dwordcpy-@psm2_ARCH@.c \
+	prov/psm2/src/psm2/opa/opa_service.c \
+	prov/psm2/src/psm2/opa/opa_sysfs.c \
+	prov/psm2/src/psm2/opa/opa_syslog.c \
+	prov/psm2/src/psm2/opa/opa_time.c \
+	prov/psm2/src/psm2/opa/opa_utils.c \
+	prov/psm2/src/psm2/psm_hal_gen1/psm_hal_gen1.c \
+	prov/psm2/src/psm2/psm_hal_gen1/opa_i2cflash_gen1.c \
+	prov/psm2/src/psm2/psm_hal_gen1/opa_proto_gen1.c \
+	prov/psm2/src/psm2/psm_hal_gen1/opa_service_gen1.c \
+	prov/psm2/src/psm2/psm_hal_gen1/opa_utils_gen1.c \
+	prov/psm2/src/psm2/psm_hal_gen1/psm_gdrcpy.c
+
+if HAVE_PSM2_X86_64
+_psm2_nodist_files += \
+	prov/psm2/src/psm2/opa/opa_dwordcpy-x86_64-fast.S
+endif
+
+_psm2_cppflags = \
+	-I$(top_srcdir)/prov/psm2/src/psm2 \
+	-I$(top_srcdir)/prov/psm2/src/psm2/include \
+	-I$(top_srcdir)/prov/psm2/src/psm2/include/linux-i386 \
+	-I$(top_srcdir)/prov/psm2/src/psm2/mpspawn \
+	-I$(top_srcdir)/prov/psm2/src/psm2/ptl_ips \
+	-I$(top_srcdir)/prov/psm2/src/psm2/ptl_am \
+	-I$(top_srcdir)/prov/psm2/src/psm2/ptl_self \
+	-I$(top_srcdir)/prov/psm2/src/psm2/psm_hal_gen1 \
+	-DNVALGRIND
+
+
+endif HAVE_PSM2_SRC
+
+if HAVE_PSM2_DL
+pkglib_LTLIBRARIES += libpsmx2-fi.la
+libpsmx2_fi_la_SOURCES = $(_psm2_files) $(common_srcs)
+nodist_libpsmx2_fi_la_SOURCES = $(_psm2_nodist_files)
+libpsmx2_fi_la_CPPFLAGS = $(AM_CPPFLAGS) $(psm2_CPPFLAGS) $(_psm2_cppflags)
+libpsmx2_fi_la_LDFLAGS = \
+    -module -avoid-version -shared -export-dynamic \
+    -export-symbols-regex ^fi_prov_ini $(psm2_LDFLAGS)
+libpsmx2_fi_la_LIBADD = $(linkback) $(psm2_LIBS)
+libpsmx2_fi_la_DEPENDENCIES = $(linkback)
+else !HAVE_PSM2_DL
+noinst_LTLIBRARIES += libpsmx2.la
+libpsmx2_la_SOURCES = $(_psm2_files)
+nodist_libpsmx2_la_SOURCES = $(_psm2_nodist_files)
+libpsmx2_la_CPPFLAGS = $(src_libfabric_la_CPPFLAGS) $(psm2_CPPFLAGS) $(_psm2_cppflags)
+libpsmx2_la_LDFLAGS = $(psm2_LDFLAGS)
+libpsmx2_la_LIBADD = $(psm2_LIBS)
+src_libfabric_la_LIBADD += libpsmx2.la
+src_libfabric_la_DEPENDENCIES += libpsmx2.la
+endif !HAVE_PSM2_DL
+
+prov_install_man_pages += man/man7/fi_psm2.7
+
+endif HAVE_PSM2
+
+prov_dist_man_pages += man/man7/fi_psm2.7

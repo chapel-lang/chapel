@@ -1,0 +1,8 @@
+Skipping registry update since no dependency found in manifest file.
+
+[root]
+name = "Tester"
+version = "0.1.0"
+chplVersion = "CHPL_CUR_FULL..CHPL_CUR_FULL"
+
+

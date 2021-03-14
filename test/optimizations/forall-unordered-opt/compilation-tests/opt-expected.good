@@ -1,0 +1,13 @@
+opt-expected.chpl:109: note: Optimized atomic call to be unordered
+opt-expected.chpl:123: note: Optimized atomic call to be unordered
+opt-expected.chpl:141: note: Optimized atomic call to be unordered
+opt-expected.chpl:14: note: Optimized assign to be unordered
+opt-expected.chpl:174: note: Optimized atomic call to be unordered
+opt-expected.chpl:24: note: Optimized atomic call to be unordered
+opt-expected.chpl:35: note: Optimized atomic call to be unordered
+opt-expected.chpl:47: note: Optimized atomic call to be unordered
+opt-expected.chpl:58: note: Optimized atomic call to be unordered
+opt-expected.chpl:60: note: Optimized atomic call to be unordered
+opt-expected.chpl:72: note: Optimized atomic call to be unordered
+opt-expected.chpl:85: note: Optimized atomic call to be unordered
+opt-expected.chpl:97: note: Optimized atomic call to be unordered

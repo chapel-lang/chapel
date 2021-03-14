@@ -1,0 +1,4 @@
+#!/bin/sh
+./copyrighthelp.sh $1 $2 $3 > zcopyhelp.good
+echo >> zcopyhelp.good
+./helphelp.sh $1 $2 $3 >> zcopyhelp.good

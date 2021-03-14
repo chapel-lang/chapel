@@ -1,0 +1,9 @@
+contains(0) = false
+contains(2) = true
+contains(53) = false
+contains(92) = false
+contains(5) = false
+contains(6) = true
+contains(4) = false
+contains(4) = true
+# ind removed: 0

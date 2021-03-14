@@ -1,0 +1,12 @@
+Calling pass_original() with rank-change:
+	0 bytes leaked
+Calling return_original() with rank-change:
+	0 bytes leaked
+Calling return_original() with rank-change and assignment:
+	0 bytes leaked
+Calling create_rankchange():
+	0 bytes leaked
+Calling return_rankchange():
+	0 bytes leaked
+Calling return_rankchange() with assignment:
+	0 bytes leaked

@@ -1,0 +1,8 @@
+intent-errors.chpl:11: error: a concrete intent is required for the extern function formal 'arg' which has record type 'my_extern_record'
+intent-errors.chpl:12: error: a concrete intent is required for the extern function formal 'arg' which has record type 'my_extern_record'
+intent-errors.chpl:13: error: 'out' intent is not yet supported for extern functions - consider changing formal 'arg' to use 'ref' intent
+intent-errors.chpl:14: error: 'inout' intent is not yet supported for extern functions - consider changing formal 'arg' to use 'ref' intent
+intent-errors.chpl:16: error: a concrete intent is required for the exported function formal 'arg' which has record type 'my_extern_record'
+intent-errors.chpl:17: error: a concrete intent is required for the exported function formal 'arg' which has record type 'my_extern_record'
+intent-errors.chpl:18: error: 'out' intent is not yet supported for exported functions - consider changing formal 'arg' to use 'ref' intent
+intent-errors.chpl:19: error: 'inout' intent is not yet supported for exported functions - consider changing formal 'arg' to use 'ref' intent

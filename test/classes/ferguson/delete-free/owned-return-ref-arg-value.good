@@ -1,0 +1,5 @@
+ x={x = 1}
+after returnByValue
+ x=nil
+ y={x = 1}
+Destroying C x=1

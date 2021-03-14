@@ -1,0 +1,2 @@
+scope-param-offset-type.chpl:4: In function 'enumScopeTest':
+scope-param-offset-type.chpl:5: error: illegal cast from <any type> to int(64)

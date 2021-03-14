@@ -1,0 +1,2 @@
+line-numbers-after-newline-in-string.chpl:3: error: 'x' is not initialized and has no type
+line-numbers-after-newline-in-string.chpl:3: note: cannot find initialization point to split-init this variable

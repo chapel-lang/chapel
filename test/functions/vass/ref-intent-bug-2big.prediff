@@ -1,0 +1,4 @@
+#!/bin/bash --norc
+
+outputfile=$2
+sort $outputfile > $outputfile.tmp  && mv $outputfile.tmp $outputfile

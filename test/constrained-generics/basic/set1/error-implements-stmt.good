@@ -1,0 +1,4 @@
+error-implements-stmt.chpl:25: In 'implements IFC' statement:
+error-implements-stmt.chpl:25: error: when checking this implements statement
+error-implements-stmt.chpl:25: note: the required function reqFun is not implemented
+error-implements-stmt.chpl:7: note: the required function reqFun in the interface IFC is declared here

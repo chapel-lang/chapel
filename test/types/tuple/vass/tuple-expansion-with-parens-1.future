@@ -1,0 +1,7 @@
+bug: incorrect assignment of a parenthesized tuple expansion expression
+
+((...someTuple)) should be the same as someTuple,
+however currently only someTuple's first component is picked.
+
+See also:
+ functions/vass/return-of-tuple-expansion-*

@@ -1,0 +1,3 @@
+badStartStopTimer.chpl:4: warning: stop called on a timer that has not been started
+badStartStopTimer.chpl:6: warning: start called on a timer that has not been stopped
+badStartStopTimer.chpl:8: warning: stop called on a timer that has not been started

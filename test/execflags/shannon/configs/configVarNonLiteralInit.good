@@ -1,0 +1,4 @@
+a: 4
+b: 5
+x is initialized at compile time to a + b
+x at runtime is 9

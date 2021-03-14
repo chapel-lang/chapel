@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+BINDIR="$CHPL_HOME"/bin/`$CHPL_HOME/util/chplenv/chpl_bin_subdir.py --host`
+
+"$BINDIR"/c2chapel testFunctions.h > functionGen.chpl

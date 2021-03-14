@@ -1,0 +1,2 @@
+dynamic_use_before_def.chpl:22: In function 'foo':
+dynamic_use_before_def.chpl:23: error: use of 'x' before encountering its definition, type unknown

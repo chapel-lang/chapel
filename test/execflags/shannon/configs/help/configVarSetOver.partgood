@@ -1,0 +1,6 @@
+module1 config vars:
+                       x: int(64) (configured to 999)
+
+module2 config vars:
+                       x: int(64)
+                       z: real(64) (configured to 8888.88)

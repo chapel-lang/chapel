@@ -1,0 +1,45 @@
+For type bool(8)
+r1 is: false, type = bool(8)
+r2 is: true, type = bool(8)
+r3 is: true, type = bool(8)
+r4 is: true, type = bool(8)
+r5 is: false, type = bool(8)
+r6 is: true, type = bool(8)
+r7 is: false, type = bool(8)
+
+For type bool(16)
+r1 is: false, type = bool(16)
+r2 is: true, type = bool(16)
+r3 is: true, type = bool(16)
+r4 is: true, type = bool(16)
+r5 is: false, type = bool(16)
+r6 is: true, type = bool(16)
+r7 is: false, type = bool(16)
+
+For type bool(32)
+r1 is: false, type = bool(32)
+r2 is: true, type = bool(32)
+r3 is: true, type = bool(32)
+r4 is: true, type = bool(32)
+r5 is: false, type = bool(32)
+r6 is: true, type = bool(32)
+r7 is: false, type = bool(32)
+
+For type bool(64)
+r1 is: false, type = bool(64)
+r2 is: true, type = bool(64)
+r3 is: true, type = bool(64)
+r4 is: true, type = bool(64)
+r5 is: false, type = bool(64)
+r6 is: true, type = bool(64)
+r7 is: false, type = bool(64)
+
+For type bool
+r1 is: false, type = bool
+r2 is: true, type = bool
+r3 is: true, type = bool
+r4 is: true, type = bool
+r5 is: false, type = bool
+r6 is: true, type = bool
+r7 is: false, type = bool
+

@@ -1,0 +1,33 @@
+=======================
+hwloc README for Chapel
+=======================
+
+This copy of hwloc 1.11.13 is being released with Chapel for
+convenience and was obtained from:
+
+  https://www.open-mpi.org/projects/hwloc/
+
+Any Chapel issues that seem to be related to hwloc should be directed
+to the Chapel team at https://chapel-lang.org/bugs.html.
+
+
+Upgrading hwloc versions
+========================
+
+The directory $CHPL_HOME/third-party/hwloc/hwloc-src/ contains the
+un-tarballed hwloc package contents. Version updates should be done as
+follows, assuming the CWD is $CHPL_HOME/third-party/hwloc/:
+
+1. download and untar the latest hwloc 1.X version: e.g. hwloc-1.11.13
+2. `rm -rf hwloc-src`
+3. `mv hwloc-1.11.13 hwloc-src`
+4. `git add --force hwloc-src` (--force to ignore our .gitignore)
+5. update the version number mentioned above
+6. update the okversions whitelist in chpl_hwloc.py
+7. make sure these instructions are up to date :)
+8. test (std config, and that stream gets expected performance)
+9. commit, PR, merge, etc
+
+Note that these instructions are for simple 1.X API compatible updates.
+If the hwloc API changes, the runtime shim may need to be changed and
+incompatible versions need to be dropped from the whitelist.

@@ -1,0 +1,40 @@
+factors:
+A    1
+B    2
+C    3
+D    4
+E    5
+dtype: int(64)
+A    11
+B    22
+C    33
+D    44
+E    55
+dtype: int(64)
+
+product:
+A    11
+B    44
+C    99
+D    176
+E    275
+dtype: int(64)
+
+factors:
+B    10
+C    20
+D    6
+E    7
+dtype: int(64)
+A    5
+B    1
+C    2
+dtype: int(64)
+
+product:
+A    0
+B    10
+C    40
+D    0
+E    0
+dtype: int(64)

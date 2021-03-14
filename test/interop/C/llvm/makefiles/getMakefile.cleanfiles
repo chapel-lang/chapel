@@ -1,0 +1,4 @@
+lib/getMakefile.h
+lib/libgetMakefile.a
+mytest
+lib/Makefile.getMakefile

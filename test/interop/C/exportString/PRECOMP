@@ -1,0 +1,2 @@
+#!/bin/bash
+$3 --no-llvm --library TestLibrary.chpl

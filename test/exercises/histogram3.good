@@ -1,0 +1,24 @@
+Running Histogram Example
+ Number of Random Numbers =        8
+ Number of Buckets        =       10
+
+Random Averages
+
+0.818035 0.603435 0.774039 0.856944 0.21446 0.220352 0.688512 0.331153
+
+elapsed time
+
+   X   X X 
+   XX  XXX 
++----------+
+ Raw Data
+  0.00 - 0.10: 0
+  0.10 - 0.20: 0
+  0.20 - 0.30: 2
+  0.30 - 0.40: 1
+  0.40 - 0.50: 0
+  0.50 - 0.60: 0
+  0.60 - 0.70: 2
+  0.70 - 0.80: 1
+  0.80 - 0.90: 2
+  0.90 - 1.00: 0

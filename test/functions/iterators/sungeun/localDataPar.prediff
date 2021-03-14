@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# sort the output to handle the numa case where iterator debug output is in a
+# non-deterministic order. Don't sort for non-numa 
+
+lm=`$CHPL_HOME/util/chplenv/chpl_locale_model.py`
+if [ "$lm" = "numa" ]
+then
+    sort $2 > $2.prediff.tmp
+    mv $2.prediff.tmp $2
+fi
+

@@ -1,0 +1,6 @@
+popcount:
+clz:
+ctz:
+verify:2: 1314447104
+verify:4: 3834217727
+verify:6: 99999980

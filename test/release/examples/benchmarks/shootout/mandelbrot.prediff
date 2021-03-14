@@ -1,0 +1,93 @@
+#!/usr/bin/env python3
+
+# Compare mandelbrot program output.
+
+# Due to numerical instability with different optimization
+# levels, this script tolerates a small number of bit differences
+# in the output.
+
+import os
+import os.path
+import shutil
+import socket
+import sys
+
+testname=sys.argv[1]
+testout=sys.argv[2]
+
+diffs_to_allow=4
+
+clbg_expect=testname+"clbg.pbm"
+expect=testname+".pbm"
+
+hostname=socket.gethostname();
+
+error = ""
+
+if os.getenv('CHPL_TEST_PERF') == 'on':
+  # do nothing for performance tests
+  # these look for data after the .pbm and generally generate
+  # more image data than the expected .pbm
+  exit()
+
+if not os.path.isfile(expect):
+  error = "Error - could not find expected output " + expect
+else:
+
+  if 'shootout' in hostname:
+    diffs_to_allow=0
+    if os.path.isfile(clbg_expect):
+      expect = clbg_expect
+
+  outsize = os.path.getsize(testout)
+  expectsize = os.path.getsize(expect)
+  if outsize != expectsize:
+    error = "File lengths do not match"
+
+    # If there is extra stuff in the output, emit it
+    # (in case it is e.g. GASNet errors)
+    if outsize > expectsize:
+      with open(testout, "rb") as outF:
+        outF.seek(expectsize)
+        rest = outF.read()
+        rest = str(rest, encoding='utf-8', errors='backslashreplace')
+        error = error + "\n" + rest
+
+  else:
+
+    diffs=0
+
+    with open(expect, "rb") as expectF:
+      with open(testout, "rb") as outF:
+        while True:
+            expectByte = expectF.read(1)
+            if not expectByte:
+                break
+            outByte = outF.read(1)
+            if not outByte:
+                break
+            
+            byte_xor = ord(expectByte) ^ ord(outByte)
+            if byte_xor != 0:
+              diffs += bin(byte_xor).count("1")
+
+    print ("[Info from mandelbrot.prediff with " + expect + ": " +
+           str(diffs) + " bit differences]")
+    if diffs > diffs_to_allow:
+      error = "There were " + str(diffs) + " bit differences"
+
+# Save a copy of the failed output but only if there was an error
+savefile=testout + ".save"
+if error != "":
+  shutil.copyfile(testout, testout + ".save");
+else:
+  try:
+    os.remove(savefile)
+  except:
+    pass
+
+# Now output error to testout
+with open(testout, "w") as outF:
+  outF.write(error)
+  if error != "":
+    outF.write("\n")

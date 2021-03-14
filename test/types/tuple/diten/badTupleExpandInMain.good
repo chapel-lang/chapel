@@ -1,0 +1,2 @@
+badTupleExpandInMain.chpl:1: In function 'main':
+badTupleExpandInMain.chpl:3: error: illegal tuple expansion context

@@ -1,0 +1,35 @@
+.. default-domain:: chpl
+
+.. module:: override-doc.doc
+
+override-doc.doc
+================
+**Usage**
+
+.. code-block:: chapel
+
+   use override-doc.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import override-doc.doc;
+
+.. class:: Parent
+
+   .. method:: proc f(arg: int)
+
+   .. method:: proc g(arg: int(32))
+
+   .. method:: proc h(x)
+
+.. class:: Child : Parent
+
+   .. method:: override proc f(x: int)
+
+   .. method:: override proc g(arg: int(32))
+
+   .. method:: override proc h(x)
+

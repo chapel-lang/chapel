@@ -1,0 +1,3 @@
+#!/bin/bash
+echo Compiling returnArrayTakesArg.chpl
+$3 --llvm --library --static returnArrayTakesArg.chpl

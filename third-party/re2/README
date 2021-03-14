@@ -1,0 +1,62 @@
+=====================
+re2 README for Chapel
+=====================
+
+This modified version of re2 is based on the official 2021-02-02 (cd026c5)
+release obtained from:
+
+  https://github.com/google/re2
+
+Any Chapel issues that seem to be related to re2 should be directed
+to the Chapel team at https://chapel-lang.org/bugs.html.
+
+Note that since RE2 uses C++11 atomics, it may not build or function with
+certain older compilers. In particular, if you are using GCC, we
+recommend at least GCC version 5. While this version of RE2 will build
+with GCC 4.7, the C++11 atomics were not sufficiently tested until GCC 5.
+
+Chapel modifications to re2
+===========================
+
+We modify the RE2 library to allow regular expressions in the format
+string for Chapel's readf() for searching on QIO channels. The details
+of these modifications are as follows:
+
+- moved NFA and OnePass searches to be implemented with templates
+  to allow string types other than const char*
+  Also modified these to use begin_reading() instead of begin()
+  for the pointer that will be dereferenced.
+- added file_strings.h to represent a portion of a file accessible
+  by calling some read routine (through a pointer)
+  and modified string_piece to include it.
+- implemented RE2::MatchFile which searches a buffer
+  (optionally) and then some other string type.
+- RE2 constructor now computes min/max possible match length
+  for use in MatchFile.
+
+Upgrading RE2 versions
+======================
+
+The directory $CHPL_HOME/third-party/re2/re2-src/ contains the
+un-tarballed RE2 package contents.  Version updates should be done as
+follows, assuming the CWD is $CHPL_HOME/third-party/re2/:
+
+  # create a tarball storing Chapel+RE2 changes
+  tar cvzf re2-src.tgz re2-src
+
+  # Replace re2-src with a new checkout of RE2's repository
+  mv re2-src re2-orig
+
+  git clone https://github.com/google/re2 re2-src
+  cd re2-src
+
+  # Use the previously updated version
+  git checkout <version> # <version> is the version last updated to
+  cd ..
+
+  tar xvzf re2-src.tgz
+
+  # Now, re2-src is a git repository with Chapel changes staged.
+  # Use the usual git techniques to update, e.g. git commit/git stash, git pull
+  # Be sure to update to a version listed in
+  #   https://github.com/google/re2/releases

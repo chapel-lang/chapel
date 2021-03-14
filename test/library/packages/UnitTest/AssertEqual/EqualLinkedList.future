@@ -1,0 +1,4 @@
+bug: == in LinkedList is giving false even if both are having same data
+
+Current output is
+AssertionError: assert failed - '1 2 3' != '1 2 3'

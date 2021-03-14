@@ -1,0 +1,4 @@
+# PGI - doesn't have atomics intrinsics
+CHPL_TARGET_COMPILER==cray-prgenv-pgi
+CHPL_TARGET_COMPILER==pgi
+CHPL_ATOMICS==locks

@@ -1,0 +1,2 @@
+coforallSiblingCall.chpl:4: In initializer:
+coforallSiblingCall.chpl:6: error: use of this.init() call in a coforall loop body

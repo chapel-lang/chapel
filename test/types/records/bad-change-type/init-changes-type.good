@@ -1,0 +1,3 @@
+init-changes-type.chpl:11: error: initializer produces a different type
+init-changes-type.chpl:11: note: when default-initializing 'x' of type 'R(int(64))'
+init-changes-type.chpl:11: note: init resulted in type 'R(real(64))'

@@ -1,0 +1,1 @@
+forgotReturn.chpl:5: error: illegal use of function that does not return a value: 'foo'

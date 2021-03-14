@@ -1,0 +1,2 @@
+# Multi-locale libraries don't support this yet.
+CHPL_COMM != none

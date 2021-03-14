@@ -1,0 +1,59 @@
+#!/usr/bin/env python3
+#
+# This script is a system-wide prediff for use when incremental compilation is enabled.
+# If --incremental is used along with --fast it leads to a warning being generated, this
+# script will remove the warning (if present) in the generated output.
+#
+# Can also be used with the environment variable (on bash)
+#
+#  export CHPL_SYSTEM_PREDIFF=$CHPL_HOME/util/test/prediff-for-incremental-warning
+
+import sys, subprocess
+import re
+
+# These are the tests that currently do not require the warning to be present in the output
+incrementalTests = ["time_iterate", "time_access", "optimizeOnClauses_basic", "optimizeOnClauses_basic_record",
+                    "optimizeOnClauses_basic_tuple", "parSafeMember", "formalDomainChecks", "formalDomainChecks2", "access1d",
+                    "access2d", "access3d", "ri-4-arrdom", "ri-4-arrdom.replicated", "ri-3-stress", "ri-3-stress-coforall", "assign",
+                    "assign_across_locales", "copy_to_local", "dgemm", "init", "reductions-stress-fast", "sparse-iter-performance",
+                    "externMethodCallPerf", "forVersusWhilePerf", "test_cholesky_performance", "mandelbrot-error-works",
+                    "mandelbrot-error", "atomic_bool", "atomic_vars", "ontest","uts_deq", "uts_rec", "dequeue", "sudoku-simple",
+                    "sudoku-simpler", "sudoku-smart", "sudoku", "leadFollowOpt", "ra-cleanloop", "ra-atomics", "ra", "test_for2d",
+                    "test_cgapb", "test_cgapb_loop", "cg-sparse-timecomp", "fft-timecomp", "ManyThreads", "ft-serial", "cg-sparse",
+                    "cg-printa", "cg-makea1-sparse-sort", "enumerated-array2", "enumerated-array", "formalDomainChecks3",
+                    "formalDomainChecks4", "no_atomic_assign"]
+
+if(sys.argv[1] not in incrementalTests):
+    sys.exit(0)
+
+# If the good file has a the warning for incremental compilation, the expected output should have it too
+try:
+  goodFile = open(sys.argv[1]+".good", "r")
+  for line in goodFile:
+      if(line == "warning: Compiling with --incremental along with optimizations enabled may lead to a slower execution time compared to --fast or using -O optimizations directly.\n"):
+        sys.exit(0)
+except IOError:
+    print("Can't find "+sys.argv[1]+".good")
+
+# Matches the warning we are looking for
+pattern = re.compile("warning: Compiling with --incremental along with optimizations enabled may lead to a slower execution time compared to --fast or using -O optimizations directly.")
+
+outfile = open(sys.argv[2], "r")
+realOut = open(sys.argv[2]+".tmp" , "w")
+
+findIncrementalWarn = True
+
+for line in outfile:
+  #If the warning is found , then we have to skip that line and print the rest
+  if(findIncrementalWarn):
+    if((pattern.match(line))):
+      # This file does have the warning included in it , hence do not print it
+      findIncrementalWarn = False
+    else:
+        realOut.write(line)
+  else :
+    realOut.write(line)
+
+realOut.close()
+outfile.close()
+subprocess.call("mv "+sys.argv[2]+".tmp"+" "+sys.argv[2], shell=True )

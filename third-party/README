@@ -1,0 +1,157 @@
+============================
+Chapel third-party directory
+============================
+
+This directory is designed to hold sources that were not developed by
+the Chapel team and which are released under distinct licenses from
+Chapel itself.  Current subdirectories include:
+
+
+chpl-venv/
+  Summary: Directory where several python packages are downloaded and
+           installed. Used by chpldoc and the testing system, and to generate
+           the man page and standard module documentation.
+           See chpldoc-requirements.txt, test-requirements.txt, and
+           virtualenv.txt files for a complete list of packages that are
+           installed.
+
+  License: Varies, see chpl-venv/README.md
+
+  Website: Varies, see chpl-venv/README.md
+
+
+gasnet/
+  Summary: the Berkeley GASNet library for one-sided communication
+           which we use as a communication layer to implement Chapel's
+           support for multi-locale/distributed-memory systems.
+
+  License: GASNet is made available under a BSD-style license, which
+           can be found in gasnet/gasnet-src/license.txt
+
+  Website: https://gasnet.lbl.gov/
+
+  See also: gasnet/README and gasnet/gasnet-src/README
+
+
+gmp/
+  Summary: the GNU Multiple Precision Arithmetic Library
+
+  License: L-GPL (see gmp/gmp-src/COPYING and
+           gmp/gmp-src/COPYING.LESSERv3)
+
+  Website: https://gmplib.org/
+
+  See also: gmp/README and gmp/gmp-src/README
+
+
+hwloc/
+  Summary: The Portable Hardware Locality (hwloc) software package
+           provides a portable abstraction of the hierarchical
+           topology of modern architectures.
+
+  License: BSD (see hwloc/hwloc-src/COPYING)
+
+  Website: https://www.open-mpi.org/projects/hwloc/
+
+  See also: hwloc/README and hwloc/hwloc-src/README
+
+
+jemalloc/
+  Summary: Jason Evan's memory allocator (jemalloc) which "emphasizes
+           fragmentation avoidance and scalable concurrency support."
+           and can be used when a shared heap is required.
+
+  License: jemalloc is released under a BSD-derived License (see
+           jemalloc/jemalloc-src/COPYING)
+
+  Website: http://jemalloc.net/
+
+  See also: jemalloc/README and jemalloc/jemalloc-src/README
+
+
+libfabric/
+  Summary: Libfabric is a general network communication library that
+           supports a variety of network architectures and interfaces.
+           It is part of the Open Fabrics Interfaces (OFI) framework.
+
+  License: libfabric is released under the 2-clause BSD License (see
+           libfabric/libfabric-src/COPYING)
+
+  Website: https://github.com/ofiwg/libfabric/
+
+  See also: libfabric/README and libfabric/libfabric-src/README
+
+
+libunwind/
+  Summary: libunwind is a portable and efficient C programming
+           interface (API) to determine the call-chain of a program
+
+  License: MIT (see libunwind/libunwind-<version>/COPYING and
+           libunwind/libunwind-<version>/LICENSE)
+
+  Website: https://www.nongnu.org/libunwind/
+
+  See also: libunwind/README and libunwind/libunwind-<version>/README
+
+
+llvm/
+  Summary: This directory holds LLVM and Clang.  LLVM is provided as
+           an optional back-end target in place of C (see
+           doc/rst/technotes/llvm.rst for details).  CLANG is used to
+           support "extern blocks" within Chapel -- a capability for
+           embedding C code into a Chapel source file.
+
+  License: University of Illinois / NCSA (see llvm/llvm-src/LICENSE.TXT
+           and llvm/llvm-src/tools/clang/LICENSE.TXT)
+
+  Website: https://llvm.org/ and http://clang.llvm.org/
+
+  See also: llvm/llvm-src/README.txt and llvm/llvm-src/tools/clang/README.txt
+
+
+qthread/ 
+  Summary: the Qthreads user-level tasking package developed by Sandia
+           National Laboratory.
+
+  License: Qthreads is released under the New BSD License, which can
+           be found in qthread/qthread-src/COPYING
+
+  Website: https://github.com/Qthreads/qthreads
+    and
+           http://www.cs.sandia.gov/qthreads/
+
+  See also: qthread/README and qthread/qthread-src/README.md
+
+
+re2/
+  Summary: The RE2 regular expression library used to support regular
+           expression operations described in
+           doc/rst/modules/standard/Regexp.rst
+
+  License: New BSD license (see re2/re2-src/LICENSE)
+
+  Website: https://github.com/google/re2
+
+  See also: re2/README and re2/re2-src/README
+
+
+utf8-decoder/
+  Summary: A fast UTF-8 decoder, used for fast UTF-8 I/O.
+           This decoder is by Bjoern Hoehrmann.
+
+  License: MIT (see utf8-decoder/README)
+
+  Website: http://bjoern.hoehrmann.de/utf-8/decoder/dfa/
+
+  See also: utf8-decoder/README
+
+
+whereami/
+  Summary: whereami is a cross-platform interface for locating
+           the currently executing program in the filesystem
+
+  License: MIT (see whereami/LICENSE.MIT)
+
+  Website: https://github.com/gpakosz/whereami
+
+  See also: whereami/README

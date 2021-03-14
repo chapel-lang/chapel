@@ -1,0 +1,123 @@
+HPCS SSCA#2 Benchmark, Version 2.2
+
+This directory provides a working implementation of the HPCS Scalable Synthetic
+Compact Application Benchmark #2, Version 2.2, or correspondingly, HPC Scalable
+Graph Analysis Benchmark, Version 1.0.
+
+This is the second Chapel implementation of this benchmark.  This implementation
+dramatically demonstrates Chapel's capabilities to represent polymorphic
+algorithms.  The algorithm kernels are provided in a general form that accepts a
+"graph" argument of unspecified type.  The actual argument "G" must provide
+member functions to deliver as a result or iterate over: 
+       G.vertices -- the set of vertices (a Chapel domain of unspecified rank)
+       G.neighbors (v) -- the set of neighbors of a vertex v, as an iterator
+       G.edge_weight (v) -- the corresponding set of edge_weights, as an array
+Nothing else is required of the graph representation.
+
+This implementation provides seventeen different representations of graphs.  The
+most important is the sole representation of a general sparse graph.  General
+sparse graphs are represented by an array of rows, each row represented by an
+associative array.  This is one of two "obvious" Chapel representations of
+general sparse graphs.  (The second "obvious" representation will use sparse
+arrays rather than associative arrays.  The sparse features are not yet
+supported by the compiler, but this representation will be added as soon as the
+compiler permits.)  This graph representation is realized in module
+   analyze_RMAT_graph_associative_array.chpl.
+
+The other sixteen representations are four families of representations of
+regular tori.  Each family uses a common representation for the neighbor sets in
+one dimensional through four dimensional tori.  The torus vertices are
+represented in all cases in a very natural way by tuples of the appropriate
+dimension. The compiler, not the programmer, maps multi-dimensional tuple
+addresses to a one-dimensional address space.
+
+The first family of torus representations uses a standard sparse matrix form,
+using a dense vector of length  2*torus_dimension  to represent the neighbors
+of a vertex. This is a hand-crafted sparse matrix representation which sidesteps
+the current limits of the compiler because the row lengths are identical.  This
+torus representation is realized in module 
+   analyze_torus_graphs_array_rep.chpl.
+
+The other three families of torus representations use the stencil of the torus
+in varying ways.  The three families, found in modules
+   analyze_torus_graphs_stencil_rep_v1.chpl,
+   analyze_torus_graphs_stencil_rep_v2.chpl,
+   analyze_torus_graphs_stencil_rep_v3.chpl, 
+respectively, are a progression from the sparse matrix representation to a
+natural stencil representation.  The programming challenge here is that the
+torus stencil is more complicated than a simple regular grid stencil; the
+periodic boundary conditions require some care.  The third, V3, version is the
+most sophisticated.  No storage is used to represent the neighbor sets.
+Instead, the neighbors, accommodating the boundary conditions, are computed in an
+iterator.  Iterators are a relatively sophisticated concept in Chapel and still
+in development.  The other two representations use the more familiar concept of
+arrays, but with stencil-based addressing, to represent the neighbor sets.
+
+The main program, SSCA2_main.chpl, supports one family of general sparse graphs
+and one family of torus graphs at a time.  At present, there are multiple
+families only for the torus graphs.  The choice of which family to test is made
+by you at compile time -- you have to specify which family to include in the
+compilation command.  For instance, to use the least space (and time), the
+Chapel command should begin
+
+       chpl SSCA2_main.chpl analyze_torus_graphs_stencil_rep_v3.chpl
+
+specifying that the "v3" representation should be linked with the main program.
+
+This implementation supports distributed memory parallelism using a block
+distribution of the vertex set.  The Chapel language specification provides two
+mechanisms for representing critical sections of code, either as "atomic"
+operations or using "sync" variables.  Atomic operations are not yet supported.
+So the benchmark algorithm kernels are specified here in a "sync" variable form
+in module  SSCA2_kernels.chpl.  As of this writing (April 2010), a number of
+parallel constructs are not yet supported; the compiler serializes important
+parts of this code.
+
+A draft version of the algorithms using atomic operations is found in module
+SSCA2_kernels_atomic.chpl.  This shows the relative simplicity of
+implementations using the "atomic" construct.  This version has been tested, but
+only in serial mode.  It will not run correctly today in parallel mode.  To test
+it, add 
+    SSCA2_kernels_atomic.chpl --serial
+to the compilation command line.
+
+There are two "parameter" specification files.
+
+SSCA2_compilation_config_params.chpl specifies a set of compilation-time
+"param"'s controlling a set of code variations.  See the file itself for
+documentation of the options.  The most important is whether the betweenness
+centrality algorithm filters edges or not.  These default "params" can be
+changed on the compilation command line.
+
+SSCA2_execution_config_consts.chpl contains execution time "const"'s, which
+specify the size of the graphs to analyze, together with certain other algorithm
+parameters.  The type of graphs to test, among five choices (RMAT and four
+dimensions of tori) are also controlled by this file.  These defaults can all be
+overridden by arguments on the execution command line.
+
+
+CHAPEL FILES IN THIS DISTRIBUTION:
+
+SSCA2_main.chpl                            top level driver files
+SSCA2_driver.chpl
+SSCA2_compilation_config_params.chpl
+SSCA2_execution_config_consts.chpl
+
+SSCA2_kernels.chpl                         two versions of the algorithms
+SSCA2_kernels_atomic.chpl
+
+analyze_RMAT_graph_associative_array.chpl  RMAT power law graphs
+SSCA2_RMAT_graph_generator.chpl
+
+array_rep_torus_graph_generator.chpl       Torus representations
+analyze_torus_graphs_array_rep.chpl
+analyze_torus_graphs_stencil_rep_v1.chpl
+analyze_torus_graphs_stencil_rep_v2.chpl
+analyze_torus_graphs_stencil_rep_v3.chpl
+torus_graph_generator_utilities.chpl
+
+
+
+ 
+       
+	  

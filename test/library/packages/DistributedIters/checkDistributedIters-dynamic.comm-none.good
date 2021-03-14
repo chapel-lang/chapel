@@ -1,0 +1,86 @@
+Default tests, serial:
+Testing a range, non-strided (serial)...
+Result: pass
+Testing a range, strided (serial)...
+Result: pass
+Testing a domain, non-strided (serial)...
+Result: pass
+Testing a domain, strided (serial)...
+Result: pass
+
+Default tests, zippered:
+Testing a range, non-strided (zippered)...
+DistributedIters: distributedDynamic:
+  coordinated = false
+  numLocales = 1
+  numWorkerLocales = 1
+  actualWorkerLocales.size = 1
+  masterLocale.id = 0
+  actualWorkerLocaleIds = [ 0 ]
+Result: pass
+Testing a range, strided (zippered)...
+DistributedIters: distributedDynamic:
+  coordinated = false
+  numLocales = 1
+  numWorkerLocales = 1
+  actualWorkerLocales.size = 1
+  masterLocale.id = 0
+  actualWorkerLocaleIds = [ 0 ]
+Result: pass
+Testing a domain, non-strided (zippered)...
+DistributedIters: distributedDynamic:
+  coordinated = false
+  numLocales = 1
+  numWorkerLocales = 1
+  actualWorkerLocales.size = 1
+  masterLocale.id = 0
+  actualWorkerLocaleIds = [ 0 ]
+Result: pass
+Testing a domain, strided (zippered)...
+DistributedIters: distributedDynamic:
+  coordinated = false
+  numLocales = 1
+  numWorkerLocales = 1
+  actualWorkerLocales.size = 1
+  masterLocale.id = 0
+  actualWorkerLocaleIds = [ 0 ]
+Result: pass
+
+Default tests, coordinated mode:
+Testing a range, non-strided (zippered)...
+DistributedIters: distributedDynamic:
+  coordinated = true
+  numLocales = 1
+  numWorkerLocales = 1
+  actualWorkerLocales.size = 1
+  masterLocale.id = 0
+  actualWorkerLocaleIds = [ 0 ]
+Result: pass
+Testing a range, strided (zippered)...
+DistributedIters: distributedDynamic:
+  coordinated = true
+  numLocales = 1
+  numWorkerLocales = 1
+  actualWorkerLocales.size = 1
+  masterLocale.id = 0
+  actualWorkerLocaleIds = [ 0 ]
+Result: pass
+Testing a domain, non-strided (zippered)...
+DistributedIters: distributedDynamic:
+  coordinated = true
+  numLocales = 1
+  numWorkerLocales = 1
+  actualWorkerLocales.size = 1
+  masterLocale.id = 0
+  actualWorkerLocaleIds = [ 0 ]
+Result: pass
+Testing a domain, strided (zippered)...
+DistributedIters: distributedDynamic:
+  coordinated = true
+  numLocales = 1
+  numWorkerLocales = 1
+  actualWorkerLocales.size = 1
+  masterLocale.id = 0
+  actualWorkerLocaleIds = [ 0 ]
+Result: pass
+

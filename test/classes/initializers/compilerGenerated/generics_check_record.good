@@ -1,0 +1,5 @@
+GenericRecord(bool,5,real(64))
+(v = 3.0, nongeneric = 2)
+GenericRecord(int(64),2,bool)
+GenericRecord(real(64),5,real(64))
+(v = 2.4, nongeneric = 8)

@@ -1,0 +1,1 @@
+yieldGeneric.chpl:14: error: Could not coerce 'nil' to '_ddata(unmanaged C)' in initialization

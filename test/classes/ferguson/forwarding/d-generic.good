@@ -1,0 +1,8 @@
+int
+in Wrapper.foo int (1)
+real(32)
+in C.foo where real(32) (2.0)
+uint
+in C.foo uint (3)
+complex
+in C.foo(4.0 + 0.0i)

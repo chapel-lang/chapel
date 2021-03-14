@@ -1,0 +1,29 @@
+
+cu:unmanaged Child
+cuc:unmanaged Child
+cuq:unmanaged Child?
+cb:borrowed Child
+cbc:borrowed Child
+cbq:borrowed Child?
+
+cu:borrowed Child?
+borrowed Child? {p = 1, c = 2}
+borrowed Child? {p = 1, c = 2}
+borrowed Child? {p = 1, c = 2}
+cu:unmanaged Child?
+unmanaged Child? {p = 1, c = 2}
+unmanaged Child? {p = 1, c = 2}
+unmanaged Child? {p = 1, c = 2}
+cu:borrowed Child
+borrowed Child {p = 1, c = 2}
+borrowed Child {p = 1, c = 2}
+borrowed Child {p = 1, c = 2}
+borrowed Child {p = 1, c = 2}
+cuq:borrowed Child?
+borrowed Child? {p = 1, c = 2}
+borrowed Child? {p = 1, c = 2}
+borrowed Child? {p = 1, c = 2}
+cb:borrowed Child?
+borrowed Child? {p = 1, c = 2}
+borrowed Child? {p = 1, c = 2}
+borrowed Child? {p = 1, c = 2}

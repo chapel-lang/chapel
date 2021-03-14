@@ -1,0 +1,18 @@
+save-borrow-in-collection.chpl:16: In function 'error1':
+save-borrow-in-collection.chpl:17: error: Scoped variable global would outlive the value it is set to
+save-borrow-in-collection.chpl:16: note: consider scope of arg
+save-borrow-in-collection.chpl:20: In function 'error2':
+save-borrow-in-collection.chpl:22: error: Scoped variable global would outlive the value it is set to
+save-borrow-in-collection.chpl:20: note: consider scope of arg
+save-borrow-in-collection.chpl:25: In function 'error3':
+save-borrow-in-collection.chpl:27: error: Scoped variable x would outlive the value it is set to
+save-borrow-in-collection.chpl:25: note: consider scope of arg
+save-borrow-in-collection.chpl:36: In function 'error4':
+save-borrow-in-collection.chpl:37: error: Scoped variable would outlive the value it is set to
+save-borrow-in-collection.chpl:36: note: consider scope of arg
+save-borrow-in-collection.chpl:40: In method 'error5':
+save-borrow-in-collection.chpl:41: error: Scoped variable would outlive the value it is set to
+save-borrow-in-collection.chpl:40: note: consider scope of arg
+save-borrow-in-collection.chpl:50: In function 'error6':
+save-borrow-in-collection.chpl:51: error: Scoped variable would outlive the value it is set to
+save-borrow-in-collection.chpl:50: note: consider scope of arg

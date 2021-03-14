@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+# Fails when run as a windows service, see JIRA issue 81
+
+if test "$OS" = Windows_NT -a -n "$SERVICE_ID"; then
+  echo 1
+else
+  echo 0
+fi

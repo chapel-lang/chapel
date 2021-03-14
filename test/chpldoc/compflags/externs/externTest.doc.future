@@ -1,0 +1,6 @@
+semantic: Allow users to control presence of externs in chpldoc output?
+
+This feature is practically implemented today (due to being very easy to
+support), but we weren't sure of the utility, so didn't allow it as a flag.
+
+If there is user interest, this would be easy to turn on.

@@ -1,0 +1,3 @@
+uncaught SystemError: Bad file descriptor (Operation attempted on an invalid file)
+  givenNull2.chpl:7: thrown here
+  givenNull2.chpl:7: uncaught here

@@ -1,0 +1,36 @@
+Use this guide to rebuild your copy of the CSEP524 Chapel distribution
+to support multiple locales and build Chapel
+programs to use multiple locales.
+
+
+1. Make sure $CHPL_HOME is set, as usual
+
+2. Set Chapel communication to GASNet (a network library for PGAS languages)
+
+export CHPL_COMM=gasnet
+
+3. Reconfigure Chapel
+
+./rebuild-multilocale.sh
+
+
+4. Compiling and running Chapel programs
+
+If CHPL_COMM is set to gasnet then chpl will now
+build Chapel programs for multiple locales.
+
+Unset CHPL_COMM if you want to build Chapel programs
+normally. 
+e.g., export CHPL_COMM=
+
+
+Set variables to run Chapel multilocale on single machine (e.g., your VM):
+source setenv.multiloc-local.bash
+
+Set variables to run Chapel multilocale on VM cluster
+source setenv.multiloc-ssh.bash
+
+
+
+You can also refer to the official documentation in
+$CHPL_HOME/doc/rst/usingchapel/multilocale.rst.

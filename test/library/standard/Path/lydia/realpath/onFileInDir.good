@@ -1,0 +1,1 @@
+realPath on a path without symlinks, curDir, or parentDir references behaved as expected

@@ -1,0 +1,5 @@
+perfkeys: domDeinit-GETS:, domDeinit-PUTS:, domDeinit-ONS:, domDeinit-GETS:, domDeinit-PUTS:, domDeinit-ONS:, domDeinit-GETS:, domDeinit-PUTS:, domDeinit-ONS:, domDeinit-GETS:, domDeinit-PUTS:, domDeinit-ONS:
+graphkeys: blockDomDeinit-GETS:, blockDomDeinit-PUTS:, blockDomDeinit-ONS:, cyclicDomDeinit-GETS:, cyclicDomDeinit-PUTS:, cyclicDomDeinit-ONS:, blockCycDomDeinit-GETS:, blockCycDomDeinit-PUTS:, blockCycDomDeinit-ONS:, stencilDomDeinit-GETS:, stencilDomDeinit-PUTS:, stencilDomDeinit-ONS:
+repeat-files: distCreate-cc-block.dat, distCreate-cc-cyclic.dat, distCreate-cc-blockCyc.dat, distCreate-cc-stencil.dat
+ylabel: Count
+graphtitle: Destroying distributed domains

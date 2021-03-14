@@ -1,0 +1,3 @@
+queryArrOfArr2.chpl:1: In function 'f':
+queryArrOfArr2.chpl:1: error: Query expressions are not currently supported in this context
+  queryArrOfArr2.chpl:1: called as f(x: [domain(1,int(64),false)] real(64))

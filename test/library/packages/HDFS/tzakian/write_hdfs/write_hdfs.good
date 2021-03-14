@@ -1,0 +1,30 @@
+=== Opening in write Only mode and writing to HDFS ===
+
+
+
+=== Finished writing and closed. Now opening for read ===
+
+read line from HDFS: line 1
+read line from HDFS: line 2
+read line from HDFS: line 3
+read line from HDFS: line 4
+read line from HDFS: line 5
+read line from HDFS: line 6
+read line from HDFS: line 7
+read line from HDFS: line 8
+read line from HDFS: DONE
+===== Finished test one! =========
+
+=== Starting test two ===
+
+=== Opening for write and writing ===
+
+=== Finished writing and closed. Now opening for reading and parsing into records ===
+
+======== test of get() ============
+(Beer = 123 555, Name = one) (Beer = 456, Name = two)
+========== test of stream() ==============
+(Beer = 789, Name = three)
+(Beer = 101112, Name = four)
+
+== Finished Test two! ===

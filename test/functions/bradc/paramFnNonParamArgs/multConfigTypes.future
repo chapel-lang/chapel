@@ -1,0 +1,5 @@
+bug: multiple config types in one statement
+
+This test shows that if a single config type statement declares
+multiple types, we get a compiler error.  IMO, it should be identical
+to the paramExample.chpl test in this directory.

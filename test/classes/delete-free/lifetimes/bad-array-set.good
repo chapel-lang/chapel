@@ -1,0 +1,10 @@
+bad-array-set.chpl:3: In function 'bad1':
+bad-array-set.chpl:9: error: Scoped variable would outlive the value it is set to
+bad-array-set.chpl:6: note: consider scope of A
+bad-array-set.chpl:10: error: Scoped variable would outlive the value it is set to
+bad-array-set.chpl:6: note: consider scope of A
+bad-array-set.chpl:16: In function 'bad2':
+bad-array-set.chpl:26: error: Scoped variable would outlive the value it is set to
+bad-array-set.chpl:22: note: consider scope of Ab
+bad-array-set.chpl:27: error: Scoped variable would outlive the value it is set to
+bad-array-set.chpl:22: note: consider scope of Ab

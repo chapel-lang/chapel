@@ -1,0 +1,32 @@
+This is a string literal containing a backslash (\)
+This is a string literal ending in a backslash \
+This is a string literal ending in two backslashes \\
+This is a string literal	containing a tab
+and line-end.
+
+This is a single-quoted string containing a backslash (\)
+This is a single-quoted string ending in a backslash \
+This is a single-quoted string ending in two backslashes \\
+This is a single-quoted string	containing a tab
+and a newline.
+
+\A starting backslash
+\\Two starting backslashes
+\A starting backslash
+\\Two starting backslashes
+
+ A single quote within a double-quoted string: '.
+ A single quote ending a double-quoted string: '
+'A single quote starting a double-quoted string.
+ A double quote within a double-quoted string: ".
+ A double quote ending a double-quoted string: "
+"A double quote starting a double-quoted string.
+
+ A single quote within a single-quoted string: '.
+ A single quote ending a single-quoted string: '
+'A single quote starting a single-quoted string.
+ A double quote within a single-quoted string: ".
+ A double quote ending a single-quoted string: "
+"A double quote starting a single-quoted string.
+
+DONE.

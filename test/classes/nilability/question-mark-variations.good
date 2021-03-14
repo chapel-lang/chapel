@@ -1,0 +1,14 @@
+a0 owned C(int(64))? {x = 0}
+a1 owned C(int(64))? {x = 0}
+a2 shared C(int(64))? {x = 0}
+a3 borrowed C(int(64))? {x = 0}
+a4 unmanaged C(int(64))? {x = 0}
+b0 owned C(int(64))? {x = 0}
+b1 owned C(int(64))? {x = 0}
+b2 shared C(int(64))? {x = 0}
+b3 borrowed C(int(64))? {x = 0}
+b4 unmanaged C(int(64))? {x = 0}
+c0 owned C(int(64))? {x = 0}
+d0 owned C(int(64))? {x = 1}
+d1 owned C(int(64))? {x = 1}
+d2 owned C(int(64))? {x = 1}

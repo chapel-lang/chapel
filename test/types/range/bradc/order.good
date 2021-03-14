@@ -1,0 +1,12 @@
+D.order(2) = -1
+D.order(3) = 0
+D.order(4) = 1
+D.order(5) = 2
+D.order(6) = -1
+
+D.order(2) = -1
+D.order(3) = 0
+D.order(5) = 1
+D.order(7) = 2
+D.order(8) = -1
+

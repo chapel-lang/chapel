@@ -1,0 +1,6 @@
+Feature request: partial reductions
+
+The matrix-vector multiplications in this benchmark would be a really
+good use of partial reductions once we specify them.  Here I've put
+in some placeholder syntax that I'm not particularly fond of until
+we come up with something better.

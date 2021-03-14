@@ -1,0 +1,2 @@
+deeperOn.chpl:4: In initializer:
+deeperOn.chpl:8: error: can't initialize field "x" inside a parallel statement during phase 1 of initialization

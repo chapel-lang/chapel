@@ -1,0 +1,2 @@
+passStrRngToNonstrRng.chpl:5: error: unresolved call 'foo(range(int(64),bounded,true))'
+passStrRngToNonstrRng.chpl:1: note: candidates are: foo(x: range(int(64),bounded,false))

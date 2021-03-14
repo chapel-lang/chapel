@@ -1,0 +1,25 @@
+4
+4
+4
+4
+-4
+-4
+-4
+-4
+4
+4
+4
+4
+3.14
+3.14
+3.14i
+3.14i
+3.14 + 0.0i
+3.14 + 0.0i
+3.14 + 2.1i
+3.14 + 2.1i
+true
+false
+uncaught IllegalArgumentError: bad cast from string 'maybe' to bool
+  string2prims.chpl:42: thrown here
+  string2prims.chpl:42: uncaught here

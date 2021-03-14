@@ -1,0 +1,6 @@
+field-in-task-ref-clause.chpl:10: error: cannot reference a field or function 'myField' in a with-clause of this begin block
+field-in-task-ref-clause.chpl:16: error: cannot reference a field or function 'myField' in a with-clause of this cobegin block
+field-in-task-ref-clause.chpl:22: error: cannot reference a field or function 'myField' in a with-clause of this coforall loop
+field-in-task-ref-clause.chpl:41: error: cannot reference a field or function 'myField' in a with-clause of this begin block
+field-in-task-ref-clause.chpl:47: error: cannot reference a field or function 'myField' in a with-clause of this cobegin block
+field-in-task-ref-clause.chpl:53: error: cannot reference a field or function 'myField' in a with-clause of this coforall loop

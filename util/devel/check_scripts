@@ -1,0 +1,56 @@
+#!/usr/bin/env python3
+#
+# Check that all script in dirs are invoked as follows:
+#
+#  - /bin/sh, OR
+#  - /bin/csh, OR
+#  - /usr/bin/env <perl, python, bash, tsh, etc.>
+#
+
+import sys, subprocess
+
+#
+# Parse command line args
+#
+from optparse import OptionParser
+parser = OptionParser("usage: %prog [options] dir1 dir2 ...")
+parser.add_option('-i', '--ignore',
+                  action='store', type='string', dest='ignore',
+                  help="directories to ignore")
+
+(options, args) = parser.parse_args()
+
+if len(args) < 1:
+    dirs='.'
+else:
+    dirs=' '.join(args)
+ignore = '-o -name third-party -prune '
+if options.ignore != None:
+    ignoredirs = options.ignore.split()
+    for d in ignoredirs:
+        ignore += '-o -name '+d+' -prune '
+
+cmd='find '+dirs+' -name .svn -prune '+ignore+' -o \( -print \)'
+p1 = subprocess.Popen([cmd], stdout=subprocess.PIPE, shell=True)
+p2 = subprocess.Popen(['xargs', 'file'], stdin=p1.stdout, stdout=subprocess.PIPE)
+p3 = subprocess.Popen(['grep', 'script'] , stdin=p2.stdout, stdout=subprocess.PIPE)
+output = p3.communicate()[0]
+
+scripts=output.split('\n')
+for s in scripts:
+    if not s.strip():
+        continue
+    (file, type) = s.split(':')
+    cmd = 'head -1 '+file
+    p1 = subprocess.Popen([cmd], stdout=subprocess.PIPE, shell=True)
+    l1 = p1.communicate()[0]
+    if l1[0]=='#' and l1[1]=='!':
+        l2 = l1[2:len(l1)].strip()
+        if ((l2.find('/bin/sh ')==0) or (l2=='/bin/sh') or
+            ((l2.find('/bin/csh ')==0) or (l2=='/bin/csh')) or
+            (l2.find('/usr/bin/env ')==0)):
+            continue
+        else:
+            sys.stdout.write(file+': '+l2+'\n')
+
+

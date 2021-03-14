@@ -1,0 +1,15 @@
+Label Propagation for Community Detection
+
+see CUG’15 paper: Implementing a social-network analytics pipeline using
+Spark on Urika XA
+
+https://cug.org/proceedings/cug2015_proceedings/includes/files/pap158.pdf
+https://cug.org/proceedings/cug2015_proceedings/includes/files/pap158-file2.pdf
+
+
+Computation consists of these steps:
+* Read in gzip files storing JSON-encoded tweets
+* Find pairs of Twitter users that @mention each other
+* Construct a graph from such users
+* Run a label propagation algorithm on that graph
+* Output the community structure resulting from label propagation

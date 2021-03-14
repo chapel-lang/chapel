@@ -1,0 +1,1 @@
+recordIncorrectAssignment.chpl:11: error: Cannot assign to aRecord(int(64)) from aRecord([domain(1,int(64),false)] int(64))

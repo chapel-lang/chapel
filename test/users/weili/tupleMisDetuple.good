@@ -1,0 +1,1 @@
+tupleMisDetuple.chpl:1: error: tuple size (4) must match the number of grouped variables (2)

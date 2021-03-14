@@ -1,0 +1,1 @@
+init-var-nonnil-unmanaged-from-oknil-unmanaged.chpl:9: error: cannot initialize variable 'lhs' of non-nilable type 'unmanaged MyClass' from a nilable 'unmanaged MyClass?'

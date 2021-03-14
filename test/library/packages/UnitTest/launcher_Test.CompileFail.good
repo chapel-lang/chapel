@@ -1,0 +1,10 @@
+
+======================================================================
+ERROR test_CompileFail.chpl: test_CompileFail
+----------------------------------------------------------------------
+test_CompileFail.chpl failed to compile
+----------------------------------------------------------------------
+Ran 1 test in n seconds
+
+FAILED (errors = 1 )
+compilation failed for test_CompileFail.chpl

@@ -1,0 +1,4 @@
+# file: rng-get-next-perf.dat
+parallel=false-parSafe=false-time=
+parallel=false-parSafe=true-time=
+parallel=true-parSafe=true-time=

@@ -1,0 +1,47 @@
+.. default-domain:: chpl
+
+.. module:: this.doc
+
+this.doc
+========
+**Usage**
+
+.. code-block:: chapel
+
+   use this.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import this.doc;
+
+.. class:: ThisTestClass
+
+   .. method:: proc this(yesChpldoc1)
+
+      Primary 'ThisTestClass.this' method. 
+
+   .. method:: proc this(noChpldoc1)
+
+.. method:: proc ThisTestClass.this(yesChpldoc2)
+
+   Secondary 'ThisTestClass.this' method. 
+
+.. method:: proc ThisTestClass.this(noChpldoc2)
+
+.. record:: ThisTestRecord
+
+   .. method:: proc this(yesChpldoc1)
+
+      Primary 'ThisTestRecord.this' method. 
+
+   .. method:: proc this(noChpldoc1)
+
+.. method:: proc ThisTestRecord.this(yesChpldoc2)
+
+   Secondary 'ThisTestRecord.this' method. 
+
+.. method:: proc ThisTestRecord.this(noChpldoc2)
+

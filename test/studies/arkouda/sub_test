@@ -1,0 +1,122 @@
+#!/usr/bin/env bash
+
+# Custom sub_test to run Arkouda testing. Clones, installs dependencies, builds
+# Arkouda and runs testing.
+
+ARKOUDA_URL=${ARKOUDA_URL:-https://github.com/mhmerrill/arkouda.git}
+ARKOUDA_BRANCH=${ARKOUDA_BRANCH:-master}
+
+CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+source $CWD/functions.bash
+
+subtest_start
+
+DFLT_TIMEOUT=${CHPL_TEST_TIMEOUT:-300}
+export ARKOUDA_CLIENT_TIMEOUT=${ARKOUDA_CLIENT_TIMEOUT:-$DFLT_TIMEOUT}
+
+# Arkouda needs chpl in PATH
+bin_subdir=$($CHPL_HOME/util/chplenv/chpl_bin_subdir.py)
+export "PATH=$CHPL_HOME/bin/$bin_subdir:$PATH"
+chpl --version
+
+export ARKOUDA_HOME=$CWD/arkouda
+rm -rf ${ARKOUDA_HOME}
+
+# Clone Arkouda 
+if ! git clone --depth=1 ${ARKOUDA_URL} --branch=${ARKOUDA_BRANCH} ; then
+  log_fatal_error "cloning Arkouda"
+fi
+cd ${ARKOUDA_HOME}
+
+# Install dependencies if needed
+if make check-deps 2>/dev/null ; then
+  export ARKOUDA_SKIP_CHECK_DEPS=true
+else
+  if ! nice make -j $($CHPL_HOME/util/buildRelease/chpl-make-cpu_count) install-deps ; then
+    log_fatal_error "installing dependencies"
+  fi
+  export "PATH=${ARKOUDA_HOME}/dep/hdf5-install/bin:$PATH"
+fi
+
+# Compile Arkouda
+if [ "${CHPL_TEST_ARKOUDA_PERF}" = "true" ] ; then
+  PERF_SUB_DIR="$CHPL_TEST_PERF_DIR/$CHPL_TEST_PERF_DESCRIPTION"
+  mkdir -p "$PERF_SUB_DIR"
+  export ARKOUDA_PRINT_PASSES_FILE="$PERF_SUB_DIR/comp-time"
+  export ARKOUDA_EMITTED_CODE_SIZE_FILE="$PERF_SUB_DIR/emitted-code-size"
+  export CHPL_DEBUG_FLAGS="${CHPL_DEBUG_FLAGS} --print-emitted-code-size"
+
+  make 2>&1 | tee $ARKOUDA_EMITTED_CODE_SIZE_FILE.tmp
+  if [ ${PIPESTATUS[0]} -ne "0" ] ; then
+    log_fatal_error "compiling arkouda"
+  fi
+  if grep -q "Statements emitted:" $ARKOUDA_EMITTED_CODE_SIZE_FILE.tmp ; then
+    grep "Statements emitted:" $ARKOUDA_EMITTED_CODE_SIZE_FILE.tmp > $ARKOUDA_EMITTED_CODE_SIZE_FILE
+    rm -f $ARKOUDA_EMITTED_CODE_SIZE_FILE.tmp
+  fi
+else
+  if ! make ; then
+    log_fatal_error "compiling arkouda"
+  fi
+fi
+
+# Install Arkouda and python dependencies to a python-deps subdir
+export PYTHONUSERBASE=$ARKOUDA_HOME/python-deps
+# If Arkouda deps use any of our test deps, try to use the versions we want
+AK_PIP_CONTRAINTS="--constraint $CHPL_HOME/third-party/chpl-venv/test-requirements.txt"
+if ! python3 -m pip install --force-reinstall --upgrade --no-cache-dir $AK_PIP_CONTRAINTS -e .[dev] --user ; then
+  log_fatal_error "installing arkouda"
+fi
+
+# Check installation
+test_start "make check"
+if make check ; then
+  log_success "make check output"
+else
+  log_fatal_error "running make check"
+fi
+test_end
+
+# Run Python unit tests
+test_start "make test-python"
+if make test-python ; then
+  log_success "make test-python output"
+else
+  log_error "running make test-python"
+fi
+test_end
+
+# Run benchmarks
+if [ "${CHPL_TEST_ARKOUDA_PERF}" = "true" ] ; then
+  benchmark_opts="--gen-graphs --dat-dir $CHPL_TEST_PERF_DIR --graph-dir $CHPL_TEST_PERF_DIR/html"
+
+  benchmark_opts="${benchmark_opts} --annotations $CHPL_HOME/test/ANNOTATIONS.yaml"
+  if [[ -n $CHPL_TEST_PERF_DESCRIPTION ]]; then
+    benchmark_opts="${benchmark_opts} --description $CHPL_TEST_PERF_DESCRIPTION"
+  fi
+  if [[ -n $CHPL_TEST_PERF_CONFIG_NAME ]]; then
+    benchmark_opts="${benchmark_opts} --platform $CHPL_TEST_PERF_CONFIG_NAME"
+  fi
+  if [[ -n $CHPL_TEST_NUM_TRIALS ]]; then
+    benchmark_opts="${benchmark_opts} --numtrials $CHPL_TEST_NUM_TRIALS"
+  fi
+  if [[ -n $CHPL_TEST_PERF_START_DATE ]]; then
+    benchmark_opts="${benchmark_opts} --start-date $CHPL_TEST_PERF_START_DATE"
+  fi
+  if [[ -n $CHPL_TEST_PERF_CONFIGS ]]; then
+    benchmark_opts="${benchmark_opts} --configs $CHPL_TEST_PERF_CONFIGS"
+  fi
+  if [[ -n $CHPL_TEST_ARKOUDA_BENCHMARKS ]]; then
+    benchmark_opts="${benchmark_opts} $CHPL_TEST_ARKOUDA_BENCHMARKS"
+  fi
+
+  test_start "benchmarks"
+  if ./benchmarks/run_benchmarks.py ${benchmark_opts} ; then
+    log_success "benchmark output"
+  else
+    log_error "running benchmarks"
+  fi
+  test_end
+fi
+
+subtest_end

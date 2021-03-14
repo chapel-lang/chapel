@@ -1,0 +1,1 @@
+bug: an atomic operation within an on-statement does not disable RVF

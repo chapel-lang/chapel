@@ -1,0 +1,55 @@
+oneDigit:
+A    1
+B    None
+C    3
+D    None
+E    5
+dtype: int(64)
+
+twoDigit:
+A    10
+B    None
+C    30
+D    None
+E    50
+dtype: int(64)
+
+twoDigitInv:
+A    None
+B    20
+C    None
+D    40
+E    None
+dtype: int(64)
+
+oneDigit + twoDigit:
+A    11
+B    None
+C    33
+D    None
+E    55
+dtype: int(64)
+
+oneDigit - twoDigit:
+A    -9
+B    None
+C    -27
+D    None
+E    -45
+dtype: int(64)
+
+oneDigit + twoDigitInv:
+A    None
+B    None
+C    None
+D    None
+E    None
+dtype: int(64)
+
+oneDigit - twoDigitInv:
+A    None
+B    None
+C    None
+D    None
+E    None
+dtype: int(64)

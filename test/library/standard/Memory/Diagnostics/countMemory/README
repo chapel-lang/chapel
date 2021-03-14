@@ -1,0 +1,4 @@
+This test relies on the .prediff file to determine from the command
+line how much physical memory is available on the system.
+Alternatively (but less attractively), one can check in a
+.hostname.good file manually.

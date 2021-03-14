@@ -1,0 +1,15 @@
+#!/bin/sh
+#set -x
+
+# This wrapper script is used to run a command while filtering the output to hide
+# crash strings from the crash detection logic in runjobs, and forcing a zero exit code.
+# All command output is forced to stdout
+
+PERL=${PERL:-perl}
+
+# disable core files for this intentional crash
+ulimit -c 0
+
+"$@" 2>&1 | $PERL -pe "s/Caught a fatal/==Redacted==/ ; s/terminated with/==Redacted==/"
+
+exit 0

@@ -1,0 +1,6 @@
+perfkeys: real
+graphkeys: fasta
+files: fasta.dat
+graphtitle: Fasta Shootout Benchmark (historical)
+ylabel: Time (seconds)
+graphname: fasta

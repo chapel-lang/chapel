@@ -1,0 +1,22 @@
+foo1
+in loop, got (c = {x = 1})
+destroying {x = 1}
+early return
+destroying {x = 2}
+destroying {x = 0}
+foo2
+in loop, got (c = {x = 1})
+destroying {x = 1}
+early return
+destroying {x = 0}
+foo3
+in loop, got (c = {x = 1})
+destroying {x = 1}
+early return
+destroying {x = 0}
+foo4
+copy/assign {x = 1}
+in loop, got (c = {x = 1})
+destroying {x = 1}
+early return
+destroying {x = 1}

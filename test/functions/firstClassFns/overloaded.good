@@ -1,0 +1,1 @@
+overloaded.chpl:10: error: foo: can not capture overloaded functions as values

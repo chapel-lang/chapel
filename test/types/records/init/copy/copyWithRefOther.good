@@ -1,0 +1,1 @@
+copyWithRefOther.chpl:16: error: non-lvalue actual is passed to 'ref' formal 'src' of init()

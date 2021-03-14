@@ -1,0 +1,386 @@
+# data file for the Fltk User Interface Designer (fluid)
+version 1.0303 
+header_name {.h} 
+code_name {.cxx}
+comment {/*
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2016-2019 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ *
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ *
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+} {in_source in_header
+} 
+
+decl {\#include <FL/Fl_File_Chooser.H>} {private local
+} 
+
+decl {\#include <FL/Fl_Multiline_Output.H>} {public local
+} 
+
+decl {\#include <FL/Fl_Sys_Menu_Bar.H>} {public local
+} 
+
+decl {\#include <FL/fl_ask.H>} {private local
+} 
+
+decl {\#include <FL/Fl_Color_Chooser.H>} {private local
+} 
+
+decl {\#include <unistd.h>} {public local
+} 
+
+decl {\#include "Fl_MultiGroup.H"} {public global
+} 
+
+decl {\#include "Settings.h"} {public local
+} 
+
+decl {\#include "DataModel.h"} {public global
+} 
+
+decl {\#include "InfoBar.h"} {public local
+} 
+
+decl {\#include "MenuManager.h"} {public global
+} 
+
+decl {\#include "ZoomScroll.h"} {public global
+} 
+
+decl {\#include "GraphView.h"} {public global
+} 
+
+decl {\#include "GridView.h"} {public global
+} 
+
+decl {\#include "LocCommWin.h"} {public global
+} 
+
+decl {\#include "ConcurrencyWin.h"} {public local
+} 
+
+decl {\#include "ProfileBrowser.h"} {public local
+} 
+
+decl {DataModel VisData;} {public local
+} 
+
+decl {MenuManager Menus;} {public local
+} 
+
+decl {SettingsData VisSettings;} {public local
+} 
+
+Function {mainWinCallback(Fl_Widget *)} {open return_type void
+} {
+  code {if (VisSettings.save_WH) {
+   VisSettings.saveToFile(false);
+}
+exit(1);} {}
+} 
+
+Function {make_LC_window(int locnum, localeData *locInfo)} {open C
+} {
+  Fl_Window {} {open
+    xywh {1082 50 200 80} type Double color 7 hide
+    class LocCommWin size_range {200 80 200 80}
+  } {
+    Fl_Group LC_Box {open
+      private xywh {0 0 200 80} box BORDER_FRAME color 0
+      class LocCommBox
+    } {}
+  }
+  code {w->setBox(LC_Box);
+w->setAsLocale(locnum, locInfo);} {}
+} 
+
+Function {make_LC_window(int fromLn, int toLn, struct commData *commdata)} {open
+} {
+  Fl_Window {} {open
+    xywh {877 49 200 80} type Double color 7 hide
+    class LocCommWin size_range {200 80 200 80}
+  } {
+    Fl_Group LC_Box1 {open
+      private xywh {0 0 200 80} box BORDER_FRAME color 0
+      class LocCommBox
+    } {}
+  }
+  code {w->setBox(LC_Box1);
+w->setAsComm(fromLn, toLn, commdata);} {}
+} 
+
+Function {make_concurrency_window(long locNum, long tagNum)} {open return_type {ConcurrencyWin *}
+} {
+  Fl_Window {} {open
+    xywh {309 55 500 600} type Double color 7 hide resizable
+    class ConcurrencyWin
+  } {
+    Fl_Group theView {open
+      private xywh {0 0 500 600}
+      code0 {o->setMembers(title,ConcWScroll,scrollWData);}
+      class ConcurrencyView
+    } {
+      Fl_Box title {
+        label Concurrency
+        private xywh {0 0 500 30} box BORDER_FRAME
+      }
+      Fl_Scroll ConcWScroll {open
+        private xywh {0 30 500 570} box DOWN_BOX color 7 resizable
+      } {
+        Fl_Box scrollWData {
+          private xywh {0 30 500 570} box FLAT_BOX color 7 resizable
+          class ConcurrencyData
+        }
+      }
+    }
+  }
+  code {w->setMembers(theView);
+w->updateData(locNum, tagNum);
+return w;} {}
+} 
+
+Function {open_data_set(const char *name, bool fromArgv)} {open private return_type bool
+} {
+  code {// printf("open_data_set ...\\n");
+
+if (!VisData.LoadData(name,true)) {
+       return false;
+}
+
+DataField->selectChild(GraphGrp);
+
+Menus.makeTagsMenu();
+Menus.setCurrentDataView(Graph_View);
+Menus.addPopUpTo(GraphGrp);
+Menus.setCurrentZoom(Graph_Scroll);
+Menus.setCurrentTag(DataModel::TagALL);
+
+Graph_View->setNumLocales(VisData.NumLocales());
+Graph_View->selectData(DataModel::TagALL);
+ 
+Grid_View->setNumLocales(VisData.NumLocales());
+Grid_View->selectData(DataModel::TagALL);
+ 
+Info->setFileName(name);
+Info->clearTagName();
+
+return true;} {selected
+  }
+} 
+
+Function {} {open
+} {
+  Fl_Window MainWindow {
+    label chplvis open
+    xywh {1300 472 560 600} type Double color 7 resizable size_range {560 590 0 0} visible
+  } {
+    Fl_Menu_Bar MainMenuBar {open
+      xywh {0 0 560 20} color 55
+      class Fl_Sys_Menu_Bar
+    } {
+      MenuItem {} {
+        label File
+        xywh {0 0 100 20}
+      }
+    }
+    Fl_Group Info {open
+      xywh {0 20 560 80} box BORDER_FRAME color 0
+      class InfoBar
+    } {}
+    Fl_Group DataControl {open
+      xywh {0 99 60 501} box BORDER_FRAME color 0
+    } {
+      Fl_Button {} {
+        xywh {0 598 60 2} box NO_BOX resizable
+        code0 {o->clear_visible_focus();}
+      }
+      Fl_Button {} {
+        callback {DataField->popAll();
+DataField->selectChild(GraphGrp);
+Menus.makeMenusFor(VIEW_GRAPH);
+Info->showColorRef();
+Graph_View->selectData(Menus.currentTag());}
+        tooltip {Graph View} image {Graph-2-40x40.png} xywh {10 110 40 40} box NO_BOX down_box FLAT_BOX selection_color 48
+        code0 {o->clear_visible_focus();}
+      }
+      Fl_Button {} {
+        callback {DataField->popAll();
+DataField->selectChild(GridGrp);
+Menus.makeMenusFor(VIEW_GRID);
+Info->showColorRef();
+Grid_View->selectData(Menus.currentTag());}
+        tooltip {Grid View} image {Grid-40x40.png} xywh {10 160 40 40} box NO_BOX down_box FLAT_BOX selection_color 48
+        code0 {o->clear_visible_focus();}
+      }
+      Fl_Button {} {
+        callback {DataField->popAll();
+DataField->selectChild(concView);
+Info->showConcurrency();
+Menus.makeMenusFor(VIEW_CONCURRENCY);
+Info->rmAllLocOrComm();
+Info->showColorRef();
+concView->updateData(Menus.currentLoc(),
+                     Menus.currentTag());}
+        tooltip {Concurrency View} image {Concurrent-40x40.png} xywh {10 210 40 40} box NO_BOX down_box FLAT_BOX
+        code0 {o->clear_visible_focus();}
+      }
+      Fl_Button {} {
+        callback {DataField->popAll();
+DataField->selectChild(ProfileView);
+ProfileView->prepareData(ProfileBrowser::D_CLOCK); // XXX
+Info->rmAllLocOrComm();
+Info->hideColorRef();
+Menus.makeMenusFor(VIEW_PROFILE);}
+        tooltip {Profile View} image {Profile-40x40.png} xywh {10 260 40 40} box NO_BOX down_box FLAT_BOX
+        code0 {o->clear_visible_focus();}
+      }
+      Fl_Button {} {
+        callback {DataField->popAll();
+Info->rmAllLocOrComm();
+SettingsGrp->copyIn();
+DataField->pushChild(SettingsGrp);}
+        tooltip Settings image {Gear-40x40.png} xywh {10 310 40 40} box NO_BOX
+        code0 {o->clear_visible_focus();}
+      }
+    }
+    Fl_Group DataField {open
+      xywh {60 100 500 500} color 0 resizable
+      class Fl_MultiGroup
+    } {
+      Fl_Group GraphGrp {open
+        xywh {60 100 500 500} color 7
+      } {
+        Fl_Scroll Graph_Scroll {open
+          xywh {60 100 500 500} color 7 resizable
+          class ZoomScroll
+        } {
+          Fl_Box Graph_View {user_data_type {void*}
+            xywh {60 100 500 500} color 7 selection_color 48 resizable
+            code0 {Graph_Scroll->setZoomWidget(o);}
+            class GraphView
+          }
+        }
+      }
+      Fl_Group GridGrp {open
+        xywh {60 100 500 500} color 7
+      } {
+        Fl_Scroll Grid_Scroll {open
+          xywh {60 100 500 500} color 7 resizable
+          class ZoomScroll
+        } {
+          Fl_Box Grid_View {
+            xywh {60 100 500 500} color 7 resizable
+            code0 {Grid_Scroll->setZoomWidget(o);}
+            class GridView
+          }
+        }
+      }
+      Fl_Group SettingsGrp {user_data_type {void*}
+        xywh {60 100 500 500} color 0 hide
+        class Settings
+      } {
+        Fl_Check_Button saveWH {
+          label {  Restore main window size} user_data_type {void*}
+          callback {SettingsGrp->toggleSaveWH();
+saveWH->value(SettingsGrp->getSaveWH());}
+          xywh {75 190 215 25} type Normal box FLAT_BOX down_box DOWN_BOX
+          code0 {saveWH->value(SettingsGrp->getSaveWH());}
+        }
+        Fl_Button {} {
+          label Cancel
+          callback {DataField->popChild();}
+          xywh {75 245 105 25}
+        }
+        Fl_Button {} {
+          label Save
+          callback {SettingsGrp->copyOut();
+VisSettings.saveToFile(true);
+DataField->popChild();}
+          xywh {220 245 105 25}
+        }
+        Fl_Button {} {
+          label {Use for this run only}
+          callback {bool oldWH = VisSettings.save_WH;
+SettingsGrp->copyOut();
+VisSettings.save_WH = oldWH;
+DataField->popChild();}
+          xywh {370 245 170 25}
+        }
+        Fl_Button {} {
+          label {Set Cool Color}
+          callback {SettingsGrp->setCoolColor();}
+          xywh {75 135 120 25}
+        }
+        Fl_Button {} {
+          label {Set Hot Color}
+          callback {SettingsGrp->setHotColor();}
+          xywh {370 135 120 25}
+        }
+        Fl_Button {} {
+          label {Reset Heat Colors}
+          callback {SettingsGrp->reset();}
+          xywh {370 190 165 25}
+        }
+        Fl_Button {} {
+          xywh {550 575 10 25} box NO_BOX color 7 resizable
+          code0 {o->clear_visible_focus();}
+        }
+      }
+      Fl_Group concView {open
+        xywh {60 100 500 500} hide
+        code0 {o->setMembers(title2,ConcWScroll2,scrollWData2);}
+        class ConcurrencyView
+      } {
+        Fl_Box title2 {
+          label Concurrency
+          private xywh {59 99 501 30} box BORDER_FRAME color 0
+        }
+        Fl_Scroll ConcWScroll2 {open
+          private xywh {60 130 500 470} color 7 resizable
+        } {
+          Fl_Box scrollWData2 {
+            private xywh {60 130 500 470} color 7 resizable
+            class ConcurrencyData
+          }
+        }
+      }
+      Fl_Browser ProfileView {
+        xywh {60 100 500 500} hide
+        code0 {o->clear_visible_focus();}
+        class ProfileBrowser
+      }
+    }
+  }
+  code {if (argc > 1 && argv[1][1] != '-') {
+    //printf ("argv[1] is %s\\n", argv[1]);
+    if (!open_data_set(argv[1], true)) {
+       exit(1);
+    }
+    argc--;
+    argv++;
+} else {
+   // look for .Vdebug/.Vdebug-0
+   if (access(".Vdebug/.Vdebug-0", R_OK) == 0)
+      (void) open_data_set(".Vdebug/.Vdebug-0",false);
+}
+MainWindow->callback(mainWinCallback);
+if (VisSettings.save_WH) {
+   MainWindow->size(VisSettings.mainW,VisSettings.mainH);
+   MainWindow->redraw();
+}
+Menus.makeMenusFor(VIEW_GRAPH);
+ProfileView->loadData();} {}
+} 

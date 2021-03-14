@@ -1,0 +1,5 @@
+# This test has widely varying execution times for gasnet-qthreads.
+# Running with multiple trials on an empty machine timings are
+# between ~40 and ~600 seconds. We should be able to remove this
+# when we test on real hardware instead of using local spawning.
+900

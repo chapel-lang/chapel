@@ -1,0 +1,6 @@
+feature request: Helpful message for Chapel fn actual -> C fn formal mismatch
+
+Lydia suggested that it would be nice to have a message (like the one
+proposed here, or an equivalent) that would give the user the hint
+that using c_ptrTo() might help fix their issue.  I agree but it was
+more than I could take on at present.

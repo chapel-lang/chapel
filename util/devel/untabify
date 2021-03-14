@@ -1,0 +1,31 @@
+#!/usr/bin/env perl
+#
+# Searches the files you have modified or added in the current git-controlled
+# directory and its children (using 'git status'), and removes tabs from them
+# unless they appear in the explicit reject list.
+#
+# This usage of tab2space assumes UNIX-style line-end characters and a tab width of 4.
+#
+
+use File::Temp qw/ :POSIX/;
+
+@files = `git status --porcelain`;
+
+foreach $file (@files)
+{
+    next if $file =~ /^\?/;
+    chop $file;
+    my $filename = substr $file, 3;
+
+    # Add filters for files you don't want untabified here
+    # For example, this skips files whose names end in ".good":
+    next if $filename =~ /\.good$/;
+
+    print "Removing tabs from $filename ...\n";
+    my $tmpname = tmpnam();
+    $command = "tab2space -lf $filename > $tmpname && mv $tmpname $filename";
+    system($command);
+}
+
+
+

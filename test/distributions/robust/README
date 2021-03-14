@@ -1,0 +1,30 @@
+Distribution Robustness Suites
+
+This directory contains test suites designed to cover most of the
+functionality that is provided by Chapel's domain maps.  The tests are
+written using driver code that defines domain maps, domains and arrays
+using the compile-time specified domain map.
+
+To test a particular distribution, use e.g.:
+
+ CHPL_COMM=gasnet
+ for dist in block cyclic replicated
+   ./util/start_test -compopts -sdistType=DistType.$dist \
+       test/distributions/robust/arithmetic
+
+Before adding tests to these directories, please consider if they fit
+this intent.  For example, direct bug reports should probably be put
+somewhere else, but it would be fine to commit code here by rewriting
+the buggy code in a way to work with any domain maps.
+
+Directory structure:
+
+- arithmetic: for domain maps that use DefaultRectangular as a base
+  (e.g., BlockDist, CyclicDist, ReplicatedDist, etc.)
+
+- associative: for domain maps that use DefaultAssociative as a base
+  (only DefaultAssociative for now)
+
+TODO:
+- sparse
+

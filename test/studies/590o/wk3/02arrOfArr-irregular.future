@@ -1,0 +1,7 @@
+unimplemented feature: arrays of forall arrays
+
+unimplemented feature: arrays of parameterized arrays
+
+This future captures that arrays of arrays in which the inner
+array's domain is a function of the outer's are not yet
+implemented.

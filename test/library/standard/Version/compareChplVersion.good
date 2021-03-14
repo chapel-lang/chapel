@@ -1,0 +1,700 @@
+Comparing versions:
+version 2.1.0
+version 2.1.0
+------------------
+== : true
+!= : false
+<  : false
+<= : true
+>  : false
+>= : true
+
+Comparing versions:
+version 2.1.0 (aaa)
+version 2.1.0 (aaa)
+------------------
+== : true
+!= : false
+<  : false
+<= : true
+>  : false
+>= : true
+
+Comparing versions:
+version 2.1.0
+version 2.1.0 (aaa)
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+
+Comparing versions:
+version 2.1.0 (aaa)
+version 2.1.0
+------------------
+== : false
+!= : true
+>  : false
+>= : false
+
+Comparing versions:
+version 2.1.0
+version 2.1.1
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+version 2.1.1
+version 2.1.0
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+version 2.1.0
+version 2.2.0
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+version 2.2.0
+version 2.1.0
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+version 2.1.0
+version 2.2.1
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+version 2.2.1
+version 2.1.0
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+version 2.1.0
+version 3.1.0
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+version 3.1.0
+version 2.1.0
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+version 2.1.0
+version 3.1.1
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+version 3.1.1
+version 2.1.0
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+version 2.1.0
+version 2.1.1 (bbb)
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+version 2.1.1 (bbb)
+version 2.1.0
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+version 2.1.0
+version 2.2.0 (ccc)
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+version 2.2.0 (ccc)
+version 2.1.0
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+version 2.1.0
+version 2.2.1 (ddd)
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+version 2.2.1 (ddd)
+version 2.1.0
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+version 2.1.0
+version 3.1.0 (eee)
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+version 3.1.0 (eee)
+version 2.1.0
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+version 2.1.0
+version 3.1.1 (fff)
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+version 3.1.1 (fff)
+version 2.1.0
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+version 2.1.1
+version 2.2.0
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+version 2.2.0
+version 2.1.1
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+version 2.1.1
+version 2.2.1
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+version 2.2.1
+version 2.1.1
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+version 2.1.1
+version 3.1.0
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+version 3.1.0
+version 2.1.1
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+version 2.1.1
+version 3.1.1
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+version 3.1.1
+version 2.1.1
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+version 2.1.1
+version 2.2.0 (ccc)
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+version 2.2.0 (ccc)
+version 2.1.1
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+version 2.1.1
+version 2.2.1 (ddd)
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+version 2.2.1 (ddd)
+version 2.1.1
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+version 2.1.1
+version 3.1.0 (eee)
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+version 3.1.0 (eee)
+version 2.1.1
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+version 2.1.1
+version 3.1.1 (fff)
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+version 3.1.1 (fff)
+version 2.1.1
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+version 2.2.0
+version 2.2.1
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+version 2.2.1
+version 2.2.0
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+version 2.2.0
+version 3.1.0
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+version 3.1.0
+version 2.2.0
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+version 2.2.0
+version 3.1.1
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+version 3.1.1
+version 2.2.0
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+version 2.2.0
+version 2.2.1 (ddd)
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+version 2.2.1 (ddd)
+version 2.2.0
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+version 2.2.0
+version 3.1.0 (eee)
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+version 3.1.0 (eee)
+version 2.2.0
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+version 2.2.0
+version 3.1.1 (fff)
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+version 3.1.1 (fff)
+version 2.2.0
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+version 2.2.1
+version 3.1.0
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+version 3.1.0
+version 2.2.1
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+version 2.2.1
+version 3.1.1
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+version 3.1.1
+version 2.2.1
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+version 2.2.1
+version 3.1.0 (eee)
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+version 3.1.0 (eee)
+version 2.2.1
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+version 2.2.1
+version 3.1.1 (fff)
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+version 3.1.1 (fff)
+version 2.2.1
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+version 3.1.0
+version 3.1.1
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+version 3.1.1
+version 3.1.0
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+version 3.1.0
+version 3.1.1 (fff)
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+version 3.1.1 (fff)
+version 3.1.0
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+

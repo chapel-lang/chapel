@@ -1,0 +1,1 @@
+nonnilable-owned.chpl:3: error: toArray() method is not available on a 'vector' with elements of a non-nilable owned type, here: owned object

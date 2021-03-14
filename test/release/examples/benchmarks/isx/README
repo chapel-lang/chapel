@@ -1,0 +1,95 @@
+============================
+Chapel implementation of ISx
+============================
+
+This directory contains a Chapel port of the ISx benchmark. See the reference
+version at https://github.com/ParRes/ISx for more details.
+
+
+------
+Status
+------
+
+The Chapel version of ISx is a work-in-progress. Several improvements remain to
+improve both performance and elegance. See the list below for more details.
+
+
+-----
+Files
+-----
+
+This directory's contents are as follows:
+
+./
+  isx.chpl       : the main Chapel source code
+
+  Makefile       : builds an optimized ISx
+
+  README         : this file
+
+  Other files with the same base filename as the Chapel test program but
+  different filename extensions, are for use by the automated test system.
+  For example, file isx.execopts supports automated testing of isx.chpl.
+  Files with all-uppercase filenames like NUMLOCALES (but not "README") are
+  similar, except they are applied to all chpl tests in the directory.
+  $CHPL_HOME/examples/README.testing contains more information.
+
+  goods-1/       : used by the Chapel testing system
+  goods-4/
+
+-----------------
+Execution Options
+-----------------
+
+The following are some of the config[uration] options that can be used to
+modify the execution at program launch time.
+
+
+* useSubTimers : bool -- prints timing information for sections of the program
+
+* mode : enum -- choose between different scaling modes
+
+* n -- the number of keys to sort per task
+
+* numTrials -- the number of trials to perform
+
+
+-----
+TODOs
+-----
+
+Performance issues
+------------------
+
+* The current implementation of the Barrier standard module is not expected
+  to perform well at scale. See Barrier module documentation for more details.
+
+* Returning an array in Chapel currently results in copying. This benchmark
+  is supposed to support very large arrays, and performing those copies
+  can hurt performance and increase memory usage.
+
+Other TODOs
+-----------
+* Unify PCG usage with reference version
+  - reference version uses pcg32_srandom_r() which takes a second stream
+    ID argument
+  - PCG supports an ability to safely clamp values to a [0, maxKeyVal)
+    range.  The PCG interface we're using doesn't currently, so I did
+    it manually in the code.  Switch to a lower-level interface that
+    does the clamping and/or make sure that I don't have bugs in my
+    clamping logic.
+
+* Investigate performance using the chplvis tool
+
+Language TODOs
+--------------
+* The stats would be much more complete (while remaining elegant/
+  efficient) if we had min/max task reduction intents...
+
+* Should we be able to support scans on arrays of atomics without a
+  .read()?
+
+* We really want an exclusive scan, but Chapel's is inclusive.  Wasn't
+  the original plan to support both?  Does code exist for this that
+  simply isn't accessible currently?
+

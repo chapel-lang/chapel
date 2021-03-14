@@ -1,0 +1,11 @@
+#!/bin/csh -f
+set testname = $1
+set outfile  = $2
+
+set tmpfile = $outfile.prediff.tmp
+# The allocation address is not stable.
+sed -e 's/0x[0-9a-f]*/0xnnnnnnnn/' -e 's/Address: */Address:    /' $outfile > $tmpfile
+# We don't care how many bytes were leaked, nor on which locale, nor at which line number.
+# The number of bytes leaked will be different on 32-bit vs. 64-bit platforms.
+sed -e 's/[0-9]/n/g' $tmpfile > $outfile
+rm $tmpfile

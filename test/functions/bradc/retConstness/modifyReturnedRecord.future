@@ -1,0 +1,18 @@
+error message: const records
+
+semantic: return values should be const by default?
+
+Since we allow functions to be labeled as var, param, and type,
+my hypothesis was that our unlabeled functions were probably
+const.  Record assignment and array assignment seem like the
+two cases for which this might not happen automatically, though
+Steve and I currently think they should for consistency.
+Modifying records returned by functions isn't particularly useful,
+because you can't capture the record without copying it.
+Modifying arrays might be considered more useful, but also
+reasonable to outlaw for consistency.
+
+If for some reason this doesn't pan out, we might want to say
+that a blank function kind is like a blank argument kind in
+that the semantics depend on the type.  This seems like it
+would be nice to avoid if possible, though.

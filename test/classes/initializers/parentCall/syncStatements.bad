@@ -1,0 +1,2 @@
+syncStatements.chpl:7: In initializer:
+syncStatements.chpl:9: error: Only catch-less try! statements are allowed in initializers for now

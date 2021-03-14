@@ -1,0 +1,3 @@
+modifyIndicesStandalone.chpl:5: error: cannot assign to const variable
+modifyIndicesStandalone.chpl:10: error: cannot assign to const variable
+modifyIndicesStandalone.chpl:15: error: cannot assign to const variable

@@ -1,0 +1,15 @@
+include $(THIRD_PARTY_DIR)/llvm/Makefile.share-included
+
+ifndef LLVM_LLVM_LIBS
+  export LLVM_LLVM_LIBS=$(shell test -x $(LLVM_CONFIG) && $(LLVM_CONFIG) --ldflags --system-libs --libs support)
+endif
+
+LLVM_CXXFLAGS=$(LLVM_CONFIG_CXXFLAGS)
+LLVM_CFLAGS=$(LLVM_CONFIG_CFLAGS)
+
+LLVM_INCLUDES += -I$(LLVM_INCLUDE_DIR)
+LLVM_LIBS=-L$(LLVM_LIB_DIR) $(LLVM_LLVM_LIBS)
+
+CLANG_CC=no-clang-in-llvm-minimal
+CLANG_CXX=no-clang++-in-llvm-minimal
+

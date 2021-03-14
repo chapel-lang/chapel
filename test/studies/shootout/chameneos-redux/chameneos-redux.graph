@@ -1,0 +1,7 @@
+perfkeys: real, real, real, real, real, real, real, real
+graphkeys: chameneos-spin-loop, chameneos-waitFor, chameneos-yield-loop, chameneos-cas, release, chameneos-blc, chameneos-ejr, release-fast
+files: lydia/chameneos-redux-lydia.dat, lydia/chameneos-redux-waitFor.dat, lydia/chameneos-redux-yield.dat, hannah/chameneos-redux-cas.dat, chameneosredux.dat, chameneosredux-blc.dat, chameneosredux-ejr.dat, chameneosredux-fast.dat
+graphtitle: Chameneos Redux Shootout Benchmark (n=6,000,000)
+ylabel: Time (seconds)
+graphname: chameneos-redux-comparisons
+

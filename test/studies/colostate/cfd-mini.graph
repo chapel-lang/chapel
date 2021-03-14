@@ -1,0 +1,5 @@
+perfkeys: LoopTime:, LoopTime:
+files: cfd-mini-c.dat, cfd-mini-serial.dat
+graphkeys: Baseline Serial C, Baseline Serial Chapel
+ylabel: Time (seconds)
+graphtitle: Performance of Various CFD-mini Implementations

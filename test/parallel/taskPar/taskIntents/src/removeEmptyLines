@@ -1,0 +1,24 @@
+#!/usr/bin/perl
+
+use English;
+use strict;               #- give ourselves grief about valid Perl code
+use warnings;             #- add more misery
+use open OUT => ":raw";   #- get rid of '\r'
+$OUTPUT_AUTOFLUSH = 1;    #- ensure stdin vs. stdout output order is preserved
+
+my $prevLine = "// DO NOT EDIT - THIS FILE IS GENERATED AUTOMATICALLY.\n";
+
+while (<>) {
+   my $curLine = $_;
+
+   if ($curLine eq "\n" && $prevLine eq "\n") {
+      # Two empty lines in a row, skip $prevLine.
+      # Also applies if the first line is empty.
+   } else {
+      print $prevLine;
+   }
+
+   $prevLine = $curLine;
+}
+
+print $prevLine;

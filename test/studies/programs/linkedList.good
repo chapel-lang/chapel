@@ -1,0 +1,8 @@
+The list contains: 78 76 42 9 63 55 15 12 83 1
+The list includes a one
+No more ones: 78 76 42 9 63 55 15 12 83
+The list after deleting first contains: 76 42 9 63 55 15 12 83
+delete element at pos 3 :76 42 63 55 15 12 83
+delete element at pos 1 :42 63 55 15 12 83
+delete element at pos 5 :42 63 55 15 83
+The list contains: 

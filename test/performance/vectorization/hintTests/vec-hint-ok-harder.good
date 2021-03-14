@@ -1,0 +1,6 @@
+vec-hint-ok-harder.chpl:19: note: loop vectorization (with parallel access) hinted for CForLoop
+vec-hint-ok-harder.chpl:25: note: loop vectorization (with parallel access) hinted for CForLoop
+vec-hint-ok-harder.chpl:32: note: loop vectorization (with parallel access) hinted for CForLoop
+2.0 10001.0
+3.0 10002.0
+5.0005e+07 0.0

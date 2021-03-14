@@ -1,0 +1,342 @@
+./rangeAPItest.chpl:3: In function 'testRangeAPI':
+./rangeAPItest.chpl:43: warning: invoking 'offset' on an unstrided range has no effect.
+  simpleRangeTest.chpl:4: called as testRangeAPI(lbl: string, r: range(int(64),bounded,false), idx: int(64), subr: range(int(64),bounded,false))
+basic range
+------------
+1..10
+idxType          = int(64)
+stridable        = false
+boundedType      = bounded
+isRangeType()    = true
+isBoundedRange() = true
+isBounded()      = true
+hasLowBound()    = true
+hasHighBound()   = true
+stride           = 1
+alignment        = 1
+aligned          = true
+first            = 1
+last             = 10
+low              = 1
+high             = 10
+alignedLow       = 1
+alignedHigh      = 10
+isEmpty()        = false
+size             = 10
+hasFirst()       = true
+hasLast()        = true
+isNat.Algned()   = true
+isAmbiguous      = false
+contains(4) = true
+contains(3..6) = true
+ident(self)      = true
+ident(other)     = false
+boundsCheck(4) = true
+boundsCheck(3..6) = true
+indexOrder(4) = 3
+orderToIndex(3)  = 4
+expand(2)        = -1..12
+offset(1)        = 1..10
+translate(2)     = 3..12
+translate(-2)    = -1..8
+exterior(2)      = 11..12
+exterior(-2)     = -1..0
+interior(2)      = 9..10
+interior(-2)     = 1..2
+serial iteration = 
+1 2 3 4 5 6 7 8 9 10 
+r#2               = 1..2
+r#-2              = 9..10
+r == subr         = false
+r != subr         = true
+r[subr]           = 3..6
+r[subr] == subr[r]= true
+Copying...        = 1..10
+
+strided range
+------------
+1..20 by 2
+idxType          = int(64)
+stridable        = true
+boundedType      = bounded
+isRangeType()    = true
+isBoundedRange() = true
+isBounded()      = true
+hasLowBound()    = true
+hasHighBound()   = true
+stride           = 2
+alignment        = 1
+aligned          = true
+first            = 1
+last             = 19
+low              = 1
+high             = 20
+alignedLow       = 1
+alignedHigh      = 19
+isEmpty()        = false
+size             = 10
+hasFirst()       = true
+hasLast()        = true
+isNat.Algned()   = true
+isAmbiguous      = false
+contains(7) = true
+contains(5..13 by 2) = true
+ident(self)      = true
+ident(other)     = false
+boundsCheck(7) = true
+boundsCheck(5..13 by 2) = true
+indexOrder(7) = 3
+orderToIndex(3)  = 7
+expand(2)        = -1..22 by 2
+offset(1)        = 1..20 by 2 align 0
+translate(2)     = 3..22 by 2
+translate(-2)    = -1..18 by 2
+exterior(2)      = 21..22 by 2
+exterior(-2)     = -1..0 by 2
+interior(2)      = 19..20 by 2
+interior(-2)     = 1..2 by 2
+serial iteration = 
+1 3 5 7 9 11 13 15 17 19 
+r#2               = 1..4 by 2
+r#-2              = 17..20 by 2
+r == subr         = false
+r != subr         = true
+r[subr]           = 5..13 by 2
+r[subr] == subr[r]= true
+Copying...        = 1..20 by 2
+
+neg. str. range
+------------
+1..20 by -2
+idxType          = int(64)
+stridable        = true
+boundedType      = bounded
+isRangeType()    = true
+isBoundedRange() = true
+isBounded()      = true
+hasLowBound()    = true
+hasHighBound()   = true
+stride           = -2
+alignment        = 20
+aligned          = true
+first            = 20
+last             = 2
+low              = 1
+high             = 20
+alignedLow       = 2
+alignedHigh      = 20
+isEmpty()        = false
+size             = 10
+hasFirst()       = true
+hasLast()        = true
+isNat.Algned()   = true
+isAmbiguous      = false
+contains(14) = true
+contains(16..8 by -2) = true
+ident(self)      = true
+ident(other)     = false
+boundsCheck(14) = true
+boundsCheck(16..8 by -2) = true
+indexOrder(14) = 3
+orderToIndex(3)  = 14
+expand(2)        = -1..22 by -2
+offset(1)        = 1..20 by -2 align 1
+translate(2)     = 3..22 by -2
+translate(-2)    = -1..18 by -2
+exterior(2)      = 21..22 by -2
+exterior(-2)     = -1..0 by -2
+interior(2)      = 19..20 by -2
+interior(-2)     = 1..2 by -2
+serial iteration = 
+20 18 16 14 12 10 8 6 4 2 
+r#2               = 17..20 by -2
+r#-2              = 1..4 by -2
+r == subr         = false
+r != subr         = true
+r[subr]           = 16..8 by -2
+r[subr] == subr[r]= true
+Copying...        = 1..20 by -2
+
+unbounded range
+------------
+1..
+idxType          = int(64)
+stridable        = false
+boundedType      = boundedLow
+isRangeType()    = true
+isBoundedRange() = false
+isBounded()      = false
+hasLowBound()    = true
+hasHighBound()   = false
+stride           = 1
+alignment        = 1
+aligned          = true
+first            = 1
+last             = 0
+low              = 1
+high             = 0
+alignedLow       = 1
+alignedHigh      = 0
+isEmpty()        = false
+hasFirst()       = true
+hasLast()        = false
+isNat.Algned()   = true
+isAmbiguous      = false
+contains(4) = true
+contains(3..6) = true
+ident(self)      = true
+ident(other)     = false
+boundsCheck(4) = true
+boundsCheck(3..6) = true
+indexOrder(4) = 3
+orderToIndex(3)  = 4
+translate(2)     = 3..
+translate(-2)    = -1..
+serial iteration = 
+1 
+2 
+3 
+...
+
+r#2               = 1..2
+r == subr         = false
+r != subr         = true
+r[subr]           = 3..6
+r[subr] == subr[r]= true
+Copying...        = 1..
+
+upper unbnd range
+------------
+..10
+idxType          = int(64)
+stridable        = false
+boundedType      = boundedHigh
+isRangeType()    = true
+isBoundedRange() = false
+isBounded()      = false
+hasLowBound()    = false
+hasHighBound()   = true
+stride           = 1
+alignment        = 0
+aligned          = false
+first            = 1
+last             = 10
+low              = 1
+high             = 10
+alignedLow       = 1
+alignedHigh      = 10
+isEmpty()        = false
+hasFirst()       = false
+hasLast()        = true
+isNat.Algned()   = false
+isAmbiguous      = false
+contains(4) = true
+contains(3..6) = true
+ident(self)      = true
+ident(other)     = false
+boundsCheck(4) = true
+boundsCheck(3..6) = true
+indexOrder(4) = -1
+translate(2)     = ..12
+translate(-2)    = ..8
+serial iteration = 
+<can't be done>
+
+r#-2              = 9..10
+r == subr         = false
+r != subr         = true
+r[subr]           = 3..6
+r[subr] == subr[r]= true
+Copying...        = ..10
+
+neg upper unbnd range
+------------
+..10 by -1
+idxType          = int(64)
+stridable        = true
+boundedType      = boundedHigh
+isRangeType()    = true
+isBoundedRange() = false
+isBounded()      = false
+hasLowBound()    = false
+hasHighBound()   = true
+stride           = -1
+alignment        = 10
+aligned          = true
+first            = 10
+last             = 1
+low              = 1
+high             = 10
+alignedLow       = 1
+alignedHigh      = 10
+isEmpty()        = false
+hasFirst()       = true
+hasLast()        = false
+isNat.Algned()   = true
+isAmbiguous      = false
+contains(4) = true
+contains(3..6 by -1) = true
+ident(self)      = true
+ident(other)     = false
+boundsCheck(4) = true
+boundsCheck(3..6 by -1) = true
+indexOrder(4) = 6
+orderToIndex(3)  = 7
+translate(2)     = ..12 by -1
+translate(-2)    = ..8 by -1
+serial iteration = 
+10 
+9 
+8 
+...
+
+r#2               = 9..10 by -1
+r == subr         = false
+r != subr         = true
+r[subr]           = 3..6 by -1
+r[subr] == subr[r]= true
+Copying...        = ..10 by -1
+
+unbounded range
+------------
+..
+idxType          = int(64)
+stridable        = false
+boundedType      = boundedNone
+isRangeType()    = true
+isBoundedRange() = false
+isBounded()      = false
+hasLowBound()    = false
+hasHighBound()   = false
+stride           = 1
+alignment        = 0
+aligned          = false
+first            = 1
+last             = 0
+low              = 1
+high             = 0
+alignedLow       = 1
+alignedHigh      = 0
+isEmpty()        = false
+hasFirst()       = false
+hasLast()        = false
+isNat.Algned()   = false
+isAmbiguous      = false
+contains(4) = true
+contains(3..6) = true
+ident(self)      = true
+ident(other)     = false
+boundsCheck(4) = true
+boundsCheck(3..6) = true
+indexOrder(4) = -1
+translate(2)     = ..
+translate(-2)    = ..
+serial iteration = 
+<can't be done>
+
+r == subr         = false
+r != subr         = true
+r[subr]           = 3..6
+r[subr] == subr[r]= true
+Copying...        = ..
+

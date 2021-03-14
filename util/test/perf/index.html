@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <!-- In order to support IE7 and IE8, we use excanvas, emulate certain IE
+         versions, and use jquery version 1 instead of 2. Future versions of
+         dygraphs will remove support for anything older than IE9, so we can
+         remove that code, and use a newer jquery version. -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=EmulateIE7; IE=EmulateIE9">
+    <title>Chapel Performance Graphs</title>
+    <link rel="stylesheet" href="perfgraph.css">
+    <!--[if IE]>
+        <script src="http://dygraphs.com/excanvas.js"></script>
+        <![endif]-->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.0.0-alpha.12/dist/html2canvas.min.js"></script>
+
+
+    <!-- Overrides the default Date.parse -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.18.1/moment.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dygraph/2.1.0/dygraph.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dygraph/2.0.0/dygraph.min.css" />
+
+    <script src="graphdata.js"></script>
+
+  </head>
+  <body onload="perfGraphInit()">
+    <script>
+      <!-- hide
+           function jumpto(x){
+             if (document.form1.jumpmenu.value != "null") {
+               selectSuite(x);
+               displaySelectedGraphs();
+             }
+           }
+           // end hide -->
+    </script>
+    <div id="graphSelectionPane">
+      <a id="homeLink"
+         class="grayButton simpleLink"
+         href="http://chapel-lang.org/perf/">Home</a>
+
+      <p id='toggleConf'><em>Toggle configurations</em></p>
+      <p><em>Select a test suite</em></p>
+      <div id="suiteMenu"></div>
+
+      <p><em>Select and display specific tests</em></p>
+
+      <div id="buttonMenu">
+        <button class="grayButton" onclick="displaySelectedGraphs()">Display</button>
+        <button class="grayButton" onclick="clearDates()">Clear Dates</button>
+        <button class="grayButton" onclick="lastTwoWeeks()">Last Two Weeks</button>
+
+        <button class="grayButton" onclick="selectAllGraphs()">Select All</button>
+        <button class="grayButton" onclick="unselectAllGraphs()">Unselect All</button>
+        <button class="grayButton" onclick="invertSelection()">Invert Selection</button>
+      </div>
+
+      <p>Filter: <input type="text" name="filterBox">&nbsp;
+        <button class="grayButton" onclick="clearFilter()" style="padding: 0px 3px 0px 3px">&#x2715;</button>
+      </p>
+
+      <div id="graphlist">
+        <!-- populated with checkboxes by javascript -->
+      </div>
+    </div> <!-- End of graph selection pane -->
+
+    <div id="titleDiv">
+      <center><h2 id="titleElem"></h2></center>
+      <center><h4 id="dateElem"></h4></center>
+    </div>
+
+    <div id="graphdisplay">
+      <!-- populated with graphs by javascript -->
+    </div>
+
+    <script src="perfgraph.js"></script>
+  </body>
+</html>
+

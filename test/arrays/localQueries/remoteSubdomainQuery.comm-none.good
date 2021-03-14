@@ -1,0 +1,42 @@
+domain(1,int(64),false):
+I own:   {1..10}
+It owns: {1..10}
+I own:   {1..10}
+It owns: {1..10}
+(<no communication>)
+
+DefaultAssociativeDom(real(64),true):
+I own:   {3.4}
+It owns: {3.4}
+I own:   {3.4}
+It owns: {3.4}
+(<no communication>)
+
+DefaultSparseDom(1,int(64),domain(1,int(64),false)):
+I own:   {7}
+It owns: {7}
+I own:   {7}
+It owns: {7}
+(<no communication>)
+
+[domain(1,int(64),false)] real(64):
+I own:   {1..10}
+It owns: {1..10}
+I own:   {1..10}
+It owns: {1..10}
+(<no communication>)
+
+[DefaultAssociativeDom(real(64),true)] real(64):
+I own:   {3.4}
+It owns: {3.4}
+I own:   {3.4}
+It owns: {3.4}
+(<no communication>)
+
+[DefaultSparseDom(1,int(64),domain(1,int(64),false))] real(64):
+I own:   {7}
+It owns: {7}
+I own:   {7}
+It owns: {7}
+(<no communication>)
+

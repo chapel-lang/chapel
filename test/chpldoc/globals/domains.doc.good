@@ -1,0 +1,33 @@
+.. default-domain:: chpl
+
+.. module:: domains.doc
+
+domains.doc
+===========
+**Usage**
+
+.. code-block:: chapel
+
+   use domains.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import domains.doc;
+
+.. data:: var domain1: domain(keyType, parSafe = true)
+
+.. data:: var domain2: domain(rank = 5)
+
+.. data:: var domain3: domain(rank = 2, int(8), true)
+
+.. data:: var domain4: domain(2, idxType = int(8))
+
+.. data:: var domain5: domain(2, int(8))
+
+.. data:: var domain6: domain(2, stridable = true)
+
+.. data:: var domain7: domain(rank = 3, idxType = int, stridable = false)
+

@@ -1,0 +1,1 @@
+EVARS=vals amudprun  -np 1 ./testVFlag_real -v -nl 1 EXECOPTS

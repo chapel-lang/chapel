@@ -1,0 +1,3 @@
+in foo(): x=3
+in foo(): x=2
+in foo(): x=1

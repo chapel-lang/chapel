@@ -1,0 +1,1097 @@
+{
+  "fe77e30e-2e9f-11eb-adc5-acbc32c4f96b": [
+    ".github/CONTRIBUTING.md"
+  ],
+  "20acc50e-2ad9-11e6-a3a6-10ddb1d4c3d5": [
+    "ACKNOWLEDGEMENTS.md"
+  ],
+  "515baeda-2ada-11e6-a3a6-10ddb1d4c3d5": [
+    "CHANGES.md"
+  ],
+  "f91458ec-2adb-11e6-a3a6-10ddb1d4c3d5": [
+    "CONTRIBUTORS.md"
+  ],
+  "06bdda1e-bb86-11e6-9740-843835579daa": [
+    "LICENSE",
+    "LICENSE.devel"
+  ],
+  "07648a72-5b7a-11e8-af7e-10ddb1d4c3d5": [
+    "compiler/AST/AggregateType.cpp"
+  ],
+  "d774177c-244d-11e9-b712-843835579daa": [
+    "compiler/AST/AstDump.cpp"
+  ],
+  "02edde22-1d0a-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/AST/AstDumpToHtml.cpp"
+  ],
+  "3f2e197e-1d0a-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/AST/AstToText.cpp"
+  ],
+  "77dd4c52-3b13-11e9-b712-843835579daa": [
+    "compiler/AST/CatchStmt.cpp"
+  ],
+  "fb18cb3c-244d-11e9-b712-843835579daa": [
+    "compiler/AST/FnSymbol.cpp"
+  ],
+  "641fb78e-4110-11e8-af7e-10ddb1d4c3d5": [
+    "compiler/AST/ForallStmt.cpp"
+  ],
+  "d551f4f6-d1a9-11e8-954d-10ddb1d4c3d5": [
+    "compiler/AST/LoopExpr.cpp"
+  ],
+  "93ca6f88-fd34-11e9-98b5-10ddb1d4c3d5": [
+    "compiler/AST/astutil.cpp"
+  ],
+  "77ab2706-1d0a-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/AST/baseAST.cpp"
+  ],
+  "ce578c98-1d0a-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/AST/bb.cpp"
+  ],
+  "f4c93d2c-1d0a-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/AST/build.cpp"
+  ],
+  "7db5465c-ad3f-11e6-91b8-10ddb1d4c3d5": [
+    "compiler/AST/expr.cpp",
+    "compiler/codegen/expr.cpp"
+  ],
+  "ad56c506-780b-11e7-88ba-10ddb1d4c3d5": [
+    "compiler/AST/foralls.cpp"
+  ],
+  "5000dfe8-62e2-11eb-a43d-6f93f4244f4b": [
+    "compiler/AST/interfaces.cpp"
+  ],
+  "e2d7df7c-1d0c-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/AST/iterator.cpp"
+  ],
+  "0846cc78-1d0d-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/AST/stmt.cpp"
+  ],
+  "80fcfaee-ad3f-11e6-91b8-10ddb1d4c3d5": [
+    "compiler/AST/symbol.cpp",
+    "compiler/codegen/symbol.cpp"
+  ],
+  "b4bc8e62-253c-11ea-948f-10ddb1d4c3d5": [
+    "compiler/AST/type.cpp"
+  ],
+  "c0913c10-9315-11e9-a422-10ddb1d4c3d5": [
+    "compiler/AST/view.cpp"
+  ],
+  "0196aa72-62e1-11e7-88ba-10ddb1d4c3d5": [
+    "compiler/AST/wellknown.cpp"
+  ],
+  "9fb63076-1d80-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/DIRS"
+  ],
+  "9e24069c-1d09-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/adt/bitVec.cpp"
+  ],
+  "b5dc0974-1d09-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/adt/vec.cpp"
+  ],
+  "661b62ac-1d7e-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/backend/beautify.cpp"
+  ],
+  "75f1ecaa-1d83-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/codegen/codegen.cpp"
+  ],
+  "6de8d7ca-9c7b-11e8-b963-10ddb1d4c3d5": [
+    "compiler/codegen/library.cpp"
+  ],
+  "de897ffc-9315-11e9-a422-10ddb1d4c3d5": [
+    "compiler/codegen/mli.cpp"
+  ],
+  "d20c5afc-1d7e-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/ifa/num.cpp"
+  ],
+  "82c1d8e6-e581-11e8-954d-10ddb1d4c3d5": [
+    "compiler/include/baseAST.h"
+  ],
+  "081f50fc-91e8-11e7-b3f1-10ddb1d4c3d5": [
+    "compiler/include/clangBuiltinsWrappedSet.h",
+    "runtime/include/llvm/chapel_libc_wrapper.h",
+    "runtime/include/llvm/clang_builtins_wrapper.h"
+  ],
+  "57076cb0-1d7f-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/include/codegen.h"
+  ],
+  "12c3b64e-0c12-11e7-980e-10ddb1d4c3d5": [
+    "compiler/include/countTokens.h",
+    "compiler/parser/countTokens.cpp"
+  ],
+  "dbbd3434-ca86-11e7-8b8c-10ddb1d4c3d5": [
+    "compiler/include/expr.h"
+  ],
+  "9de1a12a-8644-11e8-ad82-10ddb1d4c3d5": [
+    "compiler/include/files.h"
+  ],
+  "b9f0367c-1d7f-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/include/list.h"
+  ],
+  "59041530-69c5-11e6-90f0-10ddb1d4c3d5": [
+    "compiler/include/llvmDebug.h"
+  ],
+  "de79f068-ca86-11e7-8b8c-10ddb1d4c3d5": [
+    "compiler/include/llvmVer.h"
+  ],
+  "dab54cf8-1d7f-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/include/log.h"
+  ],
+  "e4db0dbc-1d7f-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/include/map.h"
+  ],
+  "8e2d4094-e581-11e8-954d-10ddb1d4c3d5": [
+    "compiler/include/misc.h"
+  ],
+  "ed3f86d6-1d7f-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/include/parser.h"
+  ],
+  "a8be55e8-7b38-11eb-91c9-15da80cfac4b": [
+    "compiler/include/resolution.h"
+  ],
+  "7e01f6c6-4110-11e8-af7e-10ddb1d4c3d5": [
+    "compiler/include/symbol.h"
+  ],
+  "f765ca54-d1a9-11e8-954d-10ddb1d4c3d5": [
+    "compiler/llvm/clangUtil.cpp"
+  ],
+  "27d3b052-d1aa-11e8-954d-10ddb1d4c3d5": [
+    "compiler/llvm/llvmAggregateGlobalOps.cpp"
+  ],
+  "2c837c22-d1aa-11e8-954d-10ddb1d4c3d5": [
+    "compiler/llvm/llvmDebug.cpp"
+  ],
+  "1de0f71c-d1aa-11e8-954d-10ddb1d4c3d5": [
+    "compiler/llvm/llvmGlobalToWide.cpp"
+  ],
+  "253a6d0e-d1aa-11e8-954d-10ddb1d4c3d5": [
+    "compiler/llvm/llvmUtil.cpp"
+  ],
+  "5a669f74-1d80-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/main/arg.cpp"
+  ],
+  "613bf236-1d80-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/main/commonFlags.cpp",
+    "compiler/main/commonFlags.h",
+    "compiler/main/driver.cpp"
+  ],
+  "a52d3b2e-8644-11e8-ad82-10ddb1d4c3d5": [
+    "compiler/main/docsDriver.cpp"
+  ],
+  "4171383e-1d81-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/optimizations/copyPropagation.cpp"
+  ],
+  "7356b18e-62e2-11eb-a43d-6f93f4244f4b": [
+    "compiler/optimizations/forallOptimizations.cpp"
+  ],
+  "fcd32732-b78b-11e6-9740-843835579daa": [
+    "compiler/optimizations/inferConstRefs.cpp"
+  ],
+  "753d1002-1d81-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/optimizations/liveVariableAnalysis.cpp"
+  ],
+  "86988e94-1d81-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/optimizations/loopInvariantCodeMotion.cpp"
+  ],
+  "eb10d276-d1a9-11e8-954d-10ddb1d4c3d5": [
+    "compiler/optimizations/noAliasSets.cpp"
+  ],
+  "ee09a666-09c3-11eb-b2e8-10ddb1d4c3d5": [
+    "compiler/optimizations/preNormalizeOptimizations.cpp"
+  ],
+  "26cda7c8-69e9-11e7-88ba-10ddb1d4c3d5": [
+    "compiler/optimizations/refPropagation.cpp"
+  ],
+  "93e7af94-1d81-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/optimizations/remoteValueForwarding.cpp"
+  ],
+  "965c5d6a-1d81-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/optimizations/removeUnnecessaryAutoCopyCalls.cpp"
+  ],
+  "2b3e60a0-7ee3-11e6-ab60-00a0cc3ee663": [
+    "compiler/optimizations/replaceArrayAccessesWithRefTemps.cpp"
+  ],
+  "2d19bb3e-1d83-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/parser/parser.cpp"
+  ],
+  "6379ee24-1d83-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/passes/addInitGuards.cpp"
+  ],
+  "4bd54270-d6dc-11ea-8acb-843835579daa": [
+    "compiler/passes/checkResolved.cpp"
+  ],
+  "732b6fa0-1d83-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/passes/cleanup.cpp"
+  ],
+  "98c778e4-1d83-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/passes/docs.cpp"
+  ],
+  "9c85c382-1d83-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/passes/expandExternArrayCalls.cpp"
+  ],
+  "a4542298-1d83-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/passes/externCResolve.cpp"
+  ],
+  "2c37162c-1a84-11e7-980e-10ddb1d4c3d5": [
+    "compiler/passes/initializerRules.cpp"
+  ],
+  "e5dbc400-1d83-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/passes/normalize.cpp"
+  ],
+  "0fdc1a0c-1d84-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/passes/scopeResolve.cpp"
+  ],
+  "56f705f2-5f64-11ea-b972-843835579daa": [
+    "compiler/passes/splitInit.cpp"
+  ],
+  "0b4871a8-5b7a-11e8-af7e-10ddb1d4c3d5": [
+    "compiler/resolution/AutoDestroyScope.cpp"
+  ],
+  "a4c82866-83ce-11e7-ad1f-10ddb1d4c3d5": [
+    "compiler/resolution/ResolutionCandidate.cpp"
+  ],
+  "7e73d6b2-1d84-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/resolution/callDestructors.cpp"
+  ],
+  "208f1cd2-0c12-11e7-980e-10ddb1d4c3d5": [
+    "compiler/resolution/cullOverReferences.cpp"
+  ],
+  "d7761e16-36bd-11e7-96a7-10ddb1d4c3d5": [
+    "compiler/resolution/expandVarArgs.cpp"
+  ],
+  "04f188f0-d205-11e9-a3be-843835579daa": [
+    "compiler/resolution/fixupExports.cpp"
+  ],
+  "8983f3ac-1d84-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/resolution/functionResolution.cpp"
+  ],
+  "4f065520-1d85-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/resolution/implementForallIntents.cpp"
+  ],
+  "5bfd40ae-ca86-11e7-8b8c-10ddb1d4c3d5": [
+    "compiler/resolution/implementForallIntents2.cpp"
+  ],
+  "d5351900-d1c0-11e8-954d-10ddb1d4c3d5": [
+    "compiler/resolution/initializerResolution.cpp"
+  ],
+  "94331c44-62e2-11eb-a43d-6f93f4244f4b": [
+    "compiler/resolution/interfaceResolution.cpp"
+  ],
+  "1873381c-2cbe-11e8-aa67-10ddb1d4c3d5": [
+    "compiler/resolution/lifetime.cpp"
+  ],
+  "9fb5188e-4110-11e8-af7e-10ddb1d4c3d5": [
+    "compiler/resolution/lowerForalls.cpp"
+  ],
+  "803ee256-1d85-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/resolution/lowerIterators.cpp"
+  ],
+  "3bdbc4ea-d1aa-11e8-954d-10ddb1d4c3d5": [
+    "compiler/resolution/nilChecking.cpp"
+  ],
+  "e44e8ee8-2015-11e7-980e-10ddb1d4c3d5": [
+    "compiler/resolution/postFold.cpp"
+  ],
+  "ebe3ea10-ca86-11e7-8b8c-10ddb1d4c3d5": [
+    "compiler/resolution/preFold.cpp"
+  ],
+  "f203530c-8644-11e8-ad82-10ddb1d4c3d5": [
+    "compiler/resolution/tuples.cpp"
+  ],
+  "e95fef8a-2015-11e7-980e-10ddb1d4c3d5": [
+    "compiler/resolution/virtualDispatch.cpp"
+  ],
+  "01f4f6a8-2016-11e7-980e-10ddb1d4c3d5": [
+    "compiler/resolution/visibleFunctions.cpp"
+  ],
+  "c6d25ce8-a183-11e6-91b8-10ddb1d4c3d5": [
+    "compiler/resolution/wrappers.cpp"
+  ],
+  "390fbcc4-4e3c-11e6-907f-843835579daa": [
+    "compiler/util/files.cpp"
+  ],
+  "61835ab6-5f64-11ea-b972-843835579daa": [
+    "compiler/util/misc.cpp"
+  ],
+  "9627af8c-e581-11e8-954d-10ddb1d4c3d5": [
+    "compiler/util/stringutil.cpp"
+  ],
+  "97641a68-1e44-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/rst/developer/bestPractices/CompilerDebugging.rst"
+  ],
+  "21b197c2-1e45-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/rst/developer/bestPractices/ContributorInfo.rst"
+  ],
+  "f50f46a0-2e9e-11eb-adc5-acbc32c4f96b": [
+    "doc/rst/developer/bestPractices/DCO.rst"
+  ],
+  "b1eb2c32-1e44-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/rst/developer/bestPractices/Potpourri.rst"
+  ],
+  "7b9a1e46-8ab8-11e6-b915-843835579daa": [
+    "doc/rst/developer/bestPractices/README.rst"
+  ],
+  "53b60e8e-d6dc-11ea-8acb-843835579daa": [
+    "doc/rst/developer/bestPractices/Sanitizers.rst"
+  ],
+  "b557a264-8ab5-11e6-b915-843835579daa": [
+    "doc/rst/developer/bestPractices/SpellChecking.rst"
+  ],
+  "a0e68d14-3a21-11e8-af7e-10ddb1d4c3d5": [
+    "doc/rst/developer/bestPractices/TestSystem.rst"
+  ],
+  "c05642c4-62e2-11eb-a43d-6f93f4244f4b": [
+    "doc/rst/developer/bestPractices/git.rst"
+  ],
+  "72774460-69c5-11e6-90f0-10ddb1d4c3d5": [
+    "doc/rst/developer/chips/15.rst"
+  ],
+  "0cdb833a-fd7e-11e6-980e-10ddb1d4c3d5": [
+    "doc/rst/developer/chips/17.rst"
+  ],
+  "c16e02ce-36bc-11e7-96a7-10ddb1d4c3d5": [
+    "doc/rst/developer/chips/19.rst"
+  ],
+  "dde58592-2ac6-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/rst/developer/chips/2.rst"
+  ],
+  "554af092-652a-11e7-88ba-10ddb1d4c3d5": [
+    "doc/rst/developer/chips/22.rst"
+  ],
+  "8ac11bda-2ac4-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/rst/developer/chips/inactive/11.rst"
+  ],
+  "fdcdfd40-2e9e-11eb-adc5-acbc32c4f96b": [
+    "doc/rst/developer/chips/inactive/18.rst"
+  ],
+  "45fe4b8e-62e1-11e7-88ba-10ddb1d4c3d5": [
+    "doc/rst/developer/chips/inactive/21.rst"
+  ],
+  "1a4b12ba-2ac5-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/rst/developer/chips/inactive/3.rst"
+  ],
+  "2ae96310-2ac5-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/rst/developer/chips/inactive/4.rst"
+  ],
+  "5ee74a88-2ac5-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/rst/developer/chips/inactive/5.rst"
+  ],
+  "e13e71b8-2ac6-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/rst/developer/chips/inactive/9.rst"
+  ],
+  "6eb99dbc-1e45-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/rst/developer/compilerOverview/compiler.tex"
+  ],
+  "396f9ef0-1e44-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/rst/developer/contributorAgreements/README.md"
+  ],
+  "63b96a22-1e46-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/rst/developer/hdfs_and_chapel/API.tex",
+    "doc/rst/developer/hdfs_and_chapel/examples.tex",
+    "modules/packages/HDFSiterator.chpl"
+  ],
+  "d819ca0c-1e45-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/rst/developer/hdfs_and_chapel/intro.tex"
+  ],
+  "d667ed16-fd34-11e9-98b5-10ddb1d4c3d5": [
+    "doc/rst/language/spec.rst"
+  ],
+  "5dfff152-2952-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/rst/language/spec/README"
+  ],
+  "7c62caa8-253d-11ea-948f-10ddb1d4c3d5": [
+    "doc/rst/language/spec/arrays.rst"
+  ],
+  "4d4f76a8-253d-11ea-948f-10ddb1d4c3d5": [
+    "doc/rst/language/spec/domains.rst"
+  ],
+  "836b6940-253d-11ea-948f-10ddb1d4c3d5": [
+    "doc/rst/language/spec/expressions.rst"
+  ],
+  "7717bf22-253d-11ea-948f-10ddb1d4c3d5": [
+    "doc/rst/language/spec/interoperability.rst"
+  ],
+  "117a9e8c-253d-11ea-948f-10ddb1d4c3d5": [
+    "doc/rst/language/spec/modules.rst"
+  ],
+  "61e57b76-253d-11ea-948f-10ddb1d4c3d5": [
+    "doc/rst/language/spec/procedures.rst"
+  ],
+  "1c00d998-253d-11ea-948f-10ddb1d4c3d5": [
+    "doc/rst/language/spec/ranges.rst"
+  ],
+  "1381859c-253d-11ea-948f-10ddb1d4c3d5": [
+    "doc/rst/language/spec/statements.rst"
+  ],
+  "466a4d0e-253d-11ea-948f-10ddb1d4c3d5": [
+    "doc/rst/language/spec/tuples.rst"
+  ],
+  "3916e364-dfc3-11e6-93be-10ddb1d4c3d5": [
+    "doc/rst/platforms/aws.rst"
+  ],
+  "b89daf54-62e2-11eb-a43d-6f93f4244f4b": [
+    "doc/rst/platforms/cray.rst"
+  ],
+  "a78ba0d8-8220-11e6-b915-843835579daa": [
+    "doc/rst/technotes/auxIO.rst"
+  ],
+  "e72b8a7e-1e47-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/rst/technotes/dsi.rst"
+  ],
+  "8a9f313e-1e47-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/rst/technotes/extern.rst"
+  ],
+  "f824f208-a3e4-11ea-8acb-843835579daa": [
+    "doc/rst/technotes/globalvars.rst"
+  ],
+  "22cf2998-09c4-11eb-b2e8-10ddb1d4c3d5": [
+    "doc/rst/technotes/index.rst"
+  ],
+  "5f5c9598-1e47-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/rst/technotes/libraries.rst"
+  ],
+  "e8ed417a-624d-11e9-b712-843835579daa": [
+    "doc/rst/technotes/lifetimeChecking.rst"
+  ],
+  "2393b51a-feca-11ea-b2e8-10ddb1d4c3d5": [
+    "doc/rst/technotes/protoGenCodeGuide.rst"
+  ],
+  "cd80a742-ad6d-11e7-a204-10ddb1d4c3d5": [
+    "doc/rst/technotes/reduceIntents.rst"
+  ],
+  "d45846e8-a1b9-11e7-a204-10ddb1d4c3d5": [
+    "doc/rst/tools/c2chapel/c2chapel.rst"
+  ],
+  "a892ed32-1e49-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/rst/tools/chpldoc/chpldoc.rst"
+  ],
+  "f81d91a2-8aba-11e7-b3f1-10ddb1d4c3d5": [
+    "doc/rst/tools/mason/mason.rst"
+  ],
+  "50034a8e-feca-11ea-b2e8-10ddb1d4c3d5": [
+    "doc/rst/tools/protoc-gen-chpl/protoc-gen-chpl.rst"
+  ],
+  "7ada2798-4027-11e6-907f-843835579daa": [
+    "doc/rst/users-guide/base/forloops.rst"
+  ],
+  "7e15c372-4027-11e6-907f-843835579daa": [
+    "doc/rst/users-guide/index.rst"
+  ],
+  "55c3384c-1e48-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/rst/usingchapel/executing.rst"
+  ],
+  "c32754ea-8068-11e6-ab60-00a0cc3ee663": [
+    "doc/rst/usingchapel/multilocale.rst"
+  ],
+  "cd28f34a-a1b9-11e7-a204-10ddb1d4c3d5": [
+    "doc/rst/usingchapel/prereqs.rst"
+  ],
+  "d741a952-4110-11e8-af7e-10ddb1d4c3d5": [
+    "man/chpl.rst"
+  ],
+  "1c692a6a-2add-11e6-a3a6-10ddb1d4c3d5": [
+    "man/chpldoc.rst"
+  ],
+  "2c94c1ec-2add-11e6-a3a6-10ddb1d4c3d5": [
+    "man/confchpl.rst"
+  ],
+  "28bf43b2-2add-11e6-a3a6-10ddb1d4c3d5": [
+    "man/confchpldoc.rst"
+  ],
+  "610c0354-1f11-11e6-a3a6-10ddb1d4c3d5": [
+    "modules/dists/BlockCycDist.chpl",
+    "modules/dists/DSIUtil.chpl"
+  ],
+  "e22d9978-8645-11e8-ad82-10ddb1d4c3d5": [
+    "modules/dists/BlockDist.chpl"
+  ],
+  "f705d2b6-1f0e-11e6-a3a6-10ddb1d4c3d5": [
+    "modules/dists/CyclicDist.chpl"
+  ],
+  "854734a2-1f0f-11e6-a3a6-10ddb1d4c3d5": [
+    "modules/dists/DimensionalDist2D.chpl"
+  ],
+  "3efba760-1f11-11e6-a3a6-10ddb1d4c3d5": [
+    "modules/dists/ReplicatedDist.chpl"
+  ],
+  "6c8e8208-1f0f-11e6-a3a6-10ddb1d4c3d5": [
+    "modules/dists/SparseBlockDist.chpl"
+  ],
+  "edb63ad0-0c15-11e7-980e-10ddb1d4c3d5": [
+    "modules/dists/StencilDist.chpl"
+  ],
+  "ab3bbeb6-1f10-11e6-a3a6-10ddb1d4c3d5": [
+    "modules/dists/dims/BlockCycDim.chpl"
+  ],
+  "37795eb0-1f11-11e6-a3a6-10ddb1d4c3d5": [
+    "modules/dists/dims/BlockDim.chpl"
+  ],
+  "347ba0d8-1f11-11e6-a3a6-10ddb1d4c3d5": [
+    "modules/dists/dims/ReplicatedDim.chpl"
+  ],
+  "0e29860c-1a83-11e7-980e-10ddb1d4c3d5": [
+    "modules/internal/ArrayViewRankChange.chpl"
+  ],
+  "dad68368-9316-11e9-a422-10ddb1d4c3d5": [
+    "modules/internal/ArrayViewSlice.chpl"
+  ],
+  "c643ceac-1f14-11e6-a3a6-10ddb1d4c3d5": [
+    "modules/internal/AtomicsCommon.chpl"
+  ],
+  "4d6baa58-bd82-11e9-8464-10ddb1d4c3d5": [
+    "modules/internal/Bytes.chpl"
+  ],
+  "b35c0a0c-cac9-11e9-8464-10ddb1d4c3d5": [
+    "modules/internal/BytesStringCommon.chpl"
+  ],
+  "5010068a-0c15-11e7-980e-10ddb1d4c3d5": [
+    "modules/internal/ChapelArray.chpl"
+  ],
+  "69d46c90-62e3-11eb-a43d-6f93f4244f4b": [
+    "modules/internal/ChapelAutoAggregation.chpl"
+  ],
+  "ce35097e-8645-11e8-ad82-10ddb1d4c3d5": [
+    "modules/internal/ChapelBase.chpl"
+  ],
+  "5853ce2a-7b39-11eb-91c9-15da80cfac4b": [
+    "modules/internal/ChapelDistribution.chpl"
+  ],
+  "6f2ab8ea-83ce-11e7-ad1f-10ddb1d4c3d5": [
+    "modules/internal/ChapelError.chpl"
+  ],
+  "0ad18466-aac5-11ea-8acb-843835579daa": [
+    "modules/internal/ChapelHashing.chpl"
+  ],
+  "dc718a6c-ab57-11e8-b963-10ddb1d4c3d5": [
+    "modules/internal/ChapelIteratorSupport.chpl"
+  ],
+  "be179ce4-253d-11ea-948f-10ddb1d4c3d5": [
+    "modules/internal/ChapelLocale.chpl"
+  ],
+  "47cb0e3c-1f14-11e6-a3a6-10ddb1d4c3d5": [
+    "modules/internal/ChapelRange.chpl"
+  ],
+  "101dbad0-1f18-11e6-a3a6-10ddb1d4c3d5": [
+    "modules/internal/ChapelReduce.chpl"
+  ],
+  "b4905dc4-5f88-11e6-90f0-10ddb1d4c3d5": [
+    "modules/internal/ChapelSyncvar.chpl"
+  ],
+  "810b7fd2-1f15-11e6-a3a6-10ddb1d4c3d5": [
+    "modules/internal/DefaultAssociative.chpl"
+  ],
+  "c3b7f950-1f15-11e6-a3a6-10ddb1d4c3d5": [
+    "modules/internal/DefaultRectangular.chpl"
+  ],
+  "c3e70026-8645-11e8-ad82-10ddb1d4c3d5": [
+    "modules/internal/ExternalArray.chpl"
+  ],
+  "5e553c42-d1c1-11e8-954d-10ddb1d4c3d5": [
+    "modules/internal/OwnedObject.chpl"
+  ],
+  "e6ecf3ae-9c7b-11e8-b963-10ddb1d4c3d5": [
+    "modules/internal/String.chpl"
+  ],
+  "1234061c-2e9f-11eb-adc5-acbc32c4f96b": [
+    "modules/internal/localeModels/gpu/LocaleModel.chpl"
+  ],
+  "d635d1bc-4aae-11e8-af7e-10ddb1d4c3d5": [
+    "modules/internal/tasktable/on/ChapelTaskTable.chpl"
+  ],
+  "a6c246da-cac9-11e9-8464-10ddb1d4c3d5": [
+    "modules/packages/AtomicObjects.chpl"
+  ],
+  "71a525f2-43ff-11e6-907f-843835579daa": [
+    "modules/packages/BLAS.chpl"
+  ],
+  "ebcca246-1f2f-11e6-a3a6-10ddb1d4c3d5": [
+    "modules/packages/Buffers.chpl"
+  ],
+  "527abebe-9db6-11e7-a204-10ddb1d4c3d5": [
+    "modules/packages/Crypto.chpl"
+  ],
+  "d91ef3d6-ab57-11e8-b963-10ddb1d4c3d5": [
+    "modules/packages/CryptoHandlers/openssl_c_support.h"
+  ],
+  "2127a88e-1f1a-11e6-a3a6-10ddb1d4c3d5": [
+    "modules/packages/Curl.chpl"
+  ],
+  "733029d2-8aba-11e7-b3f1-10ddb1d4c3d5": [
+    "modules/packages/DistributedBag.chpl"
+  ],
+  "838b0068-8aba-11e7-b3f1-10ddb1d4c3d5": [
+    "modules/packages/DistributedDeque.chpl"
+  ],
+  "e9a3e440-9db7-11e7-a204-10ddb1d4c3d5": [
+    "modules/packages/DistributedIters.chpl"
+  ],
+  "95e5e682-cac9-11e9-8464-10ddb1d4c3d5": [
+    "modules/packages/EpochManager.chpl"
+  ],
+  "f8a68c5e-1f19-11e6-a3a6-10ddb1d4c3d5": [
+    "modules/packages/FFTW.chpl"
+  ],
+  "cc606fa4-fd7e-11e6-980e-10ddb1d4c3d5": [
+    "modules/packages/Futures.chpl"
+  ],
+  "95bdbfa8-9316-11e9-a422-10ddb1d4c3d5": [
+    "modules/packages/HDF5Helper/hdf5_helper.h"
+  ],
+  "6cd27e0c-7b82-11e6-ab60-00a0cc3ee663": [
+    "modules/packages/HDFS.chpl"
+  ],
+  "40d00fe6-1a82-11e7-980e-10ddb1d4c3d5": [
+    "modules/packages/LinearAlgebra.chpl"
+  ],
+  "f8a06e7e-1f18-11e6-a3a6-10ddb1d4c3d5": [
+    "modules/packages/LinearAlgebraJama.chpl"
+  ],
+  "a29eae9a-cac9-11e9-8464-10ddb1d4c3d5": [
+    "modules/packages/LockFreeQueue.chpl"
+  ],
+  "69fe0f48-1f2a-11e6-a3a6-10ddb1d4c3d5": [
+    "modules/packages/MPI.chpl"
+  ],
+  "3a59da00-3376-11e6-a3a6-10ddb1d4c3d5": [
+    "modules/packages/MatrixMarket.chpl"
+  ],
+  "10db92e8-fecb-11ea-b2e8-10ddb1d4c3d5": [
+    "modules/packages/ProtobufProtocolSupport.chpl"
+  ],
+  "c0ac0568-bd81-11e9-8464-10ddb1d4c3d5": [
+    "modules/packages/Sort.chpl"
+  ],
+  "3b5ef8a0-780c-11e7-88ba-10ddb1d4c3d5": [
+    "modules/packages/TOML.chpl"
+  ],
+  "558c0f58-cac9-11e9-8464-10ddb1d4c3d5": [
+    "modules/packages/UnitTest.chpl"
+  ],
+  "ac12c756-4d89-11e6-907f-843835579daa": [
+    "modules/packages/VisualDebug.chpl",
+    "runtime/include/chpl-visual-debug.h",
+    "runtime/src/chpl-visual-debug.c"
+  ],
+  "24a5f32a-792f-11e6-807a-843835579daa": [
+    "modules/packages/ZMQ.chpl"
+  ],
+  "b6c10b42-9316-11e9-a422-10ddb1d4c3d5": [
+    "modules/packages/ZMQHelper/zmq_helper.c"
+  ],
+  "076e82b2-624e-11e9-b712-843835579daa": [
+    "modules/packages/ZMQHelper/zmq_helper.h"
+  ],
+  "c0254978-0c13-11e7-980e-10ddb1d4c3d5": [
+    "modules/standard/DateTime.chpl"
+  ],
+  "fbc85e3e-1f2e-11e6-a3a6-10ddb1d4c3d5": [
+    "modules/standard/FileSystem.chpl"
+  ],
+  "23858b0c-5b7a-11e8-af7e-10ddb1d4c3d5": [
+    "modules/standard/GMP.chpl"
+  ],
+  "1ad5560e-5b7a-11e8-af7e-10ddb1d4c3d5": [
+    "modules/standard/GMPHelper/chplgmp.h"
+  ],
+  "55301aa8-1f2e-11e6-a3a6-10ddb1d4c3d5": [
+    "modules/standard/IO.chpl"
+  ],
+  "b6f2f694-cac9-11e9-8464-10ddb1d4c3d5": [
+    "modules/standard/List.chpl"
+  ],
+  "5c43053e-9317-11e9-a422-10ddb1d4c3d5": [
+    "modules/standard/Lists.chpl"
+  ],
+  "7de3ce6c-3f64-11e6-907f-843835579daa": [
+    "modules/standard/Math.chpl"
+  ],
+  "c51f1070-3a21-11e8-af7e-10ddb1d4c3d5": [
+    "modules/standard/Path.chpl"
+  ],
+  "6ba10a44-1f2f-11e6-a3a6-10ddb1d4c3d5": [
+    "modules/standard/Random.chpl"
+  ],
+  "f8d11ee0-1f2f-11e6-a3a6-10ddb1d4c3d5": [
+    "modules/standard/Regexp.chpl"
+  ],
+  "d41572f2-1f2c-11e6-a3a6-10ddb1d4c3d5": [
+    "modules/standard/SysBasic.chpl"
+  ],
+  "f5a43844-9c7b-11e8-b963-10ddb1d4c3d5": [
+    "modules/standard/Time.chpl"
+  ],
+  "e9347814-1f30-11e6-a3a6-10ddb1d4c3d5": [
+    "modules/standard/Types.chpl"
+  ],
+  "7238a240-9317-11e9-a422-10ddb1d4c3d5": [
+    "runtime/etc/src/mli/common_code.c"
+  ],
+  "6df7b2de-9317-11e9-a422-10ddb1d4c3d5": [
+    "runtime/etc/src/mli/server_runtime.c"
+  ],
+  "011204e0-1fb5-11e6-a3a6-10ddb1d4c3d5": [
+    "runtime/include/chpl-bitops.h"
+  ],
+  "af0a00d4-244e-11e9-b712-843835579daa": [
+    "runtime/include/chpl-comm-diags.h"
+  ],
+  "ca5cd802-68b8-11ea-b972-843835579daa": [
+    "runtime/include/chpl-comm.h"
+  ],
+  "ceec8a70-68b8-11ea-b972-843835579daa": [
+    "runtime/include/chpl-mem-array.h"
+  ],
+  "1ae55fde-1fb5-11e6-a3a6-10ddb1d4c3d5": [
+    "runtime/include/chpl-wide-ptr-fns.h"
+  ],
+  "61f7efb8-bd82-11e9-8464-10ddb1d4c3d5": [
+    "runtime/include/comm/ofi/chpl-comm-task-decls.h"
+  ],
+  "d18d2f28-68b8-11ea-b972-843835579daa": [
+    "runtime/include/comm/ugni/chpl-comm-impl.h"
+  ],
+  "73aae312-d1c1-11e8-954d-10ddb1d4c3d5": [
+    "runtime/include/comm/ugni/comm-ugni-heap-pages.h"
+  ],
+  "83d35d38-d6dc-11ea-8acb-843835579daa": [
+    "runtime/include/mem/jemalloc/chpl-mem-impl.h"
+  ],
+  "cedb8f86-1fb5-11e6-a3a6-10ddb1d4c3d5": [
+    "runtime/include/qio/sys.h"
+  ],
+  "0ebaef5a-2409-11e6-a3a6-10ddb1d4c3d5": [
+    "runtime/src/chpl-cache.c"
+  ],
+  "9410539a-9317-11e9-a422-10ddb1d4c3d5": [
+    "runtime/src/chpl-launcher-common.c"
+  ],
+  "8d9c0040-2407-11e6-a3a6-10ddb1d4c3d5": [
+    "runtime/src/chpl-timers.c"
+  ],
+  "726887c4-bc39-11e6-9740-843835579daa": [
+    "runtime/src/chplsys.c"
+  ],
+  "847163aa-bc39-11e6-9740-843835579daa": [
+    "runtime/src/comm/gasnet/comm-gasnet.c"
+  ],
+  "4d38d4da-fecb-11ea-b2e8-10ddb1d4c3d5": [
+    "runtime/src/comm/ofi/README.md"
+  ],
+  "f2c0b4da-07e9-11e8-bed3-10ddb1d4c3d5": [
+    "runtime/src/comm/ofi/comm-ofi-internal.h",
+    "runtime/src/comm/ofi/comm-ofi.c"
+  ],
+  "91c58b86-d1c1-11e8-954d-10ddb1d4c3d5": [
+    "runtime/src/comm/ofi/comm-ofi-oob-pmi.c"
+  ],
+  "38c20924-fd35-11e9-98b5-10ddb1d4c3d5": [
+    "runtime/src/comm/ofi/comm-ofi-oob-slurm-pmi2.c"
+  ],
+  "c09c5496-ff1f-11e7-bed3-10ddb1d4c3d5": [
+    "runtime/src/comm/ugni/comm-ugni-launch.c"
+  ],
+  "aa0e6b5c-0c12-11e7-980e-10ddb1d4c3d5": [
+    "runtime/src/comm/ugni/comm-ugni.c"
+  ],
+  "31db04f6-fecb-11ea-b2e8-10ddb1d4c3d5": [
+    "runtime/src/error.c"
+  ],
+  "e4e38696-e581-11e8-954d-10ddb1d4c3d5": [
+    "runtime/src/launch/amudprun/launch-amudprun.c"
+  ],
+  "a37c5ce4-f6a4-11e8-8d7e-10ddb1d4c3d5": [
+    "runtime/src/launch/gasnetrun_common/gasnetrun_common.h"
+  ],
+  "622c50fc-7b39-11eb-91c9-15da80cfac4b": [
+    "runtime/src/launch/lsf-gasnetrun_ibv/launch-lsf-gasnetrun_ibv.c"
+  ],
+  "b7c60ac2-2403-11e6-a3a6-10ddb1d4c3d5": [
+    "runtime/src/launch/mpirun/launch-mpirun.c"
+  ],
+  "b5c2175e-244e-11e9-b712-843835579daa": [
+    "runtime/src/launch/mpirun4ofi/launch-mpirun4ofi.c"
+  ],
+  "f598bef8-5f64-11ea-b972-843835579daa": [
+    "runtime/src/launch/pals/launch-pals.c"
+  ],
+  "c10852de-5f64-11ea-b972-843835579daa": [
+    "runtime/src/launch/pals/pals-utils.c"
+  ],
+  "af6e03d4-2403-11e6-a3a6-10ddb1d4c3d5": [
+    "runtime/src/launch/pbs-aprun/launch-pbs-aprun.c"
+  ],
+  "d56c6ea6-68b8-11ea-b972-843835579daa": [
+    "runtime/src/launch/slurm-srun/launch-slurm-srun.c"
+  ],
+  "c756642a-c5e5-11e7-82fe-10ddb1d4c3d5": [
+    "runtime/src/launch/smp/launch-smp.c"
+  ],
+  "88143c78-d6dc-11ea-8acb-843835579daa": [
+    "runtime/src/mem/jemalloc/mem-jemalloc.c"
+  ],
+  "a2b5a7e0-2404-11e6-a3a6-10ddb1d4c3d5": [
+    "runtime/src/qio/auxFilesys/curl/qio_plugin_curl.c"
+  ],
+  "c04de3c6-2404-11e6-a3a6-10ddb1d4c3d5": [
+    "runtime/src/qio/auxFilesys/hdfs/qio_plugin_hdfs.c"
+  ],
+  "3d6b3228-2405-11e6-a3a6-10ddb1d4c3d5": [
+    "runtime/src/qio/qio.c"
+  ],
+  "eafb2e70-2405-11e6-a3a6-10ddb1d4c3d5": [
+    "runtime/src/qio/qio_formatted.c"
+  ],
+  "74ec0768-2405-11e6-a3a6-10ddb1d4c3d5": [
+    "runtime/src/qio/sys.c"
+  ],
+  "e2b2b296-8068-11e6-ab60-00a0cc3ee663": [
+    "runtime/src/tasks/massivethreads/tasks-massivethreads.c"
+  ],
+  "75ed892c-d1c1-11e8-954d-10ddb1d4c3d5": [
+    "runtime/src/tasks/qthreads/tasks-qthreads.c"
+  ],
+  "c9f78ff4-2403-11e6-a3a6-10ddb1d4c3d5": [
+    "runtime/src/threads/pthreads/threads-pthreads.c"
+  ],
+  "203d644e-8648-11e8-ad82-10ddb1d4c3d5": [
+    "runtime/src/topo/hwloc/topo-hwloc.c"
+  ],
+  "6d1ff4ac-2952-11e6-a3a6-10ddb1d4c3d5": [
+    "spec/Arrays.tex"
+  ],
+  "3277f5dc-4e3e-11e6-907f-843835579daa": [
+    "spec/Classes.tex"
+  ],
+  "b74a5b44-2952-11e6-a3a6-10ddb1d4c3d5": [
+    "spec/Domains.tex"
+  ],
+  "cd92e998-2952-11e6-a3a6-10ddb1d4c3d5": [
+    "spec/Expressions.tex"
+  ],
+  "e1d71c80-2952-11e6-a3a6-10ddb1d4c3d5": [
+    "spec/Interoperation.tex"
+  ],
+  "f72f3d38-2952-11e6-a3a6-10ddb1d4c3d5": [
+    "spec/Memory_Consistency.tex"
+  ],
+  "cffdd350-2952-11e6-a3a6-10ddb1d4c3d5": [
+    "spec/Methods.tex",
+    "spec/Procedures.tex"
+  ],
+  "185b17ce-2954-11e6-a3a6-10ddb1d4c3d5": [
+    "spec/Modules.tex"
+  ],
+  "e78c94ba-2953-11e6-a3a6-10ddb1d4c3d5": [
+    "spec/Ranges.tex"
+  ],
+  "ec772e36-2953-11e6-a3a6-10ddb1d4c3d5": [
+    "spec/Statements.tex"
+  ],
+  "ef5af4e8-2953-11e6-a3a6-10ddb1d4c3d5": [
+    "spec/Task_Parallelism_and_Synchronization.tex"
+  ],
+  "f233cdf2-2953-11e6-a3a6-10ddb1d4c3d5": [
+    "spec/Tuples.tex"
+  ],
+  "97a7d6e0-2952-11e6-a3a6-10ddb1d4c3d5": [
+    "spec/chapel_testing.tex"
+  ],
+  "b4520e6e-5076-11e6-b83e-bc5ff4765d0d": [
+    "test/ANNOTATIONS.yaml"
+  ],
+  "27c712aa-a8a0-11e6-91b8-10ddb1d4c3d5": [
+    "test/exercises/Mandelbrot/MPlot.chpl",
+    "test/exercises/Mandelbrot/mandelbrot.chpl",
+    "test/exercises/Mandelbrot/solutions/mandelbrot1-seq.chpl",
+    "test/exercises/Mandelbrot/solutions/mandelbrot2-datapar.chpl",
+    "test/exercises/Mandelbrot/solutions/mandelbrot3-datapar-dist.chpl",
+    "test/exercises/Mandelbrot/solutions/mandelbrot4-taskpar.chpl",
+    "test/exercises/Mandelbrot/solutions/mandelbrot5-taskpar-dist.chpl",
+    "test/exercises/Mandelbrot/unit/mandelbrot-zero-bug.chpl"
+  ],
+  "f60e4ad6-a966-11e6-91b8-10ddb1d4c3d5": [
+    "test/exercises/boundedBuffer/boundedBuffer.chpl",
+    "test/exercises/boundedBuffer/solutions/boundedBuffer-atomic.chpl",
+    "test/exercises/boundedBuffer/solutions/boundedBuffer-sync.chpl"
+  ],
+  "0738cf48-a89f-11e6-91b8-10ddb1d4c3d5": [
+    "test/exercises/c-ray/c-ray.chpl"
+  ],
+  "2409dd7e-b858-11e6-9740-843835579daa": [
+    "test/release/examples/benchmarks/hpcc/fft.chpl"
+  ],
+  "6877b508-b858-11e6-9740-843835579daa": [
+    "test/release/examples/benchmarks/hpcc/hpl.chpl"
+  ],
+  "2fa429f4-b859-11e6-9740-843835579daa": [
+    "test/release/examples/benchmarks/isx/README",
+    "test/release/examples/benchmarks/lcals/LCALSChecksums.chpl",
+    "test/release/examples/benchmarks/lcals/LCALSConfiguration.chpl",
+    "test/release/examples/benchmarks/lcals/LCALSDataTypes.chpl",
+    "test/release/examples/benchmarks/lcals/LCALSEnums.chpl",
+    "test/release/examples/benchmarks/lcals/LCALSLoops.chpl",
+    "test/release/examples/benchmarks/lcals/LCALSMain.chpl",
+    "test/release/examples/benchmarks/lcals/RunARawLoops.chpl",
+    "test/release/examples/benchmarks/lcals/RunBRawLoops.chpl",
+    "test/release/examples/benchmarks/lcals/RunCRawLoops.chpl",
+    "test/release/examples/benchmarks/lcals/RunParallelRawLoops.chpl",
+    "test/release/examples/benchmarks/lcals/RunSPMDRawLoops.chpl",
+    "test/release/examples/benchmarks/lcals/RunVectorizeOnlyRawLoops.chpl"
+  ],
+  "a5d0ed60-b859-11e6-9740-843835579daa": [
+    "test/release/examples/benchmarks/lcals/LongDouble.chpl",
+    "test/release/examples/benchmarks/lcals/README",
+    "test/release/examples/benchmarks/lcals/longdouble.h"
+  ],
+  "b5a0f3a2-b859-11e6-9740-843835579daa": [
+    "test/release/examples/benchmarks/lcals/README-LCALS_license.txt"
+  ],
+  "8137d9ea-b85a-11e6-9740-843835579daa": [
+    "test/release/examples/benchmarks/lcals/Timer.chpl"
+  ],
+  "53e029b4-b85c-11e6-9740-843835579daa": [
+    "test/release/examples/benchmarks/lulesh/README"
+  ],
+  "5ff41798-b85b-11e6-9740-843835579daa": [
+    "test/release/examples/benchmarks/lulesh/lmeshes/README"
+  ],
+  "04d69f54-b85e-11e6-9740-843835579daa": [
+    "test/release/examples/benchmarks/lulesh/lulesh.chpl",
+    "test/release/examples/benchmarks/lulesh/luleshInit.chpl"
+  ],
+  "d522708e-b85e-11e6-9740-843835579daa": [
+    "test/release/examples/benchmarks/miniMD/README"
+  ],
+  "d0d2e0ae-b85e-11e6-9740-843835579daa": [
+    "test/release/examples/benchmarks/miniMD/helpers/forces.chpl",
+    "test/release/examples/benchmarks/miniMD/helpers/initMD.chpl",
+    "test/release/examples/benchmarks/miniMD/helpers/neighbor.chpl",
+    "test/release/examples/benchmarks/miniMD/helpers/thermo.chpl",
+    "test/release/examples/benchmarks/miniMD/miniMD.chpl"
+  ],
+  "e3aa346c-1d8a-11e6-a3a6-10ddb1d4c3d5": [
+    "test/release/examples/benchmarks/shootout/README"
+  ],
+  "b53f219e-718d-11e6-8e91-843835579daa": [
+    "test/release/examples/benchmarks/shootout/fasta.chpl"
+  ],
+  "c6909e2e-4400-11e6-907f-843835579daa": [
+    "test/release/examples/benchmarks/shootout/knucleotide.chpl"
+  ],
+  "617a3c5c-dfc3-11e6-93be-10ddb1d4c3d5": [
+    "test/release/examples/benchmarks/shootout/mandelbrot-fast.chpl"
+  ],
+  "4bfc193a-4401-11e6-907f-843835579daa": [
+    "test/release/examples/benchmarks/shootout/regexdna-redux.chpl",
+    "test/release/examples/benchmarks/shootout/regexdna.chpl"
+  ],
+  "560979a4-4401-11e6-907f-843835579daa": [
+    "test/release/examples/benchmarks/shootout/revcomp-fast.chpl",
+    "test/release/examples/benchmarks/shootout/revcomp.chpl"
+  ],
+  "7fcc0bd0-b85f-11e6-9740-843835579daa": [
+    "test/release/examples/benchmarks/ssca2/README"
+  ],
+  "0bb8ad60-b860-11e6-9740-843835579daa": [
+    "test/release/examples/benchmarks/ssca2/SSCA2_Modules/SSCA2_RMAT_graph_generator.chpl"
+  ],
+  "e79be4f6-b85f-11e6-9740-843835579daa": [
+    "test/release/examples/benchmarks/ssca2/SSCA2_Modules/SSCA2_compilation_config_params.chpl"
+  ],
+  "ebd0997c-b85f-11e6-9740-843835579daa": [
+    "test/release/examples/benchmarks/ssca2/SSCA2_Modules/SSCA2_execution_config_consts.chpl"
+  ],
+  "fe33d4c6-b85f-11e6-9740-843835579daa": [
+    "test/release/examples/benchmarks/ssca2/SSCA2_Modules/SSCA2_kernels.chpl"
+  ],
+  "87dec826-b85f-11e6-9740-843835579daa": [
+    "test/release/examples/benchmarks/ssca2/SSCA2_Modules/analyze_RMAT_graph_associative_array.chpl"
+  ],
+  "baca0444-b85f-11e6-9740-843835579daa": [
+    "test/release/examples/benchmarks/ssca2/SSCA2_Modules/io_RMAT_graph.chpl"
+  ],
+  "83dc1ce2-b85f-11e6-9740-843835579daa": [
+    "test/release/examples/benchmarks/ssca2/SSCA2_main.chpl"
+  ],
+  "d86303d0-4d88-11e6-907f-843835579daa": [
+    "test/release/examples/hello4-datapar-dist.chpl"
+  ],
+  "8c00fe52-31db-11e6-a3a6-10ddb1d4c3d5": [
+    "test/release/examples/primers/LAPACKlib.chpl"
+  ],
+  "da2ea3b8-ad6d-11e7-a204-10ddb1d4c3d5": [
+    "test/release/examples/primers/LinearAlgebralib.chpl"
+  ],
+  "03dbf2b0-31dc-11e6-a3a6-10ddb1d4c3d5": [
+    "test/release/examples/primers/README"
+  ],
+  "57dcb2ce-31db-11e6-a3a6-10ddb1d4c3d5": [
+    "test/release/examples/primers/distributions.chpl"
+  ],
+  "5d456562-31db-11e6-a3a6-10ddb1d4c3d5": [
+    "test/release/examples/primers/domains.chpl"
+  ],
+  "9b2d18d4-31db-11e6-a3a6-10ddb1d4c3d5": [
+    "test/release/examples/primers/learnChapelInYMinutes.chpl"
+  ],
+  "5b81c0c6-fd35-11e9-98b5-10ddb1d4c3d5": [
+    "test/release/examples/primers/listOps.chpl"
+  ],
+  "87c9eef0-62e3-11eb-a43d-6f93f4244f4b": [
+    "test/release/examples/primers/parIters.chpl"
+  ],
+  "e8974bb8-8068-11e6-ab60-00a0cc3ee663": [
+    "test/release/examples/primers/ranges.chpl"
+  ],
+  "5094b6c0-8220-11e6-b915-843835579daa": [
+    "test/release/examples/primers/syncsingle.chpl"
+  ],
+  "eb31abc0-8068-11e6-ab60-00a0cc3ee663": [
+    "test/release/examples/primers/taskParallel.chpl"
+  ],
+  "80066972-2f20-11e8-aa67-10ddb1d4c3d5": [
+    "test/release/examples/spec/Expressions/condexp.chpl"
+  ],
+  "84377626-2f20-11e8-aa67-10ddb1d4c3d5": [
+    "test/release/examples/spec/Modules/nested-use.chpl"
+  ],
+  "79b61d92-2f20-11e8-aa67-10ddb1d4c3d5": [
+    "test/release/examples/spec/Procedures/varargs.chpl"
+  ],
+  "7626c32a-2f20-11e8-aa67-10ddb1d4c3d5": [
+    "test/release/examples/spec/Statements/conditionals.chpl"
+  ],
+  "a717e780-d45d-11e6-b38c-acbc32c4f96b": [
+    "test/release/examples/users-guide/base/typeAliases.chpl"
+  ],
+  "33179874-caca-11e9-8464-10ddb1d4c3d5": [
+    "tools/mason/MasonExample.chpl"
+  ],
+  "40a2e84a-caca-11e9-8464-10ddb1d4c3d5": [
+    "tools/mason/MasonExternal.chpl"
+  ],
+  "1157b502-caca-11e9-8464-10ddb1d4c3d5": [
+    "tools/mason/MasonHelp.chpl"
+  ],
+  "2c87d6d6-caca-11e9-8464-10ddb1d4c3d5": [
+    "tools/mason/MasonModify.chpl"
+  ],
+  "75b00dec-caca-11e9-8464-10ddb1d4c3d5": [
+    "tools/mason/MasonNew.chpl"
+  ],
+  "5e3f02e4-caca-11e9-8464-10ddb1d4c3d5": [
+    "tools/mason/MasonSystem.chpl"
+  ],
+  "52708a00-caca-11e9-8464-10ddb1d4c3d5": [
+    "tools/mason/MasonTest.chpl"
+  ],
+  "733f59d2-caca-11e9-8464-10ddb1d4c3d5": [
+    "tools/mason/MasonUpdate.chpl"
+  ],
+  "1ec7ca88-caca-11e9-8464-10ddb1d4c3d5": [
+    "tools/mason/MasonUtils.chpl"
+  ],
+  "78ea7772-caca-11e9-8464-10ddb1d4c3d5": [
+    "tools/mason/SpecParser.chpl"
+  ]
+}

@@ -1,0 +1,1 @@
+mutualuse2.chpl:33: error: cannot initialize 'n' of type 'borrowed C' from a '<type unknown>'

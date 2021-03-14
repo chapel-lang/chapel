@@ -1,0 +1,5 @@
+error message: would like a more explanatory error message in the value-used-as-a-type situation
+
+Right now it says "invalid type specification". While it is quite easy
+to see what's going on in this case, there will be cases where
+the situation would be obscure. The above message would come handy then.

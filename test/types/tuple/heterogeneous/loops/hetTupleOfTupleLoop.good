@@ -1,0 +1,1 @@
+hetTupleOfTupleLoop.chpl:1: error: Heterogeneous tuples don't support this style of loop yet

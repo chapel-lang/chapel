@@ -1,0 +1,28 @@
+set(LLVM_LINK_COMPONENTS
+  AllTargetsAsmParsers
+  AllTargetsCodeGens
+  AllTargetsDescs
+  AllTargetsInfos
+  Core
+  IRReader
+  Support
+  Target
+  TransformUtils
+  )
+
+add_llvm_tool(llvm-reduce
+  TestRunner.cpp
+  deltas/Delta.cpp
+  deltas/ReduceArguments.cpp
+  deltas/ReduceAttributes.cpp
+  deltas/ReduceBasicBlocks.cpp
+  deltas/ReduceFunctions.cpp
+  deltas/ReduceGlobalVars.cpp
+  deltas/ReduceInstructions.cpp
+  deltas/ReduceMetadata.cpp
+  deltas/ReduceOperandBundles.cpp
+  llvm-reduce.cpp
+
+  DEPENDS
+  intrinsics_gen
+  )

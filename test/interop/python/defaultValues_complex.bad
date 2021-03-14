@@ -1,0 +1,2 @@
+defaultValues_complex.chpl:1: warning: Non-literal default values are ignored in exported functions, argument 'x' must always be provided
+2.0 + 3.0i

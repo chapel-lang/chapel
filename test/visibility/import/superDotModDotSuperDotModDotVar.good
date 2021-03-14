@@ -1,0 +1,1 @@
+superDotModDotSuperDotModDotVar.chpl:10: error: Cannot find symbol 'super' in module 'Mod'

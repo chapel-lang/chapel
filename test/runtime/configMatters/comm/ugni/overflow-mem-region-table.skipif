@@ -1,0 +1,10 @@
+#!/usr/bin/env python3
+
+# This test only makes sense with mem=jemalloc, hugepages,
+# and dynamic heap extension.
+
+import os
+print(os.getenv('CHPL_MEM') != 'jemalloc' or
+      os.getenv('HUGETLB_DEFAULT_PAGE_SIZE') == None or
+      os.getenv('CHPL_RT_MAX_HEAP_SIZE') != None)
+

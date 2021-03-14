@@ -1,0 +1,2 @@
+hasCobeginOnFieldInit.chpl:4: In initializer:
+hasCobeginOnFieldInit.chpl:7: error: can't initialize field "x" inside a parallel statement during phase 1 of initialization

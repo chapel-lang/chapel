@@ -1,0 +1,5 @@
+#!/bin/bash
+
+if [ ! -d "everyLoc" ]; then
+   mkdir everyLoc
+fi

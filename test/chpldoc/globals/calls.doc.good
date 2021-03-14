@@ -1,0 +1,38 @@
+calls.doc.chpl:19: warning: This file-scope code is outside of any explicit module declarations (e.g., module Hello), so an implicit module named 'calls.doc' is being introduced to contain the file's contents.
+.. default-domain:: chpl
+
+.. module:: calls.doc
+
+calls.doc
+=========
+**Usage**
+
+.. code-block:: chapel
+
+   use calls.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import calls.doc;
+
+**Submodules**
+
+.. toctree::
+   :maxdepth: 1
+   :glob:
+
+   calls.doc/*
+
+.. data:: var variable: int(64) = 5
+
+.. data:: var hello0: string = greet(Tony)
+
+.. data:: var hello1: int = Hello.writeSomething()
+
+.. data:: var hello2: int = Hello.innerHello.writeGiven(6)
+
+.. data:: var hello3: int = Hello.innerHello.writeAdd(7, 8)
+

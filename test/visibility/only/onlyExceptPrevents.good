@@ -1,0 +1,2 @@
+onlyExceptPrevents.chpl:18: In function 'main':
+onlyExceptPrevents.chpl:19: error: 'a' undeclared (first use this function)

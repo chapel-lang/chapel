@@ -1,0 +1,23 @@
+in callin borrowed, x is: 10 2.3
+re-assigned to be: 11 3.4
+back at callsite, a is: 11 3.4
+
+in callin unmanaged, x is: 11 3.4
+re-assigned to be: 12 4.5
+back at callsite, a is: 12 4.5
+
+in callout, x ought to be nil
+re-assigned new instance to be: 12 4.5
+back at callsite, a is: 12 4.5
+
+in callinout, x is: 12 4.5
+re-assigned to be: 13 5.6
+back at callsite, a is: 13 5.6
+
+in callblank borrowed, x is: 13 5.6
+re-assigned to be: 14 6.7
+back at callsite, a is: 14 6.7
+
+in callblank unmanaged, x is: 14 6.7
+re-assigned to be: 15 7.8
+back at callsite, a is: 15 7.8

@@ -1,0 +1,12 @@
+Testing default array
+[1, 2, 3, 4, 5]
+[1, 2, 3, 4, 5]
+Testing block array
+[1, 2, 3, 4, 5]
+[1, 2, 3, 4, 5]
+Testing cyclic array
+[1, 2, 3, 4, 5]
+[1, 2, 3, 4, 5]
+Testing block cyclic array
+[1, 2, 3, 4, 5]
+[1, 2, 3, 4, 5]

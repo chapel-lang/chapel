@@ -1,0 +1,15 @@
+unimplemented feature: slicing associative array
+
+Error slicing associative array
+
+Get an error along the lines of:
+
+$CHPL_HOME/modules/internal/ChapelArray.chpl:979: In function 'getIndices':
+$CHPL_HOME/modules/internal/ChapelArray.chpl:980: error: unresolved call 'DefaultAssociativeDom(string,true).dsiGetIndices()' [functionResolution.cpp:1815]
+$CHPL_HOME/modules/internal/ChapelArray.chpl:980: note:   instantiated from getIndices [functionResolution.cpp:1822]
+$CHPL_HOME/modules/internal/ChapelArray.chpl:1260: note:   instantiated from this [functionResolution.cpp:1822]
+$CHPL_HOME/modules/internal/DefaultRectangular.chpl:69: note: candidates are: DefaultRectangularDom.dsiGetIndices() [79767] [functionResolution.cpp:1829]
+$CHPL_HOME/modules/internal/DefaultOpaque.chpl:31: note:                 DefaultOpaqueDom.dsiGetIndices() [100330] [functionResolution.cpp:1829]
+
+
+but array slicing for associative arrays should be supported.

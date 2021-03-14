@@ -1,0 +1,3 @@
+accessThisBad.chpl:4: In initializer:
+accessThisBad.chpl:5: error: cannot pass "this" to a function before calling super.init() or this.init()
+accessThisBad.chpl:7: error: field initialization not allowed before super.init() or this.init()

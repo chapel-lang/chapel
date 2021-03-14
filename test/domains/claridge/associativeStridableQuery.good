@@ -1,0 +1,1 @@
+associativeStridableQuery.chpl:2: error: associative domains do not support .stridable

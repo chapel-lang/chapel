@@ -1,0 +1,250 @@
+#!/usr/bin/env perl
+
+use File::Basename;
+use Cwd 'abs_path';
+
+$cwd = abs_path(dirname(__FILE__));
+$chplhomedir = abs_path("$cwd/../..");
+
+
+# Mailing lists.
+$failuremail = "chapel+tests\@discoursemail.com";
+$allmail = "chapel-test-results-all\@lists.sourceforge.net";
+$replymail = "";
+
+$printusage = 1;
+$debug = 1;
+
+while (@ARGV) {
+    $flag = shift @ARGV;
+    if ($flag eq "-debug") {
+	$debug = 1;
+        $printusage = 0;
+    } elsif ($flag eq "-cron") {
+	$debug = 0;
+        $printusage = 0;
+    } else {
+        $printusage = 1;
+        last;
+    }
+}
+
+if ($printusage == 1) {
+    print "testRelease [-debug|-cron]\n";
+    print "\t-debug     : test the release for individual user\n";
+    print "\t-cron      : use for nightly cron runs only (mails team)\n";
+    exit 1;
+}
+
+
+#
+# get uniquifiers
+#
+$pid = getpgrp();
+$user = `whoami`;
+chomp($user);
+$debugmail = $ENV{'CHPL_NIGHTLY_DEBUG_EMAIL'};
+if ($debug == 1 && $debugmail eq "") {
+    print "Set CHPL_NIGHTLY_DEBUG_EMAIL to use debug mode\n";
+    exit 1;
+}
+
+if ($cronrecipient eq "" and exists($ENV{"CHPL_NIGHTLY_CRON_RECIPIENT"})) {
+    $cronrecipient = $ENV{"CHPL_NIGHTLY_CRON_RECIPIENT"};
+}
+
+if ($cronrecipient ne "") {
+    print "Overriding \$failuremail and \$allmail with: $cronrecipient.\n";
+    $failuremail = $cronrecipient;
+    $allmail = $cronrecipient;
+    $replymail = $cronrecipient;
+}
+
+
+#
+# get build url
+#
+if (exists($ENV{"BUILD_URL"})) {
+    $buildurl = $ENV{"BUILD_URL"};
+} else {
+    $buildurl = "unknown";
+}
+
+
+$platform = `$ENV{'CHPL_HOME'}/util/chplenv/chpl_platform.py --host`;
+chomp($platform);
+
+
+#
+# directory locations
+#
+$chplhome = $ENV{'CHPL_HOME'};
+$basetmpdir = $ENV{'CHPL_NIGHTLY_TMPDIR'};
+if ($basetmpdir eq "") {
+    $basetmpdir = $ENV{'TMPDIR'};
+}
+if ($basetmpdir eq "") {
+    $basetmpdir = "/tmp";
+}
+if ($debug == 1) {
+    $tmpdir = "$basetmpdir/chapel-testRelease-dbg.$user.deleteme";
+} else {
+    $tmpdir = "$basetmpdir/chapel-testRelease-crn.$user.deleteme";
+}
+
+
+
+#
+# set mail options. Default to util/test/send_email.py, if available and
+# working. If not available or not working, default to 'mail'.
+#
+$mailer = $ENV{'CHPL_MAILER'};
+if ($mailer eq "") {
+    $chplsendemail = "$chplhomedir/util/test/send_email.py";
+    `$chplsendemail --help >/dev/null 2>&1`;
+    if ($? == 0) {
+        $header = "";
+        if ($replymail ne "") {
+          $header = "Reply-To=$replymail,";
+        }
+        $header .= "Precedence=bulk";
+        $mailer = "$chplsendemail --header=$header";
+    } else {
+        print "[Error: send_email.py failed to run. Defaulting to 'mail'.]\n";
+        $mailer = "mail";
+    }
+}
+print "\$mailer = $mailer\n";
+
+
+$somethingfailed = 0;
+
+
+#
+# make temp directory
+#
+mysystem("rm -rf $tmpdir", "removing previous tmp dir", 1, 1);
+mysystem("mkdir $tmpdir > /dev/null", "creating temp dir", 1, 1);
+
+
+mysystem("rm -f $chplhome/tar/chapel-test.tar.gz", "deleting previous tarball", 0, 0);
+
+#
+# make release
+#
+mysystem("$chplhome/util/buildRelease/gen_release test", "creating release", 1, 1);
+
+
+#
+# copy release to temp directory, unpack, and run tests
+#
+mysystem("cp $chplhome/tar/chapel-test.tar.gz $tmpdir", "copying release", 1, 1);
+mysystem("cd $tmpdir && gunzip chapel-test.tar.gz", "unzipping release", 1, 1);
+mysystem("cd $tmpdir && tar xf chapel-test.tar", "untarring release", 1, 1);
+$teststatus = mysystem("cd $tmpdir/chapel-test && $chplhome/util/buildRelease/testReleaseHelp `$chplhome/util/chplenv/chpl_make.py`", "running testReleaseHelp script", 1, 1);
+
+
+#
+# send mail
+#
+if ($teststatus == 0 or $teststatus == 2) {
+    $failures = `grep \\\\[Error $tmpdir/chapel-test/examples/Logs/testReleaseHelp.log | wc -l`; chomp($failures);
+    if ($failures == "0") {
+        $shortstatus = "Passed";
+        $successmail = "$allmail";
+    } else {
+        $shortstatus = "Failed: Tests";
+        $successmail = "$failuremail";
+    }
+} else {
+    $shortstatus = "Failed: Something";
+    $successmail = "$failuremail";
+}
+if ($debug == 1) {
+    $mailsubject = "Dbug Release $shortstatus ($platform)";
+} else {
+    $mailsubject = "Cron Release $shortstatus ($platform)";
+}
+    
+if ($debug == 1) {
+    $mailcommand = "| $mailer -s \"$mailsubject \" $debugmail";
+} else {
+    $mailcommand = "| $mailer -s \"$mailsubject \" $successmail";
+}
+    
+if (!exists($ENV{"CHPL_TEST_NOMAIL"}) or grep {$ENV{"CHPL_TEST_NOMAIL"} =~ /^$_$/i} ('','\s*','0','f(alse)?','no?')) {
+    open(MAIL, $mailcommand);
+
+    print MAIL "=== Results - testRelease =================================================\n";
+    print MAIL "Hostname:   ", `hostname`;
+    print MAIL "Build: ", $buildurl, "\n";
+    print MAIL "\$tmpdir:    $tmpdir\n";
+    print MAIL "\$chplhome:  $chplhome\n";
+    print MAIL "Ended:      ", scalar(localtime()), "\n";
+    print MAIL "\n";
+
+    print MAIL `cat $tmpdir/chapel-test/examples/Logs/testReleaseHelp.log.summary`;
+    
+    close(MAIL);
+} else {
+    print "CHPL_TEST_NOMAIL: No $mailcommand\n";
+}
+    
+    
+#
+# clean up
+#
+if ($somethingfailed == 0) {
+    print "Cleaning up\n";
+    mysystem("rm -rf $tmpdir", "removing temp dir", 0, 1);
+}
+
+exit 0;
+
+
+#
+# subroutines
+#
+
+sub mysystem {
+    $command = $_[0];
+    $errorname = $_[1];
+    $fatal = $_[2];
+    $mailmsg = $_[3];
+
+    $status = system($command);
+    if ($status != 0) {
+	$somethingfailed = 1;
+        $status = $status / 256;
+	print "Error $_[1]: $status\n";
+
+    if ($mailmsg != 0) {
+        if ($debug == 1) {
+            $mailsubject = "Dbug Release Failed ($platform)";
+            $mailcommand = "| $mailer -s \"$mailsubject \" $debugmail";
+        } else {
+            $mailsubject = "Cron Release Failed ($platform)";
+            $mailcommand = "| $mailer -s \"$mailsubject \" $failuremail";
+        }
+
+        if (!exists($ENV{"CHPL_TEST_NOMAIL"}) or grep {$ENV{"CHPL_TEST_NOMAIL"} =~ /^$_$/i} ('','\s*','0','f(alse)?','no?')) {
+            print "Trying to mail message... using $mailcommand\n";
+            open(MAIL, $mailcommand);
+            print MAIL "=== Summary - testRelease =====================================\n";
+            print MAIL "ERROR $_[1]: $status\n";
+            $host = `hostname`; chomp($host);
+            print MAIL "(workspace left at $host:$tmpdir)\n";
+            print MAIL "(or better, visit 'release-tarball-smoke-test' in jenkins)\n";
+            print MAIL "=== End Summary ===============================================\n";
+            close(MAIL);
+        } else {
+            print "CHPL_TEST_NOMAIL: No $mailcommand\n";
+        }
+    }
+
+	if ($fatal != 0) {
+	    exit 1;
+	}
+    }
+    $status;
+}

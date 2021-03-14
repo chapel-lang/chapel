@@ -1,0 +1,107 @@
+# Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+# Copyright 2004-2019 Cray Inc.
+# Other additional copyright holders may be indicated within.
+# 
+# The entirety of this work is licensed under the Apache License,
+# Version 2.0 (the "License"); you may not use this file except
+# in compliance with the License.
+# 
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#
+# settings for the build
+#
+DEPEND=1
+ifdef CHPL_DEVELOPER
+DEBUG=1
+WARNINGS=1
+TAGS=1
+else
+OPTIMIZE=1
+endif
+#PROFILE=1
+
+
+#
+# include the standard Chapel Makefile.base
+#
+
+include $(CHPL_MAKE_HOME)/make/Makefile.base
+
+RUNTIME_ROOT = $(COMPILER_ROOT)/../runtime
+
+INCL_CFLAGS = -I. -I$(COMPILER_ROOT)/include/$(CHPL_MAKE_HOST_PLATFORM) -I$(COMPILER_ROOT)/include $(LLVM_INCLUDES) -I$(COMPILER_BUILD) -I$(RUNTIME_ROOT)/include/encoding -I$(THIRD_PARTY_DIR)/utf8-decoder
+COMP_CXXFLAGS += $(INCL_CFLAGS)
+
+#
+# add gc-related stuff
+#
+OBJ_SUFFIX=o
+CHPL_MUNGE=
+
+
+ifeq ($(DIR_USES_OFFSETOF), 1)
+ifeq ($(GNU_GCC_MAJOR_VERSION),3)
+ifeq ($(GNU_GCC_MINOR_VERSION),4)
+ONLYCXXFLAGS += -Wno-invalid-offsetof
+endif
+endif
+ifeq ($(GNU_GCC_MAJOR_VERSION),4)
+ifeq ($(GNU_GCC_MINOR_VERSION),0)
+ONLYCXXFLAGS += -Wno-invalid-offsetof
+endif
+endif
+endif
+
+
+COMP_CXXFLAGS := $(COMP_CXXFLAGS) $(ONLYCXXFLAGS) $(LLVM_CXXFLAGS)
+
+
+#
+# clean and clobber targets
+#
+CLEAN_TARGS = \
+	./$(OBJ_SUBDIR)/*.o \
+	./$(OBJ_SUBDIR)/*.d \
+	./$(OBJ_SUBDIR)/*.gcda \
+	./$(OBJ_SUBDIR)/*.gcno \
+	./$(OBJ_SUBDIR)/*.gcov \
+	core \
+	*.core \
+	*.gmon \
+	$(GEN_HEADERS) \
+	$(GEN_SRCS) \
+	TAGS \
+	tags
+
+CLEANALL_TARGS = \
+	$(CLEAN_TARGS)
+
+CLOBBER_TARGS = \
+	$(CLEANALL_TARGS) \
+	$(EXECS) \
+	*.a \
+	*~
+
+
+#
+# platform-specific subdirectory targets
+#
+
+DEPENDS = ./$(OBJ_SUBDIR)/*.d
+
+
+
+MAKEALLSUBDIRS = $(SUBDIRS:%=%.makedir)
+CLEANSUBDIRS = $(SUBDIRS:%=%.cleandir)
+CLEANALLSUBDIRS = $(SUBDIRS:%=%.cleanalldir)
+CLEANSUBDIRDEPS = $(SUBDIRS:%=%.cleandirdeps)
+CLOBBERSUBDIRS = $(SUBDIRS:%=%.clobberdir)

@@ -1,0 +1,127 @@
+[The following was developed back when spec was written in Latex / .tex
+however the principles still hold for the rst-formatted spec.]
+
+Each chapter on a feature (e.g. a data type) should have this structure:
+
+* The first one or a couple of paragraphs are a high-level introduction
+and/or summary of the feature. It could include, for example:
+
+  - compare and/or contrast this feature in Chapel vs. other languages,
+  - give insights into how the compiler uses the feature(s).
+
+* The next paragraph is the road map, stating the organization of
+the chapter and/or how the feature is presented in the spec.
+
+* The first section is optional and contains a more in-depth
+introduction of the feature.
+
+* For a data type, these sections should follow:
+
+  - types
+  - values, with subsections on
+      - literals
+         - specify the literal's type first, the literal's value second
+      - default values
+  - common operations - all of the following that applies:
+      - the assignment statement
+      - equality and other comparisons
+      - iterating
+      - implicit/explicit conversions?
+      - printing behavior?
+
+* Then a section describing operations specific to this feature follows.
+
+
+The following environments are available for use in the spec:
+
+- example    
+  Example Chapel programs, along with explanation text
+  should be contained in the example environment.
+
+- note
+  To make a note to future implementors of Chapel, or those
+  who are interested in how Chapel is implemented, use the note
+  environment.  
+
+- rationale
+  To provide more explanation about a feature, use the rationale
+  section.   
+
+- openissue
+    Issues that we do not know how to handle.
+
+- future
+    Issues or features that we have a story about, but which are not yet
+  fully-designed or have not yet been implemented. 
+
+
+Guidelines for updating the spec:
+
+- There should be example programs for every language concept
+  and for every subsection.
+
+- In explaining a feature, try to address both the compiler
+  developers and programmers of the language.  Explain the syntax of
+  the feature and any implementation details.  Also explain the
+  impact of the feature and how it is used when programming.
+
+[Some general principles highlighted by the spec review 8/10/2010:]
+
+- Group material into chapters by theme.
+  - It is OK to move syntax for a feature (e.g. class types)
+    from the chapter on the enclosing syntactic concept (e.g. type)
+    into the chapter on the enclosing theme (e.g. classes).
+
+- Implementation limitations go into the status file for the release.
+
+- Use examples in lieu of a user's guide/gentle introduction.
+
+- Italicize the term when you are defining it.
+  Be sure to add it to the index.  We want as many things as possible in
+  the index.  (See below for guidance on index term creation.)
+
+
+General rules for index term creation:
+
+ - It is better to err on the side of too many entries; we can cull excessive
+   entries later.
+
+ - Double-billing is OK, e.g.
+	\index{formal arguments}
+	\index{arguments!formal}
+
+ - An acceptable exception is when these are visually close, so would be noisy:
+	\index{operator precedence}
+	\index{operators!precedence}
+   In this case, the second form is preferred.
+
+ - Global topics can appear at the top level; otherwise, they are qualified by
+   the chapter name (or general topic).
+	[in Functions.tex]	\index{argument passing}
+	[in Arrays.tex]		\index{arrays!argument passing}
+
+ - In general, the plural form of index headers is preferred:
+	\index{arrays!argument passing} (preferred)
+	\index{array!argument passing} (discouraged)
+
+ - If there are two forms which make sense -- one indented and the other not --
+   the indented form is preferred:
+	\index{arrays!argument passing} (preferred)
+	\index{array argument passing} (discouraged)
+   We assume that the topic of passing arrays as arguments (in this example)
+   fits entirely within the topic of arrays, so is properly cast as a subtopic.
+   In contrast, if the topic spans several chapters or stands on its own, then
+   it is reasonable to make it a top-level index entry.
+
+ - A concept which belongs both at the top level and at an indented level should
+   correspondingly have two index entries.  At the top level, there should be a
+   single entry containing a "(see xxx)" note referring to the indented entry:
+	\index{domains!rectangular}
+	\index{rectangular domains (see domains, rectangular)}
+   All detailed entries (those elaborating domains!rectangular) should appear
+   only below the indented entry.
+
+   Rationale: Since the two entries represent the same concept, their
+   sub-entries would all be duplicated.  The (see xxx) note allows us to save
+   index space.  Choosing the indented entry over the top-level one tends to
+   make the index deeper, which naturally tends to group related entries.

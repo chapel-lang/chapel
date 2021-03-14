@@ -1,0 +1,9 @@
+#!/bin/bash
+diff stencilSerial.output.bin output.bin > $2
+ret=$?
+if [ $ret == 0 ] ; then
+  echo success > $2
+  rm output.bin
+else
+  echo results differed > $2
+fi

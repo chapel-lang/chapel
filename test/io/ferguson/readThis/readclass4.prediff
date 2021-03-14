@@ -1,0 +1,14 @@
+#!/bin/sh
+
+testname=$1
+outfile=$2
+
+grep -i error $outfile > $outfile.2
+if [ $? -eq 0 ]
+then
+  echo CompileError > $outfile.2
+  mv $outfile.2 $outfile
+else
+  rm $outfile.2
+fi
+

@@ -1,0 +1,1 @@
+deinit-on-int.chpl:1: error: deinit may not be defined for types other than record, union, or class

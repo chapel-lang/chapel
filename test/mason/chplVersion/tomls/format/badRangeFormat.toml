@@ -1,0 +1,7 @@
+
+[brick]
+name = "badRangeFormat"
+version = "0.1.0"
+chplVersion = "1.1..1.2..1.3"
+
+[dependencies]

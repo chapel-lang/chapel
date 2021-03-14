@@ -1,0 +1,2 @@
+paramInHeader2.chpl:4: In initializer:
+paramInHeader2.chpl:4: error: invalid access of class member in initializer argument list

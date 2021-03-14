@@ -1,0 +1,222 @@
+#!/usr/bin/env python3
+
+"""Compare the help page and man page for chpl and chpldoc.
+
+Make sure every flag in the help page is present in the man page. Also, for
+chpl check that all top-level CHPL variables from $CHPL_HOME/util/printchplenv
+are included in the man page's ENVIRONMENT section.
+"""
+
+from functools import reduce
+import logging
+import operator
+import os
+import os.path
+import subprocess
+import sys
+
+
+def main():
+    results = []
+    chpl = sys.argv[1]
+    chpldoc = chpl + 'doc'
+
+    # Test chpl
+    results.append( check_man_page(chpl, ['--no-devel']) )
+
+    # Test chpldoc
+    results.append( check_man_page(chpldoc) )
+
+    # Exit clean if no errors.
+    if not reduce(operator.and_, results):
+        sys.exit(1)
+    else:
+        sys.exit(0)
+
+
+def check_man_page(bin_name, additional_args=None):
+    """Verify man page match -h options for given program. Returns True if help
+    text and man text match. Returns False if not.
+
+    :arg bin_name: Program to call with --help and name of .1 man page.
+    :arg additional_args: Additional arguments list to call program with.
+    """
+    chpl_home = _get_chpl_home()
+    short_bin_name = os.path.basename(bin_name)
+
+    if not os.path.exists(bin_name):
+        _error("'{0}' does not exist at: {1}".format(short_bin_name, bin_name))
+        return False
+
+    # Get the help text
+    help_cmd = [bin_name]
+    if additional_args is not None:
+        help_cmd.extend(additional_args)
+    help_cmd.append('--help')
+    helptxt, help_exit = _run_cmd(help_cmd)
+
+    if help_exit != 0:
+        _error('failed to get help text with:',
+               ' '.join(help_cmd).replace(chpl_home, '$CHPL_HOME'),
+               'exited with non-zero status code', help_exit)
+        return False
+
+    # Get the man page text
+    manpage = _get_man_page(bin_name)
+
+    # Section dictionaries
+    helpsections = {}
+    mansections = {}
+
+    #
+    # Parse help and man page to populate section dictionaries
+    #
+
+    numerrors = 0
+    currentsection = None
+
+    # Collect flags and sections from helptxt
+    for hline in [l.strip() for l in helptxt.splitlines() if l.strip()]:
+
+        # Line is section
+        if hline[-1] == ':':
+            section = hline.strip(':')
+            helpsections[section] = []
+            currentsection = section
+        # Line is flag
+        elif hline[0] == '-':
+            if currentsection is None:
+                numerrors += 1
+                _error(sl, 'not in a {0} man page section'.format(short_bin_name))
+                notFound.append(hline)
+                continue
+
+            hflags = _get_flags(hline)
+
+            if hflags:
+                helpsections[currentsection].append(hflags)
+
+    currentsection = None
+
+    # Collect flags and sections from manpage
+    for mline in [l.strip() for l in manpage if len(l.strip()) > 2]:
+
+        # Line is flag
+        if mline[0:3] == '**-' and mline[-2:] == '**' and currentsection:
+
+            mflags = _get_flags(mline)
+
+            if mflags:
+                mansections[section].append(mflags)
+        # Line is section
+        elif mline[0] == '*' and mline[-1] == '*' and mline[1] != '*':
+            section = mline.strip('*')
+            mansections[section] = []
+            currentsection = section
+
+    #
+    # Compare contents section dictionaries
+    #
+
+    # Do both pages have the same sections?
+    if helpsections.keys() != mansections.keys():
+
+        helpdiff = list(set(helpsections.keys()) - set(mansections.keys()))
+        mandiff = list(set(mansections.keys()) - set(helpsections.keys()))
+
+        numerrors += len(helpdiff) + len(mandiff)
+
+        if helpdiff:
+            _error('help output has additional sections: {0}'.format(helpdiff))
+        if mandiff:
+            _error('man page has additional sections: {0}'.format(mandiff))
+
+        # We require same sections to continue, return early
+        return numerrors
+
+    # Does each section contain the same number of flags?
+    for section in helpsections.keys():
+        helpflags = helpsections[section]
+        manflags = mansections[section]
+
+        if helpflags != manflags:
+            helpdiff = list(set(helpflags) - set(manflags))
+            mandiff = list(set(manflags) - set(helpflags))
+
+            numerrors += len(helpdiff) + len(mandiff)
+
+            if helpdiff:
+                _error('help section "{0}" has additional flags:\
+                        {1}'.format(section, helpdiff))
+            if mandiff:
+                _error('man section "{0}" has additional flags:\
+                        {1}'.format(section, mandiff))
+
+    # Return True if no error (man/help text match). False otherwise.
+    return numerrors == 0
+
+
+def _get_chpl_home():
+    repo_root = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), '../..'))
+    chpl_home = os.environ.get('CHPL_HOME', repo_root)
+    return chpl_home
+
+def _get_man_page(bin_name):
+    man_file = os.path.join(_get_chpl_home(), 'man', os.path.basename(bin_name) + '.rst')
+    with open(man_file, 'r') as fp:
+        man_rst = fp.readlines()
+    return man_rst
+
+
+def _get_flags(s):
+    """Get the flags in a string."""
+    rs = ''
+    # Handle empty lines
+    if not s.strip():
+        return rs
+
+    # Remove rst formatting of **bold text**
+    ls = s.strip('*')
+
+    # Look for all comma separated flags
+    ls = ls.strip().split(',')
+    for f in ls:
+        sf = f.strip();
+        try:
+            if sf[0] == '-':
+                # Add flag to the return string
+                rs += sf.split()[0]+','
+            else:
+                break
+        except IndexError:
+            continue
+    if rs:
+        # Remove any trailing text
+        return rs.strip().split()[0]
+    else:
+        return rs
+
+
+def _run_cmd(cmd):
+    """Run command then return stdout and exit code."""
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    stdout, _ = proc.communicate()
+    return stdout.decode(), proc.returncode
+
+
+def _msg(level, *args):
+    log_msg = ' '.join([str(arg) for arg in args])
+    print('{level}: {msg}'.format(level=level.upper(), msg=log_msg))
+
+
+def _warn(*args):
+    _msg('Warning', *args)
+
+
+def _error(*args):
+    _msg('Error', *args)
+
+
+if __name__ == '__main__':
+    main()

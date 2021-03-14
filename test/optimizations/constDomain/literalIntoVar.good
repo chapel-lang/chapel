@@ -1,0 +1,15 @@
+Passing around a literal returned from a function
+Assign to var variable
+false
+Assign to const variable
+true
+Pass to generic in intent
+false
+Pass to concrete in intent
+false
+Pass to var field with default initializer
+false
+How many arrays are tracked? 1
+Pass to const field with default initializer
+true
+How many arrays are tracked? 0

@@ -1,0 +1,5 @@
+perfkeys: Module level access took, Method level access took
+graphkeys: module level, method level
+graphtitle: Module versus Method multiplication/division
+ylabel: Time (seconds)
+graphname: moduleMethodCompare

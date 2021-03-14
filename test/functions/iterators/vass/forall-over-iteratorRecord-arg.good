@@ -1,0 +1,4 @@
+forall-over-iteratorRecord-arg.chpl:21: In function 'myTestProc':
+forall-over-iteratorRecord-arg.chpl:23: error: a forall loop over a formal argument corresponding to a for/forall/promoted expression or an iterator call is not implemented
+forall-over-iteratorRecord-arg.chpl:34: note: the actual argument is here
+  forall-over-iteratorRecord-arg.chpl:34: called as myTestProc(IR: iterator)

@@ -1,0 +1,23 @@
+feature request: enumerate iterator similar to python
+
+An enumerate iterator would provide the functionality of these zippered
+iterators:
+
+  for (value, i) in zip(myIter, 1..) {
+    // do something with i and value...
+  }
+  forall (value, i) in zip(myIter, 1..) {
+    // do something with i and value...
+  }
+
+For example:
+
+  for (value, i) in enumerate(myIter) {
+    // do something with i and value...
+  }
+  forall (value, i) in enumerate(myIter) {
+    // do something with i and value...
+  }
+
+Programmers accustomed to using python's enumerate iterator, but not yet
+familiar with chapel's zippered iterators, would find this useful.

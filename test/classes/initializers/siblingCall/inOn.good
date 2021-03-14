@@ -1,0 +1,2 @@
+inOn.chpl:4: In initializer:
+inOn.chpl:6: error: use of this.init() call in an on block

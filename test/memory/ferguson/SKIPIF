@@ -1,0 +1,7 @@
+CHPL_TARGET_COMPILER==cray-prgenv-gnu
+CHPL_TARGET_COMPILER==cray-prgenv-intel
+CHPL_TARGET_COMPILER==cray-prgenv-pgi
+
+# this test uses libchplmalloc, which only works
+# on glibc systems (and is known not to work on Mac OS X)
+CHPL_TARGET_PLATFORM != linux64

@@ -1,0 +1,2 @@
+renameOnlyNothing2.chpl:8: In function 'main':
+renameOnlyNothing2.chpl:9: error: 'x' undeclared (first use this function)

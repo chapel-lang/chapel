@@ -1,0 +1,4 @@
+unimplemented feature: reading fields out of order in inheritance
+
+It would be possible to support such a thing... but initially
+it does not work.

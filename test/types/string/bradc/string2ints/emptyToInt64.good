@@ -1,0 +1,3 @@
+uncaught IllegalArgumentError: bad cast from empty string to int(64)
+  emptyToInt64.chpl:2: thrown here
+  emptyToInt64.chpl:2: uncaught here

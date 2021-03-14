@@ -1,0 +1,1 @@
+zip_forall_assoc_error.chpl:11: error: Tuple zipped with incompatible iterator expression.

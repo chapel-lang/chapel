@@ -1,0 +1,9 @@
+feature request: allow the "error" and "warning" primitives to work in more cases
+
+Right now compiling each of co1 and co2 results in compiler crashing:
+
+error: assertion error [functionResolution.cpp:1542]
+
+Using the "error" primitive instead of "assertion" results in the same crash.
+
+Motivation: would like to implement compilerAssert more elegantly.

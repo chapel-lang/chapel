@@ -1,0 +1,12 @@
+main start
+driver start
+driver idx1 5
+driver idx1 6
+driver idx2 5
+driver idx2 6
+driver idx3 5
+driver idx3 6
+driver finish
+uncaught Error: 
+  abort-loop-vs-init-pragma.chpl:24: thrown here
+  abort-loop-vs-init-pragma.chpl:31: uncaught here

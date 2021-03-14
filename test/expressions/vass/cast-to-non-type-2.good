@@ -1,0 +1,2 @@
+cast-to-non-type-2.chpl:2: error: illegal cast to non-type
+cast-to-non-type-2.chpl:3: warning: c: string

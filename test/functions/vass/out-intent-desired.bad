@@ -1,0 +1,2 @@
+out-intent-desired.chpl:9: In function 'testClasses':
+out-intent-desired.chpl:9: error: Scoped variable i would outlive the value it is set to

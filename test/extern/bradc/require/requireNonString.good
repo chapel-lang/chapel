@@ -1,0 +1,1 @@
+requireNonString.chpl:3: error: 'require' statements require string arguments

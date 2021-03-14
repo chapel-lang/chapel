@@ -1,0 +1,38 @@
+semantic: should the depth of the 'use' chain matter?
+
+Context: symbols 'x' are defined in two different modules M11 and M222.
+Those modules are 'use'ed through different-depth use chains
+e.g. by the main module.
+
+Should a reference to 'x' in the main module be an "it is ambiguous" error?
+Or should M11's 'x' shadow M222's 'x' because the depth of the use chain
+of M222 is longer?
+
+Currently Chapel prefers symbols from the shorter-depth-use-chain module.
+In a discussion July 2015, Brad suggested that the depth should be used
+to shadow symbols in deeper modules along the same use chain, e.g.:
+
+  use M1;
+  writeln(x); // OK - use M1's x
+  module M1  { var x: int; use M11; }
+  module M11 { var x: real; } // shadowed by M1's x
+
+and that the depth should not be used to prioritize among independent
+use chains.
+
+Related: when the use chains have a diamond shape and 'x' is defined
+only at the bottom of the diamond, references to 'x' should not be
+considered conflicting under either choice above:
+
+  use M1;
+  use M2;
+  writeln(x); // OK - use M3's x
+  module M1 { use M3; }
+  module M2 { use M3; }
+  module M3 { var x: real; }
+
+Related, not covered in this future: should the depth of 'use'
+affect determination of the more specific function during resolution?
+
+Note that this discussion applies to using modules via 'use' statements.
+It does not apply to explicit naming.

@@ -1,0 +1,10 @@
+#!/bin/sh
+  
+testname=$1
+outfile=$2
+
+# grep for deadMod* and aliveMod* from the printModuleInitOrder list and grab
+# output -- usually either I'm Alive! or I'm Dead :( . Also grab the
+# --report-dead-modules output
+grep -i "Removed*\|deadMod*\|aliveMod*\|I'm *" $outfile | sed -e 's/^[ ]*//' > $outfile.2
+mv $outfile.2 $outfile

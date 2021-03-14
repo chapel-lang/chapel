@@ -1,0 +1,15 @@
+g unmanaged OtherClass(int(64))
+h int(64)
+i unmanaged MyClass(unmanaged OtherClass(int(64)))
+j unmanaged MyClass(unmanaged OtherClass(int(64)))
+k unmanaged MyClass(unmanaged OtherClass(int(64)))
+ll unmanaged MyClass
+ll borrowed MyClass
+ll generic
+m unmanaged MyClass
+m unmanaged object
+m borrowed MyClass
+m borrowed object
+n unmanaged MyClass
+n borrowed MyClass
+n unmanaged object

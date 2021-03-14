@@ -1,0 +1,9 @@
+feature request: allow an unstridable range to be implicitly coerced to stridable when it is passed as an arguments to a function
+
+Currently this coersion is supported when assigning to a variable.
+Would be nice to allow this when passing ranges as arguments.
+
+Allowing the reverse coersion (with a runtime check)
+is perhaps less desirable/advisable.
+
+See also promotion-of-actuals-idxType.*

@@ -1,0 +1,3 @@
+lifetime-checking-on-by-default.chpl:6: In function 'bad':
+lifetime-checking-on-by-default.chpl:8: error: Reference to scoped variable cannot be returned
+lifetime-checking-on-by-default.chpl:7: note: consider scope of locl

@@ -1,0 +1,2 @@
+ReplicatedNonCopyable.chpl:5: In function 'test':
+ReplicatedNonCopyable.chpl:7: error: cannot initialize replicated array because element type owned C cannot be copied

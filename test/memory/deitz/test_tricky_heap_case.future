@@ -1,0 +1,8 @@
+bug: heap allocation failure due to array element write in begin
+
+Was:
+
+bug: array not allocated on heap
+
+This is a tricky case where the compiler will have to backtrack through
+references to determine that a variable needs to be allocated on the heap.

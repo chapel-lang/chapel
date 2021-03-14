@@ -1,0 +1,11 @@
+bug: forwarding does not work without 'this'
+#5979
+
+In the current compiler, scopeResolve is responsible for adding the
+implicit 'this.' to a method call within a method. That's not happening
+if the method called is a forwarded method, because scope resolve runs
+before the set of forwarded methods is computed.
+
+I think that the solution here is to move the implicit  'this.' logic
+from scopeResolve into functionResolution. See also
+ test/functions/ferguson/spec-insn-method-no-this.future

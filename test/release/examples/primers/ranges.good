@@ -1,0 +1,76 @@
+Basic range r
+Range 1..10 = 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
+Open interval range rOpen
+Range 3..9 = 3, 4, 5, 6, 7, 8, 9
+The sum of the values in 1..10 is 55
+The sum of the values in 1..10 as computed by reduce is also 55
+
+Domains and arrays
+D = {1..10, 1..10}
+Array A
+0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
+
+Unbounded ranges
+Range 1.. = 1, 2, 3, ...
+Range ..5 = ..., 3, 4, 5
+Range .. = all integers, increasing
+Iterating over (312..315, 1..) generates
+ (312, 1) (313, 2) (314, 3) (315, 4)
+
+Range stride and the by operator
+Range 1..10 by 2 = 1, 3, 5, 7, 9
+Range 1..10 by 4 = 1, 5, 9
+Range 1..10 by -1 = 10, 9, 8, 7, 6, 5, 4, 3, 2, 1
+Range 5.. by 2 = 5, 7, 9, ...
+
+Range alignment and the align operator
+Range 1..10 by 2 = 1, 3, 5, 7, 9
+Range 1..10 by 2 align 0 = 2, 4, 6, 8, 10
+Implicit alignment set using 'by'
+Range 1..10 by -2 = 10, 8, 6, 4, 2
+Range ..5 by -3 = 5, 2, -1, ...
+
+The count operator
+Range 0..4 = 0, 1, 2, 3, 4
+Range 1..4 = 1, 2, 3, 4
+Range 7..10 by -1 = 10, 9, 8, 7
+Range 3..5 = 3, 4, 5
+
+Operators + and -
+Range 3..12 = 3, 4, 5, 6, 7, 8, 9, 10, 11, 12
+Range ..6 = ..., 4, 5, 6
+Range 0..9 by 2 = 0, 2, 4, 6, 8
+
+Range equality
+true
+true
+
+Range slicing
+A slice of 1..10 with 2..7
+Range 2..7 = 2, 3, 4, 5, 6, 7
+A slice of 1..10 with 5..15
+Range 5..10 = 5, 6, 7, 8, 9, 10
+A slice of 5..15 with 1..10 is the same
+Range 5..10 = 5, 6, 7, 8, 9, 10
+Range 1..10 by 2 = 1, 3, 5, 7, 9
+Range 1..10 by 2 align 0 = 2, 4, 6, 8, 10
+A slice of 1..20 by 3 with 1..20 by 2
+Range 1..20 by 6 = 1, 7, 13, 19
+A slice of 1..20 by 3 with 1..20 by -2
+Range 1..20 by 6 align 4 = 4, 10, 16
+
+A slice of 1..10 with 5..
+Range 5..10 = 5, 6, 7, 8, 9, 10
+A slice of 1..10 with 5.. by 2
+Range 5..10 by 2 = 5, 7, 9
+A slice of 1.. with ..5
+Range 1..5 = 1, 2, 3, 4, 5

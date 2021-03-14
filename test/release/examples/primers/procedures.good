@@ -1,0 +1,50 @@
+A simple procedure
+6! is 720
+
+Another simple procedure
+33! is 3400198294675128320
+6! is 720
+
+Using operator overloading
+down + over = (10.0, -5.0)
+
+Using named arguments
+{center = (2.0, 0.0), radius = 1.5}
+
+Using generic arguments
+5
+I see you've passed me an integer!
+Greetings, procedure unknownArg!
+I liked that last variable so much, I'll write it again!
+Greetings, procedure unknownArg!
+false
+
+Using the "in" intent
+5 ...
+4 ...
+3 ...
+2 ...
+1 ...
+Blastoff!
+s is still 5
+
+Using the "inout" intent
+3 ...
+2 ...
+1 ...
+Boink?
+t is now 0
+
+Using the "ref" intent
+3 ...
+2 ...
+1 ...
+Flippity boop
+bip is now 0
+
+Using the "out" intent
+Computed Pi as about 3.14359 in 501 iterations.
+
+Using variable argument lists.
+1 red 8.72 1..4
+

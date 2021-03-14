@@ -1,0 +1,5 @@
+semantic: Add "out" modifier for ref intents?
+
+Do we want to be able to specify that a ref argument is write-only?
+This may help with some optimizations.
+(See .chpl file for more info.)

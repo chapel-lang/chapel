@@ -1,0 +1,4 @@
+Whole array assignment (int(64)) : SUCCESS
+Whole array assignment (uint(64)) : SUCCESS
+Whole array assignment (real(32)) : SUCCESS
+Whole array assignment (string) : SUCCESS

@@ -1,0 +1,4 @@
+-sdistType=Block --report-auto-local-access -M$CHPL_HOME/test/optimizations/autoLocalAccess/
+-sdistType=BlockCyclic --report-auto-local-access -M$CHPL_HOME/test/optimizations/autoLocalAccess/
+-sdistType=Cyclic --report-auto-local-access -M$CHPL_HOME/test/optimizations/autoLocalAccess/
+-sdistType=Stencil --report-auto-local-access -M$CHPL_HOME/test/optimizations/autoLocalAccess/

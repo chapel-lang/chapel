@@ -1,0 +1,2 @@
+constInHeader.chpl:4: In initializer:
+constInHeader.chpl:4: error: invalid access of class member in initializer argument list

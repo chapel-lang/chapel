@@ -1,0 +1,1 @@
+externRemoteRecord3.chpl:18: error: references to remote data cannot be passed to external routines like 'foo'

@@ -1,0 +1,8 @@
+performance: ref arguments shouldn't always be wide
+
+The current compiler always implements 'ref' arguments as wide pointer
+types even when the arguments are provably local.  We should really be
+more careful about when to widen reference arguments since wide values
+add runtime overhead, make code complexity worse, and disable other
+optimizations (like fast-on optimizations -- see the opEquals test in
+this same directory).

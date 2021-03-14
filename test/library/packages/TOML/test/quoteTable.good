@@ -1,0 +1,10 @@
+
+[LocalAtomics."0.1.0"]
+score = "3"
+
+[DataStructures."0.1.0"]
+score = "1"
+
+[GPUIterator."0.0.1"]
+score = "4"
+

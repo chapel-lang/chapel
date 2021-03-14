@@ -1,0 +1,2 @@
+returntypedottype.chpl:5: error: can't apply '.type' to a type (complex(128))
+returntypedottype.chpl:6: error: can't apply '.type' to a type (int(64))

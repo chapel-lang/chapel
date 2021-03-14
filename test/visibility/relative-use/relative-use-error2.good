@@ -1,0 +1,2 @@
+relative-use-error2.chpl:8: In function 'foo':
+relative-use-error2.chpl:9: error: Cannot find module or enum 'DoesNotExistModule'

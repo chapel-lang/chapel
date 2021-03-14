@@ -1,0 +1,88 @@
+
+casts to borrowed Child
+cb:borrowed Child
+borrowed Child {p = 1, c = 2}
+cbq:borrowed Child
+borrowed Child {p = 1, c = 2}
+cu:borrowed Child
+borrowed Child {p = 1, c = 2}
+cuq:borrowed Child
+borrowed Child {p = 1, c = 2}
+pb:borrowed Child
+ClassCastError: cannot cast class to type - runtime types not compatible
+pbq:borrowed Child
+ClassCastError: cannot cast class to type - runtime types not compatible
+pu:borrowed Child
+ClassCastError: cannot cast class to type - runtime types not compatible
+puq:borrowed Child
+ClassCastError: cannot cast class to type - runtime types not compatible
+nbq:borrowed Child
+NilClassError: cannot convert nil class to non nilable type
+nuq:borrowed Child
+NilClassError: cannot convert nil class to non nilable type
+
+casts to borrowed Child?
+cb:borrowed Child?
+borrowed Child? {p = 1, c = 2}
+cbq:borrowed Child?
+borrowed Child? {p = 1, c = 2}
+cu:borrowed Child?
+borrowed Child? {p = 1, c = 2}
+cuq:borrowed Child?
+borrowed Child? {p = 1, c = 2}
+pb:borrowed Child?
+borrowed Child? nil
+pbq:borrowed Child?
+borrowed Child? nil
+pu:borrowed Child?
+borrowed Child? nil
+puq:borrowed Child?
+borrowed Child? nil
+nbq:borrowed Child?
+borrowed Child? nil
+nuq:borrowed Child?
+borrowed Child? nil
+
+casts to unmanaged Child
+cb:unmanaged Child
+unmanaged Child {p = 1, c = 2}
+cbq:unmanaged Child
+unmanaged Child {p = 1, c = 2}
+cu:unmanaged Child
+unmanaged Child {p = 1, c = 2}
+cuq:unmanaged Child
+unmanaged Child {p = 1, c = 2}
+pb:unmanaged Child
+ClassCastError: cannot cast class to type - runtime types not compatible
+pbq:unmanaged Child
+ClassCastError: cannot cast class to type - runtime types not compatible
+pu:unmanaged Child
+ClassCastError: cannot cast class to type - runtime types not compatible
+puq:unmanaged Child
+ClassCastError: cannot cast class to type - runtime types not compatible
+nbq:unmanaged Child
+NilClassError: cannot convert nil class to non nilable type
+nuq:unmanaged Child
+NilClassError: cannot convert nil class to non nilable type
+
+casts to unmanaged Child?
+cb:unmanaged Child?
+unmanaged Child? {p = 1, c = 2}
+cbq:unmanaged Child?
+unmanaged Child? {p = 1, c = 2}
+cu:unmanaged Child?
+unmanaged Child? {p = 1, c = 2}
+cuq:unmanaged Child?
+unmanaged Child? {p = 1, c = 2}
+pb:unmanaged Child?
+unmanaged Child? nil
+pbq:unmanaged Child?
+unmanaged Child? nil
+pu:unmanaged Child?
+unmanaged Child? nil
+puq:unmanaged Child?
+unmanaged Child? nil
+nbq:unmanaged Child?
+unmanaged Child? nil
+nuq:unmanaged Child?
+unmanaged Child? nil

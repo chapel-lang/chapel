@@ -1,0 +1,12 @@
+Concrete
+Concrete
+Concrete
+Generic
+Generic
+Generic
+c1 {x = 10, y = 20}
+c2 {x = 20, y = 30}
+c3 {x = 30, y = 40}
+c5 {x = false, y = 40.0}
+c6 {x = true, y = 50.0}
+c7 {x = true, y = 60.0}

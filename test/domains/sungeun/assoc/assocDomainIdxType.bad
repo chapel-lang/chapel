@@ -1,0 +1,1 @@
+assocDomainIdxType.chpl:1: error: Default Associative domains with idxType=DefaultAssociativeDom(string,true) are not allowed

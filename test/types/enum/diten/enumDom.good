@@ -1,0 +1,16 @@
+(a.domain, s)
+1.1 3
+2.2 4
+3.3 5
+(s, a.domain)
+1.1 3
+2.2 4
+3.3 5
+(b.domain, s)
+green 3
+red 4
+blue 5
+(s, b.domain)
+green 3
+red 4
+blue 5

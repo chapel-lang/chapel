@@ -1,0 +1,2 @@
+--coinflip=false # boolIndex.good
+--coinflip=true  # boolIndex-true.good

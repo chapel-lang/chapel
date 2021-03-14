@@ -1,0 +1,3 @@
+In secondary initializer of class Foo
+{x = 10, y = true}
+{x = 2, y = true}

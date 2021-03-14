@@ -1,0 +1,5 @@
+perfkeys: real, real, real, real, real, real, real, real
+files: pidigits-blc.dat, pidigits-iter.dat, pidigits.dat, pidigits-ledrug.dat, pidigits-BigInt.dat, pidigits-ledrug-BigInt.dat, pidigits-fast.dat, pidigits-gmp.dat
+graphkeys: brad version, iterator version, release, Ledrug, early bigint version, early Ledrug with bigint, fast release version, GMP version
+ylabel: Time (seconds)
+graphtitle: Pi digits variations

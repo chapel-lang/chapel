@@ -1,0 +1,25 @@
+constraint-task-fns-errors.chpl:40: In function 'test_begin':
+constraint-task-fns-errors.chpl:44: error: Actual argument does not meet called function lifetime constraint
+constraint-task-fns-errors.chpl:43: note: consider scope of a
+constraint-task-fns-errors.chpl:4: note: called function setit_begin(lhs: borrowed C?, rhs: borrowed C)
+constraint-task-fns-errors.chpl:4: note: includes lifetime constraint lhs < rhs
+constraint-task-fns-errors.chpl:50: In function 'test_cobegin':
+constraint-task-fns-errors.chpl:54: error: Actual argument does not meet called function lifetime constraint
+constraint-task-fns-errors.chpl:53: note: consider scope of a
+constraint-task-fns-errors.chpl:9: note: called function setit_cobegin(lhs: borrowed C?, rhs: borrowed C)
+constraint-task-fns-errors.chpl:9: note: includes lifetime constraint lhs < rhs
+constraint-task-fns-errors.chpl:60: In function 'test_coforall':
+constraint-task-fns-errors.chpl:64: error: Actual argument does not meet called function lifetime constraint
+constraint-task-fns-errors.chpl:63: note: consider scope of a
+constraint-task-fns-errors.chpl:16: note: called function setit_coforall(lhs: borrowed C?, rhs: borrowed C)
+constraint-task-fns-errors.chpl:16: note: includes lifetime constraint lhs < rhs
+constraint-task-fns-errors.chpl:70: In function 'test_forall':
+constraint-task-fns-errors.chpl:74: error: Actual argument does not meet called function lifetime constraint
+constraint-task-fns-errors.chpl:73: note: consider scope of a
+constraint-task-fns-errors.chpl:25: note: called function setit_forall(lhs: borrowed C?, rhs: borrowed C)
+constraint-task-fns-errors.chpl:25: note: includes lifetime constraint lhs < rhs
+constraint-task-fns-errors.chpl:80: In function 'test_on':
+constraint-task-fns-errors.chpl:84: error: Actual argument does not meet called function lifetime constraint
+constraint-task-fns-errors.chpl:83: note: consider scope of a
+constraint-task-fns-errors.chpl:34: note: called function setit_on(lhs: borrowed C?, rhs: borrowed C)
+constraint-task-fns-errors.chpl:34: note: includes lifetime constraint lhs < rhs

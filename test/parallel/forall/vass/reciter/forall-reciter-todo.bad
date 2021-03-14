@@ -1,0 +1,7 @@
+forall-reciter-todo.chpl:45: In function 'main':
+forall-reciter-todo.chpl:50: error: forall loops over recursive parallel iterators are currently not implemented
+forall-reciter-todo.chpl:50: note: in the presence of non-ref intents
+forall-reciter-todo.chpl:19: note: the parallel iterator is here
+forall-reciter-todo.chpl:58: error: forall loops over recursive parallel iterators are currently not implemented
+forall-reciter-todo.chpl:58: note: in the presence of non-ref intents
+forall-reciter-todo.chpl:19: note: the parallel iterator is here

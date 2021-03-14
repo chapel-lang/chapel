@@ -1,0 +1,8 @@
+-scopyType=int --remote-value-forwarding
+-scopyType=int --no-remote-value-forwarding
+-scopyType=real
+-scopyType=complex
+-scopyType=imag
+-scopyType=bool
+-scopyType=TupInt
+-scopyType=RecInt

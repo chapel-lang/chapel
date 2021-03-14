@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+#PBS -N "ra"
+#PBS -j oe
+#PBS -l walltime=1:00:00
+#PBS -l size=8
+#PBS -A CSC025CHAP
+#PBS -q debug
+
+# cd to directory where job was submitted from
+cd $PBS_O_WORKDIR
+
+date
+
+aprun -n2 -N1 ./ra --n=26 --N_U_log2=20
+

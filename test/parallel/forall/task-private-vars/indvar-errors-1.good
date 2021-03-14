@@ -1,0 +1,5 @@
+indvar-errors-1.chpl:8: In function 'main':
+indvar-errors-1.chpl:10: error: the initialization or type expression of the task-private variable 'tpv1' references the forall loop induction variable 'loc'
+indvar-errors-1.chpl:11: error: the initialization or type expression of the task-private variable 'tpv2' references the forall loop induction variable 'loc'
+indvar-errors-1.chpl:17: error: the initialization or type expression of the task-private variable 'tpv1' references the forall loop induction variable 'loc1'
+indvar-errors-1.chpl:18: error: the initialization or type expression of the task-private variable 'tpv2' references the forall loop induction variable 'loc2'

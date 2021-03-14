@@ -1,0 +1,57 @@
+semantic: Choose one of int(64) or uint(64) for mixed operations.
+
+Brad's comment: I don't think we should choose between these by
+default because there is no right answer.  Moreover, by flagging our
+error overloads as being "compiler introduced", we can support the
+ability for a user (or a library) to define the overloads as they see
+fit.
+
+Specifically, a case where I might want int + uint to be int would be
+one in which my intention is to compute with ints (because they're so
+natural, the default, support negatives, etc.), yet I need to add in
+the result of a library routine that returns a uint (like a length,
+size, etc. function where the author didn't agree with my philosophy
+that these should always return int's because of the pains of working
+with uints).  In this case, I'd like to keep storing ints, and not
+have my result coerce to uint.
+
+   var myInt = 42;
+   myInt += x.lengthReturnsUint();
+
+The counter-example is that I'm working with uints, but I happen to
+have created an int const (note: not param) and can't add it in
+because it breaks things:
+
+   var myUint: uint = 42;
+   const one = 1;
+   myUint += one;
+
+The point being that I think you typically want the result to match
+the type that you're working with as your default/natural type, and
+that type could vary depending on the setting.  One could argue
+something like "maybe the first operand should determine the result
+type" but I think that approach is a bit fragile and icky compared to
+defining neither by default and forcing the user to choose (via an
+explicit cast or overload of their own).
+
+----
+
+Tom's original request:
+
+
+Keeping the result of this combination of types will make a lot of code break
+if we go to 64 bits for the default integer type.  It would be better to choose
+one of int(64) and uint(46) as the result type of a mixed operation, and then 
+generate a run-time error if the result does not fit in the specified result type
+(a down-cast for assignment).
+
+At this point, I think that int(64) is the better choice for the uebertype.
+The reasoning is that prgrs normally use "int" when they don't care, but use
+"uint" as an assertion that the value never goes negative.  
+Then it makes sense to allow (e.g.) uint real arguments to be cast silently to
+int formal parameters (as long as the representation fits), whereas signed real
+arguments might have to be explicitly cast to unsigned when calling a function
+expecting unsigned arguments.  That makes the unsignedness assertion show up in
+the client code, so the assertion propagates (similar to const-ness in C).
+
+

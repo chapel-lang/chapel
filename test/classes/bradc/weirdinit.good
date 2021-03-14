@@ -1,0 +1,3 @@
+weirdinit.chpl:6: In function 'main':
+weirdinit.chpl:7: error: 'a' used before defined
+weirdinit.chpl:7: note: defined here

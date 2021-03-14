@@ -1,0 +1,118 @@
+AMMPI Documentation
+===================
+Author: Dan Bonachea
+Contact email: gasnet-devel@lbl.gov
+Home page: https://gasnet.lbl.gov/ammpi
+
+AMMPI is an implementation of the AM-2 specification over MPI-1.
+
+AMMPI is a portable implementation of the AM-2 specification that runs on MPI-1.1
+message-passing operations. It does not currently use MPI-RMA in any way.
+
+The intent is a fully-portable implementation that will work on any system with
+a compliant MPI implementation.  We don't expect to achieve latency performance
+competitive with a native implementation of AM optimized for special-purpose
+hardware, instead we seek to provide a compatibility layer that will allow
+AM-based systems to quickly get up and running on any HPC platform. 
+
+AMMPI is a production-quality AM layer that provides a number of features in
+addition to the standard AM-2 API, including a helper library for SPMD job
+startup and an API to access built-in networking utilization and performance
+statistics. It has been successfully ported to a number of parallel
+architectures, and porting to new architectures generally requires minimal
+effort. AMMPI performs all its MPI calls on a separate, private MPI
+communicator, which is strongly guaranteed by the MPI spec to isolate it from
+any other MPI communication in the application, so there's never a possibility
+of deadlock or hard-limit resource contention between the two.
+
+AMMPI is used to implement the GASNet communication system (https://gasnet.lbl.gov). 
+Further documentation about using AMMPI is available in the mpi-conduit
+documentation: https://gasnet.lbl.gov/dist/mpi-conduit/README
+
+Requirements
+------------
+
+* MPI 1.1 or later implementation, with a C99 compiler
+
+* GNU Make and basic UNIX tools for the provided Makefiles
+
+Limitations
+-----------
+
+AMMPI is a purely polling-based implementation of Active Messages, in that incoming
+active messages are only serviced inside synchronous calls to the AMMPI library from
+the local process. This can lead to increased latency for those requests when the local
+node is inattentive to the network.
+
+AMMPI has a few notable departures from the AM-2 specification:
+
+* The client must call AM_SetExpectedResources() exactly once on an endpoint
+  after setting up the translation table and before making any calls to the
+  transport functions (AM_Poll, AM_Reply* or AM_Request*). It is also an error to
+  call AM_Map, AM_MapAny or AM_Unmap (which change the translation table) after
+  the call to AM_SetExpectedResources().
+
+* AM_PAR bundle/endpoint access is not implemented - this means AMMPI does
+  not provide thread safety, but can be used in a thread-funnelled mode with
+  locking at the client level.
+
+* The nbytes argument to Medium and Long AM handlers has type `size_t`
+
+* AM_GetXferM is not implemented.
+
+* Clients should not take the address of AM_ entry point "functions", because
+  many are implemented as macros.
+
+Change Log
+----------
+AMMPI 2.9 (06/2018)
+- Medium and Long AM handlers change in signature on 64-bit platforms: 
+  the nbytes argument now has type size_t instead of int
+- New AMMPI_LIBRARY_VERSION_{MAJOR,MINOR} defines
+- Significant rearrangement of internal files and utilities
+- AM Handler dispatching code is now strictly spec-compliant
+- Several pseudo-public programmatic knobs renamed into the AMX_ namespace
+- AMX_ProcessLabel now supported for labelling per-node library output
+- Bug 2774: source_addr to Med/Long injection is now ignored for nbytes=0
+- Fix an unreported cosmetic output bug in AMX_RETURN error reporting
+
+AMMPI 2.8 (03/2017)
+- Add AMMPI_FS_SYNC envvar to control exit-time filesystem sync()
+- Add AMMPI_MPI_THREAD to control MPI threading mode used to init MPI 2+ in AMMPI_SPMDSetThreadMode
+- Fix AM_{Get,Set}NumHandlers and AM_MoveEndpoint
+- Export AMMPI_enEqual
+- Expose AMX_SetTranslationTag
+- Add C++ compatibility to the public header (ie extern "C")
+- Renamed portable_platform.h
+- Rename some platform Makefile fragments
+- Remove support for: Cray T3E, Catamount, native Win32 (use cygwin instead)
+- Remove some obsolete files
+- make run-tests now outputs summary results at the end
+- Fix some harmless check-exports failures, and allow the test to be skipped via CHECK_EXPORTS=0
+- Fix some harmless warnings on amxdist
+- Respect MANUAL_MPICFLAGS in stand-alone mode
+- Remove the debug/opt workaround
+- Fix possible syntax errors with AM expression arguments
+- Silence the annoying MPICH/Linux _FORTIFY_SOURCE warning
+- Use MPI_Comm_set_errhandler for MPI 2+
+- Use realloc when appropriate to manage internal state
+- Use C99 __func__ when available in error messages
+- Fix compile errors for AMMPI_NONBLOCKING_SENDS==0 or AMMPI_PREPOST_RECVS=0
+- Remove dead code
+- Update URL and contact email
+
+AMMPI 2.7 (10/2010)
+- Test for MPI_VERSION >= 2 in threaded utilities
+- Fix a harmless warning
+
+AMMPI 2.6 (05/2010)
+- Fix an assertion failure on PREDICT_PACKET_LENGTH_
+
+AMMPI 2.5 (10/2009)
+- Implement strict prototypes, ie: fn(void)
+- Handle compilers that don't support __attribute__((__format__ (__printf__))
+
+AMMPI 2.4 (10/2007)
+- Implement AMMPI_SPMDSetThreadMode
+- Implement AMMPI_VERIFY_MPI_ORDERING
+

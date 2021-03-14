@@ -1,0 +1,2 @@
+in class C init()
+in class C init(owned C)

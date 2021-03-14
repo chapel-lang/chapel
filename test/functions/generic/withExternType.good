@@ -1,0 +1,17 @@
+withExternType.chpl:27: warning: t1==t2 true
+withExternType.chpl:27: warning: t1==t3 true
+withExternType.chpl:27: warning: t1==t4 true
+withExternType.chpl:27: warning: t1==t5 true
+withExternType.chpl:27: warning: t1==t6 true
+withExternType.chpl:27: warning: t2==t3 true
+withExternType.chpl:27: warning: t2==t4 true
+withExternType.chpl:27: warning: t2==t5 true
+withExternType.chpl:27: warning: t2==t6 true
+withExternType.chpl:27: warning: t3==t4 true
+withExternType.chpl:27: warning: t3==t5 true
+withExternType.chpl:27: warning: t3==t6 true
+withExternType.chpl:27: warning: t4==t5 true
+withExternType.chpl:27: warning: t4==t6 true
+withExternType.chpl:27: warning: t5==t6 true
+withExternType.chpl:27: In function 'main':
+withExternType.chpl:52: error: success

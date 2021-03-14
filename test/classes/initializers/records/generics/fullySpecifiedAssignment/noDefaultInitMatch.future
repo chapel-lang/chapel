@@ -1,0 +1,11 @@
+feature request: make fully specified generic record init work when no initializer with a generic argument per field is provided
+
+Today, instances of the form:
+
+var x: Foo(args) = new Foo();
+
+fail if Foo has not defined an initializer with a generic argument per generic
+field in the type.  Since the instance is just going to get overwritten with the
+return value of the call on the right side of the assignment operator, it would
+be nice to allow the user to write that form without failure, instead of forcing
+them to never declare the explicit type for `x`.

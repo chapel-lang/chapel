@@ -1,0 +1,4 @@
+bug: incorrect locale id within local-on statement
+
+'x' is not widened across a local-on statement, and loses its locality
+information. It should simply read 'LOCALE0', but instead reads 'LOCALE0.ND0'.

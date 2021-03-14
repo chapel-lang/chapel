@@ -1,0 +1,13 @@
+#!/bin/bash
+
+TEST=$1
+LOG=$2
+# PREDIFF: Script to execute before diff'ing output (arguments: <test
+#    executable>, <log>, <compiler executable>)
+
+MYLOG=""
+
+LAST=""
+
+grep -v contains $LOG > $LOG.tmp
+mv $LOG.tmp $LOG

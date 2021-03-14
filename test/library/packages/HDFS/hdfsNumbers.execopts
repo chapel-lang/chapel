@@ -1,0 +1,10 @@
+--n=1 --bufsz=1
+--n=1 --bufsz=8
+--n=1 --bufsz=16
+--n=10 --bufsz=1
+--n=10 --bufsz=8
+--n=10 --bufsz=16
+--n=128 --bufsz=128
+--n=10000 --bufsz=0
+--n=10000 --bufsz=128
+--n=10000 --bufsz=4096

@@ -1,0 +1,10 @@
+MyClass deinitializer called (10, true)
+10
+MyClass deinitializer called (-1, true)
+{memberInt = -1, memberBool = true}
+{memberInt = 0, memberBool = true}
+{memberInt = 9, memberBool = true}
+MyClass deinitializer called (9, true)
+MyClass deinitializer called (0, true)
+MyClass deinitializer called (-1, true)
+MyClass deinitializer called (10, true)

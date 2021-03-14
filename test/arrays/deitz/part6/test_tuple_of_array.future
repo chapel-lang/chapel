@@ -1,0 +1,7 @@
+bug: type composed of runtime type is not a runtime type
+
+was:
+
+bug: tuple type of array type
+
+types containing array types need to have runtime info

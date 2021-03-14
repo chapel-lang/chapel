@@ -1,0 +1,195 @@
+#!/bin/bash
+# Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+# Copyright 2004-2019 Cray Inc.
+# Other additional copyright holders may be indicated within.
+#
+# The entirety of this work is licensed under the Apache License,
+# Version 2.0 (the "License"); you may not use this file except
+# in compliance with the License.
+#
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# This script checks the test/ directory for the .good the .bad and
+# the .future files (and assorted other start_test control files) that
+# are stale.  Most of the files are stale if there's no .chpl file
+# that refers to them.
+# Exceptions:
+# - .bad files are also stale if there's no matching .future file.
+# - .notest files are stale only if there's also no matching directory.
+# - .good files are complicated as they may be referenced without a
+#   matching .chpl due to .compopts and .execopts files.  start_test
+#   may add locale-model or comm-layer (etc) labels to the names.
+#   (comm-none, lm-flat, etc.)  Some .prediff and PREDIFF files make
+#   use of .good files that don't naturally match any tests.
+# - .perfkeys can also be generated from .compopts and .execopts.
+
+# usage: findUnusedTestFiles
+#
+# The script reports to stdout the name of any test file it thinks is
+# unused.
+
+for f in $(find $CHPL_HOME/test                                               \
+           -name \*.good       -o -name \*.bad      -o -name \*.future -o     \
+           -name \*.prediff    -o -name \*.precomp  -o -name \*.preexec -o    \
+           -name \*.compopts   -o -name \*.execopts -o -name \*.numlocales -o \
+           -name \*.catfiles   -o -name \*.notest   -o -name \*.noexec -o     \
+           -name \*.cleanfiles -o -name \*.skipif   -o -name \*.suppressif -o \
+           -name \*.timeout    -o -name \*.perfnumtrials -o                   \
+           -name \*.perfcompopts -o -name \*.perfexecopts                     \
+          ); do
+
+   d=$(dirname $f)
+
+   # Get the base name by stripping off the extensions we're looking
+   # for, and extensions the test system will automatically look for
+   # ("no-local" and following (order matters)).
+   # linux32, cray-xc are the in-use sub_test:platform values
+   f=$(basename $f)
+   base=$f
+   for ext in good bad future prediff precomp preexec compopts execopts      \
+              numlocales catfiles notest noexec cleanfiles skipif suppressif \
+              timeout perfnumtrials perfcompopts perfexecopts                \
+              no-local lm-flat lm-numa na-none na-ugni                       \
+              comm-ugni comm-ofi comm-gasnet comm-none                       \
+              linux32 cray-xc; do
+       base=${base%.${ext}}
+   done
+
+   GOODFILE=0
+   BADFILE=0
+   FUTUREFILE=0
+   NOTESTFILE=0
+   SKIPIFFILE=0
+   SUPPRESSIFFILE=0
+   [ ${f%.good} == ${f}   ] || GOODFILE=1
+   [ ${f%.bad} == ${f}    ] || BADFILE=1
+   [ ${f%.future} == ${f} ] || FUTUREFILE=1
+   [ ${f%.notest} == ${f} ] || NOTESTFILE=1
+   [ ${f%.skipif} == ${f} ] || SKIPIFFILE=1
+   [ ${f%.suppressif} == ${f} ] || SUPPRESSIFFILE=1
+
+   # deprecated/potential future chpldoc mode #1369 e9a18221a
+   base=${base/%.logical.doc/.doc}
+
+   # Ignore everything in a NOTEST dir
+   if [ -f $d/NOTEST ]; then
+       continue
+   fi
+
+   # Some .mason dirctories are created at runtime, so ignore e.g. the
+   # .mason.notest even when there's not a .mason dir.
+   if [ ${f#.mason} != $f ]; then
+       continue
+   fi
+
+   # Note .bad files lacking a .future.  This is much simpler than all
+   # the ways .good files can be named.
+   if [ $BADFILE == 1 ]; then
+       if [ ! -f $d/${base}.future ]; then
+	   echo ${d#${CHPL_HOME}/}/$f
+	   continue
+       fi
+   fi
+
+   # A .notest, .skipif, or .suppressif file can apply to a subdirectory
+   if [ $NOTESTFILE == 1 -o $SKIPIFFILE == 1 -o $SUPPRESSIFFILE == 1 ]; then
+       if [ -d $d/${base} ]; then
+	   continue
+       fi
+   fi
+
+   # Handle some special cases that apply only to .good files.
+   if [ $GOODFILE == 1 ]; then
+      # This dir uses a PREDIFF file to pick a specific .good file.  But
+      # it just invokes "../../PREDIFF $0", so the later PREDIFF section
+      # won't catch it.
+
+      # Keep the line testing this path under 80 columns.  Sigh.
+      DRAPM="$CHPL_HOME/test/distributions/robust"
+      DRAPM="${DRAPM}/arithmetic/performance/multilocale"
+      if [ $d == $DRAPM ]; then
+	  base=${base%.cyclic}
+	  base=${base%.replicated}
+	  base=${base%.block}
+	  base=${base%.default}
+      fi
+
+      # These dirs stick the .good files in subdirs, and copy them in
+      # via precomp.  Pretend these .good files are one directory up.
+      if [ $d == "$CHPL_HOME/test/release/examples/benchmarks/isx/goods-1" -o \
+	   $d == "$CHPL_HOME/test/release/examples/benchmarks/isx/goods-4" -o \
+	   $d == "$CHPL_HOME/test/studies/isx/goods-1" -o \
+	   $d == "$CHPL_HOME/test/studies/isx/goods-4" ]; then
+	  d=${d/\/goods-1/}
+	  d=${d/\/goods-4/}
+      fi
+
+      # This dir has foo-alt.good files that are included by the
+      # using-chpl .rst files.
+      if [ $d == "$CHPL_HOME/test/release/examples/users-guide/taskpar" ]; then
+	  if [ ${base%-alt} != $base ]; then
+	      continue
+	  fi
+      fi
+   fi
+
+   chpl=${base}.chpl
+   toml=${base}.toml
+   c=${base}.test.c
+   ml_c=${base}.ml\-test.c
+
+   if [ -f $d/$chpl -o -f $d/$c -o -f $d/$ml_c -o -f $d/$toml ]; then
+      continue
+   fi
+
+   # See if this file is symlinked to by something in its dir
+   if ls -lR "$d" | grep ^l | grep " -> $f" > /dev/null 2>&1; then
+     continue
+   fi
+
+   # See if this file is named in a compopts or execopts file
+   co=$(compgen -G $d/'*.compopts')
+   eo=$(compgen -G $d/'*.execopts')
+   cdo=$(compgen -G $d/'*.chpldocopts')
+
+   # Some opts files have "# goodname.good", others just "# goodname",
+   # so check $base instead of $f.
+   # The grep includes /dev/null in case $co $eo and $cdo are all empty.
+   if grep $base $co $eo $cdo /dev/null > /dev/null 2>&1; then
+      continue
+   fi
+
+   if [ $GOODFILE == 1 ]; then
+       # If a .prediff, PREDIFF, or sub_test mentions .good files at all,
+       # assume it's doing something sneaky.
+       pd=$(compgen -G $d/'*.prediff')
+       pd1=$(compgen -G $d/'PREDIFF')
+       st=$(compgen -G $d/'sub_test')
+       if grep \\.good $pd $pd1 $st /dev/null > /dev/null 2>&1; then
+	   continue
+       fi
+
+       # compopts and execopts with more than one line but no explicit
+       # filenames cause foo.chpl to have good files foo.x-y.chpl for x
+       # and y in 0 or 1..#lines in file.
+       if [ -n "$co" -o -n "$eo" -o -f $d/COMPOPTS -o -f $d/EXECOPTS ]; then
+	   base=${base%.[0-9]*-[0-9]*}
+	   chpl=$base.chpl
+	   c=$base.test.c
+	   ml_c=$base.ml\-test.c
+	   if [ -f $d/$chpl -o -f $d/$c -o -f $d/$ml_c ]; then
+               continue
+	   fi
+       fi
+   fi
+
+   echo ${d#${CHPL_HOME}/}/$f
+done

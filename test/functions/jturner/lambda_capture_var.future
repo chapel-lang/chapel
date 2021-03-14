@@ -1,0 +1,5 @@
+semantic: first-class functions capturing a variable
+
+MPF 2016-10-28: language design for first-class functions is still a TODO, even
+though there has been a prototype.  It is not clear to me that programs such as
+this one need be valid in the language design we choose.

@@ -1,0 +1,6 @@
+#!/bin/sh
+if [ -z "$CHPL_TEST_PERF" ]; then
+  head -1 $2 > $2.prediff.tmp
+  tail -3 $2 | head -1 >> $2.prediff.tmp
+  mv $2.prediff.tmp $2
+fi

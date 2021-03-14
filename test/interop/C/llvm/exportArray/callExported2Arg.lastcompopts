@@ -1,0 +1,1 @@
+-Llib/ -lexportFuncWith1Arr1Not `$CHPL_HOME/util/config/compileline --libraries` -lexportFuncWith1Arr1Not

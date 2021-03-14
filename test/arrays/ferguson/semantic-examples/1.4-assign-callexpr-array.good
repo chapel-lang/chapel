@@ -1,0 +1,6 @@
+globalArray is 0
+setting returnGlobalArray() = ArrTwo
+copy/assign from 0
+copy/assign from 2
+globalArray is now 0
+0

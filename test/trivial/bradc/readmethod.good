@@ -1,0 +1,2 @@
+readmethod.chpl:1: In function 'main':
+readmethod.chpl:2: error: 'goo' undeclared (first use this function)

@@ -1,0 +1,17 @@
+
+Distributed Matrix Transpose
+
+  Problem Characteristics
+                       rows   : 100
+                       columns: 100
+                       beta   : 1.0
+    norm of A                 : 70.4151
+    norm of C                 : 255.958
+    max acceptable discrepancy: 7.1802e-14
+
+  Unblocked Results
+    *** SUCCESS ***
+ Blocked Results V1
+    *** SUCCESS ***
+ Blocked Results V2
+    *** SUCCESS ***

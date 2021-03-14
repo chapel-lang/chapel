@@ -1,0 +1,10 @@
+fields-of-this-4-begin-cobegin.chpl:13: In method 'bgn':
+fields-of-this-4-begin-cobegin.chpl:15: error: cannot assign to const variable
+fields-of-this-4-begin-cobegin.chpl:24: In method 'cob':
+fields-of-this-4-begin-cobegin.chpl:26: error: cannot assign to const variable
+fields-of-this-4-begin-cobegin.chpl:27: error: cannot assign to const variable
+fields-of-this-4-begin-cobegin.chpl:42: In method 'bgn':
+fields-of-this-4-begin-cobegin.chpl:44: error: cannot assign to const variable
+fields-of-this-4-begin-cobegin.chpl:53: In method 'cob':
+fields-of-this-4-begin-cobegin.chpl:55: error: cannot assign to const variable
+fields-of-this-4-begin-cobegin.chpl:56: error: cannot assign to const variable

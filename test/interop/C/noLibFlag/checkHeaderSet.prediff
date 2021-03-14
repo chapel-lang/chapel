@@ -1,0 +1,9 @@
+#!/bin/bash
+
+if [ -f lib/headerSet.h ]; then
+   echo "found header" >> $2
+fi
+
+if [ -f lib/libcheckHeaderSet.a ]; then
+   echo "found library" >> $2
+fi

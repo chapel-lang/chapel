@@ -1,0 +1,5 @@
+perfkeys: success  single reduction 1d:, success  multiple reductions 1d:, success  multiple reductions 2d:, success  multiple reductions 3d:
+repeat-files: reductions-perf.dat
+graphkeys: single reduction 1d, M reductions 1d, M reductions 2d, M reductions 3d
+ylabel: Time (seconds)
+graphtitle: Reductions Time (sec)

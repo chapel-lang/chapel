@@ -1,0 +1,6 @@
+arr-dom.chpl:4: In function 'badReturnBorrowedArrayDom':
+arr-dom.chpl:7: error: Scoped variable cannot be returned
+arr-dom.chpl:5: note: consider scope of A
+arr-dom.chpl:11: In function 'badReturnBorrowedArrayDomDist':
+arr-dom.chpl:14: error: Scoped variable cannot be returned
+arr-dom.chpl:12: note: consider scope of A

@@ -1,0 +1,8 @@
+feature request: handle reading of atomic variables consistently
+
+This is the same as read-atomics-1.future,
+except currently writeln(a) is permitted.
+
+Again, the point is that ideally either all reads and writes to atomics
+are allowed directly or all of them are disallowed.
+Right now some accesses are allowed while some others are not.

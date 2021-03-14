@@ -1,0 +1,56 @@
+#!/usr/bin/env python3
+#
+# This script is a system-wide prediff for use when stack tracing is enabled.
+# If the test doesn't present a stack trace in the expected output, this script
+# will remove the stack trace (if present) in the generated output.
+#
+# Can also be used with the environment variable (on bash)
+#
+#  export CHPL_SYSTEM_PREDIFF=$CHPL_HOME/util/test/prediff-for-stacktrace
+
+import sys, subprocess
+import re
+
+# These are the tests that produces a binary output, so we can be sure that
+# they doesn't have a stack trace
+# This set of tests are taken from prediff-for-amudp-warning
+binaryTest = ["mandelbrot", "mandelbrot-complex", "mandelbrot-dist",
+              "mandelbrot-fancy declprintint", "fwriteIntFile",
+              "fwriteMultipleInts", "fwriteIntStdout"]
+
+if( sys.argv[1] in binaryTest):
+  sys.exit(0)
+
+# If the good file has a stack trace, the expected output should have it too
+try:
+  goodFile = open(sys.argv[1]+".good", "r")
+  for line in goodFile:
+    if(line == "Stacktrace\n"):
+      sys.exit(0)
+except IOError:
+    print "Can't find "+sys.argv[1]+".good"
+
+# Matches a function line in our stack trace
+pattern = re.compile(".*\(\) at .*:[0-9]+")
+
+outfile = open(sys.argv[2], "r")
+realOut = open(sys.argv[2]+".tmp" , "w")
+
+startStackTrace=False
+
+for line in outfile:
+  # if we are in a "stack trace zone"
+  if(startStackTrace):
+    if(not(pattern.match(line) or line == "\n")):
+      # This line is not a part of the stack trace, so we assume it's finished
+      startStackTrace = False
+      realOut.write(line)
+  # This is the start of the stack trace zone
+  elif(line == "Stacktrace\n"):
+    startStackTrace = True
+  else :
+    realOut.write(line)
+
+realOut.close()
+outfile.close()
+subprocess.call("mv "+sys.argv[2]+".tmp"+" "+sys.argv[2], shell=True )

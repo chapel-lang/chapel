@@ -1,0 +1,26 @@
+feature request: Support pow() as a function.
+
+Forgot about the ** (exponentiation) operator after my first reading of the
+spec, and fell back on my knowledge of the C math library -- adding an extern
+declaration:
+
+    // Returns x raised to the y power.
+    _extern proc pow(x : real(64), y : real(64)) : real(64);
+
+That's the only version there is (no powf(), for example).  So that was it.
+
+Arguments in favor:
+ - We can say, "Chapel fully and natively supports the C math library."
+ - Helpful for C-programmer retreads trying to use Chapel (usability).
+
+Arguments against:
+ - Pollutes the global namespace.
+ - What about other data types?
+
+Rebuttal of arguments against:
+ - One name is not much.
+ - The request is for the signature above only, for compatibility with the
+   existing C standard.
+
+Rebuttal of arguments for:
+  [authors needed]

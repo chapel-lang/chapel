@@ -1,0 +1,27 @@
+initial array is 0
+-
+test0
+0 0
+test1
+0 0
+test2
+0 0
+test3
+0 0
+test4
+1
+test5
+1
+test6
+1
+test7
+1
+test8
+1
+testrDefault
+init (default)
+(x = 0, ptr = {xx = 0})
+deinit 0 0
+-
+globalA is (x = 1, ptr = {xx = 1})
+-

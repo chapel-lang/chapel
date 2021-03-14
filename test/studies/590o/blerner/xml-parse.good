@@ -1,0 +1,48 @@
+	[0--14] = <a><ii>end</ii>
+	[0--22] = <a><ii>end</ii><none />
+	[0--26] = <a><ii>end</ii><none /></a>
+	[0--2] = <a>
+	[0--6] = <a><ii>
+	[0--9] = <a><ii>end
+	[10--14] = </ii>
+	[10--22] = </ii><none />
+	[10--26] = </ii><none /></a>
+	[15--22] = <none />
+	[15--26] = <none /></a>
+	[23--26] = </a>
+	[3--14] = <ii>end</ii>
+	[3--22] = <ii>end</ii><none />
+	[3--26] = <ii>end</ii><none /></a>
+	[3--6] = <ii>
+	[3--9] = <ii>end
+	[7--14] = end</ii>
+	[7--22] = end</ii><none />
+	[7--26] = end</ii><none /></a>
+	[7--9] = end
+    PCData(end)
+  <ii>
+  <none>
+<a>
+Not a legitimate tag or PCdata
+Not a legitimate tag or PCdata
+Not a legitimate tag or PCdata
+Not a legitimate tag or PCdata
+Not a legitimate tag or PCdata
+Not ending with end tag
+Not ending with end tag
+Not ending with end tag
+Not ending with end tag
+Not ending with end tag
+Not ending with end tag
+PCData : end
+Parse succeeded!
+Self-closed : none
+Start and end tags disagree : '/' <=> 'a'
+Start and end tags disagree : '/' <=> 'a'
+Start and end tags disagree : '/i' <=> 'ii'
+Start and end tags disagree : 'a>' <=> 'ii'
+Start and end tags disagree : 'i' <=> 'a'
+Start and end tags disagree : 'n' <=> 'a'
+[0,26] = 
+[0-26] = ELEMENT(a)
+[3-14] = ELEMENT(ii)

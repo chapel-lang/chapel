@@ -1,0 +1,5 @@
+perfkeys: Performance (mOps/sec) =, Performance (mOps/sec) =
+files: many-to-one-gets.dat, many-to-one-unordered-gets.dat
+graphkeys: GETs from 1 node, Unordered GETs from 1 node
+graphtitle: Remote Unordered GET Performance
+ylabel: Performance (10**6 ops/sec)

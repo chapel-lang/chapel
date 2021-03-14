@@ -1,0 +1,20 @@
+test1
+R.init 1
+starting foo, x=(x = 1) y=(x = 1)
+ending   foo, x=(x = 101) y=(x = 1)
+R.deinit 101
+test2
+R.init 2
+starting foo, x=(x = 2) y=(x = 2)
+ending   foo, x=(x = 102) y=(x = 2)
+R.deinit 102
+test3
+R.init 3
+starting foo, x=(x = 3) y=(x = 3)
+ending   foo, x=(x = 103) y=(x = 3)
+R.deinit 103
+test4
+R.init 4
+starting foo, x=(x = 4) y=(x = 4)
+ending   foo, x=(x = 104) y=(x = 4)
+R.deinit 104

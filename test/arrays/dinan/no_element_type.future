@@ -1,0 +1,6 @@
+semantic: omitted array element type
+
+feature request: Allow array element types to be inferred
+
+If this future is resolved, the no_element_type_error test should be updated
+since it is no longer erroneous.

@@ -1,0 +1,2 @@
+setParentField-type.chpl:13: In initializer:
+setParentField-type.chpl:15: error: cannot update a type field, "t", from parent type in child initializer

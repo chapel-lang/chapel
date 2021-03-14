@@ -1,0 +1,3 @@
+# Use this test only under valgrind.
+# Otherwise use its origin, PTRANS.chpl
+CHPL_TEST_VGRND_EXE != on

@@ -1,0 +1,23 @@
+.. default-domain:: chpl
+
+.. module:: extern-block.doc
+
+extern-block.doc
+================
+**Usage**
+
+.. code-block:: chapel
+
+   use extern-block.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import extern-block.doc;
+
+.. function:: proc myfunction()
+
+   myfunction docs  
+

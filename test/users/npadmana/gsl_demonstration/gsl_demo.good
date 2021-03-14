@@ -1,0 +1,33 @@
+0.112463
+(val = 0.112463, err = 2.50551e-16)
+success
+success(val = 1.10475e-10, err = 8.29729e-25)
+success(val = 1.10475e-10, err = 5.79496e-21)
+Random numbers from a few random number generators
+0.999742 802792108
+0.16291 4084684829
+0.282618 2342628799
+0.947201 320516809
+0.231657 984487517
+0.484974 2246144618
+0.957477 398433606
+0.744305 2198246467
+0.540044 1456873311
+0.739953 3409412117
+<x> of a sample of Gaussian random numbers :0.0141418
+<x^2> of a sample of Gaussian random numbers :0.952166
+<x^3> of a sample of Gaussian random numbers :0.0962244
+<x^4> of a sample of Gaussian random numbers :2.7175
+68.3% of a Gaussian distribution occurs < 0.476104
+Expected : 0.476104 (Mathematica)
+Some Poisson numbers with mean 2...
+3 1 2 2 3 4 1 6 1 4 4 0 0 1 2 1 5 1 2 2 2 3 2 1 2 3 3 2 2 3 2 2 2 3 2 1 1 2 1 2 1 0 2 2 2 3 1 0 3 2 
+x:0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9
+y:0.0 0.201 0.408 0.627 0.864 1.125 1.416 1.743 2.112 2.529
+x^3 + 2x for x=0.45 :0.991138
+Compared to :0.991125
+Integration result : -4.0
+Expected : -4.0
+Estimated error : 1.35447e-13
+Actual error : 8.52651e-14
+The speed of light in m/s is 2.99792e+08

@@ -1,0 +1,72 @@
+---------
+Spec: openblas@1.2.3%gcc@4.2.3 +hl~mpi
+Package: openblas
+Version: 1.2.3
+Compiler: ----
+Variants: +hl ~mpi
+----------
+
+---------
+Spec: hdf5@1.6.3%gcc~mpi
+Package: hdf5
+Version: 1.6.3
+Compiler: ----
+Variants: ~mpi
+----------
+
+---------
+Spec: hdf5@1.1.3:1.52.3zh
+Package: hdf5
+Version: 1.1.3:1.52.3zh
+Compiler: ----
+Variants: 
+----------
+
+---------
+Spec: hdf5@1.2.3
+Package: hdf5
+Version: 1.2.3
+Compiler: ----
+Variants: 
+----------
+
+---------
+Spec: hdf5@1.7.3+mpi
+Package: hdf5
+Version: 1.7.3
+Compiler: ----
+Variants: +mpi
+----------
+
+---------
+Spec: hdf5@1.20.3%f77
+Package: hdf5
+Version: 1.20.3
+Compiler: ----
+Variants: 
+----------
+
+---------
+Spec: hdf5@1.11.3%f77+mpi
+Package: hdf5
+Version: 1.11.3
+Compiler: ----
+Variants: +mpi
+----------
+
+---------
+Spec: ncurses@6.0.0%clang@9.0.0-apple patches=f84b2708a42777aadcc7f502a261afe10ca5646a51c1ef8b5e60d2070d926b57 ~symlinks arch=darwin-sierra-x86_64 ^pkg-config@0.29.2%clang@9.0.0-apple+internal_glib arch=darwin-sierra-x86_64
+Package: ncurses
+Version: 6.0.0
+Compiler: ----
+Variants: patches=f84b2708a42777aadcc7f502a261afe10ca5646a51c1ef8b5e60d2070d926b57 ~symlinks arch=darwin-sierra-x86_64 ^pkg -config@0.29.2 %clang@9.0.0-apple +internal_glib arch=darwin-sierra-x86_64
+----------
+
+---------
+Spec: hdf5@1.10.1%clang@9.0.0-apple~cxx~debug~fortran~hl~mpi+pic+shared~szip~threadsafe arch=darwin-sierra-x86_64 ^hwloc@1.11.8%clang@9.0.0-apple~cuda+libxml2~pci arch=darwin-sierra-x86_64 ^libxml2@2.9.4%clang@9.0.0-apple~python arch=darwin-sierra-x86_64 ^xz@5.2.3%clang@9.0.0-apple arch=darwin-sierra-x86_64 ^zlib@1.2.11%clang@9.0.0-apple+optimize+pic+shared arch=darwin-sierra-x86_64
+Package: hdf5
+Version: 1.10.1
+Compiler: ----
+Variants: ~cxx ~debug ~fortran ~hl ~mpi +pic +shared ~szip ~threadsafe arch=darwin-sierra-x86_64 ^hwloc @1.11.8 %clang@9.0.0-apple ~cuda +libxml2 ~pci arch=darwin-sierra-x86_64 ^libxml2 @2.9.4 %clang@9.0.0-apple ~python arch=darwin-sierra-x86_64 ^xz @5.2.3 %clang@9.0.0-apple arch=darwin-sierra-x86_64 ^zlib @1.2.11 %clang@9.0.0-apple +optimize +pic +shared arch=darwin-sierra-x86_64
+----------
+

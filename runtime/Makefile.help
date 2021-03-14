@@ -1,0 +1,192 @@
+# Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+# Copyright 2004-2019 Cray Inc.
+# Other additional copyright holders may be indicated within.
+# 
+# The entirety of this work is licensed under the Apache License,
+# Version 2.0 (the "License"); you may not use this file except
+# in compliance with the License.
+# 
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#
+# Makefile: builds Chapel runtime
+#
+
+RUNTIME_ROOT = .
+RUNTIME_SUBDIR = .
+
+#
+# include standard header for runtime
+#
+include $(RUNTIME_ROOT)/make/Makefile.runtime.head
+
+# To run this, from runtime/
+# make printstuff.helpme
+printstuff:
+	@echo MAKE_LAUNCHER = $(MAKE_LAUNCHER)
+	@echo CHPL_MAKE_PLATFORM = $(CHPL_MAKE_PLATFORM)
+	@echo CHPL_MAKE_COMPILER = $(CHPL_MAKE_COMPILER)
+	@echo CHPL_MAKE_HOST_COMPILER = $(CHPL_MAKE_HOST_COMPILER)
+	@echo CHPL_MAKE_TARGET_COMPILER = $(CHPL_MAKE_TARGET_COMPILER)
+	@echo AR = $(AR)
+	@echo RANLIB = $(RANLIB)
+	@echo $(CHPL_MAKE_HOME)/make/platform/Makefile.$(CHPL_MAKE_PLATFORM)
+	@echo CHPL_MAKE_MEM = $(CHPL_MAKE_MEM)
+	@echo CHPL_MAKE_HOST_TARGET = $(CHPL_MAKE_HOST_TARGET)
+	@echo CHPL_MAKE_TARGET_CPU = $(CHPL_MAKE_TARGET_CPU)
+	@echo CHPL_MAKE_RUNTIME_CPU = $(CHPL_MAKE_RUNTIME_CPU)
+	@echo CHPL_MAKE_TARGET_CPU_FLAG = $(CHPL_MAKE_TARGET_CPU_FLAG)
+	@echo CHPL_MAKE_TARGET_BACKEND_CPU = $(CHPL_MAKE_TARGET_BACKEND_CPU)
+	@echo CHPL_ORIG_TARGET_COMPILER = $(CHPL_ORIG_TARGET_COMPILER)
+	@echo CXX_STD = $(CXX_STD)
+	@echo RUNTIME_CXXFLAGS += $(RUNTIME_CXXFLAGS)
+
+
+#
+# include source subdirectories here
+#
+include src/Makefile.include
+include src/tasks/$(CHPL_MAKE_TASKS)/Makefile.include
+include src/threads/$(CHPL_MAKE_THREADS)/Makefile.include
+include src/timers/$(CHPL_MAKE_TIMERS)/Makefile.include
+include src/comm/$(CHPL_MAKE_COMM)/Makefile.include
+include src/launch/$(CHPL_MAKE_LAUNCHER)/Makefile.include
+include src/mem/$(CHPL_MAKE_MEM)/Makefile.include
+include src/topo/$(CHPL_MAKE_TOPO)/Makefile.include
+include src/qio/Makefile.include
+
+
+#
+# subdirectories and false subdirectory-oriented targets to force recursion
+#
+
+SUBDIRS = \
+	src \
+
+SRCS =
+
+RUNTIME_OBJS = \
+	$(COMMON_OBJS) \
+	$(TASKS_OBJS) \
+	$(THREADS_OBJS) \
+	$(TIMERS_OBJS) \
+	$(COMM_OBJS) \
+	$(MEM_COMMON_OBJS) \
+	$(QIO_OBJS) \
+	$(REGEXP_OBJS) \
+	$(TOPO_OBJS) \
+	$(AUXFS_HDFS_OBJS) \
+	$(AUXFS_CURL_OBJS)
+
+LAUNCH_LIB_OBJS = \
+	$(COMMON_LAUNCHER_OBJS) \
+	$(COMM_LAUNCHER_OBJS) \
+	$(LAUNCHER_OBJS) \
+	$(ONLY_LAUNCHER_OBJS)
+
+RUNTIME_DIR = ../$(LIB_RT_DIR)
+RUNTIME_LIB = $(RUNTIME_DIR)/libchpl.a
+RUNTIME_DIR_TIMESTAMP = $(RUNTIME_DIR)/.timestamp
+
+RUNTIME_MALLOC_LIB = $(RUNTIME_DIR)/libchplmalloc.a
+
+LAUNCHER_DIR = ../$(LIB_LN_DIR)
+LAUNCHER_LIB = $(LAUNCHER_DIR)/libchpllaunch.a
+LAUNCHER_DIR_TIMESTAMP = $(LAUNCHER_DIR)/.timestamp
+
+RUNTIME_TARGETS = \
+	$(RUNTIME_LIB) \
+	$(RUNTIME_DIR)/main.o \
+	$(RUNTIME_MALLOC_LIB) \
+
+ifneq ($(CHPL_MAKE_LAUNCHER),none)
+LAUNCHER_TARGETS = \
+	$(LAUNCHER_LIB) \
+	$(LAUNCHER_DIR)/main_launcher.o
+endif
+
+ifeq ($(MAKE_LAUNCHER),0)
+TARGETS = $(RUNTIME_TARGETS)
+else
+TARGETS = $(LAUNCHER_TARGETS)
+endif
+
+# Generate tags command, dependent on if Makefile variable, TAGS == 1
+ifeq ($(TAGS), 1)
+TAGS_COMMAND=-@(which $(CHPL_TAGS_UTIL) > /dev/null 2>&1 && echo "Updating TAGS..." && $(CHPL_TAGS_UTIL) $(CHPL_TAGS_FLAGS) $(ALL_SRCS) $(CURDIR)/include/*.h) || echo "$(CHPL_TAGS_UTIL) not available"
+endif
+
+#
+# main rules
+#
+
+include $(RUNTIME_ROOT)/make/Makefile.runtime.rules
+
+
+#
+# target-based rules
+#
+
+RUNTIME_CHPLCONFIG = $(RUNTIME_DIR)/chplconfig
+RUNTIME_LIST_INCLUDESANDDEFINES = $(RUNTIME_DIR)/list-includes-and-defines
+RUNTIME_LIST_LIBRARIES = $(RUNTIME_DIR)/list-libraries
+RUNTIME_OVERRIDE_LD = $(RUNTIME_DIR)/override-ld
+
+$(RUNTIME_LIB): $(RUNTIME_OBJS) $(RUNTIME_DIR_TIMESTAMP) $(RUNTIME_LIST_INCLUDESANDDEFINES) $(RUNTIME_LIST_LIBRARIES) $(RUNTIME_OVERRIDE_LD)
+	@rm -f $@
+	$(AR) -rc $@ $(RUNTIME_OBJS)
+	$(RANLIB) $@
+	$(TAGS_COMMAND)
+	../util/printchplenv --runtime --no-tidy --anonymize --simple > $(RUNTIME_CHPLCONFIG)
+
+
+$(RUNTIME_LIST_INCLUDESANDDEFINES): $(RUNTIME_OBJS) $(RUNTIME_DIR_TIMESTAMP)
+	$(MAKE) -f Makefile.config printincludesanddefines > $(RUNTIME_LIST_INCLUDESANDDEFINES)
+
+$(RUNTIME_LIST_LIBRARIES): $(RUNTIME_OBJS) $(RUNTIME_DIR_TIMESTAMP)
+	$(MAKE) -f Makefile.config printlibraries > $(RUNTIME_LIST_LIBRARIES)
+
+$(RUNTIME_OVERRIDE_LD): $(RUNTIME_OBJS) $(RUNTIME_DIR_TIMESTAMP)
+	$(MAKE) -f Makefile.config printoverrideld > $(RUNTIME_OVERRIDE_LD)
+
+$(RUNTIME_DIR)/main.o: $(RUNTIME_OBJDIR)/src/main.o
+	cp $< $@
+
+$(RUNTIME_MALLOC_LIB): $(RUNTIME_MALLOC_OBJS) $(RUNTIME_DIR_TIMESTAMP)
+	@rm -f $@
+	$(AR) -rc $@ $(RUNTIME_MALLOC_OBJS)
+	$(RANLIB) $@
+	$(TAGS_COMMAND)
+
+
+#
+# launcher rules
+#
+$(LAUNCHER_LIB): $(LAUNCH_LIB_OBJS) $(LAUNCHER_DIR_TIMESTAMP)
+	@rm -f $@
+	$(AR) -rc $@ $(LAUNCH_LIB_OBJS)
+	$(RANLIB) $@
+
+$(LAUNCHER_DIR)/main_launcher.o: $(LAUNCHER_OBJDIR)/src/main_launcher.o
+	cp $< $@
+
+#
+# include standard footer for runtime
+#
+include $(RUNTIME_ROOT)/make/Makefile.runtime.foot
+
+#
+# qthreads-specific bootstrapping
+#
+src/tasks/qthreads/Makefile.include:
+	cd src/tasks/qthreads && $(MAKE) copy_qthread_files
+
+.NOTPARALLEL:

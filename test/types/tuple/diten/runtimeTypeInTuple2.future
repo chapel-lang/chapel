@@ -1,0 +1,8 @@
+bug: type composed of runtime type is not a runtime type
+
+Was:
+
+bug: Tuple with runtime type doesn't have a default value
+
+The two domains in the tuple should be initialized to a default value -
+probably either [1..0], or [1..3].

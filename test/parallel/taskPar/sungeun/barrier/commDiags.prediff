@@ -1,0 +1,28 @@
+#! /usr/bin/env bash
+#
+# With network atomics (thus using the plain .good file), in the first
+# ('atomic remote test basic') segment of the output, the last node to
+# arrive at the barrier will do 2 gets and 1 execute_on, and the others
+# will do 1 get and 2 execute_ons.  Whether it's last to arrive or not,
+# node 0 won't show any of these gets or execute_ons in its comm diags
+# because they are against a node-0 barrier variable and will be short
+# circuited.  But if some node in 1..4 is the last to arrive then its
+# comm diags will show the 2 gets and 1 execute_on.  To deal with this
+# variability, we sort the output for nodes 1..4 in the first section
+# and allow precisely one line of it to have 2 gets and 1 execute_on
+# instead of the other way around.
+#
+# For configurations that use comm-none.good or na-none.good the first
+# section of the output doesn't show N gets and 3-N execute_ons, so this
+# is just a long no-op.
+#
+g='get'
+x='execute_on'
+(   sed -n '1,2 p' < $2 \
+ && sed -n '/atomic remote test basic/,/atomic remote test split phase/ p' \
+        < $2 \
+    | sed -e '1,2 d' -e '$ d' \
+    | sort \
+    | sed -E "\$ s/($g = 2, $x = 1)|($g = 1, $x = 2)/$g = N, $x = 3-N/" \
+ && sed -n '/atomic remote test split phase/,$ p' < $2) \
+> $2.tmp && mv $2.tmp $2
