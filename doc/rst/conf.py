@@ -192,7 +192,7 @@ html_static_path = ['meta/static']
 # If true, SmartyPants will be used to convert quotes and dashes to
 # typographically correct entities.
 # We turn this off because it clobbers the man page documentation
-html_use_smartypants = False
+smartquotes = False
 
 # Custom sidebar templates, maps document names to template names.
 #html_sidebars = {}
