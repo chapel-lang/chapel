@@ -115,6 +115,25 @@ private proc checkChplVersion(lockFile : borrowed Toml) throws {
   }
 }
 
+/*
+Given a project Directory, this method removes the
+checksum field from the project's toml and regenerates
+a toml without the checksum field.
+*/
+proc removeHash(projectHome: string, tf: string){
+  var hash = "";
+  var tomlPath = projectHome + "/" + tf;
+  if isFile(tomlPath) {
+    const toParse = open(tomlPath, iomode.r);
+    const tomlFile = owned.create(parseToml(toParse));
+    if tomlFile.pathExists("brick.CheckSum") {
+      hash = tomlFile["brick"]!["CheckSum"]!.s;
+      tomlFile["brick"]!.A.remove("CheckSum");
+    }
+    generateToml(tomlFile, tomlPath);
+  }
+  return hash;
+}
 
 proc buildProgram(release: bool, show: bool, force: bool, ref cmdLineCompopts: list(string),
                   tomlName="Mason.toml", lockName="Mason.lock") throws {
@@ -136,6 +155,7 @@ proc buildProgram(release: bool, show: bool, force: bool, ref cmdLineCompopts: l
 
     // build on last modification
     if projectModified(projectHome, projectName, binLoc) || force {
+      var previousHash = removeHash(projectHome, tomlName);
 
       if isFile(projectHome + "/" + lockName) {
 
@@ -174,6 +194,11 @@ proc buildProgram(release: bool, show: bool, force: bool, ref cmdLineCompopts: l
       }
       else {
         throw new owned MasonError("Cannot build: no Mason.lock found");
+      }
+
+      var newHash = updateTomlWithChecksum(projectHome);
+      if previousHash != "" && previousHash != newHash {
+        writeln("Project had some updates, computing the new Hash");
       }
     }
     else {

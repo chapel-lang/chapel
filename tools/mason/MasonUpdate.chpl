@@ -75,6 +75,11 @@ proc masonUpdate(args: [?d] string) {
   return updateLock(skipUpdate, tf, lf);
 }
 
+/*
+Given a project Directory, this method removes the
+checksum field from the project's toml and regenerates
+a toml without the checksum field.
+*/
 proc removeHash(projectHome: string, tf: string){
   var hash = "";
   var tomlPath = projectHome + "/" + tf;
@@ -137,7 +142,7 @@ proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock") {
     delete lockFile;
     var newHash = updateTomlWithChecksum(projectHome);
     if previousHash != "" && previousHash != newHash {
-      writeln("Project has some changes, computing the new Hash");
+      writeln("Project had some updates, computing the new Hash");
     }
   }
   catch e: MasonError {
