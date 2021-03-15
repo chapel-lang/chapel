@@ -57,17 +57,6 @@ record Handle
 }
 
 // Assignment
-// operator =(ref lhs: Handle, ref rhs:Handle)
-// This signature does not work.  We get:
-// sharedRefCount.chpl:8: In function 'foo':
-// sharedRefCount.chpl:14: error: non-lvalue actual is passed to 'ref' formal 'rhs' of = [functionResolution.cpp:2543]
-// which means that there is no ref promotion...
-// operator =(ref lhs: Handle, rhs:Handle)
-// That's where we want to go, but we're not there yet.  Again, since there is
-// no ref promotion, we don't bind the lhs either, and end up using the
-// catch-all implementation on line 242 of ChapelBase.chpl.
-// We have to bind to this version, or we don't get the desired
-// reference-counting behavior
 operator Handle.=(ref lhs: Handle, rhs:Handle)
 {
   // The rhs gains a new reference.
