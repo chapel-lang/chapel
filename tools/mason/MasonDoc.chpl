@@ -19,14 +19,20 @@
  */
 
 
-private use FileSystem;
-private use MasonHelp;
-private use IO;
-private use MasonUtils;
+use List;
+use FileSystem;
+use MasonHelp;
+use IO;
+use MasonUtils;
+use MasonArguments;
 
-proc masonDoc(args: [] string) throws {
+proc masonDoc(args: list(string)) throws {
   try! {
-    if args.size > 2 {
+    var helpFlag = new HelpFlag();
+    var otherArgs: list(string);
+    var ok = processArgs(args, otherArgs, helpFlag);
+
+    if !ok || helpFlag.present || !otherArgs.isEmpty() {
       masonDocHelp();
       exit(0);
     }

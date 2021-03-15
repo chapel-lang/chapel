@@ -18,14 +18,16 @@
  * limitations under the License.
  */
 
-private use List;
 use MasonHelp;
 use MasonEnv;
 use MasonUpdate;
 use MasonUtils;
+use MasonArguments;
+
+use FileSystem;
+use List;
 use TOML;
 use Sort;
-use FileSystem;
 use Regexp;
 use IO;
 
@@ -36,39 +38,34 @@ use IO;
 // - allow for exclusion of a pattern
 //
 
-//
-// Temporary passthrough transforming array to list to appease the compiler.
-//
-proc masonSearch(args: [?d] string) {
-  var listArgs: list(string);
-  for x in args do listArgs.append(x);
-  masonSearch(listArgs);
-}
+proc masonSearch(args: list(string)) {
+  var helpFlag = new HelpFlag();
+  var showFlag = new BooleanFlag('--show');
+  var debugFlag = new BooleanFlag('--debug');
+  var updateFlag = new BooleanFlag('--update', '--no-update', !MASON_OFFLINE);
+  var otherArgs: list(string);
 
-proc masonSearch(ref args: list(string)) {
-  if hasOptions(args, "-h", "--help") {
+  var ok = processArgs(args, otherArgs,
+                       helpFlag, showFlag, debugFlag, updateFlag);
+  if !ok || helpFlag.present {
     masonSearchHelp();
-    exit(0);
+    exit(1);
   }
 
-  const show = hasOptions(args, "--show");
-  const debug = hasOptions(args, "--debug");
-  var skipUpdate = MASON_OFFLINE;
-  if hasOptions(args, "--update") {
-    skipUpdate = false;
-  }
-
-  if hasOptions(args, "--no-update") {
-    skipUpdate = true;
-  }
+  const show = showFlag.value;
+  const debug = debugFlag.value;
+  var skipUpdate = updateFlag.value;
 
   updateRegistry(skipUpdate);
 
-  consumeArgs(args);
-
   // If no query is provided, list all packages in registry
-  const query = if args.size > 0 then args[args.size-1].toLower()
-                else ".*";
+  const query: string;
+  if otherArgs.isEmpty() {
+    query = ".*";
+  } else {
+    var tmp = args[args.size-1]; // want to use .last() - but issue #17259
+    query = tmp.toLower();
+  }
   const pattern = compile(query, ignoreCase=true);
   var results: list(string);
   var packages: list(string);

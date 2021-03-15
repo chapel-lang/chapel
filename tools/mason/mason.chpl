@@ -39,6 +39,8 @@ use MasonExternal;
 use MasonPublish;
 use MasonInit;
 
+use List;
+
 /*
 
 The Design of Mason
@@ -72,6 +74,18 @@ Full documentation is located in the chapel release in $CHPL_HOME/doc/rst/tools/
 
 
 
+// Return just the list of arguments for the subcommand, i.e.
+// for
+//   mason init -d mydir
+// it would return
+//   -d mydir
+proc subcommandArgs(args: [] string) {
+  var ret:list(string);
+  for i in 2..args.size {
+    ret.append(args[i]);
+  }
+  return ret;
+}
 
 proc main(args: [] string) throws {
   try! {
@@ -80,21 +94,21 @@ proc main(args: [] string) throws {
       exit(0);
     }
     select (args[1]) {
-      when 'new' do masonNew(args);
-      when 'init' do masonInit(args);
-      when 'add' do masonModify(args);
-      when 'rm' do masonModify(args);
-      when 'build' do masonBuild(args);
-      when 'update' do masonUpdate(args);
-      when 'run' do masonRun(args);
-      when 'search' do masonSearch(args);
-      when 'system' do masonSystem(args);
-      when 'external' do masonExternal(args);
-      when 'test' do masonTest(args);
-      when 'env' do masonEnv(args);
-      when 'doc' do masonDoc(args);
-      when 'publish' do masonPublish(args);
-      when 'clean' do masonClean(args);
+      when 'new' do masonNew(subcommandArgs(args));
+      when 'init' do masonInit(subcommandArgs(args));
+      when 'add' do masonModify('add', subcommandArgs(args));
+      when 'rm' do masonModify('rm', subcommandArgs(args));
+      when 'build' do masonBuild(subcommandArgs(args));
+      when 'update' do masonUpdate(subcommandArgs(args));
+      when 'run' do masonRun(subcommandArgs(args));
+      when 'search' do masonSearch(subcommandArgs(args));
+      when 'system' do masonSystem(subcommandArgs(args));
+      when 'external' do masonExternal(subcommandArgs(args));
+      when 'test' do masonTest(subcommandArgs(args));
+      when 'env' do masonEnv(subcommandArgs(args));
+      when 'doc' do masonDoc(subcommandArgs(args));
+      when 'publish' do masonPublish(subcommandArgs(args));
+      when 'clean' do masonClean(subcommandArgs(args));
       when 'help' do masonHelp();
       when 'version' do printVersion();
       when '-h' do masonHelp();

@@ -29,6 +29,7 @@ const spackDefaultPath = MASON_HOME + "/spack";
 private use List;
 private use Map;
 use MasonUtils;
+use MasonArguments;
 use FileSystem;
 use MasonHelp;
 use SpecParser;
@@ -36,74 +37,49 @@ use MasonEnv;
 use Path;
 use TOML;
 
-proc masonExternal(args: [] string) {
+proc masonExternal(args: list(string)) {
   try! {
-    if args.size < 3 {
+    var helpFlag = new HelpFlag();
+    var setupFlag = new BooleanFlag('--setup');
+    var searchFlag = new SubcommandFlag('search');
+    var compilerFlag = new SubcommandFlag('compiler');
+    var installFlag = new SubcommandFlag('install');
+    var uninstallFlag = new SubcommandFlag('uninstall');
+    var infoFlag = new SubcommandFlag('info');
+    var findFlag = new SubcommandFlag('find');
+    var specFlag = new BooleanFlag('--spec');
+    var versionFlag = new BooleanFlag( ('-V', '--version'), none, false);
+    var otherArgs: list(string);
+    var ok = processArgs(args, otherArgs,
+                         helpFlag,
+                         setupFlag, searchFlag, compilerFlag,
+                         installFlag, uninstallFlag,
+                         infoFlag, findFlag,
+                         specFlag, versionFlag);
+
+    if !ok || helpFlag.present || !otherArgs.isEmpty() {
       masonExternalHelp();
       exit(0);
     }
-    else if args[2] == "-h" || args[2] == "--help" {
-      masonExternalHelp();
+    if !otherArgs.isEmpty() {
+      writeln('error: no such subcommand');
+      writeln('try mason external --help');
       exit(0);
     }
-    else if args[2] == "--setup" {
-      // if MASON_OFFLINE is set, then cannot install spack
-      if MASON_OFFLINE {
-        throw new owned MasonError('Cannot setup Spack when MASON_OFFLINE is set to true');
-        exit(0);
-      }
-      // If spack and spack registry is present with latest version, print message
-      if isDir(SPACK_ROOT) &&
-      isDir(MASON_HOME+'/spack-registry') &&
-      getSpackVersion == spackVersion &&
-      SPACK_ROOT == spackDefaultPath {
-        throw new owned MasonError("Spack backend is already installed");
-      }
-      // If both spack and spack registry not installed then setup spack
-      if !isDir(SPACK_ROOT) && !isDir(MASON_HOME+'/spack-registry') then
-        setupSpack();
-      // If spack registry is not installed then install it
-      if !isDir(MASON_HOME+'/spack-registry') {
-        writeln("Installing Spack Registry ...");
-        const dest = MASON_HOME + '/spack-registry';
-        const branch = ' --branch releases/latest ';
-        const status = cloneSpackRepository(branch, dest);
-        if status != 0 then throw new owned MasonError("Spack registry installation failed.");
-      }
-      // If spack is installed and version is outdated, update it
-      if isDir(SPACK_ROOT) && getSpackVersion != spackVersion {
-        writeln("Updating Spack backend ... ");
-        const status = updateSpackCommandLine();
-        if isDir(MASON_HOME + '/spack-registry') then generateYAML();
-        if status != 0 then throw new owned MasonError("Spack update failed.");
-      }
-      // If spack is not installed then install it
-      if !isDir(SPACK_ROOT) {
-        writeln("Installing Spack backend ... ");
-        const spackLatestBranch = ' --branch ' + spackBranch + ' ';
-        const status = cloneSpackRepository(spackLatestBranch, SPACK_ROOT);
-        if isDir(MASON_HOME + '/spack-registry') then generateYAML();
-        if status != 0 then throw new owned MasonError("Spack installation failed.");
-      }
-      exit(0);
+
+    if setupFlag.present {
+      try! doSetup();
     }
+
     if spackInstalled() {
-      select (args[2]) {
-        when 'search' do searchSpkgs(args);
-        when 'compiler' do compiler(args);
-        when 'install' do installSpkg(args);
-        when 'uninstall' do uninstallSpkg(args);
-        when 'info' do spkgInfo(args);
-        when 'find' do findSpkg(args);
-        when '--spec' do specHelp();
-        when '-V' do printSpackVersion();
-        when '--version' do printSpackVersion();
-        otherwise {
-          writeln('error: no such subcommand');
-          writeln('try mason external --help');
-          exit(1);
-        }
-      }
+      if searchFlag.present then searchSpkgs(searchFlag.args);
+      if compilerFlag.present then compiler(compilerFlag.args);
+      if installFlag.present then installSpkg(installFlag.args);
+      if uninstallFlag.present then uninstallSpkg(uninstallFlag.args);
+      if infoFlag.present then spkgInfo(infoFlag.args);
+      if findFlag.present then findSpkg(findFlag.args);
+      if specFlag.present then specHelp();
+      if versionFlag.present then printSpackVersion();
     }
   }
   catch e: MasonError {
@@ -132,6 +108,47 @@ proc spackInstalled() throws {
           " version of Spack.\nTo use mason external, call: mason external --setup");
   }
   return true;
+}
+
+private proc doSetup() throws {
+  // if MASON_OFFLINE is set, then cannot install spack
+  if MASON_OFFLINE {
+    throw new owned MasonError('Cannot setup Spack when MASON_OFFLINE is set to true');
+  }
+  // If spack and spack registry is present with latest version, print message
+  if isDir(SPACK_ROOT) &&
+     isDir(MASON_HOME+'/spack-registry') &&
+     getSpackVersion == spackVersion &&
+     SPACK_ROOT == spackDefaultPath {
+    throw new owned MasonError("Spack backend is already installed");
+  }
+  // If both spack and spack registry not installed then setup spack
+  if !isDir(SPACK_ROOT) && !isDir(MASON_HOME+'/spack-registry') then
+    setupSpack();
+  // If spack registry is not installed then install it
+  if !isDir(MASON_HOME+'/spack-registry') {
+    writeln("Installing Spack Registry ...");
+    const dest = MASON_HOME + '/spack-registry';
+    const branch = ' --branch releases/latest ';
+    const status = cloneSpackRepository(branch, dest);
+    if status != 0 then throw new owned MasonError("Spack registry installation failed.");
+  }
+  // If spack is installed and version is outdated, update it
+  if isDir(SPACK_ROOT) && getSpackVersion != spackVersion {
+    writeln("Updating Spack backend ... ");
+    const status = updateSpackCommandLine();
+    if isDir(MASON_HOME + '/spack-registry') then generateYAML();
+    if status != 0 then throw new owned MasonError("Spack update failed.");
+  }
+  // If spack is not installed then install it
+  if !isDir(SPACK_ROOT) {
+    writeln("Installing Spack backend ... ");
+    const spackLatestBranch = ' --branch ' + spackBranch + ' ';
+    const status = cloneSpackRepository(spackLatestBranch, SPACK_ROOT);
+    if isDir(MASON_HOME + '/spack-registry') then generateYAML();
+    if status != 0 then throw new owned MasonError("Spack installation failed.");
+  }
+  exit(0);
 }
 
 /* Spack installed to MASON_HOME/spack */
@@ -226,30 +243,31 @@ private proc listSpkgs() {
 }
 
 /* Queries spack for package existence */
-private proc searchSpkgs(args: [?d] string) {
-  if args.size < 4 {
+private proc searchSpkgs(args: list(string)) {
+  if args.size == 0 {
     listSpkgs();
     exit(0);
-  }
-  else {
+  } else {
     var command = "spack list";
     var pkgName: string;
-    if args[3].find('-') != -1 {
-      for arg in args[3..] {
-        if arg.find('h') != -1 {
-          masonExternalSearchHelp();
-          exit(0);
-        }
-      }
+
+    var helpFlag = new HelpFlag();
+    var descFlag = new BooleanFlag( ('-d', '--desc'), none, false);
+    var otherArgs: list(string);
+    var ok = processArgs(args, otherArgs,
+                         helpFlag, descFlag);
+
+    if !ok || helpFlag.present || otherArgs.size != 1 {
+      masonExternalSearchHelp();
+      exit(0);
     }
-    if args[3] == "-d" || args[3] == "--desc" {
-      command = " ".join(command, "--search-description");
-      pkgName = args[4];
+    if descFlag.value {
+      command += " --search-description";
     }
-    else {
-      pkgName = args[3];
-    }
-    command = " ".join(command, pkgName);
+    pkgName = otherArgs[0];
+
+    command += " ";
+    command += pkgName;
     const status = runSpackCommand(command);
   }
 }
@@ -262,42 +280,51 @@ private proc listInstalled() {
 
 /* User facing function to show packages installed on
    system. Takes all spack arguments ex. -df <package> */
-private proc findSpkg(args: [?d] string) {
-  if args.size == 3 {
+private proc findSpkg(args: list(string)) {
+  var helpFlag = new HelpFlag();
+  var otherArgs: list(string);
+  var ok = processArgs(args, otherArgs, helpFlag);
+
+  if !ok || helpFlag.present {
+    masonExternalFindHelp();
+    exit(1);
+  }
+
+  if otherArgs.isEmpty() {
     listInstalled();
     exit(0);
   }
-  if args[3].find('-') != -1 {
-    for arg in args[3..] {
-      if arg == "-h" || arg == "--help" {
-        masonExternalFindHelp();
-        exit(0);
-      }
-    }
-  }
+
   var command = "spack find";
-  var packageWithArgs = " ".join(args[3..]);
+  var packageWithArgs = " ".join(args.these());
   const status = runSpackCommand(" ".join(command, packageWithArgs));
 }
 
 /* Entry point into the various info subcommands */
-private proc spkgInfo(args: [?d] string) {
-  var option = "--help";
-  if args.size < 4 {
+private proc spkgInfo(args: list(string)) {
+  var helpFlag = new HelpFlag();
+  var archFlag = new BooleanFlag('--arch');
+  var otherArgs: list(string);
+  var ok = processArgs(args, otherArgs, helpFlag);
+
+  if !ok || helpFlag.present {
     masonExternalInfoHelp();
     exit(1);
   }
-  else {
-    option = args[3];
-  }
-  select option {
-      when "--arch" do printArch();
-      when "--help" do masonExternalInfoHelp();
-      when "-h" do masonExternalInfoHelp();
-      otherwise {
-        var status = runSpackCommand("spack info " + option);
-      }
+
+  if archFlag.value {
+    if !otherArgs.isEmpty() {
+      masonExternalInfoHelp();
+      exit(1);
     }
+    printArch();
+  } else {
+    if otherArgs.size != 1 {
+      masonExternalInfoHelp();
+      exit(1);
+    }
+    var status = runSpackCommand("spack info " + otherArgs[0]);
+  }
 }
 
 /* Print system arch info */
@@ -323,24 +350,30 @@ proc spkgInstalled(spec: string) {
 
 
 /* Entry point into the various compiler functions */
-private proc compiler(args: [?d] string) {
-  var option = "list";
-  if args.size > 3 {
-    option = args[3];
+private proc compiler(args: list(string)) {
+  var helpFlag = new HelpFlag();
+  var listFlag = new BooleanFlag('--list');
+  var findFlag = new BooleanFlag('--find');
+  var editFlag = new BooleanFlag('--edit');
+  var otherArgs: list(string);
+  var ok = processArgs(args, otherArgs,
+                       helpFlag,
+                       listFlag, findFlag, editFlag);
+
+  if !ok || helpFlag.present || !otherArgs.isEmpty() {
+    masonCompilerHelp();
   }
-  select option {
-      when "--list" do listCompilers();
-      when "--find" do findCompilers();
-      when "--edit" do editCompilers();
-      otherwise do masonCompilerHelp();
-    }
+
+  if listFlag.value then listCompilers();
+  if findFlag.value then findCompilers();
+  if editFlag.value then editCompilers();
 }
 
 /* Lists available compilers on system */
 private proc listCompilers() {
   const command = "spack compilers";
   const status = runSpackCommand(command);
- }
+}
 
 /* Finds available compilers */
 private proc findCompilers() {
@@ -522,82 +555,68 @@ private proc resolveSpec(spec: string): string throws {
 
 
 /* Install an external package */
-proc installSpkg(args: [?d] string) throws {
-  if hasOptions(args, '-h', '--help') {
+proc installSpkg(args: list(string)) throws {
+  var helpFlag = new HelpFlag();
+  var otherArgs: list(string);
+  var ok = processArgs(args, otherArgs, helpFlag);
+
+  if !ok || helpFlag.present || otherArgs.isEmpty() {
     masonInstallHelp();
     exit(1);
   }
 
-  if MASON_OFFLINE && args.count('--update') == 0 {
+  if MASON_OFFLINE && otherArgs.count('--update') == 0 {
     writeln('Cannot install Spack packages when MASON_OFFLINE=true');
     return;
   }
 
-  if args.size < 4 {
-    masonInstallHelp();
-    exit(1);
-  }
-  else {
-    var command = "spack install";
-    var spec: string;
-    if args[3] == "-h" || args[3] == "--help" {
-      masonInstallHelp();
-      exit(1);
-    }
-    else {
-      spec = " ".join(args[3..]);
-    }
+  var command = "spack install";
+  var spec: string;
+  spec = " ".join(args.these());
 
-    const status = runSpackCommand(" ".join(command, spec));
-    if status != 0 {
-      throw new owned MasonError("Package could not be installed");
-    }
+  const status = runSpackCommand(" ".join(command, spec));
+  if status != 0 {
+    throw new owned MasonError("Package could not be installed");
   }
 }
 
 
 /* Uninstall an external package */
-proc uninstallSpkg(args: [?d] string) throws {
-  if args.size < 4 {
+proc uninstallSpkg(args: list(string)) throws {
+  var helpFlag = new HelpFlag();
+  var otherArgs: list(string);
+  var ok = processArgs(args, otherArgs, helpFlag);
+
+  if !ok || helpFlag.present || otherArgs.isEmpty() {
     masonUninstallHelp();
     exit(1);
   }
-  else {
-    var pkgName: string;
-    var command = "spack uninstall -y";
-    var confirm: string;
-    var uninstallArgs = "";
-    if args[3] == "-h" || args[3] == "--help" {
-      masonUninstallHelp();
-      exit(1);
-    }
-    else if args[3].startsWith("-") > 0 {
-      for arg in args[3..] {
-        if arg.startsWith("-") {
-          uninstallArgs = " ".join(uninstallArgs, arg);
-        }
-        else {
-          pkgName = "".join(pkgName, arg);
-        }
+
+  var pkgName: string;
+  var command = "spack uninstall -y";
+  var confirm: string;
+  var uninstallArgs = "";
+  if args[0].startsWith("-") {
+    for arg in args {
+      if arg.startsWith("-") {
+        uninstallArgs = " ".join(uninstallArgs, arg);
+      } else {
+        pkgName = "".join(pkgName, arg);
       }
     }
-    else {
-      pkgName = "".join(args[3..]);
-    }
+  } else {
+    pkgName = "".join(args.these());
+  }
 
-    writeln("Are you sure you want to uninstall " + pkgName +"? [y/n]");
-    read(confirm);
-    if confirm != "y" {
-      writeln("Aborting...");
-      exit(0);
-    }
+  writeln("Are you sure you want to uninstall " + pkgName +"? [y/n]");
+  read(confirm);
+  if confirm != "y" {
+    writeln("Aborting...");
+    exit(0);
+  }
 
-
-    const status = runSpackCommand(" ".join(command, uninstallArgs, pkgName));
-    if status != 0 {
-      throw new owned MasonError("Package could not be uninstalled");
-    }
+  const status = runSpackCommand(" ".join(command, uninstallArgs, pkgName));
+  if status != 0 {
+    throw new owned MasonError("Package could not be uninstalled");
   }
 }
-
-

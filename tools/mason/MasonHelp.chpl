@@ -104,14 +104,14 @@ proc masonBuildHelp() {
 
 proc masonNewHelp() {
   writeln('Usage:');
-  writeln('    mason new [options] <project name>');
+  writeln('    mason new [options] <directory name>');
   writeln('    mason new                    Starts an interactive session');
   writeln();
   writeln('Options:');
   writeln('    -h, --help                   Display this message');
   writeln('        --show                   Increase verbosity');
   writeln('        --no-vcs                 Do not initialize a git repository');
-  writeln('    --name <legalName>           Specify package name different from directory name');
+  writeln('    --name <legalName>           Specify package name (default is directory name)');
 }
 
 proc masonInitHelp(){

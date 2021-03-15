@@ -19,9 +19,10 @@
  */
 
 
-private use List;
 use MasonUtils;
 use MasonExternal;
+
+use List;
 use Regexp;
 
 config const debugSpecParser=false;

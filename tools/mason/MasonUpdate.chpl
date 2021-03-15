@@ -18,17 +18,17 @@
  * limitations under the License.
  */
 
-private use List;
-private use Map;
-
-use TOML;
-use FileSystem;
 use MasonUtils;
 use MasonEnv;
 use MasonSystem;
 use MasonExternal;
 use MasonHelp;
+use MasonArguments;
 
+use FileSystem;
+use List;
+use Map;
+use TOML;
 
 /*
 Update: Performs the upfront dependency resolution and generates the lock file.
@@ -47,31 +47,22 @@ The current resolution strategy for Mason 0.1.0 is the IVRS as described below:
 
 private var failedChapelVersion: list(string);
 
-proc masonUpdate(args: [?d] string) {
+proc masonUpdate(args: list(string)) {
+
+  var helpFlag = new HelpFlag();
+  var updateFlag = new BooleanFlag('--update', '--no-update', !MASON_OFFLINE);
+  var otherArgs: list(string);
+
+  var ok = processArgs(args, otherArgs, helpFlag, updateFlag);
+  if !ok || helpFlag.present || !otherArgs.isEmpty() {
+    masonUpdateHelp();
+    exit(1);
+  }
+
   var tf = "Mason.toml";
   var lf = "Mason.lock";
-  var skipUpdate = MASON_OFFLINE;
+  var skipUpdate = updateFlag.value;
 
-  var listArgs: list(string);
-  for arg in args {
-    listArgs.append(arg);
-    select (arg) {
-      when '-h' {
-        masonUpdateHelp();
-        exit(0);
-      }
-      when '--help' {
-        masonUpdateHelp();
-        exit(0);
-      }
-      when '--no-update' {
-        skipUpdate = true;
-      }
-      when '--update' {
-        skipUpdate = false;
-      }
-    }
-  }
   return updateLock(skipUpdate, tf, lf);
 }
 
