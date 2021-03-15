@@ -141,11 +141,6 @@ static fi_addr_t* ofi_rxAddrs;          // table of remote endpoint addresses
 static int numTxCtxs;
 static int numRxCtxs;
 
-enum lastOp_t {
-  opClassRmaWrite,
-  opClassAmo,
-};
-
 struct perTxCtxInfo_t {
   atomic_bool allocated;        // true: in use; false: available
   chpl_bool bound;              // true: bound to an owner (usually a thread)
@@ -160,8 +155,8 @@ struct perTxCtxInfo_t {
   uint64_t numTxnsOut;          // number of transactions in flight now
                                 // (and for which we expect CQ events)
   uint64_t numTxnsSent;         // number of transactions ever initiated
-  enum lastOp_t lastOp;         // last operation we did
-  void* putVisBitmap;           // PUT target nodes, for forcing vis. later
+  void* putVisBitmap;           // nodes needing forced RMA store visibility
+  void* amoVisBitmap;           // nodes needing forced AMO store visibility
 };
 
 static int tciTabLen;
@@ -283,10 +278,12 @@ static inline void ofi_put_ll(const void*, c_nodeid_t,
                               void*, size_t, void*, struct perTxCtxInfo_t*,
                               chpl_bool);
 static inline void do_remote_put_buff(void*, c_nodeid_t, void*, size_t);
+static void setup_ofi_get(void);
 static inline chpl_comm_nb_handle_t ofi_get(void*, c_nodeid_t,
                                             void*, size_t);
-static inline void ofi_get_ll(void*, c_nodeid_t,
-                              void*, size_t, void*, struct perTxCtxInfo_t*);
+static inline void ofi_get_ll(void*, void*,
+                              c_nodeid_t, uint64_t, uint64_t,
+                              size_t, void*, uint64_t, struct perTxCtxInfo_t*);
 static inline void do_remote_get_buff(void*, c_nodeid_t, void*, size_t);
 static inline void do_remote_amo_nf_buff(void*, c_nodeid_t, void*, size_t,
                                          enum fi_op, enum fi_datatype);
@@ -298,8 +295,8 @@ static void checkTxCmplsCntr(struct perTxCtxInfo_t*);
 static inline size_t readCQ(struct fid_cq*, void*, size_t);
 static void reportCQError(struct fid_cq*);
 static inline void waitForTxnComplete(struct perTxCtxInfo_t*, void* ctx);
-static inline void waitForPutsVisOneNode(c_nodeid_t, struct perTxCtxInfo_t*);
-static inline void waitForPutsVisAllNodes(struct perTxCtxInfo_t*);
+static inline void waitForMemFxVisOneNode(c_nodeid_t, struct perTxCtxInfo_t*);
+static inline void waitForMemFxVisAllNodes(struct perTxCtxInfo_t*, chpl_bool);
 static void* allocBounceBuf(size_t);
 static void freeBounceBuf(void*);
 static inline void local_yield(void);
@@ -628,7 +625,14 @@ txnTrkCtx_t txnTrkDecode(void* ctx) {
 // time by any remote node.
 //
 static uint32_t* orderDummy;
-static uint32_t** orderDummyMap;
+static void* orderDummyMRDesc;
+
+struct orderDummyMap_t {
+  uint64_t mrRaddr;
+  uint64_t mrKey;
+};
+
+static struct orderDummyMap_t* orderDummyMap;
 
 
 ////////////////////////////////////////
@@ -706,6 +710,19 @@ int bitmapTest(struct bitmap_t* b, size_t i) {
         size_t _bi_end = (_eWid < _bCnt) ? _eWid : _bCnt;               \
         for (size_t _bi = 0; _bi < _bi_end; _bi++) {                    \
           if (((b)->map[_ei] & bitmapElemBit(_bi)) != 0) {              \
+            size_t i = _ei * bitmapElemWidth + _bi;
+
+#define BITMAP_FOREACH_SET_OR(b1, b2, i)                                \
+  do {                                                                  \
+    size_t _eWid = bitmapElemWidth;                                     \
+    size_t _eCnt = bitmapNumElems((b1)->len);                           \
+    size_t _bCnt = (b1)->len;                                           \
+    for (size_t _ei = 0; _ei < _eCnt; _ei++, _bCnt -= _eWid) {          \
+      bitmapBaseType_t _m = (b1)->map[_ei] | (b2)->map[_ei];            \
+      if (_m != 0) {                                                    \
+        size_t _bi_end = (_eWid < _bCnt) ? _eWid : _bCnt;               \
+        for (size_t _bi = 0; _bi < _bi_end; _bi++) {                    \
+          if ((_m & bitmapElemBit(_bi)) != 0) {                         \
             size_t i = _ei * bitmapElemWidth + _bi;
 
 #define BITMAP_FOREACH_SET_END  } } } } } while (0);
@@ -920,9 +937,9 @@ static void init_broadcast_private(void);
 //
 // forward decls
 //
+static inline chpl_bool mrGetKey(uint64_t*, uint64_t*, int, void*, size_t);
 static inline chpl_bool mrGetLocalKey(void*, size_t);
 static inline chpl_bool mrGetDesc(void**, void*, size_t);
-
 
 void chpl_comm_init(int *argc_p, char ***argv_p) {
   chpl_comm_ofi_abort_on_error =
@@ -992,11 +1009,12 @@ void init_ofi(void) {
   init_ofiForAms();
 
   CHPL_CALLOC(orderDummy, 1);
-  CHK_TRUE(mrGetLocalKey(orderDummy, sizeof(*orderDummy)));
-  CHK_TRUE(mrGetDesc(NULL, orderDummy, sizeof(*orderDummy)));
+  CHK_TRUE(mrGetDesc(&orderDummyMRDesc, orderDummy, sizeof(*orderDummy)));
   CHPL_CALLOC(orderDummyMap, chpl_numNodes);
-  chpl_comm_ofi_oob_allgather(&orderDummy, orderDummyMap,
-                              sizeof(orderDummyMap[0]));
+  struct orderDummyMap_t odm;
+  CHK_TRUE(mrGetKey(&odm.mrKey, &odm.mrRaddr, chpl_nodeID, orderDummy,
+                    sizeof(*orderDummy)));
+  chpl_comm_ofi_oob_allgather(&odm, orderDummyMap, sizeof(orderDummyMap[0]));
 
   init_ofiConnections();
 
@@ -2256,6 +2274,7 @@ void init_ofiForRma(void) {
   (void) isAtomicValid(FI_INT32);
 
   setup_ofi_put();
+  setup_ofi_get();
 }
 
 
@@ -2944,28 +2963,34 @@ void mcmReleaseOneNode(c_nodeid_t node, struct perTxCtxInfo_t* tcip,
   DBG_PRINTF(DBG_ORDER,
              "dummy GET from %d for %s ordering",
              (int) node, dbgOrderStr);
+  uint64_t flags = (mcmMode == mcmm_msgOrdFence) ? FI_FENCE : 0;
   if (tcip->txCQ != NULL) {
     atomic_bool txnDone;
     atomic_init_bool(&txnDone, false);
     void* ctx = txnTrkEncodeDone(&txnDone);
-    ofi_get_ll(orderDummy, node, orderDummyMap[node], 1, ctx, tcip);
+    ofi_get_ll(orderDummy, orderDummyMRDesc,
+               node, orderDummyMap[node].mrRaddr, orderDummyMap[node].mrKey,
+               sizeof(*orderDummy), ctx, flags, tcip);
     waitForTxnComplete(tcip, ctx);
     atomic_destroy_bool(&txnDone);
   } else {
-    ofi_get_ll(orderDummy, node, orderDummyMap[node], 1, NULL, tcip);
+    ofi_get_ll(orderDummy, orderDummyMRDesc,
+               node, orderDummyMap[node].mrRaddr, orderDummyMap[node].mrKey,
+               sizeof(*orderDummy), NULL, flags, tcip);
     waitForTxnComplete(tcip, NULL);
   }
 }
 
 
 static
-void mcmReleaseAllNodes(struct bitmap_t* b, struct perTxCtxInfo_t* tcip,
+void mcmReleaseAllNodes(struct bitmap_t* b1, struct bitmap_t* b2,
+                        struct perTxCtxInfo_t* tcip,
                         const char* dbgOrderStr) {
   //
-  // Do a transaction (dummy GET or no-op AM) on every node in a bitmap.
-  // Combined with our ordering assertions, this forces the results of
-  // previous transactions to be visible in memory.  The effects of the
-  // transactions we do here don't matter, only their completions.
+  // Do a transaction do force all outstanding operations' remote
+  // memory effects to be visible, on every node in one bitmap or
+  // either of two bitmaps.  The effects of the transactions we do
+  // here don't matter, only their completions.
   //
   // TODO: Allow multiple of these transactions outstanding at once,
   //       instead of waiting for each one before firing the next.
@@ -2975,13 +3000,22 @@ void mcmReleaseAllNodes(struct bitmap_t* b, struct perTxCtxInfo_t* tcip,
     CHK_TRUE((myTcip = tciAlloc()) != NULL);
   }
 
-  BITMAP_FOREACH_SET(b, node) {
-    bitmapClear(b, node);
-    (*myTcip->checkTxCmplsFn)(myTcip);
-    // If using CQ, need room for at least 1 txn.
-    waitForCQSpace(myTcip, 1);
-    mcmReleaseOneNode(node, myTcip, dbgOrderStr);
-  } BITMAP_FOREACH_SET_END
+  if (b2 == NULL) {
+    BITMAP_FOREACH_SET(b1, node) {
+      (*myTcip->checkTxCmplsFn)(myTcip);
+      mcmReleaseOneNode(node, myTcip, dbgOrderStr);
+    } BITMAP_FOREACH_SET_END
+
+    bitmapZero(b1);
+  } else {
+      BITMAP_FOREACH_SET_OR(b1, b2, node) {
+      (*myTcip->checkTxCmplsFn)(myTcip);
+      mcmReleaseOneNode(node, myTcip, dbgOrderStr);
+    } BITMAP_FOREACH_SET_END
+
+    bitmapZero(b1);
+    bitmapZero(b2);
+  }
 
   if (tcip == NULL) {
     tciFree(myTcip);
@@ -3001,7 +3035,7 @@ void chpl_comm_impl_task_create(void) {
   DBG_PRINTF(DBG_IFACE_MCM, "%s()", __func__);
 
   retireDelayedAmDone(false /*taskIsEnding*/);
-  waitForPutsVisAllNodes(NULL);
+  waitForMemFxVisAllNodes(NULL, false /*putsOnly*/);
 }
 
 
@@ -3010,7 +3044,7 @@ void chpl_comm_impl_task_end(void) {
 
   task_local_buff_end(get_buff | put_buff | amo_nf_buff);
   retireDelayedAmDone(true /*taskIsEnding*/);
-  waitForPutsVisAllNodes(NULL);
+  waitForMemFxVisAllNodes(NULL, false /*putsOnly*/);
 }
 
 
@@ -3481,10 +3515,10 @@ void amRequestCommon(c_nodeid_t node,
   if (myReq->b.op == am_opExecOn
       || myReq->b.op == am_opExecOnLrg
       || (myReq->b.op == am_opAMO && myReq->amo.ofiOp != FI_ATOMIC_READ)) {
-    waitForPutsVisAllNodes(myTcip);
+    waitForMemFxVisAllNodes(myTcip, false /*putsOnly*/);
   } else if (myReq->b.op == am_opGet
              || myReq->b.op == am_opPut) {
-    waitForPutsVisOneNode(node, myTcip);
+    waitForMemFxVisOneNode(node, myTcip);
   }
 
   //
@@ -4448,8 +4482,9 @@ struct perTxCtxInfo_t* tciAllocCommon(chpl_bool bindToAmHandler) {
   if (bindToAmHandler
       || (tciTabFixedAssignments && chpl_task_isFixedThread())) {
     _ttcip->bound = true;
-    if (_ttcip->putVisBitmap == NULL) {
-      _ttcip->putVisBitmap = bitmapAlloc(chpl_numNodes);
+    _ttcip->putVisBitmap = bitmapAlloc(chpl_numNodes);
+    if ((ofi_info->caps & FI_ATOMIC) != 0) {
+      _ttcip->amoVisBitmap = bitmapAlloc(chpl_numNodes);
     }
   }
   DBG_PRINTF(DBG_TCIPS, "alloc%s tciTab[%td]",
@@ -4653,19 +4688,12 @@ chpl_comm_nb_handle_t rmaPutFn_msgOrdFence(void* myAddr, void* mrDesc,
                                            uint64_t mrRaddr, uint64_t mrKey,
                                            size_t size,
                                            struct perTxCtxInfo_t* tcip) {
-  //
-  // When using message ordering we have to do something after the PUT
-  // to force it into visibility, and on the same tx context as the PUT
-  // itself because libfabric message ordering is specific to endpoint
-  // pairs.  With a bound tx context we can do it later, when needed.
-  // Otherwise we have to do it here, before we release the tx context.
-  //
-
   chpl_comm_nb_handle_t ret;
 
-  if (tcip->lastOp != opClassAmo
-      && tcip->bound
-      && size <= ofi_info->tx_attr->inject_size) {
+  if (tcip->bound
+      && size <= ofi_info->tx_attr->inject_size
+      && (tcip->amoVisBitmap == NULL
+          || !bitmapTest(tcip->amoVisBitmap, node))) {
     //
     // Special case: write injection has the least latency.  We can use
     // that if this PUT doesn't need a fence, its size doesn't exceed
@@ -4678,7 +4706,8 @@ chpl_comm_nb_handle_t rmaPutFn_msgOrdFence(void* myAddr, void* mrDesc,
     atomic_init_bool(&txnDone, false);
     void* ctx = txnTrkEncodeDone(&txnDone);
 
-    if (tcip->lastOp == opClassAmo) {
+    if (tcip->bound
+        && bitmapTest(tcip->amoVisBitmap, node)) {
       //
       // Special case: If our last operation was an AMO (which can only
       // be true with a bound tx context) then we need to do a fenced
@@ -4703,8 +4732,13 @@ chpl_comm_nb_handle_t rmaPutFn_msgOrdFence(void* myAddr, void* mrDesc,
     atomic_destroy_bool(&txnDone);
   }
 
-  tcip->lastOp = opClassRmaWrite;
-
+  //
+  // When using message ordering we have to do something after the PUT
+  // to force it into visibility, and on the same tx context as the PUT
+  // itself because libfabric message ordering is specific to endpoint
+  // pairs.  With a bound tx context we can do it later, when needed.
+  // Otherwise we have to do it here, before we release the tx context.
+  //
   if (tcip->bound) {
     bitmapSet(tcip->putVisBitmap, node);
   } else {
@@ -4906,7 +4940,7 @@ void ofi_put_V(int v_len, void** addr_v, void** local_mr_v,
   // Enforce Chapel MCM: force all of the above PUTs to appear in
   // target memory.
   //
-  mcmReleaseAllNodes(tcip->putVisBitmap, tcip, "unordered PUT");
+  mcmReleaseAllNodes(tcip->putVisBitmap, NULL, tcip, "unordered PUT");
 
   tciFree(tcip);
 }
@@ -4974,6 +5008,152 @@ void do_remote_put_buff(void* addr, c_nodeid_t node, void* raddr,
 
 
 static inline
+chpl_comm_nb_handle_t rmaRead(void* addr, void* mrDesc,
+                              c_nodeid_t node,
+                              uint64_t mrRaddr, uint64_t mrKey,
+                              size_t size, void* ctx,
+                              struct perTxCtxInfo_t* tcip) {
+  DBG_PRINTF(DBG_RMA | DBG_RMA_READ,
+             "tx read: %p <= %d:%#" PRIx64 ", size %zd, ctx %p",
+             addr, (int) node, mrRaddr, size, ctx);
+  OFI_RIDE_OUT_EAGAIN(tcip,
+                      fi_read(tcip->txCtx, addr, size,
+                               mrDesc, rxRmaAddr(tcip, node),
+                               mrRaddr, mrKey, ctx));
+  tcip->numTxnsOut++;
+  tcip->numTxnsSent++;
+  return NULL;
+}
+
+
+static inline
+chpl_comm_nb_handle_t rmaReadMsg(void* addr, void* mrDesc,
+                                 c_nodeid_t node,
+                                 uint64_t mrRaddr, uint64_t mrKey,
+                                 size_t size, void* ctx, uint64_t flags,
+                                 struct perTxCtxInfo_t* tcip) {
+  struct iovec msg_iov = (struct iovec)
+                         { .iov_base = addr,
+                           .iov_len = size };
+  struct fi_rma_iov rma_iov = (struct fi_rma_iov)
+                              { .addr = (uint64_t) mrRaddr,
+                                .len = size,
+                                .key = mrKey };
+  struct fi_msg_rma msg = (struct fi_msg_rma)
+                          { .msg_iov = &msg_iov,
+                            .desc = mrDesc,
+                            .iov_count = 1,
+                            .addr = rxRmaAddr(tcip, node),
+                            .rma_iov = &rma_iov,
+                            .rma_iov_count = 1,
+                            .context = ctx };
+  DBG_PRINTF(DBG_RMA | DBG_RMA_READ,
+             "tx read msg: %p <= %d:%#" PRIx64 ", size %zd, ctx %p, "
+             "flags %#" PRIx64,
+             addr, (int) node, mrRaddr, size, ctx, flags);
+  OFI_RIDE_OUT_EAGAIN(tcip, fi_readmsg(tcip->txCtx, &msg, flags));
+  tcip->numTxnsOut++;
+  tcip->numTxnsSent++;
+  return NULL;
+}
+
+
+typedef chpl_comm_nb_handle_t (rmaGetFn_t)(void* myAddr, void* mrDesc,
+                                           c_nodeid_t node,
+                                           uint64_t mrRaddr, uint64_t mrKey,
+                                           size_t size, void* ctx,
+                                           struct perTxCtxInfo_t* tcip);
+static rmaGetFn_t rmaGetFn_msgOrdFence;
+static rmaGetFn_t rmaGetFn_msgOrd;
+static rmaGetFn_t rmaGetFn_dlvrCmplt;
+
+static rmaGetFn_t* rmaGetFn = NULL;
+static pthread_once_t rmaGetFnOnce = PTHREAD_ONCE_INIT;
+
+static
+void init_rmaGetFn(void) {
+  switch (mcmMode) {
+  case mcmm_msgOrdFence:  rmaGetFn = rmaGetFn_msgOrdFence;  break;
+  case mcmm_msgOrd:       rmaGetFn = rmaGetFn_msgOrd;       break;
+  case mcmm_dlvrCmplt:    rmaGetFn = rmaGetFn_dlvrCmplt;    break;
+  default:
+    INTERNAL_ERROR_V("unexpected mcmMode %d", mcmMode);
+    break;
+  }
+}
+
+static
+void setup_ofi_get(void) {
+  PTHREAD_CHK(pthread_once(&rmaGetFnOnce, init_rmaGetFn));
+}
+
+
+static
+chpl_comm_nb_handle_t rmaGetFn_msgOrdFence(void* myAddr, void* mrDesc,
+                                           c_nodeid_t node,
+                                           uint64_t mrRaddr, uint64_t mrKey,
+                                           size_t size, void* ctx,
+                                           struct perTxCtxInfo_t* tcip) {
+  chpl_comm_nb_handle_t ret;
+
+  if (tcip->bound
+      && (bitmapTest(tcip->putVisBitmap, node)
+          || (tcip->amoVisBitmap != NULL
+              && bitmapTest(tcip->amoVisBitmap, node)))) {
+    //
+    // Special case: If our last operation was a write whose memory
+    // effects might not be visible yet (which can only be true with
+    // a bound tx context) then this GET needs to be fenced to force
+    // that visibility.
+    //
+    ret = rmaReadMsg(myAddr, mrDesc, node, mrRaddr, mrKey, size, ctx,
+                     FI_FENCE, tcip);
+    bitmapClear(tcip->putVisBitmap, node);
+    if (tcip->amoVisBitmap != NULL) {
+      bitmapClear(tcip->amoVisBitmap, node);
+    }
+  } else {
+    //
+    // General case.
+    //
+    ret = rmaRead(myAddr, mrDesc, node, mrRaddr, mrKey, size, ctx, tcip);
+  }
+
+  return ret;
+}
+
+
+static
+chpl_comm_nb_handle_t rmaGetFn_msgOrd(void* myAddr, void* mrDesc,
+                                      c_nodeid_t node,
+                                      uint64_t mrRaddr, uint64_t mrKey,
+                                      size_t size, void* ctx,
+                                      struct perTxCtxInfo_t* tcip) {
+  //
+  // This GET will force any outstanding PUT to the same node to be
+  // visible.
+  //
+  if (tcip->bound) {
+    bitmapClear(tcip->putVisBitmap, node);
+    if (tcip->amoVisBitmap != NULL) {
+      bitmapClear(tcip->amoVisBitmap, node);
+    }
+  }
+  return rmaRead(myAddr, mrDesc, node, mrRaddr, mrKey, size, ctx, tcip);
+}
+
+
+static
+chpl_comm_nb_handle_t rmaGetFn_dlvrCmplt(void* myAddr, void* mrDesc,
+                                         c_nodeid_t node,
+                                         uint64_t mrRaddr, uint64_t mrKey,
+                                         size_t size, void* ctx,
+                                         struct perTxCtxInfo_t* tcip) {
+  return rmaRead(myAddr, mrDesc, node, mrRaddr, mrKey, size, ctx, tcip);
+}
+
+
+static inline
 chpl_comm_nb_handle_t ofi_get(void* addr, c_nodeid_t node,
                               void* raddr, size_t size) {
   //
@@ -5000,11 +5180,6 @@ chpl_comm_nb_handle_t ofi_get(void* addr, c_nodeid_t node,
              "GET %p <= %d:%p, size %zd",
              addr, (int) node, raddr, size);
 
-  // MCM TODO: Here I think for mcmm_msgOrdFence we have to do a fenced
-  //           operation iff the last thing we did was a PUT.
-
-  void* myAddr = addr;
-
   //
   // If the remote address is directly accessible do an RMA from this
   // side; otherwise do the opposite RMA from the other side.
@@ -5012,14 +5187,12 @@ chpl_comm_nb_handle_t ofi_get(void* addr, c_nodeid_t node,
   uint64_t mrKey;
   uint64_t mrRaddr;
   if (mrGetKey(&mrKey, &mrRaddr, node, raddr, size)) {
-    //
-    // The remote address is RMA-accessible; GET directly from it.
-    //
-    void* mrDesc;
-    myAddr = mrLocalizeTarget(&mrDesc, addr, size, "GET tgt");
-
     struct perTxCtxInfo_t* tcip;
     CHK_TRUE((tcip = tciAlloc()) != NULL);
+    waitForCQSpace(tcip, 1);
+
+    void* mrDesc;
+    void* myAddr = mrLocalizeTarget(&mrDesc, addr, size, "GET tgt");
 
     atomic_bool txnDone;
     atomic_init_bool(&txnDone, false);
@@ -5027,36 +5200,15 @@ chpl_comm_nb_handle_t ofi_get(void* addr, c_nodeid_t node,
                 ? txnTrkEncodeId(__LINE__)
                 : txnTrkEncodeDone(&txnDone);
 
-    DBG_PRINTF(DBG_RMA | DBG_RMA_READ,
-               "tx read: %p <= %d:%p(0x%" PRIx64 "), size %zd, key 0x%" PRIx64
-               ", ctx %p",
-               myAddr, (int) node, raddr, mrRaddr, size, mrKey, ctx);
-    OFI_RIDE_OUT_EAGAIN(tcip,
-                        fi_read(tcip->txCtx, myAddr, size,
-                                mrDesc, rxRmaAddr(tcip, node),
-                                mrRaddr, mrKey, ctx));
-    tcip->numTxnsOut++;
-    tcip->numTxnsSent++;
-
-    //
-    // This GET will force any outstanding PUT to the same node
-    // to be visible.
-    //
-    if (mcmMode != mcmm_dlvrCmplt && tcip->bound) {
-      bitmapClear(tcip->putVisBitmap, node);
-    }
+    (*rmaGetFn)(myAddr, mrDesc, node, mrRaddr, mrKey, size, ctx, tcip);
 
     waitForTxnComplete(tcip, ctx);
     atomic_destroy_bool(&txnDone);
-    tciFree(tcip);
 
     mrUnLocalizeTarget(myAddr, addr, size);
+    tciFree(tcip);
   } else {
-    //
-    // The remote address is not RMA-accessible.  Do the opposite RMA
-    // from the remote side.
-    //
-    amRequestRMAGet(node, myAddr, raddr, size);
+    amRequestRMAGet(node, addr, raddr, size);
   }
 
   return NULL;
@@ -5064,38 +5216,14 @@ chpl_comm_nb_handle_t ofi_get(void* addr, c_nodeid_t node,
 
 
 static inline
-void ofi_get_ll(void* addr, c_nodeid_t node,
-                void* raddr, size_t size, void* ctx,
+void ofi_get_ll(void* addr, void* mrDesc,
+                c_nodeid_t node, uint64_t mrRaddr, uint64_t mrKey,
+                size_t size, void* ctx, uint64_t flags,
                 struct perTxCtxInfo_t* tcip) {
-  DBG_PRINTF(DBG_RMA | DBG_RMA_READ,
-             "GET LL %p <= %d:%p, size %zd",
-             addr, (int) node, raddr, size);
-
-  uint64_t mrKey = 0;
-  uint64_t mrRaddr = 0;
-  CHK_TRUE(mrGetKey(&mrKey, &mrRaddr, node, raddr, size));
-
-  void* mrDesc;
-  CHK_TRUE(mrGetDesc(&mrDesc, addr, size));
-
-  struct perTxCtxInfo_t* myTcip = tcip;
-  if (myTcip == NULL) {
-    CHK_TRUE((myTcip = tciAlloc()) != NULL);
-  }
-
-  DBG_PRINTF(DBG_RMA | DBG_RMA_READ,
-             "tx read: %p <= %d:%p(0x%" PRIx64 "), size %zd, key 0x%" PRIx64
-             ", ctx %p",
-             addr, (int) node, raddr, mrRaddr, size, mrKey, ctx);
-  OFI_RIDE_OUT_EAGAIN(myTcip,
-                      fi_read(myTcip->txCtx, addr, size,
-                              mrDesc, rxRmaAddr(myTcip, node),
-                              mrRaddr, mrKey, ctx));
-  myTcip->numTxnsOut++;
-  myTcip->numTxnsSent++;
-
-  if (myTcip != tcip) {
-    tciFree(myTcip);
+  if (flags == 0) {
+    rmaRead(addr, mrDesc, node, mrRaddr, mrKey, size, ctx, tcip);
+  } else {
+    rmaReadMsg(addr, mrDesc, node, mrRaddr, mrKey, size, ctx, flags, tcip);
   }
 }
 
@@ -5243,7 +5371,7 @@ chpl_comm_nb_handle_t ofi_amo(c_nodeid_t node, uint64_t object, uint64_t mrKey,
   CHK_TRUE((tcip = tciAlloc()) != NULL);
 
   if (ofiOp != FI_ATOMIC_READ) {
-    waitForPutsVisAllNodes(tcip);
+    waitForMemFxVisAllNodes(tcip, true /*putsOnly*/);
   }
 
   atomic_bool txnDone;
@@ -5535,32 +5663,37 @@ void waitForTxnComplete(struct perTxCtxInfo_t* tcip, void* ctx) {
 
 
 static inline
-void waitForPutsVisOneNode(c_nodeid_t node, struct perTxCtxInfo_t* tcip) {
-  // MCM TODO: Here I think for mcmm_msgOrdFence we have to do a fenced
-  //           operation iff the last thing we did was a PUT.
-
+void waitForMemFxVisOneNode(c_nodeid_t node, struct perTxCtxInfo_t* tcip) {
   //
-  // Enforce MCM: at the end of a task, make sure all our outstanding
-  // PUTs have actually completed on their target nodes.  We can only
-  // have any PUTs outstanding here if we're using message ordering
-  // for MCM conformance and we've got a bound tx context.
+  // Enforce MCM: make sure the memory effects of all the operations
+  // we've done so far, to a specific node, are actually visible.
+  // This is only needed if we're using message ordering for MCM
+  // conformance and we have a bound tx context.  Otherwise, we
+  // force visibility at the time of the operation.
   //
   if (mcmMode != mcmm_dlvrCmplt
       && tcip->bound
-      && bitmapTest(tcip->putVisBitmap, node)) {
+      && (bitmapTest(tcip->putVisBitmap, node)
+          || (tcip->amoVisBitmap != NULL
+              && bitmapTest(tcip->amoVisBitmap, node)))) {
     bitmapClear(tcip->putVisBitmap, node);
+    if (tcip->amoVisBitmap != NULL) {
+      bitmapClear(tcip->amoVisBitmap, node);
+    }
     mcmReleaseOneNode(node, tcip, "PUT");
   }
 }
 
 
 static inline
-void waitForPutsVisAllNodes(struct perTxCtxInfo_t* tcip) {
+void waitForMemFxVisAllNodes(struct perTxCtxInfo_t* tcip,
+                             chpl_bool putsOnly) {
   //
-  // Enforce MCM: at the end of a task, make sure all our outstanding
-  // PUTs have actually completed on their target nodes.  We can only
-  // have any PUTs outstanding here if we're using message ordering
-  // for MCM conformance and we've got a bound tx context.
+  // Enforce MCM: make sure the memory effects of all the operations
+  // we've done so far, to any node, are actually visible.  This is
+  // only needed if we're using message ordering for MCM conformance
+  // and we have a bound tx context.  Otherwise, we force visibility
+  // at the time of the operation.
   //
   if (chpl_numNodes > 1 && mcmMode != mcmm_dlvrCmplt) {
     struct perTxCtxInfo_t* myTcip = tcip;
@@ -5569,7 +5702,13 @@ void waitForPutsVisAllNodes(struct perTxCtxInfo_t* tcip) {
     }
 
     if (myTcip->bound) {
-      mcmReleaseAllNodes(myTcip->putVisBitmap, NULL, "PUT");
+      if (putsOnly) {
+        mcmReleaseAllNodes(myTcip->putVisBitmap, NULL,
+                           myTcip, "PUT");
+      } else {
+        mcmReleaseAllNodes(myTcip->putVisBitmap, myTcip->amoVisBitmap,
+                           myTcip, "PUT");
+      }
     }
 
     if (myTcip != tcip) {
@@ -5959,7 +6098,7 @@ void doAMO(c_nodeid_t node, void* object,
     //
     if (node == chpl_nodeID) {
       if (ofiOp != FI_ATOMIC_READ) {
-        waitForPutsVisAllNodes(NULL);
+        waitForMemFxVisAllNodes(NULL, true /*putsOnly*/);
       }
       doCpuAMO(object, operand1, operand2, result, ofiOp, ofiType, size);
     } else {
@@ -6349,7 +6488,7 @@ void chpl_comm_barrier(const char *msg) {
   // the caller's responsibility.)
   //
   retireDelayedAmDone(false /*taskIsEnding*/);
-  waitForPutsVisAllNodes(NULL);
+  waitForMemFxVisAllNodes(NULL, false /*putsOnly*/);
 
   //
   // Wait for our child locales to notify us that they have reached the
