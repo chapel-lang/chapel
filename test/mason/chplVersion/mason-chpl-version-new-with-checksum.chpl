@@ -1,11 +1,11 @@
-use IO;
-use MasonNew;
-use MasonUtils;
 
+use MasonUtils;
+use MasonNew;
+use IO;
 
 proc main() {
   const args : [0..2] string;
-  args = ['new', 'newTest', '--no-checksum'];
+  args = ['mason','new', 'newTest'];
 
   assert(isDir("newTest") == false);
 

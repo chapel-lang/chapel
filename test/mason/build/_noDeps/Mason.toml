@@ -1,5 +1,7 @@
+
 [brick]
 name = "noDeps"
+CheckSum = "58bbb5b97dcefc83772291c47954233dc39296e1c08ec10a560913147ff661c6"
 version = "0.1.0"
 chplVersion = "1.24.0"
 license = "None"

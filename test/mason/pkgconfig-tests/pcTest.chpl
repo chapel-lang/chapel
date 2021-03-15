@@ -11,7 +11,7 @@ proc test(goodLock: string, tf: string) {
   // actual current version.
 
   const currentVersion = getChapelVersionStr();
-  var checksum = true;
+  var checksum = false;
 
   // file.good -> file.lock
   const lf = goodLock.replace('good', 'lock');

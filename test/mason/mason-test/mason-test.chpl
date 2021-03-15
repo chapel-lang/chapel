@@ -1,6 +1,6 @@
 use MasonTest;
 
 proc main() {
-  const args = ["test"];
+  const args = ["test", "--no-checksum"];
   masonTest(args);
 }

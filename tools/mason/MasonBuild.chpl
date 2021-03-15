@@ -78,6 +78,7 @@ proc masonBuild(args: [] string) throws {
     if force then compopts.append("--force");
     // add expected arguments for masonExample
     compopts.insert(0,["example", "--example"]);
+    if !checksum then compopts.append("--no-checksum");
     masonExample(compopts.toArray());
   }
   else {

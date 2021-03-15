@@ -7,7 +7,7 @@ use IO;
 use FileSystem;
 
 config const toml = "";
-var checksum = true;
+var checksum = false;
 
 proc main() {
 
