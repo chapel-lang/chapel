@@ -57,7 +57,7 @@ struct ConversionsTableValue {
   FnSymbol* assign;
   FnSymbol* initEq;
   FnSymbol* cast;
-  ConversionsTableValue() : assign(NULL), initEq(NULL), cast(NULL) { }
+  ConversionsTableValue() : assign(nullptr), initEq(nullptr), cast(nullptr) { }
 };
 
 typedef std::pair<Type*,Type*> ConversionsTableKey;
@@ -125,7 +125,7 @@ static void storeDefaultValuesForPython(FnSymbol* fn, ArgSymbol* formal);
 static void resolveFormals(FnSymbol* fn) {
   for_formals(formal, fn) {
     if (formal->type == dtUnknown) {
-      if (formal->typeExpr == NULL) {
+      if (formal->typeExpr == nullptr) {
         formal->type = dtObject;
 
       } else {
@@ -184,7 +184,7 @@ static void resolveFormals(FnSymbol* fn) {
         formal->intent = useIntent;
     }
 
-    if (formal->defaultExpr != NULL && fn->hasFlag(FLAG_EXPORT)) {
+    if (formal->defaultExpr != nullptr && fn->hasFlag(FLAG_EXPORT)) {
       storeDefaultValuesForPython(fn, formal);
     }
   }
@@ -386,7 +386,7 @@ static bool shouldUpdateAtomicFormalToRef(FnSymbol* fn, ArgSymbol* formal) {
 
 bool recordContainingCopyMutatesField(Type* t) {
   AggregateType* at = toAggregateType(t);
-  if (at == NULL) return false;
+  if (at == nullptr) return false;
   if (!isRecord(at)) return false;
   if (at->symbol->hasFlag(FLAG_COPY_MUTATES)) return true;
 
@@ -412,7 +412,7 @@ static void handleParamCNameFormal(FnSymbol* fn, ArgSymbol* formal) {
   // Handle param cnames for functions
   resolveBlockStmt(formal->defaultExpr);
   SymExpr* se = toSymExpr(formal->defaultExpr->body.last());
-  if (se == NULL) {
+  if (se == nullptr) {
     USR_FATAL(fn, "extern name expression must be param");
   }
   VarSymbol* var = toVarSymbol(se->symbol());
@@ -433,13 +433,13 @@ static void handleParamCNameFormal(FnSymbol* fn, ArgSymbol* formal) {
 ************************************** | *************************************/
 
 void resolveSpecifiedReturnType(FnSymbol* fn) {
-  Type* retType = NULL;
+  Type* retType = nullptr;
 
 
   // resolve specified return types for any 'out' intent formals
   for_formals(formal, fn) {
     if (formal->originalIntent == INTENT_OUT) {
-      if (formal->type == dtUnknown && formal->typeExpr != NULL) {
+      if (formal->type == dtUnknown && formal->typeExpr != nullptr) {
         resolveBlockStmt(formal->typeExpr);
         formal->type = formal->typeExpr->body.tail->getValType();
       }
@@ -481,7 +481,7 @@ void resolveSpecifiedReturnType(FnSymbol* fn) {
       fn->retType = retType;
     }
 
-    if (fn->isIterator() == true && fn->iteratorInfo == NULL) {
+    if (fn->isIterator() == true && fn->iteratorInfo == nullptr) {
       // Note: protoIteratorClass changes fn->retType to the iterator record.
       // The original return type is stored here in retType.
       protoIteratorClass(fn, retType);
@@ -548,20 +548,20 @@ void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
 
       insertUnrefForArrayOrTupleReturn(fn);
 
-      Type* yieldedType = NULL;
+      Type* yieldedType = nullptr;
       resolveReturnTypeAndYieldedType(fn, &yieldedType);
 
       fixPrimInitsAndAddCasts(fn);
 
-      if (fn->isIterator() == true && fn->iteratorInfo == NULL) {
+      if (fn->isIterator() == true && fn->iteratorInfo == nullptr) {
         protoIteratorClass(fn, yieldedType);
       }
 
-      if (fn->isMethod() == true && fn->_this != NULL) {
+      if (fn->isMethod() == true && fn->_this != nullptr) {
         ensureInMethodList(fn);
       }
 
-      if (forCall != NULL) {
+      if (forCall != nullptr) {
         resolveAlsoParallelIterators(fn, forCall);
         resolveAlsoConversions(fn, forCall);
       }
@@ -601,8 +601,8 @@ static void markTypesWithDefaultInitEqOrAssign(FnSymbol* fn) {
 
 static void resolveAlsoConversions(FnSymbol* fn, CallExpr* forCall) {
 
-  Type* toType = NULL;
-  Type* fromType = NULL;
+  Type* toType = nullptr;
+  Type* fromType = nullptr;
 
   if (fn->name == astrSassign) {
     int i = 1;
@@ -663,19 +663,19 @@ static void resolveAlsoConversions(FnSymbol* fn, CallExpr* forCall) {
   bool checkInitEq = false;
   bool checkCast = false;
 
-  if (canCoerce(fromType, NULL, toType, NULL, NULL)) {
+  if (canCoerce(fromType, nullptr, toType, nullptr, nullptr)) {
     implicitConverts = true;
     checkAssign = true;
     checkInitEq = true;
     checkCast = true;
   }
 
-  if (fn->name == astrSassign || have.assign != NULL) {
+  if (fn->name == astrSassign || have.assign != nullptr) {
     checkInitEq = true;
     checkCast = true;
   }
 
-  if (fn->name == astrInitEquals || have.initEq != NULL) {
+  if (fn->name == astrInitEquals || have.initEq != nullptr) {
     checkCast = true;
   }
 
@@ -695,7 +695,7 @@ static void resolveAlsoConversions(FnSymbol* fn, CallExpr* forCall) {
 
     // However, don't allow '=' on these types to be defined
     // outside of the standard/internal modules
-    if (have.assign != NULL &&
+    if (have.assign != nullptr &&
         have.assign->defPoint->getModule()->modTag == MOD_USER) {
       USR_FATAL_CONT(have.assign->defPoint,
                      "Can't overload assignments for class types");
@@ -709,7 +709,7 @@ static void resolveAlsoConversions(FnSymbol* fn, CallExpr* forCall) {
     checkInitEq = false;
     // However, don't allow '=' on these types to be defined
     // outside of the standard/internal modules
-    if (have.assign != NULL &&
+    if (have.assign != nullptr &&
         have.assign->defPoint->getModule()->modTag == MOD_USER) {
       USR_FATAL_CONT(have.assign->defPoint,
                      "unsupported = overload to '%s' from '%s'",
@@ -752,7 +752,7 @@ static void resolveAlsoConversions(FnSymbol* fn, CallExpr* forCall) {
     checkInitEq = false;
 
   // add calls to resolve these if not already known
-  if (checkAssign && have.assign == NULL) {
+  if (checkAssign && have.assign == nullptr) {
     // also resolve =
     BlockStmt* block = new BlockStmt(BLOCK_SCOPELESS);
     forCall->insertBefore(block);
@@ -770,7 +770,7 @@ static void resolveAlsoConversions(FnSymbol* fn, CallExpr* forCall) {
     have.assign = c->resolvedFunction();
   }
 
-  if (checkInitEq && have.initEq == NULL) {
+  if (checkInitEq && have.initEq == nullptr) {
     // also resolve init=
     BlockStmt* block = new BlockStmt(BLOCK_SCOPELESS);
     forCall->insertBefore(block);
@@ -788,7 +788,7 @@ static void resolveAlsoConversions(FnSymbol* fn, CallExpr* forCall) {
     have.initEq = c->resolvedFunction();
   }
 
-  if (checkCast && have.cast == NULL) {
+  if (checkCast && have.cast == nullptr) {
     // also resolve cast
     BlockStmt* block = new BlockStmt(BLOCK_SCOPELESS);
     forCall->insertBefore(block);
@@ -806,17 +806,17 @@ static void resolveAlsoConversions(FnSymbol* fn, CallExpr* forCall) {
 
   // Now, error if an implied function was not found.
   bool error = false;
-  if (checkAssign && have.assign == NULL) {
+  if (checkAssign && have.assign == nullptr) {
     USR_FATAL_CONT(forCall, "an = overload setting '%s' from '%s' is missing",
                             toString(toType), toString(fromType));
     error = true;
   }
-  if (checkInitEq && have.initEq == NULL) {
+  if (checkInitEq && have.initEq == nullptr) {
     USR_FATAL_CONT(forCall, "an init= initializing '%s' from '%s' is missing",
                             toString(toType), toString(fromType));
     error = true;
   }
-  if (checkCast && have.cast == NULL) {
+  if (checkCast && have.cast == nullptr) {
     USR_FATAL_CONT(forCall, "a cast creating '%s' from '%s' is missing",
                             toString(toType), toString(fromType));
     error = true;
@@ -825,10 +825,10 @@ static void resolveAlsoConversions(FnSymbol* fn, CallExpr* forCall) {
   if (error) {
     if (implicitConverts) {
       USR_PRINT("expected because implicit conversion is available between these two types");
-    } else if (have.assign != NULL) {
+    } else if (have.assign != nullptr) {
       USR_PRINT(have.assign->defPoint,
                 "expected because assignment is defined here between these two types");
-    } else if (have.initEq != NULL) {
+    } else if (have.initEq != nullptr) {
       USR_PRINT(have.initEq->defPoint,
                 "expected because init= is defined here between these two types");
     }
@@ -1048,7 +1048,7 @@ static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn) {
 
         SymExpr* fromSe = toSymExpr(fromExpr);
         bool domain = rhsType->symbol->hasFlag(FLAG_DOMAIN) &&
-                      fromSe != NULL &&
+                      fromSe != nullptr &&
                       isCallExprTemporary(fromSe->symbol()) &&
                       isTemporaryFromNoCopyReturn(fromSe->symbol());
         bool array = rhsType->symbol->hasFlag(FLAG_ARRAY);
@@ -1162,7 +1162,7 @@ static CallExpr* findSetShape(CallExpr* setRet, Symbol* ret) {
         return call;
       }
   // not found
-  return NULL;
+  return nullptr;
 }
 
 class SplitInitVisitor final : public AstVisitorTraverse {
@@ -1195,7 +1195,7 @@ bool SplitInitVisitor::enterCallExpr(CallExpr* call) {
 
     // Can this be replaced by a split init?
     std::vector<CallExpr*> initAssigns;
-    Expr* prevent = NULL;
+    Expr* prevent = nullptr;
     bool foundSplitInit = false;
 
     SymExpr* se = toSymExpr(call->get(1));
@@ -1244,7 +1244,7 @@ bool SplitInitVisitor::enterCallExpr(CallExpr* call) {
         assign->replace(init);
         resolveInitVar(init);
       }
-    } else if (prevent != NULL) {
+    } else if (prevent != nullptr) {
       preventMap[sym] = prevent;
     }
   }
@@ -1276,7 +1276,7 @@ bool FixPrimInitsVisitor::enterCallExpr(CallExpr* call) {
   if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR) ||
       call->isPrimitive(PRIM_NOINIT_INIT_VAR) ||
       call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL)) {
-    Expr* prevent = NULL;
+    Expr* prevent = nullptr;
     SymExpr* se = toSymExpr(call->get(1));
     Symbol* sym = se->symbol();
     if (preventMap.count(sym))
@@ -1316,8 +1316,8 @@ static void gatherTempsDeadLastMention(VarSymbol* v,
 
   for_SymbolSymExprs(se, v) {
     if (CallExpr* call = toCallExpr(se->getStmtExpr())) {
-      SymExpr* lhsSe = NULL;
-      CallExpr* subCall = NULL;
+      SymExpr* lhsSe = nullptr;
+      CallExpr* subCall = nullptr;
       if (isInitOrReturn(call, lhsSe, subCall)) {
         // call above sets lhsSe and initOrCtor
       } else if (call->resolvedOrVirtualFunction()) {
@@ -1325,15 +1325,15 @@ static void gatherTempsDeadLastMention(VarSymbol* v,
       }
 
       // handle a returned variable being inited here
-      if (lhsSe != NULL) {
+      if (lhsSe != nullptr) {
         VarSymbol* lhs = toVarSymbol(lhsSe->symbol());
-        if (lhs != NULL && lhs != v && lhs->hasFlag(FLAG_TEMP))
+        if (lhs != nullptr && lhs != v && lhs->hasFlag(FLAG_TEMP))
           gatherTempsDeadLastMention(lhs, temps);
       }
 
       // also handle out intent variables being inited here
-      FnSymbol* fn = subCall ? subCall->resolvedOrVirtualFunction() : NULL;
-      if (fn != NULL) {
+      FnSymbol* fn = subCall ? subCall->resolvedOrVirtualFunction() : nullptr;
+      if (fn != nullptr) {
         int i = 1;
         for_formals_actuals(formal, actual, subCall) {
           bool outIntent = (formal->intent == INTENT_OUT ||
@@ -1345,10 +1345,10 @@ static void gatherTempsDeadLastMention(VarSymbol* v,
               INT_ASSERT(ne->name == formal->name);
               se = toSymExpr(ne->actual);
             }
-            INT_ASSERT(se != NULL);
+            INT_ASSERT(se != nullptr);
 
             VarSymbol* tmpVar = toVarSymbol(se->symbol());
-            if (tmpVar != NULL && tmpVar != v && tmpVar->hasFlag(FLAG_TEMP)) {
+            if (tmpVar != nullptr && tmpVar != v && tmpVar->hasFlag(FLAG_TEMP)) {
               if (outIntent) {
                 // initializing a temp with out intent
                 gatherTempsDeadLastMention(tmpVar, temps);
@@ -1385,8 +1385,8 @@ static void markTempsDeadLastMention(std::set<VarSymbol*>& temps) {
 
     for_SymbolSymExprs(se, v) {
       if (CallExpr* call = toCallExpr(se->getStmtExpr())) {
-        SymExpr* lhsSe = NULL;
-        CallExpr* subCall = NULL;
+        SymExpr* lhsSe = nullptr;
+        CallExpr* subCall = nullptr;
         if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
           lhsSe = toSymExpr(call->get(1));
         } else if (isInitOrReturn(call, lhsSe, subCall)) {
@@ -1396,16 +1396,16 @@ static void markTempsDeadLastMention(std::set<VarSymbol*>& temps) {
         }
 
         // returning into a user var?
-        if (lhsSe != NULL) {
+        if (lhsSe != nullptr) {
           VarSymbol* lhs = toVarSymbol(lhsSe->symbol());
-          if (lhs != NULL && lhs != v && !lhs->hasFlag(FLAG_TEMP)) {
+          if (lhs != nullptr && lhs != v && !lhs->hasFlag(FLAG_TEMP)) {
             // Used in initializing a user var, so mark end of block
             makeThemEndOfBlock = true;
             break;
           }
         }
         // out intent setting a user var?
-        if (subCall != NULL && subCall->resolvedOrVirtualFunction() != NULL) {
+        if (subCall != nullptr && subCall->resolvedOrVirtualFunction() != nullptr) {
           for_formals_actuals(formal, actual, subCall) {
             bool outIntent = (formal->intent == INTENT_OUT ||
                               formal->originalIntent == INTENT_OUT);
@@ -1415,11 +1415,11 @@ static void markTempsDeadLastMention(std::set<VarSymbol*>& temps) {
                 INT_ASSERT(ne->name == formal->name);
                 se = toSymExpr(ne->actual);
               }
-              INT_ASSERT(se != NULL);
+              INT_ASSERT(se != nullptr);
 
               VarSymbol* outVar = toVarSymbol(se->symbol());
 
-              if (outVar != NULL && outVar != v &&
+              if (outVar != nullptr && outVar != v &&
                   !outVar->hasFlag(FLAG_TEMP)) {
                 // Used in initializing a user var, so mark end of block
                 makeThemEndOfBlock = true;
@@ -1441,7 +1441,7 @@ static void markTempsDeadLastMention(std::set<VarSymbol*>& temps) {
   if (makeThemEndOfBlock) {
     for_set(VarSymbol, temp, temps) {
       temp->addFlag(FLAG_DEAD_END_OF_BLOCK);
-      if (temp->defPoint != NULL) {
+      if (temp->defPoint != nullptr) {
         FnSymbol* initFn = toFnSymbol(temp->defPoint->parentSymbol);
         if (initFn && initFn->hasFlag(FLAG_MODULE_INIT)) {
           ModuleSymbol* mod = temp->defPoint->getModule();
@@ -1556,7 +1556,7 @@ static FnSymbol*      makeIteratorMethod(IteratorInfo* ii,
                                          Type*         retType);
 
 static void protoIteratorClass(FnSymbol* fn, Type* yieldedType) {
-  INT_ASSERT(yieldedType != NULL);
+  INT_ASSERT(yieldedType != nullptr);
   if (yieldedType == dtUnknown) {
     USR_FATAL(fn, "unable to resolve yielded type");
   }
@@ -1627,9 +1627,9 @@ static AggregateType* makeIteratorRecord(FnSymbol* fn, Type* yieldedType) {
 }
 
 static const char* iteratorClassName(FnSymbol* fn) {
-  const char* retval = NULL;
+  const char* retval = nullptr;
 
-  if (fn->_this == NULL) {
+  if (fn->_this == nullptr) {
     retval = astr(fn->name);
 
   } else {
@@ -1765,7 +1765,7 @@ void resolveIfExprType(CondStmt* stmt) {
     // NB: Assumes '0' and '1' correspond to 'then' and 'else', respectively.
     Type* thenType = retTypes.v[0];
     Type* elseType = retTypes.v[1];
-    Type* retType  = NULL;
+    Type* retType  = nullptr;
 
     Symbol* thenSym = retSymbols.v[0];
     Symbol* elseSym = retSymbols.v[1];
@@ -1801,10 +1801,10 @@ void resolveIfExprType(CondStmt* stmt) {
     } else {
       bool promote = false;
 
-      if (canDispatch(elseType, elseSym, thenType, NULL, fn, &promote) &&
+      if (canDispatch(elseType, elseSym, thenType, nullptr, fn, &promote) &&
           promote == false) {
         retType = thenType;
-      } else if (canDispatch(thenType, thenSym, elseType, NULL, fn, &promote) &&
+      } else if (canDispatch(thenType, thenSym, elseType, nullptr, fn, &promote) &&
                  promote == false) {
         retType = elseType;
       }
@@ -1812,7 +1812,7 @@ void resolveIfExprType(CondStmt* stmt) {
 
     // For tuples, generally do not allow a tuple to contain a reference
     // when it is returned
-    if (retType != NULL && retType->symbol->hasFlag(FLAG_TUPLE) == true) {
+    if (retType != nullptr && retType->symbol->hasFlag(FLAG_TUPLE) == true) {
       // Compute the tuple type without any refs
       // Set the function return type to that type.
       AggregateType* tupleType = toAggregateType(retType);
@@ -1829,7 +1829,7 @@ void resolveIfExprType(CondStmt* stmt) {
       const char* elseKind = elseTypeVar ? "type" : "value";
       USR_PRINT("'then' branch returns a %s, but 'else' branch returns a %s", thenKind, elseKind);
       USR_STOP();
-    } else if (retType == NULL || (thenTypeVar && thenType != elseType)) {
+    } else if (retType == nullptr || (thenTypeVar && thenType != elseType)) {
       USR_FATAL_CONT(stmt, "Unable to resolve type of if-expression");
       if (thenTypeVar || elseTypeVar) {
         USR_PRINT("if-expression returns type variables, did you mean to use a param conditional?");
@@ -1876,7 +1876,7 @@ static void checkInterfaceFunctionRetType(FnSymbol* fn, Type* retType,
 // specified explicitly.
 void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
 
-  bool isIterator = fn->isIterator(); // TODO - do we need || fn->iteratorInfo != NULL;
+  bool isIterator = fn->isIterator(); // TODO - do we need || fn->iteratorInfo != nullptr;
   Symbol* ret     = fn->getReturnSymbol();
   Type*   retType = ret->type;
 
@@ -1884,7 +1884,7 @@ void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
     // For iterators, the return symbol / return type is void
     // or the iterator record. Here we want to compute the yielded
     // type.
-    ret = NULL;
+    ret = nullptr;
     retType = dtUnknown;
   }
 
@@ -1930,7 +1930,7 @@ void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
             if (canDispatch(retTypes.v[j],
                             retSymbols.v[j],
                             retTypes.v[i],
-                            NULL,
+                            nullptr,
                             fn,
                             &requireScalarPromotion) == false) {
               best = false;
@@ -1979,7 +1979,7 @@ void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
   } else {
 
     // Update the yielded type argument if it was requested
-    if (yieldedType != NULL)
+    if (yieldedType != nullptr)
       *yieldedType = retType;
 
     // Update the types of the yielded symbols if they have FLAG_YVV
@@ -1995,7 +1995,7 @@ void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
 }
 
 void resolveReturnType(FnSymbol* fn) {
-  return resolveReturnTypeAndYieldedType(fn, NULL);
+  return resolveReturnTypeAndYieldedType(fn, nullptr);
 }
 
 
@@ -2004,21 +2004,21 @@ static void computeReturnTypeParamVectors(BaseAST*      ast,
                                           Vec<Type*>&   retTypes,
                                           Vec<Symbol*>& retSymbols) {
   if (CallExpr* call = toCallExpr(ast)) {
-    Expr* returnedExpr = NULL;
-    if (retSymbol != NULL && call->isPrimitive(PRIM_MOVE)) {
+    Expr* returnedExpr = nullptr;
+    if (retSymbol != nullptr && call->isPrimitive(PRIM_MOVE)) {
       if (SymExpr* sym = toSymExpr(call->get(1))) {
         if (sym->symbol() == retSymbol)
           returnedExpr = call->get(2);
       }
-    } else if(retSymbol == NULL && call->isPrimitive(PRIM_YIELD)) {
+    } else if(retSymbol == nullptr && call->isPrimitive(PRIM_YIELD)) {
       returnedExpr = call->get(1);
     }
 
-    if (returnedExpr != NULL) {
+    if (returnedExpr != nullptr) {
       if (SymExpr* se = toSymExpr(returnedExpr)) {
         retSymbols.add(se->symbol());
       } else {
-        retSymbols.add(NULL);
+        retSymbols.add(nullptr);
       }
 
       retTypes.add(returnedExpr->typeInfo());
@@ -2048,7 +2048,7 @@ static void computeReturnTypeParamVectors(BaseAST*      ast,
 ************************************** | *************************************/
 
 Type* getReturnedTupleType(FnSymbol* fn, AggregateType* retType) {
-  Type* retval = NULL;
+  Type* retval = nullptr;
 
   INT_ASSERT(retType->symbol->hasFlag(FLAG_TUPLE));
 
@@ -2185,7 +2185,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
   // is consistent.
   for_formals(formal, fn) {
     Symbol* tmp = formals2vars.get(formal);
-    if (tmp == NULL)
+    if (tmp == nullptr)
       continue;
 
     SET_LINENO(formal);
@@ -2236,7 +2236,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
       if (formalType == dtAny || formalType == dtUnknown)
         formalType = dtSplitInitType;
 
-      BlockStmt* defaultExpr = NULL;
+      BlockStmt* defaultExpr = nullptr;
 
       if (formal->defaultExpr &&
           formal->defaultExpr->body.tail->typeInfo() != dtTypeDefaultToken) {
@@ -2244,9 +2244,9 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
       }
 
       if (formalType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
-        VarSymbol* typeTmp = NULL;
+        VarSymbol* typeTmp = nullptr;
 
-        if (formal->typeExpr != NULL) {
+        if (formal->typeExpr != nullptr) {
           typeTmp = newTemp("_formal_type_tmp_");
           typeTmp->addFlag(FLAG_MAYBE_TYPE);
           BlockStmt* typeExpr = formal->typeExpr->copy();
@@ -2258,31 +2258,31 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
           start->insertBefore(setType);
           typeExpr->flattenAndRemove();
         }
-        if (defaultExpr != NULL) {
+        if (defaultExpr != nullptr) {
           CallExpr* init = new CallExpr(PRIM_INIT_VAR, tmp,
                                         defaultExpr->body.tail->remove());
-          if (typeTmp != NULL)
+          if (typeTmp != nullptr)
             init->insertAtTail(new SymExpr(typeTmp));
           start->insertBefore(defaultExpr);
           start->insertBefore(init);
         } else {
           CallExpr* init = new CallExpr(PRIM_DEFAULT_INIT_VAR, tmp);
-          if (typeTmp != NULL) {
+          if (typeTmp != nullptr) {
             init->insertAtTail(new SymExpr(typeTmp));
           } else {
             // find the FLAG_TYPE_FORMAL_FOR_OUT formal just before this one
             // and set typeTmp to that.
             DefExpr* beforeDef = toDefExpr(formal->defPoint->prev);
-            INT_ASSERT(beforeDef != NULL);
+            INT_ASSERT(beforeDef != nullptr);
             ArgSymbol* typeFormal = toArgSymbol(beforeDef->sym);
-            INT_ASSERT(typeFormal != NULL);
+            INT_ASSERT(typeFormal != nullptr);
             init->insertAtTail(new SymExpr(typeFormal));
           }
           start->insertBefore(init);
           start->insertBefore(new CallExpr(PRIM_END_OF_STATEMENT));
         }
       } else {
-        if (defaultExpr != NULL) {
+        if (defaultExpr != nullptr) {
           CallExpr* init = new CallExpr(PRIM_INIT_VAR, tmp,
                                         defaultExpr->body.tail->remove(),
                                         formalType->symbol);
@@ -2489,17 +2489,17 @@ static bool insertAndResolveCasts(FnSymbol* fn) {
 
 Type* arrayElementType(Type* arrayType) {
   AggregateType* at = toAggregateType(arrayType);
-  if (at == NULL) return NULL;
+  if (at == nullptr) return nullptr;
 
   Symbol* instField = at->getField("_instance", false);
-  if (instField == NULL) return NULL;
+  if (instField == nullptr) return nullptr;
 
   Type* instType = instField->type;
   AggregateType* instClass = toAggregateType(canonicalClassType(instType));
-  if (instClass == NULL) return NULL;
+  if (instClass == nullptr) return nullptr;
 
   Symbol* eltTypeField = instClass->getField("eltType", false);
-  if (eltTypeField == NULL) return NULL;
+  if (eltTypeField == nullptr) return nullptr;
 
   Type* eltType = eltTypeField->getValType();
   return eltType;
@@ -2510,9 +2510,9 @@ static void issueInitConversionError(Symbol* to, Symbol* toType, Symbol* from,
 
   Type* fromValType = from->getValType();
 
-  const char* toName = NULL;
-  const char* toTypeStr = NULL;
-  const char* fromStr = NULL;
+  const char* toName = nullptr;
+  const char* toTypeStr = nullptr;
+  const char* fromStr = nullptr;
   const char* sep = "";
 
   if (to->hasFlag(FLAG_RVV)) {
@@ -2591,7 +2591,7 @@ static void insertInitConversion(Symbol* to, Symbol* toType, Symbol* from,
     // types are the same and no runtime types.
     // handle reference level adjustments. No cast necessary.
 
-    Expr* newRhs = NULL;
+    Expr* newRhs = nullptr;
 
     if (from->type == to->type) {
       newRhs = new SymExpr(from);
@@ -2671,7 +2671,7 @@ static void insertInitConversion(Symbol* to, Symbol* toType, Symbol* from,
   }
 
   if (useRttCopy) {
-    CallExpr* newCall = NULL;
+    CallExpr* newCall = nullptr;
     if (stealRHS) {
       newCall = new CallExpr(astr_coerceMove, toType, from, definedConst);
     } else {
@@ -2687,7 +2687,7 @@ static void insertInitConversion(Symbol* to, Symbol* toType, Symbol* from,
 
     if (toType->type->symbol->hasFlag(FLAG_TUPLE)) {
 
-      if (canCoerce(fromValType, from, toType->type, NULL, NULL)) {
+      if (canCoerce(fromValType, from, toType->type, nullptr, nullptr)) {
         // use tuple cast (at least to handle ref vs value tuples)
         // TODO: adjust tuples to use init=
         CallExpr* cast = createCast(from, toType->type->symbol);
@@ -2708,7 +2708,7 @@ static void insertInitConversion(Symbol* to, Symbol* toType, Symbol* from,
       VarSymbol* tmp = newTemp("_cast_tmp_", valType);
       insertBefore->insertBefore(new DefExpr(tmp));
 
-      CallExpr* readCall = NULL;
+      CallExpr* readCall = nullptr;
       if (isSyncType(fromValType)) {
         readCall = new CallExpr("readFE", gMethodToken, from);
         USR_WARN(to, "implicitly reading from a sync is deprecated; "
@@ -2731,7 +2731,7 @@ static void insertInitConversion(Symbol* to, Symbol* toType, Symbol* from,
 
     } else if (isRecord(toType->type) || isUnion(toType->type)) {
       // insert an init= call
-      CallExpr* initEq = NULL;
+      CallExpr* initEq = nullptr;
       initEq = new CallExpr(astrInitEquals, gMethodToken, to, from);
       newCalls.push_back(initEq);
       insertBefore->insertBefore(initEq);
@@ -2747,7 +2747,7 @@ static void insertInitConversion(Symbol* to, Symbol* toType, Symbol* from,
 
       if (toType->type->symbol->hasFlag(FLAG_EXTERN) ||
           fromValType->symbol->hasFlag(FLAG_EXTERN) ||
-          canCoerce(fromValType, from, toType->type, NULL, NULL) ||
+          canCoerce(fromValType, from, toType->type, nullptr, nullptr) ||
           (toType->type == dtStringC && fromValType == dtNil)) {
         // Cast and assign
         INT_ASSERT(!typeNeedsCopyInitDeinit(toType->type));
@@ -2796,8 +2796,8 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn,
             gdbShouldBreakHere();
 
           Symbol* to = lhs->symbol();
-          Symbol* toType = NULL;
-          Symbol* from = NULL;
+          Symbol* toType = nullptr;
+          Symbol* from = nullptr;
 
           bool isTypeOf = (rhsCall && rhsCall->isPrimitive(PRIM_TYPEOF));
           bool fromPrimCoerce = false;
@@ -2816,7 +2816,7 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn,
             } else if (lhsType == rhs->typeInfo()) {
               // the types match exactly and it's not a PRIM_COERCE.
               // There is nothing to do; the PRIM_MOVE/PRIM_ASSIGN is OK.
-              from = NULL;
+              from = nullptr;
             } else if (lhsType->getValType() == rhs->getValType() &&
                        call->isPrimitive(PRIM_ASSIGN)) {
               // The types match except for reference level. In PRIM_ASSIGN.
@@ -2824,14 +2824,14 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn,
               // Note, this case shouldn't add an autoCopy call if the RHS
               // is a ref (that would present problems for use of PRIM_ASSIGN
               // in module code).
-              from = NULL;
+              from = nullptr;
             } else if (SymExpr* rhsSe = toSymExpr(rhs)) {
               // use the type of the LHS
               toType = lhsType->symbol;
               from = rhsSe->symbol();
             } else {
               // Store the RHS into a temporary
-              Symbol* tmp = NULL;
+              Symbol* tmp = nullptr;
               tmp = newTemp("_cast_tmp_", rhs->typeInfo());
               call->insertBefore(new DefExpr(tmp));
               CallExpr* newMove = new CallExpr(PRIM_MOVE, tmp, rhs->copy());
@@ -2842,7 +2842,7 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn,
             }
 
             // If rewriting this operation is required, do it
-            if (from != NULL) {
+            if (from != nullptr) {
               SET_LINENO(rhs);
               insertInitConversion(to, toType, from, fromPrimCoerce,
                                    call, newCalls);
@@ -2864,7 +2864,7 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn,
 ************************************** | *************************************/
 
 void ensureInMethodList(FnSymbol* fn) {
-  if (fn->isMethod() == true && fn->_this != NULL) {
+  if (fn->isMethod() == true && fn->_this != nullptr) {
     Type* thisType = fn->_this->type->getValType();
     bool  found    = false;
 

@@ -91,7 +91,7 @@ static bool loopHasValidInductionVariables(ForallStmt *forall);
 static Symbol *canDetermineLoopDomainStatically(ForallStmt *forall);
 static Symbol *getCallBaseSymIfSuitable(CallExpr *call, ForallStmt *forall,
                                         bool checkArgs, int *argIdx,
-                                        CallRejectReason *reason=NULL);
+                                        CallRejectReason *reason=nullptr);
 static Symbol *getCallBase(CallExpr *call);
 static void generateDynamicCheckForAccess(CallExpr *access,
                                           ForallStmt *forall,
@@ -200,7 +200,7 @@ Expr *preFoldMaybeLocalArrElem(CallExpr *call) {
 }
 
 Expr *preFoldMaybeLocalThis(CallExpr *call) {
-  Expr *ret = NULL;
+  Expr *ret = nullptr;
   bool confirmed = false;
 
   // PRIM_MAYBE_LOCAL_THIS looks like
@@ -264,7 +264,7 @@ void transformConditionalAggregation(CondStmt *cond) {
     }
     cond->insertBefore(expr->remove());
   }
-  
+
   // remove the defpoint of the aggregation marker
   SymExpr *condExpr = toSymExpr(cond->condExpr);
   INT_ASSERT(condExpr);
@@ -323,8 +323,8 @@ void cleanupRemainingAggCondStmts() {
                 std::vector<SymExpr *> symExprs;
                 collectSymExprs(condStmt->elseStmt, symExprs);
 
-                Symbol *aggregatorToRemove = NULL;
-                FnSymbol *parentFn = NULL;
+                Symbol *aggregatorToRemove = nullptr;
+                FnSymbol *parentFn = nullptr;
                 for_vector(SymExpr, symExpr, symExprs) {
                   Symbol *sym = symExpr->symbol();
                   if(sym->hasFlag(FLAG_COMPILER_ADDED_AGGREGATOR)) {
@@ -334,8 +334,8 @@ void cleanupRemainingAggCondStmts() {
                   }
                 }
 
-                INT_ASSERT(aggregatorToRemove != NULL);
-                INT_ASSERT(parentFn != NULL);
+                INT_ASSERT(aggregatorToRemove != nullptr);
+                INT_ASSERT(parentFn != nullptr);
 
                 // put the nodes in the then block right before the conditional
                 for_alist(expr, condStmt->thenStmt->body) {
@@ -367,7 +367,7 @@ void cleanupRemainingAggCondStmts() {
           Symbol *sym = symExpr->symbol();
           if (sym == aggregatorToRemove) {
             CallExpr *parentCall = toCallExpr(symExpr->parentExpr);
-            INT_ASSERT(parentCall != NULL);
+            INT_ASSERT(parentCall != nullptr);
 
             if (parentCall->isPrimitive(PRIM_MOVE)) {
               /* Here's what we expect to see in the AST with associated
@@ -419,7 +419,7 @@ void cleanupRemainingAggCondStmts() {
 
               Symbol *lhsSym = toSymExpr(moveCall->get(1))->symbol();
               INT_ASSERT(lhsSym->defPoint == moveCall->prev);
-              
+
               CallExpr *deinitCall = toCallExpr(moveCall->next);
               INT_ASSERT(deinitCall);
               INT_ASSERT(deinitCall->theFnSymbol()->hasFlag(FLAG_DESTRUCTOR));
@@ -454,7 +454,7 @@ void finalizeForallOptimizationsResolution() {
       }
     }
   }
-  
+
   // the following chunks can be refactored into a helper, but there are slight
   // differences, and it may be dirtier if we do that.
   if (fReportAutoLocalAccess) {
@@ -465,7 +465,7 @@ void finalizeForallOptimizationsResolution() {
       std::stringstream message;
       message << "Local access attempt reverted. All static checks failed or code is unreachable.";
       message << "(" << it->stringLoc() << ")";
-      LOG_ALA(0, message.str().c_str(), NULL);
+      LOG_ALA(0, message.str().c_str(), nullptr);
     }
   }
   primMaybeLocalThisLocations.clear();
@@ -478,7 +478,7 @@ void finalizeForallOptimizationsResolution() {
       std::stringstream message;
       message << "Aggregation attempt reverted. Could not prove that exactly one side of the assignment is local.";
       message << "(" << it->stringLoc() << ")";
-      LOG_AA(0, message.str().c_str(), NULL);
+      LOG_AA(0, message.str().c_str(), nullptr);
     }
   }
   primMaybeAggregateAssignLocations.clear();
@@ -499,7 +499,7 @@ static bool LOG_help(int depth, const char *msg, BaseAST *node,
 
   bool reportedLoc = false;
   if (flag) {
-    bool verbose = node == NULL ||  // to support wholesale reversion reporting
+    bool verbose = node == nullptr ||  // to support wholesale reversion reporting
                    (node->getModule()->modTag != MOD_INTERNAL &&
                     node->getModule()->modTag != MOD_STANDARD);
 
@@ -509,7 +509,7 @@ static bool LOG_help(int depth, const char *msg, BaseAST *node,
       if (curLogDepth > 0) {
         std::cout << "|";
       }
-      
+
       for (int i = 0 ; i < depth; i++) {
         std::cout << " ";
       }
@@ -527,7 +527,7 @@ static bool LOG_help(int depth, const char *msg, BaseAST *node,
         default:
           break;
       }
-      if (node != NULL) {
+      if (node != nullptr) {
         std::cout << " (" << node->stringLoc() << ")";
         if (veryVerbose) {
           nprint_view(node);
@@ -630,14 +630,14 @@ static Symbol *getDotDomBaseSym(Expr *expr) {
       }
     }
   }
-  return NULL;
+  return nullptr;
 }
 
 static Expr *getDomainExprFromArrayType(CallExpr* ceInner){
   if (ceInner->isNamed("chpl__ensureDomainExpr")) {
     return ceInner->get(1);
   }
-  return NULL;
+  return nullptr;
 }
 
 // get the domain part of the expression from `[D] int` or `[?D] int`
@@ -669,7 +669,7 @@ static Expr *getDomExprFromTypeExprOrQuery(Expr *e) {
       }
     }
   }
-  return NULL;
+  return nullptr;
 }
 
 static Symbol *getDomSym(Symbol *arrSym);
@@ -677,7 +677,7 @@ static Symbol *getDomSym(Symbol *arrSym);
 // get the domain symbol from `Dom`, `?Dom` (if allowQuery) or `arr.domain`
 static Symbol *getDomSymFromDomExpr(Expr *domExpr, bool allowQuery) {
   // we try the following cases one by one:
-  
+
   if (SymExpr *domSE = toSymExpr(domExpr)) {
     return domSE->symbol();
   }
@@ -691,18 +691,18 @@ static Symbol *getDomSymFromDomExpr(Expr *domExpr, bool allowQuery) {
   if (Symbol *dotDomBaseSym = getDotDomBaseSym(domExpr)) {
     return getDomSym(dotDomBaseSym); // recurse
   }
-  return NULL;
+  return nullptr;
 }
 
 // If `arrSym` is an array symbol, try to return its domain's symbol. return
-// NULL if we can't find a domain symbol statically
+// nullptr if we can't find a domain symbol statically
 static Symbol *getDomSym(Symbol *arrSym) {
 
-  Symbol *ret = NULL;
+  Symbol *ret = nullptr;
 
   // try to get the domain of arrays that are defined in this scope
   if(DefExpr *def = arrSym->defPoint) {
-    if (def->exprType != NULL) {
+    if (def->exprType != nullptr) {
       // check for pattern `var A: [D] int;`
       if (Expr *arg = getDomExprFromTypeExprOrQuery(def->exprType)) {
         ret = getDomSymFromDomExpr(arg, /* allowQuery= */ false);
@@ -718,7 +718,7 @@ static Symbol *getDomSym(Symbol *arrSym) {
     }
   }
 
-  if (ret == NULL) {
+  if (ret == nullptr) {
     // try to get the domain if the symbol was an argument
     // e.g. `a: [d] int`, `a: [?d] int`, `a: [x.domain] int`
     if (ArgSymbol *arrArgSym = toArgSymbol(arrSym)) {
@@ -738,7 +738,7 @@ static Symbol *getDomSym(Symbol *arrSym) {
 // Return the closest parent of `ce` that can impact locality (forall or on)
 static Stmt *getLocalityDominator(CallExpr* ce) {
   Expr *cur = ce->parentExpr;
-  while (cur != NULL) {
+  while (cur != nullptr) {
     if (BlockStmt *block = toBlockStmt(cur)) {
       if (!block->isRealBlockStmt()) { // check for on statement
         return block;
@@ -749,7 +749,7 @@ static Stmt *getLocalityDominator(CallExpr* ce) {
     }
     cur = cur->parentExpr;
   }
-  return NULL;
+  return nullptr;
 }
 
 // check whether an expression is used to assign a subindex. e.g.
@@ -845,14 +845,14 @@ static void gatherForallInfo(ForallStmt *forall) {
     Expr *curIterExpr = iterExprs.get(i);
     Expr *curIndexVar = indexVars.get(i);
 
-    Symbol *loopIdxSym = NULL;
-    Symbol *iterSym = NULL;
-    Expr *dotDomIterExpr = NULL;
-    Symbol *dotDomIterSym = NULL;
-    Symbol *dotDomIterSymDom = NULL;
+    Symbol *loopIdxSym = nullptr;
+    Symbol *iterSym = nullptr;
+    Expr *dotDomIterExpr = nullptr;
+    Symbol *dotDomIterSym = nullptr;
+    Symbol *dotDomIterSymDom = nullptr;
 
-    CallExpr *iterCall = NULL;
-    Symbol *iterCallTmp = NULL;
+    CallExpr *iterCall = nullptr;
+    Symbol *iterCallTmp = nullptr;
 
     std::vector<Symbol *> multiDIndices;
 
@@ -886,9 +886,9 @@ static void gatherForallInfo(ForallStmt *forall) {
     forall->optInfo.iterCall.push_back(iterCall);
     forall->optInfo.iterCallTmp.push_back(iterCallTmp);
 
-    if (iterSym != NULL ||
-        dotDomIterSym != NULL ||
-        iterCall != NULL) {
+    if (iterSym != nullptr ||
+        dotDomIterSym != nullptr ||
+        iterCall != nullptr) {
       // the iterator is something we can optimize
       // now check the induction variables
       if (SymExpr* se = toSymExpr(curIndexVar)) {
@@ -926,18 +926,18 @@ static Symbol *canDetermineLoopDomainStatically(ForallStmt *forall) {
   // symbol (with the hopes that that symbol is a domain), or a foo.domain
   if (forall->optInfo.iterSym.size() > 0){
     Symbol *ret = forall->optInfo.iterSym[0];
-    if (ret != NULL) {
+    if (ret != nullptr) {
       return ret;
     }
   }
 
   if (forall->optInfo.dotDomIterSym.size() > 0) {
     Symbol *ret = forall->optInfo.dotDomIterSym[0];
-    if (ret != NULL) {
+    if (ret != nullptr) {
       return ret;
     }
   }
-  return NULL;
+  return nullptr;
 }
 
 static const char *getCallRejectReasonStr(CallRejectReason reason) {
@@ -970,28 +970,28 @@ static const char *getCallRejectReasonStr(CallRejectReason reason) {
 
 // Bunch of checks to see if `call` is a candidate for optimization within
 // `forall`. Returns the symbol of the `baseExpr` of the `call` if it is
-// suitable. NULL otherwise
+// suitable. nullptr otherwise
 static Symbol *getCallBaseSymIfSuitable(CallExpr *call, ForallStmt *forall,
                                         bool checkArgs, int *argIdx,
                                         CallRejectReason *reason) {
-  
+
   // TODO see if you can use getCallBase
   SymExpr *baseSE = toSymExpr(call->baseExpr);
 
-  if (baseSE != NULL) {
+  if (baseSE != nullptr) {
     Symbol *accBaseSym = baseSE->symbol();
 
     // Prevent making changes to `new C[i]`
     if (CallExpr *parentCall = toCallExpr(call->parentExpr)) {
-      if (parentCall->isPrimitive(PRIM_NEW)) { return NULL; } 
+      if (parentCall->isPrimitive(PRIM_NEW)) { return nullptr; }
     }
 
     // don't analyze further if the call base is a yielded symbol
     if (accBaseSym->hasFlag(FLAG_INDEX_VAR)) {
-      if (!accBaseSym->hasFlag(FLAG_TEMP) && reason != NULL) {
+      if (!accBaseSym->hasFlag(FLAG_TEMP) && reason != nullptr) {
         *reason = CRR_ACCESS_BASE_IS_LOOP_INDEX;
       }
-      return NULL;
+      return nullptr;
     }
 
     // give up if the access uses a different symbol than the symbols yielded by
@@ -1012,48 +1012,48 @@ static Symbol *getCallBaseSymIfSuitable(CallExpr *call, ForallStmt *forall,
       }
 
       if (!found) {
-        if (reason != NULL) *reason = CRR_NO_CLEAN_INDEX_MATCH;
-        return NULL;
+        if (reason != nullptr) *reason = CRR_NO_CLEAN_INDEX_MATCH;
+        return nullptr;
       }
     }
 
     // (i,j) in forall (i,j) in bla is a tuple that is index-by-index accessed
     // in loop body that throw off this analysis
-    if (accBaseSym->hasFlag(FLAG_INDEX_OF_INTEREST)) { return NULL; }
+    if (accBaseSym->hasFlag(FLAG_INDEX_OF_INTEREST)) { return nullptr; }
 
     // give up if the symbol we are looking to optimize is defined inside the
     // loop itself
-    if (forall->loopBody()->contains(accBaseSym->defPoint)) { 
-      if (reason != NULL) *reason = CRR_ACCESS_BASE_IS_NOT_OUTER_VAR;
-      return NULL;
+    if (forall->loopBody()->contains(accBaseSym->defPoint)) {
+      if (reason != nullptr) *reason = CRR_ACCESS_BASE_IS_NOT_OUTER_VAR;
+      return nullptr;
     }
 
     // similarly, give up if the base symbol is a shadow variable
     if (isShadowVarSymbol(accBaseSym)) {
-      if (reason != NULL) *reason = CRR_ACCESS_BASE_IS_SHADOW_VAR;
-      return NULL;
+      if (reason != nullptr) *reason = CRR_ACCESS_BASE_IS_SHADOW_VAR;
+      return nullptr;
     }
 
     // this call has another tighter-enclosing stmt that may change locality,
     // don't optimize
     if (forall != getLocalityDominator(call)) {
-      if (reason != NULL) *reason = CRR_TIGHTER_LOCALITY_DOMINATOR;
-      return NULL;
+      if (reason != nullptr) *reason = CRR_TIGHTER_LOCALITY_DOMINATOR;
+      return nullptr;
     }
 
     return accBaseSym;
   }
 
-  if (reason != NULL) *reason = CRR_NOT_ARRAY_ACCESS_LIKE;
-  return NULL;
+  if (reason != nullptr) *reason = CRR_NOT_ARRAY_ACCESS_LIKE;
+  return nullptr;
 }
 
 static Symbol *getCallBase(CallExpr *call) {
   SymExpr *baseSE = toSymExpr(call->baseExpr);
-  if (baseSE != NULL) {
+  if (baseSE != nullptr) {
     return baseSE->symbol();
   }
-  return NULL;
+  return nullptr;
 }
 
 // for a call like `A[i]`, this will create something like
@@ -1061,7 +1061,7 @@ static Symbol *getCallBase(CallExpr *call) {
 // chpl_dynamicAutoLocalCheck(A, loopDomain)
 //
 // right before the `forall`. Multiple dynamic checks are &&'ed. `allChecks` is
-// that "&&" call, or NULL if this was the first time we are adding a
+// that "&&" call, or nullptr if this was the first time we are adding a
 // dynamic check
 static void generateDynamicCheckForAccess(CallExpr *access,
                                           ForallStmt *forall,
@@ -1073,7 +1073,7 @@ static void generateDynamicCheckForAccess(CallExpr *access,
 
   SET_LINENO(forall);
 
-  CallExpr *currentCheck = NULL;
+  CallExpr *currentCheck = nullptr;
   if (optInfo.dynamicCheckForSymMap.count(baseSym) == 0) {
     currentCheck = new CallExpr("chpl__dynamicAutoLocalCheck");
     optInfo.dynamicCheckForSymMap[baseSym] = currentCheck;
@@ -1083,24 +1083,24 @@ static void generateDynamicCheckForAccess(CallExpr *access,
   }
   currentCheck->insertAtTail(baseSym);
 
-  if (optInfo.iterSym[iterandIdx] != NULL) {
+  if (optInfo.iterSym[iterandIdx] != nullptr) {
     currentCheck->insertAtTail(new SymExpr(optInfo.iterSym[iterandIdx]));
   }
-  else if (optInfo.dotDomIterExpr[iterandIdx] != NULL) {
+  else if (optInfo.dotDomIterExpr[iterandIdx] != nullptr) {
     currentCheck->insertAtTail(optInfo.dotDomIterExpr[iterandIdx]->copy());
   }
-  else if (optInfo.iterCallTmp[iterandIdx] != NULL) {
+  else if (optInfo.iterCallTmp[iterandIdx] != nullptr) {
     currentCheck->insertAtTail(new SymExpr(optInfo.iterCallTmp[iterandIdx]));
   }
   else {
     INT_FATAL("optInfo didn't have enough information");
   }
 
-  CallExpr *staticOverride = new CallExpr(PRIM_UNARY_LNOT, 
+  CallExpr *staticOverride = new CallExpr(PRIM_UNARY_LNOT,
       new SymExpr(forall->optInfo.staticCheckSymForSymMap[baseSym]));
   currentCheck = new CallExpr("||", staticOverride, currentCheck);
 
-  if (allChecks == NULL) {
+  if (allChecks == nullptr) {
     allChecks = currentCheck;
   }
   else {
@@ -1118,7 +1118,7 @@ static Symbol *generateStaticCheckForAccess(CallExpr *access,
                                             ForallStmt *forall,
                                             int iterandIdx,
                                             Expr *&allChecks) {
-                                          
+
   ForallOptimizationInfo &optInfo = forall->optInfo;
   Symbol *baseSym = getCallBase(access);
   INT_ASSERT(baseSym);
@@ -1133,20 +1133,20 @@ static Symbol *generateStaticCheckForAccess(CallExpr *access,
     CallExpr *checkCall = new CallExpr("chpl__staticAutoLocalCheck");
     checkCall->insertAtTail(baseSym);
 
-    if (optInfo.iterSym[iterandIdx] != NULL) {
+    if (optInfo.iterSym[iterandIdx] != nullptr) {
       checkCall->insertAtTail(new SymExpr(optInfo.iterSym[iterandIdx]));
     }
-    else if (optInfo.dotDomIterExpr[iterandIdx] != NULL) {
+    else if (optInfo.dotDomIterExpr[iterandIdx] != nullptr) {
       checkCall->insertAtTail(optInfo.dotDomIterExpr[iterandIdx]->copy());
     }
-    else if (optInfo.iterCallTmp[iterandIdx] != NULL) {
+    else if (optInfo.iterCallTmp[iterandIdx] != nullptr) {
       checkCall->insertAtTail(new SymExpr(optInfo.iterCallTmp[iterandIdx]));
     }
     else {
       INT_FATAL("optInfo didn't have enough information");
     }
 
-    if (allChecks == NULL) {
+    if (allChecks == nullptr) {
       allChecks = new SymExpr(checkSym);
     }
     else {
@@ -1288,7 +1288,7 @@ static void constructCondStmtFromLoops(Expr *condExpr,
 // param staticCheckN = staticCheck(arrN, loopDomain)
 //
 // if (staticCheck1 || staticCheck2 || ... || staticCheckN) {
-//   
+//
 //   const dynamicCheck = (!staticCheckX || dynamicCheck(arrX, loopDomain)) &&
 //                        (!staticCheckY || dynamicCheck(arrY, loopDomain)) &&
 //                        ...
@@ -1318,7 +1318,7 @@ static void constructCondStmtFromLoops(Expr *condExpr,
 // staticCheckX and staticCheckZ are static checks added for dynamic
 // candidates. OR'ed static checks in two `if`s are added so that we can fold
 // out unnecessary loops during resolution.
-// 
+//
 // Note that the static checks are param flags and during resolution we'll
 // definitely lose either loop0 or the bigger branch. In other words, there can
 // be duplicate loops at the end of normalize, but after resolution we expect
@@ -1330,10 +1330,10 @@ static void generateOptimizedLoops(ForallStmt *forall) {
   const int totalNumCandidates = sOptCandidates.size() + dOptCandidates.size();
   if (totalNumCandidates == 0) return;
 
-  ForallStmt *noOpt = NULL;
-  ForallStmt *noDyn = NULL;
-  Expr *staticCond = NULL;
-  CallExpr *dynamicCond = NULL;
+  ForallStmt *noOpt = nullptr;
+  ForallStmt *noDyn = nullptr;
+  Expr *staticCond = nullptr;
+  CallExpr *dynamicCond = nullptr;
 
   // copy the forall to have: `noOpt` == loop0, `forall` == loop1
   noOpt = cloneLoop(forall);
@@ -1349,7 +1349,7 @@ static void generateOptimizedLoops(ForallStmt *forall) {
     // copy the forall to have: `noDyn` == loop1, `forall` == loop2
     noDyn = cloneLoop(forall);
     noDyn->optInfo.cloneType = STATIC_ONLY;
-    
+
     // change potential dynamic accesses in loop2
     optimizeLoop(forall, staticCond, dynamicCond, /* isStatic= */ false);
     forall->optInfo.cloneType = STATIC_AND_DYNAMIC;
@@ -1358,13 +1358,13 @@ static void generateOptimizedLoops(ForallStmt *forall) {
   // add `(staticChecksX || .. || staticChecksZ)` part
   dynamicCond = addStaticCheckSymsToDynamicCond(forall, dynamicCond,
           forall->optInfo.staticCheckSymsForDynamicCandidates);
-  
+
   // we have all the parts needed, now build the structure
-  if (staticCond != NULL) {  // this must be true at this point
+  if (staticCond != nullptr) {  // this must be true at this point
     constructCondStmtFromLoops(staticCond, forall, noOpt);
   }
-  
-  if (dynamicCond != NULL) {
+
+  if (dynamicCond != nullptr) {
     constructCondStmtFromLoops(dynamicCond, forall, noDyn);
   }
 }
@@ -1387,7 +1387,7 @@ static void autoLocalAccess(ForallStmt *forall) {
   }
 
   Symbol *loopDomain = canDetermineLoopDomainStatically(forall);
-  bool staticLoopDomain = loopDomain != NULL;
+  bool staticLoopDomain = loopDomain != nullptr;
   if (staticLoopDomain) {
     LOG_ALA(1, "Found loop domain", loopDomain);
     LOG_ALA(1, "Will attempt static and dynamic optimizations", forall);
@@ -1409,7 +1409,7 @@ static void autoLocalAccess(ForallStmt *forall) {
                                                   &iterandIdx,
                                                   &reason);
 
-    if (accBaseSym == NULL) {
+    if (accBaseSym == nullptr) {
       if (reason != CRR_UNKNOWN &&
           reason != CRR_NOT_ARRAY_ACCESS_LIKE) {
         LOG_ALA(2, "Start analyzing call", call);
@@ -1430,7 +1430,7 @@ static void autoLocalAccess(ForallStmt *forall) {
     bool canOptimizeStatically = false;
 
     if (staticLoopDomain) {
-      
+
       // forall i in A.domain do ... A[i] ...
       if (forall->optInfo.dotDomIterSym[iterandIdx] == accBaseSym) {
         canOptimizeStatically = true;
@@ -1440,16 +1440,16 @@ static void autoLocalAccess(ForallStmt *forall) {
       else {
         Symbol *domSym = getDomSym(accBaseSym);
 
-        if (domSym != NULL) {  //  I can find the domain of the array
+        if (domSym != nullptr) {  //  I can find the domain of the array
           LOG_ALA(3, "Found the domain of the access base", domSym);
-          
+
           // forall i in A.domain do ... B[i] ... where B and A share domain
           if (forall->optInfo.dotDomIterSymDom[iterandIdx] == domSym) {
             canOptimizeStatically = true;
 
             LOG_ALA(3, "Can optimize: Access base has the same domain as iterator's base", call);
           }
-         
+
           // forall i in D do ... A[i] ... where D is A's domain
           else if (forall->optInfo.iterSym[iterandIdx] == domSym) {
             canOptimizeStatically = true;
@@ -1566,12 +1566,12 @@ static void symbolicFastFollowerAnalysis(ForallStmt *forall) {
     return;
   }
 
-  Symbol *commonDomSym = NULL;
+  Symbol *commonDomSym = nullptr;
   bool confirm = true;
 
   for_alist(iterExpr, forall->iteratedExpressions()) {
-    Symbol *iterBaseSym = NULL;
-    Symbol *iterBaseDomSym = NULL;
+    Symbol *iterBaseSym = nullptr;
+    Symbol *iterBaseDomSym = nullptr;
 
     // record it if it is a symbol
     if (isUnresolvedSymExpr(iterExpr) || isSymExpr(iterExpr)) {
@@ -1585,7 +1585,7 @@ static void symbolicFastFollowerAnalysis(ForallStmt *forall) {
     }
 
     // break if we couldn't get a symbol that we can analyze further
-    if (iterBaseSym == NULL) {
+    if (iterBaseSym == nullptr) {
       confirm = false;
       break;
     }
@@ -1599,7 +1599,7 @@ static void symbolicFastFollowerAnalysis(ForallStmt *forall) {
       iterBaseDomSym = iterBaseSym;
     }
 
-    if (commonDomSym == NULL) {
+    if (commonDomSym == nullptr) {
       commonDomSym = iterBaseDomSym;
     }
     else {
@@ -1673,10 +1673,10 @@ AggregationCandidateInfo::AggregationCandidateInfo(CallExpr *candidate,
   forall(forall),
   lhsLocalityInfo(UNKNOWN),
   rhsLocalityInfo(UNKNOWN),
-  lhsLogicalChild(NULL),
-  rhsLogicalChild(NULL),
-  srcAggregator(NULL),
-  dstAggregator(NULL) { }
+  lhsLogicalChild(nullptr),
+  rhsLogicalChild(nullptr),
+  srcAggregator(nullptr),
+  dstAggregator(nullptr) { }
 
 static CondStmt *createAggCond(CallExpr *noOptAssign, Symbol *aggregator, SymExpr *aggMarkerSE) {
   INT_ASSERT(aggregator);
@@ -1686,7 +1686,7 @@ static CondStmt *createAggCond(CallExpr *noOptAssign, Symbol *aggregator, SymExp
   // on both sides
   SymExpr *lhsSE = toSymExpr(noOptAssign->get(1));
   SymExpr *rhsSE = toSymExpr(noOptAssign->get(2));
-  INT_ASSERT(lhsSE != NULL && rhsSE != NULL);
+  INT_ASSERT(lhsSE != nullptr && rhsSE != nullptr);
 
   SET_LINENO(noOptAssign);
 
@@ -1745,22 +1745,22 @@ void AggregationCandidateInfo::removeSideEffectsFromPrimitive() {
 // Because: b[i] is a local access candidate, and both sides of = will be
 // visited as such. Currently, that's not handled properly
 void AggregationCandidateInfo::addAggregators() {
-  if (srcAggregator != NULL && dstAggregator != NULL) { // assert?
+  if (srcAggregator != nullptr && dstAggregator != nullptr) { // assert?
     return; // we have already enough
   }
 
   // we have a lhs that waits analysis or local, and a rhs that we can't know
   // about
-  if (srcAggregator == NULL &&
+  if (srcAggregator == nullptr &&
       (lhsLocalityInfo == PENDING || lhsLocalityInfo == LOCAL) &&
-      rhsLogicalChild != NULL) {
+      rhsLogicalChild != nullptr) {
     if (CallExpr *genCall = getAggGenCallForChild(rhsLogicalChild, true)) {
       SET_LINENO(this->forall);
 
       UnresolvedSymExpr *aggTmp = new UnresolvedSymExpr("chpl_src_auto_agg");
       ShadowVarSymbol *aggregator = ShadowVarSymbol::buildForPrefix(SVP_VAR,
                                                                     aggTmp,
-                                                                    NULL, //type
+                                                                    nullptr, //type
                                                                     genCall);
       aggregator->addFlag(FLAG_COMPILER_ADDED_AGGREGATOR);
       forall->shadowVariables().insertAtTail(aggregator->defPoint);
@@ -1770,18 +1770,18 @@ void AggregationCandidateInfo::addAggregators() {
       this->srcAggregator = aggregator;
     }
   }
-  
+
   // we have a rhs that waits analysis or local
-  if (dstAggregator == NULL &&
+  if (dstAggregator == nullptr &&
       (rhsLocalityInfo == PENDING || rhsLocalityInfo == LOCAL) &&
-      lhsLogicalChild != NULL) {
+      lhsLogicalChild != nullptr) {
     if (CallExpr *genCall = getAggGenCallForChild(lhsLogicalChild, false)) {
       SET_LINENO(this->forall);
 
       UnresolvedSymExpr *aggTmp = new UnresolvedSymExpr("chpl_dst_auto_agg");
       ShadowVarSymbol *aggregator = ShadowVarSymbol::buildForPrefix(SVP_VAR,
                                                                     aggTmp,
-                                                                    NULL, //type
+                                                                    nullptr, //type
                                                                     genCall);
       aggregator->addFlag(FLAG_COMPILER_ADDED_AGGREGATOR);
       forall->shadowVariables().insertAtTail(aggregator->defPoint);
@@ -1823,7 +1823,7 @@ static CallExpr *getAggGenCallForChild(Expr *child, bool srcAggregation) {
     }
   }
 
-  return NULL;
+  return nullptr;
 }
 
 // currently we want both sides to be calls, but we need to relax these to
@@ -1841,12 +1841,12 @@ static bool assignmentSuitableForAggregation(CallExpr *call, ForallStmt *forall)
         if (!leftCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS)) {
           return getCallBaseSymIfSuitable(leftCall, forall,
                                           /*checkArgs=*/false,
-                                          NULL) != NULL;
+                                          nullptr) != nullptr;
         }
         else if (!rightCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS)) {
           return getCallBaseSymIfSuitable(rightCall, forall,
                                           /*checkArgs=*/false,
-                                          NULL) != NULL;
+                                          nullptr) != nullptr;
         }
       }
     }
@@ -1856,7 +1856,7 @@ static bool assignmentSuitableForAggregation(CallExpr *call, ForallStmt *forall)
         if (!leftCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS)) {
           return getCallBaseSymIfSuitable(leftCall, forall,
                                           /*checkArgs=*/false,
-                                          NULL) != NULL;
+                                          nullptr) != nullptr;
         }
       }
     }
@@ -1891,13 +1891,13 @@ Expr *preFoldMaybeAggregateAssign(CallExpr *call) {
   SymExpr *aggMarkerSE = toSymExpr(call->get(1)->remove());
   INT_ASSERT(aggMarkerSE);
 
-  Expr *replacement = NULL;
+  Expr *replacement = nullptr;
 
   std::stringstream message;
 
   // either side is local, but not both
   if (lhsLocal != rhsLocal) {
-    Symbol *aggregator = NULL;
+    Symbol *aggregator = nullptr;
 
     // aggregator can be nil in two cases:
     // (1) we couldn't determine what the code looks like statically on one side of
@@ -1917,12 +1917,12 @@ Expr *preFoldMaybeAggregateAssign(CallExpr *call) {
       aggregator = dstAggregator;
     }
 
-    if (aggregator != NULL) {
+    if (aggregator != nullptr) {
       replacement = createAggCond(assign, aggregator, aggMarkerSE);
     }
   }
-  
-  if (replacement == NULL) {
+
+  if (replacement == nullptr) {
     if (fReportAutoAggregation) {
       if (lhsLocal && rhsLocal) {
         message << "Both sides of the assignment looks local. Will not use aggregation";
@@ -2007,7 +2007,7 @@ void AggregationCandidateInfo::transformCandidate() {
   this->candidate->insertBefore(new DefExpr(aggMarker));
 
   repl->insertAtTail(new SymExpr(aggMarker));
-  
+
   this->candidate->replace(repl);
 }
 
@@ -2073,7 +2073,7 @@ static Expr *getAlignedIterandForTheYieldedSym(Symbol *sym, ForallStmt *forall,
     }
   }
 
-  return NULL;
+  return nullptr;
 }
 
 static bool handleYieldedArrayElementsInAssignment(CallExpr *call,
@@ -2086,8 +2086,8 @@ static bool handleYieldedArrayElementsInAssignment(CallExpr *call,
     gatherForallInfo(forall);
   }
 
-  Symbol *maybeArrElemSym = NULL;
-  Expr *maybeArrExpr = NULL;
+  Symbol *maybeArrElemSym = nullptr;
+  Expr *maybeArrExpr = nullptr;
 
   bool lhsMaybeArrSym = false;
   bool rhsMaybeArrSym = false;
@@ -2104,7 +2104,7 @@ static bool handleYieldedArrayElementsInAssignment(CallExpr *call,
     Symbol *tmpSym = lhsSymExpr->symbol();
     maybeArrExpr = getAlignedIterandForTheYieldedSym(tmpSym, forall,
                                                      &onlyIfFastFollower);
-    if (maybeArrExpr != NULL) {
+    if (maybeArrExpr != nullptr) {
       lhsMaybeArrSym = true;
       maybeArrElemSym = tmpSym;
     }
@@ -2113,7 +2113,7 @@ static bool handleYieldedArrayElementsInAssignment(CallExpr *call,
     Symbol *tmpSym = rhsSymExpr->symbol();
     maybeArrExpr = getAlignedIterandForTheYieldedSym(tmpSym, forall,
                                                      &onlyIfFastFollower);
-    if (maybeArrExpr != NULL) {
+    if (maybeArrExpr != nullptr) {
       rhsMaybeArrSym = true;
       maybeArrElemSym = tmpSym;
     }
@@ -2136,7 +2136,7 @@ static bool handleYieldedArrayElementsInAssignment(CallExpr *call,
       otherChildIsSuitable = (getCallBaseSymIfSuitable(otherCall,
                                                        forall,
                                                        /*checkArgs=*/false,
-                                                       NULL) != NULL);
+                                                       nullptr) != nullptr);
     }
   }
 
@@ -2180,7 +2180,7 @@ static bool handleYieldedArrayElementsInAssignment(CallExpr *call,
 
 static CallExpr *findMaybeAggAssignInBlock(BlockStmt *block) {
   Expr *cur = block->body.last();
-  
+
   // at this point, only skippable call seems like PRIM_END_OF_STATEMENT, so
   // just skip that and give up after.
   if (CallExpr *curCall = toCallExpr(cur)) {
@@ -2195,7 +2195,7 @@ static CallExpr *findMaybeAggAssignInBlock(BlockStmt *block) {
     }
   }
 
-  return NULL;
+  return nullptr;
 }
 
 // called during resolution when we revert an aggregation
@@ -2203,7 +2203,7 @@ static void removeAggregatorFromFunction(Symbol *aggregator, FnSymbol *parent) {
 
   // find other SymExprs within the function and remove the aggregator if it is
   // not being used by other primitives, or its `copy` function.
-  
+
   std::vector<SymExpr *> symExprsToCheck;
   collectSymExprsFor(parent, aggregator, symExprsToCheck);
 
@@ -2232,7 +2232,7 @@ static void removeAggregatorFromFunction(Symbol *aggregator, FnSymbol *parent) {
 
     symExprsToRemove.push_back(se);
   }
-  
+
   if (shouldRemove) {
     // remove the definition
     aggregator->defPoint->remove();
@@ -2270,7 +2270,7 @@ static void findAndUpdateMaybeAggAssign(CallExpr *call, bool confirmed) {
 
   bool lhsOfMaybeAggAssign = false;
   bool rhsOfMaybeAggAssign = false;
-  Symbol *tmpSym = NULL;
+  Symbol *tmpSym = nullptr;
   if (CallExpr *parentCall = toCallExpr(call->parentExpr)) {
     if (parentCall->isPrimitive(PRIM_MOVE)) {
       SymExpr *lhsSE = toSymExpr(parentCall->get(1));
@@ -2368,4 +2368,3 @@ static void removeAggregationFromRecursiveForallHelp(BlockStmt *block) {
     }
   }
 }
-

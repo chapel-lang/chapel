@@ -188,9 +188,9 @@ void countToken(const char* toktext1,
     if (printTokens) {
       line.push_back(' ');
       line.append(toktext1);
-      if (toktext2 != NULL)
+      if (toktext2)
         line.append(toktext2);
-      if (toktext3 != NULL)
+      if (toktext3)
         line.append(toktext3);
     }
     lineTokens++;

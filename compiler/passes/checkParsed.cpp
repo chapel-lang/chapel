@@ -170,13 +170,13 @@ static const char* getClassKindSpecifier(CallExpr* call) {
     }
   }
 
-  return NULL;
+  return nullptr;
 }
 
 static void checkManagedClassKinds(CallExpr* call) {
   const char* outer = getClassKindSpecifier(call);
 
-  if (outer != NULL) {
+  if (outer != nullptr) {
     Expr* inner = call->get(1);
     // skip management decorator if present
     if (NamedExpr* ne = toNamedExpr(inner))
@@ -186,7 +186,7 @@ static void checkManagedClassKinds(CallExpr* call) {
     CallExpr* innerCall = toCallExpr(inner);
     if (innerCall) {
       const char* inner = getClassKindSpecifier(innerCall);
-      if (inner != NULL) {
+      if (inner != nullptr) {
         USR_FATAL_CONT(call,
                        "Type expression uses multiple class kinds: %s %s",
                        outer, inner);
@@ -257,7 +257,7 @@ static void checkPrivateDecls(DefExpr* def) {
         FnSymbol* fn = toFnSymbol(def->sym);
 
         // The parent symbol is a module symbol.  Could still be invalid.
-        if (fn != NULL && fn->isMethod() == true) {
+        if (fn != nullptr && fn->isMethod() == true) {
           USR_FATAL_CONT(def,
                          "Can't apply private to the fields or methods of "
                          "a class or record yet");
@@ -323,7 +323,7 @@ checkParsedVar(VarSymbol* var) {
 
   if (var->hasFlag(FLAG_CONFIG) &&
       isModuleSymbol(var->defPoint->parentSymbol) == false) {
-    const char* varType = NULL;
+    const char* varType = nullptr;
 
     if (var->hasFlag(FLAG_PARAM))
       varType = "parameters";
@@ -361,7 +361,7 @@ checkFunction(FnSymbol* fn) {
   if (fn->hasFlag(FLAG_EXTERN) && fn->throwsError())
     USR_FATAL_CONT(fn, "Extern functions cannot throw errors.");
 
-  if (fn->hasFlag(FLAG_EXPORT) && fn->where != NULL)
+  if (fn->hasFlag(FLAG_EXPORT) && fn->where != nullptr)
     USR_FATAL_CONT(fn, "Exported functions cannot have where clauses.");
 
 
@@ -458,7 +458,7 @@ static void checkOperator(FnSymbol* fn) {
 }
 
 static void nestedName(ModuleSymbol* mod) {
-  if (mod->defPoint == NULL) {
+  if (mod->defPoint == nullptr) {
     return;
   }
 
@@ -474,7 +474,7 @@ static void nestedName(ModuleSymbol* mod) {
 }
 
 static void includedStrictNames(ModuleSymbol* mod) {
-  if (mod->defPoint == NULL) {
+  if (mod->defPoint == nullptr) {
     return;
   }
 
@@ -491,7 +491,7 @@ static void includedStrictNames(ModuleSymbol* mod) {
     // in is not necessarily a top-level module, though.
     ModuleSymbol* lastParentSameFile = parent;
     for (ModuleSymbol* cur = parent;
-         cur != NULL && cur->defPoint != NULL;
+         cur != nullptr && cur->defPoint != nullptr;
          cur = cur->defPoint->getModule()) {
       if (parent->astloc.filename == cur->astloc.filename) {
         lastParentSameFile = cur;

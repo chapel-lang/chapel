@@ -59,7 +59,7 @@ class IteratorInfo;
 
 class Type : public BaseAST {
 public:
-  virtual Type*          copy(SymbolMap* map      = NULL,
+  virtual Type*          copy(SymbolMap* map      = nullptr,
                               bool       internal = false)                 = 0;
 
   // Interface for BaseAST
@@ -360,7 +360,7 @@ private:
 
 class PrimitiveType final : public Type {
  public:
-  PrimitiveType(Symbol *init_defaultVal = NULL, bool internalType=false);
+  PrimitiveType(Symbol *init_defaultVal = nullptr, bool internalType=false);
   void verify()                                         override;
   void accept(AstVisitor* visitor)                      override;
   DECLARE_COPY(PrimitiveType);

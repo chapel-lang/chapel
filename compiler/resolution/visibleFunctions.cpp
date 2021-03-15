@@ -87,7 +87,7 @@ static bool useMethodVisibilityRules(CallExpr* call, const char* name) {
 // This constructor creates a fresh VisibilityInfo
 // when we start processing the call described by 'info'.
 VisibilityInfo::VisibilityInfo(const CallInfo& info) :
-  currStart(NULL), nextPOI(NULL), poiDepth(-1), call(info.call),
+  currStart(nullptr), nextPOI(nullptr), poiDepth(-1), call(info.call),
   useMethodVisibility(useMethodVisibilityRules(info.call, info.name))
 { }
 
@@ -113,7 +113,7 @@ bool scopeMayDefineHazard(BlockStmt* scope, const char* fnName) {
 }
 
 bool scopeDefinesVisibleFunctions(BlockStmt* scope) {
-  return visibleFunctionMap.get(scope) != NULL;
+  return visibleFunctionMap.get(scope) != nullptr;
 }
 
 
@@ -160,7 +160,7 @@ void getMoreVisibleFunctionsOrMethods(const char*     name,
 
 void findVisibleFunctionsAllPOIs(CallInfo&       info,
                                  Vec<FnSymbol*>& visibleFns) {
-  findVisibleFunctions(info, NULL, NULL, NULL, visibleFns);
+  findVisibleFunctions(info, nullptr, nullptr, nullptr, visibleFns);
 }
 
 void findVisibleFunctions(CallInfo&             info,
@@ -190,7 +190,7 @@ void findVisibleFunctions(CallInfo&             info,
   } else {
     // Methods, fields, and type helper functions should first look at the scope
     // where the type was defined.  All other functions don't need to do this.
-    if (visInfo != NULL) {
+    if (visInfo != nullptr) {
       // cf. getMoreVisibleFunctionsOrMethods()
       if (visInfo->useMethodVisibility)
         getVisibleMethodsVI(info.name, call, visInfo, visited, visibleFns);
@@ -212,7 +212,7 @@ void findVisibleFunctions(CallInfo&             info,
       USR_PRINT(call, "call: %s", info.toString());
 
     if (visibleFns.n == 0) {
-     if (numVisitedP == NULL)
+     if (numVisitedP == nullptr)
       USR_PRINT(call, "no visible functions found");
 
     } else {
@@ -235,7 +235,7 @@ static void buildVisibleFunctionMap() {
   for (int i = nVisibleFunctions; i < gFnSymbols.n; i++) {
     FnSymbol* fn = gFnSymbols.v[i];
     if (!fn->hasFlag(FLAG_INVISIBLE_FN) && fn->inTree() && !isArgSymbol(fn->defPoint->parentSymbol)) {
-      BlockStmt* block = NULL;
+      BlockStmt* block = nullptr;
       if (fn->hasFlag(FLAG_AUTO_II)) {
         block = theProgram->block;
       } else {
@@ -291,7 +291,7 @@ static void buildReexportVec(VisibilityStmt* visStmt, const char* name,
 
 static void buildReexportVec(BlockStmt* scope, const char* name, CallExpr* call,
                              std::vector<FnSymbol*>* vec) {
-  if (scope->useList != NULL) {
+  if (scope->useList != nullptr) {
     for_actuals(expr, scope->useList) {
       if (ImportStmt* import = toImportStmt(expr)) {
         buildReexportVec(import, name, call, vec);
@@ -442,9 +442,9 @@ static void getVisibleMethods(const char* name, CallExpr* call,
   BlockStmt*           block    = getVisibilityScope(call);
   std::set<BlockStmt*> visited;
 
-  lookAtTypeFirst(name, call, block, NULL, visited, visibleFns);
+  lookAtTypeFirst(name, call, block, nullptr, visited, visibleFns);
 
-  getVisibleMethodsImpl(name, call, block, NULL, visited, visibleFns, false);
+  getVisibleMethodsImpl(name, call, block, nullptr, visited, visibleFns, false);
 }
 
 static void lookAtTypeFirstHelper(const char* name, CallExpr* call,
@@ -473,7 +473,7 @@ static void lookAtTypeFirst(const char* name, CallExpr* call, BlockStmt* block,
                             Vec<FnSymbol*>&       visibleFns)
 {
   INT_ASSERT(call->numActuals() >= 1);
-  Expr* typeActual = NULL;
+  Expr* typeActual = nullptr;
 
   if (call->numActuals() >= 2 && call->get(1)->typeInfo() == dtMethodToken) {
     typeActual = call->get(2);
@@ -511,7 +511,7 @@ static void getVisibleMethodsFirstVisit(const char* name, CallExpr* call,
   // This is because e.g. in associative.chpl primer, instantiation occurs in
   // a block that isn't a fn or module block.
   visited.insert(block);
-  if (visInfo != NULL)
+  if (visInfo != nullptr)
     visInfo->visitedScopes.push_back(block);
 
   if (VisibleFunctionBlock* vfb = visibleFunctionMap.get(block)) {
@@ -541,7 +541,7 @@ static void getVisibleMethodsFirstVisitFiltered(const char* name,
   // e.g. in associative.chpl primer, instantiation occurs in a
   // block that isn't a fn or module block.
   visited.insert(block);
-  if (visInfo != NULL)
+  if (visInfo != nullptr)
     visInfo->visitedScopes.push_back(block);
 
   if (VisibleFunctionBlock* vfb = visibleFunctionMap.get(block)) {
@@ -619,7 +619,7 @@ static void getVisibleMethodsFromUseListFiltered(const char* name,
                                                  std::set<const char*> filter) {
   // the block uses other modules
   for_actuals(expr, block->useList) {
-    SymExpr* se = NULL;
+    SymExpr* se = nullptr;
     std::set<const char*> namedTypes;
 
     if (UseStmt* use = toUseStmt(expr)) {
@@ -744,13 +744,13 @@ static void getVisibleMethodsFiltered(const char* name, CallExpr* call,
     getVisibleMethodsFirstVisitFiltered(name, call, block, visInfo, visited,
                                         visibleFns, typeNames);
 
-  if (block->useList != NULL) {
+  if (block->useList != nullptr) {
     getVisibleMethodsFromUseListFiltered(name, call, block, visInfo, visited,
                                          visibleFns, inUseChain, firstVisit,
                                          typeNames);
   }
 
-  if (firstVisit && block->modRefs != NULL) {
+  if (firstVisit && block->modRefs != nullptr) {
     for_actuals(expr, block->modRefs) {
       SymExpr* se = toSymExpr(expr);
       INT_ASSERT(se);
@@ -771,11 +771,11 @@ static void getVisibleMethodsFiltered(const char* name, CallExpr* call,
   getVisibleMethodsFiltered(name, call, next, visInfo, visited, visibleFns,
                             inUseChain, typeNames);
 
-  if (instantiationPt != NULL) {
+  if (instantiationPt != nullptr) {
     // Also look at the instantiation point
-    if (visInfo == NULL)
+    if (visInfo == nullptr)
       getVisibleMethodsFiltered(name, call,   // visit all POIs right away
-                                instantiationPt, NULL, visited, visibleFns,
+                                instantiationPt, nullptr, visited, visibleFns,
                                 inUseChain, typeNames);
     else {
       // I'm concerned that coming back to it later won't allow the filtering
@@ -824,12 +824,12 @@ static void getVisibleMethodsImpl(const char* name, CallExpr* call,
     getVisibleMethodsFirstVisit(name, call, block, visInfo, visited,
                                 visibleFns);
 
-  if (block->useList != NULL) {
+  if (block->useList != nullptr) {
     getVisibleMethodsFromUseList(name, call, block, visInfo, visited,
                                  visibleFns, inUseChain, firstVisit);
   }
 
-  if (firstVisit && block->modRefs != NULL) {
+  if (firstVisit && block->modRefs != nullptr) {
     for_actuals(expr, block->modRefs) {
       SymExpr* se = toSymExpr(expr);
       INT_ASSERT(se);
@@ -850,11 +850,11 @@ static void getVisibleMethodsImpl(const char* name, CallExpr* call,
   getVisibleMethodsImpl(name, call, next, visInfo, visited, visibleFns,
                         inUseChain);
 
-  if (instantiationPt != NULL) {
+  if (instantiationPt != nullptr) {
     // Also look at the instantiation point
-    if (visInfo == NULL)
+    if (visInfo == nullptr)
       getVisibleMethodsImpl(name, call,   // visit all POIs right away
-                            instantiationPt, NULL, visited, visibleFns,
+                            instantiationPt, nullptr, visited, visibleFns,
                             inUseChain);
     else
       visInfo->nextPOI = instantiationPt; // come back to it later
@@ -893,17 +893,17 @@ void getVisibleFunctions(const char*      name,
   BlockStmt*           block    = getVisibilityScope(call);
   std::set<BlockStmt*> visited;
 
-  getVisibleFunctionsImpl(name, call, block, NULL,
+  getVisibleFunctionsImpl(name, call, block, nullptr,
                           visited, visibleFns, false);
 }
 
 static BlockStmt* getVisibleFnsInstantiationPt(BlockStmt* block) {
-  BlockStmt* instantiationPt = NULL;
+  BlockStmt* instantiationPt = nullptr;
 
   // We check for an instantiation point only at FnSymbols'
   // top-level blocks, i.e. body, where, etc.
-  if (block->parentExpr != NULL)
-    return NULL;
+  if (block->parentExpr != nullptr)
+    return nullptr;
 
   if (FnSymbol* inFn = toFnSymbol(block->parentSymbol)) {
     BlockStmt* inFnInstantiationPoint = inFn->instantiationPoint();
@@ -957,7 +957,7 @@ static void getVisibleFnsFirstVisit(const char*       name,
   // e.g. in associative.chpl primer, instantiation occurs in a
   // block that isn't a fn or module block.
   visited.insert(block);
-  if (visInfo != NULL)
+  if (visInfo != nullptr)
     visInfo->visitedScopes.push_back(block);
 
   if (VisibleFunctionBlock* vfb = visibleFunctionMap.get(block)) {
@@ -1113,7 +1113,7 @@ static void getVisibleFunctionsImpl(const char*       name,
   if (firstVisit)
     getVisibleFnsFirstVisit(name, call, block, visInfo, visited, visibleFns);
 
-  if (block->useList != NULL)
+  if (block->useList != nullptr)
     getVisibleFnsFromUseList(name, call, block, visInfo, visited, visibleFns,
                              inUseChain, firstVisit);
 
@@ -1123,12 +1123,12 @@ static void getVisibleFunctionsImpl(const char*       name,
                           visibleFns, inUseChain);
 
   // Also look at the instantiation point
-  if (instantiationPt != NULL)
+  if (instantiationPt != nullptr)
   {
     INT_ASSERT(!inUseChain);
-    if (visInfo == NULL)
+    if (visInfo == nullptr)
       getVisibleFunctionsImpl(name, call, // visit all POIs right away
-                  instantiationPt, NULL, visited, visibleFns, inUseChain);
+                  instantiationPt, nullptr, visited, visibleFns, inUseChain);
     else
       // Executes after recursing to outer/enclosing scopes above.
       // Overwrites instantiationPt from an outer scope, if already in nextPOI.
@@ -1149,7 +1149,7 @@ BlockStmt* getInstantiationPoint(Expr* expr) {
   }
 
   Expr* cur = expr;
-  while (cur != NULL) {
+  while (cur != nullptr) {
     if (BlockStmt* block = toBlockStmt(cur->parentExpr)) {
       if (block->blockTag == BLOCK_SCOPELESS) {
         // continue
@@ -1176,13 +1176,13 @@ BlockStmt* getInstantiationPoint(Expr* expr) {
     else if (cur->parentSymbol)
       cur = cur->parentSymbol->defPoint;
     else
-      cur = NULL;
+      cur = nullptr;
   }
 
-  if (cur == NULL)
+  if (cur == nullptr)
     INT_FATAL(expr, "Expression has no visibility block.");
 
-  return NULL;
+  return nullptr;
 }
 
 /* This function returns the next BlockStmt enclosing `expr` that
@@ -1196,7 +1196,7 @@ BlockStmt* getInstantiationPoint(Expr* expr) {
 BlockStmt* getVisibilityScope(Expr* expr) {
 
   Expr* cur = expr;
-  while (cur != NULL) {
+  while (cur != nullptr) {
     // Pretend that ArgSymbols are in the function's body
     // (which is reasonable since functions cannot be defined
     //  within an ArgSymbol). This way we can consult the function's POIs
@@ -1217,13 +1217,13 @@ BlockStmt* getVisibilityScope(Expr* expr) {
     else if (cur->parentSymbol)
       cur = cur->parentSymbol->defPoint;
     else
-      cur = NULL;
+      cur = nullptr;
   }
 
-  if (cur == NULL)
+  if (cur == nullptr)
     INT_FATAL(expr, "Expression has no visibility block.");
 
-  return NULL;
+  return nullptr;
 }
 
 
@@ -1236,7 +1236,7 @@ BlockStmt* getVisibilityScope(Expr* expr) {
 static BlockStmt* getVisibilityScopeNoParentModule(Expr* expr) {
   BlockStmt* next = getVisibilityScope(expr);
 
-  if (expr->parentExpr != NULL || ! isModuleSymbol(expr->parentSymbol))
+  if (expr->parentExpr != nullptr || ! isModuleSymbol(expr->parentSymbol))
     // If so, we know we are not crossing a module boundary.
     return next;
 

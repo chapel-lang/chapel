@@ -45,8 +45,8 @@ static bool        exit_immediately = true;
 static bool        exit_eventually  = false;
 static bool        exit_end_of_pass = false;
 
-static const char* err_subdir       = NULL;
-static const char* err_filename     = NULL;
+static const char* err_subdir       = nullptr;
+static const char* err_filename     = nullptr;
 
 static int         err_lineno       =    0;
 static int         err_fatal        =    0;
@@ -54,13 +54,13 @@ static int         err_user         =    0;
 static int         err_print        =    0;
 static int         err_ignore       =    0;
 
-static FnSymbol*   err_fn           = NULL;
+static FnSymbol*   err_fn           = nullptr;
 static int         err_fn_id        = 0;
 static bool        err_fn_header_printed = false;
 
 static bool        handle_erroneous_fns = true;
 
-astlocT            last_error_loc(0, NULL);
+astlocT            last_error_loc(0, nullptr);
 
 static bool forceWidePtrs();
 
@@ -102,7 +102,7 @@ bool requireOutlinedOn() {
 
 const char* cleanFilename(const char* name) {
   static int  chplHomeLen = strlen(CHPL_HOME);
-  const char* retval      = NULL;
+  const char* retval      = nullptr;
 
   if (strncmp(name, CHPL_HOME, chplHomeLen) == 0) {
     retval = astr("$CHPL_HOME", name + chplHomeLen);
@@ -114,12 +114,12 @@ const char* cleanFilename(const char* name) {
 }
 
 const char* cleanFilename(const BaseAST* ast) {
-  const char* retval = NULL;
+  const char* retval = nullptr;
 
   if (const char* astFname = ast->fname()) {
     retval = cleanFilename(astFname);
 
-  } else if (yyfilename != NULL) {
+  } else if (yyfilename != nullptr) {
     retval = cleanFilename(yyfilename);
 
   } else {
@@ -166,7 +166,7 @@ static void print_user_internal_error() {
   char error[20];
 
   const char* filename_start = strrchr(err_filename, '/');
-  const char* filename_end = NULL;
+  const char* filename_end = nullptr;
   const char* directory_start = err_subdir;
   char        version[128]   = { '\0' };
 
@@ -186,7 +186,7 @@ static void print_user_internal_error() {
   if (filename_end - filename_start >= 6)
     filename_end = filename_end - 3;
   else
-    filename_end = NULL;
+    filename_end = nullptr;
 
   int idx = 0;
   // first 3 characters are from directory
@@ -243,7 +243,7 @@ static FnSymbol* findNonTaskFn(FnSymbol* fn) {
   FnSymbol* lastFn = fn;
   while (true) {
     // If we ran out of functions in tree, use the last one
-    if (fn == NULL || fn->inTree() == false)
+    if (fn == nullptr || fn->inTree() == false)
       return lastFn;
 
     // If it's not a task function, we are done
@@ -291,7 +291,7 @@ static CallExpr* findACallSite(FnSymbol* fn, std::set<FnSymbol*> ignoreFns) {
     }
   }
 
-  return NULL;
+  return nullptr;
 }
 
 static bool isModuleInitFunction(FnSymbol* fn) {
@@ -306,7 +306,7 @@ static bool isModuleInitFunction(FnSymbol* fn) {
 
 
 static const char* fnKindAndName(FnSymbol* fn) {
-  if (fn == NULL)
+  if (fn == nullptr)
     return "";
 
   ModuleSymbol* mod = fn->getModule();
@@ -351,7 +351,7 @@ static Expr* findBestCallSite(FnSymbol* errFn,
   BlockStmt* instantiationPoint = errFn->instantiationPoint();
   Expr* bestPoint = instantiationPoint;
 
-  if (instantiationPoint != NULL) {
+  if (instantiationPoint != nullptr) {
     std::vector<CallExpr*> calls;
     collectFnCalls(instantiationPoint, calls);
     for_vector(CallExpr, call, calls) {
@@ -382,9 +382,9 @@ static void printCallstack(FnSymbol* errFn, FnSymbol* prevFn,
 
   Expr* bestPoint = findBestCallSite(errFn, currentFns);
 
-  if (bestPoint != NULL) {
+  if (bestPoint != nullptr) {
     FnSymbol* inFn = findNonTaskFn(bestPoint->getFunction());
-    if (inFn == NULL)
+    if (inFn == nullptr)
       return;
 
     // Don't print "called from chpl_gen_main"
@@ -398,12 +398,12 @@ static void printCallstack(FnSymbol* errFn, FnSymbol* prevFn,
         // don't print out callstack entry at all if the function is chpl_
         // or it is internal and not the "In function" call
         hideErrFn = isHiddenFunction(errFn) ||
-                    (prevFn != NULL && isInternalFunction(errFn));
+                    (prevFn != nullptr && isInternalFunction(errFn));
       }
 
       // Continue printing stack frames until not generic;
       // or, with --print-callstack-on-error, module/main is reached
-      bool recurse = (inFn->instantiatedFrom != NULL ||
+      bool recurse = (inFn->instantiatedFrom != nullptr ||
                       inFn->hasFlag(FLAG_INSTANTIATED_GENERIC) ||
                       hideErrFn || hideInFn ||
                       fPrintCallStackOnError);
@@ -464,11 +464,11 @@ static void printCallstackForLastError() {
     // Clearing it is also helpful in case err_fn is deleted
     // in a future pass and then an error is reported.
     FnSymbol* fn = err_fn;
-    err_fn = NULL;
+    err_fn = nullptr;
 
     bool printStack = false;
     if (fAutoPrintCallStackOnError)
-      printStack = (fn->instantiatedFrom != NULL ||
+      printStack = (fn->instantiatedFrom != nullptr ||
                     fn->hasFlag(FLAG_INSTANTIATED_GENERIC));
     else
       printStack = fPrintCallStackOnError;
@@ -477,7 +477,7 @@ static void printCallstackForLastError() {
       std::set<FnSymbol*> currentFns;
       bool printedUnderline = false;
       bool lastHidden = false;
-      printCallstack(fn, NULL, currentFns,
+      printCallstack(fn, nullptr, currentFns,
                      printedUnderline, lastHidden);
       if (printedUnderline)
         USR_PRINT("generic instantiations are underlined in the above callstack");
@@ -489,20 +489,20 @@ static bool printErrorHeader(BaseAST* ast, astlocT astloc) {
 
   if (Expr* expr = toExpr(ast)) {
     Expr* use = findLocationIgnoringInternalInlining(expr);
-    if (use != NULL)
+    if (use != nullptr)
       ast = use;
   }
 
   if (!err_print) {
     if (Expr* expr = toExpr(ast)) {
-      FnSymbol* fn = NULL;
-      if (expr && expr->parentSymbol != NULL)
+      FnSymbol* fn = nullptr;
+      if (expr && expr->parentSymbol != nullptr)
         fn = findNonTaskFn(expr->getFunction());
 
       // Don't consider functions that aren't in the tree
-      if (fn != NULL)
-        if (fn->defPoint == NULL || !fn->inTree())
-          fn = NULL;
+      if (fn != nullptr)
+        if (fn->defPoint == nullptr || !fn->inTree())
+          fn = nullptr;
 
       if (fn && fn->id != err_fn_id) {
         printCallstackForLastError();
@@ -550,7 +550,7 @@ static bool printErrorHeader(BaseAST* ast, astlocT astloc) {
     have_ast_line = true;
     filename = cleanFilename(ast);
     linenum = ast->linenum();
-  } else if ( astloc.filename != NULL) {
+  } else if ( astloc.filename != nullptr) {
     have_ast_line = true;
     filename = cleanFilename(astloc.filename);
     linenum = astloc.lineno;
@@ -563,7 +563,7 @@ static bool printErrorHeader(BaseAST* ast, astlocT astloc) {
       filename = cleanFilename(currentAstLoc.filename);
       linenum = currentAstLoc.lineno;
     } else {
-      filename = NULL;
+      filename = nullptr;
       linenum = -1;
     }
   }
@@ -660,7 +660,7 @@ void printCallStackCalls() {
 }
 
 static bool isErrorInOrCallingErroneousFunction(BaseAST* ast) {
-  if (ast == NULL)
+  if (ast == nullptr)
     return false;
 
   if (CallExpr* call = toCallExpr(ast)) {
@@ -676,14 +676,14 @@ static bool isErrorInOrCallingErroneousFunction(BaseAST* ast) {
 static void reportErroneousFunctionCall(BaseAST* ast) {
   INT_ASSERT(ast);
 
-  FnSymbol* fn = NULL;
+  FnSymbol* fn = nullptr;
   if (CallExpr* call = toCallExpr(ast)) {
     FnSymbol* calledFn = call->resolvedFunction();
     if (calledFn && calledFn->hasFlag(FLAG_ERRONEOUS_COPY))
       fn = calledFn;
   }
 
-  if (fn == NULL)
+  if (fn == nullptr)
     fn = ast->getFunction();
 
   INT_ASSERT(fn && fn->hasFlag(FLAG_ERRONEOUS_COPY));
@@ -697,14 +697,14 @@ static void reportErroneousFunctionCall(BaseAST* ast) {
 
   while (true) {
     fn = cur->getFunction();
-    if (fn == NULL)
+    if (fn == nullptr)
       break;
     if (!fn->hasFlag(FLAG_ERRONEOUS_COPY))
       break;
 
     err = getErroneousCopyError(fn);
     next = findBestCallSite(fn, currentFns);
-    if (next == NULL)
+    if (next == nullptr)
       break;
 
     cur = next;
@@ -731,19 +731,19 @@ static void vhandleError(const BaseAST* ast,
                          va_list        args);
 
 void handleError(const char *fmt, ...) {
-  astlocT astloc(0, NULL);
+  astlocT astloc(0, nullptr);
 
   va_list args;
 
   va_start(args, fmt);
 
-  vhandleError(NULL, astloc, fmt, args);
+  vhandleError(nullptr, astloc, fmt, args);
 
   va_end(args);
 }
 
 void handleError(const BaseAST* ast, const char *fmt, ...) {
-  astlocT astloc(0, NULL);
+  astlocT astloc(0, nullptr);
 
   va_list args;
 
@@ -759,7 +759,7 @@ void handleError(astlocT astloc, const char *fmt, ...) {
 
   va_start(args, fmt);
 
-  vhandleError(NULL, astloc, fmt, args);
+  vhandleError(nullptr, astloc, fmt, args);
 
   va_end(args);
 }
@@ -864,7 +864,7 @@ void clearFatalErrors() {
 }
 
 bool printsSameLocationAsLastError(const BaseAST* ast) {
-  astlocT loc(0, NULL);
+  astlocT loc(0, nullptr);
 
   if ( ast && ast->linenum() ) {
     loc.filename = cleanFilename(ast);
@@ -875,7 +875,7 @@ bool printsSameLocationAsLastError(const BaseAST* ast) {
 }
 
 void clearLastErrorLocation() {
-  last_error_loc.filename = NULL;
+  last_error_loc.filename = nullptr;
   last_error_loc.lineno = 0;
 }
 
@@ -940,9 +940,9 @@ static void setupErrorFormatEscapes() {
                                   "rxvt-unicode-256color",
                                   "linux",
                                   "cygwin",
-                                  NULL};
-      if (term == NULL) term = "";
-      for (int i = 0; colorTerms[i] != NULL; i++) {
+                                  nullptr};
+      if (term == nullptr) term = "";
+      for (int i = 0; colorTerms[i] != nullptr; i++) {
         if (0 == strcmp(term, colorTerms[i]))
           isColorTerm = true;
       }

@@ -94,14 +94,14 @@ class LayeredValueTable
       // Line and file info for the C declaration
       astlocT astloc;
 
-      Storage() : astloc(0, NULL) {
-        u.value = NULL;
-        u.block = NULL;
-        u.type = NULL;
-        u.cTypeDecl = NULL;
-        u.cValueDecl = NULL;
-        u.chplVar = NULL;
-        u.castChplVarTo = NULL;
+      Storage() : astloc(0, nullptr) {
+        u.value = nullptr;
+        u.block = nullptr;
+        u.type = nullptr;
+        u.cTypeDecl = nullptr;
+        u.cValueDecl = nullptr;
+        u.chplVar = nullptr;
+        u.castChplVarTo = nullptr;
         isLVPtr = GEN_VAL;
         isUnsigned = false;
         addedToChapelAST = false;
@@ -120,19 +120,19 @@ class LayeredValueTable
     void addLayer();
     void removeLayer();
     void addValue(llvm::StringRef name, llvm::Value *value, uint8_t isLVPtr, bool isUnsigned);
-    void addGlobalValue(llvm::StringRef name, llvm::Value *value, uint8_t isLVPtr, bool isUnsigned); //, Type* type=NULL);
+    void addGlobalValue(llvm::StringRef name, llvm::Value *value, uint8_t isLVPtr, bool isUnsigned); //, Type* type=nullptr);
     void addGlobalValue(llvm::StringRef name, GenRet gend);
     void addGlobalType(llvm::StringRef name, llvm::Type *type, bool isUnsigned);
     void addGlobalCDecl(clang::NamedDecl* cdecl);
-    void addGlobalCDecl(llvm::StringRef name, clang::NamedDecl* cdecl, const char* castToType=NULL);
-    void addGlobalVarSymbol(llvm::StringRef name, VarSymbol* var, const char* castToType=NULL);
+    void addGlobalCDecl(llvm::StringRef name, clang::NamedDecl* cdecl, const char* castToType=nullptr);
+    void addGlobalVarSymbol(llvm::StringRef name, VarSymbol* var, const char* castToType=nullptr);
     void addBlock(llvm::StringRef name, llvm::BasicBlock *block);
     GenRet getValue(llvm::StringRef name);
     llvm::BasicBlock *getBlock(llvm::StringRef name);
-    llvm::Type *getType(llvm::StringRef name, bool* isUnsigned=NULL);
+    llvm::Type *getType(llvm::StringRef name, bool* isUnsigned=nullptr);
     void getCDecl(llvm::StringRef name, clang::TypeDecl** cTypeOut,
-        clang::ValueDecl** cValueOut, const char** cCastedToTypeOut=NULL,
-        astlocT *astlocOut=NULL);
+        clang::ValueDecl** cValueOut, const char** cCastedToTypeOut=nullptr,
+        astlocT *astlocOut=nullptr);
     bool isCArray(llvm::StringRef name);
     VarSymbol* getVarSymbol(llvm::StringRef name);
  

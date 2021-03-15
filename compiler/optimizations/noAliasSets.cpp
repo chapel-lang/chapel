@@ -251,8 +251,8 @@ void reportAliases(std::map<Symbol*, CallExpr*> &noAliasCallsForSymbol) {
 
         // symTemp otherSymTemp
         if (otherScopeInCall || scopeInOtherCall) {
-          const char* symName = NULL;
-          const char* otherSymName = NULL;
+          const char* symName = nullptr;
+          const char* otherSymName = nullptr;
 
           if (developer) {
             symName = sym->name;
@@ -268,7 +268,7 @@ void reportAliases(std::map<Symbol*, CallExpr*> &noAliasCallsForSymbol) {
             else if (!otherTemp)
               otherSymName = otherSym->name;
 
-            if (symName == NULL && otherSymName == NULL)
+            if (symName == nullptr && otherSymName == nullptr)
               if (symInArrayGet && otherInArrayGet)
                 symName = otherSymName = "<array get pointer>";
           }
@@ -289,8 +289,8 @@ void reportAliases(std::map<Symbol*, CallExpr*> &noAliasCallsForSymbol) {
 static
 void addNoAliasSetsInFn(FnSymbol* fn) {
   std::map<Symbol*, CallExpr*> noAliasCallsForSymbol;
-  CallExpr* lastNoAliasCall = NULL;
-  CallExpr* noop = NULL;
+  CallExpr* lastNoAliasCall = nullptr;
+  CallExpr* noop = nullptr;
 
   // Look for aliasing information about any array formals
   std::vector<CallExpr*> calls;
@@ -305,7 +305,7 @@ void addNoAliasSetsInFn(FnSymbol* fn) {
     }
   }
 
-  if (lastNoAliasCall == NULL) {
+  if (lastNoAliasCall == nullptr) {
     SET_LINENO(fn);
     noop = new CallExpr(PRIM_NOOP);
     lastNoAliasCall = noop;
@@ -420,8 +420,8 @@ void addNoAliasSetsInFn(FnSymbol* fn) {
     changed = false;
     for_vector(CallExpr, call, calls) {
       // Code below sets these to propagate alias scopes
-      Symbol* fromSym = NULL;
-      Symbol* toSym = NULL;
+      Symbol* fromSym = nullptr;
+      Symbol* toSym = nullptr;
 
       // Check for cases where propagation is needed
       if (call->isPrimitive(PRIM_MOVE) ||
@@ -477,7 +477,7 @@ void addNoAliasSetsInFn(FnSymbol* fn) {
       }
 
 
-      if (fromSym != NULL) {
+      if (fromSym != nullptr) {
         if (noAliasCallsForSymbol.count(fromSym)) {
           if (noAliasCallsForSymbol.count(toSym) == 0) {
             SET_LINENO(call);
@@ -931,9 +931,9 @@ void computeNoAliasSets() {
     for_vector(CallExpr, call, calls) {
       FnSymbol* q = call->resolvedOrVirtualFunction();
       INT_ASSERT(q);
-      ArgSymbol* f3 = NULL;
+      ArgSymbol* f3 = nullptr;
       int f3Idx = 0;
-      ArgSymbol* f4 = NULL;
+      ArgSymbol* f4 = nullptr;
       int f4Idx = 0;
 
       // Figure out what f1 is passed to, and what f2 is passed to
@@ -954,7 +954,7 @@ void computeNoAliasSets() {
         }
         formalIdx++;
       }
-      if (f3 != NULL && f4 != NULL) {
+      if (f3 != nullptr && f4 != nullptr) {
         // compute normalized index pair (idx3 < idx4)
         int idx3 = f3Idx < f4Idx ? f3Idx : f4Idx;
         int idx4 = f3Idx < f4Idx ? f4Idx : f3Idx;

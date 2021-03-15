@@ -67,41 +67,41 @@ char CHPL_RUNTIME_LIB[FILENAME_MAX+1] = "";
 char CHPL_RUNTIME_INCL[FILENAME_MAX+1] = "";
 char CHPL_THIRD_PARTY[FILENAME_MAX+1] = "";
 
-const char* CHPL_HOST_PLATFORM = NULL;
-const char* CHPL_HOST_ARCH = NULL;
-const char* CHPL_HOST_COMPILER = NULL;
-const char* CHPL_HOST_CPU = NULL;
-const char* CHPL_TARGET_PLATFORM = NULL;
-const char* CHPL_TARGET_ARCH = NULL;
-const char* CHPL_TARGET_CPU = NULL;
-const char* CHPL_RUNTIME_CPU = NULL;
-const char* CHPL_TARGET_BACKEND_CPU = NULL;
-const char* CHPL_TARGET_CPU_FLAG = NULL;
-const char* CHPL_TARGET_COMPILER = NULL;
-const char* CHPL_ORIG_TARGET_COMPILER = NULL;
-const char* CHPL_LOCALE_MODEL = NULL;
-const char* CHPL_COMM = NULL;
-const char* CHPL_COMM_SUBSTRATE = NULL;
-const char* CHPL_GASNET_SEGMENT = NULL;
-const char* CHPL_LIBFABRIC = NULL;
-const char* CHPL_TASKS = NULL;
-const char* CHPL_LAUNCHER = NULL;
-const char* CHPL_TIMERS = NULL;
-const char* CHPL_MEM = NULL;
-const char* CHPL_MAKE = NULL;
-const char* CHPL_ATOMICS = NULL;
-const char* CHPL_NETWORK_ATOMICS = NULL;
-const char* CHPL_GMP = NULL;
-const char* CHPL_HWLOC = NULL;
-const char* CHPL_REGEXP = NULL;
-const char* CHPL_LLVM = NULL;
-const char* CHPL_AUX_FILESYS = NULL;
-const char* CHPL_UNWIND = NULL;
-const char* CHPL_LIB_PIC = NULL;
+const char* CHPL_HOST_PLATFORM = nullptr;
+const char* CHPL_HOST_ARCH = nullptr;
+const char* CHPL_HOST_COMPILER = nullptr;
+const char* CHPL_HOST_CPU = nullptr;
+const char* CHPL_TARGET_PLATFORM = nullptr;
+const char* CHPL_TARGET_ARCH = nullptr;
+const char* CHPL_TARGET_CPU = nullptr;
+const char* CHPL_RUNTIME_CPU = nullptr;
+const char* CHPL_TARGET_BACKEND_CPU = nullptr;
+const char* CHPL_TARGET_CPU_FLAG = nullptr;
+const char* CHPL_TARGET_COMPILER = nullptr;
+const char* CHPL_ORIG_TARGET_COMPILER = nullptr;
+const char* CHPL_LOCALE_MODEL = nullptr;
+const char* CHPL_COMM = nullptr;
+const char* CHPL_COMM_SUBSTRATE = nullptr;
+const char* CHPL_GASNET_SEGMENT = nullptr;
+const char* CHPL_LIBFABRIC = nullptr;
+const char* CHPL_TASKS = nullptr;
+const char* CHPL_LAUNCHER = nullptr;
+const char* CHPL_TIMERS = nullptr;
+const char* CHPL_MEM = nullptr;
+const char* CHPL_MAKE = nullptr;
+const char* CHPL_ATOMICS = nullptr;
+const char* CHPL_NETWORK_ATOMICS = nullptr;
+const char* CHPL_GMP = nullptr;
+const char* CHPL_HWLOC = nullptr;
+const char* CHPL_REGEXP = nullptr;
+const char* CHPL_LLVM = nullptr;
+const char* CHPL_AUX_FILESYS = nullptr;
+const char* CHPL_UNWIND = nullptr;
+const char* CHPL_LIB_PIC = nullptr;
 
-const char* CHPL_RUNTIME_SUBDIR = NULL;
-const char* CHPL_LAUNCHER_SUBDIR = NULL;
-const char* CHPL_LLVM_UNIQ_CFG_PATH = NULL;
+const char* CHPL_RUNTIME_SUBDIR = nullptr;
+const char* CHPL_LAUNCHER_SUBDIR = nullptr;
+const char* CHPL_LLVM_UNIQ_CFG_PATH = nullptr;
 
 static char libraryFilename[FILENAME_MAX] = "";
 static char incFilename[FILENAME_MAX] = "";
@@ -168,7 +168,7 @@ bool fAutoAggregation = false;
 bool fReportAutoAggregation= false;
 
 bool  printPasses     = false;
-FILE* printPassesFile = NULL;
+FILE* printPassesFile = nullptr;
 
 // flag for llvmWideOpt
 bool fLLVMWideOpt = false;
@@ -278,7 +278,7 @@ bool preserveInlinedLineNumbers = false;
 
 char stopAfterPass[128];
 
-const char* compileCommand = NULL;
+const char* compileCommand = nullptr;
 char compileVersion[64];
 
 std::string llvmFlags;
@@ -343,7 +343,7 @@ static void saveChplHomeDerivedInEnv() {
 
 static void setupChplHome(const char* argv0) {
   const char* chpl_home = getenv("CHPL_HOME");
-  char*       guess     = NULL;
+  char*       guess     = nullptr;
   bool        installed = false;
   char        majMinorVers[64];
 
@@ -377,7 +377,7 @@ static void setupChplHome(const char* argv0) {
     } else {
       // Maybe we are in e.g. /usr/bin.
       free(guess);
-      guess = NULL;
+      guess = nullptr;
     }
   }
 
@@ -385,7 +385,7 @@ static void setupChplHome(const char* argv0) {
     if( strlen(chpl_home) > FILENAME_MAX )
       USR_FATAL("$CHPL_HOME=%s path too long", chpl_home);
 
-    if( guess == NULL ) {
+    if( guess == nullptr ) {
       // Could not find exe path, but have a env var set
       strncpy(CHPL_HOME, chpl_home, FILENAME_MAX);
     } else {
@@ -403,7 +403,7 @@ static void setupChplHome(const char* argv0) {
   } else {
 
     // Check in a default location too
-    if( guess == NULL ) {
+    if( guess == nullptr ) {
       char TEST_HOME[FILENAME_MAX+1] = "";
 
       // Check for Chapel libraries at installed prefix
@@ -422,7 +422,7 @@ static void setupChplHome(const char* argv0) {
       }
     }
 
-    if( guess == NULL ) {
+    if( guess == nullptr ) {
       // Could not find enviro var, and could not
       // guess at exe's path name.
       USR_FATAL("$CHPL_HOME must be set to run chpl");
@@ -519,7 +519,7 @@ static void recordCodeGenStrings(int argc, char* argv[]) {
       }
       arg = dq+1;
       compileCommand = astr(compileCommand, targ);
-      if (arg == NULL) break;
+      if (arg == nullptr) break;
     }
     if (arg)
       compileCommand = astr(compileCommand, arg, " ");
@@ -859,7 +859,7 @@ static void setLogPass(const ArgumentDescription* desc, const char* arg) {
 static void setPrintPassesFile(const ArgumentDescription* desc, const char* fileName) {
   printPassesFile = fopen(fileName, "w");
 
-  if (printPassesFile == NULL) {
+  if (printPassesFile == nullptr) {
     USR_WARN("Error opening printPassesFile: %s.", fileName);
   }
 }
@@ -914,133 +914,133 @@ Record components:
 // their environment variable is set
 
 static ArgumentDescription arg_desc[] = {
- {"", ' ', NULL, "Module Processing Options", NULL, NULL, NULL, NULL},
- {"count-tokens", ' ', NULL, "[Don't] count tokens in main modules", "N", &countTokens, "CHPL_COUNT_TOKENS", NULL},
- {"main-module", ' ', "<module>", "Specify entry point module", "S256", NULL, NULL, ModuleSymbol::mainModuleNameSet },
- {"module-dir", 'M', "<directory>", "Add directory to module search path", "P", NULL, NULL, addModulePath},
- {"print-code-size", ' ', NULL, "[Don't] print code size of main modules", "N", &printTokens, "CHPL_PRINT_TOKENS", NULL},
- {"print-module-files", ' ', NULL, "Print module file locations", "F", &printModuleFiles, NULL, NULL},
- {"print-search-dirs", ' ', NULL, "[Don't] print module search path", "N", &printSearchDirs, "CHPL_PRINT_SEARCH_DIRS", NULL},
+ {"", ' ', nullptr, "Module Processing Options", nullptr, nullptr, nullptr, nullptr},
+ {"count-tokens", ' ', nullptr, "[Don't] count tokens in main modules", "N", &countTokens, "CHPL_COUNT_TOKENS", nullptr},
+ {"main-module", ' ', "<module>", "Specify entry point module", "S256", nullptr, nullptr, ModuleSymbol::mainModuleNameSet },
+ {"module-dir", 'M', "<directory>", "Add directory to module search path", "P", nullptr, nullptr, addModulePath},
+ {"print-code-size", ' ', nullptr, "[Don't] print code size of main modules", "N", &printTokens, "CHPL_PRINT_TOKENS", nullptr},
+ {"print-module-files", ' ', nullptr, "Print module file locations", "F", &printModuleFiles, nullptr, nullptr},
+ {"print-search-dirs", ' ', nullptr, "[Don't] print module search path", "N", &printSearchDirs, "CHPL_PRINT_SEARCH_DIRS", nullptr},
 
- {"", ' ', NULL, "Warning and Language Control Options", NULL, NULL, NULL, NULL},
- {"permit-unhandled-module-errors", ' ', NULL, "Permit unhandled errors in explicit modules; such errors halt at runtime", "N", &fPermitUnhandledModuleErrors, "CHPL_PERMIT_UNHANDLED_MODULE_ERRORS", NULL},
- {"warn-unstable", ' ', NULL, "Enable [disable] warnings for uses of language features that are in flux", "N", &fWarnUnstable, "CHPL_WARN_UNSTABLE", NULL},
- {"warnings", ' ', NULL, "Enable [disable] output of warnings", "n", &ignore_warnings, "CHPL_DISABLE_WARNINGS", NULL},
+ {"", ' ', nullptr, "Warning and Language Control Options", nullptr, nullptr, nullptr, nullptr},
+ {"permit-unhandled-module-errors", ' ', nullptr, "Permit unhandled errors in explicit modules; such errors halt at runtime", "N", &fPermitUnhandledModuleErrors, "CHPL_PERMIT_UNHANDLED_MODULE_ERRORS", nullptr},
+ {"warn-unstable", ' ', nullptr, "Enable [disable] warnings for uses of language features that are in flux", "N", &fWarnUnstable, "CHPL_WARN_UNSTABLE", nullptr},
+ {"warnings", ' ', nullptr, "Enable [disable] output of warnings", "n", &ignore_warnings, "CHPL_DISABLE_WARNINGS", nullptr},
 
- {"", ' ', NULL, "Parallelism Control Options", NULL, NULL, NULL, NULL},
- {"local", ' ', NULL, "Target one [many] locale[s]", "N", &fLocal, "CHPL_LOCAL", setLocal},
+ {"", ' ', nullptr, "Parallelism Control Options", nullptr, nullptr, nullptr, nullptr},
+ {"local", ' ', nullptr, "Target one [many] locale[s]", "N", &fLocal, "CHPL_LOCAL", setLocal},
 
- {"", ' ', NULL, "Optimization Control Options", NULL, NULL, NULL, NULL},
- {"baseline", ' ', NULL, "Disable all Chapel optimizations", "F", &fBaseline, "CHPL_BASELINE", setBaselineFlag},
- {"cache-remote", ' ', NULL, "[Don't] enable cache for remote data", "N", &fCacheRemote, "CHPL_CACHE_REMOTE", NULL},
- {"copy-propagation", ' ', NULL, "Enable [disable] copy propagation", "n", &fNoCopyPropagation, "CHPL_DISABLE_COPY_PROPAGATION", NULL},
- {"dead-code-elimination", ' ', NULL, "Enable [disable] dead code elimination", "n", &fNoDeadCodeElimination, "CHPL_DISABLE_DEAD_CODE_ELIMINATION", NULL},
- {"fast", ' ', NULL, "Disable checks; optimize/specialize code", "F", &fFastFlag, "CHPL_FAST", setFastFlag},
- {"fast-followers", ' ', NULL, "Enable [disable] fast followers", "n", &fNoFastFollowers, "CHPL_DISABLE_FAST_FOLLOWERS", NULL},
- {"ieee-float", ' ', NULL, "Generate code that is strict [lax] with respect to IEEE compliance", "N", &fieeefloat, "CHPL_IEEE_FLOAT", setFloatOptFlag},
- {"ignore-local-classes", ' ', NULL, "Disable [enable] local classes", "N", &fIgnoreLocalClasses, NULL, NULL},
- {"inline", ' ', NULL, "Enable [disable] function inlining", "n", &fNoInline, NULL, NULL},
- {"inline-iterators", ' ', NULL, "Enable [disable] iterator inlining", "n", &fNoInlineIterators, "CHPL_DISABLE_INLINE_ITERATORS", NULL},
- {"inline-iterators-yield-limit", ' ', "<limit>", "Limit number of yields permitted in inlined iterators", "I", &inline_iter_yield_limit, "CHPL_INLINE_ITER_YIELD_LIMIT", NULL},
- {"live-analysis", ' ', NULL, "Enable [disable] live variable analysis", "n", &fNoLiveAnalysis, "CHPL_DISABLE_LIVE_ANALYSIS", NULL},
- {"loop-invariant-code-motion", ' ', NULL, "Enable [disable] loop invariant code motion", "n", &fNoLoopInvariantCodeMotion, NULL, NULL},
- {"optimize-forall-unordered-ops", ' ', NULL, "Enable [disable] optimization of foralls to unordered operations", "n", &fNoOptimizeForallUnordered, "CHPL_DISABLE_OPTIMIZE_FORALL_UNORDERED_OPS", NULL},
- {"optimize-range-iteration", ' ', NULL, "Enable [disable] optimization of iteration over anonymous ranges", "n", &fNoOptimizeRangeIteration, "CHPL_DISABLE_OPTIMIZE_RANGE_ITERATION", NULL},
- {"optimize-loop-iterators", ' ', NULL, "Enable [disable] optimization of iterators composed of a single loop", "n", &fNoOptimizeLoopIterators, "CHPL_DISABLE_OPTIMIZE_LOOP_ITERATORS", NULL},
- {"optimize-on-clauses", ' ', NULL, "Enable [disable] optimization of on clauses", "n", &fNoOptimizeOnClauses, "CHPL_DISABLE_OPTIMIZE_ON_CLAUSES", NULL},
- {"optimize-on-clause-limit", ' ', "<limit>", "Limit recursion depth of on clause optimization search", "I", &optimize_on_clause_limit, "CHPL_OPTIMIZE_ON_CLAUSE_LIMIT", NULL},
- {"privatization", ' ', NULL, "Enable [disable] privatization of distributed arrays and domains", "n", &fNoPrivatization, "CHPL_DISABLE_PRIVATIZATION", NULL},
- {"remote-value-forwarding", ' ', NULL, "Enable [disable] remote value forwarding", "n", &fNoRemoteValueForwarding, "CHPL_DISABLE_REMOTE_VALUE_FORWARDING", NULL},
- {"remote-serialization", ' ', NULL, "Enable [disable] serialization for remote consts", "n", &fNoRemoteSerialization, "CHPL_DISABLE_REMOTE_SERIALIZATION", NULL},
- {"remove-copy-calls", ' ', NULL, "Enable [disable] remove copy calls", "n", &fNoRemoveCopyCalls, "CHPL_DISABLE_REMOVE_COPY_CALLS", NULL},
- {"scalar-replacement", ' ', NULL, "Enable [disable] scalar replacement", "n", &fNoScalarReplacement, "CHPL_DISABLE_SCALAR_REPLACEMENT", NULL},
- {"scalar-replace-limit", ' ', "<limit>", "Limit on the size of tuples being replaced during scalar replacement", "I", &scalar_replace_limit, "CHPL_SCALAR_REPLACE_TUPLE_LIMIT", NULL},
- {"tuple-copy-opt", ' ', NULL, "Enable [disable] tuple (memcpy) optimization", "n", &fNoTupleCopyOpt, "CHPL_DISABLE_TUPLE_COPY_OPT", NULL},
- {"tuple-copy-limit", ' ', "<limit>", "Limit on the size of tuples considered for optimization", "I", &tuple_copy_limit, "CHPL_TUPLE_COPY_LIMIT", NULL},
- {"infer-local-fields", ' ', NULL, "Enable [disable] analysis to infer local fields in classes and records", "n", &fNoInferLocalFields, "CHPL_DISABLE_INFER_LOCAL_FIELDS", NULL},
- {"vectorize", ' ', NULL, "Enable [disable] generation of vectorization hints", "n", &fNoVectorize, "CHPL_DISABLE_VECTORIZATION", setVectorize},
+ {"", ' ', nullptr, "Optimization Control Options", nullptr, nullptr, nullptr, nullptr},
+ {"baseline", ' ', nullptr, "Disable all Chapel optimizations", "F", &fBaseline, "CHPL_BASELINE", setBaselineFlag},
+ {"cache-remote", ' ', nullptr, "[Don't] enable cache for remote data", "N", &fCacheRemote, "CHPL_CACHE_REMOTE", nullptr},
+ {"copy-propagation", ' ', nullptr, "Enable [disable] copy propagation", "n", &fNoCopyPropagation, "CHPL_DISABLE_COPY_PROPAGATION", nullptr},
+ {"dead-code-elimination", ' ', nullptr, "Enable [disable] dead code elimination", "n", &fNoDeadCodeElimination, "CHPL_DISABLE_DEAD_CODE_ELIMINATION", nullptr},
+ {"fast", ' ', nullptr, "Disable checks; optimize/specialize code", "F", &fFastFlag, "CHPL_FAST", setFastFlag},
+ {"fast-followers", ' ', nullptr, "Enable [disable] fast followers", "n", &fNoFastFollowers, "CHPL_DISABLE_FAST_FOLLOWERS", nullptr},
+ {"ieee-float", ' ', nullptr, "Generate code that is strict [lax] with respect to IEEE compliance", "N", &fieeefloat, "CHPL_IEEE_FLOAT", setFloatOptFlag},
+ {"ignore-local-classes", ' ', nullptr, "Disable [enable] local classes", "N", &fIgnoreLocalClasses, nullptr, nullptr},
+ {"inline", ' ', nullptr, "Enable [disable] function inlining", "n", &fNoInline, nullptr, nullptr},
+ {"inline-iterators", ' ', nullptr, "Enable [disable] iterator inlining", "n", &fNoInlineIterators, "CHPL_DISABLE_INLINE_ITERATORS", nullptr},
+ {"inline-iterators-yield-limit", ' ', "<limit>", "Limit number of yields permitted in inlined iterators", "I", &inline_iter_yield_limit, "CHPL_INLINE_ITER_YIELD_LIMIT", nullptr},
+ {"live-analysis", ' ', nullptr, "Enable [disable] live variable analysis", "n", &fNoLiveAnalysis, "CHPL_DISABLE_LIVE_ANALYSIS", nullptr},
+ {"loop-invariant-code-motion", ' ', nullptr, "Enable [disable] loop invariant code motion", "n", &fNoLoopInvariantCodeMotion, nullptr, nullptr},
+ {"optimize-forall-unordered-ops", ' ', nullptr, "Enable [disable] optimization of foralls to unordered operations", "n", &fNoOptimizeForallUnordered, "CHPL_DISABLE_OPTIMIZE_FORALL_UNORDERED_OPS", nullptr},
+ {"optimize-range-iteration", ' ', nullptr, "Enable [disable] optimization of iteration over anonymous ranges", "n", &fNoOptimizeRangeIteration, "CHPL_DISABLE_OPTIMIZE_RANGE_ITERATION", nullptr},
+ {"optimize-loop-iterators", ' ', nullptr, "Enable [disable] optimization of iterators composed of a single loop", "n", &fNoOptimizeLoopIterators, "CHPL_DISABLE_OPTIMIZE_LOOP_ITERATORS", nullptr},
+ {"optimize-on-clauses", ' ', nullptr, "Enable [disable] optimization of on clauses", "n", &fNoOptimizeOnClauses, "CHPL_DISABLE_OPTIMIZE_ON_CLAUSES", nullptr},
+ {"optimize-on-clause-limit", ' ', "<limit>", "Limit recursion depth of on clause optimization search", "I", &optimize_on_clause_limit, "CHPL_OPTIMIZE_ON_CLAUSE_LIMIT", nullptr},
+ {"privatization", ' ', nullptr, "Enable [disable] privatization of distributed arrays and domains", "n", &fNoPrivatization, "CHPL_DISABLE_PRIVATIZATION", nullptr},
+ {"remote-value-forwarding", ' ', nullptr, "Enable [disable] remote value forwarding", "n", &fNoRemoteValueForwarding, "CHPL_DISABLE_REMOTE_VALUE_FORWARDING", nullptr},
+ {"remote-serialization", ' ', nullptr, "Enable [disable] serialization for remote consts", "n", &fNoRemoteSerialization, "CHPL_DISABLE_REMOTE_SERIALIZATION", nullptr},
+ {"remove-copy-calls", ' ', nullptr, "Enable [disable] remove copy calls", "n", &fNoRemoveCopyCalls, "CHPL_DISABLE_REMOVE_COPY_CALLS", nullptr},
+ {"scalar-replacement", ' ', nullptr, "Enable [disable] scalar replacement", "n", &fNoScalarReplacement, "CHPL_DISABLE_SCALAR_REPLACEMENT", nullptr},
+ {"scalar-replace-limit", ' ', "<limit>", "Limit on the size of tuples being replaced during scalar replacement", "I", &scalar_replace_limit, "CHPL_SCALAR_REPLACE_TUPLE_LIMIT", nullptr},
+ {"tuple-copy-opt", ' ', nullptr, "Enable [disable] tuple (memcpy) optimization", "n", &fNoTupleCopyOpt, "CHPL_DISABLE_TUPLE_COPY_OPT", nullptr},
+ {"tuple-copy-limit", ' ', "<limit>", "Limit on the size of tuples considered for optimization", "I", &tuple_copy_limit, "CHPL_TUPLE_COPY_LIMIT", nullptr},
+ {"infer-local-fields", ' ', nullptr, "Enable [disable] analysis to infer local fields in classes and records", "n", &fNoInferLocalFields, "CHPL_DISABLE_INFER_LOCAL_FIELDS", nullptr},
+ {"vectorize", ' ', nullptr, "Enable [disable] generation of vectorization hints", "n", &fNoVectorize, "CHPL_DISABLE_VECTORIZATION", setVectorize},
 
- {"auto-local-access", ' ', NULL, "Enable [disable] using local access automatically", "N", &fAutoLocalAccess, "CHPL_DISABLE_AUTO_LOCAL_ACCESS", NULL},
- {"dynamic-auto-local-access", ' ', NULL, "Enable [disable] using local access automatically (dynamic only)", "N", &fDynamicAutoLocalAccess, "CHPL_DISABLE_DYNAMIC_AUTO_LOCAL_ACCESS", NULL},
+ {"auto-local-access", ' ', nullptr, "Enable [disable] using local access automatically", "N", &fAutoLocalAccess, "CHPL_DISABLE_AUTO_LOCAL_ACCESS", nullptr},
+ {"dynamic-auto-local-access", ' ', nullptr, "Enable [disable] using local access automatically (dynamic only)", "N", &fDynamicAutoLocalAccess, "CHPL_DISABLE_DYNAMIC_AUTO_LOCAL_ACCESS", nullptr},
 
- {"auto-aggregation", ' ', NULL, "Enable [disable] automatically aggregating remote accesses in foralls", "N", &fAutoAggregation, "CHPL_AUTO_AGGREGATION", NULL},
+ {"auto-aggregation", ' ', nullptr, "Enable [disable] automatically aggregating remote accesses in foralls", "N", &fAutoAggregation, "CHPL_AUTO_AGGREGATION", nullptr},
 
- {"", ' ', NULL, "Run-time Semantic Check Options", NULL, NULL, NULL, NULL},
- {"checks", ' ', NULL, "Enable [disable] all following run-time checks", "n", &fNoChecks, "CHPL_NO_CHECKS", setChecks},
- {"bounds-checks", ' ', NULL, "Enable [disable] bounds checking", "n", &fNoBoundsChecks, "CHPL_NO_BOUNDS_CHECKING", NULL},
- {"cast-checks", ' ', NULL, "Enable [disable] safeCast() value checks", "n", &fNoCastChecks, NULL, NULL},
- {"div-by-zero-checks", ' ', NULL, "Enable [disable] divide-by-zero checks", "n", &fNoDivZeroChecks, NULL, NULL},
- {"formal-domain-checks", ' ', NULL, "Enable [disable] formal domain checking", "n", &fNoFormalDomainChecks, NULL, NULL},
- {"local-checks", ' ', NULL, "Enable [disable] local block checking", "n", &fNoLocalChecks, NULL, NULL},
- {"nil-checks", ' ', NULL, "Enable [disable] runtime nil checking", "n", &fNoNilChecks, "CHPL_NO_NIL_CHECKS", NULL},
- {"stack-checks", ' ', NULL, "Enable [disable] stack overflow checking", "n", &fNoStackChecks, "CHPL_STACK_CHECKS", setStackChecks},
+ {"", ' ', nullptr, "Run-time Semantic Check Options", nullptr, nullptr, nullptr, nullptr},
+ {"checks", ' ', nullptr, "Enable [disable] all following run-time checks", "n", &fNoChecks, "CHPL_NO_CHECKS", setChecks},
+ {"bounds-checks", ' ', nullptr, "Enable [disable] bounds checking", "n", &fNoBoundsChecks, "CHPL_NO_BOUNDS_CHECKING", nullptr},
+ {"cast-checks", ' ', nullptr, "Enable [disable] safeCast() value checks", "n", &fNoCastChecks, nullptr, nullptr},
+ {"div-by-zero-checks", ' ', nullptr, "Enable [disable] divide-by-zero checks", "n", &fNoDivZeroChecks, nullptr, nullptr},
+ {"formal-domain-checks", ' ', nullptr, "Enable [disable] formal domain checking", "n", &fNoFormalDomainChecks, nullptr, nullptr},
+ {"local-checks", ' ', nullptr, "Enable [disable] local block checking", "n", &fNoLocalChecks, nullptr, nullptr},
+ {"nil-checks", ' ', nullptr, "Enable [disable] runtime nil checking", "n", &fNoNilChecks, "CHPL_NO_NIL_CHECKS", nullptr},
+ {"stack-checks", ' ', nullptr, "Enable [disable] stack overflow checking", "n", &fNoStackChecks, "CHPL_STACK_CHECKS", setStackChecks},
 
- {"", ' ', NULL, "C Code Generation Options", NULL, NULL, NULL, NULL},
- {"codegen", ' ', NULL, "[Don't] Do code generation", "n", &no_codegen, "CHPL_NO_CODEGEN", NULL},
- {"cpp-lines", ' ', NULL, "[Don't] Generate #line annotations", "N", &printCppLineno, "CHPL_CG_CPP_LINES", noteCppLinesSet},
- {"max-c-ident-len", ' ', NULL, "Maximum length of identifiers in generated code, 0 for unlimited", "I", &fMaxCIdentLen, "CHPL_MAX_C_IDENT_LEN", NULL},
- {"munge-user-idents", ' ', NULL, "[Don't] Munge user identifiers to avoid naming conflicts with external code", "N", &fMungeUserIdents, "CHPL_MUNGE_USER_IDENTS"},
+ {"", ' ', nullptr, "C Code Generation Options", nullptr, nullptr, nullptr, nullptr},
+ {"codegen", ' ', nullptr, "[Don't] Do code generation", "n", &no_codegen, "CHPL_NO_CODEGEN", nullptr},
+ {"cpp-lines", ' ', nullptr, "[Don't] Generate #line annotations", "N", &printCppLineno, "CHPL_CG_CPP_LINES", noteCppLinesSet},
+ {"max-c-ident-len", ' ', nullptr, "Maximum length of identifiers in generated code, 0 for unlimited", "I", &fMaxCIdentLen, "CHPL_MAX_C_IDENT_LEN", nullptr},
+ {"munge-user-idents", ' ', nullptr, "[Don't] Munge user identifiers to avoid naming conflicts with external code", "N", &fMungeUserIdents, "CHPL_MUNGE_USER_IDENTS"},
  {"savec", ' ', "<directory>", "Save generated C code in directory", "P", saveCDir, "CHPL_SAVEC_DIR", verifySaveCDir},
 
- {"", ' ', NULL, "C Code Compilation Options", NULL, NULL, NULL, NULL},
- {"ccflags", ' ', "<flags>", "Back-end C compiler flags (can be specified multiple times)", "S", NULL, "CHPL_CC_FLAGS", setCCFlags},
- {"debug", 'g', NULL, "[Don't] Support debugging of generated C code", "N", &debugCCode, "CHPL_DEBUG", setChapelDebug},
- {"dynamic", ' ', NULL, "Generate a dynamically linked binary", "F", &fLinkStyle, NULL, setDynamicLink},
+ {"", ' ', nullptr, "C Code Compilation Options", nullptr, nullptr, nullptr, nullptr},
+ {"ccflags", ' ', "<flags>", "Back-end C compiler flags (can be specified multiple times)", "S", nullptr, "CHPL_CC_FLAGS", setCCFlags},
+ {"debug", 'g', nullptr, "[Don't] Support debugging of generated C code", "N", &debugCCode, "CHPL_DEBUG", setChapelDebug},
+ {"dynamic", ' ', nullptr, "Generate a dynamically linked binary", "F", &fLinkStyle, nullptr, setDynamicLink},
  {"hdr-search-path", 'I', "<directory>", "C header search path", "P", incFilename, "CHPL_INCLUDE_PATH", handleIncDir},
- {"ldflags", ' ', "<flags>", "Back-end C linker flags (can be specified multiple times)", "S", NULL, "CHPL_LD_FLAGS", setLDFlags},
+ {"ldflags", ' ', "<flags>", "Back-end C linker flags (can be specified multiple times)", "S", nullptr, "CHPL_LD_FLAGS", setLDFlags},
  {"lib-linkage", 'l', "<library>", "C library linkage", "P", libraryFilename, "CHPL_LIB_NAME", handleLibrary},
  {"lib-search-path", 'L', "<directory>", "C library search path", "P", libraryFilename, "CHPL_LIB_PATH", handleLibPath},
- {"optimize", 'O', NULL, "[Don't] Optimize generated C code", "N", &optimizeCCode, "CHPL_OPTIMIZE", NULL},
- {"specialize", ' ', NULL, "[Don't] Specialize generated C code for CHPL_TARGET_CPU", "N", &specializeCCode, "CHPL_SPECIALIZE", NULL},
- {"output", 'o', "<filename>", "Name output executable", "P", executableFilename, "CHPL_EXE_NAME", NULL},
- {"static", ' ', NULL, "Generate a statically linked binary", "F", &fLinkStyle, NULL, NULL},
+ {"optimize", 'O', nullptr, "[Don't] Optimize generated C code", "N", &optimizeCCode, "CHPL_OPTIMIZE", nullptr},
+ {"specialize", ' ', nullptr, "[Don't] Specialize generated C code for CHPL_TARGET_CPU", "N", &specializeCCode, "CHPL_SPECIALIZE", nullptr},
+ {"output", 'o', "<filename>", "Name output executable", "P", executableFilename, "CHPL_EXE_NAME", nullptr},
+ {"static", ' ', nullptr, "Generate a statically linked binary", "F", &fLinkStyle, nullptr, nullptr},
 
- {"", ' ', NULL, "LLVM Code Generation Options", NULL, NULL, NULL, NULL},
- {"llvm", ' ', NULL, "[Don't] use the LLVM code generator", "N", &fYesLlvmCodegen, "CHPL_LLVM_CODEGEN", setLlvmCodegen},
- {"llvm-wide-opt", ' ', NULL, "Enable [disable] LLVM wide pointer optimizations", "N", &fLLVMWideOpt, "CHPL_LLVM_WIDE_OPTS", NULL},
- {"mllvm", ' ', "<flags>", "LLVM flags (can be specified multiple times)", "S", NULL, "CHPL_MLLVM", setLLVMFlags},
+ {"", ' ', nullptr, "LLVM Code Generation Options", nullptr, nullptr, nullptr, nullptr},
+ {"llvm", ' ', nullptr, "[Don't] use the LLVM code generator", "N", &fYesLlvmCodegen, "CHPL_LLVM_CODEGEN", setLlvmCodegen},
+ {"llvm-wide-opt", ' ', nullptr, "Enable [disable] LLVM wide pointer optimizations", "N", &fLLVMWideOpt, "CHPL_LLVM_WIDE_OPTS", nullptr},
+ {"mllvm", ' ', "<flags>", "LLVM flags (can be specified multiple times)", "S", nullptr, "CHPL_MLLVM", setLLVMFlags},
 
- {"", ' ', NULL, "Compilation Trace Options", NULL, NULL, NULL, NULL},
- {"print-commands", ' ', NULL, "[Don't] print system commands", "N", &printSystemCommands, "CHPL_PRINT_COMMANDS", NULL},
- {"print-passes", ' ', NULL, "[Don't] print compiler passes", "N", &printPasses, "CHPL_PRINT_PASSES", NULL},
- {"print-passes-file", ' ', "<filename>", "Print compiler passes to <filename>", "S", NULL, "CHPL_PRINT_PASSES_FILE", setPrintPassesFile},
+ {"", ' ', nullptr, "Compilation Trace Options", nullptr, nullptr, nullptr, nullptr},
+ {"print-commands", ' ', nullptr, "[Don't] print system commands", "N", &printSystemCommands, "CHPL_PRINT_COMMANDS", nullptr},
+ {"print-passes", ' ', nullptr, "[Don't] print compiler passes", "N", &printPasses, "CHPL_PRINT_PASSES", nullptr},
+ {"print-passes-file", ' ', "<filename>", "Print compiler passes to <filename>", "S", nullptr, "CHPL_PRINT_PASSES_FILE", setPrintPassesFile},
 
- {"", ' ', NULL, "Miscellaneous Options", NULL, NULL, NULL, NULL},
+ {"", ' ', nullptr, "Miscellaneous Options", nullptr, nullptr, nullptr, nullptr},
  DRIVER_ARG_DEVELOPER,
- {"explain-call", ' ', "<call>[:<module>][:<line>]", "Explain resolution of call", "S256", fExplainCall, NULL, NULL},
- {"explain-instantiation", ' ', "<function|type>[:<module>][:<line>]", "Explain instantiation of type", "S256", fExplainInstantiation, NULL, NULL},
- {"explain-verbose", ' ', NULL, "Enable [disable] tracing of disambiguation with 'explain' options", "N", &fExplainVerbose, "CHPL_EXPLAIN_VERBOSE", NULL},
- {"instantiate-max", ' ', "<max>", "Limit number of instantiations", "I", &instantiation_limit, "CHPL_INSTANTIATION_LIMIT", NULL},
- {"print-all-candidates", ' ', NULL, "[Don't] print all candidates for a resolution failure", "N", &fPrintAllCandidates, "CHPL_PRINT_ALL_CANDIDATES", NULL},
- {"print-callgraph", ' ', NULL, "[Don't] print a representation of the callgraph for the program", "N", &fPrintCallGraph, "CHPL_PRINT_CALLGRAPH", NULL},
- {"print-callstack-on-error", ' ', NULL, "[Don't] print the Chapel call stack leading to each error or warning", "N", &fPrintCallStackOnError, "CHPL_PRINT_CALLSTACK_ON_ERROR", setPrintCallstackOnErrorFlag},
- {"print-unused-functions", ' ', NULL, "[Don't] print the name and location of unused functions", "N", &fPrintUnusedFns, NULL, NULL},
- {"set", 's', "<name>[=<value>]", "Set config value", "S", NULL, NULL, readConfig},
- {"task-tracking", ' ', NULL, "Enable [disable] runtime task tracking", "N", &fEnableTaskTracking, "CHPL_TASK_TRACKING", NULL},
+ {"explain-call", ' ', "<call>[:<module>][:<line>]", "Explain resolution of call", "S256", fExplainCall, nullptr, nullptr},
+ {"explain-instantiation", ' ', "<function|type>[:<module>][:<line>]", "Explain instantiation of type", "S256", fExplainInstantiation, nullptr, nullptr},
+ {"explain-verbose", ' ', nullptr, "Enable [disable] tracing of disambiguation with 'explain' options", "N", &fExplainVerbose, "CHPL_EXPLAIN_VERBOSE", nullptr},
+ {"instantiate-max", ' ', "<max>", "Limit number of instantiations", "I", &instantiation_limit, "CHPL_INSTANTIATION_LIMIT", nullptr},
+ {"print-all-candidates", ' ', nullptr, "[Don't] print all candidates for a resolution failure", "N", &fPrintAllCandidates, "CHPL_PRINT_ALL_CANDIDATES", nullptr},
+ {"print-callgraph", ' ', nullptr, "[Don't] print a representation of the callgraph for the program", "N", &fPrintCallGraph, "CHPL_PRINT_CALLGRAPH", nullptr},
+ {"print-callstack-on-error", ' ', nullptr, "[Don't] print the Chapel call stack leading to each error or warning", "N", &fPrintCallStackOnError, "CHPL_PRINT_CALLSTACK_ON_ERROR", setPrintCallstackOnErrorFlag},
+ {"print-unused-functions", ' ', nullptr, "[Don't] print the name and location of unused functions", "N", &fPrintUnusedFns, nullptr, nullptr},
+ {"set", 's', "<name>[=<value>]", "Set config value", "S", nullptr, nullptr, readConfig},
+ {"task-tracking", ' ', nullptr, "Enable [disable] runtime task tracking", "N", &fEnableTaskTracking, "CHPL_TASK_TRACKING", nullptr},
 
- {"", ' ', NULL, "Compiler Configuration Options", NULL, NULL, NULL, NULL},
- {"home", ' ', "<path>", "Path to Chapel's home directory", "S", NULL, "_CHPL_HOME", setHome},
- {"atomics", ' ', "<atomics-impl>", "Specify atomics implementation", "S", NULL, "_CHPL_ATOMICS", setEnv},
- {"network-atomics", ' ', "<network>", "Specify network atomics implementation", "S", NULL, "_CHPL_NETWORK_ATOMICS", setEnv},
- {"aux-filesys", ' ', "<aio-system>", "Specify auxiliary I/O system", "S", NULL, "_CHPL_AUX_FILESYS", setEnv},
- {"comm", ' ', "<comm-impl>", "Specify communication implementation", "S", NULL, "_CHPL_COMM", setEnv},
- {"comm-substrate", ' ', "<conduit>", "Specify communication conduit", "S", NULL, "_CHPL_COMM_SUBSTRATE", setEnv},
- {"gasnet-segment", ' ', "<segment>", "Specify GASNet memory segment", "S", NULL, "_CHPL_GASNET_SEGMENT", setEnv},
- {"gmp", ' ', "<gmp-version>", "Specify GMP library", "S", NULL, "_CHPL_GMP", setEnv},
- {"hwloc", ' ', "<hwloc-impl>", "Specify whether to use hwloc", "S", NULL, "_CHPL_HWLOC", setEnv},
- {"launcher", ' ', "<launcher-system>", "Specify how to launch programs", "S", NULL, "_CHPL_LAUNCHER", setEnv},
- {"locale-model", ' ', "<locale-model>", "Specify locale model to use", "S", NULL, "_CHPL_LOCALE_MODEL", setEnv},
- {"make", ' ', "<make utility>", "Make utility for generated code", "S", NULL, "_CHPL_MAKE", setEnv},
- {"mem", ' ', "<mem-impl>", "Specify the memory manager", "S", NULL, "_CHPL_MEM", setEnv},
- {"regexp", ' ', "<regexp>", "Specify whether to use regexp support", "S", NULL, "_CHPL_REGEXP", setEnv},
- {"target-arch", ' ', "<architecture>", "Target architecture / machine type", "S", NULL, "_CHPL_TARGET_ARCH", setEnv},
- {"target-compiler", ' ', "<compiler>", "Compiler for generated code", "S", NULL, "_CHPL_TARGET_COMPILER", setEnv},
- {"target-cpu", ' ', "<cpu>", "Target cpu model for specialization", "S", NULL, "_CHPL_TARGET_CPU", setEnv},
- {"target-platform", ' ', "<platform>", "Platform for cross-compilation", "S", NULL, "_CHPL_TARGET_PLATFORM", setEnv},
- {"tasks", ' ', "<task-impl>", "Specify tasking implementation", "S", NULL, "_CHPL_TASKS", setEnv},
- {"timers", ' ', "<timer-impl>", "Specify timer implementation", "S", NULL, "_CHPL_TIMERS", setEnv},
+ {"", ' ', nullptr, "Compiler Configuration Options", nullptr, nullptr, nullptr, nullptr},
+ {"home", ' ', "<path>", "Path to Chapel's home directory", "S", nullptr, "_CHPL_HOME", setHome},
+ {"atomics", ' ', "<atomics-impl>", "Specify atomics implementation", "S", nullptr, "_CHPL_ATOMICS", setEnv},
+ {"network-atomics", ' ', "<network>", "Specify network atomics implementation", "S", nullptr, "_CHPL_NETWORK_ATOMICS", setEnv},
+ {"aux-filesys", ' ', "<aio-system>", "Specify auxiliary I/O system", "S", nullptr, "_CHPL_AUX_FILESYS", setEnv},
+ {"comm", ' ', "<comm-impl>", "Specify communication implementation", "S", nullptr, "_CHPL_COMM", setEnv},
+ {"comm-substrate", ' ', "<conduit>", "Specify communication conduit", "S", nullptr, "_CHPL_COMM_SUBSTRATE", setEnv},
+ {"gasnet-segment", ' ', "<segment>", "Specify GASNet memory segment", "S", nullptr, "_CHPL_GASNET_SEGMENT", setEnv},
+ {"gmp", ' ', "<gmp-version>", "Specify GMP library", "S", nullptr, "_CHPL_GMP", setEnv},
+ {"hwloc", ' ', "<hwloc-impl>", "Specify whether to use hwloc", "S", nullptr, "_CHPL_HWLOC", setEnv},
+ {"launcher", ' ', "<launcher-system>", "Specify how to launch programs", "S", nullptr, "_CHPL_LAUNCHER", setEnv},
+ {"locale-model", ' ', "<locale-model>", "Specify locale model to use", "S", nullptr, "_CHPL_LOCALE_MODEL", setEnv},
+ {"make", ' ', "<make utility>", "Make utility for generated code", "S", nullptr, "_CHPL_MAKE", setEnv},
+ {"mem", ' ', "<mem-impl>", "Specify the memory manager", "S", nullptr, "_CHPL_MEM", setEnv},
+ {"regexp", ' ', "<regexp>", "Specify whether to use regexp support", "S", nullptr, "_CHPL_REGEXP", setEnv},
+ {"target-arch", ' ', "<architecture>", "Target architecture / machine type", "S", nullptr, "_CHPL_TARGET_ARCH", setEnv},
+ {"target-compiler", ' ', "<compiler>", "Compiler for generated code", "S", nullptr, "_CHPL_TARGET_COMPILER", setEnv},
+ {"target-cpu", ' ', "<cpu>", "Target cpu model for specialization", "S", nullptr, "_CHPL_TARGET_CPU", setEnv},
+ {"target-platform", ' ', "<platform>", "Platform for cross-compilation", "S", nullptr, "_CHPL_TARGET_PLATFORM", setEnv},
+ {"tasks", ' ', "<task-impl>", "Specify tasking implementation", "S", nullptr, "_CHPL_TASKS", setEnv},
+ {"timers", ' ', "<timer-impl>", "Specify timer implementation", "S", nullptr, "_CHPL_TIMERS", setEnv},
 
- {"", ' ', NULL, "Compiler Information Options", NULL, NULL, NULL, NULL},
+ {"", ' ', nullptr, "Compiler Information Options", nullptr, nullptr, nullptr, nullptr},
  DRIVER_ARG_COPYRIGHT,
  DRIVER_ARG_HELP,
  DRIVER_ARG_HELP_ENV,
@@ -1050,103 +1050,103 @@ static ArgumentDescription arg_desc[] = {
 
  // NOTE: Developer flags should not have 1-character equivalents
  //       (so that they are available for user flags)
- {"", ' ', NULL, "Developer Flags -- Debug Output", NULL, NULL, NULL, NULL},
- {"cc-warnings", ' ', NULL, "[Don't] Give warnings for generated code", "N", &ccwarnings, "CHPL_CC_WARNINGS", NULL},
- {"use-color-terminal", ' ', NULL, "[Don't] emit control codes for color and bold in error messages", "N", &fUseColorTerminal, "CHPL_USE_COLOR_TERMINAL", setUseColorTerminalFlag},
- {"gen-ids", ' ', NULL, "[Don't] pepper generated code with BaseAST::ids", "N", &fGenIDS, "CHPL_GEN_IDS", NULL},
- {"html", ' ', NULL, "Dump IR in HTML format (toggle)", "T", &fdump_html, "CHPL_HTML", NULL},
- {"html-user", ' ', NULL, "Dump IR in HTML for user module(s) only (toggle)", "T", &fdump_html, "CHPL_HTML_USER", setHtmlUser},
- {"html-wrap-lines", ' ', NULL, "[Don't] allow wrapping lines in HTML dumps", "N", &fdump_html_wrap_lines, "CHPL_HTML_WRAP_LINES", NULL},
- {"html-print-block-ids", ' ', NULL, "[Don't] print block IDs in HTML dumps", "N", &fdump_html_print_block_IDs, "CHPL_HTML_PRINT_BLOCK_IDS", NULL},
- {"html-chpl-home", ' ', NULL, "Path to use instead of CHPL_HOME in HTML dumps", "P", fdump_html_chpl_home, "CHPL_HTML_CHPL_HOME", NULL},
- {"log", ' ', NULL, "Dump IR in text format.", "F", &fLog, "CHPL_LOG", NULL},
+ {"", ' ', nullptr, "Developer Flags -- Debug Output", nullptr, nullptr, nullptr, nullptr},
+ {"cc-warnings", ' ', nullptr, "[Don't] Give warnings for generated code", "N", &ccwarnings, "CHPL_CC_WARNINGS", nullptr},
+ {"use-color-terminal", ' ', nullptr, "[Don't] emit control codes for color and bold in error messages", "N", &fUseColorTerminal, "CHPL_USE_COLOR_TERMINAL", setUseColorTerminalFlag},
+ {"gen-ids", ' ', nullptr, "[Don't] pepper generated code with BaseAST::ids", "N", &fGenIDS, "CHPL_GEN_IDS", nullptr},
+ {"html", ' ', nullptr, "Dump IR in HTML format (toggle)", "T", &fdump_html, "CHPL_HTML", nullptr},
+ {"html-user", ' ', nullptr, "Dump IR in HTML for user module(s) only (toggle)", "T", &fdump_html, "CHPL_HTML_USER", setHtmlUser},
+ {"html-wrap-lines", ' ', nullptr, "[Don't] allow wrapping lines in HTML dumps", "N", &fdump_html_wrap_lines, "CHPL_HTML_WRAP_LINES", nullptr},
+ {"html-print-block-ids", ' ', nullptr, "[Don't] print block IDs in HTML dumps", "N", &fdump_html_print_block_IDs, "CHPL_HTML_PRINT_BLOCK_IDS", nullptr},
+ {"html-chpl-home", ' ', nullptr, "Path to use instead of CHPL_HOME in HTML dumps", "P", fdump_html_chpl_home, "CHPL_HTML_CHPL_HOME", nullptr},
+ {"log", ' ', nullptr, "Dump IR in text format.", "F", &fLog, "CHPL_LOG", nullptr},
  {"log-dir", ' ', "<path>", "Specify log directory", "P", log_dir, "CHPL_LOG_DIR", setLogDir},
- {"log-ids", ' ', NULL, "[Don't] include BaseAST::ids in log files", "N", &fLogIds, "CHPL_LOG_IDS", NULL},
- {"log-module", ' ', "<module-name>", "Restrict IR dump to the named module", "S256", log_module, "CHPL_LOG_MODULE", NULL},
- {"log-pass", ' ', "<passname>", "Restrict IR dump to the named pass. Can be specified multiple times", "S", NULL, "CHPL_LOG_PASS", setLogPass},
- {"log-node", ' ', NULL, "Dump IR using AstDumpToNode", "F", &fLogNode, "CHPL_LOG_NODE", NULL},
-// {"log-symbol", ' ', "<symbol-name>", "Restrict IR dump to the named symbol(s)", "S256", log_symbol, "CHPL_LOG_SYMBOL", NULL}, // This doesn't work yet.
- {"llvm-print-ir", ' ', "<name>", "Dump LLVM Intermediate Representation of given function to stdout", "S", NULL, "CHPL_LLVM_PRINT_IR", &setPrintIr},
- {"llvm-print-ir-stage", ' ', "<stage>", "Specifies from which LLVM optimization stage to print function: none, basic, full", "S", NULL, "CHPL_LLVM_PRINT_IR_STAGE", &verifyStageAndSetStageNum},
- {"verify", ' ', NULL, "Run consistency checks during compilation", "N", &fVerify, "CHPL_VERIFY", NULL},
- {"parse-only", ' ', NULL, "Stop compiling after 'parse' pass for syntax checking", "N", &fParseOnly, NULL, NULL},
- {"parser-debug", ' ', NULL, "Set parser debug level", "+", &debugParserLevel, "CHPL_PARSER_DEBUG", NULL},
- {"debug-short-loc", ' ', NULL, "Display long [short] location in certain debug outputs", "N", &debugShortLoc, "CHPL_DEBUG_SHORT_LOC", NULL},
- {"print-emitted-code-size", ' ', NULL, "Print emitted code size", "F", &fPrintEmittedCodeSize, NULL, NULL},
- {"print-module-resolution", ' ', NULL, "Print name of module being resolved", "F", &fPrintModuleResolution, "CHPL_PRINT_MODULE_RESOLUTION", NULL},
- {"print-dispatch", ' ', NULL, "Print dynamic dispatch table", "F", &fPrintDispatch, NULL, NULL},
- {"print-statistics", ' ', "[n|k|t]", "Print AST statistics", "S256", fPrintStatistics, NULL, NULL},
- {"report-aliases", ' ', NULL, "Report aliases in user code", "N", &fReportAliases, NULL, NULL},
- {"report-blocking", ' ', NULL, "Report blocking functions in user code", "N", &fReportBlocking, NULL, NULL},
- {"report-inlining", ' ', NULL, "Print inlined functions", "F", &report_inlining, NULL, NULL},
- {"report-dead-blocks", ' ', NULL, "Print dead block removal stats", "F", &fReportDeadBlocks, NULL, NULL},
- {"report-dead-modules", ' ', NULL, "Print dead module removal stats", "F", &fReportDeadModules, NULL, NULL},
- {"report-optimized-loop-iterators", ' ', NULL, "Print stats on optimized single loop iterators", "F", &fReportOptimizedLoopIterators, NULL, NULL},
- {"report-inlined-iterators", ' ', NULL, "Print stats on inlined iterators", "F", &fReportInlinedIterators, NULL, NULL},
- {"report-vectorized-loops", ' ', NULL, "Show which loops have vectorization hints", "F", &fReportVectorizedLoops, NULL, NULL},
- {"report-optimized-on", ' ', NULL, "Print information about on clauses that have been optimized for potential fast remote fork operation", "F", &fReportOptimizedOn, NULL, NULL},
- {"report-auto-local-access", ' ', NULL, "Enable compiler logs for auto local access optimization", "N", &fReportAutoLocalAccess, "CHPL_REPORT_AUTO_LOCAL_ACCESS", NULL},
- {"report-auto-aggregation", ' ', NULL, "Enable compiler logs for automatic aggregation", "N", &fReportAutoAggregation, "CHPL_REPORT_AUTO_AGGREGATION", NULL},
- {"report-optimized-forall-unordered-ops", ' ', NULL, "Show which statements in foralls have been converted to unordered operations", "F", &fReportOptimizeForallUnordered, NULL, NULL},
- {"report-promotion", ' ', NULL, "Print information about scalar promotion", "F", &fReportPromotion, NULL, NULL},
- {"report-scalar-replace", ' ', NULL, "Print scalar replacement stats", "F", &fReportScalarReplace, NULL, NULL},
+ {"log-ids", ' ', nullptr, "[Don't] include BaseAST::ids in log files", "N", &fLogIds, "CHPL_LOG_IDS", nullptr},
+ {"log-module", ' ', "<module-name>", "Restrict IR dump to the named module", "S256", log_module, "CHPL_LOG_MODULE", nullptr},
+ {"log-pass", ' ', "<passname>", "Restrict IR dump to the named pass. Can be specified multiple times", "S", nullptr, "CHPL_LOG_PASS", setLogPass},
+ {"log-node", ' ', nullptr, "Dump IR using AstDumpToNode", "F", &fLogNode, "CHPL_LOG_NODE", nullptr},
+// {"log-symbol", ' ', "<symbol-name>", "Restrict IR dump to the named symbol(s)", "S256", log_symbol, "CHPL_LOG_SYMBOL", nullptr}, // This doesn't work yet.
+ {"llvm-print-ir", ' ', "<name>", "Dump LLVM Intermediate Representation of given function to stdout", "S", nullptr, "CHPL_LLVM_PRINT_IR", &setPrintIr},
+ {"llvm-print-ir-stage", ' ', "<stage>", "Specifies from which LLVM optimization stage to print function: none, basic, full", "S", nullptr, "CHPL_LLVM_PRINT_IR_STAGE", &verifyStageAndSetStageNum},
+ {"verify", ' ', nullptr, "Run consistency checks during compilation", "N", &fVerify, "CHPL_VERIFY", nullptr},
+ {"parse-only", ' ', nullptr, "Stop compiling after 'parse' pass for syntax checking", "N", &fParseOnly, nullptr, nullptr},
+ {"parser-debug", ' ', nullptr, "Set parser debug level", "+", &debugParserLevel, "CHPL_PARSER_DEBUG", nullptr},
+ {"debug-short-loc", ' ', nullptr, "Display long [short] location in certain debug outputs", "N", &debugShortLoc, "CHPL_DEBUG_SHORT_LOC", nullptr},
+ {"print-emitted-code-size", ' ', nullptr, "Print emitted code size", "F", &fPrintEmittedCodeSize, nullptr, nullptr},
+ {"print-module-resolution", ' ', nullptr, "Print name of module being resolved", "F", &fPrintModuleResolution, "CHPL_PRINT_MODULE_RESOLUTION", nullptr},
+ {"print-dispatch", ' ', nullptr, "Print dynamic dispatch table", "F", &fPrintDispatch, nullptr, nullptr},
+ {"print-statistics", ' ', "[n|k|t]", "Print AST statistics", "S256", fPrintStatistics, nullptr, nullptr},
+ {"report-aliases", ' ', nullptr, "Report aliases in user code", "N", &fReportAliases, nullptr, nullptr},
+ {"report-blocking", ' ', nullptr, "Report blocking functions in user code", "N", &fReportBlocking, nullptr, nullptr},
+ {"report-inlining", ' ', nullptr, "Print inlined functions", "F", &report_inlining, nullptr, nullptr},
+ {"report-dead-blocks", ' ', nullptr, "Print dead block removal stats", "F", &fReportDeadBlocks, nullptr, nullptr},
+ {"report-dead-modules", ' ', nullptr, "Print dead module removal stats", "F", &fReportDeadModules, nullptr, nullptr},
+ {"report-optimized-loop-iterators", ' ', nullptr, "Print stats on optimized single loop iterators", "F", &fReportOptimizedLoopIterators, nullptr, nullptr},
+ {"report-inlined-iterators", ' ', nullptr, "Print stats on inlined iterators", "F", &fReportInlinedIterators, nullptr, nullptr},
+ {"report-vectorized-loops", ' ', nullptr, "Show which loops have vectorization hints", "F", &fReportVectorizedLoops, nullptr, nullptr},
+ {"report-optimized-on", ' ', nullptr, "Print information about on clauses that have been optimized for potential fast remote fork operation", "F", &fReportOptimizedOn, nullptr, nullptr},
+ {"report-auto-local-access", ' ', nullptr, "Enable compiler logs for auto local access optimization", "N", &fReportAutoLocalAccess, "CHPL_REPORT_AUTO_LOCAL_ACCESS", nullptr},
+ {"report-auto-aggregation", ' ', nullptr, "Enable compiler logs for automatic aggregation", "N", &fReportAutoAggregation, "CHPL_REPORT_AUTO_AGGREGATION", nullptr},
+ {"report-optimized-forall-unordered-ops", ' ', nullptr, "Show which statements in foralls have been converted to unordered operations", "F", &fReportOptimizeForallUnordered, nullptr, nullptr},
+ {"report-promotion", ' ', nullptr, "Print information about scalar promotion", "F", &fReportPromotion, nullptr, nullptr},
+ {"report-scalar-replace", ' ', nullptr, "Print scalar replacement stats", "F", &fReportScalarReplace, nullptr, nullptr},
 
- {"", ' ', NULL, "Developer Flags -- Miscellaneous", NULL, NULL, NULL, NULL},
- {"allow-noinit-array-not-pod", ' ', NULL, "Allow noinit for arrays of records", "N", &fAllowNoinitArrayNotPod, "CHPL_BREAK_ON_CODEGEN", NULL},
+ {"", ' ', nullptr, "Developer Flags -- Miscellaneous", nullptr, nullptr, nullptr, nullptr},
+ {"allow-noinit-array-not-pod", ' ', nullptr, "Allow noinit for arrays of records", "N", &fAllowNoinitArrayNotPod, "CHPL_BREAK_ON_CODEGEN", nullptr},
  DRIVER_ARG_BREAKFLAGS_COMMON,
- {"break-on-codegen", ' ', NULL, "Break when function cname is code generated", "S256", &breakOnCodegenCname, "CHPL_BREAK_ON_CODEGEN", NULL},
- {"break-on-codegen-id", ' ', NULL, "Break when id is code generated", "I", &breakOnCodegenID, "CHPL_BREAK_ON_CODEGEN_ID", NULL},
- {"default-dist", ' ', "<distribution>", "Change the default distribution", "S256", defaultDist, "CHPL_DEFAULT_DIST", NULL},
- {"explain-call-id", ' ', "<call-id>", "Explain resolution of call by ID", "I", &explainCallID, NULL, NULL},
- {"break-on-resolve-id", ' ', NULL, "Break when function call with AST id is resolved", "I", &breakOnResolveID, "CHPL_BREAK_ON_RESOLVE_ID", NULL},
- {"denormalize", ' ', NULL, "Enable [disable] denormalization", "N", &fDenormalize, "CHPL_DENORMALIZE", NULL},
+ {"break-on-codegen", ' ', nullptr, "Break when function cname is code generated", "S256", &breakOnCodegenCname, "CHPL_BREAK_ON_CODEGEN", nullptr},
+ {"break-on-codegen-id", ' ', nullptr, "Break when id is code generated", "I", &breakOnCodegenID, "CHPL_BREAK_ON_CODEGEN_ID", nullptr},
+ {"default-dist", ' ', "<distribution>", "Change the default distribution", "S256", defaultDist, "CHPL_DEFAULT_DIST", nullptr},
+ {"explain-call-id", ' ', "<call-id>", "Explain resolution of call by ID", "I", &explainCallID, nullptr, nullptr},
+ {"break-on-resolve-id", ' ', nullptr, "Break when function call with AST id is resolved", "I", &breakOnResolveID, "CHPL_BREAK_ON_RESOLVE_ID", nullptr},
+ {"denormalize", ' ', nullptr, "Enable [disable] denormalization", "N", &fDenormalize, "CHPL_DENORMALIZE", nullptr},
  DRIVER_ARG_DEBUGGERS,
- {"interprocedural-alias-analysis", ' ', NULL, "Enable [disable] interprocedural alias analysis", "n", &fNoInterproceduralAliasAnalysis, NULL, NULL},
- {"lifetime-checking", ' ', NULL, "Enable [disable] lifetime checking pass", "n", &fNoLifetimeChecking, NULL, NULL},
- {"split-initialization", ' ', NULL, "Enable [disable] support for split initialization", "n", &fNoSplitInit, NULL, NULL},
- {"early-deinit", ' ', NULL, "Enable [disable] support for early deinit based upon expiring value analysis", "n", &fNoEarlyDeinit, NULL, NULL},
- {"copy-elision", ' ', NULL, "Enable [disable] copy elision based upon expiring value analysis", "n", &fNoCopyElision, NULL, NULL},
- {"ignore-nilability-errors", ' ', NULL, "Allow compilation to continue by coercing away nilability", "N", &fIgnoreNilabilityErrors, NULL, NULL},
- {"overload-sets-checks", ' ', NULL, "Report potentially hijacked calls", "N", &fOverloadSetsChecks, NULL, NULL},
- {"compile-time-nil-checking", ' ', NULL, "Enable [disable] compile-time nil checking", "N", &fCompileTimeNilChecking, "CHPL_NO_COMPILE_TIME_NIL_CHECKS", NULL},
- {"infer-implements-decls", ' ', NULL, "Enable [disable] inference of implements-declarations", "N", &fInferImplementsStmts, "CHPL_INFER_IMPLEMENTS_DECLS", NULL},
- {"ignore-errors", ' ', NULL, "[Don't] attempt to ignore errors", "N", &ignore_errors, "CHPL_IGNORE_ERRORS", NULL},
- {"ignore-user-errors", ' ', NULL, "[Don't] attempt to ignore user errors", "N", &ignore_user_errors, "CHPL_IGNORE_USER_ERRORS", NULL},
- {"ignore-errors-for-pass", ' ', NULL, "[Don't] attempt to ignore errors until the end of the pass in which they occur", "N", &ignore_errors_for_pass, "CHPL_IGNORE_ERRORS_FOR_PASS", NULL},
- {"infer-const-refs", ' ', NULL, "Enable [disable] inferring const refs", "n", &fNoInferConstRefs, NULL, NULL},
- {"library", ' ', NULL, "Generate a Chapel library file", "F", &fLibraryCompile, NULL, NULL},
+ {"interprocedural-alias-analysis", ' ', nullptr, "Enable [disable] interprocedural alias analysis", "n", &fNoInterproceduralAliasAnalysis, nullptr, nullptr},
+ {"lifetime-checking", ' ', nullptr, "Enable [disable] lifetime checking pass", "n", &fNoLifetimeChecking, nullptr, nullptr},
+ {"split-initialization", ' ', nullptr, "Enable [disable] support for split initialization", "n", &fNoSplitInit, nullptr, nullptr},
+ {"early-deinit", ' ', nullptr, "Enable [disable] support for early deinit based upon expiring value analysis", "n", &fNoEarlyDeinit, nullptr, nullptr},
+ {"copy-elision", ' ', nullptr, "Enable [disable] copy elision based upon expiring value analysis", "n", &fNoCopyElision, nullptr, nullptr},
+ {"ignore-nilability-errors", ' ', nullptr, "Allow compilation to continue by coercing away nilability", "N", &fIgnoreNilabilityErrors, nullptr, nullptr},
+ {"overload-sets-checks", ' ', nullptr, "Report potentially hijacked calls", "N", &fOverloadSetsChecks, nullptr, nullptr},
+ {"compile-time-nil-checking", ' ', nullptr, "Enable [disable] compile-time nil checking", "N", &fCompileTimeNilChecking, "CHPL_NO_COMPILE_TIME_NIL_CHECKS", nullptr},
+ {"infer-implements-decls", ' ', nullptr, "Enable [disable] inference of implements-declarations", "N", &fInferImplementsStmts, "CHPL_INFER_IMPLEMENTS_DECLS", nullptr},
+ {"ignore-errors", ' ', nullptr, "[Don't] attempt to ignore errors", "N", &ignore_errors, "CHPL_IGNORE_ERRORS", nullptr},
+ {"ignore-user-errors", ' ', nullptr, "[Don't] attempt to ignore user errors", "N", &ignore_user_errors, "CHPL_IGNORE_USER_ERRORS", nullptr},
+ {"ignore-errors-for-pass", ' ', nullptr, "[Don't] attempt to ignore errors until the end of the pass in which they occur", "N", &ignore_errors_for_pass, "CHPL_IGNORE_ERRORS_FOR_PASS", nullptr},
+ {"infer-const-refs", ' ', nullptr, "Enable [disable] inferring const refs", "n", &fNoInferConstRefs, nullptr, nullptr},
+ {"library", ' ', nullptr, "Generate a Chapel library file", "F", &fLibraryCompile, nullptr, nullptr},
  {"library-dir", ' ', "<directory>", "Save generated library helper files in directory", "P", libDir, "CHPL_LIB_SAVE_DIR", verifySaveLibDir},
- {"library-header", ' ', "<filename>", "Name generated header file", "P", libmodeHeadername, NULL, setLibmode},
- {"library-makefile", ' ', NULL, "Generate a makefile to help use the generated library", "F", &fLibraryMakefile, NULL, setLibmode},
- {"library-fortran", ' ', NULL, "Generate a module compatible with Fortran", "F", &fLibraryFortran, NULL, setLibmode},
- {"library-fortran-name", ' ', "<modulename>", "Name generated Fortran module", "P", fortranModulename, NULL, setFortranAndLibmode},
- {"library-python", ' ', NULL, "Generate a module compatible with Python", "F", &fLibraryPython, NULL, setLibmode},
- {"library-python-name", ' ', "<filename>", "Name generated Python module", "P", pythonModulename, NULL, setPythonAndLibmode},
- {"library-ml-debug", ' ', NULL, "Enable [disable] generation of debug messages in multi-locale libraries", "N", &fMultiLocaleLibraryDebug, NULL, NULL},
- {"localize-global-consts", ' ', NULL, "Enable [disable] optimization of global constants", "n", &fNoGlobalConstOpt, "CHPL_DISABLE_GLOBAL_CONST_OPT", NULL},
- {"local-temp-names", ' ', NULL, "[Don't] Generate locally-unique temp names", "N", &localTempNames, "CHPL_LOCAL_TEMP_NAMES", NULL},
- {"log-deleted-ids-to", ' ', "<filename>", "Log AST id and memory address of each deleted node to the specified file", "P", deletedIdFilename, "CHPL_DELETED_ID_FILENAME", NULL},
- {"memory-frees", ' ', NULL, "Enable [disable] memory frees in the generated code", "n", &fNoMemoryFrees, "CHPL_DISABLE_MEMORY_FREES", NULL},
- {"override-checking", ' ', NULL, "[Don't] check use of override keyword", "N", &fOverrideChecking, NULL, NULL},
- {"prepend-internal-module-dir", ' ', "<directory>", "Prepend directory to internal module search path", "P", NULL, NULL, addInternalModulePath},
- {"prepend-standard-module-dir", ' ', "<directory>", "Prepend directory to standard module search path", "P", NULL, NULL, addStandardModulePath},
- {"preserve-inlined-line-numbers", ' ', NULL, "[Don't] Preserve file names/line numbers in inlined code", "N", &preserveInlinedLineNumbers, "CHPL_PRESERVE_INLINED_LINE_NUMBERS", NULL},
- {"print-id-on-error", ' ', NULL, "[Don't] print AST id in error messages", "N", &fPrintIDonError, "CHPL_PRINT_ID_ON_ERROR", NULL},
- {"print-unused-internal-functions", ' ', NULL, "[Don't] print names and locations of unused internal functions", "N", &fPrintUnusedInternalFns, NULL, NULL},
- {"region-vectorizer", ' ', NULL, "Enable [disable] region vectorizer", "N", &fRegionVectorizer, NULL, NULL},
- {"remove-empty-records", ' ', NULL, "Enable [disable] empty record removal", "n", &fNoRemoveEmptyRecords, "CHPL_DISABLE_REMOVE_EMPTY_RECORDS", NULL},
- {"remove-unreachable-blocks", ' ', NULL, "[Don't] remove unreachable blocks after resolution", "N", &fRemoveUnreachableBlocks, "CHPL_REMOVE_UNREACHABLE_BLOCKS", NULL},
- {"replace-array-accesses-with-ref-temps", ' ', NULL, "Enable [disable] replacing array accesses with reference temps (experimental)", "N", &fReplaceArrayAccessesWithRefTemps, NULL, NULL },
- {"incremental", ' ', NULL, "Enable [disable] using incremental compilation", "N", &fIncrementalCompilation, "CHPL_INCREMENTAL_COMP", NULL},
- {"minimal-modules", ' ', NULL, "Enable [disable] using minimal modules",               "N", &fMinimalModules, "CHPL_MINIMAL_MODULES", NULL},
- {"print-chpl-settings", ' ', NULL, "Print current chapel settings and exit", "F", &fPrintChplSettings, NULL,NULL},
- {"print-additional-errors", ' ', NULL, "Print additional errors", "F", &fPrintAdditionalErrors, NULL,NULL},
- {"stop-after-pass", ' ', "<passname>", "Stop compilation after reaching this pass", "S128", &stopAfterPass, "CHPL_STOP_AFTER_PASS", NULL},
- {"force-vectorize", ' ', NULL, "Ignore vectorization hazards when vectorizing loops", "N", &fForceVectorize, NULL, NULL},
- {"warn-const-loops", ' ', NULL, "Enable [disable] warnings for some 'while' loops with constant conditions", "N", &fWarnConstLoops, "CHPL_WARN_CONST_LOOPS", NULL},
- {"warn-domain-literal", ' ', NULL, "Enable [disable] old domain literal syntax warnings", "n", &fNoWarnDomainLiteral, "CHPL_WARN_DOMAIN_LITERAL", setWarnDomainLiteral},
- {"warn-tuple-iteration", ' ', NULL, "Enable [disable] warnings for tuple iteration", "n", &fNoWarnTupleIteration, "CHPL_WARN_TUPLE_ITERATION", setWarnTupleIteration},
- {"warn-special", ' ', NULL, "Enable [disable] special warnings", "n", &fNoWarnSpecial, "CHPL_WARN_SPECIAL", setWarnSpecial},
+ {"library-header", ' ', "<filename>", "Name generated header file", "P", libmodeHeadername, nullptr, setLibmode},
+ {"library-makefile", ' ', nullptr, "Generate a makefile to help use the generated library", "F", &fLibraryMakefile, nullptr, setLibmode},
+ {"library-fortran", ' ', nullptr, "Generate a module compatible with Fortran", "F", &fLibraryFortran, nullptr, setLibmode},
+ {"library-fortran-name", ' ', "<modulename>", "Name generated Fortran module", "P", fortranModulename, nullptr, setFortranAndLibmode},
+ {"library-python", ' ', nullptr, "Generate a module compatible with Python", "F", &fLibraryPython, nullptr, setLibmode},
+ {"library-python-name", ' ', "<filename>", "Name generated Python module", "P", pythonModulename, nullptr, setPythonAndLibmode},
+ {"library-ml-debug", ' ', nullptr, "Enable [disable] generation of debug messages in multi-locale libraries", "N", &fMultiLocaleLibraryDebug, nullptr, nullptr},
+ {"localize-global-consts", ' ', nullptr, "Enable [disable] optimization of global constants", "n", &fNoGlobalConstOpt, "CHPL_DISABLE_GLOBAL_CONST_OPT", nullptr},
+ {"local-temp-names", ' ', nullptr, "[Don't] Generate locally-unique temp names", "N", &localTempNames, "CHPL_LOCAL_TEMP_NAMES", nullptr},
+ {"log-deleted-ids-to", ' ', "<filename>", "Log AST id and memory address of each deleted node to the specified file", "P", deletedIdFilename, "CHPL_DELETED_ID_FILENAME", nullptr},
+ {"memory-frees", ' ', nullptr, "Enable [disable] memory frees in the generated code", "n", &fNoMemoryFrees, "CHPL_DISABLE_MEMORY_FREES", nullptr},
+ {"override-checking", ' ', nullptr, "[Don't] check use of override keyword", "N", &fOverrideChecking, nullptr, nullptr},
+ {"prepend-internal-module-dir", ' ', "<directory>", "Prepend directory to internal module search path", "P", nullptr, nullptr, addInternalModulePath},
+ {"prepend-standard-module-dir", ' ', "<directory>", "Prepend directory to standard module search path", "P", nullptr, nullptr, addStandardModulePath},
+ {"preserve-inlined-line-numbers", ' ', nullptr, "[Don't] Preserve file names/line numbers in inlined code", "N", &preserveInlinedLineNumbers, "CHPL_PRESERVE_INLINED_LINE_NUMBERS", nullptr},
+ {"print-id-on-error", ' ', nullptr, "[Don't] print AST id in error messages", "N", &fPrintIDonError, "CHPL_PRINT_ID_ON_ERROR", nullptr},
+ {"print-unused-internal-functions", ' ', nullptr, "[Don't] print names and locations of unused internal functions", "N", &fPrintUnusedInternalFns, nullptr, nullptr},
+ {"region-vectorizer", ' ', nullptr, "Enable [disable] region vectorizer", "N", &fRegionVectorizer, nullptr, nullptr},
+ {"remove-empty-records", ' ', nullptr, "Enable [disable] empty record removal", "n", &fNoRemoveEmptyRecords, "CHPL_DISABLE_REMOVE_EMPTY_RECORDS", nullptr},
+ {"remove-unreachable-blocks", ' ', nullptr, "[Don't] remove unreachable blocks after resolution", "N", &fRemoveUnreachableBlocks, "CHPL_REMOVE_UNREACHABLE_BLOCKS", nullptr},
+ {"replace-array-accesses-with-ref-temps", ' ', nullptr, "Enable [disable] replacing array accesses with reference temps (experimental)", "N", &fReplaceArrayAccessesWithRefTemps, nullptr, nullptr },
+ {"incremental", ' ', nullptr, "Enable [disable] using incremental compilation", "N", &fIncrementalCompilation, "CHPL_INCREMENTAL_COMP", nullptr},
+ {"minimal-modules", ' ', nullptr, "Enable [disable] using minimal modules",               "N", &fMinimalModules, "CHPL_MINIMAL_MODULES", nullptr},
+ {"print-chpl-settings", ' ', nullptr, "Print current chapel settings and exit", "F", &fPrintChplSettings, nullptr,nullptr},
+ {"print-additional-errors", ' ', nullptr, "Print additional errors", "F", &fPrintAdditionalErrors, nullptr,nullptr},
+ {"stop-after-pass", ' ', "<passname>", "Stop compilation after reaching this pass", "S128", &stopAfterPass, "CHPL_STOP_AFTER_PASS", nullptr},
+ {"force-vectorize", ' ', nullptr, "Ignore vectorization hazards when vectorizing loops", "N", &fForceVectorize, nullptr, nullptr},
+ {"warn-const-loops", ' ', nullptr, "Enable [disable] warnings for some 'while' loops with constant conditions", "N", &fWarnConstLoops, "CHPL_WARN_CONST_LOOPS", nullptr},
+ {"warn-domain-literal", ' ', nullptr, "Enable [disable] old domain literal syntax warnings", "n", &fNoWarnDomainLiteral, "CHPL_WARN_DOMAIN_LITERAL", setWarnDomainLiteral},
+ {"warn-tuple-iteration", ' ', nullptr, "Enable [disable] warnings for tuple iteration", "n", &fNoWarnTupleIteration, "CHPL_WARN_TUPLE_ITERATION", setWarnTupleIteration},
+ {"warn-special", ' ', nullptr, "Enable [disable] special warnings", "n", &fNoWarnSpecial, "CHPL_WARN_SPECIAL", setWarnSpecial},
 
  DRIVER_ARG_PRINT_CHPL_HOME,
  DRIVER_ARG_LAST
@@ -1158,7 +1158,7 @@ static ArgumentState sArgState = {
   0,
   "program",
   "path",
-  NULL
+  nullptr
 };
 
 static void printStuff(const char* argv0) {
@@ -1199,7 +1199,7 @@ static void printStuff(const char* argv0) {
 
     printf("%s\t%s\n", CHPL_HOME, guess);
     const char* prefix = get_configured_prefix();
-    if (prefix != NULL && prefix[0] != '\0' )
+    if (prefix != nullptr && prefix[0] != '\0' )
       printf("# configured prefix  %s\n", prefix);
 
     free(guess);
@@ -1250,12 +1250,12 @@ static void setupLLVMCodeGen() {
     fLlvmCodegen = false;
   } else {
     const char* chpl_llvm = getenv("CHPL_LLVM");
-    if (chpl_llvm != NULL && 0 == strcmp(chpl_llvm, "none")) {
+    if (chpl_llvm != nullptr && 0 == strcmp(chpl_llvm, "none")) {
       fLlvmCodegen = false;
     } else {
 #ifdef HAVE_LLVM
       const char* chpl_llvm_by_default = getenv("CHPL_LLVM_BY_DEFAULT");
-      if (chpl_llvm_by_default != NULL &&
+      if (chpl_llvm_by_default != nullptr &&
           0 != strcmp(chpl_llvm_by_default, "0")) {
         // LLVM-by-default was requested
         fLlvmCodegen = true;
@@ -1279,7 +1279,7 @@ bool useDefaultEnv(std::string key) {
   // Note: When CHPL_TARGET_CPU is processed, CHPL_HOST_COMPILER is already
   // set in envMap, due to the order of printchplenv output
   if (key == "CHPL_TARGET_CPU") {
-    if (strstr(envMap["CHPL_TARGET_COMPILER"], "cray-prgenv") != NULL) {
+    if (strstr(envMap["CHPL_TARGET_COMPILER"], "cray-prgenv") != nullptr) {
       return true;
     }
   }
@@ -1376,12 +1376,12 @@ static void setChapelEnvs() {
   CHPL_LAUNCHER_SUBDIR = envMap["CHPL_LAUNCHER_SUBDIR"];
   CHPL_LLVM_UNIQ_CFG_PATH = envMap["CHPL_LLVM_UNIQ_CFG_PATH"];
 
-  // Make sure there are no NULLs in envMap
-  // a NULL in envMap might mean that one of the variables
+  // Make sure there are no nullptrs in envMap
+  // a nullptr in envMap might mean that one of the variables
   // the compiler expected printchplenv to produce was not produced.
   for (std::map<std::string, const char*>::iterator env=envMap.begin();
        env!=envMap.end(); ++env) {
-    INT_ASSERT(env->second != NULL);
+    INT_ASSERT(env->second != nullptr);
   }
 }
 
@@ -1656,13 +1656,13 @@ int main(int argc, char* argv[]) {
 
   tracker.Stop();
 
-  if (printPasses == true || printPassesFile != NULL) {
+  if (printPasses == true || printPassesFile != nullptr) {
     tracker.ReportPass();
     tracker.ReportTotal();
     tracker.ReportRollup();
   }
 
-  if (printPassesFile != NULL) {
+  if (printPassesFile != nullptr) {
     fclose(printPassesFile);
   }
 

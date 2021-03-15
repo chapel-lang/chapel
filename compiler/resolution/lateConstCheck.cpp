@@ -63,7 +63,7 @@ static void printReason(BaseAST* reason, BaseAST** lastPrintedReason)
   if (Symbol* s = toSymbol(reason))
     expr = s->defPoint;
   ModuleSymbol* inModule = expr->getModule();
-  FnSymbol* inFunction = NULL;
+  FnSymbol* inFunction = nullptr;
 
   if (FnSymbol* fn = toFnSymbol(reason))
     inFunction = fn;
@@ -74,11 +74,11 @@ static void printReason(BaseAST* reason, BaseAST** lastPrintedReason)
   // in a user-defined module or a compiler-generated function.
   bool user = inModule->modTag == MOD_USER;
   bool compilerGenerated = false;
-  if (inFunction != NULL)
+  if (inFunction != nullptr)
     compilerGenerated = inFunction->hasFlag(FLAG_COMPILER_GENERATED);
 
   BaseAST* last = *lastPrintedReason;
-  bool same = (last != NULL &&
+  bool same = (last != nullptr &&
                reason->fname() == last->fname() &&
                reason->linenum() == last->linenum());
 
@@ -149,7 +149,7 @@ static bool isTupleFunctionToSkip(FnSymbol* calledFn) {
 
 // Print use chains when debugging.
 static void printFormalUseChain(ArgSymbol* formal, UseMap* um) {
-  if (um == NULL) {
+  if (um == nullptr) {
     return;
   }
 
@@ -160,9 +160,9 @@ static void printFormalUseChain(ArgSymbol* formal, UseMap* um) {
   BaseAST* tmp = formal;
   int count = 0;
 
-  while (tmp != NULL) {
+  while (tmp != nullptr) {
     printf("%d: %d\n", count, tmp->id);
-    tmp = um->count(tmp) ? um->at(tmp) : NULL;
+    tmp = um->count(tmp) ? um->at(tmp) : nullptr;
     count++;
   }
 }
@@ -178,12 +178,12 @@ static bool checkTupleFormalUses(FnSymbol* calledFn, ArgSymbol* formal,
 
   // Leave if formal is not a tuple.
   AggregateType* at = toAggregateType(formal->getValType());
-  if (at == NULL || !at->symbol->hasFlag(FLAG_TUPLE)) {
+  if (at == nullptr || !at->symbol->hasFlag(FLAG_TUPLE)) {
     return false;
   }
 
   // Leave if we have no info about this formal's constness.
-  if (formal->fieldQualifiers == NULL) {
+  if (formal->fieldQualifiers == nullptr) {
     return false;
   }
 
@@ -254,10 +254,10 @@ static bool checkTupleFormalUses(FnSymbol* calledFn, ArgSymbol* formal,
 
     // The tuple intent is const, but it is used somewhere...
     if ((fieldIntent & INTENT_CONST) && !isFieldMarkedConst) {
-      BaseAST* use = NULL;
+      BaseAST* use = nullptr;
 
       // Only fetch the closest use if the UseMap exists.
-      if (um != NULL && um->count(formal)) {
+      if (um != nullptr && um->count(formal)) {
         use = um->at(formal);
       }
 
@@ -277,7 +277,7 @@ static bool checkTupleFormalUses(FnSymbol* calledFn, ArgSymbol* formal,
       // TODO: Cannot indicate which field was set with the current UseMap.
       // We need to adjust the key type (maybe to GraphNode) to store the
       // field index before we can use this functionality.
-      if (use != NULL) {
+      if (use != nullptr) {
         USR_PRINT(use, "possibly set here");
       }
 
@@ -295,11 +295,11 @@ static bool checkTupleFormalUses(FnSymbol* calledFn, ArgSymbol* formal,
 // TODO: Could we could get rid of this if we just propagated constness to
 // coerce temporaries instead?
 static Symbol* getOriginalTupleFromCoerceTmp(Symbol* sym) {
-  Symbol* result = NULL;
+  Symbol* result = nullptr;
 
   AggregateType* at = toAggregateType(sym->getValType());
-  if (at == NULL || !at->symbol->hasFlag(FLAG_TUPLE)) {
-    return NULL;
+  if (at == nullptr || !at->symbol->hasFlag(FLAG_TUPLE)) {
+    return nullptr;
   }
 
   // Find a PRIM_SET_MEMBER for the coerce temp. The third argument is
@@ -309,19 +309,19 @@ static Symbol* getOriginalTupleFromCoerceTmp(Symbol* sym) {
 
     // The parent call should be a PRIM_SET_MEMBER.
     CallExpr* set = toCallExpr(se->parentExpr);
-    if (set == NULL || !set->isPrimitive(PRIM_SET_MEMBER)) {
+    if (set == nullptr || !set->isPrimitive(PRIM_SET_MEMBER)) {
       continue;
     }
 
     // Make sure the coerce temp is in the correct position.
     SymExpr* coerceTmpLhs = toSymExpr(set->get(1));
-    if (coerceTmpLhs == NULL || coerceTmpLhs->symbol() != sym) {
+    if (coerceTmpLhs == nullptr || coerceTmpLhs->symbol() != sym) {
       continue;
     }
 
     // Third argument should be the read temp. 
     SymExpr* fromReadTmp = toSymExpr(set->get(3));
-    if (fromReadTmp == NULL) {
+    if (fromReadTmp == nullptr) {
       continue;
     }
 
@@ -332,7 +332,7 @@ static Symbol* getOriginalTupleFromCoerceTmp(Symbol* sym) {
     //    ('move' read_x0 ('.' tup x0))
     for_SymbolSymExprs(useReadTmp, readTmp) {
       CallExpr* move = toCallExpr(useReadTmp->parentExpr);
-      if (move == NULL || !move->isPrimitive(PRIM_MOVE)) {
+      if (move == nullptr || !move->isPrimitive(PRIM_MOVE)) {
         continue;
       }
 
@@ -346,19 +346,19 @@ static Symbol* getOriginalTupleFromCoerceTmp(Symbol* sym) {
       // Get the PRIM_GET_MEMBER from the move expression.
       //    ('.' tup x0)
       CallExpr* get = toCallExpr(move->get(2));
-      if (get == NULL || !get->isPrimitive(PRIM_GET_MEMBER)) {
+      if (get == nullptr || !get->isPrimitive(PRIM_GET_MEMBER)) {
         continue;
       }
 
       // The first argument is the original actual.
       SymExpr* useOriginal = toSymExpr(get->get(1));
-      INT_ASSERT(useOriginal != NULL);
+      INT_ASSERT(useOriginal != nullptr);
 
       // Done!
       result = useOriginal->symbol();
     }
 
-    if (result != NULL) {
+    if (result != nullptr) {
       break;
     }
   }
@@ -374,14 +374,14 @@ static bool checkTupleFormalToActual(ArgSymbol* formal, Expr* actual,
                                      CallExpr* call, UseMap* um) {
 
   FnSymbol* calledFn = call->resolvedFunction();
-  INT_ASSERT(calledFn != NULL);
+  INT_ASSERT(calledFn != nullptr);
 
   if (isTupleFunctionToSkip(calledFn)) {
     return false;
   }
  
   AggregateType* at = toAggregateType(formal->getValType());
-  if (at == NULL || !at->symbol->hasFlag(FLAG_TUPLE)) {
+  if (at == nullptr || !at->symbol->hasFlag(FLAG_TUPLE)) {
     return false;
   }
 
@@ -391,7 +391,7 @@ static bool checkTupleFormalToActual(ArgSymbol* formal, Expr* actual,
   }
 
   // Leave if we have no info about this formal's constness.
-  if (formal->fieldQualifiers == NULL) {
+  if (formal->fieldQualifiers == nullptr) {
     return false;
   }
 
@@ -435,7 +435,7 @@ static bool checkTupleFormalToActual(ArgSymbol* formal, Expr* actual,
 
     bool isActualFieldConst = false;
     bool isActualConst = false;
-    Symbol* actualSym = NULL;
+    Symbol* actualSym = nullptr;
 
     // Determine where the actual is coming from and if its origin is const
     // or not. There are three cases that we cover so far:
@@ -459,7 +459,7 @@ static bool checkTupleFormalToActual(ArgSymbol* formal, Expr* actual,
         // Walk backwards from coerce_tmp to original value tuple.
         Symbol* original = getOriginalTupleFromCoerceTmp(sym);
 
-        if (original == NULL) {
+        if (original == nullptr) {
           INT_FATAL(sym, "Unable to unpack coercion temp: %d", sym->id);
         }
 
@@ -473,12 +473,12 @@ static bool checkTupleFormalToActual(ArgSymbol* formal, Expr* actual,
 
       // Case: Actual is referential tuple built from expression.
       } else if (sym->hasFlag(FLAG_TEMP)) {
-        CallExpr* build = NULL;
+        CallExpr* build = nullptr;
 
         // Fetch the _build_tuple call for the actual.
         for_SymbolSymExprs(se, sym) {
           CallExpr* move = toCallExpr(se->parentExpr);
-          if (move == NULL || !move->isPrimitive(PRIM_MOVE)) {
+          if (move == nullptr || !move->isPrimitive(PRIM_MOVE)) {
             continue;
           }
 
@@ -489,12 +489,12 @@ static bool checkTupleFormalToActual(ArgSymbol* formal, Expr* actual,
           }
 
           CallExpr* buildCall = toCallExpr(move->get(2));
-          if (buildCall == NULL) {
+          if (buildCall == nullptr) {
             continue;
           }
 
           FnSymbol* buildFn = buildCall->resolvedFunction();
-          if (buildFn == NULL || !buildFn->hasFlag(FLAG_BUILD_TUPLE)) {
+          if (buildFn == nullptr || !buildFn->hasFlag(FLAG_BUILD_TUPLE)) {
             continue;
           }
 
@@ -502,13 +502,13 @@ static bool checkTupleFormalToActual(ArgSymbol* formal, Expr* actual,
         }
 
         // Check the argument to _build_tuple. Is it const?
-        if (build != NULL) {
+        if (build != nullptr) {
           Expr* buildArg = build->get(fieldIdx);
 
           INT_ASSERT(buildArg->getValType() == field->getValType());
 
           SymExpr* buildSymExpr = toSymExpr(buildArg);
-          if (buildSymExpr != NULL) {
+          if (buildSymExpr != nullptr) {
 
             Symbol* buildSym = buildSymExpr->symbol();
             if (buildSym->qualType().isConst()) {
@@ -524,7 +524,7 @@ static bool checkTupleFormalToActual(ArgSymbol* formal, Expr* actual,
       } else if (ArgSymbol* arg = toArgSymbol(sym)) {
 
         // But not _this_ formal...
-        if (arg != NULL && arg != formal) {
+        if (arg != nullptr && arg != formal) {
           DEBUG_SYMBOL(arg);
 
           if (arg->intent & INTENT_CONST && arg->qualType().isConst()) {
@@ -546,10 +546,10 @@ static bool checkTupleFormalToActual(ArgSymbol* formal, Expr* actual,
     }
 
     if (isActualFieldConst && !isFieldMarkedConst) {
-      INT_ASSERT(actualSym != NULL);
+      INT_ASSERT(actualSym != nullptr);
 
-      BaseAST* use = NULL;
-      if (um != NULL && um->count(formal)) {
+      BaseAST* use = nullptr;
+      if (um != nullptr && um->count(formal)) {
         use = um->at(formal);
       }
 
@@ -627,7 +627,7 @@ void lateConstCheck(std::map<BaseAST*, BaseAST*> * reasonNotConst) {
   forv_Vec(CallExpr, call, gCallExprs) {
 
     // Ignore calls removed earlier by this pass.
-    if (call->parentExpr == NULL)
+    if (call->parentExpr == nullptr)
       continue;
 
     if (FnSymbol* calledFn = call->resolvedFunction()) {
@@ -735,20 +735,20 @@ void lateConstCheck(std::map<BaseAST*, BaseAST*> * reasonNotConst) {
                          formal->name,
                          calledName, calleeParens);
 
-          BaseAST* lastPrintedReason = NULL;
+          BaseAST* lastPrintedReason = nullptr;
 
           printReason(formal->getValType()->symbol, &lastPrintedReason);
 
           SymExpr* actSe = toSymExpr(actual);
 
-          if (actSe != NULL &&
+          if (actSe != nullptr &&
               actSe->symbol()->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT)) {
             printTaskOrForallConstErrorNote(actSe->symbol());
           }
 
           printReason(formal, &lastPrintedReason);
 
-          if (reasonNotConst != NULL) {
+          if (reasonNotConst != nullptr) {
             BaseAST* reason     = (*reasonNotConst)[formal];
 
             BaseAST* lastReason = formal;
@@ -785,7 +785,7 @@ void lateConstCheck(std::map<BaseAST*, BaseAST*> * reasonNotConst) {
                         if (FnSymbol* rhsCalledFn = rhsCall->resolvedFunction()) {
                           printReason(def,         &lastPrintedReason);
                           printReason(rhsCalledFn, &lastPrintedReason);
-                          printCause = NULL;
+                          printCause = nullptr;
 
                           break;
                         }
@@ -826,7 +826,7 @@ void lateConstCheck(std::map<BaseAST*, BaseAST*> * reasonNotConst) {
       for_formals(formal, fn) {
         if (formal->intent == INTENT_REF) {
           Type* vt = formal->getValType();
-          if (vt->scalarPromotionType == NULL &&
+          if (vt->scalarPromotionType == nullptr &&
               !(isAtomicType(vt) || isSyncType(vt) || isSingleType(vt)) &&
               !formal->hasFlag(FLAG_ERROR_VARIABLE)) {
             if (formal == fn->_this)

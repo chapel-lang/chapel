@@ -40,7 +40,7 @@ static std::map<FnSymbol*, FnSymbol*> wrapperMap;
 static std::map<ArgSymbol*, ArgSymbol*> wrapperArgMap;
 static std::map<FnSymbol*, Type*> wrapperRetTypeMap;
 
-Type* exportTypeChplByteBuffer = NULL;
+Type* exportTypeChplByteBuffer = nullptr;
 
 std::set<FnSymbol*> exportedStrRets;
 
@@ -69,7 +69,7 @@ FnSymbol* getUnwrappedFunction(FnSymbol* wrapper) {
   if ((it = wrapperMap.find(wrapper)) != wrapperMap.end()) {
     return it->second;
   }
-  return NULL;
+  return nullptr;
 }
 
 ArgSymbol* getUnwrappedArg(ArgSymbol* arg) {
@@ -77,7 +77,7 @@ ArgSymbol* getUnwrappedArg(ArgSymbol* arg) {
   if ((it = wrapperArgMap.find(arg)) != wrapperArgMap.end()) {
     return it->second;
   }
-  return NULL;
+  return nullptr;
 }
 
 Type* getUnwrappedRetType(FnSymbol* fn) {
@@ -85,7 +85,7 @@ Type* getUnwrappedRetType(FnSymbol* fn) {
   if ((it = wrapperRetTypeMap.find(fn)) != wrapperRetTypeMap.end()) {
     return it->second;
   }
-  return NULL;
+  return nullptr;
 }
 
 static void resolveExportWrapperTypeAliases(void) {
@@ -131,9 +131,9 @@ void fixupExportedFunction(FnSymbol* fn) {
 // type aliases have already been resolved.
 //
 Type* resolveTypeAlias(const char* mod, const char* alias) {
-  ModuleSymbol* msym = NULL;
-  Symbol* asym = NULL;
-  Type* result = NULL;
+  ModuleSymbol* msym = nullptr;
+  Symbol* asym = nullptr;
+  Type* result = nullptr;
 
   forv_Vec(ModuleSymbol, md, allModules) {
     if (md->modTag == MOD_INTERNAL && !strcmp(md->name, mod)) {
@@ -142,7 +142,7 @@ Type* resolveTypeAlias(const char* mod, const char* alias) {
     }
   }
 
-  if (msym == NULL) {
+  if (msym == nullptr) {
     INT_FATAL("Failed to find module %s in %s", mod, __FUNCTION__);
   }
 
@@ -157,7 +157,7 @@ Type* resolveTypeAlias(const char* mod, const char* alias) {
     }
   }
 
-  if (asym == NULL) {
+  if (asym == nullptr) {
     INT_FATAL("Failed to find type alias %s in module %s in %s",
               alias, mod, __FUNCTION__);
   }
@@ -179,7 +179,7 @@ Type* resolveTypeAlias(const char* mod, const char* alias) {
 
 static void attemptFixups(FnSymbol* fn) {
   std::vector<VarSymbol*> tmps;
-  FnSymbol* wrapper = NULL;
+  FnSymbol* wrapper = nullptr;
 
   if (!fn->hasFlag(FLAG_EXPORT)) { return; }
 
@@ -194,9 +194,9 @@ static void attemptFixups(FnSymbol* fn) {
     // clarity.
     // 
     if (validateFormalIntent(fn, as) && needsFixup(as->type)) {
-      if (wrapper == NULL) { wrapper = createWrapper(fn); }
+      if (wrapper == nullptr) { wrapper = createWrapper(fn); }
       VarSymbol* tmp = fixupFormal(wrapper, i);
-      INT_ASSERT(tmp != NULL);
+      INT_ASSERT(tmp != nullptr);
       tmps.push_back(tmp);
 
       //
@@ -206,13 +206,13 @@ static void attemptFixups(FnSymbol* fn) {
       //
       wrapperArgMap[wrapper->getFormal(i)] = as;
     } else {
-      // Push back a NULL sentry value for unconverted formals.
-      tmps.push_back(NULL);
+      // Push back a nullptr sentry value for unconverted formals.
+      tmps.push_back(nullptr);
     }
   }
 
   if (needsFixup(fn->retType) && validateReturnIntent(fn)) {
-    if (wrapper == NULL) { wrapper = createWrapper(fn); }
+    if (wrapper == nullptr) { wrapper = createWrapper(fn); }
     if (fMultiLocaleInterop) {
       exportedStrRets.insert(wrapper);
     }
@@ -223,7 +223,7 @@ static void attemptFixups(FnSymbol* fn) {
   }
 
   // If a wrapper hasn't been made yet, there's nothing to do.
-  if (wrapper == NULL) { return; }
+  if (wrapper == nullptr) { return; }
 
   insertUnwrappedCall(wrapper, fn, tmps);
 
@@ -341,7 +341,7 @@ static Type* getTypeForFixup(Type* t, bool ret) {
   }
 
   // Should never reach here.
-  return NULL;
+  return nullptr;
 }
 
 static bool isTypeThatMightRequireCopy(Type* t) {
@@ -416,8 +416,8 @@ static void insertUnwrappedCall(FnSymbol* wrapper, FnSymbol* fn,
                                 const std::vector<VarSymbol*>& tmps) {
   bool isVoid = (fn->retType == dtVoid);
 
-  VarSymbol* utmp = isVoid ? NULL : newTemp(fn->retType);
-  VarSymbol* rtmp = isVoid ? NULL : newTemp(wrapper->retType);
+  VarSymbol* utmp = isVoid ? nullptr : newTemp(fn->retType);
+  VarSymbol* rtmp = isVoid ? nullptr : newTemp(wrapper->retType);
 
   CallExpr* call = new CallExpr(fn);
   BlockStmt* wbody = wrapper->body;
@@ -430,11 +430,11 @@ static void insertUnwrappedCall(FnSymbol* wrapper, FnSymbol* fn,
   //
   // Loop through a list of VarSymbols for formals, supplying the VarSymbol
   // as the actual to the call, or the original ArgSymbol for that formal if
-  // the slot is NULL.
+  // the slot is nullptr.
   //
   for (size_t i = 0; i < tmps.size(); i++) {
     VarSymbol* tmp = tmps[i];
-    if (tmp != NULL) {
+    if (tmp != nullptr) {
       call->insertAtTail(tmp);
     } else {
       int idx = (int) i + 1;

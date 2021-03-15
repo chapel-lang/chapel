@@ -104,7 +104,7 @@ ImportStmt::ImportStmt(BaseAST* source, std::vector<const char*>* namesList,
 }
 
 ImportStmt* ImportStmt::copyInner(SymbolMap* map) {
-  ImportStmt* _this = NULL;
+  ImportStmt* _this = nullptr;
   if (modRename[0] != '\0') {
     _this = new ImportStmt(COPY_INT(src), modRename, isPrivate);
   } else {
@@ -138,7 +138,7 @@ void ImportStmt::verify() {
     INT_FATAL(this, "Bad NamedExpr::astTag");
   }
 
-  if (src == NULL) {
+  if (src == nullptr) {
     INT_FATAL(this, "Bad ImportStmt::src");
   }
 
@@ -225,7 +225,7 @@ void ImportStmt::scopeResolve(ResolveScope* scope) {
 // Go into the module referred to by the import statement
 //
 BaseAST* ImportStmt::getSearchScope() const {
-  BaseAST* retval = NULL;
+  BaseAST* retval = nullptr;
 
   if (SymExpr* se = toSymExpr(src)) {
     if (ModuleSymbol* module = toModuleSymbol(se->symbol())) {
@@ -270,8 +270,8 @@ bool ImportStmt::checkValid(Expr* expr) const {
         if (SymExpr* rhs = toSymExpr(call->get(2))) {
           VarSymbol* v = toVarSymbol(rhs->symbol());
 
-          if (v                        != NULL &&
-              v->immediate             != NULL &&
+          if (v                        != nullptr &&
+              v->immediate             != nullptr &&
               v->immediate->const_kind == CONST_KIND_STRING) {
             retval = true;
 
@@ -410,7 +410,7 @@ void ImportStmt::typeWasNamed(Type* t,
   } else {
     const char* name = t->symbol->name;
     if (AggregateType* at = toAggregateType(t)) {
-      if (at->instantiatedFrom != NULL) {
+      if (at->instantiatedFrom != nullptr) {
         // Need to check against the generic type's name rather than the
         // instantiation, since the instantiation name included instantiation
         // information in it (and that isn't usable in a use/import list, at
@@ -649,7 +649,7 @@ bool ImportStmt::providesNewSymbols(const ImportStmt* other) const {
 *                                                                             *
 * If the outer use does not require us to alter ourself, return ourself.      *
 * If the combination of the two stmts results in no new symbols being         *
-* provided by this module, return NULL.                                       *
+* provided by this module, return nullptr.                                    *
 *                                                                             *
 ************************************** | *************************************/
 
@@ -694,7 +694,7 @@ ImportStmt* ImportStmt::applyOuterUse(const UseStmt* outer) {
     } else if (newUnqualifiedList.size() == 0 && newRenamed.size() == 0) {
       // All of our list was in the 'except' list,
       // so we don't provide new symbols.
-      return NULL;
+      return nullptr;
 
     } else {
       // The list will be shorter, create a new ImportStmt with it.
@@ -762,7 +762,7 @@ ImportStmt* ImportStmt::applyOuterUse(const UseStmt* outer) {
       // all of the 'only' identifiers in the outer use
       // were missing from the inner import's list, so this
       // module use will give us nothing.
-      return NULL;
+      return nullptr;
     }
   }
 }
@@ -777,7 +777,7 @@ ImportStmt* ImportStmt::applyOuterImport(const ImportStmt* outer) {
 
     // Unqualified access means we shouldn't follow the imports within this
     // scope.
-    return NULL;
+    return nullptr;
   } else {
     // The outer import provides unqualified access.
 
@@ -789,7 +789,7 @@ ImportStmt* ImportStmt::applyOuterImport(const ImportStmt* outer) {
       // qualified access in a single import statement.
       INT_ASSERT(!providesUnqualifiedAccess());
 
-      return NULL;
+      return nullptr;
 
     } else {
       // The inner import also provides unqualified access. We should see how
@@ -848,7 +848,7 @@ ImportStmt* ImportStmt::applyOuterImport(const ImportStmt* outer) {
       } else {
         // all of the identifiers in the outer import were missing from the
         // inner import's list, so this module import will give us nothing.
-        return NULL;
+        return nullptr;
       }
     }
   }

@@ -151,12 +151,12 @@ public:
                    // called type, since LLVM native integer types do not
                    // include signed-ness.
                    
-  GenRet() : c(), val(NULL), type(NULL), surroundingStruct(NULL),
-             fieldOffset(0), fieldTbaaTypeDescriptor(NULL),
-             aliasScope(NULL), noalias(NULL),
+  GenRet() : c(), val(nullptr), type(nullptr), surroundingStruct(nullptr),
+             fieldOffset(0), fieldTbaaTypeDescriptor(nullptr),
+             aliasScope(nullptr), noalias(nullptr),
              canBeMarkedAsConstAfterStore(false), alreadyStored(false),
              mustPointOutsideOrderIndependentLoop(false),
-             chplType(NULL), isLVPtr(GEN_VAL), isUnsigned(false) { }
+             chplType(nullptr), isLVPtr(GEN_VAL), isUnsigned(false) { }
 
   // Allow implicit conversion from AST elements.
   GenRet(BaseAST* ast) {
@@ -171,7 +171,7 @@ public:
 
   // Return true if this GenRet is empty
   bool isEmpty() const {
-    return c.empty() && val == NULL && type == NULL;
+    return c.empty() && val == nullptr && type == nullptr;
   }
 };
 

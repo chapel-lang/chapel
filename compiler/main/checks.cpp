@@ -461,7 +461,7 @@ static void check_afterScopeResolve()
       // a previous out formal.
       for_formals(formal, fn) {
 
-        if (formal->intent == INTENT_OUT && formal->variableExpr != NULL)
+        if (formal->intent == INTENT_OUT && formal->variableExpr != nullptr)
           USR_FATAL_CONT(formal, "out intent varargs are not supported");
 
         for_formals(earlierFormal, fn) {
@@ -751,7 +751,7 @@ static FnSymbol* findUserInitEq(AggregateType* at) {
         return fn;
     }
   }
-  return NULL;
+  return nullptr;
 }
 
 static FnSymbol* findUserAssign(AggregateType* at) {
@@ -766,7 +766,7 @@ static FnSymbol* findUserAssign(AggregateType* at) {
         return fn;
     }
   }
-  return NULL;
+  return nullptr;
 }
 
 
@@ -932,4 +932,3 @@ checkFormalActualTypesMatch()
     }
   }
 }
-

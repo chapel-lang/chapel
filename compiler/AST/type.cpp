@@ -46,12 +46,12 @@
 static bool isDerivedType(Type* type, Flag flag);
 
 Type::Type(AstTag astTag, Symbol* iDefaultVal) : BaseAST(astTag) {
-  symbol              = NULL;
-  refType             = NULL;
+  symbol              = nullptr;
+  refType             = nullptr;
   defaultValue        = iDefaultVal;
-  destructor          = NULL;
+  destructor          = nullptr;
   isInternalType      = false;
-  scalarPromotionType = NULL;
+  scalarPromotionType = nullptr;
 }
 
 const char* Type::name() const {
@@ -106,11 +106,11 @@ bool Type::isWidePtrType() const {
 
 Symbol* Type::getField(const char* name, bool fatal) const {
   INT_FATAL(this, "getField not called on AggregateType");
-  return NULL;
+  return nullptr;
 }
 
 bool Type::hasDestructor() const {
-  return destructor != NULL;
+  return destructor != nullptr;
 }
 
 FnSymbol* Type::getDestructor() const {
@@ -143,7 +143,7 @@ Symbol* Type::getSubstitutionWithName(const char* name) const {
       return ns.value;
   }
 
-  return NULL;
+  return nullptr;
 }
 
 void Type::setSubstitutionWithName(const char* name, Symbol* value) {
@@ -167,9 +167,9 @@ void Type::setSubstitutionWithName(const char* name, Symbol* value) {
 }
 
 const char* toString(Type* type, bool decorateAllClasses) {
-  const char* retval = NULL;
+  const char* retval = nullptr;
 
-  if (type == NULL ||
+  if (type == nullptr   ||
       type == dtUnknown ||
       type == dtSplitInitType) {
     retval = "<type unknown>";
@@ -253,7 +253,7 @@ const char* toString(Type* type, bool decorateAllClasses) {
       retval = "c_void_ptr";
     }
 
-    if (retval == NULL)
+    if (retval == nullptr)
       retval = vt->symbol->name;
 
   }
@@ -326,7 +326,7 @@ QualifiedType QualifiedType::refToRefType() const {
   if (isRef() && !type->symbol->hasFlag(FLAG_REF)) {
     // Use a ref type here.
     // In the future, the Qualifier should be sufficient
-    INT_ASSERT(type->refType != NULL);
+    INT_ASSERT(type->refType != nullptr);
     type = type->refType;
   }
 
@@ -364,7 +364,7 @@ PrimitiveType::copyInner(SymbolMap* map) {
     INT_FATAL(this, "Unexpected call to PrimitiveType::copyInner");
   }
 
-  return new PrimitiveType(NULL);
+  return new PrimitiveType(nullptr);
 }
 
 
@@ -398,7 +398,7 @@ void PrimitiveType::printDocs(std::ostream *file, unsigned int tabs) {
     *file << std::endl;
   }
 
-  if (this->symbol->doc != NULL) {
+  if (this->symbol->doc != nullptr) {
     this->printDocsDescription(this->symbol->doc, file, tabs + 1);
     if (!fDocsTextOnly) {
       *file << std::endl;
@@ -422,7 +422,7 @@ void PrimitiveType::accept(AstVisitor* visitor) {
 
 
 ConstrainedType::ConstrainedType(ConstrainedTypeUse use) :
-  Type(E_ConstrainedType, NULL), ctUse(use)
+  Type(E_ConstrainedType, nullptr), ctUse(use)
 {
   gConstrainedTypes.add(this);
 }
@@ -477,7 +477,7 @@ const char* ConstrainedType::useString() const {
   case CT_GENERIC_STANDIN:  return "CT_GENERIC_STANDIN";
   }
   INT_FATAL(this, "unknown ConstrainedType use");
-  return NULL;
+  return nullptr;
 }
 
 void ConstrainedType::printDocs(std::ostream *file, unsigned int tabs) {
@@ -516,9 +516,9 @@ bool isConstrainedTypeSymbol(Symbol* s, ConstrainedTypeUse use) {
 }
 
 EnumType::EnumType() :
-  Type(E_EnumType, NULL),
-  constants(), integerType(NULL),
-  doc(NULL)
+  Type(E_EnumType, nullptr),
+  constants(), integerType(nullptr),
+  doc(nullptr)
 {
   gEnumTypes.add(this);
   constants.parent = this;
@@ -620,7 +620,7 @@ void EnumType::printDocs(std::ostream *file, unsigned int tabs) {
     *file << std::endl;
   }
 
-  if (this->doc != NULL) {
+  if (this->doc != nullptr) {
     this->printDocsDescription(this->doc, file, tabs + 1);
     *file << std::endl;
 
@@ -952,7 +952,7 @@ static PrimitiveType* createInternalType(const char* name, const char* cname) {
 
 static PrimitiveType*
 createType(const char* name, const char* cname, bool internalType) {
-  PrimitiveType* pt = new PrimitiveType(NULL, internalType);
+  PrimitiveType* pt = new PrimitiveType(nullptr, internalType);
   TypeSymbol*    ts = new TypeSymbol(name, pt);
 
   ts->cname = astr(cname);
@@ -1393,10 +1393,10 @@ bool isAliasingArrayType(Type* t) {
 
 static bool isDerivedType(Type* type, Flag flag)
 {
-  AggregateType* at     =  NULL;
+  AggregateType* at     =  nullptr;
   bool           retval = false;
 
-  while ((at = toAggregateType(type)) != NULL && retval == false)
+  while ((at = toAggregateType(type)) != nullptr && retval == false)
   {
     if (at->symbol->hasFlag(flag) == true)
       retval = true;
@@ -1425,7 +1425,7 @@ Type* getManagedPtrBorrowType(const Type* managedPtrType) {
   INT_ASSERT(at);
 
   const char* fieldName = astr("chpl_t");
-  Type* borrowType = NULL;
+  Type* borrowType = nullptr;
   Symbol* field = at->getField(fieldName, /*fatal*/ false);
   if (field) {
     borrowType = field->type;
@@ -1433,7 +1433,7 @@ Type* getManagedPtrBorrowType(const Type* managedPtrType) {
     Symbol* sub = at->getSubstitution(fieldName);
     borrowType = sub->type;
   }
-  if (borrowType == NULL)
+  if (borrowType == nullptr)
     INT_FATAL("Could not determine borrow type");
 
   ClassTypeDecorator decorator = CLASS_TYPE_BORROWED_NONNIL;
@@ -1475,7 +1475,7 @@ bool isAtomicType(const Type* t) {
 }
 
 bool isRefIterType(Type* t) {
-  Symbol* iteratorRecord = NULL;
+  Symbol* iteratorRecord = nullptr;
 
   if (t->symbol->hasFlag(FLAG_ITERATOR_CLASS)) {
     AggregateType* at = toAggregateType(t);
@@ -1638,7 +1638,7 @@ VarSymbol* resizeImmediate(VarSymbol* s, PrimitiveType* t)
       return new_UIntSymbol(s->immediate->to_uint(), (IF1_int_type) i);
     }
   }
-  return NULL;
+  return nullptr;
 }
 
 
@@ -1878,7 +1878,7 @@ bool needsGenericRecordInitializer(Type* type) {
     if (isRecordOrUnionWithInitializers(type)) {
       if (at->isGeneric() == true ||
           at->symbol->hasFlag(FLAG_GENERIC) == true ||
-          at->instantiatedFrom != NULL) {
+          at->instantiatedFrom != nullptr) {
         retval = true;
       }
     }
@@ -1890,7 +1890,7 @@ bool needsGenericRecordInitializer(Type* type) {
 Immediate getDefaultImmediate(Type* t) {
   VarSymbol* defaultVar = toVarSymbol(t->defaultValue);
   // (or anything handled by coerce_immediate)
-  if (defaultVar == NULL || defaultVar->immediate == NULL)
+  if (defaultVar == nullptr || defaultVar->immediate == nullptr)
     INT_FATAL(t->symbol, "does not have a default value");
 
   // Numeric types should have a default of the right type

@@ -48,7 +48,7 @@ bool             fdump_html_include_system_modules      =    true;
 bool             fdump_html_wrap_lines                  =    true;
 bool             fdump_html_print_block_IDs             =   false;
 
-FILE*            deletedIdHandle                        =    NULL;
+FILE*            deletedIdHandle                        =    nullptr;
 char             deletedIdFilename[FILENAME_MAX + 1]    =      "";
 
 // Keeping names of available passes
@@ -143,7 +143,7 @@ void teardownLogfiles() {
 
   if (deletedIdFilename[0] != '\0') {
     fclose(deletedIdHandle);
-    deletedIdHandle = NULL;
+    deletedIdHandle = nullptr;
   }
 }
 

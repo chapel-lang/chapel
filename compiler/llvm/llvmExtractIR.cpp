@@ -38,21 +38,21 @@ using namespace llvm;
 
 void extractAndPrintFunctionsLLVM(std::set<const GlobalValue*> *gvs) {
 
-  if (gvs == NULL || gvs->size() == 0)
+  if (gvs == nullptr || gvs->size() == 0)
     return;
 
-  const Module* funcModule = NULL;
+  const Module* funcModule = nullptr;
 
   std::set<std::string> names;
   for (auto V : *gvs) {
-    if (funcModule == NULL) {
+    if (funcModule == nullptr) {
       funcModule = V->getParent();
     } else {
       assert(funcModule == V->getParent());
     }
     names.insert(V->getName().str());
   }
-  assert(funcModule != NULL);
+  assert(funcModule != nullptr);
 
   ValueToValueMapTy VMap;
   // Create a new module containing only the definition of the function

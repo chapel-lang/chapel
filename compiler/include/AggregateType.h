@@ -126,7 +126,7 @@ public:
                                            CallExpr* call,
                                            const char* callString,
                                            bool evalDefaults,
-                                           Expr* insnPoint = NULL);
+                                           Expr* insnPoint = nullptr);
   void                        resolveConcreteType();
 
   bool                        isInstantiatedFrom(const AggregateType* base)
@@ -241,11 +241,11 @@ private:
 
   void                        renameInstantiation();
 
-  AggregateType*              instantiationWithParent(AggregateType* parent, Expr* insnPoint = NULL);
+  AggregateType*              instantiationWithParent(AggregateType* parent, Expr* insnPoint = nullptr);
 
   AggregateType*              getCurInstantiation(Symbol* sym, Type* symType);
 
-  AggregateType*              getNewInstantiation(Symbol* sym, Type* symType, Expr* insnPoint = NULL);
+  AggregateType*              getNewInstantiation(Symbol* sym, Type* symType, Expr* insnPoint = nullptr);
 
   AggregateType*              discoverParentAndCheck(Expr* storesName);
 

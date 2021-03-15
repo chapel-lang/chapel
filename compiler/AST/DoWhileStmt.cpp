@@ -82,8 +82,8 @@ DoWhileStmt::DoWhileStmt(VarSymbol* var, BlockStmt* body) :
 
 DoWhileStmt* DoWhileStmt::copyInner(SymbolMap* map)
 {
-  Expr*        cond   = NULL;
-  BlockStmt*   body   = NULL;
+  Expr*        cond   = nullptr;
+  BlockStmt*   body   = nullptr;
   DoWhileStmt* retval = new DoWhileStmt(cond, body);
 
   retval->copyInnerShare(*this, map);
@@ -131,7 +131,7 @@ Expr* DoWhileStmt::getNextExpr(Expr* expr)
 {
   Expr* retval = this;
 
-  if (expr == condExprGet() && body.head != NULL)
+  if (expr == condExprGet() && body.head != nullptr)
     retval = body.head->getFirstExpr();
 
   return retval;

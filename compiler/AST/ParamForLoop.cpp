@@ -45,10 +45,10 @@ BlockStmt* ParamForLoop::buildParamForLoop(VarSymbol* indexVar,
   LabelSymbol* continueLabel  = new LabelSymbol("_unused_continueLabel");
 
   CallExpr*    call       = toCallExpr(range);
-  Expr*        low        = NULL;
-  Expr*        high       = NULL;
-  Expr*        stride     = NULL;
-  Expr*        count      = NULL;
+  Expr*        low        = nullptr;
+  Expr*        high       = nullptr;
+  Expr*        stride     = nullptr;
+  Expr*        count      = nullptr;
 
   BlockStmt*   outer      = new BlockStmt();
 
@@ -69,7 +69,7 @@ BlockStmt* ParamForLoop::buildParamForLoop(VarSymbol* indexVar,
   }
 
   if(call) {
-    if(count == NULL)
+    if(count == nullptr)
     {
       // high..low
       if (call->isNamed("chpl_build_bounded_range"))
@@ -106,7 +106,7 @@ BlockStmt* ParamForLoop::buildParamForLoop(VarSymbol* indexVar,
   }
 
   // When no case is satisfied, then show error
-  if(high == NULL || low == NULL)
+  if(high == nullptr || low == nullptr)
   {
     USR_FATAL(range, "param for-loops currently only support range expressions with well-defined param integral bounds");
   }
@@ -324,16 +324,16 @@ void ParamForLoop::verify()
 {
   BlockStmt::verify();
 
-  if (mResolveInfo              == NULL)
+  if (mResolveInfo              == nullptr)
     INT_FATAL(this, "ParamForLoop::verify. mResolveInfo is NULL");
 
-  if (BlockStmt::blockInfoGet() != NULL)
+  if (BlockStmt::blockInfoGet() != nullptr)
     INT_FATAL(this, "ParamForLoop::verify. blockInfo is not NULL");
 
-  if (useList                   != NULL)
+  if (useList                   != nullptr)
     INT_FATAL(this, "ParamForLoop::verify. useList   is not NULL");
 
-  if (byrefVars                 != NULL)
+  if (byrefVars                 != nullptr)
     INT_FATAL(this, "ParamForLoop::verify. byrefVars is not NULL");
 }
 
@@ -368,7 +368,7 @@ Expr* ParamForLoop::getNextExpr(Expr* expr)
 {
   Expr* retval = this;
 
-  if (expr == mResolveInfo && body.head != NULL)
+  if (expr == mResolveInfo && body.head != nullptr)
     retval = body.head->getFirstExpr();
 
   return retval;
@@ -501,7 +501,7 @@ CallExpr* ParamForLoop::foldForResolve()
   }
 
   if (emptyLoop)
-    addMentionToEndOfStatement(this, NULL);
+    addMentionToEndOfStatement(this, nullptr);
 
   // Remove the "insertion marker"
   noop->remove();
@@ -557,7 +557,7 @@ Type* ParamForLoop::indexType()
 
     DefExpr* formal = toDefExpr(sym->formals.get(1));
 
-    if (toArgSymbol(formal->sym)->typeExpr != NULL) {
+    if (toArgSymbol(formal->sym)->typeExpr != nullptr) {
       idxType = toArgSymbol(formal->sym)->typeExpr->body.tail->typeInfo();
     } else {
       idxType = formal->sym->type;

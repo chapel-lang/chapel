@@ -63,17 +63,17 @@
 #define STL_UTIL_TOK_PASTE(a, b) STL_UTIL_TOK_PASTE_INTERNAL(a,b)
 #define STL_UTIL_UNIQUE(NAME) STL_UTIL_TOK_PASTE(NAME, __LINE__)
 
-#define for_vector(TYPE, VAL, VEC) \
-  const std::vector<TYPE*> & STL_UTIL_UNIQUE(for_vector_vec) = (VEC); \
-  std::vector<TYPE*>::const_iterator STL_UTIL_UNIQUE(for_vector_iter) = \
-      STL_UTIL_UNIQUE(for_vector_vec).begin(); \
-  std::vector<TYPE*>::const_iterator STL_UTIL_UNIQUE(for_vector_end) = \
-      STL_UTIL_UNIQUE(for_vector_vec).end(); \
-  for (TYPE * VAL = NULL ; \
-       (VAL = ( STL_UTIL_UNIQUE(for_vector_iter) != \
-                STL_UTIL_UNIQUE(for_vector_end) ) ? \
-              * STL_UTIL_UNIQUE(for_vector_iter) : \
-              (TYPE*)0) ; \
+#define for_vector(TYPE, VAL, VEC)                                       \
+  const std::vector<TYPE*> & STL_UTIL_UNIQUE(for_vector_vec) = (VEC);    \
+  std::vector<TYPE*>::const_iterator STL_UTIL_UNIQUE(for_vector_iter) =  \
+      STL_UTIL_UNIQUE(for_vector_vec).begin();                           \
+  std::vector<TYPE*>::const_iterator STL_UTIL_UNIQUE(for_vector_end) =   \
+      STL_UTIL_UNIQUE(for_vector_vec).end();                             \
+  for (TYPE * VAL = nullptr ;                                            \
+       (VAL = ( STL_UTIL_UNIQUE(for_vector_iter) !=                      \
+                STL_UTIL_UNIQUE(for_vector_end) ) ?                      \
+              * STL_UTIL_UNIQUE(for_vector_iter) :                       \
+              (TYPE*)0) ;                                                \
        ++STL_UTIL_UNIQUE(for_vector_iter) )
 
 #define for_vector_allowing_0s(TYPE, VAL, VEC)                           \
@@ -83,7 +83,7 @@
   std::vector<TYPE*>::const_iterator STL_UTIL_UNIQUE(for_vector_end) =   \
       STL_UTIL_UNIQUE(for_vector_vec).end();                             \
   bool STL_UTIL_UNIQUE(for_vector_cont);                                 \
-  for (TYPE * VAL = NULL ;                                               \
+  for (TYPE * VAL = nullptr ;                                            \
        (STL_UTIL_UNIQUE(for_vector_cont) =                               \
               ( STL_UTIL_UNIQUE(for_vector_iter) !=                      \
                 STL_UTIL_UNIQUE(for_vector_end) )),                      \
@@ -93,17 +93,17 @@
        STL_UTIL_UNIQUE(for_vector_cont);                                 \
        ++STL_UTIL_UNIQUE(for_vector_iter) )
 
-#define for_set(TYPE, VAL, VEC) \
-  const std::set<TYPE*> & STL_UTIL_UNIQUE(for_set_set) = (VEC); \
-  std::set<TYPE*>::const_iterator STL_UTIL_UNIQUE(for_set_iter) = \
-      STL_UTIL_UNIQUE(for_set_set).begin(); \
-  std::set<TYPE*>::const_iterator STL_UTIL_UNIQUE(for_set_end) = \
-      STL_UTIL_UNIQUE(for_set_set).end(); \
-  for (TYPE * VAL = NULL ; \
-       (VAL = ( STL_UTIL_UNIQUE(for_set_iter) != \
-                STL_UTIL_UNIQUE(for_set_end) ) ? \
-              * STL_UTIL_UNIQUE(for_set_iter) : \
-              (TYPE*)0) ; \
+#define for_set(TYPE, VAL, VEC)                                          \
+  const std::set<TYPE*> & STL_UTIL_UNIQUE(for_set_set) = (VEC);          \
+  std::set<TYPE*>::const_iterator STL_UTIL_UNIQUE(for_set_iter) =        \
+      STL_UTIL_UNIQUE(for_set_set).begin();                              \
+  std::set<TYPE*>::const_iterator STL_UTIL_UNIQUE(for_set_end) =         \
+      STL_UTIL_UNIQUE(for_set_set).end();                                \
+  for (TYPE * VAL = nullptr ;                                            \
+       (VAL = ( STL_UTIL_UNIQUE(for_set_iter) !=                         \
+                STL_UTIL_UNIQUE(for_set_end) ) ?                         \
+              * STL_UTIL_UNIQUE(for_set_iter) :                          \
+              (TYPE*)0) ;                                                \
        ++STL_UTIL_UNIQUE(for_set_iter) )
 
 #endif

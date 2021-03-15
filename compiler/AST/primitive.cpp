@@ -224,7 +224,7 @@ returnInfoVal(CallExpr* call) {
   }
 
   INT_FATAL(call, "attempt to get value type of non-reference type");
-  return QualifiedType(NULL);
+  return QualifiedType(nullptr);
 }
 
 // BHARSH TODO: merge this with returnInfoAsRef and fix the WIDE_REF case...
@@ -281,7 +281,7 @@ returnInfoArrayIndexValue(CallExpr* call) {
     return QualifiedType(eltTypeSymbol->type, QUAL_VAL);
   } else {
     INT_FATAL("unsupported case");
-    return QualifiedType(NULL);
+    return QualifiedType(nullptr);
   }
 }
 
@@ -305,7 +305,7 @@ returnInfoGetMember(CallExpr* call) {
   if (!var)
     INT_FATAL(call, "bad member primitive");
   if (Immediate* imm = var->immediate) {
-    Symbol* field = NULL;
+    Symbol* field = nullptr;
     if (imm->const_kind == CONST_KIND_STRING)
     {
       const char* name = var->immediate->v_string;
@@ -322,7 +322,7 @@ returnInfoGetMember(CallExpr* call) {
   } else
     return sym->qualType();
   INT_FATAL(call, "bad member primitive");
-  return QualifiedType(NULL);
+  return QualifiedType(nullptr);
 }
 
 static QualifiedType
@@ -356,10 +356,10 @@ returnInfoGetMemberRef(CallExpr* call) {
   INT_ASSERT(se);
   VarSymbol* var = toVarSymbol(se->symbol());
   INT_ASSERT(var);
-  Type* retType = NULL;
+  Type* retType = nullptr;
   if (Immediate* imm = var->immediate)
   {
-    Symbol* field = NULL;
+    Symbol* field = nullptr;
     if (imm->const_kind == CONST_KIND_STRING)
     {
       const char* name = var->immediate->v_string;
@@ -397,8 +397,8 @@ returnInfoGetMemberRef(CallExpr* call) {
 
 static QualifiedType
 returnInfoEndCount(CallExpr* call) {
-  static Type* endCountType = NULL;
-  if (endCountType == NULL) {
+  static Type* endCountType = nullptr;
+  if (endCountType == nullptr) {
     // Look for the type var `_remoteEndCountType` in ChapelBase.
     forv_Vec(VarSymbol, var, gVarSymbols) {
       const char* searchStr = "_remoteEndCountType";
@@ -516,7 +516,7 @@ returnInfoToNilable(CallExpr* call) {
     if (isManagedPtrType(t)) {
       AggregateType* manager = getManagedPtrManagerType(t);
       AggregateType* at = toAggregateType(canonicalClassType(t));
-      if (at == NULL) {
+      if (at == nullptr) {
         // e.g. _to_nonnil(owned)
         t = getDecoratedClass(manager, decorator);
       } else {
@@ -544,7 +544,7 @@ returnInfoToNonNilable(CallExpr* call) {
     if (isManagedPtrType(t)) {
       AggregateType* manager = getManagedPtrManagerType(t);
       AggregateType* at = toAggregateType(canonicalClassType(t));
-      if (at == NULL) {
+      if (at == nullptr) {
         // e.g. _to_nonnil(owned)
         t = getDecoratedClass(manager, decorator);
       } else {
@@ -578,7 +578,7 @@ void printPrimitiveCounts(const char* passName) {
   }
 
   forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->baseExpr == NULL) {
+    if (call->baseExpr == nullptr) {
       if (call->primitive) {
         primCounts[call->primitive->tag] += 1;
       }
@@ -650,7 +650,7 @@ prim_def(const char* name, QualifiedType (*returnInfo)(CallExpr*),
 void
 initPrimitive() {
   // use for any primitives not in this list
-  primitives[PRIM_UNKNOWN] = NULL;
+  primitives[PRIM_UNKNOWN] = nullptr;
 
   prim_def(PRIM_ACTUALS_LIST, "actuals list", returnInfoVoid);
   prim_def(PRIM_NOOP, "noop", returnInfoVoid);

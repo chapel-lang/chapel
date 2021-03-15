@@ -26,7 +26,7 @@
 static int typeSize(VarSymbol* var);
 
 Type* typeForTypeSpecifier(Expr* expr, bool fatalOK) {
-  Type* retval = NULL;
+  Type* retval = nullptr;
 
   if (SymExpr* symExpr = toSymExpr(expr)) {
     if (TypeSymbol* sym = toTypeSymbol(symExpr->symbol())) {

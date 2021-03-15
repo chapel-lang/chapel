@@ -37,17 +37,17 @@ CatchStmt* CatchStmt::build(const char* name, Expr* type, BlockStmt* body) {
 }
 
 CatchStmt* CatchStmt::build(const char* name, BlockStmt* body) {
-  return new CatchStmt(name, NULL, body);
+  return new CatchStmt(name, nullptr, body);
 }
 
 CatchStmt* CatchStmt::build(BlockStmt* body) {
-  return new CatchStmt(NULL, NULL, body);
+  return new CatchStmt(nullptr, nullptr, body);
 }
 
 CatchStmt::CatchStmt(const char* name, Expr* type, BlockStmt* body)
   : Stmt(E_CatchStmt) {
 
-  _name = name ? astr(name) : NULL;
+  _name = name ? astr(name) : nullptr;
   _type = type;
   _body = body;
 
@@ -86,23 +86,23 @@ BlockStmt* CatchStmt::bodyWithoutTest() const {
     // Find the else body in the last CondStmt in the catch block body.
     // This should always exist after CatchStmt::cleanup
     // for non-catchall errors.
-    CondStmt* finalCond = NULL;
+    CondStmt* finalCond = nullptr;
     for_alist_backward(node, this->body()->body) {
       if (CondStmt* cond = toCondStmt(node)) {
         finalCond = cond;
         break;
       }
     }
-    INT_ASSERT(finalCond != NULL && finalCond->elseStmt != NULL);
+    INT_ASSERT(finalCond != nullptr && finalCond->elseStmt != nullptr);
     return finalCond->thenStmt;
   }
 }
 
 bool CatchStmt::isCatchall() const {
-  if (_name == NULL)
+  if (_name == nullptr)
     return true;
 
-  if (_type == NULL)
+  if (_type == nullptr)
     return true;
 
   if (SymExpr* typeSe = toSymExpr(type()))
@@ -144,7 +144,7 @@ Expr* CatchStmt::getFirstExpr() {
   if (_body) {
     return _body->getFirstExpr();
   }
-  return NULL;
+  return nullptr;
 }
 
 Expr* CatchStmt::getNextExpr(Expr* expr) {
@@ -206,8 +206,8 @@ void CatchStmt::cleanup()
   // Below, we will transform even catchall block so that the error will
   // be freed appropriately.
 
-  Expr* typeExpr = NULL;
-  if (_type != NULL) {
+  Expr* typeExpr = nullptr;
+  if (_type != nullptr) {
     typeExpr = _type->copy();
   } else {
     typeExpr = new SymExpr(dtError->symbol);
@@ -215,7 +215,7 @@ void CatchStmt::cleanup()
   INT_ASSERT(typeExpr);
 
   const char* name = _name;
-  if (name == NULL)
+  if (name == nullptr)
     name = astr("chpl_anon_error");
 
   VarSymbol* casted = newTemp();
@@ -223,7 +223,7 @@ void CatchStmt::cleanup()
   Expr* unmNilType = new CallExpr(PRIM_TO_NILABLE_CLASS,
                                   new CallExpr(PRIM_TO_UNMANAGED_CLASS,
                                                typeExpr));
-  Expr* castedCurrent = NULL;
+  Expr* castedCurrent = nullptr;
   if (catchall) {
     castedCurrent = new CallExpr(PRIM_CURRENT_ERROR);
   } else {
@@ -273,8 +273,8 @@ void CatchStmt::cleanup()
     // Find the parent try statement. If it's a try!, add a call
     // to halt so that isDefinedAllPaths works correctly.
 
-    TryStmt* inTry = NULL;
-    for (Expr* cur = this->parentExpr; cur != NULL; cur = cur->parentExpr) {
+    TryStmt* inTry = nullptr;
+    for (Expr* cur = this->parentExpr; cur != nullptr; cur = cur->parentExpr) {
       if (TryStmt* t = toTryStmt(cur))
         inTry = t;
     }

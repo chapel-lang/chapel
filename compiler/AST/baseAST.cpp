@@ -63,14 +63,14 @@ static int uid = 1;
 
 #define sum_gvecs(type) g##type##s.n
 
-#define def_vec_hash(SomeType) \
-    template<> \
-    uintptr_t _vec_hasher(SomeType* obj) { \
-      if (obj == NULL) { \
-        return 0; \
-      } else { \
-        return (uintptr_t)((BaseAST*)obj)->id; \
-      } \
+#define def_vec_hash(SomeType)                  \
+    template<>                                  \
+    uintptr_t _vec_hasher(SomeType* obj) {      \
+      if (obj == nullptr) {                     \
+        return 0;                               \
+      } else {                                  \
+        return (uintptr_t)((BaseAST*)obj)->id;  \
+      }                                         \
     }
 
 foreach_ast(def_vec_hash);
@@ -172,7 +172,7 @@ void printStatistics(const char* pass) {
 /* Certain AST elements, such as PRIM_END_OF_STATEMENT, should just
    be adjusted when variables are removed. */
 static void remove_weak_links(VarSymbol* var) {
-  if (var != NULL) {
+  if (var != nullptr) {
     for_SymbolSymExprs(se, var) {
       if (isAlive(se))
         if (CallExpr* call = toCallExpr(se->parentExpr))
@@ -243,14 +243,14 @@ void cleanAst() {
       FnSymbol* method = ts->type->methods.v[i];
 
       if (method && !isAliveQuick(method)) {
-        ts->type->methods.v[i] = NULL;
+        ts->type->methods.v[i] = nullptr;
       }
 
       if (AggregateType* ct = toAggregateType(ts->type)) {
 
         if (ct->hasDestructor()                  == true &&
             isAliveQuick(ct->getDestructor())    == false) {
-          ct->setDestructor(NULL);
+          ct->setDestructor(nullptr);
         }
       }
     }
@@ -259,21 +259,21 @@ void cleanAst() {
       for (int i = 0; i < at->dispatchChildren.n; i++) {
         if (AggregateType* type = at->dispatchChildren.v[i]) {
           if (isAlive(type) == false) {
-            at->dispatchChildren.v[i] = NULL;
+            at->dispatchChildren.v[i] = nullptr;
           }
         }
       }
 
       //
       // If an internal aggregate type is being deleted, set its global
-      // handle to NULL. See #15169.
+      // handle to nullptr. See #15169.
       //
       if (!isAlive(at)) {
-        if (at == dtBytes) dtBytes = NULL;
-        if (at == dtString) dtString = NULL;
-        if (at == dtLocale) dtLocale = NULL;
-        if (at == dtOwned) dtOwned = NULL;
-        if (at == dtShared) dtShared = NULL;
+        if (at == dtBytes) dtBytes = nullptr;
+        if (at == dtString) dtString = nullptr;
+        if (at == dtLocale) dtLocale = nullptr;
+        if (at == dtOwned) dtOwned = nullptr;
+        if (at == dtShared) dtShared = nullptr;
       }
     }
   }
@@ -378,21 +378,21 @@ const char* BaseAST::stringLoc(void) const {
 
 
 ModuleSymbol* BaseAST::getModule() {
-  ModuleSymbol* retval = NULL;
+  ModuleSymbol* retval = nullptr;
 
   if (ModuleSymbol* x = toModuleSymbol(this)) {
     retval = x;
 
   } else if (Type* x = toType(this)) {
-    if (x->symbol != NULL)
+    if (x->symbol != nullptr)
       retval = x->symbol->getModule();
 
   } else if (Symbol* x = toSymbol(this)) {
-    if (x->defPoint != NULL)
+    if (x->defPoint != nullptr)
       retval = x->defPoint->getModule();
 
   } else if (Expr* x = toExpr(this)) {
-    if (x->parentSymbol != NULL)
+    if (x->parentSymbol != nullptr)
       retval = x->parentSymbol->getModule();
 
   } else {
@@ -421,7 +421,7 @@ bool BaseAST::isRefOrWideRef() {
 
 FnSymbol* BaseAST::getFunction() {
   BaseAST* cur = this;
-  while (cur != NULL) {
+  while (cur != nullptr) {
     // base cases
     if (ModuleSymbol* x = toModuleSymbol(cur))
       return x->initFn;
@@ -437,7 +437,7 @@ FnSymbol* BaseAST::getFunction() {
     else
       INT_FATAL(this, "Unexpected case in BaseAST::getFunction()");
   }
-  return NULL;
+  return nullptr;
 }
 
 
@@ -542,7 +542,7 @@ void BaseAST::printTabs(std::ostream *file, unsigned int tabs) {
 //       'doc' member and all doc-related methods would only be available to
 //       chpldoc? (thomasvandoren, 2015-02-21)
 void BaseAST::printDocsDescription(const char *doc, std::ostream *file, unsigned int tabs) {
-  if (doc != NULL) {
+  if (doc != nullptr) {
     std::stringstream sStream(ltrimAllLines(doc));
     std::string line;
     while (std::getline(sStream, line)) {
@@ -593,7 +593,7 @@ void update_symbols(BaseAST* ast, SymbolMap* map) {
         // some cases the SymbolMap contains a mapping from the generic 'T' to
         // an instantiation of 'T'. Is that mapping necessary?
         CallExpr* call = toCallExpr(sym_expr->parentExpr);
-        if (call != NULL && call->baseExpr == sym_expr) {
+        if (call != nullptr && call->baseExpr == sym_expr) {
           if (y->getValType()->symbol->hasFlag(FLAG_TUPLE) == false &&
               y->getValType() != dtUnknown &&
               sym_expr->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {

@@ -82,7 +82,7 @@ static ShadowVarSymbol* buildShadowVariable(ShadowVarPrefix prefix,
       break;
   }
 
-  ShadowVarSymbol* result = new ShadowVarSymbol(intent, name, NULL);
+  ShadowVarSymbol* result = new ShadowVarSymbol(intent, name, nullptr);
   new DefExpr(result); // set result->defPoint
   return result;
 }
@@ -93,7 +93,7 @@ static ShadowVarSymbol* buildTaskPrivateVariable(ShadowVarPrefix prefix,
 
   // TPV - task-private variable, as we have a type and/or an initializer.
   ShadowVarSymbol* result = new ShadowVarSymbol(TFI_TASK_PRIVATE,
-                                                nameString, NULL);
+                                                nameString, nullptr);
 
   switch (prefix)
   {
@@ -124,10 +124,10 @@ static ShadowVarSymbol* buildTaskPrivateVariable(ShadowVarPrefix prefix,
     // Ref tpvs must have init and not type.
     case SVP_CONST_REF:
     case SVP_REF:
-      if (init == NULL)
+      if (init == nullptr)
         USR_FATAL_CONT(nameExpr, "a 'ref' or 'const ref' task-private variable"
                      " '%s' must have an initializing expression", nameString);
-      if (type != NULL)
+      if (type != nullptr)
         USR_FATAL_CONT(nameExpr, "a 'ref' or 'const ref' task-private variable"
                        " '%s' cannot have a type", nameString);
       break;
@@ -169,7 +169,7 @@ ShadowVarSymbol* ShadowVarSymbol::buildForPrefix(ShadowVarPrefix prefix,
   if (nameString == astrThis)
     USR_FATAL_CONT(nameExp, "cannot currently apply a forall or task intent to 'this'");
 
-  if (type == NULL && init == NULL)
+  if (type == nullptr && init == nullptr)
     // non-TPV forall intent
     return buildShadowVariable(prefix, nameString, nameExp);
   else
@@ -179,9 +179,9 @@ ShadowVarSymbol* ShadowVarSymbol::buildForPrefix(ShadowVarPrefix prefix,
 ShadowVarSymbol* ShadowVarSymbol::buildFromReduceIntent(Expr* ovar,
                                                         Expr* riExpr)
 {
-  INT_ASSERT(riExpr != NULL);
+  INT_ASSERT(riExpr != nullptr);
   const char* name = toUnresolvedSymExpr(ovar)->unresolved;
-  ShadowVarSymbol* result = new ShadowVarSymbol(TFI_REDUCE, name, NULL, riExpr);
+  ShadowVarSymbol* result = new ShadowVarSymbol(TFI_REDUCE, name, nullptr, riExpr);
   new DefExpr(result); // set result->defPoint
   return result;
 }
@@ -283,7 +283,7 @@ static bool acceptUnmodifiedIterCall(ForallStmt* pfs, CallExpr* iterCall)
 //   - chpl__staticFastFollowerCheck
 //   - chpl__dynamicFastFollowerCheck
 //
-// lead can be NULL, in which case it won't be added to the arg list of the call
+// lead can be nullptr, in which case it won't be added to the arg list of the call
 // boolOp can be `||` or `&&` and determines the operation between calls
 CallExpr *buildFastFollowerCheckCallForZipOrProm(std::vector<SymExpr *> exprs,
                                                  const char *fnName,
@@ -296,7 +296,7 @@ CallExpr *buildFastFollowerCheckCallForZipOrProm(std::vector<SymExpr *> exprs,
       ret = new CallExpr(boolOp, ret);
     }
     CallExpr *newCall = new CallExpr(fnName, se->copy());
-    if (lead != NULL) {
+    if (lead != nullptr) {
       newCall->insertAtTail(new SymExpr(lead));
     }
     ret->insertAtTail(newCall);
@@ -406,7 +406,7 @@ buildFollowLoop(VarSymbol* iter,
 
   // followIdx has a defPoint in the non-fast case
   // and no defPoint in the fast case i.e. for fastFollowIdx.
-  if (followIdx->defPoint == NULL) {
+  if (followIdx->defPoint == nullptr) {
     followBlock->insertAtTail(new DefExpr(followIdx));
   } else {
     followBlock->insertAtTail(followIdx->defPoint);
@@ -499,7 +499,7 @@ static void checkWhenOverTupleExpand(ForallStmt* fs) {
 static CallExpr* buildForallParIterCall(ForallStmt* pfs, SymExpr* origSE,
                                         FnSymbol*& origTargetRef)
 {
-  CallExpr* iterCall = NULL;
+  CallExpr* iterCall = nullptr;
 
   if (isIteratorRecord(origSE->symbol())) {
     // Our iterable expression is an iterator call.
@@ -512,7 +512,7 @@ static CallExpr* buildForallParIterCall(ForallStmt* pfs, SymExpr* origSE,
     }
 
     CallExpr* origIterCall = toCallExpr(getDefOfTemp(origSE));
-    if (origIterCall == NULL || ! origIterCall->isResolved()) {
+    if (origIterCall == nullptr || ! origIterCall->isResolved()) {
       USR_FATAL(origSE, "a forall loop over this kind of iterable expression is not implemented");
     }
 
@@ -567,8 +567,8 @@ static ParIterFlavor findParIter(ForallStmt* pfs, CallExpr* iterCall,
                                  SymExpr* origSE, FnSymbol* origTarget)
 {
   ParIterFlavor retval = PIF_NONE;
-  IteratorGroup* igroup = origTarget ? origTarget->iteratorGroup : NULL;
-  FnSymbol* noniterFn = NULL;
+  IteratorGroup* igroup = origTarget ? origTarget->iteratorGroup : nullptr;
+  FnSymbol* noniterFn = nullptr;
 
   checkForExplicitTagArgs(iterCall);
 
@@ -581,7 +581,7 @@ static ParIterFlavor findParIter(ForallStmt* pfs, CallExpr* iterCall,
   if (!pfs->zippered()) {
     bool gotSA = false;
     if (igroup) {
-      gotSA = igroup->standalone != NULL;
+      gotSA = igroup->standalone != nullptr;
       if (gotSA) iterCall->baseExpr->replace(new SymExpr(igroup->standalone));
       else noniterFn = igroup->noniterSA;
     } else {
@@ -595,7 +595,7 @@ static ParIterFlavor findParIter(ForallStmt* pfs, CallExpr* iterCall,
     tag->actual->replace(new SymExpr(gLeaderTag));
     bool gotLeader = false;
     if (igroup) {
-      gotLeader = igroup->leader != NULL;
+      gotLeader = igroup->leader != nullptr;
       if (gotLeader) iterCall->baseExpr->replace(new SymExpr(igroup->leader));
       else if (!noniterFn) noniterFn = igroup->noniterL;
     } else {
@@ -607,7 +607,7 @@ static ParIterFlavor findParIter(ForallStmt* pfs, CallExpr* iterCall,
   // try serial
   if (retval == PIF_NONE && pfs->allowSerialIterator()) {
     tag->remove();
-    if (origTarget != NULL) {
+    if (origTarget != nullptr) {
       retval = PIF_SERIAL;
       iterCall->baseExpr->replace(new SymExpr(origTarget));
     } else {
@@ -619,7 +619,7 @@ static ParIterFlavor findParIter(ForallStmt* pfs, CallExpr* iterCall,
   }
 
   if (retval == PIF_NONE) {
-   if (noniterFn != NULL) {
+   if (noniterFn != nullptr) {
     USR_FATAL_CONT(iterCall, "The iterable-expression resolves to a non-iterator function '%s' when looking for a parallel iterator", noniterFn->name);
     USR_PRINT(noniterFn, "The function '%s' is declared here", noniterFn->name);
     USR_STOP();
@@ -634,15 +634,15 @@ static ParIterFlavor findParIter(ForallStmt* pfs, CallExpr* iterCall,
   return retval;
 }
 
-/////////// handle serial cases /////////// 
+/////////// handle serial cases ///////////
 
-static FnSymbol* trivialLeader          = NULL;
-static Type*     trivialLeaderYieldType = NULL;
+static FnSymbol* trivialLeader          = nullptr;
+static Type*     trivialLeaderYieldType = nullptr;
 
 // Return a _build_tuple of fs's index variables.
 static Expr* hzsMakeIndices(ForallStmt* fs) {
   if (fs->numInductionVars() == 1) {
-    INT_ASSERT(fs->overTupleExpand()); 
+    INT_ASSERT(fs->overTupleExpand());
     return new SymExpr(fs->firstInductionVarDef()->sym);
   }
 
@@ -709,9 +709,9 @@ static void hzsBuildZipperedForLoop(ForallStmt* fs, FnSymbol* origIterFn,
 
 // Use 'trivialLeader' as fs's parallel iterator.
 static CallExpr* hzsCallTrivialParIter(ForallStmt* fs) {
-  CallExpr* result = NULL;
+  CallExpr* result = nullptr;
 
-  if (trivialLeader == NULL) {
+  if (trivialLeader == nullptr) {
     result = new CallExpr("chpl_trivialLeader");
     fs->insertBefore(result);
     resolveCallAndCallee(result, false);
@@ -755,7 +755,7 @@ will be handled by existing code.
 static CallExpr* handleZipperedSerial(ForallStmt* fs, FnSymbol* origIterFn,
                                       CallExpr* iterCall, SymExpr* origSE)
 {
-  if (origIterFn != NULL && isParallelIterator(origIterFn))
+  if (origIterFn != nullptr && isParallelIterator(origIterFn))
     USR_FATAL(fs->iteratedExpressions().head, "Support for this combination of zippered iterators is not currently implemented");
 
   hzsBuildZipperedForLoop(fs, origIterFn, iterCall, origSE);
@@ -768,7 +768,7 @@ static CallExpr* handleZipperedSerial(ForallStmt* fs, FnSymbol* origIterFn,
 static CallExpr* setupFollowerCall(BlockStmt* holder, Symbol* followThis,
                                    Symbol* iterSym) {
   Symbol* iterSymAlt = iterSym;
-  CallExpr* followerCall = NULL;
+  CallExpr* followerCall = nullptr;
 
   // This happens for the []-statement in chpl__transferArray()
   // when assigning from, say, a loop expression.
@@ -794,7 +794,7 @@ static CallExpr* setupFollowerCall(BlockStmt* holder, Symbol* followThis,
                                 iterSym, gFollowerTag, followThis);
 
     holder->insertAtHead(followerCall);
-  }    
+  }
 
   return followerCall;
 }
@@ -844,7 +844,7 @@ static bool optionalFollowersAreMissing(ForallStmt* fs, Symbol* followThis) {
   return retval;
 }
 
-/////////// final transformations /////////// 
+/////////// final transformations ///////////
 
 // Create the induction variable of the parallel loop.
 static VarSymbol* createFollowThis(QualifiedType piType) {
@@ -911,7 +911,7 @@ static void addParIdxVarsAndRestruct(ForallStmt* fs, VarSymbol* parIdx) {
 
 static RetTag iteratorTag(FnSymbol* iterFn) {
   IteratorInfo* ii = iterFn->iteratorInfo;
-  if (ii == NULL) {
+  if (ii == nullptr) {
     // We got an iterator forwarder.
     INT_ASSERT(iterFn->hasFlag(FLAG_FN_RETURNS_ITERATOR));
     FnSymbol* underlyingIter = getTheIteratorFn(iterFn->retType);
@@ -992,7 +992,7 @@ static CallExpr *generateFastFollowCheckHelp(CallExpr *iterCall,
                                              const char *fnName,
                                              bool addLead) {
 
-  Symbol *leadSym = NULL;
+  Symbol *leadSym = nullptr;
 
   if (addLead) {
     SymExpr *leadSE = toSymExpr(iterCall->get(1));
@@ -1000,8 +1000,8 @@ static CallExpr *generateFastFollowCheckHelp(CallExpr *iterCall,
 
     leadSym = leadSE->symbol();
   }
-  
-  const char *zipOp = NULL;
+
+  const char *zipOp = nullptr;
   if (strcmp(fnName, "chpl__canHaveFastFollowers") == 0) {
     zipOp = "||";
   }
@@ -1034,7 +1034,7 @@ static CallExpr *generateFastFollowCheck(Expr *e, bool isStatic) {
 
   CallExpr *checkCall = generateFastFollowCheckHelp(iterCall, fnName,
                                                     /*addLead=*/true);
-  CallExpr *retCall = NULL;
+  CallExpr *retCall = nullptr;
   if (isStatic) {
      //we also need to check whether any of the iterands can actually have fast
      //followers
@@ -1073,7 +1073,7 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
 
   VarSymbol* iterRec         = newTemp("chpl__iterLF"); // serial iter, LF case
   VarSymbol* followIter      = newTemp("chpl__followIter");
-  BlockStmt* followBlock     = NULL;
+  BlockStmt* followBlock     = nullptr;
 
   iterRec->addFlag(FLAG_NO_COPY);
   iterRec->addFlag(FLAG_EXPR_TEMP);
@@ -1107,7 +1107,7 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
 
     VarSymbol* fastFollowIdx   = newTemp("chpl__fastFollowIdx");
     VarSymbol* fastFollowIter  = newTemp("chpl__fastFollowIter");
-    BlockStmt* fastFollowBlock = NULL;
+    BlockStmt* fastFollowBlock = nullptr;
 
 
     T1->addFlag(FLAG_EXPR_TEMP);
@@ -1195,7 +1195,7 @@ CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE)
 
   checkWhenOverTupleExpand(pfs);
 
-  FnSymbol* origTarget = NULL;
+  FnSymbol* origTarget = nullptr;
   CallExpr* iterCall = buildForallParIterCall(pfs, origSE, origTarget);
 
   // So we know where iterCall is.
@@ -1230,7 +1230,7 @@ CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE)
     VarSymbol* followThis = createFollowThis(yType);
 
     if (optionalFollowersAreMissing(pfs, followThis)) {
-      firstIterCall = handleZipperedSerial(pfs, NULL, iterCall, origSE);
+      firstIterCall = handleZipperedSerial(pfs, nullptr, iterCall, origSE);
 
     } else {
       addParIdxVarsAndRestruct(pfs, followThis);
@@ -1290,7 +1290,7 @@ void static setupRecIterFields(ForallStmt* fs, CallExpr* parIterCall)
   DefExpr*   recIterICdef = new DefExpr(parIter);
   CallExpr*  recIterGetIterator  = new CallExpr("_getIterator", iterRec);
   CallExpr*  recIterFreeIterator = new CallExpr("_freeIterator", parIter);
-  
+
   CallExpr* initIterRec = new CallExpr(PRIM_MOVE, iterRec, parIterCall->copy());
   CallExpr* initParIter = new CallExpr(PRIM_MOVE, parIter, recIterGetIterator);
 
@@ -1376,7 +1376,7 @@ static void convertIteratorForLoopexpr(ForallStmt* fs) {
           FnSymbol* iterator = getTheIteratorFn(calleeFn->retType);
           SET_LINENO(calleeSE);
           calleeSE->replace(new SymExpr(iterator));
-          if (calleeFn->firstSymExpr() == NULL)
+          if (calleeFn->firstSymExpr() == nullptr)
             calleeFn->defPoint->remove(); // not needed any more
           removeOuterVarArgs(iterCall, calleeFn, iterator);
           // Adds coercions as needed.
@@ -1398,7 +1398,7 @@ void resolveForallStmts2() {
     // If isTaskFun(parent), error is still reported in nonLeaderParCheckInt.
     if (parent->isIterator() && !parent->hasFlag(FLAG_INLINE_ITERATOR))
       USR_FATAL_CONT(fs, "invalid use of parallel construct in serial iterator");
-    
+
     convertIteratorForLoopexpr(fs);
   }
 }
@@ -1464,7 +1464,7 @@ static void removeWithEnclosing(Expr* expr) {
           defer->remove();
           return;
         }
-        INT_ASSERT(block->parentExpr != NULL);
+        INT_ASSERT(block->parentExpr != nullptr);
         block->remove();
         return;
       }
@@ -1512,7 +1512,7 @@ static void transferTheIterable(ForallStmt* dest, ForLoop* src) {
   IC->defPoint->remove();
 
   // no more uses
-  INT_ASSERT(IC->firstSymExpr() == NULL);
+  INT_ASSERT(IC->firstSymExpr() == nullptr);
 }
 
 static ForallStmt* doReplaceWithForall(ForLoop* src)
@@ -1642,7 +1642,7 @@ static SymExpr* elemTypeIfIterableIIT(Expr* ref, SymExpr* iitr,
 static Expr* lowerReduceOp(Expr* ref, SymExpr* opSE, SymExpr* dataSE,
                            bool zippered)
 {
-  CallExpr* iit = NULL;
+  CallExpr* iit = nullptr;
   if (zippered) {
     // Cf. destructZipperedIterables. 'zipcall' will be removed there.
     CallExpr* zipcall = toCallExpr(getDefOfTemp(dataSE)->copy());
@@ -1698,7 +1698,7 @@ Expr* lowerPrimReduce(CallExpr* call) {
 
   Expr* opExpr = lowerReduceOp(callStmt, opSE, dataSE, zippered);
 
-  Symbol* result = NULL;
+  Symbol* result = nullptr;
   if (callStmt == call) {
     result = newTemp("chpl_redResult");
     callStmt->insertBefore(new DefExpr(result));

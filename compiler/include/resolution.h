@@ -124,24 +124,24 @@ bool canCoerceAsSubtype(Type*     actualType,
                         Type*     formalType,
                         ArgSymbol* formalSym,
                         FnSymbol* fn,
-                        bool*     promotes = NULL,
-                        bool*     paramNarrows = NULL);
+                        bool*     promotes = nullptr,
+                        bool*     paramNarrows = nullptr);
 
 bool canCoerce(Type*     actualType,
                Symbol*   actualSym,
                Type*     formalType,
                ArgSymbol* formalSym,
                FnSymbol* fn,
-               bool*     promotes = NULL,
-               bool*     paramNarrows = NULL);
+               bool*     promotes = nullptr,
+               bool*     paramNarrows = nullptr);
 
 bool canDispatch(Type*     actualType,
                  Symbol*   actualSym,
                  Type*     formalType,
-                 ArgSymbol* formalSym = NULL,
-                 FnSymbol* fn          = NULL,
-                 bool*     promotes    = NULL,
-                 bool*     paramNarrows= NULL,
+                 ArgSymbol* formalSym = nullptr,
+                 FnSymbol* fn          = nullptr,
+                 bool*     promotes    = nullptr,
+                 bool*     paramNarrows= nullptr,
                  bool      paramCoerce = false);
 
 
@@ -250,7 +250,7 @@ void      ensureInMethodList(FnSymbol* fn);
 bool      hasAutoCopyForType(Type* type);
 FnSymbol* getAutoCopyForType(Type* type);   // requires hasAutoCopyForType()==true
 void      getAutoCopyTypeKeys(Vec<Type*>& keys);
-FnSymbol* getAutoCopy(Type* t);             // returns NULL if there are none
+FnSymbol* getAutoCopy(Type* t);             // returns nullptr if there are none
 FnSymbol* getAutoDestroy(Type* t);          //  "
 
 FnSymbol* getInitCopyDuringResolution(Type* t);
@@ -391,6 +391,6 @@ static inline void sanityCheckDefinedConstArg(BaseAST *arg) {
 }
 
 
-// Return the array element type, or NULL if not an array
+// Return the array element type, or nullptr if not an array
 Type* arrayElementType(Type* arrayType);
 #endif

@@ -45,7 +45,7 @@ InitNormalize::InitNormalize(FnSymbol* fn) {
   mPhase         = startPhase(fn);
   mBlockType     = cBlockNormal;
   mPrevBlockType = cBlockNormal;
-  mThisAsParent  = NULL;
+  mThisAsParent  = nullptr;
 }
 
 InitNormalize::InitNormalize(BlockStmt* block, const InitNormalize& curr) {
@@ -133,13 +133,13 @@ void InitNormalize::merge(const InitNormalize& fork) {
   mImplicitFields.insert(fork.mImplicitFields.begin(),
                          fork.mImplicitFields.end());
 
-  if (this->mThisAsParent == NULL) {
+  if (this->mThisAsParent == nullptr) {
     this->mThisAsParent = fork.mThisAsParent;
   }
 }
 
 AggregateType* InitNormalize::type() const {
-  return mFn != NULL ? toAggregateType(mFn->_this->type) : NULL;
+  return mFn != nullptr ? toAggregateType(mFn->_this->type) : nullptr;
 }
 
 FnSymbol* InitNormalize::theFn() const {
@@ -171,7 +171,7 @@ bool InitNormalize::isFieldReinitialized(DefExpr* field) const {
   Expr*          ptr    = at->fields.head;
   bool           retval = false;
 
-  while (ptr != NULL && ptr != mCurrField && retval == false) {
+  while (ptr != nullptr && ptr != mCurrField && retval == false) {
     if (field == ptr) {
       retval = true;
     } else {
@@ -179,7 +179,7 @@ bool InitNormalize::isFieldReinitialized(DefExpr* field) const {
     }
   }
 
-  INT_ASSERT(ptr != NULL);
+  INT_ASSERT(ptr != nullptr);
 
   return retval;
 }
@@ -230,7 +230,7 @@ bool InitNormalize::inOnInForall() const {
 
 void InitNormalize::completePhase1(CallExpr* initStmt) {
   if        (isThisInit(initStmt)  == true) {
-    mCurrField = NULL;
+    mCurrField = nullptr;
 
   } else if (isSuperInit(initStmt) == true) {
     initializeFieldsBefore(initStmt);
@@ -259,7 +259,7 @@ void InitNormalize::completePhase0(CallExpr* initStmt) {
 }
 
 void InitNormalize::initializeFieldsAtTail(BlockStmt* block, DefExpr* endField) {
-  if (mCurrField != NULL && mCurrField != endField) {
+  if (mCurrField != nullptr && mCurrField != endField) {
     Expr* noop = new CallExpr(PRIM_NOOP);
 
     block->insertAtTail(noop);
@@ -272,7 +272,7 @@ void InitNormalize::initializeFieldsAtTail(BlockStmt* block, DefExpr* endField) 
 
 void InitNormalize::initializeFieldsBefore(Expr* insertBefore,
                                            DefExpr* endField) {
-  while (mCurrField != NULL && mCurrField != endField) {
+  while (mCurrField != nullptr && mCurrField != endField) {
     DefExpr* field = mCurrField;
 
     initializeField(insertBefore, field);
@@ -286,42 +286,42 @@ void InitNormalize::initializeField(Expr* insertBefore,
                                     Expr* userInit) const {
   Expr* initExpr = userInit;
   Expr* typeExpr = field->exprType;
-  Expr* ret      = NULL;
+  Expr* ret      = nullptr;
 
-  if (initExpr == NULL && field->init != NULL) {
+  if (initExpr == nullptr && field->init != nullptr) {
     initExpr = field->init->copy();
   }
 
-  if (typeExpr == NULL && initExpr == NULL) {
+  if (typeExpr == nullptr && initExpr == nullptr) {
     USR_FATAL_CONT(insertBefore,
                    "can't omit initialization of field \"%s\", "
                    "no type or default value provided",
                    field->sym->name);
   } else if (field->sym->hasEitherFlag(FLAG_PARAM, FLAG_TYPE_VARIABLE)) {
-    if (typeExpr != NULL && initExpr == NULL) {
+    if (typeExpr != nullptr && initExpr == nullptr) {
       ret = genericFieldInitTypeWoutInit(insertBefore, field);
 
-    } else if (typeExpr != NULL && initExpr != NULL) {
+    } else if (typeExpr != nullptr && initExpr != nullptr) {
       ret = genericFieldInitTypeWithInit(insertBefore, field, initExpr);
 
-    } else if (typeExpr == NULL && initExpr != NULL) {
+    } else if (typeExpr == nullptr && initExpr != nullptr) {
       ret = genericFieldInitTypeInference(insertBefore, field, initExpr);
 
     } else {
       INT_ASSERT(false);
     }
-  } else if (typeExpr == NULL && field->init == NULL) {
+  } else if (typeExpr == nullptr && field->init == nullptr) {
     // Special case: initializing 'var x;' field from 'userInit'
-    INT_ASSERT(userInit != NULL);
+    INT_ASSERT(userInit != nullptr);
     ret = genericFieldInitTypeInference(insertBefore, field, initExpr);
 
-  } else if (typeExpr != NULL && initExpr == NULL) {
+  } else if (typeExpr != nullptr && initExpr == nullptr) {
     ret = fieldInitTypeWoutInit(insertBefore, field);
 
-  } else if (typeExpr != NULL && initExpr != NULL) {
+  } else if (typeExpr != nullptr && initExpr != nullptr) {
     ret = fieldInitTypeWithInit(insertBefore, field, initExpr);
 
-  } else if (typeExpr == NULL && initExpr != NULL) {
+  } else if (typeExpr == nullptr && initExpr != nullptr) {
     //INT_ASSERT(field->sym->type == dtUnknown);
     ret = fieldInitTypeInference(insertBefore, field, initExpr);
 
@@ -329,7 +329,7 @@ void InitNormalize::initializeField(Expr* insertBefore,
     INT_ASSERT(false);
   }
 
-  if (ret != NULL) {
+  if (ret != nullptr) {
     processThisUses(ret);
   }
 }
@@ -499,7 +499,7 @@ Expr* InitNormalize::fieldInitTypeWoutInit(Expr*    insertBefore,
                                            DefExpr* field) const {
 
   if (field->sym->hasFlag(FLAG_NO_INIT))
-    return NULL;
+    return nullptr;
 
   SET_LINENO(insertBefore);
 
@@ -548,21 +548,21 @@ Expr* InitNormalize::fieldInitTypeWithInit(Expr*    insertBefore,
     // Do not set type of 'tmp' so that resolution will infer it later
     VarSymbol* tmp       = newTemp(field->sym->name);
     DefExpr*   tmpDefn   = new DefExpr(tmp);
-    Expr*      checkType = NULL;
+    Expr*      checkType = nullptr;
 
     bool noinit = false;
     if (SymExpr* se = toSymExpr(initExpr))
       if (se->symbol() == gNoInit)
         noinit = true;
 
-    if (field->exprType == NULL) {
+    if (field->exprType == nullptr) {
       checkType = new SymExpr(type->symbol);
     } else {
       checkType = field->exprType->copy();
     }
 
     // Set the value for TMP
-    CallExpr*  tmpInit = NULL;
+    CallExpr*  tmpInit = nullptr;
     if (noinit) {
       tmpInit = new CallExpr(PRIM_NOINIT_INIT_VAR, tmp, checkType);
     } else {
@@ -651,7 +651,7 @@ DefExpr* InitNormalize::toSuperField(AggregateType* at,
     }
   }
 
-  return NULL;
+  return nullptr;
 }
 
 /************************************* | **************************************
@@ -664,7 +664,7 @@ bool InitNormalize::isFieldInitialized(const DefExpr* field) const {
   const DefExpr* ptr    = mCurrField;
   bool           retval = true;
 
-  while (ptr != NULL && retval == true) {
+  while (ptr != nullptr && retval == true) {
     if (ptr == field) {
       retval = false;
     } else {
@@ -694,7 +694,7 @@ InitNormalize::InitPhase InitNormalize::startPhase(BlockStmt* block) const {
   const InitPhase defaultPhase = cPhase1;
   InitPhase retval = defaultPhase;
 
-  while (stmt != NULL && retval == defaultPhase) {
+  while (stmt != nullptr && retval == defaultPhase) {
     if (isDefExpr(stmt) == true) {
       stmt = stmt->next;
 
@@ -716,7 +716,7 @@ InitNormalize::InitPhase InitNormalize::startPhase(BlockStmt* block) const {
       }
 
     } else if (CondStmt* cond = toCondStmt(stmt)) {
-      if (cond->elseStmt == NULL) {
+      if (cond->elseStmt == nullptr) {
         InitPhase thenPhase = startPhase(cond->thenStmt);
 
         if (thenPhase != defaultPhase) {
@@ -754,7 +754,7 @@ InitNormalize::InitPhase InitNormalize::startPhase(BlockStmt* block) const {
 
     } else if (ForallStmt* forall = toForallStmt(stmt)) {
       // Nothing to normalize in fRecIter*
-      INT_ASSERT(forall->fRecIterIRdef == NULL);
+      INT_ASSERT(forall->fRecIterIRdef == nullptr);
 
       InitPhase phase = startPhase(forall->loopBody());
 
@@ -856,7 +856,7 @@ void InitNormalize::makeThisAsParent(CallExpr* call) {
   // type parentType = this.super.type;
   // var thisAsParent : parentType = (_cast parentType this);
 
-  INT_ASSERT(this->mThisAsParent == NULL);
+  INT_ASSERT(this->mThisAsParent == nullptr);
 
   VarSymbol* parentType = newTemp();
   DefExpr*   parentDef  = new DefExpr(parentType);
@@ -894,7 +894,7 @@ static bool isThisDot(CallExpr* call) {
 
   if (call->isNamedAstr(astrSdot) == true) {
     SymExpr* base = toSymExpr(call->get(1));
-    if (base != NULL &&
+    if (base != nullptr &&
         base->symbol()->hasFlag(FLAG_ARG_THIS)) {
       retval = true;
     }
@@ -923,7 +923,7 @@ static bool isMethodCall(CallExpr* call) {
 static bool typeHasMethod(AggregateType* type, const char* methodName) {
   bool retval = false;
 
-  INT_ASSERT(type != NULL);
+  INT_ASSERT(type != nullptr);
 
   if (type != dtObject) {
     forv_Vec(FnSymbol, method, type->methods) {
@@ -959,7 +959,7 @@ class ProcessThisUses final : public AstVisitorTraverse
 };
 
 void ProcessThisUses::visitSymExpr(SymExpr* node) {
-  DefExpr* field = NULL;
+  DefExpr* field = nullptr;
 
   if (node->symbol()->hasFlag(FLAG_ARG_THIS)) {
     if (DefExpr* parentDef = toDefExpr(node->parentExpr)) {
@@ -969,9 +969,9 @@ void ProcessThisUses::visitSymExpr(SymExpr* node) {
         USR_FATAL_CONT(node, "cannot initialize a variable from \"this\" before this.complete()");
       }
     } else {
-      CallExpr* call = NULL;
+      CallExpr* call = nullptr;
       Expr* cur = node;
-      while (call == NULL && cur->parentExpr != NULL) {
+      while (call == nullptr && cur->parentExpr != nullptr) {
         if (CallExpr* parent = toCallExpr(cur->parentExpr)) {
           call = parent;
         } else {
@@ -1007,7 +1007,7 @@ void ProcessThisUses::visitSymExpr(SymExpr* node) {
     }
   }
 
-  if (field != NULL) {
+  if (field != nullptr) {
     PrimitiveTag tag = PRIM_GET_MEMBER;
     if (field->sym->hasEitherFlag(FLAG_PARAM, FLAG_TYPE_VARIABLE)) {
       tag = PRIM_GET_MEMBER_VALUE;
@@ -1033,7 +1033,7 @@ bool ProcessThisUses::enterCallExpr(CallExpr* node) {
         USR_FATAL_CONT(node, "cannot call field-accessor method \"%s\" before this.complete()", field->sym->name);
       }
       node->baseExpr->remove();
-      node->baseExpr = NULL;
+      node->baseExpr = nullptr;
       node->primitive = primitives[PRIM_GET_MEMBER];
 
     }
@@ -1045,7 +1045,7 @@ bool ProcessThisUses::enterCallExpr(CallExpr* node) {
                      field->sym->name);
     } else if (state->isPhase1()) {
       node->baseExpr->remove();
-      node->baseExpr = NULL;
+      node->baseExpr = nullptr;
       node->primitive = primitives[PRIM_GET_MEMBER];
     }
     return false;
@@ -1104,7 +1104,7 @@ void InitNormalize::processThisUses(Expr* expr) const {
 
 Expr* InitNormalize::fieldInitFromInitStmt(DefExpr*  field,
                                            CallExpr* initStmt) {
-  Expr* retval = NULL;
+  Expr* retval = nullptr;
 
   if (field != mCurrField) {
     INT_ASSERT(isFieldReinitialized(field) == false);

@@ -965,7 +965,7 @@ bool AstDumpToNode::enterInterfaceSym(InterfaceSymbol* node) {
 
 bool AstDumpToNode::enterCallExpr(CallExpr* node)
 {
-  if (node->primitive == NULL)
+  if (node->primitive == nullptr)
     fprintf(mFP, compact ? "%s%s " : "%s%-15s", delimitEnter, "Call");
 
   else if (node->isPrimitive(PRIM_MOVE))
@@ -1351,7 +1351,7 @@ bool AstDumpToNode::enterTryStmt(TryStmt* node)
   mOffset = mOffset + 2;
   newline();
 
-  if (node->_body != NULL)
+  if (node->_body != nullptr)
   {
     node->_body->accept(this);
   }
@@ -1375,7 +1375,7 @@ bool AstDumpToNode::enterCatchStmt(CatchStmt* node)
   mOffset = mOffset + 2;
   newline();
 
-  if (node->_body != NULL)
+  if (node->_body != nullptr)
   {
     mOffset = mOffset + 2;
     node->_body->accept(this);
@@ -1647,11 +1647,11 @@ void AstDumpToNode::visitVarSym(VarSymbol* node)
 static const char* symPrefixString(Symbol* sym) {
   const char* retval = "";
 
-  if (sym != NULL)
+  if (sym != nullptr)
   {
     static char symPrefixBuffer[1024];
 
-    Symbol* parent = sym->defPoint ? sym->defPoint->parentSymbol : NULL;
+    Symbol* parent = sym->defPoint ? sym->defPoint->parentSymbol : nullptr;
 
     if (isModuleSymbol(parent))
       sprintf(symPrefixBuffer, "%s.",  parent->name);

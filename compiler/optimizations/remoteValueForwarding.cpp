@@ -478,11 +478,11 @@ static VarSymbol* replaceArgWithDeserialized(FnSymbol* fn, ArgSymbol* arg,
   anchor->insertBefore(new DefExpr(dsRef));
 
   CallExpr* deserializeCall = new CallExpr(deserializeFn, arg);
-  CallExpr* callToAdd = NULL;
+  CallExpr* callToAdd = nullptr;
 
   if (needsRuntimeType) {
     FnSymbol* runtimeTypeFn = valueToRuntimeTypeMap.get(oldArgType->getValType());
-    INT_ASSERT(runtimeTypeFn != NULL);
+    INT_ASSERT(runtimeTypeFn != nullptr);
     VarSymbol* info = new VarSymbol("ds_info", runtimeTypeFn->retType);
     anchor->insertBefore(new DefExpr(info));
 
@@ -513,13 +513,13 @@ static void destroyArgAndDeserialized(FnSymbol* fn, ArgSymbol* arg,
   INT_ASSERT(lastExpr && lastExpr->isPrimitive(PRIM_RETURN));
 
   FnSymbol* dataDestroyFn = getAutoDestroy(arg->getValType());
-  if (dataDestroyFn != NULL) {
+  if (dataDestroyFn != nullptr) {
     lastExpr->insertBefore(new CallExpr(dataDestroyFn, arg));
   }
 
   if (!newStyleInIntent) {
     FnSymbol* deserializeDestroyFn = getAutoDestroy(deserialized->getValType());
-    if (deserializeDestroyFn != NULL) {
+    if (deserializeDestroyFn != nullptr) {
       lastExpr->insertBefore(new CallExpr(deserializeDestroyFn, deserialized));
     }
   }
@@ -568,11 +568,11 @@ static void insertSerialization(FnSymbol*  fn,
 
   FnSymbol* serializeFn   = ser.serializer;
   FnSymbol* deserializeFn = ser.deserializer;
-  INT_ASSERT(serializeFn != NULL && deserializeFn != NULL);
+  INT_ASSERT(serializeFn != nullptr && deserializeFn != nullptr);
 
   bool needsRuntimeType = oldArgType->getValType()->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE);
 
-  Type* dataType = NULL;
+  Type* dataType = nullptr;
   if (serializeFn->hasFlag(FLAG_FN_RETARG)) {
     ArgSymbol* retArg = toArgSymbol(toDefExpr(serializeFn->formals.tail)->sym);
     INT_ASSERT(retArg && retArg->hasFlag(FLAG_RETARG));
@@ -620,7 +620,7 @@ static CallExpr* findDestroyCallForArg(ArgSymbol* arg) {
 
   FnSymbol* fn = arg->getFunction();
   for (Expr* stmt = fn->body->body.tail;
-       stmt != NULL;
+       stmt != nullptr;
        stmt = stmt->prev) {
 
     // Look for a CallExpr to auto destroy fn with argument arg
@@ -632,7 +632,7 @@ static CallExpr* findDestroyCallForArg(ArgSymbol* arg) {
               return call;
   }
 
-  return NULL;
+  return nullptr;
 }
 
 static void defaultForwarding(Map<Symbol*, Vec<SymExpr*>*>& useMap,
@@ -657,7 +657,7 @@ static void defaultForwarding(Map<Symbol*, Vec<SymExpr*>*>& useMap,
       deref->addFlag(FLAG_COFORALL_INDEX_VAR);
     }
 
-    Expr* rhs = NULL;
+    Expr* rhs = nullptr;
     if (actual->isRef()) {
       rhs = new CallExpr(PRIM_DEREF, new SymExpr(actual->symbol()));
     } else {
@@ -691,7 +691,7 @@ static void defaultForwarding(Map<Symbol*, Vec<SymExpr*>*>& useMap,
       Expr*      stmt   = use->getStmtExpr();
       VarSymbol* reref = newTemp("rvfRerefTmp", prevArgType);
 
-      Expr* rhs = NULL;
+      Expr* rhs = nullptr;
       if (reref->isRef()) {
         rhs = new CallExpr(PRIM_SET_REFERENCE, arg);
       } else {
@@ -712,7 +712,7 @@ static bool isSyncSingleMethod(FnSymbol* fn) {
 
   bool retval = false;
 
-  if (fn->_this != NULL) {
+  if (fn->_this != nullptr) {
     Type* valType = fn->_this->getValType();
 
     if  (isSyncType(valType)   == true ||
@@ -838,7 +838,7 @@ static bool isSafeToDeref(Map<Symbol*, Vec<SymExpr*>*>& defMap,
                           Vec<Symbol*>&                 visited) {
   bool retval = true;
 
-  if (visited.set_in(ref) == NULL) {
+  if (visited.set_in(ref) == nullptr) {
     int numDefs = (defMap.get(ref)) ? defMap.get(ref)->n : 0;
 
     visited.set_add(ref);
@@ -900,7 +900,7 @@ static bool isSafeToDeref(Map<Symbol*, Vec<SymExpr*>*>& defMap,
                              visited);
 
     } else if (call->isPrimitive(PRIM_SET_MEMBER) == true &&
-               field                              != NULL) {
+               field                              != nullptr) {
       SymExpr* se = toSymExpr(call->get(2));
 
       INT_ASSERT(se);
@@ -925,7 +925,7 @@ static bool computeDotLocale(Symbol* sym) {
 
   DotInfo* info = dotLocaleMap[sym];
 
-  if (info == NULL) {
+  if (info == nullptr) {
     // No uses of this symbol, so definitely no uses of dot-locale
     return false;
   } else if (info->finalized) {
@@ -997,7 +997,7 @@ static void computeUsesDotLocale() {
     if (!(isVarSymbol(se->symbol()) || isArgSymbol(se->symbol()))) continue;
     if (!se->isRef()) continue;
 
-    DotInfo* info = NULL;
+    DotInfo* info = nullptr;
     DotInfoIter it = dotLocaleMap.find(se->symbol());
     if (it == dotLocaleMap.end()) {
       info = new DotInfo();

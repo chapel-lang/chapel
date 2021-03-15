@@ -82,9 +82,9 @@ static void tryToReplaceWithDirectRangeIterator(Expr* iteratorExpr)
     return;
   if (CallExpr* call = toCallExpr(iteratorExpr))
   {
-    CallExpr* range = NULL;
-    Expr* stride = NULL;
-    Expr* count = NULL;
+    CallExpr* range = nullptr;
+    Expr* stride = nullptr;
+    Expr* count = nullptr;
     // grab the stride if we have a strided range
     if (call->isNamed("chpl_by"))
     {
@@ -190,7 +190,7 @@ BlockStmt* ForLoop::doBuildForLoop(Expr*      indices,
       // rewrite into a utility function for the other get*Zip
       // functions as we convert parallel loops over to use PRIM_ZIP).
       //
-      zipExpr->primitive = NULL;   // remove the primitive
+      zipExpr->primitive = nullptr;   // remove the primitive
 
       // If there's just one argument...
       if (zipExpr->argList.length == 1) {
@@ -474,20 +474,20 @@ void ForLoop::verify()
 {
   BlockStmt::verify();
 
-  if (BlockStmt::blockInfoGet() != 0)
-    INT_FATAL(this, "ForLoop::verify. blockInfo is not NULL");
+  if (BlockStmt::blockInfoGet() != nullptr)
+    INT_FATAL(this, "ForLoop::verify. blockInfo is not nullptr");
 
-  if (mIndex    == 0)
-    INT_FATAL(this, "ForLoop::verify. index     is NULL");
+  if (mIndex    == nullptr)
+    INT_FATAL(this, "ForLoop::verify. index     is nullptr");
 
-  if (mIterator == 0)
-    INT_FATAL(this, "ForLoop::verify. iterator  is NULL");
+  if (mIterator == nullptr)
+    INT_FATAL(this, "ForLoop::verify. iterator  is nullptr");
 
-  if (useList   != 0)
-    INT_FATAL(this, "ForLoop::verify. useList   is not NULL");
+  if (useList   != nullptr)
+    INT_FATAL(this, "ForLoop::verify. useList   is not nullptr");
 
-  if (byrefVars != 0)
-    INT_FATAL(this, "ForLoop::verify. byrefVars is not NULL");
+  if (byrefVars != nullptr)
+    INT_FATAL(this, "ForLoop::verify. byrefVars is not nullptr");
 }
 
 GenRet ForLoop::codegen()
@@ -527,14 +527,14 @@ void ForLoop::replaceChild(Expr* oldAst, Expr* newAst)
   if (oldAst == mIndex)
   {
     SymExpr* se = toSymExpr(newAst);
-    // Complain if the newAst is not NULL and cannot be converted to a SymExpr.
+    // Complain if the newAst is not nullptr and cannot be converted to a SymExpr.
     INT_ASSERT(!newAst || se);
     mIndex = se;
   }
   else if (oldAst == mIterator)
   {
     SymExpr* se = toSymExpr(newAst);
-    // Complain if the newAst is not NULL and cannot be converted to a SymExpr.
+    // Complain if the newAst is not nullptr and cannot be converted to a SymExpr.
     INT_ASSERT(!newAst || se);
     mIterator = se;
   }
@@ -565,13 +565,13 @@ Expr* ForLoop::getNextExpr(Expr* expr)
 {
   Expr* retval = this;
 
-  if (expr == mIndex && mIterator != NULL)
+  if (expr == mIndex && mIterator != nullptr)
     retval = mIterator;
 
-  else if (expr == mIndex    && body.head != NULL)
+  else if (expr == mIndex    && body.head != nullptr)
     retval = body.head->getFirstExpr();
 
-  else if (expr == mIterator && body.head != NULL)
+  else if (expr == mIterator && body.head != nullptr)
     retval = body.head->getFirstExpr();
 
   return retval;

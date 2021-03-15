@@ -223,10 +223,10 @@
 static void debug(BaseAST* base, const char* format, ...) {
 #ifdef PRINT_WIDE_ANALYSIS
   Symbol* sym = toSymbol(base);
-  if (sym == NULL) {
+  if (sym == nullptr) {
     sym = toSymExpr(base)->symbol();
   }
-  INT_ASSERT(sym != NULL);
+  INT_ASSERT(sym != nullptr);
 
   DEBUG_PRINTF("%s (%d) in %s : ", sym->cname, sym->id, sym->getModule()->cname);
   va_list argptr;
@@ -350,7 +350,7 @@ static Symbol* getTupleField(CallExpr* call) {
   Symbol* field = getSvecSymbol(call);
 
   // Probably a star tuple
-  if (field == NULL) {
+  if (field == nullptr) {
     field = call->get(1)->getValType()->getField("x0");
   }
 
@@ -364,7 +364,7 @@ static QualifiedType getNarrowType(BaseAST* bs) {
   //
 
 
-  Type* retType = NULL;
+  Type* retType = nullptr;
   Qualifier retQ = QUAL_UNKNOWN;
 
   if (Type* t = toType(bs)) {
@@ -379,7 +379,7 @@ static QualifiedType getNarrowType(BaseAST* bs) {
     }
     retType = t;
   } else {
-    Symbol* sym = NULL;
+    Symbol* sym = nullptr;
     if (Symbol* s = toSymbol(bs)) {
       sym = s;
     } else {
@@ -519,7 +519,7 @@ static void cause_helper(BaseAST* target, int level, std::set<Symbol*>& visited)
 
   if (isLcnSymbol(target) || isSymExpr(target)) {
     Symbol* sym = toSymbol(target);
-    if (sym == NULL) {
+    if (sym == nullptr) {
       sym = toSymExpr(target)->symbol();
     }
 
@@ -570,7 +570,7 @@ static void cause_helper(BaseAST* target, int level, std::set<Symbol*>& visited)
 
 static void printCauses(Symbol* sym) {
   //quiet unused function warning
-  if (sym == NULL) return;
+  if (sym == nullptr) return;
 
   DEBUG_PRINTF("Printing causes for %s (%d)\n", sym->cname, sym->id);
 
@@ -688,7 +688,7 @@ static FnSymbol* usedInOn(Symbol* sym) {
     if (downstreamFromOn[fn]) return fn;
   }
 
-  return NULL;
+  return nullptr;
 }
 
 
@@ -786,7 +786,7 @@ static void buildWideRefMap()
 
       if (inner->symbol->hasFlag(FLAG_WIDE_CLASS)) continue;
 
-      AggregateType* refToWideClass = NULL;
+      AggregateType* refToWideClass = nullptr;
 
       // Make a ref to a wide class: _ref__wide_T
       // This preserves the original _ref_T
@@ -809,7 +809,7 @@ static void buildWideRefMap()
       //
       // For refs to classes, we use the 'refToWideClass' type we just created.
       AggregateType* wideRefType = new AggregateType(AGGREGATE_RECORD);
-      TypeSymbol* wideTS = NULL;
+      TypeSymbol* wideTS = nullptr;
       if (refToWideClass) {
         wideTS = new TypeSymbol(astr("__wide_", refToWideClass->symbol->cname), wideRefType);
       } else {
@@ -1701,7 +1701,7 @@ static void localizeCall(CallExpr* call) {
 
             SET_LINENO(stmt);
             insertLocalTemp(rhs->get(1));
-            VarSymbol* localVar = NULL;
+            VarSymbol* localVar = nullptr;
             if (rhs->isPrimitive(PRIM_ARRAY_GET))
               localVar = newTemp(astr("local_", lhs->symbol()->name),
                                  getNarrowType(lhs));
@@ -2348,7 +2348,7 @@ static void fixRecordWrappedTypes() {
     } else if (ts->hasFlag(FLAG_WIDE_CLASS)) {
       Type* addr = ts->type->getField("addr")->type;
       if (canWidenRecord(addr)) {
-        wideClassMap.put(addr, NULL);
+        wideClassMap.put(addr, nullptr);
       }
     }
   }
@@ -2555,7 +2555,7 @@ insertWideReferences(void) {
 #endif
 
   //quiet unused function warning
-  printCauses(NULL);
+  printCauses(nullptr);
 
 }
 

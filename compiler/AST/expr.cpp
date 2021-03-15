@@ -57,11 +57,11 @@ class FnSymbol;
 
 Expr::Expr(AstTag astTag) :
   BaseAST(astTag),
-  parentSymbol(NULL),
-  parentExpr(NULL),
-  list(NULL),
-  prev(NULL),
-  next(NULL)
+  parentSymbol(nullptr),
+  parentExpr(nullptr),
+  list(nullptr),
+  prev(nullptr),
+  next(nullptr)
 { }
 
 bool Expr::isStmt() const {
@@ -139,7 +139,7 @@ bool Expr::isRefOrWideRef() {
 bool Expr::contains(const Expr* expr) const {
   const Expr* parent = expr->parentExpr;
 
-  while (parent != NULL && parent != this) {
+  while (parent != nullptr && parent != this) {
     parent = parent->parentExpr;
   }
 
@@ -216,7 +216,7 @@ Expr* Expr::getStmtExpr() {
     }
   }
 
-  return NULL;
+  return nullptr;
 }
 
 Expr* Expr::getNextExpr(Expr* expr) {
@@ -227,15 +227,15 @@ Expr* Expr::getNextExpr(Expr* expr) {
 // that contains 'this'
 
 // It is probably an error if there is no such BlockStmt.
-// Currently return NULL.  Consider throwing an internal error in the future.
+// Currently return nullptr.  Consider throwing an internal error in the future.
 BlockStmt* Expr::getScopeBlock() {
   Expr*      expr   = this->parentExpr;
-  BlockStmt* retval = NULL;
+  BlockStmt* retval = nullptr;
 
-  while (expr != NULL && retval == NULL) {
+  while (expr != nullptr && retval == nullptr) {
     BlockStmt* block = toBlockStmt(expr);
 
-    if (block != NULL && (block->blockTag & BLOCK_SCOPELESS) == 0)
+    if (block != nullptr && (block->blockTag & BLOCK_SCOPELESS) == 0)
       retval = block;
     else
       expr   = expr->parentExpr;
@@ -297,7 +297,7 @@ bool Expr::inTree() {
 
 QualifiedType Expr::qualType() {
   INT_FATAL(this, "Illegal call to Expr::qualType()");
-  return QualifiedType(NULL);
+  return QualifiedType(nullptr);
 }
 
 bool Expr::isNoInitExpr() const {
@@ -347,11 +347,11 @@ Expr* Expr::remove() {
 
     list->length--;
 
-    next = NULL;
-    prev = NULL;
-    list = NULL;
+    next = nullptr;
+    prev = nullptr;
+    list = nullptr;
   } else {
-    callReplaceChild(this, NULL);
+    callReplaceChild(this, nullptr);
   }
 
   if (parentSymbol) {
@@ -381,9 +381,9 @@ void Expr::replace(Expr* new_ast) {
       prev->next = new_ast;
     else
       list->head = new_ast;
-    next = NULL;
-    prev = NULL;
-    list = NULL;
+    next = nullptr;
+    prev = nullptr;
+    list = nullptr;
   } else {
     callReplaceChild(this, new_ast);
   }
@@ -533,8 +533,8 @@ Expr::insertAfter(const char* format, ...) {
 SymExpr::SymExpr(Symbol* init_var) :
   Expr(E_SymExpr),
   var(init_var),
-  symbolSymExprsPrev(NULL),
-  symbolSymExprsNext(NULL)
+  symbolSymExprsPrev(nullptr),
+  symbolSymExprsNext(nullptr)
 {
   if (!init_var)
     INT_FATAL(this, "Bad call to SymExpr");
@@ -559,7 +559,7 @@ Expr* SymExpr::getFirstExpr() {
 void SymExpr::verify() {
   Expr::verify(E_SymExpr);
 
-  if (var == NULL)
+  if (var == nullptr)
     INT_FATAL(this, "SymExpr::verify %12d: var is NULL", id);
 
   if (var->defPoint) {
@@ -582,7 +582,7 @@ void SymExpr::verify() {
      using local operations on the lists.
    */
 
-  if (this->symbolSymExprsPrev == NULL) {
+  if (this->symbolSymExprsPrev == nullptr) {
     if (var->firstSymExpr() != this)
       INT_FATAL(this, "SymExpr::verify %12d: no prev but not first", id);
   } else {
@@ -592,7 +592,7 @@ void SymExpr::verify() {
       INT_FATAL(this, "SymExpr::verify %12d: prev SymExpr not in tree", id);
   }
 
-  if (this->symbolSymExprsNext == NULL) {
+  if (this->symbolSymExprsNext == nullptr) {
     if (var->lastSymExpr() != this)
       INT_FATAL(this, "SymExpr::verify %12d: no next but not last", id);
   } else {
@@ -640,16 +640,16 @@ void SymExpr::accept(AstVisitor* visitor) {
 
 void SymExpr::setSymbol(Symbol* s)
 {
-  // If the old symbol is not NULL and the SymExpr
+  // If the old symbol is not nullptr and the SymExpr
   // is in the tree, remove the SymExpr from the old Symbol's list.
-  if (var != NULL && parentSymbol != NULL) {
+  if (var != nullptr && parentSymbol != nullptr) {
     var->removeSymExpr(this);
   }
   // Update the symbol
   var = s;
-  // If the symbol is not NULL and the SymExpr is in the tree,
+  // If the symbol is not nullptr and the SymExpr is in the tree,
   // add the SymExpr to the new Symbol's list.
-  if (s != NULL && parentSymbol != NULL) {
+  if (s != nullptr && parentSymbol != nullptr) {
     s->addSymExpr(this);
   }
 }
@@ -715,8 +715,8 @@ void UnresolvedSymExpr::accept(AstVisitor* visitor) {
 DefExpr::DefExpr(Symbol* initSym, BaseAST* initInit, BaseAST* initExprType) :
   Expr(E_DefExpr),
   sym(initSym),
-  init(NULL),
-  exprType(NULL)
+  init(nullptr),
+  exprType(nullptr)
 {
   if (sym)
     sym->defPoint = this;
@@ -788,7 +788,7 @@ void DefExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
 
 QualifiedType DefExpr::qualType(void) {
   INT_FATAL(this, "Illegal call to DefExpr::qualType()");
-  return QualifiedType(NULL);
+  return QualifiedType(nullptr);
 }
 
 
@@ -918,21 +918,21 @@ void ContextCallExpr::setRefValueConstRefOptions(CallExpr* refCall,
   // ContextCallExpr::getCalls depends on this order
   int n = 0;
 
-  if (valueCall != NULL) {
+  if (valueCall != nullptr) {
     options.insertAtTail(valueCall);
     parent_insert_help(this, valueCall);
     hasValue = true;
     n++;
   }
 
-  if (constRefCall != NULL) {
+  if (constRefCall != nullptr) {
     options.insertAtTail(constRefCall);
     parent_insert_help(this, constRefCall);
     hasConstRef = true;
     n++;
   }
 
-  if (refCall != NULL) {
+  if (refCall != nullptr) {
     options.insertAtTail(refCall);
     parent_insert_help(this, refCall);
     hasRef = true;
@@ -954,26 +954,26 @@ void ContextCallExpr::getCalls(CallExpr*& refCall,
     valueCall = toCallExpr(options.get(n));
     n++;
   } else {
-    valueCall = NULL;
+    valueCall = nullptr;
   }
 
   if (hasConstRef) {
     constRefCall = toCallExpr(options.get(n));
     n++;
   } else {
-    constRefCall = NULL;
+    constRefCall = nullptr;
   }
 
   if (hasRef) {
     refCall = toCallExpr(options.get(n));
     n++;
   } else {
-    refCall = NULL;
+    refCall = nullptr;
   }
 }
 
 CallExpr* ContextCallExpr::getValueCall() const {
-  CallExpr* retval = NULL;
+  CallExpr* retval = nullptr;
 
   if (hasValue == true) {
     retval = toCallExpr(options.get(1));
@@ -983,7 +983,7 @@ CallExpr* ContextCallExpr::getValueCall() const {
 }
 
 CallExpr* ContextCallExpr::getConstRefCall() const {
-  CallExpr* retval = NULL;
+  CallExpr* retval = nullptr;
 
   if (hasConstRef == true) {
     int n = (hasValue == true) ? 2 : 1;
@@ -995,7 +995,7 @@ CallExpr* ContextCallExpr::getConstRefCall() const {
 }
 
 CallExpr* ContextCallExpr::getRefCall() const {
-  CallExpr* retval = NULL;
+  CallExpr* retval = nullptr;
 
   if (hasRef == true) {
     int n = (hasValue == true && hasConstRef == true) ? 3 : 2;
@@ -1021,7 +1021,7 @@ NamedExpr::NamedExpr(const char* init_name, Expr* init_actual) :
 
 
 Expr* NamedExpr::getFirstExpr() {
-  return (actual != NULL) ? actual->getFirstExpr() : this;
+  return (actual != nullptr) ? actual->getFirstExpr() : this;
 }
 
 void NamedExpr::verify() {
@@ -1074,7 +1074,7 @@ void NamedExpr::accept(AstVisitor* visitor) {
 
 bool
 get_bool(Expr* e, uint64_t* i) {
-  Immediate* imm = NULL;
+  Immediate* imm = nullptr;
   if (e) {
     if (SymExpr* l = toSymExpr(e)) {
       imm = getSymbolImmediate(l->symbol());
@@ -1091,7 +1091,7 @@ get_bool(Expr* e, uint64_t* i) {
 
 bool
 get_int(Expr *e, int64_t *i) {
-  Immediate* imm = NULL;
+  Immediate* imm = nullptr;
   if (e) {
     if (SymExpr *l = toSymExpr(e)) {
       imm = getSymbolImmediate(l->symbol());
@@ -1108,7 +1108,7 @@ get_int(Expr *e, int64_t *i) {
 
 bool
 get_uint(Expr *e, uint64_t *i) {
-  Immediate* imm = NULL;
+  Immediate* imm = nullptr;
   if (e) {
     if (SymExpr *l = toSymExpr(e)) {
       imm = getSymbolImmediate(l->symbol());
@@ -1125,7 +1125,7 @@ get_uint(Expr *e, uint64_t *i) {
 
 bool
 get_string(Expr *e, const char **s) {
-  Immediate* imm = NULL;
+  Immediate* imm = nullptr;
   if (e) {
     if (SymExpr *l = toSymExpr(e)) {
       imm = getSymbolImmediate(l->symbol());
@@ -1142,14 +1142,14 @@ get_string(Expr *e, const char **s) {
 
 const char*
 get_string(Expr* e) {
-  const char* s = NULL;
+  const char* s = nullptr;
   if (!get_string(e, &s))
     INT_FATAL(e, "string literal expression expected");
   return s;
 }
 
 Expr* getNextExpr(Expr* expr) {
-  Expr* retval = NULL;
+  Expr* retval = nullptr;
 
   if (expr->next) {
     retval = expr->next->getFirstExpr();
@@ -1419,11 +1419,11 @@ static CallExpr* findOptimizationInfo(Expr* anchor) {
       if (call->isPrimitive(PRIM_OPTIMIZATION_INFO))
         return call;
 
-  return NULL;
+  return nullptr;
 }
 
 void addOptimizationFlag(Expr* insertAfter, Flag flag) {
-  Symbol* optInfoSym = NULL;
+  Symbol* optInfoSym = nullptr;
   CallExpr* optInfo = findOptimizationInfo(insertAfter);
   if (optInfo) {
     optInfoSym = toSymExpr(optInfo->get(1))->symbol();
@@ -1441,7 +1441,7 @@ void addOptimizationFlag(Expr* insertAfter, Flag flag) {
 
 // Returns true if the PRIM_OPTIMIZATION_INFO includes this flag
 bool hasOptimizationFlag(Expr* anchor, Flag flag) {
-  Symbol* optInfoSym = NULL;
+  Symbol* optInfoSym = nullptr;
   CallExpr* optInfo = findOptimizationInfo(anchor);
   if (optInfo) {
     optInfoSym = toSymExpr(optInfo->get(1))->symbol();

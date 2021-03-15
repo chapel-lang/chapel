@@ -31,7 +31,7 @@ enum TryTag {
 
 class CallExpr final : public Expr {
 public:
-  PrimitiveOp* primitive;        // primitive expression (baseExpr == NULL)
+  PrimitiveOp* primitive;        // primitive expression (baseExpr == nullptr)
   Expr*        baseExpr;         // function expression
 
   AList        argList;          // function actuals
@@ -42,32 +42,32 @@ public:
   TryTag       tryTag;
 
   CallExpr(BaseAST*     base,
-           BaseAST*     arg1 = NULL,
-           BaseAST*     arg2 = NULL,
-           BaseAST*     arg3 = NULL,
-           BaseAST*     arg4 = NULL,
-           BaseAST*     arg5 = NULL);
+           BaseAST*     arg1 = nullptr,
+           BaseAST*     arg2 = nullptr,
+           BaseAST*     arg3 = nullptr,
+           BaseAST*     arg4 = nullptr,
+           BaseAST*     arg5 = nullptr);
 
   CallExpr(PrimitiveOp* prim,
-           BaseAST*     arg1 = NULL,
-           BaseAST*     arg2 = NULL,
-           BaseAST*     arg3 = NULL,
-           BaseAST*     arg4 = NULL,
-           BaseAST*     arg5 = NULL);
+           BaseAST*     arg1 = nullptr,
+           BaseAST*     arg2 = nullptr,
+           BaseAST*     arg3 = nullptr,
+           BaseAST*     arg4 = nullptr,
+           BaseAST*     arg5 = nullptr);
 
   CallExpr(PrimitiveTag prim,
-           BaseAST*     arg1 = NULL,
-           BaseAST*     arg2 = NULL,
-           BaseAST*     arg3 = NULL,
-           BaseAST*     arg4 = NULL,
-           BaseAST*     arg5 = NULL);
+           BaseAST*     arg1 = nullptr,
+           BaseAST*     arg2 = nullptr,
+           BaseAST*     arg3 = nullptr,
+           BaseAST*     arg4 = nullptr,
+           BaseAST*     arg5 = nullptr);
 
   CallExpr(const char*  name,
-           BaseAST*     arg1 = NULL,
-           BaseAST*     arg2 = NULL,
-           BaseAST*     arg3 = NULL,
-           BaseAST*     arg4 = NULL,
-           BaseAST*     arg5 = NULL);
+           BaseAST*     arg1 = nullptr,
+           BaseAST*     arg2 = nullptr,
+           BaseAST*     arg3 = nullptr,
+           BaseAST*     arg4 = nullptr,
+           BaseAST*     arg5 = nullptr);
 
   ~CallExpr() override = default;
 
@@ -141,13 +141,13 @@ private:
   bool            isRefExternStarTuple(Symbol* formal, Expr* actual)     const;
 };
 
-CallExpr* callChplHereAlloc(Type* type, VarSymbol* md = NULL);
+CallExpr* callChplHereAlloc(Type* type, VarSymbol* md = nullptr);
 
 void      insertChplHereAlloc(Expr*      call,
                               bool       insertAfter,
                               Symbol*    sym,
                               Type*      t,
-                              VarSymbol* md = NULL);
+                              VarSymbol* md = nullptr);
 
 CallExpr* callChplHereFree(BaseAST* p);
 
@@ -167,7 +167,7 @@ inline FnSymbol* CallExpr::resolvedFunction() const {
   if (SymExpr* base = toSymExpr(baseExpr))
     return toFnSymbol(base->symbol());
   else
-    return NULL;
+    return nullptr;
 }
 
 inline FnSymbol* CallExpr::theFnSymbol() const {
@@ -175,7 +175,7 @@ inline FnSymbol* CallExpr::theFnSymbol() const {
 }
 
 inline bool CallExpr::isResolved() const {
-  return resolvedFunction() != NULL;
+  return resolvedFunction() != nullptr;
 }
 
 // TODO: rename these

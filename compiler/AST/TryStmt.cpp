@@ -31,7 +31,7 @@ BlockStmt* TryStmt::build(bool tryBang, Expr* expr) {
   } else {
     body->insertAtTail(expr);
   }
-  return buildChplStmt(new TryStmt(tryBang, body, NULL));
+  return buildChplStmt(new TryStmt(tryBang, body, nullptr));
 }
 
 BlockStmt* TryStmt::build(bool tryBang, BlockStmt* body, BlockStmt* catches,
@@ -91,7 +91,7 @@ void TryStmt::accept(AstVisitor* visitor) {
 }
 
 TryStmt* TryStmt::copyInner(SymbolMap* map) {
-  TryStmt* copy = new TryStmt(_tryBang, COPY_INT(_body), NULL);
+  TryStmt* copy = new TryStmt(_tryBang, COPY_INT(_body), nullptr);
   for_alist(c, _catches) {
     copy->_catches.insertAtTail(COPY_INT(c));
   }
@@ -109,7 +109,7 @@ Expr* TryStmt::getFirstExpr() {
   if (_body) {
     return _body->getFirstExpr();
   }
-  return NULL;
+  return nullptr;
 }
 
 Expr* TryStmt::getNextExpr(Expr* expr) {

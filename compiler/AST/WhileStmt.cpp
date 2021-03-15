@@ -245,7 +245,7 @@ void WhileStmt::checkConstLoops()
 SymExpr* WhileStmt::getWhileCondDef(VarSymbol* condSym)
 {
   std::vector<SymExpr*> symExprs;
-  SymExpr*              condDef = NULL;
+  SymExpr*              condDef = nullptr;
 
   collectSymExprsFor(this, condSym, symExprs);
 

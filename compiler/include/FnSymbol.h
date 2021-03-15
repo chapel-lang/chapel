@@ -82,7 +82,7 @@ public:
   AList                      formals;
 
   // The return type of the function. This field is not fully established
-  // until function resolution, and could be NULL before then.  Up to that
+  // until function resolution, and could be nullptr before then.  Up to that
   // point, return type information is stored in the retExprType field.
   Type*                      retType;
 
@@ -206,7 +206,7 @@ public:
 
   CallExpr*                  singleInvocation()                          const;
 
-  TagGenericResult           tagIfGeneric(SymbolMap* map = NULL, bool abortOK = false);
+  TagGenericResult           tagIfGeneric(SymbolMap* map = nullptr, bool abortOK = false);
 
   bool                       isNormalized()                              const;
   void                       setNormalized(bool value);

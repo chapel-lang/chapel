@@ -105,10 +105,10 @@ FnSymbol* expandIfVarArgs(FnSymbol* fn, CallInfo& info) {
     retval = cacheLookup(fn, info.actuals.n);
 
     // No substitution found
-    if (retval == NULL) {
+    if (retval == nullptr) {
       retval = expandVarArgs(fn, info);
 
-      if (retval != NULL) {
+      if (retval != nullptr) {
         cacheExtend(fn, retval);
       }
     }
@@ -121,7 +121,7 @@ static bool hasVariableArgs(FnSymbol* fn) {
   bool retval = false;
 
   for_formals(formal, fn) {
-    if (formal->variableExpr != NULL) {
+    if (formal->variableExpr != nullptr) {
       retval = true;
     }
   }
@@ -149,10 +149,10 @@ static int       varArgsCount(ArgSymbol* formal, VarSymbol* nVar);
 static FnSymbol* expandVarArgs(FnSymbol* fn, CallInfo& info) {
   int       numVarArgs      = 0;
   bool      isQueryVariable = false;
-  FnSymbol* retval          = NULL;
+  FnSymbol* retval          = nullptr;
 
   for_formals(formal, fn) {
-    if (formal->variableExpr != NULL) {
+    if (formal->variableExpr != nullptr) {
       if (isDefExpr(formal->variableExpr->body.tail) == true) {
         isQueryVariable = true;
       } else if (SymExpr* se = toSymExpr(formal->variableExpr->body.tail)) {
@@ -219,7 +219,7 @@ static void expandVarArgsFixed(FnSymbol* fn, CallInfo& info) {
 
 // A  query variable e.g. proc foo(x, y, z ... ?N)
 static FnSymbol* expandVarArgsQuery(FnSymbol* fn, CallInfo& info) {
-  FnSymbol* retval = NULL;
+  FnSymbol* retval = nullptr;
 
   for_formals(formal, fn) {
     if (BlockStmt* block = formal->variableExpr) {
@@ -264,7 +264,7 @@ static FnSymbol* expandVarArgsQuery(FnSymbol* fn, CallInfo& info) {
 static int varArgsCount(ArgSymbol* formal, VarSymbol* nVar) {
   int retval = 0;
 
-  if (nVar->type == dtInt[INT_SIZE_DEFAULT] && nVar->immediate != NULL) {
+  if (nVar->type == dtInt[INT_SIZE_DEFAULT] && nVar->immediate != nullptr) {
     retval = nVar->immediate->int_value();
 
   } else {
@@ -323,7 +323,7 @@ static void expandVarArgsFormal(FnSymbol* fn, ArgSymbol* formal, int n) {
 
   fn->addFlag(FLAG_EXPANDED_VARARGS);
 
-  if (fn->where != NULL) {
+  if (fn->where != nullptr) {
     expandVarArgsWhere(fn, formal, formals);
   }
 
@@ -345,7 +345,7 @@ static Formals insertFormalsForVarArg(ArgSymbol* varArg, int n) {
 
     // Please update FnSymbol::substitutionsToString if this changes
     newFormal->addFlag(FLAG_EXPANDED_VARARGS);
-    newFormal->variableExpr = NULL;
+    newFormal->variableExpr = nullptr;
     newFormal->name         = astr("_e", istr(i), "_", varArg->name);
     newFormal->cname        = astr("_e", istr(i), "_", varArg->cname);
 
@@ -393,7 +393,7 @@ static void expandVarArgsLifetimeConstraints(FnSymbol* fn,
         if (CallExpr* constraint = toCallExpr(ltof->parentExpr))
           {
             // Replace 'constraint' with a copy for each of 'varargs'.
-            CallExpr* replAll = NULL;
+            CallExpr* replAll = nullptr;
             for_vector(ArgSymbol, newarg, varargs) {
               SymbolMap map;
               map.put(formal, newarg);
@@ -474,7 +474,7 @@ static void expandVarArgsBody(FnSymbol*      fn,
   }
 
   if (needTuple == true) {
-    CallExpr* tupleCall = NULL;
+    CallExpr* tupleCall = nullptr;
 
     if (isString(formal->type) == true && formal->intent == INTENT_BLANK) {
       tupleCall = expandVarArgString(fn, var, formal, formals);
@@ -497,7 +497,7 @@ static void expandVarArgsBody(FnSymbol*      fn,
     }
 
     if (formal->intent == INTENT_OUT || formal->intent == INTENT_INOUT) {
-      INT_ASSERT(tupleCall != NULL);
+      INT_ASSERT(tupleCall != nullptr);
       insertEpilogueTemps(fn, var, tupleCall);
     }
 
@@ -590,8 +590,8 @@ static CallExpr* expandVarArgString(FnSymbol*      fn,
                                     const Formals& varargs) {
   int       n      = static_cast<int>(varargs.size());
   DefExpr*  defn   = new DefExpr(var);
-  Expr*     tail   = NULL;
-  CallExpr* retval = NULL;
+  Expr*     tail   = nullptr;
+  CallExpr* retval = nullptr;
 
   if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true) {
     retval = new CallExpr(dtTuple->symbol);
@@ -612,7 +612,7 @@ static CallExpr* expandVarArgString(FnSymbol*      fn,
     retval->insertAtTail(local);
 
     // Define the local and initialize the value
-    if (tail == NULL) {
+    if (tail == nullptr) {
       fn->insertAtHead(localDefn);
     } else {
       tail->insertAfter(localDefn);
@@ -643,7 +643,7 @@ static VarSymbol* buildTupleVariable(ArgSymbol* formal) {
 
 static CallExpr* buildTupleCall(ArgSymbol* formal, const Formals& formals) {
   int       n      = static_cast<int>(formals.size());
-  CallExpr* retval = NULL;
+  CallExpr* retval = nullptr;
 
   if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true) {
     retval = new CallExpr(dtTuple->symbol);
@@ -809,8 +809,8 @@ static int varargAccessIndex(SymExpr* se, CallExpr* parent, int numArgs) {
   if (se == parent->baseExpr && parent->numActuals() == 1) {
     VarSymbol* idxVar = toVarSymbol(toSymExpr(parent->get(1))->symbol());
 
-    if (idxVar                        != NULL &&
-        idxVar->immediate             != NULL &&
+    if (idxVar                        != nullptr &&
+        idxVar->immediate             != nullptr &&
         idxVar->immediate->const_kind == NUM_KIND_INT) {
       int idxNum = idxVar->immediate->int_value();
 
@@ -857,12 +857,12 @@ static ExpandVarArgsMap sCache;
 
 static FnSymbol* cacheLookup(FnSymbol* fn, int numActuals) {
   ExpandVarArgsMap::iterator it     = sCache.find(fn);
-  FnSymbol*                  retval = NULL;
+  FnSymbol*                  retval = nullptr;
 
   if (it != sCache.end()) {
     std::vector<FnSymbol*>* fns = it->second;
 
-    for (size_t i = 0; i < (*fns).size() && retval == NULL; i++) {
+    for (size_t i = 0; i < (*fns).size() && retval == nullptr; i++) {
       if ((*fns)[i]->numFormals() == numActuals) {
         retval = (*fns)[i];
       }

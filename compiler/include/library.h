@@ -62,7 +62,7 @@ void codegen_make_python_module();
 void ensureLibDirExists();
 void openLibraryHelperFile(fileinfo* fi,
                            const char* name,
-                           const char* ext = NULL);
+                           const char* ext = nullptr);
 void closeLibraryHelperFile(fileinfo* fi, bool beautifyIt = true);
 const char* getLibraryExtension();
 

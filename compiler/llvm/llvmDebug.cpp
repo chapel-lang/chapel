@@ -92,7 +92,7 @@ llvm::MDNode *myGetType(const Type *type) {
   TypeNodeIter i = myTypeDescriptors.find(type);
   if(i != myTypeDescriptors.end())
     return i->second;
-  return NULL;
+  return nullptr;
 }
 
 
@@ -134,7 +134,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
   int defLine = type->symbol->linenum();
 
   if(!ty) {
-    return NULL;
+    return nullptr;
   }
   if(ty->isIntegerTy()) {
     N = this->dibuilder.createBasicType(
@@ -206,8 +206,8 @@ llvm::DIType* debug_data::construct_type(Type *type)
             8*layout.getABITypeAlignment(PointeeTy):
             8), /* AlignInBits */
             llvm::DINode::FlagZero, /* Flags */
-            NULL, /* DerivedFrom */
-            NULL /* Elements */
+            nullptr, /* DerivedFrom */
+            nullptr /* Elements */
             );
 
           N = this->dibuilder.createPointerType(
@@ -247,7 +247,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
           }
         } //Not sure whether we should directly return getType(vt)
 
-        const llvm::StructLayout* slayout = NULL;
+        const llvm::StructLayout* slayout = nullptr;
         const char *struct_name = this_class->classStructName(true);
         llvm::Type* st = getTypeLLVM(struct_name);
         if(st){
@@ -277,7 +277,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
               llvm::Type* fty = fts->llvmType;
               llvm::DIType* mty;
               llvm::DIType* fditype =  get_type(field->type);
-              if(fditype == NULL)
+              if(fditype == nullptr)
               // if field->type is an internal type, get_type returns null
               // which is not a good type for a MemberType). At the moment it
               // uses a nullptr type as a stub, but we should change it
@@ -328,7 +328,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
     if( this_class->dispatchParents.length() > 0 )
       derivedFrom = get_type(this_class->dispatchParents.first());
 
-    const llvm::StructLayout* slayout = NULL;
+    const llvm::StructLayout* slayout = nullptr;
     llvm::StructType* struct_type = llvm::cast<llvm::StructType>(ty);
     slayout = layout.getStructLayout(struct_type);
 
@@ -353,7 +353,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
       TypeSymbol* fts = field->type->symbol;
       llvm::Type* fty = fts->llvmType;
       llvm::DIType* fditype =  get_type(field->type);
-      if(fditype == NULL)
+      if(fditype == nullptr)
       // See line 270 for a comment about this if
         fditype = this->dibuilder.createNullPtrType();
 
@@ -361,7 +361,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
         fty = getTypeLLVM(fts->cname);
         if(!fty) {
           // FIXME: Types should have an LLVM type
-          return NULL;
+          return nullptr;
         }
       }
       bool unused;
@@ -426,7 +426,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
   }
 
   else if(ty->isArrayTy() && type->astTag == E_AggregateType) {
-    if (type->symbol->hasFlag(FLAG_C_ARRAY)) return NULL;
+    if (type->symbol->hasFlag(FLAG_C_ARRAY)) return nullptr;
     AggregateType *this_class = (AggregateType *)type;
     // Subscripts are "ranges" for each dimension of the array
     llvm::SmallVector<llvm::Metadata *, 4> Subscripts;
@@ -435,7 +435,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
     Subscripts.push_back(this->dibuilder.getOrCreateSubrange(0, Asize));
     Symbol *eleSym = toDefExpr(this_class->fields.head)->sym;
     Type *eleType = eleSym->type;
-    if (get_type(eleType) == NULL) return NULL;
+    if (get_type(eleType) == nullptr) return nullptr;
     N = this->dibuilder.createArrayType(
       Asize,
       8*layout.getABITypeAlignment(ty),
@@ -460,12 +460,12 @@ llvm::DIType* debug_data::construct_type(Type *type)
     printf("\tllvmType is NULL\n");
   }*/
 
-  return NULL;
+  return nullptr;
 }
 
 llvm::DIType* debug_data::get_type(Type *type)
 {
-  if( NULL == type->symbol->llvmDIType ) {
+  if( nullptr == type->symbol->llvmDIType ) {
     type->symbol->llvmDIType = construct_type(type);
   }
   return llvm::cast_or_null<llvm::DIType>(type->symbol->llvmDIType);
@@ -516,7 +516,7 @@ llvm::DINamespace* debug_data::construct_module_scope(ModuleSymbol* modSym)
 
 llvm::DINamespace* debug_data::get_module_scope(ModuleSymbol* modSym)
 {
-  if( NULL == modSym->llvmDINameSpace ) {
+  if( nullptr == modSym->llvmDINameSpace ) {
     modSym->llvmDINameSpace = construct_module_scope(modSym);
   }
   return llvm::cast_or_null<llvm::DINamespace>(modSym->llvmDINameSpace);
@@ -586,7 +586,7 @@ llvm::DISubprogram* debug_data::construct_function(FnSymbol *function)
 
 llvm::DISubprogram* debug_data::get_function(FnSymbol *function)
 {
-  if( NULL == function->llvmDISubprogram ) {
+  if( nullptr == function->llvmDISubprogram ) {
     function->llvmDISubprogram = construct_function(function);
   }
   return llvm::cast_or_null<llvm::DISubprogram>(function->llvmDISubprogram);
@@ -616,13 +616,13 @@ llvm::DIGlobalVariableExpression* debug_data::construct_global_variable(VarSymbo
      );
   else {
     //return an Empty dbg node if the symbol type is unresolved
-    return NULL;
+    return nullptr;
   }
 }
 
 llvm::DIGlobalVariableExpression* debug_data::get_global_variable(VarSymbol *gVarSym)
 {
-  if( NULL == gVarSym->llvmDIGlobalVariable ) {
+  if( nullptr == gVarSym->llvmDIGlobalVariable ) {
     gVarSym->llvmDIGlobalVariable = construct_global_variable(gVarSym);
   }
   return llvm::cast_or_null<llvm::DIGlobalVariableExpression>(
@@ -658,13 +658,13 @@ llvm::DIVariable* debug_data::construct_variable(VarSymbol *varSym)
   }
   else {
     //Empty dbg node if the symbol type is unresolved
-    return NULL;
+    return nullptr;
   }
 }
 
 llvm::DIVariable* debug_data::get_variable(VarSymbol *varSym)
 {
-  if( NULL == varSym->llvmDIVariable ){
+  if( nullptr == varSym->llvmDIVariable ){
     varSym->llvmDIVariable = construct_variable(varSym);
   }
   return llvm::cast_or_null<llvm::DIVariable>(varSym->llvmDIVariable);
@@ -675,7 +675,7 @@ llvm::DIVariable* debug_data::construct_formal_arg(ArgSymbol *argSym, unsigned A
   const char *name = argSym->name;
   const char *file_name = argSym->astloc.filename;
   int line_number = argSym->astloc.lineno;
-  FnSymbol *funcSym = NULL;
+  FnSymbol *funcSym = nullptr;
   if(isFnSymbol(argSym->defPoint->parentSymbol))
     funcSym = (FnSymbol*)argSym->defPoint->parentSymbol;
   else
@@ -698,13 +698,13 @@ llvm::DIVariable* debug_data::construct_formal_arg(ArgSymbol *argSym, unsigned A
       );
   else {
     //Empty dbg node if the symbol type is unresolved
-    return NULL;
+    return nullptr;
   }
 }
 
 llvm::DIVariable* debug_data::get_formal_arg(ArgSymbol *argSym, unsigned int ArgNo)
 {
-  if( NULL == argSym->llvmDIFormal ){
+  if( nullptr == argSym->llvmDIFormal ){
     argSym->llvmDIFormal = construct_formal_arg(argSym, ArgNo);
   }
   return llvm::cast_or_null<llvm::DIVariable>(argSym->llvmDIFormal);

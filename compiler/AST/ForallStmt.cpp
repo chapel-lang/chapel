@@ -43,7 +43,7 @@ ForallStmt::ForallStmt(BlockStmt* body):
   Stmt(E_ForallStmt),
   fLoopBody(body),
   fZippered(false),
-  fZipCall(NULL),
+  fZipCall(nullptr),
   fFromForLoop(false),
   fFromReduce(false),
   fOverTupleExpand(false),
@@ -51,17 +51,17 @@ ForallStmt::ForallStmt(BlockStmt* body):
   fRequireSerialIterator(false),
   fVectorizationHazard(false),
   fIsForallExpr(false),
-  fContinueLabel(NULL),
-  fErrorHandlerLabel(NULL),
-  fRecIterIRdef(NULL),
-  fRecIterICdef(NULL),
-  fRecIterGetIterator(NULL),
-  fRecIterFreeIterator(NULL)
+  fContinueLabel(nullptr),
+  fErrorHandlerLabel(nullptr),
+  fRecIterIRdef(nullptr),
+  fRecIterICdef(nullptr),
+  fRecIterGetIterator(nullptr),
+  fRecIterFreeIterator(nullptr)
 {
   fIterVars.parent = this;
   fIterExprs.parent = this;
   fShadowVars.parent = this;
-  INT_ASSERT(fLoopBody != NULL);
+  INT_ASSERT(fLoopBody != nullptr);
 
 
   optInfo.autoLocalAccessChecked = false;
@@ -149,18 +149,18 @@ void ForallStmt::verify() {
   }
 
   // Either all four are present or none.
-  if (fRecIterIRdef != NULL) {
-    INT_ASSERT(fRecIterICdef        != NULL);
-    INT_ASSERT(fRecIterGetIterator  != NULL);
-    INT_ASSERT(fRecIterFreeIterator != NULL);
+  if (fRecIterIRdef != nullptr) {
+    INT_ASSERT(fRecIterICdef        != nullptr);
+    INT_ASSERT(fRecIterGetIterator  != nullptr);
+    INT_ASSERT(fRecIterFreeIterator != nullptr);
     verifyParent(fRecIterIRdef);        verifyNotOnList(fRecIterIRdef);
     verifyParent(fRecIterICdef);        verifyNotOnList(fRecIterICdef);
     verifyParent(fRecIterGetIterator);  verifyNotOnList(fRecIterGetIterator);
     verifyParent(fRecIterFreeIterator); verifyNotOnList(fRecIterFreeIterator);
   } else {
-    INT_ASSERT(fRecIterICdef        == NULL);
-    INT_ASSERT(fRecIterGetIterator  == NULL);
-    INT_ASSERT(fRecIterFreeIterator == NULL);
+    INT_ASSERT(fRecIterICdef        == nullptr);
+    INT_ASSERT(fRecIterGetIterator  == nullptr);
+    INT_ASSERT(fRecIterFreeIterator == nullptr);
   }
 
   INT_ASSERT(fLoopBody);
@@ -189,7 +189,7 @@ void ForallStmt::accept(AstVisitor* visitor) {
     if (fRecIterGetIterator)  fRecIterGetIterator->accept(visitor);
     if (fRecIterFreeIterator) fRecIterFreeIterator->accept(visitor);
     if (fZipCall)             fZipCall->accept(visitor);
-    
+
     fLoopBody->accept(visitor);
 
     visitor->exitForallStmt(this);
@@ -199,7 +199,7 @@ void ForallStmt::accept(AstVisitor* visitor) {
 void ForallStmt::setZipCall(CallExpr *call) {
   INT_ASSERT(!call->inTree());  // iterated expression is not in tree
   INT_ASSERT(call->isPrimitive(PRIM_ZIP));
-  INT_ASSERT(this->fZipCall == NULL);
+  INT_ASSERT(this->fZipCall == nullptr);
 
   this->fZipCall = call;
 
@@ -223,14 +223,14 @@ Expr* ForallStmt::getNextExpr(Expr* expr) {
   if (expr == fIterExprs.tail) {
     if (Expr* sv1 = fShadowVars.head)
       return sv1->getFirstExpr();
-    else if (fRecIterIRdef != NULL)
+    else if (fRecIterIRdef != nullptr)
       return fRecIterIRdef->getFirstExpr();
     else
       return fLoopBody->getFirstExpr();
   }
 
   if (expr == fShadowVars.tail) {
-    if (fRecIterIRdef != NULL)
+    if (fRecIterIRdef != nullptr)
       return fRecIterIRdef->getFirstExpr();
     else
       return fLoopBody->getFirstExpr();
@@ -255,7 +255,7 @@ Expr* ForallStmt::getNextExpr(Expr* expr) {
     return this;
 
   INT_ASSERT(false); // should have done one of the above
-  return NULL;
+  return nullptr;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -282,21 +282,21 @@ void ForallStmt::setNotZippered() {
   fZippered = false;
 }
 
-// Return the nearest enclosing forall statement for 'expr', or NULL if none.
+// Return the nearest enclosing forall statement for 'expr', or nullptr if none.
 ForallStmt* enclosingForallStmt(Expr* expr) {
   for (Expr* curr = expr->parentExpr; curr; curr = curr->parentExpr)
     if (ForallStmt* fs = toForallStmt(curr))
       return fs;
-  return NULL;
+  return nullptr;
 }
 
 // Return a ForallStmt* if 'expr' is the DefExpr of its induction variable.
 ForallStmt* isForallIterVarDef(Expr* expr) {
-  if (expr->list != NULL)
+  if (expr->list != nullptr)
     if (ForallStmt* pfs = toForallStmt(expr->parentExpr))
       if (expr->list == &pfs->inductionVariables())
         return pfs;
-  return NULL;
+  return nullptr;
 }
 
 // Return a ForallStmt* if 'expr' is its iterable-expression.
@@ -305,11 +305,11 @@ ForallStmt* isForallIterExpr(Expr* expr) {
     if (expr == pfs->zipCall())
       return pfs;
 
-    if (expr->list != NULL)
+    if (expr->list != nullptr)
       if (expr->list == &pfs->iteratedExpressions())
         return pfs;
   }
-  return NULL;
+  return nullptr;
 }
 
 // Return a ForallStmt* if 'expr' is its loopBody.
@@ -317,7 +317,7 @@ ForallStmt* isForallLoopBody(Expr* expr) {
   if (ForallStmt* pfs = toForallStmt(expr->parentExpr))
     if (expr == pfs->loopBody())
       return pfs;
-  return NULL;
+  return nullptr;
 }
 
 // Return a const ForallStmt* if 'expr' is its loopBody.
@@ -325,19 +325,19 @@ const ForallStmt* isConstForallLoopBody(const Expr* expr) {
   if (const ForallStmt* pfs = toConstForallStmt(expr->parentExpr))
     if (expr == pfs->loopBody())
       return pfs;
-  return NULL;
+  return nullptr;
 }
 
 // Return a ForallStmt* if 'expr' is one of its fRecIter* helpers.
 ForallStmt* isForallRecIterHelper(Expr* expr) {
-  if (expr->list == NULL)
+  if (expr->list == nullptr)
     if (ForallStmt* pfs = toForallStmt(expr->parentExpr))
       if (expr == pfs->fRecIterIRdef ||
           expr == pfs->fRecIterICdef ||
           expr == pfs->fRecIterGetIterator ||
           expr == pfs->fRecIterFreeIterator)
         return pfs;
-  return NULL;
+  return nullptr;
 }
 
 // Return the index variable of the parallel loop.
@@ -346,12 +346,12 @@ VarSymbol* parIdxVar(ForallStmt* fs) {
   INT_ASSERT(fs->inductionVariables().length == 1);
   DefExpr* ivdef = fs->firstInductionVarDef();
   VarSymbol* ivsym = toVarSymbol(ivdef->sym);
-  INT_ASSERT(ivsym != NULL);
+  INT_ASSERT(ivsym != nullptr);
   return ivsym;
 }
 
 LabelSymbol* ForallStmt::continueLabel() {
-  if (fContinueLabel == NULL) {
+  if (fContinueLabel == nullptr) {
     // We are extra-cautious here, to guard against the potential
     // that we have added code that must execute at the end of fLoopBody.
     // If this presents hardship, we can switch to always creating
@@ -417,7 +417,7 @@ static int numIterablesToDestructure(ForallStmt* fs) {
 static void createAndAddIndexVar(AList& fIterVars, Symbol* idxVar) {
   idxVar->addFlag(FLAG_INDEX_VAR);
   idxVar->addFlag(FLAG_INSERT_AUTO_DESTROY);
-  INT_ASSERT(idxVar->defPoint == NULL); // ensure we do not overwrite it
+  INT_ASSERT(idxVar->defPoint == nullptr); // ensure we do not overwrite it
   fIterVars.insertAtTail(new DefExpr(idxVar));
 }
 
@@ -446,7 +446,7 @@ static inline VarSymbol* indexExprToVarSymbol(BaseAST* index) {
   if (VarSymbol* VS = toVarSymbol(index))
     return VS;
   // Caller responsibility.
-  return NULL;
+  return nullptr;
 }
 
 static void fsDestructureWhenSingleIdxVar(ForallStmt* fs, AList& fIterVars,

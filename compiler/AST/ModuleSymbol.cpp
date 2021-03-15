@@ -29,20 +29,20 @@
 #include "stmt.h"
 #include "stringutil.h"
 
-BlockStmt*                         rootBlock             = NULL;
-ModuleSymbol*                      rootModule            = NULL;
-ModuleSymbol*                      theProgram            = NULL;
-ModuleSymbol*                      baseModule            = NULL;
+BlockStmt*                         rootBlock             = nullptr;
+ModuleSymbol*                      rootModule            = nullptr;
+ModuleSymbol*                      theProgram            = nullptr;
+ModuleSymbol*                      baseModule            = nullptr;
 
-ModuleSymbol*                      stringLiteralModule   = NULL;
-ModuleSymbol*                      standardModule        = NULL;
-ModuleSymbol*                      printModuleInitModule = NULL;
-ModuleSymbol*                      ioModule              = NULL;
+ModuleSymbol*                      stringLiteralModule   = nullptr;
+ModuleSymbol*                      standardModule        = nullptr;
+ModuleSymbol*                      printModuleInitModule = nullptr;
+ModuleSymbol*                      ioModule              = nullptr;
 
 Vec<ModuleSymbol*>                 userModules; // Contains user + main modules
 Vec<ModuleSymbol*>                 allModules;  // Contains all modules except rootModule
 
-static ModuleSymbol*               sMainModule           = NULL;
+static ModuleSymbol*               sMainModule           = nullptr;
 static std::string                 sMainModuleName;
 
 static std::vector<ModuleSymbol*>  sTopLevelModules;
@@ -66,7 +66,7 @@ void ModuleSymbol::getTopLevelModules(std::vector<ModuleSymbol*>& mods) {
 }
 
 const char* ModuleSymbol::modTagToString(ModTag modTag) {
-  const char* retval = NULL;
+  const char* retval = nullptr;
 
   switch (modTag) {
     case MOD_INTERNAL:
@@ -97,25 +97,25 @@ void ModuleSymbol::mainModuleNameSet(const ArgumentDescription* desc,
 }
 
 ModuleSymbol* ModuleSymbol::mainModule() {
-  if (sMainModule == NULL) {
+  if (sMainModule == nullptr) {
     sMainModule = findMainModuleByName();
   }
 
-  if (sMainModule == NULL) {
+  if (sMainModule == nullptr) {
     sMainModule = findMainModuleFromMainFunction();
   }
 
-  if (sMainModule == NULL) {
+  if (sMainModule == nullptr) {
     sMainModule = findMainModuleFromCommandLine();
   }
 
-  INT_ASSERT(sMainModule != NULL);
+  INT_ASSERT(sMainModule != nullptr);
 
   return sMainModule;
 }
 
 ModuleSymbol* ModuleSymbol::findMainModuleByName() {
-  ModuleSymbol* retval = NULL;
+  ModuleSymbol* retval = nullptr;
 
   if (sMainModuleName != "") {
     forv_Vec(ModuleSymbol, mod, userModules) {
@@ -124,7 +124,7 @@ ModuleSymbol* ModuleSymbol::findMainModuleByName() {
       }
     }
 
-    if (retval == NULL) {
+    if (retval == nullptr) {
       USR_FATAL("Couldn't find module %s", sMainModuleName.c_str());
     }
   }
@@ -134,15 +134,15 @@ ModuleSymbol* ModuleSymbol::findMainModuleByName() {
 
 ModuleSymbol* ModuleSymbol::findMainModuleFromMainFunction() {
   bool          errorP  = false;
-  FnSymbol*     matchFn = NULL;
-  ModuleSymbol* retval  = NULL;
+  FnSymbol*     matchFn = nullptr;
+  ModuleSymbol* retval  = nullptr;
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (strcmp("main", fn->name) == 0) {
       ModuleSymbol* fnMod = fn->getModule();
 
       if (fnMod->hasFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE) == true) {
-        if (retval == NULL) {
+        if (retval == nullptr) {
           matchFn = fn;
           retval  = fnMod;
 
@@ -175,13 +175,13 @@ ModuleSymbol* ModuleSymbol::findMainModuleFromMainFunction() {
 }
 
 ModuleSymbol* ModuleSymbol::findMainModuleFromCommandLine() {
-  ModuleSymbol* retval = NULL;
+  ModuleSymbol* retval = nullptr;
 
   for_alist(expr, theProgram->block->body) {
     if (DefExpr* def = toDefExpr(expr)) {
       if (ModuleSymbol* mod = toModuleSymbol(def->sym)) {
         if (mod->hasFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE) == true) {
-          if (retval != NULL) {
+          if (retval != nullptr) {
             if (fLibraryCompile) {
               // "Main module" is not a valid concept in library compilation
               if (executableFilename[0] == '\0') {
@@ -223,12 +223,12 @@ ModuleSymbol::ModuleSymbol(const char* iName,
 
   modTag              = iModTag;
   block               = iBlock;
-  initFn              = NULL;
-  deinitFn            = NULL;
-  filename            = NULL;
-  doc                 = NULL;
-  extern_info         = NULL;
-  llvmDINameSpace     = NULL;
+  initFn              = nullptr;
+  deinitFn            = nullptr;
+  filename            = nullptr;
+  doc                 = nullptr;
+  extern_info         = nullptr;
+  llvmDINameSpace     = nullptr;
 
   registerModule(this);
 
@@ -268,7 +268,7 @@ void ModuleSymbol::verify() {
 ModuleSymbol* ModuleSymbol::copyInner(SymbolMap* map) {
   INT_FATAL(this, "Illegal call to ModuleSymbol::copy");
 
-  return NULL;
+  return nullptr;
 }
 
 // Collect the top-level classes for this Module.
@@ -332,7 +332,7 @@ void ModuleSymbol::printDocs(std::ostream* file,
     *file << ".. default-domain:: chpl" << std::endl << std::endl;
     *file << ".. module:: " << this->docsName() << std::endl;
 
-    if (this->doc != NULL) {
+    if (this->doc != nullptr) {
       this->printTabs(file, tabs + 1);
 
       *file << ":synopsis: ";
@@ -416,7 +416,7 @@ void ModuleSymbol::printDocs(std::ostream* file,
     this->printTableOfContents(file);
   }
 
-  if (this->doc != NULL) {
+  if (this->doc != nullptr) {
     // Only print tabs for text only mode. The .rst prefers not to have the
     // tabs for module level comments and leading whitespace removed.
     unsigned int t = tabs;
@@ -639,7 +639,7 @@ void ModuleSymbol::replaceChild(BaseAST* oldAst, BaseAST* newAst) {
 
 void ModuleSymbol::accept(AstVisitor* visitor) {
   if (visitor->enterModSym(this) == true) {
-    if (block != NULL) {
+    if (block != nullptr) {
       block->accept(visitor);
     }
 
@@ -651,7 +651,7 @@ void ModuleSymbol::addDefaultUses() {
   if (modTag != MOD_INTERNAL) {
     ModuleSymbol* parentModule = toModuleSymbol(this->defPoint->parentSymbol);
 
-    if (parentModule == NULL) {
+    if (parentModule == nullptr) {
       USR_FATAL(this, "Modules must be declared at module- or file-scope");
     }
 

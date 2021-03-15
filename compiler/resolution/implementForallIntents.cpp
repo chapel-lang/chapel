@@ -217,21 +217,21 @@ static void workaroundForReduceIntoDetupleDecl(ForallStmt* fs, Symbol* svar) {
   //
 
   // Find the SE using 'svar' as an outer var.
-  SymExpr* ovarSE = NULL;
+  SymExpr* ovarSE = nullptr;
   for_shadow_vars(sv2,temp,fs)
     if (SymExpr* ovar2 = sv2->outerVarSE)
       if (ovar2->symbol() == svar)
         { ovarSE = ovar2; break; }
-  if (ovarSE == NULL) return; // not our pattern
+  if (ovarSE == nullptr) return; // not our pattern
 
   // Find the other use of 'svar'.
-  SymExpr* otherUse = NULL;
+  SymExpr* otherUse = nullptr;
   for_SymbolUses(useSE, svar)
     if (useSE != ovarSE) {
-      if (otherUse != NULL) return; // too many uses - not our pattern
+      if (otherUse != nullptr) return; // too many uses - not our pattern
       otherUse = useSE;
     }
-  if (otherUse == NULL) return; // not our pattern
+  if (otherUse == nullptr) return; // not our pattern
 
   // Find the var initialized from 'otherUse', if any.
   if (CallExpr* initCall = toCallExpr(otherUse->parentExpr))
@@ -349,7 +349,7 @@ static Symbol* setupRiGlobalOp(ForallStmt* fs, Symbol* fiVarSym,
 
 static void handleRISpec(ForallStmt* fs, ShadowVarSymbol* svar)
 {
-  Symbol* globalOp = NULL;
+  Symbol* globalOp = nullptr;
   Symbol* fiVarSym = svar->outerVarSym();
   Expr*   riSpec   = svar->reduceOpExpr();
   SET_LINENO(riSpec);
@@ -358,13 +358,13 @@ static void handleRISpec(ForallStmt* fs, ShadowVarSymbol* svar)
     Symbol* riSym = riSE->symbol();
 
     if (TypeSymbol* riTypeSym = toTypeSymbol(riSym)) {
-      globalOp = setupRiGlobalOp(fs, fiVarSym, riSpec, riTypeSym, NULL);
+      globalOp = setupRiGlobalOp(fs, fiVarSym, riSpec, riTypeSym, nullptr);
 
     } else {
       INT_ASSERT(isLcnSymbol(riSym)); // what else can a globalOp be??
 
       if (fs->needsInitialAccumulate())
-        insertAndResolveInitialAccumulate(fs, NULL, riSym, fiVarSym);
+        insertAndResolveInitialAccumulate(fs, nullptr, riSym, fiVarSym);
 
       // The user will manage allocation and deallocation of 'riSym'.
       // So we only need to add a call generate().
@@ -436,7 +436,7 @@ static ShadowVarSymbol* create_REDUCE_PRP(ForallStmt* fs, ShadowVarSymbol* AS)
 static ShadowVarSymbol* create_REDUCE_PAS(ForallStmt* fs, ShadowVarSymbol* AS)
 {
   ShadowVarSymbol* PAS = new ShadowVarSymbol(TFI_REDUCE_PARENT_AS,
-                                             astr("PAS_", AS->name), NULL);
+                                             astr("PAS_", AS->name), nullptr);
   PAS->qual = QUAL_VAL;
   PAS->type = AS->type;
 
@@ -450,7 +450,7 @@ static ShadowVarSymbol* create_REDUCE_RP(ForallStmt* fs, ShadowVarSymbol* PRP,
                                          ShadowVarSymbol* AS)
 {
   ShadowVarSymbol* RP = new ShadowVarSymbol(TFI_REDUCE_OP,
-                                            astr("RP_", AS->name), NULL);
+                                            astr("RP_", AS->name), nullptr);
 
   // It always points to the same reduction op class instance.
   RP->addFlag(FLAG_CONST);
@@ -489,7 +489,7 @@ static void setupForReduce(ForallStmt* fs,
   globalAS->qual = QUAL_VAL;
 
   PAS->outerVarSE = new SymExpr(globalAS);
-  insert_help(PAS->outerVarSE, NULL, PAS);
+  insert_help(PAS->outerVarSE, nullptr, PAS);
 
   /// before the forall ///
   BlockStmt* holder1 = new BlockStmt();
@@ -549,7 +549,7 @@ static ShadowVarSymbol* create_IN_Parentvar(ForallStmt* fs,
                                             Symbol* userOuterVar)
 {
   ShadowVarSymbol* INP = new ShadowVarSymbol(TFI_IN_PARENT,
-                                             astr("INP_", SI->name), NULL);
+                                             astr("INP_", SI->name), nullptr);
   INP->addFlag(FLAG_CONST);  // make it be like 'const in'
   INP->qual = QUAL_CONST_VAL;
   INP->type = SI->type;
@@ -583,7 +583,7 @@ static ShadowVarSymbol* create_IN_Parentvar(ForallStmt* fs,
   INP->initBlock()->insertAtTail(move);
 
   INP->outerVarSE = new SymExpr(INPovar);
-  insert_help(INP->outerVarSE, NULL, INP);
+  insert_help(INP->outerVarSE, nullptr, INP);
 
   return INP;
 }
@@ -783,7 +783,7 @@ static AggregateType* isRecordReceiver(Symbol* sym) {
     if (Type* type = sym->type->getValType())
       if (isUserRecord(type))
         return toAggregateType(type);
-  return NULL;
+  return nullptr;
 }
 
 //
@@ -892,7 +892,7 @@ static void removeUsesOfShadowVar(ShadowVarSymbol* svar) {
 static void resolveAndPruneExplicitShadowVars(ForallStmt* fs,
                                               Expr* lastExplicitSVarDef)
 {
-  if (lastExplicitSVarDef == NULL)
+  if (lastExplicitSVarDef == nullptr)
     return;  // there were no explicit shadow vars
 
   for_shadow_vars_and_defs(svar, svdef, temp, fs)
@@ -932,7 +932,7 @@ static Symbol* isFieldAccess(AggregateType* recType, Expr* arg) {
             if (! fieldSym->hasFlag(FLAG_PARAM) &&
                 ! fieldSym->hasFlag(FLAG_TYPE_VARIABLE))
               return fieldSym;
-  return NULL;
+  return nullptr;
 }
 
 static VarSymbol* createFieldRef(Expr* anchor, Symbol* thisSym,
@@ -989,14 +989,14 @@ static void doConvertFieldsOfThis(ForallStmt* fs, AggregateType* recType,
   for_SymbolSymExprs(se, svar) {
     if (Symbol* fieldSym = isFieldAccess(recType, se)) {
       ShadowVarSymbol*& fieldSV = fieldVars[fieldSym];
-      if (fieldSV == NULL)
+      if (fieldSV == nullptr)
         fieldSV = createSVforFieldAccess(fs, ovar, fieldSym);
       se->parentExpr->replace(new SymExpr(fieldSV));
     }
   }
 
   // Remove 'svar' if it does not have any uses remaining.
-  if (svar->firstSymExpr() == NULL)
+  if (svar->firstSymExpr() == nullptr)
     svar->defPoint->remove();
 }
 
@@ -1035,12 +1035,12 @@ static ArgSymbol* enclosingRecordThisArg(FnSymbol* fn)
 
     if (parent->hasFlag(FLAG_METHOD))
       // A method on a non-record or a weird-o lacking _this.
-      return NULL;
+      return nullptr;
 
     fn = parent;
   }
 
-  return NULL; // not in a method
+  return nullptr; // not in a method
 }
 
 // This adds a new formal to 'fn' and augments all calls to 'fn'
@@ -1090,7 +1090,7 @@ void convertFieldsOfRecordThis(FnSymbol* fn) {
     if (Symbol* fieldSym = isFieldAccess(thisType, se))
      {
        ArgSymbol*& fieldArg = fieldArgs[fieldSym];
-       if (fieldArg == NULL)
+       if (fieldArg == nullptr)
          fieldArg = createArgForFieldAccess(thisArg, fn, fieldSym);
        se->parentExpr->replace(new SymExpr(fieldArg));
      }

@@ -296,16 +296,16 @@ static ShadowVarSymbol* refShadowVarForOuterVarExpr(Expr* expr) {
     if (ShadowVarSymbol* svar = toShadowVarSymbol(expr->parentSymbol))
       if (svar->intent == TFI_REF)
         return svar;
-  return NULL;
+  return nullptr;
 }
 
 // Would choosing the refCall or valueCall change our determination
 // about sym? If so, this function returns true.
 static
 bool contextCallItDepends(Symbol* sym, ContextCallExpr* cc) {
-  CallExpr* refCall = NULL;
-  CallExpr* valueCall = NULL;
-  CallExpr* constRefCall = NULL;
+  CallExpr* refCall = nullptr;
+  CallExpr* valueCall = nullptr;
+  CallExpr* constRefCall = nullptr;
 
   cc->getCalls(refCall, valueCall, constRefCall);
 
@@ -683,8 +683,8 @@ void CullRefCtx::propagateConstnessToFieldAccesses(void) {
     SymExpr* lhsSe = toSymExpr(move->get(1));
     AggregateType* at = toAggregateType(aggregateSe->getValType());
 
-    // note, at might be NULL for unmanaged SomeClass
-    if (at == NULL || at->isClass())
+    // note, at might be nullptr for unmanaged SomeClass
+    if (at == nullptr || at->isClass())
       continue;
 
     if (aggregateSe->symbol()->qualType().isConst())
@@ -776,15 +776,15 @@ bool CullRefCtx::isCallApplicableLoop(SymExpr* se, CallExpr* call,
     // Find enclosing PRIM_MOVE
     CallExpr* move = toCallExpr(se->parentExpr->getStmtExpr());
     if (move && !move->isPrimitive(PRIM_MOVE))
-      move = NULL;
+      move = nullptr;
 
-    if (move != NULL) {
+    if (move != nullptr) {
 
       // Now, LHS of PRIM_MOVE is iterator variable
       SymExpr* lhs = toSymExpr(move->get(1));
       Symbol* iterator = lhs->symbol();
-      ForLoop* forLoop = NULL;
-      ForallStmt*   fs = NULL;
+      ForLoop* forLoop = nullptr;
+      ForallStmt*   fs = nullptr;
 
       // TODO: expand isChplIterOrLoopIterator to watch for ForallStmt?
 
@@ -793,7 +793,7 @@ bool CullRefCtx::isCallApplicableLoop(SymExpr* se, CallExpr* call,
 
         // Scroll through exprs until we find ForLoop.
         if (!forLoop) {
-          for (Expr* e = move; e != NULL; e = e->next) {
+          for (Expr* e = move; e != nullptr; e = e->next) {
             if ((forLoop = toForLoop(e)) || (fs = toForallStmt(e)))
               break;
           }
@@ -807,7 +807,7 @@ bool CullRefCtx::isCallApplicableLoop(SymExpr* se, CallExpr* call,
           gatherLoopDetails(forLoop, info.isForall, info.leaderDetails,
                             info.followerForLoop, info.detailsVector);
           foundLoop = true;
-        } else if (fs != NULL) {
+        } else if (fs != nullptr) {
 
           // Ditto if it is a ForallStmt.
           gatherLoopDetails(fs, info.isForall, info.leaderDetails,
@@ -857,12 +857,12 @@ bool CullRefCtx::checkLoopForDependencies(GraphNode node, LoopInfo &info,
     // Note, if we wanted to use the return intent
     // of the iterator, it is overwritten in protoIteratorClass.
     // This flag should be set for array iteration
-    if (iterableSe != NULL &&
+    if (iterableSe != nullptr &&
         iterableSe->symbol() == sym &&
         (iterableTupleElement == 0 ||
          iterableTupleElement == node.fieldIndex) &&
         iteratorYieldsConstWhenConstThis &&
-        index != NULL &&
+        index != nullptr &&
         isRefOrTupleWithRef(index, indexTupleElement)) {
 
       // Now the const-ness of the array depends
@@ -908,7 +908,7 @@ bool CullRefCtx::checkBuildTupleCall(SymExpr* se, CallExpr* call,
 
       INT_ASSERT(1 <= j && j <= call->numActuals());
 
-      Symbol*        tupleField = NULL;
+      Symbol*        tupleField = nullptr;
       AggregateType* tupleType  = toAggregateType(lhsSymbol->type);
       int            k          = 1;
 
@@ -985,7 +985,7 @@ bool CullRefCtx::checkTupleCastCall(SymExpr* se, CallExpr* call,
 
     CallExpr* move = toCallExpr(call->parentExpr);
 
-    if (move != NULL && move->isPrimitive(PRIM_MOVE)) {
+    if (move != nullptr && move->isPrimitive(PRIM_MOVE)) {
       SymExpr*  lhs       = toSymExpr(move->get(1));
       Symbol*   lhsSymbol = lhs->symbol();
 
@@ -993,7 +993,7 @@ bool CullRefCtx::checkTupleCastCall(SymExpr* se, CallExpr* call,
 
       // AFAIK, only internal (tuple -> tuple) casts that adjust tuple ref
       // levels will be labeled with the flag FLAG_TUPLE_CAST_FN.
-      INT_ASSERT(lhsAt != NULL);
+      INT_ASSERT(lhsAt != nullptr);
       INT_ASSERT(lhsAt->symbol->hasFlag(FLAG_TUPLE));
 
       // Only add the LHS as a dependency if it contains reference fields.
@@ -1497,7 +1497,7 @@ void CullRefCtx::lowerRemainingContextCallExprs(void) {
     CallExpr* move = toCallExpr(cc->parentExpr);
 
     bool notConst = false;
-    Symbol* lhsSymbol = NULL;
+    Symbol* lhsSymbol = nullptr;
 
     if (move) {
       SymExpr* lhs = toSymExpr(move->get(1));
@@ -1612,23 +1612,23 @@ void cullOverReferences() {
 static
 bool firstPassLowerContextCall(ContextCallExpr* cc)
 {
-  CallExpr* refCall = NULL;
-  CallExpr* valueCall = NULL;
-  CallExpr* constRefCall = NULL;
+  CallExpr* refCall = nullptr;
+  CallExpr* valueCall = nullptr;
+  CallExpr* constRefCall = nullptr;
 
   cc->getCalls(refCall, valueCall, constRefCall);
 
   INT_ASSERT(refCall || valueCall || constRefCall);
 
   CallExpr* someCall = refCall;
-  if (someCall == NULL) someCall = constRefCall;
-  if (someCall == NULL) someCall = valueCall;
+  if (someCall == nullptr) someCall = constRefCall;
+  if (someCall == nullptr) someCall = valueCall;
 
   FnSymbol* fn = someCall->resolvedFunction();
   INT_ASSERT(fn);
 
-  CallExpr* move = NULL; // set if the call is in a PRIM_MOVE
-  SymExpr* lhs = NULL; // lhs if call is in a PRIM_MOVE
+  CallExpr* move = nullptr; // set if the call is in a PRIM_MOVE
+  SymExpr* lhs = nullptr; // lhs if call is in a PRIM_MOVE
 
   // Decide whether to use the value call or the ref call.
   // Always leave the ref call for iterators.
@@ -1660,9 +1660,9 @@ bool firstPassLowerContextCall(ContextCallExpr* cc)
 static
 void lowerContextCallPreferRefConstRef(ContextCallExpr* cc)
 {
-  CallExpr* refCall = NULL;
-  CallExpr* valueCall = NULL;
-  CallExpr* constRefCall = NULL;
+  CallExpr* refCall = nullptr;
+  CallExpr* valueCall = nullptr;
+  CallExpr* constRefCall = nullptr;
   choose_type_t which;
 
   cc->getCalls(refCall, valueCall, constRefCall);
@@ -1682,9 +1682,9 @@ void lowerContextCallPreferRefConstRef(ContextCallExpr* cc)
 static
 void lowerContextCallPreferConstRefValue(ContextCallExpr* cc)
 {
-  CallExpr* refCall = NULL;
-  CallExpr* valueCall = NULL;
-  CallExpr* constRefCall = NULL;
+  CallExpr* refCall = nullptr;
+  CallExpr* valueCall = nullptr;
+  CallExpr* constRefCall = nullptr;
   choose_type_t which;
 
   cc->getCalls(refCall, valueCall, constRefCall);
@@ -1704,9 +1704,9 @@ void lowerContextCallPreferConstRefValue(ContextCallExpr* cc)
 static
 void lowerContextCallComputeConstRef(ContextCallExpr* cc, bool notConst, Symbol* lhsSymbol)
 {
-  CallExpr* refCall = NULL;
-  CallExpr* valueCall = NULL;
-  CallExpr* constRefCall = NULL;
+  CallExpr* refCall = nullptr;
+  CallExpr* valueCall = nullptr;
+  CallExpr* constRefCall = nullptr;
   choose_type_t which = USE_CONST_REF;
 
   cc->getCalls(refCall, valueCall, constRefCall);
@@ -1717,14 +1717,14 @@ void lowerContextCallComputeConstRef(ContextCallExpr* cc, bool notConst, Symbol*
   } else {
     // Check: should we use the const-ref or value version?
     // Use value version if it's never passed/returned as const ref
-    if (valueCall != NULL && constRefCall != NULL) {
-      if (lhsSymbol == NULL || symbolIsUsedAsConstRef(lhsSymbol))
+    if (valueCall != nullptr && constRefCall != nullptr) {
+      if (lhsSymbol == nullptr || symbolIsUsedAsConstRef(lhsSymbol))
         which = USE_CONST_REF;
       else
         which = USE_VALUE;
     } else {
       // Use whichever value version we have.
-      if (constRefCall != NULL)
+      if (constRefCall != nullptr)
         which = USE_CONST_REF;
       else
         which = USE_VALUE;
@@ -1737,23 +1737,23 @@ void lowerContextCallComputeConstRef(ContextCallExpr* cc, bool notConst, Symbol*
 static
 void lowerContextCall(ContextCallExpr* cc, choose_type_t which)
 {
-  CallExpr* refCall = NULL;
-  CallExpr* valueCall = NULL;
-  CallExpr* constRefCall = NULL;
+  CallExpr* refCall = nullptr;
+  CallExpr* valueCall = nullptr;
+  CallExpr* constRefCall = nullptr;
 
   cc->getCalls(refCall, valueCall, constRefCall);
 
   // Check that whatever was selected is available.
   if (which == USE_REF)
-    INT_ASSERT(refCall != NULL);
+    INT_ASSERT(refCall != nullptr);
   if (which == USE_CONST_REF)
-    INT_ASSERT(constRefCall != NULL);
+    INT_ASSERT(constRefCall != nullptr);
   if (which == USE_VALUE)
-    INT_ASSERT(valueCall != NULL);
+    INT_ASSERT(valueCall != nullptr);
 
   CallExpr* someCall = refCall;
-  if (someCall == NULL) someCall = constRefCall;
-  if (someCall == NULL) someCall = valueCall;
+  if (someCall == nullptr) someCall = constRefCall;
+  if (someCall == nullptr) someCall = valueCall;
 
   FnSymbol* fn = someCall->resolvedFunction();
   INT_ASSERT(fn);
@@ -1761,8 +1761,8 @@ void lowerContextCall(ContextCallExpr* cc, choose_type_t which)
   // TODO tidy up below based upon the above assumptions.
 
   bool useValueCall = (which == USE_VALUE || which == USE_CONST_REF);
-  CallExpr* move = NULL; // set if the call is in a PRIM_MOVE
-  SymExpr* lhs = NULL; // lhs if call is in a PRIM_MOVE
+  CallExpr* move = nullptr; // set if the call is in a PRIM_MOVE
+  SymExpr* lhs = nullptr; // lhs if call is in a PRIM_MOVE
 
   // Decide whether to use the value call or the ref call.
   // Always leave the ref call for iterators.

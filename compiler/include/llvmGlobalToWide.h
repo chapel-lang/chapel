@@ -105,9 +105,9 @@ struct GlobalPointerInfo {
   llvm::Function* globalToWideFn;
   llvm::Function* wideToGlobalFn;
 
-  GlobalPointerInfo() : wideTy(NULL),
-                        addrFn(NULL), locFn(NULL), nodeFn(NULL), makeFn(NULL),
-                        globalToWideFn(NULL), wideToGlobalFn(NULL) { }
+  GlobalPointerInfo() : wideTy(nullptr),
+                        addrFn(nullptr), locFn(nullptr), nodeFn(nullptr), makeFn(nullptr),
+                        globalToWideFn(nullptr), wideToGlobalFn(nullptr) { }
 };
 
 #define GLOBAL_TYPE ".gt."
@@ -167,12 +167,12 @@ struct GlobalToWideInfo {
 
   GlobalToWideInfo()
     : globalSpace(0), wideSpace(0), globalPtrBits(0),
-      localeIdType(NULL), nodeIdType(NULL), gTypes(), specialFunctions(),
-      getFn(NULL), getFnType(NULL),
-      putFn(NULL), putFnType(NULL),
-      getPutFn(NULL), getPutFnType(NULL),
-      memsetFn(NULL), memsetFnType(NULL),
-      hasPreservingFn(false), preservingFn(NULL) { }
+      localeIdType(nullptr), nodeIdType(nullptr), gTypes(), specialFunctions(),
+      getFn(nullptr), getFnType(nullptr),
+      putFn(nullptr), putFnType(nullptr),
+      getPutFn(nullptr), getPutFnType(nullptr),
+      memsetFn(nullptr), memsetFnType(nullptr),
+      hasPreservingFn(false), preservingFn(nullptr) { }
 };
 
 llvm::ModulePass *createGlobalToWide(GlobalToWideInfo* info,

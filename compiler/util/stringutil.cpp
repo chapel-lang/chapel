@@ -445,7 +445,7 @@ void splitString(const std::string& s, std::vector<std::string>& vec, const char
       if (strlen(arg) > 0) {
         vec.push_back(std::string(arg));
       }
-      arg = strtok(NULL, delimiters);
+      arg = strtok(nullptr, delimiters);
     }
     free(cStr);
   }

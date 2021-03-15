@@ -202,7 +202,7 @@ void MLIContext::emit(ModuleSymbol* md) {
 void MLIContext::emit(FnSymbol* fn) {
   if (!this->shouldEmit(fn)) { return; }
 
-  this->verifyPrototype(fn); 
+  this->verifyPrototype(fn);
   this->emitClientWrapper(fn);
   this->emitServerWrapper(fn);
 
@@ -274,7 +274,7 @@ void MLIContext::emitServerPrelude(void) {
   gen += this->genHeaderInc("chpl_mli_marshalling.c");
   gen += this->genHeaderInc("_main.c");
   gen += "\n";
-  
+
   this->setOutputAndWrite(&this->fiServerBundle, gen);
 
   return;
@@ -317,7 +317,7 @@ std::string MLIContext::genMarshalBodyPrimitiveScalar(Type* t, bool out) {
   gen += this->genSocketCall("skt", target, out);
 
   // Generate a null frame in the opposite direction for the ACK.
-  gen += this->genSocketCall("skt", NULL, !out);
+  gen += this->genSocketCall("skt", nullptr, !out);
 
   return gen;
 }
@@ -370,7 +370,7 @@ std::string MLIContext::genMarshalBodyString(Type* t, bool out) {
   gen += this->genSocketCallBuffer("skt", target, "bytes", out);
 
   // Generate a null frame in the opposite direction for the ACK.
-  gen += this->genSocketCall("skt", NULL, !out);
+  gen += this->genSocketCall("skt", nullptr, !out);
 
   if (!out) {
     // Null terminate the string we just received.
@@ -412,7 +412,7 @@ std::string MLIContext::genMarshalBodyChplBytesWrapper(Type* t, bool out) {
   gen += this->genSocketCall("skt", fieldIsOwned, out);
 
   // Generate a null frame for the ACK.
-  gen += this->genSocketCall("skt", NULL, !out);
+  gen += this->genSocketCall("skt", nullptr, !out);
 
   // Push/pull the "size" field.
   gen += this->genSocketCall("skt", fieldSize, out);
@@ -444,7 +444,7 @@ std::string MLIContext::genMarshalBodyChplBytesWrapper(Type* t, bool out) {
   gen += this->genSocketCallBuffer("skt", fieldData, fieldSize, out);
 
   // Generate a null frame for the ACK.
-  gen += this->genSocketCall("skt", NULL, !out);
+  gen += this->genSocketCall("skt", nullptr, !out);
 
   // Null terminate the bytes buffer if we are pulling.
   if (!out) {
@@ -529,7 +529,7 @@ std::string MLIContext::genMarshalRoutine(Type* t, bool out) {
     // c_ptr(int8)s that weren't originally Chapel strings.
     gen += this->genMarshalBodyString(t, out);
   } else if (t->getValType() == exportTypeChplByteBuffer) {
-    gen += this->genMarshalBodyChplBytesWrapper(t, out); 
+    gen += this->genMarshalBodyChplBytesWrapper(t, out);
   } else {
     USR_FATAL(t, "Multi-locale libraries do not support type: %s",
               t->name());
@@ -537,7 +537,7 @@ std::string MLIContext::genMarshalRoutine(Type* t, bool out) {
 
   // If we are unpacking, return our temporary.
   if (!out) { gen += "return result;\n"; }
-  
+
   gen += scope_end;
   gen += "\n";
 
@@ -557,7 +557,7 @@ void MLIContext::emitServerDispatchRoutine(void) {
 
   gen += this->genServerDispatchSwitch(this->exps);
   gen += "\n";
-  
+
   this->setOutputAndWrite(&this->fiServerBundle, gen);
 
   return;
@@ -608,7 +608,7 @@ void MLIContext::emitClientWrapper(FnSymbol* fn) {
   gen += "\n";
 
   this->write(gen);
-  
+
   return;
 }
 
@@ -630,12 +630,12 @@ void MLIContext::emitServerWrapper(FnSymbol* fn) {
 
   gen += this->genServersideRPC(fn);
   gen += "return 0;\n";
- 
+
   gen += scope_end;
   gen += "\n";
 
   this->setOutputAndWrite(&this->fiServerBundle, gen);
- 
+
   return;
 }
 
@@ -683,7 +683,7 @@ std::string MLIContext::genServerWrapperCall(FnSymbol* fn) {
 
   return gen;
 }
-  
+
 std::string
 MLIContext::genServerDispatchSwitch(const std::vector<FnSymbol*>& fns) {
   std::string gen;
@@ -703,11 +703,11 @@ MLIContext::genServerDispatchSwitch(const std::vector<FnSymbol*>& fns) {
     gen += ": ";
 
     gen += scope_begin;
-    
+
     if (this->debugPrint) {
       gen += this->genDebugPrintCall(fn);
     }
-    
+
     gen += "err = ";
     gen += this->genServerWrapperCall(fn);
     gen += scope_end;
@@ -915,7 +915,7 @@ std::string MLIContext::genMemCleanup(Type* t, const char* var) {
   } else {
     INT_FATAL("Unsupported type %s expects deallocation", t->symbol->name);
   }
-       
+
   return gen;
 }
 
@@ -928,7 +928,7 @@ std::string MLIContext::genMarshalCall(const char* skt, const char* var,
   gen += str(id);
   gen += "(";
   gen += skt;
-  
+
   if (out) {
     gen += ",";
     gen += var;
@@ -1002,7 +1002,7 @@ MLIContext::genSocketCall(const char* skt, const char* var, const char* len,
 
 std::string
 MLIContext::genSocketCall(const char* skt, const char* var, bool out) {
-  return this->genSocketCall(skt, var, NULL, out);
+  return this->genSocketCall(skt, var, nullptr, out);
 }
 
 std::string MLIContext::genSocketPushCall(const char* skt, const char* var) {

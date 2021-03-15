@@ -35,7 +35,7 @@
 #include "TryStmt.h"
 #include "wellknown.h"
 
-FnSymbol* chplUserMain = NULL;
+FnSymbol* chplUserMain = nullptr;
 static bool mainReturnsSomething;
 
 static void buildChplEntryPoints();
@@ -193,9 +193,9 @@ typedef enum {
 // functionExists returns true iff
 //  function's name matches name
 //  function's number of formals matches numFormals
-//  function's first formal's type matches formalType1 if not NULL
-//  function's second formal's type matches formalType2 if not NULL
-//  function's third formal's type matches formalType3 if not NULL
+//  function's first formal's type matches formalType1 if not nullptr
+//  function's second formal's type matches formalType2 if not nullptr
+//  function's third formal's type matches formalType3 if not nullptr
 static FnSymbol* functionExists(const char* name,
                                  int numFormals,
                                  Type* formalType1,
@@ -253,14 +253,14 @@ static FnSymbol* functionExists(const char* name,
   }
 
   // No matching function found.
-  return NULL;
+  return nullptr;
 }
 
 static FnSymbol* functionExists(const char* name,
                                  Type* formalType1,
                                  functionExistsKind kind=FIND_EITHER)
 {
-  return functionExists(name, 1, formalType1, NULL, NULL, NULL, kind);
+  return functionExists(name, 1, formalType1, nullptr, nullptr, nullptr, kind);
 }
 
 
@@ -270,7 +270,7 @@ static FnSymbol* functionExists(const char* name,
                                  Type* formalType2,
                                  functionExistsKind kind=FIND_EITHER)
 {
-  return functionExists(name, 2, formalType1, formalType2, NULL, NULL, kind);
+  return functionExists(name, 2, formalType1, formalType2, nullptr, nullptr, kind);
 }
 
 static FnSymbol* functionExists(const char* name,
@@ -280,7 +280,7 @@ static FnSymbol* functionExists(const char* name,
                                  functionExistsKind kind=FIND_EITHER)
 {
   return functionExists(name, 3,
-                         formalType1, formalType2, formalType3, NULL, kind);
+                         formalType1, formalType2, formalType3, nullptr, kind);
 }
 
 static FnSymbol* functionExists(const char* name,
@@ -322,7 +322,7 @@ static void fixupAccessor(AggregateType* ct, Symbol *field,
 // Resetting a union to store a different field requires two steps:
 //   1. deinit anything that was stored
 //   2. default-init the requested field
-// If newField == NULL, skip step 2.
+// If newField == nullptr, skip step 2.
 static BlockStmt* buildResetUnionField(Symbol* _this,
                                        AggregateType* ct,
                                        Symbol* newField) {
@@ -354,7 +354,7 @@ static BlockStmt* buildResetUnionField(Symbol* _this,
     block->insertAtTail(new CondStmt(checkId, deinitBlock));
   }
 
-  if (newField != NULL) {
+  if (newField != nullptr) {
     Symbol* newFieldNameSym = new_CStringSymbol(newField->name);
     // Set the union ID to store the target field
     block->insertAtTail(new CallExpr(PRIM_SET_UNION_ID,
@@ -494,7 +494,7 @@ FnSymbol* build_accessor(AggregateType* ct, Symbol* field,
     }
   }
 
-  Expr* toReturn = NULL;
+  Expr* toReturn = nullptr;
   if (isTypeSymbol(field) && isEnumType(field->type)) {
     fn->insertAtTail(new CallExpr(PRIM_RETURN, field));
     // better flatten enumerated types now
@@ -513,9 +513,9 @@ FnSymbol* build_accessor(AggregateType* ct, Symbol* field,
                             new SymExpr(fieldNameSym));
   }
 
-  if (toReturn != NULL) {
+  if (toReturn != nullptr) {
     if (typeOrParam) {
-      Symbol* alternate = NULL;
+      Symbol* alternate = nullptr;
       if (field->hasFlag(FLAG_PARAM))
         alternate = gUninstantiated;
       else
@@ -596,8 +596,8 @@ static void buildAccessors(AggregateType* ct, Symbol *field) {
 static FnSymbol* chplGenMainExists() {
   bool          errorP   = false;
   ModuleSymbol* module   = ModuleSymbol::mainModule();
-  FnSymbol*     matchFn  = NULL;
-  ModuleSymbol* matchMod = NULL;
+  FnSymbol*     matchFn  = nullptr;
+  ModuleSymbol* matchMod = nullptr;
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (strcmp("main", fn->name) == 0) {
@@ -608,13 +608,13 @@ static FnSymbol* chplGenMainExists() {
 
         CallExpr* ret = toCallExpr(fn->body->body.last());
 
-        if (ret == NULL || ret->isPrimitive(PRIM_RETURN) == false) {
+        if (ret == nullptr || ret->isPrimitive(PRIM_RETURN) == false) {
           INT_FATAL(fn, "function is not normalized");
         }
 
         SymExpr* sym = toSymExpr(ret->get(1));
 
-        if (sym == NULL) {
+        if (sym == nullptr) {
           INT_FATAL(fn, "function is not normalized");
         }
 
@@ -623,7 +623,7 @@ static FnSymbol* chplGenMainExists() {
         ModuleSymbol* fnMod = fn->getModule();
 
         if (fnMod == module) {
-          if (matchFn == NULL) {
+          if (matchFn == nullptr) {
             matchFn  = fn;
             matchMod = fnMod;
 
@@ -667,13 +667,13 @@ static void buildChplEntryPoints() {
   ModuleSymbol* mainModule   = ModuleSymbol::mainModule();
   chplUserMain = chplGenMainExists();
 
-  if (fLibraryCompile == true && chplUserMain != NULL) {
+  if (fLibraryCompile == true && chplUserMain != nullptr) {
     USR_WARN(chplUserMain,
              "'main()' has no special meaning when compiling "
              "in --library mode");
   }
 
-  if (chplUserMain == NULL) {
+  if (chplUserMain == nullptr) {
     SET_LINENO(mainModule);
 
     chplUserMain          = new FnSymbol("main");
@@ -718,7 +718,7 @@ static void buildChplEntryPoints() {
   mainModule->block->insertAtTail(new DefExpr(chpl_gen_main));
 
   VarSymbol* main_ret = newTemp("_main_ret", dtInt[INT_SIZE_64]);
-  VarSymbol* endCount = NULL;
+  VarSymbol* endCount = nullptr;
 
   chpl_gen_main->insertAtTail(new DefExpr(main_ret));
 
@@ -1181,7 +1181,7 @@ static void buildEnumIntegerCastFunctions(EnumType* et) {
     // the enum constant.
     int64_t count = 0;
     BlockStmt* whenstmts = buildChapelStmt();
-    Expr* lastInit = NULL;
+    Expr* lastInit = nullptr;
     for_enums(constant, et) {
       if (constant->init) {
         lastInit = constant->init;
@@ -1191,7 +1191,7 @@ static void buildEnumIntegerCastFunctions(EnumType* et) {
           count++;
         }
       }
-      if (lastInit != NULL) {
+      if (lastInit != nullptr) {
         CondStmt* when =
           new CondStmt(new CallExpr(PRIM_WHEN,
                                     new CallExpr("+", lastInit->copy(),
@@ -1211,13 +1211,13 @@ static void buildEnumIntegerCastFunctions(EnumType* et) {
                    new BlockStmt(new CallExpr("chpl_enum_cast_error",
                                               from,
                                               new_StringSymbol(et->symbol->name))),
-                                 NULL));
+                                 nullptr));
 
     // in addition, insert a dummy return since the compiler doesn't
     // know that chpl_enum_cast_error() always throws
     fn->insertAtTail(new CallExpr(PRIM_RETURN,
                                   toDefExpr(et->constants.first())->sym));
-    
+
     def = new DefExpr(fn);
     baseModule->block->insertAtTail(def);
     reset_ast_loc(def, et->symbol);
@@ -1258,13 +1258,13 @@ static void buildEnumIntegerCastFunctions(EnumType* et) {
 
       count = 0;
       whenstmts = buildChapelStmt();
-      lastInit = NULL;
+      lastInit = nullptr;
       for_enums(constant, et) {
         if (constant->init) {
           lastInit = constant->init;
           count = 0;
         } else {
-          if (lastInit != NULL) {
+          if (lastInit != nullptr) {
             count++;
           }
         }
@@ -1299,7 +1299,7 @@ static void buildEnumIntegerCastFunctions(EnumType* et) {
       // bogus return to help the compiler know that all paths return.
       fn->insertAtTail(new TryStmt(false,
                                    buildSelectStmt(new SymExpr(from), whenstmts),
-                                   NULL));
+                                   nullptr));
       fn->insertAtTail(new CallExpr(PRIM_RETURN, new_IntSymbol(0)));
     }
 
@@ -1535,14 +1535,14 @@ static void buildUnionAssignmentFunction(AggregateType* ct) {
 ************************************** | *************************************/
 
 static void checkNotPod(AggregateType* at) {
-  if (functionExists(astr_initCopy, at) == NULL) {
+  if (functionExists(astr_initCopy, at) == nullptr) {
 
     if (at->hasUserDefinedInitEquals()) {
       at->symbol->addFlag(FLAG_NOT_POD);
     } else {
       // Compiler-generated copy-initializers should not disable POD
       FnSymbol* fn = functionExists("init", dtMethodToken, at, at);
-      if (fn != NULL && fn->hasFlag(FLAG_COMPILER_GENERATED) == false) {
+      if (fn != nullptr && fn->hasFlag(FLAG_COMPILER_GENERATED) == false) {
         at->symbol->addFlag(FLAG_NOT_POD);
       }
     }
@@ -1570,7 +1570,7 @@ static void buildRecordHashFunction(AggregateType *ct) {
     fn->insertAtTail(new CallExpr(PRIM_RETURN, new_UIntSymbol(0)));
     fn->addFlag(FLAG_INLINE);
   } else {
-    CallExpr *call = NULL;
+    CallExpr *call = nullptr;
     bool first = true;
     int i = 1;
     for_fields(field, ct) {
@@ -1605,7 +1605,7 @@ static void buildRecordHashFunction(AggregateType *ct) {
 static void buildDefaultOfFunction(AggregateType* ct) {
   if (ct->symbol->hasEitherFlag(FLAG_TUPLE, FLAG_ITERATOR_RECORD) &&
       ct->defaultValue != gNil &&
-      functionExists("_defaultOf", ct) == NULL) {
+      functionExists("_defaultOf", ct) == nullptr) {
 
     FnSymbol*  fn  = new FnSymbol("_defaultOf");
     ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "t", ct);
@@ -1754,7 +1754,7 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
 
   // Make writeThis when appropriate
   if (makeReadThisAndWriteThis == true && hasWriteThis == false) {
-    ArgSymbol* fileArg = NULL;
+    ArgSymbol* fileArg = nullptr;
     FnSymbol* fn = buildWriteThisFnSymbol(ct, &fileArg);
 
     // Compiler generated versions of readThis/writeThis now throw.
@@ -1881,7 +1881,7 @@ static void buildEnumStringOrBytesCastFunctions(EnumType* et,
   fn->insertFormalAtTail(from);
   fn->insertFormalAtTail(toType);
 
-  CondStmt* cond = NULL;
+  CondStmt* cond = nullptr;
   for_enums(constant, et) {
     cond = new CondStmt(
              new CallExpr("==", from,
@@ -1906,7 +1906,7 @@ static void buildEnumStringOrBytesCastFunctions(EnumType* et,
                        new CallExpr("chpl_enum_cast_error",
                                     from,
                                     new_StringSymbol(et->symbol->name))),
-                     NULL));
+                     nullptr));
   fn->addFlag(FLAG_INSERT_LINE_FILE_INFO);
   fn->addFlag(FLAG_ALWAYS_PROPAGATE_LINE_FILE_INFO);
 
@@ -1926,7 +1926,7 @@ static void buildEnumStringOrBytesCastFunctions(EnumType* et,
 
 
 void buildDefaultDestructor(AggregateType* ct) {
-  if (functionExists("deinit", dtMethodToken, ct) == NULL) {
+  if (functionExists("deinit", dtMethodToken, ct) == nullptr) {
     SET_LINENO(ct->symbol);
 
     FnSymbol* fn = new FnSymbol("deinit");
@@ -1955,7 +1955,7 @@ void buildDefaultDestructor(AggregateType* ct) {
     fn->retType = dtVoid;
 
     if (ct->isUnion()) {
-      fn->insertAtTail(buildResetUnionField(fn->_this, ct, NULL));
+      fn->insertAtTail(buildResetUnionField(fn->_this, ct, nullptr));
     }
 
     fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));

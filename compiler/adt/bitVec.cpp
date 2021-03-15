@@ -28,7 +28,7 @@ BitVec::BitVec(size_t in_size) {
   if (in_size == 0) {
     ndata         = 0;
     this->in_size = 0;
-    data          = NULL;
+    data          = nullptr;
   } else {
     ndata         = 1 + (in_size - 1) / (sizeof(TYPE) << 3);
     this->in_size = in_size;
@@ -38,7 +38,7 @@ BitVec::BitVec(size_t in_size) {
 
 
 BitVec::BitVec(const BitVec& rhs)
-: data(NULL),
+: data(nullptr),
   in_size(rhs.in_size),
   ndata(rhs.ndata)
 {

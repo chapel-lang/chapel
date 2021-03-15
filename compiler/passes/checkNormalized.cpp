@@ -48,7 +48,7 @@ static void checkFunctionSignatures() {
       }
 
     } else if (fn->hasFlag(FLAG_DESTRUCTOR) == true) {
-      if (fn->retExprType != NULL) {
+      if (fn->retExprType != nullptr) {
         USR_FATAL_CONT(fn, "destructors may not declare a return type");
       }
     }
@@ -62,10 +62,10 @@ static void checkPrimNew() {
       if (call->numActuals() >= 1) {
         Expr*    arg1     = call->get(1);
         SymExpr* se       = toSymExpr(arg1);
-        Expr*    typeExpr = NULL;
+        Expr*    typeExpr = nullptr;
 
         // Extract the type expression
-        if (se != NULL && se->symbol() == gModuleToken) {
+        if (se != nullptr && se->symbol() == gModuleToken) {
           typeExpr = call->get(3);
         } else {
           typeExpr = call->get(1);

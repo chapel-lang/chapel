@@ -34,21 +34,21 @@ static Symbol* isInterfaceFormalSymbol(Symbol* sym) {
   if (TypeSymbol* var = toTypeSymbol(sym))
     return var;
   // we could also allow param formals
-  return NULL;
+  return nullptr;
 }
 
 static Symbol* isInterfaceFormalDecl(Expr* expr) {
   if (DefExpr* def = toDefExpr(expr))
     if (Symbol* ifor = isInterfaceFormalSymbol(def->sym))
       return ifor;
-  return NULL;
+  return nullptr;
 }
 
 static FnSymbol* toInterfaceFunDecl(Expr* expr) {
   if (DefExpr* def = toDefExpr(expr))
     if (FnSymbol* fn = toFnSymbol(def->sym))
       return fn;
-  return NULL;
+  return nullptr;
 }
 
 static VarSymbol* toAssociatedTypeDecl(Expr* expr) {
@@ -56,7 +56,7 @@ static VarSymbol* toAssociatedTypeDecl(Expr* expr) {
     if (VarSymbol* AT = toVarSymbol(def->sym))
       if (AT->hasFlag(FLAG_TYPE_VARIABLE))
         return AT;
-  return NULL;
+  return nullptr;
 }
 
 DefExpr* InterfaceSymbol::buildDef(const char* name,
@@ -85,10 +85,9 @@ DefExpr* InterfaceSymbol::buildDef(const char* name,
         // which we do not handle at the moment.
         USR_FATAL_CONT(ifun, "iterators at present are not allowed"
                              " in an interface");
-
     } else if (VarSymbol* AT = toAssociatedTypeDecl(expr)) {
       // not allowing defaults for now
-      if (AT->defPoint->init != NULL || AT->defPoint->exprType != NULL)
+      if (AT->defPoint->init != nullptr || AT->defPoint->exprType != nullptr)
         USR_FATAL_CONT(expr, "an associated type at present cannot have"
                              " a default value");
       // support for multi-argument interfaces is pending #17008
@@ -122,7 +121,7 @@ DefExpr* InterfaceSymbol::buildDef(const char* name,
 DefExpr* InterfaceSymbol::buildFormal(const char* name,
                                       IntentTag intent)
 {
-  Symbol* formal = NULL;
+  Symbol* formal = nullptr;
   if (intent == INTENT_TYPE) {
     formal = ConstrainedType::buildSym(name, CT_IFC_FORMAL);
   } else {
@@ -132,7 +131,7 @@ DefExpr* InterfaceSymbol::buildFormal(const char* name,
 }
 
 InterfaceSymbol::InterfaceSymbol(const char* name, BlockStmt* body) :
-  Symbol(E_InterfaceSymbol, name, NULL), ifcFormals(), ifcBody(body)
+  Symbol(E_InterfaceSymbol, name, nullptr), ifcFormals(), ifcBody(body)
 {
   ifcFormals.parent = this;
   gInterfaceSymbols.add(this);
@@ -258,11 +257,11 @@ void IfcConstraint::prettyPrint(std::ostream* o) {
 // ImplementsStmt
 //
 
-Symbol* gDummyWitness = NULL;
+Symbol* gDummyWitness = nullptr;
 
 ImplementsStmt* ImplementsStmt::build(const char* name, CallExpr* actuals,
                                       BlockStmt* body) {
- if (body == NULL) body = new BlockStmt();
+ if (body == nullptr) body = new BlockStmt();
  IfcConstraint* icon = IfcConstraint::build(name, actuals);
  return new ImplementsStmt(icon, body);
 }
@@ -333,7 +332,7 @@ Expr* ImplementsStmt::getNextExpr(Expr* expr) {
     return this;
 
   INT_FATAL(this, "Unexpected case in ImplementsStmt::getNextExpr");
-  return NULL;
+  return nullptr;
 }
 
 
@@ -497,7 +496,7 @@ static void verifyWrapImplementsStmt(FnSymbol* wrapFn, ImplementsStmt* istm,
 void markImplStmtWrapFnAsFailure(FnSymbol* wrapFn) {
   AList& body = wrapFn->body->body;
   ImplementsStmt* istm = toImplementsStmt(body.head);
-  INT_ASSERT(istm != NULL);
+  INT_ASSERT(istm != nullptr);
   body.insertAtHead(new CallExpr(PRIM_ERROR));
   if (fVerify) verifyWrapImplementsStmt(wrapFn, istm, false);
 }
@@ -506,7 +505,7 @@ FnSymbol* wrapOneImplementsStatement(ImplementsStmt* istm) {
   SET_LINENO(istm);
   if (isUnresolvedSymExpr(istm->iConstraint->interfaceExpr)) {
     INT_ASSERT(! normalized); // will report "undeclared" error later
-    return NULL;
+    return nullptr;
   }
   InterfaceSymbol* isym = istm->ifcSymbol();
   FnSymbol* wrapFn = new FnSymbol(implementsWrapperName(isym));

@@ -151,7 +151,7 @@ unifyClassInstances(Symbol* sym) {
   if (!defMap.get(sym))
     return false;
 
-  SymExpr* rhs = NULL;
+  SymExpr* rhs = nullptr;
 
   for_defs(def, defMap, sym) {
     if (def->parentSymbol) {
@@ -341,7 +341,7 @@ scalarReplaceClass(AggregateType* ct, Symbol* sym) {
 
 static bool isHandledRecordUse(SymExpr* se) {
   CallExpr* call = toCallExpr(se->parentExpr);
-  INT_ASSERT(call != NULL);
+  INT_ASSERT(call != nullptr);
 
   bool ret = false;
 
@@ -394,7 +394,7 @@ scalarReplaceRecord(AggregateType* ct, Symbol* sym) {
   bool memberAccessed = false;
   for_uses(se, useMap, sym) {
     CallExpr* parent = toCallExpr(se->parentExpr);
-    if (se->inTree() && parent != NULL) {
+    if (se->inTree() && parent != nullptr) {
       if (isHandledRecordUse(se) == false) {
         return false;
       }
@@ -466,7 +466,7 @@ scalarReplaceRecord(AggregateType* ct, Symbol* sym) {
         addUse(useMap, member);
         addDef(defMap, a3);
       } else {
-        rhs = NULL; // to silence compiler warnings
+        rhs = nullptr; // to silence compiler warnings
         INT_ASSERT(false);
       }
       for_fields(field, ct) {
@@ -485,7 +485,7 @@ scalarReplaceRecord(AggregateType* ct, Symbol* sym) {
   // It is an AST invariant that every method contains a declaration for its
   // _this symbol.  So we can't remove the declaration if it is the containing
   // method's _this.  If the containing function is not a method, then its
-  // _this field will be NULL (so will not match any valid sym).
+  // _this field will be nullptr (so will not match any valid sym).
   if (FnSymbol* parent = toFnSymbol(sym->defPoint->parentSymbol))
     if (parent->_this != sym)
       sym->defPoint->remove();

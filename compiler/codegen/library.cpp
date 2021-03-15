@@ -47,7 +47,7 @@ std::map<TypeSymbol*, std::string> fortranTypeNames;
 //
 void codegen_library_header(std::vector<FnSymbol*> functions) {
   if (fLibraryCompile) {
-    fileinfo libhdrfile = { NULL, NULL, NULL };
+    fileinfo libhdrfile = { nullptr, nullptr, nullptr };
 
     // Name the generated header file after the executable (and assume any
     // modifications to it have already happened)
@@ -56,7 +56,7 @@ void codegen_library_header(std::vector<FnSymbol*> functions) {
     // probably put assignment to gChplCompilationConfig here
 
     // follow convention of just not writing to the file if we can't open it
-    if (libhdrfile.fptr != NULL) {
+    if (libhdrfile.fptr != nullptr) {
       FILE* save_cfile = gGenInfo->cfile;
 
       gGenInfo->cfile = libhdrfile.fptr;
@@ -325,11 +325,11 @@ static void setupPythonTypeMap() {
   pythonNames[dtComplex[COMPLEX_SIZE_128]->symbol] =
               std::make_pair("double complex", "numpy.complex128");
 
-  if (dtBytes != NULL) {
+  if (dtBytes != nullptr) {
     pythonNames[dtBytes->symbol] = std::make_pair("", "object");
   }
 
-  if (dtString != NULL) {
+  if (dtString != nullptr) {
     pythonNames[dtString->symbol] = std::make_pair("", "object");
   }
 
@@ -449,11 +449,11 @@ void makeFortranModule(std::vector<FnSymbol*> functions) {
   const char* filename = fortranModulename[0] != '\0' ? fortranModulename
                                                       : libmodeHeadername;
   int indent = 0;
-  fileinfo fort = { NULL, NULL, NULL };
+  fileinfo fort = { nullptr, nullptr, nullptr };
 
   openLibraryHelperFile(&fort, filename, "f90");
 
-  if (fort.fptr != NULL) {
+  if (fort.fptr != nullptr) {
     FILE* save_cfile = gGenInfo->cfile;
     gGenInfo->cfile = fort.fptr;
     fprintf(fort.fptr, "%*smodule %s\n", indent, "", filename);
@@ -481,11 +481,11 @@ void makeFortranModule(std::vector<FnSymbol*> functions) {
 // Generate the .pxd file for the library.  This will be used when creating
 // the Python module
 static void makePXDFile(std::vector<FnSymbol*> functions) {
-  fileinfo pxd = { NULL, NULL, NULL };
+  fileinfo pxd = { nullptr, nullptr, nullptr };
 
   openLibraryHelperFile(&pxd, pxdName.c_str(), "pxd");
 
-  if (pxd.fptr != NULL) {
+  if (pxd.fptr != nullptr) {
     FILE* save_cfile = gGenInfo->cfile;
 
     gGenInfo->cfile = pxd.fptr;
@@ -514,11 +514,11 @@ static void makeOpaqueArrayClass();
 // Generate the .pyx file for the library.  This will also be used when
 // creating the Python module.
 static void makePYXFile(std::vector<FnSymbol*> functions) {
-  fileinfo pyx = { NULL, NULL, NULL };
+  fileinfo pyx = { nullptr, nullptr, nullptr };
 
   openLibraryHelperFile(&pyx, pythonModulename, "pyx");
 
-  if (pyx.fptr != NULL) {
+  if (pyx.fptr != nullptr) {
     FILE* save_cfile = gGenInfo->cfile;
 
     gGenInfo->cfile = pyx.fptr;
@@ -666,11 +666,11 @@ static void makeOpaqueArrayClass() {
 // create the Python file which will be used to compile the .pyx, .pxd, library,
 // and header files into a Python module.
 static void makePYFile() {
-  fileinfo py = { NULL, NULL, NULL };
+  fileinfo py = { nullptr, nullptr, nullptr };
 
   openLibraryHelperFile(&py, pythonModulename, "py");
 
-  if (py.fptr != NULL) {
+  if (py.fptr != nullptr) {
     FILE* save_cfile = gGenInfo->cfile;
 
     gGenInfo->cfile = py.fptr;
@@ -718,7 +718,7 @@ static void makePYFile() {
     char* curSection = strtok(copyOfLib, " \n");
     // Get the libraries from compileline --libraries, taking the `name`
     // portion from all `-lname` parts of that command's output
-    while (curSection != NULL) {
+    while (curSection != nullptr) {
       if (strncmp(curSection, "-l", prefixLen) == 0) {
         if (first) {
           first = false;
@@ -727,7 +727,7 @@ static void makePYFile() {
         }
         fprintf(py.fptr, "\"%s\"", &curSection[prefixLen]);
       }
-      curSection = strtok(NULL, " \n");
+      curSection = strtok(nullptr, " \n");
     }
 
     // Fetch addition
@@ -750,10 +750,10 @@ static void makePYFile() {
 }
 
 static void makePYInitFile() {
-  fileinfo py = { NULL, NULL, NULL };
+  fileinfo py = { nullptr, nullptr, nullptr };
 
   char* path = dirHasFile(libDir, "__init__.py");
-  if (path != NULL) {
+  if (path != nullptr) {
     free(path);
     USR_WARN("Cannot generate %s/__init__.py because it would overwrite "
              "existing file", libDir);
@@ -762,7 +762,7 @@ static void makePYInitFile() {
  
   openLibraryHelperFile(&py, "__init__", "py");
 
-  if (py.fptr != NULL) {
+  if (py.fptr != nullptr) {
     FILE* save_cfile = gGenInfo->cfile;
     gGenInfo->cfile = py.fptr;
 
@@ -805,7 +805,7 @@ static void makePYInitFile() {
 void codegen_make_python_module() {
   const char* oldPath = getenv("PYTHONPATH");
   std::string pythonPath = "";
-  if (oldPath == NULL) {
+  if (oldPath == nullptr) {
     pythonPath = CHPL_RUNTIME_INCL;
   } else {
     pythonPath += oldPath;
@@ -818,8 +818,8 @@ void codegen_make_python_module() {
   // detects
   std::string crayCompiler;
   std::string crayLinker;
-  if (CHPL_TARGET_COMPILER != NULL &&
-      strstr(CHPL_TARGET_COMPILER, "cray-prgenv") != NULL) {
+  if (CHPL_TARGET_COMPILER != nullptr &&
+      strstr(CHPL_TARGET_COMPILER, "cray-prgenv") != nullptr) {
     if (strcmp(CHPL_TARGET_COMPILER, "cray-prgenv-gnu") != 0) {
       USR_WARN("PrgEnvs other than gnu may not be ABI compatible with Cython"
                " source files");

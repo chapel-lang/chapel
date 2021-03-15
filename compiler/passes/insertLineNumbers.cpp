@@ -133,8 +133,8 @@ insertLineNumber(CallExpr* call) {
   ModuleSymbol* mod  = fn->getModule();
   ArgSymbol*    fileArg = filenameMap.get(fn);
   ArgSymbol*    lineArg = linenoMap.get(fn);
-  Symbol*       file    = NULL;
-  Symbol*       line    = NULL;
+  Symbol*       file    = nullptr;
+  Symbol*       line    = nullptr;
 
   if (strcmp(fn->name, "chpl__heapAllocateGlobals") == 0 ||
       strcmp(fn->name, "chpl__initStringLiterals")  == 0 ||
@@ -207,9 +207,9 @@ insertLineNumber(CallExpr* call) {
     // file/line arguments in the enclosing function.
 
     // Create them if they don't exist yet.
-    if (lineArg == NULL)
+    if (lineArg == nullptr)
       lineArg = newLine(fn);
-    if (fileArg == NULL)
+    if (fileArg == nullptr)
       fileArg = newFile(fn);
 
     line = lineArg;
@@ -278,7 +278,7 @@ static void insertNilChecks() {
         FnSymbol* fn = call->resolvedFunction();
 
         // Avoid inserting a nil-check if this is a call to a destructor
-        if (fn == NULL || fn->hasFlag(FLAG_DESTRUCTOR) == false) {
+        if (fn == nullptr || fn->hasFlag(FLAG_DESTRUCTOR) == false) {
           Expr* stmt = call->getStmtExpr();
 
           SET_LINENO(stmt);
@@ -299,7 +299,7 @@ void insertLineNumbers() {
   std::vector<std::string> constantFilenames;
 
   // Put a null string into the iterator at the first position, some runtime
-  // calls will pass in NULL for their filename, we can then use this null
+  // calls will pass in nullptr for their filename, we can then use this null
   // string to deal with that case.
   constantFilenames.push_back("");
 
@@ -369,10 +369,10 @@ static void moveLinenoInsideArgBundle()
       filenameArgSym = filenameMap.get(fn);
 
       // Either both should be set, or neither.
-      INT_ASSERT( (lineArgSym == NULL && filenameArgSym == NULL) ||
-                  (lineArgSym != NULL && filenameArgSym != NULL) );
+      INT_ASSERT( (lineArgSym == nullptr && filenameArgSym == nullptr) ||
+                  (lineArgSym != nullptr && filenameArgSym != nullptr) );
 
-      if (lineArgSym != NULL && filenameArgSym != NULL) {
+      if (lineArgSym != nullptr && filenameArgSym != nullptr) {
         // This task (wrapper) function is not actually called with lineno, fname
         // arguments, so remove them.
         SET_LINENO(fn);

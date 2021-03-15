@@ -84,8 +84,8 @@ void usage(const ArgumentState* state,
 
   fprintf(stdout, "Usage: %s [flags] [source files]\n", state->program_name);
 
-  // The last row is the only row where the name is NULL
-  for (int i = 0; desc[i].name != 0; i++)
+  // The last row is the only row where the name is nullptr
+  for (int i = 0; desc[i].name != nullptr; i++)
   {
     // If this is a header row (the name is the empty string)
     if (desc[i].name[0] == '\0')
@@ -173,7 +173,7 @@ void usage(const ArgumentState* state,
           {
           case 'I':
           case '+':
-            if (desc[i].location != 0)
+            if (desc[i].location != nullptr)
               printf("%d", *(int*) desc[i].location);
             else
               printf("''");
@@ -182,7 +182,7 @@ void usage(const ArgumentState* state,
 
           case 'P':
           case 'S':
-            if (desc[i].location != 0)
+            if (desc[i].location != nullptr)
               printf("'%s'", (char*) desc[i].location);
             else
               printf("''");
@@ -190,7 +190,7 @@ void usage(const ArgumentState* state,
             break;
 
           case 'D':
-            if (desc[i].location != 0)
+            if (desc[i].location != nullptr)
               printf("%g", *(double*) desc[i].location);
             else
               printf("''");
@@ -200,7 +200,7 @@ void usage(const ArgumentState* state,
           case 'f':
           case 'F':
           case 'T':
-            if (desc[i].location != 0)
+            if (desc[i].location != nullptr)
             {
               bool sel = *((bool*) desc[i].location);
 
@@ -212,7 +212,7 @@ void usage(const ArgumentState* state,
             break;
 
           case 'L':
-            if (desc[i].location != 0)
+            if (desc[i].location != nullptr)
               printf("%" PRId64, *(int64_t*) desc[i].location);
             else
               printf("''");
@@ -221,7 +221,7 @@ void usage(const ArgumentState* state,
 
           case 'N':
           case 'n':
-            if (desc[i].location != 0)
+            if (desc[i].location != nullptr)
               printf("--%s%s",
                      (*(bool*) desc[i].location ^ (type == 'N')) ? "no-" : "",
                      desc[i].name);
@@ -295,7 +295,7 @@ static void word_wrap_print(const char* text, int startCol, int endCol)
       }
     }
 
-    word = strtok_r(NULL, delims, &savePtr);
+    word = strtok_r(nullptr, delims, &savePtr);
   }
 
   free(textDup);
@@ -379,13 +379,13 @@ static void ProcessEnvironment(const ArgumentState* state)
   ArgumentDescription* desc = state->desc;
 
   // The name field is defined by every row except the final guard
-  for (int i = 0; desc[i].name != 0; i++)
+  for (int i = 0; desc[i].name != nullptr; i++)
   {
     if (desc[i].env)
     {
       const char* env = get_envvar_setting(desc[i]);
 
-      if (env != 0)
+      if (env != nullptr)
       {
         char sel = desc[i].type[0];
 
@@ -432,7 +432,7 @@ static void ApplyValue(const ArgumentState*       state,
 {
   void* location = desc->location;
 
-  if (location != 0)
+  if (location != nullptr)
   {
     char type = desc->type[0];
 
@@ -457,7 +457,7 @@ static void ApplyValue(const ArgumentState*       state,
         break;
 
       case 'I':
-        *((int*)     location) = strtol(value, NULL, 0);
+        *((int*)     location) = strtol(value, nullptr, 0);
         break;
 
       case 'L':
@@ -465,7 +465,7 @@ static void ApplyValue(const ArgumentState*       state,
         break;
 
       case 'D':
-        *((double*)  location) = strtod(value, NULL);
+        *((double*)  location) = strtod(value, nullptr);
         break;
 
       case 'P':
@@ -474,7 +474,7 @@ static void ApplyValue(const ArgumentState*       state,
 
       case 'S':
       {
-        long bufSize = strtol(desc->type + 1, NULL, 10);
+        long bufSize = strtol(desc->type + 1, nullptr, 10);
 
         strncpy((char*) location, value, bufSize);
 
@@ -517,7 +517,7 @@ static void ProcessCommandLine(ArgumentState* state, int argc, char* aargv[])
     argvSave[i] = strdup(aargv[i]);
   }
 
-  argvSave[argc] = NULL;
+  argvSave[argc] = nullptr;
 
   for (int i = 0; i < argc + 1; i++)
     argvBase[i] = argvSave[i];
@@ -529,13 +529,13 @@ static void ProcessCommandLine(ArgumentState* state, int argc, char* aargv[])
       if ((*argv)[1] == '-')
       {
         char* end   = strchr((*argv) + 2, '=');
-        int   len   = (end != 0) ? end - ((*argv) + 2) : strlen((*argv) + 2);
+        int   len   = end != nullptr ? end - ((*argv) + 2) : strlen((*argv) + 2);
         bool  found = false;
 
-        for (int i = 0; desc[i].name != 0 && found == false; i++)
+        for (int i = 0; desc[i].name != nullptr && found == false; i++)
         {
           // Skip sections headers
-          if (desc[i].type != 0)
+          if (desc[i].type != nullptr)
           {
             int flagLen = strlen(desc[i].name);
 
@@ -543,7 +543,7 @@ static void ProcessCommandLine(ArgumentState* state, int argc, char* aargv[])
             {
               const char* currentFlag = *argv;
 
-              *argv = (end == 0) ? *argv + strlen(*argv) : end;
+              *argv = end == nullptr ? *argv + strlen(*argv) : end;
 
               process_arg(state, &(state->desc[i]), &argv, currentFlag);
 
@@ -557,7 +557,7 @@ static void ProcessCommandLine(ArgumentState* state, int argc, char* aargv[])
             {
               const char* currentFlag = *argv;
 
-              *argv        = (end == 0) ? *argv + strlen(*argv) - 1 : end;
+              *argv        = end == nullptr ? *argv + strlen(*argv) - 1 : end;
 
               desc[i].type = (desc[i].type[0] == 'N') ? "f" : "F";
 
@@ -583,10 +583,10 @@ static void ProcessCommandLine(ArgumentState* state, int argc, char* aargv[])
         char errFlag[3]    = { '-', singleDashArg, '\0' };
         bool found         = false;
 
-        for (int i = 0; desc[i].name != 0 && found == false; i++)
+        for (int i = 0; desc[i].name != nullptr && found == false; i++)
         {
           // Skip sections headers
-          if (desc[i].type != 0)
+          if (desc[i].type != nullptr)
           {
             if (desc[i].key == singleDashArg)
             {
@@ -617,7 +617,7 @@ static void ProcessCommandLine(ArgumentState* state, int argc, char* aargv[])
         sizeof(char*) * (state->nfile_arguments + 2));
 
       state->file_argument[state->nfile_arguments++] = strdup(*argv);
-      state->file_argument[state->nfile_arguments]   = NULL;
+      state->file_argument[state->nfile_arguments]   = nullptr;
     }
   }
 
@@ -636,7 +636,7 @@ static void process_arg(const ArgumentState*       state,
                         char***                    argv,
                         const char*                currentFlag)
 {
-  const char* arg = NULL;
+  const char* arg = nullptr;
 
   if (desc->type)
   {
@@ -681,7 +681,7 @@ static void process_arg(const ArgumentState*       state,
           break;
 
         case 'P':
-          if (desc->location != NULL) {
+          if (desc->location != nullptr) {
             strncpy((char*) desc->location, arg, FILENAME_MAX);
           }
           break;
@@ -729,7 +729,7 @@ static void print_suggestions(const char* flag, const ArgumentDescription* desc)
   // Find the first developer only flag
   // (Code in this function assumes developer flags are after other flags)
   int firstDeveloperOnly = 0;
-  for (int i = 0; desc[i].name != 0; i++) {
+  for (int i = 0; desc[i].name != nullptr; i++) {
     const char* devFlags = "Developer Flags";
     if (desc[i].description &&
         // Does the description start with devFlags?
@@ -741,7 +741,7 @@ static void print_suggestions(const char* flag, const ArgumentDescription* desc)
 
   bool helped = false;
   // Find some common confusions and print a suggestion
-  for (int i = 0; desc[i].name != 0; i++) {
+  for (int i = 0; desc[i].name != nullptr; i++) {
     // Skip developer-only options for non-developer compile
     if (!developer && i >= firstDeveloperOnly)
       break;
@@ -769,7 +769,7 @@ static void print_suggestions(const char* flag, const ArgumentDescription* desc)
   // Did the user elaborate on a flag that was abbreviated?
   // e.g. --helpme
   if (!helped) {
-    for (int i = 0; desc[i].name != 0; i++) {
+    for (int i = 0; desc[i].name != nullptr; i++) {
       // Skip developer-only options for non-developer compile
       if (!developer && i >= firstDeveloperOnly)
         break;
@@ -787,7 +787,7 @@ static void print_suggestions(const char* flag, const ArgumentDescription* desc)
 
   // Did the user type a portion of a flag?
   if (!helped) {
-    for (int i = 0; desc[i].name != 0; i++) {
+    for (int i = 0; desc[i].name != nullptr; i++) {
       // Skip developer-only options for non-developer compile
       if (!developer && i >= firstDeveloperOnly)
         break;
@@ -830,34 +830,34 @@ static void missing_arg(const char* currentFlag)
   clean_exit(1);
 }
 
-/************************************* | **************************************
-*                                                                             *
-* The value in the environment could be one of                                *
-*     NULL    (no value)                                                      *
-*     ""      (the value is the empty string)                                 *
-*     string  (the value is a general string)                                 *
-*                                                                             *
-* If the value is NULL     then the result is NULL                            *
-*                                                                             *
-* If the value is ""       then                                               *
-*    If the type is 'P' or 'S' (Path or String) then return ""                *
-*    otherwise return NULL                                                    *
-*                                                                             *
-* If the value is a string then the result is that string                     *
-*                                                                             *
-************************************** | *************************************/
+/*************************** | ************************************
+*                                                                 *
+* The value in the environment could be one of                    *
+*     nullptr (no value)                                          *
+*     ""      (the value is the empty string)                     *
+*     string  (the value is a general string)                     *
+*                                                                 *
+* If the value is nullptr then the result is nullptr              *
+*                                                                 *
+* If the value is "" then                                         *
+*    If the type is 'P' or 'S' (Path or String) then return ""    *
+*    otherwise return nullptr                                     *
+*                                                                 *
+* If the value is a string then the result is that string         *
+*                                                                 *
+**************************** | ************************************/
 
 static const char* get_envvar_setting(const ArgumentDescription& desc)
 {
   const char* retval = 0;
 
-  if (desc.env != 0)
+  if (desc.env != nullptr)
   {
     // The result of getenv() must not be modified or free'd
     const char* env = getenv(desc.env);
 
     // The environment variable is not set
-    if (env == 0)
+    if (env == nullptr)
       retval = 0;
 
     // The environment variable IS the empty string

@@ -29,7 +29,7 @@ public:
 
   Expr* indices;       // Optional: [Unresolved]SymExpr or CallExpr to _build_tuple
   Expr* iteratorExpr;  // Expr or CallExpr to _build_tuple in zippered case
-  Expr* cond;          // filtering condition or NULL if none
+  Expr* cond;          // filtering condition or nullptr if none
   BlockStmt* loopBody;
 
   // Indicates whether this loop-expression is a forall-expr or for-expr

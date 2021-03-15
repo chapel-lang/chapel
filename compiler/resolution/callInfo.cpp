@@ -28,9 +28,9 @@
 #include "stringutil.h"
 
 CallInfo::CallInfo() {
-  call  = NULL;
-  scope = NULL;
-  name  = NULL;
+  call  = nullptr;
+  scope = nullptr;
+  name  = nullptr;
 }
 
 bool CallInfo::isWellFormed(CallExpr* callExpr) {
@@ -76,7 +76,7 @@ bool CallInfo::isWellFormed(CallExpr* callExpr) {
       actual = named->actual;
 
     } else {
-      actualNames.add(NULL);
+      actualNames.add(nullptr);
     }
 
     if (isDefExpr(actual)) {
@@ -178,13 +178,13 @@ const char* CallInfo::toString() {
     VarSymbol*     var  = toVarSymbol(sym);
     Type*          type = sym->type;
     AggregateType* at   = toAggregateType(type);
-    IteratorInfo*  ii   = (at != NULL) ? at->iteratorInfo : NULL;
+    IteratorInfo*  ii   = (at != nullptr) ? at->iteratorInfo : nullptr;
 
     if (i > start) {
       retval = astr(retval, ", ");
     }
 
-    if (actualNames.v[i] != NULL) {
+    if (actualNames.v[i] != nullptr) {
       retval = astr(retval, actualNames.v[i], "=");
     }
 
@@ -195,7 +195,7 @@ const char* CallInfo::toString() {
     } else if (sym->hasFlag(FLAG_TYPE_VARIABLE) == true) {
       retval = astr(retval, "type ", ::toString(type));
 
-    } else if (var != NULL && var->immediate != NULL) {
+    } else if (var != nullptr && var->immediate != nullptr) {
       if (var->immediate->const_kind == CONST_KIND_STRING) {
         retval = astr(retval, "\"", var->immediate->v_string, "\"");
 

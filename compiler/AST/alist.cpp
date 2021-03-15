@@ -26,9 +26,9 @@
 #include "stringutil.h"
 
 AList::AList() :
-  head(NULL),
-  tail(NULL),
-  parent(NULL),
+  head(nullptr),
+  tail(nullptr),
+  parent(nullptr),
   length(0)
 { }
 
@@ -52,7 +52,7 @@ Expr* AList::only(void) {
   else
     INT_FATAL("only() called on list with more than one element");
 
-  return NULL;
+  return nullptr;
 }
 
 
@@ -73,7 +73,7 @@ Expr* AList::get(int index) const {
 
   INT_FATAL("Indexing list out of bounds");
 
-  return NULL;
+  return nullptr;
 }
 
 bool AList::empty() const {

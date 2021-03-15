@@ -535,7 +535,7 @@ static CallExpr* findRealOnCall(FnSymbol* wrapperFn) {
     }
   }
   INT_ASSERT(false);
-  return NULL;
+  return nullptr;
 }
 
 // Insert runningTaskCounter increment and decrement calls for on-stmts.

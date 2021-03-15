@@ -35,7 +35,7 @@
 
 
 int                                          BasicBlock::nextID     = 0;
-BasicBlock*                                  BasicBlock::basicBlock = NULL;
+BasicBlock*                                  BasicBlock::basicBlock = nullptr;
 Map<LabelSymbol*, std::vector<BasicBlock*>*> BasicBlock::gotoMaps;
 Map<LabelSymbol*, BasicBlock*>               BasicBlock::labelMaps;
 
@@ -56,7 +56,7 @@ void BasicBlock::reset(FnSymbol* fn) {
 }
 
 void BasicBlock::clear(FnSymbol* fn) {
-  if (fn->basicBlocks != NULL) {
+  if (fn->basicBlocks != nullptr) {
     for_vector(BasicBlock, bb, *fn->basicBlocks)
       delete bb;
 
@@ -213,7 +213,7 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt, bool mark) {
       // Set up goto map, so this block's successor can be back-patched later.
       std::vector<BasicBlock*>* vbb = gotoMaps.get(label);
 
-      if (vbb == NULL) {
+      if (vbb == nullptr) {
         vbb = new std::vector<BasicBlock*>();
       }
 
@@ -238,7 +238,7 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt, bool mark) {
     for_vector(BaseAST, ast, asts) {
       if (CallExpr* call = toCallExpr(ast)) {
         // mark function calls as essential
-        if (call->resolvedFunction() != NULL) {
+        if (call->resolvedFunction() != nullptr) {
           mark = true;
 
         // mark essential primitives as essential
@@ -249,7 +249,7 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt, bool mark) {
         } else if (call->isPrimitive(PRIM_MOVE) ||
                  call->isPrimitive(PRIM_ASSIGN)) {
           if (SymExpr* se = toSymExpr(call->get(1))) {
-            if (se->symbol()->type->refType == NULL) {
+            if (se->symbol()->type->refType == nullptr) {
               mark = true;
             }
           }
@@ -413,7 +413,7 @@ bool BasicBlock::isOK() {
       exprs.size() == 0)
     return false;
 
-  // Expressions must be live (non-NULL);
+  // Expressions must be live (non-nullptr);
   for_vector(Expr, expr, exprs)
     if (expr == 0)
       return false;

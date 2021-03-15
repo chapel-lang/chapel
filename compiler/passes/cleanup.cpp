@@ -67,13 +67,13 @@ void cleanup() {
 *                                                                             *
 ************************************** | *************************************/
 
-static bool areMultiDefExprsInAList(AList& list) { 
+static bool areMultiDefExprsInAList(AList& list) {
    int numStmts = 0;
 
     for_alist(stmt, list){
       if (isDefExpr(stmt)) numStmts++;
     }
-    
+
     return numStmts > 1;
 }
 
@@ -87,14 +87,14 @@ static void setAstHelp(Expr* parent, Expr*& lhs, Expr* rhs) {
 
 static void backPropagateInFunction(BlockStmt* block) {
 
-  Expr* init = NULL;
-  DefExpr* prev = NULL;
+  Expr* init = nullptr;
+  DefExpr* prev = nullptr;
 
   if (!areMultiDefExprsInAList(block->body)) return;
 
   SET_LINENO(block);
 
-  VarSymbol* typeTmp = NULL;
+  VarSymbol* typeTmp = nullptr;
   BlockStmt* tmpBlock = new BlockStmt();
 
   for_alist_backward(stmt, block->body) {
@@ -103,22 +103,22 @@ static void backPropagateInFunction(BlockStmt* block) {
       //1. set local variables -- analysis
       if (def->init || def->exprType) {
 
-        if(def->init != NULL) {
+        if(def->init != nullptr) {
           init = def->init;
         } else {
-          init = NULL;
+          init = nullptr;
         }
 
-        typeTmp = NULL;
+        typeTmp = nullptr;
 
       }
 
       //2. update prev if necessary. Since the defExprs in a block statement are
       //iterated in a reverse order, we use prev for cases like var x, y = 1.0, so
       //that x can be initialized with 1.0 and y is initialized with the x symbol.
-      if (prev != NULL && def->init == NULL && def->exprType == NULL) {
+      if (prev != nullptr && def->init == nullptr && def->exprType == nullptr) {
         SET_LINENO(prev);
-        if(prev->exprType != NULL && typeTmp == NULL){
+        if(prev->exprType != nullptr && typeTmp == nullptr){
           typeTmp = newTemp("type_tmp");
           typeTmp->addFlag(FLAG_TYPE_VARIABLE);
           DefExpr* tmpDef = new DefExpr(typeTmp, prev->exprType->copy());
@@ -126,7 +126,7 @@ static void backPropagateInFunction(BlockStmt* block) {
           tmpBlock->insertAtTail(tmpDef);
         }
 
-        if(prev->init != NULL && init != NULL){
+        if(prev->init != nullptr && init != nullptr){
           if (init->isNoInitExpr()){
             setAstHelp(prev, prev->init, init->copy());
           } else if (typeTmp) {
@@ -136,15 +136,15 @@ static void backPropagateInFunction(BlockStmt* block) {
           }
         }
       }
-    
+
       //3. update def, type then init
       {
         SET_LINENO(def);
-        if(typeTmp != NULL && def->exprType == NULL) {
+        if(typeTmp != nullptr && def->exprType == nullptr) {
           setAstHelp(def, def->exprType, prev->exprType->copy());
         }
 
-        if(init != NULL && def->init == NULL){
+        if(init != nullptr && def->init == nullptr){
           setAstHelp(def, def->init, init->copy());
         }
       }
@@ -171,7 +171,7 @@ static void backPropagate(BaseAST* ast) {
             return;
           }
         } else if(isEndOfStatementMarker(stmt)){
-        
+
         } else {
           return;
         }
@@ -250,7 +250,7 @@ static void cleanup(ModuleSymbol* module) {
                 !arg2->hasFlag(FLAG_TYPE_VARIABLE)) {
               USR_FATAL_CONT(arg2, "second formal for cast should have type intent");
             }
-            if (arg2->typeExpr == NULL &&
+            if (arg2->typeExpr == nullptr &&
                 fn->getModule()->modTag != MOD_USER) {
               USR_WARN(arg2, "cast type formal should be constrained");
             }
@@ -264,7 +264,7 @@ static void cleanup(ModuleSymbol* module) {
     SET_LINENO(ast);
 
     if (BlockStmt* block = toBlockStmt(ast)) {
-      if (block->blockTag == BLOCK_SCOPELESS && block->list != NULL) {
+      if (block->blockTag == BLOCK_SCOPELESS && block->list != nullptr) {
         block->flattenAndRemove();
       }
 
@@ -300,7 +300,7 @@ static void cleanup(ModuleSymbol* module) {
     // emit calls to a resolved function; however new_StringSymbol might
     // run before that function is parsed. So fix up any literals created
     // during parsing here.
-    INT_ASSERT(gChplCreateStringWithLiteral != NULL);
+    INT_ASSERT(gChplCreateStringWithLiteral != nullptr);
     const char* name = gChplCreateStringWithLiteral->name;
 
     for_vector(BaseAST, ast, asts) {
@@ -435,7 +435,7 @@ static void flattenPrimaryMethod(TypeSymbol* ts, FnSymbol* fn) {
 
   insertPoint->insertBefore(def->remove());
 
-  if (fn->userString != NULL && fn->name != ts->name) {
+  if (fn->userString != nullptr && fn->name != ts->name) {
     if (strncmp(fn->userString, "ref ", 4) == 0) {
       // fn->userString of "ref foo()"
       // Move "ref " before the type name so we end up with "ref Type.foo()"

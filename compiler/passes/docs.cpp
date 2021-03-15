@@ -2,15 +2,15 @@
  * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -121,9 +121,9 @@ void docs(void) {
 }
 
 bool isNotSubmodule(ModuleSymbol *mod) {
-  return (mod->defPoint == NULL || 
-          mod->defPoint->parentSymbol == NULL ||
-          mod->defPoint->parentSymbol->name == NULL || 
+  return (mod->defPoint == nullptr ||
+          mod->defPoint->parentSymbol == nullptr ||
+          mod->defPoint->parentSymbol->name == nullptr ||
           strcmp("chpl__Program", mod->defPoint->parentSymbol->name) == 0 ||
           strcmp("_root", mod->defPoint->parentSymbol->name) == 0);
 }
@@ -149,10 +149,10 @@ void printClass(std::ofstream *file, AggregateType *cl, unsigned int tabs) {
     }
 
     // If alphabetical option passed, alphabetizes the output
-    if (fDocsAlphabetize) 
-      qsort(cl->methods.v, cl->methods.n, sizeof(cl->methods.v[0]), 
+    if (fDocsAlphabetize)
+      qsort(cl->methods.v, cl->methods.n, sizeof(cl->methods.v[0]),
         compareNames);
-    
+
     forv_Vec(FnSymbol, fn, cl->methods){
       // We only want to print methods defined within the class under the
       // class header
@@ -169,7 +169,7 @@ bool devOnlyFunction(FnSymbol *fn) {
   return (fn->hasFlag(FLAG_MODULE_INIT) || fn->isPrimaryMethod());
 }
 
-// Returns true if the provide module is one of the internal or standard 
+// Returns true if the provide module is one of the internal or standard
 // modules. It is our opinion that these should only automatically be printed
 // out if the user is in developer mode.
 bool devOnlyModule(ModuleSymbol *mod) {
@@ -197,7 +197,7 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, unsigned int tabs, std:
     // If alphabetical option passed, fDocsAlphabetizes the output
     if (fDocsAlphabetize)
       qsort(&fns[0], fns.size(), sizeof(FnSymbol*), compareNames);
-  
+
     for_vector(FnSymbol, fn, fns) {
       // TODO: Add flag to compiler to turn on doc dev only output
 
@@ -219,7 +219,7 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, unsigned int tabs, std:
     std::vector<ModuleSymbol*> mods = mod->getTopLevelModules();
     if (fDocsAlphabetize)
       qsort(&mods[0], mods.size(), sizeof(ModuleSymbol*), compareNames);
-  
+
     for_vector(ModuleSymbol, subMod, mods) {
       // TODO: Add flag to compiler to turn on doc dev only output
       if (!devOnlyModule(subMod)) {
@@ -276,7 +276,7 @@ static bool existsAndDir(const char* dirpath) {
 }
 
 
-/* 
+/*
  * Create new sphinx project at given location and return path where .rst files
  * should be placed.
  */
@@ -368,7 +368,7 @@ static char * checkProjectVersion(char * projectVersion) {
   } else {
     USR_FATAL("Invalid version format: %s due to: %s", projectVersion, error);
   }
-  return NULL;
+  return nullptr;
 }
 
 

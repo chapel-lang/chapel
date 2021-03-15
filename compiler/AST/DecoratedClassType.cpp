@@ -90,7 +90,7 @@ const char* decoratedTypeAstr(ClassTypeDecorator d, const char* className) {
     // no default for help from compilation errors
   }
   INT_FATAL("Case not handled");
-  return NULL;
+  return nullptr;
 }
 
 // Information from the formalDecorator will be used,
@@ -125,7 +125,7 @@ ClassTypeDecorator combineDecorators(ClassTypeDecorator formalDecorator,
 
 
 DecoratedClassType::DecoratedClassType(AggregateType* cls, ClassTypeDecorator d)
-  : Type(E_DecoratedClassType, NULL) {
+  : Type(E_DecoratedClassType, nullptr) {
 
   canonicalClass = cls;
   decorator = d;
@@ -327,7 +327,7 @@ Type* getDecoratedClass(Type* t, ClassTypeDecorator d) {
     // intentionally no default
   }
 
-  return NULL;
+  return nullptr;
 }
 
 

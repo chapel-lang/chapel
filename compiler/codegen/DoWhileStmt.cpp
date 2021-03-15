@@ -64,9 +64,9 @@ GenRet DoWhileStmt::codegen()
 #ifdef HAVE_LLVM
     llvm::Function*   func             = info->irBuilder->GetInsertBlock()->getParent();
 
-    llvm::BasicBlock* blockStmtBody    = NULL;
-    llvm::BasicBlock* blockStmtEnd     = NULL;
-    llvm::BasicBlock* blockStmtEndCond = NULL;
+    llvm::BasicBlock* blockStmtBody    = nullptr;
+    llvm::BasicBlock* blockStmtEnd     = nullptr;
+    llvm::BasicBlock* blockStmtEndCond = nullptr;
 
     getFunction()->codegenUniqueNum++;
 

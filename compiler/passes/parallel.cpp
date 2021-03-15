@@ -98,7 +98,7 @@ typedef struct {
 } BundleArgsFnData;
 
 // bundleArgsFnDataInit: the initial value for BundleArgsFnData
-static BundleArgsFnData bundleArgsFnDataInit = { true, NULL, NULL };
+static BundleArgsFnData bundleArgsFnDataInit = { true, nullptr, nullptr };
 
 static int broadcastGlobalID = 0;
 
@@ -344,7 +344,7 @@ static Symbol* insertAutoCopyForTaskArg
   {
     // TODO: Find out why _RuntimeTypeInfo records do not have autoCopy
     // functions, so we can get rid of this special test.
-    if (autoCopyFn == NULL) return var;
+    if (autoCopyFn == nullptr) return var;
 
     // Insert a call to the autoCopy function ahead of the call.
     VarSymbol* valTmp = newTemp(baseType);
@@ -363,7 +363,7 @@ static void insertAutoDestroyForVar(Symbol *arg, FnSymbol* wrap_fn)
   Type*     baseType = arg->getValType();
   FnSymbol* autoDestroyFn = getAutoDestroy(baseType);
 
-  if (autoDestroyFn == NULL) return;
+  if (autoDestroyFn == nullptr) return;
 
   if (arg->isRef())
   {
@@ -422,7 +422,7 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
 
     // Insert autoCopy/autoDestroy as needed for "begin" or "nonblocking on"
     // calls (and some other cases).
-    Symbol  *var = NULL;
+    Symbol  *var = nullptr;
     bool autoCopy = needsAutoCopyAutoDestroyForArg(formal, arg, fn);
     if (autoCopy)
       var = insertAutoCopyForTaskArg(arg, fcall, fn);
@@ -473,9 +473,9 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
 
   // Find the _EndCount argument so we can pass that explicitly as the
   // first argument to a task launch function.
-  Symbol* endCount = NULL;
-  VarSymbol *taskList = NULL;
-  VarSymbol *taskListNode = NULL;
+  Symbol* endCount = nullptr;
+  VarSymbol *taskList = nullptr;
+  VarSymbol *taskListNode = nullptr;
 
   if (!fn->hasFlag(FLAG_ON)) {
     for_actuals(arg, fcall) {
@@ -496,7 +496,7 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
     if (!fn->hasFlag(FLAG_BEGIN))
       INT_ASSERT(endCount);
 
-    if (endCount != NULL) {
+    if (endCount != nullptr) {
       // Now get the taskList field out of the end count.
 
       taskList = newTemp(astr("_taskList", fn->name), QualifiedType(QUAL_REF, dtCVoidPtr));
@@ -562,10 +562,10 @@ static CallExpr* helpFindDownEndCount(BlockStmt* block)
     cur = cur->prev;
   }
 
-  return NULL;
+  return nullptr;
 }
 
-// Finds downEndCount CallExpr or returns NULL.
+// Finds downEndCount CallExpr or returns nullptr.
 CallExpr* findDownEndCount(FnSymbol* fn)
 {
   return helpFindDownEndCount(fn->body);
@@ -603,7 +603,7 @@ void moveDownEndCountToWrapper(FnSymbol* fn, FnSymbol* wrap_fn, Symbol* wrap_c, 
     if (downEndCount->numActuals() == 1) {
       // Call downEndCount in the wrapper.
       CallExpr* call = new CallExpr(downEndCountFn);
-      if (error != NULL)
+      if (error != nullptr)
         call->insertAtTail(error);
       else
         call->insertAtTail(gNil);
@@ -622,7 +622,7 @@ void moveDownEndCountToWrapper(FnSymbol* fn, FnSymbol* wrap_fn, Symbol* wrap_c, 
     QualifiedType endCountType = endCountTmp->qualType();
 
     Expr* cur = downEndCount->prev;
-    ArgSymbol* whichArg = NULL;
+    ArgSymbol* whichArg = nullptr;
     bool getDynamicEndCount = false;
     // Which argument is passed to the downEndCount?
     // Or is it gotten dynamically?
@@ -633,7 +633,7 @@ void moveDownEndCountToWrapper(FnSymbol* fn, FnSymbol* wrap_fn, Symbol* wrap_c, 
         whichArg = arg;
         break;
       }
-      if (cur == NULL)
+      if (cur == nullptr)
         break; // out of AST
       if (CallExpr* call = toCallExpr(cur))
         if (call->isPrimitive(PRIM_MOVE))
@@ -653,11 +653,11 @@ void moveDownEndCountToWrapper(FnSymbol* fn, FnSymbol* wrap_fn, Symbol* wrap_c, 
       cur = cur->prev;
     }
 
-    INT_ASSERT(whichArg != NULL || getDynamicEndCount == true);
+    INT_ASSERT(whichArg != nullptr || getDynamicEndCount == true);
 
-    VarSymbol* localEndCount = NULL;
+    VarSymbol* localEndCount = nullptr;
 
-    if (whichArg != NULL) {
+    if (whichArg != nullptr) {
       // figure out which arg is the i'th arg
       int i = 1;
       for_formals(formal, fn) {
@@ -698,7 +698,7 @@ void moveDownEndCountToWrapper(FnSymbol* fn, FnSymbol* wrap_fn, Symbol* wrap_c, 
 
     // Call downEndCount in the wrapper.
     CallExpr* call = new CallExpr(downEndCountFn, localEndCount);
-    if (error != NULL)
+    if (error != nullptr)
       call->insertAtTail(error);
     else
       call->insertAtTail(gNil);
@@ -709,7 +709,7 @@ void moveDownEndCountToWrapper(FnSymbol* fn, FnSymbol* wrap_fn, Symbol* wrap_c, 
     // is now in the wrapper.
     downEndCount->remove();
 
-    INT_ASSERT(localEndCount != NULL);
+    INT_ASSERT(localEndCount != nullptr);
   }
 }
 
@@ -721,7 +721,7 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
   AggregateType* ctype = baData.ctype;
   FnSymbol *wrap_fn = new FnSymbol( astr("wrap", fn->name));
 
-  Symbol* error = NULL;
+  Symbol* error = nullptr;
 
   // Create error variable, but not for blocking on statement
   // This function will handle errors for non-blocking tasks/on
@@ -803,9 +803,9 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
   {
     // Skip runtime header
     if (i > 0) {
-      if (error != NULL && field->hasFlag(FLAG_ERROR_VARIABLE)) {
+      if (error != nullptr && field->hasFlag(FLAG_ERROR_VARIABLE)) {
         // Add the error argument
-        INT_ASSERT(error != NULL);
+        INT_ASSERT(error != nullptr);
         call_orig->insertAtTail(error);
       } else {
         // insert args
@@ -933,15 +933,15 @@ static void insertBroadcast(Expr* beforeExpr, Symbol* sym) {
     Serializers ser       = serializeMap[sym->type];
     FnSymbol* broadcastFn = ser.broadcaster;
     FnSymbol* destroyFn   = ser.destroyer;
-    INT_ASSERT(broadcastFn != NULL && destroyFn != NULL);
+    INT_ASSERT(broadcastFn != nullptr && destroyFn != nullptr);
 
     VarSymbol* broadcastID = new_IntSymbol(broadcastGlobalID++);
     beforeExpr->insertAfter(new CallExpr(broadcastFn, sym, broadcastID));
 
     FnSymbol* autoDestroyFn = autoDestroyMap.get(sym->type);
 
-    if (autoDestroyFn != NULL) {
-      Expr* destroyExpr = NULL;
+    if (autoDestroyFn != nullptr) {
+      Expr* destroyExpr = nullptr;
 
       // We expect to find an autoDestroy call inserted by callDestructors'
       // 'insertGlobalAutoDestroyCalls' function.
@@ -951,12 +951,12 @@ static void insertBroadcast(Expr* beforeExpr, Symbol* sym) {
           FnSymbol* fn = call->resolvedFunction();
           if (fn == autoDestroyFn) {
             // Fail if multiple destroys are found
-            INT_ASSERT(destroyExpr == NULL);
+            INT_ASSERT(destroyExpr == nullptr);
             destroyExpr = call->getStmtExpr();
           }
         }
       }
-      INT_ASSERT(destroyExpr != NULL);
+      INT_ASSERT(destroyExpr != nullptr);
 
       // Destroy broadcasted copies before the original.
       destroyExpr->insertBefore(new CallExpr(destroyFn, sym, broadcastID));
@@ -1504,13 +1504,13 @@ static void passArgsToNestedFns() {
       // since the errors are handled directly.
       if (baData.adjustErrors) {
         AggregateType* ctype = baData.ctype;
-        Symbol* toRemove = NULL;
+        Symbol* toRemove = nullptr;
         for_fields(field, ctype) {
           if (field->hasFlag(FLAG_ERROR_VARIABLE))
             toRemove = field;
         }
-        if (toRemove != NULL) {
-          INT_ASSERT(toRemove->firstSymExpr() == NULL);
+        if (toRemove != nullptr) {
+          INT_ASSERT(toRemove->firstSymExpr() == nullptr);
           toRemove->defPoint->remove();
         }
       }

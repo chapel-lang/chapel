@@ -40,36 +40,36 @@ void driverSetHelpTrue(const ArgumentDescription* desc, const char* unused);
 void driverSetDevelSettings(const ArgumentDescription* desc, const char* arg_unused);
 
 #define DRIVER_ARG_COPYRIGHT \
-  {"copyright", ' ', NULL, "Show copyright", "F", &fPrintCopyright, NULL, NULL}
+  {"copyright", ' ', nullptr, "Show copyright", "F", &fPrintCopyright, nullptr, nullptr}
 
 #define DRIVER_ARG_BREAKFLAGS_COMMON \
-  {"break-on-id", ' ', NULL, "Break when AST id is created", "I", &breakOnID, "CHPL_BREAK_ON_ID", NULL}, \
-  {"break-on-remove-id", ' ', NULL, "Break when AST id is removed from the tree", "I", &breakOnRemoveID, "CHPL_BREAK_ON_REMOVE_ID", NULL}
+  {"break-on-id", ' ', nullptr, "Break when AST id is created", "I", &breakOnID, "CHPL_BREAK_ON_ID", nullptr}, \
+  {"break-on-remove-id", ' ', nullptr, "Break when AST id is removed from the tree", "I", &breakOnRemoveID, "CHPL_BREAK_ON_REMOVE_ID", nullptr}
 
 #define DRIVER_ARG_DEBUGGERS                                            \
-  {"gdb", ' ', NULL, "Run compiler in gdb", "F", &fRungdb, NULL, NULL}, \
-  {"lldb", ' ', NULL, "Run compiler in lldb", "F", &fRunlldb, NULL, NULL}
+  {"gdb", ' ', nullptr, "Run compiler in gdb", "F", &fRungdb, nullptr, nullptr}, \
+  {"lldb", ' ', nullptr, "Run compiler in lldb", "F", &fRunlldb, nullptr, nullptr}
 
 #define DRIVER_ARG_DEVELOPER \
-  {"devel", ' ', NULL, "Compile as a developer [user]", "N", &developer, "CHPL_DEVELOPER", driverSetDevelSettings}
+  {"devel", ' ', nullptr, "Compile as a developer [user]", "N", &developer, "CHPL_DEVELOPER", driverSetDevelSettings}
 
 #define DRIVER_ARG_HELP \
-  {"help", 'h', NULL, "Help (show this list)", "F", &fPrintHelp, NULL, NULL}
+  {"help", 'h', nullptr, "Help (show this list)", "F", &fPrintHelp, nullptr, nullptr}
 
 #define DRIVER_ARG_HELP_ENV \
-  {"help-env", ' ', NULL, "Environment variable help", "F", &fPrintEnvHelp, "", driverSetHelpTrue}
+  {"help-env", ' ', nullptr, "Environment variable help", "F", &fPrintEnvHelp, "", driverSetHelpTrue}
 
 #define DRIVER_ARG_HELP_SETTINGS \
-  {"help-settings", ' ', NULL, "Current flag settings", "F", &fPrintSettingsHelp, "", driverSetHelpTrue}
+  {"help-settings", ' ', nullptr, "Current flag settings", "F", &fPrintSettingsHelp, "", driverSetHelpTrue}
 
 #define DRIVER_ARG_LICENSE \
-  {"license", ' ', NULL, "Show license", "F", &fPrintLicense, NULL, NULL}
+  {"license", ' ', nullptr, "Show license", "F", &fPrintLicense, nullptr, nullptr}
 
 #define DRIVER_ARG_PRINT_CHPL_HOME \
-  {"print-chpl-home", ' ', NULL, "Print CHPL_HOME and path to this executable and exit", "F", &fPrintChplHome, NULL,NULL}
+  {"print-chpl-home", ' ', nullptr, "Print CHPL_HOME and path to this executable and exit", "F", &fPrintChplHome, nullptr,nullptr}
 
 #define DRIVER_ARG_VERSION \
-  {"version", ' ', NULL, "Show version", "F", &fPrintVersion, NULL, NULL}
+  {"version", ' ', nullptr, "Show version", "F", &fPrintVersion, nullptr, nullptr}
 
 #define DRIVER_ARG_LAST \
   {0}

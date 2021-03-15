@@ -49,9 +49,9 @@ Expr* buildSquareCallExpr(Expr* base, CallExpr* args);
 
 Expr* buildNamedActual(const char* name, Expr* expr);
 
-Expr* buildFormalArrayType(Expr* iterator, Expr* eltType, Expr* index = NULL);
+Expr* buildFormalArrayType(Expr* iterator, Expr* eltType, Expr* index = nullptr);
 
-Expr* buildIntLiteral(const char* pch, const char* file = NULL, int line = -1);
+Expr* buildIntLiteral(const char* pch, const char* file = nullptr, int line = -1);
 Expr* buildRealLiteral(const char* pch);
 Expr* buildImagLiteral(const char* pch);
 Expr* buildStringLiteral(const char* pch);
@@ -61,7 +61,7 @@ Expr* buildCStringLiteral(const char* pch);
 Expr* buildDotExpr(BaseAST* base, const char* member);
 Expr* buildDotExpr(const char* base, const char* member);
 
-BlockStmt* buildChapelStmt(Expr* expr = NULL);
+BlockStmt* buildChapelStmt(Expr* expr = nullptr);
 BlockStmt* buildErrorStandin();
 
 BlockStmt* buildUseStmt(std::vector<PotentialRename*>* args, bool privateUse);
@@ -81,7 +81,7 @@ BlockStmt* buildRequireStmt(CallExpr* args);
 DefExpr* buildQueriedExpr(const char *expr);
 BlockStmt* buildTupleVarDeclStmt(BlockStmt* tupleBlock, Expr* type, Expr* init);
 BlockStmt* buildLabelStmt(const char* name, Expr* stmt);
-BlockStmt* buildIfStmt(Expr* condExpr, Expr* thenExpr, Expr* elseExpr = NULL);
+BlockStmt* buildIfStmt(Expr* condExpr, Expr* thenExpr, Expr* elseExpr = nullptr);
 CallExpr*  buildIfVar(const char* name, Expr* rhs, bool isConst);
 
 ModuleSymbol* buildModule(const char* name,
@@ -98,7 +98,7 @@ BlockStmt* buildIncludeModule(const char* name,
 
 CallExpr* buildPrimitiveExpr(CallExpr* exprs);
 
-FnSymbol* buildIfExpr(Expr* e, Expr* e1, Expr* e2 = NULL);
+FnSymbol* buildIfExpr(Expr* e, Expr* e1, Expr* e2 = nullptr);
 CallExpr* buildLetExpr(BlockStmt* decls, Expr* expr);
 BlockStmt* buildSerialStmt(Expr* cond, BlockStmt* body);
 void       checkControlFlow(Expr* expr, const char* context);
@@ -113,18 +113,18 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
                                  BlockStmt* body,
                                  bool zippered = false);
 BlockStmt* buildGotoStmt(GotoTag tag, const char* name);
-BlockStmt* buildPrimitiveStmt(PrimitiveTag tag, Expr* e1 = NULL, Expr* e2 = NULL);
+BlockStmt* buildPrimitiveStmt(PrimitiveTag tag, Expr* e1 = nullptr, Expr* e2 = nullptr);
 BlockStmt* buildDeleteStmt(CallExpr* exprlist);
 Expr* buildForLoopExpr(Expr* indices,
                        Expr* iterator,
                        Expr* expr,
-                       Expr* cond = NULL,
+                       Expr* cond = nullptr,
                        bool maybeArrayType = false,
                        bool zippered = false);
 Expr* buildForallLoopExpr(Expr* indices,
                           Expr* iterator,
                           Expr* expr,
-                          Expr* cond = NULL,
+                          Expr* cond = nullptr,
                           bool maybeArrayType = false,
                           bool zippered = false);
 Expr* buildForallLoopExprFromArrayType(CallExpr* buildArrRTTypeCall,
@@ -142,8 +142,8 @@ CallExpr* buildScanExpr(Expr* op, Expr* data, bool zippered = false);
 
 std::set<Flag>* buildVarDeclFlags(Flag flag1 = FLAG_UNKNOWN,
                                   Flag flag2 = FLAG_UNKNOWN);
-BlockStmt* buildVarDecls(BlockStmt* stmts, const char* docs = NULL,
-                         std::set<Flag>* flags = NULL, Expr* cnameExpr = NULL);
+BlockStmt* buildVarDecls(BlockStmt* stmts, const char* docs = nullptr,
+                         std::set<Flag>* flags = nullptr, Expr* cnameExpr = nullptr);
 
 DefExpr*  buildClassDefExpr(const char*   name,
                             const char*   cname,

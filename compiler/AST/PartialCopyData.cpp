@@ -27,8 +27,8 @@
 static std::map<int, PartialCopyData> sFnMap;
 
 PartialCopyData::PartialCopyData() {
-  partialCopySource = NULL;
-  varargOldFormal   = NULL;
+  partialCopySource = nullptr;
+  varargOldFormal   = nullptr;
 }
 
 PartialCopyData::~PartialCopyData() {
@@ -48,10 +48,10 @@ bool hasPartialCopyData(const FnSymbol* fn) {
   return retval;
 }
 
-// Return the entry for 'fn' in partialCopyFnMap or NULL if it does not exist.
+// Return the entry for 'fn' in partialCopyFnMap or nullptr if it does not exist.
 PartialCopyData* getPartialCopyData(FnSymbol* fn) {
   std::map<int, PartialCopyData>::iterator it     = sFnMap.find(fn->id);
-  PartialCopyData*                         retval = NULL;
+  PartialCopyData*                         retval = nullptr;
 
   if (it != sFnMap.end()) {
     retval = &(it->second);

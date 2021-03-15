@@ -158,7 +158,7 @@ GenRet BlockStmt::codegen() {
   } else {
 #ifdef HAVE_LLVM
     llvm::Function*   func          = info->irBuilder->GetInsertBlock()->getParent();
-    llvm::BasicBlock* blockStmtBody = NULL;
+    llvm::BasicBlock* blockStmtBody = nullptr;
 
     getFunction()->codegenUniqueNum++;
 
@@ -247,7 +247,7 @@ CondStmt::codegen() {
         info->module->getContext(),
         FNAME("cond_then"));
 
-    llvm::BasicBlock *condStmtElse = NULL;
+    llvm::BasicBlock *condStmtElse = nullptr;
 
     llvm::BasicBlock *condStmtEnd = llvm::BasicBlock::Create(
         info->module->getContext(),

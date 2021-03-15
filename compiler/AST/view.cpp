@@ -127,7 +127,7 @@ forall_explanation_start(const BaseAST* ast, const BaseAST* parentAst) {
   if (isDeferStmt(ast)) {
     return "defer\n";
   }
-  return NULL;
+  return nullptr;
 }
 
 static void forallPreamble(const Expr* expr, const BaseAST* parentAst,
@@ -264,11 +264,11 @@ list_line(const Expr* expr, const BaseAST* parentAst) {
 }
 
 static void
-list_ast(const BaseAST* ast, const BaseAST* parentAst = NULL, int indent = 0) {
+list_ast(const BaseAST* ast, const BaseAST* parentAst = nullptr, int indent = 0) {
   bool do_list_line = false;
   bool is_C_loop = false;
   bool empty_block = false;
-  const char* block_explain = NULL;
+  const char* block_explain = nullptr;
   if (const Expr* expr = toConstExpr(ast)) {
     forallPreamble(expr, parentAst, indent);
     do_list_line = !parentAst || list_line(expr, parentAst);
@@ -308,7 +308,7 @@ list_ast(const BaseAST* ast, const BaseAST* parentAst = NULL, int indent = 0) {
       printf("%s = ", e->name);
     } else if (toConstDefExpr(expr)) {
       Symbol* sym = toConstDefExpr(expr)->sym;
-      if (sym->type != NULL) {
+      if (sym->type != nullptr) {
         printf("def %s ", sym->qualType().qualStr());
       } else {
         printf("def ");
@@ -324,7 +324,7 @@ list_ast(const BaseAST* ast, const BaseAST* parentAst = NULL, int indent = 0) {
     } else if (isImplementsStmt(expr)) {
       printf("implements stmt ");
     } else if (isIfcConstraint(expr)) {
-      if (parentAst == NULL || !isImplementsStmt(parentAst))
+      if (parentAst == nullptr || !isImplementsStmt(parentAst))
         printf("ifc constraint (");
       else
         printf("(");
@@ -350,7 +350,7 @@ list_ast(const BaseAST* ast, const BaseAST* parentAst = NULL, int indent = 0) {
     bool parentIsCLoop = isCallExpr(parentAst) &&
       toConstCallExpr(parentAst)->isPrimitive(PRIM_BLOCK_C_FOR_LOOP);
     const CallExpr* parent_C_loop = parentIsCLoop ? toConstCallExpr(parentAst) :
-      NULL;
+      nullptr;
     if (isCallExpr(expr) || isIfcConstraint(expr)) {
       printf(") ");
     }
@@ -367,7 +367,7 @@ list_ast(const BaseAST* ast, const BaseAST* parentAst = NULL, int indent = 0) {
         printf("}"); // newline is coming
       else
         printf("}\n");
-      if (isConstForallLoopBody(expr) && parentAst != NULL) {
+      if (isConstForallLoopBody(expr) && parentAst != nullptr) {
         print_indent(indent);
         printf("      end forall %d", parentAst->id);
       }
@@ -424,13 +424,13 @@ BaseAST* aid09(int id) {
         return a;                               \
     }
   foreach_ast(match_id);
-  return NULL;
+  return nullptr;
 }
 
 static BaseAST* aidWithError(int id, const char* callerMsg) {
   if (aidIgnore(id)) {
     printf("%s\n", aidIgnoreError(callerMsg, id));
-    return NULL;
+    return nullptr;
   } else {
     BaseAST* result = aid09(id);
     if (!result) printf("%s\n", aidNotFoundError(callerMsg, id));
@@ -450,16 +450,16 @@ Expr* aidExpr(int id) {
   if (BaseAST* ast = aidWithError(id, "aidExpr"))
     return aidExpr(ast);
   else
-    return NULL;
+    return nullptr;
 }
 
 Expr* aidExpr(BaseAST* ast) {
   if (Expr* expr = toExpr(ast))
     return expr;
-  if (ast != NULL)
+  if (ast != nullptr)
     printf("<aidExpr: node %d is a %s, not an Expr>\n",
            ast->id, ast->astTagAsString());
-  return NULL;
+  return nullptr;
 }
 
 // inTree(): a workaround for an lldb bug
@@ -612,7 +612,7 @@ void list_view(int id) {
 }
 
 void list_view(const BaseAST* ast) {
-  if (ast==NULL) {
+  if (ast==nullptr) {
     printf("<NULL>");
   } else {
     if (isSymbol(ast))
@@ -624,7 +624,7 @@ void list_view(const BaseAST* ast) {
 }
 
 void list_view_noline(const BaseAST* ast) {
-  if (ast==NULL) {
+  if (ast==nullptr) {
     printf("<NULL>");
   } else {
     if (isSymbol(ast))
@@ -635,7 +635,7 @@ void list_view_noline(const BaseAST* ast) {
 }
 
 void print_view(BaseAST* ast) {
-  if (ast==NULL) {
+  if (ast==nullptr) {
     printf("<NULL>");
   } else {
     type_print_view(ast);
@@ -646,7 +646,7 @@ void print_view(BaseAST* ast) {
 }
 
 void print_view_noline(BaseAST* ast) {
-  if (ast==NULL) {
+  if (ast==nullptr) {
     printf("<NULL>");
   } else {
     type_print_view(ast);
@@ -661,7 +661,7 @@ void nprint_view(int id) {
 }
 
 void nprint_view(BaseAST* ast) {
-  if (ast==NULL) {
+  if (ast==nullptr) {
     printf("<NULL>");
   } else {
     type_nprint_view(ast);
@@ -672,7 +672,7 @@ void nprint_view(BaseAST* ast) {
 }
 
 void nprint_view_noline(BaseAST* ast) {
-  if (ast==NULL) {
+  if (ast==nullptr) {
     printf("<NULL>");
   } else {
     type_nprint_view(ast);
@@ -702,7 +702,7 @@ void astDump_view(int id) {
 }
 
 void astDump_view(BaseAST* ast) {
-  if (ast==NULL) {
+  if (ast==nullptr) {
     printf("<NULL>");
   } else {
     AstDump logger(stdout);
@@ -720,7 +720,7 @@ void astDumpToNode_view(int id) {
 }
 
 void astDumpToNode_view(BaseAST* ast) {
-  if (ast==NULL) {
+  if (ast==nullptr) {
     printf("<NULL>");
   } else {
     AstDumpToNode logger(stdout);
@@ -871,19 +871,19 @@ Symbol* debugParentSym(int id) {
     return debugParentSym(ast);
   else {
     printf("%s\n", aidNotFoundError("debugParentSym", id));
-    return NULL;
+    return nullptr;
   }
 }
 Symbol* debugParentSym(BaseAST* ast) {
   if (!ast)
-    return NULL;
+    return nullptr;
   else if (Expr* expr = toExpr(ast))
     return expr->parentSymbol;
   else if (Symbol* sym = toSymbol(ast))
-    return sym->defPoint ? sym->defPoint->parentSymbol : NULL;
+    return sym->defPoint ? sym->defPoint->parentSymbol : nullptr;
   else {
     printf("<debugParentSym: node %d is neither Expr nor Symbol>\n", ast->id);
-    return NULL;
+    return nullptr;
   }
 }
 
@@ -893,19 +893,19 @@ Expr* debugParentExpr(int id) {
     return debugParentExpr(ast);
   else {
     printf("%s\n", aidNotFoundError("debugParentExpr", id));
-    return NULL;
+    return nullptr;
   }
 }
 Expr* debugParentExpr(BaseAST* ast) {
   if (!ast)
-    return NULL;
+    return nullptr;
   else if (Expr* expr = toExpr(ast))
     return expr->parentExpr;
   else if (Symbol* sym = toSymbol(ast))
-    return sym->defPoint ? sym->defPoint->parentExpr : NULL;
+    return sym->defPoint ? sym->defPoint->parentExpr : nullptr;
   else {
     printf("<debugParentExpr: node %d is neither Expr nor Symbol>\n", ast->id);
-    return NULL;
+    return nullptr;
   }
 }
 
@@ -920,10 +920,10 @@ void blockSummary(int id) {
     printf("%s\n", aidNotFoundError("blockSummary", id));
 }
 void blockSummary(BaseAST* ast) {
-  if (ast == NULL)
+  if (ast == nullptr)
     printf("<blockSummary: NULL>\n");
   else if (BlockStmt* block = toBlockStmt(ast))
-    blockSummary(block, NULL);
+    blockSummary(block, nullptr);
   else if (FnSymbol* fn = toFnSymbol(ast))
     blockSummary(fn->body, fn);
   else if (ModuleSymbol* mod = toModuleSymbol(ast))
@@ -942,9 +942,9 @@ static const char* summarySymbolKind(Symbol* sym) {
   if (isInterfaceSymbol(sym)) return "interface";
   return sym->astTagAsString();
 }
-static void summarySymbolPrint(Symbol* sym, const char* prefix = NULL,
-                               const char* suffix = NULL) {
-  printf("%s%s %s[%d] %s", prefix ? prefix : "", 
+static void summarySymbolPrint(Symbol* sym, const char* prefix = nullptr,
+                               const char* suffix = nullptr) {
+  printf("%s%s %s[%d] %s", prefix ? prefix : "",
          summarySymbolKind(sym), sym->name, sym->id, suffix ? suffix : "");
 }
 void blockSummary(BlockStmt* block, Symbol* sym) {
@@ -977,7 +977,7 @@ void blockSummary(BlockStmt* block, Symbol* sym) {
     printf("\n");
   }
   printf("%9d }   %s\n", block->id, debugLoc(block));
-  if (sym != NULL)
+  if (sym != nullptr)
     summarySymbolPrint(sym, "in ", "\n");
 }
 
@@ -1007,7 +1007,7 @@ void map_view(SymbolMap& map) {
       } else {
         printf("NULL");
       }
-      if (val != NULL && val != gNil) {
+      if (val != nullptr && val != gNil) {
         printf("  => ");
         if (!fLogIds) printf(" [%d]", val->id);
         log_ast_symbol(stdout, val, true);
@@ -1139,29 +1139,29 @@ void vec_view(std::vector<SymExpr*>& syms) {
 static void showBlock(BlockStmt* block) {
   printf("  %8d  %s", block->id, debugLoc(block));
   if (FnSymbol* sym = toFnSymbol(block->parentSymbol)) {
-    const char* msg = NULL;
+    const char* msg = nullptr;
     if      (block == sym->body)                msg = "body";
     else if (block == sym->where)               msg = "where";
     else if (block == sym->lifetimeConstraints) msg = "lifetimeConstraints";
     else if (block == sym->retExprType)         msg = "retExprType";
-    if (msg != NULL)
+    if (msg != nullptr)
       printf("  fn %s[%d] %s", sym->name, sym->id, msg);
   } else if (ModuleSymbol* sym = toModuleSymbol(block->parentSymbol)) {
     if (block == sym->block)
       printf("  module %s[%d] %s", sym->name, sym->id, "body");
   } else if (ArgSymbol* sym = toArgSymbol(block->parentSymbol)) {
-    const char* msg = NULL;
+    const char* msg = nullptr;
     if      (block == sym->typeExpr)     msg = "typeExpr";
     else if (block == sym->defaultExpr)  msg = "defaultExpr";
     else if (block == sym->variableExpr) msg = "variableExpr";
-    if (msg != NULL)
+    if (msg != nullptr)
       printf("  arg %s[%d] %s", sym->name, sym->id, msg);
   } else if (ShadowVarSymbol* sym = toShadowVarSymbol(block->parentSymbol)) {
-    const char* msg = NULL;
+    const char* msg = nullptr;
     if      (block == sym->initBlock())   msg = "initBlock";
     else if (block == sym->deinitBlock()) msg = "deinitBlock";
     else if (block == sym->specBlock)     msg = "specBlock";
-    if (msg != NULL)
+    if (msg != nullptr)
       printf("  svar %s[%d] %s", sym->name, sym->id, msg);
   }
   printf("\n");
@@ -1284,7 +1284,7 @@ void whocalls(BaseAST* ast) {
     printf("whocalls: aborting: got NULL\n");
     return;
   }
-  Symbol* sym = NULL;
+  Symbol* sym = nullptr;
   if (SymExpr* se = toSymExpr(ast))
     sym = se->symbol();
   else if (DefExpr* def = toDefExpr(ast))
@@ -1292,7 +1292,7 @@ void whocalls(BaseAST* ast) {
   else if (Symbol* symm = toSymbol(ast))
     sym = symm;
 
-  if (sym == NULL)
+  if (sym == nullptr)
     printf("whocalls: aborting: need a SymExpr or DefExpr or Symbol\n");
   else
     whocalls(ast->id, sym);
@@ -1311,19 +1311,19 @@ static char* parentMsg(Expr* expr, int* cntInTreeP, int* cntNonTreeP) {
 }
 
 void whocalls(int id) {
-  whocalls(id, NULL);
+  whocalls(id, nullptr);
 }
 
 // 'sym' is used to print the function name
 static void whocalls(int id, Symbol* sym) {
-  if (sym == NULL)
+  if (sym == nullptr)
     printf("whocalls [%d]\n", id);
   else if (sym->id == id)
     printf("whocalls %s %s[%d]\n", sym->astTagAsString(), sym->name, id);
   else
     printf("whocalls [%d]  ignoring %s %s[%d]\n",
            id, sym->astTagAsString(), sym->name, sym->id);
-  
+
   int callAll = 0, callMatch = 0, callNonTreeMatch = 0;
   forv_Vec(CallExpr, call, gCallExprs) {
     if (SymExpr* se = toSymExpr(call->baseExpr)) {
@@ -1404,13 +1404,13 @@ FnSymbol* debugGetTheIteratorFn(int id) {
   if (BaseAST* ast = aidWithError(id, "debugGetTheIteratorFn"))
     return debugGetTheIteratorFn(ast);
   else
-    return NULL;
+    return nullptr;
 }
 
 FnSymbol* debugGetTheIteratorFn(BaseAST* ast) {
   if (!ast) {
     printf("<debugGetTheIteratorFn: NULL>\n");
-    return NULL;
+    return nullptr;
   }
   else if (Symbol* sym = toSymbol(ast))
     return debugGetTheIteratorFn(sym->type);
@@ -1423,6 +1423,6 @@ FnSymbol* debugGetTheIteratorFn(BaseAST* ast) {
   else {
     printf("<don't know how to get the iterator for node %s %d>\n",
            ast->astTagAsString(), ast->id);
-    return NULL;
+    return nullptr;
   }
 }

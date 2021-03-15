@@ -35,8 +35,8 @@ void stopCountingFileTokens(yyscan_t scanner);
 void finishCountingTokens();
 
 void countToken(const char* toktext1,
-                const char* toktext2 = NULL,
-                const char* toktext3 = NULL);
+                const char* toktext2 = nullptr,
+                const char* toktext3 = nullptr);
 void countNewline();
 void countCommentLine();
 void countSingleLineComment(const char* comment);

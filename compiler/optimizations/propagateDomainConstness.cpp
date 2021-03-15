@@ -49,7 +49,7 @@ static void setDefinedConstForDomainSymbol(Symbol *domainSym,
 // and changes pertinent arguments in the CallExprs as necessary
 void setDefinedConstForDefExprIfApplicable(DefExpr* defExpr,
                                            std::set<Flag>* flags) {
-  if (defExpr->init != NULL) {
+  if (defExpr->init != nullptr) {
     if (flags->count(FLAG_CONST) == 0) {
       setDefinedConstForDefExprWithIfExprs(defExpr->init);
     }
@@ -68,13 +68,13 @@ void setDefinedConstForPrimSetMemberIfApplicable(CallExpr *call) {
   // 1: this
   // 2: field
   // 3: src
-  Symbol *thisSym = NULL;
+  Symbol *thisSym = nullptr;
   if (SymExpr *se = toSymExpr(call->get(1))) {
     thisSym = se->symbol();
   }
 
-  Symbol *fieldSym = NULL;
-  Type *fieldType = NULL;
+  Symbol *fieldSym = nullptr;
+  Type *fieldType = nullptr;
   if (SymExpr *se = toSymExpr(call->get(2))) {
     fieldSym = se->symbol();
     fieldType = fieldSym->getValType();
@@ -112,8 +112,8 @@ void setDefinedConstForFieldsInInitializer(FnSymbol *fn) {
 void removeInitOrAutoCopyPostResolution(CallExpr *call) {
   Expr *parentExpr = call->parentExpr;
 
-  Symbol *argSym = NULL;
-  Type *argType = NULL;
+  Symbol *argSym = nullptr;
+  Type *argType = nullptr;
   if (SymExpr *se = toSymExpr(call->get(1))) {
     argSym = se->symbol();
     argType = argSym->getValType();
@@ -135,11 +135,10 @@ void removeInitOrAutoCopyPostResolution(CallExpr *call) {
   INT_ASSERT(isConst->type == dtBool);
 
   if (argType->symbol->hasFlag(FLAG_DOMAIN)) {
-
     bool createdNoop;
     Expr *nextExpr = getNextExprOrCreateNoop(parentExpr, createdNoop);
 
-    Symbol *lhs = NULL;
+    Symbol *lhs = nullptr;
     if (CallExpr *parentCall = toCallExpr(parentExpr)) {
       if (parentCall->isPrimitive(PRIM_MOVE)) {
         if (SymExpr *lhsSE = toSymExpr(parentCall->get(1))) {
@@ -163,7 +162,7 @@ static Expr* getNextExprOrCreateNoop(Expr *baseExpr, bool &createdNoop) {
   createdNoop = false;
   Expr *nextExpr = baseExpr->next;
 
-  if (nextExpr == NULL) {
+  if (nextExpr == nullptr) {
     createdNoop = true;
   }
   else if (CallExpr *nextCall = toCallExpr(nextExpr)) {
@@ -274,4 +273,3 @@ static void setDefinedConstForDomainField(Symbol *thisSym, Symbol *fieldSym,
     setDefinedConstForDomainSymbol(domSym, insBeforeMarker, insAfterMarker,
                                    isConst);
 }
-

@@ -103,7 +103,7 @@ void EnumType::codegenDef() {
       // sized appropriately, when it exists.  When it doesn't, give
       // it the semi-arbitrary 0-based ordinal value (similar to what
       // the C back-end would do itself).  Note that once some enum
-      // has a non-NULL constant->init, all subsequent ones should as
+      // has a non-nullptr constant->init, all subsequent ones should as
       // well.
       int order = 0;
       for_enums(constant, this) {
@@ -198,7 +198,7 @@ void AggregateType::codegenDef() {
   FILE* outfile = info->cfile;
 
 #ifdef HAVE_LLVM
-  llvm::Type *type = NULL;
+  llvm::Type *type = nullptr;
 #endif
 
   if (symbol->hasFlag(FLAG_STAR_TUPLE)) {
@@ -334,7 +334,7 @@ void AggregateType::codegenDef() {
 
       if(aggregateTag == AGGREGATE_UNION) {
 
-        llvm::Type *largestType = NULL;
+        llvm::Type *largestType = nullptr;
         uint64_t largestSize = 0;
 
         for_fields(field, this) {
@@ -394,7 +394,7 @@ void AggregateType::codegenDef() {
         Type* baseType = this->getField("addr")->type;
         llvm::Type* llBaseType = baseType->symbol->codegen().type;
         INT_ASSERT(llBaseType);
-        llvm::Type *globalPtrTy = NULL;
+        llvm::Type *globalPtrTy = nullptr;
 
         // Remove one level of indirection since the addr field
         // of a wide pointer is always a local address.

@@ -71,7 +71,7 @@ void checkControlFlow(Expr* expr, const char* context) {
       }
     } else if (BlockStmt* block = toBlockStmt(ast)) {
       if (block->isLoopStmt() && !loopSet.set_in(block)) {
-        if (block->userLabel != NULL) {
+        if (block->userLabel != nullptr) {
           labelSet.set_add(block->userLabel);
         }
         std::vector<BaseAST*> loopAsts;
@@ -203,7 +203,7 @@ static const char* toImmediateString(Expr* expr) {
       }
     }
   }
-  return NULL;
+  return nullptr;
 }
 
 
@@ -215,7 +215,7 @@ static const char* toImmediateString(Expr* expr) {
 static void zipToTuple(Expr* zipPrim) {
   CallExpr* zipExpr = toCallExpr(zipPrim);
   assert(zipExpr->isPrimitive(PRIM_ZIP));
-  zipExpr->primitive = NULL;
+  zipExpr->primitive = nullptr;
   zipExpr->baseExpr = new UnresolvedSymExpr("_build_tuple");
 }
 
@@ -387,7 +387,7 @@ static BlockStmt* buildUseList(BaseAST* module, const char* newName,
                                BlockStmt* list, bool privateUse) {
   UseStmt* newUse = new UseStmt(module, newName, privateUse);
   addModuleToSearchList(newUse, module);
-  if (list == NULL) {
+  if (list == nullptr) {
     return buildChapelStmt(newUse);
   } else {
     list->insertAtTail(newUse);
@@ -414,7 +414,7 @@ bool processStringInRequireStmt(const char* str, bool parseTime,
   } else {
     if (isChplSource(str)) {
       if (parseTime) {
-        addSourceFile(str, NULL);
+        addSourceFile(str, nullptr);
         return true;
       } else {
         USR_FATAL("'require' cannot handle non-literal '.chpl' files");
@@ -479,7 +479,7 @@ BlockStmt* buildUseStmt(Expr* mod, const char * rename,
         }
         UnresolvedSymExpr* old_name = toUnresolvedSymExpr(elem->first);
         UnresolvedSymExpr* new_name = toUnresolvedSymExpr(elem->second);
-        if (old_name != NULL && new_name != NULL) {
+        if (old_name != nullptr && new_name != nullptr) {
           // Verify that the new name isn't already in the renameMap
           if (renameMap.count(new_name->unresolved) == 0) {
             renameMap[new_name->unresolved] = old_name->unresolved;
@@ -510,7 +510,7 @@ BlockStmt* buildUseStmt(Expr* mod, Expr* rename,
     return buildUseStmt(mod, usym->unresolved, names, except, privateUse);
   } else {
     USR_FATAL(rename, "incorrect expression in use statement rename, identifier expected");
-    return NULL; // should never be reached, the USR_FATAL will halt execution
+    return nullptr; // should never be reached, the USR_FATAL will halt execution
   }
 }
 
@@ -518,13 +518,13 @@ BlockStmt* buildUseStmt(Expr* mod, Expr* rename,
 // Build a 'use' statement
 //
 BlockStmt* buildUseStmt(std::vector<PotentialRename*>* args, bool privateUse) {
-  BlockStmt* list = NULL;
+  BlockStmt* list = nullptr;
 
   //
   // Iterate over the expressions being 'use'd, processing them
   //
   for_vector(PotentialRename, maybeRename, *args) {
-    Expr* useArg = NULL;
+    Expr* useArg = nullptr;
     switch (maybeRename->tag) {
       case PotentialRename::SINGLE:
         useArg = maybeRename->elem;
@@ -534,7 +534,7 @@ BlockStmt* buildUseStmt(std::vector<PotentialRename*>* args, bool privateUse) {
         useArg = maybeRename->renamed->first;
         Expr* newNameExpr = maybeRename->renamed->second;
         UnresolvedSymExpr* newName = toUnresolvedSymExpr(newNameExpr);
-        if (newName != NULL)
+        if (newName != nullptr)
           list = buildUseList(useArg, newName->unresolved, list, privateUse);
         else
           USR_FATAL(newNameExpr, "incorrect expression in use statement rename, identifier expected");
@@ -545,7 +545,7 @@ BlockStmt* buildUseStmt(std::vector<PotentialRename*>* args, bool privateUse) {
   //
   // If all of them are consumed, replace the use statement by a no-op
   //
-  if (list == NULL) {
+  if (list == nullptr) {
     list = buildChapelStmt(new CallExpr(PRIM_NOOP));
   }
 
@@ -612,7 +612,7 @@ ImportStmt* buildImportStmt(Expr* mod, std::vector<PotentialRename*>* names) {
         UnresolvedSymExpr* old_name = toUnresolvedSymExpr(elem->first);
         UnresolvedSymExpr* new_name = toUnresolvedSymExpr(elem->second);
 
-        if (old_name != NULL && new_name != NULL) {
+        if (old_name != nullptr && new_name != nullptr) {
           // Verify that the new name isn't already in the renameMap
           if (renameMap.count(new_name->unresolved) == 0) {
             renameMap[new_name->unresolved] = old_name->unresolved;
@@ -644,7 +644,7 @@ ImportStmt* buildImportStmt(Expr* mod, std::vector<PotentialRename*>* names) {
 // Build a 'require' statement
 //
 BlockStmt* buildRequireStmt(CallExpr* args) {
-  BlockStmt* list = NULL;
+  BlockStmt* list = nullptr;
 
   //
   // Iterate over the expressions being 'require'd, processing them
@@ -665,7 +665,7 @@ BlockStmt* buildRequireStmt(CallExpr* args) {
     // (during resolution)
     //
     CallExpr* requireCall = new CallExpr(PRIM_REQUIRE, useArg);
-    if (list == NULL) {
+    if (list == nullptr) {
       list = buildChapelStmt(requireCall);
     } else {
       list->insertAtTail(requireCall);
@@ -675,7 +675,7 @@ BlockStmt* buildRequireStmt(CallExpr* args) {
   //
   // If we didn't create anything, return a no-op
   //
-  if (list == NULL) {
+  if (list == nullptr) {
     list = buildChapelStmt(new CallExpr(PRIM_NOOP));
   }
 
@@ -790,7 +790,7 @@ buildExternBlockStmt(const char* c_code) {
   // use CPtr, SysBasic, SysCTypes to get c_ptr, c_int, c_double etc.
   // (System error codes do not need to be part of this).
   BlockStmt* useBlock = buildUseList(new UnresolvedSymExpr("CPtr"), "",
-                                     NULL, privateUse);
+                                     nullptr, privateUse);
   buildUseList(new UnresolvedSymExpr("SysCTypes"), "", useBlock, privateUse);
   buildUseList(new UnresolvedSymExpr("SysBasic"), "", useBlock, privateUse);
 
@@ -849,7 +849,7 @@ BlockStmt* buildIncludeModule(const char* name,
                               const char* docs) {
   astlocT loc(chplLineno, yyfilename);
   ModuleSymbol* mod = parseIncludedSubmodule(name);
-  INT_ASSERT(mod != NULL);
+  INT_ASSERT(mod != nullptr);
 
   // check visibility specifiers
   //
@@ -896,7 +896,7 @@ CallExpr* buildPrimitiveExpr(CallExpr* exprs) {
   } else {
     INT_FATAL(expr, "primitive with non-literal string name");
   }
-  return NULL;
+  return nullptr;
 }
 
 
@@ -1044,7 +1044,7 @@ Expr* buildForallLoopExprFromArrayType(CallExpr* buildArrTypeCall,
     //
     // That pattern is currently not valid, and is expected to trigger an
     // error message during resolution.
-    Expr* indices = NULL;
+    Expr* indices = nullptr;
     if (buildArrTypeCall->numActuals() >= 3) {
       indices = buildArrTypeCall->get(3)->remove();
     }
@@ -1057,7 +1057,7 @@ Expr* buildForallLoopExprFromArrayType(CallExpr* buildArrTypeCall,
     if (CallExpr* EltExprAsCall = toCallExpr(EltExpr)) {
       EltExpr = buildForallLoopExprFromArrayType(EltExprAsCall, true);
     }
-    return buildForallLoopExpr(indices, DomExpr, EltExpr, NULL, true);
+    return buildForallLoopExpr(indices, DomExpr, EltExpr, nullptr, true);
   } else {
     // if we get something other than a "build array runtime type" call...
     if (recursiveCall) {
@@ -1066,7 +1066,7 @@ Expr* buildForallLoopExprFromArrayType(CallExpr* buildArrTypeCall,
     } else {
       // ...or something is wrong if we're not
       INT_FATAL("buildForallLoopExprFromArrayType() wasn't called with a call to chpl__buildArrayRuntimeType as expected");
-      return NULL;
+      return nullptr;
     }
   }
 }
@@ -1096,14 +1096,14 @@ void addTaskIntent(CallExpr* ti, ShadowVarSymbol* svar) {
     ti->insertAtTail(ovar);
   } else {
     ArgSymbol* tiMark = tiMarkForForallIntent(svar);
-    INT_ASSERT(tiMark != NULL);
+    INT_ASSERT(tiMark != nullptr);
     ti->insertAtTail(tiMark);
     ti->insertAtTail(ovar);
   }
 }
 
 static CallExpr* copyByrefVars(CallExpr* byrefVarsSource) {
-  if (!byrefVarsSource) return NULL;
+  if (!byrefVarsSource) return nullptr;
   return byrefVarsSource->copy();
 }
 
@@ -1290,7 +1290,7 @@ BlockStmt* buildParamForLoopStmt(const char* index, Expr* range, BlockStmt* stmt
 
 BlockStmt*
 buildAssignment(Expr* lhs, Expr* rhs, const char* op) {
-  INT_ASSERT(op != NULL);
+  INT_ASSERT(op != nullptr);
   return buildChapelStmt(new CallExpr(op, lhs, rhs));
 }
 
@@ -1325,9 +1325,9 @@ BlockStmt* buildLOrAssignment(Expr* lhs, Expr* rhs) {
 
 BlockStmt* buildSelectStmt(Expr* selectCond, BlockStmt* whenstmts) {
   BlockStmt* block = new BlockStmt();
-  CondStmt* otherwise = NULL;
-  CondStmt* top = NULL;
-  CondStmt* condStmt = NULL;
+  CondStmt* otherwise = nullptr;
+  CondStmt* top = nullptr;
+  CondStmt* condStmt = nullptr;
 
   VarSymbol* tmp = newTemp();
 
@@ -1350,7 +1350,7 @@ BlockStmt* buildSelectStmt(Expr* selectCond, BlockStmt* whenstmts) {
         USR_FATAL(selectCond, "Select has multiple otherwise clauses");
       otherwise = when;
     } else {
-      Expr* expr = NULL;
+      Expr* expr = nullptr;
       for_actuals(whenCond, conds) {
         whenCond->remove();
         if (!expr)
@@ -1458,9 +1458,9 @@ CallExpr* buildScanExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
 
 static void
 backPropagateInitsTypes(BlockStmt* stmts) {
-  Expr* init = NULL;
-  Expr* type = NULL;
-  DefExpr* prev = NULL;
+  Expr* init = nullptr;
+  Expr* type = nullptr;
+  DefExpr* prev = nullptr;
   for_alist_backward(stmt, stmts->body) {
     if(isEndOfStatementMarker(stmt)){
       continue;
@@ -1508,7 +1508,7 @@ std::set<Flag>* buildVarDeclFlags(Flag flag1, Flag flag2) {
 
 // look up cfgname and mark it as used if we find it
 static Expr* lookupConfigValHelp(const char* cfgname, VarSymbol* var) {
-  Expr* configInit = NULL;
+  Expr* configInit = nullptr;
   configInit = getCmdLineConfig(cfgname);
   if (configInit) {
     if (VarSymbol* conflictingVar = isUsedCmdLineConfig(cfgname)) {
@@ -1531,7 +1531,7 @@ static Expr* lookupConfigVal(VarSymbol* var) {
   // only public configs can be matched in an unqualified manner
   if (!parsingPrivate) {
     if (Expr* unqualConfigInit = lookupConfigValHelp(astr(cfgname), var)) {
-      if (configInit == NULL) {
+      if (configInit == nullptr) {
         configInit = unqualConfigInit;
       } else {
         // we may want to have the latter flag "win", but that would require
@@ -1573,17 +1573,17 @@ static const char* cnameExprToString(Expr* cnameExpr) {
       if (v->isImmediate())
         if (v->immediate->const_kind == CONST_KIND_STRING)
           return v->immediate->v_string;
-  return NULL;
+  return nullptr;
 }
 
 BlockStmt* buildVarDecls(BlockStmt* stmts, const char* docs,
                          std::set<Flag>* flags, Expr* cnameExpr) {
   bool firstvar = true;
-  const char* cname = NULL;
+  const char* cname = nullptr;
 
-  if (cnameExpr != NULL) {
+  if (cnameExpr != nullptr) {
     cname = cnameExprToString(cnameExpr);
-    if (cname == NULL) {
+    if (cname == nullptr) {
       USR_FATAL_CONT(cnameExpr, "at present, external variables can only be renamed using string literals");
     }
   }
@@ -1600,7 +1600,7 @@ BlockStmt* buildVarDecls(BlockStmt* stmts, const char* docs,
           if (flags->count(FLAG_EXTERN) && flags->count(FLAG_PARAM))
             USR_FATAL(var, "external params are not supported");
 
-          if (cnameExpr != NULL && !firstvar)
+          if (cnameExpr != nullptr && !firstvar)
             USR_FATAL_CONT(var, "external symbol renaming can only be applied to one symbol at a time");
 
           setDefinedConstForDefExprIfApplicable(defExpr, flags);
@@ -1633,7 +1633,7 @@ BlockStmt* buildVarDecls(BlockStmt* stmts, const char* docs,
     CallExpr* checkCall = stmts->blockInfoGet();
     SymExpr* tuple = toSymExpr(checkCall->get(1));
     tuple->symbol()->defPoint->insertAfter(checkCall);
-    stmts->blockInfoSet(NULL);
+    stmts->blockInfoSet(nullptr);
   }
 
   // Add a PRIM_END_OF_STATEMENT.
@@ -1680,8 +1680,8 @@ DefExpr* buildClassDefExpr(const char*  name,
                            Flag         externFlag,
                            const char*  docs) {
   bool isExtern = externFlag == FLAG_EXTERN;
-  AggregateType* ct = NULL;
-  TypeSymbol* ts = NULL;
+  AggregateType* ct = nullptr;
+  TypeSymbol* ts = nullptr;
 
   ct = new AggregateType(tag);
 
@@ -1724,9 +1724,9 @@ DefExpr* buildClassDefExpr(const char*  name,
 
     ts->addFlag(FLAG_EXTERN);
     ts->addFlag(FLAG_NO_OBJECT);
-    ct->defaultValue=NULL;
+    ct->defaultValue=nullptr;
 
-    if (inherit != NULL)
+    if (inherit != nullptr)
       USR_FATAL_CONT(inherit,
                      "External types do not currently support inheritance");
   }
@@ -1739,7 +1739,7 @@ DefExpr* buildClassDefExpr(const char*  name,
 
   ct->addDeclarations(decls);
 
-  if (inherit != NULL) {
+  if (inherit != nullptr) {
     ct->inherits.insertAtTail(inherit);
   }
 
@@ -1756,7 +1756,7 @@ DefExpr* buildClassDefExpr(const char*  name,
 void setupTypeIntentArg(ArgSymbol* arg) {
   arg->intent = INTENT_BLANK;
   arg->addFlag(FLAG_TYPE_VARIABLE);
-  if (arg->typeExpr == NULL)
+  if (arg->typeExpr == nullptr)
     arg->type = dtAny;
 }
 
@@ -1862,7 +1862,7 @@ BlockStmt* buildExternExportFunctionDecl(Flag externOrExport, Expr* paramCNameEx
 
   const char* cname = "";
   // Look for a string literal we can use
-  if (paramCNameExpr != NULL) {
+  if (paramCNameExpr != nullptr) {
     const char* cnameStr = cnameExprToString(paramCNameExpr);
     if (cnameStr) {
       cname = cnameStr;
@@ -1874,7 +1874,7 @@ BlockStmt* buildExternExportFunctionDecl(Flag externOrExport, Expr* paramCNameEx
     fn->addFlag(FLAG_EXTERN);
 
     // extern functions with no declared return type will return void
-    if (fn->retExprType == NULL)
+    if (fn->retExprType == nullptr)
       fn->retType = dtVoid;
   }
   if (externOrExport == FLAG_EXPORT) {
@@ -1896,7 +1896,7 @@ BlockStmt* buildExternExportFunctionDecl(Flag externOrExport, Expr* paramCNameEx
     DefExpr* argDef = buildArgDefExpr(INTENT_BLANK,
                                       astr_chpl_cname,
                                       new SymExpr(dtString->symbol),
-                                      paramCNameExpr, NULL);
+                                      paramCNameExpr, nullptr);
     fn->insertFormalAtTail(argDef);
   }
 
@@ -2070,7 +2070,7 @@ BlockStmt* buildForwardingStmt(Expr* expr, std::vector<PotentialRename*>* names,
         }
         UnresolvedSymExpr* old_name = toUnresolvedSymExpr(elem->first);
         UnresolvedSymExpr* new_name = toUnresolvedSymExpr(elem->second);
-        if (old_name != NULL && new_name != NULL) {
+        if (old_name != nullptr && new_name != nullptr) {
           renameMap[new_name->unresolved] = old_name->unresolved;
         } else {
           useListError(elem->first, except);
@@ -2131,7 +2131,7 @@ buildFunctionFormal(FnSymbol* fn, DefExpr* def) {
   fn->insertFormalAtTail(def);
   if (!strcmp(arg->name, "chpl__tuple_arg_temp")) {
     destructureTupleGroupedArgs(fn, arg->variableExpr, new SymExpr(arg));
-    arg->variableExpr = NULL;
+    arg->variableExpr = nullptr;
     // append countFormals to the argument name so it is unique
     arg->name = astr(arg->name, istr(countFormals));
   }
@@ -2163,7 +2163,7 @@ BlockStmt* buildLocalStmt(Expr* stmt) {
   //
   BlockStmt* onBlock = toBlockStmt(body->body.tail);
   if (body->blockTag == BLOCK_SCOPELESS &&
-      onBlock != NULL &&
+      onBlock != nullptr &&
       onBlock->isBlockType(PRIM_BLOCK_ON)) {
     // On-statement directly inside scopeless local block
 
@@ -2171,11 +2171,11 @@ BlockStmt* buildLocalStmt(Expr* stmt) {
     SymExpr* head = toSymExpr(call->argList.head);
     if (head->symbol() == gTrue) {
       // avoiding 'local local on'
-      onBlock = NULL;
+      onBlock = nullptr;
     }
   } else {
     // not an on-block
-    onBlock = NULL;
+    onBlock = nullptr;
   }
   if (onBlock) {
     CallExpr* call = toCallExpr(onBlock->blockInfoGet());
@@ -2378,9 +2378,9 @@ buildCobeginStmt(CallExpr* byref_vars, BlockStmt* block) {
 
   if (block->blockTag == BLOCK_SCOPELESS) {
     block = toBlockStmt(block->body.only());
-    if (block == NULL) {
-      // Though 'block' should be non-NULL in correct programs, in
-      // cobegins containing syntax errors, it may be NULL.  So we'll
+    if (block == nullptr) {
+      // Though 'block' should be non-nullptr in correct programs, in
+      // cobegins containing syntax errors, it may be nullptr.  So we'll
       // just return the original block statement to make progress
       // until the compiler exits.
       return outer;
@@ -2457,7 +2457,7 @@ CallExpr* buildPreDecIncWarning(Expr* expr, char sign) {
   } else {
     INT_FATAL(expr, "Error in parser");
   }
-  return NULL;
+  return nullptr;
 }
 
 BlockStmt* convertTypesToExtern(BlockStmt* blk) {
@@ -2465,7 +2465,7 @@ BlockStmt* convertTypesToExtern(BlockStmt* blk) {
     if (DefExpr* de = toDefExpr(node)) {
       if (!de->init) {
         Symbol* vs = de->sym;
-        PrimitiveType* pt = new PrimitiveType(NULL);
+        PrimitiveType* pt = new PrimitiveType(nullptr);
 
         TypeSymbol* ts = new TypeSymbol(vs->name, pt);
         if (VarSymbol* theVs = toVarSymbol(vs)) {
@@ -2510,10 +2510,10 @@ BlockStmt* handleConfigTypes(BlockStmt* blk) {
   return blk;
 }
 
-static VarSymbol* one = NULL;
+static VarSymbol* one = nullptr;
 
 static SymExpr* buildOneExpr() {
-  if (one == NULL) {
+  if (one == nullptr) {
     one = new_IntSymbol(1);
   }
   return new SymExpr(one);
@@ -2569,24 +2569,24 @@ CallExpr* buildUnboundedRange() {
 // We need to take care to discriminate among these
 
 static BlockStmt* findStmtWithTag(PrimitiveTag tag, BlockStmt* blockStmt) {
-  BlockStmt* retval = NULL;
+  BlockStmt* retval = nullptr;
 
-  while (blockStmt != NULL && retval == NULL) {
+  while (blockStmt != nullptr && retval == nullptr) {
     BlockStmt* tail = toBlockStmt(blockStmt->body.tail);
 
     // This is the stmt we're looking for
-    if (tail != NULL && tail->isBlockType(tag)) {
+    if (tail != nullptr && tail->isBlockType(tag)) {
       retval    = tail;
 
     // Stop if the current blockStmt is not of length 1
     } else if (blockStmt->length() != 1) {
-      blockStmt = NULL;
+      blockStmt = nullptr;
 
     // Stop if the tail is not a "real" BlockStmt (e.g. a Loop etc)
-    } else if (tail == NULL ||
+    } else if (tail == nullptr ||
                (tail->isRealBlockStmt() == false &&
                 !tail->isBlockType(PRIM_BLOCK_ELIDED_ON))) {
-      blockStmt = NULL;
+      blockStmt = nullptr;
 
     // Step in to the block and try again
     } else {

@@ -129,7 +129,7 @@ namespace {
      determines the lifetime.
    */
   struct Lifetime {
-    // if non-NULL, the scope of this symbol represents the lifetime
+    // if non-nullptr, the scope of this symbol represents the lifetime
     Symbol* fromSymbolScope;
     // relevant expression for this lifetime, for errors
     Expr* relevantExpr;
@@ -140,7 +140,7 @@ namespace {
     // is this lifetime return scope - i.e. allowing it to be returned?
     bool returnScope;
     Lifetime()
-      : fromSymbolScope(NULL), relevantExpr(NULL),
+      : fromSymbolScope(nullptr), relevantExpr(nullptr),
         unknown(true), infinite(false), returnScope(false)
     {
     }
@@ -176,7 +176,7 @@ namespace {
   struct DetempGroup {
     Symbol* favorite;
     std::vector<Symbol*> elements;
-    DetempGroup() : favorite(NULL), elements() { }
+    DetempGroup() : favorite(nullptr), elements() { }
   };
 
   struct DeinitOrderNode {
@@ -185,12 +185,12 @@ namespace {
     DeinitOrderNode* nestedOrder; // nested blocks, if-then blocks
     DeinitOrderNode* elseOrder;
     DeinitOrderNode()
-      : order(0), ast(NULL),
-        nestedOrder(NULL), elseOrder(NULL)
+      : order(0), ast(nullptr),
+        nestedOrder(nullptr), elseOrder(nullptr)
     { }
     DeinitOrderNode(Expr* e)
       : order(1), ast(e),
-        nestedOrder(NULL), elseOrder(NULL)
+        nestedOrder(nullptr), elseOrder(nullptr)
     { }
   };
 
@@ -412,7 +412,7 @@ void checkLifetimesAndNilDereferences() {
     // Now that lifetime checking is complete, remove the lifetimeConstraints
     if (fn->lifetimeConstraints) {
       fn->lifetimeConstraints->remove();
-      fn->lifetimeConstraints = NULL;
+      fn->lifetimeConstraints = nullptr;
     }
   }
 }
@@ -511,7 +511,7 @@ static void markArgumentsReturnScope(FnSymbol* fn) {
       anyReturnScope = true;
   }
 
-  if (fn->isMethod() && fn->_this != NULL && !anyReturnScope &&
+  if (fn->isMethod() && fn->_this != nullptr && !anyReturnScope &&
       fn->name != astrInit && fn->name != astrInitEquals &&
       !fn->lifetimeConstraints) {
     // Methods default to 'this' return scope
@@ -547,12 +547,12 @@ static Symbol* getSymbolFromLifetimeClause(Expr* expr, bool &isRet) {
       return se->symbol();
     } else if (call->isPrimitive(PRIM_RETURN)) {
       isRet = true;
-      return NULL;
+      return nullptr;
     }
   }
 
   INT_FATAL("Unhandled");
-  return NULL;
+  return nullptr;
 }
 
 static constraint_t mergeConstraints(constraint_t a, constraint_t b, bool& invalid) {
@@ -661,8 +661,8 @@ static constraint_t orderConstraintFromClause(Expr* expr, Symbol* a, Symbol* b)
       // No impact on isLifetimeShorter but could impact inference
       return CONSTRAINT_UNKNOWN;
     } else {
-      Symbol* lhs = NULL;
-      Symbol* rhs = NULL;
+      Symbol* lhs = nullptr;
+      Symbol* rhs = nullptr;
       bool lhsRet = false;
       bool rhsRet = false;
 
@@ -722,8 +722,8 @@ static Symbol* returnLifetimeFromClause(Expr* expr) {
 
   if (CallExpr* call = toCallExpr(expr)) {
     if (call->isNamed(",")) {
-      Symbol* v1 = NULL;
-      Symbol* v2 = NULL;
+      Symbol* v1 = nullptr;
+      Symbol* v2 = nullptr;
       v1 = returnLifetimeFromClause(call->get(1));
       v2 = returnLifetimeFromClause(call->get(2));
       if (v1 && v2)
@@ -741,13 +741,13 @@ static Symbol* returnLifetimeFromClause(Expr* expr) {
     }
   }
 
-  return NULL;
+  return nullptr;
 }
 
 
 static Symbol* returnLifetimeFromFnClause(FnSymbol* fn) {
-  if (fn->lifetimeConstraints == NULL)
-    return NULL;
+  if (fn->lifetimeConstraints == nullptr)
+    return nullptr;
 
   Expr* last = fn->lifetimeConstraints->body.last();
   return returnLifetimeFromClause(last);
@@ -755,7 +755,7 @@ static Symbol* returnLifetimeFromFnClause(FnSymbol* fn) {
 
 static bool isOuterVariable(FnSymbol* fn, Symbol* var) {
   for (Expr* cur = var->defPoint;
-      cur != NULL;
+      cur != nullptr;
       cur = getParentExprIncludingTaskFnCalls(cur)) {
     if (cur->parentSymbol == fn)
       return false;
@@ -775,8 +775,8 @@ static bool isOuterLifetimeFromClause(LifetimeState& lifetimes, ArgSymbol* arg, 
     } else if (call->isPrimitive(PRIM_RETURN)) {
       return false;
     } else {
-      Symbol* lhs = NULL;
-      Symbol* rhs = NULL;
+      Symbol* lhs = nullptr;
+      Symbol* rhs = nullptr;
       bool lhsRet = false;
       bool rhsRet = false;
 
@@ -826,8 +826,8 @@ static void printOrderConstraintFromClause(Expr* expr, Symbol* a, Symbol* b)
       printOrderConstraintFromClause(call->get(1), a, b);
       printOrderConstraintFromClause(call->get(2), a, b);
     } else {
-      Symbol* lhs = NULL;
-      Symbol* rhs = NULL;
+      Symbol* lhs = nullptr;
+      Symbol* rhs = nullptr;
       bool lhsRet = false;
       bool rhsRet = false;
 
@@ -838,7 +838,7 @@ static void printOrderConstraintFromClause(Expr* expr, Symbol* a, Symbol* b)
           (b == lhs && a == rhs)) {
         const char* lhsName = lhsRet?"return":lhs->name;
         const char* rhsName = rhsRet?"return":rhs->name;
-        const char* calledName = NULL;
+        const char* calledName = nullptr;
 
         if (SymExpr* base = toSymExpr(call->baseExpr))
           calledName = base->symbol()->name;
@@ -1258,7 +1258,7 @@ LifetimePair LifetimeState::inferredLifetimeForCall(CallExpr* call) {
 
   returnsBorrow = isSubjectToBorrowLifetimeAnalysis(returnType);
 
-  ArgSymbol* theOnlyOneThatMatters = NULL;
+  ArgSymbol* theOnlyOneThatMatters = nullptr;
   if (Symbol* sym = returnLifetimeFromFnClause(calledFn)) {
     // lifetime = outer/global variable -> infinite lifetime
     if (sym->defPoint->getFunction() != calledFn)
@@ -1276,7 +1276,7 @@ LifetimePair LifetimeState::inferredLifetimeForCall(CallExpr* call) {
     LifetimePair argLifetime = unknownLifetimePair();
 
     if (formalArgumentDoesNotImpactReturnLifetime(formal) ||
-        (theOnlyOneThatMatters != NULL && theOnlyOneThatMatters != formal))
+        (theOnlyOneThatMatters != nullptr && theOnlyOneThatMatters != formal))
       continue;
 
     if (returnsRef && formal->isRef()) {
@@ -1453,7 +1453,7 @@ static void addSymbolToDetempGroup(Symbol* sym, DetempGroup* group) {
   bool preferSym = false;
   // Should we prefer sym to old?
   // Or leave old there as the preferred symbol?
-  if (old == NULL) {
+  if (old == nullptr) {
     preferSym = true;
   } else {
     Stmt* oldBlock = getDefBlock(old);
@@ -1506,7 +1506,7 @@ static void addPairToDetempMap(Symbol* a, Symbol* b,
   bool aInMap = map.count(a) > 0;
   bool bInMap = map.count(b) > 0;
 
-  DetempGroup* group = NULL;
+  DetempGroup* group = nullptr;
   if (!aInMap && !bInMap) {
     // Create a new map entry for both of them.
     group = new DetempGroup();
@@ -1561,8 +1561,8 @@ bool GatherTempsVisitor::enterCallExpr(CallExpr* call) {
     if (lhs->hasFlag(FLAG_RVV))
       return false;
 
-    Symbol* a = NULL;
-    Symbol* b = NULL;
+    Symbol* a = nullptr;
+    Symbol* b = nullptr;
 
     if (SymExpr* rhsSe = toSymExpr(call->get(2))) {
       Symbol* rhs = rhsSe->symbol();
@@ -1618,18 +1618,18 @@ bool GatherTempsVisitor::enterCallExpr(CallExpr* call) {
 static void printDeinitOrderTree(const char* prefix, DeinitOrderNode* node) {
 
   int astId = 0;
-  if (node->ast != NULL)
+  if (node->ast != nullptr)
     astId = node->ast->id;
 
   bool anyElse = false;
-  for (DeinitOrderNode* cur = node; cur != NULL; cur = cur->nestedOrder) {
+  for (DeinitOrderNode* cur = node; cur != nullptr; cur = cur->nestedOrder) {
     if (cur->elseOrder)
       anyElse = true;
   }
 
   if (anyElse == false) {
     printf("%s", prefix);
-    for (DeinitOrderNode* cur = node; cur != NULL; cur = cur->nestedOrder) {
+    for (DeinitOrderNode* cur = node; cur != nullptr; cur = cur->nestedOrder) {
       if (cur->ast)
         astId = cur->ast->id;
       if (cur != node)
@@ -1640,11 +1640,11 @@ static void printDeinitOrderTree(const char* prefix, DeinitOrderNode* node) {
   } else {
     // print something more complex
     printf("%sorder=%i ast=%i\n", prefix, node->order, astId);
-    if (node->nestedOrder != NULL) {
+    if (node->nestedOrder != nullptr) {
       printf("%snested:\n", prefix);
       printDeinitOrderTree(astr(prefix, "  "), node->nestedOrder);
     }
-    if (node->elseOrder != NULL) {
+    if (node->elseOrder != nullptr) {
       printf("%selse:\n", prefix);
       printDeinitOrderTree(astr(prefix, "  "), node->elseOrder);
     }
@@ -1665,13 +1665,13 @@ static void printOrderSummary(std::vector<DeinitOrderNode*>& orderStack) {
 }
 
 static void clearDeinitOrderNodeSubtree(DeinitOrderNode* node) {
-  if (node->nestedOrder != NULL) {
+  if (node->nestedOrder != nullptr) {
     delete node->nestedOrder;
-    node->nestedOrder = NULL;
+    node->nestedOrder = nullptr;
   }
-  if (node->elseOrder != NULL) {
+  if (node->elseOrder != nullptr) {
     delete node->elseOrder;
-    node->elseOrder = NULL;
+    node->elseOrder = nullptr;
   }
 }
 
@@ -1694,17 +1694,17 @@ static void addToDeinitOrderTree(DeinitOrderNode* dst, DeinitOrderNode* src) {
   dst->ast = src->ast;
 
   // create new nodes for any sub-nodes if they are not present already.
-  if (src->nestedOrder != NULL && dst->nestedOrder == NULL) {
+  if (src->nestedOrder != nullptr && dst->nestedOrder == nullptr) {
     dst->nestedOrder = new DeinitOrderNode();
   }
-  if (src->elseOrder != NULL && dst->elseOrder == NULL) {
+  if (src->elseOrder != nullptr && dst->elseOrder == nullptr) {
     dst->elseOrder = new DeinitOrderNode();
   }
 
   // copy the sub-nodes, recursively
-  if (src->nestedOrder != NULL)
+  if (src->nestedOrder != nullptr)
     addToDeinitOrderTree(dst->nestedOrder, src->nestedOrder);
-  if (src->elseOrder != NULL)
+  if (src->elseOrder != nullptr)
     addToDeinitOrderTree(dst->elseOrder, src->elseOrder);
 }
 
@@ -1746,9 +1746,9 @@ void DeinitOrderVisitor::exitScope(Expr* block) {
 
   if (!orderStack.empty()) {
     // count order for whatever calls follow block being in new statements
-    nextDeinitOrderNode(orderStack.back(), NULL);
+    nextDeinitOrderNode(orderStack.back(), nullptr);
   } else {
-    INT_ASSERT(block->parentExpr == NULL);
+    INT_ASSERT(block->parentExpr == nullptr);
   }
 }
 
@@ -1815,7 +1815,7 @@ void DeinitOrderVisitor::exitForLoop(ForLoop* node) {
 
 static Expr* findUnconditionalReturn(BlockStmt* block) {
   // Check, does the block always return?
-  for (Expr* cur = block->body.first(); cur != NULL; cur = cur->next) {
+  for (Expr* cur = block->body.first(); cur != nullptr; cur = cur->next) {
     if (GotoStmt* g = toGotoStmt(cur))
       if (g->gotoTag == GOTO_RETURN ||
           g->gotoTag == GOTO_ERROR_HANDLING_RETURN)
@@ -1831,18 +1831,18 @@ static Expr* findUnconditionalReturn(BlockStmt* block) {
           return e;
 
     if (CondStmt* c = toCondStmt(cur)) {
-      Expr* thenRet = NULL;
-      Expr* elseRet = NULL;
-      if (c->thenStmt != NULL)
+      Expr* thenRet = nullptr;
+      Expr* elseRet = nullptr;
+      if (c->thenStmt != nullptr)
         thenRet = findUnconditionalReturn(c->thenStmt);
-      if (c->elseStmt != NULL)
+      if (c->elseStmt != nullptr)
         elseRet = findUnconditionalReturn(c->elseStmt);
-      if (thenRet != NULL && elseRet != NULL)
+      if (thenRet != nullptr && elseRet != nullptr)
         return elseRet;
     }
   }
 
-  return NULL;
+  return nullptr;
 }
 
 bool DeinitOrderVisitor::enterCondStmt(CondStmt* cond) {
@@ -1860,15 +1860,15 @@ bool DeinitOrderVisitor::enterCondStmt(CondStmt* cond) {
     printf(" cond %i\n", cond->id);
   }
 
-  Expr* thenRet = NULL;
-  Expr* elseRet = NULL;
-  if (cond->thenStmt != NULL)
+  Expr* thenRet = nullptr;
+  Expr* elseRet = nullptr;
+  if (cond->thenStmt != nullptr)
     thenRet = findUnconditionalReturn(cond->thenStmt);
-  if (cond->elseStmt != NULL)
+  if (cond->elseStmt != nullptr)
     elseRet = findUnconditionalReturn(cond->elseStmt);
 
-  if (cond->thenStmt != NULL) {
-    bool skip = (thenRet != NULL && elseRet == NULL);
+  if (cond->thenStmt != nullptr) {
+    bool skip = (thenRet != nullptr && elseRet == nullptr);
     if (skip)
       skipEarlyDeinitsForUnconditionalReturn++;
 
@@ -1890,8 +1890,8 @@ bool DeinitOrderVisitor::enterCondStmt(CondStmt* cond) {
     if (skip)
       skipEarlyDeinitsForUnconditionalReturn--;
   }
-  if (cond->elseStmt != NULL) {
-    bool skip = (elseRet != NULL && thenRet == NULL);
+  if (cond->elseStmt != nullptr) {
+    bool skip = (elseRet != nullptr && thenRet == nullptr);
 
     if (skip)
       skipEarlyDeinitsForUnconditionalReturn++;
@@ -1916,7 +1916,7 @@ bool DeinitOrderVisitor::enterCondStmt(CondStmt* cond) {
   }
 
   // any calls after the cond statement should get a new order number
-  nextDeinitOrderNode(orderStack.back(), NULL);
+  nextDeinitOrderNode(orderStack.back(), nullptr);
 
   // already visited contained AST
   return false;
@@ -1926,7 +1926,7 @@ void DeinitOrderVisitor::noteUnconditionalReturnInParentBlocks(Expr* r) {
   // Go up blocks, avoiding loops and conditionals, marking their
   // end point in blockOrder.
 
-  for (Expr* e = r; e != NULL; e = e->parentExpr) {
+  for (Expr* e = r; e != nullptr; e = e->parentExpr) {
     if (BlockStmt* b = toBlockStmt(e)) {
       if (b->blockTag == BLOCK_NORMAL)
         addToDeinitOrderTree(&lifetimes->blockOrder[b], orderStack.front());
@@ -2011,8 +2011,8 @@ bool DeinitOrderVisitor::enterGotoStmt(GotoStmt* g) {
 
 static bool isRecordInitOrReturn(CallExpr* call, Symbol*& lhs, CallExpr*& initOrCtor, LifetimeState* lifetimes) {
 
-  SymExpr* gotLHS = NULL;
-  CallExpr* gotCall = NULL;
+  SymExpr* gotLHS = nullptr;
+  CallExpr* gotCall = nullptr;
   if (isRecordInitOrReturn(call, gotLHS, gotCall)) {
     INT_ASSERT(gotLHS);
     if (gotCall) {
@@ -2022,8 +2022,8 @@ static bool isRecordInitOrReturn(CallExpr* call, Symbol*& lhs, CallExpr*& initOr
     }
   }
 
-  lhs = NULL;
-  initOrCtor = NULL;
+  lhs = nullptr;
+  initOrCtor = nullptr;
   return false;
 }
 
@@ -2130,8 +2130,8 @@ bool IntrinsicLifetimesVisitor::enterCallExpr(CallExpr* call) {
   if (lifetimes->callsToIgnore.count(call))
     return false;
 
-  Symbol* initSym = NULL;
-  CallExpr* initCall = NULL;
+  Symbol* initSym = nullptr;
+  CallExpr* initCall = nullptr;
 
   Lifetime lt = unknownLifetime();
 
@@ -2221,8 +2221,8 @@ bool InferLifetimesVisitor::enterCallExpr(CallExpr* call) {
   if (lifetimes->callsToIgnore.count(call))
     return false;
 
-  Symbol* initSym = NULL;
-  CallExpr* initCall = NULL;
+  Symbol* initSym = nullptr;
+  CallExpr* initCall = nullptr;
   if (isRecordInitOrReturn(call, initSym, initCall, lifetimes) &&
       lifetimes->shouldPropagateLifetimeTo(call, initSym)) {
 
@@ -2317,7 +2317,7 @@ bool InferLifetimesVisitor::enterForLoop(ForLoop* forLoop) {
 
   bool isForall = false;
   IteratorDetails leaderDetails;
-  ForLoop* followerForLoop = NULL;
+  ForLoop* followerForLoop = nullptr;
   std::vector<IteratorDetails> detailsVector;
 
   gatherLoopDetails(forLoop, isForall, leaderDetails,
@@ -2350,11 +2350,11 @@ bool InferLifetimesVisitor::enterForLoop(ForLoop* forLoop) {
     // as the iterable in the event that 'these' is called.
     // For that reason, if we can't find the iterator anywhere, we
     // assume it's a method.
-    if (iterable != NULL)
+    if (iterable != nullptr)
       if (AggregateType* at = toAggregateType(iterable->getValType()))
-        if (at->iteratorInfo != NULL)
+        if (at->iteratorInfo != nullptr)
           if (FnSymbol* fn = getTheIteratorFn(at))
-            method = (fn->_this != NULL);
+            method = (fn->_this != nullptr);
 
     bool usedAsRef = index->isRef();
     bool usedAsBorrow = isOrContainsBorrowedClass(index->type);
@@ -2431,13 +2431,13 @@ void InferLifetimesVisitor::inferLifetimesForConstraint(CallExpr* forCall, Expr*
     } else if (constraint->isNamed("=")) {
       Expr* a = constraint->get(1);
       Expr* b = constraint->get(2);
-      ArgSymbol* constraintLhs = NULL;
-      ArgSymbol* constraintRhs = NULL;
+      ArgSymbol* constraintLhs = nullptr;
+      ArgSymbol* constraintRhs = nullptr;
       bool ignore = false;
       constraintLhs = toArgSymbol(getSymbolFromLifetimeClause(a, ignore));
       constraintRhs = toArgSymbol(getSymbolFromLifetimeClause(b, ignore));
-      Symbol* actualLhs = NULL;
-      Symbol* actualRhs = NULL;
+      Symbol* actualLhs = nullptr;
+      Symbol* actualRhs = nullptr;
       if (constraintLhs && constraintRhs) {
         for_formals_actuals(formal, actualExpr, forCall) {
           if (SymExpr* actualSe = toSymExpr(actualExpr)) {
@@ -2604,7 +2604,7 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
               lifetimes->combinedLifetimeForSymbol(actual2sym);
 
             Lifetime relevantLifetime;
-            Symbol* relevantSymbol = NULL;
+            Symbol* relevantSymbol = nullptr;
             bool error = false;
             bool ref = false;
 
@@ -2662,7 +2662,7 @@ void EmitLifetimeErrorsVisitor::emitBadReturnErrors(CallExpr* call) {
   FnSymbol* inFn = call->getFunction();
 
   // track rhs symbol for error messages
-  Symbol* rhsSym = NULL;
+  Symbol* rhsSym = nullptr;
   if (SymExpr* rhsSe = toSymExpr(rhsExpr)) {
     rhsSym = lifetimes->getCanonicalSymbol(rhsSe->symbol());
   }
@@ -2971,7 +2971,7 @@ bool outlivesBlock(LifetimeInformation* info, Symbol* sym, BlockStmt* block) {
   if (lp.referent.unknown == false) {
     if (lp.referent.infinite || lp.referent.returnScope) {
       referentOutlivesBlock = true;
-    } else if (lp.referent.fromSymbolScope != NULL) {
+    } else if (lp.referent.fromSymbolScope != nullptr) {
       Stmt* referentDefBlock = getDefBlock(lp.referent.fromSymbolScope);
       if (isBlockWithinBlock(referentDefBlock, block) == false)
         referentOutlivesBlock = true;
@@ -3217,7 +3217,7 @@ static bool isAnalyzedMoveOrAssignment(CallExpr* call) {
  */
 static bool symbolHasInfiniteLifetime(Symbol* sym) {
 
-  if (sym == NULL)
+  if (sym == nullptr)
     return true;
 
   Symbol* parentSymbol = sym->defPoint->parentSymbol;
@@ -3252,12 +3252,12 @@ static Stmt* getDefBlock(Symbol* sym) {
 
     defPoint = defPoint->parentExpr;
   }
-  return NULL;
+  return nullptr;
 }
 
 static Expr* getParentExprIncludingTaskFnCalls(Expr* cur) {
   Expr* parent = cur->parentExpr;
-  if (parent == NULL) {
+  if (parent == nullptr) {
     if (FnSymbol* inFn = cur->getFunction()) {
       if (isTaskFun(inFn)) {
         for_SymbolSymExprs(se, inFn) {
@@ -3303,7 +3303,7 @@ bool LifetimeState::isLifetimeUnspecifiedFormalOrdering(Lifetime a,
   ArgSymbol* aArg = toArgSymbol(a.fromSymbolScope);
   ArgSymbol* bArg = toArgSymbol(b.fromSymbolScope);
   FnSymbol* fn = a.fromSymbolScope->defPoint->getFunction();
-  INT_ASSERT(fn != NULL && aArg != NULL && bArg != NULL);
+  INT_ASSERT(fn != nullptr && aArg != nullptr && bArg != nullptr);
 
   constraint_t c = orderConstraintFromClause(fn, aArg, bArg);
   if (c != CONSTRAINT_UNKNOWN)
@@ -3344,7 +3344,7 @@ bool LifetimeState::isLifetimeShorter(Lifetime a, Lifetime b) {
     if (isArgSymbol(aSym) && isArgSymbol(bSym)) {
       FnSymbol* aFn = aSym->getFunction();
       FnSymbol* bFn = bSym->getFunction();
-      if (aFn == bFn && aFn->lifetimeConstraints != NULL) {
+      if (aFn == bFn && aFn->lifetimeConstraints != nullptr) {
         // TODO: transitivity ?
         constraint_t c = orderConstraintFromClause(aFn, aSym, bSym);
         return (c == CONSTRAINT_LESS || c == CONSTRAINT_LESS_EQ);
@@ -3358,7 +3358,7 @@ bool LifetimeState::isLifetimeShorter(Lifetime a, Lifetime b) {
     DeinitOrderNode* bCur = bNode;
     bool anyElse = false;
 
-    while (aCur != NULL && bCur != NULL) {
+    while (aCur != nullptr && bCur != nullptr) {
       if (aCur->order < bCur->order)
         return true;
       if (aCur->order > bCur->order)
@@ -3421,7 +3421,7 @@ DeinitOrderNode* LifetimeState::deinitOrderNodeFor(Symbol* sym) {
   // otherwise, use the order from the final location in the defining
   // block as recorded in blockOrder
   Stmt* block = getDefBlock(sym);
-  if (block == NULL && isArgSymbol(sym))
+  if (block == nullptr && isArgSymbol(sym))
     block = sym->defPoint->getFunction()->body;
 
   DeinitOrderBlockMap::iterator it2 = blockOrder.find(block);
@@ -3448,7 +3448,7 @@ LifetimePair LifetimeState::minimumLifetimePair(LifetimePair a,
 static Lifetime scopeLifetimeForSymbol(Symbol* sym) {
   Lifetime lt;
   lt.fromSymbolScope = sym;
-  lt.relevantExpr = NULL;
+  lt.relevantExpr = nullptr;
   lt.unknown = false;
   lt.infinite = symbolHasInfiniteLifetime(sym);
   lt.returnScope = false;
@@ -3457,8 +3457,8 @@ static Lifetime scopeLifetimeForSymbol(Symbol* sym) {
 
 static Lifetime unknownLifetime() {
   Lifetime lt;
-  lt.fromSymbolScope = NULL;
-  lt.relevantExpr = NULL;
+  lt.fromSymbolScope = nullptr;
+  lt.relevantExpr = nullptr;
   lt.unknown = true;
   lt.infinite = false;
   lt.returnScope = false;
@@ -3467,8 +3467,8 @@ static Lifetime unknownLifetime() {
 
 static Lifetime infiniteLifetime() {
   Lifetime lt;
-  lt.fromSymbolScope = NULL;
-  lt.relevantExpr = NULL;
+  lt.fromSymbolScope = nullptr;
+  lt.relevantExpr = nullptr;
   lt.unknown = false;
   lt.infinite = true;
   lt.returnScope = false;

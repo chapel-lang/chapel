@@ -175,7 +175,7 @@ void checkPrimitives()
         Symbol* getField = getFieldSe->symbol();
         INT_ASSERT(ct);
         INT_ASSERT(getField);
-        Symbol* name_match = NULL;
+        Symbol* name_match = nullptr;
         for_fields(field, ct) {
           if (0 == strcmp(field->name, getField->name))
             name_match = field;
@@ -324,7 +324,7 @@ void checkReturnTypesHaveRefTypes()
     if (retType->symbol->hasFlag(FLAG_REF))
       continue;
 
-    if (fn->retTag != RET_TYPE && retType->refType == NULL)
+    if (fn->retTag != RET_TYPE && retType->refType == nullptr)
       INT_FATAL(fn, "every return type must also have a ref type.");
   }
 }

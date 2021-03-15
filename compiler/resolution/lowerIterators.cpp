@@ -77,7 +77,7 @@ FnSymbol* getTheIteratorFn(Type* icType)
 
 // When debugging, avoid assertion failures of the production version.
 FnSymbol* debugGetTheIteratorFn(Type* type) {
-  FnSymbol* result = NULL;
+  FnSymbol* result = nullptr;
   if (AggregateType* agg = toAggregateType(type)) {
     if (agg->symbol->hasFlag(FLAG_TUPLE)) {
       // Through the end of resolution, the first field is the tuple size.
@@ -101,7 +101,7 @@ FnSymbol* debugGetTheIteratorFn(ForLoop* forLoop) {
     if (SymExpr* iteratorSE = forLoop->iteratorGet())
       return debugGetTheIteratorFn(iteratorSE->symbol()->type);
   // otherwise
-  return NULL;
+  return nullptr;
 }
 
 
@@ -125,7 +125,7 @@ static void nonLeaderParCheck()
 
 bool isVirtualIterator(FnSymbol* iterFn) {
   bool retval = false;
-  Type* IRtype = NULL;
+  Type* IRtype = nullptr;
 
   if (IteratorInfo* info = iterFn->iteratorInfo) {
     // A proper iterator.
@@ -144,7 +144,7 @@ bool isVirtualIterator(FnSymbol* iterFn) {
         IRtype = formal->getValType();
       }
   }
-  
+
   if (AggregateType* at = toAggregateType(IRtype)) {
     Vec<AggregateType*>* children = &(at->dispatchChildren);
 
@@ -227,7 +227,7 @@ namespace {
   };
 
   VectorHazardVisitor::VectorHazardVisitor(std::map<FnSymbol*, bool>
-      &fnHasVectorHazard) : hazard(false), reason(NULL), fnHasVectorHazard(fnHasVectorHazard)
+      &fnHasVectorHazard) : hazard(false), reason(nullptr), fnHasVectorHazard(fnHasVectorHazard)
   {
   }
 
@@ -249,11 +249,11 @@ static bool doesFnHaveVectorHazard(FnSymbol* fn,
   // Mark it as a hazard if there is recursion
   fnHasVectorHazard[fn] = true;
 
-  TypeSymbol* thisTypeSymbol = NULL;
-  if (fn->_this != NULL)
+  TypeSymbol* thisTypeSymbol = nullptr;
+  if (fn->_this != nullptr)
     thisTypeSymbol = fn->_this->getValType()->symbol;
 
-  CallExpr* reason = NULL;
+  CallExpr* reason = nullptr;
   bool hazard = false;
   if (fn->hasFlag(FLAG_LLVM_READNONE) ||
       fn->hasFlag(FLAG_FN_SYNCHRONIZATION_FREE) ||
@@ -267,7 +267,7 @@ static bool doesFnHaveVectorHazard(FnSymbol* fn,
     // Who knows what extern functions do!
     // To allow an extern function, mark it with FLAG_FN_SYNCHRONIZATION_FREE.
     hazard = true;
-  } else if (thisTypeSymbol != NULL &&
+  } else if (thisTypeSymbol != nullptr &&
              (thisTypeSymbol->hasFlag(FLAG_ATOMIC_TYPE) ||
               thisTypeSymbol->hasFlag(FLAG_SYNC) ||
               thisTypeSymbol->hasFlag(FLAG_SINGLE))) {
@@ -291,7 +291,7 @@ static bool doesFnHaveVectorHazard(FnSymbol* fn,
   }
 
   if (report && hazard) {
-    FnSymbol *calledFn = NULL;
+    FnSymbol *calledFn = nullptr;
     if (reason)
       calledFn = reason->resolvedFunction();
     if (developer && calledFn)
@@ -363,7 +363,7 @@ static void markVectorizableForallLoops()
         }
 
         if (report && hazard) {
-          FnSymbol *fn = NULL;
+          FnSymbol *fn = nullptr;
           if (v.reason)
             fn = v.reason->resolvedFunction();
           if (developer && fn && v.hazard)
@@ -429,7 +429,7 @@ static void markVectorizableForallLoops()
     }
 
     if (report && hazard) {
-      FnSymbol *fn = NULL;
+      FnSymbol *fn = nullptr;
       if (v.reason)
         fn = v.reason->resolvedFunction();
       if (developer && fn && v.hazard)
@@ -688,7 +688,7 @@ fragmentLocalBlocks() {
           // NOAKES 2014/11/25 Transitional.
           // Avoid calling blockInfoGet() on loops
           if (block->isLoopStmt()   == false &&
-              block->blockInfoGet() != NULL  &&
+              block->blockInfoGet() != nullptr  &&
               block->blockInfoGet()->isPrimitive(PRIM_BLOCK_UNLOCAL)) {
             // UNLOCAL applies to a single LOCAL
             block->blockInfoGet()->remove();
@@ -820,9 +820,9 @@ replaceIteratorFormals(FnSymbol* iterator, Symbol* ic,
 }
 
 static Map<FnSymbol*,FnSymbol*> iteratorFnMap;
-static FnSymbol* argBundleCopyFn = NULL;
-static FnSymbol* argBundleFreeFn = NULL;
-static AggregateType*  argBundleType = NULL;
+static FnSymbol* argBundleCopyFn = nullptr;
+static FnSymbol* argBundleFreeFn = nullptr;
+static AggregateType*  argBundleType = nullptr;
 
 
 //
@@ -831,7 +831,7 @@ static AggregateType*  argBundleType = NULL;
 //
 static void
 ensureArgBundleType(AggregateType* ct) {
-  if (argBundleType == NULL) {
+  if (argBundleType == nullptr) {
     argBundleType = new AggregateType(AGGREGATE_CLASS);
     TypeSymbol* aabSym = new TypeSymbol("chpl_argBundle", argBundleType);
     aabSym->addFlag(FLAG_NO_OBJECT);
@@ -857,7 +857,7 @@ ensureArgBundleType(AggregateType* ct) {
 //
 static void
 createArgBundleFreeFn(AggregateType* ct, FnSymbol* loopBodyFnWrapper) {
-  if (argBundleFreeFn == NULL) {
+  if (argBundleFreeFn == nullptr) {
     // Create the shared function that frees recursive argument bundles.
     argBundleFreeFn = new FnSymbol("chpl__freeRecursiveIteratorArgumentBundle");
     argBundleFreeFn->insertFormalAtTail(new ArgSymbol(INTENT_CONST_IN, "loopBodyFnID", dtInt[INT_SIZE_DEFAULT]));
@@ -881,7 +881,7 @@ createArgBundleFreeFn(AggregateType* ct, FnSymbol* loopBodyFnWrapper) {
   block->insertAtTail(new CallExpr(PRIM_MOVE, loopBodyFnArgsTmp, new CallExpr(PRIM_CAST, ct->symbol, loopBodyFnArgsArg)));
 
   // The last field contains the index used to select the recursive iterator argument bundle.
-  Symbol* lastField = NULL; // assume function pointer for function argument bundle
+  Symbol* lastField = nullptr; // assume function pointer for function argument bundle
   for_fields(field, ct) {
     // If the bundle contains a pointer to another bundle,
     // its clause must call this free function recursively.
@@ -943,7 +943,7 @@ createArgBundleFreeFn(AggregateType* ct, FnSymbol* loopBodyFnWrapper) {
 //
 static void
 createArgBundleCopyFn(AggregateType* ct, FnSymbol* loopBodyFnWrapper) {
-  if (argBundleCopyFn == NULL) {
+  if (argBundleCopyFn == nullptr) {
     // Create the shared function that copies recursive argument bundles.
     // The initial implementation is just a shell.  After creation, it looks like:
     //  chpl_argBundle chpl__copyRecursiveIteratorArgumentBundle(int loopBodyFnID, chpl_argBundle loopBodyFnArgs)
@@ -986,7 +986,7 @@ createArgBundleCopyFn(AggregateType* ct, FnSymbol* loopBodyFnWrapper) {
   Symbol* loopBodyFnArgsTmp = newTemp("loopBodyFnArgsTmp", ct);
   block->insertAtTail(new DefExpr(loopBodyFnArgsTmp));
   block->insertAtTail(new CallExpr(PRIM_MOVE, loopBodyFnArgsTmp, new CallExpr(PRIM_CAST, ct->symbol, loopBodyFnArgsArg)));
-  Symbol* lastTmp = NULL; // assume function pointer for function argument bundle
+  Symbol* lastTmp = nullptr; // assume function pointer for function argument bundle
   for_fields(field, ct) {
     Symbol* tmp = newTemp(field->name, field->type);
     block->insertAtTail(new DefExpr(tmp));
@@ -1076,7 +1076,7 @@ bundleLoopBodyFnArgsForIteratorFnCall(CallExpr* iteratorFnCall,
   CallExpr* loopBodyFnWrapperCall = new CallExpr(loopBodyFn, wrapperIndexArg);
 
   int i = 1;
-  Expr* lastActual = NULL;
+  Expr* lastActual = nullptr;
   while (loopBodyFnCall->numActuals() >= 2) {
     // Skip the index arg.
     Expr* actual = loopBodyFnCall->get(2)->remove();
@@ -1171,7 +1171,7 @@ bundleLoopBodyFnArgsForIteratorFnCall(CallExpr* iteratorFnCall,
 // todo: should this count carry across calls to task functions?
 //
 static int
-countEnclosingLocalBlocks(Expr* expr, BlockStmt* outer = NULL) {
+countEnclosingLocalBlocks(Expr* expr, BlockStmt* outer = nullptr) {
   int count = 0;
 
   for (Expr* tmp = expr; tmp && tmp != outer; tmp = tmp->parentExpr) {
@@ -1179,7 +1179,7 @@ countEnclosingLocalBlocks(Expr* expr, BlockStmt* outer = NULL) {
       // NOAKES 2014/11/25 Transitional.  Avoid calling blockInfoGet() on loops
       if (blk->isLoopStmt() == true) {
 
-      } else if (blk->blockInfoGet() == NULL) {
+      } else if (blk->blockInfoGet() == nullptr) {
 
       } else if (blk->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL)) {
         count++;
@@ -1634,7 +1634,7 @@ addDummyErrorArgumentToCall(CallExpr* call)
 static ArgSymbol*
 findErrorFormalForFn(FnSymbol* fn)
 {
-  ArgSymbol* errorArg = NULL;
+  ArgSymbol* errorArg = nullptr;
   if (fn->throwsError()) {
     for_formals(formal, fn) {
       // TODO: should this check FLAG_ERROR_VARIABLE?
@@ -1684,13 +1684,13 @@ fixupErrorHandlingExits(BlockStmt* body, bool& adjustCaller) {
       // variable outside of this function?
       bool fixError = false;
 
-      Expr* oldErrorSrc = NULL;
-      Expr* oldErrorDst = NULL;
+      Expr* oldErrorSrc = nullptr;
+      Expr* oldErrorDst = nullptr;
 
       // Find the PRIM_MOVE/PRIM_ASSIGN setting the error variable
-      CallExpr* prevMoveErr = NULL;
+      CallExpr* prevMoveErr = nullptr;
       Expr* cur = g->prev;
-      while (cur != NULL) {
+      while (cur != nullptr) {
         if (CallExpr* call = toCallExpr(cur)) {
           if ((call->isPrimitive(PRIM_MOVE) ||
                call->isPrimitive(PRIM_ASSIGN)) &&
@@ -1705,7 +1705,7 @@ fixupErrorHandlingExits(BlockStmt* body, bool& adjustCaller) {
       // TODO -- only consider errors with FLAG_ERROR_VAR?
       // Is it possible for user code to look like this?
 
-      if (prevMoveErr != NULL) {
+      if (prevMoveErr != nullptr) {
         oldErrorDst = prevMoveErr->get(1);
         oldErrorSrc = prevMoveErr->get(2);
         INT_ASSERT(oldErrorDst);
@@ -1725,11 +1725,11 @@ fixupErrorHandlingExits(BlockStmt* body, bool& adjustCaller) {
         // Find the formal to store the error
         // ... find the (last) error argument
         ArgSymbol* errorArg = findErrorFormalForFn(fn);
-        if (errorArg == NULL) {
+        if (errorArg == nullptr) {
           errorArg = addDummyErrorFormalToFn(fn);
           adjustCaller = true;
         }
-        INT_ASSERT(errorArg != NULL);
+        INT_ASSERT(errorArg != nullptr);
 
         // Replace it with assign / goto return
         if (oldErrorDst && oldErrorSrc) {
@@ -1754,13 +1754,13 @@ findFollowingCheckErrorBlock(SymExpr* se, LabelSymbol*& outHandlerLabel,
     if (isBlockStmt(scope)) {
       // Consider statements that appear before stmt
       // We are looking for a DefExpr of an error label
-      for(Expr* cur = stmt->next; cur != NULL; cur = cur->next) {
+      for(Expr* cur = stmt->next; cur != nullptr; cur = cur->next) {
         if (DefExpr* def = toDefExpr(cur)) {
           if (LabelSymbol* label = toLabelSymbol(def->sym)) {
             if (label->hasFlag(FLAG_ERROR_LABEL)) {
               outHandlerLabel = label;
               // find the error that this block is working with
-              for(Expr* e = def->next; e != NULL; e = e->next) {
+              for(Expr* e = def->next; e != nullptr; e = e->next) {
                 std::vector<CallExpr*> calls;
                 collectCallExprs(e, calls);
                 for_vector(CallExpr, call, calls) {
@@ -1782,7 +1782,7 @@ findFollowingCheckErrorBlock(SymExpr* se, LabelSymbol*& outHandlerLabel,
         // handling label, to make sure that the end count is not leaked.
         else if (CallExpr* call = toCallExpr(cur)) {
           if (call->isNamed("_endCountFree")) {
-            if (endCountFree == NULL) {
+            if (endCountFree == nullptr) {
               endCountFree = call;
             }
             else {
@@ -1802,12 +1802,12 @@ findFollowingCheckErrorBlock(SymExpr* se, LabelSymbol*& outHandlerLabel,
 void handleChplPropagateErrorCall(CallExpr* call) {
   SymExpr* errSe = toSymExpr(call->get(1));
   INT_ASSERT(errSe && errSe->typeInfo() == dtError);
-  LabelSymbol* label = NULL;
-  Symbol* error = NULL;
-  CallExpr *endCountFree = NULL;
+  LabelSymbol* label = nullptr;
+  Symbol* error = nullptr;
+  CallExpr *endCountFree = nullptr;
   if (findFollowingCheckErrorBlock(errSe, label, error, endCountFree)) {
     errSe->remove();
-    if (endCountFree != NULL) {
+    if (endCountFree != nullptr) {
       call->insertBefore(endCountFree->copy());
     }
     call->insertBefore(new CallExpr(PRIM_MOVE, error, errSe));
@@ -1828,8 +1828,8 @@ replaceErrorFormalWithEnclosingError(SymExpr* se) {
   if (oldSymbol->defPoint->parentSymbol != se->parentSymbol &&
       oldSymbol->hasFlag(FLAG_ERROR_VARIABLE)) {
 
-    LabelSymbol* newLabel = NULL;
-    Symbol* newError = NULL;
+    LabelSymbol* newLabel = nullptr;
+    Symbol* newError = nullptr;
 
     // This code is only written to handle a PRIM_MOVE/ASSIGN
     // that is setting the out error argument of the iterator.
@@ -1843,15 +1843,15 @@ replaceErrorFormalWithEnclosingError(SymExpr* se) {
     FnSymbol* inFn = toFnSymbol(se->parentSymbol);
 
     // find the Goto we need to replace
-    GotoStmt* fixGoto = NULL;
-    for(Expr* cur = se->getStmtExpr(); cur != NULL; cur = cur->next) {
+    GotoStmt* fixGoto = nullptr;
+    for(Expr* cur = se->getStmtExpr(); cur != nullptr; cur = cur->next) {
       fixGoto = toGotoStmt(cur);
-      if (fixGoto != NULL)
+      if (fixGoto != nullptr)
         break;
     }
     INT_ASSERT(fixGoto);
 
-    CallExpr *dummy = NULL;
+    CallExpr *dummy = nullptr;
     if (findFollowingCheckErrorBlock(se, newLabel, newError, dummy)) {
       // Adjust the current error handling block.
       // 1. Change the use of the error argument to use the
@@ -1865,7 +1865,7 @@ replaceErrorFormalWithEnclosingError(SymExpr* se) {
       // 1. Make sure that the task function has an error argument.
       // 2. Set that out argument instead of the invalid one.
       ArgSymbol* errorArg = findErrorFormalForFn(inFn);
-      if (errorArg == NULL) {
+      if (errorArg == nullptr) {
         errorArg = addDummyErrorFormalToFn(inFn);
         // And adjust callers of this function
         for_SymbolSymExprs(se, inFn) {
@@ -1894,7 +1894,7 @@ replaceErrorFormalWithEnclosingError(SymExpr* se) {
 
 // Return an appropriate IBB insertion point for an outbound goto 'gt'.
 // 'loopRef' is the forLoop or its copy for lowering, whichever is inTree().
-// 'IC' is the forLoop's _iteratorClass, or NULL if lowering a ForallStmt.
+// 'IC' is the forLoop's _iteratorClass, or nullptr if lowering a ForallStmt.
 //
 static Expr* ibbInsertPoint(Expr* loopRef, Symbol* IC, GotoStmt* gt) {
   DefExpr* gtTarget = toSymExpr(gt->label)->symbol()->defPoint;
@@ -1906,7 +1906,7 @@ static Expr* ibbInsertPoint(Expr* loopRef, Symbol* IC, GotoStmt* gt) {
   if (!IC) {
     return gt;
   }
-  
+
   // If we are breaking out from this loop, the IC is freed
   // at the break target. Insert the IBB right before the goto.
   // Cf. if gt is a GOTO_RETURN, the IC is freed at the goto.
@@ -1926,7 +1926,7 @@ static Expr* ibbInsertPoint(Expr* loopRef, Symbol* IC, GotoStmt* gt) {
           return stmt;
 
   INT_FATAL(gt, "did not find the insertion point");
-  return NULL;
+  return nullptr;
 }
 
 // Insert the IBB 'breakBlock' right before each goto that exits 'loopBody'.
@@ -2064,8 +2064,8 @@ expandBodyForIteratorInline(ForLoop*       forLoop,
 
         BlockStmt* bodyCopy = forLoop->copyBody(&map);
         addIteratorBreakBlocksInline(ibody, forLoop->iteratorGet()->symbol(),
-                                     bodyCopy, call, NULL);
-        
+                                     bodyCopy, call, nullptr);
+
         if (int count = countEnclosingLocalBlocks(call, ibody)) {
           for (int i = 0; i < count; i++) {
             bodyCopy = new BlockStmt(bodyCopy);
@@ -2292,7 +2292,7 @@ static void buildIteratorCallInner(BlockStmt* block,
                                    int        fnid,
                                    Symbol*    iterator) {
   IteratorInfo* ii = getTheIteratorFn(iterator)->iteratorInfo;
-  FnSymbol*     fn = NULL;
+  FnSymbol*     fn = nullptr;
 
   switch (fnid) {
   case ZIP1:     fn = ii->zip1;     break;
@@ -2410,7 +2410,7 @@ expandForLoop(ForLoop* forLoop) {
     VarSymbol*   index     = toVarSymbol(se1->symbol());
 
     BlockStmt*   initBlock = new BlockStmt();
-    BlockStmt*   testBlock = NULL;
+    BlockStmt*   testBlock = nullptr;
     BlockStmt*   incrBlock = new BlockStmt();
 
     setupSimultaneousIterators(iterators, indices, iterator, index, forLoop);
@@ -2428,7 +2428,7 @@ expandForLoop(ForLoop* forLoop) {
       getIteratorChildren(children, iterators.v[i]->type);
 
       // Add zip1 before the loop
-      forLoop->insertBefore(buildIteratorCall(NULL,         ZIP1,     iterators.v[i], children));
+      forLoop->insertBefore(buildIteratorCall(nullptr,         ZIP1,     iterators.v[i], children));
 
       // Get the current value of the iterator.
       forLoop->insertAtHead(buildIteratorCall(indices.v[i], GETVALUE, iterators.v[i], children));
@@ -2439,21 +2439,21 @@ expandForLoop(ForLoop* forLoop) {
         // add the init, and incr functions to the init, and incr blocks of the
         // c for loop. If the underlying iterator does not have a c for loop,
         // these blocks will be empty
-        initBlock->insertAtTail(buildIteratorCall(NULL, INIT, iterators.v[i], children));
-        incrBlock->insertAtTail(buildIteratorCall(NULL, INCR, iterators.v[i], children));
+        initBlock->insertAtTail(buildIteratorCall(nullptr, INIT, iterators.v[i], children));
+        incrBlock->insertAtTail(buildIteratorCall(nullptr, INCR, iterators.v[i], children));
 
       } else {
         // for dynamically dispatched iterators, conditional checks and other
         // code are added in buildIteratorCall. These constructs aren't legal
         // in a c for loop, so instead of creating a well formed c for loop we
         // add the init before the loop, and the incr at the bottom of it.
-        forLoop->insertBefore(buildIteratorCall(NULL, INIT, iterators.v[i], children));
-        forLoop->insertAtTail(buildIteratorCall(NULL, INCR, iterators.v[i], children));
+        forLoop->insertBefore(buildIteratorCall(nullptr, INIT, iterators.v[i], children));
+        forLoop->insertAtTail(buildIteratorCall(nullptr, INCR, iterators.v[i], children));
       }
 
       // Add zip3 and zip4 at tail and after the loop respectively.
-      forLoop->insertAtTail(buildIteratorCall(NULL, ZIP3, iterators.v[i], children));
-      forLoop->insertAfter (buildIteratorCall(NULL, ZIP4, iterators.v[i], children));
+      forLoop->insertAtTail(buildIteratorCall(nullptr, ZIP3, iterators.v[i], children));
+      forLoop->insertAfter (buildIteratorCall(nullptr, ZIP4, iterators.v[i], children));
 
       FnSymbol* iterFn = getTheIteratorFn(iterators.v[i]);
       if (iterFn->hasFlag(FLAG_YIELD_WITHIN_ON)) {
@@ -2462,10 +2462,10 @@ expandForLoop(ForLoop* forLoop) {
       }
 
       if (isBoundedIterator(iterFn)) {
-        if (testBlock == NULL) {
+        if (testBlock == nullptr) {
           if (isNotDynIter) {
             // note that we have found the first test
-            testBlock = buildIteratorCall(NULL, HASMORE, iterators.v[i], children);
+            testBlock = buildIteratorCall(nullptr, HASMORE, iterators.v[i], children);
 
           } else {
             // note that we have found the first test block and add checks for
@@ -2507,7 +2507,7 @@ expandForLoop(ForLoop* forLoop) {
         }
       }
 
-      forLoop->insertAtHead(buildIteratorCall(NULL, ZIP2, iterators.v[i], children));
+      forLoop->insertAtHead(buildIteratorCall(nullptr, ZIP2, iterators.v[i], children));
 
       // Need to check if iterator will be inlined, isSingleLoopIterator()
       // doesn't handle arbitrary blockstmts well, so we collapse them first
@@ -2544,9 +2544,9 @@ expandForLoop(ForLoop* forLoop) {
 
     // Ensure that the test clause for completely unbounded loops contains
     // something.
-    // testBlock is only non-NULL if isBoundedIterator() evaluates to true for
+    // testBlock is only non-nullptr if isBoundedIterator() evaluates to true for
     // at least one of the iterators being zippered together.
-    if (testBlock == NULL) {
+    if (testBlock == nullptr) {
       testBlock = new BlockStmt();
 
       testBlock->insertAtTail(new SymExpr(gTrue));
@@ -2642,7 +2642,7 @@ static void cleanupLeaderIteratorCalls()
       collectSymExprs(fn, symExprs);
       for_vector(SymExpr, se, symExprs) {
         ArgSymbol* iteratorArg = toArgSymbol(se->symbol());
-        if (iteratorArg == NULL) continue;
+        if (iteratorArg == nullptr) continue;
         if (iteratorArg->defPoint->parentSymbol == fn) continue;
 
         SET_LINENO(se);
@@ -2687,7 +2687,7 @@ static void cleanupLeaderFollowerIteratorCalls()
               if (isArgSymbol(se->symbol()) &&
                   call->parentSymbol != se->symbol()->defPoint->parentSymbol) {
                 Symbol* field = toAggregateType(iteratorType)->getField(i);
-                VarSymbol* tmp = NULL;
+                VarSymbol* tmp = nullptr;
                 SET_LINENO(call);
                 if (field->type->refType == se->symbol()->type) {
                   tmp = newTemp(field->name, field->type->refType);

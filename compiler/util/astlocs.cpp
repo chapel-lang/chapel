@@ -26,7 +26,7 @@
 
 #include <cstddef>
 
-astlocT currentAstLoc(0,NULL);
+astlocT currentAstLoc(0,nullptr);
 
 /************************************* | **************************************
 *                                                                             *
@@ -77,12 +77,12 @@ astlocMarker::~astlocMarker() {
 Expr* findLocationIgnoringInternalInlining(Expr* cur) {
 
   while (true) {
-    if (cur == NULL || cur->parentSymbol == NULL)
+    if (cur == nullptr || cur->parentSymbol == nullptr)
       return cur;
 
     FnSymbol* curFn = cur->getFunction();
     // If we didn't find a function, or it's not in tree, give up
-    if (curFn == NULL || curFn->inTree() == false)
+    if (curFn == nullptr || curFn->inTree() == false)
       return cur;
 
     // If it's already in user code, use that, because
@@ -99,22 +99,22 @@ Expr* findLocationIgnoringInternalInlining(Expr* cur) {
       return cur;
 
     // Look for a call to that function
-    CallExpr* anyCall = NULL;
-    CallExpr* userCall = NULL;
+    CallExpr* anyCall = nullptr;
+    CallExpr* userCall = nullptr;
     for_SymbolSymExprs(se, curFn) {
       CallExpr* call = toCallExpr(se->parentExpr);
       if (se == call->baseExpr) {
-        if (anyCall == NULL)
+        if (anyCall == nullptr)
           anyCall = call;
-        if (call->getModule()->modTag == MOD_USER && userCall == NULL)
+        if (call->getModule()->modTag == MOD_USER && userCall == nullptr)
           userCall = call;
         break;
       }
     }
 
-    if (userCall != NULL)
+    if (userCall != nullptr)
       cur = userCall;
-    else if (anyCall != NULL)
+    else if (anyCall != nullptr)
       cur = anyCall;
     else
       return cur; // Stop if we didn't find any calls.
@@ -128,11 +128,11 @@ bool printsUserLocation(const BaseAST* astIn) {
 
   if (Expr* expr = toExpr(ast)) {
     Expr* foundExpr = findLocationIgnoringInternalInlining(expr);
-    if (foundExpr != NULL)
+    if (foundExpr != nullptr)
       ast = foundExpr;
   }
 
-  ModuleSymbol* mod = NULL;
+  ModuleSymbol* mod = nullptr;
   if (ast)
     mod = ast->getModule();
 
@@ -147,7 +147,7 @@ static SymExpr* findMentionOfSymbol(BlockStmt* block, Symbol* sym) {
       return se;
     }
   }
-  return NULL;
+  return nullptr;
 }
 
 astlocT getUserInstantiationPoint(const BaseAST* ast) {
@@ -165,21 +165,21 @@ astlocT getUserInstantiationPoint(const BaseAST* ast) {
 
     if (DefExpr* d = toDefExpr(cur)) {
       // Continue with the defined symbol
-      if (d->sym != NULL)
+      if (d->sym != nullptr)
         cur = d->sym;
     } else if (Expr* e = toExpr(cur)) {
       // Continue with the expression's parent function
       FnSymbol* parentFn = e->getFunction();
-      if (parentFn != NULL)
+      if (parentFn != nullptr)
         cur = parentFn;
     } else if (FnSymbol* fn = toFnSymbol(cur)) {
       // Find the first call to the function within the instantiation point,
       // so that we can have a better error message line number.
       BlockStmt* instantiationPoint = fn->instantiationPoint();
 
-      if (instantiationPoint != NULL) {
+      if (instantiationPoint != nullptr) {
         SymExpr* mention = findMentionOfSymbol(instantiationPoint, fn);
-        if (mention != NULL)
+        if (mention != nullptr)
           cur = mention;
         else
           cur = instantiationPoint;
@@ -189,9 +189,9 @@ astlocT getUserInstantiationPoint(const BaseAST* ast) {
       // so we can have a better error message line number.
       BlockStmt* instantiationPoint = ts->instantiationPoint;
 
-      if (instantiationPoint != NULL) {
+      if (instantiationPoint != nullptr) {
         SymExpr* mention = findMentionOfSymbol(instantiationPoint, ts);
-        if (mention != NULL)
+        if (mention != nullptr)
           cur = mention;
         else
           cur = instantiationPoint;
@@ -202,6 +202,6 @@ astlocT getUserInstantiationPoint(const BaseAST* ast) {
     if (last == cur) break;
   }
 
-  INT_ASSERT(cur != NULL);
+  INT_ASSERT(cur != nullptr);
   return cur->astloc;
 }

@@ -100,7 +100,7 @@ char *
 get(charp &p, int optnum = 0) {
   while (*p && isspace(*p)) p++;
   char *s = p;
-  if (optnum && (*p != '-' && !isdigit(*p))) return NULL;
+  if (optnum && (*p != '-' && !isdigit(*p))) return nullptr;
   if (*s == '{') {
     while (*p && *p != '}') p++;
     if (*p) p++;
@@ -111,7 +111,7 @@ get(charp &p, int optnum = 0) {
   } else 
     while (*p && !isspace(*p)) p++;
   if (!*p) return EOF_TOK;
-  if (*s == ';') return NULL;
+  if (*s == ';') return nullptr;
   return dupstr(s, p);
 }
 
@@ -177,7 +177,7 @@ build_data(Vec<Line *> &lines) {
 int
 main(int argc, char *argv[]) {
   int i = 1, len = 0;
-  char *buf = NULL;
+  char *buf = nullptr;
   Vec<Line *> lines;
 
   if (argc < 1 || buf_read(argv[1], &buf, &len) < 0) {

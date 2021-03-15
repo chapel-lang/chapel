@@ -213,7 +213,7 @@ void beautify(fileinfo* origfile) {
       if (!strncmp(cp, ZLINEINPUT, ZLINEINPUTLEN)) {
         sscanf(cp, ZLINEINPUTFORMAT, &zline, zname);
         znptr = strrchr(zname,'/');
-        if (znptr != NULL) {
+        if (znptr != nullptr) {
           // We can't use strcpy here because the source
           // and destination strings can overlap.
           char *src = znptr+1;

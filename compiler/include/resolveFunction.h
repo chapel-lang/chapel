@@ -36,7 +36,7 @@ bool  isLeaderIterator(FnSymbol* fn);
 bool  isFollowerIterator(FnSymbol* fn);
 bool  isStandaloneIterator(FnSymbol* fn);
 
-// If yieldType is not NULL, the type yielded by an iterator will
+// If yieldType is not nullptr, the type yielded by an iterator will
 // be stored in it.
 void  resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldType);
 void  resolveReturnType(FnSymbol* fn);

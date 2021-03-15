@@ -42,46 +42,46 @@
 //
 // The function that represents the compiler-generated entry point
 //
-Symbol *gNil = NULL;
-Symbol *gUnknown = NULL;
-Symbol *gMethodToken = NULL;
-Symbol *gDummyRef = NULL;
-Symbol *gTypeDefaultToken = NULL;
-Symbol *gLeaderTag = NULL, *gFollowerTag = NULL, *gStandaloneTag = NULL;
-Symbol *gModuleToken = NULL;
-Symbol *gNoInit = NULL;
-Symbol *gSplitInit = NULL;
-Symbol *gVoid = NULL;
-Symbol *gNone = NULL;
-Symbol *gFile = NULL;
-Symbol *gStringC = NULL;
-Symbol *gStringCopy = NULL;
-Symbol *gOpaque = NULL;
-Symbol *gTimer = NULL;
-Symbol *gTaskID = NULL;
-Symbol *gSyncVarAuxFields = NULL;
-Symbol *gSingleVarAuxFields = NULL;
+Symbol *gNil = nullptr;
+Symbol *gUnknown = nullptr;
+Symbol *gMethodToken = nullptr;
+Symbol *gDummyRef = nullptr;
+Symbol *gTypeDefaultToken = nullptr;
+Symbol *gLeaderTag = nullptr, *gFollowerTag = nullptr, *gStandaloneTag = nullptr;
+Symbol *gModuleToken = nullptr;
+Symbol *gNoInit = nullptr;
+Symbol *gSplitInit = nullptr;
+Symbol *gVoid = nullptr;
+Symbol *gNone = nullptr;
+Symbol *gFile = nullptr;
+Symbol *gStringC = nullptr;
+Symbol *gStringCopy = nullptr;
+Symbol *gOpaque = nullptr;
+Symbol *gTimer = nullptr;
+Symbol *gTaskID = nullptr;
+Symbol *gSyncVarAuxFields = nullptr;
+Symbol *gSingleVarAuxFields = nullptr;
 
-VarSymbol *gTrue = NULL;
-VarSymbol *gFalse = NULL;
-VarSymbol *gBoundsChecking = NULL;
-VarSymbol *gCastChecking = NULL;
-VarSymbol *gNilChecking = NULL;
-VarSymbol *gOverloadSetsChecks = NULL;
-VarSymbol *gDivZeroChecking = NULL;
-VarSymbol* gCacheRemote = NULL;
-VarSymbol* gPrivatization = NULL;
-VarSymbol* gLocal = NULL;
-VarSymbol* gWarnUnstable = NULL;
-VarSymbol* gIteratorBreakToken = NULL;
-VarSymbol* gNodeID = NULL;
-VarSymbol *gModuleInitIndentLevel = NULL;
-VarSymbol *gInfinity = NULL;
-VarSymbol *gNan = NULL;
-VarSymbol *gUninstantiated = NULL;
+VarSymbol *gTrue = nullptr;
+VarSymbol *gFalse = nullptr;
+VarSymbol *gBoundsChecking = nullptr;
+VarSymbol *gCastChecking = nullptr;
+VarSymbol *gNilChecking = nullptr;
+VarSymbol *gOverloadSetsChecks = nullptr;
+VarSymbol *gDivZeroChecking = nullptr;
+VarSymbol* gCacheRemote = nullptr;
+VarSymbol* gPrivatization = nullptr;
+VarSymbol* gLocal = nullptr;
+VarSymbol* gWarnUnstable = nullptr;
+VarSymbol* gIteratorBreakToken = nullptr;
+VarSymbol* gNodeID = nullptr;
+VarSymbol *gModuleInitIndentLevel = nullptr;
+VarSymbol *gInfinity = nullptr;
+VarSymbol *gNan = nullptr;
+VarSymbol *gUninstantiated = nullptr;
 
 void verifyInTree(BaseAST* ast, const char* msg) {
-  if (ast != NULL && ast->inTree() == false) {
+  if (ast != nullptr && ast->inTree() == false) {
     INT_FATAL(ast, "%s is not in AST", msg);
   }
 }
@@ -96,10 +96,10 @@ Symbol::Symbol(AstTag astTag, const char* init_name, Type* init_type) :
   qual(QUAL_UNKNOWN),
   type(init_type),
   flags(),
-  fieldQualifiers(NULL),
-  defPoint(NULL),
-  symExprsHead(NULL),
-  symExprsTail(NULL)
+  fieldQualifiers(nullptr),
+  defPoint(nullptr),
+  symExprsHead(nullptr),
+  symExprsTail(nullptr)
 {
   if (init_name) {
     name = astr(init_name);
@@ -134,7 +134,7 @@ void Symbol::verify() {
     INT_FATAL("cname is not an astr");
 
   if (symExprsHead) {
-    if (symExprsHead->symbolSymExprsPrev != NULL)
+    if (symExprsHead->symbolSymExprsPrev != nullptr)
       INT_FATAL(this, "Symbol's SymExpr list is malformed (head)");
     if (symExprsHead->symbol() != this)
       INT_FATAL(this, "Symbol's SymExpr head has other symbol");
@@ -143,7 +143,7 @@ void Symbol::verify() {
   }
 
   if (symExprsTail) {
-    if (symExprsTail->symbolSymExprsNext != NULL)
+    if (symExprsTail->symbolSymExprsNext != nullptr)
       INT_FATAL(this, "Symbol's SymExpr list is malformed (tail)");
     if (symExprsTail->symbol() != this)
       INT_FATAL(this, "Symbol's SymExpr tail has other symbol");
@@ -156,7 +156,7 @@ void Symbol::verify() {
 bool Symbol::inTree() {
   if (defPoint)
     return defPoint->inTree();
-  // rootModule->defPoint is always NULL
+  // rootModule->defPoint is always nullptr
   if (this == rootModule)
     return true;
   else
@@ -232,7 +232,7 @@ bool Symbol::isRenameable() const {
 
 bool Symbol::isRef() {
   QualifiedType q = qualType();
-  return (type != NULL) && (q.isRef() || type->symbol->hasFlag(FLAG_REF));
+  return (type != nullptr) && (q.isRef() || type->symbol->hasFlag(FLAG_REF));
 }
 
 bool Symbol::isWideRef() {
@@ -245,9 +245,9 @@ bool Symbol::isRefOrWideRef() {
 }
 
 
-// Returns the scope in which the given symbol is declared; NULL otherwise.
+// Returns the scope in which the given symbol is declared; nullptr otherwise.
 BlockStmt* Symbol::getDeclarationScope() const {
-  return (defPoint != NULL) ? defPoint->getScopeBlock() : NULL;
+  return (defPoint != nullptr) ? defPoint->getScopeBlock() : nullptr;
 }
 
 
@@ -302,15 +302,15 @@ void Symbol::addSymExpr(SymExpr* se) {
   // to all the uses of 3, and that probably isn't adding
   // any value.
 
-  if (symExprsTail == NULL) {
-    se->symbolSymExprsPrev = NULL;
-    se->symbolSymExprsNext = NULL;
+  if (symExprsTail == nullptr) {
+    se->symbolSymExprsPrev = nullptr;
+    se->symbolSymExprsNext = nullptr;
     symExprsHead = se;
     symExprsTail = se;
   } else {
     SymExpr* oldTail = symExprsTail;
     se->symbolSymExprsPrev = oldTail;
-    se->symbolSymExprsNext = NULL;
+    se->symbolSymExprsNext = nullptr;
     symExprsTail = se;
     oldTail->symbolSymExprsNext = se;
   }
@@ -329,8 +329,8 @@ void Symbol::removeSymExpr(SymExpr* se) {
   else
     symExprsHead = next;
 
-  next = NULL;
-  prev = NULL;
+  next = nullptr;
+  prev = nullptr;
 }
 
 
@@ -369,27 +369,27 @@ bool Symbol::isDefined() const {
 }
 
 SymExpr* Symbol::getSingleUse() const {
-  SymExpr* ret = NULL;
+  SymExpr* ret = nullptr;
   for_SymbolUses(use, this) {
-    if (ret != NULL) return NULL;
+    if (ret != nullptr) return nullptr;
     ret = use;
   }
   return ret;
 }
 
 SymExpr* Symbol::getSingleDef() const {
-  SymExpr* ret = NULL;
+  SymExpr* ret = nullptr;
   for_SymbolDefs(def, this) {
-    if (ret != NULL) return NULL;
+    if (ret != nullptr) return nullptr;
     ret = def;
   }
   return ret;
 }
 
 SymExpr* Symbol::getSingleDefUnder(Symbol* parent) const {
-  SymExpr* ret = NULL;
+  SymExpr* ret = nullptr;
   for_SymbolDefs(def, this) {
-    if (ret != NULL) return NULL;
+    if (ret != nullptr) return nullptr;
     if (def->parentSymbol != parent) continue;
     ret = def;
   }
@@ -405,7 +405,7 @@ Expr* Symbol::getInitialization() const {
 
   FnSymbol* fn = toFnSymbol(defPoint->parentSymbol);
   ModuleSymbol* mod = toModuleSymbol(defPoint->parentSymbol);
-  if (fn == NULL && mod != NULL ) {
+  if (fn == nullptr && mod != nullptr ) {
     // Global variables are initialized in their module init function, unless
     // it's used in a loopexpr wrapper function for an array type.
     //
@@ -423,16 +423,16 @@ Expr* Symbol::getInitialization() const {
   Expr* stmt;
   // We'll search statements starting with stmt for the one
   // initializing our variable.
-  if (mod != NULL) {
+  if (mod != nullptr) {
     stmt = fn->body->body.head;
   } else {
     stmt = defPoint->getStmtExpr()->next;
   }
 
   const Symbol *curSym = this;
-  const Symbol *refSym = NULL;
+  const Symbol *refSym = nullptr;
 
-  while (stmt != NULL) {
+  while (stmt != nullptr) {
     std::vector<SymExpr*> symExprs;
     collectSymExprsFor(stmt, curSym, refSym, symExprs);
 
@@ -459,14 +459,14 @@ Expr* Symbol::getInitialization() const {
           SymExpr* dstSe = toSymExpr(call->get(1));
           CallExpr* getRef = toCallExpr(call->get(2));
 
-          if (getRef != NULL) {
+          if (getRef != nullptr) {
             if (getRef->isPrimitive(PRIM_ADDR_OF) ||
                 getRef->isPrimitive(PRIM_SET_REFERENCE)) {
               // Start looking for the first def of the captured reference
 
               INT_ASSERT(dstSe);
               // Doesn't handle multiple refs before finding initialization
-              INT_ASSERT(refSym == NULL);
+              INT_ASSERT(refSym == nullptr);
               refSym = dstSe->symbol();
               handled = true;
             }
@@ -480,7 +480,7 @@ Expr* Symbol::getInitialization() const {
     stmt = stmt->next;
   }
 
-  return NULL;
+  return nullptr;
 }
 
 
@@ -535,14 +535,14 @@ int LcnSymbol::offset() const
 VarSymbol::VarSymbol(const char *init_name,
                      Type    *init_type) :
   LcnSymbol(E_VarSymbol, init_name, init_type),
-  immediate(NULL),
-  doc(NULL),
+  immediate(nullptr),
+  doc(nullptr),
   isField(false),
-  llvmDIGlobalVariable(NULL),
-  llvmDIVariable(NULL)
+  llvmDIGlobalVariable(nullptr),
+  llvmDIVariable(nullptr)
 {
   gVarSymbols.add(this);
-  if (type == dtUnknown || type->symbol == NULL) {
+  if (type == dtUnknown || type->symbol == nullptr) {
     this->qual = QUAL_UNKNOWN;
   } else if (type->symbol->hasFlag(FLAG_REF)) {
     this->qual = QUAL_REF;
@@ -555,11 +555,11 @@ VarSymbol::VarSymbol(const char *init_name,
 
 VarSymbol::VarSymbol(const char* init_name, QualifiedType qType) :
   LcnSymbol(E_VarSymbol, init_name, qType.type()),
-  immediate(NULL),
-  doc(NULL),
+  immediate(nullptr),
+  doc(nullptr),
   isField(false),
-  llvmDIGlobalVariable(NULL),
-  llvmDIVariable(NULL)
+  llvmDIGlobalVariable(nullptr),
+  llvmDIVariable(nullptr)
 {
   gVarSymbols.add(this);
 
@@ -568,11 +568,11 @@ VarSymbol::VarSymbol(const char* init_name, QualifiedType qType) :
 
 VarSymbol::VarSymbol(AstTag astTag, const char* initName, Type* initType) :
   LcnSymbol(astTag, initName, initType),
-  immediate(NULL),
-  doc(NULL),
+  immediate(nullptr),
+  doc(nullptr),
   isField(false),
-  llvmDIGlobalVariable(NULL),
-  llvmDIVariable(NULL)
+  llvmDIGlobalVariable(nullptr),
+  llvmDIVariable(nullptr)
 {
   // The subclass is to take care of the rest.
 }
@@ -683,7 +683,7 @@ void VarSymbol::printDocs(std::ostream *file, unsigned int tabs) {
     *file << std::endl;
   }
 
-  if (this->doc != NULL) {
+  if (this->doc != nullptr) {
     this->printDocsDescription(this->doc, file, tabs + 1);
     if (!fDocsTextOnly) {
       *file << std::endl;
@@ -701,7 +701,7 @@ void VarSymbol::makeField() {
 }
 
 bool VarSymbol::isImmediate() const {
-  return immediate != NULL;
+  return immediate != nullptr;
 }
 
 void VarSymbol::accept(AstVisitor* visitor) {
@@ -719,11 +719,11 @@ ArgSymbol::ArgSymbol(IntentTag iIntent, const char* iName,
   LcnSymbol(E_ArgSymbol, iName, iType),
   intent(iIntent),
   originalIntent(iIntent),
-  typeExpr(NULL),
-  defaultExpr(NULL),
-  variableExpr(NULL),
-  instantiatedFrom(NULL),
-  llvmDIFormal(NULL)
+  typeExpr(nullptr),
+  defaultExpr(nullptr),
+  variableExpr(nullptr),
+  instantiatedFrom(nullptr),
+  llvmDIFormal(nullptr)
 {
   if (intentsResolved) {
     if (iIntent == INTENT_BLANK || iIntent == INTENT_CONST) {
@@ -734,19 +734,19 @@ ArgSymbol::ArgSymbol(IntentTag iIntent, const char* iName,
     }
   }
   if (!iTypeExpr)
-    typeExpr = NULL;
+    typeExpr = nullptr;
   else if (BlockStmt* block = toBlockStmt(iTypeExpr))
     typeExpr = block;
   else
     typeExpr = new BlockStmt(iTypeExpr, BLOCK_TYPE);
   if (!iDefaultExpr)
-    defaultExpr = NULL;
+    defaultExpr = nullptr;
   else if (BlockStmt* block = toBlockStmt(iDefaultExpr))
     defaultExpr = block;
   else
     defaultExpr = new BlockStmt(iDefaultExpr, BLOCK_SCOPELESS);
   if (!iVariableExpr)
-    variableExpr = NULL;
+    variableExpr = nullptr;
   else if (BlockStmt* block = toBlockStmt(iVariableExpr))
     variableExpr = block;
   else
@@ -967,7 +967,7 @@ std::string ArgSymbol::demungeVarArgName(std::string* num) {
   std::string n = mynum; // ##_name
   mynum.resize(mynum.find('_')); // ##
   n.erase(0, n.find('_')+1); // name
-  if (num != NULL) {
+  if (num != nullptr) {
     *num = mynum;
   }
   return n;
@@ -987,7 +987,7 @@ ShadowVarSymbol::ShadowVarSymbol(ForallIntentTag iIntent,
   VarSymbol(E_ShadowVarSymbol, name, dtUnknown),
   intent(iIntent),
   outerVarSE(outerVar),
-  specBlock(NULL),
+  specBlock(nullptr),
   svInitBlock(new BlockStmt()),
   svDeinitBlock(new BlockStmt()),
   pruneit(false)
@@ -1023,7 +1023,7 @@ void ShadowVarSymbol::verify() {
     INT_ASSERT(pfs);
     INT_ASSERT(defPoint->list == &(pfs->shadowVariables()));
   }
-  if (specBlock != NULL)
+  if (specBlock != nullptr)
     INT_ASSERT(intent == TFI_REDUCE || intent == TFI_REDUCE_OP);
   INT_ASSERT(!iteratorsLowered); // should be gone at lowerIterators
 }
@@ -1041,7 +1041,7 @@ void ShadowVarSymbol::accept(AstVisitor* visitor) {
 
 ShadowVarSymbol* ShadowVarSymbol::copyInner(SymbolMap* map) {
   ShadowVarSymbol* ss = new ShadowVarSymbol(intent, name,
-                                            COPY_INT(outerVarSE), NULL);
+                                            COPY_INT(outerVarSE), nullptr);
   ss->type = type;
   ss->qual = qual;
   ss->specBlock     = COPY_INT(specBlock);
@@ -1144,7 +1144,7 @@ const char* ShadowVarSymbol::intentDescrString() const {
 
 Expr* ShadowVarSymbol::reduceOpExpr() const {
   if (!specBlock)
-    return NULL;
+    return nullptr;
   INT_ASSERT(specBlock->body.length == 1);
   INT_ASSERT(isReduce());
   return specBlock->body.head;
@@ -1219,15 +1219,15 @@ bool isOuterVarOfShadowVar(Expr* expr) {
 
 TypeSymbol::TypeSymbol(const char* init_name, Type* init_type) :
   Symbol(E_TypeSymbol, init_name, init_type),
-    llvmType(NULL),
-    llvmTbaaTypeDescriptor(NULL),
-    llvmTbaaAccessTag(NULL), llvmConstTbaaAccessTag(NULL),
-    llvmTbaaAggTypeDescriptor(NULL),
-    llvmTbaaStructCopyNode(NULL), llvmConstTbaaStructCopyNode(NULL),
-    llvmDIType(NULL),
-    doc(NULL),
-    instantiationPoint(NULL),
-    userInstantiationPointLoc(0, NULL)
+    llvmType(nullptr),
+    llvmTbaaTypeDescriptor(nullptr),
+    llvmTbaaAccessTag(nullptr), llvmConstTbaaAccessTag(nullptr),
+    llvmTbaaAggTypeDescriptor(nullptr),
+    llvmTbaaStructCopyNode(nullptr), llvmConstTbaaStructCopyNode(nullptr),
+    llvmDIType(nullptr),
+    doc(nullptr),
+    instantiationPoint(nullptr),
+    userInstantiationPointLoc(0, nullptr)
 {
   addFlag(FLAG_TYPE_VARIABLE);
   if (!type)
@@ -1257,7 +1257,7 @@ TypeSymbol::copyInner(SymbolMap* map) {
   new_type_symbol->instantiationPoint = instantiationPoint;
   if (AggregateType* at = toAggregateType(new_type)) {
     for_fields(field, at) {
-      insert_help(field->defPoint, NULL, new_type_symbol);
+      insert_help(field->defPoint, nullptr, new_type_symbol);
     }
   }
   return new_type_symbol;
@@ -1317,7 +1317,7 @@ Immediate* EnumSymbol::getImmediate() {
       return initvar->immediate;
     }
   }
-  return NULL;
+  return nullptr;
 }
 
 void EnumSymbol::accept(AstVisitor* visitor) {
@@ -1331,8 +1331,8 @@ void EnumSymbol::accept(AstVisitor* visitor) {
 ************************************** | *************************************/
 
 LabelSymbol::LabelSymbol(const char* init_name) :
-  Symbol(E_LabelSymbol, init_name, NULL),
-  iterResumeGoto(NULL)
+  Symbol(E_LabelSymbol, init_name, nullptr),
+  iterResumeGoto(nullptr)
 {
   gLabelSymbols.add(this);
 }
@@ -1369,7 +1369,7 @@ LabelSymbol::copyInner(SymbolMap* map) {
       // update the copy
       copy->iterResumeGoto = rec->value;
       // indicate we are done with it
-      rec->value = NULL;
+      rec->value = nullptr;
       // printf("LabelSymbol-copy %d > %d  irg %d > %d\n", this->id, copy->id,
       //        iterResumeGoto->id, copy->iterResumeGoto->id);
     } else {
@@ -1446,7 +1446,7 @@ std::string unescapeString(const char* const str, BaseAST *astForError) {
               if( str[pos] && isxdigit(str[pos]))
                 buf[1] = str[pos++];
           }
-          num = strtol(buf, NULL, 16);
+          num = strtol(buf, nullptr, 16);
           newString += (char) num;
         }
         break;
@@ -1465,7 +1465,7 @@ HashMap<Immediate *, ImmHashFns, VarSymbol *> uniqueConstantsHash;
 HashMap<Immediate *, ImmHashFns, VarSymbol *> stringLiteralsHash;
 HashMap<Immediate *, ImmHashFns, VarSymbol *> bytesLiteralsHash;
 
-LabelSymbol* initStringLiteralsEpilogue = NULL;
+LabelSymbol* initStringLiteralsEpilogue = nullptr;
 
 void createInitStringLiterals() {
   SET_LINENO(stringLiteralModule);
@@ -1523,7 +1523,7 @@ VarSymbol *new_StringSymbol(const char *str) {
 
     // We want to keep the compilation going here so that we can catch other
     // invalid string literals without having to compile again. However,
-    // returning `s` (i.e. NULL at this point) does not work well with the rest
+    // returning `s` (i.e. nullptr at this point) does not work well with the rest
     // of the compilation. At the same time we should avoid adding invalid
     // sequences to stringLiteralsHash. Therefore, set a flag to note that this
     // string is invalid and should not be added to stringLiteralsHash.
@@ -1542,8 +1542,8 @@ VarSymbol *new_StringSymbol(const char *str) {
   // DefExpr(s) always goes into the module scope to make it a global
   stringLiteralModule->block->insertAtTail(stringLitDef);
 
-  Expr* initFn = NULL;
-  if (gChplCreateStringWithLiteral != NULL)
+  Expr* initFn = nullptr;
+  if (gChplCreateStringWithLiteral != nullptr)
     initFn = new SymExpr(gChplCreateStringWithLiteral);
   else
     initFn = new UnresolvedSymExpr("chpl_createStringWithLiteral");
@@ -1555,7 +1555,7 @@ VarSymbol *new_StringSymbol(const char *str) {
 
   CallExpr* moveCall = new CallExpr(PRIM_MOVE, s, initCall);
 
-  if (initStringLiterals == NULL) {
+  if (initStringLiterals == nullptr) {
     createInitStringLiterals();
     initStringLiteralsEpilogue = initStringLiterals->getOrCreateEpilogueLabel();
   }
@@ -1607,8 +1607,8 @@ VarSymbol *new_BytesSymbol(const char *str) {
   // DefExpr(s) always goes into the module scope to make it a global
   stringLiteralModule->block->insertAtTail(bytesLitDef);
 
-  Expr* initFn = NULL;
-  if (gChplCreateBytesWithLiteral != NULL)
+  Expr* initFn = nullptr;
+  if (gChplCreateBytesWithLiteral != nullptr)
     initFn = new SymExpr(gChplCreateBytesWithLiteral);
   else
     initFn = new UnresolvedSymExpr("chpl_createBytesWithLiteral");
@@ -1621,7 +1621,7 @@ VarSymbol *new_BytesSymbol(const char *str) {
 
   CallExpr* moveCall = new CallExpr(PRIM_MOVE, s, initCall);
 
-  if (initStringLiterals == NULL) {
+  if (initStringLiterals == nullptr) {
     createInitStringLiterals();
     initStringLiteralsEpilogue = initStringLiterals->getOrCreateEpilogueLabel();
   }
@@ -1648,7 +1648,7 @@ VarSymbol *new_StringOrBytesSymbol(const char *str, AggregateType *t) {
   }
   else {
     INT_FATAL("new_StringOrBytesSymbol accepts dtString and dtBytes only");
-    return NULL;
+    return nullptr;
   }
 }
 
@@ -1755,7 +1755,7 @@ static VarSymbol* new_FloatSymbol(const char* num,
                                   Type* type) {
   Immediate imm;
   int len = strlen(num);
-  const char* normalized = NULL;
+  const char* normalized = nullptr;
   char* n = (char*)malloc(len+1);
 
   /* Remove '_' separators from the number */
@@ -1770,10 +1770,10 @@ static VarSymbol* new_FloatSymbol(const char* num,
 
   switch (size) {
     case FLOAT_SIZE_32:
-      imm.v_float32  = strtof(n, NULL);
+      imm.v_float32  = strtof(n, nullptr);
       break;
     case FLOAT_SIZE_64:
-      imm.v_float64  = strtod(n, NULL);
+      imm.v_float64  = strtod(n, nullptr);
       break;
     default:
       INT_FATAL( "unknown FLOAT_SIZE");
@@ -1904,7 +1904,7 @@ immediate_type(Immediate *imm) {
       USR_FATAL("bad immediate type");
       break;
   }
-  return NULL;
+  return nullptr;
 }
 
 VarSymbol* new_ImmediateSymbol(Immediate *imm) {
@@ -1932,7 +1932,7 @@ VarSymbol* new_ImmediateSymbol(Immediate *imm) {
 }
 
 Immediate* getSymbolImmediate(Symbol* sym) {
-  Immediate* imm = NULL;
+  Immediate* imm = nullptr;
 
   if (VarSymbol* var = toVarSymbol(sym)) {
     imm = var->immediate;
@@ -1947,16 +1947,16 @@ Immediate* getSymbolImmediate(Symbol* sym) {
 
 
 // Return the expression PRIM_MOVE-ed into origSE->symbol().
-// Return NULL if the def is not found or is uncertain.
+// Return nullptr if the def is not found or is uncertain.
 Expr* getDefOfTemp(SymExpr* origSE)
 {
   Symbol* origSym = origSE->symbol();
-  if (!origSym->hasFlag(FLAG_TEMP)) return NULL;  // only temps
+  if (!origSym->hasFlag(FLAG_TEMP)) return nullptr;  // only temps
 
   SymExpr* otherSE = origSym->getSingleDef();
 
 
-  if (otherSE == NULL) {
+  if (otherSE == nullptr) {
     // Sometimes the DefExpr for 'origSym' is hoisted to the module level -
     // see static 'globalTemps' in normalize.cpp. Then, 'origSym' does not get
     // cloned while instantiating the enclosing function, so we get two defs.
@@ -1973,7 +1973,7 @@ Expr* getDefOfTemp(SymExpr* origSE)
         return def->get(2);
 
   // uncertain situation
-  return NULL;
+  return nullptr;
 }
 
 
@@ -2003,41 +2003,41 @@ FlagSet getRecordWrappedFlags(Symbol* s) {
 
 // cache some popular strings
 
-const char* astrSassign = NULL;
-const char* astrSdot = NULL;
-const char* astrSeq = NULL;
-const char* astrSne = NULL;
-const char* astrSgt = NULL;
-const char* astrSgte = NULL;
-const char* astrSlt = NULL;
-const char* astrSlte = NULL;
-const char* astrSswap = NULL;
-const char* astrScolon = NULL;
-const char* astr_cast = NULL;
-const char* astr_defaultOf = NULL;
-const char* astrInit = NULL;
-const char* astrInitEquals = NULL;
-const char* astrNew = NULL;
-const char* astrDeinit = NULL;
-const char* astrPostinit = NULL;
-const char* astrTag = NULL;
-const char* astrThis = NULL;
-const char* astrSuper = NULL;
-const char* astr_chpl_cname = NULL;
-const char* astr_chpl_forward_tgt = NULL;
-const char* astr_chpl_manager = NULL;
-const char* astr_chpl_statementLevelSymbol = NULL;
-const char* astr_chpl_waitDynamicEndCount = NULL;
-const char* astr_forallexpr = NULL;
-const char* astr_forexpr = NULL;
-const char* astr_loopexpr_iter = NULL;
-const char* astrPostfixBang = NULL;
-const char* astrBorrow = NULL;
-const char* astr_init_coerce_tmp = NULL;
-const char* astr_autoCopy = NULL;
-const char* astr_initCopy = NULL;
-const char* astr_coerceCopy = NULL;
-const char* astr_coerceMove = NULL;
+const char* astrSassign = nullptr;
+const char* astrSdot = nullptr;
+const char* astrSeq = nullptr;
+const char* astrSne = nullptr;
+const char* astrSgt = nullptr;
+const char* astrSgte = nullptr;
+const char* astrSlt = nullptr;
+const char* astrSlte = nullptr;
+const char* astrSswap = nullptr;
+const char* astrScolon = nullptr;
+const char* astr_cast = nullptr;
+const char* astr_defaultOf = nullptr;
+const char* astrInit = nullptr;
+const char* astrInitEquals = nullptr;
+const char* astrNew = nullptr;
+const char* astrDeinit = nullptr;
+const char* astrPostinit = nullptr;
+const char* astrTag = nullptr;
+const char* astrThis = nullptr;
+const char* astrSuper = nullptr;
+const char* astr_chpl_cname = nullptr;
+const char* astr_chpl_forward_tgt = nullptr;
+const char* astr_chpl_manager = nullptr;
+const char* astr_chpl_statementLevelSymbol = nullptr;
+const char* astr_chpl_waitDynamicEndCount = nullptr;
+const char* astr_forallexpr = nullptr;
+const char* astr_forexpr = nullptr;
+const char* astr_loopexpr_iter = nullptr;
+const char* astrPostfixBang = nullptr;
+const char* astrBorrow = nullptr;
+const char* astr_init_coerce_tmp = nullptr;
+const char* astr_autoCopy = nullptr;
+const char* astr_initCopy = nullptr;
+const char* astr_coerceCopy = nullptr;
+const char* astr_coerceMove = nullptr;
 
 void initAstrConsts() {
   astrSassign = astr("=");
@@ -2118,7 +2118,7 @@ VarSymbol* newTemp(const char* name, QualifiedType qt) {
 }
 
 VarSymbol* newTemp(QualifiedType qt) {
-  return newTemp((const char*)NULL, qt);
+  return newTemp(nullptr, qt);
 }
 
 VarSymbol* newTemp(const char* name, Type* type) {
@@ -2134,7 +2134,7 @@ VarSymbol* newTemp(const char* name, Type* type) {
 }
 
 VarSymbol* newTemp(Type* type) {
-  return newTemp((const char*)NULL, type);
+  return newTemp(nullptr, type);
 }
 
 VarSymbol* newTempConst(const char* name, Type* type) {
@@ -2242,7 +2242,7 @@ const char* toString(VarSymbol* var, bool withType) {
   // Compiler temporaries should have a single definition
   while (sym->hasFlag(FLAG_TEMP) && !sym->hasFlag(FLAG_USER_VARIABLE_NAME)) {
     SymExpr* singleDef = sym->getSingleDef();
-    if (singleDef != NULL) {
+    if (singleDef != nullptr) {
       if (CallExpr* c = toCallExpr(singleDef->parentExpr)) {
         if (c->isPrimitive(PRIM_MOVE) ||
             c->isPrimitive(PRIM_ASSIGN)) {
@@ -2257,12 +2257,12 @@ const char* toString(VarSymbol* var, bool withType) {
     }
 
     // Give up
-    sym = NULL;
+    sym = nullptr;
     break;
   }
 
-  const char* name = NULL;
-  if (sym != NULL) {
+  const char* name = nullptr;
+  if (sym != nullptr) {
     name = sym->name;
   } else {
     // Look for something using the temporary
@@ -2270,8 +2270,8 @@ const char* toString(VarSymbol* var, bool withType) {
 
     sym = var;
     while (sym->hasFlag(FLAG_TEMP) && !sym->hasFlag(FLAG_USER_VARIABLE_NAME)) {
-      Expr* cur = NULL;
-      name = NULL;
+      Expr* cur = nullptr;
+      name = nullptr;
       for (cur = sym->defPoint; cur; cur = cur->next) {
         if (CallExpr* c = toCallExpr(cur)) {
           if (c->isPrimitive(PRIM_MOVE) ||
@@ -2290,14 +2290,14 @@ const char* toString(VarSymbol* var, bool withType) {
             SymExpr* valueSe = toSymExpr(c->get(3));
             if (fieldSe && valueSe && valueSe->symbol() == sym) {
               sym = fieldSe->symbol();
-              name = NULL;
+              name = nullptr;
               // Field access might be by name
               if (VarSymbol* v = toVarSymbol(sym))
                 if (v->immediate)
                   if (v->immediate->const_kind == CONST_KIND_STRING)
                     name = astr("field ", v->immediate->v_string);
 
-              if (name == NULL)
+              if (name == nullptr)
                 name = astr("field ", sym->name);
 
               break;
@@ -2306,14 +2306,14 @@ const char* toString(VarSymbol* var, bool withType) {
         }
       }
       // Stop looking if the above code didn't find anything
-      if (name == NULL)
+      if (name == nullptr)
         break;
     }
   }
 
   if (ArgSymbol* arg = toArgSymbol(sym)) {
     return toString(arg, withType);
-  } else if (name != NULL) {
+  } else if (name != nullptr) {
     if (withType)
       return astr(name, ": ", toString(var->getValType()));
     else
@@ -2325,9 +2325,9 @@ const char* toString(VarSymbol* var, bool withType) {
 const char* toString(Symbol* sym, bool withType) {
   VarSymbol* var = toVarSymbol(sym);
   ArgSymbol* arg = toArgSymbol(sym);
-  if (var != NULL)
+  if (var != nullptr)
     return toString(var, withType);
-  if (arg != NULL)
+  if (arg != nullptr)
     return toString(arg, withType);
 
   return sym->name;

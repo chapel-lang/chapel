@@ -214,17 +214,17 @@ void CForLoop::verify()
 {
   BlockStmt::verify();
 
-  if (BlockStmt::blockInfoGet() != 0)
-    INT_FATAL(this, "CForLoop::verify. blockInfo is NULL");
+  if (BlockStmt::blockInfoGet() != nullptr)
+    INT_FATAL(this, "CForLoop::verify. blockInfo is nullptr");
 
-  if (initBlockGet()            == 0)
-    INT_FATAL(this, "CForLoop::verify. initBlock is NULL");
+  if (initBlockGet()            == nullptr)
+    INT_FATAL(this, "CForLoop::verify. initBlock is nullptr");
 
-  if (testBlockGet()            == 0)
-    INT_FATAL(this, "CForLoop::verify. testBlock is NULL");
+  if (testBlockGet()            == nullptr)
+    INT_FATAL(this, "CForLoop::verify. testBlock is nullptr");
 
-  if (incrBlockGet()            == 0)
-    INT_FATAL(this, "CForLoop::verify. incrBlock is NULL");
+  if (incrBlockGet()            == nullptr)
+    INT_FATAL(this, "CForLoop::verify. incrBlock is nullptr");
 
   if (initBlockGet()->blockTag  != BLOCK_C_FOR_LOOP)
     INT_FATAL(this, "CForLoop::verify. initBlock is not BLOCK_C_FOR_LOOP");
@@ -235,11 +235,11 @@ void CForLoop::verify()
   if (incrBlockGet()->blockTag  != BLOCK_C_FOR_LOOP)
     INT_FATAL(this, "CForLoop::verify. incrBlock is not BLOCK_C_FOR_LOOP");
 
-  if (useList                   != 0)
-    INT_FATAL(this, "CForLoop::verify. useList   is not NULL");
+  if (useList                   != nullptr)
+    INT_FATAL(this, "CForLoop::verify. useList   is not nullptr");
 
-  if (byrefVars                 != 0)
-    INT_FATAL(this, "CForLoop::verify. byrefVars is not NULL");
+  if (byrefVars                 != nullptr)
+    INT_FATAL(this, "CForLoop::verify. byrefVars is not nullptr");
 }
 
 void CForLoop::accept(AstVisitor* visitor)
@@ -303,7 +303,7 @@ Expr* CForLoop::getNextExpr(Expr* expr)
   else if (expr == mTestClause)
     retval = mIncrClause->getFirstExpr();
 
-  else if (expr == mIncrClause && body.head != NULL)
+  else if (expr == mIncrClause && body.head != nullptr)
     retval = body.head->getFirstExpr();
 
   else

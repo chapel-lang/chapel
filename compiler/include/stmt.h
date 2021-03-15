@@ -117,7 +117,7 @@ enum BlockTag {
 // Parent class for LoopStmt and various loops as well
 class BlockStmt : public Stmt {
 public:
-                      BlockStmt(Expr*    initBody     = NULL,
+                      BlockStmt(Expr*    initBody     = nullptr,
                                 BlockTag initBlockTag = BLOCK_NORMAL);
                       BlockStmt(BlockTag initBlockTag);
 
@@ -203,7 +203,7 @@ class CondStmt final : public Stmt {
 public:
   CondStmt(Expr*    iCondExpr,
            BaseAST* iThenStmt,
-           BaseAST* iElseStmt = NULL,
+           BaseAST* iElseStmt = nullptr,
            bool     isIfExpr = false);
 
   DECLARE_COPY(CondStmt);
@@ -417,7 +417,7 @@ Expr*        skip_cond_test(Expr* expr);
 void         codegenStmt(Expr* stmt);
 
 // Extract (e.toGotoStmt)->(label.toSymExpr)->var and var->->iterResumeGoto,
-// if possible; NULL otherwise.
+// if possible; nullptr otherwise.
 LabelSymbol* getGotoLabelSymbol(GotoStmt* gs);
 GotoStmt*    getGotoLabelsIterResumeGoto(GotoStmt* gs);
 

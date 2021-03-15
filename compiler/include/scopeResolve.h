@@ -50,7 +50,7 @@ Symbol*  lookupAndCount(const char*           name,
                         BaseAST*              context,
                         int&                  nSymbolsFound,
                         bool storeRenames = false,
-                        astlocT** renameLoc = NULL,
+                        astlocT** renameLoc = nullptr,
                         bool issueErrors = true);
 
 void checkConflictingSymbols(std::vector<Symbol *>& symbols,

@@ -40,7 +40,7 @@ void checkConfigs() {
     configMap.get_keys(configParamSetNames);
 
     forv_Vec(const char, name, configParamSetNames) {
-      if (usedConfigParams.get(name) == NULL) {
+      if (usedConfigParams.get(name) == nullptr) {
         USR_FATAL_CONT("Trying to set unrecognized config '%s' via -s flag",
                        name);
         anyBadConfigParams = true;
@@ -77,7 +77,7 @@ void parseCmdLineConfig(const char* name, const char* value) {
 
   // Determine if the body is also a BlockStmt
   BlockStmt*  b        = toBlockStmt(stmt->body.head);
-  Expr*       newExpr  = NULL;
+  Expr*       newExpr  = nullptr;
 
   // If NO then extract the RHS from the stmt
   if (b == 0) {

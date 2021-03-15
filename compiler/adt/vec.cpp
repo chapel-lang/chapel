@@ -63,7 +63,7 @@ unsigned int prime2[] = {
 template<>
 uintptr_t _vec_hasher(const char* obj) {
   uintptr_t h = 0;
-  while (obj != NULL && *obj) h = h * 27 + (unsigned char)*obj++;
+  while (obj != nullptr && *obj) h = h * 27 + (unsigned char)*obj++;
   return h;
 }
 template<>

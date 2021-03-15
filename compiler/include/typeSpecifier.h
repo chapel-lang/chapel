@@ -28,7 +28,7 @@ class Type;
 //   1) Primitive types (parameterized and default)
 //   2) Non-parameterized, i.e. non-generic, classes and records
 //
-// It is defined to return NULL for more general type specifiers.
+// It is defined to return nullptr for more general type specifiers.
 //
 // This function was initially defined for a simple use in preFold().
 // In that use case it generated FATAL errors for invalid primitives.
@@ -37,7 +37,7 @@ class Type;
 // e.g. in limited situations within normalize.  In these
 // situations param-folding will not have occurred and it
 // is necessary to suppress any error messages and simply
-// return NULL.
+// return nullptr.
 //
 
 Type* typeForTypeSpecifier(Expr* expr, bool fatalOK);

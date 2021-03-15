@@ -55,13 +55,13 @@ public:
   void verifyParent(const Expr* child); // verify proper child->parentExpr
 
   // New interface
-  virtual Expr*   copy(SymbolMap* map = NULL, bool internal = false)   = 0;
-  virtual void    replaceChild(Expr* old_ast, Expr* new_ast)           = 0;
+  virtual Expr*   copy(SymbolMap* map = nullptr, bool internal = false) = 0;
+  virtual void    replaceChild(Expr* old_ast, Expr* new_ast)            = 0;
 
-  virtual Expr*   getFirstExpr()                                       = 0;
+  virtual Expr*   getFirstExpr()                                        = 0;
   virtual Expr*   getNextExpr(Expr* expr);
 
-  virtual bool    isNoInitExpr()                                     const;
+  virtual bool    isNoInitExpr()                                      const;
 
   virtual void    prettyPrint(std::ostream* o);
 
@@ -71,7 +71,7 @@ public:
   bool            isRefOrWideRef();
 
   /* Returns true if the given expression is contained by this one. */
-  bool            contains(const Expr* expr)                         const;
+  bool            contains(const Expr* expr)                          const;
 
   bool            isModuleDefinition();
 
@@ -98,7 +98,7 @@ public:
 
   Expr*           remove();
 
-  bool            isStmtExpr()                                       const;
+  bool            isStmtExpr()                                        const;
   Expr*           getStmtExpr();
 
   BlockStmt*      getScopeBlock();
@@ -117,10 +117,10 @@ private:
 
 class DefExpr final : public Expr {
 public:
-  DefExpr(Symbol*  initSym      = NULL,
-          BaseAST* initInit     = NULL,
-          BaseAST* initExprType = NULL);
- ~DefExpr() override = default;
+                  DefExpr(Symbol*  initSym      = nullptr,
+                          BaseAST* initInit     = nullptr,
+                          BaseAST* initExprType = nullptr);
+  // ~DefExpr() override = default;
 
   void    verify()                                   override;
 
@@ -341,7 +341,7 @@ inline InterfaceSymbol* IfcConstraint::ifcSymbol() const {
 //  - isAlive(Symbol) is false vs. Symbol::inTree() is true on rootModule.
 //    'rootModule' is the only module that is always alive/in tree
 //    yet does not have a defPoint.
-//  - Type::inTree() performs an additional check for Type::symbol != NULL,
+//  - Type::inTree() performs an additional check for Type::symbol != nullptr,
 //    whereas isAlive(Type) does not.
 //
 static inline bool isAlive(Expr* expr) {
@@ -399,7 +399,7 @@ inline Symbol* ShadowVarSymbol::outerVarSym() const {
   if (SymExpr* ovse = this->outerVarSE)
     return ovse->symbol();
   else
-    return NULL;
+    return nullptr;
 }
 
 // E.g. NamedExpr::actual, DefExpr::init.
@@ -430,7 +430,7 @@ const char* get_string(Expr* e); // fatal on failure
 #define for_exprs_postorder(e, expr)                            \
   for (Expr *last = (expr), *e = expr->getFirstExpr();          \
        e;                                                       \
-       e = (e != last) ? getNextExpr(e) : NULL)
+       e = (e != last) ? getNextExpr(e) : nullptr)
 
 Expr* getNextExpr(Expr* expr);
 

@@ -56,7 +56,7 @@ bool SafeExprAnalysis::exprHasNoSideEffects(Expr* e, Expr* exprToMove) {
         safeExprCache[e] = false;
         return false;
       }
-      else if (exprToMove != NULL) {
+      else if (exprToMove != nullptr) {
         //
         // Exposed by AST pattern like this:
         //          |---|------- `exprToMove`

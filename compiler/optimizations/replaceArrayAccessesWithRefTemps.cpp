@@ -123,8 +123,8 @@ void replaceArrayAccessesWithRefTemps() {
       std::map<Symbol*, std::vector<ContextCallExpr*> > arrayAccessMap;
 
       SymExpr*  loopIdx   = forLoop->indexGet();
-      CallExpr* indexMove = NULL;
-      Symbol*   indexVar  = NULL;
+      CallExpr* indexMove = nullptr;
+      Symbol*   indexVar  = nullptr;
 
       collect_asts(forLoop, asts);
 
@@ -139,7 +139,7 @@ void replaceArrayAccessesWithRefTemps() {
                 if (toSymExpr(call->get(1))->symbol()->hasFlag(FLAG_TEMP)) {
                   loopIdx = toSymExpr(call->get(1));
                 } else {
-                  assert(indexMove == NULL && indexVar == NULL);
+                  assert(indexMove == nullptr && indexVar == nullptr);
                   indexMove = call;
                   indexVar = toSymExpr(call->get(1))->symbol();
                 }
@@ -268,7 +268,7 @@ void replaceArrayAccessesWithRefTemps() {
               CallExpr*   accessCall = toCallExpr(call);
               SymExpr*    array      = toSymExpr(accessCall->get(1));
               SymExpr*    idx        = toSymExpr(accessCall->get(2));
-              const char* sayref     = NULL;
+              const char* sayref     = nullptr;
 
               sayref = ref->hasFlag(FLAG_REF_VAR) ? " ref " : " ";
 

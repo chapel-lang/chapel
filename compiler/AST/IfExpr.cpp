@@ -35,9 +35,9 @@
 
 IfExpr::IfExpr(Expr* condition, Expr* thenExpr, Expr* elseExpr) :
   Expr(E_IfExpr),
-  condition(NULL),
-  thenStmt(NULL),
-  elseStmt(NULL)
+  condition(nullptr),
+  thenStmt(nullptr),
+  elseStmt(nullptr)
 {
   this->condition = condition;
 
@@ -116,7 +116,7 @@ void IfExpr::prettyPrint(std::ostream* o) {
 }
 
 Expr* IfExpr::getFirstExpr() {
-  return (condition != NULL) ? condition->getFirstExpr() : this;
+  return (condition != nullptr) ? condition->getFirstExpr() : this;
 }
 
 GenRet IfExpr::codegen() {

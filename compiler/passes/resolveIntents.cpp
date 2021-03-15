@@ -95,7 +95,7 @@ bool isTupleContainingRefMaybeConst(Type* t)
 static bool isTupleContainingTypeWithFlag(Type* t, Flag f) {
   AggregateType* at = toAggregateType(t->getValType());
 
-  if (at != NULL && at->symbol->hasFlag(FLAG_TUPLE)) {
+  if (at != nullptr && at->symbol->hasFlag(FLAG_TUPLE)) {
     for_fields(field, at) {
       Type* ft = field->type->getValType();
       if (ft->symbol->hasFlag(f))

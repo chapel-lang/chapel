@@ -104,7 +104,7 @@ namespace {
       insertBefore = i;
     } else {
       // Add at the end of entry block.
-      insertBefore = NULL;
+      insertBefore = nullptr;
     }
 
     AllocaInst *tempVar;
@@ -297,7 +297,7 @@ namespace {
     if( Function* ff = dyn_cast<Function>(f) ) {
       assert(ff->getParent());
     }
-    FunctionType* ft = NULL;
+    FunctionType* ft = nullptr;
     if( PointerType* pt = dyn_cast<PointerType>(t) ) {
       t = pt->getElementType();
     }
@@ -315,7 +315,7 @@ namespace {
 
     // When remapping things with remapped types, these functions
     // provide an opportunity to do the remapping. They should return
-    // NULL if that specific thing does not need to be remapped. They
+    // nullptr if that specific thing does not need to be remapped. They
     // do not need to handle remapping e.g. structure or arrays
     //  if only elements need remapping.
     virtual Constant* remapConstant(const Constant* C,
@@ -885,7 +885,7 @@ namespace {
                                                   SyncScope::SingleThread
                                                   );
 
-              Instruction* putget = NULL;
+              Instruction* putget = nullptr;
 
               if( dstSpace == info->globalSpace &&
                   srcSpace != info->globalSpace ) {
@@ -947,7 +947,7 @@ namespace {
 
               Value* wDst = callGlobalToWideFn(gDst, call);
 
-              Instruction* mset = NULL;
+              Instruction* mset = nullptr;
 
               Value* args[4];
               args[0] = createRnode(info, wDst, call);
@@ -1004,9 +1004,9 @@ namespace {
           assert(0);
         }
       }
-      // Otherwise, return NULL to indicate we opted out
+      // Otherwise, return nullptr to indicate we opted out
       //  of modifying the constant directly.
-      return NULL;
+      return nullptr;
     }
   };
 
@@ -1044,7 +1044,7 @@ namespace {
     }
 
     // If the type needs to change, offer it up to fixConstant,
-    // which returns NULL if MapValue will handle it (ie it's
+    // which returns nullptr if MapValue will handle it (ie it's
     // just the arguments that change).
     if( ty != C->getType() ) {
       Constant* newC = TypeMapper->remapConstant(C, VM, Flags);
@@ -1121,7 +1121,7 @@ namespace {
           // Check that the new argument is the mapped type.
           // We don't do this for instructions since in
           // general we might not have remapped them yet.
-          assert(newV != NULL);
+          assert(newV != nullptr);
           assert( newV->getType() == new_type );
         }
       }
@@ -1133,7 +1133,7 @@ namespace {
 
 
     Type *old_type = I->getType();
-    Type *new_type = NULL;
+    Type *new_type = nullptr;
     if( old_type ) TypeMapper->remapType(old_type);
 
     // Now, remap operands that we know about needing remap
@@ -1183,7 +1183,7 @@ namespace {
     // Constructor for running within opt, for testing and
     // bugpoint.
     GlobalToWide()
-      : ModulePass(ID), info(NULL), layoutAfterwards(""),
+      : ModulePass(ID), info(nullptr), layoutAfterwards(""),
         debugPassOne(false),
         debugPassTwo(false)
     {
@@ -1235,7 +1235,7 @@ namespace {
 #if HAVE_LLVM_VER < 90
         Type* getFnTy = getFn->getType();
         info->getFn = getFn;
-        info->getFnType = NULL;
+        info->getFnType = nullptr;
 #else
         FunctionType* getFnTy = getFn.getFunctionType();
         info->getFn = getFn.getCallee();
@@ -1250,7 +1250,7 @@ namespace {
 #if HAVE_LLVM_VER < 90
         Type* putFnTy = putFn->getType();
         info->putFn = putFn;
-        info->putFnType = NULL;
+        info->putFnType = nullptr;
 #else
         FunctionType* putFnTy = putFn.getFunctionType();
         info->putFn = putFn.getCallee();
@@ -1267,7 +1267,7 @@ namespace {
 #if HAVE_LLVM_VER < 90
         Type* getPutFnTy = getPutFn->getType();
         info->getPutFn = getPutFn;
-        info->getPutFnType = NULL;
+        info->getPutFnType = nullptr;
 #else
         FunctionType* getPutFnTy = getPutFn.getFunctionType();
         info->getPutFn = getPutFn.getCallee();
@@ -1283,7 +1283,7 @@ namespace {
 #if HAVE_LLVM_VER < 90
         Type* memsetFnTy = memsetFn->getType();
         info->memsetFn = memsetFn;
-        info->memsetFnType = NULL;
+        info->memsetFnType = nullptr;
 #else
         FunctionType* memsetFnTy = memsetFn.getFunctionType();
         info->memsetFn = memsetFn.getCallee();
@@ -1708,8 +1708,8 @@ namespace {
 
           Type *old_type = gv->getType()->getPointerElementType();
           Type *new_type = convertTypeGlobalToWide(&M, info, old_type);
-          Constant *old_init = NULL;
-          Constant *new_init = NULL;
+          Constant *old_init = nullptr;
+          Constant *new_init = nullptr;
 
           if( gv->hasInitializer() ) {
             old_init = gv->getInitializer();
@@ -1814,7 +1814,7 @@ namespace {
 
           for (BasicBlock::iterator I = BB->begin(), E = BB->end(); I != E; ) {
             Instruction *insn = &*I;
-            Instruction *prev = NULL;
+            Instruction *prev = nullptr;
             if( I != BB->begin() ) {
               --I;
               prev = &*I;
@@ -1828,7 +1828,7 @@ namespace {
             if( debugPassTwo ) {
               // Print out insns that we added, from prev to I.
               BasicBlock::iterator J;
-              if( prev != NULL ) {
+              if( prev != nullptr ) {
                 J = BasicBlock::iterator(prev);
               } else {
                 J = BB->begin();
@@ -1966,7 +1966,7 @@ namespace {
         Value* cf = info->preservingFn;
         Function* f = dyn_cast<Function>(cf);
         if( f ) {
-          info->preservingFn.setValPtr(NULL);
+          info->preservingFn.setValPtr(nullptr);
           f->eraseFromParent();
         }
       }
@@ -2039,9 +2039,9 @@ bool containsGlobalPointers(GlobalToWideInfo* info, Type* t)
 // getting a node number or address. Does not create the wide type.
 void populateFunctionsForGlobalType(Module *module, GlobalToWideInfo* info, Type* globalPtrTy)
 {
-  llvm::Type *ptrTy = NULL;
-  llvm::Type* locTy = NULL;
-  llvm::Type* nodeTy = NULL;
+  llvm::Type *ptrTy = nullptr;
+  llvm::Type* locTy = nullptr;
+  llvm::Type* nodeTy = nullptr;
 
   assert(info->localeIdType);
   assert(info->nodeIdType);
@@ -2142,7 +2142,7 @@ llvm::Function* getMakeFn(llvm::Module *module, GlobalToWideInfo* info, llvm::Ty
 
 void populateFunctionsForGlobalToWideType(Module *module, GlobalToWideInfo* info, Type* globalPtrTy)
 {
-  llvm::Type *widePtrTy = NULL;
+  llvm::Type *widePtrTy = nullptr;
 
   widePtrTy = convertTypeGlobalToWide(module, info, globalPtrTy);
 
@@ -2221,7 +2221,7 @@ Type* convertTypeGlobalToWide(Module* module, GlobalToWideInfo* info, Type* t)
   // Is it a struct type?
   if (t->isStructTy()){
     StructType *st = cast<StructType>(t);
-    StructType *newStruct = NULL;
+    StructType *newStruct = nullptr;
     // Create a new struct...
     if (!st->isLiteral()) {
       // Rename the old structure

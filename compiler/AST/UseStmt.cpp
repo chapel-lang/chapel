@@ -33,7 +33,7 @@
 UseStmt::UseStmt(BaseAST* source, const char* modRename,
                  bool isPrivate) : VisibilityStmt(E_UseStmt) {
   this->isPrivate = isPrivate;
-  src    = NULL;
+  src    = nullptr;
   this->modRename = astr(modRename);
   except = false;
   canReexport = true;
@@ -60,7 +60,7 @@ UseStmt::UseStmt(BaseAST*                            source,
   VisibilityStmt(E_UseStmt) {
 
   this->isPrivate = isPrivate;
-  src    = NULL;
+  src    = nullptr;
   this->modRename = astr(modRename);
   except = exclude;
   canReexport = true;
@@ -133,7 +133,7 @@ void UseStmt::verify() {
     INT_FATAL(this, "Bad NamedExpr::astTag");
   }
 
-  if (src == NULL) {
+  if (src == nullptr) {
     INT_FATAL(this, "Bad UseStmt::src");
   }
 
@@ -240,8 +240,8 @@ bool UseStmt::isValid(Expr* expr) const {
         if (SymExpr* rhs = toSymExpr(call->get(2))) {
           VarSymbol* v = toVarSymbol(rhs->symbol());
 
-          if (v                        != NULL &&
-              v->immediate             != NULL &&
+          if (v                        != nullptr &&
+              v->immediate             != nullptr &&
               v->immediate->const_kind == CONST_KIND_STRING) {
             retval = true;
 
@@ -364,7 +364,7 @@ void UseStmt::validateNamed() {
 
 // Should only be called when the mod field has been resolved
 BaseAST* UseStmt::getSearchScope() const {
-  BaseAST* retval = NULL;
+  BaseAST* retval = nullptr;
 
   if (SymExpr* se = toSymExpr(src)) {
     if (ModuleSymbol* module = toModuleSymbol(se->symbol())) {
@@ -422,7 +422,7 @@ void UseStmt::typeWasNamed(Type* t, std::set<const char*>* namedTypes) const {
   } else {
     const char* name = t->symbol->name;
     if (AggregateType* at = toAggregateType(t)) {
-      if (at->instantiatedFrom != NULL) {
+      if (at->instantiatedFrom != nullptr) {
         // Need to check against the generic type's name rather than the
         // instantiation, since the instantiation name included instantiation
         // information in it (and that isn't usable in a use/import list, at
@@ -515,7 +515,7 @@ bool UseStmt::matchedNameOrRename(const char* name) const {
 *                                                                             *
 * If the outer use does not require us to alter ourself, return ourself.      *
 * If the combination of the two uses results in no new symbols being provided *
-* by this module, return NULL.                                                *
+* by this module, return nullptr.                                                *
 *                                                                             *
 ************************************** | *************************************/
 
@@ -566,7 +566,7 @@ UseStmt* UseStmt::applyOuterUse(const UseStmt* outer) {
       } else if (newOnlyList.size() == 0 && newRenamed.size() == 0) {
         // All of the 'only' list was in the 'except' list,
         // so we don't provide new symbols.
-        return NULL;
+        return nullptr;
 
       } else {
         // The only list will be shorter, create a new UseStmt with it.
@@ -636,7 +636,7 @@ UseStmt* UseStmt::applyOuterUse(const UseStmt* outer) {
         } else {
           // all the 'only' identifiers were in the 'except'
           // list so this module use will give us nothing.
-          return NULL;
+          return nullptr;
         }
 
       } else {
@@ -694,7 +694,7 @@ UseStmt* UseStmt::applyOuterUse(const UseStmt* outer) {
           // all of the 'only' identifiers in the outer use
           // were missing from the inner use's 'only' list, so this
           // module use will give us nothing.
-          return NULL;
+          return nullptr;
         }
       }
 
@@ -769,7 +769,7 @@ ImportStmt* UseStmt::applyOuterImport(const ImportStmt* outer) {
         } else {
           // all the unqualified identifiers were in the 'except'
           // list so this module use will give us nothing.
-          return NULL;
+          return nullptr;
         }
 
       } else {
@@ -827,7 +827,7 @@ ImportStmt* UseStmt::applyOuterImport(const ImportStmt* outer) {
           // all of the unqualified and renamed identifiers in the outer import
           // were missing from the inner use's 'only' list, so this module use
           // will give us nothing.
-          return NULL;
+          return nullptr;
         }
       }
 

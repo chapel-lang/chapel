@@ -42,7 +42,7 @@ bool fDocsProcessUsedModules = false;
 
 
 void docsArgSetCommentLabel(const ArgumentDescription* desc, const char* label) {
-  assert(label != NULL);
+  assert(label != nullptr);
   size_t len = strlen(label);
   if (len != 0) {
     if (len > sizeof(fDocsCommentLabel)) {
@@ -75,31 +75,31 @@ Record components:
 */
 
 ArgumentDescription docs_arg_desc[] = {
- {"", ' ', NULL, "Documentation Options", NULL, NULL, NULL, NULL},
+ {"", ' ', nullptr, "Documentation Options", nullptr, nullptr, nullptr, nullptr},
 
  // TODO: This option is disabled for now (since source based ordering was
  //       introduced). The code to support it is still around, and the plan is
  //       to bring it back someday soon. (thomasvandoren, 2015-03-11)
  //
- // {"alphabetical", ' ', NULL, "Alphabetizes the documentation", "N", &fDocsAlphabetize, NULL, NULL},
+ // {"alphabetical", ' ', nullptr, "Alphabetizes the documentation", "N", &fDocsAlphabetize, nullptr, nullptr},
 
- {"output-dir", 'o', "<dirname>", "Sets the documentation directory to <dirname>", "S256", fDocsFolder, NULL, NULL},
- {"author", ' ', "<author>", "Documentation author string.", "S256", fDocsAuthor, "CHPLDOC_AUTHOR", NULL},
- {"comment-style", ' ', "<indicator>", "Only includes comments that start with <indicator>", "S256", fDocsCommentLabel, NULL, docsArgSetCommentLabel},
- {"process-used-modules", ' ', NULL, "Also parse and document 'use'd modules", "F", &fDocsProcessUsedModules, NULL, NULL},
- {"save-sphinx",  ' ', "<directory>", "Save generated Sphinx project in directory", "S256", fDocsSphinxDir, NULL, NULL},
- {"text-only", ' ', NULL, "Generate text documentation only", "F", &fDocsTextOnly, NULL, NULL},
- {"html", ' ', NULL, "[Don't] generate html documentation (on by default)", "N", &fDocsHTML, NULL, NULL},
- {"project-version", ' ', "<projectversion>", "Sets the documentation version to <projectversion>", "S256", fDocsProjectVersion, "CHPLDOC_PROJECT_VERSION", NULL},
+ {"output-dir", 'o', "<dirname>", "Sets the documentation directory to <dirname>", "S256", fDocsFolder, nullptr, nullptr},
+ {"author", ' ', "<author>", "Documentation author string.", "S256", fDocsAuthor, "CHPLDOC_AUTHOR", nullptr},
+ {"comment-style", ' ', "<indicator>", "Only includes comments that start with <indicator>", "S256", fDocsCommentLabel, nullptr, docsArgSetCommentLabel},
+ {"process-used-modules", ' ', nullptr, "Also parse and document 'use'd modules", "F", &fDocsProcessUsedModules, nullptr, nullptr},
+ {"save-sphinx",  ' ', "<directory>", "Save generated Sphinx project in directory", "S256", fDocsSphinxDir, nullptr, nullptr},
+ {"text-only", ' ', nullptr, "Generate text documentation only", "F", &fDocsTextOnly, nullptr, nullptr},
+ {"html", ' ', nullptr, "[Don't] generate html documentation (on by default)", "N", &fDocsHTML, nullptr, nullptr},
+ {"project-version", ' ', "<projectversion>", "Sets the documentation version to <projectversion>", "S256", fDocsProjectVersion, "CHPLDOC_PROJECT_VERSION", nullptr},
 
 
  // TODO: Whether or not to support this flag is an open discussion. Currently,
  //       it is not supported, so the flag is always true.
  //       (thomasvandoren, 2015-03-08)
- //{"externs", ' ', NULL, "Include externs", "n", &fDocsIncludeExterns, NULL, NULL},
- {"print-commands", ' ', NULL, "[Don't] print system commands", "N", &printSystemCommands, "CHPL_PRINT_COMMANDS", NULL},
+ //{"externs", ' ', nullptr, "Include externs", "n", &fDocsIncludeExterns, nullptr, nullptr},
+ {"print-commands", ' ', nullptr, "[Don't] print system commands", "N", &printSystemCommands, "CHPL_PRINT_COMMANDS", nullptr},
 
- {"", ' ', NULL, "Information Options", NULL, NULL, NULL, NULL},
+ {"", ' ', nullptr, "Information Options", nullptr, nullptr, nullptr, nullptr},
  DRIVER_ARG_HELP,
  DRIVER_ARG_HELP_ENV,
  DRIVER_ARG_HELP_SETTINGS,
@@ -107,7 +107,7 @@ ArgumentDescription docs_arg_desc[] = {
  DRIVER_ARG_COPYRIGHT,
  DRIVER_ARG_LICENSE,
 
- {"", ' ', NULL, "Developer Flags", NULL, NULL, NULL, NULL},
+ {"", ' ', nullptr, "Developer Flags", nullptr, nullptr, nullptr, nullptr},
  DRIVER_ARG_DEVELOPER,
  DRIVER_ARG_BREAKFLAGS_COMMON,
  DRIVER_ARG_DEBUGGERS,

@@ -240,7 +240,7 @@
       (Current).first_column = (Rhs)[1].first_column;                     \
       (Current).last_line    = (Rhs)[N].last_line;                        \
       (Current).last_column  = (Rhs)[N].last_column;                      \
-      (Current).comment      = NULL;                                      \
+      (Current).comment      = YY_NULLPTR;                                \
                                                                           \
       if ((Current).first_line)                                           \
         yystartlineno = (Current).first_line;                             \
@@ -571,7 +571,7 @@ stmt:
 module_decl_start:
   access_control opt_prototype TMODULE ident_def
     {
-      $$ = buildModule($4, currentModuleType, NULL, yyfilename, $1, $2, @1.comment);
+      $$ = buildModule($4, currentModuleType, YY_NULLPTR, yyfilename, $1, $2, @1.comment);
       // store previous module name in order to restore it once we're
       // done with this module in module_decl_stmt below.  Ultimately,
       // we will need to store a stack of module names in order to
@@ -600,9 +600,9 @@ module_decl_stmt:
 ;
 
 access_control:
-        { $$ = false; @$.comment = context->latestComment; context->latestComment = NULL; } // public
-| TPUBLIC { $$ = false; @$.comment = context->latestComment; context->latestComment = NULL; } // also public
-| TPRIVATE { $$ = true; @$.comment = context->latestComment; context->latestComment = NULL; } // private
+        { $$ = false; @$.comment = context->latestComment; context->latestComment = YY_NULLPTR; } // public
+| TPUBLIC { $$ = false; @$.comment = context->latestComment; context->latestComment = YY_NULLPTR; } // also public
+| TPRIVATE { $$ = true; @$.comment = context->latestComment; context->latestComment = YY_NULLPTR; } // private
 ;
 
 opt_prototype:
@@ -620,7 +620,7 @@ include_module_stmt:
  TINCLUDE
   {
     @1.comment = context->latestComment;
-    context->latestComment = NULL;
+    context->latestComment = YY_NULLPTR;
   }
  include_access_control opt_prototype TMODULE ident_def TSEMI
  {
@@ -776,7 +776,7 @@ assignment_stmt:
 // Here are some nonterminals for identifiers
 
 opt_label_ident:
-         { $$ = NULL; }
+         { $$ = YY_NULLPTR; }
 | TIDENT { $$ = $1; }
 ;
 
@@ -912,12 +912,12 @@ extern_export_decl_stmt:
   TEXTERN TRECORD
     {
       @2.comment = context->latestComment;
-      context->latestComment = NULL;
+      context->latestComment = YY_NULLPTR;
     }
   ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
     {
       $$ = buildChapelStmt(buildClassDefExpr($4,
-                                             NULL,
+                                             YY_NULLPTR,
                                              AGGREGATE_RECORD,
                                              $5,
                                              $7,
@@ -927,7 +927,7 @@ extern_export_decl_stmt:
 | TEXTERN STRINGLITERAL TRECORD
     {
       @3.comment = context->latestComment;
-      context->latestComment = NULL;
+      context->latestComment = YY_NULLPTR;
     }
   ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
     {
@@ -943,12 +943,12 @@ extern_export_decl_stmt:
 | TEXPORT TRECORD
     {
       @2.comment = context->latestComment;
-      context->latestComment = NULL;
+      context->latestComment = YY_NULLPTR;
     }
   ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
     {
       $$ = buildChapelStmt(buildClassDefExpr($4,
-                                             NULL,
+                                             YY_NULLPTR,
                                              AGGREGATE_RECORD,
                                              $5,
                                              $7,
@@ -958,7 +958,7 @@ extern_export_decl_stmt:
 | TEXPORT STRINGLITERAL TRECORD
     {
       @3.comment = context->latestComment;
-      context->latestComment = NULL;
+      context->latestComment = YY_NULLPTR;
     }
   ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
     {
@@ -983,7 +983,7 @@ extern_export_decl_stmt:
 | TEXTERN opt_expr var_decl_type var_decl_stmt_inner_ls TSEMI
     {
       const char* comment = context->latestComment;
-      context->latestComment = NULL;
+      context->latestComment = YY_NULLPTR;
 
       $3->insert(FLAG_EXTERN);
       $$ = buildVarDecls($4, comment, $3, $2);
@@ -991,7 +991,7 @@ extern_export_decl_stmt:
 | TEXPORT opt_expr var_decl_type var_decl_stmt_inner_ls TSEMI
     {
       const char* comment = context->latestComment;
-      context->latestComment = NULL;
+      context->latestComment = YY_NULLPTR;
 
       $3->insert(FLAG_EXPORT);
       $$ = buildVarDecls($4, comment, $3, $2);
@@ -1011,20 +1011,20 @@ loop_stmt:
 | TWHILE ifvar do_stmt                          { $$ = WhileDoStmt::build($2, $3); }
 | TCOFORALL expr TIN expr opt_task_intent_ls do_stmt              { $$ = buildCoforallLoopStmt($2, $4, $5, $6);       }
 | TCOFORALL expr TIN zippered_iterator opt_task_intent_ls do_stmt { $$ = buildCoforallLoopStmt($2, $4, $5, $6, true); }
-| TCOFORALL expr opt_task_intent_ls do_stmt                       { $$ = buildCoforallLoopStmt(NULL, $2, $3, $4);     }
+| TCOFORALL expr opt_task_intent_ls do_stmt                       { $$ = buildCoforallLoopStmt(YY_NULLPTR, $2, $3, $4);     }
 | TFOR expr TIN expr do_stmt                    { $$ = ForLoop::buildForLoop(  $2, $4, $5, false, false); }
 | TFOR expr TIN zippered_iterator do_stmt       { $$ = ForLoop::buildForLoop(  $2, $4, $5, true, false); }
-| TFOR expr do_stmt                             { $$ = ForLoop::buildForLoop(NULL, $2, $3, false, false); }
-| TFOR zippered_iterator do_stmt                { $$ = ForLoop::buildForLoop(NULL, $2, $3, true, false); }
+| TFOR expr do_stmt                             { $$ = ForLoop::buildForLoop(YY_NULLPTR, $2, $3, false, false); }
+| TFOR zippered_iterator do_stmt                { $$ = ForLoop::buildForLoop(YY_NULLPTR, $2, $3, true, false); }
 | TFOR TPARAM ident_def TIN expr do_stmt        { $$ = buildParamForLoopStmt($3, $5, $6); }
-| TFORALL expr TIN expr                                   do_stmt  { $$ = ForallStmt::build($2,   $4, NULL, $5, false, false); }
+| TFORALL expr TIN expr                                   do_stmt  { $$ = ForallStmt::build($2,   $4, YY_NULLPTR, $5, false, false); }
 | TFORALL expr TIN expr              forall_intent_clause do_stmt  { $$ = ForallStmt::build($2,   $4, $5,   $6, false, false); }
-| TFORALL expr TIN zippered_iterator                      do_stmt  { $$ = ForallStmt::build($2,   $4, NULL, $5, true,  false); }
+| TFORALL expr TIN zippered_iterator                      do_stmt  { $$ = ForallStmt::build($2,   $4, YY_NULLPTR, $5, true,  false); }
 | TFORALL expr TIN zippered_iterator forall_intent_clause do_stmt  { $$ = ForallStmt::build($2,   $4, $5,   $6, true,  false); }
-| TFORALL          expr                                   do_stmt  { $$ = ForallStmt::build(NULL, $2, NULL, $3, false, false); }
-| TFORALL          expr              forall_intent_clause do_stmt  { $$ = ForallStmt::build(NULL, $2, $3,   $4, false, false); }
-| TFORALL          zippered_iterator                      do_stmt  { $$ = ForallStmt::build(NULL, $2, NULL, $3, true,  false); }
-| TFORALL          zippered_iterator forall_intent_clause do_stmt  { $$ = ForallStmt::build(NULL, $2, $3,   $4, true,  false); }
+| TFORALL          expr                                   do_stmt  { $$ = ForallStmt::build(YY_NULLPTR, $2, YY_NULLPTR, $3, false, false); }
+| TFORALL          expr              forall_intent_clause do_stmt  { $$ = ForallStmt::build(YY_NULLPTR, $2, $3,   $4, false, false); }
+| TFORALL          zippered_iterator                      do_stmt  { $$ = ForallStmt::build(YY_NULLPTR, $2, YY_NULLPTR, $3, true,  false); }
+| TFORALL          zippered_iterator forall_intent_clause do_stmt  { $$ = ForallStmt::build(YY_NULLPTR, $2, $3,   $4, true,  false); }
 | TFOREACH expr TIN expr                                   do_stmt { $$ = foreachNotImplementedError(); }
 | TFOREACH expr TIN expr              forall_intent_clause do_stmt { $$ = foreachNotImplementedError(); }
 | TFOREACH expr TIN zippered_iterator                      do_stmt { $$ = foreachNotImplementedError(); }
@@ -1037,7 +1037,7 @@ loop_stmt:
     {
       if ($2->argList.length != 1)
         USR_FATAL($4, "invalid index expression");
-      $$ = ForallStmt::build($2->get(1)->remove(), $4, NULL, new BlockStmt($6), false, true);
+      $$ = ForallStmt::build($2->get(1)->remove(), $4, YY_NULLPTR, new BlockStmt($6), false, true);
     }
 | TLSBR expr_ls TIN expr forall_intent_clause TRSBR stmt
     {
@@ -1049,7 +1049,7 @@ loop_stmt:
     {
       if ($2->argList.length != 1)
         USR_FATAL($4, "invalid index expression");
-      $$ = ForallStmt::build($2->get(1)->remove(), $4, NULL, new BlockStmt($6), true,  true);
+      $$ = ForallStmt::build($2->get(1)->remove(), $4, YY_NULLPTR, new BlockStmt($6), true,  true);
     }
 | TLSBR expr_ls TIN zippered_iterator forall_intent_clause TRSBR stmt
     {
@@ -1060,24 +1060,24 @@ loop_stmt:
 | TLSBR expr_ls TRSBR stmt
     {
       if ($2->argList.length > 1)
-        $$ = ForallStmt::build(NULL, new CallExpr("chpl__ensureDomainExpr", $2), NULL, new BlockStmt($4), false, true);
+        $$ = ForallStmt::build(YY_NULLPTR, new CallExpr("chpl__ensureDomainExpr", $2), YY_NULLPTR, new BlockStmt($4), false, true);
       else
-        $$ = ForallStmt::build(NULL, $2->get(1)->remove(),                       NULL, new BlockStmt($4), false, true);
+        $$ = ForallStmt::build(YY_NULLPTR, $2->get(1)->remove(),                       YY_NULLPTR, new BlockStmt($4), false, true);
     }
 | TLSBR expr_ls forall_intent_clause TRSBR stmt
     {
       if ($2->argList.length > 1)
-        $$ = ForallStmt::build(NULL, new CallExpr("chpl__ensureDomainExpr", $2), $3, new BlockStmt($5), false, true);
+        $$ = ForallStmt::build(YY_NULLPTR, new CallExpr("chpl__ensureDomainExpr", $2), $3, new BlockStmt($5), false, true);
       else
-        $$ = ForallStmt::build(NULL, $2->get(1)->remove(),                       $3, new BlockStmt($5), false, true);
+        $$ = ForallStmt::build(YY_NULLPTR, $2->get(1)->remove(),                       $3, new BlockStmt($5), false, true);
     }
 | TLSBR zippered_iterator TRSBR stmt
     {
-      $$ = ForallStmt::build(NULL, $2, NULL, new BlockStmt($4), true,  true);
+      $$ = ForallStmt::build(YY_NULLPTR, $2, YY_NULLPTR, new BlockStmt($4), true,  true);
     }
 | TLSBR zippered_iterator forall_intent_clause TRSBR stmt
     {
-      $$ = ForallStmt::build(NULL, $2, $3,   new BlockStmt($5), true,  true);
+      $$ = ForallStmt::build(YY_NULLPTR, $2, $3,   new BlockStmt($5), true,  true);
     }
 ;
 
@@ -1170,13 +1170,13 @@ implements_type_error_ident:
 
 implements_stmt:
   TIMPLEMENTS ident_def TLP actual_ls TRP TSEMI
-  { $$ = buildChapelStmt(ImplementsStmt::build($2, $4, NULL)); }
+  { $$ = buildChapelStmt(ImplementsStmt::build($2, $4, YY_NULLPTR)); }
 | implements_type_ident TIMPLEMENTS ident_def TSEMI
   { CallExpr* act = new CallExpr(PRIM_ACTUALS_LIST, new UnresolvedSymExpr($1));
-    $$ = buildChapelStmt(ImplementsStmt::build($3, act, NULL)); }
+    $$ = buildChapelStmt(ImplementsStmt::build($3, act, YY_NULLPTR)); }
 | implements_type_ident TIMPLEMENTS ident_def TLP actual_ls TRP TSEMI
   { $5->insertAtHead(new UnresolvedSymExpr($1));
-    $$ = buildChapelStmt(ImplementsStmt::build($3, $5, NULL)); }
+    $$ = buildChapelStmt(ImplementsStmt::build($3, $5, YY_NULLPTR)); }
 ;
 
 ifc_constraint:
@@ -1214,8 +1214,8 @@ catch_stmt:
 ;
 
 catch_expr:
-  ident_def           { $$ = new DefExpr(new VarSymbol($1), NULL, new UnresolvedSymExpr("Error")); }
-| ident_def TCOLON expr { $$ = new DefExpr(new VarSymbol($1), NULL, $3);   }
+  ident_def           { $$ = new DefExpr(new VarSymbol($1), YY_NULLPTR, new UnresolvedSymExpr("Error")); }
+| ident_def TCOLON expr { $$ = new DefExpr(new VarSymbol($1), YY_NULLPTR, $3);   }
 ;
 
 throw_stmt:
@@ -1248,7 +1248,7 @@ class_decl_stmt:
   class_tag ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
     {
       $$ = buildChapelStmt(buildClassDefExpr($2,
-                                             NULL,
+                                             YY_NULLPTR,
                                              $1,
                                              $3,
                                              $5,
@@ -1258,7 +1258,7 @@ class_decl_stmt:
 | class_tag ident_def opt_inherit TLCBR error TRCBR
     {
       $$ = buildChapelStmt(buildClassDefExpr($2,
-                                             NULL,
+                                             YY_NULLPTR,
                                              $1,
                                              $3,
                                              new BlockStmt(),
@@ -1272,22 +1272,22 @@ class_tag:
   TCLASS   {
              $$                     = AGGREGATE_CLASS;
              @$.comment             = context->latestComment;
-             context->latestComment = NULL;
+             context->latestComment = YY_NULLPTR;
            }
 | TRECORD  {
              $$                     = AGGREGATE_RECORD;
              @$.comment             = context->latestComment;
-             context->latestComment = NULL;
+             context->latestComment = YY_NULLPTR;
            }
 | TUNION   {
              $$                     = AGGREGATE_UNION;
              @$.comment             = context->latestComment;
-             context->latestComment = NULL;
+             context->latestComment = YY_NULLPTR;
            }
 ;
 
 opt_inherit:
-                  { $$ = NULL; }
+                  { $$ = YY_NULLPTR; }
 | TCOLON expr_ls  { $$ = $2; }
 ;
 
@@ -1307,7 +1307,7 @@ enum_decl_stmt:
       for_vector(DefExpr, ec, *$4) {
         ec->sym->type = pdt;
         pdt->constants.insertAtTail(ec);
-        if (pdt->defaultValue == NULL) {
+        if (pdt->defaultValue == YY_NULLPTR) {
           pdt->defaultValue = ec->sym;
         }
       }
@@ -1328,7 +1328,7 @@ enum_header:
     {
       $$ = new EnumType();
       @$.comment = context->latestComment;
-      context->latestComment = NULL;
+      context->latestComment = YY_NULLPTR;
     }
 ;
 
@@ -1339,7 +1339,7 @@ enum_ls:
       $$->push_back($1);
       //$$->doc = context->latestComment;
       // start here for enabling documentation of enum constants
-      //context->latestComment = NULL;
+      //context->latestComment = YY_NULLPTR;
     }
 | enum_ls TCOMMA
     {
@@ -1408,7 +1408,7 @@ fn_decl_stmt:
     {
       // Capture the latest comment
       @2.comment = context->latestComment;
-      context->latestComment = NULL;
+      context->latestComment = YY_NULLPTR;
 
       // Sets up to capture tokens while parsing the next grammar nonterminal.
       captureTokens = 1;
@@ -1442,25 +1442,25 @@ fn_decl_stmt:
       }
       if ($2 == ProcIterOp_OP) {
         fn->addFlag(FLAG_OPERATOR);
-        if (fn->_this != NULL) {
+        if (fn->_this != YY_NULLPTR) {
           updateOpThisTagOrErr(fn);
           setupTypeIntentArg(toArgSymbol(fn->_this));
         }
       }
 
       $$ = buildFunctionDecl($4, $6, $7, $8, $9.where, $9.lifetime, $10, @2.comment);
-      context->latestComment = NULL;
+      context->latestComment = YY_NULLPTR;
     }
 ;
 
 fn_decl_stmt_inner:
   opt_this_intent_tag fn_ident opt_formal_ls
     {
-      $$ = buildFunctionSymbol($3, $2, $1, NULL);
+      $$ = buildFunctionSymbol($3, $2, $1, YY_NULLPTR);
     }
 | opt_this_intent_tag assignop_ident opt_formal_ls
     {
-      $$ = buildFunctionSymbol($3, $2, $1, NULL);
+      $$ = buildFunctionSymbol($3, $2, $1, YY_NULLPTR);
       $$->addFlag(FLAG_ASSIGNOP);
     }
 | opt_this_intent_tag fn_decl_receiver_expr TDOT fn_ident opt_formal_ls
@@ -1474,7 +1474,7 @@ fn_decl_stmt_inner:
     }
 | opt_this_intent_tag error opt_formal_ls
     {
-      $$ = buildFunctionSymbol($3, "dummy", INTENT_BLANK, NULL);
+      $$ = buildFunctionSymbol($3, "dummy", INTENT_BLANK, YY_NULLPTR);
     }
 ;
 
@@ -1539,20 +1539,20 @@ req_formal_ls:
 ;
 
 formal_ls:
-                           { $$ = buildFunctionFormal(NULL, NULL); }
-| formal                   { $$ = buildFunctionFormal(NULL, $1); }
+                           { $$ = buildFunctionFormal(YY_NULLPTR, YY_NULLPTR); }
+| formal                   { $$ = buildFunctionFormal(YY_NULLPTR, $1); }
 | formal_ls TCOMMA formal  { $$ = buildFunctionFormal($1, $3); }
 ;
 
 formal:
   opt_intent_tag ident_def opt_formal_type opt_init_expr
-    { $$ = buildArgDefExpr($1, $2, $3, $4, NULL); }
+    { $$ = buildArgDefExpr($1, $2, $3, $4, YY_NULLPTR); }
 | pragma_ls opt_intent_tag ident_def opt_formal_type opt_init_expr
-    { $$ = buildPragmaDefExpr($1, buildArgDefExpr($2, $3, $4, $5, NULL)); }
+    { $$ = buildPragmaDefExpr($1, buildArgDefExpr($2, $3, $4, $5, YY_NULLPTR)); }
 | opt_intent_tag ident_def opt_formal_type var_arg_expr
-    { $$ = buildArgDefExpr($1, $2, $3, NULL, $4); }
+    { $$ = buildArgDefExpr($1, $2, $3, YY_NULLPTR, $4); }
 | pragma_ls opt_intent_tag ident_def opt_formal_type var_arg_expr
-    { $$ = buildPragmaDefExpr($1, buildArgDefExpr($2, $3, $4, NULL, $5)); }
+    { $$ = buildPragmaDefExpr($1, buildArgDefExpr($2, $3, $4, YY_NULLPTR, $5)); }
 | opt_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP opt_formal_type opt_init_expr
     { $$ = buildTupleArgDefExpr($1, $3, $5, $6); }
 | opt_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP opt_formal_type var_arg_expr
@@ -1605,7 +1605,7 @@ opt_throws_error:
 | TTHROWS { $$ = true;  }
 
 opt_function_body_stmt:
-  TSEMI     { $$ = NULL; }
+  TSEMI     { $$ = YY_NULLPTR; }
 | function_body_stmt
 ;
 
@@ -1629,11 +1629,11 @@ var_arg_expr:
 ;
 
 opt_lifetime_where:
-  { $$ = makeWhereAndLifetime(NULL, NULL); }
+  { $$ = makeWhereAndLifetime(YY_NULLPTR, YY_NULLPTR); }
 | TWHERE expr
-  { $$ = makeWhereAndLifetime($2, NULL); }
+  { $$ = makeWhereAndLifetime($2, YY_NULLPTR); }
 | TLIFETIME lifetime_components_expr
-  { $$ = makeWhereAndLifetime(NULL, $2); }
+  { $$ = makeWhereAndLifetime(YY_NULLPTR, $2); }
 | TWHERE expr TLIFETIME lifetime_components_expr
   { $$ = makeWhereAndLifetime($2, $4); }
 | TLIFETIME lifetime_components_expr TWHERE expr
@@ -1681,7 +1681,7 @@ type_alias_decl_stmt_inner:
       var->addFlag(FLAG_TYPE_VARIABLE);
 
       var->doc               = context->latestComment;
-      context->latestComment = NULL;
+      context->latestComment = YY_NULLPTR;
 
       DefExpr* def = new DefExpr(var, $2);
 
@@ -1694,7 +1694,7 @@ type_alias_decl_stmt_inner:
       var->addFlag(FLAG_TYPE_VARIABLE);
 
       var->doc               = context->latestComment;
-      context->latestComment = NULL;
+      context->latestComment = YY_NULLPTR;
 
       DefExpr* def = new DefExpr(var, $2);
 
@@ -1704,7 +1704,7 @@ type_alias_decl_stmt_inner:
 ;
 
 opt_init_type:
-    { $$ = NULL; }
+    { $$ = YY_NULLPTR; }
 | TASSIGN type_level_expr
     { $$ = $2; }
 | TASSIGN array_type
@@ -1724,12 +1724,12 @@ var_decl_stmt:
     {
       $2->insert(FLAG_CONFIG);
       $$ = buildVarDecls($3, context->latestComment, $2);
-      context->latestComment = NULL;
+      context->latestComment = YY_NULLPTR;
     }
 | var_decl_type var_decl_stmt_inner_ls TSEMI
     {
       $$ = buildVarDecls($2, context->latestComment, $1);
-      context->latestComment = NULL;
+      context->latestComment = YY_NULLPTR;
     }
 ;
 
@@ -1770,7 +1770,7 @@ tuple_var_decl_stmt_inner_ls:
 /** TYPES ********************************************************************/
 
 opt_init_expr:
-                        { $$ = NULL; }
+                        { $$ = YY_NULLPTR; }
 | TASSIGN TNOINIT       { $$ = new SymExpr(gNoInit); }
 | TASSIGN opt_try_expr  { $$ = $2; }
 ;
@@ -1780,14 +1780,14 @@ ret_array_type:
   TLSBR TRSBR type_level_expr
     { $$ = new CallExpr("chpl__buildArrayRuntimeType", gNil, $3); }
 | TLSBR TRSBR
-    { $$ = new CallExpr("chpl__buildArrayRuntimeType", gNil, NULL); }
+    { $$ = new CallExpr("chpl__buildArrayRuntimeType", gNil, YY_NULLPTR); }
 | TLSBR expr_ls TRSBR type_level_expr
     { $$ = new CallExpr("chpl__buildArrayRuntimeType",
              new CallExpr("chpl__ensureDomainExpr", $2), $4);
     }
 | TLSBR expr_ls TRSBR
     { $$ = new CallExpr("chpl__buildArrayRuntimeType",
-             new CallExpr("chpl__ensureDomainExpr", $2), NULL);
+             new CallExpr("chpl__ensureDomainExpr", $2), YY_NULLPTR);
     }
 | TLSBR TRSBR ret_array_type
     { $$ = new CallExpr("chpl__buildArrayRuntimeType", gNil, $3); }
@@ -1803,20 +1803,20 @@ ret_array_type:
 ;
 
 opt_ret_type:
-                          { $$ = NULL; }
+                          { $$ = YY_NULLPTR; }
 | TCOLON type_level_expr  { $$ = $2; }
 | TCOLON ret_array_type   { $$ = $2; }
 | TCOLON reserved_type_ident_use { $$ = new UnresolvedSymExpr($2); }
-| error                   { $$ = NULL; }
+| error                   { $$ = YY_NULLPTR; }
 ;
 
 
 opt_type:
-                          { $$ = NULL; }
+                          { $$ = YY_NULLPTR; }
 | TCOLON type_level_expr  { $$ = $2; }
 | TCOLON array_type       { $$ = $2; }
 | TCOLON reserved_type_ident_use { $$ = new UnresolvedSymExpr($2); }
-| error                   { $$ = NULL; }
+| error                   { $$ = YY_NULLPTR; }
 ;
 
 /* NOTE: Some things about the following rule concern me (blc), but I
@@ -1859,7 +1859,7 @@ array_type:
 ;
 
 opt_formal_array_elt_type:
-                        { $$ = NULL; }
+                        { $$ = YY_NULLPTR; }
 | type_level_expr       { $$ = $1; }
 | query_expr            { $$ = $1; }
 ;
@@ -1882,7 +1882,7 @@ formal_array_type:
 ;
 
 opt_formal_type:
-                            { $$ = NULL; }
+                            { $$ = YY_NULLPTR; }
 | TCOLON type_level_expr    { $$ = $2; }
 | TCOLON query_expr         { $$ = $2; }
 | TCOLON reserved_type_ident_use { $$ = new UnresolvedSymExpr($2); }
@@ -2001,45 +2001,45 @@ for_expr:
   TFOR expr TIN expr TDO expr %prec TFOR
     { $$ = buildForLoopExpr($2, $4, $6); }
 | TFOR expr TIN zippered_iterator TDO expr %prec TFOR
-    { $$ = buildForLoopExpr($2, $4, $6, NULL, false, true); }
+    { $$ = buildForLoopExpr($2, $4, $6, YY_NULLPTR, false, true); }
 | TFOR expr TDO expr %prec TFOR
-    { $$ = buildForLoopExpr(NULL, $2, $4); }
+    { $$ = buildForLoopExpr(YY_NULLPTR, $2, $4); }
 | TFOR expr TIN expr TDO TIF expr TTHEN expr %prec TNOELSE
     { $$ = buildForLoopExpr($2, $4, $9, $7); }
 | TFOR expr TIN zippered_iterator TDO TIF expr TTHEN expr %prec TNOELSE
     { $$ = buildForLoopExpr($2, $4, $9, $7, false, true); }
 | TFOR expr TDO TIF expr TTHEN expr %prec TNOELSE
-    { $$ = buildForLoopExpr(NULL, $2, $7, $5); }
+    { $$ = buildForLoopExpr(YY_NULLPTR, $2, $7, $5); }
 | TFORALL expr TIN expr TDO expr %prec TFOR
     { $$ = buildForallLoopExpr($2, $4, $6); }
 | TFORALL expr TIN zippered_iterator TDO expr %prec TFOR
-    { $$ = buildForallLoopExpr($2, $4, $6, NULL, false, true); }
+    { $$ = buildForallLoopExpr($2, $4, $6, YY_NULLPTR, false, true); }
 | TFORALL expr TDO expr %prec TFOR
-    { $$ = buildForallLoopExpr(NULL, $2, $4); }
+    { $$ = buildForallLoopExpr(YY_NULLPTR, $2, $4); }
 | TFORALL expr TIN expr TDO TIF expr TTHEN expr %prec TNOELSE
     { $$ = buildForallLoopExpr($2, $4, $9, $7); }
 | TFORALL expr TIN zippered_iterator TDO TIF expr TTHEN expr %prec TNOELSE
     { $$ = buildForallLoopExpr($2, $4, $9, $7, false, true); }
 | TFORALL expr TDO TIF expr TTHEN expr %prec TNOELSE
-    { $$ = buildForallLoopExpr(NULL, $2, $7, $5); }
+    { $$ = buildForallLoopExpr(YY_NULLPTR, $2, $7, $5); }
 | TLSBR expr_ls TRSBR expr %prec TFOR
     {
       if ($2->argList.length > 1)
-        $$ = buildForallLoopExpr(NULL, new CallExpr("chpl__ensureDomainExpr", $2), $4, NULL, true);
+        $$ = buildForallLoopExpr(YY_NULLPTR, new CallExpr("chpl__ensureDomainExpr", $2), $4, YY_NULLPTR, true);
       else
-        $$ = buildForallLoopExpr(NULL, $2->get(1)->remove(), $4, NULL, true);
+        $$ = buildForallLoopExpr(YY_NULLPTR, $2->get(1)->remove(), $4, YY_NULLPTR, true);
     }
 | TLSBR expr_ls TIN expr TRSBR expr %prec TFOR
     {
       if ($2->argList.length != 1)
         USR_FATAL($4, "invalid index expression");
-      $$ = buildForallLoopExpr($2->get(1)->remove(), $4, $6, NULL, true);
+      $$ = buildForallLoopExpr($2->get(1)->remove(), $4, $6, YY_NULLPTR, true);
     }
 | TLSBR expr_ls TIN zippered_iterator TRSBR expr %prec TFOR
     {
       if ($2->argList.length != 1)
         USR_FATAL($4, "invalid index expression");
-      $$ = buildForallLoopExpr($2->get(1)->remove(), $4, $6, NULL, false, true);
+      $$ = buildForallLoopExpr($2->get(1)->remove(), $4, $6, YY_NULLPTR, false, true);
     }
 | TLSBR expr_ls TIN expr TRSBR TIF expr TTHEN expr %prec TNOELSE
     {
@@ -2086,7 +2086,7 @@ stmt_level_expr:
 ;
 
 opt_task_intent_ls:
-                                { $$ = NULL; }
+                                { $$ = YY_NULLPTR; }
 | task_intent_clause
 ;
 
@@ -2244,7 +2244,7 @@ expr:
 ;
 
 opt_expr:
-                  { $$ = NULL; }
+                  { $$ = YY_NULLPTR; }
 | expr            { $$ = $1; }
 ;
 

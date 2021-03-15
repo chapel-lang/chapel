@@ -86,7 +86,7 @@ void preNormalizeFields(AggregateType* at) {
     if (DefExpr* defExpr = toDefExpr(field)) {
       if (defExpr->sym->hasFlag(FLAG_PARAM)         == false &&
           defExpr->sym->hasFlag(FLAG_TYPE_VARIABLE) == false) {
-        Type* type = NULL;
+        Type* type = nullptr;
 
         if (Expr* typeExpr = defExpr->exprType) {
           type = typeForTypeSpecifier(typeExpr, false);
@@ -95,23 +95,23 @@ void preNormalizeFields(AggregateType* at) {
           //   =>
           // var x : Foo;
           // var y : typeof(x);       // Handle this case
-          if (type == NULL) {
+          if (type == nullptr) {
             if (CallExpr* callExpr = toCallExpr(typeExpr)) {
               if (callExpr->isPrimitive(PRIM_TYPEOF) == true) {
                 if (SymExpr* varExpr = toSymExpr(callExpr->get(1))) {
                   Type* t = varExpr->symbol()->type;
 
-                  type = (t != dtUnknown) ? t : NULL;
+                  type = (t != dtUnknown) ? t : nullptr;
                 }
               }
             }
           }
 
-        } else if (defExpr->init != NULL) {
+        } else if (defExpr->init != nullptr) {
           type = typeForExpr(defExpr->init);
         }
 
-        if (type != NULL) {
+        if (type != nullptr) {
           Symbol* sym = defExpr->sym;
 
           if (sym->hasFlag(FLAG_CONST) == true) {
@@ -132,7 +132,7 @@ void preNormalizeFields(AggregateType* at) {
 //   1) An immediate value for one of the primitive scalars
 //   2) A new expr
 static Type* typeForExpr(Expr* expr) {
-  Type* retval = NULL;
+  Type* retval = nullptr;
 
   if (SymExpr* symExpr = toSymExpr(expr)) {
     Type* type = symExpr->symbol()->type;
@@ -151,7 +151,7 @@ static Type* typeForExpr(Expr* expr) {
 }
 
 static AggregateType* typeForNewExpr(CallExpr* newExpr) {
-  AggregateType* retval = NULL;
+  AggregateType* retval = nullptr;
 
   if (CallExpr* constructor = toCallExpr(newExpr->get(1))) {
     if (SymExpr* baseExpr = toSymExpr(constructor->baseExpr)) {
@@ -247,7 +247,7 @@ static bool isReturnVoid(FnSymbol* fn) {
       if (calls[i]->isPrimitive(PRIM_RETURN)) {
         SymExpr* value = toSymExpr(calls[i]->get(1));
 
-        if (value == NULL || value->symbol()->type != dtVoid) {
+        if (value == nullptr || value->symbol()->type != dtVoid) {
           USR_FATAL(calls[i], "initializers cannot return a value");
           retval = false;
         }
@@ -421,7 +421,7 @@ static void checkLocalPhaseOneErrors(const InitNormalize& state,
 }
 
 static void checkInvalidInit(InitNormalize& state, CallExpr* callExpr) {
-  const char* initName = NULL;
+  const char* initName = nullptr;
   if (isSuperInit(callExpr) == true) {
     initName = "super.init()";
   } else if (isThisInit(callExpr) == true) {
@@ -430,7 +430,7 @@ static void checkInvalidInit(InitNormalize& state, CallExpr* callExpr) {
     initName = "this.complete()";
   }
 
-  if (initName == NULL) {
+  if (initName == nullptr) {
     INT_FATAL("Called 'checkInvalidInit' with invalid call");
   }
 
@@ -471,7 +471,7 @@ static InitNormalize preNormalize(AggregateType* at,
   // This sub-block may have a different phase than the parent
   state.checkPhase(block);
 
-  while (stmt != NULL) {
+  while (stmt != nullptr) {
     if (isUnacceptableTry(stmt) == true) {
       USR_FATAL(stmt,
                 "Only catch-less try! statements are allowed in "
@@ -625,7 +625,7 @@ static InitNormalize preNormalize(AggregateType* at,
       }
 
     } else if (CondStmt* cond = toCondStmt(stmt)) {
-      if (cond->elseStmt == NULL) {
+      if (cond->elseStmt == nullptr) {
         InitNormalize::InitPhase phaseThen = state.startPhase(cond->thenStmt);
         InitNormalize            stateThen = preNormalize(
                                                   at,
@@ -724,11 +724,11 @@ void unifyConditionalBranchLastField(AggregateType* at,
   int  elseFieldPos = -1;
   bool updateElse   = false;
 
-  if (thenFieldDef != NULL) {
+  if (thenFieldDef != nullptr) {
     thenFieldPos = at->getFieldPosition(thenFieldDef->name());
   }
 
-  if (elseFieldDef != NULL) {
+  if (elseFieldDef != nullptr) {
     elseFieldPos = at->getFieldPosition(elseFieldDef->name());
   }
 
@@ -772,17 +772,17 @@ static bool isInitStmt(CallExpr* stmt) {
 bool isSuperInit(CallExpr* stmt) {
   const char* name = initName(stmt);
 
-  return name != NULL && strcmp(name, "super") == 0 ? true : false;
+  return name != nullptr && strcmp(name, "super") == 0 ? true : false;
 }
 
 bool isThisInit(CallExpr* stmt) {
   const char* name = initName(stmt);
 
-  return name != NULL && strcmp(name, "this")  == 0 ? true : false;
+  return name != nullptr && strcmp(name, "this")  == 0 ? true : false;
 }
 
 static const char* initName(CallExpr* call) {
-  const char* retval = NULL;
+  const char* retval = nullptr;
 
   if (CallExpr* inner = toCallExpr(call->baseExpr)) {
     retval = initNameInner(inner);
@@ -803,7 +803,7 @@ static const char* initName(CallExpr* call) {
 //
 
 static const char* initNameInner(CallExpr* expr) {
-  const char* retval = NULL;
+  const char* retval = nullptr;
 
   if (expr->numActuals()                    ==    2 &&
       expr->isNamedAstr(astrSdot)           == true &&
@@ -914,14 +914,14 @@ static DefExpr* toSuperFieldInit(AggregateType* at, CallExpr* callExpr) {
     }
   }
 
-  return NULL;
+  return nullptr;
 }
 
 static DefExpr* toLocalFieldInit(AggregateType* at, CallExpr* callExpr) {
-  DefExpr* retval = NULL;
+  DefExpr* retval = nullptr;
 
   // The outer call has assignment syntax
-  if (at != NULL && isAssignment(callExpr) == true) {
+  if (at != nullptr && isAssignment(callExpr) == true) {
     if (CallExpr* lhs = toCallExpr(callExpr->get(1))) {
       retval = toLocalField(at, lhs);
     }
@@ -931,20 +931,20 @@ static DefExpr* toLocalFieldInit(AggregateType* at, CallExpr* callExpr) {
 }
 
 static DefExpr* toLocalField(AggregateType* at, CallExpr* expr) {
-  DefExpr* retval = NULL;
+  DefExpr* retval = nullptr;
 
   if (expr->isNamedAstr(astrSdot)) {
     SymExpr* base = toSymExpr(expr->get(1));
     SymExpr* name = toSymExpr(expr->get(2));
 
-    if (base != NULL && name != NULL) {
+    if (base != nullptr && name != nullptr) {
       VarSymbol* var = toVarSymbol(name->symbol());
 
       // The base is <this> and the slot is a fieldName
       if (base->symbol()->hasFlag(FLAG_ARG_THIS) == true &&
 
-          var                                    != NULL &&
-          var->immediate                         != NULL &&
+          var                                    != nullptr &&
+          var->immediate                         != nullptr &&
           var->immediate->const_kind             == CONST_KIND_STRING) {
         retval = fieldByName(at, var->immediate->v_string);
       }
@@ -957,9 +957,9 @@ static DefExpr* toLocalField(AggregateType* at, CallExpr* expr) {
 // Return the field with the given name
 static DefExpr* fieldByName(AggregateType* at, const char* name) {
   Expr*    currField = at->fields.head;
-  DefExpr* retval    = NULL;
+  DefExpr* retval    = nullptr;
 
-  while (currField != NULL && retval == NULL) {
+  while (currField != nullptr && retval == nullptr) {
     DefExpr*   defExpr = toDefExpr(currField);
     VarSymbol* var     = toVarSymbol(defExpr->sym);
 
@@ -1045,12 +1045,12 @@ bool hasInitDone(BlockStmt* block) {
   Expr* stmt   = block->body.head;
   bool  retval = false;
 
-  while (stmt != NULL && retval == false) {
+  while (stmt != nullptr && retval == false) {
     if (CallExpr* callExpr = toCallExpr(stmt)) {
       retval = isInitDone(callExpr);
 
     } else if (CondStmt* cond = toCondStmt(stmt)) {
-      if (cond->elseStmt == NULL) {
+      if (cond->elseStmt == nullptr) {
         retval = hasInitDone(cond->thenStmt);
 
       } else {
@@ -1141,11 +1141,11 @@ static bool findPostinitAndMark(AggregateType* at) {
   bool retval = false;
 
   // If there is postinit() it is defined on the defining type
-  if (at->instantiatedFrom == NULL) {
+  if (at->instantiatedFrom == nullptr) {
     int size = at->methods.n;
 
     for (int i = 0; i < size && retval == false; i++) {
-      if (at->methods.v[i] != NULL)
+      if (at->methods.v[i] != nullptr)
         retval = at->methods.v[i]->isPostInitializer();
     }
 
@@ -1172,7 +1172,7 @@ static bool buildPostInitChain(AggregateType* at,
   bool ret = false;
 
   // Works around odd case with _ddata
-  AggregateType* parent = NULL;
+  AggregateType* parent = nullptr;
   if (at->isClass() == true && at->dispatchParents.size() > 0) {
     parent = at->dispatchParents.v[0];
   }
@@ -1184,7 +1184,7 @@ static bool buildPostInitChain(AggregateType* at,
       chain.push_back(at);
       ret = true;
     }
-  } else if (parent != NULL && buildPostInitChain(parent, chain) == true) {
+  } else if (parent != nullptr && buildPostInitChain(parent, chain) == true) {
     ret = true;
     chain.push_back(at);
   } else if (findPostinitAndMark(at)) {
@@ -1244,7 +1244,7 @@ bool PostinitVisitor::enterCondStmt(CondStmt* node) {
   vis.found = false;
 
   bool elsePostinit = false;
-  if (node->elseStmt != NULL) {
+  if (node->elseStmt != nullptr) {
     node->elseStmt->accept(&vis);
     elsePostinit = vis.found;
   } else if (thenPostinit) {
@@ -1276,7 +1276,7 @@ bool PostinitVisitor::enterCallExpr(CallExpr* node) {
 
 bool PostinitVisitor::enterBlockStmt(BlockStmt* node) {
   if (CallExpr* info = node->blockInfoGet()) {
-    const char* name = NULL;
+    const char* name = nullptr;
     bool isLoweredElseCoforall = false;
     if (info->isPrimitive(PRIM_BLOCK_BEGIN) ||
         info->isPrimitive(PRIM_BLOCK_BEGIN_ON)) {
@@ -1299,7 +1299,7 @@ bool PostinitVisitor::enterBlockStmt(BlockStmt* node) {
 
       name = "coforall";
     }
-    if (name != NULL) {
+    if (name != nullptr) {
       PostinitVisitor vis;
       for_alist(next_ast, node->body)
         next_ast->accept(&vis);
@@ -1421,7 +1421,7 @@ static int insertPostInit(AggregateType* at, bool insertSuper) {
 
   forv_Vec(FnSymbol, method, at->methods) {
     if (method->isPostInitializer()) {
-      if (method->where == NULL) {
+      if (method->where == nullptr) {
         found = true;
       }
       if (method->formals.length > 2) {

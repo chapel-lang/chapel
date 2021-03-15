@@ -161,7 +161,7 @@ void ReturnByRef::returnByRefCollectCalls(RefMap& calls)
       if (FnSymbol* fn = call->resolvedOrVirtualFunction()) {
        if (isTransformableFunction(fn)) {
         RefMap::iterator iter = calls.find(fn->id);
-        ReturnByRef*     info = NULL;
+        ReturnByRef*     info = nullptr;
 
         if (iter == calls.end())
         {
@@ -222,7 +222,7 @@ bool ReturnByRef::isTransformableFunction(FnSymbol* fn)
 
 void ReturnByRef::transformFunction(FnSymbol* fn)
 {
-  ArgSymbol* formal = NULL;
+  ArgSymbol* formal = nullptr;
 
   // Do nothing if we already transformed this function
   if (fn->hasFlag(FLAG_FN_RETARG))
@@ -232,7 +232,7 @@ void ReturnByRef::transformFunction(FnSymbol* fn)
     formal = addFormal(fn);
   }
 
-  if (fn->hasFlag(FLAG_ITERATOR_FN) == false && formal != NULL) {
+  if (fn->hasFlag(FLAG_ITERATOR_FN) == false && formal != nullptr) {
     insertAssignmentToFormal(fn, formal);
   }
 
@@ -240,7 +240,7 @@ void ReturnByRef::transformFunction(FnSymbol* fn)
   updateAssignmentsFromRefTypeToValue(fn);
   updateAssignmentsFromModuleLevelValue(fn);
 
-  if (formal != NULL) {
+  if (formal != nullptr) {
     updateReturnStatement(fn);
     updateReturnType(fn);
   }
@@ -280,7 +280,7 @@ void ReturnByRef::insertAssignmentToFormal(FnSymbol* fn, ArgSymbol* formal)
   Expr*     expr        = returnPrim;
 
   // Walk backwards while the previous element is an autoDestroy call
-  while (expr->prev != NULL) {
+  while (expr->prev != nullptr) {
     bool stop = true;
 
     if (CallExpr* call = toCallExpr(expr->prev)) {
@@ -330,7 +330,7 @@ void ReturnByRef::updateAssignmentsFromRefArgToValue(FnSymbol* fn)
       SymExpr* lhs = toSymExpr(move->get(1));
       SymExpr* rhs = toSymExpr(move->get(2));
 
-      if (lhs != NULL && rhs != NULL)
+      if (lhs != nullptr && rhs != nullptr)
       {
         // check if the lhs is actually the return/yield symbol
         if(lhs->symbol()->hasFlag(FLAG_RVV) ||
@@ -338,7 +338,7 @@ void ReturnByRef::updateAssignmentsFromRefArgToValue(FnSymbol* fn)
           VarSymbol* symLhs = toVarSymbol(lhs->symbol());
           ArgSymbol* symRhs = toArgSymbol(rhs->symbol());
 
-          if (symLhs != NULL && symRhs != NULL)
+          if (symLhs != nullptr && symRhs != nullptr)
           {
             // check if rhs is actually a formal
             bool rhsIsFormal = false;
@@ -364,7 +364,7 @@ void ReturnByRef::updateAssignmentsFromRefArgToValue(FnSymbol* fn)
               {
                 SET_LINENO(move);
 
-                CallExpr* autoCopy = NULL;
+                CallExpr* autoCopy = nullptr;
 
                 rhs->remove();
                 autoCopy = new CallExpr(getAutoCopyForType(symRhs->type),
@@ -415,7 +415,7 @@ void ReturnByRef::updateAssignmentsFromRefTypeToValue(FnSymbol* fn)
         SymExpr*  exprRhs = toSymExpr(callRhs->get(1));
         Symbol*    symRhs = exprRhs->symbol();
 
-        if (varLhs != NULL && symRhs != NULL)
+        if (varLhs != nullptr && symRhs != nullptr)
         {
           INT_ASSERT(varLhs->isRef() == false && symRhs->isRef());
           if (typeNeedsCopyInitDeinit(varLhs->type) &&
@@ -481,12 +481,12 @@ void ReturnByRef::updateAssignmentsFromModuleLevelValue(FnSymbol* fn)
       SymExpr* lhs = toSymExpr(move->get(1));
       SymExpr* rhs = toSymExpr(move->get(2));
 
-      if (lhs != NULL && rhs != NULL)
+      if (lhs != nullptr && rhs != nullptr)
       {
         VarSymbol* symLhs = toVarSymbol(lhs->symbol());
         VarSymbol* symRhs = toVarSymbol(rhs->symbol());
 
-        if (symLhs != NULL && symRhs != NULL)
+        if (symLhs != nullptr && symRhs != nullptr)
         {
           if (typeNeedsCopyInitDeinit(symLhs->type) &&
               !symLhs->hasFlag(FLAG_NO_COPY) &&
@@ -499,7 +499,7 @@ void ReturnByRef::updateAssignmentsFromModuleLevelValue(FnSymbol* fn)
             {
               SET_LINENO(move);
 
-              CallExpr* autoCopy = NULL;
+              CallExpr* autoCopy = nullptr;
 
               rhs->remove();
               autoCopy = new CallExpr(getAutoCopyForType(symRhs->type),
@@ -654,7 +654,7 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
           isFormalTmpWriteback(nextExpr)))
     nextExpr = nextExpr->next;
 
-  CallExpr* copyExpr  = NULL;
+  CallExpr* copyExpr  = nullptr;
 
   Symbol*   useLhs    = toSymExpr(lhs)->symbol();
 
@@ -671,8 +671,8 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
   //   b) the subsequent statement is PRIM_MOVE for an initCopy/autoCopy
   //   c) the initCopy/autoCopy has the same argument and return type
   //      (this accounts for tuples containing refs)
-  if (fn                            != NULL  &&
-      nextExpr                      != NULL)
+  if (fn                            != nullptr  &&
+      nextExpr                      != nullptr)
   {
     if (CallExpr* callNext = toCallExpr(nextExpr))
     {
@@ -683,7 +683,7 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
         {
           FnSymbol* rhsFn = rhsCall->resolvedFunction();
 
-          if (rhsFn                              != NULL &&
+          if (rhsFn                              != nullptr &&
               (rhsFn->hasFlag(FLAG_AUTO_COPY_FN) == true ||
                rhsFn->hasFlag(FLAG_INIT_COPY_FN) == true))
           {
@@ -792,12 +792,12 @@ bool isTemporaryFromNoCopyReturn(Symbol* fromSym) {
 
   bool anyNoCopyReturn = false;
   for_SymbolSymExprs(se, fromSym) {
-    SymExpr* lhsSe = NULL;
-    CallExpr* initOrCtor = NULL;
+    SymExpr* lhsSe = nullptr;
+    CallExpr* initOrCtor = nullptr;
     if (CallExpr* call = toCallExpr(se->parentExpr)) {
       if (isInitOrReturn(call, lhsSe, initOrCtor)) {
         if (lhsSe == se) {
-          if (initOrCtor != NULL) {
+          if (initOrCtor != nullptr) {
             if (FnSymbol* calledFn = initOrCtor->resolvedOrVirtualFunction()) {
               if (calledFn->hasFlag(FLAG_NO_COPY_RETURN)) {
                 anyNoCopyReturn = true;
@@ -834,7 +834,7 @@ bool doesCopyInitializationRequireCopy(Expr* initFrom) {
 
     // Is it the result of a call returning by value?
     SymExpr* fromSe = toSymExpr(initFrom);
-    INT_ASSERT(fromSe != NULL); // assuming normalized AST
+    INT_ASSERT(fromSe != nullptr); // assuming normalized AST
     if (isCallExprTemporary(fromSe->symbol())) {
       // check for the sub-expression being a function marked with
       //  pragma "no copy return"
@@ -903,7 +903,7 @@ static void
 fixupDestructors() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_DESTRUCTOR)) {
-      if (fn->_this == NULL) {
+      if (fn->_this == nullptr) {
         continue;
       }
       AggregateType* ct = toAggregateType(fn->_this->getValType());
@@ -1006,7 +1006,7 @@ static void ensureModuleDeinitFnAnchor(ModuleSymbol* mod, Expr*& anchor) {
 static void cleanupModuleDeinitAnchor(Expr*& anchor) {
   if (anchor) {
     anchor->remove();
-    anchor = NULL;
+    anchor = nullptr;
   }
 }
 
@@ -1034,7 +1034,7 @@ static void collectGlobals(ModuleSymbol* mod,
                            std::vector<VarSymbol*>& inited,
                            std::set<VarSymbol*>& initedSet) {
 
-  for (Expr* stmt = block->body.first(); stmt != NULL; stmt = stmt->next) {
+  for (Expr* stmt = block->body.first(); stmt != nullptr; stmt = stmt->next) {
 
     // Look for a variable initialization.
     if (isCallExpr(stmt)) {
@@ -1043,12 +1043,12 @@ static void collectGlobals(ModuleSymbol* mod,
       // once a variable is initialized, it stays initialized, until
       // it is destroyed.
 
-      CallExpr* fCall = NULL;
+      CallExpr* fCall = nullptr;
       // Check for returned variable
       if (VarSymbol* v = initsVariable(stmt, fCall))
         noteGlobalInitialization(mod, v, inited, initedSet);
 
-      if (fCall != NULL) {
+      if (fCall != nullptr) {
         // Check also for out intent in a called function
         for_formals_actuals(formal, actual, fCall) {
           if (VarSymbol* v = initsVariableOut(formal, actual))
@@ -1081,11 +1081,11 @@ static void insertGlobalAutoDestroyCalls() {
 
   forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
     if (isAlive(mod)) {
-      Expr* anchor = NULL;
+      Expr* anchor = nullptr;
 
       inited.clear();
       initedSet.clear();
-      if (mod->initFn != NULL) {
+      if (mod->initFn != nullptr) {
         collectGlobals(mod, mod->initFn->body, inited, initedSet);
       } else {
         // Collect variables from modules without initFn
@@ -1129,7 +1129,7 @@ static void lowerAutoDestroyRuntimeType(CallExpr* call) {
           bool destroyFieldRTT = false;
           FnSymbol *destroyFn = autoDestroyMap.get(field->getValType());
 
-          if (destroyFn != NULL) {
+          if (destroyFn != nullptr) {
             INT_ASSERT(call->getStmtExpr() == call);
             destroyField = true;
           }
@@ -1146,7 +1146,7 @@ static void lowerAutoDestroyRuntimeType(CallExpr* call) {
             call->insertBefore("'move'(%S,'.v'(%E,%S))", fieldTemp,
               new SymExpr(rttSym), field);
 
-            CallExpr *destroyCall = NULL;
+            CallExpr *destroyCall = nullptr;
             if (destroyField) {
               // Invoke destroyFn on the field
               destroyCall = new CallExpr(destroyFn, fieldTemp);
@@ -1155,7 +1155,7 @@ static void lowerAutoDestroyRuntimeType(CallExpr* call) {
               // Add another PRIM_AUTO_DESTROY_RUNTIME_TYPE for the field
               destroyCall = new CallExpr(PRIM_AUTO_DESTROY_RUNTIME_TYPE, fieldTemp);
             }
-            
+
             call->insertBefore(destroyCall);
           }
         }
@@ -1296,7 +1296,7 @@ static VarSymbol* theCheckedModuleScopeVariable(Expr* actual) {
       if (isCheckedModuleScopeVariable(var))
         return var;
 
-  return NULL;
+  return nullptr;
 }
 
 // There should be a single instance of this class per compilation.
@@ -1313,7 +1313,7 @@ class GatherGlobalsReferredTo final : public AstVisitorTraverse {
     std::map<FnSymbol*, std::set<FnSymbol*> > callGraph;
 
     GatherGlobalsReferredTo()
-      : thisFunction(NULL)
+      : thisFunction(nullptr)
     { }
     bool callUsesGlobal(CallExpr* c, std::set<VarSymbol*>& globals);
     bool fnUsesGlobal(FnSymbol* fn, std::set<VarSymbol*>& globals);
@@ -1585,7 +1585,7 @@ bool FindInvalidGlobalUses::errorIfFnUsesInvalid(FnSymbol* fn, BaseAST* loc,
   for_set (FnSymbol, called, fnCalls) {
     if (checkIfFnUsesInvalid(called)) {
       BaseAST* useLoc = findSymExprFor(fn, called);
-      if (useLoc == NULL)
+      if (useLoc == nullptr)
         useLoc = fn;
       if (!developer && !printsUserLocation(useLoc))
         useLoc = loc;
@@ -1615,11 +1615,11 @@ bool FindInvalidGlobalUses::enterCallExpr(CallExpr* call) {
   if (invalidGlobals.size() == 0)
     return false;
 
-  CallExpr* fCall = NULL;
+  CallExpr* fCall = nullptr;
   VarSymbol* retVar = initsVariable(call, fCall);
 
   // First, check any actuals not being initialized in the call.
-  if (fCall != NULL) {
+  if (fCall != nullptr) {
     // check an actual function call
     for_formals_actuals(formal, actual, fCall) {
       SymExpr* actualSe = toSymExpr(actual);
@@ -1663,7 +1663,7 @@ bool FindInvalidGlobalUses::enterCallExpr(CallExpr* call) {
   if (retVar && isCheckedModuleScopeVariable(retVar))
     invalidGlobals.erase(retVar);
   // out intent
-  if (fCall != NULL) {
+  if (fCall != nullptr) {
     for_formals_actuals(formal, actual, fCall) {
       if (VarSymbol* outVar = initsVariableOut(formal, actual))
         if (isCheckedModuleScopeVariable(outVar))
@@ -1706,7 +1706,7 @@ static void checkForInvalidGlobalUses() {
   GatherGlobalsReferredTo gatherVisitor;
 
   forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
-    if (mod->initFn != NULL &&
+    if (mod->initFn != nullptr &&
         (mod->modTag != MOD_INTERNAL && mod->modTag != MOD_STANDARD)) {
       // if we expand to internal modules, have to contend with
       // the possibility of writeln being called in a class deinitializer
@@ -1756,7 +1756,7 @@ static SymExpr* getActualBeforeCopyInit(CallExpr* call, ArgSymbol* formal) {
     }
   }
 
-  return NULL;
+  return nullptr;
 }
 
 // Function resolution adds "dummy" initCopy functions for types
@@ -1803,7 +1803,7 @@ static void checkForErroneousInitCopies() {
   // Emit an error if an actual is a copy.
   for_set(ArgSymbol, formal, errorOnCopyFormals) {
     FnSymbol* fn = formal->getFunction();
-    INT_ASSERT(fn != NULL);
+    INT_ASSERT(fn != nullptr);
 
     if (!fn->inTree())
       continue;
@@ -1878,7 +1878,7 @@ static void checkForErroneousInitCopies() {
 
             if (printsUserLocation(t)) {
               USR_PRINT(t, "%s does not have a valid init=", toString(t));
-            } else if (t->symbol->userInstantiationPointLoc.filename != NULL) {
+            } else if (t->symbol->userInstantiationPointLoc.filename != nullptr) {
               USR_PRINT(t->symbol->userInstantiationPointLoc,
                         "%s does not have a valid init=", toString(t));
             }
@@ -2094,7 +2094,7 @@ void callDestructors() {
 
   insertCopiesForYields();
 
-  lateConstCheck(NULL);
+  lateConstCheck(nullptr);
 
   addAutoDestroyCalls();
 

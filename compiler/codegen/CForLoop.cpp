@@ -65,7 +65,7 @@ static llvm::MDNode* generateLoopMetadata(bool thisLoopParallelAccess,
     anyParallelAccesses = true;
     accessGroup = llvm::MDNode::getDistinct(ctx, {});
   } else {
-    accessGroup = NULL;
+    accessGroup = nullptr;
     for (auto & loopData : info->loopStack) {
       if (loopData.markMemoryOps)
         anyParallelAccesses = true;
@@ -184,9 +184,9 @@ GenRet CForLoop::codegen()
 #ifdef HAVE_LLVM
     llvm::Function*   func          = info->irBuilder->GetInsertBlock()->getParent();
 
-    llvm::BasicBlock* blockStmtInit = NULL;
-    llvm::BasicBlock* blockStmtBody = NULL;
-    llvm::BasicBlock* blockStmtEnd  = NULL;
+    llvm::BasicBlock* blockStmtInit = nullptr;
+    llvm::BasicBlock* blockStmtBody = nullptr;
+    llvm::BasicBlock* blockStmtEnd  = nullptr;
 
     BlockStmt*        initBlock     = initBlockGet();
     BlockStmt*        testBlock     = testBlockGet();

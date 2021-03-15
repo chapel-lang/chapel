@@ -44,7 +44,7 @@
 #include <cstdlib>
 
 static int             explainInstantiationLine   = -2;
-static ModuleSymbol*   explainInstantiationModule = NULL;
+static ModuleSymbol*   explainInstantiationModule = nullptr;
 static Vec<FnSymbol*>  whereStack;
 
 static
@@ -153,7 +153,7 @@ checkInfiniteWhereInstantiation(FnSymbol* fn) {
       if (where == fn) {
         USR_FATAL_CONT(fn->where, "illegal where clause due"
                        " to infinite instantiation");
-        FnSymbol* printOn = NULL;
+        FnSymbol* printOn = nullptr;
         forv_Vec(FnSymbol, tmp, whereStack) {
           if (printOn)
             USR_PRINT(printOn->where, "evaluation of '%s' where clause results"
@@ -199,7 +199,7 @@ static bool trackInstantiationsForFn(FnSymbol* fn) {
 static void
 checkInstantiationLimit(FnSymbol* fn) {
   if (trackInstantiationsForFn(fn)) {
-    while (fn->instantiatedFrom != NULL) {
+    while (fn->instantiatedFrom != nullptr) {
       fn = fn->instantiatedFrom;
     }
     if (instantiationLimitMap.get(fn) >= instantiation_limit) {
@@ -220,10 +220,10 @@ void popInstantiationLimit(FnSymbol* fn) {
   // Go from the concrete function to the generic it was based upon (if any)
   //
   fn = fn->instantiatedFrom;
-  if (fn == NULL) {
+  if (fn == nullptr) {
     return; // this was not a generic function, so it won't be in the table
   }
-  while (fn->instantiatedFrom != NULL) {
+  while (fn->instantiatedFrom != nullptr) {
     fn = fn->instantiatedFrom;
   }
 
@@ -309,9 +309,9 @@ void renameInstantiatedTypeString(TypeSymbol* sym, VarSymbol* var)
  * \param call Call that is being resolved
  */
 FnSymbol* instantiateWithoutCall(FnSymbol* fn, SymbolMap& subs) {
-  FnSymbol* newFn = instantiateSignature(fn, subs, NULL);
+  FnSymbol* newFn = instantiateSignature(fn, subs, nullptr);
 
-  if (newFn != NULL) {
+  if (newFn != nullptr) {
     instantiateBody(newFn);
   }
 
@@ -326,7 +326,7 @@ FnSymbol* instantiateWithoutCall(FnSymbol* fn, SymbolMap& subs) {
  * \param fn   Generic function to finish instantiating
  */
 void instantiateBody(FnSymbol* fn) {
-  if (getPartialCopyData(fn) != NULL) {
+  if (getPartialCopyData(fn) != nullptr) {
     fn->finalizeCopy();
   }
 }
@@ -341,7 +341,7 @@ void instantiateBody(FnSymbol* fn) {
 FnSymbol* instantiateSignature(FnSymbol*  fn,
                                SymbolMap& subs,
                                VisibilityInfo* visInfo) {
-  CallExpr* call = visInfo ? visInfo->call : NULL;
+  CallExpr* call = visInfo ? visInfo->call : nullptr;
 
   //
   // Handle tuples explicitly
@@ -383,7 +383,7 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
         return cached;
       } else {
         INT_FATAL("cache returned gVoid");
-        return NULL;
+        return nullptr;
       }
 
     } else {
@@ -391,7 +391,7 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
 
       // copy generic class type if this function is a type constructor
       SymbolMap map;
-      FnSymbol* newFn = NULL;
+      FnSymbol* newFn = nullptr;
       bool hasGenericDefaultExpr = false;
 
       SymbolMap allSubsBeforeDefaultExprs;
@@ -419,7 +419,7 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
             return cached;
           } else {
             INT_FATAL("cache returned gVoid");
-            return NULL;
+            return nullptr;
           }
         }
       }
@@ -485,12 +485,12 @@ static bool fixupDefaultInitCopy(FnSymbol* fn,
       // it up completely...
       instantiateBody(newFn);
 
-      const char* err = NULL;
+      const char* err = nullptr;
 
       if (FnSymbol* initFn = findCopyInitFn(ct, err)) {
         Symbol*   thisTmp  = newTemp(ct);
         DefExpr*  def      = new DefExpr(thisTmp);
-        CallExpr* initCall = NULL;
+        CallExpr* initCall = nullptr;
 
         initCall = new CallExpr(initFn, gMethodToken, thisTmp, arg);
 
@@ -558,7 +558,7 @@ static bool fixupDefaultInitCopy(FnSymbol* fn,
 FnSymbol* determineRootFunc(FnSymbol* fn) {
   FnSymbol* root = fn;
 
-  while (root->instantiatedFrom != NULL &&
+  while (root->instantiatedFrom != nullptr &&
          root->numFormals() == root->instantiatedFrom->numFormals()) {
     root = root->instantiatedFrom;
   }
@@ -611,7 +611,7 @@ FnSymbol* instantiateFunction(FnSymbol*  fn,
 
   Expr* putBefore = fn->defPoint;
 
-  if (putBefore->list == NULL) {
+  if (putBefore->list == nullptr) {
     putBefore = call->parentSymbol->defPoint;
   }
 
@@ -624,7 +624,7 @@ FnSymbol* instantiateFunction(FnSymbol*  fn,
     // Handle default expressions: set the type of the formal
     // based upon the default expression value.
     //
-    if (newFormal->defaultExpr != NULL &&
+    if (newFormal->defaultExpr != nullptr &&
         (newFormal->intent == INTENT_PARAM ||
          newFormal->type->symbol->hasFlag(FLAG_GENERIC)) &&
         !subs.get(formal)) {
@@ -632,7 +632,7 @@ FnSymbol* instantiateFunction(FnSymbol*  fn,
       resolveBlockStmt(newFormal->defaultExpr);
 
       Expr* tail = newFormal->defaultExpr->body.tail;
-      Symbol* val = NULL;
+      Symbol* val = nullptr;
       if (newFormal->intent == INTENT_PARAM) {
         if (SymExpr* se = toSymExpr(tail)) {
           if (se->symbol()->isParameter() == false) {
@@ -657,8 +657,8 @@ FnSymbol* instantiateFunction(FnSymbol*  fn,
         bool inOutCopy = inOrOutFormalNeedingCopyType(formal);
         if (defType == dtTypeDefaultToken)
           val = dtTypeDefaultToken->symbol;
-        else if (Type* type = getInstantiationType(defType, NULL,
-                                                   newFormal->type, NULL,
+        else if (Type* type = getInstantiationType(defType, nullptr,
+                                                   newFormal->type, nullptr,
                                                    call,
                                                    true, false,
                                                    inOutCopy)) {
@@ -666,7 +666,7 @@ FnSymbol* instantiateFunction(FnSymbol*  fn,
         }
       }
 
-      if (val != NULL) {
+      if (val != nullptr) {
         if (hasGenericDefaultExpr == false) {
           hasGenericDefaultExpr = true;
           // And copy the allSubs into allSubsBeforeDefaultExprs
@@ -735,7 +735,7 @@ FnSymbol* instantiateFunction(FnSymbol*  fn,
       }
 
       if (!newFormal->defaultExpr || formal->hasFlag(FLAG_TYPE_VARIABLE)) {
-        Symbol* defaultSym = NULL;
+        Symbol* defaultSym = nullptr;
 
         if (Symbol* sym = paramMap.get(newFormal)) {
           defaultSym = sym;
@@ -755,7 +755,7 @@ FnSymbol* instantiateFunction(FnSymbol*  fn,
           block->insertAtTail(defaultSe);
         } else {
           newFormal->defaultExpr = new BlockStmt(defaultSe);
-          insert_help(newFormal->defaultExpr, NULL, newFormal);
+          insert_help(newFormal->defaultExpr, nullptr, newFormal);
         }
       }
     }
@@ -802,7 +802,7 @@ bool evaluateWhereClause(FnSymbol* fn) {
 
     SymExpr* se = toSymExpr(fn->where->body.last());
 
-    if (se == NULL) {
+    if (se == nullptr) {
       USR_FATAL(fn->where, "invalid where clause");
     }
 

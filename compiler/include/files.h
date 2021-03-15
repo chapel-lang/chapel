@@ -45,7 +45,7 @@ struct fileinfo {
   const char* pathname;
 };
 
-void codegen_makefile(fileinfo* mainfile, const char** tmpbinname=NULL, bool skip_compile_link=false, const std::vector<const char *>& splitFiles = std::vector<const char*>());
+void codegen_makefile(fileinfo* mainfile, const char** tmpbinname=nullptr, bool skip_compile_link=false, const std::vector<const char *>& splitFiles = std::vector<const char*>());
 
 void ensureDirExists(const char* /* dirname */, const char* /* explanation */);
 const char* getCwd();
@@ -58,7 +58,7 @@ const char* genIntermediateFilename(const char* filename);
 const char* getDirectory(const char* filename);
 const char* stripdirectories(const char* filename);
 
-void openCFile(fileinfo* fi, const char* name, const char* ext = NULL);
+void openCFile(fileinfo* fi, const char* name, const char* ext = nullptr);
 void closeCFile(fileinfo* fi, bool beautifyIt=true);
 
 fileinfo* openTmpFile(const char* tmpfilename, const char* mode = "w");

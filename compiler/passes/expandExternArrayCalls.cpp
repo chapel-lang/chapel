@@ -67,12 +67,12 @@ void expandExternArrayCalls() {
     if (!fn->hasFlag(FLAG_EXTERN))
       continue;
 
-    FnSymbol* fcopy = NULL;
+    FnSymbol* fcopy = nullptr;
     std::set<int> replaced_args;
     int current_formal = 0;
 
     for_formals(formal, fn) {
-      UnresolvedSymExpr* eltType = NULL;
+      UnresolvedSymExpr* eltType = nullptr;
       if (checkIsArray(formal, eltType)) {
         if (!fcopy) {
           SET_LINENO(fn);
@@ -124,7 +124,7 @@ void expandExternArrayCalls() {
       current_formal = 0;
       for_formals(formal, fcopy) {
         if(replaced_args.count(current_formal)) {
-          UnresolvedSymExpr* eltType = NULL;
+          UnresolvedSymExpr* eltType = nullptr;
           checkIsArray(formal, eltType);
           externCall->argList.insertAtTail(new CallExpr("chpl_arrayToPtr",
                                                         new SymExpr(formal),
@@ -148,9 +148,9 @@ void expandExternArrayCalls() {
 
 // Returns true if formal is an array
 // After the function, eltType will be set to the element type of the array if
-// it is found, NULL otherwise
+// it is found, nullptr otherwise
 bool checkIsArray(ArgSymbol* formal, UnresolvedSymExpr* &eltType) {
-  eltType = NULL;
+  eltType = nullptr;
   if (BlockStmt* bs = formal->typeExpr) {
     INT_ASSERT(bs->length() == 1);
     Expr* firstExpr = bs->body.first();
@@ -169,7 +169,7 @@ bool checkIsArray(ArgSymbol* formal, UnresolvedSymExpr* &eltType) {
 }
 
 bool retExprTypeIsVoid(BlockStmt* retExprType) {
-  if (retExprType != NULL && retExprType->body.length == 1) {
+  if (retExprType != nullptr && retExprType->body.length == 1) {
     if (SymExpr* se = toSymExpr(retExprType->body.only())) {
       if (se->symbol()->type == dtVoid) {
         return true;

@@ -198,7 +198,7 @@ FnSymbol* makeConstructTuple(std::vector<TypeSymbol*>& args,
     // should call initCopy vs autoCopy, but these are more
     // or less the same now.
 
-    Symbol* element = NULL;
+    Symbol* element = nullptr;
     if (isReferenceType(args[i]->type) ||
         isTupleContainingAnyReferences(args[i]->type)) {
       // If it is a reference, pass it through.
@@ -347,7 +347,7 @@ TupleInfo getTupleInfo(std::vector<TypeSymbol*>& args,
     forv_Vec(AggregateType, t, dtTuple->dispatchParents) {
       AggregateType* at = toAggregateType(t);
 
-      INT_ASSERT(at != NULL);
+      INT_ASSERT(at != nullptr);
 
       newType->dispatchParents.add(at);
 
@@ -357,10 +357,10 @@ TupleInfo getTupleInfo(std::vector<TypeSymbol*>& args,
     // Decide whether or not we have a homogeneous/star tuple
     bool  markStar = true;
     {
-      Type* starType = NULL;
+      Type* starType = nullptr;
 
       for(size_t i = 0; i < args.size(); i++) {
-        if (starType == NULL) {
+        if (starType == nullptr) {
           starType = args[i]->type;
         } else if (starType != args[i]->type) {
           markStar = false;
@@ -404,7 +404,7 @@ TupleInfo getTupleInfo(std::vector<TypeSymbol*>& args,
                                                        instantiationPoint,
                                                        noref);
     } else {
-      info.buildStarTupleType = NULL;
+      info.buildStarTupleType = nullptr;
     }
 
     // Build the value constructor
@@ -461,7 +461,7 @@ instantiate_tuple_hash( FnSymbol* fn) {
   AggregateType* ct;
   getTupleArgAndType(fn, arg, ct);
 
-  CallExpr* call = NULL;
+  CallExpr* call = nullptr;
   bool first = true;
   for (int i=0; i<ct->fields.length-1; i++) {
     CallExpr *field_access = new CallExpr( arg, new_IntSymbol(i));
@@ -502,8 +502,8 @@ instantiate_tuple_hash( FnSymbol* fn) {
 ************************************** | *************************************/
 
 static void instantiate_tuple_init(FnSymbol* fn) {
-  ArgSymbol*     arg = NULL;
-  AggregateType* ct  = NULL;
+  ArgSymbol*     arg = nullptr;
+  AggregateType* ct  = nullptr;
 
   getTupleArgAndType(fn, arg, ct);
 
@@ -534,7 +534,7 @@ static void instantiate_tuple_init(FnSymbol* fn) {
     elem->addFlag(FLAG_NO_AUTO_DESTROY);
     elem->addFlag(FLAG_TEMP);
 
-    fn->body->insertAtTail(new DefExpr(elem, NULL, type->symbol));
+    fn->body->insertAtTail(new DefExpr(elem, nullptr, type->symbol));
     fn->body->insertAtTail(new CallExpr(PRIM_SET_MEMBER, tup, symName, elem));
   }
 
@@ -554,10 +554,10 @@ static VarSymbol* generateReadTupleField(Symbol* fromSym, Symbol* fromField,
                                          Expr* insertBefore,
                                          BlockStmt* insertAtTail)
 {
-  VarSymbol* readF = NULL;
+  VarSymbol* readF = nullptr;
   const char* name  = fromField->name;
   Symbol*  fromName = new_CStringSymbol(name);
-  CallExpr* get = NULL;
+  CallExpr* get = nullptr;
 
   if (isReferenceType(fromField->type)) {
     // Use PRIM_GET_MEMBER_VALUE if the element is already a reference
@@ -598,7 +598,7 @@ static VarSymbol* generateCoerce(Symbol* fromField, Symbol* toField,
                                  Expr* insertBefore)
 {
   const char* name  = toField->name;
-  VarSymbol* element = NULL;
+  VarSymbol* element = nullptr;
 
   // now readF is some kind of reference
   // the code below needs to handle the following 5 cases:
@@ -690,11 +690,11 @@ void addTupleCoercion(AggregateType* fromT, AggregateType* toT,
     Symbol*   toField = toDefExpr(  toT->fields.get(i))->sym;
     Symbol*    toName = new_CStringSymbol(  toField->name);
 
-    VarSymbol* readF = NULL;
-    VarSymbol* element = NULL;
+    VarSymbol* readF = nullptr;
+    VarSymbol* element = nullptr;
 
 
-    readF = generateReadTupleField(fromSym, fromField, insertBefore, NULL);
+    readF = generateReadTupleField(fromSym, fromField, insertBefore, nullptr);
 
     element = generateCoerce(fromField, toField, readF, insertBefore);
 
@@ -733,10 +733,10 @@ static void instantiate_tuple_cast(FnSymbol* fn, CallExpr* context) {
     Symbol*    toName = new_CStringSymbol(  toField->name);
     const char* name  = toField->name;
 
-    VarSymbol* readF = NULL;
-    VarSymbol* element = NULL;
+    VarSymbol* readF = nullptr;
+    VarSymbol* element = nullptr;
 
-    readF = generateReadTupleField(arg, fromField, NULL, block);
+    readF = generateReadTupleField(arg, fromField, nullptr, block);
 
     // now readF might be some kind of reference
     // the code below needs to handle the following 5 cases:
@@ -815,8 +815,8 @@ instantiate_tuple_initCopy_or_autoCopy(FnSymbol* fn,
     Symbol*    toName = new_CStringSymbol(  toField->name);
     const char* name  = toField->name;
 
-    VarSymbol* read = generateReadTupleField(arg, fromField, NULL, block);
-    VarSymbol* element = NULL;
+    VarSymbol* read = generateReadTupleField(arg, fromField, nullptr, block);
+    VarSymbol* element = nullptr;
 
     if (isReferenceType(fromField->type) && isReferenceType(toField->type)) {
       // If it is a reference, pass it through
@@ -888,8 +888,8 @@ instantiate_tuple_unref(FnSymbol* fn)
       Symbol*    toName = new_CStringSymbol(  toField->name);
       const char* name  = toField->name;
 
-      VarSymbol* read = generateReadTupleField(arg, fromField, NULL, block);
-      VarSymbol* element = NULL;
+      VarSymbol* read = generateReadTupleField(arg, fromField, nullptr, block);
+      VarSymbol* element = nullptr;
 
       if (isReferenceType(fromField->type)) {
         // If it is a reference, copy construct it
@@ -947,7 +947,7 @@ static AggregateType* do_computeTupleWithIntent(bool           valueOnly,
   bool                     allSame            = true;
   BlockStmt*               instantiationPoint = at->symbol->instantiationPoint;
   int                      i                  = 0;
-  AggregateType*           retval             = NULL;
+  AggregateType*           retval             = nullptr;
 
   for_fields(field, at) {
     if (i != 0) { // skip size field
@@ -1033,17 +1033,17 @@ static AggregateType* do_computeTupleWithIntent(bool           valueOnly,
 
 AggregateType* computeTupleWithIntentForArg(IntentTag intent, AggregateType* t, ArgSymbol* arg)
 {
-  return do_computeTupleWithIntent(false, intent, t, NULL, NULL, false);
+  return do_computeTupleWithIntent(false, intent, t, nullptr, nullptr, false);
 }
 
 AggregateType* computeTupleWithIntent(IntentTag intent, AggregateType* t)
 {
-  return do_computeTupleWithIntent(false, intent, t, NULL, NULL, false);
+  return do_computeTupleWithIntent(false, intent, t, nullptr, nullptr, false);
 }
 
 AggregateType* computeNonRefTuple(AggregateType* t)
 {
-  return do_computeTupleWithIntent(true, INTENT_BLANK, t, NULL, NULL, false);
+  return do_computeTupleWithIntent(true, INTENT_BLANK, t, nullptr, nullptr, false);
 }
 
 AggregateType* computeCopyTuple(AggregateType* t, bool valueOnly, const char* copyName, BlockStmt* testBlock)
@@ -1111,11 +1111,11 @@ FnSymbol* createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
   std::vector<TypeSymbol*> args;
 
   bool isStarTuple = fn && fn->hasFlag(FLAG_STAR_TUPLE);
-  bool      noChangeTypes  = fn == NULL ||
+  bool      noChangeTypes  = fn == nullptr ||
                              fn->hasFlag(FLAG_BUILD_TUPLE_TYPE) == true ||
                              fn->retTag                         == RET_TYPE;
 
-  bool      firstArgIsSize = fn == NULL || // 'type constructor' mode
+  bool      firstArgIsSize = fn == nullptr || // 'type constructor' mode
                              fn->hasFlag(FLAG_INIT_TUPLE)       == true ||
                              isStarTuple;
 
@@ -1126,7 +1126,7 @@ FnSymbol* createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
 
   int       i              = 0;
 
-  FnSymbol* retval         = NULL;
+  FnSymbol* retval         = nullptr;
 
   // This is a workaround for iterators use of build_tuple_always_allow_ref
   if (FnSymbol* inFn = call->getFunction()) {
@@ -1142,7 +1142,7 @@ FnSymbol* createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
       VarSymbol* v  = toVarSymbol(se->symbol());
 
       // If 'se' is not an Immediate, then this is not a legal tuple
-      // type expression, so return NULL.  This happens, for example,
+      // type expression, so return nullptr.  This happens, for example,
       // when we try to instantiate the *(param int, type) tuple
       // builder with a boolean const, which we seem to do pretty
       // aggressively (i.e., even if there is a better *() overload
@@ -1151,8 +1151,8 @@ FnSymbol* createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
       // 'last resort' pragmas are removed from the *(bool,) overloads
       // in modules/internal/ChapelTuple.chpl.
       //
-      if (v == NULL || v->immediate == NULL) {
-        return NULL;
+      if (v == nullptr || v->immediate == nullptr) {
+        return nullptr;
       }
 
       actualN = v->immediate->to_int();
@@ -1171,7 +1171,7 @@ FnSymbol* createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
 
             if ((intent & INTENT_FLAG_REF) != 0) {
               Type* refType = t->getRefType();
-              INT_ASSERT(refType != NULL);
+              INT_ASSERT(refType != nullptr);
               t = refType;
             }
           }
@@ -1206,7 +1206,7 @@ FnSymbol* createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
   BlockStmt* point = getInstantiationPoint(call);
   TupleInfo info   = getTupleInfo(args, point, noRef);
 
-  if (fn == NULL) {
+  if (fn == nullptr) {
     retval = info.init;
 
   } else if (fn->hasFlag(FLAG_INIT_TUPLE) == true) {
@@ -1226,4 +1226,3 @@ FnSymbol* createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
 
   return retval;
 }
-

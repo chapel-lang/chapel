@@ -37,9 +37,9 @@ snprint_float_val(char* buf, size_t max, double val, bool hex) {
     if (chpl_signbit(val)) nc = snprintf(buf, max, "-%g" , -val);
     else                   nc = snprintf(buf, max, "%g" , val);
 
-    if (strchr(buf, '.') == NULL &&
-        strchr(buf, 'e') == NULL &&
-        strchr(buf, 'p') == NULL) {
+    if (strchr(buf, '.') == nullptr &&
+        strchr(buf, 'e') == nullptr &&
+        strchr(buf, 'p') == nullptr) {
       strncat(buf, ".0", max-nc);
       return nc + 2;
     } else {
@@ -141,7 +141,7 @@ snprint_imm(char *str, size_t max, const Immediate &imm) {
       }
       break;
     case CONST_KIND_STRING: {
-      char const * fmt = NULL;
+      char const * fmt = nullptr;
       if (imm.string_kind == STRING_KIND_C_STRING)
         fmt = "c\"%s\"";
       else if (imm.string_kind == STRING_KIND_BYTES)
@@ -215,7 +215,7 @@ fprint_imm(FILE *fp, const Immediate &imm, bool showType) {
     }
     case NUM_KIND_REAL: case NUM_KIND_IMAG: {
       char str[80];
-      const char* size = NULL;
+      const char* size = nullptr;
       switch (imm.num_index) {
         case FLOAT_SIZE_32:
           res = snprint_float_val(str, sizeof(str), imm.v_float32, false);
@@ -257,7 +257,7 @@ fprint_imm(FILE *fp, const Immediate &imm, bool showType) {
       }
       break;
     case CONST_KIND_STRING: {
-      char const * fmt = NULL;
+      char const * fmt = nullptr;
       if (imm.string_kind == STRING_KIND_C_STRING)
         fmt = "c\"%s\"";
       else if (imm.string_kind == STRING_KIND_BYTES)

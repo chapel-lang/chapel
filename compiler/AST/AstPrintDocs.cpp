@@ -34,7 +34,7 @@
 
 
 AstPrintDocs::AstPrintDocs(std::string moduleName, std::string path, std::string parentName) :
-  file(NULL),
+  file(nullptr),
   tabs(0),
   moduleName(moduleName),
   pathWithoutPostfix(""),
@@ -179,7 +179,7 @@ bool AstPrintDocs::enterBlockStmt(BlockStmt* node) {
   // Nested block statements have a parentExpr.  We don't want to go into
   // nested block statements, because their contents aren't accessible
   // outside of that scope.
-  return node->parentExpr == NULL;
+  return node->parentExpr == nullptr;
 }
 
 

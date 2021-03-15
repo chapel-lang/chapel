@@ -75,7 +75,7 @@ Expr* DeferStmt::getFirstExpr() {
   if (_body) {
     return _body->getFirstExpr();
   }
-  return NULL;
+  return nullptr;
 }
 
 Expr* DeferStmt::getNextExpr(Expr* expr) {
@@ -204,7 +204,7 @@ void checkDefersAfterParsing()
     // Check that there are no top-level defers;
     // each defer must be in a function (other than module init).
     ModuleSymbol* mod = toModuleSymbol(defer->parentSymbol);
-    if (mod != NULL && defer->parentExpr == mod->block)
+    if (mod != nullptr && defer->parentExpr == mod->block)
       USR_FATAL_CONT(defer, "defer can only be used within a function");
 
     // Make sure the DeferStmt does not include a break that is outside

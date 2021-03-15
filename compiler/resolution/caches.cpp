@@ -69,7 +69,7 @@ checkCache(SymbolMapCache& cache, FnSymbol* oldFn, SymbolMap* map) {
         return entry->fn;
     }
   }
-  return NULL;
+  return nullptr;
 }
 
 
@@ -159,7 +159,7 @@ public:
 //
 
 void genericsCacheSummary(CalledFunInfo* fi) {
-  if (fi == NULL) printf("<NULL>\n");
+  if (fi == nullptr) printf("<NULL>\n");
   else genericsCacheSummary(*fi);
 }
 
@@ -172,7 +172,7 @@ void genericsCacheSummary(CalledFunInfo& fi) {
 }
 
 void genericsCacheSummary(GenericsCacheInfo* ci) {
-  if (ci == NULL) printf("<NULL>\n");
+  if (ci == nullptr) printf("<NULL>\n");
   else genericsCacheSummary(*ci);
 }
 
@@ -187,7 +187,7 @@ void genericsCacheSummary(GenericsCacheInfo& ci) {
 }
 
 void genericsCacheSummary(VisibilityInfo* visInfo) {
-  if (visInfo == NULL) printf("<NULL>\n");
+  if (visInfo == nullptr) printf("<NULL>\n");
   else genericsCacheSummary(*visInfo);
 }
 
@@ -267,12 +267,12 @@ checkCache(SymbolMapScopeCache& cache, FnSymbol* oldFn,
   if (Vec<SymbolMapScopeCacheEntry*>* entries = cache.get(oldFn)) {
     forv_Vec(SymbolMapScopeCacheEntry, entry, *entries) {
       if (isCacheEntryMatch(map, &entry->map) &&
-          (visInfo == NULL || isApplicableInstantiation(*visInfo, entry->fn)) )
+          (visInfo == nullptr || isApplicableInstantiation(*visInfo, entry->fn)) )
         return entry->fn;
     }
   }
 
-  return NULL;
+  return nullptr;
 }
 
 
@@ -292,8 +292,8 @@ freeCache(SymbolMapScopeCache& cache) {
 //
 
 void createCacheInfoIfNeeded(FnSymbol* fn) {
-  INT_ASSERT(fn->cacheInfo == NULL);
-  if (fn->instantiatedFrom == NULL)
+  INT_ASSERT(fn->cacheInfo == nullptr);
+  if (fn->instantiatedFrom == nullptr)
     // We will not be checking applicability for a concrete function
     // because there will be no cached instantiations.
     // So, do not compute cacheInfo.
@@ -306,14 +306,14 @@ void clearCacheInfoIfEmpty(FnSymbol* fn) {
   if (GenericsCacheInfo* cacheInfo = fn->cacheInfo) {
     if (cacheInfo->infos.empty()) {
       delete cacheInfo;
-      fn->cacheInfo = NULL; // Make future checks cheaper.
+      fn->cacheInfo = nullptr; // Make future checks cheaper.
     }
   }
 }
 
 void cleanupCacheInfo(FnSymbol* fn) {
   delete fn->cacheInfo;
-  fn->cacheInfo = NULL;
+  fn->cacheInfo = nullptr;
 }
 
 // Add to parentInfos the cacheInfo of the FnSymbol containing 'expr'.
@@ -321,7 +321,7 @@ void cleanupCacheInfo(FnSymbol* fn) {
 static bool addOneParentInfo(std::vector<GenericsCacheInfo*>& parentInfos,
                              Expr* expr) {
   FnSymbol* parentFn = expr->getFunction();
-  if (parentFn->cacheInfo == NULL)
+  if (parentFn->cacheInfo == nullptr)
     return false;
 
   parentInfos.push_back(parentFn->cacheInfo);
@@ -420,7 +420,7 @@ static bool analyzeVisitedScopes(std::vector<CalledFunInfo*>& toProcess,
         if (cfi->isDeclarationScope(scope)) {
           // We reached the scope where 'cfi' is defined.
           // No more checking for this 'cfi' is needed. Check it off.
-          toProcess[iCFI] = NULL;
+          toProcess[iCFI] = nullptr;
           remainingCFIs--;
           continue;
         }
@@ -488,7 +488,7 @@ static void visitMorePOIs(std::vector<CalledFunInfo*>& toProcess,
     advanceCurrStart(visInfo);
   }
   while
-    (remainingCFIs > 0 && visInfo.currStart != NULL);
+    (remainingCFIs > 0 && visInfo.currStart != nullptr);
 }
 
 //
@@ -498,7 +498,7 @@ static void visitMorePOIs(std::vector<CalledFunInfo*>& toProcess,
 static bool isApplicableInstantiation(VisibilityInfo& visInfo, FnSymbol* fn)
 {
   GenericsCacheInfo* cacheInfo = fn->cacheInfo;
-  if (cacheInfo == NULL) return true;
+  if (cacheInfo == nullptr) return true;
   int sizeCI = cacheInfo->size();
 
   int remainingCFIs = sizeCI;
@@ -508,7 +508,7 @@ static bool isApplicableInstantiation(VisibilityInfo& visInfo, FnSymbol* fn)
   if (analyzeVisitedScopes(toProcess, visInfo, remainingCFIs, 0))
       return false;
 
-  if (remainingCFIs > 0 && visInfo.nextPOI != NULL)
+  if (remainingCFIs > 0 && visInfo.nextPOI != nullptr)
     visitMorePOIs(toProcess, visInfo, remainingCFIs);
 
   // Return true if we have found the declaring scopes of all CFIs.

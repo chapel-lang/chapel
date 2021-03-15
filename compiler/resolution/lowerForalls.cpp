@@ -408,7 +408,7 @@ ExpandVisitor::~ExpandVisitor() {
 static Symbol* removeParIterReturn(BlockStmt* cloneBody, Symbol* retsym) {
   CallExpr* retexpr = toCallExpr(cloneBody->body.tail);
   INT_ASSERT(retexpr && retexpr->isPrimitive(PRIM_RETURN));
-  if (retsym == NULL) {
+  if (retsym == nullptr) {
     retsym = toSymExpr(retexpr->get(1))->symbol();
     INT_ASSERT(retsym->type->symbol->hasFlag(FLAG_ITERATOR_RECORD));
 
@@ -504,7 +504,7 @@ static void addDefAndMap(Expr* aInit, SymbolMap& map, ShadowVarSymbol* svar,
                          VarSymbol* currVar)
 {
   if (currVar->type == dtNothing) {
-    INT_ASSERT(currVar->firstSymExpr() == NULL);
+    INT_ASSERT(currVar->firstSymExpr() == nullptr);
     return;
   }
   aInit->insertBefore(new DefExpr(currVar));
@@ -597,7 +597,7 @@ static void checkForallsInInitDeinitBlocks(ForallStmt* forall) {
 // Replace 'yield' with a clone of the forall loop body.
 static void expandYield(ExpandVisitor* EV, CallExpr* yieldCall)
 {
-  // Todo: update EV->svar2clonevar in-place, then reset to NULL,
+  // Todo: update EV->svar2clonevar in-place, then reset to nullptr,
   // to avoid map creation+destruction cost.
 
   // This will be svar2clonevar (the incoming "current map")
@@ -614,7 +614,7 @@ static void expandYield(ExpandVisitor* EV, CallExpr* yieldCall)
   yieldCall->insertBefore(new CallExpr(PRIM_MOVE, cloneIdxVar, yieldExpr));
 
   BlockStmt* bodyClone = EV->forall->loopBody()->copy(&map);
-  addIteratorBreakBlocksInline(EV->forall->loopBody(), NULL,
+  addIteratorBreakBlocksInline(EV->forall->loopBody(), nullptr,
                                bodyClone, yieldCall, &EV->delayedRemoval);
   yieldCall->replace(bodyClone);
 
@@ -746,7 +746,7 @@ static Symbol* eActualOrRef(Expr* ref, ShadowVarSymbol* svar, Symbol* eActual)
 static void addArgAndMap(FnSymbol* cloneTaskFn, CallExpr* callToTFn,
                          int numOrigActuals, SymbolMap& iMap,
                          SymbolMap& map, ShadowVarSymbol* svar,
-                         int ix, Symbol* mappee = NULL)
+                         int ix, Symbol* mappee = nullptr)
 {
   Symbol* eActual = iMap.get(svar);   // 'e' for "extra" (i.e. newly added)
   callToTFn->insertAtTail(eActualOrRef(callToTFn, svar, eActual));
@@ -836,7 +836,7 @@ static void expandShadowVarTaskFn(FnSymbol* cloneTaskFn, CallExpr* callToTFn,
 static void expandTaskFn(ExpandVisitor* EV, CallExpr* callToTFn, FnSymbol* taskFn)
 {
   bool addErrorArgToCall = false;
-  Expr *aInit=NULL, *aFini=NULL;
+  Expr *aInit=nullptr, *aFini=nullptr;
 
   // Follow the cloning steps in expandBodyForIteratorInline().
   // No need for taskFnCopies.
@@ -902,7 +902,7 @@ static void expandShadowVarForall(ForallStmt* fs,
   ShadowVarSymbol* newSV = srcSV->copy(&map);
 
   // Set newSV->outerVarSym.
-  Symbol* newOvar = NULL;
+  Symbol* newOvar = nullptr;
 
   switch (newSV->intent) {
     case TFI_IN:
@@ -931,10 +931,10 @@ static void expandShadowVarForall(ForallStmt* fs,
       break;
   }
 
-  if (newOvar != NULL)
+  if (newOvar != nullptr)
     newSV->outerVarSE = new SymExpr(iMap.get(newOvar));
   else
-    INT_ASSERT(newSV->outerVarSE == NULL);
+    INT_ASSERT(newSV->outerVarSE == nullptr);
 
   fs->shadowVariables().insertAtTail(new DefExpr(newSV));
 }
@@ -1089,16 +1089,16 @@ static void reorderShadowVsTaskPrivateVars(ForallStmt* fs) {
   // that shouldGoFirst() from 'svars' to that temp list.
 
   Expr* currDef = svars.head;
-  Expr* lastReorderedDef = NULL;
+  Expr* lastReorderedDef = nullptr;
 
   do {
     Expr* nextDef = currDef->next;
     ShadowVarSymbol* currSV = toShadowVarSymbol(toDefExpr(currDef)->sym);
 
     if (shouldGoFirst(currSV)) {
-      if (lastReorderedDef == NULL) {
+      if (lastReorderedDef == nullptr) {
         // This is the first time we are seeing a "shouldGoFirst" SV.
-        if (currDef->prev != NULL)
+        if (currDef->prev != nullptr)
           // We got some defs before, which are not "shouldGoFirst".
           svars.insertAtHead(currDef->remove());
         else
@@ -1118,7 +1118,7 @@ static void reorderShadowVsTaskPrivateVars(ForallStmt* fs) {
     }
 
     currDef = nextDef;
-  } while (currDef != NULL);
+  } while (currDef != nullptr);
 
   if (fVerify) {
     bool inSVs = true;
@@ -1195,7 +1195,7 @@ static void handleRecursiveIter(ForallStmt* fs,
   PARBlock->insertAtTail(parIterCall->remove());
   PARBlock->insertAtTail(new CallExpr(PRIM_MOVE, parIter, callGetIter->remove()));
 
-  ForLoop* PARBody = new ForLoop(parIdx, parIter, NULL,
+  ForLoop* PARBody = new ForLoop(parIdx, parIter, nullptr,
                                  /* zippered */ false,
                                  /*forall*/ true,
                                  /*isForExpr*/ fs->isForallExpr());
@@ -1244,7 +1244,7 @@ static void cleanupRetArg(Symbol* retArg, Symbol* currSym) {
   move->remove();
 
   // Ensure no other uses.
-  INT_ASSERT(retArg->firstSymExpr() == NULL);
+  INT_ASSERT(retArg->firstSymExpr() == nullptr);
 }
 
 // Remove the autoDestroy of 'currSym', if present.
@@ -1346,7 +1346,7 @@ static CallExpr* stripReturnScaffolding(BlockStmt* block, Symbol* currSym) {
             // The autoCopy may be deleted in callDestructors, with autoDestroy
             // still around. Ex. test/functions/promotion/forallPromotes.chpl
             removeAutoDestroyCallIfPresent(currSym);
-            INT_ASSERT(currSym->firstSymExpr() == NULL); // no other refs to it
+            INT_ASSERT(currSym->firstSymExpr() == nullptr); // no other refs to it
             currSym = srcSE->symbol();
             continue;
           }
@@ -1356,12 +1356,12 @@ static CallExpr* stripReturnScaffolding(BlockStmt* block, Symbol* currSym) {
               defMove->remove();
               currSym = toSymExpr(srcCall->get(1))->symbol();
               removeAutoDestroyCallIfPresent(currSym);
-              INT_ASSERT(currSym->firstSymExpr() == NULL); // no other refs to it
+              INT_ASSERT(currSym->firstSymExpr() == nullptr); // no other refs to it
               continue;
             }
             // Found it. Place it where our ForallStmt will go.
             defMove->replace(srcCall->remove());
-            INT_ASSERT(currSym->firstSymExpr() == NULL); // no other refs to it
+            INT_ASSERT(currSym->firstSymExpr() == nullptr); // no other refs to it
             return srcCall;
           }
         } else if (FnSymbol* defFn = defMove->resolvedFunction()) {
@@ -1382,7 +1382,7 @@ static CallExpr* stripReturnScaffolding(BlockStmt* block, Symbol* currSym) {
     break;
   }
 
-  return NULL; //dummy
+  return nullptr; //dummy
 }
 
 //
@@ -1404,7 +1404,7 @@ static void handleIteratorForwarders(ForallStmt* fs,
 
   // Handle a return by reference. Ex.:
   //  distributions/bradc/assoc/userAssoc-domain-stress
-  Symbol* retRefSym = NULL;
+  Symbol* retRefSym = nullptr;
   if (iterFn->hasFlag(FLAG_FN_RETARG)) {
     SymExpr* retRefSE     = toSymExpr(iterCall->argList.tail);
     Symbol*  retRefFormal = toDefExpr(iterFn->formals.tail)->sym;
@@ -1504,7 +1504,7 @@ static void lowerOneForallStmt(ForallStmt* fs) {
   fs->remove();
   // We could also do {iwrap,ibody}->flattenAndRemove().
 
-  if (parIterFn->firstSymExpr() == NULL)
+  if (parIterFn->firstSymExpr() == nullptr)
     // We have inlined all uses. So, remove the iterator as well.
     parIterFn->defPoint->remove();
 }
@@ -1516,7 +1516,7 @@ static void removeDeadIters() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (!fn->inTree()) continue;
 
-    if (fn->firstSymExpr() == NULL)
+    if (fn->firstSymExpr() == nullptr)
     {
       if (fn->hasFlag(FLAG_INLINE_ITERATOR) || isTaskFun(fn))
         // Got a parallel iterator or task function with no uses. Remove.
@@ -1540,5 +1540,5 @@ void lowerForallStmtsInline()
   toplevelYieldsArePresent.clear();
 
   // Ensure gDummyRef is no longer used.
-  INT_ASSERT(gDummyRef->firstSymExpr() == NULL);
+  INT_ASSERT(gDummyRef->firstSymExpr() == nullptr);
 }

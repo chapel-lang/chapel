@@ -200,13 +200,13 @@ ClangInfo::ClangInfo(
          clangCXX(clangCxxIn),
          clangCCArgs(clangCCArgsIn),
          clangOtherArgs(clangOtherArgsIn),
-         codegenOptions(), diagOptions(NULL),
-         DiagClient(NULL),
-         DiagID(NULL),
-         Diags(NULL),
-         Clang(NULL),
-         Ctx(NULL),
-         cCodeGen(NULL), cCodeGenAction(NULL),
+         codegenOptions(), diagOptions(nullptr),
+         DiagClient(nullptr),
+         DiagID(nullptr),
+         Diags(nullptr),
+         Clang(nullptr),
+         Ctx(nullptr),
+         cCodeGen(nullptr), cCodeGenAction(nullptr),
          asmTargetLayoutStr(),
          intSizeInBits(0),
          longSizeInBits(0),
@@ -257,7 +257,7 @@ VarSymbol *minMaxConstant(int nbits, bool isSigned, bool isMin)
     return new_IntSymbol(UINT64_MAX, INT_SIZE_64);
 
   else INT_ASSERT(0 && "Bad options for minMaxConstant");
-  return NULL;
+  return nullptr;
 }
 
 static
@@ -310,12 +310,12 @@ static
       INT_FATAL("case not handled");
   }
 
-  return NULL;
+  return nullptr;
 }
 
 static
 void setupCIntType(::Type*& type, int nbits, bool unsigned_) {
-  if (type != NULL) {
+  if (type != nullptr) {
     INT_ASSERT(get_width(type) == nbits);
     INT_ASSERT(is_signed(type) == !unsigned_);
   } else {
@@ -419,10 +419,10 @@ void handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
     return; // TODO -- handle macro functions.
   }
 
-  VarSymbol* varRet = NULL;
-  TypeDecl* cTypeRet = NULL;
-  ValueDecl* cValueRet = NULL;
-  const char* cCastToTypeRet = NULL;
+  VarSymbol* varRet = nullptr;
+  TypeDecl* cTypeRet = nullptr;
+  ValueDecl* cValueRet = nullptr;
+  const char* cCastToTypeRet = nullptr;
 
   handleMacroExpr(macro,
                   macro->tokens_begin(), macro->tokens_end(),
@@ -430,7 +430,7 @@ void handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
 
   if( debugPrint ) {
     std::string s = std::string(id->getName());
-    const char* kind = NULL;
+    const char* kind = nullptr;
     if( varRet ) kind = "var";
     if( cTypeRet ) kind = "cdecl type";
     if( cValueRet ) kind = "cdecl value";
@@ -518,12 +518,12 @@ static bool findParenthesizedExpr(const MacroInfo* inMacro,
 }
 
 
-// Returns a type/identifier/macro name or NULL if it was not handled
+// Returns a type/identifier/macro name or nullptr if it was not handled
 static const char* handleTypeOrIdentifierExpr(const MacroInfo* inMacro,
                                               MacroInfo::tokens_iterator start,
                                               MacroInfo::tokens_iterator end,
                                               IdentifierInfo*& ii) {
-  ii = NULL;
+  ii = nullptr;
 
   // handle things like 'unsigned int'
   int _unsigned = 0;
@@ -580,7 +580,7 @@ static const char* handleTypeOrIdentifierExpr(const MacroInfo* inMacro,
 
     // Give up if there are any tokens beyond the main token
     if (start != end)
-      return NULL;
+      return nullptr;
 
     if (tok.getKind() == tok::identifier) {
       IdentifierInfo* tokId = tok.getIdentifierInfo();
@@ -590,34 +590,34 @@ static const char* handleTypeOrIdentifierExpr(const MacroInfo* inMacro,
   } else {
     // Give up if we didn't handle all the tokens in the above loop
     if (start != end)
-      return NULL;
+      return nullptr;
 
     // Rule out cases that don't make sense
     // char -> only can add signed or unsigned
     if (_char > 0 &&
         (_short > 0 || _long > 0 || _int > 0 ||  _float > 0 || _double > 0))
-      return NULL;
+      return nullptr;
     // float/double -> only can add long or signed
     if ((_float > 0 || _double > 0) &&
         (_short > 0 || _char > 0 || _int > 0 || _unsigned > 0))
-      return NULL;
+      return nullptr;
     // can't have both float and double
     if (_float > 0 && _double > 0)
-      return NULL;
+      return nullptr;
     // can't have int int or char char
     if (_int > 1 || _char > 1)
-      return NULL;
+      return nullptr;
     // can't have both signed and unsigned
     if (_signed > 0 && _unsigned > 0)
-      return NULL;
+      return nullptr;
     // can't have both short and long
     if (_long > 0 && _short > 0)
-      return NULL;
+      return nullptr;
     // can't have short short or long long long
     if (_long > 2 || _short > 1)
-      return NULL;
+      return nullptr;
 
-    const char* ret = NULL;
+    const char* ret = nullptr;
 
     if (_double > 0) {
       // signed double would be OK
@@ -641,10 +641,10 @@ static const char* handleTypeOrIdentifierExpr(const MacroInfo* inMacro,
       else if (_long == 0 && _short == 0) ret = "c_int";
     }
 
-    if (ret != NULL)
+    if (ret != nullptr)
       return astr(ret);
   }
-  return NULL;
+  return nullptr;
 }
 
 static const char* handleStringExpr(const MacroInfo* inMacro,
@@ -657,14 +657,14 @@ static const char* handleStringExpr(const MacroInfo* inMacro,
 
   // Give up if there are any tokens beyond the main token
   if (start != end)
-    return NULL;
+    return nullptr;
 
   if (tok.getKind() == tok::string_literal) {
     std::string body = std::string(tok.getLiteralData(), tok.getLength());
     return astr(body.c_str());
   }
 
-  return NULL;
+  return nullptr;
 }
 
 static ::Type* getTypeForMacro(const char* name) {
@@ -697,7 +697,7 @@ static bool handleNumericExpr(const MacroInfo* inMacro,
                               Immediate* imm,
                               const char*& cCastToTypeRet) {
 
-  cCastToTypeRet = NULL;
+  cCastToTypeRet = nullptr;
 
   removeMacroOuterParens(inMacro, start, end);
 
@@ -736,29 +736,29 @@ static bool handleNumericCastExpr(const MacroInfo* inMacro,
     if (castEnd == end)
       return false;
 
-    const char* castTo = NULL;
-    clang::IdentifierInfo* ii = NULL;
+    const char* castTo = nullptr;
+    clang::IdentifierInfo* ii = nullptr;
     castTo = handleTypeOrIdentifierExpr(inMacro, castStart, castEnd, ii);
-    if (castTo == NULL)
+    if (castTo == nullptr)
       return false;
     start = castEnd;
 
     // Find the type to cast to
     // (handles things like macros, nested parens)
-    VarSymbol* tmpVar = NULL;
-    TypeDecl* tmpType = NULL;
-    ValueDecl* tmpVal = NULL;
-    const char* tmpCastToType = NULL;
+    VarSymbol* tmpVar = nullptr;
+    TypeDecl* tmpType = nullptr;
+    ValueDecl* tmpVal = nullptr;
+    const char* tmpCastToType = nullptr;
 
     handleMacroExpr(inMacro, castStart, castEnd,
                     tmpVar, tmpType, tmpVal, tmpCastToType);
 
-    if (tmpType == NULL || tmpCastToType != NULL)
+    if (tmpType == nullptr || tmpCastToType != nullptr)
       return false;
 
     cCastToTypeRet = astr(tmpType->getName().str().c_str());
 
-    const char* rhsCastToTy = NULL;
+    const char* rhsCastToTy = nullptr;
     Immediate rhsImm;
     Immediate retImm;
     bool got = handleNumericExpr(inMacro, castEnd, end, &rhsImm, rhsCastToTy);
@@ -766,11 +766,11 @@ static bool handleNumericCastExpr(const MacroInfo* inMacro,
     if (got == false)
       return false;
 
-    if (rhsCastToTy == NULL) {
+    if (rhsCastToTy == nullptr) {
       retImm = rhsImm;
     } else {
       ::Type* t = getTypeForMacro(tmpType->getName().str().c_str());
-      if (t == NULL)
+      if (t == nullptr)
         return false;
 
       Immediate dstImm = getDefaultImmediate(t);
@@ -782,16 +782,16 @@ static bool handleNumericCastExpr(const MacroInfo* inMacro,
 
     // Try handling the cast now if we can.
     // Put it off if the type isn't known yet (e.g. a typedef)
-    ::Type* doCastToType = NULL;
-    if (cCastToTypeRet != NULL) {
+    ::Type* doCastToType = nullptr;
+    if (cCastToTypeRet != nullptr) {
       doCastToType = getTypeForMacro(cCastToTypeRet);
     }
 
-    if (doCastToType != NULL) {
+    if (doCastToType != nullptr) {
       Immediate dstImm = getDefaultImmediate(doCastToType);
       coerce_immediate(&retImm, &dstImm);
       *imm = dstImm;
-      cCastToTypeRet = NULL; // cast already handled
+      cCastToTypeRet = nullptr; // cast already handled
     } else {
       *imm = retImm;
     }
@@ -816,9 +816,9 @@ static bool handleNumericUnaryPrefixExpr(const MacroInfo* inMacro,
       return false;
 
     Immediate rhsImm;
-    const char* tmpCastToTy = NULL;
+    const char* tmpCastToTy = nullptr;
     bool got = handleNumericExpr(inMacro, start+1, end, &rhsImm, tmpCastToTy);
-    if (got == false || tmpCastToTy != NULL)
+    if (got == false || tmpCastToTy != nullptr)
       return false;
 
     int p = 0;
@@ -829,7 +829,7 @@ static bool handleNumericUnaryPrefixExpr(const MacroInfo* inMacro,
         INT_FATAL("unhandled case");
     }
 
-    fold_constant(p, &rhsImm, NULL, imm);
+    fold_constant(p, &rhsImm, nullptr, imm);
     return true;
   }
 
@@ -846,7 +846,7 @@ static bool handleNumericLiteralExpr(const MacroInfo* inMacro,
   // handle a single numeric literal
   if (start->getKind() == tok::numeric_constant && start+1 == end) {
     Token tok = *start; // the main token
-    VarSymbol* varRet = NULL;
+    VarSymbol* varRet = nullptr;
     std::string numString;
     int hex;
     int isfloat;
@@ -900,7 +900,7 @@ static bool handleNumericLiteralExpr(const MacroInfo* inMacro,
         }
       }
 
-      ::Type* t = NULL;
+      ::Type* t = nullptr;
       if (_unsigned > 1 || _long > 2) return false;
       if (_unsigned > 0) {
         if (_long == 2)      t = dt_c_ulonglong;
@@ -911,7 +911,7 @@ static bool handleNumericLiteralExpr(const MacroInfo* inMacro,
         else if (_long == 1) t = dt_c_long;
         else                 t = dt_c_int;
       }
-      INT_ASSERT(t != NULL);
+      INT_ASSERT(t != nullptr);
 
       if        (t == dtInt[INT_SIZE_64] || t == dtUInt[INT_SIZE_64]) {
         size = INT_SIZE_64;
@@ -922,9 +922,9 @@ static bool handleNumericLiteralExpr(const MacroInfo* inMacro,
       }
 
       if (_unsigned > 0) {
-        varRet = new_UIntSymbol(strtoul(numString.c_str(), NULL, 0), size);
+        varRet = new_UIntSymbol(strtoul(numString.c_str(), nullptr, 0), size);
       } else {
-        varRet = new_IntSymbol(strtol(numString.c_str(), NULL, 0), size);
+        varRet = new_IntSymbol(strtol(numString.c_str(), nullptr, 0), size);
       }
     } else {
       IF1_float_type size = FLOAT_SIZE_64;
@@ -940,7 +940,7 @@ static bool handleNumericLiteralExpr(const MacroInfo* inMacro,
       varRet = new_RealSymbol(numString.c_str(), size);
     }
 
-    INT_ASSERT(varRet != NULL);
+    INT_ASSERT(varRet != nullptr);
     *imm = *varRet->immediate;
     return true;
   }
@@ -995,14 +995,14 @@ static bool handleNumericBinOpExpr(const MacroInfo* inMacro,
   // Compute the lhs and rhs immediates
   Immediate lhsImm;
   Immediate rhsImm;
-  const char* lhsCastToTy = NULL;
-  const char* rhsCastToTy = NULL;
+  const char* lhsCastToTy = nullptr;
+  const char* rhsCastToTy = nullptr;
 
   lhsOk = handleNumericExpr(inMacro, lhsStart, lhsEnd, &lhsImm, lhsCastToTy);
   rhsOk = handleNumericExpr(inMacro, rhsStart, rhsEnd, &rhsImm, rhsCastToTy);
   if (lhsOk == false || rhsOk == false)
     return false;
-  if (lhsCastToTy != NULL || rhsCastToTy != NULL)
+  if (lhsCastToTy != nullptr || rhsCastToTy != nullptr)
     return false;
 
   // Apply the binary operator to the immediate
@@ -1033,9 +1033,9 @@ static void handleMacroExpr(const MacroInfo* inMacro,
 
   const bool debugPrint = debugPrintMacros;
 
-  varRet = NULL;
-  cTypeRet = NULL;
-  cValueRet = NULL;
+  varRet = nullptr;
+  cTypeRet = nullptr;
+  cValueRet = nullptr;
 
   if (start == end) {
     if( debugPrint) {
@@ -1053,9 +1053,9 @@ static void handleMacroExpr(const MacroInfo* inMacro,
     }
   }
 
-  clang::IdentifierInfo* ii = NULL;
+  clang::IdentifierInfo* ii = nullptr;
   const char* idName = handleTypeOrIdentifierExpr(inMacro, start, end, ii);
-  if (idName != NULL) {
+  if (idName != nullptr) {
     if( debugPrint) {
       printf("id = %s\n", idName);
     }
@@ -1066,7 +1066,7 @@ static void handleMacroExpr(const MacroInfo* inMacro,
     if( !varRet ) {
       info->lvt->getCDecl(idName, &cTypeRet, &cValueRet);
     }
-    if( !varRet && !cTypeRet && !cValueRet && ii != NULL) {
+    if( !varRet && !cTypeRet && !cValueRet && ii != nullptr) {
       // Check to see if it's another macro.
       MacroInfo* otherMacro = preproc.getMacroInfo(ii);
       if( otherMacro && otherMacro != inMacro ) {
@@ -1095,14 +1095,14 @@ static void handleMacroExpr(const MacroInfo* inMacro,
   }
 
   const char* str = handleStringExpr(inMacro, start, end);
-  if (str != NULL) {
+  if (str != nullptr) {
     if( debugPrint) printf("str = %s\n", str);
     varRet = new_CStringSymbol(str);
     return;
   }
 
   Immediate imm;
-  const char* castToTy = NULL;
+  const char* castToTy = nullptr;
   if (handleNumericExpr(inMacro, start, end, &imm, castToTy)) {
     if (debugPrint) {
       printf("num = ");
@@ -1182,9 +1182,9 @@ class CCodeGenConsumer final : public ASTConsumer {
       : ASTConsumer(),
         info(gGenInfo),
         Diags(info->clangInfo->Diags.get()),
-        Builder(NULL),
+        Builder(nullptr),
         parseOnly(info->clangInfo->parseOnly),
-        savedCtx(NULL)
+        savedCtx(nullptr)
     {
 
       if (!parseOnly) {
@@ -1226,7 +1226,7 @@ class CCodeGenConsumer final : public ASTConsumer {
     void doHandleDecl(Decl* d) {
       if (TypedefDecl *td = dyn_cast<TypedefDecl>(d)) {
         const clang::Type *ctype= td->getUnderlyingType().getTypePtrOrNull();
-        if(ctype != NULL) {
+        if(ctype != nullptr) {
           info->lvt->addGlobalCDecl(td);
         }
       } else if (FunctionDecl *fd = dyn_cast<FunctionDecl>(d)) {
@@ -1311,7 +1311,7 @@ class CCodeGenConsumer final : public ASTConsumer {
       } else if(RecordDecl *rd = dyn_cast<RecordDecl>(D)) {
          const clang::Type *ctype = rd->getTypeForDecl();
 
-         if(ctype != NULL && rd->getDefinition() != NULL) {
+         if(ctype != nullptr && rd->getDefinition() != nullptr) {
            info->lvt->addGlobalCDecl(rd);
          }
       }
@@ -1424,12 +1424,12 @@ static void finishClang(ClangInfo* clangInfo){
 static void deleteClang(ClangInfo* clangInfo){
   if( clangInfo->cCodeGen ) {
     delete clangInfo->cCodeGen;
-    clangInfo->cCodeGen = NULL;
+    clangInfo->cCodeGen = nullptr;
   }
   delete clangInfo->Clang;
-  clangInfo->Clang = NULL;
+  clangInfo->Clang = nullptr;
   delete clangInfo->cCodeGenAction;
-  clangInfo->cCodeGenAction = NULL;
+  clangInfo->cCodeGenAction = nullptr;
 }
 
 static void cleanupClang(ClangInfo* clangInfo)
@@ -1485,7 +1485,7 @@ void setupClang(GenInfo* info, std::string mainFile)
   clangInfo->diagOptions = new DiagnosticOptions();
   clangInfo->DiagClient= new TextDiagnosticPrinter(errs(),&*clangInfo->diagOptions);
   clangInfo->DiagID = new DiagnosticIDs();
-  DiagnosticsEngine* Diags = NULL;
+  DiagnosticsEngine* Diags = nullptr;
   Diags = new DiagnosticsEngine(
       clangInfo->DiagID, &*clangInfo->diagOptions, clangInfo->DiagClient);
   clangInfo->Diags = Diags;
@@ -1497,7 +1497,7 @@ void setupClang(GenInfo* info, std::string mainFile)
 
   std::unique_ptr<clang::driver::Compilation> C(TheDriver.BuildCompilation(clangArgs));
 
-  clang::driver::Command* job = NULL;
+  clang::driver::Command* job = nullptr;
 
   if (localeUsesGPU() == false) {
     // Not a CPU+GPU compilation, so just use first job.
@@ -1518,7 +1518,7 @@ void setupClang(GenInfo* info, std::string mainFile)
 
         if (gCodegenGPU) {
           // For GPU, set job to 1st cc1 command
-          if (job == NULL) job = &command;
+          if (job == nullptr) job = &command;
         } else {
           // For CPU, set job to last cc1 command
           job = &command;
@@ -1528,7 +1528,7 @@ void setupClang(GenInfo* info, std::string mainFile)
   }
 
 
-  if (job == NULL)
+  if (job == nullptr)
     USR_FATAL("Could not find cc1 command from clang driver");
 
   if( printSystemCommands && developer ) {
@@ -1618,12 +1618,12 @@ void setupClang(GenInfo* info, std::string mainFile)
     for (auto & i : vec) {
       Args.push_back(i.c_str());
     }
-    Args.push_back(NULL);
+    Args.push_back(nullptr);
 
     if (printSystemCommands && developer) {
       printf("# parsing llvm command line options: ");
       for (auto arg : Args) {
-        if (arg != NULL)
+        if (arg != nullptr)
           printf(" %s", arg);
       }
       printf("\n");
@@ -1799,7 +1799,7 @@ void finishCodegenLLVM() {
 
   // We don't need our postgen function pass manager anymore.
   delete info->FPM_postgen;
-  info->FPM_postgen = NULL;
+  info->FPM_postgen = nullptr;
 
   // Now finish any Clang code generation.
   finishClang(info->clangInfo);
@@ -1946,7 +1946,7 @@ static void handleErrorLLVM(void* user_data, const std::string& reason,
 struct ExternBlockInfo {
   GenInfo* gen_info;
   fileinfo file;
-  ExternBlockInfo() : gen_info(NULL), file() { }
+  ExternBlockInfo() : gen_info(nullptr), file() { }
  ~ExternBlockInfo() = default;
 };
 
@@ -1990,7 +1990,7 @@ void runClang(const char* just_parse_filename) {
                               "-Wmissing-format-attribute",
                               // clang can't tell which functions we use
                               "-Wno-unused-function",
-                              NULL};
+                              nullptr};
   const char* clang_debug = "-g";
   const char* clang_opt = "-O3";
   const char* clang_fast_float = "-ffast-math";
@@ -2116,8 +2116,8 @@ void runClang(const char* just_parse_filename) {
   }
 
   if (specializeCCode &&
-      CHPL_TARGET_CPU_FLAG != NULL &&
-      CHPL_TARGET_BACKEND_CPU != NULL &&
+      CHPL_TARGET_CPU_FLAG != nullptr &&
+      CHPL_TARGET_BACKEND_CPU != nullptr &&
       CHPL_TARGET_CPU_FLAG[0] != '\0' &&
       CHPL_TARGET_BACKEND_CPU[0] != '\0' &&
       0 != strcmp(CHPL_TARGET_CPU_FLAG, "none") &&
@@ -2213,7 +2213,7 @@ void runClang(const char* just_parse_filename) {
   }
 
   if( printSystemCommands ) {
-    if (just_parse_filename != NULL)
+    if (just_parse_filename != nullptr)
       printf("<internal clang parsing %s> ", just_parse_filename);
     else
       printf("<internal clang code generation> ");
@@ -2232,12 +2232,12 @@ void runClang(const char* just_parse_filename) {
   // turn it off if we just wanted to parse some C.
   gGenInfo = new GenInfo();
 
-  bool parseOnly = (just_parse_filename != NULL);
+  bool parseOnly = (just_parse_filename != nullptr);
 
   gGenInfo->lvt = new LayeredValueTable();
 
 
-  ClangInfo* clangInfo = NULL;
+  ClangInfo* clangInfo = nullptr;
   clangInfo = new ClangInfo(clangCC, clangCXX,
                             clangCCArgs, clangOtherArgs,
                             parseOnly);
@@ -2365,7 +2365,7 @@ void readExternC(void) {
     // Now swap what went into the global layered value table
     // into the module's own layered value table.
     module->extern_info->gen_info = gGenInfo;
-    gGenInfo = NULL;
+    gGenInfo = nullptr;
   }
 }
 
@@ -2400,15 +2400,15 @@ llvm::Function* getFunctionLLVM(const char* name)
     return fn;
   }
 
-  return NULL;
+  return nullptr;
 }
 
 clang::FunctionDecl* getFunctionDeclClang(const char* name)
 {
   GenInfo* info = gGenInfo;
 
-  clang::TypeDecl* cType = NULL;
-  clang::ValueDecl* cValue = NULL;
+  clang::TypeDecl* cType = nullptr;
+  clang::ValueDecl* cValue = nullptr;
 
   info->lvt->getCDecl(name, &cType, &cValue);
   clang::FunctionDecl* FD = llvm::dyn_cast_or_null<clang::FunctionDecl>(cValue);
@@ -2424,7 +2424,7 @@ llvm::Type* getTypeLLVM(const char* name)
   t = info->lvt->getType(name);
   if( t ) return t;
 
-  return NULL;
+  return nullptr;
 }
 // should support TypedefDecl,EnumDecl,RecordDecl
 llvm::Type* codegenCType(const TypeDecl* td)
@@ -2496,7 +2496,7 @@ GenRet codegenCValue(const ValueDecl *vd)
 
     ret.isUnsigned = ! ed->getType()->hasSignedIntegerRepresentation();
 
-    llvm::Type* type = NULL;
+    llvm::Type* type = nullptr;
     type = clang::CodeGen::convertTypeForMemory(cCodeGen->CGM(), ed->getType());
 
     ret.val = ConstantInt::get(type, v);
@@ -2668,12 +2668,12 @@ llvm::BasicBlock *LayeredValueTable::getBlock(StringRef name) {
     if( store->u.block && isa<llvm::BasicBlock>(store->u.block) )
       return store->u.block;
   }
-  return NULL;
+  return nullptr;
 }
 
 llvm::Type *LayeredValueTable::getType(StringRef name, bool *isUnsigned) {
   if(Storage *store = get(name)) {
-    if (isUnsigned != NULL) {
+    if (isUnsigned != nullptr) {
       *isUnsigned = store->isUnsigned;
     }
 
@@ -2689,26 +2689,26 @@ llvm::Type *LayeredValueTable::getType(StringRef name, bool *isUnsigned) {
       // Convert it to an LLVM type.
       store->u.type = codegenCType(store->u.cTypeDecl);
       const clang::Type *type = store->u.cTypeDecl->getTypeForDecl();
-      if (type != NULL) {
+      if (type != nullptr) {
         store->isUnsigned = type->isUnsignedIntegerOrEnumerationType();
       }
       return store->u.type;
     }
   }
-  return NULL;
+  return nullptr;
 }
 
 // Returns a type or a name decl for a given name
 // Note that C can have a function and a type sharing the same name
 // (e.g. stat/struct stat).
-// Sets the output arguments to NULL if a type/value was not found.
-// Either output argument can be NULL.
+// Sets the output arguments to nullptr if a type/value was not found.
+// Either output argument can be nullptr.
 void LayeredValueTable::getCDecl(StringRef name, TypeDecl** cTypeOut,
     ValueDecl** cValueOut, const char** cCastedToTypeOut, astlocT* astlocOut) {
 
-  if (cValueOut) *cValueOut = NULL;
-  if (cTypeOut) *cTypeOut = NULL;
-  if (cCastedToTypeOut) *cCastedToTypeOut = NULL;
+  if (cValueOut) *cValueOut = nullptr;
+  if (cTypeOut) *cTypeOut = nullptr;
+  if (cCastedToTypeOut) *cCastedToTypeOut = nullptr;
 
   if(Storage *store = get(name)) {
     if( store->u.cValueDecl ) {
@@ -2733,8 +2733,8 @@ void LayeredValueTable::getCDecl(StringRef name, TypeDecl** cTypeOut,
 }
 
 bool LayeredValueTable::isCArray(StringRef cname) {
-  clang::TypeDecl* cType = NULL;
-  clang::ValueDecl* cValue = NULL;
+  clang::TypeDecl* cType = nullptr;
+  clang::ValueDecl* cValue = nullptr;
 
   this->getCDecl(cname, &cType, &cValue);
 
@@ -2750,7 +2750,7 @@ VarSymbol* LayeredValueTable::getVarSymbol(StringRef name) {
       return store->u.chplVar;
     }
   }
-  return NULL;
+  return nullptr;
 }
 
 LayeredValueTable::Storage* LayeredValueTable::get(StringRef name) {
@@ -2763,7 +2763,7 @@ LayeredValueTable::Storage* LayeredValueTable::get(StringRef name) {
     }
   }
 
-  return NULL;
+  return nullptr;
 }
 
 bool LayeredValueTable::isAlreadyInChapelAST(llvm::StringRef name)
@@ -2804,10 +2804,10 @@ int getCRecordMemberGEP(const char* typeName, const char* fieldName,
   clang::CodeGenerator* cCodeGen = clangInfo->cCodeGen;
   INT_ASSERT(cCodeGen);
 
-  TypeDecl* d = NULL;
+  TypeDecl* d = nullptr;
   int ret;
 
-  info->lvt->getCDecl(typeName, &d, NULL);
+  info->lvt->getCDecl(typeName, &d, nullptr);
   INT_ASSERT(d);
   if( isa<TypedefDecl>(d) ) {
     TypedefDecl* td = cast<TypedefDecl>(d);
@@ -2824,7 +2824,7 @@ int getCRecordMemberGEP(const char* typeName, const char* fieldName,
   RecordDecl* rec = cast<RecordDecl>(d);
   // Find the field decl.
   RecordDecl::field_iterator it;
-  FieldDecl* field = NULL;
+  FieldDecl* field = nullptr;
   for( it = rec->field_begin(); it != rec->field_end(); ++it ) {
     if( fieldName == it->getName() ) {
       field = *it;
@@ -2878,16 +2878,16 @@ static clang::CanQualType getClangType(::Type* t, bool makeRef) {
     return Ctx->VoidTy;
   // could match other builtin types like c_void_ptr or c_int here
 
-  clang::TypeDecl* cTypeDecl = NULL;
-  clang::ValueDecl* cValueDecl = NULL;
-  const char* cCastedToType = NULL;
+  clang::TypeDecl* cTypeDecl = nullptr;
+  clang::ValueDecl* cValueDecl = nullptr;
+  const char* cCastedToType = nullptr;
   const char* cname = t->symbol->cname;
   info->lvt->getCDecl(cname, &cTypeDecl, &cValueDecl, &cCastedToType);
 
   if (cCastedToType)
     USR_FATAL(t, "Cannot use macro with type cast in export function argument");
 
-  if (cTypeDecl == NULL)
+  if (cTypeDecl == nullptr)
     USR_FATAL(t, "Could not find C type %s - "
                   "extern/export functions should only use extern types",
                    cname);
@@ -2951,14 +2951,14 @@ const clang::CodeGen::CGFunctionInfo& getClangABIInfo(FnSymbol* fn) {
   // Lookup the clang AST for this function so we can
   // use the C ABI
 
-  clang::TypeDecl* cType = NULL;
-  clang::ValueDecl* cValue = NULL;
-  const char* cCastedToType = NULL;
+  clang::TypeDecl* cType = nullptr;
+  clang::ValueDecl* cValue = nullptr;
+  const char* cCastedToType = nullptr;
 
   info->lvt->getCDecl(fn->cname, &cType, &cValue, &cCastedToType);
 
   clang::FunctionDecl* FD = llvm::dyn_cast_or_null<clang::FunctionDecl>(cValue);
-  if (FD != NULL) {
+  if (FD != nullptr) {
     // This is the typical case for extern functions.
 
     // This case could be supported if we need it to be
@@ -3001,9 +3001,9 @@ getCGArgInfo(const clang::CodeGen::CGFunctionInfo* CGI, int curCArg)
 
   // Don't try to use the the calling convention code for variadic args.
   if ((unsigned) curCArg >= CGI->arg_size() && CGI->isVariadic())
-    return NULL;
+    return nullptr;
 
-  const clang::CodeGen::ABIArgInfo* argInfo = NULL;
+  const clang::CodeGen::ABIArgInfo* argInfo = nullptr;
 #if HAVE_LLVM_VER >= 100
   llvm::ArrayRef<clang::CodeGen::CGFunctionInfoArgInfo> a=CGI->arguments();
   argInfo = &a[curCArg].info;
@@ -3059,8 +3059,8 @@ static unsigned helpGetAlignment(::Type* type) {
   INT_ASSERT(info);
 
   if (type->symbol->hasFlag(FLAG_EXTERN)) {
-    clang::TypeDecl* cType = NULL;
-    clang::ValueDecl* cVal = NULL;
+    clang::TypeDecl* cType = nullptr;
+    clang::ValueDecl* cVal = nullptr;
     info->lvt->getCDecl(type->symbol->cname, &cType, &cVal);
     if (cType) {
       return helpGetCTypeAlignment(cType);
@@ -3276,7 +3276,7 @@ void setupForGlobalToWide(void) {
   ginfo->irBuilder->SetInsertPoint(block);
 
   llvm::Value* fns[] = {info->getFn, info->putFn,
-                        info->getPutFn, info->memsetFn, NULL};
+                        info->getPutFn, info->memsetFn, nullptr};
 
   llvm::Value* ret = llvm::Constant::getNullValue(retType);
   llvm::Function::arg_iterator args = fn->arg_begin();
@@ -3868,7 +3868,7 @@ void makeBinaryLLVM(void) {
   fileinfo mainfile;
   mainfile.filename = "chpl__module.o";
   mainfile.pathname = moduleFilename.c_str();
-  const char* tmpbinname = NULL;
+  const char* tmpbinname = nullptr;
 
   codegen_makefile(&mainfile, &tmpbinname, true);
   INT_ASSERT(tmpbinname);
@@ -4133,7 +4133,7 @@ static void moveGeneratedLibraryFile(const char* tmpbinname) {
 }
 
 void print_clang(clang::Decl* d) {
-  if (d == NULL)
+  if (d == nullptr)
     fprintf(stderr, "NULL");
   else
     d->print(llvm::dbgs());
@@ -4142,7 +4142,7 @@ void print_clang(clang::Decl* d) {
 }
 
 void print_clang(clang::TypeDecl* d) {
-  if (d == NULL)
+  if (d == nullptr)
     fprintf(stderr, "NULL");
   else
     d->print(llvm::dbgs());
@@ -4150,7 +4150,7 @@ void print_clang(clang::TypeDecl* d) {
   fprintf(stderr, "\n");
 }
 void print_clang(clang::ValueDecl* d) {
-  if (d == NULL)
+  if (d == nullptr)
     fprintf(stderr, "NULL");
   else
     d->print(llvm::dbgs());

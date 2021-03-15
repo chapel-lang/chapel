@@ -54,19 +54,19 @@
 
 
 IteratorInfo::IteratorInfo() :
-  iterator(NULL),
-  getIterator(NULL),
-  iclass(NULL),
-  irecord(NULL),
-  advance(NULL),
-  zip1(NULL),
-  zip2(NULL),
-  zip3(NULL),
-  zip4(NULL),
-  hasMore(NULL),
-  getValue(NULL),
-  init(NULL),
-  incr(NULL)
+  iterator(nullptr),
+  getIterator(nullptr),
+  iclass(nullptr),
+  irecord(nullptr),
+  advance(nullptr),
+  zip1(nullptr),
+  zip2(nullptr),
+  zip3(nullptr),
+  zip4(nullptr),
+  hasMore(nullptr),
+  getValue(nullptr),
+  init(nullptr),
+  incr(nullptr)
 {}
 
 // Actions upon deleting a FnSymbol.
@@ -74,12 +74,12 @@ void cleanupIteratorInfo(FnSymbol* host) {
   IteratorInfo* iteratorInfo = host->iteratorInfo;
 
   if (iteratorInfo && ! host->hasFlag(FLAG_TASK_FN_FROM_ITERATOR_FN)) {
-    // Also set iterator class and iterator record iteratorInfo = NULL.
+    // Also set iterator class and iterator record iteratorInfo = nullptr.
     if (iteratorInfo->iclass)
-      iteratorInfo->iclass->iteratorInfo = NULL;
+      iteratorInfo->iclass->iteratorInfo = nullptr;
 
     if (iteratorInfo->irecord)
-      iteratorInfo->irecord->iteratorInfo = NULL;
+      iteratorInfo->irecord->iteratorInfo = nullptr;
 
     delete iteratorInfo;
   }
@@ -92,7 +92,7 @@ void cleanupIteratorInfo(FnSymbol* host) {
 
 /*
 The following properties hold after a call is resolved to an iterator "IT".
-Implemented by resolveAlsoParallelIterators(). 
+Implemented by resolveAlsoParallelIterators().
 
 ANY ITERATOR
 
@@ -100,10 +100,10 @@ ANY ITERATOR
   It is stored in Iterator->iteratorGroup for each Iterator in IG.
 
   Given a group IG, IT2->iteratorGroup==IG for each iterator IT2
-  that IG points to: IG.serial, IG.standalone (when non-NULL), etc.
+  that IG points to: IG.serial, IG.standalone (when non-nullptr), etc.
 
-  IG.serial is always non-NULL.
-  
+  IG.serial is always non-nullptr.
+
 * An iterator IT2 (any flavor) is pointed to from a group IG
   if and only if IT2->iteratorGroup == IG.
 
@@ -113,14 +113,14 @@ SERIAL / STANDALONE / LEADER
   such that:
    - IG.serial points to IT.
    - IG.standalone points to the corresponding standalone iterator
-     if it is available, NULL otherwise.
+     if it is available, nullptr otherwise.
    - IG.leader - ditto.
    - IG.follower is currently unused.
 
 * If a serial IT has no corresponding standalone or leader,
   there is still a group IG for IT, such that:
    - IG.serial == IT
-   - IG.standalone == IG.leader == NULL.
+   - IG.standalone == IG.leader == nullptr.
   This can be used to check availability of standalone/leader.
 
 * If IT is a standalone or leader iterator, there may or may not be
@@ -147,7 +147,7 @@ SERIAL --> PARALLEL
   the representative call should go next to the definition
   of the serial iterator. However, that would cause visibility issues.
 
-LOGISTICS  
+LOGISTICS
 
 * Only the availability of the standalone and leader iterators
   is detected. Their bodies are not resolved, to avoid encountering
@@ -164,8 +164,8 @@ LOGISTICS
 */
 
 IteratorGroup::IteratorGroup() :
-  serial(NULL), standalone(NULL), leader(NULL), follower(NULL),
-  noniterSA(NULL), noniterL(NULL)
+  serial(nullptr), standalone(nullptr), leader(nullptr), follower(nullptr),
+  noniterSA(nullptr), noniterL(nullptr)
 {}
 
 static bool isIteratorOrForwarder(FnSymbol* it) {
@@ -220,7 +220,7 @@ static void checkParallelIterator(FnSymbol* serial, Expr* call,
 // See if any parallel iterators are available.
 void resolveAlsoParallelIterators(FnSymbol* serial, Expr* call) {
   if (! isIteratorOrForwarder(serial)) return;  // not of interest
-  if (serial->iteratorGroup != NULL) return;  // already taken care of
+  if (serial->iteratorGroup != nullptr) return;  // already taken care of
 
   if (serial->hasFlag(FLAG_INLINE_ITERATOR))
     // 'serial' is actually a parallel iterator. Since we did not come
@@ -246,7 +246,7 @@ void resolveAlsoParallelIterators(FnSymbol* serial, Expr* call) {
 }
 
 static inline void verifyIGfunction(IteratorGroup* igroup, FnSymbol* fn) {
-  if (fn != NULL)
+  if (fn != nullptr)
     INT_ASSERT(fn->iteratorGroup == igroup);
 }
 
@@ -260,7 +260,7 @@ void verifyIteratorGroup(FnSymbol* it) {
              it == igroup->follower);
 
   // Independent of 'it'.
-  INT_ASSERT(igroup->serial != NULL);
+  INT_ASSERT(igroup->serial != nullptr);
   verifyIGfunction(igroup, igroup->serial);
   verifyIGfunction(igroup, igroup->standalone);
   verifyIGfunction(igroup, igroup->leader);
@@ -269,8 +269,8 @@ void verifyIteratorGroup(FnSymbol* it) {
 
 static inline void cleanupIGfunction(FnSymbol* it, FnSymbol*& parIterInIG) {
   if (it == parIterInIG) {
-    parIterInIG = NULL;
-    it->iteratorGroup = NULL;
+    parIterInIG = nullptr;
+    it->iteratorGroup = nullptr;
   }
 }
 
@@ -279,16 +279,16 @@ void cleanupIteratorGroup(FnSymbol* it) {
   IteratorGroup* igroup = it->iteratorGroup;
   if (! igroup) return;
 
-  it->iteratorGroup = NULL;
+  it->iteratorGroup = nullptr;
 
   bool deleteIG = false;
 
   if (it == igroup->serial) {
     // Without the serial iterator, the group is of no interest.
     deleteIG = true;
-    if (FnSymbol* SA = igroup->standalone) SA->iteratorGroup = NULL;
-    if (FnSymbol* L  = igroup->leader)     L->iteratorGroup  = NULL;
-    if (FnSymbol* F  = igroup->follower)   F->iteratorGroup  = NULL;
+    if (FnSymbol* SA = igroup->standalone) SA->iteratorGroup = nullptr;
+    if (FnSymbol* L  = igroup->leader)     L->iteratorGroup  = nullptr;
+    if (FnSymbol* F  = igroup->follower)   F->iteratorGroup  = nullptr;
   } else {
     cleanupIGfunction(it, igroup->standalone);
     cleanupIGfunction(it, igroup->leader);
@@ -296,10 +296,10 @@ void cleanupIteratorGroup(FnSymbol* it) {
   }
 
   if (deleteIG ||  // or if nobody remains in the group:
-      (igroup->serial     == NULL &&
-       igroup->standalone == NULL &&
-       igroup->leader     == NULL &&
-       igroup->follower   == NULL )
+      (igroup->serial     == nullptr &&
+       igroup->standalone == nullptr &&
+       igroup->leader     == nullptr &&
+       igroup->follower   == nullptr )
   ) {
     delete igroup;
   }
@@ -309,7 +309,7 @@ void cleanupIteratorGroup(FnSymbol* it) {
 
 static void showIGhelp(IteratorGroup* igroup, FnSymbol* fn, const char* kind)
 {
-  if (fn == NULL) {
+  if (fn == nullptr) {
     printf("  %s -\n", kind);
   } else {
     printf("  %s  %s[%d]  ", kind, fn->name, fn->id);
@@ -328,21 +328,21 @@ static void showIGhelp(IteratorGroup* igroup, FnSymbol* fn) {
                  fn->name, fn->id);
   printf("igroup %p\n", igroup);
 
-  if (igroup != NULL) {
+  if (igroup != nullptr) {
     showIGhelp(igroup, igroup->serial,     "serial");
     showIGhelp(igroup, igroup->standalone, "standalone");
     showIGhelp(igroup, igroup->leader,     "leader");
-    if (igroup->follower != NULL)  // currently unexpected
+    if (igroup->follower != nullptr)  // currently unexpected
       showIGhelp(igroup, igroup->follower, "??follower");
   }
 }
 
 void showIteratorGroup(IteratorGroup* igroup) {
-  showIGhelp(igroup, NULL);
+  showIGhelp(igroup, nullptr);
 }
 
 void showIteratorGroup(BaseAST* ast) {
-  if (ast == NULL)
+  if (ast == nullptr)
     printf("<showIteratorGroup: ast==NULL>\n");
   else if (FnSymbol* fn = toFnSymbol(ast))
     showIGhelp(fn->iteratorGroup, fn);
@@ -367,32 +367,32 @@ static void skipIBBinAlist(Expr*& _alist_next) {
   _alist_next = _alist_next->next;
 }
 
-// If this is an IBB, return its CondStmt. Otherwise return NULL.
+// If this is an IBB, return its CondStmt. Otherwise return nullptr.
 CondStmt* isIBBCondStmt(BaseAST* ast) {
   if (CondStmt* condStmt = toCondStmt(ast))
     if (SymExpr* condSE = toSymExpr(condStmt->condExpr))
       if (condSE->symbol() == gIteratorBreakToken)
         return condStmt;
-  return NULL;
+  return nullptr;
 }
 
-// If this is in an IBB, return its CondStmt. Otherwise return NULL.
+// If this is in an IBB, return its CondStmt. Otherwise return nullptr.
 static CondStmt* isInIBBCondStmt(Expr* expr) {
   for (Expr* parent = expr->parentExpr; parent;
        expr = parent, parent = parent->parentExpr)
     if (CondStmt* IBB = isIBBCondStmt(parent))
       if (expr == IBB->thenStmt)
         return IBB;
-  return NULL;
+  return nullptr;
 }
 
 
-// Return the PRIM_YIELD CallExpr* or NULL.
+// Return the PRIM_YIELD CallExpr* or nullptr.
 static inline CallExpr* asYieldExpr(BaseAST* e) {
   if (CallExpr* call = toCallExpr(e))
     if (call->isPrimitive(PRIM_YIELD))
       return call;
-  return NULL;
+  return nullptr;
 }
 static inline CallExpr* parentYieldExpr(SymExpr* se) {
   return asYieldExpr(se->parentExpr);
@@ -424,7 +424,7 @@ removeRetSymbolAndUses(FnSymbol* fn) {
   // We cannot remove rsym's definition, because rsym
   // may also be referenced in an autoDestroy call.
 
-  INT_ASSERT(fn->iteratorInfo != NULL);
+  INT_ASSERT(fn->iteratorInfo != nullptr);
   Type* yieldedType = fn->iteratorInfo->yieldedType;
 
   return yieldedType;
@@ -445,7 +445,7 @@ static void addIteratorFromForExpr(Expr* ref, Symbol* ir) {
   fn->retTag = RET_PARAM;
   fn->retType = dtBool;
   fn->setMethod(true);
-  
+
   ArgSymbol* mtArg = new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken);
   ArgSymbol* irArg = new ArgSymbol(INTENT_BLANK, "this", ir->type);
   irArg->addFlag(FLAG_ARG_THIS);
@@ -475,7 +475,7 @@ bool checkIteratorFromForExpr(Expr* ref, Symbol* shape) {
   FnSymbol* checkFn = checkCall->resolvedFunction();
   resolveFunction(checkFn);
   holder->remove();
-  
+
   Symbol* checkResult = checkFn->getReturnSymbol();
 
   // chpl_iteratorFromForExpr() is a param boolean function
@@ -505,7 +505,7 @@ CallExpr* setIteratorRecordShape(Expr* ref, Symbol* ir, Symbol* shapeSpec,
   AggregateType* iRecord = toAggregateType(ir->type);
   INT_ASSERT(iRecord->symbol->hasFlag(FLAG_ITERATOR_RECORD));
   Symbol* field = iRecord->getField("_shape_", false);
-  if (field == NULL) {
+  if (field == nullptr) {
     field = new VarSymbol("_shape_", value->type);
     iRecord->fields.insertAtTail(new DefExpr(field));
     // An accessor lets us get _shape_ in Chapel code.
@@ -548,7 +548,7 @@ void setIteratorRecordShape(CallExpr* call) {
 // (these come up in particular with local and unlocal blocks).
 static Expr* loopOrNonBlockParent(Expr* expr) {
   Expr* parent = expr->parentExpr;
-  while (parent != NULL) {
+  while (parent != nullptr) {
     if (!isBlockStmt(parent))
       break;
     if (isLoopStmt(parent))
@@ -574,16 +574,16 @@ static Expr* loopOrNonBlockParent(Expr* expr) {
 CallExpr*
 isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts) {
   if (fNoOptimizeLoopIterators)
-    return NULL;
-  BlockStmt* singleFor = NULL;
-  CallExpr* singleYield = NULL;
+    return nullptr;
+  BlockStmt* singleFor = nullptr;
+  CallExpr* singleYield = nullptr;
   forv_Vec(BaseAST, ast, asts) {
     // If a yield statement,
     if (CallExpr* call = toCallExpr(ast)) {
       if (call->isPrimitive(PRIM_YIELD)) {
         if (singleYield) {
           // We already saw a yield stmt.  This is the second one, so fail.
-          return NULL;
+          return nullptr;
         }
 
         // Select yield statements whose parent expression is a loop statement
@@ -601,7 +601,7 @@ isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts) {
         if (isLoopStmt(parent)) {
           // NOAKES 2014/11/25  It is interesting the DoWhile loops aren't supported
           if (isDoWhileStmt(call->parentExpr))
-            return NULL;
+            return nullptr;
 
           // We expect that ParamForLoops have already been removed from the tree
           if (isParamForLoop(call->parentExpr))
@@ -611,7 +611,7 @@ isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts) {
 
           singleYield = call;
         } else {
-          return NULL;
+          return nullptr;
         }
       }
     }
@@ -621,7 +621,7 @@ isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts) {
     else if (isLoopStmt(ast)) {
       // NOAKES 2014/11/25  It is interesting the DoWhile loops aren't supported
       if (isDoWhileStmt(ast))
-        return NULL;
+        return nullptr;
 
       // We expect that ParamForLoops have already been removed from the tree
       if (isParamForLoop(ast))
@@ -633,18 +633,18 @@ isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts) {
       BlockStmt* block = toBlockStmt(ast);
       Expr*     parent = loopOrNonBlockParent(expr);
 
-      if (parent == NULL && expr->parentSymbol == fn) {
+      if (parent == nullptr && expr->parentSymbol == fn) {
         // This captures the first loop statement, but does not fail if there
         // is more than one.  Compare the test for a single yield above.
         // Is this intentional?
-        if (singleFor == NULL)
+        if (singleFor == nullptr)
           singleFor = block;
         // 2015-02-23 hilde: TODO: Uncomment the following, and see what breaks
 //        else
 //          INT_FATAL(expr, "Iterator contains a second for loop.")
         // I think the existing code works because each loop should contain at
         // least one yield, so the second yield causes the singleYield test
-        // above to fail and return NULL preemptively.  Bad news if that
+        // above to fail and return nullptr preemptively.  Bad news if that
         // assumption fails.
         // This question would not arise if the search were rewritten in a more
         // straightforward fashion: First, look for a single loop; then, within
@@ -652,7 +652,7 @@ isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts) {
         // foolproof.
         // Also, probably the redundant code would be removed.
       } else {
-        return NULL;
+        return nullptr;
       }
     }
 
@@ -664,14 +664,14 @@ isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts) {
           // Should we restrict this case to allow a goto only if it is
           // the last goto in the IBB conditional's then-branch?
       else
-        return NULL;
+        return nullptr;
     }
   }
 
   if (singleFor && singleYield) {
     return singleYield;
   } else {
-    return NULL;
+    return nullptr;
   }
 }
 
@@ -938,9 +938,9 @@ static void
 buildZip1(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
 
   // Expects to be called inside a clause that already tests singleLoop !=
-  // NULL.  This restriction can be removed if the != NULL test is pushed down
+  // nullptr.  This restriction can be removed if the != nullptr test is pushed down
   // into this routine.
-  INT_ASSERT(singleLoop != NULL);
+  INT_ASSERT(singleLoop != nullptr);
 
   BlockStmt* zip1body = new BlockStmt();
 
@@ -1011,9 +1011,9 @@ static void
 buildZip2(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
 
   // Expects to be called inside a clause that already tests singleLoop !=
-  // NULL.  This restriction can be removed if the != NULL test is pushed down
+  // nullptr.  This restriction can be removed if the != nullptr test is pushed down
   // into this routine.
-  INT_ASSERT(singleLoop != NULL);
+  INT_ASSERT(singleLoop != nullptr);
 
   // In copied expressions, replace _ic with zip2->_this .
   // See Note #1.
@@ -1065,9 +1065,9 @@ static void
 buildZip3(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
 
   // Expects to be called inside a clause that already tests singleLoop !=
-  // NULL.  This restriction can be removed if the != NULL test is pushed down
+  // nullptr.  This restriction can be removed if the != nullptr test is pushed down
   // into this routine.
-  INT_ASSERT(singleLoop != NULL);
+  INT_ASSERT(singleLoop != nullptr);
 
   BlockStmt* zip3body = new BlockStmt();
 
@@ -1135,9 +1135,9 @@ static void
 buildZip4(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
 
   // Expects to be called inside a clause that already tests singleLoop !=
-  // NULL.  This restriction can be removed if the != NULL test is pushed down
+  // nullptr.  This restriction can be removed if the != nullptr test is pushed down
   // into this routine.
-  INT_ASSERT(singleLoop != NULL);
+  INT_ASSERT(singleLoop != nullptr);
 
   // In copied expressions, replace _ic with zip4->_this .
   // See Note #1.
@@ -1217,7 +1217,7 @@ void createIteratorBreakBlocks() {
 }
 
 // Find and return the IBB for the given yield stmt.
-// Remove the enclosing conditional from the tree if delayedRm==NULL,
+// Remove the enclosing conditional from the tree if delayedRm==nullptr,
 // otherwise add it to delayedRm.
 BlockStmt* getAndRemoveIteratorBreakBlockForYield(std::vector<Expr*>* delayedRm,
                                                   CallExpr* yield)
@@ -1246,7 +1246,7 @@ static void handleYieldInAdvance(Vec<LabelSymbol*>& labels,
                                  IteratorInfo* ii, Symbol* ic, Symbol* end,
                                  CallExpr* call, int idx)
 {
-  BlockStmt* breakBlock = getAndRemoveIteratorBreakBlockForYield(NULL, call);
+  BlockStmt* breakBlock = getAndRemoveIteratorBreakBlockForYield(nullptr, call);
 
   call->insertBefore(new CallExpr(PRIM_SET_MEMBER,
                                   ic, ii->iclass->getField("more"),
@@ -1375,7 +1375,7 @@ buildHasMore(IteratorInfo* ii, BlockStmt* singleLoop) {
   INT_ASSERT(my_this == ii->hasMore->_this);
   map.put(advance_this, my_this);
 
-  if (singleLoop != NULL) {
+  if (singleLoop != nullptr) {
     if (singleLoop->isCForLoop() == true) {
       CForLoop*  cforLoop  = toCForLoop(singleLoop);
 
@@ -1459,11 +1459,11 @@ buildInit(IteratorInfo* ii, BlockStmt* singleLoop) {
   INT_ASSERT(ii->init->getFormal(1) == ii->init->_this);
   map.put(advance_this, my_this);
 
-  if (singleLoop != NULL)
+  if (singleLoop != nullptr)
   {
     if (singleLoop->isCForLoop() == true) {
       CForLoop*  cforLoop  = toCForLoop(singleLoop);
-      BlockStmt* initBlock = NULL;
+      BlockStmt* initBlock = nullptr;
 
       initBlock = cforLoop->initBlockGet();
 
@@ -1495,10 +1495,10 @@ buildIncr(IteratorInfo* ii, BlockStmt* singleLoop) {
   INT_ASSERT(my_this == ii->incr->_this);
   map.put(advance_this, my_this);
 
-  if (singleLoop != NULL) {
+  if (singleLoop != nullptr) {
     if (singleLoop->isCForLoop() == true) {
       CForLoop*  cforLoop  = toCForLoop(singleLoop);
-      BlockStmt* incrBlock = NULL;
+      BlockStmt* incrBlock = nullptr;
 
       incrBlock = cforLoop->incrBlockGet();
 
@@ -1593,7 +1593,7 @@ static void collectLiveLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn, BlockStm
   // C_FOR_LOOP needs to ensure the for-loop init variables are also
   // converted to fields.  The test/incr fields are handled correctly
   // as a result of being inserted in to the body of the loop
-  if (singleLoop != NULL && singleLoop->isCForLoop() == true) {
+  if (singleLoop != nullptr && singleLoop->isCForLoop() == true) {
     std::vector<SymExpr*> symExprs;
     CForLoop*             cforLoop = toCForLoop(singleLoop);
 
@@ -1632,7 +1632,7 @@ static void insertLocalsForRefs(Vec<Symbol*>& syms,
       continue;
 
     if (sym->type->symbol->hasFlag(FLAG_REF)) {
-      CallExpr* move = NULL;
+      CallExpr* move = nullptr;
       if (!sym->isDefined()) {
         INT_FATAL(sym, "Expected sym to have at least one definition");
       }
@@ -1642,7 +1642,7 @@ static void insertLocalsForRefs(Vec<Symbol*>& syms,
         CallExpr* parent = toCallExpr(def->parentExpr);
         INT_ASSERT(parent);
         if (parent->isPrimitive(PRIM_MOVE)) {
-          if (move == NULL) {
+          if (move == nullptr) {
             move = parent;
           } else {
             INT_FATAL(sym, "Expected sym to have exactly one move-definition");
@@ -1784,13 +1784,13 @@ rebuildIterator(IteratorInfo* ii,
   for_vector(CallExpr, call, icalls)
     if (FnSymbol* taskFn = resolvedToTaskFun(call))
       // ... except those with multiple calls to them.
-      if (taskFn->singleInvocation() != NULL)
+      if (taskFn->singleInvocation() != nullptr)
         taskFn->defPoint->remove();
 
   for_alist(expr, fn->body->body)
     expr->remove();
 
-  fn->retSymbol = NULL;
+  fn->retSymbol = nullptr;
   fn->defPoint->remove();
 
   // Now the iterator creates and returns a copy of the iterator record.
@@ -1829,7 +1829,7 @@ rebuildIterator(IteratorInfo* ii,
 
   // Return the filled-in iterator record.
   if (fn->hasFlag(FLAG_FN_RETARG)) {
-    ArgSymbol* retArg = NULL;
+    ArgSymbol* retArg = nullptr;
     for_formals(formal, fn) {
       if (formal->hasFlag(FLAG_RETARG))
         retArg = formal;
@@ -1939,7 +1939,7 @@ removeLocals(Vec<Symbol*>& locals, Vec<BaseAST*>& asts, Vec<Symbol*>& yldSymSet,
 
 
 // Creates (and returns) an iterator class field.
-// 'type' is used if local==NULL.
+// 'type' is used if local==nullptr.
 static inline Symbol* createICField(int& i, Symbol* local, Type* type,
                                     bool isValueField, FnSymbol* fn) {
   // The field name is "value" for the return value of the iterator,
@@ -1991,17 +1991,17 @@ static void addLocalsToClassAndRecord(Vec<Symbol*>& locals, FnSymbol* fn,
                                       SymbolMap& local2field, SymbolMap& local2rfield)
 {
   IteratorInfo* ii = fn->iteratorInfo;
-  Symbol* valField = NULL;
+  Symbol* valField = nullptr;
 
   int i = 0;    // This numbers the fields.
   forv_Vec(Symbol, local, locals) {
     bool isYieldSym = yldSymSet.set_in(local);
-    Symbol* field = createICField(i, local, NULL, isYieldSym && oneLocalYS, fn);
+    Symbol* field = createICField(i, local, nullptr, isYieldSym && oneLocalYS, fn);
     local2field.put(local, field);
     if (isYieldSym) {
       INT_ASSERT(local->type == yieldedType);
       if (oneLocalYS) {
-        INT_ASSERT(valField == NULL); // there is exactly 1 yield symbol
+        INT_ASSERT(valField == nullptr); // there is exactly 1 yield symbol
         valField = field;
       }
     }
@@ -2029,7 +2029,7 @@ static void addLocalsToClassAndRecord(Vec<Symbol*>& locals, FnSymbol* fn,
   }
 
   if (!valField) {
-    valField = createICField(i, NULL, yieldedType, true, fn);
+    valField = createICField(i, nullptr, yieldedType, true, fn);
   }
   *valFieldRef = valField;
 }
@@ -2047,10 +2047,10 @@ void lowerIterator(FnSymbol* fn) {
   Type* yieldedType = removeRetSymbolAndUses(fn);
   collect_asts_postorder(fn, asts);
 
-  BlockStmt* singleLoop = NULL;
+  BlockStmt* singleLoop = nullptr;
   if (CallExpr* singleLoopYield = isSingleLoopIterator(fn, asts)) {
     // If the iterator contains a single loop statement containing a single
-    // yield, singleLoop is that loop statement; otherwise, it is NULL.
+    // yield, singleLoop is that loop statement; otherwise, it is nullptr.
     singleLoop = toBlockStmt(singleLoopYield->parentExpr);
   }
 

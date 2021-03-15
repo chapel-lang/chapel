@@ -129,7 +129,7 @@ static void viewSymbolFlags(Symbol* sym) {
       } else if (FnSymbol* fs = toFnSymbol(sym)) {
         printf("isGeneric %s\n", fs->isGenericIsValid() ?
                (fs->isGeneric() ? "yes" : "no") : "unset");
-        bool isMethod = fs->_this != NULL;
+        bool isMethod = fs->_this != nullptr;
         bool isTypeMethod = isMethod && fs->_this->hasFlag(FLAG_TYPE_VARIABLE);
         printf("fn %s%s%s(%d args) %s\n",
                isMethod ? intentDescrString(fs->thisTag) : "",
@@ -195,13 +195,13 @@ static Symbol* symflagOK(const char* msg, BaseAST* ast, int flag) {
   if (!sym) {
     printf("%s: [%d] is a %s (does not support Flags)\n", msg, ast->id,
            ast->astTagAsString());
-    return NULL;
+    return nullptr;
   } else if (flag <= 0) {
     printf("%s: flag is non-positive: %d\n", msg, flag);
-    return NULL;
+    return nullptr;
   } else if (flag >= NUM_FLAGS) {
     printf("%s: flag is too big (NUM_FLAGS is %d): %d\n", msg, NUM_FLAGS, flag);
-    return NULL;
+    return nullptr;
   } else {
     printf("%s(%s=%d)\n", msg, flagNames[flag], flag);
     return sym;

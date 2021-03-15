@@ -69,7 +69,7 @@ LoopExpr::LoopExpr(Expr* indices,
   indices(indices),
   iteratorExpr(iteratorExpr),
   cond(cond),
-  loopBody(NULL),
+  loopBody(nullptr),
   forall(forall),
   zippered(zippered),
   maybeArrayType(maybeArrayType)
@@ -87,7 +87,7 @@ LoopExpr::LoopExpr(Expr* indices,
     this->loopBody = new BlockStmt(loopBody);
   }
 
-  if (indices != NULL) {
+  if (indices != nullptr) {
     findLoopExprDefs(this, indices, defIndices);
   }
 
@@ -97,10 +97,10 @@ LoopExpr::LoopExpr(Expr* indices,
 
 LoopExpr::LoopExpr(bool forall, bool zippered, bool maybeArrayType) :
   Expr(E_LoopExpr),
-  indices(NULL),
-  iteratorExpr(NULL),
-  cond(NULL),
-  loopBody(NULL),
+  indices(nullptr),
+  iteratorExpr(nullptr),
+  cond(nullptr),
+  loopBody(nullptr),
   forall(forall),
   zippered(zippered),
   maybeArrayType(maybeArrayType)
@@ -162,7 +162,7 @@ void LoopExpr::accept(AstVisitor* visitor) {
 
 Expr* LoopExpr::getFirstExpr() {
   INT_FATAL(this, "LoopExpr::getFirstExpr() is not implemented");
-  return NULL;
+  return nullptr;
 }
 
 GenRet LoopExpr::codegen() {
@@ -195,7 +195,7 @@ class LowerLoopExprVisitor final : public AstVisitorTraverse
 // table.
 //
 bool LowerLoopExprVisitor::enterLoopExpr(LoopExpr* node) {
-  if (node->getStmtExpr() == NULL) {
+  if (node->getStmtExpr() == nullptr) {
     // Don't touch LoopExprs in DefExprs, they should be copied later into
     // BlockStmts.
 
@@ -206,7 +206,7 @@ bool LowerLoopExprVisitor::enterLoopExpr(LoopExpr* node) {
   } else {
     SET_LINENO(node);
 
-    bool noFilter = node->cond == NULL;
+    bool noFilter = node->cond == nullptr;
 
     CallExpr* replacement = buildLoopExprFunctions(node);
 
@@ -265,14 +265,14 @@ static void copyIndexDefs(LoopExpr* loopExpr, BlockStmt* indicesBlock,
     indicesBlock->insertAtTail(expr->copy(indicesMap));
 }
 
-static Expr* removeOrNull(Expr* arg) { return arg ? arg->remove() : NULL; }
+static Expr* removeOrNull(Expr* arg) { return arg ? arg->remove() : nullptr; }
 
 static BlockStmt*
 handleArrayTypeCase(LoopExpr* loopExpr, FnSymbol* fn, Expr* indices,
                     ArgSymbol* iteratorExprArg, BlockStmt* expr)
 {
   BlockStmt* block         = new BlockStmt();
-  bool hasSpecifiedIndices = indices != NULL;
+  bool hasSpecifiedIndices = indices != nullptr;
 
   fn->addFlag(FLAG_MAYBE_TYPE);
 
@@ -556,7 +556,7 @@ bool isOuterVarLoop(Symbol* sym, Expr* enclosingExpr) {
 
   // 'curr' is under the same Symbol as 'enclosingExpr'.
   while (true) {
-    if (curr == NULL) {
+    if (curr == nullptr) {
       // 'sym' better not be defined under a Symbol
       // that is adjacent to 'enclosingExpr'.
       // 2020-11 the assert below means we do not enter the above while-loop,
@@ -744,10 +744,10 @@ static CallExpr* buildLoopExprFunctions(LoopExpr* loopExpr) {
   if (insideArgSymbol) {
     loopExpr->getModule()->block->insertAtHead(new DefExpr(fn));
   } else {
-    BlockStmt* block = NULL;
-    CondStmt* ifExprCond = NULL;
+    BlockStmt* block = nullptr;
+    CondStmt* ifExprCond = nullptr;
     for (Expr* cur = loopExpr->getStmtExpr();
-         cur != NULL;
+         cur != nullptr;
          cur = cur->parentExpr) {
       if (BlockStmt* b = toBlockStmt(cur)) {
         block = b;
@@ -755,11 +755,11 @@ static CallExpr* buildLoopExprFunctions(LoopExpr* loopExpr) {
       }
     }
 
-    if (block != NULL && isLoweredIfExprBlock(block)) {
+    if (block != nullptr && isLoweredIfExprBlock(block)) {
       ifExprCond = toCondStmt(block->parentExpr);
     }
 
-    if (ifExprCond != NULL)
+    if (ifExprCond != nullptr)
       // for if-exprs, insert just before the CondStmt
       ifExprCond->insertBefore(new DefExpr(fn));
     else
@@ -767,7 +767,7 @@ static CallExpr* buildLoopExprFunctions(LoopExpr* loopExpr) {
   }
 
   SymbolMap outerMap;
-  ArgSymbol* iteratorExprArg = NULL;
+  ArgSymbol* iteratorExprArg = nullptr;
   CallExpr* ret = buildCallAndArgs(fn, iteratorExpr, outerVars, &outerMap,
                                    &iteratorExprArg);
 
@@ -795,11 +795,11 @@ static CallExpr* buildLoopExprFunctions(LoopExpr* loopExpr) {
   block->insertAtTail(retCall);
   update_symbols(fn, &outerMap);
 
-  FnSymbol* sifn = NULL;
-  FnSymbol* lifn = NULL;
-  FnSymbol* fifn = NULL;
+  FnSymbol* sifn = nullptr;
+  FnSymbol* lifn = nullptr;
+  FnSymbol* fifn = nullptr;
 
-  Expr* stmt = NULL; // Initialized by buildSerialIteratorFn.
+  Expr* stmt = nullptr; // Initialized by buildSerialIteratorFn.
   sifn = buildSerialIteratorFn(iteratorName, loopBody, cond, indices,
                                zippered, forall, stmt);
 
@@ -816,7 +816,7 @@ static CallExpr* buildLoopExprFunctions(LoopExpr* loopExpr) {
     AList indDefCopies;
     for_alist(defI, loopExpr->defIndices)
       indDefCopies.insertAtTail(defI->copy(&map));
-    Expr* indicesCopy = (indices) ? indices->copy(&map) : NULL;
+    Expr* indicesCopy = (indices) ? indices->copy(&map) : nullptr;
     Expr* bodyCopy = stmt->copy(&map);
     fifn->insertAtTail(
         ForLoop::buildLoweredForallLoop(

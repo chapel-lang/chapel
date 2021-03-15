@@ -67,7 +67,7 @@ void collectLcnSymExprs(BaseAST* ast, std::vector<SymExpr*>& symExprs);
 void collectSymbols(BaseAST* ast, std::vector<Symbol*>& symbols);
 
 // If ast contains a SymExpr pointing to sym, return that SymExpr
-// Otherwise, return NULL
+// Otherwise, return nullptr
 SymExpr* findSymExprFor(BaseAST* ast, Symbol* sym);
 
 // utility routines for clearing and resetting lineno and filename

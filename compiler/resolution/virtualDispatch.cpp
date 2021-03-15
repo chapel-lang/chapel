@@ -250,9 +250,9 @@ static void collectMethods(FnSymbol*               pfn,
                            std::vector<FnSymbol*>& methods) {
   AggregateType* fromType = pct;
 
-  while (fromType != NULL) {
+  while (fromType != nullptr) {
     forv_Vec(FnSymbol, cfn, fromType->methods) {
-      if (cfn && cfn->instantiatedFrom == NULL) {
+      if (cfn && cfn->instantiatedFrom == nullptr) {
         // if pfn is a filled in vararg function then cfn needs its
         // vararg stamped out here too.
         if (pfn->hasFlag(FLAG_EXPANDED_VARARGS)) {
@@ -478,8 +478,8 @@ static void resolveOverride(FnSymbol* pfn, FnSymbol* cfn) {
       USR_STOP();
 
     } else if (cfn->throwsError() != pfn->throwsError()) {
-      const char* pfnThrowing = NULL;
-      const char* cfnThrowing = NULL;
+      const char* pfnThrowing = nullptr;
+      const char* cfnThrowing = nullptr;
 
       if (pfn->throwsError()) {
         pfnThrowing = "throwing";
@@ -528,9 +528,9 @@ static void overrideIterator(FnSymbol* pfn, FnSymbol* cfn) {
 
     AggregateType* atCthisType  = toAggregateType(cthisType);
 
-    INT_ASSERT(atPfnRetType != NULL);
-    INT_ASSERT(atCfnRetType != NULL);
-    INT_ASSERT(atCthisType  != NULL);
+    INT_ASSERT(atPfnRetType != nullptr);
+    INT_ASSERT(atCfnRetType != nullptr);
+    INT_ASSERT(atCthisType  != nullptr);
 
     atPfnRetType->dispatchChildren.add_exclusive(atCfnRetType);
     atCfnRetType->dispatchParents.add_exclusive(atPfnRetType);
@@ -546,7 +546,7 @@ static void overrideIterator(FnSymbol* pfn, FnSymbol* cfn) {
       if (parent == dtObject) {
         AggregateType* atCic = toAggregateType(cic);
 
-        INT_ASSERT(atCic != NULL);
+        INT_ASSERT(atCic != nullptr);
 
         int            item  = parent->dispatchChildren.index(atCic);
 
@@ -558,8 +558,8 @@ static void overrideIterator(FnSymbol* pfn, FnSymbol* cfn) {
       AggregateType* atCic = toAggregateType(cic);
       AggregateType* atPic = toAggregateType(pic);
 
-      INT_ASSERT(atCic != NULL);
-      INT_ASSERT(atPic != NULL);
+      INT_ASSERT(atCic != nullptr);
+      INT_ASSERT(atPic != nullptr);
 
       pic->dispatchChildren.add_exclusive(atCic);
       cic->dispatchParents.add_exclusive(atPic);
@@ -638,7 +638,7 @@ static void virtualDispatchUpdate(FnSymbol* pfn, FnSymbol* cfn) {
 static void virtualDispatchUpdateChildren(FnSymbol* pfn, FnSymbol* cfn) {
   Vec<FnSymbol*>* fns = virtualChildrenMap.get(pfn);
 
-  if (fns == NULL) {
+  if (fns == nullptr) {
     fns = new Vec<FnSymbol*>();
     virtualChildrenMap.put(pfn, fns);
   }
@@ -649,7 +649,7 @@ static void virtualDispatchUpdateChildren(FnSymbol* pfn, FnSymbol* cfn) {
 static void virtualDispatchUpdateParents(FnSymbol* pfn, FnSymbol* cfn) {
   Vec<FnSymbol*>* fns = virtualParentsMap.get(cfn);
 
-  if (fns == NULL) {
+  if (fns == nullptr) {
     fns = new Vec<FnSymbol*>();
     virtualParentsMap.put(cfn, fns);
   }
@@ -660,7 +660,7 @@ static void virtualDispatchUpdateParents(FnSymbol* pfn, FnSymbol* cfn) {
 static void virtualDispatchUpdateRoots(FnSymbol* pfn, FnSymbol* cfn) {
   Vec<FnSymbol*>* fns = virtualRootsMap.get(cfn);
 
-  if (fns == NULL) {
+  if (fns == nullptr) {
     fns = new Vec<FnSymbol*>();
     virtualRootsMap.put(cfn, fns);
 
@@ -730,7 +730,7 @@ static void buildVirtualMethodTable() {
   ctq.add(dtObject);
 
   for (int i = 0; i < virtualRootsMap.n; i++) {
-    if (virtualRootsMap.v[i].key != NULL) {
+    if (virtualRootsMap.v[i].key != nullptr) {
       for (int j = 0; j < virtualRootsMap.v[i].value->n; j++) {
         FnSymbol* root = virtualRootsMap.v[i].value->v[j];
 
@@ -749,7 +749,7 @@ static void buildVirtualMethodTable() {
             if (AggregateType* at = toAggregateType(cfn->_this->type)) {
               forv_Vec(AggregateType, pt, at->dispatchParents) {
                 if (pt == t) {
-                  if (childSet.set_in(at) == NULL) {
+                  if (childSet.set_in(at) == nullptr) {
                     addVirtualMethodTableEntry(at, cfn, false);
 
                     childSet.set_add(at);
@@ -764,7 +764,7 @@ static void buildVirtualMethodTable() {
 
         if (AggregateType* at = toAggregateType(t)) {
           forv_Vec(AggregateType, childType, at->dispatchChildren) {
-            if (childType && childSet.set_in(childType) == NULL) {
+            if (childType && childSet.set_in(childType) == nullptr) {
               addVirtualMethodTableEntry(childType, pfn, false);
             }
           }
@@ -782,7 +782,7 @@ static void buildVirtualMethodTable() {
 
   // Reverse each value
   for (int i = 0; i < virtualMethodTable.n; i++) {
-    if (virtualMethodTable.v[i].key != NULL) {
+    if (virtualMethodTable.v[i].key != nullptr) {
       virtualMethodTable.v[i].value->reverse();
     }
   }
@@ -798,7 +798,7 @@ static void addVirtualMethodTableEntry(Type*     type,
 
   if (type->symbol->hasFlag(FLAG_GENERIC)) return;
 
-  if (fns == NULL) {
+  if (fns == nullptr) {
     fns = new Vec<FnSymbol*>();
 
   } else if (exclusive == true) {
@@ -861,7 +861,7 @@ static void printDispatchInfo() {
             // (and not, say, the version in some parent class e.g. object).
             Vec<FnSymbol*>* childFns = virtualChildrenMap.get(fn);
 
-            if (childFns != NULL) {
+            if (childFns != nullptr) {
               printf(" %i children:\n", childFns->n);
 
               for (int k = 0; k < childFns->n; k++) {
@@ -871,7 +871,7 @@ static void printDispatchInfo() {
               }
             }
 
-            if (childFns == NULL || childFns->n == 0) {
+            if (childFns == nullptr || childFns->n == 0) {
               printf("\n");
             }
 
@@ -903,7 +903,7 @@ static void trimVirtualMap(std::set<FnSymbol*>& fns_in_vmt,
     if (! fns_in_vmt.count(el->key)) {
       // We should not even be looking here.
       delete el->value;
-      el->value = NULL;
+      el->value = nullptr;
       // Since Map does not remove entries well, keep 'el' there.
       continue;
     }
@@ -950,7 +950,7 @@ static void filterVirtualChildren() {
   form_Map(VirtualMapElem, el, virtualRootsMap) {
     if (! fns_in_vmt.count(el->key)) {
       delete el->value;
-      el->value = NULL;
+      el->value = nullptr;
     }
   }
 }
@@ -960,7 +960,7 @@ typedef std::map<const char*, std::vector<FnSymbol*> > NameToFns;
 typedef std::map<AggregateType*, NameToFns > TypeToNameToFns;
 
 static AggregateType* getReceiverClassType(FnSymbol* fn) {
-  if (fn->isMethod() && fn->_this != NULL) {
+  if (fn->isMethod() && fn->_this != nullptr) {
     if (Type* cct = canonicalClassType(fn->_this->getValType())) {
       if (AggregateType* at = toAggregateType(cct)) {
         if (at->isClass()) {
@@ -970,7 +970,7 @@ static AggregateType* getReceiverClassType(FnSymbol* fn) {
     }
   }
 
-  return NULL;
+  return nullptr;
 }
 
 static void findFunctionsProbablyMatching(TypeToNameToFns & map,
@@ -1026,14 +1026,14 @@ static FnSymbol* getOverrideCandidate(FnSymbol* fn) {
   }
 
   // otherwise, not a candidate.
-  return NULL;
+  return nullptr;
 }
 
 // This function helps avoid redundant errors for different
 // instantiations of a generic
 static FnSymbol* getOverrideCandidateGenericFn(FnSymbol* fn)
 {
-  while (fn->instantiatedFrom != NULL)
+  while (fn->instantiatedFrom != nullptr)
     fn = fn->instantiatedFrom;
   return fn;
 }
@@ -1095,14 +1095,14 @@ static void checkMethodsOverride() {
 
         // Do some initial basic checking
         if (fn->hasFlag(FLAG_OVERRIDE)) {
-          const char* msg = NULL;
+          const char* msg = nullptr;
 
           if (fn->hasFlag(FLAG_NO_PARENS))
             msg = "parentheses-less methods cannot override";
           else if (!isOverrideableMethod(fn))
             msg = "signature is not overrideable";
 
-          if (msg != NULL) {
+          if (msg != nullptr) {
             FnSymbol* eFn = getOverrideCandidateGenericFn(fn);
             if (erroredFunctions.count(eFn) == 0) {
               USR_FATAL_CONT(fn, "%s.%s override keyword present but %s",
@@ -1159,8 +1159,8 @@ static void checkMethodsOverride() {
                 // If they're both instantiated functions,
                 // check they're instantiated with the same types/params.
                 // If not, it's not a match.
-                if (fn->instantiatedFrom != NULL &&
-                    pfn->instantiatedFrom != NULL) {
+                if (fn->instantiatedFrom != nullptr &&
+                    pfn->instantiatedFrom != nullptr) {
 
                   int numFormals = fn->numFormals();
                   for (int i=3; i <= numFormals; i++) {
@@ -1288,7 +1288,7 @@ void insertDynamicDispatchCalls() {
     if (call->inTree()) {
       if (FnSymbol* fn = call->resolvedFunction()) {
 
-        if (virtualChildrenMap.get(fn) != NULL  &&   // There are overrides
+        if (virtualChildrenMap.get(fn) != nullptr  &&   // There are overrides
             wasSuperDot(call)          == false &&   // Not super.<foo>()
             call->isNamed("init")      == false) {   // Not an initializer
           SET_LINENO(call);

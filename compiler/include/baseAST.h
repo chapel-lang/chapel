@@ -216,38 +216,38 @@ static inline bool isType(AstTag tag)
 // The outermost call to copy invokes the copyInner method used to
 // implement the recursive copy.
 //
-#define DECLARE_COPY(type)                                              \
-  type* copy(SymbolMap* map = NULL, bool internal = false) override {   \
-    SymbolMap localMap;                                                 \
-    if (!map)                                                           \
-      map = &localMap;                                                  \
-    type* _this = copyInner(map);                                       \
-    _this->astloc = astloc;                                             \
-    if (!internal)                                                      \
-      update_symbols(_this, map);                                       \
-    return _this;                                                       \
+#define DECLARE_COPY(type)                                                 \
+  type* copy(SymbolMap* map = nullptr, bool internal = false) override {   \
+    SymbolMap localMap;                                                    \
+    if (!map)                                                              \
+      map = &localMap;                                                     \
+    type* _this = copyInner(map);                                          \
+    _this->astloc = astloc;                                                \
+    if (!internal)                                                         \
+      update_symbols(_this, map);                                          \
+    return _this;                                                          \
   }
 
 // This should be expanded verbatim and overloaded, so we don't create a map if
 // internal is false.
 // copyInner must now copy flags.
-#define DECLARE_SYMBOL_COPY(type)                                       \
-  type* copy(SymbolMap* map = NULL, bool internal = false) override {   \
-    SymbolMap localMap;                                                 \
-    if (!map)                                                           \
-      map = &localMap;                                                  \
-    type* _this = copyInner(map);                                       \
-    _this->astloc = astloc;                                             \
-    map->put(this, _this);                                              \
-    if (!internal)                                                      \
-      update_symbols(_this, map);                                       \
-    return _this;                                                       \
+#define DECLARE_SYMBOL_COPY(type)                                          \
+  type* copy(SymbolMap* map = nullptr, bool internal = false) override {   \
+    SymbolMap localMap;                                                    \
+    if (!map)                                                              \
+      map = &localMap;                                                     \
+    type* _this = copyInner(map);                                          \
+    _this->astloc = astloc;                                                \
+    map->put(this, _this);                                                 \
+    if (!internal)                                                         \
+      update_symbols(_this, map);                                          \
+    return _this;                                                          \
   }
 
 //
 // macro used to call copy from inside the copyInner method
 //
-#define COPY_INT(c) (c ? c->copy(map, true) : NULL)
+#define COPY_INT(c) (c ? c->copy(map, true) : nullptr)
 
 //
 // abstract parent of all AST node types
@@ -383,9 +383,9 @@ bool isCForLoop(const BaseAST* a);
 //   note: toDerivedClass is equivalent to dynamic_cast<DerivedClass*>
 //
 #define def_to_ast(Type) \
-  static inline Type * to##Type(BaseAST* a) { return is##Type(a) ? (Type*)a : NULL; } \
+  static inline Type * to##Type(BaseAST* a) { return is##Type(a) ? (Type*)a : nullptr; } \
   static inline const Type * toConst##Type(const BaseAST* a) \
-    { return is##Type(a) ? (const Type*)a : NULL; }
+    { return is##Type(a) ? (const Type*)a : nullptr; }
 
 def_to_ast(SymExpr)
 def_to_ast(UnresolvedSymExpr)
@@ -439,9 +439,9 @@ def_to_ast(ParamForLoop);
   namespace std { \
     template<> struct less<SomeType*> { \
       bool operator()(const SomeType* lhs, const SomeType* rhs) const { \
-        if (lhs == NULL && rhs != NULL) return true; \
-        if (lhs != NULL && rhs == NULL) return false; \
-        if (lhs == NULL && rhs == NULL) return false; \
+        if (lhs == nullptr && rhs != nullptr) return true; \
+        if (lhs != nullptr && rhs == nullptr) return false; \
+        if (lhs == nullptr && rhs == nullptr) return false; \
         return ((const BaseAST*)lhs)->id < ((const BaseAST*)rhs)->id; \
       } \
     }; \
@@ -497,30 +497,30 @@ def_less_ast(ParamForLoop);
 
 static inline LcnSymbol* toLcnSymbol(BaseAST* a)
 {
-  return isLcnSymbol(a) ? (LcnSymbol*) a : NULL;
+  return isLcnSymbol(a) ? (LcnSymbol*) a : nullptr;
 }
 
 static inline const LcnSymbol* toConstLcnSymbol(const BaseAST* a)
 {
-  return isLcnSymbol(a) ? (const LcnSymbol*) a : NULL;
+  return isLcnSymbol(a) ? (const LcnSymbol*) a : nullptr;
 }
 
 CallExpr* getDesignatedCall(const ContextCallExpr* a);
 
 static inline CallExpr* toCallExpr(BaseAST* a)
 {
-  if (!a) return NULL;
+  if (!a) return nullptr;
   if (a->astTag == E_CallExpr) return (CallExpr*) a;
   if (a->astTag == E_ContextCallExpr) return getDesignatedCall((ContextCallExpr*)a);
-  return NULL;
+  return nullptr;
 }
 
 static inline const CallExpr* toConstCallExpr(const BaseAST* a)
 {
-  if (!a) return NULL;
+  if (!a) return nullptr;
   if (a->astTag == E_CallExpr) return (const CallExpr*) a;
   if (a->astTag == E_ContextCallExpr) return getDesignatedCall((const ContextCallExpr*)a);
-  return NULL;
+  return nullptr;
 }
 
 

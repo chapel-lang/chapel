@@ -56,11 +56,11 @@ AutoDestroyScope::AutoDestroyScope(AutoDestroyScope* parent,
 
 // For a = or PRIM_ASSIGN setting an arg from a formal temp
 // in the epilogue (for out or inout), return the formal temp handled.
-// Otherwise, return NULL
+// Otherwise, return nullptr
 static VarSymbol* findFormalTempAssignBack(const Expr* stmt) {
   if (const CallExpr* call = toConstCallExpr(stmt)) {
-    SymExpr* lhsSe = NULL;
-    SymExpr* rhsSe = NULL;
+    SymExpr* lhsSe = nullptr;
+    SymExpr* rhsSe = nullptr;
     if (FnSymbol* fn = call->resolvedFunction()) {
       if (fn->hasFlag(FLAG_ASSIGNOP) == true && call->numActuals() == 2) {
         lhsSe = toSymExpr(call->get(1));
@@ -72,14 +72,14 @@ static VarSymbol* findFormalTempAssignBack(const Expr* stmt) {
       rhsSe = toSymExpr(call->get(2));
     }
 
-    Symbol* lhs = NULL;
-    Symbol* rhs = NULL;
-    if (lhsSe != NULL && rhsSe != NULL) {
+    Symbol* lhs = nullptr;
+    Symbol* rhs = nullptr;
+    if (lhsSe != nullptr && rhsSe != nullptr) {
       lhs = lhsSe->symbol();
       rhs = rhsSe->symbol();
     }
 
-    if (lhs != NULL && rhs != NULL && isArgSymbol(lhs)) {
+    if (lhs != nullptr && rhs != nullptr && isArgSymbol(lhs)) {
       if (rhs->hasFlag(FLAG_FORMAL_TEMP)) {
         VarSymbol* var = toVarSymbol(rhs);
         INT_ASSERT(var);
@@ -87,13 +87,13 @@ static VarSymbol* findFormalTempAssignBack(const Expr* stmt) {
       }
     }
   }
-  return NULL;
+  return nullptr;
 }
 
 void AutoDestroyScope::addFormalTemps() {
   FnSymbol* fn = const_cast<BlockStmt*>(mBlock)->getFunction();
-  INT_ASSERT(mParent == NULL);
-  INT_ASSERT(fn != NULL);
+  INT_ASSERT(mParent == nullptr);
+  INT_ASSERT(fn != nullptr);
 
   if (fn->hasFlag(FLAG_EXTERN))
     return;
@@ -109,10 +109,10 @@ void AutoDestroyScope::addFormalTemps() {
     // Go through the function epilogue looking for
     // write-backs to args from FORMAL_TEMP variables
     LabelSymbol* epilogue = fn->getEpilogueLabel();
-    INT_ASSERT(epilogue != NULL);
+    INT_ASSERT(epilogue != nullptr);
     // should have been created in resolution
-    Expr* next = NULL;
-    for (Expr* cur = epilogue->defPoint; cur != NULL; cur = next) {
+    Expr* next = nullptr;
+    for (Expr* cur = epilogue->defPoint; cur != nullptr; cur = next) {
       next = cur->next;
       if (VarSymbol* var = findFormalTempAssignBack(cur)) {
         CallExpr* call = toCallExpr(cur);
@@ -135,7 +135,7 @@ void AutoDestroyScope::deferAdd(DeferStmt* defer) {
 
 void AutoDestroyScope::addInitialization(VarSymbol* var) {
   // Note: this will be called redundantly.
-  for (AutoDestroyScope* scope = this; scope != NULL; scope = scope->mParent) {
+  for (AutoDestroyScope* scope = this; scope != nullptr; scope = scope->mParent) {
     if (scope->mInitedVars.insert(var).second) {
       // An insertion occurred, meaning this was the first
       // thing that looked like initialization for this variable.
@@ -156,7 +156,7 @@ void AutoDestroyScope::addInitialization(VarSymbol* var) {
 }
 
 void AutoDestroyScope::addEarlyDeinit(VarSymbol* var) {
-  for (AutoDestroyScope* cur = this; cur != NULL; cur = cur->mParent) {
+  for (AutoDestroyScope* cur = this; cur != nullptr; cur = cur->mParent) {
     cur->mDeinitedVars.insert(var);
 
     if (cur->mDeclaredVars.count(var) > 0) {
@@ -182,7 +182,7 @@ VarSymbol* AutoDestroyScope::findVariableUsedBeforeInitialized(Expr* stmt) {
     }
   }
 
-  return NULL;
+  return nullptr;
 }
 
 // Forget about initializations for outer variables initialized
@@ -197,7 +197,7 @@ void AutoDestroyScope::forgetOuterVariableInitializations() {
 
     // Each outer variable should be stored in some parent scope's
     // mLocalsAndDefers.
-    for (AutoDestroyScope* cur = this; cur != NULL; cur = cur->mParent) {
+    for (AutoDestroyScope* cur = this; cur != nullptr; cur = cur->mParent) {
       if (cur->mInitedVars.erase(var) > 0 ) {
         if (cur->mDeclaredVars.count(var) > 0) {
           // expecting to find it at the last position in mLocalsAndDefers
@@ -216,7 +216,7 @@ void AutoDestroyScope::forgetOuterVariableInitializations() {
   // iterate through DeinitedVars
   for_set (VarSymbol, var, mDeinitedVars) {
     // clear it from any parent scopes, stopping at the declaration point
-    for (AutoDestroyScope* s = this->mParent; s != NULL; s = s->mParent) {
+    for (AutoDestroyScope* s = this->mParent; s != nullptr; s = s->mParent) {
       s->mDeinitedVars.erase(var);
 
       if (s->mDeclaredVars.count(var) > 0) {
@@ -260,7 +260,7 @@ bool AutoDestroyScope::handlingFormalTemps(const Expr* stmt) const {
 
   if (mLocalsHandled == false) {
 
-    if (findFormalTempAssignBack(stmt) != NULL) {
+    if (findFormalTempAssignBack(stmt) != nullptr) {
       retval = true;
     }
   }
@@ -275,14 +275,14 @@ bool AutoDestroyScope::handlingFormalTemps(const Expr* stmt) const {
 void AutoDestroyScope::insertAutoDestroys(FnSymbol* fn, Expr* refStmt,
                                           const std::set<VarSymbol*>& ignored) {
   GotoStmt*               gotoStmt   = toGotoStmt(refStmt);
-  bool                    recurse    = (gotoStmt != NULL) ? true : false;
+  bool                    recurse    = (gotoStmt != nullptr) ? true : false;
   BlockStmt*              forTarget  = findBlockForTarget(gotoStmt);
   VarSymbol*              excludeVar = variableToExclude(fn, refStmt);
   const AutoDestroyScope* scope      = this;
   bool                    gotoError  = false;
   std::set<VarSymbol*>    ignoredSet(ignored);
 
-  if (gotoStmt != NULL && gotoStmt->gotoTag == GOTO_ERROR_HANDLING)
+  if (gotoStmt != nullptr && gotoStmt->gotoTag == GOTO_ERROR_HANDLING)
     gotoError = true;
 
   // Error handling gotos need to include auto-destroys
@@ -294,7 +294,7 @@ void AutoDestroyScope::insertAutoDestroys(FnSymbol* fn, Expr* refStmt,
   // Error handling gotos also need to include auto-destroys
   // for outer variables initialized in the scope (in the try block).
 
-  while (scope != NULL) {
+  while (scope != nullptr) {
     // stop when block == forTarget for non-error-handling gotos
     if (scope->mBlock == forTarget && gotoError == false)
       break;
@@ -323,7 +323,7 @@ static void deinitialize(Expr* before, Expr* after, VarSymbol* var) {
     return; // nothing to do for variables not to be auto-destroyed
 
   FnSymbol* autoDestroyFn = autoDestroyMap.get(var->type);
-  if (autoDestroyFn == NULL)
+  if (autoDestroyFn == nullptr)
     return; // nothing to do if there is no auto-destroy fn
 
   INT_ASSERT(autoDestroyFn->hasFlag(FLAG_AUTO_DESTROY_FN));
@@ -342,7 +342,7 @@ void AutoDestroyScope::destroyVariable(Expr* after, VarSymbol* var,
   INT_ASSERT(!var->hasFlag(FLAG_FORMAL_TEMP));
 
   if (ignored.count(var) == 0 && isVariableInitialized(var))
-    deinitialize(NULL, after, var);
+    deinitialize(nullptr, after, var);
 }
 
 // Destroy outer variables and add them to the ignored set
@@ -356,20 +356,20 @@ void AutoDestroyScope::destroyOuterVariables(Expr* before,
     INT_ASSERT(!var->hasFlag(FLAG_FORMAL_TEMP));
 
     if (ignored.count(var) == 0 && isVariableInitialized(var)) {
-      deinitialize(before, NULL, var);
+      deinitialize(before, nullptr, var);
       ignored.insert(var);
     }
   }
 }
 
 // If 'refStmt' is in a shadow variable's initBlock(),
-// return that svar's deinitBlock(). Otherwise return NULL.
+// return that svar's deinitBlock(). Otherwise return nullptr.
 static BlockStmt* shadowVarsDeinitBlock(Expr* refStmt) {
   if (ShadowVarSymbol* svar = toShadowVarSymbol(refStmt->parentSymbol))
     if (refStmt->parentExpr == svar->initBlock())
       return svar->deinitBlock();
 
-  return NULL;
+  return nullptr;
 }
 
 // add autoDestroys after refStmt
@@ -380,7 +380,7 @@ void AutoDestroyScope::variablesDestroy(Expr*      refStmt,
   // Handle the primary locals
   if (mLocalsHandled == false) {
     Expr*  insertBeforeStmt = refStmt;
-    Expr*  noop             = NULL;
+    Expr*  noop             = nullptr;
     size_t count            = mLocalsAndDefers.size();
 
     // If this is a simple nested block, insert after the final stmt
@@ -388,9 +388,9 @@ void AutoDestroyScope::variablesDestroy(Expr*      refStmt,
     // Do not get tricked by sequences of unreachable code
     if (count == 0) {
       // Don't bother adding a noop if there is nothing to insert
-      insertBeforeStmt = NULL;
-    } else if (refStmt->next == NULL) {
-      if (mParent != NULL && !isGotoStmt(refStmt)) {
+      insertBeforeStmt = nullptr;
+    } else if (refStmt->next == nullptr) {
+      if (mParent != nullptr && !isGotoStmt(refStmt)) {
         SET_LINENO(refStmt);
         // Add a PRIM_NOOP to insert before
         noop = new CallExpr(PRIM_NOOP);
@@ -410,7 +410,7 @@ void AutoDestroyScope::variablesDestroy(Expr*      refStmt,
     // Add formal temp writebacks for non-error returns
     // Do the writebacks in formal declaration order
     GotoStmt* gotoStmt = toGotoStmt(refStmt);
-    bool forErrorReturn = gotoStmt != NULL &&
+    bool forErrorReturn = gotoStmt != nullptr &&
                           gotoStmt->gotoTag == GOTO_ERROR_HANDLING_RETURN;
 
     if (forErrorReturn == false) {
@@ -431,17 +431,17 @@ void AutoDestroyScope::variablesDestroy(Expr*      refStmt,
       // of interleaving matters.
       INT_ASSERT(var || defer);
 
-      if (var != NULL && var != excludeVar && ignored.count(var) == 0) {
+      if (var != nullptr && var != excludeVar && ignored.count(var) == 0) {
         if (startingScope->isVariableInitialized(var)) {
           bool outIntentFormalReturn = forErrorReturn == false &&
                                        var->hasFlag(FLAG_FORMAL_TEMP_OUT);
           // No deinit for out formal returns - deinited at call site
           if (outIntentFormalReturn == false)
-            deinitialize(insertBeforeStmt, NULL, var);
+            deinitialize(insertBeforeStmt, nullptr, var);
         }
       }
 
-      if (defer != NULL) {
+      if (defer != nullptr) {
         SET_LINENO(defer);
         BlockStmt* deferBlockCopy = defer->body()->copy();
         insertBeforeStmt->insertBefore(deferBlockCopy);
@@ -450,7 +450,7 @@ void AutoDestroyScope::variablesDestroy(Expr*      refStmt,
     }
 
     // remove the PRIM_NOOP if we added one.
-    if (noop != NULL)
+    if (noop != nullptr)
       noop->remove();
   }
 
@@ -458,7 +458,7 @@ void AutoDestroyScope::variablesDestroy(Expr*      refStmt,
 
 bool AutoDestroyScope::isVariableInitialized(VarSymbol* var) const {
   for (const AutoDestroyScope* scope = this;
-       scope != NULL;
+       scope != nullptr;
        scope = scope->mParent) {
     if (scope->mInitedVars.count(var) > 0)
       if (scope->mDeinitedVars.count(var) == 0)
@@ -470,7 +470,7 @@ bool AutoDestroyScope::isVariableInitialized(VarSymbol* var) const {
 
 bool AutoDestroyScope::isVariableDeclared(VarSymbol* var) const {
   for (const AutoDestroyScope* scope = this;
-       scope != NULL;
+       scope != nullptr;
        scope = scope->mParent) {
     if (scope->mDeclaredVars.count(var) > 0)
       return true;
@@ -487,15 +487,15 @@ bool AutoDestroyScope::isVariableDeclared(VarSymbol* var) const {
 // Note that the value we are concerned about may be copied in to one or
 // more temporary variables between being copied to the return temp.
 static VarSymbol* variableToExclude(FnSymbol* fn, Expr* refStmt) {
-  Symbol* retVar = NULL;
-  VarSymbol* exclude = NULL;
+  Symbol* retVar = nullptr;
+  VarSymbol* exclude = nullptr;
 
   if (fn->hasFlag(FLAG_FN_RETARG)) {
     // FnSymbol::getReturnSymbol does not work on functions
     // transformed in this way, so work around that issue.
 
     // Starting from the end of the function, find a PRIM_ASSIGN to the RETARG
-    for (Expr* cur = fn->body->body.last(); cur != NULL; cur = cur->prev) {
+    for (Expr* cur = fn->body->body.last(); cur != nullptr; cur = cur->prev) {
       if (CallExpr* call = toCallExpr(cur)) {
         if (call->isPrimitive(PRIM_ASSIGN)) {
           if (SymExpr* lhsSe = toSymExpr(call->get(1))) {
@@ -519,14 +519,14 @@ static VarSymbol* variableToExclude(FnSymbol* fn, Expr* refStmt) {
   // TODO: migrate variableToExclude to addAutoDestroys
   // and the excluded set.
 
-  if (retVar != NULL) {
+  if (retVar != nullptr) {
     if (typeNeedsCopyInitDeinit(retVar->type) ||
         fn->hasFlag(FLAG_INIT_COPY_FN)) {
       Symbol* needle = retVar;
       Expr*   expr   = refStmt;
 
       // Walk backwards looking for the variable that is being returned
-      while (exclude == NULL && expr != NULL && needle != NULL) {
+      while (exclude == nullptr && expr != nullptr && needle != nullptr) {
         if (CallExpr* move = toCallExpr(expr)) {
           if (move->isPrimitive(PRIM_MOVE) || move->isPrimitive(PRIM_ASSIGN)) {
             SymExpr*   lhs    = toSymExpr(move->get(1));
@@ -541,7 +541,7 @@ static VarSymbol* variableToExclude(FnSymbol* fn, Expr* refStmt) {
                   needle = rhsVar;
                 }
               } else {
-                needle = NULL;
+                needle = nullptr;
               }
             }
           }
@@ -557,13 +557,13 @@ static VarSymbol* variableToExclude(FnSymbol* fn, Expr* refStmt) {
 
 // Find the block stmt that encloses the target of this gotoStmt
 static BlockStmt* findBlockForTarget(GotoStmt* stmt) {
-  BlockStmt* retval = NULL;
+  BlockStmt* retval = nullptr;
 
-  if (stmt != NULL && stmt->isGotoReturn() == false) {
+  if (stmt != nullptr && stmt->isGotoReturn() == false) {
     SymExpr* labelSymExpr = toSymExpr(stmt->label);
     Expr*    ptr          = labelSymExpr->symbol()->defPoint;
 
-    while (ptr != NULL && isBlockStmt(ptr) == false) {
+    while (ptr != nullptr && isBlockStmt(ptr) == false) {
       ptr = ptr->parentExpr;
     }
 

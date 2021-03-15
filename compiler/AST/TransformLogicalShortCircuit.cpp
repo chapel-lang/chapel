@@ -49,8 +49,8 @@ bool TransformLogicalShortCircuit::enterCallExpr(CallExpr* call)
         Expr*      right = call->get(2);
         VarSymbol* lvar  = newTemp();
 
-        VarSymbol* eMsg  = NULL;
-        IfExpr*    ife   = NULL;
+        VarSymbol* eMsg  = nullptr;
+        IfExpr*    ife   = nullptr;
 
         left->remove();
         right->remove();

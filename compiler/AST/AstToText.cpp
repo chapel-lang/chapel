@@ -35,7 +35,7 @@ const std::string& AstToText::text() const
 
 void AstToText::appendNameAndFormals(FnSymbol* fn)
 {
-  if (fn->instantiatedFrom != NULL && developer == false)
+  if (fn->instantiatedFrom != nullptr && developer == false)
   {
     appendNameAndFormals(fn->instantiatedFrom);
   }
@@ -367,7 +367,7 @@ void AstToText::appendFormalType(ArgSymbol* arg)
 //
 // The current minimum conditions for this are
 //
-//     a) typeExpr was NULL
+//     a) typeExpr was nullptr
 //     b) the defaultExpr is a blockStmt with 1 stmt
 //
 // Then it gets tricky. We fall back on a tree-recursion that tries to
@@ -381,7 +381,7 @@ bool AstToText::typeExprCopiedFromDefaultExpr(ArgSymbol* arg) const
   BlockStmt* defaultBlock = arg->defaultExpr;
   bool       retval       = false;
 
-  if (typeBlock != NULL && defaultBlock != NULL)
+  if (typeBlock != nullptr && defaultBlock != nullptr)
   {
     if (typeBlock->body.length == 1 && defaultBlock->body.length == 1)
     {
@@ -400,7 +400,7 @@ bool AstToText::exprTypeHackEqual(Expr* expr0, Expr* expr1) const
 {
   bool retval = true;
 
-  if (expr0 == NULL && expr1 == NULL)
+  if (expr0 == nullptr && expr1 == nullptr)
   {
     retval = true;
   }
@@ -491,7 +491,7 @@ bool AstToText::handleNormalizedTypeOf(BlockStmt* bs)
     CallExpr* moveExp = toCallExpr(bs->body.get(2));
     CallExpr* typeExp = toCallExpr(bs->body.get(3));
 
-    if (callTmp != NULL && moveExp != NULL && typeExp != NULL)
+    if (callTmp != nullptr && moveExp != nullptr && typeExp != nullptr)
     {
       if (moveExp->isPrimitive(PRIM_MOVE)   == true &&
           typeExp->isPrimitive(PRIM_TYPEOF) == true)
@@ -569,7 +569,7 @@ void AstToText::appendFormalVariableExpr(ArgSymbol* arg)
 
 void AstToText::appendFormalDefault(ArgSymbol* arg)
 {
-  if (arg->defaultExpr  != NULL)
+  if (arg->defaultExpr  != nullptr)
   {
     BlockStmt* bs = arg->defaultExpr;
 
@@ -670,8 +670,8 @@ void AstToText::appendDomain(CallExpr* expr, bool printingType)
 int AstToText::indexForThis(FnSymbol* fn) const
 {
   int        numFormals = fn->formals.length;
-  ArgSymbol* arg1       = NULL;
-  ArgSymbol* arg2       = NULL;
+  ArgSymbol* arg1       = nullptr;
+  ArgSymbol* arg2       = nullptr;
   int        retval     = 0;
 
   //
@@ -694,11 +694,11 @@ int AstToText::indexForThis(FnSymbol* fn) const
   //
   // Determine if either of the first two formals is "this"
   //
-  if      (arg1 != NULL && strcmp(arg1->name, "_mt")    == 0 &&
-           arg2 != NULL && arg2->hasFlag(FLAG_ARG_THIS) == true)
+  if      (arg1 != nullptr && strcmp(arg1->name, "_mt")    == 0 &&
+           arg2 != nullptr && arg2->hasFlag(FLAG_ARG_THIS) == true)
     retval = 2;
 
-  else if (arg1 != NULL && arg1->hasFlag(FLAG_ARG_THIS) == true)
+  else if (arg1 != nullptr && arg1->hasFlag(FLAG_ARG_THIS) == true)
     retval = 1;
 
   else
@@ -1509,7 +1509,7 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType, const char *outer,
       // skip to-nilable if present
       while (inner) {
         CallExpr* call = toCallExpr(inner);
-        if (call == NULL)
+        if (call == nullptr)
           break;
         if (call->isPrimitive(PRIM_TO_NILABLE_CLASS) == false &&
             call->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED) == false)
@@ -1893,13 +1893,13 @@ bool AstToText::isMtArg(CallExpr* expr, bool expectThis) const
         SymExpr* symMt     = toSymExpr(call->get(1));
         SymExpr* symTarget = toSymExpr(call->get(2));
 
-        if (symMt != NULL && symTarget != 0)
+        if (symMt != nullptr && symTarget != 0)
         {
           VarSymbol* varMt     = toVarSymbol(symMt->symbol());
           ArgSymbol* argTarget = toArgSymbol(symTarget->symbol());
 
-          if (varMt                             != NULL          &&
-              argTarget                         != NULL          &&
+          if (varMt                             != nullptr       &&
+              argTarget                         != nullptr       &&
               varMt->type                       == dtMethodToken &&
               argTarget->hasFlag(FLAG_ARG_THIS) == expectThis)
           {

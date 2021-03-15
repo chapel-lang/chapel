@@ -40,7 +40,7 @@ static CallExpr* isPrimIfVar(Expr* cond) {
 
 BlockStmt* WhileDoStmt::build(Expr* cond, BlockStmt* body)
 {
-  BlockStmt* retval = NULL;
+  BlockStmt* retval = nullptr;
 
   if (isPrimitiveCForLoop(cond) == true)
   {
@@ -196,7 +196,7 @@ Expr* WhileDoStmt::getNextExpr(Expr* expr)
 {
   Expr* retval = this;
 
-  if (expr == condExprGet() && body.head != NULL)
+  if (expr == condExprGet() && body.head != nullptr)
     retval = body.head->getFirstExpr();
 
   return retval;

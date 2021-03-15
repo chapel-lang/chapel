@@ -70,7 +70,7 @@ std::vector<const char*>   libDirs;
 std::vector<const char*>   libFiles;
 
 // directory for intermediates; tmpdir or saveCDir
-static const char* intDirName        = NULL;
+static const char* intDirName        = nullptr;
 
 static const int   MAX_CHARS_PER_PID = 32;
 
@@ -81,7 +81,7 @@ static void addPath(const char* pathVar, std::vector<const char*>* pathvec) {
 
   do {
     colon = strchr(dirString, ':'); // are there colon separators?
-    if (colon != NULL) {
+    if (colon != nullptr) {
       *colon = '\0';                      // if so, cut the string there
       colon++;                            // and advance to the next
     }
@@ -89,7 +89,7 @@ static void addPath(const char* pathVar, std::vector<const char*>* pathvec) {
     pathvec->push_back(astr(dirString));
 
     dirString = colon;                     // advance dirString
-  } while (colon != NULL);
+  } while (colon != nullptr);
 }
 
 //
@@ -147,7 +147,7 @@ static const char* getTempDir() {
   const char* possibleDirsInEnv[] = {"TMPDIR", "TMP", "TEMP", "TEMPDIR"};
   for (unsigned int i = 0; i < (sizeof(possibleDirsInEnv) / sizeof(char*)); i++) {
     const char* curDir = getenv(possibleDirsInEnv[i]);
-    if (curDir != NULL) {
+    if (curDir != nullptr) {
       return curDir;
     }
   }
@@ -173,7 +173,7 @@ const char* makeTempDir(const char* dirPrefix) {
 
   struct passwd* passwdinfo = getpwuid(geteuid());
   const char* userid;
-  if (passwdinfo == NULL) {
+  if (passwdinfo == nullptr) {
     userid = "anon";
   } else {
     userid = passwdinfo->pw_name;
@@ -184,14 +184,14 @@ const char* makeTempDir(const char* dirPrefix) {
   const char* tmpDir = astr(tmpdirprefix, myuserid, mypidstr, tmpdirsuffix);
   ensureDirExists(tmpDir, "making temporary directory");
 
-  free(myuserid); myuserid = NULL;
+  free(myuserid); myuserid = nullptr;
 
   return tmpDir;
 }
 
 static void ensureTmpDirExists() {
   if (saveCDir[0] == '\0') {
-    if (tmpdirname == NULL) {
+    if (tmpdirname == nullptr) {
       tmpdirname = makeTempDir("chpl-");
       intDirName = tmpdirname;
     }
@@ -245,14 +245,14 @@ void deleteTmpDir() {
   inDeleteTmpDir = 1;
 
 #ifndef DEBUGTMPDIR
-  if (tmpdirname != NULL) {
+  if (tmpdirname != nullptr) {
     if (strlen(tmpdirname) < 1 ||
-        strchr(tmpdirname, '*') != NULL ||
+        strchr(tmpdirname, '*') != nullptr ||
         strcmp(tmpdirname, "//") == 0) {
       INT_FATAL("tmp directory name looks fishy");
     }
     deleteDir(tmpdirname);
-    tmpdirname = NULL;
+    tmpdirname = nullptr;
   }
 #endif
 
@@ -270,7 +270,7 @@ const char* genIntermediateFilename(const char* filename) {
 
 const char* getDirectory(const char* filename) {
   const char* filenamebase = strrchr(filename, '/');
-  if (filenamebase == NULL) {
+  if (filenamebase == nullptr) {
     return astr(".");
   } else {
     char dir[FILENAME_MAX];
@@ -284,7 +284,7 @@ const char* getDirectory(const char* filename) {
 const char* stripdirectories(const char* filename) {
   const char* filenamebase = strrchr(filename, '/');
 
-  if (filenamebase == NULL) {
+  if (filenamebase == nullptr) {
     filenamebase = filename;
   } else {
     filenamebase++;
@@ -305,7 +305,7 @@ FILE* openfile(const char* filename,
                bool        fatal) {
   FILE* newfile = fopen(filename, mode);
 
-  if (newfile == NULL) {
+  if (newfile == nullptr) {
     if (fatal == true) {
       USR_FATAL("opening %s: %s", filename, strerror(errno));
     }
@@ -381,7 +381,7 @@ void closeInputFile(FILE* infile) {
 }
 
 
-static const char** inputFilenames = NULL;
+static const char** inputFilenames = nullptr;
 
 
 static bool checkSuffix(const char* filename, const char* suffix) {
@@ -460,7 +460,7 @@ void addSourceFiles(int numNewFilenames, const char* filename[]) {
       inputFilenames[cursor++] = newFilename;
     }
   }
-  inputFilenames[cursor] = NULL;
+  inputFilenames[cursor] = nullptr;
 
   if (!foundChplSource)
     USR_FATAL("Command line contains no .chpl source files");
@@ -468,8 +468,8 @@ void addSourceFiles(int numNewFilenames, const char* filename[]) {
 
 static const char* addCurrentDirToSourceFile(const char* filename,
                                              const char* modFilename) {
-  // Do nothing if modFilename is NULL
-  if (modFilename == NULL) {
+  // Do nothing if modFilename is nullptr
+  if (modFilename == nullptr) {
     return filename;
   }
 
@@ -576,7 +576,7 @@ std::string getChplDepsApp() {
 }
 
 bool compilingWithPrgEnv() {
-  return (strstr(CHPL_ORIG_TARGET_COMPILER, "cray-prgenv") != NULL);
+  return (strstr(CHPL_ORIG_TARGET_COMPILER, "cray-prgenv") != nullptr);
 }
 
 std::string runCommand(std::string& command) {
@@ -592,7 +592,7 @@ std::string runCommand(std::string& command) {
 
   // Read output of command into result via buffer
   while (!feof(pipe)) {
-    if (fgets(buffer, 256, pipe) != NULL) {
+    if (fgets(buffer, 256, pipe) != nullptr) {
       result += buffer;
     }
   }
@@ -988,10 +988,10 @@ void expandInstallationPaths(std::string& s) {
                          "$CHPL_RUNTIME_INCL", CHPL_RUNTIME_INCL,
                          "$CHPL_THIRD_PARTY", CHPL_THIRD_PARTY,
                          "$CHPL_HOME", CHPL_HOME,
-                         NULL};
+                         nullptr};
 
   // For each of the patterns in tofix, find/replace all occurrences.
-  for (int j = 0; tofix[j] != NULL; j += 2) {
+  for (int j = 0; tofix[j] != nullptr; j += 2) {
 
     const char* key = tofix[j];
     const char* val = tofix[j+1];
@@ -1022,11 +1022,11 @@ void expandInstallationPaths(std::vector<std::string>& args) {
 char* chplRealPath(const char* path)
 {
   // We would really rather use
-  // char* got = realpath(path, NULL);
+  // char* got = realpath(path, nullptr);
   // but that doesn't work on some Mac OS X versions.
   char* buf = (char*) malloc(PATH_MAX);
   char* got = realpath(path, buf);
-  char* ret = NULL;
+  char* ret = nullptr;
   if( got ) ret = strdup(got);
   free(buf);
   return ret;
@@ -1034,7 +1034,7 @@ char* chplRealPath(const char* path)
 
 
 // Returns a "real path" to the file in the directory,
-// or NULL if the file did not exist.
+// or nullptr if the file did not exist.
 // The return value must be freed by the caller.
 // We try to use realpath but might give up.
 char* dirHasFile(const char *dir, const char *file)
@@ -1048,7 +1048,7 @@ char* dirHasFile(const char *dir, const char *file)
 
   snprintf(tmp, len, "%s/%s", dir, file);
   real = chplRealPath(tmp);
-  if( real == NULL ) {
+  if( real == nullptr ) {
     // realpath not working on this system,
     // just use tmp.
     real = tmp;
@@ -1058,7 +1058,7 @@ char* dirHasFile(const char *dir, const char *file)
 
   if( stat(real, &stats) != 0) {
     free(real);
-    real = NULL;
+    real = nullptr;
   }
 
   return real;
@@ -1075,7 +1075,7 @@ static int sys_getcwd(char** path_out)
   if( !buf ) return ENOMEM;
 
   while( 1 ) {
-    if ( getcwd(buf, sz) != NULL ) {
+    if ( getcwd(buf, sz) != nullptr ) {
       break;
 
     } else if ( errno == ERANGE ) {
@@ -1083,14 +1083,14 @@ static int sys_getcwd(char** path_out)
       sz *= 2;
 
       /*
-       * Realloc may return NULL, in which case we will need to free the memory
+       * Realloc may return nullptr, in which case we will need to free the memory
        * initially pointed to by buf.  This is why we store the result of the
-       * call in newP instead of directly into buf.  If a non-NULL value is
+       * call in newP instead of directly into buf.  If a non-nullptr value is
        * returned we update the buf pointer.
        */
       void* newP = realloc(buf, sz);
 
-      if (newP != NULL) {
+      if (newP != nullptr) {
         buf = static_cast<char*>(newP);
 
       } else {
@@ -1127,11 +1127,11 @@ const char* getCwd() {
 
 
 // Find the path to the running program
-// (or return NULL if we couldn't figure it out).
+// (or return nullptr if we couldn't figure it out).
 // The return value must be freed by the caller.
 char* findProgramPath(const char *argv0)
 {
-  char* real = NULL;
+  char* real = nullptr;
   char* path;
 
   /* Note - there are lots of friendly
@@ -1141,7 +1141,7 @@ char* findProgramPath(const char *argv0)
       ret = readlink("/proc/self/exe", dst, max_dst - 1);
       // return an error if there was an error.
       if( ret < 0 ) return -1;
-      // append the NULL byte
+      // append the nullptr byte
       if( ret < max_dst ) dst[ret] = '\0';
       return 0;
     #else
@@ -1162,12 +1162,12 @@ char* findProgramPath(const char *argv0)
   }
 
   // Is argv0 a relative path?
-  if( strchr(argv0, '/') != NULL ) {
-    char* cwd = NULL;
+  if( strchr(argv0, '/') != nullptr ) {
+    char* cwd = nullptr;
     if( 0 == sys_getcwd(&cwd) ) {
       real = dirHasFile(cwd, argv0);
     } else {
-      real = NULL;
+      real = nullptr;
     }
     free(cwd);
     return real;
@@ -1175,10 +1175,10 @@ char* findProgramPath(const char *argv0)
 
   // Is argv0 just in $PATH?
   path = getenv("PATH");
-  if( path == NULL ) return NULL;
+  if( path == nullptr ) return nullptr;
 
   path = strdup(path);
-  if( path == NULL ) return NULL;
+  if( path == nullptr ) return nullptr;
 
   // Go through PATH changing ':' into '\0'
   char* start;
@@ -1186,9 +1186,9 @@ char* findProgramPath(const char *argv0)
   char* path_end = path + strlen(path);
 
   start = path;
-  while( start != NULL && start < path_end ) {
+  while( start != nullptr && start < path_end ) {
     end = strchr(start, ':');
-    if( end == NULL ) end = path_end;
+    if( end == nullptr ) end = path_end;
     else end[0] = '\0'; // replace ':' with '\0'
 
     real = dirHasFile(start, argv0);

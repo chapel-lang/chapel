@@ -60,7 +60,7 @@ static void markTaskFunctionsInIterators(Vec<FnSymbol*>& nestedFunctions) {
     while (curFn && isTaskFun(curFn)) {
       curFn = toFnSymbol(curFn->defPoint->parentSymbol);
     }
-    // Now curFn is NULL or the first not-a-task function
+    // Now curFn is nullptr or the first not-a-task function
     if (curFn && curFn->isIterator()) {
       // Mark all of the inner task functions
       IteratorInfo* ii = curFn->iteratorInfo;
@@ -80,7 +80,7 @@ static void markTaskFunctionsInIterators(Vec<FnSymbol*>& nestedFunctions) {
 // third argument not used at call site
 //
 static bool
-isOuterVar(Symbol* sym, FnSymbol* fn, Symbol* parent = NULL) {
+isOuterVar(Symbol* sym, FnSymbol* fn, Symbol* parent = nullptr) {
   if (!parent) {
     parent = fn->defPoint->parentSymbol;
 
@@ -195,7 +195,7 @@ passByRef(Symbol* sym) {
   }
 
   // These simply document the current state.
-  INT_ASSERT(type->symbol->hasFlag(FLAG_REF) == (type->refType == NULL));
+  INT_ASSERT(type->symbol->hasFlag(FLAG_REF) == (type->refType == nullptr));
 
   // Coforall vars are constant, but are not marked so.
   // todo - mark them with FLAG_CONST and remove this assert,

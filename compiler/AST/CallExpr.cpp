@@ -35,8 +35,8 @@ CallExpr::CallExpr(BaseAST* base,
                    BaseAST* arg3,
                    BaseAST* arg4,
                    BaseAST* arg5) : Expr(E_CallExpr) {
-  primitive  = NULL;
-  baseExpr   = NULL;
+  primitive  = nullptr;
+  baseExpr   = nullptr;
   partialTag = false;
   methodTag  = false;
   square     = false;
@@ -69,7 +69,7 @@ CallExpr::CallExpr(PrimitiveOp* prim,
                    BaseAST*     arg4,
                    BaseAST*     arg5) : Expr(E_CallExpr) {
   primitive  = prim;
-  baseExpr   = NULL;
+  baseExpr   = nullptr;
   partialTag = false;
   methodTag  = false;
   square     = false;
@@ -93,7 +93,7 @@ CallExpr::CallExpr(PrimitiveTag prim,
                    BaseAST*     arg4,
                    BaseAST*     arg5) : Expr(E_CallExpr) {
   primitive  = primitives[prim];
-  baseExpr   = NULL;
+  baseExpr   = nullptr;
   partialTag = false;
   methodTag  = false;
   square     = false;
@@ -116,7 +116,7 @@ CallExpr::CallExpr(const char* name,
                    BaseAST*    arg3,
                    BaseAST*    arg4,
                    BaseAST*    arg5) : Expr(E_CallExpr) {
-  primitive  = NULL;
+  primitive  = nullptr;
   baseExpr   = new UnresolvedSymExpr(name);
   partialTag = false;
   methodTag  = false;
@@ -135,7 +135,7 @@ CallExpr::CallExpr(const char* name,
 }
 
 static void callExprHelper(CallExpr* call, BaseAST* arg) {
-  if (arg != NULL) {
+  if (arg != nullptr) {
     if (isSymbol(arg) == true || isExpr(arg) == true) {
       call->insertAtTail(arg);
     } else {
@@ -145,11 +145,11 @@ static void callExprHelper(CallExpr* call, BaseAST* arg) {
 }
 
 bool CallExpr::isEmpty() const {
-  return primitive == NULL && baseExpr == NULL;
+  return primitive == nullptr && baseExpr == nullptr;
 }
 
 bool CallExpr::isPrimitive() const {
-  return primitive != NULL;
+  return primitive != nullptr;
 }
 
 bool CallExpr::isPrimitive(PrimitiveTag primitiveTag) const {
@@ -161,12 +161,12 @@ bool CallExpr::isPrimitive(const char* primitiveName) const {
 }
 
 Expr* CallExpr::getFirstExpr() {
-  Expr* retval = NULL;
+  Expr* retval = nullptr;
 
-  if (baseExpr != NULL) {
+  if (baseExpr != nullptr) {
     retval = baseExpr->getFirstExpr();
 
-  } else if (argList.head != NULL) {
+  } else if (argList.head != nullptr) {
     retval = argList.head->getFirstExpr();
 
   } else {
@@ -179,7 +179,7 @@ Expr* CallExpr::getFirstExpr() {
 Expr* CallExpr::getNextExpr(Expr* expr) {
   Expr* retval = this;
 
-  if (expr == baseExpr && argList.head != NULL) {
+  if (expr == baseExpr && argList.head != nullptr) {
     retval = argList.head->getFirstExpr();
   }
 
@@ -194,7 +194,7 @@ void CallExpr::verify() {
 
   Expr::verify(E_CallExpr);
 
-  if (parentExpr == NULL) {
+  if (parentExpr == nullptr) {
     INT_FATAL(this, "Every CallExpr is expected to have a parentExpr");
   }
 
@@ -230,8 +230,8 @@ void CallExpr::verify() {
     fieldIndex = fieldIndex + 1;
   }
 
-  if (primitive != NULL) {
-    INT_ASSERT(baseExpr == NULL);
+  if (primitive != nullptr) {
+    INT_ASSERT(baseExpr == nullptr);
 
     switch (primitive->tag) {
     case PRIM_BLOCK_PARAM_LOOP:
@@ -262,7 +262,7 @@ void CallExpr::verify() {
   } else if (CallExpr* subCall = toCallExpr(baseExpr)) {
     // Confirm that this is a partial call, but only if the call is not
     // within a DefExpr (indicated by not having a stmt-expr)
-    if (normalized && subCall->getStmtExpr() != NULL)
+    if (normalized && subCall->getStmtExpr() != nullptr)
       INT_ASSERT(subCall->partialTag == true);
   }
 
@@ -272,7 +272,7 @@ void CallExpr::verify() {
 CallExpr* CallExpr::copyInner(SymbolMap* map) {
   CallExpr* _this = 0;
 
-  if (primitive != NULL) {
+  if (primitive != nullptr) {
     _this = new CallExpr(primitive);
 
   } else {
@@ -304,7 +304,7 @@ void CallExpr::replaceChild(Expr* oldAst, Expr* newAst) {
 
 
 void CallExpr::insertAtHead(BaseAST* ast) {
-  Expr* toInsert = NULL;
+  Expr* toInsert = nullptr;
 
   if (Symbol* a = toSymbol(ast)) {
     toInsert = new SymExpr(a);
@@ -320,7 +320,7 @@ void CallExpr::insertAtHead(BaseAST* ast) {
 
 
 void CallExpr::insertAtTail(BaseAST* ast) {
-  Expr* toInsert = NULL;
+  Expr* toInsert = nullptr;
 
   if (Symbol* a = toSymbol(ast)) {
     toInsert = new SymExpr(a);
@@ -336,8 +336,8 @@ void CallExpr::insertAtTail(BaseAST* ast) {
 
 void CallExpr::setUnresolvedFunction(const char* name) {
   // Currently a PRIM_OP
-  if (primitive != NULL) {
-    primitive = NULL;
+  if (primitive != nullptr) {
+    primitive = nullptr;
     baseExpr  = new UnresolvedSymExpr(astr(name));
 
     parent_insert_help(this, baseExpr);
@@ -355,8 +355,8 @@ void CallExpr::setUnresolvedFunction(const char* name) {
 
 void CallExpr::setResolvedFunction(FnSymbol* fn) {
   // Currently a PRIM_OP
-  if (primitive != NULL) {
-    primitive = NULL;
+  if (primitive != nullptr) {
+    primitive = nullptr;
     baseExpr  = new SymExpr(fn);
 
     parent_insert_help(this, baseExpr);
@@ -383,7 +383,7 @@ FnSymbol* CallExpr::resolvedOrVirtualFunction() const {
   FnSymbol* retval = this->resolvedFunction();
 
   // Also handle the PRIMOP for a virtual method call
-  if (retval == NULL) {
+  if (retval == nullptr) {
     if (isPrimitive(PRIM_VIRTUAL_METHOD_CALL) == true) {
       SymExpr* arg1 = toSymExpr(get(1));
 
@@ -438,13 +438,13 @@ Expr* CallExpr::get(int index) const {
 
 
 FnSymbol* CallExpr::findFnSymbol() {
-  FnSymbol* retval = NULL;
+  FnSymbol* retval = nullptr;
 
   if (SymExpr* variable = toSymExpr(baseExpr)) {
     retval = toFnSymbol(variable->symbol());
   }
 
-  if (retval == NULL) {
+  if (retval == nullptr) {
     INT_FATAL(this, "Cannot find FnSymbol in CallExpr");
   }
 
@@ -472,7 +472,7 @@ CallExpr* createCast(BaseAST* src, BaseAST* toType) {
 }
 
 QualifiedType CallExpr::qualType(void) {
-  QualifiedType retval(NULL);
+  QualifiedType retval(nullptr);
 
   if (primitive) {
     retval = primitive->returnInfo(this);
@@ -532,7 +532,7 @@ void CallExpr::prettyPrint(std::ostream* o) {
     }
   }
 
-  if (baseExpr != NULL) {
+  if (baseExpr != nullptr) {
     if (UnresolvedSymExpr *expr = toUnresolvedSymExpr(baseExpr)) {
       if (strcmp(expr->unresolved, "*") == 0){
         unusual = true;
@@ -659,7 +659,7 @@ bool CallExpr::isRefExternStarTuple(Symbol* formal, Expr* actual) const {
 //
 
 void CallExpr::convertToNoop() {
-  if (baseExpr != NULL) {
+  if (baseExpr != nullptr) {
     baseExpr->remove();
   }
 
@@ -681,7 +681,7 @@ CallExpr* callChplHereAlloc(Type* type, VarSymbol* md) {
   // this sizeof() call to take the resolved type of s as an argument
   CallExpr*  sizeExpr  = new CallExpr(PRIM_SIZEOF_BUNDLE,
                                       new SymExpr(type->symbol));
-  VarSymbol* mdExpr    = (md != NULL) ? md : newMemDesc(type);
+  VarSymbol* mdExpr    = (md != nullptr) ? md : newMemDesc(type);
   CallExpr*  allocExpr = new CallExpr("chpl_here_alloc", sizeExpr, mdExpr);
 
   // Again, as we don't know the type yet, we leave it to resolution
@@ -705,10 +705,10 @@ void insertChplHereAlloc(Expr*      call,
   CallExpr*      sizeExpr  = new CallExpr(PRIM_MOVE,
                                           sizeTmp,
                                           new CallExpr(PRIM_SIZEOF_BUNDLE,
-                                                       (ct != NULL) ?
+                                                       (ct != nullptr) ?
                                                        ct->symbol   :
                                                        t->symbol));
-  VarSymbol*     mdExpr    = (md != NULL) ? md : newMemDesc(t);
+  VarSymbol*     mdExpr    = (md != nullptr) ? md : newMemDesc(t);
   Symbol*        allocTmp  = newTemp("chpl_here_alloc_tmp", dtCVoidPtr);
   CallExpr*      allocExpr = new CallExpr(PRIM_MOVE,
                                           allocTmp,
@@ -737,7 +737,7 @@ void insertChplHereAlloc(Expr*      call,
 }
 
 CallExpr* callChplHereFree(BaseAST* p) {
-  CallExpr* retval = NULL;
+  CallExpr* retval = nullptr;
 
   if (p->typeInfo()->symbol->hasFlag(FLAG_DATA_CLASS) == false) {
     CallExpr* castExpr = new CallExpr(PRIM_CAST_TO_VOID_STAR, p);
@@ -757,7 +757,7 @@ CallExpr* callChplHereFree(BaseAST* p) {
 }
 
 FnSymbol* resolvedToTaskFun(CallExpr* call) {
-  FnSymbol* retval = NULL;
+  FnSymbol* retval = nullptr;
 
   if (FnSymbol* cfn = call->resolvedFunction()) {
     if (isTaskFun(cfn) == true) {
@@ -778,7 +778,7 @@ bool isInitOrReturn(CallExpr* call, SymExpr*& lhsSe, CallExpr*& initOrCtor)
     SymExpr* retSe = toSymExpr(call->get(1));
     INT_ASSERT(retSe);
 
-    CallExpr* retCall = NULL;
+    CallExpr* retCall = nullptr;
     if (CallExpr* rhsCallExpr = toCallExpr(call->get(2))) {
       if (rhsCallExpr->resolvedOrVirtualFunction()) {
         retCall = rhsCallExpr;
@@ -793,7 +793,7 @@ bool isInitOrReturn(CallExpr* call, SymExpr*& lhsSe, CallExpr*& initOrCtor)
              call->isPrimitive(PRIM_INIT_VAR_SPLIT_INIT) ||
              call->isPrimitive(PRIM_INIT_FIELD)) {
     lhsSe = toSymExpr(call->get(1));
-    initOrCtor = NULL;
+    initOrCtor = nullptr;
     return true;
   }
 
@@ -809,7 +809,7 @@ bool isInitOrReturn(CallExpr* call, SymExpr*& lhsSe, CallExpr*& initOrCtor)
             se = toSymExpr(ne->actual);
           }
 
-          INT_ASSERT(se != NULL);
+          INT_ASSERT(se != nullptr);
           lhsSe = se;
           initOrCtor = call;
           return true;
@@ -827,7 +827,7 @@ bool isInitOrReturn(CallExpr* call, SymExpr*& lhsSe, CallExpr*& initOrCtor)
             se = toSymExpr(ne->actual);
           }
 
-          INT_ASSERT(se != NULL);
+          INT_ASSERT(se != nullptr);
           lhsSe = se;
           initOrCtor = call;
           return true;
@@ -836,8 +836,8 @@ bool isInitOrReturn(CallExpr* call, SymExpr*& lhsSe, CallExpr*& initOrCtor)
     }
   }
 
-  lhsSe = NULL;
-  initOrCtor = NULL;
+  lhsSe = nullptr;
+  initOrCtor = nullptr;
   return false;
 }
 
@@ -847,11 +847,11 @@ bool isInitOrReturn(CallExpr* call, SymExpr*& lhsSe, CallExpr*& initOrCtor)
 // lhsSe is the SymExpr indicating what is being set.
 // initOrCtor is the user call (e.g. someCall in the examples above).
 bool isRecordInitOrReturn(CallExpr* call, SymExpr*& lhsSe, CallExpr*& initOrCtor) {
-  SymExpr* gotSe = NULL;
-  CallExpr* gotCall = NULL;
+  SymExpr* gotSe = nullptr;
+  CallExpr* gotCall = nullptr;
   if (isInitOrReturn(call, gotSe, gotCall)) {
     INT_ASSERT(gotSe);
-    Type* t = NULL;
+    Type* t = nullptr;
     if (call->isPrimitive(PRIM_MOVE))
       t = gotSe->typeInfo();
     else
@@ -865,7 +865,7 @@ bool isRecordInitOrReturn(CallExpr* call, SymExpr*& lhsSe, CallExpr*& initOrCtor
     }
   }
 
-  lhsSe = NULL;
-  initOrCtor = NULL;
+  lhsSe = nullptr;
+  initOrCtor = nullptr;
   return false;
 }

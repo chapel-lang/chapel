@@ -40,9 +40,9 @@ struct IteratorDetails {
   FnSymbol* iterator;
 
   IteratorDetails()
-    : iterable(NULL), iterableTupleElement(0),
-      index(NULL), indexTupleElement(0),
-      iteratorClass(NULL), iterator(NULL)
+    : iterable(nullptr), iterableTupleElement(0),
+      index(nullptr), indexTupleElement(0),
+      iteratorClass(nullptr), iterator(nullptr)
   {
   }
 };

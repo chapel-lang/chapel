@@ -106,7 +106,7 @@ removeEmptyRecords() {
       }
     }
     if (fn->_this && emptyRecordTypeSet.count(fn->_this->type) != 0)
-      fn->_this = NULL;
+      fn->_this = nullptr;
   }
 
   for_vector(Symbol, sym, emptyRecordSymbols) {

@@ -188,7 +188,7 @@ class ConstInfo {
 
 ConstInfo::ConstInfo(Symbol* s) {
   sym = s;
-  fnUses = NULL;
+  fnUses = nullptr;
   Qualifier q = sym->qualType().getQual();
 
   finalizedConstness = q == QUAL_CONST_REF || q == QUAL_CONST_VAL;
@@ -351,7 +351,7 @@ static bool inferConstRef(Symbol* sym) {
   // 'info' may be null if the argument is never used. In that case we can
   // consider 'sym' to be a const-ref. By letting the rest of the function
   // proceed, we'll fix up the qualifier for such symbols at the end.
-  if (info == NULL) {
+  if (info == nullptr) {
     return true;
   } else if (info->finalizedConstness || wasConstRef) {
     return wasConstRef;
@@ -496,7 +496,7 @@ static bool onlyUsedForInitOrRetarg(Symbol* ref, CallExpr* defCall) {
   bool seenInitOrRetarg = false;
 
   INT_ASSERT(ref->isRef());
-  INT_ASSERT(defCall != NULL);
+  INT_ASSERT(defCall != nullptr);
 
   for_SymbolSymExprs(use, ref) {
     if (use->parentExpr == defCall)
@@ -528,7 +528,7 @@ static bool inferConst(Symbol* sym) {
   // 'info' may be null if the argument is never used. In that case we can
   // consider 'sym' to be a const-ref. By letting the rest of the function
   // proceed, we'll fix up the qualifier for such symbols at the end.
-  if (info == NULL) {
+  if (info == nullptr) {
     return true;
   } else if (info->finalizedConstness || wasConstVal) {
     return wasConstVal;
@@ -541,7 +541,7 @@ static bool inferConst(Symbol* sym) {
     SymExpr* use = info->next();
 
     CallExpr* call = toCallExpr(use->parentExpr);
-    if (call == NULL) {
+    if (call == nullptr) {
       // Could be a DefExpr, or the condition for a while loop.
       // BHARSH: I'm not sure of all the possibilities
       continue;
@@ -613,7 +613,7 @@ static bool inferRefToConst(Symbol* sym) {
   ConstInfo* info = infoMap[sym];
 
   // If this ref isn't const, then it can't point to a const thing
-  if (info == NULL) {
+  if (info == nullptr) {
     return false;
   } else if (info->finalizedRefToConst || wasRefToConst || !isConstRef) {
     return wasRefToConst;
@@ -641,7 +641,7 @@ static bool inferRefToConst(Symbol* sym) {
       isRefToConst = false;
     } else {
       // Need this part to be re-entrant in case of recursive functions
-      while (info->fnUses != NULL && isRefToConst) {
+      while (info->fnUses != nullptr && isRefToConst) {
         SymExpr* se = info->fnUses;
         info->fnUses = se->symbolSymExprsNext;
 
@@ -673,7 +673,7 @@ static bool inferRefToConst(Symbol* sym) {
     SymExpr* use = info->next();
 
     CallExpr* call = toCallExpr(use->parentExpr);
-    if (call == NULL) continue;
+    if (call == nullptr) continue;
 
     if (isMoveOrAssign(call)) {
       if (use == call->get(1)) {
@@ -744,7 +744,7 @@ void inferConstRefs() {
     // TODO: BHARSH: Skip classes for now. Not sure how to deal with aliasing
     if (!se->isRef() && isClass(se->typeInfo())) continue;
 
-    ConstInfo* info = NULL;
+    ConstInfo* info = nullptr;
     ConstInfoIter it = infoMap.find(se->symbol());
     if (it == infoMap.end()) {
       info = new ConstInfo(se->symbol());

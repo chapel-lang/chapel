@@ -73,7 +73,7 @@ static void helpGetLastStmts(Expr* last, std::vector<Expr*>& stmts);
 
 static void getLastStmts(BlockStmt* loop, std::vector<Expr*>& stmts) {
 
-  Expr* last = NULL;
+  Expr* last = nullptr;
 
   if (CForLoop* cfor = toCForLoop(loop)) {
     // For a CForLoop, ignore the initBlock, testBlock, incrBlock.
@@ -95,7 +95,7 @@ static Expr* skipIgnoredStmts(Expr* last) {
 
   while (true) {
     CallExpr* call = toCallExpr(last);
-    FnSymbol* calledFn = NULL;
+    FnSymbol* calledFn = nullptr;
     if (call)
       calledFn = call->resolvedFunction();
 
@@ -127,7 +127,7 @@ static Expr* skipIgnoredStmts(Expr* last) {
 }
 
 static bool shouldCheckElseStmtForLastStmts(CondStmt *cond) {
-  if (cond->elseStmt == NULL) {
+  if (cond->elseStmt == nullptr) {
     return false;
   }
   // if this conditional was generated for aggregation, the else block has all
@@ -144,7 +144,7 @@ static bool shouldCheckElseStmtForLastStmts(CondStmt *cond) {
 
 static void helpGetLastStmts(Expr* last, std::vector<Expr*>& stmts) {
 
-  if (last == NULL)
+  if (last == nullptr)
     return;
 
   last = skipIgnoredStmts(last);
@@ -335,8 +335,8 @@ void MarkOptimizableForallLastStmts::markLoopsInForall(ForallStmt* forall) {
     for_vector(BlockStmt, block, bodies) {
       Expr* stmt = lastStatementsPerBody[loopNum][stmtNum];
       if (exprIsOptimizable(block, stmt, lifetimeInfo)) {
-        SymExpr* lhs = NULL;
-        SymExpr* rhs = NULL;
+        SymExpr* lhs = nullptr;
+        SymExpr* rhs = nullptr;
         if (CallExpr* call = toCallExpr(stmt)) {
           if (call->numActuals() >= 1)
             lhs = toSymExpr(call->get(1));
@@ -358,8 +358,8 @@ void MarkOptimizableForallLastStmts::markLoopsInForall(ForallStmt* forall) {
     for_vector(BlockStmt, block, bodies) {
       Expr* stmt = lastStatementsPerBody[loopNum][stmtNum];
       if (exprIsOptimizable(block, stmt, lifetimeInfo)) {
-        SymExpr* lhs = NULL;
-        SymExpr* rhs = NULL;
+        SymExpr* lhs = nullptr;
+        SymExpr* rhs = nullptr;
         if (CallExpr* call = toCallExpr(stmt)) {
           if (call->numActuals() >= 1)
             lhs = toSymExpr(call->get(1));
@@ -685,12 +685,12 @@ void GatherBlockingFunctions::exitForLoop(ForLoop* node) {
 
 static
 CallExpr* findMarkerNear(Expr* stmt) {
- for (Expr* cur = stmt; cur != NULL; cur = cur->next) {
+ for (Expr* cur = stmt; cur != nullptr; cur = cur->next) {
   if (CallExpr* call = toCallExpr(cur))
     if (call->isPrimitive(PRIM_OPTIMIZATION_INFO))
       return call;
   }
-  return NULL;
+  return nullptr;
 }
 
 static const char* optimizableFunctionTable[] =
@@ -701,13 +701,13 @@ static const char* optimizableFunctionTable[] =
    "chpl_comm_atomic_or_", "chpl_comm_atomic_or_unordered_",
    "chpl_comm_atomic_xor_", "chpl_comm_atomic_xor_unordered_",
    // These are for optimization reporting purposes
-   "atomic_fetch_add_explicit_", NULL,
-   "atomic_fetch_sub_explicit_", NULL,
-   "atomic_fetch_and_explicit_", NULL,
-   "atomic_fetch_or_explicit_", NULL,
-   "atomic_fetch_xor_explicit_", NULL,
+   "atomic_fetch_add_explicit_", nullptr,
+   "atomic_fetch_sub_explicit_", nullptr,
+   "atomic_fetch_and_explicit_", nullptr,
+   "atomic_fetch_or_explicit_", nullptr,
+   "atomic_fetch_xor_explicit_", nullptr,
    // These indicate to code using this table that the end is reached
-   NULL, NULL };
+   nullptr, nullptr };
 
 static bool isOptimizableAtomicFunction(const char* cname) {
   for (int i=0; optimizableFunctionTable[i]; i+=2) {
@@ -716,7 +716,7 @@ static bool isOptimizableAtomicFunction(const char* cname) {
     if (startsWith(cname, from)) {
       // Pass this test for the purpose of optimization testing
       // (we won't actually transform it later)
-      if (to == NULL)
+      if (to == nullptr)
         return true;
 
       // Otherwise, optimize only if it's not already unordered
@@ -734,7 +734,7 @@ static bool isOptimizableAtomicStmt(Expr* stmt, BlockStmt* loop) {
   // optimization if the return value is used.
   INT_ASSERT(stmt == stmt->getStmtExpr());
 
-  Symbol* refAtomic = NULL;
+  Symbol* refAtomic = nullptr;
   if (CallExpr* call = toCallExpr(stmt)) {
     if (FnSymbol* fn = call->resolvedFunction()) {
       if (fn->hasFlag(FLAG_EXTERN)) {
@@ -749,7 +749,7 @@ static bool isOptimizableAtomicStmt(Expr* stmt, BlockStmt* loop) {
     }
   }
 
-  if (refAtomic != NULL)
+  if (refAtomic != nullptr)
     if (BlockStmt* defInBlock = toBlockStmt(refAtomic->defPoint->parentExpr))
       if (isBlockWithinBlock(defInBlock, loop))
         if (CallExpr* marker = findMarkerNear(stmt))
@@ -766,15 +766,15 @@ static const char* getUnorderedAtomicFunction(const char* cname) {
   for (int i=0; optimizableFunctionTable[i]; i+=2) {
     if (startsWith(cname, optimizableFunctionTable[i])) {
       const char* newPrefix = optimizableFunctionTable[i+1];
-      if (newPrefix == NULL)
-        return NULL;
+      if (newPrefix == nullptr)
+        return nullptr;
       size_t len = strlen(optimizableFunctionTable[i]);
       const char* suffix = cname + len;
       return astr(newPrefix, suffix);
     }
   }
 
-  return NULL;
+  return nullptr;
 }
 
 
@@ -786,15 +786,15 @@ static void transformAtomicStmt(Expr* stmt) {
   CallExpr* call = toCallExpr(stmt);
   FnSymbol* oldFn = call->resolvedFunction();
   const char* newFnCName = getUnorderedAtomicFunction(oldFn->cname);
-  FnSymbol* newFn = NULL;
+  FnSymbol* newFn = nullptr;
 
   if (fReportOptimizeForallUnordered)
     USR_PRINT(call, "Optimized atomic call to be unordered");
 
-  // We might have newFnCName == NULL if we just wanted
+  // We might have newFnCName == nullptr if we just wanted
   // to test the compiler optimization but there is no
   // runtime support / value in the optimization
-  if (newFnCName == NULL)
+  if (newFnCName == nullptr)
     return;
 
   // Now lookup up newFn in the map
@@ -810,7 +810,7 @@ static void transformAtomicStmt(Expr* stmt) {
     oldFn->defPoint->insertAfter(new DefExpr(newFn));
 
     // Remove a memory_order argument if present
-    ArgSymbol* orderFormal = NULL;
+    ArgSymbol* orderFormal = nullptr;
     for_formals(formal, newFn) {
       if (formal->typeInfo()->symbol->hasFlag(FLAG_C_MEMORY_ORDER_TYPE))
         orderFormal = formal;
@@ -828,7 +828,7 @@ static void transformAtomicStmt(Expr* stmt) {
   if (fCacheRemote) {
     // remove the chpl_rmem_consist_maybe_release added before the atomic
     // This fence is redundant because we add a full fence immediately below.
-    for (Expr* cur = call->getStmtExpr()->prev; cur != NULL; cur = cur->prev) {
+    for (Expr* cur = call->getStmtExpr()->prev; cur != nullptr; cur = cur->prev) {
       if (CallExpr* call = toCallExpr(cur)) {
         if (FnSymbol* fn = call->resolvedFunction()) {
           if (fn->hasFlag(FLAG_COMPILER_ADDED_REMOTE_FENCE))
@@ -843,7 +843,7 @@ static void transformAtomicStmt(Expr* stmt) {
     // *and* because the optimization fired, we know that the atomic op
     // we are making unordered is not being used to communicate to the current
     // task.
-    for (Expr* cur = call->getStmtExpr()->next; cur != NULL; cur = cur->next) {
+    for (Expr* cur = call->getStmtExpr()->next; cur != nullptr; cur = cur->next) {
       if (CallExpr* call = toCallExpr(cur)) {
         if (FnSymbol* fn = call->resolvedFunction()) {
           if (fn->hasFlag(FLAG_COMPILER_ADDED_REMOTE_FENCE))
@@ -867,7 +867,7 @@ static void transformAtomicStmt(Expr* stmt) {
   // Add a fence call before the call.
   // First, gather the memory order argument from the call.
   // The loop below finds the last argument that is a memory_order.
-  Expr* orderActual = NULL;
+  Expr* orderActual = nullptr;
   for_actuals(actual, call) {
     if (actual->typeInfo()->symbol->hasFlag(FLAG_C_MEMORY_ORDER_TYPE))
       orderActual = actual;
@@ -884,7 +884,7 @@ static void transformAtomicStmt(Expr* stmt) {
 }
 
 static bool isOptimizableAssignStmt(Expr* stmt, BlockStmt* loop) {
-  Symbol* lhs = NULL;
+  Symbol* lhs = nullptr;
   if (CallExpr* call = toCallExpr(stmt))
     if (call->isPrimitive(PRIM_ASSIGN))
       if (SymExpr* lhsSe = toSymExpr(call->get(1)))
@@ -922,7 +922,7 @@ static CondStmt *getAggregationCondStmt(Expr *stmt) {
       }
     }
   }
-  return NULL;
+  return nullptr;
 }
 
 static void transformAssignStmt(Expr* stmt) {
@@ -934,7 +934,7 @@ static void transformAssignStmt(Expr* stmt) {
 
   Symbol* lhs = toSymExpr(call->get(1))->symbol();
   Expr* rhs = call->get(2);
-  CallExpr* callToRemove = NULL;
+  CallExpr* callToRemove = nullptr;
 
   if (isSymExpr(rhs) && rhs->isRef() == false) {
     // Find a pattern like
@@ -948,9 +948,9 @@ static void transformAssignStmt(Expr* stmt) {
     // PRIM_ASSIGN lhs rhsRef
     //
     Symbol* rhsSym = toSymExpr(rhs)->symbol();
-    Symbol* rhsRef = NULL;
+    Symbol* rhsRef = nullptr;
     CallExpr* prevCall = toCallExpr(call->prev);
-    if (prevCall != NULL) {
+    if (prevCall != nullptr) {
       if (prevCall->isPrimitive(PRIM_MOVE) ||
           prevCall->isPrimitive(PRIM_ASSIGN)) {
         Symbol* prevLhs = toSymExpr(prevCall->get(1))->symbol();
@@ -966,7 +966,7 @@ static void transformAssignStmt(Expr* stmt) {
       }
     }
 
-    if (rhsRef != NULL && prevCall != NULL) {
+    if (rhsRef != nullptr && prevCall != nullptr) {
       callToRemove = prevCall;
       rhs = new SymExpr(rhsRef);
     }

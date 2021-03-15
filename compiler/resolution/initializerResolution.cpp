@@ -41,7 +41,7 @@
 #include "wellknown.h"
 #include "wrappers.h"
 
-static void resolveInitCall(CallExpr* call, AggregateType* newExprAlias = NULL, bool forNewExpr = false);
+static void resolveInitCall(CallExpr* call, AggregateType* newExprAlias = nullptr, bool forNewExpr = false);
 
 static void gatherInitCandidates(CallInfo&                  info,
                                  Vec<FnSymbol*>&            visibleFns,
@@ -63,7 +63,7 @@ static AggregateType* resolveNewFindType(CallExpr* newExpr);
 ************************************** | *************************************/
 
 FnSymbol* resolveInitializer(CallExpr* call) {
-  FnSymbol* retval = NULL;
+  FnSymbol* retval = nullptr;
 
   callStack.add(call);
 
@@ -77,7 +77,7 @@ FnSymbol* resolveInitializer(CallExpr* call) {
     resolveInitializerMatch(call->resolvedFunction());
 
     if (isGenericRecord(call->get(2)->typeInfo())) {
-      SymExpr* namedSe = NULL;
+      SymExpr* namedSe = nullptr;
 
       // There are two cases for generic records
       if (NamedExpr* named = toNamedExpr(call->get(2))) {
@@ -150,7 +150,7 @@ static FnSymbol* buildNewWrapper(FnSymbol* initFn) {
       initToNewMap.put(formal, newArg);
       fn->insertFormalAtTail(newArg);
 
-      if (newArg->variableExpr != NULL) {
+      if (newArg->variableExpr != nullptr) {
         innerInit->insertAtTail(new CallExpr(PRIM_TUPLE_EXPAND, newArg));
       } else {
         innerInit->insertAtTail(new SymExpr(newArg));
@@ -176,7 +176,7 @@ static FnSymbol* buildNewWrapper(FnSymbol* initFn) {
   }
 
   VarSymbol* result = newTemp();
-  Expr* resultExpr = NULL;
+  Expr* resultExpr = nullptr;
   if (isClass(type)) {
     Type* uct = type->getDecoratedClass(CLASS_TYPE_UNMANAGED_NONNIL);
     resultExpr = new CallExpr(PRIM_CAST, uct->symbol, initTemp);
@@ -225,7 +225,7 @@ static void insertNamedInstantiationInfo(CallExpr* newExpr,
         initCall->insertAtTail(new NamedExpr(field->name, new SymExpr(field->type->symbol)));
       } else if (field->hasFlag(FLAG_PARAM)) {
         initCall->insertAtTail(new NamedExpr(field->name, new SymExpr(at->getSubstitution(field->name))));
-      } else if (at->getSubstitution(field->name) != NULL) {
+      } else if (at->getSubstitution(field->name) != nullptr) {
         USR_FATAL(newExpr, "A type alias of '%s' may not be used in a new-expression because it contains a typeless field ('%s')", rootType->symbol->name, field->name);
       }
     }
@@ -244,8 +244,8 @@ static CallExpr* buildInitCall(CallExpr* newExpr,
                                BlockStmt* block) {
   AggregateType* rootType = at->getRootInstantiation();
 
-  Expr* modToken = NULL;
-  Expr* modValue = NULL;
+  Expr* modToken = nullptr;
+  Expr* modValue = nullptr;
   if (SymExpr* se = toSymExpr(newExpr->get(1))) {
     if (se->symbol() == gModuleToken) {
       modValue = newExpr->get(2)->remove();
@@ -264,7 +264,7 @@ static CallExpr* buildInitCall(CallExpr* newExpr,
     call->insertAtTail(newExpr->get(i)->copy());
   }
 
-  if (modToken != NULL) {
+  if (modToken != nullptr) {
     call->insertAtHead(modValue);
     call->insertAtHead(modToken);
   }
@@ -278,7 +278,7 @@ static CallExpr* buildInitCall(CallExpr* newExpr,
   }
 
   // Find the correct 'init' function without wrapping/promoting
-  AggregateType* alias = at == rootType ? NULL : at;
+  AggregateType* alias = at == rootType ? nullptr : at;
   resolveInitCall(call, alias, true);
   resolveInitializerMatch(call->resolvedFunction());
   tmp->type = call->resolvedFunction()->_this->getValType();
@@ -373,7 +373,7 @@ void resolveNewInitializer(CallExpr* newExpr, Type* manager) {
     // If the default value for a formal is a new-expression, the final
     // statement in the BlockStmt will be a PRIM_NEW.
     ArgSymbol *argSym = toArgSymbol(stmt->parentSymbol);
-    bool inArgSymbol = stmt == newExpr && argSym != NULL;
+    bool inArgSymbol = stmt == newExpr && argSym != nullptr;
 
     VarSymbol* new_temp = newTemp("new_temp");
     block->insertAtTail(new DefExpr(new_temp));
@@ -489,7 +489,7 @@ static void resolveInitCall(CallExpr* call, AggregateType* newExprAlias, bool fo
   if (info.isWellFormed(call) == true) {
     Vec<FnSymbol*>            visibleFns, mostApplicable;
     Vec<ResolutionCandidate*> candidates;
-    ResolutionCandidate*      best        = NULL;
+    ResolutionCandidate*      best        = nullptr;
 
     findVisibleFunctionsAllPOIs(info, visibleFns);
 
@@ -501,7 +501,7 @@ static void resolveInitCall(CallExpr* call, AggregateType* newExprAlias, bool fo
 
     best = disambiguateForInit(info, candidates);
 
-    if (best == NULL) {
+    if (best == nullptr) {
       if (call->partialTag == false) {
         if (forNewExpr == true) {
           // This exists to enable multiple fatal error messages when an
@@ -516,7 +516,7 @@ static void resolveInitCall(CallExpr* call, AggregateType* newExprAlias, bool fo
           // In the future, the compiler should not be attempting to resolve
           // an already-resolved call.
           bool existingErrors = fatalErrorsEncountered();
-          if (newExprAlias != NULL) {
+          if (newExprAlias != nullptr) {
             USR_FATAL_CONT(call, "Unable to resolve new-expression with type alias '%s'", newExprAlias->symbol->name);
           }
           if (!inGenerousResolutionForErrors()) {
@@ -712,7 +712,7 @@ static void makeRecordInitWrappers(CallExpr* call) {
 
   if (info.isWellFormed(call) == true) {
     std::vector<ArgSymbol*> actualIdxToFormal;
-    FnSymbol*               wrap = NULL;
+    FnSymbol*               wrap = nullptr;
 
     makeActualsVector(info, actualIdxToFormal);
 
@@ -748,7 +748,7 @@ static void makeActualsVector(const CallInfo&          info,
     formalIdxToActual.push_back(false);
   }
   for (int i = 0; i < info.actuals.n; i++) {
-    actualIdxToFormal.push_back(NULL);
+    actualIdxToFormal.push_back(nullptr);
   }
 
   for (int i = 0; i < info.actuals.n; i++) {
@@ -779,10 +779,10 @@ static void makeActualsVector(const CallInfo&          info,
   // Fill in unmatched formals in sequence with the remaining actuals.
   // Record successful substitutions.
   int        j      = 0;
-  ArgSymbol* formal = (fn->numFormals()) ? fn->getFormal(1) : NULL;
+  ArgSymbol* formal = (fn->numFormals()) ? fn->getFormal(1) : nullptr;
 
   for (int i = 0; i < info.actuals.n; i++) {
-    if (info.actualNames.v[i] == NULL) {
+    if (info.actualNames.v[i] == nullptr) {
       bool match = false;
 
       while (formal) {
@@ -827,7 +827,7 @@ static void makeActualsVector(const CallInfo&          info,
 }
 
 static AggregateType* resolveNewFindType(CallExpr* newExpr) {
-  SymExpr* typeExpr = NULL;
+  SymExpr* typeExpr = nullptr;
 
   // Find the SymExpr for the type.
   //   1) Common case  :- primNew(Type, arg1, ...);
@@ -843,7 +843,7 @@ static AggregateType* resolveNewFindType(CallExpr* newExpr) {
 
   } else if (CallExpr* partial = toCallExpr(newExpr->get(1))) {
     if (SymExpr* se = toSymExpr(partial->baseExpr)) {
-      typeExpr = partial->partialTag ? se : NULL;
+      typeExpr = partial->partialTag ? se : nullptr;
     }
   }
 

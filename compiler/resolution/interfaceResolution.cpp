@@ -288,7 +288,7 @@ static void recordInterim(FnSymbol* &parentFn, CallExpr* call,
 void recordCGInterimInstantiations(CallExpr* call, ResolutionCandidate* best1,
                        ResolutionCandidate* best2, ResolutionCandidate* best3)
 {
-  FnSymbol* parentFn = NULL;
+  FnSymbol* parentFn = nullptr;
   recordInterim(parentFn, call, best1);
   recordInterim(parentFn, call, best2);
   recordInterim(parentFn, call, best3);
@@ -317,7 +317,7 @@ void handleCallsToOtherCGfuns(FnSymbol* origFn, InterfaceInfo* ifcInfo,
 
         cgCalleeSE->replace(new SymExpr(origCGfun));
         resolveNormalCall(call);
-        
+
       } else {
         // cgCallee was created for 'origFn'. It gets referenced in 'newFn'
         // because newFn is a copy of origFn. Once handleCallsToOtherCGfuns
@@ -327,7 +327,6 @@ void handleCallsToOtherCGfuns(FnSymbol* origFn, InterfaceInfo* ifcInfo,
     }
   }
 }
-
 
 /*********** resolveInterfaceSymbol ***********/
 
@@ -366,11 +365,11 @@ static void resolveISymRequiredFun(InterfaceSymbol* isym, FnSymbol* fn) {
     USR_FATAL_CONT(fn, "interface functions with 'param' or 'type'"
                    " return intent are currently not allowed");
 
-  if (fn->where != NULL)
+  if (fn->where != nullptr)
     USR_FATAL_CONT(fn->where, "the interface function %s%s", fn->name,
           " contains a where clause, which is currently not supported");
 
-  if (fn->retExprType != NULL && fn->retType == dtUnknown)
+  if (fn->retExprType != nullptr && fn->retType == dtUnknown)
     resolveSpecifiedReturnType(fn);  // like in isApplicable()
 
   resolveFunction(fn);
@@ -426,7 +425,7 @@ static Symbol* resolveConstraintActual(Expr* &curAct, int idxAct) {
     Symbol* typeSym = curActSym->type->symbol;
     if (typeSym != curActSym)
       curActSE->setSymbol(typeSym);
-    return curActSym->type->symbol; 
+    return curActSym->type->symbol;
   }
   if (CallExpr* call = toCallExpr(curAct)) {
     // allow "arg.type" queries
@@ -459,7 +458,7 @@ static void buildAndCheckFormals2Actuals(InterfaceSymbol* isym,
 
   int i = 0;
   for (Expr *curFml = isym->ifcFormals.head, *curAct = icon->consActuals.head;
-       curFml != NULL;
+       curFml != nullptr;
        curFml = curFml->next, curAct = curAct->next)
    fml2act.put(toDefExpr(curFml)->sym, resolveConstraintActual(curAct, ++i));
 }
@@ -481,9 +480,9 @@ static void buildAndCheckFormals2Actuals(InterfaceSymbol* isym,
 // Extends fml2act with the mapping origT -> the new instantiation.
 // Adds the new instantiation to standinInstantiations for later removal.
 // Returns the new instantiation. Marks it for later removal if markRm.
-// 
+//
 // If origT is already a key in fml2act, returns its mapping.
-// Otherwise returns NULL to indicate that origT does not involve CG types.
+// Otherwise returns nullptr to indicate that origT does not involve CG types.
 //
 static Type* instantiateOneAggregateType(SymbolMap &fml2act,
                                          Expr*       anchor,
@@ -617,7 +616,7 @@ static void createRepsForIfcSymbols(FnSymbol* fn, InterfaceInfo* ifcInfo) {
 void resolveConstrainedGenericFun(FnSymbol* fn) {
   if (fn->isResolved()) return;
   InterfaceInfo* ifcInfo = fn->interfaceInfo;
-  if (ifcInfo == NULL) return;  // not a CG
+  if (ifcInfo == nullptr) return;  // not a CG
 
   cgprint("resolving CG function early %s  %s {\n",
           symstring(fn), debugLoc(fn));
@@ -683,7 +682,7 @@ static void resolveIStmActuals(FnSymbol* wrapFn, ImplementsStmt* istm) {
 }
 
 static void cleanupHolder(BlockStmt* holder) {
-  do { holder->body.tail->remove(); } while (holder->body.tail != NULL);
+  do { holder->body.tail->remove(); } while (holder->body.tail != nullptr);
 }
 
 static void handleGenericImplementation(FnSymbol*& target,
@@ -752,7 +751,7 @@ static bool resolveOneAssocType(InterfaceSymbol* isym,  ImplementsStmt*   istm,
           USR_STOP();
         } else
           INT_ASSERT(resolvedTarget == target);
-        
+
         implAT = target->retType;
         cgprint("%s   generic -> %s\n", indent, symstring(implAT->symbol));
 
@@ -899,7 +898,7 @@ static bool checkAssocConstraints(InterfaceSymbol* isym,  ImplementsStmt* istm,
 static bool checkNonemptyHolder(InterfaceSymbol* isym,  ImplementsStmt* istm,
                                 BlockStmt*     holder,  FnSymbol*     target,
                                 FnSymbol*       reqFn,  bool  reportErrors) {
-  if (holder->body.tail != NULL) {
+  if (holder->body.tail != nullptr) {
     if (reportErrors) {
       USR_FATAL_CONT(istm, "when checking this implements statement");
       USR_PRINT(target, "this implementation of the required function %s"
@@ -986,7 +985,7 @@ static bool resolveOneRequiredFn(InterfaceSymbol* isym,  ImplementsStmt*  istm,
   FnSymbol* target = tryResolveCall(call);
 
   // do not allow representatives to help satisfy a constraint
-  if (target != NULL && !target->hasFlag(FLAG_CG_REPRESENTATIVE)) {
+  if (target != nullptr && !target->hasFlag(FLAG_CG_REPRESENTATIVE)) {
     cgprint("%s           -> %s  %s\n", indent,
             symstring(target), debugLoc(target));
 
@@ -996,7 +995,7 @@ static bool resolveOneRequiredFn(InterfaceSymbol* isym,  ImplementsStmt*  istm,
     if (genericTarget) {
       // Need the return type for checkReturnType() below.
       // Will resolve the body when instantiating this istm.
-      if (target->retExprType != NULL && target->retType == dtUnknown)
+      if (target->retExprType != nullptr && target->retType == dtUnknown)
         resolveSpecifiedReturnType(target);  // like in isApplicable()
     } else
       resolveFunction(target); // aborts if there are errors
@@ -1006,7 +1005,7 @@ static bool resolveOneRequiredFn(InterfaceSymbol* isym,  ImplementsStmt*  istm,
     if (!( checkNonemptyHolder(isym, istm, holder, target, reqFn, reportErrors)
            & checkReturnType(isym, istm, target, fml2act, reqFn, reportErrors)
            & checkReturnIntent(isym, istm, target, reqFn, reportErrors) ))
-      target = NULL;  // if one or more of the above checks fail
+      target = nullptr;  // if one or more of the above checks fail
     else if (genericTarget)
       handleGenericImplementation(target, indent);
 
@@ -1044,7 +1043,7 @@ static bool resolveOneRequiredFn(InterfaceSymbol* isym,  ImplementsStmt*  istm,
   INT_ASSERT(popped == call);
 
   implRef = target; // aka istm->witnesses.put(reqFn, target)
-  return target != NULL;
+  return target != nullptr;
 }
 
 static bool resolveRequiredFns(InterfaceSymbol* isym,  ImplementsStmt* istm,
@@ -1150,7 +1149,7 @@ static bool resolveImplementsStmt(FnSymbol* wrapFn, ImplementsStmt* istm,
   INT_ASSERT(wrapFn->hasFlag(FLAG_RESOLVED));
   CallExpr* popped = callStack.pop();
   INT_ASSERT(popped == callsite);
-  callsite->remove();  
+  callsite->remove();
 
   if (!success) {
     if (reportErrors) USR_STOP();
@@ -1187,7 +1186,7 @@ static bool enclConstraintMatches(InterfaceSymbol* isym,
 
   for (Expr *consArg = call2wf->argList.head,
             *implArg = icon->consActuals.head;
-       consArg != NULL;
+       consArg != nullptr;
        consArg = consArg->next, implArg = implArg->next)
   {
     Type* consT = toSymExpr(consArg)->symbol()->type;
@@ -1203,7 +1202,7 @@ static bool enclConstraintMatches(InterfaceSymbol* isym,
 }
 
 // Return a constraint from ifcInfo that matches call2wf,
-// or NULL if none of them matched.
+// or nullptr if none of them matched.
 static IfcConstraint* satisfyingEnclConstraint(InterfaceSymbol*  isym,
                                                CallExpr*      call2wf,
                                                InterfaceInfo* ifcInfo) {
@@ -1247,7 +1246,7 @@ static bool isGenericMatch(Type* consT, Type* implT) {
         if (consAT == implAT)
           return true;
       }
-      while (consAT != NULL);
+      while (consAT != nullptr);
 
   return false;
 }
@@ -1255,7 +1254,7 @@ static bool isGenericMatch(Type* consT, Type* implT) {
 class MatchResult { public:
   ImplementsStmt* istm;
   bool            isSuccess;
-  bool            isConcrete; 
+  bool            isConcrete;
   MatchResult(ImplementsStmt* is, bool ss, bool con):
     istm(is), isSuccess(ss), isConcrete(con) { }
 };
@@ -1263,8 +1262,8 @@ class MatchResult { public:
 //
 // Returns a MatchResult tuple with the following components:
 // * istm: the istm within wrapFn, if it matches the constraint
-//   represented by 'call2wf', NULL otherwise
-// If istm is non-NULL:
+//   represented by 'call2wf', nullptr otherwise
+// If istm is non-nullptr:
 // * isSuccess: true, unless wrapFn is marked as failure
 // * isConcrete: true when the arguments of the constraint
 //   and the istm pare pair-wise equal; otherwise a generic match
@@ -1284,7 +1283,7 @@ static MatchResult matchingImplStm(InterfaceSymbol* isym,
   // todo: share code with constraintMatches()
   for (Expr *consArg = call2wf->argList.head,
             *implArg = iss.istm->iConstraint->consActuals.head;
-       consArg != NULL;
+       consArg !=nullptr;
        consArg = consArg->next, implArg = implArg->next)
   {
     Type* consT = toSymExpr(consArg)->symbol()->type;
@@ -1412,26 +1411,26 @@ static void cgprintCheckedConstraint(InterfaceSymbol* isym,
 #endif
 
 // Traverse lexical scopes starting with callsite's.
-// If the scope of 'wrapFn' is found first, return NULL.
+// If the scope of 'wrapFn' is found first, return nullptr.
 // Otherwise return the parent of 'callsite' within the earliest
 // enclosing scope that contains visible functions or a POI.
 static Expr* closestInterestingScopeAnchor(CallExpr* callsite,
                                            FnSymbol* wrapFn) {
   Expr*     currAnchor = callsite->getStmtExpr();
-  BlockStmt* wrapBlock = NULL;
-  if (wrapFn != NULL) {
+  BlockStmt* wrapBlock = nullptr;
+  if (wrapFn != nullptr) {
     wrapBlock = toBlockStmt(wrapFn->defPoint->parentExpr);
-    INT_ASSERT(wrapBlock != NULL);
+    INT_ASSERT(wrapBlock != nullptr);
   }
 
   while (true) {
     BlockStmt* currBlock = toBlockStmt(currAnchor->parentExpr);
 
-    if (wrapBlock != NULL && wrapBlock == currBlock)
-      return NULL;
+    if (wrapBlock != nullptr && wrapBlock == currBlock)
+      return nullptr;
 
-    if (currBlock == NULL) {
-      INT_ASSERT(currAnchor->parentExpr == NULL);
+    if (currBlock == nullptr) {
+      INT_ASSERT(currAnchor->parentExpr == nullptr);
 
       // Check for a POI, like in getInstantiationPoint().
       Symbol* parentSym = currAnchor->parentSymbol;
@@ -1458,7 +1457,7 @@ static Expr* closestInterestingScopeAnchor(CallExpr* callsite,
 }
 
 // 'failureWrapFn' is the wrapFn for a negative outcome of an earlier attempt
-// to infer this constraint, if found, otherwise NULL.
+// to infer this constraint, if found, otherwise nullptr.
 static ImplementsStmt* checkInferredImplStmt(CallExpr* callsite,
                                              InterfaceSymbol* isym,
                                              CallExpr* call2wf,
@@ -1468,14 +1467,14 @@ static ImplementsStmt* checkInferredImplStmt(CallExpr* callsite,
 
   if (isym->requiredFns.n == 0)
     // Do not infer for an empty interface.
-    return NULL;
+    return nullptr;
 
   Expr* anchor = closestInterestingScopeAnchor(callsite, failureWrapFn);
 
-  if (anchor == NULL)
+  if (anchor == nullptr)
     // Closer scopes do not define any functions, so the inference outcome,
     // if we tried to infer, would be the same, i.e. negative.
-    return NULL;
+    return nullptr;
 
   // Try to infer as if we are in anchor's scope.
   // Retain the outcome - positive or negative - next to 'anchor'.
@@ -1486,12 +1485,12 @@ static ImplementsStmt* checkInferredImplStmt(CallExpr* callsite,
   FnSymbol* wrapFn = wrapOneImplementsStatement(istm);
   bool success = resolveImplementsStmt(wrapFn, istm, false, false);
 
-  return success ? istm : NULL;
+  return success ? istm : nullptr;
 }
 
 /*
 constraintIsSatisfiedAtCallSite() checks if 'constraint' is satisfied.
-Return the corresponding ImplementsStmt if yes, NULL if no.
+Return the corresponding ImplementsStmt if yes, nullptr if no.
 
 Semantics:
 - When there is/are matching visible ImplementsStmt(s), use the closest one.
@@ -1548,12 +1547,12 @@ ConstraintSat constraintIsSatisfiedAtCallSite(CallExpr*      callsite,
   gatherVisibleWrapperFns(callsite, call2wf, visibleFns);
 
   FirstPick pick = pickMatchingImplementsStmts(isym, visibleFns, call2wf);
-  ImplementsStmt* bestIstm = NULL;
+  ImplementsStmt* bestIstm = nullptr;
 
   if (ImplementsStmt* conSuccess = pick.conSuccess)
     // yippee, found a satisfying concrete istm
     bestIstm = conSuccess;
-  
+
   else if (ImplementsStmt* genSuccess = pick.genSuccess)
     // instantiate a generic istm
     bestIstm = useGenericImplementsStmt(callsite, isym, call2wf, genSuccess);
@@ -1578,7 +1577,8 @@ ConstraintSat constraintIsSatisfiedAtCallSite(CallExpr*      callsite,
 //
 // This populates 'substitutions' with the mapping from each associated type
 // in 'fn' for indx-th constraint to the A.T.'s instantiation.
-// 
+//
+//
 void copyIfcRepsToSubstitutions(FnSymbol* fn, Expr* anchor, int indx,
                              ImplementsStmt* istm, SymbolMap& substitutions) {
   // repsForIfcSymbols include mapping for associated types, if any
@@ -1696,7 +1696,7 @@ void adjustForCGinstantiation(FnSymbol* fn, SymbolMap& substitutions,
   adjustCGtype(substitutions, fn->retType);
   for_formals(formal, fn)
     adjustCGtype(substitutions, formal->type);
-    
+
   if (isInterimInstantiation) {
     fn->addFlag(FLAG_CG_INTERIM_INST);
     // Do not fill in the body of an interim instantiation.
@@ -1705,7 +1705,7 @@ void adjustForCGinstantiation(FnSymbol* fn, SymbolMap& substitutions,
   }
 
   // This is how we copy a CG function.
-  INT_ASSERT(fn->interfaceInfo == NULL);
+  INT_ASSERT(fn->interfaceInfo == nullptr);
   INT_ASSERT(! fn->hasFlag(FLAG_GENERIC));
 
   SymbolMap& pciMap = pci->partialCopyMap;
@@ -1766,8 +1766,8 @@ Expr* resolveCallToAssociatedType(CallExpr* call, ConstrainedType* recv) {
   InterfaceInfo* ifcInfo = parentFn->interfaceInfo;
   const char* atName = toUnresolvedSymExpr(call->baseExpr)->unresolved;
 
-  ConstrainedType* assocType = NULL;
-  IfcConstraint*   assocCon  = NULL;
+  ConstrainedType* assocType = nullptr;
+  IfcConstraint*   assocCon  = nullptr;
   int indx = -1;
 
   // Find the constraint(s) where 'recv' is an implementer.
@@ -1790,7 +1790,7 @@ Expr* resolveCallToAssociatedType(CallExpr* call, ConstrainedType* recv) {
       continue;
 
     // Ensure it is unambiguous.
-    if (assocCon != NULL)
+    if (assocCon != nullptr)
       issueAssocTypeAmbiguousError(assocCon, icon, call, atName);
     assocCon = icon;
 
@@ -1805,7 +1805,7 @@ Expr* resolveCallToAssociatedType(CallExpr* call, ConstrainedType* recv) {
     INT_ASSERT(assocType->ctUse == CT_CGFUN_ASSOC_TYPE);
   }
 
-  if (assocType == NULL)
+  if (assocType == nullptr)
     // This was not a reference to an associated type
     return call;
 

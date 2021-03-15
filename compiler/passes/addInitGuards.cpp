@@ -198,7 +198,7 @@ static void addPrintModInitOrder(FnSymbol* fn)
   // Only do this if gPrintModuleInitFn exists.  It won't exist when
   // compiling --minimal-modules
   //
-  if (gPrintModuleInitFn == NULL)
+  if (gPrintModuleInitFn == nullptr)
     return;
 
   // The function printModuleIInit() takes 3 arguments:

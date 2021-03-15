@@ -2,15 +2,15 @@
  * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -87,7 +87,7 @@ class Vec {
   int           i;      // size index for sets
   C             *v;
   C             e[S];
-  
+
   Vec<C,S>();
   Vec<C,S>(const Vec<C,S> &vv);
   ~Vec() { if (v && v != e) free(v); }
@@ -127,7 +127,7 @@ class Vec {
   Vec<C,S>& operator=(Vec<C,S> &v) { this->copy(v); return *this; }
   int length () { return n; }
   int size() { return n; }
-  
+
  private:
   void move_internal(Vec<C,S> &v);
   void copy_internal(const Vec<C,S> &v);
@@ -173,7 +173,7 @@ class Intervals : public Vec<int> {
 class UnionFind : public Vec<int> {
  public:
   // set number of elements, initialized to singletons, may be called repeatedly to increase size
-  void size(int n); 
+  void size(int n);
   // return representative element
   int find(int n);
   // unify the sets containing the two elements
@@ -195,7 +195,7 @@ Vec<C,S>::Vec(const Vec<C,S> &vv) {
   copy(vv);
 }
 
-template <class C, int S> inline void 
+template <class C, int S> inline void
 Vec<C,S>::add(C a) {
   if (n & (S-1))
     v[n++] = a;
@@ -233,7 +233,7 @@ Vec<C,S>::pop() {
 template <class C, int S> inline void
 Vec<C,S>::clear() {
   if (v && v != e) free(v);
-  v = NULL;
+  v = nullptr;
   n = 0;
   i = 0;
 }
@@ -275,7 +275,7 @@ Vec<C,S>::in(C a) {
   for (C *c = v; c < v + n; c++)
     if (*c == a)
       return c;
-  return NULL;
+  return nullptr;
 }
 
 template <class C, int S> inline int
@@ -283,7 +283,7 @@ Vec<C,S>::add_exclusive(C a) {
   if (!in(a)) {
     add(a);
     return 1;
-  } else 
+  } else
     return 0;
 }
 
@@ -310,40 +310,40 @@ Vec<C,S>::index(C a) {
   return -1;
 }
 
-template <class C, int S> inline void 
+template <class C, int S> inline void
 Vec<C,S>::move_internal(Vec<C,S> &vv)  {
   n = vv.n;
   i = vv.i;
   v = vv.v;
-  if (vv.v == &vv.e[0]) { 
+  if (vv.v == &vv.e[0]) {
     memcpy((void*)e, &vv.e[0], sizeof(e));
     v = e;
   } else
     vv.v = 0;
 }
 
-template <class C, int S> inline void 
+template <class C, int S> inline void
 Vec<C,S>::move(Vec<C,S> &vv)  {
   move_internal(vv);
   vv.clear();
 }
 
-template <class C, int S> inline void 
+template <class C, int S> inline void
 Vec<C,S>::copy(const Vec<C,S> &vv)  {
   n = vv.n;
   i = vv.i;
-  if (vv.v == &vv.e[0]) { 
+  if (vv.v == &vv.e[0]) {
     memcpy((void*)e, &vv.e[0], sizeof(e));
     v = e;
   } else {
-    if (vv.v) 
+    if (vv.v)
       copy_internal(vv);
     else
       v = 0;
   }
 }
 
-template <class C, int S> inline void 
+template <class C, int S> inline void
 Vec<C,S>::fill(int nn)  {
   for (int i = n; i < nn; i++)
     add() = 0;
@@ -364,7 +364,7 @@ Vec<C,S>::append(const std::vector<C> &v) {
   }
 }
 
-template <class C, int S> inline void 
+template <class C, int S> inline void
 Vec<C,S>::addx() {
   if (!n) {
     v = e;
@@ -391,7 +391,7 @@ Vec<C,S>::addx() {
   }
 }
 
-template <class C, int S> void 
+template <class C, int S> void
 Vec<C,S>::add_internal(C a) {
   addx();
   v[n++] = a;
@@ -465,7 +465,7 @@ Vec<C,S>::set_union(Vec<C,S> &vv) {
     if (vv.v[i])
       changed = set_add(vv.v[i]) || changed;
   return changed;
-} 
+}
 
 template <class C, int S> void
 Vec<C,S>::set_to_vec() {
@@ -484,7 +484,7 @@ Vec<C,S>::vec_to_set() {
     set_add(*c);
 }
 
-template <class C, int S>  void 
+template <class C, int S>  void
 Vec<C,S>::remove(int index) {
   if (n > 1)
     memmove(&v[index], &v[index+1], (n - 1 - index) * sizeof(v[0]));
@@ -493,7 +493,7 @@ Vec<C,S>::remove(int index) {
     v = e;
 }
 
-template <class C, int S>  void 
+template <class C, int S>  void
 Vec<C,S>::insert(int index, C a) {
   addx();
   n++;
@@ -502,7 +502,7 @@ Vec<C,S>::insert(int index, C a) {
   v[index] = a;
 }
 
-template <class C, int S>  void 
+template <class C, int S>  void
 Vec<C,S>::reverse() {
   for (int i = 0; i < n/2; i++) {
     C *s = &v[i], *e = &v[n - 1 - i];

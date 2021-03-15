@@ -56,7 +56,7 @@ llvm::AllocaInst* makeAlloca(llvm::Type* type,
     insertBefore = i;
   } else {
     // Add at the end of entry block.
-    insertBefore = NULL;
+    insertBefore = nullptr;
   }
 
   llvm::AllocaInst *tempVar;
@@ -307,7 +307,7 @@ PromotedPair convertValuesToLarger(
                         false);
   }
 
-  return PromotedPair(NULL, NULL, false);
+  return PromotedPair(nullptr, nullptr, false);
 }
 
 
@@ -365,7 +365,7 @@ llvm::Type* arrayVecEltType(llvm::Type *t)
     llvm::VectorType *vt = llvm::dyn_cast<llvm::VectorType>(t);
     return vt->getElementType();
   } else {
-    return NULL;
+    return nullptr;
   }
 }
 
@@ -499,7 +499,7 @@ llvm::Value *convertValueToType(llvm::IRBuilder<>* irBuilder,
       // We turn it into a store/load to convert the type
       // since LLVM does not allow bit casts on structure types.
       llvm::AllocaInst* tmp_alloc;
-      llvm::Type* useTy = NULL;
+      llvm::Type* useTy = nullptr;
 
       if( layout.getTypeStoreSize(newType) >=
           layout.getTypeStoreSize(curType) )
@@ -520,7 +520,7 @@ llvm::Value *convertValueToType(llvm::IRBuilder<>* irBuilder,
     }
   }
 
-  return NULL;
+  return nullptr;
 }
 
 int64_t getTypeSizeInBytes(const llvm::DataLayout& layout, llvm::Type* ty)
@@ -545,7 +545,7 @@ bool isTypeSizeSmallerThan(const llvm::DataLayout& layout, llvm::Type* ty, uint6
 
 void print_llvm(llvm::Type* t)
 {
-  if (t == NULL)
+  if (t == nullptr)
     fprintf(stderr, "NULL");
   else
     t->print(llvm::dbgs(), true);
@@ -555,7 +555,7 @@ void print_llvm(llvm::Type* t)
 
 void print_llvm(llvm::Value* v)
 {
-  if (v == NULL)
+  if (v == nullptr)
     fprintf(stderr, "NULL");
   else
     v->print(llvm::dbgs(), true);
@@ -565,10 +565,10 @@ void print_llvm(llvm::Value* v)
 
 void print_llvm(llvm::Module* m)
 {
-  if (m == NULL)
+  if (m == nullptr)
     fprintf(stderr, "NULL");
   else
-    m->print(llvm::dbgs(), NULL);
+    m->print(llvm::dbgs(), nullptr);
 
   fprintf(stderr, "\n");
 }
@@ -576,4 +576,3 @@ void print_llvm(llvm::Module* m)
 
 
 #endif
-

@@ -66,7 +66,7 @@ bool VisibilityStmt::isARenamedSym(const char* name) const {
 
 const char* VisibilityStmt::getRenamedSym(const char* name) const {
   std::map<const char*, const char*>::const_iterator it;
-  const char*                                        retval = NULL;
+  const char* retval = nullptr;
 
   it = renamed.find(name);
 
@@ -107,7 +107,7 @@ Symbol* VisibilityStmt::checkIfModuleNameMatches(const char* name) {
     // under this category
     INT_FATAL("Malformed src");
   }
-  return NULL;
+  return nullptr;
 }
 
 
@@ -215,11 +215,11 @@ BlockStmt::BlockStmt(Expr* initBody, BlockTag initBlockTag) :
 
 
   blockTag      = initBlockTag;
-  useList       = NULL;
-  modRefs       = NULL;
-  userLabel     = NULL;
-  byrefVars     = NULL;
-  blockInfo     = NULL;
+  useList       = nullptr;
+  modRefs       = nullptr;
+  userLabel     = nullptr;
+  byrefVars     = nullptr;
+  blockInfo     = nullptr;
 
   body.parent   = this;
 
@@ -234,11 +234,11 @@ BlockStmt::BlockStmt(BlockTag initBlockTag) :
 
 
   blockTag      = initBlockTag;
-  useList       = NULL;
-  modRefs       = NULL;
-  userLabel     = NULL;
-  byrefVars     = NULL;
-  blockInfo     = NULL;
+  useList       = nullptr;
+  modRefs       = nullptr;
+  userLabel     = nullptr;
+  byrefVars     = nullptr;
+  blockInfo     = nullptr;
 
   body.parent   = this;
 
@@ -260,15 +260,15 @@ void BlockStmt::verify() {
       INT_FATAL(this, "BlockStmt::verify. Bad body.expr->parentExpr");
   }
 
-  if (blockInfo != NULL && blockInfo->parentExpr != this) {
+  if (blockInfo != nullptr && blockInfo->parentExpr != this) {
     INT_FATAL(this, "BlockStmt::verify. Bad blockInfo->parentExpr");
   }
 
-  if (useList   != NULL && useList->parentExpr   != this) {
+  if (useList   != nullptr && useList->parentExpr   != this) {
     INT_FATAL(this, "BlockStmt::verify. Bad useList->parentExpr");
   }
 
-  if (modRefs   != NULL && modRefs->parentExpr   != this) {
+  if (modRefs   != nullptr && modRefs->parentExpr   != this) {
     INT_FATAL(this, "BlockStmt::verify. Bad modRefs->parentExpr");
   }
 
@@ -328,13 +328,13 @@ BlockStmt::copyInner(SymbolMap* map) {
 }
 
 
-// Note that newAst can be NULL to reflect deletion
+// Note that newAst can be nullptr to reflect deletion
 void BlockStmt::replaceChild(Expr* oldAst, Expr* newAst) {
   CallExpr* oldExpr = toCallExpr(oldAst);
-  CallExpr* newExpr = (newAst != NULL) ? toCallExpr(newAst) : NULL;
+  CallExpr* newExpr = (newAst != nullptr) ? toCallExpr(newAst) : nullptr;
   bool handled = true;
 
-  if (oldExpr == NULL)
+  if (oldExpr == nullptr)
     handled = false;
 
   else if (oldExpr == blockInfo)
@@ -432,7 +432,7 @@ BlockStmt::getFirstExpr() {
   if (blockInfo != 0)
     retval = blockInfo->getFirstExpr();
 
-  else if (body.head      != 0)
+  else if (body.head != 0)
     retval = body.head->getFirstExpr();
 
   else
@@ -616,7 +616,7 @@ BlockStmt::useListAdd(ModuleSymbol* mod, bool privateUse) {
 
 void
 BlockStmt::useListAdd(VisibilityStmt* stmt) {
-  if (useList == NULL) {
+  if (useList == nullptr) {
     useList = new CallExpr(PRIM_USED_MODULES_LIST);
 
     if (parentSymbol)
@@ -633,7 +633,7 @@ bool
 BlockStmt::useListRemove(ModuleSymbol* mod) {
   bool retval = false;
 
-  if (useList != NULL) {
+  if (useList != nullptr) {
     for_alist(expr, useList->argList) {
       if (SymExpr* symExpr = toSymExpr(expr)) {
         if (ModuleSymbol* curMod = toModuleSymbol(symExpr->symbol())) {
@@ -653,7 +653,7 @@ BlockStmt::useListRemove(ModuleSymbol* mod) {
 
 void
 BlockStmt::useListClear() {
-  if (useList != NULL) {
+  if (useList != nullptr) {
 
     for_alist(expr, useList->argList) {
       expr->remove();
@@ -664,13 +664,13 @@ BlockStmt::useListClear() {
       useList->remove();
     }
 
-    useList = NULL;
+    useList = nullptr;
   }
 }
 
 void
 BlockStmt::modRefsAdd(ModuleSymbol* mod) {
-  if (modRefs == NULL) {
+  if (modRefs == nullptr) {
     modRefs = new CallExpr(PRIM_REFERENCED_MODULES_LIST);
 
     if (parentSymbol)
@@ -687,7 +687,7 @@ bool
 BlockStmt::modRefsRemove(ModuleSymbol* mod) {
   bool retval = false;
 
-  if (modRefs != NULL) {
+  if (modRefs != nullptr) {
     for_alist(expr, modRefs->argList) {
       if (SymExpr* symExpr = toSymExpr(expr)) {
         if (ModuleSymbol* curMod = toModuleSymbol(symExpr->symbol())) {
@@ -707,7 +707,7 @@ BlockStmt::modRefsRemove(ModuleSymbol* mod) {
 
 void
 BlockStmt::modRefsClear() {
-  if (modRefs != NULL) {
+  if (modRefs != nullptr) {
 
     for_alist(expr, modRefs->argList) {
       expr->remove();
@@ -718,7 +718,7 @@ BlockStmt::modRefsClear() {
       modRefs->remove();
     }
 
-    modRefs = NULL;
+    modRefs = nullptr;
   }
 }
 
@@ -760,8 +760,8 @@ CondStmt::CondStmt(Expr* iCondExpr,
                    bool isIfExpr) : Stmt(E_CondStmt) {
 
   condExpr = iCondExpr;
-  thenStmt = NULL;
-  elseStmt = NULL;
+  thenStmt = nullptr;
+  elseStmt = nullptr;
   fIsIfExpr = isIfExpr;
 
   if (Expr* s = toExpr(iThenStmt)) {
@@ -777,7 +777,7 @@ CondStmt::CondStmt(Expr* iCondExpr,
     INT_FATAL(iThenStmt, "Bad then-stmt passed to CondStmt constructor");
   }
 
-  if (iElseStmt != NULL) {
+  if (iElseStmt != nullptr) {
     if (Expr* s = toExpr(iElseStmt)) {
       BlockStmt* bs = toBlockStmt(s);
 
@@ -803,11 +803,11 @@ static void fixIfExprFoldedBlock(Expr* stmt) {
 }
 
 static void addCondMentionsToEndOfStatement(CondStmt* cond, bool isIfExpr) {
-  CallExpr* end = NULL;
+  CallExpr* end = nullptr;
 
   if (isIfExpr) {
     // Find the next PRIM_END_OF_STATEMENT
-    for (Expr* cur = cond; cur != NULL; cur = cur->next) {
+    for (Expr* cur = cond; cur != nullptr; cur = cur->next) {
       if (CallExpr* call = toCallExpr(cur)) {
         if (call->isPrimitive(PRIM_END_OF_STATEMENT)) {
           end = call;
@@ -821,7 +821,7 @@ static void addCondMentionsToEndOfStatement(CondStmt* cond, bool isIfExpr) {
 }
 
 CallExpr* CondStmt::foldConstantCondition(bool addEndOfStatement) {
-  CallExpr* result = NULL;
+  CallExpr* result = nullptr;
 
   if (SymExpr* cond = toSymExpr(condExpr)) {
     if (VarSymbol* var = toVarSymbol(cond->symbol())) {
@@ -860,7 +860,7 @@ CallExpr* CondStmt::foldConstantCondition(bool addEndOfStatement) {
         } else {
           Expr* else_stmt = elseStmt;
 
-          if (else_stmt != NULL) {
+          if (else_stmt != nullptr) {
             else_stmt->remove();
             replace(else_stmt);
             if (ifExpr) fixIfExprFoldedBlock(else_stmt);
@@ -951,15 +951,15 @@ void CondStmt::replaceChild(Expr* oldAst, Expr* newAst) {
 void CondStmt::accept(AstVisitor* visitor) {
   if (visitor->enterCondStmt(this) == true) {
 
-    if (condExpr != NULL) {
+    if (condExpr != nullptr) {
       condExpr->accept(visitor);
     }
 
-    if (thenStmt != NULL) {
+    if (thenStmt != nullptr) {
       thenStmt->accept(visitor);
     }
 
-    if (elseStmt != NULL) {
+    if (elseStmt != nullptr) {
       elseStmt->accept(visitor);
     }
 
@@ -972,12 +972,12 @@ Expr* CondStmt::getFirstExpr() {
 }
 
 Expr* CondStmt::getNextExpr(Expr* expr) {
-  Expr* retval = NULL;
+  Expr* retval = nullptr;
 
-  if        (expr == condExpr && thenStmt != NULL) {
+  if        (expr == condExpr && thenStmt != nullptr) {
     retval = thenStmt->getFirstExpr();
 
-  } else if (expr == thenStmt && elseStmt != NULL) {
+  } else if (expr == thenStmt && elseStmt != nullptr) {
     retval = elseStmt->getFirstExpr();
 
   } else {
@@ -988,12 +988,12 @@ Expr* CondStmt::getNextExpr(Expr* expr) {
 }
 
 // If 'expr' is the condExpr in a CondStmt, return that CondStmt.
-// Otherwise, return NULL.
+// Otherwise, return nullptr.
 CondStmt* isConditionalInCondStmt(Expr* expr) {
   if (CondStmt* parent = toCondStmt(expr->parentExpr))
     if (expr == parent->condExpr)
       return parent;
-  return NULL;
+  return nullptr;
 }
 
 // If 'expr' is the result of a call to '_cond_stmt', return the call's
@@ -1026,7 +1026,7 @@ const char* gotoTagToString(GotoTag gotoTag) {
     case GOTO_ERROR_HANDLING_RETURN: return "error-handling-return";
   }
   INT_FATAL("invalid gotoTag %d", (int)gotoTag);
-  return NULL;
+  return nullptr;
 }
 
 GotoStmt::GotoStmt(GotoTag init_gotoTag, const char* init_label) :
@@ -1068,12 +1068,12 @@ LabelSymbol* getGotoLabelSymbol(GotoStmt* gs) {
     if (SymExpr* labse = toSymExpr(gs->label))
       if (labse->symbol())
         return toLabelSymbol(labse->symbol());
-  return NULL;
+  return nullptr;
 }
 
 GotoStmt* getGotoLabelsIterResumeGoto(GotoStmt* gs) {
   LabelSymbol* labsym = getGotoLabelSymbol(gs);
-  return labsym ? labsym->iterResumeGoto : NULL;
+  return labsym ? labsym->iterResumeGoto : nullptr;
 }
 
 void GotoStmt::verify() {
@@ -1119,7 +1119,7 @@ void GotoStmt::verify() {
 
       GotoStmt* igs = getGotoLabelsIterResumeGoto(this);
 
-      if ((gotoTag == GOTO_ITER_RESUME) == (igs == NULL))
+      if ((gotoTag == GOTO_ITER_RESUME) == (igs == nullptr))
         INT_FATAL(this,
                   "goto must be GOTO_ITER_RESUME iff its label has iterResumeGoto");
 
@@ -1140,7 +1140,7 @@ GotoStmt::copyInner(SymbolMap* map) {
   // For a GOTO_ITER_RESUME: has the label symbol already been copied? ...
   LabelSymbol* labsym;
   if (gotoTag == GOTO_ITER_RESUME && (labsym = getGotoLabelSymbol(this))) {
-    LabelSymbol* lcopy = NULL;
+    LabelSymbol* lcopy = nullptr;
     if (Symbol* mcopy = map->get(labsym)) {
       lcopy = toLabelSymbol(mcopy);
       INT_ASSERT(lcopy); // a LabelSymbol gotta map to a LabelSymbol
@@ -1185,7 +1185,7 @@ const char* GotoStmt::getName() {
   else if (UnresolvedSymExpr* use = toUnresolvedSymExpr(label))
     return use->unresolved;
   else
-    return NULL;
+    return nullptr;
 }
 
 void GotoStmt::accept(AstVisitor* visitor) {
@@ -1207,7 +1207,7 @@ bool GotoStmt::isGotoReturn() const {
 }
 
 LabelSymbol* GotoStmt::gotoTarget() const {
-  LabelSymbol* retval = NULL;
+  LabelSymbol* retval = nullptr;
 
   if (SymExpr* labelExpr = toSymExpr(label)) {
     if (LabelSymbol* label = toLabelSymbol(labelExpr->symbol())) {
@@ -1262,7 +1262,7 @@ void ExternBlockStmt::accept(AstVisitor* visitor) {
 
 Expr* ExternBlockStmt::getFirstExpr() {
   INT_FATAL(this, "unexpected ExternBlockStmt in getFirstExpr");
-  return NULL;
+  return nullptr;
 }
 
 
@@ -1275,9 +1275,9 @@ Expr* ExternBlockStmt::getFirstExpr() {
 ForwardingStmt::ForwardingStmt(DefExpr* toFnDef) :
   Stmt(E_ForwardingStmt),
   toFnDef(toFnDef),
-  fnReturningForwarding(NULL),
-  type(NULL),
-  scratchFn(NULL),
+  fnReturningForwarding(nullptr),
+  type(nullptr),
+  scratchFn(nullptr),
   named(),
   renamed(),
   except(false)
@@ -1292,9 +1292,9 @@ ForwardingStmt::ForwardingStmt(DefExpr* toFnDef) :
 ForwardingStmt::ForwardingStmt(DefExpr* toFnDef, std::set<const char*>* args, bool exclude, std::map<const char*, const char*>* renames) :
   Stmt(E_ForwardingStmt),
   toFnDef(toFnDef),
-  fnReturningForwarding(NULL),
-  type(NULL),
-  scratchFn(NULL),
+  fnReturningForwarding(nullptr),
+  type(nullptr),
+  scratchFn(nullptr),
   named(),
   renamed(),
   except(exclude)
@@ -1343,7 +1343,7 @@ void ForwardingStmt::replaceChild(Expr* old_ast, Expr* new_ast) {
 }
 
 ForwardingStmt* ForwardingStmt::copyInner(SymbolMap* map) {
-  ForwardingStmt* ret = NULL;
+  ForwardingStmt* ret = nullptr;
 
   if (named.size() > 0 || renamed.size() > 0) {
     ret = new ForwardingStmt(COPY_INT(toFnDef), &named, except, &renamed);
@@ -1366,5 +1366,5 @@ void ForwardingStmt::accept(AstVisitor* visitor) {
 }
 
 Expr* ForwardingStmt::getFirstExpr() {
-  return (toFnDef != NULL) ? toFnDef->getFirstExpr() : this;
+  return (toFnDef != nullptr) ? toFnDef->getFirstExpr() : this;
 }

@@ -97,7 +97,7 @@ bool LoopStmt::isParallelAccessVectorizable() const
 // what if the nearest enclosing loop is a forall?
 LoopStmt* LoopStmt::findEnclosingLoop(Expr* expr)
 {
-  LoopStmt* retval = NULL;
+  LoopStmt* retval = nullptr;
 
   if (LoopStmt* loop = toLoopStmt(expr))
   {
@@ -111,7 +111,7 @@ LoopStmt* LoopStmt::findEnclosingLoop(Expr* expr)
 
   else
   {
-    retval = NULL;
+    retval = nullptr;
   }
 
   return retval;
@@ -122,7 +122,7 @@ LoopStmt* LoopStmt::findEnclosingLoop(Expr* expr, const char* name)
 {
   LoopStmt* retval = LoopStmt::findEnclosingLoop(expr);
 
-  while (retval != NULL && retval->isNamed(name) == false)
+  while (retval != nullptr && retval->isNamed(name) == false)
   {
     retval = LoopStmt::findEnclosingLoop(retval->parentExpr);
   }
@@ -132,7 +132,7 @@ LoopStmt* LoopStmt::findEnclosingLoop(Expr* expr, const char* name)
 
 Stmt* LoopStmt::findEnclosingLoopOrForall(Expr* expr)
 {
-  for (Expr* curr = expr; curr != NULL; curr = curr->parentExpr) {
+  for (Expr* curr = expr; curr != nullptr; curr = curr->parentExpr) {
     if (LoopStmt* loop = toLoopStmt(curr)) {
       return loop;
     }
@@ -141,14 +141,14 @@ Stmt* LoopStmt::findEnclosingLoopOrForall(Expr* expr)
     }
   }
   // no enclosing loops
-  return NULL;
+  return nullptr;
 }
 
 bool LoopStmt::isNamed(const char* name) const
 {
   bool retval = false;
 
-  if (userLabel != NULL)
+  if (userLabel != nullptr)
   {
     retval = (strcmp(userLabel, name) == 0) ? true : false;
   }

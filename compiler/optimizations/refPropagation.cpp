@@ -34,16 +34,16 @@ static size_t s_ref_repl_count; ///< The number of references replaced this pass
 
 // If there is exactly one definition of var by something of reference type, 
 // then return the call that defines it.
-// Otherwise, return NULL.
+// Otherwise, return nullptr.
 static CallExpr*
 findRefDef(Map<Symbol*,Vec<SymExpr*>*>& defMap, Symbol* var) {
-  CallExpr* ret = NULL;
+  CallExpr* ret = nullptr;
   for_defs(def, defMap, var) {
     if (CallExpr* call = toCallExpr(def->parentExpr)) {
       if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN))
         if (call->get(2)->isRef()) {
           if (ret)
-            return NULL;
+            return nullptr;
           else
             ret = call;
         }
@@ -141,7 +141,7 @@ eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
         if (!stillAlive) {
           var->defPoint->remove();
           Vec<SymExpr*>* defs = defMap.get(var);
-          if (defs == NULL) {
+          if (defs == nullptr) {
             INT_FATAL(var, "Expected var to be defined");
           }
           // Remove the first definition from the AST.

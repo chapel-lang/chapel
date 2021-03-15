@@ -127,7 +127,7 @@ public:
       header = setHeader;
       insertBlock(setHeader);
 
-      loopAST = NULL;
+      loopAST = nullptr;
       if (header->exprs.size() != 0) {
         if (BlockStmt* blockStmt = toBlockStmt(header->exprs.at(0)->parentExpr)) {
           if (LoopStmt* loop = toLoopStmt(blockStmt)) {
@@ -322,7 +322,7 @@ rhsAlias(CallExpr* call) {
     }
   }
   if (!hasRef) {
-    return NULL;
+    return nullptr;
   }
 
   if (call->isPrimitive(PRIM_MOVE) ||
@@ -379,7 +379,7 @@ rhsAlias(CallExpr* call) {
       }
     }
   }
-  return NULL;
+  return nullptr;
 }
 
 
@@ -490,7 +490,7 @@ static bool isConst(SymExpr* symExpr) {
  * Small helper method for adding a def/use so clean up the code for doing so a bit
  */
 static void addDefOrUse(symToVecSymExprMap& localDefOrUseMap, Symbol* var, SymExpr* defOrUse) {
-  if(localDefOrUseMap[var] == NULL) {
+  if(localDefOrUseMap[var] == nullptr) {
     localDefOrUseMap[var] = new std::vector<SymExpr*>;
   }
   localDefOrUseMap[var]->push_back(defOrUse);
@@ -619,7 +619,7 @@ static bool allOperandsAreLoopInvariant(Expr* expr, std::set<SymExpr*>& loopInva
     //else check if there is only one def for the symExpr. That the
     //def is invariant, and that the def occurs before this symExpr
     int numDefs = 0;
-    SymExpr* def = NULL;
+    SymExpr* def = nullptr;
 
     if(actualDefs.count(symExpr) == 1) {
       numDefs += actualDefs[symExpr].size();
@@ -628,7 +628,7 @@ static bool allOperandsAreLoopInvariant(Expr* expr, std::set<SymExpr*>& loopInva
       }
     }
 
-    if(numDefs > 1 || def == NULL) {
+    if(numDefs > 1 || def == nullptr) {
       return false;
     }
 
@@ -729,8 +729,8 @@ static bool computeAliases(FnSymbol* fn, std::map<Symbol*, std::set<Symbol*> >& 
     for_vector(Expr, expr, block2->exprs) {
       if(CallExpr* call = toCallExpr(expr)) {
         Symbol* rhs = rhsAlias(call);
-        if(rhs != NULL) {
-          Symbol* lhs = NULL;
+        if(rhs != nullptr) {
+          Symbol* lhs = nullptr;
           if(call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN))
             lhs = toSymExpr(call->get(1))->symbol();
           else
@@ -770,8 +770,8 @@ static bool computeAliases(FnSymbol* fn, std::map<Symbol*, std::set<Symbol*> >& 
           if (sym->id < otherSym->id) {
             bool symTemp = (sym->hasFlag(FLAG_TEMP) && !isArgSymbol(sym));
             bool otherTemp = (otherSym->hasFlag(FLAG_TEMP) && !isArgSymbol(otherSym));
-            const char* symName = NULL;
-            const char* otherSymName = NULL;
+            const char* symName = nullptr;
+            const char* otherSymName = nullptr;
 
             if (developer) {
               symName = sym->name;

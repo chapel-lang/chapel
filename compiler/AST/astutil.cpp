@@ -65,7 +65,7 @@ void collectFnCalls(BaseAST* ast, std::vector<CallExpr*>& calls) {
 void collectVirtualAndFnCalls(BaseAST* ast, std::vector<CallExpr*>& calls) {
   AST_CHILDREN_CALL(ast, collectFnCalls, calls);
   if (CallExpr* call = toCallExpr(ast))
-    if (call->resolvedOrVirtualFunction() != NULL)
+    if (call->resolvedOrVirtualFunction() != nullptr)
       calls.push_back(call);
 }
 
@@ -246,7 +246,7 @@ static void do_containsSymExprFor(BaseAST* ast, Symbol* sym, SymExpr** found) {
 
 // returns true if the AST contains a SymExpr pointing to sym
 SymExpr* findSymExprFor(BaseAST* ast, Symbol* sym) {
-  SymExpr* ret = NULL;
+  SymExpr* ret = nullptr;
   do_containsSymExprFor(ast, sym, &ret);
   return ret;
 }
@@ -264,11 +264,11 @@ void reset_ast_loc(BaseAST* destNode, astlocT astlocArg) {
 // This is a specialization of computeAllCallSites()
 // for use during resolveDynamicDispatches().
 void computeNonvirtualCallSites(FnSymbol* fn) {
-  if (fn->calledBy == NULL) {
+  if (fn->calledBy == nullptr) {
     fn->calledBy = new Vec<CallExpr*>();
   }
 
-  INT_ASSERT(virtualRootsMap.get(fn) == NULL);
+  INT_ASSERT(virtualRootsMap.get(fn) == nullptr);
 
   for_SymbolSymExprs(se, fn) {
     if (CallExpr* call = toCallExpr(se->parentExpr)) {
@@ -293,11 +293,11 @@ void computeNonvirtualCallSites(FnSymbol* fn) {
 // and all virtual calls to all its virtual parents, if any.
 void computeAllCallSites(FnSymbol* fn) {
   Vec<CallExpr*>* calledBy = fn->calledBy;
-  if (calledBy == NULL)
+  if (calledBy == nullptr)
     fn->calledBy = calledBy = new Vec<CallExpr*>();
-  else 
+  else
     calledBy->clear();
-  
+
   for_SymbolSymExprs(se, fn) {
     if (CallExpr* call = toCallExpr(se->parentExpr)) {
       if (fn == call->resolvedFunction()) {
@@ -570,7 +570,7 @@ void buildDefUseMaps(Vec<Symbol*>& symSet,
                      Map<Symbol*,Vec<SymExpr*>*>& defMap,
                      Map<Symbol*,Vec<SymExpr*>*>& useMap) {
   forv_Vec(Symbol, sym, symSet) {
-    if (sym == NULL) continue;
+    if (sym == nullptr) continue;
 
     for_SymbolSymExprs(se, sym) {
       if (se->inTree() && sym == se->symbol()) {
@@ -641,8 +641,8 @@ void subSymbol(BaseAST* ast, Symbol* oldSym, Symbol* newSym) {
 
 
 void sibling_insert_help(BaseAST* sibling, BaseAST* ast) {
-  Expr* parentExpr = NULL;
-  Symbol* parentSymbol = NULL;
+  Expr* parentExpr = nullptr;
+  Symbol* parentSymbol = nullptr;
   if (Expr* expr = toExpr(sibling)) {
     parentExpr = expr->parentExpr;
     parentSymbol = expr->parentSymbol;
@@ -656,8 +656,8 @@ void sibling_insert_help(BaseAST* sibling, BaseAST* ast) {
 void parent_insert_help(BaseAST* parent, Expr* ast) {
   if (!parent || !parent->inTree())
     return;
-  Expr* parentExpr = NULL;
-  Symbol* parentSymbol = NULL;
+  Expr* parentExpr = nullptr;
+  Symbol* parentSymbol = nullptr;
   if (Expr* expr = toExpr(parent)) {
     parentExpr = expr;
     parentSymbol = expr->parentSymbol;
@@ -676,7 +676,7 @@ void insert_help(BaseAST* ast,
                  Symbol* parentSymbol) {
   if (Symbol* sym = toSymbol(ast)) {
     parentSymbol = sym;
-    parentExpr = NULL;
+    parentExpr = nullptr;
   } else if (Expr* expr = toExpr(ast)) {
     if (SymExpr* se = toSymExpr(expr)) {
       Symbol* symbol = se->symbol();
@@ -706,8 +706,8 @@ void remove_help(BaseAST* ast, int trace_flag) {
         symbol->removeSymExpr(se);
       }
     }
-    expr->parentSymbol = NULL;
-    expr->parentExpr = NULL;
+    expr->parentSymbol = nullptr;
+    expr->parentExpr = nullptr;
   } else if (LabelSymbol* labsym = toLabelSymbol(ast)) {
     if (labsym->iterResumeGoto)
       removedIterResumeLabels.add(labsym);
@@ -735,7 +735,7 @@ actual_to_formal(Expr *a) {
     }
   }
   INT_FATAL(a, "bad call to actual_to_formal");
-  return NULL;
+  return nullptr;
 }
 
 
@@ -749,7 +749,7 @@ Expr* formal_to_actual(CallExpr* call, Symbol* arg) {
   } else {
     INT_FATAL(call, "formal_to_actual invoked with unresolved call");
   }
-  return NULL;
+  return nullptr;
 }
 
 bool givesType(Symbol* sym) {
@@ -801,7 +801,7 @@ bool isTypeExpr(Expr* expr) {
       Type*          t    = canonicalDecoratedClassType(left->getValType());
       AggregateType* ct   = toAggregateType(t);
 
-      INT_ASSERT(ct != NULL);
+      INT_ASSERT(ct != nullptr);
 
       if (left->symbol()->type->symbol->hasFlag(FLAG_TUPLE) == true &&
           left->symbol()->hasFlag(FLAG_TYPE_VARIABLE)       == true) {
@@ -814,7 +814,7 @@ bool isTypeExpr(Expr* expr) {
         if (var->isType() == true) {
           retval = true;
 
-        } else if (var->immediate != NULL) {
+        } else if (var->immediate != nullptr) {
           const char* name = var->immediate->v_string;
           Symbol*     field = ct->getField(name);
 
@@ -906,7 +906,7 @@ visitVisibleFunctions(Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types)
     pruneVisit(chpl_gen_main, fns, types);
 
   // When present, the printModuleInitOrder function is always visible;
-  // it will be NULL for --minimal-modules compilations
+  // it will be nullptr for --minimal-modules compilations
   if (gPrintModuleInitFn) {
     pruneVisit(gPrintModuleInitFn, fns, types);
   }
@@ -1026,7 +1026,7 @@ static void pruneUnusedRefs(Vec<TypeSymbol*>& types)
         continue;
 
       // Unlink reference type from value type.
-      vt->refType = NULL;
+      vt->refType = nullptr;
     }
 
     ts->defPoint->remove();
@@ -1040,10 +1040,10 @@ void cleanupAfterTypeRemoval()
   // change symbols with dead types to void (important for baseline)
   //
   forv_Vec(DefExpr, def, gDefExprs) {
-    if (def->inTree()                             &&
-        def->sym->type                   != NULL  &&
-        isAggregateType(def->sym->type)  ==  true &&
-        isTypeSymbol(def->sym)           == false &&
+    if (def->inTree()                                &&
+        def->sym->type                   != nullptr  &&
+        isAggregateType(def->sym->type)  ==  true    &&
+        isTypeSymbol(def->sym)           == false    &&
         def->sym->type->symbol->inTree() == false)
       def->sym->type = dtNothing;
   }
@@ -1142,7 +1142,7 @@ Symbol* getSvecSymbol(CallExpr* call) {
     return tuple->getField(immediateVal+1);
   } else {
     // GET_SVEC_MEMBER(p, i), where p is a star tuple
-    return NULL;
+    return nullptr;
   }
 }
 

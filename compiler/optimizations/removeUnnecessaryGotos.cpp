@@ -67,18 +67,18 @@ void removeUnnecessaryGotos(FnSymbol* fn, bool removeEpilogueLabel) {
     LabelSymbol* continueLabel = loop->continueLabelGet();
 
     if (breakLabel && isAlive(breakLabel) == false) {
-      loop->breakLabelSet(NULL);
+      loop->breakLabelSet(nullptr);
     }
 
     if (continueLabel && isAlive(continueLabel) == false) {
-      loop->continueLabelSet(NULL);
+      loop->continueLabelSet(nullptr);
     }
   }
 
   for_vector(ForallStmt, forall, foralls) {
     if (forall->fContinueLabel && !isAlive(forall->fContinueLabel))
-      forall->fContinueLabel = NULL;
+      forall->fContinueLabel = nullptr;
     if (forall->fErrorHandlerLabel && !isAlive(forall->fErrorHandlerLabel))
-      forall->fErrorHandlerLabel = NULL;
+      forall->fErrorHandlerLabel = nullptr;
   }
 }

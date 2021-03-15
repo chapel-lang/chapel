@@ -141,7 +141,7 @@ void denormalize(void) {
  *   pair first, which will replace node 6 with 3 and remove 1
  *   altogether. At that point when we try to denormalize the second
  *   pair(t2,t1) in our list, node id 6 will still be in the map but
- *   it's parent pointer will be NULL, since it's removed by
+ *   it's parent pointer will be nullptr, since it's removed by
  *   6->replace(3) operation in the previous iteration.
  *
  *   [I might be leaking compiler memory in the logic I just described]
@@ -167,7 +167,7 @@ void denormalizeOrDeferCandidates(UseDefCastMap& candidates,
     Expr* def = defCastPair.first;
     Type* castTo = defCastPair.second;
 
-    if(def->parentExpr == NULL) {
+    if(def->parentExpr == nullptr) {
       deferredSyms.insert(use->symbol());
       continue;
     }
@@ -188,9 +188,9 @@ void findCandidatesInFuncOnlySym(FnSymbol* fn, std::set<Symbol*> symVec,
 
   for_set(Symbol, sym, symVec) {
 
-    SymExpr *use = NULL;
-    Expr *def = NULL;
-    Type* castTo = NULL;
+    SymExpr *use = nullptr;
+    Expr *def = nullptr;
+    Type* castTo = nullptr;
 
     //if we don't already have it cached,
     //check for global symbols in function body
@@ -229,7 +229,7 @@ void findCandidatesInFuncOnlySym(FnSymbol* fn, std::set<Symbol*> symVec,
 
       //denormalize if the def is safe to move and there is no unsafe
       //function between use and def
-      if(analysisData.exprHasNoSideEffects(def, NULL)) {
+      if(analysisData.exprHasNoSideEffects(def, nullptr)) {
         if(!unsafeExprInBetween(def, use, def, analysisData)) {
           DefCastPair defCastPair(def, castTo);
           udcMap.insert(std::pair<SymExpr*, DefCastPair>
@@ -293,7 +293,7 @@ static ArgSymbol* formalForActual(FnSymbol* fn, Expr* firstActual,
   Expr* formalDef = fn->formals.head;
   Expr* actual    = firstActual;
 
-  while (formalDef != NULL && actual != NULL)
+  while (formalDef != nullptr && actual != nullptr)
   {
     if (actual == actualToMatch)
       return toArgSymbol(toDefExpr(formalDef)->sym);
@@ -303,7 +303,7 @@ static ArgSymbol* formalForActual(FnSymbol* fn, Expr* firstActual,
   }
 
   INT_ASSERT(false); // should have matched the actual
-  return NULL;
+  return nullptr;
 }
 
 // Return true when 'se' is passed by reference
@@ -322,7 +322,7 @@ static bool isValPassedByRef(CallExpr* ce, SymExpr* se)
   Expr* actual = ce->argList.head;
   FnSymbol* fn = ce->resolvedFunction();
 
-  if (fn == NULL) {
+  if (fn == nullptr) {
     if (ce->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
       fn = toFnSymbol(toSymExpr(actual)->symbol());
       if (se == actual->next)
@@ -345,15 +345,15 @@ bool isDenormalizable(Symbol* sym,
 
   if(sym && !(toFnSymbol(sym) || toArgSymbol(sym) || toTypeSymbol(sym))) {
     if(sym->name != astrThis) { //avoid issue with --baseline
-      SymExpr *use = NULL;
-      Expr *usePar = NULL;
-      Expr *def = NULL;
-      Expr *defPar = NULL;
+      SymExpr *use = nullptr;
+      Expr *usePar = nullptr;
+      Expr *def = nullptr;
+      Expr *defPar = nullptr;
 
       SymExpr* singleDef = sym->getSingleDef();
       SymExpr* singleUse = sym->getSingleUse();
 
-      if(singleDef != NULL && singleUse != NULL) { // check def-use counts
+      if(singleDef != nullptr && singleUse != nullptr) { // check def-use counts
         SymExpr* se = singleDef;
         defPar = se->parentExpr;
 
@@ -508,7 +508,7 @@ void denormalize(Expr* def, SymExpr* use, Type* castTo) {
   Expr* replExpr = def->remove();
 
   //replace use with def
-  if(castTo != NULL) {
+  if(castTo != nullptr) {
     SET_LINENO(def);
     Expr* castExpr = new CallExpr(PRIM_CAST, castTo->symbol, replExpr);
     use->replace(castExpr);

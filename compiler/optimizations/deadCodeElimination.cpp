@@ -111,8 +111,8 @@ void deadVariableElimination(FnSymbol* fn) {
         collectSymbolSet(call->getStmtExpr(), potentiallyChanged);
         INT_ASSERT(call);
 
-        Expr* dest = NULL;
-        Expr* rhs = NULL;
+        Expr* dest = nullptr;
+        Expr* rhs = nullptr;
         bool ok = getSettingPrimitiveDstSrc(call, &dest, &rhs);
         INT_ASSERT(ok);
 
@@ -190,21 +190,21 @@ void deadExpressionElimination(FnSymbol* fn) {
 
     } else if (CondStmt* cond = toCondStmt(ast)) {
       // Compensate for deadBlockElimination
-      if (cond->condExpr == NULL) {
+      if (cond->condExpr == nullptr) {
         cond->remove();
 
-      } else if (cond->thenStmt == NULL && cond->elseStmt == NULL) {
+      } else if (cond->thenStmt == nullptr && cond->elseStmt == nullptr) {
         cond->remove();
 
       } else {
 
         // Invert the condition and shuffle the alternative
-        if (cond->thenStmt == NULL) {
+        if (cond->thenStmt == nullptr) {
           Expr* condExpr = new CallExpr(PRIM_UNARY_LNOT, cond->condExpr);
 
           cond->replaceChild(cond->condExpr, condExpr);
           cond->replaceChild(cond->thenStmt, cond->elseStmt);
-          cond->replaceChild(cond->elseStmt, NULL);
+          cond->replaceChild(cond->elseStmt, nullptr);
 
         // NOAKES 2014/11/14 It's "odd" that folding is being done here
         } else {
@@ -390,7 +390,7 @@ static bool isDeadModule(ModuleSymbol* mod) {
     if (DefExpr* defExpr = toDefExpr(expr)) {
       // A 1-stmt module init function doesn't prevent the module being dead
       if (FnSymbol* fn = toFnSymbol(defExpr->sym)) {
-        if (mod->initFn == NULL)
+        if (mod->initFn == nullptr)
           INT_FATAL("Expected initFn for module '%s', but was null", mod->name);
 
         // ignore the init function

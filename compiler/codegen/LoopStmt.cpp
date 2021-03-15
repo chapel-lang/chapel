@@ -32,7 +32,7 @@ void LoopStmt::reportVectorizable()
     if (developer || mod->modTag == MOD_USER)
     {
       if (this->isVectorizable()) {
-        const char* kind = NULL;
+        const char* kind = nullptr;
 
         // if there is a vectorization hazard, we shouldn't
         // have considered it vectorizable at all.

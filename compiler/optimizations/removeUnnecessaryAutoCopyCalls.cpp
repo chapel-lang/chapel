@@ -74,7 +74,7 @@ static void removePODinitDestroy()
 
           // Bridge out the autoCopy call.
 
-          Type* lhsType = NULL;
+          Type* lhsType = nullptr;
           Type* rhsType = actual->typeInfo();
 
           CallExpr* move = toCallExpr(call->parentExpr);

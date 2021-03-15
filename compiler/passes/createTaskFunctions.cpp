@@ -29,10 +29,10 @@
 #include "wellknown.h"
 
 // 'markPruned' replaced deletion from SymbolMap, which does not work well.
-Symbol*           markPruned      = NULL;
+Symbol*           markPruned      = nullptr;
 
 // initial value for 'uses' SymbolMap
-Symbol*           markUnspecified = NULL;
+Symbol*           markUnspecified = nullptr;
 
 
 /************************************* | **************************************
@@ -55,12 +55,12 @@ Symbol*           markUnspecified = NULL;
 *                                                                             *
 ************************************** | *************************************/
 
-static ArgSymbol* tiMarkBlank     = NULL;
-static ArgSymbol* tiMarkIn        = NULL;
-static ArgSymbol* tiMarkConstDft  = NULL;
-static ArgSymbol* tiMarkConstIn   = NULL;
-static ArgSymbol* tiMarkConstRef  = NULL;
-static ArgSymbol* tiMarkRef       = NULL;
+static ArgSymbol* tiMarkBlank     = nullptr;
+static ArgSymbol* tiMarkIn        = nullptr;
+static ArgSymbol* tiMarkConstDft  = nullptr;
+static ArgSymbol* tiMarkConstIn   = nullptr;
+static ArgSymbol* tiMarkConstRef  = nullptr;
+static ArgSymbol* tiMarkRef       = nullptr;
 
 void initForTaskIntents() {
   markPruned      = gVoid;
@@ -191,7 +191,7 @@ static void cleanupRedRefs(Expr*& redRef1, Expr*& redRef2) {
   if (!redRef1) return;
   redRef1->remove();
   redRef2->remove();
-  redRef1 = redRef2 = NULL;
+  redRef1 = redRef2 = nullptr;
 }
 
 //
@@ -201,7 +201,7 @@ static void cleanupRedRefs(Expr*& redRef1, Expr*& redRef2) {
 //
 static Expr* findTailInsertionPoint(Expr* fromHere, bool isCoforall) {
   Expr*     curr   = (isCoforall) ? fromHere->parentExpr : fromHere;
-  CallExpr* result = NULL;
+  CallExpr* result = nullptr;
 
   while ((curr = curr->next)) {
     if (CallExpr* call = toCallExpr(curr))
@@ -471,7 +471,7 @@ findOuterVars(FnSymbol* fn, SymbolMap& uses) {
 // Mark the variables listed in 'with' clauses, if any, with tiMark markers.
 static void markOuterVarsWithIntents(CallExpr* byrefVars, SymbolMap& uses) {
   if (!byrefVars) return;
-  Symbol* marker = NULL;
+  Symbol* marker = nullptr;
 
   // The actuals alternate:
   //  (tiMark arg | reduce opExpr), task-intent variable [, repeat]
@@ -494,7 +494,7 @@ static void markOuterVarsWithIntents(CallExpr* byrefVars, SymbolMap& uses) {
           USR_WARN(byrefVars, "the variable '%s' is given a reduce intent and not mentioned in the loop body - it will have the unit value after the loop", var->name);
         }
       }
-      marker = NULL;
+      marker = nullptr;
     } else {
       marker = var;
       INT_ASSERT(marker);  // otherwise the alternation logic will not work
@@ -574,14 +574,14 @@ static void
 addVarsToFormalsActuals(FnSymbol* fn, SymbolMap& vars,
                         CallExpr* call, bool isCoforall)
 {
-  Expr *redRef1 = NULL, *redRef2 = NULL;
+  Expr *redRef1 = nullptr, *redRef2 = nullptr;
   form_Map(SymbolMapElem, e, vars) {
       Symbol* sym = e->key;
       if (e->value != markPruned) {
         SET_LINENO(sym);
-        ArgSymbol* newFormal = NULL;
-        Symbol*    newActual = NULL;
-        Symbol*    symReplace = NULL;
+        ArgSymbol* newFormal = nullptr;
+        Symbol*    newActual = nullptr;
+        Symbol*    symReplace = nullptr;
 
         // If we see a TypeSymbol here, it came from a reduce intent.
         // (See the above comment about 'vars'.)
@@ -651,7 +651,7 @@ static void replaceVarUses(Expr* topAst, SymbolMap& vars) {
 }
 
 static
-bool isAtomicFunctionWithOrderArgument(FnSymbol* fnSymbol, ArgSymbol** order = NULL)
+bool isAtomicFunctionWithOrderArgument(FnSymbol* fnSymbol, ArgSymbol** order = nullptr)
 {
   if( !fnSymbol ) return false;
   Symbol* _this = fnSymbol->_this;
@@ -709,7 +709,7 @@ void createTaskFunctions(void) {
         std::vector<FnSymbol*> moduleFunctions =
           module->getTopLevelFunctions(false);
         for_vector(FnSymbol, fnSymbol, moduleFunctions) {
-          ArgSymbol* order = NULL;
+          ArgSymbol* order = nullptr;
           // Does this function have an order= argument?
           // If so, add memory consistency functions (future - if they are not
           // already there).
@@ -735,7 +735,7 @@ void createTaskFunctions(void) {
     } else if (CallExpr* const info = block->blockInfoGet()) {
       SET_LINENO(block);
 
-      FnSymbol* fn = NULL;
+      FnSymbol* fn = nullptr;
 
       if (info->isPrimitive(PRIM_BLOCK_BEGIN)) {
         fn = new FnSymbol("begin_fn");
@@ -917,7 +917,7 @@ void createTaskFunctions(void) {
           markOuterVarsWithIntents(block->byrefVars, uses);
           pruneOuterVars(call->parentSymbol, uses);
 
-          if (block->byrefVars != NULL)
+          if (block->byrefVars != nullptr)
             block->byrefVars->remove();
 
           bool isCoforall = info->isPrimitive(PRIM_BLOCK_COFORALL) ||

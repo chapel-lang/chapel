@@ -126,7 +126,7 @@ Value* getLoadStorePointer(Instruction* I)
     StoreInst *store = cast<StoreInst>(I);
     return store->getPointerOperand();
   }
-  return NULL;
+  return nullptr;
 }
 
 // Given a start and end load/store instruction (in the same basic block),
@@ -142,7 +142,7 @@ Instruction* postponeDependentInstructions(
 {
   // memopsUses stores uses of toAggregate
   SmallPtrSet<Instruction*, 8> memopsUses;
-  Instruction *LastMemopUse = NULL;
+  Instruction *LastMemopUse = nullptr;
 
   // Gather any instructions using the result of a load
   for (BasicBlock::iterator BI = First->getIterator();
@@ -495,7 +495,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
   Type* globalInt8PtrTy = int8Ty->getPointerTo(globalSpace);
   bool isLoad = isa<LoadInst>(StartInst);
   bool isStore = isa<StoreInst>(StartInst);
-  Instruction *lastAddedInsn = NULL;
+  Instruction *lastAddedInsn = nullptr;
 
   DenseMap<Instruction*, int> bbPos; // pos in basic block
 
@@ -631,20 +631,20 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
     // Figure out the start and end instruction
     // and the set of loads and stores in the Range
     SmallSet<Instruction*, 8> toAggregate;
-    Instruction *First = NULL;
-    Instruction *Last = NULL;
+    Instruction *First = nullptr;
+    Instruction *Last = nullptr;
     for (SmallVector<Instruction*, 16>::const_iterator
          SI = Range.TheStores.begin(),
          SE = Range.TheStores.end(); SI != SE; ++SI) {
       Instruction* insn = *SI;
-      if (First == NULL || bbPos[insn] < bbPos[First])
+      if (First == nullptr || bbPos[insn] < bbPos[First])
         First = insn;
-      if (Last == NULL || bbPos[insn] > bbPos[Last])
+      if (Last == nullptr || bbPos[insn] > bbPos[Last])
         Last = insn;
 
       toAggregate.insert(insn);
     }
-    assert(First != NULL && Last != NULL);
+    assert(First != nullptr && Last != nullptr);
     assert(bbPos[First] < bbPos[Last]); // < because at least 2 ops
     assert(toAggregate.count(First));
     assert(toAggregate.count(Last));
@@ -675,7 +675,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
       Alignment = DL->getABITypeAlignment(EltType);
     }
 
-    Instruction *alloc = NULL;
+    Instruction *alloc = nullptr;
 
     // create temporary alloca space to communicate to/from.
     alloc = makeAlloca(int8Ty, "agg.tmp", insertBefore,

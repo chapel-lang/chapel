@@ -36,6 +36,6 @@ class FnSymbol;
 class Type;
 
 FnSymbol* resolveInitializer(CallExpr* call);
-void resolveNewInitializer(CallExpr* call, Type* manager = NULL);
+void resolveNewInitializer(CallExpr* call, Type* manager = nullptr);
 
 #endif

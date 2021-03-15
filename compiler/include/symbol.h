@@ -152,7 +152,7 @@ public:
   void           verify()    override;
 
   // Note: copy may add copied Symbols to the supplied map
-  virtual Symbol*    copy(SymbolMap* map      = NULL,
+  virtual Symbol*    copy(SymbolMap* map      = nullptr,
                           bool       internal = false)           = 0;
   virtual void       replaceChild(BaseAST* oldAst,
                                   BaseAST* newAst)               = 0;
@@ -211,9 +211,9 @@ public:
   // but may be faster.
   bool               isUsed()                                  const;
   bool               isDefined()                               const;
-  // Return the single use of this Symbol, or NULL if there are 0 or >= 2
+  // Return the single use of this Symbol, or nullptr if there are 0 or >= 2
   SymExpr*           getSingleUse()                            const;
-  // Return the single def of this Symbol, or NULL if there are 0 or >= 2
+  // Return the single def of this Symbol, or nullptr if there are 0 or >= 2
   SymExpr*           getSingleDef()                            const;
   // Same, considering only defs under 'parent'.
   SymExpr*           getSingleDefUnder(Symbol* parent)         const;
@@ -224,7 +224,7 @@ public:
   // is useful for finding such cases.
   // This function finds the statement expression that is responsible
   // for initializing this symbol.
-  // It can return NULL if it's unable to make sense of the AST pattern.
+  // It can return nullptr if it's unable to make sense of the AST pattern.
   Expr*              getInitialization()                       const;
 
 protected:
@@ -247,17 +247,17 @@ private:
 
 #define for_SymbolSymExprs(se, symbol)                                  \
   for (SymExpr *se = (symbol)->firstSymExpr(),                          \
-         *_se_next = se ? se->symbolSymExprsNext : NULL;                \
+         *_se_next = se ? se->symbolSymExprsNext : nullptr;             \
        se;                                                              \
        se = _se_next,                                                   \
-         _se_next = se ? se->symbolSymExprsNext : NULL)
+         _se_next = se ? se->symbolSymExprsNext : nullptr)
 
-#define for_SymbolDefs(def, symbol)                                      \
-  for_SymbolSymExprs(def, symbol)                                        \
+#define for_SymbolDefs(def, symbol)                                     \
+  for_SymbolSymExprs(def, symbol)                                       \
     if ((isDefAndOrUse(def) & 1))
 
-#define for_SymbolUses(use, symbol)                                      \
-  for_SymbolSymExprs(use, symbol)                                        \
+#define for_SymbolUses(use, symbol)                                     \
+  for_SymbolSymExprs(use, symbol)                                       \
     if ((isDefAndOrUse(use) & 2))
 
 
@@ -363,9 +363,9 @@ public:
   ArgSymbol(IntentTag   iIntent,
             const char* iName,
             Type*       iType,
-            Expr*       iTypeExpr     = NULL,
-            Expr*       iDefaultExpr  = NULL,
-            Expr*       iVariableExpr = NULL);
+            Expr*       iTypeExpr     = nullptr,
+            Expr*       iDefaultExpr  = nullptr,
+            Expr*       iVariableExpr = nullptr);
 
 
   // Interface for BaseAST
@@ -394,11 +394,11 @@ public:
   std::string     getPythonDefaultValue();
   std::string     getPythonArgTranslation();
 
-  std::string     demungeVarArgName(std::string* num=NULL);
+  std::string     demungeVarArgName(std::string* num=nullptr);
 
   IntentTag       intent;
   IntentTag       originalIntent; // stores orig intent after resolve intents
-  BlockStmt*      typeExpr;    // Type expr for arg type, or NULL.
+  BlockStmt*      typeExpr;    // Type expr for arg type, or nullptr.
   BlockStmt*      defaultExpr;
 
   // Stores the expression specified after an ellipsis in vararg formal.
@@ -427,7 +427,7 @@ public:
   ShadowVarSymbol(ForallIntentTag iIntent,
                   const char* iName,
                   SymExpr* outerVar,
-                  Expr* iSpec = NULL);
+                  Expr* iSpec = nullptr);
 
   void  verify()                                           override;
   void  accept(AstVisitor* visitor)                        override;
@@ -447,7 +447,7 @@ public:
                                          Expr* name, Expr* type, Expr* init);
   static ShadowVarSymbol* buildFromReduceIntent(Expr* ovar, Expr* riExpr);
 
-  // The outer variable or NULL if not applicable.
+  // The outer variable or nullptr if not applicable.
   Symbol* outerVarSym()    const;
 
   // Returns the EXPR in "with (EXPR reduce x)".
@@ -471,11 +471,11 @@ public:
   // The intent for this variable.
   ForallIntentTag intent;
 
-  // Reference to the outer variable. NULL for task-private variables.
+  // Reference to the outer variable. nullptr for task-private variables.
   SymExpr* outerVarSE;
 
   // For a reduce intent, the reduce expression, wrapped in a block.
-  // Otherwise NULL.
+  // Otherwise nullptr.
   BlockStmt* specBlock;
 
   // Corresponding actions to be performed at task startup and teardown.
@@ -726,11 +726,11 @@ Immediate *getSymbolImmediate(Symbol* sym);
 void createInitStringLiterals();
 void resetTempID();
 FlagSet getRecordWrappedFlags(Symbol* s);
-VarSymbol* newTemp(const char* name = NULL, Type* type = dtUnknown);
+VarSymbol* newTemp(const char* name = nullptr, Type* type = dtUnknown);
 VarSymbol* newTemp(Type* type);
 VarSymbol* newTemp(const char* name, QualifiedType qt);
 VarSymbol* newTemp(QualifiedType qt);
-VarSymbol* newTempConst(const char* name = NULL, Type* type = dtUnknown);
+VarSymbol* newTempConst(const char* name = nullptr, Type* type = dtUnknown);
 VarSymbol* newTempConst(Type* type);
 VarSymbol* newTempConst(const char* name, QualifiedType qt);
 VarSymbol* newTempConst(QualifiedType qt);

@@ -169,7 +169,7 @@ static WellKnownType sWellKnownTypes[] = {
 };
 
 static void removeIfUndefinedGlobalType(AggregateType*& t) {
-  if (t->symbol == NULL || t->symbol->defPoint == NULL) {
+  if (t->symbol == nullptr || t->symbol->defPoint == nullptr) {
     // This means there was no declaration of this type
     if (t->symbol)
       gTypeSymbols.remove(gTypeSymbols.index(t->symbol));
@@ -178,7 +178,7 @@ static void removeIfUndefinedGlobalType(AggregateType*& t) {
 
     delete t;
 
-    t = NULL;
+    t = nullptr;
   }
 }
 
@@ -197,9 +197,9 @@ static void gatherType(Symbol* sym, Type* t, const char* name) {
     WellKnownType& wkt = sWellKnownTypes[i];
 
     if (name == wkt.name) {
-      if (*wkt.type_ != NULL)
+      if (*wkt.type_ != nullptr)
         multipleDefinedTypeError(sym, name);
-      INT_ASSERT(t != NULL);
+      INT_ASSERT(t != nullptr);
       *wkt.type_ = t;
     }
   }
@@ -209,9 +209,9 @@ static void gatherType(Symbol* sym, Type* t, const char* name) {
     WellKnownAggregateType& wkt = sWellKnownAggregateTypes[i];
 
     if (name == wkt.name) {
-      if (*wkt.type_ != NULL)
+      if (*wkt.type_ != nullptr)
         multipleDefinedTypeError(sym, name);
-      INT_ASSERT(t != NULL);
+      INT_ASSERT(t != nullptr);
       if (wkt.isClass == true && isClass(t) == false) {
         USR_FATAL_CONT(sym,
                        "The '%s' type must be a class.",
@@ -240,10 +240,10 @@ void gatherWellKnownTypes() {
 
   // Check type aliases (for e.g. extern type c_int = int(32) )
   forv_Vec(VarSymbol, var, gVarSymbols) {
-    if (var->defPoint != NULL &&
+    if (var->defPoint != nullptr &&
         isModuleSymbol(var->defPoint->parentSymbol) &&
         var->hasFlag(FLAG_TYPE_VARIABLE)) {
-      Type* t = NULL;
+      Type* t = nullptr;
       if (var->type != dtUnknown) {
         t = var->type;
       } else {
@@ -254,7 +254,7 @@ void gatherWellKnownTypes() {
         }
       }
 
-      if (t != NULL && t != dtUnknown)
+      if (t != nullptr && t != dtUnknown)
         gatherType(var, t, var->name);
     }
   }
@@ -270,7 +270,7 @@ void gatherWellKnownTypes() {
     for (int i = 0; i < nTypes; ++i) {
       WellKnownType& wkt = sWellKnownTypes[i];
 
-      if (*wkt.type_ == NULL) {
+      if (*wkt.type_ == nullptr) {
         USR_FATAL_CONT("Type '%s' must be defined in the "
                        "Chapel internal modules.",
                        wkt.name);
@@ -280,7 +280,7 @@ void gatherWellKnownTypes() {
     for (int i = 0; i < nAggregate; ++i) {
       WellKnownAggregateType& wkt = sWellKnownAggregateTypes[i];
 
-      if (*wkt.type_ == NULL) {
+      if (*wkt.type_ == nullptr) {
         if (wkt.type_ == &dtCFI_cdesc_t && !fLibraryFortran) {
           // This should only be defined when --library-fortran is used
         } else {
@@ -312,12 +312,12 @@ std::vector<Type*> getWellKnownTypes()
 
   for (int i = 0; i < nTypes; i++) {
     WellKnownType& wkt = sWellKnownTypes[i];
-    if (*wkt.type_ != NULL)
+    if (*wkt.type_ != nullptr)
       types.push_back(*wkt.type_);
   }
   for (int i = 0; i < nAggregate; i++) {
     WellKnownAggregateType& wkt = sWellKnownAggregateTypes[i];
-    if (*wkt.type_ != NULL)
+    if (*wkt.type_ != nullptr)
       types.push_back(*wkt.type_);
   }
 
@@ -333,13 +333,13 @@ void clearGenericWellKnownTypes()
   for (int i = 0; i < nTypes; i++) {
     WellKnownType& wkt = sWellKnownTypes[i];
     Type* t = *wkt.type_;
-    if (t != NULL && t->symbol && t->symbol->hasFlag(FLAG_GENERIC))
-      *wkt.type_ = NULL;
+    if (t != nullptr && t->symbol && t->symbol->hasFlag(FLAG_GENERIC))
+      *wkt.type_ = nullptr;
   }
   for (int i = 0; i < nAggregate; i++) {
     WellKnownAggregateType& wkt = sWellKnownAggregateTypes[i];
-    if (*wkt.type_ != NULL && (*wkt.type_)->isGeneric())
-      *wkt.type_ = NULL;
+    if (*wkt.type_ != nullptr && (*wkt.type_)->isGeneric())
+      *wkt.type_ = nullptr;
   }
 }
 
@@ -351,16 +351,16 @@ Type* getWellKnownTypeWithName(const char* name) {
   name = astr(name);
   for (int i = 0; i < nTypes; i++) {
     WellKnownType& wkt = sWellKnownTypes[i];
-    if (*wkt.type_ != NULL && wkt.name == name)
+    if (*wkt.type_ != nullptr && wkt.name == name)
       return *wkt.type_;
   }
   for (int i = 0; i < nAggregate; i++) {
     WellKnownAggregateType& wkt = sWellKnownAggregateTypes[i];
-    if (*wkt.type_ != NULL && wkt.name == name)
+    if (*wkt.type_ != nullptr && wkt.name == name)
       return *wkt.type_;
   }
 
-  return NULL;
+  return nullptr;
 }
 
 struct WellKnownFn
@@ -529,7 +529,7 @@ void gatherWellKnownFns() {
         wkfn.lastNameMatchedFn = fn;
 
         if (wkfn.flag == FLAG_UNKNOWN || fn->hasFlag(wkfn.flag) == true) {
-          if (*wkfn.fn != NULL) {
+          if (*wkfn.fn != nullptr) {
             USR_WARN(fn,
                      "'%s' defined more than once in Chapel internal modules.",
                      wkfn.name);
@@ -547,12 +547,12 @@ void gatherWellKnownFns() {
       FnSymbol*    lastMatched = wkfn.lastNameMatchedFn;
       FnSymbol*    fn          = *wkfn.fn;
 
-      if (lastMatched == NULL) {
+      if (lastMatched == nullptr) {
         USR_FATAL_CONT("Function '%s' must be defined in the "
                        "Chapel internal modules.",
                        wkfn.name);
 
-      } else if (fn == NULL) {
+      } else if (fn == nullptr) {
         USR_FATAL_CONT(fn,
                        "The '%s' function is missing a required flag.",
                        wkfn.name);
@@ -571,7 +571,7 @@ std::vector<FnSymbol*> getWellKnownFunctions()
 
   for (int i = 0; i < nEntries; ++i) {
     WellKnownFn& wkfn = sWellKnownFns[i];
-    if (*wkfn.fn != NULL)
+    if (*wkfn.fn != nullptr)
       fns.push_back(*wkfn.fn);
   }
 
@@ -584,8 +584,8 @@ void clearGenericWellKnownFunctions()
 
   for (int i = 0; i < nEntries; ++i) {
     WellKnownFn& wkfn = sWellKnownFns[i];
-    if (*wkfn.fn != NULL && (*wkfn.fn)->isGeneric())
-      *wkfn.fn = NULL;
+    if (*wkfn.fn != nullptr && (*wkfn.fn)->isGeneric())
+      *wkfn.fn = nullptr;
   }
 }
 

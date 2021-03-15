@@ -44,9 +44,9 @@ static void clearDefaultInitFns(FnSymbol* unusedFn) {
                                            FLAG_ITERATOR_CLASS));
       if (ii) {
         if (ii->iterator == unusedFn)
-          ii->iterator = NULL;
+          ii->iterator = nullptr;
         if (ii->getIterator == unusedFn)
-          ii->getIterator = NULL;
+          ii->getIterator = nullptr;
       }
     }
   }
@@ -183,8 +183,8 @@ static void removeRandomPrimitive(CallExpr* call) {
       baseType = canonicalDecoratedClassType(baseType);
 
       SymExpr* memberSE = toSymExpr(call->get(2));
-      const char* memberName = NULL;
-      Symbol* sym = NULL;  // the member symbol
+      const char* memberName = nullptr;
+      Symbol* sym = nullptr;  // the member symbol
 
       if (get_string(memberSE, &memberName)) {
         sym = baseType->getField(memberName);
@@ -340,7 +340,7 @@ static void replaceTypeArgsWithFormalTypeTemps() {
       // function as well to avoid assumptions that it's legal later.
       //
       if (formal == fn->_this) {
-        fn->_this = NULL;
+        fn->_this = nullptr;
       }
     }
   }
@@ -470,7 +470,7 @@ std::set<Type*> getWellKnownTypesSet() {
 
   for_vector(Type, type, wellKnownTypes) {
     AggregateType* at = toAggregateType(type);
-    if (at == NULL || at->isGeneric() == false)
+    if (at == nullptr || at->isGeneric() == false)
       concreteWellKnownTypesSet.insert(type);
   }
   return concreteWellKnownTypesSet;
@@ -606,7 +606,7 @@ static void removeTypedefParts() {
         (def->sym->hasFlag(FLAG_TYPE_VARIABLE) ||
          def->sym->type->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE))) {
       def->init->remove();
-      def->init = NULL;
+      def->init = nullptr;
     }
 
     // Also remove DefExprs for generic type variables
@@ -696,7 +696,7 @@ static void removeSymbolsWithRemovedTypes() {
   // Running the asserts after the above guards against potential false alarms
   // when an earlier-removed Fn/VarSymbol refers to a later-removed one.
   for_vector(Symbol, sym, removedSyms)
-    INT_ASSERT(sym->firstSymExpr() == NULL);  // these better be unused
+    INT_ASSERT(sym->firstSymExpr() == nullptr);  // these better be unused
 }
 
 //
@@ -710,22 +710,22 @@ static void cleanupAfterRemoves() {
   forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
     // Zero the initFn pointer if the function is now dead. Ditto deinitFn.
     if (mod->initFn && !isAlive(mod->initFn))
-      mod->initFn = NULL;
+      mod->initFn = nullptr;
     if (mod->deinitFn && !isAlive(mod->deinitFn))
-      mod->deinitFn = NULL;
+      mod->deinitFn = nullptr;
   }
 
   forv_Vec(ArgSymbol, arg, gArgSymbols) {
-    if (arg->instantiatedFrom != NULL)
+    if (arg->instantiatedFrom != nullptr)
       arg->addFlag(FLAG_INSTANTIATED_GENERIC);
-    arg->instantiatedFrom = NULL;
+    arg->instantiatedFrom = nullptr;
   }
 
   cleanupAfterTypeRemoval();
 }
 
 static bool isNothingType(Type* type) {
-  if (type == NULL) {
+  if (type == nullptr) {
     return false;
   }
   if (type == dtNothing) {
@@ -742,7 +742,7 @@ static bool isNothingType(Type* type) {
   }
   if (type->symbol->hasFlag(FLAG_STAR_TUPLE)) {
     Symbol* field = type->getField("x0", false);
-    if (field == NULL || field->type == dtNothing) {
+    if (field == nullptr || field->type == dtNothing) {
       return true;
     }
   }
@@ -836,7 +836,7 @@ static void cleanupNothingVarsAndFields() {
       for_formals(formal, fn) {
         if (isNothingType(formal->type)) {
           if (formal == fn->_this) {
-            fn->_this = NULL;
+            fn->_this = nullptr;
           }
           formal->defPoint->remove();
         }
@@ -847,7 +847,7 @@ static void cleanupNothingVarsAndFields() {
       }
       if (fn->_this) {
         if (isNothingType(fn->_this->type)) {
-          fn->_this = NULL;
+          fn->_this = nullptr;
         }
       }
   }
@@ -940,14 +940,14 @@ void saveGenericSubstitutions() {
     }
 
     // Clear instantiatedFrom since it would refer to a deleted AST node
-    if (fn->instantiatedFrom != NULL) {
+    if (fn->instantiatedFrom != nullptr) {
       fn->addFlag(FLAG_INSTANTIATED_GENERIC);
 
       // Clear instantiatedFrom since it would refer to a deleted AST node
-      fn->instantiatedFrom = NULL;
+      fn->instantiatedFrom = nullptr;
     }
 
-    fn->setInstantiationPoint(NULL);
+    fn->setInstantiationPoint(nullptr);
   }
 
   for_alive_in_Vec(TypeSymbol, ts, gTypeSymbols) {
@@ -969,9 +969,9 @@ void saveGenericSubstitutions() {
         at->substitutions.clear();
       }
 
-      if (at->instantiatedFrom != NULL) {
+      if (at->instantiatedFrom != nullptr) {
         // Clear instantiatedFrom since it would refer to a deleted AST node
-        at->instantiatedFrom = NULL;
+        at->instantiatedFrom = nullptr;
 
         ts->addFlag(FLAG_INSTANTIATED_GENERIC);
       }

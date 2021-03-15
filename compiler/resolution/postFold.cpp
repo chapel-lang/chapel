@@ -50,7 +50,7 @@ static Expr* postFoldSymExpr(SymExpr* symExpr);
     if (Immediate* imm = getSymbolImmediate(sym)) {                     \
       Immediate i3;                                                     \
                                                                         \
-      fold_constant(prim, imm, NULL, &i3);                              \
+      fold_constant(prim, imm, nullptr, &i3);                           \
                                                                         \
       retval = new SymExpr(new_ImmediateSymbol(&i3));                   \
                                                                         \
@@ -137,7 +137,7 @@ static Expr* postFoldNormal(CallExpr* call) {
   if (fn->retTag == RET_PARAM || fn->hasFlag(FLAG_MAYBE_PARAM)) {
     VarSymbol* ret = toVarSymbol(fn->getReturnSymbol());
 
-    if (ret != NULL && ret->immediate != NULL) {
+    if (ret != nullptr && ret->immediate != nullptr) {
       retval = new SymExpr(ret);
 
       call->replace(retval);
@@ -577,7 +577,7 @@ static Expr* postFoldPrimop(CallExpr* call) {
 
   } else if (call->isPrimitive(PRIM_REQUIRE) == true) {
     Expr*       arg = call->argList.only();
-    const char* str = NULL;
+    const char* str = nullptr;
 
     if (get_string(arg, &str)) {
       processStringInRequireStmt(str, false, call->astloc.filename);
@@ -603,7 +603,7 @@ static bool isSameTypeOrInstantiation(Type* sub, Type* super, Expr* ctx) {
 
   // Consider instantiation
   if (super->symbol->hasFlag(FLAG_GENERIC)) {
-    super = getInstantiationType(sub, NULL, super, NULL, ctx);
+    super = getInstantiationType(sub, nullptr, super, nullptr, ctx);
     if (sub == super)
       return true;
   }
@@ -616,14 +616,14 @@ bool isSubtypeOrInstantiation(Type* sub, Type* super, Expr* ctx) {
 
   // Consider instantiation
   if (super->symbol->hasFlag(FLAG_GENERIC))
-    super = getInstantiationType(sub, NULL, super, NULL, ctx);
+    super = getInstantiationType(sub, nullptr, super, nullptr, ctx);
 
   bool promotes = false;
   bool dispatch = false;
 
   if (sub && super) {
     dispatch = sub == super ||
-               canCoerceAsSubtype(sub, NULL, super, NULL, NULL, &promotes);
+               canCoerceAsSubtype(sub, nullptr, super, nullptr, nullptr, &promotes);
   }
 
   return dispatch && !promotes;
@@ -634,13 +634,13 @@ bool isCoercibleOrInstantiation(Type* sub, Type* super, Expr* ctx) {
 
   // Consider instantiation
   if (super->symbol->hasFlag(FLAG_GENERIC))
-    super = getInstantiationType(sub, NULL, super, NULL, ctx);
+    super = getInstantiationType(sub, nullptr, super, nullptr, ctx);
 
   bool promotes = false;
   bool dispatch = false;
 
   if (sub && super)
-    dispatch = canDispatch(sub, NULL, super, NULL, NULL, &promotes);
+    dispatch = canDispatch(sub, nullptr, super, nullptr, nullptr, &promotes);
 
   return dispatch && !promotes;
 }
@@ -670,7 +670,7 @@ static Expr* postFoldMove(CallExpr* call) {
     } else if (CallExpr* rhs = toCallExpr(call->get(2))) {
       FnSymbol* fn = rhs->resolvedFunction();
 
-      if (fn != NULL && fn->name == astrSassign && fn->retType == dtVoid) {
+      if (fn != nullptr && fn->name == astrSassign && fn->retType == dtVoid) {
         call->replace(rhs->remove());
 
         retval = rhs;
@@ -692,7 +692,7 @@ static bool postFoldMoveUpdateForParam(CallExpr* call, Symbol* lhsSym) {
 
   if (lhsSym->hasFlag(FLAG_MAYBE_PARAM) == true ||
       lhsSym->isParameter()             == true) {
-    if (paramMap.get(lhsSym) != NULL) {
+    if (paramMap.get(lhsSym) != nullptr) {
       INT_FATAL(call, "parameter set multiple times");
 
     } else if (lhsSym->isImmediate() == true) {
@@ -701,7 +701,7 @@ static bool postFoldMoveUpdateForParam(CallExpr* call, Symbol* lhsSym) {
     } else if (SymExpr* rhs = toSymExpr(call->get(2))) {
       Symbol* rhsSym = rhs->symbol();
 
-      while (paramMap.get(rhsSym) != NULL) {
+      while (paramMap.get(rhsSym) != nullptr) {
         rhsSym = paramMap.get(rhsSym);
       }
       if (rhsSym->isImmediate() == true ||

@@ -39,10 +39,10 @@ bool isChplIterOrLoopIterator(Symbol* sym, ForLoop*& loop)
     return true;
 
   Symbol* checkSym = sym;
-  Symbol* nextSym = NULL;
+  Symbol* nextSym = nullptr;
 
   while (checkSym) {
-    nextSym = NULL;
+    nextSym = nullptr;
 
     // Check if checkSym is used in a SymExpr in ForLoop
     for_SymbolSymExprs(se, checkSym) {
@@ -80,7 +80,7 @@ bool isChplIterOrLoopIterator(Symbol* sym, ForLoop*& loop)
 // Get the non-fast-follower Follower
 static
 ForLoop* findFollowerForLoop(BlockStmt* block) {
-  ForLoop* ret = NULL;
+  ForLoop* ret = nullptr;
   Expr* e = block->body.first();
   while (e) {
     if (ForLoop* forLoop = toForLoop(e)) {
@@ -93,7 +93,7 @@ ForLoop* findFollowerForLoop(BlockStmt* block) {
     if (CondStmt* cond = toCondStmt(e)) {
       // Ignore error handling blocks
       CallExpr* call = toCallExpr(cond->condExpr);
-      if (call == NULL || !call->isPrimitive(PRIM_CHECK_ERROR)) {
+      if (call == nullptr || !call->isPrimitive(PRIM_CHECK_ERROR)) {
         // Look in the else block to find the non-fast-follower
         // in case it is decided at run-time whether fast
         // followers can be used.
@@ -103,16 +103,16 @@ ForLoop* findFollowerForLoop(BlockStmt* block) {
     }
     e = e->next;
   }
-  return NULL;
+  return nullptr;
 }
 
 /* Given an expression, find the preceding variable
    declared in the same block that is marked with FLAG_CHPL__ITER,
-   or NULL if no such variable exists.
+   or nullptr if no such variable exists.
  */
 static Symbol* findPrecedingChplIter(Expr* ref)
 {
-  Symbol* chpl_iter = NULL;
+  Symbol* chpl_iter = nullptr;
   Expr* e = ref->prev;
   while (e) {
     if (DefExpr* d = toDefExpr(e)) {
@@ -195,7 +195,7 @@ Symbol* collapseIndexVarReferences(Symbol* index)
  */
 static Expr* findExprProducing(Symbol* iterator) {
 
-  if (isArgSymbol(iterator)) return NULL;
+  if (isArgSymbol(iterator)) return nullptr;
 
   Expr* initExpr = iterator->getInitialization();
 
@@ -210,7 +210,7 @@ static Expr* findExprProducing(Symbol* iterator) {
         SymExpr* lhsSe = toSymExpr(initCall->get(1));
         // skip a 'ret_tmp'
         if (rhsSe->symbol()->hasFlag(FLAG_TEMP) &&
-            lhsSe->symbol()->getSingleDef() != NULL) {
+            lhsSe->symbol()->getSingleDef() != nullptr) {
           return findExprProducing(rhsSe->symbol());
         } else {
           return rhsSe;
@@ -222,7 +222,7 @@ static Expr* findExprProducing(Symbol* iterator) {
     }
   }
 
-  return NULL;
+  return nullptr;
 }
 
 
@@ -273,7 +273,7 @@ void findZipperedIndexVariables(Symbol* index, std::vector<IteratorDetails>&
   // the index variable's tuple element.
   if (index->type->symbol->hasFlag(FLAG_TUPLE)) {
     for(size_t i = 0; i < detailsVector.size(); i++) {
-      if (detailsVector[i].index == NULL) {
+      if (detailsVector[i].index == nullptr) {
         detailsVector[i].index = index;
         detailsVector[i].indexTupleElement = i+1;
       }
@@ -338,16 +338,16 @@ void gatherLoopDetails(ForLoop*  forLoop,
   // in the loop header.
   Symbol* chpl_iter = findPrecedingChplIter(forLoop);
 
-  bool forall = (chpl_iter != NULL);
+  bool forall = (chpl_iter != nullptr);
   // MPF: should be the same as isLoweredForallLoop but it isn't yet
   //INT_ASSERT(forall == forLoop->isLoweredForallLoop());
   bool zippered = forLoop->zipperedGet() &&
                   (iterator->type->symbol->hasFlag(FLAG_TUPLE) ||
-                   (chpl_iter != NULL &&
+                   (chpl_iter != nullptr &&
                     chpl_iter->type->symbol->hasFlag(FLAG_TUPLE)));
 
   // Adjust for new-style forall loops - the counterpart of chpl_iter.
-  Symbol* newIterLF = (forall && isPar) ? findNewIterLF(chpl_iter) : NULL;
+  Symbol* newIterLF = (forall && isPar) ? findNewIterLF(chpl_iter) : nullptr;
   if (newIterLF) {
     isLeader = true;
     if (SymExpr* useSE = newIterLF->getSingleUse())
@@ -366,7 +366,7 @@ void gatherLoopDetails(ForLoop*  forLoop,
       // i.e. a non-zippered for loop
       // Find the PRIM_MOVE setting iterator
       SymExpr* def = iterator->getSingleDef();
-      Expr* iterable = NULL;
+      Expr* iterable = nullptr;
       if (def) {
         CallExpr* move = toCallExpr(def->parentExpr);
         INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
@@ -390,7 +390,7 @@ void gatherLoopDetails(ForLoop*  forLoop,
 
       IteratorDetails emptyDetails;
       leaderDetails = emptyDetails;
-      followerForLoop = NULL;
+      followerForLoop = nullptr;
       detailsVector.push_back(details);
       return;
     } else {
@@ -413,9 +413,9 @@ void gatherLoopDetails(ForLoop*  forLoop,
       //   p_followerIterator = _toFollowerZip(call_tmp)
       //   _iterator = _getIteratorZip(p_followerIterator)
 
-      SymExpr* tupleIterator = NULL;
+      SymExpr* tupleIterator = nullptr;
       CallExpr* call = toCallExpr(findExprProducing(iterator));
-      FnSymbol* calledFn = call?call->resolvedOrVirtualFunction():NULL;
+      FnSymbol* calledFn = call?call->resolvedOrVirtualFunction():nullptr;
       if (calledFn && !calledFn->hasFlag(FLAG_BUILD_TUPLE)) {
         // expecting call is e.g. _getIteratorZip
         SymExpr* otherSe = toSymExpr(call->get(1));
@@ -433,18 +433,18 @@ void gatherLoopDetails(ForLoop*  forLoop,
             if (anotherCall) {
               call = anotherCall;
             } else {
-              call = NULL;
+              call = nullptr;
               tupleIterator = otherSe;
             }
           }
         } else {
-          call = NULL;
+          call = nullptr;
           tupleIterator = otherSe;
         }
       }
 
       CallExpr* buildTupleCall = call;
-      FnSymbol* buildTupleFn   = NULL;
+      FnSymbol* buildTupleFn   = nullptr;
 
       if (buildTupleCall) {
         buildTupleFn = buildTupleCall->resolvedOrVirtualFunction();
@@ -521,7 +521,7 @@ void gatherLoopDetails(ForLoop*  forLoop,
 
       IteratorDetails emptyDetails;
       leaderDetails = emptyDetails;
-      followerForLoop = NULL;
+      followerForLoop = nullptr;
       return;
     }
   } else {
@@ -552,7 +552,7 @@ void gatherLoopDetails(ForLoop*  forLoop,
 
       IteratorDetails emptyDetails;
       leaderDetails = emptyDetails;
-      followerForLoop = NULL;
+      followerForLoop = nullptr;
       detailsVector.push_back(details);
       return;
     } else {
@@ -646,7 +646,7 @@ void gatherLoopDetails(ForallStmt* fs,
   bool zippered = false;
 
   Symbol* newIterLF = findNewIterLF(fs);
-  
+
   // copied from the other gatherLoopDetails() TODO -- can we remove?
   if (newIterLF) {
     // we still use newIterLF for zippered reduce expressions
@@ -688,11 +688,11 @@ void gatherLoopDetails(ForallStmt* fs,
       IteratorDetails detailsSA;
       detailsSA.iterable = fs->iteratedExpressions().head;
       detailsSA.index = parIdxVar(fs);
-      detailsSA.iteratorClass = NULL;
+      detailsSA.iteratorClass = nullptr;
       detailsSA.iterator = toCallExpr(detailsSA.iterable)->resolvedFunction();
 
       leaderDetails = emptyDetails;
-      followerForLoop = NULL;
+      followerForLoop = nullptr;
       detailsVector.push_back(detailsSA);
       return;
     }
@@ -727,7 +727,7 @@ void gatherLoopDetails(ForallStmt* fs,
 
       leaderDetails.iterable = detailsVector[0].iterable;
       leaderDetails.index = parIdxVar(fs);
-      leaderDetails.iteratorClass = NULL;
+      leaderDetails.iteratorClass = nullptr;
       leaderDetails.iterator = toCallExpr(
             fs->iteratedExpressions().head)->resolvedFunction();
 

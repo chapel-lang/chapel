@@ -28,7 +28,7 @@ class ModuleSymbol;
 class Symbol;
 
 // Return a symbol for the extern decl for a C declaration named cname
-// or NULL if there isn't a C declaration with that name in an extern block.
+// or nullptr if there isn't a C declaration with that name in an extern block.
 //
 // This is called during scopeResolve
 // it can call lookup() and addToSymbolTable()

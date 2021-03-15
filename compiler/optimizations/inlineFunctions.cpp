@@ -199,7 +199,7 @@ static void inlineCall(CallExpr* call) {
   // The final statement, which be some form of return, is handled specially.
   for_alist(copy, bCopy->body) {
     // This is not the final statement
-    if (copy->next != NULL) {
+    if (copy->next != nullptr) {
 
       // avoid inlining another epilogue label
       if (DefExpr* def = toDefExpr(copy)) {
@@ -265,7 +265,7 @@ BlockStmt* copyFnBodyForInlining(CallExpr* call, FnSymbol* fn, Expr* stmt) {
       VarSymbol* tmp  = newTemp(astr("i_", formal->name),
                                 formal->type);
       DefExpr*   def  = new DefExpr(tmp);
-      CallExpr*  move = NULL;
+      CallExpr*  move = nullptr;
 
       tmp->qual = QUAL_REF;
       move      = new CallExpr(PRIM_MOVE,
@@ -413,7 +413,7 @@ static void updateRefCalls() {
               VarSymbol* tmp  = newTemp(astr("i_", formal->name),
                                         formal->type);
               DefExpr*   def  = new DefExpr(tmp);
-              CallExpr*  move = NULL;
+              CallExpr*  move = nullptr;
 
               tmp->qual = QUAL_REF;
               move      = new CallExpr(PRIM_MOVE,

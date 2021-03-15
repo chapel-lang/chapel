@@ -268,7 +268,7 @@ isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs)
       return 0;
     }
     else if (block->isDoWhileStmt()        ||
-             block->blockInfoGet() == NULL ||
+             block->blockInfoGet() == nullptr ||
              block->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL)) {
       int result = 0;
 
@@ -345,7 +345,7 @@ static int findOriginalArrays(FnSymbol*        fn,
             // is RHS a local variable (user or temp)?
             // if so, find the definitions for that, and further
             // traverse if they are aliases.
-            if (rhsSym                          != NULL &&
+            if (rhsSym                          != nullptr &&
                 rhsSym->defPoint->getFunction() ==   fn &&
                 rhsSym->hasFlag(FLAG_TEMP)      == true) {
               ret += findOriginalArrays(fn, rhsSym, sources);
@@ -353,7 +353,7 @@ static int findOriginalArrays(FnSymbol*        fn,
 
           } else if (CallExpr* rhsCall = toCallExpr(rhs)) {
             FnSymbol* calledFn = rhsCall->resolvedFunction();
-            SymExpr*  aliased  = NULL; // the array that is sliced or aliased
+            SymExpr*  aliased  = nullptr; // the array that is sliced or aliased
 
             if (calledFn && calledFn->hasFlag(FLAG_RETURNS_ALIASING_ARRAY)) {
               aliased = toSymExpr(rhsCall->get(1));
@@ -499,7 +499,7 @@ checkBadAddrOf(CallExpr* call)
     // This test is turned off if we are in a wrapper function.
     FnSymbol* fn = call->getFunction();
     if (!fn->hasFlag(FLAG_WRAPPER)) {
-      SymExpr* lhs = NULL;
+      SymExpr* lhs = nullptr;
 
       if (CallExpr* move = toCallExpr(call->parentExpr))
         if (move->isPrimitive(PRIM_MOVE))

@@ -49,7 +49,7 @@
 #define TOSTRING(tok) DO_TOSTRING(tok)
 
 // INT_FATAL(ast, format, ...)
-//   where ast         == BaseAST* or NULL
+//   where ast         == BaseAST* or nullptr
 //         format, ... == normal printf stuff
 // results in something like:
 // INTERNAL ERROR in compilerSrc.c (lineno): your text here (usrSrc:usrLineno)
