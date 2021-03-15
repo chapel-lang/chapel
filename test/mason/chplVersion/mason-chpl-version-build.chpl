@@ -5,7 +5,7 @@ use IO;
 
 proc main() {
 
-  var checksum = true;
+  var checksum = false;
   const toml = open("Mason.toml", iomode.cw);
   var s      = toml.writer();
 

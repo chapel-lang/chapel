@@ -1,5 +1,7 @@
+
 [brick]
 name = "project"
+CheckSum = "4ee4deaa06afdeb48c23147e6c7519950ca706466eec23dfe27ea0140d45b7f9"
 version = "1.2.3"
 chplVersion = "1.21.0"
 license = "MIT"

@@ -203,6 +203,7 @@ private proc masonBuildRun(args: [?d] string) {
       if release then execopts.append("--release");
       if force then execopts.append("--force");
       if show then execopts.append("--show");
+      if !checksum then execopts.append("--no-checksum");
       masonExample(execopts.toArray());
     }
     else {

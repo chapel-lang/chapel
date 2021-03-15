@@ -98,6 +98,7 @@ proc masonBuild(args: [] string) throws {
     if show then compopts.append("--show");
     if release then compopts.append("--release");
     if force then compopts.append("--force");
+    if !checksum then compopts.append("--no-checksum");
     masonExample(compopts.toArray());
   }
   else {

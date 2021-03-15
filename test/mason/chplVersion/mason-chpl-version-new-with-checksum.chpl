@@ -4,8 +4,8 @@ use MasonNew;
 use IO;
 
 proc main() {
-  const args : [0..3] string;
-  args = ['mason','new', 'newTest', '--no-checksum'];
+  const args : [0..2] string;
+  args = ['mason','new', 'newTest'];
 
   assert(isDir("newTest") == false);
 

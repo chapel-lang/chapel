@@ -109,7 +109,7 @@ private proc getBuildInfo(projectHome: string) {
   getSrcCode(sourceList, false);
   const project = lockFile["root"]!["name"]!.s;
   const projectPath = "".join(projectHome, "/src/", project, ".chpl");
-  
+
   // get the example names from lockfile or from example directory
   const exampleNames = getExamples(tomlFile.borrow(), projectHome);
 
