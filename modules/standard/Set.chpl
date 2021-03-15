@@ -640,13 +640,13 @@ module Set {
     :return: A new set containing the intersection of `a` and `b`.
     :rtype: `set(t)`
   */
-  proc &(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t) {
+  proc &(const ref a: set(?t, ?), const ref b: set(t, ?)) {
     var result: set(t, (a.parSafe || b.parSafe));
 
     /* Iterate over the smaller set */
     if a.size <= b.size {
       if a.parSafe && b.parSafe {
-        forall x in a do
+        forall x in a with (ref result) do
           if b.contains(x) then
             result.add(x);
       } else {
@@ -656,7 +656,7 @@ module Set {
       }
     } else {
       if a.parSafe && b.parSafe {
-        forall x in b do
+        forall x in b with (ref result) do
           if a.contains(x) then
             result.add(x);
       } else {
