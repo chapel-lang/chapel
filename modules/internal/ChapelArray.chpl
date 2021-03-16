@@ -1470,6 +1470,7 @@ module ChapelArray {
                                  stridable=upstridable);
       var updim = 0;
 
+
       for param i in 0..rank-1 {
         if (isRange(args(i))) {
           collapsedDim(i) = false;
@@ -1481,6 +1482,7 @@ module ChapelArray {
           idx(i) = args(i);
         }
       }
+
 
       // Create distribution, domain, and array objects representing
       // the array view
@@ -1494,6 +1496,7 @@ module ChapelArray {
           upranges(d) = emptyrange;
       }
 
+      
       const rcdist = new unmanaged ArrayViewRankChangeDist(downDistPid=dist._pid,
                                                  downDistInst=dist._instance,
                                                  collapsedDim=collapsedDim,
@@ -1503,10 +1506,12 @@ module ChapelArray {
 
       const rcdistRec = new _distribution(rcdist);
 
-      return new _domain(rcdistRec, uprank,
+
+      var r = new _domain(rcdistRec, uprank,
                                     upranges(0).idxType,
                                     upranges(0).stridable,
-                                    upranges);
+                          upranges);
+      return r;
     }
 
     // error case for all-int access
@@ -1556,7 +1561,7 @@ module ChapelArray {
    /* Return a tuple of :proc:`intIdxType` describing the size of each dimension.
       For a sparse domain, return the shape of the parent domain.*/
     proc shape where isRectangularDom(this) || isSparseDom(this) {
-      var s: rank*(dim(0).intIdxType);
+      var s: rank*int;
       for (i, r) in zip(0..#s.size, dims()) do
         s(i) = r.size;
       return s;

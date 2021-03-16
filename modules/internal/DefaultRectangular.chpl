@@ -751,10 +751,10 @@ module DefaultRectangular {
     param blkChanged : bool = false;
 
     var off: rank*idxType;
-    var blk: rank*chpl__idxTypeToIntIdxType(idxType);
+    var blk: rank*int;
     var str: rank*chpl__signedType(chpl__idxTypeToIntIdxType(idxType));
-    var origin: chpl__idxTypeToIntIdxType(idxType);
-    var factoredOffs: chpl__idxTypeToIntIdxType(idxType);
+    var origin: int;
+    var factoredOffs: int;
 
     var data: _ddata(eltType);
     var shiftedData: _ddata(eltType);
@@ -796,34 +796,34 @@ module DefaultRectangular {
     if stridable {
       var sum = origin;
       for param i in 0..rank-1 do
-        sum += (chpl__idxToInt(ind(i)) - chpl__idxToInt(off(i))) * blk(i) / abs(str(i)):chpl__idxTypeToIntIdxType(idxType);
+        sum += (chpl__idxToInt(ind(i)) - chpl__idxToInt(off(i))).safeCast(int) * blk(i) / abs(str(i));
       return sum;
     } else {
       // optimize common case to get cleaner generated code
       if (rank == 1 && earlyShiftData) {
         if blkChanged {
-          return chpl__idxToInt(ind(0)) * blk(0);
+          return chpl__idxToInt(ind(0)).safeCast(int) * blk(0);
         } else {
-          return chpl__idxToInt(ind(0));
+          return chpl__idxToInt(ind(0)).safeCast(int);
         }
       } else {
-        var sum = if earlyShiftData then 0:chpl__idxTypeToIntIdxType(idxType) else origin;
+        var sum = if earlyShiftData then 0 else origin;
 
         if blkChanged {
           for param i in 0..rank-1 {
-            sum += chpl__idxToInt(ind(i)) * blk(i);
+            sum += chpl__idxToInt(ind(i)).safeCast(int) * blk(i);
           }
         } else {
           if storageOrder == ArrayStorageOrder.RMO {
             for param i in 0..rank-2 {
-              sum += chpl__idxToInt(ind(i)) * blk(i);
+              sum += chpl__idxToInt(ind(i)).safeCast(int) * blk(i);
             }
-            sum += chpl__idxToInt(ind(rank-1));
+            sum += chpl__idxToInt(ind(rank-1)).safeCast(int);
           } else {
             for param i in 1..rank-1 {
-              sum += chpl__idxToInt(ind(i)) * blk(i);
+              sum += chpl__idxToInt(ind(i)).safeCast(int) * blk(i);
             }
-            sum += chpl__idxToInt(ind(0));
+            sum += chpl__idxToInt(ind(0)).safeCast(int);
           }
         }
 
@@ -837,7 +837,7 @@ module DefaultRectangular {
     debug("E: In RAD code");
     factoredOffs = 0;
     for param i in 0..rank-1 do {
-      factoredOffs = factoredOffs + blk(i) * chpl__idxToInt(off(i));
+      factoredOffs = factoredOffs + blk(i) * chpl__idxToInt(off(i)).safeCast(int);
     }
   }
 
@@ -875,20 +875,20 @@ module DefaultRectangular {
     rad.initDataFrom(this);
 
     rad.shiftedData = if newDom.stridable then this.data else this.shiftedData;
-    rad.origin      = this.origin:newDom.idxType;
+    rad.origin      = this.origin;
     rad.off         = chpl__tuplify(newDom.dsiLow);
     rad.str         = chpl__tuplify(newDom.dsiStride);
 
     debug("G: In RAD code");
     for param i in 0..rank-1 {
-      const shift = this.blk(i) * (chpl__idxToInt(newDom.dsiDim(i).low) - chpl__idxToInt(this.off(i))) / abs(this.str(i)) : rad.idxType;
+      const shift = this.blk(i) * (chpl__idxToInt(newDom.dsiDim(i).low) - chpl__idxToInt(this.off(i))).safeCast(int) / abs(this.str(i));
       if this.str(i) > 0 {
         rad.origin += shift;
       } else {
         rad.origin -= shift;
       }
 
-      const mult = (newDom.dsiDim(i).stride / this.str(i)) : rad.idxType;
+      const mult = (newDom.dsiDim(i).stride / this.str(i));
       rad.blk(i) = this.blk(i) * mult;
     }
 
@@ -910,11 +910,11 @@ module DefaultRectangular {
     rad.initDataFrom(this);
 
     rad.shiftedData  = if newDom.stridable then this.data else this.shiftedData;
-    rad.origin       = this.origin:newDom.intIdxType;
+    rad.origin       = this.origin;
     rad.blk          = this.blk;
     rad.off          = chpl__tuplify(newDom.dsiLow);
     rad.str          = chpl__tuplify(newDom.dsiStride);
-    rad.factoredOffs = 0:newDom.intIdxType;
+    rad.factoredOffs = 0;
 
     rad.computeFactoredOffs();
     rad.initShiftedData();
@@ -939,21 +939,21 @@ module DefaultRectangular {
     rad.initDataFrom(this);
 
     rad.shiftedData = if newDom.stridable then this.data else this.shiftedData;
-    rad.origin      = this.origin:newDom.intIdxType;
+    rad.origin      = this.origin;
 
     var curDim      = 0;
     for param j in 0..idx.size-1 {
       if !collapsedDims(j) {
         rad.off(curDim) = newDom.dsiDim(curDim).low;
         const off       = (chpl__idxToInt(rad.off(curDim)) - chpl__idxToInt(this.off(j))):idxSignedType;
-        rad.origin     += ((this.blk(j):idxSignedType) * off / this.str(j)):intIdxType;
+        rad.origin     += this.blk(j) * off.safeCast(int) / this.str(j);
         rad.blk(curDim) = this.blk(j);
         rad.str(curDim) = this.str(j);
 
         curDim += 1;
       } else {
         const off   = (chpl__idxToInt(idx(j)) - chpl__idxToInt(this.off(j))):idxSignedType;
-        rad.origin += (this.blk(j):idxSignedType *  off / this.str(j)):intIdxType;
+        rad.origin += this.blk(j) *  off.safeCast(int) / this.str(j);
       }
     }
 
@@ -1231,7 +1231,7 @@ module DefaultRectangular {
         debug("I done");
       } else if storageOrder == ArrayStorageOrder.CMO {
         blk(0) = 1;
-        debug("J: " + blk(0).type:string + ", " + dom.dsiDim(0).size:string);
+        debug("J: " + blk(0).type:string + ", " + dom.dsiDim(0).size.type:string);
         for param dim in 1..rank-1 {
           blk(dim) = blk(dim-1) * dom.dsiDim(dim-1).size;
         }
