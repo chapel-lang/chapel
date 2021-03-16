@@ -475,7 +475,7 @@ typedef enum yysymbol_kind_t yysymbol_kind_t;
       (Current).first_column = (Rhs)[1].first_column;                     \
       (Current).last_line    = (Rhs)[N].last_line;                        \
       (Current).last_column  = (Rhs)[N].last_column;                      \
-      (Current).comment      = YY_NULLPTR;                                \
+      (Current).comment      = nullptr;                                   \
                                                                           \
       if ((Current).first_line)                                           \
         yystartlineno = (Current).first_line;                             \
@@ -6548,7 +6548,7 @@ yyreduce:
   case 43: /* module_decl_start: access_control opt_prototype TMODULE ident_def  */
 #line 573 "chapel.ypp"
     {
-      (yyval.pmodsymbol) = buildModule((yyvsp[0].pch), currentModuleType, YY_NULLPTR, yyfilename, (yyvsp[-3].b), (yyvsp[-2].b), (yylsp[-3]).comment);
+      (yyval.pmodsymbol) = buildModule((yyvsp[0].pch), currentModuleType, nullptr, yyfilename, (yyvsp[-3].b), (yyvsp[-2].b), (yylsp[-3]).comment);
       // store previous module name in order to restore it once we're
       // done with this module in module_decl_stmt below.  Ultimately,
       // we will need to store a stack of module names in order to
@@ -6588,19 +6588,19 @@ yyreduce:
 
   case 47: /* access_control: %empty  */
 #line 603 "chapel.ypp"
-        { (yyval.b) = false; (yyloc).comment = context->latestComment; context->latestComment = YY_NULLPTR; }
+        { (yyval.b) = false; (yyloc).comment = context->latestComment; context->latestComment = nullptr; }
 #line 6593 "bison-chapel.cpp"
     break;
 
   case 48: /* access_control: TPUBLIC  */
 #line 604 "chapel.ypp"
-          { (yyval.b) = false; (yyloc).comment = context->latestComment; context->latestComment = YY_NULLPTR; }
+          { (yyval.b) = false; (yyloc).comment = context->latestComment; context->latestComment = nullptr; }
 #line 6599 "bison-chapel.cpp"
     break;
 
   case 49: /* access_control: TPRIVATE  */
 #line 605 "chapel.ypp"
-           { (yyval.b) = true; (yyloc).comment = context->latestComment; context->latestComment = YY_NULLPTR; }
+           { (yyval.b) = true; (yyloc).comment = context->latestComment; context->latestComment = nullptr; }
 #line 6605 "bison-chapel.cpp"
     break;
 
@@ -6638,7 +6638,7 @@ yyreduce:
 #line 621 "chapel.ypp"
   {
     (yylsp[0]).comment = context->latestComment;
-    context->latestComment = YY_NULLPTR;
+    context->latestComment = nullptr;
   }
 #line 6644 "bison-chapel.cpp"
     break;
@@ -6937,7 +6937,7 @@ yyreduce:
 
   case 99: /* opt_label_ident: %empty  */
 #line 779 "chapel.ypp"
-         { (yyval.pch) = YY_NULLPTR; }
+         { (yyval.pch) = nullptr; }
 #line 6942 "bison-chapel.cpp"
     break;
 
@@ -7317,7 +7317,7 @@ yyreduce:
 #line 913 "chapel.ypp"
     {
       (yylsp[0]).comment = context->latestComment;
-      context->latestComment = YY_NULLPTR;
+      context->latestComment = nullptr;
     }
 #line 7323 "bison-chapel.cpp"
     break;
@@ -7326,7 +7326,7 @@ yyreduce:
 #line 918 "chapel.ypp"
     {
       (yyval.pblockstmt) = buildChapelStmt(buildClassDefExpr((yyvsp[-4].pch),
-                                             YY_NULLPTR,
+                                             nullptr,
                                              AGGREGATE_RECORD,
                                              (yyvsp[-3].pcallexpr),
                                              (yyvsp[-1].pblockstmt),
@@ -7340,7 +7340,7 @@ yyreduce:
 #line 928 "chapel.ypp"
     {
       (yylsp[0]).comment = context->latestComment;
-      context->latestComment = YY_NULLPTR;
+      context->latestComment = nullptr;
     }
 #line 7346 "bison-chapel.cpp"
     break;
@@ -7364,7 +7364,7 @@ yyreduce:
 #line 944 "chapel.ypp"
     {
       (yylsp[0]).comment = context->latestComment;
-      context->latestComment = YY_NULLPTR;
+      context->latestComment = nullptr;
     }
 #line 7370 "bison-chapel.cpp"
     break;
@@ -7373,7 +7373,7 @@ yyreduce:
 #line 949 "chapel.ypp"
     {
       (yyval.pblockstmt) = buildChapelStmt(buildClassDefExpr((yyvsp[-4].pch),
-                                             YY_NULLPTR,
+                                             nullptr,
                                              AGGREGATE_RECORD,
                                              (yyvsp[-3].pcallexpr),
                                              (yyvsp[-1].pblockstmt),
@@ -7387,7 +7387,7 @@ yyreduce:
 #line 959 "chapel.ypp"
     {
       (yylsp[0]).comment = context->latestComment;
-      context->latestComment = YY_NULLPTR;
+      context->latestComment = nullptr;
     }
 #line 7393 "bison-chapel.cpp"
     break;
@@ -7426,7 +7426,7 @@ yyreduce:
 #line 984 "chapel.ypp"
     {
       const char* comment = context->latestComment;
-      context->latestComment = YY_NULLPTR;
+      context->latestComment = nullptr;
 
       (yyvsp[-2].pflagset)->insert(FLAG_EXTERN);
       (yyval.pblockstmt) = buildVarDecls((yyvsp[-1].pblockstmt), comment, (yyvsp[-2].pflagset), (yyvsp[-3].pexpr));
@@ -7438,7 +7438,7 @@ yyreduce:
 #line 992 "chapel.ypp"
     {
       const char* comment = context->latestComment;
-      context->latestComment = YY_NULLPTR;
+      context->latestComment = nullptr;
 
       (yyvsp[-2].pflagset)->insert(FLAG_EXPORT);
       (yyval.pblockstmt) = buildVarDecls((yyvsp[-1].pblockstmt), comment, (yyvsp[-2].pflagset), (yyvsp[-3].pexpr));
@@ -7486,7 +7486,7 @@ yyreduce:
 
   case 188: /* loop_stmt: TCOFORALL expr opt_task_intent_ls do_stmt  */
 #line 1014 "chapel.ypp"
-                                                                  { (yyval.pblockstmt) = buildCoforallLoopStmt(YY_NULLPTR, (yyvsp[-2].pexpr), (yyvsp[-1].pcallexpr), (yyvsp[0].pblockstmt));     }
+                                                                  { (yyval.pblockstmt) = buildCoforallLoopStmt(nullptr, (yyvsp[-2].pexpr), (yyvsp[-1].pcallexpr), (yyvsp[0].pblockstmt));     }
 #line 7491 "bison-chapel.cpp"
     break;
 
@@ -7504,13 +7504,13 @@ yyreduce:
 
   case 191: /* loop_stmt: TFOR expr do_stmt  */
 #line 1017 "chapel.ypp"
-                                                { (yyval.pblockstmt) = ForLoop::buildForLoop(YY_NULLPTR, (yyvsp[-1].pexpr), (yyvsp[0].pblockstmt), false, false); }
+                                                { (yyval.pblockstmt) = ForLoop::buildForLoop(nullptr, (yyvsp[-1].pexpr), (yyvsp[0].pblockstmt), false, false); }
 #line 7509 "bison-chapel.cpp"
     break;
 
   case 192: /* loop_stmt: TFOR zippered_iterator do_stmt  */
 #line 1018 "chapel.ypp"
-                                                { (yyval.pblockstmt) = ForLoop::buildForLoop(YY_NULLPTR, (yyvsp[-1].pcallexpr), (yyvsp[0].pblockstmt), true, false); }
+                                                { (yyval.pblockstmt) = ForLoop::buildForLoop(nullptr, (yyvsp[-1].pcallexpr), (yyvsp[0].pblockstmt), true, false); }
 #line 7515 "bison-chapel.cpp"
     break;
 
@@ -7522,7 +7522,7 @@ yyreduce:
 
   case 194: /* loop_stmt: TFORALL expr TIN expr do_stmt  */
 #line 1020 "chapel.ypp"
-                                                                   { (yyval.pblockstmt) = ForallStmt::build((yyvsp[-3].pexpr),   (yyvsp[-1].pexpr), YY_NULLPTR, (yyvsp[0].pblockstmt), false, false); }
+                                                                   { (yyval.pblockstmt) = ForallStmt::build((yyvsp[-3].pexpr),   (yyvsp[-1].pexpr), nullptr, (yyvsp[0].pblockstmt), false, false); }
 #line 7527 "bison-chapel.cpp"
     break;
 
@@ -7534,7 +7534,7 @@ yyreduce:
 
   case 196: /* loop_stmt: TFORALL expr TIN zippered_iterator do_stmt  */
 #line 1022 "chapel.ypp"
-                                                                   { (yyval.pblockstmt) = ForallStmt::build((yyvsp[-3].pexpr),   (yyvsp[-1].pcallexpr), YY_NULLPTR, (yyvsp[0].pblockstmt), true,  false); }
+                                                                   { (yyval.pblockstmt) = ForallStmt::build((yyvsp[-3].pexpr),   (yyvsp[-1].pcallexpr), nullptr, (yyvsp[0].pblockstmt), true,  false); }
 #line 7539 "bison-chapel.cpp"
     break;
 
@@ -7546,25 +7546,25 @@ yyreduce:
 
   case 198: /* loop_stmt: TFORALL expr do_stmt  */
 #line 1024 "chapel.ypp"
-                                                                   { (yyval.pblockstmt) = ForallStmt::build(YY_NULLPTR, (yyvsp[-1].pexpr), YY_NULLPTR, (yyvsp[0].pblockstmt), false, false); }
+                                                                   { (yyval.pblockstmt) = ForallStmt::build(nullptr, (yyvsp[-1].pexpr), nullptr, (yyvsp[0].pblockstmt), false, false); }
 #line 7551 "bison-chapel.cpp"
     break;
 
   case 199: /* loop_stmt: TFORALL expr forall_intent_clause do_stmt  */
 #line 1025 "chapel.ypp"
-                                                                   { (yyval.pblockstmt) = ForallStmt::build(YY_NULLPTR, (yyvsp[-2].pexpr), (yyvsp[-1].pcallexpr),   (yyvsp[0].pblockstmt), false, false); }
+                                                                   { (yyval.pblockstmt) = ForallStmt::build(nullptr, (yyvsp[-2].pexpr), (yyvsp[-1].pcallexpr),   (yyvsp[0].pblockstmt), false, false); }
 #line 7557 "bison-chapel.cpp"
     break;
 
   case 200: /* loop_stmt: TFORALL zippered_iterator do_stmt  */
 #line 1026 "chapel.ypp"
-                                                                   { (yyval.pblockstmt) = ForallStmt::build(YY_NULLPTR, (yyvsp[-1].pcallexpr), YY_NULLPTR, (yyvsp[0].pblockstmt), true,  false); }
+                                                                   { (yyval.pblockstmt) = ForallStmt::build(nullptr, (yyvsp[-1].pcallexpr), nullptr, (yyvsp[0].pblockstmt), true,  false); }
 #line 7563 "bison-chapel.cpp"
     break;
 
   case 201: /* loop_stmt: TFORALL zippered_iterator forall_intent_clause do_stmt  */
 #line 1027 "chapel.ypp"
-                                                                   { (yyval.pblockstmt) = ForallStmt::build(YY_NULLPTR, (yyvsp[-2].pcallexpr), (yyvsp[-1].pcallexpr),   (yyvsp[0].pblockstmt), true,  false); }
+                                                                   { (yyval.pblockstmt) = ForallStmt::build(nullptr, (yyvsp[-2].pcallexpr), (yyvsp[-1].pcallexpr),   (yyvsp[0].pblockstmt), true,  false); }
 #line 7569 "bison-chapel.cpp"
     break;
 
@@ -7621,7 +7621,7 @@ yyreduce:
     {
       if ((yyvsp[-4].pcallexpr)->argList.length != 1)
         USR_FATAL((yyvsp[-2].pexpr), "invalid index expression");
-      (yyval.pblockstmt) = ForallStmt::build((yyvsp[-4].pcallexpr)->get(1)->remove(), (yyvsp[-2].pexpr), YY_NULLPTR, new BlockStmt((yyvsp[0].pblockstmt)), false, true);
+      (yyval.pblockstmt) = ForallStmt::build((yyvsp[-4].pcallexpr)->get(1)->remove(), (yyvsp[-2].pexpr), nullptr, new BlockStmt((yyvsp[0].pblockstmt)), false, true);
     }
 #line 7627 "bison-chapel.cpp"
     break;
@@ -7641,7 +7641,7 @@ yyreduce:
     {
       if ((yyvsp[-4].pcallexpr)->argList.length != 1)
         USR_FATAL((yyvsp[-2].pcallexpr), "invalid index expression");
-      (yyval.pblockstmt) = ForallStmt::build((yyvsp[-4].pcallexpr)->get(1)->remove(), (yyvsp[-2].pcallexpr), YY_NULLPTR, new BlockStmt((yyvsp[0].pblockstmt)), true,  true);
+      (yyval.pblockstmt) = ForallStmt::build((yyvsp[-4].pcallexpr)->get(1)->remove(), (yyvsp[-2].pcallexpr), nullptr, new BlockStmt((yyvsp[0].pblockstmt)), true,  true);
     }
 #line 7647 "bison-chapel.cpp"
     break;
@@ -7660,9 +7660,9 @@ yyreduce:
 #line 1061 "chapel.ypp"
     {
       if ((yyvsp[-2].pcallexpr)->argList.length > 1)
-        (yyval.pblockstmt) = ForallStmt::build(YY_NULLPTR, new CallExpr("chpl__ensureDomainExpr", (yyvsp[-2].pcallexpr)), YY_NULLPTR, new BlockStmt((yyvsp[0].pblockstmt)), false, true);
+        (yyval.pblockstmt) = ForallStmt::build(nullptr, new CallExpr("chpl__ensureDomainExpr", (yyvsp[-2].pcallexpr)), nullptr, new BlockStmt((yyvsp[0].pblockstmt)), false, true);
       else
-        (yyval.pblockstmt) = ForallStmt::build(YY_NULLPTR, (yyvsp[-2].pcallexpr)->get(1)->remove(),                       YY_NULLPTR, new BlockStmt((yyvsp[0].pblockstmt)), false, true);
+        (yyval.pblockstmt) = ForallStmt::build(nullptr, (yyvsp[-2].pcallexpr)->get(1)->remove(),                       nullptr, new BlockStmt((yyvsp[0].pblockstmt)), false, true);
     }
 #line 7668 "bison-chapel.cpp"
     break;
@@ -7671,9 +7671,9 @@ yyreduce:
 #line 1068 "chapel.ypp"
     {
       if ((yyvsp[-3].pcallexpr)->argList.length > 1)
-        (yyval.pblockstmt) = ForallStmt::build(YY_NULLPTR, new CallExpr("chpl__ensureDomainExpr", (yyvsp[-3].pcallexpr)), (yyvsp[-2].pcallexpr), new BlockStmt((yyvsp[0].pblockstmt)), false, true);
+        (yyval.pblockstmt) = ForallStmt::build(nullptr, new CallExpr("chpl__ensureDomainExpr", (yyvsp[-3].pcallexpr)), (yyvsp[-2].pcallexpr), new BlockStmt((yyvsp[0].pblockstmt)), false, true);
       else
-        (yyval.pblockstmt) = ForallStmt::build(YY_NULLPTR, (yyvsp[-3].pcallexpr)->get(1)->remove(),                       (yyvsp[-2].pcallexpr), new BlockStmt((yyvsp[0].pblockstmt)), false, true);
+        (yyval.pblockstmt) = ForallStmt::build(nullptr, (yyvsp[-3].pcallexpr)->get(1)->remove(),                       (yyvsp[-2].pcallexpr), new BlockStmt((yyvsp[0].pblockstmt)), false, true);
     }
 #line 7679 "bison-chapel.cpp"
     break;
@@ -7681,7 +7681,7 @@ yyreduce:
   case 216: /* loop_stmt: TLSBR zippered_iterator TRSBR stmt  */
 #line 1075 "chapel.ypp"
     {
-      (yyval.pblockstmt) = ForallStmt::build(YY_NULLPTR, (yyvsp[-2].pcallexpr), YY_NULLPTR, new BlockStmt((yyvsp[0].pblockstmt)), true,  true);
+      (yyval.pblockstmt) = ForallStmt::build(nullptr, (yyvsp[-2].pcallexpr), nullptr, new BlockStmt((yyvsp[0].pblockstmt)), true,  true);
     }
 #line 7687 "bison-chapel.cpp"
     break;
@@ -7689,7 +7689,7 @@ yyreduce:
   case 217: /* loop_stmt: TLSBR zippered_iterator forall_intent_clause TRSBR stmt  */
 #line 1079 "chapel.ypp"
     {
-      (yyval.pblockstmt) = ForallStmt::build(YY_NULLPTR, (yyvsp[-3].pcallexpr), (yyvsp[-2].pcallexpr),   new BlockStmt((yyvsp[0].pblockstmt)), true,  true);
+      (yyval.pblockstmt) = ForallStmt::build(nullptr, (yyvsp[-3].pcallexpr), (yyvsp[-2].pcallexpr),   new BlockStmt((yyvsp[0].pblockstmt)), true,  true);
     }
 #line 7695 "bison-chapel.cpp"
     break;
@@ -7938,21 +7938,21 @@ yyreduce:
 
   case 257: /* implements_stmt: TIMPLEMENTS ident_def TLP actual_ls TRP TSEMI  */
 #line 1173 "chapel.ypp"
-  { (yyval.pblockstmt) = buildChapelStmt(ImplementsStmt::build((yyvsp[-4].pch), (yyvsp[-2].pcallexpr), YY_NULLPTR)); }
+  { (yyval.pblockstmt) = buildChapelStmt(ImplementsStmt::build((yyvsp[-4].pch), (yyvsp[-2].pcallexpr), nullptr)); }
 #line 7943 "bison-chapel.cpp"
     break;
 
   case 258: /* implements_stmt: implements_type_ident TIMPLEMENTS ident_def TSEMI  */
 #line 1175 "chapel.ypp"
   { CallExpr* act = new CallExpr(PRIM_ACTUALS_LIST, new UnresolvedSymExpr((yyvsp[-3].pch)));
-    (yyval.pblockstmt) = buildChapelStmt(ImplementsStmt::build((yyvsp[-1].pch), act, YY_NULLPTR)); }
+    (yyval.pblockstmt) = buildChapelStmt(ImplementsStmt::build((yyvsp[-1].pch), act, nullptr)); }
 #line 7950 "bison-chapel.cpp"
     break;
 
   case 259: /* implements_stmt: implements_type_ident TIMPLEMENTS ident_def TLP actual_ls TRP TSEMI  */
 #line 1178 "chapel.ypp"
   { (yyvsp[-2].pcallexpr)->insertAtHead(new UnresolvedSymExpr((yyvsp[-6].pch)));
-    (yyval.pblockstmt) = buildChapelStmt(ImplementsStmt::build((yyvsp[-4].pch), (yyvsp[-2].pcallexpr), YY_NULLPTR)); }
+    (yyval.pblockstmt) = buildChapelStmt(ImplementsStmt::build((yyvsp[-4].pch), (yyvsp[-2].pcallexpr), nullptr)); }
 #line 7957 "bison-chapel.cpp"
     break;
 
@@ -8050,13 +8050,13 @@ yyreduce:
 
   case 275: /* catch_expr: ident_def  */
 #line 1217 "chapel.ypp"
-                      { (yyval.pdefexpr) = new DefExpr(new VarSymbol((yyvsp[0].pch)), YY_NULLPTR, new UnresolvedSymExpr("Error")); }
+                      { (yyval.pdefexpr) = new DefExpr(new VarSymbol((yyvsp[0].pch)), nullptr, new UnresolvedSymExpr("Error")); }
 #line 8055 "bison-chapel.cpp"
     break;
 
   case 276: /* catch_expr: ident_def TCOLON expr  */
 #line 1218 "chapel.ypp"
-                        { (yyval.pdefexpr) = new DefExpr(new VarSymbol((yyvsp[-2].pch)), YY_NULLPTR, (yyvsp[0].pexpr));   }
+                        { (yyval.pdefexpr) = new DefExpr(new VarSymbol((yyvsp[-2].pch)), nullptr, (yyvsp[0].pexpr));   }
 #line 8061 "bison-chapel.cpp"
     break;
 
@@ -8112,7 +8112,7 @@ yyreduce:
 #line 1249 "chapel.ypp"
     {
       (yyval.pblockstmt) = buildChapelStmt(buildClassDefExpr((yyvsp[-4].pch),
-                                             YY_NULLPTR,
+                                             nullptr,
                                              (yyvsp[-5].aggrTag),
                                              (yyvsp[-3].pcallexpr),
                                              (yyvsp[-1].pblockstmt),
@@ -8126,7 +8126,7 @@ yyreduce:
 #line 1259 "chapel.ypp"
     {
       (yyval.pblockstmt) = buildChapelStmt(buildClassDefExpr((yyvsp[-4].pch),
-                                             YY_NULLPTR,
+                                             nullptr,
                                              (yyvsp[-5].aggrTag),
                                              (yyvsp[-3].pcallexpr),
                                              new BlockStmt(),
@@ -8141,7 +8141,7 @@ yyreduce:
            {
              (yyval.aggrTag)                     = AGGREGATE_CLASS;
              (yyloc).comment             = context->latestComment;
-             context->latestComment = YY_NULLPTR;
+             context->latestComment = nullptr;
            }
 #line 8147 "bison-chapel.cpp"
     break;
@@ -8151,7 +8151,7 @@ yyreduce:
            {
              (yyval.aggrTag)                     = AGGREGATE_RECORD;
              (yyloc).comment             = context->latestComment;
-             context->latestComment = YY_NULLPTR;
+             context->latestComment = nullptr;
            }
 #line 8157 "bison-chapel.cpp"
     break;
@@ -8161,14 +8161,14 @@ yyreduce:
            {
              (yyval.aggrTag)                     = AGGREGATE_UNION;
              (yyloc).comment             = context->latestComment;
-             context->latestComment = YY_NULLPTR;
+             context->latestComment = nullptr;
            }
 #line 8167 "bison-chapel.cpp"
     break;
 
   case 290: /* opt_inherit: %empty  */
 #line 1290 "chapel.ypp"
-                  { (yyval.pcallexpr) = YY_NULLPTR; }
+                  { (yyval.pcallexpr) = nullptr; }
 #line 8173 "bison-chapel.cpp"
     break;
 
@@ -8203,7 +8203,7 @@ yyreduce:
       for_vector(DefExpr, ec, *(yyvsp[-1].pvecOfDefs)) {
         ec->sym->type = pdt;
         pdt->constants.insertAtTail(ec);
-        if (pdt->defaultValue == YY_NULLPTR) {
+        if (pdt->defaultValue == nullptr) {
           pdt->defaultValue = ec->sym;
         }
       }
@@ -8229,7 +8229,7 @@ yyreduce:
     {
       (yyval.penumtype) = new EnumType();
       (yyloc).comment = context->latestComment;
-      context->latestComment = YY_NULLPTR;
+      context->latestComment = nullptr;
     }
 #line 8235 "bison-chapel.cpp"
     break;
@@ -8241,7 +8241,7 @@ yyreduce:
       (yyval.pvecOfDefs)->push_back((yyvsp[0].pdefexpr));
       //$$->doc = context->latestComment;
       // start here for enabling documentation of enum constants
-      //context->latestComment = YY_NULLPTR;
+      //context->latestComment = nullptr;
     }
 #line 8247 "bison-chapel.cpp"
     break;
@@ -8345,7 +8345,7 @@ yyreduce:
     {
       // Capture the latest comment
       (yylsp[0]).comment = context->latestComment;
-      context->latestComment = YY_NULLPTR;
+      context->latestComment = nullptr;
 
       // Sets up to capture tokens while parsing the next grammar nonterminal.
       captureTokens = 1;
@@ -8387,14 +8387,14 @@ yyreduce:
       }
       if ((yyvsp[-8].procIterOp) == ProcIterOp_OP) {
         fn->addFlag(FLAG_OPERATOR);
-        if (fn->_this != YY_NULLPTR) {
+        if (fn->_this != nullptr) {
           updateOpThisTagOrErr(fn);
           setupTypeIntentArg(toArgSymbol(fn->_this));
         }
       }
 
       (yyval.pblockstmt) = buildFunctionDecl((yyvsp[-6].pfnsymbol), (yyvsp[-4].retTag), (yyvsp[-3].pexpr), (yyvsp[-2].b), (yyvsp[-1].lifetimeAndWhere).where, (yyvsp[-1].lifetimeAndWhere).lifetime, (yyvsp[0].pblockstmt), (yylsp[-8]).comment);
-      context->latestComment = YY_NULLPTR;
+      context->latestComment = nullptr;
     }
 #line 8400 "bison-chapel.cpp"
     break;
@@ -8402,7 +8402,7 @@ yyreduce:
   case 312: /* fn_decl_stmt_inner: opt_this_intent_tag fn_ident opt_formal_ls  */
 #line 1458 "chapel.ypp"
     {
-      (yyval.pfnsymbol) = buildFunctionSymbol((yyvsp[0].pfnsymbol), (yyvsp[-1].pch), (yyvsp[-2].pt), YY_NULLPTR);
+      (yyval.pfnsymbol) = buildFunctionSymbol((yyvsp[0].pfnsymbol), (yyvsp[-1].pch), (yyvsp[-2].pt), nullptr);
     }
 #line 8408 "bison-chapel.cpp"
     break;
@@ -8410,7 +8410,7 @@ yyreduce:
   case 313: /* fn_decl_stmt_inner: opt_this_intent_tag assignop_ident opt_formal_ls  */
 #line 1462 "chapel.ypp"
     {
-      (yyval.pfnsymbol) = buildFunctionSymbol((yyvsp[0].pfnsymbol), (yyvsp[-1].pch), (yyvsp[-2].pt), YY_NULLPTR);
+      (yyval.pfnsymbol) = buildFunctionSymbol((yyvsp[0].pfnsymbol), (yyvsp[-1].pch), (yyvsp[-2].pt), nullptr);
       (yyval.pfnsymbol)->addFlag(FLAG_ASSIGNOP);
     }
 #line 8417 "bison-chapel.cpp"
@@ -8436,7 +8436,7 @@ yyreduce:
   case 316: /* fn_decl_stmt_inner: opt_this_intent_tag error opt_formal_ls  */
 #line 1476 "chapel.ypp"
     {
-      (yyval.pfnsymbol) = buildFunctionSymbol((yyvsp[0].pfnsymbol), "dummy", INTENT_BLANK, YY_NULLPTR);
+      (yyval.pfnsymbol) = buildFunctionSymbol((yyvsp[0].pfnsymbol), "dummy", INTENT_BLANK, nullptr);
     }
 #line 8442 "bison-chapel.cpp"
     break;
@@ -8707,13 +8707,13 @@ yyreduce:
 
   case 362: /* formal_ls: %empty  */
 #line 1542 "chapel.ypp"
-                           { (yyval.pfnsymbol) = buildFunctionFormal(YY_NULLPTR, YY_NULLPTR); }
+                           { (yyval.pfnsymbol) = buildFunctionFormal(nullptr, nullptr); }
 #line 8712 "bison-chapel.cpp"
     break;
 
   case 363: /* formal_ls: formal  */
 #line 1543 "chapel.ypp"
-                           { (yyval.pfnsymbol) = buildFunctionFormal(YY_NULLPTR, (yyvsp[0].pdefexpr)); }
+                           { (yyval.pfnsymbol) = buildFunctionFormal(nullptr, (yyvsp[0].pdefexpr)); }
 #line 8718 "bison-chapel.cpp"
     break;
 
@@ -8725,25 +8725,25 @@ yyreduce:
 
   case 365: /* formal: opt_intent_tag ident_def opt_formal_type opt_init_expr  */
 #line 1549 "chapel.ypp"
-    { (yyval.pdefexpr) = buildArgDefExpr((yyvsp[-3].pt), (yyvsp[-2].pch), (yyvsp[-1].pexpr), (yyvsp[0].pexpr), YY_NULLPTR); }
+    { (yyval.pdefexpr) = buildArgDefExpr((yyvsp[-3].pt), (yyvsp[-2].pch), (yyvsp[-1].pexpr), (yyvsp[0].pexpr), nullptr); }
 #line 8730 "bison-chapel.cpp"
     break;
 
   case 366: /* formal: pragma_ls opt_intent_tag ident_def opt_formal_type opt_init_expr  */
 #line 1551 "chapel.ypp"
-    { (yyval.pdefexpr) = buildPragmaDefExpr((yyvsp[-4].vpch), buildArgDefExpr((yyvsp[-3].pt), (yyvsp[-2].pch), (yyvsp[-1].pexpr), (yyvsp[0].pexpr), YY_NULLPTR)); }
+    { (yyval.pdefexpr) = buildPragmaDefExpr((yyvsp[-4].vpch), buildArgDefExpr((yyvsp[-3].pt), (yyvsp[-2].pch), (yyvsp[-1].pexpr), (yyvsp[0].pexpr), nullptr)); }
 #line 8736 "bison-chapel.cpp"
     break;
 
   case 367: /* formal: opt_intent_tag ident_def opt_formal_type var_arg_expr  */
 #line 1553 "chapel.ypp"
-    { (yyval.pdefexpr) = buildArgDefExpr((yyvsp[-3].pt), (yyvsp[-2].pch), (yyvsp[-1].pexpr), YY_NULLPTR, (yyvsp[0].pexpr)); }
+    { (yyval.pdefexpr) = buildArgDefExpr((yyvsp[-3].pt), (yyvsp[-2].pch), (yyvsp[-1].pexpr), nullptr, (yyvsp[0].pexpr)); }
 #line 8742 "bison-chapel.cpp"
     break;
 
   case 368: /* formal: pragma_ls opt_intent_tag ident_def opt_formal_type var_arg_expr  */
 #line 1555 "chapel.ypp"
-    { (yyval.pdefexpr) = buildPragmaDefExpr((yyvsp[-4].vpch), buildArgDefExpr((yyvsp[-3].pt), (yyvsp[-2].pch), (yyvsp[-1].pexpr), YY_NULLPTR, (yyvsp[0].pexpr))); }
+    { (yyval.pdefexpr) = buildPragmaDefExpr((yyvsp[-4].vpch), buildArgDefExpr((yyvsp[-3].pt), (yyvsp[-2].pch), (yyvsp[-1].pexpr), nullptr, (yyvsp[0].pexpr))); }
 #line 8748 "bison-chapel.cpp"
     break;
 
@@ -8929,7 +8929,7 @@ yyreduce:
 
   case 399: /* opt_function_body_stmt: TSEMI  */
 #line 1608 "chapel.ypp"
-            { (yyval.pblockstmt) = YY_NULLPTR; }
+            { (yyval.pblockstmt) = nullptr; }
 #line 8934 "bison-chapel.cpp"
     break;
 
@@ -8969,19 +8969,19 @@ yyreduce:
 
   case 407: /* opt_lifetime_where: %empty  */
 #line 1632 "chapel.ypp"
-  { (yyval.lifetimeAndWhere) = makeWhereAndLifetime(YY_NULLPTR, YY_NULLPTR); }
+  { (yyval.lifetimeAndWhere) = makeWhereAndLifetime(nullptr, nullptr); }
 #line 8974 "bison-chapel.cpp"
     break;
 
   case 408: /* opt_lifetime_where: TWHERE expr  */
 #line 1634 "chapel.ypp"
-  { (yyval.lifetimeAndWhere) = makeWhereAndLifetime((yyvsp[0].pexpr), YY_NULLPTR); }
+  { (yyval.lifetimeAndWhere) = makeWhereAndLifetime((yyvsp[0].pexpr), nullptr); }
 #line 8980 "bison-chapel.cpp"
     break;
 
   case 409: /* opt_lifetime_where: TLIFETIME lifetime_components_expr  */
 #line 1636 "chapel.ypp"
-  { (yyval.lifetimeAndWhere) = makeWhereAndLifetime(YY_NULLPTR, (yyvsp[0].pexpr)); }
+  { (yyval.lifetimeAndWhere) = makeWhereAndLifetime(nullptr, (yyvsp[0].pexpr)); }
 #line 8986 "bison-chapel.cpp"
     break;
 
@@ -9089,7 +9089,7 @@ yyreduce:
       var->addFlag(FLAG_TYPE_VARIABLE);
 
       var->doc               = context->latestComment;
-      context->latestComment = YY_NULLPTR;
+      context->latestComment = nullptr;
 
       DefExpr* def = new DefExpr(var, (yyvsp[0].pexpr));
 
@@ -9106,7 +9106,7 @@ yyreduce:
       var->addFlag(FLAG_TYPE_VARIABLE);
 
       var->doc               = context->latestComment;
-      context->latestComment = YY_NULLPTR;
+      context->latestComment = nullptr;
 
       DefExpr* def = new DefExpr(var, (yyvsp[-2].pexpr));
 
@@ -9118,7 +9118,7 @@ yyreduce:
 
   case 428: /* opt_init_type: %empty  */
 #line 1707 "chapel.ypp"
-    { (yyval.pexpr) = YY_NULLPTR; }
+    { (yyval.pexpr) = nullptr; }
 #line 9123 "bison-chapel.cpp"
     break;
 
@@ -9169,7 +9169,7 @@ yyreduce:
     {
       (yyvsp[-2].pflagset)->insert(FLAG_CONFIG);
       (yyval.pblockstmt) = buildVarDecls((yyvsp[-1].pblockstmt), context->latestComment, (yyvsp[-2].pflagset));
-      context->latestComment = YY_NULLPTR;
+      context->latestComment = nullptr;
     }
 #line 9175 "bison-chapel.cpp"
     break;
@@ -9178,7 +9178,7 @@ yyreduce:
 #line 1730 "chapel.ypp"
     {
       (yyval.pblockstmt) = buildVarDecls((yyvsp[-1].pblockstmt), context->latestComment, (yyvsp[-2].pflagset));
-      context->latestComment = YY_NULLPTR;
+      context->latestComment = nullptr;
     }
 #line 9184 "bison-chapel.cpp"
     break;
@@ -9242,7 +9242,7 @@ yyreduce:
 
   case 448: /* opt_init_expr: %empty  */
 #line 1773 "chapel.ypp"
-                        { (yyval.pexpr) = YY_NULLPTR; }
+                        { (yyval.pexpr) = nullptr; }
 #line 9247 "bison-chapel.cpp"
     break;
 
@@ -9266,7 +9266,7 @@ yyreduce:
 
   case 452: /* ret_array_type: TLSBR TRSBR  */
 #line 1783 "chapel.ypp"
-    { (yyval.pexpr) = new CallExpr("chpl__buildArrayRuntimeType", gNil, YY_NULLPTR); }
+    { (yyval.pexpr) = new CallExpr("chpl__buildArrayRuntimeType", gNil, nullptr); }
 #line 9271 "bison-chapel.cpp"
     break;
 
@@ -9281,7 +9281,7 @@ yyreduce:
   case 454: /* ret_array_type: TLSBR expr_ls TRSBR  */
 #line 1789 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("chpl__buildArrayRuntimeType",
-             new CallExpr("chpl__ensureDomainExpr", (yyvsp[-1].pcallexpr)), YY_NULLPTR);
+             new CallExpr("chpl__ensureDomainExpr", (yyvsp[-1].pcallexpr)), nullptr);
     }
 #line 9287 "bison-chapel.cpp"
     break;
@@ -9310,7 +9310,7 @@ yyreduce:
 
   case 458: /* opt_ret_type: %empty  */
 #line 1806 "chapel.ypp"
-                          { (yyval.pexpr) = YY_NULLPTR; }
+                          { (yyval.pexpr) = nullptr; }
 #line 9315 "bison-chapel.cpp"
     break;
 
@@ -9334,13 +9334,13 @@ yyreduce:
 
   case 462: /* opt_ret_type: error  */
 #line 1810 "chapel.ypp"
-                          { (yyval.pexpr) = YY_NULLPTR; }
+                          { (yyval.pexpr) = nullptr; }
 #line 9339 "bison-chapel.cpp"
     break;
 
   case 463: /* opt_type: %empty  */
 #line 1815 "chapel.ypp"
-                          { (yyval.pexpr) = YY_NULLPTR; }
+                          { (yyval.pexpr) = nullptr; }
 #line 9345 "bison-chapel.cpp"
     break;
 
@@ -9364,7 +9364,7 @@ yyreduce:
 
   case 467: /* opt_type: error  */
 #line 1819 "chapel.ypp"
-                          { (yyval.pexpr) = YY_NULLPTR; }
+                          { (yyval.pexpr) = nullptr; }
 #line 9369 "bison-chapel.cpp"
     break;
 
@@ -9406,7 +9406,7 @@ yyreduce:
 
   case 472: /* opt_formal_array_elt_type: %empty  */
 #line 1862 "chapel.ypp"
-                        { (yyval.pexpr) = YY_NULLPTR; }
+                        { (yyval.pexpr) = nullptr; }
 #line 9411 "bison-chapel.cpp"
     break;
 
@@ -9454,7 +9454,7 @@ yyreduce:
 
   case 480: /* opt_formal_type: %empty  */
 #line 1885 "chapel.ypp"
-                            { (yyval.pexpr) = YY_NULLPTR; }
+                            { (yyval.pexpr) = nullptr; }
 #line 9459 "bison-chapel.cpp"
     break;
 
@@ -9730,13 +9730,13 @@ yyreduce:
 
   case 532: /* for_expr: TFOR expr TIN zippered_iterator TDO expr  */
 #line 2004 "chapel.ypp"
-    { (yyval.pexpr) = buildForLoopExpr((yyvsp[-4].pexpr), (yyvsp[-2].pcallexpr), (yyvsp[0].pexpr), YY_NULLPTR, false, true); }
+    { (yyval.pexpr) = buildForLoopExpr((yyvsp[-4].pexpr), (yyvsp[-2].pcallexpr), (yyvsp[0].pexpr), nullptr, false, true); }
 #line 9735 "bison-chapel.cpp"
     break;
 
   case 533: /* for_expr: TFOR expr TDO expr  */
 #line 2006 "chapel.ypp"
-    { (yyval.pexpr) = buildForLoopExpr(YY_NULLPTR, (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
+    { (yyval.pexpr) = buildForLoopExpr(nullptr, (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
 #line 9741 "bison-chapel.cpp"
     break;
 
@@ -9754,7 +9754,7 @@ yyreduce:
 
   case 536: /* for_expr: TFOR expr TDO TIF expr TTHEN expr  */
 #line 2012 "chapel.ypp"
-    { (yyval.pexpr) = buildForLoopExpr(YY_NULLPTR, (yyvsp[-5].pexpr), (yyvsp[0].pexpr), (yyvsp[-2].pexpr)); }
+    { (yyval.pexpr) = buildForLoopExpr(nullptr, (yyvsp[-5].pexpr), (yyvsp[0].pexpr), (yyvsp[-2].pexpr)); }
 #line 9759 "bison-chapel.cpp"
     break;
 
@@ -9766,13 +9766,13 @@ yyreduce:
 
   case 538: /* for_expr: TFORALL expr TIN zippered_iterator TDO expr  */
 #line 2016 "chapel.ypp"
-    { (yyval.pexpr) = buildForallLoopExpr((yyvsp[-4].pexpr), (yyvsp[-2].pcallexpr), (yyvsp[0].pexpr), YY_NULLPTR, false, true); }
+    { (yyval.pexpr) = buildForallLoopExpr((yyvsp[-4].pexpr), (yyvsp[-2].pcallexpr), (yyvsp[0].pexpr), nullptr, false, true); }
 #line 9771 "bison-chapel.cpp"
     break;
 
   case 539: /* for_expr: TFORALL expr TDO expr  */
 #line 2018 "chapel.ypp"
-    { (yyval.pexpr) = buildForallLoopExpr(YY_NULLPTR, (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
+    { (yyval.pexpr) = buildForallLoopExpr(nullptr, (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
 #line 9777 "bison-chapel.cpp"
     break;
 
@@ -9790,7 +9790,7 @@ yyreduce:
 
   case 542: /* for_expr: TFORALL expr TDO TIF expr TTHEN expr  */
 #line 2024 "chapel.ypp"
-    { (yyval.pexpr) = buildForallLoopExpr(YY_NULLPTR, (yyvsp[-5].pexpr), (yyvsp[0].pexpr), (yyvsp[-2].pexpr)); }
+    { (yyval.pexpr) = buildForallLoopExpr(nullptr, (yyvsp[-5].pexpr), (yyvsp[0].pexpr), (yyvsp[-2].pexpr)); }
 #line 9795 "bison-chapel.cpp"
     break;
 
@@ -9798,9 +9798,9 @@ yyreduce:
 #line 2026 "chapel.ypp"
     {
       if ((yyvsp[-2].pcallexpr)->argList.length > 1)
-        (yyval.pexpr) = buildForallLoopExpr(YY_NULLPTR, new CallExpr("chpl__ensureDomainExpr", (yyvsp[-2].pcallexpr)), (yyvsp[0].pexpr), YY_NULLPTR, true);
+        (yyval.pexpr) = buildForallLoopExpr(nullptr, new CallExpr("chpl__ensureDomainExpr", (yyvsp[-2].pcallexpr)), (yyvsp[0].pexpr), nullptr, true);
       else
-        (yyval.pexpr) = buildForallLoopExpr(YY_NULLPTR, (yyvsp[-2].pcallexpr)->get(1)->remove(), (yyvsp[0].pexpr), YY_NULLPTR, true);
+        (yyval.pexpr) = buildForallLoopExpr(nullptr, (yyvsp[-2].pcallexpr)->get(1)->remove(), (yyvsp[0].pexpr), nullptr, true);
     }
 #line 9806 "bison-chapel.cpp"
     break;
@@ -9810,7 +9810,7 @@ yyreduce:
     {
       if ((yyvsp[-4].pcallexpr)->argList.length != 1)
         USR_FATAL((yyvsp[-2].pexpr), "invalid index expression");
-      (yyval.pexpr) = buildForallLoopExpr((yyvsp[-4].pcallexpr)->get(1)->remove(), (yyvsp[-2].pexpr), (yyvsp[0].pexpr), YY_NULLPTR, true);
+      (yyval.pexpr) = buildForallLoopExpr((yyvsp[-4].pcallexpr)->get(1)->remove(), (yyvsp[-2].pexpr), (yyvsp[0].pexpr), nullptr, true);
     }
 #line 9816 "bison-chapel.cpp"
     break;
@@ -9820,7 +9820,7 @@ yyreduce:
     {
       if ((yyvsp[-4].pcallexpr)->argList.length != 1)
         USR_FATAL((yyvsp[-2].pcallexpr), "invalid index expression");
-      (yyval.pexpr) = buildForallLoopExpr((yyvsp[-4].pcallexpr)->get(1)->remove(), (yyvsp[-2].pcallexpr), (yyvsp[0].pexpr), YY_NULLPTR, false, true);
+      (yyval.pexpr) = buildForallLoopExpr((yyvsp[-4].pcallexpr)->get(1)->remove(), (yyvsp[-2].pcallexpr), (yyvsp[0].pexpr), nullptr, false, true);
     }
 #line 9826 "bison-chapel.cpp"
     break;
@@ -9865,7 +9865,7 @@ yyreduce:
 
   case 558: /* opt_task_intent_ls: %empty  */
 #line 2089 "chapel.ypp"
-                                { (yyval.pcallexpr) = YY_NULLPTR; }
+                                { (yyval.pcallexpr) = nullptr; }
 #line 9870 "bison-chapel.cpp"
     break;
 
@@ -10114,7 +10114,7 @@ yyreduce:
 
   case 605: /* opt_expr: %empty  */
 #line 2247 "chapel.ypp"
-                  { (yyval.pexpr) = YY_NULLPTR; }
+                  { (yyval.pexpr) = nullptr; }
 #line 10119 "bison-chapel.cpp"
     break;
 
