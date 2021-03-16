@@ -28,6 +28,8 @@
 #include "stlUtil.h"
 #include "wellknown.h"
 
+#include <algorithm>
+
 // 'markPruned' replaced deletion from SymbolMap, which does not work well.
 Symbol*           markPruned      = NULL;
 
@@ -535,6 +537,15 @@ static void pruneOuterVars(Symbol* parent, SymbolMap& uses) {
   }
 }
 
+struct SymbolPairComparator {
+  bool operator()(std::pair<Symbol*, Symbol*> lhs,
+                  std::pair<Symbol*, Symbol*> rhs) {
+    std::less<Symbol*> lessSym;
+
+    return lessSym(lhs.first, rhs.first);
+  }
+};
+
 //
 // The 'vars' map describes the outer variables referenced
 // in the task function 'fn', which is invoked by 'call'.
@@ -575,9 +586,18 @@ addVarsToFormalsActuals(FnSymbol* fn, SymbolMap& vars,
                         CallExpr* call, bool isCoforall)
 {
   Expr *redRef1 = NULL, *redRef2 = NULL;
+
+  std::vector<std::pair<Symbol*, Symbol*> > elts;
   form_Map(SymbolMapElem, e, vars) {
-      Symbol* sym = e->key;
-      if (e->value != markPruned) {
+    elts.push_back(std::make_pair(e->key, e->value));
+  }
+  std::sort(elts.begin(), elts.end(), SymbolPairComparator());
+
+  for (auto pair: elts) {
+      Symbol* key = pair.first;
+      Symbol* value = pair.second;
+      Symbol* sym = key;
+      if (value != markPruned) {
         SET_LINENO(sym);
         ArgSymbol* newFormal = NULL;
         Symbol*    newActual = NULL;
@@ -585,7 +605,7 @@ addVarsToFormalsActuals(FnSymbol* fn, SymbolMap& vars,
 
         // If we see a TypeSymbol here, it came from a reduce intent.
         // (See the above comment about 'vars'.)
-        if (TypeSymbol* reduceType = toTypeSymbol(e->value)) {
+        if (TypeSymbol* reduceType = toTypeSymbol(value)) {
           bool gotError = false;
           // For cobegin, these will report the error for each task.
           // So maybe make it no-cont to avoid duplication?
@@ -604,10 +624,10 @@ addVarsToFormalsActuals(FnSymbol* fn, SymbolMap& vars,
                                  isCoforall, redRef1, redRef2);
         } else {
           IntentTag argTag = INTENT_BLANK;
-          if (ArgSymbol* tiMarker = toArgSymbol(e->value))
+          if (ArgSymbol* tiMarker = toArgSymbol(value))
             argTag = tiMarker->intent;
           else
-            INT_ASSERT(e->value == markUnspecified);
+            INT_ASSERT(value == markUnspecified);
 
           newFormal = new ArgSymbol(argTag, sym->name, sym->type);
           if (sym->hasFlag(FLAG_COFORALL_INDEX_VAR))
@@ -616,7 +636,7 @@ addVarsToFormalsActuals(FnSymbol* fn, SymbolMap& vars,
           if (ArgSymbol* symArg = toArgSymbol(sym))
             if (symArg->hasFlag(FLAG_MARKED_GENERIC))
               newFormal->addFlag(FLAG_MARKED_GENERIC);
-          newActual = e->key;
+          newActual = key;
           symReplace = newFormal;
           // MPF 2017-03-09
           // I don't think this check should be here; it depends
@@ -628,7 +648,8 @@ addVarsToFormalsActuals(FnSymbol* fn, SymbolMap& vars,
 
         call->insertAtTail(newActual);
         fn->insertFormalAtTail(newFormal);
-        e->value = symReplace;  // aka vars->put(sym, symReplace);
+        value = symReplace;
+        vars.put(key, value);
       }
   }
   cleanupRedRefs(redRef1, redRef2);
