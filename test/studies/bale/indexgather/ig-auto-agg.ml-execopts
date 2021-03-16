@@ -9,9 +9,6 @@ comm_sub = os.getenv('CHPL_COMM_SUBSTRATE')
 ugni = comm == 'ugni'
 gn_aries = comm == 'gasnet' and comm_sub  == 'aries'
 
-N  = 10000
 NL = 1000000
-if ugni or gn_aries:
-  N = NL
 
-print('--N={0} --printStats --mode=Mode.ordered    # bale-ig-auto-aggregated'.format(N))
+print('--N={0} --printStats --mode=Mode.ordered    # bale-ig-auto-aggregated'.format(NL))
