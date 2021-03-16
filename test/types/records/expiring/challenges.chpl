@@ -19,7 +19,7 @@ record ComplexR {
     if owns then delete c;
   }
 }
-operator =(ref lhs: ComplexR, rhs: ComplexR) {
+operator ComplexR.=(ref lhs: ComplexR, rhs: ComplexR) {
   if lhs.owns then
     delete lhs.c;
   lhs.owns = false;

@@ -22,7 +22,7 @@ module M {
     proc deinit() { initCounter.sub(1); }
 
   }
-  operator =(ref lhs: r, const ref rhs: r) {
+  operator r.=(ref lhs: r, const ref rhs: r) {
     lhs.x = rhs.x;
   }
 

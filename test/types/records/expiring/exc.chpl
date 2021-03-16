@@ -25,7 +25,7 @@ record ComplexR {
     if owns then delete c;
   }
 }
-operator =(ref lhs: ComplexR, rhs: ComplexR) lifetime lhs=rhs {
+operator ComplexR.=(ref lhs: ComplexR, rhs: ComplexR) lifetime lhs=rhs {
   if lhs.owns then
     delete lhs.c;
   lhs.owns = false;

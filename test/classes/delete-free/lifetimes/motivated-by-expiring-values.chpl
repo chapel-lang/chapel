@@ -23,7 +23,7 @@ record ComplexR {
   }
 }
 
-operator =(ref lhs: ComplexR, rhs: ComplexR) {
+operator ComplexR.=(ref lhs: ComplexR, rhs: ComplexR) {
   lhs.own = nil;
   lhs.bor = rhs.value();
 }

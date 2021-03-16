@@ -29,7 +29,7 @@ record R {
 // List currently uses a primitive move instead of an assignment internally,
 // so this routine is unused.
 //
-operator =(ref A : R, B : R) {
+operator R.=(ref A : R, B : R) {
   if A.c != nil then delete A.c;
   if B.c != nil {
     A.c = new unmanaged C(B.c!.x + 1);

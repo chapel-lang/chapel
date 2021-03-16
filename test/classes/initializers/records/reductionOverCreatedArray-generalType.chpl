@@ -18,7 +18,7 @@ record Foo {
   }
 }
 
-operator =(ref lhs: Foo, const ref rhs: Foo) {
+operator Foo.=(ref lhs: Foo, const ref rhs: Foo) {
   lhs.x = rhs.x;
   lhs.y = rhs.y;
 }

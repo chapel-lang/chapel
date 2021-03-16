@@ -9,7 +9,7 @@ record D {
 proc D.init=(other : D) {
   this.j = other.j;
 }
-operator =(ref lhs : D, const ref rhs : D) {
+operator D.=(ref lhs : D, const ref rhs : D) {
   lhs.j = rhs.j;
 }
 

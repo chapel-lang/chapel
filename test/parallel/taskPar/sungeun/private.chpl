@@ -18,7 +18,9 @@ record taskPrivateData {
   }
 };
 
-inline operator =(ref a: chpl_taskID_t, b: chpl_taskID_t) { __primitive("=", a, b); }
+inline operator chpl_taskID_t.=(ref a: chpl_taskID_t, b: chpl_taskID_t) {
+  __primitive("=", a, b);
+}
 inline operator chpl_taskID_t.!=(a: chpl_taskID_t, b: chpl_taskID_t) {
   return __primitive("!=", a, b);
 }

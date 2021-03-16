@@ -1226,7 +1226,7 @@ module Vector {
     :arg lhs: The vector to assign to.
     :arg rhs: The vector to assign from. 
   */
-  operator =(ref lhs: vector(?t, ?), rhs: vector(t, ?)) {
+  operator vector.=(ref lhs: vector(?t, ?), rhs: vector(t, ?)) {
     lhs.clear();
     lhs.extend(rhs);
   }

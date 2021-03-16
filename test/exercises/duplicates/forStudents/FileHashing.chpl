@@ -33,7 +33,7 @@ module FileHashing {
   }
 
   /* Called when assigning between SHA256Hash values */
-  operator =(ref lhs: SHA256Hash, rhs: SHA256Hash) {
+  operator SHA256Hash.=(ref lhs: SHA256Hash, rhs: SHA256Hash) {
     lhs.hash = rhs.hash;
   }
 

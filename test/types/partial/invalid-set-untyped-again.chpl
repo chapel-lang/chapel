@@ -9,7 +9,7 @@ proc R.init=(rhs: R) {
   this.x = rhs.x;
 }
 
-operator =(ref lhs:R, const ref rhs:R) {
+operator R.=(ref lhs:R, const ref rhs:R) {
   lhs.x = rhs.x;
 }
 

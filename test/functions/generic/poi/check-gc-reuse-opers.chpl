@@ -60,7 +60,7 @@ module User {
   proc u3() {
     proc MyRecord.init(param p)            { note("u3.init", 2); rp = 0; }
     proc MyRecord.init=(other)             { note("u3.init=", 2); rp = 0; }
-    operator =(ref lhs:MyRecord, rhs:MyRecord) { note("u3.=", 2); }
+    operator MyRecord.=(ref lhs:MyRecord, rhs:MyRecord) { note("u3.=", 2); }
     operator MyRecord.<(lhs:MyRecord, rhs:MyRecord) { note("u3.<", 2);
                                                       return true; }
     proc _cast(type t:int,   rhs:MyRecord) { note("u3._castF", 2); return 1; }
@@ -105,7 +105,7 @@ module More1 {
   use Lib;
   proc MyRecord.init(param p)            { note("More1.init", 2); rp = 0; }
   proc MyRecord.init=(other)             { note("More1.init=", 2); rp = 0; }
-  operator =(ref lhs:MyRecord, rhs:MyRecord) { note("More1.=", 2); }
+  operator MyRecord.=(ref lhs:MyRecord, rhs:MyRecord) { note("More1.=", 2); }
   operator MyRecord.<(lhs:MyRecord, rhs:MyRecord) { note("More1.<", 2);
                                                     return true; }
   proc _cast(type t:int,   rhs:MyRecord) { note("More1._castF", 2); return 1; }
@@ -153,7 +153,7 @@ module Combo1 {
   use Lib;
   proc MyRecord.init(param p)            { note("Combo1.init", 2); rp = 0; }
   proc MyRecord.init=(other)             { note("Combo1.init=", 2); rp = 0; }
-  operator =(ref lhs:MyRecord, rhs:MyRecord) { note("Combo1.=", 2); }
+  operator MyRecord.=(ref lhs:MyRecord, rhs:MyRecord) { note("Combo1.=", 2); }
   operator MyRecord.<(lhs:MyRecord, rhs:MyRecord) { note("Combo1.<", 2);
                                                     return true; }
   proc _cast(type t:int,   rhs:MyRecord) { note("Combo1._castF", 2); return 1; }

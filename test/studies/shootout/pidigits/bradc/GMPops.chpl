@@ -23,7 +23,7 @@ inline operator mpz_t.>=(ref x: mpz_t, ref y: mpz_t) {
 // However, if I make it ref here, I get a complaint if I send in the
 // result of another operation like the *() below.
 //
-inline operator =(ref lhs: mpz_t, rhs: mpz_t) {
+inline operator mpz_t.=(ref lhs: mpz_t, rhs: mpz_t) {
   mpz_set(lhs, rhs);
 }
 

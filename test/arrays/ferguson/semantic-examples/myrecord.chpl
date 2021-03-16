@@ -11,7 +11,7 @@ proc R.init=(arg: R) {
   this.x = arg.x;
 }
 
-operator =(ref lhs: R, rhs: R) {
+operator R.=(ref lhs: R, rhs: R) {
   if printcopies then
     writeln("copy/assign from ", rhs.x);
 

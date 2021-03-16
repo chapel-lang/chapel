@@ -19,7 +19,7 @@ proc Matrix.transpose() {
   return M;
 }
 
-operator +(M1: Matrix, M2: Matrix) {
+operator Matrix.+(M1: Matrix, M2: Matrix) {
   if M1.m != M2.m || M1.n != M2.n then
     halt("illegal matrix + operation");
   var M3 = new Matrix((M1(1,1)+M2(1,1)).type, M1.m, M1.n);
