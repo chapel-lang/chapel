@@ -123,11 +123,15 @@ endif
 #
 # Flags for turning on warnings for C++/C code
 #
-WARN_CXXFLAGS = -Wall -Werror -Wpointer-arith -Wwrite-strings -Wno-strict-aliasing -Wmissing-declarations -Werror=zero-as-null-pointer-constant
+WARN_CXXFLAGS = -Wall -Werror -Wpointer-arith -Wwrite-strings -Wno-strict-aliasing -Wmissing-declarations
 WARN_CFLAGS = $(WARN_CXXFLAGS) -Wmissing-prototypes -Wstrict-prototypes -Wmissing-format-attribute
 WARN_GEN_CFLAGS = $(WARN_CFLAGS)
 SQUASH_WARN_GEN_CFLAGS = -Wno-unused -Wno-uninitialized
-NO_NULLPTR_ERROR = -Wno-error=zero-as-null-pointer-constant
+
+# Clang version >= 5 supports -Wzero-as-null-pointer-constant
+ifeq ($(shell $(CXX) -x c++ -c -Wzero-as-null-pointer-constant /dev/null 2>&1 | grep -q Wzero-as-null-pointer-constant; echo "$$?"),1)
+WARN_CXXFLAGS += -Wzero-as-null-pointer-constant
+endif
 
 #
 # Don't warn for signed pointer issues (ex. c_ptr(c_char) )
