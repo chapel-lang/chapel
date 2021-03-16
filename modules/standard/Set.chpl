@@ -541,7 +541,7 @@ module Set {
     :return: A new set containing the union between `a` and `b`.
     :rtype: `set(?t, ?)`
   */
-  proc |(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t) {
+  proc |(const ref a: set(?t, ?), const ref b: set(t, ?)) {
     var result: set(t, (a.parSafe || b.parSafe));
 
     result = a;
@@ -571,7 +571,7 @@ module Set {
     :return: A new set containing the union between `a` and `b`.
     :rtype: `set(?t, ?)`
   */
-  proc +(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t, ?) {
+  proc +(const ref a: set(?t, ?), const ref b: set(t, ?)) {
     return a | b;
   }
 
@@ -594,11 +594,11 @@ module Set {
     :return: A new set containing the difference between `a` and `b`.
     :rtype: `set(t)`
   */
-  proc -(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t) {
+  proc -(const ref a: set(?t, ?), const ref b: set(t, ?)) {
     var result = new set(t, (a.parSafe || b.parSafe));
 
     if a.parSafe && b.parSafe {
-      forall x in a do
+      forall x in a with (ref result) do
         if !b.contains(x) then
           result.add(x);
     } else {
@@ -623,7 +623,7 @@ module Set {
   */
   proc -=(ref lhs: set(?t, ?), const ref rhs: set(t, ?)) {
     if lhs.parSafe && rhs.parSafe {
-      forall x in rhs do
+      forall x in rhs with (ref lhs) do
         lhs.remove(x);
     } else {
       for x in rhs do
@@ -640,13 +640,13 @@ module Set {
     :return: A new set containing the intersection of `a` and `b`.
     :rtype: `set(t)`
   */
-  proc &(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t) {
+  proc &(const ref a: set(?t, ?), const ref b: set(t, ?)) {
     var result: set(t, (a.parSafe || b.parSafe));
 
     /* Iterate over the smaller set */
     if a.size <= b.size {
       if a.parSafe && b.parSafe {
-        forall x in a do
+        forall x in a with (ref result) do
           if b.contains(x) then
             result.add(x);
       } else {
@@ -656,7 +656,7 @@ module Set {
       }
     } else {
       if a.parSafe && b.parSafe {
-        forall x in b do
+        forall x in b with (ref result) do
           if a.contains(x) then
             result.add(x);
       } else {
@@ -687,7 +687,7 @@ module Set {
     var result: set(t, (lhs.parSafe || rhs.parSafe));
 
     if lhs.parSafe && rhs.parSafe {
-      forall x in lhs do
+      forall x in lhs with (ref result) do
         if rhs.contains(x) then
           result.add(x);
     } else {
@@ -695,6 +695,7 @@ module Set {
         if rhs.contains(x) then
           result.add(x);
     }
+
     lhs = result;
   }
 
@@ -707,7 +708,7 @@ module Set {
     :return: A new set containing the symmetric difference of `a` and `b`.
     :rtype: `set(?t, ?)`
   */
-  proc ^(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t) {
+  proc ^(const ref a: set(?t, ?), const ref b: set(t, ?)) {
     var result: set(t, (a.parSafe || b.parSafe));
 
     /* Expect the loop in ^= to be more expensive than the loop in =,
@@ -737,7 +738,7 @@ module Set {
   */
   proc ^=(ref lhs: set(?t, ?), const ref rhs: set(t, ?)) {
     if lhs.parSafe && rhs.parSafe {
-      forall x in rhs {
+      forall x in rhs with (ref lhs) {
         if lhs.contains(x) {
           lhs.remove(x);
         } else {
