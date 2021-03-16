@@ -156,6 +156,8 @@ void setupClang(GenInfo* info, std::string rtmain);
 
 bool isBuiltinExternCFunction(const char* cname);
 
+const char* legalizeName(const char* name);
+
 std::string numToString(int64_t num);
 std::string int64_to_string(int64_t i);
 std::string uint64_to_string(uint64_t i);
