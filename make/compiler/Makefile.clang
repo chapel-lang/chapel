@@ -127,7 +127,7 @@ WARN_CXXFLAGS = -Wall -Werror -Wpointer-arith -Wwrite-strings -Wno-strict-aliasi
 WARN_CFLAGS = $(WARN_CXXFLAGS) -Wmissing-prototypes -Wstrict-prototypes -Wmissing-format-attribute
 WARN_GEN_CFLAGS = $(WARN_CFLAGS)
 SQUASH_WARN_GEN_CFLAGS = -Wno-unused -Wno-uninitialized
-NO_NULLPTR_ERRROR = -Wno-error=zero-as-null-pointer-constant
+NO_NULLPTR_ERROR = -Wno-error=zero-as-null-pointer-constant
 
 #
 # Don't warn for signed pointer issues (ex. c_ptr(c_char) )
