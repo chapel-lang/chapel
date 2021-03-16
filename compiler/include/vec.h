@@ -222,7 +222,7 @@ Vec<C,S>::add() {
 template <class C, int S> inline C
 Vec<C,S>::pop() {
   if (!n)
-    return {};
+    return C{};
   n--;
   C ret = v[n];
   if (!n)

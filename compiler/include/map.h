@@ -72,8 +72,8 @@ _dupstr(char *s, char *e = nullptr) {
 
 template <class K, class C> class MapElem {
  public:
-  K     key;
-  C     value;
+  K     key{};
+  C     value{};
   bool operator==(MapElem &e) { return e.key == key; }
 
   //
@@ -85,7 +85,7 @@ template <class K, class C> class MapElem {
   //
   operator uintptr_t()     { return (uintptr_t)key; }
 
-  MapElem()                 : key{}                      { }
+  MapElem() = default;
   MapElem(K akey, C avalue) : key(akey),  value(avalue)  { }
   MapElem(MapElem &e)       : key(e.key), value(e.value) { }
   MapElem(unsigned long x)                               { assert(!x); key = 0; }
@@ -224,11 +224,11 @@ extern unsigned int open_hash_multipliers[256];
 
 template <class K, class C> inline C
 Map<K,C>::get(K akey) {
-  MapElem<K,C> e(akey, {});
+  MapElem<K,C> e(akey, C{});
   MapElem<K,C> *x = this->set_in(e);
   if (x)
     return x->value;
-  return {};
+  return C{};
 }
 
 template <class K, class C> inline MapElem<K,C> *
@@ -296,13 +296,13 @@ map_set_add(Map<K, Vec<C> *> &m, K akey, Vec<C> *madd) {
 template <class K, class AHashFns, class C> inline MapElem<K,C> *
 HashMap<K,AHashFns,C>::get_internal(K akey) {
   if (!n)
-    return {};
+    return nullptr;
   if (n <= VEC_INTEGRAL_SIZE) {
     for (MapElem<K,C> *c = v; c < v + n; c++)
       if (c->key)
         if (AHashFns::equal(akey, c->key))
           return c;
-    return {};
+    return nullptr;
   }
   unsigned int h = AHashFns::hash(akey);
   h = h % n;
@@ -311,19 +311,17 @@ HashMap<K,AHashFns,C>::get_internal(K akey) {
        k = ((k + ++j) % n))
   {
     if (!v[k].key)
-      return {};
+      return nullptr;
     else if (AHashFns::equal(akey, v[k].key))
       return &v[k];
   }
-  return {};
+  return nullptr;
 }
 
 template <class K, class AHashFns, class C> inline C
 HashMap<K,AHashFns,C>::get(K akey) {
   MapElem<K,C> *x = get_internal(akey);
-  if (!x)
-    return {};
-  return x->value;
+  return x ? x->value : C{};
 }
 
 template <class K, class AHashFns, class C> inline MapElem<K,C> *
@@ -468,13 +466,13 @@ ChainHashMap<K, AHashFns, C>::get(K akey) {
   MapElem<unsigned int,List<MapElem<K,C> > > e(h, empty);
   MapElem<unsigned int,List<MapElem<K,C> > > *x = this->set_in(e);
   if (!x)
-    return {};
+    return C{};
   List<MapElem<K,C> > *l = &x->value;
   if (l->head)
     for (ConsCell<MapElem<K,C> > *p  = l->head; p; p = p->cdr)
       if (AHashFns::equal(akey, p->car.key))
         return p->car.value;
-  return {};
+  return C{};
 }
 
 template <class K, class AHashFns, class C>  int
