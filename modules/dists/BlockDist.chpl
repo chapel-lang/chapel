@@ -394,7 +394,7 @@ class BlockArr: BaseRectangularArr {
   var locArr: [dom.dist.targetLocDom] unmanaged LocBlockArr(eltType, rank, idxType, stridable);
   pragma "local field"
   var myLocArr: unmanaged LocBlockArr(eltType, rank, idxType, stridable)?;
-  const SENTINEL = max(rank*idxType);
+  const SENTINEL = max(rank*int);
 }
 
 //
@@ -669,8 +669,8 @@ proc Block.targetLocsIdx(ind: rank*idxType) {
   for param i in 0..rank-1 do
     result(i) = max(0, min((targetLocDom.dim(i).size-1):int,
                            (((ind(i) - boundingBox.dim(i).low) *
-                             targetLocDom.dim(i).size:idxType) /
-                            boundingBox.dim(i).size):int));
+                             targetLocDom.dim(i).sizeAs(idxType)) /
+                            boundingBox.dim(i).sizeAs(idxType)):int));
   return if rank == 1 then result(0) else result;
 }
 
