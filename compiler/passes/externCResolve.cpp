@@ -159,7 +159,11 @@ Expr* convertStructToChplType(ModuleSymbol* module,
   // Create an empty struct and add it to the AST
   // This allows fields of struct* type or other recursion.
 
-  AggregateType* ct = new AggregateType(AGGREGATE_RECORD);
+  AggregateTag tag = AGGREGATE_RECORD;
+  if (structType->isUnionType())
+    tag = AGGREGATE_UNION;
+
+  AggregateType* ct = new AggregateType(tag);
   ct->defaultValue = NULL;
   TypeSymbol* ts = new TypeSymbol(chpl_name, ct);
   ts->cname = cname;
@@ -233,6 +237,12 @@ static Expr* convertToChplType(ModuleSymbol* module,
   } else if (type->isStructureType()) {
 
     return convertStructToChplType(module, type->getAsStructureType(),
+                                   typedefName);
+
+  // unions
+  } else if (type->isUnionType()) {
+
+    return convertStructToChplType(module, type->getAsUnionType(),
                                    typedefName);
 
   } else if (type->isFunctionType()) {
