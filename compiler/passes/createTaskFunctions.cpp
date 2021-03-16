@@ -28,8 +28,6 @@
 #include "stlUtil.h"
 #include "wellknown.h"
 
-#include <algorithm>
-
 // 'markPruned' replaced deletion from SymbolMap, which does not work well.
 Symbol*           markPruned      = NULL;
 
@@ -537,15 +535,6 @@ static void pruneOuterVars(Symbol* parent, SymbolMap& uses) {
   }
 }
 
-struct SymbolPairComparator {
-  bool operator()(std::pair<Symbol*, Symbol*> lhs,
-                  std::pair<Symbol*, Symbol*> rhs) {
-    std::less<Symbol*> lessSym;
-
-    return lessSym(lhs.first, rhs.first);
-  }
-};
-
 //
 // The 'vars' map describes the outer variables referenced
 // in the task function 'fn', which is invoked by 'call'.
@@ -587,12 +576,7 @@ addVarsToFormalsActuals(FnSymbol* fn, SymbolMap& vars,
 {
   Expr *redRef1 = NULL, *redRef2 = NULL;
 
-  std::vector<std::pair<Symbol*, Symbol*> > elts;
-  form_Map(SymbolMapElem, e, vars) {
-    elts.push_back(std::make_pair(e->key, e->value));
-  }
-  std::sort(elts.begin(), elts.end(), SymbolPairComparator());
-
+  SymbolMapVector elts = sortedSymbolMapElts(vars);
   for (auto pair: elts) {
       Symbol* key = pair.first;
       Symbol* value = pair.second;

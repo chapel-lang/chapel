@@ -186,8 +186,13 @@ static void addArgForGenericField(CallExpr* genCall, Symbol* gf) {
 
 static bool applyStandinsToGenerics(BlockStmt* holder, SymbolMap& fml2act) {
   bool gotGenerics = false;
-  form_Map(SymbolMapElem, elem, fml2act) {
-    Type* targetOrig = elem->value->type;
+
+  SymbolMapVector elts = sortedSymbolMapElts(fml2act);
+  for (auto pair: elts) {
+    Symbol* key = pair.first;
+    Symbol* value = pair.second;
+
+    Type* targetOrig = value->type;
     Type* targetVal  = targetOrig->getValType();
     // CG TODO: also handle DecoratedClassType
     if (AggregateType* at = toAggregateType(targetVal)) {
@@ -205,7 +210,7 @@ static bool applyStandinsToGenerics(BlockStmt* holder, SymbolMap& fml2act) {
       if (targetVal != targetOrig && instType->refType != nullptr)
         instType = instType->refType;
 
-      elem->value = instType->symbol; // aka fml2act.put(elem->key, instType);
+      fml2act.put(key, instType->symbol);
       genCall->remove();
     }
   }
@@ -508,9 +513,14 @@ static Type* instantiateOneAggregateType(SymbolMap &fml2act,
   // We may or may not use its contents.
   std::vector<Type*> subs;  // used only when there are new substitution(s)
   bool gotSub = false;
-  form_Map(SymbolMapElem, elem, at->substitutions) {
-    if (elem->key->hasFlag(FLAG_PARAM)) continue;
-    Type* srcT = elem->value->type;
+
+  SymbolMapVector elts = sortedSymbolMapElts(at->substitutions);
+  for (auto pair: elts) {
+    Symbol* key = pair.first;
+    Symbol* value = pair.second;
+
+    if (key->hasFlag(FLAG_PARAM)) continue;
+    Type* srcT = value->type;
     Type* inst = instantiateOneAggregateType(fml2act, anchor, srcT, markRm);
     subs.push_back(inst != nullptr ? inst : srcT);
     if (inst != nullptr) gotSub = true;
@@ -522,14 +532,16 @@ static Type* instantiateOneAggregateType(SymbolMap &fml2act,
   CallExpr* genCall = new CallExpr(atgen->symbol);
   anchor->insertBefore(genCall);
   int i = 0;
-  form_Map(SymbolMapElem, elem, at->substitutions) {
+  for (auto pair: elts) {
+    Symbol* key = pair.first;
+    Symbol* value = pair.second;
     Symbol* instSym = nullptr;
     // follow addArgForGenericField()
-    if (elem->key->hasFlag(FLAG_PARAM)) // param field
-      instSym = elem->value; // apply the same substitution as for 'at'
+    if (key->hasFlag(FLAG_PARAM)) // param field
+      instSym = value; // apply the same substitution as for 'at'
     else // var or type field
       instSym = subs[i++]->symbol;
-    genCall->insertAtTail(new NamedExpr(elem->key->name, new SymExpr(instSym)));
+    genCall->insertAtTail(new NamedExpr(key->name, new SymExpr(instSym)));
   }
 
   AggregateType* instT = atgen->generateType(genCall, "<internal error>");
@@ -601,8 +613,11 @@ static void createRepsForIfcSymbols(FnSymbol* fn, InterfaceInfo* ifcInfo) {
       fml2act.put(required->symbol, instantiated);
     }
 
-    form_Map(SymbolMapElem, elem, isym->requiredFns) {
-      FnSymbol* required = toFnSymbol(elem->key);
+    SymbolMapVector elts = sortedSymbolMapElts(isym->requiredFns);
+    for (auto pair: elts) {
+      Symbol* key = pair.first;
+
+      FnSymbol* required = toFnSymbol(key);
       FnSymbol* instantiated = makeRepForRequiredFn(fn, fml2act, required);
       // We may also want to make 'instantiated' visible in fn->where.
       fn->body->insertAtHead(new DefExpr(instantiated));
@@ -1054,13 +1069,17 @@ static bool resolveRequiredFns(InterfaceSymbol* isym,  ImplementsStmt* istm,
   bool rfSuccess = true;
   std::vector<FnSymbol*> instantiatedDefaults;
 
-  form_Map(SymbolMapElem, wit, istm->witnesses) {
-    if (FnSymbol* reqFn = toFnSymbol(wit->key))
+  SymbolMapVector elts = sortedSymbolMapElts(istm->witnesses);
+  for (auto pair: elts) {
+    Symbol* key = pair.first;
+    Symbol* value = pair.second;
+
+    if (FnSymbol* reqFn = toFnSymbol(key))
       rfSuccess &= resolveOneRequiredFn(isym, istm, fml2act, gotGenerics,
                                         instantiatedDefaults, holder, indent,
-                                        reportErrors, reqFn, wit->value);
+                                        reportErrors, reqFn, value);
     else
-      INT_ASSERT(isConstrainedTypeSymbol(wit->key, CT_IFC_ASSOC_TYPE));
+      INT_ASSERT(isConstrainedTypeSymbol(key, CT_IFC_ASSOC_TYPE));
   }
 
   if (rfSuccess) {
