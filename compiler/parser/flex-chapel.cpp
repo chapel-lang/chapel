@@ -3921,7 +3921,7 @@ static int processBlockComment(yyscan_t scanner) {
       }
       else
         depth--;
-      
+
       d = 1;
     } else if (lastc == '/' && c == '*') { // start nested
       depth++;
@@ -3975,10 +3975,10 @@ static int processBlockComment(yyscan_t scanner) {
 
       fprintf(stderr, "Warning:%d: chpldoc comment not closed, ignoring comment:%s\n",
               startLine, wholeComment.c_str());
-      yyLval->pch = NULL;
+      yyLval->pch = nullptr;
     }
   } else {
-    yyLval->pch = NULL;
+    yyLval->pch = nullptr;
   }
 
   countMultiLineComment(stringBuffer.c_str());
@@ -4132,5 +4132,4 @@ static bool yy_has_state(yyscan_t yyscanner)
 
   return yyg->yy_start_stack_ptr > 0;
 }
-
 

@@ -723,7 +723,7 @@ static void resolveAlsoConversions(FnSymbol* fn, CallExpr* forCall) {
 
   if (fWarnUnstable &&
       toType->symbol->hasFlag(FLAG_EXTERN) &&
-      have.assign != NULL &&
+      have.assign != nullptr &&
       !have.assign->hasFlag(FLAG_COMPILER_GENERATED) &&
       have.assign->defPoint->getModule()->modTag == MOD_USER) {
     USR_WARN(have.assign->defPoint,
@@ -1224,7 +1224,7 @@ bool SplitInitVisitor::enterCallExpr(CallExpr* call) {
       // Change the PRIM_DEFAULT_INIT_VAR to PRIM_INIT_VAR_SPLIT_DECL
       call->primitive = primitives[PRIM_INIT_VAR_SPLIT_DECL];
 
-      Symbol* type = NULL;
+      Symbol* type = nullptr;
 
       // remove dummy dtSplitInitType argument if present
       if (typeSe->symbol() == dtSplitInitType->symbol)
@@ -1236,7 +1236,7 @@ bool SplitInitVisitor::enterCallExpr(CallExpr* call) {
       for_vector(CallExpr, assign, initAssigns) {
         SET_LINENO(assign);
         Expr* rhs = assign->get(2)->remove();
-        CallExpr* init = NULL;
+        CallExpr* init = nullptr;
         if (type)
           init = new CallExpr(PRIM_INIT_VAR_SPLIT_INIT, sym, rhs, type);
         else
@@ -2194,7 +2194,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
     // whether tmp owns its value or not.  That is, push setting these flags
     // (or not) into the cases below, as appropriate.
     Type* formalType = formal->type->getValType();
-    DefExpr* def = NULL;
+    DefExpr* def = nullptr;
 
     // mark CONST as needed
     if (concreteIntent(formal->intent, formalType) & INTENT_FLAG_CONST) {

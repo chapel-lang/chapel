@@ -96,9 +96,9 @@ class Vec {
   void push_back(C a) { add(a);}
   int add_exclusive(C a);
   C& add();
-  C head() { return n>0 ? *v : 0; }
-  C only() { return n == 1 ? *v : 0; }
-  C tail() { return n>0 ? v[n-1] : 0; }
+  C head() { return n>0 ? *v : C{}; }
+  C only() { return n == 1 ? *v : C{}; }
+  C tail() { return n>0 ? v[n-1] : C{}; }
   C pop();
   void clear();
   void set_clear();
@@ -143,10 +143,10 @@ class Vec {
 //
 // note: loop variable is declared as type _c* in order
 // to fit into a loop declaration.
-#define forv_Vec(_c, _p, _v) \
-  if ((_v).size()) \
-    for (_c *qq__##_p = (_c*)0, *_p = (_v).begin()[0]; \
-         ((intptr_t)(qq__##_p) < (int)(_v).size()) && \
+#define forv_Vec(_c, _p, _v)                              \
+  if ((_v).size())                                        \
+    for (_c *qq__##_p = nullptr, *_p = (_v).begin()[0];   \
+         ((intptr_t)(qq__##_p) < (int)(_v).size()) &&     \
           ((_p = (_v).begin()[(intptr_t)qq__##_p]) || 1); \
          qq__##_p = (_c*)(((intptr_t)qq__##_p) + 1))
 
@@ -187,7 +187,7 @@ extern unsigned int prime2[];
 /* IMPLEMENTATION */
 
 template <class C, int S> inline
-Vec<C,S>::Vec() : n(0), i(0), v(0) {
+Vec<C,S>::Vec() : n(0), i(0), v(nullptr) {
 }
 
 template <class C, int S> inline
@@ -222,7 +222,7 @@ Vec<C,S>::add() {
 template <class C, int S> inline C
 Vec<C,S>::pop() {
   if (!n)
-    return 0;
+    return {};
   n--;
   C ret = v[n];
   if (!n)
@@ -248,7 +248,7 @@ Vec<C,S>::set_add(C a) {
   if (n < SET_LINEAR_SIZE) {
     for (C *c = v; c < v + n; c++)
       if (*c == a)
-        return 0;
+        return nullptr;
     add(a);
     return &v[n-1];
   }
@@ -319,7 +319,7 @@ Vec<C,S>::move_internal(Vec<C,S> &vv)  {
     memcpy((void*)e, &vv.e[0], sizeof(e));
     v = e;
   } else
-    vv.v = 0;
+    vv.v = nullptr;
 }
 
 template <class C, int S> inline void
@@ -339,7 +339,7 @@ Vec<C,S>::copy(const Vec<C,S> &vv)  {
     if (vv.v)
       copy_internal(vv);
     else
-      v = 0;
+      v = nullptr;
   }
 }
 
@@ -428,7 +428,7 @@ Vec<C,S>::set_add_internal(C c) {
         v[k] = c;
         return &v[k];
       } else if (v[k] == c)
-        return 0;
+        return nullptr;
     }
   }
   Vec<C,S> vv;
@@ -450,12 +450,12 @@ Vec<C,S>::set_in_internal(C c) {
          k = ((k + ++j) % n))
     {
       if (!v[k])
-        return 0;
+        return nullptr;
       else if (v[k] == c)
         return &v[k];
     }
   }
-  return 0;
+  return nullptr;
 }
 
 template <class C, int S> int

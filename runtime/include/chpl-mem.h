@@ -2,15 +2,15 @@
  * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -123,7 +123,11 @@ void* chpl_mem_realloc(void* memAlloc, size_t size,
   if (size == 0) {
     chpl_memhook_free_pre(memAlloc, lineno, filename);
     chpl_free(memAlloc);
+#ifdef __cplusplus
+    return nullptr;
+#else
     return NULL;
+#endif
   }
   moreMemAlloc = chpl_realloc(memAlloc, size);
   chpl_memhook_realloc_post(moreMemAlloc, memAlloc, size, description,
@@ -181,9 +185,19 @@ static inline size_t chpl_mem_good_alloc_size(size_t minSize, int32_t lineno, in
 // should be freed.
 static inline
 void chpl_rt_free_c_string(c_string *s, int32_t lineno, int32_t filename)  {
+#ifdef __cplusplus
+  assert(*s!=nullptr);
+#else
   assert(*s!=NULL);
+#endif
+
   chpl_mem_free((void *) *s, lineno, filename);
+
+#ifdef __cplusplus
+  *s = nullptr;
+#else
   *s = NULL;
+#endif
 }
 
 void chpl_mem_layerInit(void);

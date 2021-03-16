@@ -1249,12 +1249,12 @@ static long licmFn(FnSymbol* fn) {
 
   for_vector(Loop, loop, loops) {
     delete loop;
-    loop = 0;
+    loop = nullptr;
   }
 
   for_vector(BitVec, bitVec, dominators) {
     delete bitVec;
-    bitVec = 0;
+    bitVec = nullptr;
   }
 
   return numLoops;
@@ -1326,4 +1326,3 @@ void loopInvariantCodeMotion(void) {
 #endif
 
 }
-

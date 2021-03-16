@@ -62,7 +62,7 @@ GenRet WhileDoStmt::codegen()
       std::string end  = "}";
       CondStmt*   cond = toCondStmt(parentExpr);
 
-      if (cond == 0 || !(cond->thenStmt == this && cond->elseStmt))
+      if (cond == nullptr || !(cond->thenStmt == this && cond->elseStmt))
         end += "\n";
 
       info->cStatements.push_back(end);

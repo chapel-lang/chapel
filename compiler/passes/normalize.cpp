@@ -478,7 +478,7 @@ static void transformLogicalShortCircuit() {
 
   // Collect the distinct stmts that contain logical AND/OR expressions
   for_alive_in_Vec(CallExpr, call, gCallExprs) {
-    if (call->primitive == 0) {
+    if (call->primitive == nullptr) {
       if (UnresolvedSymExpr* expr = toUnresolvedSymExpr(call->baseExpr)) {
         if (strcmp(expr->unresolved, "&&") == 0 ||
             strcmp(expr->unresolved, "||") == 0) {

@@ -80,7 +80,7 @@ void parseCmdLineConfig(const char* name, const char* value) {
   Expr*       newExpr  = nullptr;
 
   // If NO then extract the RHS from the stmt
-  if (b == 0) {
+  if (b == nullptr) {
     if (CallExpr* c = toCallExpr(stmt->body.head)) {
       newExpr = c->get(2)->copy();
 
@@ -114,5 +114,3 @@ void useCmdLineConfig(const char* name, VarSymbol* byWhom) {
 VarSymbol* isUsedCmdLineConfig(const char* name) {
   return usedConfigParams.get(name);
 }
-
-

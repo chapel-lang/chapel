@@ -533,7 +533,7 @@ static void handleReduce(ForallStmt* fs, ShadowVarSymbol* AS) {
   setupForReduce(fs, PRP, PAS, RP, AS);
 
   // Ensure setReduceSVars() works.
-  ShadowVarSymbol *PRP1=0, *PAS1=0, *RP1=0;
+  ShadowVarSymbol *PRP1=nullptr, *PAS1=nullptr, *RP1=nullptr;
   setReduceSVars(PRP1, PAS1, RP1, AS);
   INT_ASSERT(PRP1 == PRP);
   INT_ASSERT(PAS1 == PAS);

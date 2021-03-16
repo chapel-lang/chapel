@@ -2,15 +2,15 @@
  * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -87,7 +87,7 @@ void chpl_memhook_malloc_post(void* memAlloc,
                               size_t number, size_t size,
                               chpl_mem_descInt_t description,
                               int32_t lineno, int32_t filename) {
-  if (CHPL_MEMHOOKS_ACTIVE || memAlloc == NULL)
+  if (CHPL_MEMHOOKS_ACTIVE || !memAlloc)
     chpl_memhook_check_post(memAlloc, description, lineno, filename);
   if (CHPL_MEMHOOKS_ACTIVE)
     chpl_track_malloc(memAlloc, number, size, description, lineno, filename);
@@ -121,7 +121,7 @@ void chpl_memhook_realloc_post(void* moreMemAlloc, void* memAlloc,
                                size_t size,
                                chpl_mem_descInt_t description,
                                int32_t lineno, int32_t filename) {
-  if (CHPL_MEMHOOKS_ACTIVE || moreMemAlloc == NULL)
+  if (CHPL_MEMHOOKS_ACTIVE || !moreMemAlloc)
     chpl_memhook_check_post(moreMemAlloc, description, lineno, filename);
   if (CHPL_MEMHOOKS_ACTIVE)
     chpl_track_realloc_post(moreMemAlloc, memAlloc, size, description,

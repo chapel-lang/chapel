@@ -62,7 +62,7 @@ void BasicBlock::clear(FnSymbol* fn) {
 
     delete fn->basicBlocks;
 
-    fn->basicBlocks = 0;
+    fn->basicBlocks = nullptr;
   }
 }
 
@@ -85,13 +85,13 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn) {
 BasicBlock* BasicBlock::steal() {
   BasicBlock* temp = basicBlock;
 
-  basicBlock = 0;
+  basicBlock = nullptr;
 
   return temp;
 }
 
 void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt, bool mark) {
-  if (stmt == 0) {
+  if (stmt == nullptr) {
 
   } else if (BlockStmt* s = toBlockStmt(stmt)) {
     if (s->isLoopStmt() == true) {
@@ -415,7 +415,7 @@ bool BasicBlock::isOK() {
 
   // Expressions must be live (non-nullptr);
   for_vector(Expr, expr, exprs)
-    if (expr == 0)
+    if (expr == nullptr)
       return false;
 
   // Every in edge must have a corresponding out edge in the source block.

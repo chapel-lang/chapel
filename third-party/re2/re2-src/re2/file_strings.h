@@ -98,7 +98,7 @@ struct ReadingFileSearchPtr {
 
   // construct it
   ReadingFileSearchPtr()
-    : offset(-1), fi(NULL) {
+    : offset(-1), fi(nullptr) {
   }
 
   // RE2 uses these operators normally:
@@ -137,7 +137,7 @@ struct ReadingFileSearchPtr {
   // prefix -- when running backward
   ReadingFileSearchPtr operator--() {
     assert(0);
-    fi = NULL;
+    fi = nullptr;
     return *this;
   }
   // []
@@ -161,9 +161,9 @@ struct FileSearchPtr {
   FileSearchInfo* fi;
 
   FileSearchPtr()
-    : offset(-1), fi(NULL) {
+    : offset(-1), fi(nullptr) {
   }
-  // allow implicit conversion from NULL.
+  // allow implicit conversion from nullptr
   //FileSearchPtr(void* arg)
   //  : offset(-1) {
   //}
@@ -272,7 +272,7 @@ bool operator!=(FileSearchPtr a, FileSearchPtr b)
 }
 
 
-// DFA uses memch (and memrchr) and checks the result == NULL
+// DFA uses memch (and memrchr) and checks the result == nullptr
 static inline
 bool operator==(FileSearchPtr lhs, void* rhs)
 {
@@ -321,15 +321,15 @@ struct FilePiece {
   }
 
   FilePiece()
-    : start(-1), end_(0), fi(NULL)
+    : start(-1), end_(0), fi(nullptr)
   { }
   // Used for extracting matches.
   FilePiece(FileSearchPtr p, int len)
-    : start(p.offset), end_(p.offset + len), fi(NULL)
+    : start(p.offset), end_(p.offset + len), fi(nullptr)
   { }
   // Use this one for context.
 /*  FilePiece(int64_t start, int64_t len)
-    : start(start), len(len), fi(NULL)
+    : start(start), len(len), fi(nullptr)
   { }
 */
 
@@ -354,7 +354,7 @@ struct FilePiece {
   }
 
   void clear() {
-    fi = NULL;
+    fi = nullptr;
     start = -1;
     end_ = 0;
   }
@@ -389,7 +389,7 @@ struct FilePiece {
   }
 
   // Accelerates to the first likely occurrence of the prefix.
-  // Returns a pointer to the first byte or NULL if not found.
+  // Returns a pointer to the first byte or nullptr if not found.
   FileSearchPtr prefix_accel(Prog* prog, ReadingFileSearchPtr s, ssize_t len) const;
 
   // For debugging.

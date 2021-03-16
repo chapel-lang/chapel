@@ -108,18 +108,18 @@ CForLoop* CForLoop::loopForClause(BlockStmt* clause)
 *                                                                           *
 ************************************* | ************************************/
 
-CForLoop::CForLoop() : LoopStmt(0)
+CForLoop::CForLoop() : LoopStmt(nullptr)
 {
-  mInitClause = 0;
-  mTestClause = 0;
-  mIncrClause = 0;
+  mInitClause = nullptr;
+  mTestClause = nullptr;
+  mIncrClause = nullptr;
 }
 
 CForLoop::CForLoop(BlockStmt* initBody) : LoopStmt(initBody)
 {
-  mInitClause = 0;
-  mTestClause = 0;
-  mIncrClause = 0;
+  mInitClause = nullptr;
+  mTestClause = nullptr;
+  mIncrClause = nullptr;
 }
 
 CForLoop* CForLoop::copyInner(SymbolMap* map)
@@ -133,12 +133,12 @@ CForLoop* CForLoop::copyInner(SymbolMap* map)
   retval->mContinueLabel    = mContinueLabel;
   retval->mOrderIndependent = mOrderIndependent;
 
-  if (initBlockGet() != 0 && testBlockGet() != 0 && incrBlockGet() != 0)
+  if (initBlockGet() != nullptr && testBlockGet() != nullptr && incrBlockGet() != nullptr)
     retval->loopHeaderSet(initBlockGet()->copy(map, true),
                           testBlockGet()->copy(map, true),
                           incrBlockGet()->copy(map, true));
 
-  else if (initBlockGet() != 0 && testBlockGet() != 0 && incrBlockGet() != 0)
+  else if (initBlockGet() != nullptr && testBlockGet() != nullptr && incrBlockGet() != nullptr)
     INT_ASSERT(false);
 
   for_alist(expr, body)
@@ -184,14 +184,14 @@ CallExpr* CForLoop::blockInfoGet() const
 {
   printf("Migration: CForLoop  %12d Unexpected call to blockInfoGet()\n", id);
 
-  return 0;
+  return nullptr;
 }
 
 CallExpr* CForLoop::blockInfoSet(CallExpr* expr)
 {
   printf("Migration: CForLoop  %12d Unexpected call to blockInfoSet()\n", id);
 
-  return 0;
+  return nullptr;
 }
 
 bool CForLoop::deadBlockCleanup()
@@ -249,13 +249,13 @@ void CForLoop::accept(AstVisitor* visitor)
     for_alist(next_ast, body)
       next_ast->accept(visitor);
 
-    if (initBlockGet() != 0)
+    if (initBlockGet() != nullptr)
       initBlockGet()->accept(visitor);
 
-    if (testBlockGet() != 0)
+    if (testBlockGet() != nullptr)
       testBlockGet()->accept(visitor);
 
-    if (incrBlockGet() != 0)
+    if (incrBlockGet() != nullptr)
       incrBlockGet()->accept(visitor);
 
     visitor->exitCForLoop(this);
@@ -264,20 +264,20 @@ void CForLoop::accept(AstVisitor* visitor)
 
 Expr* CForLoop::getFirstExpr()
 {
-  Expr* retval = 0;
+  Expr* retval = nullptr;
 
-  if (mInitClause != 0)
+  if (mInitClause != nullptr)
   {
-    INT_ASSERT(mTestClause != 0);
-    INT_ASSERT(mIncrClause != 0);
+    INT_ASSERT(mTestClause != nullptr);
+    INT_ASSERT(mIncrClause != nullptr);
 
     retval = mInitClause->getFirstExpr();
   }
 
-  else if (body.head != 0)
+  else if (body.head != nullptr)
   {
-    INT_ASSERT(mTestClause == 0);
-    INT_ASSERT(mIncrClause == 0);
+    INT_ASSERT(mTestClause == nullptr);
+    INT_ASSERT(mIncrClause == nullptr);
 
     retval = body.head->getFirstExpr();
   }
@@ -290,12 +290,12 @@ Expr* CForLoop::getFirstExpr()
 
 Expr* CForLoop::getNextExpr(Expr* expr)
 {
-  Expr* retval = 0;
+  Expr* retval = nullptr;
 
   if (expr == mInitClause)
   {
-    INT_ASSERT(mTestClause != 0);
-    INT_ASSERT(mIncrClause != 0);
+    INT_ASSERT(mTestClause != nullptr);
+    INT_ASSERT(mIncrClause != nullptr);
 
     retval = mTestClause->getFirstExpr();
   }

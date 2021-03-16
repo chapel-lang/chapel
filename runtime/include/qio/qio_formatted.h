@@ -2,15 +2,15 @@
  * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -86,7 +86,11 @@ qioerr qio_channel_read_int16(const int threadsafe, const int byteorder, qio_cha
   if( byteorder == QIO_BIG ) x = be16toh(x);
   if( byteorder == QIO_LITTLE ) x = le16toh(x);
   *ptr = x;
-  return 0;
+#ifdef __cplusplus
+  return nullptr;
+#else
+  return NULL;
+#endif
 }
 
 static inline
@@ -105,7 +109,11 @@ qioerr qio_channel_read_uint16(const int threadsafe, const int byteorder, qio_ch
   if( byteorder == QIO_BIG ) x = be16toh(x);
   if( byteorder == QIO_LITTLE ) x = le16toh(x);
   *ptr = x;
-  return 0;
+#ifdef __cplusplus
+  return nullptr;
+#else
+  return NULL;
+#endif
 }
 
 static inline
@@ -125,7 +133,11 @@ qioerr qio_channel_read_int32(const int threadsafe, const int byteorder, qio_cha
   if( byteorder == QIO_BIG ) x = be32toh(x);
   if( byteorder == QIO_LITTLE ) x = le32toh(x);
   *ptr = x;
-  return 0;
+#ifdef __cplusplus
+  return nullptr;
+#else
+  return NULL;
+#endif
 }
 
 static inline
@@ -144,7 +156,11 @@ qioerr qio_channel_read_uint32(const int threadsafe, const int byteorder, qio_ch
   if( byteorder == QIO_BIG ) x = be32toh(x);
   if( byteorder == QIO_LITTLE ) x = le32toh(x);
   *ptr = x;
-  return 0;
+#ifdef __cplusplus
+  return nullptr;
+#else
+  return NULL;
+#endif
 }
 
 static inline
@@ -163,7 +179,11 @@ qioerr qio_channel_read_int64(const int threadsafe, const int byteorder, qio_cha
   if( byteorder == QIO_BIG ) x = be64toh(x);
   if( byteorder == QIO_LITTLE ) x = le64toh(x);
   *ptr = x;
-  return 0;
+#ifdef __cplusplus
+  return nullptr;
+#else
+  return NULL;
+#endif
 }
 
 static inline
@@ -182,7 +202,11 @@ qioerr qio_channel_read_uint64(const int threadsafe, const int byteorder, qio_ch
   if( byteorder == QIO_BIG ) x = be64toh(x);
   if( byteorder == QIO_LITTLE ) x = le64toh(x);
   *ptr = x;
-  return 0;
+#ifdef __cplusplus
+  return nullptr;
+#else
+  return NULL;
+#endif
 }
 
 static inline
@@ -268,7 +292,11 @@ qioerr qio_channel_read_float32(const int threadsafe, const int byteorder, qio_c
   if( byteorder == QIO_BIG ) x.i = be32toh(x.i);
   if( byteorder == QIO_LITTLE ) x.i = le32toh(x.i);
   *ptr = x.f;
-  return 0;
+#ifdef __cplusplus
+  return nullptr;
+#else
+  return NULL;
+#endif
 }
 
 static inline
@@ -299,7 +327,11 @@ qioerr qio_channel_read_float64(const int threadsafe, const int byteorder, qio_c
   if( byteorder == QIO_BIG ) x.i = be64toh(x.i);
   if( byteorder == QIO_LITTLE ) x.i = le64toh(x.i);
   *ptr = x.f;
-  return 0;
+#ifdef __cplusplus
+  return nullptr;
+#else
+  return NULL;
+#endif
 }
 
 
@@ -446,7 +478,11 @@ qioerr qio_channel_read_char(const int threadsafe, qio_channel_t* restrict ch, i
     if( err ) return err;
   }
 
-  err = 0;
+#ifdef __cplusplus
+  err = nullptr;
+#else
+  err = NULL;
+#endif
 
   // TODO: This part can be refactored to use some of the functions in
   // encoding/encoding-support.h
@@ -476,7 +512,11 @@ qioerr qio_channel_read_char(const int threadsafe, qio_channel_t* restrict ch, i
       // character == byte.
       *chr = *(unsigned char*)ch->cached_cur;
       ch->cached_cur = qio_ptr_add(ch->cached_cur,1);
-      err = 0;
+#ifdef __cplusplus
+      err = nullptr;
+#else
+      err = NULL;
+#endif
     }
   } else {
     err = _qio_channel_read_char_slow_unlocked(ch, chr);
@@ -541,7 +581,12 @@ int qio_nbytes_char(int32_t chr)
 static inline
 qioerr qio_encode_char_buf(char* dst, int32_t chr)
 {
-  qioerr err = 0;
+#ifdef __cplusplus
+  qioerr err{};
+#else
+  qioerr err = NULL;
+#endif
+
   if( qio_glocale_utf8 > 0 ) {
     if( qio_glocale_utf8 == QIO_GLOCALE_UTF8 ) {
       if( chr < 0 ) {
@@ -599,7 +644,11 @@ qioerr do_qio_decode_char_buf(int32_t* restrict chr, int* restrict nbytes,
       const int ret = chpl_enc_decode_char_buf_utf8(chr, nbytes, buf, buflen,
                                                     allow_escape);
       if (ret == 0) {
-        return 0;
+#ifdef __cplusplus
+        return nullptr;
+#else
+        return NULL;
+#endif
       }
       else {
         QIO_RETURN_CONSTANT_ERROR(EILSEQ, "");
@@ -607,7 +656,11 @@ qioerr do_qio_decode_char_buf(int32_t* restrict chr, int* restrict nbytes,
     } else if( qio_glocale_utf8 == QIO_GLOCALE_ASCII ) {
       const int ret = chpl_enc_decode_char_buf_ascii(chr, nbytes, buf, buflen);
       if (ret == 0) {
-        return 0;
+#ifdef __cplusplus
+        return nullptr;
+#else
+        return NULL;
+#endif
       }
       else {
         QIO_RETURN_CONSTANT_ERROR(EILSEQ, "");
@@ -616,7 +669,11 @@ qioerr do_qio_decode_char_buf(int32_t* restrict chr, int* restrict nbytes,
   } else {
     const int ret = chpl_enc_decode_char_buf_wctype(chr, nbytes, buf, buflen);
     if (ret == 0) {
-      return 0;
+#ifdef __cplusplus
+      return nullptr;
+#else
+      return NULL;
+#endif
     }
     else if (ret == -1) {
       QIO_RETURN_CONSTANT_ERROR(EILSEQ, "");
@@ -658,7 +715,11 @@ qioerr qio_channel_write_char(const int threadsafe, qio_channel_t* restrict ch, 
     if( err ) return err;
   }
 
-  err = 0;
+#ifdef __cplusplus
+  err = nullptr;
+#else
+  err = NULL;
+#endif
 
   if( qio_glocale_utf8 > 0 &&
       qio_space_in_ptr_diff(4, ch->cached_end, ch->cached_cur) ) {
@@ -728,9 +789,9 @@ typedef struct qio_truncate_info_ {
   ssize_t max_columns;
   ssize_t max_chars;
   ssize_t max_bytes;
-  ssize_t ret_columns; 
-  ssize_t ret_chars; 
-  ssize_t ret_bytes; 
+  ssize_t ret_columns;
+  ssize_t ret_chars;
+  ssize_t ret_bytes;
   ssize_t ret_truncated_at_byte;
   ssize_t ret_truncated;
 } qio_truncate_info_t;

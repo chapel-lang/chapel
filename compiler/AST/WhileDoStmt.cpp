@@ -52,7 +52,7 @@ BlockStmt* WhileDoStmt::build(Expr* cond, BlockStmt* body)
     DefExpr* varDef = toDefExpr(condIV->get(1)->remove());
     Expr*  condExpr = condIV->get(1)->remove();
     INT_ASSERT(! varDef->init && ! varDef->exprType); // from parser
-    
+
     // The construction follows the non-IfVar case below, adding the following:
     //
     //  // at start of 'retval' block
@@ -147,8 +147,8 @@ bool WhileDoStmt::isPrimitiveCForLoop(Expr* cond)
 
 WhileDoStmt* WhileDoStmt::copyInner(SymbolMap* map)
 {
-  Expr*        condExpr = 0;
-  BlockStmt*   body     = 0;
+  Expr*        condExpr = nullptr;
+  BlockStmt*   body     = nullptr;
   WhileDoStmt* retval   = new WhileDoStmt(condExpr, body);
 
   retval->copyInnerShare(*this, map);
@@ -163,7 +163,7 @@ void WhileDoStmt::accept(AstVisitor* visitor)
     for_alist(next_ast, body)
       next_ast->accept(visitor);
 
-    if (condExprGet() != 0)
+    if (condExprGet() != nullptr)
       condExprGet()->accept(visitor);
 
     if (useList)
@@ -178,12 +178,12 @@ void WhileDoStmt::accept(AstVisitor* visitor)
 
 Expr* WhileDoStmt::getFirstExpr()
 {
-  Expr* retval = 0;
+  Expr* retval = nullptr;
 
-  if (condExprGet() != 0)
+  if (condExprGet() != nullptr)
     retval = condExprGet()->getFirstExpr();
 
-  else if (body.head      != 0)
+  else if (body.head      != nullptr)
     retval = body.head->getFirstExpr();
 
   else

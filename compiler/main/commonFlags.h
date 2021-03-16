@@ -72,6 +72,6 @@ void driverSetDevelSettings(const ArgumentDescription* desc, const char* arg_unu
   {"version", ' ', nullptr, "Show version", "F", &fPrintVersion, nullptr, nullptr}
 
 #define DRIVER_ARG_LAST \
-  {0}
+  {nullptr}
 
 #endif

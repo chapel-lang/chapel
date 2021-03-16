@@ -781,7 +781,7 @@ static void expandShadowVarTaskFn(FnSymbol* cloneTaskFn, CallExpr* callToTFn,
 
     case TFI_REDUCE:
     {
-      ShadowVarSymbol *PRP=0, *PAS=0, *RP=0, *AS=svar;
+      ShadowVarSymbol *PRP=nullptr, *PAS=nullptr, *RP=nullptr, *AS=svar;
       setReduceSVars(PRP, PAS, RP, AS);
 
       /*
@@ -984,7 +984,7 @@ static void expandShadowVarTopLevel(Expr* aInit, Expr* aFini, SymbolMap& map,
 
     case TFI_REDUCE:
     {
-      ShadowVarSymbol *PRP=0, *PAS=0, *RP=0, *AS=svar;
+      ShadowVarSymbol *PRP=nullptr, *PAS=nullptr, *RP=nullptr, *AS=svar;
       setReduceSVars(PRP, PAS, RP, AS);
 
       map.put(RP, PRP->outerVarSym());

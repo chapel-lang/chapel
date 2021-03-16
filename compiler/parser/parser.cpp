@@ -260,7 +260,7 @@ void addModuleToParseList(const char* name, VisibilityStmt* expr) {
 
 static void countTokensInCmdLineFiles() {
   int         fileNum       = 0;
-  const char* inputFileName = 0;
+  const char* inputFileName = nullptr;
 
   while ((inputFileName = nthFilename(fileNum++))) {
     if (isChplSource(inputFileName) == true) {
@@ -665,7 +665,7 @@ static ModuleSymbol* parseFile(const char* path,
     }
 
     if (containsOnlyModules(yyblock, path) == true) {
-      ModuleSymbol* moduleLast  = 0;
+      ModuleSymbol* moduleLast  = nullptr;
       int           moduleCount = 0;
 
       for_alist(stmt, yyblock->body) {
@@ -876,7 +876,7 @@ BlockStmt* parseString(const char* string,
                        const char* path,
                        const char* msg) {
   // State for the lexer
-  YY_BUFFER_STATE handle       =   0;
+  YY_BUFFER_STATE handle       =   nullptr;
   int             lexerStatus  = 100;
   YYLTYPE         yylloc;
 

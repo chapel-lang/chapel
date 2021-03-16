@@ -2,15 +2,15 @@
  * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -71,7 +71,12 @@ void debug_print_deque_iter(deque_iterator_t* it);
 
 static inline
 deque_iterator_t deque_iterator_null(void) {
+#ifdef __cplusplus
+  deque_iterator_t ret = {nullptr, nullptr, nullptr, nullptr};
+#else
   deque_iterator_t ret = {NULL, NULL, NULL, NULL};
+#endif
+
   return ret;
 }
 
@@ -94,7 +99,7 @@ ssize_t __deque_buf_size(const ssize_t item_size)
   return item_size < _DEQUE_BUFFER_SIZE ? (_DEQUE_BUFFER_SIZE / item_size) : 1;
 }
 
-/** 
+/**
  *  Prepares to traverse new_node.  Sets everything except
  *  _M_cur, which should therefore be set by the caller
  *  immediately afterwards, based on _M_first and _M_last.
@@ -185,7 +190,11 @@ void _deque_destroy_nodes(deque_node_t* start, deque_node_t* finish)
   for( cur = start; cur < finish; ++cur ) {
     // would call destructors on items in there!
     deque_free(cur->data);
+#ifdef __cplusplus
+    cur->data = nullptr;
+#else
     cur->data = NULL;
+#endif
   }
 }
 
@@ -201,7 +210,11 @@ qioerr _deque_create_nodes(const ssize_t item_size, deque_node_t* start, deque_n
     }
   }
 
-  return 0;
+#ifdef __cplusplus
+  return nullptr;
+#else
+  return NULL;
+#endif
 }
 
 static inline
@@ -232,7 +245,11 @@ qioerr _deque_initialize_map(const ssize_t item_size, deque_t* d, ssize_t num_el
   err = _deque_create_nodes(item_size, nstart, nfinish);
   if( err ) {
     deque_free(d->map);
+#ifdef __cplusplus
+    d->map = nullptr;
+#else
     d->map = NULL;
+#endif
     d->map_size = 0;
     return err;
   }
@@ -242,7 +259,11 @@ qioerr _deque_initialize_map(const ssize_t item_size, deque_t* d, ssize_t num_el
   d->start.cur = d->start.first;
   d->finish.cur = PTR_ADDBYTES(d->finish.first, (num_elements*item_size) % buf_size);
 
-  return 0;
+#ifdef __cplusplus
+  return nullptr;
+#else
+  return NULL;
+#endif
 }
 
 static inline
@@ -263,13 +284,21 @@ void deque_destroy(deque_t* d)
 static inline
 void deque_init_uninitialized(deque_t* d)
 {
+#ifdef __cplusplus
+  d->map = nullptr;
+#else
   d->map = NULL;
+#endif
 }
 
 static inline
 int deque_is_initialized(deque_t* d)
 {
+#ifdef __cplusplus
+  return d->map != nullptr;
+#else
   return d->map != NULL;
+#endif
 }
 
 static inline
@@ -311,7 +340,11 @@ qioerr _deque_reserve_map_at_back(const ssize_t item_size, deque_t* d, ssize_t n
   if( nodes_to_add + 1 > d->map_size - (d->finish.node - d->map) ) {
     return _deque_reallocate_map(item_size, __deque_buf_size(item_size), d, nodes_to_add, 0);
   } else {
-    return 0;
+#ifdef __cplusplus
+    return nullptr;
+#else
+    return NULL;
+#endif
   }
 }
 
@@ -321,7 +354,11 @@ qioerr _deque_reserve_map_at_front(const ssize_t item_size, deque_t* d, ssize_t 
   if( nodes_to_add > (d->start.node - d->map) ) {
     return _deque_reallocate_map(item_size, __deque_buf_size(item_size), d, nodes_to_add, 1);
   } else {
-    return 0;
+#ifdef __cplusplus
+    return nullptr;
+#else
+    return NULL;
+#endif
   }
 }
 
@@ -348,7 +385,11 @@ qioerr _deque_push_back_aux(const ssize_t item_size, deque_t* d, void* value)
   _deque_set_node(item_size, __deque_buf_size(item_size), & d->finish, d->finish.node + 1);
   d->finish.cur = d->finish.first;
 
-  return 0;
+#ifdef __cplusplus
+  return nullptr;
+#else
+  return NULL;
+#endif
 }
 
 // Called only if _M_impl._M_start._M_cur == _M_impl._M_start._M_first.
@@ -375,7 +416,11 @@ qioerr _deque_push_front_aux(const ssize_t item_size, deque_t* d, void* value)
   //construct(d->start.cur, v); // calls the constructor
   deque_memcpy(d->start.cur, value, item_size);
 
-  return 0;
+#ifdef __cplusplus
+  return nullptr;
+#else
+  return NULL;
+#endif
 }
 
 // Called only if _M_impl._M_finish._M_cur == _M_impl._M_finish._M_first.
@@ -418,7 +463,11 @@ qioerr deque_push_front(const ssize_t item_size, deque_t* d, void* value)
 
     d->start.cur = PTR_ADDBYTES(d->start.cur, -item_size);
 
-    return 0;
+#ifdef __cplusplus
+    return nullptr;
+#else
+    return NULL;
+#endif
   } else {
     return _deque_push_front_aux(item_size, d, value);
   }
@@ -433,7 +482,11 @@ qioerr deque_push_back(const ssize_t item_size, deque_t* d, void* value)
 
     d->finish.cur = PTR_ADDBYTES(d->finish.cur, item_size);
 
-    return 0;
+#ifdef __cplusplus
+    return nullptr;
+#else
+    return NULL;
+#endif
   } else {
     return _deque_push_back_aux(item_size, d, value);
   }

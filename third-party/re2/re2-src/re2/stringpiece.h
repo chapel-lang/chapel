@@ -61,13 +61,13 @@ class StringPiece {
   static bool can_discard(long diff) { return false; }
   static int discard_check_period() { return 0; }
   void discard(bool match, ptr_type match_start, ptr_type match_end, ptr_type min_cap) const { }
-  static const char* null_ptr() { return NULL; }
+  static const char* null_ptr() { return nullptr; }
 
   // We provide non-explicit singleton constructors so users can pass
   // in a "const char*" or a "string" wherever a "StringPiece" is
   // expected.
   StringPiece()
-      : data_(NULL), size_(0) {}
+      : data_(nullptr), size_(0) {}
 #if __has_include(<string_view>) && __cplusplus >= 201703L
   StringPiece(const std::string_view& str)
       : data_(str.data()), size_(str.size()) {}
@@ -75,7 +75,7 @@ class StringPiece {
   StringPiece(const std::string& str)
       : data_(str.data()), size_(str.size()) {}
   StringPiece(const char* str)
-      : data_(str), size_(str == NULL ? 0 : strlen(str)) {}
+      : data_(str), size_(!str ? 0 : strlen(str)) {}
   StringPiece(const char* str, size_type len)
       : data_(str), size_(len) {}
 
@@ -106,7 +106,7 @@ class StringPiece {
 
   void set(const char* str) {
     data_ = str;
-    size_ = str == NULL ? 0 : strlen(str);
+    size_ = !str ? 0 : strlen(str);
   }
 
   void set(const char* str, size_type len) {

@@ -2,15 +2,15 @@
  * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -58,7 +58,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "list.h"
 
 static inline char *
-_dupstr(char *s, char *e = 0) {
+_dupstr(char *s, char *e = nullptr) {
   int l = e ? e-s : strlen(s);
   char *ss = (char*)malloc(l+1);
   memcpy(ss, s, l);
@@ -85,7 +85,7 @@ template <class K, class C> class MapElem {
   //
   operator uintptr_t()     { return (uintptr_t)key; }
 
-  MapElem()                 : key(0)                     { }
+  MapElem()                 : key{}                      { }
   MapElem(K akey, C avalue) : key(akey),  value(avalue)  { }
   MapElem(MapElem &e)       : key(e.key), value(e.value) { }
   MapElem(unsigned long x)                               { assert(!x); key = 0; }
@@ -129,7 +129,7 @@ template <class K, class AHashFns, class C> class HashMap : public Map<K,C> {
   void get_values(Vec<C> &values);
 };
 
-#define form_Map(_c, _p, _v) if ((_v).n) for (_c *qq__##_p = (_c*)0, *_p = &(_v).v[0]; \
+#define form_Map(_c, _p, _v) if ((_v).n) for (_c *qq__##_p = nullptr, *_p = &(_v).v[0]; \
              ((intptr_t)(qq__##_p) < (_v).n) && ((_p = &(_v).v[(intptr_t)qq__##_p]) || 1); \
              qq__##_p = (_c*)(((intptr_t)qq__##_p) + 1)) \
           if ((_p)->key)
@@ -137,10 +137,10 @@ template <class K, class AHashFns, class C> class HashMap : public Map<K,C> {
 
 class StringHashFns : public HashFns<const char*> {
  public:
-  static unsigned int hash(const char *s) { 
-    unsigned int h = 0; 
+  static unsigned int hash(const char *s) {
+    unsigned int h = 0;
     // 31 changed to 27, to avoid prime2 in vec.cpp
-    while (*s) h = h * 27 + (unsigned char)*s++;  
+    while (*s) h = h * 27 + (unsigned char)*s++;
     return h;
   }
   static int equal(const char *a, const char *b) { return !strcmp(a, b); }
@@ -156,7 +156,7 @@ template <class C, class AHashFns> class ChainHash : public Map<unsigned int, Li
   void get_elements(Vec<C> &elements);
 };
 
-template <class K, class AHashFns, class C> class ChainHashMap : 
+template <class K, class AHashFns, class C> class ChainHashMap :
   public Map<unsigned int, List<MapElem<K,C> > > {
  public:
   using Map<unsigned int, List<MapElem<K, C> > >::n;
@@ -199,7 +199,7 @@ template <class C, class AHashFns, int N> class NBlockHash {
 /* use forv_Vec on BlockHashs */
 
 #define DEFAULT_BLOCK_HASH_SIZE 4
-template <class C, class ABlockHashFns> class BlockHash : 
+template <class C, class ABlockHashFns> class BlockHash :
   public NBlockHash<C, ABlockHashFns, DEFAULT_BLOCK_HASH_SIZE> {};
 typedef BlockHash<char *, StringHashFns> StringBlockHash;
 
@@ -222,13 +222,13 @@ extern unsigned int open_hash_multipliers[256];
 
 /* IMPLEMENTATION */
 
-template <class K, class C> inline C 
+template <class K, class C> inline C
 Map<K,C>::get(K akey) {
-  MapElem<K,C> e(akey, (C)0);
+  MapElem<K,C> e(akey, {});
   MapElem<K,C> *x = this->set_in(e);
   if (x)
     return x->value;
-  return (C)0;
+  return {};
 }
 
 template <class K, class C> inline MapElem<K,C> *
@@ -265,7 +265,7 @@ Map<K,C>::get_values(Vec<C> &values) {
 
 template <class K, class C> inline MapElem<K,C> *
 Map<K,C>::get_record(K akey) {
-  MapElem<K,C> e(akey, (C)0);
+  MapElem<K,C> e(akey, C{});
   MapElem<K,C> *x = this->set_in(e);
   return x;
 }
@@ -293,16 +293,16 @@ map_set_add(Map<K, Vec<C> *> &m, K akey, Vec<C> *madd) {
   v->set_union(*madd);
 }
 
-template <class K, class AHashFns, class C> inline MapElem<K,C> * 
+template <class K, class AHashFns, class C> inline MapElem<K,C> *
 HashMap<K,AHashFns,C>::get_internal(K akey) {
   if (!n)
-    return 0;
+    return {};
   if (n <= VEC_INTEGRAL_SIZE) {
     for (MapElem<K,C> *c = v; c < v + n; c++)
       if (c->key)
         if (AHashFns::equal(akey, c->key))
           return c;
-    return 0;
+    return {};
   }
   unsigned int h = AHashFns::hash(akey);
   h = h % n;
@@ -311,18 +311,18 @@ HashMap<K,AHashFns,C>::get_internal(K akey) {
        k = ((k + ++j) % n))
   {
     if (!v[k].key)
-      return 0;
+      return {};
     else if (AHashFns::equal(akey, v[k].key))
       return &v[k];
   }
-  return 0;
+  return {};
 }
 
-template <class K, class AHashFns, class C> inline C 
+template <class K, class AHashFns, class C> inline C
 HashMap<K,AHashFns,C>::get(K akey) {
   MapElem<K,C> *x = get_internal(akey);
   if (!x)
-    return 0;
+    return {};
   return x->value;
 }
 
@@ -375,7 +375,7 @@ template <class C, class AHashFns> C
 ChainHash<C, AHashFns>::put(C c) {
   unsigned int h = AHashFns::hash(c);
   List<C> *l;
-  MapElem<unsigned int,List<C> > e(h, (C)0);
+  MapElem<unsigned int,List<C> > e(h, nullptr);
   MapElem<unsigned int,List<C> > *x = this->set_in(e);
   if (x)
     l = &x->value;
@@ -387,7 +387,7 @@ ChainHash<C, AHashFns>::put(C c) {
     if (AHashFns::equal(c, x->car))
       return x->car;
   l->push(c);
-  return (C)0;
+  return nullptr;
 }
 
 template <class C, class AHashFns> C
@@ -418,7 +418,7 @@ template <class C, class AHashFns> int
 ChainHash<C, AHashFns>::del(C c) {
   unsigned int h = AHashFns::hash(c);
   List<C> *l;
-  MapElem<unsigned int,List<C> > e(h, (C)0);
+  MapElem<unsigned int,List<C> > e(h, nullptr);
   MapElem<unsigned int,List<C> > *x = this->set_in(e);
   if (x)
     l = &x->value;
@@ -458,7 +458,7 @@ ChainHashMap<K, AHashFns, C>::put(K akey, C avalue) {
       return &p->car;
     }
   l->push(c);
-  return 0;
+  return nullptr;
 }
 
 template <class K, class AHashFns, class C> C
@@ -468,13 +468,13 @@ ChainHashMap<K, AHashFns, C>::get(K akey) {
   MapElem<unsigned int,List<MapElem<K,C> > > e(h, empty);
   MapElem<unsigned int,List<MapElem<K,C> > > *x = this->set_in(e);
   if (!x)
-    return 0;
+    return {};
   List<MapElem<K,C> > *l = &x->value;
-  if (l->head) 
+  if (l->head)
     for (ConsCell<MapElem<K,C> > *p  = l->head; p; p = p->cdr)
       if (AHashFns::equal(akey, p->car.key))
         return p->car.value;
-  return 0;
+  return {};
 }
 
 template <class K, class AHashFns, class C>  int
@@ -506,7 +506,7 @@ template <class K, class AHashFns, class C> void
 ChainHashMap<K, AHashFns, C>::get_keys(Vec<K> &keys) {
   for (int i = 0; i < n; i++) {
     List<MapElem<K,C> > *l = &v[i].value;
-    if (l->head) 
+    if (l->head)
       for (ConsCell<MapElem<K,C> > *p  = l->head; p; p = p->cdr)
         keys.add(p->car.key);
   }
@@ -516,7 +516,7 @@ template <class K, class AHashFns, class C> void
 ChainHashMap<K, AHashFns, C>::get_values(Vec<C> &values) {
   for (int i = 0; i < n; i++) {
     List<MapElem<K,C> > *l = &v[i].value;
-    if (l->head) 
+    if (l->head)
       for (ConsCell<MapElem<K,C> > *p  = l->head; p; p = p->cdr)
         values.add(p->car.value);
   }
@@ -528,11 +528,11 @@ StringChainHash::canonicalize(char *s, char *e) {
   char *a = s;
   // 31 changed to 27, to avoid prime2 in vec.cpp
   if (e)
-    while (a != e) h = h * 27 + (unsigned char)*a++;  
+    while (a != e) h = h * 27 + (unsigned char)*a++;
   else
-    while (*a) h = h * 27 + (unsigned char)*a++;  
+    while (*a) h = h * 27 + (unsigned char)*a++;
   List<char*> *l;
-  MapElem<unsigned int,List<char*> > me(h, (char*)0);
+  MapElem<unsigned int,List<char*> > me(h, nullptr);
   MapElem<unsigned int,List<char*> > *x = this->set_in(me);
   if (x) {
     l = &x->value;
@@ -558,13 +558,13 @@ StringChainHash::canonicalize(char *s, char *e) {
   return s;
 }
 
-template <class K, class C> inline C 
+template <class K, class C> inline C
 Env<K,C>::get(K akey) {
   MapElem<K,List<C> *> e(akey, 0);
   MapElem<K,List<C> *> *x = store.set_in(e);
   if (x)
     return x->value->first();
-  return (C)0;
+  return nullptr;
 }
 
 template <class K, class C> inline List<C> *
@@ -594,7 +594,7 @@ Env<K,C>::pop() {
     get_bucket(e->car)->pop();
 }
 
-template <class C, class AHashFns, int N> inline 
+template <class C, class AHashFns, int N> inline
 NBlockHash<C, AHashFns, N>::NBlockHash() : n(1), i(0) {
   memset(&e[0], 0, sizeof(e));
   v = e;
@@ -623,7 +623,7 @@ NBlockHash<C, AHashFns, N>::put(C c) {
   }
   if (a < N) {
     x[a] = c;
-    return (C)0;
+    return nullptr;
   }
   C *vv = first(), *ve = last();
   C *old_v = v;
@@ -642,16 +642,16 @@ NBlockHash<C, AHashFns, N>::put(C c) {
 template <class C, class AHashFns, int N> inline C
 NBlockHash<C, AHashFns, N>::get(C c) {
   if (!n)
-    return (C)0;
+    return nullptr;
   unsigned int h = AHashFns::hash(c);
   C *x = &v[(h % n) * N];
   for (int a = 0; a < N; a++) {
     if (!x[a])
-      return (C)0;
+      return nullptr;
     if (AHashFns::equal(c, x[a]))
       return x[a];
   }
-  return (C)0;
+  return nullptr;
 }
 
 template <class C, class AHashFns, int N> inline int
@@ -672,10 +672,10 @@ NBlockHash<C, AHashFns, N>::del(C c) {
         }
         if (b != a + 1)
           x[a] = x[b - 1];
-        x[b - 1] = (C)0;
+        x[b - 1] = nullptr;
         return 1;
       } else {
-        x[N - 1] = (C)0;
+        x[N - 1] = nullptr;
         return 1;
       }
     }
@@ -693,18 +693,18 @@ template <class C, class AHashFns, int N> inline int
 NBlockHash<C, AHashFns, N>::count() {
   int nelements = 0;
   C *l = last();
-  for (C *xx = first(); xx < l; xx++) 
+  for (C *xx = first(); xx < l; xx++)
     if (*xx)
       nelements++;
   return nelements;
 }
 
-template <class C, class AHashFns, int N> inline void 
+template <class C, class AHashFns, int N> inline void
 NBlockHash<C, AHashFns, N>::copy(const NBlockHash<C, AHashFns, N> &hh) {
   clear();
   n = hh.n;
   i = hh.i;
-  if (hh.v == &hh.e[0]) { 
+  if (hh.v == &hh.e[0]) {
     memcpy(e, &hh.e[0], sizeof(e));
     v = e;
   } else {
@@ -716,12 +716,12 @@ NBlockHash<C, AHashFns, N>::copy(const NBlockHash<C, AHashFns, N> &hh) {
   }
 }
 
-template <class C, class AHashFns, int N> inline void 
+template <class C, class AHashFns, int N> inline void
 NBlockHash<C, AHashFns, N>::move(NBlockHash<C, AHashFns, N> &hh) {
   n = hh.n;
   i = hh.i;
   v = hh.v;
-  if (hh.v == &hh.e[0]) { 
+  if (hh.v == &hh.e[0]) {
     memcpy(e, &hh.e[0], sizeof(e));
     v = e;
   }

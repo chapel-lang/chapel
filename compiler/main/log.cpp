@@ -130,7 +130,7 @@ void setupLogfiles() {
   }
 
   if (deletedIdFilename[0] != '\0') {
-    if ((deletedIdHandle = fopen(deletedIdFilename, "w")) == 0) {
+    if ((deletedIdHandle = fopen(deletedIdFilename, "w")) == nullptr) {
       USR_FATAL("cannot open file \"%s\", to log deleted AST ids, for writing", deletedIdFilename);
     }
   }

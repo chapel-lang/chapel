@@ -35,7 +35,7 @@ BlockStmt* DoWhileStmt::build(Expr* cond, BlockStmt* body)
   CallExpr*    condTest      = new CallExpr("_cond_test", cond);
   LabelSymbol* continueLabel = new LabelSymbol("_continueLabel");
   LabelSymbol* breakLabel    = new LabelSymbol("_breakLabel");
-  DoWhileStmt* loop          = 0;
+  DoWhileStmt* loop          = nullptr;
   BlockStmt*   retval        = new BlockStmt();
 
   // make variables declared in the scope of the body visible to
@@ -98,7 +98,7 @@ void DoWhileStmt::accept(AstVisitor* visitor)
     for_alist(next_ast, body)
       next_ast->accept(visitor);
 
-    if (condExprGet() != 0)
+    if (condExprGet() != nullptr)
       condExprGet()->accept(visitor);
 
     if (useList)
@@ -113,12 +113,12 @@ void DoWhileStmt::accept(AstVisitor* visitor)
 
 Expr* DoWhileStmt::getFirstExpr()
 {
-  Expr* retval = 0;
+  Expr* retval = nullptr;
 
-  if (condExprGet() != 0)
+  if (condExprGet() != nullptr)
     retval = condExprGet()->getFirstExpr();
 
-  else if (body.head      != 0)
+  else if (body.head      != nullptr)
     retval = body.head->getFirstExpr();
 
   else

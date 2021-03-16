@@ -2,15 +2,15 @@
  * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -62,7 +62,7 @@ public:
                 ~Pass();
 
   static void    Header(FILE* fp);
-  static void    Footer(FILE*         fp, 
+  static void    Footer(FILE*         fp,
                         unsigned long mainTime,
                         unsigned long checkTime,
                         unsigned long cleanTime,
@@ -74,7 +74,7 @@ public:
   unsigned long  TotalTime()                         const;
 
   void           Print(FILE*         fp,
-                       unsigned long accumTime, 
+                       unsigned long accumTime,
                        unsigned long totalTime)      const;
 
   char*          mName;
@@ -127,7 +127,7 @@ void PhaseTracker::StartPhase(const char* name)
   StartPhase(name, 0, kPrimary);
 }
 
-void PhaseTracker::StartPhase(const char*            name, 
+void PhaseTracker::StartPhase(const char*            name,
                               PhaseTracker::SubPhase subPhase)
 {
   if (subPhase == kPrimary)
@@ -173,7 +173,7 @@ void PhaseTracker::ReportRollup() const
 
   PassesCollect(passes);
   PassesReport(passes, totalTime);
-  
+
   Phase::ReportText("\n\n\n");
 
   PassesSortByTime(passes);
@@ -239,7 +239,7 @@ static void PassesReport(const std::vector<Pass>& passes,
   if (printPasses     == true)
     PassesReport(stderr, passes, totalTime);
 
-  if (printPassesFile != 0)
+  if (printPassesFile != nullptr)
     PassesReport(printPassesFile, passes, totalTime);
 }
 
@@ -283,7 +283,7 @@ Phase::Phase(const char*            name,
              PhaseTracker::SubPhase subPhase,
              unsigned long          startTime)
 {
-  mName      = (subPhase == PhaseTracker::kPrimary) ? strdup(name) : 0;
+  mName      = (subPhase == PhaseTracker::kPrimary) ? strdup(name) : nullptr;
   mPassId    = passId;
   mSubPhase  = subPhase;
   mStartTime = startTime;
@@ -332,7 +332,7 @@ void Phase::ReportTime(const char* name, double secs)
   if (printPasses     == true)
     fprintf(stderr, "%32s :%8.3f seconds", name, secs);
 
-  if (printPassesFile != 0)
+  if (printPassesFile != nullptr)
     fprintf(printPassesFile, "%32s :%8.3f seconds", name, secs);
 }
 
@@ -340,8 +340,8 @@ void Phase::ReportText(const char* text)
 {
   if (printPasses     == true)
     fputs(text, stderr);
-  
-  if (printPassesFile != 0)
+
+  if (printPassesFile != nullptr)
     fputs(text, printPassesFile);
 }
 
@@ -363,7 +363,7 @@ Pass::~Pass()
 
 void Pass::Reset()
 {
-  mName     = 0;
+  mName     = nullptr;
   mPassId   = 0;
   mIndex    = 0;
   mPrimary  = 0;
@@ -418,8 +418,8 @@ void Pass::Header(FILE* fp)
   fprintf(fp, "\n");
 }
 
-void Pass::Print(FILE*         fp, 
-                 unsigned long accumTime, 
+void Pass::Print(FILE*         fp,
+                 unsigned long accumTime,
                  unsigned long totalTime) const
 {
   unsigned long passTime  = TotalTime();
@@ -442,7 +442,7 @@ void Pass::Print(FILE*         fp,
   fprintf(fp, "\n");
 }
 
-void Pass::Footer(FILE*         fp, 
+void Pass::Footer(FILE*         fp,
                   unsigned long mainTime,
                   unsigned long checkTime,
                   unsigned long cleanTime,
@@ -456,6 +456,3 @@ void Pass::Footer(FILE*         fp,
           cleanTime / 1e6,
           totalTime / 1e6);
 }
-
-
-

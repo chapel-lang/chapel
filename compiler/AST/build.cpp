@@ -754,7 +754,7 @@ buildLabelStmt(const char* name, Expr* stmt) {
     }
 
     if (LoopStmt* loop = toLoopStmt(breakLabelStmt->prev)) {
-      if (loop->breakLabelGet() == 0 || loop->continueLabelGet() == 0) {
+      if (loop->breakLabelGet() == nullptr || loop->continueLabelGet() == nullptr) {
         USR_FATAL(stmt, "cannot label parallel loop");
       } else {
         loop->userLabel = astr(name);

@@ -36,7 +36,7 @@ void Timer::clear() {
 
 void Timer::start() {
   if (mRunning == false) {
-    gettimeofday(&mRefTime, 0);
+    gettimeofday(&mRefTime, nullptr);
     mRunning = true;
 
   } else {
@@ -68,7 +68,7 @@ unsigned long Timer::diffUsec() const {
   unsigned long  deltaSec  = 0;
   unsigned long  deltaUsec = 0;
 
-  gettimeofday(&now, 0);
+  gettimeofday(&now, nullptr);
 
   /*
      Careful: The arithmetic is based on unsigned longs.

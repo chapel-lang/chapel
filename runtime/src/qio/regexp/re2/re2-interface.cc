@@ -239,7 +239,7 @@ void qio_regexp_release(qio_regexp_t* compiled)
   re_t* re = (re_t*) compiled->regexp;
   //fprintf(stdout, "Release %p\n", re);
   DO_RELEASE(re, re_free);
-  compiled->regexp = NULL;
+  compiled->regexp = nullptr;
 }
 
 void qio_regexp_get_options(const qio_regexp_t* regexp, qio_regexp_options_t* options)
@@ -295,7 +295,7 @@ qio_bool qio_regexp_match(qio_regexp_t* regexp, const char* text, int64_t text_l
   ret = re->Match(textp, startpos, endpos, ranchor, spPtr, nsubmatch);
   // Now set submatch based on StringPieces
   for( int64_t i = 0; i < nsubmatch; i++ ) {
-    if( !ret || spPtr[i].data() == NULL ) {
+    if( !ret || spPtr[i].data() == nullptr ) {
       submatch[i].offset = -1;
       submatch[i].len = 0;
     } else {
@@ -323,7 +323,7 @@ int64_t qio_regexp_replace(qio_regexp_t* regexp, const char* repl, int64_t repl_
   std::string s(str, str_len);
   RE2* re = (RE2*) regexp->regexp;
   int64_t ret = 0;
-  char* output = NULL;
+  char* output = nullptr;
   if( global ) {
     ret = RE2::GlobalReplace(&s, *re, rewrite);
   } else {
@@ -384,8 +384,8 @@ qioerr qio_regexp_channel_match(const qio_regexp_t* regexp, const int threadsafe
 {
   RE2* re = (RE2*) regexp->regexp;
   qioerr err;
-  void* bufstart = NULL;
-  void* bufend = NULL;
+  void* bufstart = nullptr;
+  void* bufend = nullptr;
   RE2::Anchor ranchor = RE2::UNANCHORED;
   int64_t need;
   int64_t start_offset, offset, end_offset;
@@ -451,7 +451,7 @@ qioerr qio_regexp_channel_match(const qio_regexp_t* regexp, const int threadsafe
   err = qio_channel_require_read(false, ch, 1);
   if( qio_err_to_int(err) == EEOF ) {
     atEOF = true;
-    err = 0;
+    err = nullptr;
   }
 
   // Require at least 1 byte and at most 1024 bytes.
@@ -459,12 +459,12 @@ qioerr qio_regexp_channel_match(const qio_regexp_t* regexp, const int threadsafe
   if( need <= 0 ) need = 1;
   if( need > 1024) need = 1024;
   err = qio_channel_require_read(false, ch, need);
-  if( qio_err_to_int(err) == EEOF ) err = 0; // ignore EOF
+  if( qio_err_to_int(err) == EEOF ) err = nullptr; // ignore EOF
   if( err ) goto error;
 
   // Get the current buffer information...
   err = qio_channel_begin_peek_cached(false, ch, &bufstart, &bufend);
-  if( qio_err_to_int(err) == EEOF ) err = 0; // ignore EOF
+  if( qio_err_to_int(err) == EEOF ) err = nullptr; // ignore EOF
   if( err ) goto error;
 
   // We never call end_peek_cached. (should be OK since we do unlock)
@@ -506,9 +506,9 @@ qioerr qio_regexp_channel_match(const qio_regexp_t* regexp, const int threadsafe
 error:
 
   // Get channel errors from within MatchSpecial1/qio_channel_read_byte
-  if( qio_err_to_int(err) == EEOF ) err = 0; // ignore EOF
+  if( qio_err_to_int(err) == EEOF ) err = nullptr; // ignore EOF
   if( ! err ) err = qio_channel_error(ch);
-  if( qio_err_to_int(err) == EEOF ) err = 0; // ignore EOF
+  if( qio_err_to_int(err) == EEOF ) err = nullptr; // ignore EOF
 
   end_offset = qio_channel_offset_unlocked(ch);
   qio_channel_revert_unlocked(ch);
@@ -540,7 +540,7 @@ markerror:
   }
 
   // Adjust the error code if nothing was found
-  if( err == 0 && ! found ) {
+  if( err == nullptr && ! found ) {
     if (atEOF) {
       err = QIO_EEOF;
     } else {

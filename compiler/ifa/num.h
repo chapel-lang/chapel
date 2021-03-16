@@ -322,7 +322,7 @@ IFA_EXTERN int int_type_precision[5] IFA_EXTERN_INIT(CPP_IS_LAME);
 IFA_EXTERN int float_type_precision[8] IFA_EXTERN_INIT(CPP_IS_LAME);
 #undef CPP_IS_LAME
 
-#define CPP_IS_LAME {{0,0,0,0,0,0,0,0}, {"bool","uint8","uint16","uint32","uint64",0,0,0}, {"bool","int8","int16","int32","int64",0,0,0}, {0,"float32",0,"float64",0,0,0,"float128"}}
+#define CPP_IS_LAME {{nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr}, {"bool","uint8","uint16","uint32","uint64",nullptr,nullptr,nullptr}, {"bool","int8","int16","int32","int64",nullptr,nullptr,nullptr}, {nullptr,"float32",nullptr,"float64",nullptr,nullptr,nullptr,"float128"}}
 IFA_EXTERN const char *num_kind_string[4][8] IFA_EXTERN_INIT(CPP_IS_LAME);
 #undef CPP_IS_LAME
 
@@ -365,4 +365,3 @@ const char* istrFromUserImag(double i);
 const char* istrFromUserComplex(double re, double im);
 
 #endif
-

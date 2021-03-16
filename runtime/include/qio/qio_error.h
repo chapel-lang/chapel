@@ -2,15 +2,15 @@
  * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -64,7 +64,7 @@ typedef const struct qio_err_s* qioerr;
    work program images loaded at different base addresses, but it will again
    cause problems if any of these error structures are allocated in dynamic
    libraries.
-   
+
  */
 
 // Get the address of a particular constant global data
@@ -101,14 +101,14 @@ qioerr qio_int_to_err(int32_t a);
 // Check if the error codes from two qioerrs are equal.
 static inline int qio_err_eq(qioerr a, qioerr b) {
   // Returns true if they have the same code.
-  if( a == NULL && b == NULL ) return 1;
-  if( (a == NULL) != (b == NULL) ) return 0;
+  if( !a && !b) return 1;
+  if( !a != !b) return 0;
   return qio_err_to_int(a) == qio_err_to_int(b);
 }
 
 // Return true if the passed qioerr represents an error
 static inline int qio_err_iserr(qioerr a) {
-  return a != NULL;
+  return !!a;
 }
 
 // Create a qioerr with the error code in errno

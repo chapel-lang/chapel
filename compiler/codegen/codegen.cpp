@@ -72,7 +72,7 @@ static bool compareSymbol(const void* v1, const void* v2);
 
 // Global so that we don't have to pass around
 // to all of the codegen() routines
-GenInfo* gGenInfo   =  0;
+GenInfo* gGenInfo   =  nullptr;
 int      gMaxVMT    = -1;
 int      gStmtCount =  0;
 bool     gCodegenGPU = false;

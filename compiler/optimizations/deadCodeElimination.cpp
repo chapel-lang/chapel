@@ -150,7 +150,7 @@ void deadExpressionElimination(FnSymbol* fn) {
   for_vector(BaseAST, ast, asts) {
     Expr* exprAst = toExpr(ast);
 
-    if (exprAst == 0) {
+    if (exprAst == nullptr) {
 
     } else if (isAlive(exprAst) == false) {
 

@@ -180,16 +180,16 @@
   public:
     ParserContext()
     {
-      scanner       = 0;
-      latestComment = 0;
-      generatedStmt = 0;
+      scanner       = nullptr;
+      latestComment = nullptr;
+      generatedStmt = nullptr;
     }
 
     ParserContext(yyscan_t scannerIn)
     {
       scanner       = scannerIn;
-      latestComment = 0;
-      generatedStmt = 0;
+      latestComment = nullptr;
+      generatedStmt = nullptr;
     }
 
     yyscan_t    scanner;

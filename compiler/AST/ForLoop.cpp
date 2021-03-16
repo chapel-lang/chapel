@@ -157,8 +157,8 @@ BlockStmt* ForLoop::doBuildForLoop(Expr*      indices,
 {
   VarSymbol*   index         = newTemp("_indexOfInterest");
   VarSymbol*   iterator      = newTemp("_iterator");
-  CallExpr*    iterInit      = 0;
-  CallExpr*    iterMove      = 0;
+  CallExpr*    iterInit      = nullptr;
+  CallExpr*    iterMove      = nullptr;
   ForLoop*     loop          = new ForLoop(index, iterator, body,
                                            zippered, isLoweredForall,
                                            isForExpr);
@@ -251,7 +251,7 @@ BlockStmt* ForLoop::doBuildForLoop(Expr*      indices,
 
   iterMove = new CallExpr(PRIM_MOVE, index, new CallExpr("iteratorIndex", iterator));
 
-  if (indices == 0)
+  if (indices == nullptr)
     indices = new UnresolvedSymExpr("chpl__elidedIdx");
 
   checkIndices(indices);
@@ -325,10 +325,10 @@ BlockStmt* ForLoop::buildLoweredForallLoop(Expr*      indices,
 *                                                                           *
 ************************************* | ************************************/
 
-ForLoop::ForLoop() : LoopStmt(0)
+ForLoop::ForLoop() : LoopStmt(nullptr)
 {
-  mIndex    = 0;
-  mIterator = 0;
+  mIndex    = nullptr;
+  mIterator = nullptr;
   mZippered = false;
   mLoweredForall = false;
   mIsForExpr = false;
@@ -451,14 +451,14 @@ CallExpr* ForLoop::blockInfoGet() const
 {
   printf("Migration: ForLoop   %12d Unexpected call to blockInfoGet()\n", id);
 
-  return 0;
+  return nullptr;
 }
 
 CallExpr* ForLoop::blockInfoSet(CallExpr* expr)
 {
   printf("Migration: ForLoop   %12d Unexpected call to blockInfoSet()\n", id);
 
-  return 0;
+  return nullptr;
 }
 
 bool ForLoop::deadBlockCleanup()
@@ -506,10 +506,10 @@ void ForLoop::accept(AstVisitor* visitor)
     for_alist(next_ast, body)
       next_ast->accept(visitor);
 
-    if (indexGet()    != 0)
+    if (indexGet()    != nullptr)
       indexGet()->accept(visitor);
 
-    if (iteratorGet() != 0)
+    if (iteratorGet() != nullptr)
       iteratorGet()->accept(visitor);
 
     if (useList)
@@ -544,15 +544,15 @@ void ForLoop::replaceChild(Expr* oldAst, Expr* newAst)
 
 Expr* ForLoop::getFirstExpr()
 {
-  Expr* retval = 0;
+  Expr* retval = nullptr;
 
-  if (mIndex         != 0)
+  if (mIndex         != nullptr)
     retval = mIndex;
 
-  else if (mIterator != 0)
+  else if (mIterator != nullptr)
     retval = mIterator;
 
-  else if (body.head != 0)
+  else if (body.head != nullptr)
     retval = body.head->getFirstExpr();
 
   else

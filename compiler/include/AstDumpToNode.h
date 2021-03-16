@@ -179,7 +179,7 @@ private:
 
   // enable compact mode
   void             enterNode(BaseAST* node)                             const;
-  void             enterNodeSym(Symbol* node, const char* name = 0)     const;
+  void             enterNodeSym(Symbol* node, const char* name = nullptr) const;
   void             exitNode(BaseAST* node, bool addNewline = false)     const;
   void             writeField(const char* msg, int offset, BaseAST* field);
   void             writeField(const char* msg, AList& list);

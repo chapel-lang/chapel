@@ -69,7 +69,7 @@ bool Expr::isStmt() const {
 }
 
 const char* DefExpr::name() const {
-  const char* retval = 0;
+  const char* retval = nullptr;
 
   if (isLcnSymbol(sym)    == true ||
       isTypeSymbol(sym)   == true ||
@@ -828,7 +828,7 @@ ContextCallExpr::ContextCallExpr() : Expr(E_ContextCallExpr) {
 }
 
 ContextCallExpr* ContextCallExpr::copyInner(SymbolMap* map) {
-  ContextCallExpr* _this = 0;
+  ContextCallExpr* _this = nullptr;
 
   _this              = new ContextCallExpr();
 

@@ -427,12 +427,12 @@ void BlockStmt::flattenAndRemove() {
 
 Expr*
 BlockStmt::getFirstExpr() {
-  Expr* retval = 0;
+  Expr* retval = nullptr;
 
-  if (blockInfo != 0)
+  if (blockInfo != nullptr)
     retval = blockInfo->getFirstExpr();
 
-  else if (body.head != 0)
+  else if (body.head != nullptr)
     retval = body.head->getFirstExpr();
 
   else
@@ -445,7 +445,7 @@ Expr*
 BlockStmt::getNextExpr(Expr* expr) {
   Expr* retval = this;
 
-  if (expr == blockInfo && body.head != 0)
+  if (expr == blockInfo && body.head != nullptr)
     retval = body.head->getFirstExpr();
 
   return retval;
@@ -540,7 +540,7 @@ BlockStmt::insertAtTailBeforeFlow(Expr* ast) {
 
 bool
 BlockStmt::isRealBlockStmt() const {
-  return blockInfo == 0;
+  return blockInfo == nullptr;
 }
 
 bool
@@ -550,7 +550,7 @@ BlockStmt::isScopeless() const {
 
 bool
 BlockStmt::isBlockType(PrimitiveTag tag) const {
-  return blockInfo != 0 && blockInfo->isPrimitive(tag) == true;
+  return blockInfo != nullptr && blockInfo->isPrimitive(tag) == true;
 }
 
 bool
@@ -968,7 +968,7 @@ void CondStmt::accept(AstVisitor* visitor) {
 }
 
 Expr* CondStmt::getFirstExpr() {
-  return (condExpr != 0) ? condExpr->getFirstExpr() : this;
+  return (condExpr != nullptr) ? condExpr->getFirstExpr() : this;
 }
 
 Expr* CondStmt::getNextExpr(Expr* expr) {
@@ -1102,7 +1102,7 @@ void GotoStmt::verify() {
       if (isFnSymbol(parent) == false) {
         ModuleSymbol* module = toModuleSymbol(parent);
 
-        if (module == 0 || module->initFn != 0) {
+        if (module == nullptr || module->initFn != nullptr) {
           INT_FATAL(this, "goto label is not in a function");
         }
       }
@@ -1199,7 +1199,7 @@ void GotoStmt::accept(AstVisitor* visitor) {
 }
 
 Expr* GotoStmt::getFirstExpr() {
-  return (label != 0) ? label->getFirstExpr() : this;
+  return (label != nullptr) ? label->getFirstExpr() : this;
 }
 
 bool GotoStmt::isGotoReturn() const {

@@ -23,8 +23,8 @@
 
 LoopStmt::LoopStmt(BlockStmt* initBody) : BlockStmt(initBody)
 {
-  mBreakLabel       = 0;
-  mContinueLabel    = 0;
+  mBreakLabel       = nullptr;
+  mContinueLabel    = nullptr;
   mOrderIndependent = false;
   mVectorizationHazard = false;
   mParallelAccessVectorizationHazard = false;

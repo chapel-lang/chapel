@@ -270,7 +270,7 @@ void CallExpr::verify() {
 }
 
 CallExpr* CallExpr::copyInner(SymbolMap* map) {
-  CallExpr* _this = 0;
+  CallExpr* _this = nullptr;
 
   if (primitive != nullptr) {
     _this = new CallExpr(primitive);

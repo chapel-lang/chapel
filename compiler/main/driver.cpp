@@ -1154,7 +1154,7 @@ static ArgumentDescription arg_desc[] = {
 
 
 static ArgumentState sArgState = {
-  0,
+  nullptr,
   0,
   "program",
   "path",

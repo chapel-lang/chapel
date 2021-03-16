@@ -162,10 +162,11 @@ GEN_CFLAGS += $(C_STD)
 # of Clang header files.
 #
 WARN_COMMONFLAGS = -Wall -Werror -Wpointer-arith -Wwrite-strings -Wno-strict-aliasing
-WARN_CXXFLAGS = $(WARN_COMMONFLAGS) -Wno-comment
+WARN_CXXFLAGS = $(WARN_COMMONFLAGS) -Wno-comment -Werror=zero-as-null-pointer-constant
 WARN_CFLAGS = $(WARN_COMMONFLAGS) -Wmissing-prototypes -Wstrict-prototypes -Wmissing-format-attribute
 WARN_GEN_CFLAGS = $(WARN_CFLAGS)
 SQUASH_WARN_GEN_CFLAGS = -Wno-unused -Wno-uninitialized
+NO_NULLPTR_ERRROR = -Wno-error=zero-as-null-pointer-constant
 
 ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -gt 5; echo "$$?"),0)
 WARN_CXXFLAGS += -Wsuggest-override

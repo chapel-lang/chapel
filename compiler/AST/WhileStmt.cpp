@@ -33,7 +33,7 @@ WhileStmt::WhileStmt(Expr* condExpr, BlockStmt* body) :
 WhileStmt::WhileStmt(VarSymbol* var, BlockStmt* body) :
   LoopStmt(body)
 {
-  mCondExpr = (var != 0) ? new SymExpr(var) : 0;
+  mCondExpr = (var != nullptr) ? new SymExpr(var) : nullptr;
 }
 
 void WhileStmt::copyInnerShare(const WhileStmt& ref,
@@ -47,7 +47,7 @@ void WhileStmt::copyInnerShare(const WhileStmt& ref,
   mContinueLabel    = ref.mContinueLabel;
   mOrderIndependent = ref.mOrderIndependent;
 
-  if (condExpr != 0)
+  if (condExpr != nullptr)
     mCondExpr = condExpr->copy(map, true);
 
   for_alist(expr, ref.body)
@@ -58,16 +58,16 @@ void WhileStmt::verify()
 {
   BlockStmt::verify();
 
-  if (condExprGet()             == 0)
+  if (condExprGet()             == nullptr)
     INT_FATAL(this, "WhileStmt::verify. condExpr  is NULL");
 
-  if (BlockStmt::blockInfoGet() != 0)
+  if (BlockStmt::blockInfoGet() != nullptr)
     INT_FATAL(this, "WhileStmt::verify. blockInfo is not NULL");
 
-  if (useList                   != 0)
+  if (useList                   != nullptr)
     INT_FATAL(this, "WhileStmt::verify. useList   is not NULL");
 
-  if (byrefVars                 != 0)
+  if (byrefVars                 != nullptr)
     INT_FATAL(this, "WhileStmt::verify. byrefVars is not NULL");
 }
 
@@ -87,7 +87,7 @@ SymExpr* WhileStmt::condExprForTmpVariableGet() const
 {
   SymExpr* retval = toSymExpr(mCondExpr);
 
-  INT_ASSERT(retval != 0);
+  INT_ASSERT(retval != nullptr);
 
   return retval;
 }
@@ -104,21 +104,21 @@ CallExpr* WhileStmt::blockInfoGet() const
 {
   printf("Migration: WhileStmt %12d Unexpected call to blockInfoGet()\n", id);
 
-  return 0;
+  return nullptr;
 }
 
 CallExpr* WhileStmt::blockInfoSet(CallExpr* expr)
 {
   printf("Migration: WhileStmt %12d Unexpected call to blockInfoSet()\n", id);
 
-  return 0;
+  return nullptr;
 }
 
 bool WhileStmt::deadBlockCleanup()
 {
   bool retval = false;
 
-  if (condExprGet() == 0)
+  if (condExprGet() == nullptr)
   {
     remove();
     retval = true;

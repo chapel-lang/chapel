@@ -94,8 +94,8 @@
 // Example: does not try to extract any extra sub-patterns
 //    CHECK(RE2::FullMatch("ruby:1234", "(\\w+):(\\d+)", &s));
 //
-// Example: does not try to extract into NULL
-//    CHECK(RE2::FullMatch("ruby:1234", "(\\w+):(\\d+)", NULL, &i));
+// Example: does not try to extract into nullptr
+//    CHECK(RE2::FullMatch("ruby:1234", "(\\w+):(\\d+)", nullptr, &i));
 //
 // Example: integer overflow causes failure
 //    CHECK(!RE2::FullMatch("ruby:1234567891234", "\\w+:(\\d+)", &i));
@@ -344,7 +344,7 @@ class RE2 {
  private:
   template <typename F, typename SP>
   static inline bool Apply(F f, SP sp, const RE2& re) {
-    return f(sp, re, NULL, 0);
+    return f(sp, re, nullptr, 0);
   }
 
   template <typename F, typename SP, typename... A>
@@ -373,14 +373,14 @@ class RE2 {
   //    std::string     (matched piece is copied to string)
   //    StringPiece     (StringPiece is mutated to point to matched piece)
   //    T               (where "bool T::ParseFrom(const char*, size_t)" exists)
-  //    (void*)NULL     (the corresponding matched sub-pattern is not copied)
+  //    nullptr         (the corresponding matched sub-pattern is not copied)
   //
   // Returns true iff all of the following conditions are satisfied:
   //   a. "text" matches "re" fully - from the beginning to the end of "text".
   //   b. The number of matched sub-patterns is >= number of supplied pointers.
   //   c. The "i"th argument has a suitable type for holding the
   //      string captured as the "i"th sub-pattern.  If you pass in
-  //      NULL for the "i"th argument, or pass fewer arguments than
+  //      nullptr for the "i"th argument, or pass fewer arguments than
   //      number of sub-patterns, the "i"th captured sub-pattern is
   //      ignored.
   //
@@ -403,7 +403,7 @@ class RE2 {
   //   b. The number of matched sub-patterns is >= number of supplied pointers.
   //   c. The "i"th argument has a suitable type for holding the
   //      string captured as the "i"th sub-pattern.  If you pass in
-  //      NULL for the "i"th argument, or pass fewer arguments than
+  //      nullptr for the "i"th argument, or pass fewer arguments than
   //      number of sub-patterns, the "i"th captured sub-pattern is
   //      ignored.
   template <typename... A>
@@ -421,7 +421,7 @@ class RE2 {
   //   b. The number of matched sub-patterns is >= number of supplied pointers.
   //   c. The "i"th argument has a suitable type for holding the
   //      string captured as the "i"th sub-pattern.  If you pass in
-  //      NULL for the "i"th argument, or pass fewer arguments than
+  //      nullptr for the "i"th argument, or pass fewer arguments than
   //      number of sub-patterns, the "i"th captured sub-pattern is
   //      ignored.
   template <typename... A>
@@ -439,7 +439,7 @@ class RE2 {
   //   b. The number of matched sub-patterns is >= number of supplied pointers.
   //   c. The "i"th argument has a suitable type for holding the
   //      string captured as the "i"th sub-pattern.  If you pass in
-  //      NULL for the "i"th argument, or pass fewer arguments than
+  //      nullptr for the "i"th argument, or pass fewer arguments than
   //      number of sub-patterns, the "i"th captured sub-pattern is
   //      ignored.
   template <typename... A>
@@ -552,8 +552,8 @@ class RE2 {
   // On a successful match, fills in submatch[] (up to nsubmatch entries)
   // with information about submatches.
   // I.e. matching RE2("(foo)|(bar)baz") on "barbazbla" will return true, with
-  // submatch[0] = "barbaz", submatch[1].data() = NULL, submatch[2] = "bar",
-  // submatch[3].data() = NULL, ..., up to submatch[nsubmatch-1].data() = NULL.
+  // submatch[0] = "barbaz", submatch[1].data() = nullptr, submatch[2] = "bar",
+  // submatch[3].data() = nullptr, ..., up to submatch[nsubmatch-1].data() = nullptr.
   // Caveat: submatch[] may be clobbered even on match failure.
   //
   // Don't ask for more match information than you will use:
@@ -562,10 +562,10 @@ class RE2 {
   // Doesn't make sense to use nsubmatch > 1 + NumberOfCapturingGroups(),
   // but will be handled correctly.
   //
-  // Passing text == StringPiece(NULL, 0) will be handled like any other
+  // Passing text == StringPiece(nullptr, 0) will be handled like any other
   // empty string, but note that on return, it will not be possible to tell
   // whether submatch i matched the empty string or did not match:
-  // either way, submatch[i].data() == NULL.
+  // either way, submatch[i].data() == nullptr.
   bool Match(const StringPiece& text,
              size_t startpos,
              size_t endpos,
@@ -580,7 +580,7 @@ class RE2 {
   // appropriately and link with a modified RE2.
   //
   // text is the StringPiece stand-in (e.g. a FILE*).
-  // buffer might be empty, (ie have .data() == NULL). If not,
+  // buffer might be empty, (ie have .data() == nullptr). If not,
   // we assume it is a cached copy of some portion of text,
   // but not necessarily all of text.
   bool MatchFile(FilePiece& text,
@@ -905,7 +905,7 @@ class RE2::Arg {
 #if !defined(_MSC_VER)
   template <typename T>
   static bool DoParseFrom(const char* str, size_t n, void* dest) {
-    if (dest == NULL) return true;
+    if (!dest) return true;
     return reinterpret_cast<T*>(dest)->ParseFrom(str, n);
   }
 #endif
@@ -961,7 +961,7 @@ class LazyRE2 {
 
   // Constructor omitted to preserve braced initialization in C++98.
 
-  // Pretend to be a pointer to Type (never NULL due to on-demand creation):
+  // Pretend to be a pointer to Type (never nullptr due to on-demand creation):
   RE2& operator*() const { return *get(); }
   RE2* operator->() const { return get(); }
 

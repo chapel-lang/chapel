@@ -162,7 +162,7 @@ void runPasses(PhaseTracker& tracker, bool isChpldoc) {
 
   setupLogfiles();
 
-  if (printPasses == true || printPassesFile != 0) {
+  if (printPasses == true || printPassesFile != nullptr) {
     tracker.ReportPass();
   }
 
@@ -235,7 +235,7 @@ static void runPass(PhaseTracker& tracker, size_t passIndex, bool isChpldoc) {
     cleanAst();
   }
 
-  if (printPasses == true || printPassesFile != 0) {
+  if (printPasses == true || printPassesFile != nullptr) {
     tracker.ReportPass();
   }
 }

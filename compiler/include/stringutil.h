@@ -2,15 +2,15 @@
  * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -27,13 +27,13 @@
 
 const char* astr(const char* s1,
                  const char* s2,
-                 const char* s3 = 0,
-                 const char* s4 = 0,
-                 const char* s5 = 0,
-                 const char* s6 = 0,
-                 const char* s7 = 0,
-                 const char* s8 = 0,
-                 const char* s9 = 0);
+                 const char* s3 = nullptr,
+                 const char* s4 = nullptr,
+                 const char* s5 = nullptr,
+                 const char* s6 = nullptr,
+                 const char* s7 = nullptr,
+                 const char* s8 = nullptr,
+                 const char* s9 = nullptr);
 
 const char* astr(const char* s1);
 const char* astr(const std::string& s);

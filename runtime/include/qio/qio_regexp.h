@@ -2,15 +2,15 @@
  * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -39,7 +39,13 @@ static inline
 qio_regexp_t qio_regexp_null(void)
 {
   qio_regexp_t ret;
+
+#ifdef __cplusplus
+  ret.regexp = nullptr;
+#else
   ret.regexp = NULL;
+#endif
+
   return ret;
 }
 
@@ -62,7 +68,7 @@ void qio_regexp_init_default_options(qio_regexp_options_t* options);
 void qio_regexp_create_compile(const char* str, int64_t str_len, const qio_regexp_options_t* options, qio_regexp_t* compiled);
 void qio_regexp_create_compile_flags(const char* str, int64_t str_len, const char* flags, int64_t flags_len, qio_bool isUtf8, qio_regexp_t* compiled);
 
-static inline 
+static inline
 void qio_regexp_create_compile_flags_2(void* str, int64_t str_len, void* flags, int64_t flags_len, qio_bool isUtf8, qio_regexp_t* compiled) {
   qio_regexp_create_compile_flags((const char*) str, str_len, (const char*) flags, flags_len, isUtf8, compiled);
 }

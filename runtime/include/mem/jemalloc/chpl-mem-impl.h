@@ -83,19 +83,23 @@ static inline void* chpl_memalign(size_t boundary, size_t size) {
 }
 
 static inline void* chpl_realloc(void* ptr, size_t size) {
-  if (ptr == NULL) {
+  if (!ptr) {
     size = minSize(size);
     return CHPL_JE_MALLOCX(size, CHPL_JE_MALLOCX_ARENA_FLAG(size));
   }
   if (size == 0) {
     CHPL_JE_DALLOCX(ptr, MALLOCX_NO_FLAGS);
+#ifdef __cplusplus
+    return nullptr;
+#else
     return NULL;
+#endif
   }
   return CHPL_JE_RALLOCX(ptr, size, CHPL_JE_MALLOCX_ARENA_FLAG(size));
 }
 
 static inline void chpl_free(void* ptr) {
-  if (ptr != NULL) {
+  if (ptr) {
     CHPL_JE_DALLOCX(ptr, MALLOCX_NO_FLAGS);
   }
 }

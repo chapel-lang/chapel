@@ -160,9 +160,9 @@ VarSymbol* ParamForLoop::newParamVar()
 *                                                                           *
 ************************************* | ************************************/
 
-ParamForLoop::ParamForLoop() : LoopStmt(0)
+ParamForLoop::ParamForLoop() : LoopStmt(nullptr)
 {
-  mResolveInfo = 0;
+  mResolveInfo = nullptr;
 }
 
 ParamForLoop::ParamForLoop(VarSymbol*   indexVar,
@@ -192,7 +192,7 @@ ParamForLoop* ParamForLoop::copyInner(SymbolMap* map)
   retval->mBreakLabel    = mBreakLabel;
   retval->mContinueLabel = mContinueLabel;
 
-  if (mResolveInfo != 0)
+  if (mResolveInfo != nullptr)
     retval->mResolveInfo = mResolveInfo->copy(map, true);
 
   for_alist(expr, body)
@@ -203,9 +203,9 @@ ParamForLoop* ParamForLoop::copyInner(SymbolMap* map)
 
 SymExpr* ParamForLoop::indexExprGet() const
 {
-  SymExpr* retval = 0;
+  SymExpr* retval = nullptr;
 
-  if (mResolveInfo != 0)
+  if (mResolveInfo != nullptr)
   {
     retval = toSymExpr(mResolveInfo->get(1));
 
@@ -217,9 +217,9 @@ SymExpr* ParamForLoop::indexExprGet() const
 
 SymExpr* ParamForLoop::lowExprGet() const
 {
-  SymExpr* retval = 0;
+  SymExpr* retval = nullptr;
 
-  if (mResolveInfo != 0)
+  if (mResolveInfo != nullptr)
   {
     retval = toSymExpr(mResolveInfo->get(2));
 
@@ -231,9 +231,9 @@ SymExpr* ParamForLoop::lowExprGet() const
 
 SymExpr* ParamForLoop::highExprGet() const
 {
-  SymExpr* retval = 0;
+  SymExpr* retval = nullptr;
 
-  if (mResolveInfo != 0)
+  if (mResolveInfo != nullptr)
   {
     retval = toSymExpr(mResolveInfo->get(3));
 
@@ -245,9 +245,9 @@ SymExpr* ParamForLoop::highExprGet() const
 
 SymExpr* ParamForLoop::strideExprGet() const
 {
-  SymExpr* retval = 0;
+  SymExpr* retval = nullptr;
 
-  if (mResolveInfo != 0)
+  if (mResolveInfo != nullptr)
   {
     retval = toSymExpr(mResolveInfo->get(4));
 
@@ -266,14 +266,14 @@ CallExpr* ParamForLoop::blockInfoGet() const
 {
   printf("Migration: ParamForLoop   %12d Unexpected call to blockInfoGet()\n", id);
 
-  return 0;
+  return nullptr;
 }
 
 CallExpr* ParamForLoop::blockInfoSet(CallExpr* expr)
 {
   printf("Migration: ParamForLoop   %12d Unexpected call to blockInfoSet()\n", id);
 
-  return 0;
+  return nullptr;
 }
 
 BlockStmt* ParamForLoop::copyBody(SymbolMap* map)
@@ -295,16 +295,16 @@ void ParamForLoop::accept(AstVisitor* visitor)
 {
   if (visitor->enterParamForLoop(this) == true)
   {
-    if (indexExprGet() != 0)
+    if (indexExprGet() != nullptr)
       indexExprGet()->accept(visitor);
 
-    if (lowExprGet() != 0)
+    if (lowExprGet() != nullptr)
       lowExprGet()->accept(visitor);
 
-    if (highExprGet() != 0)
+    if (highExprGet() != nullptr)
       highExprGet()->accept(visitor);
 
-    if (strideExprGet() != 0)
+    if (strideExprGet() != nullptr)
       strideExprGet()->accept(visitor);
 
     for_alist(next_ast, body)
@@ -359,7 +359,7 @@ GenRet ParamForLoop::codegen()
 
 Expr* ParamForLoop::getFirstExpr()
 {
-  INT_ASSERT(mResolveInfo != 0);
+  INT_ASSERT(mResolveInfo != nullptr);
 
   return mResolveInfo->getFirstExpr();
 }
@@ -542,10 +542,10 @@ Type* ParamForLoop::indexType()
 {
   SymExpr*  lse     = lowExprGet();
   SymExpr*  hse     = highExprGet();
-  CallExpr* range    = new CallExpr("chpl_build_bounded_range",
-                                    lse->copy(),
-                                    hse->copy());
-  Type*     idxType = 0;
+  CallExpr* range   = new CallExpr("chpl_build_bounded_range",
+                                   lse->copy(),
+                                   hse->copy());
+  Type*     idxType = nullptr;
 
   insertBefore(range);
 
@@ -565,7 +565,6 @@ Type* ParamForLoop::indexType()
 
     range->remove();
   }
-
   else
   {
     INT_FATAL("unresolved range");

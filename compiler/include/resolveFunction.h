@@ -29,7 +29,7 @@ class VarSymbol;
 
 void  resolveSignatureAndFunction(FnSymbol* fn);
 void  resolveSignature(FnSymbol* fn);
-void  resolveFunction(FnSymbol* fn, CallExpr* forCall = 0);
+void  resolveFunction(FnSymbol* fn, CallExpr* forCall = nullptr);
 
 bool  isParallelIterator(FnSymbol* fn);
 bool  isLeaderIterator(FnSymbol* fn);

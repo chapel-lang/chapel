@@ -72,29 +72,29 @@ void AstDumpToNode::view(const char*   passName,
 
 AstDumpToNode::AstDumpToNode(FILE* fp, int offset)
 {
-  mPath      = 0;
+  mPath      = nullptr;
   mFP        = fp;
 
   mOffset    = offset;
   mNeedSpace = false;
 
-  mModule    = 0;
+  mModule    = nullptr;
 }
 
 AstDumpToNode::AstDumpToNode()
 {
-  mPath      = 0;
-  mFP        = 0;
+  mPath      = nullptr;
+  mFP        = nullptr;
 
   mOffset    = 0;
   mNeedSpace = false;
 
-  mModule    = 0;
+  mModule    = nullptr;
 }
 
 AstDumpToNode::~AstDumpToNode()
 {
-  if (mPath != 0 && mFP != 0)
+  if (mPath != nullptr && mFP != nullptr)
   {
     close();
   }
@@ -116,22 +116,22 @@ bool AstDumpToNode::open(ModuleSymbol* mod, const char* passName, int passNum)
 
   mModule = mod;
 
-  if (mFP != 0)
+  if (mFP != nullptr)
   {
     fprintf(mFP, "AST dump for %s after pass %s.\n\n", mod->name, passName);
   }
 
-  return (mFP != 0) ? true : false;
+  return (mFP != nullptr) ? true : false;
 }
 
 bool AstDumpToNode::close()
 {
   bool retval = false;
 
-  if (mFP != 0)
+  if (mFP != nullptr)
   {
     retval = (fclose(mFP) == 0) ? true : false;
-    mFP    = 0;
+    mFP    = nullptr;
   }
 
   return retval;
@@ -231,7 +231,7 @@ bool AstDumpToNode::enterModSym(ModuleSymbol* node)
 
   // chpl_Program embeds a list of all the modules.
   // Skip the contents of the embedded ones.
-  if (mModule                                != 0  &&
+  if (mModule                                != nullptr  &&
       strcmp(mModule->name, "chpl__Program") == 0  &&
       strcmp(node->name,    "chpl__Program") != 0)
   {
@@ -588,23 +588,23 @@ bool AstDumpToNode::enterForLoop(ForLoop* node)
 
   enterNode(node);
 
-  if (node->indexGet() != 0 || node->iteratorGet() != 0)
+  if (node->indexGet() != nullptr || node->iteratorGet() != nullptr)
   {
     mOffset = mOffset + 2;
     newline();
 
-    if (node->indexGet() != 0)
+    if (node->indexGet() != nullptr)
     {
       fputs("Index:    ", mFP);
       mOffset = mOffset + 10;
       node->indexGet()->accept(this);
       mOffset = mOffset - 10;
 
-      if (node->iteratorGet() != 0)
+      if (node->iteratorGet() != nullptr)
         newline();
     }
 
-    if (node->iteratorGet() != 0)
+    if (node->iteratorGet() != nullptr)
     {
       fputs("Iterator: ", mFP);
       mOffset = mOffset + 10;
@@ -737,9 +737,9 @@ bool AstDumpToNode::enterDefExpr(DefExpr* node)
 {
   enterNode(node);
 
-  if (node->sym                 != 0 &&
-      node->exprType            == 0 &&
-      node->init                == 0 &&
+  if (node->sym                 != nullptr &&
+      node->exprType            == nullptr &&
+      node->init                == nullptr &&
       compact                   == false &&
       isModuleSymbol(node->sym) == false &&
       isFnSymbol(node->sym)     == false &&
@@ -1428,7 +1428,7 @@ bool AstDumpToNode::enterImplementsStmt(ImplementsStmt* node) {
 
 bool AstDumpToNode::enterAggrType(AggregateType* node)
 {
-  const char* tagName   = 0;
+  const char* tagName   = nullptr;
   bool        firstTime = true;
 
   switch (node->aggregateTag)
@@ -1678,22 +1678,22 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
   {
     sprintf(name, "%s%s", symPrefixString(sym), sym->name);
   }
-  else if (mod != 0)
+  else if (mod != nullptr)
   {
 #if 0
     if (false)
       ;
 
-    else if (sym == 0)
+    else if (sym == nullptr)
       sprintf(name, "??.NULL");
 
-    else if (mod->name == 0 && sym->name == 0)
+    else if (mod->name == nullptr && sym->name == nullptr)
       sprintf(name, "??.??");
 
-    else if (mod->name != 0 && sym->name == 0)
+    else if (mod->name != nullptr && sym->name == nullptr)
       sprintf(name, "%s.??", mod->name);
 
-    else if (mod->name == 0 && sym->name != 0)
+    else if (mod->name == nullptr && sym->name != nullptr)
       sprintf(name, "??.%s", sym->name);
 
     else
@@ -1706,7 +1706,7 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
   }
   else
   {
-    if (sym->name == 0)
+    if (sym->name == nullptr)
       sprintf(name, "NULL.??");
 
     else
@@ -1726,7 +1726,7 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
 
     enterNodeSym(sym, name);
 
-    if (sym->type != 0)
+    if (sym->type != nullptr)
     {
       len = writeType(sym->type);
     }
@@ -1752,7 +1752,7 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
   {
     enterNodeSym(sym, name);
 
-    if (sym->type != 0)
+    if (sym->type != nullptr)
     {
       writeType(sym->type);
     }
@@ -1767,7 +1767,7 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
   {
     enterNodeSym(sym, name);
 
-    if (sym->type != 0)
+    if (sym->type != nullptr)
     {
       writeType(sym->type);
     }
@@ -1782,7 +1782,7 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
   {
     enterNodeSym(sym, name);
 
-    if (sym->type != 0)
+    if (sym->type != nullptr)
     {
       writeType(sym->type);
     }
@@ -1797,7 +1797,7 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
   {
     enterNodeSym(sym, name);
 
-    if (sym->type != 0)
+    if (sym->type != nullptr)
     {
       writeType(sym->type);
     }
@@ -1812,7 +1812,7 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
   {
     enterNodeSym(sym, name);
 
-    if (sym->type != 0)
+    if (sym->type != nullptr)
     {
       writeType(sym->type);
     }
@@ -1829,11 +1829,11 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
 
     fprintf(mFP, " ");
 
-    if (var->immediate == 0)
+    if (var->immediate == nullptr)
     {
       int len = -1;
 
-      if (sym->type == 0 && var->depth() < 0)
+      if (sym->type == nullptr && var->depth() < 0)
       {
         fprintf(mFP, "name: %s", name);
       }
@@ -1872,7 +1872,7 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
       {
         snprint_imm(imm, bufSize, *var->immediate);
 
-        if (var->type != 0 && is_imag_type(var->type) == true)
+        if (var->type != nullptr && is_imag_type(var->type) == true)
         {
           char* tail = strchr(imm, '\0');
 
@@ -2012,17 +2012,17 @@ void AstDumpToNode::ast_symbol(Symbol* sym, bool def)
     }
   }
 
-  if ((mod == 0 || mod->name == 0) && sym->name == 0)
+  if ((mod == nullptr || mod->name == nullptr) && sym->name == nullptr)
   {
     fprintf(mFP, "name:         %s.%s", "??", "??");
   }
 
-  else if ((mod == 0 || mod->name == 0) && sym->name != 0)
+  else if ((mod == nullptr || mod->name == nullptr) && sym->name != nullptr)
   {
     fprintf(mFP, "name:         %s.%s", "??", sym->name);
   }
 
-  else if (mod->name != 0 && sym->name == 0)
+  else if (mod->name != nullptr && sym->name == nullptr)
   {
     fprintf(mFP, "name:         %s.%s", mod->name, "??");
   }
@@ -2078,7 +2078,7 @@ int AstDumpToNode::writeType(Type* type, bool announce) const
   if (false)
     ;
 
-  else if (type == 0)
+  else if (type == nullptr)
     ;
 
   else if (PrimitiveType* t = toPrimitiveType(type))
@@ -2104,7 +2104,7 @@ int AstDumpToNode::writeType(Type* type, bool announce) const
 
   else if (AggregateType* t = toAggregateType(type))
   {
-    const char* tagName   = 0;
+    const char* tagName   = nullptr;
 
     switch (t->aggregateTag)
     {

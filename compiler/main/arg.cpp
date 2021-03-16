@@ -263,7 +263,7 @@ static void word_wrap_print(const char* text, int startCol, int endCol)
    */
   char*       textDup   = strdup(text);
   const char* delims    = " ";
-  char*       savePtr   = 0;
+  char*       savePtr   = nullptr;
 
   char*       word      = strtok_r(textDup, delims, &savePtr);
 
@@ -849,7 +849,7 @@ static void missing_arg(const char* currentFlag)
 
 static const char* get_envvar_setting(const ArgumentDescription& desc)
 {
-  const char* retval = 0;
+  const char* retval = nullptr;
 
   if (desc.env != nullptr)
   {
@@ -858,11 +858,11 @@ static const char* get_envvar_setting(const ArgumentDescription& desc)
 
     // The environment variable is not set
     if (env == nullptr)
-      retval = 0;
+      retval = nullptr;
 
     // The environment variable IS the empty string
     else if (env[0] == '\0')
-      retval = (desc.type[0] == 'P' || desc.type[0] == 'S') ? "" : 0;
+      retval = (desc.type[0] == 'P' || desc.type[0] == 'S') ? "" : nullptr;
 
     // The environment variable IS NOT the empty string
     else

@@ -298,7 +298,7 @@ void AstToText::appendFormalName(ArgSymbol* arg)
 
 void AstToText::appendFormalType(ArgSymbol* arg)
 {
-  if (arg->typeExpr != 0)
+  if (arg->typeExpr != nullptr)
   {
     BlockStmt* blockStmt = arg->typeExpr;
 
@@ -452,7 +452,7 @@ bool AstToText::exprTypeHackEqual(Expr* expr0, Expr* expr1) const
 
     UnresolvedSymExpr* sym1 = toUnresolvedSymExpr(expr1);
 
-    retval = (fn != 0 && strcmp(fn->name, sym1->unresolved) == 0);
+    retval = (fn != nullptr && strcmp(fn->name, sym1->unresolved) == 0);
   }
 
   else
@@ -516,7 +516,7 @@ bool AstToText::handleNormalizedTypeOf(BlockStmt* bs)
 
 void AstToText::appendFormalVariableExpr(ArgSymbol* arg)
 {
-  if (arg->variableExpr != 0)
+  if (arg->variableExpr != nullptr)
   {
     mText += " ...";
 
@@ -778,7 +778,7 @@ void AstToText::appendExpr(SymExpr* expr, bool printingType, bool quoteStrings)
 {
   if (VarSymbol* var = toVarSymbol(expr->symbol()))
   {
-    if (var->immediate != 0)
+    if (var->immediate != nullptr)
     {
       const size_t bufSize = 128;
       char         imm[bufSize];
@@ -819,7 +819,7 @@ void AstToText::appendExpr(SymExpr* expr, bool printingType, bool quoteStrings)
       {
         snprint_imm(imm, bufSize, *var->immediate);
 
-        if (var->type != 0 && is_imag_type(var->type) == true)
+        if (var->type != nullptr && is_imag_type(var->type) == true)
         {
           char* tail = strchr(imm, '\0');
 
@@ -1038,7 +1038,7 @@ static bool needParens(const char *outer, const char *inner,
 void AstToText::appendExpr(CallExpr* expr, bool printingType, const char *outer,
                            bool unary, bool postfix, bool isRHS)
 {
-  if (expr->primitive == 0)
+  if (expr->primitive == nullptr)
   {
     if (UnresolvedSymExpr* sel = toUnresolvedSymExpr(expr->baseExpr))
     {
@@ -1208,7 +1208,7 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType, const char *outer,
 
             VarSymbol* arg1 = toVarSymbol(sym1->symbol());
 
-            if (arg1 != 0 && strcmp(arg1->name, "defaultDist") == 0)
+            if (arg1 != nullptr && strcmp(arg1->name, "defaultDist") == 0)
             {
               appendDomain(expr, printingType);
             }
@@ -1301,7 +1301,7 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType, const char *outer,
         SymExpr* symExpr1 = toSymExpr(expr->get(1));
         SymExpr* symExpr2 = toSymExpr(expr->get(2));
 
-        if (symExpr1 != 0 && symExpr2 != 0)
+        if (symExpr1 != nullptr && symExpr2 != nullptr)
         {
           if (isArgSymbol(symExpr1->symbol()) && isVarSymbol(symExpr2->symbol()))
           {
@@ -1893,7 +1893,7 @@ bool AstToText::isMtArg(CallExpr* expr, bool expectThis) const
         SymExpr* symMt     = toSymExpr(call->get(1));
         SymExpr* symTarget = toSymExpr(call->get(2));
 
-        if (symMt != nullptr && symTarget != 0)
+        if (symMt != nullptr && symTarget != nullptr)
         {
           VarSymbol* varMt     = toVarSymbol(symMt->symbol());
           ArgSymbol* argTarget = toArgSymbol(symTarget->symbol());

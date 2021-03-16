@@ -97,7 +97,7 @@ UseStmt::UseStmt(BaseAST*                            source,
 }
 
 UseStmt* UseStmt::copyInner(SymbolMap* map) {
-  UseStmt *_this = 0;
+  UseStmt *_this = nullptr;
 
   if (named.size() > 0) { // MPF: should this have || renamed.size() > 0?
     _this = new UseStmt(COPY_INT(src), modRename, &named, except, &renamed,

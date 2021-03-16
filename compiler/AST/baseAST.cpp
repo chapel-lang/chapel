@@ -209,7 +209,7 @@ void trace_remove(BaseAST* ast, char flag) {
       if (E_##type == E_VarSymbol)              \
         remove_weak_links(toVarSymbol(ast));    \
       trace_remove(ast, 'x');                   \
-      delete ast; ast = 0;                      \
+      delete ast; ast = nullptr;                \
     }                                           \
   }                                             \
   g##type##s.n = i##type
@@ -615,13 +615,13 @@ void update_symbols(BaseAST* ast, SymbolMap* map) {
     LabelSymbol* breakLabel    = ls->breakLabelGet();
     LabelSymbol* continueLabel = ls->continueLabelGet();
 
-    if (breakLabel != 0) {
+    if (breakLabel != nullptr) {
       if (LabelSymbol* y = toLabelSymbol(map->get(breakLabel))) {
         ls->breakLabelSet(y);
       }
     }
 
-    if (continueLabel != 0) {
+    if (continueLabel != nullptr) {
       if (LabelSymbol* y = toLabelSymbol(map->get(continueLabel))) {
         ls->continueLabelSet(y);
       }
@@ -681,54 +681,54 @@ bool isLoopStmt(const BaseAST* a)
 {
   const BlockStmt* stmt = toConstBlockStmt(a);
 
-  return (stmt != 0 && stmt->isLoopStmt()) ? true : false;
+  return (stmt != nullptr && stmt->isLoopStmt()) ? true : false;
 }
 
 bool isWhileStmt(const BaseAST* a)
 {
   const BlockStmt* stmt = toConstBlockStmt(a);
 
-  return (stmt != 0 && stmt->isWhileStmt()) ? true : false;
+  return (stmt != nullptr && stmt->isWhileStmt()) ? true : false;
 }
 
 bool isWhileDoStmt(const BaseAST* a)
 {
   const BlockStmt* stmt = toConstBlockStmt(a);
 
-  return (stmt != 0 && stmt->isWhileDoStmt()) ? true : false;
+  return (stmt != nullptr && stmt->isWhileDoStmt()) ? true : false;
 }
 
 bool isDoWhileStmt(const BaseAST* a)
 {
   const BlockStmt* stmt = toConstBlockStmt(a);
 
-  return (stmt != 0 && stmt->isDoWhileStmt()) ? true : false;
+  return (stmt != nullptr && stmt->isDoWhileStmt()) ? true : false;
 }
 
 bool isParamForLoop(const BaseAST* a)
 {
   const BlockStmt* stmt = toConstBlockStmt(a);
 
-  return (stmt != 0 && stmt->isParamForLoop()) ? true : false;
+  return (stmt != nullptr && stmt->isParamForLoop()) ? true : false;
 }
 
 bool isForLoop(const BaseAST* a)
 {
   const BlockStmt* stmt = toConstBlockStmt(a);
 
-  return (stmt != 0 && stmt->isForLoop()) ? true : false;
+  return (stmt != nullptr && stmt->isForLoop()) ? true : false;
 }
 
 bool isCoforallLoop(const BaseAST* a)
 {
   const BlockStmt* stmt = toConstBlockStmt(a);
 
-  return (stmt != 0 && stmt->isCoforallLoop()) ? true : false;
+  return (stmt != nullptr && stmt->isCoforallLoop()) ? true : false;
 }
 
 bool isCForLoop(const BaseAST* a)
 {
   const BlockStmt* stmt = toConstBlockStmt(a);
 
-  return (stmt != 0 && stmt->isCForLoop()) ? true : false;
+  return (stmt != nullptr && stmt->isCForLoop()) ? true : false;
 }

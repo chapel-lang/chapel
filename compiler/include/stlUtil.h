@@ -73,7 +73,7 @@
        (VAL = ( STL_UTIL_UNIQUE(for_vector_iter) !=                      \
                 STL_UTIL_UNIQUE(for_vector_end) ) ?                      \
               * STL_UTIL_UNIQUE(for_vector_iter) :                       \
-              (TYPE*)0) ;                                                \
+              nullptr) ;                                                 \
        ++STL_UTIL_UNIQUE(for_vector_iter) )
 
 #define for_vector_allowing_0s(TYPE, VAL, VEC)                           \
@@ -89,7 +89,7 @@
                 STL_UTIL_UNIQUE(for_vector_end) )),                      \
        (VAL =   STL_UTIL_UNIQUE(for_vector_cont) ?                       \
               * STL_UTIL_UNIQUE(for_vector_iter) :                       \
-                (TYPE*)0),                                               \
+                nullptr),                                                \
        STL_UTIL_UNIQUE(for_vector_cont);                                 \
        ++STL_UTIL_UNIQUE(for_vector_iter) )
 
@@ -103,7 +103,7 @@
        (VAL = ( STL_UTIL_UNIQUE(for_set_iter) !=                         \
                 STL_UTIL_UNIQUE(for_set_end) ) ?                         \
               * STL_UTIL_UNIQUE(for_set_iter) :                          \
-              (TYPE*)0) ;                                                \
+              nullptr) ;                                                 \
        ++STL_UTIL_UNIQUE(for_set_iter) )
 
 #endif

@@ -45,17 +45,17 @@
 #include "DeferStmt.h"
 
 AstDump::AstDump() {
-  mName      =     0;
-  mPath      =     0;
-  mFP        =     0;
+  mName      =     nullptr;
+  mPath      =     nullptr;
+  mFP        =     nullptr;
   mIndent    =     0;
   mNeedSpace   = false;
   mDontCloseFP = false;
 }
 
 AstDump::AstDump(FILE* fp) {
-  mName      =     0;
-  mPath      =     0;
+  mName      =     nullptr;
+  mPath      =     nullptr;
   mFP        =     fp;
   mIndent    =     0;
   mNeedSpace   = false;
@@ -90,7 +90,7 @@ bool AstDump::open(const ModuleSymbol* module, const char* passName, int passNum
   mIndent    = 0;
   mNeedSpace = false;
 
-  if (mFP != 0) {
+  if (mFP != nullptr) {
     fprintf(mFP, "AST dump for %s after pass %s.\n", module->name, passName);
     fprintf(mFP, "Module use list: ");
     for_vector(ModuleSymbol, usedMod, module->modUseList) {
@@ -99,17 +99,17 @@ bool AstDump::open(const ModuleSymbol* module, const char* passName, int passNum
     fprintf(mFP, "\n");
   }
 
-  return (mFP != 0) ? true : false;
+  return (mFP != nullptr) ? true : false;
 }
 
 bool AstDump::close() {
   bool retval = false;
 
   if (mDontCloseFP)
-    mFP = 0;
+    mFP = nullptr;
 
-  if (mFP != 0 && fclose(mFP) == 0) {
-    mFP    =    0;
+  if (mFP != nullptr && fclose(mFP) == 0) {
+    mFP    = nullptr;
     retval = true;
   }
 
@@ -291,7 +291,7 @@ void AstDump::visitSymExpr(SymExpr* node) {
     newline();
   }
 
-  if (var != 0 && var->immediate != 0) {
+  if (var != nullptr && var->immediate != nullptr) {
     const size_t bufSize = 128;
     char         imm[bufSize];
     char         buff[bufSize + 1];

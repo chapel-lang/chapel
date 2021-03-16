@@ -43,13 +43,13 @@
 #include <inttypes.h>
 
 int   AstDumpToHtml::sPassIndex = 1;
-FILE* AstDumpToHtml::sIndexFP   = 0;
+FILE* AstDumpToHtml::sIndexFP   = nullptr;
 
 const char* HTML_DL_open_tag = "<DL><DD>";
 const char* HTML_DL_close_tag = "</DD></DL>";
 
 AstDumpToHtml::AstDumpToHtml() {
-  mFP = 0;
+  mFP = nullptr;
 }
 
 AstDumpToHtml::~AstDumpToHtml() {
@@ -122,7 +122,7 @@ bool AstDumpToHtml::open(ModuleSymbol* module, const char* passName) {
 
   mFP = fopen(path, "w");
 
-  if (mFP != 0) {
+  if (mFP != nullptr) {
     const char* modClass = "";
 
     if (module->modTag == MOD_USER)
@@ -155,17 +155,17 @@ bool AstDumpToHtml::open(ModuleSymbol* module, const char* passName) {
     fprintf(mFP, "</B>\n");
   }
 
-  return (mFP != 0) ? true : false;
+  return (mFP != nullptr) ? true : false;
 }
 
 bool AstDumpToHtml::close() {
   bool retval = false;
 
-  if (mFP != 0) {
+  if (mFP != nullptr) {
     fprintf(mFP, "</BODY></HTML>\n");
 
     retval = (fclose(mFP) == 0) ? true : false;
-    mFP    = 0;
+    mFP    = nullptr;
   }
 
   return retval;
@@ -376,7 +376,7 @@ void AstDumpToHtml::visitSymExpr(SymExpr* node) {
 
   fprintf(mFP, " ");
 
-  if (var != 0 && var->immediate != 0) {
+  if (var != nullptr && var->immediate != nullptr) {
     const size_t bufSize = 128;
     char         imm[bufSize];
 

@@ -2,15 +2,15 @@
  * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -56,7 +56,7 @@ int8_t ascii(c_string s) {
 
 static inline
 int64_t string_length_bytes(c_string x) {
-  if (x == NULL)
+  if (!x)
     return 0;
   return strlen(x);
 }
@@ -64,8 +64,8 @@ int64_t string_length_bytes(c_string x) {
 static inline
 int32_t string_compare(c_string x, c_string y) {
   if (x == y) return 0;
-  if (x == NULL) return -1;
-  if (y == NULL) return 1;
+  if (!x) return -1;
+  if (!y) return 1;
   return (int32_t)strcmp(x, y);
 }
 

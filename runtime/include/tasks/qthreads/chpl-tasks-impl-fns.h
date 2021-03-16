@@ -89,7 +89,7 @@ static inline chpl_qthread_tls_t* chpl_qthread_get_tasklocal(void)
     if (chpl_qthread_done_initializing) {
         tls = (chpl_qthread_tls_t*)
                qthread_get_tasklocal(sizeof(chpl_qthread_tls_t));
-        if (tls == NULL) {
+        if (!tls) {
             pthread_t me = pthread_self();
             if (pthread_equal(me, chpl_qthread_comm_pthread))
                 tls = &chpl_qthread_comm_task_tls;
@@ -98,7 +98,13 @@ static inline chpl_qthread_tls_t* chpl_qthread_get_tasklocal(void)
         }
     }
     else
+    {
+#ifdef __cplusplus
+        tls = nullptr;
+#else
         tls = NULL;
+#endif
+    }
 
     return tls;
 }
@@ -114,7 +120,11 @@ static inline chpl_task_infoRuntime_t* chpl_task_getInfoRuntime(void)
     if (data) {
         return &data->infoRuntime;
     }
+#ifdef __cplusplus
+    return nullptr;
+#else
     return NULL;
+#endif
 }
 
 #ifdef CHPL_TASK_GET_INFO_CHAPEL_IMPL_DECL
@@ -129,7 +139,11 @@ static inline chpl_task_infoChapel_t* chpl_task_getInfoChapel(void)
         return &data->bundle->infoChapel;
     }
     assert(data && data->bundle);
+#ifdef __cplusplus
+    return nullptr;
+#else
     return NULL;
+#endif
 }
 
 
