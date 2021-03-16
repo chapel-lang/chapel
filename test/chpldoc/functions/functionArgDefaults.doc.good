@@ -41,51 +41,51 @@ or
 
 .. function:: proc isNilDefault(arg = nil)
 
-.. function:: proc plusDefault(arg = x+y)
+.. function:: proc plusDefault(arg = x + y)
 
-.. function:: proc minusDefault(arg = x-y)
+.. function:: proc minusDefault(arg = x - y)
 
-.. function:: proc multDefault(arg = x*y)
+.. function:: proc multDefault(arg = x * y)
 
-.. function:: proc divDefault(arg = x/y)
+.. function:: proc divDefault(arg = x / y)
 
-.. function:: proc modDefault(arg = x%y)
+.. function:: proc modDefault(arg = x % y)
 
-.. function:: proc orDefault(arg = x||y)
+.. function:: proc orDefault(arg = x || y)
 
-.. function:: proc binOrDefault(arg = x|y)
+.. function:: proc binOrDefault(arg = x | y)
 
-.. function:: proc andDefault(arg = x&&y)
+.. function:: proc andDefault(arg = x && y)
 
-.. function:: proc binAndDefault(arg = x&y)
+.. function:: proc binAndDefault(arg = x & y)
 
-.. function:: proc binXorDefault(arg = x^y)
+.. function:: proc binXorDefault(arg = x ^ y)
 
-.. function:: proc threeOrDefault(arg = x||y||z)
+.. function:: proc threeOrDefault(arg = x || y || z)
 
-.. function:: proc threeBinOrDefault(arg = x|y|z)
+.. function:: proc threeBinOrDefault(arg = x | y | z)
 
-.. function:: proc threeAndDefault(arg = x&&y&&z)
+.. function:: proc threeAndDefault(arg = x && y && z)
 
-.. function:: proc threeBinAndDefault(arg = x&y&z)
+.. function:: proc threeBinAndDefault(arg = x & y & z)
 
 .. function:: proc powDefault(arg = x**y)
 
-.. function:: proc lshiftDefault(arg = x<<y)
+.. function:: proc lshiftDefault(arg = x << y)
 
-.. function:: proc rshiftDefault(arg = x>>y)
+.. function:: proc rshiftDefault(arg = x >> y)
 
-.. function:: proc eqDefault(arg = x==y)
+.. function:: proc eqDefault(arg = x == y)
 
-.. function:: proc neqDefault(arg = x!=y)
+.. function:: proc neqDefault(arg = x != y)
 
-.. function:: proc lessDefault(arg = x<y)
+.. function:: proc lessDefault(arg = x < y)
 
-.. function:: proc gtDefault(arg = x>y)
+.. function:: proc gtDefault(arg = x > y)
 
-.. function:: proc lessEqDefault(arg = x<=y)
+.. function:: proc lessEqDefault(arg = x <= y)
 
-.. function:: proc gtEqDefault(arg = x>=y)
+.. function:: proc gtEqDefault(arg = x >= y)
 
 .. function:: proc minDefault(arg = min(int))
 
@@ -121,9 +121,9 @@ or
 
 .. function:: proc threeArgFuncDefault(arg = f3(x, y, z))
 
-.. function:: proc twoArgsWithDefaults(arg1 = x+y, arg2 = x-y)
+.. function:: proc twoArgsWithDefaults(arg1 = x + y, arg2 = x - y)
 
-.. function:: proc threeArgsWithDefaults(arg1 = x*y, arg2 = x/y, arg3 = x**y)
+.. function:: proc threeArgsWithDefaults(arg1 = x * y, arg2 = x / y, arg3 = x**y)
 
 .. record:: R0
 
