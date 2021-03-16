@@ -804,10 +804,6 @@ module Set {
     }
   }
 
-  pragma "no doc"
-  operator :(x: set(?et1, ?p), type t: set(?et2, parSafe=true)) {
-  }
-
   /*
     Return `true` if the sets `a` and `b` are not equal.
 
