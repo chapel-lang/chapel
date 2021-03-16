@@ -402,7 +402,7 @@ module DefaultRectangular {
                                     else dptpl / numChunks);
             var locBlock: rank*range(intIdxType);
             for param i in 0..rank-1 do
-              locBlock(i) = offset(i)..#(ranges(i).size);
+              locBlock(i) = offset(i)..#(ranges(i).sizeAs(offset(i).type));
             var followMe: rank*range(intIdxType) = locBlock;
             const (lo,hi) = _computeBlock(locBlock(parDim).size,
                                           numChunks, chunk,
@@ -464,7 +464,7 @@ module DefaultRectangular {
 
         var locBlock: rank*range(intIdxType);
         for param i in 0..rank-1 do
-          locBlock(i) = offset(i)..#(ranges(i).size);
+          locBlock(i) = offset(i)..#(ranges(i).sizeAs(offset(i).type));
         if debugDefaultDist then
           chpl_debug_writeln("*** DI: locBlock = ", locBlock);
         coforall chunk in 0..#numChunks {
