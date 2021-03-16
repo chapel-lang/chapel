@@ -143,13 +143,22 @@ Expr* convertStructToChplType(ModuleSymbol* module,
   const char* cname = chpl_name;
 
   if (!fLlvmCodegen) {
-    cname = astr("struct ", cname);
+    if (structType->isUnionType())
+      cname = astr("union ", cname);
+    else
+      cname = astr("struct ", cname);
   }
 
-  // For handling typedef struct { } bar
-  //   ie an anonymous struct, use the name in the typedef.
-  if (chpl_name[0] == '\0' && typedefName) {
-    cname = chpl_name = typedefName;
+  if (chpl_name[0] == '\0') {
+    if (typedefName) {
+      // For handling typedef struct { } bar
+      //   ie an anonymous struct, use the name in the typedef.
+      chpl_name = typedefName;
+    } else {
+      // and for other ones, create a name
+      chpl_name = getGeneratedAnonTypeName(structType);
+    }
+    cname = chpl_name;
   }
 
   // Don't convert it if it's already converted

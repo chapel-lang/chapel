@@ -45,6 +45,7 @@ namespace clang {
   class Decl;
   class FunctionDecl;
   class QualType;
+  class RecordType;
   class TypeDecl;
   class ValueDecl;
 
@@ -117,6 +118,8 @@ extern std::string ggpuFatbinPath;
 void print_clang(clang::Decl* d);
 void print_clang(clang::TypeDecl* td);
 void print_clang(clang::ValueDecl* vd);
+
+const char* getGeneratedAnonTypeName(const clang::RecordType* structType);
 
 #endif // HAVE_LLVM
 
