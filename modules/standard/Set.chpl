@@ -544,6 +544,9 @@ module Set {
   proc |(const ref a: set(?t, ?), const ref b: set(t, ?)) {
     var result: set(t, (a.parSafe || b.parSafe));
 
+    // TODO: Split-init causes weird errors.
+    result;
+
     result = a;
     result |= b;
 
@@ -711,6 +714,9 @@ module Set {
   proc ^(const ref a: set(?t, ?), const ref b: set(t, ?)) {
     var result: set(t, (a.parSafe || b.parSafe));
 
+    // TODO: Split-init causes weird errors.
+    result;
+
     /* Expect the loop in ^= to be more expensive than the loop in =,
        so arrange for the rhs of the ^= to be the smaller set. */
     if a.size <= b.size {
@@ -783,6 +789,23 @@ module Set {
     }
 
     return result;
+  }
+
+  pragma "no doc"
+  operator :(x: set(?et1, ?p1), type t: set(?et2, ?p2)) {
+    if et1 != et2 then
+      compilerError('Cannot cast to set with different ',
+                    'element type: ', t:string);
+    if p1 == p2 {
+      return x;
+    } else {
+      var result: set(et2, p2) = x;
+      return result;
+    }
+  }
+
+  pragma "no doc"
+  operator :(x: set(?et1, ?p), type t: set(?et2, parSafe=true)) {
   }
 
   /*
