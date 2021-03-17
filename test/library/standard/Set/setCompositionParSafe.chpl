@@ -3,9 +3,6 @@ use Set;
 config const lo = 1;
 config const hi = 8;
 
-type setIntLocked = set(int, parSafe=true);
-type setIntNoLock = set(int);
-
 enum LockMode { neither, left, right, both }
 
 proc addToSets(ref a, ref b) {
