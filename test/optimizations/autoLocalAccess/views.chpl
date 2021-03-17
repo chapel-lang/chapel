@@ -68,7 +68,7 @@ writeln("Starting");
   writeln();
 }
 
-{ // doesn't work yet.  https://github.com/Cray/chapel-private/issues/1614
+{ // doesn't work yet.  https://github.com/Cray/chapel-private/issues/1620
   writeln("Reindex");
   const offset = 10;
   var D = createDom({1..10});
