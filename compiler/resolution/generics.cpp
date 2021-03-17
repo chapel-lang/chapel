@@ -76,12 +76,10 @@ explainInstantiation(FnSymbol* fn) {
   int len = sprintf(msg, "instantiated %s(", fn->name);
   bool first = true;
   for_formals(formal, fn) {
-
     for (auto pair: elts) {
-      Symbol* key = pair.first;
+      ArgSymbol* arg = toArgSymbol(pair.first); // this is the key
       Symbol* value = pair.second;
 
-      ArgSymbol* arg = toArgSymbol(key);
       if (!strcmp(formal->name, arg->name)) {
         if (first)
           first = false;

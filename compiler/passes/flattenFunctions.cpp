@@ -307,78 +307,74 @@ replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
 
   SymbolMapVector elts = sortedSymbolMapElts(*vars);
   for (auto pair: elts) {
-    Symbol* key = pair.first;
-    Symbol* value = pair.second;
+    Symbol* sym = pair.first; // this is the key
+    ArgSymbol* arg = toArgSymbol(pair.second); // this is the value
+    Type*      type = arg->type;
 
-    if (Symbol* sym = key) {
-      ArgSymbol* arg  = toArgSymbol(value);
-      Type*      type = arg->type;
+    size_t i = 0;
+    for_vector(SymExpr, se, symExprs) {
+      if (se->symbol() == sym) {
+        if (type == sym->type) {
+          se->setSymbol(arg);
 
-      size_t i = 0;
-      for_vector(SymExpr, se, symExprs) {
-        if (se->symbol() == sym) {
-          if (type == sym->type) {
-            se->setSymbol(arg);
+        } else if (CallExpr* call = toCallExpr(se->parentExpr)) {
+          FnSymbol* fnc         = call->resolvedFunction();
+          bool      canPassToFn = false;
 
-          } else if (CallExpr* call = toCallExpr(se->parentExpr)) {
-            FnSymbol* fnc         = call->resolvedFunction();
-            bool      canPassToFn = false;
+          if (fnc) {
+            ArgSymbol* form = actual_to_formal(se);
 
-            if (fnc) {
-              ArgSymbol* form = actual_to_formal(se);
-
-              if (arg->isRef()                            &&
-                  form->isRef()                           &&
-                  arg->getValType() == form->getValType()) {
-                canPassToFn = true;
-              } else if (arg->type == form->type) {
-                canPassToFn = true;
-              }
-            }
-
-            // check if call is in a lifetime clause
-            if (i >= firstInLifetimeConstraint)
+            if (arg->isRef()                            &&
+                form->isRef()                           &&
+                arg->getValType() == form->getValType()) {
               canPassToFn = true;
-
-            if (( (call->isPrimitive(PRIM_MOVE)       ||
-                   call->isPrimitive(PRIM_ASSIGN)     ||
-                   call->isPrimitive(PRIM_SET_MEMBER) )
-                  && call->get(1) == se)                                   ||
-                call->isPrimitive(PRIM_GET_MEMBER)                         ||
-                call->isPrimitive(PRIM_GET_MEMBER_VALUE)                   ||
-                call->isPrimitive(PRIM_WIDE_GET_LOCALE)                    ||
-                call->isPrimitive(PRIM_WIDE_GET_NODE)                      ||
-                call->isPrimitive(PRIM_END_OF_STATEMENT)                   ||
-                canPassToFn) {
-              se->setSymbol(arg); // do not dereference argument in these cases
-
-            } else if (call->isPrimitive(PRIM_ADDR_OF)) {
-              SET_LINENO(se);
-              call->replace(new SymExpr(arg));
-
-            } else {
-              SET_LINENO(se);
-
-              VarSymbol* tmp   = newTemp(sym->type);
-              CallExpr*  deref = new CallExpr(PRIM_DEREF, arg);
-              CallExpr*  move  = new CallExpr(PRIM_MOVE,  tmp, deref);
-
-              se->getStmtExpr()->insertBefore(new DefExpr(tmp));
-              se->getStmtExpr()->insertBefore(move);
-
-              se->setSymbol(tmp);
+            } else if (arg->type == form->type) {
+              canPassToFn = true;
             }
+          }
+
+          // check if call is in a lifetime clause
+          if (i >= firstInLifetimeConstraint)
+            canPassToFn = true;
+
+          if (( (call->isPrimitive(PRIM_MOVE)       ||
+                 call->isPrimitive(PRIM_ASSIGN)     ||
+                 call->isPrimitive(PRIM_SET_MEMBER) )
+                && call->get(1) == se)                                   ||
+              call->isPrimitive(PRIM_GET_MEMBER)                         ||
+              call->isPrimitive(PRIM_GET_MEMBER_VALUE)                   ||
+              call->isPrimitive(PRIM_WIDE_GET_LOCALE)                    ||
+              call->isPrimitive(PRIM_WIDE_GET_NODE)                      ||
+              call->isPrimitive(PRIM_END_OF_STATEMENT)                   ||
+              canPassToFn) {
+            se->setSymbol(arg); // do not dereference argument in these cases
+
+          } else if (call->isPrimitive(PRIM_ADDR_OF)) {
+            SET_LINENO(se);
+            call->replace(new SymExpr(arg));
 
           } else {
-            // So far, the only other known case is when 'se' is some
-            // shadow variable's outer sym. If so, just replace the symbol.
-            ShadowVarSymbol* svar = toShadowVarSymbol(se->parentSymbol);
-            INT_ASSERT(svar && se == svar->outerVarSE);
-            se->setSymbol(arg);
+            SET_LINENO(se);
+
+            VarSymbol* tmp   = newTemp(sym->type);
+            CallExpr*  deref = new CallExpr(PRIM_DEREF, arg);
+            CallExpr*  move  = new CallExpr(PRIM_MOVE,  tmp, deref);
+
+            se->getStmtExpr()->insertBefore(new DefExpr(tmp));
+            se->getStmtExpr()->insertBefore(move);
+
+            se->setSymbol(tmp);
           }
+
+        } else {
+          // So far, the only other known case is when 'se' is some
+          // shadow variable's outer sym. If so, just replace the symbol.
+          ShadowVarSymbol* svar = toShadowVarSymbol(se->parentSymbol);
+          INT_ASSERT(svar && se == svar->outerVarSE);
+          se->setSymbol(arg);
         }
-        i++;
       }
+      i++;
     }
   }
 }

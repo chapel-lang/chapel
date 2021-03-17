@@ -578,63 +578,63 @@ addVarsToFormalsActuals(FnSymbol* fn, SymbolMap& vars,
 
   SymbolMapVector elts = sortedSymbolMapElts(vars);
   for (auto pair: elts) {
-      Symbol* key = pair.first;
-      Symbol* value = pair.second;
-      Symbol* sym = key;
-      if (value != markPruned) {
-        SET_LINENO(sym);
-        ArgSymbol* newFormal = NULL;
-        Symbol*    newActual = NULL;
-        Symbol*    symReplace = NULL;
+    Symbol* key = pair.first;
+    Symbol* value = pair.second;
+    Symbol* sym = key;
+    if (value != markPruned) {
+      SET_LINENO(sym);
+      ArgSymbol* newFormal = NULL;
+      Symbol*    newActual = NULL;
+      Symbol*    symReplace = NULL;
 
-        // If we see a TypeSymbol here, it came from a reduce intent.
-        // (See the above comment about 'vars'.)
-        if (TypeSymbol* reduceType = toTypeSymbol(value)) {
-          bool gotError = false;
-          // For cobegin, these will report the error for each task.
-          // So maybe make it no-cont to avoid duplication?
-          if (!isReduceOp(reduceType->type)) {
-            USR_FATAL_CONT(call, "%s is not a valid reduction for a reduce intent", reduceType->name);
-            gotError = true;
-          }
-          if (!isCoforall) {
-            USR_FATAL_CONT(call, "reduce intents are not available for 'begin' and are not implemented for 'cobegin'");
-            gotError = true;
-          }
-          if (gotError) continue; // skip addReduceIntentSupport() etc.
-
-          addReduceIntentSupport(fn, call, reduceType, sym,
-                                 newFormal, newActual, symReplace,
-                                 isCoforall, redRef1, redRef2);
-        } else {
-          IntentTag argTag = INTENT_BLANK;
-          if (ArgSymbol* tiMarker = toArgSymbol(value))
-            argTag = tiMarker->intent;
-          else
-            INT_ASSERT(value == markUnspecified);
-
-          newFormal = new ArgSymbol(argTag, sym->name, sym->type);
-          if (sym->hasFlag(FLAG_COFORALL_INDEX_VAR))
-            newFormal->addFlag(FLAG_COFORALL_INDEX_VAR);
-
-          if (ArgSymbol* symArg = toArgSymbol(sym))
-            if (symArg->hasFlag(FLAG_MARKED_GENERIC))
-              newFormal->addFlag(FLAG_MARKED_GENERIC);
-          newActual = key;
-          symReplace = newFormal;
-          // MPF 2017-03-09
-          // I don't think this check should be here; it depends
-          // on the type and in my experiments type is usually dtUnknown
-          // at this point.
-          if (!newActual->isConstant() && newFormal->isConstant())
-            newFormal->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
+      // If we see a TypeSymbol here, it came from a reduce intent.
+      // (See the above comment about 'vars'.)
+      if (TypeSymbol* reduceType = toTypeSymbol(value)) {
+        bool gotError = false;
+        // For cobegin, these will report the error for each task.
+        // So maybe make it no-cont to avoid duplication?
+        if (!isReduceOp(reduceType->type)) {
+          USR_FATAL_CONT(call, "%s is not a valid reduction for a reduce intent", reduceType->name);
+          gotError = true;
         }
+        if (!isCoforall) {
+          USR_FATAL_CONT(call, "reduce intents are not available for 'begin' and are not implemented for 'cobegin'");
+          gotError = true;
+        }
+        if (gotError) continue; // skip addReduceIntentSupport() etc.
 
-        call->insertAtTail(newActual);
-        fn->insertFormalAtTail(newFormal);
-        value = symReplace;
-        vars.put(key, value);
+        addReduceIntentSupport(fn, call, reduceType, sym,
+                               newFormal, newActual, symReplace,
+                               isCoforall, redRef1, redRef2);
+      } else {
+        IntentTag argTag = INTENT_BLANK;
+        if (ArgSymbol* tiMarker = toArgSymbol(value))
+          argTag = tiMarker->intent;
+        else
+          INT_ASSERT(value == markUnspecified);
+
+        newFormal = new ArgSymbol(argTag, sym->name, sym->type);
+        if (sym->hasFlag(FLAG_COFORALL_INDEX_VAR))
+          newFormal->addFlag(FLAG_COFORALL_INDEX_VAR);
+
+        if (ArgSymbol* symArg = toArgSymbol(sym))
+          if (symArg->hasFlag(FLAG_MARKED_GENERIC))
+            newFormal->addFlag(FLAG_MARKED_GENERIC);
+        newActual = key;
+        symReplace = newFormal;
+        // MPF 2017-03-09
+        // I don't think this check should be here; it depends
+        // on the type and in my experiments type is usually dtUnknown
+        // at this point.
+        if (!newActual->isConstant() && newFormal->isConstant())
+          newFormal->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
       }
+
+      call->insertAtTail(newActual);
+      fn->insertFormalAtTail(newFormal);
+      value = symReplace;
+      vars.put(key, value);
+    }
   }
   cleanupRedRefs(redRef1, redRef2);
 }
