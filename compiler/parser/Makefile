@@ -54,6 +54,9 @@ parser: FORCE flex_version_check
 		exit 1; \
 	fi;
 	flex chapel.lex
+	sed -e 's/\([^a-zA-Z0-9_]\)NULL\([^a-zA-Z0-9_]\)/\1nullptr\2/' \
+            -e 's/(YY_BUFFER_STATE) 0/nullptr/' flex-chapel.cpp  > flex-chapel.bak
+	mv flex-chapel.bak flex-chapel.cpp
 
 # Require that the flex version is at least 2.6.0
 flex_version_check:
