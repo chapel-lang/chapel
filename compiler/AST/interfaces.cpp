@@ -158,11 +158,13 @@ void InterfaceSymbol::accept(AstVisitor* visitor) {
 }
 
 InterfaceSymbol* InterfaceSymbol::copyInner(SymbolMap* map) {
-  if (this->defPoint && isGlobal(this))
-    INT_FATAL(this, "unexpected");
+  if (this->defPoint && !isGlobal(this))
+    USR_FATAL(this,
+      "only module-level interfaces are currently supported");
   else
-    USR_FATAL_CONT(this,
-                   "only module-level interfaces are currently implemented");
+    USR_FATAL(this,
+      "interface declarations in this context are currently unsupported");
+
   return this; //dummy
 }
 
@@ -271,8 +273,10 @@ ImplementsStmt::ImplementsStmt(IfcConstraint* con, BlockStmt* body)
 }
 
 ImplementsStmt* ImplementsStmt::copyInner(SymbolMap* map) {
-  if (witnesses.n > 0) // this is a non-empty map
-    INT_FATAL(this, "copying of witnesses is to be implemented");
+  if (witnesses.n > 0 || aconsWitnesses.size() > 0)
+    USR_FATAL(this,
+      "implements statements in this context are currently unsupported");
+
   return new ImplementsStmt(COPY_INT(iConstraint),
                             COPY_INT(implBody));
 }
@@ -345,7 +349,8 @@ Expr* ImplementsStmt::getNextExpr(Expr* expr) {
 //
 void introduceConstrainedTypes(FnSymbol* fn) {
   for_formals(formal, fn)
-   if (BlockStmt* typeExpr = formal->typeExpr)
+{
+   if (BlockStmt* typeExpr = formal->typeExpr) {
     if (DefExpr* def = toDefExpr(typeExpr->body.tail)) {
       INT_ASSERT(formal->type == dtUnknown); //fyi
       SET_LINENO(def);
@@ -365,7 +370,23 @@ void introduceConstrainedTypes(FnSymbol* fn) {
         USR_FATAL(typeExpr, "this formal's type query expression"
           " is currently not supported for constrained generic functions");
       typeExpr->remove();
+    } else {
+      std::vector<DefExpr*> defExprs;
+      collectDefExprs(typeExpr, defExprs);
+      if (! defExprs.empty())
+        USR_FATAL(defExprs[0], "this formal's type query expression"
+          " is currently not supported for constrained generic functions");
     }
+   } else {
+     // No declared type. Make it a ConstrainedType.
+     if (formal->type == dtUnknown || formal->type == dtAny) {
+       const char* ctName = astr(formal->name, "_t");
+       TypeSymbol* CT = ConstrainedType::buildSym(ctName, CT_CGFUN_FORMAL);
+       fn->interfaceInfo->addConstrainedType(new DefExpr(CT));
+       formal->type = CT->type;
+     }
+   }
+}
 }
 
 //
@@ -383,7 +404,7 @@ Type* desugarInterfaceAsType(ArgSymbol* arg, SymExpr* se,
   SET_LINENO(se);
 
   // introduce a ConstrainedType
-  TypeSymbol* CT = ConstrainedType::buildSym(astr("t_", isym->name),
+  TypeSymbol* CT = ConstrainedType::buildSym(astr(isym->name, "_t"),
                                              CT_CGFUN_FORMAL);
   ifcInfo->addConstrainedType(new DefExpr(CT));
 

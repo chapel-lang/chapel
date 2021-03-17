@@ -167,7 +167,7 @@ a = thisInt ^ thatInt; // Bitwise exclusive-or
 a += thisInt;          // Addition-equals (a = a + thisInt;)
 a *= thatInt;          // Times-equals (a = a * thatInt;)
 b &&= thatBool;        // Logical-and-equals (b = b && thatBool;)
-a <<= 3;               // Left-bit-shift-equals (a = a << 10;)
+a <<= 3;               // Left-bit-shift-equals (a = a << 3;)
 
 // Unlike other C family languages, there are no
 // pre/post-increment/decrement operators, such as:

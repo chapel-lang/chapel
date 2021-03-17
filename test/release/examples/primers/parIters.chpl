@@ -201,7 +201,7 @@ writeln();
 
 
 /*
-.. primers-parIters-leader-follower:
+.. _primers-parIters-leader-follower:
 
 Leader-follower iterators
 -------------------------

@@ -874,7 +874,7 @@ BlockStmt* buildIncludeModule(const char* name,
 
   // docs comment is ignored (the one in the module declaration is used)
 
-  if (fWarnUnstable) {
+  if (fWarnUnstable && mod->modTag == MOD_USER) {
     USR_WARN(loc, "module include statements are not yet stable and may change");
   }
 

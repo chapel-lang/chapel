@@ -1787,6 +1787,11 @@ SSCA2_main:
   06/12/13:
     - Initial support for hierarchical locales (21480)
 
+SSCA2_main.ml-perf:
+  11/03/20:
+    - text: Do fewer GETs to force PUTs into a visible state, and do them later (#16634)
+      config: 16-node-cs
+
 STREAM_study_fragmented:
   09/06/13:
     - chpl_localeID_t's ignore_subloc field minimized to 1 bit

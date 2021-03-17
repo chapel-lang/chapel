@@ -166,7 +166,8 @@ bool ResolutionCandidate::isApplicableCG(CallInfo& info,
     if (csat.istm != nullptr) {
       // satisfied with an implements statement
       witnesses.push_back(csat.istm);
-      copyIfcRepsToSubstitutions(fn, indx++, csat.istm, substitutions);
+      copyIfcRepsToSubstitutions(fn, info.call, indx++,
+                                 csat.istm, substitutions);
 
     } else if (csat.icon != nullptr) {
       // satisfied with a constraint of the enclosing GC function
@@ -1003,15 +1004,8 @@ bool ResolutionCandidate::checkGenericFormals(Expr* ctx) {
             return false;
           }
 
-        } else if (isConstrainedType(formal->type, CT_CGFUN_ASSOC_TYPE)) {
-          // At this point we have not yet recorded the instantiations for
-          // interface types. So we cannot compute their associated types.
-          // So allow anything to match an associated type for now.
-          // Correctness will be checked later in isApplicableConcrete().
-          //
-          // CG TODO: also enable the case when such an AT is nested.
-          // Ex. actual: [1..3] int, formal: [1..3] AT,
-          // where AT is 'int' for the current call.
+        } else if (cgFormalCanMatch(fn, formal->type)) {
+          // acceptable
 
         } else {
           bool formalIsParam = formal->hasFlag(FLAG_INSTANTIATED_PARAM) ||

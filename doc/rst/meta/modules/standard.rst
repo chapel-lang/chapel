@@ -115,16 +115,6 @@ Utilities
    Version <standard/Version>
 
 
-Deprecated Modules
-------------------
-
-.. toctree::
-   :maxdepth: 1
-
-   Assert <standard/Assert>
-
-
-
 
 Index
 -----

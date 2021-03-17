@@ -1,7 +1,0 @@
-internal error: RES-VIS-ONS-1224 chpl version 1.24.0 pre-release (81371c9883)
-
-Internal errors indicate a bug in the Chapel compiler ("It's us, not you"),
-and we're sorry for the hassle.  We would appreciate your reporting this bug -- 
-please see https://chapel-lang.org/bugs.html for instructions.  In the meantime,
-the filename + line number above may be useful in working around the issue.
-
