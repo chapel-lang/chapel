@@ -925,10 +925,15 @@ void saveGenericSubstitutions() {
         // This case is a workaround for patterns that
         // come up with compiler-generated tuple functions
         INT_ASSERT(fn->hasFlag(FLAG_INIT_TUPLE));
-        form_Map(SymbolMapElem, e, fn->substitutions) {
+
+        SymbolMapVector elts = sortedSymbolMapElts(fn->substitutions);
+        for (auto pair: elts) {
+          Symbol* key = pair.first;
+          Symbol* value = pair.second;
+
           NameAndSymbol ns;
-          ns.name = e->key->name;
-          ns.value = e->value;
+          ns.name = key->name;
+          ns.value = value;
           ns.isParam = false;
           ns.isType = false;
           fn->substitutionsPostResolve.push_back(ns);

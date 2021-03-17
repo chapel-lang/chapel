@@ -890,4 +890,7 @@ const char* toString(ArgSymbol* arg, bool withTypeAndIntent);
 const char* toString(VarSymbol* var, bool withType);
 const char* toString(Symbol* sym, bool withTypeAndIntent);
 
+typedef std::vector<std::pair<Symbol*, Symbol*> > SymbolMapVector;
+SymbolMapVector sortedSymbolMapElts(const SymbolMap& map);
+
 #endif
