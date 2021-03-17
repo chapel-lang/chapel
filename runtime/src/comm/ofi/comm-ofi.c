@@ -797,7 +797,7 @@ enum BuffType {
 typedef struct {
   chpl_bool          new;
   int                vi;
-  uint64_t           opnd1_v[MAX_CHAINED_AMO_NF_LEN];
+  uint64_t           opnd_v[MAX_CHAINED_AMO_NF_LEN];
   c_nodeid_t         locale_v[MAX_CHAINED_AMO_NF_LEN];
   void*              object_v[MAX_CHAINED_AMO_NF_LEN];
   size_t             size_v[MAX_CHAINED_AMO_NF_LEN];
@@ -3113,8 +3113,8 @@ struct amRequest_AMO_t {
   enum fi_datatype ofiType;     // ofi object type
   int8_t size;                  // object size (bytes)
   void* obj;                    // object address on target node
-  chpl_amo_datum_t operand1;    // first operand, if needed
-  chpl_amo_datum_t operand2;    // second operand, if needed
+  chpl_amo_datum_t opnd;        // operand, if needed
+  chpl_amo_datum_t cmpr;        // comparand, if needed
   void* result;                 // result address on initiator's node
 };
 
@@ -3351,14 +3351,14 @@ void amRequestRMAGet(c_nodeid_t node, void* addr, void* raddr, size_t size) {
 
 static inline
 void amRequestAMO(c_nodeid_t node, void* object,
-                  const void* operand1, const void* operand2, void* result,
+                  const void* opnd, const void* cmpr, void* result,
                   int ofiOp, enum fi_datatype ofiType, size_t size) {
   assert(!isAmHandler);
   DBG_PRINTF((ofiOp == FI_ATOMIC_READ) ? DBG_AMO_READ : DBG_AMO,
-             "AMO via AM: obj %d:%p, opnd1 <%s>, opnd2 <%s>, res %p, "
+             "AMO via AM: obj %d:%p, opnd <%s>, cmpr <%s>, res %p, "
              "op %s, typ %s, sz %zd",
              (int) node, object,
-             DBG_VAL(operand1, ofiType), DBG_VAL(operand2, ofiType), result,
+             DBG_VAL(opnd, ofiType), DBG_VAL(cmpr, ofiType), result,
              amo_opName(ofiOp), amo_typeName(ofiType), size);
 
   struct perTxCtxInfo_t* tcip;
@@ -3394,11 +3394,11 @@ void amRequestAMO(c_nodeid_t node, void* object,
                                .obj = object,
                                .result = myResult, }, };
 
-  if (operand1 != NULL) {
-    memcpy(&req.amo.operand1, operand1, size);
+  if (opnd != NULL) {
+    memcpy(&req.amo.opnd, opnd, size);
   }
-  if (operand2 != NULL) {
-    memcpy(&req.amo.operand2, operand2, size);
+  if (cmpr != NULL) {
+    memcpy(&req.amo.cmpr, cmpr, size);
   }
   amRequestCommon(node, &req, sizeof(req.amo),
                   delayBlocking ? NULL : &req.b.pAmDone,
@@ -4050,7 +4050,7 @@ void amHandleAMO(struct amRequest_AMO_t* amo) {
 
   chpl_amo_datum_t result;
   size_t resSize = amo->size;
-  doCpuAMO(amo->obj, &amo->operand1, &amo->operand2, &result,
+  doCpuAMO(amo->obj, &amo->opnd, &amo->cmpr, &result,
            amo->ofiOp, amo->ofiType, amo->size);
 
   if (amo->result != NULL) {
@@ -5352,20 +5352,18 @@ void do_remote_get_buff(void* addr, c_nodeid_t node, void* raddr,
 
 static
 chpl_comm_nb_handle_t ofi_amo(c_nodeid_t node, uint64_t object, uint64_t mrKey,
-                              const void* operand1, const void* operand2,
+                              const void* opnd, const void* cmpr,
                               void* result,
                               enum fi_op ofiOp, enum fi_datatype ofiType,
                               size_t size) {
   void* mrDescRes;
   void* myRes = mrLocalizeTarget(&mrDescRes, result, size, "AMO result");
 
-  void* mrDescOpnd1;
-  void* myOpnd1 = mrLocalizeSource(&mrDescOpnd1, operand1, size,
-                                   "AMO operand1");
+  void* mrDescOpnd;
+  void* myOpnd = mrLocalizeSource(&mrDescOpnd, opnd, size, "AMO operand");
 
-  void* mrDescOpnd2;
-  void* myOpnd2 = mrLocalizeSource(&mrDescOpnd2, operand2, size,
-                                   "AMO operand2");
+  void* mrDescCmpr;
+  void* myCmpr = mrLocalizeSource(&mrDescCmpr, cmpr, size, "AMO comparand");
 
   struct perTxCtxInfo_t* tcip;
   CHK_TRUE((tcip = tciAlloc()) != NULL);
@@ -5381,21 +5379,21 @@ chpl_comm_nb_handle_t ofi_amo(c_nodeid_t node, uint64_t object, uint64_t mrKey,
               : txnTrkEncodeDone(&txnDone);
 
   DBG_PRINTF((ofiOp == FI_ATOMIC_READ) ? DBG_AMO_READ : DBG_AMO,
-             "tx AMO: obj %d:%" PRIx64 ", opnd1 <%s>, opnd2 <%s>, "
+             "tx AMO: obj %d:%" PRIx64 ", opnd <%s>, cmpr <%s>, "
              "op %s, typ %s, sz %zd, ctx %p",
              (int) node, object,
-             DBG_VAL(myOpnd1, ofiType), DBG_VAL(myOpnd2, ofiType),
+             DBG_VAL(myOpnd, ofiType), DBG_VAL(myCmpr, ofiType),
              amo_opName(ofiOp), amo_typeName(ofiType), size, ctx);
 
   if (ofiOp == FI_CSWAP) {
     OFI_CHK(fi_compare_atomic(tcip->txCtx,
-                              myOpnd2, 1, mrDescOpnd2, myOpnd1, mrDescOpnd1,
+                              myOpnd, 1, mrDescOpnd, myCmpr, mrDescCmpr,
                               myRes, mrDescRes,
                               rxRmaAddr(tcip, node), object, mrKey,
                               ofiType, ofiOp, ctx));
   } else if (result != NULL) {
-    void* bufArg = myOpnd1;
-    // Workaround for bug wherein operand1 is unused but nevertheless
+    void* bufArg = myOpnd;
+    // Workaround for bug wherein operand is unused but nevertheless
     // must not be NULL.
     if (provCtl_readAmoNeedsOpnd) {
       if (ofiOp == FI_ATOMIC_READ && bufArg == NULL) {
@@ -5404,12 +5402,12 @@ chpl_comm_nb_handle_t ofi_amo(c_nodeid_t node, uint64_t object, uint64_t mrKey,
       }
     }
     OFI_CHK(fi_fetch_atomic(tcip->txCtx,
-                            bufArg, 1, mrDescOpnd1, myRes, mrDescRes,
+                            bufArg, 1, mrDescOpnd, myRes, mrDescRes,
                             rxRmaAddr(tcip, node), object, mrKey,
                             ofiType, ofiOp, ctx));
   } else {
     OFI_CHK(fi_atomic(tcip->txCtx,
-                      myOpnd1, 1, mrDescOpnd1,
+                      myOpnd, 1, mrDescOpnd,
                       rxRmaAddr(tcip, node), object, mrKey,
                       ofiType, ofiOp, ctx));
   }
@@ -5432,23 +5430,23 @@ chpl_comm_nb_handle_t ofi_amo(c_nodeid_t node, uint64_t object, uint64_t mrKey,
                DBG_VAL(result,  ofiType));
   }
 
-  mrUnLocalizeSource(myOpnd1, operand1);
-  mrUnLocalizeSource(myOpnd2, operand2);
+  mrUnLocalizeSource(myOpnd, opnd);
+  mrUnLocalizeSource(myCmpr, cmpr);
 
   return NULL;
 }
 
 
 static
-void ofi_amo_nf_V(int v_len, uint64_t* opnd1_v, void* local_mr,
+void ofi_amo_nf_V(int v_len, uint64_t* opnd_v, void* local_mr,
                   c_nodeid_t* locale_v, void** object_v, uint64_t* remote_mr_v,
                   size_t* size_v, enum fi_op* cmd_v,
                   enum fi_datatype* type_v) {
   DBG_PRINTF(DBG_AMO | DBG_AMO_UNORD,
-             "amo_nf_V(%d): obj %d:%p, opnd1 <%s>, op %s, typ %s, sz %zd, "
+             "amo_nf_V(%d): obj %d:%p, opnd <%s>, op %s, typ %s, sz %zd, "
              "key 0x%" PRIx64,
              v_len, (int) locale_v[0], object_v[0],
-             DBG_VAL(&opnd1_v[0], type_v[0]),
+             DBG_VAL(&opnd_v[0], type_v[0]),
              amo_opName(cmd_v[0]), amo_typeName(type_v[0]), size_v[0],
              remote_mr_v[0]);
 
@@ -5468,7 +5466,7 @@ void ofi_amo_nf_V(int v_len, uint64_t* opnd1_v, void* local_mr,
   //
   for (int vi = 0; vi < v_len; vi++) {
     struct fi_ioc msg_iov = (struct fi_ioc)
-                            { .addr = &opnd1_v[vi],
+                            { .addr = &opnd_v[vi],
                               .count = 1 };
     struct fi_rma_ioc rma_iov = (struct fi_rma_ioc)
                                 { .addr = (uint64_t) object_v[vi],
@@ -5486,7 +5484,7 @@ void ofi_amo_nf_V(int v_len, uint64_t* opnd1_v, void* local_mr,
                                  .context = txnTrkEncodeId(__LINE__),
                                  .data = 0 };
     DBG_PRINTF(DBG_RMA | DBG_RMA_WRITE,
-               "tx atomicmsg: obj %d:%p, opnd1 <%s>, op %s, typ %s, sz %zd, "
+               "tx atomicmsg: obj %d:%p, opnd <%s>, op %s, typ %s, sz %zd, "
                "key 0x%" PRIx64,
                (int) locale_v[vi], (void*) msg.rma_iov->addr,
                DBG_VAL(msg.msg_iov->addr, msg.datatype), amo_opName(msg.op),
@@ -5860,7 +5858,7 @@ DEFN_CHPL_COMM_ATOMIC_XCHG(real64, FI_DOUBLE, _real64)
     Type old_value;                                                     \
     Type old_expected;                                                  \
     memcpy(&old_expected, expected, sizeof(Type));                      \
-    doAMO(node, object, &old_expected, desired, &old_value,             \
+    doAMO(node, object, desired, &old_expected, &old_value,             \
           FI_CSWAP, ofiType, sizeof(Type));                             \
     *result = (chpl_bool32)(old_value == old_expected);                 \
     if (!*result) memcpy(expected, &old_value, sizeof(Type));           \
@@ -5876,41 +5874,41 @@ DEFN_CHPL_COMM_ATOMIC_CMPXCHG(real64, FI_DOUBLE, _real64)
 
 #define DEFN_IFACE_AMO_SIMPLE_OP(fnOp, ofiOp, fnType, ofiType, Type)    \
   void chpl_comm_atomic_##fnOp##_##fnType                               \
-         (void* operand, c_nodeid_t node, void* object,                 \
+         (void* opnd, c_nodeid_t node, void* object,                    \
           memory_order order, int ln, int32_t fn) {                     \
     DBG_PRINTF(DBG_IFACE_AMO,                                           \
                "%s(<%s>, %d, %p, %d, %s)", __func__,                    \
-               DBG_VAL(operand, ofiType), (int) node,                   \
+               DBG_VAL(opnd, ofiType), (int) node,                      \
                object, ln, chpl_lookupFilename(fn));                    \
     chpl_comm_diags_verbose_amo("amo " #fnOp, node, ln, fn);            \
     chpl_comm_diags_incr(amo);                                          \
-    doAMO(node, object, operand, NULL, NULL,                            \
+    doAMO(node, object, opnd, NULL, NULL,                               \
           ofiOp, ofiType, sizeof(Type));                                \
   }                                                                     \
                                                                         \
   void chpl_comm_atomic_##fnOp##_unordered_##fnType                     \
-         (void* operand, c_nodeid_t node, void* object,                 \
+         (void* opnd, c_nodeid_t node, void* object,                    \
           int ln, int32_t fn) {                                         \
     DBG_PRINTF(DBG_IFACE_AMO,                                           \
                "%s(<%s>, %d, %p, %d, %s)", __func__,                    \
-               DBG_VAL(operand, ofiType), (int) node,                   \
+               DBG_VAL(opnd, ofiType), (int) node,                      \
                object, ln, chpl_lookupFilename(fn));                    \
     chpl_comm_diags_verbose_amo("amo unord_" #fnOp, node, ln, fn);      \
     chpl_comm_diags_incr(amo);                                          \
-    do_remote_amo_nf_buff(operand, node, object, sizeof(Type),          \
+    do_remote_amo_nf_buff(opnd, node, object, sizeof(Type),             \
                           ofiOp, ofiType);                              \
   }                                                                     \
                                                                         \
   void chpl_comm_atomic_fetch_##fnOp##_##fnType                         \
-         (void* operand, c_nodeid_t node, void* object, void* result,   \
+         (void* opnd, c_nodeid_t node, void* object, void* result,      \
           memory_order order, int ln, int32_t fn) {                     \
     DBG_PRINTF(DBG_IFACE_AMO,                                           \
                "%s(<%s>, %d, %p, %p, %d, %s)", __func__,                \
-               DBG_VAL(operand, ofiType), (int) node,                   \
+               DBG_VAL(opnd, ofiType), (int) node,                      \
                object, result, ln, chpl_lookupFilename(fn));            \
     chpl_comm_diags_verbose_amo("amo fetch_" #fnOp, node, ln, fn);      \
     chpl_comm_diags_incr(amo);                                          \
-    doAMO(node, object, operand, NULL, result,                          \
+    doAMO(node, object, opnd, NULL, result,                             \
           ofiOp, ofiType, sizeof(Type));                                \
   }
 
@@ -5939,13 +5937,13 @@ DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, real64, FI_DOUBLE, _real64)
 
 #define DEFN_IFACE_AMO_SUB(fnType, ofiType, Type, negate)               \
   void chpl_comm_atomic_sub_##fnType                                    \
-         (void* operand, c_nodeid_t node, void* object,                 \
+         (void* opnd, c_nodeid_t node, void* object,                    \
           memory_order order, int ln, int32_t fn) {                     \
     DBG_PRINTF(DBG_IFACE_AMO,                                           \
                "%s(<%s>, %d, %p, %d, %s)", __func__,                    \
-               DBG_VAL(operand, ofiType), (int) node, object,           \
+               DBG_VAL(opnd, ofiType), (int) node, object,              \
                ln, chpl_lookupFilename(fn));                            \
-    Type myOpnd = negate(*(Type*) operand);                             \
+    Type myOpnd = negate(*(Type*) opnd);                                \
     chpl_comm_diags_verbose_amo("amo sub", node, ln, fn);               \
     chpl_comm_diags_incr(amo);                                          \
     doAMO(node, object, &myOpnd, NULL, NULL,                            \
@@ -5953,13 +5951,13 @@ DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, real64, FI_DOUBLE, _real64)
   }                                                                     \
                                                                         \
   void chpl_comm_atomic_sub_unordered_##fnType                          \
-         (void* operand, c_nodeid_t node, void* object,                 \
+         (void* opnd, c_nodeid_t node, void* object,                    \
           int ln, int32_t fn) {                                         \
     DBG_PRINTF(DBG_IFACE_AMO,                                           \
                "%s(<%s>, %d, %p, %d, %s)", __func__,                    \
-               DBG_VAL(operand, ofiType), (int) node, object,           \
+               DBG_VAL(opnd, ofiType), (int) node, object,              \
                ln, chpl_lookupFilename(fn));                            \
-    Type myOpnd = negate(*(Type*) operand);                             \
+    Type myOpnd = negate(*(Type*) opnd);                                \
     chpl_comm_diags_verbose_amo("amo unord_sub", node, ln, fn);         \
     chpl_comm_diags_incr(amo);                                          \
     do_remote_amo_nf_buff(&myOpnd, node, object, sizeof(Type),          \
@@ -5967,13 +5965,13 @@ DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, real64, FI_DOUBLE, _real64)
   }                                                                     \
                                                                         \
   void chpl_comm_atomic_fetch_sub_##fnType                              \
-         (void* operand, c_nodeid_t node, void* object, void* result,   \
+         (void* opnd, c_nodeid_t node, void* object, void* result,      \
           memory_order order, int ln, int32_t fn) {                     \
     DBG_PRINTF(DBG_IFACE_AMO,                                           \
                "%s(<%s>, %d, %p, %p, %d, %s)", __func__,                \
-               DBG_VAL(operand, ofiType), (int) node, object,           \
+               DBG_VAL(opnd, ofiType), (int) node, object,              \
                result, ln, chpl_lookupFilename(fn));                    \
-    Type myOpnd = negate(*(Type*) operand);                             \
+    Type myOpnd = negate(*(Type*) opnd);                                \
     chpl_comm_diags_verbose_amo("amo fetch_sub", node, ln, fn);         \
     chpl_comm_diags_incr(amo);                                          \
     doAMO(node, object, &myOpnd, NULL, result,                          \
@@ -6079,10 +6077,10 @@ int isAtomicValid(enum fi_datatype ofiType) {
 
 static inline
 void doAMO(c_nodeid_t node, void* object,
-           const void* operand1, const void* operand2, void* result,
+           const void* opnd, const void* cmpr, void* result,
            int ofiOp, enum fi_datatype ofiType, size_t size) {
   if (chpl_numNodes <= 1) {
-    doCpuAMO(object, operand1, operand2, result, ofiOp, ofiType, size);
+    doCpuAMO(object, opnd, cmpr, result, ofiOp, ofiType, size);
     return;
   }
 
@@ -6100,9 +6098,9 @@ void doAMO(c_nodeid_t node, void* object,
       if (ofiOp != FI_ATOMIC_READ) {
         waitForMemFxVisAllNodes(NULL, true /*putsOnly*/);
       }
-      doCpuAMO(object, operand1, operand2, result, ofiOp, ofiType, size);
+      doCpuAMO(object, opnd, cmpr, result, ofiOp, ofiType, size);
     } else {
-      amRequestAMO(node, object, operand1, operand2, result,
+      amRequestAMO(node, object, opnd, cmpr, result,
                    ofiOp, ofiType, size);
     }
   } else {
@@ -6110,7 +6108,7 @@ void doAMO(c_nodeid_t node, void* object,
     // The type is supported for network atomics and the object address
     // is remotely accessible.  Do the AMO natively.
     //
-    ofi_amo(node, mrRaddr, mrKey, operand1, operand2, result,
+    ofi_amo(node, mrRaddr, mrKey, opnd, cmpr, result,
             ofiOp, ofiType, size);
   }
 }
@@ -6118,21 +6116,21 @@ void doAMO(c_nodeid_t node, void* object,
 
 static inline
 void doCpuAMO(void* obj,
-              const void* operand1, const void* operand2, void* result,
+              const void* opnd, const void* cmpr, void* result,
               enum fi_op ofiOp, enum fi_datatype ofiType, size_t size) {
   CHK_TRUE(size == 4 || size == 8);
 
-  chpl_amo_datum_t* myOpnd1 = (chpl_amo_datum_t*) operand1;
-  chpl_amo_datum_t* myOpnd2 = (chpl_amo_datum_t*) operand2;
+  chpl_amo_datum_t* myOpnd = (chpl_amo_datum_t*) opnd;
+  chpl_amo_datum_t* myCmpr = (chpl_amo_datum_t*) cmpr;
 
 #define CPU_INT_ARITH_AMO(_o, _t, _m)                                   \
   do {                                                                  \
     if (result == NULL) {                                               \
       (void) atomic_fetch_##_o##_##_t((atomic_##_t*) obj,               \
-                                      myOpnd1->_m);                     \
+                                      myOpnd->_m);                      \
     } else {                                                            \
       *(_t*) result = atomic_fetch_##_o##_##_t((atomic_##_t*) obj,      \
-                                               myOpnd1->_m);            \
+                                               myOpnd->_m);             \
     }                                                                   \
   } while (0)
 
@@ -6146,20 +6144,18 @@ void doCpuAMO(void* obj,
       // write
       //
       if (size == 4) {
-        atomic_store_uint_least32_t(obj, myOpnd1->u32);
+        atomic_store_uint_least32_t(obj, myOpnd->u32);
       } else {
-        atomic_store_uint_least64_t(obj, myOpnd1->u64);
+        atomic_store_uint_least64_t(obj, myOpnd->u64);
       }
     } else {
       //
       // exchange
       //
       if (size == 4) {
-        *(uint32_t*) result = atomic_exchange_uint_least32_t(obj,
-                                                             myOpnd1->u32);
+        *(uint32_t*) result = atomic_exchange_uint_least32_t(obj, myOpnd->u32);
       } else {
-        *(uint64_t*) result = atomic_exchange_uint_least64_t(obj,
-                                                             myOpnd1->u64);
+        *(uint64_t*) result = atomic_exchange_uint_least64_t(obj, myOpnd->u64);
       }
     }
     break;
@@ -6174,17 +6170,17 @@ void doCpuAMO(void* obj,
 
   case FI_CSWAP:
     if (size == 4) {
-      uint32_t myOpnd1Val = myOpnd1->u32;
+      uint32_t myCmprVal = myCmpr->u32;
       (void) atomic_compare_exchange_strong_uint_least32_t(obj,
-                                                           &myOpnd1Val,
-                                                           myOpnd2->u32);
-      *(uint32_t*) result = myOpnd1Val;
+                                                           &myCmprVal,
+                                                           myOpnd->u32);
+      *(uint32_t*) result = myCmprVal;
     } else {
-      uint64_t myOpnd1Val = myOpnd1->u64;
+      uint64_t myCmprVal = myCmpr->u64;
       (void) atomic_compare_exchange_strong_uint_least64_t(obj,
-                                                           &myOpnd1Val,
-                                                           myOpnd2->u64);
-      *(uint64_t*) result = myOpnd1Val;
+                                                           &myCmprVal,
+                                                           myOpnd->u64);
+      *(uint64_t*) result = myCmprVal;
     }
     break;
 
@@ -6263,7 +6259,7 @@ void doCpuAMO(void* obj,
       DBG_PRINTF(DBG_AMO,
                  "doCpuAMO(%p, %s, %s, %s): now %s",
                  obj, amo_opName(ofiOp), amo_typeName(ofiType),
-                 DBG_VAL(myOpnd1, ofiType),
+                 DBG_VAL(myOpnd, ofiType),
                  DBG_VAL((chpl_amo_datum_t*) obj, ofiType));
     } else if (ofiOp == FI_ATOMIC_READ) {
       DBG_PRINTF(DBG_AMO_READ,
@@ -6274,8 +6270,8 @@ void doCpuAMO(void* obj,
       DBG_PRINTF(DBG_AMO,
                  "doCpuAMO(%p, %s, %s, %s, %s): now %s, res %p is %s",
                  obj, amo_opName(ofiOp), amo_typeName(ofiType),
-                 DBG_VAL(myOpnd1, ofiType),
-                 DBG_VAL(myOpnd2, ofiType),
+                 DBG_VAL(myOpnd, ofiType),
+                 DBG_VAL(myCmpr, ofiType),
                  DBG_VAL((chpl_amo_datum_t*) obj, ofiType), result,
                  DBG_VAL(result, (ofiOp == FI_CSWAP) ? FI_INT32 : ofiType));
     }
@@ -6300,7 +6296,7 @@ void amo_nf_buff_task_info_flush(amo_nf_buff_task_info_t* info) {
     DBG_PRINTF(DBG_AMO_UNORD,
                "amo_nf_buff_task_info_flush(): info has %d entries",
                info->vi);
-    ofi_amo_nf_V(info->vi, info->opnd1_v, info->local_mr,
+    ofi_amo_nf_V(info->vi, info->opnd_v, info->local_mr,
                  info->locale_v, info->object_v, info->remote_mr_v,
                  info->size_v, info->cmd_v, info->type_v);
     info->vi = 0;
@@ -6309,14 +6305,14 @@ void amo_nf_buff_task_info_flush(amo_nf_buff_task_info_t* info) {
 
 
 static inline
-void do_remote_amo_nf_buff(void* opnd1, c_nodeid_t node,
+void do_remote_amo_nf_buff(void* opnd, c_nodeid_t node,
                            void* object, size_t size,
                            enum fi_op ofiOp, enum fi_datatype ofiType) {
   //
   // "Unordered" is possible only for actual network atomic ops.
   //
   if (chpl_numNodes <= 1) {
-    doCpuAMO(object, opnd1, NULL, NULL, ofiOp, ofiType, size);
+    doCpuAMO(object, opnd, NULL, NULL, ofiOp, ofiType, size);
     return;
   }
 
@@ -6327,9 +6323,9 @@ void do_remote_amo_nf_buff(void* opnd1, c_nodeid_t node,
   if (!isAtomicValid(ofiType)
       || !mrGetKey(&mrKey, &mrRaddr, node, object, size)) {
     if (node == chpl_nodeID) {
-      doCpuAMO(object, opnd1, NULL, NULL, ofiOp, ofiType, size);
+      doCpuAMO(object, opnd, NULL, NULL, ofiOp, ofiType, size);
     } else {
-      amRequestAMO(node, object, opnd1, NULL, NULL,
+      amRequestAMO(node, object, opnd, NULL, NULL,
                    ofiOp, ofiType, size);
     }
     return;
@@ -6337,7 +6333,7 @@ void do_remote_amo_nf_buff(void* opnd1, c_nodeid_t node,
 
   amo_nf_buff_task_info_t* info = task_local_buff_acquire(amo_nf_buff);
   if (info == NULL) {
-    ofi_amo(node, mrRaddr, mrKey, opnd1, NULL, NULL, ofiOp, ofiType, size);
+    ofi_amo(node, mrRaddr, mrKey, opnd, NULL, NULL, ofiOp, ofiType, size);
     return;
   }
 
@@ -6346,13 +6342,13 @@ void do_remote_amo_nf_buff(void* opnd1, c_nodeid_t node,
     // The AMO operands themselves are stored in a vector in the info,
     // so we only need one local memory descriptor for that vector.
     //
-    CHK_TRUE(mrGetDesc(&info->local_mr, info->opnd1_v, size));
+    CHK_TRUE(mrGetDesc(&info->local_mr, info->opnd_v, size));
     info->new = false;
   }
 
   int vi = info->vi;
-  info->opnd1_v[vi]     = size == 4 ? *(uint32_t*) opnd1:
-                                      *(uint64_t*) opnd1;
+  info->opnd_v[vi]      = size == 4 ? *(uint32_t*) opnd:
+                                      *(uint64_t*) opnd;
   info->locale_v[vi]    = node;
   info->object_v[vi]    = object;
   info->size_v[vi]      = size;
@@ -6364,7 +6360,7 @@ void do_remote_amo_nf_buff(void* opnd1, c_nodeid_t node,
   DBG_PRINTF(DBG_AMO_UNORD,
              "do_remote_amo_nf_buff(): info[%d] = "
              "{%p, %d, %p, %zd, %d, %d, %" PRIx64 ", %p}",
-             vi, &info->opnd1_v[vi], (int) node, object, size,
+             vi, &info->opnd_v[vi], (int) node, object, size,
              (int) ofiOp, (int) ofiType, mrKey, info->local_mr);
 
   // flush if buffers are full
@@ -6896,11 +6892,11 @@ const char* am_reqStr(c_nodeid_t tgtNode, amRequest_t* req, size_t reqSize) {
   case am_opAMO:
     if (req->amo.ofiOp == FI_CSWAP) {
       len += snprintf(buf + len, sizeof(buf) - len,
-                      ", obj %p, opnd1 %s, opnd2 %s, res %p"
+                      ", obj %p, opnd %s, cmpr %s, res %p"
                       ", ofiOp %s, ofiType %s, sz %d",
                       req->amo.obj,
-                      DBG_VAL(&req->amo.operand1, req->amo.ofiType),
-                      DBG_VAL(&req->amo.operand2, req->amo.ofiType),
+                      DBG_VAL(&req->amo.opnd, req->amo.ofiType),
+                      DBG_VAL(&req->amo.cmpr, req->amo.ofiType),
                       req->amo.result, amo_opName(req->amo.ofiOp),
                       amo_typeName(req->amo.ofiType), req->amo.size);
     } else if (req->amo.result != NULL) {
@@ -6916,7 +6912,7 @@ const char* am_reqStr(c_nodeid_t tgtNode, amRequest_t* req, size_t reqSize) {
                         ", obj %p, opnd %s, res %p"
                         ", ofiOp %s, ofiType %s, sz %d",
                         req->amo.obj,
-                        DBG_VAL(&req->amo.operand1, req->amo.ofiType),
+                        DBG_VAL(&req->amo.opnd, req->amo.ofiType),
                         req->amo.result, amo_opName(req->amo.ofiOp),
                         amo_typeName(req->amo.ofiType), req->amo.size);
       }
@@ -6925,7 +6921,7 @@ const char* am_reqStr(c_nodeid_t tgtNode, amRequest_t* req, size_t reqSize) {
                       ", obj %p, opnd %s"
                       ", ofiOp %s, ofiType %s, sz %d",
                       req->amo.obj,
-                      DBG_VAL(&req->amo.operand1, req->amo.ofiType),
+                      DBG_VAL(&req->amo.opnd, req->amo.ofiType),
                       amo_opName(req->amo.ofiOp),
                       amo_typeName(req->amo.ofiType), req->amo.size);
     }
