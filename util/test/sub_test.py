@@ -242,7 +242,9 @@ def trim_output(output):
 
 # return True if f has .chpl, .test.c or .ml-test.c extension
 def hasTestableExtension(f):
-    if f.endswith(('.chpl', '.test.c', '.ml-test.c')):
+    if f.endswith(('.chpl',
+                   '.test.c', '.test.cpp',
+                   '.ml-test.c', '.ml-test.cpp')):
         return True
     else:
         return False
@@ -720,6 +722,11 @@ p = py3_compat.Popen([compileline, '--compile'],
 c_compiler = p.communicate()[0].rstrip()
 if p.returncode != 0:
   Fatal('Cannot find c compiler')
+p = py3_compat.Popen([compileline, '--compile-c++'],
+                     stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+cpp_compiler = p.communicate()[0].rstrip()
+if p.returncode != 0:
+  Fatal('Cannot find c++ compiler')
 
 # Find the test directory
 testdir=chpl_home+'/test'
@@ -1143,7 +1150,7 @@ for testname in testsrc:
 
     # print testname
     sys.stdout.write('[test: %s/%s]\n'%(localdir,testname))
-    test_filename = re.match(r'^(.*)\.(?:chpl|test\.c|ml-test\.c)$', testname).group(1)
+    test_filename = re.match(r'^(.*)\.(?:chpl|test\.c|test\.cpp|ml-test\.c|ml-test\.cpp)$', testname).group(1)
     execname = test_filename
     if uniquifyTests:
         execname += '.{0}'.format(os.getpid())
@@ -1151,6 +1158,10 @@ for testname in testsrc:
 
     is_c_test = testname.endswith(".test.c");
     is_ml_c_test = testname.endswith(".ml-test.c");
+    is_cpp_test = testname.endswith(".test.cpp");
+    is_ml_cpp_test = testname.endswith(".ml-test.cpp");
+    is_c_or_cpp_test = (is_c_test or is_cpp_test)
+    is_ml_c_or_cpp_test = (is_ml_c_test or is_ml_cpp_test)
 
     # If the test name ends with .doc.chpl or the compiler was set to chpldoc
     # (i.e. is_chpldoc=True), run this test with chpldoc options.
@@ -1371,17 +1382,17 @@ for testname in testsrc:
         continue # on to next test
 
     # c tests don't have a way to launch themselves
-    if is_c_test and chpllauncher != 'none':
+    if is_c_or_cpp_test and chpllauncher != 'none':
         sys.stdout.write('[Skipping c test: %s/%s]\n'%(localdir,test_filename))
         continue
 
     # .ml-test.c tests should only run when we are in a multilocale setting
-    if is_ml_c_test and chplcomm == 'none':
+    if is_ml_c_or_cpp_test and chplcomm == 'none':
         sys.stdout.write('[Skipping multilocale-only c test: %s/%s]\n'%(localdir,test_filename))
         continue
 
     # Set numlocales
-    if (numlocales == 0) or (chplcomm=='none') or is_c_test:
+    if (numlocales == 0) or (chplcomm=='none') or is_c_or_cpp_test:
         numlocexecopts = None
     else:
         if maxLocalesAvailable is not None:
@@ -1391,7 +1402,7 @@ for testname in testsrc:
                                  .format(os.path.join(localdir, test_filename),
                                          numlocales, maxLocalesAvailable))
                 continue
-        if os.getenv('CHPL_TEST_MULTILOCALE_ONLY') and (numlocales <= 1) and not is_ml_c_test:
+        if os.getenv('CHPL_TEST_MULTILOCALE_ONLY') and (numlocales <= 1) and not is_ml_c_or_cpp_test:
             sys.stdout.write('[Skipping {0} because it does not '
                              'use more than one locale]\n'
                              .format(os.path.join(localdir, test_filename)))
@@ -1538,11 +1549,15 @@ for testname in testsrc:
             args += envCompopts + shlex.split(compopts)
         args += [testname]
 
-        if is_c_test or is_ml_c_test:
+        if is_c_or_cpp_test or is_ml_c_or_cpp_test:
             # we need to drop envCompopts for C tests as those are options
             # for `chpl` so don't include them here
             args = ['-o', test_filename]+shlex.split(compopts)+[testname]
-            cmd = c_compiler
+            cmd = None
+            if is_c_test or is_ml_c_test:
+                cmd = c_compiler
+            elif is_cpp_test or is_ml_cpp_test:
+                cmd = cpp_compiler
         else:
             if test_is_chpldoc and not compiler.endswith('chpldoc'):
                 # For tests with .doc.chpl suffix, use chpldoc compiler. Update
@@ -1638,9 +1653,9 @@ for testname in testsrc:
         output = remove_clock_skew_warning(output)
 
         # remove some_file: output from C compilers
-        if is_c_test:
+        if is_c_or_cpp_test:
           for arg in args:
-            if arg.endswith(".c"):
+            if arg.endswith(".c") or arg.endswith(".cpp"):
               # remove lines like
               # somefile.c:
               # that some C compilers emit when compiling multiple files
@@ -1822,7 +1837,7 @@ for testname in testsrc:
         # Note that compiler performance only times successful compilations. 
         # Tests that are designed to fail before compilation is complete will 
         # not get timed, so the total time compiling might be off slightly.   
-        if compperftest and not is_c_test:
+        if compperftest and not is_c_or_cpp_test:
             # make the compiler performance directories if they don't exist 
             timePasses = True
             if not os.path.isdir(compperfdir) and not os.path.isfile(compperfdir):
@@ -1995,7 +2010,7 @@ for testname in testsrc:
             args+=globalExecopts
             args+=shlex.split(execopts)
             # envExecopts are meant for chpl programs, dont add them to C tests
-            if not is_c_test and envExecopts != None:
+            if not is_c_or_cpp_test and envExecopts != None:
                 args+=shlex.split(envExecopts)
             # lastexecopts really must be last, so add any launcher timeout now
             if useLauncherTimeout:
