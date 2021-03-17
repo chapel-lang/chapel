@@ -343,7 +343,10 @@ def isStructOrUnionDef(decl):
 
 def genStructOrUnion(structOrUnion, name=""):
     if name == "":
-        name = structOrUnion.name
+        if structOrUnion.name is not None:
+            name = structOrUnion.name
+        else:
+            return
 
     if name in chapelKeywords:
         isStructOrIsUnion = ("struct" if isinstance(structOrUnion, c_ast.Struct) else "union")
@@ -361,6 +364,7 @@ def genStructOrUnion(structOrUnion, name=""):
 
     members = ""
     warnKeyword = False
+    warnSkippingAnonymousType = False
     for decl in structOrUnion.decls:
         innerStructOrUnion = isStructOrUnionDef(decl)
         if innerStructOrUnion is not None:
@@ -372,13 +376,19 @@ def genStructOrUnion(structOrUnion, name=""):
             warnKeyword = True
             break
         else:
-            members += "  var " + fieldName + " : " + toChapelType(decl.type) + ";\n"
+            chapelType = toChapelType(decl.type)
+            if chapelType is None:
+                warnSkippingAnonymousType = True
+                break
+            members += "  var " + fieldName + " : " + chapelType + ";\n"
 
     if members != "":
         members = "\n" + members
     ret += members + "}\n"
     if warnKeyword:
         genComment("Fields omitted because one or more of the identifiers is a Chapel keyword")
+    if warnSkippingAnonymousType:
+        genComment("Anonymous union or struct was encountered within and skipped.")
     print(ret)
 
 def genVar(decl):
