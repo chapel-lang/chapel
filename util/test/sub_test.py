@@ -1162,6 +1162,11 @@ for testname in testsrc:
     is_ml_cpp_test = testname.endswith(".ml-test.cpp");
     is_c_or_cpp_test = (is_c_test or is_cpp_test)
     is_ml_c_or_cpp_test = (is_ml_c_test or is_ml_cpp_test)
+    c_or_cpp = None
+    if is_c_test or is_ml_c_test:
+        c_or_cpp = "c"
+    if is_cpp_test or is_ml_cpp_test:
+        c_or_cpp = "c++"
 
     # If the test name ends with .doc.chpl or the compiler was set to chpldoc
     # (i.e. is_chpldoc=True), run this test with chpldoc options.
@@ -1383,12 +1388,12 @@ for testname in testsrc:
 
     # c tests don't have a way to launch themselves
     if is_c_or_cpp_test and chpllauncher != 'none':
-        sys.stdout.write('[Skipping c test: %s/%s]\n'%(localdir,test_filename))
+        sys.stdout.write('[Skipping %s test: %s/%s]\n'%(c_or_cpp,localdir,test_filename))
         continue
 
     # .ml-test.c tests should only run when we are in a multilocale setting
     if is_ml_c_or_cpp_test and chplcomm == 'none':
-        sys.stdout.write('[Skipping multilocale-only c test: %s/%s]\n'%(localdir,test_filename))
+        sys.stdout.write('[Skipping multilocale-only %s test: %s/%s]\n'%(c_or_cpp,localdir,test_filename))
         continue
 
     # Set numlocales
