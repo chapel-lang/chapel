@@ -832,11 +832,7 @@ qioerr _qio_channel_post_cached_write(qio_channel_t* restrict ch)
 static inline
 qioerr qio_channel_read(const int threadsafe, qio_channel_t* restrict ch, void* restrict ptr, ssize_t len, ssize_t* restrict amt_read)
 {
-#ifdef __cplusplus
-  qioerr err{};
-#else
-  qioerr err = NULL;
-#endif
+  qioerr err;
 
   if( threadsafe ) {
     err = qio_lock(&ch->lock);
@@ -851,6 +847,13 @@ qioerr qio_channel_read(const int threadsafe, qio_channel_t* restrict ch, void* 
     qio_memcpy( ptr, ch->cached_cur, len );
     ch->cached_cur = qio_ptr_add(ch->cached_cur, len);
     *amt_read = len;
+
+#ifdef __cplusplus
+    err = nullptr;
+#else
+    err = NULL;
+#endif
+
   } else {
     err = _qio_slow_read(ch, ptr, len, amt_read);
     _qio_channel_set_error_unlocked(ch, err);
@@ -886,8 +889,8 @@ int32_t qio_channel_read_byte(const int threadsafe, qio_channel_t* restrict ch)
     ret = *(unsigned char*) ch->cached_cur;
     ch->cached_cur = qio_ptr_add(ch->cached_cur, 1);
   } else {
-    qioerr err;
     ssize_t amt_read;
+    qioerr err;
     err_t errcode;
     uint8_t tmp;
     err = _qio_slow_read(ch, &tmp, 1, &amt_read);
@@ -1466,7 +1469,7 @@ void _qio_channel_write_bits_cached_realign(qio_channel_t* restrict ch, uint64_t
 static inline
 qioerr qio_channel_write_bits(const int threadsafe, qio_channel_t* restrict ch, uint64_t v, int8_t nbits) {
 #ifdef __cplusplus
-  qioerr err{};
+  qioerr err = nullptr;
 #else
   qioerr err = NULL;
 #endif
@@ -1570,7 +1573,12 @@ void _qio_channel_read_bits_cached_realign(qio_channel_t* restrict ch, uint64_t*
 
 static inline
 qioerr qio_channel_read_bits(const int threadsafe, qio_channel_t* restrict ch, uint64_t* restrict v, int8_t nbits) {
-  qioerr err;
+#ifdef __cplusplus
+  qioerr err = nullptr;
+#else
+  qioerr err = NULL;
+#endif
+
   qio_bitbuffer_t part_two_bits;
   qio_bitbuffer_t tmp_bits;
   qio_bitbuffer_t value;
