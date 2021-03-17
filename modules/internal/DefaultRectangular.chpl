@@ -552,8 +552,8 @@ module DefaultRectangular {
     }
 
     proc dsiIndexOrder(ind: rank*idxType) {
-      var totOrder: intIdxType;
-      var blk: intIdxType = 1;
+      var totOrder: int;
+      var blk = 1;
       for param d in 0..rank-1 by -1 {
         const orderD = ranges(d).indexOrder(ind(d));
         // NOTE: This follows from the implementation of indexOrder()
@@ -2300,12 +2300,12 @@ module DefaultRectangular {
   // if used the optimized swap, false otherwise
   proc DefaultRectangularArr.doiOptimizedSwap(other: this.type) {
    // Get shape of array
-    var size1: rank*(this.dom.ranges(0).intIdxType);
+    var size1: rank*int;
     for (i, r) in zip(0..#this.dom.ranges.size, this.dom.ranges) do
       size1(i) = r.size;
 
     // Get shape of array
-    var size2: rank*(other.dom.ranges(0).intIdxType);
+    var size2: rank*int;
     for (i, r) in zip(0..#other.dom.ranges.size, other.dom.ranges) do
       size2(i) = r.size;
     

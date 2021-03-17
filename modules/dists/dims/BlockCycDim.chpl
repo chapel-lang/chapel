@@ -713,7 +713,7 @@ proc BlockCyclic1locdom.dsiMyDensifiedRangeForTaskID1d(globDD, taskid:int, numTa
   const AL = this.locId :resultIdxType + (nLocs - firstLoc);
 
   // Here is the densified range for all indices on this locale.
-  const hereDenseInds = 0:resultIdxType..#wholeR.size by nLocs align AL;
+  const hereDenseInds = 0:resultIdxType..#wholeR.sizeAs(resultIdxType) by nLocs align AL;
 
   // This is our chunk of hereDenseInds
   return RangeChunk.chunk(hereDenseInds, numTasks, taskid);
