@@ -2414,6 +2414,8 @@ void init_fixedHeap(void) {
   if (start == NULL)
     chpl_error("cannot initialize heap: cannot get memory", 0, 0);
 
+  chpl_comm_regMemHeapTouch(start, size);
+
   DBG_PRINTF(DBG_MR, "fixed heap on %spages, start=%p size=%#zx\n",
              have_hugepages ? "huge" : "regular ", start, size);
 

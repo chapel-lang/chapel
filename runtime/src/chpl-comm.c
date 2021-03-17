@@ -23,12 +23,15 @@
 //  comm/<commlayer>/comm-<commlayer>.c
 //
 #include "chplrt.h"
+
+#include "chpl-align.h"
 #include "chpl-comm.h"
 #include "chpl-comm-compiler-macros.h"
 #include "chpl-comm-diags.h"
 #include "chpl-comm-internal.h"
 #include "chpl-env.h"
 #include "chpl-mem.h"
+#include "chpl-topo.h"
 
 // Don't get warning macros for chpl_comm_get etc.
 #include "chpl-comm-no-warning-macros.h"
@@ -153,6 +156,62 @@ size_t chpl_comm_getenvMaxHeapSize(void)
   return maxHeapSize;
 }
 
+typedef struct {
+  unsigned char *start;
+  uintptr_t size;
+  int tid;
+  int nthreads;
+} memory_region;
+
+// Pin a thread a specific NUMA domain and cyclically touch pages to get
+// interleaved memory. We don't have an accurate estimate of the page size when
+// Transparent Huge Pages (THP) are used, so we fault in regions in at least 2
+// MiB chunks to cover the most common THP size. We then touch the first
+// element of every system page or non-transparent huge page to fault in.
+static void *touch_thread(void *mem_region) {
+  memory_region* mr = (memory_region*) mem_region;
+
+  uintptr_t page_size = chpl_comm_regMemHeapPageSize();
+  uintptr_t touch_size = page_size > 2<<20 ? page_size: 2<<20;
+  unsigned char* aligned_start = round_up_to_mask_ptr(mr->start, touch_size-1);
+  uintptr_t aligned_offset = (uintptr_t)aligned_start - (uintptr_t)mr->start;
+  uintptr_t aligned_size = round_down_to_mask(mr->size - aligned_offset, touch_size-1);
+
+  chpl_topo_setThreadLocality(mr->tid % chpl_topo_getNumNumaDomains());
+  // Iterate through all the touch regions cyclically
+  for (uintptr_t tr=mr->tid*touch_size; tr<aligned_size; tr+=mr->nthreads*touch_size) {
+    // Iterate through all the page regions in the current region we're touching
+    for (uintptr_t pr=tr; pr<tr+touch_size; pr+=page_size) {
+      aligned_start[pr] = 0;
+    }
+  }
+  return NULL;
+}
+
+// Touch or fault-in a region of memory. Meant to be used on the registered
+// heap/segment for configurations that register a static heap.  We try to
+// touch the memory in an interleaved/cyclic fashion in parallel to improve
+// NUMA affinity and the speed of faulting memory in. Without this memory will
+// be faulted in serially at NIC registration time, which is slow and leads to
+// poor NUMA affinity with memory split evenly in massive chunks across NUMA
+// domains.
+void chpl_comm_regMemHeapTouch(void* start, uintptr_t size) {
+  int nthreads = chpl_topo_getNumCPUsPhysical(true);
+  pthread_t thread_id[nthreads];
+  memory_region mem_regions[nthreads];
+
+  for (int tid=0; tid<nthreads; tid++) {
+    mem_regions[tid].start = start;
+    mem_regions[tid].size = size;
+    mem_regions[tid].tid = tid;
+    mem_regions[tid].nthreads = nthreads;
+    pthread_create(&thread_id[tid], NULL, touch_thread, (void *)&mem_regions[tid]);
+  }
+
+  for (int tid=0; tid<nthreads; tid++) {
+    pthread_join(thread_id[tid], NULL);
+  }
+}
 
 void* chpl_get_global_serialize_table(int64_t idx) {
   return chpl_global_serialize_table[idx];
