@@ -6,7 +6,7 @@ operator =(ref lhs:AssignOnly, rhs:AssignOnly) { }
 
 record Both { }
 proc Both.init=(other:Both) { }
-operator =(ref lhs:Both, rhs:Both) { }
+operator Both.=(ref lhs:Both, rhs:Both) { }
 
 record Neither { }
 
