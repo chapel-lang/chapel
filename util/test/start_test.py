@@ -473,10 +473,10 @@ def generate_graphs(test=False):
     if test:
         basedir = os.path.dirname(test)
         remove_dot = test.replace(".chpl", "")
-        remove_dot = remove_dot.replace(".test.c", "")
-        remove_dot = remove_dot.replace(".test.cpp", "")
-        remove_dot = remove_dot.replace(".ml-test.c", "")
         remove_dot = remove_dot.replace(".ml-test.cpp", "")
+        remove_dot = remove_dot.replace(".ml-test.c", "")
+        remove_dot = remove_dot.replace(".test.cpp", "")
+        remove_dot = remove_dot.replace(".test.c", "")
         graph_files = [(remove_dot + ".graph")]
         # exit if it isn't actually a file
         if not os.path.isfile(graph_files[0]):
