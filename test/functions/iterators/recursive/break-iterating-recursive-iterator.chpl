@@ -8,6 +8,6 @@ iter a(n:int):int {
 
 for  p in a(10) do {
   write(p, ' ');
-  if p<5 then break;  //Causes compilation error
+  if p<5 then break;  //Causes internal error
 }
 writeln();
