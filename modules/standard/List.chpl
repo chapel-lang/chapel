@@ -746,7 +746,8 @@ module List {
       :return: A reference to the first item in this list.
       :rtype: `ref eltType`
     */
-    proc ref first() ref {
+    pragma "no doc"
+    proc const ref _firstHelper() ref {
       if parSafe then
         compilerWarning('Calling `first()` on a list initialized with ' +
                         '`parSafe=true` has been deprecated, consider ' +
@@ -765,25 +766,15 @@ module List {
       return result;
     }
     
-    proc const ref first() const ref {
-      if parSafe then
-        compilerWarning('Calling `first()` on a list initialized with ' +
-                        '`parSafe=true` has been deprecated, consider ' +
-                        'using `set()` or `update()` instead');
-      _enter();
-
-      if boundsChecking && _size == 0 {
-        _leave();
-        boundsCheckHalt("Called \"list.first\" on an empty list.");
-      }
-
-      // TODO: How to make this work with on clauses?
-      ref result = _getRef(0);
-      _leave();
-
+    proc ref first() ref{
+      ref result = _firstHelper();
       return result;
     }
     
+    proc const ref first() const ref{
+      const ref result = _firstHelper();
+      return result;
+    }
 
     /*
       Returns a reference to the last item in this list.
@@ -797,7 +788,8 @@ module List {
       :return: A reference to the last item in this list.
       :rtype: `ref eltType`
     */
-    proc ref last() ref {
+    pragma "no doc"
+    proc const ref _lastHelper() ref {
       if parSafe then
         compilerWarning('Calling `last()` on a list initialized with ' +
                         '`parSafe=true` has been deprecated, consider ' +
@@ -816,22 +808,13 @@ module List {
       return result;
     }
 
-    proc const ref last() ref {
-      if parSafe then
-        compilerWarning('Calling `last()` on a list initialized with ' +
-                        '`parSafe=true` has been deprecated, consider ' +
-                        'using `set()` or `update()` instead');
-      _enter();
-
-      if boundsChecking && _size == 0 {
-        _leave();
-        boundsCheckHalt("Called \"list.last\" on an empty list.");
-      }
-
-      // TODO: How to make this work with on clauses?
-      ref result = _getRef(_size-1);
-      _leave();
-
+    proc ref last() ref{
+      ref result = _lastHelper();
+      return result;
+    }
+    
+    proc const ref last() const ref{
+      const ref result = _lastHelper();
       return result;
     }
     
