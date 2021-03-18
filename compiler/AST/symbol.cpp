@@ -2334,18 +2334,18 @@ const char* toString(Symbol* sym, bool withType) {
 }
 
 struct SymbolPairComparator {
-  bool operator()(std::pair<Symbol*, Symbol*> lhs,
-                  std::pair<Symbol*, Symbol*> rhs) {
+  bool operator()(SymbolMapKeyValue lhs, SymbolMapKeyValue rhs) {
+    // use the same logic as other set/map ordering
     std::less<Symbol*> lessSym;
 
-    return lessSym(lhs.first, rhs.first);
+    return lessSym(lhs.key, rhs.key);
   }
 };
 
 SymbolMapVector sortedSymbolMapElts(const SymbolMap& map) {
-  std::vector<std::pair<Symbol*, Symbol*> > elts;
+  SymbolMapVector elts;
   form_Map(SymbolMapElem, e, map) {
-    elts.push_back(std::make_pair(e->key, e->value));
+    elts.push_back(SymbolMapKeyValue(e->key, e->value));
   }
   std::sort(elts.begin(), elts.end(), SymbolPairComparator());
   return elts;
