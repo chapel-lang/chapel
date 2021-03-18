@@ -98,9 +98,9 @@ where tag == iterKind.leader
   // int(64).  Then we can call divceilpos() with it and any chunkSize
   // type, since then we know at least one arg is signed.
   if c.idxType == uint(64) then
-    numChunks = divceil(c.size, chunkSize:uint(64)): int;
+    numChunks = divceil(c.sizeAs(uint(64)), chunkSize:uint(64)): int;
   else
-    numChunks = divceilpos(c.size:int(64), chunkSize): int;
+    numChunks = divceilpos(c.size, chunkSize): int;
 
   // Check if the number of tasks is 0, in that case it returns a default value
   const nTasks = min(numChunks, defaultNumTasks(numTasks));

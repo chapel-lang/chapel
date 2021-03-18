@@ -746,7 +746,7 @@ class CyclicArr: BaseRectangularArr {
 
   var locArr: [dom.dist.targetLocDom] unmanaged LocCyclicArr(eltType, rank, idxType);
   var myLocArr: unmanaged LocCyclicArr(eltType=eltType, rank=rank, idxType=idxType)?;
-  const SENTINEL = max(rank*idxType);
+  const SENTINEL = max(rank*int);
 }
 
 pragma "no copy return"
@@ -872,7 +872,7 @@ inline proc _remoteAccessData.getDataIndex(
     halt("RADOpt not supported for strided cyclic arrays.");
   } else {
     for param i in 0..rank-1 do {
-      sum += (((ind(i) - off(i)) * blk(i))-startIdx(i))/dimLen(i);
+      sum += (((ind(i) - off(i)):int * blk(i))-startIdx(i):int)/dimLen(i);
     }
   }
   return sum;
@@ -1106,7 +1106,7 @@ class LocCyclicRADCache /* : LocRADCache */ {
   param rank: int;
   type idxType;
   var startIdx: rank*idxType;
-  var targetLocDomDimLength: rank*idxType;
+  var targetLocDomDimLength: rank*int;
 
   proc init(param rank: int, type idxType, startIdx, targetLocDom) {
     this.rank = rank;
@@ -1116,7 +1116,7 @@ class LocCyclicRADCache /* : LocRADCache */ {
 
     for param i in 0..rank-1 do
       // NOTE: Not bothering to check to see if length can fit into idxType
-      targetLocDomDimLength(i) = targetLocDom.dim(i).size:idxType;
+      targetLocDomDimLength(i) = targetLocDom.dim(i).size;
   }
 }
 
