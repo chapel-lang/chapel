@@ -7,6 +7,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     g++ \
     perl \
+    python3.7 \
+    python3-distutils \
+    python3-venv \
     python \
     python-dev \
     python-setuptools \
@@ -21,12 +24,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-ENV CHPL_VERSION master
+Run update-alternatives --install /usr/bin/python python /usr/bin/python3.7 20
+Run update-alternatives --set python /usr/bin/python3.7
+
+ENV CHPL_VERSION 1.24.0
 ENV CHPL_HOME    /opt/chapel/$CHPL_VERSION
 ENV CHPL_GMP     system
 
 RUN mkdir -p /opt/chapel \
-    && wget -q -O - https://github.com/chapel-lang/chapel/archive/$CHPL_VERSION.tar.gz | tar -xzC /opt/chapel --transform 's/chapel-//' \
+    && wget -q -O - https://github.com/chapel-lang/chapel/releases/download/$CHPL_VERSION/chapel-$CHPL_VERSION.tar.gz | tar -xzC /opt/chapel --transform 's/chapel-//' \
     && make -C $CHPL_HOME \
     && make -C $CHPL_HOME chpldoc test-venv mason \
     && make -C $CHPL_HOME cleanall
