@@ -734,18 +734,6 @@ module List {
       return result;
     }
 
-    /*
-      Returns a reference to the first item in this list.
-
-      .. warning::
-
-        Calling this method on an empty list will cause the currently running
-        program to halt. If the `--fast` flag is used, no safety checks will
-        be performed.
-
-      :return: A reference to the first item in this list.
-      :rtype: `ref eltType`
-    */
     pragma "no doc"
     proc const ref _firstHelper() ref {
       if parSafe then
@@ -765,19 +753,9 @@ module List {
 
       return result;
     }
-    
-    proc ref first() ref{
-      ref result = _firstHelper();
-      return result;
-    }
-    
-    proc const ref first() const ref{
-      const ref result = _firstHelper();
-      return result;
-    }
 
     /*
-      Returns a reference to the last item in this list.
+      Returns a reference to the first item in this list.
 
       .. warning::
 
@@ -785,9 +763,20 @@ module List {
         program to halt. If the `--fast` flag is used, no safety checks will
         be performed.
 
-      :return: A reference to the last item in this list.
+      :return: A reference to the first item in this list.
       :rtype: `ref eltType`
     */
+    proc ref first() ref{
+      ref result = _firstHelper();
+      return result;
+    }
+    
+    pragma "no doc"
+    proc const ref first() const ref{
+      const ref result = _firstHelper();
+      return result;
+    }
+
     pragma "no doc"
     proc const ref _lastHelper() ref {
       if parSafe then
@@ -808,11 +797,24 @@ module List {
       return result;
     }
 
+    /*
+      Returns a reference to the last item in this list.
+
+      .. warning::
+
+        Calling this method on an empty list will cause the currently running
+        program to halt. If the `--fast` flag is used, no safety checks will
+        be performed.
+
+      :return: A reference to the last item in this list.
+      :rtype: `ref eltType`
+    */
     proc ref last() ref{
       ref result = _lastHelper();
       return result;
     }
     
+    pragma "no doc"
     proc const ref last() const ref{
       const ref result = _lastHelper();
       return result;
