@@ -1,0 +1,5 @@
+This directory stores header files that represent Chapel programs in the
+frontend.
+
+The AST will be translated to a mid-level IR that is represented in a
+different directory.
