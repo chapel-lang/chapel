@@ -32,6 +32,9 @@ void testPerformance(const char* inputFile, bool printTiming) {
       std::cout << "unordered map elapsed time: " << elapsed.count() << " s\n";
 
     file.close();
+  } else {
+    std::cerr << "could not open file " << inputFile << "\n";
+    exit(-1);
   }
 }
 
@@ -64,4 +67,5 @@ int main(int argc, char** argv) {
 
   // Next, measure performance
   testPerformance(inputFile, printTiming);
+  return 0;
 }
