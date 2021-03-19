@@ -521,8 +521,7 @@ proc Block.init(boundingBox: domain,
 
 proc Block.dsiAssign(other: this.type) {
 
-  coforall (locid, loc, locDistElt)
-           in zip(targetLocDom, targetLocales, locDist) {
+  coforall (loc, locDistElt) in zip(targetLocales, locDist) {
     on loc {
       delete locDistElt;
     }
@@ -907,8 +906,8 @@ proc BlockDom.dsiBuildArray(type eltType, param initElts:bool) {
   var myLocArrTemp: unmanaged LocBlockArr(eltType, rank, idxType, stridable)?;
 
   // formerly in BlockArr.setup()
-  coforall (localeIdx, loc, locDomsElt, locArrTempElt)
-           in zip(dom.dist.targetLocDom, dom.dist.targetLocales, dom.locDoms, locArrTemp)
+  coforall (loc, locDomsElt, locArrTempElt)
+           in zip(dom.dist.targetLocales, dom.locDoms, locArrTemp)
            with (ref myLocArrTemp) {
     on loc {
       const LBA = new unmanaged LocBlockArr(eltType, rank, idxType, stridable,
@@ -995,8 +994,8 @@ proc BlockDom.setup() {
 }
 
 override proc BlockDom.dsiDestroyDom() {
-  coforall (localeIdx, locDomsElt) in zip(dist.targetLocDom, locDoms) {
-    on locDomsElt {
+  coforall (loc, locDomsElt) in zip(dist.targetLocales, locDoms) {
+    on loc {
       delete locDomsElt;
     }
   }
@@ -1061,7 +1060,7 @@ proc BlockArr.setupRADOpt() {
 }
 
 override proc BlockArr.dsiElementInitializationComplete() {
-  coforall (localeIdx, locArrElt) in zip(dom.dist.targetLocDom, locArr) {
+  coforall locArrElt in locArr {
     on locArrElt {
       locArrElt.myElems.dsiElementInitializationComplete();
     }
@@ -1069,7 +1068,7 @@ override proc BlockArr.dsiElementInitializationComplete() {
 }
 
 override proc BlockArr.dsiElementDeinitializationComplete() {
-  coforall (localeIdx, locArrElt) in zip(dom.dist.targetLocDom, locArr) {
+  coforall locArrElt in locArr {
     on locArrElt {
       locArrElt.myElems.dsiElementDeinitializationComplete();
     }
@@ -1077,7 +1076,7 @@ override proc BlockArr.dsiElementDeinitializationComplete() {
 }
 
 override proc BlockArr.dsiDestroyArr(deinitElts:bool) {
-  coforall (localeIdx, locArrElt) in zip(dom.dist.targetLocDom, locArr) {
+  coforall locArrElt in locArr {
     on locArrElt {
       var arr = locArrElt;
       if deinitElts then
