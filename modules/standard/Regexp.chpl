@@ -450,7 +450,8 @@ class BadRegexpError : Error {
                    this flag can be set inside the regular expression with
                    ``(?U)``.
 
-   :throws BadRegexError: If RE2 is not created properly.
+   :throws BadRegexError: If the argument 'pattern' has syntactical errors.
+    Refer to https://github.com/google/re2/blob/master/re2/re2.h for more details about error codes.
  */
 
 proc compile(pattern: ?t, posix=false, literal=false, noCapture=false,
