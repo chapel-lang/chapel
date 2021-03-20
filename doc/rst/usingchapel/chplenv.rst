@@ -55,7 +55,7 @@ PATH
 
     .. code-block:: sh
 
-        CHPL_BIN_SUBDIR=`"$CHPL_HOME"/util/chplenv/chpl_bin_subdir.py`
+        CHPL_BIN_SUBDIR="$CHPL_HOME"/util/chplenv/chpl_bin_subdir.py
         export PATH="$PATH":"$CHPL_HOME/bin/$CHPL_BIN_SUBDIR"
 
 
@@ -84,7 +84,7 @@ CHPL_HOST_PLATFORM
 
     .. code-block:: sh
 
-        export CHPL_HOST_PLATFORM=`$CHPL_HOME/util/chplenv/chpl_platform.py`
+        export CHPL_HOST_PLATFORM=$CHPL_HOME/util/chplenv/chpl_platform.py
 
    For other platforms that appear very similar to a UNIX workstation from the
    shell prompt (e.g., a Cray CS\ |trade|), the value may need to be set
