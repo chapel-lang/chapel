@@ -770,7 +770,7 @@ module List {
       ref result = _firstHelper();
       return result;
     }
-    
+
     pragma "no doc"
     proc const ref first() const ref{
       const ref result = _firstHelper();
@@ -813,13 +813,13 @@ module List {
       ref result = _lastHelper();
       return result;
     }
-    
+
     pragma "no doc"
     proc const ref last() const ref{
       const ref result = _lastHelper();
       return result;
     }
-    
+
     pragma "no doc"
     inline proc ref _extendGeneric(collection) {
 
