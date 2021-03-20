@@ -8,40 +8,38 @@ Developer Note:
   file to disable them causing testing noise.*
 
 This directory contains
-[Chapel versions](http://benchmarksgame.alioth.debian.org/u64q/chapel.html)
+[Chapel versions](https://benchmarksgame-team.pages.debian.net/benchmarksgame/measurements/chapel.html)
 of the
-[Computer Language Benchmarks Game](http://benchmarksgame.alioth.debian.org/) programs
+[Computer Language Benchmarks Game](https://benchmarksgame-team.pages.debian.net/benchmarksgame/index.html) programs
 that have been officially submitted to the Computer Language
 Benchmarks Games website.
 
-* [binarytrees.chpl](http://benchmarksgame.alioth.debian.org/u64q/program.php?test=binarytrees&lang=chapel&id=1)
+* [binarytrees.chpl #3](https://benchmarksgame-team.pages.debian.net/benchmarksgame/program/binarytrees-chapel-3.html)
     * Allocates and deallocates many, many binary trees
-* [fannkuchredux.chpl](http://benchmarksgame.alioth.debian.org/u64q/program.php?test=fannkuchredux&lang=chapel&id=1)
+* [fannkuchredux.chpl #2](https://benchmarksgame-team.pages.debian.net/benchmarksgame/program/fannkuchredux-chapel-2.html)
     * Performs many operations on small arrays
-* [fasta.chpl](http://benchmarksgame.alioth.debian.org/u64q/program.php?test=fasta&lang=chapel&id=1) |
-  [fasta.chpl #2](http://benchmarksgame.alioth.debian.org/u64q/program.php?test=fasta&lang=chapel&id=2)
+* [fasta.chpl #3](https://benchmarksgame-team.pages.debian.net/benchmarksgame/program/fasta-chapel-3.html) |
+  [fasta.chpl #5](https://benchmarksgame-team.pages.debian.net/benchmarksgame/program/fasta-chapel-5.html)
     * Generates and writes random DNA sequences
-* [knucleotide.chpl](http://benchmarksgame.alioth.debian.org/u64q/program.php?test=knucleotide&lang=chapel&id=1)
+* [knucleotide.chpl #3](https://benchmarksgame-team.pages.debian.net/benchmarksgame/program/knucleotide-chapel-3.html)
     * Count the frequencies of specific nucleotide sequences
-* [mandelbrot.chpl](http://benchmarksgame.alioth.debian.org/u64q/program.php?test=mandelbrot&lang=chapel&id=1)
+* [mandelbrot.chpl](https://benchmarksgame-team.pages.debian.net/benchmarksgame/program/mandelbrot-chapel-1.html) |
+  [mandelbrot.chpl #3](https://benchmarksgame-team.pages.debian.net/benchmarksgame/program/mandelbrot-chapel-3.html)
     * Plots the mandelbrot set [-1.5-i,0.5+i] on a bitmap
-* [meteor.chpl](http://benchmarksgame.alioth.debian.org/u64q/program.php?test=meteor&lang=chapel&id=1)
-    * Performs a parallel search for all solutions to a puzzle
-* [meteor-fast.chpl](http://benchmarksgame.alioth.debian.org/u64q/program.php?test=meteor&lang=chapel&id=2)
-    * A less readable, but much faster version of meteor.
-* [nbody.chpl](http://benchmarksgame.alioth.debian.org/u64q/program.php?test=nbody&lang=chapel&id=1)
+* [nbody.chpl #2](https://benchmarksgame-team.pages.debian.net/benchmarksgame/program/nbody-chapel-2.html)
     * Performs an n-body simulation of the Jovian planets
-* [pidigits.chpl](http://benchmarksgame.alioth.debian.org/u64q/program.php?test=pidigits&lang=chapel&id=1) |
-  [pidigits.chpl #2](http://benchmarksgame.alioth.debian.org/u64q/program.php?test=pidigits&lang=chapel&id=2)
+* [pidigits.chpl #2](https://benchmarksgame-team.pages.debian.net/benchmarksgame/program/pidigits-chapel-2.html) |
+  [pidigits.chpl #3](https://benchmarksgame-team.pages.debian.net/benchmarksgame/program/pidigits-chapel-3.html) |
+  [pidigits.chpl #4](https://benchmarksgame-team.pages.debian.net/benchmarksgame/program/pidigits-chapel-4.html)
     * Computes digits of pi using GMP, if available
-* [regexdna-redux.chpl](http://benchmarksgame.alioth.debian.org/u64q/program.php?test=regexredux&lang=chapel&id=1)
+* [regex-redux.chpl #2](https://benchmarksgame-team.pages.debian.net/benchmarksgame/program/regexredux-chapel-2.html) |
+  [regex-redux.chpl #3](https://benchmarksgame-team.pages.debian.net/benchmarksgame/program/regexredux-chapel-3.html)
     * Performs DNA matching
-* [revcomp.chpl](http://benchmarksgame.alioth.debian.org/u64q/program.php?test=revcomp&lang=chapel&id=1)
+* [revcomp.chpl #2](https://benchmarksgame-team.pages.debian.net/benchmarksgame/program/revcomp-chapel-2.html) |
+  [revcomp.chpl #3](https://benchmarksgame-team.pages.debian.net/benchmarksgame/program/revcomp-chapel-3.html)
     * Calculate the strand to bind with a given DNA strand
-* [spectralnorm.chpl](http://benchmarksgame.alioth.debian.org/u64q/program.php?test=spectralnorm&lang=chapel&id=1)
+* [spectralnorm.chpl](https://benchmarksgame-team.pages.debian.net/benchmarksgame/program/spectralnorm-chapel-1.html)
     * Calculates the spectral norm of an infinite matrix
-* [threadring.chpl](http://benchmarksgame.alioth.debian.org/u64q/program.php?test=threadring&lang=chapel&id=1)
-    * Passes a token between a large number of threads
 
 For the latest versions of these benchmarks
 and more information on their implementations, see:
