@@ -58,8 +58,11 @@ always-build-chplspell-venv: FORCE
 	$(MAKE) chplspell-venv; \
 	fi
 
-test: FORCE
-	cd test && start_test
+test: spectests FORCE
+	cd examples && start_test
+
+test-compiler: compiler-lib FORCE
+	cd build && cmake --build . --target tests && ctest .
 
 SPECTEST_DIR = ./test/release/examples/spec
 spectests: FORCE

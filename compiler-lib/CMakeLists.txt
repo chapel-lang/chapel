@@ -20,15 +20,20 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 # set include directories for -I
 #include_directories(include)
 
+# lib/CMakeLists.txt defines the target chplCompilerLib
 add_subdirectory(lib)
 
 enable_testing()
 
+add_custom_target(tests)
+
 # define a function to simplify adding tests
 function(comp_unit_test target)
   add_executable(${target} "${target}.cpp")
+  set_property(TARGET ${target} PROPERTY EXCLUDE_FROM_ALL)
   target_link_libraries(${target} chplCompilerLib)
   add_test(NAME ${target} COMMAND ${target})
+  add_dependencies(tests ${target})
 endfunction(comp_unit_test)
 
 add_subdirectory(test)
