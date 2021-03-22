@@ -173,7 +173,7 @@ experiences:
 
   If you have a pattern that you're trying to write in an
   index-neutral style, but can't, don't hesitate to `ask for tips
-  <https://chapel-lang.org/users.html>`_.
+  <https://chapel-lang.org/community.html>`_.
         
 
 * Some common pitfalls to check for in your code include:
@@ -231,7 +231,7 @@ Need Help?
 
 If you are able to share your code with us and would like help
 updating it to Chapel 1.22, please don't hesitate to `ask for help
-<https://chapel-lang.org/users.html>`_.  Given our experience in
+<https://chapel-lang.org/community.html>`_.  Given our experience in
 updating the Chapel code base itself, we have found it fairly easy to
 update most codes, even when we're unfamiliar with them.
 

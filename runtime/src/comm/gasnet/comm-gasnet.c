@@ -626,9 +626,10 @@ chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
     return (chpl_comm_nb_handle_t) ret;
   }
 
-  ret = gasnet_put_nb_bulk(node, raddr, addr, size);
-
+  chpl_comm_diags_verbose_rdma("put_nb", node, size, ln, fn, commID);
   chpl_comm_diags_incr(put_nb);
+
+  ret = gasnet_put_nb_bulk(node, raddr, addr, size);
 
   return (chpl_comm_nb_handle_t) ret;
 }
@@ -660,9 +661,10 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node, void* raddr,
     return (chpl_comm_nb_handle_t) ret;
   }
 
-  ret = gasnet_get_nb_bulk(addr, node, raddr, size);
-
+  chpl_comm_diags_verbose_rdma("get_nb", node, size, ln, fn, commID);
   chpl_comm_diags_incr(get_nb);
+
+  ret = gasnet_get_nb_bulk(addr, node, raddr, size);
 
   return (chpl_comm_nb_handle_t) ret;
 }
@@ -726,17 +728,16 @@ int32_t chpl_comm_getMaxThreads(void) {
 static volatile int pollingRunning;
 static volatile int pollingQuit;
 static chpl_bool pollingRequired;
-static atomic_bool pollingLock;
+static atomic_spinlock_t pollingLock;
 
 static inline void am_poll_try(void) {
-  // Serialize polling for IBV and Aries. Concurrent polling causes contention
-  // in these configurations. For other configurations that are AM-based
-  // (udp/amudp, mpi/ammpi) serializing can hurt performance.
-#if defined(GASNET_CONDUIT_IBV) || defined(GASNET_CONDUIT_ARIES)
-  if (!atomic_load_explicit_bool(&pollingLock, memory_order_acquire) &&
-      !atomic_exchange_explicit_bool(&pollingLock, true, memory_order_acquire)) {
+  // Serialize polling for IBV, UCX, and Aries. Concurrent polling causes
+  // contention in these configurations. For other configurations that are
+  // AM-based (udp/amudp, mpi/ammpi) serializing can hurt performance.
+#if defined(GASNET_CONDUIT_IBV) || defined(GASNET_CONDUIT_UCX) || defined(GASNET_CONDUIT_ARIES)
+  if (atomic_try_lock_spinlock_t(&pollingLock)) {
     (void) gasnet_AMPoll();
-    atomic_store_explicit_bool(&pollingLock, false, memory_order_release);
+    atomic_unlock_spinlock_t(&pollingLock);
   }
 #else
     (void) gasnet_AMPoll();
@@ -755,7 +756,7 @@ static void polling(void* x) {
 }
 
 static void setup_polling(void) {
-  atomic_init_bool(&pollingLock, false);
+  atomic_init_spinlock_t(&pollingLock);
 #if defined(GASNET_CONDUIT_IBV)
   pollingRequired = false;
   chpl_env_set("GASNET_RCV_THREAD", "1", 1);
@@ -822,6 +823,15 @@ static void set_num_comm_domains() {
 
 void chpl_comm_init(int *argc_p, char ***argv_p) {
 //  int status; // Some compilers complain about unused variable 'status'.
+
+  // For configurations that register a fixed heap at startup use a gasnet hook
+  // to allow us to fault and interleave in the memory in parallel for faster
+  // startup and better NUMA affinity.
+#if defined(GASNET_CONDUIT_IBV) || defined(GASNET_CONDUIT_UCX) || defined(GASNET_CONDUIT_ARIES)
+#if defined(GASNET_SEGMENT_FAST)
+  gasnet_client_attach_hook = &chpl_comm_regMemHeapTouch;
+#endif
+#endif
 
   set_max_segsize();
   set_num_comm_domains();

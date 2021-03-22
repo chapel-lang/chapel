@@ -70,12 +70,16 @@ explainInstantiation(FnSymbol* fn) {
   if (explainInstantiationLine != -1 && explainInstantiationLine != fn->defPoint->linenum())
     return;
 
+  SymbolMapVector elts = sortedSymbolMapElts(fn->substitutions);
+
   char msg[1024] = "";
   int len = sprintf(msg, "instantiated %s(", fn->name);
   bool first = true;
   for_formals(formal, fn) {
-    form_Map(SymbolMapElem, e, fn->substitutions) {
-      ArgSymbol* arg = toArgSymbol(e->key);
+    for (auto pair: elts) {
+      ArgSymbol* arg = toArgSymbol(pair.first); // this is the key
+      Symbol* value = pair.second;
+
       if (!strcmp(formal->name, arg->name)) {
         if (first)
           first = false;
@@ -84,7 +88,7 @@ explainInstantiation(FnSymbol* fn) {
         INT_ASSERT(arg);
         if (strcmp(fn->name, tupleInitName))
           len += sprintf(msg+len, "%s = ", arg->name);
-        if (VarSymbol* vs = toVarSymbol(e->value)) {
+        if (VarSymbol* vs = toVarSymbol(value)) {
           if (vs->immediate && vs->immediate->const_kind == NUM_KIND_INT)
             len += sprintf(msg+len, "%" PRId64, vs->immediate->int_value());
           else if (vs->immediate && vs->immediate->const_kind == CONST_KIND_STRING)
@@ -92,7 +96,7 @@ explainInstantiation(FnSymbol* fn) {
           else
             len += sprintf(msg+len, "%s", vs->name);
         }
-        else if (Symbol* s = toSymbol(e->value))
+        else if (Symbol* s = toSymbol(value))
       // For a generic symbol, just print the name.
       // Additional clauses for specific symbol types should precede this one.
           len += sprintf(msg+len, "%s", s->name);

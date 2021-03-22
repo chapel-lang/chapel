@@ -450,7 +450,10 @@ class BadRegexpError : Error {
                    this flag can be set inside the regular expression with
                    ``(?U)``.
 
+   :throws BadRegexError: If the argument 'pattern' has syntactical errors.
+    Refer to https://github.com/google/re2/blob/master/re2/re2.h for more details about error codes.
  */
+
 proc compile(pattern: ?t, posix=false, literal=false, noCapture=false,
              /*i*/ ignoreCase=false, /*m*/ multiLine=false, /*s*/ dotAll=false,
              /*U*/ nonGreedy=false): regexp(t) throws where t==string || t==bytes {

@@ -456,6 +456,12 @@ all:
     - Improve the speed of tracking arrays declared over a domain (#16740)
   02/01/21:
     - Enable the cache for remote data by default (#17044)
+  03/18/21:
+    - text: Improve NUMA affinity and startup times for configs that use a fixed heap (#17405)
+      config: 16-node-xc, 16-node-cs, 16-node-cs-hdr
+    - text: Set the number of launcher cores per locale for Cray CS perf testing (#17407)
+      config: 16-node-cs
+
 # End all
 
 AllCompTime: &timecomp-base

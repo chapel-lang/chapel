@@ -2232,7 +2232,11 @@ PromotionInfo::PromotionInfo(FnSymbol* fn,
       promotedType = ts;
     } else {
       bool actualProvidedForFormal = false;
-      for_vector(ArgSymbol, arg, actualFormals) {
+      // Can't use for_vector here as it will not iterate if the vector starts
+      // with a NULL entry
+      for (long unsigned int k = 0; k < actualFormals.size(); k++) {
+        ArgSymbol* arg = actualFormals[k];
+
         if (arg == formal) {
           actualProvidedForFormal = true;
           break;
