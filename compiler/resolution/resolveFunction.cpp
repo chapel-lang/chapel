@@ -607,6 +607,7 @@ static void resolveAlsoConversions(FnSymbol* fn, CallExpr* forCall) {
   if (fn->name == astrSassign) {
     int i = 1;
     if (fn->getFormal(i)->typeInfo() == dtMethodToken) i++;
+    if (fn->getFormal(i)->hasFlag(FLAG_ARG_THIS)) i++;
     toType = fn->getFormal(i)->getValType(); i++;
     fromType = fn->getFormal(i)->getValType();
   } else if (fn->name == astrInitEquals) {
@@ -616,6 +617,7 @@ static void resolveAlsoConversions(FnSymbol* fn, CallExpr* forCall) {
   } else if (fn->name == astr_cast) {
     int i = 1;
     if (fn->getFormal(i)->typeInfo() == dtMethodToken) i++;
+    if (fn->getFormal(i)->hasFlag(FLAG_ARG_THIS)) i++;
     toType = fn->getFormal(i)->getValType(); i++;
     fromType = fn->getFormal(i)->getValType();
   } else {

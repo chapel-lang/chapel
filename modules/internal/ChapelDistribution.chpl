@@ -193,8 +193,10 @@ module ChapelDistribution {
     pragma "dont disable remote value forwarding"
     proc remove() : (unmanaged BaseDom?, unmanaged BaseDist?) {
 
-      // TODO -- remove dsiLinksDistribution
-      assert( dsiMyDist().dsiTrackDomains() == dsiLinksDistribution() );
+      if boundsChecking {
+        // TODO -- remove dsiLinksDistribution
+        assert( dsiMyDist().dsiTrackDomains() == dsiLinksDistribution() );
+      }
 
       var ret_dom:unmanaged BaseDom? = nil;
       var ret_dist:unmanaged BaseDist? = nil;
