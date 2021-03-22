@@ -626,9 +626,10 @@ chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
     return (chpl_comm_nb_handle_t) ret;
   }
 
-  ret = gasnet_put_nb_bulk(node, raddr, addr, size);
-
+  chpl_comm_diags_verbose_rdma("put_nb", node, size, ln, fn, commID);
   chpl_comm_diags_incr(put_nb);
+
+  ret = gasnet_put_nb_bulk(node, raddr, addr, size);
 
   return (chpl_comm_nb_handle_t) ret;
 }
@@ -660,9 +661,10 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node, void* raddr,
     return (chpl_comm_nb_handle_t) ret;
   }
 
-  ret = gasnet_get_nb_bulk(addr, node, raddr, size);
-
+  chpl_comm_diags_verbose_rdma("get_nb", node, size, ln, fn, commID);
   chpl_comm_diags_incr(get_nb);
+
+  ret = gasnet_get_nb_bulk(addr, node, raddr, size);
 
   return (chpl_comm_nb_handle_t) ret;
 }
