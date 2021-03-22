@@ -2236,8 +2236,6 @@ PromotionInfo::PromotionInfo(FnSymbol* fn,
       // with a NULL entry
       for (long unsigned int k = 0; k < actualFormals.size(); k++) {
         ArgSymbol* arg = actualFormals[k];
-        if (arg == NULL)
-          continue;
 
         if (arg == formal) {
           actualProvidedForFormal = true;
