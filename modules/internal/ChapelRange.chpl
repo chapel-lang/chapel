@@ -639,14 +639,22 @@ module ChapelRange {
       return isBoundedRange(this) && this.alignedLow > this.alignedHigh;
   }
 
+  config param sizeReturnsInt = false;
 
   /* Returns the number of elements in this range as an integer.
 
      If the size exceeds `max(int)`, this procedure will halt when
      bounds checks are on.
    */
-  proc range.size: int {
-    return this.sizeAs(int);
+  proc range.size {
+    if (this.idxType != int && sizeReturnsInt == false) {
+      compilerWarning("'range("+idxType:string+").size' is changing to return 'int' values rather than '"+idxType:string+"'\n" +
+                      "  (to get the value as a different type, call the new method '.sizeAs(type t)')\n" +
+                      "  (to opt into the change now, re-compile with '-ssizeReturnsInt=true')");
+      return this.sizeAs(this.idxType);
+    } else {
+      return this.sizeAs(int);
+    }
   }
 
   /* Returns the number of elements in this range as the specified
