@@ -2099,13 +2099,6 @@ void init_ofiForAms(void) {
 }
 
 
-#if 0
-static
-void init_ofiPerThread(void) {
-}
-#endif
-
-
 void chpl_comm_rollcall(void) {
   DBG_PRINTF(DBG_IFACE_SETUP, "%s()", __func__);
 
