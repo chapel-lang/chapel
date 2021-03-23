@@ -40,7 +40,7 @@ end of module search dirs
   $CHPL_HOME/modules/packages/Sort.chpl
   $CHPL_HOME/modules/packages/Search.chpl
   $CHPL_HOME/modules/standard/Sys.chpl
-  $CHPL_HOME/modules/standard/Regexp.chpl
+  $CHPL_HOME/modules/standard/Regex.chpl
   $CHPL_HOME/modules/standard/List.chpl
   $CHPL_HOME/modules/standard/Random.chpl
   $CHPL_HOME/modules/dists/BlockDist.chpl

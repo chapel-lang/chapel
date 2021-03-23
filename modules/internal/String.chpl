@@ -47,7 +47,7 @@ Besides the functions below, some other modules provide routines that are
 useful for working with strings. The :mod:`IO` module provides
 `IO.string.format` which creates a string that is the result of
 formatting. It also includes functions for reading and writing strings.
-The :mod:`Regexp` module also provides some routines for searching
+The :mod:`Regex` module also provides some routines for searching
 within strings.
 
 Casts from String to a Numeric Type

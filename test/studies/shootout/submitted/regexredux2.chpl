@@ -5,7 +5,7 @@
    derived from the GNU C++ RE2 version by Alexey Zolotov
 */
 
-use IO, Regexp;
+use IO, Regex;
 
 proc main(args: [] string) {
   var variants = [
@@ -21,7 +21,7 @@ proc main(args: [] string) {
   ];
 
   var subst = [
-    ("tHa[Nt]", "<4>"), ("aND|caN|Ha[DS]|WaS", "<3>"), ("a[NSt]|BY", "<2>"), 
+    ("tHa[Nt]", "<4>"), ("aND|caN|Ha[DS]|WaS", "<3>"), ("a[NSt]|BY", "<2>"),
     ("<[^>]*>", "|"), ("\\|[^|][^|]*\\|", "-")
   ];
 
