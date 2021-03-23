@@ -25,7 +25,7 @@
 #include "qbuffer.h"
 #include "qio.h"
 #include "qio_formatted.h"
-#include "qio_regexp.h"
+#include "qio_regex.h"
 #include "qio_style.h"
 #include "bulkget.h"
 #include "sys.h"

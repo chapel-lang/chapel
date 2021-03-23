@@ -102,7 +102,7 @@ RecordParser Types and Functions
  */
 module RecordParser {
 
-use IO, Regexp, Reflection;
+use IO, Regex, Reflection;
 
 
 /* A class providing the ability to read records matching a regular expression.
@@ -116,12 +116,12 @@ class RecordReader {
   /* The channel to read from */
   var myReader;
   /* The regular expression to read (using match on the channel) */
-  var matchRegexp: regexp(string);
+  var matchRegex: regex(string);
   pragma "no doc"
   param num_fields = numFields(t); // Number of fields in record
 
   /* Create a RecordReader to match an auto-generated regular expression
-     for a record created by the :proc:`createRegexp` routine.
+     for a record created by the :proc:`createRegex` routine.
 
      :arg t: the record type to read
      :arg myReader: the channel to read from
@@ -132,7 +132,7 @@ class RecordReader {
     // TODO: remove the following once we can throw from init() calls
     this.complete();
     try! {
-      this.matchRegexp = compile(createRegexp());
+      this.matchRegex = compile(createRegex());
     }
   }
 
@@ -140,18 +140,25 @@ class RecordReader {
 
      :arg t: the record type to read
      :arg myReader: the channel to read from
-     :arg mRegexp: the regular expression to read. This argument
+     :arg mRegex: the regular expression to read. This argument
                    currently must be a string, but in the future might be a
                    compiled regular expression.
    */
-  proc init(type t, myReader, mRegexp) /* throws */ {
+  proc init(type t, myReader, mRegex) /* throws */ {
     this.t = t;
     this.myReader = myReader;
     // TODO: remove the following once we can throw from init() calls
     this.complete();
     try! {
-        this.matchRegexp = compile(mRegexp);
+        this.matchRegex = compile(mRegex);
     }
+  }
+
+  pragma "no doc"
+  pragma "last resort"
+  proc init(type t, myReader, mRegexp) /* throws */ {
+    compilerWarning("RecordReader.init(): 'mRegexp' is deprecated; please use 'mRegex'");
+    init(t, myReader, mRegexp);
   }
 
   /* Create a string regular expression for the record type :type:`t` attached to
@@ -160,7 +167,7 @@ class RecordReader {
      The created regular expression will search for
      ``<fieldName1> <spaces> <fieldValue1> <spaces>``
   */
-  proc createRegexp() {
+  proc createRegex() {
     // This is a VERY loose regex, and therefore could lead to errors unless the
     // data is very nice... (but hey, the programmer wasn't willing to give us a
     // regex..)
@@ -169,6 +176,12 @@ class RecordReader {
       accum = accum + getFieldName(t, n) + "\\s*(.*?)" + "\\s*";
     }
     return accum;
+  }
+
+  pragma "no doc"
+  proc createRegexp() {
+    compilerWarning("RecordReader: 'createRegexp' is deprecated; please use 'createRegex' instead.");
+    return createRegex();
   }
 
   /* Yield records for the range offst..offst+len, but assumes that the
@@ -228,7 +241,7 @@ class RecordReader {
     var once = false; // We havent populated yet
     // This will only loop through  at most one time before returning
     // FEATURE REQUEST: Make this so we don't need a for loop here
-    for m in myReader.matches(matchRegexp, num_fields, 1) {
+    for m in myReader.matches(matchRegex, num_fields, 1) {
       if (((m(0).offset) >= offst+len) && len != -1) { // rec.start >= start + len
         // Then break and dont return any record
         return (rec, false);

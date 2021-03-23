@@ -1218,10 +1218,10 @@ extern record qio_conv_t {
   var literal_is_whitespace:uint(8);
   var literal_length:uint(32);
   var literal:c_void_ptr;
-  var regexp_length:uint(32);
-  var regexp:c_void_ptr;
-  var regexp_flags_length:uint(32);
-  var regexp_flags:c_void_ptr;
+  var regex_length:uint(32);
+  var regex:c_void_ptr;
+  var regex_flags_length:uint(32);
+  var regex_flags:c_void_ptr;
 }
 
 private extern const QIO_CONV_UNK:c_int;
@@ -1242,8 +1242,8 @@ private extern const QIO_CONV_ARG_TYPE_CHAR:c_int;
 private extern const QIO_CONV_ARG_TYPE_STRING:c_int;
 private extern const QIO_CONV_ARG_TYPE_BINARY_STRING:c_int;
 private extern const QIO_CONV_ARG_TYPE_REPR:c_int;
-private extern const QIO_CONV_ARG_TYPE_REGEXP:c_int;
-private extern const QIO_CONV_ARG_TYPE_NONE_REGEXP_LITERAL:c_int;
+private extern const QIO_CONV_ARG_TYPE_REGEX:c_int;
+private extern const QIO_CONV_ARG_TYPE_NONE_REGEX_LITERAL:c_int;
 private extern const QIO_CONV_ARG_TYPE_NONE_LITERAL:c_int;
 
 private extern const QIO_CONV_SET_MIN_WIDTH_COLS:c_int;
@@ -1265,8 +1265,8 @@ private extern proc qio_format_error_too_many_args():syserr;
 private extern proc qio_format_error_too_few_args():syserr;
 private extern proc qio_format_error_arg_mismatch(arg:int):syserr;
 pragma "no doc"
-extern proc qio_format_error_bad_regexp():syserr;
-private extern proc qio_format_error_write_regexp():syserr;
+extern proc qio_format_error_bad_regex():syserr;
+private extern proc qio_format_error_write_regex():syserr;
 
 /*
    :returns: the default I/O style. See :record:`iostyle`
@@ -4783,7 +4783,7 @@ String and Bytes Conversions
  consume one or more 'a's when reading, gives an error when printing,
  and does not assign to any arguments
  (note - regular expression support is dependent on RE2 build;
- see :mod:`Regexp`)
+ see :mod:`Regex`)
 
 ``%/(a+)/``
  consume one or more 'a's and then set the corresponding string
@@ -5567,43 +5567,43 @@ proc _setIfChar(ref lhs:?t, rhs:int(32)) where !(t==string||isIntegralType(t))
 
 
 private inline
-proc _toRegexp(x:?t) where isSubtype(t, regexp(?))
+proc _toRegex(x:?t) where isSubtype(t, regex(?))
 {
   return (x, true);
 }
 private inline
-proc _toRegexp(x:?t)
+proc _toRegex(x:?t)
 {
-  var r:regexp(string);
+  var r:regex(string);
   return (r, false);
 }
 
 pragma "no doc"
-class _channel_regexp_info {
-  var hasRegexp = false;
-  var matchedRegexp = false;
-  var releaseRegexp = false;
-  var theRegexp = qio_regexp_null();
-  var matches: _ddata(qio_regexp_string_piece_t) = nil; // size = ncaptures+1
+class _channel_regex_info {
+  var hasRegex = false;
+  var matchedRegex = false;
+  var releaseRegex = false;
+  var theRegex = qio_regex_null();
+  var matches: _ddata(qio_regex_string_piece_t) = nil; // size = ncaptures+1
   var capArr: _ddata(bytes) = nil; // size = ncaptures
   var capturei: int;
   var ncaptures: int;
 
   proc clear() {
-    if releaseRegexp {
-      qio_regexp_release(theRegexp);
+    if releaseRegex {
+      qio_regex_release(theRegex);
     }
-    theRegexp = qio_regexp_null();
-    hasRegexp = false;
-    matchedRegexp = false;
-    releaseRegexp = false;
+    theRegex = qio_regex_null();
+    hasRegex = false;
+    matchedRegex = false;
+    releaseRegex = false;
     if matches then _ddata_free(matches, ncaptures+1);
     for i in 0..#ncaptures do capArr[i] = b"";
     if capArr then _ddata_free(capArr, ncaptures);
   }
   proc allocate_captures() {
-    ncaptures = qio_regexp_get_ncaptures(theRegexp);
-    matches = _ddata_allocate(qio_regexp_string_piece_t, ncaptures+1);
+    ncaptures = qio_regex_get_ncaptures(theRegex);
+    matches = _ddata_allocate(qio_regex_string_piece_t, ncaptures+1);
     capArr = _ddata_allocate(bytes, ncaptures);
     capturei = 0;
   }
@@ -5611,21 +5611,21 @@ class _channel_regexp_info {
     clear();
   }
   override proc writeThis(f) throws {
-    f <~> "{hasRegexp = " + hasRegexp: string;
-    f <~> ", matchedRegexp = " + matchedRegexp: string;
-    f <~> ", releaseRegexp = " + releaseRegexp: string;
+    f <~> "{hasRegex = " + hasRegex: string;
+    f <~> ", matchedRegex = " + matchedRegex: string;
+    f <~> ", releaseRegex = " + releaseRegex: string;
     f <~> ", ... capturei = " + capturei: string;
     f <~> ", ncaptures = " + ncaptures: string + "}";
   }
 }
 
 pragma "no doc"
-proc channel._match_regexp_if_needed(cur:size_t, len:size_t, ref error:syserr,
-    ref style:iostyle, r:unmanaged _channel_regexp_info)
+proc channel._match_regex_if_needed(cur:size_t, len:size_t, ref error:syserr,
+    ref style:iostyle, r:unmanaged _channel_regex_info)
 {
-  if qio_regexp_ok(r.theRegexp) {
-    if r.matchedRegexp then return;
-    r.matchedRegexp = true;
+  if qio_regex_ok(r.theRegex) {
+    if r.matchedRegex then return;
+    r.matchedRegex = true;
     r.allocate_captures(); // also allocates matches and capArr
     var ncaps = r.ncaptures;
     var nm = ncaps + 1;
@@ -5637,10 +5637,10 @@ proc channel._match_regexp_if_needed(cur:size_t, len:size_t, ref error:syserr,
     var can_discard = (cur == len);
     if maxlen == max(uint(32)) then maxlen = max(int(64));
     var before_match = qio_channel_offset_unlocked(_channel_internal);
-    // Do the actual regexp search.
-    // Now read, matching the regexp.
-    error = qio_regexp_channel_match(r.theRegexp, false, _channel_internal,
-                                     maxlen, QIO_REGEXP_ANCHOR_START,
+    // Do the actual regex search.
+    // Now read, matching the regex.
+    error = qio_regex_channel_match(r.theRegex, false, _channel_internal,
+                                     maxlen, QIO_REGEX_ANCHOR_START,
                                      can_discard,
                                      /* keep_unmatched */ true,
                                      /* keep_whole_pattern */ false,
@@ -5655,7 +5655,7 @@ proc channel._match_regexp_if_needed(cur:size_t, len:size_t, ref error:syserr,
       for j in 0..#ncaps {
         // matches[0] is the whole pattern, and
         // we only want to extract capture groups.
-        var m = _to_reMatch(r.matches[1+j]);
+        var m = _to_regexMatch(r.matches[1+j]);
         _extractMatch(m, r.capArr[j], error);
         if error then break;
       }
@@ -5674,23 +5674,23 @@ proc channel._match_regexp_if_needed(cur:size_t, len:size_t, ref error:syserr,
       // EFORMAT means the pattern did not match.
     }
   } else {
-    error = qio_format_error_bad_regexp();
+    error = qio_format_error_bad_regex();
   }
 }
 
 // Reads the next format string that will require argument handling.
-// Handles literals and regexps itself; everything else will
+// Handles literals and regexes itself; everything else will
 // be returned in conv and with gotConv = true.
 // Assumes, for a reading channel, that we are within a mark/revert/commit
-//  in readf. (used in the regexp handling here).
+//  in readf. (used in the regex handling here).
 pragma "no doc"
 proc channel._format_reader(
     fmtStr:?fmtType, ref cur:size_t, len:size_t, ref error:syserr,
     ref conv:qio_conv_t, ref gotConv:bool, ref style:iostyle,
-    ref r:unmanaged _channel_regexp_info?,
+    ref r:unmanaged _channel_regex_info?,
     isReadf:bool)
 {
-  if r != nil then r!.hasRegexp = false;
+  if r != nil then r!.hasRegex = false;
   if !error {
     var fmt = fmtStr.localize().c_str();
     while cur < len {
@@ -5734,45 +5734,45 @@ proc channel._format_reader(
           // when printing we don't care if it's just whitespace.
           error = qio_channel_print_literal_2(false, _channel_internal, conv.literal, conv.literal_length:ssize_t);
         }
-      } else if conv.argType == QIO_CONV_ARG_TYPE_NONE_REGEXP_LITERAL {
+      } else if conv.argType == QIO_CONV_ARG_TYPE_NONE_REGEX_LITERAL {
         if ! isReadf {
           // It's not so clear what to do when printing
-          // a regexp. So we just don't handle it.
-          error = qio_format_error_write_regexp();
+          // a regex. So we just don't handle it.
+          error = qio_format_error_write_regex();
         } else {
-          // allocate regexp info if needed
-          if r == nil then r = new unmanaged _channel_regexp_info();
+          // allocate regex info if needed
+          if r == nil then r = new unmanaged _channel_regex_info();
           const rnn = r!;  // indicate that it is non-nil
           // clear out old data, if there is any.
           rnn.clear();
-          // Compile a regexp from the format string
+          // Compile a regex from the format string
           var errstr:string;
-          // build a regexp out of regexp and regexp_flags
-          qio_regexp_create_compile_flags_2(conv.regexp, conv.regexp_length,
-                                            conv.regexp_flags,
-                                            conv.regexp_flags_length,
+          // build a regex out of regex and regex_flags
+          qio_regex_create_compile_flags_2(conv.regex, conv.regex_length,
+                                            conv.regex_flags,
+                                            conv.regex_flags_length,
                                             /* utf8? */ fmtType==string,
-                                            rnn.theRegexp);
-          rnn.releaseRegexp = true;
-          if qio_regexp_ok(rnn.theRegexp) {
-            rnn.hasRegexp = true;
-            rnn.ncaptures = qio_regexp_get_ncaptures(rnn.theRegexp);
+                                            rnn.theRegex);
+          rnn.releaseRegex = true;
+          if qio_regex_ok(rnn.theRegex) {
+            rnn.hasRegex = true;
+            rnn.ncaptures = qio_regex_get_ncaptures(rnn.theRegex);
             // If there are no captures, and we don't have arguments
-            // to consume, go ahead and match the regexp.
+            // to consume, go ahead and match the regex.
             if rnn.ncaptures > 0 ||
                conv.preArg1 != QIO_CONV_UNK ||
                conv.preArg2 != QIO_CONV_UNK ||
                conv.preArg3 != QIO_CONV_UNK
             {
-              // We need to consume args as part of matching this regexp.
+              // We need to consume args as part of matching this regex.
               gotConv = true;
               break;
             } else {
               // No args will be consumed.
-              _match_regexp_if_needed(cur, len, error, style, rnn);
+              _match_regex_if_needed(cur, len, error, style, rnn);
             }
           } else {
-            error = qio_format_error_bad_regexp();
+            error = qio_format_error_bad_regex();
             //if dieOnError then assert(!error, errstr);
           }
         }
@@ -5825,7 +5825,7 @@ proc channel._conv_helper(
     boundsCheckHelp();
     if conv.argType != QIO_CONV_UNK {
       if argType(j) == QIO_CONV_UNK {
-        // Some regexp paths set it earlier..
+        // Some regex paths set it earlier..
         argType(j) = conv.argType;
       }
       j += 1;
@@ -6126,7 +6126,7 @@ proc channel._read_complex(width:uint(32), out t:complex, i:int)
 // for which we have already created and instantiation of this.
 proc channel._writefOne(fmtStr, ref arg, i: int,
                         ref cur: size_t, ref j: int,
-                        ref r: unmanaged _channel_regexp_info?,
+                        ref r: unmanaged _channel_regex_info?,
                         argType: c_ptr(c_int), argTypeLen: int,
                         ref conv: qio_conv_t, ref gotConv: bool,
                         ref style: iostyle, ref err: syserr, origLocale: locale,
@@ -6221,9 +6221,9 @@ proc channel._writefOne(fmtStr, ref arg, i: int,
         if ! ok {
           err = qio_format_error_arg_mismatch(i);
         } else try _writeOne(iokind.dynamic, t, origLocale);
-      } when QIO_CONV_ARG_TYPE_REGEXP { // It's not so clear what to do when printing
-        // a regexp. So we just don't handle it.
-        err = qio_format_error_write_regexp();
+      } when QIO_CONV_ARG_TYPE_REGEX { // It's not so clear what to do when printing
+        // a regex. So we just don't handle it.
+        err = qio_format_error_write_regex();
       } when QIO_CONV_ARG_TYPE_REPR {
         try _writeOne(iokind.dynamic, arg, origLocale);
       } otherwise {
@@ -6268,7 +6268,7 @@ proc channel.writef(fmtStr: ?t, const args ...?k): bool throws
     // c_ptr. This should reduce number of instantiations of writefOne
     var argType: c_array(c_int, argTypeLen);
 
-    var r:unmanaged _channel_regexp_info?;
+    var r:unmanaged _channel_regex_info?;
     defer {
       if r then delete r;
     }
@@ -6322,7 +6322,7 @@ proc channel.writef(fmtStr:?t): bool throws
     var end:size_t;
     var dummy:c_int;
 
-    var r:unmanaged _channel_regexp_info?;
+    var r:unmanaged _channel_regex_info?;
     defer {
       if r then delete r;
     }
@@ -6394,7 +6394,7 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
     // helper. See writef
     var argType: c_array(c_int, argTypeLen);
 
-    var r:unmanaged _channel_regexp_info?;
+    var r:unmanaged _channel_regex_info?;
     defer {
       if r then delete r;
     }
@@ -6419,7 +6419,7 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
 
           if r != nil {
            const rnn = r!;  // indicate that it is non-nil
-           if (rnn.hasRegexp) {
+           if (rnn.hasRegex) {
             // We need to handle the next ncaptures arguments.
             if i + rnn.ncaptures - 1 > k {
               err= qio_format_error_too_few_args();
@@ -6532,19 +6532,19 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
                 err = qio_format_error_arg_mismatch(i);
               } else try _readOne(iokind.dynamic, t, origLocale);
               if ! err then err = _setIfPrimitive(args(i),t,i);
-            } when QIO_CONV_ARG_TYPE_REGEXP {
-              var (t,ok) = _toRegexp(args(i));
+            } when QIO_CONV_ARG_TYPE_REGEX {
+              var (t,ok) = _toRegex(args(i));
               if ! ok {
                 err = qio_format_error_arg_mismatch(i);
               } else {
                 // match it here.
-                if r == nil then r = new unmanaged _channel_regexp_info();
+                if r == nil then r = new unmanaged _channel_regex_info();
                 const rnn = r!;  // indicate that it is non-nil
                 rnn.clear();
-                rnn.theRegexp = t._regexp;
-                rnn.hasRegexp = true;
-                rnn.releaseRegexp = false;
-                _match_regexp_if_needed(cur, len, err, style, rnn);
+                rnn.theRegex = t._regex;
+                rnn.hasRegex = true;
+                rnn.releaseRegex = false;
+                _match_regex_if_needed(cur, len, err, style, rnn);
 
                 // Set the capture groups.
                 // We need to handle the next ncaptures arguments.
@@ -6561,13 +6561,13 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
               try _readOne(iokind.dynamic, args(i), origLocale);
             } when QIO_CONV_SET_CAPTURE {
               if r == nil {
-                err = qio_format_error_bad_regexp();
+                err = qio_format_error_bad_regex();
               } else {
                 const rnn = r!;  // indicate that it is non-nil
-                _match_regexp_if_needed(cur, len, err, style, rnn);
+                _match_regex_if_needed(cur, len, err, style, rnn);
                 // Set args(i) to the capture at capturei.
                 if rnn.capturei >= rnn.ncaptures {
-                  err = qio_format_error_bad_regexp();
+                  err = qio_format_error_bad_regex();
                 } else {
                   // We have a string in captures[capturei] and
                   // we need to set args(i) to that.
@@ -6592,7 +6592,7 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
                       // DecodeError here?
                     } catch {
                       // maybe a cast error for the enum cast
-                      err = qio_format_error_bad_regexp();
+                      err = qio_format_error_bad_regex();
                     }
                   }
                   rnn.capturei += 1;
@@ -6664,7 +6664,7 @@ proc channel.readf(fmtStr:?t) throws
     var end:size_t;
     var dummy:c_int;
 
-    var r:unmanaged _channel_regexp_info?;
+    var r:unmanaged _channel_regex_info?;
     defer {
       if r then delete r;
     }
@@ -6850,18 +6850,18 @@ private proc chpl_do_format(fmt:?t, args ...?k): t throws
 
 
 
-use Regexp;
+use Regex;
 
-private extern proc qio_regexp_channel_match(const ref re:qio_regexp_t, threadsafe:c_int, ch:qio_channel_ptr_t, maxlen:int(64), anchor:c_int, can_discard:bool, keep_unmatched:bool, keep_whole_pattern:bool, submatch:_ddata(qio_regexp_string_piece_t), nsubmatch:int(64)):syserr;
+private extern proc qio_regex_channel_match(const ref re:qio_regex_t, threadsafe:c_int, ch:qio_channel_ptr_t, maxlen:int(64), anchor:c_int, can_discard:bool, keep_unmatched:bool, keep_whole_pattern:bool, submatch:_ddata(qio_regex_string_piece_t), nsubmatch:int(64)):syserr;
 
 pragma "no doc"
-proc channel._extractMatch(m:reMatch, ref arg:reMatch, ref error:syserr) {
+proc channel._extractMatch(m:regexMatch, ref arg:regexMatch, ref error:syserr) {
   // If the argument is a match record, just return it.
   arg = m;
 }
 
 pragma "no doc"
-proc channel._extractMatch(m:reMatch, ref arg:bytes, ref error:syserr) {
+proc channel._extractMatch(m:regexMatch, ref arg:bytes, ref error:syserr) {
   var cur:int(64);
   var target = m.offset:int;
   var len = m.size;
@@ -6902,8 +6902,8 @@ proc channel._extractMatch(m:reMatch, ref arg:bytes, ref error:syserr) {
 }
 
 pragma "no doc"
-proc channel._extractMatch(m:reMatch, ref arg:?t, ref error:syserr)
-      where t != reMatch && t != bytes {
+proc channel._extractMatch(m:regexMatch, ref arg:?t, ref error:syserr)
+      where t != regexMatch && t != bytes {
   // If there was no match, return the default value of the type
   if !m.matched {
     var empty:arg.type;
@@ -6944,27 +6944,27 @@ proc channel._extractMatch(m:reMatch, ref arg:?t, ref error:syserr)
     position to just after the match. Will not do anything
     if error is set.
 
-    :arg m: a :record:`Regexp.reMatch` storing a location that matched
+    :arg m: a :record:`Regex.regexMatch` storing a location that matched
     :arg arg: an argument to retrieve the match into. If it is not a string,
               the string match will be cast to arg.type.
 
     :throws SystemError: Thrown if a match could not be extracted.
  */
-proc channel.extractMatch(m:reMatch, ref arg) throws {
+proc channel.extractMatch(m:regexMatch, ref arg) throws {
   var err:syserr = ENOERR;
   on this.home {
     try this.lock(); defer { this.unlock(); }
     _extractMatch(m, arg, err);
   }
   if err {
-    try this._ch_ioerror(err, "in channel.extractMatch(m:reMatch, ref " +
+    try this._ch_ioerror(err, "in channel.extractMatch(m:regexMatch, ref " +
                               arg.type:string + ")");
   }
 }
 
 // documented in throws version
 pragma "no doc"
-proc channel.extractMatch(m:reMatch, ref arg, ref error:syserr) {
+proc channel.extractMatch(m:regexMatch, ref arg, ref error:syserr) {
   on this.home {
     try! this.lock();
     _extractMatch(m, arg, error);
@@ -6975,30 +6975,30 @@ proc channel.extractMatch(m:reMatch, ref arg, ref error:syserr) {
 // Assumes that the channel has been marked where the search began
 // (or at least before the capture groups if discarding)
 pragma "no doc"
-proc channel._ch_handle_captures(matches:_ddata(qio_regexp_string_piece_t),
+proc channel._ch_handle_captures(matches:_ddata(qio_regex_string_piece_t),
                                  nmatches:int,
                                  ref captures, ref error:syserr) {
   assert(nmatches >= captures.size);
   for param i in 0..captures.size-1 {
-    var m = _to_reMatch(matches[i]);
+    var m = _to_regexMatch(matches[i]);
     _extractMatch(m, captures[i], error);
   }
 }
 
 // documented in the error= captures version
 pragma "no doc"
-proc channel.search(re:regexp(?), ref error:syserr):reMatch
+proc channel.search(re:regex(?), ref error:syserr):regexMatch
 {
-  var m:reMatch;
+  var m:regexMatch;
   on this.home {
     try! this.lock();
     var nm = 1;
-    var matches = _ddata_allocate(qio_regexp_string_piece_t, nm);
+    var matches = _ddata_allocate(qio_regex_string_piece_t, nm);
     error = qio_channel_mark(false, _channel_internal);
     if !error {
-      error = qio_regexp_channel_match(re._regexp,
+      error = qio_regex_channel_match(re._regex,
                                        false, _channel_internal, max(int(64)),
-                                       QIO_REGEXP_ANCHOR_UNANCHORED,
+                                       QIO_REGEX_ANCHOR_UNANCHORED,
                                        /* can_discard */ true,
                                        /* keep_unmatched */ false,
                                        /* keep_whole_pattern */ true,
@@ -7007,7 +7007,7 @@ proc channel.search(re:regexp(?), ref error:syserr):reMatch
     // Don't report "didn't match" errors
     if error == EFORMAT || error == EEOF then error = ENOERR;
     if !error {
-      m = _to_reMatch(matches[0]);
+      m = _to_regexMatch(matches[0]);
       if m.matched {
         // Advance to the match.
         qio_channel_revert_unlocked(_channel_internal);
@@ -7028,7 +7028,7 @@ proc channel.search(re:regexp(?), ref error:syserr):reMatch
 
 // documented in the error= version
 pragma "no doc"
-proc channel.search(re:regexp(?)):reMatch throws
+proc channel.search(re:regex(?)):regexMatch throws
 {
   var e:syserr = ENOERR;
   var ret = this.search(re, error=e);
@@ -7044,26 +7044,26 @@ proc channel.search(re:regexp(?)):reMatch throws
 
     Throws a SystemError if an error occurs.
 
-    :arg re: a :record:`Regexp.regexp` record representing a compiled
+    :arg re: a :record:`Regex.regex` record representing a compiled
              regular expression.
     :arg captures: an optional variable number of arguments in which to
                    store the regions of the file matching the capture groups
                    in the regular expression.
     :returns: the region of the channel that matched
  */
-proc channel.search(re:regexp(?), ref captures ...?k): reMatch throws
+proc channel.search(re:regex(?), ref captures ...?k): regexMatch throws
 {
-  var m:reMatch;
+  var m:regexMatch;
   var err:syserr = ENOERR;
   on this.home {
     try this.lock(); defer { this.unlock(); }
     var nm = captures.size + 1;
-    var matches = _ddata_allocate(qio_regexp_string_piece_t, nm);
+    var matches = _ddata_allocate(qio_regex_string_piece_t, nm);
     err = qio_channel_mark(false, _channel_internal);
     if ! err {
-      err = qio_regexp_channel_match(re._regexp,
+      err = qio_regex_channel_match(re._regex,
                                      false, _channel_internal, max(int(64)),
-                                     QIO_REGEXP_ANCHOR_UNANCHORED,
+                                     QIO_REGEX_ANCHOR_UNANCHORED,
                                      /* can_discard */ true,
                                      /* keep_unmatched */ false,
                                      /* keep_whole_pattern */ true,
@@ -7071,7 +7071,7 @@ proc channel.search(re:regexp(?), ref captures ...?k): reMatch throws
     }
     if err == EFORMAT || err == EEOF then err = ENOERR;
     if !err {
-      m = _to_reMatch(matches[0]);
+      m = _to_regexMatch(matches[0]);
       if m.matched {
         // Extract the capture groups.
         _ch_handle_captures(matches, nm, captures, err);
@@ -7095,18 +7095,18 @@ proc channel.search(re:regexp(?), ref captures ...?k): reMatch throws
 
 // documented in the capture group version
 pragma "no doc"
-proc channel.match(re:regexp(?), ref error:syserr):reMatch
+proc channel.match(re:regex(?), ref error:syserr):regexMatch
 {
-  var m:reMatch;
+  var m:regexMatch;
   on this.home {
     try! this.lock();
     var nm = 1;
-    var matches = _ddata_allocate(qio_regexp_string_piece_t, nm);
+    var matches = _ddata_allocate(qio_regex_string_piece_t, nm);
     error = qio_channel_mark(false, _channel_internal);
     if ! error {
-      error = qio_regexp_channel_match(re._regexp,
+      error = qio_regex_channel_match(re._regex,
                                        false, _channel_internal, max(int(64)),
-                                       QIO_REGEXP_ANCHOR_START,
+                                       QIO_REGEX_ANCHOR_START,
                                        /* can_discard */ true,
                                        /* keep_unmatched */ true,
                                        /* keep_whole_pattern */ true,
@@ -7115,7 +7115,7 @@ proc channel.match(re:regexp(?), ref error:syserr):reMatch
     // Don't report "didn't match" errors
     if error == EFORMAT || error == EEOF then error = ENOERR;
     if !error {
-      m = _to_reMatch(matches[0]);
+      m = _to_regexMatch(matches[0]);
       if m.matched {
         // Advance to the match.
         qio_channel_revert_unlocked(_channel_internal);
@@ -7135,7 +7135,7 @@ proc channel.match(re:regexp(?), ref error:syserr):reMatch
 
 // documented in the error= version
 pragma "no doc"
-proc channel.match(re:regexp(?)):reMatch throws
+proc channel.match(re:regex(?)):regexMatch throws
 {
   var e:syserr = ENOERR;
   var ret = this.match(re, error=e);
@@ -7144,12 +7144,12 @@ proc channel.match(re:regexp(?)):reMatch throws
 }
 
 /* Match, starting at the current position in the channel,
-   against a regexp, possibly pulling out capture groups.
+   against a regex, possibly pulling out capture groups.
    If there was a match, leaves the channel position at
    the match. If there was no match, leaves the channel
    position where it was at the start of this call.
 
-   :arg re: a :record:`Regexp.regexp` record representing a compiled
+   :arg re: a :record:`Regex.regex` record representing a compiled
              regular expression.
    :arg captures: an optional variable number of arguments in which to
                   store the regions of the file matching the capture groups
@@ -7157,18 +7157,18 @@ proc channel.match(re:regexp(?)):reMatch throws
    :returns: the region of the channel that matched
  */
 
-proc channel.match(re:regexp(?), ref captures ...?k, ref error:syserr):reMatch
+proc channel.match(re:regex(?), ref captures ...?k, ref error:syserr):regexMatch
 {
-  var m:reMatch;
+  var m:regexMatch;
   on this.home {
     try! this.lock();
     var nm = 1 + captures.size;
-    var matches = _ddata_allocate(qio_regexp_string_piece_t, nm);
+    var matches = _ddata_allocate(qio_regex_string_piece_t, nm);
     error = qio_channel_mark(false, _channel_internal);
     if !error {
-      error = qio_regexp_channel_match(re._regexp,
+      error = qio_regex_channel_match(re._regex,
                                false, _channel_internal, max(int(64)),
-                               QIO_REGEXP_ANCHOR_START,
+                               QIO_REGEX_ANCHOR_START,
                                /* can_discard */ true,
                                /* keep_unmatched */ true,
                                /* keep_whole_pattern */ true,
@@ -7177,7 +7177,7 @@ proc channel.match(re:regexp(?), ref captures ...?k, ref error:syserr):reMatch
     // Don't report "didn't match" errors
     if error == EFORMAT || error == EEOF then error = ENOERR;
     if !error {
-      m = _to_reMatch(matches[0]);
+      m = _to_regexMatch(matches[0]);
       if m.matched {
         // Extract the capture groups.
         _ch_handle_captures(matches, nm, captures, error);
@@ -7199,7 +7199,7 @@ proc channel.match(re:regexp(?), ref captures ...?k, ref error:syserr):reMatch
 }
 // documented in the error= version
 pragma "no doc"
-proc channel.match(re:regexp(?), ref captures ...?k):reMatch throws
+proc channel.match(re:regex(?), ref captures ...?k):regexMatch throws
 {
   var e:syserr = ENOERR;
   var ret = this.match(re, (...captures), error=e);
@@ -7211,7 +7211,7 @@ proc channel.match(re:regexp(?), ref captures ...?k):reMatch throws
 
 /* Enumerates matches in the string as well as capture groups.
 
-   Yields tuples of :record:`Regexp.reMatch` objects, the 1st is always
+   Yields tuples of :record:`Regex.regexMatch` objects, the 1st is always
    the match for the whole pattern.
 
    At the time each match is returned, the channel position is
@@ -7228,24 +7228,24 @@ proc channel.match(re:regexp(?), ref captures ...?k):reMatch throws
 
    Holds the channel lock for the duration of the search.
 
-   :arg re: a :record:`Regexp.regexp` record representing a compiled
+   :arg re: a :record:`Regex.regex` record representing a compiled
             regular expression.
    :arg captures: an optional compile-time constant representing the number
                   of captures to be yielded in tuple elements.
    :arg maxmatches: the maximum number of matches to report.
-   :yields: tuples of :record:`Regexp.reMatch` objects, where the first element
+   :yields: tuples of :record:`Regex.regexMatch` objects, where the first element
             is the whole pattern.  The tuples will have 1+captures elements.
  */
 pragma "not order independent yielding loops"
-iter channel.matches(re:regexp(?), param captures=0, maxmatches:int = max(int))
+iter channel.matches(re:regex(?), param captures=0, maxmatches:int = max(int))
 // TODO: should be throws
 {
-  var m:reMatch;
+  var m:regexMatch;
   var go = true;
   var i = 0;
   var error:syserr = ENOERR;
   param nret = captures+1;
-  var ret:nret*reMatch;
+  var ret:nret*regexMatch;
 
   // TODO should be try not try!  ditto try! _mark() below
   try! lock();
@@ -7254,21 +7254,21 @@ iter channel.matches(re:regexp(?), param captures=0, maxmatches:int = max(int))
   while go && i < maxmatches {
     on this.home {
       var nm = 1 + captures;
-      var matches = _ddata_allocate(qio_regexp_string_piece_t, nm);
+      var matches = _ddata_allocate(qio_regex_string_piece_t, nm);
       if ! error {
-        error = qio_regexp_channel_match(re._regexp,
+        error = qio_regex_channel_match(re._regex,
                                  false, _channel_internal, max(int(64)),
-                                 QIO_REGEXP_ANCHOR_UNANCHORED,
+                                 QIO_REGEX_ANCHOR_UNANCHORED,
                                  /* can_discard */ true,
                                  /* keep_unmatched */ false,
                                  /* keep_whole_pattern */ true,
                                  matches, nm);
       }
       if !error {
-        m = _to_reMatch(matches[0]);
+        m = _to_regexMatch(matches[0]);
         if m.matched {
           for param i in 0..nret-1 {
-            m = _to_reMatch(matches[i]);
+            m = _to_regexMatch(matches[i]);
             _extractMatch(m, ret[i], error);
           }
           // Advance to the start of the match.

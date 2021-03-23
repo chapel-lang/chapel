@@ -1,6 +1,6 @@
 //  #include "stdchplrt.h"
 #include "qio.h"
-#include "qio_regexp.h"
+#include "qio_regex.h"
 #include <assert.h>
 #include <stdio.h>
 

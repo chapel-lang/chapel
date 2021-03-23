@@ -1,4 +1,4 @@
-use Regexp;
+use Regex;
 use IO;
 
 writeln("Words words words");
