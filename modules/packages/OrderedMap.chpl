@@ -116,7 +116,7 @@ module OrderedMap {
 
     /* The underlying implementation */
     pragma "no doc"
-    var _set: orderedSet(_eltType, parSafe);
+    var _set: orderedSet;
 
 
     //TODO: Maybe we should use the lock from the underlying implementation
