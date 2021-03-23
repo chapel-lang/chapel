@@ -2170,7 +2170,7 @@ static const char* getClangBuiltinWrappedName(const char* name)
 // main module (minus its path and extension) if it isn't set
 // already.  If in library mode, set the name of the header file as well.
 static void setupDefaultFilenames() {
-  if (executableFilename[0] == '\0') {
+  if (executableFilename.empty()) {
     ModuleSymbol* mainMod = ModuleSymbol::mainModule();
     const char* mainModFilename = mainMod->astloc.filename;
     const char* filename = stripdirectories(mainModFilename);
@@ -2196,11 +2196,10 @@ static void setupDefaultFilenames() {
         }
         *lastDot = '\0';
       }
-      if (strlen(filename) >= sizeof(executableFilename) - 3) {
+      if (strlen(filename) >= FILENAME_MAX - 2) {
         INT_FATAL("input filename exceeds executable filename buffer size");
       }
-      strncpy(executableFilename, filename,
-              sizeof(executableFilename)-1);
+      executableFilename += std::string(filename);
 
       if (fLibraryPython && pythonModulename[0] == '\0') {
         strncpy(pythonModulename, filename, sizeof(pythonModulename)-1);
@@ -2217,34 +2216,33 @@ static void setupDefaultFilenames() {
     } else {
       // copy from that slash onwards into the executableFilename,
       // saving space for a `\0` terminator
-      if (strlen(filename) >= sizeof(executableFilename)) {
+      if (strlen(filename) > FILENAME_MAX) {
         INT_FATAL("input filename exceeds executable filename buffer size");
       }
-      strncpy(executableFilename, filename, sizeof(executableFilename)-1);
-      executableFilename[sizeof(executableFilename)-1] = '\0';
+      executableFilename=filename;
     }
 
     // remove the filename extension from the executable filename
-    char* lastDot = strrchr(executableFilename, '.');
-    if (lastDot == NULL) {
+    std::string::size_type lastDotPos=executableFilename.rfind('.');
+    if (lastDotPos == std::string::npos) {
       INT_FATAL(mainMod, "main module filename is missing its extension: %s\n",
-                executableFilename);
+                executableFilename.c_str());
     }
-    *lastDot = '\0';
+    executableFilename.erase(lastDotPos);
 
   }
 
   // If we're in library mode and the executable name was set but the header
   // name wasn't, use the executable name for the header name as well
   if (fLibraryCompile && libmodeHeadername[0] == '\0') {
-    strncpy(libmodeHeadername, executableFilename, sizeof(libmodeHeadername)-1);
+    strncpy(libmodeHeadername, executableFilename.c_str(), sizeof(libmodeHeadername)-1);
     libmodeHeadername[sizeof(libmodeHeadername)-1] = '\0';
   }
 
   // If we're in library mode and the library name was explicitly set, use that
   // name for the python module.
   if (fLibraryCompile && fLibraryPython && pythonModulename[0] == '\0') {
-    strncpy(pythonModulename, executableFilename, sizeof(pythonModulename)-1);
+    strncpy(pythonModulename, executableFilename.c_str(), sizeof(pythonModulename)-1);
     pythonModulename[sizeof(pythonModulename)-1] = '\0';
   }
 }

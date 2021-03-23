@@ -184,7 +184,7 @@ ModuleSymbol* ModuleSymbol::findMainModuleFromCommandLine() {
           if (retval != NULL) {
             if (fLibraryCompile) {
               // "Main module" is not a valid concept in library compilation
-              if (executableFilename[0] == '\0') {
+              if (executableFilename.empty()) {
                 // But we need to know the name to use for the generated library
                 // So if the user hasn't set the executableFilename via -o,
                 // generate an error message

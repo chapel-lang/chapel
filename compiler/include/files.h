@@ -27,7 +27,7 @@
 #include <vector>
 #include "vec.h"
 
-extern char executableFilename[FILENAME_MAX+1];
+extern std::string executableFilename;
 extern char libmodeHeadername[FILENAME_MAX+1];
 extern char fortranModulename[FILENAME_MAX+1];
 extern char pythonModulename[FILENAME_MAX+1];

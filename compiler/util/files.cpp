@@ -56,7 +56,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-char executableFilename[FILENAME_MAX + 1] = "";
+std::string executableFilename            = "";
 char libmodeHeadername[FILENAME_MAX + 1]  = "";
 char fortranModulename[FILENAME_MAX + 1]  = "";
 char pythonModulename[FILENAME_MAX + 1]   = "";
@@ -697,12 +697,12 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
                       bool skip_compile_link,
                       const std::vector<const char*>& splitFiles) {
   const char* tmpDirName = intDirName;
-  const char* strippedExeFilename = stripdirectories(executableFilename);
+  const char* strippedExeFilename = stripdirectories(executableFilename.c_str());
   const char* exeExt = getLibraryExtension();
   const char* server = "";
   const char* tmpserver = "";
   const char* tmpbin = "";
-  bool startsWithLib = !strncmp(executableFilename, "lib", 3);
+  bool startsWithLib = !strncmp(executableFilename.c_str(), "lib", 3);
   bool dyn = (fLinkStyle == LS_DYNAMIC);
   std::string makeallvars;
   fileinfo makefile;
@@ -738,7 +738,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
     ensureLibDirExists();
     fprintf(makefile.fptr, "BINNAME = %s/", libDir);
     if (!startsWithLib) { fprintf(makefile.fptr, "lib"); }
-    fprintf(makefile.fptr, "%s%s\n\n", executableFilename, exeExt);
+    fprintf(makefile.fptr, "%s%s\n\n", executableFilename.c_str(), exeExt);
 
     //
     // Now that the client and launcher are merged, the server name becomes
@@ -747,12 +747,12 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
     // from the file name.
     //
     if (fMultiLocaleInterop) {
-      server = astr(executableFilename, "_server");
+      server = astr(executableFilename.c_str(), "_server");
       fprintf(makefile.fptr, "SERVERNAME = %s\n\n", server);
     }
 
   } else {
-    fprintf(makefile.fptr, "BINNAME = %s%s\n\n", executableFilename, exeExt);
+    fprintf(makefile.fptr, "BINNAME = %s%s\n\n", executableFilename.c_str(), exeExt);
   }
 
   //

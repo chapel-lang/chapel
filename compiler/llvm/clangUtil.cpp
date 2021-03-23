@@ -3673,7 +3673,7 @@ void makeBinaryLLVM(void) {
     if (fLibraryCompile) {
       moveGeneratedLibraryFile(tmpbinname);
     } else {
-      moveResultFromTmp(executableFilename, tmpbinname);
+      moveResultFromTmp(executableFilename.c_str(), tmpbinname);
     }
 
   } else {
@@ -3888,7 +3888,7 @@ static std::string getLibraryOutputPath() {
   const char* exeExt = getLibraryExtension();
   const char* libraryPrefix = "";
   int libLength = strlen("lib");
-  bool startsWithLib = strncmp(executableFilename, "lib", libLength) == 0;
+  bool startsWithLib = strncmp(executableFilename.c_str(), "lib", libLength) == 0;
 
   if (!startsWithLib) {
     libraryPrefix = "lib";

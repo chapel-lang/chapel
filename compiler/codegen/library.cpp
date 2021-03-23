@@ -136,7 +136,7 @@ static void printMakefileLibraries(fileinfo makefile, std::string name);
 void codegen_library_makefile() {
   std::string name = "";
   int libLength = strlen("lib");
-  bool startsWithLib = strncmp(executableFilename, "lib", libLength) == 0;
+  bool startsWithLib = strncmp(executableFilename.c_str(), "lib", libLength) == 0;
   if (startsWithLib) {
     name += &executableFilename[libLength];
   } else {
@@ -677,7 +677,7 @@ static void makePYFile() {
 
     std::string libname = "";
     int libLength = strlen("lib");
-    bool startsWithLib = strncmp(executableFilename, "lib", libLength) == 0;
+    bool startsWithLib = strncmp(executableFilename.c_str(), "lib", libLength) == 0;
     if (startsWithLib) {
       libname += &executableFilename[libLength];
     } else {
@@ -861,7 +861,7 @@ void codegen_make_python_module() {
 
   std::string name = "-l";
   int libLength = strlen("lib");
-  bool startsWithLib = strncmp(executableFilename, "lib", libLength) == 0;
+  bool startsWithLib = strncmp(executableFilename.c_str(), "lib", libLength) == 0;
   if (startsWithLib) {
     name += &executableFilename[libLength];
   } else {
