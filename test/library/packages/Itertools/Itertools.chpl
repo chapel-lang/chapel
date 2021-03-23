@@ -33,14 +33,22 @@ module Itertools {
   /*
     Returns an object over and over again, a specified
     number of times.
+-
+-
     :arg arg: The object to be returned
     :type arg: `?`
+-
     :arg times: The number of times to return
     :type times: `int`
+-
     :yields: Object in the range ``1..times``
+-
+-
     If the argument ``times`` has the value 0, it will return
     the object an infinite number of times.
+-
     This iterator can be called in serial and parallel zippered contexts.
+-
     .. note::
       This iterator is not suitable for parallel infinite iteration i.e.
       avoid using zippered, ``forall``, or ``coforall`` loops with the
@@ -107,15 +115,23 @@ module Itertools {
   /*
     Returns elements from an iterable over and over again, a specified
     number of times.
+-
+-
     :arg arg: The iterable whose elements are to be returned
     :type arg: `?`
+-
     :arg times: The number of times to iterate through the iterable
     (i.e. number of times each element is to be returned)
     :type times: `int`
+-
     :yields: Elements of the iterable ``times`` times
+-
+-
     If the argument ``times`` has the value 0, it will return each element of
     the iterable an infinite number of times.
+-
     This iterator can be called in serial and parallel zippered contexts.
+-
     .. note::
       This iterator is not suitable for parallel infinite iteration i.e.
       avoid using zippered, ``forall``, or ``coforall`` loops with the
@@ -187,16 +203,24 @@ module Itertools {
   /*
     Returns accumulated sums, differences, or results of other binary
     operations (specified via the operation argument).
+-
+-
     :arg arg: The iterable on which the accumulation is to be performed
     :type arg: `array`
+-
     :arg operation: The operation which is to be performed for the
     accumulation
     :type operation: `operations (enum)`
+-
     :yields: Elements of the resultant array
+-
+-
     This iterator can only be called in serial contexts.
+-
     .. note::
       Be careful to pass ``real`` arrays if division is to be performed,
       or the decimal part will be truncated.
+-
     .. note::
       This tool is similar to the already available ``scan`` functionality
       for Chapel, however, this tool also provides ``divide`` and ``subtract``
@@ -204,7 +228,7 @@ module Itertools {
   */
 
   enum operations { add, subtract, multiply, divide,
-                    bitwiseAnd, bitwiseOr, bitwiseXor }
+                    bitwiseAnd, bitwiseOr, bitwiseXor }{}
 
   iter accumulate(arg: [?argDom], operation: operations)
       where argDom.rank == 1 {
