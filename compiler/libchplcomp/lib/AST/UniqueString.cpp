@@ -34,11 +34,16 @@ static const char* uniquifyString(const char* str) {
 }
 
 UniqueString::UniqueString(const char* str) {
+  assert(str != NULL);
   this->s = uniquifyString(str);
 }
 
 UniqueString::UniqueString(const std::string& str) {
   this->s = uniquifyString(str.c_str());
+}
+
+bool UniqueString::startsWith(const char* prefix) const {
+  return (0 == strncmp(this->s, prefix, strlen(prefix)));
 }
 
 }
