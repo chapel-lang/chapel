@@ -87,16 +87,6 @@ module OrderedMap {
   class _valueWrapper {
     var val;
   }
-  /*
-    This doesn't indicate any comparing.
-    Just to make (keyType, shared _valueWrapper?) comparable.
-  */
-  proc <(a: shared _valueWrapper?, b: shared _valueWrapper?) {
-    return false;
-  }
-  proc >(a: shared _valueWrapper?, b: shared _valueWrapper?) {
-    return false;
-  }
 
   record orderedMap {
     /* Type of orderedMap keys. */
