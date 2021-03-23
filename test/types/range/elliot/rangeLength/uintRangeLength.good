@@ -28,5 +28,4 @@
 1
 18446744073709551615
 18446744073709551615
-0
-uintRangeLength.chpl:26: error: halt reached - range.size exceeds max(int(64))
+uintRangeLength.chpl:23: error: halt reached - range.size exceeds max(uint(64))

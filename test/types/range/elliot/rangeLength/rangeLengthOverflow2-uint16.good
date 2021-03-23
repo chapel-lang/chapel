@@ -1,0 +1,1 @@
+rangeLengthOverflow2.chpl:7: error: halt reached - range.size exceeds max(uint(16))
