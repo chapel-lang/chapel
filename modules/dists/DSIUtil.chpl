@@ -52,7 +52,7 @@ proc _computeChunkStuff(maxTasks, ignoreRunning, minSize, ranges,
   type EC = uint; // type for element counts
   var numElems = 1:EC;
   for param i in 0..rank-1 do {
-    numElems *= ranges(i).size:EC;
+    numElems *= ranges(i).sizeAs(EC);
   }
 
   var numChunks = _computeNumChunks(maxTasks, ignoreRunning, minSize, numElems);
@@ -66,7 +66,7 @@ proc _computeChunkStuff(maxTasks, ignoreRunning, minSize, ranges,
   var maxElems = min(EC);
   // break/continue don't work with param loops (known future)
   for /* param */ i in 0..rank-1 do {
-    const curElems = ranges(i).size:EC;
+    const curElems = ranges(i).sizeAs(EC);
     if curElems >= numChunks:EC {
       parDim = i;
       break;
@@ -223,13 +223,13 @@ proc computeZeroBasedRanges(ranges: _tuple) {
     if rest.size > 1 then
       return (0:idxType..#first.size:idxType, (...helper(idxType, (...rest))));
     else
-      return (0:idxType..#first.size:idxType, 0:idxType..#rest(0).size:idxType);
+      return (0:idxType..#first.size:idxType, 0:idxType..#rest(0).sizeAs(idxType));
   }
   type idxType = ranges(0).idxType;
   if ranges.size > 1 then
     return helper(idxType, (...ranges));
   else
-    return (0:idxType..#ranges(0).size:idxType,);
+    return (0:idxType..#ranges(0).sizeAs(idxType),);
 }
 
 //
@@ -466,7 +466,7 @@ proc setupTargetLocalesArray(ref targetLocDom, targetLocArr, specifiedLocArr) {
       compilerError("specified target array of locales must equal 1 or distribution rank");
     var ranges: rank*range;
     for param i in 0..rank-1 do
-      ranges(i) = 0..#specifiedLocArr.domain.dim(i).size;
+      ranges(i) = 0..#specifiedLocArr.domain.dim(i).sizeAs(int);
     targetLocDom = {(...ranges)};
     targetLocArr = specifiedLocArr;
   }
@@ -484,7 +484,7 @@ proc setupTargetLocRanges(param rank, specifiedLocArr) {
     if specifiedLocArr.rank != rank then
       compilerError("specified target array of locales must equal 1 or distribution rank");
     for param i in 0..rank-1 do
-      ranges(i) = 0..#specifiedLocArr.domain.dim(i).size;
+      ranges(i) = 0..#specifiedLocArr.domain.dim(i).sizeAs(int);
   }
 
   return ranges;
@@ -518,10 +518,10 @@ proc bulkCommComputeActiveDims(LeftDims, RightDims) {
   var li = 0, ri = 0;
   proc advance() {
     // Advance to positions in each domain where the sizes are equal.
-    while LeftDims(li).size == 1 && LeftDims(li).size != RightDims(ri).size do li += 1;
-    while RightDims(ri).size == 1 && RightDims(ri).size != LeftDims(li).size do ri += 1;
+    while LeftDims(li).sizeAs(int) == 1 && LeftDims(li).sizeAs(int) != RightDims(ri).sizeAs(int) do li += 1;
+    while RightDims(ri).sizeAs(int) == 1 && RightDims(ri).sizeAs(int) != LeftDims(li).sizeAs(int) do ri += 1;
 
-    assert(LeftDims(li).size == RightDims(ri).size);
+    assert(LeftDims(li).sizeAs(int) == RightDims(ri).sizeAs(int));
   }
 
   do {

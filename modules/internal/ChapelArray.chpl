@@ -1470,7 +1470,6 @@ module ChapelArray {
                                  stridable=upstridable);
       var updim = 0;
 
-
       for param i in 0..rank-1 {
         if (isRange(args(i))) {
           collapsedDim(i) = false;
@@ -1482,7 +1481,6 @@ module ChapelArray {
           idx(i) = args(i);
         }
       }
-
 
       // Create distribution, domain, and array objects representing
       // the array view
@@ -1496,7 +1494,6 @@ module ChapelArray {
           upranges(d) = emptyrange;
       }
 
-      
       const rcdist = new unmanaged ArrayViewRankChangeDist(downDistPid=dist._pid,
                                                  downDistInst=dist._instance,
                                                  collapsedDim=collapsedDim,
@@ -1506,11 +1503,10 @@ module ChapelArray {
 
       const rcdistRec = new _distribution(rcdist);
 
-
       var r = new _domain(rcdistRec, uprank,
                                     upranges(0).idxType,
                                     upranges(0).stridable,
-                          upranges);
+                                    upranges); 
       return r;
     }
 
@@ -1563,7 +1559,7 @@ module ChapelArray {
     proc shape where isRectangularDom(this) || isSparseDom(this) {
       var s: rank*int;
       for (i, r) in zip(0..#s.size, dims()) do
-        s(i) = r.size;
+        s(i) = r.sizeAs(int);
       return s;
     }
 
@@ -1927,7 +1923,7 @@ module ChapelArray {
 
       for param i in 0..<rank {
           var currDim = this.dim(i);
-          div /= currDim.size;
+          div /= currDim.sizeAs(int);
           const lo = currDim.alignedLow;
           const hi = currDim.alignedHigh;
           const stride = currDim.stride;
@@ -3115,7 +3111,7 @@ module ChapelArray {
                       " dimension(s) to " + newDims.size:string);
 
       for param i in 0..rank-1 do
-        if newDims(i).size != _value.dom.dsiDim(i).size then
+        if newDims(i).sizeAs(int) != _value.dom.dsiDim(i).sizeAs(int) then
           halt("extent in dimension ", i, " does not match actual");
 
       const thisDomClass = this._value.dom;
@@ -3461,7 +3457,7 @@ module ChapelArray {
     //
     if isRectangularDom(this.domain) && isRectangularDom(that.domain) {
       for d in 0..#this.rank do
-        if this.domain.dim(d).size != that.domain.dim(d).size then
+        if this.domain.dim(d).sizeAs(int) != that.domain.dim(d).sizeAs(int) then
           return false;
     }
 
@@ -3900,10 +3896,10 @@ module ChapelArray {
             bDims = b._value.dom.dsiDims();
       compilerAssert(aDims.size == bDims.size);
       for param i in 0..aDims.size-1 {
-        if aDims(i).size != bDims(i).size then
+        if aDims(i).sizeAs(int) != bDims(i).sizeAs(int) then
           halt(if forSwap then "swapping" else "assigning",
                " between arrays of different shapes in dimension ",
-               i, ": ", aDims(i).size, " vs. ", bDims(i).size);
+               i, ": ", aDims(i).sizeAs(int), " vs. ", bDims(i).sizeAs(int));
       }
     } else {
       // may not have dsiDims(), so can't check them as above
