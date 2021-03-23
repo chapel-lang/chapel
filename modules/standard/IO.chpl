@@ -836,7 +836,7 @@ extern record iostyle { // aka qio_style_t
      how is the exponent written? Default is ``e``. */
   var exponent_char:style_char_t = 0x65; // e
   /* When reading or writing a numeric value in a text mode channel,
-     when base is > 10, how is the exponent written? Default is ``e``. */
+     when base is > 10, how is the exponent written? Default is ``p``. */
   var other_exponent_char:style_char_t = 0x70; // p
   /* What character denotes a positive number? Default is ``+``. */
   var positive_char:style_char_t = 0x2b; // +;
