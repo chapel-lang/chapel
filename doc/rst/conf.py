@@ -189,9 +189,9 @@ html_static_path = ['meta/static']
 # using the given strftime format.
 #html_last_updated_fmt = '%b %d, %Y'
 
-# If true, SmartyPants will be used to convert quotes and dashes to
+# If true, smartquotes will be used to convert quotes and dashes to
 # typographically correct entities.
-# We turn this off because it clobbers the man page documentation
+# We turned this off because it clobbers the man page documentation
 smartquotes = False
 
 # Custom sidebar templates, maps document names to template names.
