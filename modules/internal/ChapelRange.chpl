@@ -665,7 +665,7 @@ module ChapelRange {
     if al > ah then return 0;
     const s = abs(this.stride): uint;
     const lenAsUint = ((ah - al):uint / s + 1);
-    if boundsChecking && (lenAsUint > max(t)) then
+    if boundsChecking && (lenAsUint == 0 || lenAsUint > max(t)) then
       HaltWrappers.boundsCheckHalt("range.size exceeds max("+t:string+")");
     return lenAsUint: t;
   }
