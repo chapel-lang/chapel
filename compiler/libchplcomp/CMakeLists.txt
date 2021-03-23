@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.13.4)
 
-project(chplCompilerLib VERSION 0.1)
+project(libchplcomp VERSION 0.1)
 
 set(CHPL_MAIN_SRC_DIR     ${CMAKE_CURRENT_SOURCE_DIR})
 set(CHPL_MAIN_INCLUDE_DIR ${CHPL_MAIN_SRC_DIR}/include)
@@ -20,7 +20,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 # set include directories for -I
 #include_directories(include)
 
-# lib/CMakeLists.txt defines the target chplCompilerLib
+# lib/CMakeLists.txt defines the target libchplcomp
 add_subdirectory(lib)
 
 enable_testing()
@@ -31,7 +31,7 @@ add_custom_target(tests)
 function(comp_unit_test target)
   add_executable(${target} "${target}.cpp")
   set_property(TARGET ${target} PROPERTY EXCLUDE_FROM_ALL)
-  target_link_libraries(${target} chplCompilerLib)
+  target_link_libraries(${target} libchplcomp)
   add_test(NAME ${target} COMMAND ${target})
   add_dependencies(tests ${target})
 endfunction(comp_unit_test)

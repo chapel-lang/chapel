@@ -73,10 +73,10 @@ notcompiler: FORCE
 	@$(MAKE) runtime
 	@$(MAKE) modules
 
-compiler-lib: FORCE
+libchplcomp: FORCE
 	@echo "Making the compiler library..."
-	@mkdir -p build
-	@cd build && cmake ../compiler-lib && cmake --build . --target chplCompilerLib
+	@mkdir -p build/libchplcomp
+	@cd build/libchplcomp && cmake ../../compiler/libchplcomp && cmake --build .  --target libchplcomp
 
 compiler: FORCE
 	@echo "Making the compiler..."
