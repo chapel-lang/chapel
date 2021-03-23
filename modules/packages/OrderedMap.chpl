@@ -87,16 +87,6 @@ module OrderedMap {
   class _valueWrapper {
     var val;
   }
-  /*
-    This doesn't indicate any comparing.
-    Just to make (keyType, shared _valueWrapper?) comparable.
-  */
-  proc <(a: shared _valueWrapper?, b: shared _valueWrapper?) {
-    return false;
-  }
-  proc >(a: shared _valueWrapper?, b: shared _valueWrapper?) {
-    return false;
-  }
 
   record orderedMap {
     /* Type of orderedMap keys. */
@@ -116,7 +106,7 @@ module OrderedMap {
 
     /* The underlying implementation */
     pragma "no doc"
-    var _set: orderedSet(_eltType, parSafe);
+    var _set: orderedSet;
 
 
     //TODO: Maybe we should use the lock from the underlying implementation
