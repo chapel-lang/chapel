@@ -802,28 +802,28 @@ module DefaultRectangular {
       // optimize common case to get cleaner generated code
       if (rank == 1 && earlyShiftData) {
         if blkChanged {
-          return chpl__idxToInt(ind(0)).safeCast(int) * blk(0);
+          return chpl__idxToInt(ind(0)):int * blk(0);
         } else {
-          return chpl__idxToInt(ind(0)).safeCast(int);
+          return chpl__idxToInt(ind(0)):int;
         }
       } else {
         var sum = if earlyShiftData then 0 else origin;
 
         if blkChanged {
           for param i in 0..rank-1 {
-            sum += chpl__idxToInt(ind(i)).safeCast(int) * blk(i);
+            sum += chpl__idxToInt(ind(i)):int * blk(i);
           }
         } else {
           if storageOrder == ArrayStorageOrder.RMO {
             for param i in 0..rank-2 {
-              sum += chpl__idxToInt(ind(i)).safeCast(int) * blk(i);
+              sum += chpl__idxToInt(ind(i)):int * blk(i);
             }
-            sum += chpl__idxToInt(ind(rank-1)).safeCast(int);
+            sum += chpl__idxToInt(ind(rank-1)):int;
           } else {
             for param i in 1..rank-1 {
-              sum += chpl__idxToInt(ind(i)).safeCast(int) * blk(i);
+              sum += chpl__idxToInt(ind(i)):int * blk(i);
             }
-            sum += chpl__idxToInt(ind(0)).safeCast(int);
+            sum += chpl__idxToInt(ind(0)):int;
           }
         }
 
@@ -837,7 +837,7 @@ module DefaultRectangular {
     debug("E: In RAD code");
     factoredOffs = 0;
     for param i in 0..rank-1 do {
-      factoredOffs = factoredOffs + blk(i) * chpl__idxToInt(off(i)).safeCast(int);
+      factoredOffs = factoredOffs + blk(i) * chpl__idxToInt(off(i)):int;
     }
   }
 
@@ -1195,7 +1195,7 @@ module DefaultRectangular {
       factoredOffs = 0;
       debug("H: " + blk(0).type:string + ", " + chpl__idxToInt(off(0)).type:string);
       for param i in 0..rank-1 do {
-        factoredOffs = factoredOffs + blk(i) * chpl__idxToInt(off(i)).safeCast(int);
+        factoredOffs = factoredOffs + blk(i) * chpl__idxToInt(off(i)):int;
       }
       debug("H done");
     }
@@ -1292,7 +1292,7 @@ module DefaultRectangular {
 
         // optimize common case to get cleaner generated code
         if (rank == 1 && wantShiftedIndex) {
-          return chpl__idxToInt(ind(0)).safeCast(int);
+          return chpl__idxToInt(ind(0)):int;
         } else {
           var sum = 0;
           var useInd = ind;
@@ -1312,14 +1312,14 @@ module DefaultRectangular {
           } else {
             if storageOrder == ArrayStorageOrder.RMO {
               for param i in 0..rank-2 {
-                sum += chpl__idxToInt(ind(i)).safeCast(int) * blk(i);
+                sum += chpl__idxToInt(ind(i)):int * blk(i);
               }
-              sum += chpl__idxToInt(ind(rank-1)).safeCast(int);
+              sum += chpl__idxToInt(ind(rank-1)):int;
             } else {
               for param i in 1..rank-1 {
-                sum += chpl__idxToInt(ind(i)).safeCast(int) * blk(i);
+                sum += chpl__idxToInt(ind(i)):int * blk(i);
               }
-              sum += chpl__idxToInt(ind(0)).safeCast(int);
+              sum += chpl__idxToInt(ind(0)):int;
             }
             if !wantShiftedIndex then sum -= factoredOffs;
             return sum;
