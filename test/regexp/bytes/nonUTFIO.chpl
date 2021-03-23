@@ -9,7 +9,7 @@
 */
 
 use IO;
-use Regexp;;
+use Regex;;
 
 config const preCompiled = false;
 

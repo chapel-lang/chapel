@@ -1,4 +1,4 @@
-use Regexp;
+use Regex;
 
 config type t = string;
 
@@ -57,7 +57,7 @@ writeln("Search 3");
   var r = compile("(t)[a-z]+":t);
 
   var str = " test ":t;
-  var cap:reMatch;
+  var cap:regexMatch;
   {
     var match = r.search(str, cap);
 
@@ -81,7 +81,7 @@ writeln("Search 4");
   var r = compile("([a-z]+)":t);
 
   var str = " test ":t;
-  var cap:reMatch;
+  var cap:regexMatch;
   {
     var match = r.search(str, cap);
 
@@ -141,7 +141,7 @@ writeln("Match 1");
     writeln(match);
 
     writeln(str[match]);
-  } 
+  }
 }
 
 writeln("Match 2");

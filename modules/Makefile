@@ -92,7 +92,7 @@ MODULES_TO_DOCUMENT = \
 	standard/Path.chpl \
 	standard/Random.chpl \
 	standard/Reflection.chpl \
-	standard/Regexp.chpl \
+	standard/Regex.chpl \
 	standard/Set.chpl \
 	standard/Spawn.chpl \
 	standard/Sys.chpl \
