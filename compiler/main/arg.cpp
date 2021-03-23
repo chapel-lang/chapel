@@ -716,6 +716,13 @@ static void process_arg(const ArgumentState*       state,
         
         case 'R':
           if(desc->location) {
+            if (strlen(desc->type)!=1) {
+              int len = strlen(arg);
+              int maxLen = atoi(desc->type + 1);
+              if( len > maxLen ) {
+                USR_FATAL("argument for --%s is too long", desc->name);
+              }
+            }
             (*((std::string*)desc->location)) = std::string(arg, std::min((int)strlen(arg), (int)FILENAME_MAX));
           }
           break;
