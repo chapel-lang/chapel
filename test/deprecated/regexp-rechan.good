@@ -1,3 +1,18 @@
+regexp-rechan.chpl:16: warning: `channel.match(re:regex(?))` is deprecated
+$CHPL_HOME/modules/standard/IO.chpl:7130: In method 'match':
+$CHPL_HOME/modules/standard/IO.chpl:7134: warning: `channel.match(re:regex(?), ref error:syserr)` is deprecated
+  regexp-rechan.chpl:16: called as (channel(false,dynamic,true)).match(re: regex(string))
+regexp-rechan.chpl:27: warning: `channel.match(re:regex(?))` is deprecated
+regexp-rechan.chpl:39: warning: `channel.match(re:regex(?), ref captures ...?k)` is deprecated
+$CHPL_HOME/modules/standard/IO.chpl:7196: In method 'match':
+$CHPL_HOME/modules/standard/IO.chpl:7200: warning: `channel.match(re:regex(?), ref captures ...?k, ref error:syserr)` is deprecated
+  regexp-rechan.chpl:39: called as (channel(false,dynamic,true)).match(re: regex(string), captures(0): string)
+regexp-rechan.chpl:52: warning: `channel.match(re:regex(?), ref captures ...?k)` is deprecated
+regexp-rechan.chpl:65: warning: `channel.match(re:regex(?), ref captures ...?k)` is deprecated
+regexp-rechan.chpl:78: warning: `channel.match(re:regex(?), ref captures ...?k)` is deprecated
+$CHPL_HOME/modules/standard/IO.chpl:7023: In method 'search':
+$CHPL_HOME/modules/standard/IO.chpl:7026: warning: `channel.search(re:regex(?), ref error:syserr)` is deprecated
+  regexp-rechan.chpl:93: called as (channel(false,dynamic,true)).search(re: regex(string))
 Words words words
 +match: One word no captures
 match (matched = true, offset = 0, size = 5)

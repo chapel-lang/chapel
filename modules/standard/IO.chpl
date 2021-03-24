@@ -321,10 +321,7 @@ Error Handling
 --------------
 
 Most I/O routines throw a :class:`SysError.SystemError`, and can be handled
-appropriately with ``try`` and ``catch``. For legacy reasons, most I/O routines
-can also can accept an optional `error=` argument.
-In this documentation, `SystemError` may include both the
-:class:`SysError.SystemError` class proper and its subclasses.
+appropriately with ``try`` and ``catch``.
 
 Some of these subclasses commonly used within the I/O implementation include:
 
@@ -332,15 +329,8 @@ Some of these subclasses commonly used within the I/O implementation include:
  * :class:`SysError.UnexpectedEOFError` - a read or write only returned part of the requested data
  * :class:`SysError.BadFormatError` - data read did not adhere to the requested format
 
-Some of the legacy error codes used include:
-
- * :const:`SysBasic.EILSEQ` - illegal multibyte sequence (e.g. there was a
-   UTF-8 format error)
- * :const:`SysBasic.EOVERFLOW` - data read did not fit into requested type
-   (e.g. reading 1000 into a `uint(8)`).
-
 An error code can be converted to a string using the function
-:proc:`~SysError.errorToString`.
+:proc:`SysError.errorToString()`.
 
 .. _about-io-ensuring-successful-io:
 
@@ -4103,7 +4093,8 @@ proc channel.flush() throws {
   }
   if err then try this._ch_ioerror(err, "in channel.flush");
 }
-// documented in error= version
+
+// documented in throws version
 pragma "no doc"
 proc channel.flush(out error:syserr) {
   error = ENOERR;
@@ -6965,6 +6956,7 @@ proc channel.extractMatch(m:regexMatch, ref arg) throws {
 // documented in throws version
 pragma "no doc"
 proc channel.extractMatch(m:regexMatch, ref arg, ref error:syserr) {
+  compilerWarning("`channel.extractMatch(m:regexMatch, ref arg, ref error:syserr)` is deprecated");
   on this.home {
     try! this.lock();
     _extractMatch(m, arg, error);
@@ -6989,6 +6981,7 @@ proc channel._ch_handle_captures(matches:_ddata(qio_regex_string_piece_t),
 pragma "no doc"
 proc channel.search(re:regex(?), ref error:syserr):regexMatch
 {
+  compilerWarning("`channel.search(re:regex(?), ref error:syserr)` is deprecated");
   var m:regexMatch;
   on this.home {
     try! this.lock();
@@ -7025,8 +7018,7 @@ proc channel.search(re:regex(?), ref error:syserr):regexMatch
   return m;
 }
 
-
-// documented in the error= version
+// documented in the version with captures
 pragma "no doc"
 proc channel.search(re:regex(?)):regexMatch throws
 {
@@ -7097,6 +7089,7 @@ proc channel.search(re:regex(?), ref captures ...?k): regexMatch throws
 pragma "no doc"
 proc channel.match(re:regex(?), ref error:syserr):regexMatch
 {
+  compilerWarning("`channel.match(re:regex(?), ref error:syserr)` is deprecated");
   var m:regexMatch;
   on this.home {
     try! this.lock();
@@ -7133,32 +7126,21 @@ proc channel.match(re:regex(?), ref error:syserr):regexMatch
   return m;
 }
 
-// documented in the error= version
 pragma "no doc"
 proc channel.match(re:regex(?)):regexMatch throws
 {
+  compilerWarning("`channel.match(re:regex(?))` is deprecated");
   var e:syserr = ENOERR;
   var ret = this.match(re, error=e);
   if e then try this._ch_ioerror(e, "in channel.match");
   return ret;
 }
 
-/* Match, starting at the current position in the channel,
-   against a regex, possibly pulling out capture groups.
-   If there was a match, leaves the channel position at
-   the match. If there was no match, leaves the channel
-   position where it was at the start of this call.
-
-   :arg re: a :record:`Regex.regex` record representing a compiled
-             regular expression.
-   :arg captures: an optional variable number of arguments in which to
-                  store the regions of the file matching the capture groups
-                  in the regular expression.
-   :returns: the region of the channel that matched
- */
-
+// documented in the throws version
+pragma "no doc"
 proc channel.match(re:regex(?), ref captures ...?k, ref error:syserr):regexMatch
 {
+  compilerWarning("`channel.match(re:regex(?), ref captures ...?k, ref error:syserr)` is deprecated");
   var m:regexMatch;
   on this.home {
     try! this.lock();
@@ -7197,17 +7179,28 @@ proc channel.match(re:regex(?), ref captures ...?k, ref error:syserr):regexMatch
   }
   return m;
 }
-// documented in the error= version
-pragma "no doc"
+
+/* Match, starting at the current position in the channel,
+   against a regex, possibly pulling out capture groups.
+   If there was a match, leaves the channel position at
+   the match. If there was no match, leaves the channel
+   position where it was at the start of this call.
+
+   :arg re: a :record:`Regex.regex` record representing a compiled
+             regular expression.
+   :arg captures: an optional variable number of arguments in which to
+                  store the regions of the file matching the capture groups
+                  in the regular expression.
+   :returns: the region of the channel that matched
+ */
 proc channel.match(re:regex(?), ref captures ...?k):regexMatch throws
 {
+  compilerWarning("`channel.match(re:regex(?), ref captures ...?k)` is deprecated");
   var e:syserr = ENOERR;
   var ret = this.match(re, (...captures), error=e);
   if e then try this._ch_ioerror(e, "in channel.match");
   return ret;
 }
-
-
 
 /* Enumerates matches in the string as well as capture groups.
 
