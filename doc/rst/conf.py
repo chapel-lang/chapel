@@ -192,7 +192,7 @@ html_static_path = ['meta/static']
 # If true, smartquotes will be used to convert quotes and dashes to
 # typographically correct entities.
 # We turned this off because it clobbers the man page documentation
-smartquotes = False
+smartquotes = True
 
 # Custom sidebar templates, maps document names to template names.
 #html_sidebars = {}
