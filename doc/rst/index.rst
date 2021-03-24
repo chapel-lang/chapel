@@ -36,6 +36,8 @@ Chapel Documentation
    Chapel Evolution <language/evolution>
    Documentation Archives <language/archivedSpecs>
 
+.. doxygenindex::
+
 Index
 -----
 

@@ -22,7 +22,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # lib/CMakeLists.txt defines the target libchplcomp
 add_subdirectory(lib)
+# Support for documentation of AST header
+add_subdirectory(doc)
 
+# Support for C++ compiler unit tests
+# Needs to happen in this file for ctest to work in this dir
 enable_testing()
 
 add_custom_target(tests)

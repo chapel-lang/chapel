@@ -78,6 +78,10 @@ libchplcomp: FORCE
 	@mkdir -p build/libchplcomp
 	@cd build/libchplcomp && cmake ../../compiler/libchplcomp && cmake --build .  --target libchplcomp
 
+libchplcomp-docs: libchplcomp FORCE
+	@echo "Making the compiler library docs..."
+	@cd build/libchplcomp && cmake --build .  --target api-docs
+
 compiler: FORCE
 	@echo "Making the compiler..."
 	@cd third-party && $(MAKE) llvm
