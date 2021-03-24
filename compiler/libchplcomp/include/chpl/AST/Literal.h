@@ -6,8 +6,15 @@
 namespace chpl {
 
 /**
-  This class represents a literal
-  e.g. 1 2.0 3.0i "string" b"bytes" are all literals
+  This class represents a literal.
+
+  Here are some example literals:
+
+  \rst
+  .. code-block:: chapel
+
+    1 2.0 3.0i "string" b"bytes"
+  \endrst
  */
 class Literal final : public Expr {
   // TODO: move over 'ifa' code
