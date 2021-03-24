@@ -1,4 +1,5 @@
 #include "chpl/AST/UniqueString.h"
+#include "chpl/AST/CallExpr.h"
 
 #include <unordered_map>
 #include <cstring>

@@ -1,6 +1,7 @@
 #ifndef CHPL_AST_IDENTIFIER_H
 #define CHPL_AST_IDENTIFIER_H
 
+#include "chpl/AST/Expr.h"
 #include "chpl/AST/UniqueString.h"
 
 namespace chpl {
@@ -9,7 +10,7 @@ namespace chpl {
 // E.g. in
 //    var x = 1; // here, 'x' is not an Identifier (it is the declared symbol)
 //    f(x);      // here, 'f' and 'x' are Identifiers
-class Identifier : final Expr {
+class Identifier final : public Expr {
  private:
   UniqueString name_;
  public:

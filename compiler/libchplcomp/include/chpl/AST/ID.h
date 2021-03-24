@@ -22,11 +22,11 @@ class ID final {
   int numContainedIds_;
  public:
   // Return a path to the symbol (or, for an expression, the parent symbol)
-  UniqueString symbolPath() { return symbolPath_; }
+  UniqueString symbolPath() const { return symbolPath_; }
   // Returns the numbering of this node in a postorder traversal
   // of a symbol's nodes. This number is not normally relevant
   // when the AST in question is a symbol.
-  int postOrderId() { return postOrderId_; }
+  int postOrderId() const { return postOrderId_; }
   // Return the number of ids contained in this node. In the postorder
   // traversal numbering, the ids contained appear before the node.
   //
@@ -40,7 +40,7 @@ class ID final {
   //   LeafA has id 0 and numContainedIds 0
   //   LeafB has id 1 and numContainedIds 0
   //   Node  has id 2 and numContainedIds 2
-  int numContainedIds() { return numContainedIds_; }
+  int numContainedIds() const { return numContainedIds_; }
 
   // returns 'true' if the AST node with this ID contains the AST
   // node with the other ID.
@@ -51,11 +51,11 @@ class ID final {
 
 namespace std {
   template<> struct less<chpl::ID> {
-    bool operator()(const ID lhs, const ID rhs) const {
-      UniqueString lhsPath = lhs.symbolPath();
-      UniqueString rhsPath = rhs.symbolPath();
+    bool operator()(const chpl::ID lhs, const chpl::ID rhs) const {
+      chpl::UniqueString lhsPath = lhs.symbolPath();
+      chpl::UniqueString rhsPath = rhs.symbolPath();
       if (lhsPath != rhsPath) {
-        std::less<UniqueString> ustrLess;
+        std::less<chpl::UniqueString> ustrLess;
         return ustrLess(lhsPath, rhsPath);
       }
 

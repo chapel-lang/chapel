@@ -26,7 +26,7 @@ enum ASTTag {
 // (not yet for abstract parent classes)
 #define IS_AST(NAME) \
   static inline bool is##NAME(ASTTag tag) { \
-    return tag == NAME;
+    return tag == NAME; \
   }
 #define AST_NODE(NAME) IS_AST(NAME)
 #define AST_LEAF(NAME) IS_AST(NAME)

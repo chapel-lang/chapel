@@ -6,23 +6,39 @@
 
 namespace chpl {
 
+// forward declare the various AST types
+// using macros and ASTList.h
+#define AST_DECL(NAME) class NAME;
+#define AST_NODE(NAME) AST_DECL(NAME)
+#define AST_LEAF(NAME) AST_DECL(NAME)
+#define AST_BEGIN_SUBCLASSES(NAME) AST_DECL(NAME)
+#define AST_END_SUBCLASSES(NAME)
+// Apply the above macros to ASTList.h
+#include "ASTList.h"
+// clear the macros
+#undef AST_NODE
+#undef AST_LEAF
+#undef AST_BEGIN_SUBCLASSES
+#undef AST_END_SUBCLASSES
+#undef AST_DECL
+
+
 // This is the base class for AST types
 class BaseAST {
  public:
-  using asttags;
 
  private:
-  ASTTag tag_;
+  asttags::ASTTag tag_;
   ID id_;
 
  public:
   ~BaseAST() = default;
 
-  ASTTag tag() {
+  asttags::ASTTag tag() const {
     return tag_;
   }
 
-  ID id() {
+  ID id() const {
     return id_; 
   }
 
@@ -32,12 +48,12 @@ class BaseAST {
     return this->id_.contains(other->id_);
   }
 
-  #define AST_IS(NAME) \
-    bool is##NAME() { \
-      return this->tag == NAME; \
-    }
   // define is__ methods for the various AST types
   // using macros and ASTList.h
+  #define AST_IS(NAME) \
+    bool is##NAME() const { \
+      return asttags::is##NAME(this->tag_); \
+    }
   #define AST_NODE(NAME) AST_IS(NAME)
   #define AST_LEAF(NAME) AST_IS(NAME)
   #define AST_BEGIN_SUBCLASSES(NAME) AST_IS(NAME)
@@ -55,7 +71,7 @@ class BaseAST {
   // using macros and ASTList.h
   // Note: these offer equivalent functionality to C++ dynamic_cast<DstType*>
   #define AST_TO(NAME) \
-    NAME * to##NAME() { \
+    const NAME * to##NAME() const { \
       return this->is##NAME() ? (NAME *)this : nullptr; \
     }
   #define AST_NODE(NAME) AST_TO(NAME)
@@ -84,7 +100,9 @@ namespace std {
       if (lhs == nullptr && rhs != nullptr) return true; \
       if (rhs == nullptr) return false; \
       std::less<chpl::ID> lessID; \
-      return lessID(lhs->id(), rhs->id()); \
+      /* cast in the next line is so it compiles with only forward decls */ \
+      return lessID(((const chpl::BaseAST*)lhs)->id(), \
+                    ((const chpl::BaseAST*)rhs)->id()); \
     } \
   };
 #define AST_NODE(NAME) AST_LESS(NAME)

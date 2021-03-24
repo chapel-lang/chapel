@@ -1,6 +1,7 @@
 #ifndef CHPL_AST_COMMENT_H
 #define CHPL_AST_COMMENT_H
 
+#include "chpl/AST/Expr.h"
 #include "chpl/AST/UniqueString.h"
 
 namespace chpl {
@@ -9,7 +10,7 @@ namespace chpl {
 // Not all comments are represented in the AST (since the comments could
 // go anywhere and that would be hard to parse). However, comments that
 // are at a statement level will be represented with this type.
-class Comment : final Expr {
+class Comment final : public Expr {
  private:
   UniqueString comment_;
  public:

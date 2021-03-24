@@ -1,10 +1,14 @@
 #ifndef CHPL_AST_CALLEXPR_H
 #define CHPL_AST_CALLEXPR_H
 
+#include "chpl/AST/Expr.h"
+
+#include <vector>
+
 namespace chpl {
 
 // This class represents a call to a function
-class CallExpr : final Expr {
+class CallExpr final : public Expr {
  public:
    struct PossiblyNamedActual {
      UniqueString name; // "" if unused
