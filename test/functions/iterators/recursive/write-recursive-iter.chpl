@@ -6,4 +6,4 @@ iter a(n:int):int {
   }
 }
 
-writeln(a(10)); //Causing internal error
+writeln(a(10)); //Causes error
