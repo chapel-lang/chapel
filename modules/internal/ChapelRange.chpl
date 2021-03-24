@@ -651,7 +651,7 @@ module ChapelRange {
       compilerWarning("'range("+idxType:string+").size' is changing to return 'int' values rather than '"+idxType:string+"'\n" +
                       "  (to get the value as a different type, call the new method '.sizeAs(type t)')\n" +
                       "  (to opt into the change now, re-compile with '-ssizeReturnsInt=true')");
-      return this.sizeAs(this.idxType);
+      return this.sizeAs(this.intIdxType);
     } else {
       return this.sizeAs(int);
     }
