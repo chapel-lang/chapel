@@ -1159,15 +1159,17 @@ module DateTime {
   /* Create a `datetime` as described by the `date_string` and `format`
      string */
   proc type datetime.strptime(date_string: string, format: string) {
-    extern proc strptime(buf: c_string, format: c_string, ref ts: tm);
+    extern proc chpl_strptime(buf: c_string, format: c_string, ref ts: tm, ref ms: c_ulong);
     var timeStruct: tm;
-    strptime(date_string.c_str(), format.c_str(), timeStruct);
+    var microSeconds: c_ulong;
+    chpl_strptime(date_string.c_str(), format.c_str(), timeStruct, microSeconds);
     return new datetime(timeStruct.tm_year + 1900,
                         timeStruct.tm_mon + 1,
                         timeStruct.tm_mday,
                         timeStruct.tm_hour,
                         timeStruct.tm_min,
-                        timeStruct.tm_sec);
+                        timeStruct.tm_sec,
+                        microSeconds:uint(32));
   }
 
   /* Create a `string` from a `datetime` matching the `format` string */
