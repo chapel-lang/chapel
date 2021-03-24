@@ -61,20 +61,98 @@
 #include <errno.h>
 #include <locale.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 #include <time.h>
-
 #include "chpl-strptime.h"
+
+#define SECSPERMIN  60
+#define MINSPERHOUR  60
+#define HOURSPERDAY  24
+#define DAYSPERWEEK  7
+#define DAYSPERNYEAR  365
+#define DAYSPERLYEAR  366
+#define SECSPERHOUR  (SECSPERMIN * MINSPERHOUR)
+#define SECSPERDAY  ((long) SECSPERHOUR * HOURSPERDAY)
+#define MONSPERYEAR  12
+
+#define TM_YEAR_BASE  1900
+
+static const struct {
+    const char *abday[7];
+    const char *day[7];
+    const char *abmon[12];
+    const char *mon[12];
+    const char *am_pm[2];
+    const char *d_t_fmt;
+    const char *d_fmt;
+    const char *t_fmt;
+    const char *t_fmt_ampm;
+} _DefaultTimeLocale = {
+    {
+        "Sun","Mon","Tue","Wed","Thu","Fri","Sat",
+    },
+    {
+        "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday",
+        "Friday", "Saturday"
+    },
+    {
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+    },
+    {
+        "January", "February", "March", "April", "May", "June", "July",
+        "August", "September", "October", "November", "December"
+    },
+    {
+        "AM", "PM"
+    },
+    "%a %b %d %H:%M:%S %Y",
+    "%m/%d/%y",
+    "%H:%M:%S",
+    "%I:%M:%S %p"
+};
+
+#define _ctloc(x) (_DefaultTimeLocale.x)
+
+/*
+ * We do not implement alternate representations. However, we always
+ * check whether a given modifier is allowed for a certain conversion.
+ */
+#define _ALT_E          0x01
+#define _ALT_O          0x02
+#define _LEGAL_ALT(x)   do { if (alt_format & ~(x)) return 0; } while(0)
+
+struct century_relyear {
+    int century;
+    int relyear;
+};
+
+static char gmt[] = "GMT";
+static char utc[] = "UTC";
+
+/* RFC-822/RFC-2822 */
+static const char * const nast[5] = {
+       "EST",    "CST",    "MST",    "PST",    "\0\0\0"
+};
+static const char * const nadt[5] = {
+       "EDT",    "CDT",    "MDT",    "PDT",    "\0\0\0"
+};
+
+static int _conv_num(const unsigned char **, int *, int, int);
+static int _conv_long(const unsigned char **, unsigned long *, unsigned long, unsigned long);
+static const unsigned char *_find_string(const unsigned char *, int *, const char * const *,
+       const char * const *, int);
+static unsigned char *
+_strptime(const unsigned char *buf, const char *fmt, struct tm *tm, struct century_relyear *cr, unsigned long *micro);
 
 char *
 chpl_strptime(const char *buf, const char *fmt, struct tm *tm, unsigned long *micro)
 {
-    struct century_relyear cr;
-    cr.century = TM_YEAR_BASE;
-    cr.relyear = -1;
-    *micro = 0;
-    return (char *)(_strptime((const unsigned char *)buf, fmt, tm, &cr, micro));
+    struct century_relyear cr = { TM_YEAR_BASE, -1 };
+    return (char*) _strptime((const unsigned char*)buf, fmt, tm, &cr, micro);
 }
+
 static unsigned char *
 _strptime(const unsigned char *buf, const char *fmt, struct tm *tm, struct century_relyear *cr, unsigned long *micro)
 {
@@ -279,9 +357,9 @@ literal:
             if (!(_conv_num(&bp, &tm->tm_sec, 0, 61)))
                 return (NULL);
             break;
-        case 'f':   /* The micro Seconds. */
+        case 'f':   /* The microseconds. */
             _LEGAL_ALT(_ALT_O);
-            if (!(_conv_long(&bp, micro, (unsigned long)0, (unsigned long)1000000)))
+            if (!_conv_long(&bp, micro, 0, 1000000))
                 return (NULL);
             break;
         case 'U':   /* The week of year, beginning on sunday. */
@@ -499,12 +577,12 @@ _conv_long(const unsigned char **buf, unsigned long *dest, unsigned long llim, u
   *dest = result;
   return (1);
 }
-static const u_char *
-_find_string(const u_char *bp, int *tgt, const char * const *n1,
+static const unsigned char *
+_find_string(const unsigned char *bp, int *tgt, const char * const *n1,
     const char * const *n2, int c)
 {
   int i;
-  unsigned int len;
+  size_t len;
   /* check full name - then abbreviated ones */
   for (; n1 != NULL; n1 = n2, n2 = NULL) {
     for (i = 0; i < c; i++, n1++) {

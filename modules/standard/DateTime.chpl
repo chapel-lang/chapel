@@ -1161,7 +1161,7 @@ module DateTime {
   proc type datetime.strptime(date_string: string, format: string) {
     extern proc chpl_strptime(buf: c_string, format: c_string, ref ts: tm, ref ms: c_ulong);
     var timeStruct: tm;
-    var microSeconds: c_ulong;
+    var microSeconds: c_ulong = 0;
     chpl_strptime(date_string.c_str(), format.c_str(), timeStruct, microSeconds);
     return new datetime(timeStruct.tm_year + 1900,
                         timeStruct.tm_mon + 1,
