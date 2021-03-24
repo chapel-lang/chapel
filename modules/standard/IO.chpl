@@ -270,9 +270,9 @@ In addition, there are several convenient synonyms for :proc:`channel.write` and
  * the `<~> operator`_
 
 Sometimes it's important to flush the buffer in a channel - to do that, use the
-.flush() method. Flushing the buffer will make all writes available to other
-applications or other views of the file (ie, it will call e.g. the OS call
-pwrite).  It is also possible to close a channel, which will implicitly
+:proc:`channel.flush()` method. Flushing the buffer will make all writes available
+to other applications or other views of the file (e.g., it will call the OS call
+``pwrite()``).  It is also possible to close a channel, which will implicitly
 flush it and release any buffer memory used by the channel.  Note that if you
 need to ensure that data from a channel is on disk, you'll have to call
 :proc:`channel.flush` or :proc:`channel.close` and then :proc:`file.fsync` on
@@ -300,7 +300,7 @@ a local variable is the only reference to a channel, the channel will
 be closed when that variable goes out of scope.  Programs may also
 close a file or channel explicitly.
 
-.. _about-io-style:
+.. _stdin-stdout-stderr:
 
 The ``stdin``, ``stdout``, and ``stderr`` Channels
 --------------------------------------------------
@@ -313,7 +313,7 @@ input, standard output, and standard error.
 :var:`stdout` and :var:`stderr` support writing.
 
 All three channels are safe to use concurrently.
-Their types' ``kind`` argument is ``dynamic``
+Their types' ``kind`` argument is ``dynamic``.
 
 .. _about-io-error-handling:
 
@@ -321,28 +321,16 @@ Error Handling
 --------------
 
 Most I/O routines throw a :class:`SysError.SystemError`, and can be handled
-appropriately with ``try`` and ``catch``. For legacy reasons most I/O routines
-can also can accept an optional `error=` argument.
-In this documentation, `SystemError` may include both the
-:class:`SysError.SystemError` class proper and its subclasses.
+appropriately with ``try`` and ``catch``.
 
 Some of these subclasses commonly used within the I/O implementation include:
 
  * :class:`SysError.EOFError` - the end of file was reached
- * :class:`SysError.UnexpectedEOFError` - a read or write only returned
-                                          part of the requested data
- * :class:`SysError.BadFormatError` - data read did not adhere to the
-                                      requested format
-
-Some of the legacy error codes used include:
-
- * :const:`SysBasic.EILSEQ` - illegal multibyte sequence (e.g. there was a
-   UTF-8 format error)
- * :const:`SysBasic.EOVERFLOW` - data read did not fit into requested type
-   (e.g. reading 1000 into a `uint(8)`).
+ * :class:`SysError.UnexpectedEOFError` - a read or write only returned part of the requested data
+ * :class:`SysError.BadFormatError` - data read did not adhere to the requested format
 
 An error code can be converted to a string using the function
-:proc:`~SysError.errorToString`.
+:proc:`SysError.errorToString()`.
 
 .. _about-io-ensuring-successful-io:
 
@@ -353,7 +341,7 @@ It is possible - in some situations - for I/O to fail without returning an
 error. In cases where a programmer wants to be sure that there was no error
 writing the data to disk, it is important to call :proc:`file.fsync` to make
 sure that data has arrived on disk without an error. Many errors can be
-reported with typical operation, but some errors can only be reported by the
+reported with a typical operation, but some errors can only be reported by the
 system during :proc:`file.close` or even :proc:`file.fsync`.
 
 When a file (or channel) is closed, data written to that file will be written
@@ -361,25 +349,15 @@ to disk eventually by the operating system. If an application needs to be sure
 that the data is immediately written to persistent storage, it should use
 :proc:`file.fsync` prior to closing the file.
 
-Correspondence to C I/O
------------------------
+Correspondence with C I/O
+-------------------------
 
-It is not possible to seek, read, or write to a file directly.
-Create a channel to proceed.
+It is not possible to seek, read, or write to a file directly; channels must be
+created and used.
 
-:proc:`channel.flush` in Chapel has the same conceptual meaning as fflush() in
-C.  However, fflush() is not necessarily called in channel.flush().  Unlike
-fsync(), which is actually called in file.fsync() in Chapel.
-
-The iomode constants in Chapel have the same meaning as the following
-strings passed to fopen() in C:
-
-  * iomode.r   "r"
-  * iomode.rw  "r+"
-  * iomode.cw  "w"
-  * iomode.cwr "w+"
-
-However, open() in Chapel does not necessarily invoke fopen().
+:proc:`channel.flush` in Chapel has the same conceptual meaning as ``fflush()``
+in C.  However, ``fflush()`` is not necessarily called in :proc:`channel.flush()`,
+unlike ``fsync()``, which is actually called by :proc:`file.fsync()` in Chapel.
 
 IO Functions and Types
 ----------------------
@@ -439,19 +417,46 @@ private use CPtr;
 
 /*
 
-The :type:`iomode` type is an enum.
-When used as arguments when opening files,
-its constants have the following meaning:
+The :type:`iomode` type is an enum. When used as arguments when opening files, its
+constants have the same meaning as the following strings passed to ``fopen()`` in C:
 
-* ``iomode.r`` - open an existing file for reading.
-* ``iomode.rw`` - open an existing file for reading and writing.
-* ``iomode.cw`` - create a new file for writing.
-  If the file already exists, its contents are removed
-  when the file is opened in this mode.
-* ``iomode.cwr`` - as with ``iomode.cw`` but reading from the
-  file is also allowed.
+.. list-table::
+   :widths: 8 8 64
+   :header-rows: 1
 
+   * - :type:`iomode`
+     - ``fopen()`` argument
+     - Description
+   * - ``iomode.r``
+     - ``"r"``
+     - open an existing file for reading.
+   * - ``iomode.rw``
+     - ``"r+"``
+     - open an existing file for reading and writing.
+   * - ``iomode.cw``
+     - ``"w"``
+     - create a new file for writing. If the file already exists, its contents are truncated.
+   * - ``iomode.cwr``
+     - ``"w+"``
+     - same as ``iomode.cw``, but reading from the file is also allowed.
+
+.. TODO: Support append / create-exclusive modes:
+   * - ``iomode.a``
+     - ``"a"``
+     - open a file for appending, creating it if it does not exist.
+   * - ``iomode.ar``
+     - ``"a+"``
+     - same as ``iomode.a``, but reading from the file is also allowed.
+   * - ``iomode.cwx``
+     - ``"wx"``
+     - open a file for writing, throwing an error if it already exists. (The test for file's existence and the file's creation are atomic on POSIX.)
+   * - ``iomode.cwrx``
+     - ``"w+x"``
+     - same as ``iomode.cwx``, but reading from the file is also allowed.
+
+However, :proc:`open()` in Chapel does not necessarily invoke ``fopen()`` in C.
 */
+
 enum iomode {
   r = 1,
   cw = 2,
@@ -464,18 +469,18 @@ enum iomode {
 The :type:`iokind` type is an enum. When used as arguments to the
 :record:`channel` type, its constants have the following meaning:
 
-* ``iokind.big`` means binary I/O with big-endian byte order is performed
-  when writing/reading basic types from the channel.
-
-* ``iokind.little`` means binary I/O with little-endian byte order
-  (similar to ``iokind.big`` but with little-endian byte order).
+* ``iokind.dynamic`` means that the applicable I/O style has full effect
+  and as a result the kind varies at runtime.
 
 * ``iokind.native`` means binary I/O in native byte order
   (similar to ``iokind.big`` but with the byte order that is native
   to the target platform).
 
-* ``iokind.dynamic`` means that the applicable I/O style has full effect
-  and as a result the kind varies at runtime.
+* ``iokind.big`` means binary I/O with big-endian byte order is performed
+  when writing/reading basic types from the channel.
+
+* ``iokind.little`` means binary I/O with little-endian byte order
+  (similar to ``iokind.big`` but with little-endian byte order).
 
 In the case of ``iokind.big``, ``iokind.little``, and
 ``iokind.native`` the applicable :record:`iostyle` is consulted when
@@ -762,8 +767,7 @@ extern const QIO_STRING_FORMAT_TOEOF:uint(8);
 The :record:`iostyle` type represents I/O styles
 defining how Chapel's basic types should be read or written.
 
-See :ref:`about-io-style`.
-
+See :ref:`about-io-styles`.
 */
 extern record iostyle { // aka qio_style_t
   /* Perform binary I/O? 1 - yes, 0 - no.
@@ -785,18 +789,18 @@ extern record iostyle { // aka qio_style_t
   var str_style:int(64) = iostringstyle.data_toeof: int(64);
 
   // text style choices
-  /* When performing text I/O, pad out to this many columns */
+  /* When performing text I/O, pad out to this many columns. */
   var min_width_columns:uint(32) = 0;
-  /* When performing text I/O, do not use more than this many columns */
+  /* When performing text I/O, do not use more than this many columns. */
   var max_width_columns:uint(32) = max(uint(32));
-  /* When performing text I/O, do not use more than this many characters */
+  /* When performing text I/O, do not use more than this many characters. */
   var max_width_characters:uint(32) = max(uint(32));
-  /* When performing text I/O, do not use more than this many bytes */
+  /* When performing text I/O, do not use more than this many bytes. */
   var max_width_bytes:uint(32) = max(uint(32));
 
-  /* What character do we start strings with, when appropriate? Default is " */
+  /* What character do we start strings with, when appropriate? Default is ``"``. */
   var string_start:style_char_t = 0x22; // "
-  /* What character do we end strings with, when appropriate? Default is " */
+  /* What character do we end strings with, when appropriate? Default is ``"``. */
   var string_end:style_char_t = 0x22; // "
 
   /* How should we format strings when performing text I/O?
@@ -805,7 +809,7 @@ extern record iostyle { // aka qio_style_t
    */
   var string_format:uint(8) = iostringformat.word:uint(8);
 
-  /* What character do we start bytes with, when appropriate? Default is " */
+  /* What character do we start bytes with, when appropriate? Default is ``"``. */
   var bytes_prefix:style_char_t = 0x62; // b
 
   // numeric scanning/printing choices
@@ -816,27 +820,27 @@ extern record iostyle { // aka qio_style_t
   var base:uint(8) = 0;
   /* When reading or writing a numeric value in a text mode channel,
      how is the integer portion separated from the fractional portion?
-     Default is '.' */
+     Default is ``.``. */
   var point_char:style_char_t = 0x2e; // .
   /* When reading or writing a numeric value in a text mode channel,
-     how is the exponent written? Default is 'e' */
+     how is the exponent written? Default is ``e``. */
   var exponent_char:style_char_t = 0x65; // e
   /* When reading or writing a numeric value in a text mode channel,
-     when base is > 10, how is the exponent written? Default is 'e' */
+     when base is > 10, how is the exponent written? Default is ``p``. */
   var other_exponent_char:style_char_t = 0x70; // p
-  /* What character denotes a positive number? Default is '+' */
+  /* What character denotes a positive number? Default is ``+``. */
   var positive_char:style_char_t = 0x2b; // +;
-  /* What character denotes a negative number? Default is '-' */
+  /* What character denotes a negative number? Default is ``-``. */
   var negative_char:style_char_t = 0x2d; // -;
-  /* What character follows an the imaginary number? Default is 'i' */
+  /* What character follows an the imaginary number? Default is ``i``. */
   var i_char:style_char_t = 0x69; // i
-  /* When writing in a base other than 10, should the prefix be used?
-     (e.g. hexadecimal numbers are prefixed with 0x) */
+  /* When writing in a base other than 10, should the prefix be used
+     (e.g. hexadecimal numbers are prefixed with 0x)? */
   var prefix_base:uint(8) = 1;
   // numeric printing choices
-  /* When padding with spaces, which pad character to use? Default is ' ' */
+  /* When padding with spaces, which pad character to use? Default is ' '. */
   var pad_char:style_char_t = 0x20; // ' '
-  /* When printing a positive numeric value, should the + be shown? */
+  /* When printing a positive numeric value, should the ``+`` be shown? */
   var showplus:uint(8) = 0;
   /* When printing a numeric value in hexadecimal, should it be
      uppercase? */
@@ -846,11 +850,11 @@ extern record iostyle { // aka qio_style_t
      is to right-justify the number. */
   var leftjustify:uint(8) = 0;
   /* When printing an integral value using a real format, should a trailing
-     decimal point be included? If so, the value 0 will be written as '0.' */
+     decimal point be included? If so, the value 0 will be written as ``0.`` */
   var showpoint:uint(8) = 0;
   /* When printing an integral value using a real format, should a trailing
      decimal point and zero be included? If so, the value 0 will be written
-     as '0.0' */
+     as ``0.0`` */
   var showpointzero:uint(8) = 1;
   /* Specifies the precision for real format conversions. See the description
      of realfmt below. */
@@ -1364,11 +1368,11 @@ The following binary operators are defined on :type:`iohints`:
 * ``|`` for set union
 * ``&`` for set intersection
 * ``==`` for set equality
-* ``1=`` for set inequality
+* ``!=`` for set inequality
 
-When an :type:`iohints` formal has default intent, the
-actual is copied to the formal upon a function call and
-the formal cannot be assigned within the function.
+When an :type:`iohints` formal argument has default intent, the
+actual is copied as ``const in`` to the formal upon a function
+call, and the formal cannot be assigned within the function.
 
 The default value of the :type:`iohints` type is undefined.
 
@@ -1381,9 +1385,9 @@ The :record:`file` type is implementation-defined.  A value of the
 :record:`file` type refers to the state that is used by the implementation to
 identify and interact with the OS file.
 
-When a :record:`file` formal argument has default intent, the
-actual is copied to the formal upon a function call and
-the formal cannot be assigned within the function.
+When a :record:`file` formal argument has default intent, the actual is passed
+by ``const ref`` to the formal upon a function call, and the formal
+cannot be assigned within the function.
 
 The default value of the :record:`file` type does not represent any OS file.
 It is illegal to perform any I/O operations on the default value.
@@ -1398,6 +1402,7 @@ record file {
 
   // INIT TODO: This would be a useful case for requesting a default initializer
   // be built even when handwritten initializers (copy init) exist.
+  pragma "no doc"
   proc init() {
   }
 }
@@ -1533,8 +1538,8 @@ proc file.close() throws {
 Sync a file to disk.
 
 Commits file data to the device associated with this file.
-Data written to the file by a channel will be committed
-only if the channel has been closed or flushed.
+Data written to the file by a channel will only be guaranteed
+committed if the channel has been closed or flushed.
 
 This function will typically call the ``fsync`` system call.
 
@@ -1841,6 +1846,10 @@ deleted upon closing.
 Temporary files are always opened with :type:`iomode` ``iomode.cwr``;
 that is, a new file is created that supports both writing and reading.
 
+.. TODO:
+  Temporary files are always opened with :type:`iomode` ``iomode.cwrx``;
+  that is, a new file is created that supports both writing and reading.
+
 :arg hints: optional argument to specify any hints to the I/O system about
             this file. See :type:`iohints`.
 :arg style: optional argument to specify I/O style associated with this file.
@@ -1901,12 +1910,12 @@ The :record:`channel` type is implementation-defined.
 A value of the :record:`channel` type refers to the state that is used
 to implement the channel operations.
 
-When a :record:`channel` formal has default intent, the
-actual is copied to the formal upon a function call and
-the formal cannot be assigned within the function.
+When a :record:`channel` formal argument has default intent, the actual is passed
+by ``const ref`` to the formal upon a function call, and the formal
+cannot be assigned within the function.
 
 The default value of the :record:`channel` type is not associated
-with any file and so cannot be used to perform I/O.
+with any file, and so cannot be used to perform I/O.
 
 The :record:`channel` type is generic.
 
@@ -2091,20 +2100,20 @@ inline operator :(x: ioChar, type t:string) {
 
 Represents a newline character or character sequence (ie ``\n``). I/O routines
 (such as :proc:`channel.read` and :proc:`channel.write`) can use arguments of
-this type in order to read or write a newline. This is different from '\n'
+this type in order to read or write a newline. This is different from ``\n``
 because an ioNewline always produces an actual newline, but in some cases
 writing ``\n`` will produce an escaped string (such as ``"\n"``).
 
 When reading an ioNewline, read routines will skip any character sequence
-(including e.g. letters and numbers) to get to the newline character unless
+(including, e.g., letters and numbers) to get to the newline character unless
 ``skipWhitespaceOnly`` is set to true.
 
  */
 record ioNewline {
   /*
-    Normally, we will skip anything at all to get to a \n,
+    Normally, we will skip anything at all to get to a ``\n``,
     but if skipWhitespaceOnly is set, it will be an error
-    if we run into non-space characters other than \n.
+    if we run into non-space characters other than ``\n``.
    */
   var skipWhitespaceOnly: bool = false;
   pragma "no doc"
@@ -2124,9 +2133,9 @@ inline operator :(x: ioNewline, type t:string) {
 
 Used to represent a constant string we want to read or write.
 
-When writing, the ioLiteral is output without any quoting or escaping.
+When writing, the ``ioLiteral`` is output without any quoting or escaping.
 
-When reading, the ioLiteral must be matched exactly - or else the read call
+When reading, the ``ioLiteral`` must be matched exactly - or else the read call
 will return an error with code :data:`SysBasic.EFORMAT`.
 
 */
@@ -2251,9 +2260,8 @@ inline proc channel.unlock() {
       If the channel can be used by multiple tasks, take care
       when doing operations that rely on the channel's current offset.
       To prevent race conditions, first lock the channel with
-      :proc:`channel.lock`, do the operations, then unlock it
-      with :proc:`channel.unlock`.
-      While holding the lock, use :proc:`channel._offset` instead.
+      :proc:`channel.lock`, do the operations with :proc:`channel._offset`
+      instead, then unlock it with :proc:`channel.unlock`.
 
    :returns: the current offset of the channel
  */
@@ -2306,20 +2314,20 @@ proc channel.advancePastByte(byte:uint(8)) throws {
 }
 
 /*
-   *mark* a channel - that is, save the current offset of the channel
+   *Mark* a channel - that is, save the current offset of the channel
    on its *mark stack*. This function can only be called on a channel
    with ``locking==false``.
 
    The *mark stack* stores several channel offsets. For any channel offset that
    is between the minimum and maximum value in the *mark stack*, I/O operations
    on the channel will keep that region of the file buffered in memory so that
-   those operations can be un-done. As a result, it is possible to perform *I/O
+   those operations can be undone. As a result, it is possible to perform *I/O
    transactions* on a channel. The basic steps for an *I/O transaction* are:
 
     * *mark* the current position with :proc:`channel.mark`
     * do something speculative (e.g. try to read 200 bytes of anything followed
       by a 'B')
-    * if the speculative operation was successful,  commit the changes by
+    * if the speculative operation was successful, commit the changes by
       calling :proc:`channel.commit`
     * if the speculative operation was not successful, go back to the *mark* by
       calling :proc:`channel.revert`. Subsequent I/O operations will work
@@ -2387,7 +2395,7 @@ inline proc channel.commit() where this.locking == false {
                          that the file is not seekable, or that the
                          channel is marked.
  */
-proc channel.seek(start:int, end:int = max(int)) throws {
+proc channel.seek(start:int(64), end:int(64) = max(int(64))) throws {
 
   if this.locking then
     compilerError("Cannot seek on a locking channel");
@@ -2494,7 +2502,7 @@ proc channel._set_style(style:iostyle) {
 /*
 
    Return the locale on which an ongoing I/O was started with a channel.
-   This method will return nil unless it is called on a channel that is
+   This method will return ``nilLocale`` unless it is called on a channel that is
    the formal argument to a `readThis`, `writeThis`, or `readWriteThis` method.
 
  */
@@ -2557,7 +2565,7 @@ This function is equivalent to calling :proc:`open` and then
             channel should start reading. Defaults to 0.
 :arg end: zero-based byte offset indicating where in the file the
           channel should no longer be allowed to read. Defaults
-          to a ``max(int)`` - meaning no end point.
+          to a ``max(int(64))`` - meaning no end point.
 :arg hints: optional argument to specify any hints to the I/O system about
             this file. See :type:`iohints`.
 :returns: an open reading channel to the requested resource.
@@ -2595,7 +2603,7 @@ This function is equivalent to calling :proc:`open` with ``iomode.cwr`` and then
             channel should start writing. Defaults to 0.
 :arg end: zero-based byte offset indicating where in the file the
           channel should no longer be allowed to write. Defaults
-          to a ``max(int)`` - meaning no end point.
+          to a ``max(int(64))`` - meaning no end point.
 :arg hints: optional argument to specify any hints to the I/O system about
             this file. See :type:`iohints`.
 :returns: an open writing channel to the requested resource.
@@ -2641,7 +2649,7 @@ proc openwriter(path:string,
                channel should start reading. Defaults to 0.
    :arg end: zero-based byte offset indicating where in the file the
              channel should no longer be allowed to read. Defaults
-             to a ``max(int)`` - meaning no end point.
+             to a ``max(int(64))`` - meaning no end point.
    :arg hints: provide hints about the I/O that this channel will perform. See
                :type:`iohints`. The default value of :const:`IOHINT_NONE`
                will cause the channel to use the hints provided when opening
@@ -2726,7 +2734,7 @@ proc file.lines(param locking:bool = true, start:int(64) = 0, end:int(64) = max(
                channel should start writing. Defaults to 0.
    :arg end: zero-based byte offset indicating where in the file the
              channel should no longer be allowed to write. Defaults
-             to a ``max(int)`` - meaning no end point.
+             to a ``max(int(64))`` - meaning no end point.
    :arg hints: provide hints about the I/O that this channel will perform. See
                :type:`iohints`. The default value of :const:`IOHINT_NONE`
                will cause the channel to use the hints provided when opening
@@ -3913,7 +3921,7 @@ proc channel.readln(ref args ...?k,
 
      It is difficult to handle errors or to handle reaching the end of
      the file with this function. If such cases are important please use
-     the :proc:`channel.read` returning the values read in arguments instead.
+     the :proc:`channel.read` returning the values read into arguments instead.
 
    For example, the following line of code reads a value of type `int`
    from :var:`stdin` and uses it to initialize a variable ``x``:
@@ -3941,8 +3949,7 @@ proc channel.read(type t) throws {
 
      It is difficult to handle errors or to handle reaching the end of
      the file with this function. If such cases are important please use
-     :proc:`channel.readln` instead.
-
+     the :proc:`channel.readln` returning the values read into arguments instead.
 
    :arg t: the type to read
    :returns: the value read
@@ -4086,7 +4093,8 @@ proc channel.flush() throws {
   }
   if err then try this._ch_ioerror(err, "in channel.flush");
 }
-// documented in error= version
+
+// documented in throws version
 pragma "no doc"
 proc channel.flush(out error:syserr) {
   error = ENOERR;
@@ -6948,6 +6956,7 @@ proc channel.extractMatch(m:regexMatch, ref arg) throws {
 // documented in throws version
 pragma "no doc"
 proc channel.extractMatch(m:regexMatch, ref arg, ref error:syserr) {
+  compilerWarning("`channel.extractMatch(m:regexMatch, ref arg, ref error:syserr)` is deprecated");
   on this.home {
     try! this.lock();
     _extractMatch(m, arg, error);
@@ -6972,6 +6981,7 @@ proc channel._ch_handle_captures(matches:_ddata(qio_regex_string_piece_t),
 pragma "no doc"
 proc channel.search(re:regex(?), ref error:syserr):regexMatch
 {
+  compilerWarning("`channel.search(re:regex(?), ref error:syserr)` is deprecated");
   var m:regexMatch;
   on this.home {
     try! this.lock();
@@ -7008,8 +7018,7 @@ proc channel.search(re:regex(?), ref error:syserr):regexMatch
   return m;
 }
 
-
-// documented in the error= version
+// documented in the version with captures
 pragma "no doc"
 proc channel.search(re:regex(?)):regexMatch throws
 {
@@ -7080,6 +7089,7 @@ proc channel.search(re:regex(?), ref captures ...?k): regexMatch throws
 pragma "no doc"
 proc channel.match(re:regex(?), ref error:syserr):regexMatch
 {
+  compilerWarning("`channel.match(re:regex(?), ref error:syserr)` is deprecated");
   var m:regexMatch;
   on this.home {
     try! this.lock();
@@ -7116,32 +7126,21 @@ proc channel.match(re:regex(?), ref error:syserr):regexMatch
   return m;
 }
 
-// documented in the error= version
 pragma "no doc"
 proc channel.match(re:regex(?)):regexMatch throws
 {
+  compilerWarning("`channel.match(re:regex(?))` is deprecated");
   var e:syserr = ENOERR;
   var ret = this.match(re, error=e);
   if e then try this._ch_ioerror(e, "in channel.match");
   return ret;
 }
 
-/* Match, starting at the current position in the channel,
-   against a regex, possibly pulling out capture groups.
-   If there was a match, leaves the channel position at
-   the match. If there was no match, leaves the channel
-   position where it was at the start of this call.
-
-   :arg re: a :record:`Regex.regex` record representing a compiled
-             regular expression.
-   :arg captures: an optional variable number of arguments in which to
-                  store the regions of the file matching the capture groups
-                  in the regular expression.
-   :returns: the region of the channel that matched
- */
-
+// documented in the throws version
+pragma "no doc"
 proc channel.match(re:regex(?), ref captures ...?k, ref error:syserr):regexMatch
 {
+  compilerWarning("`channel.match(re:regex(?), ref captures ...?k, ref error:syserr)` is deprecated");
   var m:regexMatch;
   on this.home {
     try! this.lock();
@@ -7180,17 +7179,28 @@ proc channel.match(re:regex(?), ref captures ...?k, ref error:syserr):regexMatch
   }
   return m;
 }
-// documented in the error= version
-pragma "no doc"
+
+/* Match, starting at the current position in the channel,
+   against a regex, possibly pulling out capture groups.
+   If there was a match, leaves the channel position at
+   the match. If there was no match, leaves the channel
+   position where it was at the start of this call.
+
+   :arg re: a :record:`Regex.regex` record representing a compiled
+             regular expression.
+   :arg captures: an optional variable number of arguments in which to
+                  store the regions of the file matching the capture groups
+                  in the regular expression.
+   :returns: the region of the channel that matched
+ */
 proc channel.match(re:regex(?), ref captures ...?k):regexMatch throws
 {
+  compilerWarning("`channel.match(re:regex(?), ref captures ...?k)` is deprecated");
   var e:syserr = ENOERR;
   var ret = this.match(re, (...captures), error=e);
   if e then try this._ch_ioerror(e, "in channel.match");
   return ret;
 }
-
-
 
 /* Enumerates matches in the string as well as capture groups.
 
