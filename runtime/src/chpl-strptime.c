@@ -171,7 +171,8 @@ static const char * const nadt[5] = {
 };
 static  int _conv_num(const unsigned char **, int *, int, int);
 static int _conv_long(const unsigned char **, unsigned long *, unsigned long, unsigned long);
-static unsigned char *_strptime(const unsigned char *, const char *, struct tm *,struct century_relyear *, unsigned long *);
+char *chpl_strptime(const char *buf, const char *fmt, struct tm *tm, unsigned long *micro);
+static unsigned char *_strptime(const unsigned char *, const char *, struct tm *, struct century_relyear *, unsigned long *);
 static  const u_char *_find_string(const u_char *, int *, const char * const *,
       const char * const *, int);
 char *
