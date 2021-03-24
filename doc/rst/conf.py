@@ -40,6 +40,7 @@ extensions = [
 ]
 
 breathe_default_project = "libchplcomp"
+breathe_default_members = ('members', 'undoc-members')
 
 nitpick_ignore = []
 for line in open('../util/nitpick_ignore'):

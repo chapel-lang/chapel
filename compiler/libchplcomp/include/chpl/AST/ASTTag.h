@@ -12,10 +12,12 @@ namespace asttags {
 enum ASTTag {
   // define the enum for all of the non-virtual AST nodes
   // using macros and ASTClassesList.h
+  /// \cond DO_NOT_DOCUMENT
   #define AST_NODE(NAME) NAME ,
   #define AST_LEAF(NAME) NAME ,
   #define AST_BEGIN_SUBCLASSES(NAME) START_##NAME ,
   #define AST_END_SUBCLASSES(NAME) END_##NAME ,
+  /// \endcond
   // Apply the above macros to ASTClassesList.h
   #include "ASTClassesList.h"
   // clear the macros
@@ -27,6 +29,7 @@ enum ASTTag {
 
 // define is___ for leaf and regular nodes
 // (not yet for abstract parent classes)
+/// \cond DO_NOT_DOCUMENT
 #define IS_AST(NAME) \
   static inline bool is##NAME(ASTTag tag) { \
     return tag == NAME; \
@@ -35,6 +38,7 @@ enum ASTTag {
 #define AST_LEAF(NAME) IS_AST(NAME)
 #define AST_BEGIN_SUBCLASSES(NAME)
 #define AST_END_SUBCLASSES(NAME)
+/// \endcond
 // Apply the above macros to ASTClassesList.h
 #include "ASTClassesList.h"
 // clear the macros
@@ -45,6 +49,7 @@ enum ASTTag {
 #undef IS_AST
 
 // define is___ for abstract parent classes
+/// \cond DO_NOT_DOCUMENT
 #define IS_AST(NAME) \
   static inline bool is##NAME(ASTTag tag) { \
     return START_##NAME < tag && tag < END_##NAME; \
@@ -53,6 +58,7 @@ enum ASTTag {
 #define AST_LEAF(NAME)
 #define AST_BEGIN_SUBCLASSES(NAME) IS_AST(NAME)
 #define AST_END_SUBCLASSES(NAME)
+/// \endcond
 // Apply the above macros to ASTClassesList.h
 #include "ASTClassesList.h"
 // clear the macros

@@ -6,13 +6,16 @@
 
 namespace chpl {
 
+
 // forward declare the various AST types
 // using macros and ASTClassesList.h
+/// \cond DO_NOT_DOCUMENT
 #define AST_DECL(NAME) class NAME;
 #define AST_NODE(NAME) AST_DECL(NAME)
 #define AST_LEAF(NAME) AST_DECL(NAME)
 #define AST_BEGIN_SUBCLASSES(NAME) AST_DECL(NAME)
 #define AST_END_SUBCLASSES(NAME)
+/// \endcond
 // Apply the above macros to ASTClassesList.h
 #include "ASTClassesList.h"
 // clear the macros
@@ -21,7 +24,6 @@ namespace chpl {
 #undef AST_BEGIN_SUBCLASSES
 #undef AST_END_SUBCLASSES
 #undef AST_DECL
-
 
 /**
   This is the base class for AST types
@@ -52,6 +54,7 @@ class BaseAST {
 
   // define is__ methods for the various AST types
   // using macros and ASTClassesList.h
+  /// \cond DO_NOT_DOCUMENT
   #define AST_IS(NAME) \
     bool is##NAME() const { \
       return asttags::is##NAME(this->tag_); \
@@ -60,6 +63,7 @@ class BaseAST {
   #define AST_LEAF(NAME) AST_IS(NAME)
   #define AST_BEGIN_SUBCLASSES(NAME) AST_IS(NAME)
   #define AST_END_SUBCLASSES(NAME)
+  /// \endcond
   // Apply the above macros to ASTClassesList.h
   #include "ASTClassesList.h"
   // clear the macros
@@ -72,6 +76,7 @@ class BaseAST {
   // define to__ methods for the various AST types
   // using macros and ASTClassesList.h
   // Note: these offer equivalent functionality to C++ dynamic_cast<DstType*>
+  /// \cond DO_NOT_DOCUMENT
   #define AST_TO(NAME) \
     const NAME * to##NAME() const { \
       return this->is##NAME() ? (NAME *)this : nullptr; \
@@ -80,6 +85,7 @@ class BaseAST {
   #define AST_LEAF(NAME) AST_TO(NAME)
   #define AST_BEGIN_SUBCLASSES(NAME) AST_TO(NAME)
   #define AST_END_SUBCLASSES(NAME)
+  /// \endcond
   // Apply the above macros to ASTClassesList.h
   #include "ASTClassesList.h"
   // clear the macros
@@ -92,10 +98,12 @@ class BaseAST {
 
 } // end namespace chpl
 
+/// \cond DO_NOT_DOCUMENT
 namespace std {
 
 // define std::less for the various AST types
 // using macros and ASTClassesList.h
+/// \cond DO_NOT_DOCUMENT
 #define AST_LESS(NAME) \
   template<> struct less<chpl::NAME*> { \
     bool operator()(const chpl::NAME* lhs, const chpl::NAME* rhs) const { \
@@ -111,6 +119,7 @@ namespace std {
 #define AST_LEAF(NAME) AST_LESS(NAME)
 #define AST_BEGIN_SUBCLASSES(NAME) AST_LESS(NAME)
 #define AST_END_SUBCLASSES(NAME)
+/// \endcond
 // Apply the above macros to ASTClassesList.h
 #include "ASTClassesList.h"
 // clear the macros
@@ -121,5 +130,6 @@ namespace std {
 #undef AST_LESS
 
 } // end namespace std
+/// \endcond
 
 #endif
