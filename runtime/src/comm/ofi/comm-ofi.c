@@ -223,6 +223,7 @@ static void emit_delayedFixedHeapMsgs(void);
 
 static inline struct perTxCtxInfo_t* tciAlloc(void);
 static inline struct perTxCtxInfo_t* tciAllocForAmHandler(void);
+static inline chpl_bool tciAllocTabEntry(struct perTxCtxInfo_t*);
 static inline void tciFree(struct perTxCtxInfo_t*);
 static inline chpl_comm_nb_handle_t ofi_put(const void*, c_nodeid_t,
                                             void*, size_t);
@@ -428,6 +429,7 @@ typedef enum {
   provType_verbs,
   provType_rxd,
   provType_rxm,
+  provType_tcp,
   provTypeCount
 } provider_t;
 
@@ -472,9 +474,12 @@ void init_providerInUse(void) {
     providerSetSet(&providerInUseSet, provType_efa);
   } else if (isInProvName("gni", pn)) {
     providerSetSet(&providerInUseSet, provType_gni);
+  } else if (isInProvName("tcp", pn)) {
+    providerSetSet(&providerInUseSet, provType_tcp);
   } else if (isInProvName("verbs", pn)) {
     providerSetSet(&providerInUseSet, provType_verbs);
   }
+
   //
   // We can be using any number of utility providers.
   //
@@ -857,6 +862,7 @@ static void init_ofiExchangeAvInfo(void);
 static void init_ofiForMem(void);
 static void init_ofiForRma(void);
 static void init_ofiForAms(void);
+static void init_ofiConnections(void);
 
 static void init_bar(void);
 
@@ -943,6 +949,8 @@ void init_ofi(void) {
   CHPL_CALLOC(orderDummyMap, chpl_numNodes);
   chpl_comm_ofi_oob_allgather(&orderDummy, orderDummyMap,
                               sizeof(orderDummyMap[0]));
+
+  init_ofiConnections();
 
   DBG_PRINTF(DBG_CFG,
              "AM config: recv buf size %zd MiB, %s, responses use %s",
@@ -2099,6 +2107,53 @@ void init_ofiForAms(void) {
 }
 
 
+static inline void amRequestNop(c_nodeid_t, chpl_bool, struct perTxCtxInfo_t*);
+
+static
+void init_ofiConnections(void) {
+  //
+  // With providers that do dynamic endpoint connection we have seen
+  // fairly dramatic connection overheads under certain circumstances.
+  // As an aid to performance analysis, here we allow for forcing the
+  // endpoint connections to be established early, during startup,
+  // rather than later during timed sections of user code.
+  //
+  if (!providerInUse(provType_tcp)
+      && !providerInUse(provType_verbs)) {
+    return;
+  }
+
+  if (!chpl_env_rt_get_bool("COMM_OFI_CONNECT_EAGERLY", false)) {
+    return;
+  }
+
+  //
+  // We do this by firing a no-op AM to every remote node from every
+  // still-inactive tx context.  (In effect, this means from all tx
+  // contexts that aren't already bound to AM handlers.)  At present we
+  // use blocking AMs for this, but if needed we could delay blocking
+  // until after the last one had been initiated.  One way or another,
+  // we need to not return until after all the connections have been
+  // established.
+  //
+  for (int i = 0; i < tciTabLen; i++) {
+    struct perTxCtxInfo_t* tcip = &tciTab[i];
+    if (!tcip->bound) {
+      CHK_TRUE(tciAllocTabEntry(tcip));
+      for (c_nodeid_t node = 0; node < chpl_numNodes; node++) {
+        if (node != chpl_nodeID) {
+          while (tcip->txCQ != NULL && tcip->numTxnsOut >= txCQLen) {
+            (*tcip->checkTxCmplsFn)(tcip);
+          }
+          amRequestNop(node, true /*blocking*/, tcip);
+        }
+      }
+      tciFree(tcip);
+    }
+  }
+}
+
+
 void chpl_comm_rollcall(void) {
   DBG_PRINTF(DBG_IFACE_SETUP, "%s()", __func__);
 
@@ -2572,7 +2627,7 @@ int mrGetLocalKey(void* addr, size_t size) {
 // Interface: memory consistency
 //
 
-static inline void amRequestNop(c_nodeid_t, chpl_bool);
+static inline void amRequestNop(c_nodeid_t, chpl_bool, struct perTxCtxInfo_t*);
 static inline chpl_bool setUpDelayedAmDone(chpl_comm_taskPrvData_t**, void**);
 static inline void retireDelayedAmDone(chpl_bool);
 
@@ -2761,7 +2816,7 @@ static void amRequestRMA(c_nodeid_t, amOp_t, void*, void*, size_t);
 static void amRequestAMO(c_nodeid_t, void*, const void*, const void*, void*,
                          int, enum fi_datatype, size_t);
 static void amRequestFree(c_nodeid_t, void*);
-static void amRequestNop(c_nodeid_t, chpl_bool);
+static inline void amRequestNop(c_nodeid_t, chpl_bool, struct perTxCtxInfo_t*);
 static void amRequestCommon(c_nodeid_t, amRequest_t*, size_t,
                             amDone_t**, chpl_bool, struct perTxCtxInfo_t*);
 static inline void amWaitForDone(amDone_t*);
@@ -2998,12 +3053,13 @@ void amRequestFree(c_nodeid_t node, void* p) {
 
 
 static inline
-void amRequestNop(c_nodeid_t node, chpl_bool blocking) {
+void amRequestNop(c_nodeid_t node, chpl_bool blocking,
+                  struct perTxCtxInfo_t* tcip) {
   amRequest_t req = { .b = { .op = am_opNop,
                              .node = chpl_nodeID, }, };
   amRequestCommon(node, &req, sizeof(req.b),
                   blocking ? &req.b.pAmDone : NULL,
-                  false /*yieldDuringTxnWait*/, NULL);
+                  false /*yieldDuringTxnWait*/, tcip);
 }
 
 
@@ -3726,7 +3782,7 @@ void amCheckLiveness(void) {
     if (--node == 0) {
       node = chpl_numNodes - 1;
     }
-    amRequestNop(node, false /*blocking*/);
+    amRequestNop(node, false /*blocking*/, amTcip);
     count = countInterval;
     lastTime = time;
   }
@@ -4059,7 +4115,7 @@ struct perTxCtxInfo_t* tciAllocCommon(chpl_bool bindToAmHandler) {
       return _ttcip;
     }
 
-    if (!atomic_exchange_bool(&_ttcip->allocated, true)) {
+    if (tciAllocTabEntry(_ttcip)) {
       DBG_PRINTF(DBG_TCIPS, "realloc tciTab[%td]", _ttcip - tciTab);
       return _ttcip;
     }
@@ -4098,7 +4154,7 @@ struct perTxCtxInfo_t* findFreeTciTabEntry(chpl_bool bindToAmHandler) {
     // we ever have more, the CHK_FALSE will force us to revisit this.
     //
     tcip = &tciTab[numWorkerTxCtxs];
-    CHK_FALSE(atomic_exchange_bool(&tcip->allocated, true));
+    CHK_TRUE(tciAllocTabEntry(tcip));
     return tcip;
   }
 
@@ -4119,7 +4175,7 @@ struct perTxCtxInfo_t* findFreeTciTabEntry(chpl_bool bindToAmHandler) {
       if (++iw >= numWorkerTxCtxs)
         iw = 0;
       allBound = allBound && tciTab[iw].bound;
-      if (!atomic_exchange_bool(&tciTab[iw].allocated, true)) {
+      if (tciAllocTabEntry(&tciTab[iw])) {
         tcip = &tciTab[iw];
       }
     } while (tcip == NULL && iw != last_iw);
@@ -4131,6 +4187,16 @@ struct perTxCtxInfo_t* findFreeTciTabEntry(chpl_bool bindToAmHandler) {
   } while (tcip == NULL);
 
   return tcip;
+}
+
+
+//
+// This returns true if you successfully allocated the given tciTab
+// entry and false otherwise.
+//
+static inline
+chpl_bool tciAllocTabEntry(struct perTxCtxInfo_t* tcip) {
+  return(!atomic_exchange_bool(&tcip->allocated, true));
 }
 
 
