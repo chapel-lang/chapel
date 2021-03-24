@@ -6,10 +6,12 @@
 
 namespace chpl {
 
-// This class represents a comment that might be used for documentation.
-// Not all comments are represented in the AST (since the comments could
-// go anywhere and that would be hard to parse). However, comments that
-// are at a statement level will be represented with this type.
+/**
+  This class represents a comment that might be used for documentation.
+  Not all comments are represented in the AST (since the comments could
+  go anywhere and that would be hard to parse). However, comments that
+  are at a statement level will be represented with this type.
+ */
 class Comment final : public Expr {
  private:
   UniqueString comment_;

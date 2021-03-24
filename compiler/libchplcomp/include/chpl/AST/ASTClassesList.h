@@ -16,6 +16,9 @@
 // This file should store the AST nodes in groups according to the
 // class hierarchy and otherwise be in sorted order.
 
+// the following comment disables doxygen for these
+/// \cond DO_NOT_DOCUMENT
+
 AST_BEGIN_SUBCLASSES(BaseAST)
 
   AST_BEGIN_SUBCLASSES(Expr)
@@ -91,3 +94,5 @@ AST_BEGIN_SUBCLASSES(BaseAST)
   AST_END_SUBCLASSES(Symbol)
 
 AST_END_SUBCLASSES(BaseAST)
+
+/// \endcond

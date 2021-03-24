@@ -7,14 +7,14 @@
 namespace chpl {
 
 // forward declare the various AST types
-// using macros and ASTList.h
+// using macros and ASTClassesList.h
 #define AST_DECL(NAME) class NAME;
 #define AST_NODE(NAME) AST_DECL(NAME)
 #define AST_LEAF(NAME) AST_DECL(NAME)
 #define AST_BEGIN_SUBCLASSES(NAME) AST_DECL(NAME)
 #define AST_END_SUBCLASSES(NAME)
-// Apply the above macros to ASTList.h
-#include "ASTList.h"
+// Apply the above macros to ASTClassesList.h
+#include "ASTClassesList.h"
 // clear the macros
 #undef AST_NODE
 #undef AST_LEAF
@@ -23,7 +23,9 @@ namespace chpl {
 #undef AST_DECL
 
 
-// This is the base class for AST types
+/**
+  This is the base class for AST types
+ */
 class BaseAST {
  public:
 
@@ -49,7 +51,7 @@ class BaseAST {
   }
 
   // define is__ methods for the various AST types
-  // using macros and ASTList.h
+  // using macros and ASTClassesList.h
   #define AST_IS(NAME) \
     bool is##NAME() const { \
       return asttags::is##NAME(this->tag_); \
@@ -58,8 +60,8 @@ class BaseAST {
   #define AST_LEAF(NAME) AST_IS(NAME)
   #define AST_BEGIN_SUBCLASSES(NAME) AST_IS(NAME)
   #define AST_END_SUBCLASSES(NAME)
-  // Apply the above macros to ASTList.h
-  #include "ASTList.h"
+  // Apply the above macros to ASTClassesList.h
+  #include "ASTClassesList.h"
   // clear the macros
   #undef AST_NODE
   #undef AST_LEAF
@@ -68,7 +70,7 @@ class BaseAST {
   #undef AST_IS
 
   // define to__ methods for the various AST types
-  // using macros and ASTList.h
+  // using macros and ASTClassesList.h
   // Note: these offer equivalent functionality to C++ dynamic_cast<DstType*>
   #define AST_TO(NAME) \
     const NAME * to##NAME() const { \
@@ -78,8 +80,8 @@ class BaseAST {
   #define AST_LEAF(NAME) AST_TO(NAME)
   #define AST_BEGIN_SUBCLASSES(NAME) AST_TO(NAME)
   #define AST_END_SUBCLASSES(NAME)
-  // Apply the above macros to ASTList.h
-  #include "ASTList.h"
+  // Apply the above macros to ASTClassesList.h
+  #include "ASTClassesList.h"
   // clear the macros
   #undef AST_NODE
   #undef AST_LEAF
@@ -93,7 +95,7 @@ class BaseAST {
 namespace std {
 
 // define std::less for the various AST types
-// using macros and ASTList.h
+// using macros and ASTClassesList.h
 #define AST_LESS(NAME) \
   template<> struct less<chpl::NAME*> { \
     bool operator()(const chpl::NAME* lhs, const chpl::NAME* rhs) const { \
@@ -109,8 +111,8 @@ namespace std {
 #define AST_LEAF(NAME) AST_LESS(NAME)
 #define AST_BEGIN_SUBCLASSES(NAME) AST_LESS(NAME)
 #define AST_END_SUBCLASSES(NAME)
-// Apply the above macros to ASTList.h
-#include "ASTList.h"
+// Apply the above macros to ASTClassesList.h
+#include "ASTClassesList.h"
 // clear the macros
 #undef AST_NODE
 #undef AST_LEAF

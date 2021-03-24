@@ -6,10 +6,12 @@
 
 namespace chpl {
 
-// This class represents a reference to a symbol by name.
-// E.g. in
-//    var x = 1; // here, 'x' is not an Identifier (it is the declared symbol)
-//    f(x);      // here, 'f' and 'x' are Identifiers
+/**
+  This class represents a reference to a symbol by name.
+   E.g. in
+      var x = 1; // here, 'x' is not an Identifier (it is the declared symbol)
+      f(x);      // here, 'f' and 'x' are Identifiers
+ */
 class Identifier final : public Expr {
  private:
   UniqueString name_;

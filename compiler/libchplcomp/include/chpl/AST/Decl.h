@@ -5,7 +5,9 @@
 
 namespace chpl {
 
-// This is an abstract base class for declarations
+/**
+  This is an abstract base class for declarations
+ */
 class Decl : BaseAST {
  public:
   virtual ~Decl() = 0; // this is an abstract base class

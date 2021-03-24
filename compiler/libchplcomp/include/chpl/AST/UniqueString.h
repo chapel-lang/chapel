@@ -10,10 +10,12 @@
 
 namespace chpl {
 
-// This class represents a unique'd NULL-terminated string.
-// unique'd strings allow:
-//   fast == and !=
-//   not worrying about freeing them
+/**
+  This class represents a unique'd NULL-terminated string.
+   unique'd strings allow:
+     fast == and !=
+     not worrying about freeing them
+ */
 class UniqueString final {
  private:
   const char* s;

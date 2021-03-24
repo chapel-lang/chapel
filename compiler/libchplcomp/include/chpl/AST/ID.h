@@ -5,10 +5,12 @@
 
 namespace chpl {
 
-// This class represents an ID for an AST node.
-// AST element IDs can be helpful for creating maps with AST
-// elements as keys.
-// All AST nodes have IDs.
+/**
+  This class represents an ID for an AST node.
+  AST element IDs can be helpful for creating maps with AST
+  elements as keys.
+  All AST nodes have IDs.
+ */
 class ID final {
  private:
   // A path to the symbol, e.g. MyModule#0.MyFunction#1

@@ -7,7 +7,9 @@
 
 namespace chpl {
 
-// This class represents a call to a function
+/**
+  This class represents a call to a function
+ */
 class CallExpr final : public Expr {
  public:
    struct PossiblyNamedActual {

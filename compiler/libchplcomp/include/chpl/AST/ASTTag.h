@@ -5,16 +5,19 @@ namespace chpl {
 
 namespace asttags {
 
-// Define the type that represents a tag to identify which AST class
+/**
+
+  This enum is used to identify which AST class a node is.
+ */
 enum ASTTag {
   // define the enum for all of the non-virtual AST nodes
-  // using macros and ASTList.h
+  // using macros and ASTClassesList.h
   #define AST_NODE(NAME) NAME ,
   #define AST_LEAF(NAME) NAME ,
   #define AST_BEGIN_SUBCLASSES(NAME) START_##NAME ,
   #define AST_END_SUBCLASSES(NAME) END_##NAME ,
-  // Apply the above macros to ASTList.h
-  #include "ASTList.h"
+  // Apply the above macros to ASTClassesList.h
+  #include "ASTClassesList.h"
   // clear the macros
   #undef AST_NODE
   #undef AST_LEAF
@@ -32,8 +35,8 @@ enum ASTTag {
 #define AST_LEAF(NAME) IS_AST(NAME)
 #define AST_BEGIN_SUBCLASSES(NAME)
 #define AST_END_SUBCLASSES(NAME)
-// Apply the above macros to ASTList.h
-#include "ASTList.h"
+// Apply the above macros to ASTClassesList.h
+#include "ASTClassesList.h"
 // clear the macros
 #undef AST_NODE
 #undef AST_LEAF
@@ -50,8 +53,8 @@ enum ASTTag {
 #define AST_LEAF(NAME)
 #define AST_BEGIN_SUBCLASSES(NAME) IS_AST(NAME)
 #define AST_END_SUBCLASSES(NAME)
-// Apply the above macros to ASTList.h
-#include "ASTList.h"
+// Apply the above macros to ASTClassesList.h
+#include "ASTClassesList.h"
 // clear the macros
 #undef AST_NODE
 #undef AST_LEAF
