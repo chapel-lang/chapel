@@ -586,14 +586,17 @@ class Function {
 /*************************************************************************/
 
 
-operator +(F: unmanaged Function, G: unmanaged Function): unmanaged Function {
+operator Function.+(F: unmanaged Function,
+                    G: unmanaged Function): unmanaged Function {
     return F.add(G);
 }
 
-operator -(F: unmanaged Function, G: unmanaged Function): unmanaged Function {
+operator Function.-(F: unmanaged Function,
+                    G: unmanaged Function): unmanaged Function {
     return F.subtract(G);
 }
     
-operator *(F: unmanaged Function, G: unmanaged Function): unmanaged Function {
+operator Function.*(F: unmanaged Function,
+                    G: unmanaged Function): unmanaged Function {
     return F.multiply(G);
 }
