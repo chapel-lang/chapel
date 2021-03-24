@@ -2502,7 +2502,7 @@ proc channel._set_style(style:iostyle) {
 /*
 
    Return the locale on which an ongoing I/O was started with a channel.
-   This method will return ``nil`` unless it is called on a channel that is
+   This method will return ``nilLocale`` unless it is called on a channel that is
    the formal argument to a `readThis`, `writeThis`, or `readWriteThis` method.
 
  */
