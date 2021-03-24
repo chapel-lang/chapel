@@ -2136,19 +2136,19 @@ void init_ofiConnections(void) {
   // we need to not return until after all the connections have been
   // established.
   //
-  for (int i = 0; i < tciTabLen; i++) {
-    struct perTxCtxInfo_t* tcip = &tciTab[i];
-    if (!tcip->bound) {
-      CHK_TRUE(tciAllocTabEntry(tcip));
-      for (c_nodeid_t node = 0; node < chpl_numNodes; node++) {
-        if (node != chpl_nodeID) {
-          while (tcip->txCQ != NULL && tcip->numTxnsOut >= txCQLen) {
-            (*tcip->checkTxCmplsFn)(tcip);
-          }
-          amRequestNop(node, true /*blocking*/, tcip);
+  for (c_nodeid_t node = (chpl_nodeID + 1) % chpl_numNodes;
+       node != chpl_nodeID;
+       node = (node + 1) % chpl_numNodes) {
+    for (int i = 0; i < tciTabLen; i++) {
+      struct perTxCtxInfo_t* tcip = &tciTab[i];
+      if (!tcip->bound) {
+        CHK_TRUE(tciAllocTabEntry(tcip));
+        while (tcip->txCQ != NULL && tcip->numTxnsOut >= txCQLen) {
+          (*tcip->checkTxCmplsFn)(tcip);
         }
+        amRequestNop(node, true /*blocking*/, tcip);
+        tciFree(tcip);
       }
-      tciFree(tcip);
     }
   }
 }
