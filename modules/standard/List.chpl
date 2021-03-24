@@ -1302,13 +1302,13 @@ module List {
 
         if end >= 0 && !_withinBounds(end) then
           boundsCheckHalt("End" + msg + end:string);
-
-        if !_withinBounds(start) then
-          boundsCheckHalt("Start" + msg + start:string);
       }
 
       param error = -1;
 
+      if !_withinBounds(start) then
+        return error;
+        
       if end >= 0 && end < start then
         return error;
 
