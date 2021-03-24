@@ -43,57 +43,57 @@
 #include <string.h>
 #include <time.h>
 
-#define SECSPERMIN	60
-#define MINSPERHOUR	60
-#define HOURSPERDAY	24
-#define DAYSPERWEEK	7
-#define DAYSPERNYEAR	365
-#define DAYSPERLYEAR	366
-#define SECSPERHOUR	(SECSPERMIN * MINSPERHOUR)
-#define SECSPERDAY	((long) SECSPERHOUR * HOURSPERDAY)
-#define MONSPERYEAR	12
+#define SECSPERMIN  60
+#define MINSPERHOUR  60
+#define HOURSPERDAY  24
+#define DAYSPERWEEK  7
+#define DAYSPERNYEAR  365
+#define DAYSPERLYEAR  366
+#define SECSPERHOUR  (SECSPERMIN * MINSPERHOUR)
+#define SECSPERDAY  ((long) SECSPERHOUR * HOURSPERDAY)
+#define MONSPERYEAR  12
 
-#define TM_SUNDAY	0
-#define TM_MONDAY	1
-#define TM_TUESDAY	2
-#define TM_WEDNESDAY	3
-#define TM_THURSDAY	4
-#define TM_FRIDAY	5
-#define TM_SATURDAY	6
+#define TM_SUNDAY  0
+#define TM_MONDAY  1
+#define TM_TUESDAY  2
+#define TM_WEDNESDAY  3
+#define TM_THURSDAY  4
+#define TM_FRIDAY  5
+#define TM_SATURDAY  6
 
-#define TM_JANUARY	0
-#define TM_FEBRUARY	1
-#define TM_MARCH	2
-#define TM_APRIL	3
-#define TM_MAY		4
-#define TM_JUNE		5
-#define TM_JULY		6
-#define TM_AUGUST	7
-#define TM_SEPTEMBER	8
-#define TM_OCTOBER	9
-#define TM_NOVEMBER	10
-#define TM_DECEMBER	11
+#define TM_JANUARY  0
+#define TM_FEBRUARY  1
+#define TM_MARCH  2
+#define TM_APRIL  3
+#define TM_MAY    4
+#define TM_JUNE    5
+#define TM_JULY    6
+#define TM_AUGUST  7
+#define TM_SEPTEMBER  8
+#define TM_OCTOBER  9
+#define TM_NOVEMBER  10
+#define TM_DECEMBER  11
 
-#define TM_YEAR_BASE	1900
+#define TM_YEAR_BASE  1900
 
-#define EPOCH_YEAR	1970
-#define EPOCH_WDAY	TM_THURSDAY
+#define EPOCH_YEAR  1970
+#define EPOCH_WDAY  TM_THURSDAY
 
 #define isleap(y) (((y) % 4) == 0 && (((y) % 100) != 0 || ((y) % 400) == 0))
 
 /*
 ** Since everything in isleap is modulo 400 (or a factor of 400), we know that
-**	isleap(y) == isleap(y % 400)
+**  isleap(y) == isleap(y % 400)
 ** and so
-**	isleap(a + b) == isleap((a + b) % 400)
+**  isleap(a + b) == isleap((a + b) % 400)
 ** or
-**	isleap(a + b) == isleap(a % 400 + b % 400)
+**  isleap(a + b) == isleap(a % 400 + b % 400)
 ** This is true even if % means modulo rather than Fortran remainder
 ** (which is allowed by C89 but not C99).
 ** We use this to avoid addition overflow problems.
 */
 
-#define isleap_sum(a, b)	isleap((a) % 400 + (b) % 400)
+#define isleap_sum(a, b)  isleap((a) % 400 + (b) % 400)
 
 static const struct {
     const char *abday[7];
@@ -153,8 +153,8 @@ static const char * const nadt[5] = {
 static  int _conv_num(const unsigned char **, int *, int, int);
 static int _conv_long(const unsigned char **, unsigned long *, unsigned long, unsigned long);
 static unsigned char *_strptime(const unsigned char *, const char *, struct tm *,struct century_relyear *, unsigned long *);
-static	const u_char *_find_string(const u_char *, int *, const char * const *,
-	    const char * const *, int);
+static  const u_char *_find_string(const u_char *, int *, const char * const *,
+      const char * const *, int);
 char *
 chpl_strptime(const char *buf, const char *fmt, struct tm *tm, unsigned long *micro)
 {
@@ -368,7 +368,7 @@ literal:
             if (!(_conv_num(&bp, &tm->tm_sec, 0, 61)))
                 return (NULL);
             break;
-        case 'f':   /* The seconds. */
+        case 'f':   /* The micro Seconds. */
             _LEGAL_ALT(_ALT_O);
             if (!(_conv_long(&bp, micro, (unsigned long)0, (unsigned long)1000000)))
                 return (NULL);
@@ -425,104 +425,104 @@ literal:
             if (!(_conv_num(&bp, &cr->relyear, 0, 99)))
                 return (NULL);
             break;
-		case 'Z':
-			tzset();
-			if (strncmp((const char *)bp, gmt, 3) == 0) {
-				tm->tm_isdst = 0;
-				tm->tm_gmtoff = 0;
-				tm->tm_zone = gmt;
-				bp += 3;
-			} else if (strncmp((const char *)bp, utc, 3) == 0) {
-				tm->tm_isdst = 0;
-				tm->tm_gmtoff = 0;
-				tm->tm_zone = utc;
-				bp += 3;
-			} else {
-				ep = _find_string(bp, &i,
-						 (const char * const *)tzname,
-						  NULL, 2);
-				if (ep == NULL)
-					return (NULL);
-				tm->tm_isdst = i;
-				tm->tm_gmtoff = -(timezone);
-				tm->tm_zone = tzname[i];
-				bp = ep;
-			}
-			continue;
-		case 'z':
-			/*
-			 * We recognize all ISO 8601 formats:
-			 * Z	= Zulu time/UTC
-			 * [+-]hhmm
-			 * [+-]hh:mm
-			 * [+-]hh
-			 * We recognize all RFC-822/RFC-2822 formats:
-			 * UT|GMT
-			 *          North American : UTC offsets
-			 * E[DS]T = Eastern : -4 | -5
-			 * C[DS]T = Central : -5 | -6
-			 * M[DS]T = Mountain: -6 | -7
-			 * P[DS]T = Pacific : -7 | -8
-			 */
-			while (isspace(*bp))
-				bp++;
-			switch (*bp++) {
-			case 'G':
-				if (*bp++ != 'M')
-					return NULL;
-				/*FALLTHROUGH*/
-			case 'U':
-				if (*bp++ != 'T')
-					return NULL;
-				/*FALLTHROUGH*/
-			case 'Z':
-				tm->tm_isdst = 0;
-				tm->tm_gmtoff = 0;
-				tm->tm_zone = utc;
-				continue;
-			case '+':
-				neg = 0;
-				break;
-			case '-':
-				neg = 1;
-				break;
-			default:
-				--bp;
-				ep = _find_string(bp, &i, nast, NULL, 4);
-				if (ep != NULL) {
-					tm->tm_gmtoff = (-5 - i) * SECSPERHOUR;
-					tm->tm_zone = (char *)nast[i];
-					bp = ep;
-					continue;
-				}
-				ep = _find_string(bp, &i, nadt, NULL, 4);
-				if (ep != NULL) {
-					tm->tm_isdst = 1;
-					tm->tm_gmtoff = (-4 - i) * SECSPERHOUR;
-					tm->tm_zone = (char *)nadt[i];
-					bp = ep;
-					continue;
-				}
-				return NULL;
-			}
-			if (!isdigit(bp[0]) || !isdigit(bp[1]))
-				return NULL;
-			offs = ((bp[0]-'0') * 10 + (bp[1]-'0')) * SECSPERHOUR;
-			bp += 2;
-			if (*bp == ':')
-				bp++;
-			if (isdigit(*bp)) {
-				offs += (*bp++ - '0') * 10 * SECSPERMIN;
-				if (!isdigit(*bp))
-					return NULL;
-				offs += (*bp++ - '0') * SECSPERMIN;
-			}
-			if (neg)
-				offs = -offs;
-			tm->tm_isdst = 0;	/* XXX */
-			tm->tm_gmtoff = offs;
-			tm->tm_zone = NULL;	/* XXX */
-			continue;
+    case 'Z':
+      tzset();
+      if (strncmp((const char *)bp, gmt, 3) == 0) {
+        tm->tm_isdst = 0;
+        tm->tm_gmtoff = 0;
+        tm->tm_zone = gmt;
+        bp += 3;
+      } else if (strncmp((const char *)bp, utc, 3) == 0) {
+        tm->tm_isdst = 0;
+        tm->tm_gmtoff = 0;
+        tm->tm_zone = utc;
+        bp += 3;
+      } else {
+        ep = _find_string(bp, &i,
+             (const char * const *)tzname,
+              NULL, 2);
+        if (ep == NULL)
+          return (NULL);
+        tm->tm_isdst = i;
+        tm->tm_gmtoff = -(timezone);
+        tm->tm_zone = tzname[i];
+        bp = ep;
+      }
+      continue;
+    case 'z':
+      /*
+       * We recognize all ISO 8601 formats:
+       * Z  = Zulu time/UTC
+       * [+-]hhmm
+       * [+-]hh:mm
+       * [+-]hh
+       * We recognize all RFC-822/RFC-2822 formats:
+       * UT|GMT
+       *          North American : UTC offsets
+       * E[DS]T = Eastern : -4 | -5
+       * C[DS]T = Central : -5 | -6
+       * M[DS]T = Mountain: -6 | -7
+       * P[DS]T = Pacific : -7 | -8
+       */
+      while (isspace(*bp))
+        bp++;
+      switch (*bp++) {
+      case 'G':
+        if (*bp++ != 'M')
+          return NULL;
+        /*FALLTHROUGH*/
+      case 'U':
+        if (*bp++ != 'T')
+          return NULL;
+        /*FALLTHROUGH*/
+      case 'Z':
+        tm->tm_isdst = 0;
+        tm->tm_gmtoff = 0;
+        tm->tm_zone = utc;
+        continue;
+      case '+':
+        neg = 0;
+        break;
+      case '-':
+        neg = 1;
+        break;
+      default:
+        --bp;
+        ep = _find_string(bp, &i, nast, NULL, 4);
+        if (ep != NULL) {
+          tm->tm_gmtoff = (-5 - i) * SECSPERHOUR;
+          tm->tm_zone = (char *)nast[i];
+          bp = ep;
+          continue;
+        }
+        ep = _find_string(bp, &i, nadt, NULL, 4);
+        if (ep != NULL) {
+          tm->tm_isdst = 1;
+          tm->tm_gmtoff = (-4 - i) * SECSPERHOUR;
+          tm->tm_zone = (char *)nadt[i];
+          bp = ep;
+          continue;
+        }
+        return NULL;
+      }
+      if (!isdigit(bp[0]) || !isdigit(bp[1]))
+        return NULL;
+      offs = ((bp[0]-'0') * 10 + (bp[1]-'0')) * SECSPERHOUR;
+      bp += 2;
+      if (*bp == ':')
+        bp++;
+      if (isdigit(*bp)) {
+        offs += (*bp++ - '0') * 10 * SECSPERMIN;
+        if (!isdigit(*bp))
+          return NULL;
+        offs += (*bp++ - '0') * SECSPERMIN;
+      }
+      if (neg)
+        offs = -offs;
+      tm->tm_isdst = 0;  /* XXX */
+      tm->tm_gmtoff = offs;
+      tm->tm_zone = NULL;  /* XXX */
+      continue;
         /*
          * Miscellaneous conversions.
          */
@@ -555,55 +555,55 @@ literal:
 static int
 _conv_num(const unsigned char **buf, int *dest, int llim, int ulim)
 {
-	int result = 0;
-	int rulim = ulim;
-	if (**buf < '0' || **buf > '9')
-		return (0);
-	/* we use rulim to break out of the loop when we run out of digits */
-	do {
-		result *= 10;
-		result += *(*buf)++ - '0';
-		rulim /= 10;
-	} while ((result * 10 <= ulim) && rulim && **buf >= '0' && **buf <= '9');
-	if (result < llim || result > ulim)
-		return (0);
-	*dest = result;
-	return (1);
+  int result = 0;
+  int rulim = ulim;
+  if (**buf < '0' || **buf > '9')
+    return (0);
+  /* we use rulim to break out of the loop when we run out of digits */
+  do {
+    result *= 10;
+    result += *(*buf)++ - '0';
+    rulim /= 10;
+  } while ((result * 10 <= ulim) && rulim && **buf >= '0' && **buf <= '9');
+  if (result < llim || result > ulim)
+    return (0);
+  *dest = result;
+  return (1);
 }
 static int
 _conv_long(const unsigned char **buf, unsigned long *dest, unsigned long llim, unsigned long ulim)
 {
-	unsigned long result = 0;
-	unsigned long rulim = ulim;
-	if (**buf < '0' || **buf > '9')
-		return (0);
-	/* we use rulim to break out of the loop when we run out of digits */
-	do {
-		result *= 10;
-		result += *(*buf)++ - '0';
-		rulim /= 10;
-	} while ((result * 10 <= ulim) && rulim && **buf >= '0' && **buf <= '9');
+  unsigned long result = 0;
+  unsigned long rulim = ulim;
+  if (**buf < '0' || **buf > '9')
+    return (0);
+  /* we use rulim to break out of the loop when we run out of digits */
+  do {
+    result *= 10;
+    result += *(*buf)++ - '0';
+    rulim /= 10;
+  } while ((result * 10 <= ulim) && rulim && **buf >= '0' && **buf <= '9');
   if (result < llim || result > ulim)
     return (0);
-	*dest = result;
-	return (1);
+  *dest = result;
+  return (1);
 }
 static const u_char *
 _find_string(const u_char *bp, int *tgt, const char * const *n1,
-		const char * const *n2, int c)
+    const char * const *n2, int c)
 {
-	int i;
-	unsigned int len;
-	/* check full name - then abbreviated ones */
-	for (; n1 != NULL; n1 = n2, n2 = NULL) {
-		for (i = 0; i < c; i++, n1++) {
-			len = strlen(*n1);
-			if (strncasecmp(*n1, (const char *)bp, len) == 0) {
-				*tgt = i;
-				return bp + len;
-			}
-		}
-	}
-	/* Nothing matched */
-	return NULL;
+  int i;
+  unsigned int len;
+  /* check full name - then abbreviated ones */
+  for (; n1 != NULL; n1 = n2, n2 = NULL) {
+    for (i = 0; i < c; i++, n1++) {
+      len = strlen(*n1);
+      if (strncasecmp(*n1, (const char *)bp, len) == 0) {
+        *tgt = i;
+        return bp + len;
+      }
+    }
+  }
+  /* Nothing matched */
+  return NULL;
 }
