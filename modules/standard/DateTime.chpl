@@ -1157,19 +1157,41 @@ module DateTime {
   }
 
   /* Create a `datetime` as described by the `date_string` and `format`
-     string */
+     string. Fields not specified by format will have defaults. This is
+     deprecated. */
+  pragma "no doc"
   proc type datetime.strptime(date_string: string, format: string) {
+    compilerWarning("proc type datetype.strptime() is deprecated.\nPlease use proc datetime.strptime() instead.");
+    var dt: datetime; /* how to initialize? */
+    dt.strptime(date_string, format);
+    return dt;
+  }
+
+  /* Modify a `datetime` as described by the `date_string` and `format`
+     string. Fields not specified by format are not modified. */
+  proc ref datetime.strptime(date_string: string, format: string) {
     extern proc chpl_strptime(buf: c_string, format: c_string, ref ts: tm, ref ms: c_ulong);
+    var microSeconds = chpl_time.microsecond : c_ulong;
     var timeStruct: tm;
-    var microSeconds: c_ulong = 0;
+
+    timeStruct.tm_year = (chpl_date.year - 1900) : int(32);
+    timeStruct.tm_mon  = (chpl_date.month - 1) : int(32);
+    timeStruct.tm_mday = chpl_date.day : int(32);
+    timeStruct.tm_hour = chpl_time.hour : int(32);
+    timeStruct.tm_min  = chpl_time.minute : int(32);
+    timeStruct.tm_sec  = chpl_time.second : int(32);
+    // TODO: How to handle tm_zone
+
     chpl_strptime(date_string.c_str(), format.c_str(), timeStruct, microSeconds);
-    return new datetime(timeStruct.tm_year + 1900,
-                        timeStruct.tm_mon + 1,
-                        timeStruct.tm_mday,
-                        timeStruct.tm_hour,
-                        timeStruct.tm_min,
-                        timeStruct.tm_sec,
-                        microSeconds:uint(32));
+
+    chpl_date.chpl_year   = timeStruct.tm_year + 1900;
+    chpl_date.chpl_month  = timeStruct.tm_mon + 1;
+    chpl_date.chpl_day    = timeStruct.tm_mday;
+    chpl_time.chpl_hour   = timeStruct.tm_hour;
+    chpl_time.chpl_minute = timeStruct.tm_min;
+    chpl_time.chpl_second = timeStruct.tm_sec;
+    chpl_time.chpl_microsecond = microSeconds : int(64);
+    // TODO: How to handle tm_zone
   }
 
   /* Create a `string` from a `datetime` matching the `format` string */
