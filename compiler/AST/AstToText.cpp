@@ -1471,6 +1471,7 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType, const char *outer,
 
         if (isSymExpr(expr->get(i)) 
           && isVarSymbol(toSymExpr(expr->get(i))->symbol()) 
+          && toVarSymbol(toSymExpr(expr->get(i))->symbol())->isImmediate() 
           && toVarSymbol(toSymExpr(expr->get(i))->symbol())->immediate->const_kind == CONST_KIND_STRING)
         {
           mText += "\"";
@@ -1768,6 +1769,7 @@ void AstToText::appendExpr(CallExpr* expr, const char* fnName, bool printingType
 
     if (isSymExpr(expr->get(i)) 
       && isVarSymbol(toSymExpr(expr->get(i))->symbol()) 
+      && toVarSymbol(toSymExpr(expr->get(i))->symbol())->isImmediate() 
       && toVarSymbol(toSymExpr(expr->get(i))->symbol())->immediate->const_kind == CONST_KIND_STRING)
     {
       mText += "\"";
