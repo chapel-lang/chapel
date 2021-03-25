@@ -353,7 +353,13 @@ module ChapelRange {
   proc chpl__nudgeLowBound(param low) param {
     return chpl__intToIdx(low.type, chpl__idxToInt(low) + 1);
   }
-  proc chpl__nudgeHighBound(param high) param {
+  // would really like to remove the type constraints here, but it
+  // breaks enum ranges until we support a param chpl__intToIdx()
+  // routine for bools
+  proc chpl__nudgeHighBound(param high: integral) param {
+    return chpl__intToIdx(high.type, chpl__idxToInt(high) - 1);
+  }
+  proc chpl__nudgeHighBound(param high: bool) param {
     return chpl__intToIdx(high.type, chpl__idxToInt(high) - 1);
   }
 
