@@ -381,6 +381,7 @@ module OrderedMap {
 
       :yields: A reference to one of the keys contained in this orderedMap.
     */
+    pragma "order independent yielding loops"
     iter keys() const ref {
       for kv in _set {
           yield kv[0];
@@ -393,6 +394,7 @@ module OrderedMap {
       :yields: A tuple of references to one of the key-value pairs contained in
                this orderedMap.
     */
+    pragma "order independent yielding loops"
     iter items() const ref {
       for kv in _set {
         yield (kv[0], kv[1]!.val);
@@ -404,6 +406,7 @@ module OrderedMap {
 
       :yields: A reference to one of the values contained in this orderedMap.
     */
+    pragma "order independent yielding loops"
     iter values() ref {
       for kv in _set {
         yield kv[1]!.val;
