@@ -270,7 +270,7 @@ module CommDiagnostics
 
     /*
       GETs that were not handled by the cache - that is, GETs where the
-      cache needed to communicate in order to handle the GET.
+      cache needed to communicate with another locale.
      */
     var cache_get_misses: uint(64);
 
