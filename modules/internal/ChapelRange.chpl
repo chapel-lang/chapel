@@ -641,13 +641,19 @@ module ChapelRange {
 
   config param sizeReturnsInt = false;
 
+  private proc chpl_idxTypeSizeChange(type t) param {
+    return (t != int &&
+            !isEnumType(t) &&
+            !isBoolType(t));
+  }
+  
   /* Returns the number of elements in this range as an integer.
 
      If the size exceeds `max(int)`, this procedure will halt when
      bounds checks are on.
    */
   proc range.size {
-    if (this.idxType != int && sizeReturnsInt == false) {
+    if (chpl_idxTypeSizeChange(idxType) && sizeReturnsInt == false) {
       compilerWarning("'range("+idxType:string+").size' is changing to return 'int' values rather than '"+idxType:string+"'\n" +
                       "  (to get the value as a different type, call the new method '.sizeAs(type t)')\n" +
                       "  (to opt into the change now, re-compile with '-ssizeReturnsInt=true')");
