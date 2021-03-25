@@ -19,15 +19,15 @@
  */
 
 %option outfile="flex-chapel.cpp"
-%option header-file="../include/flex-chapel.h"
+%option header-file="flex-chapel.h"
 
 %option noyywrap
 %option nounput
 
 /* These options create a re-entrant scanner that returns
-     an integer to indicate the token type
-     a  bison-style YYSTYPE by reference. The value will always be in yylval->pch.
-     a  bison-style YYLTYPE by reference.
+     * an integer to indicate the token type
+     * a bison-style YYSTYPE by reference. (value in yylval->pch)
+     * a bison-style YYLTYPE by reference.
 
      i.e. int yylex(YYSTYPE*, YYLTYPE*, yyscan_t yyscanner);
 */
@@ -46,7 +46,6 @@
 %{
 
 #include "bison-chapel.h"
-#include "docsDriver.h"
 #include "parser.h"
 
 #include <cstdio>
@@ -832,9 +831,6 @@ static int processBlockComment(yyscan_t scanner) {
   int startLine = chplLineno;
   const char* startFilename = yyfilename;
 
-  int         len          = strlen(fDocsCommentLabel);
-  int         labelIndex   = (len >= 2) ? 2 : 0;
-
   int         c            = 0;
   int         d            = 1;
   bool        badComment = false;
@@ -855,37 +851,19 @@ static int processBlockComment(yyscan_t scanner) {
       countMultiLineComment(stringBuffer.c_str());
       processNewline(scanner);
 
-      if (fDocs && labelIndex == len) {
-        wholeComment += stringBuffer;
-        wholeComment += '\n';
-      }
+      wholeComment += stringBuffer;
+      wholeComment += '\n';
 
       newString();
       countCommentLine();
     } else {
-      if ((labelIndex < len) && (labelIndex != -1)) {
-        if (c == fDocsCommentLabel[labelIndex]) {
-          labelIndex++;
-        } else {
-          labelIndex = -1;
-        }
-      }
-
       addChar(c);
     }
 
-    if (len != 0 && c == fDocsCommentLabel[len - d])
-      d++;
-    else
-      d = 1;
+    d = 1;
 
     if (lastc == '*' && c == '/' && lastlastc != '/') { // close comment
-      if(labelIndex == len && d != len + 1) {
-        depth--;
-        badComment = true;
-      }
-      else
-        depth--;
+      depth--;
       
       d = 1;
     } else if (lastc == '/' && c == '*') { // start nested
@@ -906,23 +884,10 @@ static int processBlockComment(yyscan_t scanner) {
     }
   }
 
-  // back up two to not print */ again.
-  if (stringBuffer.size() >= 2)
-    stringBuffer.resize(stringBuffer.size()-2);
-
-  // back up further if the user has specified a special form of commenting
-  if (len > 2 && labelIndex == len)
-    stringBuffer.resize(stringBuffer.size() - (len - 2));
-
   // Saves the comment grabbed to the comment field of the location struct,
   // for use when the --docs flag is implemented
-  if (fDocs && labelIndex == len) {
+  {
     wholeComment += stringBuffer;
-
-    if (len > 2) {
-      len          = len - 2;
-      wholeComment = wholeComment.substr(len);
-    }
 
     // Also, only need to fix indentation failure when the comment matters
     size_t location = wholeComment.find("\\x09");

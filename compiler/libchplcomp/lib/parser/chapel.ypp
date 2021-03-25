@@ -68,15 +68,11 @@
   #ifndef _BISON_CHAPEL_DEFINES_1_
   #define _BISON_CHAPEL_DEFINES_1_
 
-  #include "symbol.h"
-
-  #include "ImportStmt.h"
-
   #include <cstdio>
   #include <utility>
   #include <vector>
 
-  class ArgSymbol;
+  /*class ArgSymbol;
   class BlockStmt;
   class CallExpr;
   class DefExpr;
@@ -111,13 +107,14 @@
     ret.where = w;
     ret.lifetime = lt;
     return ret;
-  }
+  }*/
 
   // The lexer only uses pch.
   // The remaining types are for parser productions
   union  YYSTYPE {
     const char*               pch;
 
+    /*
     Vec<const char*>*         vpch;
     RetTag                    retTag;
     AggregateTag              aggrTag;
@@ -139,7 +136,7 @@
     ShadowVarPrefix           pShadowVarPref;
     std::vector<PotentialRename*>* ponlylist;
     std::set<Flag>*           pflagset;
-    WhereAndLifetime          lifetimeAndWhere;
+    WhereAndLifetime          lifetimeAndWhere;*/
   };
 
   #endif
@@ -159,7 +156,6 @@
     int         last_line;
     int         last_column;
     const char* comment;
-    const char* prevModule;
   };
 
   #define YYLTYPE_IS_DECLARED 1
@@ -194,7 +190,9 @@
 
     yyscan_t    scanner;
     const char* latestComment;
+    std::vector<UniqueString> currentModuleStack;
     BaseAST*    generatedStmt;
+    ASTContext* ctx;
   };
 
   #endif
@@ -279,11 +277,12 @@
 %require "2.5"
 
 // The names for the output files
-%defines "../include/bison-chapel.h"
+%defines "bison-chapel.h"
 %output  "bison-chapel.cpp"
 
 %debug
 %verbose
+
 // These would print out expected token names, but that might just
 // add unnecessary complexity for someone new to the language ...
 //%define parse.lac full
@@ -572,12 +571,7 @@ module_decl_start:
   access_control opt_prototype TMODULE ident_def
     {
       $$ = buildModule($4, currentModuleType, NULL, yyfilename, $1, $2, @1.comment);
-      // store previous module name in order to restore it once we're
-      // done with this module in module_decl_stmt below.  Ultimately,
-      // we will need to store a stack of module names in order to
-      // support full module path resolution of -s config flags.
-      @$.prevModule = currentModuleName;
-      currentModuleName = $4;
+      context->currentModuleStack.push_back(context->ctx.uniqueString($4));
     }
 ;
 
@@ -585,17 +579,17 @@ module_decl_stmt:
    module_decl_start TLCBR TRCBR
     { $1->block = new BlockStmt();
       $$ = buildChapelStmt(new DefExpr($1));
-      currentModuleName = @1.prevModule;  // restore previous module name
+      context->currentModuleStack.pop_back();
     }
 | module_decl_start TLCBR stmt_ls TRCBR
     { $1->block = $3;
       $$ = buildChapelStmt(new DefExpr($1));
-      currentModuleName = @1.prevModule;  // restore previous module name
+      context->currentModuleStack.pop_back();
     }
 | module_decl_start TLCBR error TRCBR
     { $1->block = buildErrorStandin();
       $$ = buildChapelStmt(new DefExpr($1));
-      currentModuleName = @1.prevModule;  // restore previous module name
+      context->currentModuleStack.pop_back();
     }
 ;
 
