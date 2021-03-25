@@ -107,7 +107,7 @@ proc BlockDim.init(numLocales: int, boundingBox: range(?),
 
   this.numLocales = numLocales;
   this.bbStart = boundingBox.low;
-  this.bbLength = boundingBox.size;
+  this.bbLength = boundingBox.sizeAs(int);
 }
 
 /////////// privatization - start
@@ -259,7 +259,7 @@ proc Block1dom.dsiSingleTaskPerLocaleOnly1d() param return false;
 proc Block1locdom.dsiMyDensifiedRangeForTaskID1d(globDD, taskid:int, numTasks:int) {
   const locRange = densify(myRange, globDD.wholeR, userErrors=false);
   // Copied straight from BlockDom leader - replace locBlock(parDim)->locRange.
-  const (lo, hi) = _computeBlock(locRange.size, numTasks, taskid,
+  const (lo, hi) = _computeBlock(locRange.sizeAs(int), numTasks, taskid,
                                  locRange.high, locRange.low, locRange.low);
 
   // If this can occasionally be an empty range, add a check to Dimensional
