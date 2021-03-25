@@ -846,8 +846,7 @@ proc replaceDirname(path:string,newDirname:string):string {
 */
 proc replaceBasename(const path:string,const newBasename:string):string throws {
     const (dirname, basename) = splitPath(path);
-    const sep = "/";
-    if(newBasename.endsWith(sep)) {
+    if(newBasename.endsWith(pathSep)) {
       throw new owned IllegalArgumentError(newBasename,"is not a invalid basename");
     }
     return joinPath(dirname,newBasename);
@@ -871,23 +870,27 @@ proc replaceBasename(const path:string,const newBasename:string):string throws {
 proc replaceExt(in path:string,in newExt:string):string throws {
     const (extLessPath, ext) = splitExt(path);
     const (dirname, basename) = splitPath(extLessPath);
-    // altsep for windows only future
-    const altsep = "", sep = "/";
 
     // Check for empty basename as extension can't be appended
     if (basename.isEmpty()){
       throw new owned IllegalArgumentError(path,"has an empty basename");
     }
     // check is extension contains spearator.
-    else if(newExt.find(sep) != -1 || (!altsep.isEmpty() && newExt.find(altsep) != -1)){
-      throw new owned IllegalArgumentError(newExt,"is an invalid suffix");
+    else if(newExt.find(pathSep) != -1){
+      throw new owned IllegalArgumentError(newExt,"=extension can't contain path separators");
     }
-    // if extension is not blank then check it starts with ''.' and isn't just '.'
-    else if(!newExt.isEmpty() && !newExt.startsWith(".") || newExt == ".") {
-      throw new owned IllegalArgumentError(newExt,"is an invalid suffix");
+    // if extension is not blank then check it shouldn't end with ''.' and isn't just '.'
+    else if(!newExt.isEmpty() && newExt == "." || newExt.endsWith(".")) {
+      throw new owned IllegalArgumentError(newExt,"extension can't end with '.'");
+    }
+    // remove leading '.' if any for uniform support to both
+    const strippedExt = newExt.strip(".",leading=true);
+    // check for presence of spaces in stripedExt
+    if(strippedExt.find(" ") != -1){
+      throw new owned IllegalArgumentError(newExt,"extension can't contain spaces");
     }
 
-    return replaceBasename(path,basename+newExt);
+    return replaceBasename(path,basename+"."+strippedExt);
 }
 
 /*
