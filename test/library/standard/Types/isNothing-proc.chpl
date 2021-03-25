@@ -1,8 +1,8 @@
 use Types;
 
-proc myassert(type t){
-var Var: t;
-writeln(t:string, " ", isNothing(t), " ", isNothing(Var));
+proc printIsNothing(type t){
+  var Var: t;
+  writeln(t:string, " ", isNothing(t), " ", isNothing(Var));
 }
 type nothingType = nothing;
 type intType = int;
@@ -13,11 +13,11 @@ type isReal = real;
 type isRecord = imag;
 type isComplex = complex;
 
-myassert(nothingType);
-myassert(intType);
-myassert(stringType);
-myassert(boolType);
-myassert(bytesType); 
-myassert(isReal); 
-myassert(isRecord); 
-myassert(isComplex); 
+printIsNothing(nothingType);
+printIsNothing(intType);
+printIsNothing(stringType);
+printIsNothing(boolType);
+printIsNothing(bytesType); 
+printIsNothing(isReal); 
+printIsNothing(isRecord); 
+printIsNothing(isComplex); 
