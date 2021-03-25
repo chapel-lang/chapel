@@ -1297,17 +1297,21 @@ module List {
       :rtype: `int`
     */
     proc const indexOf(x: eltType, start: int=0, end: int=-1): int {
+      
+      param error = -1;
+
+      if _size == 0 then
+        return error;
+
       if boundsChecking {
         const msg = " index for \"list.indexOf\" out of bounds: ";
 
         if end >= 0 && !_withinBounds(end) then
           boundsCheckHalt("End" + msg + end:string);
+
+        if !_withinBounds(start) then
+          boundsCheckHalt("Start" + msg + start:string);
       }
-
-      param error = -1;
-
-      if !_withinBounds(start) then
-        return error;
         
       if end >= 0 && end < start then
         return error;
