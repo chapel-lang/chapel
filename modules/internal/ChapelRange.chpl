@@ -350,6 +350,12 @@ module ChapelRange {
   proc chpl__nudgeHighBound(high) {
     return chpl__intToIdx(high.type, chpl__idxToInt(high) - 1);
   }
+  proc chpl__nudgeLowBound(param low) param {
+    return chpl__intToIdx(low.type, chpl__idxToInt(low) + 1);
+  }
+  proc chpl__nudgeHighBound(param high) param {
+    return chpl__intToIdx(high.type, chpl__idxToInt(high) - 1);
+  }
 
   // Range builders for low bounded ranges
   proc chpl_build_low_bounded_range(low: integral)
@@ -2621,7 +2627,7 @@ operator :(r: range(?), type t: range(?)) {
       return i: idxType;
   }
 
-  inline proc chpl__intToIdx(type idxType: integral, param i: integral) {
+  inline proc chpl__intToIdx(type idxType: integral, param i: integral) param {
     if (i.type == idxType) then
       return i;
     else
@@ -2631,6 +2637,12 @@ operator :(r: range(?), type t: range(?)) {
   inline proc chpl__intToIdx(type idxType: enum, i: integral) {
     return chpl__orderToEnum(i, idxType);
   }
+
+  /* Doesn't work yet:  Need to implement a param chpl__orderToEnum?
+  inline proc chpl__intToIdx(type idxType: enum, param i: integral) param {
+    return chpl__orderToEnum(i, idxType);
+  }
+*/
 
   inline proc chpl__intToIdx(type idxType, i: integral) where isBoolType(idxType) {
     return i: bool;
@@ -2653,6 +2665,10 @@ operator :(r: range(?), type t: range(?)) {
   }
 
   inline proc chpl__idxToInt(i: enum) {
+    return chpl__enumToOrder(i);
+  }
+
+  inline proc chpl__idxToInt(param i: enum) param {
     return chpl__enumToOrder(i);
   }
 
