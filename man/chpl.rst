@@ -8,9 +8,9 @@ chpl
 SYNOPSIS
 --------
 
-|   **chpl** [**-O**] [**--no-checks**] [**--fast**]
-|            [**-g**] [**--savec** *directory*]
-|            [**-M** *directory*...] [**--main-module** *mod*]
+|   **chpl** [**-O**] [**\--no-checks**] [**\--fast**]
+|            [**-g**] [**\--savec** *directory*]
+|            [**-M** *directory*...] [**\--main-module** *mod*]
 |            [**-o** *outfile*] [*options*] source-files...
 |
 
