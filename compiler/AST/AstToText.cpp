@@ -1469,7 +1469,17 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType, const char *outer,
         if (i > 1)
           mText += ", ";
 
-        appendExpr(expr->get(i), printingType);
+        if (isSymExpr(expr->get(i)) 
+          && isVarSymbol(toSymExpr(expr->get(i))->symbol()) 
+          && toVarSymbol(toSymExpr(expr->get(i))->symbol())->isImmediate() 
+          && toVarSymbol(toSymExpr(expr->get(i))->symbol())->immediate->const_kind == CONST_KIND_STRING)
+        {
+          mText += "\"";
+          appendExpr(expr->get(i), printingType);
+          mText += "\"";
+        }
+        else
+          appendExpr(expr->get(i), printingType);
       }
 
       mText += ')';
@@ -1757,7 +1767,17 @@ void AstToText::appendExpr(CallExpr* expr, const char* fnName, bool printingType
     if (i > 1)
       mText += ", ";
 
-    appendExpr(expr->get(i), printingType);
+    if (isSymExpr(expr->get(i)) 
+      && isVarSymbol(toSymExpr(expr->get(i))->symbol()) 
+      && toVarSymbol(toSymExpr(expr->get(i))->symbol())->isImmediate() 
+      && toVarSymbol(toSymExpr(expr->get(i))->symbol())->immediate->const_kind == CONST_KIND_STRING)
+    {
+      mText += "\"";
+      appendExpr(expr->get(i), printingType);
+      mText += "\"";
+    }
+    else
+      appendExpr(expr->get(i), printingType);
   }
 
   // 1-tuples get a trailing "," inside the parens.

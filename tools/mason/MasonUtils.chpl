@@ -339,7 +339,7 @@ private var chplVersionInfo = new VersionInfo(-1, -1, -1);
    (major, minor, bugFix, isMaster)
 */
 proc getChapelVersionInfo(): VersionInfo {
-  use Regexp;
+  use Regex;
 
   if chplVersionInfo(0) == -1 {
     try {

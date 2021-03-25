@@ -712,7 +712,7 @@
     "modules/standard/Random.chpl"
   ],
   "f8d11ee0-1f2f-11e6-a3a6-10ddb1d4c3d5": [
-    "modules/standard/Regexp.chpl"
+    "modules/standard/Regex.chpl"
   ],
   "d41572f2-1f2c-11e6-a3a6-10ddb1d4c3d5": [
     "modules/standard/SysBasic.chpl"

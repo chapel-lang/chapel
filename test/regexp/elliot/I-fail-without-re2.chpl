@@ -2,5 +2,5 @@
 // Since re2 is speculatively built, we want some way to notice if it stops
 // building in configurations we expect it to.
 
-use Regexp;
+use Regex;
 var myRegexp = compile("a+");
