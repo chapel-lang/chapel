@@ -344,6 +344,13 @@ module ChapelRange {
     compilerError("Bounds of 'low..high' must be integers of compatible types.");
   }
 
+  proc chpl__nudgeLowBound(low) {
+    return chpl__intToIdx(low.type, chpl__idxToInt(low) + 1);
+  }
+  proc chpl__nudgeHighBound(high) {
+    return chpl__intToIdx(high.type, chpl__idxToInt(high) - 1);
+  }
+
   // Range builders for low bounded ranges
   proc chpl_build_low_bounded_range(low: integral)
     return new range(low.type, BoundedRangeType.boundedLow, _low=low);
