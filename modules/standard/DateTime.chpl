@@ -1001,9 +1001,10 @@ module DateTime {
 
   /* Get the `time` since Unix Epoch in seconds
   */
-  proc type datetime.timeSinceEpoch():int(64) {
-    const timedelta = getTimeOfDay();
-    return timedelta(0);
+  proc type datetime.timeSinceEpoch():real {
+    var (seconds,microseconds):(real,real) = getTimeOfDay();
+    microseconds = microseconds/1000000.0;
+    return seconds + microseconds;
   }
 
   /* Get the `time` portion of the `datetime` value including the
