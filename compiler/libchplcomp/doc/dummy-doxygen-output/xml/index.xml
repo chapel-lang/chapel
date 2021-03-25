@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygenindex xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="index.xsd" version="1.9.1" xml:lang="en-US">
+  <compound refid="namespacechpl" kind="namespace"><name>chpl</name>
+  </compound>
+  <compound refid="dummy-compiler-sources_8h" kind="file"><name>dummy-compiler-sources.h</name>
+  </compound>
+</doxygenindex>

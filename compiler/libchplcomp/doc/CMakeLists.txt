@@ -15,8 +15,11 @@ if(DOXYGEN_FOUND)
   doxygen_add_docs(api-docs ${CHPL_MAIN_INCLUDE_DIR})
 
 else(DOXYGEN_FOUND)
-
   add_custom_target(api-docs
                     COMMAND echo
-                    COMMENT "skipping api-docs because doxygen is missing")
+                    COMMENT "using dummy api-docs because doxygen is missing")
+  add_custom_command(TARGET api-docs POST_BUILD
+                     COMMAND ${CMAKE_COMMAND} -E copy_directory
+                         ${CMAKE_CURRENT_SOURCE_DIR}/dummy-doxygen-output/xml
+                         ${CMAKE_CURRENT_BINARY_DIR}/doxygen/xml)
 endif(DOXYGEN_FOUND)

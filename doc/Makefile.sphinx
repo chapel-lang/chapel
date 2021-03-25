@@ -8,7 +8,7 @@ CHPLDEPS = $(shell $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/chplenv/chpl_home_
 COPY_IF_DIFFERENT = $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/config/update-if-different --copy
 
 # You can set these variables from the command line.
-SPHINXOPTS    = -n
+SPHINXOPTS    = -n -W --keep-going
 SPHINXBUILD = $(CHPL_MAKE_PYTHON) $(CHPLDEPS) sphinx-build
 PAPER         =
 SOURCEDIR     = rst
@@ -27,10 +27,7 @@ installed, grab it from http://sphinx-doc.org/"
 
 # Internal variables.
 COMP_DOXY_XML=../build/libchplcomp/doc/doxygen/xml
-BREATHEOPT =
-ifneq ("$(wildcard $(COMP_DOXY_XML))", "")
-  BREATHEOPT += -Dbreathe_projects.libchplcomp=../$(COMP_DOXY_XML)
-endif
+BREATHEOPT = -Dbreathe_projects.libchplcomp=../$(COMP_DOXY_XML)
 PAPEROPT_a4     = -D latex_paper_size=a4
 PAPEROPT_letter = -D latex_paper_size=letter
 ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) $(BREATHEOPT) $(SOURCEDIR)
