@@ -412,7 +412,7 @@ class BadRegexError : Error {
 }
 
 // Until Issue 17275 is fixed:
-type BadRegexpError = BadRegexError;
+type BadRegexpError = owned BadRegexError;
 
 // When Issue 17275 is fixed:
 
