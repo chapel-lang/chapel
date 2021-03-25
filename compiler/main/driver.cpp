@@ -897,6 +897,7 @@ Flag types:
   I = int
   P = path
   S = string
+  R = string (also stores in string)
   D = double
   f = set to false
   F = set to true
@@ -993,7 +994,7 @@ static ArgumentDescription arg_desc[] = {
  {"lib-search-path", 'L', "<directory>", "C library search path", "P", libraryFilename, "CHPL_LIB_PATH", handleLibPath},
  {"optimize", 'O', NULL, "[Don't] Optimize generated C code", "N", &optimizeCCode, "CHPL_OPTIMIZE", NULL},
  {"specialize", ' ', NULL, "[Don't] Specialize generated C code for CHPL_TARGET_CPU", "N", &specializeCCode, "CHPL_SPECIALIZE", NULL},
- {"output", 'o', "<filename>", "Name output executable", "P", &executableFilename[0], "CHPL_EXE_NAME", NULL},
+ {"output", 'o', "<filename>", "Name output executable", "R", &executableFilename, "CHPL_EXE_NAME", NULL},
  {"static", ' ', NULL, "Generate a statically linked binary", "F", &fLinkStyle, NULL, NULL},
 
  {"", ' ', NULL, "LLVM Code Generation Options", NULL, NULL, NULL, NULL},

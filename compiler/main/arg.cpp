@@ -188,6 +188,12 @@ void usage(const ArgumentState* state,
               printf("''");
 
             break;
+          
+          case 'R':
+            if(desc[i].location != 0)
+              printf("'%s'", (*(std::string*)desc[i].location).c_str());
+            else
+              printf("''");
 
           case 'D':
             if (desc[i].location != 0)
@@ -480,6 +486,11 @@ static void ApplyValue(const ArgumentState*       state,
 
         break;
       }
+      case 'R':
+      {
+        (*((std::string*) location)) = std::string(value, std::min((int)strlen(value), (int)FILENAME_MAX));
+        break;
+      }
     }
   }
 
@@ -696,6 +707,12 @@ static void process_arg(const ArgumentState*       state,
             strncpy((char*) desc->location, arg, maxlen);
           }
           break;
+        
+        case 'R':
+          if(desc->location) {
+            (*((std::string*)desc->location)) = std::string(arg, std::min((int)strlen(arg), (int)FILENAME_MAX));
+          }
+          break;
 
         default:
           fprintf(stdout,
@@ -862,7 +879,7 @@ static const char* get_envvar_setting(const ArgumentDescription& desc)
 
     // The environment variable IS the empty string
     else if (env[0] == '\0')
-      retval = (desc.type[0] == 'P' || desc.type[0] == 'S') ? "" : 0;
+      retval = (desc.type[0] == 'P' || desc.type[0] == 'S' || desc.type[0] == 'R') ? "" : 0;
 
     // The environment variable IS NOT the empty string
     else
