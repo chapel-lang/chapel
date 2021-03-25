@@ -667,7 +667,7 @@ proc Block.targetLocsIdx(ind: idxType) where rank == 1 {
 proc Block.targetLocsIdx(ind: rank*idxType) {
   var result: rank*int;
   for param i in 0..rank-1 do
-    result(i) = max(0, min((targetLocDom.dim(i).size-1):int,
+    result(i) = max(0, min((targetLocDom.dim(i).sizeAs(int)-1):int,
                            (((ind(i) - boundingBox.dim(i).low) *
                              targetLocDom.dim(i).sizeAs(idxType)) /
                             boundingBox.dim(i).sizeAs(idxType)):int));
@@ -713,7 +713,7 @@ proc chpl__computeBlock(locid, targetLocBox, boundingBox) {
     const lo = boundingBox.dim(i).low;
     const hi = boundingBox.dim(i).high;
     const numelems = hi - lo + 1;
-    const numlocs = targetLocBox.dim(i).size;
+    const numlocs = targetLocBox.dim(i).sizeAs(int);
     const (blo, bhi) = _computeBlock(numelems, numlocs, chpl__tuplify(locid)(i),
                                      max(idxType), min(idxType), lo);
     inds(i) = blo..bhi;
@@ -1503,12 +1503,12 @@ proc BlockDom.numRemoteElems(viewDom, rlo, rid) {
   // NOTE: Not bothering to check to see if rid+1, length, or rlo-1 used
   //  below can fit into idxType
   var blo, bhi:dist.idxType;
-  if rid==(dist.targetLocDom.dim(rank-1).size - 1) then
+  if rid==(dist.targetLocDom.dim(rank-1).sizeAs(int) - 1) then
     bhi=viewDom.dim(rank-1).high;
   else {
       bhi = dist.boundingBox.dim(rank-1).low +
         intCeilXDivByY((dist.boundingBox.dim(rank-1).high - dist.boundingBox.dim(rank-1).low +1)*(rid+1):idxType,
-                       dist.targetLocDom.dim(rank-1).size:idxType) - 1:idxType;
+                       dist.targetLocDom.dim(rank-1).sizeAs(idxType)) - 1:idxType;
   }
 
   return (bhi - (rlo - 1):idxType);

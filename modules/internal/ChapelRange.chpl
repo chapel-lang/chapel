@@ -830,7 +830,7 @@ module ChapelRange {
     if isBoundedRange(r1) {
 
       // gotta have a special case for length 0 or 1
-      const len = r1.size, l2 = r2.size;
+      const len = r1.sizeAs(uint), l2 = r2.sizeAs(uint);
       if len != l2 then return false;
       if len == 0 then return true;
       if r1.first != r2.first then return false;
@@ -966,7 +966,7 @@ operator :(r: range(?), type t: range(?)) {
                           other.alignment,
                           true);
 
-    return (boundedOther.size == 0) || contains(boundedOther);
+    return (boundedOther.sizeAs(int) == 0) || contains(boundedOther);
   }
   /* Return true if ``other`` is contained in this range and false otherwise */
   inline proc range.boundsCheck(other: idxType)
@@ -1059,9 +1059,9 @@ operator :(r: range(?), type t: range(?)) {
       if ord < 0 then
         HaltWrappers.boundsCheckHalt("invoking orderToIndex on a negative integer: " + ord:string);
 
-      if isBoundedRange(this) && ord >= this.size then
+      if isBoundedRange(this) && ord >= this.sizeAs(int) then
         HaltWrappers.boundsCheckHalt("invoking orderToIndex on an integer " +
-            ord:string + " that is larger than the range's number of indices " + this.size:string);
+            ord:string + " that is larger than the range's number of indices " + this.sizeAs(int):string);
     }
 
     return chpl_intToIdx(chpl__addRangeStrides(this.firstAsInt, this.stride,
@@ -1673,7 +1673,7 @@ operator :(r: range(?), type t: range(?)) {
     if boundsChecking && !r.hasLast()  && count < 0 then
       boundsCheckHalt("With a negative count, the range must have a last index.");
     if boundsChecking && r.boundedType == BoundedRangeType.bounded &&
-      abs(count:chpl__maxIntTypeSameSign(count.type)):uint(64) > r.size:uint(64) then {
+      abs(count:chpl__maxIntTypeSameSign(count.type)):uint(64) > r.sizeAs(uint(64)) then {
       boundsCheckHalt("bounded range is too small to access " + abs(count):string + " elements");
     }
 
@@ -2171,7 +2171,7 @@ operator :(r: range(?), type t: range(?)) {
       chpl_debug_writeln("*** In range standalone iterator:");
     }
 
-    const len = this.size;
+    const len = this.sizeAs(int);
     const numChunks = if __primitive("task_get_serial") then
                       1 else _computeNumChunks(len);
 
@@ -2215,7 +2215,7 @@ operator :(r: range(?), type t: range(?)) {
     const numSublocs = here.getChildCount();
 
     if localeModelHasSublocales && numSublocs != 0 {
-      const len = this.size;
+      const len = this.sizeAs(int);
       const tasksPerLocale = dataParTasksPerLocale;
       const ignoreRunning = dataParIgnoreRunningTasks;
       const minIndicesPerTask = dataParMinGranularity;
@@ -2252,7 +2252,7 @@ operator :(r: range(?), type t: range(?)) {
           }
           const (lo,hi) = _computeBlock(len, numChunks, chunk, len-1);
           const locRange = lo..hi;
-          const locLen = locRange.size;
+          const locLen = locRange.sizeAs(int);
           // Divide the locale's tasks approximately evenly
           // among the sublocales
           const numSublocTasks = (if chunk < dptpl % numChunks
@@ -2274,7 +2274,7 @@ operator :(r: range(?), type t: range(?)) {
       }
 
     } else {
-      var v = this.size;
+      var v = this.sizeAs(int);
       const numChunks = if __primitive("task_get_serial") then
                         1 else _computeNumChunks(v);
 
@@ -2332,11 +2332,11 @@ operator :(r: range(?), type t: range(?)) {
     if (isBoundedRange(myFollowThis) && !myFollowThis.stridable) ||
        myFollowThis.hasLast()
     {
-      const flwlen = myFollowThis.size;
+      const flwlen = myFollowThis.sizeAs(int);
       if boundsChecking && this.hasLast() {
         // this check is for typechecking only
         if isBoundedRange(this) {
-          if this.size < flwlen then
+          if this.sizeAs(int) < flwlen then
             HaltWrappers.boundsCheckHalt("zippered iteration over a range with too few indices");
         } else
           assert(false, "hasFirst && hasLast do not imply isBoundedRange");
