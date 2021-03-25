@@ -1,1 +1,9 @@
-target_sources(libchplcomp PRIVATE UniqueString.cpp)
+target_sources(libchplcomp
+               PRIVATE
+
+               ASTContext.cpp
+               BaseAST.cpp
+               ID.cpp
+               UniqueString.cpp
+
+              )

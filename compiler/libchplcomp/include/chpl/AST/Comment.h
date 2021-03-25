@@ -5,6 +5,7 @@
 #include "chpl/AST/UniqueString.h"
 
 namespace chpl {
+namespace ast {
 
 /**
   This class represents a comment that might be used for documentation.
@@ -20,5 +21,7 @@ class Comment final : public Expr {
   UniqueString comment() const { return comment_; }
 };
 
-}
+} // end namespace ast
+} // end namespace chpl
+
 #endif

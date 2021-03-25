@@ -3,6 +3,8 @@
 
 namespace chpl {
 
+namespace ast {
+
 namespace asttags {
 
 /**
@@ -69,6 +71,8 @@ enum ASTTag {
 #undef IS_AST
 
 } // end namespace tags
+
+} // end namespace ast
 
 } // end namespace chpl
 

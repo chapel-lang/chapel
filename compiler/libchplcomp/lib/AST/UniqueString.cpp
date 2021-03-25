@@ -1,50 +1,19 @@
 #include "chpl/AST/UniqueString.h"
-#include "chpl/AST/CallExpr.h"
 
-#include <unordered_map>
 #include <cstring>
 
 namespace chpl {
-
-struct UniqueStrEqual {
-  bool operator()(const char* lhs, const char* rhs) const {
-    return strcmp(lhs, rhs) == 0;
-  }
-};
-
-struct UniqueStrHash {
-  std::size_t operator()(const char* s) const {
-    // this hash is from StringHashFns in the old map.h
-    unsigned int h = 0;
-    while (*s) h = h * 27 + (unsigned char)*s++;
-    return h;
-  }
-};
-
-static std::unordered_map<const char*, const char*, UniqueStrHash, UniqueStrEqual> uniqueStringsTable;
-
-static const char* uniquifyString(const char* str) {
-
-  auto search = uniqueStringsTable.find(str);
-  if (search != uniqueStringsTable.end()) {
-    return search->second;
-  }
-  char* s = strdup(str);
-  uniqueStringsTable.insert(search, {s, s});
-  return s;
-}
-
-UniqueString::UniqueString(const char* str) {
-  assert(str != NULL);
-  this->s = uniquifyString(str);
-}
-
-UniqueString::UniqueString(const std::string& str) {
-  this->s = uniquifyString(str.c_str());
-}
+namespace ast {
 
 bool UniqueString::startsWith(const char* prefix) const {
   return (0 == strncmp(this->s, prefix, strlen(prefix)));
 }
-
+bool UniqueString::startsWith(const UniqueString prefix) const {
+  return this->startsWith(prefix.c_str());
 }
+bool UniqueString::startsWith(const std::string& prefix) const {
+  return this->startsWith(prefix.c_str());
+}
+
+} // end namespace ast
+} // end namespace chpl

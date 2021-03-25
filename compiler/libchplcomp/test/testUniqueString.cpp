@@ -1,3 +1,4 @@
+#include "chpl/AST/ASTContext.h"
 #include "chpl/AST/UniqueString.h"
 
 #include <chrono>
@@ -7,7 +8,10 @@
 #include <iostream>
 #include <cassert>
 
-void testPerformance(const char* inputFile, bool printTiming) {
+using namespace chpl;
+using namespace ast;
+
+void testPerformance(ASTContext& ctx, const char* inputFile, bool printTiming) {
   int repeat = 10;
 
   std::ifstream file(inputFile);
@@ -18,9 +22,8 @@ void testPerformance(const char* inputFile, bool printTiming) {
     while (std::getline(file, line)) {
       for (int i = 0; i < repeat; i++) {
         std::istringstream iss(line, std::istringstream::in);
-        while( iss >> word )
-        {
-          chpl::UniqueString u(word);
+        while (iss >> word) {
+          ctx.uniqueString(word);
         }
       }
     }
@@ -50,22 +53,27 @@ int main(int argc, char** argv) {
       inputFile = argv[i];
   }
 
+  ASTContext ctx;
+
   // First, add some strings to the map and make sure we get uniqueness.
   {
     std::string test1 = "test1";
     std::string test1Copy = test1;
     assert(test1.c_str() != test1Copy.c_str());
-    chpl::UniqueString t1(test1);
-    chpl::UniqueString t2(test1Copy);
-    chpl::UniqueString t3("test1");
+    UniqueString t1 = ctx.uniqueString(test1);
+    UniqueString t2 = ctx.uniqueString(test1Copy);
+    UniqueString t3 = ctx.uniqueString("test1");
     assert(t1.c_str() == t2.c_str());
     assert(t2.c_str() == t3.c_str());
 
-    chpl::UniqueString h("hello");
+    UniqueString h = ctx.uniqueString("hello");
     assert(h.c_str() != t1.c_str());
+
+    // check that uniqueString(NULL) == uniqueString("")
+    assert(ctx.uniqueString(NULL) == ctx.uniqueString(""));
   }
 
   // Next, measure performance
-  testPerformance(inputFile, printTiming);
+  testPerformance(ctx, inputFile, printTiming);
   return 0;
 }

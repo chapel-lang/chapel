@@ -4,6 +4,7 @@
 #include "chpl/AST/UniqueString.h"
 
 namespace chpl {
+namespace ast {
 
 /**
   This class represents an ID for an AST node.
@@ -47,22 +48,17 @@ class ID final {
   // returns 'true' if the AST node with this ID contains the AST
   // node with the other ID.
   bool contains(const ID other) const;
+
+  int compare(const ID other) const;
 };
 
+} // end namespace ast
 } // end namespace chpl
 
 namespace std {
-  template<> struct less<chpl::ID> {
-    bool operator()(const chpl::ID lhs, const chpl::ID rhs) const {
-      chpl::UniqueString lhsPath = lhs.symbolPath();
-      chpl::UniqueString rhsPath = rhs.symbolPath();
-      if (lhsPath != rhsPath) {
-        std::less<chpl::UniqueString> ustrLess;
-        return ustrLess(lhsPath, rhsPath);
-      }
-
-      // otherwise, use the id
-      return lhs.postOrderId() < rhs.postOrderId(); 
+  template<> struct less<chpl::ast::ID> {
+    bool operator()(const chpl::ast::ID lhs, const chpl::ast::ID rhs) const {
+      return lhs.compare(rhs) < 0;
     }
   };
 } // end namespace std

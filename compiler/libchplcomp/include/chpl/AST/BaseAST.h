@@ -6,6 +6,7 @@
 
 namespace chpl {
 
+namespace ast {
 
 // forward declare the various AST types
 // using macros and ASTClassesList.h
@@ -96,6 +97,8 @@ class BaseAST {
   #undef AST_TO
 };
 
+} // end namespace ast
+
 } // end namespace chpl
 
 /// \cond DO_NOT_DOCUMENT
@@ -105,14 +108,15 @@ namespace std {
 // using macros and ASTClassesList.h
 /// \cond DO_NOT_DOCUMENT
 #define AST_LESS(NAME) \
-  template<> struct less<chpl::NAME*> { \
-    bool operator()(const chpl::NAME* lhs, const chpl::NAME* rhs) const { \
+  template<> struct less<chpl::ast::NAME*> { \
+    bool operator()(const chpl::ast::NAME* lhs, \
+                    const chpl::ast::NAME* rhs) const { \
       if (lhs == nullptr && rhs != nullptr) return true; \
       if (rhs == nullptr) return false; \
-      std::less<chpl::ID> lessID; \
+      std::less<chpl::ast::ID> lessID; \
       /* cast in the next line is so it compiles with only forward decls */ \
-      return lessID(((const chpl::BaseAST*)lhs)->id(), \
-                    ((const chpl::BaseAST*)rhs)->id()); \
+      return lessID(((const chpl::ast::BaseAST*)lhs)->id(), \
+                    ((const chpl::ast::BaseAST*)rhs)->id()); \
     } \
   };
 #define AST_NODE(NAME) AST_LESS(NAME)

@@ -4,6 +4,7 @@
 #include "chpl/AST/Expr.h"
 
 namespace chpl {
+namespace ast {
 
 /**
   This class represents a literal.
@@ -20,5 +21,7 @@ class Literal final : public Expr {
   // TODO: move over 'ifa' code
 };
 
-}
+} // end namespace ast
+} // end namespace chpl
+
 #endif

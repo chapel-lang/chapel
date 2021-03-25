@@ -5,6 +5,7 @@
 #include "chpl/AST/UniqueString.h"
 
 namespace chpl {
+namespace ast {
 
 /**
   This class represents a reference to a symbol by name.
@@ -24,5 +25,7 @@ class Identifier final : public Expr {
   UniqueString name() const { return name_; }
 };
 
-}
+} // end namespace ast
+} // end namespace chpl
+
 #endif
