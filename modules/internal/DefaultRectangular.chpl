@@ -314,7 +314,7 @@ module DefaultRectangular {
                                                      ranges);
       if debugDefaultDist {
         chpl_debug_writeln("    numChunks=", numChunks, " parDim=", parDim,
-                           " ranges(", parDim, ").size=", ranges(parDim).size);
+                           " ranges(", parDim, ").size=", ranges(parDim).sizeAs(int));
       }
       if debugDataPar {
         chpl_debug_writeln("### numTasksPerLoc = ", numTasks, "\n",
@@ -452,7 +452,7 @@ module DefaultRectangular {
                                                        ranges);
         if debugDefaultDist then
           chpl_debug_writeln("    numChunks=", numChunks, " parDim=", parDim,
-                  " ranges(", parDim, ").size=", ranges(parDim).size);
+                  " ranges(", parDim, ").size=", ranges(parDim).sizeAs(int));
 
         if debugDataPar {
           chpl_debug_writeln("### numTasksPerLoc = ", numTasks, "\n",
@@ -2302,12 +2302,12 @@ module DefaultRectangular {
    // Get shape of array
     var size1: rank*int;
     for (i, r) in zip(0..#this.dom.ranges.size, this.dom.ranges) do
-      size1(i) = r.size;
+      size1(i) = r.sizeAs(int);
 
     // Get shape of array
     var size2: rank*int;
     for (i, r) in zip(0..#other.dom.ranges.size, other.dom.ranges) do
-      size2(i) = r.size;
+      size2(i) = r.sizeAs(int);
     
     if(this.locale == other.locale &&
        size1 == size2) {
