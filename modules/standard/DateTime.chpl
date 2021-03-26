@@ -1369,6 +1369,13 @@ module DateTime {
   }
 
   pragma "no doc"
+  proc -(dt: datetime, d: date):timedelta {
+    // convert date to datetime and use the default zero time
+    var castDate = datetime.combine(d,new time());
+    return dt - castDate;
+  }
+
+  pragma "no doc"
   proc ==(dt1: datetime, dt2: datetime): bool {
     if dt1.tzinfo.borrow() == nil && dt2.tzinfo.borrow() != nil ||
        dt1.tzinfo.borrow() != nil && dt2.tzinfo.borrow() == nil {
