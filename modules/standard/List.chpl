@@ -899,8 +899,7 @@ module List {
          lifetime this < x {
       var result = false;
 
-      on this {
-        _enter();
+      _enter();
 
       // Handle special case of `a.insert((a.size), x)` here.
       if idx == _size {
@@ -915,8 +914,7 @@ module List {
         result = true;
       }
 
-        _leave();
-      }
+      _leave();
 
       // Destroy our copy if it was never used.
       if !result then
