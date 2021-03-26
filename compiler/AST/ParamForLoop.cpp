@@ -410,24 +410,25 @@ CallExpr* ParamForLoop::foldForResolve()
   SymExpr*   hse       = highExprGet();
   SymExpr*   sse       = strideExprGet();
 
+  CallExpr*  noop      = new CallExpr(PRIM_NOOP);
+
+  Symbol*      idxSym  = idxExpr->symbol();
+  Type*        idxType = indexType();
+
+  bool emptyLoop = true;
+  Symbol*      continueSym = continueLabelGet();
+
+  if (!is_enum_type(idxType)) {
   VarSymbol* lvar      = toVarSymbol(lse->symbol());
   VarSymbol* hvar      = toVarSymbol(hse->symbol());
   VarSymbol* svar      = toVarSymbol(sse->symbol());
 
-  CallExpr*  noop      = new CallExpr(PRIM_NOOP);
-
   validateLoop(lvar, hvar, svar);
-
-  Symbol*      idxSym  = idxExpr->symbol();
-  Symbol*      continueSym = continueLabelGet();
-  Type*        idxType = indexType();
   IF1_int_type idxSize = (is_bool_type(idxType) || get_width(idxType) == 32)
                            ? INT_SIZE_32 : INT_SIZE_64;
 
   // Insert an "insertion marker" for loop unrolling
   insertAfter(noop);
-
-  bool emptyLoop = true;
 
   if (is_int_type(idxType))
   {
@@ -499,6 +500,107 @@ CallExpr* ParamForLoop::foldForResolve()
       }
     }
   }
+  } else {
+    EnumSymbol* lvar = toEnumSymbol(lse->symbol());
+    EnumSymbol* hvar = toEnumSymbol(hse->symbol());
+    VarSymbol*  svar = toVarSymbol(sse->symbol());
+
+    validateLoop(lvar, hvar, svar);
+
+    int64_t stride = svar->immediate->to_int();
+
+    // Insert an "insertion marker" for loop unrolling
+    insertAfter(noop);
+
+    bool foundLow = false;
+    bool foundHigh = false;
+    bool degenRange = false;
+
+    EnumType* et = toEnumType(lvar->type);
+
+    // Check to make sure the range is valid
+    for_enums(constant, et) {
+      if (constant->sym == lvar) {
+        if (foundHigh == true) {
+          if (stride > 0) {
+            degenRange = true;
+            break;  // degenerate range
+          } else {
+            break;
+          }
+        }
+        foundLow = true;
+      }
+      if (constant->sym == hvar) {
+        foundHigh = true;
+        if (foundLow == true) {
+          if (stride < 0) {
+            degenRange = true;
+            break;  // degenerate range
+          } else {
+            break;
+          }
+        }
+      }
+    }
+
+    if (!degenRange) {
+      // Handle cases with positive strides
+      if (stride >= 1) {
+        bool foundFirst = false;
+        int i = 0;
+        int strcount;
+        for_enums(constant, et) {
+          if (constant->sym == lvar) {
+            foundFirst = true;
+            strcount = 0;
+          }
+          if (foundFirst && strcount == 0) {
+            SymbolMap map;
+            
+            map.put(idxSym, constant->sym);
+            copyBodyHelper(noop, i, &map, this, continueSym);
+            emptyLoop = false;
+          }
+          strcount++;
+          if (strcount == stride) {
+            strcount = 0;
+          }
+          if (constant->sym == hvar) {
+            break;
+          }
+          i++;
+        }
+      } else {
+        // Handle cases with negative strides
+        bool foundFirst = false;
+        int i = 0;
+        int strcount;
+        for_enums_backward(constant, et) {
+          if (constant->sym == lvar) {
+            foundFirst = true;
+            strcount = 0;
+          }
+          if (foundFirst && strcount == 0) {
+            SymbolMap map;
+            
+            map.put(idxSym, constant->sym);
+            copyBodyHelper(noop, i, &map, this, continueSym);
+            emptyLoop = false;
+          }
+          strcount++;
+          if (strcount == -stride) {
+            strcount = 0;
+          }
+          if (constant->sym == hvar) {
+            break;
+          }
+          i++;
+        }
+      }        
+    }
+  }
+
 
   if (emptyLoop)
     addMentionToEndOfStatement(this, NULL);
@@ -527,6 +629,22 @@ void ParamForLoop::validateLoop(VarSymbol* lvar,
     USR_FATAL(this,
               "param for-loops must be defined over a bounded param range");
 
+  if (!is_int_type(svar->type) && !is_uint_type(svar->type)) {
+    USR_FATAL(this, "Range stride must be an int");
+  }
+}
+
+void ParamForLoop::validateLoop(EnumSymbol* lvar,
+                                EnumSymbol* hvar,
+                                VarSymbol* svar) {
+  if (!lvar            || !hvar            || !svar)
+    USR_FATAL(this,
+              "param for-loops must be defined over a bounded param range");
+
+  if (!svar->immediate)
+    USR_FATAL(this,
+              "param for-loops must be defined over a bounded param range");
+  
   if (!is_int_type(svar->type) && !is_uint_type(svar->type)) {
     USR_FATAL(this, "Range stride must be an int");
   }

@@ -396,6 +396,21 @@ module ChapelRange {
     return high;
   }
 
+  proc chpl_compute_low_param_loop_bound(param low: enum,
+                                         param high: low.type) param {
+    return low;
+  }
+
+  proc chpl_compute_high_param_loop_bound(param low: enum,
+                                          param high: low.type) param {
+    return high;
+  }
+
+  proc chpl_compute_high_param_loop_bound(param low: bool,
+                                          param high: bool) param {
+    return high;
+  }
+
   proc chpl_compute_low_param_loop_bound(param low: bool,
                                          param high: bool) param {
     return low;
@@ -408,7 +423,7 @@ module ChapelRange {
 
   pragma "last resort"
   proc chpl_compute_low_param_loop_bound(param low, param high) param {
-    compilerError("Range bounds must be integers of compatible types in param for-loops");
+    compilerError("A: Range bounds must be integers of compatible types in param for-loops");
   }
 
   pragma "last resort"
@@ -439,7 +454,7 @@ module ChapelRange {
 
   pragma "last resort"
   proc chpl_low_bound_count_for_param_loop(high, count) {
-    compilerError("Range bounds must be integers of compatible types in param for-loops");
+    compilerError("B: Range bounds must be integers of compatible types in param for-loops");
   }
 
   proc chpl_high_bound_count_for_param_loop(param low: integral, param count: integral) param {
@@ -456,7 +471,7 @@ module ChapelRange {
 
   pragma "last resort"
   proc chpl_high_bound_count_for_param_loop(low, count) {
-    compilerError("Range bounds must be integers of compatible types in param for-loops");
+    compilerError("C: Range bounds must be integers of compatible types in param for-loops");
   }
 
   proc chpl_bounded_count_for_param_loop_low(param low: integral, param high: integral, param count: integral) param {
