@@ -735,6 +735,8 @@ distCreate-arrays-deinit.cc-perf: &distCreate-base
     - Make locale-related comm improvements (#15288)
   06/02/20:
     - Address performance issues with stencil and block-cyclic array init (#15741)
+  03/23/21:
+    - A few communication micro-optimizations to improve Block array creation (#17354)
 
 distCreate-arrays-init.cc-perf:
   <<: *distCreate-base
@@ -1394,6 +1396,8 @@ memleaksfull:
     - File tests locking in fixes to issue #14226 (#17291)
   03/03/21:
     - Fix some issues with new tests locking in bug fixes (#17320)
+  03/24/21:
+    - Add module OrderedMap (#16271)
 # End memleaksfull
 
 meteor:
