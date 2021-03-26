@@ -584,7 +584,8 @@ module OrderedMap {
     :arg lhs: The orderedMap to assign to.
     :arg rhs: The orderedMap to assign from. 
   */
-  operator =(ref lhs: orderedMap(?kt, ?vt, ?ps), const ref rhs: orderedMap(kt, vt, ps)) {
+  operator =(ref lhs: orderedMap(?kt, ?vt, ?ps),
+             const ref rhs: orderedMap(kt, vt, ps)) {
 
     if !isCopyableType(kt) || !isCopyableType(vt) then
       compilerError("assigning orderedMap with non-copyable type");
@@ -606,7 +607,8 @@ module OrderedMap {
     :return: `true` if the contents of two orderedMaps are equal.
     :rtype: `bool`
   */
-  operator ==(const ref a: orderedMap(?kt, ?vt, ?ps), const ref b: orderedMap(kt, vt, ps)): bool {
+  operator orderedMap.==(const ref a: orderedMap(?kt, ?vt, ?ps),
+                         const ref b: orderedMap(kt, vt, ps)): bool {
     if a.size != b.size then return false;
     for (e1, e2) in zip(a.items(), b.items()) {
       if e1 != e2 then return false;
@@ -624,15 +626,16 @@ module OrderedMap {
     :return: `true` if the contents of two orderedMaps are not equal.
     :rtype: `bool`
   */
-  operator !=(const ref a: orderedMap(?kt, ?vt, ?ps), const ref b: orderedMap(kt, vt, ps)): bool {
+  operator orderedMap.!=(const ref a: orderedMap(?kt, ?vt, ?ps),
+                         const ref b: orderedMap(kt, vt, ps)): bool {
     return !(a == b);
   }
 
   /*
     Returns a new orderedMap containing the keys and values in either a or b.
   */
-  operator +(a: orderedMap(?keyType, ?valueType, ?parSafe),
-         b: orderedMap(keyType, valueType, parSafe)) {
+  operator orderedMap.+(a: orderedMap(?keyType, ?valueType, ?parSafe),
+                        b: orderedMap(keyType, valueType, parSafe)) {
     return a | b;
   }
 
@@ -640,16 +643,16 @@ module OrderedMap {
     Sets the left-hand side orderedMap to contain the keys and values in either
     a or b.
    */
-  operator +=(ref a: orderedMap(?keyType, ?valueType, ?parSafe),
-          b: orderedMap(keyType, valueType, parSafe)) {
+  operator orderedMap.+=(ref a: orderedMap(?keyType, ?valueType, ?parSafe),
+                         b: orderedMap(keyType, valueType, parSafe)) {
     a |= b;
   }
 
   /*
     Returns a new orderedMap containing the keys and values in either a or b.
   */
-  operator |(a: orderedMap(?keyType, ?valueType, ?parSafe),
-         b: orderedMap(keyType, valueType, parSafe)) {
+  operator orderedMap.|(a: orderedMap(?keyType, ?valueType, ?parSafe),
+                        b: orderedMap(keyType, valueType, parSafe)) {
     var newMap = new orderedMap(keyType, valueType, parSafe, a.comparator);
 
     newMap |= a;
@@ -661,8 +664,8 @@ module OrderedMap {
   /* Sets the left-hand side map to contain the keys and values in either
      a or b.
    */
-  operator |=(ref a: orderedMap(?keyType, ?valueType, ?parSafe),
-          b: orderedMap(keyType, valueType, parSafe)) {
+  operator orderedMap.|=(ref a: orderedMap(?keyType, ?valueType, ?parSafe),
+                         b: orderedMap(keyType, valueType, parSafe)) {
     // add keys/values from b to a if they weren't already in a
     for e in b.items() do a.add(e[0], e[1]);
   }
@@ -670,8 +673,8 @@ module OrderedMap {
   /*
     Returns a new orderedMap containing the keys that are in both a and b.
   */
-  operator &(a: orderedMap(?keyType, ?valueType, ?parSafe),
-         b: orderedMap(keyType, valueType, parSafe)) {
+  operator orderedMap.&(a: orderedMap(?keyType, ?valueType, ?parSafe),
+                        b: orderedMap(keyType, valueType, parSafe)) {
     var newMap = new orderedMap(keyType, valueType, parSafe, a.comparator);
     for (k, v) in a.items() {
       if b.contains(k) then
@@ -688,16 +691,16 @@ module OrderedMap {
       `lhs`.
 
    */
-  operator &=(ref a: orderedMap(?keyType, ?valueType, ?parSafe),
-          b: orderedMap(keyType, valueType, parSafe)) {
+  operator orderedMap.&=(ref a: orderedMap(?keyType, ?valueType, ?parSafe),
+                         b: orderedMap(keyType, valueType, parSafe)) {
     a = a & b;
   }
 
   /*
     Returns a new orderedMap containing the keys that are only in a, but not b.
   */
-  operator -(a: orderedMap(?keyType, ?valueType, ?parSafe),
-         b: orderedMap(keyType, valueType, parSafe)) {
+  operator orderedMap.-(a: orderedMap(?keyType, ?valueType, ?parSafe),
+                        b: orderedMap(keyType, valueType, parSafe)) {
     var newMap = new orderedMap(keyType, valueType, parSafe, a.comparator);
 
     for (k, v) in a.items() {
@@ -710,8 +713,8 @@ module OrderedMap {
 
   /* Sets the left-hand side orderedMap to contain the keys that are in the
      left-hand orderedMap, but not the right-hand orderedMap. */
-  operator -=(ref a: orderedMap(?keyType, ?valueType, ?parSafe),
-          b: orderedMap(keyType, valueType, parSafe)) {
+  operator orderedMap.-=(ref a: orderedMap(?keyType, ?valueType, ?parSafe),
+                         b: orderedMap(keyType, valueType, parSafe)) {
     for k in b.keys() {
       a.remove(k);
     }
@@ -722,8 +725,8 @@ module OrderedMap {
     not both.
 
   */
-  operator ^(a: orderedMap(?keyType, ?valueType, ?parSafe),
-         b: orderedMap(keyType, valueType, parSafe)) {
+  operator orderedMap.^(a: orderedMap(?keyType, ?valueType, ?parSafe),
+                        b: orderedMap(keyType, valueType, parSafe)) {
     var newMap = new orderedMap(keyType, valueType, parSafe, a.comparator);
 
     for k in a.keys() do
@@ -735,8 +738,8 @@ module OrderedMap {
 
   /* Sets the left-hand side orderedMap to contain the keys that are in either the
      left-hand orderedMap or the right-hand orderedMap, but not both. */
-  operator ^=(ref a: orderedMap(?keyType, ?valueType, ?parSafe),
-          b: orderedMap(keyType, valueType, parSafe)) {
+  operator orderedMap.^=(ref a: orderedMap(?keyType, ?valueType, ?parSafe),
+                         b: orderedMap(keyType, valueType, parSafe)) {
     for k in b.keys() {
       if a.contains(k) then a.remove(k);
       else a[k] = b[k];
