@@ -27,11 +27,11 @@ record FacInt {
   }
 }
 
-proc <(a: FacInt, b: FacInt) {
+operator FacInt.<(a: FacInt, b: FacInt) {
   return a.n < b.n;
 }
 
-proc >(a: FacInt, b: FacInt) {
+operator FacInt.>(a: FacInt, b: FacInt) {
   return a.n > b.n;
 }
 
