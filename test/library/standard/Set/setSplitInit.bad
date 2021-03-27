@@ -1,4 +1,0 @@
-$CHPL_HOME/modules/standard/Set.chpl:nnnn: In method 'init=':
-$CHPL_HOME/modules/standard/Set.chpl:nnnn: error: Cannot replace an instantiated param field with another value
-$CHPL_HOME/modules/standard/Set.chpl:nnnn: note: field 'parSafe' has value 'true' but is set to 'false'
-  setSplitInit.chpl:8: called as (set(int(64),true)).init=(other: set(int(64),false))
