@@ -552,6 +552,9 @@ module Set {
   proc |(const ref a: set(?t, ?), const ref b: set(t, ?)) {
     var result: set(t, (a.parSafe || b.parSafe));
 
+    // TODO: Split-init causes weird errors, see setCompositionParSafe.chpl
+    result;
+
     result = a;
     result |= b;
 
@@ -718,6 +721,9 @@ module Set {
   */
   proc ^(const ref a: set(?t, ?), const ref b: set(t, ?)) {
     var result: set(t, (a.parSafe || b.parSafe));
+
+    // TODO: Split-init causes weird errors, see setCompositionParSafe.chpl
+    result;
 
     /* Expect the loop in ^= to be more expensive than the loop in =,
        so arrange for the rhs of the ^= to be the smaller set. */
