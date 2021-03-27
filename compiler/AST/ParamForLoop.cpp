@@ -545,11 +545,11 @@ CallExpr* ParamForLoop::foldForResolve()
       if (stride >= 1) {
         bool foundFirst = false;  // have we found our first enum bound yet?
         int i = 0;
-        int strcount;             // used to count off strides
+        int strcount = 0;             // used to count off strides
         for_enums(constant, et) {
           if (constant->sym == lvar) {  // found the starting point
             foundFirst = true;
-            strcount = 0;
+            strcount = 0;               // start counting the stride from here
           }
 
           // stamp out a copy of the loop body
@@ -575,11 +575,11 @@ CallExpr* ParamForLoop::foldForResolve()
         // Handle cases with negative strides
         bool foundFirst = false;  // have we found our first enum bound yet?
         int i = 0;
-        int strcount;             // used to count off strides
+        int strcount = 0;             // used to count off strides
         for_enums_backward(constant, et) {
           if (constant->sym == lvar) {  // found the starting point
             foundFirst = true;
-            strcount = 0;
+            strcount = 0;               // start counting the stride from here
           }
 
           // stamp out a copy of the loop body
