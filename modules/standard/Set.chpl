@@ -195,17 +195,25 @@ module Set {
 
       :arg other: A set to initialize this set with.
     */
-    proc init=(const ref other: set(?t, ?)) lifetime this < other {
-      this.eltType = t;
-      this.parSafe = other.parSafe;
+    proc init=(const ref other: set(?t, ?p)) lifetime this < other {
+      this.eltType = if this.type.eltType != ? then
+                        this.type.eltType else t;
+      this.parSafe = if this.type.parSafe != ? then
+                        this.type.parSafe else p;
       this.complete();
 
-      if !isCopyableType(eltType) then
-        compilerError('cannot initialize ' + this.type:string + ' from ' +
-                      other.type:string + ' because element type ' +
-                      eltType:string + ' is not copyable');
-
-      for elem in other do _addElem(elem);
+      // TODO: Relax this to allow if 'isCoercible(t, this.eltType)'?
+      if this.eltType != t {
+        compilerError('cannot initialize ', this.type:string, ' from ',
+                      other.type:string, ' due to element type ',
+                      'mismatch');
+      } else if !isCopyableType(eltType) {
+        compilerError('cannot initialize ', this.type:string, ' from ',
+                      other.type:string, ' because element type ',
+                      eltType:string, ' is not copyable');
+      } else {
+        for elem in other do _addElem(elem);
+      }
     }
 
     pragma "no doc"
@@ -544,7 +552,7 @@ module Set {
   proc |(const ref a: set(?t, ?), const ref b: set(t, ?)) {
     var result: set(t, (a.parSafe || b.parSafe));
 
-    // TODO: Split-init causes weird errors.
+    // TODO: Split-init causes weird errors, see setSplitInit.chpl
     result;
 
     result = a;
@@ -714,7 +722,7 @@ module Set {
   proc ^(const ref a: set(?t, ?), const ref b: set(t, ?)) {
     var result: set(t, (a.parSafe || b.parSafe));
 
-    // TODO: Split-init causes weird errors.
+    // TODO: Split-init causes weird errors, see setSplitInit.chpl
     result;
 
     /* Expect the loop in ^= to be more expensive than the loop in =,
@@ -796,12 +804,8 @@ module Set {
     if et1 != et2 then
       compilerError('Cannot cast to set with different ',
                     'element type: ', t:string);
-    if p1 == p2 {
-      return x;
-    } else {
-      var result: set(et2, p2) = x;
-      return result;
-    }
+    var result: set(et1, p2) = x;
+    return result;
   }
 
   /*
