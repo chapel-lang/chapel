@@ -521,25 +521,21 @@ CallExpr* ParamForLoop::foldForResolve()
     // Check to make sure the range is valid
     for_enums(constant, et) {
       if (constant->sym == lvar) {
+        foundLow = true;
         if (foundHigh == true) {
           if (stride > 0) {
             degenRange = true;
-            break;  // degenerate range
-          } else {
-            break;
           }
+          break;
         }
-        foundLow = true;
       }
       if (constant->sym == hvar) {
         foundHigh = true;
         if (foundLow == true) {
           if (stride < 0) {
             degenRange = true;
-            break;  // degenerate range
-          } else {
-            break;
           }
+          break;
         }
       }
     }
@@ -547,57 +543,65 @@ CallExpr* ParamForLoop::foldForResolve()
     if (!degenRange) {
       // Handle cases with positive strides
       if (stride >= 1) {
-        bool foundFirst = false;
+        bool foundFirst = false;  // have we found our first enum bound yet?
         int i = 0;
-        int strcount;
+        int strcount;             // used to count off strides
         for_enums(constant, et) {
-          if (constant->sym == lvar) {
+          if (constant->sym == lvar) {  // found the starting point
             foundFirst = true;
             strcount = 0;
           }
+
+          // stamp out a copy of the loop body
           if (foundFirst && strcount == 0) {
             SymbolMap map;
-            
+
             map.put(idxSym, constant->sym);
             copyBodyHelper(noop, i, &map, this, continueSym);
             emptyLoop = false;
           }
+
+          // advance the stride
           strcount++;
           if (strcount == stride) {
             strcount = 0;
           }
-          if (constant->sym == hvar) {
+          if (constant->sym == hvar) {  // quit when we find the stopping bound
             break;
           }
           i++;
         }
       } else {
         // Handle cases with negative strides
-        bool foundFirst = false;
+        bool foundFirst = false;  // have we found our first enum bound yet?
         int i = 0;
-        int strcount;
+        int strcount;             // used to count off strides
         for_enums_backward(constant, et) {
-          if (constant->sym == lvar) {
+          if (constant->sym == lvar) {  // found the starting point
             foundFirst = true;
             strcount = 0;
           }
+
+          // stamp out a copy of the loop body
           if (foundFirst && strcount == 0) {
             SymbolMap map;
-            
+
             map.put(idxSym, constant->sym);
             copyBodyHelper(noop, i, &map, this, continueSym);
             emptyLoop = false;
           }
+
+          // advance the stride
           strcount++;
           if (strcount == -stride) {
             strcount = 0;
           }
-          if (constant->sym == hvar) {
+          if (constant->sym == hvar) {  // quit when we find the stopping bound
             break;
           }
           i++;
         }
-      }        
+      }
     }
   }
 
@@ -644,7 +648,7 @@ void ParamForLoop::validateLoop(EnumSymbol* lvar,
   if (!svar->immediate)
     USR_FATAL(this,
               "param for-loops must be defined over a bounded param range");
-  
+
   if (!is_int_type(svar->type) && !is_uint_type(svar->type)) {
     USR_FATAL(this, "Range stride must be an int");
   }
