@@ -347,15 +347,19 @@ module ChapelRange {
   proc chpl__nudgeLowBound(low) {
     return chpl__intToIdx(low.type, chpl__idxToInt(low) + 1);
   }
-  proc chpl__nudgeHighBound(high) {
-    return chpl__intToIdx(high.type, chpl__idxToInt(high) - 1);
-  }
   proc chpl__nudgeLowBound(param low) param {
     return chpl__intToIdx(low.type, chpl__idxToInt(low) + 1);
   }
-  // would really like to remove the type constraints here, but it
+  proc chpl__nudgeHighBound(high) {
+    return chpl__intToIdx(high.type, chpl__idxToInt(high) - 1);
+  }
+  // We would really like to remove the type constraints in the
+  // following overloads, as in chpl__nudgeLowBound() above, but it
   // breaks enum ranges until we support a param chpl__intToIdx()
-  // routine for bools
+  // routine for enums.  The reason chpl__nudgeLowBound() gets away
+  // with it is that it isn't currently used (because we don't
+  // currently / yet support '<..' ranges).
+  //
   proc chpl__nudgeHighBound(param high: integral) param {
     return chpl__intToIdx(high.type, chpl__idxToInt(high) - 1);
   }
