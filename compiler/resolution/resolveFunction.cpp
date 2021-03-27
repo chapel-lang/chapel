@@ -2142,7 +2142,8 @@ bool shouldAddInFormalTempAtCallSite(ArgSymbol* formal, FnSymbol* fn) {
     return false;
 
   // TODO: remove this filtering on records/unions
-  if (isRecord(formal->getValType()) || isUnion(formal->getValType())) {
+  if (isRecord(formal->getValType()) || isUnion(formal->getValType()) ||
+      isConstrainedType(formal->getValType())) {
     if (formal->intent == INTENT_IN ||
         formal->intent == INTENT_CONST_IN ||
         formal->originalIntent == INTENT_IN ||
@@ -2159,7 +2160,7 @@ bool shouldAddInFormalTempAtCallSite(ArgSymbol* formal, FnSymbol* fn) {
 // passing an argument of type 't'.
 //
 static bool backendRequiresCopyForIn(Type* t) {
-  return argMustUseCPtr(t);
+  return argMustUseCPtr(t) || isConstrainedType(t);
 }
 
 
