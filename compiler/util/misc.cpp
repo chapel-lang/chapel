@@ -485,6 +485,31 @@ static void printCallstackForLastError() {
   }
 }
 
+//
+// Given a function whose name starts with chpl_, it may be of interest
+// to a non-developer if it is a "non-trivial" module init function.
+// As a heuristic, we consider a module to be "trivial" if its name matches
+// the name of its file or if it starts on the first line of its file.
+//
+static bool nontrivialModuleInit(FnSymbol* fn) {
+  if (! fn->hasFlag(FLAG_MODULE_INIT))
+    return false;
+
+  if (fn->linenum() <= 1)
+    return false;
+
+  const char* basename = fn->fname();
+  if (basename == nullptr)
+    return false;
+
+  if (const char* slash = (const char*) strrchr(basename, '/'))
+    basename = slash+1;
+
+  const char* modulename = astr(fn->name + 11, ".chpl");
+
+  return strcmp(modulename, basename) != 0;
+}
+
 static bool printErrorHeader(BaseAST* ast, astlocT astloc) {
 
   if (Expr* expr = toExpr(ast)) {
@@ -522,14 +547,12 @@ static bool printErrorHeader(BaseAST* ast, astlocT astloc) {
         // the error function and line number, nothing is printed.
         if (!err_fn->hasFlag(FLAG_COMPILER_GENERATED) &&
             err_fn->linenum()) {
-          bool suppress = false;
-
-          // Suppress internal function names
-          if (!developer && strncmp(err_fn->name, "chpl_", 5) == 0) {
-            suppress = true;
-          }
-
-          if (suppress == false) {
+          // In non-developer mode, do not print functions named chpl_....
+          // DO print "In module MMM" unless it is obvious.
+          if (developer                              ||
+              strncmp(err_fn->name, "chpl_", 5) != 0 ||
+              nontrivialModuleInit(err_fn)            )
+          {
             print_error("%s:%d: In %s:\n",
                         cleanFilename(err_fn), err_fn->linenum(),
                         fnKindAndName(err_fn));
