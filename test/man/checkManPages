@@ -84,7 +84,7 @@ def check_man_page(bin_name, additional_args=None):
             helpsections[section] = []
             currentsection = section
         # Line is flag
-        elif hline[0] == '-':
+        elif hline[0:2] == '\-':
             if currentsection is None:
                 numerrors += 1
                 _error(sl, 'not in a {0} man page section'.format(short_bin_name))
@@ -102,7 +102,7 @@ def check_man_page(bin_name, additional_args=None):
     for mline in [l.strip() for l in manpage if len(l.strip()) > 2]:
 
         # Line is flag
-        if mline[0:3] == '**-' and mline[-2:] == '**' and currentsection:
+        if mline[0:4] == '**\-' and mline[-2:] == '**' and currentsection:
 
             mflags = _get_flags(mline)
 
