@@ -1,0 +1,34 @@
+#compdef chpl
+
+_arguments -s \
+    '--count-tokens[count tokens in main modules]' \
+    '--main-module=[Specify entry point module]::file:_files' \
+    '(-M --module-dir)'{-M,--module-dir=}'[Add directory to module search path]:directory:_directories' \
+    '--no-count-tokens[Do not count tokens in main modules]' \
+    '--print-code-size[print code size of main modules]' \
+    '--no-print-code-size[Do not print code size of main modules]' \
+    '--print-module-files[Print module file locations]' \
+    '--print-search-dirs[print module search path]' \
+    '--no-print-search-dirs[Do not print module search path]' \
+    '--permit-unhandled-module-errors[Permit unhandled errors in explicit modules; such errors halt at runtime]' \
+    '--no-permit-unhandled-module-errors[Permit unhandled errors in explicit modules; such errors halt at runtime]' \
+    '--warn-unstable[Enable warnings for uses of language features that are in flux]' \
+    '--no-warn-unstable[Disable warnings for uses of language features that are in flux]' \
+    '--warnings[Enable output of warnings]' \
+    '--no-warnings[Disable output of warnings]' \
+    '--local[Target one or many locale/locales]' \
+    '--no-local[Do not Target any locale]' \
+    '--baseline[Disable all Chapel optimizations]' \
+    '--cache-remote[Enable cache for remote data]' \
+    '--no-cache-remote[Do not enable cache for remote data]' \
+    '--copy-propagation[Enable copy propagation]' \
+    '--no-copy-propagation[Disable copy propagation]' \
+    '--dead-code-elimination[Enable dead code elimination]' \
+    '--no-dead-code-elimination[Disable dead code elimination]' \
+    '--fast[Disable checks; optimize/specialize code]' \
+    '--fast-followers[Enable fast followers]' \
+    '--no-fast-followers[Disable fast followers]' \
+    '--ieee-float[Generate code that is strict with respect to IEEE compliance]' \
+    '--no-ieee-float[Generate code that is lax with respect to IEEE compliance]' \
+    '--ignore-local-classes[Disable local classes]' \
+    '--no-ignore-local-classes[Enable local classes]'
