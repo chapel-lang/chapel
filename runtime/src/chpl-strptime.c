@@ -141,20 +141,16 @@ static const char * const nadt[5] = {
 
 static int _conv_num(const unsigned char **, int *, int, int);
 static int _conv_long(const unsigned char **, unsigned long *, unsigned long, unsigned long);
-static const unsigned char *_find_string(const unsigned char *, int *, const char * const *,
-       const char * const *, int);
-static unsigned char *
-_strptime(const unsigned char *buf, const char *fmt, struct tm *tm, struct century_relyear *cr, unsigned long *micro);
+static const unsigned char *_find_string(const unsigned char *, int *, const char * const *,const char * const *, int);
+static unsigned char *_strptime(const unsigned char *buf, const char *fmt, struct tm *tm, struct century_relyear *cr, unsigned long *micro);
 
-char *
-chpl_strptime(const char *buf, const char *fmt, struct tm *tm, unsigned long *micro)
+char *chpl_strptime(const char *buf, const char *fmt, struct tm *tm, unsigned long *micro)
 {
     struct century_relyear cr = { TM_YEAR_BASE, -1 };
     return (char*) _strptime((const unsigned char*)buf, fmt, tm, &cr, micro);
 }
 
-static unsigned char *
-_strptime(const unsigned char *buf, const char *fmt, struct tm *tm, struct century_relyear *cr, unsigned long *micro)
+static unsigned char *_strptime(const unsigned char *buf, const char *fmt, struct tm *tm, struct century_relyear *cr, unsigned long *micro)
 {
     unsigned char c;
     const unsigned char *bp, *ep;
@@ -541,8 +537,7 @@ literal:
     }
     return (unsigned char*)bp;
 }
-static int
-_conv_num(const unsigned char **buf, int *dest, int llim, int ulim)
+static int _conv_num(const unsigned char **buf, int *dest, int llim, int ulim)
 {
   int result = 0;
   int rulim = ulim;
@@ -559,8 +554,7 @@ _conv_num(const unsigned char **buf, int *dest, int llim, int ulim)
   *dest = result;
   return (1);
 }
-static int
-_conv_long(const unsigned char **buf, unsigned long *dest, unsigned long llim, unsigned long ulim)
+static int _conv_long(const unsigned char **buf, unsigned long *dest, unsigned long llim, unsigned long ulim)
 {
   unsigned long result = 0;
   unsigned long rulim = ulim;
@@ -577,8 +571,7 @@ _conv_long(const unsigned char **buf, unsigned long *dest, unsigned long llim, u
   *dest = result;
   return (1);
 }
-static const unsigned char *
-_find_string(const unsigned char *bp, int *tgt, const char * const *n1,
+static const unsigned char * _find_string(const unsigned char *bp, int *tgt, const char * const *n1,
     const char * const *n2, int c)
 {
   int i;
