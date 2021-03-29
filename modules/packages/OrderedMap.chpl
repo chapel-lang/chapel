@@ -588,8 +588,8 @@ module OrderedMap {
     :arg lhs: The orderedMap to assign to.
     :arg rhs: The orderedMap to assign from. 
   */
-  operator =(ref lhs: orderedMap(?kt, ?vt, ?ps),
-             const ref rhs: orderedMap(kt, vt, ps)) {
+  operator orderedMap.=(ref lhs: orderedMap(?kt, ?vt, ?ps),
+                        const ref rhs: orderedMap(kt, vt, ps)) {
 
     if !isCopyableType(kt) || !isCopyableType(vt) then
       compilerError("assigning orderedMap with non-copyable type");
