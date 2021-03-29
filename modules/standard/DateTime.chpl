@@ -1180,7 +1180,16 @@ module DateTime {
     timeStruct.tm_min  = chpl_time.minute : int(32);
     timeStruct.tm_sec  = chpl_time.second : int(32);
     var microSeconds   = chpl_time.microsecond : c_ulong;
-    // TODO: How to handle tm_zone
+
+    if tzinfo.borrow() != nil {
+      timeStruct.tm_gmtoff = abs(utcoffset()).seconds: c_long;
+      timeStruct.tm_zone = __primitive("cast", tm_zoneType, tzname().c_str());
+      timeStruct.tm_isdst = dst().seconds: int(32);
+    } else {
+      timeStruct.tm_gmtoff = 0;
+      timeStruct.tm_zone = __primitive("cast", tm_zoneType, "".c_str());
+      timeStruct.tm_isdst = -1;
+    }
 
     chpl_strptime(date_string.c_str(), format.c_str(), timeStruct, microSeconds);
 
