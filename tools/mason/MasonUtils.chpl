@@ -309,7 +309,7 @@ record VersionInfo {
   }
 }
 
-operator =(ref lhs:VersionInfo, const ref rhs:VersionInfo) {
+operator VersionInfo.=(ref lhs:VersionInfo, const ref rhs:VersionInfo) {
   lhs.major = rhs.major;
   lhs.minor = rhs.minor;
   lhs.bug   = rhs.bug;
