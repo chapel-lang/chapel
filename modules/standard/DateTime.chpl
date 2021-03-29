@@ -1162,7 +1162,8 @@ module DateTime {
   pragma "no doc"
   proc type datetime.strptime(date_string: string, format: string) {
     compilerWarning("proc type datetype.strptime() is deprecated.\nPlease use proc datetime.strptime() instead.");
-    var dt: datetime; /* how to initialize? */
+    /* intialization to epoch time */
+    var dt: datetime = new datetime(1970, 1, 1);
     dt.strptime(date_string, format);
     return dt;
   }
