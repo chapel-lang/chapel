@@ -115,5 +115,6 @@ $CHPL_HOME/util/_chapel-zsh-completion to their FPATH variable.
 They will also need to add the following into their ~/.zshrc file.
 
   .. code-block:: sh
+
      autoload -U compinit
      compinit
