@@ -1,0 +1,2 @@
+bug: renaming a type with a type method should allow the new name to call the type method
+#17475

@@ -227,7 +227,7 @@ module OrderedMap {
     */
     proc const contains(const k: keyType): bool {
       _enter(); defer _leave();
-      return _set.contains((k, nil));
+      return _set.contains((k, nil):_eltType);
     }
 
     /*
@@ -243,7 +243,7 @@ module OrderedMap {
         compilerError("updating map with non-copyable type");
 
       for key in other.keys() {
-        _set.remove((key, nil));
+        _set.remove((key, nil):_eltType);
         _set.add((key, new shared _valueWrapper(other.getValue(key))?));
       }
     }
@@ -260,12 +260,13 @@ module OrderedMap {
     proc ref this(k: keyType) ref where isDefaultInitializable(valType) {
       _enter(); defer _leave();
 
-      if !_set.contains((k, nil)) then {
+      // TODO we need to cast the argument to workaround a leak
+      if !_set.contains((k, nil):_eltType) then {
         var defaultValue: valType;
         _set.add((k, new shared _valueWrapper(defaultValue)?));
       } 
 
-      ref e = _set.instance._getReference((k, nil));
+      ref e = _set.instance._getReference((k, nil):_eltType);
 
       ref result = e[1]!.val;
       return result;
@@ -277,7 +278,7 @@ module OrderedMap {
       _enter(); defer _leave();
 
       // Could halt
-      var e = _set.instance._getValue((k, nil));
+      var e = _set.instance._getValue((k, nil):_eltType);
 
       const result = e[1]!.val;
       return result;
@@ -289,7 +290,7 @@ module OrderedMap {
       _enter(); defer _leave();
 
       // Could halt
-      var e = _set.instance._getValue((k, nil));
+      var e = _set.instance._getValue((k, nil):_eltType);
 
       const ref result = e[1]!.val;
       return result;
@@ -308,7 +309,7 @@ module OrderedMap {
       _enter(); defer _leave();
 
       // This could halt
-      ref element = _set.instance._getReference((k, nil));
+      ref element = _set.instance._getReference((k, nil):_eltType);
 
       var result = element[1]!.val.borrow();
 
@@ -323,7 +324,7 @@ module OrderedMap {
       _enter(); defer _leave();
 
       // This could halt
-      ref element = _set.instance._getReference((k, nil));
+      ref element = _set.instance._getReference((k, nil):_eltType);
 
       ref result = element[1]!.val;
 
@@ -343,7 +344,7 @@ module OrderedMap {
 
       var result: _eltType;
       var found: bool;
-      (found, result) = _set.lowerBound((k, nil));
+      (found, result) = _set.lowerBound((k, nil):_eltType);
       if !found || comparator.compare(result[0], k) != 0 then
         boundsCheckHalt("orderedMap index " + k:string + " out of bounds");
       return result[1]!.val;
@@ -356,11 +357,11 @@ module OrderedMap {
 
       var result: _eltType;
       var found: bool;
-      (found, result) = _set.lowerBound((k, nil));
+      (found, result) = _set.lowerBound((k, nil):_eltType);
       if !found || comparator.compare(result[0], k) != 0 then
         boundsCheckHalt("orderedMap index " + k:string + " out of bounds");
 
-      _set.remove((k, nil));
+      _set.remove((k, nil):_eltType);
 
       return result[1]!.val;
     }
@@ -381,6 +382,7 @@ module OrderedMap {
 
       :yields: A reference to one of the keys contained in this orderedMap.
     */
+    pragma "order independent yielding loops"
     iter keys() const ref {
       for kv in _set {
           yield kv[0];
@@ -393,6 +395,7 @@ module OrderedMap {
       :yields: A tuple of references to one of the key-value pairs contained in
                this orderedMap.
     */
+    pragma "order independent yielding loops"
     iter items() const ref {
       for kv in _set {
         yield (kv[0], kv[1]!.val);
@@ -404,6 +407,7 @@ module OrderedMap {
 
       :yields: A reference to one of the values contained in this orderedMap.
     */
+    pragma "order independent yielding loops"
     iter values() ref {
       for kv in _set {
         yield kv[1]!.val;
@@ -451,7 +455,7 @@ module OrderedMap {
     proc add(in k: keyType, in v: valType): bool lifetime this < v {
       _enter(); defer _leave();
       
-      if _set.contains((k, nil)) {
+      if _set.contains((k, nil):_eltType) {
         return false;
       }
 
@@ -477,11 +481,11 @@ module OrderedMap {
     proc set(k: keyType, in v: valType): bool {
       _enter(); defer _leave();
 
-      if _set.contains((k, nil)) == false {
+      if _set.contains((k, nil):_eltType) == false {
         return false;
       }
 
-      ref e = _set.instance._getReference((k, nil));
+      ref e = _set.instance._getReference((k, nil):_eltType);
       e[1] = new shared _valueWrapper(v)?;
 
       return true;
@@ -493,7 +497,7 @@ module OrderedMap {
      */
     proc addOrSet(in k: keyType, in v: valType) {
       _enter(); defer _leave();
-      _set.remove((k, nil));
+      _set.remove((k, nil):_eltType);
       _set.add((k, new shared _valueWrapper(v)?));
     }
 
@@ -507,7 +511,7 @@ module OrderedMap {
     */
     proc remove(k: keyType): bool {
       _enter(); defer _leave();
-      return _set.remove((k, nil));
+      return _set.remove((k, nil):_eltType);
     }
 
     /*
