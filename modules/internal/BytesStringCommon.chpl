@@ -719,27 +719,90 @@ module BytesStringCommon {
         const localNeedle = needle.localize();
         const needleLen = localNeedle.buffLen;
 
-        // i *is not* an index into anything, it is the order of the element
-        // of view we are searching from.
-        const numPossible = xLen - nLen + 1;
-        const searchSpace = if fromLeft
-            then 0..#(numPossible)
-            else 0..#(numPossible) by -1;
-        for i in searchSpace {
-          // j *is* the index into the localNeedle's buffer
-          for j in 0..#nLen {
-            const idx = view.orderToIndex(i+j); // 0s based idx
-            if x.buff[idx] != localNeedle.buff[j] then break;
+        const numChar = 256;
 
-            if j == nLen-1 {
-              if count {
-                localRet += 1;
-              } else { // find
-                localRet = view.orderToIndex(i);
-              }
+        // Preprocessing bad character heurestic
+        var badChar = c_calloc(c_int, numChar);
+
+        for i in 0..#numChar {
+          badChar[i] = -1;
+        }
+        // End preprocessing
+
+        for i in 0..#nLen {
+          badChar[localNeedle.byte(i)] = i:int(32);
+        }
+
+        // Preprocessing good suffix hurestic
+        var shift = c_calloc(c_int, nLen + 1);
+        var bPos = c_calloc(c_int, nLen + 1);
+
+        var it = nLen: c_int;
+        var it1 = (nLen + 1): c_int;
+        bPos[it] = it1;
+        while(it > 0) {
+          while(it1 <= nLen && localNeedle.byte(it - 1) != localNeedle.byte(it1 - 1)) {
+            if(shift[it1] == 0) {
+              shift[it1] = it1 - it;
             }
+
+            it1 = bPos[it1];
           }
-          if !count && localRet != -1 then break;
+
+          it -= 1;
+          it1 -= 1;
+
+          bPos[it] = it1;
+        }
+
+        it1 = bPos[0];
+
+        for i in 0..nLen {
+          if(shift[i] == 0) {
+            shift[i] = it1;
+          }
+
+          if(it1 == i) {
+            it1 = bPos[it1];
+          }
+        }
+
+        //End preprocessing
+
+        var idx = 0;
+
+        while idx <= (xLen - nLen) {
+          var j = nLen - 1;
+
+          while(j >= 0) {
+            const idx1 = view.orderToIndex(idx+j);
+            if x.buff[idx1] != localNeedle.buff[j] then break;
+            j -= 1;
+          }
+
+          if(j < 0) {
+            if count {
+              localRet += 1;
+            }
+            else {
+              localRet = view.orderToIndex(idx);
+            }
+
+            if !count && fromLeft {
+              break;
+            }
+
+            if idx + nLen < xLen {
+              const idx1 = view.orderToIndex(idx + nLen);
+              idx += max(shift[0], nLen - badChar[x.byte(idx1)]);
+            }
+            else idx += 1;
+          }
+          else {
+            const idx1 = view.orderToIndex(idx + j);
+            idx += max(1, j - badChar[x.byte(idx)], shift[j + 1]);
+          }
+
         }
       }
       if count then localRet += 1;
