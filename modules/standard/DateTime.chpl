@@ -1171,7 +1171,6 @@ module DateTime {
      string. Fields not specified by format are not modified. */
   proc ref datetime.strptime(date_string: string, format: string) {
     extern proc chpl_strptime(buf: c_string, format: c_string, ref ts: tm, ref ms: c_ulong);
-    var microSeconds = chpl_time.microsecond : c_ulong;
     var timeStruct: tm;
 
     timeStruct.tm_year = (chpl_date.year - 1900) : int(32);
@@ -1180,6 +1179,7 @@ module DateTime {
     timeStruct.tm_hour = chpl_time.hour : int(32);
     timeStruct.tm_min  = chpl_time.minute : int(32);
     timeStruct.tm_sec  = chpl_time.second : int(32);
+    var microSeconds   = chpl_time.microsecond : c_ulong;
     // TODO: How to handle tm_zone
 
     chpl_strptime(date_string.c_str(), format.c_str(), timeStruct, microSeconds);
