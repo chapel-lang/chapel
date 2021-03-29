@@ -725,49 +725,13 @@ module BytesStringCommon {
         var badChar = c_calloc(c_int, numChar);
 
         for i in 0..#numChar {
-          badChar[i] = -1;
+          badChar[i] = nLen: int(32);
         }
-        // End preprocessing
 
         for i in 0..#nLen {
-          badChar[localNeedle.byte(i)] = i:int(32);
+          badChar[localNeedle.byte(i)] = (nLen - 1 - i):int(32);
         }
-
-        // Preprocessing good suffix hurestic
-        var shift = c_calloc(c_int, nLen + 1);
-        var bPos = c_calloc(c_int, nLen + 1);
-
-        var it = nLen: c_int;
-        var it1 = (nLen + 1): c_int;
-        bPos[it] = it1;
-        while(it > 0) {
-          while(it1 <= nLen && localNeedle.byte(it - 1) != localNeedle.byte(it1 - 1)) {
-            if(shift[it1] == 0) {
-              shift[it1] = it1 - it;
-            }
-
-            it1 = bPos[it1];
-          }
-
-          it -= 1;
-          it1 -= 1;
-
-          bPos[it] = it1;
-        }
-
-        it1 = bPos[0];
-
-        for i in 0..nLen {
-          if(shift[i] == 0) {
-            shift[i] = it1;
-          }
-
-          if(it1 == i) {
-            it1 = bPos[it1];
-          }
-        }
-
-        //End preprocessing
+        // End preprocessing
 
         var idx = 0;
 
@@ -791,18 +755,9 @@ module BytesStringCommon {
             if !count && fromLeft {
               break;
             }
-
-            if idx + nLen < xLen {
-              const idx1 = view.orderToIndex(idx + nLen);
-              idx += max(shift[0], nLen - badChar[x.byte(idx1)]);
-            }
-            else idx += 1;
           }
-          else {
-            const idx1 = view.orderToIndex(idx + j);
-            idx += max(1, j - badChar[x.byte(idx)], shift[j + 1]);
-          }
-
+          const idx1 = view.orderToIndex(idx + nLen - 1);
+          idx += max(1, badChar[x.byte(idx1)]);
         }
       }
       if count then localRet += 1;
