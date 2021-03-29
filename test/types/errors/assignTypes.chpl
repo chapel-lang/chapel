@@ -14,7 +14,7 @@ var myR: R(int) = new R();
 var myR2: R(int) = new R();
 var myR3 = new R();
 
-operator =(ref lhs: R(?t), rhs: R(t)) {
+operator R.=(ref lhs: R(?t), rhs: R(t)) {
   lhs.t = rhs.t;
 }
 
