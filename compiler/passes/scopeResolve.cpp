@@ -948,6 +948,9 @@ static void updateMethod(UnresolvedSymExpr* usymExpr,
             break;
           }
 
+          if (isAstrOpName(name))
+            break;
+
           if (isAggr == true || isMethodName(name, type) == true) {
             if (isFunctionNameWithExplicitScope(expr) == false) {
               insertFieldAccess(method, usymExpr, sym, expr);
