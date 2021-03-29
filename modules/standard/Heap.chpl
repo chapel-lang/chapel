@@ -392,7 +392,7 @@ module Heap {
     :arg lhs: The heap to assign to.
     :arg rhs: The heap to assign from.
   */
-  operator =(ref lhs: heap(?t, ?), ref rhs: heap(t, ?)) {
+  operator heap.=(ref lhs: heap(?t, ?), ref rhs: heap(t, ?)) {
     lhs.comparator = rhs.comparator;
     lhs._data = rhs._data;
   }
