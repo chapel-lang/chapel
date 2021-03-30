@@ -35,28 +35,28 @@ for param c in color.blue..color.red {
 compilerWarning("---");
 writeln("---");
 
-for param c in color.blue..color.red by -1 {
+for param c in color.red..color.blue by -1 {
   compilerWarning(c:string);
   writeln(c);
 }
 compilerWarning("---");
 writeln("---");
 
-for param c in color.blue..color.red by -2 {
+for param c in color.red..color.blue by -2 {
   compilerWarning(c:string);
   writeln(c);
 }
 compilerWarning("---");
 writeln("---");
 
-for param c in color.purple..color.yellow by -2 {
+for param c in color.yellow..color.purple by -2 {
   compilerWarning(c:string);
   writeln(c);
 }
 compilerWarning("---");
 writeln("---");
 
-for param c in color.blue..color.red by -2 {
+for param c in color.red..color.blue by -2 {
   compilerWarning(c:string);
   writeln(c);
 }

@@ -24,7 +24,7 @@ for param i in number.one..number.five {
 
 writeln("---");
 
-for param i in number.five..number.one by -1 {
+for param i in number.one..number.five by -1 {
   if (i:int %2 == 0) then
     continue;
   writeln(i);
@@ -32,7 +32,7 @@ for param i in number.five..number.one by -1 {
 
 writeln("---");
 
-for param i in number.five..number.one by -1 {
+for param i in number.one..number.five by -1 {
   if (i:int %2 == 1) then
     continue;
   writeln(i);
@@ -40,7 +40,7 @@ for param i in number.five..number.one by -1 {
 
 writeln("---");
 
-for param i in number.five..number.one by -1 {
+for param i in number.one..number.five by -1 {
   if (i:int %2 == 0) then
     break;
   writeln(i);

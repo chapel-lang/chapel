@@ -523,18 +523,13 @@ CallExpr* ParamForLoop::foldForResolve()
       if (constant->sym == lvar) {
         foundLow = true;
         if (foundHigh == true) {
-          if (stride > 0) {
-            degenRange = true;
-          }
+          degenRange = true;
           break;
         }
       }
       if (constant->sym == hvar) {
         foundHigh = true;
         if (foundLow == true) {
-          if (stride < 0) {
-            degenRange = true;
-          }
           break;
         }
       }
@@ -577,7 +572,7 @@ CallExpr* ParamForLoop::foldForResolve()
         int i = 0;
         int strcount = 0;             // used to count off strides
         for_enums_backward(constant, et) {
-          if (constant->sym == lvar) {  // found the starting point
+          if (constant->sym == hvar) {  // found the starting point
             foundFirst = true;
             strcount = 0;               // start counting the stride from here
           }
@@ -596,7 +591,7 @@ CallExpr* ParamForLoop::foldForResolve()
           if (strcount == -stride) {
             strcount = 0;
           }
-          if (constant->sym == hvar) {  // quit when we find the stopping bound
+          if (constant->sym == lvar) {  // quit when we find the stopping bound
             break;
           }
           i++;
