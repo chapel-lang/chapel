@@ -525,7 +525,7 @@ module Set {
     :arg lhs: The set to assign to.
     :arg rhs: The set to assign from.
   */
-  operator =(ref lhs: set(?t, ?), const ref rhs: set(t, ?)) {
+  operator set.=(ref lhs: set(?t, ?), const ref rhs: set(t, ?)) {
     lhs.clear();
 
     for x in rhs do
