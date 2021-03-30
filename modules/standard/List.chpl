@@ -1764,7 +1764,7 @@ module List {
     :arg lhs: The list to assign to.
     :arg rhs: The list to assign from.
   */
-  operator =(ref lhs: list(?t, ?), rhs: list(t, ?)) {
+  operator list.=(ref lhs: list(?t, ?), rhs: list(t, ?)) {
     lhs.clear();
     lhs.extend(rhs);
   }
