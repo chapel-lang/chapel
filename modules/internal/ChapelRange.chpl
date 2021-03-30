@@ -406,11 +406,6 @@ module ChapelRange {
     return high;
   }
 
-  proc chpl_compute_high_param_loop_bound(param low: bool,
-                                          param high: bool) param {
-    return high;
-  }
-
   proc chpl_compute_low_param_loop_bound(param low: bool,
                                          param high: bool) param {
     return low;
