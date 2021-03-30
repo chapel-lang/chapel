@@ -1017,7 +1017,7 @@ proc regexp type
 }
 
 pragma "no doc"
-operator =(ref ret:regex(?t), x:regex(t))
+operator regex.=(ref ret:regex(?t), x:regex(t))
 {
   // retain -- release
   if x.home == ret.home {
