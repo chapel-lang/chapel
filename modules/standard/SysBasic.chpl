@@ -151,7 +151,7 @@ inline operator :(x: int(32), type t: syserr) return qio_int_to_err(x);
 pragma "no doc"
 inline operator :(x: int(64), type t: syserr) return qio_int_to_err(x:int(32));
 pragma "no doc"
-inline operator =(ref ret:syserr, x:syserr) { __primitive("=", ret, x); }
+inline operator syserr.=(ref ret:syserr, x:syserr) { __primitive("=", ret, x); }
 pragma "no doc"
 inline operator =(ref ret:syserr, x:int(32))
 { __primitive("=", ret, qio_int_to_err(x)); }
