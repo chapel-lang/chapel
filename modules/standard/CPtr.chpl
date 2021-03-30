@@ -221,7 +221,7 @@ module CPtr {
   /* Copy the elements from one c_array to another.
      Raises an error at compile time if the array sizes or
      element types do not match. */
-  operator =(ref lhs:c_array, rhs:c_array) {
+  operator c_array.=(ref lhs:c_array, rhs:c_array) {
     if lhs.eltType != rhs.eltType then
       compilerError("element type mismatch in c_array assignment");
     if lhs.size != rhs.size then
@@ -243,7 +243,7 @@ module CPtr {
   }
 
   pragma "no doc"
-  inline operator =(ref lhs:c_ptr, rhs:c_ptr) {
+  inline operator c_ptr.=(ref lhs:c_ptr, rhs:c_ptr) {
     if lhs.eltType != rhs.eltType then
       compilerError("element type mismatch in c_ptr assignment");
     __primitive("=", lhs, rhs);
