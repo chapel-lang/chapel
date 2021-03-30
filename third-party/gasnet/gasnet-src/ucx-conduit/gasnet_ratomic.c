@@ -569,18 +569,17 @@ GASNETE_DT_INT_APPLY(GASNETE_UCXRATOMIC_TBL)
 #define GASNETE_UCXRATOMIC_BADOPS_gex_dt_I64 (GASNETE_UCXRATOMIC_NO_MULT | GASNETE_UCXRATOMIC_NO_MINMAX)
 #define GASNETE_UCXRATOMIC_BADOPS_gex_dt_U64 (GASNETE_UCXRATOMIC_NO_MULT | GASNETE_UCXRATOMIC_NO_MINMAX)
 
-void gasnete_ucxratomic_create_hook(
-        gasneti_AD_t               real_ad,
-        gasneti_TM_t               real_tm,
-        gex_DT_t                   dt,
-        gex_OP_t                   ops,
-        gex_Flags_t                flags)
+void gasnete_ucxratomic_init_hook(gasneti_AD_t real_ad)
 {
+    gex_DT_t dt = real_ad->_dt;
+    gex_OP_t ops = real_ad->_ops;
+
 #define GASNETE_UCXRATOMIC_TBL_CASE(dtcode) \
     case dtcode##_dtype:                    \
         if (ops & GASNETE_UCXRATOMIC_BADOPS##dtcode) goto use_am; \
         real_ad->_fn_tbl = (gasnete_ratomic_fn_tbl_t) &gasnete_ucxratomic##dtcode##_fn_tbl; \
         real_ad->_tools_safe = 0; \
+        GASNETI_TRACE_PRINTF(O,("gex_AD_Create(dt=%d, ops=0x%x) -> UCX", (int)dt, (unsigned int)ops)); \
         return;
   switch(dt) {
       GASNETE_DT_INT_APPLY(GASNETE_UCXRATOMIC_TBL_CASE)
@@ -589,6 +588,6 @@ void gasnete_ucxratomic_create_hook(
 #undef GASNETE_UCXRATOMIC_TBL_CASE
 
 use_am:
-  gasnete_amratomic_create_hook(real_ad, real_tm, dt, ops, flags);
+  gasnete_amratomic_init_hook(real_ad);
   return;
 }

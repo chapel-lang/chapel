@@ -144,9 +144,7 @@ void test_threadinfo(int threadid, int numthreads) {
     PTHREAD_LOCALBARRIER(num_threads);
     test_threadinfo(idx, num_threads);
     PTHREAD_LOCALBARRIER(num_threads);
-  #if GASNETI_ARCH_ALTIX
-    /* Don't pin threads because system is either shared or using cgroups */
-  #elif GASNETI_ARCH_IBMPE
+  #if GASNETI_ARCH_IBMPE
     /* Don't pin threads because system s/w will have already done so */
   #else
     if (gasnett_getenv_yesno_withdefault("GASNET_TEST_SET_AFFINITY",1)) {

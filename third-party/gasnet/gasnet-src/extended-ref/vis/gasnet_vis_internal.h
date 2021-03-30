@@ -339,7 +339,7 @@ extern void gasnete_packetize_verify(gasnete_packetdesc_t *pt, size_t ptidx, int
 // 2 = Use NP AM with a negotiated-payload size
 // Default is 1 for conduits with a "real" NP AM implementation, and 0 elsewhere
 #ifndef GASNETE_VIS_NPAM
-  #if GASNETC_HAVE_NP_REQ_MEDIUM && GASNETC_HAVE_NP_REP_MEDIUM
+  #if GASNET_NATIVE_NP_ALLOC_REQ_MEDIUM && GASNET_NATIVE_NP_ALLOC_REP_MEDIUM
     #define GASNETE_VIS_NPAM 1
   #else
     #define GASNETE_VIS_NPAM 0

@@ -247,7 +247,6 @@ int _gasnete_vis_havepc(const void * const _ti) {
   gasnete_vis_pcinfo_t const * const _vis_ti = ((gasnete_vis_pcinfo_t const * const *)_ti)[2];
   return _vis_ti && _vis_ti->_handler;
 }
-// TODO-EX: comment out GASNETI_MYTHREAD_GET_OR_LOOKUP defn once we remove this sole use
 #define GASNETE_VIS_HAVEPC() _gasnete_vis_havepc(GASNETI_MYTHREAD_GET_OR_LOOKUP)
 #define _GASNETE_VIS_PCWRAP(tm,rank,flags,fnbase,syncmode,opargs) (                      \
     GASNETE_VIS_HAVEPC() ?                                                               \
@@ -340,6 +339,7 @@ extern gex_Event_t gasnete_VIS_pcwrapNB      (_GASNETE_VIS_PCWRAP_ARGS) GASNETI_
   gasnete_boundscheck_memveclist(_tm, _dstrank, _dstcount, _dstlist); \
   _GASNETE_VECTOR_COMMON(degencontigop, PUTV_DEGENERATE)
 #define _GASNETE_VECTOR_COMMON(degencontigop,degentoken)                   \
+  GASNETI_CHECK_INJECT();                                                  \
   gasnete_memveclist_checksizematch(_dstcount, _dstlist, _srccount, _srclist); \
   if_pf (_dstcount == 0 || _srccount == 0) {  /* no-op */                  \
     GASNETI_TRACE_EVENT(C, degentoken);                                    \
@@ -471,6 +471,7 @@ int _gex_VIS_VectorGetNBI(
   gasnete_boundscheck_addrlist(_tm, _dstrank, _dstcount, _dstlist, _dstlen); \
   _GASNETE_INDEXED_COMMON(degencontigop, PUTI_DEGENERATE)
 #define _GASNETE_INDEXED_COMMON(degencontigop,degentoken)                  \
+  GASNETI_CHECK_INJECT();                                                  \
   gasnete_addrlist_checksizematch(_dstcount, _dstlen, _srccount, _srclen); \
   if_pf (_dstcount*_dstlen == 0) {  /* no-op */                            \
     gasneti_assert_uint(_srccount*_srclen ,==, 0);                         \
@@ -605,6 +606,7 @@ int _gex_VIS_IndexedGetNBI(
   gex_Event_t _lc_dummy;                            \
   _GASNETE_STRIDED_COMMON(degencontigop, PUTS_DEGENERATE)
 #define _GASNETE_STRIDED_COMMON(degencontigop,degentoken)  \
+  GASNETI_CHECK_INJECT();                                  \
   if_pf (_elemsz == 0) {                                   \
     GASNETI_TRACE_EVENT(C, degentoken);                    \
     return 0;                                              \

@@ -10,7 +10,7 @@
 #include <gasnet_ucx_req.h>
 #include <gasnet_event_internal.h>
 
-GASNETI_INLINE(gasneti_ucx_progress)
+GASNETI_INLINE(gasnetc_ucx_progress)
 int gasnetc_ucx_progress(void);
 
 GASNETI_INLINE(gasnetc_am_req_reset)
@@ -19,7 +19,7 @@ void gasnetc_am_req_reset(gasnetc_am_req_t *am_req);
 GASNETI_INLINE(gasnetc_req_free)
 void gasnetc_req_free(void *req);
 
-GASNETI_INLINE(gasnetc_am_req_release)
+GASNETI_INLINE(gasnetc_rreq_release)
 void gasnetc_rreq_release(gasnetc_ucx_request_t *req);
 /* ------------------------------------------------------------------------------------ */
 /*
@@ -327,6 +327,7 @@ gasnetc_mem_info_t * gasnetc_find_mem_info(void *addr, int nbytes, gex_Rank_t ra
   // TODO-future: use UCS rcache
   gasnetc_mem_info_t *mem_info;
 
+  // TODO: thread safety in list traversal?
   GASNETI_LIST_FOREACH(mem_info, &gasneti_ucx_module.ep_tbl[rank].mem_tbl,
                        gasnetc_mem_info_t) {
     if (GASNETC_ADDR_IN_RANGE(mem_info->addr, mem_info->length, addr, nbytes)) {
@@ -755,7 +756,7 @@ void gasnetc_ProcessRecv(void *buf, size_t size)
   }
 }
 
-GASNETI_INLINE(gasneti_ucx_progress)
+GASNETI_INLINE(gasnetc_ucx_progress)
 int gasnetc_ucx_progress(void)
 {
   int status;
@@ -1009,7 +1010,7 @@ void gasnetc_poll_snd(gasnetc_lock_mode_t lmode GASNETI_THREAD_FARG)
 #endif
 }
 
-GASNETI_INLINE(gasneti_probe_recv_complete)
+GASNETI_INLINE(gasneti_req_probe_complete)
 gasnetc_ucx_request_t *gasneti_req_probe_complete(gasneti_list_t *req_list)
 {
   gasnetc_ucx_request_t *req;
