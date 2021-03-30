@@ -2115,7 +2115,7 @@ module String {
     lhs._bindex = rhs: int;
   }
   pragma "no doc"
-  operator =(ref lhs: byteIndex, const ref rhs: byteIndex) {
+  operator byteIndex.=(ref lhs: byteIndex, const ref rhs: byteIndex) {
     lhs._bindex = rhs._bindex;
   }
 
@@ -2127,7 +2127,8 @@ module String {
     lhs._cpindex = rhs: int;
   }
   pragma "no doc"
-  operator =(ref lhs: codepointIndex, const ref rhs: codepointIndex) {
+  operator codepointIndex.=(ref lhs: codepointIndex,
+                            const ref rhs: codepointIndex) {
     lhs._cpindex = rhs._cpindex;
   }
 
