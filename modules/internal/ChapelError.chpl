@@ -59,9 +59,10 @@ module ChapelError {
     }
 
     /* Override this method to provide an error message
-       in case the error is printed out or never caught.
+       of type string in case the error is printed out or never caught.
+       :rtype: string
      */
-    proc message() {
+    proc message():string {
       return _msg;
     }
   }
