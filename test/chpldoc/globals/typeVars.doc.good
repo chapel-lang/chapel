@@ -30,7 +30,7 @@ This module has some global scoped types.
 
    This is an opaque type from external source. 
 
-.. type:: type myFloats = 2*real(64)
+.. type:: type myFloats = 2 * real(64)
 
    This is a non-opaque type from external source. 
 

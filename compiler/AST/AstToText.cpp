@@ -727,7 +727,8 @@ ArgSymbol* AstToText::formalGet(FnSymbol* fn, int oneBasedIndex) const
 *                                                                           *
 ************************************* | ************************************/
 
-void AstToText::appendExpr(Expr* expr, bool printingType)
+void AstToText::appendExpr(Expr* expr, bool printingType, const char *outer,
+                           bool unary, bool postfix, bool isRHS)
 {
   if      (UnresolvedSymExpr* sel = toUnresolvedSymExpr(expr))
     appendExpr(sel);
@@ -736,7 +737,7 @@ void AstToText::appendExpr(Expr* expr, bool printingType)
     appendExpr(sel, printingType, false);
 
   else if (CallExpr*          sel = toCallExpr(expr))
-    appendExpr(sel, printingType);
+    appendExpr(sel, printingType, outer, unary, postfix, isRHS);
 
   else if (DefExpr*           sel = toDefExpr(expr))
     appendExpr(sel, printingType);
@@ -886,7 +887,168 @@ static bool looksLikeInfixOperator(const char *fnName)
   return !looksLikeIdentifier;
 }
 
-void AstToText::appendExpr(CallExpr* expr, bool printingType)
+/*
+ * Operator precedence according to the table in the spec,
+ * expressions.rst
+ *
+ * unary flag is needed because unary - (and +) have higher precedence
+ * than binary - (and +).
+ *
+ * postfix flag is needed because postfix ! has higher precedence than
+ * prefix !.
+ *
+ * Returns precedence: higher is tighter-binding.
+ * Returns -1 for unhandled operator -- caller should respond conservatively.
+ */
+static int opToPrecedence(const char *op, bool unary, bool postfix) {
+  // new is precedence 19, but doesn't come through this path.
+  if (postfix && (strcmp(op, "?") == 0 || strcmp(op, "!") == 0))
+    return 18;
+  else if (strcmp(op, ":") == 0 || op == astr_cast)
+    return 17;
+  else if (strcmp(op, "**") == 0)
+    return 16;
+  // reduce/scan/dmapped are precedence 15, but don't come through this path.
+  else if (strcmp(op, "!") == 0 || strcmp(op, "~") == 0)
+    return 14;
+  else if (strcmp(op, "*") == 0 ||
+           strcmp(op, "/") == 0 || strcmp(op, "%") == 0)
+    return 13;
+  else if (unary &&
+           (strcmp(op, "+") == 0 || strcmp(op, "-") == 0))
+    return 12;
+  else if (strcmp(op, "<<") == 0 || strcmp(op, ">>") == 0)
+    return 11;
+  else if (strcmp(op, "&") == 0)
+    return 10;
+  else if (strcmp(op, "^") == 0)
+    return 9;
+  else if (strcmp(op, "|") == 0)
+    return 8;
+  else if (strcmp(op, "+") == 0 || strcmp(op, "-") == 0)
+    return 7;
+  // .. and ..< are precedence 6, but don't come through this path.
+  else if (op == astrSlt || op == astrSlte ||
+           op == astrSgt || op == astrSgte)
+    return 5;
+  else if (op == astrSeq || op == astrSne)
+    return 4;
+  else if (strcmp(op, "&&") == 0)
+    return 3;
+  else if (strcmp(op, "||") == 0)
+    return 2;
+  // by and align are precedence 1 too, but don't come through this path.
+  else if (strcmp(op, "#") == 0)
+    return 1;
+
+  return -1;
+}
+
+/*
+ * needParens(outer, inner, ...) is called to evaluate whether we need
+ * to add parens around the inner op.  We're here when
+ * appendExpr(outer) is calling appendExpr(expr->get(1)) or
+ * expr->get(2), which has become appendExpr(inner).
+ *
+ * Given an AST node outer, with one child inner, this function
+ * returns true if we need to emit parens around the child expression.
+ * That is, if emitting the expression without parenthesis would
+ * change the semantics from what the AST represents.
+ *
+ * If the inner (child) operator has higher precedence than the outer
+ * (parent), then we don't need parens, as emitting
+ * "a outer_op b inner_op c" is equivalent to
+ * "a outer_op (b inner_op c)".
+ *
+ * If the child operator has equal precedence to the outer, then we
+ * generally don't need parenthesis, except for a few exceptions.  If
+ * the desired expression is a-(b-c) or a-(b+c), then the parentheses
+ * are needed.  Of course they're not needed for a+(b-c) or a+(b+c).
+ * If the desired expression is a/(b/c) or a/(b*c) or a%(b/c), they're
+ * needed, but not for a*(b*c) or a*(b/c).
+ * (TODO: a*(b/c) might need the parens for overflow reasons.)
+ *
+ * Unary - (and +) have higher precedence than binary - (and +), so we
+ * need the unary flag to know which case we're in.
+ *
+ * The postfix flag is needed because postfix ! has higher precedence
+ * than prefix !.
+ *
+ * The innerIsRHS flag is needed because we need parens to express
+ * a-(b-c) where inner- is the RHS of the outer-.  But we can emit
+ * a-b-c instead of (a-b)-c -- when inner- is the LHS of outer-.
+ * Also, to distinguish (-1)**2 (parens needed) from 1**(-2) (not needed).
+ */
+static bool needParens(const char *outer, const char *inner,
+                       bool outerUnary, bool outerPostfix,
+                       bool innerUnary, bool innerPostfix,
+                       bool innerIsRHS) {
+  bool ret = false;
+  int outerprec, innerprec;
+
+  if (!outer)
+    return false;
+
+  outerprec = opToPrecedence(outer, outerUnary, outerPostfix);
+  innerprec = opToPrecedence(inner, innerUnary, innerPostfix);
+
+  // -1 means opToPrecedence wasn't expecting one of these operators.
+  // Conservatively wrap parentheses around the representation of this
+  // AST node.
+  if (outerprec == -1 || innerprec == -1)
+    return true;
+
+  // We never need parens around the unary expression on the RHS:
+  // 1**-2 vs 1**(-2)
+  if (innerUnary && innerIsRHS)
+    return false;
+
+  if (outerprec > innerprec)
+    ret = true;
+
+  // If inner and outer have the same precedence, and inner is the
+  // rhs, it needs parens if a op1 (b op2 c) isn't equivalent to
+  // a op1 b op2 c.  (Note op1 and op2 may be the same op, a - (b - c))
+  if (innerIsRHS &&
+      (strcmp(outer, "-") == 0 ||
+       strcmp(outer, "/") == 0 || strcmp(outer, "%") == 0 ||
+       strcmp(outer, "<<") == 0 || strcmp(outer, ">>") == 0 ||
+       // (a==b)==true vs. a==(b==true)
+       strcmp(outer, "==") == 0 || strcmp(outer, "!=") == 0)
+      && outerprec == innerprec)
+    ret = true;
+
+  // ** is right-associative, and a**(b**c) != (a**b)**c.
+  if (!innerIsRHS && strcmp(outer, "**") == 0 && outerprec == innerprec)
+    ret = true;
+
+  return ret;
+}
+
+/*
+ * Do we want to print spaces around this binary operator?
+ */
+static bool wantSpaces(const char *op, bool printingType)
+{
+  if (strcmp(op, "**") == 0)
+    return false;
+  if (printingType)
+    return false;
+  return true;
+}
+
+/*
+ * Args needed just for needsParens() call above, described in more
+ * detail there:
+ *
+ * outer: The operator in this node's parent node.
+ *        The remaining args are ignored if this is false.
+ * unary: The parent node is a unary operator.
+ * postfix: The parent node is a postfix unary operator.
+ * isRHS: This node is the right-hand-side of the parent binary operator.
+ */
+void AstToText::appendExpr(CallExpr* expr, bool printingType, const char *outer,
+                           bool unary, bool postfix, bool isRHS)
 {
   if (expr->primitive == 0)
   {
@@ -897,39 +1059,100 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
       // UnaryOp not
       if     (strcmp(fnName, "!")                            == 0)
       {
+        bool needsParens = needParens(outer, fnName, unary, postfix,
+                                      true, false, isRHS);
+
+        if (needsParens)
+          mText += "(";
         mText += "!";
-        appendExpr(expr->get(1), printingType);
+        appendExpr(expr->get(1), printingType, fnName, true, false, false);
+        if (needsParens)
+          mText += ")";
       }
 
       // postfix!
       else if (fnName == astrPostfixBang                     &&
                expr->numActuals()                            == 1)
       {
-        appendExpr(expr->get(1), printingType);
+        bool needsParens = needParens(outer, fnName, unary, postfix,
+                                      true, true, isRHS);
+
+        if (needsParens)
+          mText += "(";
+        appendExpr(expr->get(1), printingType, fnName, true, true, false);
         mText += "!";
+        if (needsParens)
+          mText += ")";
       }
 
       // UnaryOp bitwise negate
       else if (strcmp(fnName, "~")                           == 0 &&
                expr->numActuals()                            == 1)
       {
+        bool needsParens = needParens(outer, fnName, unary, postfix,
+                                      true, false, isRHS);
+
+        if (needsParens)
+          mText += "(";
         mText += "~";
-        appendExpr(expr->get(1), printingType);
+        appendExpr(expr->get(1), printingType, fnName, true, false, false);
+        if (needsParens)
+          mText += ")";
       }
 
       // UnaryOp negate
       else if (strcmp(fnName, "-")                           == 0 &&
                expr->numActuals()                            == 1)
       {
+        bool needsParens = needParens(outer, fnName, unary, postfix,
+                                      true, false, isRHS);
+        if (needsParens)
+          mText += "(";
         mText += "-";
-        appendExpr(expr->get(1), printingType);
+        appendExpr(expr->get(1), printingType, fnName, true, false, false);
+        if (needsParens)
+          mText += ")";
+      }
+
+      // UnaryOp plus
+      else if (strcmp(fnName, "+")                           == 0 &&
+               expr->numActuals()                            == 1)
+      {
+        bool needsParens = needParens(outer, fnName, unary, postfix,
+                                      true, false, isRHS);
+        if (needsParens)
+          mText += "(";
+        mText += "+";
+        appendExpr(expr->get(1), printingType, fnName, true, false, false);
+        if (needsParens)
+          mText += ")";
       }
 
       else if (expr->isCast())
       {
-        appendExpr(expr->castFrom(), printingType);
+        bool needsParens = needParens(outer, fnName, unary, postfix,
+                                      false, false, isRHS);
+        if (needsParens)
+          mText += "(";
+        appendExpr(expr->castFrom(), printingType, ":", false, false, false);
+        if (needsParens)
+          mText += ")";
         mText += ": ";
         appendExpr(expr->castTo(), printingType);
+      }
+
+      else if (strcmp(fnName, "chpl_by")                      == 0)
+      {
+        appendExpr(expr->get(1), printingType);
+        mText += " by ";
+        appendExpr(expr->get(2), printingType);
+      }
+
+      else if (strcmp(fnName, "chpl_align")                   == 0)
+      {
+        appendExpr(expr->get(1), printingType);
+        mText += " align ";
+        appendExpr(expr->get(2), printingType);
       }
 
       else if (strcmp(fnName, "chpl__atomicType")             == 0)
@@ -1182,9 +1405,23 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
         else
         {
           // Binary operator, infix notation
-          appendExpr(expr->get(1), printingType);
+          bool needsParens = needParens(outer, fnName, unary, postfix,
+                                        false, false, isRHS);
+          bool wantsSpaces = wantSpaces(fnName, printingType);
+
+          if (needsParens)
+            mText += "(";
+          appendExpr(expr->get(1), printingType, fnName, false, false, false);
+
+          if (wantsSpaces)
+            mText += " ";
           appendExpr(expr->baseExpr, printingType);
-          appendExpr(expr->get(2), printingType);
+          if (wantsSpaces)
+            mText += " ";
+
+          appendExpr(expr->get(2), printingType, fnName, false, false, true);
+          if (needsParens)
+            mText += ")";
         }
 
       }
@@ -1232,7 +1469,17 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
         if (i > 1)
           mText += ", ";
 
-        appendExpr(expr->get(i), printingType);
+        if (isSymExpr(expr->get(i)) 
+          && isVarSymbol(toSymExpr(expr->get(i))->symbol()) 
+          && toVarSymbol(toSymExpr(expr->get(i))->symbol())->isImmediate() 
+          && toVarSymbol(toSymExpr(expr->get(i))->symbol())->immediate->const_kind == CONST_KIND_STRING)
+        {
+          mText += "\"";
+          appendExpr(expr->get(i), printingType);
+          mText += "\"";
+        }
+        else
+          appendExpr(expr->get(i), printingType);
       }
 
       mText += ')';
@@ -1520,7 +1767,17 @@ void AstToText::appendExpr(CallExpr* expr, const char* fnName, bool printingType
     if (i > 1)
       mText += ", ";
 
-    appendExpr(expr->get(i), printingType);
+    if (isSymExpr(expr->get(i)) 
+      && isVarSymbol(toSymExpr(expr->get(i))->symbol()) 
+      && toVarSymbol(toSymExpr(expr->get(i))->symbol())->isImmediate() 
+      && toVarSymbol(toSymExpr(expr->get(i))->symbol())->immediate->const_kind == CONST_KIND_STRING)
+    {
+      mText += "\"";
+      appendExpr(expr->get(i), printingType);
+      mText += "\"";
+    }
+    else
+      appendExpr(expr->get(i), printingType);
   }
 
   // 1-tuples get a trailing "," inside the parens.

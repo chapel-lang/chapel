@@ -239,9 +239,9 @@ module ChapelArray {
     const hereID = here.id;
     const privatizeData = value.dsiGetPrivatizeData();
     on Locales[0] do
-      _newPrivatizedClassHelp(value, value, n, hereID, privatizeData);
+      _newPrivatizedClassHelp(value, value, n, hereID);
 
-    proc _newPrivatizedClassHelp(parentValue, originalValue, n, hereID, privatizeData) {
+    proc _newPrivatizedClassHelp(parentValue, originalValue, n, hereID) {
       var newValue = originalValue;
       if hereID != here.id {
         newValue = parentValue.dsiPrivatize(privatizeData);
@@ -257,10 +257,10 @@ module ChapelArray {
       cobegin {
         if chpl_localeTree.left._instance != nil then
           on chpl_localeTree.left do
-            _newPrivatizedClassHelp(newValue, originalValue, n, hereID, privatizeData);
+            _newPrivatizedClassHelp(newValue, originalValue, n, hereID);
         if chpl_localeTree.right._instance != nil then
           on chpl_localeTree.right do
-            _newPrivatizedClassHelp(newValue, originalValue, n, hereID, privatizeData);
+            _newPrivatizedClassHelp(newValue, originalValue, n, hereID);
       }
     }
 
@@ -302,9 +302,9 @@ module ChapelArray {
     const hereID = here.id;
     const reprivatizeData = value.dsiGetReprivatizeData();
     on Locales[0] do
-      _reprivatizeHelp(value, value, pid, hereID, reprivatizeData);
+      _reprivatizeHelp(value, value, pid, hereID);
 
-    proc _reprivatizeHelp(parentValue, originalValue, pid, hereID, reprivatizeData) {
+    proc _reprivatizeHelp(parentValue, originalValue, pid, hereID) {
       var newValue = originalValue;
       if hereID != here.id {
         newValue = chpl_getPrivatizedCopy(newValue.type, pid);
@@ -313,10 +313,10 @@ module ChapelArray {
       cobegin {
         if chpl_localeTree.left._instance != nil then
           on chpl_localeTree.left do
-            _reprivatizeHelp(newValue, originalValue, pid, hereID, reprivatizeData);
+            _reprivatizeHelp(newValue, originalValue, pid, hereID);
         if chpl_localeTree.right._instance != nil then
           on chpl_localeTree.right do
-            _reprivatizeHelp(newValue, originalValue, pid, hereID, reprivatizeData);
+            _reprivatizeHelp(newValue, originalValue, pid, hereID);
       }
     }
   }
@@ -3831,12 +3831,21 @@ module ChapelArray {
     return false;
   }
 
+  // these functions avoid spurious warnings related to sync variable
+  // deprecation, so once the deprecation has completed these can be removed.
+  private proc isCopyableOrSyncSingle(type t) param {
+    return isSyncType(t) || isSingleType(t) || isCopyableType(t);
+  }
+  private proc isConstCopyableOrSyncSingle(type t) param {
+    return isSyncType(t) || isSingleType(t) || isConstCopyableType(t);
+  }
+
   // This must be a param function
   proc chpl__compatibleForBulkTransfer(a:[], b:[], param kind:_tElt) param {
     if !useBulkTransfer then return false;
     if a.eltType != b.eltType then return false;
     if kind==_tElt.move then return true;
-    if kind==_tElt.initCopy && isConstCopyableType(a.eltType) then return true;
+    if kind==_tElt.initCopy && isConstCopyableOrSyncSingle(a.eltType) then return true;
     if !chpl__supportedDataTypeForBulkTransfer(a.eltType) then return false;
     return true;
   }
@@ -3865,6 +3874,7 @@ module ChapelArray {
     }
   }
 
+  // TODO: should this be returning true for atomic types?
   proc chpl__supportedDataTypeForBulkTransfer(x: string) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: bytes) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: sync) param return false;
@@ -3950,6 +3960,20 @@ module ChapelArray {
         ref aa = a[ai];
         pragma "no auto destroy"
         var copy: a.eltType = aa; // run copy initializer
+        // move it into the array
+        __primitive("=", aa, copy);
+      }
+    } else if isSyncType(a.eltType) {
+      forall aa in a {
+        pragma "no auto destroy"
+        var copy: a.eltType = aa.readFE(); // run copy initializer
+        // move it into the array
+        __primitive("=", aa, copy);
+      }
+    } else if isSingleType(a.eltType) {
+      forall aa in a {
+        pragma "no auto destroy"
+        var copy: a.eltType = aa.readFF(); // run copy initializer
         // move it into the array
         __primitive("=", aa, copy);
       }
@@ -4223,13 +4247,24 @@ module ChapelArray {
             // move it into the array
             __primitive("=", aa, copy);
           }
-
         } else {
           [ (aa,bb) in zip(a,b) ] {
-            pragma "no auto destroy"
-            var copy: a.eltType = bb; // init copy
-            // move it into the array
-            __primitive("=", aa, copy);
+            if isSyncType(bb.type) {
+              pragma "no auto destroy"
+              var copy: a.eltType = bb.readFE(); // init copy
+              // move it into the array
+              __primitive("=", aa, copy);
+            } else if isSingleType(bb.type) {
+              pragma "no auto destroy"
+              var copy: a.eltType = bb.readFF(); // init copy
+              // move it into the array
+              __primitive("=", aa, copy);
+            } else {
+              pragma "no auto destroy"
+              var copy: a.eltType = bb; // init copy
+              // move it into the array
+              __primitive("=", aa, copy);
+            }
           }
         }
       } else if kind==_tElt.assign {
@@ -4333,6 +4368,22 @@ module ChapelArray {
     return x.valType;
   }
 
+  proc _desync(type t) type where isAtomicType(t) {
+    var x: t;
+    return x.read().type;
+  }
+
+  /* Or, we could explicitly overload for each atomic type since there
+     are a fixed number
+  proc _desync(type t: atomic int) type {
+    return int;
+  } */
+
+  proc _desync(type t:_array) type {
+    type eltType = chpl__eltTypeFromArrayRuntimeType(t);
+    const ref dom = chpl__domainFromArrayRuntimeType(t);
+    return [dom] _desync(eltType);
+  }
 
   proc _desync(type t) type {
     return t;
@@ -4573,17 +4624,23 @@ module ChapelArray {
     }
   }
 
+  // This function exists to avoid communication from computing _value when
+  // the result is param.
+  private proc domainDistIsLayout(d: domain) param {
+    return d.dist._value.dsiIsLayout();
+  }
+
   pragma "find user line"
   pragma "coerce fn"
   proc chpl__coerceCopy(type dstType:_domain, rhs:_domain, definedConst: bool) {
-    param rhsIsLayout = rhs.dist._value.dsiIsLayout();
+    param rhsIsLayout = domainDistIsLayout(rhs);
 
     pragma "no copy"
     var lhs = chpl__coerceHelp(dstType, definedConst);
     lhs = rhs;
 
     // Error for assignment between local and distributed domains.
-    if lhs.dist._value.dsiIsLayout() && !rhsIsLayout then
+    if domainDistIsLayout(lhs) && !rhsIsLayout then
       compilerWarning("initializing a non-distributed domain from a distributed domain. If you didn't mean to do that, add a dmapped clause to the type expression or remove the type expression altogether");
 
     return lhs;
@@ -4592,7 +4649,7 @@ module ChapelArray {
   pragma "coerce fn"
   proc chpl__coerceMove(type dstType:_domain, in rhs:_domain,
                         definedConst: bool) {
-    param rhsIsLayout = rhs.dist._value.dsiIsLayout();
+    param rhsIsLayout = domainDistIsLayout(rhs);
 
     // TODO: just return rhs
     // if the domain types are the same and their runtime types
@@ -4603,7 +4660,7 @@ module ChapelArray {
     lhs = rhs;
 
     // Error for assignment between local and distributed domains.
-    if lhs.dist._value.dsiIsLayout() && !rhsIsLayout then
+    if domainDistIsLayout(lhs) && !rhsIsLayout then
       compilerWarning("initializing a non-distributed domain from a distributed domain. If you didn't mean to do that, add a dmapped clause to the type expression or remove the type expression altogether");
 
     return lhs;
@@ -4724,7 +4781,7 @@ module ChapelArray {
 
     if lhs.rank != rhs.rank then
       compilerError("rank mismatch in array assignment");
-    if !isCopyableType(eltType) then
+    if !isCopyableOrSyncSingle(eltType) then
       compilerError("Cannot copy-initialize array because element type '",
                     eltType:string, "' cannot be copy-initialized");
 
@@ -5316,7 +5373,7 @@ module ChapelArray {
   // 'castToVoidStar' says whether we should cast the result to c_void_ptr
   pragma "no doc"
   proc chpl_arrayToPtr(arr: [], param castToVoidStar: bool = false) {
-    if (!isRectangularArr(arr) || !arr.domain.dist._value.dsiIsLayout()) then
+    if (!isRectangularArr(arr) || !domainDistIsLayout(arr.domain)) then
       compilerError("Only single-locale rectangular arrays can be passed to an external routine argument with array type", errorDepth=2);
 
     if (arr._value.locale != here) then

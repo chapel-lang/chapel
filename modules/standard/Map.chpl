@@ -32,7 +32,7 @@ module Map {
   private use HaltWrappers;
   private use ChapelHashtable;
 
-  // Lock code lifted from modules/standard/Lists.chpl.
+  // Lock code lifted from modules/standard/List.chpl.
   // Maybe they should be combined into a Locks module.
   pragma "no doc"
   type _lockType = ChapelLocks.chpl_LocalSpinlock;

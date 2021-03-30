@@ -19,28 +19,28 @@ proc main() {
   }
 
   on Locales[numLocales-1] {
-    myBogusSyncYo$[10] = true;
+    myBogusSyncYo$[10].writeEF(true);
     local {
       myArrayYo[10] = 1.1;
     }
-    myBogusSyncYo$[10];
+    myBogusSyncYo$[10].readFE();
   }
 
   on Locales[numLocales-1] {
     local {
-      myBogusSyncYo$[10] = true;
+      myBogusSyncYo$[10].writeEF(true);
       myArrayYo[10] = 1.1;
-      myBogusSyncYo$[10];
+      myBogusSyncYo$[10].readFE();
     }
   }
 
   on Locales[numLocales-1] {
     const myValYo = 1.1;
-    myBogusSyncYo$[10] = true;
+    myBogusSyncYo$[10].writeEF(true);
     local {
       myArrayYo[10] = myValYo;
     }
-    myBogusSyncYo$[10];
+    myBogusSyncYo$[10].readFE();
   }
 
   //
@@ -53,11 +53,11 @@ proc main() {
   //
   const myValYo = 1.1;
   on Locales[numLocales-1] {
-    myBogusSyncYo$[10] = true;
+    myBogusSyncYo$[10].writeEF(true);
     local {
       myArrayYo[10] = myValYo;
     }
-    myBogusSyncYo$[10];
+    myBogusSyncYo$[10].readFE();
   }
 
   writeln("Done!");

@@ -1,4 +1,4 @@
-use Regexp;
+use Regex;
 use IO;
 
 config type t = string;

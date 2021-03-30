@@ -113,6 +113,9 @@ static void removeUnusedFunctions() {
               fatalErrorsEncountered() == false) {
             removeUnusedFunction(fn);
           }
+        } else if (fn->isConstrainedGeneric()) {
+          INT_ASSERT(fn->firstSymExpr() == nullptr);  // these better be unused
+          removeUnusedFunction(fn);
         }
       }
     }
@@ -235,13 +238,19 @@ static void removeRandomPrimitives() {
 }
 
 
-static void removeInterfaceCode() {
+// remove ASTs that supported CG (constrained generics / interfaces)
+// see also cleanupGenericStandins()
+static void cleanupConstrainedGenerics() {
   // This should be done before removing InterfaceSymbols
   // so we can get at and remove refTypes.
   for_alive_in_Vec(ConstrainedType, ct, gConstrainedTypes) {
     ct->symbol->defPoint->remove();
     if (Type* ctRef = ct->refType)
-      ctRef->symbol->defPoint->remove();
+    {
+      //INT_FATAL("CG case"); // used for testing
+      if (ctRef->symbol->defPoint->inTree())
+        ctRef->symbol->defPoint->remove();
+    }
   }
 
   for_alive_in_Vec(InterfaceSymbol, isym, gInterfaceSymbols)
@@ -916,10 +925,15 @@ void saveGenericSubstitutions() {
         // This case is a workaround for patterns that
         // come up with compiler-generated tuple functions
         INT_ASSERT(fn->hasFlag(FLAG_INIT_TUPLE));
-        form_Map(SymbolMapElem, e, fn->substitutions) {
+
+        SymbolMapVector elts = sortedSymbolMapElts(fn->substitutions);
+        for (auto pair: elts) {
+          Symbol* key = pair.first;
+          Symbol* value = pair.second;
+
           NameAndSymbol ns;
-          ns.name = e->key->name;
-          ns.value = e->value;
+          ns.name = key->name;
+          ns.value = value;
           ns.isParam = false;
           ns.isType = false;
           fn->substitutionsPostResolve.push_back(ns);
@@ -971,7 +985,7 @@ void saveGenericSubstitutions() {
 }
 
 void pruneResolvedTree() {
-  removeInterfaceCode();
+  cleanupConstrainedGenerics();
 
   removeTiMarks();
 

@@ -24,7 +24,7 @@ private use Map;
 use Path;
 use MasonUtils;
 use MasonHelp;
-use Regexp;
+use Regex;
 
 /* Entry point for mason system commands */
 proc masonSystem(args: [] string) {

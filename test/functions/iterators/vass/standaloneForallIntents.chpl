@@ -71,15 +71,15 @@ proc checkNoIntent() {
   var sss$, qqq$: sync int;
   cobegin with (ref xxx) {
     {
-      sss$;
+      sss$.readFE();
       xxx = 333;
       writeln("  updated to: ", xxx);
-      qqq$ = 1;
+      qqq$.writeEF(1);
     }
     // 'xxx' is passed implicitly by blank intent
     forall iii in myiter(1,1) {
-      sss$ = 1; // enable update to xxx
-      qqq$;     // wait for the update to complete
+      sss$.writeEF(1); // enable update to xxx
+      qqq$.readFE();     // wait for the update to complete
       writeln("  within forall: ", xxx);
     }
   }
@@ -92,10 +92,10 @@ proc checkRefIntent() {
 
   // 'xxx' is passed implicitly by blank intent
   forall iii in myiter() with (ref xxx) {
-    sss$;
+    sss$.readFE();
     xxx += 1;
     writeln(xxx);
-    sss$ = 1;
+    sss$.writeEF(1);
   }
   writeln("After forall: ", xxx);
 }

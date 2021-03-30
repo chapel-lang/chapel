@@ -3,7 +3,7 @@ var num: sync int = 0;
 
 proc foo() {
   sleep(1);
-  num += 1;
+  num.writeEF(num.readFE() + 1);
 }
 
 sync cobegin {

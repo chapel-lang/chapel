@@ -199,7 +199,7 @@ use IO;
   /* dot - vector-matrix */
   {
     var A = LinearAlgebra.Matrix([1,1,0],
-                   [0,1,1]);
+                                 [0,1,1]);
     var Asps = CSRMatrix(A);
     var v = LinearAlgebra.Vector(2,3);
     const Av = LinearAlgebra.Vector(2, 5, 3);
@@ -209,7 +209,7 @@ use IO;
   /* dot - matrix-vector */
   {
     var A = LinearAlgebra.Matrix([1,1,0],
-                   [0,1,1]);
+                                 [0,1,1]);
     var Asps = CSRMatrix(A);
     var v = LinearAlgebra.Vector(1,2,3);
     const Av = LinearAlgebra.Vector(3, 5);

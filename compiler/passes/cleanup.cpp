@@ -238,10 +238,14 @@ static void cleanup(ModuleSymbol* module) {
           anchor->insertBefore(type);
           anchor->remove();
         } else if (fn->name == astrScolon) {
-          if (fn->numFormals() != 2) {
-            USR_FATAL_CONT(fn, "cast function should have two formals");
+          int extraMethodArgs = 2*fn->isMethod(); // 2 extra args: this & _mt
+          int numFormals = fn->numFormals() - extraMethodArgs;
+          if (numFormals != 2) {
+            USR_FATAL_CONT(fn, "cast operator should have two formals, not %d",
+                           numFormals);
           } else {
-            ArgSymbol* arg2 = fn->getFormal(2);
+            // skip 'this' argument, if method
+            ArgSymbol* arg2 = fn->getFormal(2 + extraMethodArgs);
             if (arg2->intent != INTENT_TYPE &&
                 !arg2->hasFlag(FLAG_TYPE_VARIABLE)) {
               USR_FATAL_CONT(arg2, "second formal for cast should have type intent");

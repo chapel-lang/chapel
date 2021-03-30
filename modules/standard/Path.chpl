@@ -51,6 +51,7 @@
    :proc:`file.absPath`
    :proc:`expandVars`
    :proc:`joinPath`
+   :proc:`splitExt`
    :proc:`splitPath`
 
    Path Properties
@@ -367,6 +368,7 @@ proc dirname(name: string): string {
   compilerWarning("Path.dirname: Argument 'name' is deprecated - use 'path' instead");
   return dirname(path=name);
 }
+
 
 /* Expands any environment variables in the path of the form ``$<name>`` or
    ``${<name>}`` into their values.  If ``<name>`` does not exist, they are left
@@ -806,6 +808,38 @@ proc file.relPath(start:string=curDir): string throws {
   import Path;
   // Have to prefix module name to avoid muddying name resolution.
   return Path.relPath(this.path, start);
+}
+
+
+/*
+  Splits the given path into its root and extension.
+  Leading periods in the path are ignored.
+
+  :arg path: A string file name, not necessarily valid.
+  :type path: `string`
+
+  :returns: A tuple of the form ``(root, ext)``.
+  :rtype: `(string, string)`
+
+*/
+
+proc splitExt(path:string): (string, string) {
+  var lastIdx = path.rfind(".");
+  var lastSep = path.rfind("/");
+  if(lastIdx == -1 || lastSep > lastIdx) {
+    return (path, "");
+  }
+  var idx = lastIdx - 1;
+  while(true) {
+    if(idx < 0 || path[idx] == "/") {
+      return (path, "");
+    }
+    else if(path[idx] == ".") {
+      idx -= 1;
+    }
+    else break;
+  }
+  return (path[..(lastIdx - 1)], path[lastIdx..]);
 }
 
 /* Split path into a tuple that is equivalent to (:proc:`dirname`,

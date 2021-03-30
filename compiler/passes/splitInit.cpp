@@ -720,6 +720,25 @@ static bool canCopyElideCall(CallExpr* call, Symbol* lhs, Symbol* rhs) {
          !(isCallExprTemporary(rhs) && isTemporaryFromNoCopyReturn(rhs));
 }
 
+// Promote elision points for local variables in a block to the parent map.
+static void promoteLocalVars(VarToCopyElisionState& parentMap,
+                             VarToCopyElisionState& blockMap,
+                             VariablesSet& parentSet,
+                             VariablesSet& blockSet) {
+  VarToCopyElisionState::iterator it;
+  for (it = blockMap.begin(); it != blockMap.end(); ++it) {
+    VarSymbol* var = toVarSymbol(it->first);
+    if (blockSet.find(var) != blockSet.end()) {
+      if (parentSet.find(var) == parentSet.end()) {
+        CopyElisionState& state = blockMap[var];
+        if (state.lastIsCopy) {
+          parentMap[var] = state;
+        }
+      }
+    }
+  }
+}
+
 // returns true if there was an unconditional return
 static bool doFindCopyElisionPoints(Expr* start,
                                     VarToCopyElisionState& map,
@@ -819,7 +838,9 @@ static bool doFindCopyElisionPoints(Expr* start,
     // { ... }  (nested block)
     } else if (BlockStmt* block = toBlockStmt(cur)) {
 
-      if (block->isLoopStmt() || block->isRealBlockStmt() == false) {
+      if (block->isLoopStmt() ||
+          (block->isRealBlockStmt() == false &&
+           !block->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL))) {
         // Loop / on / begin / etc - just check for uses
         Expr* start = block->body.first();
         VariablesSet newEligible;
@@ -877,53 +898,32 @@ static bool doFindCopyElisionPoints(Expr* start,
       VarToCopyElisionState ifMap;
       VarToCopyElisionState elseMap;
 
+      VariablesSet ifEligible = eligible;
+      VariablesSet elseEligible = eligible;
+
       bool ifRet = false;
       bool elseRet = false;
-      {
-        VariablesSet ifEligible = eligible;
-        ifRet = doFindCopyElisionPoints(ifStart, ifMap, ifEligible);
-      }
 
-      if (elseStart != NULL) {
-        VariablesSet elseEligible = eligible;
+      ifRet = doFindCopyElisionPoints(ifStart, ifMap, ifEligible);
+
+      if (elseStart) {
         elseRet = doFindCopyElisionPoints(elseStart, elseMap, elseEligible);
       }
 
-      if (ifRet || elseRet) {
-        if (ifRet == false) {
-          // elseRet == true, so just note any copy inits from if
-          for (VarToCopyElisionState::iterator it = ifMap.begin();
-               it != ifMap.end();
-               ++it) {
-            VarSymbol* var = it->first;
-            CopyElisionState& state = it->second;
-            if (state.lastIsCopy)
-              map[var] = state;
-          }
-        }
-        if (elseRet == false) {
-          // ifRet == true, so just note any copy inits from else
-          for (VarToCopyElisionState::iterator it = elseMap.begin();
-               it != elseMap.end();
-               ++it) {
-            VarSymbol* var = it->first;
-            CopyElisionState& state = it->second;
-            if (state.lastIsCopy)
-              map[var] = state;
-          }
-        }
+      // If both blocks return, then they have already been copy elided.
+      if (ifRet && elseRet) {
+        return true;
 
-        // if both if and else return, the conditional returns.
-        if (ifRet && elseRet)
-          return true;
+      // Neither if nor else block returns. Promote elision points from 
+      // each block into the parent copy elision map. If a variable is
+      // declared in a higher scope and is not copied in both blocks, then
+      // we cannot promote it. The elision points for local variables from
+      // each block can be promoted freely.
+      } else if (!ifRet && !elseRet) {
 
-      } else {
-        // neither if nor else returns
-
-        // Look for variables copy-inited from in both the if and else
-        // and adjust the main map accordingly.
-
-        // Note that uses are already noted above.
+        // First, promote local variables from each block.
+        promoteLocalVars(map, ifMap, eligible, ifEligible);
+        promoteLocalVars(map, elseMap, eligible, elseEligible);
 
         // The loop below relies on the maps being ordered.
         VarToCopyElisionState::key_compare comp = map.key_comp();
@@ -933,11 +933,12 @@ static bool doFindCopyElisionPoints(Expr* start,
         while (ifIt != ifMap.end() && elseIt != elseMap.end()) {
           VarSymbol* ifVar = ifIt->first;
           VarSymbol* elseVar = elseIt->first;
+
           if (comp(ifVar, elseVar)) {
             // if element was less, so advance if iterator
             ++ifIt;
           } else if (comp(elseVar, ifVar)) {
-            // else element was less, so else iterator
+            // else element was less, so advance else iterator
             ++elseIt;
           } else {
             // ifVar == elseVar
@@ -962,8 +963,19 @@ static bool doFindCopyElisionPoints(Expr* start,
             ++elseIt;
           }
         }
-        // no need to handle leftovers (e.g. ifIt not at end)
-        // because we marked uses above.
+
+      // One block hasn't returned. Figure out which one it is, and promote 
+      // all its elision points into the parent map.
+      } else {
+        VarToCopyElisionState::iterator it, end;
+        it = ifRet ? elseMap.begin() : ifMap.begin();
+        end = ifRet ? elseMap.end() : ifMap.end();
+        for (; it != end; ++it) {
+          VarSymbol* var = it->first;
+          CopyElisionState& state = it->second;
+          if (state.lastIsCopy)
+            map[var] = state;
+        }
       }
     } else if (isFunctionOrTypeDeclaration(cur)) {
       // OK: mentions like `proc f() { ... x ... }` don't count

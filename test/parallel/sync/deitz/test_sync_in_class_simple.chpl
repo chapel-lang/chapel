@@ -4,9 +4,9 @@ class C {
 
 var c = new unmanaged C();
 
-c.s = 2;
+c.s.writeEF(2);
 
-var r = c.s;
+var r = c.s.readFE();
 
 writeln(r);
 

@@ -2332,3 +2332,21 @@ const char* toString(Symbol* sym, bool withType) {
 
   return sym->name;
 }
+
+struct SymbolPairComparator {
+  bool operator()(std::pair<Symbol*, Symbol*> lhs,
+                  std::pair<Symbol*, Symbol*> rhs) {
+    std::less<Symbol*> lessSym;
+
+    return lessSym(lhs.first, rhs.first);
+  }
+};
+
+SymbolMapVector sortedSymbolMapElts(const SymbolMap& map) {
+  std::vector<std::pair<Symbol*, Symbol*> > elts;
+  form_Map(SymbolMapElem, e, map) {
+    elts.push_back(std::make_pair(e->key, e->value));
+  }
+  std::sort(elts.begin(), elts.end(), SymbolPairComparator());
+  return elts;
+}

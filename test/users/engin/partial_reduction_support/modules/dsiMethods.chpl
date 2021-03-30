@@ -111,13 +111,13 @@ proc DefaultSparseDom.__private_findRowRange(r) {
   var done: atomic bool;
   begin with (ref end) {
     var found: bool;
-    (found, end) = binarySearch(_indices, ((...r),endDummy), hi=_nnz);
+    (found, end) = binarySearch(_indices, ((...r),endDummy), hi=_nnz-1);
     done.write(true);
   }
   var found: bool;
-  (found, start) = binarySearch(_indices, ((...r),startDummy), hi=_nnz);
+  (found, start) = binarySearch(_indices, ((...r),startDummy), hi=_nnz-1);
   done.waitFor(true);
-  return start..min(_nnz,end-1);
+  return start..min(_nnz-1,end-1);
 }
 
 proc partialIterationDimCheck(param onlyDim, param rank) {
@@ -137,7 +137,7 @@ iter DefaultSparseDom.dsiPartialThese(param onlyDim: int, otherIdx,
 
   if onlyDim != this.rank-1 {
     for i in nnzDom.low..#_nnz do
-      if _indices[i].withoutIdx(onlyDim) == otherIdxTup then 
+      if _indices[i].withoutIdx(onlyDim) == otherIdxTup then
         yield _indices[i][onlyDim];
   }
   else { //here we are sure that we are looking for the last index
@@ -166,11 +166,11 @@ iter DefaultSparseDom.dsiPartialThese(param onlyDim: int, otherIdx,
   const numElems = h-l+1;
   coforall t in 0..#numTasks {
     const myChunk = _computeBlock(numElems, numTasks, t, h-l, 0, 0);
-    yield (myChunk[0]..min(_nnz, myChunk[1]),);
+    yield (myChunk[0]..min(_nnz-1, myChunk[1]),);
   }
 }
 
-iter DefaultSparseDom.dsiPartialThese(param onlyDim: int, otherIdx, 
+iter DefaultSparseDom.dsiPartialThese(param onlyDim: int, otherIdx,
     tasksPerLocale = dataParTasksPerLocale,
     ignoreRunning = dataParIgnoreRunningTasks,
     minIndicesPerTask = dataParMinGranularity,
@@ -186,7 +186,7 @@ iter DefaultSparseDom.dsiPartialThese(param onlyDim: int, otherIdx,
     for i in followRange do
       if _indices[i].withoutIdx(onlyDim) == otherIdxTup then
         yield _indices[i][onlyDim];
-      else 
+      else
         for i in followRange do
           yield _indices[i][onlyDim];
 }
@@ -207,14 +207,14 @@ iter DefaultSparseDom.dsiPartialThese(param onlyDim: int, otherIdx,
   if onlyDim==rank-1 then rowRange = __private_findRowRange(otherIdxTup);
 
   const l = if onlyDim!=rank-1 then _indices.domain.low else rowRange.low;
-  const h = if onlyDim!=rank-1 then _nnz else rowRange.high;
+  const h = if onlyDim!=rank-1 then _nnz-1 else rowRange.high;
   const numElems = h-l+1;
   if numElems <= -2 then return;
 
   if onlyDim != rank-1 {
     coforall t in 0..#numTasks {
       const myChunk = _computeBlock(numElems, numTasks, t, h, l, l);
-      for i in myChunk[0]..min(_nnz,myChunk[1]) do
+      for i in myChunk[0]..min(_nnz-1,myChunk[1]) do
         if _indices[i].withoutIdx(onlyDim) == otherIdxTup then
           yield _indices[i][onlyDim];
     }
@@ -239,22 +239,22 @@ iter DefaultSparseArr.dsiPartialThese(param onlyDim, otherIdx) {
   }
 }
 
-iter DefaultSparseArr.dsiPartialThese(param onlyDim, otherIdx, 
+iter DefaultSparseArr.dsiPartialThese(param onlyDim, otherIdx,
     param tag) where tag==iterKind.leader {
   for followThis in dom.dsiPartialThese(onlyDim,otherIdx,tag=tag) {
     yield followThis;
   }
 }
 
-iter DefaultSparseArr.dsiPartialThese(param onlyDim, otherIdx, 
+iter DefaultSparseArr.dsiPartialThese(param onlyDim, otherIdx,
     param tag, followThis) where tag==iterKind.follower {
-  for i in dom.dsiPartialThese(onlyDim, otherIdx, tag=tag, 
+  for i in dom.dsiPartialThese(onlyDim, otherIdx, tag=tag,
       followThis) {
     yield dsiAccess(otherIdx.withIdx(onlyDim, i));
   }
 }
 
-iter DefaultSparseArr.dsiPartialThese(param onlyDim, otherIdx, 
+iter DefaultSparseArr.dsiPartialThese(param onlyDim, otherIdx,
     param tag) where tag==iterKind.standalone &&
       __primitive("method call resolves", dom, "dsiPartialThese",
                                           onlyDim, otherIdx, tag=tag) {
@@ -371,9 +371,9 @@ iter CSDom.dsiPartialThese(param onlyDim, otherIdx,
     const numTasks = if tasksPerLocale==0 then here.maxTaskPar else
       tasksPerLocale;
 
-    const  numChunks = if __primitive("task_get_serial") 
-      then 1 
-      else _computeNumChunks(numTasks, ignoreRunning, 
+    const  numChunks = if __primitive("task_get_serial")
+      then 1
+      else _computeNumChunks(numTasks, ignoreRunning,
           minIndicesPerTask, numElems);
 
     if numChunks == 1 {
@@ -397,22 +397,22 @@ iter CSArr.dsiPartialThese(param onlyDim, otherIdx) {
   }
 }
 
-iter CSArr.dsiPartialThese(param onlyDim, otherIdx, 
+iter CSArr.dsiPartialThese(param onlyDim, otherIdx,
     param tag) where tag==iterKind.leader {
   for followThis in dom.dsiPartialThese(onlyDim,otherIdx[0],tag=tag) {
     yield followThis;
   }
 }
 
-iter CSArr.dsiPartialThese(param onlyDim, otherIdx, 
+iter CSArr.dsiPartialThese(param onlyDim, otherIdx,
     param tag, followThis) where tag==iterKind.follower {
-  for i in dom.dsiPartialThese(onlyDim, otherIdx[0], tag=tag, 
+  for i in dom.dsiPartialThese(onlyDim, otherIdx[0], tag=tag,
       followThis) {
     yield dsiAccess(otherIdx.withIdx(onlyDim, i));
   }
 }
 
-iter CSArr.dsiPartialThese(param onlyDim, otherIdx, 
+iter CSArr.dsiPartialThese(param onlyDim, otherIdx,
     param tag) where tag==iterKind.standalone &&
       __primitive("method call resolves", dom, "dsiPartialThese",
                                           onlyDim, otherIdx[0], tag=tag) {
@@ -500,7 +500,7 @@ proc LocBlockDom.dsiPartialDomain(param exceptDim) {
 
 iter LocBlockArr.dsiPartialThese(param onlyDim, otherIdx) {
 
-  for i in myElems._value.dsiPartialThese(onlyDim,otherIdx) do 
+  for i in myElems._value.dsiPartialThese(onlyDim,otherIdx) do
     yield i;
 }
 
@@ -517,7 +517,7 @@ iter LocBlockArr.dsiPartialThese(param onlyDim, otherIdx,
     param tag: iterKind, followThis) where tag == iterKind.follower {
 
   for i in myElems._value.dsiPartialThese(onlyDim, otherIdx, tag=tag,
-      followThis) do 
+      followThis) do
     yield i;
 }
 
@@ -542,8 +542,8 @@ proc CyclicDom.dsiPartialDomain(param exceptDim) {
   var ranges = whole._value.ranges.withoutIdx(exceptDim);
   var space = {(...ranges)};
   var ret = space dmapped
-    Cyclic(startIdx=this.dist.startIdx.withoutIdx(exceptDim), 
-        targetLocales=dist.targetLocs[(...faceSliceMask(this, 
+    Cyclic(startIdx=this.dist.startIdx.withoutIdx(exceptDim),
+        targetLocales=dist.targetLocs[(...faceSliceMask(this,
             exceptDim))]);
 
   return ret;
@@ -570,7 +570,7 @@ iter LocCyclicDom.dsiPartialThese(param onlyDim, otherIdx, param tag)
 iter LocCyclicDom.dsiPartialThese(param onlyDim, otherIdx,
     param tag, followThis) where tag==iterKind.follower {
 
-  for i in myBlock._value.dsiPartialThese(onlyDim, otherIdx, 
+  for i in myBlock._value.dsiPartialThese(onlyDim, otherIdx,
       tag=iterKind.follower, followThis=followThis) {
     yield i;
   }
@@ -609,7 +609,7 @@ iter LocCyclicArr.dsiPartialThese(param onlyDim, otherIdx, param tag)
 iter LocCyclicArr.dsiPartialThese(param onlyDim, otherIdx,
     param tag, followThis) where tag==iterKind.follower {
 
-  for i in locDom.dsiPartialThese(onlyDim, otherIdx, 
+  for i in locDom.dsiPartialThese(onlyDim, otherIdx,
       tag=iterKind.follower, followThis=followThis) {
     yield this(otherIdx.withIdx(onlyDim,i));
   }
@@ -752,14 +752,14 @@ proc LocSparseBlockArr.dsiGetBaseDom() { return locDom; }
 
 iter LocSparseBlockArr.dsiPartialThese(param onlyDim, otherIdx) {
 
-  for i in myElems._value.dsiPartialThese(onlyDim,otherIdx) do 
+  for i in myElems._value.dsiPartialThese(onlyDim,otherIdx) do
     yield i;
 }
 
 iter LocSparseBlockArr.dsiPartialThese(param onlyDim, otherIdx,
     param tag: iterKind) where tag == iterKind.leader {
 
-  for followThis in 
+  for followThis in
       myElems._value.dsiPartialThese(onlyDim, otherIdx, tag=tag) do
 
     yield followThis;
@@ -769,7 +769,7 @@ iter LocSparseBlockArr.dsiPartialThese(param onlyDim, otherIdx,
     param tag: iterKind, followThis) where tag == iterKind.follower {
 
   for i in myElems._value.dsiPartialThese(onlyDim,otherIdx,tag=tag,
-      followThis) do 
+      followThis) do
 
     yield i;
 }

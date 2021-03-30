@@ -94,6 +94,95 @@ proc =(ref lhs: A, rhs: R) {
   lhs.x = rhs.x;
 }
 
+class L {
+  var x: int;
+}
+
+class M {
+  var x: int;
+}
+
+class N {
+  var x: int;
+}
+
+class O {
+  var x: int;
+}
+
+class P {
+  var x: int;
+}
+
+class Q {
+  var x: int;
+}
+
+class S {
+  var x: int;
+}
+
+class T {
+  var x: int;
+}
+
+class U {
+  var x: int;
+}
+
+class V {
+  var x: int;
+}
+
+class W {
+  var x: int;
+}
+
+operator L.=(lhs: L, rhs: L) {
+  lhs.x = rhs.x;
+}
+
+operator M.=(lhs: unmanaged M, rhs: M) {
+  lhs.x = rhs.x;
+}
+
+operator N.=(lhs: borrowed N, rhs: N) {
+  lhs.x = rhs.x;
+}
+
+operator O.=(lhs: shared O, rhs: O) {
+  lhs.x = rhs.x;
+}
+
+operator P.=(lhs: owned P, rhs: P) {
+  lhs.x = rhs.x;
+}
+
+operator Q.=(ref lhs: Q, rhs: Q) {
+  lhs.x = rhs.x;
+}
+
+operator S.=(ref lhs: owned S, rhs: S) {
+  lhs.x = rhs.x;
+}
+
+operator T.=(ref lhs: borrowed T, rhs: T) {
+  lhs.x = rhs.x;
+}
+
+operator U.=(ref lhs: U?, rhs: U) {
+  lhs!.x = rhs.x;
+}
+
+operator V.=(ref lhs: owned V?, rhs: V) {
+  lhs!.x = rhs.x;
+}
+
+operator W.=(ref lhs: borrowed W?, rhs: W) {
+  lhs!.x = rhs.x;
+}
+
+
 record R {
   var x: int;
 }
@@ -147,3 +236,47 @@ writeln(myA);
 
 myA = new R(33);
 writeln(myA);
+
+var myL = new L(42), myL2 = new L(33);
+myL = myL2;
+writeln(myL, myL2);
+
+var myM = new unmanaged M(42), myM2 = new M(33);
+myM = myM2;
+writeln(myM, myM2);
+
+var myN = new borrowed N(42), myN2 = new N(33);
+myN = myN2;
+writeln(myN, myN2);
+
+var myO = new shared O(42), myO2 = new O(33);
+myO = myO2;
+writeln(myO, myO2);
+
+var myP = new P(42), myP2 = new P(33);
+myP = myP2;
+writeln(myP, myP2);
+
+var myQ = new Q(42), myQ2 = new Q(33);
+myQ = myQ2;
+writeln(myQ, myQ2);
+
+var myS = new S(42), myS2 = new S(33);
+myS = myS2;
+writeln(myS, myS2);
+
+var myT = new borrowed T(42), myT2 = new T(33);
+myT = myT2;
+writeln(myT, myT2);
+
+var myU = new U(42), myU2 = new U(33);
+myU = myU2;
+writeln(myU, myU2);
+
+var myV: V? = new owned V(42), myV2 = new V(33);
+myV = myV2;
+writeln(myV, myV2);
+
+var myW = new W(42), myW2 = new W(33);
+myW = myW2;
+writeln(myW, myW2);

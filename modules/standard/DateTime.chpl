@@ -999,6 +999,14 @@ module DateTime {
                       second=second, microsecond=microsecond);
   }
 
+  /* Get the `time` since Unix Epoch in seconds
+  */
+  proc type datetime.timeSinceEpoch():real {
+    var (seconds,microseconds):(real,real) = getTimeOfDay();
+    microseconds = microseconds/1000000.0;
+    return seconds + microseconds;
+  }
+
   /* Get the `time` portion of the `datetime` value including the
      `tzinfo` field
    */
@@ -1366,6 +1374,13 @@ module DateTime {
                                 dt2.replace(tzinfo=nil) +
                                 dt2.utcoffset() - dt1.utcoffset();
     }
+  }
+
+  pragma "no doc"
+  proc -(dt: datetime, d: date):timedelta {
+    // convert date to datetime and use the default zero time
+    var castDate = datetime.combine(d,new time());
+    return dt - castDate;
   }
 
   pragma "no doc"

@@ -6,15 +6,15 @@ var c: sync int = n;
 var s: single bool;
 
 coforall i in 1..n {
-  var myc:int = c-1;
-  if myc==0 then s=true; else c=myc;
+  var myc:int = c.readFE()-1;
+  if myc==0 then s.writeEF(true); else c.writeEF(myc);
   // wait for everyone to get here
-  s;
+  s.readFF();
 
   if i!=n then
-  t[i];
+  t[i].readFE();
   writeln(here.runningTasks());
   if i!=1 then
-    t[i-1] = true;
+    t[i-1].writeEF(true);
 }
 

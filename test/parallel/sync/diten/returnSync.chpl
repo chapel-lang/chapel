@@ -3,7 +3,7 @@ proc retSync(x: ?t): sync t {
   return xx;
 }
 
-var x = retSync(3);
+var x = retSync(3).readFE();
 var y: sync int = retSync(4);
 
 writeln(x.type:string, ", ", y.type:string);

@@ -779,8 +779,8 @@ enum {
   QIO_CONV_ARG_TYPE_STRING,
   QIO_CONV_ARG_TYPE_BINARY_STRING,
   QIO_CONV_ARG_TYPE_REPR,
-  QIO_CONV_ARG_TYPE_REGEXP, // argument contains a regexp
-  QIO_CONV_ARG_TYPE_NONE_REGEXP_LITERAL, // literal regexp in string
+  QIO_CONV_ARG_TYPE_REGEX, // argument contains a regex
+  QIO_CONV_ARG_TYPE_NONE_REGEX_LITERAL, // literal regex in string
   QIO_CONV_ARG_TYPE_NONE_LITERAL,
   QIO_CONV_SET_MIN_WIDTH_COLS,
   QIO_CONV_SET_MAX_WIDTH_COLS,
@@ -807,10 +807,10 @@ typedef struct qio_conv_s {
   uint8_t literal_is_whitespace; // = 1 for ' ', = 2 for \n
   uint32_t literal_length;
   /*const char*/ void* literal; // pointer into format string...
-  uint32_t regexp_length;
-  /*const char*/ void* regexp;
-  uint32_t regexp_flags_length;
-  /*const char*/ void* regexp_flags;
+  uint32_t regex_length;
+  /*const char*/ void* regex;
+  uint32_t regex_flags_length;
+  /*const char*/ void* regex_flags;
 } qio_conv_t;
 
 
@@ -822,8 +822,8 @@ qioerr qio_conv_parse(c_string fmt, size_t start, uint64_t* end_out, int scannin
 qioerr qio_format_error_too_many_args(void);
 qioerr qio_format_error_too_few_args(void);
 qioerr qio_format_error_arg_mismatch(int64_t arg);
-qioerr qio_format_error_bad_regexp(void);
-qioerr qio_format_error_write_regexp(void);
+qioerr qio_format_error_bad_regex(void);
+qioerr qio_format_error_write_regex(void);
 
 #ifdef __cplusplus
 }

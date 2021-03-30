@@ -18,7 +18,7 @@ for i in 1..n {
   begin {
     sleep(i:uint);
     A(i) = i;
-    me.v = true;
+    me.v.writeEF(true);
   }
   ss = me;
 }

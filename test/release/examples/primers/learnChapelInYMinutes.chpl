@@ -167,7 +167,7 @@ a = thisInt ^ thatInt; // Bitwise exclusive-or
 a += thisInt;          // Addition-equals (a = a + thisInt;)
 a *= thatInt;          // Times-equals (a = a * thatInt;)
 b &&= thatBool;        // Logical-and-equals (b = b && thatBool;)
-a <<= 3;               // Left-bit-shift-equals (a = a << 10;)
+a <<= 3;               // Left-bit-shift-equals (a = a << 3;)
 
 // Unlike other C family languages, there are no
 // pre/post-increment/decrement operators, such as:
@@ -1135,14 +1135,14 @@ proc main() {
   sync {
     begin { // Reader task
       writeln("Reader: waiting to read.");
-      var read_sync = someSyncVar$;
+      var read_sync = someSyncVar$.readFE();
       writeln("Reader: value is ", read_sync);
     }
 
     begin { // Writer task
       writeln("Writer: will write in...");
       countdown(3);
-      someSyncVar$ = 123;
+      someSyncVar$.writeEF(123);
     }
   }
 
@@ -1153,7 +1153,7 @@ proc main() {
     begin { // Reader task
       writeln("Reader: waiting to read.");
       for i in 1..5 {
-        var read_single = someSingleVar$;
+        var read_single = someSingleVar$.readFF();
         writeln("Reader: iteration ", i,", and the value is ", read_single);
       }
     }
@@ -1161,7 +1161,7 @@ proc main() {
     begin { // Writer task
       writeln("Writer: will write in...");
       countdown(3);
-      someSingleVar$ = 5; // first and only write ever.
+      someSingleVar$.writeEF(5); // first and only write ever.
     }
   }
 
@@ -1179,7 +1179,7 @@ proc main() {
   coforall task in 1..5 { // Generate tasks
     // Create a barrier
     do {
-      lock$;                 // Read lock$ (wait)
+      lock$.readFE();           // Read lock$ (wait)
     } while (count.read() < 1); // Keep waiting until a spot opens up
 
     count.sub(1);          // decrement the counter

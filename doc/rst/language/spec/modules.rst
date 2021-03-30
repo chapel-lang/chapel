@@ -573,50 +573,15 @@ enumerated type (unless the module has been renamed to ``_``, as described
 earlier). It is an error to provide a name in a ``limitation-clause`` that does
 not exist or is not visible in the respective module or enumerated type.
 
-If a type or type's secondary methods are defined in the used module, then any
-instances of the type obtained in the scope of the use may access the fields and
-methods of that type, regardless of the ``limitation-clause``. These fields
-and methods cannot be specified in a ``limitation-clause`` on their own.  The
-privacy of use statements is also ignored when determining if an instance can
-access the fields and methods, for similar reasons.
+If an ``only`` list is left empty or an ``except`` is followed by :math:`*`
+then no symbols are made available to the scope without prefix.
 
-If an ``only`` list is left empty or ``except`` is followed by :math:`*`
-then no symbols are made available to the scope without prefix. However,
-any methods or fields defined within a module used in this way will
-still be accessible on instances of the type. For example:
-
-   *Example (limited-access.chpl)*.
-
-
-
-   .. code-block:: chapel
-
-      module M1 {
-        record A {
-          var x = 1;
-
-          proc foo() {
-            writeln("In A.foo()");
-          }
-        }
-      }
-
-      module M2 {
-        proc main() {
-          use M1 only;
-
-          var a = new M1.A(3); // Only accessible via the module prefix
-          writeln(a.x); // Accessible because we have a record instance
-          a.foo(); // Ditto
-        }
-      }
-
-   will print out
-
-   .. code-block:: printoutput
-
-      3
-      In A.foo()
+When the ``limitation-clause`` for a use of a module contains a type, the
+visibility of its tertiary methods that are defined in that module, if any, is
+affected in the same way as the visibility of the type itself.  Fields and
+methods cannot be specified in a ``limitation-clause`` on their own.  Fields,
+and primary and secondary methods are visible to any instance of the type
+regardless of use statements, see :ref:`Method_Calls`.
 
 Within an ``only`` list, a visible symbol from that module may optionally be
 given a new name using the ``as`` keyword. This new name will be usable from the
@@ -802,12 +767,12 @@ to enable this behavior.  It is an error to provide a name in an
 ``unqualified-list`` that does not exist or is not visible in the respective
 module.
 
-If a type or type's secondary methods are defined in the imported module, then
-any instances of the type obtained in the scope of the import may access the
-fields and methods of that type, regardless of the ``unqualified-list``. These
-fields and methods cannot be specified in an ``unqualified-list`` on their own.
-The privacy of import statements is also ignored when determining if an instance
-can access the fields and methods, for similar reasons.
+When the ``unqualified-list`` for an import of a module contains a type, its
+tertiary methods that are defined in that module, if any, are visible in the
+scopes where the ``import`` statement is visible.  Fields and methods cannot be
+specified in an ``unqualified-list`` on their own.  Fields, and primary and
+secondary methods are visible to any instance of the type regardless of import
+statements, see :ref:`Method_Calls`.
 
 Within an ``unqualified-list``, a visible symbol from that module may optionally
 be given a new name using the ``as`` keyword.  This new name will be usable from

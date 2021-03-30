@@ -26,7 +26,7 @@ use MasonUtils;
 use TOML;
 use Sort;
 use FileSystem;
-use Regexp;
+use Regex;
 use IO;
 
 //

@@ -37,7 +37,7 @@
 #ifndef CHPL_RT_UNIT_TEST
 #include "stdchplrt.h"
 #endif
-#include "qio_regexp.h"
+#include "qio_regex.h"
 #include "qbuffer.h" // qio_strdup, refcount functions, qio_ptr_diff, etc
 #include "qio.h" // for channel operations
 #undef printf
@@ -62,8 +62,8 @@ struct re_t {
   }
 };
 
-// A very simple 8-element local regexp cache.
-#define REGEXP_CACHE_SIZE 8
+// A very simple 8-element local regex cache.
+#define REGEX_CACHE_SIZE 8
 struct cache_elem {
   int64_t date;
   re_t* re;
@@ -71,12 +71,12 @@ struct cache_elem {
 
 struct re_cache {
   int64_t date;
-  cache_elem elems[REGEXP_CACHE_SIZE];
+  cache_elem elems[REGEX_CACHE_SIZE];
   ~re_cache();
 };
 
 static
-void qio_re_options_to_re2_options(const qio_regexp_options_t* options, RE2::Options *opts)
+void qio_re_options_to_re2_options(const qio_regex_options_t* options, RE2::Options *opts)
 {
   RE2::Options::Encoding utf8E = RE2::Options::Encoding::EncodingUTF8;
   RE2::Options::Encoding byteE = RE2::Options::Encoding::EncodingLatin1;
@@ -92,7 +92,7 @@ void qio_re_options_to_re2_options(const qio_regexp_options_t* options, RE2::Opt
 }
 
 static
-void re2_options_to_qio_re_options(const RE2::Options *opts, qio_regexp_options_t* options)
+void re2_options_to_qio_re_options(const RE2::Options *opts, qio_regex_options_t* options)
 {
   RE2::Options::Encoding utf8E = RE2::Options::Encoding::EncodingUTF8;
   RE2::Options::Encoding e = opts->encoding();
@@ -107,7 +107,7 @@ void re2_options_to_qio_re_options(const RE2::Options *opts, qio_regexp_options_
 }
 
 static
-bool equal_options(const RE2::Options *opts, const qio_regexp_options_t* options)
+bool equal_options(const RE2::Options *opts, const qio_regex_options_t* options)
 {
   RE2::Options::Encoding utf8E = RE2::Options::Encoding::EncodingUTF8;
   bool optsUtf8 = (opts->encoding() == utf8E);
@@ -129,7 +129,7 @@ void re_free(re_t* re)
 }
 
 static
-re_t* local_cache_get(const char* str, int64_t str_len, const qio_regexp_options_t* options) {
+re_t* local_cache_get(const char* str, int64_t str_len, const qio_regex_options_t* options) {
   thread_local re_cache cache;
   re_cache* c = &cache;
   int oldest;
@@ -139,7 +139,7 @@ re_t* local_cache_get(const char* str, int64_t str_len, const qio_regexp_options
   // or a matching element
   oldest = 0;
   oldest_date = c->elems[0].date;
-  for( int i = 0; i < REGEXP_CACHE_SIZE; i++ ) {
+  for( int i = 0; i < REGEX_CACHE_SIZE; i++ ) {
     if( c->elems[i].date < oldest_date ) {
       oldest = i;
       oldest_date = c->elems[i].date;
@@ -187,7 +187,7 @@ re_cache::~re_cache() {
   }
 }
 
-void qio_regexp_init_default_options(qio_regexp_options_t* opt)
+void qio_regex_init_default_options(qio_regex_options_t* opt)
 {
   opt->utf8 = true;
   opt->posix = false;
@@ -200,21 +200,21 @@ void qio_regexp_init_default_options(qio_regexp_options_t* opt)
 }
 
 // The returned re_t (passed back through "compiled") must be released by the caller.
-void qio_regexp_create_compile(const char* str, int64_t str_len, const qio_regexp_options_t* options, qio_regexp_t* compiled)
+void qio_regex_create_compile(const char* str, int64_t str_len, const qio_regex_options_t* options, qio_regex_t* compiled)
 {
-  re_t* regexp = local_cache_get(str, str_len, options);
-  compiled->regexp = (void*) regexp;
+  re_t* regex = local_cache_get(str, str_len, options);
+  compiled->regex = (void*) regex;
   // We bump the reference count, because caller "owns" its copy of the cached
-  // regexp.  This way, a regexp can be removed from the cache without causing a
+  // regex.  This way, a regex can be removed from the cache without causing a
   // copy that is still in use to be deleted early.
-  DO_RETAIN(regexp);
+  DO_RETAIN(regex);
 }
 
 // The re_t returned in compiled must be released by the caller.
-void qio_regexp_create_compile_flags(const char* str, int64_t str_len, const char* flags, int64_t flags_len, qio_bool isUtf8, qio_regexp_t* compiled)
+void qio_regex_create_compile_flags(const char* str, int64_t str_len, const char* flags, int64_t flags_len, qio_bool isUtf8, qio_regex_t* compiled)
 {
-  qio_regexp_options_t opt;
-  qio_regexp_init_default_options(&opt);
+  qio_regex_options_t opt;
+  qio_regex_init_default_options(&opt);
   // Parse the flags into options.
   for(int i = 0; i < flags_len; i++ ) {
     if( flags[i] == 'i' ) opt.ignorecase = true;
@@ -224,70 +224,71 @@ void qio_regexp_create_compile_flags(const char* str, int64_t str_len, const cha
   }
   opt.utf8 = isUtf8;
 
-  return qio_regexp_create_compile(str, str_len, &opt, compiled);
+  return qio_regex_create_compile(str, str_len, &opt, compiled);
 }
 
-void qio_regexp_retain(const qio_regexp_t* compiled)
+void qio_regex_retain(const qio_regex_t* compiled)
 {
-  re_t* re = (re_t*) compiled->regexp;
+  re_t* re = (re_t*) compiled->regex;
   //fprintf(stdout, "Retain %p\n", re);
   DO_RETAIN(re);
 }
 
-void qio_regexp_release(qio_regexp_t* compiled)
+void qio_regex_release(qio_regex_t* compiled)
 {
-  re_t* re = (re_t*) compiled->regexp;
+  re_t* re = (re_t*) compiled->regex;
   //fprintf(stdout, "Release %p\n", re);
   DO_RELEASE(re, re_free);
-  compiled->regexp = NULL;
+  compiled->regex = NULL;
 }
 
-void qio_regexp_get_options(const qio_regexp_t* regexp, qio_regexp_options_t* options)
+void qio_regex_get_options(const qio_regex_t* regex, qio_regex_options_t* options)
 {
-  RE2* re2 = (RE2*) regexp->regexp;
+  RE2* re2 = (RE2*) regex->regex;
   const RE2::Options& opts = re2->options();
   re2_options_to_qio_re_options(&opts, options);
 }
 
-void qio_regexp_get_pattern(const qio_regexp_t* regexp, const char** pattern)
+void qio_regex_get_pattern(const qio_regex_t* regex, const char** pattern)
 {
-  RE2* re2 = (RE2*) regexp->regexp;
+  RE2* re2 = (RE2*) regex->regex;
   *pattern = qio_strdup(re2->pattern().c_str());
 }
 
-int64_t qio_regexp_get_ncaptures(const qio_regexp_t* regexp)
+int64_t qio_regex_get_ncaptures(const qio_regex_t* regex)
 {
-  RE2* re2 = (RE2*) regexp->regexp;
+  RE2* re2 = (RE2*) regex->regex;
   return re2->NumberOfCapturingGroups();
 }
-qio_bool qio_regexp_ok(const qio_regexp_t* regexp)
+
+qio_bool qio_regex_ok(const qio_regex_t* regex)
 {
-  RE2* re2 = (RE2*) regexp->regexp;
+  RE2* re2 = (RE2*) regex->regex;
   return re2 && re2->ok();
 }
 
-const char* qio_regexp_error(const qio_regexp_t* regexp)
+const char* qio_regex_error(const qio_regex_t* regex)
 {
-  RE2* re2 = (RE2*) regexp->regexp;
+  RE2* re2 = (RE2*) regex->regex;
   return qio_strdup(re2 ? re2->error().c_str() : "");
 }
 
-qio_bool qio_regexp_match(qio_regexp_t* regexp, const char* text, int64_t text_len, int64_t startpos, int64_t endpos, int anchor, qio_regexp_string_piece_t* submatch, int64_t nsubmatch)
+qio_bool qio_regex_match(qio_regex_t* regex, const char* text, int64_t text_len, int64_t startpos, int64_t endpos, int anchor, qio_regex_string_piece_t* submatch, int64_t nsubmatch)
 {
   StringPiece textp(text, text_len);
   bool ret;
   RE2::Anchor ranchor = RE2::UNANCHORED;
   MAYBE_STACK_SPACE(StringPiece, onstack);
   StringPiece* spPtr;
-  RE2* re = (RE2*) regexp->regexp;
+  RE2* re = (RE2*) regex->regex;
 
   // RE2 uses int for ncaptures
   if( nsubmatch > INT_MAX || nsubmatch < 0 )
     return false;
 
-  if( anchor == QIO_REGEXP_ANCHOR_UNANCHORED ) ranchor = RE2::UNANCHORED;
-  else if( anchor == QIO_REGEXP_ANCHOR_START ) ranchor = RE2::ANCHOR_START;
-  else if( anchor == QIO_REGEXP_ANCHOR_BOTH ) ranchor = RE2::ANCHOR_BOTH;
+  if( anchor == QIO_REGEX_ANCHOR_UNANCHORED ) ranchor = RE2::UNANCHORED;
+  else if( anchor == QIO_REGEX_ANCHOR_START ) ranchor = RE2::ANCHOR_START;
+  else if( anchor == QIO_REGEX_ANCHOR_BOTH ) ranchor = RE2::ANCHOR_BOTH;
 
   MAYBE_STACK_ALLOC(StringPiece, nsubmatch, spPtr, onstack);
   memset((void*)spPtr, 0, sizeof(StringPiece)*nsubmatch);
@@ -314,14 +315,14 @@ qio_bool qio_regexp_match(qio_regexp_t* regexp, const char* text, int64_t text_l
   return ret;
 }
 
-int64_t qio_regexp_replace(qio_regexp_t* regexp, const char* repl, int64_t repl_len, const char* str, int64_t str_len, int64_t startpos, int64_t endpos, qio_bool global, const char** str_out, int64_t* len_out)
+int64_t qio_regex_replace(qio_regex_t* regex, const char* repl, int64_t repl_len, const char* str, int64_t str_len, int64_t startpos, int64_t endpos, qio_bool global, const char** str_out, int64_t* len_out)
 {
   // This could make fewer copies of everything...
   // ... but it will work for the moment and this is the
   //     expedient way.
   StringPiece rewrite(repl, repl_len);
   std::string s(str, str_len);
-  RE2* re = (RE2*) regexp->regexp;
+  RE2* re = (RE2*) regex->regex;
   int64_t ret = 0;
   char* output = NULL;
   if( global ) {
@@ -341,10 +342,10 @@ int64_t qio_regexp_replace(qio_regexp_t* regexp, const char* repl, int64_t repl_
   return ret;
 }
 
-int qio_regexp_channel_read_byte(qio_channel_s* ch);
-void qio_regexp_channel_discard(qio_channel_s* ch, int64_t cur, int64_t min);
+int qio_regex_channel_read_byte(qio_channel_s* ch);
+void qio_regex_channel_discard(qio_channel_s* ch, int64_t cur, int64_t min);
 
-int qio_regexp_channel_read_byte(qio_channel_s* ch)
+int qio_regex_channel_read_byte(qio_channel_s* ch)
 {
   int ret;
   ret = qio_channel_read_byte(false, ch);
@@ -352,7 +353,7 @@ int qio_regexp_channel_read_byte(qio_channel_s* ch)
   return ret;
 }
 
-void qio_regexp_channel_discard(qio_channel_s* ch, int64_t cur, int64_t min)
+void qio_regex_channel_discard(qio_channel_s* ch, int64_t cur, int64_t min)
 {
   int64_t buf;
   int64_t off;
@@ -379,10 +380,9 @@ void qio_regexp_channel_discard(qio_channel_s* ch, int64_t cur, int64_t min)
   assert( qio_channel_offset_unlocked(ch) == off );
 }
 
-
-qioerr qio_regexp_channel_match(const qio_regexp_t* regexp, const int threadsafe, struct qio_channel_s* ch, int64_t maxlen, int anchor, qio_bool can_discard, qio_bool keep_unmatched, qio_bool keep_whole_pattern, qio_regexp_string_piece_t* captures, int64_t ncaptures)
+qioerr qio_regex_channel_match(const qio_regex_t* regex, const int threadsafe, struct qio_channel_s* ch, int64_t maxlen, int anchor, qio_bool can_discard, qio_bool keep_unmatched, qio_bool keep_whole_pattern, qio_regex_string_piece_t* captures, int64_t ncaptures)
 {
-  RE2* re = (RE2*) regexp->regexp;
+  RE2* re = (RE2*) regex->regex;
   qioerr err;
   void* bufstart = NULL;
   void* bufend = NULL;
@@ -419,8 +419,8 @@ qioerr qio_regexp_channel_match(const qio_regexp_t* regexp, const int threadsafe
   ci.offset = start_offset-1;
   ci.end_offset = end_offset;
   ci.file = ch;
-  ci.read_byte_fn = (read_byte_fn_t) &qio_regexp_channel_read_byte;
-  ci.discard_fn = (discard_fn_t) &qio_regexp_channel_discard;
+  ci.read_byte_fn = (read_byte_fn_t) &qio_regex_channel_read_byte;
+  ci.discard_fn = (discard_fn_t) &qio_regex_channel_discard;
   ci.re = re;
   if( ncaptures <= 0 ) ci.nmatch = 0;
   else if( ncaptures == 1 ) ci.nmatch = 1;
@@ -430,9 +430,9 @@ qioerr qio_regexp_channel_match(const qio_regexp_t* regexp, const int threadsafe
   ci.keep_unmatched = keep_unmatched;
   ci.keep_whole_pattern = keep_whole_pattern;
 
-  if( anchor == QIO_REGEXP_ANCHOR_UNANCHORED ) ranchor = RE2::UNANCHORED;
-  else if( anchor == QIO_REGEXP_ANCHOR_START ) ranchor = RE2::ANCHOR_START;
-  else if( anchor == QIO_REGEXP_ANCHOR_BOTH ) ranchor = RE2::ANCHOR_BOTH;
+  if( anchor == QIO_REGEX_ANCHOR_UNANCHORED ) ranchor = RE2::UNANCHORED;
+  else if( anchor == QIO_REGEX_ANCHOR_START ) ranchor = RE2::ANCHOR_START;
+  else if( anchor == QIO_REGEX_ANCHOR_BOTH ) ranchor = RE2::ANCHOR_BOTH;
 
   if( threadsafe ) {
     err = qio_lock(&ch->lock);

@@ -101,7 +101,7 @@ module BC_dijkstra {
       stack = Records[node].onStack;
 
 //      Nodes[node].vb += Records[node].delta;
-      Nodes[node].vb$ += Records[node].delta;
+      Nodes[node].vb$.writeEF(Nodes[node].vb$.readFE() + Records[node].delta);
 
       var ptr: unmanaged PreEdge? = Records[node].preEdge;
 
@@ -118,7 +118,7 @@ module BC_dijkstra {
         Records[predecessor].delta += factor;
 
 //        Edges[edge].vb += factor;
-        Edges[edge]!.vb$ += factor;
+        Edges[edge]!.vb$.writeEF(Edges[edge]!.vb$.readFE() + factor);
       }
     }
 

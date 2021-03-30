@@ -45,11 +45,11 @@ proc main() {
 proc producer() {
   for i in 1..numItems {
     const buffInd = (i-1) % buffersize;
-    buff$(buffInd) = i;
+    buff$(buffInd).writeEF(i);
 
     if (verbose) then writeln("producer wrote value #", i);
   }
-  buff$(numItems % buffersize) = -1;
+  buff$(numItems % buffersize).writeEF(-1);
 }
 
 
@@ -71,12 +71,12 @@ proc consumer() {
 //
 iter readFromBuff() {
   var ind = 0,              
-      nextVal = buff$(0);
+      nextVal = buff$(0).readFE();
 
   while (nextVal != -1) {
     yield nextVal;
 
     ind = (ind + 1)%buffersize;
-    nextVal = buff$(ind);
+    nextVal = buff$(ind).readFE();
   }
 }

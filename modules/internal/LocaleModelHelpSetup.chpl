@@ -49,6 +49,13 @@ module LocaleModelHelpSetup {
     var nPUsLogAll: atomic int;
     var maxTaskPar: atomic int;
 
+    // override compiler-generated default initializer for now because
+    // we don't rely on it, and it generates a --warn-unstable error
+    // for the time being (due to taking 'atomic int' formals rather
+    // than 'int' formals)
+    proc init() {
+    }
+
     proc accum(loc:locale) {
       nPUsPhysAcc.add(loc.nPUsPhysAcc);
       nPUsPhysAll.add(loc.nPUsPhysAll);

@@ -388,6 +388,9 @@ private:
 *                  proc cgFun(arg: ?T) where T implements IFC { ..... }       *
 * CT_CGFUN_ASSOC_TYPE: an assoc. type of a CT_CGFUN_FORMAL type, ex. 'arg.AT' *
 *                      in proc cgFun(arg: ?T, arg2: arg.AT) where .....       *
+* CT_GENERIC_STANDIN: represents generic fields of an implementing type       *
+*                     in a generic implements statement, ex. for 'T' in       *
+*                     record R { type T; }  R implements IFC;                 *
 *                                                                             *
 ************************************** | *************************************/
 
@@ -395,12 +398,14 @@ enum ConstrainedTypeUse {
   CT_IFC_FORMAL,
   CT_IFC_ASSOC_TYPE,
   CT_CGFUN_FORMAL,
-  CT_CGFUN_ASSOC_TYPE
+  CT_CGFUN_ASSOC_TYPE,
+  CT_GENERIC_STANDIN
 };
 
 class ConstrainedType final : public Type {
 public:
   ConstrainedTypeUse ctUse;
+
   ConstrainedType(ConstrainedTypeUse use);
   void verify()                                          override;
   void accept(AstVisitor* visitor)                       override;
@@ -410,7 +415,8 @@ public:
   void codegenDef()                                      override;
   const char* useString() const;
 
-  static TypeSymbol* build(const char* name, ConstrainedTypeUse use);
+  static TypeSymbol*      buildSym(const char* name, ConstrainedTypeUse use);
+  static ConstrainedType* buildType(const char* name, ConstrainedTypeUse use);
 
   void printDocs(std::ostream *file, unsigned int tabs);
 };
