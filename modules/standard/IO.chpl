@@ -1423,7 +1423,7 @@ proc file.init=(x: file) {
 }
 
 pragma "no doc"
-operator =(ref ret:file, x:file) {
+operator file.=(ref ret:file, x:file) {
   // retain -- release
   on x.home {
     qio_file_retain(x._file_internal);
@@ -1954,7 +1954,7 @@ record channel {
 }
 
 pragma "no doc"
-operator =(ref lhs:channel, rhs:channel) {
+operator channel.=(ref lhs:channel, rhs:channel) {
   if lhs.writing==true && rhs.writing==false {
     compilerError("cannot assign writing channel to reading channel");
   } else if lhs.writing==false && rhs.writing == true {
