@@ -521,7 +521,7 @@ module BigInteger {
   // Locale-aware assignment
   //
 
-  operator =(ref lhs: bigint, const ref rhs: bigint) {
+  operator bigint.=(ref lhs: bigint, const ref rhs: bigint) {
     inline proc helper() {
       if rhs.localeId == chpl_nodeID {
         mpz_set(lhs.mpz, rhs.mpz);
