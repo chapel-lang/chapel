@@ -192,7 +192,7 @@ module Buffers {
   }
 
   pragma "no doc"
-  operator =(ref ret:byteBuffer, x:byteBuffer) {
+  operator byteBuffer.=(ref ret:byteBuffer, x:byteBuffer) {
     // retain -- release
     if( x.home == here ) {
       on x.home {
@@ -416,7 +416,7 @@ module Buffers {
   }
 
   pragma "no doc"
-  operator =(ref ret:buffer, x:buffer) throws {
+  operator buffer.=(ref ret:buffer, x:buffer) throws {
     ret.home = here;
     // retain -- release
     if( x.home == ret.home ) {
