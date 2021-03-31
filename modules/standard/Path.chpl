@@ -814,9 +814,9 @@ proc file.relPath(start:string=curDir): string throws {
 }
 
 /*
-  Returns the provided path with dirname replaced with the provided
+  Returns a new path with dirname replaced with the provided
   new argument of dirname. If path had no dirname the argument is
-  added to the path if it had one then it is replaced.
+  added to the path.
 
   :arg path: `string` Original Path.
   :newDirname path: `string` for the new dirname
@@ -825,16 +825,15 @@ proc file.relPath(start:string=curDir): string throws {
   :rtype: `string`
 
 */
-proc replaceDirname(path:string,newDirname:string):string {
+proc replaceDirname(path: string, newDirname: string): string {
     const (dirname, basename) = splitPath(path);
-    return joinPath(newDirname,basename);
+    return joinPath(newDirname, basename);
 }
 
 /*
-  Returns the provided path with basename replaced with the provided
+  Returns a new path with basename replaced with the provided
   new argument of basename. If path had no basename the argument is
-  added to the path if it had one then it is replaced if the provided
-  new basename is empty string then basename is removed from path.
+  added to the path or if the provided new basename is empty string then basename is removed from path.
 
   :arg path: `string` Original Path.
   :newBasename path: `string` for the new dirname
@@ -844,7 +843,7 @@ proc replaceDirname(path:string,newDirname:string):string {
   :rtype: `string`
 
 */
-proc replaceBasename(const path:string,const newBasename:string):string throws {
+proc replaceBasename(path: string, newBasename: string): string throws {
     const (dirname, basename) = splitPath(path);
     if(newBasename.endsWith(pathSep)) {
       throw new owned IllegalArgumentError(newBasename,"is not a invalid basename");
@@ -853,10 +852,9 @@ proc replaceBasename(const path:string,const newBasename:string):string throws {
 }
 
 /*
-  Returns the provided path with extension replaced with the provided
+  Returns a new path with extension replaced with the provided
   new argument of extension. If path had no extension the argument is
-  added to the path if it had one then it is replaced. extension has to
-  be of form `.name` or it can be an empty string.
+  added to the path. extension has to be of form `.name` ,`name` or it can be an empty string.
 
   :arg path: `string` Original Path.
   :newExt path: `string` for the new extension
@@ -867,30 +865,30 @@ proc replaceBasename(const path:string,const newBasename:string):string throws {
   :rtype: `string`
 
 */
-proc replaceExt(in path:string,in newExt:string):string throws {
+proc replaceExt(path: string, newExt: string): string throws {
     const (extLessPath, ext) = splitExt(path);
     const (dirname, basename) = splitPath(extLessPath);
 
     // Check for empty basename as extension can't be appended
-    if (basename.isEmpty()){
-      throw new owned IllegalArgumentError(path,"has an empty basename");
+    if  basename.isEmpty() {
+      throw new owned IllegalArgumentError(path, "has an empty basename");
     }
     // check is extension contains spearator.
-    else if(newExt.find(pathSep) != -1){
-      throw new owned IllegalArgumentError(newExt,"=extension can't contain path separators");
+    else if newExt.find(pathSep) != -1 {
+      throw new owned IllegalArgumentError(newExt, "extension can't contain path separators");
     }
     // if extension is not blank then check it shouldn't end with ''.' and isn't just '.'
-    else if(!newExt.isEmpty() && newExt == "." || newExt.endsWith(".")) {
+    else if newExt == "." || newExt.endsWith(".") {
       throw new owned IllegalArgumentError(newExt,"extension can't end with '.'");
     }
     // remove leading '.' if any for uniform support to both
-    const strippedExt = newExt.strip(".",leading=true);
+    const strippedExt = newExt.strip(".", leading=true);
     // check for presence of spaces in stripedExt
     if(strippedExt.find(" ") != -1){
       throw new owned IllegalArgumentError(newExt,"extension can't contain spaces");
     }
 
-    return replaceBasename(path,basename+"."+strippedExt);
+    return replaceBasename(path, basename + "." + strippedExt);
 }
 
 /*
