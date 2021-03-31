@@ -886,8 +886,11 @@ proc replaceExt(path: string, newExt: string): string throws {
         throw new owned IllegalArgumentError(newExt, "extension can't contain spaces");
       }
     }
-
-    return replaceBasename(path, basename + "." + strippedExt);
+    var updatedExt = strippedExt;
+    if !strippedExt.isEmpty(){
+      updatedExt = "."+strippedExt;
+    }
+    return replaceBasename(path, basename + updatedExt);
 }
 
 /*
