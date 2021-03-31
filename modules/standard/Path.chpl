@@ -51,8 +51,8 @@
    :proc:`file.absPath`
    :proc:`expandVars`
    :proc:`joinPath`
-   :proc:`replaceDirname`
    :proc:`replaceBasename`
+   :proc:`replaceDirname`
    :proc:`replaceExt`
    :proc:`splitExt`
    :proc:`splitPath`
@@ -814,34 +814,18 @@ proc file.relPath(start:string=curDir): string throws {
 }
 
 /*
-  Returns a new path with dirname replaced with the provided
-  new argument of dirname. If path had no dirname the argument is
-  added to the path.
+  Returns a new path with basename in `path` replaced with `newBasename`.
+  If `path` had no basename then `newBasename` is added to the path or if
+  the `newBasename` is an empty string then basename is removed from `path`.
 
-  :arg path: `string` Original Path.
-  :newDirname path: `string` for the new dirname
+  :arg path: A path which the caller would like to access.
+  :type path: `string`
 
-  :returns: The new path after replacing dirname.
+  :arg newBasename: A basename to replace the current one
+  :type newBasename: `string`
+
+  :returns: a new path after replacing the basename.
   :rtype: `string`
-
-*/
-proc replaceDirname(path: string, newDirname: string): string {
-    const (dirname, basename) = splitPath(path);
-    return joinPath(newDirname, basename);
-}
-
-/*
-  Returns a new path with basename replaced with the provided
-  new argument of basename. If path had no basename the argument is
-  added to the path or if the provided new basename is empty string then basename is removed from path.
-
-  :arg path: `string` Original Path.
-  :newBasename path: `string` for the new dirname
-
-  :returns: The new path after replacing basename if valid basename is
-            provided else throws illegal argument error.
-  :rtype: `string`
-
 */
 proc replaceBasename(path: string, newBasename: string): string {
     const (dirname, basename) = splitPath(path);
@@ -849,18 +833,43 @@ proc replaceBasename(path: string, newBasename: string): string {
 }
 
 /*
-  Returns a new path with extension replaced with the provided
-  new argument of extension. If path had no extension the argument is
-  added to the path. extension has to be of form `.name` ,`name` or it can be an empty string.
+  Returns a new path with the dirname in `path` replaced with `newDirname`.
+  If path had no dirname `newDirname` is added to the `path` or if the
+  `newDirname` is an empty string then dirname is removed from the `path`.
 
-  :arg path: `string` Original Path.
-  :newExt path: `string` for the new extension
+  :arg path: A path which the caller would like to access.
+  :type path: `string`
 
-  :returns: The new path after replacing extension if valid argument is
-            provided else throws illegal argument error is either basename
-            is missing or extension is not valid.
+  :arg newDirname: dirname to replace the current one
+  :type newDirname: `string`
+
+  :returns: The new path after replacing dirname.
+  :rtype: `string`
+*/
+proc replaceDirname(path: string, newDirname: string): string {
+    const (dirname, basename) = splitPath(path);
+    return joinPath(newDirname, basename);
+}
+
+/*
+  Returns a new path with extension in `path` replaced with `newExt`.
+  If `path` had no extension `newExt` is added to the path or if
+  `newExt` is an empty string then extension is removed from the `path`.
+  Extension has to be of form `.name`,`name` or it can be an empty
+  string and shouldn't contain spaces.
+
+  :arg path: A path which the caller would like to access.
+  :type path: `string`
+
+  :arg newExt: extension to replace the current one
+  :type newExt: `string`
+
+  :returns: The new path after replacing extension if a valid `newExt`
+            is provided.
   :rtype: `string`
 
+  :throws IllegalArgumentError: Upon failure to provide a valid `newExt`
+                                or if the `path` had no basename.
 */
 proc replaceExt(path: string, newExt: string): string throws {
     const (extLessPath, ext) = splitExt(path);
@@ -876,11 +885,11 @@ proc replaceExt(path: string, newExt: string): string throws {
     }
     // if extension is not blank then check it shouldn't end with ''.' and isn't just '.'
     else if newExt == "." || newExt.endsWith(".") {
-      throw new owned IllegalArgumentError(newExt,"extension can't end with '.'");
+      throw new owned IllegalArgumentError(newExt, "extension can't end with '.'");
     }
     // remove leading '.' if any for uniform support to both
     const strippedExt = newExt.strip(".", leading=true);
-    // check for presence of spaces in stripedExt
+    // check for presence of spaces in strippedExt
     for c in strippedExt {
       if c.isSpace() {
         throw new owned IllegalArgumentError(newExt, "extension can't contain spaces");
