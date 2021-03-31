@@ -9,6 +9,8 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.cray-cs-hdr.arkouda"
 
 # setup arkouda
 source $CWD/common-arkouda.bash
+unset ARKOUDA_ZMQ_PATH
+unset ARKOUDA_HDF5_PATH
 export ARKOUDA_NUMLOCALES=16
 
 module list
