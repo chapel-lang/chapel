@@ -843,12 +843,9 @@ proc replaceDirname(path: string, newDirname: string): string {
   :rtype: `string`
 
 */
-proc replaceBasename(path: string, newBasename: string): string throws {
+proc replaceBasename(path: string, newBasename: string): string {
     const (dirname, basename) = splitPath(path);
-    if(newBasename.endsWith(pathSep)) {
-      throw new owned IllegalArgumentError(newBasename,"is not a invalid basename");
-    }
-    return joinPath(dirname,newBasename);
+    return joinPath(dirname, newBasename);
 }
 
 /*
@@ -884,8 +881,10 @@ proc replaceExt(path: string, newExt: string): string throws {
     // remove leading '.' if any for uniform support to both
     const strippedExt = newExt.strip(".", leading=true);
     // check for presence of spaces in stripedExt
-    if(strippedExt.find(" ") != -1){
-      throw new owned IllegalArgumentError(newExt,"extension can't contain spaces");
+    for c in strippedExt {
+      if c.isSpace() {
+        throw new owned IllegalArgumentError(newExt, "extension can't contain spaces");
+      }
     }
 
     return replaceBasename(path, basename + "." + strippedExt);
