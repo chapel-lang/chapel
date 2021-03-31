@@ -39,7 +39,8 @@ This means that we require that developers who work on the parser:
 1) have the following versions installed: Bison 2.5 or later; Flex 2.6 or later
 
 2) explicitly build the generated parser when they alter the parser
-sources.One way to do this is to run "make parser" and then run "make" to re-build the compiler as a whole.
+sources.  One way to do this is to run "make parser" and then run "make" to re-build 
+the compiler as a whole.
 
 
 3) when submitting a pull request to modify the parser sources, also include
