@@ -471,17 +471,17 @@ module DateTime {
 
   /* Operators on date values */
   pragma "no doc"
-  operator +(d: date, t: timedelta): date {
+  operator date.+(d: date, t: timedelta): date {
     return date.fromordinal(d.toordinal() + t.days);
   }
 
   pragma "no doc"
-  operator +(t: timedelta, d: date): date {
+  operator date.+(t: timedelta, d: date): date {
     return d + t;
   }
 
   pragma "no doc"
-  operator -(d: date, t: timedelta): date {
+  operator date.-(d: date, t: timedelta): date {
     return date.fromordinal(d.toordinal() - t.days);
   }
 
@@ -1289,7 +1289,7 @@ module DateTime {
   /* Operators on datetime values */
 
   pragma "no doc"
-  operator +(td: timedelta, dt: datetime) {
+  operator datetime.+(td: timedelta, dt: datetime) {
     var newmicro = dt.microsecond + td.microseconds;
     var newsec = dt.second + td.seconds;
     var newmin = dt.minute;
@@ -1316,12 +1316,12 @@ module DateTime {
   }
 
   pragma "no doc"
-  operator +(dt: datetime, td: timedelta) {
+  operator datetime.+(dt: datetime, td: timedelta) {
     return td + dt;
   }
 
   pragma "no doc"
-  operator -(dt: datetime, td: timedelta) {
+  operator datetime.-(dt: datetime, td: timedelta) {
     var deltasec  = td.seconds % 60;
     var deltamin  = (td.seconds / 60) % 60;
     var deltahour = td.seconds / (60*60);
@@ -1377,7 +1377,7 @@ module DateTime {
   }
 
   pragma "no doc"
-  operator -(dt: datetime, d: date):timedelta {
+  operator datetime.-(dt: datetime, d: date):timedelta {
     // convert date to datetime and use the default zero time
     var castDate = datetime.combine(d,new time());
     return dt - castDate;
@@ -1595,17 +1595,17 @@ module DateTime {
   /* Operators on timedelta values */
 
   pragma "no doc"
-  operator *(i: int, t: timedelta) {
+  operator timedelta.*(i: int, t: timedelta) {
     return new timedelta(days=i*t.days, seconds=i*t.seconds, microseconds=i*t.microseconds);
   }
 
   pragma "no doc"
-  operator *(t: timedelta, i: int) {
+  operator timedelta.*(t: timedelta, i: int) {
     return new timedelta(days=i*t.days, seconds=i*t.seconds, microseconds=i*t.microseconds);
   }
 
   pragma "no doc"
-  operator /(t: timedelta, i: int) {
+  operator timedelta./(t: timedelta, i: int) {
     var day = t.days / i;
     var second = t.seconds + (t.days % i)*24*60*60;
     var microsecond = t.microseconds + (second % i)*1000000;
