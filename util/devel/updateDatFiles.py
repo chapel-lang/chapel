@@ -138,14 +138,21 @@ class DatFile:
             raise ValueError('start_date: "{0}" is later than end_date: '
                              '"{1}"'.format(start_date, end_date))
 
-        start_index = end_index = 0
-        if start_time in dat_times and end_time in dat_times:
-            start_index = dat_times.index(start_time)
-            end_index = len(dat_times) - 1 - dat_times[::-1].index(end_time)
-        else:
-            raise ValueError('start_date: "{0}" or end_date: "{1}" not found '
-                             'in .dat file "{2}"'.format(start_date,
-                             end_date,self.dat_file))
+        start_index = end_index = None
+        for index, dat_time in enumerate(dat_times):
+            if isinstance(dat_time, time.struct_time) and dat_time >= start_time:
+                start_index = index
+                break
+
+        for index, dat_time in reversed(list(enumerate(dat_times))):
+            if isinstance(dat_time, time.struct_time) and dat_time <= end_time:
+                end_index = index
+                break
+
+        if start_index == None or end_index == None:
+            print('No data to remove in range {0} - {1} for .dat file '
+                  '"{2}"'.format(start_date, end_date, self.dat_file))
+            return
 
         for i in reversed(range(start_index, end_index+1)):
             # `i+1` as _get_dates() doesn't include '#Date', but self.data does
@@ -177,6 +184,10 @@ def test(f):
 
         # Remove the data for all keys in an inclusive range
         dat_file.remove_data_in_range("01/11/16", "01/12/16")
+
+        # Remove data in a range where the specified start/end dates aren't in
+        # the .dat file (but some dates in the range are)
+        dat_file.remove_data_in_range("01/14/16", "01/18/16")
 
         # Insert a new key after the "total time" key and backfill all
         # existing dates with a "-"

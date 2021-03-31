@@ -103,6 +103,8 @@ Makefiles support the following targets:
   | default   | libraries, executables                               |
   | all       |                                                      |
   +-----------+------------------------------------------------------+
+  | check     | verify basic functionality of chapel build           |
+  +-----------+------------------------------------------------------+
   | clean     | Remove the intermediate files for this configuration |
   +-----------+------------------------------------------------------+
   | cleanall  | Remove the intermediate files for all configurations |

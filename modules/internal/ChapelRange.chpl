@@ -344,6 +344,29 @@ module ChapelRange {
     compilerError("Bounds of 'low..high' must be integers of compatible types.");
   }
 
+  proc chpl__nudgeLowBound(low) {
+    return chpl__intToIdx(low.type, chpl__idxToInt(low) + 1);
+  }
+  proc chpl__nudgeLowBound(param low) param {
+    return chpl__intToIdx(low.type, chpl__idxToInt(low) + 1);
+  }
+  proc chpl__nudgeHighBound(high) {
+    return chpl__intToIdx(high.type, chpl__idxToInt(high) - 1);
+  }
+  // We would really like to remove the type constraints in the
+  // following overloads, as in chpl__nudgeLowBound() above, but it
+  // breaks enum ranges until we support a param chpl__intToIdx()
+  // routine for enums.  The reason chpl__nudgeLowBound() gets away
+  // with it is that it isn't currently used (because we don't
+  // currently / yet support '<..' ranges).
+  //
+  proc chpl__nudgeHighBound(param high: integral) param {
+    return chpl__intToIdx(high.type, chpl__idxToInt(high) - 1);
+  }
+  proc chpl__nudgeHighBound(param high: bool) param {
+    return chpl__intToIdx(high.type, chpl__idxToInt(high) - 1);
+  }
+
   // Range builders for low bounded ranges
   proc chpl_build_low_bounded_range(low: integral)
     return new range(low.type, BoundedRangeType.boundedLow, _low=low);
@@ -2624,7 +2647,7 @@ operator :(r: range(?), type t: range(?)) {
       return i: idxType;
   }
 
-  inline proc chpl__intToIdx(type idxType: integral, param i: integral) {
+  inline proc chpl__intToIdx(type idxType: integral, param i: integral) param {
     if (i.type == idxType) then
       return i;
     else
@@ -2634,6 +2657,12 @@ operator :(r: range(?), type t: range(?)) {
   inline proc chpl__intToIdx(type idxType: enum, i: integral) {
     return chpl__orderToEnum(i, idxType);
   }
+
+  /* Doesn't work yet:  Need to implement a param chpl__orderToEnum?
+  inline proc chpl__intToIdx(type idxType: enum, param i: integral) param {
+    return chpl__orderToEnum(i, idxType);
+  }
+*/
 
   inline proc chpl__intToIdx(type idxType, i: integral) where isBoolType(idxType) {
     return i: bool;
@@ -2656,6 +2685,10 @@ operator :(r: range(?), type t: range(?)) {
   }
 
   inline proc chpl__idxToInt(i: enum) {
+    return chpl__enumToOrder(i);
+  }
+
+  inline proc chpl__idxToInt(param i: enum) param {
     return chpl__enumToOrder(i);
   }
 
