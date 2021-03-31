@@ -1,4 +1,0 @@
-paramEnumRange.chpl:4: warning: red
-paramEnumRange.chpl:4: warning: green
-paramEnumRange.chpl:4: warning: blue
-paramEnumRange.chpl:8: error: param for-loops must be defined over a bounded param range

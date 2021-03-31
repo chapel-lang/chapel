@@ -1364,15 +1364,18 @@ static void buildEnumToOrderFunction(EnumType* et, bool paramVersion) {
 //
 //   'proc chpl_enumToOrder(i: integral, type et: et): et'
 //
-static void buildOrderToEnumFunction(EnumType* et) {
+static void buildOrderToEnumFunction(EnumType* et, bool paramVersion) {
   FnSymbol* fn = new FnSymbol(astr("chpl__orderToEnum"));
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_LAST_RESORT);
-  ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "i", dtIntegral);
+  ArgSymbol* arg1 = new ArgSymbol(paramVersion ? INTENT_PARAM : INTENT_BLANK,
+                                  "i", dtIntegral);
   ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "et", et);
   arg2->addFlag(FLAG_TYPE_VARIABLE);
   fn->insertFormalAtTail(arg1);
   fn->insertFormalAtTail(arg2);
+  if (paramVersion)
+    fn->retTag = RET_PARAM;
 
   // Generate a select statement with when clauses for each of the
   // enumeration constants, and an otherwise clause that calls halt.
@@ -1388,7 +1391,7 @@ static void buildOrderToEnumFunction(EnumType* et) {
   const char * errorString = "enumerated type out of bounds in chpl__orderToEnum()";
   CondStmt* otherwise =
     new CondStmt(new CallExpr(PRIM_WHEN),
-                 new BlockStmt(new CallExpr("halt",
+                 new BlockStmt(new CallExpr(paramVersion ? "compilerError" : "halt",
                                             new_StringSymbol(errorString))));
   whenstmts->insertAtTail(otherwise);
   fn->insertAtTail(buildSelectStmt(new SymExpr(arg1), whenstmts));
@@ -1410,7 +1413,8 @@ static void buildEnumOrderFunctions(EnumType* et) {
   //
   buildEnumToOrderFunction(et, true);
   buildEnumToOrderFunction(et, false);
-  buildOrderToEnumFunction(et);
+  buildOrderToEnumFunction(et, true);
+  buildOrderToEnumFunction(et, false);
 }
 
 
