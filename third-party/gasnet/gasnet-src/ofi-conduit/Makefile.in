@@ -280,6 +280,10 @@ CONFIGURE_ARGS = @CONFIGURE_ARGS@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
 CROSS_COMPILING = @CROSS_COMPILING@
+CUDA_UVA_CFLAGS = @CUDA_UVA_CFLAGS@
+CUDA_UVA_LDFLAGS = @CUDA_UVA_LDFLAGS@
+CUDA_UVA_LIBS = @CUDA_UVA_LIBS@
+CUDA_guess_prog = @CUDA_guess_prog@
 CXX = @CXX@
 CXXCPP = @CXXCPP@
 CXXDEPMODE = @CXXDEPMODE@
@@ -305,6 +309,8 @@ ENVCMD = @ENVCMD@
 EXEEXT = @EXEEXT@
 EXESUFFIX = @EXESUFFIX@
 FH_CFLAGS = @FH_CFLAGS@
+GASNETI_HWLOC_BIND_PATH = @GASNETI_HWLOC_BIND_PATH@
+GASNETI_HWLOC_CALC_PATH = @GASNETI_HWLOC_CALC_PATH@
 GASNETI_PTR_BITS = @GASNETI_PTR_BITS@
 GASNET_EXTRA_DEFINES = @GASNET_EXTRA_DEFINES@
 GASNET_IBV_SPAWNER_CONF = @GASNET_IBV_SPAWNER_CONF@
@@ -333,6 +339,10 @@ GSTACK_PATH = @GSTACK_PATH@
 HAVE_INTTYPES_H = @HAVE_INTTYPES_H@
 HAVE_STDINT_H = @HAVE_STDINT_H@
 HAVE_SYS_TYPES_H = @HAVE_SYS_TYPES_H@
+HWLOC_CFLAGS = @HWLOC_CFLAGS@
+HWLOC_LDFLAGS = @HWLOC_LDFLAGS@
+HWLOC_LIBS = @HWLOC_LIBS@
+HWLOC_guess_prog = @HWLOC_guess_prog@
 IBV_CFLAGS = @IBV_CFLAGS@
 IBV_LDFLAGS = @IBV_LDFLAGS@
 IBV_LIBS = @IBV_LIBS@
@@ -545,6 +555,10 @@ CONDUIT_EXTRADEPS = $(ssh_deps) $(mpi_deps) $(pmi_deps)
 # using a special, conduit-specific command. These should also be included as
 # forced targets in this file, and should probably use LIBINCLUDES/LIBDEFINES
 CONDUIT_SPECIAL_OBJS = $(mpi_special_objs)
+
+# memory kinds supported by this conduit (space separated)
+# to be included in libgasnet if support was enabled at configure time
+CONDUIT_KINDS = 
 
 # the default job spawn command to be used for "make run-tests"
 # The following substitutions are performed:

@@ -48,6 +48,14 @@ pmi_deps = $(pmi_srcdir)/*.[ch]
 endif
 
 ##
+## HWLOC support (unconditional)
+##
+hwloc_srcdir = $(top_srcdir)/other/hwloc
+hwloc_sources = $(hwloc_srcdir)/gasnet_hwloc.c
+hwloc_deps = $(hwloc_srcdir)/*.[ch]
+hwloc_extralibcflags = -I$(hwloc_srcdir) @HWLOC_CFLAGS@
+
+##
 ## IBV AM receiver and/or connection thread support (optional)
 ##
 if IBV_SEQ_THREADS
@@ -86,11 +94,14 @@ CONDUIT_SOURCELIST =                 \
       $(srcdir)/gasnet_extended.c    \
       $(srcdir)/gasnet_firehose.c    \
       $(fh_sourcelist) \
+      $(hwloc_sources) \
       $(ssh_sources) $(pmi_sources)
 
 # additional -I or -D directives needed by this specific conduit
 # other than the standard GASNet includes and flags
-CONDUIT_EXTRALIBCFLAGS = @IBV_CFLAGS@ $(fh_extralibcflags) $(ssh_defines) $(mpi_defines) $(pmi_cppflags) \
+CONDUIT_EXTRALIBCFLAGS = @IBV_CFLAGS@ \
+                         $(fh_extralibcflags) $(hwloc_extralibcflags)\
+                         $(ssh_defines) $(mpi_defines) $(pmi_cppflags) \
 			 $(ibv_thread_defines)
 
 # additional conduit header files to install from external, non-standard directories
@@ -102,13 +113,17 @@ CONDUIT_PRIVATEHEADERS = $(fh_privheaders) gasnet_ibv.h
 
 # additional file dependencies not mentioned elsewhere 
 # that should force libgasnet rebuild on update
-CONDUIT_EXTRADEPS = $(fh_extradeps) \
+CONDUIT_EXTRADEPS = $(fh_extradeps) $(hwloc_deps) \
                     $(ssh_deps) $(mpi_deps) $(pmi_deps)
 
 # additional object files to be included in libgasnet that need to be compiled 
 # using a special, conduit-specific command. These should also be included as
 # forced targets in this file, and should probably use LIBINCLUDES/LIBDEFINES
 CONDUIT_SPECIAL_OBJS = $(mpi_special_objs) $(fh_special_objs)
+
+# memory kinds supported by this conduit (space separated)
+# to be included in libgasnet if support was enabled at configure time
+CONDUIT_KINDS = cuda_uva
 
 # the default job spawn command to be used for "make run-tests"
 # The following substitutions are performed:
