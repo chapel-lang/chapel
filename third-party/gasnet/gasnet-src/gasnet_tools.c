@@ -398,8 +398,11 @@ GASNETI_IDENT(gasnett_IdentString_SystemName,
 GASNETI_IDENT(gasnett_IdentString_CompilerID, 
              "$GASNetCompilerID: " PLATFORM_COMPILER_IDSTR " $");
 
-GASNETI_IDENT(gasnett_IdentString_GitHash, 
-             "$GASNetGitHash: gex-2020.10.0 $");
+#ifndef GASNETI_GIT_HASH
+  #define GASNETI_GIT_HASH no-version-control-info
+#endif
+GASNETI_IDENT(gasnett_IdentString_GitHash,
+             "$GASNetGitHash: " _STRINGIFY(GASNETI_GIT_HASH) " $");
 
 int GASNETT_LINKCONFIG_IDIOTCHECK(_CONCAT(RELEASE_MAJOR_,GASNET_RELEASE_VERSION_MAJOR)) = 1;
 int GASNETT_LINKCONFIG_IDIOTCHECK(_CONCAT(RELEASE_MINOR_,GASNET_RELEASE_VERSION_MINOR)) = 1;
@@ -3527,7 +3530,7 @@ retry_calibration:;
   return mid;
 }
 
-#if GASNETI_CALIBRATE_TSC /* x86, x86-64, MIC and ia64 */
+#if GASNETI_CALIBRATE_TSC /* x86, x86-64 and MIC */
 extern double gasneti_calibrate_tsc_from_kernel(void) {
   double Tick = 0.0; /* Inverse GHz */
 
@@ -3552,23 +3555,6 @@ extern double gasneti_calibrate_tsc_from_kernel(void) {
     gasneti_assert_int(MHz ,>, 1);
     gasneti_assert_int(MHz ,<, 100000); 
     Tick = 1000. / MHz;
-  #elif PLATFORM_ARCH_IA64  /* && ( PLATFORM_OS_LINUX || PLATFORM_OS_CNL ) */
-    FILE *fp = fopen("/proc/cpuinfo","r");
-    char input[255];
-    if (!fp) gasneti_fatalerror("Failure in fopen('/proc/cpuinfo','r')=%s",strerror(errno));
-    while (!feof(fp) && fgets(input, sizeof(input), fp)) {
-      if (strstr(input,"itc MHz")) {
-        char *p = strchr(input,':');
-        double MHz = 0.0;
-        if (p) MHz = atof(p+1);
-        // ensure it looks reasonable
-        gasneti_assert_dbl(MHz ,>, 1);
-        gasneti_assert_dbl(MHz ,<, 100000); 
-        Tick = 1000. / MHz;
-        break;
-      }
-    }
-    fclose(fp);
   #else /* (X86 || X86_64 || MIC) && (Linux || CNL || WSL) */
   FILE *fp = NULL;
   char input[512]; /* 256 is too small for "flags" line in /proc/cpuino */

@@ -427,9 +427,10 @@ ucx-conduit: Unified Communication X framework [EXPERIMENTAL]
  This conduit is currently experimental, and is not yet carefully tuned for performance.
  It has only been validated on Mellanox InfiniBand devices starting from ConnectX-5.
 
-ofi-conduit: Open Fabrics Interfaces (*TEMPORARILY DISABLED*)
+ofi-conduit: Open Fabrics Interfaces [EXPERIMENTAL]
  GASNet over the Open Fabrics Interface framework (libfabric).
  This conduit is currently being re-implemented for GASNet-EX.
+ Work to date is believed to be functionally complete and correct, but not performant.
  Until that rewrite is complete, users are advised to use other conduits compatible
  with their hardware, or to use the legacy GASNet-1 release (if EX-specific features are not required).
 
@@ -520,6 +521,7 @@ Platforms where GASNet and Berkeley UPC have been successfully tested include:
     * macOS/{x86,x86_64}/icc/{32,64}: smp, udp, mpi &
     * macOS/{x86,x86_64}/{gcc,clang}/{32,64}: smp, udp, mpi
     * macOS/{x86,x86_64}/PGI/{32,64}: smp, udp, #
+    * macOS/AARCH64/{gcc,clang}/64:   smp, udp, #
 
     * CNL/Cray-XT/{gcc,PGI,PathScale,Intel}/64: smp, mpi &
 
@@ -766,14 +768,9 @@ application-specific support.
  a query using GEX_FLAG_TM_SCRATCH_SIZE_RECOMMENDED.
  If the size is set too low, then the performance of collectives may suffer.
  This parameter must be single-valued (same value on all processes).
+ A value of zero is permitted, but any value below some implementation-specific
+ minimum value will be silently increased to that minimum.
  Defaults to 2MB per rank.
-
-* GASNET_COLL_MIN_SCRATCH_SIZE - Specifies the minimum size of the scratch
- space allocated on each rank for internal use in collective communications.
- This is the minimum size permitted for the initial team (or job startup will
- fail), and is the value returned from a query using GEX_FLAG_TM_SCRATCH_SIZE_MIN.
- This parameter must be single-valued (same value on all processes).
- Defaults to 1KB per rank.
 
 * GASNET_COLL_ENABLE_SEARCH - enable autotuning of collectives
 * GASNET_COLL_TUNING_FILE - file to read and/or write collective autotuning data
@@ -906,6 +903,7 @@ Optional environment variable settings:
      A - AM requests/replies (and handler execution, if conduit-supported)
      X - AMPoll
      I - informational messages about system status or performance alerts
+     O - Object creation, modification and destruction
      C - conduit-specific (low-level) messages
      D - Detailed message data for gets/puts/AMreqrep
      N - Line number information from client source files

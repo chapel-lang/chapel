@@ -103,11 +103,9 @@ typedef struct {
 /*
   Protocol for TCP bootstrapping/control sockets
   initialization: 
-    worker->master (int32) - send my procid for init
+    worker->master (int32) - send a forced rank, or -1 for default allocation
     worker->master (en_t) - send my endpoint name for init
-   if received procid == AMUDP_PROCID_ALLOC
-    master->worker (int32 next_rank++)
-   else
+
     master->worker (int32 sizeof(AMUDP_SPMDBootstrapInfo_t))
     master->worker (AMUDP_SPMDBootstrapInfo_t) 
     master->worker (AMUDP_SPMDTranslation_name (variable size)) 
@@ -176,6 +174,25 @@ extern char *AMUDP_tagStr(tag_t tag, char *buf) {
     (int)(uint32_t)(tag >> 32), 
     (int)(uint32_t)(tag & 0xFFFFFFFF));
   return buf;
+}
+//------------------------------------------------------------------------------------
+typedef struct {
+  en_t name;
+  SOCKET socket;
+} workerinfo_t;
+static int workerinfo_compare(const void *left_, const void *right_) {
+  workerinfo_t *left = (workerinfo_t *)left_;
+  workerinfo_t *right = (workerinfo_t *)right_;
+  uint32_t lip = ntohl(left->name.sin_addr.s_addr);
+  uint32_t rip = ntohl(right->name.sin_addr.s_addr);
+  uint16_t lport = ntohs(left->name.sin_port);
+  uint16_t rport = ntohs(right->name.sin_port);
+  // compare ascending by IP then port
+  if (lip < rip) return -1;
+  else if (rip < lip) return 1;
+  else if (lport < rport) return -1;
+  else if (rport < lport) return 1;
+  else return 0;
 }
 //------------------------------------------------------------------------------------
 static void setupStdSocket(SOCKET& ls, SocketList& list, SocketList& allList) {
@@ -328,6 +345,16 @@ extern int AMUDP_SPMDMyProc() {
   }
   AMX_assert(AMUDP_SPMDMYPROC >= 0);
   return AMUDP_SPMDMYPROC;
+}
+/* ------------------------------------------------------------------------------------ */
+extern void AMUDP_SPMDSetProc(int rank) {
+  if (AMUDP_SPMDStartupCalled) 
+    AMX_Err("called AMUDP_SPMDSetProc after AMUDP_SPMDStartup()");
+  if (rank < 0 || AMUDP_SPMDMYPROC != AMUDP_PROCID_NEXT) 
+    AMX_Err("AMUDP_SPMDSetProc may be called at most once before AMUDP_SPMDStartup()");
+
+  AMX_assert(rank != AMUDP_PROCID_NEXT);
+  AMUDP_SPMDMYPROC = rank;
 }
 /* ------------------------------------------------------------------------------------ */
 extern int AMUDP_SPMDIsWorker(char **argv) {
@@ -668,30 +695,36 @@ pollentry:
             }
             #endif
 
+            static int forced_ranks = 0;
             { // receive bootstrapping info
-              static int32_t next_procid = 0;
-              int32_t procid, procid_nb;
+              int32_t procid_nb;
               en_t name;
 
-              recvAll(newcoord, &procid_nb, sizeof(procid_nb));
-              recvAll(newcoord, &name, sizeof(name));
-              procid = ntoh32(procid_nb);
-              if (procid == AMUDP_PROCID_ALLOC) {
-                // This is a request (e.g. by a spawner) for a procid assignment
-                procid = next_procid++;
-                procid_nb = hton32(procid);
-                sendAll(newcoord, &procid_nb, sizeof(procid_nb));
-                shutdown(newcoord, SHUT_RDWR);
-                close_socket(newcoord);
-              } else {
-                // This is a worker connecting
-                if (procid == AMUDP_PROCID_NEXT) procid = next_procid++;
-                AMUDP_SPMDWorkerSocket[procid] = newcoord;
-                AMUDP_SPMDTranslation_name[procid] = name;
-                coordList.insert(newcoord);
-                allList.insert(newcoord);
-                numWorkersAttached++;
+              // This is a worker connecting
+
+              recvAll(newcoord, &procid_nb, sizeof(procid_nb)); // procid request (if any)
+              recvAll(newcoord, &name, sizeof(name)); // worker address
+
+              int32_t procid = ntoh32(procid_nb);
+              if ( procid >= AMUDP_SPMDNUMPROCS || 
+                  (procid < 0 && procid != AMUDP_PROCID_NEXT) ) {
+                 AMX_FatalErr("Invalid forced rank assignment (%i) via WORKER_RANK envvar or AMUDP_SPMDSetProc", procid);
               }
+              if (numWorkersAttached == 0) forced_ranks = (procid != AMUDP_PROCID_NEXT);
+              if ( ( procid == AMUDP_PROCID_NEXT && forced_ranks ) ||
+                   ( procid != AMUDP_PROCID_NEXT && !forced_ranks ) ) {
+                 AMX_FatalErr("Non-collective use of forced rank assignments via WORKER_RANK envvar or AMUDP_SPMDSetProc");
+              }
+              if (procid != AMUDP_PROCID_NEXT && AMUDP_SPMDWorkerSocket[procid] != INVALID_SOCKET) {
+                 AMX_FatalErr("Conflicting rank assignment (%i) by two or more worker processes via WORKER_RANK envvar or AMUDP_SPMDSetProc", procid);
+              }
+
+              if (procid == AMUDP_PROCID_NEXT) procid = numWorkersAttached; // provisional procid
+              AMUDP_SPMDWorkerSocket[procid] = newcoord;
+              AMUDP_SPMDTranslation_name[procid] = name;
+              coordList.insert(newcoord);
+              allList.insert(newcoord);
+              numWorkersAttached++;
             }
 
             if (numWorkersAttached == AMUDP_SPMDNUMPROCS) { // all have now reported in, so we can begin computation
@@ -720,6 +753,20 @@ pollentry:
                          "ex: " AMX_ENV_PREFIX_STR "_WORKERIP=%s",
                          saw_local, AMUDP_SPMDNUMPROCS, SockAddr(&worker_subnet).IPStr());
                 force_output = true;
+              }
+
+              if (!forced_ranks) { // sort worker entries by name (ie IP address, port)
+                workerinfo_t *info_tmp = (workerinfo_t *)AMX_malloc(AMUDP_SPMDNUMPROCS * sizeof(workerinfo_t));
+                for (int i=0; i < AMUDP_SPMDNUMPROCS; i++) {
+                  info_tmp[i].name = AMUDP_SPMDTranslation_name[i];
+                  info_tmp[i].socket = AMUDP_SPMDWorkerSocket[i];
+                }
+                qsort(info_tmp, AMUDP_SPMDNUMPROCS, sizeof(workerinfo_t), &workerinfo_compare);
+                for (int i=0; i < AMUDP_SPMDNUMPROCS; i++) {
+                  AMUDP_SPMDTranslation_name[i] = info_tmp[i].name;
+                  AMUDP_SPMDWorkerSocket[i] = info_tmp[i].socket;
+                }
+                AMX_free(info_tmp);
               }
 
               int32_t bootstrapinfosz_nb = hton32(sizeof(bootstrapinfo));
@@ -971,6 +1018,20 @@ pollentry:
           AMX_RETURN_ERRFR(RESOURCE, AMUDP_SPMDStartup, "worker failed DNSLookup on master host name");
         }
         AMX_free(IPStr);
+      }
+    }
+
+    if (AMUDP_SPMDMYPROC == AMUDP_PROCID_NEXT) { 
+      // WORKER_RANK is *deliberately* not propagated or fetched from the master environment,
+      // because it must be set non-collectively by each worker process
+      const char *rank_str = AMUDP_getenv_prefixed_withdefault("WORKER_RANK", AMX_STRINGIFY(AMUDP_PROCID_NEXT));
+      if (rank_str[0] >= 'A') { // indirect envvar load
+        rank_str = getenv(rank_str);
+        if (!rank_str) rank_str = AMX_STRINGIFY(AMUDP_PROCID_NEXT);
+      }
+      int forced_rank = atoi( rank_str );
+      if (forced_rank != AMUDP_PROCID_NEXT) {
+        AMUDP_SPMDSetProc(forced_rank);
       }
     }
 

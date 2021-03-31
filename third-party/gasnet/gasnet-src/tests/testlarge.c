@@ -16,6 +16,9 @@
 *************************************************************/
 
 #include <gasnetex.h>
+#if GASNET_HAVE_MK_CLASS_CUDA_UVA
+  #include <gasnet_mk.h>
+#endif
 
 int numprocs;
 size_t maxsz = 0;
@@ -109,7 +112,7 @@ void _print_stat(int myproc, stat_struct_t *st, const char *name, int operation)
 // Double payload at each iter, subject to max_step
 // but include max_payload which may not otherwise be visited
 #define ADVANCE(sz) do {                           \
-        int step = MIN(max_step, sz);              \
+        size_t step = MIN(max_step, sz);           \
         if (!sz) {                                 \
           sz = 1;                                  \
         } else if (sz < max_payload && sz+step > max_payload) { \
@@ -288,6 +291,7 @@ int main(int argc, char **argv)
     int fullduplexmode = 0;
     int crossmachinemode = 0;
     int skipwarmup = 0;
+    int use_cuda_uva = 0;
     int help = 0;   
 
     /* call startup */
@@ -327,6 +331,12 @@ int main(int argc, char **argv)
         ++arg;
         if (argc > arg) { max_step = atoi(argv[arg]); arg++; }
         else help = 1;
+#if GASNET_HAVE_MK_CLASS_CUDA_UVA
+      // UNDOCUMENTED
+      } else if (!strcmp(argv[arg], "-cuda-uva")) {
+        use_cuda_uva = 1;
+        ++arg;
+#endif
       } else if (argv[arg][0] == '-') {
         help = 1;
         ++arg;
@@ -403,6 +413,30 @@ int main(int argc, char **argv)
     tgtmem = (numprocs > 1) ? TEST_SEG(peerproc)
                             : (void*)(alignup(maxsz,PAGESZ) + (uintptr_t)myseg);
 
+#if GASNET_HAVE_MK_CLASS_CUDA_UVA
+    gex_EP_t gpu_ep;
+    gex_MK_t kind;
+    if (use_cuda_uva) {
+      MSG0("***NOTICE***: Using EXPERIMENTAL support for CUDA UVA remote memory");
+      test_static_assert(GASNET_MAXEPS >= 2);
+
+      gex_MK_Create_args_t args;
+      args.gex_flags = 0;
+      args.gex_class = GEX_MK_CLASS_CUDA_UVA;
+      args.gex_args.gex_class_cuda_uva.gex_CUdevice = 0;
+      gex_Segment_t d_segment = GEX_SEGMENT_INVALID;
+
+      GASNET_Safe( gex_MK_Create(&kind, myclient, &args, 0) );
+      GASNET_Safe( gex_Segment_Create(&d_segment, myclient, NULL, TEST_SEGSZ_REQUEST, kind, 0) );
+      GASNET_Safe( gex_EP_Create(&gpu_ep, myclient, GEX_EP_CAPABILITY_RMA, 0) );
+      gex_EP_BindSegment(gpu_ep, d_segment, 0);
+      gex_EP_PublishBoundSegment(myteam, &gpu_ep, 1, 0);
+
+      // The "trick" to diverting RMA operation to the remote GPU memory
+      myteam = gex_TM_Pair(myep, gex_EP_QueryIndex(gpu_ep));
+      gex_Event_Wait( gex_EP_QueryBoundSegmentNB(myteam, peerproc, (void**)&tgtmem, NULL, NULL, 0) );
+    }
+#endif
 
         if (insegment) {
 	    msgbuf = (void *) myseg;

@@ -38,7 +38,6 @@ AMUDP_BEGIN_EXTERNC
 #endif
 
 #define AMUDP_PROCID_NEXT -1  /* Use next unallocated procid */
-#define AMUDP_PROCID_ALLOC -2 /* Allocate and return next procis, but do not bootstrap */
 
 #ifndef AMUDP_INITIAL_REQUESTTIMEOUT_MICROSEC
 #define AMUDP_INITIAL_REQUESTTIMEOUT_MICROSEC  100000  /* usec until first retransmit */

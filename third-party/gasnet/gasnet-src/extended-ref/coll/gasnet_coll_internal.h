@@ -62,7 +62,7 @@
 /*---------------------------------------------------------------------------------*/
 /* conduits may override this to relocate the ref-coll handlers */
 #ifndef GASNETE_COLL_HANDLER_BASE
-#define GASNETE_COLL_HANDLER_BASE 118
+#define GASNETE_COLL_HANDLER_BASE 117
 #endif
 
 #define _hidx_gasnete_coll_p2p_memcpy_reqh          (GASNETE_COLL_HANDLER_BASE+0)
@@ -75,6 +75,7 @@
 #define _hidx_gasnete_coll_p2p_med_counting_reqh    (GASNETE_COLL_HANDLER_BASE+7)
 #define _hidx_gasnete_coll_scratch_update_reqh      (GASNETE_COLL_HANDLER_BASE+8)
 #define _hidx_gasnete_subteam_op_reqh               (GASNETE_COLL_HANDLER_BASE+9)
+#define _hidx_gasnete_rexchgv_reqh                  (GASNETE_COLL_HANDLER_BASE+10)
 
 /*---------------------------------------------------------------------------------*/
 /* Forward type decls and typedefs:                                                */
@@ -168,12 +169,16 @@ extern void gasnete_coll_active_fini(void);
 
 
 /*---------------------------------------------------------------------------------*/
-#define GASNETE_COLL_MIN_SCRATCH_SIZE_DEFAULT 1024
 #define GASNETE_COLL_MAX_SCRATCH_SIZE 0xffffffff
 
 #ifndef GASNETE_COLL_SCRATCH_SIZE
 /*set defult to 2 MB*/
 #define GASNETE_COLL_SCRATCH_SIZE_DEFAULT (2*(1024*1024))
+#endif
+
+#ifndef GASNETE_COLL_SCRATCH_SIZE_MIN
+// Default minimum recommendation
+#define GASNETE_COLL_SCRATCH_SIZE_MIN MIN(GASNETI_CACHE_LINE_BYTES, 64)
 #endif
 
 #if 0
@@ -304,6 +309,9 @@ struct gasnete_coll_team_t_ {
   
   uint32_t sequence;	/* arbitrary non-zero starting value */
 
+  // Count of collectives on NO_SCRATCH teams
+  int no_scratch_count;
+
 #if GASNET_PAR && GASNET_DEBUG
   gasneti_mutex_t threads_mutex;
 #endif
@@ -332,6 +340,14 @@ struct gasnete_coll_team_t_ {
   gasnete_all_barrier_result barrier_result;
   gasnete_all_barrier_fini barrier_fini;
   gasneti_progressfn_t barrier_pf;
+
+  // Stuff for UnorderedExchangeV
+  struct {
+    uint8_t *data[2];
+    gasneti_weakatomic32_t rcvd[2][32];
+    gex_HSL_t lock; // protects data pointers
+    int phase;
+  } rexchgv;
 
 #if GASNET_DEBUG
   gasneti_mutex_t barrier_lock;
@@ -770,6 +786,16 @@ GASNETE_COLL_VALIDATE(T,GEX_RANK_INVALID,D,(N)*gasneti_nodes,GEX_RANK_INVALID,S,
 /* XXX: following arg validation unimplemented */
 #define GASNETE_COLL_VALIDATE_REDUCE(T,DI,D,S,SB,SO,ES,EC,FN,FA,F)
 
+// Diagnostic for non-trivial use of collectives in a NO_SCRATCH team
+GASNETI_COLD extern void gasnete_count_no_scratch(gasnet_team_handle_t team);
+#define GASNETE_COLL_CHECK_NO_SCRATCH(team) \
+  do {                                   \
+    if_pf (!(team)->scratch_size &&      \
+           !(team)->myrank &&            \
+           ((team)->total_ranks > 1)) {  \
+      gasnete_count_no_scratch(team);    \
+    }                                    \
+  } while(0)
 
 /*---------------------------------------------------------------------------------*/
 /* Forward decls and macros */

@@ -82,11 +82,27 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
 
   By default, each ibv-conduit process in a GASNet job will open at most
   one Host Channel Adapter (HCA).  To allow a process to utilize more
-  than one HCA, specify '--enable-ibv-multirail' at configure time,
-  which will enable use of up to two HCAs.  To use more than two,
-  additionally specify '--with-ibv-max-hcas=N' at configure time (where
+  than one HCA, specify '--with-ibv-max-hcas=N' at configure time (where
   'N' is the number of HCAs to support per process).
-  
+  Alternatively, specifying '--enable-ibv-multirail' is equivalent to
+  '--with-ibv-max-hcas=2' unless an explicit '--with-ibv-max-hcas=N'
+  option provides a different value.  Passing '--disable-ibv-multirail'
+  overrides any explicit '--with-ibv-max-hcas=N' options.
+
+  Note that multirail support includes provisions for correctness which
+  can be relevant if using mutiple HCAs per *host*, even if using only
+  a single HCA in each process.  So, '--with-ibv-max-hcas=1' is distinct
+  from '--disable-ibv-multirail'.
+  Enabling multirail support (using '--with-ibv-max-hcas=1' if appropriate)
+  is strongly recommended if one might ever use multiple HCAs per host.
+  See 'GASNET_USE_FENCED_PUTS' in the Runtime Configuration section and
+  "Bug 3447" in the Known Problems section for more information regarding
+  the correctness issues.
+
+  The use of specific HCA ports is controlled at run time by the environment
+  variable GASNET_IBV_PORTS, described below.  The default value of this
+  variable can be set at configure time using '--with-ibv-ports=...'.
+
   When using dynamic connections (see GASNET_CONNECT_DYNAMIC env var,
   below) there is an extra thread spawned to block for the arrival of
   connection requests.  If needed, this can be disabled at configure
@@ -245,7 +261,66 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
     how to enumerate available HCAs and the status of their ports.
     In most IBV distributions the 'ibv_devinfo' utility is also
     available to list the HCAs and the status of their ports.
-    The default is no filter.
+    The default can be set at configure time using '--with-ibv-ports=...',
+    and is empty (no filter) in the absence of that configure option.
+    See also 'GASNET_IBV_PORTS_*', immediately below.
+
+  + GASNET_IBV_PORTS_*
+    The environment variable 'GASNET_IBV_PORTS', described immediately above,
+    provides only a single setting and unless one uses some external means to
+    give per-process settings this cannot provide per-process control.  This
+    can make it difficult to get the best performance from multi-rail systems
+    with multiple processes per node and architectural locality properties that
+    affect PCI/adapter access efficiency.
+    However, if 'hwloc' is detected at configure time, then it is possible to
+    give ibv-conduit values for 'GASNET_IBV_PORTS' which will vary per-process
+    based on cpu-binding and machine topology information as follows.
+    1. The variable 'GASNET_IBV_PORTS_TYPE' names an object type using hwloc's
+       terminology, with the default being "Socket" (aka "Package").
+       If the value is "None" (case-insensitive) then the logic below is
+       disabled and the value of 'GASNET_IBV_PORTS' is used by all processes.
+    2. GASNet queries the set of objects of the given type which intersect the
+       process's cpuset, to construct a variable name 'GASNET_IBV_PORTS_[suff]'
+       where '[suff]' is an underscore-delimited ordered list of logical
+       object ids.  For example, with the default object type, a process bound
+       only to cores in the first socket would have a variable name of
+       'GASNET_IBV_PORTS_0'.  Meanwhile, if the cpuset spans sockets 0 and 1
+       (such as for an unbound process on a 2-socket system) then the variable
+       'GASNET_IBV_PORTS_0_1' is used.
+    3. If the environment variable determined in step 2 is set, then it is
+       used.  Otherwise the un-suffixed 'GASNET_IBV_PORTS' is used.
+    As a concrete example, on OLCF's Summit there are four HCAs in software,
+    which represent connections from two I/O buses (one per socket) to two
+    distinct InfiniBand rails.  Use of the further I/O bus introduces a latency
+    penalty, but achieving peak aggregate bandwidth requires the job to split
+    traffic over both I/O buses and both rails.
+    For most applications, we have observed the best latency and aggregate per-
+    node bandwidth is achieved using a single HCA connected to the local
+    socket's I/O bus.  For an unbound process (or one bound to cores in both
+    sockets) the performance suffers relative to the bound case, but the best
+    average-case is achieved using two HCAs chosen to span both buses and both
+    network rails.  This yields the following recommendation as a good
+    default for most applications running on this system:
+       GASNET_IBV_PORTS='mlx5_0+mlx5_3' # Spanning both sockets (e.g. unbound)
+       GASNET_IBV_PORTS_0='mlx5_0'      # Bound to socket0
+       GASNET_IBV_PORTS_1='mlx5_3'      # Bound to socket1
+    For an application which needs to maximize bandwidth of communication
+    to/from processes in a single socket at a time, one must allow process to
+    make use of both I/O buses and network rails (at the cost of increased
+    latency and potentially reduced aggregate per-node bandwidth).  This can be
+    accomplished using two HCAs per processes as follows:
+       GASNET_IBV_PORTS='mlx5_0+mlx5_3'
+       GASNET_IBV_PORTS_1='mlx5_1+mlx5_2'
+    This example illustrates the use of un-suffixed 'GASNET_IBV_PORTS' as a
+    default when lacking a more specific setting.  In particular, unbound
+    processes and those bound to socket 0 will both use 'mlx5_0+mlx5_3'
+    while processes bound to socket 1 will use 'mlx5_1+mlx5_2'.
+    These specific recommendations are appropriate to the specific composition
+    of a node of OLCF's Summit, and should not be considered as generic advice
+    for use of all multi-HCA systems.
+    Of course, even on the same system, your mileage may vary.
+    By default 'GASNET_IBV_PORTS_TYPE' is "Socket" and all other variables in
+    this family are unset.
 
   + GASNET_IBV_LIST_PORTS
     The value is a boolean: "0" to disable or "1" to enable the reporting of
@@ -545,30 +620,37 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
     up to an hardware- and firmware-dependent maximum size.
 
     A value of 0 disables use of inline sends.
+    A value of -1 causes use of the maximum value reported by the HCA.
     The default of 72 is normally correct.
-    For ibv-conduit the default of -1 causes use of the maximum value
-    reported by the HCA.
    
   + GASNET_PACKEDLONG_LIMIT
-    To perform an AMLong or AMLongAsync with non-empty payload,
+    To perform an AMLong with non-empty payload,
     ibv-conduit must transfer both the payload and the header.  For
     sufficiently small payloads, it is more efficient (in terms of both CPU
     overhead and network latency) to pack the header and payload together
     and copy the payload into place on the target before running the
     handler.  Thus, for payload up to and including this size this packing
     is used.
-    The default value is the maximum that fits into a 4KB buffer together
-    with the maximum sized header (currently 4012).
+    The default value is the maximum that, together with the maximum sized
+    header, fits into a 4KiB transfer (currently 4012).
     A value of zero ensures the payload and header always travel separately.
     
   + GASNET_NONBULKPUT_BOUNCE_LIMIT
-    To perform a non-bulk PUT with nbytes > GASNET_INLINESEND_LIMIT or to
-    transfer the payload of an AMLong (but not AMLongAsync) with nbytes >
-    MAX(GASNET_INLINESEND_LIMIT, GASNET_PACKEDLONG_LIMIT), ibv-conduit must
-    either copy the data into bounce buffers, or block until remote
-    completion is signaled by the HCA.  Such transfers up to and including
-    size GASNET_NONBULKPUT_BOUNCE_LIMIT are performed using bounce buffers
-    while larger transfers are transferred using blocking PUTs.
+    This parameter sets the limit on the use of bounce buffers to achieve
+    local completion of "non-bulk" PUT and AMLong payload transfers.  When
+    passing GEX_EVENT_NOW to perform a PUT or AMLong, the implementation must
+    block until local completion.  For PUTs with nbytes larger than
+    GASNET_INLINESEND_LIMIT, and for AMLongs with nbytes larger than both
+    GASNET_INLINESEND_LIMIT and GASNET_PACKEDLONG_LIMIT, ibv-conduit must
+    either copy the data into bounce buffers, or block until remote completion
+    is signaled by the HCA.  Such transfers up to and including size
+    GASNET_NONBULKPUT_BOUNCE_LIMIT are performed using bounce buffers while
+    larger transfers stall return from injection until the RMA is acknowledged.
+    Currently, this parameter also controls the use of bounce buffers versus
+    non-blocking RMA for initiation of all AMLong payload transfers and
+    for PUTs not passing GEX_EVENT_DEFER for the lc_opt parameter.  However,
+    cases other than GEX_EVENT_NOW are not the intended scope of this
+    parameter, and this behavior is subject to change.
     The default value is 64KB.
     A value of zero disables use of bounce buffers.
     
@@ -663,7 +745,8 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
     correct remote completion detection in the presence of multiple HCAs.
     See "Bug 3447" in the Known Problems section for information on when one
     may wish to enable this setting.
-    If enabled when using only a single HCA a warning will be issued.
+    If enabled when multirail support was not enabled at configure time, a
+    warning will be issued.
     This setting defaults to 0 (disabled).
 
   Resource usage parameters:
@@ -786,15 +869,30 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
     If you believe that throughput of these operations is too small, you
     may try increasing this value (or setting it to zero), at a cost in
     additional pinned memory.
+
+  + GASNET_PINNED_REGIONS_MAX
+    This provides a limit on the number of pinned regions to be created.
+    Similar to GASNET_PHYSMEM_MAX, the value gives an upper bound on pinned
+    regions per host, which is divided equally among processes on each host.
+    This may constrain dynamic registration via firehose (below).
+    The value may specify either a relative or absolute size.  If the value
+    parses as a floating-point value less than 1.0 (including fractions such as
+    "5/8"), then this is taken as a fraction of the maximum supported region
+    count reported by the HCA(s).  Otherwise the value is taken as an absolute
+    region count.
+    The default is to use a fraction of the HCA pinning resources equal to
+    the fraction of physical memory given by GASNET_PHYSMEM_MAX, subject to
+    a system-dependent maximum value.
    
   Firehose configuration:
   ----------------------
   These parameters must be equal across all nodes, and the behavior
   otherwise is undefined.
 
-  The following environment variables control the resources used by the
-  "firehose" [ref 1] dynamic registration library.  By default firehose
-  will use as much pinned memory as the HCA and O/S will permit.
+  The following environment variables control the per-process resources used by
+  the "firehose" [ref 1] dynamic registration library.  By default, firehose
+  will use as much pinned memory as the HCA and O/S will permit, bounded by
+  GASNET_PHYSMEM_MAX.
 
   Resource use is divided into two pools.  The main pool is for managing
   of pinning of the GASNet segment on remote nodes, while the "victim"
@@ -804,7 +902,7 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
   pool.  In a GASNET_SEGMENT_FAST configuration, firehose is not needed
   for management of the statically pinned GASNet segment, and by default
   only a small fraction of the available memory is placed in the main
-  pool and the majority is placed in the victim pool.
+  pool for internal uses and the majority is placed in the victim pool.
 
   + GASNET_USE_FIREHOSE
     This environment variable is only available in a DEBUG build of
@@ -830,40 +928,65 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
     required.  Thus it is an error to disable firehose in such a
     configuration.
 
-  + GASNET_FIREHOSE_M
-    This gives the amount of memory to place in the main pool.  The
-    suffixes "K", "M" and "G" are interpreted as Kilobytes, Megabytes
-    and Gigabytes respectively, with "M" assumed if no suffix is given.
-    When GASNET_FIREHOSE_MAXVICTIM_M is set, the default is the maximum
-    pinnable memory minus GASNET_FIREHOSE_MAXVICTIM_M.  Otherwise the
-    default is 75% of the maximum pinnable memory (in a GASNET_SEGMENT_LARGE
-    or GASNET_SEGMENT_EVERYTHING configuration), or the size of the
-    prepinned bounce buffer pool (in a GASNET_SEGMENT_FAST configuration).
+  + GASNET_FIREHOSE_M and GASNET_FIREHOSE_MAXVICTIM_M
+    GASNET_FIREHOSE_M gives the amount of memory to place in the main pool,
+    while GASNET_FIREHOSE_MAXVICTIM_M gives the amount of memory to place in
+    the victim (local) pool.  The suffixes "K", "M" and "G" are interpreted as
+    Kilobytes, Megabytes and Gigabytes respectively, with "M" assumed if no
+    suffix is given.
+    When neither variable is set, the defaults are respectively 75% and 25% of
+    the total pool.  In a GASNET_SEGMENT_LARGE or GASNET_SEGMENT_EVERYTHING
+    configuration, this pool's size is the maximum pinnable memory (but see
+    below), while in a GASNET_SEGMENT_FAST configuration it is the same size as
+    the prepinned bounce buffer pool.  Note that, as used here, "maximum
+    pinnable memory" may be less than determined from GASNET_PHYSMEM_MAX, and
+    in particular may be constrained by the product of the number of pinnable
+    regions and their maximum size.  See, GASNET_FIREHOSE_MAXREGION_SIZE,
+    GASNET_FIREHOSE_R and GASNET_FIREHOSE_MAXVICTIM_R for more information.
+    If only one of these variables is set, then the other defaults such that
+    their sum equals the total pool size.  Therefore, to enlarge or reduce the
+    total pool, one must set both.  Since enlarging the total pool risks
+    exhausting resources, potentially leading to crashes at runtime, doing so
+    will result in a warning.
 
-  + GASNET_FIREHOSE_MAXVICTIM_M
-    This gives the amount of memory to place in the victim (local) pool.
-    The suffixes "K", "M" and "G" are interpreted as Kilobytes, Megabytes
-    and Gigabytes respectively, with "M" assumed if no suffix is given.
-    The default is the maximum pinnable memory minus GASNET_FIREHOSE_M.
+  + GASNET_FIREHOSE_R and GASNET_FIREHOSE_MAXVICTIM_R
+    GASNET_FIREHOSE_R gives the maximum number of pinned regions to allocate
+    for the management of the main pool, while GASNET_FIREHOSE_MAXVICTIM_R
+    gives the maximum number of pinned regions to allocate for the management
+    of the victim (local) pool.
+    When neither variable is set, the default is to split the available pool of
+    pinnable regions (see GASNET_PINNED_REGIONS_MAX) in proportion to the
+    values of GASNET_FIREHOSE_M and GASNET_FIREHOSE_MAXVICTIM_M.
+    If only one of these variables is set, then the other defaults such that
+    their sum equals the total pool size.  Therefore, to enlarge or reduce the
+    total pool, one must set both.  Since enlarging the total pool risks
+    exhausting resources, potentially leading to crashes at runtime, doing so
+    will result in a warning.
+    The value of GASNET_FIREHOSE_R will be silently truncated if larger than
+    (GASNET_FIREHOSE_M / GASNET_FIREHOSE_MAXREGION_SIZE), since additional
+    regions would not be used.  Similarly, GASNET_FIREHOSE_MAXVICTIM_R will be
+    silently reduced if it would address more than GASNET_FIREHOSE_MAXVICTIM_M.
 
   + GASNET_FIREHOSE_MAXREGION_SIZE
     This gives the maximum size of a single dynamically pinned region,
     should be a multiple of the pagesize, and preferably a power of two.
     The suffixes "K", "M" and "G" are interpreted as Kilobytes, Megabytes
     and Gigabytes respectively, with "M" assumed if no suffix is given.
-    The current default is 128k.  Larger values have been known to trigger
-    a performance anomaly in some HCAs.
+    The maximum addressable size of the main and victim pools are limited by
+    the product of this region size and the number of firehose regions
+    allocated to each pool.
+    If the value of this parameter is set to 0, then it will be automatically
+    adjusted to allow the main and victim pools to be addressed within the
+    available number of regions, if doing so is possible subject to a
+    system-dependent maximum (pagesize squared, or larger).
+    The default value of this parameter is 128KB.
 
-  + GASNET_FIREHOSE_R
-    This gives the number of pinned regions to allocate for the management
-    of the main pool.  Values will be truncated if larger than the
-    default of (GASNET_FIREHOSE_M / GASNET_FIREHOSE_MAXREGION_SIZE).
-
-  + GASNET_FIREHOSE_MAXVICTIM_R
-    This gives the number of pinned regions to allocate for the management
-    of the victim (local) pool.  Values will be truncated if larger than
-    the default of (GASNET_FIREHOSE_MAXVICTIM_M /
-    GASNET_FIREHOSE_MAXREGION_SIZE).
+  + GASNET_FIREHOSE_TABLE_SCALE
+    This parameter gives a floating point factor, used to scale the size of
+    hash tables used in the firehose library relative to their default sizes.
+    Smaller values producer smaller tables, saving memory at the expense of
+    performance.
+    The default value is 1.
 
   + GASNET_FIREHOSE_VERBOSE
     This gives a boolean: "0" to disable or "1" to enable the output of
@@ -952,44 +1075,62 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
 
 + Negotiated-payload Active Messages (NPAM)
 
-    TL;DR:  The results below can be summarized in the following rules-of-thumb
-    for use of NPAM Medium with ibv-conduit in the current release:
+    TL;DR:  The results below, from one particular system, can be summarized in
+    the following rules-of-thumb for use of NPAM with ibv-conduit in the
+    *current* release:
     +  Use of client-provided buffer is never advantageous.
-    +  Use of gasnet-provided buffer may be advantageous for payloads of
-       512 bytes or larger.
+    +  Use of gasnet-provided buffer may be advantageous for Medium with
+       sufficiently large payloads, where both latency and bandwidth can exceed those
+       of FPAM.
+    +  Use of gasnet-provided buffer may be advantageous for Long payloads of
+       sufficient length, where bandwidth is better than FPAM (but at the
+       expense of worse latency).
+    Note that as development continues, these finding are subject to change.
 
-    Calls to gex_AM_Prepare{Request,Reply}Medium() with client_buf != NULL
-    are known as "client-provided buffer" calls.  In this mode of operation,
-    there is a small penalty in CPU overhead relative to the fixed-payload
-    AM (FPAM) calls gex_AM_{Request,Reply}Medium(), due primarily to the
-    split-phase calling convention.  While the design of NPAM allows for the
-    possibility that NPAM with client-provided buffer could enable larger
-    payloads than FPAM, ibv-conduit currently does not provide that
-    capability.
+    Calls to gex_AM_Prepare{Request,Reply}{Medium,Long}() with client_buf !=
+    NULL are known as "client-provided buffer" calls.  In this mode of
+    operation, there is a small penalty in CPU overhead relative to the
+    fixed-payload AM (FPAM) calls gex_AM_{Request,Reply}{Medium,Long}(), due
+    primarily to the split-phase calling convention.  While the design of NPAM
+    allows for the possibility that NPAM with client-provided buffer could
+    enable larger Medium payloads than FPAM, ibv-conduit currently does not
+    provide that capability.
 
-    Measurements with client-provided buffer NPAM on OLCF's Summit show the
-    latency penalty relative to FPAM in a Request/Reply "ping-pong" test is
-    around 2% for payload sizes below a couple hundred bytes, and 1% or
-    lower for payloads of 512 bytes or larger.  Throughput of a "flood" test
-    shows penalties of about 8% at the smallest payload sizes, declining
-    smoothly to 5% at the largest payloads.
-    Of course, your mileage may vary.
+    Measurements of both AM Mediums and Long with client-provided buffer NPAM
+    on OLCF's Summit show the latency penalty relative to FPAM in a
+    Request/Reply "ping-pong" test is around 2% for payload sizes below a
+    couple hundred bytes, and 1% or lower for payloads of 512 bytes or larger.
+    For AM Longs the penalty eventually approaches zero for payloads of about
+    512KiB or larger.
 
-    Calls to gex_AM_Prepare{Request,Reply}Medium() with client_buf == NULL
-    are known as "gasnet-provided buffer" calls.  In this mode of operation,
-    in code which assembles/generates the payload at AM injection time,
-    there is a measurable advantage to NPAM for sufficiently large payloads,
-    and a small penalty for small payloads.
+    Throughput of a "flood" test with client-provided buffer NPAM shows
+    penalties of about 8% at the smallest payload sizes, declining smoothly to
+    5% at the largest Medium payloads and approaching zero for Long payloads of
+    about 512KiB or larger.
+
+    Calls to gex_AM_Prepare{Request,Reply}{Medium,Long}() with client_buf ==
+    NULL are known as "gasnet-provided buffer" calls.  In this mode of
+    operation, in which GASNet allocates a buffer where client code
+    assembles/generates the payload at AM injection time, there is a measurable
+    advantage to NPAM for sufficiently large payloads, but a small penalty for
+    small payloads.
 
     Measurements with gasnet-provided buffer NPAM on OLCF's Summit show the
     latency penalty in a Request/Reply "ping-pong" test is around 2% for
-    payload sizes below a couple hundred bytes, but that latency is improved
-    over FPAM for payloads of 512 bytes or larger (by about 9% for large
-    payloads).  Throughput of a "flood" test shows similar behavior with a
-    throughput penalty of up to 5% for payload sizes 512 bytes and below,
-    but improvements in throughput above 512 bytes (by about 17% for large
-    payloads).
-    Of course, your mileage may vary.
+    payload sizes below a couple hundred bytes for both Medium and Long.  For
+    Mediums of 512 bytes or larger, the latency is improved over FPAM (by about
+    9% for large payloads).  For Longs, the large payload latency is worse
+    than for small payloads.
+
+    Throughput of a "flood" test with Mediums shows similar behavior to
+    ping-pong, with a throughput penalty of up to 5% for payload sizes 512
+    bytes and below, but improvements in throughput above 512 bytes (by about
+    17% for large payloads).  For Longs there is a throughput penalty of up to
+    5% for payload sizes below about 2KiB, but for large payloads a latency
+    improvement of 40% or more can be seen.
+
+    Your mileage may vary.
+    Relative performance may change in future releases.
 
 @ Section: Known Problems @
 
@@ -1246,6 +1387,10 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
   Note that when SRQ is used, no flow control is used.
 
 @ Section: Extended API @
+
+[This section is still *mostly* accurate, but has not been kept up-to-date
+with respect to EX updates.  Most notably: "LongAsync" is gone, "_bulk" has
+been supplanted by lc_opt options, and all the function names have changed.]
 
 Notes for myself for extended API:
 
