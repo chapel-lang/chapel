@@ -353,17 +353,7 @@ module ChapelRange {
   proc chpl__nudgeHighBound(high) {
     return chpl__intToIdx(high.type, chpl__idxToInt(high) - 1);
   }
-  // We would really like to remove the type constraints in the
-  // following overloads, as in chpl__nudgeLowBound() above, but it
-  // breaks enum ranges until we support a param chpl__intToIdx()
-  // routine for enums.  The reason chpl__nudgeLowBound() gets away
-  // with it is that it isn't currently used (because we don't
-  // currently / yet support '<..' ranges).
-  //
-  proc chpl__nudgeHighBound(param high: integral) param {
-    return chpl__intToIdx(high.type, chpl__idxToInt(high) - 1);
-  }
-  proc chpl__nudgeHighBound(param high: bool) param {
+  proc chpl__nudgeHighBound(param high) param {
     return chpl__intToIdx(high.type, chpl__idxToInt(high) - 1);
   }
 
@@ -2658,11 +2648,9 @@ operator :(r: range(?), type t: range(?)) {
     return chpl__orderToEnum(i, idxType);
   }
 
-  /* Doesn't work yet:  Need to implement a param chpl__orderToEnum?
   inline proc chpl__intToIdx(type idxType: enum, param i: integral) param {
     return chpl__orderToEnum(i, idxType);
   }
-*/
 
   inline proc chpl__intToIdx(type idxType, i: integral) where isBoolType(idxType) {
     return i: bool;
