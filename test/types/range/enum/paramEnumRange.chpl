@@ -60,3 +60,14 @@ for param c in color.red..color.blue by -2 {
   compilerWarning(c:string);
   writeln(c);
 }
+
+param r = color.red;
+param b = color.blue;
+
+compilerWarning("---");
+writeln("---");
+
+for param c in r..b by 2 {
+  compilerWarning(c:string);
+  writeln(c);
+}

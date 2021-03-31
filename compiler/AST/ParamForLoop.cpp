@@ -620,7 +620,7 @@ CallExpr* ParamForLoop::foldForResolve()
 void ParamForLoop::validateLoop(VarSymbol* lvar,
                                 VarSymbol* hvar,
                                 VarSymbol* svar) {
-  if (!lvar            || !hvar            || !svar)
+  if (!lvar || !hvar || !svar)
     USR_FATAL(this,
               "param for-loops must be defined over a bounded param range");
 
@@ -636,7 +636,7 @@ void ParamForLoop::validateLoop(VarSymbol* lvar,
 void ParamForLoop::validateLoop(EnumSymbol* lvar,
                                 EnumSymbol* hvar,
                                 VarSymbol* svar) {
-  if (!lvar            || !hvar            || !svar)
+  if (!lvar || !hvar || !svar)
     USR_FATAL(this,
               "param for-loops must be defined over a bounded param range");
 

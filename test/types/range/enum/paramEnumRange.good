@@ -32,6 +32,10 @@ paramEnumRange.chpl:56: warning: ---
 paramEnumRange.chpl:60: warning: blue
 paramEnumRange.chpl:60: warning: yellow
 paramEnumRange.chpl:60: warning: red
+paramEnumRange.chpl:67: warning: ---
+paramEnumRange.chpl:71: warning: red
+paramEnumRange.chpl:71: warning: yellow
+paramEnumRange.chpl:71: warning: blue
 red
 orange
 yellow
@@ -66,3 +70,7 @@ green
 blue
 yellow
 red
+---
+red
+yellow
+blue
