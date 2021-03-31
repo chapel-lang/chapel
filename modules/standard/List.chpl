@@ -1778,7 +1778,7 @@ module List {
     :return: `true` if the contents of two lists are equal.
     :rtype: `bool`
   */
-  operator ==(a: list(?t, ?), b: list(t, ?)): bool {
+  operator list.==(a: list(?t, ?), b: list(t, ?)): bool {
     if a.size != b.size then
       return false;
 
