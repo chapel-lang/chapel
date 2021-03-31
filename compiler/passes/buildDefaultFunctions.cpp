@@ -1391,7 +1391,7 @@ static void buildOrderToEnumFunction(EnumType* et, bool paramVersion) {
   const char * errorString = "enumerated type out of bounds in chpl__orderToEnum()";
   CondStmt* otherwise =
     new CondStmt(new CallExpr(PRIM_WHEN),
-                 new BlockStmt(new CallExpr("halt",
+                 new BlockStmt(new CallExpr(paramVersion ? "compilerError" : "halt",
                                             new_StringSymbol(errorString))));
   whenstmts->insertAtTail(otherwise);
   fn->insertAtTail(buildSelectStmt(new SymExpr(arg1), whenstmts));
