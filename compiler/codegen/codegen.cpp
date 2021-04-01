@@ -1107,8 +1107,8 @@ static void genConfigGlobalsAndAbout() {
   genGlobalString("chpl_compileCommand", compileCommand);
   genGlobalString("chpl_compileVersion", compileVersion);
   genGlobalString("chpl_compileDirectory", getCwd());
-  if (strcmp(saveCDir, "") != 0) {
-    char *actualPath = realpath(saveCDir, NULL);
+  if (strcmp(saveCDir.c_str(), "") != 0) {
+    char *actualPath = realpath(saveCDir.c_str(), NULL);
     genGlobalString("chpl_saveCDir", actualPath);
   } else {
     genGlobalString("chpl_saveCDir", "");
@@ -2028,40 +2028,39 @@ static const char* generateFileName(ChainHashMap<char*, StringHashFns, int>& fil
   // with case-insensitivity taken into account
 
   // create the lowercase filename
-  char lowerFilename[FILENAME_MAX];
-  sprintf(lowerFilename, "%s", currentModuleName);
-  for (unsigned int i=0; i<strlen(lowerFilename); i++) {
+  std::string lowerFilename = std::string(currentModuleName);
+  for (unsigned int i=0; i<lowerFilename.length(); i++) {
     lowerFilename[i] = tolower(lowerFilename[i]);
   }
 
   // create a filename by bumping a version number until we get a
   // filename we haven't seen before
-  char filename[FILENAME_MAX];
-  sprintf(filename, "%s", lowerFilename);
+  std::string filename = lowerFilename;
   int version = 1;
-  while (filenames.get(filename)) {
+  while (filenames.get(&filename[0])) {
     version++;
-    int wanted_to_write = snprintf(filename, sizeof(filename), "%s%d",
-                                   lowerFilename, version);
+    int wanted_to_write = snprintf(NULL, 0, "%s%d",
+                                   lowerFilename.c_str(), version);
     if (wanted_to_write < 0) {
       USR_FATAL("character encoding error while generating file name");
-    } else if ((size_t)wanted_to_write >= sizeof(filename)) {
+    } else if ((size_t)wanted_to_write >= FILENAME_MAX) {
       USR_FATAL("module name '%s' is too long to be the basis for a file name",
                 currentModuleName);
     }
+    filename = lowerFilename + std::to_string(version);
   }
-  filenames.put(filename, 1);
+  filenames.put(&filename[0], 1);
 
   // build the real filename using that version number -- preserves
   // case by default by going back to currentModule->name rather
   // than using the lowercase filename
   if (version == 1) {
-    sprintf(filename, "%s", currentModuleName);
+    filename = std::string(currentModuleName);
   } else {
-    sprintf(filename, "%s%d", currentModuleName, version);
+    filename = std::string(currentModuleName) + std::to_string(version);
   }
 
-  name = astr(filename);
+  name = astr(filename.c_str());
   return name;
 }
 
@@ -2179,38 +2178,36 @@ static void setupDefaultFilenames() {
     // and just the main module name in normal compilation.
     if (fLibraryCompile) {
       // If the header name isn't set either, don't use the prefix version
-      if (libmodeHeadername[0] == '\0') {
+      if (libmodeHeadername.empty()) {
         // copy from that slash onwards into the libmodeHeadername,
         // saving space for a `\0` terminator
-        if (strlen(filename) >= sizeof(libmodeHeadername)) {
+        if (strlen(filename) > FILENAME_MAX) {
           INT_FATAL("input filename exceeds header filename buffer size");
         }
-        strncpy(libmodeHeadername, filename, sizeof(libmodeHeadername)-1);
-        libmodeHeadername[sizeof(libmodeHeadername)-1] = '\0';
+        libmodeHeadername = std::string(filename, std::min((int)strlen(filename), (int)FILENAME_MAX));
         // remove the filename extension from the library header name.
-        char* lastDot = strrchr(libmodeHeadername, '.');
-        if (lastDot == NULL) {
+        std::string::size_type lastDotPos=libmodeHeadername.rfind('.');
+        if (lastDotPos == std::string::npos) {
           INT_FATAL(mainMod,
                     "main module filename is missing its extension: %s\n",
-                    libmodeHeadername);
+                    libmodeHeadername.c_str());
         }
-        *lastDot = '\0';
+        libmodeHeadername.erase(lastDotPos);
       }
       if (strlen(filename) >= FILENAME_MAX - 2) {
         INT_FATAL("input filename exceeds executable filename buffer size");
       }
       executableFilename += std::string(filename);
 
-      if (fLibraryPython && pythonModulename[0] == '\0') {
-        strncpy(pythonModulename, filename, sizeof(pythonModulename)-1);
-        pythonModulename[sizeof(pythonModulename)-1] = '\0';
-        char* lastDot = strrchr(pythonModulename, '.');
-        if (lastDot == NULL) {
+      if (fLibraryPython && pythonModulename.empty()) {
+        pythonModulename = std::string(filename);
+        std::string::size_type lastDotPos=pythonModulename.rfind('.');
+        if (lastDotPos == std::string::npos) {
           INT_FATAL(mainMod,
                     "main module filename is missing its extension: %s\n",
-                    pythonModulename);
+                    pythonModulename.c_str());
         }
-        *lastDot = '\0';
+        pythonModulename.erase(lastDotPos);
       }
 
     } else {
@@ -2234,16 +2231,14 @@ static void setupDefaultFilenames() {
 
   // If we're in library mode and the executable name was set but the header
   // name wasn't, use the executable name for the header name as well
-  if (fLibraryCompile && libmodeHeadername[0] == '\0') {
-    strncpy(libmodeHeadername, executableFilename.c_str(), sizeof(libmodeHeadername)-1);
-    libmodeHeadername[sizeof(libmodeHeadername)-1] = '\0';
+  if (fLibraryCompile && libmodeHeadername.empty()) {
+    libmodeHeadername = executableFilename;
   }
 
   // If we're in library mode and the library name was explicitly set, use that
   // name for the python module.
-  if (fLibraryCompile && fLibraryPython && pythonModulename[0] == '\0') {
-    strncpy(pythonModulename, executableFilename.c_str(), sizeof(pythonModulename)-1);
-    pythonModulename[sizeof(pythonModulename)-1] = '\0';
+  if (fLibraryCompile && fLibraryPython && pythonModulename.empty()) {
+    pythonModulename = executableFilename;
   }
 }
 
@@ -2398,10 +2393,9 @@ void codegen() {
           fileinfo modulefile;
           openCFile(&modulefile, filename, "c");
           int modulePathLen = strlen(astr(modulefile.pathname));
-          char path[FILENAME_MAX];
-          strncpy(path, astr(modulefile.pathname), modulePathLen-2);
-          path[modulePathLen-2]='\0';
-          userFileName.push_back(astr(path));
+          std::string path;
+          path = std::string(astr(modulefile.pathname), modulePathLen-2);
+          userFileName.push_back(astr(path.c_str()));
           closeCFile(&modulefile);
         }
       }

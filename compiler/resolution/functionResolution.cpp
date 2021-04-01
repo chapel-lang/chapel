@@ -9976,9 +9976,10 @@ static void printUnusedFunctions() {
    checking.
 */
 #ifdef PRINT_UNUSED_FNS_TO_FILE
-  char fname[FILENAME_MAX+1];
-  snprintf(fname, FILENAME_MAX, "%s.%s", executableFilename.c_str(), "unused");
-  FILE* outFile = fopen(fname, "w");
+  std::string fname;
+  fname = executableFilename;
+  fname += "unused";
+  FILE* outFile = fopen(fname.c_str(), "w");
 #else
   FILE* outFile = stdout;
 #endif

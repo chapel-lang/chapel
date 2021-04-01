@@ -64,9 +64,9 @@ char CHPL_HOME[FILENAME_MAX+1] = "";
 
 // These are more specific than CHPL_HOME, to work in
 // settings where Chapel is installed.
-char CHPL_RUNTIME_LIB[FILENAME_MAX+1] = "";
-char CHPL_RUNTIME_INCL[FILENAME_MAX+1] = "";
-char CHPL_THIRD_PARTY[FILENAME_MAX+1] = "";
+std::string CHPL_RUNTIME_LIB = "";
+std::string CHPL_RUNTIME_INCL = "";
+std::string CHPL_THIRD_PARTY = "";
 
 const char* CHPL_HOST_PLATFORM = NULL;
 const char* CHPL_HOST_ARCH = NULL;
@@ -104,8 +104,8 @@ const char* CHPL_RUNTIME_SUBDIR = NULL;
 const char* CHPL_LAUNCHER_SUBDIR = NULL;
 const char* CHPL_LLVM_UNIQ_CFG_PATH = NULL;
 
-static char libraryFilename[FILENAME_MAX] = "";
-static char incFilename[FILENAME_MAX] = "";
+static std::string libraryFilename = "";
+static std::string incFilename = "";
 static bool fBaseline = false;
 
 // TODO: Should --library automatically generate all supported
@@ -318,27 +318,30 @@ static bool isMaybeChplHome(const char* path)
 
 static void setChplHomeDerivedVars() {
   int rc;
-  rc = snprintf(CHPL_RUNTIME_LIB, FILENAME_MAX, "%s/%s",
-                CHPL_HOME, "lib");
+  rc = strlen(CHPL_HOME) + strlen("/lib");
   if ( rc >= FILENAME_MAX ) USR_FATAL("CHPL_HOME pathname too long");
-  rc = snprintf(CHPL_RUNTIME_INCL, FILENAME_MAX, "%s/%s",
-                CHPL_HOME, "runtime/include");
+  CHPL_RUNTIME_LIB = std::string(CHPL_HOME);
+  CHPL_RUNTIME_LIB += "/lib";
+  rc = strlen(CHPL_HOME) + strlen("/runtime/include");
   if ( rc >= FILENAME_MAX ) USR_FATAL("CHPL_HOME pathname too long");
-  rc = snprintf(CHPL_THIRD_PARTY, FILENAME_MAX, "%s/%s",
-                CHPL_HOME, "third-party");
+  CHPL_RUNTIME_INCL = std::string(CHPL_HOME);
+  CHPL_RUNTIME_INCL += "/runtime/include";
+  rc = strlen(CHPL_HOME) + strlen("/third-party");
   if ( rc >= FILENAME_MAX ) USR_FATAL("CHPL_HOME pathname too long");
+  CHPL_THIRD_PARTY = std::string(CHPL_HOME);
+  CHPL_THIRD_PARTY += "/third-party";
 }
 
 static void saveChplHomeDerivedInEnv() {
   int rc;
-  envMap["CHPL_RUNTIME_LIB"] = strdup(CHPL_RUNTIME_LIB);
-  rc = setenv("CHPL_RUNTIME_LIB", CHPL_RUNTIME_LIB, 1);
+  envMap["CHPL_RUNTIME_LIB"] = strdup(CHPL_RUNTIME_LIB.c_str());
+  rc = setenv("CHPL_RUNTIME_LIB", CHPL_RUNTIME_LIB.c_str(), 1);
   if( rc ) USR_FATAL("Could not setenv CHPL_RUNTIME_LIB");
-  envMap["CHPL_RUNTIME_INCL"] = strdup(CHPL_RUNTIME_INCL);
-  rc = setenv("CHPL_RUNTIME_INCL", CHPL_RUNTIME_INCL, 1);
+  envMap["CHPL_RUNTIME_INCL"] = strdup(CHPL_RUNTIME_INCL.c_str());
+  rc = setenv("CHPL_RUNTIME_INCL", CHPL_RUNTIME_INCL.c_str(), 1);
   if( rc ) USR_FATAL("Could not setenv CHPL_RUNTIME_INCL");
-  envMap["CHPL_THIRD_PARTY"] = strdup(CHPL_THIRD_PARTY);
-  rc = setenv("CHPL_THIRD_PARTY", CHPL_THIRD_PARTY, 1);
+  envMap["CHPL_THIRD_PARTY"] = strdup(CHPL_THIRD_PARTY.c_str());
+  rc = setenv("CHPL_THIRD_PARTY", CHPL_THIRD_PARTY.c_str(), 1);
   if( rc ) USR_FATAL("Could not setenv CHPL_THIRD_PARTY");
 }
 
@@ -405,19 +408,20 @@ static void setupChplHome(const char* argv0) {
 
     // Check in a default location too
     if( guess == NULL ) {
-      char TEST_HOME[FILENAME_MAX+1] = "";
+      std::string TEST_HOME = "";
 
       // Check for Chapel libraries at installed prefix
       // e.g. /usr/share/chapel/<vers>
       int rc;
-      rc = snprintf(TEST_HOME, FILENAME_MAX, "%s/%s/%s",
-                  get_configured_prefix(), // e.g. /usr
-                  "share/chapel",
-                  majMinorVers);
+      TEST_HOME = std::string(get_configured_prefix());
+      TEST_HOME += "/";
+      TEST_HOME += "share/chapel/";
+      TEST_HOME += std::string(majMinorVers);
+      rc = TEST_HOME.length();
       if ( rc >= FILENAME_MAX ) USR_FATAL("Installed pathname too long");
 
-      if( isMaybeChplHome(TEST_HOME) ) {
-        guess = strdup(TEST_HOME);
+      if( isMaybeChplHome(TEST_HOME.c_str()) ) {
+        guess = strdup(TEST_HOME.c_str());
 
         installed = true;
       }
@@ -455,25 +459,26 @@ static void setupChplHome(const char* argv0) {
   if( installed ) {
     int rc;
     // E.g. /usr/lib/chapel/1.16/runtime/lib
-    rc = snprintf(CHPL_RUNTIME_LIB, FILENAME_MAX, "%s/%s/%s/%s",
-                  get_configured_prefix(), // e.g. /usr
-                  "/lib/chapel",
-                  majMinorVers,
-                  "runtime/lib");
+    rc = strlen(get_configured_prefix()) + strlen("//lib/chapel/") + strlen(majMinorVers) + strlen("/runtime/lib");
     if ( rc >= FILENAME_MAX ) USR_FATAL("Installed pathname too long");
-    rc = snprintf(CHPL_RUNTIME_INCL, FILENAME_MAX, "%s/%s/%s/%s",
-                  get_configured_prefix(), // e.g. /usr
-                  "/lib/chapel",
-                  majMinorVers,
-                  "runtime/include");
+    CHPL_RUNTIME_LIB = std::string(get_configured_prefix());
+    CHPL_RUNTIME_LIB += "//lib/chapel/";
+    CHPL_RUNTIME_LIB += majMinorVers;
+    CHPL_RUNTIME_LIB += "/runtime/lib";
+    rc = strlen(get_configured_prefix()) + strlen("//lib/chapel/") + 
+        strlen(majMinorVers) + strlen("/runtime/include");
     if ( rc >= FILENAME_MAX ) USR_FATAL("Installed pathname too long");
-    rc = snprintf(CHPL_THIRD_PARTY, FILENAME_MAX, "%s/%s/%s/%s",
-                  get_configured_prefix(), // e.g. /usr
-                  "/lib/chapel",
-                  majMinorVers,
-                  "third-party");
+    CHPL_RUNTIME_INCL = std::string(get_configured_prefix());
+    CHPL_RUNTIME_INCL += "//lib/chapel/";
+    CHPL_RUNTIME_INCL += majMinorVers;
+    CHPL_RUNTIME_INCL += "/runtime/include";
+    rc = strlen(get_configured_prefix()) + strlen("//lib/chapel") + 
+          strlen(majMinorVers) + strlen("/third-party");
     if ( rc >= FILENAME_MAX ) USR_FATAL("Installed pathname too long");
-
+    CHPL_THIRD_PARTY = std::string(get_configured_prefix());
+    CHPL_THIRD_PARTY += "//lib/chapel/";
+    CHPL_THIRD_PARTY += majMinorVers;
+    CHPL_THIRD_PARTY += "/third-party";
   } else {
     setChplHomeDerivedVars();
   }
@@ -484,17 +489,17 @@ static void setupChplHome(const char* argv0) {
     saveChplHomeDerivedInEnv();
 
     if (installed) {
-      char CHPL_CONFIG[FILENAME_MAX+1] = "";
+      std::string CHPL_CONFIG = "";
       // Set an extra default CHPL_CONFIG directory
-      rc = snprintf(CHPL_CONFIG, FILENAME_MAX, "%s/%s/%s",
-                    get_configured_prefix(), // e.g. /usr
-                    "/lib/chapel",
-                    majMinorVers);
+      CHPL_CONFIG = std::string(get_configured_prefix());
+      CHPL_CONFIG += "//lib/chapel";
+      CHPL_CONFIG += std::string(majMinorVers);
+      rc = CHPL_CONFIG.length();
       if ( rc >= FILENAME_MAX ) USR_FATAL("Installed pathname too long");
 
       // Don't overwrite CHPL_CONFIG so that a user-specified
       // one would be left alone.
-      rc = setenv("CHPL_CONFIG", CHPL_CONFIG, 0);
+      rc = setenv("CHPL_CONFIG", CHPL_CONFIG.c_str(), 0);
       if( rc ) USR_FATAL("Could not setenv CHPL_CONFIG");
     }
   }
@@ -622,15 +627,15 @@ static void setLLVMFlags(const ArgumentDescription* desc, const char* arg) {
 
 
 static void handleLibrary(const ArgumentDescription* desc, const char* arg_unused) {
- addLibFile(libraryFilename);
+ addLibFile(libraryFilename.c_str());
 }
 
 static void handleLibPath(const ArgumentDescription* desc, const char* arg_unused) {
-  addLibPath(libraryFilename);
+  addLibPath(libraryFilename.c_str());
 }
 
 static void handleIncDir(const ArgumentDescription* desc, const char* arg_unused) {
-  addIncInfo(incFilename);
+  addIncInfo(incFilename.c_str());
 }
 
 static void runCompilerInGDB(int argc, char* argv[]) {
@@ -687,17 +692,17 @@ static void verifySaveCDir(const ArgumentDescription* desc, const char* unused) 
   if (saveCDir[0] == '-') {
     USR_FATAL("--savec takes a directory name as its argument\n"
               "       (you specified '%s', assumed to be another flag)",
-              saveCDir);
+              saveCDir.c_str());
   }
 }
 
 static void setLibmode(const ArgumentDescription* desc, const char* unused);
 
 static void verifySaveLibDir(const ArgumentDescription* desc, const char* unused) {
-  if (libDir[0] == '-') {
+  if (!libDir.empty() && libDir[0] == '-') {
     USR_FATAL("--library-dir takes a directory name as its argument\n"
               "       (you specified '%s', assumed to be another flag)",
-              libDir);
+              libDir.c_str());
   }
   setLibmode(desc, unused);
 }
@@ -982,16 +987,16 @@ static ArgumentDescription arg_desc[] = {
  {"cpp-lines", ' ', NULL, "[Don't] Generate #line annotations", "N", &printCppLineno, "CHPL_CG_CPP_LINES", noteCppLinesSet},
  {"max-c-ident-len", ' ', NULL, "Maximum length of identifiers in generated code, 0 for unlimited", "I", &fMaxCIdentLen, "CHPL_MAX_C_IDENT_LEN", NULL},
  {"munge-user-idents", ' ', NULL, "[Don't] Munge user identifiers to avoid naming conflicts with external code", "N", &fMungeUserIdents, "CHPL_MUNGE_USER_IDENTS"},
- {"savec", ' ', "<directory>", "Save generated C code in directory", "P", saveCDir, "CHPL_SAVEC_DIR", verifySaveCDir},
+ {"savec", ' ', "<directory>", "Save generated C code in directory", "R", &saveCDir, "CHPL_SAVEC_DIR", verifySaveCDir},
 
  {"", ' ', NULL, "C Code Compilation Options", NULL, NULL, NULL, NULL},
  {"ccflags", ' ', "<flags>", "Back-end C compiler flags (can be specified multiple times)", "S", NULL, "CHPL_CC_FLAGS", setCCFlags},
  {"debug", 'g', NULL, "[Don't] Support debugging of generated C code", "N", &debugCCode, "CHPL_DEBUG", setChapelDebug},
  {"dynamic", ' ', NULL, "Generate a dynamically linked binary", "F", &fLinkStyle, NULL, setDynamicLink},
- {"hdr-search-path", 'I', "<directory>", "C header search path", "P", incFilename, "CHPL_INCLUDE_PATH", handleIncDir},
+ {"hdr-search-path", 'I', "<directory>", "C header search path", "R", &incFilename, "CHPL_INCLUDE_PATH", handleIncDir},
  {"ldflags", ' ', "<flags>", "Back-end C linker flags (can be specified multiple times)", "S", NULL, "CHPL_LD_FLAGS", setLDFlags},
- {"lib-linkage", 'l', "<library>", "C library linkage", "P", libraryFilename, "CHPL_LIB_NAME", handleLibrary},
- {"lib-search-path", 'L', "<directory>", "C library search path", "P", libraryFilename, "CHPL_LIB_PATH", handleLibPath},
+ {"lib-linkage", 'l', "<library>", "C library linkage", "R", &libraryFilename, "CHPL_LIB_NAME", handleLibrary},
+ {"lib-search-path", 'L', "<directory>", "C library search path", "R", &libraryFilename, "CHPL_LIB_PATH", handleLibPath},
  {"optimize", 'O', NULL, "[Don't] Optimize generated C code", "N", &optimizeCCode, "CHPL_OPTIMIZE", NULL},
  {"specialize", ' ', NULL, "[Don't] Specialize generated C code for CHPL_TARGET_CPU", "N", &specializeCCode, "CHPL_SPECIALIZE", NULL},
  {"output", 'o', "<filename>", "Name output executable", "R", &executableFilename, "CHPL_EXE_NAME", NULL},
@@ -1060,11 +1065,11 @@ static ArgumentDescription arg_desc[] = {
  {"html-user", ' ', NULL, "Dump IR in HTML for user module(s) only (toggle)", "T", &fdump_html, "CHPL_HTML_USER", setHtmlUser},
  {"html-wrap-lines", ' ', NULL, "[Don't] allow wrapping lines in HTML dumps", "N", &fdump_html_wrap_lines, "CHPL_HTML_WRAP_LINES", NULL},
  {"html-print-block-ids", ' ', NULL, "[Don't] print block IDs in HTML dumps", "N", &fdump_html_print_block_IDs, "CHPL_HTML_PRINT_BLOCK_IDS", NULL},
- {"html-chpl-home", ' ', NULL, "Path to use instead of CHPL_HOME in HTML dumps", "P", fdump_html_chpl_home, "CHPL_HTML_CHPL_HOME", NULL},
+ {"html-chpl-home", ' ', NULL, "Path to use instead of CHPL_HOME in HTML dumps", "R", &fdump_html_chpl_home, "CHPL_HTML_CHPL_HOME", NULL},
  {"log", ' ', NULL, "Dump IR in text format.", "F", &fLog, "CHPL_LOG", NULL},
- {"log-dir", ' ', "<path>", "Specify log directory", "P", log_dir, "CHPL_LOG_DIR", setLogDir},
+ {"log-dir", ' ', "<path>", "Specify log directory", "R", &log_dir, "CHPL_LOG_DIR", setLogDir},
  {"log-ids", ' ', NULL, "[Don't] include BaseAST::ids in log files", "N", &fLogIds, "CHPL_LOG_IDS", NULL},
- {"log-module", ' ', "<module-name>", "Restrict IR dump to the named module", "S256", log_module, "CHPL_LOG_MODULE", NULL},
+ {"log-module", ' ', "<module-name>", "Restrict IR dump to the named module", "R256", &log_module, "CHPL_LOG_MODULE", NULL},
  {"log-pass", ' ', "<passname>", "Restrict IR dump to the named pass. Can be specified multiple times", "S", NULL, "CHPL_LOG_PASS", setLogPass},
  {"log-node", ' ', NULL, "Dump IR using AstDumpToNode", "F", &fLogNode, "CHPL_LOG_NODE", NULL},
 // {"log-symbol", ' ', "<symbol-name>", "Restrict IR dump to the named symbol(s)", "S256", log_symbol, "CHPL_LOG_SYMBOL", NULL}, // This doesn't work yet.
@@ -1117,17 +1122,17 @@ static ArgumentDescription arg_desc[] = {
  {"ignore-errors-for-pass", ' ', NULL, "[Don't] attempt to ignore errors until the end of the pass in which they occur", "N", &ignore_errors_for_pass, "CHPL_IGNORE_ERRORS_FOR_PASS", NULL},
  {"infer-const-refs", ' ', NULL, "Enable [disable] inferring const refs", "n", &fNoInferConstRefs, NULL, NULL},
  {"library", ' ', NULL, "Generate a Chapel library file", "F", &fLibraryCompile, NULL, NULL},
- {"library-dir", ' ', "<directory>", "Save generated library helper files in directory", "P", libDir, "CHPL_LIB_SAVE_DIR", verifySaveLibDir},
- {"library-header", ' ', "<filename>", "Name generated header file", "P", libmodeHeadername, NULL, setLibmode},
+ {"library-dir", ' ', "<directory>", "Save generated library helper files in directory", "R", &libDir, "CHPL_LIB_SAVE_DIR", verifySaveLibDir},
+ {"library-header", ' ', "<filename>", "Name generated header file", "R", &libmodeHeadername, NULL, setLibmode},
  {"library-makefile", ' ', NULL, "Generate a makefile to help use the generated library", "F", &fLibraryMakefile, NULL, setLibmode},
  {"library-fortran", ' ', NULL, "Generate a module compatible with Fortran", "F", &fLibraryFortran, NULL, setLibmode},
- {"library-fortran-name", ' ', "<modulename>", "Name generated Fortran module", "P", fortranModulename, NULL, setFortranAndLibmode},
+ {"library-fortran-name", ' ', "<modulename>", "Name generated Fortran module", "R", &fortranModulename, NULL, setFortranAndLibmode},
  {"library-python", ' ', NULL, "Generate a module compatible with Python", "F", &fLibraryPython, NULL, setLibmode},
- {"library-python-name", ' ', "<filename>", "Name generated Python module", "P", pythonModulename, NULL, setPythonAndLibmode},
+ {"library-python-name", ' ', "<filename>", "Name generated Python module", "R", &pythonModulename, NULL, setPythonAndLibmode},
  {"library-ml-debug", ' ', NULL, "Enable [disable] generation of debug messages in multi-locale libraries", "N", &fMultiLocaleLibraryDebug, NULL, NULL},
  {"localize-global-consts", ' ', NULL, "Enable [disable] optimization of global constants", "n", &fNoGlobalConstOpt, "CHPL_DISABLE_GLOBAL_CONST_OPT", NULL},
  {"local-temp-names", ' ', NULL, "[Don't] Generate locally-unique temp names", "N", &localTempNames, "CHPL_LOCAL_TEMP_NAMES", NULL},
- {"log-deleted-ids-to", ' ', "<filename>", "Log AST id and memory address of each deleted node to the specified file", "P", deletedIdFilename, "CHPL_DELETED_ID_FILENAME", NULL},
+ {"log-deleted-ids-to", ' ', "<filename>", "Log AST id and memory address of each deleted node to the specified file", "R", &deletedIdFilename, "CHPL_DELETED_ID_FILENAME", NULL},
  {"memory-frees", ' ', NULL, "Enable [disable] memory frees in the generated code", "n", &fNoMemoryFrees, "CHPL_DISABLE_MEMORY_FREES", NULL},
  {"override-checking", ' ', NULL, "[Don't] check use of override keyword", "N", &fOverrideChecking, NULL, NULL},
  {"prepend-internal-module-dir", ' ', "<directory>", "Prepend directory to internal module search path", "P", NULL, NULL, addInternalModulePath},
@@ -1210,20 +1215,22 @@ static void printStuff(const char* argv0) {
   }
 
   if( fPrintChplSettings ) {
-    char buf[FILENAME_MAX+1] = "";
+    std::string buf = "";
     printf("CHPL_HOME: %s\n", CHPL_HOME);
-    printf("CHPL_RUNTIME_LIB: %s\n", CHPL_RUNTIME_LIB);
-    printf("CHPL_RUNTIME_INCL: %s\n", CHPL_RUNTIME_INCL);
-    printf("CHPL_THIRD_PARTY: %s\n", CHPL_THIRD_PARTY);
+    printf("CHPL_RUNTIME_LIB: %s\n", CHPL_RUNTIME_LIB.c_str());
+    printf("CHPL_RUNTIME_INCL: %s\n", CHPL_RUNTIME_INCL.c_str());
+    printf("CHPL_THIRD_PARTY: %s\n", CHPL_THIRD_PARTY.c_str());
     printf("\n");
-    int wanted_to_write = snprintf(buf, sizeof(buf),
+    int wanted_to_write = snprintf(NULL, 0,
                                    "%s/util/printchplenv --all", CHPL_HOME);
     if (wanted_to_write < 0) {
       USR_FATAL("character encoding error in CHPL_HOME path name");
-    } else if ((size_t)wanted_to_write >= sizeof(buf)) {
+    } else if ((size_t)wanted_to_write > FILENAME_MAX) {
       USR_FATAL("CHPL_HOME path name is too long");
     }
-    int status = mysystem(buf, "running printchplenv", false);
+    buf = std::string(CHPL_HOME);
+    buf += "/util/printchplenv --all";
+    int status = mysystem(buf.c_str(), "running printchplenv", false);
     clean_exit(status);
   }
 

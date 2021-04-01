@@ -57,10 +57,10 @@
 #include <sys/stat.h>
 
 std::string executableFilename            = "";
-char libmodeHeadername[FILENAME_MAX + 1]  = "";
-char fortranModulename[FILENAME_MAX + 1]  = "";
-char pythonModulename[FILENAME_MAX + 1]   = "";
-char saveCDir[FILENAME_MAX + 1]           = "";
+std::string libmodeHeadername             = "";
+std::string fortranModulename             = "";
+std::string pythonModulename              = "";
+std::string saveCDir                      = "";
 
 std::string ccflags;
 std::string ldflags;
@@ -190,15 +190,15 @@ const char* makeTempDir(const char* dirPrefix) {
 }
 
 static void ensureTmpDirExists() {
-  if (saveCDir[0] == '\0') {
+  if (saveCDir.empty()) {
     if (tmpdirname == NULL) {
       tmpdirname = makeTempDir("chpl-");
       intDirName = tmpdirname;
     }
   } else {
-    if (intDirName != saveCDir) {
-      intDirName = saveCDir;
-      ensureDirExists(saveCDir, "ensuring --savec directory exists");
+    if (strcmp(saveCDir.c_str(), intDirName) != 0) {
+      intDirName = saveCDir.c_str();
+      ensureDirExists(saveCDir.c_str(), "ensuring --savec directory exists");
     }
   }
 }
@@ -273,11 +273,10 @@ const char* getDirectory(const char* filename) {
   if (filenamebase == NULL) {
     return astr(".");
   } else {
-    char dir[FILENAME_MAX];
+    std::string dir;
     const int len = filenamebase - filename;
-    strncpy(dir, filename, len);
-    dir[len] = '\0';
-    return astr(dir);
+    dir = std::string(filename, len);
+    return astr(dir.c_str());
   }
 }
 
@@ -356,7 +355,7 @@ void closeCFile(fileinfo* fi, bool beautifyIt) {
   // beautify without also improving indentation and such which could
   // save some time.
   //
-  if (beautifyIt && (saveCDir[0] || printCppLineno))
+  if (beautifyIt && (!saveCDir.empty() || printCppLineno))
     beautify(fi);
 }
 
@@ -711,9 +710,9 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
 
   // Capture different compiler directories.
   fprintf(makefile.fptr, "CHPL_MAKE_HOME = %s\n\n", CHPL_HOME);
-  fprintf(makefile.fptr, "CHPL_MAKE_RUNTIME_LIB = %s\n\n", CHPL_RUNTIME_LIB);
-  fprintf(makefile.fptr, "CHPL_MAKE_RUNTIME_INCL = %s\n\n", CHPL_RUNTIME_INCL);
-  fprintf(makefile.fptr, "CHPL_MAKE_THIRD_PARTY = %s\n\n", CHPL_THIRD_PARTY);
+  fprintf(makefile.fptr, "CHPL_MAKE_RUNTIME_LIB = %s\n\n", CHPL_RUNTIME_LIB.c_str());
+  fprintf(makefile.fptr, "CHPL_MAKE_RUNTIME_INCL = %s\n\n", CHPL_RUNTIME_INCL.c_str());
+  fprintf(makefile.fptr, "CHPL_MAKE_THIRD_PARTY = %s\n\n", CHPL_THIRD_PARTY.c_str());
   fprintf(makefile.fptr, "TMPDIRNAME = %s\n\n", tmpDirName);
 
   // Store chapel environment variables in a cache.
@@ -736,7 +735,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
   if (fLibraryCompile) {
 
     ensureLibDirExists();
-    fprintf(makefile.fptr, "BINNAME = %s/", libDir);
+    fprintf(makefile.fptr, "BINNAME = %s/", libDir.c_str());
     if (!startsWithLib) { fprintf(makefile.fptr, "lib"); }
     fprintf(makefile.fptr, "%s%s\n\n", executableFilename.c_str(), exeExt);
 
@@ -843,7 +842,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
 
   // Block of code for generating TAGS command, developer convenience.
   fprintf(makefile.fptr, "TAGS_COMMAND = ");
-  if (developer && saveCDir[0] && !printCppLineno) {
+  if (developer && !saveCDir.empty() && !printCppLineno) {
     fprintf(makefile.fptr,
             "-@which $(CHPL_TAGS_UTIL) > /dev/null 2>&1 && "
             "test -f $(CHPL_MAKE_HOME)/runtime/$(CHPL_TAGS_FILE) && "
@@ -851,7 +850,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
             "cp $(CHPL_MAKE_HOME)/runtime/$(CHPL_TAGS_FILE) . && "
             "$(CHPL_TAGS_UTIL) $(CHPL_TAGS_FLAGS) "
               "$(CHPL_TAGS_APPEND_FLAG) *.c *.h",
-            saveCDir);
+            saveCDir.c_str());
   }
 
   fprintf(makefile.fptr, "\n\n");
@@ -984,9 +983,9 @@ bool readArgsFromFile(std::string path, std::vector<std::string>& args,
 
 // Expands variables like $CHPL_HOME in the string
 void expandInstallationPaths(std::string& s) {
-  const char* tofix[] = {"$CHPL_RUNTIME_LIB", CHPL_RUNTIME_LIB,
-                         "$CHPL_RUNTIME_INCL", CHPL_RUNTIME_INCL,
-                         "$CHPL_THIRD_PARTY", CHPL_THIRD_PARTY,
+  const char* tofix[] = {"$CHPL_RUNTIME_LIB", CHPL_RUNTIME_LIB.c_str(),
+                         "$CHPL_RUNTIME_INCL", CHPL_RUNTIME_INCL.c_str(),
+                         "$CHPL_THIRD_PARTY", CHPL_THIRD_PARTY.c_str(),
                          "$CHPL_HOME", CHPL_HOME,
                          NULL};
 

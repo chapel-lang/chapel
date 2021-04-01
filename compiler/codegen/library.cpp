@@ -32,7 +32,7 @@
 
 std::map<Symbol*, TypeSymbol*> exportedArrayElementType;
 
-char libDir[FILENAME_MAX + 1]  = "";
+std::string libDir  = "";
 std::string pxdName = "";
 
 // TypeSymbol -> (pxdName, pyxName)  Will be "" if the cname should be used
@@ -51,7 +51,7 @@ void codegen_library_header(std::vector<FnSymbol*> functions) {
 
     // Name the generated header file after the executable (and assume any
     // modifications to it have already happened)
-    openLibraryHelperFile(&libhdrfile, libmodeHeadername, "h");
+    openLibraryHelperFile(&libhdrfile, libmodeHeadername.c_str(), "h");
     // SIMPLIFYING ASSUMPTION: not handling LLVM just yet.  If were to, would
     // probably put assignment to gChplCompilationConfig here
 
@@ -150,9 +150,9 @@ void codegen_library_makefile() {
 
   // Save the CHPL_HOME location so it can be used in the other makefile
   // variables instead of letting them be cluttered with its value
-  setupMakeEnvVars("CHPL_RUNTIME_LIB", CHPL_RUNTIME_LIB, makefile);
-  setupMakeEnvVars("CHPL_RUNTIME_INCL", CHPL_RUNTIME_INCL, makefile);
-  setupMakeEnvVars("CHPL_THIRD_PARTY", CHPL_THIRD_PARTY, makefile);
+  setupMakeEnvVars("CHPL_RUNTIME_LIB", CHPL_RUNTIME_LIB.c_str(), makefile);
+  setupMakeEnvVars("CHPL_RUNTIME_INCL", CHPL_RUNTIME_INCL.c_str(), makefile);
+  setupMakeEnvVars("CHPL_THIRD_PARTY", CHPL_THIRD_PARTY.c_str(), makefile);
   setupMakeEnvVars("CHPL_HOME", CHPL_HOME, makefile);
 
   printMakefileIncludes(makefile);
@@ -208,7 +208,7 @@ static void printMakefileIncludes(fileinfo makefile) {
 
   std::string includes = getCompilelineOption("includes-and-defines");
   fprintf(makefile.fptr, "CHPL_CFLAGS = -I%s %s",
-          libDir,
+          libDir.c_str(),
           cflags.c_str());
 
   if (requireIncludes != "") {
@@ -234,7 +234,7 @@ static void printMakefileLibraries(fileinfo makefile, std::string name) {
   std::string requires = getRequireLibraries();
 
   fprintf(makefile.fptr, "CHPL_LDFLAGS = -L%s %s",
-          libDir,
+          libDir.c_str(),
           libname.c_str());
 
   //
@@ -270,18 +270,18 @@ const char* getLibraryExtension() {
 }
 
 void ensureLibDirExists() {
-  if (libDir[0] == '\0') {
+  if (libDir.empty()) {
 
     //
     // When compiling Python, the default name of the directory where
     // generated library files are stored is as same as the Python
     // module name.
     //
-    const char* dir = fLibraryPython ? pythonModulename : "lib";
-    INT_ASSERT(strlen(dir) < sizeof(libDir));
-    strcpy(libDir, dir);
+    const char* dir = fLibraryPython ? pythonModulename.c_str() : "lib";
+    INT_ASSERT(strlen(dir) <= FILENAME_MAX);
+    libDir = std::string(dir);
   }
-  ensureDirExists(libDir, "ensuring --library-dir directory exists");
+  ensureDirExists(libDir.c_str(), "ensuring --library-dir directory exists");
 }
 
 void
@@ -292,7 +292,7 @@ openLibraryHelperFile(fileinfo* fi, const char* name, const char* ext) {
     fi->filename = astr(name);
 
   ensureLibDirExists();
-  fi->pathname = astr(libDir, "/", fi->filename);
+  fi->pathname = astr(libDir.c_str(), "/", fi->filename);
   openfile(fi, "w");
 }
 
@@ -446,8 +446,8 @@ void codegen_library_fortran(std::vector<FnSymbol*> functions) {
 }
 
 void makeFortranModule(std::vector<FnSymbol*> functions) {
-  const char* filename = fortranModulename[0] != '\0' ? fortranModulename
-                                                      : libmodeHeadername;
+  const char* filename = !fortranModulename.empty() ? fortranModulename.c_str()
+                                                      : libmodeHeadername.c_str();
   int indent = 0;
   fileinfo fort = { NULL, NULL, NULL };
 
@@ -494,7 +494,7 @@ static void makePXDFile(std::vector<FnSymbol*> functions) {
     // Get the permanent runtime definitions
     fprintf(pxd.fptr, "from chplrt cimport *\n\n");
 
-    fprintf(pxd.fptr, "cdef extern from \"%s.h\":\n", libmodeHeadername);
+    fprintf(pxd.fptr, "cdef extern from \"%s.h\":\n", libmodeHeadername.c_str());
 
     for_vector(FnSymbol, fn, functions) {
       if (isUserRoutine(fn)) {
@@ -516,7 +516,7 @@ static void makeOpaqueArrayClass();
 static void makePYXFile(std::vector<FnSymbol*> functions) {
   fileinfo pyx = { NULL, NULL, NULL };
 
-  openLibraryHelperFile(&pyx, pythonModulename, "pyx");
+  openLibraryHelperFile(&pyx, pythonModulename.c_str(), "pyx");
 
   if (pyx.fptr != NULL) {
     FILE* save_cfile = gGenInfo->cfile;
@@ -617,14 +617,14 @@ static void makePYXSetupFunctions(std::vector<FnSymbol*> moduleInits) {
             numLocalesType.c_str());
     fprintf(outfile,
             "\tcdef char** args = ['%s', '-nl', str(numLocales).encode()]\n",
-            libmodeHeadername);
+            libmodeHeadername.c_str());
     // TODO: is there a way to get the number of indices from args?
     fprintf(outfile, "\tchpl_library_init(3, args)\n");
 
   } else {
     // Define `chpl_setup` for single locale Python modules.
     fprintf(outfile, "def chpl_setup():\n");
-    fprintf(outfile, "\tcdef char** args = ['%s']\n", libmodeHeadername);
+    fprintf(outfile, "\tcdef char** args = ['%s']\n", libmodeHeadername.c_str());
     fprintf(outfile, "\tchpl_library_init(1, args)\n");
   }
 
@@ -668,7 +668,7 @@ static void makeOpaqueArrayClass() {
 static void makePYFile() {
   fileinfo py = { NULL, NULL, NULL };
 
-  openLibraryHelperFile(&py, pythonModulename, "py");
+  openLibraryHelperFile(&py, pythonModulename.c_str(), "py");
 
   if (py.fptr != NULL) {
     FILE* save_cfile = gGenInfo->cfile;
@@ -734,11 +734,11 @@ static void makePYFile() {
     fprintf(py.fptr, "]\n");
 
     // Cythonize me, Captain!
-    fprintf(py.fptr, "setup(name = '%s library',\n", pythonModulename);
+    fprintf(py.fptr, "setup(name = '%s library',\n", pythonModulename.c_str());
     fprintf(py.fptr, "\text_modules = cythonize(\n");
-    fprintf(py.fptr, "\t\tExtension(\"%s\",\n", pythonModulename);
+    fprintf(py.fptr, "\t\tExtension(\"%s\",\n", pythonModulename.c_str());
     fprintf(py.fptr, "\t\t\tinclude_dirs=[numpy.get_include()],\n");
-    fprintf(py.fptr, "\t\t\tsources=[\"%s.pyx\"],\n", pythonModulename);
+    fprintf(py.fptr, "\t\t\tsources=[\"%s.pyx\"],\n", pythonModulename.c_str());
     fprintf(py.fptr, "\t\t\tlibraries=[\"%s\"] + chpl_libraries + "
                      "[\"%s\"])))\n",
                      libname.c_str(), libname.c_str());
@@ -752,11 +752,11 @@ static void makePYFile() {
 static void makePYInitFile() {
   fileinfo py = { NULL, NULL, NULL };
 
-  char* path = dirHasFile(libDir, "__init__.py");
+  char* path = dirHasFile(libDir.c_str(), "__init__.py");
   if (path != NULL) {
     free(path);
     USR_WARN("Cannot generate %s/__init__.py because it would overwrite "
-             "existing file", libDir);
+             "existing file", libDir.c_str());
     return;
   }
  
@@ -783,12 +783,12 @@ static void makePYInitFile() {
     fprintf(py.fptr, "\n");
     fprintf(py.fptr, "import atexit\n");
     fprintf(py.fptr, "\n");
-    fprintf(py.fptr, "from %s.%s import *\n", libDir, pythonModulename);
+    fprintf(py.fptr, "from %s.%s import *\n", libDir.c_str(), pythonModulename.c_str());
     fprintf(py.fptr, "\n");
     fprintf(py.fptr, "# Register cleanup function to be called at "
                      "program exit.\n");
     fprintf(py.fptr, "atexit.register(%s.chpl_cleanup)\n",
-            pythonModulename);
+            pythonModulename.c_str());
 
     // Restore the previous file used for codegen.
     gGenInfo->cfile = save_cfile;

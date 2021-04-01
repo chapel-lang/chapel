@@ -3243,7 +3243,7 @@ void makeBinaryLLVM(void) {
   std::string opt1Filename = genIntermediateFilename("chpl__module-opt1.bc");
   std::string opt2Filename = genIntermediateFilename("chpl__module-opt2.bc");
 
-  if( saveCDir[0] != '\0' ) {
+  if( !saveCDir.empty() ) {
     std::error_code tmpErr;
     // Save the generated LLVM before optimization.
     ToolOutputFile output (preOptFilename.c_str(),
@@ -3356,7 +3356,7 @@ void makeBinaryLLVM(void) {
     // Run the optimizations now!
     mpm.run(*info->module);
 
-    if( saveCDir[0] != '\0' ) {
+    if( !saveCDir.empty() ) {
       // Save the generated LLVM after first chunk of optimization
       std::error_code tmpErr;
       ToolOutputFile output1 (opt1Filename.c_str(),
@@ -3393,7 +3393,7 @@ void makeBinaryLLVM(void) {
       // Run the optimizations now!
       mpm2.run(*info->module);
 
-      if( saveCDir[0] != '\0' ) {
+      if( !saveCDir.empty() ) {
         // Save the generated LLVM after second chunk of optimization
         std::error_code tmpErr;
         ToolOutputFile output2 (opt2Filename.c_str(),
@@ -3894,7 +3894,7 @@ static std::string getLibraryOutputPath() {
     libraryPrefix = "lib";
   }
 
-  result += std::string(libDir) + "/" + libraryPrefix + executableFilename;
+  result += libDir + "/" + libraryPrefix + executableFilename;
   result += std::string(exeExt);
 
   return result;

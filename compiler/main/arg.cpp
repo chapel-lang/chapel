@@ -194,6 +194,7 @@ void usage(const ArgumentState* state,
               printf("'%s'", (*(std::string*)desc[i].location).c_str());
             else
               printf("''");
+            break;
 
           case 'D':
             if (desc[i].location != 0)
@@ -488,7 +489,12 @@ static void ApplyValue(const ArgumentState*       state,
       }
       case 'R':
       {
-        (*((std::string*) location)) = std::string(value, std::min((int)strlen(value), (int)FILENAME_MAX));
+        if (strlen(desc->type)==1)
+          (*((std::string*) location)) = std::string(value, std::min((int)strlen(value), (int)FILENAME_MAX));
+        else{
+          long bufSize = strtol(desc->type + 1, NULL, 10);
+          (*((std::string*) location)) = std::string(value, std::min(bufSize, (long)FILENAME_MAX));
+        }
         break;
       }
     }
@@ -857,7 +863,7 @@ static void missing_arg(const char* currentFlag)
 * If the value is NULL     then the result is NULL                            *
 *                                                                             *
 * If the value is ""       then                                               *
-*    If the type is 'P' or 'S' (Path or String) then return ""                *
+*    If the type is 'P' or 'S' or 'R' (Path or String) then return ""                *
 *    otherwise return NULL                                                    *
 *                                                                             *
 * If the value is a string then the result is that string                     *

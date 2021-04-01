@@ -68,7 +68,7 @@ AstDump::~AstDump() {
 
 void AstDump::view(const char* passName, int passNum) {
   forv_Vec(ModuleSymbol, module, allModules) {
-    if (log_module[0] == '\0' || strcmp(log_module, module->name) == 0) {
+    if (log_module.empty() || strcmp(log_module.c_str(), module->name) == 0) {
       AstDump logger;
 
       if (logger.open(module, passName, passNum) == true) {
@@ -85,7 +85,7 @@ bool AstDump::open(const ModuleSymbol* module, const char* passName, int passNum
   snprintf(numBuf, 4, "%02d", passNum);
 
   mName      = astr(module->name, "_", numBuf, passName, ".ast");
-  mPath      = astr(log_dir, mName);
+  mPath      = astr(log_dir.c_str(), mName);
   mFP        = fopen(mPath, "w");
   mIndent    = 0;
   mNeedSpace = false;

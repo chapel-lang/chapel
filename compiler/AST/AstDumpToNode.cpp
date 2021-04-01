@@ -49,7 +49,7 @@ void AstDumpToNode::view(const char* passName, int passNum)
 {
   forv_Vec(ModuleSymbol, module, gModuleSymbols)
   {
-    if (log_module[0] == '\0' || strcmp(log_module, module->name) == 0)
+    if (log_module.empty() || strcmp(log_module.c_str(), module->name) == 0)
     {
       if (strcmp(module->name, "_root") != 0)
         view(passName, passNum, module);
@@ -112,7 +112,7 @@ bool AstDumpToNode::open(ModuleSymbol* mod, const char* passName, int passNum)
   snprintf(numBuf, 4, "%02d", passNum);
 
   mPath   = astr(mod->name, "_", numBuf, passName, ".ast");
-  mFP     = fopen(astr(log_dir, mPath), "w");
+  mFP     = fopen(astr(log_dir.c_str(), mPath), "w");
 
   mModule = mod;
 

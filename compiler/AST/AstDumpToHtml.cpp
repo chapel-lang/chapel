@@ -57,8 +57,8 @@ AstDumpToHtml::~AstDumpToHtml() {
 }
 
 void AstDumpToHtml::init() {
-  if (!(sIndexFP = fopen(astr(log_dir, "index.html"), "w"))) {
-    USR_FATAL("cannot open html index file \"%s\" for writing", astr(log_dir, "index.html"));
+  if (!(sIndexFP = fopen(astr(log_dir.c_str(), "index.html"), "w"))) {
+    USR_FATAL("cannot open html index file \"%s\" for writing", astr(log_dir.c_str(), "index.html"));
   }
 
   fprintf(sIndexFP, "<HTML>\n");
@@ -118,7 +118,7 @@ void AstDumpToHtml::view(const char* passName) {
 
 bool AstDumpToHtml::open(ModuleSymbol* module, const char* passName) {
   const char* name = html_file_name(sPassIndex, module->name);
-  const char* path = astr(log_dir, name);
+  const char* path = astr(log_dir.c_str(), name);
 
   mFP = fopen(path, "w");
 

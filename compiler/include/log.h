@@ -45,8 +45,8 @@ void  logWriteLog(const char* passName, int passNum, char logTag);
 
 bool  deletedIdON();
 
-extern char  log_dir   [FILENAME_MAX + 1];
-extern char  log_module[FILENAME_MAX + 1];
+extern std::string  log_dir;
+extern std::string  log_module;
 
 extern bool  fLogDir; // was --log-dir passed?
 
@@ -55,12 +55,12 @@ extern bool  fLogNode;
 extern bool  fLogIds;
 
 extern int   fdump_html;
-extern char  fdump_html_chpl_home[FILENAME_MAX + 1];
+extern std::string  fdump_html_chpl_home;
 extern bool  fdump_html_include_system_modules;
 extern bool  fdump_html_wrap_lines;
 extern bool  fdump_html_print_block_IDs;
 
 extern FILE* deletedIdHandle;
-extern char  deletedIdFilename[FILENAME_MAX + 1];
+extern std::string  deletedIdFilename;
 
 #endif

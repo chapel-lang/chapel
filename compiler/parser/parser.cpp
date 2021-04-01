@@ -213,13 +213,13 @@ void setupModulePaths() {
   sStdModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/dists/dims"));
 
   if (const char* envvarpath  = getenv("CHPL_MODULE_PATH")) {
-    char  path[FILENAME_MAX + 1];
+    std::string path;
     char* colon = NULL;
 
-    strncpy(path, envvarpath, FILENAME_MAX);
+    path = std::string(envvarpath, std::min((int)strlen(envvarpath), (int)FILENAME_MAX));
 
     do {
-      char* start = colon ? colon+1 : path;
+      char* start = colon ? colon+1 : &path[0];
 
       colon = strchr(start, ':');
 
@@ -350,13 +350,10 @@ static void addModulePaths() {
 
   while ((fileName = nthFilename(fileNum++))) {
     if (isChplSource(fileName) == true) {
-      char dirName[FILENAME_MAX + 1];
-
-      strncpy(dirName, fileName, FILENAME_MAX);
-
-      if (char* lastSlash = strrchr(dirName, '/')) {
-        *lastSlash = '\0';
-        addUsrDirToModulePath(dirName);
+      if (const char* lastSlash = strrchr(fileName, '/')) {
+        const int Len = lastSlash - fileName;
+        std::string dirName = std::string(fileName, Len);
+        addUsrDirToModulePath(dirName.c_str());
 
       } else {
         addUsrDirToModulePath(".");
