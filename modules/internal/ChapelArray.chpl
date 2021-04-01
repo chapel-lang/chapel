@@ -1919,7 +1919,7 @@ module ChapelArray {
 
       var rankOrder = order;
       var idx: (rank*_value.idxType);
-      var div = this.sizeAs(int);
+      var div = this.size;
 
       for param i in 0..<rank {
           var currDim = this.dim(i);
@@ -1944,8 +1944,8 @@ module ChapelArray {
 
     pragma "no doc"
     proc checkOrderBounds(order: int){
-      if order >= this.sizeAs(int) || order < 0 then
-        halt("Order out of bounds. Order must lie in 0..",this.sizeAs(int)-1);
+      if order >= this.size || order < 0 then
+        halt("Order out of bounds. Order must lie in 0..",this.size-1);
     }
 
     pragma "no doc"

@@ -680,7 +680,7 @@ module ChapelRange {
     const s = abs(this.stride): uint;
     const lenAsUint = ((ah - al):uint / s + 1);
     if boundsChecking && (lenAsUint == 0 || lenAsUint > max(t)) then
-      HaltWrappers.boundsCheckHalt("range.size exceeds max("+t:string+")");
+      HaltWrappers.boundsCheckHalt("range.size exceeds max("+t:string+") for: '" + this:string + "'");
     return lenAsUint: t;
   }
   
@@ -966,7 +966,7 @@ operator :(r: range(?), type t: range(?)) {
                           other.alignment,
                           true);
 
-    return (boundedOther.sizeAs(int) == 0) || contains(boundedOther);
+    return (boundedOther.sizeAs(uint) == 0) || contains(boundedOther);
   }
   /* Return true if ``other`` is contained in this range and false otherwise */
   inline proc range.boundsCheck(other: idxType)
