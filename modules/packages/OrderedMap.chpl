@@ -227,7 +227,7 @@ module OrderedMap {
     */
     proc const contains(const k: keyType): bool {
       _enter(); defer _leave();
-      return _set.contains((k, nil):_eltType);
+      return _set.contains((k, nil));
     }
 
     /*
@@ -243,7 +243,7 @@ module OrderedMap {
         compilerError("updating map with non-copyable type");
 
       for key in other.keys() {
-        _set.remove((key, nil):_eltType);
+        _set.remove((key, nil));
         _set.add((key, new shared _valueWrapper(other.getValue(key))?));
       }
     }
@@ -260,13 +260,12 @@ module OrderedMap {
     proc ref this(k: keyType) ref where isDefaultInitializable(valType) {
       _enter(); defer _leave();
 
-      // TODO we need to cast the argument to workaround a leak
-      if !_set.contains((k, nil):_eltType) then {
+      if !_set.contains((k, nil)) then {
         var defaultValue: valType;
         _set.add((k, new shared _valueWrapper(defaultValue)?));
       } 
 
-      ref e = _set.instance._getReference((k, nil):_eltType);
+      ref e = _set.instance._getReference((k, nil));
 
       ref result = e[1]!.val;
       return result;
@@ -278,7 +277,7 @@ module OrderedMap {
       _enter(); defer _leave();
 
       // Could halt
-      var e = _set.instance._getValue((k, nil):_eltType);
+      var e = _set.instance._getValue((k, nil));
 
       const result = e[1]!.val;
       return result;
@@ -290,7 +289,7 @@ module OrderedMap {
       _enter(); defer _leave();
 
       // Could halt
-      var e = _set.instance._getValue((k, nil):_eltType);
+      var e = _set.instance._getValue((k, nil));
 
       const ref result = e[1]!.val;
       return result;
@@ -309,7 +308,7 @@ module OrderedMap {
       _enter(); defer _leave();
 
       // This could halt
-      ref element = _set.instance._getReference((k, nil):_eltType);
+      ref element = _set.instance._getReference((k, nil));
 
       var result = element[1]!.val.borrow();
 
@@ -324,7 +323,7 @@ module OrderedMap {
       _enter(); defer _leave();
 
       // This could halt
-      ref element = _set.instance._getReference((k, nil):_eltType);
+      ref element = _set.instance._getReference((k, nil));
 
       ref result = element[1]!.val;
 
@@ -344,7 +343,7 @@ module OrderedMap {
 
       var result: _eltType;
       var found: bool;
-      (found, result) = _set.lowerBound((k, nil):_eltType);
+      (found, result) = _set.lowerBound((k, nil));
       if !found || comparator.compare(result[0], k) != 0 then
         boundsCheckHalt("orderedMap index " + k:string + " out of bounds");
       return result[1]!.val;
@@ -357,11 +356,11 @@ module OrderedMap {
 
       var result: _eltType;
       var found: bool;
-      (found, result) = _set.lowerBound((k, nil):_eltType);
+      (found, result) = _set.lowerBound((k, nil));
       if !found || comparator.compare(result[0], k) != 0 then
         boundsCheckHalt("orderedMap index " + k:string + " out of bounds");
 
-      _set.remove((k, nil):_eltType);
+      _set.remove((k, nil));
 
       return result[1]!.val;
     }
@@ -455,7 +454,7 @@ module OrderedMap {
     proc add(in k: keyType, in v: valType): bool lifetime this < v {
       _enter(); defer _leave();
       
-      if _set.contains((k, nil):_eltType) {
+      if _set.contains((k, nil)) {
         return false;
       }
 
@@ -481,11 +480,11 @@ module OrderedMap {
     proc set(k: keyType, in v: valType): bool {
       _enter(); defer _leave();
 
-      if _set.contains((k, nil):_eltType) == false {
+      if _set.contains((k, nil)) == false {
         return false;
       }
 
-      ref e = _set.instance._getReference((k, nil):_eltType);
+      ref e = _set.instance._getReference((k, nil));
       e[1] = new shared _valueWrapper(v)?;
 
       return true;
@@ -497,7 +496,7 @@ module OrderedMap {
      */
     proc addOrSet(in k: keyType, in v: valType) {
       _enter(); defer _leave();
-      _set.remove((k, nil):_eltType);
+      _set.remove((k, nil));
       _set.add((k, new shared _valueWrapper(v)?));
     }
 
@@ -511,7 +510,7 @@ module OrderedMap {
     */
     proc remove(k: keyType): bool {
       _enter(); defer _leave();
-      return _set.remove((k, nil):_eltType);
+      return _set.remove((k, nil));
     }
 
     /*
