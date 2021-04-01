@@ -122,6 +122,8 @@ static CallExpr *confirmAccess(CallExpr *call);
 
 static void symbolicFastFollowerAnalysis(ForallStmt *forall);
 
+static bool canBeLocalAccess(CallExpr *call);
+static bool isLocalAccess(CallExpr *call);
 static const char *getForallCloneTypeStr(Symbol *aggMarker);
 static CallExpr *getAggGenCallForChild(Expr *child, bool srcAggregation);
 static bool assignmentSuitableForAggregation(CallExpr *call, ForallStmt *forall);
@@ -1810,7 +1812,7 @@ static CallExpr *getAggGenCallForChild(Expr *child, bool srcAggregation) {
   if (CallExpr *childCall = toCallExpr(child)) {
     const char *aggFnName = srcAggregation ? "chpl_srcAggregatorFor" :
                                              "chpl_dstAggregatorFor";
-    if (childCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS)) {
+    if (canBeLocalAccess(childCall)) {
       if (SymExpr *arrSymExpr = toSymExpr(childCall->get(1))) {
         return new CallExpr(aggFnName, new SymExpr(arrSymExpr->symbol()));
       }
@@ -1834,16 +1836,16 @@ static bool assignmentSuitableForAggregation(CallExpr *call, ForallStmt *forall)
   if (CallExpr *leftCall = toCallExpr(call->get(1))) {
     if (CallExpr *rightCall = toCallExpr(call->get(2))) {
       // we want either side to be PRIM_MAYBE_LOCAL_THIS
-      if (leftCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS) ||
-          rightCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS)) {
+      if (canBeLocalAccess(leftCall) ||
+          canBeLocalAccess(rightCall)) {
         // we want the side that's not to have a baseExpr that's a SymExpr
         // this avoid function calls
-        if (!leftCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS)) {
+        if (!canBeLocalAccess(leftCall)) {
           return getCallBaseSymIfSuitable(leftCall, forall,
                                           /*checkArgs=*/false,
                                           NULL) != NULL;
         }
-        else if (!rightCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS)) {
+        else if (!canBeLocalAccess(rightCall)) {
           return getCallBaseSymIfSuitable(rightCall, forall,
                                           /*checkArgs=*/false,
                                           NULL) != NULL;
@@ -1853,7 +1855,7 @@ static bool assignmentSuitableForAggregation(CallExpr *call, ForallStmt *forall)
     else if (SymExpr *rightSymExpr = toSymExpr(call->get(2)))  {
       if (rightSymExpr->symbol()->isImmediate() ||
           rightSymExpr->symbol()->isParameter()) {
-        if (!leftCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS)) {
+        if (!canBeLocalAccess(leftCall)) {
           return getCallBaseSymIfSuitable(leftCall, forall,
                                           /*checkArgs=*/false,
                                           NULL) != NULL;
@@ -2021,12 +2023,18 @@ static void insertAggCandidate(CallExpr *call, ForallStmt *forall) {
       lhsCall->isPrimitive(PRIM_MAYBE_LOCAL_ARR_ELEM)) {
     info->lhsLocalityInfo = PENDING;
   }
+  else if (isLocalAccess(lhsCall)) {
+    info->lhsLocalityInfo = LOCAL;
+  }
   info->lhsLogicalChild = lhsCall;
 
   if (CallExpr *rhsCall = toCallExpr(call->get(2))) {
     if (rhsCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS) ||
         rhsCall->isPrimitive(PRIM_MAYBE_LOCAL_ARR_ELEM)) {
       info->rhsLocalityInfo = PENDING;
+    }
+    else if (isLocalAccess(rhsCall)) {
+      info->rhsLocalityInfo = LOCAL;
     }
     info->rhsLogicalChild = rhsCall;
   }
@@ -2129,7 +2137,7 @@ static bool handleYieldedArrayElementsInAssignment(CallExpr *call,
 
   bool otherChildIsSuitable = false;
   if (CallExpr *otherCall = toCallExpr(otherChild)) {
-    if (otherCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS)) {
+    if (canBeLocalAccess(otherCall)) {
       otherChildIsSuitable = true;
     }
     else {
@@ -2369,3 +2377,25 @@ static void removeAggregationFromRecursiveForallHelp(BlockStmt *block) {
   }
 }
 
+static bool canBeLocalAccess(CallExpr *call) {
+  return call->isPrimitive(PRIM_MAYBE_LOCAL_THIS) ||
+         isLocalAccess(call);
+}
+
+static bool isLocalAccess(CallExpr *call) {
+  if (CallExpr *baseCall = toCallExpr(call->baseExpr)) {
+    if (baseCall->isNamed(".")) {
+      if (SymExpr *secondArgSE = toSymExpr(baseCall->get(2))) {
+        if (VarSymbol *secondArgSym = toVarSymbol(secondArgSE->symbol())) {
+          if (Immediate *imm = secondArgSym->immediate) {
+            if(strcmp(imm->string_value(), "localAccess") == 0) {
+              return true;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return false;
+}
