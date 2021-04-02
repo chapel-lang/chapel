@@ -356,27 +356,48 @@ module String {
     return x: int > y: int;
   }
 
-  pragma "no doc" inline operator >(x: byteIndex,      y: int) return x: int > y;
-  pragma "no doc" inline operator >(x: codepointIndex, y: int) return x: int > y;
+  pragma "no doc" inline operator byteIndex.>(x: byteIndex, y: int) {
+    return x: int > y;
+  }
+  pragma "no doc"
+  inline operator codepointIndex.>(x: codepointIndex, y: int) return x: int > y;
 
-  pragma "no doc" inline operator >(x: int, y: byteIndex)      return x > y: int;
-  pragma "no doc" inline operator >(x: int, y: codepointIndex) return x > y: int;
+  pragma "no doc"
+  inline operator byteIndex.>(x: int, y: byteIndex) return x > y: int;
+  pragma "no doc"
+  inline operator codepointIndex.>(x: int, y: codepointIndex) return x > y: int;
   // End range helper support
 
   // Index arithmetic support
 
   // index + int or int + index --> index
-  pragma "no doc" inline operator +(x: byteIndex,      y: int) return (x: int + y): byteIndex;
-  pragma "no doc" inline operator +(x: codepointIndex, y: int) return (x: int + y): codepointIndex;
+  pragma "no doc"
+  inline operator byteIndex.+(x: byteIndex, y: int) {
+    return (x: int + y): byteIndex;
+  }
 
-  pragma "no doc" inline operator +(x: int, y: byteIndex)      return (x + y: int): byteIndex;
-  pragma "no doc" inline operator +(x: int, y: codepointIndex) return (x + y: int): codepointIndex;
+  pragma "no doc" inline operator codepointIndex.+(x: codepointIndex, y: int) {
+    return (x: int + y): codepointIndex;
+  }
+
+  pragma "no doc" inline operator byteIndex.+(x: int, y: byteIndex) {
+    return (x + y: int): byteIndex;
+  }
+
+  pragma "no doc" inline operator codepointIndex.+(x: int, y: codepointIndex) {
+    return (x + y: int): codepointIndex;
+  }
 
   pragma "no doc" inline operator +(x: bufferType, y: byteIndex) return x+(y:int);
 
   // index - int --> index
-  pragma "no doc" inline operator -(x: byteIndex,      y: int) return (x: int - y): byteIndex;
-  pragma "no doc" inline operator -(x: codepointIndex, y: int) return (x: int - y): codepointIndex;
+  pragma "no doc" inline operator byteIndex.-(x: byteIndex, y: int) {
+    return (x: int - y): byteIndex;
+  }
+
+  pragma "no doc" inline operator codepointIndex.-(x: codepointIndex, y: int) {
+    return (x: int - y): codepointIndex;
+  }
 
   // index - index --> int
   pragma "no doc" inline operator byteIndex.-(x: byteIndex, y: byteIndex) {
@@ -396,11 +417,21 @@ module String {
     return x: int < y: int;
   }
 
-  pragma "no doc" inline operator <(x: byteIndex,      y: int) return x: int < y;
-  pragma "no doc" inline operator <(x: codepointIndex, y: int) return x: int < y;
+  pragma "no doc" inline operator byteIndex.<(x: byteIndex, y: int) {
+    return x: int < y;
+  }
 
-  pragma "no doc" inline operator <(x: int, y: byteIndex)      return x < y: int;
-  pragma "no doc" inline operator <(x: int, y: codepointIndex) return x < y: int;
+  pragma "no doc" inline operator codepointIndex.<(x: codepointIndex, y: int) {
+    return x: int < y;
+  }
+
+  pragma "no doc" inline operator byteIndex.<(x: int, y: byteIndex) {
+    return x < y: int;
+  }
+
+  pragma "no doc" inline operator codepointIndex.<(x: int, y: codepointIndex) {
+    return x < y: int;
+  }
 
   pragma "no doc" inline operator byteIndex.>=(x: byteIndex, y: byteIndex) {
     return x: int >= y: int;
@@ -410,11 +441,21 @@ module String {
     return x: int >= y: int;
   }
 
-  pragma "no doc" inline operator >=(x: byteIndex, y: int)      return x: int >= y;
-  pragma "no doc" inline operator >=(x: codepointIndex, y: int) return x: int >= y;
+  pragma "no doc" inline operator byteIndex.>=(x: byteIndex, y: int) {
+    return x: int >= y;
+  }
 
-  pragma "no doc" inline operator >=(x: int, y: byteIndex)      return x >= y: int;
-  pragma "no doc" inline operator >=(x: int, y: codepointIndex) return x >= y: int;
+  pragma "no doc" inline operator codepointIndex.>=(x: codepointIndex, y: int) {
+    return x: int >= y;
+  }
+
+  pragma "no doc" inline operator byteIndex.>=(x: int, y: byteIndex) {
+    return x >= y: int;
+  }
+
+  pragma "no doc" inline operator codepointIndex.>=(x: int, y: codepointIndex) {
+    return x >= y: int;
+  }
 
   pragma "no doc" inline operator byteIndex.<=(x: byteIndex, y: byteIndex) {
     return x: int <= y: int;
@@ -424,11 +465,21 @@ module String {
     return x: int <= y: int;
   }
 
-  pragma "no doc" inline operator <=(x: byteIndex, y: int)      return x: int <= y;
-  pragma "no doc" inline operator <=(x: codepointIndex, y: int) return x: int <= y;
+  pragma "no doc" inline operator byteIndex.<=(x: byteIndex, y: int) {
+    return x: int <= y;
+  }
 
-  pragma "no doc" inline operator <=(x: int, y: byteIndex)      return x <= y: int;
-  pragma "no doc" inline operator <=(x: int, y: codepointIndex) return x <= y: int;
+  pragma "no doc" inline operator codepointIndex.<=(x: codepointIndex, y: int) {
+    return x: int <= y;
+  }
+
+  pragma "no doc" inline operator byteIndex.<=(x: int, y: byteIndex) {
+    return x <= y: int;
+  }
+
+  pragma "no doc" inline operator codepointIndex.<=(x: int, y: codepointIndex) {
+    return x <= y: int;
+  }
 
   pragma "no doc" inline operator byteIndex.==(x: byteIndex, y: byteIndex) {
     return (x:int) == (y:int);
@@ -438,11 +489,21 @@ module String {
     return (x:int) == (y:int);
   }
 
-  pragma "no doc" inline operator ==(x: byteIndex,      y: int) return (x:int) == y;
-  pragma "no doc" inline operator ==(x: codepointIndex, y: int) return (x:int) == y;
+  pragma "no doc" inline operator byteIndex.==(x: byteIndex, y: int) {
+    return (x:int) == y;
+  }
 
-  pragma "no doc" inline operator ==(x: int, y: byteIndex)      return x == (y:int);
-  pragma "no doc" inline operator ==(x: int, y: codepointIndex) return x == (y:int);
+  pragma "no doc" inline operator codepointIndex.==(x: codepointIndex, y: int) {
+    return (x:int) == y;
+  }
+
+  pragma "no doc" inline operator byteIndex.==(x: int, y: byteIndex) {
+    return x == (y:int);
+  }
+
+  pragma "no doc" inline operator codepointIndex.==(x: int, y: codepointIndex) {
+    return x == (y:int);
+  }
 
   pragma "no doc" inline operator byteIndex.!=(x: byteIndex, y: byteIndex) {
     return (x:int) != (y:int);
@@ -452,11 +513,21 @@ module String {
     return (x:int) != (y:int);
   }
 
-  pragma "no doc" inline operator !=(x: byteIndex, y: int)      return (x:int) != y;
-  pragma "no doc" inline operator !=(x: codepointIndex, y: int) return (x:int) != y;
+  pragma "no doc" inline operator byteIndex.!=(x: byteIndex, y: int) {
+    return (x:int) != y;
+  }
 
-  pragma "no doc" inline operator !=(x: int, y: byteIndex)      return x != (y:int);
-  pragma "no doc" inline operator !=(x: int, y: codepointIndex) return x != (y:int);
+  pragma "no doc" inline operator codepointIndex.!=(x: codepointIndex, y: int) {
+    return (x:int) != y;
+  }
+
+  pragma "no doc" inline operator byteIndex.!=(x: int, y: byteIndex) {
+    return x != (y:int);
+  }
+
+  pragma "no doc" inline operator codepointIndex.!=(x: int, y: codepointIndex) {
+    return x != (y:int);
+  }
 
   pragma "no doc" inline operator byteIndex.!(x: byteIndex) return !(x:int);
   pragma "no doc" inline operator codepointIndex.!(x: codepointIndex) {
@@ -2111,7 +2182,7 @@ module String {
      Copies the int `rhs` into the byteIndex `lhs`.
   */
   pragma "no doc"
-  operator =(ref lhs: byteIndex, rhs: int) {
+  operator byteIndex.=(ref lhs: byteIndex, rhs: int) {
     lhs._bindex = rhs: int;
   }
   pragma "no doc"
@@ -2123,7 +2194,7 @@ module String {
      Copies the int `rhs` into the codepointIndex `lhs`.
   */
   pragma "no doc"
-  operator =(ref lhs: codepointIndex, rhs: int) {
+  operator codepointIndex.=(ref lhs: codepointIndex, rhs: int) {
     lhs._cpindex = rhs: int;
   }
   pragma "no doc"
