@@ -574,7 +574,11 @@ def findIgnores():
                     if line.startswith("typedef"):
                         rhs = line.replace(";", "")
                         rhs = rhs.replace("typedef int ", "")
+                        rhs = rhs.replace("typedef uint32_t ", "")
                         rhs = rhs.replace("typedef _Bool ", "")
+                        rhs = rhs.replace("typedef void* ", "")
+                        if "typedef struct" in rhs:
+                            rhs = rhs.split()[-1]
 
                         ret.add(rhs.strip())
 
