@@ -231,11 +231,8 @@ passByRef(Symbol* sym) {
 
 static void
 addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
-  SymbolMapVector elts = sortedSymbolMapElts(*vars);
-  for (auto pair: elts) {
-    Symbol* key = pair.first;
-
-    if (Symbol* sym = key) {
+  for (auto elem: sortedSymbolMapElts(*vars)) {
+    if (Symbol* sym = elem.key) {
       Type* type = sym->type;
       IntentTag intent = INTENT_BLANK;
 
@@ -305,10 +302,9 @@ replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
   if (fn->lifetimeConstraints)
     collectSymExprs(fn->lifetimeConstraints, symExprs);
 
-  SymbolMapVector elts = sortedSymbolMapElts(*vars);
-  for (auto pair: elts) {
-    Symbol* sym = pair.first; // this is the key
-    ArgSymbol* arg = toArgSymbol(pair.second); // this is the value
+  for (auto elem: sortedSymbolMapElts(*vars)) {
+    Symbol*    sym = elem.key;
+    ArgSymbol* arg = toArgSymbol(elem.value);
     Type*      type = arg->type;
 
     size_t i = 0;
@@ -382,10 +378,8 @@ replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
 
 static void
 addVarsToActuals(CallExpr* call, SymbolMap* vars, bool outerCall) {
-  SymbolMapVector elts = sortedSymbolMapElts(*vars);
-  for (auto pair: elts) {
-    Symbol* key = pair.first;
-    if (Symbol* sym = key) {
+  for (auto elem: sortedSymbolMapElts(*vars)) {
+    if (Symbol* sym = elem.key) {
       SET_LINENO(sym);
       call->insertAtTail(sym);
     }

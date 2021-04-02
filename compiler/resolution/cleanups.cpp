@@ -926,14 +926,10 @@ void saveGenericSubstitutions() {
         // come up with compiler-generated tuple functions
         INT_ASSERT(fn->hasFlag(FLAG_INIT_TUPLE));
 
-        SymbolMapVector elts = sortedSymbolMapElts(fn->substitutions);
-        for (auto pair: elts) {
-          Symbol* key = pair.first;
-          Symbol* value = pair.second;
-
+        for (auto elem: sortedSymbolMapElts(fn->substitutions)) {
           NameAndSymbol ns;
-          ns.name = key->name;
-          ns.value = value;
+          ns.name = elem.key->name;
+          ns.value = elem.value;
           ns.isParam = false;
           ns.isType = false;
           fn->substitutionsPostResolve.push_back(ns);
