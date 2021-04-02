@@ -4,5 +4,5 @@ genericsInstantiationBad.chpl:N: note: this candidate did not match: ==(_arg1: F
 genericsInstantiationBad.chpl:N: note: because where clause evaluated to false
 genericsInstantiationBad.chpl:N: note: other candidates are:
 note:   ==(_arg1: bytes, _arg2: bytes)
-$CHPL_HOME/modules/internal/String.chpl:N: note:   ==(x: byteIndex, y: int)
+$CHPL_HOME/modules/internal/String.chpl:N: note:   ==(_arg1: chpl__inPlaceBuffer, _arg2: chpl__inPlaceBuffer)
 note: and 92 other candidates, use --print-all-candidates to see them
