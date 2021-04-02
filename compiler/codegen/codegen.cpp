@@ -777,9 +777,9 @@ static void genFilenameTable() {
     std::string & path = (*it);
     std::string genPath;
 
-    if(!strncmp(CHPL_HOME, path.c_str(), strlen(CHPL_HOME))) {
+    if(!strncmp(CHPL_HOME.c_str(), path.c_str(), CHPL_HOME.length())) {
       genPath = "$CHPL_HOME";
-      genPath += (path.c_str()+strlen(CHPL_HOME));
+      genPath += (path.c_str()+CHPL_HOME.length());
     } else {
       genPath = path;
     }
@@ -1114,7 +1114,7 @@ static void genConfigGlobalsAndAbout() {
     genGlobalString("chpl_saveCDir", "");
   }
 
-  genGlobalString("CHPL_HOME", CHPL_HOME);
+  genGlobalString("CHPL_HOME", CHPL_HOME.c_str());
 
   genGlobalInt("CHPL_STACK_CHECKS", !fNoStackChecks, false);
   genGlobalInt("CHPL_CACHE_REMOTE", fCacheRemote, false);
@@ -1153,7 +1153,7 @@ static void genConfigGlobalsAndAbout() {
   codegenCallPrintf(astr("Compilation command: ", compileCommand, "\\n"));
   codegenCallPrintf(astr("Chapel compiler version: ", compileVersion, "\\n"));
   codegenCallPrintf("Chapel environment:\\n");
-  codegenCallPrintf(astr("  CHPL_HOME: ", CHPL_HOME, "\\n"));
+  codegenCallPrintf(astr("  CHPL_HOME: ", CHPL_HOME.c_str(), "\\n"));
   for (std::map<std::string, const char*>::iterator env=envMap.begin(); env!=envMap.end(); ++env) {
     if (env->first != "CHPL_HOME") {
       codegenCallPrintf(astr("  ", env->first.c_str(), ": ", env->second, "\\n"));

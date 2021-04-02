@@ -162,36 +162,36 @@ void setupModulePaths() {
   // Set up the search path for modulesRoot/internal
   //
 
-  sIntModPath.add(astr(CHPL_HOME,
+  sIntModPath.add(astr(CHPL_HOME.c_str(),
                       "/",
                       modulesRoot,
                       "/internal/localeModels/",
                       CHPL_LOCALE_MODEL));
 
-  sIntModPath.add(astr(CHPL_HOME,
+  sIntModPath.add(astr(CHPL_HOME.c_str(),
                       "/",
                       modulesRoot,
                       "/internal/tasktable/",
                       fEnableTaskTracking ? "on" : "off"));
 
-  sIntModPath.add(astr(CHPL_HOME,
+  sIntModPath.add(astr(CHPL_HOME.c_str(),
                       "/",
                       modulesRoot,
                       "/internal/tasks/",
                       CHPL_TASKS));
 
-  sIntModPath.add(astr(CHPL_HOME,
+  sIntModPath.add(astr(CHPL_HOME.c_str(),
                       "/",
                       modulesRoot,
                       "/internal/comm/",
                       CHPL_COMM));
 
-  sIntModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/internal"));
+  sIntModPath.add(astr(CHPL_HOME.c_str(), "/", modulesRoot, "/internal"));
 
   //
   // Set up the search path for modulesRoot/standard
   //
-  stdGenModulesPath = astr(CHPL_HOME,
+  stdGenModulesPath = astr(CHPL_HOME.c_str(),
                            "/",
                            modulesRoot,
                            "/standard/gen/",
@@ -202,15 +202,15 @@ void setupModulePaths() {
                            CHPL_TARGET_COMPILER);
   sStdModPath.add(stdGenModulesPath);
 
-  sStdModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/standard"));
+  sStdModPath.add(astr(CHPL_HOME.c_str(), "/", modulesRoot, "/standard"));
 
-  sStdModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/packages"));
+  sStdModPath.add(astr(CHPL_HOME.c_str(), "/", modulesRoot, "/packages"));
 
-  sStdModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/layouts"));
+  sStdModPath.add(astr(CHPL_HOME.c_str(), "/", modulesRoot, "/layouts"));
 
-  sStdModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/dists"));
+  sStdModPath.add(astr(CHPL_HOME.c_str(), "/", modulesRoot, "/dists"));
 
-  sStdModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/dists/dims"));
+  sStdModPath.add(astr(CHPL_HOME.c_str(), "/", modulesRoot, "/dists/dims"));
 
   if (const char* envvarpath  = getenv("CHPL_MODULE_PATH")) {
     std::string path;

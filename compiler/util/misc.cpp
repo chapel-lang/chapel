@@ -101,10 +101,10 @@ bool requireOutlinedOn() {
 }
 
 const char* cleanFilename(const char* name) {
-  static int  chplHomeLen = strlen(CHPL_HOME);
+  static int  chplHomeLen = CHPL_HOME.length();
   const char* retval      = NULL;
 
-  if (strncmp(name, CHPL_HOME, chplHomeLen) == 0) {
+  if (strncmp(name, CHPL_HOME.c_str(), chplHomeLen) == 0) {
     retval = astr("$CHPL_HOME", name + chplHomeLen);
   } else {
     retval = name;

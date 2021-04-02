@@ -153,7 +153,7 @@ void codegen_library_makefile() {
   setupMakeEnvVars("CHPL_RUNTIME_LIB", CHPL_RUNTIME_LIB.c_str(), makefile);
   setupMakeEnvVars("CHPL_RUNTIME_INCL", CHPL_RUNTIME_INCL.c_str(), makefile);
   setupMakeEnvVars("CHPL_THIRD_PARTY", CHPL_THIRD_PARTY.c_str(), makefile);
-  setupMakeEnvVars("CHPL_HOME", CHPL_HOME, makefile);
+  setupMakeEnvVars("CHPL_HOME", CHPL_HOME.c_str(), makefile);
 
   printMakefileIncludes(makefile);
   printMakefileLibraries(makefile, name);

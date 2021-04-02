@@ -94,7 +94,7 @@ bool useDefaultEnv(std::string key);
 
 extern std::map<std::string, const char*> envMap;
 
-extern char CHPL_HOME[FILENAME_MAX+1];
+extern std::string CHPL_HOME;
 extern std::string CHPL_RUNTIME_LIB;
 extern std::string CHPL_RUNTIME_INCL;
 extern std::string CHPL_THIRD_PARTY;

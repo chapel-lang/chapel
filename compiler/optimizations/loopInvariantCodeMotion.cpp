@@ -715,7 +715,7 @@ static bool computeAliases(FnSymbol* fn, std::map<Symbol*, std::set<Symbol*> >& 
     //to the list of invariants, nothing will be hoisted from the current fn
     if(numAliases > MAX_NUM_ALIASES) {
 #ifdef detailedTiming
-       FILE* tooManyAliasesFile = fopen(astr(CHPL_HOME,"/LICMaliases.txt"), "a");
+       FILE* tooManyAliasesFile = fopen(astr(CHPL_HOME.c_str(),"/LICMaliases.txt"), "a");
        fprintf(tooManyAliasesFile, "Skipping fn %s %d of module %s %d "
            "because there were too many aliases\n", fn->name, fn->id,
            fn->getModule()->name, fn->getModule()->id);
@@ -1285,8 +1285,8 @@ void loopInvariantCodeMotion(void) {
 #ifdef detailedTiming
   FILE *timingFile;
   FILE *maxTimeFile;
-  timingFile = fopen(astr(CHPL_HOME,"/LICMtiming.txt"), "a");
-  maxTimeFile = fopen(astr(CHPL_HOME,"/LICMmaxTime.txt"), "a");
+  timingFile = fopen(astr(CHPL_HOME.c_str(),"/LICMtiming.txt"), "a");
+  maxTimeFile = fopen(astr(CHPL_HOME.c_str(),"/LICMmaxTime.txt"), "a");
 
   fprintf(timingFile, "For compilation of %s:                         \n", compileCommand );
   fprintf(timingFile, "Spent %2.3f seconds building basic blocks      \n", buildBBTimer.elapsedSecs());

@@ -538,7 +538,7 @@ const char* createDebuggerFile(const char* debugger, int argc, char* argv[]) {
 
   fprintf(dbgfile, "\n");
   closefile(dbgfile);
-  mysystem(astr("cat ", CHPL_HOME, "/compiler/etc/", debugger, ".commands >> ",
+  mysystem(astr("cat ", CHPL_HOME.c_str(), "/compiler/etc/", debugger, ".commands >> ",
                 dbgfilename),
            astr("appending ", debugger, " commands"),
            false);
@@ -709,7 +709,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
   openCFile(&makefile, "Makefile");
 
   // Capture different compiler directories.
-  fprintf(makefile.fptr, "CHPL_MAKE_HOME = %s\n\n", CHPL_HOME);
+  fprintf(makefile.fptr, "CHPL_MAKE_HOME = %s\n\n", CHPL_HOME.c_str());
   fprintf(makefile.fptr, "CHPL_MAKE_RUNTIME_LIB = %s\n\n", CHPL_RUNTIME_LIB.c_str());
   fprintf(makefile.fptr, "CHPL_MAKE_RUNTIME_INCL = %s\n\n", CHPL_RUNTIME_INCL.c_str());
   fprintf(makefile.fptr, "CHPL_MAKE_THIRD_PARTY = %s\n\n", CHPL_THIRD_PARTY.c_str());
@@ -986,7 +986,7 @@ void expandInstallationPaths(std::string& s) {
   const char* tofix[] = {"$CHPL_RUNTIME_LIB", CHPL_RUNTIME_LIB.c_str(),
                          "$CHPL_RUNTIME_INCL", CHPL_RUNTIME_INCL.c_str(),
                          "$CHPL_THIRD_PARTY", CHPL_THIRD_PARTY.c_str(),
-                         "$CHPL_HOME", CHPL_HOME,
+                         "$CHPL_HOME", CHPL_HOME.c_str(),
                          NULL};
 
   // For each of the patterns in tofix, find/replace all occurrences.

@@ -285,7 +285,7 @@ std::string generateSphinxProject(std::string dirpath) {
   const char * sphinxDir = dirpath.c_str();
 
   // Copy the sphinx template into the output dir.
-  const char * sphinxTemplate = astr(CHPL_HOME, "/third-party/chpl-venv/chpldoc-sphinx-project/*");
+  const char * sphinxTemplate = astr(CHPL_HOME.c_str(), "/third-party/chpl-venv/chpldoc-sphinx-project/*");
   const char * cmd = astr("cp -r ", sphinxTemplate, " ", sphinxDir, "/");
   if( printSystemCommands ) {
     printf("%s\n", cmd);

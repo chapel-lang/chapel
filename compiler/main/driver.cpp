@@ -60,7 +60,7 @@
 
 std::map<std::string, const char*> envMap;
 
-char CHPL_HOME[FILENAME_MAX+1] = "";
+std::string CHPL_HOME = "";
 
 // These are more specific than CHPL_HOME, to work in
 // settings where Chapel is installed.
@@ -318,15 +318,15 @@ static bool isMaybeChplHome(const char* path)
 
 static void setChplHomeDerivedVars() {
   int rc;
-  rc = strlen(CHPL_HOME) + strlen("/lib");
+  rc = CHPL_HOME.length() + strlen("/lib");
   if ( rc >= FILENAME_MAX ) USR_FATAL("CHPL_HOME pathname too long");
   CHPL_RUNTIME_LIB = std::string(CHPL_HOME);
   CHPL_RUNTIME_LIB += "/lib";
-  rc = strlen(CHPL_HOME) + strlen("/runtime/include");
+  rc = CHPL_HOME.length() + strlen("/runtime/include");
   if ( rc >= FILENAME_MAX ) USR_FATAL("CHPL_HOME pathname too long");
   CHPL_RUNTIME_INCL = std::string(CHPL_HOME);
   CHPL_RUNTIME_INCL += "/runtime/include";
-  rc = strlen(CHPL_HOME) + strlen("/third-party");
+  rc = CHPL_HOME.length() + strlen("/third-party");
   if ( rc >= FILENAME_MAX ) USR_FATAL("CHPL_HOME pathname too long");
   CHPL_THIRD_PARTY = std::string(CHPL_HOME);
   CHPL_THIRD_PARTY += "/third-party";
@@ -391,7 +391,7 @@ static void setupChplHome(const char* argv0) {
 
     if( guess == NULL ) {
       // Could not find exe path, but have a env var set
-      strncpy(CHPL_HOME, chpl_home, FILENAME_MAX);
+      CHPL_HOME = std::string(chpl_home, std::min((int)FILENAME_MAX, (int)strlen(chpl_home)));
     } else {
       // We have env var and found exe path.
       // Check that they match and emit a warning if not.
@@ -402,7 +402,7 @@ static void setupChplHome(const char* argv0) {
                  chpl_home, guess);
       }
       // Since we have an enviro var, always use that.
-      strncpy(CHPL_HOME, chpl_home, FILENAME_MAX);
+      CHPL_HOME = std::string(chpl_home, std::min((int)FILENAME_MAX, (int)strlen(chpl_home)));
     }
   } else {
 
@@ -438,7 +438,7 @@ static void setupChplHome(const char* argv0) {
         USR_FATAL("chpl guessed home %s too long", guess);
 
       // Determined exe path, but don't have a env var set
-      strncpy(CHPL_HOME, guess, FILENAME_MAX);
+      CHPL_HOME = std::string(guess, std::min((int)FILENAME_MAX, (int)strlen(guess)));
       // Also need to setenv in this case.
       rc = setenv("CHPL_HOME", guess, 0);
       if( rc ) USR_FATAL("Could not setenv CHPL_HOME");
@@ -446,9 +446,9 @@ static void setupChplHome(const char* argv0) {
   }
 
   // Check that the resulting path is a Chapel distribution.
-  if( ! isMaybeChplHome(CHPL_HOME) ) {
+  if( ! isMaybeChplHome(CHPL_HOME.c_str()) ) {
     // Bad enviro var.
-    USR_WARN("CHPL_HOME=%s is not a Chapel distribution", CHPL_HOME);
+    USR_WARN("CHPL_HOME=%s is not a Chapel distribution", CHPL_HOME.c_str());
   }
 
   if( guess )
@@ -535,14 +535,14 @@ static void recordCodeGenStrings(int argc, char* argv[]) {
 
 static void setHome(const ArgumentDescription* desc, const char* arg) {
   // Wipe previous CHPL_HOME when comp flag is given
-  CHPL_HOME[0] = '\0';
+  CHPL_HOME.clear();
 
   // Copy arg into CHPL_HOME
   size_t arglen = strlen(arg) + 1; // room for \0
-  if (arglen <= sizeof(CHPL_HOME)) {
-    memcpy(CHPL_HOME, arg, arglen);
+  if (arglen <= FILENAME_MAX + 1) {
+    CHPL_HOME = std::string(arg);
     // Update envMap
-    envMap["CHPL_HOME"] = CHPL_HOME;
+    envMap["CHPL_HOME"] = CHPL_HOME.c_str();
   } else {
     USR_FATAL("CHPL_HOME argument too long");
   }
@@ -1026,7 +1026,7 @@ static ArgumentDescription arg_desc[] = {
  {"task-tracking", ' ', NULL, "Enable [disable] runtime task tracking", "N", &fEnableTaskTracking, "CHPL_TASK_TRACKING", NULL},
 
  {"", ' ', NULL, "Compiler Configuration Options", NULL, NULL, NULL, NULL},
- {"home", ' ', "<path>", "Path to Chapel's home directory", "S", NULL, "_CHPL_HOME", setHome},
+ {"home", ' ', "<path>", "Path to Chapel's home directory", "R", NULL, "_CHPL_HOME", setHome},
  {"atomics", ' ', "<atomics-impl>", "Specify atomics implementation", "S", NULL, "_CHPL_ATOMICS", setEnv},
  {"network-atomics", ' ', "<network>", "Specify network atomics implementation", "S", NULL, "_CHPL_NETWORK_ATOMICS", setEnv},
  {"aux-filesys", ' ', "<aio-system>", "Specify auxiliary I/O system", "S", NULL, "_CHPL_AUX_FILESYS", setEnv},
@@ -1204,7 +1204,7 @@ static void printStuff(const char* argv0) {
   if( fPrintChplHome ) {
     char* guess = findProgramPath(argv0);
 
-    printf("%s\t%s\n", CHPL_HOME, guess);
+    printf("%s\t%s\n", CHPL_HOME.c_str(), guess);
     const char* prefix = get_configured_prefix();
     if (prefix != NULL && prefix[0] != '\0' )
       printf("# configured prefix  %s\n", prefix);
@@ -1216,13 +1216,13 @@ static void printStuff(const char* argv0) {
 
   if( fPrintChplSettings ) {
     std::string buf = "";
-    printf("CHPL_HOME: %s\n", CHPL_HOME);
+    printf("CHPL_HOME: %s\n", CHPL_HOME.c_str());
     printf("CHPL_RUNTIME_LIB: %s\n", CHPL_RUNTIME_LIB.c_str());
     printf("CHPL_RUNTIME_INCL: %s\n", CHPL_RUNTIME_INCL.c_str());
     printf("CHPL_THIRD_PARTY: %s\n", CHPL_THIRD_PARTY.c_str());
     printf("\n");
     int wanted_to_write = snprintf(NULL, 0,
-                                   "%s/util/printchplenv --all", CHPL_HOME);
+                                   "%s/util/printchplenv --all", CHPL_HOME.c_str());
     if (wanted_to_write < 0) {
       USR_FATAL("character encoding error in CHPL_HOME path name");
     } else if ((size_t)wanted_to_write > FILENAME_MAX) {
@@ -1403,7 +1403,7 @@ static void setupChplGlobals(const char* argv0) {
     setupChplHome(argv0);
 
     // Keep envMap updated
-    envMap["CHPL_HOME"] = CHPL_HOME;
+    envMap["CHPL_HOME"] = CHPL_HOME.c_str();
   }
 
   // tell printchplenv that we're doing an LLVM build
