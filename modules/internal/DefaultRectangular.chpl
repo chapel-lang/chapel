@@ -96,8 +96,7 @@ module DefaultRectangular {
     override proc dsiNewRectangularDom(param rank: int, type idxType,
                                        param stridable: bool, inds) {
       const dom = new unmanaged DefaultRectangularDom(rank, idxType, stridable,
-                                                      _to_unmanaged(this));
-      dom.dsiSetIndices(inds);
+                                                      _to_unmanaged(this), inds);
       return dom;
     }
 
@@ -157,9 +156,10 @@ module DefaultRectangular {
     override proc type isDefaultRectangular() param return true;
     override proc isDefaultRectangular() param return true;
 
-    proc init(param rank, type idxType, param stridable, dist) {
+    proc init(param rank, type idxType, param stridable, dist, inds) {
       super.init(rank, idxType, stridable);
       this.dist = dist;
+      this.ranges = inds;
     }
 
     proc intIdxType type {

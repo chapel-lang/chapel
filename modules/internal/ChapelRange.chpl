@@ -244,7 +244,7 @@ module ChapelRange {
   proc range.init(type idxType = int,
                   param boundedType : BoundedRangeType = BoundedRangeType.bounded,
                   param stridable : bool = false,
-                  _low : idxType = chpl__intToIdx(idxType, 1),
+                  _low : idxType = chpl__intToIdx(idxType, if isEnumType(idxType) && idxType.size == 1 then 0 else 1),
                   _high : idxType = chpl__intToIdx(idxType, 0),
                   _stride : chpl__rangeStrideType(idxType) = 1,
                   _alignment : idxType = chpl__intToIdx(idxType, 0),
@@ -2611,8 +2611,8 @@ operator :(r: range(?), type t: range(?)) {
       // empty ranges like 1..0.  If an enum only defines a single
       // symbol, we can't create such a range, so print the following
       // error message to avoid going off the rails.
-      if idxType.size < 2 then
-        compilerError("ranges are not currently supported for enums with fewer than two values");
+//      if idxType.size < 2 then
+//        compilerError("ranges are not currently supported for enums with fewer than two values");
       return int;
     } else {
       return idxType;
