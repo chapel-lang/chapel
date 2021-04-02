@@ -6,6 +6,7 @@
 
 #include <gasnetex.h>
 #include <gasnet_ratomic.h>
+#include <gasnet_mk.h>
 #include <gasnet_tools.h>
 
 /* limit segsz to prevent stack overflows for seg_everything tests */
@@ -43,6 +44,7 @@ void doit3(int partner, int *partnerseg);
 void doit5(int partner, int *partnerseg);
 void doit6(int partner, int *partnerseg);
 void doit7(int partner, int *partnerseg);
+void doit8(int partner, int *partnerseg);
 
 static gex_Client_t      myclient;
 static gex_EP_t    myep;
@@ -142,6 +144,16 @@ void test_threadinfo(int threadid, int numthreads) {
     gasnet_threadinfo_t ti = GASNET_GET_THREADINFO();
     assert_always(ti == my_ti);
   }
+  { GASNET_BEGIN_FUNCTION();
+    { GASNET_BEGIN_FUNCTION();
+      gasnet_threadinfo_t ti = GASNET_GET_THREADINFO();
+      assert_always(ti == my_ti);
+    }
+    { GASNET_POST_THREADINFO(GASNET_GET_THREADINFO());
+      gasnet_threadinfo_t ti = GASNET_GET_THREADINFO();
+      assert_always(ti == my_ti);
+    }
+  }
   assert(threadid < numthreads && numthreads <= MAX_THREADS);
   all_ti[threadid] = my_ti;
   PTHREAD_LOCALBARRIER(numthreads);
@@ -218,6 +230,94 @@ void test_libgasnet_tools(void) {
     gasnett_getheapstats(&hs);
   }
   #endif
+  {
+    static int c1,c2,c3,c4,c5,c6,c7,c8; // zero-initialized counters
+
+    #define MACRO8A(a1,a2,a3,a4,a5,a6,a7,a8)  \
+            (GASNETT_UNUSED_ARGS8(a1,a2,a3,a4,a5,a6,a7,a8),8)
+    #define MACRO7A(a1,a2,a3,a4,a5,a6,a7) \
+            (GASNETT_UNUSED_ARGS7(a1,a2,a3,a4,a5,a6,a7),7)
+    #define MACRO6A(a1,a2,a3,a4,a5,a6) \
+            (GASNETT_UNUSED_ARGS6(a1,a2,a3,a4,a5,a6),6)
+    #define MACRO5A(a1,a2,a3,a4,a5) \
+            (GASNETT_UNUSED_ARGS5(a1,a2,a3,a4,a5),5)
+    #define MACRO4A(a1,a2,a3,a4) \
+            (GASNETT_UNUSED_ARGS4(a1,a2,a3,a4),4)
+    #define MACRO3A(a1,a2,a3) \
+            (GASNETT_UNUSED_ARGS3(a1,a2,a3),3)
+    #define MACRO2A(a1,a2) \
+            (GASNETT_UNUSED_ARGS2(a1,a2),2)
+    #define MACRO1A(a1) \
+            (GASNETT_UNUSED_ARGS1(a1),1)
+    int x;
+    x = MACRO8A(++c8,++c7,++c6,++c5,++c4,++c3,++c2,++c1);
+    x = MACRO7A(++c8,++c7,++c6,++c5,++c4,++c3,++c2);
+    x = MACRO6A(++c8,++c7,++c6,++c5,++c4,++c3);
+    x = MACRO5A(++c8,++c7,++c6,++c5,++c4);
+    x = MACRO4A(++c8,++c7,++c6,++c5);
+    x = MACRO3A(++c8,++c7,++c6);
+    x = MACRO2A(++c8,++c7);
+    x = MACRO1A(++c8);
+    assert_always(c1 == 1);
+    assert_always(c2 == 2);
+    assert_always(c3 == 3);
+    assert_always(c4 == 4);
+    assert_always(c5 == 5);
+    assert_always(c6 == 6);
+    assert_always(c7 == 7);
+    assert_always(c8 == 8);
+    assert_always(x == 1);
+
+    #define MACRO8B(a0,a1,a2,a3,a4,a5,a6,a7,a8) do {\
+              x += (a0);\
+              GASNETT_UNUSED_ARGS8(a1,a2,a3,a4,a5,a6,a7,a8);\
+            } while (0)
+    #define MACRO7B(a0,a1,a2,a3,a4,a5,a6,a7) do {\
+              x += (a0);\
+              GASNETT_UNUSED_ARGS7(a1,a2,a3,a4,a5,a6,a7);\
+            } while (0)
+    #define MACRO6B(a0,a1,a2,a3,a4,a5,a6) do {\
+              x += (a0);\
+              GASNETT_UNUSED_ARGS6(a1,a2,a3,a4,a5,a6);\
+            } while (0)
+    #define MACRO5B(a0,a1,a2,a3,a4,a5) do {\
+              x += (a0);\
+              GASNETT_UNUSED_ARGS5(a1,a2,a3,a4,a5);\
+            } while (0)
+    #define MACRO4B(a0,a1,a2,a3,a4) do {\
+              x += (a0);\
+              GASNETT_UNUSED_ARGS4(a1,a2,a3,a4);\
+            } while (0)
+    #define MACRO3B(a0,a1,a2,a3) do {\
+              x += (a0);\
+              GASNETT_UNUSED_ARGS3(a1,a2,a3);\
+            } while (0)
+    #define MACRO2B(a0,a1,a2) do {\
+              x += (a0);\
+              GASNETT_UNUSED_ARGS2(a1,a2);\
+            } while (0)
+    #define MACRO1B(a0,a1) do {\
+              x += (a0);\
+              GASNETT_UNUSED_ARGS1(a1);\
+            } while (0)
+    MACRO8B(8,++c8,++c7,++c6,++c5,++c4,++c3,++c2,++c1);
+    MACRO7B(7,++c8,++c7,++c6,++c5,++c4,++c3,++c2);
+    MACRO6B(6,++c8,++c7,++c6,++c5,++c4,++c3);
+    MACRO5B(5,++c8,++c7,++c6,++c5,++c4);
+    MACRO4B(4,++c8,++c7,++c6,++c5);
+    MACRO3B(3,++c8,++c7,++c6);
+    MACRO2B(2,++c8,++c7);
+    MACRO1B(1,++c8);
+    assert_always(c1 == 1*2);
+    assert_always(c2 == 2*2);
+    assert_always(c3 == 3*2);
+    assert_always(c4 == 4*2);
+    assert_always(c5 == 5*2);
+    assert_always(c6 == 6*2);
+    assert_always(c7 == 7*2);
+    assert_always(c8 == 8*2);
+    assert_always(x == 37);
+  }
   #if GASNET_PAR
     num_threads = test_thread_limit(num_threads);
     test_createandjoin_pthreads(num_threads, &test_libgasnetpar_tools, NULL, 0);
@@ -257,13 +357,26 @@ int main(int argc, char **argv) {
     assert_always(global_segsz > 0);
   #endif
 
-  { uintptr_t size = (uintptr_t)-5;
+  { uintptr_t size = (uintptr_t)-3;
     void *owneraddr = (void*)&size;
     void *localaddr = (void*)&size;
 
     // No segments have been created/bound yet.
-    // Local and remote bound-segment queries must return non-zero and preserve output locations.
+    // Local bound-segment query must succeed synchronously and return zero size:
+    gex_Event_t ev = gex_EP_QueryBoundSegmentNB(myteam, myrank, NULL, NULL, &size, 0);
+    if (ev != GEX_EVENT_INVALID || size) {
+      MSG("*** ERROR - FAILED NO BOUND SEGMENT TEST!!!!!");
+    }
+    // Remote bound-segment query must not "fail", and must return zero size:
+    size = (uintptr_t)-4;
     gex_Rank_t peer = (myrank + 1) % numranks;
+    ev = gex_EP_QueryBoundSegmentNB(myteam, peer, NULL, NULL, &size, 0);
+    if (ev == GEX_EVENT_NO_OP || (gex_Event_Wait(ev),0) || size) {
+      MSG("*** ERROR - FAILED NO BOUND SEGMENT TEST!!!!!");
+    }
+    
+    // DEPRECATED queries must return non-zero and preserve output locations:
+    size = (uintptr_t)-5;
     if (!gex_Segment_QueryBound(myteam, myrank, &owneraddr, &localaddr, &size) ||
         !gex_Segment_QueryBound(myteam, peer,   &owneraddr, &localaddr, &size) ||
         owneraddr != (void*)&size || localaddr != (void*)&size || size != (uintptr_t)-5) {
@@ -372,6 +485,19 @@ GASNETT_EXTERNC void sizecheck_reqh(gex_Token_t token, void *buf, size_t nbytes,
   } // lc
   #undef CHECK_MAX
   gex_AM_ReplyShort0(token, sizecheck_handlers[1].gex_index, 0);
+
+#if !PLATFORM_COMPILER_XLC // Skip due to external bug 4205
+  // verify that payload queries evalute their args exactly once
+  #define CHECK_TOKEN_MAX_EVAL(cat) \
+    do { \
+      int a = 0, b = 0, c = 0, d = 0; \
+      (void) gex_Token_MaxReply##cat((a++,token),(b++,GEX_EVENT_NOW),(c++,0),(d++,0)); \
+      assert_always(a==1); assert_always(b==1); assert_always(c==1); assert_always(d==1); \
+    } while (0)
+  CHECK_TOKEN_MAX_EVAL(Medium);
+  CHECK_TOKEN_MAX_EVAL(Long);
+  #undef CHECK_TOKEN_MAX_EVAL
+#endif
 }
 gasnett_atomic_t sizecheck_ack = gasnett_atomic_init(0);
 GASNETT_EXTERNC void sizecheck_reph(gex_Token_t token) {
@@ -395,6 +521,19 @@ void doit(int partner, int *partnerseg) {
     assert_always(!memcmp(&v,&vz,sizeof(type)));   \
   } while (0)
   CHECK_ZERO_CONSTANT(gex_Segment_t, GEX_SEGMENT_INVALID);
+  CHECK_ZERO_CONSTANT(gex_TM_t,      GEX_TM_INVALID);
+  CHECK_ZERO_CONSTANT(gex_Client_t,  GEX_CLIENT_INVALID);
+  CHECK_ZERO_CONSTANT(gex_EP_t,      GEX_EP_INVALID);
+  CHECK_ZERO_CONSTANT(gex_MK_t,      GEX_MK_INVALID);
+
+  #define CHECK_NONZERO_CONSTANT(type, constant) do { \
+    static type vz;                                \
+    type v = constant;                             \
+    test_static_assert(sizeof(constant) == sizeof(type));  \
+    assert_always(sizeof(constant) == sizeof(v));  \
+    assert_always(memcmp(&v,&vz,sizeof(type)));    \
+  } while (0)
+  CHECK_NONZERO_CONSTANT(gex_MK_t,   GEX_MK_HOST);
 
   if (strcmp(clientname, gex_Client_QueryName(myclient))) {
     MSG("*** ERROR - FAILED CLIENT NAME TEST!!!!!");
@@ -441,7 +580,16 @@ void doit(int partner, int *partnerseg) {
   { void *owneraddr, *localaddr;
     uintptr_t size;
 
-    // Local bound-segment query must return 0 and give same data as direct queries
+    // Local segment query must locate the segment and give same data as direct queries
+    gex_Event_t ev = gex_EP_QueryBoundSegmentNB(myteam, myrank, &owneraddr, &localaddr, &size, GEX_FLAG_IMMEDIATE);
+    if (ev        != GEX_EVENT_INVALID ||
+        size      != gex_Segment_QuerySize(mysegment) ||
+        owneraddr != gex_Segment_QueryAddr(mysegment) ||
+        owneraddr != localaddr) {
+      MSG("*** ERROR - FAILED LOCAL BOUND SEGMENT TEST!!!!!");
+    }
+    // and DEPRECATED API should too:
+    owneraddr = localaddr = NULL; size = 0;
     if (gex_Segment_QueryBound(myteam, myrank, &owneraddr, &localaddr, &size) ||
         size      != gex_Segment_QuerySize(mysegment) ||
         owneraddr != gex_Segment_QueryAddr(mysegment) ||
@@ -454,9 +602,29 @@ void doit(int partner, int *partnerseg) {
       size = 0;
       owneraddr = NULL;
       localaddr = (void*)&size;
-      // Remote bound-segment query must return 0 and set all outputs to "plausible" values
-      if (gex_Segment_QueryBound(myteam, peer, &owneraddr, &localaddr, &size) ||
-          !size || !owneraddr || localaddr == (void*)&size) {
+      // Remote bound-segment IMMEDIATE queries may fail, but can never return a real event
+      ev = gex_EP_QueryBoundSegmentNB(myteam, peer, &owneraddr, &localaddr, &size, GEX_FLAG_IMMEDIATE);
+      if (ev == GEX_EVENT_NO_OP) {
+        // IMMEDIATE "failed.  Non-IMMEDIATE retry must locate the segment.
+        ev = gex_EP_QueryBoundSegmentNB(myteam, peer, &owneraddr, &localaddr, &size, 0);
+        if (ev == GEX_EVENT_NO_OP) {
+          MSG("*** ERROR - FAILED REMOTE BOUND SEGMENT TEST!!!!!");
+        }
+        gex_Event_Wait(ev);
+      } else if (ev != GEX_EVENT_INVALID) {
+        // "real" event (or entirely bogus value) returned from an IMMEDIATE query
+        MSG("*** ERROR - FAILED REMOTE BOUND SEGMENT TEST!!!!!");
+      }
+      // Successfully query must set all outputs to "plausible" values
+      if (!size || !owneraddr || localaddr == (void*)&size) {
+        MSG("*** ERROR - FAILED REMOTE BOUND SEGMENT TEST!!!!!");
+      }
+      // and DEPRECATED API should match:
+      void *owneraddr2 = NULL;
+      void *localaddr2 = NULL;
+      uintptr_t size2 = 0;
+      if (gex_Segment_QueryBound(myteam, peer, &owneraddr2, &localaddr2, &size2) ||
+          size2 != size || owneraddr2 != owneraddr || localaddr2 != localaddr) {
         MSG("*** ERROR - FAILED REMOTE BOUND SEGMENT TEST!!!!!");
       }
     }
@@ -546,8 +714,10 @@ void doit(int partner, int *partnerseg) {
     BARRIER();
     for (gex_Rank_t i = 0; i < neighbor_size; ++i) {
       gex_Rank_t *crossmap = NULL;
-      int rc = gex_Segment_QueryBound(myteam, neighbor_array[i].gex_jobrank, NULL, (void**)&crossmap, NULL);
-      assert_always(rc == 0);
+      size_t size;
+      gex_Event_Wait(
+          gex_EP_QueryBoundSegmentNB(myteam, neighbor_array[i].gex_jobrank, NULL, (void**)&crossmap, &size, 0) );
+      assert_always(size != 0);
       assert_always(crossmap != NULL);
       crossmap[neighbor_rank] = myrank;
     }
@@ -570,6 +740,12 @@ void doit(int partner, int *partnerseg) {
     // #proc >= #nbrhd >= #host:
     assert_always(n_proc >= n_size && n_size >= h_size);
   }
+
+  assert_always(gex_System_GetVerboseErrors());
+  gex_System_SetVerboseErrors(0);
+  assert_always(!gex_System_GetVerboseErrors());
+  gex_System_SetVerboseErrors(1);
+  assert_always(gex_System_GetVerboseErrors());
 
   /* width-independent computation of an integer variable with unknown unsigned type */
   #if PLATFORM_ARCH_LITTLE_ENDIAN
@@ -681,6 +857,14 @@ void doit(int partner, int *partnerseg) {
   assert_always(myrank < numranks);
   assert_always(numranks < GEX_RANK_INVALID);
 
+  /* max thread query */
+#if GASNET_SEQ
+  assert_always(gex_System_QueryMaxThreads() == 1);
+#else
+  // Not a spec requirement, but a reasonable assumption for any implementation
+  assert_always(gex_System_QueryMaxThreads() > 1);
+#endif
+
   /* ep_index/ep_location tests */
   assert_unsigned(gex_EP_Index_t);
   for (gex_Rank_t i = 0; i < numranks; ++i) {
@@ -696,6 +880,21 @@ void doit(int partner, int *partnerseg) {
   assert_always(gex_AM_LUBReplyMedium() >= 512);
   assert_always(gex_AM_LUBRequestLong() >= 512);
   assert_always(gex_AM_LUBReplyLong() >= 512);
+
+#if !PLATFORM_COMPILER_XLC // Skip due to external bug 4205
+  // verify that payload queries evalute their args exactly once
+  #define CHECK_AM_MAX_EVAL(name) \
+    do { \
+      int a = 0, b = 0, c = 0, d = 0, e = 0; \
+      (void) gex_AM_Max##name((a++,myteam),(b++,GEX_RANK_INVALID),(c++,GEX_EVENT_NOW),(d++,0),(e++,0)); \
+      assert_always(a==1); assert_always(b==1); assert_always(c==1); assert_always(d==1); assert_always(e==1); \
+    } while (0)
+  CHECK_AM_MAX_EVAL(RequestMedium);
+  CHECK_AM_MAX_EVAL(RequestLong);
+  CHECK_AM_MAX_EVAL(ReplyMedium);
+  CHECK_AM_MAX_EVAL(ReplyLong);
+  #undef CHECK_AM_MAX_EVAL
+#endif
 
   static int firsttime = 1;
   if (firsttime) {
@@ -861,7 +1060,7 @@ void doit0(int partner, int *partnerseg) {
 
     GEX_FLAG_ENABLE_LEAF_LC,
 
-    GEX_FLAG_TM_SCRATCH_SIZE_MIN,
+    GEX_FLAG_TM_SCRATCH_SIZE_MIN, // DEPRECATED since spec 0.11 but still valid
     GEX_FLAG_TM_SCRATCH_SIZE_RECOMMENDED,
     GEX_FLAG_TM_GLOBAL_SCRATCH,
     GEX_FLAG_TM_LOCAL_SCRATCH,
@@ -872,6 +1071,10 @@ void doit0(int partner, int *partnerseg) {
     GEX_FLAG_GLOBALLY_QUIESCED,
 
     GEX_FLAG_RANK_IS_JOBRANK,
+
+    GEX_FLAG_HINT_ACCEL_AD,
+    GEX_FLAG_HINT_ACCEL_COLL,
+    GEX_FLAG_HINT_ACCEL_ALL,
   };
   assert_arr_nonzero(gex_Flags_t, flags_arr); // No zero values
 
@@ -920,7 +1123,7 @@ void doit0(int partner, int *partnerseg) {
   };
   assert_arr_unaliased(gex_Flags_t, flags_vis);
   static gex_Flags_t const flags_tm[] = { // gex_TM_Split, Create, etc.
-    GEX_FLAG_TM_SCRATCH_SIZE_MIN,
+    GEX_FLAG_TM_SCRATCH_SIZE_MIN, // DEPRECATED since spec 0.11 but still valid
     GEX_FLAG_TM_SCRATCH_SIZE_RECOMMENDED,
     GEX_FLAG_TM_GLOBAL_SCRATCH,
     GEX_FLAG_TM_LOCAL_SCRATCH,
@@ -929,6 +1132,13 @@ void doit0(int partner, int *partnerseg) {
     GEX_FLAG_SCRATCH_SEG_OFFSET,
   };
   assert_arr_unaliased(gex_Flags_t, flags_tm);
+  static gex_Flags_t const flags_ep[] = { // gex_EP_Create, excludes ALL
+    GEX_FLAG_HINT_ACCEL_AD,
+    GEX_FLAG_HINT_ACCEL_COLL,
+  };
+  assert_arr_nonzero(gex_Flags_t, flags_ep); // No zero values
+  // Not yet specified: assert_arr_unaliased(gex_Flags_t, flags_ep);
+  assert_arr_all_val(gex_EP_Capabilities_t, flags_ep, GEX_FLAG_HINT_ACCEL_ALL); // ALL includes them all
 
   assert_inttype(gex_EC_t);
   static gex_EC_t const ec_all = GEX_EC_ALL;
@@ -949,6 +1159,19 @@ void doit0(int partner, int *partnerseg) {
   assert_arr_unaliased(gex_TI_t, ti_arr);
   assert_arr_all_val(gex_TI_t, ti_arr, ti_all); // ALL includes them all
   test_format(gex_TI_t, ti_arr, gasnett_format_ti);
+
+  assert_inttype(gex_EP_Capabilities_t);
+  static gex_EP_Capabilities_t const ep_cap_all = GEX_EP_CAPABILITY_ALL;
+  static gex_EP_Capabilities_t const ep_cap_arr[] = { // all flags but _ALL
+          GEX_EP_CAPABILITY_RMA,
+          GEX_EP_CAPABILITY_AM,
+          GEX_EP_CAPABILITY_VIS,
+          GEX_EP_CAPABILITY_COLL,
+          GEX_EP_CAPABILITY_AD
+      };
+  assert_arr_nonzero(gex_EP_Capabilities_t, ep_cap_arr); // No zero values
+  // Not yet specified: assert_arr_unaliased(gex_EP_Capabilities_t, ep_cap_arr);
+  assert_arr_all_val(gex_EP_Capabilities_t, ep_cap_arr, ep_cap_all); // ALL includes them all
 
   gex_RMA_Value_t val = 0; test_mark_used(val);
   test_static_assert(sizeof(gex_RMA_Value_t) == SIZEOF_GEX_RMA_VALUE_T);
@@ -1443,5 +1666,37 @@ void doit7(int partner, int *partnerseg) {
    * moved to gasnet_diagnostic.c (run from testinternal).
    */
   
+#ifndef TESTGASNET_NO_SPLIT
+  doit8(partner, partnerseg);
+}
+void doit8(int partner, int *partnerseg) {
+#endif
+  BARRIER();
+
+  // Checks for graceful degradation where support is missing or limited.
+  // As features become widely support these should be removed in favor
+  // of complete tests (and conduit-specific KnownFailures if needed).
+
+  // Suspend verbose errors since some of these test are expected to fail
+  gex_System_SetVerboseErrors(0);
+
+
+  // Sane GASNET_MAXEPS and graceful failure of EP_Create
+  if (GASNET_MAXEPS < 1) {
+    MSG("*** ERROR - INVALID MAXEPS SETTING!!!!!");
+  } else if (GASNET_MAXEPS == 1) {
+    gex_EP_t ep;
+    int rc = gex_EP_Create(&ep, myclient, GEX_EP_CAPABILITY_RMA, 0);
+    if (rc != GASNET_ERR_RESOURCE) {
+      MSG("*** ERROR - EXCESS EP_CREATE DID NOT FAIL AS EXPECTED!!!!!");
+    }
+  } else {
+    // testtmpair covers creation of multiple EPs where implemented
+  }
+
+
+  // Restore verbose errors
+  gex_System_SetVerboseErrors(1);
+
   BARRIER();
 }

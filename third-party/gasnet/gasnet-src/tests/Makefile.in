@@ -101,7 +101,10 @@ testprograms_seq =      \
         testimm         \
         testsplit       \
         testacc         \
+        testsegment     \
+        testtmpair      \
         testreadonly    \
+        testcudauva     \
         $(CONDUIT_TESTS) \
         $(MPI_TESTS_SEQ)
 
@@ -151,6 +154,10 @@ GASNET_CONFIG_STR=$(GASNET_SEGMENT_STR)-$(GASNET_DEBUG_STR)
 TEST_ENV=$(DEBUG_MALLOC)
 
 TEST_INOUT=
+
+# max lines (per test) of "ERROR" output to present in the final summary from run-tests
+# setting to 0 means unbounded, but that (or very large) may crash the shell
+TEST_MAX_FAILURE_LINES=16
 
 # default node count
 TEST_NODES=2
@@ -278,7 +285,7 @@ run-tests: force
 	    ( eval env $$env $(TEST_ENV)                                                \
 	    $$TIMECMD $$cmd || echo "ERROR: Test exited with failure code=$$?" )        \
                              2>&1 | tee .test-output ;                                  \
-            failure=`@PERL@ -ne 'print if ((/ERROR/ || /fatal signal/) && !(/Retrying allocation/ || /GASNET_FREEZE_ON_ERROR/));' .test-output` ; \
+            failure=`@PERL@ -ne 'if ((/ERROR/ || /fatal signal/) && !(/Retrying allocation/ || /GASNET_FREEZE_ON_ERROR/)) { print; if (++$$lines == $(TEST_MAX_FAILURE_LINES)) { print "ERROR OUTPUT TRUNCATED AT $(TEST_MAX_FAILURE_LINES) LINES\n"; exit 0; }}' .test-output` ; \
             if test "$$failure" != "" ; then                                            \
                echo " " >> $(TESTLOG) ;                                                 \
                echo " *-* $$faildesc *-*" >> $(TESTLOG) ;                               \
@@ -393,6 +400,9 @@ testgasnet_extraincs    = $(AMX_INC)
 testlegacy_extraincs    = $(AMX_INC)
 testcxx_extraincs       = $(AMX_INC)
 testlegacycxx_extraincs = $(AMX_INC)
+
+# some tests need cuda.h
+testcudauva_extraincs = @CUDA_UVA_CFLAGS@
 
 # delay function, used by multiple tests
 # need to deliberately exclude and disable optimization for this object file to prevent breaking delay

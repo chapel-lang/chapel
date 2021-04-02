@@ -174,19 +174,9 @@ proc test_cuamax_helper(type t) {
     //Create cublas handle
     var cublas_handle = cublas_create_handle();
 
-    select t {
-      when real(32) do {
-        cu_isamax(cublas_handle, N, gpu_ptr_X, 1, c_ptrTo(r));
-      }
-      when real(64) do {
-        cu_idamax(cublas_handle, N, gpu_ptr_X, 1, c_ptrTo(r));
-      }
-      when complex(64) do {
-        cu_icamax(cublas_handle, N, gpu_ptr_X, 1, c_ptrTo(r));
-      }
-      when complex(128) do {
-        cu_izamax(cublas_handle, N, gpu_ptr_X, 1, c_ptrTo(r));
-      }
+    if (t == real(32)    || t == real(64) ||
+        t == complex(64) || t == complex(128)) {
+      cu_iamax(cublas_handle, N, gpu_ptr_X, 1, c_ptrTo(r));
     }
 
     var idx = r-1;
@@ -207,19 +197,9 @@ proc test_cuamax_helper(type t) {
     //Create cublas handle
     var cublas_handle = cublas_create_handle();
 
-    select t {
-      when real(32) do {
-        cu_isamax(cublas_handle, N, gpu_ptr_X, 1, c_ptrTo(r));
-      }
-      when real(64) do {
-        cu_idamax(cublas_handle, N, gpu_ptr_X, 1, c_ptrTo(r));
-      }
-      when complex(64) do {
-        cu_icamax(cublas_handle, N, gpu_ptr_X, 1, c_ptrTo(r));
-      }
-      when complex(128) do {
-        cu_izamax(cublas_handle, N, gpu_ptr_X, 1, c_ptrTo(r));
-      }
+    if (t == real(32)    || t == real(64) ||
+        t == complex(64) || t == complex(128)) {
+      cu_iamax(cublas_handle, N, gpu_ptr_X, 1, c_ptrTo(r));
     }
 
     var idx = r;
@@ -248,19 +228,10 @@ proc test_cuamin_helper(type t) {
     //Create cublas handle
     var cublas_handle = cublas_create_handle();
 
-    select t {
-      when real(32) do {
-        cu_isamin(cublas_handle, N, gpu_ptr_X, 1, c_ptrTo(r));
-      }
-      when real(64) do {
-        cu_idamin(cublas_handle, N, gpu_ptr_X, 1, c_ptrTo(r));
-      }
-      when complex(64) do {
-        cu_icamin(cublas_handle, N, gpu_ptr_X, 1, c_ptrTo(r));
-      }
-      when complex(128) do {
-        cu_izamin(cublas_handle, N, gpu_ptr_X, 1, c_ptrTo(r));
-      }
+
+    if (t == real(32)    || t == real(64) ||
+        t == complex(64) || t == complex(128)) {
+      cu_iamin(cublas_handle, N, gpu_ptr_X, 1, c_ptrTo(r));
     }
 
     var idx = r-1;
@@ -281,19 +252,9 @@ proc test_cuamin_helper(type t) {
     //Create cublas handle
     var cublas_handle = cublas_create_handle();
 
-    select t {
-      when real(32) do {
-        cu_isamin(cublas_handle, N, gpu_ptr_X, 1, c_ptrTo(r));
-      }
-      when real(64) do {
-        cu_idamin(cublas_handle, N, gpu_ptr_X, 1, c_ptrTo(r));
-      }
-      when complex(64) do {
-        cu_icamin(cublas_handle, N, gpu_ptr_X, 1, c_ptrTo(r));
-      }
-      when complex(128) do {
-        cu_izamin(cublas_handle, N, gpu_ptr_X, 1, c_ptrTo(r));
-      }
+    if (t == real(32)    || t == real(64) ||
+        t == complex(64) || t == complex(128)) {
+      cu_iamin(cublas_handle, N, gpu_ptr_X, 1, c_ptrTo(r));
     }
 
     var idx = r;
@@ -336,27 +297,11 @@ proc test_cuasum_helper(type t) {
 
     var err = 1.0;
 
-    select t {
-      when real(32) do {
-        var r : real(32);
-        cu_sasum(cublas_handle, N, gpu_ptr_X, 1, c_ptrTo(r));
-        err = norm - r;
-      }
-      when real(64) do {
-        var r : real(64);
-        cu_dasum(cublas_handle, N, gpu_ptr_X, 1, c_ptrTo(r));
-        err = norm - r;
-      }
-      when complex(64) do {
-        var r : real(32);
-        cu_scasum(cublas_handle, N, gpu_ptr_X, 1, c_ptrTo(r));
-        err = norm - r;
-      }
-      when complex(128) do {
-        var r : real(64);
-        cu_dzasum(cublas_handle, N, gpu_ptr_X, 1, c_ptrTo(r));
-        err = norm - r;
-      }
+    if t == real(32)    || t == real(64) ||
+       t == complex(64) || t == complex(128) {
+      var r : if isComplexType(t) then real(numBits(t)/2) else t;
+      cu_asum(cublas_handle, N, gpu_ptr_X, 1, c_ptrTo(r));
+      err = norm - r;
     }
 
     trackErrors(name, err, errorThreshold, passed, failed, tests);
@@ -385,19 +330,9 @@ proc test_cucopy_helper(type t) {
     //Create cublas handle
     var cublas_handle = cublas_create_handle();
 
-    select t {
-      when real(32) do {
-        cu_scopy(cublas_handle, N, gpu_ptr_X, gpu_ptr_Y);
-      }
-      when real(64) do {
-        cu_dcopy(cublas_handle, N, gpu_ptr_X, gpu_ptr_Y);
-      }
-      when complex(64) do {
-        cu_ccopy(cublas_handle, N, gpu_ptr_X, gpu_ptr_Y);
-      }
-      when complex(128) do {
-        cu_zcopy(cublas_handle, N, gpu_ptr_X, gpu_ptr_Y);
-      }
+    if t == real(32)    || t == real(64) ||
+       t == complex(64) || t == complex(128) {
+      cu_copy(cublas_handle, N, gpu_ptr_X, gpu_ptr_Y);
     }
 
     gpu_to_cpu(c_ptrTo(Y), gpu_ptr_Y, c_sizeof(t)*N:size_t);
@@ -433,19 +368,9 @@ proc test_cuaxpy_helper(type t) {
     //Create cublas handle
     var cublas_handle = cublas_create_handle();
 
-    select t {
-      when real(32) do {
-        cu_saxpy(cublas_handle, N, gpu_ptr_X, gpu_ptr_Y, a);
-      }
-      when real(64) do {
-        cu_daxpy(cublas_handle, N, gpu_ptr_X, gpu_ptr_Y, a);
-      }
-      when complex(64) do {
-        cu_caxpy(cublas_handle, N, gpu_ptr_X, gpu_ptr_Y, a);
-      }
-      when complex(128) do {
-        cu_zaxpy(cublas_handle, N, gpu_ptr_X, gpu_ptr_Y, a);
-      }
+    if t == real(32)    || t == real(64) ||
+       t == complex(64) || t == complex(128) {
+      cu_axpy(cublas_handle, N, gpu_ptr_X, gpu_ptr_Y, a);
     }
 
     gpu_to_cpu(c_ptrTo(Y), gpu_ptr_Y, c_sizeof(t)*N:size_t);
@@ -483,13 +408,8 @@ proc test_cudot_helper(type t) {
     var cublas_handle = cublas_create_handle();
     var r : t;
 
-    select t {
-      when real(32) do {
-        cu_sdot(cublas_handle, N, gpu_ptr_X, gpu_ptr_Y, c_ptrTo(r));
-      }
-      when real(64) do {
-        cu_ddot(cublas_handle, N, gpu_ptr_X, gpu_ptr_Y, c_ptrTo(r));
-      }
+    if t == real(32) || t == real(64) {
+      cu_dot(cublas_handle, N, gpu_ptr_X, gpu_ptr_Y, c_ptrTo(r));
     }
 
     var err = abs(red - r);
@@ -523,13 +443,8 @@ proc test_cudotu_helper(type t) {
     var cublas_handle = cublas_create_handle();
     var res : t;
 
-    select t {
-      when complex(64) do {
-        cu_cdotu(cublas_handle, N, gpu_ptr_X, gpu_ptr_Y, c_ptrTo(res));
-      }
-      when complex(128) do {
-        cu_zdotu(cublas_handle, N, gpu_ptr_X, gpu_ptr_Y, c_ptrTo(res));
-      }
+    if t == complex(64) || t == complex(128) {
+      cu_dotu(cublas_handle, N, gpu_ptr_X, gpu_ptr_Y, c_ptrTo(res));
     }
 
     var err = abs(red - res);
@@ -563,13 +478,8 @@ proc test_cudotc_helper(type t) {
     var cublas_handle = cublas_create_handle();
     var res : t;
 
-    select t {
-      when complex(64) do {
-        cu_cdotc(cublas_handle, N, gpu_ptr_X, gpu_ptr_Y, c_ptrTo(res));
-      }
-      when complex(128) do {
-        cu_zdotc(cublas_handle, N, gpu_ptr_X, gpu_ptr_Y, c_ptrTo(res));
-      }
+    if t == complex(64) || t == complex(128) {
+      cu_dotc(cublas_handle, N, gpu_ptr_X, gpu_ptr_Y, c_ptrTo(res));
     }
 
     var err = abs(red - res);
@@ -602,27 +512,11 @@ proc test_cunrm2_helper(type t) {
     var cublas_handle = cublas_create_handle();
     var err = 1.0;
 
-    select t {
-      when real(32) do {
-        var r: real(32);
-        cu_snrm2(cublas_handle, N, gpu_ptr_X, c_ptrTo(r));
-        err = norm - r;
-      }
-      when real(64) do {
-        var r: real(64);
-        cu_dnrm2(cublas_handle, N, gpu_ptr_X, c_ptrTo(r));
-        err = norm - r;
-      }
-      when complex(64) do {
-        var r: real(32);
-        cu_scnrm2(cublas_handle, N, gpu_ptr_X, c_ptrTo(r));
-        err = norm -r;
-      }
-      when complex(128) do {
-        var r: real(64);
-        cu_dznrm2(cublas_handle, N, gpu_ptr_X, c_ptrTo(r));
-        err = norm - r;
-      }
+    if t == real(32)    || t == real(64) ||
+       t == complex(64) || t == complex(128) {
+      var r: if isComplexType(t) then real(numBits(t)/2) else t;
+      cu_nrm2(cublas_handle, N, gpu_ptr_X, c_ptrTo(r));
+      err = norm - r;
     }
 
     trackErrors(name, err, errorThreshold, passed, failed, tests);
@@ -659,13 +553,8 @@ proc test_curot_helper(type t) {
     //Create cublas handle
     var cublas_handle = cublas_create_handle();
 
-    select t {
-      when real(32) do {
-        cu_srot(cublas_handle, N, gpu_ptr_X, gpu_ptr_Y, c, s);
-      }
-      when real(64) do {
-        cu_drot(cublas_handle, N, gpu_ptr_X, gpu_ptr_Y, c, s);
-      }
+    if t == real(32) || t == real(64) {
+      cu_rot(cublas_handle, N, gpu_ptr_X, gpu_ptr_Y, c, s);
     }
 
     gpu_to_cpu(c_ptrTo(X), gpu_ptr_X, c_sizeof(t)*N:size_t);
@@ -712,10 +601,8 @@ proc test_cucrot_helper(type t) {
     //Create cublas handle
     var cublas_handle = cublas_create_handle();
 
-    select t {
-     when complex(64) do {
-        cu_crot(cublas_handle, N, gpu_ptr_X, gpu_ptr_Y, c, s);
-     }
+    if t == complex(64) {
+      cu_rot(cublas_handle, N, gpu_ptr_X, gpu_ptr_Y, c, s);
     }
 
     gpu_to_cpu(c_ptrTo(X), gpu_ptr_X, c_sizeof(t)*N:size_t);
@@ -762,10 +649,8 @@ proc test_cuzrot_helper(type t) {
     //Create cublas handle
     var cublas_handle = cublas_create_handle();
 
-    select t {
-     when complex(128) do {
-        cu_zrot(cublas_handle, N, gpu_ptr_X, gpu_ptr_Y, c, s);
-     }
+    if t == complex(128) {
+      cu_rot(cublas_handle, N, gpu_ptr_X, gpu_ptr_Y, c, s);
     }
 
     gpu_to_cpu(c_ptrTo(X), gpu_ptr_X, c_sizeof(t)*N:size_t);
@@ -812,10 +697,8 @@ proc test_cucsrot_helper(type t) {
     //Create cublas handle
     var cublas_handle = cublas_create_handle();
 
-    select t {
-     when complex(64) do {
-        cu_csrot(cublas_handle, N, gpu_ptr_X, gpu_ptr_Y, c, s);
-     }
+    if t == complex(64) {
+      cu_rot(cublas_handle, N, gpu_ptr_X, gpu_ptr_Y, c, s);
     }
 
     gpu_to_cpu(c_ptrTo(X), gpu_ptr_X, c_sizeof(t)*N:size_t);
@@ -863,10 +746,8 @@ proc test_cuzdrot_helper(type t) {
     //Create cublas handle
     var cublas_handle = cublas_create_handle();
 
-    select t {
-     when complex(128) do {
-        cu_zdrot(cublas_handle, N, gpu_ptr_X, gpu_ptr_Y, c, s);
-     }
+    if t == complex(128) {
+      cu_rot(cublas_handle, N, gpu_ptr_X, gpu_ptr_Y, c, s);
     }
 
     gpu_to_cpu(c_ptrTo(X), gpu_ptr_X, c_sizeof(t)*N:size_t);
@@ -911,13 +792,8 @@ proc test_curotg_helper(type t) {
     //Create cublas handle
     var cublas_handle = cublas_create_handle();
 
-    select t {
-      when real(32) do {
-        cu_srotg(cublas_handle, a, b, c, s);
-      }
-      when real(64) do {
-        cu_drotg(cublas_handle, a, b, c, s);
-      }
+    if t == real(32) || t == real(64) {
+      cu_rotg(cublas_handle, a, b, c, s);
     }
 
     // rename outputs
@@ -976,10 +852,8 @@ proc test_cucrotg_helper(type t) {
     //Create cublas handle
     var cublas_handle = cublas_create_handle();
 
-    select t {
-      when complex(64) do {
-        cu_crotg(cublas_handle, a, b, c, s);
-      }
+    if t == complex(64) {
+      cu_rotg(cublas_handle, a, b, c, s);
     }
 
     // rename outputs
@@ -1037,10 +911,8 @@ proc test_cuzrotg_helper(type t) {
     //Create cublas handle
     var cublas_handle = cublas_create_handle();
 
-    select t {
-      when complex(128) do {
-        cu_zrotg(cublas_handle, a, b, c, s);
-      }
+    if t == complex(128) {
+      cu_rotg(cublas_handle, a, b, c, s);
     }
 
     // rename outputs
@@ -1104,13 +976,8 @@ proc test_curotm_helper(type t) {
     //Create cublas handle
     var cublas_handle = cublas_create_handle();
 
-    select t {
-      when real(32) do {
-        cu_srotm(cublas_handle, N, gpu_ptr_X, gpu_ptr_Y, P);
-      }
-      when real(64) do {
-        cu_drotm(cublas_handle, N, gpu_ptr_X, gpu_ptr_Y, P);
-      }
+    if t == real(32) || t == real(64) {
+      cu_rotm(cublas_handle, N, gpu_ptr_X, gpu_ptr_Y, P);
     }
 
     gpu_to_cpu(c_ptrTo(X), gpu_ptr_X, c_sizeof(t)*N:size_t);
@@ -1178,13 +1045,8 @@ proc test_curotmg_helper(type t) {
     //Create cublas handle
     var cublas_handle = cublas_create_handle();
 
-    select t {
-      when real(32) do {
-        cu_srotmg(cublas_handle, d1, d2, b1, b2, P);
-      }
-      when real(64) do {
-        cu_drotmg(cublas_handle, d1, d2, b1, b2, P);
-      }
+    if t == real(32) || t == real(64) {
+      cu_rotmg(cublas_handle, d1, d2, b1, b2, P);
     }
 
     var flag = P[0],
@@ -1243,19 +1105,9 @@ proc test_cuscal_helper(type t) {
     //Create cublas handle
     var cublas_handle = cublas_create_handle();
 
-    select t {
-      when real(32) do {
-        cu_sscal(cublas_handle, N, a, gpu_ptr_X);
-      }
-      when real(64) do {
-        cu_dscal(cublas_handle, N, a, gpu_ptr_X);
-      }
-      when complex(64) do {
-        cu_cscal(cublas_handle, N, a, gpu_ptr_X);
-      }
-      when complex(128) do {
-        cu_zscal(cublas_handle, N, a, gpu_ptr_X);
-      }
+    if t == real(32)    || t == real(64) ||
+       t == complex(64) || t == complex(128) {
+      cu_scal(cublas_handle, N, a, gpu_ptr_X);
     }
 
     gpu_to_cpu(c_ptrTo(X), gpu_ptr_X, c_sizeof(t)*N:size_t);
@@ -1290,10 +1142,8 @@ proc test_cucsscal_helper(type t) {
     //Create cublas handle
     var cublas_handle = cublas_create_handle();
 
-    select t {
-      when complex(64) do {
-        cu_csscal(cublas_handle, N, a, gpu_ptr_X);
-      }
+    if t == complex(64) {
+      cu_scal(cublas_handle, N, a, gpu_ptr_X);
     }
 
     gpu_to_cpu(c_ptrTo(X), gpu_ptr_X, c_sizeof(t)*N:size_t);
@@ -1328,10 +1178,8 @@ proc test_cuzdscal_helper(type t) {
     //Create cublas handle
     var cublas_handle = cublas_create_handle();
 
-    select t {
-      when complex(128) do {
-        cu_zdscal(cublas_handle, N, a, gpu_ptr_X);
-      }
+    if t == complex(128) {
+      cu_scal(cublas_handle, N, a, gpu_ptr_X);
     }
 
     gpu_to_cpu(c_ptrTo(X), gpu_ptr_X, c_sizeof(t)*N:size_t);
@@ -1369,19 +1217,9 @@ proc test_cuswap_helper(type t) {
     //Create cublas handle
     var cublas_handle = cublas_create_handle();
 
-    select t {
-      when real(32) do {
-        cu_sswap(cublas_handle, N, gpu_ptr_X, gpu_ptr_Y);
-      }
-      when real(64) do {
-        cu_dswap(cublas_handle, N, gpu_ptr_X, gpu_ptr_Y);
-      }
-      when complex(64) do {
-        cu_cswap(cublas_handle, N, gpu_ptr_X, gpu_ptr_Y);
-      }
-      when complex(128) do {
-        cu_zswap(cublas_handle, N, gpu_ptr_X, gpu_ptr_Y);
-      }
+    if t == real(32)    || t == real(64) ||
+       t == complex(64) || t == complex(128) {
+      cu_swap(cublas_handle, N, gpu_ptr_X, gpu_ptr_Y);
     }
 
     gpu_to_cpu(c_ptrTo(X), gpu_ptr_X, c_sizeof(t)*N:size_t);

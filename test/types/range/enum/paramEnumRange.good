@@ -1,0 +1,76 @@
+paramEnumRange.chpl:4: warning: red
+paramEnumRange.chpl:4: warning: orange
+paramEnumRange.chpl:4: warning: yellow
+paramEnumRange.chpl:4: warning: green
+paramEnumRange.chpl:4: warning: blue
+paramEnumRange.chpl:7: warning: ---
+paramEnumRange.chpl:11: warning: red
+paramEnumRange.chpl:11: warning: yellow
+paramEnumRange.chpl:11: warning: blue
+paramEnumRange.chpl:14: warning: ---
+paramEnumRange.chpl:18: warning: orange
+paramEnumRange.chpl:18: warning: green
+paramEnumRange.chpl:21: warning: ---
+paramEnumRange.chpl:25: warning: orange
+paramEnumRange.chpl:25: warning: green
+paramEnumRange.chpl:25: warning: purple
+paramEnumRange.chpl:28: warning: ---
+paramEnumRange.chpl:35: warning: ---
+paramEnumRange.chpl:39: warning: blue
+paramEnumRange.chpl:39: warning: green
+paramEnumRange.chpl:39: warning: yellow
+paramEnumRange.chpl:39: warning: orange
+paramEnumRange.chpl:39: warning: red
+paramEnumRange.chpl:42: warning: ---
+paramEnumRange.chpl:46: warning: blue
+paramEnumRange.chpl:46: warning: yellow
+paramEnumRange.chpl:46: warning: red
+paramEnumRange.chpl:49: warning: ---
+paramEnumRange.chpl:53: warning: purple
+paramEnumRange.chpl:53: warning: green
+paramEnumRange.chpl:56: warning: ---
+paramEnumRange.chpl:60: warning: blue
+paramEnumRange.chpl:60: warning: yellow
+paramEnumRange.chpl:60: warning: red
+paramEnumRange.chpl:67: warning: ---
+paramEnumRange.chpl:71: warning: red
+paramEnumRange.chpl:71: warning: yellow
+paramEnumRange.chpl:71: warning: blue
+red
+orange
+yellow
+green
+blue
+---
+red
+yellow
+blue
+---
+orange
+green
+---
+orange
+green
+purple
+---
+---
+blue
+green
+yellow
+orange
+red
+---
+blue
+yellow
+red
+---
+purple
+green
+---
+blue
+yellow
+red
+---
+red
+yellow
+blue

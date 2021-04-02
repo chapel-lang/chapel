@@ -186,8 +186,8 @@ static void addArgForGenericField(CallExpr* genCall, Symbol* gf) {
 
 static bool applyStandinsToGenerics(BlockStmt* holder, SymbolMap& fml2act) {
   bool gotGenerics = false;
-  form_Map(SymbolMapElem, elem, fml2act) {
-    Type* targetOrig = elem->value->type;
+  for (auto elem: sortedSymbolMapElts(fml2act)) {
+    Type* targetOrig = elem.value->type;
     Type* targetVal  = targetOrig->getValType();
     // CG TODO: also handle DecoratedClassType
     if (AggregateType* at = toAggregateType(targetVal)) {
@@ -205,7 +205,7 @@ static bool applyStandinsToGenerics(BlockStmt* holder, SymbolMap& fml2act) {
       if (targetVal != targetOrig && instType->refType != nullptr)
         instType = instType->refType;
 
-      elem->value = instType->symbol; // aka fml2act.put(elem->key, instType);
+      fml2act.put(elem.key, instType->symbol);
       genCall->remove();
     }
   }
@@ -505,12 +505,13 @@ static Type* instantiateOneAggregateType(SymbolMap &fml2act,
   if (atgen == nullptr) return nullptr; // 'at' is not a generic type
   // CG TODO: can 'atgen' also be an instantiated generic with ifc types?
 
+  SymbolMapVector elts = sortedSymbolMapElts(at->substitutions);
   // We may or may not use its contents.
   std::vector<Type*> subs;  // used only when there are new substitution(s)
   bool gotSub = false;
-  form_Map(SymbolMapElem, elem, at->substitutions) {
-    if (elem->key->hasFlag(FLAG_PARAM)) continue;
-    Type* srcT = elem->value->type;
+  for (auto elem: elts) {
+    if (elem.key->hasFlag(FLAG_PARAM)) continue;
+    Type* srcT = elem.value->type;
     Type* inst = instantiateOneAggregateType(fml2act, anchor, srcT, markRm);
     subs.push_back(inst != nullptr ? inst : srcT);
     if (inst != nullptr) gotSub = true;
@@ -522,14 +523,14 @@ static Type* instantiateOneAggregateType(SymbolMap &fml2act,
   CallExpr* genCall = new CallExpr(atgen->symbol);
   anchor->insertBefore(genCall);
   int i = 0;
-  form_Map(SymbolMapElem, elem, at->substitutions) {
+  for (auto elem: elts) {
     Symbol* instSym = nullptr;
     // follow addArgForGenericField()
-    if (elem->key->hasFlag(FLAG_PARAM)) // param field
-      instSym = elem->value; // apply the same substitution as for 'at'
+    if (elem.key->hasFlag(FLAG_PARAM)) // param field
+      instSym = elem.value; // apply the same substitution as for 'at'
     else // var or type field
       instSym = subs[i++]->symbol;
-    genCall->insertAtTail(new NamedExpr(elem->key->name, new SymExpr(instSym)));
+    genCall->insertAtTail(new NamedExpr(elem.key->name, new SymExpr(instSym)));
   }
 
   AggregateType* instT = atgen->generateType(genCall, "<internal error>");
@@ -601,8 +602,8 @@ static void createRepsForIfcSymbols(FnSymbol* fn, InterfaceInfo* ifcInfo) {
       fml2act.put(required->symbol, instantiated);
     }
 
-    form_Map(SymbolMapElem, elem, isym->requiredFns) {
-      FnSymbol* required = toFnSymbol(elem->key);
+    for (auto elem: sortedSymbolMapElts(isym->requiredFns)) {
+      FnSymbol* required = toFnSymbol(elem.key);
       FnSymbol* instantiated = makeRepForRequiredFn(fn, fml2act, required);
       // We may also want to make 'instantiated' visible in fn->where.
       fn->body->insertAtHead(new DefExpr(instantiated));
@@ -969,7 +970,7 @@ static bool resolveOneRequiredFn(InterfaceSymbol* isym,  ImplementsStmt*  istm,
                                  std::vector<FnSymbol*>  &instantiatedDefaults,
                                  BlockStmt*     holder,
                                  const char*    indent,  bool     reportErrors,
-                                 FnSymbol*       reqFn,  Symbol*      &implRef)
+                                 FnSymbol*       reqFn,  Symbol*        implFn)
 {
   INT_ASSERT(holder->body.empty());
   cgprint("%s  required fn %s\n", indent, symstring(reqFn));
@@ -1013,7 +1014,7 @@ static bool resolveOneRequiredFn(InterfaceSymbol* isym,  ImplementsStmt*  istm,
   } else {
     // the call did not resolve
     call->remove();
-    if (implRef == gDummyWitness) {
+    if (implFn == gDummyWitness) {
       if (reportErrors) {
         USR_FATAL_CONT(istm, "when checking this implements statement");
         USR_PRINT(istm, "the required function %s is not implemented",
@@ -1032,7 +1033,7 @@ static bool resolveOneRequiredFn(InterfaceSymbol* isym,  ImplementsStmt*  istm,
     } else {
       // fall back on the default implementation
       SymbolMap fml2actDup = fml2act; // avoid fml2act updates by copy()
-      target = toFnSymbol(implRef->copy(&fml2actDup));
+      target = toFnSymbol(implFn->copy(&fml2actDup));
       holder->insertBefore(new DefExpr(target));
       instantiatedDefaults.push_back(target);
       INT_ASSERT(target->isResolved()); // the dflt impl was resolved with isym
@@ -1043,7 +1044,7 @@ static bool resolveOneRequiredFn(InterfaceSymbol* isym,  ImplementsStmt*  istm,
   CallExpr* popped = callStack.pop();
   INT_ASSERT(popped == call);
 
-  implRef = target; // aka istm->witnesses.put(reqFn, target)
+  istm->witnesses.put(reqFn, target);
   return target != NULL;
 }
 
@@ -1054,13 +1055,13 @@ static bool resolveRequiredFns(InterfaceSymbol* isym,  ImplementsStmt* istm,
   bool rfSuccess = true;
   std::vector<FnSymbol*> instantiatedDefaults;
 
-  form_Map(SymbolMapElem, wit, istm->witnesses) {
-    if (FnSymbol* reqFn = toFnSymbol(wit->key))
+  for (auto wit: sortedSymbolMapElts(istm->witnesses)) {
+    if (FnSymbol* reqFn = toFnSymbol(wit.key))
       rfSuccess &= resolveOneRequiredFn(isym, istm, fml2act, gotGenerics,
                                         instantiatedDefaults, holder, indent,
-                                        reportErrors, reqFn, wit->value);
+                                        reportErrors, reqFn, wit.value);
     else
-      INT_ASSERT(isConstrainedTypeSymbol(wit->key, CT_IFC_ASSOC_TYPE));
+      INT_ASSERT(isConstrainedTypeSymbol(wit.key, CT_IFC_ASSOC_TYPE));
   }
 
   if (rfSuccess) {

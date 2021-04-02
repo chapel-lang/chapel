@@ -101,6 +101,8 @@ static void progressfns_test(int id);
 static void op_test(int id);
 
 static void spawner_test(void);
+static void hbarrier_test(void);
+static void rexchgv_test(void);
 
 static gex_TM_t myteam;
 
@@ -197,6 +199,10 @@ extern int gasneti_run_diagnostics(int iter_cnt, int threadcnt, const char *test
     spawner_test();
     BARRIER();
   #endif
+
+  TEST_HEADER("host-scoped barrier test") hbarrier_test();
+
+  TEST_HEADER("RotatedExchangeV test") rexchgv_test();
 
   #if GASNET_PAR
     num_threads = threadcnt;
@@ -1452,6 +1458,104 @@ static void spawner_test(void) {
   gasneti_free(all_data);
 }
 #endif
+
+/* ------------------------------------------------------------------------------------ */
+
+static void hbarrier_test(void) {
+  // Currently, this is just to ensure this little-used interface gets tested
+  // TODO:
+  //   + Maybe verify that barrier property holds?
+  //   + Maybe verify AM progress made within this barrier?
+  for (int i = 0; i < iters0; ++i) {
+    gasneti_host_barrier();
+  }
+}
+
+/* ------------------------------------------------------------------------------------ */
+
+static void rexchgv_test(void) {
+  uint64_t data[10];
+  const size_t elem_sz = sizeof(data[0]);
+  const size_t total_len = gasneti_nodes * sizeof(data);
+  const int N = sizeof(data)/elem_sz;  // total values per rank
+  for (int i = 0; i < N; ++i) {
+    data[i] = gasneti_mynode + i * gasneti_nodes;
+  }
+
+  for (int iter = 0; iter < iters0; ++iter) {
+    // Choose splits between first and second exchanges
+    // First iteration is deterministic and the rest are random
+    int part1, part2;
+    if (!iter) {
+      part1 = 0;
+      part2 = N;
+    } else {
+      // Note that RAND() is in-sync across ranks, which we intentionally purturb
+      part1 = (TEST_RAND(0,N) + gasneti_mynode) % N;
+      part2 = N - part1;
+    }
+
+    uint64_t *data1, *data2;
+    size_t *len1, *len2;
+    size_t partial_len1, partial_len2;
+
+    partial_len1 = gasneti_blockingRotatedExchangeV(myteam, data, part1*elem_sz, (void**)&data1, &len1);
+    if (partial_len1) {
+      gasneti_assert_always_uint(*len1 ,==, part1*elem_sz);
+    } else {
+      gasneti_assert_always(data1 == NULL);
+      gasneti_assert_always(len1 == NULL);
+    }
+
+    partial_len2 = gasneti_blockingRotatedExchangeV(myteam, data+part1, part2*elem_sz, (void**)&data2, &len2);
+    if (partial_len2) {
+      gasneti_assert_always_uint(*len2 ,==, part2*elem_sz);
+    } else {
+      gasneti_assert_always(data2 == NULL);
+      gasneti_assert_always(len2 == NULL);
+    }
+
+    { // Validate lengths satisfy alignment and summation properties
+      gasneti_assert_always_uint(partial_len1 + partial_len2 ,==, total_len);
+      gasneti_assert_always_uint(partial_len1 % elem_sz ,==, 0);
+      gasneti_assert_always_uint(partial_len2 % elem_sz ,==, 0);
+      size_t sum1 = 0;
+      size_t sum2 = 0;
+      for (gex_Rank_t i = 0; i < gasneti_nodes; ++i) {
+        size_t tmp1 = len1 ? len1[i] : 0;
+        gasneti_assert_always_uint(tmp1 % elem_sz ,==, 0);
+        sum1 += tmp1;
+        size_t tmp2 = len2 ? len2[i] : 0;
+        gasneti_assert_always_uint(tmp2 % elem_sz ,==, 0);
+        sum2 += tmp2;
+        gasneti_assert_always_uint(tmp1 + tmp2 ,==, sizeof(data));
+      }
+      gasneti_assert_always_uint(partial_len1 ,==, sum1);
+      gasneti_assert_always_uint(partial_len2 ,==, sum2);
+    }
+
+    { // Validate content
+      uint64_t *p1 = data1;
+      uint64_t *p2 = data2;
+      for (gex_Rank_t i = 0; i < gasneti_nodes; ++i) {
+        int count1 = len1 ? (int)(len1[i] / elem_sz) : 0;
+        uint64_t want = (gasneti_mynode + i) % gasneti_nodes; // Not simply i, due to rotation
+        for (int j = 0; j < count1; ++j, ++p1, want += gasneti_nodes) {
+          gasneti_assert_always_uint(*p1 ,==, want);
+        }
+        int count2 = len2 ? (int)(len2[i] / elem_sz) : 0;
+        for (int j = 0; j < count2; ++j, ++p2, want += gasneti_nodes) {
+          gasneti_assert_always_uint(*p2 ,==, want);
+        }
+      }
+    }
+
+    gasneti_free(data1);
+    gasneti_free(data2);
+    gasneti_free(len1);
+    gasneti_free(len2);
+  }
+}
 
 /* ------------------------------------------------------------------------------------ */
 static gex_AM_Entry_t gasneti_diag_handlers[] = {

@@ -159,7 +159,8 @@ def getDeclName(decl):
     name = ""
     if type(inner) == c_ast.IdentifierType:
         name = " ".join(inner.names)
-    elif type(inner) == c_ast.Struct:
+    elif type(inner) == c_ast.Struct or type(inner) == c_ast.Union:
+        # Because Unions and Structs should be handled in the same way
         name = inner.name
     elif type(inner) == c_ast.Decl:
         name = inner.name
@@ -181,7 +182,7 @@ def computeArgName(decl):
         decl.show()
         raise c_parser.ParseError("Unhandled Node type")
 
-def isStructType(ast):
+def isStructOrUnionType(ast):
     inner = ast
 
     if type(inner) == c_ast.TypeDecl:
@@ -190,9 +191,9 @@ def isStructType(ast):
     if type(inner) == c_ast.IdentifierType:
         name = " ".join(inner.names)
         if name in typeDefs:
-            return isStructType(typeDefs[name].type)
+            return isStructOrUnionType(typeDefs[name].type)
 
-    if type(inner) == c_ast.Struct:
+    if type(inner) == c_ast.Struct or type(inner) == c_ast.Union:
         return True
 
     return False
@@ -233,7 +234,7 @@ def computeArgs(pl):
             argName = computeArgName(arg)
             if typeName != "":
                 if intent == "":
-                    if isStructType(arg.type):
+                    if isStructOrUnionType(arg.type):
                         intent = "in "
                 else:
                     intent += " "
@@ -328,24 +329,28 @@ def genFuncDecl(fn):
         genComment("Overload for empty varargs")
         print("extern proc " + fnName + "(" + newArgs + ") : " + retType + ";\n")
 
-def isStructDef(decl):
-    if type(decl) == c_ast.Struct:
+def isStructOrUnionDef(decl):
+    if type(decl) == c_ast.Struct or type(decl) == c_ast.Union:
         if decl.decls is not None:
             return decl
         else:
             return None
     elif type(decl) == c_ast.Decl or type(decl) == c_ast.TypeDecl or type(decl) == c_ast.PtrDecl:
-        return isStructDef(decl.type)
+        return isStructOrUnionDef(decl.type)
     else:
         return None
 
 
-def genStruct(struct, name=""):
+def genStructOrUnion(structOrUnion, name=""):
     if name == "":
-        name = struct.name
+        if structOrUnion.name is not None:
+            name = structOrUnion.name
+        else:
+            return
 
     if name in chapelKeywords:
-        genComment("Unable to generate struct '" + name + "' because its name is a Chapel keyword")
+        isStructOrIsUnion = ("struct" if isinstance(structOrUnion, c_ast.Struct) else "union")
+        genComment("Unable to generate " + isStructOrIsUnion + " '" + name + "' " + "because its name is a Chapel keyword")
         print()
         return
 
@@ -353,16 +358,17 @@ def genStruct(struct, name=""):
     foundTypes.add(name)
 
     # Forward Declaration
-    if not struct.decls:
+    if not structOrUnion.decls:
         print()
         return
 
     members = ""
     warnKeyword = False
-    for decl in struct.decls:
-        innerStruct = isStructDef(decl)
-        if innerStruct is not None:
-            genStruct(innerStruct)
+    warnSkippingAnonymousType = False
+    for decl in structOrUnion.decls:
+        innerStructOrUnion = isStructOrUnionDef(decl)
+        if innerStructOrUnion is not None:
+            genStructOrUnion(innerStructOrUnion)
 
         fieldName = getDeclName(decl)
         if fieldName in chapelKeywords:
@@ -370,13 +376,19 @@ def genStruct(struct, name=""):
             warnKeyword = True
             break
         else:
-            members += "  var " + fieldName + " : " + toChapelType(decl.type) + ";\n"
+            chapelType = toChapelType(decl.type)
+            if chapelType is None:
+                warnSkippingAnonymousType = True
+                break
+            members += "  var " + fieldName + " : " + chapelType + ";\n"
 
     if members != "":
         members = "\n" + members
     ret += members + "}\n"
     if warnKeyword:
         genComment("Fields omitted because one or more of the identifiers is a Chapel keyword")
+    if warnSkippingAnonymousType:
+        genComment("Anonymous union or struct was encountered within and skipped.")
     print(ret)
 
 def genVar(decl):
@@ -406,9 +418,9 @@ def genTypeEnum(decl):
 
 # Simple visitor to all function declarations
 class ChapelVisitor(c_ast.NodeVisitor):
-    def visit_Struct(self, node):
+    def visit_StructOrUnion(self, node):
         typeDefs[node.name] = None
-        genStruct(node)
+        genStructOrUnion(node)
 
     def visit_Typedef(self, node):
         if node.name not in typeDefs:
@@ -428,8 +440,8 @@ class ChapelVisitor(c_ast.NodeVisitor):
             genComment("Evaluating node:")
             commentNode(node)
         for c_name, c in node.children():
-            if type(c) == c_ast.Struct:
-                self.visit_Struct(c)
+            if type(c) == c_ast.Struct or type(c) == c_ast.Union:
+                self.visit_StructOrUnion(c)
             elif type(c) == c_ast.FuncDecl:
                 self.visit_FuncDecl(c)
             elif type(c) == c_ast.Enum:
@@ -458,21 +470,33 @@ def isPointerToStruct(node):
             return isPointerToStruct(node.type)
     return None
 
+def isPointerToUnion(node):
+    if type(node) == c_ast.PtrDecl:
+        if type(node.type) == c_ast.TypeDecl and type(node.type.type) == c_ast.Union:
+            return node.type.type
+        else:
+            return isPointerToUnion(node.type)
+    return None
+
 def genTypedefs(defs):
     for name in sorted(defs):
         node = defs[name]
         if node is not None:
-            if type(node.type.type) == c_ast.Struct:
+            if type(node.type.type) == c_ast.Struct or type(node.type.type) == c_ast.Union:
                 sn = node.type.type
                 if sn.decls is not None:
-                    genStruct(sn, name=node.name)
+                    genStructOrUnion(sn, name=node.name)
                 elif sn.name not in foundTypes:
-                    genComment("Opaque struct?")
+                    isStructOrIsUnion = ("struct" if type(node.type.type) == c_ast.Struct else "union")
+                    genComment("Opaque " + isStructOrIsUnion + "?")
                     print("extern record " + node.name + " {};\n")
                 else:
                     genTypeAlias(node)
             elif isPointerToStruct(node.type):
                 genComment("Typedef'd pointer to struct")
+                print("extern type " + node.name + ";\n")
+            elif isPointerToUnion(node.type):
+                genComment("Typedef'd pointer to union")
                 print("extern type " + node.name + ";\n")
             elif type(node.type.type) == c_ast.Enum:
                 genComment(node.name + " enum")

@@ -576,6 +576,7 @@ gex_Rank_t gasnete_ratomic_self(gasneti_AD_t _ad, gex_Flags_t _flags) {
     GASNETI_INLINE(fname) _GASNETE_RATOMIC_DISP_WARN##nbnbi              \
     rettype fname(_GASNETE_RATOMIC_DISP_ARGS(type))                      \
     {                                                                    \
+        GASNETI_CHECK_INJECT();                                          \
         GASNETE_TRACE_RATOMIC##nbnbi(_ad, dtcode##_dtype, _result_p,     \
                                      _tgt_rank,_tgt_addr,_opcode,_flags, \
                                      dtcode##_fmt,dtcode##_fmt_cast,     \

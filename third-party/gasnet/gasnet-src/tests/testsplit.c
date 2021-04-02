@@ -15,7 +15,6 @@
 
 #ifndef SCRATCH_QUERY_FLAG
 #define SCRATCH_QUERY_FLAG GEX_FLAG_TM_SCRATCH_SIZE_RECOMMENDED
-//#define SCRATCH_QUERY_FLAG GEX_FLAG_TM_SCRATCH_SIZE_MIN
 #endif
 
 static gex_Client_t  myclient;
@@ -94,12 +93,14 @@ static gex_TM_t eventm;
 static void *even_scratch;
 static size_t even_scratch_sz;
 static void do_evens(void) {
+  static int reps = 0;
   eventm = coltm; // init just to check whether overwritten
   int even = !(myrank & 1);
   gex_Rank_t nmembers = even ? (gex_TM_QuerySize(myteam) + 1)/2 : 0;
   gex_EP_Location_t *members = test_calloc(sizeof(gex_EP_Location_t), nmembers);
   for (gex_Rank_t i = 0; i < nmembers; ++ i) members[i].gex_rank = i * 2;
-  gex_TM_Create(&eventm, 1, myteam, members, nmembers, &even_scratch, even_scratch_sz, GEX_FLAG_TM_LOCAL_SCRATCH);
+  gex_Flags_t scratch_flag = (++reps & 1) ? GEX_FLAG_TM_LOCAL_SCRATCH : GEX_FLAG_TM_NO_SCRATCH;
+  gex_TM_Create(&eventm, 1, myteam, members, nmembers, &even_scratch, even_scratch_sz, scratch_flag);
   if (even) {
     assert_always(eventm != coltm);
     assert_always(gex_TM_QuerySize(eventm) == nmembers);
@@ -164,8 +165,6 @@ int main(int argc, char **argv)
   size_t scratch_sz;
 
   // Spec says NULL new_tm_p returns zero.
-  scratch_sz = gex_TM_Split(NULL, myteam, 0, 1, 0, 0, GEX_FLAG_TM_SCRATCH_SIZE_MIN);
-  assert_always(scratch_sz == 0);
   scratch_sz = gex_TM_Split(NULL, myteam, 0, 1, 0, 0, GEX_FLAG_TM_SCRATCH_SIZE_RECOMMENDED);
   assert_always(scratch_sz == 0);
 
@@ -205,12 +204,9 @@ int main(int argc, char **argv)
     assert_always(ep_loc.gex_ep_index == 0);
   }
 
-  // Singleton team (also tests a 2nd-level split, of coltm):
+  // Singleton team (also tests a 2nd-level split, of coltm, and GEX_FLAG_TM_NO_SCRATCH):
   gex_TM_t onetm = coltm; // init just to check whether overwritten
-  scratch_sz = gex_TM_Split(&onetm, coltm, myrank, 0, 0, 0, SCRATCH_QUERY_FLAG);
-  assert_always((scratch_addr + scratch_sz) <= scratch_end);
-  gex_TM_Split(&onetm, coltm, myrank, 0, (void*)scratch_addr, scratch_sz, 0);
-  scratch_addr += scratch_sz;
+  gex_TM_Split(&onetm, coltm, myrank, 0, NULL, 0, GEX_FLAG_TM_NO_SCRATCH);
   assert_always(onetm != coltm);
   assert_always(gex_TM_QueryRank(onetm) == 0);
   assert_always(gex_TM_QuerySize(onetm) == 1);
@@ -330,7 +326,15 @@ int main(int argc, char **argv)
   }
 
   // More destruction
-  assert_always(! gex_TM_Destroy(onetm, NULL, 0));
+  {
+    // NO_SCRATCH case must not write to *scratch_p
+    gex_Memvec_t scratch_out;
+    scratch_out.gex_addr = (void*)main;
+    scratch_out.gex_len  = myrank;
+    assert_always(! gex_TM_Destroy(onetm, &scratch_out, 0));
+    assert_always(scratch_out.gex_addr == (void*)main);
+    assert_always(scratch_out.gex_len  == myrank);
+  }
   assert_always(! gex_TM_Destroy(rowtm, NULL, 0));
   assert_always(! gex_TM_Destroy(coltm, NULL, 0));
   assert_always(! gex_TM_Destroy(revtm, NULL, 0));

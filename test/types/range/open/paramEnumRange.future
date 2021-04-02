@@ -1,3 +1,0 @@
-feature requst: param ranges over enums
-
-It seems we currently don't support these, but should and easily could.

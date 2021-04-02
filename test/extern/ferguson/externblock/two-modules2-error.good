@@ -1,1 +1,2 @@
+two-modules2-error.chpl:1: In module 'OuterModule':
 two-modules2-error.chpl:12: error: 'x' undeclared (first use this function)

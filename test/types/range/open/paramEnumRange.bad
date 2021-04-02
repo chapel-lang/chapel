@@ -1,1 +1,0 @@
-paramEnumRange.chpl:3: error: Range bounds must be integers of compatible types in param for-loops

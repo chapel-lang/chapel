@@ -20,10 +20,4 @@
   extern int gasnetc_pthread_create(gasneti_pthread_create_fn_t *, pthread_t *, const pthread_attr_t *, void *(*)(void *), void *);
 #endif
 
-#if defined(GASNET_SEGMENT_FAST)
-  #define GASNETC_PIN_SEGMENT 1
-#else
-  #define GASNETC_PIN_SEGMENT 0
-#endif
-
 #endif

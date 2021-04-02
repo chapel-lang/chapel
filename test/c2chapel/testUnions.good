@@ -1,0 +1,13 @@
+intUnion contents:
+a = 3
+b = 3
+c = 3
+
+stringUnion contents:
+a = Hello
+b = World
+
+Calling fnUnion.fn(42):
+In foo function, given: 42
+Calling fnUnion.fn(42):
+In bar function! got: 42
