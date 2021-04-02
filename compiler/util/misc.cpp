@@ -487,15 +487,11 @@ static void printCallstackForLastError() {
 
 //
 // Given a function whose name starts with chpl_, it may be of interest
-// to a non-developer if it is a "non-trivial" module init function.
-// As a heuristic, we consider a module to be "trivial" if its name matches
-// the name of its file or if it starts on the first line of its file.
+// to a non-developer if it is module init function. As a heuristic, if the
+// module name matches the name of its file, we consider it not "interesting".
 //
-static bool nontrivialModuleInit(FnSymbol* fn) {
+static bool interestingModuleInit(FnSymbol* fn) {
   if (! fn->hasFlag(FLAG_MODULE_INIT))
-    return false;
-
-  if (fn->linenum() <= 1)
     return false;
 
   const char* basename = fn->fname();
@@ -504,6 +500,9 @@ static bool nontrivialModuleInit(FnSymbol* fn) {
 
   if (const char* slash = (const char*) strrchr(basename, '/'))
     basename = slash+1;
+
+  if (! startsWith(fn->name, "chpl__init_"))
+    return false; // unexpected, so let's stay away from it
 
   const char* modulename = astr(fn->name + 11, ".chpl");
 
@@ -551,7 +550,7 @@ static bool printErrorHeader(BaseAST* ast, astlocT astloc) {
           // DO print "In module MMM" unless it is obvious.
           if (developer                              ||
               strncmp(err_fn->name, "chpl_", 5) != 0 ||
-              nontrivialModuleInit(err_fn)            )
+              interestingModuleInit(err_fn)           )
           {
             print_error("%s:%d: In %s:\n",
                         cleanFilename(err_fn), err_fn->linenum(),

@@ -1,3 +1,4 @@
+error-method-on-nilable-owned.chpl:1: In module 'mymod':
 error-method-on-nilable-owned.chpl:14: warning: borrowed MyClass?
 error-method-on-nilable-owned.chpl:5: In function 'test':
 error-method-on-nilable-owned.chpl:11: error: unresolved call 'owned MyClass?.mymethod()'
