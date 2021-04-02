@@ -1,1 +1,2 @@
+mutualuse.chpl:30: In module 'M2':
 mutualuse.chpl:33: error: use of 'a' before encountering its definition, type unknown
