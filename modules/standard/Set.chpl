@@ -203,7 +203,7 @@ module Set {
       this.complete();
 
       // TODO: Relax this to allow if 'isCoercible(t, this.eltType)'?
-      if this.eltType != t {
+      if eltType != t {
         compilerError('cannot initialize ', this.type:string, ' from ',
                       other.type:string, ' due to element type ',
                       'mismatch');
@@ -212,6 +212,7 @@ module Set {
                       other.type:string, ' because element type ',
                       eltType:string, ' is not copyable');
       } else {
+        // TODO: Use a forall when this.parSafe?
         for elem in other do _addElem(elem);
       }
     }
@@ -547,12 +548,12 @@ module Set {
     :arg b: A set to take the union of.
 
     :return: A new set containing the union between `a` and `b`.
-    :rtype: `set(?t, ?)`
   */
   proc |(const ref a: set(?t, ?), const ref b: set(t, ?)) {
     var result: set(t, (a.parSafe || b.parSafe));
 
-    // TODO: Split-init causes weird errors, see setCompositionParSafe.chpl
+    // TODO: Split-init causes weird errors, remove this line and then run
+    // setCompositionParSafe.chpl to see.
     result;
 
     result = a;
@@ -580,7 +581,6 @@ module Set {
     :arg b: A set to take the union of.
 
     :return: A new set containing the union between `a` and `b`.
-    :rtype: `set(?t, ?)`
   */
   proc +(const ref a: set(?t, ?), const ref b: set(t, ?)) {
     return a | b;
@@ -603,7 +603,6 @@ module Set {
     :arg b: A set to take the difference of.
 
     :return: A new set containing the difference between `a` and `b`.
-    :rtype: `set(t)`
   */
   proc -(const ref a: set(?t, ?), const ref b: set(t, ?)) {
     var result = new set(t, (a.parSafe || b.parSafe));
@@ -649,7 +648,6 @@ module Set {
     :arg b: A set to take the intersection of.
 
     :return: A new set containing the intersection of `a` and `b`.
-    :rtype: `set(t)`
   */
   proc &(const ref a: set(?t, ?), const ref b: set(t, ?)) {
     var result: set(t, (a.parSafe || b.parSafe));
@@ -717,12 +715,12 @@ module Set {
     :arg b: A set to take the symmetric difference of.
 
     :return: A new set containing the symmetric difference of `a` and `b`.
-    :rtype: `set(?t, ?)`
   */
   proc ^(const ref a: set(?t, ?), const ref b: set(t, ?)) {
     var result: set(t, (a.parSafe || b.parSafe));
 
-    // TODO: Split-init causes weird errors, see setCompositionParSafe.chpl
+    // TODO: Split-init causes weird errors, remove this line and then run
+    // setCompositionParSafe.chpl to see.
     result;
 
     /* Expect the loop in ^= to be more expensive than the loop in =,
@@ -801,6 +799,8 @@ module Set {
 
   pragma "no doc"
   operator :(x: set(?et1, ?p1), type t: set(?et2, ?p2)) {
+    // TODO: Allow coercion between element types? If we do then init=
+    // should also be changed accordingly.
     if et1 != et2 then
       compilerError('Cannot cast to set with different ',
                     'element type: ', t:string);
