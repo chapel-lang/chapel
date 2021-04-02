@@ -195,17 +195,26 @@ module Set {
 
       :arg other: A set to initialize this set with.
     */
-    proc init=(const ref other: set(?t, ?)) lifetime this < other {
-      this.eltType = t;
-      this.parSafe = other.parSafe;
+    proc init=(const ref other: set(?t, ?p)) lifetime this < other {
+      this.eltType = if this.type.eltType != ? then
+                        this.type.eltType else t;
+      this.parSafe = if this.type.parSafe != ? then
+                        this.type.parSafe else p;
       this.complete();
 
-      if !isCopyableType(eltType) then
-        compilerError('cannot initialize ' + this.type:string + ' from ' +
-                      other.type:string + ' because element type ' +
-                      eltType:string + ' is not copyable');
-
-      for elem in other do _addElem(elem);
+      // TODO: Relax this to allow if 'isCoercible(t, this.eltType)'?
+      if eltType != t {
+        compilerError('cannot initialize ', this.type:string, ' from ',
+                      other.type:string, ' due to element type ',
+                      'mismatch');
+      } else if !isCopyableType(eltType) {
+        compilerError('cannot initialize ', this.type:string, ' from ',
+                      other.type:string, ' because element type ',
+                      eltType:string, ' is not copyable');
+      } else {
+        // TODO: Use a forall when this.parSafe?
+        for elem in other do _addElem(elem);
+      }
     }
 
     pragma "no doc"
@@ -539,10 +548,13 @@ module Set {
     :arg b: A set to take the union of.
 
     :return: A new set containing the union between `a` and `b`.
-    :rtype: `set(?t, ?)`
   */
-  proc |(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t) {
+  proc |(const ref a: set(?t, ?), const ref b: set(t, ?)) {
     var result: set(t, (a.parSafe || b.parSafe));
+
+    // TODO: Split-init causes weird errors, remove this line and then run
+    // setCompositionParSafe.chpl to see.
+    result;
 
     result = a;
     result |= b;
@@ -569,9 +581,8 @@ module Set {
     :arg b: A set to take the union of.
 
     :return: A new set containing the union between `a` and `b`.
-    :rtype: `set(?t, ?)`
   */
-  proc +(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t, ?) {
+  proc +(const ref a: set(?t, ?), const ref b: set(t, ?)) {
     return a | b;
   }
 
@@ -592,13 +603,12 @@ module Set {
     :arg b: A set to take the difference of.
 
     :return: A new set containing the difference between `a` and `b`.
-    :rtype: `set(t)`
   */
-  proc -(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t) {
+  proc -(const ref a: set(?t, ?), const ref b: set(t, ?)) {
     var result = new set(t, (a.parSafe || b.parSafe));
 
     if a.parSafe && b.parSafe {
-      forall x in a do
+      forall x in a with (ref result) do
         if !b.contains(x) then
           result.add(x);
     } else {
@@ -623,7 +633,7 @@ module Set {
   */
   proc -=(ref lhs: set(?t, ?), const ref rhs: set(t, ?)) {
     if lhs.parSafe && rhs.parSafe {
-      forall x in rhs do
+      forall x in rhs with (ref lhs) do
         lhs.remove(x);
     } else {
       for x in rhs do
@@ -638,15 +648,14 @@ module Set {
     :arg b: A set to take the intersection of.
 
     :return: A new set containing the intersection of `a` and `b`.
-    :rtype: `set(t)`
   */
-  proc &(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t) {
+  proc &(const ref a: set(?t, ?), const ref b: set(t, ?)) {
     var result: set(t, (a.parSafe || b.parSafe));
 
     /* Iterate over the smaller set */
     if a.size <= b.size {
       if a.parSafe && b.parSafe {
-        forall x in a do
+        forall x in a with (ref result) do
           if b.contains(x) then
             result.add(x);
       } else {
@@ -656,7 +665,7 @@ module Set {
       }
     } else {
       if a.parSafe && b.parSafe {
-        forall x in b do
+        forall x in b with (ref result) do
           if a.contains(x) then
             result.add(x);
       } else {
@@ -687,7 +696,7 @@ module Set {
     var result: set(t, (lhs.parSafe || rhs.parSafe));
 
     if lhs.parSafe && rhs.parSafe {
-      forall x in lhs do
+      forall x in lhs with (ref result) do
         if rhs.contains(x) then
           result.add(x);
     } else {
@@ -695,6 +704,7 @@ module Set {
         if rhs.contains(x) then
           result.add(x);
     }
+
     lhs = result;
   }
 
@@ -705,10 +715,13 @@ module Set {
     :arg b: A set to take the symmetric difference of.
 
     :return: A new set containing the symmetric difference of `a` and `b`.
-    :rtype: `set(?t, ?)`
   */
-  proc ^(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t) {
+  proc ^(const ref a: set(?t, ?), const ref b: set(t, ?)) {
     var result: set(t, (a.parSafe || b.parSafe));
+
+    // TODO: Split-init causes weird errors, remove this line and then run
+    // setCompositionParSafe.chpl to see.
+    result;
 
     /* Expect the loop in ^= to be more expensive than the loop in =,
        so arrange for the rhs of the ^= to be the smaller set. */
@@ -737,7 +750,7 @@ module Set {
   */
   proc ^=(ref lhs: set(?t, ?), const ref rhs: set(t, ?)) {
     if lhs.parSafe && rhs.parSafe {
-      forall x in rhs {
+      forall x in rhs with (ref lhs) {
         if lhs.contains(x) {
           lhs.remove(x);
         } else {
@@ -781,6 +794,17 @@ module Set {
           return false;
     }
 
+    return result;
+  }
+
+  pragma "no doc"
+  operator :(x: set(?et1, ?p1), type t: set(?et2, ?p2)) {
+    // TODO: Allow coercion between element types? If we do then init=
+    // should also be changed accordingly.
+    if et1 != et2 then
+      compilerError('Cannot cast to set with different ',
+                    'element type: ', t:string);
+    var result: set(et1, p2) = x;
     return result;
   }
 
