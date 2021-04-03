@@ -2,10 +2,10 @@ Chapel Contributors
 ===================
 
 The following people have contributed to the implementation of the
-Chapel release:
+most recent Chapel releases:
 
-Contributors to the Chapel 1.24 release
----------------------------------------
+Contributors to the Chapel 1.24.x releases
+------------------------------------------
 * Souris Ash, individual contributor
 * Ben Albrecht, [HPE]
 * Paul Cassella, [HPE]
@@ -17,6 +17,7 @@ Contributors to the Chapel 1.24 release
 * Lydia Duncan, [HPE]
 * Prashanth Duvvuri, individual contributor
 * Michael Ferguson, [HPE]
+* Piyush Gupta, individual contributor
 * David Iten, [HPE]
 * Engin Kayraklioglu, [HPE] (former [GSoC 2017] mentor, [Cray Inc.] intern from [George Washington University])
 * Lee Killough, [HPE]
