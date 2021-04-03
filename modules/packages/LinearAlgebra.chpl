@@ -1314,8 +1314,29 @@ proc lu(A: [?Adom] ?eltType) {
   if Adom.shape(0) != Adom.shape(1) then
     halt("LU factorization only supports square matrices");
 
-  var (LU, ipiv, numSwap) = _lu(A);
-  return (LU,ipiv);
+  const n = Adom.shape(0);
+    const tempD = Adom,
+    firstD = tempD[..n,1];
+    var s : int;
+    for i in firstD { //checks if the array given is 1-based indexed or 0-based indexed
+      s = i;
+      break;
+    }
+   if ( s != 0 ) { //if not 0-based makes a copy of A which is 0-based (array B) 
+    const p = Adom.shape(0);
+    var B = Matrix(p);
+    for i in 0..<p {
+       for j in 0..<p {
+  	  B[i,j] = A[i+1,j+1];
+          }
+        }
+    var (LU, ipiv, numSwap) = _lu(B);
+    return (LU,ipiv);
+} 
+   else {
+    var (LU, ipiv, numSwap) = _lu(A);
+    return (LU,ipiv);
+   }
 }
 
 /* Return a new array as the permuted form of `A` according to
