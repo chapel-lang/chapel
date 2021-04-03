@@ -4,7 +4,7 @@ Release Changes List
 version 1.24.1
 ==============
 
-Update to the twenty-seventh public release of Chapel, April 2021
+Update to the twenty-seventh public release of Chapel, April 2021  
 (see also changes below for 1.24.0)
 
 Highlights
