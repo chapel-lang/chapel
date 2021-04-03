@@ -1327,7 +1327,7 @@ proc lu(A: [?Adom] ?eltType) {
     var B = Matrix(p);
     for i in 0..<p {
        for j in 0..<p {
-  	  B[i,j] = A[i+1,j+1];
+         B[i,j] = A[i+1,j+1];
           }
         }
     var (LU, ipiv, numSwap) = _lu(B);
