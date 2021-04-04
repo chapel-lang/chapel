@@ -1,21 +1,21 @@
 .. default-domain:: chpl
 
-.. module:: functionTypeexprFormat.doc
+.. module:: typeLooksLikeFunc.doc
 
-functionTypeexprFormat.doc
-==========================
+typeLooksLikeFunc.doc
+=====================
 **Usage**
 
 .. code-block:: chapel
 
-   use functionTypeexprFormat.doc;
+   use typeLooksLikeFunc.doc;
 
 
 or
 
 .. code-block:: chapel
 
-   import functionTypeexprFormat.doc;
+   import typeLooksLikeFunc.doc;
 
 .. type:: type t = 2*(int)
 
@@ -25,5 +25,7 @@ or
 
 .. type:: type t2 = int(w/2)
 
-.. data:: var x2 = w / 2
+.. data:: var x2: int(w/2)
+
+.. data:: var x3 = w / 2
 
