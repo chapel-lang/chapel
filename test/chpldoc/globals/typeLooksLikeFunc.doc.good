@@ -1,0 +1,29 @@
+.. default-domain:: chpl
+
+.. module:: functionTypeexprFormat.doc
+
+functionTypeexprFormat.doc
+==========================
+**Usage**
+
+.. code-block:: chapel
+
+   use functionTypeexprFormat.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import functionTypeexprFormat.doc;
+
+.. type:: type t = 2*(int)
+
+.. data:: var x: 2*(int)
+
+.. data:: param w = 32
+
+.. type:: type t2 = int(w/2)
+
+.. data:: var x2 = w / 2
+
