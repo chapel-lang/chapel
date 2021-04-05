@@ -77,6 +77,15 @@ bool ResolutionCandidate::isApplicable(CallInfo& info,
     retval = isApplicableGeneric(info, visInfo);
   }
 
+  // Note: for generic instantiations, this code will be executed twice.
+  // This is because by the time the generic branch returns, its function will
+  // have been replaced by the instantiation, which will have already had this
+  // function called on it.  However, reducing the scope for this operation does
+  // not seem to have a noticeable impact.
+  if (retval && fn->retExprType != NULL && fn->retType == dtUnknown) {
+    resolveSpecifiedReturnType(fn);
+  }
+
   return retval;
 }
 
@@ -94,13 +103,7 @@ bool ResolutionCandidate::isApplicableConcrete(CallInfo& info,
   if (computeAlignment(info) == false)
     return false;
 
-  if (checkResolveFormalsWhereClauses(info, visInfo) == false)
-    return false;
-  
-  if (fn->retExprType != NULL && fn->retType == dtUnknown)
-    resolveSpecifiedReturnType(fn);
-
-  return true;
+  return checkResolveFormalsWhereClauses(info, visInfo);
 }
 
 bool ResolutionCandidate::isApplicableGeneric(CallInfo& info,
