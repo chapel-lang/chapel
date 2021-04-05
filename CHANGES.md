@@ -1,6 +1,52 @@
 Release Changes List
 ====================
 
+version 1.24.1
+==============
+
+Update to the twenty-seventh public release of Chapel, April 2021  
+(see also changes below for 1.24.0)
+
+Highlights
+----------
+* significant performance improvements for InfiniBand systems
+* improved support for computing with `enum` ranges
+* closed all known memory leaks
+
+Feature Improvements
+--------------------
+* extended `param` for-loops to support `enum` ranges
+* added support for open-interval `enum` ranges
+
+Performance Optimizations / Improvements
+----------------------------------------
+* improved performance on InfiniBand systems by upgrading GASNet-EX
+* improved NUMA affinity and startup times when using a fixed heap
+
+Memory Improvements
+-------------------
+* closed a memory leak related to tuple coercions
+* closed a memory leak in `list.insert()`
+* closed a memory leak in constrained generic interfaces
+
+Third-Party Software Changes
+----------------------------
+* upgraded GASNet-EX to version 2021.3.0
+
+Portability
+-----------
+* improved the portability of the code base to HPE Cray EX
+
+Bug Fixes for Libraries
+-----------------------
+* fixed a bug in which `indexOf()` on an empty list halted
+* fixed bugs in binary operations for sets with `parSafe=true`
+
+Developer-oriented changes: Runtime improvements
+------------------------------------------------
+* improved our approach to polling when communicating using GASNet over `ucx`
+
+
 version 1.24.0
 ==============
 
@@ -869,7 +915,7 @@ Developer-oriented changes: Testing System
 version 1.22.1
 ==============
 
-Update to twenty-fifth public release of Chapel, June 2020
+Update to twenty-fifth public release of Chapel, June 2020  
 (see also changes below for 1.22.0)
 
 Portability
@@ -2909,7 +2955,7 @@ Developer-oriented changes: Tool improvements
 version 1.17.1
 ==============
 
-Update to twentieth public release of Chapel, April 2018
+Update to twentieth public release of Chapel, April 2018  
 (see also changes below for 1.17.0)
 
 Bug Fixes
@@ -4759,7 +4805,7 @@ Developer-oriented changes: Third-party improvements
 version 1.13.1
 ==============
 
-Update to sixteenth public release of Chapel, June 2016
+Update to sixteenth public release of Chapel, June 2016  
 (see also changes below for 1.13.0)
 
 Bug Fixes
@@ -8360,7 +8406,7 @@ Internal
 version 1.1.2
 =============
 
-Update to fourth public release of Chapel, September, 2010
+Update to fourth public release of Chapel, September, 2010  
 (see also changes below for 1.1.1 and 1.1)
 
 Platform-specific notes
@@ -8373,7 +8419,7 @@ Platform-specific notes
 version 1.1.1
 =============
 
-Update to fourth public release of Chapel, July 8, 2010
+Update to fourth public release of Chapel, July 8, 2010  
 (see also changes below for 1.1)
 
 Platform-specific notes
@@ -8717,7 +8763,7 @@ Internal
 version 1.02
 ============
 
-Update to third public release of Chapel, November 12, 2009
+Update to third public release of Chapel, November 12, 2009  
 (see also changes below for version 1.01 and 1.0)
 
 High-Level Themes
@@ -8785,7 +8831,7 @@ Internal
 version 1.01
 ============
 
-Update to third public release of Chapel, October 30, 2009
+Update to third public release of Chapel, October 30, 2009  
 (see also changes for version 1.0)
 
 High-Level Themes
