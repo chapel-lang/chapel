@@ -45,8 +45,8 @@ $dirs = "";
 $node_para = 1;                        # the number of tasks to run on each node
 $valgrind = 0;
 $memleaks = 0;
-$memleakslog = "/dev/null";
-$memleaksflag = 0;
+$memleakslog = 0;
+$memleakslogfile = "/dev/null";
 $show_all_errors = 0;
 $junit_xml = 0;
 $junit_xml_file = "";
@@ -638,8 +638,8 @@ sub main {
         } elsif (/^-memleakslog$/) {
             shift @ARGV;
             if ($#ARGV >= 0) {
-                $memleakslog = $ARGV[0];
-                $memleaksflag = 2;
+                $memleakslogfile = $ARGV[0];
+                $memleakslogflag = 1;
             } else {
                 print "missing -memleakslog arg\n";
                 exit (8);
