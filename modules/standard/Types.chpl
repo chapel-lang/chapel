@@ -391,6 +391,12 @@ proc isConstAssignable(type t) param  return isConstAssignableType(t);
 pragma "no doc"
 proc isDefaultInitializable(type t) param return isDefaultInitializableType(t);
 
+/* Returns `true` if the argument is `none` or the `nothing` type.
+ as defined by the language specification.*/
+proc isNothing(type t)  param return isNothingType(t);
+proc isNothing(e)   param return isNothingType(e.type);
+
+
 // Set 2 - values.
 /*
 Returns `true` if the argument is a primitive type,
