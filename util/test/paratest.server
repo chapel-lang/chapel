@@ -277,7 +277,7 @@ sub feed_nodes {
                       $execopts = "\\\"$execopts\\\"";
                   }
                   # If the command line gets too long, consider using xargs
-                  $rem_cmd = "$rem_exec_cmd $client_script $readyid $pwd $testdir $chplenv $futures_mode $valgrind $memleaksflag $compopts $execopts";
+                  $rem_cmd = "$rem_exec_cmd $client_script $readyid $pwd $testdir $chplenv $futures_mode $valgrind $memleaksflag $memleakslog $compopts $execopts";
                   if ($verbose) {
                       systemd ($rem_cmd);
                   } else {
@@ -355,9 +355,9 @@ sub feed_nodes {
 
       $endtime = `date`; chomp $endtime;
       print "\n";
-      if ($memleaksflag == 2) {
-          print "Collecting memleaks logs to $memleakslog\n";
-          systemd("cat $logdir/tmp.*.memleaks > $memleakslog");
+      if ($memleakslog == 1) {
+          print "Collecting memleaks logs to $memleakslogfile\n";
+          systemd("cat $logdir/tmp.*.memleaks > $memleakslogfile");
           # Keep the individual logs upon failure.
           !$? or die "Could not collect memleaks logs: $?\n";
           systemd("rm -f $logdir/tmp.*.memleaks");
@@ -639,7 +639,7 @@ sub main {
             shift @ARGV;
             if ($#ARGV >= 0) {
                 $memleakslogfile = $ARGV[0];
-                $memleakslogflag = 1;
+                $memleakslog = 1;
             } else {
                 print "missing -memleakslog arg\n";
                 exit (8);

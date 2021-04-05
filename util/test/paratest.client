@@ -69,11 +69,11 @@ sub main {
     $valgrind = "-valgrindexe" if ($ARGV[5] == 2);
 
     print "$id $workingdir $testdir $futures_mode $valgrind" if $debug;
-    if ($#ARGV>=7) {
-        $compopts = "-compopts \"" . $ARGV[7] . "\"";
-    }
     if ($#ARGV>=8) {
-        $execopts = "-execopts \"" . $ARGV[8] . "\"";
+        $compopts = "-compopts \"" . $ARGV[8] . "\"";
+    }
+    if ($#ARGV>=9) {
+        $execopts = "-execopts \"" . $ARGV[9] . "\"";
     }
 
     $synchfile = "$synchdir/$node.$id";
@@ -104,7 +104,7 @@ sub main {
     $memleaks = "-memleaks" if ($ARGV[6] == 1);
 
     $memleakslog = "";
-    $memleakslog = "-memleakslog $logdir/tmp.$dirfname.$node.memleaks" if ($ARGV[7] == 2);
+    $memleakslog = "-memleakslog $logdir/tmp.$dirfname.$node.memleaks" if ($ARGV[7] == 1);
 
     $testarg = "-compiler $compiler -logfile $logfile $futures_mode $valgrind $compopts $execopts $memleaks $memleakslog";
     $testarg = "$testarg $testdir -norecurse";
