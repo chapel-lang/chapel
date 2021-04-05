@@ -28,15 +28,24 @@ gex_AD_t gasneti_export_ad(gasneti_AD_t _real_ad) {
 }
 #endif
 
+#ifdef GASNETC_AD_EXTRA_DECLS
+GASNETC_AD_EXTRA_DECLS
+#endif
+
 extern gasneti_AD_t gasneti_alloc_ad(
                        gasneti_TM_t tm,
                        gex_DT_t dt,
                        gex_OP_t ops,
-                       gex_Flags_t flags,
-                       size_t alloc_size)
+                       gex_Flags_t flags)
 {
-  gasneti_AD_t ad = gasneti_malloc(alloc_size ? alloc_size : sizeof(*ad));
-  gasneti_assert(!alloc_size || alloc_size >= sizeof(*ad));
+  gasneti_AD_t ad;
+#ifdef GASNETC_SIZEOF_AD_T
+  size_t alloc_size = GASNETC_SIZEOF_AD_T();
+  gasneti_assert_uint(alloc_size ,>=, sizeof(*ad));
+#else
+  size_t alloc_size = sizeof(*ad);
+#endif
+  ad = gasneti_malloc(alloc_size);
   GASNETI_INIT_MAGIC(ad, GASNETI_AD_MAGIC);
   ad->_cdata = NULL;
   ad->_tm = tm;
@@ -50,16 +59,17 @@ extern gasneti_AD_t gasneti_alloc_ad(
   ad->_tools_safe = -1;
   ad->_fn_tbl = NULL;
 #endif
-#ifdef GASNETI_AD_ALLOC_EXTRA
-  GASNETI_AD_ALLOC_EXTRA(ad);
+#ifndef GASNETC_AD_INIT_HOOK
+  size_t extra = alloc_size - sizeof(*ad);
+  if (extra) memset(ad + 1, 0, extra);
 #endif
   return ad;
 }
 
 void gasneti_free_ad(gasneti_AD_t ad)
 {
-#ifdef GASNETI_AD_FREE_EXTRA
-  GASNETI_AD_FREE_EXTRA(ad);
+#ifdef GASNETI_AD_FINI_HOOK
+  GASNETI_AD_FINI_HOOK(ad);
 #endif
   GASNETI_INIT_MAGIC(ad, GASNETI_AD_BAD_MAGIC);
   gasneti_free(ad);
@@ -72,7 +82,7 @@ void gasneti_AD_Create(
         gex_OP_t                   ops,
         gex_Flags_t                flags)
 {
-  gasneti_TM_t real_tm = gasneti_import_tm(tm);
+  gasneti_TM_t real_tm = gasneti_import_tm_nonpair(tm);
 
   // Argument validation is done here, rather than gasneti_alloc_ad(), to
   // allow conduit-specific extensions (such as additional types or ops).
@@ -117,14 +127,16 @@ void gasneti_AD_Create(
   gasneti_assert((dt != GEX_DT_DBL) || sizeof(double) == 8);
 #endif
 
-  gasneti_AD_t real_ad = gasneti_alloc_ad(real_tm, dt, ops, flags, 0);
+  gasneti_AD_t real_ad = gasneti_alloc_ad(real_tm, dt, ops, flags);
 
   // Algorithm selection:
-#ifdef GASNETI_AD_CREATE_HOOK
-  GASNETI_AD_CREATE_HOOK(real_ad, real_tm, dt, ops, flags);
+#ifdef GASNETC_AD_INIT_HOOK
+  GASNETC_AD_INIT_HOOK(real_ad);
+#else
+  gasnete_amratomic_init_hook(real_ad);
+#endif
   gasneti_assert(real_ad->_tools_safe >= 0);
   gasneti_assert(real_ad->_fn_tbl != NULL);
-#endif
 
   *ad_p = gasneti_export_ad(real_ad);
   return;
@@ -867,13 +879,11 @@ GASNETE_DT_APPLY(GASNETE_AMRATOMIC_TBL)
 //
 // Create-hook to install the dispatch tables
 //
-void gasnete_amratomic_create_hook(
-        gasneti_AD_t               real_ad,
-        gasneti_TM_t               real_tm,
-        gex_DT_t                   dt,
-        gex_OP_t                   ops,
-        gex_Flags_t                flags)
+void gasnete_amratomic_init_hook(gasneti_AD_t real_ad)
 {
+    gex_DT_t dt = real_ad->_dt;
+    gex_OP_t ops = real_ad->_ops;
+
     real_ad->_tools_safe = 1;
     #define GASNETE_AMRATOMIC_TBL_CASE(dtcode) \
         case dtcode##_dtype: \
@@ -886,9 +896,9 @@ void gasnete_amratomic_create_hook(
     #undef GASNETE_AMRATOMIC_TBL_CASE
 
 #if GASNETE_BUILD_AMRATOMIC_STUBS
-    GASNETI_TRACE_PRINTF(C,("gex_AD_Create(dt=%d, ops=0x%x) -> AM_stubs", (int)dt, (unsigned int)ops));
+    GASNETI_TRACE_PRINTF(O,("gex_AD_Create(dt=%d, ops=0x%x) -> AM_stubs", (int)dt, (unsigned int)ops));
 #else
-    GASNETI_TRACE_PRINTF(C,("gex_AD_Create(dt=%d, ops=0x%x) -> AM", (int)dt, (unsigned int)ops));
+    GASNETI_TRACE_PRINTF(O,("gex_AD_Create(dt=%d, ops=0x%x) -> AM", (int)dt, (unsigned int)ops));
 #endif
 }
 

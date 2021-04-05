@@ -68,6 +68,9 @@ AMUDP has a few notable departures from the AM-2 specification:
 
 Change Log
 ----------
+AMUDP 3.18 (03/2021)
+- Add AMUDP_SPMDSetProc and envvar WORKER_RANK to support explicit rank assignment
+
 AMUDP 3.17 (10/2020)
 - Remove BLCR support
 - This version breaks compatibility of the amudprun spawner with prior versions

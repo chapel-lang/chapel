@@ -264,6 +264,16 @@ static Expr* walkBlockStmt(FnSymbol*         fn,
         if (isAutoDestroyedOrSplitInitedVariable(v))
           scope.addInitialization(v);
 
+      // workaround for issue #1833
+      if (CallExpr* c = toCallExpr(stmt))
+        if (c->isPrimitive(PRIM_SET_MEMBER))
+          if (SymExpr* lhs = toSymExpr(c->get(1)))
+            if (VarSymbol* v = toVarSymbol(lhs->symbol()))
+              if (isAutoDestroyedOrSplitInitedVariable(v))
+                if (v->hasFlag(FLAG_COERCE_TEMP) &&
+                    v->type->symbol->hasFlag(FLAG_TUPLE))
+                  scope.addInitialization(v);
+
       if (fCall != NULL) {
         // Check also for out intent in a called function
         for_formals_actuals(formal, actual, fCall) {

@@ -13,7 +13,7 @@
 
 #include <firehose_trace.h>
 
-#define GASNET_EXTENDED_VERSION      2.5
+#define GASNET_EXTENDED_VERSION      2.7
 #define GASNET_EXTENDED_VERSION_STR  _STRINGIFY(GASNET_EXTENDED_VERSION)
 #define GASNET_EXTENDED_NAME         IBV
 #define GASNET_EXTENDED_NAME_STR     _STRINGIFY(GASNET_EXTENDED_NAME)
@@ -30,8 +30,8 @@
    */
   /* Each RCV thread needs a slot in the threadtable.  The CONN thread doesn't. */
 #if GASNETC_IBV_RCV_THREAD
- #ifdef GASNETC_IBV_MAX_HCAS
-  #define GASNETE_CONDUIT_THREADS_USING_TD GASNETC_IBV_MAX_HCAS
+ #ifdef GASNETC_IBV_MAX_HCAS_CONFIGURE
+  #define GASNETE_CONDUIT_THREADS_USING_TD GASNETC_IBV_MAX_HCAS_CONFIGURE
  #else
   #define GASNETE_CONDUIT_THREADS_USING_TD 1
  #endif
@@ -63,12 +63,8 @@
 #define GASNETE_BUILD_AMREF_PUT 1
 
 #if !defined(GASNET_DISABLE_MUNMAP_DEFAULT) && PLATFORM_ARCH_64
- // default to disabling munmap for bug 955 if firehose might be used
- #if GASNET_SEGMENT_FAST && GASNETC_IBV_ODP
-   #define GASNET_DISABLE_MUNMAP_DEFAULT (!gasnetc_use_odp)
- #else
-   #define GASNET_DISABLE_MUNMAP_DEFAULT 1
- #endif
+ // default to disabling munmap due to bug 955 (firhose correctness) and bug 4164 (odp performance)
+ #define GASNET_DISABLE_MUNMAP_DEFAULT 1
 #endif
 // this VIS algorithm uses put/get with local-side buffers that are dynamically malloced and freed, 
 // thus is only safe if we disabled malloc munmap to avoid running afowl of firehose bug3364/bug955

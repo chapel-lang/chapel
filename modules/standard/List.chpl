@@ -899,8 +899,7 @@ module List {
          lifetime this < x {
       var result = false;
 
-      on this {
-        _enter();
+      _enter();
 
       // Handle special case of `a.insert((a.size), x)` here.
       if idx == _size {
@@ -915,8 +914,7 @@ module List {
         result = true;
       }
 
-        _leave();
-      }
+      _leave();
 
       // Destroy our copy if it was never used.
       if !result then
@@ -1297,6 +1295,12 @@ module List {
       :rtype: `int`
     */
     proc const indexOf(x: eltType, start: int=0, end: int=-1): int {
+      
+      param error = -1;
+
+      if _size == 0 then
+        return error;
+
       if boundsChecking {
         const msg = " index for \"list.indexOf\" out of bounds: ";
 
@@ -1306,9 +1310,7 @@ module List {
         if !_withinBounds(start) then
           boundsCheckHalt("Start" + msg + start:string);
       }
-
-      param error = -1;
-
+        
       if end >= 0 && end < start then
         return error;
 

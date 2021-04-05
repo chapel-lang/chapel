@@ -729,10 +729,10 @@ static chpl_bool pollingRequired;
 static atomic_bool pollingLock;
 
 static inline void am_poll_try(void) {
-  // Serialize polling for IBV and Aries. Concurrent polling causes contention
-  // in these configurations. For other configurations that are AM-based
-  // (udp/amudp, mpi/ammpi) serializing can hurt performance.
-#if defined(GASNET_CONDUIT_IBV) || defined(GASNET_CONDUIT_ARIES)
+  // Serialize polling for IBV, UCX, and Aries. Concurrent polling causes
+  // contention in these configurations. For other configurations that are
+  // AM-based (udp/amudp, mpi/ammpi) serializing can hurt performance.
+#if defined(GASNET_CONDUIT_IBV) || defined(GASNET_CONDUIT_UCX) || defined(GASNET_CONDUIT_ARIES)
   if (!atomic_load_explicit_bool(&pollingLock, memory_order_acquire) &&
       !atomic_exchange_explicit_bool(&pollingLock, true, memory_order_acquire)) {
     (void) gasnet_AMPoll();
@@ -822,6 +822,15 @@ static void set_num_comm_domains() {
 
 void chpl_comm_init(int *argc_p, char ***argv_p) {
 //  int status; // Some compilers complain about unused variable 'status'.
+
+  // For configurations that register a fixed heap at startup use a gasnet hook
+  // to allow us to fault and interleave in the memory in parallel for faster
+  // startup and better NUMA affinity.
+#if defined(GASNET_CONDUIT_IBV) || defined(GASNET_CONDUIT_UCX) || defined(GASNET_CONDUIT_ARIES)
+#if defined(GASNET_SEGMENT_FAST)
+  gasnet_client_attach_hook = &chpl_comm_regMemHeapTouch;
+#endif
+#endif
 
   set_max_segsize();
   set_num_comm_domains();
