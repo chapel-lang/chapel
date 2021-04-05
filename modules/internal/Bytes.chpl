@@ -1074,7 +1074,7 @@ module Bytes {
 
      Halts if `lhs` is a remote bytes.
   */
-  operator =(ref lhs: bytes, rhs_c: c_string) {
+  operator bytes.=(ref lhs: bytes, rhs_c: c_string) {
     lhs = createBytesWithNewBuffer(rhs_c);
   }
 
@@ -1098,7 +1098,7 @@ module Bytes {
                `n` times.  If `n` is less than or equal to 0, an empty bytes is
                returned.
   */
-  operator *(s: bytes, n: integral) {
+  operator bytes.*(s: bytes, n: integral) {
     return doMultiply(s, n);
   }
 
