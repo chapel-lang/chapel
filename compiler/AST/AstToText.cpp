@@ -1644,9 +1644,9 @@ void AstToText::appendExpr(DefExpr* expr, bool printingType)
       if (expr->init) {
         mText += " = ";
         if (SymExpr* sym = toSymExpr(expr->init))
-          appendExpr(sym, true, true);
+          appendExpr(sym, false, true);
         else
-          appendExpr(expr->init, true);
+          appendExpr(expr->init, false);
       }
     }
 }
