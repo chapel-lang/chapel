@@ -84,11 +84,11 @@ module CString {
   }
 
   // let us set c_strings to NULL
-  inline operator =(ref a:c_string, b:_nilType) { a = c_nil:c_string; }
+  inline operator c_string.=(ref a:c_string, b:_nilType) { a = c_nil:c_string; }
 
   // for a to be a valid c_string after this function it must be on the same
   // locale as b
-  inline operator =(ref a: c_string, b: string) {
+  inline operator c_string.=(ref a: c_string, b: string) {
     __primitive("=", a, b.c_str());
   }
 
