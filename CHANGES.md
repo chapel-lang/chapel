@@ -20,12 +20,12 @@ Feature Improvements
 
 Performance Optimizations / Improvements
 ----------------------------------------
+* improved performance on InfiniBand systems by upgrading GASNet-EX
 * improved NUMA affinity and startup times when using a fixed heap
-* improved our approach to polling when communicating with 'gasnet/ucx'
 
 Memory Improvements
 -------------------
-* closed a memory leak related to tuple casts
+* closed a memory leak related to tuple coercions
 * closed a memory leak in `list.insert()`
 * closed a memory leak in constrained generic interfaces
 
@@ -41,6 +41,10 @@ Bug Fixes for Libraries
 -----------------------
 * fixed a bug in which `indexOf()` on an empty list halted
 * fixed bugs in binary operations for sets with `parSafe=true`
+
+Developer-oriented changes: Runtime improvements
+------------------------------------------------
+* improved our approach to polling when communicating using GASNet over `ucx`
 
 
 version 1.24.0
