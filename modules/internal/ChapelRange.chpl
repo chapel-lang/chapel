@@ -612,7 +612,7 @@ module ChapelRange {
   /* Return the range's low bound. If the range does not have a low
      bound the behavior is undefined. */
   inline proc range.low {
-    if (!hasLowBound()) {
+    if !hasLowBound() {
       compilerError("can't query the low bound of a range without one");
     }
     return chpl_intToIdx(_low);
@@ -622,7 +622,7 @@ module ChapelRange {
   /* Return the range's high bound. If the range does not have a high
      bound the behavior is undefined. */
   inline proc range.high {
-    if (!hasHighBound()) {
+    if !hasHighBound() {
       compilerError("can't query the high bound of a range without one");
     }
     return chpl_intToIdx(_high);
@@ -633,6 +633,9 @@ module ChapelRange {
      undefined (does not exist), the behavior is undefined.
    */
   inline proc range.alignedLow : idxType {
+    if !hasLowBound() {
+      compilerError("can't query the low bound of a range without one");
+    }
     return chpl_intToIdx(this.alignedLowAsInt);
   }
 
@@ -650,6 +653,9 @@ module ChapelRange {
      undefined, the behavior is undefined.
    */
   inline proc range.alignedHigh : idxType {
+    if !hasHighBound() {
+      compilerError("can't query the high bound of a range without one");
+    }
     return chpl_intToIdx(this.alignedHighAsInt);
   }
 
