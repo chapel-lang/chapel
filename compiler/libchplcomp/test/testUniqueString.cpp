@@ -71,6 +71,10 @@ int main(int argc, char** argv) {
 
     // check that uniqueString(NULL) == uniqueString("")
     assert(ctx.uniqueString(NULL) == ctx.uniqueString(""));
+
+    // check that default-constructed unique string matches one from ""
+    UniqueString empty;
+    assert(empty.c_str() == ctx.uniqueString("").c_str());
   }
 
   // Next, measure performance

@@ -12,7 +12,7 @@
 namespace chpl {
 namespace ast {
 
-class ASTContext;
+class Context;
 
 /**
   This class represents a unique'd NULL-terminated string.
@@ -24,7 +24,7 @@ class ASTContext;
 
  */
 class UniqueString final {
- friend class ASTContext;
+ friend class Context;
 
  private:
   const char* s;
@@ -32,6 +32,9 @@ class UniqueString final {
   explicit UniqueString(const char* str) : s(str) { }
 
  public:
+  /** create a UniqueString storing the empty string */
+  UniqueString();
+
   /** return the null-terminated string */
   const char* c_str() const {
     return s;

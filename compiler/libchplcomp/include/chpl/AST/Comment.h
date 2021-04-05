@@ -7,6 +7,8 @@
 namespace chpl {
 namespace ast {
 
+class Builder;
+
 /**
   This class represents a comment that might be used for documentation.
   Not all comments are represented in the AST (since the comments could
@@ -14,6 +16,10 @@ namespace ast {
   are at a statement level will be represented with this type.
  */
 class Comment final : public Expr {
+ friend class Builder;
+
+ static Comment* build(Builder& builder, UniqueString comment);
+
  private:
   UniqueString comment_;
  public:

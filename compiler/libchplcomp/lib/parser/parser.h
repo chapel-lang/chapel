@@ -21,11 +21,7 @@
 #ifndef _PARSER_H_
 #define _PARSER_H_
 
-class BlockStmt;
-class VisibilityStmt;
-
-#include "symbol.h"
-
+/*
 extern int         chplLineno;
 extern bool        chplParseString;
 extern const char* chplParseStringMsg;
@@ -37,6 +33,7 @@ extern const char* currentModuleName;
 extern int         yystartlineno;
 extern const char* yyfilename;
 extern BlockStmt*  yyblock;
+*/
 
 void               parse();
 

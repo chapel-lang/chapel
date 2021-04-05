@@ -61,8 +61,11 @@ always-build-chplspell-venv: FORCE
 test: spectests FORCE
 	cd examples && start_test
 
-test-libchplcomp: libchplcomp FORCE
+test-libchplcomp: $(CHPL_MAKE_HOME)/build/libchplcomp FORCE
 	cd build/libchplcomp && cmake --build . --target tests && ctest .
+
+libchplcomp-parser: $(CHPL_MAKE_HOME)/build/libchplcomp FORCE
+	cd build/libchplcomp/lib/parser && cmake --build . --target parser
 
 SPECTEST_DIR = ./test/release/examples/spec
 spectests: FORCE

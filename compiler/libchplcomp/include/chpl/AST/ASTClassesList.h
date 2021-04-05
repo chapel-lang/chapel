@@ -21,8 +21,10 @@
 
 AST_BEGIN_SUBCLASSES(BaseAST)
 
+
   AST_BEGIN_SUBCLASSES(Expr)
 
+    AST_LEAF(ErroneousExpr)
     AST_LEAF(Identifier)
     AST_LEAF(Literal)
     AST_LEAF(Comment)

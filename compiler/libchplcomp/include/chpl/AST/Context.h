@@ -32,7 +32,7 @@ namespace detail {
   This class stores the compilation-wide context.
   In particular it handles unique'd strings.
  */
-class ASTContext {
+class Context {
  private:
   std::unordered_map<const char*, const char*, detail::UniqueStrHash, detail::UniqueStrEqual> uniqueStringsTable;
 
@@ -42,7 +42,17 @@ class ASTContext {
   // Could store an atomic uint_8 just after the string for the mark.
 
  public:
-  ~ASTContext();
+  Context();
+  ~Context();
+
+  /**
+    Get or create a unique string for a NULL-terminated C string
+    and return it as a C string.
+
+    The function `uniqueString` should be preferred for type safety
+    and to reduce redundant checks.
+   */
+  const char* uniqueCString(const char* s);
 
   /**
     Get or create a unique string for a NULL-terminated C string.

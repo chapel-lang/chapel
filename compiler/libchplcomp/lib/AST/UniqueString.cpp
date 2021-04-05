@@ -5,6 +5,17 @@
 namespace chpl {
 namespace ast {
 
+// TODO: extend this idea to other well-known strings.
+// That will make it easy to initialize them and have
+// them as global (constant) variables.
+// We can have a WellKnownStrings.h file that
+// calls makeWellKnownUniqueString e.g.
+static const char* const emptyString = "";
+
+UniqueString::UniqueString()
+  : s(emptyString) {
+}
+
 bool UniqueString::startsWith(const char* prefix) const {
   return (0 == strncmp(this->s, prefix, strlen(prefix)));
 }

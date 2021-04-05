@@ -73,12 +73,16 @@ notcompiler: FORCE
 	@$(MAKE) runtime
 	@$(MAKE) modules
 
-libchplcomp: FORCE
-	@echo "Making the compiler library..."
+$(CHPL_MAKE_HOME)/build/libchplcomp:
+	@echo "Configuring the compiler library..."
 	@mkdir -p build/libchplcomp
-	@cd build/libchplcomp && cmake ../../compiler/libchplcomp && cmake --build .  --target libchplcomp
+	@cd build/libchplcomp && cmake ../../compiler/libchplcomp
 
-libchplcomp-docs: libchplcomp FORCE
+libchplcomp: $(CHPL_MAKE_HOME)/build/libchplcomp FORCE
+	@echo "Making the compiler library..."
+	@cd build/libchplcomp && cmake --build .  --target libchplcomp
+
+libchplcomp-docs: $(CHPL_MAKE_HOME)/build/libchplcomp FORCE
 	@echo "Making the compiler library docs..."
 	@cd build/libchplcomp && cmake --build .  --target api-docs
 

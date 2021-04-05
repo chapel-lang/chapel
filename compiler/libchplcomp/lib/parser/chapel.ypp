@@ -30,17 +30,12 @@
 // The rules are listed in depth-first order from stmt and expr
 //
 
+// "%code requires" puts the code in the .h and in the .cpp files
+// "%code" (without "requires") puts the code in the .cpp file
+// Note that the generated flex scanner includes the generated bison .h
+// file, so something in "%code requires" is available in the scanner, too.
 %code requires {
-  #include <string>
-  extern int         captureTokens;
-  extern std::string captureString;
-}
-
-%code {
-  #include <string>
-  int         captureTokens;
-  std::string captureString;
-  bool        parsingPrivate=false;
+  #include "ParserDependencies.h"
 }
 
 // It would be better if Flex could generate these for itself
@@ -61,35 +56,45 @@
 }
 
 //
-// Definition of YYSTYPE
+// Definition of YYSTYPE - the "semantic value" type returned by parser
+// productions. Individual productions have a type specified with %type
+// but that's really just an element in the union defined below.
+//
+// We used to use %union but stopped doing that when defining the push
+// parser.
 //
 
 %code requires {
   #ifndef _BISON_CHAPEL_DEFINES_1_
   #define _BISON_CHAPEL_DEFINES_1_
 
-  #include <cstdio>
-  #include <utility>
-  #include <vector>
+  typedef std::vector<Expr*>* ExprListPtr; 
 
-  /*class ArgSymbol;
-  class BlockStmt;
-  class CallExpr;
-  class DefExpr;
-  class EnumType;
-  class Expr;
-  class FnSymbol;
-  class NamedExpr;
-  class Type;
-
-  enum   ProcIterOp {
+  enum ProcIterOp {
     ProcIterOp_PROC,
     ProcIterOp_ITER,
     ProcIterOp_OP
   };
 
+  enum ClassRecordUnion {
+    ClassRecordUnion_CLASS,
+    ClassRecordUnion_RECORD,
+    ClassRecordUnion_UNION
+  };
+
+  enum VisibilityTag {
+    VisibilityTag_DEFAULT,
+    VisibilityTag_PUBLIC,
+    VisibilityTag_PRIVATE,
+  };
+
+  // TODO -- transitional
+  typedef int IntentTag;
+  typedef int RetTag;
+  typedef int AggregateTag;
+
   struct PotentialRename {
-    enum{SINGLE, DOUBLE} tag;
+    enum {SINGLE, DOUBLE} tag;
 
     union {
       Expr*  elem;
@@ -107,95 +112,69 @@
     ret.where = w;
     ret.lifetime = lt;
     return ret;
-  }*/
+  }
 
-  // The lexer only uses pch.
-  // The remaining types are for parser productions
-  union  YYSTYPE {
-    const char*               pch;
 
-    /*
-    Vec<const char*>*         vpch;
-    RetTag                    retTag;
-    AggregateTag              aggrTag;
-    bool                      b;
-    IntentTag                 pt;
-    Expr*                     pexpr;
-    DefExpr*                  pdefexpr;
-    CallExpr*                 pcallexpr;
-    BlockStmt*                pblockstmt;
-    Type*                     ptype;
-    EnumType*                 penumtype;
-    std::vector<DefExpr*>*    pvecOfDefs;
-    FnSymbol*                 pfnsymbol;
-    ModuleSymbol*             pmodsymbol;
-    ImportStmt*               pimportstmt;
-    ProcIterOp                procIterOp;
-    FlagSet*                  flagSet;
-    ShadowVarSymbol*          pShadowVar;
-    ShadowVarPrefix           pShadowVarPref;
-    std::vector<PotentialRename*>* ponlylist;
-    std::set<Flag>*           pflagset;
-    WhereAndLifetime          lifetimeAndWhere;*/
+  typedef std::vector<Expr*> ExprList;
+  typedef std::vector<const char*> StrList;
+
+  // These currently all need to be POD types (i.e. pointers and ints)
+  // rather than say std::vector to keep bison working with the current
+  // strategy. In the future we could probably switch to a more
+  // C++ mode of using bison.
+  union YYSTYPE {
+    // The lexer only uses pch.
+    const char*                pch;
+
+    // The remaining types are for parser productions
+
+    // integer/enum values
+    AggregateTag               aggrTag;
+    bool                       b;
+    IntentTag                  intentTag; // was pt
+    ProcIterOp                 procIterOp;
+    RetTag                     retTag;
+    VisibilityTag              visibilityTag;
+
+    // simple pointer values 
+    BlockStmt*                 blockStmt;
+    CallExpr*                  callExpr;
+    Decl*                      decl;
+    Expr*                      expr;
+    Function*                  function;
+    Module*                    module;
+    WhereAndLifetime           lifetimeAndWhere;
+
+    // values that are temporary groupings
+    ExprList                   exprList; 
+    StrList                    strList; 
+
+    // TODO
+    //Type*                     ptype;
+    //EnumType*                 penumtype;
+    //std::vector<DefExpr*>*    pvecOfDefs;
+    //ImportStmt*               pimportstmt;
+    //FlagSet*                  flagSet;
+    //ShadowVarSymbol*          pShadowVar;
+    //ShadowVarPrefix           pShadowVarPref;
+    //std::vector<PotentialRename*>* ponlylist;
+    //std::set<Flag>*           pflagset;
   };
 
   #endif
 }
 
-//
-// Definition of YYLTYPE
-//
-
-%code requires {
-  #ifndef _BISON_CHAPEL_DEFINES_2_
-  #define _BISON_CHAPEL_DEFINES_2_
-
-  struct YYLTYPE {
-    int         first_line;
-    int         first_column;
-    int         last_line;
-    int         last_column;
-    const char* comment;
-  };
-
-  #define YYLTYPE_IS_DECLARED 1
-  #define YYLTYPE_IS_TRIVIAL  1
-
-  #endif
-}
+// It is possible to define YYLTYPE (and this grammar used to in
+// order to handle chpldoc comments). This parser uses instead the
+// strategy of saving doc-comments in ParserContext.
 
 //
 // Definition of the additional parameter to yypush_parse
 //
 
 %code requires {
-  #ifndef _BISON_CHAPEL_DEFINES_3_
-  #define _BISON_CHAPEL_DEFINES_3_
-
-  class ParserContext {
-  public:
-    ParserContext()
-    {
-      scanner       = 0;
-      latestComment = 0;
-      generatedStmt = 0;
-    }
-
-    ParserContext(yyscan_t scannerIn)
-    {
-      scanner       = scannerIn;
-      latestComment = 0;
-      generatedStmt = 0;
-    }
-
-    yyscan_t    scanner;
-    const char* latestComment;
-    std::vector<UniqueString> currentModuleStack;
-    BaseAST*    generatedStmt;
-    ASTContext* ctx;
-  };
-
-  #endif
+  // forward declare ParserContext
+  class ParserContext;
 }
 
 //
@@ -204,73 +183,21 @@
 %code provides {
   extern int yydebug;
 
-  void yyerror(YYLTYPE*       ignored,
+  void yyerror(YYLTYPE*       loc,
                ParserContext* context,
-               const char*    str);
+               const char*    errorMessage);
 }
 
 %code {
-  #include "build.h"
-  #include "CatchStmt.h"
-  #include "DeferStmt.h"
-  #include "DoWhileStmt.h"
-  #include "driver.h"
-  #include "flex-chapel.h"
-  #include "ForallStmt.h"
-  #include "ForLoop.h"
-  #include "IfExpr.h"
-  #include "misc.h"
-  #include "parser.h"
-  #include "stmt.h"
-  #include "stringutil.h"
-  #include "TryStmt.h"
-  #include "vec.h"
-  #include "WhileDoStmt.h"
+  // include ParserContext.h here because it depends
+  // uppon YYLTYPE and other types defined by the generated parser
+  // headers.
+  #include "ParserContext.h"
 
-  #include <cstdio>
-  #include <cstdlib>
-  #include <cstring>
-  #include <stdint.h>
-
-  #define YYLLOC_DEFAULT(Current, Rhs, N)                                 \
-    if (N) {                                                              \
-      (Current).first_line   = (Rhs)[1].first_line;                       \
-      (Current).first_column = (Rhs)[1].first_column;                     \
-      (Current).last_line    = (Rhs)[N].last_line;                        \
-      (Current).last_column  = (Rhs)[N].last_column;                      \
-      (Current).comment      = NULL;                                      \
-                                                                          \
-      if ((Current).first_line)                                           \
-        yystartlineno = (Current).first_line;                             \
-                                                                          \
-    } else  {                                                             \
-      (Current) = yylloc;                                                 \
-    }
-
-  void yyerror(YYLTYPE*       ignored,
+  void yyerror(YYLTYPE*       loc,
                ParserContext* context,
-               const char*    str) {
-
-    // like USR_FATAL_CONT
-    setupError("parser", __FILE__, __LINE__, 3);
-
-    // TODO -- should this begin with error:
-    if (!chplParseString) {
-      const char* yyText = yyget_text(context->scanner);
-      fprintf(stderr, "%s:%d: %s", yyfilename, chplLineno, str);
-
-      if (strlen(yyText) > 0) {
-        fprintf(stderr, ": near '%s'", yyText);
-      }
-    } else {
-      fprintf(stderr, "%s: %s", yyfilename, str);
-
-      if (chplParseStringMsg && (strlen(chplParseStringMsg) > 0)) {
-        fprintf(stderr, " %s", chplParseStringMsg);
-      }
-    }
-
-    fprintf(stderr, "\n");
+               const char*    errorMessage) {
+    context->errors.push_back(ParserError(*loc, errorMessage));
   }
 }
 
@@ -289,9 +216,10 @@
 //%define parse.error verbose
 
 %locations
-%define api.pure
+%define api.pure full
 %define api.push-pull push
 
+%lex-param { ParserContext* context }
 %parse-param { ParserContext* context }
 
 %start program
@@ -299,15 +227,15 @@
 //
 // identifiers and literals
 //
-%token <pch> TIDENT
-%token <pch> TQUERIEDIDENT
-%token <pch> INTLITERAL
-%token <pch> REALLITERAL
-%token <pch> IMAGLITERAL
-%token <pch> STRINGLITERAL
-%token <pch> BYTESLITERAL
-%token <pch> CSTRINGLITERAL
-%token <pch> EXTERNCODE
+%token <str> TIDENT
+%token <str> TQUERIEDIDENT
+%token <str> INTLITERAL
+%token <str> REALLITERAL
+%token <str> IMAGLITERAL
+%token <str> STRINGLITERAL
+%token <str> BYTESLITERAL
+%token <str> CSTRINGLITERAL
+%token <str> EXTERNCODE
 
 //
 // keywords (alphabetical)
@@ -396,11 +324,12 @@
 %left TDOT TLP TRSBR TLCBR
 %nonassoc TPRAGMA
 
-%type <b> access_control use_access_control include_access_control
+
 %type <b> opt_prototype
 %type <b> opt_throws_error
 
-%type <pt> required_intent_tag opt_intent_tag opt_this_intent_tag
+%type <visibilityTag> access_control use_access_control include_access_control
+%type <intentTag> required_intent_tag opt_intent_tag opt_this_intent_tag
 
 %type <retTag>  opt_ret_tag
 %type <aggrTag> class_tag
@@ -409,87 +338,93 @@
 %type <pch> internal_type_ident_def reserved_type_ident_use
 %type <pch> fn_ident assignop_ident opt_label_ident
 %type <pch> implements_type_ident implements_type_error_ident
-//%type <pch> opt_string
 
-%type <pblockstmt> program
-%type <pblockstmt> toplevel_stmt_ls
-%type <pblockstmt> toplevel_stmt
-%type <vpch>       pragma_ls
+%type <strList>       pragma_ls
 
-%type <pmodsymbol> module_decl_start
-%type <pblockstmt> module_decl_stmt
-%type <pblockstmt> include_module_stmt
+// statement lists
+%type <exprList> program
+%type <exprList> toplevel_stmt_ls
+%type <exprList> stmt_ls
 
-%type <pblockstmt> block_stmt
-%type <pblockstmt> stmt_ls
+// individual statements
+// exprList is used for the types of many statements that could be
+// simpler so that statement-level comments can be captured.
+%type <exprList> toplevel_stmt
+%type <exprList> module_decl_start
+%type <exprList> module_decl_stmt
+%type <exprList> include_module_stmt
+
+%type <exprList> block_stmt
 
 %type <pimportstmt> import_expr
-%type <pblockstmt> use_stmt import_stmt import_ls require_stmt
+%type <exprList> use_stmt import_stmt import_ls require_stmt
 %type <ponlylist>  renames_ls use_renames_ls opt_only_ls except_ls
 
-%type <pblockstmt> implements_stmt interface_stmt
+// These are exprList so that they can include preceeding comments
+%type <exprList> implements_stmt interface_stmt
 %type <pcallexpr>  ifc_formal_ls
 %type <pdefexpr>   ifc_formal
 
-%type <pblockstmt> class_level_stmt_ls
+%type <exprList> class_level_stmt_ls
 
-%type <pblockstmt> stmt
-%type <pblockstmt> do_stmt
-%type <pblockstmt> if_stmt loop_stmt
-%type <pblockstmt> select_stmt assignment_stmt class_level_stmt
-%type <pblockstmt> private_decl
-%type <pblockstmt> forwarding_stmt
-%type <pblockstmt> extern_export_decl_stmt
-/*%type <pblockstmt> extern_record_stmt
-%type <pblockstmt> extern_export_proc_stmt
-%type <pfnsymbol> extern_export_linkage_spec*/
-%type <pblockstmt> extern_block_stmt
-%type <pblockstmt> return_stmt
-%type <pblockstmt> defer_stmt
-%type <pblockstmt> try_stmt
-%type <pblockstmt> throw_stmt
-%type <pblockstmt> catch_stmt_ls
-%type <pexpr>      catch_stmt
-%type <pdefexpr>   catch_expr
+%type <exprList> stmt
+%type <expr> do_stmt
+%type <exprList> if_stmt loop_stmt
+%type <exprList> select_stmt assignment_stmt
+
+%type <exprList> class_level_stmt
+%type <exprList> private_decl
+%type <exprList> forwarding_stmt
+%type <exprList> extern_export_decl_stmt
+%type <exprList> extern_block_stmt
+%type <exprList> return_stmt
+%type <exprList> defer_stmt
+%type <exprList> try_stmt
+%type <exprList> throw_stmt
+%type <exprList> catch_stmt_ls
+%type <exprList> catch_stmt
+%type <decl>   catch_expr
 
 %type <pflagset> var_decl_type
 
-%type <pblockstmt> type_alias_decl_stmt type_alias_decl_stmt_inner fn_decl_stmt class_decl_stmt
-%type <pblockstmt> enum_decl_stmt
+%type <exprList> type_alias_decl_stmt
+%type <expr> type_alias_decl_stmt_inner
+%type <exprList> fn_decl_stmt class_decl_stmt
+%type <exprList> enum_decl_stmt
 
-%type <pblockstmt> var_decl_stmt var_decl_stmt_inner_ls
-%type <pblockstmt> var_decl_stmt_inner tuple_var_decl_stmt_inner_ls
+%type <exprList> var_decl_stmt var_decl_stmt_inner_ls
+%type <exprList> var_decl_stmt_inner tuple_var_decl_stmt_inner_ls
 
 
-%type <pblockstmt> function_body_stmt opt_function_body_stmt
+%type <expr> function_body_stmt opt_function_body_stmt
 
-%type <pexpr> when_stmt
-%type <pblockstmt> when_stmt_ls
+%type <expr> when_stmt
+%type <exprList> when_stmt_ls
 
 %type <pcallexpr> array_type
-%type <pexpr> opt_type opt_ret_type ret_array_type
-%type <pexpr> opt_formal_type formal_array_type opt_formal_array_elt_type lambda_decl_expr
+%type <expr> opt_type opt_ret_type ret_array_type
+%type <expr> opt_formal_type formal_array_type opt_formal_array_elt_type lambda_decl_expr
 %type <penumtype> enum_header
-%type <pvecOfDefs> enum_ls
+%type <exprList> enum_ls
 
-%type <pcallexpr> zippered_iterator
-%type <pexpr> call_base_expr call_expr dot_expr
-%type <pexpr> lhs_expr
-%type <pexpr> unary_op_expr binary_op_expr
-%type <pexpr> parenthesized_expr expr actual_expr
-%type <pexpr> bool_literal str_bytes_literal literal_expr
-%type <pexpr> stmt_level_expr sub_type_level_expr type_level_expr scalar_type
-%type <pexpr> lifetime_components_expr
-%type <pexpr> lifetime_expr lifetime_ident
+%type <callExpr> zippered_iterator
+%type <expr> call_base_expr call_expr dot_expr
+%type <expr> lhs_expr
+%type <expr> unary_op_expr binary_op_expr
+%type <expr> parenthesized_expr expr actual_expr
+%type <expr> bool_literal str_bytes_literal literal_expr
+%type <expr> stmt_level_expr sub_type_level_expr type_level_expr scalar_type
+%type <expr> lifetime_components_expr
+%type <expr> lifetime_expr lifetime_ident
 %type <lifetimeAndWhere> opt_lifetime_where
-%type <pexpr> ident_expr for_expr cond_expr nil_expr io_expr new_expr
-%type <pexpr> let_expr ifvar
-%type <pexpr> reduce_expr scan_expr reduce_scan_op_expr opt_init_expr
-%type <pexpr> opt_init_type var_arg_expr
-%type <pexpr> opt_try_expr opt_expr
-%type <pexpr> tuple_component tuple_var_decl_component
+%type <expr> ident_expr for_expr cond_expr nil_expr io_expr new_expr
+%type <expr> let_expr ifvar
+%type <expr> reduce_expr scan_expr reduce_scan_op_expr opt_init_expr
+%type <expr> opt_init_type var_arg_expr
+%type <expr> opt_try_expr opt_expr
+%type <expr> tuple_component tuple_var_decl_component
 %type <pdefexpr> formal enum_item
-%type <pexpr> query_expr ifc_constraint
+%type <expr> query_expr ifc_constraint
 
 %type <pcallexpr> new_maybe_decorated
 %type <pcallexpr> opt_inherit simple_expr_ls expr_ls assoc_expr_ls tuple_expr_ls
@@ -498,7 +433,7 @@
 %type <pcallexpr> forall_intent_clause forall_intent_ls
 
 %type <pfnsymbol> fn_decl_stmt_inner formal_ls opt_formal_ls req_formal_ls
-%type <pexpr> fn_decl_receiver_expr
+%type <expr> fn_decl_receiver_expr
 %type <procIterOp> proc_iter_or_op
 %type <pfnsymbol> linkage_spec
 %type <pShadowVar> intent_expr
@@ -507,29 +442,27 @@
 %%
 
 program:
-  toplevel_stmt_ls                     { yyblock = $$; }
+  toplevel_stmt_ls                    { context->takeTopLevelStmts($1); }
 ;
 
 // 'toplevel_stmt_ls' is 'stmt_ls' plus resetTempID()
 toplevel_stmt_ls:
-                                       { $$ = new BlockStmt(); resetTempID(); }
-| toplevel_stmt_ls toplevel_stmt       { $1->appendChapelStmt($2); context->generatedStmt = $1; resetTempID(); }
+                                      { $$ = new ExprList(); }
+| toplevel_stmt_ls toplevel_stmt      { $$->push_back($2); }
 ;
 
 // Switch between plain statements and those preceded by pragmas
-// %type <pblockstmt> toplevel_stmt
 toplevel_stmt:
    stmt
-|  pragma_ls stmt                      { $$ = buildPragmaStmt( $1, $2 ); }
+|  pragma_ls stmt                     { $$ = makeErrorExprList(); }
 ;
 
 // Sequence of pragmas
 pragma_ls:
-  TPRAGMA STRINGLITERAL                { $$ = new Vec<const char*>(); $$->add(astr($2)); }
-| pragma_ls TPRAGMA STRINGLITERAL      { $1->add(astr($3)); }
+  TPRAGMA STRINGLITERAL                { $$ = new StrList; $$->push_back($2); }
+| pragma_ls TPRAGMA STRINGLITERAL      { $1->push_back($3); }
 ;
 
-// %type <pblockstmt> stmt
 stmt:
   module_decl_stmt
 | include_module_stmt
@@ -549,54 +482,45 @@ stmt:
 | try_stmt
 | throw_stmt
 | return_stmt
-| stmt_level_expr TSEMI                { $$ = buildChapelStmt($1); }
-| TATOMIC stmt                         { $$ = buildAtomicStmt($2); }
-| TBEGIN opt_task_intent_ls stmt       { $$ = buildBeginStmt($2, $3); }
-| TBREAK opt_label_ident TSEMI         { $$ = buildGotoStmt(GOTO_BREAK, $2); }
-| TCOBEGIN opt_task_intent_ls block_stmt { $$ = buildCobeginStmt($2, $3);  }
-| TCONTINUE opt_label_ident TSEMI      { $$ = buildGotoStmt(GOTO_CONTINUE, $2); }
-| TDELETE simple_expr_ls TSEMI         { $$ = buildDeleteStmt($2); }
-| TLABEL ident_def stmt                { $$ = buildLabelStmt($2, $3); }
-| TLOCAL expr do_stmt                  { $$ = buildLocalStmt($2, $3); }
-| TLOCAL do_stmt                       { $$ = buildLocalStmt($2); }
-| TON expr do_stmt                     { $$ = buildOnStmt($2, $3); }
-| TSERIAL expr do_stmt                 { $$ = buildSerialStmt($2, $3); }
-| TSERIAL do_stmt                      { $$ = buildSerialStmt(new SymExpr(gTrue), $2); }
-| TSYNC stmt                           { $$ = buildSyncStmt($2); }
-| TYIELD expr TSEMI                    { $$ = buildPrimitiveStmt(PRIM_YIELD, $2); }
-| error TSEMI                          { $$ = buildErrorStandin(); }
+| stmt_level_expr TSEMI                { $$ = context->createExprListFromStmt($1); }
+| TATOMIC stmt                         { $$ = makeErrorExprList(); }
+| TBEGIN opt_task_intent_ls stmt       { $$ = makeErrorExprList(); }
+| TBREAK opt_label_ident TSEMI         { $$ = makeErrorExprList(); }
+| TCOBEGIN opt_task_intent_ls block_stmt { $$ = makeErrorExprList(); }
+| TCONTINUE opt_label_ident TSEMI      { $$ = makeErrorExprList(); }
+| TDELETE simple_expr_ls TSEMI         { $$ = makeErrorExprList(); }
+| TLABEL ident_def stmt                { $$ = makeErrorExprList(); }
+| TLOCAL expr do_stmt                  { $$ = makeErrorExprList(); }
+| TLOCAL do_stmt                       { $$ = makeErrorExprList(); }
+| TON expr do_stmt                     { $$ = makeErrorExprList(); }
+| TSERIAL expr do_stmt                 { $$ = makeErrorExprList(); }
+| TSERIAL do_stmt                      { $$ = makeErrorExprList(); }
+| TSYNC stmt                           { $$ = makeErrorExprList(); }
+| TYIELD expr TSEMI                    { $$ = makeErrorExprList(); }
+| error TSEMI                          { $$ = makeErrorExprList(); }
 ;
 
 module_decl_start:
   access_control opt_prototype TMODULE ident_def
     {
-      $$ = buildModule($4, currentModuleType, NULL, yyfilename, $1, $2, @1.comment);
-      context->currentModuleStack.push_back(context->ctx.uniqueString($4));
+      // TODO: context->enterModule or something to adjust the ID path
+      $$ = makeErrorExprList();
     }
 ;
 
 module_decl_stmt:
    module_decl_start TLCBR TRCBR
-    { $1->block = new BlockStmt();
-      $$ = buildChapelStmt(new DefExpr($1));
-      context->currentModuleStack.pop_back();
-    }
+    { $$ = makeErrorExprList(); }
 | module_decl_start TLCBR stmt_ls TRCBR
-    { $1->block = $3;
-      $$ = buildChapelStmt(new DefExpr($1));
-      context->currentModuleStack.pop_back();
-    }
+    { $$ = makeErrorExprList(); }
 | module_decl_start TLCBR error TRCBR
-    { $1->block = buildErrorStandin();
-      $$ = buildChapelStmt(new DefExpr($1));
-      context->currentModuleStack.pop_back();
-    }
+    { $$ = makeErrorExprList(); }
 ;
 
 access_control:
-        { $$ = false; @$.comment = context->latestComment; context->latestComment = NULL; } // public
-| TPUBLIC { $$ = false; @$.comment = context->latestComment; context->latestComment = NULL; } // also public
-| TPRIVATE { $$ = true; @$.comment = context->latestComment; context->latestComment = NULL; } // private
+           { $$ = VisibilityTag_DEFAULT; }
+| TPUBLIC  { $$ = VisibilityTag_PUBLIC; }
+| TPRIVATE { $$ = VisibilityTag_PRIVATE; }
 ;
 
 opt_prototype:
@@ -605,9 +529,9 @@ opt_prototype:
 ;
 
 include_access_control:
-           { $$ = false; }
-| TPUBLIC  { $$ = false; }
-| TPRIVATE { $$ = true; }
+           { $$ = VisibilityTag_DEFAULT; }
+| TPUBLIC  { $$ = VisibilityTag_PUBLIC; }
+| TPRIVATE { $$ = VisibilityTag_PRIVATE; }
 ;
 
 include_module_stmt:
@@ -717,9 +641,9 @@ except_ls:
 ;
 
 use_access_control:
-           { $$ = true; } // private
-| TPUBLIC  { $$ = false; } // public
-| TPRIVATE { $$ = true; } // private
+           { $$ = VisibilityTag_DEFAULT; }
+| TPUBLIC  { $$ = VisibilityTag_PUBLIC; }
+| TPRIVATE { $$ = VisibilityTag_PRIVATE; }
 ;
 
 use_stmt:
@@ -870,7 +794,7 @@ return_stmt:
 
 class_level_stmt:
   TSEMI                 { $$ = buildChapelStmt(new BlockStmt()); }
-| private_decl
+| private_decl          { $$ = $1; }
 | TPUBLIC private_decl  { $$ = $2; }
 /* the following rule saves the current state of `parsingPrivate`,
    then sets it to true when parsing the `private_decl` rule; it then
@@ -1604,7 +1528,7 @@ opt_function_body_stmt:
 ;
 
 function_body_stmt:
-  block_stmt
+  block_stmt   { $$ = getStatement($1); }
 | return_stmt  { $$ = new BlockStmt($1); }
 ;
 
@@ -2361,36 +2285,36 @@ binary_op_expr:
 ;
 
 unary_op_expr:
-  TPLUS expr %prec TUPLUS         { $$ = new CallExpr("+", $2); }
-| TMINUS expr %prec TUMINUS       { $$ = new CallExpr("-", $2); }
+  TPLUS expr %prec TUPLUS         { $$ = makeErrorExpr(); }
+| TMINUS expr %prec TUMINUS       { $$ = makeErrorExpr(); }
 | TMINUSMINUS expr %prec TUMINUS  { $$ = buildPreDecIncWarning($2, '-'); }
 | TPLUSPLUS expr %prec TUPLUS     { $$ = buildPreDecIncWarning($2, '+'); }
-| TBANG expr %prec TLNOT          { $$ = new CallExpr("!", $2); }
-| expr TBANG                      { $$ = new CallExpr("postfix!", $1); }
-| TBNOT expr                      { $$ = new CallExpr("~", $2); }
+| TBANG expr %prec TLNOT          { $$ = makeErrorExpr(); }
+| expr TBANG                      { $$ = makeErrorExpr(); }
+| TBNOT expr                      { $$ = makeErrorExpr(); }
 ;
 
 reduce_expr:
-  expr TREDUCE expr                              { $$ = buildReduceExpr($1, $3); }
-| expr TREDUCE zippered_iterator                 { $$ = buildReduceExpr($1, $3, true); }
-| reduce_scan_op_expr TREDUCE expr               { $$ = buildReduceExpr($1, $3); }
-| reduce_scan_op_expr TREDUCE zippered_iterator  { $$ = buildReduceExpr($1, $3, true); }
+  expr TREDUCE expr                              { $$ = makeErrorExpr(); }
+| expr TREDUCE zippered_iterator                 { $$ = makeErrorExpr(); }
+| reduce_scan_op_expr TREDUCE expr               { $$ = makeErrorExpr(); }
+| reduce_scan_op_expr TREDUCE zippered_iterator  { $$ = makeErrorExpr(); }
 ;
 
 scan_expr:
-  expr TSCAN expr                              { $$ = buildScanExpr($1, $3); }
-| expr TSCAN zippered_iterator                 { $$ = buildScanExpr($1, $3, true); }
-| reduce_scan_op_expr TSCAN expr               { $$ = buildScanExpr($1, $3); }
-| reduce_scan_op_expr TSCAN zippered_iterator  { $$ = buildScanExpr($1, $3, true); }
+  expr TSCAN expr                              { $$ = makeErrorExpr(); }
+| expr TSCAN zippered_iterator                 { $$ = makeErrorExpr(); }
+| reduce_scan_op_expr TSCAN expr               { $$ = makeErrorExpr(); }
+| reduce_scan_op_expr TSCAN zippered_iterator  { $$ = makeErrorExpr(); }
 ;
 
 
 reduce_scan_op_expr:
-  TPLUS  { $$ = new UnresolvedSymExpr("SumReduceScanOp"); }
-| TSTAR  { $$ = new UnresolvedSymExpr("ProductReduceScanOp"); }
-| TAND   { $$ = new UnresolvedSymExpr("LogicalAndReduceScanOp"); }
-| TOR    { $$ = new UnresolvedSymExpr("LogicalOrReduceScanOp"); }
-| TBAND  { $$ = new UnresolvedSymExpr("BitwiseAndReduceScanOp"); }
-| TBOR   { $$ = new UnresolvedSymExpr("BitwiseOrReduceScanOp"); }
-| TBXOR  { $$ = new UnresolvedSymExpr("BitwiseXorReduceScanOp"); }
+  TPLUS  { $$ = makeErrorExpr(); }
+| TSTAR  { $$ = makeErrorExpr(); }
+| TAND   { $$ = makeErrorExpr(); }
+| TOR    { $$ = makeErrorExpr(); }
+| TBAND  { $$ = makeErrorExpr(); }
+| TBOR   { $$ = makeErrorExpr(); }
+| TBXOR  { $$ = makeErrorExpr(); }
 ;

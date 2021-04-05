@@ -35,6 +35,10 @@
 #include "symbol.h"
 #include "wellknown.h"
 
+// Include ParserContext.h after the generated header bison-chapel.h because it
+// depends on types defined in the generated header.
+#include "ParserContext.h"
+
 #include <cstdlib>
 
 BlockStmt*           yyblock                       = NULL;
@@ -620,7 +624,7 @@ static ModuleSymbol* parseFile(const char* path,
       startCountingFileTokens(path);
     }
 
-    yylex_init(&context.scanner);
+    yylex_init_extra(&context.scanner, &context);
 
     stringBufferInit();
 
@@ -885,7 +889,7 @@ BlockStmt* parseString(const char* string,
   int             parserStatus = YYPUSH_MORE;
   ParserContext   context;
 
-  yylex_init(&(context.scanner));
+  yylex_init_extra(&context.scanner, &context);
 
   stringBufferInit();
 
