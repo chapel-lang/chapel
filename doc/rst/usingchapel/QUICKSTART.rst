@@ -28,14 +28,14 @@ enable more features, such as distributed memory execution.
 
       .. code-block:: bash
 
-         tar xzf chapel-1.24.0.tar.gz
+         tar xzf chapel-1.24.1.tar.gz
 
    b. Make sure that you are in the directory you just created by expanding the
       source release, for example:
 
       .. code-block:: bash
 
-         cd chapel-1.24.0
+         cd chapel-1.24.1
 
    c. Set up your environment for Chapel's Quickstart mode.
       If you are using a shell other than bash,
