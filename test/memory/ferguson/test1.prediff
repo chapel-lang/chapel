@@ -1,0 +1,28 @@
+#!/usr/bin/env python3
+
+import sys
+import re
+import os
+
+pattern = re.compile('=* Memory Leaks =*')
+
+filter_filename = sys.argv[2]
+tmp_filename = filter_filename + '.predifftmp'
+
+with open(tmp_filename, 'w') as out_file:
+  with open(filter_filename, 'r') as in_file:
+    prev_line = ""
+    scanned_first_line = False
+    for line in in_file:
+      match = pattern.match(line)
+      if match:
+        break
+
+      if scanned_first_line:
+        out_file.write(prev_line)
+      else:
+        scanned_first_line = True
+
+      prev_line = line
+
+os.replace(tmp_filename, filter_filename)
