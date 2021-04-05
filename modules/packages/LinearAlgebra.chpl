@@ -222,7 +222,7 @@ class LinearAlgebraError : Error {
     }
 }
 
-/**
+/*
 This class promotes lazy computation of required
 Helper matrices to evaluate matrix exponential.
 
@@ -255,7 +255,7 @@ class ExpmPadeHelper {
   var isExactdComputed : [1..4] bool;
   var isApproxdComputed : [1..4] bool;
 
-  /**
+  /*
   Params:
   A: Expects an N*N square matrix
   use_exact_onenorm: boolean value specifying if the onenorm has to be exact.
@@ -2319,7 +2319,7 @@ proc kron(A: [?ADom] ?eltType, B: [?BDom] eltType) {
 }
 
 
-/**
+/*
   Matrix exponential using Pade approximation
 
   Params:
@@ -2335,9 +2335,9 @@ proc kron(A: [?ADom] ?eltType, B: [?BDom] eltType) {
 
   References:
   [1] Awad H. Al-Mohy and Nicholas J. Higham (2009)
-           "A New Scaling and Squaring Algorithm for the Matrix Exponential."
-           SIAM Journal on Matrix Analysis and Applications.
-           31 (3). pp. 970-989. ISSN 1095-7162
+  "A New Scaling and Squaring Algorithm for the Matrix Exponential."
+  SIAM Journal on Matrix Analysis and Applications.
+  31 (3). pp. 970-989. ISSN 1095-7162
 */
 
 proc expm(A: [], param use_exact_onenorm=true){
@@ -2408,7 +2408,7 @@ proc expm(A: [], param use_exact_onenorm=true){
   return X;
 }
 
-/**
+/*
 This method finds P Q Matrices, where
 P = U + V
 Q = -U + V
