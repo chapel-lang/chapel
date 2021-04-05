@@ -36,7 +36,7 @@ struct ParserContext {
 
   std::vector<UniqueString> currentModuleStack;
   std::vector<UniqueString> currentFunctionStack;
-  std::vector<Expr*>* topLevelStatements;
+  ExprList* topLevelStatements;
   std::vector<ParserError> errors;
 
   // comments are gathered here
@@ -45,6 +45,23 @@ struct ParserContext {
   // accumulated here should be cleared (since they must have come from inside
   // the statement).
   std::vector<ParserComment> comments;
+
+  // These adjust for the IDs
+  // and call enterStmt / exitStmt.
+  ExprList* enterModule(YYLTYPE loc, const char* name, Expr* decl);
+  ExprList* exitModule(ExprList* decl, ExprList* body);
+  ExprList* enterFunction(YYLTYPE loc, const char* name, Expr* decl);
+  ExprList* exitFunction(ExprList* decl, ExprList* body);
+
+  // This should consume the comments that occur before
+  // .... and append them to the return
+  // It will include the argument in the return
+  ExprList* enterStmt(YYLTYPE loc, ExprList* lst);
+  ExprList* enterStmt(YYLTYPE loc, Expr* e);
+
+  // These should clear the comments (since there might be some inside the stmt)
+  ExprList* exitStmt(ExprList* lst);
+  ExprList* exitStmt(Expr* e);
 
   // Do we really need these?
   /*

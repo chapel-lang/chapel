@@ -36,7 +36,9 @@ AST_BEGIN_SUBCLASSES(BaseAST)
     AST_NODE(TryExpr)
     // Array literal expression?
     // Tuple literal expression?
-    // new Expr?
+    // new ClassOrRecord?
+    // Where to draw the line on
+    // new AST types vs. using a primitive?
 
     AST_BEGIN_SUBCLASSES(CallExpr)
       AST_NODE(PrimCallExpr)
