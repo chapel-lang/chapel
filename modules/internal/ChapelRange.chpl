@@ -1332,8 +1332,8 @@ operator :(r: range(?), type t: range(?)) {
   }
 
   proc chpl_by_help(r: range(?i,?b,?s), step) {
-    const lw: i = r.low,
-          hh: i = r.high,
+    const lw: i = if r.hasLowBound() then r.low else chpl__intToIdx(i, 1),
+          hh: i = if r.hasHighBound() then r.high else chpl__intToIdx(i, 0),
           st: r.strType = r.stride * step:r.strType;
 
     const (ald, alt): (bool, i) =
