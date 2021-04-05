@@ -88,6 +88,24 @@
     VisibilityTag_PRIVATE,
   };
 
+  enum NewTag {
+    NewTag_BLANK,
+    NewTag_OWNED,
+    NewTag_SHARED,
+    NewTag_UNMANAGED,
+    NewTag_BORROWED,
+  };
+
+  enum ShadowTag {
+    ShadowTag_CONST,
+    ShadowTag_IN,
+    ShadowTag_CONST_IN,
+    ShadowTag_REF,
+    ShadowTag_CONST_REF,
+    ShadowTag_VAR,
+  };
+
+
   // TODO -- transitional
   typedef int IntentTag;
   typedef int RetTag;
@@ -132,8 +150,10 @@
     AggregateTag               aggrTag;
     bool                       b;
     IntentTag                  intentTag; // was pt
+    NewTag                     newTag;
     ProcIterOp                 procIterOp;
     RetTag                     retTag;
+    ShadowTag                  shadowTag;
     VisibilityTag              visibilityTag;
 
     // simple pointer values 
@@ -328,7 +348,7 @@
 %type <b> opt_prototype
 %type <b> opt_throws_error
 
-%type <visibilityTag> access_control use_access_control include_access_control
+%type <visibilityTag> access_control use_access_control
 %type <intentTag> required_intent_tag opt_intent_tag opt_this_intent_tag
 
 %type <retTag>  opt_ret_tag
@@ -426,18 +446,18 @@
 %type <pdefexpr> formal enum_item
 %type <expr> query_expr ifc_constraint
 
-%type <pcallexpr> new_maybe_decorated
-%type <pcallexpr> opt_inherit simple_expr_ls expr_ls assoc_expr_ls tuple_expr_ls
-%type <pcallexpr> opt_actual_ls actual_ls
-%type <pcallexpr> opt_task_intent_ls task_intent_ls task_intent_clause
-%type <pcallexpr> forall_intent_clause forall_intent_ls
+%type <newTag> new_maybe_decorated
+%type <exprList> opt_inherit simple_expr_ls expr_ls assoc_expr_ls tuple_expr_ls
+%type <exprList> opt_actual_ls actual_ls
+%type <exprList> opt_task_intent_ls task_intent_ls task_intent_clause
+%type <exprList> forall_intent_clause forall_intent_ls
 
 %type <pfnsymbol> fn_decl_stmt_inner formal_ls opt_formal_ls req_formal_ls
 %type <expr> fn_decl_receiver_expr
 %type <procIterOp> proc_iter_or_op
 %type <pfnsymbol> linkage_spec
-%type <pShadowVar> intent_expr
-%type <pShadowVarPref> shadow_var_prefix
+%type <expr> intent_expr
+%type <shadowTag> shadow_var_prefix
 
 %%
 
@@ -528,19 +548,13 @@ opt_prototype:
 | TPROTOTYPE { $$ = true;  }
 ;
 
-include_access_control:
-           { $$ = VisibilityTag_DEFAULT; }
-| TPUBLIC  { $$ = VisibilityTag_PUBLIC; }
-| TPRIVATE { $$ = VisibilityTag_PRIVATE; }
-;
-
 include_module_stmt:
  TINCLUDE
   {
     @1.comment = context->latestComment;
     context->latestComment = NULL;
   }
- include_access_control opt_prototype TMODULE ident_def TSEMI
+ access_control opt_prototype TMODULE ident_def TSEMI
  {
    $$ = buildIncludeModule($6, $3, $4, @1.comment);
  }
@@ -1975,7 +1989,7 @@ for_expr:
 
 cond_expr:
   TIF expr TTHEN expr TELSE expr
-    { $$ = new IfExpr($2, $4, $6); }
+    { $$ = makeErrorExpr(); }
 /* MPF: it would be nice to match TIF expr TTHEN expr but
    the attempt below leads to reduce-reduce conflicts:
       TIF expr TTHEN expr %prec TNOELSE
@@ -1984,7 +1998,7 @@ cond_expr:
 ;
 
 nil_expr:
-  TNIL      { $$ = new SymExpr(gNil); }
+  TNIL      { $$ = makeErrorExpr(); }
 ;
 
 /* Expressions permitted at the statement level as <stmt_level_expr> TSEMI.
@@ -2000,7 +2014,7 @@ stmt_level_expr:
 | new_expr
 | let_expr
 | io_expr TIO expr
-    { $$ = new CallExpr("<~>", $1, $3); }
+    { $$ = makeErrorExpr(); }
 ;
 
 opt_task_intent_ls:
@@ -2013,8 +2027,8 @@ task_intent_clause:
 ;
 
 task_intent_ls:
-  intent_expr { $$ = new CallExpr(PRIM_ACTUALS_LIST); addTaskIntent($$, $1); }
-| task_intent_ls TCOMMA intent_expr                 { addTaskIntent($1, $3); }
+  intent_expr                                       { $$ = makeErrorExprList(); }
+| task_intent_ls TCOMMA intent_expr                 { $$ = makeErrorExprList(); }
 ;
 
 forall_intent_clause:
@@ -2022,99 +2036,71 @@ forall_intent_clause:
 ;
 
 forall_intent_ls:
-  intent_expr { $$ = new CallExpr(PRIM_ACTUALS_LIST); addForallIntent($$, $1); }
-| forall_intent_ls TCOMMA intent_expr               { addForallIntent($1, $3); }
+  intent_expr                          { $$ = makeErrorExprList(); }
+| forall_intent_ls TCOMMA intent_expr  { $$ = makeErrorExprList(); }
 ;
 
 intent_expr:
   shadow_var_prefix ident_expr opt_type opt_init_expr
     {
-      $$ = ShadowVarSymbol::buildForPrefix($1, $2, $3, $4);
+      $$ = makeErrorExpr();
     }
 | reduce_scan_op_expr TREDUCE ident_expr
     {
-      $$ = ShadowVarSymbol::buildFromReduceIntent($3, $1);
+      $$ = makeErrorExpr();
     }
 | expr                TREDUCE ident_expr
     {
-      $$ = ShadowVarSymbol::buildFromReduceIntent($3, $1);
+      $$ = makeErrorExpr();
     }
 ;
 
 shadow_var_prefix:
-  TCONST       { $$ = SVP_CONST;     }
-| TIN          { $$ = SVP_IN;        }
-| TCONST TIN   { $$ = SVP_CONST_IN;  }
-| TREF         { $$ = SVP_REF;       }
-| TCONST TREF  { $$ = SVP_CONST_REF; }
-| TVAR         { $$ = SVP_VAR;       }
+  TCONST       { $$ = ShadowTag_CONST;     }
+| TIN          { $$ = ShadowTag_IN;        }
+| TCONST TIN   { $$ = ShadowTag_CONST_IN;  }
+| TREF         { $$ = ShadowTag_REF;       }
+| TCONST TREF  { $$ = ShadowTag_CONST_REF; }
+| TVAR         { $$ = ShadowTag_VAR;       }
 ;
 
 io_expr:
   lhs_expr
 | io_expr TIO expr
-    { $$ = new CallExpr("<~>", $1, $3); }
+    { $$ = makeErrorExpr(); }
 ;
 
 new_maybe_decorated:
   TNEW         %prec TNOELSE
-    { $$ = new CallExpr(PRIM_NEW); }
+    { $$ = NewTag_BLANK; }
 | TNEW TOWNED
-    { $$ = new CallExpr(PRIM_NEW,
-                        new NamedExpr(astr_chpl_manager,
-                                      new SymExpr(dtOwned->symbol))); }
+    { $$ = NewTag_OWNED; }
 | TNEW TSHARED
-    { $$ = new CallExpr(PRIM_NEW,
-                        new NamedExpr(astr_chpl_manager,
-                                      new SymExpr(dtShared->symbol))); }
+    { $$ = NewTag_SHARED; }
 | TNEW TUNMANAGED
-    { $$ = new CallExpr(PRIM_NEW,
-                        new NamedExpr(astr_chpl_manager,
-                                      new SymExpr(dtUnmanaged->symbol))); }
+    { $$ = NewTag_UNMANAGED; }
 | TNEW TBORROWED
-    { $$ = new CallExpr(PRIM_NEW,
-                        new NamedExpr(astr_chpl_manager,
-                                      new SymExpr(dtBorrowed->symbol))); }
+    { $$ = NewTag_BORROWED; }
 ;
 
 new_expr:
   /* handles the typical new cases, e.g. new C(); new owned C() */
   new_maybe_decorated expr %prec TNEW
-    { $1->insertAtTail($2);
-      $$ = $1; }
-
+    { makeErrorExpr(); }
   /* handles e.g. new (typefn())(initargs) */
 | TNEW TOWNED TLP expr TRP TLP opt_actual_ls TRP %prec TNOELSE
-    { $$ = new CallExpr(PRIM_NEW,
-                        new NamedExpr(astr_chpl_manager,
-                                      new SymExpr(dtOwned->symbol)),
-                        new CallExpr($4, $7));
-    }
+    { $$ = makeErrorExpr(); }
 | TNEW TSHARED TLP expr TRP TLP opt_actual_ls TRP %prec TNOELSE
-    { $$ = new CallExpr(PRIM_NEW,
-                        new NamedExpr(astr_chpl_manager,
-                                      new SymExpr(dtShared->symbol)),
-                        new CallExpr($4, $7));
-    }
+    { $$ = makeErrorExpr(); }
 | TNEW TOWNED TLP expr TRP TLP opt_actual_ls TRP TQUESTION
-    { $$ = new CallExpr(PRIM_NEW,
-                        new NamedExpr(astr_chpl_manager,
-                                      new SymExpr(dtOwned->symbol)),
-                        new CallExpr(PRIM_TO_NILABLE_CLASS_CHECKED,
-                                     new CallExpr($4, $7)));
-    }
+    { $$ = makeErrorExpr(); }
 | TNEW TSHARED TLP expr TRP TLP opt_actual_ls TRP TQUESTION
-    { $$ = new CallExpr(PRIM_NEW,
-                        new NamedExpr(astr_chpl_manager,
-                                      new SymExpr(dtShared->symbol)),
-                        new CallExpr(PRIM_TO_NILABLE_CLASS_CHECKED,
-                                     new CallExpr($4, $7)));
-    }
+    { $$ = makeErrorExpr(); }
 ;
 
 let_expr:
   TLET var_decl_stmt_inner_ls TIN expr
-    { $$ = buildLetExpr($2, $4); }
+    { $$ = makeErrorExpr(); }
 ;
 
 /* exprs represent valid values and types. Any expression with a valid
@@ -2131,13 +2117,13 @@ expr:
 | let_expr
 | ifc_constraint
 | TLP TDOTDOTDOT expr TRP
-    { $$ = new CallExpr(PRIM_TUPLE_EXPAND, $3); }
+    { $$ = makeErrorExpr(); }
 | expr TCOLON expr
-    { $$ = createCast($1, $3); }
+    { $$ = makeErrorExpr(); }
 | expr TDOTDOT expr
-    { $$ = buildBoundedRange($1, $3); }
+    { $$ = makeErrorExpr(); }
 | expr TDOTDOTOPENHIGH expr
-    { $$ = buildBoundedRange($1, $3, false, true); }
+    { $$ = makeErrorExpr(); }
 
 /* The following cases would extend the current '..<' open range
    interval constructor to also support '<..' and '<..<'.  This
@@ -2145,20 +2131,20 @@ expr:
    in case we change our minds in a future release.
 
 | expr TDOTDOTOPENLOW expr
-    { $$ = buildBoundedRange($1, $3, true, false); }
+    { $$ = makeErrorExpr(); }
 | expr TDOTDOTOPENBOTH expr
-    { $$ = buildBoundedRange($1, $3, true, true); }
+    { $$ = makeErrorExpr(); }
 | expr TDOTDOTOPENLOW
-    { $$ = buildLowBoundedRange($1, true); }
+    { $$ = makeErrorExpr(); }
 */
 | expr TDOTDOT
-    { $$ = buildLowBoundedRange($1); }
+    { $$ = makeErrorExpr(); }
 | TDOTDOT expr
-    { $$ = buildHighBoundedRange($2); }
+    { $$ = makeErrorExpr(); }
 | TDOTDOTOPENHIGH expr
-    { $$ = buildHighBoundedRange($2, true); }
+    { $$ = makeErrorExpr(); }
 | TDOTDOT
-    { $$ = buildUnboundedRange(); }
+    { $$ = makeErrorExpr(); }
 ;
 
 opt_expr:
@@ -2167,9 +2153,9 @@ opt_expr:
 ;
 
 opt_try_expr:
-  TTRY expr       { $$ = tryExpr($2); }
-| TTRYBANG expr   { $$ = tryBangExpr($2); }
-| expr            { $$ = $1; }
+  TTRY expr       { $$ = makeErrorExpr(); }
+| TTRYBANG expr   { $$ = makeErrorExpr(); }
+| expr
 ;
 
 lhs_expr:
@@ -2185,25 +2171,25 @@ lhs_expr:
  *        opt_actual_ls, and every production it relies on, would need to be
  *        reworked to not permit the empty production. */
 call_base_expr:
-  lhs_expr           { $$ = $1; }
-| expr TBANG         { $$ = new CallExpr("postfix!", $1); }
-| sub_type_level_expr TQUESTION {$$ = new CallExpr(PRIM_TO_NILABLE_CLASS_CHECKED, $1);}
-| lambda_decl_expr   { $$ = $1; }
+  lhs_expr
+| expr TBANG                    { $$ = makeErrorExpr(); }
+| sub_type_level_expr TQUESTION { $$ = makeErrorExpr(); }
+| lambda_decl_expr
 | str_bytes_literal
 ;
 
 call_expr:
-  call_base_expr TLP opt_actual_ls TRP        { $$ = new CallExpr($1, $3); }
-| call_base_expr TLSBR opt_actual_ls TRSBR    { $$ = buildSquareCallExpr($1, $3); }
-| TPRIMITIVE TLP opt_actual_ls TRP      { $$ = buildPrimitiveExpr($3); }
+  call_base_expr TLP opt_actual_ls TRP        { $$ = makeErrorExpr(); }
+| call_base_expr TLSBR opt_actual_ls TRSBR    { $$ = makeErrorExpr(); }
+| TPRIMITIVE TLP opt_actual_ls TRP            { $$ = makeErrorExpr(); }
 ;
 
 dot_expr:
-  expr TDOT ident_use          { $$ = buildDotExpr($1, $3); }
-| expr TDOT TTYPE              { $$ = new CallExpr(PRIM_TYPEOF, $1); }
-| expr TDOT TDOMAIN            { $$ = buildDotExpr($1, "_dom"); }
-| expr TDOT TLOCALE            { $$ = buildDotExpr($1, "locale"); }
-| expr TDOT TBYTES TLP TRP     { $$ = new CallExpr(buildDotExpr($1, "chpl_bytes")); }
+  expr TDOT ident_use          { $$ = makeErrorExpr(); }
+| expr TDOT TTYPE              { $$ = makeErrorExpr(); }
+| expr TDOT TDOMAIN            { $$ = makeErrorExpr(); }
+| expr TDOT TLOCALE            { $$ = makeErrorExpr(); }
+| expr TDOT TBYTES TLP TRP     { $$ = makeErrorExpr(); }
 ;
 
 /* ( <expr> ) -- A parenthesized expression.  The parens are stripped.
@@ -2211,84 +2197,81 @@ dot_expr:
  * ( <tuple_expr_ls> ) -- Two-tuples and up.  A tuple_expr_ls contains at least 2 elements.
  */
 parenthesized_expr:
-  TLP tuple_component TRP           { $$ = $2; }
-| TLP tuple_component TCOMMA TRP    { $$ = buildOneTuple($2); }
-| TLP tuple_expr_ls TRP             { $$ = buildTuple($2); }
-| TLP tuple_expr_ls TCOMMA TRP      { $$ = buildTuple($2); }
+  TLP tuple_component TRP           { $$ = makeErrorExpr(); }
+| TLP tuple_component TCOMMA TRP    { $$ = makeErrorExpr(); }
+| TLP tuple_expr_ls TRP             { $$ = makeErrorExpr(); }
+| TLP tuple_expr_ls TCOMMA TRP      { $$ = makeErrorExpr(); }
 ;
 
 bool_literal:
-  TFALSE { $$ = new SymExpr(gFalse); }
-| TTRUE  { $$ = new SymExpr(gTrue); }
+  TFALSE { $$ = makeErrorExpr(); }
+| TTRUE  { $$ = makeErrorExpr(); }
 ;
 
 str_bytes_literal:
-  STRINGLITERAL   { $$ = buildStringLiteral($1); }
-| BYTESLITERAL    { $$ = buildBytesLiteral($1); }
+  STRINGLITERAL   { $$ = makeErrorExpr(); }
+| BYTESLITERAL    { $$ = makeErrorExpr(); }
 ;
 
 literal_expr:
   bool_literal
 | str_bytes_literal
-| INTLITERAL            { $$ = buildIntLiteral($1, yyfilename, chplLineno);    }
-| REALLITERAL           { $$ = buildRealLiteral($1);   }
-| IMAGLITERAL           { $$ = buildImagLiteral($1);   }
-| CSTRINGLITERAL        { $$ = buildCStringLiteral($1); }
-| TNONE                 { $$ = new SymExpr(gNone); }
-| TLCBR expr_ls TRCBR   { $$ = new CallExpr("chpl__buildDomainExpr", $2,
-                                            new SymExpr(gTrue)); }
-| TLCBR expr_ls TCOMMA TRCBR   { $$ = new CallExpr("chpl__buildDomainExpr", $2,
-                                                   new SymExpr(gTrue)); }
-| TLSBR expr_ls TRSBR   { $$ = new CallExpr("chpl__buildArrayExpr",  $2); }
-| TLSBR expr_ls TCOMMA TRSBR   { $$ = new CallExpr("chpl__buildArrayExpr",  $2); }
+| INTLITERAL            { $$ = makeErrorExpr(); }
+| REALLITERAL           { $$ = makeErrorExpr(); }
+| IMAGLITERAL           { $$ = makeErrorExpr(); }
+| CSTRINGLITERAL        { $$ = makeErrorExpr(); }
+| TNONE                 { $$ = makeErrorExpr(); }
+| TLCBR expr_ls TRCBR          { $$ = makeErrorExpr(); }
+| TLCBR expr_ls TCOMMA TRCBR   { $$ = makeErrorExpr(); }
+| TLSBR expr_ls TRSBR          { $$ = makeErrorExpr(); }
+| TLSBR expr_ls TCOMMA TRSBR   { $$ = makeErrorExpr(); }
 | TLSBR assoc_expr_ls TRSBR
     {
-      $$ = new CallExpr("chpl__buildAssociativeArrayExpr", $2);
+      $$ = makeErrorExpr();
     }
 | TLSBR assoc_expr_ls TCOMMA TRSBR
     {
-      $$ = new CallExpr("chpl__buildAssociativeArrayExpr", $2);
+      $$ = makeErrorExpr();
     }
 
 ;
 
 assoc_expr_ls:
-  expr TALIAS expr                      { $$ = new CallExpr(PRIM_ACTUALS_LIST, $1, $3); }
-| assoc_expr_ls TCOMMA expr TALIAS expr { $1->insertAtTail($3); $1->insertAtTail($5); }
+  expr TALIAS expr                      { $$ = makeErrorExprList(); }
+| assoc_expr_ls TCOMMA expr TALIAS expr { $1->push_back(makeErrorExpr()); }
 ;
 
 binary_op_expr:
-  expr TPLUS expr          { $$ = new CallExpr("+", $1, $3); }
-| expr TMINUS expr         { $$ = new CallExpr("-", $1, $3); }
-| expr TSTAR expr          { $$ = new CallExpr("*", $1, $3); }
-| expr TDIVIDE expr        { $$ = new CallExpr("/", $1, $3); }
-| expr TSHIFTLEFT expr     { $$ = new CallExpr("<<", $1, $3); }
-| expr TSHIFTRIGHT expr    { $$ = new CallExpr(">>", $1, $3); }
-| expr TMOD expr           { $$ = new CallExpr("%", $1, $3); }
-| expr TEQUAL expr         { $$ = new CallExpr("==", $1, $3); }
-| expr TNOTEQUAL expr      { $$ = new CallExpr("!=", $1, $3); }
-| expr TLESSEQUAL expr     { $$ = new CallExpr("<=", $1, $3); }
-| expr TGREATEREQUAL expr  { $$ = new CallExpr(">=", $1, $3); }
-| expr TLESS expr          { $$ = new CallExpr("<", $1, $3); }
-| expr TGREATER expr       { $$ = new CallExpr(">", $1, $3); }
-| expr TBAND expr          { $$ = new CallExpr("&", $1, $3); }
-| expr TBOR expr           { $$ = new CallExpr("|", $1, $3); }
-| expr TBXOR expr          { $$ = new CallExpr("^", $1, $3); }
-| expr TAND expr           { $$ = new CallExpr("&&", $1, $3); }
-| expr TOR  expr           { $$ = new CallExpr("||", $1, $3); }
-| expr TEXP expr           { $$ = new CallExpr("**", $1, $3); }
-| expr TBY expr            { $$ = new CallExpr("chpl_by", $1, $3); }
-| expr TALIGN expr         { $$ = new CallExpr("chpl_align", $1, $3); }
-| expr THASH expr          { $$ = new CallExpr("#", $1, $3); }
-| expr TDMAPPED expr       { $$ = new CallExpr("chpl__distributed", $3, $1,
-                                               new SymExpr(gTrue)); }
+  expr TPLUS expr          { $$ = makeErrorExpr(); }
+| expr TMINUS expr         { $$ = makeErrorExpr(); }
+| expr TSTAR expr          { $$ = makeErrorExpr(); }
+| expr TDIVIDE expr        { $$ = makeErrorExpr(); }
+| expr TSHIFTLEFT expr     { $$ = makeErrorExpr(); }
+| expr TSHIFTRIGHT expr    { $$ = makeErrorExpr(); }
+| expr TMOD expr           { $$ = makeErrorExpr(); }
+| expr TEQUAL expr         { $$ = makeErrorExpr(); }
+| expr TNOTEQUAL expr      { $$ = makeErrorExpr(); }
+| expr TLESSEQUAL expr     { $$ = makeErrorExpr(); }
+| expr TGREATEREQUAL expr  { $$ = makeErrorExpr(); }
+| expr TLESS expr          { $$ = makeErrorExpr(); }
+| expr TGREATER expr       { $$ = makeErrorExpr(); }
+| expr TBAND expr          { $$ = makeErrorExpr(); }
+| expr TBOR expr           { $$ = makeErrorExpr(); }
+| expr TBXOR expr          { $$ = makeErrorExpr(); }
+| expr TAND expr           { $$ = makeErrorExpr(); }
+| expr TOR  expr           { $$ = makeErrorExpr(); }
+| expr TEXP expr           { $$ = makeErrorExpr(); }
+| expr TBY expr            { $$ = makeErrorExpr(); }
+| expr TALIGN expr         { $$ = makeErrorExpr(); }
+| expr THASH expr          { $$ = makeErrorExpr(); }
+| expr TDMAPPED expr       { $$ = makeErrorExpr(); }
 ;
 
 unary_op_expr:
   TPLUS expr %prec TUPLUS         { $$ = makeErrorExpr(); }
 | TMINUS expr %prec TUMINUS       { $$ = makeErrorExpr(); }
-| TMINUSMINUS expr %prec TUMINUS  { $$ = buildPreDecIncWarning($2, '-'); }
-| TPLUSPLUS expr %prec TUPLUS     { $$ = buildPreDecIncWarning($2, '+'); }
+| TMINUSMINUS expr %prec TUMINUS  { $$ = makeErrorExpr(); /* warn */ }
+| TPLUSPLUS expr %prec TUPLUS     { $$ = makeErrorExpr(); /* warn */ }
 | TBANG expr %prec TLNOT          { $$ = makeErrorExpr(); }
 | expr TBANG                      { $$ = makeErrorExpr(); }
 | TBNOT expr                      { $$ = makeErrorExpr(); }

@@ -34,6 +34,9 @@ AST_BEGIN_SUBCLASSES(BaseAST)
     AST_NODE(ForeachExpr)
     AST_NODE(IfExpr)
     AST_NODE(TryExpr)
+    // Array literal expression?
+    // Tuple literal expression?
+    // new Expr?
 
     AST_BEGIN_SUBCLASSES(CallExpr)
       AST_NODE(PrimCallExpr)
