@@ -38,7 +38,7 @@ struct ParserContext {
   // Consider a 'proc' declaration. Comments preceding it should be consumed
   // when the decl_stmt starts. Then, after the decl_stmt is created, comments
   // accumulated here should be cleared (since they must have come from inside
-  // the statement).
+  // the statement and should not apply later).
   std::vector<ParserComment> comments;
 
   ParserContext(Builder* astBuilder)

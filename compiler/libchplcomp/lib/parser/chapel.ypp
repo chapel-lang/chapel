@@ -30,6 +30,13 @@
 // The rules are listed in depth-first order from stmt and expr
 //
 
+// A note about memory management within the parser:
+//
+//  Several grammar rules produce an allocated type (e.g. Expr*
+//  pointing to some sort of allocated Expr). When one of these
+//  rules produces a result, that result needs to be either
+//  freed or wired up into another structure to be freed later.
+
 // "%code requires" puts the code in the .h and in the .cpp files
 // "%code" (without "requires") puts the code in the .cpp file
 // Note that the generated flex scanner includes the generated bison .h
@@ -165,6 +172,8 @@
     };
   };
 
+  typedef std::vector<PotentialRename> RenameList;
+
   struct WhereAndLifetime {
     Expr* where;
     ExprList* lifetime;
@@ -223,8 +232,9 @@
 
     // values that are temporary groupings
     CommentsAndStmt            commentsAndStmt;
-    ExprList*                  exprList; 
-    StrList*                   strList; 
+    ExprList*                  exprList;
+    RenameList*                renameList;
+    StrList*                   strList;
     WhereAndLifetime           lifetimeAndWhere;
 
     // TODO
@@ -239,9 +249,13 @@
     //std::set<Flag>*           pflagset;
   };
 
+  // these helpers can be used in the semantic actions
+  #define ctxBuilder context->astBuilder
+  #define STMT(LOC,AST) makeCommentsAndStmt(context->enterStmt(LOC), AST)
   #endif
 }
 
+// YYLTYPE is the type that represents a source code location.
 // It is possible to define YYLTYPE (and this grammar used to in
 // order to handle chpldoc comments). This parser uses instead the
 // strategy of saving doc-comments in ParserContext.
@@ -430,35 +444,37 @@
 %type <commentsAndStmt> include_module_stmt
 %type <commentsAndStmt> block_stmt
 
-%type <pimportstmt> import_expr
-%type <exprList> use_stmt import_stmt import_ls require_stmt
-%type <ponlylist>  renames_ls use_renames_ls opt_only_ls except_ls
+%type <expr> import_expr
+%type <commentsAndStmt> use_stmt import_stmt require_stmt
+%type <exprList> import_ls
+%type <renameList> renames_ls use_renames_ls opt_only_ls except_ls
 
 // These are exprList so that they can include preceeding comments
-%type <exprList> implements_stmt interface_stmt
-%type <pcallexpr>  ifc_formal_ls
-%type <pdefexpr>   ifc_formal
+%type <commentsAndStmt> implements_stmt interface_stmt
+%type <exprList>  ifc_formal_ls
+%type <expr>   ifc_formal
 
 %type <exprList> class_level_stmt_ls
 
 %type <commentsAndStmt> stmt
 %type <expr> do_stmt
-%type <exprList> if_stmt loop_stmt
-%type <exprList> select_stmt assignment_stmt
+%type <commentsAndStmt> if_stmt loop_stmt
+%type <commentsAndStmt> select_stmt
+%type <commentsAndStmt> assignment_stmt
 
 %type <commentsAndStmt> class_level_stmt class_start
 %type <commentsAndStmt> inner_class_level_stmt
 %type <commentsAndStmt> forwarding_decl_stmt forwarding_decl_start
 %type <commentsAndStmt> extern_export_decl_stmt
 %type <commentsAndStmt> extern_export_decl_stmt_start
-%type <exprList> extern_block_stmt
-%type <exprList> return_stmt
-%type <exprList> defer_stmt
-%type <exprList> try_stmt
-%type <exprList> throw_stmt
+%type <commentsAndStmt> extern_block_stmt
+%type <commentsAndStmt> return_stmt
+%type <commentsAndStmt> defer_stmt
+%type <commentsAndStmt> try_stmt
+%type <commentsAndStmt> throw_stmt
 %type <exprList> catch_stmt_ls
-%type <exprList> catch_stmt
-%type <decl>   catch_expr
+%type <expr> catch_stmt
+%type <expr> catch_expr
 
 %type <variableTag> var_decl_type
 
@@ -483,7 +499,7 @@
 %type <penumtype> enum_header
 %type <exprList> enum_ls
 
-%type <callExpr> zippered_iterator
+%type <expr> zippered_iterator
 %type <expr> call_base_expr call_expr dot_expr
 %type <expr> lhs_expr
 %type <expr> unary_op_expr binary_op_expr
@@ -499,7 +515,8 @@
 %type <expr> opt_init_type var_arg_expr
 %type <expr> opt_try_expr opt_expr
 %type <expr> tuple_component tuple_var_decl_component
-%type <pdefexpr> formal enum_item
+%type <pdefexpr> formal
+%type <commentAndExpr> enum_item
 %type <expr> query_expr ifc_constraint
 
 %type <newTag> new_maybe_decorated
@@ -526,7 +543,7 @@ program:
 // 'toplevel_stmt_ls' is 'stmt_ls' plus resetTempID()
 toplevel_stmt_ls:
                                       { $$ = new ExprList(); }
-| toplevel_stmt_ls toplevel_stmt      { $$->push_back($2); }
+| toplevel_stmt_ls toplevel_stmt      { appendList($1, $2); }
 ;
 
 // Switch between plain statements and those preceded by pragmas
@@ -581,20 +598,17 @@ stmt:
 module_decl_start:
   access_control opt_prototype TMODULE ident_def
     {
-      // TODO: replace makeErrorExpr with a decl for the module
-      ExprList* comments = enterStmt(@$);
-      Expr* stmt = context->enterModule($4, makeErrorExpr());
-      $$ = makeCommentsAndStmt(comments, stmt);
+      $$ = STMT(@$, makeErrorExpr()); //context->enterModule($4);
     }
 ;
 
 module_decl_stmt:
    module_decl_start TLCBR TRCBR
-    { $$ = exitModule($1, NULL); }
+    { $$ = context->exitDecl($1.stmt, NULL); }
 | module_decl_start TLCBR stmt_ls TRCBR
-    { $$ = exitModule($1, $3); }
+    { $$ = context->exitDecl($1.stmt, $3); }
 | module_decl_start TLCBR error TRCBR
-    { $$ = exitModule($1, makeErrorExprList()); }
+    { $$ = context->exitModule($1.stmt, makeErrorExprList()); }
 ;
 
 access_control:
@@ -636,25 +650,34 @@ include_module_stmt:
    the statement level.
 */
 block_stmt:
-  TLCBR         TRCBR                  { $$ = new BlockStmt(); }
-| TLCBR stmt_ls TRCBR                  { $$ = $2;              }
-| TLCBR error   TRCBR                  { $$ = buildErrorStandin(); }
+  TLCBR         TRCBR
+  {
+    $$ = STMT(@$, makeErrorExpr()); // TODO
+  }
+| TLCBR stmt_ls TRCBR
+  {
+    $$ = STMT(@$, makeErrorExpr()); // TODO
+  }
+| TLCBR error   TRCBR
+  {
+    $$ = STMT(@$, makeErrorExpr()); // TODO
+  }
 ;
 
 // Sequence of toplevel_stmts
 stmt_ls:
-  toplevel_stmt                        { $$ = new BlockStmt(); $$->appendChapelStmt($1); }
-| stmt_ls toplevel_stmt                { $1->appendChapelStmt($2); }
+  toplevel_stmt                        { $$ = makeList($1); }
+| stmt_ls toplevel_stmt                { appendList($1, $2); }
 ;
 
 
 renames_ls:
-  expr                                 { $$ = new std::vector<PotentialRename*>();
+  expr                                 { $$ = new RenameList();
                                          PotentialRename* cur = new PotentialRename();
                                          cur->tag = PotentialRename::SINGLE;
                                          cur->elem = $1;
                                          $$->push_back(cur); }
-| expr TAS expr                        { $$ = new std::vector<PotentialRename*>();
+| expr TAS expr                        { $$ = new RenameList();
                                          PotentialRename* cur = new PotentialRename();
                                          cur->tag = PotentialRename::DOUBLE;
                                          cur->renamed = new std::pair<Expr*, Expr*>($1, $3);
@@ -672,17 +695,17 @@ renames_ls:
 /* Separated so that use statements can rename their module to "_", but nothing
    else can */
 use_renames_ls:
-  expr                                 { $$ = new std::vector<PotentialRename*>();
+  expr                                 { $$ = new RenameList();
                                          PotentialRename* cur = new PotentialRename();
                                          cur->tag = PotentialRename::SINGLE;
                                          cur->elem = $1;
                                          $$->push_back(cur); }
-| expr TAS expr                        { $$ = new std::vector<PotentialRename*>();
+| expr TAS expr                        { $$ = new RenameList();
                                          PotentialRename* cur = new PotentialRename();
                                          cur->tag = PotentialRename::DOUBLE;
                                          cur->renamed = new std::pair<Expr*, Expr*>($1, $3);
                                          $$->push_back(cur); }
-| expr TAS TUNDERSCORE                 { $$ = new std::vector<PotentialRename*>();
+| expr TAS TUNDERSCORE                 { $$ = new RenameList();
                                          PotentialRename* cur = new PotentialRename();
                                          cur->tag = PotentialRename::DOUBLE;
                                          cur->renamed = new std::pair<Expr*, Expr*>($1, new UnresolvedSymExpr("_"));
@@ -703,7 +726,7 @@ use_renames_ls:
 
 
 opt_only_ls:
-  /* nothing */                        { $$ = new std::vector<PotentialRename*>();
+  /* nothing */                        { $$ = new RenameList();
                                          PotentialRename* cur = new PotentialRename();
                                          cur->tag = PotentialRename::SINGLE;
                                          cur->elem = new UnresolvedSymExpr("");
@@ -712,7 +735,7 @@ opt_only_ls:
 ;
 
 except_ls:
-  TSTAR                                { $$ = new std::vector<PotentialRename*>();
+  TSTAR                                { $$ = new RenameList();
                                          PotentialRename* cur = new PotentialRename();
                                          cur->tag = PotentialRename::SINGLE;
                                          cur->elem = new UnresolvedSymExpr("");
@@ -727,48 +750,91 @@ use_access_control:
 ;
 
 use_stmt:
-  use_access_control TUSE use_renames_ls TSEMI            { $$ = buildUseStmt($3, $1); }
-| use_access_control TUSE expr TEXCEPT except_ls TSEMI    { $$ = buildUseStmt($3, "", $5, true, $1); }
-| use_access_control TUSE expr TAS expr TEXCEPT except_ls TSEMI    { $$ = buildUseStmt($3, $5, $7, true, $1); }
-| use_access_control TUSE expr TAS TUNDERSCORE TEXCEPT except_ls TSEMI    { $$ = buildUseStmt($3, new UnresolvedSymExpr("_"), $7, true, $1); }
-| use_access_control TUSE expr TONLY opt_only_ls TSEMI    { $$ = buildUseStmt($3, "", $5, false, $1); }
-| use_access_control TUSE expr TAS expr TONLY opt_only_ls TSEMI    { $$ = buildUseStmt($3, $5, $7, false, $1); }
-| use_access_control TUSE expr TAS TUNDERSCORE TONLY opt_only_ls TSEMI    { $$ = buildUseStmt($3, new UnresolvedSymExpr("_"), $7, false, $1); }
+  use_access_control TUSE use_renames_ls TSEMI
+    {
+      $$ = STMT(@$, makeErrorExpr()); // TODO
+    }
+| use_access_control TUSE expr TEXCEPT except_ls TSEMI
+    {
+      $$ = STMT(@$, makeErrorExpr()); // TODO
+    }
+| use_access_control TUSE expr TAS expr TEXCEPT except_ls TSEMI
+    {
+      $$ = STMT(@$, makeErrorExpr()); // TODO
+    }
+| use_access_control TUSE expr TAS TUNDERSCORE TEXCEPT except_ls TSEMI
+    {
+      $$ = STMT(@$, makeErrorExpr()); // TODO
+    }
+| use_access_control TUSE expr TONLY opt_only_ls TSEMI
+    {
+      $$ = STMT(@$, makeErrorExpr()); // TODO
+    }
+| use_access_control TUSE expr TAS expr TONLY opt_only_ls TSEMI
+    {
+      $$ = STMT(@$, makeErrorExpr()); // TODO
+    }
+| use_access_control TUSE expr TAS TUNDERSCORE TONLY opt_only_ls TSEMI
+    {
+      $$ = STMT(@$, makeErrorExpr()); // TODO
+    }
 ;
 
 import_stmt:
-  use_access_control TIMPORT import_ls TSEMI { $$ = $3;
-                                               setImportPrivacy($$, $1);}
+  use_access_control TIMPORT import_ls TSEMI
+    {
+      $$ = STMT(@$, makeErrorExpr()); // TODO
+    }
 ;
 
 import_expr:
-  expr { $$ = buildImportStmt($1); }
-| expr TAS ident_use { $$ = buildImportStmt($1, $3); }
-| expr TDOT TLCBR renames_ls TRCBR { $$ = buildImportStmt($1, $4); }
+  expr
+    { $$ = makeErrorExpr(); }
+| expr TAS ident_use
+    { $$ = makeErrorExpr(); }
+| expr TDOT TLCBR renames_ls TRCBR
+    { $$ = makeErrorExpr(); }
 ;
 
 import_ls:
-  import_expr { $$ = buildChapelStmt($1); }
-| import_ls TCOMMA import_expr { $$ = $1; $$->insertAtTail($3); }
+  import_expr
+    { $$ = makeList($1); }
+| import_ls TCOMMA import_expr
+    { appendList($1, $3); }
 ;
 
 require_stmt:
-  TREQUIRE expr_ls TSEMI               { $$ = buildRequireStmt($2); }
+  TREQUIRE expr_ls TSEMI
+    {
+      $$ = STMT(@$, makeErrorExpr()); // TODO
+    }
 ;
 
 assignment_stmt:
   lhs_expr assignop_ident opt_try_expr TSEMI
-    { $$ = buildAssignment($1, $3, $2);   }
+    {
+      $$ = STMT(@$, makeErrorExpr()); // TODO
+    }
 | lhs_expr TSWAP           opt_try_expr TSEMI
-    { $$ = buildAssignment($1, $3, "<=>"); }
+    {
+      $$ = STMT(@$, makeErrorExpr()); // TODO
+    }
 | lhs_expr TASSIGNREDUCE   opt_try_expr TSEMI
-    { $$ = buildAssignment($1, $3, PRIM_REDUCE_ASSIGN); }
+    {
+      $$ = STMT(@$, makeErrorExpr()); // TODO
+    }
 | lhs_expr TASSIGNLAND     opt_try_expr TSEMI
-    { $$ = buildLAndAssignment($1, $3);    }
+    {
+      $$ = STMT(@$, makeErrorExpr()); // TODO
+    }
 | lhs_expr TASSIGNLOR      opt_try_expr TSEMI
-    { $$ = buildLOrAssignment($1, $3);     }
+    {
+      $$ = STMT(@$, makeErrorExpr()); // TODO
+    }
 | lhs_expr TASSIGN         TNOINIT TSEMI
-    { $$ = buildAssignment($1, new SymExpr(gNoInit), "="); }
+    {
+      $$ = STMT(@$, makeErrorExpr()); // TODO
+    }
 ;
 
 // Here are some nonterminals for identifiers
@@ -838,18 +904,18 @@ internal_type_ident_def:
 ;
 
 scalar_type:
-  TBOOL    { $$ = new SymExpr(dtBools[BOOL_SIZE_DEFAULT]->symbol); }
-| TENUM    { $$ = new SymExpr(dtAnyEnumerated->symbol); }
-| TINT     { $$ = new SymExpr(dtInt[INT_SIZE_DEFAULT]->symbol); }
-| TUINT    { $$ = new SymExpr(dtUInt[INT_SIZE_DEFAULT]->symbol); }
-| TREAL    { $$ = new SymExpr(dtReal[FLOAT_SIZE_DEFAULT]->symbol); }
-| TIMAG    { $$ = new SymExpr(dtImag[FLOAT_SIZE_DEFAULT]->symbol); }
-| TCOMPLEX { $$ = new SymExpr(dtComplex[COMPLEX_SIZE_DEFAULT]->symbol); }
-| TBYTES   { $$ = new SymExpr(dtBytes->symbol); }
-| TSTRING  { $$ = new SymExpr(dtString->symbol); }
-| TLOCALE  { $$ = new SymExpr(dtLocale->symbol); }
-| TNOTHING { $$ = new SymExpr(dtNothing->symbol); }
-| TVOID    { $$ = new SymExpr(dtVoid->symbol); }
+  TBOOL    { $$ = makeErrorExpr(); }
+| TENUM    { $$ = makeErrorExpr(); }
+| TINT     { $$ = makeErrorExpr(); }
+| TUINT    { $$ = makeErrorExpr(); }
+| TREAL    { $$ = makeErrorExpr(); }
+| TIMAG    { $$ = makeErrorExpr(); }
+| TCOMPLEX { $$ = makeErrorExpr(); }
+| TBYTES   { $$ = makeErrorExpr(); }
+| TSTRING  { $$ = makeErrorExpr(); }
+| TLOCALE  { $$ = makeErrorExpr(); }
+| TNOTHING { $$ = makeErrorExpr(); }
+| TVOID    { $$ = makeErrorExpr(); }
 ;
 
 reserved_type_ident_use:
@@ -864,19 +930,24 @@ reserved_type_ident_use:
 
 do_stmt:
   TDO stmt    { $$ = $2; }
-| block_stmt  { $$ = $1; }
+| block_stmt  { $$ = $1.stmt; }
 ;
 
 return_stmt:
-  TRETURN TSEMI               { $$ = buildPrimitiveStmt(PRIM_RETURN); }
-| TRETURN opt_try_expr TSEMI  { $$ = buildPrimitiveStmt(PRIM_RETURN, $2); }
+  TRETURN TSEMI
+    {
+      $$ = STMT(@$, makeErrorExpr()); // TODO
+    }
+| TRETURN opt_try_expr TSEMI
+    {
+      $$ = STMT(@$, makeErrorExpr()); // TODO
+    }
 ;
 
 class_level_stmt:
   TSEMI
     {
-      ExprList* comments = context->enterStmt(@$);
-      $$ = makeCommentsAndStmt(comments, NULL);
+      $$ = STMT(@$, NULL);
     }
 | inner_class_level_stmt
     {
@@ -944,9 +1015,7 @@ forwarding_decl_stmt:
 forwarding_decl_start:
   TFORWARDING
     {
-      ExprList* comments = context->enterStmt(@$);
-      Expr* stmt = context->astBuilder->enterForwardingDecl();
-      $$ = makeCommentsAndStmt(comments, stmt);
+      $$ = STMT(@$, makeErrorExpr()); // TODO
     }
 ;
 
@@ -958,9 +1027,7 @@ extern_or_export:
 extern_export_decl_stmt_start:
   extern_or_export
     {
-      ExprList* comments = enterStmt(@$);
-      Expr* stmt = NULL;
-      $$ = makeCommentsAndStmt(comments, stmt);
+      $$ = STMT(@$, makeErrorExpr()); // TODO
     }
 ;
 
@@ -999,129 +1066,208 @@ extern_block_stmt:
 ;
 
 loop_stmt:
-  TDO stmt TWHILE expr TSEMI                    { $$ = DoWhileStmt::build($4, $2); }
-| TWHILE expr do_stmt                           { $$ = WhileDoStmt::build($2, $3); }
-| TWHILE ifvar do_stmt                          { $$ = WhileDoStmt::build($2, $3); }
-| TCOFORALL expr TIN expr opt_task_intent_ls do_stmt              { $$ = buildCoforallLoopStmt($2, $4, $5, $6);       }
-| TCOFORALL expr TIN zippered_iterator opt_task_intent_ls do_stmt { $$ = buildCoforallLoopStmt($2, $4, $5, $6, true); }
-| TCOFORALL expr opt_task_intent_ls do_stmt                       { $$ = buildCoforallLoopStmt(NULL, $2, $3, $4);     }
-| TFOR expr TIN expr do_stmt                    { $$ = ForLoop::buildForLoop(  $2, $4, $5, false, false); }
-| TFOR expr TIN zippered_iterator do_stmt       { $$ = ForLoop::buildForLoop(  $2, $4, $5, true, false); }
-| TFOR expr do_stmt                             { $$ = ForLoop::buildForLoop(NULL, $2, $3, false, false); }
-| TFOR zippered_iterator do_stmt                { $$ = ForLoop::buildForLoop(NULL, $2, $3, true, false); }
-| TFOR TPARAM ident_def TIN expr do_stmt        { $$ = buildParamForLoopStmt($3, $5, $6); }
-| TFORALL expr TIN expr                                   do_stmt  { $$ = ForallStmt::build($2,   $4, NULL, $5, false, false); }
-| TFORALL expr TIN expr              forall_intent_clause do_stmt  { $$ = ForallStmt::build($2,   $4, $5,   $6, false, false); }
-| TFORALL expr TIN zippered_iterator                      do_stmt  { $$ = ForallStmt::build($2,   $4, NULL, $5, true,  false); }
-| TFORALL expr TIN zippered_iterator forall_intent_clause do_stmt  { $$ = ForallStmt::build($2,   $4, $5,   $6, true,  false); }
-| TFORALL          expr                                   do_stmt  { $$ = ForallStmt::build(NULL, $2, NULL, $3, false, false); }
-| TFORALL          expr              forall_intent_clause do_stmt  { $$ = ForallStmt::build(NULL, $2, $3,   $4, false, false); }
-| TFORALL          zippered_iterator                      do_stmt  { $$ = ForallStmt::build(NULL, $2, NULL, $3, true,  false); }
-| TFORALL          zippered_iterator forall_intent_clause do_stmt  { $$ = ForallStmt::build(NULL, $2, $3,   $4, true,  false); }
-| TFOREACH expr TIN expr                                   do_stmt { $$ = foreachNotImplementedError(); }
-| TFOREACH expr TIN expr              forall_intent_clause do_stmt { $$ = foreachNotImplementedError(); }
-| TFOREACH expr TIN zippered_iterator                      do_stmt { $$ = foreachNotImplementedError(); }
-| TFOREACH expr TIN zippered_iterator forall_intent_clause do_stmt { $$ = foreachNotImplementedError(); }
-| TFOREACH          expr                                   do_stmt { $$ = foreachNotImplementedError(); }
-| TFOREACH          expr              forall_intent_clause do_stmt { $$ = foreachNotImplementedError(); }
-| TFOREACH          zippered_iterator                      do_stmt { $$ = foreachNotImplementedError(); }
-| TFOREACH          zippered_iterator forall_intent_clause do_stmt { $$ = foreachNotImplementedError(); }
+  TDO stmt TWHILE expr TSEMI
+    {
+      $$ = STMT(@$, makeErrorExpr()); // TODO
+    }
+| TWHILE expr do_stmt
+    {
+      $$ = STMT(@$, makeErrorExpr()); // TODO
+    }
+| TWHILE ifvar do_stmt
+    {
+      $$ = STMT(@$, makeErrorExpr()); // TODO
+    }
+| TCOFORALL expr TIN expr opt_task_intent_ls do_stmt
+    {
+      $$ = STMT(@$, makeErrorExpr()); // TODO
+    }
+| TCOFORALL expr TIN zippered_iterator opt_task_intent_ls do_stmt
+    {
+      $$ = STMT(@$, makeErrorExpr()); // TODO
+    }
+| TCOFORALL expr opt_task_intent_ls do_stmt
+    {
+      $$ = STMT(@$, makeErrorExpr()); // TODO
+    }
+| TFOR expr TIN expr do_stmt
+    {
+      $$ = STMT(@$, makeErrorExpr()); // TODO
+    }
+| TFOR expr TIN zippered_iterator do_stmt
+    {
+      $$ = STMT(@$, makeErrorExpr()); // TODO
+    }
+| TFOR expr do_stmt
+    {
+      $$ = STMT(@$, makeErrorExpr()); // TODO
+    }
+| TFOR zippered_iterator do_stmt
+    {
+      $$ = STMT(@$, makeErrorExpr()); // TODO
+    }
+| TFOR TPARAM ident_def TIN expr do_stmt
+    {
+      $$ = STMT(@$, makeErrorExpr()); // TODO
+    }
+| TFORALL expr TIN expr                                   do_stmt
+    {
+      $$ = STMT(@$, makeErrorExpr()); // TODO
+    }
+| TFORALL expr TIN expr              forall_intent_clause do_stmt
+    {
+      $$ = STMT(@$, makeErrorExpr()); // TODO
+    }
+| TFORALL expr TIN zippered_iterator                      do_stmt
+    {
+      $$ = STMT(@$, makeErrorExpr()); // TODO
+    }
+| TFORALL expr TIN zippered_iterator forall_intent_clause do_stmt
+    {
+      $$ = STMT(@$, makeErrorExpr()); // TODO
+    }
+| TFORALL          expr                                   do_stmt
+    {
+      $$ = STMT(@$, makeErrorExpr()); // TODO
+    }
+| TFORALL          expr              forall_intent_clause do_stmt
+    {
+      $$ = STMT(@$, makeErrorExpr()); // TODO
+    }
+| TFORALL          zippered_iterator                      do_stmt
+    {
+      $$ = STMT(@$, makeErrorExpr()); // TODO
+    }
+| TFORALL          zippered_iterator forall_intent_clause do_stmt
+    {
+      $$ = STMT(@$, makeErrorExpr()); // TODO
+    }
+| TFOREACH expr TIN expr                                   do_stmt
+    {
+      foreachNotImplementedError();
+      $$ = STMT(@$, makeErrorExpr()); // TODO
+    }
+| TFOREACH expr TIN expr              forall_intent_clause do_stmt
+    {
+      foreachNotImplementedError();
+      $$ = STMT(@$, makeErrorExpr()); // TODO
+    }
+| TFOREACH expr TIN zippered_iterator                      do_stmt
+    {
+      foreachNotImplementedError();
+      $$ = STMT(@$, makeErrorExpr()); // TODO
+    }
+| TFOREACH expr TIN zippered_iterator forall_intent_clause do_stmt
+    {
+      foreachNotImplementedError();
+      $$ = STMT(@$, makeErrorExpr()); // TODO
+    }
+| TFOREACH          expr                                   do_stmt
+    {
+      foreachNotImplementedError();
+      $$ = STMT(@$, makeErrorExpr()); // TODO
+    }
+| TFOREACH          expr              forall_intent_clause do_stmt
+    {
+      foreachNotImplementedError();
+      $$ = STMT(@$, makeErrorExpr()); // TODO
+    }
+| TFOREACH          zippered_iterator                      do_stmt
+    {
+      foreachNotImplementedError();
+      $$ = STMT(@$, makeErrorExpr()); // TODO
+    }
+| TFOREACH          zippered_iterator forall_intent_clause do_stmt
+    {
+      foreachNotImplementedError();
+      $$ = STMT(@$, makeErrorExpr()); // TODO
+    }
 | TLSBR expr_ls TIN expr TRSBR stmt
     {
-      if ($2->argList.length != 1)
-        USR_FATAL($4, "invalid index expression");
-      $$ = ForallStmt::build($2->get(1)->remove(), $4, NULL, new BlockStmt($6), false, true);
+      $$ = STMT(@$, makeErrorExpr()); // TODO
     }
 | TLSBR expr_ls TIN expr forall_intent_clause TRSBR stmt
     {
-      if ($2->argList.length != 1)
-        USR_FATAL($4, "invalid index expression");
-      $$ = ForallStmt::build($2->get(1)->remove(), $4, $5,   new BlockStmt($7), false, true);
+      $$ = STMT(@$, makeErrorExpr()); // TODO
     }
 | TLSBR expr_ls TIN zippered_iterator TRSBR stmt
     {
-      if ($2->argList.length != 1)
-        USR_FATAL($4, "invalid index expression");
-      $$ = ForallStmt::build($2->get(1)->remove(), $4, NULL, new BlockStmt($6), true,  true);
+      $$ = STMT(@$, makeErrorExpr()); // TODO
     }
 | TLSBR expr_ls TIN zippered_iterator forall_intent_clause TRSBR stmt
     {
-      if ($2->argList.length != 1)
-        USR_FATAL($4, "invalid index expression");
-      $$ = ForallStmt::build($2->get(1)->remove(), $4, $5,   new BlockStmt($7), true,  true);
+      $$ = STMT(@$, makeErrorExpr()); // TODO
     }
 | TLSBR expr_ls TRSBR stmt
     {
-      if ($2->argList.length > 1)
-        $$ = ForallStmt::build(NULL, new CallExpr("chpl__ensureDomainExpr", $2), NULL, new BlockStmt($4), false, true);
-      else
-        $$ = ForallStmt::build(NULL, $2->get(1)->remove(),                       NULL, new BlockStmt($4), false, true);
+      $$ = STMT(@$, makeErrorExpr()); // TODO
     }
 | TLSBR expr_ls forall_intent_clause TRSBR stmt
     {
-      if ($2->argList.length > 1)
-        $$ = ForallStmt::build(NULL, new CallExpr("chpl__ensureDomainExpr", $2), $3, new BlockStmt($5), false, true);
-      else
-        $$ = ForallStmt::build(NULL, $2->get(1)->remove(),                       $3, new BlockStmt($5), false, true);
+      $$ = STMT(@$, makeErrorExpr()); // TODO
     }
 | TLSBR zippered_iterator TRSBR stmt
     {
-      $$ = ForallStmt::build(NULL, $2, NULL, new BlockStmt($4), true,  true);
+      $$ = STMT(@$, makeErrorExpr()); // TODO
     }
 | TLSBR zippered_iterator forall_intent_clause TRSBR stmt
     {
-      $$ = ForallStmt::build(NULL, $2, $3,   new BlockStmt($5), true,  true);
+      $$ = STMT(@$, makeErrorExpr()); // TODO
     }
 ;
 
 zippered_iterator:
-    TZIP TLP expr_ls TRP    { $$ = new CallExpr(PRIM_ZIP, $3); }
+    TZIP TLP expr_ls TRP    { $$ = makeErrorExpr(); }
 ;
 
 if_stmt:
-  TIF expr TTHEN stmt %prec TNOELSE  { $$ = buildIfStmt($2, $4); }
-| TIF expr block_stmt %prec TNOELSE  { $$ = buildIfStmt($2, $3); }
-| TIF expr TTHEN stmt TELSE stmt     { $$ = buildIfStmt($2, $4, $6); }
-| TIF expr block_stmt TELSE stmt     { $$ = buildIfStmt($2, $3, $5); }
+  TIF expr TTHEN stmt %prec TNOELSE
+    { $$ = STMT(@$, makeErrorExpr()); }
+| TIF expr block_stmt %prec TNOELSE
+    { $$ = STMT(@$, makeErrorExpr()); }
+| TIF expr TTHEN stmt TELSE stmt
+    { $$ = STMT(@$, makeErrorExpr()); }
+| TIF expr block_stmt TELSE stmt
+    { $$ = STMT(@$, makeErrorExpr()); }
+| TIF ifvar TTHEN stmt %prec TNOELSE
+    { $$ = STMT(@$, makeErrorExpr()); }
+| TIF ifvar block_stmt %prec TNOELSE
+    { $$ = STMT(@$, makeErrorExpr()); }
+| TIF ifvar TTHEN stmt TELSE stmt
+    { $$ = STMT(@$, makeErrorExpr()); }
+| TIF ifvar block_stmt TELSE stmt
+    { $$ = STMT(@$, makeErrorExpr()); }
 
-| TIF ifvar TTHEN stmt %prec TNOELSE  { $$ = buildIfStmt($2, $4); }
-| TIF ifvar block_stmt %prec TNOELSE  { $$ = buildIfStmt($2, $3); }
-| TIF ifvar TTHEN stmt TELSE stmt     { $$ = buildIfStmt($2, $4, $6); }
-| TIF ifvar block_stmt TELSE stmt     { $$ = buildIfStmt($2, $3, $5); }
-
-| TIF expr assignop_ident expr TTHEN stmt %prec TNOELSE  {
-$$ = buildIfStmt(convertAssignmentAndWarn($2,$3,$4), $6); }
-| TIF expr assignop_ident expr block_stmt %prec TNOELSE  {
-$$ = buildIfStmt(convertAssignmentAndWarn($2,$3,$4), $5); }
-| TIF expr assignop_ident expr TTHEN stmt TELSE stmt     {
-$$ = buildIfStmt(convertAssignmentAndWarn($2,$3,$4), $6, $8); }
-| TIF expr assignop_ident expr block_stmt TELSE stmt     {
-$$ = buildIfStmt(convertAssignmentAndWarn($2,$3,$4), $5, $7); }
+| TIF expr assignop_ident expr TTHEN stmt %prec TNOELSE
+    { $$ = STMT(@$, makeErrorExpr()); }
+| TIF expr assignop_ident expr block_stmt %prec TNOELSE 
+    { $$ = STMT(@$, makeErrorExpr()); }
+| TIF expr assignop_ident expr TTHEN stmt TELSE stmt
+    { $$ = STMT(@$, makeErrorExpr()); }
+| TIF expr assignop_ident expr block_stmt TELSE stmt
+    { $$ = STMT(@$, makeErrorExpr()); }
 ;
 
 ifvar:
-  TVAR   ident_def TASSIGN expr { $$ = buildIfVar($2, $4, false); }
-| TCONST ident_def TASSIGN expr { $$ = buildIfVar($2, $4, true);  }
+  TVAR   ident_def TASSIGN expr { $$ = makeErrorExpr(); }
+| TCONST ident_def TASSIGN expr { $$ = makeErrorExpr(); }
 ;
 
 interface_stmt:
   TINTERFACE ident_def TLP ifc_formal_ls TRP block_stmt
-  { $$ = buildChapelStmt(InterfaceSymbol::buildDef($2, $4, $6)); }
+    { $$ = STMT(@$, makeErrorExpr()); }
 | TINTERFACE ident_def                       block_stmt
-  { // mimick ifc_formal_ls for a single formal "Self"
-    DefExpr*  formal = InterfaceSymbol::buildFormal("Self", INTENT_TYPE);
-    CallExpr* ls     = new CallExpr(PRIM_ACTUALS_LIST, formal);
-    $$ = buildChapelStmt(InterfaceSymbol::buildDef($2, ls, $3)); }
+    { $$ = STMT(@$, makeErrorExpr()); }
 ;
 
 ifc_formal_ls:
-  ifc_formal                      { $$ = new CallExpr(PRIM_ACTUALS_LIST, $1); }
-| ifc_formal_ls TCOMMA ifc_formal { $1->insertAtTail($3); }
+  ifc_formal                      { $$ = makeList($1); }
+| ifc_formal_ls TCOMMA ifc_formal { appendList($1, $3); }
 ;
 
 ifc_formal:
   // implicitly 'type' intent, could specify explicitly - see #16966
-  ident_def  { $$ = InterfaceSymbol::buildFormal($1, INTENT_TYPE); }
+  ident_def  { $$ = makeErrorExpr(); }
 ;
 
 // which types are allowed in 'T implements IFC'
@@ -1140,7 +1286,7 @@ implements_type_ident:
 | TVOID      { $$ = "void"; }
 | implements_type_error_ident
   { $$ = $1;
-    USR_FATAL_CONT("'%s' is not allowed to \"implement\" an interface", $1); }
+    error("'%s' is not allowed to \"implement\" an interface", $1); }
 ;
 
 // these are not allowed as types in 'T implements IFC'
@@ -1163,76 +1309,80 @@ implements_type_error_ident:
 
 implements_stmt:
   TIMPLEMENTS ident_def TLP actual_ls TRP TSEMI
-  { $$ = buildChapelStmt(ImplementsStmt::build($2, $4, NULL)); }
+    { $$ = STMT(@$, makeErrorExpr()); }
 | implements_type_ident TIMPLEMENTS ident_def TSEMI
-  { CallExpr* act = new CallExpr(PRIM_ACTUALS_LIST, new UnresolvedSymExpr($1));
-    $$ = buildChapelStmt(ImplementsStmt::build($3, act, NULL)); }
+    { $$ = STMT(@$, makeErrorExpr()); }
 | implements_type_ident TIMPLEMENTS ident_def TLP actual_ls TRP TSEMI
-  { $5->insertAtHead(new UnresolvedSymExpr($1));
-    $$ = buildChapelStmt(ImplementsStmt::build($3, $5, NULL)); }
+    { $$ = STMT(@$, makeErrorExpr()); }
 ;
 
 ifc_constraint:
   TIMPLEMENTS ident_def TLP actual_ls TRP
-  { $$ = IfcConstraint::build($2, $4); }
+    { $$ = makeErrorExpr(); }
 | implements_type_ident TIMPLEMENTS ident_def
-  { CallExpr* act = new CallExpr(PRIM_ACTUALS_LIST, new UnresolvedSymExpr($1));
-    $$ = IfcConstraint::build($3, act); }
+    { $$ = makeErrorExpr(); }
 | implements_type_ident TIMPLEMENTS ident_def TLP actual_ls TRP
-  { $5->insertAtHead(new UnresolvedSymExpr($1));
-    $$ = IfcConstraint::build($3, $5); }
+    { $$ = makeErrorExpr(); }
 ;
 
 defer_stmt:
-  TDEFER stmt             { $$ = DeferStmt::build($2); }
+  TDEFER stmt
+    { $$ = STMT(@$, makeErrorExpr()); }
 
 try_stmt:
-  TTRY     expr            TSEMI         { $$ = TryStmt::build(false, $2); }
-| TTRYBANG expr            TSEMI         { $$ = TryStmt::build(true,  $2); }
-| TTRY     assignment_stmt               { $$ = TryStmt::build(false, $2); }
-| TTRYBANG assignment_stmt               { $$ = TryStmt::build(true,  $2); }
-| TTRY     block_stmt      catch_stmt_ls { $$ = TryStmt::build(false, $2, $3); }
-| TTRYBANG block_stmt      catch_stmt_ls { $$ = TryStmt::build(true,  $2, $3); }
+  TTRY     expr            TSEMI
+    { $$ = STMT(@$, makeErrorExpr()); }
+| TTRYBANG expr            TSEMI
+    { $$ = STMT(@$, makeErrorExpr()); }
+| TTRY     assignment_stmt
+    { $$ = STMT(@$, makeErrorExpr()); }
+| TTRYBANG assignment_stmt
+    { $$ = STMT(@$, makeErrorExpr()); }
+| TTRY     block_stmt      catch_stmt_ls
+    { $$ = STMT(@$, makeErrorExpr()); }
+| TTRYBANG block_stmt      catch_stmt_ls
+    { $$ = STMT(@$, makeErrorExpr()); }
 ;
 
 catch_stmt_ls:
-                           { $$ = buildChapelStmt(); }
-| catch_stmt_ls catch_stmt { $1->insertAtTail($2); }
+                           { $$ = makeList(); }
+| catch_stmt_ls catch_stmt { appendList($1, $2); }
 ;
 
 catch_stmt:
-  TCATCH                    block_stmt { $$ = CatchStmt::build($2); }
-| TCATCH     catch_expr     block_stmt { $$ = CatchStmt::build($2, $3); }
-| TCATCH TLP catch_expr TRP block_stmt { $$ = CatchStmt::build($3, $5); }
+  TCATCH                    block_stmt { $$ = makeErrorExpr(); }
+| TCATCH     catch_expr     block_stmt { $$ = makeErrorExpr(); }
+| TCATCH TLP catch_expr TRP block_stmt { $$ = makeErrorExpr(); }
 ;
 
 catch_expr:
-  ident_def           { $$ = new DefExpr(new VarSymbol($1), NULL, new UnresolvedSymExpr("Error")); }
-| ident_def TCOLON expr { $$ = new DefExpr(new VarSymbol($1), NULL, $3);   }
+  ident_def             { $$ = makeErrorExpr(); }
+| ident_def TCOLON expr { $$ = makeErrorExpr(); }
 ;
 
 throw_stmt:
-  TTHROW expr TSEMI { $$ = buildPrimitiveStmt(PRIM_THROW, $2); }
+  TTHROW expr TSEMI
+    { $$ = STMT(@$, makeErrorExpr()); }
 
 select_stmt:
   TSELECT expr TLCBR when_stmt_ls TRCBR
-    { $$ = buildChapelStmt(buildSelectStmt($2, $4)); }
+    { $$ = STMT(@$, makeErrorExpr()); }
 | TSELECT expr TLCBR error TRCBR
-    { $$ = buildErrorStandin(); }
+    { $$ = STMT(@$, makeErrorExpr()); }
 ;
 
 when_stmt_ls:
-                          { $$ = buildChapelStmt(); }
-| when_stmt_ls when_stmt  { $1->insertAtTail($2); }
+                          { $$ = makeList(); }
+| when_stmt_ls when_stmt  { appendList($1, $2); }
 ;
 
 when_stmt:
   TWHEN expr_ls do_stmt
-    { $$ = new CondStmt(new CallExpr(PRIM_WHEN, $2), $3); }
+    { $$ = makeErrorExpr(); }
 | TOTHERWISE stmt
-    { $$ = new CondStmt(new CallExpr(PRIM_WHEN), $2); }
+    { $$ = makeErrorExpr(); }
 | TOTHERWISE TDO stmt
-    { $$ = new CondStmt(new CallExpr(PRIM_WHEN), $3); }
+    { $$ = makeErrorExpr(); }
 ;
 
 /** DECLARATION STATEMENTS ***************************************************/
@@ -1256,9 +1406,7 @@ class_decl_stmt:
 class_start:
   class_tag ident_def
     {
-      ExprList* comments = enterStmt(@$);
-      Expr* stmt = makeErrorExpr(); //context->astBuilder->enterAggregate($1, $2);
-      $$ = makeCommentsAndStmt(comments, stmt);
+      $$ = STMT(@$, makeErrorExpr()); // TODO
     }
 ;
 
@@ -1275,11 +1423,11 @@ opt_inherit:
 
 class_level_stmt_ls:
   /* nothing */
-    { $$ = new BlockStmt(); }
+    { $$ = makeList(); }
 | class_level_stmt_ls class_level_stmt
-    { $1->insertAtTail($2); }
+    { appendList($1, $2); }
 | class_level_stmt_ls pragma_ls class_level_stmt
-    { $1->insertAtTail(buildPragmaStmt($2, $3)); }
+    { appendList($1, makeErrorExpr()); }
 ;
 
 enum_decl_stmt:
@@ -1301,20 +1449,14 @@ enum_decl_stmt:
 enum_header:
   TENUM ident_def 
     {
-      ExprList* comments = enterStmt(@$);
-      Expr* stmt = context->astBuilder->enterEnumDecl($2);
-      $$ = makeCommentsAndStmt(comments, stmt);
+      $$ = STMT(@$, makeErrorExpr()); // TODO
     }
 ;
 
 enum_ls:
   enum_item
     {
-      $$ = new std::vector<DefExpr*>();
-      $$->push_back($1);
-      //$$->doc = context->latestComment;
-      // start here for enabling documentation of enum constants
-      //context->latestComment = NULL;
+      $$ = makeList($1);
     }
 | enum_ls TCOMMA
     {
@@ -1322,43 +1464,21 @@ enum_ls:
     }
 | enum_ls TCOMMA enum_item
     {
-      $1->push_back($3);
+      appendList($1, $3);
     }
 ;
 
 enum_item:
-  ident_def               { $$ = new DefExpr(new EnumSymbol($1)); }
-| ident_def TASSIGN expr  { $$ = new DefExpr(new EnumSymbol($1), $3); }
+  ident_def
+    { $$ = STMT(@$, makeErrorExpr()); }
+| ident_def TASSIGN expr
+    { $$ = STMT(@$, makeErrorExpr()); }
 ;
 
 lambda_decl_expr:
-  TLAMBDA
+  TLAMBDA req_formal_ls opt_ret_tag opt_type opt_lifetime_where function_body_stmt
     {
-      captureTokens = 1;
-      captureString.clear();
-    }
-    req_formal_ls
-    {
-      captureTokens = 0;
-      $3->userString = astr(captureString);
-    }
-  opt_ret_tag opt_type opt_lifetime_where function_body_stmt
-    {
-      $3->retTag = $5;
-      if ($5 == RET_REF || $5 == RET_CONST_REF)
-        USR_FATAL("'ref' return types are not allowed in lambdas");
-      if ($5 == RET_PARAM)
-        USR_FATAL("'param' return types are not allowed in lambdas");
-      if ($5 == RET_TYPE)
-        USR_FATAL("'type' return types are not allowed in lambdas");
-      if ($6)
-        $3->retExprType = new BlockStmt($6, BLOCK_SCOPELESS);
-      if ($7.where)
-        $3->where = new BlockStmt($7.where);
-      if ($7.lifetime)
-        $3->lifetimeConstraints = new BlockStmt($7.lifetime);
-      $3->insertAtTail($8);
-      $$ = new DefExpr(buildLambda($3));
+      $$ = makeErrorExpr();
     }
 ;
 
