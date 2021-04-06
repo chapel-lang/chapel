@@ -250,7 +250,7 @@ module CPtr {
   }
 
   pragma "no doc"
-  inline operator =(ref lhs:c_ptr, rhs:_nilType) {
+  inline operator c_ptr.=(ref lhs:c_ptr, rhs:_nilType) {
     __primitive("=", lhs, nil);
   }
 
