@@ -1429,7 +1429,10 @@ operator :(r: range(?), type t: range(?)) {
   {
     var offs = offset.safeCast(intIdxType);
     if !stridable {
-      compilerWarning("invoking 'offset' on an unstrided range has no effect.");
+      if !this.hasLowBound() then
+        compilerError("can't invoke 'offset' on an unstrided range with no low bound");
+      else
+        compilerWarning("invoking 'offset' on an unstrided range has no effect.");
       offs = 0;
     }
 
