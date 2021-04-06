@@ -12,6 +12,19 @@ namespace ast {
 class Decl : BaseAST {
  public:
   virtual ~Decl() = 0; // this is an abstract base class
+
+  enum Visibility {
+    DEFAULT,
+    PUBLIC,
+    PRIVATE,
+  };
+
+ private:
+  Visibility visibility_;
+
+ public:
+  Visibility visibility() { return visibility_; }
+  //extern/config
 };
 
 } // end namespace ast

@@ -23,19 +23,14 @@ struct ParserComment {
 };
 
 struct ParserContext {
-  ParserContext(Builder* astBuilder)
-  {
-    scanner       = nullptr;
-    builder       = astBuilder;
-    astContext    = astBuilder->context();
-  }
-
   yyscan_t scanner;
   Builder* builder;
   Context* astContext;
 
+  // TODO: move these to the astContext
   std::vector<UniqueString> currentModuleStack;
   std::vector<UniqueString> currentFunctionStack;
+
   ExprList* topLevelStatements;
   std::vector<ParserError> errors;
 
@@ -46,18 +41,31 @@ struct ParserContext {
   // the statement).
   std::vector<ParserComment> comments;
 
+  ParserContext(Builder* astBuilder)
+  {
+    scanner       = nullptr;
+    builder       = astBuilder;
+    astContext    = astBuilder->context();
+  }
+
+  void raiseParseError(YYLTYPE location, const char* message);
+
+  // TODO: move these to astContext
+
   // These adjust for the IDs
   // and call enterStmt / exitStmt.
-  ExprList* enterModule(YYLTYPE loc, const char* name, Expr* decl);
-  ExprList* exitModule(ExprList* decl, ExprList* body);
-  ExprList* enterFunction(YYLTYPE loc, const char* name, Expr* decl);
-  ExprList* exitFunction(ExprList* decl, ExprList* body);
+  //ExprList* enterModule(YYLTYPE loc, const char* name, Expr* decl);
+  //ExprList* exitModule(ExprList* decl, ExprList* body);
+  //ExprList* enterFunction(YYLTYPE loc, const char* name, Expr* decl);
+  //ExprList* exitFunction(ExprList* decl, ExprList* body);
 
   // This should consume the comments that occur before
-  // .... and append them to the return
-  // It will include the argument in the return
-  ExprList* enterStmt(YYLTYPE loc, ExprList* lst);
-  ExprList* enterStmt(YYLTYPE loc, Expr* e);
+  // and return them. (Including looking at source locations).
+  // If there is any argument, it will
+  // be also appended to the returned list.
+  ExprList* enterStmt(YYLTYPE location, ExprList* lst);
+  ExprList* enterStmt(YYLTYPE location, Expr* e);
+  ExprList* enterStmt(YYLTYPE location);
 
   // These should clear the comments (since there might be some inside the stmt)
   ExprList* exitStmt(ExprList* lst);

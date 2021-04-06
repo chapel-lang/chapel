@@ -137,12 +137,22 @@
     IntentTag_CONST,
     IntentTag_CONST_REF,
     IntentTag_REF,
+    IntentTag_IN,
+    IntentTag_CONST_IN,
+    IntentTag_OUT,
+    IntentTag_INOUT,
     IntentTag_PARAM,
     IntentTag_TYPE,
   };
 
-  // TODO -- transitional
-  typedef int AggregateTag;
+  enum LinkageTag {
+    LinkageTag_DEFAULT,
+    LinkageTag_INLINE,
+    LinkageTag_OVERRIDE,
+  };
+
+  typedef std::vector<Expr*> ExprList;
+  typedef std::vector<const char*> StrList;
 
   struct PotentialRename {
     enum {SINGLE, DOUBLE} tag;
@@ -165,10 +175,19 @@
     return ret;
   }
 
+  struct CommentsAndStmt {
+    ExprList* comments;
+    Expr* stmt;
+  };
+  static inline
+  CommentsAndStmt makeCommentsAndStmt(ExprList* comments, Expr* stmt) {
+    CommentsAndStmt ret;
+    ret.comments = comments;
+    ret.stmt = stmt;
+    return ret;
+  }
 
-  typedef std::vector<Expr*> ExprList;
-  typedef std::vector<const char*> StrList;
-
+ 
   // These currently all need to be POD types (i.e. pointers and ints)
   // rather than say std::vector to keep bison working with the current
   // strategy. In the future we could probably switch to a more
@@ -199,11 +218,12 @@
     Expr*                      expr;
     Function*                  function;
     Module*                    module;
-    WhereAndLifetime           lifetimeAndWhere;
 
     // values that are temporary groupings
+    CommentsAndStmt            commentsAndStmt;
     ExprList*                  exprList; 
     StrList*                   strList; 
+    WhereAndLifetime           lifetimeAndWhere;
 
     // TODO
     //Type*                     ptype;
@@ -387,7 +407,7 @@
 %type <intentTag> required_intent_tag opt_intent_tag opt_this_intent_tag
 
 %type <returnTag>  opt_ret_tag
-%type <aggrTag> class_tag
+%type <aggregateTag> class_tag
 
 %type <pch> ident_use ident_def ident_fn_def
 %type <pch> internal_type_ident_def reserved_type_ident_use
@@ -402,14 +422,11 @@
 %type <exprList> stmt_ls
 
 // individual statements
-// exprList is used for the types of many statements that could be
-// simpler so that statement-level comments can be captured.
-%type <exprList> toplevel_stmt
-%type <exprList> module_decl_start
-%type <exprList> module_decl_stmt
-%type <exprList> include_module_stmt
-
-%type <exprList> block_stmt
+%type <commentsAndStmt> toplevel_stmt
+%type <commentsAndStmt> module_decl_start
+%type <commentsAndStmt> module_decl_stmt
+%type <commentsAndStmt> include_module_stmt
+%type <commentsAndStmt> block_stmt
 
 %type <pimportstmt> import_expr
 %type <exprList> use_stmt import_stmt import_ls require_stmt
@@ -422,15 +439,15 @@
 
 %type <exprList> class_level_stmt_ls
 
-%type <exprList> stmt
+%type <commentsAndStmt> stmt
 %type <expr> do_stmt
 %type <exprList> if_stmt loop_stmt
 %type <exprList> select_stmt assignment_stmt
 
-%type <exprList> class_level_stmt
-%type <exprList> private_decl
-%type <exprList> forwarding_stmt
-%type <exprList> extern_export_decl_stmt
+%type <commentsAndStmt> class_level_stmt class_start
+%type <commentsAndStmt> inner_class_level_stmt
+%type <commentsAndStmt> forwarding_decl_stmt forwarding_decl_start
+%type <commentsAndStmt> extern_export_decl_stmt
 %type <exprList> extern_block_stmt
 %type <exprList> return_stmt
 %type <exprList> defer_stmt
@@ -442,16 +459,17 @@
 
 %type <variableTag> var_decl_type
 
-%type <exprList> type_alias_decl_stmt
+%type <commentsAndStmt> type_alias_decl_stmt type_alias_decl_stmt_start
 %type <expr> type_alias_decl_stmt_inner
-%type <exprList> fn_decl_stmt class_decl_stmt
-%type <exprList> enum_decl_stmt
+%type <commentsAndStmt> fn_decl_stmt class_decl_stmt
+%type <commentsAndStmt> enum_decl_stmt
 
-%type <exprList> var_decl_stmt var_decl_stmt_inner_ls
+%type <commentsAndStmt> var_decl_stmt
+%type <exprList> var_decl_stmt_inner_ls
 %type <exprList> var_decl_stmt_inner tuple_var_decl_stmt_inner_ls
 
 
-%type <expr> function_body_stmt opt_function_body_stmt
+%type <exprList> function_body_stmt opt_function_body_stmt
 
 %type <expr> when_stmt
 %type <exprList> when_stmt_ls
@@ -487,10 +505,11 @@
 %type <exprList> opt_task_intent_ls task_intent_ls task_intent_clause
 %type <exprList> forall_intent_clause forall_intent_ls
 
-%type <pfnsymbol> fn_decl_stmt_inner formal_ls opt_formal_ls req_formal_ls
+%type <exprList> fn_decl_stmt_start fn_decl_stmt_inner
+%type <exprList> opt_formal_ls req_formal_ls formal_ls
 %type <expr> fn_decl_receiver_expr
 %type <functionTag> proc_iter_or_op
-%type <pfnsymbol> linkage_spec
+%type <linkageTag> linkage_spec
 %type <expr> intent_expr
 %type <shadowTag> shadow_var_prefix
 
@@ -559,7 +578,9 @@ module_decl_start:
   access_control opt_prototype TMODULE ident_def
     {
       // TODO: replace makeErrorExpr with a decl for the module
-      $$ = context->enterModule($4, makeErrorExpr());
+      ExprList* comments = enterStmt(@$);
+      Expr* stmt = context->enterModule($4, makeErrorExpr());
+      $$ = makeCommentsAndStmt(comments, stmt);
     }
 ;
 
@@ -848,37 +869,81 @@ return_stmt:
 ;
 
 class_level_stmt:
-  TSEMI                 { $$ = buildChapelStmt(new BlockStmt()); }
-| private_decl          { $$ = $1; }
-| TPUBLIC private_decl  { $$ = $2; }
-/* the following rule saves the current state of `parsingPrivate`,
-   then sets it to true when parsing the `private_decl` rule; it then
-   restores the original value before completing.  Note that this is
-   not sufficient to reason about nestings of public and private
-   declarations, but that the current use of `parsingPrivate` (to
-   distinguish private configs) does not require that.  For such
-   cases, we'd need to do similar save/set-to-false/restore actions in
-   the public rules above, but doing this in the most straightforward
-   way results in conflicts. */
-| TPRIVATE { $<b>$ = parsingPrivate; parsingPrivate=true;}
-    private_decl { parsingPrivate=$<b>2; applyPrivateToBlock($3); $$ = $3; }
+  TSEMI
+    {
+      ExprList* comments = context->enterStmt(@$);
+      $$ = makeCommentsAndStmt(comments, NULL);
+    }
+| inner_class_level_stmt
+    {
+      CommentsAndStmt cs = $1;
+      context->astBuilder->exitDecl(cs.stmt);
+      $$ = cs;
+    }
+| TPUBLIC inner_class_level_stmt
+    {
+      CommentsAndStmt cs = $2;
+      // TODO: set visibility to public
+      context->astBuilder->exitDecl(cs.stmt);
+      $$ = cs;
+    }
+| TPRIVATE inner_class_level_stmt
+    {
+      CommentsAndStmt cs = $2;
+      // TODO: set visibility to private
+      context->astBuilder->exitDecl(cs.stmt);
+      $$ = cs;
+    }
 ;
 
-private_decl:
+inner_class_level_stmt:
   fn_decl_stmt
 | var_decl_stmt
 | enum_decl_stmt
 | type_alias_decl_stmt
 | class_decl_stmt
-| forwarding_stmt
+| forwarding_decl_stmt
 | extern_export_decl_stmt
 ;
 
-forwarding_stmt:
-  TFORWARDING expr TSEMI  { $$ = buildForwardingStmt($2); }
-| TFORWARDING expr TEXCEPT except_ls TSEMI  { $$ = buildForwardingStmt($2, $4, true); }
-| TFORWARDING expr TONLY opt_only_ls TSEMI  { $$ = buildForwardingStmt($2, $4, false); }
-| TFORWARDING var_decl_stmt { $$ = buildForwardingDeclStmt($2); }
+forwarding_decl_stmt:
+  forwarding_decl_start expr TSEMI
+    {
+      CommentsAndStmt cs = $1;
+      //ForwardingDecl* decl = toForwardingDecl(cs.stmt);
+      // TODO: save expr
+      $$ = cs;
+    }
+| forwarding_decl_start expr TEXCEPT except_ls TSEMI
+    {
+      CommentsAndStmt cs = $1;
+      //ForwardingDecl* decl = toForwardingDecl(cs.stmt);
+      // TODO: save expr and except_ls
+      $$ = cs;
+    }
+| forwarding_decl_start expr TONLY opt_only_ls TSEMI
+    {
+      CommentsAndStmt cs = $1;
+      //ForwardingDecl* decl = toForwardingDecl(cs.stmt);
+      // TODO: save expr and opt_only_ls
+      $$ = cs;
+    }
+| forwarding_decl_start var_decl_stmt
+    {
+      CommentsAndStmt cs = $1;
+      //ForwardingDecl* decl = toForwardingDecl(cs.stmt);
+      // TODO: save var_decl_stmt
+      $$ = cs;
+    }
+;
+
+forwarding_decl_start:
+  TFORWARDING
+    {
+      ExprList* comments = context->enterStmt(@$);
+      Expr* stmt = context->astBuilder->enterForwardingDecl();
+      $$ = makeCommentsAndStmt(comments, stmt);
+    }
 ;
 
 extern_export_decl_stmt:
@@ -1218,45 +1283,34 @@ when_stmt:
 /** DECLARATION STATEMENTS ***************************************************/
 
 class_decl_stmt:
-  class_tag ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
+  class_start opt_inherit TLCBR class_level_stmt_ls TRCBR
     {
-      $$ = buildChapelStmt(buildClassDefExpr($2,
-                                             NULL,
-                                             $1,
-                                             $3,
-                                             $5,
-                                             FLAG_UNKNOWN,
-                                             @1.comment));
+      CommentsAndStmt cs = $1;
+      cs.stmt = makeErrorExpr();
+      $$ = cs;
     }
-| class_tag ident_def opt_inherit TLCBR error TRCBR
+| class_start opt_inherit TLCBR error TRCBR
     {
-      $$ = buildChapelStmt(buildClassDefExpr($2,
-                                             NULL,
-                                             $1,
-                                             $3,
-                                             new BlockStmt(),
-                                             FLAG_UNKNOWN,
-                                             @1.comment));
+      CommentsAndStmt cs = $1;
+      cs.stmt = makeErrorExpr();
+      $$ = cs;
     }
-  /* see also extern_decl_stmt */
+  /* see also extern_export_decl_stmt */
+;
+
+class_start:
+  class_tag ident_def
+    {
+      ExprList* comments = enterStmt(@$);
+      Expr* stmt = makeErrorExpr(); //context->astBuilder->enterAggregate($1, $2);
+      $$ = makeCommentsAndStmt(comments, stmt);
+    }
 ;
 
 class_tag:
-  TCLASS   {
-             $$                     = AGGREGATE_CLASS;
-             @$.comment             = context->latestComment;
-             context->latestComment = NULL;
-           }
-| TRECORD  {
-             $$                     = AGGREGATE_RECORD;
-             @$.comment             = context->latestComment;
-             context->latestComment = NULL;
-           }
-| TUNION   {
-             $$                     = AGGREGATE_UNION;
-             @$.comment             = context->latestComment;
-             context->latestComment = NULL;
-           }
+  TCLASS   { $$ = AggregateTag_CLASS; }
+| TRECORD  { $$ = AggregateTag_RECORD; }
+| TUNION   { $$ = AggregateTag_UNION; }
 ;
 
 opt_inherit:
@@ -1274,34 +1328,27 @@ class_level_stmt_ls:
 ;
 
 enum_decl_stmt:
-  enum_header ident_def TLCBR enum_ls TRCBR
+  enum_header TLCBR enum_ls TRCBR
     {
-      EnumType* pdt = $1;
-      for_vector(DefExpr, ec, *$4) {
-        ec->sym->type = pdt;
-        pdt->constants.insertAtTail(ec);
-        if (pdt->defaultValue == NULL) {
-          pdt->defaultValue = ec->sym;
-        }
-      }
-      delete $4;
-      pdt->doc = @1.comment;
-      TypeSymbol* pst = new TypeSymbol($2, pdt);
-      $1->symbol = pst;
-      $$ = buildChapelStmt(new DefExpr(pst));
+      /* TODO: attach enum values to the decl */
+      CommentsAndStmt cs = $1;
+      $$ = cs; 
     }
-| enum_header ident_def TLCBR error TRCBR
+| enum_header TLCBR error TRCBR
     {
-      $$ = buildErrorStandin();
+      CommentsAndStmt cs = $1;
+      delete cs.stmt;
+      cs.stmt = makeErrorExpr();
+      $$ = cs;
     }
 ;
 
 enum_header:
-  TENUM
+  TENUM ident_def 
     {
-      $$ = new EnumType();
-      @$.comment = context->latestComment;
-      context->latestComment = NULL;
+      ExprList* comments = enterStmt(@$);
+      Expr* stmt = context->astBuilder->enterEnumDecl($2);
+      $$ = makeCommentsAndStmt(comments, stmt);
     }
 ;
 
@@ -1360,94 +1407,54 @@ lambda_decl_expr:
     }
 ;
 
-// The FnSymbol is just used as a struct to carry the flag and
-// (for exports only) the cname of the function.
 linkage_spec:
-                {
-                  $$ = new FnSymbol("");
-                }
-| TINLINE       {
-                  $$ = new FnSymbol("");
-                  $$->addFlag(FLAG_INLINE);
-                }
-| TOVERRIDE     {
-                  $$ = new FnSymbol("");
-                  $$->addFlag(FLAG_OVERRIDE);
-                }
+                { $$ = LinkageTag_DEFAULT; }
+| TINLINE       { $$ = LinkageTag_INLINE; }
+| TOVERRIDE     { $$ = LinkageTag_OVERRIDE; }
 ;
 
 fn_decl_stmt:
+  fn_decl_stmt_inner
+  opt_ret_tag opt_ret_type
+  opt_throws_error opt_lifetime_where opt_function_body_stmt
+    {
+      CommentsAndStmt cs = $1;
+      FnDecl* decl = toFnDecl(cs.stmt);
+      ExprList* body = makeErrorExprList();
+      decl->setBody(body);
+      $$ = cs;
+    }
+;
+
+fn_decl_stmt_start:
   linkage_spec proc_iter_or_op
     {
-      // Capture the latest comment
-      @2.comment = context->latestComment;
-      context->latestComment = NULL;
-
-      // Sets up to capture tokens while parsing the next grammar nonterminal.
-      captureTokens = 1;
-      captureString.clear();
-    }
-  fn_decl_stmt_inner
-    {
-      // Stop capturing and save the result.
-      captureTokens = 0;
-
-      $4->userString = astr(captureString);
-    }
-  opt_ret_tag opt_ret_type opt_throws_error opt_lifetime_where opt_function_body_stmt
-    {
-      FnSymbol* fn = $4;
-      FnSymbol* linkageFn = $1;
-
-      fn->copyFlags($1);
-      if (*linkageFn->name)
-        // The user explicitly named this function (controls mangling).
-        fn->cname = linkageFn->name;
-      else if (linkageFn->numFormals() == 1)
-        // cname should be set based upon param
-        fn->insertFormalAtTail(linkageFn->getFormal(1));
-
-      if ($2 == ProcIterOp_ITER)
-      {
-        if (fn->hasFlag(FLAG_EXTERN))
-          USR_FATAL_CONT(fn, "'iter' is not legal with 'extern'");
-        fn->addFlag(FLAG_ITERATOR_FN);
-      }
-      if ($2 == ProcIterOp_OP) {
-        fn->addFlag(FLAG_OPERATOR);
-        if (fn->_this != NULL) {
-          updateOpThisTagOrErr(fn);
-          setupTypeIntentArg(toArgSymbol(fn->_this));
-        }
-      }
-
-      $$ = buildFunctionDecl($4, $6, $7, $8, $9.where, $9.lifetime, $10, @2.comment);
-      context->latestComment = NULL;
+      ExprList* comments = context->enterStmt(@$);
+      Expr* stmt = context->astBuilder->enterFunctionDecl($1, $2);
+      $$ = makeCommentsAndStmt(comments, stmt);
     }
 ;
 
 fn_decl_stmt_inner:
-  opt_this_intent_tag fn_ident opt_formal_ls
+  fn_decl_stmt_start opt_this_intent_tag fn_ident opt_formal_ls
     {
-      $$ = buildFunctionSymbol($3, $2, $1, NULL);
+      $$ = makeErrorExpr();
     }
-| opt_this_intent_tag assignop_ident opt_formal_ls
+| fn_decl_stmt_start opt_this_intent_tag assignop_ident opt_formal_ls
     {
-      $$ = buildFunctionSymbol($3, $2, $1, NULL);
-      $$->addFlag(FLAG_ASSIGNOP);
+      $$ = makeErrorExpr();
     }
-| opt_this_intent_tag fn_decl_receiver_expr TDOT fn_ident opt_formal_ls
+| fn_decl_stmt_start opt_this_intent_tag fn_decl_receiver_expr TDOT fn_ident opt_formal_ls
     {
-      $$ = buildFunctionSymbol($5, $4, $1, $2);
+      $$ = makeErrorExpr();
     }
-| opt_this_intent_tag fn_decl_receiver_expr TDOT assignop_ident opt_formal_ls
+| fn_decl_stmt_start opt_this_intent_tag fn_decl_receiver_expr TDOT assignop_ident opt_formal_ls
     {
-      $$ = buildFunctionSymbol($5, $4, $1, $2);
-      $$->addFlag(FLAG_ASSIGNOP);
+      $$ = makeErrorExpr();
     }
-| opt_this_intent_tag error opt_formal_ls
+| fn_decl_stmt_start opt_this_intent_tag error opt_formal_ls
     {
-      $$ = buildFunctionSymbol($3, "dummy", INTENT_BLANK, NULL);
+      $$ = makeErrorExpr();
     }
 ;
 
@@ -1457,7 +1464,7 @@ fn_decl_receiver_expr:
 ;
 
 fn_ident:
-  ident_fn_def    { $$ = $1; }
+  ident_fn_def   { $$ = $1; }
 | TBAND          { $$ = "&"; }
 | TBOR           { $$ = "|"; }
 | TBXOR          { $$ = "^"; }
@@ -1477,14 +1484,18 @@ fn_ident:
 | TMOD           { $$ = "%"; }
 | TEXP           { $$ = "**"; }
 | TBANG          { $$ = "!"; }
-| TBY            { $$ = "chpl_by"; }
+| TBY            { $$ = "by"; }
 | THASH          { $$ = "#"; }
-| TALIGN         { $$ = "chpl_align"; }
+| TALIGN         { $$ = "align"; }
 | TSWAP          { $$ = "<=>"; }
 | TIO            { $$ = "<~>"; }
 | TINITEQUALS    { $$ = "init="; }
 | TCOLON         { $$ = ":"; }
-| ident_def TBANG { $$ = astr($1, "!"); }
+| ident_def TBANG
+  { std::string s = $1;
+    s += "!";
+    $$ = context->astContext->uniqueCString(s.c_str()));
+  }
 ;
 
 assignop_ident:
@@ -1503,7 +1514,7 @@ assignop_ident:
 ;
 
 opt_formal_ls:
-                     { $$ = new FnSymbol("_"); $$->addFlag(FLAG_NO_PARENS); }
+                     { $$ = NULL; /* TODO: mark as no-parens */ }
 | TLP formal_ls TRP  { $$ = $2; }
 ;
 
@@ -1512,24 +1523,27 @@ req_formal_ls:
 ;
 
 formal_ls:
-                           { $$ = buildFunctionFormal(NULL, NULL); }
-| formal                   { $$ = buildFunctionFormal(NULL, $1); }
-| formal_ls TCOMMA formal  { $$ = buildFunctionFormal($1, $3); }
+                           { $$ = makeErrorExprList(); }
+| formal                   { $$ = makeErrorExprList(); }
+| formal_ls TCOMMA formal  { $$ = makeErrorExprList(); }
 ;
 
 formal:
   opt_intent_tag ident_def opt_formal_type opt_init_expr
-    { $$ = buildArgDefExpr($1, $2, $3, $4, NULL); }
+    { $$ = makeErrorExpr(); }
 | pragma_ls opt_intent_tag ident_def opt_formal_type opt_init_expr
-    { $$ = buildPragmaDefExpr($1, buildArgDefExpr($2, $3, $4, $5, NULL)); }
+    { $$ = makeErrorExpr(); }
 | opt_intent_tag ident_def opt_formal_type var_arg_expr
-    { $$ = buildArgDefExpr($1, $2, $3, NULL, $4); }
+    { $$ = makeErrorExpr(); }
 | pragma_ls opt_intent_tag ident_def opt_formal_type var_arg_expr
-    { $$ = buildPragmaDefExpr($1, buildArgDefExpr($2, $3, $4, NULL, $5)); }
+    { $$ = makeErrorExpr(); }
 | opt_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP opt_formal_type opt_init_expr
-    { $$ = buildTupleArgDefExpr($1, $3, $5, $6); }
+    { $$ = makeErrorExpr(); }
 | opt_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP opt_formal_type var_arg_expr
-    { USR_FATAL("variable-length argument may not be grouped in a tuple"); }
+    {
+      context->raiseParseError(@$, "variable-length argument may not be grouped in a tuple");
+      $$ = makeErrorExpr();
+    }
 ;
 
 opt_intent_tag:
@@ -1538,15 +1552,15 @@ opt_intent_tag:
 ;
 
 required_intent_tag:
-  TIN     { $$ = INTENT_IN; }
-| TINOUT  { $$ = INTENT_INOUT; }
-| TOUT    { $$ = INTENT_OUT; }
-| TCONST  { $$ = INTENT_CONST; }
-| TCONST TIN { $$ = INTENT_CONST_IN; }
-| TCONST TREF { $$ = INTENT_CONST_REF; }
-| TPARAM  { $$ = INTENT_PARAM; }
-| TREF    { $$ = INTENT_REF; }
-| TTYPE   { $$ = INTENT_TYPE; }
+  TIN         { $$ = IntentTag_IN; }
+| TINOUT      { $$ = IntentTag_INOUT; }
+| TOUT        { $$ = IntentTag_OUT; }
+| TCONST TIN  { $$ = IntentTag_CONST_IN; }
+| TCONST TREF { $$ = IntentTag_CONST_REF; }
+| TCONST      { $$ = IntentTag_CONST; }
+| TPARAM      { $$ = IntentTag_PARAM; }
+| TREF        { $$ = IntentTag_REF; }
+| TTYPE       { $$ = IntentTag_TYPE; }
 ;
 
 opt_this_intent_tag:
@@ -1583,22 +1597,18 @@ opt_function_body_stmt:
 ;
 
 function_body_stmt:
-  block_stmt   { $$ = getStatement($1); }
-| return_stmt  { $$ = new BlockStmt($1); }
+  block_stmt   { $$ = makeErrorExprList(); }
+| return_stmt  { $$ = makeErrorExprList(); }
 ;
 
 query_expr:
-  TQUERIEDIDENT       { $$ = buildQueriedExpr($1); }
+  TQUERIEDIDENT       { $$ = makeErrorExpr(); }
 ;
 
 var_arg_expr:
-  TDOTDOTDOT             { $$ = new SymExpr(gUninstantiated); }
+  TDOTDOTDOT             { $$ = makeErrorExpr(); }
 | TDOTDOTDOT expr        { $$ = $2; }
-| TDOTDOTDOT query_expr  { if (DefExpr* def = toDefExpr($2)) {
-                             def->sym->addFlag(FLAG_PARAM);
-                           }
-                           $$ = $2;
-                         }
+| TDOTDOTDOT query_expr  { $$ = makeErrorExpr(); }
 ;
 
 opt_lifetime_where:
@@ -1638,21 +1648,43 @@ lifetime_ident:
 ;
 
 type_alias_decl_stmt:
-  TTYPE type_alias_decl_stmt_inner TSEMI
-    { $$ = exitStmt(enterStmt(@$, makeErrorExpr())); }
-| TCONFIG TTYPE type_alias_decl_stmt_inner TSEMI
-    { $$ = exitStmt(enterStmt(@$, makeErrorExpr())); }
-| TEXTERN TTYPE type_alias_decl_stmt_inner TSEMI
+  type_alias_decl_stmt_start type_alias_decl_stmt_inner TSEMI
     { $$ = exitStmt(enterStmt(@$, makeErrorExpr())); }
 ;
+
+type_alias_decl_stmt_start:
+  TTYPE
+    {
+      ExprList* comments = enterStmt(@$);
+      Expr* stmt = makeErrorExpr(); //context->astBuilder->enterTypeAliasDecl();
+      $$ = makeCommentsAndStmt(comments, stmt);
+    }
+| TCONFIG TTYPE
+    {
+      ExprList* comments = enterStmt(@$);
+      Expr* stmt = makeErrorExpr(); //context->astBuilder->enterTypeAliasDecl(config);
+      $$ = makeCommentsAndStmt(comments, stmt);
+    }
+
+| TEXTERN TTYPE
+    {
+      ExprList* comments = enterStmt(@$);
+      Expr* stmt = makeErrorExpr(); //context->astBuilder->enterTypeAliasDecl(extern);
+      $$ = makeCommentsAndStmt(comments, stmt);
+    }
+;
+
 
 type_alias_decl_stmt_inner:
   ident_def opt_init_type
     {
+      // set name to $1
       $$ = makeErrorExpr();
     }
 | ident_def opt_init_type TCOMMA type_alias_decl_stmt_inner
     {
+      // set name to $1
+      // add new var to multivar
       $$ = makeErrorExpr();
     }
 ;

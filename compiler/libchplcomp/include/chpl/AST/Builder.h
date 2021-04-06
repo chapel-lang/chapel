@@ -22,6 +22,14 @@ class Builder final {
 
   Context* context() const { return context_; }
   void addToplevelStmt(Expr* e) { topLevelStatements.push_back(e); }
+
+  // For complex declarations, the builder supports
+  //  enter/setBla/addBla/exit e.g. enterFnSymbol
+  //  enterDecl/exitDecl
+  // Parsing is easier if the name does not need to be set by the enter call.
+
+  // Builder methods are actually type methods on the individual AST
+  // elements. This prevents the Builder API from growing unreasonably large.
 };
 
 } // end namespace ast
