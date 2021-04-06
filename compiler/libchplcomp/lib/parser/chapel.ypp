@@ -149,6 +149,8 @@
     LinkageTag_DEFAULT,
     LinkageTag_INLINE,
     LinkageTag_OVERRIDE,
+    LinkageTag_EXTERN,
+    LinkageTag_EXPORT,
   };
 
   typedef std::vector<Expr*> ExprList;
@@ -448,6 +450,7 @@
 %type <commentsAndStmt> inner_class_level_stmt
 %type <commentsAndStmt> forwarding_decl_stmt forwarding_decl_start
 %type <commentsAndStmt> extern_export_decl_stmt
+%type <commentsAndStmt> extern_export_decl_stmt_start
 %type <exprList> extern_block_stmt
 %type <exprList> return_stmt
 %type <exprList> defer_stmt
@@ -510,6 +513,7 @@
 %type <expr> fn_decl_receiver_expr
 %type <functionTag> proc_iter_or_op
 %type <linkageTag> linkage_spec
+%type <linkageTag> extern_or_export
 %type <expr> intent_expr
 %type <shadowTag> shadow_var_prefix
 
@@ -946,93 +950,44 @@ forwarding_decl_start:
     }
 ;
 
+extern_or_export:
+  TEXTERN { $$ = LinkageTag_EXTERN; }
+| TEXPORT { $$ = LinkageTag_EXPORT; }
+;
+
+extern_export_decl_stmt_start:
+  extern_or_export
+    {
+      ExprList* comments = enterStmt(@$);
+      Expr* stmt = NULL;
+      $$ = makeCommentsAndStmt(comments, stmt);
+    }
+;
+
 extern_export_decl_stmt:
-  TEXTERN TRECORD
+  extern_export_decl_stmt_start TRECORD ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
     {
-      @2.comment = context->latestComment;
-      context->latestComment = NULL;
+      CommentsAndStmt cs = $1;
+      cs.stmt = makeErrorExpr(); // TODO
+      $$ = cs;
     }
-  ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
+| extern_export_decl_stmt_start STRINGLITERAL TRECORD ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
     {
-      $$ = buildChapelStmt(buildClassDefExpr($4,
-                                             NULL,
-                                             AGGREGATE_RECORD,
-                                             $5,
-                                             $7,
-                                             FLAG_EXTERN,
-                                             @2.comment));
+      CommentsAndStmt cs = $1;
+      cs.stmt = makeErrorExpr(); // TODO
+      $$ = cs;
     }
-| TEXTERN STRINGLITERAL TRECORD
+| extern_export_decl_stmt_start opt_expr fn_decl_stmt
     {
-      @3.comment = context->latestComment;
-      context->latestComment = NULL;
+      CommentsAndStmt cs = $1;
+      cs.stmt = makeErrorExpr(); // TODO
+      $$ = cs;
     }
-  ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
+| extern_export_decl_stmt_start opt_expr var_decl_type var_decl_stmt_inner_ls TSEMI
     {
-
-      $$ = buildChapelStmt(buildClassDefExpr($5,
-                                             $2,
-                                             AGGREGATE_RECORD,
-                                             $6,
-                                             $8,
-                                             FLAG_EXTERN,
-                                             @3.comment));
-    }
-| TEXPORT TRECORD
-    {
-      @2.comment = context->latestComment;
-      context->latestComment = NULL;
-    }
-  ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
-    {
-      $$ = buildChapelStmt(buildClassDefExpr($4,
-                                             NULL,
-                                             AGGREGATE_RECORD,
-                                             $5,
-                                             $7,
-                                             FLAG_EXPORT,
-                                             @2.comment));
-    }
-| TEXPORT STRINGLITERAL TRECORD
-    {
-      @3.comment = context->latestComment;
-      context->latestComment = NULL;
-    }
-  ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
-    {
-      $$ = buildChapelStmt(buildClassDefExpr($5,
-                                             $2,
-                                             AGGREGATE_RECORD,
-                                             $6,
-                                             $8,
-                                             FLAG_EXPORT,
-                                             @3.comment));
-    }
-
-| TEXTERN opt_expr fn_decl_stmt
-    {
-      $$ = buildExternExportFunctionDecl(FLAG_EXTERN, $2, $3);
-    }
-| TEXPORT opt_expr fn_decl_stmt
-    {
-      $$ = buildExternExportFunctionDecl(FLAG_EXPORT, $2, $3);
-    }
-
-| TEXTERN opt_expr var_decl_type var_decl_stmt_inner_ls TSEMI
-    {
-      const char* comment = context->latestComment;
-      context->latestComment = NULL;
-
-      $3->insert(FLAG_EXTERN);
-      $$ = buildVarDecls($4, comment, $3, $2);
-    }
-| TEXPORT opt_expr var_decl_type var_decl_stmt_inner_ls TSEMI
-    {
-      const char* comment = context->latestComment;
-      context->latestComment = NULL;
-
-      $3->insert(FLAG_EXPORT);
-      $$ = buildVarDecls($4, comment, $3, $2);
+      CommentsAndStmt cs = $1;
+      cs.stmt = makeErrorExpr(); // TODO
+      $$ = cs;
     }
 ;
 
