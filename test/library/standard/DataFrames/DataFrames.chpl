@@ -1034,11 +1034,11 @@ module DataFrames {
     return lhs.add(rhs);
   }
 
-  operator +(lhs: borrowed Series, n: ?N) where isNumericType(N) {
+  operator Series.+(lhs: borrowed Series, n: ?N) where isNumericType(N) {
     return lhs.add_scalar(n);
   }
 
-  operator +(n: ?N, rhs: borrowed Series) where isNumericType(N) {
+  operator Series.+(n: ?N, rhs: borrowed Series) where isNumericType(N) {
     return rhs.add_scalar(n);
   }
 
@@ -1046,7 +1046,7 @@ module DataFrames {
     return lhs.subtr(rhs);
   }
 
-  operator -(lhs: borrowed Series, n: ?N) where isNumericType(N) {
+  operator Series.-(lhs: borrowed Series, n: ?N) where isNumericType(N) {
     return lhs.subtr_scalar(n);
   }
 
@@ -1054,51 +1054,51 @@ module DataFrames {
     return lhs.mult(rhs);
   }
 
-  operator *(lhs: borrowed Series, n: ?N) where isNumericType(N) {
+  operator Series.*(lhs: borrowed Series, n: ?N) where isNumericType(N) {
     return lhs.mult_scalar(n);
   }
 
-  operator *(n: ?N, rhs: borrowed Series) where isNumericType(N) {
+  operator Series.*(n: ?N, rhs: borrowed Series) where isNumericType(N) {
     return rhs.mult_scalar(n);
   }
 
-  operator <(lhs: borrowed Series, n: ?N) where isNumericType(N) {
+  operator Series.<(lhs: borrowed Series, n: ?N) where isNumericType(N) {
     return lhs.lt_scalar(n);
   }
 
-  operator <(n: ?N, rhs: borrowed Series) where isNumericType(N) {
+  operator Series.<(n: ?N, rhs: borrowed Series) where isNumericType(N) {
     return rhs.gt_scalar(n);
   }
 
-  operator >(lhs: borrowed Series, n: ?N) where isNumericType(N) {
+  operator Series.>(lhs: borrowed Series, n: ?N) where isNumericType(N) {
     return lhs.gt_scalar(n);
   }
 
-  operator >(n: ?N, rhs: borrowed Series) where isNumericType(N) {
+  operator Series.>(n: ?N, rhs: borrowed Series) where isNumericType(N) {
     return rhs.lt_scalar(n);
   }
 
-  operator ==(lhs: borrowed Series, n: ?N) where isNumericType(N) {
+  operator Series.==(lhs: borrowed Series, n: ?N) where isNumericType(N) {
     return lhs.eq_scalar(n);
   }
 
-  operator ==(n: ?N, rhs: borrowed Series) where isNumericType(N) {
+  operator Series.==(n: ?N, rhs: borrowed Series) where isNumericType(N) {
     return rhs.eq_scalar(n);
   }
 
-  operator <=(lhs: borrowed Series, n: ?N) where isNumericType(N) {
+  operator Series.<=(lhs: borrowed Series, n: ?N) where isNumericType(N) {
     return lhs.lteq_scalar(n);
   }
 
-  operator <=(n: ?N, rhs: borrowed Series) where isNumericType(N) {
+  operator Series.<=(n: ?N, rhs: borrowed Series) where isNumericType(N) {
     return rhs.gteq_scalar(n);
   }
 
-  operator >=(lhs: borrowed Series, n: ?N) where isNumericType(N) {
+  operator Series.>=(lhs: borrowed Series, n: ?N) where isNumericType(N) {
     return lhs.gteq_scalar(n);
   }
 
-  operator >=(n: ?N, rhs: borrowed Series) where isNumericType(N) {
+  operator Series.>=(n: ?N, rhs: borrowed Series) where isNumericType(N) {
     return rhs.lteq_scalar(n);
   }
 }
