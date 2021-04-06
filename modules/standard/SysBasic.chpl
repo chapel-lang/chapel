@@ -121,23 +121,27 @@ inline operator syserr.==(a: syserr, b: syserr) {
   return (qio_err_eq(a,b) != 0:c_int);
 }
 pragma "no doc"
-inline operator ==(a: syserr, b: int(32)) return (qio_err_to_int(a) == b:int(32));
+inline operator syserr.==(a: syserr, b: int(32))
+  return (qio_err_to_int(a) == b:int(32));
 pragma "no doc"
-inline operator ==(a: syserr, b: int(64)) return (qio_err_to_int(a) == b:int(32));
+inline operator syserr.==(a: syserr, b: int(64))
+  return (qio_err_to_int(a) == b:int(32));
 pragma "no doc"
-inline operator ==(a: int(32), b: syserr) return (a:int(32) == qio_err_to_int(b));
+inline operator syserr.==(a: int(32), b: syserr)
+  return (a:int(32) == qio_err_to_int(b));
 pragma "no doc"
-inline operator ==(a: int(64), b: syserr) return (a:int(32) == qio_err_to_int(b));
+inline operator syserr.==(a: int(64), b: syserr)
+  return (a:int(32) == qio_err_to_int(b));
 pragma "no doc"
 inline operator syserr.!=(a: syserr, b: syserr) return !(a == b);
 pragma "no doc"
-inline operator !=(a: syserr, b: int(32)) return !(a == b);
+inline operator syserr.!=(a: syserr, b: int(32)) return !(a == b);
 pragma "no doc"
-inline operator !=(a: syserr, b: int(64)) return !(a == b);
+inline operator syserr.!=(a: syserr, b: int(64)) return !(a == b);
 pragma "no doc"
-inline operator !=(a: int(32), b: syserr) return !(a == b);
+inline operator syserr.!=(a: int(32), b: syserr) return !(a == b);
 pragma "no doc"
-inline operator !=(a: int(64), b: syserr) return !(a == b);
+inline operator syserr.!=(a: int(64), b: syserr) return !(a == b);
 pragma "no doc"
 inline operator syserr.!(a: syserr) return (qio_err_iserr(a) == 0:c_int);
 pragma "no doc"
@@ -153,13 +157,13 @@ inline operator :(x: int(64), type t: syserr) return qio_int_to_err(x:int(32));
 pragma "no doc"
 inline operator syserr.=(ref ret:syserr, x:syserr) { __primitive("=", ret, x); }
 pragma "no doc"
-inline operator =(ref ret:syserr, x:int(32))
+inline operator syserr.=(ref ret:syserr, x:int(32))
 { __primitive("=", ret, qio_int_to_err(x)); }
 pragma "no doc"
-inline operator =(ref ret:syserr, x:int(64))
+inline operator syserr.=(ref ret:syserr, x:int(64))
 { __primitive("=", ret, qio_int_to_err(x:int(32))); }
 pragma "no doc"
-inline operator =(ref ret:err_t, x:syserr)
+inline operator syserr.=(ref ret:err_t, x:syserr)
 { __primitive("=", ret, qio_err_to_int(x):err_t); }
 
 // end of file
