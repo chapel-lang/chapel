@@ -659,7 +659,7 @@ Operator Definitions
 // ``+= -= *= /= %= **= &= |= ˆ= <<= >>= <=>``
 
 // Boolean exclusive or operator.
-operator bool.^(left : bool, right : bool): bool {
+operator ^(left : bool, right : bool): bool {
   return (left || right) && !(left && right);
 }
 
