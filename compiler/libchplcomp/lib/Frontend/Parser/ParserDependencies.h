@@ -12,8 +12,6 @@
 #include "chpl/AST/Identifier.h"
 #include "chpl/AST/UniqueString.h"
 
-#include "parser.h"
-
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>

@@ -48,7 +48,6 @@
 %{
 
 #include "bison-chapel.h"
-#include "parser.h"
 
 #include <cstdio>
 

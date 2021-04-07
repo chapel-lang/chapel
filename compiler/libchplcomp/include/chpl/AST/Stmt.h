@@ -1,7 +1,7 @@
 #ifndef CHPL_AST_STMT_H
-#define CHPL_AST_STMTEXPR_H
+#define CHPL_AST_STMT_H
 
-#include "chpl/AST/BaseAST.h"
+#include "chpl/AST/Expr.h"
 
 namespace chpl {
 namespace ast {

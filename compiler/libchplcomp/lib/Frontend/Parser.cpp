@@ -18,9 +18,9 @@
  * limitations under the License.
  */
 
-#include "parser.h"
+#include "chpl/Frontend/Parser.h"
 
-#include "bison-chapel.h"
+#include "Parser/bison-chapel.h"
 
 #include <cstdlib>
 

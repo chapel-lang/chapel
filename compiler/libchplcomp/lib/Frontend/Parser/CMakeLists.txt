@@ -16,7 +16,6 @@ target_sources(libchplcomp
                bison-chapel.cpp
                bison-chapel.h
                flex-chapel.cpp
-               Parser.cpp
 
               )
 
