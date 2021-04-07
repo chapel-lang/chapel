@@ -11,4 +11,4 @@ target_include_directories(libchplcomp PUBLIC
 target_include_directories(libchplcomp PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_subdirectory(AST)
-add_subdirectory(parser)
+add_subdirectory(Frontend)

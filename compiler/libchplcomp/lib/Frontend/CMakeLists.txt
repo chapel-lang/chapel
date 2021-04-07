@@ -12,11 +12,11 @@
 
 target_sources(libchplcomp
                PRIVATE
+
                bison-chapel.cpp
                bison-chapel.h
                flex-chapel.cpp
-               parser.cpp
-               parser.h
+               Parser.cpp
 
               )
 
