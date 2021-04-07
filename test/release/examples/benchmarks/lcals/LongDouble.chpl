@@ -22,28 +22,28 @@ operator :(d:?tt, type t:longdouble) where tt == real(64) || tt == real(32) ||
   return __primitive("cast", t, d);
 }
 
-proc +(ld: longdouble, d: real): longdouble
+operator +(ld: longdouble, d: real): longdouble
   return __primitive("+", ld, d);
-proc -(ld: longdouble, d: real): longdouble
+operator -(ld: longdouble, d: real): longdouble
   return __primitive("-", ld, d);
-proc *(ld: longdouble, d: real): longdouble
+operator *(ld: longdouble, d: real): longdouble
   return __primitive("*", ld, d);
-proc /(ld: longdouble, d: real): longdouble
+operator /(ld: longdouble, d: real): longdouble
   return __primitive("/", ld, d);
 
-proc +=(ref ld: longdouble, d: real) {
+operator +=(ref ld: longdouble, d: real) {
   ld = ld + d;
 }
-proc -=(ref ld: longdouble, d: real) {
+operator -=(ref ld: longdouble, d: real) {
   ld = ld - d;
 }
-proc *=(ref ld: longdouble, d: real) {
+operator *=(ref ld: longdouble, d: real) {
   ld = ld * d;
 }
-proc -=(ref ld: longdouble, d: real) {
+operator -=(ref ld: longdouble, d: real) {
   ld = ld / d;
 }
 
-proc =(ref ld: longdouble, d: real) {
+operator =(ref ld: longdouble, d: real) {
   __primitive("=", ld, d);
 }

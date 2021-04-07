@@ -38,13 +38,13 @@ module MemConsistency {
     return _defaultOfMemoryOrder();
   }
 
-  proc ==(a:memory_order, b:memory_order):bool {
+  operator memory_order.==(a:memory_order, b:memory_order):bool {
     return __primitive("==", a, b);
   }
-  proc !=(a:memory_order, b:memory_order):bool {
+  operator memory_order.!=(a:memory_order, b:memory_order):bool {
     return __primitive("!=", a, b);
   }
-  proc =(ref lhs:memory_order, rhs:memory_order) {
+  operator memory_order.=(ref lhs:memory_order, rhs:memory_order) {
     __primitive("=", lhs, rhs);
   }
 

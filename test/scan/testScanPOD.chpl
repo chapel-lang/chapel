@@ -4,14 +4,14 @@ record NotPodR {
   var i: int;
   proc deinit() { if i < 0  then writeln("custom destructor"); }
 }
-proc +(const ref a: NotPodR, const ref b: NotPodR) {
+operator NotPodR.+(const ref a: NotPodR, const ref b: NotPodR) {
   return new NotPodR(a.i + b.i);
 }
 
 record PodR {
   var i: int;
 }
-proc +(const ref a: PodR, const ref b: PodR) {
+operator PodR.+(const ref a: PodR, const ref b: PodR) {
   return new PodR(a.i + b.i);
 }
 

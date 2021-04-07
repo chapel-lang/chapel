@@ -1058,14 +1058,14 @@ module Bytes {
   /*
      Appends the :mod:`bytes <Bytes>` `rhs` to the :mod:`bytes <Bytes>` `lhs`.
   */
-  proc +=(ref lhs: bytes, const ref rhs: bytes) : void {
+  operator bytes.+=(ref lhs: bytes, const ref rhs: bytes) : void {
     doAppend(lhs, rhs);
   }
 
   /*
      Copies the :mod:`bytes <Bytes>` `rhs` into the :mod:`bytes <Bytes>` `lhs`.
   */
-  proc =(ref lhs: bytes, rhs: bytes) {
+  operator bytes.=(ref lhs: bytes, rhs: bytes) {
     doAssign(lhs, rhs);
   }
 
@@ -1074,7 +1074,7 @@ module Bytes {
 
      Halts if `lhs` is a remote bytes.
   */
-  proc =(ref lhs: bytes, rhs_c: c_string) {
+  operator bytes.=(ref lhs: bytes, rhs_c: c_string) {
     lhs = createBytesWithNewBuffer(rhs_c);
   }
 
@@ -1085,12 +1085,12 @@ module Bytes {
      :returns: A new :mod:`bytes <Bytes>` which is the result of concatenating
                `s0` and `s1`
   */
-  proc +(s0: bytes, s1: bytes) {
+  operator bytes.+(s0: bytes, s1: bytes) {
     return doConcat(s0, s1);
   }
 
   pragma "no doc"
-  inline proc +(param s0: bytes, param s1: bytes) param
+  inline operator bytes.+(param s0: bytes, param s1: bytes) param
     return __primitive("string_concat", s0, s1);
 
   /*
@@ -1098,66 +1098,66 @@ module Bytes {
                `n` times.  If `n` is less than or equal to 0, an empty bytes is
                returned.
   */
-  proc *(s: bytes, n: integral) {
+  operator bytes.*(s: bytes, n: integral) {
     return doMultiply(s, n);
   }
 
   pragma "no doc"
-  proc ==(a: bytes, b: bytes) : bool {
+  operator bytes.==(a: bytes, b: bytes) : bool {
     return doEq(a,b);
   }
 
   pragma "no doc"
-  inline proc !=(a: bytes, b: bytes) : bool {
+  inline operator bytes.!=(a: bytes, b: bytes) : bool {
     return !doEq(a,b);
   }
 
   pragma "no doc"
-  inline proc <(a: bytes, b: bytes) : bool {
+  inline operator bytes.<(a: bytes, b: bytes) : bool {
     return doLessThan(a, b);
   }
 
   pragma "no doc"
-  inline proc >(a: bytes, b: bytes) : bool {
+  inline operator bytes.>(a: bytes, b: bytes) : bool {
     return doGreaterThan(a, b);
   }
 
   pragma "no doc"
-  inline proc <=(a: bytes, b: bytes) : bool {
+  inline operator bytes.<=(a: bytes, b: bytes) : bool {
     return doLessThanOrEq(a, b);
   }
   pragma "no doc"
-  inline proc >=(a: bytes, b: bytes) : bool {
+  inline operator bytes.>=(a: bytes, b: bytes) : bool {
     return doGreaterThanOrEq(a, b);
   }
 
   pragma "no doc"
-  inline proc ==(param s0: bytes, param s1: bytes) param  {
+  inline operator bytes.==(param s0: bytes, param s1: bytes) param  {
     return __primitive("string_compare", s0, s1) == 0;
   }
 
   pragma "no doc"
-  inline proc !=(param s0: bytes, param s1: bytes) param {
+  inline operator bytes.!=(param s0: bytes, param s1: bytes) param {
     return __primitive("string_compare", s0, s1) != 0;
   }
 
   pragma "no doc"
-  inline proc <=(param a: bytes, param b: bytes) param {
+  inline operator bytes.<=(param a: bytes, param b: bytes) param {
     return (__primitive("string_compare", a, b) <= 0);
   }
 
   pragma "no doc"
-  inline proc >=(param a: bytes, param b: bytes) param {
+  inline operator bytes.>=(param a: bytes, param b: bytes) param {
     return (__primitive("string_compare", a, b) >= 0);
   }
 
   pragma "no doc"
-  inline proc <(param a: bytes, param b: bytes) param {
+  inline operator bytes.<(param a: bytes, param b: bytes) param {
     return (__primitive("string_compare", a, b) < 0);
   }
 
   pragma "no doc"
-  inline proc >(param a: bytes, param b: bytes) param {
+  inline operator bytes.>(param a: bytes, param b: bytes) param {
     return (__primitive("string_compare", a, b) > 0);
   }
 

@@ -12,7 +12,7 @@ record myR {
   }
 }
 
-proc =(ref lhs: myR, rhs: myR) {
+operator myR.=(ref lhs: myR, rhs: myR) {
   lhs.x = rhs.x;
   lhs.sx.writeEF(rhs.sx.readFE());
 }

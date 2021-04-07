@@ -551,7 +551,7 @@ proc _to_regexMatch(ref p:qio_regex_string_piece_t):regexMatch {
 }
 
 pragma "no doc"
-inline proc !(m: regexMatch) return !m.matched;
+inline operator regexMatch.!(m: regexMatch) return !m.matched;
 
 pragma "no doc"
 inline proc _cond_test(m: regexMatch) return m.matched;
@@ -1017,7 +1017,7 @@ proc regexp type
 }
 
 pragma "no doc"
-proc =(ref ret:regex(?t), x:regex(t))
+operator regex.=(ref ret:regex(?t), x:regex(t))
 {
   // retain -- release
   if x.home == ret.home {

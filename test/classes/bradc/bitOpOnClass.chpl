@@ -21,7 +21,8 @@ class MyClass {
 }
 
 
-proc |(lhs: borrowed MyClass, rhs: borrowed MyClass): unmanaged MyClass {
+operator MyClass.|(lhs: borrowed MyClass,
+                   rhs: borrowed MyClass): unmanaged MyClass {
   var res = new unmanaged MyClass(min(lhs.len, rhs.len));
   forall (r,a,b) in zip(res.arr, lhs.arr, rhs.arr) do
     r = a | b;

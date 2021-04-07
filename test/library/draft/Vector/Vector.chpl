@@ -1226,7 +1226,7 @@ module Vector {
     :arg lhs: The vector to assign to.
     :arg rhs: The vector to assign from. 
   */
-  proc =(ref lhs: vector(?t, ?), rhs: vector(t, ?)) {
+  operator vector.=(ref lhs: vector(?t, ?), rhs: vector(t, ?)) {
     lhs.clear();
     lhs.extend(rhs);
   }
@@ -1240,7 +1240,7 @@ module Vector {
     :return: `true` if the contents of two vectors are equal.
     :rtype: `bool`
   */
-  proc ==(a: vector(?t, ?), b: vector(t, ?)): bool {
+  operator vector.==(a: vector(?t, ?), b: vector(t, ?)): bool {
     if a.size != b.size then
       return false;
 
@@ -1263,7 +1263,7 @@ module Vector {
     :return: `true` if the contents of two vectors are not equal.
     :rtype: `bool`
   */
-  proc !=(a: vector(?t, ?), b: vector(t, ?)): bool {
+  operator vector.!=(a: vector(?t, ?), b: vector(t, ?)): bool {
     return !(a == b);
   }
 

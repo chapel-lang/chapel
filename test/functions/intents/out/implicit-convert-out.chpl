@@ -21,7 +21,7 @@ record R {
   }
 }
 
-proc =(ref r: R, x: int) {
+operator =(ref r: R, x: int) {
   writeln("In assign");
   r.x = x;
 }
