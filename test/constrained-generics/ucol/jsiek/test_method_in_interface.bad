@@ -1,0 +1,4 @@
+test_method_in_interface.chpl:21: In 'implements LessThan' statement:
+test_method_in_interface.chpl:21: error: when checking this implements statement
+test_method_in_interface.chpl:21: note: the required function less_than is not implemented
+test_method_in_interface.chpl:2: note: the required function less_than in the interface LessThan is declared here
