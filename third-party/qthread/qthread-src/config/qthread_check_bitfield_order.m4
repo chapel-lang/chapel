@@ -15,6 +15,10 @@ AS_IF([test "x$with_forward_bitfields" = x],
                       [qthread_cv_bitfield_order],
                       [AC_RUN_IFELSE([AC_LANG_PROGRAM([[
 #include <assert.h>
+#include <signal.h>
+#include <stdlib.h>
+#include <string.h>
+
 union foo {
     unsigned int w;
     struct bar {
@@ -24,6 +28,18 @@ union foo {
     } s;
 } fb;]],
 [[
+struct sigaction sa;
+void handler (int sig)
+{
+    exit(1);
+}
+
+memset (&sa, '\0', sizeof(sa));
+sa.sa_sigaction = (void (*)(int, siginfo_t *, void *)) &handler;
+sa.sa_flags = SA_SIGINFO;
+//Catch SIGABORT
+sigaction(SIGABRT, &sa, NULL); 
+
 fb.w = 0;
 fb.s.c = 1;
 assert(fb.w == 1);]])],

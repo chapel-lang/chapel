@@ -37,7 +37,7 @@ void handle()
     memset (&sa, '\0', sizeof(sa));
     sa.sa_sigaction = (void (*)(int, siginfo_t *, void *)) &handler;
     sa.sa_flags = SA_SIGINFO;
-    // Register handler for SIGSEGV 
+    // Catch SIGSEGV 
     sigaction(SIGSEGV, &sa, NULL); 
 }
 
