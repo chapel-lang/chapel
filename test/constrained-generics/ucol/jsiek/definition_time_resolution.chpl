@@ -1,8 +1,11 @@
-interface I(T) {
-  proc f(x:T):T;
+module IFC {
+   interface I(T) {
+     proc f(x:T):T;
+   }
 }
 
 module A {
+   use IFC;
 
    proc f(x:int):int { return x; }
 
@@ -13,6 +16,8 @@ module A {
 }
 
 module B {
+   use IFC;
+   import A;
 
    proc f(x:int):int { return x + 1; }
 
@@ -24,4 +29,10 @@ module B {
 
 }
 
-writeln(B.h(41));
+module Main {
+   import B;
+
+   proc main {
+     writeln(B.h(41));
+   }
+}
