@@ -53,6 +53,7 @@ class Context {
     and to reduce redundant checks.
    */
   const char* uniqueCString(const char* s);
+  const char* uniqueCString(const std::string& s);
 
   /**
     Get or create a unique string for a NULL-terminated C string.

@@ -24,6 +24,13 @@ void yyerror(YYLTYPE*       loc,
   context->errors.push_back(ParserError(*loc, errorMessage));
 }
 
+static void noteError(YYLTYPE location, ParserContext* context, const char* s) {
+  yyerror(&location, context, s);
+}
+static void noteError(YYLTYPE location, ParserContext* context, const std::string& s) {
+  yyerror(&location, context, context->astContext->uniqueCString(s));
+}
+
 static ErroneousExpr* raiseError(YYLTYPE location,
                                  ParserContext* context,
                                  const char* errorMessage) {

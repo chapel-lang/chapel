@@ -81,6 +81,9 @@ class BaseAST {
   #define AST_TO(NAME) \
     const NAME * to##NAME() const { \
       return this->is##NAME() ? (NAME *)this : nullptr; \
+    } \
+    NAME * to##NAME() { \
+      return this->is##NAME() ? (NAME *)this : nullptr; \
     }
   #define AST_NODE(NAME) AST_TO(NAME)
   #define AST_LEAF(NAME) AST_TO(NAME)

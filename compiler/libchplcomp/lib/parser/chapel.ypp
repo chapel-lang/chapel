@@ -178,7 +178,7 @@
     PotentialRename(Expr* from, Expr* to)
     {
       this->tag = DOUBLE;
-      this->elem = NULL;
+      this->elem = nullptr;
       this->renamed = std::make_pair(from, to);
     }
 
@@ -226,6 +226,7 @@
     AggregateTag               aggregateTag;
     FunctionTag                functionTag;
     IntentTag                  intentTag;
+    LinkageTag                 linkageTag;
     NewTag                     newTag;
     PrototypeTag               prototypeTag;
     ReturnTag                  returnTag;
@@ -289,12 +290,14 @@
                const char*    errorMessage);
 }
 
-%code {
+%code provides {
   // include ParserContext.h here because it depends
   // uppon YYLTYPE and other types defined by the generated parser
   // headers.
   #include "ParserContext.h"
+}
 
+%code {
   // include the definition of methods for ParserContext
   #include "ParserContext.cpp"
   // include other helper functions for the parser
@@ -304,7 +307,10 @@
   #define BUILDER (context->builder)
   #define STMT(LOC,AST) makeCommentsAndStmt(context->gatherComments(LOC), AST)
   #define ENDSTMT() context->clearComments();
+
+  // ERROR creates an error and returns an error sentinel Expr
   #define ERROR(LOC,MSG) raiseError(LOC, context, MSG)
+
   #define TODOEXPR(LOC) raiseError(LOC, context, "not implemented yet")
   #define TODOSTMT(LOC) makeCommentsAndStmt(context->gatherComments(LOC), raiseError(LOC, context, "not implemented yet"))
   #define TODOLIST(LOC) context->makeList(raiseError(LOC, context, "not implemented yet"))
@@ -501,8 +507,8 @@
 %type <commentsAndStmt> enum_decl_stmt
 
 %type <commentsAndStmt> var_decl_stmt
-%type <exprList> var_decl_stmt_inner_ls
-%type <exprList> var_decl_stmt_inner tuple_var_decl_stmt_inner_ls
+%type <exprList> var_decl_stmt_inner_ls tuple_var_decl_stmt_inner_ls
+%type <expr> var_decl_stmt_inner
 
 
 %type <exprList> function_body_stmt opt_function_body_stmt
@@ -510,10 +516,10 @@
 %type <expr> when_stmt
 %type <exprList> when_stmt_ls
 
-%type <pcallexpr> array_type
+%type <expr> array_type
 %type <expr> opt_type opt_ret_type ret_array_type
 %type <expr> opt_formal_type formal_array_type opt_formal_array_elt_type lambda_decl_expr
-%type <penumtype> enum_header
+%type <commentsAndStmt> enum_header
 %type <exprList> enum_ls
 
 %type <expr> zippered_iterator
@@ -532,8 +538,8 @@
 %type <expr> opt_init_type var_arg_expr
 %type <expr> opt_try_expr opt_expr
 %type <expr> tuple_component tuple_var_decl_component
-%type <pdefexpr> formal
-%type <commentAndExpr> enum_item
+%type <expr> formal
+%type <commentsAndStmt> enum_item
 %type <expr> query_expr ifc_constraint
 
 %type <newTag> new_maybe_decorated
@@ -542,7 +548,7 @@
 %type <exprList> opt_task_intent_ls task_intent_ls task_intent_clause
 %type <exprList> forall_intent_clause forall_intent_ls
 
-%type <exprList> fn_decl_stmt_start fn_decl_stmt_inner
+%type <commentsAndStmt> fn_decl_stmt_start fn_decl_stmt_inner
 %type <exprList> opt_formal_ls req_formal_ls formal_ls
 %type <expr> fn_decl_receiver_expr
 %type <functionTag> proc_iter_or_op
@@ -619,6 +625,7 @@ module_decl_start:
   access_control opt_prototype TMODULE ident_def
     {
       $$ = TODOSTMT(@$);
+      context->visibility = VisibilityTag_DEFAULT;
     }
 ;
 
@@ -647,9 +654,10 @@ opt_prototype:
 
 include_module_stmt:
  TINCLUDE access_control opt_prototype TMODULE ident_def TSEMI
- {
-   $$ = TODOSTMT(@$);
- }
+   {
+     $$ = TODOSTMT(@$);
+     context->visibility = VisibilityTag_DEFAULT;
+   }
 ;
 
 /* Grouping of statements into blocks.
@@ -771,30 +779,37 @@ use_stmt:
   access_control TUSE use_renames_ls TSEMI
     {
       $$ = TODOSTMT(@$);
+      context->visibility = VisibilityTag_DEFAULT;
     }
 | access_control TUSE expr TEXCEPT except_ls TSEMI
     {
       $$ = TODOSTMT(@$);
+      context->visibility = VisibilityTag_DEFAULT;
     }
 | access_control TUSE expr TAS expr TEXCEPT except_ls TSEMI
     {
       $$ = TODOSTMT(@$);
+      context->visibility = VisibilityTag_DEFAULT;
     }
 | access_control TUSE expr TAS TUNDERSCORE TEXCEPT except_ls TSEMI
     {
       $$ = TODOSTMT(@$);
+      context->visibility = VisibilityTag_DEFAULT;
     }
 | access_control TUSE expr TONLY opt_only_ls TSEMI
     {
       $$ = TODOSTMT(@$);
+      context->visibility = VisibilityTag_DEFAULT;
     }
 | access_control TUSE expr TAS expr TONLY opt_only_ls TSEMI
     {
       $$ = TODOSTMT(@$);
+      context->visibility = VisibilityTag_DEFAULT;
     }
 | access_control TUSE expr TAS TUNDERSCORE TONLY opt_only_ls TSEMI
     {
       $$ = TODOSTMT(@$);
+      context->visibility = VisibilityTag_DEFAULT;
     }
 ;
 
@@ -802,6 +817,7 @@ import_stmt:
   access_control TIMPORT import_ls TSEMI
     {
       $$ = TODOSTMT(@$);
+      context->visibility = VisibilityTag_DEFAULT;
     }
 ;
 
@@ -858,7 +874,7 @@ assignment_stmt:
 // Here are some nonterminals for identifiers
 
 opt_label_ident:
-         { $$ = NULL; }
+         { $$ = nullptr; }
 | TIDENT { $$ = $1; }
 ;
 
@@ -965,25 +981,23 @@ return_stmt:
 class_level_stmt:
   TSEMI
     {
-      $$ = STMT(@$, NULL);
+      $$ = STMT(@$, nullptr);
     }
 | inner_class_level_stmt
     {
+      // visibility should be default when inner_class_level_stmt is parsed
       $$ = context->finishStmt($1);
+      context->visibility = VisibilityTag_DEFAULT;
     }
-| TPUBLIC inner_class_level_stmt
+| TPUBLIC {context->visibility = VisibilityTag_PUBLIC;} inner_class_level_stmt
     {
-      CommentsAndStmt cs = $2;
-      // TODO: set visibility to public
-      context->astBuilder->exitDecl(cs.stmt);
-      $$ = cs;
+      $$ = context->finishStmt($3);
+      context->visibility = VisibilityTag_DEFAULT;
     }
-| TPRIVATE inner_class_level_stmt
+| TPRIVATE {context->visibility = VisibilityTag_PRIVATE;} inner_class_level_stmt
     {
-      CommentsAndStmt cs = $2;
-      // TODO: set visibility to private
-      context->astBuilder->exitDecl(cs.stmt);
-      $$ = cs;
+      $$ = context->finishStmt($3);
+      context->visibility = VisibilityTag_DEFAULT;
     }
 ;
 
@@ -1294,7 +1308,11 @@ implements_type_ident:
 | TVOID      { $$ = "void"; }
 | implements_type_error_ident
   {
-    $$ = ERROR(@$, "type not allowed to implement an interface");
+    std::string s = "type ";
+    s += "'"; s += $1; s += "'";
+    s += " not allowed to implement an interface";
+    noteError(@$, context, s);
+    $$ = $1;
   }
 ;
 
@@ -1426,7 +1444,7 @@ class_tag:
 ;
 
 opt_inherit:
-                  { $$ = NULL; }
+                  { $$ = nullptr; }
 | TCOLON expr_ls  { $$ = $2; }
 ;
 
@@ -1503,40 +1521,41 @@ fn_decl_stmt:
   opt_throws_error opt_lifetime_where opt_function_body_stmt
     {
       CommentsAndStmt cs = $1;
-      FnDecl* decl = toFnDecl(cs.stmt);
+      FnDecl* decl = cs.stmt->toFnDecl();
       ExprList* body = TODOLIST(@$);
-      decl->setBody(body);
+      //decl->setBody(body); TODO
       $$ = cs;
-    }
-;
-
-fn_decl_stmt_start:
-  linkage_spec proc_iter_or_op
-    {
-      $$ = STMT(@$, makeErrorExpr()); // TODO
     }
 ;
 
 fn_decl_stmt_inner:
   fn_decl_stmt_start opt_this_intent_tag fn_ident opt_formal_ls
     {
-      $$ = makeErrorExpr();
+      $$ = TODOSTMT(@$);
     }
 | fn_decl_stmt_start opt_this_intent_tag assignop_ident opt_formal_ls
     {
-      $$ = makeErrorExpr();
+      $$ = TODOSTMT(@$);
     }
 | fn_decl_stmt_start opt_this_intent_tag fn_decl_receiver_expr TDOT fn_ident opt_formal_ls
     {
-      $$ = makeErrorExpr();
+      $$ = TODOSTMT(@$);
     }
 | fn_decl_stmt_start opt_this_intent_tag fn_decl_receiver_expr TDOT assignop_ident opt_formal_ls
     {
-      $$ = makeErrorExpr();
+      $$ = TODOSTMT(@$);
     }
 | fn_decl_stmt_start opt_this_intent_tag error opt_formal_ls
     {
-      $$ = makeErrorExpr();
+      // TODO
+      $$ = TODOSTMT(@$);
+    }
+;
+
+fn_decl_stmt_start:
+  linkage_spec proc_iter_or_op
+    {
+      $$ = TODOSTMT(@$);
     }
 ;
 
@@ -1574,9 +1593,8 @@ fn_ident:
 | TINITEQUALS    { $$ = "init="; }
 | TCOLON         { $$ = ":"; }
 | ident_def TBANG
-  { std::string s = $1;
-    s += "!";
-    $$ = context->astContext->uniqueCString(s.c_str()));
+  { std::string s = $1; s += "!";
+    $$ = context->astContext->uniqueCString(s);
   }
 ;
 
@@ -1596,7 +1614,7 @@ assignop_ident:
 ;
 
 opt_formal_ls:
-                     { $$ = NULL; /* TODO: mark as no-parens */ }
+                     { $$ = nullptr; /* TODO: mark as no-parens */ }
 | TLP formal_ls TRP  { $$ = $2; }
 ;
 
@@ -1612,24 +1630,23 @@ formal_ls:
 
 formal:
   opt_intent_tag ident_def opt_formal_type opt_init_expr
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 | pragma_ls opt_intent_tag ident_def opt_formal_type opt_init_expr
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 | opt_intent_tag ident_def opt_formal_type var_arg_expr
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 | pragma_ls opt_intent_tag ident_def opt_formal_type var_arg_expr
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 | opt_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP opt_formal_type opt_init_expr
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 | opt_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP opt_formal_type var_arg_expr
     {
-      yyerror(*@$, context, "variable-length argument may not be grouped in a tuple");
-      $$ = makeErrorExpr();
+      $$ = ERROR(@$, "variable-length argument may not be grouped in a tuple");
     }
 ;
 
 opt_intent_tag:
-                      { $$ = INTENT_BLANK; }
+                      { $$ = IntentTag_DEFAULT; }
 | required_intent_tag { $$ = $1; }
 ;
 
@@ -1674,7 +1691,7 @@ opt_throws_error:
 | TTHROWS { $$ = ThrowsTag_THROWS; }
 
 opt_function_body_stmt:
-  TSEMI               { $$ = NULL; }
+  TSEMI               { $$ = nullptr; }
 | function_body_stmt  { $$ = $1; }
 ;
 
@@ -1684,21 +1701,21 @@ function_body_stmt:
 ;
 
 query_expr:
-  TQUERIEDIDENT       { $$ = makeErrorExpr(); }
+  TQUERIEDIDENT       { $$ = TODOEXPR(@$); }
 ;
 
 var_arg_expr:
-  TDOTDOTDOT             { $$ = makeErrorExpr(); }
+  TDOTDOTDOT             { $$ = TODOEXPR(@$); }
 | TDOTDOTDOT expr        { $$ = $2; }
-| TDOTDOTDOT query_expr  { $$ = makeErrorExpr(); }
+| TDOTDOTDOT query_expr  { $$ = TODOEXPR(@$); }
 ;
 
 opt_lifetime_where:
-  { $$ = makeWhereAndLifetime(NULL, NULL); }
+  { $$ = makeWhereAndLifetime(nullptr, nullptr); }
 | TWHERE expr
-  { $$ = makeWhereAndLifetime($2, NULL); }
+  { $$ = makeWhereAndLifetime($2, nullptr); }
 | TLIFETIME lifetime_components_expr
-  { $$ = makeWhereAndLifetime(NULL, $2); }
+  { $$ = makeWhereAndLifetime(nullptr, $2); }
 | TWHERE expr TLIFETIME lifetime_components_expr
   { $$ = makeWhereAndLifetime($2, $4); }
 | TLIFETIME lifetime_components_expr TWHERE expr
@@ -1713,40 +1730,42 @@ lifetime_components_expr:
 ;
 
 lifetime_expr:
-  lifetime_ident TASSIGN      lifetime_ident  { $$ = makeErrorExpr(); }
-| lifetime_ident TLESS        lifetime_ident  { $$ = makeErrorExpr(); }
-| lifetime_ident TLESSEQUAL   lifetime_ident  { $$ = makeErrorExpr(); }
-| lifetime_ident TEQUAL       lifetime_ident  { $$ = makeErrorExpr(); }
-| lifetime_ident TGREATER     lifetime_ident  { $$ = makeErrorExpr(); }
-| lifetime_ident TGREATEREQUAL lifetime_ident { $$ = makeErrorExpr(); }
-| TRETURN lifetime_ident                      { $$ = makeErrorExpr(); }
+  lifetime_ident TASSIGN      lifetime_ident  { $$ = TODOEXPR(@$); }
+| lifetime_ident TLESS        lifetime_ident  { $$ = TODOEXPR(@$); }
+| lifetime_ident TLESSEQUAL   lifetime_ident  { $$ = TODOEXPR(@$); }
+| lifetime_ident TEQUAL       lifetime_ident  { $$ = TODOEXPR(@$); }
+| lifetime_ident TGREATER     lifetime_ident  { $$ = TODOEXPR(@$); }
+| lifetime_ident TGREATEREQUAL lifetime_ident { $$ = TODOEXPR(@$); }
+| TRETURN lifetime_ident                      { $$ = TODOEXPR(@$); }
 ;
 
 lifetime_ident:
   TIDENT
-  { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 | TTHIS
-  { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 ;
 
 type_alias_decl_stmt:
   type_alias_decl_stmt_start type_alias_decl_stmt_inner TSEMI
-    { $$ = exitStmt(enterStmt(@$, makeErrorExpr())); }
+    {
+      $$ = context->finishStmt($1); // TODO
+    }
 ;
 
 type_alias_decl_stmt_start:
   TTYPE
     {
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
 | TCONFIG TTYPE
     {
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
 
 | TEXTERN TTYPE
     {
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
 ;
 
@@ -1755,22 +1774,22 @@ type_alias_decl_stmt_inner:
   ident_def opt_init_type
     {
       // set name to $1
-      $$ = makeErrorExpr();
+      $$ = TODOEXPR(@$);
     }
 | ident_def opt_init_type TCOMMA type_alias_decl_stmt_inner
     {
       // set name to $1
       // add new var to multivar
-      $$ = makeErrorExpr();
+      $$ = TODOEXPR(@$);
     }
 ;
 
 opt_init_type:
-    { $$ = NULL; }
+    { $$ = nullptr; }
 | TASSIGN type_level_expr
     { $$ = $2; }
 | TASSIGN array_type
-    { $$ = makeErrorExpr(); } // Cannot be a type_level_expr as expr inherits from type_level_expr.
+    { $$ = TODOEXPR(@$); } // Cannot be a type_level_expr as expr inherits from type_level_expr.
 ;
 
 var_decl_type:
@@ -1784,13 +1803,11 @@ var_decl_type:
 var_decl_stmt:
   TCONFIG var_decl_type var_decl_stmt_inner_ls TSEMI
     {
-      Expr* decl = makeErrorExpr();
-      $$ = exitStmt(enterStmt(@$, decl));
+      $$ = context->finishStmt(TODOSTMT(@$));
     }
 | var_decl_type var_decl_stmt_inner_ls TSEMI
     {
-      Expr* decl = makeErrorExpr();
-      $$ = exitStmt(enterStmt(@$, decl));
+      $$ = context->finishStmt(TODOSTMT(@$));
     }
 ;
 
@@ -1807,18 +1824,18 @@ var_decl_stmt_inner_ls:
 
 var_decl_stmt_inner:
   ident_def opt_type opt_init_expr
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 | TLP tuple_var_decl_stmt_inner_ls TRP opt_type opt_init_expr
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 ;
 
 tuple_var_decl_component:
   TUNDERSCORE
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 | ident_def
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 | TLP tuple_var_decl_stmt_inner_ls TRP
-    { $$ = $2; }
+    { $$ = TODOEXPR(@$); }
 ;
 
 tuple_var_decl_stmt_inner_ls:
@@ -1833,8 +1850,8 @@ tuple_var_decl_stmt_inner_ls:
 /** TYPES ********************************************************************/
 
 opt_init_expr:
-                        { $$ = NULL; }
-| TASSIGN TNOINIT       { $$ = makeErrorExpr(); }
+                        { $$ = nullptr; }
+| TASSIGN TNOINIT       { $$ = TODOEXPR(@$); }
 | TASSIGN opt_try_expr  { $$ = $2; }
 ;
 
@@ -1842,50 +1859,49 @@ opt_init_expr:
 ret_array_type:
   TLSBR TRSBR type_level_expr
     {
-      $$ = makeErrorExpr();
+      $$ = TODOEXPR(@$);
     }
 | TLSBR TRSBR
     {
-      $$ = makeErrorExpr();
+      $$ = TODOEXPR(@$);
     }
 | TLSBR expr_ls TRSBR type_level_expr
     {
-      $$ = makeErrorExpr();
+      $$ = TODOEXPR(@$);
     }
 | TLSBR expr_ls TRSBR
     {
-      $$ = makeErrorExpr();
+      $$ = TODOEXPR(@$);
     }
 | TLSBR TRSBR ret_array_type
     {
-      $$ = makeErrorExpr();
+      $$ = TODOEXPR(@$);
     }
 | TLSBR expr_ls TRSBR ret_array_type
     {
-      $$ = makeErrorExpr();
+      $$ = TODOEXPR(@$);
     }
 | TLSBR error TRSBR
     {
-      $$ = makeErrorExpr();
+      $$ = TODOEXPR(@$);
     }
-
 ;
 
 opt_ret_type:
-                                 { $$ = NULL; }
+                                 { $$ = nullptr; }
 | TCOLON type_level_expr         { $$ = $2; }
 | TCOLON ret_array_type          { $$ = $2; }
-| TCOLON reserved_type_ident_use { $$ = makeErrorExpr(); }
-| error                          { $$ = NULL; }
+| TCOLON reserved_type_ident_use { $$ = Identifier::build(BUILDER, $2); }
+| error                          { $$ = ErroneousExpr::build(BUILDER); }
 ;
 
 
 opt_type:
-                                 { $$ = NULL; }
+                                 { $$ = nullptr; }
 | TCOLON type_level_expr         { $$ = $2; }
 | TCOLON array_type              { $$ = $2; }
-| TCOLON reserved_type_ident_use { $$ = makeErrorExpr(); }
-| error                          { $$ = NULL; }
+| TCOLON reserved_type_ident_use { $$ = Identifier::build(BUILDER, $2); }
+| error                          { $$ = ErroneousExpr::build(BUILDER); }
 ;
 
 /* NOTE: Some things about the following rule concern me (blc), but I
@@ -1907,50 +1923,50 @@ opt_type:
 array_type:
   TLSBR expr_ls TRSBR type_level_expr
     {
-      $$ = makeErrorExpr();
+      $$ = TODOEXPR(@$);
     }
 | TLSBR expr_ls TRSBR array_type
     {
-      $$ = makeErrorExpr();
+      $$ = TODOEXPR(@$);
     }
 | TLSBR expr_ls TIN expr TRSBR type_level_expr
     {
-      $$ = makeErrorExpr();
+      $$ = TODOEXPR(@$);
     }
 | TLSBR error TRSBR
     {
-      $$ = makeErrorExpr();
+      $$ = ErroneousExpr::build(BUILDER);
     }
 ;
 
 opt_formal_array_elt_type:
-                        { $$ = NULL; }
+                        { $$ = nullptr; }
 | type_level_expr       { $$ = $1; }
 | query_expr            { $$ = $1; }
 ;
 
 formal_array_type:
   TLSBR TRSBR opt_formal_array_elt_type
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 | TLSBR expr_ls TRSBR opt_formal_array_elt_type
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 
 // Johnk: Unclear to me what the type should be when [<range>][] <type> is encountered.
 //        At present buildArrayRuntimeType is undefined when gNil is passed and
 //        the second argument is a formal_array_type.
 | TLSBR TRSBR formal_array_type
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 | TLSBR expr_ls TRSBR formal_array_type
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 | TLSBR expr_ls TIN expr TRSBR opt_formal_array_elt_type
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 ;
 
 opt_formal_type:
-                                 { $$ = NULL; }
+                                 { $$ = nullptr; }
 | TCOLON type_level_expr         { $$ = $2; }
 | TCOLON query_expr              { $$ = $2; }
-| TCOLON reserved_type_ident_use { $$ = makeErrorExpr(); }
+| TCOLON reserved_type_ident_use { $$ = Identifier::build(BUILDER, $2); }
 | TCOLON formal_array_type       { $$ = $2; }
 ;
 
@@ -1969,7 +1985,7 @@ simple_expr_ls:
 ;
 
 tuple_component:
-  TUNDERSCORE   { $$ = makeErrorExpr(); }
+  TUNDERSCORE   { $$ = Identifier::build(BUILDER, "_"); }
 | opt_try_expr  { $$ = $1; }
 | query_expr    { $$ = $1; }
 ;
@@ -1990,14 +2006,14 @@ actual_ls:
 ;
 
 actual_expr:
-  ident_use TASSIGN query_expr   { $$ = makeErrorExpr(); }
-| ident_use TASSIGN opt_try_expr { $$ = makeErrorExpr(); }
+  ident_use TASSIGN query_expr   { $$ = TODOEXPR(@$); }
+| ident_use TASSIGN opt_try_expr { $$ = TODOEXPR(@$); }
 | query_expr                     { $$ = $1; }
 | opt_try_expr                   { $$ = $1; }
 ;
 
 ident_expr:
-  ident_use      { $$ = makeErrorExpr(); }
+  ident_use      { $$ = TODOEXPR(@$); }
 | scalar_type    { $$ = $1; }
 ;
 
@@ -2012,9 +2028,9 @@ type_level_expr:
   sub_type_level_expr %prec TNOELSE
     { $$ = $1; }
 | sub_type_level_expr TQUESTION %prec TQUESTION
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 | TQUESTION
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 ;
 
 // TODO: It would be nice if '?' could be an `expr`, but then 'borrowed?' would not work.
@@ -2025,93 +2041,83 @@ sub_type_level_expr:
 | unary_op_expr             // We allow binary exprs as types...why not unary?
 | binary_op_expr            // tuples, expr dmapped expr, overloaded binary ops
 | TSINGLE expr
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 | TINDEX TLP opt_actual_ls TRP
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 | TDOMAIN TLP opt_actual_ls TRP
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 | TSUBDOMAIN TLP opt_actual_ls TRP
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 | TSPARSE TSUBDOMAIN TLP actual_expr TRP
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 | TATOMIC expr
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 | TSYNC expr
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 
 | TOWNED
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 | TOWNED expr
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 | TUNMANAGED
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 | TUNMANAGED expr
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 | TSHARED
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 | TSHARED expr
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 | TBORROWED
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 | TBORROWED expr
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 
 | TCLASS
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 | TRECORD
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 ;
 
 for_expr:
   TFOR expr TIN expr TDO expr %prec TFOR
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 | TFOR expr TIN zippered_iterator TDO expr %prec TFOR
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 | TFOR expr TDO expr %prec TFOR
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 | TFOR expr TIN expr TDO TIF expr TTHEN expr %prec TNOELSE
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 | TFOR expr TIN zippered_iterator TDO TIF expr TTHEN expr %prec TNOELSE
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 | TFOR expr TDO TIF expr TTHEN expr %prec TNOELSE
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 | TFORALL expr TIN expr TDO expr %prec TFOR
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 | TFORALL expr TIN zippered_iterator TDO expr %prec TFOR
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 | TFORALL expr TDO expr %prec TFOR
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 | TFORALL expr TIN expr TDO TIF expr TTHEN expr %prec TNOELSE
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 | TFORALL expr TIN zippered_iterator TDO TIF expr TTHEN expr %prec TNOELSE
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 | TFORALL expr TDO TIF expr TTHEN expr %prec TNOELSE
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 | TLSBR expr_ls TRSBR expr %prec TFOR
-    {
-      $$ = makeErrorExpr();
-    }
+    { $$ = TODOEXPR(@$); }
 | TLSBR expr_ls TIN expr TRSBR expr %prec TFOR
-    {
-      $$ = makeErrorExpr();
-    }
+    { $$ = TODOEXPR(@$); }
 | TLSBR expr_ls TIN zippered_iterator TRSBR expr %prec TFOR
-    {
-      $$ = makeErrorExpr();
-    }
+    { $$ = TODOEXPR(@$); }
 | TLSBR expr_ls TIN expr TRSBR TIF expr TTHEN expr %prec TNOELSE
-    {
-      $$ = makeErrorExpr();
-    }
+    { $$ = TODOEXPR(@$); }
 | TLSBR expr_ls TIN zippered_iterator TRSBR TIF expr TTHEN expr %prec TNOELSE
-    {
-      $$ = makeErrorExpr();
-    }
+    { $$ = TODOEXPR(@$); }
 ;
 
 cond_expr:
   TIF expr TTHEN expr TELSE expr
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 /* MPF: it would be nice to match TIF expr TTHEN expr but
    the attempt below leads to reduce-reduce conflicts:
       TIF expr TTHEN expr %prec TNOELSE
@@ -2120,7 +2126,7 @@ cond_expr:
 ;
 
 nil_expr:
-  TNIL      { $$ = makeErrorExpr(); }
+  TNIL      { $$ = Identifier::build(BUILDER, "nil"); }
 ;
 
 /* Expressions permitted at the statement level as <stmt_level_expr> TSEMI.
@@ -2136,11 +2142,11 @@ stmt_level_expr:
 | new_expr
 | let_expr
 | io_expr TIO expr
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 ;
 
 opt_task_intent_ls:
-                                { $$ = NULL; }
+                                { $$ = nullptr; }
 | task_intent_clause
 ;
 
@@ -2270,7 +2276,7 @@ expr:
 ;
 
 opt_expr:
-                  { $$ = NULL; }
+                  { $$ = nullptr; }
 | expr            { $$ = $1; }
 ;
 

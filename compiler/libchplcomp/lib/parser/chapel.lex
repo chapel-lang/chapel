@@ -52,17 +52,6 @@
 
 #include <cstdio>
 
-//
-// Make sure exit is undefined:
-//
-
-#ifdef exit
-#undef exit
-#endif
-
-// And redefine it to call our exit routine:
-#define exit(x) clean_exit(x)
-
 static int  processIdentifier(yyscan_t scanner, bool queried);
 static int  processToken(yyscan_t scanner, int t);
 static int  processStringLiteral(yyscan_t scanner, const char* q, int type);

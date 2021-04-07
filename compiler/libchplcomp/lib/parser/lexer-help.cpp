@@ -24,10 +24,6 @@
 *                                                                           *
 ************************************* | ************************************/
 
-#include "countTokens.h"
-#include "misc.h"
-#include "stringutil.h"
-
 #include <cstring>
 #include <cctype>
 #include <string>
@@ -46,15 +42,9 @@ static std::string stringBuffer;
 int processNewline(yyscan_t scanner) {
   YYLTYPE* yyLloc = yyget_lloc(scanner);
 
-  chplLineno++;
-
-  yyLloc->first_column = 0;
-  yyLloc->last_column  = 0;
-
-  yyLloc->first_line   = chplLineno;
-  yyLloc->last_line    = chplLineno;
-
-  countNewline();
+  // TODO: we had line counting here with global variables,
+  // probably because things like eatStringLiteral don't have
+  // flex updating the current location.
 
   return YYLEX_NEWLINE;
 }
@@ -72,8 +62,9 @@ void stringBufferInit() {
 static int  processIdentifier(yyscan_t scanner, bool queried) {
   YYSTYPE* yyLval = yyget_lval(scanner);
   int      retval = processToken(scanner, queried ? TQUERIEDIDENT : TIDENT);
+  ParserContext* context = yyget_extra(scanner);
 
-  yyLval->pch = astr(yyget_text(scanner));
+  yyLval->pch = context->astContext->uniqueCString(yyget_text(scanner));
 
   return retval;
 }
@@ -81,39 +72,7 @@ static int  processIdentifier(yyscan_t scanner, bool queried) {
 static int processToken(yyscan_t scanner, int t) {
   YYSTYPE* yyLval = yyget_lval(scanner);
 
-  countToken(yyget_text(scanner));
-
   yyLval->pch = yyget_text(scanner);
-
-  if (captureTokens) {
-    if (t == TASSIGN ||
-        t == TDOTDOTDOT) {
-      captureString.push_back(' ');
-    }
-
-    if (t != TLCBR) {
-      captureString.append(yyget_text(scanner));
-    }
-
-    if (t == TCOMMA  ||
-        t == TPARAM  ||
-        t == TZIP    ||
-        t == TTYPE   ||
-        t == TCONST  ||
-        t == TIN     ||
-        t == TINOUT  ||
-        t == TOUT    ||
-        t == TREF    ||
-        t == TCOLON  ||
-        t == TASSIGN ||
-        t == TRSBR ||
-        t == TBORROWED ||
-        t == TUNMANAGED ||
-        t == TOWNED ||
-        t == TSHARED) {
-      captureString.push_back(' ');
-    }
-  }
 
   // If the stack has a value then we must be in externmode.
   // Return to INITIAL
@@ -140,14 +99,6 @@ static int processStringLiteral(yyscan_t scanner, const char* q, int type) {
 
   yyLval->pch = eatStringLiteral(scanner, q);
 
-  countToken(q, yyLval->pch, q);
-
-  if (captureTokens) {
-    captureString.append(yyText);
-    captureString.append(yyLval->pch);
-    captureString.append(yyText);
-  }
-
   return type;
 }
 
@@ -157,13 +108,6 @@ static int processMultilineStringLiteral(yyscan_t scanner, const char* q,
   YYSTYPE* yyLval = yyget_lval(scanner);
   yyLval->pch = eatMultilineStringLiteral(scanner, q);
 
-  countToken(q, yyLval->pch, q);
-
-  if (captureTokens) {
-    captureString.append(yyText);
-    captureString.append(yyLval->pch);
-    captureString.append(yyText);
-  }
   return type;
 }
 
@@ -282,12 +226,6 @@ static int processExtern(yyscan_t scanner) {
 
   yyLval->pch = yyget_text(scanner);
 
-  countToken(yyText);
-
-  if (captureTokens) {
-    captureString.append(yyText);
-  }
-
   // Push a state to record that "extern" has been seen
   yy_push_state(externmode, scanner);
 
@@ -307,12 +245,6 @@ static int processExternCode(yyscan_t scanner) {
   YYSTYPE* yyLval = yyget_lval(scanner);
 
   yyLval->pch = eatExternCode(scanner);
-
-  countToken(astr(yyLval->pch));
-
-  if (captureTokens) {
-    captureString.append(yyLval->pch);
-  }
 
   return EXTERNCODE;
 }
