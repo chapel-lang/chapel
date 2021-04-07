@@ -547,15 +547,13 @@ const char* createDebuggerFile(const char* debugger, int argc, char* argv[]) {
   return dbgfilename;
 }
 
-std::string runPrintChplEnv(std::map<std::string, const char*> varMap) {
+std::string runPrintChplEnv(const std::map<std::string, const char*>& varMap) {
   // Run printchplenv script, passing currently known CHPL_vars as well
-  std::string command = "";
+  std::string command;
 
-  // Pass known variables in varMap into printchplenv by appending to command
-  for (std::map<std::string, const char*>::iterator ii=varMap.begin(); ii!=varMap.end(); ++ii)
-  {
-    command += ii->first + "=" + std::string(ii->second) + " ";
-  }
+  // Pass known variables in varMap into printchplenv by prepending to command
+  for (auto& ii : varMap)
+    command += ii.first + "=" + ii.second + " ";
 
   // Toss stderr away until printchplenv supports a '--suppresswarnings' flag
   command += std::string(CHPL_HOME) + "/util/printchplenv --all --internal --no-tidy --simple 2> /dev/null";
@@ -675,8 +673,7 @@ void genIncludeCommandLineHeaders(FILE* outfile) {
   }
 }
 
-std::string genMakefileEnvCache(void);
-std::string genMakefileEnvCache(void) {
+static std::string genMakefileEnvCache() {
   std::string result;
   std::map<std::string, const char*>::iterator env;
 
