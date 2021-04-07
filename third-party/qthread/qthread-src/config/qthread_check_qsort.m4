@@ -16,16 +16,36 @@ AC_CHECK_FUNCS([qsort_r],
                                       [AC_RUN_IFELSE([AC_LANG_SOURCE([[
 #include <stdlib.h>
 #include <assert.h>
+#include <signal.h>
+#include <string.h>
+
+struct sigaction sa;
 
 int cmp(void *a, const void *b, const void*c)
 {
-assert(a == NULL);
-return *(int*)b - *(int*)c;
+  assert(a == NULL);
+  return *(int*)b - *(int*)c;
 }
+
+void handler(int sig)
+{
+    exit(1);
+}
+
+void handle()
+{
+    memset (&sa, '\0', sizeof(sa));
+    sa.sa_sigaction = (void (*)(int, siginfo_t *, void *)) &handler;
+    sa.sa_flags = SA_SIGINFO;
+    // Register handler for SIGSEGV 
+    sigaction(SIGSEGV, &sa, NULL); 
+}
+
 int main()
 {
     int array[5] = {7,3,5,2,8};
     int i;
+    handle();
     qsort_r(array,5,sizeof(int),NULL,cmp);
     for (i=0;i<4;i++) {
         assert(array[i] < array[i+1]);
