@@ -18,12 +18,11 @@ class Builder;
 class Comment final : public Expr {
  friend class Builder;
 
- static Comment* build(Builder& builder, UniqueString comment);
-
  private:
   UniqueString comment_;
  public:
-  ~DocComment() override = default;
+  ~Comment() override = default;
+  static Comment* build(Builder* builder, UniqueString comment);
   UniqueString comment() const { return comment_; }
 };
 

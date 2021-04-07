@@ -27,6 +27,9 @@ class UniqueString final {
  friend class Context;
 
  private:
+  // We could consider applying a short-string optimization here
+  // if we thought it was valuable to have strings < 7 bytes be
+  // stored directly.
   const char* s;
 
   explicit UniqueString(const char* str) : s(str) { }

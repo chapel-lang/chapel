@@ -22,6 +22,7 @@ class Identifier final : public Expr {
  private:
   UniqueString name_;
  public:
+  static Identifier* build(Builder* builder, const char* name);
   UniqueString name() const { return name_; }
 };
 

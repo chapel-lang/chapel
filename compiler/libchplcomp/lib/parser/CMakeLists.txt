@@ -17,6 +17,7 @@ target_sources(libchplcomp
                flex-chapel.cpp
                parser.cpp
                parser.h
+
               )
 
 add_custom_target(parser

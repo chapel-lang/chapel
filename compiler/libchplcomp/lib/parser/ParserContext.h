@@ -1,4 +1,6 @@
 // This is included at the right time in the generated bison .h/.cpp
+// so that it can depend upon YYLTYPE.
+//
 // It is split out into this separate file for easier maintenance.
 
 // Headers that this depends upon should be defined in ParserDependencies.h
@@ -39,16 +41,34 @@ struct ParserContext {
   // when the decl_stmt starts. Then, after the decl_stmt is created, comments
   // accumulated here should be cleared (since they must have come from inside
   // the statement and should not apply later).
-  std::vector<ParserComment> comments;
+  std::vector<ParserComment>* comments;
 
-  ParserContext(Builder* astBuilder)
+  VisibilityTag visibility;
+
+  ParserContext(Builder* builder)
   {
-    scanner       = nullptr;
-    builder       = astBuilder;
-    astContext    = astBuilder->context();
+    this->scanner            = nullptr;
+    this->builder            = builder;
+    this->topLevelStatements = nullptr;
+    this->comments           = nullptr;
+    this->visibility         = VisibilityTag_DEFAULT;
   }
 
-  void raiseParseError(YYLTYPE location, const char* message);
+  std::vector<ParserComment>* gatherComments(YYLTYPE location);
+  void clearComments();
+  ExprList* makeList();
+  ExprList* makeList(ExprList* lst);
+  ExprList* makeList(Expr* e);
+  ExprList* makeList(CommentsAndStmt cs);
+  void appendList(ExprList* dst, ExprList* lst);
+  void appendList(ExprList* dst, Expr* e);
+  void appendList(ExprList* dst, CommentsAndStmt cs);
+ 
+  // clears the inner comments that should have already been captured
+  // to handle things like this
+  //     { /* doc comment } proc myproc()
+  CommentsAndStmt finishStmt(CommentsAndStmt cs);
+  CommentsAndStmt finishStmt(Expr* e);
 
   // TODO: move these to astContext
 

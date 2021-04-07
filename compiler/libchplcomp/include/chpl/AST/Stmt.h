@@ -9,7 +9,7 @@ namespace ast {
 /**
   This is an abstract base class for statements
  */
-class Stmt : Expr {
+class Stmt : public Expr {
  public:
   virtual ~Stmt() = 0; // this is an abstract base class
 };

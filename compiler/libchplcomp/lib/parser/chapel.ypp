@@ -166,10 +166,22 @@
   struct PotentialRename {
     enum {SINGLE, DOUBLE} tag;
 
-    union {
-      Expr*  elem;
-      std::pair<Expr*, Expr*>* renamed;
-    };
+    Expr* elem;
+    std::pair<Expr*, Expr*> renamed;
+
+    PotentialRename(Expr* elem)
+    {
+      this->tag = SINGLE;
+      this->elem = elem;
+      this->renamed = std::make_pair((Expr*)nullptr, (Expr*)nullptr);
+    }
+    PotentialRename(Expr* from, Expr* to)
+    {
+      this->tag = DOUBLE;
+      this->elem = NULL;
+      this->renamed = std::make_pair(from, to);
+    }
+
   };
 
   typedef std::vector<PotentialRename> RenameList;
@@ -187,11 +199,11 @@
   }
 
   struct CommentsAndStmt {
-    ExprList* comments;
+    std::vector<ParserComment>* comments;
     Expr* stmt;
   };
   static inline
-  CommentsAndStmt makeCommentsAndStmt(ExprList* comments, Expr* stmt) {
+  CommentsAndStmt makeCommentsAndStmt(std::vector<ParserComment>* comments, Expr* stmt) {
     CommentsAndStmt ret;
     ret.comments = comments;
     ret.stmt = stmt;
@@ -249,9 +261,6 @@
     //std::set<Flag>*           pflagset;
   };
 
-  // these helpers can be used in the semantic actions
-  #define ctxBuilder context->astBuilder
-  #define STMT(LOC,AST) makeCommentsAndStmt(context->enterStmt(LOC), AST)
   #endif
 }
 
@@ -286,11 +295,19 @@
   // headers.
   #include "ParserContext.h"
 
-  void yyerror(YYLTYPE*       loc,
-               ParserContext* context,
-               const char*    errorMessage) {
-    context->errors.push_back(ParserError(*loc, errorMessage));
-  }
+  // include the definition of methods for ParserContext
+  #include "ParserContext.cpp"
+  // include other helper functions for the parser
+  #include "parser-help.cpp"
+
+  // these helpers can be used in the semantic actions
+  #define BUILDER (context->builder)
+  #define STMT(LOC,AST) makeCommentsAndStmt(context->gatherComments(LOC), AST)
+  #define ENDSTMT() context->clearComments();
+  #define ERROR(LOC,MSG) raiseError(LOC, context, MSG)
+  #define TODOEXPR(LOC) raiseError(LOC, context, "not implemented yet")
+  #define TODOSTMT(LOC) makeCommentsAndStmt(context->gatherComments(LOC), raiseError(LOC, context, "not implemented yet"))
+  #define TODOLIST(LOC) context->makeList(raiseError(LOC, context, "not implemented yet"))
 }
 
 %require "2.5"
@@ -319,15 +336,15 @@
 //
 // identifiers and literals
 //
-%token <str> TIDENT
-%token <str> TQUERIEDIDENT
-%token <str> INTLITERAL
-%token <str> REALLITERAL
-%token <str> IMAGLITERAL
-%token <str> STRINGLITERAL
-%token <str> BYTESLITERAL
-%token <str> CSTRINGLITERAL
-%token <str> EXTERNCODE
+%token <pch> TIDENT
+%token <pch> TQUERIEDIDENT
+%token <pch> INTLITERAL
+%token <pch> REALLITERAL
+%token <pch> IMAGLITERAL
+%token <pch> STRINGLITERAL
+%token <pch> BYTESLITERAL
+%token <pch> CSTRINGLITERAL
+%token <pch> EXTERNCODE
 
 //
 // keywords (alphabetical)
@@ -419,7 +436,7 @@
 
 %type <throwsTag> opt_throws_error
 %type <prototypeTag> opt_prototype
-%type <visibilityTag> access_control use_access_control
+%type <visibilityTag> access_control
 %type <intentTag> required_intent_tag opt_intent_tag opt_this_intent_tag
 
 %type <returnTag>  opt_ret_tag
@@ -472,9 +489,9 @@
 %type <commentsAndStmt> defer_stmt
 %type <commentsAndStmt> try_stmt
 %type <commentsAndStmt> throw_stmt
-%type <exprList> catch_stmt_ls
-%type <expr> catch_stmt
+%type <exprList> catch_expr_ls
 %type <expr> catch_expr
+%type <expr> catch_expr_inner
 
 %type <variableTag> var_decl_type
 
@@ -537,24 +554,24 @@
 %%
 
 program:
-  toplevel_stmt_ls                    { context->takeTopLevelStmts($1); }
+  toplevel_stmt_ls                    { context->topLevelStatements = $1; }
 ;
 
 // 'toplevel_stmt_ls' is 'stmt_ls' plus resetTempID()
 toplevel_stmt_ls:
-                                      { $$ = new ExprList(); }
-| toplevel_stmt_ls toplevel_stmt      { appendList($1, $2); }
+                                      { $$ = context->makeList(); }
+| toplevel_stmt_ls toplevel_stmt      { context->appendList($1, $2); }
 ;
 
 // Switch between plain statements and those preceded by pragmas
 toplevel_stmt:
    stmt
-|  pragma_ls stmt                     { $$ = makeErrorExprList(); }
+|  pragma_ls stmt                     { $$ = TODOSTMT(@$); }
 ;
 
 // Sequence of pragmas
 pragma_ls:
-  TPRAGMA STRINGLITERAL                { $$ = new StrList; $$->push_back($2); }
+  TPRAGMA STRINGLITERAL                { $$ = new StrList(); $$->push_back($2); }
 | pragma_ls TPRAGMA STRINGLITERAL      { $1->push_back($3); }
 ;
 
@@ -578,43 +595,49 @@ stmt:
 | throw_stmt                { $$ = context->finishStmt($1); }
 | return_stmt               { $$ = context->finishStmt($1); }
 | stmt_level_expr TSEMI     { $$ = context->finishStmt($1); }
-| TATOMIC stmt              { $$ = context->finishStmt(makeErrorExpr()); }
-| TBEGIN opt_task_intent_ls stmt         { $$ = context->finishStmt(makeErrorExpr()); }
-| TBREAK opt_label_ident TSEMI           { $$ = context->finishStmt(makeErrorExpr()); }
-| TCOBEGIN opt_task_intent_ls block_stmt { $$ = context->finishStmt(makeErrorExpr()); }
-| TCONTINUE opt_label_ident TSEMI        { $$ = context->finishStmt(makeErrorExpr()); }
-| TDELETE simple_expr_ls TSEMI           { $$ = context->finishStmt(makeErrorExpr()); }
-| TLABEL ident_def stmt     { $$ = context->finishStmt(makeErrorExpr()); }
-| TLOCAL expr do_stmt       { $$ = context->finishStmt(makeErrorExpr()); }
-| TLOCAL do_stmt            { $$ = context->finishStmt(makeErrorExpr()); }
-| TON expr do_stmt          { $$ = context->finishStmt(makeErrorExpr()); }
-| TSERIAL expr do_stmt      { $$ = context->finishStmt(makeErrorExpr()); }
-| TSERIAL do_stmt           { $$ = context->finishStmt(makeErrorExpr()); }
-| TSYNC stmt                { $$ = context->finishStmt(makeErrorExpr()); }
-| TYIELD expr TSEMI         { $$ = context->finishStmt(makeErrorExpr()); }
-| error TSEMI               { $$ = context->finishStmt(makeErrorExpr()); }
+| TATOMIC stmt              { $$ = TODOSTMT(@$); }
+| TBEGIN opt_task_intent_ls stmt         { $$ = context->finishStmt(TODOSTMT(@$)); }
+| TBREAK opt_label_ident TSEMI           { $$ = context->finishStmt(TODOSTMT(@$)); }
+| TCOBEGIN opt_task_intent_ls block_stmt { $$ = context->finishStmt(TODOSTMT(@$)); }
+| TCONTINUE opt_label_ident TSEMI        { $$ = context->finishStmt(TODOSTMT(@$)); }
+| TDELETE simple_expr_ls TSEMI           { $$ = context->finishStmt(TODOSTMT(@$)); }
+| TLABEL ident_def stmt     { $$ = context->finishStmt(TODOSTMT(@$)); }
+| TLOCAL expr do_stmt       { $$ = context->finishStmt(TODOSTMT(@$)); }
+| TLOCAL do_stmt            { $$ = context->finishStmt(TODOSTMT(@$)); }
+| TON expr do_stmt          { $$ = context->finishStmt(TODOSTMT(@$)); }
+| TSERIAL expr do_stmt      { $$ = context->finishStmt(TODOSTMT(@$)); }
+| TSERIAL do_stmt           { $$ = context->finishStmt(TODOSTMT(@$)); }
+| TSYNC stmt                { $$ = context->finishStmt(TODOSTMT(@$)); }
+| TYIELD expr TSEMI         { $$ = context->finishStmt(TODOSTMT(@$)); }
+| error TSEMI
+  {
+    $$ = STMT(@$, ErroneousExpr::build(BUILDER));
+  }
 ;
 
 module_decl_start:
   access_control opt_prototype TMODULE ident_def
     {
-      $$ = STMT(@$, makeErrorExpr()); //context->enterModule($4);
+      $$ = TODOSTMT(@$);
     }
 ;
 
 module_decl_stmt:
    module_decl_start TLCBR TRCBR
-    { $$ = context->exitDecl($1.stmt, NULL); }
+    { $$ = TODOSTMT(@$); }
 | module_decl_start TLCBR stmt_ls TRCBR
-    { $$ = context->exitDecl($1.stmt, $3); }
+    { $$ = TODOSTMT(@$); }
 | module_decl_start TLCBR error TRCBR
-    { $$ = context->exitModule($1.stmt, makeErrorExprList()); }
+    {
+      ExprList* errList = context->makeList(ErroneousExpr::build(BUILDER));
+      $$ = TODOSTMT(@$); // should be a module containing errList
+    }
 ;
 
 access_control:
-           { $$ = VisibilityTag_DEFAULT; }
-| TPUBLIC  { $$ = VisibilityTag_PUBLIC; }
-| TPRIVATE { $$ = VisibilityTag_PRIVATE; }
+           { $$ = VisibilityTag_DEFAULT; context->visibility = $$; }
+| TPUBLIC  { $$ = VisibilityTag_PUBLIC;  context->visibility = $$; }
+| TPRIVATE { $$ = VisibilityTag_PRIVATE; context->visibility = $$; }
 ;
 
 opt_prototype:
@@ -623,20 +646,9 @@ opt_prototype:
 ;
 
 include_module_stmt:
- TINCLUDE
-  {
-    @1.comment = context->latestComment;
-    context->latestComment = NULL;
-  }
- access_control opt_prototype TMODULE ident_def TSEMI
+ TINCLUDE access_control opt_prototype TMODULE ident_def TSEMI
  {
-   // TODO: replace makeErrorExpr with a decl for the module
-   ExprList* declList = context->startStmt(makeErrorExpr());
-   $$ = context->enterModule($4);
-   // TODO: parse module
-   $$ = context->exitModule($$,  
-   exitModule
-   $$ = buildIncludeModule($6, $3, $4, @1.comment);
+   $$ = TODOSTMT(@$);
  }
 ;
 
@@ -652,188 +664,194 @@ include_module_stmt:
 block_stmt:
   TLCBR         TRCBR
   {
-    $$ = STMT(@$, makeErrorExpr()); // TODO
+    $$ = TODOSTMT(@$);
   }
 | TLCBR stmt_ls TRCBR
   {
-    $$ = STMT(@$, makeErrorExpr()); // TODO
+    $$ = TODOSTMT(@$);
   }
 | TLCBR error   TRCBR
   {
-    $$ = STMT(@$, makeErrorExpr()); // TODO
+    ExprList* errList = context->makeList(ErroneousExpr::build(BUILDER));
+    $$ = TODOSTMT(@$); // should be a block containing errList
   }
 ;
 
 // Sequence of toplevel_stmts
 stmt_ls:
-  toplevel_stmt                        { $$ = makeList($1); }
-| stmt_ls toplevel_stmt                { appendList($1, $2); }
+  toplevel_stmt                        { $$ = context->makeList($1); }
+| stmt_ls toplevel_stmt                { context->appendList($1, $2); }
 ;
 
-
 renames_ls:
-  expr                                 { $$ = new RenameList();
-                                         PotentialRename* cur = new PotentialRename();
-                                         cur->tag = PotentialRename::SINGLE;
-                                         cur->elem = $1;
-                                         $$->push_back(cur); }
-| expr TAS expr                        { $$ = new RenameList();
-                                         PotentialRename* cur = new PotentialRename();
-                                         cur->tag = PotentialRename::DOUBLE;
-                                         cur->renamed = new std::pair<Expr*, Expr*>($1, $3);
-                                         $$->push_back(cur); }
-| renames_ls TCOMMA expr                  { PotentialRename* cur = new PotentialRename();
-                                         cur->tag = PotentialRename::SINGLE;
-                                         cur->elem = $3;
-                                         $1->push_back(cur); }
-| renames_ls TCOMMA expr TAS expr         { PotentialRename* cur = new PotentialRename();
-                                         cur->tag = PotentialRename::DOUBLE;
-                                         cur->renamed = new std::pair<Expr*, Expr*>($3, $5);
-                                         $1->push_back(cur); }
+  expr
+    {
+      $$ = new RenameList();
+      PotentialRename cur($1);;
+      $$->push_back(cur);
+    }
+| expr TAS expr
+    {
+      $$ = new RenameList();
+      PotentialRename cur($1, $3);
+      $$->push_back(cur);
+    }
+| renames_ls TCOMMA expr
+    {
+      PotentialRename cur($3);
+      $1->push_back(cur);
+    }
+| renames_ls TCOMMA expr TAS expr
+    {
+      PotentialRename cur($3, $5);
+      $1->push_back(cur);
+    }
 ;
 
 /* Separated so that use statements can rename their module to "_", but nothing
    else can */
 use_renames_ls:
-  expr                                 { $$ = new RenameList();
-                                         PotentialRename* cur = new PotentialRename();
-                                         cur->tag = PotentialRename::SINGLE;
-                                         cur->elem = $1;
-                                         $$->push_back(cur); }
-| expr TAS expr                        { $$ = new RenameList();
-                                         PotentialRename* cur = new PotentialRename();
-                                         cur->tag = PotentialRename::DOUBLE;
-                                         cur->renamed = new std::pair<Expr*, Expr*>($1, $3);
-                                         $$->push_back(cur); }
-| expr TAS TUNDERSCORE                 { $$ = new RenameList();
-                                         PotentialRename* cur = new PotentialRename();
-                                         cur->tag = PotentialRename::DOUBLE;
-                                         cur->renamed = new std::pair<Expr*, Expr*>($1, new UnresolvedSymExpr("_"));
-                                         $$->push_back(cur); }
-| use_renames_ls TCOMMA expr           { PotentialRename* cur = new PotentialRename();
-                                         cur->tag = PotentialRename::SINGLE;
-                                         cur->elem = $3;
-                                         $1->push_back(cur); }
-| use_renames_ls TCOMMA expr TAS expr  { PotentialRename* cur = new PotentialRename();
-                                         cur->tag = PotentialRename::DOUBLE;
-                                         cur->renamed = new std::pair<Expr*, Expr*>($3, $5);
-                                         $1->push_back(cur); }
-| use_renames_ls TCOMMA expr TAS TUNDERSCORE { PotentialRename* cur = new PotentialRename();
-                                         cur->tag = PotentialRename::DOUBLE;
-                                         cur->renamed = new std::pair<Expr*, Expr*>($3, new UnresolvedSymExpr("_"));
-                                         $1->push_back(cur); }
+  expr
+    {
+      $$ = new RenameList();
+      PotentialRename cur($1);
+      $$->push_back(cur);
+    }
+| expr TAS expr
+    {
+      $$ = new RenameList();
+      PotentialRename cur($1, $3);
+      $$->push_back(cur);
+    }
+| expr TAS TUNDERSCORE
+    {
+      $$ = new RenameList();
+      PotentialRename cur($1, Identifier::build(BUILDER, "_"));
+      $$->push_back(cur);
+    }
+| use_renames_ls TCOMMA expr
+    {
+      PotentialRename cur($3);
+      $1->push_back(cur);
+     }
+| use_renames_ls TCOMMA expr TAS expr
+     {
+       PotentialRename cur($3, $5);
+       $1->push_back(cur);
+     }
+| use_renames_ls TCOMMA expr TAS TUNDERSCORE
+     {
+       PotentialRename cur($3, Identifier::build(BUILDER, "_"));
+       $1->push_back(cur);
+     }
 ;
 
 
 opt_only_ls:
-  /* nothing */                        { $$ = new RenameList();
-                                         PotentialRename* cur = new PotentialRename();
-                                         cur->tag = PotentialRename::SINGLE;
-                                         cur->elem = new UnresolvedSymExpr("");
-                                         $$->push_back(cur); }
+  /* nothing */
+    {
+      $$ = new RenameList();
+      PotentialRename cur(Identifier::build(BUILDER, ""));
+      $$->push_back(cur);
+    }
 | renames_ls
 ;
 
 except_ls:
-  TSTAR                                { $$ = new RenameList();
-                                         PotentialRename* cur = new PotentialRename();
-                                         cur->tag = PotentialRename::SINGLE;
-                                         cur->elem = new UnresolvedSymExpr("");
-                                         $$->push_back(cur); }
+  TSTAR
+    {
+      $$ = new RenameList();
+      PotentialRename cur(Identifier::build(BUILDER, ""));
+      $$->push_back(cur);
+     }
 | renames_ls
 ;
 
-use_access_control:
-           { $$ = VisibilityTag_DEFAULT; }
-| TPUBLIC  { $$ = VisibilityTag_PUBLIC; }
-| TPRIVATE { $$ = VisibilityTag_PRIVATE; }
-;
-
 use_stmt:
-  use_access_control TUSE use_renames_ls TSEMI
+  access_control TUSE use_renames_ls TSEMI
     {
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
-| use_access_control TUSE expr TEXCEPT except_ls TSEMI
+| access_control TUSE expr TEXCEPT except_ls TSEMI
     {
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
-| use_access_control TUSE expr TAS expr TEXCEPT except_ls TSEMI
+| access_control TUSE expr TAS expr TEXCEPT except_ls TSEMI
     {
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
-| use_access_control TUSE expr TAS TUNDERSCORE TEXCEPT except_ls TSEMI
+| access_control TUSE expr TAS TUNDERSCORE TEXCEPT except_ls TSEMI
     {
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
-| use_access_control TUSE expr TONLY opt_only_ls TSEMI
+| access_control TUSE expr TONLY opt_only_ls TSEMI
     {
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
-| use_access_control TUSE expr TAS expr TONLY opt_only_ls TSEMI
+| access_control TUSE expr TAS expr TONLY opt_only_ls TSEMI
     {
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
-| use_access_control TUSE expr TAS TUNDERSCORE TONLY opt_only_ls TSEMI
+| access_control TUSE expr TAS TUNDERSCORE TONLY opt_only_ls TSEMI
     {
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
 ;
 
 import_stmt:
-  use_access_control TIMPORT import_ls TSEMI
+  access_control TIMPORT import_ls TSEMI
     {
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
 ;
 
 import_expr:
   expr
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 | expr TAS ident_use
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 | expr TDOT TLCBR renames_ls TRCBR
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 ;
 
 import_ls:
   import_expr
-    { $$ = makeList($1); }
+    { $$ = context->makeList($1); }
 | import_ls TCOMMA import_expr
-    { appendList($1, $3); }
+    { context->appendList($1, $3); }
 ;
 
 require_stmt:
   TREQUIRE expr_ls TSEMI
     {
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
 ;
 
 assignment_stmt:
   lhs_expr assignop_ident opt_try_expr TSEMI
     {
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
 | lhs_expr TSWAP           opt_try_expr TSEMI
     {
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
 | lhs_expr TASSIGNREDUCE   opt_try_expr TSEMI
     {
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
 | lhs_expr TASSIGNLAND     opt_try_expr TSEMI
     {
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
 | lhs_expr TASSIGNLOR      opt_try_expr TSEMI
     {
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
 | lhs_expr TASSIGN         TNOINIT TSEMI
     {
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
 ;
 
@@ -846,19 +864,19 @@ opt_label_ident:
 
 ident_fn_def:
   TIDENT                   { $$ = $1; }
-| TNONE                    { $$ = "none"; redefiningReservedWordError($$); }
+| TNONE                    { $$ = "none"; ERROR(@$, "redefining reserved word 'none'"); }
 | TTHIS                    { $$ = "this"; }
-| TFALSE                   { $$ = "false"; redefiningReservedWordError($$); }
-| TTRUE                    { $$ = "true"; redefiningReservedWordError($$); }
-| internal_type_ident_def  { $$ = $1; redefiningReservedTypeError($1); }
+| TFALSE                   { $$ = "false"; ERROR(@$, "redefining reserved word 'false'"); }
+| TTRUE                    { $$ = "true"; ERROR(@$, "redefining reserved word 'true'"); }
+| internal_type_ident_def  { $$ = $1; ERROR(@$, "redefining reserved word"); }
 
 ident_def:
   TIDENT                   { $$ = $1; }
-| TNONE                    { $$ = "none"; redefiningReservedWordError($$); }
-| TTHIS                    { $$ = "this"; redefiningReservedWordError($$); }
-| TFALSE                   { $$ = "false"; redefiningReservedWordError($$); }
-| TTRUE                    { $$ = "true"; redefiningReservedWordError($$); }
-| internal_type_ident_def  { $$ = $1; redefiningReservedTypeError($1); }
+| TNONE                    { $$ = "none"; ERROR(@$, "redefining reserved word 'none'"); }
+| TTHIS                    { $$ = "this"; ERROR(@$, "redefining reserved word 'this'"); }
+| TFALSE                   { $$ = "false"; ERROR(@$, "redefining reserved word 'false'"); }
+| TTRUE                    { $$ = "true"; ERROR(@$, "redefining reserved word 'true'"); }
+| internal_type_ident_def  { $$ = $1; ERROR(@$, "redefining reserved word"); }
 ;
 
 /* Represents a use of an identifier. This is not used as often as you
@@ -904,18 +922,18 @@ internal_type_ident_def:
 ;
 
 scalar_type:
-  TBOOL    { $$ = makeErrorExpr(); }
-| TENUM    { $$ = makeErrorExpr(); }
-| TINT     { $$ = makeErrorExpr(); }
-| TUINT    { $$ = makeErrorExpr(); }
-| TREAL    { $$ = makeErrorExpr(); }
-| TIMAG    { $$ = makeErrorExpr(); }
-| TCOMPLEX { $$ = makeErrorExpr(); }
-| TBYTES   { $$ = makeErrorExpr(); }
-| TSTRING  { $$ = makeErrorExpr(); }
-| TLOCALE  { $$ = makeErrorExpr(); }
-| TNOTHING { $$ = makeErrorExpr(); }
-| TVOID    { $$ = makeErrorExpr(); }
+  TBOOL    { $$ = TODOEXPR(@$); }
+| TENUM    { $$ = TODOEXPR(@$); }
+| TINT     { $$ = TODOEXPR(@$); }
+| TUINT    { $$ = TODOEXPR(@$); }
+| TREAL    { $$ = TODOEXPR(@$); }
+| TIMAG    { $$ = TODOEXPR(@$); }
+| TCOMPLEX { $$ = TODOEXPR(@$); }
+| TBYTES   { $$ = TODOEXPR(@$); }
+| TSTRING  { $$ = TODOEXPR(@$); }
+| TLOCALE  { $$ = TODOEXPR(@$); }
+| TNOTHING { $$ = TODOEXPR(@$); }
+| TVOID    { $$ = TODOEXPR(@$); }
 ;
 
 reserved_type_ident_use:
@@ -929,18 +947,18 @@ reserved_type_ident_use:
 ;
 
 do_stmt:
-  TDO stmt    { $$ = $2; }
-| block_stmt  { $$ = $1.stmt; }
+  TDO stmt    { $$ = $2.stmt; delete $2.comments; }
+| block_stmt  { $$ = $1.stmt; delete $1.comments; }
 ;
 
 return_stmt:
   TRETURN TSEMI
     {
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
 | TRETURN opt_try_expr TSEMI
     {
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
 ;
 
@@ -951,9 +969,7 @@ class_level_stmt:
     }
 | inner_class_level_stmt
     {
-      CommentsAndStmt cs = $1;
-      context->astBuilder->exitDecl(cs.stmt);
-      $$ = cs;
+      $$ = context->finishStmt($1);
     }
 | TPUBLIC inner_class_level_stmt
     {
@@ -1015,7 +1031,7 @@ forwarding_decl_stmt:
 forwarding_decl_start:
   TFORWARDING
     {
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
 ;
 
@@ -1027,7 +1043,7 @@ extern_or_export:
 extern_export_decl_stmt_start:
   extern_or_export
     {
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
 ;
 
@@ -1035,25 +1051,25 @@ extern_export_decl_stmt:
   extern_export_decl_stmt_start TRECORD ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
     {
       CommentsAndStmt cs = $1;
-      cs.stmt = makeErrorExpr(); // TODO
+      cs.stmt = TODOEXPR(@$); // TODO
       $$ = cs;
     }
 | extern_export_decl_stmt_start STRINGLITERAL TRECORD ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
     {
       CommentsAndStmt cs = $1;
-      cs.stmt = makeErrorExpr(); // TODO
+      cs.stmt = TODOEXPR(@$); // TODO
       $$ = cs;
     }
 | extern_export_decl_stmt_start opt_expr fn_decl_stmt
     {
       CommentsAndStmt cs = $1;
-      cs.stmt = makeErrorExpr(); // TODO
+      cs.stmt = TODOEXPR(@$); // TODO
       $$ = cs;
     }
 | extern_export_decl_stmt_start opt_expr var_decl_type var_decl_stmt_inner_ls TSEMI
     {
       CommentsAndStmt cs = $1;
-      cs.stmt = makeErrorExpr(); // TODO
+      cs.stmt = TODOEXPR(@$); // TODO
       $$ = cs;
     }
 ;
@@ -1061,213 +1077,205 @@ extern_export_decl_stmt:
 extern_block_stmt:
   TEXTERN EXTERNCODE
     {
-      $$ = buildExternBlockStmt(astr($2));
+      $$ = TODOSTMT(@$);
     }
 ;
 
 loop_stmt:
   TDO stmt TWHILE expr TSEMI
     {
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
 | TWHILE expr do_stmt
     {
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
 | TWHILE ifvar do_stmt
     {
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
 | TCOFORALL expr TIN expr opt_task_intent_ls do_stmt
     {
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
 | TCOFORALL expr TIN zippered_iterator opt_task_intent_ls do_stmt
     {
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
 | TCOFORALL expr opt_task_intent_ls do_stmt
     {
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
 | TFOR expr TIN expr do_stmt
     {
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
 | TFOR expr TIN zippered_iterator do_stmt
     {
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
 | TFOR expr do_stmt
     {
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
 | TFOR zippered_iterator do_stmt
     {
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
 | TFOR TPARAM ident_def TIN expr do_stmt
     {
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
 | TFORALL expr TIN expr                                   do_stmt
     {
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
 | TFORALL expr TIN expr              forall_intent_clause do_stmt
     {
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
 | TFORALL expr TIN zippered_iterator                      do_stmt
     {
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
 | TFORALL expr TIN zippered_iterator forall_intent_clause do_stmt
     {
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
 | TFORALL          expr                                   do_stmt
     {
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
 | TFORALL          expr              forall_intent_clause do_stmt
     {
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
 | TFORALL          zippered_iterator                      do_stmt
     {
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
 | TFORALL          zippered_iterator forall_intent_clause do_stmt
     {
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
 | TFOREACH expr TIN expr                                   do_stmt
     {
-      foreachNotImplementedError();
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
 | TFOREACH expr TIN expr              forall_intent_clause do_stmt
     {
-      foreachNotImplementedError();
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
 | TFOREACH expr TIN zippered_iterator                      do_stmt
     {
-      foreachNotImplementedError();
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
 | TFOREACH expr TIN zippered_iterator forall_intent_clause do_stmt
     {
-      foreachNotImplementedError();
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
 | TFOREACH          expr                                   do_stmt
     {
-      foreachNotImplementedError();
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
 | TFOREACH          expr              forall_intent_clause do_stmt
     {
-      foreachNotImplementedError();
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
 | TFOREACH          zippered_iterator                      do_stmt
     {
-      foreachNotImplementedError();
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
 | TFOREACH          zippered_iterator forall_intent_clause do_stmt
     {
-      foreachNotImplementedError();
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
 | TLSBR expr_ls TIN expr TRSBR stmt
     {
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
 | TLSBR expr_ls TIN expr forall_intent_clause TRSBR stmt
     {
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
 | TLSBR expr_ls TIN zippered_iterator TRSBR stmt
     {
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
 | TLSBR expr_ls TIN zippered_iterator forall_intent_clause TRSBR stmt
     {
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
 | TLSBR expr_ls TRSBR stmt
     {
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
 | TLSBR expr_ls forall_intent_clause TRSBR stmt
     {
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
 | TLSBR zippered_iterator TRSBR stmt
     {
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
 | TLSBR zippered_iterator forall_intent_clause TRSBR stmt
     {
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
 ;
 
 zippered_iterator:
-    TZIP TLP expr_ls TRP    { $$ = makeErrorExpr(); }
+    TZIP TLP expr_ls TRP    { $$ = TODOEXPR(@$); }
 ;
 
 if_stmt:
   TIF expr TTHEN stmt %prec TNOELSE
-    { $$ = STMT(@$, makeErrorExpr()); }
+    { $$ = TODOSTMT(@$); }
 | TIF expr block_stmt %prec TNOELSE
-    { $$ = STMT(@$, makeErrorExpr()); }
+    { $$ = TODOSTMT(@$); }
 | TIF expr TTHEN stmt TELSE stmt
-    { $$ = STMT(@$, makeErrorExpr()); }
+    { $$ = TODOSTMT(@$); }
 | TIF expr block_stmt TELSE stmt
-    { $$ = STMT(@$, makeErrorExpr()); }
+    { $$ = TODOSTMT(@$); }
 | TIF ifvar TTHEN stmt %prec TNOELSE
-    { $$ = STMT(@$, makeErrorExpr()); }
+    { $$ = TODOSTMT(@$); }
 | TIF ifvar block_stmt %prec TNOELSE
-    { $$ = STMT(@$, makeErrorExpr()); }
+    { $$ = TODOSTMT(@$); }
 | TIF ifvar TTHEN stmt TELSE stmt
-    { $$ = STMT(@$, makeErrorExpr()); }
+    { $$ = TODOSTMT(@$); }
 | TIF ifvar block_stmt TELSE stmt
-    { $$ = STMT(@$, makeErrorExpr()); }
+    { $$ = TODOSTMT(@$); }
 
 | TIF expr assignop_ident expr TTHEN stmt %prec TNOELSE
-    { $$ = STMT(@$, makeErrorExpr()); }
+    { $$ = TODOSTMT(@$); }
 | TIF expr assignop_ident expr block_stmt %prec TNOELSE 
-    { $$ = STMT(@$, makeErrorExpr()); }
+    { $$ = TODOSTMT(@$); }
 | TIF expr assignop_ident expr TTHEN stmt TELSE stmt
-    { $$ = STMT(@$, makeErrorExpr()); }
+    { $$ = TODOSTMT(@$); }
 | TIF expr assignop_ident expr block_stmt TELSE stmt
-    { $$ = STMT(@$, makeErrorExpr()); }
+    { $$ = TODOSTMT(@$); }
 ;
 
 ifvar:
-  TVAR   ident_def TASSIGN expr { $$ = makeErrorExpr(); }
-| TCONST ident_def TASSIGN expr { $$ = makeErrorExpr(); }
+  TVAR   ident_def TASSIGN expr { $$ = TODOEXPR(@$); }
+| TCONST ident_def TASSIGN expr { $$ = TODOEXPR(@$); }
 ;
 
 interface_stmt:
   TINTERFACE ident_def TLP ifc_formal_ls TRP block_stmt
-    { $$ = STMT(@$, makeErrorExpr()); }
+    { $$ = TODOSTMT(@$); }
 | TINTERFACE ident_def                       block_stmt
-    { $$ = STMT(@$, makeErrorExpr()); }
+    { $$ = TODOSTMT(@$); }
 ;
 
 ifc_formal_ls:
-  ifc_formal                      { $$ = makeList($1); }
-| ifc_formal_ls TCOMMA ifc_formal { appendList($1, $3); }
+  ifc_formal                      { $$ = context->makeList($1); }
+| ifc_formal_ls TCOMMA ifc_formal { context->appendList($1, $3); }
 ;
 
 ifc_formal:
   // implicitly 'type' intent, could specify explicitly - see #16966
-  ident_def  { $$ = makeErrorExpr(); }
+  ident_def  { $$ = TODOEXPR(@$); }
 ;
 
 // which types are allowed in 'T implements IFC'
@@ -1285,8 +1293,9 @@ implements_type_ident:
 | TNOTHING   { $$ = "nothing"; }
 | TVOID      { $$ = "void"; }
 | implements_type_error_ident
-  { $$ = $1;
-    error("'%s' is not allowed to \"implement\" an interface", $1); }
+  {
+    $$ = ERROR(@$, "type not allowed to implement an interface");
+  }
 ;
 
 // these are not allowed as types in 'T implements IFC'
@@ -1309,80 +1318,80 @@ implements_type_error_ident:
 
 implements_stmt:
   TIMPLEMENTS ident_def TLP actual_ls TRP TSEMI
-    { $$ = STMT(@$, makeErrorExpr()); }
+    { $$ = TODOSTMT(@$); }
 | implements_type_ident TIMPLEMENTS ident_def TSEMI
-    { $$ = STMT(@$, makeErrorExpr()); }
+    { $$ = TODOSTMT(@$); }
 | implements_type_ident TIMPLEMENTS ident_def TLP actual_ls TRP TSEMI
-    { $$ = STMT(@$, makeErrorExpr()); }
+    { $$ = TODOSTMT(@$); }
 ;
 
 ifc_constraint:
   TIMPLEMENTS ident_def TLP actual_ls TRP
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 | implements_type_ident TIMPLEMENTS ident_def
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 | implements_type_ident TIMPLEMENTS ident_def TLP actual_ls TRP
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 ;
 
 defer_stmt:
   TDEFER stmt
-    { $$ = STMT(@$, makeErrorExpr()); }
+    { $$ = TODOSTMT(@$); }
 
 try_stmt:
   TTRY     expr            TSEMI
-    { $$ = STMT(@$, makeErrorExpr()); }
+    { $$ = TODOSTMT(@$); }
 | TTRYBANG expr            TSEMI
-    { $$ = STMT(@$, makeErrorExpr()); }
+    { $$ = TODOSTMT(@$); }
 | TTRY     assignment_stmt
-    { $$ = STMT(@$, makeErrorExpr()); }
+    { $$ = TODOSTMT(@$); }
 | TTRYBANG assignment_stmt
-    { $$ = STMT(@$, makeErrorExpr()); }
-| TTRY     block_stmt      catch_stmt_ls
-    { $$ = STMT(@$, makeErrorExpr()); }
-| TTRYBANG block_stmt      catch_stmt_ls
-    { $$ = STMT(@$, makeErrorExpr()); }
+    { $$ = TODOSTMT(@$); }
+| TTRY     block_stmt      catch_expr_ls
+    { $$ = TODOSTMT(@$); }
+| TTRYBANG block_stmt      catch_expr_ls
+    { $$ = TODOSTMT(@$); }
 ;
 
-catch_stmt_ls:
-                           { $$ = makeList(); }
-| catch_stmt_ls catch_stmt { appendList($1, $2); }
-;
-
-catch_stmt:
-  TCATCH                    block_stmt { $$ = makeErrorExpr(); }
-| TCATCH     catch_expr     block_stmt { $$ = makeErrorExpr(); }
-| TCATCH TLP catch_expr TRP block_stmt { $$ = makeErrorExpr(); }
+catch_expr_ls:
+                           { $$ = context->makeList(); }
+| catch_expr_ls catch_expr { context->appendList($1, $2); }
 ;
 
 catch_expr:
-  ident_def             { $$ = makeErrorExpr(); }
-| ident_def TCOLON expr { $$ = makeErrorExpr(); }
+  TCATCH                          block_stmt { $$ = TODOEXPR(@$); }
+| TCATCH     catch_expr_inner     block_stmt { $$ = TODOEXPR(@$); }
+| TCATCH TLP catch_expr_inner TRP block_stmt { $$ = TODOEXPR(@$); }
+;
+
+catch_expr_inner:
+  ident_def             { $$ = TODOEXPR(@$); }
+| ident_def TCOLON expr { $$ = TODOEXPR(@$); }
 ;
 
 throw_stmt:
   TTHROW expr TSEMI
-    { $$ = STMT(@$, makeErrorExpr()); }
+    { $$ = TODOSTMT(@$); }
 
 select_stmt:
   TSELECT expr TLCBR when_stmt_ls TRCBR
-    { $$ = STMT(@$, makeErrorExpr()); }
+    { $$ = TODOSTMT(@$); }
 | TSELECT expr TLCBR error TRCBR
-    { $$ = STMT(@$, makeErrorExpr()); }
+    { $$ = TODOSTMT(@$); }
 ;
 
 when_stmt_ls:
-                          { $$ = makeList(); }
-| when_stmt_ls when_stmt  { appendList($1, $2); }
+                          { $$ = context->makeList(); }
+| when_stmt_ls when_stmt  { context->appendList($1, $2); }
 ;
 
 when_stmt:
   TWHEN expr_ls do_stmt
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 | TOTHERWISE stmt
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 | TOTHERWISE TDO stmt
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 ;
 
 /** DECLARATION STATEMENTS ***************************************************/
@@ -1391,13 +1400,13 @@ class_decl_stmt:
   class_start opt_inherit TLCBR class_level_stmt_ls TRCBR
     {
       CommentsAndStmt cs = $1;
-      cs.stmt = makeErrorExpr();
+      cs.stmt = TODOEXPR(@$);
       $$ = cs;
     }
 | class_start opt_inherit TLCBR error TRCBR
     {
       CommentsAndStmt cs = $1;
-      cs.stmt = makeErrorExpr();
+      cs.stmt = TODOEXPR(@$);
       $$ = cs;
     }
   /* see also extern_export_decl_stmt */
@@ -1406,7 +1415,7 @@ class_decl_stmt:
 class_start:
   class_tag ident_def
     {
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
 ;
 
@@ -1423,11 +1432,11 @@ opt_inherit:
 
 class_level_stmt_ls:
   /* nothing */
-    { $$ = makeList(); }
+    { $$ = context->makeList(); }
 | class_level_stmt_ls class_level_stmt
-    { appendList($1, $2); }
+    { context->appendList($1, $2); }
 | class_level_stmt_ls pragma_ls class_level_stmt
-    { appendList($1, makeErrorExpr()); }
+    { context->appendList($1, TODOEXPR(@$)); }
 ;
 
 enum_decl_stmt:
@@ -1440,8 +1449,8 @@ enum_decl_stmt:
 | enum_header TLCBR error TRCBR
     {
       CommentsAndStmt cs = $1;
-      delete cs.stmt;
-      cs.stmt = makeErrorExpr();
+      if (cs.stmt) delete cs.stmt;
+      cs.stmt = ErroneousExpr::build(BUILDER);
       $$ = cs;
     }
 ;
@@ -1449,14 +1458,14 @@ enum_decl_stmt:
 enum_header:
   TENUM ident_def 
     {
-      $$ = STMT(@$, makeErrorExpr()); // TODO
+      $$ = TODOSTMT(@$);
     }
 ;
 
 enum_ls:
   enum_item
     {
-      $$ = makeList($1);
+      $$ = context->makeList($1);
     }
 | enum_ls TCOMMA
     {
@@ -1464,21 +1473,21 @@ enum_ls:
     }
 | enum_ls TCOMMA enum_item
     {
-      appendList($1, $3);
+      context->appendList($1, $3);
     }
 ;
 
 enum_item:
   ident_def
-    { $$ = STMT(@$, makeErrorExpr()); }
+    { $$ = TODOSTMT(@$); }
 | ident_def TASSIGN expr
-    { $$ = STMT(@$, makeErrorExpr()); }
+    { $$ = TODOSTMT(@$); }
 ;
 
 lambda_decl_expr:
   TLAMBDA req_formal_ls opt_ret_tag opt_type opt_lifetime_where function_body_stmt
     {
-      $$ = makeErrorExpr();
+      $$ = TODOEXPR(@$);
     }
 ;
 
@@ -1495,7 +1504,7 @@ fn_decl_stmt:
     {
       CommentsAndStmt cs = $1;
       FnDecl* decl = toFnDecl(cs.stmt);
-      ExprList* body = makeErrorExprList();
+      ExprList* body = TODOLIST(@$);
       decl->setBody(body);
       $$ = cs;
     }
@@ -1504,9 +1513,7 @@ fn_decl_stmt:
 fn_decl_stmt_start:
   linkage_spec proc_iter_or_op
     {
-      ExprList* comments = context->enterStmt(@$);
-      Expr* stmt = context->astBuilder->enterFunctionDecl($1, $2);
-      $$ = makeCommentsAndStmt(comments, stmt);
+      $$ = STMT(@$, makeErrorExpr()); // TODO
     }
 ;
 
@@ -1598,9 +1605,9 @@ req_formal_ls:
 ;
 
 formal_ls:
-                           { $$ = makeErrorExprList(); }
-| formal                   { $$ = makeErrorExprList(); }
-| formal_ls TCOMMA formal  { $$ = makeErrorExprList(); }
+                           { $$ = TODOLIST(@$); }
+| formal                   { $$ = TODOLIST(@$); }
+| formal_ls TCOMMA formal  { $$ = TODOLIST(@$); }
 ;
 
 formal:
@@ -1616,7 +1623,7 @@ formal:
     { $$ = makeErrorExpr(); }
 | opt_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP opt_formal_type var_arg_expr
     {
-      context->raiseParseError(@$, "variable-length argument may not be grouped in a tuple");
+      yyerror(*@$, context, "variable-length argument may not be grouped in a tuple");
       $$ = makeErrorExpr();
     }
 ;
@@ -1672,8 +1679,8 @@ opt_function_body_stmt:
 ;
 
 function_body_stmt:
-  block_stmt   { $$ = makeErrorExprList(); }
-| return_stmt  { $$ = makeErrorExprList(); }
+  block_stmt   { $$ = TODOLIST(@$); }
+| return_stmt  { $$ = TODOLIST(@$); }
 ;
 
 query_expr:
@@ -1700,9 +1707,9 @@ opt_lifetime_where:
 
 lifetime_components_expr:
   lifetime_expr
-  { $$ = makeErrorExprList(); }
+  { $$ = TODOLIST(@$); }
 | lifetime_components_expr TCOMMA lifetime_expr
-  { $$ = makeErrorExprList(); }
+  { $$ = TODOLIST(@$); }
 ;
 
 lifetime_expr:
@@ -1730,22 +1737,16 @@ type_alias_decl_stmt:
 type_alias_decl_stmt_start:
   TTYPE
     {
-      ExprList* comments = enterStmt(@$);
-      Expr* stmt = makeErrorExpr(); //context->astBuilder->enterTypeAliasDecl();
-      $$ = makeCommentsAndStmt(comments, stmt);
+      $$ = STMT(@$, makeErrorExpr()); // TODO
     }
 | TCONFIG TTYPE
     {
-      ExprList* comments = enterStmt(@$);
-      Expr* stmt = makeErrorExpr(); //context->astBuilder->enterTypeAliasDecl(config);
-      $$ = makeCommentsAndStmt(comments, stmt);
+      $$ = STMT(@$, makeErrorExpr()); // TODO
     }
 
 | TEXTERN TTYPE
     {
-      ExprList* comments = enterStmt(@$);
-      Expr* stmt = makeErrorExpr(); //context->astBuilder->enterTypeAliasDecl(extern);
-      $$ = makeCommentsAndStmt(comments, stmt);
+      $$ = STMT(@$, makeErrorExpr()); // TODO
     }
 ;
 
@@ -1796,11 +1797,11 @@ var_decl_stmt:
 var_decl_stmt_inner_ls:
   var_decl_stmt_inner
     {
-      $$ = makeErrorExprList();
+      $$ = TODOLIST(@$);
     }
 | var_decl_stmt_inner_ls TCOMMA var_decl_stmt_inner
     {
-      $$ = makeErrorExprList();
+      $$ = TODOLIST(@$);
     }
 ;
 
@@ -1822,11 +1823,11 @@ tuple_var_decl_component:
 
 tuple_var_decl_stmt_inner_ls:
   tuple_var_decl_component
-    { $$ = makeErrorExprList(); }
+    { $$ = TODOLIST(@$); }
 | tuple_var_decl_component TCOMMA
-    { $$ = makeErrorExprList(); }
+    { $$ = TODOLIST(@$); }
 | tuple_var_decl_component TCOMMA tuple_var_decl_stmt_inner_ls
-    { $$ = makeErrorExprList(); }
+    { $$ = TODOLIST(@$); }
 ;
 
 /** TYPES ********************************************************************/
@@ -1956,14 +1957,14 @@ opt_formal_type:
 /** EXPRESSIONS **************************************************************/
 
 expr_ls:
-  expr                       { $$ = makeErrorExprList(); }
-| query_expr                 { $$ = makeErrorExprList(); }
+  expr                       { $$ = TODOLIST(@$); }
+| query_expr                 { $$ = TODOLIST(@$); }
 | expr_ls TCOMMA expr        { $1->push_back($3); }
 | expr_ls TCOMMA query_expr  { $1->push_back($3); }
 ;
 
 simple_expr_ls:
-  expr                             { $$ = makeErrorExprList(); }
+  expr                             { $$ = TODOLIST(@$); }
 | simple_expr_ls TCOMMA expr       { $1->push_back($3); }
 ;
 
@@ -1974,18 +1975,18 @@ tuple_component:
 ;
 
 tuple_expr_ls:
-  tuple_component TCOMMA tuple_component { $$ = makeErrorExprList(); }
-| tuple_expr_ls TCOMMA tuple_component   { $$ = makeErrorExprList(); }
+  tuple_component TCOMMA tuple_component { $$ = TODOLIST(@$); }
+| tuple_expr_ls TCOMMA tuple_component   { $$ = TODOLIST(@$); }
 ;
 
 opt_actual_ls:
-             { $$ = makeErrorExprList(); }
+             { $$ = TODOLIST(@$); }
 | actual_ls  { $$ = $1; }
 ;
 
 actual_ls:
-  actual_expr                   { $$ = makeErrorExprList(); }
-| actual_ls TCOMMA actual_expr  { $$ = makeErrorExprList(); }
+  actual_expr                   { $$ = TODOLIST(@$); }
+| actual_ls TCOMMA actual_expr  { $$ = TODOLIST(@$); }
 ;
 
 actual_expr:
@@ -2148,8 +2149,8 @@ task_intent_clause:
 ;
 
 task_intent_ls:
-  intent_expr                                       { $$ = makeErrorExprList(); }
-| task_intent_ls TCOMMA intent_expr                 { $$ = makeErrorExprList(); }
+  intent_expr                                       { $$ = TODOLIST(@$); }
+| task_intent_ls TCOMMA intent_expr                 { $$ = TODOLIST(@$); }
 ;
 
 forall_intent_clause:
@@ -2157,22 +2158,22 @@ forall_intent_clause:
 ;
 
 forall_intent_ls:
-  intent_expr                          { $$ = makeErrorExprList(); }
-| forall_intent_ls TCOMMA intent_expr  { $$ = makeErrorExprList(); }
+  intent_expr                          { $$ = TODOLIST(@$); }
+| forall_intent_ls TCOMMA intent_expr  { $$ = TODOLIST(@$); }
 ;
 
 intent_expr:
   shadow_var_prefix ident_expr opt_type opt_init_expr
     {
-      $$ = makeErrorExpr();
+      $$ = TODOEXPR(@$);
     }
 | reduce_scan_op_expr TREDUCE ident_expr
     {
-      $$ = makeErrorExpr();
+      $$ = TODOEXPR(@$);
     }
 | expr                TREDUCE ident_expr
     {
-      $$ = makeErrorExpr();
+      $$ = TODOEXPR(@$);
     }
 ;
 
@@ -2188,7 +2189,7 @@ shadow_var_prefix:
 io_expr:
   lhs_expr
 | io_expr TIO expr
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 ;
 
 new_maybe_decorated:
@@ -2207,21 +2208,21 @@ new_maybe_decorated:
 new_expr:
   /* handles the typical new cases, e.g. new C(); new owned C() */
   new_maybe_decorated expr %prec TNEW
-    { makeErrorExpr(); }
+    { TODOEXPR(@$); }
   /* handles e.g. new (typefn())(initargs) */
 | TNEW TOWNED TLP expr TRP TLP opt_actual_ls TRP %prec TNOELSE
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 | TNEW TSHARED TLP expr TRP TLP opt_actual_ls TRP %prec TNOELSE
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 | TNEW TOWNED TLP expr TRP TLP opt_actual_ls TRP TQUESTION
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 | TNEW TSHARED TLP expr TRP TLP opt_actual_ls TRP TQUESTION
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 ;
 
 let_expr:
   TLET var_decl_stmt_inner_ls TIN expr
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 ;
 
 /* exprs represent valid values and types. Any expression with a valid
@@ -2238,13 +2239,13 @@ expr:
 | let_expr
 | ifc_constraint
 | TLP TDOTDOTDOT expr TRP
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 | expr TCOLON expr
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 | expr TDOTDOT expr
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 | expr TDOTDOTOPENHIGH expr
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 
 /* The following cases would extend the current '..<' open range
    interval constructor to also support '<..' and '<..<'.  This
@@ -2252,20 +2253,20 @@ expr:
    in case we change our minds in a future release.
 
 | expr TDOTDOTOPENLOW expr
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 | expr TDOTDOTOPENBOTH expr
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 | expr TDOTDOTOPENLOW
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 */
 | expr TDOTDOT
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 | TDOTDOT expr
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 | TDOTDOTOPENHIGH expr
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 | TDOTDOT
-    { $$ = makeErrorExpr(); }
+    { $$ = TODOEXPR(@$); }
 ;
 
 opt_expr:
@@ -2274,8 +2275,8 @@ opt_expr:
 ;
 
 opt_try_expr:
-  TTRY expr       { $$ = makeErrorExpr(); }
-| TTRYBANG expr   { $$ = makeErrorExpr(); }
+  TTRY expr       { $$ = TODOEXPR(@$); }
+| TTRYBANG expr   { $$ = TODOEXPR(@$); }
 | expr
 ;
 
@@ -2293,24 +2294,24 @@ lhs_expr:
  *        reworked to not permit the empty production. */
 call_base_expr:
   lhs_expr
-| expr TBANG                    { $$ = makeErrorExpr(); }
-| sub_type_level_expr TQUESTION { $$ = makeErrorExpr(); }
+| expr TBANG                    { $$ = TODOEXPR(@$); }
+| sub_type_level_expr TQUESTION { $$ = TODOEXPR(@$); }
 | lambda_decl_expr
 | str_bytes_literal
 ;
 
 call_expr:
-  call_base_expr TLP opt_actual_ls TRP        { $$ = makeErrorExpr(); }
-| call_base_expr TLSBR opt_actual_ls TRSBR    { $$ = makeErrorExpr(); }
-| TPRIMITIVE TLP opt_actual_ls TRP            { $$ = makeErrorExpr(); }
+  call_base_expr TLP opt_actual_ls TRP        { $$ = TODOEXPR(@$); }
+| call_base_expr TLSBR opt_actual_ls TRSBR    { $$ = TODOEXPR(@$); }
+| TPRIMITIVE TLP opt_actual_ls TRP            { $$ = TODOEXPR(@$); }
 ;
 
 dot_expr:
-  expr TDOT ident_use          { $$ = makeErrorExpr(); }
-| expr TDOT TTYPE              { $$ = makeErrorExpr(); }
-| expr TDOT TDOMAIN            { $$ = makeErrorExpr(); }
-| expr TDOT TLOCALE            { $$ = makeErrorExpr(); }
-| expr TDOT TBYTES TLP TRP     { $$ = makeErrorExpr(); }
+  expr TDOT ident_use          { $$ = TODOEXPR(@$); }
+| expr TDOT TTYPE              { $$ = TODOEXPR(@$); }
+| expr TDOT TDOMAIN            { $$ = TODOEXPR(@$); }
+| expr TDOT TLOCALE            { $$ = TODOEXPR(@$); }
+| expr TDOT TBYTES TLP TRP     { $$ = TODOEXPR(@$); }
 ;
 
 /* ( <expr> ) -- A parenthesized expression.  The parens are stripped.
@@ -2318,107 +2319,107 @@ dot_expr:
  * ( <tuple_expr_ls> ) -- Two-tuples and up.  A tuple_expr_ls contains at least 2 elements.
  */
 parenthesized_expr:
-  TLP tuple_component TRP           { $$ = makeErrorExpr(); }
-| TLP tuple_component TCOMMA TRP    { $$ = makeErrorExpr(); }
-| TLP tuple_expr_ls TRP             { $$ = makeErrorExpr(); }
-| TLP tuple_expr_ls TCOMMA TRP      { $$ = makeErrorExpr(); }
+  TLP tuple_component TRP           { $$ = TODOEXPR(@$); }
+| TLP tuple_component TCOMMA TRP    { $$ = TODOEXPR(@$); }
+| TLP tuple_expr_ls TRP             { $$ = TODOEXPR(@$); }
+| TLP tuple_expr_ls TCOMMA TRP      { $$ = TODOEXPR(@$); }
 ;
 
 bool_literal:
-  TFALSE { $$ = makeErrorExpr(); }
-| TTRUE  { $$ = makeErrorExpr(); }
+  TFALSE { $$ = TODOEXPR(@$); }
+| TTRUE  { $$ = TODOEXPR(@$); }
 ;
 
 str_bytes_literal:
-  STRINGLITERAL   { $$ = makeErrorExpr(); }
-| BYTESLITERAL    { $$ = makeErrorExpr(); }
+  STRINGLITERAL   { $$ = TODOEXPR(@$); }
+| BYTESLITERAL    { $$ = TODOEXPR(@$); }
 ;
 
 literal_expr:
   bool_literal
 | str_bytes_literal
-| INTLITERAL            { $$ = makeErrorExpr(); }
-| REALLITERAL           { $$ = makeErrorExpr(); }
-| IMAGLITERAL           { $$ = makeErrorExpr(); }
-| CSTRINGLITERAL        { $$ = makeErrorExpr(); }
-| TNONE                 { $$ = makeErrorExpr(); }
-| TLCBR expr_ls TRCBR          { $$ = makeErrorExpr(); }
-| TLCBR expr_ls TCOMMA TRCBR   { $$ = makeErrorExpr(); }
-| TLSBR expr_ls TRSBR          { $$ = makeErrorExpr(); }
-| TLSBR expr_ls TCOMMA TRSBR   { $$ = makeErrorExpr(); }
+| INTLITERAL            { $$ = TODOEXPR(@$); }
+| REALLITERAL           { $$ = TODOEXPR(@$); }
+| IMAGLITERAL           { $$ = TODOEXPR(@$); }
+| CSTRINGLITERAL        { $$ = TODOEXPR(@$); }
+| TNONE                 { $$ = TODOEXPR(@$); }
+| TLCBR expr_ls TRCBR          { $$ = TODOEXPR(@$); }
+| TLCBR expr_ls TCOMMA TRCBR   { $$ = TODOEXPR(@$); }
+| TLSBR expr_ls TRSBR          { $$ = TODOEXPR(@$); }
+| TLSBR expr_ls TCOMMA TRSBR   { $$ = TODOEXPR(@$); }
 | TLSBR assoc_expr_ls TRSBR
     {
-      $$ = makeErrorExpr();
+      $$ = TODOEXPR(@$);
     }
 | TLSBR assoc_expr_ls TCOMMA TRSBR
     {
-      $$ = makeErrorExpr();
+      $$ = TODOEXPR(@$);
     }
 
 ;
 
 assoc_expr_ls:
-  expr TALIAS expr                      { $$ = makeErrorExprList(); }
-| assoc_expr_ls TCOMMA expr TALIAS expr { $1->push_back(makeErrorExpr()); }
+  expr TALIAS expr                      { $$ = TODOLIST(@$); }
+| assoc_expr_ls TCOMMA expr TALIAS expr { $1->push_back(TODOEXPR(@$)); }
 ;
 
 binary_op_expr:
-  expr TPLUS expr          { $$ = makeErrorExpr(); }
-| expr TMINUS expr         { $$ = makeErrorExpr(); }
-| expr TSTAR expr          { $$ = makeErrorExpr(); }
-| expr TDIVIDE expr        { $$ = makeErrorExpr(); }
-| expr TSHIFTLEFT expr     { $$ = makeErrorExpr(); }
-| expr TSHIFTRIGHT expr    { $$ = makeErrorExpr(); }
-| expr TMOD expr           { $$ = makeErrorExpr(); }
-| expr TEQUAL expr         { $$ = makeErrorExpr(); }
-| expr TNOTEQUAL expr      { $$ = makeErrorExpr(); }
-| expr TLESSEQUAL expr     { $$ = makeErrorExpr(); }
-| expr TGREATEREQUAL expr  { $$ = makeErrorExpr(); }
-| expr TLESS expr          { $$ = makeErrorExpr(); }
-| expr TGREATER expr       { $$ = makeErrorExpr(); }
-| expr TBAND expr          { $$ = makeErrorExpr(); }
-| expr TBOR expr           { $$ = makeErrorExpr(); }
-| expr TBXOR expr          { $$ = makeErrorExpr(); }
-| expr TAND expr           { $$ = makeErrorExpr(); }
-| expr TOR  expr           { $$ = makeErrorExpr(); }
-| expr TEXP expr           { $$ = makeErrorExpr(); }
-| expr TBY expr            { $$ = makeErrorExpr(); }
-| expr TALIGN expr         { $$ = makeErrorExpr(); }
-| expr THASH expr          { $$ = makeErrorExpr(); }
-| expr TDMAPPED expr       { $$ = makeErrorExpr(); }
+  expr TPLUS expr          { $$ = TODOEXPR(@$); }
+| expr TMINUS expr         { $$ = TODOEXPR(@$); }
+| expr TSTAR expr          { $$ = TODOEXPR(@$); }
+| expr TDIVIDE expr        { $$ = TODOEXPR(@$); }
+| expr TSHIFTLEFT expr     { $$ = TODOEXPR(@$); }
+| expr TSHIFTRIGHT expr    { $$ = TODOEXPR(@$); }
+| expr TMOD expr           { $$ = TODOEXPR(@$); }
+| expr TEQUAL expr         { $$ = TODOEXPR(@$); }
+| expr TNOTEQUAL expr      { $$ = TODOEXPR(@$); }
+| expr TLESSEQUAL expr     { $$ = TODOEXPR(@$); }
+| expr TGREATEREQUAL expr  { $$ = TODOEXPR(@$); }
+| expr TLESS expr          { $$ = TODOEXPR(@$); }
+| expr TGREATER expr       { $$ = TODOEXPR(@$); }
+| expr TBAND expr          { $$ = TODOEXPR(@$); }
+| expr TBOR expr           { $$ = TODOEXPR(@$); }
+| expr TBXOR expr          { $$ = TODOEXPR(@$); }
+| expr TAND expr           { $$ = TODOEXPR(@$); }
+| expr TOR  expr           { $$ = TODOEXPR(@$); }
+| expr TEXP expr           { $$ = TODOEXPR(@$); }
+| expr TBY expr            { $$ = TODOEXPR(@$); }
+| expr TALIGN expr         { $$ = TODOEXPR(@$); }
+| expr THASH expr          { $$ = TODOEXPR(@$); }
+| expr TDMAPPED expr       { $$ = TODOEXPR(@$); }
 ;
 
 unary_op_expr:
-  TPLUS expr %prec TUPLUS         { $$ = makeErrorExpr(); }
-| TMINUS expr %prec TUMINUS       { $$ = makeErrorExpr(); }
-| TMINUSMINUS expr %prec TUMINUS  { $$ = makeErrorExpr(); /* warn */ }
-| TPLUSPLUS expr %prec TUPLUS     { $$ = makeErrorExpr(); /* warn */ }
-| TBANG expr %prec TLNOT          { $$ = makeErrorExpr(); }
-| expr TBANG                      { $$ = makeErrorExpr(); }
-| TBNOT expr                      { $$ = makeErrorExpr(); }
+  TPLUS expr %prec TUPLUS         { $$ = TODOEXPR(@$); }
+| TMINUS expr %prec TUMINUS       { $$ = TODOEXPR(@$); }
+| TMINUSMINUS expr %prec TUMINUS  { $$ = TODOEXPR(@$); /* warn */ }
+| TPLUSPLUS expr %prec TUPLUS     { $$ = TODOEXPR(@$); /* warn */ }
+| TBANG expr %prec TLNOT          { $$ = TODOEXPR(@$); }
+| expr TBANG                      { $$ = TODOEXPR(@$); }
+| TBNOT expr                      { $$ = TODOEXPR(@$); }
 ;
 
 reduce_expr:
-  expr TREDUCE expr                              { $$ = makeErrorExpr(); }
-| expr TREDUCE zippered_iterator                 { $$ = makeErrorExpr(); }
-| reduce_scan_op_expr TREDUCE expr               { $$ = makeErrorExpr(); }
-| reduce_scan_op_expr TREDUCE zippered_iterator  { $$ = makeErrorExpr(); }
+  expr TREDUCE expr                              { $$ = TODOEXPR(@$); }
+| expr TREDUCE zippered_iterator                 { $$ = TODOEXPR(@$); }
+| reduce_scan_op_expr TREDUCE expr               { $$ = TODOEXPR(@$); }
+| reduce_scan_op_expr TREDUCE zippered_iterator  { $$ = TODOEXPR(@$); }
 ;
 
 scan_expr:
-  expr TSCAN expr                              { $$ = makeErrorExpr(); }
-| expr TSCAN zippered_iterator                 { $$ = makeErrorExpr(); }
-| reduce_scan_op_expr TSCAN expr               { $$ = makeErrorExpr(); }
-| reduce_scan_op_expr TSCAN zippered_iterator  { $$ = makeErrorExpr(); }
+  expr TSCAN expr                              { $$ = TODOEXPR(@$); }
+| expr TSCAN zippered_iterator                 { $$ = TODOEXPR(@$); }
+| reduce_scan_op_expr TSCAN expr               { $$ = TODOEXPR(@$); }
+| reduce_scan_op_expr TSCAN zippered_iterator  { $$ = TODOEXPR(@$); }
 ;
 
 
 reduce_scan_op_expr:
-  TPLUS  { $$ = makeErrorExpr(); }
-| TSTAR  { $$ = makeErrorExpr(); }
-| TAND   { $$ = makeErrorExpr(); }
-| TOR    { $$ = makeErrorExpr(); }
-| TBAND  { $$ = makeErrorExpr(); }
-| TBOR   { $$ = makeErrorExpr(); }
-| TBXOR  { $$ = makeErrorExpr(); }
+  TPLUS  { $$ = TODOEXPR(@$); }
+| TSTAR  { $$ = TODOEXPR(@$); }
+| TAND   { $$ = TODOEXPR(@$); }
+| TOR    { $$ = TODOEXPR(@$); }
+| TBAND  { $$ = TODOEXPR(@$); }
+| TBOR   { $$ = TODOEXPR(@$); }
+| TBXOR  { $$ = TODOEXPR(@$); }
 ;

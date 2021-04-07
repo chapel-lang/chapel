@@ -10,6 +10,8 @@ namespace ast {
   This class represents some missing AST due to an error.
  */
 class ErroneousExpr final : public Expr {
+ public:
+  static ErroneousExpr* build(Builder* builder);
 };
 
 } // end namespace ast

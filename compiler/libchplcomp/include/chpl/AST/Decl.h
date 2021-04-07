@@ -9,7 +9,7 @@ namespace ast {
 /**
   This is an abstract base class for declarations
  */
-class Decl : BaseAST {
+class Decl : public BaseAST {
  public:
   virtual ~Decl() = 0; // this is an abstract base class
 

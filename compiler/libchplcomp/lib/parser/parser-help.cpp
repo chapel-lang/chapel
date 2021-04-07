@@ -18,28 +18,21 @@
  * limitations under the License.
  */
 
-#ifndef _PARSER_H_
-#define _PARSER_H_
+void yyerror(YYLTYPE*       loc,
+             ParserContext* context,
+             const char*    errorMessage) {
+  context->errors.push_back(ParserError(*loc, errorMessage));
+}
 
-/*
-void addInternalModulePath(const ArgumentDescription* desc,
-                           const char* newpath);
-void addStandardModulePath(const ArgumentDescription* desc,
-                           const char* newpath);
+static ErroneousExpr* raiseError(YYLTYPE location,
+                                 ParserContext* context,
+                                 const char* errorMessage) {
+  // note the error for printing
+  yyerror(&location, context, errorMessage);
+  // return an error sentinel
+  return ErroneousExpr::build(context->builder);
+}
 
-void               setupModulePaths();
+static void redefiningReservedWordError(YYLTYPE location, const char* word) {
 
-void               addFlagModulePath(const char* newpath);
-
-void               addModuleToParseList(const char* name,
-                                        VisibilityStmt* newUse);
-
-BlockStmt*         parseString(const char* string,
-                               const char* filename,
-                               const char* msg);
-
-ModuleSymbol*      parseIncludedSubmodule(const char* name);
-*/
-
-
-#endif
+}
