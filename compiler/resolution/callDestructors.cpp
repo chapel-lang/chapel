@@ -1812,14 +1812,19 @@ static void checkForErroneousInitCopies() {
 
     forv_Vec(CallExpr, call, *fn->calledBy) {
       if (SymExpr* actual = getActualBeforeCopyInit(call, formal)) {
+        SymExpr* nextUse = nullptr;
 
-        // TODO: Tweak output if it prints something like 'with <temp>'.
-        // Not sure if that can ever happen, thanks to copy elision, but
-        // leave this comment just in case.
-        USR_FATAL_CONT(call, "calling '%s' with actual '%s' would result "
-                             "in a copy",
-                             fn->name,
-                             toString(actual->symbol(), false));
+        if (nextUse) {
+          USR_FATAL_CONT(call, "cannot call '%s' because this is not the "
+                               "last use of '%s'",
+                               fn->name,
+                               toString(actual->symbol(), false));
+        } else {
+          USR_FATAL_CONT(call, "cannot call '%s' because '%s' might be "
+                               "used elsewhere",
+                               fn->name,
+                               toString(actual->symbol(), false));
+        }
       }
     }
   }
