@@ -9,9 +9,9 @@ namespace chpl {
 namespace ast {
 
 /**
-  This abstract class represents something call-like
+  This class represents a primitive call
  */
-class PrimCallExpr : public CallExpr {
+class PrimCallExpr final : public CallExpr {
  private:
    std::vector<Expr*> actuals;
  public:

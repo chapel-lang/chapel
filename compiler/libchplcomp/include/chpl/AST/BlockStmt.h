@@ -11,7 +11,7 @@ namespace ast {
 /**
   This class represents a { } block.
  */
-class BlockStmt : public Expr {
+class BlockStmt final : public Expr {
  private:
   std::vector<Expr*> body;
 

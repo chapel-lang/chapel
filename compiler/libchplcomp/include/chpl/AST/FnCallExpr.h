@@ -12,7 +12,7 @@ namespace ast {
   This class represents a function call or method call, including virtual and
   non-virtual calls (since the difference is not known before resolution).
  */
-class FnCallExpr : public CallExpr {
+class FnCallExpr final : public CallExpr {
  private:
    // this represents the called expression e.g. 'f' in 'f(1,2,3)'
    Expr* baseExpr_;

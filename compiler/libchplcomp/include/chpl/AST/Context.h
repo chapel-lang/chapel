@@ -45,31 +45,17 @@ class Context {
   Context();
   ~Context();
 
+
   /**
     Get or create a unique string for a NULL-terminated C string
     and return it as a C string.
 
-    The function `uniqueString` should be preferred for type safety
+    The function `UniqueString::build` returns such a string
+    with a wrapper type. It should be preferred for type safety
     and to reduce redundant checks.
    */
   const char* uniqueCString(const char* s);
   const char* uniqueCString(const std::string& s);
-
-  /**
-    Get or create a unique string for a NULL-terminated C string.
-    If NULL is provided, this function will return uniqueString("").
-   */
-  UniqueString uniqueString(const char* s);
-
-  /**
-    Get or create a unique string for a C++ string
-    \rst
-    .. note::
-
-      will not handle strings with embedded ``'\0'`` bytes
-    \endrst
-   */
-  UniqueString uniqueString(const std::string& s);
 };
 
 } // end namespace ast

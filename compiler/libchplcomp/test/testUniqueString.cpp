@@ -1,4 +1,4 @@
-#include "chpl/AST/ASTContext.h"
+#include "chpl/AST/Context.h"
 #include "chpl/AST/UniqueString.h"
 
 #include <chrono>
@@ -11,7 +11,7 @@
 using namespace chpl;
 using namespace ast;
 
-void testPerformance(ASTContext& ctx, const char* inputFile, bool printTiming) {
+void testPerformance(Context* ctx, const char* inputFile, bool printTiming) {
   int repeat = 10;
 
   std::ifstream file(inputFile);
@@ -23,7 +23,7 @@ void testPerformance(ASTContext& ctx, const char* inputFile, bool printTiming) {
       for (int i = 0; i < repeat; i++) {
         std::istringstream iss(line, std::istringstream::in);
         while (iss >> word) {
-          ctx.uniqueString(word);
+          UniqueString::build(ctx, word);
         }
       }
     }
@@ -53,31 +53,31 @@ int main(int argc, char** argv) {
       inputFile = argv[i];
   }
 
-  ASTContext ctx;
+  Context ctx;
 
   // First, add some strings to the map and make sure we get uniqueness.
   {
     std::string test1 = "test1";
     std::string test1Copy = test1;
     assert(test1.c_str() != test1Copy.c_str());
-    UniqueString t1 = ctx.uniqueString(test1);
-    UniqueString t2 = ctx.uniqueString(test1Copy);
-    UniqueString t3 = ctx.uniqueString("test1");
+    UniqueString t1 = UniqueString::build(&ctx, test1);
+    UniqueString t2 = UniqueString::build(&ctx, test1Copy);
+    UniqueString t3 = UniqueString::build(&ctx, "test1");
     assert(t1.c_str() == t2.c_str());
     assert(t2.c_str() == t3.c_str());
 
-    UniqueString h = ctx.uniqueString("hello");
+    UniqueString h = UniqueString::build(&ctx, "hello");
     assert(h.c_str() != t1.c_str());
 
     // check that uniqueString(NULL) == uniqueString("")
-    assert(ctx.uniqueString(NULL) == ctx.uniqueString(""));
+    assert(UniqueString::build(&ctx, NULL) == UniqueString::build(&ctx, ""));
 
     // check that default-constructed unique string matches one from ""
     UniqueString empty;
-    assert(empty.c_str() == ctx.uniqueString("").c_str());
+    assert(empty.c_str() == UniqueString::build(&ctx, "").c_str());
   }
 
   // Next, measure performance
-  testPerformance(ctx, inputFile, printTiming);
+  testPerformance(&ctx, inputFile, printTiming);
   return 0;
 }

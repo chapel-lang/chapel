@@ -9,7 +9,7 @@ namespace ast {
 /**
   This class represents a call to an operator.
  */
-class OpCallExpr : public CallExpr {
+class OpCallExpr final : public CallExpr {
  private:
    // which operator
    UniqueString op_;

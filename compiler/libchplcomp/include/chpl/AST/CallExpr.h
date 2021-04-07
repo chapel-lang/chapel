@@ -16,7 +16,7 @@ class CallExpr : public Expr {
   std::vector<Expr*> actuals_;
 
  public:
-  ~CallExpr() override = default;
+  ~CallExpr() override = 0;
 
   int numActuals() const { return actuals_.size(); }
   Expr* actual(int i) { return actuals_[i]; }

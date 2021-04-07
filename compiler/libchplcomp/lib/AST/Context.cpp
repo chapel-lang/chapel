@@ -44,14 +44,5 @@ const char* Context::uniqueCString(const std::string& s) {
   return this->getOrCreateUniqueString(s.c_str());
 }
 
-UniqueString Context::uniqueString(const char* s) {
-  if (s == NULL) s = "";
-  return UniqueString(this->getOrCreateUniqueString(s));
-}
-
-UniqueString Context::uniqueString(const std::string& s) {
-  return UniqueString(this->getOrCreateUniqueString(s.c_str()));
-}
-
 } // end namespace ast
 } // end namespace chpl

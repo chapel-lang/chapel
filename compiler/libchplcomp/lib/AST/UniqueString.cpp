@@ -1,5 +1,7 @@
 #include "chpl/AST/UniqueString.h"
 
+#include "chpl/AST/Context.h"
+
 #include <cstring>
 
 namespace chpl {
@@ -14,6 +16,15 @@ static const char* const emptyString = "";
 
 UniqueString::UniqueString()
   : s(emptyString) {
+}
+
+UniqueString UniqueString::build(Context* context, const char* s) {
+  if (s == NULL) s = "";
+  return UniqueString(context->uniqueCString(s));
+}
+
+UniqueString UniqueString::build(Context* context, const std::string& s) {
+  return UniqueString(context->uniqueCString(s));
 }
 
 bool UniqueString::startsWith(const char* prefix) const {

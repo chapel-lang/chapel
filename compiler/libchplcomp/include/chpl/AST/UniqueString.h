@@ -38,6 +38,21 @@ class UniqueString final {
   /** create a UniqueString storing the empty string */
   UniqueString();
 
+  /**
+    Get or create a unique string for a NULL-terminated C string.
+    If NULL is provided, this function will return uniqueString("").
+   */
+  static UniqueString build(Context* context, const char* s);
+  /**
+    Get or create a unique string for a C++ string
+    \rst
+    .. note::
+
+      will not handle strings with embedded ``'\0'`` bytes
+    \endrst
+   */
+  static UniqueString build(Context* context, const std::string& s);
+
   /** return the null-terminated string */
   const char* c_str() const {
     return s;
