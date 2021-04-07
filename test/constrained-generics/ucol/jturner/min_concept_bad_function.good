@@ -1,0 +1,6 @@
+min_concept_bad_function.chpl:25: error: unresolved call 'minFn(3, 4)'
+min_concept_bad_function.chpl:15: note: this candidate did not match: minFn(x: ?T, y: T)
+min_concept_bad_function.chpl:15: note: because interface constraint(s) were not satisfied
+min_concept_bad_function.chpl:15: note: the constraint GreaterThan for int is not satisfied
+min_concept_bad_function.chpl:6: note: because the required function GT is not implemented
+min_concept_bad_function.chpl:16: note: because no functions named GT found in scope
