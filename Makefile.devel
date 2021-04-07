@@ -65,7 +65,7 @@ test-libchplcomp: $(CHPL_MAKE_HOME)/build/libchplcomp FORCE
 	cd build/libchplcomp && cmake --build . --target tests && ctest .
 
 libchplcomp-parser: $(CHPL_MAKE_HOME)/build/libchplcomp FORCE
-	cd build/libchplcomp/lib/parser && cmake --build . --target parser
+	cd build/libchplcomp/lib/Frontend/Parser && cmake --build . --target parser
 
 SPECTEST_DIR = ./test/release/examples/spec
 spectests: FORCE
