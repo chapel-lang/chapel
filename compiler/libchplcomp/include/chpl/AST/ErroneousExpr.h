@@ -10,7 +10,11 @@ namespace ast {
   This class represents some missing AST due to an error.
  */
 class ErroneousExpr final : public Expr {
+ private:
+  ErroneousExpr() : Expr(asttags::ErroneousExpr) { }
+
  public:
+  ~ErroneousExpr() = default;
   static ErroneousExpr* build(Builder* builder);
 };
 

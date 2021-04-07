@@ -186,6 +186,10 @@
 
   typedef std::vector<PotentialRename> RenameList;
 
+  // these structures do not use constructors to avoid
+  // errors about being in the union below. Additionally
+  // they only have pointer or numeric fields.
+
   struct WhereAndLifetime {
     Expr* where;
     ExprList* lifetime;
@@ -210,14 +214,26 @@
     return ret;
   }
 
- 
+  struct SizedStr {
+    const char* allocatedData; // *not* a uniqued string!
+    long size;
+  };
+  static inline
+  SizedStr makeSizedStr(const char* allocatedData, long size) {
+    SizedStr ret;
+    ret.allocatedData = allocatedData;
+    ret.size = size;
+    return ret;
+  }
+
   // These currently all need to be POD types (i.e. pointers and ints)
   // rather than say std::vector to keep bison working with the current
   // strategy. In the future we could probably switch to a more
   // C++ mode of using bison.
   union YYSTYPE {
-    // The lexer only uses pch.
-    const char*                pch;
+    // The lexer only uses these two
+    const char*                pch;      // maybe better named 'str'
+    SizedStr                   sizedStr;
 
     // The remaining types are for parser productions
 
@@ -269,6 +285,11 @@
 // It is possible to define YYLTYPE (and this grammar used to in
 // order to handle chpldoc comments). This parser uses instead the
 // strategy of saving doc-comments in ParserContext.
+// The default YYLTYPE includes:
+//   first_line
+//   first_column
+//   last_line
+//   last_column
 
 //
 // Definition of the additional parameter to yypush_parse
@@ -288,6 +309,14 @@
   void yyerror(YYLTYPE*       loc,
                ParserContext* context,
                const char*    errorMessage);
+
+  void noteError(YYLTYPE location,
+                 ParserContext* context,
+                 const char* errorMessage);
+
+  void noteError(YYLTYPE location,
+                 ParserContext* context,
+                 const std::string s);
 }
 
 %code provides {
@@ -347,10 +376,10 @@
 %token <pch> INTLITERAL
 %token <pch> REALLITERAL
 %token <pch> IMAGLITERAL
-%token <pch> STRINGLITERAL
-%token <pch> BYTESLITERAL
-%token <pch> CSTRINGLITERAL
-%token <pch> EXTERNCODE
+%token <sizedStr> STRINGLITERAL
+%token <sizedStr> BYTESLITERAL
+%token <sizedStr> CSTRINGLITERAL
+%token <sizedStr> EXTERNCODE
 
 //
 // keywords (alphabetical)
@@ -577,8 +606,21 @@ toplevel_stmt:
 
 // Sequence of pragmas
 pragma_ls:
-  TPRAGMA STRINGLITERAL                { $$ = new StrList(); $$->push_back($2); }
-| pragma_ls TPRAGMA STRINGLITERAL      { $1->push_back($3); }
+  TPRAGMA STRINGLITERAL
+    {
+      SizedStr ss = $2;
+      $$ = new StrList();
+      const char* u = context->astContext->uniqueCString(ss.allocatedData);
+      delete ss.allocatedData;
+      $$->push_back(u);
+    }
+| pragma_ls TPRAGMA STRINGLITERAL
+    {
+      SizedStr ss = $3;
+      const char* u = context->astContext->uniqueCString(ss.allocatedData);
+      delete ss.allocatedData;
+      $1->push_back(u);
+    }
 ;
 
 stmt:

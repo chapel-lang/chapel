@@ -12,18 +12,23 @@ class Builder;
 /**
   This class represents a comment that might be used for documentation.
   Not all comments are represented in the AST (since the comments could
-  go anywhere and that would be hard to parse). However, comments that
+  go anywhere and that would be hard to represent). However, comments that
   are at a statement level will be represented with this type.
  */
 class Comment final : public Expr {
  friend class Builder;
 
  private:
-  UniqueString comment_;
+  Comment(const char* comment, long size)
+    : Expr(asttags::Comment), comment_(comment), size_(size) { }
+  const char* comment_; // not a unique string; allocated here
+  long size_;
+
  public:
-  ~Comment() override = default;
-  static Comment* build(Builder* builder, UniqueString comment);
-  UniqueString comment() const { return comment_; }
+  ~Comment() override;
+  static Comment* build(Builder* builder, const char* data, long size);
+  const char* comment() const { return comment_; }
+  long size() const { return size_; }
 };
 
 } // end namespace ast

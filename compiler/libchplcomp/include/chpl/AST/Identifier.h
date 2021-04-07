@@ -7,6 +7,8 @@
 namespace chpl {
 namespace ast {
 
+class Builder;
+
 /**
   This class represents a reference to a symbol by name.
   E.g. in
@@ -19,9 +21,14 @@ namespace ast {
   \endrst
  */
 class Identifier final : public Expr {
+ friend class Builder;
+
  private:
+  Identifier(UniqueString name)
+    : Expr(asttags::Identifier), name_(name) { }
   UniqueString name_;
  public:
+  ~Identifier() override = default;
   static Identifier* build(Builder* builder, const char* name);
   UniqueString name() const { return name_; }
 };

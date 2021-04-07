@@ -29,23 +29,19 @@
 #include <string>
 #include <algorithm>
 
-static void  newString();
-static void  addString(const char* str);
-static void  addChar(char c);
-static void  addCharEscapeNonprint(char c);
-static void  addCharEscapingC(yyscan_t scanner, char c);
-
 static int   getNextYYChar(yyscan_t scanner);
 
-static std::string stringBuffer;
+static void updateLocation(YYLTYPE* loc, int nLines, int nCols) {
+  loc->first_line = loc->last_line;
+  loc->first_column = loc->last_column;
+  loc->last_line = loc->first_line + nLines;
+  int startColumn = (nLines==0)?(loc->first_column):(1);
+  loc->last_column = startColumn + nCols;
+}
 
 int processNewline(yyscan_t scanner) {
-  YYLTYPE* yyLloc = yyget_lloc(scanner);
-
-  // TODO: we had line counting here with global variables,
-  // probably because things like eatStringLiteral don't have
-  // flex updating the current location.
-
+  YYLTYPE* loc = yyget_lloc(scanner);
+  updateLocation(loc, 1, 0);
   return YYLEX_NEWLINE;
 }
 
@@ -55,24 +51,27 @@ int processNewline(yyscan_t scanner) {
 *                                                                           *
 ************************************* | ************************************/
 
-void stringBufferInit() {
-  stringBuffer.clear();
-}
+static int processIdentifier(yyscan_t scanner, bool queried) {
+  YYSTYPE* val = yyget_lval(scanner);
+  int retval = processToken(scanner, queried ? TQUERIEDIDENT : TIDENT);
+  // note: processToken calls updateLocation.
 
-static int  processIdentifier(yyscan_t scanner, bool queried) {
-  YYSTYPE* yyLval = yyget_lval(scanner);
-  int      retval = processToken(scanner, queried ? TQUERIEDIDENT : TIDENT);
+  const char* pch = yyget_text(scanner);
   ParserContext* context = yyget_extra(scanner);
-
-  yyLval->pch = context->astContext->uniqueCString(yyget_text(scanner));
+  val->pch = context->astContext->uniqueCString(pch);
 
   return retval;
 }
 
 static int processToken(yyscan_t scanner, int t) {
-  YYSTYPE* yyLval = yyget_lval(scanner);
+  YYSTYPE* val = yyget_lval(scanner);
 
-  yyLval->pch = yyget_text(scanner);
+  const char* pch = yyget_text(scanner);
+  YYLTYPE* loc = yyget_lloc(scanner);
+  updateLocation(loc, 0, strlen(pch));
+
+  ParserContext* context = yyget_extra(scanner);
+  val->pch = context->astContext->uniqueCString(pch);
 
   // If the stack has a value then we must be in externmode.
   // Return to INITIAL
@@ -89,101 +88,198 @@ static int processToken(yyscan_t scanner, int t) {
 *                                                                           *
 ************************************* | ************************************/
 
-static const char* eatStringLiteral(yyscan_t scanner, const char* startChar);
-static const char* eatMultilineStringLiteral(yyscan_t scanner,
-                                             const char* startChar);
+static SizedStr eatStringLiteral(yyscan_t scanner, const char* startChar);
+static SizedStr eatTripleStringLiteral(yyscan_t scanner, const char* startChar);
 
-static int processStringLiteral(yyscan_t scanner, const char* q, int type) {
-  const char* yyText = yyget_text(scanner);
-  YYSTYPE*    yyLval = yyget_lval(scanner);
+static int processStringLiteral(yyscan_t scanner,
+                                const char* startChar,
+                                int type) {
+  // update the location for the string start (e.g. b" )
+  const char* pch = yyget_text(scanner);
+  YYLTYPE* loc = yyget_lloc(scanner);
+  updateLocation(loc, 0, strlen(pch));
 
-  yyLval->pch = eatStringLiteral(scanner, q);
-
+  YYSTYPE* val = yyget_lval(scanner);
+  val->sizedStr = eatStringLiteral(scanner, startChar);
   return type;
 }
 
-static int processMultilineStringLiteral(yyscan_t scanner, const char* q,
-                                         int type) {
-  const char* yyText = yyget_text(scanner);
-  YYSTYPE* yyLval = yyget_lval(scanner);
-  yyLval->pch = eatMultilineStringLiteral(scanner, q);
+static int processTripleStringLiteral(yyscan_t scanner,
+                                      const char* startChar,
+                                      int type) {
+  // update the location for the string start (e.g. b" )
+  const char* pch = yyget_text(scanner);
+  YYLTYPE* loc = yyget_lloc(scanner);
+  updateLocation(loc, 0, strlen(pch));
 
+  YYSTYPE* val = yyget_lval(scanner);
+  val->sizedStr = eatTripleStringLiteral(scanner, startChar);
   return type;
 }
 
-static const char* eatStringLiteral(yyscan_t scanner, const char* startChar) {
-  char*      yyText  = yyget_text(scanner);
-  YYLTYPE*   yyLloc  = yyget_lloc(scanner);
+static
+void noteErrInString(yyscan_t scanner, int nLines, int nCols, const char* msg) {
+  ParserContext* context = yyget_extra(scanner);
+  YYLTYPE* loc = yyget_lloc(scanner);
+  YYLTYPE myloc = *loc;
+  updateLocation(&myloc, nLines, nCols);
+  noteError(myloc, context, msg);
+}
+
+static
+char simpleEscape(int c) {
+  if (c == '\'')
+    return '\'';
+  if (c == '"')
+    return '"';
+  if (c == '?')
+    return '?';
+  if (c == '\\')
+    return '\\';
+  if (c == 'a')
+    return '\a';
+  if (c == 'b')
+    return '\b';
+  if (c == 'f')
+    return '\f';
+  if (c == 'n')
+    return '\n';
+  if (c == 'r')
+    return '\r';
+  if (c == 't')
+    return '\t';
+  if (c == 'v')
+    return '\v';
+  if (c == '\n')
+    // to allow newline followed by \ at the end of the line
+    return '\n';
+
+  return '\0';
+}
+
+static SizedStr eatStringLiteral(yyscan_t scanner, const char* startChar) {
+  ParserContext* context = yyget_extra(scanner);
+  YYLTYPE* loc = yyget_lloc(scanner);
   const char startCh = *startChar;
   int        c       = 0;
+  int nLines = 0;
+  int nCols = 0;
+  std::string s;
 
-  newString();
+  c = getNextYYChar(scanner);
+  nCols++; // if it's newline, this will immediately be reset
 
-  while ((c = getNextYYChar(scanner)) != startCh && c != 0) {
+  while (c != startCh && c != 0) {
     if (c == '\n') {
-      ParserContext* context = yyget_extra(scanner);
-
-      yyText[0] = '\0';
-      yyerror(yyLloc, context, "end-of-line in a string literal without a preceding backslash");
+      // TODO: string literals with newline after backslash
+      // are not documented in the spec
+      noteErrInString(scanner, nLines, nCols, "end-of-line in a string literal without a preceding backslash");
+      s += c;
+      nLines++;
+      nCols = 0;
     } else {
-      if (startCh == '\'' && c == '\"') {
-        addCharEscapeNonprint('\\');
-      }
-
-      // \ escape ? to avoid C trigraphs
-      if (c == '?')
-        addCharEscapeNonprint('\\');
-
-      addCharEscapeNonprint(c);
+      s += c;
     }
 
     if (c == '\\') {
       c = getNextYYChar(scanner);
+      nCols++;
 
+      // account for newlines after \ at the end
       if (c == '\n') {
-        processNewline(scanner);
-        addCharEscapeNonprint('n');
+        nLines++;
+        nCols = 0;
+      }
+
+      // handle the escapes described in the spec
+      //   \' \" \? \\ \a \b \f \n \r \t \v and \xDIGITS
+      char esc = simpleEscape(c);
+      if (esc != 0) {
+        s += esc;
+      } else if (c == 'x') {
+        // Read hexadecimal digits until we run out
+        char buf[3] = {'\0', '\0', '\0'};
+        bool foundNonHex = false;
+        bool overflow = false;
+        for (int i = 0; true; i++) {
+          c = getNextYYChar(scanner);
+          nCols++;
+          // TODO the exact behavior here is not documented in the spec
+          if (('0' <= c && c <= '9') ||
+              ('A' <= c && c <= 'F') ||
+              ('a' <= c && c <= 'f')) {
+            if (i < 2)
+              buf[i] = c;
+            else
+              overflow = true;
+          } else {
+            foundNonHex = true;
+            break;
+          }
+        }
+        if (overflow)
+          noteErrInString(scanner, nLines, nCols,
+                          "overflow when reading \\x escape");
+        if (foundNonHex)
+          continue; // need to process c as the next character
+
       } else if (c == 'u' || c == 'U') {
-        ParserContext* context = yyget_extra(scanner);
-        yyerror(yyLloc, context, "universal character name not yet supported in string literal");
-        addCharEscapeNonprint('t'); // add a valid escape to continue parsing
+        noteErrInString(scanner, nLines, nCols, "universal character name not yet supported in string literal");
+        s += "\\u"; // this is a dummy value
       } else if ('0' <= c && c <= '7' ) {
-        ParserContext* context = yyget_extra(scanner);
-        yyerror(yyLloc, context, "octal escape not supported in string literal");
-        addCharEscapeNonprint('t'); // add a valid escape to continue parsing
+        noteErrInString(scanner, nLines, nCols, "octal escape not supported in string literal");
+        s += "\\";
+        s += c; // a dummy value
       } else if (c == 0) {
         // we've reached EOF
-        addCharEscapeNonprint('t'); // add a valid escape to continue parsing
+        s += "\\";
         break; // EOF reached, so stop
       } else {
-        addCharEscapeNonprint(c);
+        s += "\\"; // TODO exact behavior here is not documented in the spec
+        s += c;
       }
     }
+    c = getNextYYChar(scanner);
+    nCols++;
   } /* eat up string */
 
   if (c == 0) {
-    ParserContext* context = yyget_extra(scanner);
-
-    yyerror(yyLloc, context, "EOF in string");
+    noteErrInString(scanner, nLines, nCols, "EOF in string");
   }
 
-  return astr(stringBuffer);
+  // update the location 
+  updateLocation(loc, nLines, nCols);
+
+  // allocate the value to return
+  long size = s.size();
+  char* buf = (char*) malloc(size+1);
+  memcpy(buf, s.c_str(), size+1);
+
+  return makeSizedStr(buf, size);
 }
 
-static const char* eatMultilineStringLiteral(yyscan_t scanner,
-                                             const char* startChar) {
-  YYLTYPE* yyLloc    = yyget_lloc(scanner);
+static SizedStr eatTripleStringLiteral(yyscan_t scanner,
+                                       const char* startChar) {
+  ParserContext* context = yyget_extra(scanner);
+  YYLTYPE* loc       = yyget_lloc(scanner);
   const char startCh = *startChar;
   int startChCount   = 0;
   int c              = 0;
-
-  newString();
+  int nLines = 0;
+  int nCols = 0;
+  std::string s;
 
   while (true) {
     c = getNextYYChar(scanner);
-
     if (c == 0) {
       break;
+    }
+
+    if (c == '\n') {
+      nLines++;
+      nCols = 0;
+    } else {
+      nCols++;
     }
 
     if (c == startCh) {
@@ -195,22 +291,27 @@ static const char* eatMultilineStringLiteral(yyscan_t scanner,
       startChCount = 0;
     }
 
-    addCharEscapingC(scanner, c);
+    s += c;
   } /* eat up string */
 
   if (c == 0) {
-    ParserContext* context = yyget_extra(scanner);
-
-    yyerror(yyLloc, context, "EOF in string");
+    noteErrInString(scanner, nLines, nCols, "EOF in string");
   }
-  // Remove two escaped quotes from the end of the string that are
-  // actually part of the string closing token.  If this is a single
-  // quoted string that will be two characters, but if it is a double
-  // quoted string it will be four because of extra escape characters
-  int removeChars = (startCh == '\'') ? 2 : 4;
-  std::string sub = stringBuffer.substr(0, stringBuffer.length()-removeChars);
 
-  return astr(sub);
+  // update the location 
+  updateLocation(loc, nLines, nCols);
+
+  long size = s.size();
+  // Remove two quotes from the end of the string that are
+  // actually part of the string closing token.
+  for (int i = 0; i < 2; i++) {
+    if (s[size-1] == startCh) size--;
+  }
+  char* buf = (char*) malloc(size+1);
+  memcpy(buf, s.c_str(), size);
+  buf[size] = '\0';
+
+  return makeSizedStr(buf, size);
 }
 
 
@@ -221,10 +322,9 @@ static const char* eatMultilineStringLiteral(yyscan_t scanner,
 ************************************* | ************************************/
 
 static int processExtern(yyscan_t scanner) {
-  const char* yyText = yyget_text(scanner);
-  YYSTYPE*    yyLval = yyget_lval(scanner);
-
-  yyLval->pch = yyget_text(scanner);
+  const char* pch = yyget_text(scanner);
+  YYLTYPE* loc = yyget_lloc(scanner);
+  updateLocation(loc, 0, strlen(pch));
 
   // Push a state to record that "extern" has been seen
   yy_push_state(externmode, scanner);
@@ -238,18 +338,21 @@ static int processExtern(yyscan_t scanner) {
 *                                                                           *
 ************************************* | ************************************/
 
-static const char* eatExternCode(yyscan_t scanner);
+static SizedStr eatExternCode(yyscan_t scanner);
 
 // When the lexer calls this function, it has already consumed the first '{'
 static int processExternCode(yyscan_t scanner) {
-  YYSTYPE* yyLval = yyget_lval(scanner);
+  const char* pch = yyget_text(scanner);
+  YYLTYPE* loc = yyget_lloc(scanner);
+  updateLocation(loc, 0, strlen(pch));
 
-  yyLval->pch = eatExternCode(scanner);
+  YYSTYPE* val = yyget_lval(scanner);
+  val->sizedStr = eatExternCode(scanner);
 
   return EXTERNCODE;
 }
 
-static const char* eatExternCode(yyscan_t scanner) {
+static SizedStr eatExternCode(yyscan_t scanner) {
   const int in_code                          = 0;
   const int in_single_quote                  = 1;
   const int in_single_quote_backslash        = 2;
@@ -259,22 +362,25 @@ static const char* eatExternCode(yyscan_t scanner) {
   const int in_single_line_comment_backslash = 6;
   const int in_multi_line_comment            = 7;
 
-  YYLTYPE*  yyLloc                           = yyget_lloc(scanner);
+  YYLTYPE*  loc                              = yyget_lloc(scanner);
 
   int       depth                            = 1;
   int       c                                = 0;
   int       lastc                            = 0;
   int       state                            = 0;
 
-  newString();
+  ParserContext* context = yyget_extra(scanner);
+
+  int nLines = 0;
+  int nCols = 0;
+  std::string s;
 
   // First, store the line information.
-  addString("#line ");
-  addString(istr(chplLineno));
-  addString(" \"");
-  addString(yyfilename);
-  addString("\" ");
-  addString("\n");
+  s += "#line ";
+  s += std::to_string(loc->first_line + nLines);
+  s += " \"";
+  s += context->filename;
+  s += "\" \n";
 
   // Now, append the C code until we get to a }.
   while (depth > 0) {
@@ -287,34 +393,41 @@ static const char* eatExternCode(yyscan_t scanner) {
       switch (state) {
         case in_code:
           // there was no match to the {
-          yyerror(yyLloc, context, "Missing } in extern block");
+          noteErrInString(scanner, nLines, nCols,
+                          "Missing } in extern block");
           break;
 
         case in_single_quote:
         case in_single_quote_backslash:
-          yyerror(yyLloc, context, "Runaway \'string\' in extern block");
+          noteErrInString(scanner, nLines, nCols,
+                          "Runaway \'string\' in extern block");
           break;
 
         case in_double_quote:
         case in_double_quote_backslash:
-          yyerror(yyLloc, context, "Runaway \"string\" in extern block");
+          noteErrInString(scanner, nLines, nCols,
+                          "Runaway \"string\" in extern block");
           break;
 
         case in_single_line_comment:
-          yyerror(yyLloc, context, "Missing newline after extern block // comment");
+          noteErrInString(scanner, nLines, nCols,
+                          "Missing newline after extern block // comment");
           break;
 
         case in_multi_line_comment:
-          yyerror(yyLloc, context, "Runaway /* comment */ in extern block");
+          noteErrInString(scanner, nLines, nCols,
+                          "Runaway /* comment */ in extern block");
           break;
       }
       break;
     }
 
-    addChar(c);
+    s += c;
 
-    if (c == '\n')
-      processNewline(scanner);
+    if (c == '\n') {
+      nCols = 0;
+      nLines++;
+    }
 
     // Now update state (are we in a comment? a string?)
     switch (state) {
@@ -386,12 +499,18 @@ static const char* eatExternCode(yyscan_t scanner) {
     }
   }
 
-  //save the C String
-  //eliminate the final '{'
-  if (stringBuffer.size() >= 1)
-    stringBuffer.resize(stringBuffer.size()-1);
+  // update the location 
+  updateLocation(loc, nLines, nCols);
 
-  return astr(stringBuffer);
+  //save the C String
+  //eliminate the final '}'
+  long size = s.size();
+  if (s[size-1] == '}') size--;
+  char* buf = (char*) malloc(size+1);
+  memcpy(buf, s.c_str(), size);
+  buf[size] = '\0';
+
+  return makeSizedStr(buf, size);
 }
 
 /************************************ | *************************************
@@ -401,8 +520,9 @@ static const char* eatExternCode(yyscan_t scanner) {
 ************************************* | ************************************/
 
 static void processWhitespace(yyscan_t scanner) {
-  // might eventually want to keep track of column numbers and do
-  // something here
+  const char* pch = yyget_text(scanner);
+  YYLTYPE* loc = yyget_lloc(scanner);
+  updateLocation(loc, 0, strlen(pch));
 }
 
 /************************************ | *************************************
@@ -412,24 +532,34 @@ static void processWhitespace(yyscan_t scanner) {
 ************************************* | ************************************/
 
 static int processSingleLineComment(yyscan_t scanner) {
-  YYSTYPE* yyLval = yyget_lval(scanner);
-  int      c      = 0;
+  YYSTYPE* val = yyget_lval(scanner);
+  int      c   = 0;
 
-  newString();
-  countCommentLine();
+  // start with the comment introduction
+  std::string s;
+  s += yyget_text(scanner);
 
   // Read until the end of the line
   while ((c = getNextYYChar(scanner)) != '\n' && c != 0) {
-    addChar(c);
+    s += c;
   }
 
-  countSingleLineComment(stringBuffer.c_str());
-
-  if (c != 0) {
-    processNewline(scanner);
+  YYLTYPE* loc = yyget_lloc(scanner);
+  int nLines = 1;
+  int nCols = 0;
+  if (c == 0) {
+    nCols = s.size();
+    nLines = 0;
   }
+  updateLocation(loc, nLines, nCols);
 
-  yyLval->pch = astr(stringBuffer);
+  // allocate the value to return
+  long size = s.size();
+  char* buf = (char*) malloc(size+1);
+  memcpy(buf, s.c_str(), size+1);
+
+  ParserContext* context = yyget_extra(scanner);
+  context->noteComment(*loc, buf, size);
 
   return YYLEX_SINGLE_LINE_COMMENT;
 }
@@ -441,22 +571,25 @@ static int processSingleLineComment(yyscan_t scanner) {
 ************************************* | ************************************/
 
 static int processBlockComment(yyscan_t scanner) {
-  YYSTYPE*    yyLval       = yyget_lval(scanner);
-  YYLTYPE*    yyLloc       = yyget_lloc(scanner);
+  YYSTYPE*    val       = yyget_lval(scanner);
+  YYLTYPE*    loc       = yyget_lloc(scanner);
 
   int nestedStartLine = -1;
-  int startLine = chplLineno;
-  const char* startFilename = yyfilename;
+  int nestedStartCol = -1;
+  int startLine = loc->first_line;
+  int startCol = loc->first_column;
 
   int         c            = 0;
-  int         d            = 1;
   bool        badComment = false;
   int         lastc        = 0;
   int         depth        = 1;
-  std::string wholeComment = "";
 
-  newString();
-  countCommentLine();
+  int nLines = 0;
+  int nCols = 0;
+  // start with the comment introduction
+  std::string s;
+  s += yyget_text(scanner);
+  nCols += s.size();
 
   while (depth > 0) {
     int lastlastc = lastc;
@@ -465,72 +598,40 @@ static int processBlockComment(yyscan_t scanner) {
     c     = getNextYYChar(scanner);
 
     if (c == '\n') {
-      countMultiLineComment(stringBuffer.c_str());
-      processNewline(scanner);
-
-      wholeComment += stringBuffer;
-      wholeComment += '\n';
-
-      newString();
-      countCommentLine();
+      nCols = 0;
+      nLines++;
     } else {
-      addChar(c);
+      nCols++;
     }
-
-    d = 1;
+    s += c;
 
     if (lastc == '*' && c == '/' && lastlastc != '/') { // close comment
       depth--;
-      
-      d = 1;
     } else if (lastc == '/' && c == '*') { // start nested
       depth++;
       // keep track of the start of the last nested comment
-      nestedStartLine = chplLineno;
+      nestedStartLine = nLines;
+      nestedStartCol = nCols;
     } else if (c == 0) {
-      ParserContext* context = yyget_extra(scanner);
-
-      fprintf(stderr, "%s:%d: unterminated comment started here\n",
-              startFilename, startLine);
+      noteErrInString(scanner, nLines, nCols, "EOF in comment");
+      noteErrInString(scanner, 0, 0, "unterminated comment started here");
       if( nestedStartLine >= 0 ) {
-        fprintf(stderr, "%s:%d: nested comment started here\n",
-                startFilename, nestedStartLine);
+        noteErrInString(scanner, nestedStartLine, nestedStartCol,
+                        "nested comment started here");
       }
-      yyerror(yyLloc, context, "EOF in comment");
       break;
     }
   }
 
-  // Saves the comment grabbed to the comment field of the location struct,
-  // for use when the --docs flag is implemented
-  {
-    wholeComment += stringBuffer;
+  updateLocation(loc, nLines, nCols);
 
-    // Also, only need to fix indentation failure when the comment matters
-    size_t location = wholeComment.find("\\x09");
+  // allocate the value to return
+  long size = s.size();
+  char* buf = (char*) malloc(size+1);
+  memcpy(buf, s.c_str(), size+1);
 
-    while (location != std::string::npos) {
-      wholeComment = wholeComment.substr(0, location) + wholeComment.substr(location + 4);
-
-      wholeComment.insert(location, "\t");
-
-      location = wholeComment.find("\\x09");
-    }
-    if(!badComment)
-      yyLval->pch = astr(wholeComment.c_str());
-    else {
-
-      fprintf(stderr, "Warning:%d: chpldoc comment not closed, ignoring comment:%s\n",
-              startLine, wholeComment.c_str());
-      yyLval->pch = NULL;
-    }
-  } else {
-    yyLval->pch = NULL;
-  }
-
-  countMultiLineComment(stringBuffer.c_str());
-
-  newString();
+  ParserContext* context = yyget_extra(scanner);
+  context->noteComment(*loc, buf, size);
 
   return YYLEX_BLOCK_COMMENT;
 }
@@ -542,116 +643,11 @@ static int processBlockComment(yyscan_t scanner) {
 ************************************* | ************************************/
 
 static void processInvalidToken(yyscan_t scanner) {
+  const char* pch = yyget_text(scanner);
+  YYLTYPE* loc = yyget_lloc(scanner);
+  updateLocation(loc, 0, strlen(pch));
   ParserContext* context = yyget_extra(scanner);
-  YYLTYPE*      yyLloc = yyget_lloc(scanner);
-
-  yyerror(yyLloc, context, "Invalid token");
-}
-
-/************************************ | *************************************
-*                                                                           *
-*                                                                           *
-*                                                                           *
-************************************* | ************************************/
-
-static char toHex(char c);
-
-static void newString() {
-  stringBuffer.clear();
-}
-
-// Does not escape
-static void addString(const char* str) {
-  stringBuffer.append(str);
-}
-
-// Does not escape
-static void addChar(char c) {
-  stringBuffer.push_back(c);
-}
-
-// Escapes
-static void addCharEscapeNonprint(char c) {
-  int escape  = !(isascii(c) && isprint(c));
-  //
-  // If the previous character sequence was a hex escape and the current
-  // character is a hex digit, escape it also.  Otherwise, conforming
-  // target C compilers interpret this character as a continuation of
-  // the previous hex escape.
-  //
-  if (isxdigit(c)) {
-    size_t len = stringBuffer.length();
-    if (len >= 4 && stringBuffer[len - 4] == '\\' &&
-        (stringBuffer[len - 3] == 'x' || stringBuffer[len - 3] == 'X') &&
-        isxdigit(stringBuffer[len - 2]) && isxdigit(stringBuffer[len - 1])) {
-      escape = 1;
-    }
-  }
-
-  if (escape) {
-    stringBuffer.push_back('\\');
-    stringBuffer.push_back('x');
-    stringBuffer.push_back(toHex(((unsigned char)c) >> 4));
-    stringBuffer.push_back(toHex(c & 0xf));
-  } else {
-    stringBuffer.push_back(c);
-  }
-}
-
-// Convert C escape characters into two characters: '\\' and the other character
-static void addCharEscapingC(yyscan_t scanner, char c) {
-  switch (c) {
-    case '\"' :
-      addChar('\\');
-      addChar('"');
-      break;
-    case '?' :
-      addChar('\\');
-      addChar('?');
-      break;
-    case '\\' :
-      addChar('\\');
-      addChar('\\');
-      break;
-    case '\a' :
-      addChar('\\');
-      addChar('a');
-      break;
-    case '\b' :
-      addChar('\\');
-      addChar('b');
-      break;
-    case '\f' :
-      addChar('\\');
-      addChar('f');
-      break;
-    case '\n' :
-      addChar('\\');
-      addChar('n');
-      // Keep track of line numbers when a newline is found in a string
-      processNewline(scanner);
-      break;
-    case '\r' :
-      addChar('\\');
-      addChar('r');
-      break;
-    case '\t' :
-      addChar('\\');
-      addChar('t');
-      break;
-    case '\v' :
-      addChar('\\');
-      addChar('v');
-      break;
-    default :
-      addChar(c);
-      break;
-  }
-}
-
-// Returns the hexadecimal character for 0-16.
-static char toHex(char c) {
-  return (0 <= c && c <= 9) ? '0' + c : 'A' + (c - 10);
+  yyerror(loc, context, "Invalid token");
 }
 
 static int getNextYYChar(yyscan_t scanner) {

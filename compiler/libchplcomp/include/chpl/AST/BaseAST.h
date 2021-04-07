@@ -5,8 +5,9 @@
 #include "chpl/AST/ID.h"
 
 namespace chpl {
-
 namespace ast {
+
+class Builder;
 
 // forward declare the various AST types
 // using macros and ASTClassesList.h
@@ -30,14 +31,17 @@ namespace ast {
   This is the base class for AST types
  */
 class BaseAST {
- public:
+ friend class Builder;
 
  private:
   asttags::ASTTag tag_;
   ID id_;
 
+ protected:
+  BaseAST(asttags::ASTTag tag) : tag_(tag), id_() { }
+
  public:
-  ~BaseAST() = default;
+  virtual ~BaseAST() = 0; // this is an abstract base class
 
   asttags::ASTTag tag() const {
     return tag_;

@@ -14,18 +14,21 @@ struct ParserError {
   // emit errors here and create a stand-in ErroneousExpr AST
   // node.
   YYLTYPE location;
-  const char* message;
+  std::string message;
+  ParserError(YYLTYPE location, std::string message)
+    : location(location), message(message) { }
   ParserError(YYLTYPE location, const char* message)
     : location(location), message(message) { }
 };
 
 struct ParserComment {
   YYLTYPE location;
-  UniqueString comment;
+  SizedStr comment;
 };
 
 struct ParserContext {
   yyscan_t scanner;
+  const char* filename;
   Builder* builder;
   Context* astContext;
 
@@ -45,15 +48,17 @@ struct ParserContext {
 
   VisibilityTag visibility;
 
-  ParserContext(Builder* builder)
+  ParserContext(const char* filename, Builder* builder)
   {
     this->scanner            = nullptr;
+    this->filename           = filename;
     this->builder            = builder;
     this->topLevelStatements = nullptr;
     this->comments           = nullptr;
     this->visibility         = VisibilityTag_DEFAULT;
   }
 
+  void noteComment(YYLTYPE loc, const char* data, long size);
   std::vector<ParserComment>* gatherComments(YYLTYPE location);
   void clearComments();
   ExprList* makeList();

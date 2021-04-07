@@ -24,6 +24,7 @@ class ID final {
   // this node?
   int numContainedIds_;
  public:
+  ID() { }
   // Return a path to the symbol (or, for an expression, the parent symbol)
   UniqueString symbolPath() const { return symbolPath_; }
   // Returns the numbering of this node in a postorder traversal

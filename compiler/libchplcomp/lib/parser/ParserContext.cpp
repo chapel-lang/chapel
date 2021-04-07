@@ -33,6 +33,7 @@ std::vector<ParserComment>* ParserContext::gatherComments(YYLTYPE location) {
       break;
     } else {
       // remove this comment
+      delete comment.comment.allocatedData;
       ret->pop_back();
     }
   }
@@ -40,7 +41,18 @@ std::vector<ParserComment>* ParserContext::gatherComments(YYLTYPE location) {
   return ret;
 }
 
+void ParserContext::noteComment(YYLTYPE loc, const char* data, long size) {
+  ParserComment c;
+  c.location = loc;
+  c.comment.allocatedData = data;
+  c.comment.size = size;
+  this->comments->push_back(c);
+}
+
 void ParserContext::clearComments() {
+  for (ParserComment parserComment : *this->comments) {
+    delete parserComment.comment.allocatedData;
+  }
   this->comments->clear();
 }
 
@@ -75,7 +87,9 @@ void ParserContext::appendList(ExprList* dst, Expr* e) {
 void ParserContext::appendList(ExprList* dst, CommentsAndStmt cs) {
   if (cs.comments != nullptr) {
     for (ParserComment parserComment : *cs.comments) {
-      Comment* c = Comment::build(builder, parserComment.comment);
+      Comment* c = Comment::build(builder,
+                                  parserComment.comment.allocatedData,
+                                  parserComment.comment.size);
       dst->push_back(c);
     }
   }

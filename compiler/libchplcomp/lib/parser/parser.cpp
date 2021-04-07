@@ -21,74 +21,10 @@
 #include "parser.h"
 
 #include "bison-chapel.h"
-#include "build.h"
-#include "config.h"
-#include "countTokens.h"
-#include "docsDriver.h"
-#include "driver.h"
-#include "expr.h"
-#include "files.h"
-#include "flex-chapel.h"
-#include "ImportStmt.h"
-#include "insertLineNumbers.h"
-#include "stringutil.h"
-#include "symbol.h"
-#include "wellknown.h"
-
-// Include ParserContext.h after the generated header bison-chapel.h because it
-// depends on types defined in the generated header.
-#include "ParserContext.h"
 
 #include <cstdlib>
 
-BlockStmt*           yyblock                       = NULL;
-const char*          yyfilename                    = NULL;
-int                  yystartlineno                 = 0;
-
-ModTag               currentModuleType             = MOD_INTERNAL;
-const char*          currentModuleName             = NULL;
-
-int                  chplLineno                    = 0;
-bool                 chplParseString               = false;
-const char*          chplParseStringMsg            = NULL;
-
-bool                 currentFileNamedOnCommandLine = false;
-
-bool                 parsed                        = false;
-
-static bool          sFirstFile                    = true;
-static bool          sHandlingInternalModulesNow   = false;
-
-static const char* stdGenModulesPath;
-
-static void          countTokensInCmdLineFiles();
-
-static void          parseInternalModules();
-
-static void          parseCommandLineFiles();
-
-static void          parseDependentModules(bool isInternal);
-
-static ModuleSymbol* parseMod(const char* modName,
-                              bool        isInternal);
-
-static ModuleSymbol* parseFile(const char* fileName,
-                               ModTag      modTag,
-                               bool        namedOnCommandLine,
-                               bool        include);
-
-static const char*   stdModNameToPath(const char* modName,
-                                      bool*       isStandard);
-
-static const char*   searchThePath(const char*      modName,
-                                   bool             isInternal,
-                                   Vec<const char*> searchPath);
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
+#if 0
 
 void parse() {
   yydebug = debugParserLevel;
@@ -1005,3 +941,5 @@ static const char* searchThePath(const char*      modName,
 
   return retval;
 }
+
+#endif
