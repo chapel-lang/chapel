@@ -30,6 +30,8 @@ module DefaultSparse {
 
   config param debugDefaultSparse = false;
 
+  config param defaultSparseSupportsAutoLocalAccess = true;
+
   class DefaultSparseDom: BaseSparseDomImpl {
     var dist: unmanaged DefaultDist;
     var _nnz = 0;
@@ -396,6 +398,10 @@ module DefaultSparse {
         return new _domain(copy);
       }
     }
+
+    override proc dsiSupportsAutoLocalAccess() param {
+      return defaultSparseSupportsAutoLocalAccess;
+    }
   }
 
 
@@ -433,6 +439,11 @@ module DefaultSparse {
       else // ?fromMMS: is this error message correct? Not actually looking at value.
         halt("attempting to assign a 'zero' value in a sparse array: ", ind);
     }
+
+    inline proc dsiLocalAccess(ind: idxType) ref where rank == 1 {
+      return dsiAccess(ind);
+    }
+
     // value version
     proc dsiAccess(ind: idxType) const ref where rank == 1 {
       // make sure we're in the dense bounding box
@@ -448,6 +459,9 @@ module DefaultSparse {
         return irv;
     }
 
+    inline proc dsiLocalAccess(ind: idxType) const ref where rank == 1 {
+      return dsiAccess(ind);
+    }
 
     // ref version
     proc dsiAccess(ind: rank*idxType) ref {
@@ -463,6 +477,11 @@ module DefaultSparse {
       else
         halt("attempting to assign a 'zero' value in a sparse array: ", ind);
     }
+
+    inline proc dsiLocalAccess(ind: rank*idxType) ref {
+      return dsiAccess(ind);
+    }
+
     // value version for POD types
     proc dsiAccess(ind: rank*idxType)
     where shouldReturnRvalueByValue(eltType) {
@@ -478,6 +497,12 @@ module DefaultSparse {
       else
         return irv;
     }
+
+    inline proc dsiLocalAccess(ind: rank*idxType)
+    where shouldReturnRvalueByValue(eltType) {
+      return dsiAccess(ind);
+    }
+
     // const ref version for types with copy ctors
     proc dsiAccess(ind: rank*idxType) const ref
     where shouldReturnRvalueByConstRef(eltType) {
@@ -492,6 +517,11 @@ module DefaultSparse {
         return data(loc);
       else
         return irv;
+    }
+
+    inline proc dsiAccess(ind: rank*idxType) const ref
+    where shouldReturnRvalueByConstRef(eltType) {
+      return dsiAccess(ind);
     }
 
     pragma "order independent yielding loops"

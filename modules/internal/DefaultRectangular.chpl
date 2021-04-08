@@ -52,7 +52,7 @@ module DefaultRectangular {
   config param earlyShiftData = true;
   config param usePollyArrayIndex = false;
 
-  config param defaultRectangularSupportsAutoLocalAccess = false;
+  config param defaultRectangularSupportsAutoLocalAccess = true;
 
   enum ArrayStorageOrder { RMO, CMO }
   config param defaultStorageOrder = ArrayStorageOrder.RMO;

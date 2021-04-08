@@ -32,6 +32,8 @@ module DefaultAssociative {
   config param debugDefaultAssoc = false;
   config param debugAssocDataPar = false;
 
+  config param defaultAssociativeSupportsAutoLocalAccess = true;
+
   // helps to move around array elements when rehashing the domain
   class DefaultAssociativeDomRehashHelper : chpl__rehashHelpers {
     var dom: unmanaged DefaultAssociativeDom;
@@ -438,6 +440,9 @@ module DefaultAssociative {
       }
     }
 
+    override proc dsiSupportsAutoLocalAccess() param {
+      return defaultAssociativeSupportsAutoLocalAccess;
+    }
   }
 
   class DefaultAssociativeArr: AbsBaseArr {
