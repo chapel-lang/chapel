@@ -2127,10 +2127,13 @@ arkouda: &arkouda-base
     - Increase the problem size for string benchmarks (mhmerrill/arkouda#676)
   02/19/21:
     - Skip long string partitioning in string argsort (mhmerrill/arkouda#681)
+  03/23/21:
+    - A few communication micro-optimizations to improve Block array creation (#17354)
   03/25/21:
     - fix groupby benchmark bug (mhmerrill/arkouda#712)
   04/07/21:
     - Increase the aggregation buffer sizes for non-ugni configurations (mhmerrill/arkouda#732)
+    - Revert a recent change in block array creation that caused performance regression (#17531)
 
 arkouda-string:
   <<: *arkouda-base
