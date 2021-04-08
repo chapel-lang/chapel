@@ -66,13 +66,9 @@ extern {
 
     checkCudaErrors(cuMemAlloc(&devBufferX, sizeof(double)));
 
-    //get value of X
-
-    printf("input num: ");
-    scanf("%lf", &X);
-    printf("number: %lf\n", X);
-
-
+    srand(0);
+    X = rand() % 100;
+    
     checkCudaErrors(cuMemcpyHtoD(devBufferX, &X, sizeof(double)));
 
     return devBufferX;
