@@ -1,5 +1,15 @@
-bug: compiler crash
+error message: print out the line number of the promoted function
 
-To fix:
-* allow promotion wrappers in the assertion that gets tripped over,
-* ideally, improve the error message about the return type mismatch.
+see also:
+  test/constrained-generics/ucol/jturner/min_concept_void_promote.chpl
+  test/constrained-generics/ucol/cwailes-1/tier_1_auto_promote.chpl
+
+If #16412 is answered in the negative, then the compiler correctly reports
+an error when compiling this test.
+
+However, the user is likely to benefit from knowing which function got
+promoted. This .future requests that the appropriate filename:linenumber
+be printed as part of the error message.
+
+Also, the "currently not implemented" line of the error message will need
+to be changed to "not allowed".
