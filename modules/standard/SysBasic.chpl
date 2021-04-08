@@ -117,47 +117,53 @@ inline proc ENOERR return 0:err_t;
 
 // When err_t is no longer just int(32), will need to add cases for err_t too.
 pragma "no doc"
-inline proc ==(a: syserr, b: syserr) return (qio_err_eq(a,b) != 0:c_int);
+inline operator syserr.==(a: syserr, b: syserr) {
+  return (qio_err_eq(a,b) != 0:c_int);
+}
 pragma "no doc"
-inline proc ==(a: syserr, b: int(32)) return (qio_err_to_int(a) == b:int(32));
+inline operator syserr.==(a: syserr, b: int(32))
+  return (qio_err_to_int(a) == b:int(32));
 pragma "no doc"
-inline proc ==(a: syserr, b: int(64)) return (qio_err_to_int(a) == b:int(32));
+inline operator syserr.==(a: syserr, b: int(64))
+  return (qio_err_to_int(a) == b:int(32));
 pragma "no doc"
-inline proc ==(a: int(32), b: syserr) return (a:int(32) == qio_err_to_int(b));
+inline operator syserr.==(a: int(32), b: syserr)
+  return (a:int(32) == qio_err_to_int(b));
 pragma "no doc"
-inline proc ==(a: int(64), b: syserr) return (a:int(32) == qio_err_to_int(b));
+inline operator syserr.==(a: int(64), b: syserr)
+  return (a:int(32) == qio_err_to_int(b));
 pragma "no doc"
-inline proc !=(a: syserr, b: syserr) return !(a == b);
+inline operator syserr.!=(a: syserr, b: syserr) return !(a == b);
 pragma "no doc"
-inline proc !=(a: syserr, b: int(32)) return !(a == b);
+inline operator syserr.!=(a: syserr, b: int(32)) return !(a == b);
 pragma "no doc"
-inline proc !=(a: syserr, b: int(64)) return !(a == b);
+inline operator syserr.!=(a: syserr, b: int(64)) return !(a == b);
 pragma "no doc"
-inline proc !=(a: int(32), b: syserr) return !(a == b);
+inline operator syserr.!=(a: int(32), b: syserr) return !(a == b);
 pragma "no doc"
-inline proc !=(a: int(64), b: syserr) return !(a == b);
+inline operator syserr.!=(a: int(64), b: syserr) return !(a == b);
 pragma "no doc"
-inline proc !(a: syserr) return (qio_err_iserr(a) == 0:c_int);
+inline operator syserr.!(a: syserr) return (qio_err_iserr(a) == 0:c_int);
 pragma "no doc"
 inline proc _cond_test(a: syserr) return (qio_err_iserr(a) != 0:c_int);
 pragma "no doc"
-inline proc _cast(type t: int(32), x: syserr) return qio_err_to_int(x);
+inline operator :(x: syserr, type t: int(32)) return qio_err_to_int(x);
 pragma "no doc"
-inline proc _cast(type t: int(64), x: syserr) return qio_err_to_int(x):int(64);
+inline operator :(x: syserr, type t: int(64)) return qio_err_to_int(x):int(64);
 pragma "no doc"
-inline proc _cast(type t: syserr, x: int(32)) return qio_int_to_err(x);
+inline operator :(x: int(32), type t: syserr) return qio_int_to_err(x);
 pragma "no doc"
-inline proc _cast(type t: syserr, x: int(64)) return qio_int_to_err(x:int(32));
+inline operator :(x: int(64), type t: syserr) return qio_int_to_err(x:int(32));
 pragma "no doc"
-inline proc =(ref ret:syserr, x:syserr) { __primitive("=", ret, x); }
+inline operator syserr.=(ref ret:syserr, x:syserr) { __primitive("=", ret, x); }
 pragma "no doc"
-inline proc =(ref ret:syserr, x:int(32)) 
+inline operator syserr.=(ref ret:syserr, x:int(32))
 { __primitive("=", ret, qio_int_to_err(x)); }
 pragma "no doc"
-inline proc =(ref ret:syserr, x:int(64)) 
+inline operator syserr.=(ref ret:syserr, x:int(64))
 { __primitive("=", ret, qio_int_to_err(x:int(32))); }
 pragma "no doc"
-inline proc =(ref ret:err_t, x:syserr) 
+inline operator syserr.=(ref ret:err_t, x:syserr)
 { __primitive("=", ret, qio_err_to_int(x):err_t); }
 
 // end of file

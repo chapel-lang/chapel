@@ -1,7 +1,7 @@
 #ifndef SPR_H
 #define SPR_H
 
-#include <qthread/qthread.h>
+#include "qthread.h"
 
 Q_STARTCXX /* */
 

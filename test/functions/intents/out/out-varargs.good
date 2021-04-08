@@ -1,0 +1,1 @@
+out-varargs.chpl:1: error: out intent varargs are not supported

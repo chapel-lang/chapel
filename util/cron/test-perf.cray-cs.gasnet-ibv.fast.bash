@@ -21,7 +21,6 @@ export CHPL_TEST_TIMEOUT=1800
 export CHPL_GASNET_SEGMENT=fast
 export GASNET_PHYSMEM_MAX=83G
 export CHPL_GASNET_MORE_CFG_OPTIONS=--disable-ibv-odp
-export CHPL_LAUNCHER=slurm-gasnetrun_ibv
 nightly_args="${nightly_args} -no-buildcheck"
 perf_args="-performance-description gn-ibv-fast -numtrials 1"
 

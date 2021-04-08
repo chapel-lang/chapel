@@ -1,0 +1,5 @@
+bug: compiler crash
+
+To fix:
+* allow promotion wrappers in the assertion that gets tripped over,
+* ideally, improve the error message about the return type mismatch.

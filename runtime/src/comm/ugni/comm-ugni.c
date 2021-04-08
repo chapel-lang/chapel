@@ -3089,6 +3089,8 @@ void make_registered_heap(void)
     }
   }
 
+  chpl_comm_regMemHeapTouch(start, size);
+
   registered_heap_size  = size;
   registered_heap_start = start;
   registered_heap_info_set = 1;

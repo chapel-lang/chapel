@@ -1541,7 +1541,7 @@ proc solve(A: [?Adom] ?eltType, b: [?bdom] eltType) {
      This procedure depends on the :mod:`LAPACK` module, and will generate a
      compiler error if ``lapackImpl`` is ``none``.
 */
-proc leastSquares(A: [] ?t, b: [] t, cond = -1.0) throws 
+proc leastSquares(A: [] ?t, b: [] t, cond = -1.0) throws
   where usingLAPACK && isLAPACKType(t)
 {
   use SysCTypes;
@@ -2188,9 +2188,9 @@ A common usage of this interface might look like this:
   // var A: [D] int;
 
   // Add indices to the sparse domain along the diagonal
+  D += (0,0);
   D += (1,1);
   D += (2,2);
-  D += (3,3);
 
   // Set all nonzero indices to the value of 1
   A = 1;
@@ -2313,40 +2313,52 @@ module Sparse {
 
   /* Return a CSR matrix constructed from internal representation:
 
-    - ``shape``: bounding box dimensions
+    - ``parentDom``: parent domain for sparse matrix, bounding box for nonzeros indices
     - ``data``: non-zero element values
     - ``indices``: non-zero row pointers
     - ``indptr``: index pointers
 
   */
-  proc CSRMatrix(shape: 2*int, data: [?nnzDom] ?eltType, indices: [nnzDom], indptr: [?indDom])
-    where indDom.rank == 1 && nnzDom.rank == 1 {
-    var ADom = CSRDomain(shape, indices, indptr);
+  proc CSRMatrix(parentDom: domain(2), data: [?nnzDom] ?eltType, indices: [nnzDom], indptr: [?indDom])
+        where indDom.rank == 1 && nnzDom.rank == 1 {
+    var ADom = CSRDomain(parentDom, indices, indptr);
     var A: [ADom] eltType;
     A.data = data;
     return A;
   }
 
   /* Return a CSR domain constructed from internal representation */
-  proc CSRDomain(shape: 2*int, indices: [?nnzDom], indptr: [?indDom])
-    where indDom.rank == 1 && nnzDom.rank == 1 {
-    const (M, N) = shape;
-    // TODO: Update to 0-based indices
-    const D = {1..M, 1..N};
-    var ADom: sparse subdomain(D) dmapped CS(sortedIndices=false);
+  proc CSRDomain(parentDom: domain(2), indices: [?nnzDom], indptr: [?indDom])
+        where indDom.rank == 1 && nnzDom.rank == 1 {
+    const rowRange = parentDom.dim(0).low..parentDom.dim(0).high;
+    var ADom: sparse subdomain(parentDom) dmapped CS(sortedIndices=false);
 
-    ADom.startIdxDom = {1..indptr.size};
+    ADom.startIdxDom = {rowRange.low..rowRange.high+1};
     ADom.startIdx = indptr;
-    const (hasZero, zeroIndex) = indices.find(0);
-    if hasZero {
-      ADom._nnz = zeroIndex-1;
-    } else {
-      ADom._nnz = indices.size;
-    }
-    ADom.nnzDom = {1..indices.size};
+    ADom._nnz = indices.size;
+    ADom.nnzDom = {0..#indices.size};
     ADom.idx = indices;
 
     return ADom;
+  }
+
+  /* Return a CSR matrix constructed from internal representation:
+    - ``shape``: (M,N) bounding box will be {0..#M,0..#N}
+    - ``data``: non-zero element values
+    - ``indices``: non-zero row pointers
+    - ``indptr``: index pointers
+  */
+  proc CSRMatrix(shape: 2*int, data: [?nnzDom] ?eltType, indices: [nnzDom], indptr: [?indDom])
+        where indDom.rank == 1 && nnzDom.rank == 1 {
+    const (M, N) = shape;
+    return CSRMatrix({0..#M, 0..#N}, data, indices, indptr);
+  }
+
+  /* Return a CSR domain constructed from internal representation */
+  proc CSRDomain(shape: 2*int, indices: [?nnzDom], indptr: [?indDom])
+        where indDom.rank == 1 && nnzDom.rank == 1 {
+    const (M, N) = shape;
+    return CSRDomain({0..#M, 0..#N}, indices, indptr);
   }
 
   /*
@@ -2457,33 +2469,35 @@ module Sparse {
   {
     type idxType = ADom.idxType;
 
-    // TODO: Update to 0-based indices here and in helper functions
-    const (M, K1) = A.shape,
-          (K2, N) = B.shape;
+    // The ranges for the inner dimensions need to match up
+    const rowRange = ADom.dim(0);
+    const innerARange = ADom.dim(1);
+    const innerBRange = BDom.dim(0);
+    const colRange = BDom.dim(1);
 
-    if K1 != K2 then
-      halt("Mismatched shape in sparse matrix-matrix multiplication");
+    if innerARange != innerBRange then
+        halt("Mismatched shape in sparse matrix-matrix multiplication");
 
-    // TODO: Return empty M x N sparse array if A or B size == 0
+    // TODO: Return empty (rowRange, colRange) sparse array if A or B size == 0
 
     /* Note on compressed sparse (CS) internals:
-       - startIdx.domain (indPtr) starts on 0
-       - idx.domain (ind) starts on 1
-       - data.domain starts on 1
+       - startIdx.domain (indPtr) can start with any index
+       - idx.domain (ind) starts on 0
+       - data.domain starts on 0
      */
 
-    // major axis
-    var indPtr: [1..M+1] idxType;
+    // major axis (or row) for result matrix
+    var indPtr: [rowRange.low..rowRange.high+1] idxType;
 
     pass1(A, B, indPtr);
 
     const nnz = indPtr[indPtr.domain.last];
-    var ind: [1..nnz] idxType;
-    var data: [1..nnz] eltType;
+    var ind: [0..#nnz] idxType;
+    var data: [0..#nnz] eltType;
 
     pass2(A, B, indPtr, ind, data);
 
-    var C = CSRMatrix((M, N), data, ind, indPtr);
+    var C = CSRMatrix({rowRange, colRange}, data, ind, indPtr);
 
     if C.domain.sortedIndices {
       sortIndices(C);
@@ -2502,27 +2516,32 @@ module Sparse {
     proc _array.indPtr ref return this.dom.startIdx;
     proc _array.ind ref return this.dom.idx;
 
-    const (M, K1) = A.shape,
-          (K2, N) = B.shape;
-    type idxType = ADom.idxType;
-    var mask: [1..N] idxType;
-    indPtr[1] = 1;
-    var nnz = 1: idxType;
+    const row_range = ADom.dim(0);
+    const inner_Arange = ADom.dim(1);
+    const inner_Brange = BDom.dim(0);
+    const col_range = BDom.dim(1);
 
-    // Rows of C
-    for i in 1..M {
+    type idxType = ADom.idxType;
+
+    var mask: [col_range.low..col_range.high] idxType;
+    mask = col_range.low-1;    // init to something not in col range
+    indPtr[col_range.low] = 0; // col indices definitely start at 0
+    var nnz = 0: idxType;
+
+    // Rows of output matrix C
+    for i in row_range {
       var row_nnz = 0;
-      const Arange = A.indPtr[i]..A.indPtr[i+1]-1;
+      const Apos_range = A.indPtr[i]..A.indPtr[i+1]-1;  // nonzero position range
       // Row pointers of A
-      for jj in Arange {
+      for jpos in Apos_range {
         // Column index of A
-        const j = A.ind[jj];
-        const Brange = B.indPtr[j]..B.indPtr[j+1]-1;
+        const j = A.ind[jpos];
+        const Bpos_range = B.indPtr[j]..B.indPtr[j+1]-1;
         // Row pointers of B
-        for kk in Brange {
+        for kk in Bpos_range {
           // Column index of B
           var k = B.ind[kk];
-          if mask[k] != i {
+          if mask[k] != i { // default of 0 for mask would not count a 0-indexed matrix
             mask[k] = i;
             row_nnz += 1;
           }
@@ -2544,35 +2563,38 @@ module Sparse {
 
     type idxType = ADom.idxType;
 
-    const (M, K1) = A.shape,
-          (K2, N) = B.shape;
+    const row_range = ADom.dim(0);
+    const inner_Arange = ADom.dim(1);
+    const inner_Brange = BDom.dim(0);
+    const col_range = BDom.dim(1);
 
-    const cols = {1..N};
+    const cols = col_range;
 
     var next: [cols] idxType = -1,
         sums: [cols] eltType;
 
-    var nnz = 1;
+    var nnz = 0;
 
-    for i in 1..M {
+    for i in row_range {
       var head = 0:idxType,
           length = 0:idxType;
 
       // Maps row index (i) -> nnz index of A
-      const Arange = A.indPtr[i]..A.indPtr[i+1]-1;
-      for jj in Arange {
-        // Non-zero column index of A for row i
-        const j = A.ind[jj];
-        const v = A.data[jj];
+      const Apos_range = A.indPtr[i]..A.indPtr[i+1]-1;
+      for jpos in Apos_range {
+        // Nonzero column index of A for row i
+        const j = A.ind[jpos];
+        const v = A.data[jpos];
 
         // Maps row index (j) -> nnz index of B
-        const Brange = B.indPtr[j]..B.indPtr[j+1]-1;
-        for kk in Brange {
-          // Non-zero column index of B for row j
+        const Bpos_range = B.indPtr[j]..B.indPtr[j+1]-1;
+        for kk in Bpos_range {
+          // Nonzero column index of B for row j
           const k = B.ind[kk];
 
           sums[k] += v*B.data[kk];
 
+          // ?fromMMS: what is all of this pushing about?
           // push k to stack
           if next[k] == -1 {
             next[k] = head;
@@ -2605,16 +2627,16 @@ module Sparse {
   private proc sortIndices(ref A: [?Dom] ?eltType) where isCSArr(A) {
     use Sort;
 
-    const (M, N) = A.shape;
+    const rowRange = Dom.dim(0);
 
     proc _array.indPtr ref return this.dom.startIdx;
     proc _array.ind return this.dom.idx;
     type idxType = A.ind.eltType;
 
-    var temp: [1..A.ind.size] (idxType, eltType);
+    var temp: [0..#A.ind.size] (idxType, eltType);
     temp = for (idx, datum) in zip(A.ind, A.data) do (idx, datum);
 
-    for i in 1..M {
+    for i in rowRange {
       const rowStart = A.indPtr[i],
             rowEnd = A.indPtr[i+1]-1;
       if rowEnd - rowStart > 0 {

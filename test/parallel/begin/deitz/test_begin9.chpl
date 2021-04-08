@@ -1,25 +1,25 @@
 var s, t, u, v: sync bool;
 
 begin {
-  s = true;
+  s.writeEF(true);
 }
-s;
+s.readFE();
 
 begin {
-  u;
-  v = true;
+  u.readFE();
+  v.writeEF(true);
 }
 begin {
-  t;
-  u = true;
+  t.readFE();
+  u.writeEF(true);
 }
 begin {
-  s;
-  t = true;
+  s.readFE();
+  t.writeEF(true);
 }
 begin {
-  s = true;
+  s.writeEF(true);
 }
-v;
+v.readFE();
 
 writeln("finished");

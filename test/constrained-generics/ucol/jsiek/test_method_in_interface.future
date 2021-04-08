@@ -1,0 +1,11 @@
+unimplemented feature: 'implements' on class types
+#17262
+
+Technically speaking, the code as written is incorrect:
+'LessThan' is implemented only for 'borrowed C'
+while minFn() is being invoked on 'owned C'.
+
+However, this future asks the question: what should this code look like?
+
+Somewhat related: it is unreasonable to pass 'owned' things directly into
+minFn(), as one of the two arguments will inevitably get destroyed.

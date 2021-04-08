@@ -27,8 +27,8 @@ proc set_then_sync() {
 
   forall i in 0..#N {
     tmp.localAccess[i] = A[rindex.localAccess[i]];
-    x = 1;      // don't optimize -- other thread could assume tmp updated
-                // after x is set
+    x.writeEF(1); // don't optimize -- other thread could assume tmp updated
+                  // after x is set
   }
 }
 set_then_sync();
@@ -41,8 +41,8 @@ proc set_then_single() {
 
   forall i in 0..#N {
     tmp.localAccess[i] = A[rindex.localAccess[i]];
-    x = 1;      // don't optimize -- other thread could assume tmp updated
-                // after x is set
+    x.writeEF(1); // don't optimize -- other thread could assume tmp updated
+                  // after x is set
   }
 }
 set_then_single();
@@ -314,9 +314,9 @@ proc mini_sync() {
 
   forall r in 1..M {
     // Acquire the lock
-    myLock = 1;
+    myLock.writeEF(1);
     // Release the lock
-    myLock = 0;
+    myLock.writeEF(0);
     // release the lock
     count.add(1);
   }
@@ -330,9 +330,9 @@ proc mini_single() {
 
   forall r in 1..M {
     // Acquire the lock
-    myLock = 1;
+    myLock.writeEF(1);
     // Release the lock
-    myLock = 0;
+    myLock.writeEF(0);
     // release the lock
     count.add(1);
   }
@@ -403,7 +403,7 @@ record buffer1 {
   }
 }
 
-proc =(ref lhs:buffer1, rhs:buffer1) {
+operator buffer1.=(ref lhs:buffer1, rhs:buffer1) {
   for i in 1..64 do
     lhs.b[i] = rhs.b[i];
 
@@ -447,7 +447,7 @@ record buffer2 {
   }
 }
 
-proc =(ref lhs:buffer2, rhs:buffer2) {
+operator buffer2.=(ref lhs:buffer2, rhs:buffer2) {
   for i in 1..64 do
     lhs.b[i] = rhs.b[i];
 

@@ -859,7 +859,18 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
 
   // sjd: stopgap to avoid shadowing variables or functions by methods
   } else if (fn->isMethod() == true) {
-    updateMethod(usymExpr);
+    BlockStmt* block = usymExpr->getScopeBlock();
+    FnSymbol* containingFn = usymExpr->getFunction();
+    bool convert = true;
+    if (block != NULL && containingFn != NULL) {
+      if (block == containingFn->lifetimeConstraints) {
+        // This is in a lifetime constraint clause.  Don't make this a method
+        // call
+        convert = false;
+      }
+    }
+    if (convert)
+      updateMethod(usymExpr);
 
   // handle function call without parentheses
   } else if (fn->hasFlag(FLAG_NO_PARENS) == true) {
@@ -931,6 +942,14 @@ static void updateMethod(UnresolvedSymExpr* usymExpr,
         if (symExpr == NULL || symExpr->symbol() != method->_this) {
           const char* name = usymExpr->unresolved;
           Type*       type = method->_this->type;
+
+          if ((method->name == astrInit || method->name == astrInitEquals) &&
+              isAstrOpName(name)) {
+            break;
+          }
+
+          if (isAstrOpName(name))
+            break;
 
           if (isAggr == true || isMethodName(name, type) == true) {
             if (isFunctionNameWithExplicitScope(expr) == false) {
@@ -1516,7 +1535,7 @@ static void adjustTypeMethodsOnClasses() {
 
     ArgSymbol* thisArg = toArgSymbol(fn->_this);
     Type*      thisType = thisArg->type;
-    if (! isClass(thisType)) continue; // handle only undecorated classes
+    if (! isClassLikeOrManaged(thisType)) continue;
 
     if (BlockStmt* typeBlock = thisArg->typeExpr) {
       // Remove the type block, ensuring that its information is preserved.

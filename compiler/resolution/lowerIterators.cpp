@@ -215,10 +215,11 @@ static bool isCallVectorHazard(CallExpr* call,
                                std::map<FnSymbol*, bool> &fnHasVectorHazard);
 
 namespace {
-  class VectorHazardVisitor : public AstVisitorTraverse {
+  class VectorHazardVisitor final : public AstVisitorTraverse {
     public:
       VectorHazardVisitor (std::map<FnSymbol*, bool> &fnHasVectorHazard);
-      virtual bool enterCallExpr (CallExpr*  node);
+
+      bool enterCallExpr (CallExpr*  node) override;
 
       bool hazard;
       CallExpr* reason;
@@ -1745,7 +1746,7 @@ fixupErrorHandlingExits(BlockStmt* body, bool& adjustCaller) {
 
 static bool
 findFollowingCheckErrorBlock(SymExpr* se, LabelSymbol*& outHandlerLabel,
-    Symbol*& outErrorSymbol) {
+    Symbol*& outErrorSymbol, CallExpr*& endCountFree) {
   Expr* stmt = se->getStmtExpr(); // aka last scope
   Expr* scope = stmt->parentExpr;
 
@@ -1754,8 +1755,8 @@ findFollowingCheckErrorBlock(SymExpr* se, LabelSymbol*& outHandlerLabel,
       // Consider statements that appear before stmt
       // We are looking for a DefExpr of an error label
       for(Expr* cur = stmt->next; cur != NULL; cur = cur->next) {
-        if (DefExpr* def = toDefExpr(cur))
-          if (LabelSymbol* label = toLabelSymbol(def->sym))
+        if (DefExpr* def = toDefExpr(cur)) {
+          if (LabelSymbol* label = toLabelSymbol(def->sym)) {
             if (label->hasFlag(FLAG_ERROR_LABEL)) {
               outHandlerLabel = label;
               // find the error that this block is working with
@@ -1773,6 +1774,22 @@ findFollowingCheckErrorBlock(SymExpr* se, LabelSymbol*& outHandlerLabel,
               }
               INT_FATAL("Could not find error variable for handler");
             }
+          }
+        }
+        // in case there's an endCountFree between this expression and the
+        // label, we want to record it. The caller can use that information to
+        // insert a copy of that call right before jumping to the error
+        // handling label, to make sure that the end count is not leaked.
+        else if (CallExpr* call = toCallExpr(cur)) {
+          if (call->isNamed("_endCountFree")) {
+            if (endCountFree == NULL) {
+              endCountFree = call;
+            }
+            else {
+              USR_WARN(call, "An unexpected pattern encountered. Your application may leak memory");
+            }
+          }
+        }
       }
     }
     stmt = scope;
@@ -1787,8 +1804,12 @@ void handleChplPropagateErrorCall(CallExpr* call) {
   INT_ASSERT(errSe && errSe->typeInfo() == dtError);
   LabelSymbol* label = NULL;
   Symbol* error = NULL;
-  if (findFollowingCheckErrorBlock(errSe, label, error)) {
+  CallExpr *endCountFree = NULL;
+  if (findFollowingCheckErrorBlock(errSe, label, error, endCountFree)) {
     errSe->remove();
+    if (endCountFree != NULL) {
+      call->insertBefore(endCountFree->copy());
+    }
     call->insertBefore(new CallExpr(PRIM_MOVE, error, errSe));
     call->insertBefore(new GotoStmt(GOTO_ERROR_HANDLING, label));
     call->remove();
@@ -1830,7 +1851,8 @@ replaceErrorFormalWithEnclosingError(SymExpr* se) {
     }
     INT_ASSERT(fixGoto);
 
-    if (findFollowingCheckErrorBlock(se, newLabel, newError)) {
+    CallExpr *dummy = NULL;
+    if (findFollowingCheckErrorBlock(se, newLabel, newError, dummy)) {
       // Adjust the current error handling block.
       // 1. Change the use of the error argument to use the
       // identified error variable.

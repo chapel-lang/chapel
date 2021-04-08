@@ -10,6 +10,5 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="slurm-gasnet-mpi"
 # setup for mpi
 module load openmpi/gcc
 export CHPL_COMM_SUBSTRATE=mpi
-export CHPL_LAUNCHER=slurm-gasnetrun_mpi
 
 $CWD/nightly -cron -hellos ${nightly_args}

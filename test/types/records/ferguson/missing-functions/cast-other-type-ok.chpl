@@ -3,7 +3,7 @@ record R {
 }
 
 // cross-type
-proc _cast(type t: R, x: int) {
+operator :(x: int, type t: R) {
   return new R(x);
 }
 

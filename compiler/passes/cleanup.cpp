@@ -223,6 +223,39 @@ static void cleanup(ModuleSymbol* module) {
         if (fn->hasFlag(FLAG_COMPILER_NESTED_FUNCTION) == true) {
           normalizeNestedFunctionExpressions(fn);
         }
+        if (fn->name == astr_cast) {
+          USR_WARN(fn, "_cast is deprecated syntax for declaring a cast");
+          USR_PRINT("please change to e.g. 'operator : (from: FromType, type t: ToType)'");
+          // change the name to : and swap the first two arguments
+          fn->name = astr(":");
+          DefExpr* type = fn->getFormal(1)->defPoint;
+          DefExpr* val = fn->getFormal(2)->defPoint;
+          Expr* anchor = new CallExpr(PRIM_NOOP);
+          type->insertBefore(anchor);
+          type->remove();
+          val->remove();
+          anchor->insertBefore(val);
+          anchor->insertBefore(type);
+          anchor->remove();
+        } else if (fn->name == astrScolon) {
+          int extraMethodArgs = 2*fn->isMethod(); // 2 extra args: this & _mt
+          int numFormals = fn->numFormals() - extraMethodArgs;
+          if (numFormals != 2) {
+            USR_FATAL_CONT(fn, "cast operator should have two formals, not %d",
+                           numFormals);
+          } else {
+            // skip 'this' argument, if method
+            ArgSymbol* arg2 = fn->getFormal(2 + extraMethodArgs);
+            if (arg2->intent != INTENT_TYPE &&
+                !arg2->hasFlag(FLAG_TYPE_VARIABLE)) {
+              USR_FATAL_CONT(arg2, "second formal for cast should have type intent");
+            }
+            if (arg2->typeExpr == NULL &&
+                fn->getModule()->modTag != MOD_USER) {
+              USR_WARN(arg2, "cast type formal should be constrained");
+            }
+          }
+        }
       }
     }
   }

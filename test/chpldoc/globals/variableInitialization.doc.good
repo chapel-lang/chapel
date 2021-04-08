@@ -19,3 +19,9 @@ or
 
 .. data:: var a = foo("this is", a, "function", call)
 
+.. data:: var b = foo("this is", 1, "function", call)
+
+.. data:: var c = foo("this is", "1", "function", call)
+
+.. data:: var d = foo("this is", a, "function", call).bar("1", 2, "three")
+

@@ -1,5 +1,5 @@
 use CPtr;
-use Regexp;
+use Regex;
 
 var mem = c_calloc(uint(8), 4096);
 if mem != c_nil then

@@ -10,7 +10,7 @@ platform that supports multilocale Chapel.  However, there are also other
 communication configurations that work in specific situations.  On Cray
 XC systems, using native communication as described in :ref:`Using
 Chapel on Cray Systems <readme-cray>` will probably give the best performance.
-For instructions on using the preliminary OpenFabrics Interfaces
+For instructions on using the OpenFabrics Interfaces
 libfabric-based ``ofi`` communication layer, see :ref:`readme-libfabric`.
 
 Steps 2-3 describe how to build a multilocale Chapel, and steps 4-6 cover

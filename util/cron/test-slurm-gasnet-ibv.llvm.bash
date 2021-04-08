@@ -12,6 +12,5 @@ source $CWD/common-llvm.bash
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="slurm-gasnet-ibv.llvm"
 
 export CHPL_COMM_SUBSTRATE=ibv
-export CHPL_LAUNCHER=slurm-gasnetrun_ibv
 
 $CWD/nightly -cron -examples ${nightly_args} < /dev/null

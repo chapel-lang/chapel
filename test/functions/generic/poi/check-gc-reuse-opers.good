@@ -1,104 +1,116 @@
-check-gc-reuse-opers.chpl:39: In function 'u1':
-check-gc-reuse-opers.chpl:40: warning: User.u1
+check-gc-reuse-opers.chpl:66: warning: _cast is deprecated syntax for declaring a cast
+note: please change to e.g. 'operator : (from: FromType, type t: ToType)'
+check-gc-reuse-opers.chpl:67: warning: _cast is deprecated syntax for declaring a cast
+note: please change to e.g. 'operator : (from: FromType, type t: ToType)'
+check-gc-reuse-opers.chpl:111: warning: _cast is deprecated syntax for declaring a cast
+note: please change to e.g. 'operator : (from: FromType, type t: ToType)'
+check-gc-reuse-opers.chpl:112: warning: _cast is deprecated syntax for declaring a cast
+note: please change to e.g. 'operator : (from: FromType, type t: ToType)'
+check-gc-reuse-opers.chpl:159: warning: _cast is deprecated syntax for declaring a cast
+note: please change to e.g. 'operator : (from: FromType, type t: ToType)'
+check-gc-reuse-opers.chpl:160: warning: _cast is deprecated syntax for declaring a cast
+note: please change to e.g. 'operator : (from: FromType, type t: ToType)'
+check-gc-reuse-opers.chpl:40: In function 'u1':
+check-gc-reuse-opers.chpl:41: warning: User.u1
 check-gc-reuse-opers.chpl:22: In function 'libIN':
 check-gc-reuse-opers.chpl:22: warning: User.init
-  check-gc-reuse-opers.chpl:41: called as libIN(myArg: int(64))
+  check-gc-reuse-opers.chpl:42: called as libIN(myArg: int(64))
 check-gc-reuse-opers.chpl:23: In function 'libIE':
 check-gc-reuse-opers.chpl:23: warning: User.init=
-  check-gc-reuse-opers.chpl:42: called as libIE(myArg: int(64))
+  check-gc-reuse-opers.chpl:43: called as libIE(myArg: int(64))
 check-gc-reuse-opers.chpl:24: In function 'libAS':
 check-gc-reuse-opers.chpl:24: warning: User.=
-  check-gc-reuse-opers.chpl:43: called as libAS(myArg: int(64))
+  check-gc-reuse-opers.chpl:44: called as libAS(myArg: int(64))
 check-gc-reuse-opers.chpl:25: In function 'libLT':
 check-gc-reuse-opers.chpl:25: warning: User.<
-  check-gc-reuse-opers.chpl:44: called as libLT(myArg: int(64))
+  check-gc-reuse-opers.chpl:45: called as libLT(myArg: int(64))
 check-gc-reuse-opers.chpl:26: In function 'libCF':
 check-gc-reuse-opers.chpl:26: warning: User._castF
-  check-gc-reuse-opers.chpl:45: called as libCF(myArg: int(64))
+  check-gc-reuse-opers.chpl:46: called as libCF(myArg: int(64))
 check-gc-reuse-opers.chpl:27: In function 'libCT':
 check-gc-reuse-opers.chpl:27: warning: User._castT
-  check-gc-reuse-opers.chpl:46: called as libCT(myArg: int(64))
-check-gc-reuse-opers.chpl:48: In function 'u2':
-check-gc-reuse-opers.chpl:50: warning: User.u2
-check-gc-reuse-opers.chpl:59: In function 'u3':
-check-gc-reuse-opers.chpl:67: warning: User.u3
+  check-gc-reuse-opers.chpl:47: called as libCT(myArg: int(64))
+check-gc-reuse-opers.chpl:49: In function 'u2':
+check-gc-reuse-opers.chpl:51: warning: User.u2
+check-gc-reuse-opers.chpl:60: In function 'u3':
+check-gc-reuse-opers.chpl:69: warning: User.u3
 check-gc-reuse-opers.chpl:23: In function 'libIE':
 check-gc-reuse-opers.chpl:23: warning: u3.init=
-  check-gc-reuse-opers.chpl:69: called as libIE(myArg: int(64))
+  check-gc-reuse-opers.chpl:71: called as libIE(myArg: int(64))
 check-gc-reuse-opers.chpl:24: In function 'libAS':
 check-gc-reuse-opers.chpl:24: warning: u3.=
-  check-gc-reuse-opers.chpl:70: called as libAS(myArg: int(64))
+  check-gc-reuse-opers.chpl:72: called as libAS(myArg: int(64))
 check-gc-reuse-opers.chpl:25: In function 'libLT':
 check-gc-reuse-opers.chpl:25: warning: u3.<
-  check-gc-reuse-opers.chpl:71: called as libLT(myArg: int(64))
+  check-gc-reuse-opers.chpl:73: called as libLT(myArg: int(64))
 check-gc-reuse-opers.chpl:26: In function 'libCF':
 check-gc-reuse-opers.chpl:26: warning: u3._castF
-  check-gc-reuse-opers.chpl:72: called as libCF(myArg: int(64))
+  check-gc-reuse-opers.chpl:74: called as libCF(myArg: int(64))
 check-gc-reuse-opers.chpl:27: In function 'libCT':
 check-gc-reuse-opers.chpl:27: warning: u3._castT
-  check-gc-reuse-opers.chpl:73: called as libCT(myArg: int(64))
-check-gc-reuse-opers.chpl:59: In function 'u3':
-check-gc-reuse-opers.chpl:66: warning: u3.init
-check-gc-reuse-opers.chpl:111: In function 'm1con':
-check-gc-reuse-opers.chpl:112: warning: More1.m1con
+  check-gc-reuse-opers.chpl:75: called as libCT(myArg: int(64))
+check-gc-reuse-opers.chpl:60: In function 'u3':
+check-gc-reuse-opers.chpl:68: warning: u3.init
+check-gc-reuse-opers.chpl:114: In function 'm1con':
+check-gc-reuse-opers.chpl:115: warning: More1.m1con
 check-gc-reuse-opers.chpl:23: In function 'libIE':
 check-gc-reuse-opers.chpl:23: warning: More1.init=
-  check-gc-reuse-opers.chpl:114: called as libIE(myArg: int(64))
+  check-gc-reuse-opers.chpl:117: called as libIE(myArg: int(64))
 check-gc-reuse-opers.chpl:24: In function 'libAS':
 check-gc-reuse-opers.chpl:24: warning: More1.=
-  check-gc-reuse-opers.chpl:115: called as libAS(myArg: int(64))
+  check-gc-reuse-opers.chpl:118: called as libAS(myArg: int(64))
 check-gc-reuse-opers.chpl:25: In function 'libLT':
 check-gc-reuse-opers.chpl:25: warning: More1.<
-  check-gc-reuse-opers.chpl:116: called as libLT(myArg: int(64))
+  check-gc-reuse-opers.chpl:119: called as libLT(myArg: int(64))
 check-gc-reuse-opers.chpl:26: In function 'libCF':
 check-gc-reuse-opers.chpl:26: warning: More1._castF
-  check-gc-reuse-opers.chpl:117: called as libCF(myArg: int(64))
+  check-gc-reuse-opers.chpl:120: called as libCF(myArg: int(64))
 check-gc-reuse-opers.chpl:27: In function 'libCT':
 check-gc-reuse-opers.chpl:27: warning: More1._castT
-  check-gc-reuse-opers.chpl:118: called as libCT(myArg: int(64))
-check-gc-reuse-opers.chpl:109: In function '_cast':
-check-gc-reuse-opers.chpl:110: warning: More1.init
-  check-gc-reuse-opers.chpl:27: called as _cast(type t = MyRecord, rhs: int(64)) from function 'libCT'
-  check-gc-reuse-opers.chpl:118: called as libCT(myArg: int(64))
-check-gc-reuse-opers.chpl:120: In function 'm1gen':
-check-gc-reuse-opers.chpl:121: warning: More1.m1gen
-  check-gc-reuse-opers.chpl:83: called as m1gen(param p = 0)
-check-gc-reuse-opers.chpl:134: In function 'm2con':
-check-gc-reuse-opers.chpl:135: warning: More2.m2con
-check-gc-reuse-opers.chpl:138: In function 'm2gen':
-check-gc-reuse-opers.chpl:139: warning: More2.m2gen
-  check-gc-reuse-opers.chpl:88: called as m2gen(param p = 0)
-check-gc-reuse-opers.chpl:176: In function 'combo2a':
-check-gc-reuse-opers.chpl:177: warning: Combo2.combo2a
-  check-gc-reuse-opers.chpl:160: called as combo2a(param p = 0)
+  check-gc-reuse-opers.chpl:121: called as libCT(myArg: int(64))
+check-gc-reuse-opers.chpl:112: In function ':':
+check-gc-reuse-opers.chpl:113: warning: More1.init
+  check-gc-reuse-opers.chpl:27: called as :(rhs: int(64), type t = MyRecord) from function 'libCT'
+  check-gc-reuse-opers.chpl:121: called as libCT(myArg: int(64))
+check-gc-reuse-opers.chpl:123: In function 'm1gen':
+check-gc-reuse-opers.chpl:124: warning: More1.m1gen
+  check-gc-reuse-opers.chpl:85: called as m1gen(param p = 0)
+check-gc-reuse-opers.chpl:137: In function 'm2con':
+check-gc-reuse-opers.chpl:138: warning: More2.m2con
+check-gc-reuse-opers.chpl:141: In function 'm2gen':
+check-gc-reuse-opers.chpl:142: warning: More2.m2gen
+  check-gc-reuse-opers.chpl:90: called as m2gen(param p = 0)
+check-gc-reuse-opers.chpl:180: In function 'combo2a':
+check-gc-reuse-opers.chpl:181: warning: Combo2.combo2a
+  check-gc-reuse-opers.chpl:164: called as combo2a(param p = 0)
 check-gc-reuse-opers.chpl:23: In function 'libIE':
 check-gc-reuse-opers.chpl:23: warning: Combo1.init=
-  check-gc-reuse-opers.chpl:179: called as libIE(myArg: int(64)) from function 'combo2a'
-  check-gc-reuse-opers.chpl:160: called as combo2a(param p = 0)
+  check-gc-reuse-opers.chpl:183: called as libIE(myArg: int(64)) from function 'combo2a'
+  check-gc-reuse-opers.chpl:164: called as combo2a(param p = 0)
 check-gc-reuse-opers.chpl:24: In function 'libAS':
 check-gc-reuse-opers.chpl:24: warning: Combo1.=
-  check-gc-reuse-opers.chpl:180: called as libAS(myArg: int(64)) from function 'combo2a'
-  check-gc-reuse-opers.chpl:160: called as combo2a(param p = 0)
+  check-gc-reuse-opers.chpl:184: called as libAS(myArg: int(64)) from function 'combo2a'
+  check-gc-reuse-opers.chpl:164: called as combo2a(param p = 0)
 check-gc-reuse-opers.chpl:25: In function 'libLT':
 check-gc-reuse-opers.chpl:25: warning: Combo1.<
-  check-gc-reuse-opers.chpl:181: called as libLT(myArg: int(64)) from function 'combo2a'
-  check-gc-reuse-opers.chpl:160: called as combo2a(param p = 0)
+  check-gc-reuse-opers.chpl:185: called as libLT(myArg: int(64)) from function 'combo2a'
+  check-gc-reuse-opers.chpl:164: called as combo2a(param p = 0)
 check-gc-reuse-opers.chpl:26: In function 'libCF':
 check-gc-reuse-opers.chpl:26: warning: Combo1._castF
-  check-gc-reuse-opers.chpl:182: called as libCF(myArg: int(64)) from function 'combo2a'
-  check-gc-reuse-opers.chpl:160: called as combo2a(param p = 0)
+  check-gc-reuse-opers.chpl:186: called as libCF(myArg: int(64)) from function 'combo2a'
+  check-gc-reuse-opers.chpl:164: called as combo2a(param p = 0)
 check-gc-reuse-opers.chpl:27: In function 'libCT':
 check-gc-reuse-opers.chpl:27: warning: Combo1._castT
-  check-gc-reuse-opers.chpl:183: called as libCT(myArg: int(64)) from function 'combo2a'
-  check-gc-reuse-opers.chpl:160: called as combo2a(param p = 0)
-check-gc-reuse-opers.chpl:156: In function '_cast':
-check-gc-reuse-opers.chpl:157: warning: Combo1.init
-  check-gc-reuse-opers.chpl:27: called as _cast(type t = MyRecord, rhs: int(64)) from function 'libCT'
-  check-gc-reuse-opers.chpl:183: called as libCT(myArg: int(64)) from function 'combo2a'
-  check-gc-reuse-opers.chpl:160: called as combo2a(param p = 0)
-check-gc-reuse-opers.chpl:162: In function 'combo1b':
-check-gc-reuse-opers.chpl:163: warning: Combo1.combo1b
-  check-gc-reuse-opers.chpl:187: called as combo1b(param p = 0)
+  check-gc-reuse-opers.chpl:187: called as libCT(myArg: int(64)) from function 'combo2a'
+  check-gc-reuse-opers.chpl:164: called as combo2a(param p = 0)
+check-gc-reuse-opers.chpl:160: In function ':':
+check-gc-reuse-opers.chpl:161: warning: Combo1.init
+  check-gc-reuse-opers.chpl:27: called as :(rhs: int(64), type t = MyRecord) from function 'libCT'
+  check-gc-reuse-opers.chpl:187: called as libCT(myArg: int(64)) from function 'combo2a'
+  check-gc-reuse-opers.chpl:164: called as combo2a(param p = 0)
+check-gc-reuse-opers.chpl:166: In function 'combo1b':
+check-gc-reuse-opers.chpl:167: warning: Combo1.combo1b
+  check-gc-reuse-opers.chpl:191: called as combo1b(param p = 0)
 
 User.u1
 User.init

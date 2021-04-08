@@ -15,8 +15,11 @@ fnints: OK
 intDefines: OK
 invalidC: OK
 miscTypedef: OK
+miscTypedefUnion: OK
 nestedStruct: OK
+nestedUnion: OK
 opaqueStruct: OK
+opaqueUnion: OK
 simpleRecords: OK
 sysCTypes: OK
 .c file: OK

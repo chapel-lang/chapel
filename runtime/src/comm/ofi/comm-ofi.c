@@ -223,6 +223,7 @@ static void emit_delayedFixedHeapMsgs(void);
 
 static inline struct perTxCtxInfo_t* tciAlloc(void);
 static inline struct perTxCtxInfo_t* tciAllocForAmHandler(void);
+static inline chpl_bool tciAllocTabEntry(struct perTxCtxInfo_t*);
 static inline void tciFree(struct perTxCtxInfo_t*);
 static inline chpl_comm_nb_handle_t ofi_put(const void*, c_nodeid_t,
                                             void*, size_t);
@@ -428,6 +429,7 @@ typedef enum {
   provType_verbs,
   provType_rxd,
   provType_rxm,
+  provType_tcp,
   provTypeCount
 } provider_t;
 
@@ -472,9 +474,12 @@ void init_providerInUse(void) {
     providerSetSet(&providerInUseSet, provType_efa);
   } else if (isInProvName("gni", pn)) {
     providerSetSet(&providerInUseSet, provType_gni);
+  } else if (isInProvName("tcp", pn)) {
+    providerSetSet(&providerInUseSet, provType_tcp);
   } else if (isInProvName("verbs", pn)) {
     providerSetSet(&providerInUseSet, provType_verbs);
   }
+
   //
   // We can be using any number of utility providers.
   //
@@ -857,6 +862,7 @@ static void init_ofiExchangeAvInfo(void);
 static void init_ofiForMem(void);
 static void init_ofiForRma(void);
 static void init_ofiForAms(void);
+static void init_ofiConnections(void);
 
 static void init_bar(void);
 
@@ -943,6 +949,8 @@ void init_ofi(void) {
   CHPL_CALLOC(orderDummyMap, chpl_numNodes);
   chpl_comm_ofi_oob_allgather(&orderDummy, orderDummyMap,
                               sizeof(orderDummyMap[0]));
+
+  init_ofiConnections();
 
   DBG_PRINTF(DBG_CFG,
              "AM config: recv buf size %zd MiB, %s, responses use %s",
@@ -1185,32 +1193,119 @@ struct fi_info* findProvInList(struct fi_info* info,
 
 
 static
+struct fi_info* findProvider(struct fi_info** p_infoList,
+                             struct fi_info* hints,
+                             chpl_bool skip_RxD_provs,
+                             chpl_bool skip_RxM_provs,
+                             const char* feature) {
+  chpl_bool skip_ungood_provs;
+
+  if (hints != NULL) {
+    int ret;
+    OFI_CHK_2(fi_getinfo(COMM_OFI_FI_VERSION, NULL, NULL, 0, hints,
+                         p_infoList),
+              ret, -FI_ENODATA);
+    skip_ungood_provs = (getProviderName() == NULL);
+  } else {
+    skip_ungood_provs = false;
+  }
+
+  struct fi_info* infoFound = NULL;
+  if (*p_infoList != NULL
+      && ((infoFound = findProvInList(*p_infoList, skip_ungood_provs,
+                                      skip_RxD_provs, skip_RxM_provs))
+          != NULL)) {
+    DBG_PRINTF_NODE0(DBG_PROV,
+                     "** found %sdesirable provider with %s",
+                     (hints != NULL) ? "" : "less-", feature);
+  } else {
+    DBG_PRINTF_NODE0(DBG_PROV,
+                     "** no %sdesirable provider with %s",
+                     (hints != NULL) ? "" : "less-", feature);
+  }
+
+  return infoFound;
+}
+
+
+static
+struct fi_info* findDlvrCmpltProv(struct fi_info** p_infoList,
+                                  struct fi_info* hints) {
+  //
+  // We're looking for a provider that supports FI_DELIVERY_COMPLETE.
+  // If we're given hints, then we don't have any candidates yet.  In
+  // that case we're asked to get a provider list using those hints,
+  // modified with delivery-complete, and from that select the first
+  // "good" (or forced) provider, which is assumed to be the one that
+  // will perform best.  Otherwise, we're just asked to find the best
+  // less-good provider from the given list.
+  //
+  const char* prov_name = getProviderName();
+  const chpl_bool forced_RxD = isInProvName("ofi_rxd", prov_name);
+  const chpl_bool forced_RxM = isInProvName("ofi_rxm", prov_name);
+  struct fi_info* infoFound;
+
+  uint64_t op_flags_saved = 0;
+  if (hints != NULL) {
+    op_flags_saved = hints->tx_attr->op_flags;
+    hints->tx_attr->op_flags = FI_DELIVERY_COMPLETE;
+  }
+
+  infoFound = findProvider(p_infoList, hints,
+                           !forced_RxD /*skip_RxD_provs*/,
+                           !forced_RxM /*skip_RxM_provs*/,
+                           "delivery-complete");
+
+  if (hints != NULL) {
+    hints->tx_attr->op_flags = op_flags_saved;
+  }
+
+  return infoFound;
+}
+
+
+static
+struct fi_info* findMsgOrderProv(struct fi_info** p_infoList,
+                                 struct fi_info* hints) {
+  //
+  // We're looking for a provider that supports the message orderings
+  // that are sufficient for us to adhere to the MCM.  If we're given
+  // hints, then we don't have any candidates yet.  In that case we're
+  // asked to get a provider list using those hints, modified with the
+  // needed message orderings, and from that select the first "good" (or
+  // forced) provider, which is assumed to be the one that will perform
+  // best.  Otherwise, we're just asked to find the best less-good
+  // provider from the given list.
+  //
+  const char* prov_name = getProviderName();
+  const chpl_bool forced_RxD = isInProvName("ofi_rxd", prov_name);
+  struct fi_info* infoFound;
+
+  uint64_t tx_msg_order_saved = 0;
+  uint64_t rx_msg_order_saved = 0;
+  if (hints != NULL) {
+    tx_msg_order_saved = hints->tx_attr->msg_order;
+    rx_msg_order_saved = hints->rx_attr->msg_order;
+    hints->tx_attr->msg_order |= FI_ORDER_RAW  | FI_ORDER_WAW | FI_ORDER_SAW;
+    hints->rx_attr->msg_order |= FI_ORDER_RAW  | FI_ORDER_WAW | FI_ORDER_SAW;
+  }
+
+  infoFound = findProvider(p_infoList, hints,
+                           !forced_RxD /*skip_RxD_provs*/,
+                           false /*skip_RxM_provs*/,
+                           "message orderings");
+
+  if (hints != NULL) {
+    hints->tx_attr->msg_order = tx_msg_order_saved;
+    hints->rx_attr->msg_order = rx_msg_order_saved;
+  }
+
+  return infoFound;
+}
+
+
+static
 void init_ofiFabricDomain(void) {
-  //
-  // Just within this function, it's useful during setup to be able to
-  // produce error messages only from node 0, for problems we expect
-  // all nodes to encounter identically.
-  //
-#  define INTERNAL_ERROR_V_NODE0(fmt, ...)                              \
-    do {                                                                \
-      if (chpl_nodeID == 0) {                                           \
-        INTERNAL_ERROR_V(fmt, ## __VA_ARGS__);                          \
-      } else {                                                          \
-        chpl_comm_ofi_oob_fini();                                       \
-        chpl_exit_any(0);                                               \
-      }                                                                 \
-    } while (0)
-
-  //
-  // It's also useful to be able to print debug info only from node 0.
-  //
-#  define DBG_PRINTF_NODE0(mask, fmt, ...)                              \
-    do {                                                                \
-      if (chpl_nodeID == 0) {                                           \
-        DBG_PRINTF(mask, fmt, ## __VA_ARGS__);                          \
-      }                                                                 \
-    } while (0)
-
   //
   // Build hints describing our fundamental requirements and get a list
   // of the providers that can satisfy those:
@@ -1230,9 +1325,6 @@ void init_ofiFabricDomain(void) {
   // - in addition, include the memory registration modes we can support
   //
   const char* prov_name = getProviderName();
-  const chpl_bool forced_RxD = isInProvName("ofi_rxd", prov_name);
-  const chpl_bool forced_RxM = isInProvName("ofi_rxm", prov_name);
-
   struct fi_info* hints;
   CHK_TRUE((hints = fi_allocinfo()) != NULL);
 
@@ -1299,12 +1391,12 @@ void init_ofiFabricDomain(void) {
   // by any of the returned providers.  Providers will not typically
   // "volunteer" capabilities that aren't asked for, especially if those
   // capabilities have performance costs.  So here, first see if we get
-  // a "good" core provider when we hint the transaction orderings, and
-  // iff that fails see if we get a "good" core provider when we hint
-  // delivery-complete.  "Good" here means "not tcp or sockets".  There
-  // are some wrinkles:
-  // - Setting either the transaction orderings or the delivery types in
-  //   manually overridden hints causes those hints to be used as-is,
+  // a "good" core provider when we hint at delivery-complete and then
+  // (if needed) message ordering.  Then, if that doesn't succeed, we
+  // settle for a not-so-good provider.  "Good" here means "neither tcp
+  // nor sockets".  There are some wrinkles:
+  // - Setting either the transaction orderings or the completion type
+  //   in manually overridden hints causes those hints to be used as-is,
   //   turning off both the good-provider check and any attempt to find
   //   something sufficient for the MCM.
   // - Setting the FI_PROVIDER environment variable to manually specify
@@ -1332,112 +1424,54 @@ void init_ofiFabricDomain(void) {
       INTERNAL_ERROR_V_NODE0("No (forced) provider for prov_name \"%s\"",
                              (prov_name == NULL) ? "<any>" : prov_name);
     }
-    goto haveProvider;
   }
 
   //
-  // If we can find a good provider that supports FI_DELIVERY_COMPLETE,
-  // then use that.  In doing so, don't accept anything that includes
-  // the RxM utility provider unless the environment forces it on us,
-  // because RxM advertises delivery-complete but doesn't actually do
-  // it.
+  // Try to find a good provider, then settle for a not-so-good one. By
+  // default try delivery-complete first, then message ordering, but
+  // allow that order to be swapped via the environment.
   //
-  hints->tx_attr->op_flags = FI_DELIVERY_COMPLETE;
+  if (ofi_info == NULL) {
+    const chpl_bool
+      preferDlvrCmplt = chpl_env_rt_get_bool("COMM_OFI_DO_DELIVERY_COMPLETE",
+                                             true);
+    struct {
+      struct fi_info* (*fn)(struct fi_info**, struct fi_info*);
+      struct fi_info* infoList;
+    } capTry[] = { { findDlvrCmpltProv, NULL },
+                   { findMsgOrderProv, NULL }, };
+    size_t capTryLen = sizeof(capTry) / sizeof(capTry[0]);
 
-  struct fi_info* infoCmplt;
-  OFI_CHK_2(fi_getinfo(COMM_OFI_FI_VERSION, NULL, NULL, 0, hints, &infoCmplt),
-            ret, -FI_ENODATA);
+    if (!preferDlvrCmplt) {
+      capTry[0].fn = findMsgOrderProv;
+      capTry[1].fn = findDlvrCmpltProv;
+    }
 
-  if (ret == FI_SUCCESS
-      && ((ofi_info = findProvInList(infoCmplt,
-                                     prov_name == NULL /*skip_ungood_provs*/,
-                                     !forced_RxD /*skip_RxD_provs*/,
-                                     !forced_RxM /*skip_RxM_provs*/))
-          != NULL)) {
-    DBG_PRINTF_NODE0(DBG_PROV,
-                     "** found desirable provider with delivery-complete");
-    fi_freeinfo(infoCmplt);
-    goto haveProvider;
-  }
+    // Search for a good provider.
+    for (int i = 0; ofi_info == NULL && i < capTryLen; i++) {
+      ofi_info = (*capTry[i].fn)(&capTry[i].infoList, hints);
+    }
 
-  DBG_PRINTF_NODE0(DBG_PROV,
-                   "** no desirable provider with delivery-complete");
+    // If necessary, search for a less-good provider.
+    for (int i = 0; ofi_info == NULL && i < capTryLen; i++) {
+      ofi_info = (*capTry[i].fn)(&capTry[i].infoList, NULL);
+    }
 
-  hints->tx_attr->op_flags = FI_COMPLETION;
-
-  //
-  // If we can find a good provider that supports the transaction
-  // orderings we want, then use that.
-  //
-  uint64_t msg_order_more = FI_ORDER_RAW  | FI_ORDER_WAW | FI_ORDER_SAW;
-  hints->tx_attr->msg_order |= msg_order_more;
-  hints->rx_attr->msg_order = hints->tx_attr->msg_order;
-
-  struct fi_info* infoTxOrd;
-  OFI_CHK_2(fi_getinfo(COMM_OFI_FI_VERSION, NULL, NULL, 0, hints, &infoTxOrd),
-            ret, -FI_ENODATA);
-
-  if (ret == FI_SUCCESS
-      && ((ofi_info = findProvInList(infoTxOrd,
-                                     prov_name == NULL /*skip_ungood_provs*/,
-                                     !forced_RxD /*skip_RxD_provs*/,
-                                     false /*skip_RxM_provs*/))
-          != NULL)) {
-    DBG_PRINTF_NODE0(DBG_PROV,
-                     "** found desirable provider with transaction orderings");
-    fi_freeinfo(infoTxOrd);
-    goto haveProvider;
-  }
-
-  DBG_PRINTF_NODE0(DBG_PROV,
-                   "** no desirable provider with transaction orderings");
-
-  hints->tx_attr->msg_order &= ~msg_order_more;
-  hints->rx_attr->msg_order = hints->tx_attr->msg_order;
-
-  //
-  // We couldn't find a good provider that supports what we need, so now
-  // try to find _any_ provider that does so.
-  //
-  if (infoCmplt != NULL) {
-    ofi_info = findProvInList(infoCmplt,
-                              false /*skip_ungood_provs*/,
-                              !forced_RxD /*skip_RxD_provs*/,
-                              !forced_RxM /*skip_RxM_provs*/);
-    fi_freeinfo(infoCmplt);
-    if (ofi_info != NULL) {
-      DBG_PRINTF_NODE0(DBG_PROV,
-                       "** found less-desirable provider with "
-                       "delivery-complete");
-      if (infoTxOrd != NULL) {
-        fi_freeinfo(infoTxOrd);
-      }
-      goto haveProvider;
+    // ofi_info has the result; free intermediate list(s).
+    for (int i = 0; i < capTryLen && capTry[i].infoList != NULL; i++) {
+      fi_freeinfo(capTry[i].infoList);
     }
   }
 
-  if (infoTxOrd != NULL) {
-    ofi_info = findProvInList(infoTxOrd,
-                              false /*skip_ungood_provs*/,
-                              !forced_RxD /*skip_RxD_provs*/,
-                              false /*skip_RxM_provs*/);
-    fi_freeinfo(infoTxOrd);
-    if (ofi_info != NULL) {
-      DBG_PRINTF_NODE0(DBG_PROV,
-                       "** found less-desirable provider with transaction "
-                       "orderings");
-      goto haveProvider;
-    }
+  if (ofi_info == NULL) {
+    //
+    // We didn't find any provider at all.
+    // NOTE: execution ends here.
+    //
+    INTERNAL_ERROR_V_NODE0("No libfabric provider for prov_name \"%s\"",
+                           (prov_name == NULL) ? "<any>" : prov_name);
   }
 
-  //
-  // We didn't find any provider at all.
-  // NOTE: execution ends here.
-  //
-  INTERNAL_ERROR_V_NODE0("No libfabric provider for prov_name \"%s\"",
-                         (prov_name == NULL) ? "<any>" : prov_name);
-
-haveProvider:
   //
   // If we get here, we have a provider in ofi_info.
   //
@@ -1478,9 +1512,6 @@ haveProvider:
   //
   OFI_CHK(fi_fabric(ofi_info->fabric_attr, &ofi_fabric, NULL));
   OFI_CHK(fi_domain(ofi_fabric, ofi_info, &ofi_domain, NULL));
-
-#  undef DBG_PRINTF_NODE0
-#  undef INTERNAL_ERROR_V_NODE0
 }
 
 
@@ -2076,11 +2107,51 @@ void init_ofiForAms(void) {
 }
 
 
-#if 0
+static inline void amRequestNop(c_nodeid_t, chpl_bool, struct perTxCtxInfo_t*);
+
 static
-void init_ofiPerThread(void) {
+void init_ofiConnections(void) {
+  //
+  // With providers that do dynamic endpoint connection we have seen
+  // fairly dramatic connection overheads under certain circumstances.
+  // As an aid to performance analysis, here we allow for forcing the
+  // endpoint connections to be established early, during startup,
+  // rather than later during timed sections of user code.
+  //
+  if (!providerInUse(provType_tcp)
+      && !providerInUse(provType_verbs)) {
+    return;
+  }
+
+  if (!chpl_env_rt_get_bool("COMM_OFI_CONNECT_EAGERLY", false)) {
+    return;
+  }
+
+  //
+  // We do this by firing a no-op AM to every remote node from every
+  // still-inactive tx context.  (In effect, this means from all tx
+  // contexts that aren't already bound to AM handlers.)  At present we
+  // use blocking AMs for this, but if needed we could delay blocking
+  // until after the last one had been initiated.  One way or another,
+  // we need to not return until after all the connections have been
+  // established.
+  //
+  for (c_nodeid_t node = (chpl_nodeID + 1) % chpl_numNodes;
+       node != chpl_nodeID;
+       node = (node + 1) % chpl_numNodes) {
+    for (int i = 0; i < tciTabLen; i++) {
+      struct perTxCtxInfo_t* tcip = &tciTab[i];
+      if (!tcip->bound) {
+        CHK_TRUE(tciAllocTabEntry(tcip));
+        while (tcip->txCQ != NULL && tcip->numTxnsOut >= txCQLen) {
+          (*tcip->checkTxCmplsFn)(tcip);
+        }
+        amRequestNop(node, true /*blocking*/, tcip);
+        tciFree(tcip);
+      }
+    }
+  }
 }
-#endif
 
 
 void chpl_comm_rollcall(void) {
@@ -2391,6 +2462,8 @@ void init_fixedHeap(void) {
   if (start == NULL)
     chpl_error("cannot initialize heap: cannot get memory", 0, 0);
 
+  chpl_comm_regMemHeapTouch(start, size);
+
   DBG_PRINTF(DBG_MR, "fixed heap on %spages, start=%p size=%#zx\n",
              have_hugepages ? "huge" : "regular ", start, size);
 
@@ -2554,7 +2627,7 @@ int mrGetLocalKey(void* addr, size_t size) {
 // Interface: memory consistency
 //
 
-static inline void amRequestNop(c_nodeid_t, chpl_bool);
+static inline void amRequestNop(c_nodeid_t, chpl_bool, struct perTxCtxInfo_t*);
 static inline chpl_bool setUpDelayedAmDone(chpl_comm_taskPrvData_t**, void**);
 static inline void retireDelayedAmDone(chpl_bool);
 
@@ -2743,7 +2816,7 @@ static void amRequestRMA(c_nodeid_t, amOp_t, void*, void*, size_t);
 static void amRequestAMO(c_nodeid_t, void*, const void*, const void*, void*,
                          int, enum fi_datatype, size_t);
 static void amRequestFree(c_nodeid_t, void*);
-static void amRequestNop(c_nodeid_t, chpl_bool);
+static inline void amRequestNop(c_nodeid_t, chpl_bool, struct perTxCtxInfo_t*);
 static void amRequestCommon(c_nodeid_t, amRequest_t*, size_t,
                             amDone_t**, chpl_bool, struct perTxCtxInfo_t*);
 static inline void amWaitForDone(amDone_t*);
@@ -2980,12 +3053,13 @@ void amRequestFree(c_nodeid_t node, void* p) {
 
 
 static inline
-void amRequestNop(c_nodeid_t node, chpl_bool blocking) {
+void amRequestNop(c_nodeid_t node, chpl_bool blocking,
+                  struct perTxCtxInfo_t* tcip) {
   amRequest_t req = { .b = { .op = am_opNop,
                              .node = chpl_nodeID, }, };
   amRequestCommon(node, &req, sizeof(req.b),
                   blocking ? &req.b.pAmDone : NULL,
-                  false /*yieldDuringTxnWait*/, NULL);
+                  false /*yieldDuringTxnWait*/, tcip);
 }
 
 
@@ -3708,7 +3782,7 @@ void amCheckLiveness(void) {
     if (--node == 0) {
       node = chpl_numNodes - 1;
     }
-    amRequestNop(node, false /*blocking*/);
+    amRequestNop(node, false /*blocking*/, amTcip);
     count = countInterval;
     lastTime = time;
   }
@@ -4041,7 +4115,7 @@ struct perTxCtxInfo_t* tciAllocCommon(chpl_bool bindToAmHandler) {
       return _ttcip;
     }
 
-    if (!atomic_exchange_bool(&_ttcip->allocated, true)) {
+    if (tciAllocTabEntry(_ttcip)) {
       DBG_PRINTF(DBG_TCIPS, "realloc tciTab[%td]", _ttcip - tciTab);
       return _ttcip;
     }
@@ -4080,7 +4154,7 @@ struct perTxCtxInfo_t* findFreeTciTabEntry(chpl_bool bindToAmHandler) {
     // we ever have more, the CHK_FALSE will force us to revisit this.
     //
     tcip = &tciTab[numWorkerTxCtxs];
-    CHK_FALSE(atomic_exchange_bool(&tcip->allocated, true));
+    CHK_TRUE(tciAllocTabEntry(tcip));
     return tcip;
   }
 
@@ -4101,7 +4175,7 @@ struct perTxCtxInfo_t* findFreeTciTabEntry(chpl_bool bindToAmHandler) {
       if (++iw >= numWorkerTxCtxs)
         iw = 0;
       allBound = allBound && tciTab[iw].bound;
-      if (!atomic_exchange_bool(&tciTab[iw].allocated, true)) {
+      if (tciAllocTabEntry(&tciTab[iw])) {
         tcip = &tciTab[iw];
       }
     } while (tcip == NULL && iw != last_iw);
@@ -4113,6 +4187,16 @@ struct perTxCtxInfo_t* findFreeTciTabEntry(chpl_bool bindToAmHandler) {
   } while (tcip == NULL);
 
   return tcip;
+}
+
+
+//
+// This returns true if you successfully allocated the given tciTab
+// entry and false otherwise.
+//
+static inline
+chpl_bool tciAllocTabEntry(struct perTxCtxInfo_t* tcip) {
+  return(!atomic_exchange_bool(&tcip->allocated, true));
 }
 
 

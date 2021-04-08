@@ -55,7 +55,7 @@ defaults to ``true`` if omitted. For example:
   .. code-block:: chapel
 
     use LayoutCS;
-    var D = {1..n, 1..m};  // a default-distributed domain
+    var D = {0..#n, 0..#m};  // a default-distributed domain
     var CSR_Domain: sparse subdomain(D) dmapped CS(compressRows=true); // Default argument
     var CSC_Domain : sparse subdomain(D) dmapped CS(compressRows=false);
 
@@ -72,7 +72,7 @@ This domain map is a layout, i.e. it maps all indices to the current locale.
 All elements of a CS-distributed array are stored
 on the locale where the array variable is declared.  By default, the CS
 layout stores sparse indices in sorted order.  However, this default can
-be changed for a program by compiling with ``-sLayoutCSDefaultToSorted=false``, 
+be changed for a program by compiling with ``-sLayoutCSDefaultToSorted=false``,
 or for a specific domain by passing ``sortedIndices=false`` as an argument
 to the ``CS()`` initializer.
 */
@@ -118,10 +118,10 @@ class CSDom: BaseSparseDomImpl {
 
   /* (row|col) start */
   pragma "local field"
-  var startIdx: [startIdxDom] idxType;      // would like index(nnzDom)
+  var startIdx: [startIdxDom] idxType;    // would like index(nnzDom)
   /* (row|col) idx */
   pragma "local field"
-  var idx: [nnzDom] idxType;        // would like index(parentDom.dim(0))
+  var idx: [nnzDom] idxType;      // would like index(parentDom.dim(0))
 
   /* Initializer */
   proc init(param rank, type idxType, param compressRows, param sortedIndices, param stridable, dist: unmanaged CS(compressRows,sortedIndices), parentDom: domain) {
@@ -139,11 +139,14 @@ class CSDom: BaseSparseDomImpl {
     this.dist = dist;
     rowRange = parentDom.dim(0);
     colRange = parentDom.dim(1);
-    startIdxDom = if compressRows then {rowRange.low..rowRange.high+1} else {colRange.low..colRange.high+1};
+    // startIdx array takes advantage of potentially using a non-zero-indexed bounding box
+    startIdxDom = if compressRows
+                  then {rowRange.low..rowRange.high+1}
+                  else {colRange.low..colRange.high+1};
 
     this.complete();
 
-    nnzDom = {1.._nnz};
+    nnzDom = {0..#_nnz};
     dsiClear();
   }
 
@@ -153,7 +156,7 @@ class CSDom: BaseSparseDomImpl {
   override proc dsiMyDist() return dist;
 
   proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
-    if _to_borrowed(rhs._instance.type) == this.type && 
+    if _to_borrowed(rhs._instance.type) == this.type &&
        canDoDirectAssignment(rhs) {
       // Optimized CSC->CSC / CSR->CSR
 
@@ -187,7 +190,7 @@ class CSDom: BaseSparseDomImpl {
   pragma "not order independent yielding loops"
   iter dsiIndsIterSafeForRemoving() {
     var cursor = if this.compressRows then rowRange.high else colRange.high;
-    for i in 1.._nnz by -1 {
+    for i in 0..#_nnz by -1 {
       while (startIdx(cursor) > i) {
         cursor -= 1;
       }
@@ -203,7 +206,7 @@ class CSDom: BaseSparseDomImpl {
   iter these() {
     // TODO: Is it faster to start at _private_findStart(1) ?
     var cursor = if this.compressRows then rowRange.low else colRange.low;
-    for i in 1.._nnz {
+    for i in 0..#_nnz {
       while (startIdx(cursor+1) <= i) {
         cursor+= 1;
       }
@@ -224,9 +227,9 @@ class CSDom: BaseSparseDomImpl {
 
     // split our numElems elements over numChunks tasks
     if numChunks == 1 then
-      yield (this, 1, numElems);
+      yield (this, 0, numElems-1);
     else
-      coforall chunk in RangeChunk.chunks(1..numElems, numChunks) do
+      coforall chunk in RangeChunk.chunks(0..#numElems, numChunks) do
         yield (this, chunk.first, chunk.last);
     // TODO: to handle large numElems and numChunks faster, it would be great
     // to run the binary search in _private_findStart smarter, e.g.
@@ -236,6 +239,7 @@ class CSDom: BaseSparseDomImpl {
   pragma "not order independent yielding loops"
   iter these(param tag: iterKind, followThis: (?,?,?)) where tag == iterKind.follower {
     var (followThisDom, startIx, endIx) = followThis;
+
     if boundsChecking then
       assert(startIx <= endIx, "CSDom follower - got nothing to iterate over");
 
@@ -304,15 +308,13 @@ class CSDom: BaseSparseDomImpl {
     if this.compressRows {
       if this.sortedIndices then
         ret = binarySearch(idx, col, lo=startIdx(row), hi=stopIdx(row));
-      else {
+      else
         ret = linearSearch(idx, col, lo=startIdx(row), hi=stopIdx(row));
-      }
     } else {
       if this.sortedIndices then
         ret = binarySearch(idx, row, lo=startIdx(col), hi=stopIdx(col));
-      else {
+      else
         ret = linearSearch(idx, row, lo=startIdx(col), hi=stopIdx(col));
-      }
     }
 
     return ret;
@@ -328,9 +330,9 @@ class CSDom: BaseSparseDomImpl {
 
   proc dsiFirst {
     if _nnz == 0 then return (parentDom.low) - (1,1);
-    const _low = nnzDom.low;
+    // find the corresponding index into startIdx
     for i in startIdxDom {
-      if startIdx[i] > _low {
+      if startIdx[i] > idx.domain.low {
         if this.compressRows then
           return (i-1, idx[idx.domain.low]);
         else
@@ -344,15 +346,17 @@ class CSDom: BaseSparseDomImpl {
   proc dsiLast {
     if _nnz == 0 then return (parentDom.low) - (1,1);
 
-    var _last = parentDom.low[1] - 1;
-    for i in startIdxDom do
-      if startIdx[i] > _last then
-        _last = i-1;
+    const _lastIdx = _nnz-1;
+    var _lastMinor = idx[_lastIdx];
+    var _lastMajor = parentDom.low[1] - 1;
 
+    for i in startIdxDom.low..startIdxDom.high by -1 {
+        if startIdx[i] > _lastIdx then _lastMajor = i-1;
+    }
     if this.compressRows then
-      return (_last, idx[_nnz]);
+      return (_lastMajor, _lastMinor);
     else
-      return (idx[_nnz], _last);
+      return (_lastMinor, _lastMajor);
   }
 
   proc dsiAdd(ind: rank*idxType) {
@@ -374,7 +378,7 @@ class CSDom: BaseSparseDomImpl {
     const (row,col) = ind;
 
     // shift row|column indices up
-    for i in insertPt.._nnz-1 by -1 {
+    for i in insertPt.._nnz-2 by -1 {
       idx(i+1) = idx(i);
     }
 
@@ -398,7 +402,7 @@ class CSDom: BaseSparseDomImpl {
     // this second initialization of any new values in the array.
     // we could also eliminate the oldNNZDomSize variable
     for a in _arrs {
-      a.sparseShiftArray(insertPt.._nnz-1, oldNNZDomSize+1..nnzDom.size);
+      a.sparseShiftArray(insertPt.._nnz-2, oldNNZDomSize..nnzDom.size-1);
     }
     return 1;
   }
@@ -416,9 +420,8 @@ class CSDom: BaseSparseDomImpl {
 
     if this.compressRows then
       bulkAdd_prepareInds(inds, dataSorted, isUnique, cmp=Sort.defaultComparator);
-    else {
+    else
       bulkAdd_prepareInds(inds, dataSorted, isUnique, cmp=_columnComparator);
-    }
 
     if _nnz == 0 {
 
@@ -427,14 +430,15 @@ class CSDom: BaseSparseDomImpl {
       _nnz += inds.size-dupCount;
       _bulkGrow();
 
-      var idxIdx = 1;
+      var idxIdx = 0;
       var prevIdx = parentDom.low - (1,1);
       var current: idxType;
 
-      if this.compressRows then
+      if this.compressRows {
         current = parentDom.dim(0).low;
-      else
+      } else {
         current = parentDom.dim(1).low;
+      }
 
       // Update startIdx && idx
       for (i,j) in inds {
@@ -468,12 +472,11 @@ class CSDom: BaseSparseDomImpl {
         startIdx[r] = startIdxHigh;
       }
 
-      return idxIdx-1;
+      return idxIdx;
     } // if _nnz == 0
 
     const (actualInsertPts, actualAddCnt) =
       __getActualInsertPts(this, inds, isUnique);
-
     const oldnnz = _nnz;
     _nnz += actualAddCnt;
 
@@ -482,7 +485,7 @@ class CSDom: BaseSparseDomImpl {
 
     // Linearly fill the new idx from backwards
     var newIndIdx = indsDom.high; //index into new indices
-    var oldIndIdx = oldnnz; //index into old indices
+    var oldIndIdx = oldnnz-1; //index into old indices
     var newLoc = actualInsertPts[newIndIdx]; // its position-to-be in new dom
     while newLoc == -1 {
       newIndIdx -= 1;
@@ -490,17 +493,16 @@ class CSDom: BaseSparseDomImpl {
       newLoc = actualInsertPts[newIndIdx];
     }
 
-    var arrShiftMap: [{1..oldnnz}] int; //to map where data goes
-
-    for i in 1.._nnz by -1 {
-      if oldIndIdx >= 1 && i > newLoc {
+    var arrShiftMap: [{0..#oldnnz}] int; //to map where data goes
+    for i in 0..#_nnz by -1 {
+      if oldIndIdx >= 0 && i > newLoc {
         // Shift from old values
         idx[i] = idx[oldIndIdx];
         arrShiftMap[oldIndIdx] = i;
         oldIndIdx -= 1;
       }
       else if newIndIdx >= indsDom.low && i == newLoc {
-        // Put the new guy in
+        // Put the new nonzero in
         if this.compressRows {
           idx[i] = inds[newIndIdx][1];
         } else {
@@ -526,11 +528,10 @@ class CSDom: BaseSparseDomImpl {
     var cursorCnt = 0;
     for (ind, p) in zip(inds, actualInsertPts)  {
       if p == -1 then continue;
-      if this.compressRows {
+      if this.compressRows then
         cursor = ind[0];
-      } else {
+      else
         cursor = ind[1];
-      }
       if cursor == prevCursor then cursorCnt += 1;
       else {
         startIdx[prevCursor+1] += cursorCnt;
@@ -546,6 +547,7 @@ class CSDom: BaseSparseDomImpl {
     for i in prevCursor+1..startIdxDom.high {
       startIdx[i] += cursorCnt;
     }
+
     for a in _arrs do
       a.sparseBulkShiftArray(arrShiftMap, oldnnz);
 
@@ -567,7 +569,7 @@ class CSDom: BaseSparseDomImpl {
     const (row,col) = ind;
 
     // shift column indices down
-    for i in insertPt.._nnz {
+    for i in insertPt.._nnz-1 {
       idx(i) = idx(i+1);
     }
 
@@ -581,7 +583,6 @@ class CSDom: BaseSparseDomImpl {
         startIdx(r) -= 1;
       }
     }
-
 
     // shift all of the arrays up and initialize nonzeroes if
     // necessary
@@ -599,7 +600,7 @@ class CSDom: BaseSparseDomImpl {
 
   override proc dsiClear() {
     _nnz = 0;
-    startIdx = 1;
+    startIdx = 0;
   }
 
   pragma "order independent yielding loops"
@@ -696,7 +697,7 @@ class CSArr: BaseSparseArrImpl {
 
   pragma "order independent yielding loops"
   iter these() ref {
-    for i in 1..dom._nnz do yield data[i];
+    for i in 0..#dom._nnz do yield data[i];
   }
 
   iter these(param tag: iterKind) where tag == iterKind.leader {

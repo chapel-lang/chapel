@@ -1,0 +1,5 @@
+perfkeys: Performance (GB/s) =, Performance (GB/s) =
+files: auto-aggregation.dat, no-auto-aggregation.dat
+graphkeys: with aggregation, without aggregation
+graphtitle: Worst-case Automatic Aggregation Performance
+ylabel: Performance (GB/s)

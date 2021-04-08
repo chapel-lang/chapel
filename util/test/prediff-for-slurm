@@ -19,9 +19,13 @@ msgs = (
 """,
 """slurmstepd: error: .+ \[[0-9]+] .*
 """,
-"""srun: error: spank: /opt/cray/pe/atp/libAtpSLaunch.so: Plugin file not found
+"""srun: error: spank: /opt/cray/.*: Plugin file not found
 """,
 """cp: cannot create regular file .*/[.]module/PrgEnv-.*: File exists
+""",
+"""cp: failed to close .*/[.]module/PrgEnv-.*: Stale file handle
+""",
+"""diff: .*/[.]module/PrgEnv-.*: No such file or directory
 """,
 )
 

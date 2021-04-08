@@ -10,7 +10,12 @@
 #include <gasnet_internal.h>
 #include <firehose.h>
 
-#if GASNETC_IBV_ODP
+// This establishes precedence in one central place
+#if GASNETC_IBV_ODP_MLNX && GASNETC_IBV_ODP_CORE
+  #undef GASNETC_IBV_ODP_MLNX
+#endif
+
+#if GASNETC_IBV_ODP_MLNX
   #define GASNETI_NEED_VERBS_EXP_H 1
 #endif
 
@@ -74,7 +79,7 @@ extern gasneti_atomic_t gasnetc_exit_running;
  * ENOSPC from ibv_create_cq() after a few thousand tests have run.
  * So, we will make a best-effort to at least destroy QPs and CQs.
  */
-#if PLATFORM_OS_SOLARIS || GASNET_DEBUG
+#if PLATFORM_OS_SOLARIS || GASNETC_IBV_QUIESCE
   #define GASNETC_IBV_SHUTDOWN 1
 #endif
 
@@ -83,7 +88,7 @@ extern gasneti_atomic_t gasnetc_exit_running;
  * These are registered early and are available even before _attach()
  */
 #define _hidx_gasnetc_ack                     0 /* Special case */
-#define _hidx_gasnetc_exchg_reqh              (GASNETC_HANDLER_BASE+0)
+#define _hidx_gasnetc_hbarr_reqh              (GASNETC_HANDLER_BASE+0)
 #define _hidx_gasnetc_exit_reduce_reqh        (GASNETC_HANDLER_BASE+1)
 #define _hidx_gasnetc_exit_role_reqh          (GASNETC_HANDLER_BASE+2)
 #define _hidx_gasnetc_exit_role_reph          (GASNETC_HANDLER_BASE+3)
@@ -195,8 +200,10 @@ typedef struct {
   int32_t		nBytes;
   gex_AM_Arg_t	args[GASNETC_MAX_ARGS];
 } gasnetc_longmsg_t;
-#define GASNETC_MSG_LONG_ARGSEND(nargs)  GASNETC_ARGSEND_AUX(gasnetc_longmsg_t,nargs)
-#define GASNETC_MSG_LONG_DATA(msg,nargs) (void *)(&msg->longmsg.args[(unsigned int)nargs])
+#define GASNETC_MSG_LONG_ARGSEND(nargs) /* Note 8-byte alignment for payload */ \
+		GASNETI_ALIGNUP(GASNETC_ARGSEND_AUX(gasnetc_longmsg_t,nargs), 8)
+#define GASNETC_MSG_LONG_DATA(msg,nargs) \
+		((void *)((uintptr_t)(msg) + GASNETC_MSG_LONG_ARGSEND(nargs)))
 
 typedef union {
   uint8_t		raw[GASNETC_BUFSZ];
@@ -367,7 +374,12 @@ void gasnetc_counter_wait(gasnetc_counter_t *counter, int handler_context GASNET
 #if (GASNETC_IB_MAX_HCAS > 1)
   #define GASNETC_FOR_ALL_HCA_INDEX(h)	for (h = 0; h < gasnetc_num_hcas; ++h)
   #define GASNETC_FOR_ALL_HCA(p)	for (p = &gasnetc_hca[0]; p < &gasnetc_hca[gasnetc_num_hcas]; ++p)
+#else
+  #define GASNETC_FOR_ALL_HCA_INDEX(h)	for (h = 0; h < 1; ++h)
+  #define GASNETC_FOR_ALL_HCA(p)	for (p = &gasnetc_hca[0]; p < &gasnetc_hca[1]; ++p)
+#endif
 
+#if GASNETC_IBV_MAX_HCAS_CONFIGURE // Includes multi-rail support w/ 1 HCA
   // Need a couple cache lines for dummy AMO accesses
   extern gasneti_auxseg_request_t gasnetc_fence_auxseg_alloc(gasnet_seginfo_t *auxseg_info);
   #define GASNETC_AUXSEG_FNS() gasnetc_fence_auxseg_alloc,
@@ -375,11 +387,10 @@ void gasnetc_counter_wait(gasnetc_counter_t *counter, int handler_context GASNET
   // Use AMO after Put to fence for strict memory model adherence
   extern int gasnetc_use_fenced_puts;
   #define GASNETC_USE_FENCED_PUTS gasnetc_use_fenced_puts
+  #define GASNETC_HAVE_FENCED_PUTS 1
 #else
-  #define GASNETC_FOR_ALL_HCA_INDEX(h)	for (h = 0; h < 1; ++h)
-  #define GASNETC_FOR_ALL_HCA(p)	for (p = &gasnetc_hca[0]; p < &gasnetc_hca[1]; ++p)
-
   #define GASNETC_USE_FENCED_PUTS 0
+  #undef GASNETC_HAVE_FENCED_PUTS
 #endif
 
 /* ------------------------------------------------------------------------------------ */
@@ -551,14 +562,10 @@ extern gasnetc_EP_t gasnetc_ep0;
 typedef struct gasnetc_Segment_t_ {
   GASNETI_SEGMENT_COMMON // conduit-indep part as prefix
 
-  int idx; // location in segment table
-
 #if GASNETC_PIN_SEGMENT
   // memory registation info (per-HCA)
   uint32_t            seg_lkey[GASNETC_IB_MAX_HCAS];
-  #if GASNETC_IBV_SHUTDOWN
-    gasnetc_memreg_t  seg_reg[GASNETC_IB_MAX_HCAS];
-  #endif
+  gasnetc_memreg_t    seg_reg[GASNETC_IB_MAX_HCAS];
 #endif
 } *gasnetc_Segment_t;
 
@@ -769,6 +776,7 @@ typedef union {
 
 /* Routines in gasnet_core_connect.c */
 #if GASNETC_IBV_XRC
+extern size_t gasnetc_xrc_preinit(const uint16_t *remote_lids);
 extern int gasnetc_xrc_init(void **shared_mem_p);
 #endif
 extern int gasnetc_connect_init(gasnetc_EP_t ep0); // TODO-EX: multi-ep support?
@@ -917,6 +925,9 @@ extern size_t           gasnetc_am_inline_limit_sndrcv;
 extern enum ibv_mtu    gasnetc_max_mtu;
 extern int              gasnetc_qp_timeout;
 extern int              gasnetc_qp_retry_count;
+#if GASNETC_PIN_SEGMENT
+  extern uint32_t *gasnetc_np_rkeys[GASNET_MAXEPS];
+#endif
 
 #if GASNETC_IBV_SRQ
   extern int			gasnetc_rbuf_limit;
@@ -944,16 +955,11 @@ extern gasnetc_hca_t	gasnetc_hca[GASNETC_IB_MAX_HCAS];
 extern uintptr_t	gasnetc_max_msg_sz;
 extern size_t   	gasnetc_put_stripe_sz, gasnetc_put_stripe_split;
 extern size_t   	gasnetc_get_stripe_sz, gasnetc_get_stripe_split;
-#if GASNETC_PIN_SEGMENT
-  extern uintptr_t		gasnetc_seg_start;
-  extern uintptr_t		gasnetc_seg_len;
-#endif
 extern size_t			gasnetc_fh_align;
 extern size_t			gasnetc_fh_align_mask;
 extern firehose_info_t		gasnetc_firehose_info;
 extern gasnetc_port_info_t      *gasnetc_port_tbl;
 extern int                      gasnetc_num_ports;
-extern gex_Rank_t            gasnetc_remote_nodes;
 #if GASNETC_DYNAMIC_CONNECT
   extern gasnetc_sema_t         gasnetc_zero_sema;
 #endif

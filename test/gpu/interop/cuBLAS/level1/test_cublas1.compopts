@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+nvccDir=$(which nvcc)
+nvccLib=${nvccDir%/bin/nvcc}/lib64
+
+echo "-M../ -L$nvccLib -lcudart -lcublas"

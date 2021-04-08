@@ -82,7 +82,7 @@ record CustomContainingNilableOwned {
     this.zq = new owned C();
   }
 }
-proc =(ref lhs: CustomContainingNilableOwned,
+operator =(ref lhs: CustomContainingNilableOwned,
        const ref rhs: CustomContainingNilableOwned) {
   lhs.zq = new owned C();
 }
@@ -96,7 +96,7 @@ record CustomContainingNonNilableOwned {
     this.z = new owned C();
   }
 }
-proc =(ref lhs: CustomContainingNonNilableOwned,
+operator =(ref lhs: CustomContainingNonNilableOwned,
        const ref rhs: CustomContainingNonNilableOwned) {
   lhs.z = new owned C();
 }

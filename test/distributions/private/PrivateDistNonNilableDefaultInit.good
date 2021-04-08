@@ -1,0 +1,10 @@
+$CHPL_HOME/modules/dists/PrivateDist.chpl:nnnn: In initializer:
+$CHPL_HOME/modules/dists/PrivateDist.chpl:nnnn: error: cannot default-initialize default: shared C
+$CHPL_HOME/modules/dists/PrivateDist.chpl:nnnn: error: use here prevents split-init
+note: non-nilable class type 'borrowed C' does not support default initialization
+note: Consider using the type shared C? instead
+PrivateDistNonNilableDefaultInit.chpl:6: error: cannot default-initialize the array a because it has a non-nilable element type 'shared C'
+  $CHPL_HOME/modules/dists/PrivateDist.chpl:nnnn: called as PrivateArr.init(type eltType = shared C, param rank = 1, type idxType = int(64), param stridable = false, dom: unmanaged PrivateDom(1,int(64),false), param initElts = true) from method 'dsiBuildArray'
+  $CHPL_HOME/modules/internal/ChapelArray.chpl:nnnn: called as (PrivateDom(1,int(64),false)).dsiBuildArray(type eltType = shared C, param initElts = true)
+  within internal functions (use --print-callstack-on-error to see)
+  PrivateDistNonNilableDefaultInit.chpl:9: called as test1()

@@ -43,6 +43,7 @@ ForallStmt::ForallStmt(BlockStmt* body):
   Stmt(E_ForallStmt),
   fLoopBody(body),
   fZippered(false),
+  fZipCall(NULL),
   fFromForLoop(false),
   fFromReduce(false),
   fOverTupleExpand(false),
@@ -92,6 +93,7 @@ ForallStmt* ForallStmt::copyInner(SymbolMap* map) {
   _this->fRecIterICdef        = COPY_INT(fRecIterICdef);
   _this->fRecIterGetIterator  = COPY_INT(fRecIterGetIterator);
   _this->fRecIterFreeIterator = COPY_INT(fRecIterFreeIterator);
+  _this->fZipCall             = COPY_INT(fZipCall);
 
   return _this;
 }
@@ -108,6 +110,8 @@ void ForallStmt::replaceChild(Expr* oldAst, Expr* newAst) {
     fRecIterGetIterator = toCallExpr(newAst);
   else if (oldAst == fRecIterFreeIterator)
     fRecIterFreeIterator = toCallExpr(newAst);
+  else if (oldAst == fZipCall)
+    fZipCall = toCallExpr(newAst);
 
   else
     INT_ASSERT(false);
@@ -184,11 +188,22 @@ void ForallStmt::accept(AstVisitor* visitor) {
     if (fRecIterICdef)        fRecIterICdef->accept(visitor);
     if (fRecIterGetIterator)  fRecIterGetIterator->accept(visitor);
     if (fRecIterFreeIterator) fRecIterFreeIterator->accept(visitor);
+    if (fZipCall)             fZipCall->accept(visitor);
     
     fLoopBody->accept(visitor);
 
     visitor->exitForallStmt(this);
   }
+}
+
+void ForallStmt::setZipCall(CallExpr *call) {
+  INT_ASSERT(!call->inTree());  // iterated expression is not in tree
+  INT_ASSERT(call->isPrimitive(PRIM_ZIP));
+  INT_ASSERT(this->fZipCall == NULL);
+
+  this->fZipCall = call;
+
+  parent_insert_help(this, call);
 }
 
 GenRet ForallStmt::codegen() {
@@ -286,10 +301,14 @@ ForallStmt* isForallIterVarDef(Expr* expr) {
 
 // Return a ForallStmt* if 'expr' is its iterable-expression.
 ForallStmt* isForallIterExpr(Expr* expr) {
-  if (expr->list != NULL)
-    if (ForallStmt* pfs = toForallStmt(expr->parentExpr))
+  if (ForallStmt* pfs = toForallStmt(expr->parentExpr)) {
+    if (expr == pfs->zipCall())
+      return pfs;
+
+    if (expr->list != NULL)
       if (expr->list == &pfs->iteratedExpressions())
         return pfs;
+  }
   return NULL;
 }
 

@@ -13,6 +13,7 @@ TARGETS = \
 	domains \
 	errorHandling \
 	fileIO \
+	forallLoops \
 	genericClasses \
 	iterators \
 	learnChapelInYMinutes \

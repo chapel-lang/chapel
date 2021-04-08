@@ -123,9 +123,11 @@ var tmp: borrowed C = new borrowed C(1, 10);
 var b1 = own.borrow();
 // now b1 and own refer to the same instance
 // it is illegal to:
+//
 //  * use the borrow after whatever it is borrowed from goes out of scope
-//  * use the borrow after the instance is deleted (for example if
-//    own is assigned to)
+//
+//  * use the borrow after the instance is deleted (for example if own is assigned to)
+//
 
 // A class type without a decorator, such as ``C``, has generic management.
 // The ``this`` argument of a method is generally ``borrowed C``.

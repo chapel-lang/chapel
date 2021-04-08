@@ -511,11 +511,6 @@ LcnSymbol::LcnSymbol(AstTag      astTag,
   mOffset = -1;
 }
 
-LcnSymbol::~LcnSymbol()
-{
-
-}
-
 void LcnSymbol::locationSet(int depth, int offset)
 {
   mDepth  = depth;
@@ -2017,6 +2012,7 @@ const char* astrSgte = NULL;
 const char* astrSlt = NULL;
 const char* astrSlte = NULL;
 const char* astrSswap = NULL;
+const char* astrScolon = NULL;
 const char* astr_cast = NULL;
 const char* astr_defaultOf = NULL;
 const char* astrInit = NULL;
@@ -2053,6 +2049,7 @@ void initAstrConsts() {
   astrSlt = astr("<");
   astrSlte = astr("<=");
   astrSswap = astr("<=>");
+  astrScolon = astr(":");
   astr_cast   = astr("_cast");
   astr_defaultOf = astr("_defaultOf");
   astrInit    = astr("init");
@@ -2082,6 +2079,30 @@ void initAstrConsts() {
   astr_initCopy = astr("chpl__initCopy");
   astr_coerceCopy = astr("chpl__coerceCopy");
   astr_coerceMove = astr("chpl__coerceMove");
+}
+
+bool isAstrOpName(const char* name) {
+  if (name == astrSassign || name == astrSeq || name == astrSne ||
+      name == astrSgt || name == astrSgte || name == astrSlt ||
+      name == astrSlte || name == astrSswap || strcmp(name, "&") == 0 ||
+      strcmp(name, "|") == 0 || strcmp(name, "^") == 0 ||
+      strcmp(name, "~") == 0 || strcmp(name, "+") == 0 ||
+      strcmp(name, "-") == 0 || strcmp(name, "*") == 0 ||
+      strcmp(name, "/") == 0 || strcmp(name, "<<") == 0 ||
+      strcmp(name, ">>") == 0 || strcmp(name, "%") == 0 ||
+      strcmp(name, "**") == 0 || strcmp(name, "!") == 0 ||
+      strcmp(name, "<~>") == 0 || strcmp(name, "+=") == 0 ||
+      strcmp(name, "-=") == 0 || strcmp(name, "*=") == 0 ||
+      strcmp(name, "/=") == 0 || strcmp(name, "%=") == 0 ||
+      strcmp(name, "**=") == 0 || strcmp(name, "&=") == 0 ||
+      strcmp(name, "|=") == 0 || strcmp(name, "^=") == 0 ||
+      strcmp(name, ">>=") == 0 || strcmp(name, "<<=") == 0 ||
+      strcmp(name, "#") == 0 || strcmp(name, "by") == 0 ||
+      strcmp(name, "align") == 0) {
+    return true;
+  } else {
+    return false;
+  }
 }
 
 /************************************* | **************************************
@@ -2140,26 +2161,28 @@ VarSymbol* newTempConst(QualifiedType qt) {
   return result;
 }
 
-const char* toString(ArgSymbol* arg, bool withType) {
+const char* toString(ArgSymbol* arg, bool withTypeAndIntent) {
   const char* intent = "";
-  switch (arg->intent) {
-    case INTENT_BLANK:           intent = "";           break;
-    case INTENT_IN:              intent = "in ";        break;
-    case INTENT_INOUT:           intent = "inout ";     break;
-    case INTENT_OUT:             intent = "out ";       break;
-    case INTENT_CONST:           intent = "const ";     break;
-    case INTENT_CONST_IN:        intent = "const in ";  break;
-    case INTENT_CONST_REF:       intent = "const ref "; break;
-    case INTENT_REF_MAYBE_CONST: intent = "";           break;
-    case INTENT_REF:             intent = "ref ";       break;
-    case INTENT_PARAM:           intent = "param ";     break;
-    case INTENT_TYPE:            intent = "type ";      break;
+  if (withTypeAndIntent) {
+    switch (arg->intent) {
+      case INTENT_BLANK:           intent = "";           break;
+      case INTENT_IN:              intent = "in ";        break;
+      case INTENT_INOUT:           intent = "inout ";     break;
+      case INTENT_OUT:             intent = "out ";       break;
+      case INTENT_CONST:           intent = "const ";     break;
+      case INTENT_CONST_IN:        intent = "const in ";  break;
+      case INTENT_CONST_REF:       intent = "const ref "; break;
+      case INTENT_REF_MAYBE_CONST: intent = "";           break;
+      case INTENT_REF:             intent = "ref ";       break;
+      case INTENT_PARAM:           intent = "param ";     break;
+      case INTENT_TYPE:            intent = "type ";      break;
+    }
   }
 
   const char* retval = "";
   if (arg->getValType() == dtAny ||
       arg->getValType() == dtUnknown ||
-      withType == false)
+      withTypeAndIntent == false)
     retval = astr(intent, arg->name);
   else
     retval = astr(intent, arg->name, ": ", toString(arg->getValType()));
@@ -2298,4 +2321,32 @@ const char* toString(VarSymbol* var, bool withType) {
   } else {
     return astr("<temporary>");
   }
+}
+const char* toString(Symbol* sym, bool withType) {
+  VarSymbol* var = toVarSymbol(sym);
+  ArgSymbol* arg = toArgSymbol(sym);
+  if (var != NULL)
+    return toString(var, withType);
+  if (arg != NULL)
+    return toString(arg, withType);
+
+  return sym->name;
+}
+
+struct SymbolPairComparator {
+  bool operator()(SymbolMapKeyValue lhs, SymbolMapKeyValue rhs) {
+    // use the same logic as other set/map ordering
+    std::less<Symbol*> lessSym;
+
+    return lessSym(lhs.key, rhs.key);
+  }
+};
+
+SymbolMapVector sortedSymbolMapElts(const SymbolMap& map) {
+  SymbolMapVector elts;
+  form_Map(SymbolMapElem, e, map) {
+    elts.push_back(SymbolMapKeyValue(e->key, e->value));
+  }
+  std::sort(elts.begin(), elts.end(), SymbolPairComparator());
+  return elts;
 }

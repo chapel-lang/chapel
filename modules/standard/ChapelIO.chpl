@@ -879,7 +879,7 @@ module ChapelIO {
   // (primitive types should support :string directly)
   pragma "no doc"
   pragma "last resort"
-  proc _cast(type t, x) where t == string && ! isPrimitiveType(x.type) {
+  operator :(x, type t:string) where !isPrimitiveType(x.type) {
     return stringify(x);
   }
 }

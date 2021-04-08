@@ -23,6 +23,7 @@
 
 #include "LoopStmt.h"
 
+// parent of WhileDoStmt and DoWhileStmt
 class WhileStmt : public LoopStmt
 {
 public:
@@ -30,36 +31,26 @@ public:
   SymExpr*               condExprForTmpVariableGet()                  const;
 
 protected:
-                         WhileStmt(Expr*      sym,
-                                   BlockStmt* initBody);
+  WhileStmt(Expr*      sym, BlockStmt* initBody);
+  WhileStmt(VarSymbol* sym, BlockStmt* initBody);
+ ~WhileStmt() override = default;
 
-                         WhileStmt(VarSymbol* sym,
-                                   BlockStmt* initBody);
-
-  virtual               ~WhileStmt();
-
-  void                   copyShare(const WhileStmt& ref,
-                                   SymbolMap*       mapRef,
-                                   bool             internal);
+  void      copyInnerShare(const WhileStmt& ref, SymbolMap* map);
 
   // Interface to BaseAST
-  virtual void           verify();
+  void      verify()                                 override;
 
   // Interface to Expr
-  virtual void           replaceChild(Expr* oldAst, Expr* newAst);
+  void      replaceChild(Expr* oldAst, Expr* newAst) override;
 
   // New interface
-  virtual bool           isWhileStmt()                                const;
-
-  virtual void           checkConstLoops();
-
-  virtual bool           deadBlockCleanup();
-
-  virtual CallExpr*      blockInfoGet()                               const;
-  virtual CallExpr*      blockInfoSet(CallExpr* expr);
+  bool      isWhileStmt()                      const override;
+  void      checkConstLoops()                        override;
+  bool      deadBlockCleanup()                       override;
+  CallExpr* blockInfoGet()                     const override;
+  CallExpr* blockInfoSet(CallExpr* expr)             override;
 
 private:
-                         WhileStmt();
 
   // Helper functions for checkConstLoops()
   SymExpr*               getWhileCondDef(VarSymbol* condSym);

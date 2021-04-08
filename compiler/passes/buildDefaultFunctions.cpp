@@ -283,6 +283,16 @@ static FnSymbol* functionExists(const char* name,
                          formalType1, formalType2, formalType3, NULL, kind);
 }
 
+static FnSymbol* functionExists(const char* name,
+                                Type* formalType1,
+                                Type* formalType2,
+                                Type* formalType3,
+                                Type* formalType4,
+                                functionExistsKind kind=FIND_EITHER) {
+  return functionExists(name, 4, formalType1, formalType2, formalType3,
+                        formalType4, kind);
+}
+
 static void fixupAccessor(AggregateType* ct, Symbol *field,
                            bool fieldIsConst, bool recordLike,
                            FnSymbol* fn)
@@ -448,8 +458,9 @@ FnSymbol* build_accessor(AggregateType* ct, Symbol* field,
     // This cast "throws" when the receiver actual is nilable. OK because:
     // - If this field is a runtime type, we will generate an error below.
     // - Otherwise this method will be eliminated before lowerErrorHandling.
-    fn->insertAtTail("'move'(%S,_cast(%S,%S))", borrowOfThis,
-                     dtBorrowedNonNilable->symbol, _this);
+    CallExpr* cast = createCast(_this, dtBorrowedNonNilable->symbol);
+    CallExpr* move = new CallExpr(PRIM_MOVE, borrowOfThis, cast);
+    fn->insertAtTail(move);
     baseSym = borrowOfThis;
   }
 
@@ -1148,19 +1159,21 @@ static void buildEnumIntegerCastFunctions(EnumType* et) {
   bool initsExist = !et->isAbstract();
 
   FnSymbol* fn;
-  ArgSymbol* arg1, *arg2;
+  ArgSymbol* from;
+  ArgSymbol* toType;
   DefExpr* def;
   // only build the int<->enum cast functions if some enums were given values
   if (initsExist) {
     // build the integral value to enumerated type cast function
-    fn = new FnSymbol(astr_cast);
+    fn = new FnSymbol(astrScolon);
+    fn->addFlag(FLAG_OPERATOR);
     fn->addFlag(FLAG_COMPILER_GENERATED);
     fn->addFlag(FLAG_LAST_RESORT);
-    arg1 = new ArgSymbol(INTENT_BLANK, "t", et);
-    arg1->addFlag(FLAG_TYPE_VARIABLE);
-    arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", dtIntegral);
-    fn->insertFormalAtTail(arg1);
-    fn->insertFormalAtTail(arg2);
+    from = new ArgSymbol(INTENT_BLANK, "from", dtIntegral);
+    toType = new ArgSymbol(INTENT_BLANK, "t", et);
+    toType->addFlag(FLAG_TYPE_VARIABLE);
+    fn->insertFormalAtTail(from);
+    fn->insertFormalAtTail(toType);
     fn->throwsErrorInit();
 
     // Generate a select statement with a 'when' clause for each of
@@ -1185,18 +1198,18 @@ static void buildEnumIntegerCastFunctions(EnumType* et) {
                                                  new SymExpr(new_IntSymbol(count)))),
                        new CallExpr(PRIM_RETURN,
                                     new CallExpr(PRIM_CAST,
-                                                  et->symbol, arg2)));
+                                                  et->symbol, from)));
         whenstmts->insertAtTail(when);
       }
     }
-    fn->insertAtTail(buildSelectStmt(new SymExpr(arg2), whenstmts));
+    fn->insertAtTail(buildSelectStmt(new SymExpr(from), whenstmts));
 
     // if we get through the select statement without finding our case
     // and returning its value (which can happen for semi-concrete
     // enums), call chpl_enum_cast_error(), which throws an error.
     fn->insertAtTail(new TryStmt(false,
                    new BlockStmt(new CallExpr("chpl_enum_cast_error",
-                                              arg2,
+                                              from,
                                               new_StringSymbol(et->symbol->name))),
                                  NULL));
 
@@ -1212,19 +1225,20 @@ static void buildEnumIntegerCastFunctions(EnumType* et) {
     fn->tagIfGeneric();
 
     // build the enumerated to integer cast
-    fn = new FnSymbol(astr_cast);
+    fn = new FnSymbol(astrScolon);
+    fn->addFlag(FLAG_OPERATOR);
     fn->addFlag(FLAG_COMPILER_GENERATED);
     fn->addFlag(FLAG_LAST_RESORT);
-    arg1 = new ArgSymbol(INTENT_BLANK, "t", dtIntegral);
-    arg1->addFlag(FLAG_TYPE_VARIABLE);
-    arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", et);
-    fn->insertFormalAtTail(arg1);
-    fn->insertFormalAtTail(arg2);
+    from = new ArgSymbol(INTENT_BLANK, "from", et);
+    toType = new ArgSymbol(INTENT_BLANK, "t", dtIntegral);
+    toType->addFlag(FLAG_TYPE_VARIABLE);
+    fn->insertFormalAtTail(from);
+    fn->insertFormalAtTail(toType);
 
     if (et->isConcrete()) {
       // If this enum is concrete, rely on the C cast and inline
       fn->insertAtTail(new CallExpr(PRIM_RETURN,
-                                    new CallExpr(PRIM_CAST, arg1, arg2)));
+                                    new CallExpr(PRIM_CAST, toType, from)));
       fn->addFlag(FLAG_INLINE);
     } else {
       // Otherwise, it's semi-concrete, so we need errors for some
@@ -1257,7 +1271,7 @@ static void buildEnumIntegerCastFunctions(EnumType* et) {
         CallExpr* result;
         if (lastInit) {
           result = new CallExpr(PRIM_RETURN,
-                                new CallExpr(PRIM_CAST, arg1,
+                                new CallExpr(PRIM_CAST, toType,
                                              new CallExpr("+", lastInit->copy(),
                                                           new SymExpr(new_IntSymbol(count)))));
         } else {
@@ -1284,7 +1298,7 @@ static void buildEnumIntegerCastFunctions(EnumType* et) {
       // wrap a try statement around the select statement and insert a
       // bogus return to help the compiler know that all paths return.
       fn->insertAtTail(new TryStmt(false,
-                                   buildSelectStmt(new SymExpr(arg2), whenstmts),
+                                   buildSelectStmt(new SymExpr(from), whenstmts),
                                    NULL));
       fn->insertAtTail(new CallExpr(PRIM_RETURN, new_IntSymbol(0)));
     }
@@ -1350,15 +1364,18 @@ static void buildEnumToOrderFunction(EnumType* et, bool paramVersion) {
 //
 //   'proc chpl_enumToOrder(i: integral, type et: et): et'
 //
-static void buildOrderToEnumFunction(EnumType* et) {
+static void buildOrderToEnumFunction(EnumType* et, bool paramVersion) {
   FnSymbol* fn = new FnSymbol(astr("chpl__orderToEnum"));
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_LAST_RESORT);
-  ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "i", dtIntegral);
+  ArgSymbol* arg1 = new ArgSymbol(paramVersion ? INTENT_PARAM : INTENT_BLANK,
+                                  "i", dtIntegral);
   ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "et", et);
   arg2->addFlag(FLAG_TYPE_VARIABLE);
   fn->insertFormalAtTail(arg1);
   fn->insertFormalAtTail(arg2);
+  if (paramVersion)
+    fn->retTag = RET_PARAM;
 
   // Generate a select statement with when clauses for each of the
   // enumeration constants, and an otherwise clause that calls halt.
@@ -1374,7 +1391,7 @@ static void buildOrderToEnumFunction(EnumType* et) {
   const char * errorString = "enumerated type out of bounds in chpl__orderToEnum()";
   CondStmt* otherwise =
     new CondStmt(new CallExpr(PRIM_WHEN),
-                 new BlockStmt(new CallExpr("halt",
+                 new BlockStmt(new CallExpr(paramVersion ? "compilerError" : "halt",
                                             new_StringSymbol(errorString))));
   whenstmts->insertAtTail(otherwise);
   fn->insertAtTail(buildSelectStmt(new SymExpr(arg1), whenstmts));
@@ -1396,13 +1413,17 @@ static void buildEnumOrderFunctions(EnumType* et) {
   //
   buildEnumToOrderFunction(et, true);
   buildEnumToOrderFunction(et, false);
-  buildOrderToEnumFunction(et);
+  buildOrderToEnumFunction(et, true);
+  buildOrderToEnumFunction(et, false);
 }
 
 
 static void buildRecordAssignmentFunction(AggregateType* ct) {
-  if (functionExists("=", ct, ct))
+  if (functionExists("=", ct, ct)) {
     return;
+  } else if (functionExists("=", dtMethodToken, dtAny, ct, ct)) {
+    return;
+  }
 
   bool externRecord = ct->symbol->hasFlag(FLAG_EXTERN);
 
@@ -1557,7 +1578,11 @@ static void buildRecordHashFunction(AggregateType *ct) {
     bool first = true;
     int i = 1;
     for_fields(field, ct) {
-      if (!field->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD)) {
+
+      // See #11613 for rationale behind skipping type and param fields.
+      if (!(field->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD) ||
+            field->hasFlag(FLAG_TYPE_VARIABLE) ||
+            field->hasFlag(FLAG_PARAM))) {
         CallExpr *field_access = new CallExpr(field->name, gMethodToken, arg);
         if (first) {
           call = new CallExpr("chpl__defaultHash", field_access);
@@ -1571,8 +1596,15 @@ static void buildRecordHashFunction(AggregateType *ct) {
       }
       i++;
     }
-    fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
+
+    if (call) {
+      fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
+    } else {
+      fn->insertAtTail(new CallExpr(PRIM_RETURN, new_UIntSymbol(0)));
+      fn->addFlag(FLAG_INLINE);
+    }
   }
+
   DefExpr *def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
   reset_ast_loc(def, ct->symbol);
@@ -1820,18 +1852,18 @@ static void buildEnumStringOrBytesCastFunctions(EnumType* et,
   if (otherType != dtString && otherType != dtBytes) {
     INT_FATAL("wrong type was passed to buildEnumStringOrBytesCastFunctions");
   }
-  if (functionExists(astr_cast, otherType, et))
+  if (functionExists(astrScolon, otherType, et))
     return;
 
-  FnSymbol* fn = new FnSymbol(astr_cast);
+  FnSymbol* fn = new FnSymbol(astrScolon);
+  fn->addFlag(FLAG_OPERATOR);
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_LAST_RESORT);
+  ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "from", et);
+  fn->insertFormalAtTail(arg);
   ArgSymbol* t = new ArgSymbol(INTENT_BLANK, "t", otherType);
   t->addFlag(FLAG_TYPE_VARIABLE);
   fn->insertFormalAtTail(t);
-  ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "this", et);
-  arg->addFlag(FLAG_ARG_THIS);
-  fn->insertFormalAtTail(arg);
 
   for_enums(constant, et) {
     fn->insertAtTail(
@@ -1854,24 +1886,25 @@ static void buildEnumStringOrBytesCastFunctions(EnumType* et,
   fn->tagIfGeneric();
 
   // string to enumerated type cast function
-  fn = new FnSymbol(astr_cast);
+  fn = new FnSymbol(astrScolon);
+  fn->addFlag(FLAG_OPERATOR);
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_LAST_RESORT);
-  ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "t", et);
-  arg1->addFlag(FLAG_TYPE_VARIABLE);
-  ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", otherType);
-  fn->insertFormalAtTail(arg1);
-  fn->insertFormalAtTail(arg2);
+  ArgSymbol* from = new ArgSymbol(INTENT_BLANK, "from", otherType);
+  ArgSymbol* toType = new ArgSymbol(INTENT_BLANK, "t", et);
+  toType->addFlag(FLAG_TYPE_VARIABLE);
+  fn->insertFormalAtTail(from);
+  fn->insertFormalAtTail(toType);
 
   CondStmt* cond = NULL;
   for_enums(constant, et) {
     cond = new CondStmt(
-             new CallExpr("==", arg2,
+             new CallExpr("==", from,
                           new_StringOrBytesSymbol(constant->sym->name, otherType)),
              new CallExpr(PRIM_RETURN, constant->sym),
              cond);
     cond = new CondStmt(
-             new CallExpr("==", arg2,
+             new CallExpr("==", from,
                           new_StringOrBytesSymbol(
                             astr(et->symbol->name, ".", constant->sym->name),
                             otherType)),
@@ -1886,7 +1919,7 @@ static void buildEnumStringOrBytesCastFunctions(EnumType* et,
                      false,
                      new BlockStmt(
                        new CallExpr("chpl_enum_cast_error",
-                                    arg2,
+                                    from,
                                     new_StringSymbol(et->symbol->name))),
                      NULL));
   fn->addFlag(FLAG_INSERT_LINE_FILE_INFO);

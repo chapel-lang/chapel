@@ -7,8 +7,8 @@ class D {
 var d: unmanaged D = new unmanaged D();
 var i: int;
 
-d.s = 4;
-i = d.s;
+d.s.writeEF(4);
+i = d.s.readFE();
 writeln( "i is ", i);
 
 
@@ -19,8 +19,8 @@ class E {
 var e: unmanaged E = new unmanaged E();
 var f: real;
 
-e.sf = 1.2;
-f    = e.sf;
+e.sf.writeEF(1.2);
+f    = e.sf.readFE();
 
 writeln( "f is ", f);
 

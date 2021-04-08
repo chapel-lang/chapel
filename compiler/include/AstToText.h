@@ -70,8 +70,8 @@ class LoopExpr;
 class AstToText
 {
 public:
-                         AstToText();
-                        ~AstToText();
+  AstToText() = default;
+ ~AstToText() = default;
 
   // A reference to the generate text
   const std::string&     text()                                        const;
@@ -93,7 +93,7 @@ public:
   void                   appendEnumDecl(EnumType* et);
   void                   appendVarDef(VarSymbol* var);
 
-  void                   appendExpr(Expr* expr, bool printingType);
+  void                   appendExpr(Expr* expr, bool printingType, const char *outer = nullptr, bool unary=false, bool postfix=false, bool isRHS=false);
 
 private:
 
@@ -147,7 +147,7 @@ private:
                                     bool               quoteStrings);
 
   void                   appendExpr(CallExpr*          expr,
-                                    bool               printingType);
+                                    bool               printingType, const char *outer, bool unary, bool postfix, bool isRHS);
 
   void                   appendExpr(CallExpr*          expr,
                                     const char*        fnName,

@@ -35,7 +35,7 @@ record R {
     return this;
   }
 }
-proc =(ref lhs:R, rhs:R) {
+operator =(ref lhs:R, rhs:R) {
   writeln("lhs", lhs.toString(), " = rhs", rhs.toString());
   lhs.x = rhs.x;
   lhs.ptr = new shared C(rhs.ptr.xx);
@@ -120,6 +120,8 @@ proc test5() {
 test5();
 
 proc outGenericArray1(out arr) {
+  var tmp:[1..1] R;
+  arr = tmp; // init arr so we can query its domain
   writeln(arr.domain);
 }
 
@@ -154,7 +156,9 @@ proc test7() {
 test7();
 
 proc outGenericArray2a(out arr) {
-  writeln(arr.domain, " ", arr); // preventing split-init
+  var A:[1..1] R;
+  arr = A; // 1st initialization to establish type
+
   var B:[1..1] R = for i in 1..1 do makeR(i);
   arr = B;
 }
@@ -168,6 +172,8 @@ proc test7a() {
 test7a();
 
 proc outPartialArray1(out arr:[] R) {
+  var A:[1..1] R;
+  arr = A; // must establish type
 }
 
 proc test8() {

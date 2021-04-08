@@ -1,3 +1,4 @@
+has-arg-list.chpl:1: In module 'OuterModule':
 has-arg-list.chpl:19: error: type in 'new' expression is missing its argument list
 has-arg-list.chpl:20: error: type in 'new' expression is missing its argument list
 has-arg-list.chpl:27: In initializer:

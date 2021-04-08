@@ -69,7 +69,7 @@ class ForallOptimizationInfo {
     // forall loop statement //
 ///////////////////////////////////
 
-class ForallStmt : public Stmt
+class ForallStmt final : public Stmt
 {
 public:
   bool       zippered()       const; // 'zip' keyword used and >1 index var
@@ -81,6 +81,7 @@ public:
   BlockStmt* loopBody()       const; // the body of the forall loop
   std::vector<BlockStmt*> loopBodies() const; // body or bodies of followers
   LabelSymbol* continueLabel();      // create it if not already
+  CallExpr* zipCall() const;
 
   // when originating from a ForLoop or a reduce expression
   bool createdFromForLoop()     const;  // is converted from a for-loop
@@ -92,14 +93,17 @@ public:
   bool requireSerialIterator()  const;  // do not seek standalone or leader
 
   DECLARE_COPY(ForallStmt);
+  ForallStmt* copyInner(SymbolMap* map) override;
 
-  virtual void        verify();
-  virtual void        accept(AstVisitor* visitor);
-  virtual GenRet      codegen();
 
-  virtual void        replaceChild(Expr* oldAst, Expr* newAst);
-  virtual Expr*       getFirstExpr();
-  virtual Expr*       getNextExpr(Expr* expr);
+  void        verify() override;
+  void        accept(AstVisitor* visitor) override;
+  GenRet      codegen() override;
+
+  void        replaceChild(Expr* oldAst, Expr* newAst) override;
+  Expr*       getFirstExpr() override;
+  Expr*       getNextExpr(Expr* expr) override;
+  void        setZipCall(CallExpr *call);
 
   static ForallStmt* buildHelper(Expr* indices, Expr* iterator,
                                  CallExpr* intents, BlockStmt* body,
@@ -132,12 +136,15 @@ public:
 
   ForallOptimizationInfo optInfo;
 
+  void insertZipSym(Symbol *sym);
+
 private:
   AList          fIterVars;
   AList          fIterExprs;
   AList          fShadowVars;  // may be empty
   BlockStmt*     fLoopBody;    // always present
   bool           fZippered;
+  CallExpr*      fZipCall;
   bool           fFromForLoop; // see comment below
   bool           fFromReduce;
   bool           fOverTupleExpand;
@@ -150,8 +157,8 @@ private:
   ForallStmt(BlockStmt* body);
 
 public:
-  LabelSymbol*   fContinueLabel;
-  LabelSymbol*   fErrorHandlerLabel;
+  LabelSymbol*            fContinueLabel;
+  LabelSymbol*            fErrorHandlerLabel;
 
   // for recursive iterators during lowerIterators
   DefExpr*       fRecIterIRdef;
@@ -189,6 +196,8 @@ inline const AList& ForallStmt::constIteratedExpressions() const {
 }
 inline AList& ForallStmt::shadowVariables()        { return fShadowVars; }
 inline BlockStmt* ForallStmt::loopBody()     const { return fLoopBody;   }
+
+inline CallExpr* ForallStmt::zipCall()       const { return fZipCall;    }
 
 inline bool ForallStmt::needToHandleOuterVars() const { return !fFromForLoop; }
 inline bool ForallStmt::createdFromForLoop()    const { return  fFromForLoop; }

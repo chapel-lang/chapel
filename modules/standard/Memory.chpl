@@ -33,6 +33,7 @@
 module Memory {
 
 include module Diagnostics;
+include module Initialization;
 
 pragma "insert line file info"
 private extern proc chpl_memoryUsed(): uint(64);

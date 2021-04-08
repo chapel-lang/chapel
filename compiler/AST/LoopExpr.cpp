@@ -178,13 +178,13 @@ static CallExpr* buildLoopExprFunctions(LoopExpr* faExpr);
 static void addIterRecShape(CallExpr* forallExprCall,
                             bool parallel, bool zippered);
 
-class LowerLoopExprVisitor : public AstVisitorTraverse
+class LowerLoopExprVisitor final : public AstVisitorTraverse
 {
   public:
-    LowerLoopExprVisitor() { }
-    virtual ~LowerLoopExprVisitor() { }
+    LowerLoopExprVisitor()          = default;
+   ~LowerLoopExprVisitor() override = default;
 
-    virtual bool enterLoopExpr(LoopExpr* node);
+    bool enterLoopExpr(LoopExpr* node) override;
 };
 
 //

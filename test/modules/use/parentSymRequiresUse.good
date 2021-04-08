@@ -1,1 +1,2 @@
+parentSymRequiresUse.chpl:3: In module 'N':
 parentSymRequiresUse.chpl:4: error: 'xyz' undeclared (first use this function)

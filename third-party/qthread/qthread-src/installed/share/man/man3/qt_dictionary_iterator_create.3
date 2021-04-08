@@ -1,0 +1,30 @@
+.TH qt_dictionary_iterator_create 3 "AUGUST 2012" libqthread "libqthread"
+.SH NAME
+.B qt_dictionary_iterator_create
+\- allocate a concurrent dictionary iterator
+.SH SYNOPSIS
+.B #include <qthread/dictionary.h>
+
+.I qt_dictionary_iterator *
+.br
+.B qt_dictionary_iterator_create
+.RI "(qt_dictionary *" dict );
+
+.SH DESCRIPTION
+This function creates a dictionary iterator. The iterator points to the first element of the dictionary
+.IR dict .
+.SH RETURN VALUES
+Returns an initialized qt_dictionary_iterator object, or NULL if something went wrong.
+.SH SEE ALSO
+.BR qt_dictionary_create (3),
+.BR qt_dictionary_delete (3),
+.BR qt_dictionary_destroy (3),
+.BR qt_dictionary_end (3),
+.BR qt_dictionary_get (3),
+.BR qt_dictionary_iterator_copy (3),
+.BR qt_dictionary_iterator_destroy (3),
+.BR qt_dictionary_iterator_equals (3),
+.BR qt_dictionary_iterator_get (3),
+.BR qt_dictionary_iterator_next (3),
+.BR qt_dictionary_put (3),
+.BR qt_dictionary_put_if_absent (3)

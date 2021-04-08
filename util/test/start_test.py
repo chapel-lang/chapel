@@ -300,11 +300,13 @@ def test_directory(test, test_type):
         # run tests in directory
         # don't run if only doing performance graphs
         if not test_type == "graph":
-            # check for .chpl, .test.c, or .ml-test.c files, and for NOTEST
+            # check for .chpl, .test.c(pp), or .ml-test.c(pp) files
+            # and for NOTEST
             are_tests = False
             for f in files:
                 if not test_type == "performance":
-                    if f.endswith((".chpl", ".test.c", ".ml-test.c")) :
+                    if f.endswith((".chpl", ".test.c", ".ml-test.c",
+                                   ".test.cpp", ".ml-test.cpp")) :
                         are_tests = True
                         break
                 else:
@@ -470,8 +472,11 @@ def run_sub_test(test=False):
 def generate_graphs(test=False):
     if test:
         basedir = os.path.dirname(test)
-        remove_dot = test.replace(".chpl", "").replace(".test.c", "")
+        remove_dot = test.replace(".chpl", "")
+        remove_dot = remove_dot.replace(".ml-test.cpp", "")
         remove_dot = remove_dot.replace(".ml-test.c", "")
+        remove_dot = remove_dot.replace(".test.cpp", "")
+        remove_dot = remove_dot.replace(".test.c", "")
         graph_files = [(remove_dot + ".graph")]
         # exit if it isn't actually a file
         if not os.path.isfile(graph_files[0]):
@@ -1033,6 +1038,7 @@ def set_up_executables():
 
     comm = chpl_comm.get()
     network_atomics = chpl_atomics.get('network')
+    comm_substrate = chpl_comm_substrate.get()
     launcher = chpl_launcher.get()
     locale_model = chpl_locale_model.get()
 
@@ -1121,11 +1127,16 @@ def set_up_executables():
         prediff_for_slurm = os.path.join(util_dir, "test", "prediff-for-slurm")
         if prediff_for_slurm not in chpl_system_prediff:
             chpl_system_prediff.append(prediff_for_slurm)
-    elif 'lsf-' in launcher:
+    if 'lsf-' in launcher:
         # With lsf-based launcher, auto-run prediff-for-lsf.
         prediff_for_lsf = os.path.join(util_dir, "test", "prediff-for-lsf")
         if prediff_for_lsf not in chpl_system_prediff:
             chpl_system_prediff.append(prediff_for_lsf)
+    if 'ucx' in comm_substrate:
+        # With ucx-based launcher, auto-run prediff-for-ucx.
+        prediff_for_ucx = os.path.join(util_dir, "test", "prediff-for-ucx")
+        if prediff_for_ucx not in chpl_system_prediff:
+            chpl_system_prediff.append(prediff_for_ucx)
 
     if chpl_system_prediff:
         os.environ["CHPL_SYSTEM_PREDIFF"] = ','.join(chpl_system_prediff)
@@ -1296,7 +1307,7 @@ def parser_setup():
     # main args
     p = parser.add_argument("tests", nargs="*", help="test files or directories")
     if argcomplete:
-        p.completer = argcomplete.completers.FilesCompleter([".chpl", ".test.c", ".ml-test.c"])
+        p.completer = argcomplete.completers.FilesCompleter([".chpl", ".test.c", ".test.cpp", ".ml-test.c", ".ml-test.cpp"])
 
     # executing options
     parser.add_argument("-execopts", "--execopts", action="append", 

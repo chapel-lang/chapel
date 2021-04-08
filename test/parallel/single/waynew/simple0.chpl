@@ -2,6 +2,6 @@
 
 var s: single int;
 
-s = 1;
-s = 2;
+s.writeEF(1);
+s.writeEF(2);
 
