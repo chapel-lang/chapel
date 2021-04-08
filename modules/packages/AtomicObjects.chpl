@@ -382,7 +382,7 @@ prototype module AtomicObjects {
 
     forwarding this.getObject()!;
   }
-  proc =(ref lhs: ABA, const ref rhs: lhs.type) {
+  operator =(ref lhs: ABA, const ref rhs: lhs.type) {
     lhs.__ABA_ptr = rhs.__ABA_ptr;
     lhs.__ABA_cnt = rhs.__ABA_cnt;
   }
@@ -416,11 +416,11 @@ prototype module AtomicObjects {
   /*
     Special case operator that compares two ``ABA`` wrappers.
   */
-  proc ==(const ref aba1 : ABA, const ref aba2 : ABA) {
+  operator ==(const ref aba1 : ABA, const ref aba2 : ABA) {
     return aba1.__ABA_cnt == aba2.__ABA_cnt && aba1.__ABA_ptr == aba2.__ABA_ptr;
   }
 
-  proc !=(const ref aba1 : ABA, const ref aba2 : ABA) {
+  operator !=(const ref aba1 : ABA, const ref aba2 : ABA) {
     return aba1.__ABA_cnt != aba2.__ABA_cnt || aba1.__ABA_ptr != aba2.__ABA_ptr;
   }
 
