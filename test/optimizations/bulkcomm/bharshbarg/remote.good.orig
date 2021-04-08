@@ -1,12 +1,12 @@
 
 A and B on same locale
 
-proc =(a:[],b:[]): in chpl__bulkTransferArray
-proc =(a:[],b:[]): attempting doiBulkTransferFromKnown
-proc =(a:[],b:[]): in chpl__bulkTransferArray
-proc =(a:[],b:[]): attempting doiBulkTransferToKnown
-proc =(a:[],b:[]): in chpl__bulkTransferArray
-proc =(a:[],b:[]): attempting doiBulkTransferFromKnown
+operator =(a:[],b:[]): in chpl__bulkTransferArray
+operator =(a:[],b:[]): attempting doiBulkTransferFromKnown
+operator =(a:[],b:[]): in chpl__bulkTransferArray
+operator =(a:[],b:[]): attempting doiBulkTransferToKnown
+operator =(a:[],b:[]): in chpl__bulkTransferArray
+operator =(a:[],b:[]): attempting doiBulkTransferFromKnown
 isDataContiguous(): off=(1, 1) blk=(10, 1)
 isDataContiguous return False
 Performing complex DefaultRectangular transfer
@@ -22,16 +22,16 @@ BulkTransferStride with values:
 	srcStride     = 10
 	count         = 5 10
 BulkTransferStride: On LHS - GET from 0
-proc =(a:[],b:[]): successfully completed bulk transfer
-proc =(a:[],b:[]): successfully completed bulk transfer
-proc =(a:[],b:[]): successfully completed bulk transfer
+operator =(a:[],b:[]): successfully completed bulk transfer
+operator =(a:[],b:[]): successfully completed bulk transfer
+operator =(a:[],b:[]): successfully completed bulk transfer
 
-proc =(a:[],b:[]): in chpl__bulkTransferArray
-proc =(a:[],b:[]): attempting doiBulkTransferFromKnown
-proc =(a:[],b:[]): in chpl__bulkTransferArray
-proc =(a:[],b:[]): attempting doiBulkTransferToKnown
-proc =(a:[],b:[]): in chpl__bulkTransferArray
-proc =(a:[],b:[]): attempting doiBulkTransferFromKnown
+operator =(a:[],b:[]): in chpl__bulkTransferArray
+operator =(a:[],b:[]): attempting doiBulkTransferFromKnown
+operator =(a:[],b:[]): in chpl__bulkTransferArray
+operator =(a:[],b:[]): attempting doiBulkTransferToKnown
+operator =(a:[],b:[]): in chpl__bulkTransferArray
+operator =(a:[],b:[]): attempting doiBulkTransferFromKnown
 isDataContiguous(): off=(1, 1) blk=(10, 1)
 isDataContiguous return False
 Performing complex DefaultRectangular transfer
@@ -47,20 +47,20 @@ BulkTransferStride with values:
 	srcStride     = 10
 	count         = 5 10
 BulkTransferStride: On LHS - GET from 0
-proc =(a:[],b:[]): successfully completed bulk transfer
-proc =(a:[],b:[]): successfully completed bulk transfer
-proc =(a:[],b:[]): successfully completed bulk transfer
+operator =(a:[],b:[]): successfully completed bulk transfer
+operator =(a:[],b:[]): successfully completed bulk transfer
+operator =(a:[],b:[]): successfully completed bulk transfer
 End of assignment
 
 
 B on different locale
 
-proc =(a:[],b:[]): in chpl__bulkTransferArray
-proc =(a:[],b:[]): attempting doiBulkTransferFromKnown
-proc =(a:[],b:[]): in chpl__bulkTransferArray
-proc =(a:[],b:[]): attempting doiBulkTransferToKnown
-proc =(a:[],b:[]): in chpl__bulkTransferArray
-proc =(a:[],b:[]): attempting doiBulkTransferFromKnown
+operator =(a:[],b:[]): in chpl__bulkTransferArray
+operator =(a:[],b:[]): attempting doiBulkTransferFromKnown
+operator =(a:[],b:[]): in chpl__bulkTransferArray
+operator =(a:[],b:[]): attempting doiBulkTransferToKnown
+operator =(a:[],b:[]): in chpl__bulkTransferArray
+operator =(a:[],b:[]): attempting doiBulkTransferFromKnown
 isDataContiguous(): off=(1, 1) blk=(10, 1)
 isDataContiguous return False
 Performing complex DefaultRectangular transfer
@@ -76,16 +76,16 @@ BulkTransferStride with values:
 	srcStride     = 10
 	count         = 5 10
 BulkTransferStride: On RHS - PUT to 0
-proc =(a:[],b:[]): successfully completed bulk transfer
-proc =(a:[],b:[]): successfully completed bulk transfer
-proc =(a:[],b:[]): successfully completed bulk transfer
+operator =(a:[],b:[]): successfully completed bulk transfer
+operator =(a:[],b:[]): successfully completed bulk transfer
+operator =(a:[],b:[]): successfully completed bulk transfer
 
-proc =(a:[],b:[]): in chpl__bulkTransferArray
-proc =(a:[],b:[]): attempting doiBulkTransferFromKnown
-proc =(a:[],b:[]): in chpl__bulkTransferArray
-proc =(a:[],b:[]): attempting doiBulkTransferToKnown
-proc =(a:[],b:[]): in chpl__bulkTransferArray
-proc =(a:[],b:[]): attempting doiBulkTransferFromKnown
+operator =(a:[],b:[]): in chpl__bulkTransferArray
+operator =(a:[],b:[]): attempting doiBulkTransferFromKnown
+operator =(a:[],b:[]): in chpl__bulkTransferArray
+operator =(a:[],b:[]): attempting doiBulkTransferToKnown
+operator =(a:[],b:[]): in chpl__bulkTransferArray
+operator =(a:[],b:[]): attempting doiBulkTransferFromKnown
 isDataContiguous(): off=(1, 1) blk=(10, 1)
 isDataContiguous return False
 Performing complex DefaultRectangular transfer
@@ -101,20 +101,20 @@ BulkTransferStride with values:
 	srcStride     = 10
 	count         = 5 10
 BulkTransferStride: On LHS - GET from 0
-proc =(a:[],b:[]): successfully completed bulk transfer
-proc =(a:[],b:[]): successfully completed bulk transfer
-proc =(a:[],b:[]): successfully completed bulk transfer
+operator =(a:[],b:[]): successfully completed bulk transfer
+operator =(a:[],b:[]): successfully completed bulk transfer
+operator =(a:[],b:[]): successfully completed bulk transfer
 End of assignment
 
 
 A and B on different locale
 
-proc =(a:[],b:[]): in chpl__bulkTransferArray
-proc =(a:[],b:[]): attempting doiBulkTransferFromKnown
-proc =(a:[],b:[]): in chpl__bulkTransferArray
-proc =(a:[],b:[]): attempting doiBulkTransferToKnown
-proc =(a:[],b:[]): in chpl__bulkTransferArray
-proc =(a:[],b:[]): attempting doiBulkTransferFromKnown
+operator =(a:[],b:[]): in chpl__bulkTransferArray
+operator =(a:[],b:[]): attempting doiBulkTransferFromKnown
+operator =(a:[],b:[]): in chpl__bulkTransferArray
+operator =(a:[],b:[]): attempting doiBulkTransferToKnown
+operator =(a:[],b:[]): in chpl__bulkTransferArray
+operator =(a:[],b:[]): attempting doiBulkTransferFromKnown
 isDataContiguous(): off=(1, 1) blk=(10, 1)
 isDataContiguous return False
 Performing complex DefaultRectangular transfer
@@ -131,16 +131,16 @@ BulkTransferStride with values:
 	srcStride     = 10
 	count         = 5 10
 BulkTransferStride: On LHS - GET from 1
-proc =(a:[],b:[]): successfully completed bulk transfer
-proc =(a:[],b:[]): successfully completed bulk transfer
-proc =(a:[],b:[]): successfully completed bulk transfer
+operator =(a:[],b:[]): successfully completed bulk transfer
+operator =(a:[],b:[]): successfully completed bulk transfer
+operator =(a:[],b:[]): successfully completed bulk transfer
 
-proc =(a:[],b:[]): in chpl__bulkTransferArray
-proc =(a:[],b:[]): attempting doiBulkTransferFromKnown
-proc =(a:[],b:[]): in chpl__bulkTransferArray
-proc =(a:[],b:[]): attempting doiBulkTransferToKnown
-proc =(a:[],b:[]): in chpl__bulkTransferArray
-proc =(a:[],b:[]): attempting doiBulkTransferFromKnown
+operator =(a:[],b:[]): in chpl__bulkTransferArray
+operator =(a:[],b:[]): attempting doiBulkTransferFromKnown
+operator =(a:[],b:[]): in chpl__bulkTransferArray
+operator =(a:[],b:[]): attempting doiBulkTransferToKnown
+operator =(a:[],b:[]): in chpl__bulkTransferArray
+operator =(a:[],b:[]): attempting doiBulkTransferFromKnown
 isDataContiguous(): off=(1, 1) blk=(10, 1)
 isDataContiguous return False
 Performing complex DefaultRectangular transfer
@@ -157,8 +157,8 @@ BulkTransferStride with values:
 	srcStride     = 10
 	count         = 5 10
 BulkTransferStride: On LHS - GET from 0
-proc =(a:[],b:[]): successfully completed bulk transfer
-proc =(a:[],b:[]): successfully completed bulk transfer
-proc =(a:[],b:[]): successfully completed bulk transfer
+operator =(a:[],b:[]): successfully completed bulk transfer
+operator =(a:[],b:[]): successfully completed bulk transfer
+operator =(a:[],b:[]): successfully completed bulk transfer
 End of assignment
 
