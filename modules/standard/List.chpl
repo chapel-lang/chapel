@@ -706,9 +706,9 @@ module List {
       // gasnet/multilocale configurations.
       //
       _appendByRef(x);
-      var insertedElementIndex = _size - 1;
+      var result = _size - 1;
       _leave();
-      return insertedElementIndex;
+      return result;
     }
 
     /*
