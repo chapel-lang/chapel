@@ -630,7 +630,7 @@ module ChapelRange {
 
 
   /* Returns the range's aligned low bound. If the aligned low bound is
-     undefined (e.g., ``..10 by -2``), the behavior is undefined.
+     undefined (e.g., ``..10 by -2``), a compiler error is generated.
    */
   inline proc range.alignedLow : idxType {
     if !hasLowBound() {
@@ -650,7 +650,7 @@ module ChapelRange {
 
   // TODO: Add back example?
   /* Returns the range's aligned high bound. If the aligned high bound is
-     undefined (e.g., ``1.. by 2``), the behavior is undefined.
+     undefined (e.g., ``1.. by 2``), a compiler error is generated.
    */
   inline proc range.alignedHigh : idxType {
     if !hasHighBound() {
