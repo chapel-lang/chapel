@@ -20,7 +20,7 @@ record r {
   proc deinit() { if doPrint then writeln('deinit'); }
 }
 
-proc =(ref lhs: r, rhs: r) { writeln('assign'); }
+operator =(ref lhs: r, rhs: r) { writeln('assign'); }
 
 // Test migrating to N>=12 locales then adding to a set on Locale 0.
 // N>=12 is the number of distributed set.add() calls before a
