@@ -935,13 +935,13 @@ operator :(r: range(?), type t: range(?)) {
   }
 
   if tmp.stridable {
-    tmp._stride = r.stride;
+    tmp._stride = r.stride: tmp._stride.type;
     tmp._alignment = r.alignment: tmp.intIdxType;
     tmp._aligned = r.aligned;
   }
 
-  tmp._low = (if r.hasLowBound() then r._low else 1): tmp.intIdxType;
-  tmp._high = (if r.hasHighBound() then r._high else 0): tmp.intIdxType;
+  tmp._low = (if r.hasLowBound() then r.low else r._low): tmp.intIdxType;
+  tmp._high = (if r.hasHighBound() then r.high else r._high): tmp.intIdxType;
   return tmp;
 }
 
