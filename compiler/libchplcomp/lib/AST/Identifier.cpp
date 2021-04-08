@@ -6,9 +6,8 @@
 namespace chpl {
 namespace ast {
 
-Identifier* Identifier::build(Builder* builder, const char* name) {
-  UniqueString uname = UniqueString::build(builder->context(), name);
-  return new Identifier(uname);
+Identifier* Identifier::build(Builder* builder, UniqueString name) {
+  return new Identifier(name);
 }
 
 } // namespace ast

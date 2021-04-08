@@ -22,6 +22,7 @@
 
 using namespace chpl;
 using namespace ast;
+using detail::PODUniqueString;
 
 struct ParserError;
 struct ParserComment;

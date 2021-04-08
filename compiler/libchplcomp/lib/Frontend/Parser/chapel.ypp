@@ -161,7 +161,7 @@
   };
 
   typedef std::vector<Expr*> ExprList;
-  typedef std::vector<const char*> StrList;
+  typedef std::vector<PODUniqueString> UniqueStrList;
 
   struct PotentialRename {
     enum {SINGLE, DOUBLE} tag;
@@ -226,13 +226,14 @@
     return ret;
   }
 
+
   // These currently all need to be POD types (i.e. pointers and ints)
   // rather than say std::vector to keep bison working with the current
   // strategy. In the future we could probably switch to a more
   // C++ mode of using bison.
   union YYSTYPE {
     // The lexer only uses these two
-    const char*                pch;      // maybe better named 'str'
+    PODUniqueString            uniqueStr;
     SizedStr                   sizedStr;
 
     // The remaining types are for parser productions
@@ -263,7 +264,7 @@
     CommentsAndStmt            commentsAndStmt;
     ExprList*                  exprList;
     RenameList*                renameList;
-    StrList*                   strList;
+    UniqueStrList*             uniqueStrList;
     WhereAndLifetime           lifetimeAndWhere;
 
     // TODO
@@ -337,6 +338,8 @@
   #define STMT(LOC,AST) makeCommentsAndStmt(context->gatherComments(LOC), AST)
   #define ENDSTMT() context->clearComments();
 
+  #define STR(s) PODUniqueString::build(context->astContext, s)
+
   // ERROR creates an error and returns an error sentinel Expr
   #define ERROR(LOC,MSG) raiseError(LOC, context, MSG)
 
@@ -371,11 +374,11 @@
 //
 // identifiers and literals
 //
-%token <pch> TIDENT
-%token <pch> TQUERIEDIDENT
-%token <pch> INTLITERAL
-%token <pch> REALLITERAL
-%token <pch> IMAGLITERAL
+%token <uniqueStr> TIDENT
+%token <uniqueStr> TQUERIEDIDENT
+%token <uniqueStr> INTLITERAL
+%token <uniqueStr> REALLITERAL
+%token <uniqueStr> IMAGLITERAL
 %token <sizedStr> STRINGLITERAL
 %token <sizedStr> BYTESLITERAL
 %token <sizedStr> CSTRINGLITERAL
@@ -477,12 +480,12 @@
 %type <returnTag>  opt_ret_tag
 %type <aggregateTag> class_tag
 
-%type <pch> ident_use ident_def ident_fn_def
-%type <pch> internal_type_ident_def reserved_type_ident_use
-%type <pch> fn_ident assignop_ident opt_label_ident
-%type <pch> implements_type_ident implements_type_error_ident
+%type <uniqueStr> ident_use ident_def ident_fn_def
+%type <uniqueStr> internal_type_ident_def reserved_type_ident_use
+%type <uniqueStr> fn_ident assignop_ident opt_label_ident
+%type <uniqueStr> implements_type_ident implements_type_error_ident
 
-%type <strList>       pragma_ls
+%type <uniqueStrList>       pragma_ls
 
 // statement lists
 %type <exprList> program
@@ -609,15 +612,15 @@ pragma_ls:
   TPRAGMA STRINGLITERAL
     {
       SizedStr ss = $2;
-      $$ = new StrList();
-      const char* u = context->astContext->uniqueCString(ss.allocatedData);
+      $$ = new UniqueStrList();
+      PODUniqueString u = STR(ss.allocatedData);
       delete ss.allocatedData;
       $$->push_back(u);
     }
 | pragma_ls TPRAGMA STRINGLITERAL
     {
       SizedStr ss = $3;
-      const char* u = context->astContext->uniqueCString(ss.allocatedData);
+      PODUniqueString u = STR(ss.allocatedData);
       delete ss.allocatedData;
       $1->push_back(u);
     }
@@ -776,7 +779,7 @@ use_renames_ls:
 | expr TAS TUNDERSCORE
     {
       $$ = new RenameList();
-      PotentialRename cur($1, Identifier::build(BUILDER, "_"));
+      PotentialRename cur($1, Identifier::build(BUILDER, STR("_")));
       $$->push_back(cur);
     }
 | use_renames_ls TCOMMA expr
@@ -791,7 +794,7 @@ use_renames_ls:
      }
 | use_renames_ls TCOMMA expr TAS TUNDERSCORE
      {
-       PotentialRename cur($3, Identifier::build(BUILDER, "_"));
+       PotentialRename cur($3, Identifier::build(BUILDER, STR("_")));
        $1->push_back(cur);
      }
 ;
@@ -801,7 +804,7 @@ opt_only_ls:
   /* nothing */
     {
       $$ = new RenameList();
-      PotentialRename cur(Identifier::build(BUILDER, ""));
+      PotentialRename cur(Identifier::build(BUILDER, STR("")));
       $$->push_back(cur);
     }
 | renames_ls
@@ -811,7 +814,7 @@ except_ls:
   TSTAR
     {
       $$ = new RenameList();
-      PotentialRename cur(Identifier::build(BUILDER, ""));
+      PotentialRename cur(Identifier::build(BUILDER, STR("")));
       $$->push_back(cur);
      }
 | renames_ls
@@ -916,24 +919,24 @@ assignment_stmt:
 // Here are some nonterminals for identifiers
 
 opt_label_ident:
-         { $$ = nullptr; }
+         { $$ = STR(""); }
 | TIDENT { $$ = $1; }
 ;
 
 ident_fn_def:
   TIDENT                   { $$ = $1; }
-| TNONE                    { $$ = "none"; ERROR(@$, "redefining reserved word 'none'"); }
-| TTHIS                    { $$ = "this"; }
-| TFALSE                   { $$ = "false"; ERROR(@$, "redefining reserved word 'false'"); }
-| TTRUE                    { $$ = "true"; ERROR(@$, "redefining reserved word 'true'"); }
+| TNONE                    { $$ = STR("none"); ERROR(@$, "redefining reserved word 'none'"); }
+| TTHIS                    { $$ = STR("this"); }
+| TFALSE                   { $$ = STR("false"); ERROR(@$, "redefining reserved word 'false'"); }
+| TTRUE                    { $$ = STR("true"); ERROR(@$, "redefining reserved word 'true'"); }
 | internal_type_ident_def  { $$ = $1; ERROR(@$, "redefining reserved word"); }
 
 ident_def:
   TIDENT                   { $$ = $1; }
-| TNONE                    { $$ = "none"; ERROR(@$, "redefining reserved word 'none'"); }
-| TTHIS                    { $$ = "this"; ERROR(@$, "redefining reserved word 'this'"); }
-| TFALSE                   { $$ = "false"; ERROR(@$, "redefining reserved word 'false'"); }
-| TTRUE                    { $$ = "true"; ERROR(@$, "redefining reserved word 'true'"); }
+| TNONE                    { $$ = STR("none"); ERROR(@$, "redefining reserved word 'none'"); }
+| TTHIS                    { $$ = STR("this"); ERROR(@$, "redefining reserved word 'this'"); }
+| TFALSE                   { $$ = STR("false"); ERROR(@$, "redefining reserved word 'false'"); }
+| TTRUE                    { $$ = STR("true"); ERROR(@$, "redefining reserved word 'true'"); }
 | internal_type_ident_def  { $$ = $1; ERROR(@$, "redefining reserved word"); }
 ;
 
@@ -947,7 +950,7 @@ ident_def:
  */
 ident_use:
   TIDENT                   { $$ = $1; }
-| TTHIS                    { $$ = "this"; }
+| TTHIS                    { $$ = STR("this"); }
 ;
 
 internal_type_ident_def:
@@ -958,25 +961,25 @@ internal_type_ident_def:
     Uses of these types are parsed differently.
     See scalar_type and reserved_type_ident_use.
   */
-  TBOOL      { $$ = "bool"; }
-| TINT       { $$ = "int"; }
-| TUINT      { $$ = "uint"; }
-| TREAL      { $$ = "real"; }
-| TIMAG      { $$ = "imag"; }
-| TCOMPLEX   { $$ = "complex"; }
-| TBYTES     { $$ = "bytes"; }
-| TSTRING    { $$ = "string"; }
-| TSYNC      { $$ = "sync"; }
-| TSINGLE    { $$ = "single"; }
-| TOWNED     { $$ = "owned"; }
-| TSHARED    { $$ = "shared"; }
-| TBORROWED  { $$ = "borrowed"; }
-| TUNMANAGED { $$ = "unmanaged"; }
-| TDOMAIN    { $$ = "domain"; }
-| TINDEX     { $$ = "index"; }
-| TLOCALE    { $$ = "locale"; }
-| TNOTHING   { $$ = "nothing"; }
-| TVOID      { $$ = "void"; }
+  TBOOL      { $$ = STR("bool"); }
+| TINT       { $$ = STR("int"); }
+| TUINT      { $$ = STR("uint"); }
+| TREAL      { $$ = STR("real"); }
+| TIMAG      { $$ = STR("imag"); }
+| TCOMPLEX   { $$ = STR("complex"); }
+| TBYTES     { $$ = STR("bytes"); }
+| TSTRING    { $$ = STR("string"); }
+| TSYNC      { $$ = STR("sync"); }
+| TSINGLE    { $$ = STR("single"); }
+| TOWNED     { $$ = STR("owned"); }
+| TSHARED    { $$ = STR("shared"); }
+| TBORROWED  { $$ = STR("borrowed"); }
+| TUNMANAGED { $$ = STR("unmanaged"); }
+| TDOMAIN    { $$ = STR("domain"); }
+| TINDEX     { $$ = STR("index"); }
+| TLOCALE    { $$ = STR("locale"); }
+| TNOTHING   { $$ = STR("nothing"); }
+| TVOID      { $$ = STR("void"); }
 ;
 
 scalar_type:
@@ -998,10 +1001,10 @@ reserved_type_ident_use:
   /* These reserved words can also be used as types but in fewer
      places in the parser. Additionally their type versions have
      different names. */
-  TSYNC      { $$ = "_syncvar"; }
-| TSINGLE    { $$ = "_singlevar"; }
-| TDOMAIN    { $$ = "_domain"; }
-| TINDEX     { $$ = "_index"; }
+  TSYNC      { $$ = STR("sync"); }
+| TSINGLE    { $$ = STR("single"); }
+| TDOMAIN    { $$ = STR("domain"); }
+| TINDEX     { $$ = STR("index"); }
 ;
 
 do_stmt:
@@ -1337,21 +1340,21 @@ ifc_formal:
 // which types are allowed in 'T implements IFC'
 implements_type_ident:
   TIDENT     { $$ = $1; }
-| TBOOL      { $$ = "bool"; }
-| TINT       { $$ = "int"; }
-| TUINT      { $$ = "uint"; }
-| TREAL      { $$ = "real"; }
-| TIMAG      { $$ = "imag"; }
-| TCOMPLEX   { $$ = "complex"; }
-| TBYTES     { $$ = "bytes"; }
-| TSTRING    { $$ = "string"; }
-| TLOCALE    { $$ = "locale"; }
-| TNOTHING   { $$ = "nothing"; }
-| TVOID      { $$ = "void"; }
+| TBOOL      { $$ = STR("bool"); }
+| TINT       { $$ = STR("int"); }
+| TUINT      { $$ = STR("uint"); }
+| TREAL      { $$ = STR("real"); }
+| TIMAG      { $$ = STR("imag"); }
+| TCOMPLEX   { $$ = STR("complex"); }
+| TBYTES     { $$ = STR("bytes"); }
+| TSTRING    { $$ = STR("string"); }
+| TLOCALE    { $$ = STR("locale"); }
+| TNOTHING   { $$ = STR("nothing"); }
+| TVOID      { $$ = STR("void"); }
 | implements_type_error_ident
   {
     std::string s = "type ";
-    s += "'"; s += $1; s += "'";
+    s += "'"; s += $1.c_str(); s += "'";
     s += " not allowed to implement an interface";
     noteError(@$, context, s);
     $$ = $1;
@@ -1360,20 +1363,20 @@ implements_type_ident:
 
 // these are not allowed as types in 'T implements IFC'
 implements_type_error_ident:
-  TNONE      { $$ = "none"; }
-| TTHIS      { $$ = "this"; }
-| TFALSE     { $$ = "false"; }
-| TTRUE      { $$ = "true"; }
+  TNONE      { $$ = STR("none"); }
+| TTHIS      { $$ = STR("this"); }
+| TFALSE     { $$ = STR("false"); }
+| TTRUE      { $$ = STR("true"); }
 /* it would be nice to include these, alas they cause shift/reduce conflicts:
-| TSYNC      { $$ = "sync"; }
-| TSINGLE    { $$ = "single"; }
-| TOWNED     { $$ = "owned"; }
-| TSHARED    { $$ = "shared"; }
-| TBORROWED  { $$ = "borrowed"; }
-| TUNMANAGED { $$ = "unmanaged"; }
+| TSYNC      { $$ = STR("sync"); }
+| TSINGLE    { $$ = STR("single"); }
+| TOWNED     { $$ = STR("owned"); }
+| TSHARED    { $$ = STR("shared"); }
+| TBORROWED  { $$ = STR("borrowed"); }
+| TUNMANAGED { $$ = STR("unmanaged"); }
 */
-| TDOMAIN    { $$ = "domain"; }
-| TINDEX     { $$ = "index"; }
+| TDOMAIN    { $$ = STR("domain"); }
+| TINDEX     { $$ = STR("index"); }
 ;
 
 implements_stmt:
@@ -1608,51 +1611,51 @@ fn_decl_receiver_expr:
 
 fn_ident:
   ident_fn_def   { $$ = $1; }
-| TBAND          { $$ = "&"; }
-| TBOR           { $$ = "|"; }
-| TBXOR          { $$ = "^"; }
-| TBNOT          { $$ = "~"; }
-| TEQUAL         { $$ = "=="; }
-| TNOTEQUAL      { $$ = "!="; }
-| TLESSEQUAL     { $$ = "<="; }
-| TGREATEREQUAL  { $$ = ">="; }
-| TLESS          { $$ = "<"; }
-| TGREATER       { $$ = ">"; }
-| TPLUS          { $$ = "+"; }
-| TMINUS         { $$ = "-"; }
-| TSTAR          { $$ = "*"; }
-| TDIVIDE        { $$ = "/"; }
-| TSHIFTLEFT     { $$ = "<<"; }
-| TSHIFTRIGHT    { $$ = ">>"; }
-| TMOD           { $$ = "%"; }
-| TEXP           { $$ = "**"; }
-| TBANG          { $$ = "!"; }
-| TBY            { $$ = "by"; }
-| THASH          { $$ = "#"; }
-| TALIGN         { $$ = "align"; }
-| TSWAP          { $$ = "<=>"; }
-| TIO            { $$ = "<~>"; }
-| TINITEQUALS    { $$ = "init="; }
-| TCOLON         { $$ = ":"; }
+| TBAND          { $$ = STR("&"); }
+| TBOR           { $$ = STR("|"); }
+| TBXOR          { $$ = STR("^"); }
+| TBNOT          { $$ = STR("~"); }
+| TEQUAL         { $$ = STR("=="); }
+| TNOTEQUAL      { $$ = STR("!="); }
+| TLESSEQUAL     { $$ = STR("<="); }
+| TGREATEREQUAL  { $$ = STR(">="); }
+| TLESS          { $$ = STR("<"); }
+| TGREATER       { $$ = STR(">"); }
+| TPLUS          { $$ = STR("+"); }
+| TMINUS         { $$ = STR("-"); }
+| TSTAR          { $$ = STR("*"); }
+| TDIVIDE        { $$ = STR("/"); }
+| TSHIFTLEFT     { $$ = STR("<<"); }
+| TSHIFTRIGHT    { $$ = STR(">>"); }
+| TMOD           { $$ = STR("%"); }
+| TEXP           { $$ = STR("**"); }
+| TBANG          { $$ = STR("!"); }
+| TBY            { $$ = STR("by"); }
+| THASH          { $$ = STR("#"); }
+| TALIGN         { $$ = STR("align"); }
+| TSWAP          { $$ = STR("<=>"); }
+| TIO            { $$ = STR("<~>"); }
+| TINITEQUALS    { $$ = STR("init="); }
+| TCOLON         { $$ = STR(":"); }
 | ident_def TBANG
-  { std::string s = $1; s += "!";
-    $$ = context->astContext->uniqueCString(s);
+  { std::string s = $1.c_str(); s += "!";
+    $$ = STR(s.c_str());
   }
 ;
 
 assignop_ident:
-  TASSIGN        { $$ = "="; }
-| TASSIGNPLUS    { $$ = "+="; }
-| TASSIGNMINUS   { $$ = "-="; }
-| TASSIGNMULTIPLY { $$ = "*="; }
-| TASSIGNDIVIDE  { $$ = "/="; }
-| TASSIGNMOD     { $$ = "%="; }
-| TASSIGNEXP     { $$ = "**="; }
-| TASSIGNBAND    { $$ = "&="; }
-| TASSIGNBOR     { $$ = "|="; }
-| TASSIGNBXOR    { $$ = "^="; }
-| TASSIGNSR      { $$ = ">>="; }
-| TASSIGNSL      { $$ = "<<="; }
+  TASSIGN         { $$ = STR("="); }
+| TASSIGNPLUS     { $$ = STR("+="); }
+| TASSIGNMINUS    { $$ = STR("-="); }
+| TASSIGNMULTIPLY { $$ = STR("*="); }
+| TASSIGNDIVIDE   { $$ = STR("/="); }
+| TASSIGNMOD      { $$ = STR("%="); }
+| TASSIGNEXP      { $$ = STR("**="); }
+| TASSIGNBAND     { $$ = STR("&="); }
+| TASSIGNBOR      { $$ = STR("|="); }
+| TASSIGNBXOR     { $$ = STR("^="); }
+| TASSIGNSR       { $$ = STR(">>="); }
+| TASSIGNSL       { $$ = STR("<<="); }
 ;
 
 opt_formal_ls:
@@ -2027,7 +2030,7 @@ simple_expr_ls:
 ;
 
 tuple_component:
-  TUNDERSCORE   { $$ = Identifier::build(BUILDER, "_"); }
+  TUNDERSCORE   { $$ = Identifier::build(BUILDER, STR("_")); }
 | opt_try_expr  { $$ = $1; }
 | query_expr    { $$ = $1; }
 ;
@@ -2168,7 +2171,7 @@ cond_expr:
 ;
 
 nil_expr:
-  TNIL      { $$ = Identifier::build(BUILDER, "nil"); }
+  TNIL      { $$ = Identifier::build(BUILDER, STR("nil")); }
 ;
 
 /* Expressions permitted at the statement level as <stmt_level_expr> TSEMI.

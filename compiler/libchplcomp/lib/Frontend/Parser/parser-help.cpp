@@ -39,7 +39,3 @@ static ErroneousExpr* raiseError(YYLTYPE location,
   // return an error sentinel
   return ErroneousExpr::build(context->builder);
 }
-
-static void redefiningReservedWordError(YYLTYPE location, const char* word) {
-
-}

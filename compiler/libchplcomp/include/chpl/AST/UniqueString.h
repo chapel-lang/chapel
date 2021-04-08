@@ -18,11 +18,6 @@ namespace ast {
 class Context;
 
 namespace detail {
-// this class is POD for use in PODUniqueString
-// We could consider applying a short-string optimization here
-// if we thought it was valuable to have strings < 7 bytes be
-// stored directly.
-
 // We can make it store 6 bytes in line this way:
 // alloc all such strings aligned to 2 bytes
 // store in the low-order byte an odd number
@@ -49,7 +44,7 @@ namespace detail {
 //             ~33,000 (73%) are < 39 bytes
 //
 // Q: does this improve performance?
-//   Yes, by about 5% in testUniqueString.cpp
+//   Yes, by about 5-10% in testUniqueString.cpp
 //   It might be more than that when the string references are
 //   not recently used.
 struct InlinedString {
@@ -170,8 +165,10 @@ class UniqueString final {
   UniqueString() {
     this->s.i = detail::InlinedString::buildFromAligned("", 0);
   }
-  /** create a UniqueString from a PODUniqueString */
-  explicit UniqueString(detail::PODUniqueString s) {
+  /** create a UniqueString from a PODUniqueString.
+      this constructor intentionally allows implicit conversion.
+   */
+  UniqueString(detail::PODUniqueString s) {
     this->s = s;
   }
 

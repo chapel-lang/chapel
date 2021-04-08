@@ -29,7 +29,7 @@ class Identifier final : public Expr {
   UniqueString name_;
  public:
   ~Identifier() override = default;
-  static Identifier* build(Builder* builder, const char* name);
+  static Identifier* build(Builder* builder, UniqueString name);
   UniqueString name() const { return name_; }
 };
 
