@@ -610,7 +610,7 @@ module ChapelRange {
   }
 
   /* Return the range's low bound. If the range does not have a low
-     bound the behavior is undefined. */
+     bound (e.g., ``..10``), a compiler error is generated. */
   inline proc range.low {
     if !hasLowBound() {
       compilerError("can't query the low bound of a range without one");
@@ -620,7 +620,7 @@ module ChapelRange {
 
 
   /* Return the range's high bound. If the range does not have a high
-     bound the behavior is undefined. */
+     bound (e.g., ``1..``), a compiler error is generated. */
   inline proc range.high {
     if !hasHighBound() {
       compilerError("can't query the high bound of a range without one");
@@ -630,7 +630,7 @@ module ChapelRange {
 
 
   /* Returns the range's aligned low bound. If the aligned low bound is
-     undefined (does not exist), the behavior is undefined.
+     undefined (e.g., ``..10 by -2``), the behavior is undefined.
    */
   inline proc range.alignedLow : idxType {
     if !hasLowBound() {
@@ -650,7 +650,7 @@ module ChapelRange {
 
   // TODO: Add back example?
   /* Returns the range's aligned high bound. If the aligned high bound is
-     undefined, the behavior is undefined.
+     undefined (e.g., ``1.. by 2``), the behavior is undefined.
    */
   inline proc range.alignedHigh : idxType {
     if !hasHighBound() {
@@ -940,8 +940,8 @@ operator :(r: range(?), type t: range(?)) {
     tmp._aligned = r.aligned;
   }
 
-  tmp._low = (if r.hasLowBound() then r.low else 1): tmp.intIdxType;
-  tmp._high = (if r.hasHighBound() then r.high else 0): tmp.intIdxType;
+  tmp._low = if r.hasLowBound() then r._low else 1: tmp.intIdxType;
+  tmp._high = if r.hasHighBound() then r._high else 0: tmp.intIdxType;
   return tmp;
 }
 
