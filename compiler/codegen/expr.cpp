@@ -4644,7 +4644,7 @@ DEFINE_PRIM(PRIM_GPU_KERNEL_LAUNCH) {
   }
 
   // TODO: make this emit what you want
-  ret = codegenCallExpr("gpu_kernel_launch_here", args);
+  ret = codegenCallExpr("cuLaunchKernel", args);
 }
 
 static void codegenPutGet(CallExpr* call, GenRet &ret) {
