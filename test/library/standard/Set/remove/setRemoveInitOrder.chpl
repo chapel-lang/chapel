@@ -19,7 +19,7 @@ proc r.deinit() {
   writeln('deinit r: ', _id);
 }
 
-proc =(ref lhs: r, const ref rhs: r) {
+operator r.=(ref lhs: r, const ref rhs: r) {
   writeln('assigning r: ', lhs._id, ' from r: ', rhs._id);
 }
 

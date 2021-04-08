@@ -1,9 +1,9 @@
 nestedMethodBad.chpl:14: In function 'main':
 nestedMethodBad.chpl:19: error: unresolved call '+(R, R)'
-$CHPL_HOME/modules/internal/Bytes.chpl:1088: note: this candidate did not match: +(s0: bytes, s1: bytes)
+$CHPL_HOME/modules/internal/String.chpl:nnnn: note: this candidate did not match: +(x: bufferType, y: byteIndex)
 nestedMethodBad.chpl:19: note: because actual argument #1 with type 'R'
-$CHPL_HOME/modules/internal/Bytes.chpl:1088: note: is passed to formal 's0: bytes'
+$CHPL_HOME/modules/internal/String.chpl:nnnn: note: is passed to formal 'x: c_ptr(uint(8))'
 nestedMethodBad.chpl:19: note: other candidates are:
-$CHPL_HOME/modules/internal/String.chpl:364: note:   +(x: byteIndex, y: int)
-$CHPL_HOME/modules/internal/String.chpl:365: note:   +(x: codepointIndex, y: int)
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:   +(a: uint(64), b: int(64))
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:   +(a: int(64), b: uint(64))
 note: and 95 other candidates, use --print-all-candidates to see them

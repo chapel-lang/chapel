@@ -6,7 +6,7 @@ record NotPod1 {
   var x:int;
 }
 
-proc =(ref lhs:NotPod1, rhs:NotPod1) {
+operator NotPod1.=(ref lhs:NotPod1, rhs:NotPod1) {
   writeln("in assign");
 }
 

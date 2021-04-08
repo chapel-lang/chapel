@@ -15,7 +15,7 @@ record arr33 {
 
 writeln(A((1,1)+(0, 0)));
 
-proc +(a: 2*int, b: 2*int) {
+operator +(a: 2*int, b: 2*int) {
   writeln("Choose the correct +");
   return (a(0)+b(0), a(1)+b(1));
 }

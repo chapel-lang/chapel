@@ -1762,7 +1762,7 @@ module List {
     :arg lhs: The list to assign to.
     :arg rhs: The list to assign from.
   */
-  proc =(ref lhs: list(?t, ?), rhs: list(t, ?)) {
+  operator list.=(ref lhs: list(?t, ?), rhs: list(t, ?)) {
     lhs.clear();
     lhs.extend(rhs);
   }
@@ -1776,7 +1776,7 @@ module List {
     :return: `true` if the contents of two lists are equal.
     :rtype: `bool`
   */
-  proc ==(a: list(?t, ?), b: list(t, ?)): bool {
+  operator list.==(a: list(?t, ?), b: list(t, ?)): bool {
     if a.size != b.size then
       return false;
 
@@ -1800,7 +1800,7 @@ module List {
     :return: `true` if the contents of two lists are not equal.
     :rtype: `bool`
   */
-  proc !=(a: list(?t, ?), b: list(t, ?)): bool {
+  operator list.!=(a: list(?t, ?), b: list(t, ?)): bool {
     return !(a == b);
   }
 

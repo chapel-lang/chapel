@@ -948,6 +948,9 @@ static void updateMethod(UnresolvedSymExpr* usymExpr,
             break;
           }
 
+          if (isAstrOpName(name))
+            break;
+
           if (isAggr == true || isMethodName(name, type) == true) {
             if (isFunctionNameWithExplicitScope(expr) == false) {
               insertFieldAccess(method, usymExpr, sym, expr);
@@ -1532,7 +1535,7 @@ static void adjustTypeMethodsOnClasses() {
 
     ArgSymbol* thisArg = toArgSymbol(fn->_this);
     Type*      thisType = thisArg->type;
-    if (! isClass(thisType)) continue; // handle only undecorated classes
+    if (! isClassLikeOrManaged(thisType)) continue;
 
     if (BlockStmt* typeBlock = thisArg->typeExpr) {
       // Remove the type block, ensuring that its information is preserved.

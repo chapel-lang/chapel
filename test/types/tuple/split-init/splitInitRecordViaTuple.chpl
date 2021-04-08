@@ -12,7 +12,7 @@ record R {
   }
 }
 
-proc =(ref lhs: R, rhs: int) {
+operator =(ref lhs: R, rhs: int) {
   lhs.x = rhs;
 }
 

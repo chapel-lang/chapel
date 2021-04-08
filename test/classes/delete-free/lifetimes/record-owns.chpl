@@ -38,7 +38,7 @@ record RMyClass {
   }
 }
 
-proc =(ref lhs:RMyClass, ref rhs:RMyClass) {
+operator RMyClass.=(ref lhs:RMyClass, ref rhs:RMyClass) {
   lhs.c = rhs.c;
 }
 

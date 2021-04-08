@@ -704,8 +704,7 @@ module Map {
     :arg lhs: The map to assign to.
     :arg rhs: The map to assign from. 
   */
-  proc =(ref lhs: map(?kt, ?vt, ?), const ref rhs: map(kt, vt, ?)) {
-
+  operator map.=(ref lhs: map(?kt, ?vt, ?), const ref rhs: map(kt, vt, ?)) {
     if !isCopyableType(kt) || !isCopyableType(vt) then
       compilerError("assigning map with non-copyable type");
 
@@ -743,7 +742,8 @@ module Map {
     :return: `true` if the contents of two maps are equal.
     :rtype: `bool`
   */
-  proc ==(const ref a: map(?kt, ?vt, ?ps), const ref b: map(kt, vt, ps)): bool {
+  operator map.==(const ref a: map(?kt, ?vt, ?ps),
+                  const ref b: map(kt, vt, ps)): bool {
     for key in a.keys() {
       if !b.contains(key) || a[key] != b[key] then
         return false;
@@ -767,12 +767,14 @@ module Map {
     :return: `true` if the contents of two maps are not equal.
     :rtype: `bool`
   */
-  proc !=(const ref a: map(?kt, ?vt, ?ps), const ref b: map(kt, vt, ps)): bool {
+  operator map.!=(const ref a: map(?kt, ?vt, ?ps),
+                  const ref b: map(kt, vt, ps)): bool {
     return !(a == b);
   }
 
   /* Returns a new map containing the keys and values in either a or b. */
-  proc +(a: map(?keyType, ?valueType, ?), b: map(keyType, valueType, ?)) {
+  operator map.+(a: map(?keyType, ?valueType, ?),
+                 b: map(keyType, valueType, ?)) {
     return a | b;
   }
 
@@ -780,13 +782,14 @@ module Map {
     Sets the left-hand side map to contain the keys and values in either
     a or b.
    */
-  proc +=(ref a: map(?keyType, ?valueType, ?),
-              b: map(keyType, valueType, ?)) {
+  operator map.+=(ref a: map(?keyType, ?valueType, ?),
+                      b: map(keyType, valueType, ?)) {
     a |= b;
   }
 
   /* Returns a new map containing the keys and values in either a or b. */
-  proc |(a: map(?keyType, ?valueType, ?), b: map(keyType, valueType, ?)) {
+  operator map.|(a: map(?keyType, ?valueType, ?),
+                  b: map(keyType, valueType, ?)) {
     var newMap = new map(keyType, valueType, (a.parSafe || b.parSafe));
 
     for k in a do newMap.add(k, a.getValue(k));
@@ -797,14 +800,15 @@ module Map {
   /* Sets the left-hand side map to contain the keys and values in either
      a or b.
    */
-  proc |=(ref a: map(?keyType, ?valueType, ?),
-              b: map(keyType, valueType, ?)) {
+  operator map.|=(ref a: map(?keyType, ?valueType, ?),
+                      b: map(keyType, valueType, ?)) {
     // add keys/values from b to a if they weren't already in a
     for k in b do a.add(k, b.getValue(k));
   }
 
   /* Returns a new map containing the keys that are in both a and b. */
-  proc &(a: map(?keyType, ?valueType, ?), b: map(keyType, valueType, ?)) {
+  operator map.&(a: map(?keyType, ?valueType, ?),
+                 b: map(keyType, valueType, ?)) {
     var newMap = new map(keyType, valueType, (a.parSafe || b.parSafe));
 
     for k in a.keys() do
@@ -816,14 +820,14 @@ module Map {
 
   /* Sets the left-hand side map to contain the keys that are in both a and b.
    */
-  proc &=(ref a: map(?keyType, ?valueType, ?),
-              b: map(keyType, valueType, ?)) {
+  operator map.&=(ref a: map(?keyType, ?valueType, ?),
+                  b: map(keyType, valueType, ?)) {
     a = a & b;
   }
 
   /* Returns a new map containing the keys that are only in a, but not b. */
-  proc -(a: map(?keyType, ?valueType, ?),
-         b: map(keyType, valueType, ?)) {
+  operator map.-(a: map(?keyType, ?valueType, ?),
+             b: map(keyType, valueType, ?)) {
     var newMap = new map(keyType, valueType, (a.parSafe || b.parSafe));
 
     for ak in a.keys() {
@@ -836,8 +840,8 @@ module Map {
 
   /* Sets the left-hand side map to contain the keys that are in the
      left-hand map, but not the right-hand map. */
-  proc -=(ref a: map(?keyType, ?valueType, ?),
-              b: map(keyType, valueType, ?)) {
+  operator map.-=(ref a: map(?keyType, ?valueType, ?),
+                      b: map(keyType, valueType, ?)) {
     a._enter(); defer a._leave();
 
     for k in b.keys() {
@@ -853,8 +857,8 @@ module Map {
 
   /* Returns a new map containing the keys that are in either a or b, but
      not both. */
-  proc ^(a: map(?keyType, ?valueType, ?),
-         b: map(keyType, valueType, ?)) {
+  operator map.^(a: map(?keyType, ?valueType, ?),
+                 b: map(keyType, valueType, ?)) {
     var newMap = new map(keyType, valueType, (a.parSafe || b.parSafe));
 
     for k in a.keys() do
@@ -866,8 +870,8 @@ module Map {
 
   /* Sets the left-hand side map to contain the keys that are in either the
      left-hand map or the right-hand map, but not both. */
-  proc ^=(ref a: map(?keyType, ?valueType, ?),
-              b: map(keyType, valueType, ?)) {
+  operator map.^=(ref a: map(?keyType, ?valueType, ?),
+                      b: map(keyType, valueType, ?)) {
     for k in b.keys() {
       if a.contains(k) then a.remove(k);
       else a.add(k, b.getValue(k));

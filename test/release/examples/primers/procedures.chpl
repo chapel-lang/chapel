@@ -85,7 +85,7 @@ writeln();
 record Point { var x, y: real; }
 
 // Tell how to add two points together.
-proc +(p1: Point, p2: Point)
+operator Point.+(p1: Point, p2: Point)
 {
   // Vector addition in 2-space.
   return new Point(p1.x + p2.x, p1.y + p2.y);

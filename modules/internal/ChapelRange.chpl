@@ -806,11 +806,11 @@ module ChapelRange {
     return arg2 == arg1(arg2);
   }
 
-  proc ==(r1: range(?), r2: range(?)) param
+  operator ==(r1: range(?), r2: range(?)) param
     where r1.boundedType != r2.boundedType
   return false;
 
-  proc ==(r1: range(?), r2: range(?)): bool
+  operator ==(r1: range(?), r2: range(?)): bool
     where r1.boundedType == r2.boundedType
   {
     // An ambiguous ranges cannot equal an unambiguous one
@@ -847,7 +847,7 @@ module ChapelRange {
     }
   }
 
-  proc !=(r1: range(?), r2: range(?))  return !(r1 == r2);
+  operator !=(r1: range(?), r2: range(?))  return !(r1 == r2);
 
   /* Returns true if the two ranges are the same in every respect: i.e. the
      two ranges have the same ``idxType``, ``boundedType``, ``stridable``,
@@ -1215,7 +1215,7 @@ operator :(r: range(?), type t: range(?)) {
   //#
 
   // Assignment
-  inline proc =(ref r1: range(stridable=?s1), r2: range(stridable=?s2))
+  inline operator =(ref r1: range(stridable=?s1), r2: range(stridable=?s2))
   {
     if r1.boundedType != r2.boundedType then
       compilerError("type mismatch in assignment of ranges with different boundedType parameters");
@@ -1243,7 +1243,7 @@ operator :(r: range(?), type t: range(?)) {
   // Absolute alignment is not preserved
   // (That is, the alignment shifts along with the range.)
   //
-  inline proc +(r: range(?e, ?b, ?s), offset: integral)
+  inline operator +(r: range(?e, ?b, ?s), offset: integral)
   {
     const i = offset:r.intIdxType;
     type strType = chpl__rangeStrideType(e);
@@ -1256,10 +1256,10 @@ operator :(r: range(?), type t: range(?)) {
                      r.aligned);
   }
 
-  inline proc +(i:integral, r: range(?e,?b,?s))
+  inline operator +(i:integral, r: range(?e,?b,?s))
     return r + i;
 
-  inline proc -(r: range(?e,?b,?s), i: integral)
+  inline operator -(r: range(?e,?b,?s), i: integral)
   {
     type strType = chpl__rangeStrideType(e);
 
@@ -1349,7 +1349,7 @@ operator :(r: range(?), type t: range(?)) {
    * because the parser renames the routine since 'by' is a keyword.
    */
   pragma "no doc"
-  inline proc by(r, step) {
+  inline operator by(r, step) {
     if !isRange(r) then
       compilerError("the first argument of the 'by' operator is not a range");
     chpl_range_check_stride(step, r.idxType);
@@ -1366,7 +1366,7 @@ operator :(r: range(?), type t: range(?)) {
   // We want to warn the user at compiler time if they had an invalid param
   // stride rather than waiting until runtime.
   pragma "no doc"
-  inline proc by(r : range(?), param step) {
+  inline operator by(r : range(?), param step) {
     chpl_range_check_stride(step, r.idxType);
     return chpl_by_help(r, step:r.strType);
   }
@@ -1383,7 +1383,7 @@ operator :(r: range(?), type t: range(?)) {
   // It produces a new range with the specified alignment.
   // By definition, alignment is relative to the low bound of the range.
   pragma "no doc"
-  inline proc align(r : range(?i, ?b, ?s), algn: i)
+  inline operator align(r : range(?i, ?b, ?s), algn: i)
   {
     // Note that aligning an unstrided range will set the field value,
     // but has no effect on the index set produced (a mod 1 == 0).
@@ -1400,7 +1400,7 @@ operator :(r: range(?), type t: range(?)) {
    * because the parser renames the routine since 'align' is a keyword.
    */
   pragma "no doc"
-  inline proc align(r : range(?i, ?b, ?s), algn) {
+  inline operator align(r : range(?i, ?b, ?s), algn) {
     compilerError("can't align a range with idxType ", i:string,
                   " using a value of type ", algn.type:string);
     return r;
@@ -1716,15 +1716,15 @@ operator :(r: range(?), type t: range(?)) {
                      _aligned = if r.stridable then r.aligned else none);
   }
 
-  proc #(r:range(?i), count:chpl__rangeStrideType(i)) {
+  operator #(r:range(?i), count:chpl__rangeStrideType(i)) {
     return chpl_count_help(r, count);
   }
 
-  proc #(r:range(?i), count:chpl__rangeUnsignedType(i)) {
+  operator #(r:range(?i), count:chpl__rangeUnsignedType(i)) {
     return chpl_count_help(r, count);
   }
 
-  proc #(r: range(?i), count) {
+  operator #(r: range(?i), count) {
     compilerError("can't apply '#' to a range with idxType ",
                   i:string, " using a count of type ",
                   count.type:string);

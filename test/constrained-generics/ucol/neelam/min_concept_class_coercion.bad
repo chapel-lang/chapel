@@ -1,0 +1,4 @@
+min_concept_class_coercion.chpl:18: In 'implements LessThan' statement:
+min_concept_class_coercion.chpl:18: error: when checking this implements statement
+min_concept_class_coercion.chpl:20: note: this implementation of the required function LT requires implicit conversion(s), which is currently disallowed
+min_concept_class_coercion.chpl:15: note: the required function LT in the interface LessThan is declared here

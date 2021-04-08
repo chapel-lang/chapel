@@ -373,7 +373,7 @@ module OwnedObject {
     ``lhs``, if any. Transfers ownership of the object managed by ``rhs``
     to ``lhs``, leaving ``rhs`` storing `nil`.
   */
-  proc =(ref lhs:_owned,
+  operator =(ref lhs:_owned,
          pragma "leaves arg nil"
          ref rhs: _owned)
     where ! (isNonNilableClass(lhs) && isNilableClass(rhs))
@@ -399,7 +399,7 @@ module OwnedObject {
   }
 
   pragma "no doc"
-  proc =(ref lhs:_owned, rhs:_nilType)
+  operator =(ref lhs:_owned, rhs:_nilType)
     where ! isNonNilableClass(lhs)
   {
     lhs.clear();
@@ -407,7 +407,7 @@ module OwnedObject {
   /*
     Swap two :record:`owned` objects.
   */
-  proc <=>(ref lhs:_owned, ref rhs:lhs.type) {
+  operator <=>(ref lhs:_owned, ref rhs:lhs.type) {
     lhs.chpl_p <=> rhs.chpl_p;
   }
 

@@ -4,7 +4,7 @@ use OsetTest;
 
 
 class C { var x: int = 0; }
-proc <(x: shared C?, y: shared C?) {
+operator C.<(x: shared C?, y: shared C?) {
   if x == nil && y == nil then return 1;
   else if x == nil then return 1;
   else if y == nil then return 0;

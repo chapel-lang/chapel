@@ -4,7 +4,7 @@ record r {
   proc deinit() { writeln('deinit'); }
 }
 
-proc =(ref lhs: r, rhs: r) { writeln('assign'); }
+operator r.=(ref lhs: r, rhs: r) { writeln('assign'); }
 
 proc consumeElement(in elem) {}
 

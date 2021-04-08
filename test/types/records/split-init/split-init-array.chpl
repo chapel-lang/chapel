@@ -26,7 +26,7 @@ record R {
     if print then writeln("deinit ", x);
   }
 }
-proc =(ref lhs:R, rhs:R) {
+operator R.=(ref lhs:R, rhs:R) {
   if print then writeln("= ", lhs.x, " ", rhs.x);
   lhs.x = rhs.x;
 }

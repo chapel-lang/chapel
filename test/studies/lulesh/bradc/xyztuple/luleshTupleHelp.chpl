@@ -1,16 +1,16 @@
-inline proc *(v:real, xyz:3*real) {
+inline operator *(v:real, xyz:3*real) {
   return (v*xyz[0], v*xyz[1], v*xyz[2]);
 }
 
-inline proc *(xyz:3*real, v:real) {
+inline operator *(xyz:3*real, v:real) {
   return (xyz[0]*v, xyz[1]*v, xyz[2]*v);
 }
 
-inline proc /(xyz:3*real, v:real) {
+inline operator /(xyz:3*real, v:real) {
   return (xyz[0]/v, xyz[1]/v, xyz[2]/v);
 }
 
-inline proc -=(ref xyz: 3*real, v:real) {
+inline operator -=(ref xyz: 3*real, v:real) {
   xyz[0] -= v;
   xyz[1] -= v;
   xyz[2] -= v;

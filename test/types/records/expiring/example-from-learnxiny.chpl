@@ -51,7 +51,7 @@ class MyClass {
 
 // We can define an operator on our class as well, but
 // the definition has to be outside the class definition.
-proc +(A : MyClass, B : MyClass) : owned MyClass {
+operator MyClass.+(A : MyClass, B : MyClass) : owned MyClass {
   return
     new owned MyClass(memberInt = A.getMemberInt() + B.getMemberInt(),
                       memberBool = A.getMemberBool() || B.getMemberBool());
