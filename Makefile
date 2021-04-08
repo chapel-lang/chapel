@@ -76,11 +76,12 @@ notcompiler: FORCE
 $(CHPL_MAKE_HOME)/build/libchplcomp:
 	@echo "Configuring the compiler library..."
 	@mkdir -p build/libchplcomp
-	@cd build/libchplcomp && cmake ../../compiler/libchplcomp
+	#@cd build/libchplcomp && cmake ../../compiler/libchplcomp -DCMAKE_BUILD_TYPE=Debug
+	@cd build/libchplcomp && cmake ../../compiler/libchplcomp -DCMAKE_BUILD_TYPE=Release
 
 libchplcomp: $(CHPL_MAKE_HOME)/build/libchplcomp FORCE
 	@echo "Making the compiler library..."
-	@cd build/libchplcomp && cmake --build .  --target libchplcomp
+	@cd build/libchplcomp && cmake --build .  --target libchplcomp --verbose
 
 libchplcomp-docs: $(CHPL_MAKE_HOME)/build/libchplcomp FORCE
 	@echo "Making the compiler library docs..."

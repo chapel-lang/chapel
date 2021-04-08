@@ -62,7 +62,7 @@ test: spectests FORCE
 	cd examples && start_test
 
 test-libchplcomp: $(CHPL_MAKE_HOME)/build/libchplcomp FORCE
-	cd build/libchplcomp && cmake --build . --target tests && ctest .
+	cd build/libchplcomp && cmake --build . --target tests --verbose && ctest .
 
 libchplcomp-parser: $(CHPL_MAKE_HOME)/build/libchplcomp FORCE
 	cd build/libchplcomp/lib/Frontend/Parser && cmake --build . --target parser
