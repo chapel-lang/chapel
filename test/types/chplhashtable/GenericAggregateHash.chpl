@@ -18,6 +18,13 @@ record r2 {
   var a: [0..3] T;
 }
 
+record r3 {
+  type T;
+  param flag: bool;
+}
+
+record r4 {}
+
 operator r1.==(lhs: r1, rhs: r1) {
   return lhs.x == rhs.x;
 }
@@ -39,10 +46,10 @@ proc test2() {
   var d: domain(r2(int));
   d += new r2(int);
   writeln(d);
-
 }
 test2();
 
+// Tests for classes are actually irrelevant here, but...
 proc test3() {
   var d: domain(shared C1(int));
   d += new shared C1(int);
@@ -63,4 +70,20 @@ proc test5() {
   writeln(d);
 }
 test5();
+
+// Test record with only type/param fields (hash should return 0).
+proc test6() {
+  var d: domain(r3(int, flag=false));
+  d += new r3(int, flag=false);
+  writeln(d);
+}
+test6();
+
+// Test empty record (hash should return 0).
+proc test7() {
+  var d: domain(r4);
+  d += new r4();
+  writeln(d);
+}
+test7();
 
