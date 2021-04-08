@@ -1317,8 +1317,8 @@ private proc getQ(A, tau) {
   var n = A.domain.shape[0];
   var I = eye(A.domain);
   var Q = I;
+  var v: [1..n] real;
   for i in 1..n {
-    var v: [1..n] real;
     v[1..i-1] = 0;
     v[i] = 1;
     v[i+1..n] = A[(i+1)..n,i];
@@ -1340,7 +1340,7 @@ private proc getQ(A, tau) {
       This procedure depends on the modules :mod:`LAPACK` and :mod:`BLAS`.
       It must be compiled with the `-llapacke` and `-lblas` flags.
 */
-proc qr (A: [?Adom] ?t)
+proc qr(A: [?Adom] ?t)
   where A.rank == 2 && isLAPACKType(t) && usingLAPACK && usingBLAS {
   if isDistributed(A) then
     compilerError("qr does not support distributed vectors/matrices");
@@ -1350,7 +1350,7 @@ proc qr (A: [?Adom] ?t)
   var n = Adom.shape[0];
   var tau:[1..n] real;
   var info = LAPACK.geqrf(lapack_memory_order.row_major, Aclone, tau);
-  if info <0 then
+  if info < 0 then
     halt("QR Factorization failed on the input matrix");
   var Q = getQ(Aclone, tau);
   var R = triu(Aclone);
