@@ -789,7 +789,7 @@ module Map {
 
   /* Returns a new map containing the keys and values in either a or b. */
   operator map.|(a: map(?keyType, ?valueType, ?),
-                  b: map(keyType, valueType, ?)) {
+                 b: map(keyType, valueType, ?)) {
     var newMap = new map(keyType, valueType, (a.parSafe || b.parSafe));
 
     for k in a do newMap.add(k, a.getValue(k));
