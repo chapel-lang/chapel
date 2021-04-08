@@ -704,17 +704,32 @@ module Map {
     :arg lhs: The map to assign to.
     :arg rhs: The map to assign from. 
   */
-  proc =(ref lhs: map(?kt, ?vt, ?ps), const ref rhs: map(kt, vt, ps)) {
+  proc =(ref lhs: map(?kt, ?vt, ?), const ref rhs: map(kt, vt, ?)) {
 
     if !isCopyableType(kt) || !isCopyableType(vt) then
       compilerError("assigning map with non-copyable type");
 
     lhs.clear();
     for key in rhs.keys() {
-      lhs.add(key, rhs[key]);
+      lhs.add(key, rhs.getValue(key));
     }
   }
 
+  pragma "no doc"
+  operator :(x: map(?k1, ?v1, ?p1), type t: map(?k2, ?v2, ?p2)) {
+    // TODO: Allow coercion between element types? If we do then init=
+    // should also be changed accordingly.
+    if k1 != k2 then
+      compilerError('Cannot cast to map with different ',
+                    'key type: ', k2:string);
+
+    if v1 != v2 then
+      compilerError('Cannot cast to map with different ',
+                    'value type: ', v2:string);
+
+    var result: map(k1, v1, p2) = x;
+    return result;
+  }
 
   /*
     Returns `true` if the contents of two maps are the same.
@@ -757,8 +772,7 @@ module Map {
   }
 
   /* Returns a new map containing the keys and values in either a or b. */
-  proc +(a: map(?keyType, ?valueType, ?parSafe),
-         b: map(keyType, valueType, parSafe)) {
+  proc +(a: map(?keyType, ?valueType, ?), b: map(keyType, valueType, ?)) {
     return a | b;
   }
 
@@ -766,59 +780,55 @@ module Map {
     Sets the left-hand side map to contain the keys and values in either
     a or b.
    */
-  proc +=(ref a: map(?keyType, ?valueType, ?parSafe),
-          b: map(keyType, valueType, parSafe)) {
+  proc +=(ref a: map(?keyType, ?valueType, ?),
+              b: map(keyType, valueType, ?)) {
     a |= b;
   }
 
   /* Returns a new map containing the keys and values in either a or b. */
-  proc |(a: map(?keyType, ?valueType, ?parSafe),
-         b: map(keyType, valueType, parSafe)) {
-    var newMap = new map(keyType, valueType, parSafe);
+  proc |(a: map(?keyType, ?valueType, ?), b: map(keyType, valueType, ?)) {
+    var newMap = new map(keyType, valueType, (a.parSafe || b.parSafe));
 
-    for k in a do newMap.add(k, a[k]);
-    for k in b do newMap.add(k, b[k]);
+    for k in a do newMap.add(k, a.getValue(k));
+    for k in b do newMap.add(k, b.getValue(k));
     return newMap;
   }
 
   /* Sets the left-hand side map to contain the keys and values in either
      a or b.
    */
-  proc |=(ref a: map(?keyType, ?valueType, ?parSafe),
-          b: map(keyType, valueType, parSafe)) {
+  proc |=(ref a: map(?keyType, ?valueType, ?),
+              b: map(keyType, valueType, ?)) {
     // add keys/values from b to a if they weren't already in a
-    for k in b do a.add(k, b[k]);
+    for k in b do a.add(k, b.getValue(k));
   }
 
   /* Returns a new map containing the keys that are in both a and b. */
-  proc &(a: map(?keyType, ?valueType, ?parSafe),
-         b: map(keyType, valueType, parSafe)) {
-    var newMap = new map(keyType, valueType, parSafe);
-    // TODO: This is a horrible way to do this. Fix it
-    for ak in a.keys() {
-      for bk in b.keys() {
-        if ak == bk then
-          newMap.add(ak, a[ak]);
-      }
-    }
+  proc &(a: map(?keyType, ?valueType, ?), b: map(keyType, valueType, ?)) {
+    var newMap = new map(keyType, valueType, (a.parSafe || b.parSafe));
+
+    for k in a.keys() do
+      if b.contains(k) then
+        newMap.add(k, a.getValue(k));
+
     return newMap;
   }
 
   /* Sets the left-hand side map to contain the keys that are in both a and b.
    */
-  proc &=(ref a: map(?keyType, ?valueType, ?parSafe),
-          b: map(keyType, valueType, parSafe)) {
+  proc &=(ref a: map(?keyType, ?valueType, ?),
+              b: map(keyType, valueType, ?)) {
     a = a & b;
   }
 
   /* Returns a new map containing the keys that are only in a, but not b. */
-  proc -(a: map(?keyType, ?valueType, ?parSafe),
-         b: map(keyType, valueType, parSafe)) {
-    var newMap = new map(keyType, valueType, parSafe);
+  proc -(a: map(?keyType, ?valueType, ?),
+         b: map(keyType, valueType, ?)) {
+    var newMap = new map(keyType, valueType, (a.parSafe || b.parSafe));
 
     for ak in a.keys() {
       if !b.contains(ak) then
-        newMap[ak] = a[ak];
+        newMap.add(ak, a.getValue(ak));
     }
 
     return newMap;
@@ -826,9 +836,10 @@ module Map {
 
   /* Sets the left-hand side map to contain the keys that are in the
      left-hand map, but not the right-hand map. */
-  proc -=(ref a: map(?keyType, ?valueType, ?parSafe),
-          b: map(keyType, valueType, parSafe)) {
+  proc -=(ref a: map(?keyType, ?valueType, ?),
+              b: map(keyType, valueType, ?)) {
     a._enter(); defer a._leave();
+
     for k in b.keys() {
       var (found, slot) = a.table.findFullSlot(k);
       if found {
@@ -836,29 +847,30 @@ module Map {
         a.table.clearSlot(slot, outKey, outVal);
       }
     }
+
     a.table.maybeShrinkAfterRemove();
   }
 
   /* Returns a new map containing the keys that are in either a or b, but
      not both. */
-  proc ^(a: map(?keyType, ?valueType, ?parSafe),
-         b: map(keyType, valueType, parSafe)) {
-    var newMap = new map(keyType, valueType, parSafe);
+  proc ^(a: map(?keyType, ?valueType, ?),
+         b: map(keyType, valueType, ?)) {
+    var newMap = new map(keyType, valueType, (a.parSafe || b.parSafe));
 
     for k in a.keys() do
-      if !b.contains(k) then newMap[k] = a[k];
+      if !b.contains(k) then newMap.add(k, a.getValue(k));
     for k in b do
-      if !a.contains(k) then newMap[k] = b[k];
+      if !a.contains(k) then newMap.add(k, b.getValue(k));
     return newMap;
   }
 
   /* Sets the left-hand side map to contain the keys that are in either the
      left-hand map or the right-hand map, but not both. */
-  proc ^=(ref a: map(?keyType, ?valueType, ?parSafe),
-          b: map(keyType, valueType, parSafe)) {
+  proc ^=(ref a: map(?keyType, ?valueType, ?),
+              b: map(keyType, valueType, ?)) {
     for k in b.keys() {
       if a.contains(k) then a.remove(k);
-      else a[k] = b[k];
+      else a.add(k, b.getValue(k));
     }
   }
 }
