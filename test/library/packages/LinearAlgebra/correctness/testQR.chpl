@@ -2,10 +2,10 @@ use LinearAlgebra;
 use Math;
 
 proc isSame(A: [?Adom], B) {
-    var same = true;
+    var equal = true;
     for(valueFound, expectedValue) in zip(A, B) do
-        same = same && Math.isclose(valueFound, expectedValue);
-    return same;
+        equal = equal && Math.isclose(valueFound, expectedValue);
+    return equal;
 }
 
 proc printQR(Q, R){
