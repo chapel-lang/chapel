@@ -101,6 +101,21 @@ void ParserContext::appendList(ExprList* dst, CommentsAndStmt cs) {
   }
 }
 
+void ParserContext::appendComments(CommentsAndStmt*cs,
+                                   std::vector<ParserComment>* comments) {
+  if (cs->comments == nullptr) {
+    cs->comments = comments;
+    return;
+  }
+
+  // otherwise, append them and then delete comments
+  for (ParserComment parserComment : *comments) {
+    cs->comments->push_back(parserComment);
+  }
+
+  delete comments;
+}
+
 CommentsAndStmt ParserContext::finishStmt(CommentsAndStmt cs) {
   this->clearComments();
   return cs;

@@ -721,7 +721,9 @@ block_stmt:
   }
 | TLCBR stmt_ls TRCBR
   {
-    $$ = TODOSTMT(@$);
+    CommentsAndStmt cs = TODOSTMT(@$);
+    context->appendComments(&cs, context->gatherComments(@3));
+    $$ = cs;
   }
 | TLCBR error   TRCBR
   {
@@ -1111,12 +1113,14 @@ extern_export_decl_stmt:
     {
       CommentsAndStmt cs = $1;
       cs.stmt = TODOEXPR(@$); // TODO
+      context->appendComments(&cs, context->gatherComments(@7));
       $$ = cs;
     }
 | extern_export_decl_stmt_start STRINGLITERAL TRECORD ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
     {
       CommentsAndStmt cs = $1;
       cs.stmt = TODOEXPR(@$); // TODO
+      context->appendComments(&cs, context->gatherComments(@8));
       $$ = cs;
     }
 | extern_export_decl_stmt_start opt_expr fn_decl_stmt
@@ -1464,6 +1468,7 @@ class_decl_stmt:
     {
       CommentsAndStmt cs = $1;
       cs.stmt = TODOEXPR(@$);
+      context->appendComments(&cs, context->gatherComments(@5));
       $$ = cs;
     }
 | class_start opt_inherit TLCBR error TRCBR

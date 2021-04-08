@@ -68,7 +68,8 @@ struct ParserContext {
   void appendList(ExprList* dst, ExprList* lst);
   void appendList(ExprList* dst, Expr* e);
   void appendList(ExprList* dst, CommentsAndStmt cs);
- 
+  void appendComments(CommentsAndStmt*cs, std::vector<ParserComment>* comments);
+
   // clears the inner comments that should have already been captured
   // to handle things like this
   //     { /* doc comment } proc myproc()
