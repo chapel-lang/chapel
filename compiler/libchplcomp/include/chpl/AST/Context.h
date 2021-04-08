@@ -50,6 +50,8 @@ class Context {
     Get or create a unique string for a NULL-terminated C string
     and return it as a C string.
 
+    Strings returned by this function will always be aligned to 2 bytes.
+
     The function `UniqueString::build` returns such a string
     with a wrapper type. It should be preferred for type safety
     and to reduce redundant checks.
