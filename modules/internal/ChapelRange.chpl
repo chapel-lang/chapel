@@ -940,8 +940,8 @@ operator :(r: range(?), type t: range(?)) {
     tmp._aligned = r.aligned;
   }
 
-  tmp._low = if r.hasLowBound() then r._low else 1: tmp.intIdxType;
-  tmp._high = if r.hasHighBound() then r._high else 0: tmp.intIdxType;
+  tmp._low = (if r.hasLowBound() then r._low else 1): tmp.intIdxType;
+  tmp._high = (if r.hasHighBound() then r._high else 0): tmp.intIdxType;
   return tmp;
 }
 
