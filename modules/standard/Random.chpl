@@ -169,7 +169,7 @@ module Random {
      :arg arr: a rectangular 1-D non-strided array
      :arg seed: the seed to use when creating the permutation. Defaults to
       `oddCurrentTime` from :type:`RandomSupport.SeedGenerator`.
-     :arg algorithm: A param indicating which algorithm to use. Defaults to PCG.
+     :arg algorithm: A param indicating which algorithm to use. Defaults to gPCG.
      :type algorithm: :type:`RNG`
    */
   proc permutation(arr: [], seed: int(64) = SeedGenerator.oddCurrentTime, param algorithm=RNG.PCG) {
@@ -1201,7 +1201,7 @@ module Random {
         if(!isRectangularArr(arr)) then
           compilerError("permutation does not support non-rectangular arrays");
         
-        if(!isNumericType(arr)) then
+        if(!isNumericType(eltType)) then
           compilerError("permutation does not support non-numeric arrays");
 
         _lock();
@@ -1211,7 +1211,7 @@ module Random {
           arr[ind] = (i+1);
         }
 
-        for i in 0..(arr.size-1) by -1 {
+        for i in 0..<arr.size by -1 {
           var j = randlc_bounded(arr.domain.idxType,
                                  PCGRandomStreamPrivate_rngs,
                                  seed, PCGRandomStreamPrivate_count,
