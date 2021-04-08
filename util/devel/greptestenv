@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+if [ ! -z "$CHPL_HOME" ] ; then
+    chapelDir="$CHPL_HOME"
+else
+    chapelDir="./"
+fi
+
+pushd $chapelDir > /dev/null
+
+find test -wholename "*/.svn" -prune -o \( -name \*.execenv -o -name EXECENV -o -name \*.skipif  -o -name SKIPIF -o -name \*.suppressif -o -name \*.perfexecenv -o -name PERFEXECENV \) -print0 | xargs -0 grep -H "$@"
+
+popd > /dev/null
