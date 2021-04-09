@@ -1,6 +1,6 @@
 ./rangeAPItest.chpl:3: In function 'testRangeAPI':
-./rangeAPItest.chpl:43: warning: invoking 'offset' on an unstrided range has no effect.
-  simpleRangeTest.chpl:4: called as testRangeAPI(lbl: string, r: range(int(64),bounded,false), idx: int(64), subr: range(int(64),bounded,false))
+./rangeAPItest.chpl:45: warning: invoking 'offset' on an unstrided range has no effect.
+  simpleRangeTest.chpl:4: called as testRangeAPI(lbl: string, r: range(int(64),bounded,false), idx: int(64), subr: range(int(64),bounded,false), offset: int(64), count: int(64))
 basic range
 ------------
 1..10

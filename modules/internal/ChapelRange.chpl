@@ -1167,6 +1167,12 @@ operator :(r: range(?), type t: range(?)) {
     compilerError("offsets must be of integral type");
   }
 
+  inline proc range.translate(offset: integral) where chpl__singleValIdxType(idxType) {
+    compilerError("can't apply '.translate()' to a range whose 'idxType' only has one value");
+
+  }
+
+
   // Compute the alignment of the range returned by this.interior()
   // and this.exterior(). Keep it private.
   pragma "no doc"
@@ -1252,6 +1258,12 @@ operator :(r: range(?), type t: range(?)) {
                      low, high, stride, _effAlmt(), aligned);
   }
 
+  pragma "no doc"
+  proc range.exterior(offset: integral) where chpl__singleValIdxType(idxType)
+  {
+    compilerError("can't apply '.exterior()' to a range whose 'idxType' only has one value");
+  }
+
   // Returns an expanded range, or a contracted range if offset < 0.
   // The existing absolute alignment is preserved.
   pragma "no doc"
@@ -1279,6 +1291,12 @@ operator :(r: range(?), type t: range(?)) {
                      chpl_intToIdx(_low-i),
                      chpl_intToIdx(_high+i),
                      stride, alignment, _aligned);
+  }
+
+  pragma "no doc"
+  proc range.expand(offset: integral) where chpl__singleValIdxType(idxType)
+  {
+    compilerError("can't apply '.expand()' to a range whose 'idxType' only has one value");
   }
 
 

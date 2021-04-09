@@ -1,6 +1,6 @@
 config param testError = 0, testDisplayRepresentation = false;
 
-proc testRangeAPI(lbl, r: range(?), idx, subr) {
+proc testRangeAPI(lbl, r: range(?), idx, subr, offset=3, count=2) {
   writeln(lbl);
   writeln("------------");
   writeln(r);
@@ -37,18 +37,24 @@ proc testRangeAPI(lbl, r: range(?), idx, subr) {
   writeln("boundsCheck(", subr, ") = ", r.boundsCheck(subr));
   writeln("indexOrder(", idx, ") = ", r.indexOrder(idx));
   if (r.hasFirst()) then
-    writeln("orderToIndex(3)  = ", r.orderToIndex(3));
+    writeln("orderToIndex(", offset, ")  = ", r.orderToIndex(offset));
   if (isBoundedRange(r)) {
-    writeln("expand(2)        = ", r.expand(2));
+    if !chpl__singleValIdxType(r.idxType) {
+      writeln("expand(2)        = ", r.expand(2));
+    }
     writeln("offset(1)        = ", r.offset(1));
   }
-  writeln("translate(2)     = ", r.translate(2));
-  writeln("translate(-2)    = ", r.translate(-2));
+  if !chpl__singleValIdxType(r.idxType) {
+    writeln("translate(2)     = ", r.translate(2));
+    writeln("translate(-2)    = ", r.translate(-2));
+  }
   if (isBoundedRange(r)) {
-    writeln("exterior(2)      = ", r.exterior(2));
-    writeln("exterior(-2)     = ", r.exterior(-2));
-    writeln("interior(2)      = ", r.interior(2));
-    writeln("interior(-2)     = ", r.interior(-2));
+    if !chpl__singleValIdxType(r.idxType) {
+      writeln("exterior(2)      = ", r.exterior(2));
+      writeln("exterior(-2)     = ", r.exterior(-2));
+    }
+    writeln("interior(",count,")      = ", r.interior(count));
+    writeln("interior(",-count,")     = ", r.interior(-count));
   }
           
   writeln("serial iteration = ");
@@ -73,9 +79,9 @@ proc testRangeAPI(lbl, r: range(?), idx, subr) {
   writeln();
 
   if r.hasFirst() then
-    writeln("r#2               = ", r#2);
+    writeln("r#",count,"               = ", r#count);
   if r.hasLast() then
-    writeln("r#-2              = ", r#-2);
+    writeln("r#-",count,"              = ", r#-count);
   writeln("r == subr         = ", r == subr);
   writeln("r != subr         = ", r != subr);
   writeln("r[subr]           = ", r[subr]);
