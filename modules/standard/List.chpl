@@ -693,8 +693,11 @@ module List {
 
       :arg x: An element to append.
       :type x: `eltType`
+
+      :return: List index where element was inserted.
+      :rtype: `int`
     */
-    proc ref append(pragma "no auto destroy" in x: this.eltType)
+    proc ref append(pragma "no auto destroy" in x: this.eltType) : int
     lifetime this < x {
       _enter();
 
@@ -703,7 +706,9 @@ module List {
       // gasnet/multilocale configurations.
       //
       _appendByRef(x);
+      var result = _size - 1;
       _leave();
+      return result;
     }
 
     /*
