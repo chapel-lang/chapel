@@ -132,8 +132,6 @@ Parser::ParseResult Parser::parseFile(const char* path) {
 
   yylex_init_extra(&parserContext, &parserContext.scanner);
 
-  stringBufferInit();
-
   yyset_in(fp, parserContext.scanner);
 
   while (lexerStatus != 0 && parserStatus == YYPUSH_MORE) {
@@ -185,8 +183,6 @@ Parser::ParseResult Parser::parseString(const char* path, const char* str) {
   ParserContext parserContext(path, &builder);
 
   yylex_init_extra(&parserContext, &parserContext.scanner);
-
-  stringBufferInit();
 
   handle              = yy_scan_string(str, parserContext.scanner);
 

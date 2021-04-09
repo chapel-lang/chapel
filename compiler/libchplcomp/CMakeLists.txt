@@ -22,6 +22,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # lib/CMakeLists.txt defines the target libchplcomp
 add_subdirectory(lib)
+# also make sure headers are included in the target
+add_subdirectory(include/chpl)
 # Support for documentation of AST header
 add_subdirectory(doc)
 
