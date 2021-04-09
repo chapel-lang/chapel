@@ -603,7 +603,8 @@ program:
 // 'toplevel_stmt_ls' is 'stmt_ls' plus resetTempID()
 toplevel_stmt_ls:
                                       { $$ = context->makeList(); }
-| toplevel_stmt_ls toplevel_stmt      { context->appendList($1, $2); }
+| toplevel_stmt_ls toplevel_stmt      { printf("APPEND\n");
+                                        context->appendList($1, $2); }
 ;
 
 // Switch between plain statements and those preceded by pragmas
@@ -650,7 +651,7 @@ stmt:
 | try_stmt                  { $$ = context->finishStmt($1); }
 | throw_stmt                { $$ = context->finishStmt($1); }
 | return_stmt               { $$ = context->finishStmt($1); }
-| stmt_level_expr TSEMI     { $$ = context->finishStmt($1); }
+| stmt_level_expr TSEMI     { $$ = context->finishStmt(STMT(@$,$1)); }
 | TATOMIC stmt              { $$ = TODOSTMT(@$); }
 | TBEGIN opt_task_intent_ls stmt         { $$ = context->finishStmt(TODOSTMT(@$)); }
 | TBREAK opt_label_ident TSEMI           { $$ = context->finishStmt(TODOSTMT(@$)); }
@@ -2068,7 +2069,7 @@ actual_expr:
 ;
 
 ident_expr:
-  ident_use      { $$ = TODOEXPR(@$); }
+  ident_use      { $$ = Identifier::build(BUILDER, $1).release(); }
 | scalar_type    { $$ = $1; }
 ;
 

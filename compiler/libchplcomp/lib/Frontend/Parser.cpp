@@ -32,6 +32,8 @@
 #include <cstdlib>
 #include <cstring>
 
+#define DEBUG_PARSER 1
+
 namespace chpl {
 
 using namespace ast;
@@ -75,15 +77,17 @@ static bool closefile(FILE* fp, const char* path, ErrorMessage& errorOut) {
   return true;
 }
 
-owned<Parser> Parser::build(Context* context) {
+/*owned<Parser> Parser::build(Context* context) {
   return toOwned(new Parser(context));
-}
+}*/
 
 static void updateParseResult(ParserContext* parserContext,
                               Parser::ParseResult* result) {
   // Save the top-level exprs
-  for (Expr* stmt : *parserContext->topLevelStatements) {
-    result->topLevelExprs.push_back(toOwned(stmt));
+  if (parserContext->topLevelStatements != nullptr) {
+    for (Expr* stmt : *parserContext->topLevelStatements) {
+      result->topLevelExprs.push_back(toOwned(stmt));
+    }
   }
 
   Context* aCtx = parserContext->astContext;
@@ -115,6 +119,10 @@ Parser::ParseResult Parser::parseFile(const char* path) {
   }
 
   // Otherwise, we have successfully openned the file.
+
+  // Set the (global) parser debug state
+  if (DEBUG_PARSER)
+    yydebug = DEBUG_PARSER;
 
   // State for the lexer
   int           lexerStatus  = 100;
@@ -172,6 +180,10 @@ Parser::ParseResult Parser::parseFile(const char* path) {
 
 
 Parser::ParseResult Parser::parseString(const char* path, const char* str) {
+  // Set the (global) parser debug state
+  if (DEBUG_PARSER)
+    yydebug = DEBUG_PARSER;
+
   // State for the lexer
   YY_BUFFER_STATE handle       =   0;
   int             lexerStatus  = 100;

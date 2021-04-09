@@ -35,10 +35,9 @@ class Parser final {
 
     ast::Context* context_;
 
-   Parser(ast::Context* context) : context_(context) { }
-
  public:
-   static owned<Parser> build(ast::Context* context);
+   Parser(ast::Context* context) : context_(context) { }
+   //static owned<Parser> build(ast::Context* context);
    ~Parser() = default;
 
    /**

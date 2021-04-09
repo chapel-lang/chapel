@@ -20,21 +20,23 @@
 
 std::vector<ParserComment>* ParserContext::gatherComments(YYLTYPE location) {
   std::vector<ParserComment>* ret = this->comments;
-  this->comments = new std::vector<ParserComment>();
+  this->comments = nullptr;
 
-  // Drop any comments from 'ret' that occur after the passed location
-  // so that things like the docs comment below are ignored
-  //    proc f /* docs comment */ (arg) 
-  while (ret->size() > 0) {
-    ParserComment comment = ret->back();
-    if (comment.location.first_line <= location.first_line &&
-        comment.location.first_column <= location.first_column) {
-      // OK, we can keep this comment (and any earlier ones)
-      break;
-    } else {
-      // remove this comment
-      delete comment.comment.allocatedData;
-      ret->pop_back();
+  if (ret != nullptr) {
+    // Drop any comments from 'ret' that occur after the passed location
+    // so that things like the docs comment below are ignored
+    //    proc f /* docs comment */ (arg) 
+    while (ret->size() > 0) {
+      ParserComment comment = ret->back();
+      if (comment.location.first_line <= location.first_line &&
+          comment.location.first_column <= location.first_column) {
+        // OK, we can keep this comment (and any earlier ones)
+        break;
+      } else {
+        // remove this comment
+        delete comment.comment.allocatedData;
+        ret->pop_back();
+      }
     }
   }
 
@@ -42,6 +44,9 @@ std::vector<ParserComment>* ParserContext::gatherComments(YYLTYPE location) {
 }
 
 void ParserContext::noteComment(YYLTYPE loc, const char* data, long size) {
+  if (this->comments == nullptr) {
+    this->comments = new std::vector<ParserComment>();
+  }
   ParserComment c;
   c.location = loc;
   c.comment.allocatedData = data;
@@ -50,10 +55,12 @@ void ParserContext::noteComment(YYLTYPE loc, const char* data, long size) {
 }
 
 void ParserContext::clearComments() {
-  for (ParserComment parserComment : *this->comments) {
-    delete parserComment.comment.allocatedData;
+  if (this->comments != nullptr) {
+    for (ParserComment parserComment : *this->comments) {
+      delete parserComment.comment.allocatedData;
+    }
+    this->comments->clear();
   }
-  this->comments->clear();
 }
 
 ParserExprList* ParserContext::makeList() {

@@ -73,11 +73,15 @@ notcompiler: FORCE
 	@$(MAKE) runtime
 	@$(MAKE) modules
 
+LIB_CMAKE_ARG := -DCMAKE_BUILD_TYPE=Release
+ifdef CHPL_DEVELOPER
+  LIB_CMAKE_ARG := -DCMAKE_BUILD_TYPE=Debug
+endif
+
 $(CHPL_MAKE_HOME)/build/libchplcomp:
 	@echo "Configuring the compiler library..."
 	@mkdir -p build/libchplcomp
-	#@cd build/libchplcomp && cmake ../../compiler/libchplcomp -DCMAKE_BUILD_TYPE=Debug
-	@cd build/libchplcomp && cmake ../../compiler/libchplcomp -DCMAKE_BUILD_TYPE=Release
+	@cd build/libchplcomp && cmake ../../compiler/libchplcomp $(LIB_CMAKE_ARG)
 
 libchplcomp: $(CHPL_MAKE_HOME)/build/libchplcomp FORCE
 	@echo "Making the compiler library..."
