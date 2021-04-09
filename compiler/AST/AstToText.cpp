@@ -1607,14 +1607,12 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType, const char *outer,
   }
 }
 
-void AstToText::appendExprTypeVar(DefExpr* expr, bool isType)
+void AstToText::appendExprTypeVar(DefExpr* expr)
 {
-  if (isType) {
-    mText += expr->sym->name;
-    if(expr->init) {
-      mText += " = ";
-      appendExpr(expr->init, true);
-    }
+  mText += expr->sym->name;
+  if (expr->init) {
+    mText += " = ";
+    appendExpr(expr->init, true);
   }
 }
 
@@ -1994,7 +1992,7 @@ void AstToText::appendEnumConstants(EnumType* et) {
 
 void AstToText::appendVarDef(VarSymbol* var) {
   if (var->isType())
-    appendExprTypeVar(var->defPoint, true);
+    appendExprTypeVar(var->defPoint);
   else
     appendExpr(var->defPoint, false);
 }
