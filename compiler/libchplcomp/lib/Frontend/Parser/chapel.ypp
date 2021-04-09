@@ -603,8 +603,7 @@ program:
 // 'toplevel_stmt_ls' is 'stmt_ls' plus resetTempID()
 toplevel_stmt_ls:
                                       { $$ = context->makeList(); }
-| toplevel_stmt_ls toplevel_stmt      { printf("APPEND\n");
-                                        context->appendList($1, $2); }
+| toplevel_stmt_ls toplevel_stmt      { context->appendList($1, $2); }
 ;
 
 // Switch between plain statements and those preceded by pragmas

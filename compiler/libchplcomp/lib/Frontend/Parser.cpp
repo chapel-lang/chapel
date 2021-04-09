@@ -25,6 +25,8 @@
 #include "chpl/Frontend/Parser.h"
 
 #include "chpl/AST/ErrorMessage.h"
+#include "chpl/AST/Comment.h"
+#include "chpl/AST/Expr.h"
 
 #include "Parser/bison-chapel.h"
 #include "Parser/flex-chapel.h"
@@ -32,7 +34,7 @@
 #include <cstdlib>
 #include <cstring>
 
-#define DEBUG_PARSER 1
+#define DEBUG_PARSER 0
 
 namespace chpl {
 
@@ -83,12 +85,23 @@ static bool closefile(FILE* fp, const char* path, ErrorMessage& errorOut) {
 
 static void updateParseResult(ParserContext* parserContext,
                               Parser::ParseResult* result) {
+
   // Save the top-level exprs
   if (parserContext->topLevelStatements != nullptr) {
     for (Expr* stmt : *parserContext->topLevelStatements) {
       result->topLevelExprs.push_back(toOwned(stmt));
     }
   }
+  // Save any remaining top-level comments
+  if (parserContext->comments != nullptr) {
+    for (ParserComment parserComment : *parserContext->comments) {
+      result->topLevelExprs.push_back(
+                           Comment::build(parserContext->builder,
+                                          parserComment.comment.allocatedData,
+                                          parserComment.comment.size));
+    }
+  }
+
 
   Context* aCtx = parserContext->astContext;
   // Save the parse errors

@@ -47,6 +47,27 @@ int main() {
     assert(parseResult.parseErrors.size() == 0);
   }
 
+  {
+    auto parseResult = parser.parseString("<test>", "/* hi */ y; /* bye */");
+    assert(parseResult.topLevelExprs.size() == 3);
+    assert(parseResult.topLevelExprs[0]->isComment());
+    assert(parseResult.topLevelExprs[1]->isIdentifier());
+    assert(parseResult.topLevelExprs[2]->isComment());
+    assert(parseResult.parseErrors.size() == 0);
+  }
+
+  {
+    auto parseResult = parser.parseString("<test>",
+                                           "// hi\n"
+                                           "a;\n"
+                                           "// bye\n");
+    assert(parseResult.topLevelExprs.size() == 3);
+    assert(parseResult.topLevelExprs[0]->isComment());
+    assert(parseResult.topLevelExprs[1]->isIdentifier());
+    assert(parseResult.topLevelExprs[2]->isComment());
+    assert(parseResult.parseErrors.size() == 0);
+  }
+
 
   return 0;
 }
