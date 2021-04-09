@@ -3,9 +3,13 @@ enum color { red };
 var r = color.red..color.red;
 
 writeln(r);
+writeln(r.size);
 
 for i in r do
-  writeln(r);
+  writeln(i);
+
+forall i in r do
+  writeln(i);
 
 const D = {color.red..color.red};
 const D2 = {r, r};

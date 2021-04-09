@@ -1,5 +1,7 @@
 red..red
-red..red
+1
+red
+red
 {red..red}
 red
 {red..red, red..red}
@@ -10,4 +12,4 @@ red
 1
 2
 3
-red..red
+red..<red

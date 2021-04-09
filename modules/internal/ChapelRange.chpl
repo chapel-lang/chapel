@@ -216,6 +216,7 @@ module ChapelRange {
     var _stride    : if stridable then chpl__rangeStrideType(idxType) else nothing; // signed stride
     var _alignment : if stridable then chpl__idxTypeToIntIdxType(idxType) else nothing; // alignment
     var _aligned   : if stridable then bool else nothing;
+    var _isEmpty   : if chpl__singleValIdxType(idxType) then bool else nothing;
 
     proc strType type  return chpl__rangeStrideType(idxType);
 
@@ -243,9 +244,35 @@ module ChapelRange {
   pragma "no doc"
   proc range.init(type idxType = int,
                   param boundedType : BoundedRangeType = BoundedRangeType.bounded,
+                  param stridable : bool = false
+                 ) {
+    this.idxType     = idxType;
+    this.boundedType = boundedType;
+    this.stridable   = stridable;
+    this._low = 1:chpl__idxTypeToIntIdxType(idxType);
+    this._high = 0:chpl__idxTypeToIntIdxType(idxType);
+    this.complete();
+    if stridable {
+      this._stride    = 1: this._stride.type;
+      this._alignment = 0: this._alignment.type;
+      this._aligned   = false;
+    }
+
+    // If there's only a single idxType, the only way low/high can be
+    // 1/0 is if this was default-initialized, which means that it's
+    // empty, so mark it as such
+    if chpl__singleValIdxType(idxType) then {
+      this._isEmpty = (this._low == 1 && this._high == 0);
+//      writeln("Z: this._isEmpty = ", this._isEmpty);
+    }
+  }
+
+  pragma "no doc"
+  proc range.init(type idxType = int,
+                  param boundedType : BoundedRangeType = BoundedRangeType.bounded,
                   param stridable : bool = false,
-                  _low : idxType = chpl__intToIdx(idxType, if isEnumType(idxType) && idxType.size == 1 then 0 else 1),
-                  _high : idxType = chpl__intToIdx(idxType, 0),
+                  _low : idxType,
+                  _high : idxType,
                   _stride : chpl__rangeStrideType(idxType) = 1,
                   _alignment : idxType = chpl__intToIdx(idxType, 0),
                   _aligned : bool = false) {
@@ -261,6 +288,16 @@ module ChapelRange {
       this._aligned   = _aligned;
     }
 
+    // If there's only a single idxType, the only way low/high can be
+    // 1/0 is if this was default-initialized, which means that it's
+    // empty, so mark it as such
+    if chpl__singleValIdxType(idxType) then {
+      this._isEmpty = (this._low == 1 && this._high == 0);
+//      writeln("A: this._isEmpty = ", this._isEmpty);
+    }
+        
+    
+    
     if !stridable && boundsChecking then
       assert(_stride == 1);
   }
@@ -291,6 +328,13 @@ module ChapelRange {
     this.complete();
     if stridable then
       compilerError("non-stridable range initializer called with stridable=true");
+    // If there's only a single idxType, the only way low/high can be
+    // 1/0 is if this was default-initialized, which means that it's
+    // empty, so mark it as such
+    if chpl__singleValIdxType(idxType) then {
+      _isEmpty = (this._low == 1 && this._high == 0);
+//      writeln("B: this._isEmpty = ", this._isEmpty);
+    }
   }
 
   pragma "no doc"
@@ -359,22 +403,22 @@ module ChapelRange {
 
   // Range builders for low bounded ranges
   proc chpl_build_low_bounded_range(low: integral)
-    return new range(low.type, BoundedRangeType.boundedLow, _low=low);
+  return new range(low.type, BoundedRangeType.boundedLow, _low=low, _high=chpl__intToIdx(low.type, 0));
   proc chpl_build_low_bounded_range(low: enum)
-    return new range(low.type, BoundedRangeType.boundedLow, _low=low);
+    return new range(low.type, BoundedRangeType.boundedLow, _low=low, _high=chpl__intToIdx(low.type, 0));
   proc chpl_build_low_bounded_range(low: bool)
-    return new range(low.type, BoundedRangeType.boundedLow, _low=low);
+    return new range(low.type, BoundedRangeType.boundedLow, _low=low, _high=chpl__intToIdx(low.type, 0));
   proc chpl_build_low_bounded_range(low) {
     compilerError("Bound of 'low..' must be an integer");
   }
 
   // Range builders for high bounded ranges
   proc chpl_build_high_bounded_range(high: integral)
-    return new range(high.type, BoundedRangeType.boundedHigh, _high=high);
+    return new range(high.type, BoundedRangeType.boundedHigh, _high=high, _low=chpl__intToIdx(high.type, 1));
   proc chpl_build_high_bounded_range(high: enum)
-    return new range(high.type, BoundedRangeType.boundedHigh, _high=high);
+    return new range(high.type, BoundedRangeType.boundedHigh, _high=high, _low=chpl__intToIdx(high.type, 1));
   proc chpl_build_high_bounded_range(high: bool)
-    return new range(high.type, BoundedRangeType.boundedHigh, _high=high);
+  return new range(high.type, BoundedRangeType.boundedHigh, _high=high,  _low=chpl__intToIdx(high.type, 1));
   proc chpl_build_high_bounded_range(high) {
     compilerError("Bound of '..high' must be an integer.");
   }
@@ -658,8 +702,9 @@ module ChapelRange {
   inline proc range.isEmpty() {
     if boundsChecking && isAmbiguous() then
       HaltWrappers.boundsCheckHalt("isEmpty() is invoked on an ambiguously-aligned range");
-    else
-      return isBoundedRange(this) && this.alignedLow > this.alignedHigh;
+    if chpl__singleValIdxType(idxType) && _isEmpty then
+      return true;
+    return isBoundedRange(this) && this.alignedLow > this.alignedHigh;
   }
 
 
@@ -672,6 +717,9 @@ module ChapelRange {
     if ! isBoundedRange(this) then
       compilerError("'size' is not defined on unbounded ranges");
 
+    if chpl__singleValIdxType(idxType) then
+      return if _isEmpty then 0 else 1;
+    
     // assumes alignedHigh/alignedLow always work, even for an empty range
     const ah = this.alignedHighAsInt,
           al = this.alignedLowAsInt;
@@ -1234,6 +1282,15 @@ operator :(r: range(?), type t: range(?)) {
       r1._alignment = chpl__idxToInt(r2.alignment);
       r1._aligned = r2.aligned;
     }
+
+    if chpl__singleValIdxType(r2.idxType) {
+      if chpl__singleValIdxType(r1.idxType) {
+        r1._isEmpty = r2._isEmpty;
+      } else {
+        if r2._isEmpty then
+          r1._high = r1._low - 1;
+      }
+    }
   }
 
   //////////////////////////////////////////////////////////////////////////////////
@@ -1338,7 +1395,11 @@ operator :(r: range(?), type t: range(?)) {
           if r.stridable then (r.aligned, r.alignment)
                          else (false, r.chpl_intToIdx(0));
 
-    return new range(i, b, true,  lw, hh, st, alt, ald);
+    var rs = new range(i, b, true, lw, hh, st, alt, ald);
+    if (chpl__singleValIdxType(i)) {
+      rs._isEmpty = r._isEmpty;
+    }
+    return rs;
   }
 
   /*
@@ -1814,8 +1875,7 @@ operator :(r: range(?), type t: range(?)) {
     for i in r do yield i;
   }
 
-  iter chpl_direct_range_iter(low: enum, high: enum,
-                              stride: integral) {
+  iter chpl_direct_range_iter(low: enum, high: enum, stride: integral) {
     const r = low..high by stride;
     for i in r do yield i;
   }
@@ -2060,7 +2120,7 @@ operator :(r: range(?), type t: range(?)) {
   pragma "no doc"
   pragma "order independent yielding loops"
   iter range.these()
-    where boundedType == BoundedRangeType.bounded && stridable == true {
+    where boundedType == BoundedRangeType.bounded && stridable == true && !chpl__singleValIdxType(this.idxType) {
     if (useOptimizedRangeIterators) {
       if boundsChecking {
         checkIfIterWillOverflow();
@@ -2089,7 +2149,7 @@ operator :(r: range(?), type t: range(?)) {
   pragma "no doc"
   pragma "order independent yielding loops"
   iter range.these()
-    where boundedType == BoundedRangeType.bounded && stridable == false {
+    where boundedType == BoundedRangeType.bounded && stridable == false && !chpl__singleValIdxType(this.idxType) {
     if (useOptimizedRangeIterators) {
       if boundsChecking then checkIfIterWillOverflow();
 
@@ -2109,6 +2169,14 @@ operator :(r: range(?), type t: range(?)) {
     } else {
       for i in this.generalIterator() do yield i;
     }
+  }
+
+
+  // Special serial iterator for a range whose idxType only supports 1 value
+  iter range.these()
+    where boundedType == BoundedRangeType.bounded && chpl__singleValIdxType(this.idxType) {
+      if !_isEmpty then
+        yield chpl__intToIdx(this.idxType, _low);
   }
 
   //################################################################################
@@ -2412,6 +2480,8 @@ operator :(r: range(?), type t: range(?)) {
     if x.hasLowBound() then
       ret += x.low:string;
     ret += "..";
+    if (chpl__singleValIdxType(x.idxType) && x._isEmpty) then
+      ret += "<";
     if x.hasHighBound() then
       ret += x.high:string;
     if x.stride != 1 then
@@ -2645,11 +2715,11 @@ operator :(r: range(?), type t: range(?)) {
   }
 
   inline proc chpl__intToIdx(type idxType: enum, i: integral) {
-    return chpl__orderToEnum(i, idxType);
+    return chpl__orderToEnum( if chpl__singleValIdxType(idxType) then 0 else i, idxType);
   }
 
   inline proc chpl__intToIdx(type idxType: enum, param i: integral) param {
-    return chpl__orderToEnum(i, idxType);
+    return chpl__orderToEnum( if chpl__singleValIdxType(idxType) then 0 else i, idxType);
   }
 
   inline proc chpl__intToIdx(type idxType, i: integral) where isBoolType(idxType) {
@@ -2686,5 +2756,9 @@ operator :(r: range(?), type t: range(?)) {
 
   inline proc chpl__idxToInt(param i: bool) param {
     return i: int;
+  }
+
+  proc chpl__singleValIdxType(type t) param {
+    return isEnumType(t) && t.size == 1;
   }
 }

@@ -304,12 +304,12 @@ module String {
   pragma "no doc"
   proc chpl_build_low_bounded_range(low: ?t)
     where t == byteIndex || t == codepointIndex
-    return new range(t, BoundedRangeType.boundedLow, _low=low);
+  return new range(t, BoundedRangeType.boundedLow, _low=low, _high=chpl__intToIdx(t, 0));
 
   pragma "no doc"
   proc chpl_build_high_bounded_range(high: ?t)
     where t == byteIndex || t == codepointIndex
-    return new range(t, BoundedRangeType.boundedHigh, _high=high);
+  return new range(t, BoundedRangeType.boundedHigh, _high=high, _low=chpl__intToIdx(t, 1));
 
   pragma "no doc"
   proc chpl__rangeStrideType(type idxType: byteIndex) type

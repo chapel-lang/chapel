@@ -1,0 +1,298 @@
+explicit initialized
+r is: red..red
+r.size: 1
+r.low: red
+r.high: red
+serial iter:
+red
+serial follower:
+(1, red)
+serial leader:
+(red, 1)
+standalone par iter:
+red
+parallel follower:
+(1, red)
+parallel leader:
+(red, 1)
+1D domain D: {red..red}
+D.size: 1
+D serial iter:
+red
+D standalone parallel:
+red
+D zip with self:
+(red, red)
+2D domain D2: {red..red, red..red}
+D2.size: 1
+D2 serial iter:
+(red, red)
+D2 standalone parallel:
+(red, red)
+D2 zip with self:
+((red, red), (red, red))
+A.size: 1
+A.dims.size: 1
+A: 0
+B.size:1
+B.dims.size: (1, 1)
+B: 0
+C.size: 1
+C.dims.size: 1
+C: 0
+Par A Loop:
+0
+Par B Loop:
+0
+Par C Loop:
+0
+
+overwritten:
+r is: red..<red
+r.size: 0
+r.low: red
+r.high: red
+serial iter:
+serial follower:
+serial leader:
+standalone par iter:
+parallel follower:
+parallel leader:
+1D domain D: {red..<red}
+D.size: 0
+D serial iter:
+D standalone parallel:
+D zip with self:
+2D domain D2: {red..<red, red..<red}
+D2.size: 0
+D2 serial iter:
+D2 standalone parallel:
+D2 zip with self:
+A.size: 0
+A.dims.size: 0
+A: 
+B.size:0
+B.dims.size: (0, 0)
+B: 
+C.size: 0
+C.dims.size: 0
+C: 
+Par A Loop:
+Par B Loop:
+Par C Loop:
+
+default initialized
+r is: red..<red
+r.size: 0
+r.low: red
+r.high: red
+serial iter:
+serial follower:
+serial leader:
+standalone par iter:
+parallel follower:
+parallel leader:
+1D domain D: {red..<red}
+D.size: 0
+D serial iter:
+D standalone parallel:
+D zip with self:
+2D domain D2: {red..<red, red..<red}
+D2.size: 0
+D2 serial iter:
+D2 standalone parallel:
+D2 zip with self:
+A.size: 0
+A.dims.size: 0
+A: 
+B.size:0
+B.dims.size: (0, 0)
+B: 
+C.size: 0
+C.dims.size: 0
+C: 
+Par A Loop:
+Par B Loop:
+Par C Loop:
+
+overwritten:
+r is: red..red
+r.size: 1
+r.low: red
+r.high: red
+serial iter:
+red
+serial follower:
+(1, red)
+serial leader:
+(red, 1)
+standalone par iter:
+red
+parallel follower:
+(1, red)
+parallel leader:
+(red, 1)
+1D domain D: {red..red}
+D.size: 1
+D serial iter:
+red
+D standalone parallel:
+red
+D zip with self:
+(red, red)
+2D domain D2: {red..red, red..red}
+D2.size: 1
+D2 serial iter:
+(red, red)
+D2 standalone parallel:
+(red, red)
+D2 zip with self:
+((red, red), (red, red))
+A.size: 1
+A.dims.size: 1
+A: 0
+B.size:1
+B.dims.size: (1, 1)
+B: 0
+C.size: 1
+C.dims.size: 1
+C: 0
+Par A Loop:
+0
+Par B Loop:
+0
+Par C Loop:
+0
+
+implicit strided
+r is: red..<red
+r.size: 0
+r.low: red
+r.high: red
+serial iter:
+serial follower:
+serial leader:
+standalone par iter:
+parallel follower:
+parallel leader:
+1D domain D: {red..<red}
+D.size: 0
+D serial iter:
+D standalone parallel:
+D zip with self:
+2D domain D2: {red..<red, red..<red}
+D2.size: 0
+D2 serial iter:
+D2 standalone parallel:
+D2 zip with self:
+A.size: 0
+A.dims.size: 0
+A: 
+B.size:0
+B.dims.size: (0, 0)
+B: 
+C.size: 0
+C.dims.size: 0
+C: 
+Par A Loop:
+Par B Loop:
+Par C Loop:
+
+overwritten:
+r is: red..red
+r.size: 1
+r.low: red
+r.high: red
+serial iter:
+red
+serial follower:
+(1, red)
+serial leader:
+(red, 1)
+standalone par iter:
+red
+parallel follower:
+(1, red)
+parallel leader:
+(red, 1)
+1D domain D: {red..red}
+D.size: 1
+D serial iter:
+red
+D standalone parallel:
+red
+D zip with self:
+(red, red)
+2D domain D2: {red..red, red..red}
+D2.size: 1
+D2 serial iter:
+(red, red)
+D2 standalone parallel:
+(red, red)
+D2 zip with self:
+((red, red), (red, red))
+A.size: 1
+A.dims.size: 1
+A: 0
+B.size:1
+B.dims.size: (1, 1)
+B: 0
+C.size: 1
+C.dims.size: 1
+C: 0
+Par A Loop:
+0
+Par B Loop:
+0
+Par C Loop:
+0
+
+strided:
+r is: red..red by 2
+r.size: 1
+r.low: red
+r.high: red
+serial iter:
+red
+serial follower:
+(1, red)
+serial leader:
+(red, 1)
+standalone par iter:
+red
+parallel follower:
+(1, red)
+parallel leader:
+(red, 1)
+1D domain D: {red..red by 2}
+D.size: 1
+D serial iter:
+red
+D standalone parallel:
+red
+D zip with self:
+(red, red)
+2D domain D2: {red..red by 2, red..red by 2}
+D2.size: 1
+D2 serial iter:
+(red, red)
+D2 standalone parallel:
+(red, red)
+D2 zip with self:
+((red, red), (red, red))
+A.size: 1
+A.dims.size: 1
+A: 0
+B.size:1
+B.dims.size: (1, 1)
+B: 0
+C.size: 1
+C.dims.size: 1
+C: 0
+Par A Loop:
+0
+Par B Loop:
+0
+Par C Loop:
+0
+
