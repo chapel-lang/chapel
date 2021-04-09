@@ -48,7 +48,7 @@ Par C Loop:
 0
 
 overwritten:
-r is: red..<red
+r is: red>..red
 r.size: 0
 r.low: red
 r.high: red
@@ -58,12 +58,12 @@ serial leader:
 standalone par iter:
 parallel follower:
 parallel leader:
-1D domain D: {red..<red}
+1D domain D: {red>..red}
 D.size: 0
 D serial iter:
 D standalone parallel:
 D zip with self:
-2D domain D2: {red..<red, red..<red}
+2D domain D2: {red>..red, red>..red}
 D2.size: 0
 D2 serial iter:
 D2 standalone parallel:
@@ -82,7 +82,7 @@ Par B Loop:
 Par C Loop:
 
 default initialized
-r is: red..<red
+r is: red>..red
 r.size: 0
 r.low: red
 r.high: red
@@ -92,12 +92,12 @@ serial leader:
 standalone par iter:
 parallel follower:
 parallel leader:
-1D domain D: {red..<red}
+1D domain D: {red>..red}
 D.size: 0
 D serial iter:
 D standalone parallel:
 D zip with self:
-2D domain D2: {red..<red, red..<red}
+2D domain D2: {red>..red, red>..red}
 D2.size: 0
 D2 serial iter:
 D2 standalone parallel:
@@ -165,7 +165,7 @@ Par C Loop:
 0
 
 implicit strided
-r is: red..<red
+r is: red>..red
 r.size: 0
 r.low: red
 r.high: red
@@ -175,12 +175,12 @@ serial leader:
 standalone par iter:
 parallel follower:
 parallel leader:
-1D domain D: {red..<red}
+1D domain D: {red>..red}
 D.size: 0
 D serial iter:
 D standalone parallel:
 D zip with self:
-2D domain D2: {red..<red, red..<red}
+2D domain D2: {red>..red, red>..red}
 D2.size: 0
 D2 serial iter:
 D2 standalone parallel:
@@ -296,3 +296,6 @@ Par B Loop:
 Par C Loop:
 0
 
+singleValEnum4.chpl:45: warning: result can't be trusted
+singleValEnum4.chpl:45: warning: result can't be trusted
+singleValEnum4.chpl:45: warning: result can't be trusted

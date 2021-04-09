@@ -359,6 +359,31 @@ module ChapelRange {
               other.aligned);
   }
 
+    pragma "no doc"
+  proc range.init=(other : range(?i,?b,?s)) where chpl__singleValIdxType(i) {
+    type idxType      = if this.type.idxType     == ? then i else this.type.idxType;
+    param boundedType = if this.type.boundedType == ? then b else this.type.boundedType;
+    param stridable   = if this.type.stridable   == ? then s else this.type.stridable;
+
+    if boundedType != b {
+      compilerError("range(boundedType=" + this.type.boundedType:string + ") cannot be initialized from range(boundedType=" + b:string + ")");
+    }
+
+    if !stridable && s then
+      compilerError("cannot initialize a non-stridable range from a stridable range");
+
+    const str = if stridable && s then other.stride else 1:chpl__rangeStrideType(idxType);
+    this.init(idxType, boundedType, stridable);
+    this._low = other._low;
+    this._high = other._high;
+    if (this.stridable) {
+      this._stride = other._stride;
+      this._alignment = other._alignment;
+      this._aligned = other._aligned;
+    }
+    this._isEmpty = other._isEmpty;
+  }
+
   /////////////////////////////////
   // for debugging
   pragma "no doc"
@@ -615,7 +640,7 @@ module ChapelRange {
   /* Returns the alignment of the range */
   inline proc range.alignment where stridable return chpl_intToIdx(_alignment);
   pragma "no doc"
-  proc range.alignment where !stridable && hasLowBound() return low;
+  proc range.alignment where !stridable && hasLowBound() && !chpl__singleValIdxType(idxType) return low;
   pragma "no doc"
   proc range.alignment return chpl_intToIdx(0);
 
@@ -1378,6 +1403,15 @@ operator :(r: range(?), type t: range(?)) {
       compilerError("the step argument of the 'by' operator is too large and cannot be represented within the range's stride type " + strType:string);
   }
 
+  proc chpl_by_help(r: range(?i,?b,?s), step) where chpl__singleValIdxType(i) {
+    const st: r.strType = r.stride * step:r.strType;
+    var r2: range(i, b, true);
+    r2;  // force default initialization
+    r2 = r;
+    r2._stride = st;
+    return r2;
+  }
+
   proc chpl_by_help(r: range(?i,?b,?s), step) {
     const lw: i = r.low,
           hh: i = r.high,
@@ -1395,11 +1429,7 @@ operator :(r: range(?), type t: range(?)) {
           if r.stridable then (r.aligned, r.alignment)
                          else (false, r.chpl_intToIdx(0));
 
-    var rs = new range(i, b, true, lw, hh, st, alt, ald);
-    if (chpl__singleValIdxType(i)) {
-      rs._isEmpty = r._isEmpty;
-    }
-    return rs;
+    return new range(i, b, true, lw, hh, st, alt, ald);
   }
 
   /*
@@ -2404,7 +2434,7 @@ operator :(r: range(?), type t: range(?)) {
           assert(false, "hasFirst && hasLast do not imply isBoundedRange");
       }
       if this.stridable || myFollowThis.stridable {
-        var r = chpl_intToIdx(1)..chpl_intToIdx(0) by 1:chpl__rangeStrideType(intIdxType);
+        var r: range(idxType, stridable=true);
 
         if flwlen != 0 {
           const stride = this.stride * myFollowThis.stride;
@@ -2423,7 +2453,7 @@ operator :(r: range(?), type t: range(?)) {
           yield i;
 
       } else {
-        var r = chpl__intToIdx(idxType,1)..chpl__intToIdx(idxType,0);
+        var r:range(idxType);
 
         if flwlen != 0 {
           const low = this.orderToIndex(myFollowThis.first);
@@ -2477,11 +2507,14 @@ operator :(r: range(?), type t: range(?)) {
   operator :(x: range(?), type t: string) {
     var ret: string;
 
-    if x.hasLowBound() then
-      ret += x.low:string;
+    if x.hasLowBound() {
+      if (chpl__singleValIdxType(x.idxType) && x._isEmpty) {
+        ret += x.high:string + ">";
+      } else {
+        ret += x.low:string;
+      }
+    }
     ret += "..";
-    if (chpl__singleValIdxType(x.idxType) && x._isEmpty) then
-      ret += "<";
     if x.hasHighBound() then
       ret += x.high:string;
     if x.stride != 1 then
@@ -2715,11 +2748,23 @@ operator :(r: range(?), type t: range(?)) {
   }
 
   inline proc chpl__intToIdx(type idxType: enum, i: integral) {
-    return chpl__orderToEnum( if chpl__singleValIdxType(idxType) then 0 else i, idxType);
+    if chpl__singleValIdxType(idxType) {
+      if (i != 0) then
+        warning("result can't be trusted");
+      return chpl__orderToEnum(0, idxType);
+    } else {
+      return chpl__orderToEnum(i, idxType);
+    }
   }
 
   inline proc chpl__intToIdx(type idxType: enum, param i: integral) param {
-    return chpl__orderToEnum( if chpl__singleValIdxType(idxType) then 0 else i, idxType);
+    if chpl__singleValIdxType(idxType) {
+      if (i != 0) then
+        compilerError("result can't be trusted");
+      return chpl__orderToEnum(0, idxType);
+    } else {
+      return chpl__orderToEnum(i, idxType);
+    }
   }
 
   inline proc chpl__intToIdx(type idxType, i: integral) where isBoolType(idxType) {

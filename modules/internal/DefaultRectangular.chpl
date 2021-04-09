@@ -1201,6 +1201,8 @@ module DefaultRectangular {
     }
 
     proc setupFieldsAndAllocate(param initElts) {
+      if dom.dsiNumIndices == 0 then
+        return;
       for param dim in 0..rank-1 {
         off(dim) = dom.dsiDim(dim).alignedLow;
         str(dim) = dom.dsiDim(dim).stride;

@@ -775,11 +775,14 @@ module ChapelIO {
       alignCheckRange.normalizeAlignment();
     }
 
-    if hasLowBound() then
-      f <~> low;
+    if hasLowBound() {
+      if (chpl__singleValIdxType(this.idxType) && this._isEmpty) {
+        f <~> high <~> new ioLiteral(">");
+      } else {
+        f <~> low;
+      }
+    }
     f <~> new ioLiteral("..");
-    if (chpl__singleValIdxType(this.idxType) && this._isEmpty) then
-      f <~> new ioLiteral("<");
     if hasHighBound() then
       f <~> high;
     if stride != 1 then
