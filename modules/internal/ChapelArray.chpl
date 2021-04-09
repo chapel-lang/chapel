@@ -2740,10 +2740,13 @@ module ChapelArray {
       if boundsChecking then
         checkAccess(i, value=value);
 
-      if isRectangularArr(this) || isSparseArr(this) then
-        return value.dsiLocalAccess(i);
+      if chpl_isNonDistributedArray() then
+        return this(i);
       else
-        return value.dsiLocalAccess(i(0));
+        if isRectangularArr(this) || isSparseArr(this) then
+          return value.dsiLocalAccess(i);
+        else
+          return value.dsiLocalAccess(i(0));
     }
     pragma "no doc" // value version, for POD types
     pragma "alias scope from this"
@@ -2754,10 +2757,13 @@ module ChapelArray {
       if boundsChecking then
         checkAccess(i, value=value);
 
-      if isRectangularArr(this) || isSparseArr(this) then
-        return value.dsiLocalAccess(i);
+      if chpl_isNonDistributedArray() then
+        return this(i);
       else
-        return value.dsiLocalAccess(i(0));
+        if isRectangularArr(this) || isSparseArr(this) then
+          return value.dsiLocalAccess(i);
+        else
+          return value.dsiLocalAccess(i(0));
     }
     pragma "no doc" // const ref version, for not-POD types
     pragma "alias scope from this"
@@ -2768,10 +2774,13 @@ module ChapelArray {
       if boundsChecking then
         checkAccess(i, value=value);
 
-      if isRectangularArr(this) || isSparseArr(this) then
-        return value.dsiLocalAccess(i);
+      if chpl_isNonDistributedArray() then
+        return this(i);
       else
-        return value.dsiLocalAccess(i(0));
+        if isRectangularArr(this) || isSparseArr(this) then
+          return value.dsiLocalAccess(i);
+        else
+          return value.dsiLocalAccess(i(0));
     }
 
     pragma "no doc" // ref version
@@ -3356,6 +3365,10 @@ module ChapelArray {
 
     proc iteratorYieldsLocalElements() param {
       return _value.dsiIteratorYieldsLocalElements();
+    }
+
+    proc chpl_isNonDistributedArray() param {
+     return domainDistIsLayout(_getDomain(_value.dom));
     }
 
   }  // record _array

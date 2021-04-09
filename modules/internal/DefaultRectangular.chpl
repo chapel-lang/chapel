@@ -1341,17 +1341,6 @@ module DefaultRectangular {
     }
 
 
-    inline proc dsiLocalAccess(i) ref
-      return dsiAccess(i);
-
-    inline proc dsiLocalAccess(i)
-    where shouldReturnRvalueByValue(eltType)
-      return dsiAccess(i);
-
-    inline proc dsiLocalAccess(i) const ref
-    where shouldReturnRvalueByConstRef(eltType)
-      return dsiAccess(i);
-
     inline proc dsiBoundsCheck(i) {
       return dom.dsiMember(i);
     }
