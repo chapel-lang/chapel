@@ -1192,7 +1192,10 @@ module DateTime {
       timeStruct.tm_isdst = -1;
     }
 
-    chpl_strptime(date_string.c_str(), format.c_str(), timeStruct, microSeconds);
+    const checkNil = chpl_strptime(date_string.c_str(), format.c_str(), timeStruct, microSeconds);
+    if is_c_nil(checkNil) {
+      throw new owned IllegalArgumentError("Invalid Arguments Provided");
+    }
 
     chpl_date.chpl_year   = timeStruct.tm_year + 1900;
     chpl_date.chpl_month  = timeStruct.tm_mon + 1;
