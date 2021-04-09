@@ -13,6 +13,12 @@ if [ -z "${CHPL_SOURCED_BASHRC}" -a -f ~/.bashrc ] ; then
     export CHPL_SOURCED_BASHRC=true
 fi
 
+if [ -f /data/cf/chapel/setup_system_llvm.bash ] ; then
+  source /data/cf/chapel/setup_system_llvm.bash
+elif [ -f /cray/css/users/chapelu/setup_system_llvm.bash ] ; then
+  source /cray/css/users/chapelu/setup_system_llvm.bash
+fi
+
 log_info "gcc version: $(which gcc)"
 gcc --version
 
