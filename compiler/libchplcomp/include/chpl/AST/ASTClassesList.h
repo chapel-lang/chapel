@@ -16,32 +16,50 @@
 // This file should store the AST nodes in groups according to the
 // class hierarchy and otherwise be in sorted order.
 
+// A note about the philosophy:
+// Where to draw the line on
+// new AST types vs. using a primitive?
+//  try to make AST nodes and use inheritance
+//  to allow coarse-grain view
+
+// Should there be a generic way to enumerate the
+// children of a particular AST node besides the visitor?
+//  yes, and allow getting "next" somehow
+//  let's try making a vector of children
+
 // the following comment disables doxygen for these
 /// \cond DO_NOT_DOCUMENT
 
 AST_BEGIN_SUBCLASSES(BaseAST)
 
-
   AST_BEGIN_SUBCLASSES(Expr)
 
+    AST_LEAF(Comment)
     AST_LEAF(ErroneousExpr)
     AST_LEAF(Identifier)
     AST_LEAF(Literal)
-    AST_LEAF(Comment)
 
-    AST_NODE(ForExpr)
-    AST_NODE(ForallExpr)
-    AST_NODE(ForeachExpr)
     AST_NODE(IfExpr)
     AST_NODE(TryExpr)
-    // Array literal expression?
-    // Tuple literal expression?
-    // new ClassOrRecord?
-    // Where to draw the line on
-    // new AST types vs. using a primitive?
+    AST_NODE(DotExpr)
+
+    AST_BEGIN_SUBCLASSES(LoopExpr)
+      AST_NODE(ForExpr)
+      AST_NODE(ForallExpr)
+      AST_NODE(ForeachExpr)
+    AST_END_SUBCLASSES(LoopExpr)
+
+    AST_BEGIN_SUBCLASSES(LiteralExpr)
+      AST_NODE(StringLiteral) // includes bytes
+      AST_NODE(NumericLiteral)
+      AST_NODE(TupleLiteral)
+      AST_NODE(ArrayLiteral)
+      AST_NODE(DomainLiteral)
+    AST_END_SUBCLASSES(LiteralExpr)
 
     AST_BEGIN_SUBCLASSES(CallExpr)
       AST_NODE(PrimCallExpr)
+      AST_NODE(NewExpr)
       AST_NODE(FnCallExpr)
       AST_NODE(OpCallExpr)
     AST_END_SUBCLASSES(CallExpr)
