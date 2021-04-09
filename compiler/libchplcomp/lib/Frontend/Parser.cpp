@@ -33,7 +33,8 @@
 #include <cstring>
 
 namespace chpl {
-namespace ast {
+
+using namespace ast;
 
 // TODO - move these file routines somewhere else
 
@@ -223,5 +224,4 @@ Parser::ParseResult Parser::parseString(const char* path, const char* str) {
   return ret;
 }
 
-} // namespace ast
 } // namespace chpl

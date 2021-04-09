@@ -9,9 +9,10 @@
 #include <unordered_map>
 
 namespace chpl {
-namespace ast {
 
-class Expr;
+namespace ast { class Expr; }
+
+using ast::owned;
 
 /**
   A class for parsing
@@ -19,9 +20,9 @@ class Expr;
 class Parser final {
   public:
     struct ParseResult final {
-      ExprList topLevelExprs;
-      std::vector<ErrorMessage> parseErrors;
-      std::unordered_map<BaseAST*, Location> locations;
+      ast::ExprList topLevelExprs;
+      std::vector<ast::ErrorMessage> parseErrors;
+      std::unordered_map<ast::BaseAST*, ast::Location> locations;
     };
 
  private:
@@ -32,18 +33,18 @@ class Parser final {
    // TODO: compile-time configuration variable settings
    // need to be stored in here.
 
-   Context* context_;
+    ast::Context* context_;
 
-   Parser(Context* context) : context_(context) { }
+   Parser(ast::Context* context) : context_(context) { }
 
  public:
-   static owned<Parser> build(Context* context);
+   static owned<Parser> build(ast::Context* context);
    ~Parser() = default;
 
    /**
      Return the AST Context used by this Parser.
     */
-   Context* context() { return context_; }
+   ast::Context* context() { return context_; }
 
    /**
      Parse a file at a particular path.
@@ -56,7 +57,6 @@ class Parser final {
    ParseResult parseString(const char* path, const char* str);
 };
 
-} // end namespace ast
 } // end namespace chpl
 
 #endif
