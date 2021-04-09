@@ -16,6 +16,7 @@ AS_IF([test "x$with_forward_bitfields" = x],
                       [AC_RUN_IFELSE([AC_LANG_PROGRAM([[
 #include <assert.h>
 #include <signal.h>
+#include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -29,13 +30,13 @@ union foo {
 } fb;]],
 [[
 struct sigaction sa;
-void handler (int sig)
+void handler (int sig, siginfo_t* s, void* v)
 {
-    exit(1);
+    _exit(1);
 }
 
 memset (&sa, '\0', sizeof(sa));
-sa.sa_sigaction = (void (*)(int, siginfo_t *, void *)) &handler;
+sa.sa_sigaction = &handler;
 sa.sa_flags = SA_SIGINFO;
 //Catch SIGABORT
 sigaction(SIGABRT, &sa, NULL); 
