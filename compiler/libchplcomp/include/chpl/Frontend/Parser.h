@@ -1,12 +1,22 @@
 #ifndef CHPL_FRONTEND_PARSER_H
 #define CHPL_FRONTEND_PARSER_H
 
-#include "chpl/AST/Stmt.h"
+#include "chpl/AST/ErrorMessage.h"
+#include "chpl/AST/Location.h"
 
 #include <vector>
+#include <unordered_map>
 
 namespace chpl {
 namespace ast {
+
+class Expr;
+
+class ParseResult final {
+  std::vector<Expr*> topLevelExprs;
+  std::vector<ErrorMessage> parseErrors;
+  std::unordered_map<BaseAST*, Location> locations;
+};
 
 /**
   A class for parsing
@@ -16,6 +26,9 @@ class Parser final {
 
    // TODO: stuff to do with module search paths
    // and then connect parsed modules to a query
+
+   // TODO: compile-time configuration variable settings
+   // need to be stored in here.
 
  public:
    /**

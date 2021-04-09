@@ -4,10 +4,11 @@
 #include "chpl/AST/ASTTag.h"
 #include "chpl/AST/ID.h"
 
+#include <memory>
+#include <vector>
+
 namespace chpl {
 namespace ast {
-
-class Builder;
 
 // forward declare the various AST types
 // using macros and ASTClassesList.h
@@ -27,6 +28,11 @@ class Builder;
 #undef AST_END_SUBCLASSES
 #undef AST_DECL
 
+// forward declare other classes
+class Builder;
+
+typedef std::vector< std::unique_ptr<Expr> > ExprList;
+
 /**
   This is the base class for AST types
  */
@@ -36,9 +42,10 @@ class BaseAST {
  private:
   asttags::ASTTag tag_;
   ID id_;
+  ExprList children;
 
  protected:
-  BaseAST(asttags::ASTTag tag) : tag_(tag), id_() { }
+  BaseAST(asttags::ASTTag tag);
 
  public:
   virtual ~BaseAST() = 0; // this is an abstract base class

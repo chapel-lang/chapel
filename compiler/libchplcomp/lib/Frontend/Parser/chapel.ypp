@@ -75,8 +75,6 @@
   #ifndef _BISON_CHAPEL_DEFINES_1_
   #define _BISON_CHAPEL_DEFINES_1_
 
-  typedef std::vector<Expr*>* ExprListPtr; 
-
   enum FunctionTag {
     FunctionTag_PROC,
     FunctionTag_ITER,
@@ -160,7 +158,7 @@
     LinkageTag_EXPORT,
   };
 
-  typedef std::vector<Expr*> ExprList;
+  typedef std::vector<Expr*> ParserExprList;
   typedef std::vector<PODUniqueString> UniqueStrList;
 
   struct PotentialRename {
@@ -192,10 +190,10 @@
 
   struct WhereAndLifetime {
     Expr* where;
-    ExprList* lifetime;
+    ParserExprList* lifetime;
   };
   static inline
-  WhereAndLifetime makeWhereAndLifetime(Expr* w, ExprList* lt) {
+  WhereAndLifetime makeWhereAndLifetime(Expr* w, ParserExprList* lt) {
     WhereAndLifetime ret;
     ret.where = w;
     ret.lifetime = lt;
@@ -262,7 +260,7 @@
 
     // values that are temporary groupings
     CommentsAndStmt            commentsAndStmt;
-    ExprList*                  exprList;
+    ParserExprList*            exprList;
     RenameList*                renameList;
     UniqueStrList*             uniqueStrList;
     WhereAndLifetime           lifetimeAndWhere;
@@ -681,7 +679,7 @@ module_decl_stmt:
     { $$ = TODOSTMT(@$); }
 | module_decl_start TLCBR error TRCBR
     {
-      ExprList* errList = context->makeList(ErroneousExpr::build(BUILDER));
+      ParserExprList* errList = context->makeList(ErroneousExpr::build(BUILDER));
       $$ = TODOSTMT(@$); // should be a module containing errList
     }
 ;
@@ -727,7 +725,7 @@ block_stmt:
   }
 | TLCBR error   TRCBR
   {
-    ExprList* errList = context->makeList(ErroneousExpr::build(BUILDER));
+    ParserExprList* errList = context->makeList(ErroneousExpr::build(BUILDER));
     $$ = TODOSTMT(@$); // should be a block containing errList
   }
 ;

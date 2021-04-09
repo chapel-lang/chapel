@@ -36,7 +36,7 @@ struct ParserContext {
   std::vector<UniqueString> currentModuleStack;
   std::vector<UniqueString> currentFunctionStack;
 
-  ExprList* topLevelStatements;
+  ParserExprList* topLevelStatements;
   std::vector<ParserError> errors;
 
   // comments are gathered here
@@ -61,13 +61,13 @@ struct ParserContext {
   void noteComment(YYLTYPE loc, const char* data, long size);
   std::vector<ParserComment>* gatherComments(YYLTYPE location);
   void clearComments();
-  ExprList* makeList();
-  ExprList* makeList(ExprList* lst);
-  ExprList* makeList(Expr* e);
-  ExprList* makeList(CommentsAndStmt cs);
-  void appendList(ExprList* dst, ExprList* lst);
-  void appendList(ExprList* dst, Expr* e);
-  void appendList(ExprList* dst, CommentsAndStmt cs);
+  ParserExprList* makeList();
+  ParserExprList* makeList(ParserExprList* lst);
+  ParserExprList* makeList(Expr* e);
+  ParserExprList* makeList(CommentsAndStmt cs);
+  void appendList(ParserExprList* dst, ParserExprList* lst);
+  void appendList(ParserExprList* dst, Expr* e);
+  void appendList(ParserExprList* dst, CommentsAndStmt cs);
   void appendComments(CommentsAndStmt*cs, std::vector<ParserComment>* comments);
 
   // clears the inner comments that should have already been captured
@@ -80,22 +80,22 @@ struct ParserContext {
 
   // These adjust for the IDs
   // and call enterStmt / exitStmt.
-  //ExprList* enterModule(YYLTYPE loc, const char* name, Expr* decl);
-  //ExprList* exitModule(ExprList* decl, ExprList* body);
-  //ExprList* enterFunction(YYLTYPE loc, const char* name, Expr* decl);
-  //ExprList* exitFunction(ExprList* decl, ExprList* body);
+  //ParserExprList* enterModule(YYLTYPE loc, const char* name, Expr* decl);
+  //ParserExprList* exitModule(ParserExprList* decl, ParserExprList* body);
+  //ParserExprList* enterFunction(YYLTYPE loc, const char* name, Expr* decl);
+  //ParserExprList* exitFunction(ParserExprList* decl, ParserExprList* body);
 
   // This should consume the comments that occur before
   // and return them. (Including looking at source locations).
   // If there is any argument, it will
   // be also appended to the returned list.
-  ExprList* enterStmt(YYLTYPE location, ExprList* lst);
-  ExprList* enterStmt(YYLTYPE location, Expr* e);
-  ExprList* enterStmt(YYLTYPE location);
+  ParserExprList* enterStmt(YYLTYPE location, ParserExprList* lst);
+  ParserExprList* enterStmt(YYLTYPE location, Expr* e);
+  ParserExprList* enterStmt(YYLTYPE location);
 
   // These should clear the comments (since there might be some inside the stmt)
-  ExprList* exitStmt(ExprList* lst);
-  ExprList* exitStmt(Expr* e);
+  ParserExprList* exitStmt(ParserExprList* lst);
+  ParserExprList* exitStmt(Expr* e);
 
   // Do we really need these?
   /*

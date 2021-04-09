@@ -56,35 +56,35 @@ void ParserContext::clearComments() {
   this->comments->clear();
 }
 
-ExprList* ParserContext::makeList() {
-  return new ExprList();
+ParserExprList* ParserContext::makeList() {
+  return new ParserExprList();
 }
-ExprList* ParserContext::makeList(ExprList* lst) {
+ParserExprList* ParserContext::makeList(ParserExprList* lst) {
   return lst;
 }
-ExprList* ParserContext::makeList(Expr* e) {
-  ExprList* ret = new ExprList();
+ParserExprList* ParserContext::makeList(Expr* e) {
+  ParserExprList* ret = new ParserExprList();
   ret->push_back(e);
   return ret;
 }
-ExprList* ParserContext::makeList(CommentsAndStmt cs) {
-  ExprList* ret = new ExprList();
+ParserExprList* ParserContext::makeList(CommentsAndStmt cs) {
+  ParserExprList* ret = new ParserExprList();
   this->appendList(ret, cs);
   return ret;
 }
 
-void ParserContext::appendList(ExprList* dst, ExprList* lst) {
+void ParserContext::appendList(ParserExprList* dst, ParserExprList* lst) {
   for (Expr* elt : *lst) {
     dst->push_back(elt);
   }
   delete lst;
 }
 
-void ParserContext::appendList(ExprList* dst, Expr* e) {
+void ParserContext::appendList(ParserExprList* dst, Expr* e) {
   dst->push_back(e);
 }
 
-void ParserContext::appendList(ExprList* dst, CommentsAndStmt cs) {
+void ParserContext::appendList(ParserExprList* dst, CommentsAndStmt cs) {
   if (cs.comments != nullptr) {
     for (ParserComment parserComment : *cs.comments) {
       Comment* c = Comment::build(builder,
