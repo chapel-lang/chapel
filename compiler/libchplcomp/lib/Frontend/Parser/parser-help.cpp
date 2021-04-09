@@ -37,5 +37,5 @@ static ErroneousExpr* raiseError(YYLTYPE location,
   // note the error for printing
   yyerror(&location, context, errorMessage);
   // return an error sentinel
-  return ErroneousExpr::build(context->builder);
+  return ErroneousExpr::build(context->builder).release();
 }

@@ -1,0 +1,38 @@
+#ifndef CHPL_AST_LOCATION_H
+#define CHPL_AST_LOCATION_H
+
+#include "chpl/AST/UniqueString.h"
+
+namespace chpl {
+namespace ast {
+
+/**
+  This class represents a source location.
+ */
+class Location final {
+ private:
+  UniqueString path_;
+  int firstLine_;
+  int firstColumn_;
+  int lastLine_;
+  int lastColumn_;
+ public:
+  Location()
+    : path_(),
+      firstLine_(-1), firstColumn_(-1),
+      lastLine_(-1), lastColumn_(-1) {
+  }
+
+  Location(UniqueString path,
+           int firstLine=-1, int firstColumn=-1,
+           int lastLine=-1, int lastColumn=-1)
+    : path_(path),
+      firstLine_(firstLine), firstColumn_(firstColumn),
+      lastLine_(lastLine), lastColumn_(lastColumn) {
+  }
+};
+
+} // end namespace ast
+} // end namespace chpl
+
+#endif

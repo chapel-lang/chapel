@@ -375,12 +375,14 @@ static SizedStr eatExternCode(yyscan_t scanner) {
   int nCols = 0;
   std::string s;
 
-  // First, store the line information.
-  s += "#line ";
-  s += std::to_string(loc->first_line + nLines);
-  s += " \"";
-  s += context->filename;
-  s += "\" \n";
+  if (context->filename != NULL && context->filename[0] != '\0') {
+    // First, store the line information.
+    s += "#line ";
+    s += std::to_string(loc->first_line + nLines);
+    s += " \"";
+    s += context->filename;
+    s += "\" \n";
+  }
 
   // Now, append the C code until we get to a }.
   while (depth > 0) {

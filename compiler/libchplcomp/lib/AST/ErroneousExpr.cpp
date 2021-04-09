@@ -3,8 +3,8 @@
 namespace chpl {
 namespace ast {
 
-ErroneousExpr* ErroneousExpr::build(Builder* builder) {
-  return new ErroneousExpr();
+owned<ErroneousExpr> ErroneousExpr::build(Builder* builder) {
+  return toOwned(new ErroneousExpr());
 }
 
 } // namespace ast

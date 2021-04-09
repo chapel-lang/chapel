@@ -31,10 +31,41 @@ namespace ast {
 // forward declare other classes
 class Builder;
 
-typedef std::vector< std::unique_ptr<Expr> > ExprList;
+/**
+ owned<T> is just a synonym for 'std::unique_ptr<T>'.
+ It is shorter and uses the Chapel term for it.
+ */
+template<typename T>
+  using owned = std::unique_ptr<T>;
+/**
+ give a raw pointer to an owned<T> to manage it.
+ */
+template<typename T>
+static inline owned<T> toOwned(T* takeFrom) {
+  return owned<T>(takeFrom);
+}
 
 /**
-  This is the base class for AST types
+ ExprList is just a list that owns some expressions.
+ */
+typedef std::vector<owned<Expr>> ExprList;
+
+/**
+  This is the base class for AST types.
+
+  Every AST class has:
+   * a tag (indicating which AST class it is)
+   * an ID (a sort of scoped location used as a key in maps)
+   * a list of child Exprs
+
+  The list of child Exprs is included in BaseAST to allow for
+  generic tree traversals of the AST.
+
+  someAst->isCallExpr() / someAst->toCallExpr() are available
+  and generated for all AST types.
+
+  std::less is defined for every AST class and it compares IDs.
+
  */
 class BaseAST {
  friend class Builder;
@@ -50,16 +81,39 @@ class BaseAST {
  public:
   virtual ~BaseAST() = 0; // this is an abstract base class
 
+  /**
+    Returns the tag indicating which BaseAST subclass this is.
+   */
   asttags::ASTTag tag() const {
     return tag_;
   }
 
+  /**
+    Returns the ID of this AST node.
+   */
   ID id() const {
     return id_; 
   }
 
-  // Returns 'true' if this symbol contains another AST node.
-  // This is an operation on the IDs.
+  /**
+    Returns the number of child AST nodes in the tree directly under this one.
+   */
+  int numChildren() {
+    return children.size();
+  }
+  /**
+    Returns the i'th child AST node in the tree directly under this one.
+    This function returns a "borrow" of the AST node. It is managed
+    by this object.
+   */
+  Expr* getChild(int i) {
+    return children[i].get();
+  }
+
+  /**
+    Returns 'true' if this symbol contains another AST node.
+    This is an operation on the IDs.
+   */
   bool contains(const BaseAST* other) const {
     return this->id_.contains(other->id_);
   }

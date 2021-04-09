@@ -15,7 +15,7 @@ class ErroneousExpr final : public Expr {
 
  public:
   ~ErroneousExpr() = default;
-  static ErroneousExpr* build(Builder* builder);
+  static owned<ErroneousExpr> build(Builder* builder);
 };
 
 } // end namespace ast

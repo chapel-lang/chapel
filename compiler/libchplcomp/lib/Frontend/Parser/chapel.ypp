@@ -167,18 +167,22 @@
     Expr* elem;
     std::pair<Expr*, Expr*> renamed;
 
-    PotentialRename(Expr* elem)
-    {
+    PotentialRename(Expr* elem) {
       this->tag = SINGLE;
       this->elem = elem;
       this->renamed = std::make_pair((Expr*)nullptr, (Expr*)nullptr);
     }
+    PotentialRename(owned<Expr> elem) : PotentialRename(elem.release()) { }
     PotentialRename(Expr* from, Expr* to)
     {
       this->tag = DOUBLE;
       this->elem = nullptr;
       this->renamed = std::make_pair(from, to);
     }
+    PotentialRename(owned<Expr> from, owned<Expr> to)
+    : PotentialRename(from.release(), to.release()) { }
+    PotentialRename(Expr* from, owned<Expr> to)
+    : PotentialRename(from, to.release()) { }
 
   };
 
@@ -210,6 +214,10 @@
     ret.comments = comments;
     ret.stmt = stmt;
     return ret;
+  }
+  static inline
+  CommentsAndStmt makeCommentsAndStmt(std::vector<ParserComment>* comments, owned<Expr> stmt) {
+    return makeCommentsAndStmt(comments, stmt.release());
   }
 
   struct SizedStr {
@@ -1516,7 +1524,7 @@ enum_decl_stmt:
     {
       CommentsAndStmt cs = $1;
       if (cs.stmt) delete cs.stmt;
-      cs.stmt = ErroneousExpr::build(BUILDER);
+      cs.stmt = ErroneousExpr::build(BUILDER).release();
       $$ = cs;
     }
 ;
@@ -1570,7 +1578,7 @@ fn_decl_stmt:
     {
       CommentsAndStmt cs = $1;
       FnDecl* decl = cs.stmt->toFnDecl();
-      ExprList* body = TODOLIST(@$);
+      ParserExprList* body = TODOLIST(@$);
       //decl->setBody(body); TODO
       $$ = cs;
     }
@@ -1939,8 +1947,8 @@ opt_ret_type:
                                  { $$ = nullptr; }
 | TCOLON type_level_expr         { $$ = $2; }
 | TCOLON ret_array_type          { $$ = $2; }
-| TCOLON reserved_type_ident_use { $$ = Identifier::build(BUILDER, $2); }
-| error                          { $$ = ErroneousExpr::build(BUILDER); }
+| TCOLON reserved_type_ident_use { $$ = Identifier::build(BUILDER, $2).release(); }
+| error                          { $$ = ErroneousExpr::build(BUILDER).release(); }
 ;
 
 
@@ -1948,8 +1956,8 @@ opt_type:
                                  { $$ = nullptr; }
 | TCOLON type_level_expr         { $$ = $2; }
 | TCOLON array_type              { $$ = $2; }
-| TCOLON reserved_type_ident_use { $$ = Identifier::build(BUILDER, $2); }
-| error                          { $$ = ErroneousExpr::build(BUILDER); }
+| TCOLON reserved_type_ident_use { $$ = Identifier::build(BUILDER, $2).release(); }
+| error                          { $$ = ErroneousExpr::build(BUILDER).release(); }
 ;
 
 /* NOTE: Some things about the following rule concern me (blc), but I
@@ -1983,7 +1991,7 @@ array_type:
     }
 | TLSBR error TRSBR
     {
-      $$ = ErroneousExpr::build(BUILDER);
+      $$ = ErroneousExpr::build(BUILDER).release();
     }
 ;
 
@@ -2014,7 +2022,7 @@ opt_formal_type:
                                  { $$ = nullptr; }
 | TCOLON type_level_expr         { $$ = $2; }
 | TCOLON query_expr              { $$ = $2; }
-| TCOLON reserved_type_ident_use { $$ = Identifier::build(BUILDER, $2); }
+| TCOLON reserved_type_ident_use { $$ = Identifier::build(BUILDER, $2).release(); }
 | TCOLON formal_array_type       { $$ = $2; }
 ;
 
@@ -2033,7 +2041,7 @@ simple_expr_ls:
 ;
 
 tuple_component:
-  TUNDERSCORE   { $$ = Identifier::build(BUILDER, STR("_")); }
+  TUNDERSCORE   { $$ = Identifier::build(BUILDER, STR("_")).release(); }
 | opt_try_expr  { $$ = $1; }
 | query_expr    { $$ = $1; }
 ;
@@ -2174,7 +2182,7 @@ cond_expr:
 ;
 
 nil_expr:
-  TNIL      { $$ = Identifier::build(BUILDER, STR("nil")); }
+  TNIL      { $$ = Identifier::build(BUILDER, STR("nil")).release(); }
 ;
 
 /* Expressions permitted at the statement level as <stmt_level_expr> TSEMI.

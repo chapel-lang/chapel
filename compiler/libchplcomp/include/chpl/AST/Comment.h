@@ -26,7 +26,7 @@ class Comment final : public Expr {
 
  public:
   ~Comment() override;
-  static Comment* build(Builder* builder, const char* data, long size);
+  static owned<Comment> build(Builder* builder, const char* data, long size);
   const char* comment() const { return comment_; }
   long size() const { return size_; }
 };

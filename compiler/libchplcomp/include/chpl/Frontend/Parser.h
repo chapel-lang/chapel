@@ -1,6 +1,7 @@
 #ifndef CHPL_FRONTEND_PARSER_H
 #define CHPL_FRONTEND_PARSER_H
 
+#include "chpl/AST/BaseAST.h"
 #include "chpl/AST/ErrorMessage.h"
 #include "chpl/AST/Location.h"
 
@@ -12,16 +13,17 @@ namespace ast {
 
 class Expr;
 
-class ParseResult final {
-  std::vector<Expr*> topLevelExprs;
-  std::vector<ErrorMessage> parseErrors;
-  std::unordered_map<BaseAST*, Location> locations;
-};
-
 /**
   A class for parsing
  */
 class Parser final {
+  public:
+    struct ParseResult final {
+      ExprList topLevelExprs;
+      std::vector<ErrorMessage> parseErrors;
+      std::unordered_map<BaseAST*, Location> locations;
+    };
+
  private:
 
    // TODO: stuff to do with module search paths
@@ -30,15 +32,28 @@ class Parser final {
    // TODO: compile-time configuration variable settings
    // need to be stored in here.
 
+   Context* context_;
+
+   Parser(Context* context) : context_(context) { }
+
  public:
+   static owned<Parser> build(Context* context);
+   ~Parser() = default;
+
    /**
-     Parse a file and return a vector of top-level statements.
+     Return the AST Context used by this Parser.
     */
-   std::vector<Expr*> parseFile(const char* path);
+   Context* context() { return context_; }
+
    /**
-     Parse a string and return a vector of top-level statements.
+     Parse a file at a particular path.
     */
-   std::vector<Expr*> parseString(const char* str);
+   ParseResult parseFile(const char* path);
+   /**
+     Parse source code in a string.
+     'path' is only used for certain errors.
+    */
+   ParseResult parseString(const char* path, const char* str);
 };
 
 } // end namespace ast

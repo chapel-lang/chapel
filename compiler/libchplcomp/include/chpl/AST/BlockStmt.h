@@ -13,7 +13,6 @@ namespace ast {
  */
 class BlockStmt final : public Expr {
  private:
-  std::vector<Expr*> body;
 
  public:
 };

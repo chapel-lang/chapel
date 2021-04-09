@@ -1,0 +1,7 @@
+* queries need to generally produce error messages
+  in addition to a map
+* a when running a query implementation
+    * some things need to happen at the start
+    * some things need to happen at the end
+* should all query implementations call helper fns?
+  Or, should they be invoked in a stylized manner?

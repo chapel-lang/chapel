@@ -6,8 +6,8 @@
 namespace chpl {
 namespace ast {
 
-Identifier* Identifier::build(Builder* builder, UniqueString name) {
-  return new Identifier(name);
+owned<Identifier> Identifier::build(Builder* builder, UniqueString name) {
+  return toOwned(new Identifier(name));
 }
 
 } // namespace ast

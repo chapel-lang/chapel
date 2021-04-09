@@ -64,9 +64,15 @@ struct ParserContext {
   ParserExprList* makeList();
   ParserExprList* makeList(ParserExprList* lst);
   ParserExprList* makeList(Expr* e);
+  ParserExprList* makeList(owned<Expr> e) {
+    return this->makeList(e.release());
+  }
   ParserExprList* makeList(CommentsAndStmt cs);
   void appendList(ParserExprList* dst, ParserExprList* lst);
   void appendList(ParserExprList* dst, Expr* e);
+  void appendList(ParserExprList* dst, owned<Expr> e) {
+    this->appendList(dst, e.release());
+  }
   void appendList(ParserExprList* dst, CommentsAndStmt cs);
   void appendComments(CommentsAndStmt*cs, std::vector<ParserComment>* comments);
 
@@ -75,6 +81,9 @@ struct ParserContext {
   //     { /* doc comment } proc myproc()
   CommentsAndStmt finishStmt(CommentsAndStmt cs);
   CommentsAndStmt finishStmt(Expr* e);
+  CommentsAndStmt finishStmt(owned<Expr> e) {
+    return this->finishStmt(e.release());
+  }
 
   // TODO: move these to astContext
 
@@ -91,11 +100,17 @@ struct ParserContext {
   // be also appended to the returned list.
   ParserExprList* enterStmt(YYLTYPE location, ParserExprList* lst);
   ParserExprList* enterStmt(YYLTYPE location, Expr* e);
+  ParserExprList* enterStmt(YYLTYPE location, owned<Expr> e) {
+    return this->enterStmt(location, e.release());
+  }
   ParserExprList* enterStmt(YYLTYPE location);
 
   // These should clear the comments (since there might be some inside the stmt)
   ParserExprList* exitStmt(ParserExprList* lst);
   ParserExprList* exitStmt(Expr* e);
+  ParserExprList* exitStmt(owned<Expr> e) {
+    return this->exitStmt(e.release());
+  }
 
   // Do we really need these?
   /*

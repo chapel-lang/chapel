@@ -5,6 +5,7 @@ target_sources(libchplcomp
                Comment.cpp
                Context.cpp
                ErroneousExpr.cpp
+               ErrorMessage.cpp
                Expr.cpp
                ID.cpp
                Identifier.cpp

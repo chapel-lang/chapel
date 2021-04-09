@@ -15,13 +15,13 @@ class Expr;
 class Builder final {
  private:
   Context* context_;
-  std::vector<Expr*> topLevelStatements;
+  //std::vector<Expr*> topLevelStatements;
 
  public:
   Builder(Context* context) : context_(context) { }
 
   Context* context() const { return context_; }
-  void addToplevelStmt(Expr* e) { topLevelStatements.push_back(e); }
+  //void addToplevelStmt(Expr* e) { topLevelStatements.push_back(e); }
 
   // For complex declarations, the builder supports
   //  enter/setBla/addBla/exit e.g. enterFnSymbol

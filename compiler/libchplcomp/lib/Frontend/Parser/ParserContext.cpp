@@ -87,10 +87,10 @@ void ParserContext::appendList(ParserExprList* dst, Expr* e) {
 void ParserContext::appendList(ParserExprList* dst, CommentsAndStmt cs) {
   if (cs.comments != nullptr) {
     for (ParserComment parserComment : *cs.comments) {
-      Comment* c = Comment::build(builder,
-                                  parserComment.comment.allocatedData,
-                                  parserComment.comment.size);
-      dst->push_back(c);
+      auto c = Comment::build(builder,
+                              parserComment.comment.allocatedData,
+                              parserComment.comment.size);
+      dst->push_back(c.release());
     }
   }
   if (cs.stmt != nullptr) {
