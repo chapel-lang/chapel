@@ -610,19 +610,32 @@ module ChapelRange {
   }
 
   /* Return the range's low bound. If the range does not have a low
-     bound the behavior is undefined. */
-  inline proc range.low  return chpl_intToIdx(_low);
+     bound (e.g., ``..10``), a compiler error is generated. */
+  inline proc range.low {
+    if !hasLowBound() {
+      compilerError("can't query the low bound of a range without one");
+    }
+    return chpl_intToIdx(_low);
+  }
 
 
   /* Return the range's high bound. If the range does not have a high
-     bound the behavior is undefined. */
-  inline proc range.high return chpl_intToIdx(_high);
+     bound (e.g., ``1..``), a compiler error is generated. */
+  inline proc range.high {
+    if !hasHighBound() {
+      compilerError("can't query the high bound of a range without one");
+    }
+    return chpl_intToIdx(_high);
+  }
 
 
   /* Returns the range's aligned low bound. If the aligned low bound is
-     undefined (does not exist), the behavior is undefined.
+     undefined (e.g., ``..10 by -2``), a compiler error is generated.
    */
   inline proc range.alignedLow : idxType {
+    if !hasLowBound() {
+      compilerError("can't query the low bound of a range without one");
+    }
     return chpl_intToIdx(this.alignedLowAsInt);
   }
 
@@ -637,9 +650,12 @@ module ChapelRange {
 
   // TODO: Add back example?
   /* Returns the range's aligned high bound. If the aligned high bound is
-     undefined, the behavior is undefined.
+     undefined (e.g., ``1.. by 2``), a compiler error is generated.
    */
   inline proc range.alignedHigh : idxType {
+    if !hasHighBound() {
+      compilerError("can't query the high bound of a range without one");
+    }
     return chpl_intToIdx(this.alignedHighAsInt);
   }
 
@@ -919,13 +935,13 @@ operator :(r: range(?), type t: range(?)) {
   }
 
   if tmp.stridable {
-    tmp._stride = r.stride;
+    tmp._stride = r.stride: tmp._stride.type;
     tmp._alignment = r.alignment: tmp.intIdxType;
     tmp._aligned = r.aligned;
   }
 
-  tmp._low = r.low: tmp.intIdxType;
-  tmp._high = r.high: tmp.intIdxType;
+  tmp._low = (if r.hasLowBound() then r.low else r._low): tmp.intIdxType;
+  tmp._high = (if r.hasHighBound() then r.high else r._high): tmp.intIdxType;
   return tmp;
 }
 
@@ -1322,8 +1338,8 @@ operator :(r: range(?), type t: range(?)) {
   }
 
   proc chpl_by_help(r: range(?i,?b,?s), step) {
-    const lw: i = r.low,
-          hh: i = r.high,
+    const lw: i = if r.hasLowBound() then r.low else chpl__intToIdx(i, 1),
+          hh: i = if r.hasHighBound() then r.high else chpl__intToIdx(i, 0),
           st: r.strType = r.stride * step:r.strType;
 
     const (ald, alt): (bool, i) =
@@ -1413,7 +1429,10 @@ operator :(r: range(?), type t: range(?)) {
   {
     var offs = offset.safeCast(intIdxType);
     if !stridable {
-      compilerWarning("invoking 'offset' on an unstrided range has no effect.");
+      if !this.hasLowBound() then
+        compilerError("can't invoke 'offset' on an unstrided range with no low bound");
+      else
+        compilerWarning("invoking 'offset' on an unstrided range has no effect.");
       offs = 0;
     }
 
