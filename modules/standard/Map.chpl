@@ -158,19 +158,37 @@ module Map {
     proc init=(pragma "intent ref maybe const formal"
                other: map(?kt, ?vt, ?ps)) lifetime this < other {
 
-      if !isCopyableType(kt) || !isCopyableType(vt) then
-        compilerError("initializing map with non-copyable type");
-
-      this.keyType = kt;
-      this.valType = vt;
-      this.parSafe = ps;
-
+      // TODO: There has got to be some way that we can abstract this!
+      // Arguably this is something that the compiler should be
+      // inferring for us in some way.
+      this.keyType = if this.type.keyType != ? then
+                        this.type.keyType else kt;
+      this.valType = if this.type.valType != ? then
+                        this.type.valType else vt;
+      this.parSafe = if this.type.parSafe != ? then
+                        this.type.parSafe else ps;
       this.complete();
 
-      for key in other.keys() {
-        const (_, slot) = table.findAvailableSlot(key);
-        const (_, slot2) = other.table.findFullSlot(key);
-        table.fillSlot(slot, key, other.table.table[slot2].val);
+      if keyType != kt {
+        compilerError('cannot initialize ', this.type:string, ' from ',
+                      other.type:string, ' due to key type mismatch');
+      } else if valType != vt {
+        compilerError('cannot initialize ', this.type:string, ' from ',
+                      other.type:string, ' due to value type mismatch');
+      } else if !isCopyableType(keyType) {
+        compilerError('cannot initialize ', this.type:string, ' from ',
+                      other.type:string, ' because key type ',
+                      keyType:string, ' is not copyable');
+      } else if !isCopyableType(valType) {
+        compilerError('cannot initialize ', this.type:string, ' from ',
+                      other.type:string, ' because value type ',
+                      valType:string, ' is not copyable');
+      } else {
+        for key in other.keys() {
+          const (_, slot) = table.findAvailableSlot(key);
+          const (_, slot2) = other.table.findFullSlot(key);
+          table.fillSlot(slot, key, other.table.table[slot2].val);
+        }
       }
     }
 
