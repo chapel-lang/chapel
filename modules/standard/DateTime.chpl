@@ -1160,7 +1160,7 @@ module DateTime {
      string. Fields not specified by format will have defaults. This is
      deprecated. */
   pragma "no doc"
-  proc type datetime.strptime(date_string: string, format: string) {
+  proc type datetime.strptime(date_string: string, format: string = "%a %b %d %H:%M:%S %Y") {
     compilerWarning("proc type datetype.strptime() is deprecated.\nPlease use proc datetime.strptime() instead.");
     /* intialization to epoch time */
     var dt: datetime = new datetime(1970, 1, 1);
@@ -1170,8 +1170,8 @@ module DateTime {
 
   /* Modify a `datetime` as described by the `date_string` and `format`
      string. Fields not specified by format are not modified. */
-  proc ref datetime.strptime(date_string: string, format: string) {
-    extern proc chpl_strptime(buf: c_string, format: c_string, ref ts: tm, ref ms: c_ulong);
+  proc ref datetime.strptime(date_string: string, format: string = "%a %b %d %H:%M:%S %Y") throws {
+    extern proc chpl_strptime(buf: c_string, format: c_string, ref ts: tm, ref ms: c_ulong): c_string;
     var timeStruct: tm;
 
     timeStruct.tm_year = (chpl_date.year - 1900) : int(32);
