@@ -1097,8 +1097,26 @@ module Bytes {
      :returns: A new :mod:`bytes <Bytes>` which is the result of repeating `s`
                `n` times.  If `n` is less than or equal to 0, an empty bytes is
                returned.
+          
+     The operation is commutative.
+     For example:
+
+     .. code-block:: chapel
+        
+        writeln(b"Hello! "*3);
+        or
+        writeln(3*b"Hello! ");
+
+     Results in::
+
+        Hello! Hello! Hello!         
   */
   operator bytes.*(s: bytes, n: integral) {
+    return doMultiply(s, n);
+  }
+
+  pragma "no doc"
+  operator bytes.*(n: integral, s: bytes) {
     return doMultiply(s, n);
   }
 
