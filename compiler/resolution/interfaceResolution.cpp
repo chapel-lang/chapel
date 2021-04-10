@@ -22,6 +22,7 @@
 #include "callInfo.h"
 #include "DecoratedClassType.h"
 #include "driver.h"
+#include "iterator.h"
 #include "PartialCopyData.h"
 #include "passes.h"
 #include "ResolutionCandidate.h"
@@ -923,24 +924,48 @@ static bool checkReturnType(InterfaceSymbol* isym,  ImplementsStmt* istm,
   if (Symbol* actualType = fml2act.get(reqType->symbol))
     reqType = actualType->type->getValType();
 
-  if (reqType != implType) {
-    if (reportErrors) {
-      USR_FATAL_CONT(istm, "when checking this implements statement");
+  if (reqType == implType)
+    return true;  // good
+
+  bool gotPromotion = false;
+  if (target->hasFlag(FLAG_PROMOTION_WRAPPER)) {
+    // We had to promote the function in the source code.
+    // The only way for this to work is when it produces no value
+    // and no value is expected by reqFn.
+    if (reqType == dtVoid || reqType == dtNothing)
+      if (Type* yieldType = target->iteratorInfo->yieldedType->getValType())
+        if (yieldType == dtVoid || yieldType == dtNothing)
+          return true;
+    // Otherwise it is an error, reported next.
+    gotPromotion = true;
+  }
+
+  if (reportErrors) {
+    USR_FATAL_CONT(istm, "when checking this implements statement");
+    if (gotPromotion)
+      ; // do not print target's line number - it is not helpful in this case
+    else
       USR_PRINT(target, "this implementation of the required function %s",
                         reqFn->name);
-      if (implType == dtUnknown)
-        USR_PRINT(target, "needs to specify its return type");
-      else {
-        USR_PRINT(target, "has return type '%s'", toString(implType));
-        USR_PRINT(reqFn, "which does not match the expected return type '%s'",
-                          toString(reqType));
-      }
-      USR_PRINT(reqFn, "the required function %s in the interface %s"
-                       " is declared here", reqFn->name, isym->name);
+    if (implType == dtUnknown) {
+      USR_PRINT(target, "needs to specify its return type");
+
+    } else if (gotPromotion) {
+      // for a good line number, find the FnSymbol that got promoted
+      USR_PRINT("the implementation of the required function %s",
+                      reqFn->name);
+      USR_PRINT("has a non-void return type and needs to be promoted");
+      USR_PRINT("which is currently not implemented");
+    } else {
+      USR_PRINT(target, "has return type '%s'", toString(implType));
+      USR_PRINT(reqFn, "which does not match the expected return type '%s'",
+                        toString(reqType));
     }
-    return false;
+    USR_PRINT(reqFn, "the required function %s in the interface %s"
+                     " is declared here", reqFn->name, isym->name);
   }
-  return true;
+
+  return false;
 }
 
 static bool checkReturnIntent(InterfaceSymbol* isym,  ImplementsStmt* istm,
@@ -991,7 +1016,8 @@ static bool resolveOneRequiredFn(InterfaceSymbol* isym,  ImplementsStmt*  istm,
     cgprint("%s           -> %s  %s\n", indent,
             symstring(target), debugLoc(target));
 
-    INT_ASSERT(! target->isGeneric());
+    INT_ASSERT(target->hasFlag(FLAG_PROMOTION_WRAPPER) ||
+               ! target->isGeneric());
     bool genericTarget = target->instantiatedFrom ? standinArgs : false;
 
     if (genericTarget) {
