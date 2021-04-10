@@ -2241,17 +2241,25 @@ module String {
      :returns: A new string which is the result of repeating `s` `n` times.
                If `n` is less than or equal to 0, an empty string is returned.
 
+     The operation is commutative.
      For example:
 
      .. code-block:: chapel
 
         writeln("Hello! " * 3);
+        or
+        writeln(3 * "Hello! ");
 
      Results in::
 
        Hello! Hello! Hello!
   */
   operator *(s: string, n: integral) {
+    return doMultiply(s, n);
+  }
+
+  pragma "no doc"
+  operator *(n: integral, s: string) {
     return doMultiply(s, n);
   }
 
