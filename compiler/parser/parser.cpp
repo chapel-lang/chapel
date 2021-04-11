@@ -330,6 +330,14 @@ static void parseCommandLineFiles() {
   while ((inputFileName = nthFilename(fileNum++))) {
     if (isChplSource(inputFileName)) {
       parseFile(inputFileName, MOD_USER, true, false);
+      /*
+      Ensure that all the files parsed don't exceed the
+      NAME_MAX/2 125 bytes Limits
+      */
+      if (strlen(inputFileName) > NAME_MAX / 2 - 16)
+      {
+        USR_FATAL("File name too long");
+      }
     }
   }
 
