@@ -77,7 +77,7 @@ else{
 
         for 1..iters {
             t.start();
-            const frobNorm = norm(b, normType.normFrob);
+            const frobNorm = norm(b, normType.norm2);
             t.stop();
         }
         
