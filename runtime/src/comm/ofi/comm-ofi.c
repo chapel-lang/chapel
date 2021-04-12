@@ -6611,7 +6611,7 @@ void do_remote_amo_nf_buff(void* opnd, c_nodeid_t node,
   info->opnd_v[vi]      = size == 4 ? *(uint32_t*) opnd:
                                       *(uint64_t*) opnd;
   info->locale_v[vi]    = node;
-  info->object_v[vi]    = object;
+  info->object_v[vi]    = (void*) mrRaddr;
   info->size_v[vi]      = size;
   info->cmd_v[vi]       = ofiOp;
   info->type_v[vi]      = ofiType;
