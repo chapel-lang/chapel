@@ -3,6 +3,7 @@
 // It contains any #includes necessary for the parser.
 
 #include "chpl/AST/BaseAST.h"
+#include "chpl/AST/BlockStmt.h"
 #include "chpl/AST/Builder.h"
 #include "chpl/AST/Comment.h"
 #include "chpl/AST/Context.h"

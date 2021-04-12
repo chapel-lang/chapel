@@ -3,6 +3,10 @@
 namespace chpl {
 namespace ast {
 
+ErroneousExpr::ErroneousExpr()
+  : Expr(asttags::ErroneousExpr) {
+}
+
 owned<ErroneousExpr> ErroneousExpr::build(Builder* builder) {
   return toOwned(new ErroneousExpr());
 }

@@ -3,6 +3,10 @@
 namespace chpl {
 namespace ast {
 
+ID::ID()
+  : symbolPath_(), postOrderId_(-1), numContainedIds_(0) {
+}
+
 // Returns 'true' if this symbol contains another AST node.
 bool ID::contains(const ID other) const {
   UniqueString thisPath = this->symbolPath();

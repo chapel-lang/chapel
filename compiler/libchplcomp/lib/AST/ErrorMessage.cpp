@@ -24,6 +24,16 @@ static std::string vprint_to_string(const char* format, va_list vl) {
   return ret;
 }
 
+ErrorMessage::ErrorMessage()
+  : level_(-1), location_(), message_() {
+}
+ErrorMessage::ErrorMessage(Location location, std::string message)
+  : level_(0), location_(location), message_(message) {
+}
+ErrorMessage::ErrorMessage(Location location, const char* message)
+  : level_(0), location_(location), message_(message) {
+}
+
 ErrorMessage ErrorMessage::build(Location loc, const char* fmt, ...) {
   std::string ret;
   va_list vl;

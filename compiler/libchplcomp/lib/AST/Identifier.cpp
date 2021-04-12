@@ -1,10 +1,13 @@
 #include "chpl/AST/Identifier.h"
 
 #include "chpl/AST/Builder.h"
-#include "chpl/AST/Context.h"
 
 namespace chpl {
 namespace ast {
+
+Identifier::Identifier(UniqueString name)
+  : Expr(asttags::Identifier), name_(name) {
+}
 
 owned<Identifier> Identifier::build(Builder* builder, UniqueString name) {
   return toOwned(new Identifier(name));

@@ -21,17 +21,12 @@ class ErrorMessage final {
   // TODO: how to handle a callstack of sorts?
 
  public:
-  ErrorMessage() : level_(-1), location_(), message_() {
-  }
-  ErrorMessage(Location location, std::string message)
-    : level_(0), location_(location), message_(message) {
-  }
-  ErrorMessage(Location location, const char* message)
-    : level_(0), location_(location), message_(message) {
-  }
+  ErrorMessage();
+  ErrorMessage(Location location, std::string message);
+  ErrorMessage(Location location, const char* message);
+
   static ErrorMessage build(Location loc, const char* fmt, ...)
     __attribute__ ((format (printf, 2, 3)));
-
 };
 
 } // end namespace ast

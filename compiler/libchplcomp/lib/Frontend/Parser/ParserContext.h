@@ -68,12 +68,16 @@ struct ParserContext {
     return this->makeList(e.release());
   }
   ParserExprList* makeList(CommentsAndStmt cs);
+
   void appendList(ParserExprList* dst, ParserExprList* lst);
   void appendList(ParserExprList* dst, Expr* e);
   void appendList(ParserExprList* dst, owned<Expr> e) {
     this->appendList(dst, e.release());
   }
+  void appendList(ParserExprList* dst, std::vector<ParserComment>* comments);
   void appendList(ParserExprList* dst, CommentsAndStmt cs);
+  ExprList consumeList(ParserExprList* lst);
+
   void appendComments(CommentsAndStmt*cs, std::vector<ParserComment>* comments);
 
   // clears the inner comments that should have already been captured

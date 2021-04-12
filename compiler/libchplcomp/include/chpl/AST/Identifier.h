@@ -24,8 +24,7 @@ class Identifier final : public Expr {
  friend class Builder;
 
  private:
-  Identifier(UniqueString name)
-    : Expr(asttags::Identifier), name_(name) { }
+  Identifier(UniqueString name);
   UniqueString name_;
  public:
   ~Identifier() override = default;

@@ -19,27 +19,49 @@
  */
 
 std::vector<ParserComment>* ParserContext::gatherComments(YYLTYPE location) {
-  std::vector<ParserComment>* ret = this->comments;
-  this->comments = nullptr;
 
-  if (ret != nullptr) {
-    // Drop any comments from 'ret' that occur after the passed location
-    // so that things like the docs comment below are ignored
-    //    proc f /* docs comment */ (arg) 
-    while (ret->size() > 0) {
-      ParserComment comment = ret->back();
+  // If there were no comments, there is nothing to do.
+  if (this->comments == nullptr) {
+    return nullptr;
+  }
+
+  if (this->comments->size() == 0) {
+    delete this->comments;
+    return nullptr;
+  }
+
+  // Otherwise, gather only those comments that appear before the location.
+  // This might be all of the comments or only some of them.
+
+  size_t lastCommentToGather = 0;
+  {
+    size_t i = 0;
+    for (ParserComment comment : *this->comments) {
       if (comment.location.first_line <= location.first_line &&
           comment.location.first_column <= location.first_column) {
-        // OK, we can keep this comment (and any earlier ones)
-        break;
-      } else {
-        // remove this comment
-        delete comment.comment.allocatedData;
-        ret->pop_back();
+        // OK, we can gather this comment (and any earlier ones)
+        lastCommentToGather = i;
       }
+      i++;
     }
   }
 
+  // now, return the comments up to and including lastCommentToGather
+
+  // if that's all the comments, it is easy
+  if (lastCommentToGather == this->comments->size()-1) {
+    std::vector<ParserComment>* ret = this->comments;
+    this->comments = nullptr;
+    return ret;
+  }
+
+  // general case
+  std::vector<ParserComment>* ret = new std::vector<ParserComment>();
+  for (size_t i = 0; i <= lastCommentToGather; i++) {
+    ret->push_back((*this->comments)[i]);
+  }
+  this->comments->erase(this->comments->begin(),
+                        this->comments->begin()+lastCommentToGather+1);
   return ret;
 }
 
@@ -91,21 +113,37 @@ void ParserContext::appendList(ParserExprList* dst, Expr* e) {
   dst->push_back(e);
 }
 
-void ParserContext::appendList(ParserExprList* dst, CommentsAndStmt cs) {
-  if (cs.comments != nullptr) {
-    for (ParserComment parserComment : *cs.comments) {
-      auto c = Comment::build(builder,
+void ParserContext::appendList(ParserExprList* dst,
+                               std::vector<ParserComment>* comments) {
+  if (comments != nullptr) {
+    for (ParserComment parserComment : *comments) {
+      auto c = Comment::build(this->builder,
                               parserComment.comment.allocatedData,
                               parserComment.comment.size);
       dst->push_back(c.release());
     }
+    delete comments;
   }
+}
+
+void ParserContext::appendList(ParserExprList* dst, CommentsAndStmt cs) {
+  // append the comments
+  this->appendList(dst, cs.comments);
+  // then append the statement
   if (cs.stmt != nullptr) {
     dst->push_back(cs.stmt);
   }
-  if (cs.comments != nullptr) {
-    delete cs.comments;
+}
+
+ExprList ParserContext::consumeList(ParserExprList* lst) {
+  ExprList ret;
+  if (lst != nullptr) {
+    for (Expr* e : *lst) {
+      ret.push_back(toOwned(e));
+    }
+    delete lst;
   }
+  return ret;
 }
 
 void ParserContext::appendComments(CommentsAndStmt*cs,

@@ -722,18 +722,34 @@ include_module_stmt:
 block_stmt:
   TLCBR         TRCBR
   {
-    $$ = TODOSTMT(@$);
+    auto b = BlockStmt::build(BUILDER, context->consumeList(nullptr));
+    $$ = STMT(@$,b.release());
   }
 | TLCBR stmt_ls TRCBR
   {
-    CommentsAndStmt cs = TODOSTMT(@$);
-    context->appendComments(&cs, context->gatherComments(@3));
+    // gather the comments before the opening bracket
+    CommentsAndStmt cs = STMT(@1, nullptr);
+    // create a list of the statements
+    ParserExprList* lst = $2;
+    assert(lst != nullptr);
+    // add also any comments appearing after all statements
+    // and before the closing close bracket.
+    context->appendList(lst, context->gatherComments(@3));
+    // create the BlockStmt
+    auto blockstmt = BlockStmt::build(BUILDER, context->consumeList(lst));
+    cs.stmt = blockstmt.release();
     $$ = cs;
   }
 | TLCBR error   TRCBR
   {
-    ParserExprList* errList = context->makeList(ErroneousExpr::build(BUILDER));
-    $$ = TODOSTMT(@$); // should be a block containing errList
+    // gather the comments before the opening bracket
+    CommentsAndStmt cs = STMT(@1, nullptr);
+    // create a list of stmts that just has an ErroneousExpr
+    ParserExprList* lst = context->makeList(ErroneousExpr::build(BUILDER));
+    // create the BlockStmt
+    auto blockstmt = BlockStmt::build(BUILDER, context->consumeList(lst));
+    cs.stmt = blockstmt.release();
+    $$ = cs;
   }
 ;
 

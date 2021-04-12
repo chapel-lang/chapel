@@ -13,14 +13,23 @@ namespace ast {
  */
 class CallExpr : public Expr {
  private:
-  std::vector<Expr*> actuals_;
 
  public:
   ~CallExpr() override = 0;
 
-  int numActuals() const { return actuals_.size(); }
-  Expr* actual(int i) { return actuals_[i]; }
-  const Expr* actual(int i) const { return actuals_[i]; }
+  // note: the reason for the +/- 1 below is that the
+  // 0'th child is the called expression, which does
+  // not count as an "actual".
+
+  int numActuals() const {
+    return this->numChildren() - 1;
+  }
+  const Expr* actual(int i) const {
+    return this->getChild(i+1);
+  }
+  Expr* baseExpr() const {
+    return this->getChild(0);
+  }
 };
 
 } // end namespace ast

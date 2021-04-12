@@ -61,17 +61,7 @@ struct InlinedString {
     return (val & 0xff) == INLINE_TAG;
   }
 
-  static inline char* dataAssumingTag(void* vptr) {
-    char* ptr = (char*) vptr;
-    // assuming the tag is present, where is the string data?
-    // on a little endian system, need to pass the tag.
-    // on big endian systems, the tag is after the null terminator,
-    // so no action is necessary.
-    #if __BYTE_ORDER == __LITTLE_ENDIAN
-      ptr += 1; // pass the tag
-    #endif
-    return ptr;
-  }
+  static char* dataAssumingTag(void* vptr);
 
   /**
     Creates an InlinedString from a pointer.

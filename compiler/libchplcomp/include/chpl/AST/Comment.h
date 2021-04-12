@@ -19,8 +19,7 @@ class Comment final : public Expr {
  friend class Builder;
 
  private:
-  Comment(const char* comment, long size)
-    : Expr(asttags::Comment), comment_(comment), size_(size) { }
+  Comment(const char* comment, long size);
   const char* comment_; // not a unique string; allocated here
   long size_;
 

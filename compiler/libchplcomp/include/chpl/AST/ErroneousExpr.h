@@ -11,7 +11,7 @@ namespace ast {
  */
 class ErroneousExpr final : public Expr {
  private:
-  ErroneousExpr() : Expr(asttags::ErroneousExpr) { }
+  ErroneousExpr();
 
  public:
   ~ErroneousExpr() = default;

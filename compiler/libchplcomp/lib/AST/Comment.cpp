@@ -3,6 +3,10 @@
 namespace chpl {
 namespace ast {
 
+Comment::Comment(const char* comment, long size)
+ : Expr(asttags::Comment), comment_(comment), size_(size) {
+}
+
 Comment::~Comment() {
   delete comment_;
 }

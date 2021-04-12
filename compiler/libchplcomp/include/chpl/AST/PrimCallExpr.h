@@ -13,13 +13,12 @@ namespace ast {
  */
 class PrimCallExpr final : public CallExpr {
  private:
-   std::vector<Expr*> actuals;
  public:
   ~PrimCallExpr() override = default;
 
   // TODO: which primitive?
-  int numActuals() const override { return actuals.size(); }
-  Expr* actual(int i) const override { return actuals[i].actual; }
+  int numActuals() const override { return this->numChildren(); }
+  Expr* actual(int i) const override { return this->getChild(i); }
 };
 
 } // end namespace ast

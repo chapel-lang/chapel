@@ -2,6 +2,7 @@ target_sources(libchplcomp
                PRIVATE
 
                BaseAST.cpp
+               BlockStmt.cpp
                Comment.cpp
                Context.cpp
                ErroneousExpr.cpp

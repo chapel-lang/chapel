@@ -8,8 +8,13 @@ namespace chpl {
 namespace ast {
 
 BaseAST::BaseAST(asttags::ASTTag tag)
-  : tag_(tag), id_() {
+  : tag_(tag), id_(), children_() {
 }
+
+BaseAST::BaseAST(asttags::ASTTag tag, ExprList children)
+  : tag_(tag), id_(), children_(std::move(children)) {
+}
+
 
 BaseAST::~BaseAST() {
 }

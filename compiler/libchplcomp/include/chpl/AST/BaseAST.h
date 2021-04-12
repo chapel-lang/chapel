@@ -73,10 +73,11 @@ class BaseAST {
  private:
   asttags::ASTTag tag_;
   ID id_;
-  ExprList children;
+  ExprList children_;
 
  protected:
   BaseAST(asttags::ASTTag tag);
+  BaseAST(asttags::ASTTag tag, ExprList children);
 
  public:
   virtual ~BaseAST() = 0; // this is an abstract base class
@@ -98,16 +99,16 @@ class BaseAST {
   /**
     Returns the number of child AST nodes in the tree directly under this one.
    */
-  int numChildren() {
-    return children.size();
+  int numChildren() const {
+    return children_.size();
   }
   /**
     Returns the i'th child AST node in the tree directly under this one.
     This function returns a "borrow" of the AST node. It is managed
     by this object.
    */
-  Expr* getChild(int i) {
-    return children[i].get();
+  const Expr* getChild(int i) const {
+    return children_[i].get();
   }
 
   /**
