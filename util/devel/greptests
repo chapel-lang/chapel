@@ -3,6 +3,13 @@
 if [ $# -eq 0 ]
   then
       echo "No arguments supplied, see -help"
+      exit 1
+fi
+
+if [ $# -gt 3 ]
+  then
+      echo "Only usable with single strings, please encapsulate your pattern with quotes, see -help"
+      exit 2
 fi
 
 if [ ! -z "$CHPL_HOME" ] ; then
@@ -40,14 +47,14 @@ case "$1" in
 		;;
 	    *)
 		echo "Option $type not recognized, see -help"
-		break
+		exit 3
 		;;
 	esac
 
 	if [ ${#@} -eq 0 ]
 	then
 	    echo "No search term supplied, see -help"
-	    break
+	    exit 4
 	fi
 	
 	pushd $chapelDir > /dev/null
@@ -57,7 +64,7 @@ case "$1" in
 	popd > /dev/null
 	;;
     -help)
-	echo "Usage: greptests [-t] [args]"
+	echo "Usage: greptests [-t] [pattern]"
 	echo "-t [type] - the file types to search"
 	echo "    tests - .chpl"
 	echo "    futures - .future"
@@ -66,11 +73,10 @@ case "$1" in
 	echo "    testopts - .compopts, COMPOPTS, .execopts, EXECOPTS, .perfcompopts, PERFCOMPOPTS, .perfexecopts, PERFEXECOPTS"
 	echo "    outputs - .good, .bad"
 	echo "    scripts - .prediff, PREDIFF, .precomp, PRECOMP, .preexec, PREEXEC"
-	echo " args - the text to search"
+	echo " pattern - the text to search, please enclose any multi-word search in quotes"
 	;;
-    --)
-	shift
-	break
+    *)
+	echo "Option $1 not recognized, see -help"
+	exit 5
 	;;
-    *) echo "Option $1 not recognized, see -help" ;;
 esac
