@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 
 if [ $# -eq 0 ]
-  then
+then
       echo "No arguments supplied, see -help"
       exit 1
 fi
 
 if [ $# -gt 3 ]
-  then
+then
       echo "Only usable with single strings, please encapsulate your pattern with quotes, see -help"
       exit 2
 fi
@@ -16,6 +16,17 @@ if [ ! -z "$CHPL_HOME" ] ; then
     chapelDir="$CHPL_HOME"
 else
     chapelDir="./"
+fi
+
+if [ $# -eq 1 ] && [ "$1" != "-help" ]
+then    
+    pushd $chapelDir > /dev/null
+
+    find test -wholename "*/.git" -prune -o -name \*.chpl -print0 | xargs -0 grep -H "$@"
+
+    popd > /dev/null
+
+    exit 0
 fi
 
 case "$1" in
@@ -64,7 +75,7 @@ case "$1" in
 	popd > /dev/null
 	;;
     -help)
-	echo "Usage: greptests [-t] [pattern]"
+	echo "Usage: greptests [-t] pattern"
 	echo "-t [type] - the file types to search"
 	echo "    tests - .chpl"
 	echo "    futures - .future"
