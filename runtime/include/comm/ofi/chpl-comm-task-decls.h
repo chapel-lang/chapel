@@ -59,7 +59,6 @@ typedef struct {
   void* pAmDone;                // initiator's 'amDone' flag; NULL means nonblk
 #ifdef CHPL_COMM_DEBUG
   uint64_t seq;
-  uint32_t crc;
 #endif
 } chpl_comm_bundleData_t;
 

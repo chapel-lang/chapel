@@ -3087,7 +3087,6 @@ struct amRequest_base_t {
   c_nodeid_t node;            // initiator's node
   amDone_t* pAmDone;          // initiator's 'done' flag; may be NULL
 #ifdef CHPL_COMM_DEBUG
-  uint32_t crc;
   uint64_t seq;
 #endif
 };
@@ -3476,16 +3475,8 @@ void amRequestCommon(c_nodeid_t node,
 
     if (op_uses_on_bundle(req->b.op)) {
       req->xo.hdr.comm.seq = atomic_fetch_add_uint_least64_t(&seq, 1);
-#ifdef DEBUG_CRC_MSGS
-      req->xo.hdr.comm.crc = 0;
-      req->xo.hdr.comm.crc = xcrc32((void*) req, reqSize, ~(uint32_t) 0);
-#endif
     } else {
       req->b.seq = atomic_fetch_add_uint_least64_t(&seq, 1);
-#ifdef DEBUG_CRC_MSGS
-      req->b.crc = 0;
-      req->b.crc = xcrc32((void*) req, reqSize, ~(uint32_t) 0);
-#endif
     }
   }
 #endif
@@ -3824,33 +3815,6 @@ void processRxAmReq(struct perTxCtxInfo_t* tcip) {
                  "CQ rx AM req @ buffer offset %zd, sz %zd, seqId %s",
                  (char*) req - (char*) ofi_iov_reqs[ofi_msg_i].iov_base,
                  cqes[i].len, am_seqIdStr(req));
-
-#if defined(CHPL_COMM_DEBUG) && defined(DEBUG_CRC_MSGS)
-      if (DBG_TEST_MASK(DBG_AM)) {
-        uint32_t sent_crc, rcvd_crc;
-        size_t reqSize;
-        if (op_uses_on_bundle(req->b.op)) {
-          sent_crc = req->xo.hdr.comm.crc;
-          req->xo.hdr.comm.crc = 0;
-          reqSize = req->xo.hdr.comm.argSize;
-        } else {
-          sent_crc = req->b.crc;
-          req->b.crc = 0;
-          reqSize = (req->b.op == am_opGet || req->b.op == am_opPut)
-                    ? sizeof(struct amRequest_RMA_t)
-                    : (req->b.op == am_opAMO)
-                    ? sizeof(struct amRequest_AMO_t)
-                    : (req->b.op == am_opFree)
-                    ? sizeof(struct amRequest_free_t)
-                    : (req->b.op == am_opFree)
-                    ? sizeof(struct amRequest_free_t)
-                    : sizeof(struct amRequest_base_t);
-        }
-        uint32_t rcvd_crc = xcrc32((void*) req, reqSize, ~(uint32_t) 0);
-        CHK_TRUE(rcvd_crc == sent_crc);
-      }
-#endif
-
       DBG_PRINTF(DBG_AM | DBG_AM_RECV,
                  "rx AM req: %s",
                  am_reqStr(chpl_nodeID, req, cqes[i].len));

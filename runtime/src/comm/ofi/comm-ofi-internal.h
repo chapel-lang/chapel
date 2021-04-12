@@ -128,11 +128,6 @@ char* chpl_comm_ofi_dbg_val(const void*, enum fi_datatype);
 
 #define DBG_VAL(pV, typ) chpl_comm_ofi_dbg_val(pV, typ)
 
-//#define DEBUG_CRC_MSGS
-#ifdef DEBUG_CRC_MSGS
-#include <libiberty.h>
-#endif
-
 #else // CHPL_COMM_DEBUG
 
 #define DBG_INIT()
