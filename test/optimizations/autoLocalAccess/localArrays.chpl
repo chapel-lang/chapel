@@ -1,3 +1,9 @@
+// Some of the cases in this test aren't optimized as expected. Creating futures
+// are somewhat difficult for auto aggregation tests, so I am keeping this as a
+// regular test for now.
+// 
+// See: https://github.com/Cray/chapel-private/issues/1897
+
 use LayoutCS;
 
 var thisCalls: atomic int;
