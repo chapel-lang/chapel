@@ -1111,12 +1111,12 @@ module Bytes {
 
         Hello! Hello! Hello!         
   */
-  operator bytes.*(s: bytes, n: integral) {
+  operator *(s: bytes, n: integral) {
     return doMultiply(s, n);
   }
 
   pragma "no doc"
-  operator bytes.*(n: integral, s: bytes) {
+  operator *(n: integral, s: bytes) {
     return doMultiply(s, n);
   }
 
