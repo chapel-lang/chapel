@@ -744,7 +744,7 @@ module Map {
       compilerError('Cannot cast to map with different ',
                     'value type: ', v2:string);
 
-    var result: map(k1, v1, p2) = x;
+    var result: t = x;
     return result;
   }
 
@@ -801,7 +801,7 @@ module Map {
     a or b.
    */
   operator map.+=(ref a: map(?keyType, ?valueType, ?),
-                      b: map(keyType, valueType, ?)) {
+                  b: map(keyType, valueType, ?)) {
     a |= b;
   }
 
@@ -819,7 +819,7 @@ module Map {
      a or b.
    */
   operator map.|=(ref a: map(?keyType, ?valueType, ?),
-                      b: map(keyType, valueType, ?)) {
+                  b: map(keyType, valueType, ?)) {
     // add keys/values from b to a if they weren't already in a
     for k in b do a.add(k, b.getValue(k));
   }
@@ -845,7 +845,7 @@ module Map {
 
   /* Returns a new map containing the keys that are only in a, but not b. */
   operator map.-(a: map(?keyType, ?valueType, ?),
-             b: map(keyType, valueType, ?)) {
+                 b: map(keyType, valueType, ?)) {
     var newMap = new map(keyType, valueType, (a.parSafe || b.parSafe));
 
     for ak in a.keys() {
@@ -859,7 +859,7 @@ module Map {
   /* Sets the left-hand side map to contain the keys that are in the
      left-hand map, but not the right-hand map. */
   operator map.-=(ref a: map(?keyType, ?valueType, ?),
-                      b: map(keyType, valueType, ?)) {
+                  b: map(keyType, valueType, ?)) {
     a._enter(); defer a._leave();
 
     for k in b.keys() {
@@ -889,7 +889,7 @@ module Map {
   /* Sets the left-hand side map to contain the keys that are in either the
      left-hand map or the right-hand map, but not both. */
   operator map.^=(ref a: map(?keyType, ?valueType, ?),
-                      b: map(keyType, valueType, ?)) {
+                  b: map(keyType, valueType, ?)) {
     for k in b.keys() {
       if a.contains(k) then a.remove(k);
       else a.add(k, b.getValue(k));
