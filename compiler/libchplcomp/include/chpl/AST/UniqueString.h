@@ -6,8 +6,6 @@
 #ifndef CHPL_AST_UNIQUE_STRING_H
 #define CHPL_AST_UNIQUE_STRING_H
 
-#include "chpl/Util/bswap.h"
-
 #include <cassert>
 #include <cstring>
 #include <string>

@@ -12,3 +12,4 @@ target_include_directories(libchplcomp PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_subdirectory(AST)
 add_subdirectory(Frontend)
+add_subdirectory(Util)

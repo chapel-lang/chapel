@@ -18,11 +18,9 @@
  * limitations under the License.
  */
 
-// make sure to get the XSI/POSIX.1-2001 strerror_r
-#define _POSIX_C_SOURCE 200112L
-#undef _GNU_SOURCE
-
 #include "chpl/Frontend/Parser.h"
+
+#include "../Util/files.h"
 
 #include "chpl/AST/ErrorMessage.h"
 #include "chpl/AST/Comment.h"
@@ -39,45 +37,6 @@
 namespace chpl {
 
 using namespace ast;
-
-// TODO - move these file routines somewhere else
-
-static std::string my_strerror(int errno_) {
-  char errbuf[256];
-  int rc;
-  errbuf[0] = '\0';
-  rc = strerror_r(errno_, errbuf, sizeof(errbuf));
-  if (rc != 0)
-    strncpy(errbuf, "<unknown error>", sizeof(errbuf));
-  return std::string(errbuf); 
-}
-
-/* Open a file. If the open failed, return nullptr and set errorOut. */
-static FILE* openfile(const char* path, const char* mode,
-                      ErrorMessage& errorOut) {
-  FILE* fp = fopen(path, mode);
-  if (fp == nullptr) {
-    std::string strerr = my_strerror(errno);
-    auto emptyLocation = Location();
-    // set errorOut. NULL will be returned.
-    errorOut = ErrorMessage::build(emptyLocation, "opening %s: %s",
-                                   path, strerr.c_str());
-  }
-
-  return fp;
-}
-/* Close a file. If the close failed, return false and set errorOut. */
-static bool closefile(FILE* fp, const char* path, ErrorMessage& errorOut) {
-  int rc = fclose(fp);
-  if (rc != 0) {
-    std::string strerr = my_strerror(errno);
-    auto emptyLocation = Location();
-    errorOut = ErrorMessage::build(emptyLocation, "closing %s: %s",
-                                   path, strerr.c_str());
-    return false;
-  }
-  return true;
-}
 
 /*owned<Parser> Parser::build(Context* context) {
   return toOwned(new Parser(context));

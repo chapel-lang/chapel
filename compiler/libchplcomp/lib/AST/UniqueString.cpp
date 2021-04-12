@@ -1,3 +1,8 @@
+// include these first since they set some things that
+// are used by system headers.
+#include "../Util/sys_basic.h"
+#include "../Util/bswap.h"
+
 #include "chpl/AST/UniqueString.h"
 
 #include "chpl/AST/Context.h"
