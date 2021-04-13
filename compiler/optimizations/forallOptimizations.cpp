@@ -2384,7 +2384,7 @@ static bool canBeLocalAccess(CallExpr *call) {
 
 static bool isLocalAccess(CallExpr *call) {
   if (CallExpr *baseCall = toCallExpr(call->baseExpr)) {
-    if (baseCall->isNamed(".")) {
+    if (baseCall->isNamedAstr(astrSdot)) {
       if (SymExpr *secondArgSE = toSymExpr(baseCall->get(2))) {
         if (VarSymbol *secondArgSym = toVarSymbol(secondArgSE->symbol())) {
           if (Immediate *imm = secondArgSym->immediate) {
