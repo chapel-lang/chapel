@@ -3,6 +3,7 @@ target_sources(libchplcomp
 
                BaseAST.cpp
                BlockStmt.cpp
+               Builder.cpp
                Comment.cpp
                Context.cpp
                ErroneousExpr.cpp
@@ -10,6 +11,7 @@ target_sources(libchplcomp
                Expr.cpp
                ID.cpp
                Identifier.cpp
+               Stmt.cpp
                UniqueString.cpp
 
               )

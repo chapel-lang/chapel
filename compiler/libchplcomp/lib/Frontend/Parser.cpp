@@ -46,48 +46,43 @@ owned<Parser> Parser::build(Context* context) {
   return toOwned(new Parser(context));
 }
 
-static void updateParseResult(ParserContext* parserContext,
-                              Parser::ParseResult* result) {
+static void updateParseResult(ParserContext* parserContext) {
 
-  // TODO: populate result->locations
+  Builder* builder = parserContext->builder;
 
   // Save the top-level exprs
   if (parserContext->topLevelStatements != nullptr) {
     for (Expr* stmt : *parserContext->topLevelStatements) {
-      result->topLevelExprs.push_back(toOwned(stmt));
+      builder->addToplevelExpr(toOwned(stmt));
     }
     delete parserContext->topLevelStatements;
   }
   // Save any remaining top-level comments
   if (parserContext->comments != nullptr) {
     for (ParserComment parserComment : *parserContext->comments) {
-      result->topLevelExprs.push_back(toOwned(parserComment.comment));
-
-      Location loc = parserContext->convertLocation(parserComment.location);
-      result->locations.push_back(std::make_pair(parserComment.comment, loc));
+      builder->addToplevelExpr(toOwned(parserComment.comment));
     }
     delete parserContext->comments;
   }
-
 
   Context* aCtx = parserContext->context();
   // Save the parse errors
   for (ParserError & parserError : parserContext->errors) {
     // Need to convert the error to a regular ErrorMessage
     Location loc = parserContext->convertLocation(parserError.location);
-    result->parseErrors.push_back(ErrorMessage(loc, parserError.message));
+    builder->addError(ErrorMessage(loc, parserError.message));
   }
 }
 
 
-Parser::ParseResult Parser::parseFile(const char* path) {
-  Parser::ParseResult ret;
-
+Builder::Result Parser::parseFile(const char* path) {
+  auto builder = Builder::build(this->context(), path);
   ErrorMessage fileError;
+
   FILE* fp = openfile(path, "r", fileError);
   if (fp == NULL) {
-    ret.parseErrors.push_back(fileError);
-    return ret;
+    builder->addError(fileError);
+    return builder->result();
   }
 
   // Otherwise, we have successfully openned the file.
@@ -103,8 +98,7 @@ Parser::ParseResult Parser::parseFile(const char* path) {
   yypstate*     parser       = yypstate_new();
   int           parserStatus = YYPUSH_MORE;
   YYLTYPE       yylloc;
-  Builder       builder(this->context());
-  ParserContext parserContext(path, &builder);
+  ParserContext parserContext(path, builder.get());
 
   yylloc.first_line             = 1;
   yylloc.first_column           = 1;
@@ -141,17 +135,19 @@ Parser::ParseResult Parser::parseFile(const char* path) {
   yylex_destroy(parserContext.scanner);
 
   if (closefile(fp, path, fileError)) {
-    ret.parseErrors.push_back(fileError);
-    return ret;
+    builder->addError(fileError);
   }
 
-  // Store errors and collected top-level exprs in the result
-  updateParseResult(&parserContext, &ret);
-  return ret;
+  updateParseResult(&parserContext);
+
+  // compute the result from the builder
+  return builder->result();
 }
 
 
-Parser::ParseResult Parser::parseString(const char* path, const char* str) {
+Builder::Result Parser::parseString(const char* path, const char* str) {
+  auto builder = Builder::build(this->context(), path);
+
   // Set the (global) parser debug state
   if (DEBUG_PARSER)
     yydebug = DEBUG_PARSER;
@@ -162,10 +158,9 @@ Parser::ParseResult Parser::parseString(const char* path, const char* str) {
   YYLTYPE         yylloc;
 
   // State for the parser
-  yypstate*       parser       = yypstate_new();
-  int             parserStatus = YYPUSH_MORE;
-  Builder       builder(this->context());
-  ParserContext parserContext(path, &builder);
+  yypstate*     parser       = yypstate_new();
+  int           parserStatus = YYPUSH_MORE;
+  ParserContext parserContext(path, builder.get());
 
   yylex_init_extra(&parserContext, &parserContext.scanner);
 
@@ -202,10 +197,9 @@ Parser::ParseResult Parser::parseString(const char* path, const char* str) {
   yy_delete_buffer(handle, parserContext.scanner);
   yylex_destroy(parserContext.scanner);
 
-  Parser::ParseResult ret;
-  // Store errors and collected top-level exprs in the result
-  updateParseResult(&parserContext, &ret);
-  return ret;
+  updateParseResult(&parserContext);
+
+  return builder->result();
 }
 
 } // namespace chpl

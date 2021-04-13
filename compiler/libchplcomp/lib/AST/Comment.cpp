@@ -1,20 +1,20 @@
 #include "chpl/AST/Comment.h"
 
+#include "chpl/AST/Builder.h"
+
 #include <cstdlib>
 
 namespace chpl {
 namespace ast {
 
-Comment::Comment(const char* comment, long size)
- : Expr(asttags::Comment), comment_(comment), size_(size) {
+Comment::Comment(std::string s)
+ : Expr(asttags::Comment), comment_(std::move(s)) {
 }
 
-Comment::~Comment() {
-  free((void*)comment_);
-}
-
-owned<Comment> Comment::build(Builder* builder, const char* data, long size) {
-  return toOwned(new Comment(data, size));
+owned<Comment> Comment::build(Builder* builder, Location loc, std::string c) {
+  Comment* ret = new Comment(std::move(c));
+  builder->noteLocation(ret, loc);
+  return toOwned(ret);
 }
 
 } // namespace ast

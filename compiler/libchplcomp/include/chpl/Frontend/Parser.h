@@ -2,6 +2,7 @@
 #define CHPL_FRONTEND_PARSER_H
 
 #include "chpl/AST/BaseAST.h"
+#include "chpl/AST/Builder.h"
 #include "chpl/AST/Expr.h"
 #include "chpl/AST/ErrorMessage.h"
 #include "chpl/AST/Location.h"
@@ -44,12 +45,12 @@ class Parser final {
    /**
      Parse a file at a particular path.
     */
-   ParseResult parseFile(const char* path);
+   ast::Builder::Result parseFile(const char* path);
    /**
      Parse source code in a string.
      'path' is only used for certain errors.
     */
-   ParseResult parseString(const char* path, const char* str);
+   ast::Builder::Result parseString(const char* path, const char* str);
 };
 
 } // end namespace chpl

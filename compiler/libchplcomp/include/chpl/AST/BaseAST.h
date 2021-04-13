@@ -65,6 +65,8 @@ class BaseAST {
  protected:
   BaseAST(asttags::ASTTag tag);
   BaseAST(asttags::ASTTag tag, ExprList children);
+  // called by the Builder
+  void setID(ID id) { id_ = id; }
 
  public:
   virtual ~BaseAST() = 0; // this is an abstract base class

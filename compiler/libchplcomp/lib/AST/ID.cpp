@@ -7,6 +7,12 @@ ID::ID()
   : symbolPath_(), postOrderId_(-1), numContainedIds_(0) {
 }
 
+ID::ID(UniqueString symbolPath, int postOrderId, int numContainedIds)
+  : symbolPath_(symbolPath),
+    postOrderId_(postOrderId),
+    numContainedIds_(numContainedIds) {
+}
+
 // Returns 'true' if this symbol contains another AST node.
 bool ID::contains(const ID other) const {
   UniqueString thisPath = this->symbolPath();

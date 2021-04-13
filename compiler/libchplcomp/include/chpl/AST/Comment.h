@@ -2,7 +2,9 @@
 #define CHPL_AST_COMMENT_H
 
 #include "chpl/AST/Expr.h"
-#include "chpl/AST/UniqueString.h"
+#include "chpl/AST/Location.h"
+
+#include <string>
 
 namespace chpl {
 namespace ast {
@@ -19,16 +21,15 @@ class Comment final : public Expr {
  friend class Builder;
 
  private:
-  Comment(const char* comment, long size);
-  const char* comment_; // not a unique string; allocated here
-  long size_;
+  Comment(std::string s);
+
+  std::string comment_;
 
  public:
-  ~Comment() override;
-  /** takes ownership of the data pointer - this class will free it */
-  static owned<Comment> build(Builder* builder, const char* data, long size);
-  const char* comment() const { return comment_; }
-  long size() const { return size_; }
+  ~Comment() override = default;
+  static owned<Comment> build(Builder* builder, Location loc, std::string c);
+  const char* c_str() const { return comment_.c_str(); }
+  const std::string& str() const { return comment_; }
 };
 
 } // end namespace ast

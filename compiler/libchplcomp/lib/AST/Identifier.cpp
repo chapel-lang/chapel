@@ -9,8 +9,11 @@ Identifier::Identifier(UniqueString name)
   : Expr(asttags::Identifier), name_(name) {
 }
 
-owned<Identifier> Identifier::build(Builder* builder, UniqueString name) {
-  return toOwned(new Identifier(name));
+owned<Identifier> Identifier::build(Builder* builder,
+                                    Location loc, UniqueString name) {
+  Identifier* ret = new Identifier(name);
+  builder->noteLocation(ret, loc);
+  return toOwned(ret);
 }
 
 } // namespace ast

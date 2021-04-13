@@ -36,8 +36,9 @@ static ErroneousExpr* raiseError(YYLTYPE location,
                                  const char* errorMessage) {
   // note the error for printing
   yyerror(&location, context, errorMessage);
+  Location ll = context->convertLocation(location);
   // return an error sentinel
-  return ErroneousExpr::build(context->builder).release();
+  return ErroneousExpr::build(context->builder, ll).release();
 }
 
 // these helpers can be used in the semantic actions
@@ -46,6 +47,7 @@ static ErroneousExpr* raiseError(YYLTYPE location,
 #define ENDSTMT() context->clearComments();
 
 #define STR(s) PODUniqueString::build(context->context(), s)
+#define LOC(loc) context->convertLocation(loc)
 
 // ERROR creates an error and returns an error sentinel Expr
 #define ERROR(LOC,MSG) raiseError(LOC, context, MSG)

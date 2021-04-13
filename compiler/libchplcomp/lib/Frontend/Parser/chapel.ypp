@@ -30,6 +30,14 @@
 // The rules are listed in depth-first order from stmt and expr
 //
 
+// A note about parser actions:
+//
+//  $1 $2 etc refer to the result of the components of the nonterminal
+//        (and midrule actions count for these numbers)
+//  $$ is the result of this nonterminal
+//  @1 @2 etc refer to the locations
+//  @$ is the location of the entire construct
+
 // A note about memory management within the parser:
 //
 //  Several grammar rules produce an allocated type (e.g. Expr*
@@ -654,7 +662,7 @@ stmt:
 | TYIELD expr TSEMI         { $$ = context->finishStmt(TODOSTMT(@$)); }
 | error TSEMI
   {
-    $$ = STMT(@$, ErroneousExpr::build(BUILDER));
+    $$ = STMT(@$, ErroneousExpr::build(BUILDER, LOC(@1)));
   }
 ;
 
@@ -673,7 +681,8 @@ module_decl_stmt:
     { $$ = TODOSTMT(@$); }
 | module_decl_start TLCBR error TRCBR
     {
-      ParserExprList* errList = context->makeList(ErroneousExpr::build(BUILDER));
+      ParserExprList* errList = nullptr;
+      errList = context->makeList(ErroneousExpr::build(BUILDER, LOC(@3)));
       $$ = TODOSTMT(@$); // should be a module containing errList
     }
 ;
@@ -716,7 +725,7 @@ block_stmt:
     // add also any comments appearing after all statements
     // and before the closing close bracket.
     context->appendList(lst, context->gatherComments(@2));
-    auto blockstmt = BlockStmt::build(BUILDER, context->consumeList(lst));
+    auto blockstmt = BlockStmt::build(BUILDER, LOC(@$), context->consumeList(lst));
     cs.stmt = blockstmt.release();
     $$ = cs;
   }
@@ -738,7 +747,7 @@ block_stmt:
     cs.comments = context->gatherCommentsFromList(lst, @1);;
 
     // create the BlockStmt
-    auto blockstmt = BlockStmt::build(BUILDER, context->consumeList(lst));
+    auto blockstmt = BlockStmt::build(BUILDER, LOC(@$), context->consumeList(lst));
     cs.stmt = blockstmt.release();
     $$ = cs;
   }
@@ -747,9 +756,9 @@ block_stmt:
     // gather the comments before the opening bracket
     CommentsAndStmt cs = STMT(@1, nullptr);
     // create a list of stmts that just has an ErroneousExpr
-    ParserExprList* lst = context->makeList(ErroneousExpr::build(BUILDER));
+    ParserExprList* lst = context->makeList(ErroneousExpr::build(BUILDER, LOC(@2)));
     // create the BlockStmt
-    auto blockstmt = BlockStmt::build(BUILDER, context->consumeList(lst));
+    auto blockstmt = BlockStmt::build(BUILDER, LOC(@$), context->consumeList(lst));
     cs.stmt = blockstmt.release();
     $$ = cs;
   }
@@ -804,7 +813,7 @@ use_renames_ls:
 | expr TAS TUNDERSCORE
     {
       $$ = new RenameList();
-      PotentialRename cur($1, Identifier::build(BUILDER, STR("_")));
+      PotentialRename cur($1, Identifier::build(BUILDER, LOC(@3), STR("_")));
       $$->push_back(cur);
     }
 | use_renames_ls TCOMMA expr
@@ -819,7 +828,7 @@ use_renames_ls:
      }
 | use_renames_ls TCOMMA expr TAS TUNDERSCORE
      {
-       PotentialRename cur($3, Identifier::build(BUILDER, STR("_")));
+       PotentialRename cur($3, Identifier::build(BUILDER, LOC(@5), STR("_")));
        $1->push_back(cur);
      }
 ;
@@ -829,7 +838,7 @@ opt_only_ls:
   /* nothing */
     {
       $$ = new RenameList();
-      PotentialRename cur(Identifier::build(BUILDER, STR("")));
+      PotentialRename cur(Identifier::build(BUILDER, LOC(@$), STR("")));
       $$->push_back(cur);
     }
 | renames_ls
@@ -839,7 +848,7 @@ except_ls:
   TSTAR
     {
       $$ = new RenameList();
-      PotentialRename cur(Identifier::build(BUILDER, STR("")));
+      PotentialRename cur(Identifier::build(BUILDER, LOC(@1), STR("")));
       $$->push_back(cur);
      }
 | renames_ls
@@ -1541,7 +1550,7 @@ enum_decl_stmt:
     {
       CommentsAndStmt cs = $1;
       if (cs.stmt) delete cs.stmt;
-      cs.stmt = ErroneousExpr::build(BUILDER).release();
+      cs.stmt = ErroneousExpr::build(BUILDER, LOC(@3)).release();
       $$ = cs;
     }
 ;
@@ -1964,8 +1973,8 @@ opt_ret_type:
                                  { $$ = nullptr; }
 | TCOLON type_level_expr         { $$ = $2; }
 | TCOLON ret_array_type          { $$ = $2; }
-| TCOLON reserved_type_ident_use { $$ = Identifier::build(BUILDER, $2).release(); }
-| error                          { $$ = ErroneousExpr::build(BUILDER).release(); }
+| TCOLON reserved_type_ident_use { $$ = Identifier::build(BUILDER, LOC(@2), $2).release(); }
+| error                          { $$ = ErroneousExpr::build(BUILDER, LOC(@1)).release(); }
 ;
 
 
@@ -1973,8 +1982,8 @@ opt_type:
                                  { $$ = nullptr; }
 | TCOLON type_level_expr         { $$ = $2; }
 | TCOLON array_type              { $$ = $2; }
-| TCOLON reserved_type_ident_use { $$ = Identifier::build(BUILDER, $2).release(); }
-| error                          { $$ = ErroneousExpr::build(BUILDER).release(); }
+| TCOLON reserved_type_ident_use { $$ = Identifier::build(BUILDER, LOC(@2), $2).release(); }
+| error                          { $$ = ErroneousExpr::build(BUILDER, LOC(@1)).release(); }
 ;
 
 /* NOTE: Some things about the following rule concern me (blc), but I
@@ -2008,7 +2017,7 @@ array_type:
     }
 | TLSBR error TRSBR
     {
-      $$ = ErroneousExpr::build(BUILDER).release();
+      $$ = ErroneousExpr::build(BUILDER, LOC(@2)).release();
     }
 ;
 
@@ -2039,7 +2048,7 @@ opt_formal_type:
                                  { $$ = nullptr; }
 | TCOLON type_level_expr         { $$ = $2; }
 | TCOLON query_expr              { $$ = $2; }
-| TCOLON reserved_type_ident_use { $$ = Identifier::build(BUILDER, $2).release(); }
+| TCOLON reserved_type_ident_use { $$ = Identifier::build(BUILDER, LOC(@2), $2).release(); }
 | TCOLON formal_array_type       { $$ = $2; }
 ;
 
@@ -2058,7 +2067,7 @@ simple_expr_ls:
 ;
 
 tuple_component:
-  TUNDERSCORE   { $$ = Identifier::build(BUILDER, STR("_")).release(); }
+  TUNDERSCORE   { $$ = Identifier::build(BUILDER, LOC(@1), STR("_")).release(); }
 | opt_try_expr  { $$ = $1; }
 | query_expr    { $$ = $1; }
 ;
@@ -2086,7 +2095,7 @@ actual_expr:
 ;
 
 ident_expr:
-  ident_use      { $$ = Identifier::build(BUILDER, $1).release(); }
+  ident_use      { $$ = Identifier::build(BUILDER, LOC(@1), $1).release(); }
 | scalar_type    { $$ = $1; }
 ;
 
@@ -2199,7 +2208,7 @@ cond_expr:
 ;
 
 nil_expr:
-  TNIL      { $$ = Identifier::build(BUILDER, STR("nil")).release(); }
+  TNIL      { $$ = Identifier::build(BUILDER, LOC(@1), STR("nil")).release(); }
 ;
 
 /* Expressions permitted at the statement level as <stmt_level_expr> TSEMI.

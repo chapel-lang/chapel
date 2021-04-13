@@ -2,6 +2,7 @@
 #define CHPL_AST_IDENTIFIER_H
 
 #include "chpl/AST/Expr.h"
+#include "chpl/AST/Location.h"
 #include "chpl/AST/UniqueString.h"
 
 namespace chpl {
@@ -28,7 +29,7 @@ class Identifier final : public Expr {
   UniqueString name_;
  public:
   ~Identifier() override = default;
-  static owned<Identifier> build(Builder* builder, UniqueString name);
+  static owned<Identifier> build(Builder* builder, Location loc, UniqueString name);
   UniqueString name() const { return name_; }
 };
 

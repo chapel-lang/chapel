@@ -77,7 +77,9 @@ void ParserContext::noteComment(YYLTYPE loc, const char* data, long size) {
   }
   ParserComment c;
   c.location = loc;
-  auto comment = Comment::build(this->builder, data, size);
+  Location ll = this->convertLocation(loc);
+  auto comment = Comment::build(this->builder, ll, std::string(data, size));
+  free((void*)data);
   c.comment = comment.release();
   this->comments->push_back(c);
 }

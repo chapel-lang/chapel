@@ -24,32 +24,53 @@ class ID final {
   // this node?
   int numContainedIds_;
  public:
+  /**
+    Construct an empty ID
+   */
   ID();
-  // Return a path to the symbol (or, for an expression, the parent symbol)
+  /**
+    Construct an ID with a symbol path and postorder traversal number
+   */
+  ID(UniqueString symbolPath, int postOrderId, int numContainedIds);
+  /**
+    Return a path to the symbol (or, for an expression, the parent symbol)
+   */
   UniqueString symbolPath() const { return symbolPath_; }
-  // Returns the numbering of this node in a postorder traversal
-  // of a symbol's nodes. This number is not normally relevant
-  // when the AST in question is a symbol.
+  /**
+    Returns the numbering of this node in a postorder traversal
+    of a symbol's nodes. This number is not normally relevant
+    when the AST in question is a symbol.
+   */
   int postOrderId() const { return postOrderId_; }
-  // Return the number of ids contained in this node. In the postorder
-  // traversal numbering, the ids contained appear before the node.
-  //
-  // The node with postorder traversal ID 
-  //   postOrderId(Node) - numContainedIds()
-  // is the first node contained within this node.
+  /**
+    Return the number of ids contained in this node. In the postorder
+    traversal numbering, the ids contained appear before the node.
 
-  // E.g. in this notional AST:
-  //   Node(LeafA LeafB)  
-  //
-  //   LeafA has id 0 and numContainedIds 0
-  //   LeafB has id 1 and numContainedIds 0
-  //   Node  has id 2 and numContainedIds 2
+    The node with postorder traversal ID
+      postOrderId(Node) - numContainedIds()
+    is the first node contained within this node.
+
+    E.g. in this notional AST:
+      Node(LeafA LeafB)
+
+      LeafA has id 0 and numContainedIds 0
+      LeafB has id 1 and numContainedIds 0
+      Node  has id 2 and numContainedIds 2
+   */
   int numContainedIds() const { return numContainedIds_; }
 
-  // returns 'true' if the AST node with this ID contains the AST
-  // node with the other ID.
+  /**
+    returns 'true' if the AST node with this ID contains the AST
+    node with the other ID.
+   */
   bool contains(const ID other) const;
 
+  /**
+    compare this ID with another ID
+      result  < 0 if this < other
+      result == 0 if this == other
+      result  > 0 if this > other
+   */
   int compare(const ID other) const;
 };
 

@@ -5,13 +5,19 @@
 namespace chpl {
 namespace ast {
 
+
 BlockStmt::BlockStmt(ExprList stmts) :
-  Expr(asttags::BlockStmt, std::move(stmts)) {
+  Stmt(asttags::BlockStmt, std::move(stmts)) {
 }
 
-owned<BlockStmt> BlockStmt::build(Builder* builder, ExprList stmts) {
-  return toOwned(new BlockStmt(std::move(stmts)));
+owned<BlockStmt> BlockStmt::build(Builder* builder,
+                                  Location loc,
+                                  ExprList stmts) {
+  BlockStmt* ret = new BlockStmt(std::move(stmts));
+  builder->noteLocation(ret, loc);
+  return toOwned(ret);
 }
+
 
 } // namespace ast
 } // namespace chpl

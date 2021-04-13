@@ -18,14 +18,14 @@ using namespace ast;
 static void test0(Parser* parser) {
   auto parseResult = parser->parseString("<test>", "");
   assert(parseResult.topLevelExprs.size() == 0);
-  assert(parseResult.parseErrors.size() == 0);
+  assert(parseResult.errors.size() == 0);
 }
 
 static void test1(Parser* parser) {
   auto parseResult = parser->parseString("<test>", "x;");
   assert(parseResult.topLevelExprs.size() == 1);
   assert(parseResult.topLevelExprs[0]->isIdentifier());
-  assert(parseResult.parseErrors.size() == 0);
+  assert(parseResult.errors.size() == 0);
 }
 
 static void test2(Parser* parser) {
@@ -33,7 +33,7 @@ static void test2(Parser* parser) {
   assert(parseResult.topLevelExprs.size() == 2);
   assert(parseResult.topLevelExprs[0]->isIdentifier());
   assert(parseResult.topLevelExprs[1]->isIdentifier());
-  assert(parseResult.parseErrors.size() == 0);
+  assert(parseResult.errors.size() == 0);
 }
 
 static void test3(Parser* parser) {
@@ -41,7 +41,7 @@ static void test3(Parser* parser) {
   assert(parseResult.topLevelExprs.size() == 2);
   assert(parseResult.topLevelExprs[0]->isComment());
   assert(parseResult.topLevelExprs[1]->isIdentifier());
-  assert(parseResult.parseErrors.size() == 0);
+  assert(parseResult.errors.size() == 0);
 }
 
 static void test4(Parser* parser) {
@@ -50,7 +50,7 @@ static void test4(Parser* parser) {
   assert(parseResult.topLevelExprs[0]->isComment());
   assert(parseResult.topLevelExprs[1]->isIdentifier());
   assert(parseResult.topLevelExprs[2]->isComment());
-  assert(parseResult.parseErrors.size() == 0);
+  assert(parseResult.errors.size() == 0);
 }
 
 static void test5(Parser* parser) {
@@ -62,7 +62,7 @@ static void test5(Parser* parser) {
   assert(parseResult.topLevelExprs[0]->isComment());
   assert(parseResult.topLevelExprs[1]->isIdentifier());
   assert(parseResult.topLevelExprs[2]->isComment());
-  assert(parseResult.parseErrors.size() == 0);
+  assert(parseResult.errors.size() == 0);
 }
 
 static void test6(Parser* parser) { 
@@ -70,7 +70,7 @@ static void test6(Parser* parser) {
                                          "{ }");
   assert(parseResult.topLevelExprs.size() == 1);
   assert(parseResult.topLevelExprs[0]->isBlockStmt());
-  assert(parseResult.parseErrors.size() == 0);
+  assert(parseResult.errors.size() == 0);
 }
 
 static void test7(Parser* parser) {
@@ -78,7 +78,7 @@ static void test7(Parser* parser) {
                                          "{ a; }");
   assert(parseResult.topLevelExprs.size() == 1);
   assert(parseResult.topLevelExprs[0]->isBlockStmt());
-  assert(parseResult.parseErrors.size() == 0);
+  assert(parseResult.errors.size() == 0);
   BlockStmt* block = parseResult.topLevelExprs[0]->toBlockStmt();
   assert(block->numStmts()==1);
   assert(block->stmt(0)->isIdentifier());
@@ -88,7 +88,7 @@ static void test8(Parser* parser) {
   auto parseResult = parser->parseString("<test>", "aVeryLongIdentifierName;");
   assert(parseResult.topLevelExprs.size() == 1);
   assert(parseResult.topLevelExprs[0]->isIdentifier());
-  assert(parseResult.parseErrors.size() == 0);
+  assert(parseResult.errors.size() == 0);
 }
 
 static void test9(Parser* parser) {
@@ -96,7 +96,7 @@ static void test9(Parser* parser) {
                                          "{ /* this is a comment */ }");
   assert(parseResult.topLevelExprs.size() == 1);
   assert(parseResult.topLevelExprs[0]->isBlockStmt());
-  assert(parseResult.parseErrors.size() == 0);
+  assert(parseResult.errors.size() == 0);
   BlockStmt* block = parseResult.topLevelExprs[0]->toBlockStmt();
   assert(block->numStmts()==1);
   assert(block->stmt(0)->isComment());
@@ -111,7 +111,7 @@ static void test10(Parser* parser) {
                                          "}\n");
   assert(parseResult.topLevelExprs.size() == 1);
   assert(parseResult.topLevelExprs[0]->isBlockStmt());
-  assert(parseResult.parseErrors.size() == 0);
+  assert(parseResult.errors.size() == 0);
   BlockStmt* block = parseResult.topLevelExprs[0]->toBlockStmt();
   assert(block->numStmts()==3);
   assert(block->stmt(0)->isComment());
@@ -133,7 +133,7 @@ static void test11(Parser* parser) {
   assert(parseResult.topLevelExprs[0]->isComment());
   assert(parseResult.topLevelExprs[1]->isBlockStmt());
   assert(parseResult.topLevelExprs[2]->isComment());
-  assert(parseResult.parseErrors.size() == 0);
+  assert(parseResult.errors.size() == 0);
   BlockStmt* block = parseResult.topLevelExprs[1]->toBlockStmt();
   assert(block->numStmts()==3);
   assert(block->stmt(0)->isComment());
@@ -160,7 +160,7 @@ static void test12(Parser* parser) {
   assert(parseResult.topLevelExprs[2]->isBlockStmt());
   assert(parseResult.topLevelExprs[3]->isComment());
   assert(parseResult.topLevelExprs[4]->isComment());
-  assert(parseResult.parseErrors.size() == 0);
+  assert(parseResult.errors.size() == 0);
   BlockStmt* block = parseResult.topLevelExprs[2]->toBlockStmt();
   assert(block->numStmts()==5);
   assert(block->stmt(0)->isComment());

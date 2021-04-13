@@ -2,6 +2,7 @@
 #define CHPL_AST_ERRONEOUSEXPR_H
 
 #include "chpl/AST/Expr.h"
+#include "chpl/AST/Location.h"
 
 namespace chpl {
 namespace ast {
@@ -15,7 +16,7 @@ class ErroneousExpr final : public Expr {
 
  public:
   ~ErroneousExpr() = default;
-  static owned<ErroneousExpr> build(Builder* builder);
+  static owned<ErroneousExpr> build(Builder* builder, Location loc);
 };
 
 } // end namespace ast
