@@ -23,6 +23,7 @@
 #include "astutil.h"
 #include "build.h"
 #include "ForallStmt.h"
+#include "LoopExpr.h"
 #include "LoopStmt.h"
 #include "passes.h"
 #include "preFold.h"
@@ -79,7 +80,7 @@ static Symbol *getDotDomBaseSym(Expr *expr);
 static Expr *getDomExprFromTypeExprOrQuery(Expr *e);
 static Symbol *getDomSym(Symbol *arrSym);
 static Symbol *getDomSymFromDomExpr(Expr *domExpr, bool allowQuery);
-static Stmt *getLocalityDominator(CallExpr* ce);
+static Expr *getLocalityDominator(CallExpr* ce);
 static bool isSubIndexAssignment(Expr *expr,
                                  Symbol *subIndex,
                                  int indexIndex,
@@ -736,7 +737,7 @@ static Symbol *getDomSym(Symbol *arrSym) {
 }
 
 // Return the closest parent of `ce` that can impact locality (forall or on)
-static Stmt *getLocalityDominator(CallExpr* ce) {
+static Expr *getLocalityDominator(CallExpr* ce) {
   Expr *cur = ce->parentExpr;
   while (cur != NULL) {
     if (BlockStmt *block = toBlockStmt(cur)) {
@@ -744,6 +745,13 @@ static Stmt *getLocalityDominator(CallExpr* ce) {
         return block;
       }
     }
+    
+    if (LoopExpr *loop = toLoopExpr(cur)) {
+      if (loop->forall) {
+        return loop;
+      }
+    }
+
     if (ForallStmt *forall = toForallStmt(cur)) {
       return forall;
     }
