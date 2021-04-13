@@ -733,7 +733,7 @@ module Map {
   }
 
   pragma "no doc"
-  operator :(x: map(?k1, ?v1, ?p1), type t: map(?k2, ?v2, ?p2)) {
+  operator map.:(x: map(?k1, ?v1, ?p1), type t: map(?k2, ?v2, ?p2)) {
     // TODO: Allow coercion between element types? If we do then init=
     // should also be changed accordingly.
     if k1 != k2 then
