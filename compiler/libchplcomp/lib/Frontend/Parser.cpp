@@ -38,9 +38,13 @@ namespace chpl {
 
 using namespace ast;
 
-/*owned<Parser> Parser::build(Context* context) {
+Parser::Parser(ast::Context* context)
+  : context_(context) {
+}
+
+owned<Parser> Parser::build(Context* context) {
   return toOwned(new Parser(context));
-}*/
+}
 
 static void updateParseResult(ParserContext* parserContext,
                               Parser::ParseResult* result) {
@@ -62,7 +66,7 @@ static void updateParseResult(ParserContext* parserContext,
   }
 
 
-  Context* aCtx = parserContext->astContext;
+  Context* aCtx = parserContext->context();
   // Save the parse errors
   for (ParserError & parserError : parserContext->errors) {
     // Need to convert the error to a regular ErrorMessage

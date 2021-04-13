@@ -13,10 +13,18 @@
 target_sources(libchplcomp
                PRIVATE
 
+               # these are generated
                bison-chapel.cpp
                bison-chapel.h
                flex-chapel.cpp
+               flex-chapel.h
 
+               # these are included from the generated files
+               lexer-help.h
+               parser-help.h
+               ParserContext.h
+               ParserContextImpl.h
+               ParserDependencies.h
               )
 
 add_custom_target(parser

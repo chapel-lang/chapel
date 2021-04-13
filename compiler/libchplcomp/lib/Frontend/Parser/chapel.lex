@@ -322,4 +322,4 @@ zip              return processToken(yyscanner, TZIP);
 
 %%
 
-#include "lexer-help.cpp"
+#include "lexer-help.h"

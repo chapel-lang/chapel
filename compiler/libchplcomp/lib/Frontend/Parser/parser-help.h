@@ -39,3 +39,18 @@ static ErroneousExpr* raiseError(YYLTYPE location,
   // return an error sentinel
   return ErroneousExpr::build(context->builder).release();
 }
+
+// these helpers can be used in the semantic actions
+#define BUILDER (context->builder)
+#define STMT(LOC,AST) makeCommentsAndStmt(context->gatherComments(LOC), AST)
+#define ENDSTMT() context->clearComments();
+
+#define STR(s) PODUniqueString::build(context->context(), s)
+
+// ERROR creates an error and returns an error sentinel Expr
+#define ERROR(LOC,MSG) raiseError(LOC, context, MSG)
+
+#define TODOEXPR(LOC) raiseError(LOC, context, "not implemented yet")
+#define TODOSTMT(LOC) makeCommentsAndStmt(context->gatherComments(LOC), raiseError(LOC, context, "not implemented yet"))
+#define TODOLIST(LOC) context->makeList(raiseError(LOC, context, "not implemented yet"))
+

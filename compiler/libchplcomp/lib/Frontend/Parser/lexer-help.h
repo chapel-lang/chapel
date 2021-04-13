@@ -58,7 +58,7 @@ static int processIdentifier(yyscan_t scanner, bool queried) {
 
   const char* pch = yyget_text(scanner);
   ParserContext* context = yyget_extra(scanner);
-  val->uniqueStr = PODUniqueString::build(context->astContext, pch);
+  val->uniqueStr = PODUniqueString::build(context->context(), pch);
 
   return retval;
 }
@@ -71,7 +71,7 @@ static int processToken(yyscan_t scanner, int t) {
   updateLocation(loc, 0, strlen(pch));
 
   ParserContext* context = yyget_extra(scanner);
-  val->uniqueStr = PODUniqueString::build(context->astContext, pch);
+  val->uniqueStr = PODUniqueString::build(context->context(), pch);
 
   // If the stack has a value then we must be in externmode.
   // Return to INITIAL

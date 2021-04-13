@@ -30,7 +30,6 @@ struct ParserContext {
   yyscan_t scanner;
   const char* filename;
   Builder* builder;
-  Context* astContext;
 
   // TODO: move these to the astContext
   std::vector<UniqueString> currentModuleStack;
@@ -57,6 +56,8 @@ struct ParserContext {
     this->comments           = nullptr;
     this->visibility         = VisibilityTag_DEFAULT;
   }
+
+  Context* context() { return builder->context(); }
 
   void noteComment(YYLTYPE loc, const char* data, long size);
   std::vector<ParserComment>* gatherComments(YYLTYPE location);

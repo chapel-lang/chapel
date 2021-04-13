@@ -1,5 +1,7 @@
 #include "chpl/AST/Comment.h"
 
+#include <cstdlib>
+
 namespace chpl {
 namespace ast {
 
@@ -8,7 +10,7 @@ Comment::Comment(const char* comment, long size)
 }
 
 Comment::~Comment() {
-  delete comment_;
+  free((void*)comment_);
 }
 
 owned<Comment> Comment::build(Builder* builder, const char* data, long size) {

@@ -76,6 +76,66 @@ void testPerformance(Context* ctx, const char* inputFile, bool printTiming) {
   }
 }
 
+void test0() {
+  auto context = Context::build();
+  Context* ctx = context.get();
+
+  // First, add some strings to the map and make sure we get uniqueness.
+  // needs to be long enough to require strdup etc.
+  #define TEST1STRING "this is a very very very long string"
+  std::string test1 = TEST1STRING;
+  std::string test1Copy = test1;
+  assert(test1.c_str() != test1Copy.c_str());
+  const char* t1 = ctx->uniqueCString(test1);
+  const char* t2 = ctx->uniqueCString(test1Copy);
+  const char* t3 = ctx->uniqueCString(TEST1STRING);
+  assert(t1 == t2);
+  assert(t2 == t3);
+
+  // this string is short enough to be inlined
+  std::string hello = "hello";
+  const char* h1 = ctx->uniqueCString("hello");
+  const char* h2 = ctx->uniqueCString(hello);
+  assert(h1 == h2);
+
+  // check that uniqueString(NULL) == uniqueString("")
+  assert(ctx->uniqueCString(nullptr) == ctx->uniqueCString(""));
+
+  const char* x = ctx->uniqueCString("aVeryLongIdentifierName");
+}
+
+
+void test1() {
+  auto context = Context::build();
+  Context* ctx = context.get();
+
+  // First, add some strings to the map and make sure we get uniqueness.
+  // needs to be long enough to require strdup etc.
+  #define TEST1STRING "this is a very very very long string"
+  std::string test1 = TEST1STRING;
+  std::string test1Copy = test1;
+  assert(test1.c_str() != test1Copy.c_str());
+  UniqueString t1 = UniqueString::build(ctx, test1);
+  UniqueString t2 = UniqueString::build(ctx, test1Copy);
+  UniqueString t3 = UniqueString::build(ctx, TEST1STRING);
+  assert(t1.c_str() == t2.c_str());
+  assert(t2.c_str() == t3.c_str());
+
+  // this string is short enough to be inlined
+  std::string hello = "hello";
+  UniqueString h1 = UniqueString::build(ctx, "hello");
+  UniqueString h2 = UniqueString::build(ctx, hello);
+  assert(h1 == h2);
+
+  // check that uniqueString(NULL) == uniqueString("")
+  assert(UniqueString::build(ctx, NULL) == UniqueString::build(ctx, ""));
+
+  // check that default-constructed unique string matches one from ""
+  UniqueString empty;
+  assert(empty == UniqueString::build(ctx, ""));
+}
+
+
 int main(int argc, char** argv) {
   const char* inputFile = "moby.txt";
   int repeat = 10;
@@ -88,36 +148,13 @@ int main(int argc, char** argv) {
       inputFile = argv[i];
   }
 
-  Context ctx;
+  test0();
+  test1();
 
-  // First, add some strings to the map and make sure we get uniqueness.
-  {
-    // needs to be long enough to require strdup etc.
-    #define TEST1STRING "this is a very very very long string"
-    std::string test1 = TEST1STRING;
-    std::string test1Copy = test1;
-    assert(test1.c_str() != test1Copy.c_str());
-    UniqueString t1 = UniqueString::build(&ctx, test1);
-    UniqueString t2 = UniqueString::build(&ctx, test1Copy);
-    UniqueString t3 = UniqueString::build(&ctx, TEST1STRING);
-    assert(t1.c_str() == t2.c_str());
-    assert(t2.c_str() == t3.c_str());
-
-    // this string is short enough to be inlined
-    std::string hello = "hello";
-    UniqueString h1 = UniqueString::build(&ctx, "hello");
-    UniqueString h2 = UniqueString::build(&ctx, hello);
-    assert(h1 == h2);
-
-    // check that uniqueString(NULL) == uniqueString("")
-    assert(UniqueString::build(&ctx, NULL) == UniqueString::build(&ctx, ""));
-
-    // check that default-constructed unique string matches one from ""
-    UniqueString empty;
-    assert(empty == UniqueString::build(&ctx, ""));
-  }
+  auto context = Context::build();
+  Context* ctx = context.get();
 
   // Next, measure performance
-  testPerformance(&ctx, inputFile, printTiming);
+  testPerformance(ctx, inputFile, printTiming);
   return 0;
 }

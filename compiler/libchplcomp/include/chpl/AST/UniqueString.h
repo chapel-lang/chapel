@@ -45,8 +45,17 @@ namespace detail {
 //   Yes, by about 5-10% in testUniqueString.cpp
 //   It might be more than that when the string references are
 //   not recently used.
+
+extern const char* emptyString;
+
 struct InlinedString {
-  const char* v;
+
+  // This union is only used to make the debugger output more reasonable.
+  // All reads/writes here go through the 'v' variable.
+  union {
+    const char* v;
+    char data[sizeof(const char*)];
+  };
 
   enum {
     INLINE_TAG=0xbb, // could be any odd value
@@ -68,6 +77,13 @@ struct InlinedString {
     that alignmentIndicatesTag(s)==false.
    */
   static inline InlinedString buildFromAligned(const char* s, int len) {
+    // Store empty strings as nullptr
+    if (s == nullptr || len == 0) {
+      InlinedString ret;
+      ret.v = nullptr;
+      return ret;
+    }
+
     // Would the tag, null terminator, and data fit?
     if (len <= MAX_SIZE_INLINED) {
       uintptr_t val = INLINE_TAG; // store the tag in the low-order bits, 0s
@@ -108,6 +124,9 @@ struct InlinedString {
     return alignmentIndicatesTag(this->v);
   }
   const char* c_str() const {
+    if (this->v == nullptr) {
+      return emptyString;
+    }
     if (this->isInline()) {
       return dataAssumingTag((void*) &this->v);
     }

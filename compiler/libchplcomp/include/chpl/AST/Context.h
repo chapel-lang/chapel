@@ -1,7 +1,8 @@
 #ifndef CHPL_AST_CONTEXT_H
 #define CHPL_AST_CONTEXT_H
 
-#include "UniqueString.h"
+#include "chpl/AST/memory.h"
+#include "chpl/AST/UniqueString.h"
 
 #include <unordered_map>
 #include <cstring>
@@ -35,14 +36,25 @@ namespace detail {
 class Context {
  private:
   std::unordered_map<const char*, const char*, detail::UniqueStrHash, detail::UniqueStrEqual> uniqueStringsTable;
+  int zero; //just an easy way to check the context is valid for debugging
 
   const char* getOrCreateUniqueString(const char* s);
 
   // Future Work: support marking used strings and garbage collecting the rest
   // Could store an atomic uint_8 just after the string for the mark.
 
- public:
+  // Future Work: make the context thread-safe
+  
+  // Future Work: allow moving some AST to a different context
+  //              (or, at least, that can handle the unique strings)
+
   Context();
+
+ public:
+  /**
+    Create a new AST Context.
+   */
+  static owned<Context> build();
   ~Context();
 
 

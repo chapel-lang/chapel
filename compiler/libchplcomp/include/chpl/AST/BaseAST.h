@@ -3,6 +3,7 @@
 
 #include "chpl/AST/ASTTag.h"
 #include "chpl/AST/ID.h"
+#include "chpl/AST/memory.h"
 
 #include <memory>
 #include <vector>
@@ -30,20 +31,6 @@ namespace ast {
 
 // forward declare other classes
 class Builder;
-
-/**
- owned<T> is just a synonym for 'std::unique_ptr<T>'.
- It is shorter and uses the Chapel term for it.
- */
-template<typename T>
-  using owned = std::unique_ptr<T>;
-/**
- give a raw pointer to an owned<T> to manage it.
- */
-template<typename T>
-static inline owned<T> toOwned(T* takeFrom) {
-  return owned<T>(takeFrom);
-}
 
 /**
  ExprList is just a list that owns some expressions.

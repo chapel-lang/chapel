@@ -5,7 +5,11 @@
 namespace chpl {
 namespace ast {
 
-Context::Context() {
+Context::Context() : uniqueStringsTable(), zero(0) {
+}
+
+owned<Context> Context::build() {
+  return toOwned(new Context());
 }
 
 Context::~Context() {
