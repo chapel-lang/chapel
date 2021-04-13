@@ -1,2 +1,3 @@
 MoveInitializeCopyError.chpl:4: In function 'test1':
-MoveInitializeCopyError.chpl:8: error: cannot call 'moveInitialize' because 'r2' might be used elsewhere
+MoveInitializeCopyError.chpl:8: error: cannot call 'moveInitialize' because this is not the last use of 'r2'
+MoveInitializeCopyError.chpl:11: note: next use of 'r2' is here
