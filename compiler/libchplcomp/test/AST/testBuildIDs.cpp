@@ -25,9 +25,10 @@ void test0() {
   Location emptyLoc;
 
   {
-    auto strA = UniqueString::build(ctx, "a"); 
-    auto strB = UniqueString::build(ctx, "b"); 
-    auto strC = UniqueString::build(ctx, "c"); 
+    // Create the AST for { a; b; c; }
+    auto strA = UniqueString::build(ctx, "a");
+    auto strB = UniqueString::build(ctx, "b");
+    auto strC = UniqueString::build(ctx, "c");
     ExprList children;
 
     children.push_back(Identifier::build(b, emptyLoc, strA));
@@ -37,7 +38,7 @@ void test0() {
     b->addToplevelExpr(std::move(block));
   }
 
-  Builder::Result r = b->result(); 
+  Builder::Result r = b->result();
   assert(r.topLevelExprs.size() == 1);
   assert(r.errors.size() == 0);
   assert(r.locations.size() == 4);
@@ -84,7 +85,66 @@ void test0() {
   assert(block->stmt(1)->id().compare(block->stmt(2)->id()) < 0);
 }
 
+void test1() {
+  auto context = Context::build();
+  Context* ctx = context.get();
+  auto builder = Builder::build(ctx, "path/to/test.chpl");
+  Builder* b   = builder.get();
+  Location emptyLoc;
+
+  {
+    // Create the AST for { a; { } { b; } c; }
+    auto strA = UniqueString::build(ctx, "a");
+    auto strB = UniqueString::build(ctx, "b");
+    auto strC = UniqueString::build(ctx, "c");
+
+    ExprList outer;
+    outer.push_back(Identifier::build(b, emptyLoc, strA));
+    {
+      ExprList empty;
+      outer.push_back(BlockStmt::build(b, emptyLoc, std::move(empty)));
+    }
+    {
+      ExprList block;
+      block.push_back(Identifier::build(b, emptyLoc, strB));
+      outer.push_back(BlockStmt::build(b, emptyLoc, std::move(block)));
+    }
+    outer.push_back(Identifier::build(b, emptyLoc, strC));
+    auto block = BlockStmt::build(b, emptyLoc, std::move(outer));
+    b->addToplevelExpr(std::move(block));
+  }
+
+  Builder::Result r = b->result();
+  assert(r.topLevelExprs.size() == 1);
+  assert(r.errors.size() == 0);
+  assert(r.locations.size() == 6);
+  BlockStmt* outer = r.topLevelExprs[0]->toBlockStmt();
+  assert(outer);
+  assert(outer->numStmts() == 4);
+  assert(outer->stmt(0)->isIdentifier());
+  assert(outer->stmt(1)->isBlockStmt());
+  assert(outer->stmt(2)->isBlockStmt());
+  assert(outer->stmt(3)->isIdentifier());
+  const BlockStmt* empty = outer->stmt(1)->toBlockStmt();
+  assert(empty->numStmts() == 0);
+  const BlockStmt* block = outer->stmt(2)->toBlockStmt();
+  assert(block->numStmts() == 1);
+
+  // now check the IDs
+  assert(outer->stmt(0)->id().postOrderId() == 0);
+  assert(outer->stmt(0)->id().numContainedChildren() == 0);
+  assert(empty->id().postOrderId() == 1);
+  assert(empty->id().numContainedChildren() == 0);
+  assert(block->stmt(0)->id().postOrderId() == 2);
+  assert(block->stmt(0)->id().numContainedChildren() == 0);
+  assert(block->id().postOrderId() == 3);
+  assert(block->id().numContainedChildren() == 1);
+  assert(outer->stmt(3)->id().postOrderId() == 4);
+  assert(outer->stmt(3)->id().numContainedChildren() == 0);
+}
+
 int main(int argc, char** argv) {
   test0();
+  test1();
   return 0;
 }
