@@ -56,6 +56,7 @@ static void updateParseResult(ParserContext* parserContext,
     for (Expr* stmt : *parserContext->topLevelStatements) {
       result->topLevelExprs.push_back(toOwned(stmt));
     }
+    delete parserContext->topLevelStatements;
   }
   // Save any remaining top-level comments
   if (parserContext->comments != nullptr) {
@@ -65,6 +66,7 @@ static void updateParseResult(ParserContext* parserContext,
       Location loc = parserContext->convertLocation(parserComment.location);
       result->locations.push_back(std::make_pair(parserComment.comment, loc));
     }
+    delete parserContext->comments;
   }
 
 
