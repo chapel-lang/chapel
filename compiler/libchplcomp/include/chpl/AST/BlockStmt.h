@@ -4,8 +4,6 @@
 #include "chpl/AST/Location.h"
 #include "chpl/AST/Stmt.h"
 
-#include <vector>
-
 namespace chpl {
 namespace ast {
 

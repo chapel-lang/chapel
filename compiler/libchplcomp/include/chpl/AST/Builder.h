@@ -5,7 +5,7 @@
 #include "chpl/AST/UniqueString.h"
 
 #include <vector>
-#include <set>
+#include <unordered_map>
 #include <utility>
 
 namespace chpl {
@@ -23,7 +23,7 @@ class Location;
 class Builder final {
  private:
   typedef std::vector<std::pair<UniqueString,int>> pathVecT;
-  typedef std::set<UniqueString> declaredHereT;
+  typedef std::unordered_map<UniqueString,int> declaredHereT;
 
   Context* context_;
   UniqueString inferredModuleName_;

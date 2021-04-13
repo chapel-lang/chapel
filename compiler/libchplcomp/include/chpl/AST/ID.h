@@ -22,7 +22,7 @@ class ID final {
   int postOrderId_;
   // How many of the previous ids would be considered within
   // this node?
-  int numContainedIds_;
+  int numChildIds_;
  public:
   /**
     Construct an empty ID
@@ -31,7 +31,7 @@ class ID final {
   /**
     Construct an ID with a symbol path and postorder traversal number
    */
-  ID(UniqueString symbolPath, int postOrderId, int numContainedIds);
+  ID(UniqueString symbolPath, int postOrderId, int numChildIds);
   /**
     Return a path to the symbol (or, for an expression, the parent symbol)
    */
@@ -43,11 +43,11 @@ class ID final {
    */
   int postOrderId() const { return postOrderId_; }
   /**
-    Return the number of ids contained in this node. In the postorder
-    traversal numbering, the ids contained appear before the node.
+    Return the number of ids contained in this node, not including itself. In
+    the postorder traversal numbering, the ids contained appear before the node.
 
     The node with postorder traversal ID
-      postOrderId(Node) - numContainedIds()
+      postOrderId(Node) - numChildIds()
     is the first node contained within this node.
 
     E.g. in this notional AST:
@@ -57,11 +57,11 @@ class ID final {
       LeafB has id 1 and numContainedIds 0
       Node  has id 2 and numContainedIds 2
    */
-  int numContainedIds() const { return numContainedIds_; }
+  int numContainedChildren() const { return numChildIds_; }
 
   /**
     returns 'true' if the AST node with this ID contains the AST
-    node with the other ID.
+    node with the other ID, including if they refer to the same AST node. 
    */
   bool contains(const ID other) const;
 

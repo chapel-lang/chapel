@@ -70,6 +70,7 @@ void Builder::assignIDs() {
   pathVecT path;
   declaredHereT decl;
 
+  path.push_back(std::make_pair(inferredModuleName_, 0));
   for (auto const& ownedExpr: topLevelExprs_) {
     Expr* e = ownedExpr.get();
     assignIDs(e, path, decl); 
@@ -99,12 +100,14 @@ void Builder::assignIDs(BaseAST* ast, pathVecT& path, declaredHereT& decl) {
 
 void Builder::assignIDsPostorder(BaseAST* ast, UniqueString symbolPath, int& i) {
   int firstChildID = i;
-  for (int i = 0; i < ast->numChildren(); i++) {
-    BaseAST* child = (BaseAST*) ast->getChild(i);
+  for (int j = 0; j < ast->numChildren(); j++) {
+    BaseAST* child = (BaseAST*) ast->getChild(j);
     this->assignIDsPostorder(child, symbolPath, i);
   }
-  int myID = i++;
-  int numContainedIDs = myID - firstChildID;
+  int afterChildID = i;
+  int myID = afterChildID;
+  i++; // count the ID for the node we are currently visiting
+  int numContainedIDs = afterChildID - firstChildID;
   ast->setID(ID(symbolPath, myID, numContainedIDs));
 }
 

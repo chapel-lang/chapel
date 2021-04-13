@@ -1,4 +1,5 @@
 comp_unit_test(testUniqueString)
+comp_unit_test(testBuildIDs)
 
 # Add a link to the string test file.
 # This link is created in the build directory at cmake "configure" time.

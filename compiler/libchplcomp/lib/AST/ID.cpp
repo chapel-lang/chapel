@@ -4,13 +4,13 @@ namespace chpl {
 namespace ast {
 
 ID::ID()
-  : symbolPath_(), postOrderId_(-1), numContainedIds_(0) {
+  : symbolPath_(), postOrderId_(-1), numChildIds_(0) {
 }
 
-ID::ID(UniqueString symbolPath, int postOrderId, int numContainedIds)
+ID::ID(UniqueString symbolPath, int postOrderId, int numChildIds)
   : symbolPath_(symbolPath),
     postOrderId_(postOrderId),
-    numContainedIds_(numContainedIds) {
+    numChildIds_(numChildIds) {
 }
 
 // Returns 'true' if this symbol contains another AST node.
@@ -21,7 +21,7 @@ bool ID::contains(const ID other) const {
   if (thisPath == otherPath) {
     // the nodes have the same parent symbol, so consider the AST ids
     int thisId  = this->postOrderId();
-    int thisNContained = this->numContainedIds();
+    int thisNContained = this->numContainedChildren();
     int otherId = other.postOrderId();
     int thisFirstContained = thisId - thisNContained;
 

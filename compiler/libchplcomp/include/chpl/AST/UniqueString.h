@@ -231,6 +231,9 @@ class UniqueString final {
     else
       return strcmp(this->c_str(), other.c_str());
   }
+  size_t hash() const {
+    return (size_t) s.i.v;
+  }
 };
 
 
@@ -242,6 +245,17 @@ namespace std {
     bool operator()(const chpl::ast::UniqueString lhs,
                     const chpl::ast::UniqueString rhs) const {
       return lhs.compare(rhs) < 0;
+    }
+  };
+  template<> struct hash<chpl::ast::UniqueString> {
+    size_t operator()(const chpl::ast::UniqueString key) const {
+      return (size_t) key.hash();
+    }
+  };
+  template<> struct equal_to<chpl::ast::UniqueString> {
+    bool operator()(const chpl::ast::UniqueString lhs,
+                    const chpl::ast::UniqueString rhs) const {
+      return lhs == rhs;
     }
   };
 } // end namespace std
