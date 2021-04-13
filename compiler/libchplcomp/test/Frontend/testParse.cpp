@@ -93,6 +93,35 @@ static void test8(Parser* parser) {
 
 static void test9(Parser* parser) {
   auto parseResult = parser->parseString("<test>",
+                                         "{ /* this is a comment */ }");
+  assert(parseResult.topLevelExprs.size() == 1);
+  assert(parseResult.topLevelExprs[0]->isBlockStmt());
+  assert(parseResult.parseErrors.size() == 0);
+  BlockStmt* block = parseResult.topLevelExprs[0]->toBlockStmt();
+  assert(block->numStmts()==1);
+  assert(block->stmt(0)->isComment());
+}
+
+static void test10(Parser* parser) {
+  auto parseResult = parser->parseString("<test>",
+                                         "{\n"
+                                         "/* this is comment 2 */\n"
+                                         "aVeryLongIdentifierName;\n"
+                                         "/* this is comment 3 */\n"
+                                         "}\n");
+  assert(parseResult.topLevelExprs.size() == 1);
+  assert(parseResult.topLevelExprs[0]->isBlockStmt());
+  assert(parseResult.parseErrors.size() == 0);
+  BlockStmt* block = parseResult.topLevelExprs[0]->toBlockStmt();
+  assert(block->numStmts()==3);
+  assert(block->stmt(0)->isComment());
+  assert(block->stmt(1)->isIdentifier());
+  assert(block->stmt(2)->isComment());
+}
+
+
+static void test11(Parser* parser) {
+  auto parseResult = parser->parseString("<test>",
                                          "/* this is comment 1 */\n"
                                          "{\n"
                                          "/* this is comment 2 */\n"
@@ -128,6 +157,8 @@ int main() {
   test7(p);
   test8(p);
   test9(p);
+  test10(p);
+  test11(p);
 
   return 0;
 }

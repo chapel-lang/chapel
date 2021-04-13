@@ -38,6 +38,9 @@ struct ParserContext {
   ParserExprList* topLevelStatements;
   std::vector<ParserError> errors;
 
+  // TODO: this should just hash on the pointer; the void* is a hack to do that
+  std::unordered_map<void*, YYLTYPE> commentLocations;
+
   // comments are gathered here
   // Consider a 'proc' declaration. Comments preceding it should be consumed
   // when the decl_stmt starts. Then, after the decl_stmt is created, comments
@@ -79,6 +82,8 @@ struct ParserContext {
   void appendList(ParserExprList* dst, CommentsAndStmt cs);
   ExprList consumeList(ParserExprList* lst);
 
+  std::vector<ParserComment>* gatherCommentsFromList(ParserExprList* lst,
+                                                     YYLTYPE location);
   void appendComments(CommentsAndStmt*cs, std::vector<ParserComment>* comments);
 
   // clears the inner comments that should have already been captured

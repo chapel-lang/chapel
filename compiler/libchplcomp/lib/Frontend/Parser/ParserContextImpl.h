@@ -33,7 +33,7 @@ std::vector<ParserComment>* ParserContext::gatherComments(YYLTYPE location) {
   // Otherwise, gather only those comments that appear before the location.
   // This might be all of the comments or only some of them.
 
-  size_t lastCommentToGather = 0;
+  ssize_t lastCommentToGather = -1;
   {
     size_t i = 0;
     for (ParserComment comment : *this->comments) {
@@ -48,14 +48,20 @@ std::vector<ParserComment>* ParserContext::gatherComments(YYLTYPE location) {
 
   // now, return the comments up to and including lastCommentToGather
 
-  // if that's all the comments, it is easy
+  if (lastCommentToGather < 0) {
+    // don't need to return any comments
+    std::vector<ParserComment>* ret = nullptr;
+    return ret;
+  }
+
   if (lastCommentToGather == this->comments->size()-1) {
+    // need to return all comments
     std::vector<ParserComment>* ret = this->comments;
     this->comments = nullptr;
     return ret;
   }
 
-  // general case
+  // general case: return only the comments up to lastCommentToGather
   std::vector<ParserComment>* ret = new std::vector<ParserComment>();
   for (size_t i = 0; i <= lastCommentToGather; i++) {
     ret->push_back((*this->comments)[i]);
@@ -120,6 +126,7 @@ void ParserContext::appendList(ParserExprList* dst,
       auto c = Comment::build(this->builder,
                               parserComment.comment.allocatedData,
                               parserComment.comment.size);
+      this->commentLocations.insert({(void*)c.get(), parserComment.location});
       dst->push_back(c.release());
     }
     delete comments;
@@ -143,6 +150,57 @@ ExprList ParserContext::consumeList(ParserExprList* lst) {
     }
     delete lst;
   }
+  return ret;
+}
+
+std::vector<ParserComment>*
+ParserContext::gatherCommentsFromList(ParserExprList* lst,
+                                      YYLTYPE location) {
+  if (lst == nullptr || lst->size() == 0) {
+    // no list, so nothing to do
+    return nullptr;
+  }
+
+  size_t nToMove = 0;
+  while (lst->size() > nToMove) {
+    Expr* e = (*lst)[nToMove];
+    if (Comment* c = e->toComment()) {
+      auto search = this->commentLocations.find(c);
+      assert(search != this->commentLocations.end());
+      YYLTYPE commentLocation = search->second;
+      if (commentLocation.first_line <= location.first_line &&
+          commentLocation.first_column <= location.first_column) {
+        nToMove++;
+        continue;
+      }
+    }
+    break;
+  }
+
+  if (nToMove == 0) {
+    return nullptr;
+  }
+
+  std::vector<ParserComment>* ret = new std::vector<ParserComment>();
+  for (size_t i = 0; i < nToMove; i++) {
+    Comment* c = (*lst)[i]->toComment();
+    assert(c);
+    auto search = this->commentLocations.find(c);
+    assert(search != this->commentLocations.end());
+    YYLTYPE commentLocation = search->second;
+    // TODO: it would be nicer if we didn't have to translate
+    // between the two comment types.
+    ParserComment pc;
+    pc.location = commentLocation;
+    char* data = (char*)malloc(c->size()+1);
+    memcpy(data, c->comment(), c->size()+1);
+    pc.comment = makeSizedStr(data, c->size());
+    delete c;
+    ret->push_back(pc);
+  }
+
+  lst->erase(lst->begin(), lst->begin()+nToMove);
+
   return ret;
 }
 

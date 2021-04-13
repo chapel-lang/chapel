@@ -709,19 +709,34 @@ include_module_stmt:
 block_stmt:
   TLCBR         TRCBR
   {
-    auto b = BlockStmt::build(BUILDER, context->consumeList(nullptr));
-    $$ = STMT(@$,b.release());
+    // gather the comments before the opening bracket
+    CommentsAndStmt cs = STMT(@1, nullptr);
+    // create a list of the statements
+    ParserExprList* lst = new ParserExprList();
+    // add also any comments appearing after all statements
+    // and before the closing close bracket.
+    context->appendList(lst, context->gatherComments(@2));
+    auto blockstmt = BlockStmt::build(BUILDER, context->consumeList(lst));
+    cs.stmt = blockstmt.release();
+    $$ = cs;
   }
 | TLCBR stmt_ls TRCBR
   {
-    // gather the comments before the opening bracket
-    CommentsAndStmt cs = STMT(@1, nullptr);
     // create a list of the statements
     ParserExprList* lst = $2;
     assert(lst != nullptr);
     // add also any comments appearing after all statements
     // and before the closing close bracket.
     context->appendList(lst, context->gatherComments(@3));
+
+    // comments from before the opening bracket will have been
+    // gathered into stmt_ls when that was parsed, so pull out any
+    // comments that occur before the opening bracket.
+    // (This would be simpler to handle with midrule actions but those
+    //  lead to parser conflicts).
+    CommentsAndStmt cs = {0};
+    cs.comments = context->gatherCommentsFromList(lst, @1);;
+
     // create the BlockStmt
     auto blockstmt = BlockStmt::build(BUILDER, context->consumeList(lst));
     cs.stmt = blockstmt.release();
