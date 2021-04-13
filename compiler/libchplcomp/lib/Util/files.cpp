@@ -5,6 +5,8 @@
 #include "chpl/AST/ErrorMessage.h"
 #include "chpl/AST/Location.h"
 
+#include <cerrno>
+
 namespace chpl {
 
 FILE* openfile(const char* path, const char* mode, ast::ErrorMessage& errorOut) {
