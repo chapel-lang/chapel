@@ -10,7 +10,7 @@
 #  ADD_FLEX_BISON_DEPENDENCY(MyScanner MyParser)
 #ENDIF(BISON_FOUND AND FLEX_FOUND)
 
-target_sources(libchplcomp
+target_sources(libchplcomp-obj
                PRIVATE
 
                # these are generated

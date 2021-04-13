@@ -1,4 +1,4 @@
-target_sources(libchplcomp
+target_sources(libchplcomp-obj
                PRIVATE
 
                BaseAST.cpp

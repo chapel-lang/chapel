@@ -37,7 +37,11 @@ add_custom_target(tests)
 function(comp_unit_test target)
   add_executable(${target} "${target}.cpp")
   set_property(TARGET ${target} PROPERTY EXCLUDE_FROM_ALL)
-  target_link_libraries(${target} libchplcomp)
+  target_link_libraries(${target} $<TARGET_OBJECTS:libchplcomp-obj>)
+  target_include_directories(${target} PUBLIC
+                             ${CHPL_MAIN_INCLUDE_DIR}
+                             ${CHPL_INCLUDE_DIR})
+  add_dependencies(${target} libchplcomp-obj)
   add_test(NAME ${target} COMMAND ${target})
   add_dependencies(tests ${target})
 endfunction(comp_unit_test)
