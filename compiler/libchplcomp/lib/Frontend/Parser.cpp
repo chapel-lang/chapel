@@ -49,6 +49,8 @@ owned<Parser> Parser::build(Context* context) {
 static void updateParseResult(ParserContext* parserContext,
                               Parser::ParseResult* result) {
 
+  // TODO: populate result->locations
+
   // Save the top-level exprs
   if (parserContext->topLevelStatements != nullptr) {
     for (Expr* stmt : *parserContext->topLevelStatements) {
@@ -58,10 +60,10 @@ static void updateParseResult(ParserContext* parserContext,
   // Save any remaining top-level comments
   if (parserContext->comments != nullptr) {
     for (ParserComment parserComment : *parserContext->comments) {
-      result->topLevelExprs.push_back(
-                           Comment::build(parserContext->builder,
-                                          parserComment.comment.allocatedData,
-                                          parserComment.comment.size));
+      result->topLevelExprs.push_back(toOwned(parserComment.comment));
+
+      Location loc = parserContext->convertLocation(parserComment.location);
+      result->locations.push_back(std::make_pair(parserComment.comment, loc));
     }
   }
 
@@ -70,17 +72,9 @@ static void updateParseResult(ParserContext* parserContext,
   // Save the parse errors
   for (ParserError & parserError : parserContext->errors) {
     // Need to convert the error to a regular ErrorMessage
-    UniqueString upath = UniqueString::build(aCtx, parserContext->filename);
-    Location loc(upath,
-                 parserError.location.first_line,
-                 parserError.location.first_column,
-                 parserError.location.last_line,
-                 parserError.location.last_column);
-
+    Location loc = parserContext->convertLocation(parserError.location);
     result->parseErrors.push_back(ErrorMessage(loc, parserError.message));
   }
-
-  // TODO: generate locations map
 }
 
 

@@ -77,15 +77,15 @@ void ParserContext::noteComment(YYLTYPE loc, const char* data, long size) {
   }
   ParserComment c;
   c.location = loc;
-  c.comment.allocatedData = data;
-  c.comment.size = size;
+  auto comment = Comment::build(this->builder, data, size);
+  c.comment = comment.release();
   this->comments->push_back(c);
 }
 
 void ParserContext::clearComments() {
   if (this->comments != nullptr) {
     for (ParserComment parserComment : *this->comments) {
-      delete parserComment.comment.allocatedData;
+      delete parserComment.comment;
     }
     this->comments->clear();
   }
@@ -123,11 +123,9 @@ void ParserContext::appendList(ParserExprList* dst,
                                std::vector<ParserComment>* comments) {
   if (comments != nullptr) {
     for (ParserComment parserComment : *comments) {
-      auto c = Comment::build(this->builder,
-                              parserComment.comment.allocatedData,
-                              parserComment.comment.size);
-      this->commentLocations.insert({(void*)c.get(), parserComment.location});
-      dst->push_back(c.release());
+      Comment* c = parserComment.comment;
+      dst->push_back(c);
+      this->commentLocations.insert({(void*)c, parserComment.location});
     }
     delete comments;
   }
@@ -188,14 +186,9 @@ ParserContext::gatherCommentsFromList(ParserExprList* lst,
     auto search = this->commentLocations.find(c);
     assert(search != this->commentLocations.end());
     YYLTYPE commentLocation = search->second;
-    // TODO: it would be nicer if we didn't have to translate
-    // between the two comment types.
     ParserComment pc;
     pc.location = commentLocation;
-    char* data = (char*)malloc(c->size()+1);
-    memcpy(data, c->comment(), c->size()+1);
-    pc.comment = makeSizedStr(data, c->size());
-    delete c;
+    pc.comment = c;
     ret->push_back(pc);
   }
 
@@ -226,4 +219,12 @@ CommentsAndStmt ParserContext::finishStmt(CommentsAndStmt cs) {
 CommentsAndStmt ParserContext::finishStmt(Expr* e) {
   this->clearComments();
   return makeCommentsAndStmt(NULL, e);
+}
+
+Location ParserContext::convertLocation(YYLTYPE location) {
+  return Location(this->filename,
+                  location.first_line,
+                  location.first_column,
+                  location.last_line,
+                  location.last_column);
 }

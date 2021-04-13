@@ -11,6 +11,7 @@
 #include "chpl/AST/ErroneousExpr.h"
 #include "chpl/AST/Expr.h"
 #include "chpl/AST/Identifier.h"
+#include "chpl/AST/Location.h"
 #include "chpl/AST/UniqueString.h"
 
 #include <cstdint>

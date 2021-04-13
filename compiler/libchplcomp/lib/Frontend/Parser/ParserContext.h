@@ -23,17 +23,13 @@ struct ParserError {
 
 struct ParserComment {
   YYLTYPE location;
-  SizedStr comment;
+  Comment* comment;
 };
 
 struct ParserContext {
   yyscan_t scanner;
-  const char* filename;
+  UniqueString filename;
   Builder* builder;
-
-  // TODO: move these to the astContext
-  std::vector<UniqueString> currentModuleStack;
-  std::vector<UniqueString> currentFunctionStack;
 
   ParserExprList* topLevelStatements;
   std::vector<ParserError> errors;
@@ -52,8 +48,10 @@ struct ParserContext {
 
   ParserContext(const char* filename, Builder* builder)
   {
+    auto uniqueFilename = UniqueString::build(builder->context(), filename);
+
     this->scanner            = nullptr;
-    this->filename           = filename;
+    this->filename           = uniqueFilename;
     this->builder            = builder;
     this->topLevelStatements = nullptr;
     this->comments           = nullptr;
@@ -121,6 +119,8 @@ struct ParserContext {
   ParserExprList* exitStmt(owned<Expr> e) {
     return this->exitStmt(e.release());
   }
+
+  Location convertLocation(YYLTYPE location);
 
   // Do we really need these?
   /*

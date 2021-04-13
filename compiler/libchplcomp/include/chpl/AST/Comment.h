@@ -25,6 +25,7 @@ class Comment final : public Expr {
 
  public:
   ~Comment() override;
+  /** takes ownership of the data pointer - this class will free it */
   static owned<Comment> build(Builder* builder, const char* data, long size);
   const char* comment() const { return comment_; }
   long size() const { return size_; }
