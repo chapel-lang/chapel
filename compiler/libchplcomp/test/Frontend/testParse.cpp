@@ -141,6 +141,36 @@ static void test11(Parser* parser) {
   assert(block->stmt(2)->isComment());
 }
 
+static void test12(Parser* parser) {
+  auto parseResult = parser->parseString("<test>",
+                                         "/* this is comment 1 */\n"
+                                         "/* this is comment 2 */\n"
+                                         "{\n"
+                                         "/* this is comment 2 */\n"
+                                         "/* this is comment 3 */\n"
+                                         "aVeryLongIdentifierName;\n"
+                                         "/* this is comment 3 */\n"
+                                         "/* this is comment 4 */\n"
+                                         "}\n"
+                                         "/* this is comment 5 */\n"
+                                         "/* this is comment 6 */");
+  assert(parseResult.topLevelExprs.size() == 5);
+  assert(parseResult.topLevelExprs[0]->isComment());
+  assert(parseResult.topLevelExprs[1]->isComment());
+  assert(parseResult.topLevelExprs[2]->isBlockStmt());
+  assert(parseResult.topLevelExprs[3]->isComment());
+  assert(parseResult.topLevelExprs[4]->isComment());
+  assert(parseResult.parseErrors.size() == 0);
+  BlockStmt* block = parseResult.topLevelExprs[2]->toBlockStmt();
+  assert(block->numStmts()==5);
+  assert(block->stmt(0)->isComment());
+  assert(block->stmt(1)->isComment());
+  assert(block->stmt(2)->isIdentifier());
+  assert(block->stmt(3)->isComment());
+  assert(block->stmt(4)->isComment());
+}
+
+
 int main() {
   auto context = Context::build();
   Context* ctx = context.get();
@@ -159,6 +189,7 @@ int main() {
   test9(p);
   test10(p);
   test11(p);
+  test12(p);
 
   return 0;
 }
