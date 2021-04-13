@@ -3146,6 +3146,7 @@ static const char* amo_typeName(enum fi_datatype);
 static const char* am_seqIdStr(amRequest_t*);
 static const char* am_reqStr(c_nodeid_t, amRequest_t*, size_t);
 static const char* am_reqDoneStr(amRequest_t*);
+static void am_debugPrep(amRequest_t*);
 #endif
 
 static void amRequestExecOn(c_nodeid_t, c_sublocid_t, chpl_fn_int_t,
@@ -3460,25 +3461,7 @@ void amRequestCommon(c_nodeid_t node,
   }
 
 #ifdef CHPL_COMM_DEBUG
-  if (DBG_TEST_MASK(DBG_AM | DBG_AM_SEND | DBG_AM_RECV)
-      || (req->b.op == am_opAMO && DBG_TEST_MASK(DBG_AMO))) {
-    static atomic_uint_least64_t seq;
-
-    static chpl_bool seqInited = false;
-    if (!seqInited) {
-      static pthread_mutex_t seqLock = PTHREAD_MUTEX_INITIALIZER;
-      PTHREAD_CHK(pthread_mutex_lock(&seqLock));
-      atomic_init_uint_least64_t(&seq, 1);
-      seqInited = true;
-      PTHREAD_CHK(pthread_mutex_unlock(&seqLock));
-    }
-
-    if (op_uses_on_bundle(req->b.op)) {
-      req->xo.hdr.comm.seq = atomic_fetch_add_uint_least64_t(&seq, 1);
-    } else {
-      req->b.seq = atomic_fetch_add_uint_least64_t(&seq, 1);
-    }
-  }
+  am_debugPrep(req);
 #endif
 
   struct perTxCtxInfo_t* myTcip = tcip;
@@ -7190,6 +7173,32 @@ const char* am_reqDoneStr(amRequest_t* req) {
                     am_seqIdStr(req), pAmDone);
   }
   return buf;
+}
+
+
+static inline
+void am_debugPrep(amRequest_t* req) {
+  if (DBG_TEST_MASK(DBG_AM | DBG_AM_SEND | DBG_AM_RECV)
+      || (req->b.op == am_opAMO && DBG_TEST_MASK(DBG_AMO))) {
+    static chpl_bool seqInited = false;
+    static atomic_uint_least64_t seqNext;
+    if (!seqInited) {
+      static pthread_mutex_t seqLock = PTHREAD_MUTEX_INITIALIZER;
+      PTHREAD_CHK(pthread_mutex_lock(&seqLock));
+      if (!seqInited) {
+        seqInited = true;
+        atomic_init_uint_least64_t(&seqNext, 1);
+      }
+      PTHREAD_CHK(pthread_mutex_unlock(&seqLock));
+    }
+
+    uint64_t seq = atomic_fetch_add_uint_least64_t(&seqNext, 1);
+    if (op_uses_on_bundle(req->b.op)) {
+      req->xo.hdr.comm.seq = seq;
+    } else {
+      req->b.seq = seq;
+    }
+  }
 }
 
 #endif
