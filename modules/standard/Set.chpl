@@ -798,7 +798,7 @@ module Set {
   }
 
   pragma "no doc"
-  operator :(x: set(?et1, ?p1), type t: set(?et2, ?p2)) {
+  operator set.:(x: set(?et1, ?p1), type t: set(?et2, ?p2)) {
     // TODO: Allow coercion between element types? If we do then init=
     // should also be changed accordingly.
     if et1 != et2 then
