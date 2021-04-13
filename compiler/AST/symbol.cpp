@@ -2098,7 +2098,7 @@ bool isAstrOpName(const char* name) {
       strcmp(name, "|=") == 0 || strcmp(name, "^=") == 0 ||
       strcmp(name, ">>=") == 0 || strcmp(name, "<<=") == 0 ||
       strcmp(name, "#") == 0 || strcmp(name, "by") == 0 ||
-      strcmp(name, "align") == 0) {
+      strcmp(name, "align") == 0 || name == astrScolon) {
     return true;
   } else {
     return false;
