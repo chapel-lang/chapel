@@ -1120,10 +1120,7 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
     leadForLoop->insertAtTail(new DefExpr(T2));
 
     if (zippered == false) {
-      leadForLoop->insertAtTail("'move'(%S, chpl__staticFastFollowCheck(%S))",    T1, iterRec);
-      leadForLoop->insertAtTail(new CondStmt(new SymExpr(T1),
-                                          new_Expr("'move'(%S, chpl__dynamicFastFollowCheck(%S))",    T2, iterRec),
-                                          new_Expr("'move'(%S, %S)", T2, gFalse)));
+      leadForLoop->insertAtTail("'move'(%S, chpl__staticFastFollowCheck(%S))",    T2, iterRec);
     } else {
       CallExpr *checkCall = generateFastFollowCheck(iterExpr, /*isStatic=*/true);
       CallExpr *moveToFlag = new CallExpr(PRIM_MOVE, T1, checkCall);
