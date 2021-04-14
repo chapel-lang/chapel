@@ -17,6 +17,7 @@ target_include_directories(libchplcomp-obj PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_subdirectory(AST)
 add_subdirectory(Frontend)
+add_subdirectory(Queries)
 add_subdirectory(Util)
 
 add_library(libchplcomp $<TARGET_OBJECTS:libchplcomp-obj>)

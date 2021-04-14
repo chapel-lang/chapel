@@ -5,7 +5,6 @@ target_sources(libchplcomp-obj
                BlockStmt.cpp
                Builder.cpp
                Comment.cpp
-               Context.cpp
                ErroneousExpr.cpp
                ErrorMessage.cpp
                Expr.cpp
