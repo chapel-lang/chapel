@@ -5,7 +5,8 @@
 
 namespace chpl {
 
-Context::Context() : uniqueStringsTable(), zero(0) {
+Context::Context()
+  : uniqueStringsTable(), queryDB(), currentRevisionNumber(1) {
 }
 
 owned<Context> Context::build() {
