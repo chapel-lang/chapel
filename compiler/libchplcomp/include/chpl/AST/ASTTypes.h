@@ -1,6 +1,8 @@
 #ifndef CHPL_AST_ASTTYPES_H
 #define CHPL_AST_ASTTYPES_H
 
+#include "chpl/Util/memory.h"
+
 #include <vector>
 
 namespace chpl {

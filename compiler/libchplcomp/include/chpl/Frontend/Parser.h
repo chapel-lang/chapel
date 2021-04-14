@@ -6,7 +6,7 @@
 #include "chpl/AST/Expr.h"
 #include "chpl/AST/ErrorMessage.h"
 #include "chpl/AST/Location.h"
-#include "chpl/AST/memory.h"
+#include "chpl/Util/memory.h"
 
 #include <vector>
 

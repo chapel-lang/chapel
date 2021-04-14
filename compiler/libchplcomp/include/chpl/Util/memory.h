@@ -1,5 +1,5 @@
-#ifndef CHPL_AST_MEMORY_H
-#define CHPL_AST_MEMORY_H
+#ifndef CHPL_UTIL_MEMORY_H
+#define CHPL_UTIL_MEMORY_H
 
 #include <memory>
 

@@ -1,8 +1,8 @@
 #ifndef CHPL_QUERIES_CONTEXT_H
 #define CHPL_QUERIES_CONTEXT_H
 
-#include "chpl/AST/memory.h"
 #include "chpl/Queries/ContextDetail.h"
+#include "chpl/Util/memory.h"
 
 #include <unordered_map>
 
