@@ -3368,7 +3368,7 @@ module ChapelArray {
     }
 
     proc chpl_isNonDistributedArray() param {
-     return domainDistIsLayout(_getDomain(_value.dom));
+      return domainDistIsLayout(_getDomain(chpl__getActualArray(_value).dom));
     }
 
   }  // record _array

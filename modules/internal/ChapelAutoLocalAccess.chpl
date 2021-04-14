@@ -26,7 +26,12 @@ module ChapelAutoLocalAccess {
   // forall's and we don't want to mess up the iterator
   proc chpl__staticAutoLocalCheck(accessBase: [], loopDomain: domain) param {
     if accessBase.domain.type == loopDomain.type {
-      return loopDomain.supportsAutoLocalAccess();
+      if chpl__isArrayViewWithDifferentDist(accessBase) {
+        return false;
+      }
+      else {
+        return loopDomain.supportsAutoLocalAccess();
+      }
     }
 
     // support forall i in a.domain.localSubdomain() do .... a[i] ....
@@ -91,5 +96,9 @@ module ChapelAutoLocalAccess {
   }
   proc chpl__dynamicAutoLocalCheck(type accessBase, loopDomain) {
     return false;
+  }
+
+  proc chpl__isArrayViewWithDifferentDist(arr: []) param {
+    return chpl__getActualArray(arr._value).dom.type != arr.domain._value.type;
   }
 }
