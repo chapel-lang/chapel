@@ -54,6 +54,12 @@ Builder::Result Builder::result() {
   this->createImplicitModuleIfNeeded();
   this->assignIDs();
 
+  // Performance: We could consider copying all of these AST
+  // nodes to a newly allocated buffer big enough to hold them
+  // all contiguously. The reason to do so would be to ensure
+  // that a postorder traversal of the AST has good data locality
+  // (i.e. good cache behavior).
+
   Builder::Result ret;
   ret.context = context_;
   ret.topLevelExprs.swap(topLevelExprs_);

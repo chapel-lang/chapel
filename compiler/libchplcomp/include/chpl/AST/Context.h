@@ -60,7 +60,8 @@ class Context {
 
   /**
     Get or create a unique string for a NULL-terminated C string
-    and return it as a C string.
+    and return it as a C string. If the passed string is NULL,
+    this function will return an empty string.
 
     Strings returned by this function will always be aligned to 2 bytes.
 

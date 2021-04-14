@@ -52,6 +52,9 @@ struct InlinedString {
 
   // This union is only used to make the debugger output more reasonable.
   // All reads/writes here go through the 'v' variable.
+  // Performance: Should we "inline" strings up to 14 bytes
+  // by using a 16 byte data region? To try that, some of the
+  // surrounding code will need adjustment.
   union {
     const char* v;
     char data[sizeof(const char*)];
@@ -68,6 +71,7 @@ struct InlinedString {
     return (val == 0) || ((val & 0xff) == INLINE_TAG);
   }
 
+  // Performance: Does this function need to be inlined?
   static char* dataAssumingTag(void* vptr);
 
   /**
