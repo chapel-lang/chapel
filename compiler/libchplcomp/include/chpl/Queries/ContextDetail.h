@@ -34,7 +34,7 @@ typedef std::vector<QueryMapResultBase*> DependencyVec;
 class QueryMapResultBase {
  public:
   std::vector<QueryMapResultBase*> dependencies;
-  RevisionNumber lastChecked;
+  RevisionNumber lastComputed; // might also be called "last checked"
   RevisionNumber lastChanged;
 };
 template<typename ResultType>

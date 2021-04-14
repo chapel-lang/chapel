@@ -84,14 +84,14 @@ class Context {
   bool beginQueryCanUseResult(chpl::detail::QueryMapResultBase* result) {
     // If we already checked this query in this revision,
     // we can use this result
-    if (result->lastChecked == this->currentRevisionNumber) {
+    if (result->lastComputed == this->currentRevisionNumber) {
       return true;
     }
 
     // Otherwise, check the dependencies. Have any of them
     // changed since the last revision in which we computed this?
     for (chpl::detail::QueryMapResultBase* dependency : result->dependencies) {
-      if (dependency->lastChanged > result->lastChecked) {
+      if (dependency->lastChanged > result->lastComputed) {
         return false;
       }
     }
@@ -146,13 +146,13 @@ class Context {
       if (oldResult->equals(result)) {
         // no change to the result
         // so update "last checked" but don't change "last changed".
-        oldResult->lastChecked = this->currentRevisionNumber;
+        oldResult->lastComputed = this->currentRevisionNumber;
         return oldResult->result;
       } else {
         // change to the result
         // so update "last changed" and "last checked"
         // and store the new result in the map
-        oldResult->lastChecked = this->currentRevisionNumber;
+        oldResult->lastComputed = this->currentRevisionNumber;
         oldResult->lastChanged = this->currentRevisionNumber;
         oldResult->result = result;
         return oldResult->result;
@@ -163,7 +163,7 @@ class Context {
     // and store the new result in the map
     auto newResult = new chpl::detail::QueryMapResult<ResultType>(result);
     endQueryHandleDependency(newResult);
-    newResult->lastChecked = this->currentRevisionNumber;
+    newResult->lastComputed = this->currentRevisionNumber;
     newResult->lastChanged = this->currentRevisionNumber;
     queryMap->insert(search, {tupleOfArgs, toOwned(newResult)});
     return newResult->result;
