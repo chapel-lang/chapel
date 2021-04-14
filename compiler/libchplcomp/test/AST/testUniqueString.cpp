@@ -1,4 +1,4 @@
-#include "chpl/AST/Context.h"
+#include "chpl/Queries/Context.h"
 #include "chpl/AST/UniqueString.h"
 
 // always check assertions in this test

@@ -11,9 +11,9 @@
 #include <string>
 
 namespace chpl {
-namespace ast {
-
 class Context;
+
+namespace ast {
 
 namespace detail {
 // We can make it store 6 bytes in line this way:

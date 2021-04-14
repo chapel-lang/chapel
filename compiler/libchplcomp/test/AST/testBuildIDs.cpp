@@ -2,12 +2,12 @@
 
 #include "chpl/AST/BlockStmt.h"
 #include "chpl/AST/Builder.h"
-#include "chpl/AST/Context.h"
 #include "chpl/AST/ErrorMessage.h"
 #include "chpl/AST/Expr.h"
 #include "chpl/AST/Identifier.h"
 #include "chpl/AST/Location.h"
 #include "chpl/AST/UniqueString.h"
+#include "chpl/Queries/Context.h"
 
 // always check assertions in this test
 #ifdef NDEBUG

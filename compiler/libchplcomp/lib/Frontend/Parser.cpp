@@ -38,7 +38,7 @@ namespace chpl {
 
 using namespace ast;
 
-Parser::Parser(ast::Context* context)
+Parser::Parser(Context* context)
   : context_(context) {
 }
 

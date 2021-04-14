@@ -5,7 +5,7 @@
 
 #include "chpl/AST/UniqueString.h"
 
-#include "chpl/AST/Context.h"
+#include "chpl/Queries/Context.h"
 
 #include <cassert>
 #include <cstring>

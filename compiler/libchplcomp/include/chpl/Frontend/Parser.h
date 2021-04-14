@@ -30,17 +30,17 @@ class Parser final {
    // TODO: compile-time configuration variable settings
    // need to be stored in here.
 
-   ast::Context* context_;
-   Parser(ast::Context* context);
+   Context* context_;
+   Parser(Context* context);
 
  public:
-   static owned<Parser> build(ast::Context* context);
+   static owned<Parser> build(Context* context);
    ~Parser() = default;
 
    /**
      Return the AST Context used by this Parser.
     */
-   ast::Context* context() { return context_; }
+   Context* context() { return context_; }
 
    /**
      Parse a file at a particular path.

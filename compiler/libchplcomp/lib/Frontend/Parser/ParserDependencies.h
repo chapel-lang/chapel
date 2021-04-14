@@ -6,13 +6,13 @@
 #include "chpl/AST/BlockStmt.h"
 #include "chpl/AST/Builder.h"
 #include "chpl/AST/Comment.h"
-#include "chpl/AST/Context.h"
 #include "chpl/AST/Decl.h"
 #include "chpl/AST/ErroneousExpr.h"
 #include "chpl/AST/Expr.h"
 #include "chpl/AST/Identifier.h"
 #include "chpl/AST/Location.h"
 #include "chpl/AST/UniqueString.h"
+#include "chpl/Queries/Context.h"
 
 #include <cstdint>
 #include <cstdio>
@@ -25,7 +25,7 @@
 
 using namespace chpl;
 using namespace ast;
-using detail::PODUniqueString;
+using chpl::ast::detail::PODUniqueString;
 
 struct ParserError;
 struct ParserComment;

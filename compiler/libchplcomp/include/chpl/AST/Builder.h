@@ -9,9 +9,11 @@
 #include <utility>
 
 namespace chpl {
-namespace ast {
 
 class Context;
+
+namespace ast {
+
 class ErrorMessage;
 class Expr;
 class Location;

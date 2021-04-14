@@ -1,5 +1,5 @@
-#ifndef CHPL_AST_CONTEXT_H
-#define CHPL_AST_CONTEXT_H
+#ifndef CHPL_QUERIES_CONTEXT_H
+#define CHPL_QUERIES_CONTEXT_H
 
 #include "chpl/AST/memory.h"
 #include "chpl/AST/UniqueString.h"
@@ -8,7 +8,6 @@
 #include <cstring>
 
 namespace chpl {
-namespace ast {
 
 /// \cond DO_NOT_DOCUMENT
 namespace detail {
@@ -73,7 +72,6 @@ class Context {
   const char* uniqueCString(const std::string& s);
 };
 
-} // end namespace ast
 } // end namespace chpl
 
 #endif

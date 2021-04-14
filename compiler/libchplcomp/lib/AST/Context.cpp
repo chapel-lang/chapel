@@ -1,9 +1,8 @@
-#include "chpl/AST/Context.h"
+#include "chpl/Queries/Context.h"
 
 #include <cstdlib>
 
 namespace chpl {
-namespace ast {
 
 Context::Context() : uniqueStringsTable(), zero(0) {
 }
@@ -62,5 +61,4 @@ const char* Context::uniqueCString(const std::string& s) {
   return this->getOrCreateUniqueString(s.c_str());
 }
 
-} // end namespace ast
 } // end namespace chpl

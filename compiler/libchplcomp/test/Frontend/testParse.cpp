@@ -1,9 +1,9 @@
 // g++ -g -I compiler/libchplcomp/include/ compiler/libchplcomp/lib/AST/*.cpp compiler/libchplcomp/lib/Frontend/*.cpp compiler/libchplcomp/lib/Frontend/Parser/{bison-chapel,flex-chapel}.cpp compiler/libchplcomp/lib/Util/*.cpp compiler/libchplcomp/test/Frontend/testParse.cpp
 
 #include "chpl/AST/BlockStmt.h"
-#include "chpl/AST/Context.h"
 #include "chpl/AST/Expr.h"
 #include "chpl/Frontend/Parser.h"
+#include "chpl/Queries/Context.h"
 
 // always check assertions in this test
 #ifdef NDEBUG
