@@ -21,7 +21,7 @@ enum ASTTag {
   #define AST_END_SUBCLASSES(NAME) END_##NAME ,
   /// \endcond
   // Apply the above macros to ASTClassesList.h
-  #include "ASTClassesList.h"
+  #include "chpl/AST/ASTClassesList.h"
   // clear the macros
   #undef AST_NODE
   #undef AST_LEAF
@@ -42,7 +42,7 @@ enum ASTTag {
 #define AST_END_SUBCLASSES(NAME)
 /// \endcond
 // Apply the above macros to ASTClassesList.h
-#include "ASTClassesList.h"
+#include "chpl/AST/ASTClassesList.h"
 // clear the macros
 #undef AST_NODE
 #undef AST_LEAF
@@ -62,7 +62,7 @@ enum ASTTag {
 #define AST_END_SUBCLASSES(NAME)
 /// \endcond
 // Apply the above macros to ASTClassesList.h
-#include "ASTClassesList.h"
+#include "chpl/AST/ASTClassesList.h"
 // clear the macros
 #undef AST_NODE
 #undef AST_LEAF
