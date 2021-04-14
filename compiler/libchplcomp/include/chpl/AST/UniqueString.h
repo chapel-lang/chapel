@@ -46,7 +46,7 @@ namespace detail {
 //   It might be more than that when the string references are
 //   not recently used.
 
-extern const char* emptyString;
+extern const char* const emptyString;
 
 struct InlinedString {
 
@@ -65,7 +65,7 @@ struct InlinedString {
   static inline bool alignmentIndicatesTag(const char* s) {
     uintptr_t val = (uintptr_t) s;
     // check if the low-order bits are the tag indicating inline
-    return (val & 0xff) == INLINE_TAG;
+    return (val == 0) || ((val & 0xff) == INLINE_TAG);
   }
 
   static char* dataAssumingTag(void* vptr);
@@ -124,9 +124,6 @@ struct InlinedString {
     return alignmentIndicatesTag(this->v);
   }
   const char* c_str() const {
-    if (this->v == nullptr) {
-      return emptyString;
-    }
     if (this->isInline()) {
       return dataAssumingTag((void*) &this->v);
     }

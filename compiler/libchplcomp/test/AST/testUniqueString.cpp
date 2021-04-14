@@ -101,6 +101,9 @@ void test0() {
   // check that uniqueString(NULL) == uniqueString("")
   assert(ctx->uniqueCString(nullptr) == ctx->uniqueCString(""));
 
+  // check that uniqueString(NULL) != nullptr
+  assert(ctx->uniqueCString(nullptr) != nullptr);
+
   const char* x = ctx->uniqueCString("aVeryLongIdentifierName");
 }
 

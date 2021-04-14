@@ -15,8 +15,6 @@ namespace ast {
 
 namespace detail {
 
-  const char* emptyString;
-
   char* InlinedString::dataAssumingTag(void* vptr) {
     char* ptr = (char*) vptr;
     // assuming the tag is present, where is the string data?
