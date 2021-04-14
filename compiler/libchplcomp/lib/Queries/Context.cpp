@@ -58,8 +58,5 @@ const char* Context::uniqueCString(const char* s) {
   if (s == NULL) s = "";
   return this->getOrCreateUniqueString(s);
 }
-const char* Context::uniqueCString(const std::string& s) {
-  return this->getOrCreateUniqueString(s.c_str());
-}
 
 } // end namespace chpl

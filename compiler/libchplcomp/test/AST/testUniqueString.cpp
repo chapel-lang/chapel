@@ -86,8 +86,8 @@ void test0() {
   std::string test1 = TEST1STRING;
   std::string test1Copy = test1;
   assert(test1.c_str() != test1Copy.c_str());
-  const char* t1 = ctx->uniqueCString(test1);
-  const char* t2 = ctx->uniqueCString(test1Copy);
+  const char* t1 = ctx->uniqueCString(test1.c_str());
+  const char* t2 = ctx->uniqueCString(test1Copy.c_str());
   const char* t3 = ctx->uniqueCString(TEST1STRING);
   assert(t1 == t2);
   assert(t2 == t3);
@@ -95,7 +95,7 @@ void test0() {
   // this string is short enough to be inlined
   std::string hello = "hello";
   const char* h1 = ctx->uniqueCString("hello");
-  const char* h2 = ctx->uniqueCString(hello);
+  const char* h2 = ctx->uniqueCString(hello.c_str());
   assert(h1 == h2);
 
   // check that uniqueString(NULL) == uniqueString("")
