@@ -1,6 +1,7 @@
 #include "chpl/Queries/Context.h"
 
 #include <cstdlib>
+#include <cassert>
 
 namespace chpl {
 

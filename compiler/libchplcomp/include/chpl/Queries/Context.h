@@ -2,31 +2,11 @@
 #define CHPL_QUERIES_CONTEXT_H
 
 #include "chpl/AST/memory.h"
-#include "chpl/AST/UniqueString.h"
+#include "chpl/Queries/ContextDetail.h"
 
 #include <unordered_map>
-#include <cstring>
 
 namespace chpl {
-
-/// \cond DO_NOT_DOCUMENT
-namespace detail {
-  struct UniqueStrEqual {
-    bool operator()(const char* lhs, const char* rhs) const {
-      return strcmp(lhs, rhs) == 0;
-    }
-  };
-
-  struct UniqueStrHash {
-    std::size_t operator()(const char* s) const {
-      // this hash is from StringHashFns in the old map.h
-      unsigned int h = 0;
-      while (*s) h = h * 27 + (unsigned char)*s++;
-      return h;
-    }
-  };
-}
-/// \endcond
 
 /**
   This class stores the compilation-wide context.
