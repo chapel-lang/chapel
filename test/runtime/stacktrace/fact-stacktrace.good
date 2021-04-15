@@ -1,7 +1,7 @@
 fact-stacktrace.chpl:2: error: halt reached
 Stacktrace
 
-halt() at $CHPL_HOME/modules/internal/ChapelIO.chpl:nnnn
+halt() at $CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn
 fact() at fact-stacktrace.chpl:1
 fact() at fact-stacktrace.chpl:1
 fact() at fact-stacktrace.chpl:1
