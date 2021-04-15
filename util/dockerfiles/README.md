@@ -19,8 +19,7 @@ This is the core image for Chapel. It provides the complete Chapel compiler and 
 
 ## [`chapel/chapel-gasnet:<version>`](https://hub.docker.com/r/chapel/chapel-gasnet/)
 
-* [`1.24.1`, `latest` (_1.24.0/gasnet/Dockerfile_)](https://github.com/chapel-lang/chapel/blob/release/1.24/util/dockerfiles/gasnet/Dockerfile/)
-* [`1.24.0` (_1.23.0/gasnet/Dockerfile_)](https://github.com/chapel-lang/chapel/blob/1.23.0/util/dockerfiles/gasnet/Dockerfile)
+* [`1.24.1`, `latest` (_1.24.1/gasnet/Dockerfile_)](https://github.com/chapel-lang/chapel/blob/release/1.24/util/dockerfiles/gasnet/Dockerfile/)
 * [`1.23.0` (_1.23.0/gasnet/Dockerfile_)](https://github.com/chapel-lang/chapel/blob/1.23.0/util/dockerfiles/gasnet/Dockerfile)
 
 The Chapel core image (above), rebuilt with `CHPL_COMM=gasnet` and `GASNET_SPAWNFN=L`. Simulates a multilocale Chapel platform within the Docker container.
