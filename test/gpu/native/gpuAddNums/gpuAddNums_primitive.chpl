@@ -59,7 +59,7 @@ extern {
     return (void*)function;
   }
 
-  CUdeviceptr getDeviceBufferPointer(){
+  static CUdeviceptr getDeviceBufferPointer(){
 
     double X;
     CUdeviceptr devBufferX;
@@ -75,16 +75,16 @@ extern {
 
   }
 
-  void **getKernelParams(CUdeviceptr *devBufferX){
+  static void **getKernelParams(CUdeviceptr *devBufferX){
     static void* kernelParams[1];
     kernelParams[0] = devBufferX;
     return kernelParams;
   }
 
 
-  double getDataFromDevice(CUdeviceptr devBufferX){
+  static double getDataFromDevice(CUdeviceptr devBufferX){
     double X;
-    auto err = cuMemcpyDtoH(&X, devBufferX, sizeof(double));
+    cuMemcpyDtoH(&X, devBufferX, sizeof(double));
     return X;
   }
 
@@ -107,7 +107,7 @@ var kernelParams = getKernelParams(ptr);
  __primitive("gpu kernel launch", funcPtr, 1, 1, 1, 1, 1, 1, 0, 0, kernelParams, 0);
 output = getDataFromDevice(deviceBuffer);
 
-writeln("output: ", output);
+writeln(output);
 
 }
 
