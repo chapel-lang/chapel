@@ -64,7 +64,6 @@ class Builder final {
     This struct records the result of building some AST.
    */
   struct Result final {
-    Context* context;
     ast::ExprList topLevelExprs;
     std::vector<ErrorMessage> errors;
     std::vector<std::pair<BaseAST*, Location>> locations;

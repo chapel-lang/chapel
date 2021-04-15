@@ -61,7 +61,6 @@ Builder::Result Builder::result() {
   // (i.e. good cache behavior).
 
   Builder::Result ret;
-  ret.context = context_;
   ret.topLevelExprs.swap(topLevelExprs_);
   ret.errors.swap(errors_);
   ret.locations.swap(locations_);

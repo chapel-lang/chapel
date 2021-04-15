@@ -16,13 +16,6 @@ namespace chpl {
   A class for parsing
  */
 class Parser final {
-  public:
-    struct ParseResult final {
-      ast::ExprList topLevelExprs;
-      std::vector<ast::ErrorMessage> parseErrors;
-      std::vector<std::pair<ast::BaseAST*, ast::Location>> locations;
-    };
-
  private:
    // TODO: stuff to do with module search paths
    // and then connect parsed modules to a query

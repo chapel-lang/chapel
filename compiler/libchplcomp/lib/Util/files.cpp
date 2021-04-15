@@ -34,4 +34,45 @@ bool closefile(FILE* fp, const char* path, ast::ErrorMessage& errorOut) {
   return true;
 }
 
+bool readfile(const char* path,
+              std::string& strOut,
+              ast::ErrorMessage& errorOut) {
+
+  FILE* fp = openfile(path, "r", errorOut);
+  if (fp == nullptr) {
+    return false;
+  }
+
+  // Try to get the file length in order to optimize string allocation
+  long len = 0;
+  fseek(fp, 0, SEEK_END);
+  len = ftell(fp);
+  fseek(fp, 0, SEEK_SET);
+  if (len > 0) strOut.reserve(len);
+
+  char buf[256];
+  while (true) {
+    size_t got = fread(buf, 1, sizeof(buf), fp);
+    if (got > 0) {
+      strOut.append(buf, got);
+    } else {
+      if (ferror(fp)) {
+        auto emptyLocation = ast::Location();
+        errorOut = ast::ErrorMessage::build(emptyLocation, "reading %s", path);
+        ast::ErrorMessage ignored;
+        closefile(fp, path, ignored);
+        return false;
+      }
+      // otherwise, end of file reached
+      break;
+    }
+  }
+  bool ok = closefile(fp, path, errorOut);
+  if (!ok) {
+    return false;
+  }
+
+  return true;
+}
+
 }
