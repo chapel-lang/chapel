@@ -11,7 +11,7 @@
 
 ## `chapel/chapel:<version>`
 Supported Chapel versions:
-* [`1.24.1`, `latest` (_1.24.1/Dockerfile_)](https://github.com/chapel-lang/chapel/blob/release/1.24.1/util/dockerfiles/Dockerfile/)
+* [`1.24.1`, `latest` (_1.24.1/Dockerfile_)](https://github.com/chapel-lang/chapel/blob/release/1.24/util/dockerfiles/Dockerfile/)
 * [`1.24.0` (_1.24.0/Dockerfile_)](https://github.com/chapel-lang/chapel/blob/1.24.0/util/dockerfiles/Dockerfile)
 * [`1.23.0` (_1.23.0/Dockerfile_)](https://github.com/chapel-lang/chapel/blob/1.23.0/util/dockerfiles/Dockerfile)
 
