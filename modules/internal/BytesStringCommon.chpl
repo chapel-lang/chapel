@@ -54,6 +54,9 @@ module BytesStringCommon {
   pragma "no doc"
   param surrogateEscape = 0xdc:byteType;
 
+  pragma "no doc"
+  var chpl_bmh_badChar = c_calloc(c_int, 256);
+
   private proc isBytesOrStringType(type t) param: bool {
     return t==bytes || t==string;
   }
@@ -721,47 +724,71 @@ module BytesStringCommon {
 
         const numChar = 256;
 
-        // Preprocessing bad character heurestic
-        var badChar = c_calloc(c_int, numChar);
-
         for i in 0..#numChar {
-          badChar[i] = nLen: int(32);
+          chpl_bmh_badChar[i] = nLen: int(32);
         }
 
-        for i in 0..#nLen {
-          badChar[localNeedle.byte(i)] = (nLen - 1 - i):int(32);
-        }
-        // End preprocessing
-
-        var idx = 0;
-
-        while idx <= (xLen - nLen) {
-          var j = nLen - 1;
-
-          while(j >= 0) {
-            const idx1 = view.orderToIndex(idx+j);
-            if x.buff[idx1] != localNeedle.buff[j] then break;
-            j -= 1;
+        if fromLeft {
+          // Preprocessing bad character heurestic
+          for i in 0..#nLen {
+            chpl_bmh_badChar[localNeedle.byte(i)] = (nLen - 1 - i):int(32);
           }
+          // End preprocessing
 
-          if(j < 0) {
-            if count {
-              localRet += 1;
-            }
-            else {
-              localRet = view.orderToIndex(idx);
+          var idx = 0;
+
+          while idx <= (xLen - nLen) {
+            var j = nLen - 1;
+
+            while j >= 0 {
+              const idx1 = view.orderToIndex(idx+j);
+              if x.buff[idx1] != localNeedle.buff[j] then break;
+              j -= 1;
             }
 
-            if !count && fromLeft {
+            if j < 0 {
+              if count {
+                localRet += 1;
+              }
+              else {
+                localRet = view.orderToIndex(idx);
+                break;
+              }
+            }
+            const idx1 = view.orderToIndex(idx + nLen - 1);
+            idx += max(1, chpl_bmh_badChar[x.byte(idx1)]);
+          }
+          if count then localRet += 1;
+          ret = localRet;
+        }
+        else {
+          // Preprocessing bad character heurestic
+          for i in 0..(nLen - 1) by -1 {
+            chpl_bmh_badChar[localNeedle.byte(i)] = i:int(32);
+          }
+          // End preprocessing
+
+          var idx = 0;
+
+          while idx <= (xLen - nLen) {
+            var j = nLen - 1;
+
+            while j >= 0 {
+              const idx1 = view.orderToIndex(xLen - 1 - (idx + j));
+              if x.buff[idx1] != localNeedle.buff[nLen - 1 - j] then break;
+              j -= 1;
+            }
+
+            if j < 0 {
+              localRet = view.orderToIndex(xLen - 1 - idx - (nLen - 1));
               break;
             }
+            const idx1 = view.orderToIndex(xLen - 1 - (idx + nLen - 1));
+            idx += max(1, chpl_bmh_badChar[x.byte(idx1)]);
           }
-          const idx1 = view.orderToIndex(idx + nLen - 1);
-          idx += max(1, badChar[x.byte(idx1)]);
+          ret = localRet;
         }
       }
-      if count then localRet += 1;
-      ret = localRet;
     }
     return ret;
   }
