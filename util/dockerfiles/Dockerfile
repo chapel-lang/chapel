@@ -27,7 +27,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 Run update-alternatives --install /usr/bin/python python /usr/bin/python3.7 20
 Run update-alternatives --set python /usr/bin/python3.7
 
-ENV CHPL_VERSION 1.24.0
+ENV CHPL_VERSION 1.24.1
 ENV CHPL_HOME    /opt/chapel/$CHPL_VERSION
 ENV CHPL_GMP     system
 
