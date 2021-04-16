@@ -753,6 +753,46 @@ Type* getConcreteParentForGenericFormal(Type* actualType, Type* formalType) {
   return retval;
 }
 
+// For when getConcreteParentForGenericFormal wouldn't return but there's
+// still a valid relationship between the types.
+Type* getMoreInstantiatedParentForGenericFormal(Type* actualType,
+                                                Type* formalType) {
+  Type* retval = NULL;
+
+  if (AggregateType* at = toAggregateType(actualType)) {
+    forv_Vec(AggregateType, parent, at->dispatchParents) {
+      if (isInstantiation(parent, formalType) == true) {
+        retval = parent;
+        break;
+
+      } else if (parent == formalType) {
+        // There might be a better match, so don't break, but it's still a
+        // match
+        retval = parent;
+
+      } else if (Type* t = getMoreInstantiatedParentForGenericFormal(parent, formalType)) {
+        retval = t;
+        break;
+      }
+    }
+
+    if (retval == NULL) {
+      if (isClass(formalType)) {
+        // Handle e.g. Owned(GenericClass) passed to a formal : GenericClass
+        // TODO: Why is this here and not in getBasicInstantiationType?
+        if (isManagedPtrType(at)) {
+          Type* classType = getManagedPtrBorrowType(actualType);
+          if (canInstantiate(classType, formalType)) {
+            retval = classType;
+          }
+        }
+      }
+    }
+  }
+
+  return retval;
+}
+
 static bool instantiatedFieldsMatch(Type* actualType, Type* formalType) {
 
   AggregateType* actual = toAggregateType(actualType);
