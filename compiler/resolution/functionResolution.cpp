@@ -779,7 +779,6 @@ Type* getMoreInstantiatedParentForGenericFormal(Type* actualType,
     if (retval == NULL) {
       if (isClass(formalType)) {
         // Handle e.g. Owned(GenericClass) passed to a formal : GenericClass
-        // TODO: Why is this here and not in getBasicInstantiationType?
         if (isManagedPtrType(at)) {
           Type* classType = getManagedPtrBorrowType(actualType);
           if (canInstantiate(classType, formalType)) {
