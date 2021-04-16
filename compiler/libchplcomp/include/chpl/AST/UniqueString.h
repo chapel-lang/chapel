@@ -114,7 +114,7 @@ class UniqueString final {
   size_t hash() const {
     return (size_t) s.i.v;
   }
-  void swap(UniqueString other) {
+  void swap(UniqueString& other) {
     UniqueString oldThis = *this;
     *this = other;
     other = oldThis;

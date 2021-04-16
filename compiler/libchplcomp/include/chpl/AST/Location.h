@@ -31,6 +31,8 @@ class Location final {
       lastLine_(lastLine), lastColumn_(lastColumn) {
   }
 
+  UniqueString path() { return path_; }
+
   inline bool operator==(const Location other) const {
     return this->path_ == other.path_ &&
            this->firstLine_ == other.firstLine_ &&
@@ -46,7 +48,16 @@ class Location final {
            this->lastColumn_ != other.lastColumn_;
   }
 
-  void swap(Location other) {
+  size_t hash() const {
+    size_t h = this->path_.hash();
+    h = hash_combine(h, this->firstLine_);
+    h = hash_combine(h, this->firstColumn_);
+    h = hash_combine(h, this->lastLine_);
+    h = hash_combine(h, this->lastColumn_);
+    return h;
+  }
+
+  void swap(Location& other) {
     Location oldThis = *this;
     *this = other;
     other = oldThis;

@@ -136,6 +136,34 @@ void test1() {
   // check that default-constructed unique string matches one from ""
   UniqueString empty;
   assert(empty == UniqueString::build(ctx, ""));
+
+  // check ==
+  assert(t1 == t2);
+  assert(!(t1 != t2));
+  assert(h1 != t1);
+  assert(!(h1 == t1));
+
+  // test copy init
+  UniqueString t1Copy = t1;
+  UniqueString h1Copy = h1;
+  assert(t1Copy == t1);
+  assert(h1Copy == h1);
+
+  // test assignment
+  UniqueString t1assign;
+  UniqueString h1assign;
+  t1assign = t1;
+  h1assign = h1;
+  assert(t1assign == t1);
+  assert(h1assign == h1);
+
+  // test swap
+  t1Copy.swap(h1Copy);
+  assert(t1Copy == h1);
+  assert(h1Copy == t1);
+
+  // test hash
+  assert(t1.hash() != h1.hash());
 }
 
 

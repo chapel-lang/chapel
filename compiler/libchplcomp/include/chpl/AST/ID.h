@@ -85,6 +85,12 @@ class ID final {
   size_t hash() const {
     return hash_combine(symbolPath_.hash(), postOrderId_);
   }
+
+  void swap(ID& other) {
+    ID oldThis = *this;
+    *this = other;
+    other = oldThis;
+  }
 };
 
 } // end namespace ast
