@@ -4643,7 +4643,8 @@ DEFINE_PRIM(PRIM_GPU_KERNEL_LAUNCH) {
     args.push_back(actual->codegen());
   }
 
-  // TODO: make this emit what you want
+  //arguments for PRIM_GPU_KERNEL_LAUNCH go directly
+  //to cuLaunchKernel
   ret = codegenCallExpr("cuLaunchKernel", args);
 }
 
