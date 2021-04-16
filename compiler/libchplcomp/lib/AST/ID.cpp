@@ -1,5 +1,7 @@
 #include "chpl/AST/ID.h"
 
+#include <cstring>
+
 namespace chpl {
 namespace ast {
 

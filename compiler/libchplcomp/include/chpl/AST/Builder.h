@@ -29,12 +29,12 @@ class Builder final {
 
   Context* context_;
   UniqueString inferredModuleName_;
-  ExprList topLevelExprs_;
+  ASTList topLevelExprs_;
   std::vector<ErrorMessage> errors_;
   std::vector<std::pair<BaseAST*, Location>> locations_;
 
   Builder(Context* context, UniqueString inferredModuleName);
-  void createImplicitModuleIfNeeded();
+  UniqueString createImplicitModuleIfNeeded();
   void assignIDs();
   void assignIDs(BaseAST* ast, pathVecT& path, declaredHereT& decl);
   void assignIDsPostorder(BaseAST* ast, UniqueString symbolPath, int& i);
@@ -64,7 +64,7 @@ class Builder final {
     This struct records the result of building some AST.
    */
   struct Result final {
-    ast::ExprList topLevelExprs;
+    ast::ASTList topLevelExprs;
     std::vector<ErrorMessage> errors;
     std::vector<std::pair<BaseAST*, Location>> locations;
   };

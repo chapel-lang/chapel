@@ -102,10 +102,7 @@ static std::size_t queryArgsHashImpl(const std::tuple<Ts...>& tuple) {
   if (I + 1 < sizeof...(Ts)) {
     size_t resthash =
       queryArgsHashImpl<(I + 1 < sizeof... (Ts) ? I + 1 : I)>(tuple);
-    size_t hash = myhash;
-    // this hash combiner is from boost hash_combine
-    hash ^= resthash + 0x9e3779b9 + (resthash << 6) + (resthash >> 2);
-    return hash;
+    return chpl::hash_combine(myhash, resthash);
   } else {
     return myhash;
   }

@@ -1,5 +1,7 @@
 #include "chpl/Queries/Context.h"
 
+#include "chpl/Queries/QueryImpl.h"
+
 #include <cstdlib>
 #include <cassert>
 
@@ -57,6 +59,67 @@ const char* Context::getOrCreateUniqueString(const char* str) {
   return buf;
 }
 
+const char* Context::uniqueCString(const char* s) {
+  if (s == NULL) s = "";
+  return this->getOrCreateUniqueString(s);
+}
+
+UniqueString Context::moduleNameForID(ID id) {
+  // If the symbol path is empty, this ID doesn't have a module.
+  if (id.symbolPath().isEmpty()) {
+    UniqueString empty;
+    return empty;
+  }
+  
+  // Otherwise, the module name is everything up to the first '.'
+  size_t len = 0;
+  const char* s = id.symbolPath().c_str();
+  while (true) {
+    if (*s == '\0' || *s == '.') break;
+    len++;
+  }
+
+  return UniqueString::build(this, s, len);
+}
+
+UniqueString Context::filePathForID(ID id) {
+  UniqueString modName = this->moduleNameForID(id);
+  return this->filePathForModuleName(modName);
+}
+
+UniqueString Context::filePathForModuleName(UniqueString modName) {
+  QUERY_BEGIN_NAMED(this, UniqueString, "filePathForModuleName", modName);
+  if (QUERY_USE_SAVED()) {
+    return QUERY_GET_SAVED();
+  }
+  assert(false && "This query should always use a saved result");
+  auto result = UniqueString::build(this, "<unknown file path>");
+  return QUERY_END(result);
+}
+
+void Context::setFilePathForModuleName(UniqueString modName, UniqueString path) {
+  UniqueString queryName = UniqueString::build(this, "filePathForModuleName");
+  auto tupleOfArgs = std::make_tuple(modName);
+  bool changed = false;
+  auto queryMapResult = updateResultForQuery(queryName, tupleOfArgs,
+                                             path, changed);
+}
+
+void Context::setFileText(UniqueString path, std::string data) {
+  UniqueString queryName = UniqueString::build(this, "fileText");
+  auto tupleOfArgs = std::make_tuple(path);
+  bool changed = false;
+  auto queryMapResult = updateResultForQuery(queryName, tupleOfArgs,
+                                             data, changed);
+  if (changed) {
+    this->currentRevisionNumber++;
+    auto currentRevision = this->currentRevisionNumber;
+    queryMapResult->lastCheckedAndReused = 0;
+    queryMapResult->lastComputed = currentRevision;
+    queryMapResult->lastChanged = currentRevision;
+  }
+}
+
 bool Context::queryCanUseSavedResult(QueryMapResultBase* resultEntry) {
   // If we already checked this query in this revision,
   // we can use this result
@@ -78,6 +141,17 @@ bool Context::queryCanUseSavedResult(QueryMapResultBase* resultEntry) {
   resultEntry->lastCheckedAndReused = this->currentRevisionNumber;
   return true;
 }
+
+bool Context::queryCanUseSavedResultAndPushIfNot(UniqueString queryName, QueryMapResultBase* resultEntry) {
+  bool ret = this->queryCanUseSavedResult(resultEntry);
+  if (ret == false) {
+    // since the result cannot be used, the query will be evaluated
+    // so push something to queryDeps
+    queryDeps.push_back(QueryDepsEntry(queryName));
+  }
+  return ret;
+}
+
 void Context::saveDependenciesAndErrorsInParent(QueryMapResultBase* resultEntry) {
   // Record that the parent query depends upon this one. 
   //
@@ -107,11 +181,6 @@ void Context::endQueryHandleDependency(QueryMapResultBase* result) {
 void Context::queryNoteError(ErrorMessage error) {
   assert(queryDeps.size() > 0);
   queryDeps.back().errors.push_back(error);
-}
-
-const char* Context::uniqueCString(const char* s) {
-  if (s == NULL) s = "";
-  return this->getOrCreateUniqueString(s);
 }
 
 

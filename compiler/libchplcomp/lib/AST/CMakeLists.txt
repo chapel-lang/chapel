@@ -11,8 +11,12 @@ target_sources(libchplcomp-obj
                Expr.cpp
                ID.cpp
                Identifier.cpp
+               Module.cpp
+               ModuleDecl.cpp
                Stmt.cpp
+               Symbol.cpp
                UniqueString.cpp
-               VarDecl.cpp
+               Variable.cpp
+               VariableDecl.cpp
 
               )

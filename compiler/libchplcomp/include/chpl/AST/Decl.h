@@ -2,6 +2,7 @@
 #define CHPL_AST_DECL_H
 
 #include "chpl/AST/Expr.h"
+#include "chpl/AST/Symbol.h"
 #include "chpl/AST/UniqueString.h"
 
 namespace chpl {
@@ -11,27 +12,23 @@ namespace ast {
   This is an abstract base class for declarations
  */
 class Decl : public Expr {
- public:
-  enum Visibility {
-    VISIBILITY_DEFAULT,
-    VISIBILITY_PUBLIC,
-    VISIBILITY_PRIVATE,
-  };
-
- private:
-  UniqueString name_;
-  Visibility visibility_;
-
  protected:
-  Decl(asttags::ASTTag tag, UniqueString name, Visibility visibility);
-  Decl(asttags::ASTTag tag, ExprList children,
-       UniqueString name, Visibility visibility);
+  Decl(asttags::ASTTag tag, owned<Symbol> symbol);
 
  public:
   virtual ~Decl() = 0; // this is an abstract base class
 
-  UniqueString name() { return name_; }
-  Visibility visibility() { return visibility_; }
+  const Symbol* symbol() const {
+    const BaseAST* ast = getChild(0);
+    assert(ast->isSymbol());
+    return (const Symbol*) ast;
+  }
+  UniqueString name() const {
+    return symbol()->name();
+  }
+  Symbol::Visibility visibility() const {
+    return symbol()->visibility();
+  }
 };
 
 } // end namespace ast

@@ -8,7 +8,7 @@ Expr::Expr(asttags::ASTTag tag)
   : BaseAST(tag) {
 }
 
-Expr::Expr(asttags::ASTTag tag, ExprList children)
+Expr::Expr(asttags::ASTTag tag, ASTList children)
   : BaseAST(tag, std::move(children)) {
 }
 

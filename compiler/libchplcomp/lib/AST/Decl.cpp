@@ -5,15 +5,8 @@
 namespace chpl {
 namespace ast {
 
-
-Decl::Decl(asttags::ASTTag tag, UniqueString name, Decl::Visibility visibility)
-  : Expr(tag), name_(name), visibility_(visibility) {
-}
-
-Decl::Decl(asttags::ASTTag tag, ExprList children,
-           UniqueString name, Decl::Visibility visibility)
-  : Expr(tag, std::move(children)),
-    name_(name), visibility_(visibility) {
+Decl::Decl(asttags::ASTTag tag, owned<Symbol> symbol)
+  : Expr(tag, makeASTList(std::move(symbol))) {
 }
 
 Decl::~Decl() {

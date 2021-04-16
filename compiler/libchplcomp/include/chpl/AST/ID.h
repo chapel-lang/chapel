@@ -72,15 +72,46 @@ class ID final {
       result  > 0 if this > other
    */
   int compare(const ID other) const;
+
+  inline bool operator==(const ID other) const {
+    return this->symbolPath_ == other.symbolPath_ &&
+           this->postOrderId_ == other.postOrderId_;
+  }
+  inline bool operator!=(const ID other) const {
+    return this->symbolPath_ != other.symbolPath_ ||
+           this->postOrderId_ != other.postOrderId_;
+  }
+
+  size_t hash() const {
+    return hash_combine(symbolPath_.hash(), postOrderId_);
+  }
 };
 
 } // end namespace ast
+
+// Allow chpl::ast::ID to be just called chpl::ID
+// TODO: Should it be moved out of the ast namespace? What directory
+// should it go in?
+
+using chpl::ast::ID;
+
 } // end namespace chpl
 
 namespace std {
   template<> struct less<chpl::ast::ID> {
     bool operator()(const chpl::ast::ID lhs, const chpl::ast::ID rhs) const {
       return lhs.compare(rhs) < 0;
+    }
+  };
+  template<> struct hash<chpl::ast::ID> {
+    size_t operator()(const chpl::ast::ID key) const {
+      return (size_t) key.hash();
+    }
+  };
+  template<> struct equal_to<chpl::ast::ID> {
+    bool operator()(const chpl::ast::ID lhs,
+                    const chpl::ast::ID rhs) const {
+      return lhs == rhs;
     }
   };
 } // end namespace std

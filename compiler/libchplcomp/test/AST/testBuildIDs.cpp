@@ -1,5 +1,3 @@
-// g++ -g -I compiler/libchplcomp/include/ compiler/libchplcomp/lib/AST/*.cpp compiler/libchplcomp/lib/Util/*.cpp compiler/libchplcomp/test/AST/testBuildIDs.cpp
-
 #include "chpl/AST/BlockStmt.h"
 #include "chpl/AST/Builder.h"
 #include "chpl/AST/ErrorMessage.h"
@@ -29,7 +27,7 @@ void test0() {
     auto strA = UniqueString::build(ctx, "a");
     auto strB = UniqueString::build(ctx, "b");
     auto strC = UniqueString::build(ctx, "c");
-    ExprList children;
+    ASTList children;
 
     children.push_back(Identifier::build(b, emptyLoc, strA));
     children.push_back(Identifier::build(b, emptyLoc, strB));
@@ -98,14 +96,14 @@ void test1() {
     auto strB = UniqueString::build(ctx, "b");
     auto strC = UniqueString::build(ctx, "c");
 
-    ExprList outer;
+    ASTList outer;
     outer.push_back(Identifier::build(b, emptyLoc, strA));
     {
-      ExprList empty;
+      ASTList empty;
       outer.push_back(BlockStmt::build(b, emptyLoc, std::move(empty)));
     }
     {
-      ExprList block;
+      ASTList block;
       block.push_back(Identifier::build(b, emptyLoc, strB));
       outer.push_back(BlockStmt::build(b, emptyLoc, std::move(block)));
     }

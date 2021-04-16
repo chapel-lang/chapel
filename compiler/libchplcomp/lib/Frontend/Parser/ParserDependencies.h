@@ -11,8 +11,12 @@
 #include "chpl/AST/Expr.h"
 #include "chpl/AST/Identifier.h"
 #include "chpl/AST/Location.h"
+#include "chpl/AST/Module.h"
+#include "chpl/AST/ModuleDecl.h"
 #include "chpl/AST/UniqueString.h"
-#include "chpl/AST/VarDecl.h"
+#include "chpl/AST/Symbol.h"
+#include "chpl/AST/Variable.h"
+#include "chpl/AST/VariableDecl.h"
 #include "chpl/Queries/Context.h"
 
 #include <cstdint>

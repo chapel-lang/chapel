@@ -108,10 +108,7 @@ struct InlinedString {
   static InlinedString buildUsingContextTable(Context* context,
                                               const char* s, int len);
 
-  static InlinedString build(Context* context, const char* s) {
-    int len = 0;
-    if (s != NULL) len = strlen(s);
-
+  static InlinedString build(Context* context, const char* s, size_t len) {
     if (len <= MAX_SIZE_INLINED) {
       // if it fits inline, just return that
       return InlinedString::buildFromAligned(s, len);
@@ -120,6 +117,11 @@ struct InlinedString {
       // which produces a string with even alignment
       return InlinedString::buildUsingContextTable(context, s, len);
     }
+  }
+  static InlinedString build(Context* context, const char* s) {
+    size_t len = 0;
+    if (s != NULL) len = strlen(s);
+    return InlinedString::build(context, s, len);
   }
 
   bool isInline() const {
@@ -139,6 +141,12 @@ struct InlinedString {
 // (which uses it in a union).
 struct PODUniqueString {
   InlinedString i;
+  static inline PODUniqueString build(Context* context,
+                                      const char* s, size_t len) {
+    PODUniqueString ret;
+    ret.i = InlinedString::build(context, s, len);
+    return ret;
+  }
   static inline PODUniqueString build(Context* context, const char* s) {
     PODUniqueString ret;
     ret.i = InlinedString::build(context, s);
@@ -151,6 +159,16 @@ struct PODUniqueString {
 
 } // end namespace detail
 } // end namespace ast
+
+// TODO: should this go somewhere else?
+static inline
+size_t hash_combine(size_t hash1, size_t hash2) {
+  size_t hash = hash1;
+  size_t other = hash2;
+  hash ^= other + 0x9e3779b9 + (other << 6) + (other >> 2);
+  return hash;
+}
+
 } // end namespace chpl
 /// \endcond
 

@@ -2,6 +2,7 @@
 #define CHPL_QUERIES_CONTEXT_H
 
 #include "chpl/AST/UniqueString.h"
+#include "chpl/AST/ID.h"
 #include "chpl/Queries/ContextDetail.h"
 #include "chpl/Util/memory.h"
 
@@ -23,6 +24,12 @@ class Context {
   // without slicing.
   std::unordered_map<UniqueString, owned<chpl::querydetail::QueryMapBase>> queryDB;
 
+  // Since IDs include module names but not file paths, use this
+  // map to go from module name to file path.
+  // (If this proves too restrictive for some reason, we could
+  //  start including file path in IDs).
+  std::unordered_map<UniqueString, UniqueString> modNameToFilepath;
+
   struct QueryDepsEntry {
     UniqueString queryName;
     chpl::querydetail::QueryDependencyVec dependencies;
@@ -42,6 +49,13 @@ class Context {
   bool queryCanUseSavedResult(chpl::querydetail::QueryMapResultBase* resultEntry);
   void saveDependenciesAndErrorsInParent(chpl::querydetail::QueryMapResultBase* resultEntry);
   void endQueryHandleDependency(chpl::querydetail::QueryMapResultBase* result);
+
+  template<typename ResultType, typename... ArgTs>
+  chpl::querydetail::QueryMapResult<ResultType>*
+  updateResultForQuery(UniqueString queryName,
+                       const std::tuple<ArgTs...>& tupleOfArgs,
+                       ResultType result,
+                       bool& changed);
 
   // Future Work: support marking used strings and garbage collecting the rest
   // Could store an atomic uint_8 just after the string for the mark.
@@ -85,13 +99,47 @@ class Context {
    */
   const char* uniqueCString(const char* s);
 
+  /**
+    Return the name of the module containing this ID.
+   */
+  UniqueString moduleNameForID(ID id);
+  /**
+    Return the file path for the file containing this ID.
+   */
+  UniqueString filePathForID(ID id);
+  
+  /**
+    Query to get a file path given a module name
+   */
+  UniqueString filePathForModuleName(UniqueString modName);
 
+  // setters for named queries.
+
+  /**
+    Sets the file path for the given toplevel module name. It does not bump
+    the current revision counter so is suitable for calling from
+    a parse query.
+   */
+  void setFilePathForModuleName(UniqueString modName, UniqueString path);
+
+  /**
+    setFileText will set the text for a particular file path.
+    It will bump the current revision counter if the text
+    is different from what it was.
+   */
+  void setFileText(UniqueString path, std::string data);
+
+  // the following functions are called by the macros defined in QueryImpl.h
+  // and should not be called directly
+
+  /// \cond DO_NOT_DOCUMENT
   template<typename ResultType, typename... ArgTs>
   chpl::querydetail::QueryMap<ResultType,ArgTs...>*
-    queryBeginGetMap(UniqueString queryName, const std::tuple<ArgTs...>& tupleOfArgs);
+    queryGetMap(UniqueString queryName, const std::tuple<ArgTs...>& tupleOfArgs);
 
   bool queryCanUseSavedResultAndPushIfNot(UniqueString queryName,
       chpl::querydetail::QueryMapResultBase* resultEntry);
+
   template<typename ResultType>
   const ResultType& queryGetSavedResult(chpl::querydetail::QueryMapResult<ResultType>* resultEntry);
 
@@ -100,6 +148,7 @@ class Context {
   ResultType& queryEnd(UniqueString queryName, ResultType result,
                       const std::tuple<ArgTs...>& tupleOfArgs,
                       chpl::querydetail::QueryMap<ResultType,ArgTs...>* queryMap);
+  /// \endcond
 };
 
 } // end namespace chpl

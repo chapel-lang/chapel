@@ -51,7 +51,7 @@ void Builder::noteLocation(BaseAST* ast, Location loc) {
 }
 
 Builder::Result Builder::result() {
-  this->createImplicitModuleIfNeeded();
+  UniqueString inferredModuleName = this->createImplicitModuleIfNeeded();
   this->assignIDs();
 
   // Performance: We could consider copying all of these AST
@@ -67,8 +67,20 @@ Builder::Result Builder::result() {
   return ret;
 }
 
-void Builder::createImplicitModuleIfNeeded() {
-  // TODO
+// Returns the name of the implicit module, or "" if there is none
+UniqueString Builder::createImplicitModuleIfNeeded() {
+  bool containsOnlyModules = true;
+  for (auto const& ownedExpr: topLevelExprs_) {
+    if (ownedExpr->isModuleDecl() == false) {
+      containsOnlyModules = false;
+    }
+  }
+  if (containsOnlyModules) {
+    UniqueString empty;
+    return empty;
+  } else {
+    return inferredModuleName_;
+  }
 }
 
 void Builder::assignIDs() {
@@ -77,8 +89,8 @@ void Builder::assignIDs() {
 
   path.push_back(std::make_pair(inferredModuleName_, 0));
   for (auto const& ownedExpr: topLevelExprs_) {
-    Expr* e = ownedExpr.get();
-    assignIDs(e, path, decl); 
+    const BaseAST* ast = ownedExpr.get();
+    assignIDs((BaseAST*)ast, path, decl); 
   }
 }
 

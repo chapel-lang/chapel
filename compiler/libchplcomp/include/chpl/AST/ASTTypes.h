@@ -27,12 +27,19 @@ namespace ast {
 #undef AST_DECL
 
 // forward declare other classes
+class BaseAST;
 class Builder;
 
 /**
- ExprList is just a list that owns some expressions.
+  ASTList is just a list that owns some AST nodes.
  */
-typedef std::vector<owned<Expr>> ExprList;
+typedef std::vector<owned<BaseAST>> ASTList;
+
+static inline ASTList makeASTList(owned<BaseAST> ast) {
+  ASTList lst;
+  lst.push_back(std::move(ast));
+  return lst;
+}
 
 } // end namespace ast
 } // end namespace chpl

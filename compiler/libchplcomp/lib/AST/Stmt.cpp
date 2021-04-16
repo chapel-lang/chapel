@@ -8,7 +8,7 @@ Stmt::Stmt(asttags::ASTTag tag)
   : Expr(tag) {
 }
 
-Stmt::Stmt(asttags::ASTTag tag, ExprList children)
+Stmt::Stmt(asttags::ASTTag tag, ASTList children)
   : Expr(tag, std::move(children)) {
 }
 

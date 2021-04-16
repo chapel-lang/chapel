@@ -47,12 +47,26 @@ class UniqueString final {
 
   /**
     Get or create a unique string for a NULL-terminated C string.
-    If NULL is provided, this function will return uniqueString("").
+    If NULL is provided, this function will return the UniqueString
+    representing "".
    */
   static inline UniqueString build(Context* context, const char* s) {
     detail::PODUniqueString ret = detail::PODUniqueString::build(context, s);
     return UniqueString(ret);
   }
+
+  /**
+    Get or create a unique string for a string from a pointer
+    and a length. If the length is 0, this function will return
+    the UniqueString representing "".
+   */
+  static inline UniqueString build(Context* context,
+                                   const char* s, size_t len) {
+    detail::PODUniqueString ret =
+      detail::PODUniqueString::build(context, s, len);
+    return UniqueString(ret);
+  }
+
 
   /**
     Get or create a unique string for a C++ string
@@ -99,6 +113,11 @@ class UniqueString final {
   }
   size_t hash() const {
     return (size_t) s.i.v;
+  }
+  void swap(UniqueString other) {
+    UniqueString oldThis = *this;
+    *this = other;
+    other = oldThis;
   }
 };
 

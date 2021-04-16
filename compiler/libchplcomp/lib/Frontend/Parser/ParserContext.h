@@ -46,8 +46,8 @@ struct ParserContext {
 
   // Tracking a current state for these makes it easier to write
   // the parser rules.
-  Decl::Visibility visibility;
-  VarDecl::Tag varDeclTag;
+  Symbol::Visibility visibility;
+  Variable::Tag varDeclTag;
 
   ParserContext(const char* filename, Builder* builder)
   {
@@ -58,8 +58,8 @@ struct ParserContext {
     this->builder            = builder;
     this->topLevelStatements = nullptr;
     this->comments           = nullptr;
-    this->visibility         = Decl::VISIBILITY_DEFAULT;
-    this->varDeclTag         = VarDecl::VAR;
+    this->visibility         = Symbol::VISIBILITY_DEFAULT;
+    this->varDeclTag         = Variable::VAR;
   }
 
   Context* context() { return builder->context(); }
@@ -82,7 +82,7 @@ struct ParserContext {
   }
   void appendList(ParserExprList* dst, std::vector<ParserComment>* comments);
   void appendList(ParserExprList* dst, CommentsAndStmt cs);
-  ExprList consumeList(ParserExprList* lst);
+  ASTList consumeList(ParserExprList* lst);
 
   std::vector<ParserComment>* gatherCommentsFromList(ParserExprList* lst,
                                                      YYLTYPE location);

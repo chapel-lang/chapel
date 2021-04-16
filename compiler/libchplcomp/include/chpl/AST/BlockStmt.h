@@ -12,19 +12,21 @@ namespace ast {
  */
 class BlockStmt final : public Stmt {
  private:
-  BlockStmt(ExprList stmts);
+  BlockStmt(ASTList stmts);
 
  public:
   /**
    Create and return a BlockStmt containing the passed stmts.
    */
-  static owned<BlockStmt> build(Builder* builder, Location loc, ExprList stmts);
+  static owned<BlockStmt> build(Builder* builder, Location loc, ASTList stmts);
 
   int numStmts() const {
     return this->numChildren();
   }
   const Expr* stmt(int i) const {
-    return this->getChild(i);
+    const BaseAST* ast = this->getChild(i);
+    assert(ast->isExpr());
+    return (const Expr*)ast;
   }
 };
 

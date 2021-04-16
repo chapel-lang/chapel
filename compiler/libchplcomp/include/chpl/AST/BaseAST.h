@@ -6,6 +6,8 @@
 #include "chpl/AST/ASTTypes.h"
 #include "chpl/Util/memory.h"
 
+#include <cassert>
+
 namespace chpl {
 namespace ast {
 
@@ -32,11 +34,11 @@ class BaseAST {
  private:
   asttags::ASTTag tag_;
   ID id_;
-  ExprList children_;
+  ASTList children_;
 
  protected:
   BaseAST(asttags::ASTTag tag);
-  BaseAST(asttags::ASTTag tag, ExprList children);
+  BaseAST(asttags::ASTTag tag, ASTList children);
   // called by the Builder
   void setID(ID id) { id_ = id; }
 
@@ -68,7 +70,8 @@ class BaseAST {
     This function returns a "borrow" of the AST node. It is managed
     by this object.
    */
-  const Expr* getChild(int i) const {
+  const BaseAST* getChild(int i) const {
+    assert(0 <= i && i < children_.size());
     return children_[i].get();
   }
 
@@ -156,6 +159,8 @@ namespace std {
 /// \endcond
 // Apply the above macros to ASTClassesList.h
 #include "chpl/AST/ASTClassesList.h"
+// Additionally, apply the macro to BaseAST
+AST_LESS(BaseAST)
 // clear the macros
 #undef AST_NODE
 #undef AST_LEAF

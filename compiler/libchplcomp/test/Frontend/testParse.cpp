@@ -1,5 +1,3 @@
-// g++ -g -I compiler/libchplcomp/include/ compiler/libchplcomp/lib/AST/*.cpp compiler/libchplcomp/lib/Frontend/*.cpp compiler/libchplcomp/lib/Frontend/Parser/{bison-chapel,flex-chapel}.cpp compiler/libchplcomp/lib/Util/*.cpp compiler/libchplcomp/test/Frontend/testParse.cpp
-
 #include "chpl/AST/BlockStmt.h"
 #include "chpl/AST/Expr.h"
 #include "chpl/Frontend/Parser.h"
@@ -175,7 +173,7 @@ static void test13(Parser* parser) {
                                          "var a;\n"
                                          "a;");
   assert(parseResult.topLevelExprs.size() == 2);
-  assert(parseResult.topLevelExprs[0]->isVarDecl());
+  assert(parseResult.topLevelExprs[0]->isVariableDecl());
   assert(parseResult.topLevelExprs[1]->isIdentifier());
   assert(parseResult.errors.size() == 0);
 }

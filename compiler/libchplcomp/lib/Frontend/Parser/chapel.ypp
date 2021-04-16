@@ -248,8 +248,8 @@
     ReturnTag                  returnTag;
     ShadowTag                  shadowTag;
     ThrowsTag                  throwsTag;
-    VarDecl::Tag               variableTag;
-    Decl::Visibility           visibilityTag;
+    Variable::Tag              variableTag;
+    Symbol::Visibility         visibilityTag;
 
     // simple pointer values 
     BlockStmt*                 blockStmt;
@@ -656,7 +656,7 @@ module_decl_start:
   access_control opt_prototype TMODULE ident_def
     {
       $$ = TODOSTMT(@$);
-      context->visibility = Decl::VISIBILITY_DEFAULT;
+      context->visibility = Symbol::VISIBILITY_DEFAULT;
     }
 ;
 
@@ -674,9 +674,9 @@ module_decl_stmt:
 ;
 
 access_control:
-           { $$ = Decl::VISIBILITY_DEFAULT; context->visibility = $$; }
-| TPUBLIC  { $$ = Decl::VISIBILITY_PUBLIC;  context->visibility = $$; }
-| TPRIVATE { $$ = Decl::VISIBILITY_PRIVATE; context->visibility = $$; }
+           { $$ = Symbol::VISIBILITY_DEFAULT; context->visibility = $$; }
+| TPUBLIC  { $$ = Symbol::VISIBILITY_PUBLIC;  context->visibility = $$; }
+| TPRIVATE { $$ = Symbol::VISIBILITY_PRIVATE; context->visibility = $$; }
 ;
 
 opt_prototype:
@@ -688,7 +688,7 @@ include_module_stmt:
  TINCLUDE access_control opt_prototype TMODULE ident_def TSEMI
    {
      $$ = TODOSTMT(@$);
-     context->visibility = Decl::VISIBILITY_DEFAULT;
+     context->visibility = Symbol::VISIBILITY_DEFAULT;
    }
 ;
 
@@ -844,37 +844,37 @@ use_stmt:
   access_control TUSE use_renames_ls TSEMI
     {
       $$ = TODOSTMT(@$);
-      context->visibility = Decl::VISIBILITY_DEFAULT;
+      context->visibility = Symbol::VISIBILITY_DEFAULT;
     }
 | access_control TUSE expr TEXCEPT except_ls TSEMI
     {
       $$ = TODOSTMT(@$);
-      context->visibility = Decl::VISIBILITY_DEFAULT;
+      context->visibility = Symbol::VISIBILITY_DEFAULT;
     }
 | access_control TUSE expr TAS expr TEXCEPT except_ls TSEMI
     {
       $$ = TODOSTMT(@$);
-      context->visibility = Decl::VISIBILITY_DEFAULT;
+      context->visibility = Symbol::VISIBILITY_DEFAULT;
     }
 | access_control TUSE expr TAS TUNDERSCORE TEXCEPT except_ls TSEMI
     {
       $$ = TODOSTMT(@$);
-      context->visibility = Decl::VISIBILITY_DEFAULT;
+      context->visibility = Symbol::VISIBILITY_DEFAULT;
     }
 | access_control TUSE expr TONLY opt_only_ls TSEMI
     {
       $$ = TODOSTMT(@$);
-      context->visibility = Decl::VISIBILITY_DEFAULT;
+      context->visibility = Symbol::VISIBILITY_DEFAULT;
     }
 | access_control TUSE expr TAS expr TONLY opt_only_ls TSEMI
     {
       $$ = TODOSTMT(@$);
-      context->visibility = Decl::VISIBILITY_DEFAULT;
+      context->visibility = Symbol::VISIBILITY_DEFAULT;
     }
 | access_control TUSE expr TAS TUNDERSCORE TONLY opt_only_ls TSEMI
     {
       $$ = TODOSTMT(@$);
-      context->visibility = Decl::VISIBILITY_DEFAULT;
+      context->visibility = Symbol::VISIBILITY_DEFAULT;
     }
 ;
 
@@ -882,7 +882,7 @@ import_stmt:
   access_control TIMPORT import_ls TSEMI
     {
       $$ = TODOSTMT(@$);
-      context->visibility = Decl::VISIBILITY_DEFAULT;
+      context->visibility = Symbol::VISIBILITY_DEFAULT;
     }
 ;
 
@@ -1052,17 +1052,17 @@ class_level_stmt:
     {
       // visibility should be default when inner_class_level_stmt is parsed
       $$ = context->finishStmt($1);
-      context->visibility = Decl::VISIBILITY_DEFAULT;
+      context->visibility = Symbol::VISIBILITY_DEFAULT;
     }
-| TPUBLIC {context->visibility = Decl::VISIBILITY_PUBLIC;} inner_class_level_stmt
+| TPUBLIC {context->visibility = Symbol::VISIBILITY_PUBLIC;} inner_class_level_stmt
     {
       $$ = context->finishStmt($3);
-      context->visibility = Decl::VISIBILITY_DEFAULT;
+      context->visibility = Symbol::VISIBILITY_DEFAULT;
     }
-| TPRIVATE {context->visibility = Decl::VISIBILITY_PRIVATE;} inner_class_level_stmt
+| TPRIVATE {context->visibility = Symbol::VISIBILITY_PRIVATE;} inner_class_level_stmt
     {
       $$ = context->finishStmt($3);
-      context->visibility = Decl::VISIBILITY_DEFAULT;
+      context->visibility = Symbol::VISIBILITY_DEFAULT;
     }
 ;
 
@@ -1861,18 +1861,18 @@ opt_init_type:
 ;
 
 var_decl_type:
-  TPARAM      { $$ = VarDecl::PARAM;     context->varDeclTag = $$;}
-| TCONST TREF { $$ = VarDecl::CONST_REF; context->varDeclTag = $$;}
-| TREF        { $$ = VarDecl::REF;       context->varDeclTag = $$;}
-| TCONST      { $$ = VarDecl::CONST;     context->varDeclTag = $$;}
-| TVAR        { $$ = VarDecl::VAR;       context->varDeclTag = $$;}
+  TPARAM      { $$ = Variable::PARAM;     context->varDeclTag = $$;}
+| TCONST TREF { $$ = Variable::CONST_REF; context->varDeclTag = $$;}
+| TREF        { $$ = Variable::REF;       context->varDeclTag = $$;}
+| TCONST      { $$ = Variable::CONST;     context->varDeclTag = $$;}
+| TVAR        { $$ = Variable::VAR;       context->varDeclTag = $$;}
 ;
 
 var_decl_stmt:
   TCONFIG var_decl_type var_decl_stmt_inner_ls TSEMI
     {
       $$ = TODOSTMT(@$);
-      context->varDeclTag = VarDecl::VAR;
+      context->varDeclTag = Variable::VAR;
     }
 | var_decl_type var_decl_stmt_inner_ls TSEMI
     {
@@ -1883,7 +1883,7 @@ var_decl_stmt:
         $$ = TODOSTMT(@$);
       }
       delete lst;
-      context->varDeclTag = VarDecl::VAR;
+      context->varDeclTag = Variable::VAR;
     }
 ;
 
@@ -1900,10 +1900,10 @@ var_decl_stmt_inner_ls:
 
 var_decl_stmt_inner:
   ident_def opt_type opt_init_expr
-    { $$ = VarDecl::build(BUILDER, LOC(@$),
-                          $1, context->visibility,
-                          context->varDeclTag,
-                          toOwned($2), toOwned($3)).release(); }
+    { $$ = VariableDecl::build(BUILDER, LOC(@$),
+                               $1, context->visibility,
+                               context->varDeclTag,
+                               toOwned($2), toOwned($3)).release(); }
 | TLP tuple_var_decl_stmt_inner_ls TRP opt_type opt_init_expr
     { $$ = TODOEXPR(@$); }
 ;

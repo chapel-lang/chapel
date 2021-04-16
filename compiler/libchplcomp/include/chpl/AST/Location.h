@@ -30,6 +30,27 @@ class Location final {
       firstLine_(firstLine), firstColumn_(firstColumn),
       lastLine_(lastLine), lastColumn_(lastColumn) {
   }
+
+  inline bool operator==(const Location other) const {
+    return this->path_ == other.path_ &&
+           this->firstLine_ == other.firstLine_ &&
+           this->firstColumn_ == other.firstColumn_ &&
+           this->lastLine_ == other.lastLine_ &&
+           this->lastColumn_ == other.lastColumn_;
+  }
+  inline bool operator!=(const Location other) const {
+    return this->path_ != other.path_ ||
+           this->firstLine_ != other.firstLine_ ||
+           this->firstColumn_ != other.firstColumn_ ||
+           this->lastLine_ != other.lastLine_ ||
+           this->lastColumn_ != other.lastColumn_;
+  }
+
+  void swap(Location other) {
+    Location oldThis = *this;
+    *this = other;
+    other = oldThis;
+  }
 };
 
 } // end namespace ast

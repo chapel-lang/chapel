@@ -12,7 +12,7 @@ namespace ast {
 class Stmt : public Expr {
  protected:
   Stmt(asttags::ASTTag tag);
-  Stmt(asttags::ASTTag tag, ExprList children);
+  Stmt(asttags::ASTTag tag, ASTList children);
  public:
   virtual ~Stmt() = 0; // this is an abstract base class
 };

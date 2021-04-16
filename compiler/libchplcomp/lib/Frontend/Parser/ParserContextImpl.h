@@ -142,8 +142,8 @@ void ParserContext::appendList(ParserExprList* dst, CommentsAndStmt cs) {
   }
 }
 
-ExprList ParserContext::consumeList(ParserExprList* lst) {
-  ExprList ret;
+ASTList ParserContext::consumeList(ParserExprList* lst) {
+  ASTList ret;
   if (lst != nullptr) {
     for (Expr* e : *lst) {
       ret.push_back(toOwned(e));

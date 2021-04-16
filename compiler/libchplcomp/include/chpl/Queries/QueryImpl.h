@@ -13,7 +13,7 @@ namespace chpl {
 using namespace chpl::querydetail;
 
 template<typename ResultType, typename... ArgTs>
-QueryMap<ResultType,ArgTs...>* Context::queryBeginGetMap(UniqueString queryName, const std::tuple<ArgTs...>& tupleOfArgs) {
+QueryMap<ResultType,ArgTs...>* Context::queryGetMap(UniqueString queryName, const std::tuple<ArgTs...>& tupleOfArgs) {
   // Look up the map entry for this query name
   auto search = this->queryDB.find(queryName);
   if (search != this->queryDB.end()) {
@@ -34,15 +34,47 @@ QueryMap<ResultType,ArgTs...>* Context::queryBeginGetMap(UniqueString queryName,
   return (QueryMap<ResultType,ArgTs...>*)newBase;
 }
 
-
-bool Context::queryCanUseSavedResultAndPushIfNot(UniqueString queryName, QueryMapResultBase* resultEntry) {
-  bool ret = this->queryCanUseSavedResult(resultEntry);
-  if (ret == false) {
-    // since the result cannot be used, the query will be evaluated
-    // so push something to queryDeps
-    queryDeps.push_back(QueryDepsEntry(queryName));
+template<typename ResultType, typename... ArgTs>
+QueryMapResult<ResultType>*
+Context::updateResultForQuery(UniqueString queryName,
+                              const std::tuple<ArgTs...>& tupleOfArgs,
+                              ResultType result,
+                              bool& changed) {
+  // Look up the map entry for this query name
+  QueryMap<ResultType,ArgTs...>* queryMap =
+    queryGetMap<ResultType>(queryName, tupleOfArgs);
+  // Set the map element
+  auto search = queryMap->map.find(tupleOfArgs);
+  if (search != queryMap->map.end()) {
+   QueryMapResult<ResultType>* oldResult = &(search->second);
+   std::equal_to<ResultType> equal;
+   if (equal(oldResult->result, result)) {
+     changed = false;
+     oldResult->lastComputed = this->currentRevisionNumber;
+     return oldResult;
+   } else {
+     oldResult->result.swap(result);
+     changed = true;
+     auto currentRevision = this->currentRevisionNumber;
+     oldResult->lastComputed = currentRevision;
+     oldResult->lastChanged  = currentRevision;
+     return oldResult;
+   }
+  } else {
+    auto iter =
+      queryMap->map.emplace_hint(
+        search,
+        std::make_pair(tupleOfArgs,
+                       QueryMapResult<ResultType>(QueryDependencyVec(),
+                                                  0,
+                                                  this->currentRevisionNumber,
+                                                  this->currentRevisionNumber,
+                                                  QueryErrorVec(),
+                                                  std::move(result))));
+    QueryMapResult<ResultType>* newResult = &(iter->second);
+    changed = true;
+    return newResult;
   }
-  return ret;
 }
 
 template<typename ResultType>
@@ -61,44 +93,22 @@ ResultType& Context::queryEnd(UniqueString queryName,
   assert(queryDeps.size() > 0);
   assert(queryDeps.back().queryName == queryName);
 
-  auto search = queryMap->map.find(tupleOfArgs);
-  if (search != queryMap->map.end()) {
-    QueryMapResult<ResultType>* oldResult = &(search->second);
-    endQueryHandleDependency(oldResult);
+  bool changed = false;
+  QueryMapResult<ResultType>* ret =
+    this->updateResultForQuery(queryName,
+                               tupleOfArgs, std::move(result),
+                               changed);
 
-    std::equal_to<ResultType> equal;
-    if (equal(oldResult->result, result)) {
-      // no change to the result
-      // so update "last checked" but don't change "last changed".
-      oldResult->lastComputed = this->currentRevisionNumber;
-      return oldResult->result;
-    } else {
-      // change to the result
-      // so update "last changed" and "last checked"
-      // and store the new result in the map
-      oldResult->lastComputed = this->currentRevisionNumber;
-      oldResult->lastChanged = this->currentRevisionNumber;
-      oldResult->result.swap(result);
-      return oldResult->result;
-    }
+  endQueryHandleDependency(ret);
+
+  auto currentRevision = this->currentRevisionNumber;
+  if (changed == false) {
+    ret->lastComputed = currentRevision;
+  } else {
+    ret->lastComputed = currentRevision;
+    ret->lastChanged  = currentRevision;
   }
-  // result not found in map
-  // so update "last changed" and "last checked"
-  // and store the new result in the map
-  auto iter =
-    queryMap->map.emplace_hint(
-      search,
-      std::make_pair(tupleOfArgs,
-                     QueryMapResult<ResultType>(QueryDependencyVec(),
-                                                this->currentRevisionNumber,
-                                                this->currentRevisionNumber,
-                                                this->currentRevisionNumber,
-                                                QueryErrorVec(),
-                                                std::move(result))));
-  // update the dependencies with the result we have
-  QueryMapResult<ResultType>* newResult = &(iter->second);
-  endQueryHandleDependency(newResult);
-  return newResult->result;
+  return ret->result;
 }
 
 } // end namespace chpl
@@ -138,20 +148,25 @@ ResultType& Context::queryEnd(UniqueString queryName,
       return QUERY_END(result);
     }
 
+  QUERY_BEGIN_NAMED can be used to provide a name for the query.
+  That is needed in order to allow Context to have a setter method
+  for that query.
  */
+
+#define QUERY_BEGIN_NAMED(context, ResultType, queryName, ...) \
+  Context* BEGIN_QUERY_CONTEXT = context; \
+  UniqueString BEGIN_QUERY_NAME = UniqueString::build(context, queryName); \
+  auto BEGIN_QUERY_ARGS = std::make_tuple(__VA_ARGS__); \
+  auto BEGIN_QUERY_MAP = \
+    context->queryGetMap<ResultType>(BEGIN_QUERY_NAME, \
+                                     BEGIN_QUERY_ARGS); \
+  auto BEGIN_QUERY_SEARCH1 = BEGIN_QUERY_MAP->map.find(BEGIN_QUERY_ARGS);
+
 #define QUERY_BEGIN(context, ResultType, ...) \
   const char* BEGIN_QUERY_FILE = __FILE__; \
   int BEGIN_QUERY_LINE = __LINE__; \
-  const char* BEGIN_QUERY_FUNC = __func__; \
   const char* BEGIN_QUERY_FILE_LINE = __FILE__ STRINGIZE_LINE(__LINE__); \
-  Context* BEGIN_QUERY_CONTEXT = context; \
-  UniqueString BEGIN_QUERY_NAME = UniqueString::build(context, BEGIN_QUERY_FILE_LINE); \
-  auto BEGIN_QUERY_ARGS = std::make_tuple(__VA_ARGS__); \
-  auto BEGIN_QUERY_MAP = \
-    context->queryBeginGetMap<ResultType>(BEGIN_QUERY_NAME, \
-                                          BEGIN_QUERY_ARGS); \
-  auto BEGIN_QUERY_SEARCH1 = BEGIN_QUERY_MAP->map.find(BEGIN_QUERY_ARGS);
-
+  QUERY_BEGIN_NAMED(context, ResultType, BEGIN_QUERY_FILE_LINE, __VA_ARGS__);
 
 #define QUERY_USE_SAVED() \
   (BEGIN_QUERY_SEARCH1 != BEGIN_QUERY_MAP->map.end() && \

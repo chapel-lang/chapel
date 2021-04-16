@@ -6,13 +6,20 @@ namespace chpl {
 namespace ast {
 
 
-BlockStmt::BlockStmt(ExprList stmts) :
+BlockStmt::BlockStmt(ASTList stmts) :
   Stmt(asttags::BlockStmt, std::move(stmts)) {
+
+#ifndef NDEBUG
+  // check that all children are exprs (and not, say, Symbols)
+  for (int i = 0; i < this->numChildren(); i++) {
+    assert(getChild(i)->isExpr());
+  }
+#endif
 }
 
 owned<BlockStmt> BlockStmt::build(Builder* builder,
                                   Location loc,
-                                  ExprList stmts) {
+                                  ASTList stmts) {
   BlockStmt* ret = new BlockStmt(std::move(stmts));
   builder->noteLocation(ret, loc);
   return toOwned(ret);
