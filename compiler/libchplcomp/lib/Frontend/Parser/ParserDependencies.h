@@ -12,6 +12,7 @@
 #include "chpl/AST/Identifier.h"
 #include "chpl/AST/Location.h"
 #include "chpl/AST/UniqueString.h"
+#include "chpl/AST/VarDecl.h"
 #include "chpl/Queries/Context.h"
 
 #include <cstdint>

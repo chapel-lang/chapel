@@ -5,6 +5,7 @@ target_sources(libchplcomp-obj
                BlockStmt.cpp
                Builder.cpp
                Comment.cpp
+               Decl.cpp
                ErroneousExpr.cpp
                ErrorMessage.cpp
                Expr.cpp
@@ -12,5 +13,6 @@ target_sources(libchplcomp-obj
                Identifier.cpp
                Stmt.cpp
                UniqueString.cpp
+               VarDecl.cpp
 
               )

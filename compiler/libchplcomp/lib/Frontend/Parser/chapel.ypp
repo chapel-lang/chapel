@@ -94,12 +94,6 @@
     AggregateTag_UNION,
   };
 
-  enum VisibilityTag {
-    VisibilityTag_DEFAULT,
-    VisibilityTag_PUBLIC,
-    VisibilityTag_PRIVATE,
-  };
-
   enum PrototypeTag {
     PrototypeTag_DEFAULT,
     PrototypeTag_PROTOTYPE,
@@ -116,14 +110,6 @@
     NewTag_SHARED,
     NewTag_UNMANAGED,
     NewTag_BORROWED,
-  };
-
-  enum VariableTag {
-    VariableTag_VAR,
-    VariableTag_CONST,
-    VariableTag_CONST_REF,
-    VariableTag_REF,
-    VariableTag_PARAM,
   };
 
   enum ShadowTag {
@@ -262,8 +248,8 @@
     ReturnTag                  returnTag;
     ShadowTag                  shadowTag;
     ThrowsTag                  throwsTag;
-    VariableTag                variableTag;
-    VisibilityTag              visibilityTag;
+    VarDecl::Tag               variableTag;
+    Decl::Visibility           visibilityTag;
 
     // simple pointer values 
     BlockStmt*                 blockStmt;
@@ -670,7 +656,7 @@ module_decl_start:
   access_control opt_prototype TMODULE ident_def
     {
       $$ = TODOSTMT(@$);
-      context->visibility = VisibilityTag_DEFAULT;
+      context->visibility = Decl::VISIBILITY_DEFAULT;
     }
 ;
 
@@ -688,9 +674,9 @@ module_decl_stmt:
 ;
 
 access_control:
-           { $$ = VisibilityTag_DEFAULT; context->visibility = $$; }
-| TPUBLIC  { $$ = VisibilityTag_PUBLIC;  context->visibility = $$; }
-| TPRIVATE { $$ = VisibilityTag_PRIVATE; context->visibility = $$; }
+           { $$ = Decl::VISIBILITY_DEFAULT; context->visibility = $$; }
+| TPUBLIC  { $$ = Decl::VISIBILITY_PUBLIC;  context->visibility = $$; }
+| TPRIVATE { $$ = Decl::VISIBILITY_PRIVATE; context->visibility = $$; }
 ;
 
 opt_prototype:
@@ -702,7 +688,7 @@ include_module_stmt:
  TINCLUDE access_control opt_prototype TMODULE ident_def TSEMI
    {
      $$ = TODOSTMT(@$);
-     context->visibility = VisibilityTag_DEFAULT;
+     context->visibility = Decl::VISIBILITY_DEFAULT;
    }
 ;
 
@@ -858,37 +844,37 @@ use_stmt:
   access_control TUSE use_renames_ls TSEMI
     {
       $$ = TODOSTMT(@$);
-      context->visibility = VisibilityTag_DEFAULT;
+      context->visibility = Decl::VISIBILITY_DEFAULT;
     }
 | access_control TUSE expr TEXCEPT except_ls TSEMI
     {
       $$ = TODOSTMT(@$);
-      context->visibility = VisibilityTag_DEFAULT;
+      context->visibility = Decl::VISIBILITY_DEFAULT;
     }
 | access_control TUSE expr TAS expr TEXCEPT except_ls TSEMI
     {
       $$ = TODOSTMT(@$);
-      context->visibility = VisibilityTag_DEFAULT;
+      context->visibility = Decl::VISIBILITY_DEFAULT;
     }
 | access_control TUSE expr TAS TUNDERSCORE TEXCEPT except_ls TSEMI
     {
       $$ = TODOSTMT(@$);
-      context->visibility = VisibilityTag_DEFAULT;
+      context->visibility = Decl::VISIBILITY_DEFAULT;
     }
 | access_control TUSE expr TONLY opt_only_ls TSEMI
     {
       $$ = TODOSTMT(@$);
-      context->visibility = VisibilityTag_DEFAULT;
+      context->visibility = Decl::VISIBILITY_DEFAULT;
     }
 | access_control TUSE expr TAS expr TONLY opt_only_ls TSEMI
     {
       $$ = TODOSTMT(@$);
-      context->visibility = VisibilityTag_DEFAULT;
+      context->visibility = Decl::VISIBILITY_DEFAULT;
     }
 | access_control TUSE expr TAS TUNDERSCORE TONLY opt_only_ls TSEMI
     {
       $$ = TODOSTMT(@$);
-      context->visibility = VisibilityTag_DEFAULT;
+      context->visibility = Decl::VISIBILITY_DEFAULT;
     }
 ;
 
@@ -896,7 +882,7 @@ import_stmt:
   access_control TIMPORT import_ls TSEMI
     {
       $$ = TODOSTMT(@$);
-      context->visibility = VisibilityTag_DEFAULT;
+      context->visibility = Decl::VISIBILITY_DEFAULT;
     }
 ;
 
@@ -1066,17 +1052,17 @@ class_level_stmt:
     {
       // visibility should be default when inner_class_level_stmt is parsed
       $$ = context->finishStmt($1);
-      context->visibility = VisibilityTag_DEFAULT;
+      context->visibility = Decl::VISIBILITY_DEFAULT;
     }
-| TPUBLIC {context->visibility = VisibilityTag_PUBLIC;} inner_class_level_stmt
+| TPUBLIC {context->visibility = Decl::VISIBILITY_PUBLIC;} inner_class_level_stmt
     {
       $$ = context->finishStmt($3);
-      context->visibility = VisibilityTag_DEFAULT;
+      context->visibility = Decl::VISIBILITY_DEFAULT;
     }
-| TPRIVATE {context->visibility = VisibilityTag_PRIVATE;} inner_class_level_stmt
+| TPRIVATE {context->visibility = Decl::VISIBILITY_PRIVATE;} inner_class_level_stmt
     {
       $$ = context->finishStmt($3);
-      context->visibility = VisibilityTag_DEFAULT;
+      context->visibility = Decl::VISIBILITY_DEFAULT;
     }
 ;
 
@@ -1875,28 +1861,36 @@ opt_init_type:
 ;
 
 var_decl_type:
-  TPARAM      { $$ = VariableTag_PARAM; }
-| TCONST TREF { $$ = VariableTag_CONST_REF; }
-| TREF        { $$ = VariableTag_REF; }
-| TCONST      { $$ = VariableTag_CONST; }
-| TVAR        { $$ = VariableTag_VAR; }
+  TPARAM      { $$ = VarDecl::PARAM;     context->varDeclTag = $$;}
+| TCONST TREF { $$ = VarDecl::CONST_REF; context->varDeclTag = $$;}
+| TREF        { $$ = VarDecl::REF;       context->varDeclTag = $$;}
+| TCONST      { $$ = VarDecl::CONST;     context->varDeclTag = $$;}
+| TVAR        { $$ = VarDecl::VAR;       context->varDeclTag = $$;}
 ;
 
 var_decl_stmt:
   TCONFIG var_decl_type var_decl_stmt_inner_ls TSEMI
     {
-      $$ = context->finishStmt(TODOSTMT(@$));
+      $$ = TODOSTMT(@$);
+      context->varDeclTag = VarDecl::VAR;
     }
 | var_decl_type var_decl_stmt_inner_ls TSEMI
     {
-      $$ = context->finishStmt(TODOSTMT(@$));
+      ParserExprList* lst = $2;
+      if (lst->size() == 1) {
+        $$ = STMT(@$, (*lst)[0]);
+      } else {
+        $$ = TODOSTMT(@$);
+      }
+      delete lst;
+      context->varDeclTag = VarDecl::VAR;
     }
 ;
 
 var_decl_stmt_inner_ls:
   var_decl_stmt_inner
     {
-      $$ = TODOLIST(@$);
+      $$ = context->makeList($1);
     }
 | var_decl_stmt_inner_ls TCOMMA var_decl_stmt_inner
     {
@@ -1906,7 +1900,10 @@ var_decl_stmt_inner_ls:
 
 var_decl_stmt_inner:
   ident_def opt_type opt_init_expr
-    { $$ = TODOEXPR(@$); }
+    { $$ = VarDecl::build(BUILDER, LOC(@$),
+                          $1, context->visibility,
+                          context->varDeclTag,
+                          toOwned($2), toOwned($3)).release(); }
 | TLP tuple_var_decl_stmt_inner_ls TRP opt_type opt_init_expr
     { $$ = TODOEXPR(@$); }
 ;

@@ -44,7 +44,10 @@ struct ParserContext {
   // the statement and should not apply later).
   std::vector<ParserComment>* comments;
 
-  VisibilityTag visibility;
+  // Tracking a current state for these makes it easier to write
+  // the parser rules.
+  Decl::Visibility visibility;
+  VarDecl::Tag varDeclTag;
 
   ParserContext(const char* filename, Builder* builder)
   {
@@ -55,7 +58,8 @@ struct ParserContext {
     this->builder            = builder;
     this->topLevelStatements = nullptr;
     this->comments           = nullptr;
-    this->visibility         = VisibilityTag_DEFAULT;
+    this->visibility         = Decl::VISIBILITY_DEFAULT;
+    this->varDeclTag         = VarDecl::VAR;
   }
 
   Context* context() { return builder->context(); }

@@ -170,6 +170,16 @@ static void test12(Parser* parser) {
   assert(block->stmt(4)->isComment());
 }
 
+static void test13(Parser* parser) {
+  auto parseResult = parser->parseString("<test>",
+                                         "var a;\n"
+                                         "a;");
+  assert(parseResult.topLevelExprs.size() == 2);
+  assert(parseResult.topLevelExprs[0]->isVarDecl());
+  assert(parseResult.topLevelExprs[1]->isIdentifier());
+  assert(parseResult.errors.size() == 0);
+}
+
 
 int main() {
   auto context = Context::build();
@@ -190,6 +200,7 @@ int main() {
   test10(p);
   test11(p);
   test12(p);
+  test13(p);
 
   return 0;
 }

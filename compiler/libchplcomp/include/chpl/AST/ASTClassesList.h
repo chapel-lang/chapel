@@ -37,7 +37,6 @@ AST_BEGIN_SUBCLASSES(BaseAST)
     AST_LEAF(Comment)
     AST_LEAF(ErroneousExpr)
     AST_LEAF(Identifier)
-    AST_LEAF(Literal)
 
     AST_NODE(IfExpr)
     AST_NODE(TryExpr)
@@ -50,8 +49,8 @@ AST_BEGIN_SUBCLASSES(BaseAST)
     AST_END_SUBCLASSES(LoopExpr)
 
     AST_BEGIN_SUBCLASSES(LiteralExpr)
-      AST_NODE(StringLiteral) // includes bytes
-      AST_NODE(NumericLiteral)
+      AST_LEAF(StringLiteral) // includes bytes
+      AST_LEAF(NumericLiteral)
       AST_NODE(TupleLiteral)
       AST_NODE(ArrayLiteral)
       AST_NODE(DomainLiteral)
