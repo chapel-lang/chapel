@@ -160,7 +160,11 @@ ResultType& Context::queryEnd(UniqueString queryName,
   auto BEGIN_QUERY_MAP = \
     context->queryGetMap<ResultType>(BEGIN_QUERY_NAME, \
                                      BEGIN_QUERY_ARGS); \
-  auto BEGIN_QUERY_SEARCH1 = BEGIN_QUERY_MAP->map.find(BEGIN_QUERY_ARGS);
+  auto BEGIN_QUERY_SEARCH1 = BEGIN_QUERY_MAP->map.find(BEGIN_QUERY_ARGS); \
+  QueryMapResultBase* BEGIN_QUERY_FOUND1 = nullptr; \
+  if (BEGIN_QUERY_SEARCH1 != BEGIN_QUERY_MAP->map.end()) { \
+    BEGIN_QUERY_FOUND1 = &(BEGIN_QUERY_SEARCH1->second); \
+  }
 
 #define QUERY_BEGIN(context, ResultType, ...) \
   const char* BEGIN_QUERY_FILE = __FILE__; \
@@ -169,8 +173,7 @@ ResultType& Context::queryEnd(UniqueString queryName,
   QUERY_BEGIN_NAMED(context, ResultType, BEGIN_QUERY_FILE_LINE, __VA_ARGS__);
 
 #define QUERY_USE_SAVED() \
-  (BEGIN_QUERY_SEARCH1 != BEGIN_QUERY_MAP->map.end() && \
-   BEGIN_QUERY_CONTEXT->queryCanUseSavedResultAndPushIfNot(BEGIN_QUERY_NAME, &(BEGIN_QUERY_SEARCH1->second)))
+  (BEGIN_QUERY_CONTEXT->queryCanUseSavedResultAndPushIfNot(BEGIN_QUERY_NAME, BEGIN_QUERY_FOUND1))
 
 #define QUERY_GET_SAVED() \
   (BEGIN_QUERY_CONTEXT->queryGetSavedResult(&(BEGIN_QUERY_SEARCH1->second)))

@@ -75,7 +75,7 @@ UniqueString Context::moduleNameForID(ID id) {
   size_t len = 0;
   const char* s = id.symbolPath().c_str();
   while (true) {
-    if (*s == '\0' || *s == '.') break;
+    if (s[len] == '\0' || s[len] == '.') break;
     len++;
   }
 
@@ -121,6 +121,11 @@ void Context::setFileText(UniqueString path, std::string data) {
 }
 
 bool Context::queryCanUseSavedResult(QueryMapResultBase* resultEntry) {
+  // If there was no result, we can't reuse it
+  if (resultEntry == nullptr) {
+    return false;
+  }
+
   // If we already checked this query in this revision,
   // we can use this result
   if (resultEntry->lastComputed == this->currentRevisionNumber ||
