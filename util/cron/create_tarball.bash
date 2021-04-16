@@ -15,6 +15,8 @@ export CHPL_GEN_RELEASE_NO_CLONE=true
 export CHPL_HOME=$(cd $CWD/../.. ; pwd)
 log_info "Setting CHPL_HOME to: ${CHPL_HOME}"
 
+export CHPL_LLVM=none
+
 version_num_text=$(cat $CHPL_HOME/compiler/main/version_num.h)
 major=$(echo "${version_num_text}" | grep MAJOR_VERSION | cut -f3 -d" " | sed "s/\"//g")
 minor=$(echo "${version_num_text}" | grep MINOR_VERSION | cut -f3 -d" " | sed "s/\"//g")
