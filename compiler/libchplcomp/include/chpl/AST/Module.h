@@ -26,6 +26,7 @@ class Module final : public Symbol {
   enum Tag {
     DEFAULT,
     PROTOTYPE,
+    IMPLICIT,
   };
 
  private:

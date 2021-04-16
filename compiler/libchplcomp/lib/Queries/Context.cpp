@@ -110,7 +110,7 @@ void Context::setFileText(UniqueString path, std::string data) {
   auto tupleOfArgs = std::make_tuple(path);
   bool changed = false;
   auto queryMapResult = updateResultForQuery(queryName, tupleOfArgs,
-                                             data, changed);
+                                             std::move(data), changed);
   if (changed) {
     this->currentRevisionNumber++;
     auto currentRevision = this->currentRevisionNumber;

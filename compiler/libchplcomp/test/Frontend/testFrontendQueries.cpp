@@ -27,16 +27,15 @@ static void test1() {
   Context* ctx = context.get();
 
   auto modOne = UniqueString::build(ctx, "modOne.chpl");
-  std::string modOneContents = "/* this is a test */";
+  std::string modOneContents = "/* this is a test */\n"
+                               "a;\n";
   ctx->setFileText(modOne, modOneContents);
   auto modTwo = UniqueString::build(ctx, "modTwo.chpl");
-  std::string modTwoContents = "/* this is a another test */";
+  std::string modTwoContents = "/* this is a another test */"
+                               "a;\n";
   ctx->setFileText(modTwo, modTwoContents);
  
-  std::string gotContentsOne = FrontendQueries::fileText(ctx, modOne);
-  assert(gotContentsOne == modOneContents);
-  std::string gotContentsTwo = FrontendQueries::fileText(ctx, modTwo);
-  assert(gotContentsTwo == modTwoContents);
+  //const ast::Builder::Result* parse(Context* context, UniqueString path);
 }
 
 

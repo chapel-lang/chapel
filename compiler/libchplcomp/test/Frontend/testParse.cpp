@@ -1,5 +1,7 @@
 #include "chpl/AST/BlockStmt.h"
 #include "chpl/AST/Expr.h"
+#include "chpl/AST/Identifier.h"
+#include "chpl/AST/ModuleDecl.h"
 #include "chpl/Frontend/Parser.h"
 #include "chpl/Queries/Context.h"
 
@@ -14,103 +16,143 @@ using namespace chpl;
 using namespace ast;
 
 static void test0(Parser* parser) {
-  auto parseResult = parser->parseString("<test>", "");
-  assert(parseResult.topLevelExprs.size() == 0);
+  auto parseResult = parser->parseString("test0.chpl", "");
   assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExprs.size() == 1);
+  assert(parseResult.topLevelExprs[0]->isModuleDecl());
+  auto module = parseResult.topLevelExprs[0]->toModuleDecl()->module();
+  assert(module->name().compare("test0") == 0);
+  assert(module->numStmts() == 0);
 }
 
 static void test1(Parser* parser) {
-  auto parseResult = parser->parseString("<test>", "x;");
-  assert(parseResult.topLevelExprs.size() == 1);
-  assert(parseResult.topLevelExprs[0]->isIdentifier());
+  auto parseResult = parser->parseString("test1.chpl", "x;");
   assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExprs.size() == 1);
+  assert(parseResult.topLevelExprs[0]->isModuleDecl());
+  auto module = parseResult.topLevelExprs[0]->toModuleDecl()->module();
+  assert(module->name().compare("test1") == 0);
+  assert(module->numStmts() == 1);
+  assert(module->stmt(0)->isIdentifier());
+  auto identifier = module->stmt(0)->toIdentifier();
+  assert(identifier->name().compare("x") == 0);
 }
 
 static void test2(Parser* parser) {
-  auto parseResult = parser->parseString("<test>", "x; y;");
-  assert(parseResult.topLevelExprs.size() == 2);
-  assert(parseResult.topLevelExprs[0]->isIdentifier());
-  assert(parseResult.topLevelExprs[1]->isIdentifier());
+  auto parseResult = parser->parseString("test2.chpl", "x; y;");
   assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExprs.size() == 1);
+  assert(parseResult.topLevelExprs[0]->isModuleDecl());
+  auto module = parseResult.topLevelExprs[0]->toModuleDecl()->module();
+  assert(module->name().compare("test2") == 0);
+  assert(module->numStmts() == 2);
+  assert(module->stmt(0)->isIdentifier());
+  assert(module->stmt(1)->isIdentifier());
 }
 
 static void test3(Parser* parser) {
-  auto parseResult = parser->parseString("<test>", "/* hi */ y;");
-  assert(parseResult.topLevelExprs.size() == 2);
-  assert(parseResult.topLevelExprs[0]->isComment());
-  assert(parseResult.topLevelExprs[1]->isIdentifier());
+  auto parseResult = parser->parseString("test3.chpl", "/* hi */ y;");
   assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExprs.size() == 1);
+  assert(parseResult.topLevelExprs[0]->isModuleDecl());
+  auto module = parseResult.topLevelExprs[0]->toModuleDecl()->module();
+  assert(module->name().compare("test3") == 0);
+  assert(module->numStmts() == 2);
+  assert(module->stmt(0)->isComment());
+  assert(module->stmt(1)->isIdentifier());
 }
 
 static void test4(Parser* parser) {
-  auto parseResult = parser->parseString("<test>", "/* hi */ y; /* bye */");
-  assert(parseResult.topLevelExprs.size() == 3);
-  assert(parseResult.topLevelExprs[0]->isComment());
-  assert(parseResult.topLevelExprs[1]->isIdentifier());
-  assert(parseResult.topLevelExprs[2]->isComment());
+  auto parseResult = parser->parseString("test4.chpl", "/* hi */ y; /* bye */");
   assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExprs.size() == 1);
+  assert(parseResult.topLevelExprs[0]->isModuleDecl());
+  auto module = parseResult.topLevelExprs[0]->toModuleDecl()->module();
+  assert(module->name().compare("test4") == 0);
+  assert(module->numStmts() == 3);
+  assert(module->stmt(0)->isComment());
+  assert(module->stmt(1)->isIdentifier());
+  assert(module->stmt(2)->isComment());
 }
 
 static void test5(Parser* parser) {
-  auto parseResult = parser->parseString("<test>",
+  auto parseResult = parser->parseString("test5.chpl",
                                          "// hi\n"
                                          "a;\n"
                                          "// bye\n");
-  assert(parseResult.topLevelExprs.size() == 3);
-  assert(parseResult.topLevelExprs[0]->isComment());
-  assert(parseResult.topLevelExprs[1]->isIdentifier());
-  assert(parseResult.topLevelExprs[2]->isComment());
   assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExprs.size() == 1);
+  assert(parseResult.topLevelExprs[0]->isModuleDecl());
+  auto module = parseResult.topLevelExprs[0]->toModuleDecl()->module();
+  assert(module->numStmts() == 3);
+  assert(module->stmt(0)->isComment());
+  assert(module->stmt(1)->isIdentifier());
+  assert(module->stmt(2)->isComment());
 }
 
 static void test6(Parser* parser) { 
-  auto parseResult = parser->parseString("<test>",
+  auto parseResult = parser->parseString("test6.chpl",
                                          "{ }");
-  assert(parseResult.topLevelExprs.size() == 1);
-  assert(parseResult.topLevelExprs[0]->isBlockStmt());
   assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExprs.size() == 1);
+  assert(parseResult.topLevelExprs[0]->isModuleDecl());
+  auto module = parseResult.topLevelExprs[0]->toModuleDecl()->module();
+  assert(module->numStmts() == 1);
+  assert(module->stmt(0)->isBlockStmt());
 }
 
 static void test7(Parser* parser) {
-  auto parseResult = parser->parseString("<test>",
+  auto parseResult = parser->parseString("test7.chpl",
                                          "{ a; }");
-  assert(parseResult.topLevelExprs.size() == 1);
-  assert(parseResult.topLevelExprs[0]->isBlockStmt());
   assert(parseResult.errors.size() == 0);
-  BlockStmt* block = parseResult.topLevelExprs[0]->toBlockStmt();
+  assert(parseResult.topLevelExprs.size() == 1);
+  assert(parseResult.topLevelExprs[0]->isModuleDecl());
+  auto module = parseResult.topLevelExprs[0]->toModuleDecl()->module();
+  assert(module->numStmts() == 1);
+  assert(module->stmt(0)->isBlockStmt());
+  const BlockStmt* block = module->stmt(0)->toBlockStmt();
   assert(block->numStmts()==1);
   assert(block->stmt(0)->isIdentifier());
 }
 
 static void test8(Parser* parser) {
-  auto parseResult = parser->parseString("<test>", "aVeryLongIdentifierName;");
-  assert(parseResult.topLevelExprs.size() == 1);
-  assert(parseResult.topLevelExprs[0]->isIdentifier());
+  auto parseResult = parser->parseString("t.chpl", "aVeryLongIdentifierName;");
   assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExprs.size() == 1);
+  assert(parseResult.topLevelExprs[0]->isModuleDecl());
+  auto module = parseResult.topLevelExprs[0]->toModuleDecl()->module();
+  assert(module->numStmts() == 1);
+  assert(module->stmt(0)->isIdentifier());
 }
 
 static void test9(Parser* parser) {
-  auto parseResult = parser->parseString("<test>",
+  auto parseResult = parser->parseString("test9.chpl",
                                          "{ /* this is a comment */ }");
-  assert(parseResult.topLevelExprs.size() == 1);
-  assert(parseResult.topLevelExprs[0]->isBlockStmt());
   assert(parseResult.errors.size() == 0);
-  BlockStmt* block = parseResult.topLevelExprs[0]->toBlockStmt();
+  assert(parseResult.topLevelExprs.size() == 1);
+  assert(parseResult.topLevelExprs[0]->isModuleDecl());
+  auto module = parseResult.topLevelExprs[0]->toModuleDecl()->module();
+  assert(module->numStmts() == 1);
+  assert(module->stmt(0)->isBlockStmt());
+  const BlockStmt* block = module->stmt(0)->toBlockStmt();
   assert(block->numStmts()==1);
   assert(block->stmt(0)->isComment());
 }
 
 static void test10(Parser* parser) {
-  auto parseResult = parser->parseString("<test>",
+  auto parseResult = parser->parseString("test10.chpl",
                                          "{\n"
                                          "/* this is comment 2 */\n"
                                          "aVeryLongIdentifierName;\n"
                                          "/* this is comment 3 */\n"
                                          "}\n");
-  assert(parseResult.topLevelExprs.size() == 1);
-  assert(parseResult.topLevelExprs[0]->isBlockStmt());
   assert(parseResult.errors.size() == 0);
-  BlockStmt* block = parseResult.topLevelExprs[0]->toBlockStmt();
+  assert(parseResult.topLevelExprs.size() == 1);
+  assert(parseResult.topLevelExprs[0]->isModuleDecl());
+  auto module = parseResult.topLevelExprs[0]->toModuleDecl()->module();
+  assert(module->numStmts() == 1);
+  assert(module->stmt(0)->isBlockStmt());
+  const BlockStmt* block = module->stmt(0)->toBlockStmt();
   assert(block->numStmts()==3);
   assert(block->stmt(0)->isComment());
   assert(block->stmt(1)->isIdentifier());
@@ -119,7 +161,7 @@ static void test10(Parser* parser) {
 
 
 static void test11(Parser* parser) {
-  auto parseResult = parser->parseString("<test>",
+  auto parseResult = parser->parseString("test11.chpl",
                                          "/* this is comment 1 */\n"
                                          "{\n"
                                          "/* this is comment 2 */\n"
@@ -127,12 +169,15 @@ static void test11(Parser* parser) {
                                          "/* this is comment 3 */\n"
                                          "}\n"
                                          "/* this is comment 4 */");
-  assert(parseResult.topLevelExprs.size() == 3);
-  assert(parseResult.topLevelExprs[0]->isComment());
-  assert(parseResult.topLevelExprs[1]->isBlockStmt());
-  assert(parseResult.topLevelExprs[2]->isComment());
   assert(parseResult.errors.size() == 0);
-  BlockStmt* block = parseResult.topLevelExprs[1]->toBlockStmt();
+  assert(parseResult.topLevelExprs.size() == 1);
+  assert(parseResult.topLevelExprs[0]->isModuleDecl());
+  auto module = parseResult.topLevelExprs[0]->toModuleDecl()->module();
+  assert(module->numStmts() == 3);
+  assert(module->stmt(0)->isComment());
+  assert(module->stmt(1)->isBlockStmt());
+  assert(module->stmt(2)->isComment());
+  const BlockStmt* block = module->stmt(1)->toBlockStmt();
   assert(block->numStmts()==3);
   assert(block->stmt(0)->isComment());
   assert(block->stmt(1)->isIdentifier());
@@ -140,7 +185,7 @@ static void test11(Parser* parser) {
 }
 
 static void test12(Parser* parser) {
-  auto parseResult = parser->parseString("<test>",
+  auto parseResult = parser->parseString("test12.chpl",
                                          "/* this is comment 1 */\n"
                                          "/* this is comment 2 */\n"
                                          "{\n"
@@ -152,14 +197,17 @@ static void test12(Parser* parser) {
                                          "}\n"
                                          "/* this is comment 5 */\n"
                                          "/* this is comment 6 */");
-  assert(parseResult.topLevelExprs.size() == 5);
-  assert(parseResult.topLevelExprs[0]->isComment());
-  assert(parseResult.topLevelExprs[1]->isComment());
-  assert(parseResult.topLevelExprs[2]->isBlockStmt());
-  assert(parseResult.topLevelExprs[3]->isComment());
-  assert(parseResult.topLevelExprs[4]->isComment());
   assert(parseResult.errors.size() == 0);
-  BlockStmt* block = parseResult.topLevelExprs[2]->toBlockStmt();
+  assert(parseResult.topLevelExprs.size() == 1);
+  assert(parseResult.topLevelExprs[0]->isModuleDecl());
+  auto module = parseResult.topLevelExprs[0]->toModuleDecl()->module();
+  assert(module->numStmts() == 5);
+  assert(module->stmt(0)->isComment());
+  assert(module->stmt(1)->isComment());
+  assert(module->stmt(2)->isBlockStmt());
+  assert(module->stmt(3)->isComment());
+  assert(module->stmt(4)->isComment());
+  const BlockStmt* block = module->stmt(2)->toBlockStmt();
   assert(block->numStmts()==5);
   assert(block->stmt(0)->isComment());
   assert(block->stmt(1)->isComment());
@@ -169,13 +217,16 @@ static void test12(Parser* parser) {
 }
 
 static void test13(Parser* parser) {
-  auto parseResult = parser->parseString("<test>",
+  auto parseResult = parser->parseString("test13.chpl",
                                          "var a;\n"
                                          "a;");
-  assert(parseResult.topLevelExprs.size() == 2);
-  assert(parseResult.topLevelExprs[0]->isVariableDecl());
-  assert(parseResult.topLevelExprs[1]->isIdentifier());
   assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExprs.size() == 1);
+  assert(parseResult.topLevelExprs[0]->isModuleDecl());
+  auto module = parseResult.topLevelExprs[0]->toModuleDecl()->module();
+  assert(module->numStmts() == 2);
+  assert(module->stmt(0)->isVariableDecl());
+  assert(module->stmt(1)->isIdentifier());
 }
 
 

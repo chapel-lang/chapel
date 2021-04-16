@@ -4,6 +4,7 @@
 #include "chpl/AST/Expr.h"
 #include "chpl/AST/Identifier.h"
 #include "chpl/AST/Location.h"
+#include "chpl/AST/ModuleDecl.h"
 #include "chpl/AST/UniqueString.h"
 #include "chpl/Queries/Context.h"
 
@@ -143,10 +144,13 @@ void test2() {
   }
 
   Builder::Result r = b->result();
-  assert(r.topLevelExprs.size() == 1);
   assert(r.errors.size() == 0);
-  assert(r.locations.size() == 4);
-  BlockStmt* block = r.topLevelExprs[0]->toBlockStmt();
+  assert(r.topLevelExprs.size() == 1);
+  assert(r.topLevelExprs[0]->isModuleDecl());
+  auto module = r.topLevelExprs[0]->toModuleDecl()->module();
+  assert(r.locations.size() == 6); // +1 module decl +1 module sym
+  assert(module->stmt(0)->isBlockStmt());
+  const BlockStmt* block = module->stmt(0)->toBlockStmt();
   assert(block);
   assert(block->numStmts() == 3);
   assert(block->stmt(0)->isIdentifier());
@@ -162,12 +166,21 @@ void test2() {
   assert(block->stmt(2)->id().numContainedChildren() == 0);
   assert(block->id().postOrderId() == 3);
   assert(block->id().numContainedChildren() == 3);
+  assert(module->id().postOrderId() == 4);
+  assert(module->id().numContainedChildren() == 4);
 
   // now check containment on the ids
   assert(block->id().contains(block->id()));
   assert(block->id().contains(block->stmt(0)->id()));
   assert(block->id().contains(block->stmt(1)->id()));
   assert(block->id().contains(block->stmt(2)->id()));
+ 
+  assert(module->id().contains(module->id()));
+  assert(module->id().contains(block->id()));
+  assert(module->id().contains(block->stmt(0)->id()));
+  assert(module->id().contains(block->stmt(1)->id()));
+  assert(module->id().contains(block->stmt(2)->id()));
+
   assert(!block->stmt(0)->id().contains(block->id()));
   assert(!block->stmt(0)->id().contains(block->stmt(1)->id()));
   assert(!block->stmt(0)->id().contains(block->stmt(2)->id()));
@@ -227,10 +240,13 @@ void test3() {
   }
 
   Builder::Result r = b->result();
-  assert(r.topLevelExprs.size() == 1);
   assert(r.errors.size() == 0);
-  assert(r.locations.size() == 6);
-  BlockStmt* outer = r.topLevelExprs[0]->toBlockStmt();
+  assert(r.topLevelExprs.size() == 1);
+  assert(r.topLevelExprs[0]->isModuleDecl());
+  auto module = r.topLevelExprs[0]->toModuleDecl()->module();
+  assert(r.locations.size() == 8); // +1 module decl +1 module sym
+  assert(module->stmt(0)->isBlockStmt());
+  const BlockStmt* outer = module->stmt(0)->toBlockStmt();
   assert(outer);
   assert(outer->numStmts() == 4);
   assert(outer->stmt(0)->isIdentifier());

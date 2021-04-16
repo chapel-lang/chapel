@@ -111,6 +111,9 @@ class UniqueString final {
     else
       return strcmp(this->c_str(), other.c_str());
   }
+  int compare(const char* other) const {
+    return strcmp(this->c_str(), other);
+  }
   size_t hash() const {
     return (size_t) s.i.v;
   }

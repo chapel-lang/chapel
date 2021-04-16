@@ -28,19 +28,21 @@ class Builder final {
   typedef std::unordered_map<UniqueString,int> declaredHereT;
 
   Context* context_;
+  UniqueString filepath_;
   UniqueString inferredModuleName_;
   ASTList topLevelExprs_;
   std::vector<ErrorMessage> errors_;
   std::vector<std::pair<BaseAST*, Location>> locations_;
 
-  Builder(Context* context, UniqueString inferredModuleName);
+  Builder(Context* context,
+          UniqueString filepath, UniqueString inferredModuleName);
   UniqueString createImplicitModuleIfNeeded();
-  void assignIDs();
+  void assignIDs(UniqueString inferredModule);
   void assignIDs(BaseAST* ast, pathVecT& path, declaredHereT& decl);
   void assignIDsPostorder(BaseAST* ast, UniqueString symbolPath, int& i);
 
  public:
-  static owned<Builder> build(Context* context, const char* filename);
+  static owned<Builder> build(Context* context, const char* filepath);
 
   Context* context() const { return context_; }
 

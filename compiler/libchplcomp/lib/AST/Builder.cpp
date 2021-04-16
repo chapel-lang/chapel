@@ -2,6 +2,7 @@
 
 #include "chpl/AST/ErrorMessage.h"
 #include "chpl/AST/Expr.h"
+#include "chpl/AST/ModuleDecl.h"
 
 #include <cstring>
 #include <string>
@@ -9,8 +10,12 @@
 namespace chpl {
 namespace ast {
 
-Builder::Builder(Context* context, UniqueString inferredModuleName)
-  : context_(context), inferredModuleName_(inferredModuleName),
+Builder::Builder(Context* context,
+                 UniqueString filepath,
+                 UniqueString inferredModuleName)
+  : context_(context),
+    filepath_(filepath),
+    inferredModuleName_(inferredModuleName),
     topLevelExprs_(), errors_(), locations_() {
 }
 
@@ -30,11 +35,12 @@ static std::string filenameToModulename(const char* filename) {
   }
 }
 
-owned<Builder> Builder::build(Context* context, const char* filename) {
+owned<Builder> Builder::build(Context* context, const char* filepath) {
   // compute the basename of filename to get the inferred module name
-  std::string modname = filenameToModulename(filename);
+  std::string modname = filenameToModulename(filepath);
   auto uniqueModname = UniqueString::build(context, modname);
-  auto b = new Builder(context, uniqueModname);
+  auto uniqueFilename = UniqueString::build(context, filepath);
+  auto b = new Builder(context, uniqueFilename, uniqueModname);
   return toOwned(b);
 }
 
@@ -51,8 +57,8 @@ void Builder::noteLocation(BaseAST* ast, Location loc) {
 }
 
 Builder::Result Builder::result() {
-  UniqueString inferredModuleName = this->createImplicitModuleIfNeeded();
-  this->assignIDs();
+  UniqueString inferredName = this->createImplicitModuleIfNeeded();
+  this->assignIDs(inferredName);
 
   // Performance: We could consider copying all of these AST
   // nodes to a newly allocated buffer big enough to hold them
@@ -68,26 +74,42 @@ Builder::Result Builder::result() {
 }
 
 // Returns the name of the implicit module, or "" if there is none
+// If the implicit module is needed, moves the statements in to it.
 UniqueString Builder::createImplicitModuleIfNeeded() {
   bool containsOnlyModules = true;
+  bool containsAnyModules = false;
   for (auto const& ownedExpr: topLevelExprs_) {
-    if (ownedExpr->isModuleDecl() == false) {
+    if (ownedExpr->isModuleDecl()) {
+      containsAnyModules = true;
+    } else {
       containsOnlyModules = false;
     }
   }
-  if (containsOnlyModules) {
+  if (containsAnyModules && containsOnlyModules) {
     UniqueString empty;
     return empty;
   } else {
+    // create a new module containing all of the statements
+    ASTList stmts;
+    stmts.swap(topLevelExprs_);
+    auto implicitModule = ModuleDecl::build(this, Location(filepath_),
+                                            inferredModuleName_,
+                                            Symbol::VISIBILITY_DEFAULT,
+                                            Module::IMPLICIT,
+                                            std::move(stmts));
+    topLevelExprs_.push_back(std::move(implicitModule));
+    // return the name of the module
     return inferredModuleName_;
   }
 }
 
-void Builder::assignIDs() {
+void Builder::assignIDs(UniqueString inferredModule) {
   pathVecT path;
   declaredHereT decl;
 
-  path.push_back(std::make_pair(inferredModuleName_, 0));
+  if (!inferredModule.isEmpty())
+    path.push_back(std::make_pair(inferredModule, 0));
+
   for (auto const& ownedExpr: topLevelExprs_) {
     const BaseAST* ast = ownedExpr.get();
     assignIDs((BaseAST*)ast, path, decl); 
