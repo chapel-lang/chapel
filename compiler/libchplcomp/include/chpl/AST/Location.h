@@ -33,6 +33,13 @@ class Location final {
 };
 
 } // end namespace ast
+
+// Allow chpl::ast::Location to be just called chpl::Location
+// TODO: Should it be moved out of the ast namespace? What directory
+// should it go in?
+
+using chpl::ast::Location;
+
 } // end namespace chpl
 
 #endif

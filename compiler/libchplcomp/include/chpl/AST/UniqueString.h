@@ -104,6 +104,13 @@ class UniqueString final {
 
 
 } // end namespace ast
+
+// Allow chpl::ast::UniqueString to be just called chpl::UniqueString
+// TODO: Should it be moved out of the ast namespace? What directory
+// should it go in?
+using chpl::ast::UniqueString;
+
+
 } // end namespace chpl
 
 namespace std {

@@ -36,7 +36,7 @@ typedef int64_t RevisionNumber;
 class QueryMapResultBase;
 
 typedef std::vector<QueryMapResultBase*> QueryDependencyVec;
-typedef std::vector<ast::ErrorMessage> QueryErrorVec;
+typedef std::vector<ErrorMessage> QueryErrorVec;
 
 class QueryMapResultBase {
  public:
@@ -80,9 +80,9 @@ class QueryMapResult final : public QueryMapResultBase {
 
 class QueryMapBase {
  public:
-   ast::UniqueString queryName;
+   UniqueString queryName;
 
-   QueryMapBase(ast::UniqueString queryName)
+   QueryMapBase(UniqueString queryName)
      : queryName(queryName) {
    }
    virtual ~QueryMapBase() = 0; // this is an abstract base class
@@ -174,7 +174,7 @@ class QueryMap final : public QueryMapBase {
                      TheResultType,
                      QueryMapArgTupleHash<ArgTs...>,
                      QueryMapArgTupleEqual<ArgTs...>> map;
-  QueryMap(ast::UniqueString queryName)
+  QueryMap(UniqueString queryName)
      : QueryMapBase(queryName), map() {
  }
 };

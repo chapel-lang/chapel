@@ -9,25 +9,25 @@
 
 namespace chpl {
 
-FILE* openfile(const char* path, const char* mode, ast::ErrorMessage& errorOut) {
+FILE* openfile(const char* path, const char* mode, ErrorMessage& errorOut) {
   FILE* fp = fopen(path, mode);
   if (fp == nullptr) {
     std::string strerr = my_strerror(errno);
-    auto emptyLocation = ast::Location();
+    auto emptyLocation = Location();
     // set errorOut. NULL will be returned.
-    errorOut = ast::ErrorMessage::build(emptyLocation, "opening %s: %s",
+    errorOut = ErrorMessage::build(emptyLocation, "opening %s: %s",
                                    path, strerr.c_str());
   }
 
   return fp;
 }
 
-bool closefile(FILE* fp, const char* path, ast::ErrorMessage& errorOut) {
+bool closefile(FILE* fp, const char* path, ErrorMessage& errorOut) {
   int rc = fclose(fp);
   if (rc != 0) {
     std::string strerr = my_strerror(errno);
-    auto emptyLocation = ast::Location();
-    errorOut = ast::ErrorMessage::build(emptyLocation, "closing %s: %s",
+    auto emptyLocation = Location();
+    errorOut = ErrorMessage::build(emptyLocation, "closing %s: %s",
                                    path, strerr.c_str());
     return false;
   }
@@ -36,7 +36,7 @@ bool closefile(FILE* fp, const char* path, ast::ErrorMessage& errorOut) {
 
 bool readfile(const char* path,
               std::string& strOut,
-              ast::ErrorMessage& errorOut) {
+              ErrorMessage& errorOut) {
 
   FILE* fp = openfile(path, "r", errorOut);
   if (fp == nullptr) {
@@ -57,9 +57,9 @@ bool readfile(const char* path,
       strOut.append(buf, got);
     } else {
       if (ferror(fp)) {
-        auto emptyLocation = ast::Location();
-        errorOut = ast::ErrorMessage::build(emptyLocation, "reading %s", path);
-        ast::ErrorMessage ignored;
+        auto emptyLocation = Location();
+        errorOut = ErrorMessage::build(emptyLocation, "reading %s", path);
+        ErrorMessage ignored;
         closefile(fp, path, ignored);
         return false;
       }

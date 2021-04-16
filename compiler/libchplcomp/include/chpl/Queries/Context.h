@@ -9,10 +9,6 @@
 
 namespace chpl {
 
-// Allow ast::UniqueString to be just called UniqueString
-// TODO: Should it even be ast::UniqueString at all?
-using chpl::ast::UniqueString;
-
 /**
   This class stores the compilation-wide context.
   In particular it handles unique'd strings.
@@ -30,7 +26,7 @@ class Context {
   struct QueryDepsEntry {
     UniqueString queryName;
     chpl::querydetail::QueryDependencyVec dependencies;
-    std::vector<ast::ErrorMessage> errors;
+    std::vector<ErrorMessage> errors;
     QueryDepsEntry(UniqueString queryName)
       : queryName(queryName), dependencies(), errors() {
     }
@@ -54,6 +50,20 @@ class Context {
 
   // Future Work: allow moving some AST to a different context
   //              (or, at least, that can handle the unique strings)
+
+  // Performance: Add fine-grained timing to measure
+  //  * the total time spent in each query
+  //  * the time spent in each query in Context functions
+  //    (i.e. hashtable manipulations)
+  //  * the time spent in each query in other queries
+  //  * the time spent in each query in other query code
+
+  // Performance: How can we arrange for better locality of reference/
+  // cache reuse for the maps from IDs? The IDs within a function could
+  // be just stored in a vector, but that would add an indirection to
+  // the hashtable. Is there a way to adjust the hashing function and
+  // tune the hashtable bucket size, or something? Do we need a custom
+  // hashtable?
 
  public:
   /**
@@ -85,7 +95,7 @@ class Context {
   template<typename ResultType>
   const ResultType& queryGetSavedResult(chpl::querydetail::QueryMapResult<ResultType>* resultEntry);
 
-  void queryNoteError(ast::ErrorMessage error);
+  void queryNoteError(ErrorMessage error);
   template<typename ResultType, typename... ArgTs>
   ResultType& queryEnd(UniqueString queryName, ResultType result,
                       const std::tuple<ArgTs...>& tupleOfArgs,

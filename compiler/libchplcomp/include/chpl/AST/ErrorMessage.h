@@ -30,6 +30,12 @@ class ErrorMessage final {
 };
 
 } // end namespace ast
+
+// Allow chpl::ast::ErrorMessage to be just called chpl::ErrorMessage
+// TODO: Should it be moved out of the ast namespace? What directory
+// should it go in?
+using chpl::ast::ErrorMessage;
+
 } // end namespace chpl
 
 #endif

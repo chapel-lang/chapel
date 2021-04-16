@@ -16,7 +16,7 @@ const std::string& FrontendQueries::readFile(Context* context, UniqueString path
     return QUERY_GET_SAVED();
   }
 
-  ast::ErrorMessage error;
+  ErrorMessage error;
   std::string result;
   bool ok = readfile(path.c_str(), result, error);
   if (!ok) {
@@ -37,7 +37,7 @@ static ast::Builder::Result* parseFile(Context* context, UniqueString path) {
   ast::Builder::Result tmpResult = parser->parseFile(path.c_str());
   result->topLevelExprs.swap(tmpResult.topLevelExprs);
   result->locations.swap(tmpResult.locations);
-  for (ast::ErrorMessage e : tmpResult.errors) {
+  for (ErrorMessage e : tmpResult.errors) {
     QUERY_ERROR(e);
   }
 

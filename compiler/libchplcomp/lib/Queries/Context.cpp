@@ -86,7 +86,7 @@ void Context::saveDependenciesAndErrorsInParent(QueryMapResultBase* resultEntry)
   if (queryDeps.size() > 0) {
     queryDeps.back().dependencies.push_back(resultEntry);
     if (resultEntry->errors.size() > 0) {
-      for (ast::ErrorMessage e : resultEntry->errors) {
+      for (ErrorMessage e : resultEntry->errors) {
         queryDeps.back().errors.push_back(e);
       }
     }
@@ -104,7 +104,7 @@ void Context::endQueryHandleDependency(QueryMapResultBase* result) {
   saveDependenciesAndErrorsInParent(result);
 }
 
-void Context::queryNoteError(ast::ErrorMessage error) {
+void Context::queryNoteError(ErrorMessage error) {
   assert(queryDeps.size() > 0);
   queryDeps.back().errors.push_back(error);
 }
