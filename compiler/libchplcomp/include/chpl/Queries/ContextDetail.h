@@ -163,6 +163,29 @@ struct QueryMapArgTupleEqual final {
   }
 };
 
+// define a way to debug-print out a tuple
+template<typename T>
+static void queryArgsPrintOne(const T& v) { }
+
+void queryArgsPrintOne(const ID& v);
+void queryArgsPrintOne(const UniqueString& v);
+
+template<size_t I, typename... Ts>
+static void queryArgsPrintImpl(const std::tuple<Ts...>& tuple) {
+  queryArgsPrintOne(std::get<I>(tuple));
+  if (I + 1 < sizeof...(Ts)) {
+    queryArgsPrintImpl<(I + 1 < sizeof... (Ts) ? I + 1 : I)>(tuple);
+  }
+}
+
+template<typename... Ts>
+static void queryArgsPrint(const std::tuple<Ts...>& tuple) {
+  queryArgsPrintImpl<0>(tuple);
+}
+template<>
+void queryArgsPrint<>(const std::tuple<>& tuple);
+
+
 template<typename ResultType, typename... ArgTs>
 class QueryMap final : public QueryMapBase {
  public:

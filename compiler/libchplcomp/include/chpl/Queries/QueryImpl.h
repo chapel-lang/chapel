@@ -12,6 +12,23 @@ namespace chpl {
 
 using namespace chpl::querydetail;
 
+template<typename... ArgTs>
+void Context::queryTraceBegin(UniqueString queryName, const char* func,
+                     const std::tuple<ArgTs...>& tupleOfArg) {
+  printf("QUERY TRACE BEGIN %s (", func);
+  queryArgsPrint(tupleOfArg);
+  printf(")\n");
+}
+
+template<typename... ArgTs>
+void Context::queryTraceEnd(UniqueString queryName, const char* func,
+                   const std::tuple<ArgTs...>& tupleOfArg,
+                   bool changed) {
+  printf("QUERY TRACE END %s changed=%i (", func, (int)changed);
+  queryArgsPrint(tupleOfArg);
+  printf(")\n");
+}
+
 template<typename ResultType, typename... ArgTs>
 QueryMap<ResultType,ArgTs...>* Context::queryGetMap(UniqueString queryName, const std::tuple<ArgTs...>& tupleOfArgs) {
   // Look up the map entry for this query name
@@ -84,7 +101,7 @@ const ResultType& Context::queryGetSavedResult(QueryMapResult<ResultType>* resul
 }
 
 template<typename ResultType, typename... ArgTs>
-ResultType& Context::queryEnd(UniqueString queryName,
+ResultType& Context::queryEnd(UniqueString queryName, const char* func,
                     ResultType result,
                     const std::tuple<ArgTs...>& tupleOfArgs,
                     QueryMap<ResultType,ArgTs...>* queryMap) {
@@ -98,6 +115,8 @@ ResultType& Context::queryEnd(UniqueString queryName,
     this->updateResultForQuery(queryName,
                                tupleOfArgs, std::move(result),
                                changed);
+
+  queryTraceEnd(queryName, func, tupleOfArgs, changed);
 
   endQueryHandleDependency(ret);
 
@@ -155,8 +174,11 @@ ResultType& Context::queryEnd(UniqueString queryName,
 
 #define QUERY_BEGIN_NAMED(context, ResultType, queryName, ...) \
   Context* BEGIN_QUERY_CONTEXT = context; \
+  const char* BEGIN_QUERY_FUNC = __func__; \
   UniqueString BEGIN_QUERY_NAME = UniqueString::build(context, queryName); \
   auto BEGIN_QUERY_ARGS = std::make_tuple(__VA_ARGS__); \
+  context->queryTraceBegin(BEGIN_QUERY_NAME, BEGIN_QUERY_FUNC, \
+                           BEGIN_QUERY_ARGS); \
   auto BEGIN_QUERY_MAP = \
     context->queryGetMap<ResultType>(BEGIN_QUERY_NAME, \
                                      BEGIN_QUERY_ARGS); \
@@ -169,11 +191,11 @@ ResultType& Context::queryEnd(UniqueString queryName,
 #define QUERY_BEGIN(context, ResultType, ...) \
   const char* BEGIN_QUERY_FILE = __FILE__; \
   int BEGIN_QUERY_LINE = __LINE__; \
-  const char* BEGIN_QUERY_FILE_LINE = __FILE__ STRINGIZE_LINE(__LINE__); \
+  const char* BEGIN_QUERY_FILE_LINE = __FILE__ ":" STRINGIZE_LINE(__LINE__); \
   QUERY_BEGIN_NAMED(context, ResultType, BEGIN_QUERY_FILE_LINE, __VA_ARGS__);
 
 #define QUERY_USE_SAVED() \
-  (BEGIN_QUERY_CONTEXT->queryCanUseSavedResultAndPushIfNot(BEGIN_QUERY_NAME, BEGIN_QUERY_FOUND1))
+  (BEGIN_QUERY_CONTEXT->queryCanUseSavedResultAndPushIfNot(BEGIN_QUERY_NAME, BEGIN_QUERY_FUNC, BEGIN_QUERY_FOUND1))
 
 #define QUERY_GET_SAVED() \
   (BEGIN_QUERY_CONTEXT->queryGetSavedResult(&(BEGIN_QUERY_SEARCH1->second)))
@@ -183,6 +205,6 @@ ResultType& Context::queryEnd(UniqueString queryName,
 
 #define QUERY_END(result) \
   /* must not use BEGIN_QUERY_SEARCH1 (iterator could be invalidated) */ \
-  (BEGIN_QUERY_CONTEXT->queryEnd(BEGIN_QUERY_NAME, result, BEGIN_QUERY_ARGS, BEGIN_QUERY_MAP))
+  (BEGIN_QUERY_CONTEXT->queryEnd(BEGIN_QUERY_NAME, BEGIN_QUERY_FUNC, result, BEGIN_QUERY_ARGS, BEGIN_QUERY_MAP))
 
 #endif

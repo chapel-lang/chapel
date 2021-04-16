@@ -133,11 +133,23 @@ class Context {
   // and should not be called directly
 
   /// \cond DO_NOT_DOCUMENT
+  template<typename... ArgTs>
+  void queryTraceBegin(UniqueString queryName, const char* func,
+                       const std::tuple<ArgTs...>& tupleOfArg);
+
+  template<typename... ArgTs>
+  void queryTraceEnd(UniqueString queryName, const char* func,
+                     const std::tuple<ArgTs...>& tupleOfArg,
+                     bool changed);
+
+
   template<typename ResultType, typename... ArgTs>
   chpl::querydetail::QueryMap<ResultType,ArgTs...>*
     queryGetMap(UniqueString queryName, const std::tuple<ArgTs...>& tupleOfArgs);
 
+  // queryFunc is only used for tracing
   bool queryCanUseSavedResultAndPushIfNot(UniqueString queryName,
+      const char* queryFunc,
       chpl::querydetail::QueryMapResultBase* resultEntry);
 
   template<typename ResultType>
@@ -145,7 +157,8 @@ class Context {
 
   void queryNoteError(ErrorMessage error);
   template<typename ResultType, typename... ArgTs>
-  ResultType& queryEnd(UniqueString queryName, ResultType result,
+  ResultType& queryEnd(UniqueString queryName, const char* func,
+                      ResultType result,
                       const std::tuple<ArgTs...>& tupleOfArgs,
                       chpl::querydetail::QueryMap<ResultType,ArgTs...>* queryMap);
   /// \endcond

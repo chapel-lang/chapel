@@ -13,6 +13,7 @@ using namespace chpl;
 using namespace ast;
 
 static void test0() {
+  printf("test0\n");
   auto context = Context::build();
   Context* ctx = context.get();
 
@@ -25,6 +26,7 @@ static void test0() {
 }
 
 static void test1() {
+  printf("test1\n");
   auto context = Context::build();
   Context* ctx = context.get();
 
@@ -36,6 +38,7 @@ static void test1() {
 }
 
 static void test2() {
+  printf("test2\n");
   auto context = Context::build();
   Context* ctx = context.get();
 
@@ -59,6 +62,8 @@ static void test2() {
   assert(p->topLevelExprs[0]->isModuleDecl());
   auto moduleTwo = p->topLevelExprs[0]->toModuleDecl()->module();
   assert(moduleTwo->numStmts() == 2);
+
+  printf("test2 changing whitespace in modOne.chpl\n");
 
   modOneContents = "/* this is a test */\n"
                    "\n"

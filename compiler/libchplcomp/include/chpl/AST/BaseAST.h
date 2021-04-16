@@ -168,6 +168,8 @@ AST_LESS(BaseAST)
 #undef AST_END_SUBCLASSES
 #undef AST_LESS
 
+  // TODO:: need to define std::equal_to for these AST nodes
+
 } // end namespace std
 /// \endcond
 

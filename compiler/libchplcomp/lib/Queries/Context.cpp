@@ -147,12 +147,15 @@ bool Context::queryCanUseSavedResult(QueryMapResultBase* resultEntry) {
   return true;
 }
 
-bool Context::queryCanUseSavedResultAndPushIfNot(UniqueString queryName, QueryMapResultBase* resultEntry) {
+bool Context::queryCanUseSavedResultAndPushIfNot(UniqueString queryName, const char* queryFunc, QueryMapResultBase* resultEntry) {
   bool ret = this->queryCanUseSavedResult(resultEntry);
   if (ret == false) {
+    printf("QUERY TRACE COMPUTING %s\n", queryFunc);
     // since the result cannot be used, the query will be evaluated
     // so push something to queryDeps
     queryDeps.push_back(QueryDepsEntry(queryName));
+  } else {
+    printf("QUERY TRACE REUSING %s\n", queryFunc);
   }
   return ret;
 }
@@ -201,6 +204,17 @@ template<>
 bool queryArgsEquals<>(const std::tuple<>& lhs,
                        const std::tuple<>& rhs) {
   return true;
+}
+
+template<>
+void queryArgsPrint<>(const std::tuple<>& tuple) {
+}
+
+void queryArgsPrintOne(const ID& v) {
+  printf("ID(%s@%i) ", v.symbolPath().c_str(), v.postOrderId());
+}
+void queryArgsPrintOne(const UniqueString& v) {
+  printf("\"%s\" ", v.c_str());
 }
 
 QueryMapResultBase::~QueryMapResultBase() {
