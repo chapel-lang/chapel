@@ -95,7 +95,7 @@ regexdna: regexdna.chpl
 	else \
 	echo "";\
 	echo "Can't build regexdna without CHPL_RE2 being enabled. See for details:"; \
-	echo "https://chapel-lang.org/docs/usingchapel/chplenv.html#chpl-regex"; \
+	echo "https://chapel-lang.org/docs/usingchapel/chplenv.html#chpl-re2"; \
 	echo ""; \
 	fi
 
@@ -105,7 +105,7 @@ regexdna-redux: regexdna-redux.chpl
 	else \
 	echo "";\
 	echo "Can't build regexdna-redux without CHPL_RE2 being enabled. See for details:"; \
-	echo "https://chapel-lang.org/docs/usingchapel/chplenv.html#chpl-regex"; \
+	echo "https://chapel-lang.org/docs/usingchapel/chplenv.html#chpl-re2"; \
 	echo ""; \
 	fi
 
