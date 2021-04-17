@@ -608,18 +608,18 @@ CHPL_HWLOC
        all versions. For best results, we recommend using the bundled libfabric
        if possible.
 
-.. _readme-chplenv.CHPL_REGEXP:
+.. _readme-chplenv.CHPL_RE2:
 
-CHPL_REGEXP
+CHPL_RE2
 ~~~~~~~~~~~
-   Optionally, the ``CHPL_REGEXP`` environment variable can be used to enable
+   Optionally, the ``CHPL_RE2`` environment variable can be used to enable
    regular expression operations as defined in :chpl:mod:`Regex`.  Current
    options are:
 
        ======= ==============================================
        Value   Description
        ======= ==============================================
-       re2     use the re2 distribution in third-party
+       bundled use the re2 distribution in third-party
        none    do not support regular expression operations
        ======= ==============================================
 
@@ -630,13 +630,13 @@ CHPL_REGEXP
        ======= ===============================
        Value   Description
        ======= ===============================
-       re2     if the build was successful
+       bundled if the build was successful
        none    otherwise
        ======= ===============================
 
    .. note::
      Note that the Chapel ``util/quickstart/setchplenv.*`` source scripts set
-     ``CHPL_REGEXP`` to ``'none`` while the ``util/setchplenv.*`` versions
+     ``CHPL_RE2`` to ``'none`` while the ``util/setchplenv.*`` versions
      leave it unset, resulting in the behavior described just above.
 
 .. _readme-chplenv.CHPL_AUX_FILESYS:

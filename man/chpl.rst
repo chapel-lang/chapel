@@ -305,7 +305,7 @@ OPTIONS
     Enable [disable] optimization of the last statement in forall statements to
     use aggregated communication. This optimization is disabled by default.
 
-*Run-time Semantic Check Options* 
+*Run-time Semantic Check Options*
 
 **--[no-]checks**
 
@@ -349,7 +349,7 @@ OPTIONS
 
     Enable [disable] run-time checking for stack overflow.
 
-*C Code Generation Options* 
+*C Code Generation Options*
 
 **--[no-]codegen**
 
@@ -672,12 +672,11 @@ OPTIONS
     flag corresponds with and overrides the $CHPL\_MEM environment variable
     (defaults to a best guess based on $CHPL\_COMM).
 
-**--regexp <regexp>**
+**--re2 <re2>**
 
-    Specify the regular expression library to use. This flag corresponds
-    with and overrides the $CHPL\_REGEXP environment variable (defaults to
-    'none' or 're2' if you've installed the re2 package in the third-party
-    *directory*).
+    Specify the RE2 library to use. This flag corresponds with and overrides
+    the $CHPL\_RE2 environment variable (defaults to 'none' or 'bundled' if
+    you've installed the re2 package in the third-party *directory*).
 
 **--target-arch <architecture>**
 

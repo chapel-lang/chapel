@@ -41,7 +41,7 @@ use HDFS, ReplicatedVar, RecordParser;
 
    :arg path: the path to the file within the HDFS server
    :arg rec: the type of the records to return
-   :arg regexp: a regular expression with the same number of captures as
+   :arg regex: a regular expression with the same number of captures as
                 the number of fields in the record type ``rec``
 
    */
@@ -55,7 +55,7 @@ iter HDFSiter(path: string, type rec, regex: string) {
   var N  = new RecordReader(rec, rr, regex);
   // Make this migrate around to various locales based upon where the blocks reside
   // Reason we haven't done this is because we can't have a yield inside an on clause in a
-  // serial iterator 
+  // serial iterator
   for n in N.stream() {
     yield n;
 
@@ -88,7 +88,7 @@ iter HDFSiter(param tag: iterKind, path: string, type rec, regex: string)
     // Get the local file
     var localFile = globalFile.getLocal();
 
-    // Get the mapping of host for blocks for this file along 
+    // Get the mapping of host for blocks for this file along
     // with how many blocks  there are
     var (hosts, numBlocksForFile) = getHosts(localFile);
 
@@ -110,7 +110,7 @@ iter HDFSiter(param tag: iterKind, path: string, type rec, regex: string)
         forall byteRange in workQueue[loc.id] with (ref globalFile) {
           var rr = globalFile.hdfsReader(start=byteRange(1));
           var N  = new RecordReader(rec, rr, regex);
-          // Dont have a L/F for this so we yield serially. 
+          // Dont have a L/F for this so we yield serially.
           for n in N.stream_num(byteRange(1), byteRange(2)) {
             yield n;
           }

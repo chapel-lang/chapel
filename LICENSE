@@ -79,7 +79,7 @@ The Chapel implementation is composed of two categories of code:
      libunwind        only used when CHPL_UNWIND is 'libunwind'
      llvm             only used when CHPL_LLVM is 'llvm'
      qthread          only used when CHPL_TASKS is 'qthreads'
-     re2              only used when CHPL_REGEXP is 're2'
+     re2              only used when CHPL_RE2 is 'bundled'
      utf8-decoder     bundled into the Chapel runtime to decode UTF-8 strings
      whereami         used when starting a program with a launcher
 

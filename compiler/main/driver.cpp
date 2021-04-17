@@ -93,7 +93,7 @@ const char* CHPL_ATOMICS = NULL;
 const char* CHPL_NETWORK_ATOMICS = NULL;
 const char* CHPL_GMP = NULL;
 const char* CHPL_HWLOC = NULL;
-const char* CHPL_REGEXP = NULL;
+const char* CHPL_RE2 = NULL;
 const char* CHPL_LLVM = NULL;
 const char* CHPL_AUX_FILESYS = NULL;
 const char* CHPL_UNWIND = NULL;
@@ -1032,7 +1032,7 @@ static ArgumentDescription arg_desc[] = {
  {"locale-model", ' ', "<locale-model>", "Specify locale model to use", "S", NULL, "_CHPL_LOCALE_MODEL", setEnv},
  {"make", ' ', "<make utility>", "Make utility for generated code", "S", NULL, "_CHPL_MAKE", setEnv},
  {"mem", ' ', "<mem-impl>", "Specify the memory manager", "S", NULL, "_CHPL_MEM", setEnv},
- {"regexp", ' ', "<regexp>", "Specify whether to use regexp support", "S", NULL, "_CHPL_REGEXP", setEnv},
+ {"re2", ' ', "<re2-version>", "Specify RE2 library", "S", NULL, "_CHPL_RE2", setEnv},
  {"target-arch", ' ', "<architecture>", "Target architecture / machine type", "S", NULL, "_CHPL_TARGET_ARCH", setEnv},
  {"target-compiler", ' ', "<compiler>", "Compiler for generated code", "S", NULL, "_CHPL_TARGET_COMPILER", setEnv},
  {"target-cpu", ' ', "<cpu>", "Target cpu model for specialization", "S", NULL, "_CHPL_TARGET_CPU", setEnv},
@@ -1366,7 +1366,7 @@ static void setChapelEnvs() {
   CHPL_NETWORK_ATOMICS = envMap["CHPL_NETWORK_ATOMICS"];
   CHPL_GMP             = envMap["CHPL_GMP"];
   CHPL_HWLOC           = envMap["CHPL_HWLOC"];
-  CHPL_REGEXP          = envMap["CHPL_REGEXP"];
+  CHPL_RE2             = envMap["CHPL_RE2"];
   CHPL_LLVM            = envMap["CHPL_LLVM"];
   CHPL_AUX_FILESYS     = envMap["CHPL_AUX_FILESYS"];
   CHPL_UNWIND          = envMap["CHPL_UNWIND"];
@@ -1379,10 +1379,8 @@ static void setChapelEnvs() {
   // Make sure there are no NULLs in envMap
   // a NULL in envMap might mean that one of the variables
   // the compiler expected printchplenv to produce was not produced.
-  for (std::map<std::string, const char*>::iterator env=envMap.begin();
-       env!=envMap.end(); ++env) {
-    INT_ASSERT(env->second != NULL);
-  }
+  for (auto& env : envMap)
+    INT_ASSERT(env.second != NULL);
 }
 
 static void setupChplGlobals(const char* argv0) {

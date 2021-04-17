@@ -23,7 +23,7 @@ TARGETS = \
 	spectralnorm \
 	threadring
 
-CHPL_MAKE_REGEXP=$(shell python3 $(CHPL_HOME)/util/chplenv/chpl_regexp.py)
+CHPL_MAKE_RE2=$(shell python3 $(CHPL_HOME)/util/chplenv/chpl_re2.py)
 CHPL_MAKE_GMP=$(shell python3 $(CHPL_HOME)/util/chplenv/chpl_gmp.py)
 
 REALS = $(TARGETS:%=%_real)
@@ -90,22 +90,22 @@ pidigits-fast: pidigits-fast.chpl
 	fi
 
 regexdna: regexdna.chpl
-	@+if [ "$(CHPL_REGEXP)" != "none" ]; then \
+	@+if [ "$(CHPL_RE2)" != "none" ]; then \
 	$(CHPL) -o $@ $(CHPL_FLAGS) $<; \
 	else \
 	echo "";\
-	echo "Can't build regexdna without CHPL_REGEXP being enabled. See for details:"; \
-	echo "https://chapel-lang.org/docs/usingchapel/chplenv.html#chpl-regexp"; \
+	echo "Can't build regexdna without CHPL_RE2 being enabled. See for details:"; \
+	echo "https://chapel-lang.org/docs/usingchapel/chplenv.html#chpl-regex"; \
 	echo ""; \
 	fi
 
 regexdna-redux: regexdna-redux.chpl
-	@+if [ "$(CHPL_REGEXP)" != "none" ]; then \
+	@+if [ "$(CHPL_RE2)" != "none" ]; then \
 	$(CHPL) -o $@ $(CHPL_FLAGS) $<; \
 	else \
 	echo "";\
-	echo "Can't build regexdna-redux without CHPL_REGEXP being enabled. See for details:"; \
-	echo "https://chapel-lang.org/docs/usingchapel/chplenv.html#chpl-regexp"; \
+	echo "Can't build regexdna-redux without CHPL_RE2 being enabled. See for details:"; \
+	echo "https://chapel-lang.org/docs/usingchapel/chplenv.html#chpl-regex"; \
 	echo ""; \
 	fi
 

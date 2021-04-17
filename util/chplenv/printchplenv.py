@@ -91,7 +91,7 @@ CHPL_ENVS = [
     ChapelEnv('  CHPL_NETWORK_ATOMICS', INTERNAL | DEFAULT),
     ChapelEnv('CHPL_GMP', INTERNAL | DEFAULT, 'gmp'),
     ChapelEnv('CHPL_HWLOC', RUNTIME | DEFAULT),
-    ChapelEnv('CHPL_REGEXP', RUNTIME | DEFAULT),
+    ChapelEnv('CHPL_RE2', RUNTIME | DEFAULT),
     ChapelEnv('CHPL_LLVM', COMPILER | DEFAULT, 'llvm'),
     ChapelEnv('CHPL_AUX_FILESYS', RUNTIME | DEFAULT, 'fs'),
     ChapelEnv('CHPL_LIB_PIC', RUNTIME | LAUNCHER, 'lib_pic'),
@@ -168,7 +168,7 @@ def compute_all_values():
     ENV_VALS['  CHPL_NETWORK_ATOMICS'] = chpl_atomics.get('network')
     ENV_VALS['CHPL_GMP'] = chpl_gmp.get()
     ENV_VALS['CHPL_HWLOC'] = chpl_hwloc.get()
-    ENV_VALS['CHPL_REGEXP'] = chpl_regexp.get()
+    ENV_VALS['CHPL_RE2'] = chpl_re2.get()
     ENV_VALS['CHPL_LLVM'] = chpl_llvm.get()
     aux_filesys = chpl_aux_filesys.get()
     ENV_VALS['CHPL_AUX_FILESYS'] = '_'.join(sorted(aux_filesys.split(' ')))
@@ -222,9 +222,9 @@ def compute_internal_values():
     if chpl_tasks.get() == 'qthreads':
         link_args_3p.extend(chpl_qthreads.get_link_args())
 
-    ENV_VALS['  CHPL_RE2_UNIQ_CFG_PATH'] = chpl_regexp.get_uniq_cfg_path()
-    if chpl_regexp.get() == 're2':
-        link_args_3p.extend(chpl_regexp.get_link_args())
+    ENV_VALS['  CHPL_RE2_UNIQ_CFG_PATH'] = chpl_re2.get_uniq_cfg_path()
+    if chpl_re2.get() != 'none':
+        link_args_3p.extend(chpl_re2.get_link_args())
 
     # Remove duplicates, keeping last occurrence and preserving order
     # e.g. "-lhwloc -lqthread -lhwloc ..." -> "-lqthread -lhwloc ..."

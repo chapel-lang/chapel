@@ -124,7 +124,7 @@ extern const char* CHPL_ATOMICS;
 extern const char* CHPL_NETWORK_ATOMICS;
 extern const char* CHPL_GMP;
 extern const char* CHPL_HWLOC;
-extern const char* CHPL_REGEXP;
+extern const char* CHPL_RE2;
 extern const char* CHPL_LLVM;
 extern const char* CHPL_AUX_FILESYS;
 extern const char* CHPL_UNWIND;
