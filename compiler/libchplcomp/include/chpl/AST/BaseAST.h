@@ -36,6 +36,14 @@ class BaseAST {
   ID id_;
   ASTList children_;
 
+  /**
+    This function needs to be defined by subclasses.
+    It should check only those fields beneath BaseAST
+    (no need to check tag, ID, or children).
+    It can assume that other has the same type as the receiver.
+   */
+  virtual bool contentsMatchInner(const BaseAST* other) const = 0;
+
  protected:
   BaseAST(asttags::ASTTag tag);
   BaseAST(asttags::ASTTag tag, ASTList children);
@@ -82,6 +90,8 @@ class BaseAST {
   bool contains(const BaseAST* other) const {
     return this->id_.contains(other->id_);
   }
+
+  bool contentsMatch(const BaseAST* other) const;
 
   // define is__ methods for the various AST types
   // using macros and ASTClassesList.h

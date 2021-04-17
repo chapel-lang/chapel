@@ -35,59 +35,6 @@ namespace querydetail {
 typedef int64_t RevisionNumber;
 class QueryMapResultBase;
 
-typedef std::vector<QueryMapResultBase*> QueryDependencyVec;
-typedef std::vector<ErrorMessage> QueryErrorVec;
-
-class QueryMapResultBase {
- public:
-  QueryDependencyVec dependencies;
-  RevisionNumber lastCheckedAndReused;
-  RevisionNumber lastComputed;
-  RevisionNumber lastChanged;
-  // errors includes errors from dependencies, transitively,
-  // so that the dependencies can be forgotten and errors still reported.
-  QueryErrorVec errors;
-
-  QueryMapResultBase(QueryDependencyVec deps,
-                     RevisionNumber lastCheckedAndReused,
-                     RevisionNumber lastComputed,
-                     RevisionNumber lastChanged,
-                     QueryErrorVec errors)
-    : dependencies(std::move(deps)),
-      lastCheckedAndReused(lastCheckedAndReused),
-      lastComputed(lastComputed),
-      lastChanged(lastChanged),
-      errors(std::move(errors)) {
-  }
-  virtual ~QueryMapResultBase() = 0; // this is an abstract base class
-};
-template<typename ResultType>
-class QueryMapResult final : public QueryMapResultBase {
- public:
-  ResultType result;
-  QueryMapResult(QueryDependencyVec deps,
-                 RevisionNumber lastCheckedAndReused,
-                 RevisionNumber lastComputed,
-                 RevisionNumber lastChanged,
-                 QueryErrorVec errors,
-                 ResultType result)
-    : QueryMapResultBase(std::move(deps),
-                         lastCheckedAndReused, lastComputed, lastChanged,
-                         std::move(errors)),
-      result(std::move(result)) {
-  }
-};
-
-class QueryMapBase {
- public:
-   UniqueString queryName;
-
-   QueryMapBase(UniqueString queryName)
-     : queryName(queryName) {
-   }
-   virtual ~QueryMapBase() = 0; // this is an abstract base class
-};
-
 // define a hash function for std::tuple since the standard doesn't
 // include one.
 template<typename T>
@@ -164,8 +111,13 @@ struct QueryMapArgTupleEqual final {
 };
 
 // define a way to debug-print out a tuple
+void queryArgsPrintSep();
+void queryArgsPrintUnknown();
+
 template<typename T>
-static void queryArgsPrintOne(const T& v) { }
+static void queryArgsPrintOne(const T& v) {
+  queryArgsPrintUnknown();
+}
 
 void queryArgsPrintOne(const ID& v);
 void queryArgsPrintOne(const UniqueString& v);
@@ -174,6 +126,7 @@ template<size_t I, typename... Ts>
 static void queryArgsPrintImpl(const std::tuple<Ts...>& tuple) {
   queryArgsPrintOne(std::get<I>(tuple));
   if (I + 1 < sizeof...(Ts)) {
+    queryArgsPrintSep();
     queryArgsPrintImpl<(I + 1 < sizeof... (Ts) ? I + 1 : I)>(tuple);
   }
 }
@@ -185,18 +138,81 @@ static void queryArgsPrint(const std::tuple<Ts...>& tuple) {
 template<>
 void queryArgsPrint<>(const std::tuple<>& tuple);
 
+typedef std::vector<QueryMapResultBase*> QueryDependencyVec;
+typedef std::vector<ErrorMessage> QueryErrorVec;
+
+class QueryMapResultBase {
+ public:
+  QueryDependencyVec dependencies;
+  RevisionNumber lastCheckedAndReused;
+  RevisionNumber lastComputed;
+  RevisionNumber lastChanged;
+  // errors includes errors from dependencies, transitively,
+  // so that the dependencies can be forgotten and errors still reported.
+  QueryErrorVec errors;
+
+  QueryMapResultBase(QueryDependencyVec deps,
+                     RevisionNumber lastCheckedAndReused,
+                     RevisionNumber lastComputed,
+                     RevisionNumber lastChanged,
+                     QueryErrorVec errors)
+    : dependencies(std::move(deps)),
+      lastCheckedAndReused(lastCheckedAndReused),
+      lastComputed(lastComputed),
+      lastChanged(lastChanged),
+      errors(std::move(errors)) {
+  }
+  virtual ~QueryMapResultBase() = 0; // this is an abstract base class
+};
+template<typename ResultType>
+class QueryMapResult final : public QueryMapResultBase {
+ public:
+  ResultType result;
+  QueryMapResult(QueryDependencyVec deps,
+                 RevisionNumber lastCheckedAndReused,
+                 RevisionNumber lastComputed,
+                 RevisionNumber lastChanged,
+                 QueryErrorVec errors,
+                 ResultType result)
+    : QueryMapResultBase(std::move(deps),
+                         lastCheckedAndReused, lastComputed, lastChanged,
+                         std::move(errors)),
+      result(std::move(result)) {
+  }
+};
+
+class QueryMapBase {
+ public:
+   UniqueString queryName;
+   const char* prettyFunc;
+
+   QueryMapBase(UniqueString queryName, const char* prettyFunc)
+     : queryName(queryName), prettyFunc(prettyFunc) {
+   }
+   virtual ~QueryMapBase() = 0; // this is an abstract base class
+   virtual void clearOldResults() = 0;
+};
 
 template<typename ResultType, typename... ArgTs>
 class QueryMap final : public QueryMapBase {
  public:
   typedef QueryMapResult<ResultType> TheResultType;
+  // the main map
   std::unordered_map<std::tuple<ArgTs...>,
                      TheResultType,
                      QueryMapArgTupleHash<ArgTs...>,
                      QueryMapArgTupleEqual<ArgTs...>> map;
-  QueryMap(UniqueString queryName)
-     : QueryMapBase(queryName), map() {
- }
+  // old results stores replaced results long enough for dependent
+  // queries to compare with them.
+  std::vector<ResultType> oldResults;
+
+  QueryMap(UniqueString queryName, const char* prettyFunc)
+     : QueryMapBase(queryName, prettyFunc), map(), oldResults() {
+  }
+  ~QueryMap() = default;
+  void clearOldResults() override {
+    oldResults.clear();
+  }
 };
 
 } // end namespace querydetail

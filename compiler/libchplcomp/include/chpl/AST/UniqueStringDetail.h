@@ -160,7 +160,7 @@ struct PODUniqueString {
 } // end namespace detail
 } // end namespace ast
 
-// TODO: should this go somewhere else?
+// TODO: should these go somewhere else?
 static inline
 size_t hash_combine(size_t hash1, size_t hash2) {
   size_t hash = hash1;
@@ -168,6 +168,16 @@ size_t hash_combine(size_t hash1, size_t hash2) {
   hash ^= other + 0x9e3779b9 + (other << 6) + (other >> 2);
   return hash;
 }
+
+template<typename T> struct matches {
+  bool operator()(const T& lhs, const T& rhs) const = 0;
+};
+template<> struct matches<std::string> {
+  bool operator()(const std::string& lhs,
+                  const std::string& rhs) const {
+    return lhs == rhs;
+  }
+};
 
 } // end namespace chpl
 /// \endcond

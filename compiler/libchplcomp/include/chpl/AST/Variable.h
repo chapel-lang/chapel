@@ -45,6 +45,7 @@ class Variable final : public Symbol {
   Variable(ASTList children,
            UniqueString name, Symbol::Visibility vis, Tag tag,
            int8_t typeExprChildNum, int8_t initExprChildNum);
+  bool contentsMatchInner(const BaseAST* other) const override;
 
  public:
   ~Variable() override = default;

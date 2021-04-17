@@ -95,11 +95,18 @@ class ID final {
 
 } // end namespace ast
 
+template<> struct matches<chpl::ast::ID> {
+  bool operator()(const chpl::ast::ID& lhs,
+                  const chpl::ast::ID& rhs) const {
+    return lhs == rhs;
+  }
+};
+
 // Allow chpl::ast::ID to be just called chpl::ID
 // TODO: Should it be moved out of the ast namespace? What directory
 // should it go in?
-
 using chpl::ast::ID;
+
 
 } // end namespace chpl
 

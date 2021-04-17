@@ -18,6 +18,12 @@ Module::Module(ASTList children, UniqueString name, Symbol::Visibility vis,
 #endif
 }
 
+bool Module::contentsMatchInner(const BaseAST* other) const {
+  const Module* lhs = this;
+  const Module* rhs = (const Module*) other;
+  return lhs->symbolContentsMatchInner(rhs) &&
+         lhs->tag_ == rhs->tag_;
+}
 
 } // namespace ast
 } // namespace chpl

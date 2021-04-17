@@ -13,6 +13,7 @@ namespace ast {
 class ErroneousExpr final : public Expr {
  private:
   ErroneousExpr();
+  bool contentsMatchInner(const BaseAST* other) const override;
 
  public:
   ~ErroneousExpr() = default;

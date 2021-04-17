@@ -26,6 +26,7 @@ class ModuleDecl final : public Decl {
 
  private:
   ModuleDecl(owned<Module> module);
+  bool contentsMatchInner(const BaseAST* other) const override;
 
  public:
   ~ModuleDecl() override = default;

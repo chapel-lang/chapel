@@ -10,6 +10,11 @@ VariableDecl::VariableDecl(owned<Variable> variable)
   : Decl(asttags::VariableDecl, std::move(variable)) {
 }
 
+bool VariableDecl::contentsMatchInner(const BaseAST* other) const {
+  const VariableDecl* lhs = this;
+  const VariableDecl* rhs = (const VariableDecl*) other;
+  return lhs->declContentsMatchInner(rhs);
+}
 
 owned<VariableDecl>
 VariableDecl::build(Builder* builder, Location loc,

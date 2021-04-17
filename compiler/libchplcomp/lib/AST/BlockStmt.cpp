@@ -17,6 +17,10 @@ BlockStmt::BlockStmt(ASTList stmts) :
 #endif
 }
 
+bool BlockStmt::contentsMatchInner(const BaseAST* other) const {
+  return true;
+}
+
 owned<BlockStmt> BlockStmt::build(Builder* builder,
                                   Location loc,
                                   ASTList stmts) {

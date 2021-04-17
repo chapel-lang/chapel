@@ -12,8 +12,6 @@ namespace ast {
   This abstract class represents something call-like
  */
 class CallExpr : public Expr {
- private:
-
  public:
   ~CallExpr() override = 0;
 

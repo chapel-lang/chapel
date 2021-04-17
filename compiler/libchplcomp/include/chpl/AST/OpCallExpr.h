@@ -11,8 +11,10 @@ namespace ast {
  */
 class OpCallExpr final : public CallExpr {
  private:
-   // which operator
-   UniqueString op_;
+  // which operator
+  UniqueString op_;
+
+  bool matchesInner(const BaseAST* other) const override;
  public:
   ~OpCallExpr() override = default;
 

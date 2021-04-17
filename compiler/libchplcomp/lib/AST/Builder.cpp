@@ -138,6 +138,10 @@ void Builder::assignIDs(BaseAST* ast, pathVecT& path, declaredHereT& decl) {
 }
 
 void Builder::assignIDsPostorder(BaseAST* ast, UniqueString symbolPath, int& i) {
+  // Don't consider comments when computing AST ids.
+  if (ast->isComment())
+    return;
+
   int firstChildID = i;
   for (int j = 0; j < ast->numChildren(); j++) {
     BaseAST* child = (BaseAST*) ast->getChild(j);
@@ -148,6 +152,35 @@ void Builder::assignIDsPostorder(BaseAST* ast, UniqueString symbolPath, int& i) 
   i++; // count the ID for the node we are currently visiting
   int numContainedIDs = afterChildID - firstChildID;
   ast->setID(ID(symbolPath, myID, numContainedIDs));
+}
+
+bool Builder::Result::matches(const Builder::Result* other) const {
+  // First, check the sizes
+  if (this->topLevelExprs.size() != other->topLevelExprs.size() ||
+      this->errors.size()        != other->errors.size() ||
+      this->locations.size()     != other->locations.size())
+    return false;
+
+  // Otherwise, check the contents. We can assume the sizes match.
+  for (size_t i = 0; i < this->topLevelExprs.size(); i++) {
+    BaseAST* lhsAst = this->topLevelExprs[i].get();
+    BaseAST* rhsAst = other->topLevelExprs[i].get();
+    if (!lhsAst->contentsMatch(rhsAst))
+      return false;
+  }
+  for (size_t i = 0; i < this->errors.size(); i++) {
+    if (this->errors[i] != other->errors[i])
+      return false;
+  }
+  for (size_t i = 0; i < this->locations.size(); i++) {
+    BaseAST* lhsAst = this->locations[i].first;
+    BaseAST* rhsAst = other->locations[i].first;
+    Location lhsLoc = this->locations[i].second;
+    Location rhsLoc = other->locations[i].second;
+    if (lhsAst->id() != rhsAst->id() || lhsLoc != rhsLoc)
+      return false;
+  }
+  return true;
 }
 
 } // namespace ast

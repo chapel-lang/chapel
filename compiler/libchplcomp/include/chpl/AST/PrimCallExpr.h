@@ -13,6 +13,7 @@ namespace ast {
  */
 class PrimCallExpr final : public CallExpr {
  private:
+  bool matchesInner(const BaseAST* other) const override;
  public:
   ~PrimCallExpr() override = default;
 

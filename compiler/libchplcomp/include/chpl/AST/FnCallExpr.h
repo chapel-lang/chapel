@@ -14,12 +14,13 @@ namespace ast {
  */
 class FnCallExpr final : public CallExpr {
  private:
-   // this represents the called expression e.g. 'f' in 'f(1,2,3)'
-   Expr* baseExpr_;
-   // for each actual (matching CallExpr's actuals), what are the names?
-   // if the actual is unnamed, it is the empty string.
-   std::vector<UniqueString> actualNames_;
-   // TODO: do we need partialTag / methodTag?
+  // this represents the called expression e.g. 'f' in 'f(1,2,3)'
+  Expr* baseExpr_;
+  // for each actual (matching CallExpr's actuals), what are the names?
+  // if the actual is unnamed, it is the empty string.
+  std::vector<UniqueString> actualNames_;
+  // TODO: do we need partialTag / methodTag?
+  bool matchesInner(const BaseAST* other) const override;
  public:
   ~FnCallExpr() override = default;
 

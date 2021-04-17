@@ -97,27 +97,28 @@ UniqueString Context::filePathForModuleName(UniqueString modName) {
   return QUERY_END(result);
 }
 
-void Context::setFilePathForModuleName(UniqueString modName, UniqueString path) {
+void Context::advanceToNextRevision() {
+  this->currentRevisionNumber++;
+  printf("CURRENT REVISION NUMBER IS NOW %i\n",
+         (int) this->currentRevisionNumber);
+}
+
+bool Context::setFilePathForModuleName(UniqueString modName, UniqueString path) {
   UniqueString queryName = UniqueString::build(this, "filePathForModuleName");
   auto tupleOfArgs = std::make_tuple(modName);
   bool changed = false;
   auto queryMapResult = updateResultForQuery(queryName, tupleOfArgs,
                                              path, changed);
+  return changed;
 }
 
-void Context::setFileText(UniqueString path, std::string data) {
+bool Context::setFileText(UniqueString path, std::string data) {
   UniqueString queryName = UniqueString::build(this, "fileText");
   auto tupleOfArgs = std::make_tuple(path);
   bool changed = false;
   auto queryMapResult = updateResultForQuery(queryName, tupleOfArgs,
                                              std::move(data), changed);
-  if (changed) {
-    this->currentRevisionNumber++;
-    auto currentRevision = this->currentRevisionNumber;
-    queryMapResult->lastCheckedAndReused = 0;
-    queryMapResult->lastComputed = currentRevision;
-    queryMapResult->lastChanged = currentRevision;
-  }
+  return changed;
 }
 
 bool Context::queryCanUseSavedResult(QueryMapResultBase* resultEntry) {
@@ -135,8 +136,21 @@ bool Context::queryCanUseSavedResult(QueryMapResultBase* resultEntry) {
 
   // Otherwise, check the dependencies. Have any of them
   // changed since the last revision in which we computed this?
-  for (QueryMapResultBase* dependency : resultEntry->dependencies) {
-    if (dependency->lastChanged > resultEntry->lastComputed) {
+  if (resultEntry->dependencies.size() > 0) {
+    for (QueryMapResultBase* dependency : resultEntry->dependencies) {
+      if (dependency->lastChanged > resultEntry->lastComputed) {
+        return false;
+      }
+      // check the dependencies, transitively
+      if (!queryCanUseSavedResult(dependency)) {
+        return false;
+      }
+    }
+  } else {
+    // If there are no dependencies, assume it is some external
+    // input that is managed by the currentRevisionNumber.
+    // So, recompute it if the current revision number has changed.
+    if (this->currentRevisionNumber > resultEntry->lastComputed) {
       return false;
     }
   }
@@ -150,12 +164,12 @@ bool Context::queryCanUseSavedResult(QueryMapResultBase* resultEntry) {
 bool Context::queryCanUseSavedResultAndPushIfNot(UniqueString queryName, const char* queryFunc, QueryMapResultBase* resultEntry) {
   bool ret = this->queryCanUseSavedResult(resultEntry);
   if (ret == false) {
-    printf("QUERY TRACE COMPUTING %s\n", queryFunc);
+    printf("QUERY COMPUTING %s (...)\n", queryFunc);
     // since the result cannot be used, the query will be evaluated
     // so push something to queryDeps
     queryDeps.push_back(QueryDepsEntry(queryName));
   } else {
-    printf("QUERY TRACE REUSING %s\n", queryFunc);
+    printf("QUERY END       %s (...) REUSING\n", queryFunc);
   }
   return ret;
 }
@@ -168,7 +182,7 @@ void Context::saveDependenciesAndErrorsInParent(QueryMapResultBase* resultEntry)
   if (queryDeps.size() > 0) {
     queryDeps.back().dependencies.push_back(resultEntry);
     if (resultEntry->errors.size() > 0) {
-      for (ErrorMessage e : resultEntry->errors) {
+      for (const ErrorMessage& e : resultEntry->errors) {
         queryDeps.back().errors.push_back(e);
       }
     }
@@ -184,11 +198,19 @@ void Context::endQueryHandleDependency(QueryMapResultBase* result) {
   // a parent query. In that event, we should update the dependency
   // vector for the parent query.
   saveDependenciesAndErrorsInParent(result);
+  // if there are no parent queries, we can clear out the saved oldResults
+  if (queryDeps.size() == 0) {
+    // warning: this proceeds in a nondeterministic order
+    for (auto& dbEntry: queryDB) {
+      QueryMapBase* queryMapBase = dbEntry.second.get();
+      queryMapBase->clearOldResults();
+    }
+  }
 }
 
 void Context::queryNoteError(ErrorMessage error) {
   assert(queryDeps.size() > 0);
-  queryDeps.back().errors.push_back(error);
+  queryDeps.back().errors.push_back(std::move(error));
 }
 
 
@@ -210,11 +232,19 @@ template<>
 void queryArgsPrint<>(const std::tuple<>& tuple) {
 }
 
+void queryArgsPrintSep() {
+  printf(", ");
+}
+
+void queryArgsPrintUnknown() {
+  printf("?");
+}
+
 void queryArgsPrintOne(const ID& v) {
-  printf("ID(%s@%i) ", v.symbolPath().c_str(), v.postOrderId());
+  printf("ID(%s@%i)", v.symbolPath().c_str(), v.postOrderId());
 }
 void queryArgsPrintOne(const UniqueString& v) {
-  printf("\"%s\" ", v.c_str());
+  printf("\"%s\"", v.c_str());
 }
 
 QueryMapResultBase::~QueryMapResultBase() {

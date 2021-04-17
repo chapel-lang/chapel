@@ -66,6 +66,13 @@ class Location final {
 
 } // end namespace ast
 
+template<> struct matches<chpl::ast::Location> {
+  bool operator()(const chpl::ast::Location& lhs,
+                  const chpl::ast::Location& rhs) const {
+    return lhs == rhs;
+  }
+};
+
 // Allow chpl::ast::Location to be just called chpl::Location
 // TODO: Should it be moved out of the ast namespace? What directory
 // should it go in?

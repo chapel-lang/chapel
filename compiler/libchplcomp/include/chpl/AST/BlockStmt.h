@@ -13,6 +13,7 @@ namespace ast {
 class BlockStmt final : public Stmt {
  private:
   BlockStmt(ASTList stmts);
+  bool contentsMatchInner(const BaseAST* other) const override;
 
  public:
   /**

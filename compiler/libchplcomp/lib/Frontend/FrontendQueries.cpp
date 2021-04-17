@@ -9,6 +9,31 @@
 #include <cstdio>
 
 namespace chpl {
+
+template<> struct matches<FrontendQueries::LocationsMap> {
+  bool operator()(const FrontendQueries::LocationsMap& lhs,
+                  const FrontendQueries::LocationsMap& rhs) const {
+    return lhs == rhs;
+  }
+};
+template<> struct matches<FrontendQueries::ModuleDeclVec> {
+  bool operator()(const FrontendQueries::ModuleDeclVec& lhs,
+                  const FrontendQueries::ModuleDeclVec& rhs) const {
+    size_t lhsN = lhs.size();
+    size_t rhsN = rhs.size();
+    if (lhsN != rhsN)
+      return false;
+    for (size_t i = 0; i < lhsN; i++) {
+      const ast::ModuleDecl* lhsMod = lhs[i];
+      const ast::ModuleDecl* rhsMod = rhs[i];
+      if (!lhsMod->contentsMatch(rhsMod))
+        return false;
+    }
+    return true;
+  }
+};
+
+
 namespace FrontendQueries {
 
 const std::string& fileText(Context* context, UniqueString path) {
@@ -21,13 +46,13 @@ const std::string& fileText(Context* context, UniqueString path) {
   std::string result;
   bool ok = readfile(path.c_str(), result, error);
   if (!ok) {
-    QUERY_ERROR(error);
+    QUERY_ERROR(std::move(error));
   }
 
   return QUERY_END(result);
 }
 
-const ast::Builder::Result* parse(Context* context, UniqueString path) {
+const ast::Builder::Result* parseFile(Context* context, UniqueString path) {
   QUERY_BEGIN(context, owned<ast::Builder::Result>, path);
   if (QUERY_USE_SAVED()) {
     return QUERY_GET_SAVED().get();
@@ -43,8 +68,10 @@ const ast::Builder::Result* parse(Context* context, UniqueString path) {
   ast::Builder::Result tmpResult = parser->parseString(pathc, textc);
   result->topLevelExprs.swap(tmpResult.topLevelExprs);
   result->locations.swap(tmpResult.locations);
-  for (ErrorMessage e : tmpResult.errors) {
-    QUERY_ERROR(e);
+  for (ErrorMessage& e : tmpResult.errors) {
+    ErrorMessage tmp;
+    tmp.swap(e);
+    QUERY_ERROR(std::move(tmp));
   }
 
   // Update the filePathForModuleName query
@@ -63,7 +90,7 @@ const LocationsMap& fileLocations(Context* context, UniqueString path) {
   }
 
   // Get the result of parsing
-  const ast::Builder::Result* p = parse(context, path);
+  const ast::Builder::Result* p = parseFile(context, path);
   // Create a map of ID to Location
   std::unordered_map<ID, Location> result;
   for (auto pair : p->locations) {
@@ -89,6 +116,25 @@ Location locate(Context* context, ID id) {
   auto search = map.find(id);
   if (search != map.end()) {
     result = search->second;
+  }
+
+  return QUERY_END(result);
+}
+
+const ModuleDeclVec& parse(Context* context, UniqueString path) {
+  QUERY_BEGIN(context, ModuleDeclVec, path);
+  if (QUERY_USE_SAVED()) {
+    return QUERY_GET_SAVED();
+  }
+
+  // Get the result of parsing
+  const ast::Builder::Result* p = parseFile(context, path);
+  // Compute a vector of ModuleDecls
+  ModuleDeclVec result;
+  for (auto & topLevelExpr : p->topLevelExprs) {
+    if (const ast::ModuleDecl* modDecl = topLevelExpr->toModuleDecl()) {
+      result.push_back(modDecl);
+    }
   }
 
   return QUERY_END(result);

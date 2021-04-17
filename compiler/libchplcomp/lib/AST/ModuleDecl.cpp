@@ -10,6 +10,11 @@ ModuleDecl::ModuleDecl(owned<Module> module)
   : Decl(asttags::ModuleDecl, std::move(module)) {
 }
 
+bool ModuleDecl::contentsMatchInner(const BaseAST* other) const {
+  const ModuleDecl* lhs = this;
+  const ModuleDecl* rhs = (const ModuleDecl*) other;
+  return lhs->declContentsMatchInner(rhs);
+}
 
 owned<ModuleDecl>
 ModuleDecl::build(Builder* builder, Location loc,

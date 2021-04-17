@@ -14,6 +14,9 @@ namespace ast {
 class Decl : public Expr {
  protected:
   Decl(asttags::ASTTag tag, owned<Symbol> symbol);
+  bool declContentsMatchInner(const Decl* other) const {
+    return true;
+  }
 
  public:
   virtual ~Decl() = 0; // this is an abstract base class

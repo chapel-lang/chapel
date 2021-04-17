@@ -27,6 +27,10 @@ class Symbol : public BaseAST {
   Symbol(asttags::ASTTag tag, UniqueString name, Visibility vis);
   Symbol(asttags::ASTTag tag, ASTList children,
          UniqueString name, Visibility vis);
+  bool symbolContentsMatchInner(const Symbol* other) const {
+    return this->name_ == other->name_ &&
+           this->visibility_ == other->visibility_;
+  }
 
  public:
   virtual ~Symbol() = 0; // this is an abstract base class

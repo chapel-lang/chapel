@@ -37,11 +37,19 @@ static void test1() {
   FrontendQueries::parse(ctx, path);
 }
 
+static const Module* parseOneModule(Context* ctx, UniqueString filepath) {
+  const FrontendQueries::ModuleDeclVec& v =
+    FrontendQueries::parse(ctx, filepath);
+  assert(v.size() == 1);
+  return v[0]->module();
+}
+
 static void test2() {
   printf("test2\n");
   auto context = Context::build();
   Context* ctx = context.get();
 
+  ctx->advanceToNextRevision();
   auto modOnePath = UniqueString::build(ctx, "modOne.chpl");
   std::string modOneContents = "/* this is a test */\n"
                                "a;\n";
@@ -51,19 +59,16 @@ static void test2() {
                                "a;\n";
   ctx->setFileText(modTwoPath, modTwoContents);
  
-  const ast::Builder::Result* p;
-  p = FrontendQueries::parse(ctx, modOnePath);
-  assert(p->topLevelExprs.size() == 1);
-  assert(p->topLevelExprs[0]->isModuleDecl());
-  auto moduleOne = p->topLevelExprs[0]->toModuleDecl()->module();
+  const Module* moduleOne = nullptr;
+  const Module* moduleTwo = nullptr;
+
+  moduleOne = parseOneModule(ctx, modOnePath);
+  moduleTwo = parseOneModule(ctx, modTwoPath);
   assert(moduleOne->numStmts() == 2);
-  p = FrontendQueries::parse(ctx, modTwoPath);
-  assert(p->topLevelExprs.size() == 1);
-  assert(p->topLevelExprs[0]->isModuleDecl());
-  auto moduleTwo = p->topLevelExprs[0]->toModuleDecl()->module();
   assert(moduleTwo->numStmts() == 2);
 
   printf("test2 changing whitespace in modOne.chpl\n");
+  ctx->advanceToNextRevision();
 
   modOneContents = "/* this is a test */\n"
                    "\n"
@@ -72,15 +77,11 @@ static void test2() {
   ctx->setFileText(modOnePath, modOneContents);
   ctx->setFileText(modTwoPath, modTwoContents);
 
-  p = FrontendQueries::parse(ctx, modOnePath);
-  assert(p->topLevelExprs.size() == 1);
-  assert(p->topLevelExprs[0]->isModuleDecl());
-  moduleOne = p->topLevelExprs[0]->toModuleDecl()->module();
+  printf("test2 parsing modOne.chpl\n");
+  moduleOne = parseOneModule(ctx, modOnePath);
+  printf("test2 parsing modTwo.chpl\n");
+  moduleTwo = parseOneModule(ctx, modTwoPath);
   assert(moduleOne->numStmts() == 2);
-  p = FrontendQueries::parse(ctx, modTwoPath);
-  assert(p->topLevelExprs.size() == 1);
-  assert(p->topLevelExprs[0]->isModuleDecl());
-  moduleTwo = p->topLevelExprs[0]->toModuleDecl()->module();
   assert(moduleTwo->numStmts() == 2);
 }
 

@@ -127,6 +127,13 @@ class UniqueString final {
 
 } // end namespace ast
 
+template<> struct matches<chpl::ast::UniqueString> {
+  bool operator()(const chpl::ast::UniqueString& lhs,
+                  const chpl::ast::UniqueString& rhs) const {
+    return lhs == rhs;
+  }
+};
+
 // Allow chpl::ast::UniqueString to be just called chpl::UniqueString
 // TODO: Should it be moved out of the ast namespace? What directory
 // should it go in?

@@ -10,6 +10,12 @@ ErroneousExpr::ErroneousExpr()
   : Expr(asttags::ErroneousExpr) {
 }
 
+bool ErroneousExpr::contentsMatchInner(const BaseAST* other) const {
+  const ErroneousExpr* lhs = this;
+  const ErroneousExpr* rhs = (const ErroneousExpr*) other;
+  return lhs->exprContentsMatchInner(rhs);
+}
+
 owned<ErroneousExpr> ErroneousExpr::build(Builder* builder, Location loc) {
   ErroneousExpr* ret = new ErroneousExpr();
   builder->noteLocation(ret, loc);

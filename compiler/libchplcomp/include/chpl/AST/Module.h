@@ -35,6 +35,7 @@ class Module final : public Symbol {
   Module(ASTList children,
          UniqueString name, Symbol::Visibility vis,
          Module::Tag tag);
+  bool contentsMatchInner(const BaseAST* other) const override;
 
  public:
   ~Module() override = default;

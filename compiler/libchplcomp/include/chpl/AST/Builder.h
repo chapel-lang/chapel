@@ -69,6 +69,8 @@ class Builder final {
     ast::ASTList topLevelExprs;
     std::vector<ErrorMessage> errors;
     std::vector<std::pair<BaseAST*, Location>> locations;
+
+    bool matches(const Result* other) const;
   };
 
   /**
@@ -88,6 +90,16 @@ class Builder final {
 };
 
 } // end namespace ast
+
+template<> struct matches<owned<chpl::ast::Builder::Result>> {
+  bool operator()(const owned<chpl::ast::Builder::Result>& lhs,
+                  const owned<chpl::ast::Builder::Result>& rhs) const {
+    return lhs.get()->matches(rhs.get());
+  }
+};
+
+
 } // end namespace chpl
+
 
 #endif

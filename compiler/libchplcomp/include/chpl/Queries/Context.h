@@ -113,21 +113,30 @@ class Context {
    */
   UniqueString filePathForModuleName(UniqueString modName);
 
+  /**
+    This function increments the current revision number stored
+    in the context. After it is called, the setters below can
+    be used to provide the input at that revision.
+   */
+  void advanceToNextRevision();
+
   // setters for named queries.
 
   /**
     Sets the file path for the given toplevel module name. It does not bump
     the current revision counter so is suitable for calling from
     a parse query.
+    Returns 'true' if this function caused a new result to be saved
+    in the context.
    */
-  void setFilePathForModuleName(UniqueString modName, UniqueString path);
+  bool setFilePathForModuleName(UniqueString modName, UniqueString path);
 
   /**
     setFileText will set the text for a particular file path.
-    It will bump the current revision counter if the text
-    is different from what it was.
+    Returns 'true' if this function caused a new result to be saved
+    in the context.
    */
-  void setFileText(UniqueString path, std::string data);
+  bool setFileText(UniqueString path, std::string data);
 
   // the following functions are called by the macros defined in QueryImpl.h
   // and should not be called directly

@@ -13,6 +13,10 @@ class Expr : public BaseAST {
  protected:
   Expr(asttags::ASTTag tag);
   Expr(asttags::ASTTag tag, ASTList children);
+  bool exprContentsMatchInner(const Expr* other) const {
+    return true;
+  }
+
  public:
   virtual ~Expr() = 0; // this is an abstract base class
 };

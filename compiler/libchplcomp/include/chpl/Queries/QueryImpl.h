@@ -4,6 +4,14 @@
 #include "chpl/Queries/Context.h"
 #include "chpl/Queries/ContextDetail.h"
 
+#ifndef QUERY_MAP_USE_PRETTYFUNC
+  #if defined(__clang__)
+    #define QUERY_MAP_USE_PRETTYFUNC
+  #elif defined(__GNUC__)
+    #define QUERY_MAP_USE_PRETTYFUNC
+  #endif
+#endif
+
 /**
   This file should be included by .cpp files implementing queries.
  */
@@ -15,7 +23,7 @@ using namespace chpl::querydetail;
 template<typename... ArgTs>
 void Context::queryTraceBegin(UniqueString queryName, const char* func,
                      const std::tuple<ArgTs...>& tupleOfArg) {
-  printf("QUERY TRACE BEGIN %s (", func);
+  printf("QUERY BEGIN     %s (", func);
   queryArgsPrint(tupleOfArg);
   printf(")\n");
 }
@@ -24,28 +32,38 @@ template<typename... ArgTs>
 void Context::queryTraceEnd(UniqueString queryName, const char* func,
                    const std::tuple<ArgTs...>& tupleOfArg,
                    bool changed) {
-  printf("QUERY TRACE END %s changed=%i (", func, (int)changed);
+  printf("QUERY END       %s (", func);
   queryArgsPrint(tupleOfArg);
-  printf(")\n");
+  printf(") %s\n", changed?"UPDATED":"NO CHANGE");
 }
 
 template<typename ResultType, typename... ArgTs>
 QueryMap<ResultType,ArgTs...>* Context::queryGetMap(UniqueString queryName, const std::tuple<ArgTs...>& tupleOfArgs) {
+
+  const char* prettyFunc = "";
+#ifdef QUERY_MAP_USE_PRETTYFUNC
+    prettyFunc = __PRETTY_FUNCTION__;
+#endif
+ 
   // Look up the map entry for this query name
   auto search = this->queryDB.find(queryName);
   if (search != this->queryDB.end()) {
     // found an entry for this query name
     QueryMapBase* base = search->second.get();
+    // check that the arg/result types match 
+    assert(0 == strcmp(base->prettyFunc, prettyFunc));
     // return the inner map
     return (QueryMap<ResultType,ArgTs...>*)base;
   }
+ 
   // Otherwise, create the QueryMap entry for this query name
   // and add it to the map
   auto iter =
     this->queryDB.emplace_hint(
       search,
       std::make_pair(queryName,
-                     toOwned(new QueryMap<ResultType,ArgTs...>(queryName))));
+                     toOwned(new QueryMap<ResultType,ArgTs...>(queryName,
+                                                               prettyFunc))));
   // and return a pointer to the newly inserted map
   QueryMapBase* newBase = iter->second.get();
   return (QueryMap<ResultType,ArgTs...>*)newBase;
@@ -64,13 +82,23 @@ Context::updateResultForQuery(UniqueString queryName,
   auto search = queryMap->map.find(tupleOfArgs);
   if (search != queryMap->map.end()) {
    QueryMapResult<ResultType>* oldResult = &(search->second);
-   std::equal_to<ResultType> equal;
-   if (equal(oldResult->result, result)) {
+
+   chpl::matches<ResultType> equal;
+   bool match = equal(oldResult->result, result);
+
+   // Either way, save both the newly computed result and the old result.
+   // The old result will be GC'd when no query is running.
+   // We will return &oldResult, more or less.
+   oldResult->result.swap(result);
+   // save the oldResult (now in result)
+   // long enough for later queries to compare with it
+   queryMap->oldResults.push_back(std::move(result));
+
+   if (match) {
      changed = false;
      oldResult->lastComputed = this->currentRevisionNumber;
      return oldResult;
    } else {
-     oldResult->result.swap(result);
      changed = true;
      auto currentRevision = this->currentRevisionNumber;
      oldResult->lastComputed = currentRevision;

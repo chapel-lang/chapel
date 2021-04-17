@@ -21,9 +21,10 @@ class Comment final : public Expr {
  friend class Builder;
 
  private:
-  Comment(std::string s);
-
   std::string comment_;
+
+  Comment(std::string s);
+  bool contentsMatchInner(const BaseAST* other) const override;
 
  public:
   ~Comment() override = default;

@@ -27,6 +27,17 @@ class ErrorMessage final {
 
   static ErrorMessage build(Location loc, const char* fmt, ...)
     __attribute__ ((format (printf, 2, 3)));
+
+  inline bool operator==(const ErrorMessage& other) const {
+    return this->level_ == other.level_ &&
+           this->location_ == other.location_ &&
+           this->message_ == other.message_;
+  }
+  inline bool operator!=(const ErrorMessage& other) const {
+    return !(*this == other);
+  }
+
+  void swap(ErrorMessage& other);
 };
 
 } // end namespace ast

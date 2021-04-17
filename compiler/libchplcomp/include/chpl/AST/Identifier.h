@@ -25,8 +25,10 @@ class Identifier final : public Expr {
  friend class Builder;
 
  private:
-  Identifier(UniqueString name);
   UniqueString name_;
+
+  Identifier(UniqueString name);
+  bool contentsMatchInner(const BaseAST* other) const override;
  public:
   ~Identifier() override = default;
   static owned<Identifier> build(Builder* builder, Location loc, UniqueString name);

@@ -43,5 +43,13 @@ ErrorMessage ErrorMessage::build(Location loc, const char* fmt, ...) {
   return ErrorMessage(loc, ret);
 }
 
+void ErrorMessage::swap(ErrorMessage& other) {
+  int oldThisLevel = this->level_;
+  this->level_ = other.level_;
+  other.level_ = oldThisLevel;
+  this->location_.swap(other.location_);
+  this->message_.swap(other.message_);
+}
+
 } // namespace ast
 } // namespace chpl

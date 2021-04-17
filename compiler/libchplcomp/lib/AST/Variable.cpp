@@ -25,6 +25,16 @@ Variable::Variable(ASTList children,
 #endif
 }
 
+bool Variable::contentsMatchInner(const BaseAST* other) const {
+  const Variable* lhs = this;
+  const Variable* rhs = (const Variable*) other;
+  return lhs->symbolContentsMatchInner(rhs) &&
+         lhs->tag_ == rhs->tag_ &&
+         lhs->typeExprChildNum == rhs->typeExprChildNum &&
+         lhs->initExprChildNum == rhs->initExprChildNum;
+}
+
+
 
 } // namespace ast
 } // namespace chpl
