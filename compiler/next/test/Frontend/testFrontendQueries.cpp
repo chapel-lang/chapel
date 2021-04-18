@@ -49,7 +49,7 @@ static void test2() {
   auto context = Context::build();
   Context* ctx = context.get();
 
-  ctx->advanceToNextRevision();
+  ctx->advanceToNextRevision(true);
   auto modOnePath = UniqueString::build(ctx, "modOne.chpl");
   std::string modOneContents = "/* this is a test */\n"
                                "a;\n";
@@ -67,8 +67,10 @@ static void test2() {
   assert(moduleOne->numStmts() == 2);
   assert(moduleTwo->numStmts() == 2);
 
+  ctx->collectGarbage();
+
   printf("test2 changing whitespace in modOne.chpl\n");
-  ctx->advanceToNextRevision();
+  ctx->advanceToNextRevision(true);
 
   modOneContents = "/* this is a test */\n"
                    "\n"
@@ -83,6 +85,8 @@ static void test2() {
   moduleTwo = parseOneModule(ctx, modTwoPath);
   assert(moduleOne->numStmts() == 2);
   assert(moduleTwo->numStmts() == 2);
+
+  ctx->collectGarbage();
 }
 
 

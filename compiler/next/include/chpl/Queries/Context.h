@@ -17,7 +17,8 @@ namespace chpl {
 class Context {
  private:
   // map that supports uniqueCString / UniqueString
-  std::unordered_map<const char*, const char*, chpl::detail::UniqueStrHash, chpl::detail::UniqueStrEqual> uniqueStringsTable;
+   typedef std::unordered_map<const char*, char*, chpl::detail::UniqueStrHash, chpl::detail::UniqueStrEqual> UniqueStringsTableType;
+  UniqueStringsTableType uniqueStringsTable;
 
   // map from a query name to appropriate QueryMap object.
   // maps to an 'owned' heap-allocated thing to manage having subclasses
@@ -43,6 +44,8 @@ class Context {
   std::vector<QueryDepsEntry> queryDeps;
 
   chpl::querydetail::RevisionNumber currentRevisionNumber;
+  chpl::querydetail::RevisionNumber lastPrepareToGCRevisionNumber;
+  chpl::querydetail::RevisionNumber gcCounter;
 
   Context();
   const char* getOrCreateUniqueString(const char* s);
@@ -117,8 +120,19 @@ class Context {
     This function increments the current revision number stored
     in the context. After it is called, the setters below can
     be used to provide the input at that revision.
+
+    If the prepareToGC argument is true, when processing queries
+    in that revision, will prepare to garbage collect (by marking
+    elements appropriately).
    */
-  void advanceToNextRevision();
+  void advanceToNextRevision(bool prepareToGC);
+
+  /**
+    This function runs garbage collection, but it only has an effect
+    if the last call to advanceToNextRevision passed
+    prepareToGC=true.
+   */
+  void collectGarbage();
 
   // setters for named queries.
 

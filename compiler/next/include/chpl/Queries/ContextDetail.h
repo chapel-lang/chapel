@@ -15,6 +15,7 @@ namespace detail {
 
 struct UniqueStrEqual final {
   bool operator()(const char* lhs, const char* rhs) const {
+    // pass the 2 metadata bytes
     return strcmp(lhs, rhs) == 0;
   }
 };

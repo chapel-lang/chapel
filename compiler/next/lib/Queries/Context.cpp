@@ -10,7 +10,8 @@ namespace chpl {
 using namespace chpl::querydetail;
 
 Context::Context()
-  : uniqueStringsTable(), queryDB(), currentRevisionNumber(1) {
+  : uniqueStringsTable(), queryDB(), queryDeps(),
+    currentRevisionNumber(1), lastPrepareToGCRevisionNumber(0), gcCounter(1) {
 }
 
 owned<Context> Context::build() {
@@ -47,16 +48,31 @@ static char* allocateEvenAligned(size_t amt) {
 }
 
 const char* Context::getOrCreateUniqueString(const char* str) {
+  char gcMark = this->gcCounter & 0xff;
   auto search = this->uniqueStringsTable.find(str);
   if (search != this->uniqueStringsTable.end()) {
-    return search->second;
+    char* buf = search->second;
+    // update the GC mark
+    // Performance: Would it be better to do this store unconditionally?
+    if (this->currentRevisionNumber == this->lastPrepareToGCRevisionNumber) {
+      buf[0] = gcMark;
+    }
+    const char* key = buf+2; // pass the 2 bytes of metadata
+    return key;
   }
-  size_t len = strlen(str)+1;
-  char* buf = allocateEvenAligned(len);
+  size_t strLen = strlen(str);
+  size_t allocLen = strLen+3; // 2 bytes of metadata, str data, '\0'
+  char* buf = allocateEvenAligned(allocLen);
+  // set the GC mark
+  buf[0] = gcMark;
+  // set the unused metadata (need to still have even alignment)
+  buf[1] = 0x02;
   // copy the string data, including the null terminator
-  memcpy(buf, str, len);
-  this->uniqueStringsTable.insert(search, {buf, buf});
-  return buf;
+  memcpy(buf+2, str, strLen+1);
+  const char* key = buf+2; // pass the 2 bytes of metadata
+  // Add it to the table
+  this->uniqueStringsTable.insert(search, {key, buf});
+  return key;
 }
 
 const char* Context::uniqueCString(const char* s) {
@@ -70,7 +86,7 @@ UniqueString Context::moduleNameForID(ID id) {
     UniqueString empty;
     return empty;
   }
-  
+
   // Otherwise, the module name is everything up to the first '.'
   size_t len = 0;
   const char* s = id.symbolPath().c_str();
@@ -97,10 +113,44 @@ UniqueString Context::filePathForModuleName(UniqueString modName) {
   return QUERY_END(result);
 }
 
-void Context::advanceToNextRevision() {
+void Context::advanceToNextRevision(bool prepareToGC) {
   this->currentRevisionNumber++;
+  if (prepareToGC) {
+    this->lastPrepareToGCRevisionNumber = this->currentRevisionNumber;
+    gcCounter++;
+  }
   printf("CURRENT REVISION NUMBER IS NOW %i\n",
          (int) this->currentRevisionNumber);
+}
+
+void Context::collectGarbage() {
+  // if there are no parent queries, we can clear out the saved oldResults
+  if (queryDeps.size() == 0 &&
+      this->lastPrepareToGCRevisionNumber == this->currentRevisionNumber) {
+    // warning: these loops proceeds in a nondeterministic order
+    for (auto& dbEntry: queryDB) {
+      QueryMapBase* queryMapBase = dbEntry.second.get();
+      queryMapBase->clearOldResults();
+    }
+    // Performance: Would it be better to modify the table in-place
+    // rather than creating a new table as is done here?
+    char gcMark = this->gcCounter & 0xff;
+    UniqueStringsTableType newTable;
+    std::vector<char*> toFree;
+    for (auto& e: uniqueStringsTable) {
+      const char* key = e.first;
+      char* buf = e.second;
+      if (buf[0] == gcMark) {
+        newTable.insert(std::make_pair(key, buf));
+      } else {
+        toFree.push_back(buf);
+      }
+    }
+    for (char* buf: toFree) {
+      free(buf);
+    }
+    uniqueStringsTable.swap(newTable);
+  }
 }
 
 bool Context::setFilePathForModuleName(UniqueString modName, UniqueString path) {
@@ -175,7 +225,7 @@ bool Context::queryCanUseSavedResultAndPushIfNot(UniqueString queryName, const c
 }
 
 void Context::saveDependenciesAndErrorsInParent(QueryMapResultBase* resultEntry) {
-  // Record that the parent query depends upon this one. 
+  // Record that the parent query depends upon this one.
   //
   // we haven't pushed the query beginning yet, so the
   // parent query is at queryDeps.back()
@@ -198,14 +248,6 @@ void Context::endQueryHandleDependency(QueryMapResultBase* result) {
   // a parent query. In that event, we should update the dependency
   // vector for the parent query.
   saveDependenciesAndErrorsInParent(result);
-  // if there are no parent queries, we can clear out the saved oldResults
-  if (queryDeps.size() == 0) {
-    // warning: this proceeds in a nondeterministic order
-    for (auto& dbEntry: queryDB) {
-      QueryMapBase* queryMapBase = dbEntry.second.get();
-      queryMapBase->clearOldResults();
-    }
-  }
 }
 
 void Context::queryNoteError(ErrorMessage error) {
