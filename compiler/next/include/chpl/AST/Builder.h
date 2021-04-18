@@ -32,7 +32,7 @@ class Builder final {
   UniqueString inferredModuleName_;
   ASTList topLevelExprs_;
   std::vector<ErrorMessage> errors_;
-  std::vector<std::pair<BaseAST*, Location>> locations_;
+  std::vector<std::pair<ID, Location>> locations_;
 
   Builder(Context* context,
           UniqueString filepath, UniqueString inferredModuleName);
@@ -68,9 +68,9 @@ class Builder final {
   struct Result final {
     ast::ASTList topLevelExprs;
     std::vector<ErrorMessage> errors;
-    std::vector<std::pair<BaseAST*, Location>> locations;
+    std::vector<std::pair<ID, Location>> locations;
 
-    bool matches(const Result* other) const;
+    static bool combine(Result& keep, Result& addin);
   };
 
   /**
@@ -91,10 +91,10 @@ class Builder final {
 
 } // end namespace ast
 
-template<> struct matches<owned<chpl::ast::Builder::Result>> {
-  bool operator()(const owned<chpl::ast::Builder::Result>& lhs,
-                  const owned<chpl::ast::Builder::Result>& rhs) const {
-    return lhs.get()->matches(rhs.get());
+template<> struct combine<owned<chpl::ast::Builder::Result>> {
+  bool operator()(owned<chpl::ast::Builder::Result>& keep,
+                  owned<chpl::ast::Builder::Result>& addin) const {
+    return chpl::ast::Builder::Result::combine(*keep, *addin);
   }
 };
 

@@ -95,10 +95,10 @@ class ID final {
 
 } // end namespace ast
 
-template<> struct matches<chpl::ast::ID> {
-  bool operator()(const chpl::ast::ID& lhs,
-                  const chpl::ast::ID& rhs) const {
-    return lhs == rhs;
+template<> struct combine<chpl::ast::ID> {
+  bool operator()(chpl::ast::ID& keep,
+                  chpl::ast::ID& addin) const {
+    return defaultCombine(keep, addin);
   }
 };
 

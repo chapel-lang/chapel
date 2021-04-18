@@ -22,7 +22,7 @@ class Decl : public Expr {
   virtual ~Decl() = 0; // this is an abstract base class
 
   const Symbol* symbol() const {
-    const BaseAST* ast = getChild(0);
+    const BaseAST* ast = child(0);
     assert(ast->isSymbol());
     return (const Symbol*) ast;
   }

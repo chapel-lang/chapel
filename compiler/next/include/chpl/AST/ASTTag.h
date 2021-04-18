@@ -2,10 +2,9 @@
 #define CHPL_AST_ASTTAG_H
 
 namespace chpl {
-
 namespace ast {
-
 namespace asttags {
+
 
 /**
 
@@ -27,6 +26,7 @@ enum ASTTag {
   #undef AST_LEAF
   #undef AST_BEGIN_SUBCLASSES
   #undef AST_END_SUBCLASSES
+  NUM_AST_TAGS
 };
 
 // define is___ for leaf and regular nodes
@@ -70,10 +70,11 @@ enum ASTTag {
 #undef AST_END_SUBCLASSES
 #undef IS_AST
 
+const char* tagToString(ASTTag tag);
+
+
 } // end namespace tags
-
 } // end namespace ast
-
 } // end namespace chpl
 
 #endif

@@ -12,7 +12,7 @@ BlockStmt::BlockStmt(ASTList stmts) :
 #ifndef NDEBUG
   // check that all children are exprs (and not, say, Symbols)
   for (int i = 0; i < this->numChildren(); i++) {
-    assert(getChild(i)->isExpr());
+    assert(child(i)->isExpr());
   }
 #endif
 }

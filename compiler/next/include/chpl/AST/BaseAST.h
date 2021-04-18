@@ -78,7 +78,7 @@ class BaseAST {
     This function returns a "borrow" of the AST node. It is managed
     by this object.
    */
-  const BaseAST* getChild(int i) const {
+  const BaseAST* child(int i) const {
     assert(0 <= i && i < children_.size());
     return children_[i].get();
   }
@@ -91,7 +91,19 @@ class BaseAST {
     return this->id_.contains(other->id_);
   }
 
+  bool shallowMatch(const BaseAST* other) const;
+  /*
   bool contentsMatch(const BaseAST* other) const;
+   */
+
+  // keep is some old AST
+  // addin is some new AST we wish to combine with it
+  // If they are the same, returns keep.
+  // If they differ, sets keep to addin, reusing inner AST elements
+  // where possible.
+  static bool combineAST(owned<BaseAST>& keep, owned<BaseAST>& addin);
+
+  static void dump(const BaseAST* ast);
 
   // define is__ methods for the various AST types
   // using macros and ASTClassesList.h

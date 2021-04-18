@@ -53,7 +53,7 @@ void Builder::addError(ErrorMessage e) {
 }
 
 void Builder::noteLocation(BaseAST* ast, Location loc) {
-  this->locations_.push_back(std::make_pair(ast, loc));
+  this->locations_.push_back(std::make_pair(ast->id(), loc));
 }
 
 Builder::Result Builder::result() {
@@ -144,7 +144,7 @@ void Builder::assignIDsPostorder(BaseAST* ast, UniqueString symbolPath, int& i) 
 
   int firstChildID = i;
   for (int j = 0; j < ast->numChildren(); j++) {
-    BaseAST* child = (BaseAST*) ast->getChild(j);
+    BaseAST* child = (BaseAST*) ast->child(j);
     this->assignIDsPostorder(child, symbolPath, i);
   }
   int afterChildID = i;
@@ -154,33 +154,17 @@ void Builder::assignIDsPostorder(BaseAST* ast, UniqueString symbolPath, int& i) 
   ast->setID(ID(symbolPath, myID, numContainedIDs));
 }
 
-bool Builder::Result::matches(const Builder::Result* other) const {
-  // First, check the sizes
-  if (this->topLevelExprs.size() != other->topLevelExprs.size() ||
-      this->errors.size()        != other->errors.size() ||
-      this->locations.size()     != other->locations.size())
-    return false;
+bool Builder::Result::combine(Result& keep, Result& addin) {
+  bool match = true;
 
-  // Otherwise, check the contents. We can assume the sizes match.
-  for (size_t i = 0; i < this->topLevelExprs.size(); i++) {
-    BaseAST* lhsAst = this->topLevelExprs[i].get();
-    BaseAST* rhsAst = other->topLevelExprs[i].get();
-    if (!lhsAst->contentsMatch(rhsAst))
-      return false;
-  }
-  for (size_t i = 0; i < this->errors.size(); i++) {
-    if (this->errors[i] != other->errors[i])
-      return false;
-  }
-  for (size_t i = 0; i < this->locations.size(); i++) {
-    BaseAST* lhsAst = this->locations[i].first;
-    BaseAST* rhsAst = other->locations[i].first;
-    Location lhsLoc = this->locations[i].second;
-    Location rhsLoc = other->locations[i].second;
-    if (lhsAst->id() != rhsAst->id() || lhsLoc != rhsLoc)
-      return false;
-  }
-  return true;
+  // merge the errors and locations
+  match &= defaultCombine(keep.errors, addin.errors);
+  match &= defaultCombine(keep.locations, addin.locations);
+
+  // merge the ASTs
+  match &= combineASTLists(keep.topLevelExprs, addin.topLevelExprs);
+
+  return match;
 }
 
 } // namespace ast

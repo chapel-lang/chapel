@@ -56,7 +56,7 @@ class Variable final : public Symbol {
     */
   const Expr* typeExpr() const {
     if (typeExprChildNum >= 0) {
-      const BaseAST* ast = this->getChild(typeExprChildNum);
+      const BaseAST* ast = this->child(typeExprChildNum);
       assert(ast->isExpr());
       return (const Expr*)ast;
     } else {
@@ -69,7 +69,7 @@ class Variable final : public Symbol {
     */
   const Expr* initExpr() const {
     if (initExprChildNum >= 0) {
-      const BaseAST* ast = this->getChild(initExprChildNum);
+      const BaseAST* ast = this->child(initExprChildNum);
       assert(ast->isExpr());
       return (const Expr*)ast;
     } else {

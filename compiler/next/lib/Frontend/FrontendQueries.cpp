@@ -10,26 +10,16 @@
 
 namespace chpl {
 
-template<> struct matches<FrontendQueries::LocationsMap> {
-  bool operator()(const FrontendQueries::LocationsMap& lhs,
-                  const FrontendQueries::LocationsMap& rhs) const {
-    return lhs == rhs;
+template<> struct combine<FrontendQueries::LocationsMap> {
+  bool operator()(FrontendQueries::LocationsMap& keep,
+                  FrontendQueries::LocationsMap& addin) const {
+    return defaultCombine(keep, addin);
   }
 };
-template<> struct matches<FrontendQueries::ModuleDeclVec> {
-  bool operator()(const FrontendQueries::ModuleDeclVec& lhs,
-                  const FrontendQueries::ModuleDeclVec& rhs) const {
-    size_t lhsN = lhs.size();
-    size_t rhsN = rhs.size();
-    if (lhsN != rhsN)
-      return false;
-    for (size_t i = 0; i < lhsN; i++) {
-      const ast::ModuleDecl* lhsMod = lhs[i];
-      const ast::ModuleDecl* rhsMod = rhs[i];
-      if (!lhsMod->contentsMatch(rhsMod))
-        return false;
-    }
-    return true;
+template<> struct combine<FrontendQueries::ModuleDeclVec> {
+  bool operator()(FrontendQueries::ModuleDeclVec& keep,
+                  FrontendQueries::ModuleDeclVec& addin) const {
+    return defaultCombine(keep, addin);
   }
 };
 
@@ -94,9 +84,9 @@ const LocationsMap& fileLocations(Context* context, UniqueString path) {
   // Create a map of ID to Location
   std::unordered_map<ID, Location> result;
   for (auto pair : p->locations) {
-    ast::BaseAST* ast = pair.first;
+    ID id = pair.first;
     Location loc = pair.second;
-    result.insert({ast->id(), loc});
+    result.insert({id, loc});
   }
   
   return QUERY_END(result);

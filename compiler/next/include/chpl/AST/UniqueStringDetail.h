@@ -169,13 +169,21 @@ size_t hash_combine(size_t hash1, size_t hash2) {
   return hash;
 }
 
-template<typename T> struct matches {
-  bool operator()(const T& lhs, const T& rhs) const = 0;
+template<typename T> struct combine {
+  bool operator()(T& keep, T& addin) const = 0;
 };
-template<> struct matches<std::string> {
-  bool operator()(const std::string& lhs,
-                  const std::string& rhs) const {
-    return lhs == rhs;
+template<typename T>
+static inline bool defaultCombine(T& keep, T& addin) {
+  if (keep == addin) {
+    return true;
+  } else {
+    keep.swap(addin);
+    return false;
+  }
+}
+template<> struct combine<std::string> {
+  bool operator()(std::string& keep, std::string& addin) const {
+    return defaultCombine(keep, addin);
   }
 };
 

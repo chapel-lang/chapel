@@ -83,17 +83,8 @@ Context::updateResultForQuery(UniqueString queryName,
   if (search != queryMap->map.end()) {
    QueryMapResult<ResultType>* oldResult = &(search->second);
 
-   chpl::matches<ResultType> equal;
-   bool match = equal(oldResult->result, result);
-
-   // Either way, save both the newly computed result and the old result.
-   // The old result will be GC'd when no query is running.
-   // We will return &oldResult, more or less.
-   oldResult->result.swap(result);
-   // save the oldResult (now in result)
-   // long enough for later queries to compare with it
-   queryMap->oldResults.push_back(std::move(result));
-
+   chpl::combine<ResultType> combiner;
+   bool match = combiner(oldResult->result, result);
    if (match) {
      changed = false;
      oldResult->lastComputed = this->currentRevisionNumber;

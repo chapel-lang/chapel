@@ -127,10 +127,10 @@ class UniqueString final {
 
 } // end namespace ast
 
-template<> struct matches<chpl::ast::UniqueString> {
-  bool operator()(const chpl::ast::UniqueString& lhs,
-                  const chpl::ast::UniqueString& rhs) const {
-    return lhs == rhs;
+template<> struct combine<chpl::ast::UniqueString> {
+  bool operator()(chpl::ast::UniqueString& keep,
+                  chpl::ast::UniqueString& addin) const {
+    return defaultCombine(keep, addin);
   }
 };
 

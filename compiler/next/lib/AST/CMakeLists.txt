@@ -1,6 +1,8 @@
 target_sources(libchplcomp-obj
                PRIVATE
 
+               ASTTag.cpp
+               ASTTypes.cpp
                BaseAST.cpp
                BlockStmt.cpp
                Builder.cpp

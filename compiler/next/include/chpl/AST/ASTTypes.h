@@ -41,6 +41,8 @@ static inline ASTList makeASTList(owned<BaseAST> ast) {
   return lst;
 }
 
+bool combineASTLists(ASTList& keep, ASTList& addin);
+
 } // end namespace ast
 } // end namespace chpl
 

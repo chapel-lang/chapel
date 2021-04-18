@@ -44,7 +44,7 @@ class Module final : public Symbol {
     return this->numChildren();
   }
   const Expr* stmt(int i) const {
-    const BaseAST* ast = this->getChild(i);
+    const BaseAST* ast = this->child(i);
     assert(ast->isExpr());
     return (Expr*) ast;
   }
