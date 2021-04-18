@@ -14,6 +14,7 @@ bool combineASTLists(ASTList& keep, ASTList& addin) {
   bool allMatched = true;
 
   ASTList newList;
+  ASTList junkList;
 
   /*
   printf("BEGINNING combineASTLists\n");
@@ -44,28 +45,42 @@ bool combineASTLists(ASTList& keep, ASTList& addin) {
       addinElt.swap(addin[addinIdx]);
       // it seems like a close enough match, so combine it
       eltMatched = BaseAST::combineAST(keepElt, addinElt);
-      // now keepElt has the thing to return
+      // combineAST might have swapped the elements but
+      // now keepElt is the one to put in newList.
       newList.push_back(std::move(keepElt));
-      keepIdx++;
+      // put the other thing in junkList
+      junkList.push_back(std::move(addinElt));
       addinIdx++;
+      keepIdx++;
     } else if (addinIdx+1 < addinSize &&
                keep[keepIdx]->shallowMatch(addin[addinIdx+1].get())) {
       // like an element was added in addin,
       // so add two elements from addin and pass 1 keep element
-      owned<BaseAST> keepEltOne;
-      owned<BaseAST> keepEltTwo;
-      keepEltOne.swap(keep[keepIdx]);
-      keepEltTwo.swap(keep[keepIdx+1]);
-      newList.push_back(std::move(keepEltOne));
-      newList.push_back(std::move(keepEltTwo));
+      owned<BaseAST> keepElt;
+      owned<BaseAST> addinEltOne;
+      owned<BaseAST> addinEltTwo;
+      keepElt.swap(keep[keepIdx]);
+      addinEltOne.swap(addin[addinIdx]);
+      addinEltTwo.swap(addin[addinIdx+1]);
+      newList.push_back(std::move(addinEltOne));
+      newList.push_back(std::move(addinEltTwo));
+      junkList.push_back(std::move(keepElt));
+      addinIdx += 2;
       keepIdx++;
     } else if (keepIdx+1 < keepSize &&
                keep[keepIdx+1]->shallowMatch(addin[addinIdx].get())) {
       // like an element was deleted from keep,
       // so add an element from addin but pass 2 keep elements
-      owned<BaseAST> keepElt;
-      keepElt.swap(keep[keepIdx]);
-      newList.push_back(std::move(keepElt));
+      owned<BaseAST> addinElt;
+      owned<BaseAST> keepEltOne;
+      owned<BaseAST> keepEltTwo;
+      addinElt.swap(addin[addinIdx]);
+      keepEltOne.swap(keep[keepIdx]);
+      keepEltTwo.swap(keep[keepIdx+1]);
+      newList.push_back(std::move(addinElt));
+      junkList.push_back(std::move(keepEltOne));
+      junkList.push_back(std::move(keepEltTwo));
+      addinIdx++;
       keepIdx += 2;
     } else {
       // give up on trying to match things
@@ -82,9 +97,16 @@ bool combineASTLists(ASTList& keep, ASTList& addin) {
     addinElt.swap(addin[addinIdx]);
     newList.push_back(std::move(addinElt));
   }
+  for (; keepIdx < keepSize; keepIdx++) {
+    owned<BaseAST> keepElt;
+    keepElt.swap(keep[keepIdx]);
+    junkList.push_back(std::move(keepElt));
+  }
 
   assert(newList.size() == addin.size());
-  newList.swap(keep);
+  // Swap the lists into place.
+  keep.swap(newList);
+  addin.swap(junkList);
 
   /*
   printf("ENDING combineASTLists\n");
