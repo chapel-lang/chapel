@@ -1,0 +1,76 @@
+This directory contains a start towards work on the revamped compiler.
+This directory uses a different directory structure from the old compiler
+- see below for rationale.
+
+For now, this work is being done in this directory but the expectation is
+that eventually it swap places with the compiler/ directory (so any
+old-compiler code still used is put into subdirectories according to the
+organization described below).
+
+
+As a preparatory step for the effort to significantly improve the
+compiler, thinking about the directory structure we use for sources
+and headers. This addresses three problems:
+
+ 1. it's not always clear where to find a header/source file - the
+    convention varies within the compiler
+ 2. the current structure is not compatible with refactoring the compiler
+    into a library and multiple tools using that library
+ 3. the current structure makes namespacing harder
+
+### current structure (old compiler structure)
+
+The current structure is to
+ * separate out the .cpp files into subdirectories by topic (AST,
+   resolution, optimizations). These are currently stored under
+   `compiler` so, for example, we have `compiler/AST`.
+ * store all include files used by multiple topics in `compiler/include`.
+ * store include files used only within a single topic within that topic
+   directory. For example, we have some header files in
+   `compiler/resolution`.
+
+### proposed structure (new compiler structure)
+
+I'm proposing that we generally try to follow the LLVM project's
+directory structure. The structure (for each LLVM project) is this:
+ * For code that goes into the library:
+   * store .cpp files in `lib/<topic>`
+   * store C++ `.h` files forming the library API into
+     `include/<project-name>/ and C API `.h` files (if any) in
+     `include/<project-name>-c/`. Header files that are relevant to a
+     particular topic go into `include/<project-name>/<topic>` and almost
+     all header files go into these topic subdirectories.
+   * store `.h` files that are for use only within the project in
+     `lib/<topic>`
+   * For example, within the LLVM project there is
+     `include/llvm/Analysis/AliasAnalysis.h` and
+     `llvm/lib/Analysis/AliasAnalysis.cpp`.
+
+ * For code that does not go into a library and only supports a tool,
+   store it in `tool/<tool-name>`. For example, there is an LLVM tool
+   called `opt` and the sources for it are stored in `tools/opt`.
+
+In particular, for our project, I would expect we end up with this structure:
+```
+  runtime/ (could also be called chpl-rt/ in the future)
+  compiler/  (could also be called chpl/ in the future)
+     include/chpl
+       AST/ (new AST headers forming library API will go here)
+       (nothing from the old compiler since it does not present a library interface)
+       
+     lib/
+       AST/ (new AST source code)
+       oAST/ (current AST source code and headers)
+       resolution/ (resolution code as well as resolution.h)
+       ...
+  
+     tools/
+        chpl/
+          include/ (current contents of compiler/include)
+          AST/ (current contents of compiler/AST)
+          ...
+          main/.cpp files implementing (source code only used in `chpl` and not in compiler-as-a-library - could contain contents of `compiler/main` today)
+```
+
+Please note that when we `#include` a header we will do so assuming that
+compiler/include is in the `-I` path and also `lib` is as well.

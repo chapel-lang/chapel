@@ -77,19 +77,20 @@ LIB_CMAKE_ARG := -DCMAKE_BUILD_TYPE=Release
 ifdef CHPL_DEVELOPER
   LIB_CMAKE_ARG := -DCMAKE_BUILD_TYPE=Debug
 endif
+# TODO - also have a unique build path
 
-$(CHPL_MAKE_HOME)/build/libchplcomp:
+$(CHPL_MAKE_HOME)/build/compiler.next:
 	@echo "Configuring the compiler library..."
-	@mkdir -p build/libchplcomp
-	@cd build/libchplcomp && cmake ../../compiler/libchplcomp $(LIB_CMAKE_ARG)
+	@mkdir -p build/compiler.next
+	@cd build/compiler.next && cmake ../../compiler/next $(LIB_CMAKE_ARG)
 
-libchplcomp: $(CHPL_MAKE_HOME)/build/libchplcomp FORCE
+libchplcomp: $(CHPL_MAKE_HOME)/build/compiler.next FORCE
 	@echo "Making the compiler library..."
-	@cd build/libchplcomp && cmake --build .  --target libchplcomp --verbose
+	@cd build/compiler.next && cmake --build .  --target libchplcomp --verbose
 
-libchplcomp-docs: $(CHPL_MAKE_HOME)/build/libchplcomp FORCE
+libchplcomp-docs: $(CHPL_MAKE_HOME)/build/compiler.next FORCE
 	@echo "Making the compiler library docs..."
-	@cd build/libchplcomp && cmake --build .  --target api-docs
+	@cd build/compiler.next && cmake --build .  --target api-docs
 
 compiler: FORCE
 	@echo "Making the compiler..."
