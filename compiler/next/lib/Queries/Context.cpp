@@ -130,7 +130,7 @@ void Context::collectGarbage() {
     // warning: these loops proceeds in a nondeterministic order
     for (auto& dbEntry: queryDB) {
       QueryMapBase* queryMapBase = dbEntry.second.get();
-      queryMapBase->clearOldResults();
+      queryMapBase->clearOldResults(this->currentRevisionNumber);
     }
     // Performance: Would it be better to modify the table in-place
     // rather than creating a new table as is done here?

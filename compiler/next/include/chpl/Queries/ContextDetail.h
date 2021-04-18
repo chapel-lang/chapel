@@ -191,18 +191,19 @@ class QueryMapBase {
      : queryName(queryName), prettyFunc(prettyFunc) {
    }
    virtual ~QueryMapBase() = 0; // this is an abstract base class
-   virtual void clearOldResults() = 0;
+   virtual void clearOldResults(RevisionNumber currentRevisionNumber) = 0;
 };
 
 template<typename ResultType, typename... ArgTs>
 class QueryMap final : public QueryMapBase {
  public:
   typedef QueryMapResult<ResultType> TheResultType;
-  // the main map
-  std::unordered_map<std::tuple<ArgTs...>,
+  typedef std::unordered_map<std::tuple<ArgTs...>,
                      TheResultType,
                      QueryMapArgTupleHash<ArgTs...>,
-                     QueryMapArgTupleEqual<ArgTs...>> map;
+                     QueryMapArgTupleEqual<ArgTs...>> MapType;
+  // the main map
+  MapType map;
   // old results stores replaced results long enough for dependent
   // queries to compare with them.
   std::vector<ResultType> oldResults;
@@ -211,7 +212,23 @@ class QueryMap final : public QueryMapBase {
      : QueryMapBase(queryName, prettyFunc), map(), oldResults() {
   }
   ~QueryMap() = default;
-  void clearOldResults() override {
+  void clearOldResults(RevisionNumber currentRevisionNumber) override {
+    // Performance: Would it be better to move everything to a new map
+    // rather than modify it in place as is done here?
+    auto iter = map.begin();
+    while (iter != map.end()) {
+      TheResultType& result = iter->second;
+      if (result.lastCheckedAndReused >= currentRevisionNumber ||
+          result.lastComputed >= currentRevisionNumber ||
+          result.lastChanged >= currentRevisionNumber) {
+        // Keep the result
+        ++iter;
+      } else {
+        // Remove the result
+        iter = map.erase(iter);
+      }
+    }
+
     oldResults.clear();
   }
 };
