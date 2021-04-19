@@ -16,6 +16,7 @@
   This file should be included by .cpp files implementing queries.
  */
 
+/// \cond DO_NOT_DOCUMENT
 namespace chpl {
 
 using namespace chpl::querydetail;
@@ -242,5 +243,7 @@ ResultType& Context::queryEnd(UniqueString queryName, const char* func,
 #define QUERY_END(result) \
   /* must not use BEGIN_QUERY_SEARCH1 (iterator could be invalidated) */ \
   (BEGIN_QUERY_CONTEXT->queryEnd(BEGIN_QUERY_NAME, BEGIN_QUERY_FUNC, result, BEGIN_QUERY_ARGS, BEGIN_QUERY_MAP))
+
+/// \endcond
 
 #endif

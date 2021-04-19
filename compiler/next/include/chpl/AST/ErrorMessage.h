@@ -30,7 +30,7 @@ class ErrorMessage final {
   static ErrorMessage build(Location loc, const char* fmt, ...)
 #ifndef DOXYGEN
     // docs generator has trouble with the attribute applied to 'build'
-    // so this is a workaround
+    // so the above ifndef works around the issue.
     __attribute__ ((format (printf, 2, 3)))
 #endif
   ;

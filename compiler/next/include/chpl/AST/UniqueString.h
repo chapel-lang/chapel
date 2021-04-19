@@ -24,8 +24,6 @@ namespace ast {
     * fast == and !=
     * not worrying about freeing them
 
-  Use ASTContext to create one.
-
  */
 class UniqueString final {
  friend class Context;

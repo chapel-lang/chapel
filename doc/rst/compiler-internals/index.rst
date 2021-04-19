@@ -3,6 +3,6 @@
 Compiler Internals
 ==================
 
-.. doxygennamespace:: chpl::ast
+.. doxygennamespace:: chpl
    :members:
    :undoc-members:

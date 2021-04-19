@@ -12,125 +12,126 @@ namespace chpl {
 
 /**
 
-  \rst
+\rst
 
-  This class stores the compilation-wide context. It handles unique'd strings
-  and also a *program database* which is basically a bunch of maps storing the
-  results of queries (so that they are are memoized) but that updates these
-  results according to a dependency graph and revision number.
+This class stores the compilation-wide context. It handles unique'd strings
+and also a *program database* which is basically a bunch of maps storing the
+results of queries (so that they are are memoized) but that updates these
+results according to a dependency graph and revision number.
 
-  Queries are just functions that are written in a stylized manner to interact
-  with the program database in the context.
+Queries are just functions that are written in a stylized manner to interact
+with the program database in the context.
 
-  To write a query, create a function that uses the ``QUERY_`` macros defined in
-  QueryImpl.h. The arguments to the function need to be POD (so
-  ``UniqueString``, ``ID``, ``Location``, are OK but AST pointers or
-  ``std::vector`` e.g. are not). The function will return a result, which need
-  not be POD and can include AST pointers (but see below). The function needs to
-  be written in a stylized way to interact with the program database.
+To write a query, create a function that uses the ``QUERY_`` macros defined in
+QueryImpl.h. The arguments to the function need to be POD (so
+``UniqueString``, ``ID``, ``Location``, are OK but AST pointers or
+``std::vector`` e.g. are not). The function will return a result, which need
+not be POD and can include AST pointers (but see below). The function needs to
+be written in a stylized way to interact with the program database.
 
-  For example, here is a query that computes MyResultType from myKey1 and
-  myKey2:
+For example, here is a query that computes MyResultType from myKey1 and
+myKey2:
 
-  .. code-block:: c++
+.. code-block:: c++
 
-      #include "chpl/Queries/QueryImpl.h"
+    #include "chpl/Queries/QueryImpl.h"
 
-      const MyResultType& myQueryFunction(Context* context,
-                                          MyPodKeyType myKey1,
-                                          MyOtherPodKeyType myKey2) {
-        QUERY_BEGIN(context, MyResultType, myKey1, myKey2)
-        if (QUERY_USE_SAVED()) {
-          return QUERY_GET_SAVED();
-        }
-        // do steps to compute the result
-        MyResultType result = ...;
-        // if an error is encountered, it can be saved with QUERY_ERROR(error)
-
-        return QUERY_END(result);
+    const MyResultType& myQueryFunction(Context* context,
+                                        MyPodKeyType myKey1,
+                                        MyOtherPodKeyType myKey2) {
+      QUERY_BEGIN(context, MyResultType, myKey1, myKey2)
+      if (QUERY_USE_SAVED()) {
+        return QUERY_GET_SAVED();
       }
+      // do steps to compute the result
+      MyResultType result = ...;
+      // if an error is encountered, it can be saved with QUERY_ERROR(error)
+
+      return QUERY_END(result);
+    }
 
 
-  To call the query, just write e.g. ``myQueryFunction(context, key1, key2)``.
+To call the query, just write e.g. ``myQueryFunction(context, key1, key2)``.
 
-  The query function will check for a result stored already in the program
-  database that can be reused and the first return accounts for that case.
-  After that, the query proceeds to compute the result. It will then compare the
-  computed result with the saved result, if any, and in some cases combine the
-  results. Finally, the saved result (which might have been updated) is
-  returned.
+The query function will check for a result stored already in the program
+database that can be reused and the first return accounts for that case.
+After that, the query proceeds to compute the result. It will then compare the
+computed result with the saved result, if any, and in some cases combine the
+results. Finally, the saved result (which might have been updated) is
+returned.
 
-  The above is appropriate for value types  (``std::string``, ``int``, etc).
-  For an object that should be managed as owned within the context,
-  use this pattern:
+The above is appropriate for value types  (``std::string``, ``int``, etc).
+For an object that should be managed as owned within the context,
+use this pattern:
 
-  .. code-block:: c++
+.. code-block:: c++
 
-     const MyClassType* myQueryFunction(Context* context, myKey1, myKey2) {
-       QUERY_BEGIN(context, owned<MyClassType>, myKey1, myKey2)
-       if (QUERY_USE_SAVED()) {
-         return QUERY_GET_SAVED().get();
-       }
-       // do steps to compute the result
-       owned<MyClassType> result = ...;
-       // if an error is encountered, it can be saved with QUERY_ERROR(error)
-
-       return QUERY_END(result).get();
+   const MyClassType* myQueryFunction(Context* context, myKey1, myKey2) {
+     QUERY_BEGIN(context, owned<MyClassType>, myKey1, myKey2)
+     if (QUERY_USE_SAVED()) {
+       return QUERY_GET_SAVED().get();
      }
+     // do steps to compute the result
+     owned<MyClassType> result = ...;
+     // if an error is encountered, it can be saved with QUERY_ERROR(error)
+
+     return QUERY_END(result).get();
+   }
 
 
-  There are some requirements on query argument/key types and on result types.
+There are some requirements on query argument/key types and on result types.
 
-  Since the argument/key types are stored in a hashtable, we need
-  ``std::hash<KeyType>`` and ``std::equal_to<KeyType>`` to be implemented, e.g.
+Since the argument/key types are stored in a hashtable, we need
+``std::hash<KeyType>`` and ``std::equal_to<KeyType>`` to be implemented, e.g.
 
-  .. code-block:: c++
+.. code-block:: c++
 
-      namespace std {
-        template<> struct hash<chpl::MyPodKeyType> {
-          size_t operator()(const chpl::ast::UniqueString key) const {
-            return doSomethingToComputeHash...;
-          }
-        };
-        template<> struct equal_to<chpl::MyPodKeyType> {
-          bool operator()(const chpl::MyPodKeyType lhs,
-                          const chpl::MyPodKeyType rhs) const {
-            return doSomethingToCheckIfEqual...;
-          }
-        };
-      }
+    namespace std {
+      template<> struct hash<chpl::MyPodKeyType> {
+        size_t operator()(const chpl::ast::UniqueString key) const {
+          return doSomethingToComputeHash...;
+        }
+      };
+      template<> struct equal_to<chpl::MyPodKeyType> {
+        bool operator()(const chpl::MyPodKeyType lhs,
+                        const chpl::MyPodKeyType rhs) const {
+          return doSomethingToCheckIfEqual...;
+        }
+      };
+    }
 
-  The process of computing a query and checking to see if it maches a saved
-  result requires that the result type implement ``chpl::combine``:
+The process of computing a query and checking to see if it maches a saved
+result requires that the result type implement ``chpl::combine``:
 
-  .. code-block:: c++
+.. code-block:: c++
 
-      namespace chpl {
-        template<> struct combine<MyResultType> {
-          bool operator()(chpl::ast::UniqueString& keep,
-                          chpl::ast::UniqueString& addin) const {
-            return doSomethingToCombine...;
-          }
-        };
+    namespace chpl {
+      template<> struct combine<MyResultType> {
+        bool operator()(chpl::ast::UniqueString& keep,
+                        chpl::ast::UniqueString& addin) const {
+          return doSomethingToCombine...;
+        }
+      };
 
-  On entry to the ``combine`` function, ``keep`` is the current value in the
-  program database and ``addin`` is the newly computed value. The ``combine``
-  function needs to:
-    * store the current, updated result in ``keep``
-    * store the unused result in ``addin``
-    * return ``true`` if ``keep`` matched ``addin``; that is, ``keep`` did not
-      need to be updated.
+On entry to the ``combine`` function, ``keep`` is the current value in the
+program database and ``addin`` is the newly computed value. The ``combine``
+function needs to:
 
-  For most result types, ``return defaultCombine(keep, addin);`` should be
-  sufficient. In the event that a result is actually a collection of results
-  that *owns* the elements (for example, when parsing, the result is
-  conceptually a vector of top-level symbol), the ``combine`` function
-  should try to update only those elements of ``keep`` that changed by swapping
-  in the appropriate elements from ``addin``. This strategy allows later queries
-  that depend on such a result to use pointers to the owned elements and to
-  avoid updating everything if just one element changed.
+  * store the current, updated result in ``keep``
+  * store the unused result in ``addin``
+  * return ``true`` if ``keep`` matched ``addin``; that is, ``keep`` did not
+    need to be updated.
 
-  \endrst
+For most result types, ``return defaultCombine(keep, addin);`` should be
+sufficient. In the event that a result is actually a collection of results
+that *owns* the elements (for example, when parsing, the result is
+conceptually a vector of top-level symbol), the ``combine`` function
+should try to update only those elements of ``keep`` that changed by swapping
+in the appropriate elements from ``addin``. This strategy allows later queries
+that depend on such a result to use pointers to the owned elements and to
+avoid updating everything if just one element changed.
+
+\endrst
 
  */
 class Context {

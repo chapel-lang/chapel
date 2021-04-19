@@ -12,7 +12,10 @@ if(DOXYGEN_FOUND)
      "rst=\\verbatim embed:rst"
      "endrst=\\endverbatim")
   set(DOXYGEN_EXTRACT_PRIVATE NO)
+  # when Doxygen runs, define DOXYGEN in the preprocessor
   set(DOXYGEN_PREDEFINED "DOXYGEN")
+  # exclude combine functions that the docs system has trouble with
+  set(DOXYGEN_EXCLUDE_SYMBOLS "chpl::combine")
   doxygen_add_docs(api-docs ${CHPL_MAIN_INCLUDE_DIR})
 
 else(DOXYGEN_FOUND)
