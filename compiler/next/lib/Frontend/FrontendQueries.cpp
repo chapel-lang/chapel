@@ -1,6 +1,7 @@
 #include "chpl/Frontend/FrontendQueries.h"
 
 #include "chpl/AST/ErrorMessage.h"
+#include "chpl/AST/Module.h"
 #include "chpl/Frontend/Parser.h"
 #include "chpl/Queries/QueryImpl.h"
 
@@ -22,7 +23,35 @@ template<> struct combine<FrontendQueries::ModuleDeclVec> {
     return defaultCombine(keep, addin);
   }
 };
+template<> struct combine<FrontendQueries::DefinedTopLevelNamesVec> {
+  bool operator()(FrontendQueries::DefinedTopLevelNamesVec& keep,
+                  FrontendQueries::DefinedTopLevelNamesVec& addin) const {
 
+    size_t nKeep = keep.size();
+    size_t nAddin = addin.size();
+    bool match = true;
+    if (nKeep == nAddin) {
+      for (size_t i = 0; i < nKeep; i++) {
+        FrontendQueries::DefinedTopLevelNames& keepElt = keep[i];
+        FrontendQueries::DefinedTopLevelNames& addinElt = addin[i];
+        if (keepElt.module != addinElt.module ||
+            keepElt.topLevelNames != addinElt.topLevelNames) {
+          match = false;
+          break;
+        }
+      }
+    } else {
+      match = false;
+    }
+
+    if (match) {
+      return true;
+    } else {
+      keep.swap(addin);
+      return false;
+    }
+  }
+};
 
 namespace FrontendQueries {
 
@@ -129,6 +158,39 @@ const ModuleDeclVec& parse(Context* context, UniqueString path) {
 
   return QUERY_END(result);
 }
+
+static std::vector<UniqueString> getTopLevelNames(const ast::Module* module) {
+  std::vector<UniqueString> result;
+  int nStmts = module->numStmts();
+  for (int i = 0; i < nStmts; i++) {
+    const ast::Expr* expr = module->stmt(i);
+    if (const ast::Decl* decl = expr->toDecl()) {
+      const ast::Symbol* sym = decl->symbol();
+      result.push_back(sym->name());
+    }
+  }
+  return result;
+}
+
+const DefinedTopLevelNamesVec& moduleLevelDeclNames(Context* context,
+                                                    UniqueString path) {
+  QUERY_BEGIN(context, DefinedTopLevelNamesVec, path);
+  if (QUERY_USE_SAVED()) {
+    return QUERY_GET_SAVED();
+  }
+
+  DefinedTopLevelNamesVec result;
+
+  // Get the result of parsing modules
+  const ModuleDeclVec& p = parse(context, path);
+  for (const ast::ModuleDecl* modDecl : p) {
+    const ast::Module* module = modDecl->module();
+    result.push_back(DefinedTopLevelNames(module, getTopLevelNames(module)));
+  }
+
+  return QUERY_END(result);
+}
+
 
 /*const ast::BaseAST* ast(Context* context, ID id) {
   return nullptr;

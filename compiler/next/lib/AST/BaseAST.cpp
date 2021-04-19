@@ -3,6 +3,8 @@
 // A complete definition of Expr is required in order
 // to have the ExprList field compile (used in BaseAST() and ~BaseAST()).
 #include "chpl/AST/Expr.h"
+#include "chpl/AST/Identifier.h"
+#include "chpl/AST/Symbol.h"
 
 namespace chpl {
 namespace ast {
@@ -69,11 +71,27 @@ static void dumpHelper(const BaseAST* ast, int depth) {
   }
   ID emptyId;
   if (ast->id() != emptyId) {
-    printf("%s %s@%i %p\n",
-           asttags::tagToString(ast->tag()),
-           ast->id().symbolPath().c_str(),
-           ast->id().postOrderId(),
-           ast);
+    if (const Symbol* sym = ast->toSymbol()) {
+      printf("%s %s@%i %p %s\n",
+             asttags::tagToString(ast->tag()),
+             ast->id().symbolPath().c_str(),
+             ast->id().postOrderId(),
+             ast,
+             sym->name().c_str());
+    } else if (const Identifier* ident = ast->toIdentifier()) {
+      printf("%s %s@%i %p %s\n",
+             asttags::tagToString(ast->tag()),
+             ast->id().symbolPath().c_str(),
+             ast->id().postOrderId(),
+             ast,
+             ident->name().c_str());
+    } else {
+      printf("%s %s@%i %p\n",
+             asttags::tagToString(ast->tag()),
+             ast->id().symbolPath().c_str(),
+             ast->id().postOrderId(),
+             ast);
+    }
   } else {
     printf("%s <no id> %p\n",
            asttags::tagToString(ast->tag()),

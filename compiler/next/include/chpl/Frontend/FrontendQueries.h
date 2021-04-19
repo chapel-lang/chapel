@@ -25,6 +25,22 @@ namespace FrontendQueries {
   typedef std::vector<const ast::ModuleDecl*> ModuleDeclVec;
   const ModuleDeclVec& parse(Context* context, UniqueString path);
 
+  struct DefinedTopLevelNames {
+    // the module
+    const ast::Module* module;
+    // these are in program order
+    std::vector<UniqueString> topLevelNames;
+    DefinedTopLevelNames(const ast::Module* module,
+                         std::vector<UniqueString> topLevelNames)
+      : module(module), topLevelNames(std::move(topLevelNames)) {
+    }
+  };
+  typedef std::vector<DefinedTopLevelNames> DefinedTopLevelNamesVec;
+
+  const DefinedTopLevelNamesVec& moduleLevelDeclNames(Context* context,
+                                                      UniqueString path);
+
+
   /*struct ResolutionGroup {
     // index is the postorder ID
     std::vector<Symbol*> idToSymbol;
@@ -38,5 +54,6 @@ namespace FrontendQueries {
 };
 
 } // end namespace chpl
+
 
 #endif

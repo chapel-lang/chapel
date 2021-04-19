@@ -177,7 +177,8 @@ template<typename T> struct combine {
 };
 template<typename T>
 static inline bool defaultCombine(T& keep, T& addin) {
-  if (keep == addin) {
+  std::equal_to<T> eq;
+  if (eq(keep, addin)) {
     return true;
   } else {
     keep.swap(addin);
