@@ -11,7 +11,8 @@ if(DOXYGEN_FOUND)
   set(DOXYGEN_ALIASES
      "rst=\\verbatim embed:rst"
      "endrst=\\endverbatim")
-   set(DOXYGEN_EXTRACT_PRIVATE NO)
+  set(DOXYGEN_EXTRACT_PRIVATE NO)
+  set(DOXYGEN_PREDEFINED "DOXYGEN")
   doxygen_add_docs(api-docs ${CHPL_MAIN_INCLUDE_DIR})
 
 else(DOXYGEN_FOUND)

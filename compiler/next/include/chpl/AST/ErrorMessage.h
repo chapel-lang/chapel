@@ -25,8 +25,15 @@ class ErrorMessage final {
   ErrorMessage(Location location, std::string message);
   ErrorMessage(Location location, const char* message);
 
+
+
   static ErrorMessage build(Location loc, const char* fmt, ...)
-    __attribute__ ((format (printf, 2, 3)));
+#ifndef DOXYGEN
+    // docs generator has trouble with the attribute applied to 'build'
+    // so this is a workaround
+    __attribute__ ((format (printf, 2, 3)))
+#endif
+  ;
 
   inline bool operator==(const ErrorMessage& other) const {
     return this->level_ == other.level_ &&

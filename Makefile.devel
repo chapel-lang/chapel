@@ -61,6 +61,10 @@ always-build-chplspell-venv: FORCE
 test: spectests FORCE
 	cd examples && start_test
 
+libchplcomp-docs: $(CHPL_MAKE_HOME)/build/compiler.next FORCE
+	@echo "Making the compiler library docs..."
+	cd build/compiler.next && cmake --build .  --target api-docs
+
 test-libchplcomp: $(CHPL_MAKE_HOME)/build/compiler.next FORCE
 	cd build/compiler.next && cmake --build . --target tests --verbose && ctest .
 

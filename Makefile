@@ -88,10 +88,6 @@ libchplcomp: $(CHPL_MAKE_HOME)/build/compiler.next FORCE
 	@echo "Making the compiler library..."
 	@cd build/compiler.next && cmake --build .  --target libchplcomp --verbose
 
-libchplcomp-docs: $(CHPL_MAKE_HOME)/build/compiler.next FORCE
-	@echo "Making the compiler library docs..."
-	@cd build/compiler.next && cmake --build .  --target api-docs
-
 compiler: FORCE
 	@echo "Making the compiler..."
 	@cd third-party && $(MAKE) llvm

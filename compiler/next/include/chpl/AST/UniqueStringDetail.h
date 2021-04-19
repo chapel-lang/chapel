@@ -137,8 +137,11 @@ struct InlinedString {
   }
 };
 
-// this class is POD and has only the trivial constructor to help the parser
+// This class is POD and has only the trivial constructor to help the parser
 // (which uses it in a union).
+// All UniqueStrings are actually POD; the difference is that this one
+// does not have a default constructor.
+// TODO: rename it
 struct PODUniqueString {
   InlinedString i;
   static inline PODUniqueString build(Context* context,
