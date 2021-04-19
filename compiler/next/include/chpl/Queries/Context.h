@@ -276,7 +276,8 @@ class Context {
   /**
     setFileText will set the text for a particular file path.
     Returns 'true' if this function caused a new result to be saved
-    in the context.
+    in the context. In that event, the revision updated for the
+    file text result will be updated.
    */
   bool setFileText(UniqueString path, std::string data);
 

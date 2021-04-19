@@ -22,11 +22,6 @@ namespace FrontendQueries {
   const LocationsMap& fileLocations(Context* context, UniqueString path);
   Location locate(Context* context, ID id);
 
-  // TODO: should this query "own" the ModuleDecl? Do we need to
-  // use shared_ptr? There will probably be more queries down the line
-  // that want to return AST pointers, so it would be nice if we don't
-  // have to reference count everywhere. If we don't reference count,
-  // we have to keep the depended-upon queries around.
   typedef std::vector<const ast::ModuleDecl*> ModuleDeclVec;
   const ModuleDeclVec& parse(Context* context, UniqueString path);
 

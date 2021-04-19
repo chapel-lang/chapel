@@ -22,10 +22,10 @@ BaseAST::~BaseAST() {
 bool BaseAST::shallowMatch(const BaseAST* other) const {
   const BaseAST* lhs = this;
   const BaseAST* rhs = other;
-  return lhs->tag() == rhs->tag() &&
-         lhs->id() == rhs->id() &&
-         lhs->numChildren() == rhs->numChildren() &&
-         lhs->contentsMatchInner(rhs);
+  bool ret = (lhs->tag() == rhs->tag() &&
+              lhs->id().symbolPath() == rhs->id().symbolPath() &&
+              lhs->contentsMatchInner(rhs));
+  return ret;
 }
 
 /*
@@ -61,13 +61,24 @@ bool BaseAST::combineAST(owned<BaseAST>& keep, owned<BaseAST>& addin) {
 
 static void dumpHelper(const BaseAST* ast, int depth) {
   for (int i = 0; i < depth; i++) {
-    printf(" ");
+    printf("  ");
   }
   if (ast == nullptr) {
     printf("nullptr\n");
     return;
   }
-  printf("%s %p\n", asttags::tagToString(ast->tag()), ast);
+  ID emptyId;
+  if (ast->id() != emptyId) {
+    printf("%s %s@%i %p\n",
+           asttags::tagToString(ast->tag()),
+           ast->id().symbolPath().c_str(),
+           ast->id().postOrderId(),
+           ast);
+  } else {
+    printf("%s <no id> %p\n",
+           asttags::tagToString(ast->tag()),
+           ast);
+  }
   int nChildren = ast->numChildren();
   for (int i = 0; i < nChildren; i++) {
     dumpHelper(ast->child(i), depth+1);
