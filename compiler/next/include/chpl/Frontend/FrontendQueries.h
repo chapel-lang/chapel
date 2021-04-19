@@ -25,7 +25,16 @@ namespace FrontendQueries {
   typedef std::vector<const ast::ModuleDecl*> ModuleDeclVec;
   const ModuleDeclVec& parse(Context* context, UniqueString path);
 
-  const ast::BaseAST* ast(Context* context, ID id);
+  /*struct ResolutionGroup {
+    // index is the postorder ID
+    std::vector<Symbol*> idToSymbol;
+  };
+  typedef std::unordered_map<Module*,owned<ResolutionGroup>>
+    ModuleInitResolutionResult;*/
+  /*typedef std::unordered_map<FnSymbol*,owned<ResolutionResult>>
+    FunctionResolutionResult;*/
+
+  //const ast::BaseAST* ast(Context* context, ID id);
 };
 
 } // end namespace chpl

@@ -217,11 +217,36 @@ static void test3() {
 
 // TODO: test locate
 
-int main() {
-  test0();
-  test1();
-  test2();
-  test3();
+int main(int argc, char** argv) {
+
+  if (argc == 1) {
+    printf("Usage: %s file.chpl otherFile.chpl ...\n", argv[0]);
+    return 0; // need this to return 0 for testing to be happy
+  }
+
+  auto context = Context::build();
+  Context* ctx = context.get();
+  while (true) {
+    ctx->advanceToNextRevision(true);
+    for (int i = 1; i < argc; i++) {
+      auto modulePath = UniqueString::build(ctx, argv[i]);
+      const FrontendQueries::ModuleDeclVec& mods
+        = FrontendQueries::parse(ctx, modulePath);
+      for (const ast::ModuleDecl* modDecl : mods) {
+        const ast::Module* module = modDecl->module();
+        printf("Module %s:\n", module->name().c_str());
+        BaseAST::dump(module);
+      }
+    }
+    ctx->collectGarbage();
+
+    // ask the user if they want to run it again
+    printf ("Would you like to incrementally parse again? [Y]: ");
+    int ch = getc(stdin);
+    if (!(ch == 'Y' || ch == 'y' || ch == '\n'))
+      break;
+    printf("\n");
+  }
 
   return 0;
 }

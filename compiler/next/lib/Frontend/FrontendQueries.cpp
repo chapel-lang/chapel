@@ -130,9 +130,9 @@ const ModuleDeclVec& parse(Context* context, UniqueString path) {
   return QUERY_END(result);
 }
 
-const ast::BaseAST* ast(Context* context, ID id) {
+/*const ast::BaseAST* ast(Context* context, ID id) {
   return nullptr;
-}
+}*/
 
 } // end namespace FrontendQueries
 } // end namespace chpl
