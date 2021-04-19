@@ -44,18 +44,18 @@ QueryMap<ResultType,ArgTs...>* Context::queryGetMap(UniqueString queryName, cons
 #ifdef QUERY_MAP_USE_PRETTYFUNC
     prettyFunc = __PRETTY_FUNCTION__;
 #endif
- 
+
   // Look up the map entry for this query name
   auto search = this->queryDB.find(queryName);
   if (search != this->queryDB.end()) {
     // found an entry for this query name
     QueryMapBase* base = search->second.get();
-    // check that the arg/result types match 
+    // check that the arg/result types match
     assert(0 == strcmp(base->prettyFunc, prettyFunc));
     // return the inner map
     return (QueryMap<ResultType,ArgTs...>*)base;
   }
- 
+
   // Otherwise, create the QueryMap entry for this query name
   // and add it to the map
   auto iter =
@@ -71,30 +71,34 @@ QueryMap<ResultType,ArgTs...>* Context::queryGetMap(UniqueString queryName, cons
 
 template<typename ResultType, typename... ArgTs>
 QueryMapResult<ResultType>*
-Context::updateResultForQuery(UniqueString queryName,
-                              const std::tuple<ArgTs...>& tupleOfArgs,
+Context::updateResultForQuery(const std::tuple<ArgTs...>& tupleOfArgs,
                               ResultType result,
-                              bool& changed) {
-  // Look up the map entry for this query name
-  QueryMap<ResultType,ArgTs...>* queryMap =
-    queryGetMap<ResultType>(queryName, tupleOfArgs);
+                              bool& changedOut,
+                              QueryMap<ResultType,ArgTs...>* queryMap) {
   // Set the map element
   auto search = queryMap->map.find(tupleOfArgs);
   if (search != queryMap->map.end()) {
-   QueryMapResult<ResultType>* oldResult = &(search->second);
+   QueryMapResult<ResultType>* storedResult = &(search->second);
 
+   // Call a chpl::combine function. That leaves the result in the 1st argument
+   // and returns whether or not it needed to change. The 2nd argument contains
+   // junk. If we wait until a garbageCollect call to free the junk, we can
+   // avoid certain cases where a pointer could be allocated, freed, and then
+   // allocated; leading to a sort of ABA issue.
    chpl::combine<ResultType> combiner;
-   bool match = combiner(oldResult->result, result);
+   bool match = combiner(storedResult->result, result);
+   // now storedResult is the new result
+   queryMap->oldResults.push_back(std::move(result));
    if (match) {
-     changed = false;
-     oldResult->lastComputed = this->currentRevisionNumber;
-     return oldResult;
+     changedOut = false;
+     storedResult->lastComputed = this->currentRevisionNumber;
+     return storedResult;
    } else {
-     changed = true;
+     changedOut = true;
      auto currentRevision = this->currentRevisionNumber;
-     oldResult->lastComputed = currentRevision;
-     oldResult->lastChanged  = currentRevision;
-     return oldResult;
+     storedResult->lastComputed = currentRevision;
+     storedResult->lastChanged  = currentRevision;
+     return storedResult;
    }
   } else {
     auto iter =
@@ -108,9 +112,23 @@ Context::updateResultForQuery(UniqueString queryName,
                                                   QueryErrorVec(),
                                                   std::move(result))));
     QueryMapResult<ResultType>* newResult = &(iter->second);
-    changed = true;
+    changedOut = true;
     return newResult;
   }
+}
+
+template<typename ResultType, typename... ArgTs>
+QueryMapResult<ResultType>*
+Context::updateResultForQuery(const std::tuple<ArgTs...>& tupleOfArgs,
+                              ResultType result,
+                              bool& changedOut,
+                              UniqueString queryName) {
+  // Look up the map entry for this query name
+  QueryMap<ResultType,ArgTs...>* queryMap =
+    queryGetMap<ResultType>(queryName, tupleOfArgs);
+  // Run the version of the function accepting the map
+  return
+    updateResultForQuery(tupleOfArgs, std::move(result), changedOut, queryMap);
 }
 
 template<typename ResultType>
@@ -131,9 +149,8 @@ ResultType& Context::queryEnd(UniqueString queryName, const char* func,
 
   bool changed = false;
   QueryMapResult<ResultType>* ret =
-    this->updateResultForQuery(queryName,
-                               tupleOfArgs, std::move(result),
-                               changed);
+    this->updateResultForQuery(tupleOfArgs, std::move(result),
+                               changed, queryMap);
 
   queryTraceEnd(queryName, func, tupleOfArgs, changed);
 

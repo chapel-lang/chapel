@@ -157,8 +157,8 @@ bool Context::setFilePathForModuleName(UniqueString modName, UniqueString path) 
   UniqueString queryName = UniqueString::build(this, "filePathForModuleName");
   auto tupleOfArgs = std::make_tuple(modName);
   bool changed = false;
-  auto queryMapResult = updateResultForQuery(queryName, tupleOfArgs,
-                                             path, changed);
+  auto queryMapResult = updateResultForQuery(tupleOfArgs, path,
+                                             changed, queryName);
   return changed;
 }
 
@@ -166,8 +166,8 @@ bool Context::setFileText(UniqueString path, std::string data) {
   UniqueString queryName = UniqueString::build(this, "fileText");
   auto tupleOfArgs = std::make_tuple(path);
   bool changed = false;
-  auto queryMapResult = updateResultForQuery(queryName, tupleOfArgs,
-                                             std::move(data), changed);
+  auto queryMapResult = updateResultForQuery(tupleOfArgs, std::move(data),
+                                             changed, queryName);
   return changed;
 }
 

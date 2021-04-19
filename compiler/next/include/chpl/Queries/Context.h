@@ -55,10 +55,18 @@ class Context {
 
   template<typename ResultType, typename... ArgTs>
   chpl::querydetail::QueryMapResult<ResultType>*
-  updateResultForQuery(UniqueString queryName,
-                       const std::tuple<ArgTs...>& tupleOfArgs,
+  updateResultForQuery(
+      const std::tuple<ArgTs...>& tupleOfArgs,
+      ResultType result,
+      bool& changedOut,
+      chpl::querydetail::QueryMap<ResultType,ArgTs...>* queryMap);
+
+  template<typename ResultType, typename... ArgTs>
+  chpl::querydetail::QueryMapResult<ResultType>*
+  updateResultForQuery(const std::tuple<ArgTs...>& tupleOfArgs,
                        ResultType result,
-                       bool& changed);
+                       bool& changedOut,
+                       UniqueString queryName);
 
   // Future Work: support marking used strings and garbage collecting the rest
   // Could store an atomic uint_8 just after the string for the mark.
