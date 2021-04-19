@@ -237,6 +237,143 @@ static void test3() {
   assert(identifierB == oldIdentifierB);
 }
 
+static void test4() {
+  printf("test4\n");
+  auto context = Context::build();
+  Context* ctx = context.get();
+
+  auto modulePath = UniqueString::build(ctx, "MyModule.chpl");
+  const Module* module = nullptr;
+  const Comment* comment = nullptr;
+  const Decl* declA = nullptr;
+  const Decl* declB = nullptr;
+  const BlockStmt* block = nullptr;
+
+  std::string moduleContents;
+
+  moduleContents = "/* this is a test */\n"
+                   "var a;\n"
+                   "var b;\n";
+  ctx->advanceToNextRevision(true);
+  ctx->setFileText(modulePath, moduleContents);
+  module = parseOneModule(ctx, modulePath);
+  ctx->collectGarbage();
+
+  BaseAST::dump(module);
+  assert(module->numStmts() == 3);
+  comment = module->stmt(0)->toComment();
+  declA = module->stmt(1)->toDecl();
+  declB = module->stmt(2)->toDecl();
+  assert(comment);
+  assert(declA);
+  assert(declB);
+  const Comment* oldComment = comment;
+  const Decl* oldDeclA = declA;
+  const Decl* oldDeclB = declB;
+
+  printf("test4 adding BlockStmts\n");
+  moduleContents = "/* this is a test */\n"
+                   "{ var x; }\n"
+                   "var a;\n"
+                   "{ var y; }\n"
+                   "var b;\n";
+  ctx->advanceToNextRevision(true);
+  ctx->setFileText(modulePath, moduleContents);
+  module = parseOneModule(ctx, modulePath);
+  ctx->collectGarbage();
+
+  BaseAST::dump(module);
+
+  // Check that the pointer values didn't change
+  // (they shouldn't because we should have reused the parts that didn't change)
+  assert(module->numStmts() == 5);
+  comment = module->stmt(0)->toComment();
+  block = module->stmt(1)->toBlockStmt();
+  declA = module->stmt(2)->toDecl();
+  declB = module->stmt(4)->toDecl();
+  assert(comment);
+  assert(declA);
+  assert(declB);
+  assert(comment == oldComment);
+  assert(declA == oldDeclA);
+  assert(declB == oldDeclB);
+  const BlockStmt* oldBlock = block;
+
+  printf("test4 changing Identifier in Blocks\n");
+  moduleContents = "/* this is a test */\n"
+                   "{ var xx; }\n"
+                   "var a;\n"
+                   "{ var yy; }\n"
+                   "var b;\n";
+  ctx->advanceToNextRevision(true);
+  ctx->setFileText(modulePath, moduleContents);
+  module = parseOneModule(ctx, modulePath);
+  ctx->collectGarbage();
+
+  BaseAST::dump(module);
+
+  // Check that the block and identifiers match
+  assert(module->numStmts() == 5);
+  comment = module->stmt(0)->toComment();
+  block = module->stmt(1)->toBlockStmt();
+  declA = module->stmt(2)->toDecl();
+  declB = module->stmt(4)->toDecl();
+  assert(comment);
+  assert(declA);
+  assert(declB);
+  assert(comment == oldComment);
+  assert(block == oldBlock);
+  assert(declA == oldDeclA);
+  assert(declB == oldDeclB);
+  oldBlock = nullptr; // it will be invalid after this point
+
+  printf("test4 removing the Blocks\n");
+  moduleContents = "/* this is a test */\n"
+                   "var a;\n"
+                   "var b;\n";
+  ctx->advanceToNextRevision(true);
+  ctx->setFileText(modulePath, moduleContents);
+  module = parseOneModule(ctx, modulePath);
+  ctx->collectGarbage();
+
+  BaseAST::dump(module);
+
+  // Check that the comment and identifiers match
+  assert(module->numStmts() == 3);
+  comment = module->stmt(0)->toComment();
+  declA = module->stmt(1)->toDecl();
+  declB = module->stmt(2)->toDecl();
+  assert(comment);
+  assert(declA);
+  assert(declB);
+  assert(comment == oldComment);
+  assert(declA == oldDeclA);
+  assert(declB == oldDeclB);
+  oldDeclA = nullptr; // it will be invalid after this point
+
+  printf("test4 replacing first Decl\n");
+  moduleContents = "/* this is a test */\n"
+                   "var aa;\n"
+                   "var b;\n";
+  ctx->advanceToNextRevision(true);
+  ctx->setFileText(modulePath, moduleContents);
+  module = parseOneModule(ctx, modulePath);
+  ctx->collectGarbage();
+
+  BaseAST::dump(module);
+
+  // Check that the comment and identifiers match
+  assert(module->numStmts() == 3);
+  comment = module->stmt(0)->toComment();
+  declA = module->stmt(1)->toDecl();
+  declB = module->stmt(2)->toDecl();
+  assert(comment);
+  assert(declA);
+  assert(declB);
+  assert(comment == oldComment);
+  assert(declB == oldDeclB);
+}
+
 // TODO: test locate
 
 int main() {
@@ -244,6 +381,7 @@ int main() {
   test1();
   test2();
   test3();
+  test4();
 
   return 0;
 }
