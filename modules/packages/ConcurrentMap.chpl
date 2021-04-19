@@ -766,7 +766,6 @@ prototype module ConcurrentMap {
       for already-existing keys.
 
       :arg m: The other map
-      :type m: ConcurrentMap(keyType, valType)
     */
     proc extend(m : ConcurrentMap(keyType, valType)) {
       forall (key, value) in m with (var tok = getToken()) {
