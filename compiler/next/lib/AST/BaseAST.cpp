@@ -1,7 +1,6 @@
 #include "chpl/AST/BaseAST.h"
 
-// A complete definition of Expr is required in order
-// to have the ExprList field compile (used in BaseAST() and ~BaseAST()).
+#include "chpl/AST/Decl.h"
 #include "chpl/AST/Expr.h"
 #include "chpl/AST/Identifier.h"
 #include "chpl/AST/Symbol.h"
@@ -24,10 +23,20 @@ BaseAST::~BaseAST() {
 bool BaseAST::shallowMatch(const BaseAST* other) const {
   const BaseAST* lhs = this;
   const BaseAST* rhs = other;
-  bool ret = (lhs->tag() == rhs->tag() &&
-              lhs->id().symbolPath() == rhs->id().symbolPath() &&
-              lhs->contentsMatchInner(rhs));
-  return ret;
+  if (lhs->tag() != rhs->tag())
+    return false;
+  if (lhs->id().symbolPath() != rhs->id().symbolPath())
+    return false;
+  if (!lhs->contentsMatchInner(rhs))
+    return false;
+  // Also check declaration names
+  const Decl* lhsDecl = lhs->toDecl();
+  const Decl* rhsDecl = rhs->toDecl();
+  if (lhsDecl && rhsDecl &&
+      lhsDecl->symbol()->name() != rhsDecl->symbol()->name())
+    return false;
+
+  return true;
 }
 
 /*
