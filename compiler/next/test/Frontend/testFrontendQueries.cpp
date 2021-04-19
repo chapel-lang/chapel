@@ -212,8 +212,30 @@ static void test3() {
   assert(comment == oldComment);
   assert(identifierA == oldIdentifierA);
   assert(identifierB == oldIdentifierB);
-}
+  oldIdentifierA = nullptr; // it will be invalid after this point
 
+  printf("test3 replacing first Identifier\n");
+  moduleContents = "/* this is a test */\n"
+                   "aa;\n"
+                   "b;\n";
+  ctx->advanceToNextRevision(true);
+  ctx->setFileText(modulePath, moduleContents);
+  module = parseOneModule(ctx, modulePath);
+  ctx->collectGarbage();
+
+  BaseAST::dump(module);
+
+  // Check that the comment and identifiers match
+  assert(module->numStmts() == 3);
+  comment = module->stmt(0)->toComment();
+  identifierA = module->stmt(1)->toIdentifier();
+  identifierB = module->stmt(2)->toIdentifier();
+  assert(comment);
+  assert(identifierA);
+  assert(identifierB);
+  assert(comment == oldComment);
+  assert(identifierB == oldIdentifierB);
+}
 
 // TODO: test locate
 

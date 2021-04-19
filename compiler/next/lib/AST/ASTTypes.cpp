@@ -118,6 +118,28 @@ bool combineASTLists(ASTList& keep, ASTList& addin) {
       junkList.push_back(std::move(addinElt));
       addinIdx++;
       keepIdx += 2;
+    } else if (addinIdx+1 < addinSize && keepIdx+1 < keepSize &&
+               keep[keepIdx+1]->shallowMatch(addin[addinIdx+1].get())) {
+      // like an element was replaced from keep,
+      // so add 2 elements from addin and pass 2 keep elements
+      owned<BaseAST> addinEltOne;
+      owned<BaseAST> addinEltTwo;
+      owned<BaseAST> keepEltOne;
+      owned<BaseAST> keepEltTwo;
+      addinEltOne.swap(addin[addinIdx]);
+      addinEltTwo.swap(addin[addinIdx+1]);
+      keepEltOne.swap(keep[keepIdx]);
+      keepEltTwo.swap(keep[keepIdx+1]);
+
+      // keepEltTwo matched addinEltTwo so try to combine them
+      BaseAST::combineAST(keepEltTwo, addinEltTwo);
+      // now keepEltTwo is the one to keep and addinEltTwo is junk
+      newList.push_back(std::move(addinEltOne));
+      newList.push_back(std::move(keepEltTwo));
+      junkList.push_back(std::move(keepEltOne));
+      junkList.push_back(std::move(addinEltTwo));
+      addinIdx += 2;
+      keepIdx += 2;
     } else {
       // give up on trying to match things
       allMatched = false;
