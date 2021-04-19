@@ -697,10 +697,17 @@ static Type* getBasicInstantiationType(Type* actualType, Symbol* actualSym,
       // we should instantiate the parent actual type
       if (allowCoercion && useType == NULL) {
         if (AggregateType* at = toAggregateType(canonicalActual)) {
-          if (at->instantiatedFrom                           != NULL  &&
-              canonicalFormal->symbol->hasFlag(FLAG_GENERIC) == true) {
-            if (Type* c = getConcreteParentForGenericFormal(at, canonicalFormal)) {
-              useType = c;
+          if (canonicalFormal->symbol->hasFlag(FLAG_GENERIC) == true) {
+            if (at->symbol->hasFlag(FLAG_GENERIC) == true) {
+              // The actual type is still somewhat generic, but may still be
+              // a subtype of the parent.
+              if (Type* c = getMoreInstantiatedParentForGenericFormal(at, canonicalFormal)) {
+                useType = c;
+              }
+            } else if (at->instantiatedFrom != NULL) {
+              if (Type* c = getConcreteParentForGenericFormal(at, canonicalFormal)) {
+                useType = c;
+              }
             }
           }
         }

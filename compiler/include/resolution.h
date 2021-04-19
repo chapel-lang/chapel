@@ -73,6 +73,8 @@ bool       canInstantiate(Type* actualType, Type* formalType);
 
 Type*      getConcreteParentForGenericFormal(Type* actualType,
                                              Type* formalType);
+Type*      getMoreInstantiatedParentForGenericFormal(Type* actualType,
+                                                     Type* formalType);
 
 bool       isInstantiation(Type* sub, Type* super);
 
