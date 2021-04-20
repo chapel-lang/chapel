@@ -1,0 +1,32 @@
+Adding to set of int(64) remotely
+{0}
+Adding to set of int(64) locally
+{0}
+Adding to set of real(64) remotely
+{0.0}
+Adding to set of real(64) locally
+{0.0}
+Adding to set of string remotely
+{0}
+Adding to set of string locally
+{0}
+Adding to set of bytes remotely
+{0}
+Adding to set of bytes locally
+{0}
+Adding to set of r remotely
+default init
+{(x = {x = 0})}
+deinit
+Adding to set of r locally
+default init
+{(x = {x = 0})}
+deinit
+Adding to set of shared C remotely
+{{x = 0}}
+Adding to set of shared C locally
+{{x = 0}}
+Adding to set of owned C remotely
+{{x = 0}}
+Adding to set of owned C locally
+{{x = 0}}
