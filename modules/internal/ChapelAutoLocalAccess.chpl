@@ -99,6 +99,16 @@ module ChapelAutoLocalAccess {
   }
 
   proc chpl__isArrayViewWithDifferentDist(arr: []) param {
-    return chpl__getActualArray(arr._value).dom.type != arr.domain._value.type;
+    // Slices can have different distributions than the original array which can
+    // cause false optimizations
+    if arr._value.isSliceArrayView() {
+      return chpl__getActualArray(arr._value).dom.type != arr.domain._value.type;
+    }
+    else {
+      // Non-slice views have different domain types, but they do not impact how
+      // the values are distributed. So, they are safer from ALA standpoint
+      return false;
+    }
+
   }
 }
