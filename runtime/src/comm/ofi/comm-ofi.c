@@ -271,6 +271,7 @@ static inline struct perTxCtxInfo_t* tciAllocForAmHandler(void);
 static inline chpl_bool tciAllocTabEntry(struct perTxCtxInfo_t*);
 static inline void tciFree(struct perTxCtxInfo_t*);
 static inline void waitForCQSpace(struct perTxCtxInfo_t*, size_t);
+static void setup_ofi_amSend(void);
 static void setup_ofi_put(void);
 static inline chpl_comm_nb_handle_t ofi_put(const void*, c_nodeid_t,
                                             void*, size_t);
@@ -296,8 +297,11 @@ static void checkTxCmplsCntr(struct perTxCtxInfo_t*);
 static inline size_t readCQ(struct fid_cq*, void*, size_t);
 static void reportCQError(struct fid_cq*);
 static inline void waitForTxnComplete(struct perTxCtxInfo_t*, void* ctx);
-static inline void waitForMemFxVisOneNode(c_nodeid_t, struct perTxCtxInfo_t*);
-static inline void waitForMemFxVisAllNodes(struct perTxCtxInfo_t*, chpl_bool);
+static inline void forceMemFxVisOneNode(c_nodeid_t, chpl_bool, chpl_bool,
+                                        struct perTxCtxInfo_t*);
+static inline void forceMemFxVisAllNodes(chpl_bool, chpl_bool, c_nodeid_t,
+                                         struct perTxCtxInfo_t*);
+static inline void forceMemFxVisAllNodes_noTcip(chpl_bool, chpl_bool);
 static void* allocBounceBuf(size_t);
 static void freeBounceBuf(void*);
 static inline void local_yield(void);
@@ -1394,6 +1398,11 @@ chpl_bool findMsgOrderFenceProv(struct fi_info** p_infoOut,
                                 struct fi_info* infoIn,
                                 chpl_bool inputIsHints) {
   //
+  // TODO: Short-circuit this to fail if we don't have fixed threads,
+  //       because it won't work well without that.
+  //
+
+  //
   // Try to find a provider that can conform to the MCM using atomic
   // message orderings plus fences.  We try to avoid using either the
   // RxD or RxM utility providers here, because we really only want
@@ -2274,6 +2283,7 @@ void init_ofiForRma(void) {
   //
   (void) isAtomicValid(FI_INT32);
 
+  setup_ofi_amSend();
   setup_ofi_put();
   setup_ofi_get();
   setup_ofi_amo();
@@ -2986,6 +2996,7 @@ void mcmReleaseOneNode(c_nodeid_t node, struct perTxCtxInfo_t* tcip,
 
 static
 void mcmReleaseAllNodes(struct bitmap_t* b1, struct bitmap_t* b2,
+                        c_nodeid_t skipNode,
                         struct perTxCtxInfo_t* tcip,
                         const char* dbgOrderStr) {
   //
@@ -2997,30 +3008,37 @@ void mcmReleaseAllNodes(struct bitmap_t* b1, struct bitmap_t* b2,
   // TODO: Allow multiple of these transactions outstanding at once,
   //       instead of waiting for each one before firing the next.
   //
-  struct perTxCtxInfo_t* myTcip = tcip;
-  if (myTcip == NULL) {
-    CHK_TRUE((myTcip = tciAlloc()) != NULL);
-  }
-
-  if (b2 == NULL) {
-    BITMAP_FOREACH_SET(b1, node) {
-      (*myTcip->checkTxCmplsFn)(myTcip);
-      mcmReleaseOneNode(node, myTcip, dbgOrderStr);
-    } BITMAP_FOREACH_SET_END
-
-    bitmapZero(b1);
+  if (b1 == NULL) {
+    if (b2 == NULL) {
+      // Nothing to do.
+    } else {
+      BITMAP_FOREACH_SET(b2, node) {
+        if (skipNode < 0 || node != skipNode) {
+          (*tcip->checkTxCmplsFn)(tcip);
+          mcmReleaseOneNode(node, tcip, dbgOrderStr);
+        }
+      } BITMAP_FOREACH_SET_END
+      bitmapZero(b2);
+    }
   } else {
+    if (b2 == NULL) {
+      BITMAP_FOREACH_SET(b1, node) {
+        if (skipNode < 0 || node != skipNode) {
+          (*tcip->checkTxCmplsFn)(tcip);
+          mcmReleaseOneNode(node, tcip, dbgOrderStr);
+        }
+      } BITMAP_FOREACH_SET_END
+      bitmapZero(b1);
+    } else {
       BITMAP_FOREACH_SET_OR(b1, b2, node) {
-      (*myTcip->checkTxCmplsFn)(myTcip);
-      mcmReleaseOneNode(node, myTcip, dbgOrderStr);
-    } BITMAP_FOREACH_SET_END
-
-    bitmapZero(b1);
-    bitmapZero(b2);
-  }
-
-  if (tcip == NULL) {
-    tciFree(myTcip);
+        if (skipNode < 0 || node != skipNode) {
+          (*tcip->checkTxCmplsFn)(tcip);
+          mcmReleaseOneNode(node, tcip, dbgOrderStr);
+        }
+      } BITMAP_FOREACH_SET_END
+      bitmapZero(b1);
+      bitmapZero(b2);
+    }
   }
 }
 
@@ -3037,7 +3055,7 @@ void chpl_comm_impl_task_create(void) {
   DBG_PRINTF(DBG_IFACE_MCM, "%s()", __func__);
 
   retireDelayedAmDone(false /*taskIsEnding*/);
-  waitForMemFxVisAllNodes(NULL, false /*putsOnly*/);
+  forceMemFxVisAllNodes_noTcip(true /*checkPuts*/, true /*checkAmos*/);
 }
 
 
@@ -3046,7 +3064,7 @@ void chpl_comm_impl_task_end(void) {
 
   task_local_buff_end(get_buff | put_buff | amo_nf_buff);
   retireDelayedAmDone(true /*taskIsEnding*/);
-  waitForMemFxVisAllNodes(NULL, false /*putsOnly*/);
+  forceMemFxVisAllNodes_noTcip(true /*checkPuts*/, true /*checkAmos*/);
 }
 
 
@@ -3145,6 +3163,7 @@ static const char* amo_opName(enum fi_op);
 static const char* amo_typeName(enum fi_datatype);
 static const char* am_seqIdStr(amRequest_t*);
 static const char* am_reqStr(c_nodeid_t, amRequest_t*, size_t);
+static const char* am_reqStartStr(amRequest_t*);
 static const char* am_reqDoneStr(amRequest_t*);
 static void am_debugPrep(amRequest_t*);
 #endif
@@ -3441,6 +3460,35 @@ void amRequestShutdown(c_nodeid_t node) {
 }
 
 
+typedef chpl_comm_nb_handle_t (amSendFn_t)(c_nodeid_t node, amRequest_t* req,
+                                           size_t reqSize, void* mrDesc,
+                                           chpl_bool blocking,
+                                           struct perTxCtxInfo_t* tcip);
+static amSendFn_t amSendFn_msgOrdFence;
+static amSendFn_t amSendFn_msgOrd;
+static amSendFn_t amSendFn_dlvrCmplt;
+
+static amSendFn_t* amSendFn = NULL;
+static pthread_once_t amSendFnOnce = PTHREAD_ONCE_INIT;
+
+static
+void init_amSendFn(void) {
+  switch (mcmMode) {
+  case mcmm_msgOrdFence:  amSendFn = amSendFn_msgOrdFence;  break;
+  case mcmm_msgOrd:       amSendFn = amSendFn_msgOrd;       break;
+  case mcmm_dlvrCmplt:    amSendFn = amSendFn_dlvrCmplt;    break;
+  default:
+    INTERNAL_ERROR_V("unexpected mcmMode %d", mcmMode);
+    break;
+  }
+}
+
+static
+void setup_ofi_amSend(void) {
+  PTHREAD_CHK(pthread_once(&amSendFnOnce, init_amSendFn));
+}
+
+
 static inline
 void amRequestCommon(c_nodeid_t node,
                      amRequest_t* req, size_t reqSize,
@@ -3472,65 +3520,8 @@ void amRequestCommon(c_nodeid_t node,
   void* mrDesc;
   amRequest_t* myReq = mrLocalizeSource(&mrDesc, req, reqSize, "AM req");
 
-  //
-  // We're ready to send the request.  But for on-stmts and AMOs that
-  // might modify their target variable, MCM conformance requires us
-  // first to ensure that all previous PUTs are visible.  Similarly, for
-  // GET and PUT ops, we have to ensure that PUTs to the same node are
-  // visible.  No other ops depend on PUT visibility.
-  //
-  // A note about including RMA PUT ops here -- at first glance it would
-  // seem that all PUTs targeting a given address would either be done
-  // using the RMA interface or the message interface, rather than that
-  // some PUTs would use one interface and others using the other.  But
-  // whether we use RMA or messaging depends on whether we have an MR
-  // key for the entire [address, address+size-1] memory range, so to
-  // be strictly correct we need to allow for overlapping transfers to
-  // go via different methods.
-  //
-  if (myReq->b.op == am_opExecOn
-      || myReq->b.op == am_opExecOnLrg
-      || (myReq->b.op == am_opAMO && myReq->amo.ofiOp != FI_ATOMIC_READ)) {
-    waitForMemFxVisAllNodes(myTcip, false /*putsOnly*/);
-  } else if (myReq->b.op == am_opGet
-             || myReq->b.op == am_opPut) {
-    waitForMemFxVisOneNode(node, myTcip);
-  }
-
-  //
-  // Inject the message if it's small enough and we're not going to wait
-  // for it anyway.  Otherwise, do a regular send.  Don't count injected
-  // messages as "outstanding", because they won't generate CQ events.
-  //
-  if (pAmDone == NULL && reqSize <= ofi_info->tx_attr->inject_size) {
-    if (DBG_TEST_MASK(DBG_AM | DBG_AM_SEND)
-        || (req->b.op == am_opAMO && DBG_TEST_MASK(DBG_AMO))) {
-      DBG_DO_PRINTF("tx AM req inject to %d: %s",
-                    (int) node, am_reqStr(node, myReq, reqSize));
-    }
-    // TODO: How quickly/often does local resource throttling happen?
-    OFI_RIDE_OUT_EAGAIN(myTcip,
-                        fi_inject(myTcip->txCtx, myReq, reqSize,
-                                  rxMsgAddr(myTcip, node)));
-    myTcip->numTxnsSent++;
-  } else {
-    atomic_bool txnDone;
-    atomic_init_bool(&txnDone, false);
-    void* ctx = txnTrkEncodeDone(&txnDone);
-
-    if (DBG_TEST_MASK(DBG_AM | DBG_AM_SEND)
-        || (req->b.op == am_opAMO && DBG_TEST_MASK(DBG_AMO))) {
-      DBG_DO_PRINTF("tx AM req to %d: %s, ctx %p",
-                    (int) node, am_reqStr(node, myReq, reqSize), ctx);
-    }
-    OFI_RIDE_OUT_EAGAIN(myTcip,
-                        fi_send(myTcip->txCtx, myReq, reqSize,
-                                mrDesc, rxMsgAddr(myTcip, node), ctx));
-    myTcip->numTxnsOut++;
-    myTcip->numTxnsSent++;
-    waitForTxnComplete(myTcip, ctx);
-    atomic_destroy_bool(&txnDone);
-  }
+  (*amSendFn)(node, myReq, reqSize, mrDesc, (pAmDone != NULL) /*blocking*/,
+              myTcip);
 
   if (tcip == NULL) {
     tciFree(myTcip);
@@ -3540,8 +3531,250 @@ void amRequestCommon(c_nodeid_t node,
 
   if (pAmDone != NULL) {
     amWaitForDone(pAmDone);
-    mrUnLocalizeSource(pAmDone, &amDone); // don't need target copyout
+    mrUnLocalizeSource(pAmDone, &amDone); // don't need or want target copyout
   }
+}
+
+
+static inline
+chpl_comm_nb_handle_t amSend(c_nodeid_t node, amRequest_t* req,
+                             size_t reqSize, void* mrDesc, void* ctx,
+                             struct perTxCtxInfo_t* tcip) {
+  if (DBG_TEST_MASK(DBG_AM | DBG_AM_SEND)
+      || (req->b.op == am_opAMO && DBG_TEST_MASK(DBG_AMO))) {
+    DBG_DO_PRINTF("tx AM send to %d: %s, ctx %p",
+                  (int) node, am_reqStr(node, req, reqSize), ctx);
+  }
+  OFI_RIDE_OUT_EAGAIN(tcip,
+                      fi_send(tcip->txCtx, req, reqSize, mrDesc,
+                              rxMsgAddr(tcip, node), ctx));
+  tcip->numTxnsOut++;
+  tcip->numTxnsSent++;
+  return NULL;
+}
+
+
+static inline
+chpl_comm_nb_handle_t amSendInject(c_nodeid_t node, amRequest_t* req,
+                                   size_t reqSize,
+                                   struct perTxCtxInfo_t* tcip) {
+  if (DBG_TEST_MASK(DBG_AM | DBG_AM_SEND)
+      || (req->b.op == am_opAMO && DBG_TEST_MASK(DBG_AMO))) {
+    DBG_DO_PRINTF("tx AM send inject to %d: %s",
+                  (int) node, am_reqStr(node, req, reqSize));
+  }
+  // TODO: How quickly/often does local resource throttling happen?
+  OFI_RIDE_OUT_EAGAIN(tcip,
+                      fi_inject(tcip->txCtx, req, reqSize,
+                                rxMsgAddr(tcip, node)));
+  tcip->numTxnsSent++;
+  return NULL;
+}
+
+
+static inline
+chpl_comm_nb_handle_t amSendMsg(c_nodeid_t node, amRequest_t* req,
+                                size_t reqSize, void* mrDesc, void* ctx,
+                                uint64_t flags,
+                                struct perTxCtxInfo_t* tcip) {
+  const struct iovec msg_iov = { .iov_base = req,
+                                 .iov_len = reqSize };
+  const struct fi_msg msg = { .msg_iov = &msg_iov,
+                              .desc = mrDesc,
+                              .iov_count = 1,
+                              .addr = rxMsgAddr(tcip, node),
+                              .context = ctx };
+  if (DBG_TEST_MASK(DBG_AM | DBG_AM_SEND)
+      || (req->b.op == am_opAMO && DBG_TEST_MASK(DBG_AMO))) {
+    DBG_DO_PRINTF("tx AM send msg to %d: %s, ctx %p, flags %#" PRIx64,
+                  (int) node, am_reqStr(node, req, reqSize), ctx, flags);
+  }
+  OFI_RIDE_OUT_EAGAIN(tcip,
+                      fi_sendmsg(tcip->txCtx, &msg, flags));
+  tcip->numTxnsOut++;
+  tcip->numTxnsSent++;
+  return NULL;
+}
+
+
+//
+// Implements amRequestCommon() when MCM mode is message ordering with fences.
+//
+static
+chpl_comm_nb_handle_t amSendFn_msgOrdFence(c_nodeid_t node, amRequest_t* req,
+                                           size_t reqSize, void* mrDesc,
+                                           chpl_bool blocking,
+                                           struct perTxCtxInfo_t* tcip) {
+  //
+  // For on-stmts and AMOs that might modify their target variable, MCM
+  // conformance requires us first to ensure that previous AMOs and PUTs
+  // to any node are visible.  Similarly, for GETs we have to ensure
+  // that previous AMOs and PUTs to the target node are visible, and for
+  // PUTs we have to ensure that previous AMOs to the target node are
+  // visible.  Do that here for all nodes except this op's target.  For
+  // that node, we'll use a fenced send instead.
+  //
+  chpl_bool havePutsOut = false;
+  chpl_bool haveAmosOut = false;
+
+  switch (req->b.op) {
+  case am_opExecOn:
+  case am_opExecOnLrg:
+    forceMemFxVisAllNodes(true /*checkPuts*/, true /*checkAmos*/,
+                          node /*skipNode*/, tcip);
+    havePutsOut = (tcip->putVisBitmap != NULL
+                   && bitmapTest(tcip->putVisBitmap, node));
+    haveAmosOut = (tcip->amoVisBitmap != NULL
+                   && bitmapTest(tcip->amoVisBitmap, node));
+    break;
+  case am_opAMO:
+    {
+      chpl_bool amoHasMemFx = (req->amo.ofiOp != FI_ATOMIC_READ);
+      forceMemFxVisAllNodes(amoHasMemFx /*checkPuts*/, true /*checkAmos*/,
+                            node /*skipNode*/, tcip);
+      havePutsOut = (amoHasMemFx
+                     && tcip->putVisBitmap != NULL
+                     && bitmapTest(tcip->putVisBitmap, node));
+      haveAmosOut = (tcip->amoVisBitmap != NULL
+                     && bitmapTest(tcip->amoVisBitmap, node));
+    }
+    break;
+  case am_opGet:
+    havePutsOut = (tcip->putVisBitmap != NULL
+                   && bitmapTest(tcip->putVisBitmap, node));
+    haveAmosOut = (tcip->amoVisBitmap != NULL
+                   && bitmapTest(tcip->amoVisBitmap, node));
+    break;
+  case am_opPut:
+    haveAmosOut = (tcip->amoVisBitmap != NULL
+                   && bitmapTest(tcip->amoVisBitmap, node));
+    break;
+  }
+
+  chpl_comm_nb_handle_t ret;
+
+  if (havePutsOut || haveAmosOut) {
+    //
+    // Special case: Do a fenced send if we need it for ordering with
+    // respect to some prior operation(s).  If we can inject, do so and
+    // just collect the completion later.  Otherwise, wait for it here.
+    //
+    if (!blocking
+        && reqSize <= ofi_info->tx_attr->inject_size) {
+      void* ctx = txnTrkEncodeId(__LINE__);
+      uint64_t flags = FI_FENCE | FI_INJECT;
+      ret = amSendMsg(node, req, reqSize, mrDesc, ctx, flags, tcip);
+    } else {
+      atomic_bool txnDone;
+      atomic_init_bool(&txnDone, false);
+      void* ctx = txnTrkEncodeDone(&txnDone);
+      uint64_t flags = FI_FENCE;
+      ret = amSendMsg(node, req, reqSize, mrDesc, ctx, flags, tcip);
+      waitForTxnComplete(tcip, ctx);
+      atomic_destroy_bool(&txnDone);
+    }
+
+    if (havePutsOut) {
+      bitmapClear(tcip->putVisBitmap, node);
+    }
+    if (haveAmosOut) {
+      bitmapClear(tcip->amoVisBitmap, node);
+    }
+  } else {
+    //
+    // General case.
+    //
+    atomic_bool txnDone;
+    atomic_init_bool(&txnDone, false);
+    void* ctx = txnTrkEncodeDone(&txnDone);
+    ret = amSend(node, req, reqSize, mrDesc, ctx, tcip);
+    waitForTxnComplete(tcip, ctx);
+    atomic_destroy_bool(&txnDone);
+  }
+
+  return ret;
+}
+
+
+//
+// Implements amRequestCommon() when MCM mode is message ordering.
+//
+static
+chpl_comm_nb_handle_t amSendFn_msgOrd(c_nodeid_t node, amRequest_t* req,
+                                      size_t reqSize, void* mrDesc,
+                                      chpl_bool blocking,
+                                      struct perTxCtxInfo_t* tcip) {
+  //
+  // For on-stmts and AMOs that might modify their target variable, MCM
+  // conformance requires us first to ensure that all previous AMOs and
+  // PUTs are visible.  Similarly, for GET ops, we have to ensure that
+  // AMOs and PUTs to the same node are visible.  And for PUT ops, we
+  // have to ensure that AMOs to the same node are visible.  No other AM
+  // operations depend on AMO or PUT visibility.
+  //
+  switch (req->b.op) {
+  case am_opExecOn:
+  case am_opExecOnLrg:
+    forceMemFxVisAllNodes(true /*checkPuts*/, true /*checkAmos*/,
+                          -1 /*skipNode*/, tcip);
+    break;
+  case am_opAMO:
+    if (req->amo.ofiOp != FI_ATOMIC_READ) {
+      forceMemFxVisAllNodes(true /*checkPuts*/, true /*checkAmos*/,
+                            -1 /*skipNode*/, tcip);
+    }
+    break;
+  case am_opGet:
+    forceMemFxVisOneNode(node, true /*checkPuts*/, true /*checkAmos*/, tcip);
+    break;
+  case am_opPut:
+    forceMemFxVisOneNode(node, false /*checkPuts*/, true /*checkAmos*/, tcip);
+    break;
+  }
+
+  chpl_comm_nb_handle_t ret;
+
+  if (!blocking
+      && reqSize <= ofi_info->tx_attr->inject_size) {
+    //
+    // Special case: injection is the quickest.  We use that if this is
+    // a non-blocking AM and the size doesn't exceed the injection size
+    // limit.  (We could even inject a small-enough AM request if this
+    // were a blocking AM, but there's no point because we're going to
+    // wait for it to get done on the target anyway.)
+    //
+    ret = amSendInject(node, req, reqSize, tcip);
+  } else {
+    //
+    // General case.
+    //
+    atomic_bool txnDone;
+    atomic_init_bool(&txnDone, false);
+    void* ctx = txnTrkEncodeDone(&txnDone);
+    ret = amSend(node, req, reqSize, mrDesc, ctx, tcip);
+    waitForTxnComplete(tcip, ctx);
+    atomic_destroy_bool(&txnDone);
+  }
+
+  return ret;
+}
+
+
+//
+// Implements amRequestCommon() when MCM mode is delivery complete.
+//
+static
+chpl_comm_nb_handle_t amSendFn_dlvrCmplt(c_nodeid_t node, amRequest_t* req,
+                                         size_t reqSize, void* mrDesc,
+                                         chpl_bool blocking,
+                                         struct perTxCtxInfo_t* tcip) {
+  atomic_bool txnDone;
+  atomic_init_bool(&txnDone, false);
+  void* ctx = txnTrkEncodeDone(&txnDone);
+  chpl_comm_nb_handle_t ret = amSend(node, req, reqSize, mrDesc, ctx, tcip);
+  waitForTxnComplete(tcip, ctx);
+  atomic_destroy_bool(&txnDone);
+  return ret;
 }
 
 
@@ -3629,7 +3862,7 @@ static void amWrapExecOnLrgBody(struct amRequest_execOnLrg_t*);
 static void amWrapGet(struct taskArg_RMA_t*);
 static void amWrapPut(struct taskArg_RMA_t*);
 static void amHandleAMO(struct amRequest_AMO_t*);
-static inline void amSendDone(c_nodeid_t, amDone_t*);
+static inline void amPutDone(c_nodeid_t, amDone_t*);
 static inline void amCheckLiveness(void);
 
 static inline void doCpuAMO(void*, const void*, const void*, void*,
@@ -3845,7 +4078,7 @@ void processRxAmReq(struct perTxCtxInfo_t* tcip) {
       case am_opNop:
         DBG_PRINTF(DBG_AM | DBG_AM_RECV, "%s", am_reqDoneStr(req));
         if (req->b.pAmDone != NULL) {
-          amSendDone(req->b.node, req->b.pAmDone);
+          amPutDone(req->b.node, req->b.pAmDone);
         }
         break;
 
@@ -3886,13 +4119,15 @@ void amHandleExecOn(chpl_comm_on_bundle_t* req) {
 
 static inline
 void amWrapExecOnBody(void* p) {
+  DBG_PRINTF(DBG_AM | DBG_AM_RECV, "%s", am_reqStartStr(p));
+
   chpl_comm_bundleData_t* comm = &((chpl_comm_on_bundle_t*) p)->comm;
 
   chpl_ftable_call(comm->fid, p);
-  waitForMemFxVisAllNodes(NULL, false /*putsOnly*/);
+  forceMemFxVisAllNodes_noTcip(true /*checkPuts*/, true /*checkAmos*/);
   DBG_PRINTF(DBG_AM | DBG_AM_RECV, "%s", am_reqDoneStr(p));
   if (comm->pAmDone != NULL) {
-    amSendDone(comm->node, comm->pAmDone);
+    amPutDone(comm->node, comm->pAmDone);
   }
 }
 
@@ -3909,6 +4144,8 @@ void amHandleExecOnLrg(chpl_comm_on_bundle_t* req) {
 
 static
 void amWrapExecOnLrgBody(struct amRequest_execOnLrg_t* xol) {
+  DBG_PRINTF(DBG_AM | DBG_AM_RECV, "%s", am_reqStartStr((amRequest_t*) xol));
+
   //
   // TODO: We could stack-allocate "bundle" here, if it was small enough
   //       (TBD) not to create the potential for stack overflow.  Some
@@ -3949,10 +4186,10 @@ void amWrapExecOnLrgBody(struct amRequest_execOnLrg_t* xol) {
   // Now we can finally call the body function.
   //
   chpl_ftable_call(bundle->comm.fid, bundle);
-  waitForMemFxVisAllNodes(NULL, false /*putsOnly*/);
+  forceMemFxVisAllNodes_noTcip(true /*checkPuts*/, true /*checkAmos*/);
   DBG_PRINTF(DBG_AM | DBG_AM_RECV, "%s", am_reqDoneStr((amRequest_t*) xol));
   if (comm->pAmDone != NULL) {
-    amSendDone(node, comm->pAmDone);
+    amPutDone(node, comm->pAmDone);
   }
 
   CHPL_FREE(bundle);
@@ -3962,18 +4199,20 @@ void amWrapExecOnLrgBody(struct amRequest_execOnLrg_t* xol) {
 static
 void amWrapGet(struct taskArg_RMA_t* tsk_rma) {
   struct amRequest_RMA_t* rma = &tsk_rma->rma;
+  DBG_PRINTF(DBG_AM | DBG_AM_RECV, "%s", am_reqStartStr((amRequest_t*) rma));
 
   CHK_TRUE(mrGetKey(NULL, NULL, rma->b.node, rma->raddr, rma->size));
   (void) ofi_get(rma->addr, rma->b.node, rma->raddr, rma->size);
 
   DBG_PRINTF(DBG_AM | DBG_AM_RECV, "%s", am_reqDoneStr((amRequest_t*) rma));
-  amSendDone(rma->b.node, rma->b.pAmDone);
+  amPutDone(rma->b.node, rma->b.pAmDone);
 }
 
 
 static
 void amWrapPut(struct taskArg_RMA_t* tsk_rma) {
   struct amRequest_RMA_t* rma = &tsk_rma->rma;
+  DBG_PRINTF(DBG_AM | DBG_AM_RECV, "%s", am_reqStartStr((amRequest_t*) rma));
 
   CHK_TRUE(mrGetKey(NULL, NULL, rma->b.node, rma->raddr, rma->size));
   (void) ofi_put(rma->addr, rma->b.node, rma->raddr, rma->size);
@@ -3984,12 +4223,13 @@ void amWrapPut(struct taskArg_RMA_t* tsk_rma) {
   //
 
   DBG_PRINTF(DBG_AM | DBG_AM_RECV, "%s", am_reqDoneStr((amRequest_t*) rma));
-  amSendDone(rma->b.node, rma->b.pAmDone);
+  amPutDone(rma->b.node, rma->b.pAmDone);
 }
 
 
 static
 void amHandleAMO(struct amRequest_AMO_t* amo) {
+  DBG_PRINTF(DBG_AM | DBG_AM_RECV, "%s", am_reqStartStr((amRequest_t*) amo));
   assert(amo->b.node != chpl_nodeID);    // should be handled on initiator
 
   chpl_amo_datum_t result;
@@ -4009,13 +4249,13 @@ void amHandleAMO(struct amRequest_AMO_t* amo) {
 
   DBG_PRINTF(DBG_AM | DBG_AM_RECV, "%s", am_reqDoneStr((amRequest_t*) amo));
   if (amo->b.pAmDone != NULL) {
-    amSendDone(amo->b.node, amo->b.pAmDone);
+    amPutDone(amo->b.node, amo->b.pAmDone);
   }
 }
 
 
 static inline
-void amSendDone(c_nodeid_t node, amDone_t* pAmDone) {
+void amPutDone(c_nodeid_t node, amDone_t* pAmDone) {
   static __thread amDone_t* amDone = NULL;
   if (amDone == NULL) {
     amDone = allocBounceBuf(1);
@@ -4023,13 +4263,27 @@ void amSendDone(c_nodeid_t node, amDone_t* pAmDone) {
   }
 
   //
-  // Send the 'done' indicator.  Try to just inject it, thus generating
-  // no completion event.  If we can't do that we'll send it the normal
-  // way, but consume the completion later rather than waiting for it
-  // now.
+  // Send the 'done' indicator.  If needed for the MCM mode we're in,
+  // first make sure the memory effects of all communication ops done
+  // before this are visible.  We and our initiator are the same Chapel
+  // task, for purposes of MCM conformance, and our stores during the AM
+  // must be visible to our initiator's loads after the AM is done.
   //
+  struct perTxCtxInfo_t* tcip = amTcip;  // NULL if not AM handler task/thread
+  if (tcip == NULL) {
+    CHK_TRUE((tcip = tciAlloc()) != NULL);
+  }
+
+  if (mcmMode != mcmm_dlvrCmplt) {
+    forceMemFxVisAllNodes(true /*checkPuts*/, true /*checkAmos*/,
+                          -1 /*skipNode*/, tcip);
+  }
   ofi_put_ll(amDone, node, pAmDone, sizeof(*pAmDone),
-             txnTrkEncodeId(__LINE__), amTcip, true /*useInject*/);
+             txnTrkEncodeId(__LINE__), tcip, true /*useInject*/);
+
+  if (amTcip == NULL) {
+    tciFree(tcip);
+  }
 }
 
 
@@ -4894,7 +5148,8 @@ void ofi_put_V(int v_len, void** addr_v, void** local_mr_v,
   // Enforce Chapel MCM: force all of the above PUTs to appear in
   // target memory.
   //
-  mcmReleaseAllNodes(tcip->putVisBitmap, NULL, tcip, "unordered PUT");
+  mcmReleaseAllNodes(tcip->putVisBitmap, NULL, -1 /*skipNode*/, tcip,
+                     "unordered PUT");
 
   tciFree(tcip);
 }
@@ -5054,7 +5309,8 @@ chpl_comm_nb_handle_t rmaGetFn_msgOrdFence(void* myAddr, void* mrDesc,
   chpl_comm_nb_handle_t ret;
 
   if (tcip->bound
-      && (bitmapTest(tcip->putVisBitmap, node)
+      && ((tcip->putVisBitmap != NULL
+           && bitmapTest(tcip->putVisBitmap, node))
           || (tcip->amoVisBitmap != NULL
               && bitmapTest(tcip->amoVisBitmap, node)))) {
     //
@@ -5065,7 +5321,9 @@ chpl_comm_nb_handle_t rmaGetFn_msgOrdFence(void* myAddr, void* mrDesc,
     //
     ret = rmaReadMsg(myAddr, mrDesc, node, mrRaddr, mrKey, size, ctx,
                      FI_FENCE, tcip);
-    bitmapClear(tcip->putVisBitmap, node);
+    if (tcip->putVisBitmap != NULL) {
+      bitmapClear(tcip->putVisBitmap, node);
+    }
     if (tcip->amoVisBitmap != NULL) {
       bitmapClear(tcip->amoVisBitmap, node);
     }
@@ -5094,7 +5352,9 @@ chpl_comm_nb_handle_t rmaGetFn_msgOrd(void* myAddr, void* mrDesc,
   // visible.
   //
   if (tcip->bound) {
-    bitmapClear(tcip->putVisBitmap, node);
+    if (tcip->putVisBitmap != NULL) {
+      bitmapClear(tcip->putVisBitmap, node);
+    }
     if (tcip->amoVisBitmap != NULL) {
       bitmapClear(tcip->amoVisBitmap, node);
     }
@@ -5443,7 +5703,8 @@ chpl_comm_nb_handle_t amoFn_msgOrdFence(struct amoBundle_t *ab,
   if (ab->iovRes.addr == NULL
       && tcip->bound
       && ab->size <= ofi_info->tx_attr->inject_size
-      && !bitmapTest(tcip->putVisBitmap, ab->node)) {
+      && (tcip->putVisBitmap == NULL
+          || !bitmapTest(tcip->putVisBitmap, ab->node))) {
     //
     // Special case: injection is the quickest.  We can use that if
     // this is a non-fetching operation, we have a bound tx context so
@@ -5466,6 +5727,7 @@ chpl_comm_nb_handle_t amoFn_msgOrdFence(struct amoBundle_t *ab,
     }
 
     if (tcip->bound
+        && tcip->putVisBitmap != NULL
         && bitmapTest(tcip->putVisBitmap, ab->node)) {
       //
       // Special case: If our last operation to the same remote node was
@@ -5516,7 +5778,8 @@ static
 chpl_comm_nb_handle_t amoFn_msgOrd(struct amoBundle_t *ab,
                                    struct perTxCtxInfo_t* tcip) {
   if (ab->m.op != FI_ATOMIC_READ) {
-    waitForMemFxVisAllNodes(tcip, true /*putsOnly*/);
+    forceMemFxVisAllNodes(true /*checkPuts*/, true /*checkAmos*/,
+                          -1 /*skipNode*/, tcip);
   }
 
   chpl_comm_nb_handle_t ret;
@@ -5536,7 +5799,7 @@ chpl_comm_nb_handle_t amoFn_msgOrd(struct amoBundle_t *ab,
     // General case.
     //
     // If we need a result wait for it; otherwise, message ordering will
-    // MCM conformance and we can collect the completion later.
+    // ensure MCM conformance and we can collect the completion later.
     //
     if (ab->iovRes.addr == NULL) {
       ret = amoMsg(ab, 0, tcip);
@@ -5706,7 +5969,8 @@ void ofi_amo_nf_V(int v_len, uint64_t* opnd_v, void* local_mr,
   // Enforce Chapel MCM: force visibility of the memory effects of all
   // these AMOs.
   //
-  mcmReleaseAllNodes(tcip->amoVisBitmap, NULL, tcip, "unordered AMO");
+  mcmReleaseAllNodes(tcip->amoVisBitmap, NULL, -1 /*skipNode*/, tcip,
+                     "unordered AMO");
 
   tciFree(tcip);
 }
@@ -5869,57 +6133,67 @@ void waitForTxnComplete(struct perTxCtxInfo_t* tcip, void* ctx) {
 
 
 static inline
-void waitForMemFxVisOneNode(c_nodeid_t node, struct perTxCtxInfo_t* tcip) {
+void forceMemFxVisOneNode(c_nodeid_t node,
+                          chpl_bool checkPuts, chpl_bool checkAmos,
+                          struct perTxCtxInfo_t* tcip) {
   //
-  // Enforce MCM: make sure the memory effects of all the operations
-  // we've done so far, to a specific node, are actually visible.
-  // This is only needed if we're using message ordering for MCM
-  // conformance and we have a bound tx context.  Otherwise, we
-  // force visibility at the time of the operation.
+  // Enforce MCM: make sure the memory effects of the operations we've
+  // done on a specific node are actually visible.  Note the check for
+  // a bound tx context -- we can't have outstanding network operations
+  // without that.
   //
-  if (mcmMode != mcmm_dlvrCmplt
-      && tcip->bound
-      && (bitmapTest(tcip->putVisBitmap, node)
-          || (tcip->amoVisBitmap != NULL
-              && bitmapTest(tcip->amoVisBitmap, node)))) {
-    bitmapClear(tcip->putVisBitmap, node);
-    if (tcip->amoVisBitmap != NULL) {
-      bitmapClear(tcip->amoVisBitmap, node);
+  if (tcip->bound) {
+    chpl_bool havePutsOut = (checkPuts
+                             && tcip->putVisBitmap != NULL
+                             && bitmapTest(tcip->putVisBitmap, node));
+    chpl_bool haveAmosOut = (checkAmos
+                             && tcip->amoVisBitmap != NULL
+                             && bitmapTest(tcip->amoVisBitmap, node));
+    if (havePutsOut || haveAmosOut) {
+      mcmReleaseOneNode(node, tcip, "PUT");
+      if (havePutsOut) {
+        bitmapClear(tcip->putVisBitmap, node);
+      }
+      if (haveAmosOut) {
+        bitmapClear(tcip->amoVisBitmap, node);
+      }
     }
-    mcmReleaseOneNode(node, tcip, "PUT");
   }
 }
 
 
 static inline
-void waitForMemFxVisAllNodes(struct perTxCtxInfo_t* tcip,
-                             chpl_bool putsOnly) {
+void forceMemFxVisAllNodes(chpl_bool checkPuts, chpl_bool checkAmos,
+                           c_nodeid_t skipNode,
+                           struct perTxCtxInfo_t* tcip) {
   //
   // Enforce MCM: make sure the memory effects of all the operations
-  // we've done so far, to any node, are actually visible.  This is
-  // only needed if we're using message ordering for MCM conformance
-  // and we have a bound tx context.  Otherwise, we force visibility
-  // at the time of the operation.
+  // we've done so far, to any node, are actually visible.  This is only
+  // needed if we have a bound tx context.  Otherwise, we would have
+  // forced visibility at the time of the operation.
+  //
+  if (tcip->bound) {
+    mcmReleaseAllNodes(checkPuts ? tcip->putVisBitmap : NULL,
+                       checkAmos ? tcip->amoVisBitmap : NULL,
+                       skipNode, tcip, "PUT and/or AMO");
+  }
+}
+
+
+static inline
+void forceMemFxVisAllNodes_noTcip(chpl_bool checkPuts, chpl_bool checkAmos) {
+  //
+  // Enforce MCM: make sure the memory effects of all the operations
+  // we've done so far, to any node, are actually visible.  This is only
+  // needed if we're using message ordering (with or without fences) for
+  // MCM conformance.  Otherwise, we would have forced visibility at the
+  // time of the operation.
   //
   if (chpl_numNodes > 1 && mcmMode != mcmm_dlvrCmplt) {
-    struct perTxCtxInfo_t* myTcip = tcip;
-    if (myTcip == NULL) {
-      CHK_TRUE((myTcip = tciAlloc()) != NULL);
-    }
-
-    if (myTcip->bound) {
-      if (putsOnly) {
-        mcmReleaseAllNodes(myTcip->putVisBitmap, NULL,
-                           myTcip, "PUT");
-      } else {
-        mcmReleaseAllNodes(myTcip->putVisBitmap, myTcip->amoVisBitmap,
-                           myTcip, "PUT and AMO");
-      }
-    }
-
-    if (myTcip != tcip) {
-      tciFree(myTcip);
-    }
+    struct perTxCtxInfo_t* tcip;
+    CHK_TRUE((tcip = tciAlloc()) != NULL);
+    forceMemFxVisAllNodes(checkPuts, checkAmos, -1 /*skipNode*/, tcip);
+    tciFree(tcip);
   }
 }
 
@@ -6304,7 +6578,7 @@ void doAMO(c_nodeid_t node, void* object,
     //
     if (node == chpl_nodeID) {
       if (ofiOp != FI_ATOMIC_READ) {
-        waitForMemFxVisAllNodes(NULL, true /*putsOnly*/);
+        forceMemFxVisAllNodes_noTcip(true /*checkPuts*/, true /*checkAmos*/);
       }
       doCpuAMO(object, opnd, cmpr, result, ofiOp, ofiType, size);
     } else {
@@ -6692,7 +6966,7 @@ void chpl_comm_barrier(const char *msg) {
   // the caller's responsibility.)
   //
   retireDelayedAmDone(false /*taskIsEnding*/);
-  waitForMemFxVisAllNodes(NULL, false /*putsOnly*/);
+  forceMemFxVisAllNodes_noTcip(true /*checkPuts*/, true /*checkAmos*/);
 
   //
   // Wait for our child locales to notify us that they have reached the
@@ -7153,6 +7427,16 @@ const char* am_reqStr(c_nodeid_t tgtNode, amRequest_t* req, size_t reqSize) {
     (void) snprintf(buf + len, sizeof(buf) - len, ", pAmDone %p", pAmDone);
   }
 
+  return buf;
+}
+
+
+static
+const char* am_reqStartStr(amRequest_t* req) {
+  static __thread char buf[100];
+  (void) snprintf(buf, sizeof(buf),
+                  "run AM seqId %s body in %s",
+                  am_seqIdStr(req), (amTcip == NULL) ? "task" : "AM handler");
   return buf;
 }
 
