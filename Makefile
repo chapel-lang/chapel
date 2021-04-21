@@ -73,20 +73,9 @@ notcompiler: FORCE
 	@$(MAKE) runtime
 	@$(MAKE) modules
 
-LIB_CMAKE_ARG := -DCMAKE_BUILD_TYPE=Release
-ifdef CHPL_DEVELOPER
-  LIB_CMAKE_ARG := -DCMAKE_BUILD_TYPE=Debug
-endif
-# TODO - also have a unique build path
-
-$(CHPL_MAKE_HOME)/build/compiler.next:
-	@echo "Configuring the compiler library..."
-	@mkdir -p build/compiler.next
-	@cd build/compiler.next && cmake ../../compiler/next $(LIB_CMAKE_ARG)
-
-libchplcomp: $(CHPL_MAKE_HOME)/build/compiler.next FORCE
+libchplcomp: FORCE
 	@echo "Making the compiler library..."
-	@cd build/compiler.next && cmake --build .  --target libchplcomp --verbose
+	@cd compiler/next && $(MAKE) -f Makefile.help libchplcomp
 
 compiler: FORCE
 	@echo "Making the compiler..."

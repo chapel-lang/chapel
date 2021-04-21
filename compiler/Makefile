@@ -179,7 +179,6 @@ $(COMPILER_BUILD):
 $(CHPL_BIN_DIR):
 	mkdir -p $@
 
-
 #
 # include standard footer for compiler
 #

@@ -1,7 +1,6 @@
 comp_unit_test(testUniqueString)
 comp_unit_test(testBuildIDs)
 
-# Add a link to the string test file.
-# This link is created in the build directory at cmake "configure" time.
-file(CREATE_LINK ${CMAKE_CURRENT_SOURCE_DIR}/moby.txt
-                 ${CMAKE_CURRENT_BINARY_DIR}/moby.txt)
+# Copy the moby.txt to the binary dir for use by the test
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/../../../../test/types/string/psahabu/perf/moby.txt
+     DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
