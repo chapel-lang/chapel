@@ -73,6 +73,10 @@ notcompiler: FORCE
 	@$(MAKE) runtime
 	@$(MAKE) modules
 
+libchplcomp: FORCE
+	@echo "Making the compiler library..."
+	@cd compiler/next && $(MAKE) -f Makefile.help libchplcomp
+
 compiler: FORCE
 	@echo "Making the compiler..."
 	@cd third-party && $(MAKE) llvm
