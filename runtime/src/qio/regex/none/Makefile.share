@@ -16,21 +16,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-RUNTIME_ROOT = ../../../..
-RUNTIME_SUBDIR = src/qio/regexp/re2
+REGEX_SRCS = fail-regex.c
 
-ifndef CHPL_MAKE_HOME
-export CHPL_MAKE_HOME=$(shell pwd)/$(RUNTIME_ROOT)/..
-endif
+SRCS = $(REGEX_SRCS)
 
-include $(RUNTIME_ROOT)/make/Makefile.runtime.head
- 
-REGEXP_OBJDIR = $(RUNTIME_OBJDIR)
+REGEX_OBJS = \
+      $(addprefix $(REGEX_OBJDIR)/,$(addsuffix .o,$(basename $(REGEX_SRCS))))
 
-include Makefile.share
-
-TARGETS = $(REGEXP_OBJS)
-
-include $(RUNTIME_ROOT)/make/Makefile.runtime.subdirrules
-
-include $(RUNTIME_ROOT)/make/Makefile.runtime.foot
+$(RUNTIME_OBJ_DIR)/fail-regex.o: fail-regex.c \
+                                         $(RUNTIME_OBJ_DIR_STAMP)
+	$(CC) -c $(RUNTIME_CFLAGS) $(RUNTIME_DEFS) $(RUNTIME_INCLS) -o $@ $<

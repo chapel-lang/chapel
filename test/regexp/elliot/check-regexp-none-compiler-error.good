@@ -1,1 +1,0 @@
-check-regexp-none-compiler-error.chpl:2: error: Cannot use Regex with CHPL_REGEXP=none

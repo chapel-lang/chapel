@@ -90,7 +90,7 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
 
     export CHPL_HOST_PLATFORM=cray-xc
     export CHPL_TARGET_PLATFORM=cray-xc
-    export CHPL_REGEXP=re2      # re2 required for mason
+    export CHPL_RE2=bundled      # re2 required for mason
     export CHPL_LOCAL_MODEL=flat
     export CHPL_COMM=none
     export CHPL_COMM_SUBSTRATE=none

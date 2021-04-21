@@ -83,7 +83,7 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
 
     export CHPL_HOST_PLATFORM=cray-xc
     export CHPL_TARGET_PLATFORM=cray-xc
-    export CHPL_REGEXP=re2      # re2 required for mason
+    export CHPL_REGEX=re2      # re2 required for mason
     export CHPL_LOCAL_MODEL=flat
     export CHPL_COMM=none
     export CHPL_COMM_SUBSTRATE=none
@@ -239,7 +239,7 @@ else
     log_debug "with config=$BUILD_CONFIGS_CALLBACK"
 
     # Exit immediately to skip (avoid building) unwanted Chapel configs
-    
+
     if [ "$CHPL_LIB_PIC" == pic ]; then
       # skip Chapel make for any communication and launcher that are not none
       # because pic support is for python interoperability which
@@ -253,8 +253,8 @@ else
         exit 0
       fi
     fi
-    
-    
+
+
     if [ "$CHPL_COMM" == ugni ]; then
         if [ "$CHPL_LAUNCHER" == none ]; then
 

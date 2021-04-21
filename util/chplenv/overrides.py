@@ -35,7 +35,7 @@ chplvars = [
              'CHPL_GMP',
              'CHPL_HWLOC',
              'CHPL_JEMALLOC',
-             'CHPL_REGEXP',
+             'CHPL_RE2',
              'CHPL_LLVM',
              'CHPL_AUX_FILESYS',
              'CHPL_LIB_PIC',

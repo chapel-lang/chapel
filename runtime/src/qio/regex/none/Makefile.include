@@ -16,24 +16,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-REGEXP_SRCS = re2-interface.cc
+REGEX_SUBDIR = src/qio/regex/none
 
-SRCS = $(REGEXP_SRCS)
+ALL_SRCS += $(CURDIR)/$(REGEX_SUBDIR)/*.c
 
-REGEXP_OBJS = \
-      $(addprefix $(REGEXP_OBJDIR)/,$(addsuffix .o,$(basename $(REGEXP_SRCS))))
+REGEX_OBJDIR = $(RUNTIME_BUILD)/$(REGEX_SUBDIR)
 
-RUNTIME_INCLS += -I$(RE2_INCLUDE_DIR) -I$(RE2_INCLUDE_DIR2)
-
-# RE2 2017-04-01 uses C++11 features
-
-ifeq ($(CXX11_STD),unknown)
-  $(error CXX11_STD is not set for this compiler - update make/compiler/...)
-endif
-
-# Note: passing CXX11_STD in addition to RUNTIME_CXXFLAGS below
-# Hopefully RUNTIME_CXXFLAGS includes a C++ standard version. If not,
-# the preceeding CXX11_STD will apply.
-$(RUNTIME_OBJ_DIR)/re2-interface.o: re2-interface.cc \
-                                         $(RUNTIME_OBJ_DIR_STAMP)
-	$(CXX) -c $(CXX11_STD) $(RUNTIME_CXXFLAGS) $(RUNTIME_INCLS) -o $@ $<
+include $(RUNTIME_ROOT)/$(REGEX_SUBDIR)/Makefile.share

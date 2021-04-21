@@ -15,4 +15,4 @@ import compiler_utils
 compiler_val = chpl_compiler.get('target')
 std_atomics = compiler_utils.has_std_atomics(compiler_val)
 
-sys.stdout.write('re2' if std_atomics else 'none')
+sys.stdout.write('bundled' if std_atomics else 'none')

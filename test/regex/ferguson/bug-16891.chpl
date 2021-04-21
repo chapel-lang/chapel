@@ -1,7 +1,7 @@
 use IO;
 use IO.FormattedIO;
 
-config const useRegexp=false;
+config const useRegex=false;
 
 var ff=openreader("bug-16891.txt");
 var got=true;

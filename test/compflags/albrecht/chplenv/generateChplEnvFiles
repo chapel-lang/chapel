@@ -87,7 +87,7 @@ generateCompopts() {
             "CHPL_HWLOC")
                 compopts="$compopts --$flag=$value"
                 ;;
-            "CHPL_REGEXP")
+            "CHPL_RE2")
                 compopts="$compopts --$flag=$value"
                 ;;
             "CHPL_AUX_FILESYS")

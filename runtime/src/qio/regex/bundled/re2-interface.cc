@@ -18,11 +18,6 @@
  * limitations under the License.
  */
 
-// Make sure that we get the RE2 extensions for Chapel
-#ifndef CHPL_RE2
-#define CHPL_RE2
-#endif
-
 #include <limits>
 #include <pthread.h>
 #include <stdlib.h>

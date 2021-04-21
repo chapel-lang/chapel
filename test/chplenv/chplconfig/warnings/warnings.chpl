@@ -14,4 +14,6 @@ Syntax Error: $CHPL_CONFIG/chplconfig:line 8\
               Expected format is:\
               > CHPL_VAR = VALUE\
 Warning: $CHPL_CONFIG/chplconfig:line 11: \"CHPL_COMMS\" is not an acceptable variable\
-Warning: $CHPL_CONFIG/chplconfig:line 15: Duplicate entry of \"CHPL_COMM\"\n");
+Warning: $CHPL_CONFIG/chplconfig:line 15: Duplicate entry of \"CHPL_COMM\"\
+Warning: $CHPL_CONFIG/chplconfig:line 18: \"CHPL_REGEXP\" is not an acceptable variable\
+");

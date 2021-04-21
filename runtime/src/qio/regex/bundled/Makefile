@@ -16,10 +16,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-REGEXP_SUBDIR = src/qio/regexp/re2
+RUNTIME_ROOT = ../../../..
+RUNTIME_SUBDIR = src/qio/regex/bundled
 
-ALL_SRCS += $(CURDIR)/$(REGEXP_SUBDIR)/*.cc
+ifndef CHPL_MAKE_HOME
+export CHPL_MAKE_HOME=$(shell pwd)/$(RUNTIME_ROOT)/..
+endif
 
-REGEXP_OBJDIR = $(RUNTIME_BUILD)/$(REGEXP_SUBDIR)
+include $(RUNTIME_ROOT)/make/Makefile.runtime.head
 
-include $(RUNTIME_ROOT)/$(REGEXP_SUBDIR)/Makefile.share
+REGEX_OBJDIR = $(RUNTIME_OBJDIR)
+
+include Makefile.share
+
+TARGETS = $(REGEX_OBJS)
+
+include $(RUNTIME_ROOT)/make/Makefile.runtime.subdirrules
+
+include $(RUNTIME_ROOT)/make/Makefile.runtime.foot

@@ -31,12 +31,12 @@ https://github.com/google/re2 and included here for your convenience.
 Enabling Regular Expression Support
 -----------------------------------
 
-Setting the environment variable CHPL_REGEXP to re2 will enable regular
+Setting the environment variable CHPL_RE2 to bundled will enable regular
 expression support with the RE2 library:
 
 .. code-block:: sh
 
-   export CHPL_REGEXP=re2
+   export CHPL_RE2=bundled
 
 Then, rebuild Chapel. The RE2 library will be expanded from a release included
 in the Chapel distribution.
@@ -467,8 +467,8 @@ proc compile(pattern: ?t, posix=false, literal=false, noCapture=false,
              /*i*/ ignoreCase=false, /*m*/ multiLine=false, /*s*/ dotAll=false,
              /*U*/ nonGreedy=false): regex(t) throws where t==string || t==bytes {
 
-  if CHPL_REGEXP == "none" {
-    compilerError("Cannot use Regex with CHPL_REGEXP=none");
+  if CHPL_RE2 == "none" {
+    compilerError("Cannot use Regex with CHPL_RE2=none");
   }
 
   var opts:qio_regex_options_t;
