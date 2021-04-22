@@ -45,7 +45,7 @@ $(LIBCOMPILER_BUILD_DIR):
 	  $(CMAKE) $(CHPL_MAKE_HOME)/compiler/next \
 	    $(LIB_CMAKE_ARG)
 
-libchplcomp-parser: $(CHPL_MAKE_HOME)/build/compiler.next FORCE
+libchplcomp-parser: $(LIBCOMPILER_BUILD_DIR) FORCE
 	cd $(LIBCOMPILER_BUILD_DIR)/lib/Frontend/Parser && cmake --build . --target parser
 
 libchplcomp: $(LIBCOMPILER_BUILD_DIR) FORCE
