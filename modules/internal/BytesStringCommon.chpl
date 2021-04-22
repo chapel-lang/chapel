@@ -768,23 +768,23 @@ module BytesStringCommon {
           }
           // End preprocessing
 
-          var idx = 0;
+          var idx = xLen - 1;
 
-          while idx <= (xLen - nLen) {
+          while idx >= nLen - 1 {
             var j = nLen - 1;
 
             while j >= 0 {
-              const idx1 = view.orderToIndex(xLen - 1 - (idx + j));
+              const idx1 = view.orderToIndex(idx - j);
               if x.buff[idx1] != localNeedle.buff[nLen - 1 - j] then break;
               j -= 1;
             }
 
             if j < 0 {
-              localRet = view.orderToIndex(xLen - 1 - idx - (nLen - 1));
+              localRet = view.orderToIndex(idx - (nLen - 1));
               break;
             }
-            const idx1 = view.orderToIndex(xLen - 1 - (idx + nLen - 1));
-            idx += max(1, chpl_bmh_badChar[x.byte(idx1)]);
+            const idx1 = view.orderToIndex(idx - (nLen - 1));
+            idx -= max(1, chpl_bmh_badChar[x.byte(idx1)]);
           }
           ret = localRet;
         }
