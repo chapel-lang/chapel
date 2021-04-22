@@ -32,9 +32,9 @@
 
 static int
 snprint_float_val(char* buf, size_t max, double val, bool hex) {
-  if (chpl_isfinite(val)) {
+  if (std::isfinite(val)) {
     int nc = 0;
-    if (chpl_signbit(val)) nc = snprintf(buf, max, "-%g" , -val);
+    if (std::signbit(val)) nc = snprintf(buf, max, "-%g" , -val);
     else                   nc = snprintf(buf, max, "%g" , val);
 
     if (strchr(buf, '.') == NULL &&
@@ -45,12 +45,12 @@ snprint_float_val(char* buf, size_t max, double val, bool hex) {
     } else {
       return nc;
     }
-  } else if (chpl_isinf(val)) {
-    if (chpl_signbit(val)) strncpy(buf, "-INFINITY", max);
+  } else if (std::isinf(val)) {
+    if (std::signbit(val)) strncpy(buf, "-INFINITY", max);
     else                   strncpy(buf, "INFINITY", max);
     return strlen(buf);
   } else {
-    if (chpl_signbit(val)) strncpy(buf, "-NAN", max);
+    if (std::signbit(val)) strncpy(buf, "-NAN", max);
     else                   strncpy(buf, "NAN", max);
     return strlen(buf);
   }
@@ -68,7 +68,7 @@ static int
 snprint_complex_val(char* str, size_t max, double real, double imm) {
   int numchars = 0;
   numchars += snprint_float_val(str+numchars, max-numchars, real, false);
-  if (chpl_signbit(imm)) {
+  if (std::signbit(imm)) {
     numchars += snprintf(str+numchars, max-numchars, " - ");
     numchars += snprint_float_val(str+numchars, max-numchars, -imm, false);
   } else {
