@@ -5329,4 +5329,38 @@ module ChapelArray {
     else
       return ptr;
   }
+
+
+/* Returns static information about the array in form of a string.
+   The information returned is Array type, dimension.
+*/
+proc getStaticType(Array):string{
+var Type : Array.eltType;
+var output : string;
+var rank : string;
+  if(isIntegralValue(Type)){
+        if(isIntValue(Type)){
+          output = "int";
+        }else{
+          output = "uint";
+        }
+      }else if(isFloatValue(Type)){
+        if(isImagValue(Type)){
+          output = "imag";
+        }else if(isRealValue(Type)){
+          output = "real";
+        }
+      }else if (isComplexValue(Type)){
+          output = "complex";
+      }
+      else if (isStringValue(Type)){
+        output = "string";
+      }else if (isBoolValue(Type)){
+        output = "bool";
+      }
+      rank =  Array.rank: string;
+      output+= ", dimension : " + rank;
+      return "Array type : " + output;
+    }
+
 }
