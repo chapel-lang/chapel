@@ -25,7 +25,7 @@
 
 #include <cstring>
 #include <cstdio>
-#include "chplmath.h"
+#include <cmath>
 #include "num.h"
 #include "prim_data.h"
 #include "stringutil.h"

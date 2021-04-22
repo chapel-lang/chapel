@@ -21,7 +21,6 @@
 #include "codegen.h"
 
 #include "astutil.h"
-#include "chplmath.h"
 #include "clangBuiltinsWrappedSet.h"
 #include "clangUtil.h"
 #include "config.h"
@@ -60,6 +59,7 @@
 #include <algorithm>
 #include <cctype>
 
+#include <cmath>
 #include <cstring>
 #include <cstdio>
 #include <vector>
