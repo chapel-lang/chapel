@@ -3,14 +3,12 @@ This directory uses a different directory structure from the old compiler
 - see below for rationale.
 
 For now, this work is being done in this directory but the expectation is
-that eventually it swap places with the compiler/ directory (so any
+that eventually it will swap places with the compiler/ directory (so any
 old-compiler code still used is put into subdirectories according to the
 organization described below).
 
-
-As a preparatory step for the effort to significantly improve the
-compiler, thinking about the directory structure we use for sources
-and headers. This addresses three problems:
+Part of improving the compiler will involve adjusting the directory
+structure used to store sources and headers. This addresses three problems:
 
  1. it's not always clear where to find a header/source file - the
     convention varies within the compiler
