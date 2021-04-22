@@ -1,0 +1,13 @@
+
+Start analyzing forall (differentDistView.chpl:7)
+| Found loop domain (differentDistView.chpl:5)
+| Will attempt static and dynamic optimizations (differentDistView.chpl:7)
+|
+|  Start analyzing call (differentDistView.chpl:8)
+|   Can optimize: Access base is the iterator's base (differentDistView.chpl:8)
+|  This call is a static optimization candidate (differentDistView.chpl:8)
+|
+End analyzing forall (differentDistView.chpl:7)
+
+Local access attempt reverted. All static checks failed or code is unreachable.(differentDistView.chpl:8)
+0 0 3 4 5 6 7 8 0 0
