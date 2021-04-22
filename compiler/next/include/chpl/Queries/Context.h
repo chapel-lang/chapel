@@ -58,6 +58,24 @@ written in a stylized way to interact with the context.
 
 For example, here is a query that computes MyResultType from myArg1 and
 myArg2:
+=======
+This class stores the compilation-wide context. It handles unique'd strings
+and also a *program database* which is basically a bunch of maps storing the
+results of queries (so that they are are memoized) but that updates these
+results according to a dependency graph and revision number.
+
+Queries are just functions that are written in a stylized manner to interact
+with the program database in the context.
+
+To write a query, create a function that uses the ``QUERY_`` macros defined in
+QueryImpl.h. The arguments to the function need to be POD (so
+``UniqueString``, ``ID``, ``Location``, are OK but AST pointers or
+``std::vector`` e.g. are not). The function will return a result, which need
+not be POD and can include AST pointers (but see below). The function needs to
+be written in a stylized way to interact with the program database.
+
+For example, here is a query that computes MyResultType from myKey1 and
+myKey2:
 
 .. code-block:: c++
 
