@@ -291,12 +291,12 @@ module ChapelRange {
   }
 
   pragma "no doc"
-  proc range.init(type idxType = int,
-                  param boundedType : BoundedRangeType = BoundedRangeType.bounded,
-                  param stridable : bool = false,
-                  param internal = true,
-                  _low = chpl__defaultLowBound(idxType),
-                  _high = chpl__defaultHighBound(idxType),
+  proc range.init(type idxType,
+                  param boundedType : BoundedRangeType,
+                  param stridable : bool,
+                  param internal: bool,
+                  _low,
+                  _high,
                   _stride,
                   _alignment,
                   _aligned = true) {
@@ -1428,14 +1428,14 @@ operator :(r: range(?), type t: range(?)) {
     const (ald, alt) =
       if r.isAmbiguous() then
         if r.stridable then (false, r._alignment)
-                       else (false, 0)
+                       else (false, 0:r.intIdxType)
       else
         // we could talk about aligned bounds
         if      r.hasLowBound()  && st > 0 then (true, r.alignedLowAsInt)
         else if r.hasHighBound() && st < 0 then (true, r.alignedHighAsInt)
         else
           if r.stridable then (r.aligned, r._alignment)
-                         else (false, 0);
+                         else (false, 0:r.intIdxType);
 
     return new range(i, b, true, internal=true, lw, hh, st, alt, ald);
   }
