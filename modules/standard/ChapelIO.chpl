@@ -776,15 +776,16 @@ module ChapelIO {
     }
 
     if hasLowBound() {
-      if (chpl__singleValIdxType(this.idxType) && this._isEmpty) {
-        f <~> high <~> new ioLiteral(">");
-      } else {
-        f <~> low;
-      }
+      f <~> low;
     }
     f <~> new ioLiteral("..");
-    if hasHighBound() then
-      f <~> high;
+    if hasHighBound() {
+      if (chpl__singleValIdxType(this.idxType) && this._low != this._high) {
+        f <~> new ioLiteral("<") <~> low;
+      } else {
+        f <~> high;
+      }
+    }
     if stride != 1 then
       f <~> new ioLiteral(" by ") <~> stride;
 

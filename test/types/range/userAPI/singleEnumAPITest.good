@@ -1,0 +1,96 @@
+./rangeAPItest.chpl:3: In function 'testRangeAPI':
+./rangeAPItest.chpl:45: warning: invoking 'offset' on an unstrided range has no effect.
+  singleEnumAPITest.chpl:6: called as testRangeAPI(lbl: string, r: range(color,bounded,false), idx: color, subr: range(color,bounded,false), offset: int(64), count: int(64))
+trivial enum range
+------------
+red..red
+idxType          = color
+stridable        = false
+boundedType      = bounded
+isRangeType()    = true
+isBoundedRange() = true
+isBounded()      = true
+hasLowBound()    = true
+hasHighBound()   = true
+stride           = 1
+alignment        = red
+aligned          = true
+first            = red
+last             = red
+low              = red
+high             = red
+alignedLow       = red
+alignedHigh      = red
+isEmpty()        = false
+size             = 1
+hasFirst()       = true
+hasLast()        = true
+isNat.Algned()   = true
+isAmbiguous      = false
+contains(red) = true
+contains(red..red) = true
+ident(self)      = true
+ident(other)     = true
+boundsCheck(red) = true
+boundsCheck(red..red) = true
+indexOrder(red) = 0
+orderToIndex(0)  = red
+offset(1)        = red..red
+interior(1)      = red..red
+interior(-1)     = red..red
+serial iteration = 
+red 
+r#1               = red..red
+r#-1              = red..red
+r == subr         = true
+r != subr         = false
+r[subr]           = red..red
+r[subr] == subr[r]= true
+Copying...        = red..red
+
+default trivial enum range
+------------
+red..<red
+idxType          = color
+stridable        = false
+boundedType      = bounded
+isRangeType()    = true
+isBoundedRange() = true
+isBounded()      = true
+hasLowBound()    = true
+hasHighBound()   = true
+stride           = 1
+alignment        = red
+aligned          = true
+first            = red
+last             = red
+low              = red
+high             = red
+alignedLow       = red
+alignedHigh      = red
+isEmpty()        = true
+size             = 0
+hasFirst()       = false
+hasLast()        = false
+isNat.Algned()   = true
+isAmbiguous      = false
+contains(red) = false
+contains(red..<red) = true
+ident(self)      = true
+ident(other)     = true
+boundsCheck(red) = false
+boundsCheck(red..<red) = true
+indexOrder(red) = -1
+interior(0)      = red..<red
+interior(0)     = red..<red
+serial iteration = 
+
+r == subr         = true
+r != subr         = false
+r[subr]           = red..<red
+r[subr] == subr[r]= true
+Copying...        = red..<red
+
+./rangeAPItest.chpl:19: warning: result can't be trusted
+./rangeAPItest.chpl:21: warning: result can't be trusted
+./rangeAPItest.chpl:23: warning: result can't be trusted

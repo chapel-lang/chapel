@@ -1685,6 +1685,7 @@ module DefaultRectangular {
       if dim == rank-1 {
         var first = true;
         if debugDefaultDist && f.writing then f.writeln(dom.dsiDim(dim));
+//        writeln("dom.dsiDim(dim) = ", dom.dsiDim(dim) by makeStridePositive);
         for j in dom.dsiDim(dim) by makeStridePositive {
           if first then first = false;
           else if isspace then f <~> new ioLiteral(" ");

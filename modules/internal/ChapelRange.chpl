@@ -216,7 +216,6 @@ module ChapelRange {
     var _stride    : if stridable then chpl__rangeStrideType(idxType) else nothing; // signed stride
     var _alignment : if stridable then chpl__idxTypeToIntIdxType(idxType) else nothing; // alignment
     var _aligned   : if stridable then bool else nothing;
-    var _isEmpty   : if chpl__singleValIdxType(idxType) then bool else nothing;
 
     proc strType type  return chpl__rangeStrideType(idxType);
 
@@ -249,21 +248,13 @@ module ChapelRange {
     this.idxType     = idxType;
     this.boundedType = boundedType;
     this.stridable   = stridable;
-    this._low = 1:chpl__idxTypeToIntIdxType(idxType);
-    this._high = 0:chpl__idxTypeToIntIdxType(idxType);
+    this._low = chpl__defaultLowBound(idxType);
+    this._high = chpl__defaultHighBound(idxType);
     this.complete();
     if stridable {
       this._stride    = 1: this._stride.type;
       this._alignment = 0: this._alignment.type;
       this._aligned   = false;
-    }
-
-    // If there's only a single idxType, the only way low/high can be
-    // 1/0 is if this was default-initialized, which means that it's
-    // empty, so mark it as such
-    if chpl__singleValIdxType(idxType) then {
-      this._isEmpty = (this._low == 1 && this._high == 0);
-//      writeln("Z: this._isEmpty = ", this._isEmpty);
     }
   }
 
@@ -287,16 +278,6 @@ module ChapelRange {
       this._alignment = chpl__idxToInt(_alignment);
       this._aligned   = _aligned;
     }
-
-    // If there's only a single idxType, the only way low/high can be
-    // 1/0 is if this was default-initialized, which means that it's
-    // empty, so mark it as such
-    if chpl__singleValIdxType(idxType) then {
-      this._isEmpty = (this._low == 1 && this._high == 0);
-//      writeln("A: this._isEmpty = ", this._isEmpty);
-    }
-        
-    
     
     if !stridable && boundsChecking then
       assert(_stride == 1);
@@ -307,6 +288,31 @@ module ChapelRange {
       if isNothingType(args(i).type) then return true;
     }
     return false;
+  }
+
+  pragma "no doc"
+  proc range.init(type idxType = int,
+                  param boundedType : BoundedRangeType = BoundedRangeType.bounded,
+                  param stridable : bool = false,
+                  param internal = true,
+                  _low = chpl__defaultLowBound(idxType),
+                  _high = chpl__defaultHighBound(idxType),
+                  _stride,
+                  _alignment,
+                  _aligned) {
+
+//    writeln("In internal initializer");
+    this.idxType     = idxType;
+    this.boundedType = boundedType;
+    this.stridable   = stridable;
+    this._low        = _low;
+    this._high       = _high;
+    this.complete();
+    if (stridable) {
+      this._stride    = _stride;
+      this._alignment = _alignment;
+      this._aligned   = _aligned;
+    }
   }
 
   pragma "no doc"
@@ -328,13 +334,6 @@ module ChapelRange {
     this.complete();
     if stridable then
       compilerError("non-stridable range initializer called with stridable=true");
-    // If there's only a single idxType, the only way low/high can be
-    // 1/0 is if this was default-initialized, which means that it's
-    // empty, so mark it as such
-    if chpl__singleValIdxType(idxType) then {
-      _isEmpty = (this._low == 1 && this._high == 0);
-//      writeln("B: this._isEmpty = ", this._isEmpty);
-    }
   }
 
   pragma "no doc"
@@ -381,7 +380,6 @@ module ChapelRange {
       this._alignment = other._alignment;
       this._aligned = other._aligned;
     }
-    this._isEmpty = other._isEmpty;
   }
 
   /////////////////////////////////
@@ -716,20 +714,25 @@ module ChapelRange {
   inline proc range.alignedHighAsInt {
     if ! stridable then
       return _high;
-    else
+    else {
       // Adjust _high downward by the difference between _high and _alignment.
+//      writeln("alignedHighAsInt: ", _high, _alignment, stride, chpl__diffMod(_high, _alignment, stride));
       return _high - chpl__diffMod(_high, _alignment, stride);
+    }
   }
 
   /* If the sequence represented by the range is empty, return true.  An
      error is reported if the range is ambiguous.
    */
   inline proc range.isEmpty() {
+    /*
+    writeln("In isEmpty");
+    writeln("this.alignedLow = ", this.alignedLow);
+    writeln("this.alignedHigh = ", this.alignedHigh);
+*/
     if boundsChecking && isAmbiguous() then
       HaltWrappers.boundsCheckHalt("isEmpty() is invoked on an ambiguously-aligned range");
-    if chpl__singleValIdxType(idxType) && _isEmpty then
-      return true;
-    return isBoundedRange(this) && this.alignedLow > this.alignedHigh;
+    return isBoundedRange(this) && this.alignedLowAsInt > this.alignedHighAsInt;
   }
 
 
@@ -742,9 +745,6 @@ module ChapelRange {
     if ! isBoundedRange(this) then
       compilerError("'size' is not defined on unbounded ranges");
 
-    if chpl__singleValIdxType(idxType) then
-      return if _isEmpty then 0 else 1;
-    
     // assumes alignedHigh/alignedLow always work, even for an empty range
     const ah = this.alignedHighAsInt,
           al = this.alignedLowAsInt;
@@ -858,6 +858,9 @@ module ChapelRange {
   {
     if this.isAmbiguous() || other.isAmbiguous() then return false;
 
+    if this.isBounded() && this.size == 0 then
+      return other.isBounded() && other.size == 0;;
+    
     // Since slicing preserves the direction of the first arg, may need
     // to negate one of the strides (shouldn't matter which).
     if stridable {
@@ -1027,10 +1030,11 @@ operator :(r: range(?), type t: range(?)) {
     var boundedOther = new range(
                           idxType, BoundedRangeType.bounded,
                           s || this.stridable,
-                          if other.hasLowBound() then other.low else low,
-                          if other.hasHighBound() then other.high else high,
+                          internal=true,
+                          if other.hasLowBound() then other._low else _low,
+                          if other.hasHighBound() then other._high else _high,
                           other.stride,
-                          other.alignment,
+                          other._alignment,
                           true);
 
     return (boundedOther.size == 0) || contains(boundedOther);
@@ -1176,10 +1180,10 @@ operator :(r: range(?), type t: range(?)) {
   // Compute the alignment of the range returned by this.interior()
   // and this.exterior(). Keep it private.
   pragma "no doc"
-  inline proc range._effAlmt()       where stridable return alignment;
+  inline proc range._effAlmt()       where stridable return _alignment;
 
   pragma "no doc"
-  proc range._effAlmt() where !stridable return chpl_intToIdx(0);
+  proc range._effAlmt() where !stridable return 0;
 
   // Return an interior portion of this range.
   pragma "no doc"
@@ -1206,18 +1210,22 @@ operator :(r: range(?), type t: range(?)) {
    */
   proc range.interior(offset: integral)
   {
+    if boundsChecking then
+      if offset > this.size then
+        HaltWrappers.boundsCheckHalt("can't compute the interior " + offset:string + " elements of a range with size " + this.size:string);
+
     const i = offset.safeCast(intIdxType);
     if i < 0 then
-      return new range(idxType, boundedType, stridable,
-                       low, chpl_intToIdx(_low - 1 - i), stride,
-                       _effAlmt(), aligned);
+      return new range(idxType, boundedType, stridable, internal=true,
+                       _low, _low - 1 - i, stride,
+                       _effAlmt(), _aligned);
     if i > 0 then
-      return new range(idxType, boundedType, stridable,
-                       chpl_intToIdx(_high + 1 - i), high, stride,
-                       _effAlmt(), aligned);
+      return new range(idxType, boundedType, stridable, internal=true,
+                       _high + 1 - i, _high, stride,
+                       _effAlmt(), _aligned);
     // if i == 0 then
-    return new range(idxType, boundedType, stridable,
-                     low, high, stride, _effAlmt(), aligned);
+    return new range(idxType, boundedType, stridable, internal=true,
+                     _low, _high, stride, _effAlmt(), _aligned);
   }
 
   pragma "no doc"
@@ -1244,18 +1252,18 @@ operator :(r: range(?), type t: range(?)) {
   {
     const i = offset.safeCast(intIdxType);
     if i < 0 then
-      return new range(idxType, boundedType, stridable,
-                       chpl_intToIdx(_low + i),
-                       chpl_intToIdx(_low - 1),
-                       stride, _effAlmt(), aligned);
+      return new range(idxType, boundedType, stridable, internal=true,
+                       _low + i,
+                       _low - 1,
+                       stride, _effAlmt(), _aligned);
     if i > 0 then
-      return new range(idxType, boundedType, stridable,
-                       chpl_intToIdx(_high + 1),
-                       chpl_intToIdx(_high + i),
-                       stride, _effAlmt(), aligned);
+      return new range(idxType, boundedType, stridable, internal=true,
+                       _high + 1,
+                       _high + i,
+                       stride, _effAlmt(), _aligned);
     // if i == 0 then
-    return new range(idxType, boundedType, stridable,
-                     low, high, stride, _effAlmt(), aligned);
+    return new range(idxType, boundedType, stridable, internal=true,
+                     _low, _high, stride, _effAlmt(), _aligned);
   }
 
   pragma "no doc"
@@ -1287,10 +1295,10 @@ operator :(r: range(?), type t: range(?)) {
   proc range.expand(offset: integral)
   {
     const i = offset.safeCast(intIdxType);
-    return new range(idxType, boundedType, stridable,
-                     chpl_intToIdx(_low-i),
-                     chpl_intToIdx(_high+i),
-                     stride, alignment, _aligned);
+    return new range(idxType, boundedType, stridable, internal=true,
+                     _low-i,
+                     _high+i,
+                     stride, _alignment, _aligned);
   }
 
   pragma "no doc"
@@ -1325,15 +1333,6 @@ operator :(r: range(?), type t: range(?)) {
       r1._alignment = chpl__idxToInt(r2.alignment);
       r1._aligned = r2.aligned;
     }
-
-    if chpl__singleValIdxType(r2.idxType) {
-      if chpl__singleValIdxType(r1.idxType) {
-        r1._isEmpty = r2._isEmpty;
-      } else {
-        if r2._isEmpty then
-          r1._high = r1._low - 1;
-      }
-    }
   }
 
   //////////////////////////////////////////////////////////////////////////////////
@@ -1348,12 +1347,12 @@ operator :(r: range(?), type t: range(?)) {
     const i = offset:r.intIdxType;
     type strType = chpl__rangeStrideType(e);
 
-    return new range(e, b, s,
-                     r.chpl_intToIdx(r._low + i),
-                     r.chpl_intToIdx(r._high + i),
+    return new range(e, b, s, internal=true,
+                     r._low + i,
+                     r._high + i,
                      r.stride : strType,
-                     r.chpl_intToIdx(chpl__idxToInt(r.alignment)+i),
-                     r.aligned);
+                     chpl__idxToInt(r.alignment)+i,
+                     r._aligned);
   }
 
   inline proc +(i:integral, r: range(?e,?b,?s))
@@ -1364,11 +1363,11 @@ operator :(r: range(?), type t: range(?)) {
     type strType = chpl__rangeStrideType(e);
 
     return new range(e, b, s,
-                     r.chpl_intToIdx(r._low - i),
-                     r.chpl_intToIdx(r._high - i),
+                     r._low - i,
+                     r._high - i,
                      r.stride : strType,
-                     r.chpl_intToIdx(chpl__idxToInt(r.alignment) - i),
-                     r.aligned);
+                     r._alignment - i,
+                     r._aligned);
   }
 
   inline proc chpl_check_step_integral(step) {
@@ -1421,33 +1420,24 @@ operator :(r: range(?), type t: range(?)) {
       compilerError("the step argument of the 'by' operator is too large and cannot be represented within the range's stride type " + strType:string);
   }
 
-  proc chpl_by_help(r: range(?i,?b,?s), step) where chpl__singleValIdxType(i) {
-    const st: r.strType = r.stride * step:r.strType;
-    var r2: range(i, b, true);
-    r2;  // force default initialization
-    r2 = r;
-    r2._stride = st;
-    return r2;
-  }
-
   proc chpl_by_help(r: range(?i,?b,?s), step) {
-    const lw: i = r.low,
-          hh: i = r.high,
+    const lw = r._low,
+          hh = r._high,
           st: r.strType = r.stride * step:r.strType;
 
-    const (ald, alt): (bool, i) =
+    const (ald, alt) =
       if r.isAmbiguous() then
-        if r.stridable then (false, r.alignment)
-                       else (false, r.chpl_intToIdx(0))
+        if r.stridable then (false, r._alignment)
+                       else (false, 0)
       else
         // we could talk about aligned bounds
-        if      r.hasLowBound()  && st > 0 then (true, r.alignedLow)
-        else if r.hasHighBound() && st < 0 then (true, r.alignedHigh)
+        if      r.hasLowBound()  && st > 0 then (true, r.alignedLowAsInt)
+        else if r.hasHighBound() && st < 0 then (true, r.alignedHighAsInt)
         else
-          if r.stridable then (r.aligned, r.alignment)
-                         else (false, r.chpl_intToIdx(0));
+          if r.stridable then (r.aligned, r._alignment)
+                         else (false, 0);
 
-    return new range(i, b, true, lw, hh, st, alt, ald);
+    return new range(i, b, true, internal=true, lw, hh, st, alt, ald);
   }
 
   /*
@@ -1677,10 +1667,11 @@ operator :(r: range(?), type t: range(?)) {
     var result = new range(idxType,
                            computeBoundedType(this, other),
                            this.stridable | other.stridable,
-                           chpl_intToIdx(newlo),
-                           chpl_intToIdx(newhi),
+                           internal=true,
+                           newlo,
+                           newhi,
                            newStride,
-                           chpl_intToIdx(0),
+                           0,
                            !ambig && (this.aligned || other.aligned));
 
     if result.stridable {
@@ -2168,20 +2159,25 @@ operator :(r: range(?), type t: range(?)) {
   pragma "no doc"
   pragma "order independent yielding loops"
   iter range.these()
-    where boundedType == BoundedRangeType.bounded && stridable == true && !chpl__singleValIdxType(this.idxType) {
-    if (useOptimizedRangeIterators) {
+    where boundedType == BoundedRangeType.bounded && stridable == true {
+      if (useOptimizedRangeIterators) {
+//        writeln("Before boundsChecking");
       if boundsChecking {
         checkIfIterWillOverflow();
         if this.isAmbiguous() then
           HaltWrappers.boundsCheckHalt("these -- Attempt to iterate over a range with ambiguous alignment.");
       }
+//        writeln("After boundsChecking");
 
       // must use first/last since we have no knowledge of stride
       // must check if low > high (something like 10..1) because of the !=
       // relational operator. Such ranges are supposed to iterate 0 times
-      var i: intIdxType;
-      const start = this.firstAsInt;
-      const end: intIdxType = if this.low > this.high then start else this.lastAsInt + stride: intIdxType;
+        var i: intIdxType;
+//        writeln("About to query start");
+        const start = this.firstAsInt;
+//        writeln("About to compute end");
+      const end: intIdxType = if this._low > this._high then start else this.lastAsInt + stride: intIdxType;
+//      writeln("In loop: ", start, "..", end);
       while __primitive("C for loop",
                         __primitive( "=", i, start),
                         __primitive("!=", i, end),
@@ -2197,7 +2193,7 @@ operator :(r: range(?), type t: range(?)) {
   pragma "no doc"
   pragma "order independent yielding loops"
   iter range.these()
-    where boundedType == BoundedRangeType.bounded && stridable == false && !chpl__singleValIdxType(this.idxType) {
+  where boundedType == BoundedRangeType.bounded && stridable == false {
     if (useOptimizedRangeIterators) {
       if boundsChecking then checkIfIterWillOverflow();
 
@@ -2219,13 +2215,6 @@ operator :(r: range(?), type t: range(?)) {
     }
   }
 
-
-  // Special serial iterator for a range whose idxType only supports 1 value
-  iter range.these()
-    where boundedType == BoundedRangeType.bounded && chpl__singleValIdxType(this.idxType) {
-      if !_isEmpty then
-        yield chpl__intToIdx(this.idxType, _low);
-  }
 
   //################################################################################
   //# General, Unoptimized Serial Iterator
@@ -2251,7 +2240,7 @@ operator :(r: range(?), type t: range(?)) {
 
     var i: intIdxType;
     const start = this.first;
-    const end = if this.low > this.high then start else this.last;
+    const end = if this._low > this._high then start else this.last;
 
     while __primitive("C for loop",
                       __primitive( "=", i, start),
@@ -2526,15 +2515,17 @@ operator :(r: range(?), type t: range(?)) {
     var ret: string;
 
     if x.hasLowBound() {
-      if (chpl__singleValIdxType(x.idxType) && x._isEmpty) {
-        ret += x.high:string + ">";
-      } else {
-        ret += x.low:string;
-      }
+      ret += x.low:string;
     }
     ret += "..";
-    if x.hasHighBound() then
-      ret += x.high:string;
+    if x.hasHighBound() {
+      // handle the special case of an empty range with a singleton idxType
+      if (chpl__singleValIdxType(x.idxType) && x.high != x.low) {
+        ret += "<" + x.low:string;
+      } else {
+        ret += x.high:string;
+      }
+    }
     if x.stride != 1 then
       ret += " by " + x.stride:string;
 
@@ -2823,5 +2814,21 @@ operator :(r: range(?), type t: range(?)) {
 
   proc chpl__singleValIdxType(type t) param {
     return isEnumType(t) && t.size == 1;
+  }
+
+  proc chpl__defaultLowBound(type t) param : chpl__idxTypeToIntIdxType(idxType) {
+    if chpl__singleValIdxType(t) {
+      return 0;
+    } else {
+      return 1;
+    }
+  }
+
+  proc chpl__defaultHighBound(type t) param : chpl__idxTypeToIntIdxType(idxType) {
+    if chpl__singleValIdxType(t) {
+      return -1;
+    } else {
+      return 0;
+    }
   }
 }
