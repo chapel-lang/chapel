@@ -1671,7 +1671,7 @@ operator :(r: range(?), type t: range(?)) {
                            newlo,
                            newhi,
                            newStride,
-                           0:idxType,
+                           0:intIdxType,
                            !ambig && (this.aligned || other.aligned));
 
     if result.stridable {
