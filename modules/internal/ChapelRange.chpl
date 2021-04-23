@@ -254,7 +254,7 @@ module ChapelRange {
     if stridable {
       this._stride    = 1: this._stride.type;
       this._alignment = 0: this._alignment.type;
-      this._aligned   = false;
+      this._aligned   = true;
     }
   }
 
@@ -266,7 +266,7 @@ module ChapelRange {
                   _high : idxType,
                   _stride : chpl__rangeStrideType(idxType) = 1,
                   _alignment : idxType = chpl__intToIdx(idxType, 0),
-                  _aligned : bool = false) {
+                  _aligned : bool = true) {
     this.idxType     = idxType;
     this.boundedType = boundedType;
     this.stridable   = stridable;
@@ -299,7 +299,7 @@ module ChapelRange {
                   _high = chpl__defaultHighBound(idxType),
                   _stride,
                   _alignment,
-                  _aligned) {
+                  _aligned = true) {
 
 //    writeln("In internal initializer");
     this.idxType     = idxType;
@@ -1034,7 +1034,7 @@ operator :(r: range(?), type t: range(?)) {
                           if other.hasLowBound() then other._low else _low,
                           if other.hasHighBound() then other._high else _high,
                           other.stride,
-                          other._alignment,
+                          chpl__idxToInt(other.alignment),
                           true);
 
     return (boundedOther.size == 0) || contains(boundedOther);
@@ -1218,14 +1218,14 @@ operator :(r: range(?), type t: range(?)) {
     if i < 0 then
       return new range(idxType, boundedType, stridable, internal=true,
                        _low, _low - 1 - i, stride,
-                       _effAlmt(), _aligned);
+                       _effAlmt(), aligned);
     if i > 0 then
       return new range(idxType, boundedType, stridable, internal=true,
                        _high + 1 - i, _high, stride,
-                       _effAlmt(), _aligned);
+                       _effAlmt(), aligned);
     // if i == 0 then
     return new range(idxType, boundedType, stridable, internal=true,
-                     _low, _high, stride, _effAlmt(), _aligned);
+                     _low, _high, stride, _effAlmt(), aligned);
   }
 
   pragma "no doc"
@@ -1255,15 +1255,15 @@ operator :(r: range(?), type t: range(?)) {
       return new range(idxType, boundedType, stridable, internal=true,
                        _low + i,
                        _low - 1,
-                       stride, _effAlmt(), _aligned);
+                       stride, _effAlmt(), aligned);
     if i > 0 then
       return new range(idxType, boundedType, stridable, internal=true,
                        _high + 1,
                        _high + i,
-                       stride, _effAlmt(), _aligned);
+                       stride, _effAlmt(), aligned);
     // if i == 0 then
     return new range(idxType, boundedType, stridable, internal=true,
-                     _low, _high, stride, _effAlmt(), _aligned);
+                     _low, _high, stride, _effAlmt(), aligned);
   }
 
   pragma "no doc"
@@ -1298,7 +1298,7 @@ operator :(r: range(?), type t: range(?)) {
     return new range(idxType, boundedType, stridable, internal=true,
                      _low-i,
                      _high+i,
-                     stride, _alignment, _aligned);
+                     stride, _alignment, aligned);
   }
 
   pragma "no doc"
@@ -1352,7 +1352,7 @@ operator :(r: range(?), type t: range(?)) {
                      r._high + i,
                      r.stride : strType,
                      chpl__idxToInt(r.alignment)+i,
-                     r._aligned);
+                     r.aligned);
   }
 
   inline proc +(i:integral, r: range(?e,?b,?s))
@@ -1362,12 +1362,12 @@ operator :(r: range(?), type t: range(?)) {
   {
     type strType = chpl__rangeStrideType(e);
 
-    return new range(e, b, s,
+    return new range(e, b, s, internal=true,
                      r._low - i,
                      r._high - i,
                      r.stride : strType,
                      r._alignment - i,
-                     r._aligned);
+                     r.aligned);
   }
 
   inline proc chpl_check_step_integral(step) {
@@ -1519,9 +1519,9 @@ operator :(r: range(?), type t: range(?)) {
     if boundsChecking && !hasFirst() then
       HaltWrappers.boundsCheckHalt("invoking 'offset' on a range without the first index");
 
-    return new range(idxType, boundedType, stridable, low, high, stride,
+    return new range(idxType, boundedType, stridable, internal=true, _low, _high, stride,
                      // here's the new alignment
-                     chpl_intToIdx(this.firstAsInt + offs), true);
+                     this.firstAsInt + offs, true);
   }
 
 
