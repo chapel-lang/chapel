@@ -1366,7 +1366,7 @@ operator :(r: range(?), type t: range(?)) {
                      r._low - i,
                      r._high - i,
                      r.stride : strType,
-                     r._alignment - i,
+                     chpl__idxToInt(r.alignment)-i,
                      r.aligned);
   }
 
