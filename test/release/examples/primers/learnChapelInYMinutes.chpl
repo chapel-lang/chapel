@@ -668,13 +668,19 @@ writeln(false ^ true);
 writeln(true  ^ false);
 writeln(false ^ false);
 
-// Define a ``*`` operator on any two types that returns a tuple of those types.
-operator *(left : ?ltype, right : ?rtype): (ltype, rtype) {
-  writeln("\tIn our '*' overload!");
-  return (left, right);
+record MyRecord {
+  var value: int;
 }
 
-writeln(1 * "a"); // Uses our ``*`` operator.
+// Define a ``*`` operator on any two types that returns a tuple of those types.
+operator *(left : MyRecord, right : int): int {
+  writeln("\tIn our '*' overload!");
+  return left.value*right;
+}
+
+var r = new MyRecord(2);
+
+writeln(r * 1);   // Uses our ``*`` operator.
 writeln(1 * 2);   // Uses the default ``*`` operator.
 
 //  Note: You could break everything if you get careless with your overloads.
