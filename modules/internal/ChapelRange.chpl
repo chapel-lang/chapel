@@ -2857,19 +2857,19 @@ operator :(r: range(?), type t: range(?)) {
     return isEnumType(t) && t.size == 1;
   }
 
-  proc chpl__defaultLowBound(type t) param : chpl__idxTypeToIntIdxType(idxType) {
+  proc chpl__defaultLowBound(type t) {
     if chpl__singleValIdxType(t) {
-      return 0;
+      return 0:chpl__idxTypeToIntIdxType(t);
     } else {
-      return 1;
+      return 1:chpl__idxTypeToIntIdxType(t);
     }
   }
 
-  proc chpl__defaultHighBound(type t) param : chpl__idxTypeToIntIdxType(idxType) {
+  proc chpl__defaultHighBound(type t) {
     if chpl__singleValIdxType(t) {
-      return -1;
+      return -1:chpl__idxTypeToIntIdxType(t);
     } else {
-      return 0;
+      return 0:chpl__idxTypeToIntIdxType(t);
     }
   }
 }
