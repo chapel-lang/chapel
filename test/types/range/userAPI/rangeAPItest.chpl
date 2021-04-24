@@ -15,12 +15,18 @@ proc testRangeAPI(lbl, r: range(?), idx, subr, offset=3, count=2) {
   writeln("stride           = ", r.stride);
   writeln("alignment        = ", r.alignment);
   writeln("aligned          = ", r.aligned);
-  writeln("first            = ", r.first);
-  writeln("last             = ", r.last);
-  writeln("low              = ", r.low);
-  writeln("high             = ", r.high);
-  writeln("alignedLow       = ", r.alignedLow);
-  writeln("alignedHigh      = ", r.alignedHigh);
+  if r.hasFirst() then
+    writeln("first            = ", r.first);
+  if r.hasLast() then
+    writeln("last             = ", r.last);
+  if r.hasLowBound() then
+    writeln("low              = ", r.low);
+  if r.hasHighBound() then
+    writeln("high             = ", r.high);
+  if r.hasLowBound() then
+    writeln("alignedLow       = ", r.alignedLow);
+  if r.hasHighBound() then
+    writeln("alignedHigh      = ", r.alignedHigh);
   writeln("isEmpty()        = ", r.isEmpty());
   if (isBoundedRange(r)) {
     writeln("size             = ", r.size);

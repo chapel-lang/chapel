@@ -1,5 +1,5 @@
 ./rangeAPItest.chpl:3: In function 'testRangeAPI':
-./rangeAPItest.chpl:45: warning: invoking 'offset' on an unstrided range has no effect.
+./rangeAPItest.chpl:51: warning: invoking 'offset' on an unstrided range has no effect.
   singleEnumAPITest.chpl:6: called as testRangeAPI(lbl: string, r: range(color,bounded,false), idx: color, subr: range(color,bounded,false), offset: int(64), count: int(64))
 trivial enum range
 ------------
@@ -62,8 +62,6 @@ hasHighBound()   = true
 stride           = 1
 alignment        = red
 aligned          = true
-first            = red
-last             = red
 low              = red
 high             = red
 alignedLow       = red
@@ -152,8 +150,6 @@ hasHighBound()   = true
 stride           = 1
 alignment        = red
 aligned          = true
-first            = red
-last             = red
 low              = red
 high             = red
 alignedLow       = red
@@ -181,9 +177,7 @@ r[subr]           = red..<red
 r[subr] == subr[r]= true
 Copying...        = red..<red
 
-./rangeAPItest.chpl:19: warning: result can't be trusted
-./rangeAPItest.chpl:21: warning: result can't be trusted
-./rangeAPItest.chpl:23: warning: result can't be trusted
-./rangeAPItest.chpl:19: warning: result can't be trusted
-./rangeAPItest.chpl:21: warning: result can't be trusted
-./rangeAPItest.chpl:23: warning: result can't be trusted
+./rangeAPItest.chpl:25: warning: result can't be trusted
+./rangeAPItest.chpl:29: warning: result can't be trusted
+./rangeAPItest.chpl:25: warning: result can't be trusted
+./rangeAPItest.chpl:29: warning: result can't be trusted

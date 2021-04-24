@@ -1,5 +1,5 @@
 ./rangeAPItest.chpl:3: In function 'testRangeAPI':
-./rangeAPItest.chpl:45: warning: invoking 'offset' on an unstrided range has no effect.
+./rangeAPItest.chpl:51: warning: invoking 'offset' on an unstrided range has no effect.
   codepointRangeTest.chpl:3: called as testRangeAPI(lbl: string, r: range(codepointIndex,bounded,false), idx: codepointIndex, subr: range(codepointIndex,bounded,false), offset: int(64), count: int(64))
 codepoint range
 ------------
@@ -120,11 +120,8 @@ stride           = 1
 alignment        = 1
 aligned          = true
 first            = 1
-last             = 0
 low              = 1
-high             = 0
 alignedLow       = 1
-alignedHigh      = 0
 isEmpty()        = false
 hasFirst()       = true
 hasLast()        = false
@@ -167,11 +164,8 @@ hasHighBound()   = true
 stride           = 1
 alignment        = 0
 aligned          = false
-first            = 1
 last             = 10
-low              = 1
 high             = 10
-alignedLow       = 1
 alignedHigh      = 10
 isEmpty()        = false
 hasFirst()       = false
