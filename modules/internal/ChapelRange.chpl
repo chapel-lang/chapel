@@ -275,7 +275,7 @@ module ChapelRange {
     this.init(idxType, boundedType, stridable,
               _low = chpl__defaultLowBound(idxType),
               _high = chpl__defaultHighBound(idxType),
-              _stride = 1,
+              _stride = 1:chpl__rangeStrideType(idxType),
               _alignment = chpl__defaultLowBound(idxType),
               _aligned = true);
   }
