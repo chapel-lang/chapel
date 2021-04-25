@@ -332,11 +332,23 @@ static void parseCommandLineFiles() {
     {
       /*
       Ensure that all the files parsed don't exceed the
-      NAME_MAX/2 125 bytes Limits
+      (NAME_MAX - 16) i.e. 239 bytes Limits
       */
-      if (strlen(inputFileName) > NAME_MAX / 2 - 16)
+      const size_t maxFileName = NAME_MAX - 16;
+      if (strlen(inputFileName) > maxFileName)
       {
-        USR_FATAL("File name too long");
+        char reducedFileName[maxFileName];
+        // sprintf fileName to allowed length buffer
+        snprintf(reducedFileName, maxFileName, "%s", inputFileName);
+        // error message format with fileName and allowed length
+        const char *errorFormat = "%s, filename is longer than maximum allowed length of %d";
+        // allow max length in error with error
+        const size_t errorLength = maxFileName + strlen(errorFormat) - 4 + 3;
+        // buffer to store errorMessage
+        char errorMessage[errorLength];
+        snprintf(errorMessage, errorLength, errorFormat, reducedFileName, maxFileName);
+        // throw error
+        USR_FATAL(errorMessage);
       }
       parseFile(inputFileName, MOD_USER, true, false);
     }
