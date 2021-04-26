@@ -1290,11 +1290,9 @@ module QuickSort {
           }
         } else {
           // do the subproblems in parallel
-          forall i in 1..2 {
-            if i == 1 then
-              quickSortImpl(Data, minlen, comparator, lo, eqStart-1);
-            else
-              quickSortImpl(Data, minlen, comparator, eqEnd+1, hi);
+          cobegin {
+            quickSortImpl(Data, minlen, comparator, lo, eqStart-1);
+            quickSortImpl(Data, minlen, comparator, eqEnd+1, hi);
           }
           break;
         }
