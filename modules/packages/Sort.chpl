@@ -1267,9 +1267,13 @@ module QuickSort {
         }
 
         var (eqStart, eqEnd) = partition(Data, lo, piv, hi, comparator);
-
+        const tasksPerLocale = dataParTasksPerLocale;
+        const ignoreRunning = dataParIgnoreRunningTasks;
+        const otherTasks = if ignoreRunning then 0 else here.runningTasks() - 1;
+        const dptpl = if tasksPerLocale == 0 then here.maxTaskPar else tasksPerLocale;
+        const runningEnoughParallelTasks = if otherTasks < dptpl then false else true;
         // stay sequential
-        if hi-lo < 300 {
+        if hi-lo < 300 || runningEnoughParallelTasks  {
           // handle smaller subproblem recursively and iterate for larger one
           if eqStart - lo > hi - eqEnd {
             // recur for smaller right half
