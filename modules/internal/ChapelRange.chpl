@@ -577,7 +577,11 @@ module ChapelRange {
 
   pragma "last resort"
   proc chpl_low_bound_count_for_param_loop(high, count) {
-    compilerError("Range bounds must be integers of compatible types in param for-loops");
+    chpl_build_high_bounded_range(high);  // generate normal error, if possible
+    // otherwise, fall back to this one:
+    compilerError("can't apply '#' to a range with idxType ",
+                  high.type:string, " using a count of type ",
+                  count.type:string);
   }
 
   proc chpl_high_bound_count_for_param_loop(param low: integral, param count: integral) param {
@@ -594,7 +598,11 @@ module ChapelRange {
 
   pragma "last resort"
   proc chpl_high_bound_count_for_param_loop(low, count) {
-    compilerError("Range bounds must be integers of compatible types in param for-loops");
+    chpl_build_low_bounded_range(low);  // generate normal error, if possible
+    // otherwise, fall back to this one:
+    compilerError("can't apply '#' to a range with idxType ",
+                  low.type:string, " using a count of type ",
+                  count.type:string);
   }
 
   proc chpl_bounded_count_for_param_loop_low(param low: integral, param high: integral, param count: integral) param {
@@ -616,7 +624,11 @@ module ChapelRange {
 
   pragma "last resort"
   proc chpl_bounded_count_for_param_loop_low(low, high, count) {
-    compilerError("Range bounds and counts must be integers of compatible types in param for-loops");
+    const r = chpl_build_bounded_range(low, high);  // generate normal error, if possible
+    // otherwise, fall back to this one:
+    compilerError("can't apply '#' to a range with idxType ",
+                  r.idxType:string, " using a count of type ",
+                  count.type:string);
   }
 
   proc chpl_bounded_count_for_param_loop_high(param low: integral, param high: integral, param count: integral) param {
@@ -633,7 +645,11 @@ module ChapelRange {
 
   pragma "last resort"
   proc chpl_bounded_count_for_param_loop_high(low, high, count) {
-    compilerError("Range bounds and counts must be integers of compatible types in param for-loops");
+    const r = chpl_build_bounded_range(low, high);  // generate normal error, if possible
+    // otherwise, fall back to this one:
+    compilerError("can't apply '#' to a range with idxType ",
+                  r.idxType:string, " using a count of type ",
+                  count.type:string);
   }
 
   //################################################################################
