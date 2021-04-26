@@ -44,6 +44,36 @@ namespace FrontendQueries {
   typedef std::vector<const ast::ModuleDecl*> ModuleDeclVec;
   const ModuleDeclVec& parse(Context* context, UniqueString path);
 
+  /*
+  typedef std::unordered_map<UniqueString, Symbol*> SymbolsByName;
+  const SymbolsByName& symbolsDeclaredIn(Context* context, Expr* expr);
+
+  struct ResolutionResult {
+    // the expr that is resolved
+    Expr* expr;
+    // in simple cases, this is set
+    Symbol* symbol;
+    // TODO:
+    //  return-intent overloading
+    //  generic instantiation
+    //  establish concrete intents
+    //  establish copy-init vs move
+    ResolutionResult() : expr(NULL), symbol(NULL) { }
+  };
+
+  typedef std::vector<ResolutionResult> ResolutionResultByPostorderID;
+
+    If resolve is called on a Decl, it will traverse into the declared
+    Symbol. So to resolve a function, run resolve on the FunctionDecl.
+  const ResolutionResultByPostorderID& resolve(Context* context, Expr* e);
+  */
+
+  /*
+  struct DeclaredByName {
+    std::unordered_map<UniqueString, Symbol*> declaredSymbols;
+  };*/
+
+
   struct DefinedTopLevelNames {
     // the module
     const ast::Module* module;
@@ -58,7 +88,6 @@ namespace FrontendQueries {
 
   const DefinedTopLevelNamesVec& moduleLevelDeclNames(Context* context,
                                                       UniqueString path);
-
 
   /*struct ResolutionGroup {
     // index is the postorder ID

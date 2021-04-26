@@ -30,19 +30,19 @@
 
 namespace chpl {
 
-template<> struct combine<FrontendQueries::LocationsMap> {
+template<> struct update<FrontendQueries::LocationsMap> {
   bool operator()(FrontendQueries::LocationsMap& keep,
                   FrontendQueries::LocationsMap& addin) const {
-    return defaultCombine(keep, addin);
+    return defaultUpdate(keep, addin);
   }
 };
-template<> struct combine<FrontendQueries::ModuleDeclVec> {
+template<> struct update<FrontendQueries::ModuleDeclVec> {
   bool operator()(FrontendQueries::ModuleDeclVec& keep,
                   FrontendQueries::ModuleDeclVec& addin) const {
-    return defaultCombine(keep, addin);
+    return defaultUpdate(keep, addin);
   }
 };
-template<> struct combine<FrontendQueries::DefinedTopLevelNamesVec> {
+template<> struct update<FrontendQueries::DefinedTopLevelNamesVec> {
   bool operator()(FrontendQueries::DefinedTopLevelNamesVec& keep,
                   FrontendQueries::DefinedTopLevelNamesVec& addin) const {
 
@@ -64,10 +64,10 @@ template<> struct combine<FrontendQueries::DefinedTopLevelNamesVec> {
     }
 
     if (match) {
-      return true;
+      return false;
     } else {
       keep.swap(addin);
-      return false;
+      return true;
     }
   }
 };
@@ -177,6 +177,60 @@ const ModuleDeclVec& parse(Context* context, UniqueString path) {
 
   return QUERY_END(result);
 }
+
+/*
+const SymbolsByName& symbolsDeclaredIn(Context* context, Expr* expr) {
+  QUERY_BEGIN(context, SymbolsByName, expr);
+  if (QUERY_USE_SAVED()) {
+    return QUERY_GET_SAVED();
+  }
+
+  // TODO
+
+  return QUERY_END(result);
+}
+*/
+
+/*
+// TODO: it would be reasonable for this to be an AST visitor
+static void gatherPostorderForResolve(Expr* e,
+                                      ResolutionResultByPostorderID& r) {
+  if (e->isComment()) return;
+  if (child->isDecl()) continue;
+
+  // otherwise, gather children
+  int nChildren = e->numChildren();
+  for (int i = 0; i < nChildren; i++) {
+    BaseAST* child = e->child(i);
+    gatherPostorderForResolve(e, r);
+  }
+
+  // then gather this expr
+  int postOrderId = e->id().postOrderId();
+  if (postOrderId >= 0) {
+    assert(postOrderId < r.size());
+    r[postOrderId].expr = e;
+  }
+}
+
+const ResolutionResultByPostorderID& resolve(Context* context, Expr* e) {
+  QUERY_BEGIN(context, ResolutionResultByPostorderID, expr);
+  if (QUERY_USE_SAVED()) {
+    return QUERY_GET_SAVED();
+  }
+
+  ResolutionResultByPostorderID result;
+  result.resize(e->id().postOrderId());
+  gatherPostorderForResolve(e, result);
+
+  // now go through the vector updating the ResolutionResults
+  for (ResolutionResult& rr : result) {
+
+  }
+
+  return QUERY_END(result);
+}
+*/
 
 static std::vector<UniqueString> getTopLevelNames(const ast::Module* module) {
   std::vector<UniqueString> result;
