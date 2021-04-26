@@ -21,7 +21,6 @@
 #include "codegen.h"
 
 #include "astutil.h"
-#include "chplmath.h"
 #include "clangBuiltinsWrappedSet.h"
 #include "clangUtil.h"
 #include "config.h"
@@ -60,6 +59,7 @@
 #include <algorithm>
 #include <cctype>
 
+#include <cmath>
 #include <cstring>
 #include <cstdio>
 #include <vector>
@@ -2666,14 +2666,14 @@ std::string real_to_string(double num)
 {
   char buf[32];
 
-  if (chpl_isfinite(num)) {
-    if (chpl_signbit(num)) snprintf(buf, sizeof(buf), "-%a" , -num);
+  if (std::isfinite(num)) {
+    if (std::signbit(num)) snprintf(buf, sizeof(buf), "-%a" , -num);
     else                   snprintf(buf, sizeof(buf), "%a" , num);
-  } else if (chpl_isinf(num)) {
-    if (chpl_signbit(num)) strncpy(buf, "-INFINITY", sizeof(buf));
+  } else if (std::isinf(num)) {
+    if (std::signbit(num)) strncpy(buf, "-INFINITY", sizeof(buf));
     else                   strncpy(buf, "INFINITY", sizeof(buf));
   } else {
-    if (chpl_signbit(num)) strncpy(buf, "-NAN", sizeof(buf));
+    if (std::signbit(num)) strncpy(buf, "-NAN", sizeof(buf));
     else                   strncpy(buf, "NAN", sizeof(buf));
   }
   std::string ret(buf);
