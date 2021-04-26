@@ -100,16 +100,16 @@ Context::updateResultForQuery(const std::tuple<ArgTs...>& tupleOfArgs,
   if (search != queryMap->map.end()) {
    QueryMapResult<ResultType>* storedResult = &(search->second);
 
-   // Call a chpl::combine function. That leaves the result in the 1st argument
+   // Call a chpl::update function. That leaves the result in the 1st argument
    // and returns whether or not it needed to change. The 2nd argument contains
    // junk. If we wait until a garbageCollect call to free the junk, we can
    // avoid certain cases where a pointer could be allocated, freed, and then
    // allocated; leading to a sort of ABA issue.
-   chpl::combine<ResultType> combiner;
-   bool match = combiner(storedResult->result, result);
+   chpl::update<ResultType> combiner;
+   bool changed = combiner(storedResult->result, result);
    // now storedResult is the new result
    queryMap->oldResults.push_back(std::move(result));
-   if (match) {
+   if (changed == false) {
      changedOut = false;
      storedResult->lastComputed = this->currentRevisionNumber;
      return storedResult;

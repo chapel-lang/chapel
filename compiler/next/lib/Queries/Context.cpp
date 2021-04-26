@@ -95,7 +95,7 @@ const char* Context::getOrCreateUniqueString(const char* str) {
 }
 
 const char* Context::uniqueCString(const char* s) {
-  if (s == NULL) s = "";
+  if (s == nullptr) s = "";
   return this->getOrCreateUniqueString(s);
 }
 

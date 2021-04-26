@@ -85,10 +85,10 @@ class Location final {
 
 } // end namespace ast
 
-template<> struct combine<chpl::ast::Location> {
+template<> struct update<chpl::ast::Location> {
   bool operator()(chpl::ast::Location& keep,
                   chpl::ast::Location& addin) const {
-    return defaultCombine(keep, addin);
+    return defaultUpdate(keep, addin);
   }
 };
 

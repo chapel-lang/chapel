@@ -33,31 +33,39 @@ namespace chpl {
 
 \rst
 
-This class stores the compilation-wide context. It handles unique'd strings
-and also a *program database* which is basically a bunch of maps storing the
-results of queries (so that they are are memoized) but that updates these
-results according to a dependency graph and revision number.
+This class stores the compilation-wide context. Another name for this
+compilation-wide context is *program database*. It handles unique'd strings and
+also stores the results of queries (so that they are are memoized). It tracks
+dependencies of queries in order to update them appropriately when a dependency
+changes.
 
-Queries are just functions that are written in a stylized manner to interact
-with the program database in the context.
+Queries are functions that are written in a stylized manner to interact with the
+context (aka program database). For example, a ``parse`` query might accept as
+an argument a ``UniqueString path`` and return a vector of owned AST nodes.
+Another example is a query to determine the location of an AST node; it would
+accept as an argument a ``BaseAST*`` and it would return a Location.
+
+When running a query, the query system will manage:
+ * checking to see if the query result is already saved and available for reuse
+ * recording the queries called by that query as dependencies
 
 To write a query, create a function that uses the ``QUERY_`` macros defined in
-QueryImpl.h. The arguments to the function need to be POD (so
-``UniqueString``, ``ID``, ``Location``, are OK but AST pointers or
-``std::vector`` e.g. are not). The function will return a result, which need
-not be POD and can include AST pointers (but see below). The function needs to
-be written in a stylized way to interact with the program database.
+QueryImpl.h. The arguments to the function need to be efficient to copy (so
+``UniqueString``, ``ID``, ``Location``, and pointers are OK, but e.g.
+``std::vector`` is not).  The function will return a result, which need not be
+POD and can include AST pointers (but see below). The function needs to be
+written in a stylized way to interact with the context.
 
-For example, here is a query that computes MyResultType from myKey1 and
-myKey2:
+For example, here is a query that computes MyResultType from myArg1 and
+myArg2:
 
 .. code-block:: c++
 
     #include "chpl/Queries/QueryImpl.h"
 
     const MyResultType& myQueryFunction(Context* context,
-                                        MyPodKeyType myKey1,
-                                        MyOtherPodKeyType myKey2) {
+                                        MyArgType MyArg1,
+                                        MyOtherArgType MyArg2) {
       QUERY_BEGIN(context, MyResultType, myKey1, myKey2)
       if (QUERY_USE_SAVED()) {
         return QUERY_GET_SAVED();
@@ -73,30 +81,14 @@ myKey2:
 To call the query, just write e.g. ``myQueryFunction(context, key1, key2)``.
 
 The query function will check for a result stored already in the program
-database that can be reused and the first return accounts for that case.
-After that, the query proceeds to compute the result. It will then compare the
+database that can be reused and the first return accounts for that case.  After
+that, the query proceeds to compute the result. When doing so, any queries
+called will be automatically recorded as dependencies. It will then compare the
 computed result with the saved result, if any, and in some cases combine the
-results. Finally, the saved result (which might have been updated) is
-returned.
+results. Finally, the saved result (which might have been updated) is returned.
 
-The above is appropriate for value types  (``std::string``, ``int``, etc).
-For an object that should be managed as owned within the context,
-use this pattern:
-
-.. code-block:: c++
-
-   const MyClassType* myQueryFunction(Context* context, myKey1, myKey2) {
-     QUERY_BEGIN(context, owned<MyClassType>, myKey1, myKey2)
-     if (QUERY_USE_SAVED()) {
-       return QUERY_GET_SAVED().get();
-     }
-     // do steps to compute the result
-     owned<MyClassType> result = ...;
-     // if an error is encountered, it can be saved with QUERY_ERROR(error)
-
-     return QUERY_END(result).get();
-   }
-
+Note that a query can return a value or a pointer in addition to a const
+reference.
 
 There are some requirements on query argument/key types and on result types.
 
@@ -119,27 +111,27 @@ Since the argument/key types are stored in a hashtable, we need
       };
     }
 
-The process of computing a query and checking to see if it maches a saved
-result requires that the result type implement ``chpl::combine``:
+The process of computing a query and checking to see if it matches a saved
+result requires that the result type implement ``chpl::update``:
 
 .. code-block:: c++
 
     namespace chpl {
-      template<> struct combine<MyResultType> {
+      template<> struct update<MyResultType> {
         bool operator()(chpl::ast::UniqueString& keep,
                         chpl::ast::UniqueString& addin) const {
           return doSomethingToCombine...;
         }
       };
 
-On entry to the ``combine`` function, ``keep`` is the current value in the
-program database and ``addin`` is the newly computed value. The ``combine``
+On entry to the ``update`` function, ``keep`` is the current value in the
+program database and ``addin`` is the newly computed value. The ``update``
 function needs to:
 
   * store the current, updated result in ``keep``
   * store the unused result in ``addin``
-  * return ``true`` if ``keep`` matched ``addin``; that is, ``keep`` did not
-    need to be updated.
+  * return ``false`` if ``keep`` matched ``addin`` -- that is, ``keep`` did not
+    need to be updated; and ``true`` otherwise.
 
 For most result types, ``return defaultCombine(keep, addin);`` should be
 sufficient. In the event that a result is actually a collection of results
@@ -151,7 +143,7 @@ that depend on such a result to use pointers to the owned elements and to
 avoid updating everything if just one element changed.
 
 Queries *can* return results that contain non-owning pointers to results from
-dependent queries. In that event, the combine function should not rely on the
+dependent queries. In that event, the update function should not rely on the
 contents of these pointers. The system will make sure that they refer to valid
 memory but they might be a combination of old results. Additionally, the system
 will ensure that any old results being replaced will remain allocated until the
@@ -160,7 +152,7 @@ garbage collection runs outside of any query.
 For example, a ``parse`` query might result in a list of ``owned`` AST element
 pointers. A follow-on ``listSymbols`` result in something containing these AST
 element pointers, but not owning them. The ``listSymbols`` query needs to use a
-``combine`` function that does not look into these queries.
+``update`` function that does not look into these queries.
 
 \endrst
 
@@ -168,7 +160,7 @@ element pointers, but not owning them. The ``listSymbols`` query needs to use a
 class Context {
  private:
   // map that supports uniqueCString / UniqueString
-   typedef std::unordered_map<const char*, char*, chpl::detail::UniqueStrHash, chpl::detail::UniqueStrEqual> UniqueStringsTableType;
+  using UniqueStringsTableType = std::unordered_map<const char*, char*, chpl::detail::UniqueStrHash, chpl::detail::UniqueStrEqual>;
   UniqueStringsTableType uniqueStringsTable;
 
   // map from a query name to appropriate QueryMap object.

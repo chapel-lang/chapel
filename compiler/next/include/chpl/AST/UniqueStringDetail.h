@@ -191,22 +191,22 @@ size_t hash_combine(size_t hash1, size_t hash2) {
   return hash;
 }
 
-template<typename T> struct combine {
+template<typename T> struct update {
   bool operator()(T& keep, T& addin) const = 0;
 };
 template<typename T>
-static inline bool defaultCombine(T& keep, T& addin) {
+static inline bool defaultUpdate(T& keep, T& addin) {
   std::equal_to<T> eq;
   if (eq(keep, addin)) {
-    return true;
+    return false;
   } else {
     keep.swap(addin);
-    return false;
+    return true;
   }
 }
-template<> struct combine<std::string> {
+template<> struct update<std::string> {
   bool operator()(std::string& keep, std::string& addin) const {
-    return defaultCombine(keep, addin);
+    return defaultUpdate(keep, addin);
   }
 };
 

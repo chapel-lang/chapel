@@ -145,10 +145,10 @@ class UniqueString final {
 
 } // end namespace ast
 
-template<> struct combine<chpl::ast::UniqueString> {
+template<> struct update<chpl::ast::UniqueString> {
   bool operator()(chpl::ast::UniqueString& keep,
                   chpl::ast::UniqueString& addin) const {
-    return defaultCombine(keep, addin);
+    return defaultUpdate(keep, addin);
   }
 };
 
