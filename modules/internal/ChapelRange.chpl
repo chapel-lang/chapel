@@ -450,7 +450,10 @@ module ChapelRange {
   proc chpl_build_bounded_range(low: bool, high: bool)
     return new range(bool, low=low, high=high);
   proc chpl_build_bounded_range(low, high) {
-    compilerError("Ranges defined using " + low.type:string + ".." + high.type:string + " are not currently supported");
+    if (low.type == high.type) then
+      compilerError("Ranges defined using bounds of type '" + low.type:string + "' are not currently supported");
+    else
+      compilerError("Ranges defined using bounds of type '" + low.type:string + ".." + high.type:string + "' are not currently supported");
   }
 
   proc chpl__nudgeLowBound(low) {
@@ -474,7 +477,7 @@ module ChapelRange {
   proc chpl_build_low_bounded_range(low: bool)
     return new range(low=low);
   proc chpl_build_low_bounded_range(low) {
-    compilerError("Ranges of type " + low.type:string + " are not currently supported");
+    compilerError("Ranges defined using bounds of type '" + low.type:string + "' are not currently supported");
   }
 
   // Range builders for high bounded ranges
@@ -485,7 +488,7 @@ module ChapelRange {
   proc chpl_build_high_bounded_range(high: bool)
     return new range(high=high);
   proc chpl_build_high_bounded_range(high) {
-    compilerError("Ranges of type " + high.type:string + " are not currently supported");
+    compilerError("Ranges defined using bounds of type '" + high.type:string + "' are not currently supported");
   }
 
   // Range builder for unbounded ranges
@@ -540,7 +543,10 @@ module ChapelRange {
 
   pragma "last resort"
   proc chpl_compute_low_param_loop_bound(param low, param high) param {
-    compilerError("Range bounds must be integers of compatible types in param for-loops");
+    if (low.type == high.type) then
+      compilerError("param for-loops defined using bounds of type '" + low.type:string + "' are not currently supported");
+    else
+      compilerError("param for-loops defined using bounds of type '" + low.type:string + ".." + high.type:string + "' are not currently supported");
   }
 
   pragma "last resort"
@@ -2035,7 +2041,10 @@ operator :(r: range(?), type t: range(?)) {
 
   // case for when low and high aren't compatible types and can't be coerced
   iter chpl_direct_range_iter(low, high, stride) {
-    compilerError("Bounds of 'low..high' must be integers of compatible types.");
+    if (low.type == high.type) then
+      compilerError("Ranges defined using bounds of type '" + low.type:string + "' are not currently supported");
+    else
+      compilerError("Ranges defined using bounds of type '" + low.type:string + ".." + high.type:string + "' are not currently supported");
   }
 
 
@@ -2079,14 +2088,12 @@ operator :(r: range(?), type t: range(?)) {
     for i in r#count do yield i;
   }
 
-  iter chpl_direct_counted_range_iter(low: integral, count) {
+  iter chpl_direct_counted_range_iter(low, count) {
+    chpl_build_low_bounded_range(low);  // generate normal error, if possible
+    // otherwise, fall back to this one:
     compilerError("can't apply '#' to a range with idxType ",
                   low.type:string, " using a count of type ",
                   count.type:string);
-  }
-
-  iter chpl_direct_counted_range_iter(low, count) {
-    compilerError("Bound of 'low..' must be an integer");
   }
 
   // The "actual" counted range iter. Turn the bounds of a low bounded counted

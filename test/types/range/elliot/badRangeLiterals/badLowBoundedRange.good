@@ -1,1 +1,1 @@
-badLowBoundedRange.chpl:3: error: Bound of 'low..' must be an integer
+badLowBoundedRange.chpl:3: error: Ranges defined using bounds of type 'real(64)' are not currently supported
