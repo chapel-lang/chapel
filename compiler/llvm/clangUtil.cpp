@@ -2188,21 +2188,26 @@ void runClang(const char* just_parse_filename) {
     if (localeUsesGPU()) {
       //create a header file to include header files from the command line
       std::string genHeaderFilename;
-      genHeaderFilename = genIntermediateFilename("generated_header.h");
+      genHeaderFilename = genIntermediateFilename("command-line-includes.h");
       FILE* fp =  openfile(genHeaderFilename.c_str(), "w");
 
-      std::string ifdefStrBegin("#ifdef __cplusplus\nextern \"C\" {\n#endif");
-      fprintf(fp, "%s\n", ifdefStrBegin.c_str());
+      const char* ifdefStrBegin = "#ifdef __cplusplus\n"
+                                  "extern \"C\" {\n"
+                                  "#endif";
+
+      fprintf(fp, "%s\n", ifdefStrBegin);
 
       int filenum = 0;
       while (const char* inputFilename = nthFilename(filenum++)) {
         if (isCHeader(inputFilename)) {
-          fprintf(fp, "%s%s%s\n", "#include <", inputFilename,">");
+          fprintf(fp, "%s%s%s\n", "#include \"", inputFilename,"\"");
         }
       }
 
-      std::string ifdefStrEnd("#ifdef __cplusplus\n}\n#endif");
-      fprintf(fp, "%s", ifdefStrEnd.c_str());
+      const char* ifdefStrEnd = "#ifdef __cplusplus\n"
+                                "}\n"
+                                "#endif";
+      fprintf(fp, "%s", ifdefStrEnd);
       closefile(fp);
       clangOtherArgs.push_back("-include");
       clangOtherArgs.push_back(genHeaderFilename.c_str());
