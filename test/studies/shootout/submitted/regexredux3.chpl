@@ -6,7 +6,7 @@
    which was derived from the GNU C++ RE2 version by Alexey Zolotov
 */
 
-use IO, Regex;
+use IO, Regexp;
 
 proc main(args: [] string) {
   var variants = [
