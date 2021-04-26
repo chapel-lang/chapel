@@ -1236,7 +1236,7 @@ module QuickSort {
     var lo = start,
         hi = end;
 
-
+    // keep iterating over subproblems
     while lo < hi {
         var mid = lo + (hi - lo + 1) / 2;
         var piv = mid;
@@ -1268,13 +1268,18 @@ module QuickSort {
 
         var (eqStart, eqEnd) = partition(Data, lo, piv, hi, comparator);
 
+        // stay sequential
         if hi-lo < 300 {
-          // stay sequential
+          // handle smaller subproblem recursively and iterate for larger one
           if eqStart - lo > hi - eqEnd {
+            // recur for smaller right half
             quickSortImpl(Data, minlen, comparator, eqEnd + 1, hi);
+            // change value of hi to the end of left half
             hi = eqStart - 1;
           } else {
+            // recur for smaller left half
             quickSortImpl(Data, minlen, comparator, lo,        eqStart - 1);
+            // change value of lo to the start of right half
             lo = eqEnd  + 1;
           }
         } else {
