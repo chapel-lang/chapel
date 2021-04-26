@@ -1237,7 +1237,7 @@ module QuickSort {
         hi = end;
 
 
-    while lo <= hi {
+    while lo < hi {
         var mid = lo + (hi - lo + 1) / 2;
         var piv = mid;
 
