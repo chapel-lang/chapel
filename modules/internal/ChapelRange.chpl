@@ -1550,7 +1550,7 @@ operator :(r: range(?), type t: range(?)) {
     // Note that aligning an unstrided range will set the field value,
     // but has no effect on the index set produced (a mod 1 == 0).
     return new range(i, b, true,
-                     r.chpl_intToIdx(r._low), r.chpl_intToIdx(r._high), r.stride, algn, true);
+                     r._low, r._high, r.stride, chpl__idxToInt(algn), true);
   }
 
 
