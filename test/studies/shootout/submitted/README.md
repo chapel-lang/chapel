@@ -2,7 +2,7 @@
 
 Developer Note:
 
-> : warning: This directory is intended to reflect the versions of the
+> :warning: *This directory is intended to reflect the versions of the
   Chapel codes that currently live on the CLBG website. Please do not
   update the source code of the tests without also updating the source
   code on the benchmarks site so that the `./clbg-diff.py` script
