@@ -845,7 +845,7 @@ module TimSort {
 
     /* apply merge operations on each block
     *as the merges at a level are independent of each other
-    *they can be applied parallely
+    *they can be applied in parallel
     */
 
     var numSize = blockSize;
@@ -1234,11 +1234,11 @@ module QuickSort {
 
     // grab obvious indices
     var lo = start,
-          hi = end;
+        hi = end;
 
 
-    while(lo <= hi){
-        var mid = lo + (hi-lo+1)/2;
+    while lo <= hi {
+        var mid = lo + (hi - lo + 1) / 2;
         var piv = mid;
 
         if hi - lo < 0 { // minlen {
@@ -1270,12 +1270,12 @@ module QuickSort {
 
         if hi-lo < 300 {
           // stay sequential
-          if(eqStart - lo > hi - eqEnd){
-            quickSortImpl(Data, minlen, comparator, eqEnd+1, hi);
+          if eqStart - lo > hi - eqEnd {
+            quickSortImpl(Data, minlen, comparator, eqEnd + 1, hi);
             hi = eqStart - 1;
           } else {
-            quickSortImpl(Data, minlen, comparator, lo, eqStart-1);
-            lo = eqEnd + 1;
+            quickSortImpl(Data, minlen, comparator, lo,        eqStart - 1);
+            lo = eqEnd  + 1;
           }
         } else {
           // do the subproblems in parallel
