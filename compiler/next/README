@@ -37,7 +37,11 @@ directory structure. The structure (for each LLVM project) is this:
      `include/<project-name>/ and C API `.h` files (if any) in
      `include/<project-name>-c/`. Header files that are relevant to a
      particular topic go into `include/<project-name>/<topic>` and almost
-     all header files go into these topic subdirectories.
+     all header files go into these topic subdirectories. The
+     <project-name> here is something like 'chpl' for us and this just
+     makes it so that the headers included have the same path as if they
+     were installed in e.g. `/usr/include`. So you can have e.g.
+     #include "chpl/AST/BlockStmt.h".
    * store `.h` files that are for use only within the project in
      `lib/<topic>`
    * For example, within the LLVM project there is
