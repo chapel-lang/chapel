@@ -60,7 +60,22 @@ static inline ASTList makeASTList(owned<BaseAST> ast) {
   return lst;
 }
 
-bool combineASTLists(ASTList& keep, ASTList& addin);
+/**
+ Update an AST list with some replacement AST.
+
+ It's kindof like swapping 'keep' and 'addin' but it tries
+ to keep old AST nodes when they are the same. This allows
+ for more reuse of results in the query framework.
+
+ 'keep' is some old AST
+ 'addin' is some new AST we wish to replace it with
+
+ on exit, 'keep' stores the AST we need to 'keep', and anything
+ not kept is stored in 'addin'.
+
+ The function returns 'true' if anything changed in 'keep'.
+ */
+bool updateASTList(ASTList& keep, ASTList& addin);
 
 } // end namespace ast
 } // end namespace chpl

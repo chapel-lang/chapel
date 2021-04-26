@@ -173,15 +173,15 @@ void Builder::assignIDsPostorder(BaseAST* ast, UniqueString symbolPath, int& i) 
   ast->setID(ID(symbolPath, myID, numContainedIDs));
 }
 
-bool Builder::Result::combine(Result& keep, Result& addin) {
+bool Builder::Result::update(Result& keep, Result& addin) {
   bool match = true;
 
   // merge the errors and locations
-  match &= defaultCombine(keep.errors, addin.errors);
-  match &= defaultCombine(keep.locations, addin.locations);
+  match &= defaultUpdate(keep.errors, addin.errors);
+  match &= defaultUpdate(keep.locations, addin.locations);
 
   // merge the ASTs
-  match &= combineASTLists(keep.topLevelExprs, addin.topLevelExprs);
+  match &= updateASTList(keep.topLevelExprs, addin.topLevelExprs);
 
   return match;
 }

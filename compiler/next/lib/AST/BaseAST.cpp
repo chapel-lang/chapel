@@ -58,30 +58,10 @@ bool BaseAST::shallowMatch(const BaseAST* other) const {
   return true;
 }
 
-/*
-bool BaseAST::contentsMatch(const BaseAST* other) const {
-  const BaseAST* lhs = this;
-  const BaseAST* rhs = other;
-
-  // check basics of the node itself
-  if (!lhs->shallowMatch(other))
-    return false;
-
-  // check the children match
-  int lhsN = lhs->numChildren();
-  for (int i = 0; i < lhsN; i++) {
-    if (!lhs->getChild(i)->contentsMatch(rhs->getChild(i)))
-      return false;
-  }
-
-  return true;
-}
-*/
-
-bool BaseAST::combineAST(owned<BaseAST>& keep, owned<BaseAST>& addin) {
+bool BaseAST::updateAST(owned<BaseAST>& keep, owned<BaseAST>& addin) {
   if (keep->shallowMatch(addin.get())) {
-    // run combineAST on the child list
-    return combineASTLists(keep->children_, addin->children_);
+    // run updateASTList on the child list
+    return updateASTList(keep->children_, addin->children_);
   } else {
     // swap the AST
     keep.swap(addin);

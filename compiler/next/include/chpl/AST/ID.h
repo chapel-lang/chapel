@@ -115,10 +115,10 @@ class ID final {
 
 } // end namespace ast
 
-template<> struct combine<chpl::ast::ID> {
+template<> struct update<chpl::ast::ID> {
   bool operator()(chpl::ast::ID& keep,
                   chpl::ast::ID& addin) const {
-    return defaultCombine(keep, addin);
+    return defaultUpdate(keep, addin);
   }
 };
 

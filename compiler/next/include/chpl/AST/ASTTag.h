@@ -71,13 +71,13 @@ enum ASTTag {
 
 // define is___ for abstract parent classes
 /// \cond DO_NOT_DOCUMENT
-#define IS_AST(NAME) \
+#define IS_BASE_CLASS_AST(NAME) \
   static inline bool is##NAME(ASTTag tag) { \
     return START_##NAME < tag && tag < END_##NAME; \
   }
 #define AST_NODE(NAME)
 #define AST_LEAF(NAME)
-#define AST_BEGIN_SUBCLASSES(NAME) IS_AST(NAME)
+#define AST_BEGIN_SUBCLASSES(NAME) IS_BASE_CLASS_AST(NAME)
 #define AST_END_SUBCLASSES(NAME)
 /// \endcond
 // Apply the above macros to ASTClassesList.h
@@ -87,7 +87,7 @@ enum ASTTag {
 #undef AST_LEAF
 #undef AST_BEGIN_SUBCLASSES
 #undef AST_END_SUBCLASSES
-#undef IS_AST
+#undef IS_BASE_CLASS_AST
 
 const char* tagToString(ASTTag tag);
 

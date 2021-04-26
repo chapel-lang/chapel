@@ -111,16 +111,14 @@ class BaseAST {
   }
 
   bool shallowMatch(const BaseAST* other) const;
-  /*
-  bool contentsMatch(const BaseAST* other) const;
-   */
 
   // keep is some old AST
   // addin is some new AST we wish to combine with it
-  // If they are the same, returns keep.
-  // If they differ, sets keep to addin, reusing inner AST elements
-  // where possible.
-  static bool combineAST(owned<BaseAST>& keep, owned<BaseAST>& addin);
+  //
+  // on exit, keep stores the AST we need to keep, and anything
+  // not kept is stored in 'addin'.
+  // the function returns 'true' if anything changed in 'keep'.
+  static bool updateAST(owned<BaseAST>& keep, owned<BaseAST>& addin);
 
   static void dump(const BaseAST* ast);
 

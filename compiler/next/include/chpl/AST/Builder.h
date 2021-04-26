@@ -89,7 +89,7 @@ class Builder final {
     std::vector<ErrorMessage> errors;
     std::vector<std::pair<ID, Location>> locations;
 
-    static bool combine(Result& keep, Result& addin);
+    static bool update(Result& keep, Result& addin);
   };
 
   /**
@@ -110,10 +110,10 @@ class Builder final {
 
 } // end namespace ast
 
-template<> struct combine<owned<chpl::ast::Builder::Result>> {
+template<> struct update<owned<chpl::ast::Builder::Result>> {
   bool operator()(owned<chpl::ast::Builder::Result>& keep,
                   owned<chpl::ast::Builder::Result>& addin) const {
-    return chpl::ast::Builder::Result::combine(*keep, *addin);
+    return chpl::ast::Builder::Result::update(*keep, *addin);
   }
 };
 

@@ -25,40 +25,42 @@ namespace chpl {
 namespace ast {
 
 
-bool combineASTLists(ASTList& keep, ASTList& addin) {
+bool updateASTList(ASTList& keep, ASTList& addin) {
+  /*
+   It's kindof like swapping 'keep' and 'addin' but it tries
+   to keep old AST nodes when they are the same. This allows
+   for more reuse of results in the query framework.
+
+   'keep' is some old AST
+   'addin' is some new AST we wish to replace it with
+
+   on exit, 'keep' stores the AST we need to keep, and anything
+   not kept is stored in 'addin'.
+
+   The function returns 'true' if anything changed in 'keep'.
+   */
+
   size_t keepSize = keep.size();
   size_t addinSize = addin.size();
   size_t keepIdx = 0;
   size_t addinIdx = 0;
-  bool allMatched = true;
+  bool anyChanged = false;
 
   // handle some common short scenarios directly
   if (keepSize == 0 && addinSize == 0) {
-    return true;
+    return false;
   } else if (keepSize == 1 && addinSize == 0) {
     keep.swap(addin);
-    return false;
+    return true;
   } else if (keepSize == 0 && addinSize == 1) {
     keep.swap(addin);
-    return false;
+    return true;
   } else if (keepSize == 1 && addinSize == 1) {
-    return BaseAST::combineAST(keep[0], addin[0]);
+    return BaseAST::updateAST(keep[0], addin[0]);
   }
 
   ASTList newList;
   ASTList junkList;
-
-  /*
-  printf("BEGINNING combineASTLists\n");
-  printf("keep list: \n");
-  for (auto & elt : keep) {
-    BaseAST::dump(elt.get());
-  }
-  printf("addin list: \n");
-  for (auto & elt : addin) {
-    BaseAST::dump(elt.get());
-  }
-   */
 
   // Append the elements from addin to newList, but
   // if we find an existing element that matches,
@@ -69,30 +71,16 @@ bool combineASTLists(ASTList& keep, ASTList& addin) {
   //   deletion
   //   replacement
   while (addinIdx < addinSize) {
-    /*
-    printf("\n");
-    printf("in loop next keeps \n");
-    if (keepIdx < keepSize)
-      BaseAST::dump(keep[keepIdx].get());
-    if (keepIdx+1 < keepSize)
-      BaseAST::dump(keep[keepIdx+1].get());
-    printf("in loop next addins \n");
-    if (addinIdx < addinSize)
-      BaseAST::dump(addin[addinIdx].get());
-    if (addinIdx+1 < addinSize)
-      BaseAST::dump(addin[addinIdx+1].get());
-     */
-
-    bool eltMatched = false;
+    bool eltChanged = true;
     if (keepIdx < keepSize &&
         keep[keepIdx]->shallowMatch(addin[addinIdx].get())) {
       owned<BaseAST> keepElt;
       owned<BaseAST> addinElt;
       keepElt.swap(keep[keepIdx]);
       addinElt.swap(addin[addinIdx]);
-      // it seems like a close enough match, so combine it
-      eltMatched = BaseAST::combineAST(keepElt, addinElt);
-      // combineAST might have swapped the elements but
+      // it seems like a close enough match, so update it
+      eltChanged = BaseAST::updateAST(keepElt, addinElt);
+      // updateAST might have swapped the elements but
       // now keepElt is the one to put in newList.
       newList.push_back(std::move(keepElt));
       // put the other thing in junkList
@@ -110,8 +98,8 @@ bool combineASTLists(ASTList& keep, ASTList& addin) {
       addinEltOne.swap(addin[addinIdx]);
       addinEltTwo.swap(addin[addinIdx+1]);
 
-      // keepElt matched addinEltTwo so try to combine them
-      BaseAST::combineAST(keepElt, addinEltTwo);
+      // keepElt matched addinEltTwo so try to update them
+      BaseAST::updateAST(keepElt, addinEltTwo);
       // now keepElt is the one to keep and addinEltTwo is junk
       newList.push_back(std::move(addinEltOne));
       newList.push_back(std::move(keepElt));
@@ -129,8 +117,8 @@ bool combineASTLists(ASTList& keep, ASTList& addin) {
       keepEltOne.swap(keep[keepIdx]);
       keepEltTwo.swap(keep[keepIdx+1]);
 
-      // keepEltTwo matched addinElt so try to combine them
-      BaseAST::combineAST(keepEltTwo, addinElt);
+      // keepEltTwo matched addinElt so try to update them
+      BaseAST::updateAST(keepEltTwo, addinElt);
       // now keepEltTwo is the one to keep and addinElt is junk
       newList.push_back(std::move(keepEltTwo));
       junkList.push_back(std::move(keepEltOne));
@@ -150,8 +138,8 @@ bool combineASTLists(ASTList& keep, ASTList& addin) {
       keepEltOne.swap(keep[keepIdx]);
       keepEltTwo.swap(keep[keepIdx+1]);
 
-      // keepEltTwo matched addinEltTwo so try to combine them
-      BaseAST::combineAST(keepEltTwo, addinEltTwo);
+      // keepEltTwo matched addinEltTwo so try to update them
+      BaseAST::updateAST(keepEltTwo, addinEltTwo);
       // now keepEltTwo is the one to keep and addinEltTwo is junk
       newList.push_back(std::move(addinEltOne));
       newList.push_back(std::move(keepEltTwo));
@@ -161,11 +149,11 @@ bool combineASTLists(ASTList& keep, ASTList& addin) {
       keepIdx += 2;
     } else {
       // give up on trying to match things
-      allMatched = false;
+      anyChanged = true;
       break;
     }
 
-    allMatched = allMatched && eltMatched;
+    anyChanged = anyChanged || eltChanged;
   }
 
   // if we gave up trying to match things, we end up in this loop
@@ -173,11 +161,13 @@ bool combineASTLists(ASTList& keep, ASTList& addin) {
     owned<BaseAST> addinElt;
     addinElt.swap(addin[addinIdx]);
     newList.push_back(std::move(addinElt));
+    anyChanged = true;
   }
   for (; keepIdx < keepSize; keepIdx++) {
     owned<BaseAST> keepElt;
     keepElt.swap(keep[keepIdx]);
     junkList.push_back(std::move(keepElt));
+    anyChanged = true;
   }
 
   assert(newList.size() == addin.size());
@@ -185,19 +175,7 @@ bool combineASTLists(ASTList& keep, ASTList& addin) {
   keep.swap(newList);
   addin.swap(junkList);
 
-  /*
-  printf("ENDING combineASTLists\n");
-  printf("keep list (result): \n");
-  for (auto & elt : keep) {
-    BaseAST::dump(elt.get());
-  }
-  printf("addin list (discard): \n");
-  for (auto & elt : addin) {
-    BaseAST::dump(elt.get());
-  }
-   */
-
-  return allMatched;
+  return anyChanged;
 }
 
 

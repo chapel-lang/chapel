@@ -40,9 +40,16 @@ class BlockStmt final : public Stmt {
    */
   static owned<BlockStmt> build(Builder* builder, Location loc, ASTList stmts);
 
+  /**
+   Return the number of statements in the block.
+   */
   int numStmts() const {
     return this->numChildren();
   }
+  /**
+   Return the i'th statement in the block. Note that since simple expressions
+   are also statements, this function returns an Expr.
+   */
   const Expr* stmt(int i) const {
     const BaseAST* ast = this->child(i);
     assert(ast->isExpr());
