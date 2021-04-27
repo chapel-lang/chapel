@@ -17,21 +17,24 @@
  * limitations under the License.
  */
 
-#include "chpl/AST/Expr.h"
+#include "chpl/AST/Sym.h"
 
 namespace chpl {
 namespace ast {
 
 
-Expr::Expr(asttags::ASTTag tag)
-  : BaseAST(tag) {
+Sym::Sym(asttags::ASTTag tag,
+         UniqueString name, Sym::Visibility visibility)
+  : ASTBase(tag), name_(name), visibility_(visibility) {
 }
 
-Expr::Expr(asttags::ASTTag tag, ASTList children)
-  : BaseAST(tag, std::move(children)) {
+Sym::Sym(asttags::ASTTag tag, ASTList children,
+         UniqueString name, Sym::Visibility visibility)
+  : ASTBase(tag, std::move(children)),
+    name_(name), visibility_(visibility) {
 }
 
-Expr::~Expr() {
+Sym::~Sym() {
 }
 
 

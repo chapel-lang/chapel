@@ -17,10 +17,10 @@
  * limitations under the License.
  */
 
-#include "chpl/AST/BlockStmt.h"
+#include "chpl/AST/Block.h"
 #include "chpl/AST/Builder.h"
 #include "chpl/AST/ErrorMessage.h"
-#include "chpl/AST/Expr.h"
+#include "chpl/AST/Exp.h"
 #include "chpl/AST/Identifier.h"
 #include "chpl/AST/Location.h"
 #include "chpl/AST/ModuleDecl.h"
@@ -158,18 +158,18 @@ void test2() {
     children.push_back(Identifier::build(b, emptyLoc, strA));
     children.push_back(Identifier::build(b, emptyLoc, strB));
     children.push_back(Identifier::build(b, emptyLoc, strC));
-    auto block = BlockStmt::build(b, emptyLoc, std::move(children));
-    b->addToplevelExpr(std::move(block));
+    auto block = Block::build(b, emptyLoc, std::move(children));
+    b->addToplevelExp(std::move(block));
   }
 
   Builder::Result r = b->result();
   assert(r.errors.size() == 0);
-  assert(r.topLevelExprs.size() == 1);
-  assert(r.topLevelExprs[0]->isModuleDecl());
-  auto module = r.topLevelExprs[0]->toModuleDecl()->module();
+  assert(r.topLevelExps.size() == 1);
+  assert(r.topLevelExps[0]->isModuleDecl());
+  auto module = r.topLevelExps[0]->toModuleDecl()->module();
   assert(r.locations.size() == 6); // +1 module decl +1 module sym
-  assert(module->stmt(0)->isBlockStmt());
-  const BlockStmt* block = module->stmt(0)->toBlockStmt();
+  assert(module->stmt(0)->isBlock());
+  const Block* block = module->stmt(0)->toBlock();
   assert(block);
   assert(block->numStmts() == 3);
   assert(block->stmt(0)->isIdentifier());
@@ -246,35 +246,35 @@ void test3() {
     outer.push_back(Identifier::build(b, emptyLoc, strA));
     {
       ASTList empty;
-      outer.push_back(BlockStmt::build(b, emptyLoc, std::move(empty)));
+      outer.push_back(Block::build(b, emptyLoc, std::move(empty)));
     }
     {
       ASTList block;
       block.push_back(Identifier::build(b, emptyLoc, strB));
-      outer.push_back(BlockStmt::build(b, emptyLoc, std::move(block)));
+      outer.push_back(Block::build(b, emptyLoc, std::move(block)));
     }
     outer.push_back(Identifier::build(b, emptyLoc, strC));
-    auto block = BlockStmt::build(b, emptyLoc, std::move(outer));
-    b->addToplevelExpr(std::move(block));
+    auto block = Block::build(b, emptyLoc, std::move(outer));
+    b->addToplevelExp(std::move(block));
   }
 
   Builder::Result r = b->result();
   assert(r.errors.size() == 0);
-  assert(r.topLevelExprs.size() == 1);
-  assert(r.topLevelExprs[0]->isModuleDecl());
-  auto module = r.topLevelExprs[0]->toModuleDecl()->module();
+  assert(r.topLevelExps.size() == 1);
+  assert(r.topLevelExps[0]->isModuleDecl());
+  auto module = r.topLevelExps[0]->toModuleDecl()->module();
   assert(r.locations.size() == 8); // +1 module decl +1 module sym
-  assert(module->stmt(0)->isBlockStmt());
-  const BlockStmt* outer = module->stmt(0)->toBlockStmt();
+  assert(module->stmt(0)->isBlock());
+  const Block* outer = module->stmt(0)->toBlock();
   assert(outer);
   assert(outer->numStmts() == 4);
   assert(outer->stmt(0)->isIdentifier());
-  assert(outer->stmt(1)->isBlockStmt());
-  assert(outer->stmt(2)->isBlockStmt());
+  assert(outer->stmt(1)->isBlock());
+  assert(outer->stmt(2)->isBlock());
   assert(outer->stmt(3)->isIdentifier());
-  const BlockStmt* empty = outer->stmt(1)->toBlockStmt();
+  const Block* empty = outer->stmt(1)->toBlock();
   assert(empty->numStmts() == 0);
-  const BlockStmt* block = outer->stmt(2)->toBlockStmt();
+  const Block* block = outer->stmt(2)->toBlock();
   assert(block->numStmts() == 1);
 
   // now check the IDs

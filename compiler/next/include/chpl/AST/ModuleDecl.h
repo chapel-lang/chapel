@@ -45,16 +45,16 @@ class ModuleDecl final : public Decl {
 
  private:
   ModuleDecl(owned<Module> module);
-  bool contentsMatchInner(const BaseAST* other) const override;
+  bool contentsMatchInner(const ASTBase* other) const override;
 
  public:
   ~ModuleDecl() override = default;
   static owned<ModuleDecl> build(Builder* builder, Location loc,
-                                 UniqueString name, Symbol::Visibility vis,
+                                 UniqueString name, Sym::Visibility vis,
                                  Module::Tag tag, ASTList stmts);
   const Module* module() const {
-    assert(this->symbol()->isModule());
-    return (Module*)this->symbol();
+    assert(this->sym()->isModule());
+    return (Module*)this->sym();
   }
   const Module::Tag tag() const { return this->module()->tag(); }
 };

@@ -24,7 +24,7 @@
 
 #include "chpl/AST/ErrorMessage.h"
 #include "chpl/AST/Comment.h"
-#include "chpl/AST/Expr.h"
+#include "chpl/AST/Exp.h"
 
 #include "Parser/bison-chapel.h"
 #include "Parser/flex-chapel.h"
@@ -52,15 +52,15 @@ static void updateParseResult(ParserContext* parserContext) {
 
   // Save the top-level exprs
   if (parserContext->topLevelStatements != nullptr) {
-    for (Expr* stmt : *parserContext->topLevelStatements) {
-      builder->addToplevelExpr(toOwned(stmt));
+    for (Exp* stmt : *parserContext->topLevelStatements) {
+      builder->addToplevelExp(toOwned(stmt));
     }
     delete parserContext->topLevelStatements;
   }
   // Save any remaining top-level comments
   if (parserContext->comments != nullptr) {
     for (ParserComment parserComment : *parserContext->comments) {
-      builder->addToplevelExpr(toOwned(parserComment.comment));
+      builder->addToplevelExp(toOwned(parserComment.comment));
     }
     delete parserContext->comments;
   }

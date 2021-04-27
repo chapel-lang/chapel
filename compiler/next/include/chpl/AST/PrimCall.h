@@ -17,10 +17,10 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_AST_CALLEXPR_H
-#define CHPL_AST_CALLEXPR_H
+#ifndef CHPL_AST_PRIMCALL_H
+#define CHPL_AST_PRIMCALL_H
 
-#include "chpl/AST/Expr.h"
+#include "chpl/AST/Call.h"
 
 #include <vector>
 
@@ -28,25 +28,17 @@ namespace chpl {
 namespace ast {
 
 /**
-  This abstract class represents something call-like
+  This class represents a primitive call
  */
-class CallExpr : public Expr {
+class PrimCall final : public Call {
+ private:
+  bool matchesInner(const ASTBase* other) const override;
  public:
-  ~CallExpr() override = 0;
+  ~PrimCall() override = default;
 
-  // note: the reason for the +/- 1 below is that the
-  // 0'th child is the called expression, which does
-  // not count as an "actual".
-
-  int numActuals() const {
-    return this->numChildren() - 1;
-  }
-  const Expr* actual(int i) const {
-    return this->getChild(i+1);
-  }
-  Expr* baseExpr() const {
-    return this->getChild(0);
-  }
+  // TODO: which primitive?
+  int numActuals() const override { return this->numChildren(); }
+  Exp* actual(int i) const override { return this->getChild(i); }
 };
 
 } // end namespace ast

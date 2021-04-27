@@ -20,8 +20,8 @@
 #ifndef CHPL_AST_DECL_H
 #define CHPL_AST_DECL_H
 
-#include "chpl/AST/Expr.h"
-#include "chpl/AST/Symbol.h"
+#include "chpl/AST/Exp.h"
+#include "chpl/AST/Sym.h"
 #include "chpl/AST/UniqueString.h"
 
 namespace chpl {
@@ -30,9 +30,9 @@ namespace ast {
 /**
   This is an abstract base class for declarations
  */
-class Decl : public Expr {
+class Decl : public Exp {
  protected:
-  Decl(asttags::ASTTag tag, owned<Symbol> symbol);
+  Decl(asttags::ASTTag tag, owned<Sym> symbol);
   bool declContentsMatchInner(const Decl* other) const {
     return true;
   }
@@ -40,16 +40,17 @@ class Decl : public Expr {
  public:
   virtual ~Decl() = 0; // this is an abstract base class
 
-  const Symbol* symbol() const {
-    const BaseAST* ast = child(0);
-    assert(ast->isSymbol());
-    return (const Symbol*) ast;
+  /** Returns the symbol declared by the declaration. */
+  const Sym* sym() const {
+    const ASTBase* ast = child(0);
+    assert(ast->isSym());
+    return (const Sym*) ast;
   }
   UniqueString name() const {
-    return symbol()->name();
+    return sym()->name();
   }
-  Symbol::Visibility visibility() const {
-    return symbol()->visibility();
+  Sym::Visibility visibility() const {
+    return sym()->visibility();
   }
 };
 

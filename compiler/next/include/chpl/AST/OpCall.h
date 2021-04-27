@@ -17,23 +17,31 @@
  * limitations under the License.
  */
 
-#include "chpl/AST/Stmt.h"
+#ifndef CHPL_AST_OPCALL_H
+#define CHPL_AST_OPCALL_H
+
+#include "chpl/AST/Call.h"
 
 namespace chpl {
 namespace ast {
 
+/**
+  This class represents a call to an operator.
+ */
+class OpCall final : public Call {
+ private:
+  // which operator
+  UniqueString op_;
 
-Stmt::Stmt(asttags::ASTTag tag)
-  : Expr(tag) {
-}
+  bool matchesInner(const ASTBase* other) const override;
+ public:
+  ~OpCall() override = default;
 
-Stmt::Stmt(asttags::ASTTag tag, ASTList children)
-  : Expr(tag, std::move(children)) {
-}
+  /** Returns the name of the operator called */
+  UniqueString operatorName() const { return op_; }
+};
 
-Stmt::~Stmt() {
-}
+} // end namespace ast
+} // end namespace chpl
 
-
-} // namespace ast
-} // namespace chpl
+#endif

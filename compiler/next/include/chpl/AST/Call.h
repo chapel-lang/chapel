@@ -17,26 +17,36 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_AST_ERRONEOUSEXPR_H
-#define CHPL_AST_ERRONEOUSEXPR_H
+#ifndef CHPL_AST_CALL_H
+#define CHPL_AST_CALL_H
 
-#include "chpl/AST/Expr.h"
-#include "chpl/AST/Location.h"
+#include "chpl/AST/Exp.h"
+
+#include <vector>
 
 namespace chpl {
 namespace ast {
 
 /**
-  This class represents some missing AST due to an error.
+  This abstract class represents something call-like
  */
-class ErroneousExpr final : public Expr {
- private:
-  ErroneousExpr();
-  bool contentsMatchInner(const BaseAST* other) const override;
-
+class Call : public Exp {
  public:
-  ~ErroneousExpr() = default;
-  static owned<ErroneousExpr> build(Builder* builder, Location loc);
+  ~Call() override = 0;
+
+  // note: the reason for the +/- 1 below is that the
+  // 0'th child is the called expression, which does
+  // not count as an "actual".
+
+  int numActuals() const {
+    return this->numChildren() - 1;
+  }
+  const Exp* actual(int i) const {
+    return this->getChild(i+1);
+  }
+  Exp* baseExpr() const {
+    return this->getChild(0);
+  }
 };
 
 } // end namespace ast

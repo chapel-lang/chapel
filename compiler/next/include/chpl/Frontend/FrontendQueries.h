@@ -20,9 +20,9 @@
 #ifndef CHPL_FRONTEND_FRONTENDQUERIES_H
 #define CHPL_FRONTEND_FRONTENDQUERIES_H
 
-#include "chpl/AST/BaseAST.h"
+#include "chpl/AST/ASTBase.h"
 #include "chpl/AST/Builder.h"
-#include "chpl/AST/Expr.h"
+#include "chpl/AST/Exp.h"
 #include "chpl/AST/ID.h"
 #include "chpl/AST/Location.h"
 #include "chpl/AST/ModuleDecl.h"

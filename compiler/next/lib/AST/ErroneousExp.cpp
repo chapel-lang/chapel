@@ -17,31 +17,30 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_AST_PRIMCALLEXPR_H
-#define CHPL_AST_PRIMCALLEXPR_H
+#include "chpl/AST/ErroneousExp.h"
 
-#include "chpl/AST/CallExpr.h"
-
-#include <vector>
+#include "chpl/AST/Builder.h"
 
 namespace chpl {
 namespace ast {
 
-/**
-  This class represents a primitive call
- */
-class PrimCallExpr final : public CallExpr {
- private:
-  bool matchesInner(const BaseAST* other) const override;
- public:
-  ~PrimCallExpr() override = default;
 
-  // TODO: which primitive?
-  int numActuals() const override { return this->numChildren(); }
-  Expr* actual(int i) const override { return this->getChild(i); }
-};
+ErroneousExp::ErroneousExp()
+  : Exp(asttags::ErroneousExp) {
+}
 
-} // end namespace ast
-} // end namespace chpl
+bool ErroneousExp::contentsMatchInner(const ASTBase* other) const {
+  const ErroneousExp* lhs = this;
+  const ErroneousExp* rhs = (const ErroneousExp*) other;
+  return lhs->expContentsMatchInner(rhs);
+}
 
-#endif
+owned<ErroneousExp> ErroneousExp::build(Builder* builder, Location loc) {
+  ErroneousExp* ret = new ErroneousExp();
+  builder->noteLocation(ret, loc);
+  return toOwned(ret);
+}
+
+
+} // namespace ast
+} // namespace chpl

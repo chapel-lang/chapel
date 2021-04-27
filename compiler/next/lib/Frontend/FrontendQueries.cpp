@@ -104,7 +104,7 @@ const ast::Builder::Result* parseFile(Context* context, UniqueString path) {
   const char* pathc = path.c_str();
   const char* textc = text.c_str();
   ast::Builder::Result tmpResult = parser->parseString(pathc, textc);
-  result->topLevelExprs.swap(tmpResult.topLevelExprs);
+  result->topLevelExps.swap(tmpResult.topLevelExps);
   result->locations.swap(tmpResult.locations);
   for (ErrorMessage& e : tmpResult.errors) {
     ErrorMessage tmp;
@@ -113,8 +113,8 @@ const ast::Builder::Result* parseFile(Context* context, UniqueString path) {
   }
 
   // Update the filePathForModuleName query
-  for (auto & topLevelExpr : result->topLevelExprs) {
-    UniqueString moduleName = context->moduleNameForID(topLevelExpr->id());
+  for (auto & topLevelExp : result->topLevelExps) {
+    UniqueString moduleName = context->moduleNameForID(topLevelExp->id());
     context->setFilePathForModuleName(moduleName, path);
   }
 
@@ -169,8 +169,8 @@ const ModuleDeclVec& parse(Context* context, UniqueString path) {
   const ast::Builder::Result* p = parseFile(context, path);
   // Compute a vector of ModuleDecls
   ModuleDeclVec result;
-  for (auto & topLevelExpr : p->topLevelExprs) {
-    if (const ast::ModuleDecl* modDecl = topLevelExpr->toModuleDecl()) {
+  for (auto & topLevelExp : p->topLevelExps) {
+    if (const ast::ModuleDecl* modDecl = topLevelExp->toModuleDecl()) {
       result.push_back(modDecl);
     }
   }
@@ -179,7 +179,7 @@ const ModuleDeclVec& parse(Context* context, UniqueString path) {
 }
 
 /*
-const SymbolsByName& symbolsDeclaredIn(Context* context, Expr* expr) {
+const SymbolsByName& symbolsDeclaredIn(Context* context, Exp* expr) {
   QUERY_BEGIN(context, SymbolsByName, expr);
   if (QUERY_USE_SAVED()) {
     return QUERY_GET_SAVED();
@@ -193,7 +193,7 @@ const SymbolsByName& symbolsDeclaredIn(Context* context, Expr* expr) {
 
 /*
 // TODO: it would be reasonable for this to be an AST visitor
-static void gatherPostorderForResolve(Expr* e,
+static void gatherPostorderForResolve(Exp* e,
                                       ResolutionResultByPostorderID& r) {
   if (e->isComment()) return;
   if (child->isDecl()) continue;
@@ -201,7 +201,7 @@ static void gatherPostorderForResolve(Expr* e,
   // otherwise, gather children
   int nChildren = e->numChildren();
   for (int i = 0; i < nChildren; i++) {
-    BaseAST* child = e->child(i);
+    ASTBase* child = e->child(i);
     gatherPostorderForResolve(e, r);
   }
 
@@ -213,7 +213,7 @@ static void gatherPostorderForResolve(Expr* e,
   }
 }
 
-const ResolutionResultByPostorderID& resolve(Context* context, Expr* e) {
+const ResolutionResultByPostorderID& resolve(Context* context, Exp* e) {
   QUERY_BEGIN(context, ResolutionResultByPostorderID, expr);
   if (QUERY_USE_SAVED()) {
     return QUERY_GET_SAVED();
@@ -236,9 +236,9 @@ static std::vector<UniqueString> getTopLevelNames(const ast::Module* module) {
   std::vector<UniqueString> result;
   int nStmts = module->numStmts();
   for (int i = 0; i < nStmts; i++) {
-    const ast::Expr* expr = module->stmt(i);
+    const ast::Exp* expr = module->stmt(i);
     if (const ast::Decl* decl = expr->toDecl()) {
-      const ast::Symbol* sym = decl->symbol();
+      const ast::Sym* sym = decl->sym();
       result.push_back(sym->name());
     }
   }
@@ -265,7 +265,7 @@ const DefinedTopLevelNamesVec& moduleLevelDeclNames(Context* context,
 }
 
 
-/*const ast::BaseAST* ast(Context* context, ID id) {
+/*const ast::ASTBase* ast(Context* context, ID id) {
   return nullptr;
 }*/
 

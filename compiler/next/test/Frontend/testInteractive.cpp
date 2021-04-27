@@ -55,7 +55,7 @@ int main(int argc, char** argv) {
         const std::vector<UniqueString>& topLevelNames = elt.topLevelNames;
 
         printf("Module %s:\n", module->name().c_str());
-        BaseAST::dump(module);
+        ASTBase::dump(module);
 
         printf("Defines these toplevel names:\n");
         for (const UniqueString& name : topLevelNames) {

@@ -20,7 +20,7 @@
 #ifndef CHPL_AST_IDENTIFIER_H
 #define CHPL_AST_IDENTIFIER_H
 
-#include "chpl/AST/Expr.h"
+#include "chpl/AST/Exp.h"
 #include "chpl/AST/Location.h"
 #include "chpl/AST/UniqueString.h"
 
@@ -40,14 +40,14 @@ class Builder;
       f(x);      // here, 'f' and 'x' are Identifiers
   \endrst
  */
-class Identifier final : public Expr {
+class Identifier final : public Exp {
  friend class Builder;
 
  private:
   UniqueString name_;
 
   Identifier(UniqueString name);
-  bool contentsMatchInner(const BaseAST* other) const override;
+  bool contentsMatchInner(const ASTBase* other) const override;
  public:
   ~Identifier() override = default;
   static owned<Identifier> build(Builder* builder, Location loc, UniqueString name);

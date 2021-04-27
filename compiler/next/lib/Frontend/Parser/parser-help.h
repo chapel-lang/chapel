@@ -31,14 +31,14 @@ void noteError(YYLTYPE location, ParserContext* context, const std::string s) {
   context->errors.push_back(ParserError(location, s));
 }
 
-static ErroneousExpr* raiseError(YYLTYPE location,
-                                 ParserContext* context,
-                                 const char* errorMessage) {
+static ErroneousExp* raiseError(YYLTYPE location,
+                                ParserContext* context,
+                                const char* errorMessage) {
   // note the error for printing
   yyerror(&location, context, errorMessage);
   Location ll = context->convertLocation(location);
   // return an error sentinel
-  return ErroneousExpr::build(context->builder, ll).release();
+  return ErroneousExp::build(context->builder, ll).release();
 }
 
 // these helpers can be used in the semantic actions

@@ -17,10 +17,10 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_AST_FNCALLEXPR_H
-#define CHPL_AST_FNCALLEXPR_H
+#ifndef CHPL_AST_FNCALL_H
+#define CHPL_AST_FNCALL_H
 
-#include "chpl/AST/CallExpr.h"
+#include "chpl/AST/Call.h"
 
 #include <vector>
 
@@ -31,20 +31,20 @@ namespace ast {
   This class represents a function call or method call, including virtual and
   non-virtual calls (since the difference is not known before resolution).
  */
-class FnCallExpr final : public CallExpr {
+class FnCall final : public Call {
  private:
   // this represents the called expression e.g. 'f' in 'f(1,2,3)'
-  Expr* baseExpr_;
+  Exp* baseExp_;
   // for each actual (matching CallExpr's actuals), what are the names?
   // if the actual is unnamed, it is the empty string.
   std::vector<UniqueString> actualNames_;
   // TODO: do we need partialTag / methodTag?
-  bool matchesInner(const BaseAST* other) const override;
+  bool matchesInner(const ASTBase* other) const override;
  public:
-  ~FnCallExpr() override = default;
+  ~FnCall() override = default;
 
   /** Returns the base expression e.g. 'f' in 'f(1,2,3)' */
-  Expr* baseExpr() const { return baseExpr_; }
+  Exp* baseExp() const { return baseExp_; }
   /** Returns whether actual i is named as with 'f(a=3)' */
   bool actualIsNamed(int i) const { return !actualNames_[i].isEmpty(); }
   /** Returns the name of the actual, if used; otherwise the empty string */

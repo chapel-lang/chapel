@@ -17,30 +17,29 @@
  * limitations under the License.
  */
 
-#include "chpl/AST/ErroneousExpr.h"
+#ifndef CHPL_AST_ERRONEOUSEXP_H
+#define CHPL_AST_ERRONEOUSEXP_H
 
-#include "chpl/AST/Builder.h"
+#include "chpl/AST/Exp.h"
+#include "chpl/AST/Location.h"
 
 namespace chpl {
 namespace ast {
 
+/**
+  This class represents some missing AST due to an error.
+ */
+class ErroneousExp final : public Exp {
+ private:
+  ErroneousExp();
+  bool contentsMatchInner(const ASTBase* other) const override;
 
-ErroneousExpr::ErroneousExpr()
-  : Expr(asttags::ErroneousExpr) {
-}
+ public:
+  ~ErroneousExp() = default;
+  static owned<ErroneousExp> build(Builder* builder, Location loc);
+};
 
-bool ErroneousExpr::contentsMatchInner(const BaseAST* other) const {
-  const ErroneousExpr* lhs = this;
-  const ErroneousExpr* rhs = (const ErroneousExpr*) other;
-  return lhs->exprContentsMatchInner(rhs);
-}
+} // end namespace ast
+} // end namespace chpl
 
-owned<ErroneousExpr> ErroneousExpr::build(Builder* builder, Location loc) {
-  ErroneousExpr* ret = new ErroneousExpr();
-  builder->noteLocation(ret, loc);
-  return toOwned(ret);
-}
-
-
-} // namespace ast
-} // namespace chpl
+#endif

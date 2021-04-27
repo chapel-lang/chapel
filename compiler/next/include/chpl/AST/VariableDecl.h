@@ -45,34 +45,34 @@ class Builder;
       param e = "hi";
   \endrst
 
-  Each of these is a VariableDecl that refers to a Variable Symbol.
+  Each of these is a VariableDecl that refers to a Variable Sym.
  */
 class VariableDecl final : public Decl {
  friend class Builder;
 
  private:
   VariableDecl(owned<Variable> variable);
-  bool contentsMatchInner(const BaseAST* other) const override;
+  bool contentsMatchInner(const ASTBase* other) const override;
 
  public:
   ~VariableDecl() override = default;
   static owned<VariableDecl> build(Builder* builder, Location loc,
-                                   UniqueString name, Symbol::Visibility vis,
+                                   UniqueString name, Sym::Visibility vis,
                                    Variable::Tag tag,
-                                   owned<Expr> typeExpr, owned<Expr> initExpr);
+                                   owned<Exp> typeExp, owned<Exp> initExp);
   const Variable* variable() const {
-    const Symbol* sym = this->symbol();
+    const Sym* sym = this->sym();
     assert(sym->isVariable());
     return (Variable*)sym;
   }
   const Variable::Tag tag() const {
     return this->variable()->tag();
   }
-  const Expr* typeExpr() const {
-    return this->variable()->typeExpr();
+  const Exp* typeExp() const {
+    return this->variable()->typeExp();
   }
-  const Expr* initExpr() const {
-    return this->variable()->initExpr();
+  const Exp* initExp() const {
+    return this->variable()->initExp();
   }
 };
 

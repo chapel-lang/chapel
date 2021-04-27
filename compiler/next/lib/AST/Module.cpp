@@ -25,19 +25,19 @@ namespace chpl {
 namespace ast {
 
 
-Module::Module(ASTList children, UniqueString name, Symbol::Visibility vis,
+Module::Module(ASTList children, UniqueString name, Sym::Visibility vis,
                Module::Tag tag)
-  : Symbol(asttags::Module, std::move(children), name, vis), tag_(tag) {
+  : Sym(asttags::Module, std::move(children), name, vis), tag_(tag) {
 
 #ifndef NDEBUG
-  // check that all children are exprs (and not, say, Symbols)
+  // check that all children are exprs (and not, say, Syms)
   for (int i = 0; i < this->numChildren(); i++) {
-    assert(child(i)->isExpr());
+    assert(child(i)->isExp());
   }
 #endif
 }
 
-bool Module::contentsMatchInner(const BaseAST* other) const {
+bool Module::contentsMatchInner(const ASTBase* other) const {
   const Module* lhs = this;
   const Module* rhs = (const Module*) other;
   return lhs->symbolContentsMatchInner(rhs) &&

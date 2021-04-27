@@ -20,7 +20,7 @@
 #ifndef CHPL_AST_VARIABLE_H
 #define CHPL_AST_VARIABLE_H
 
-#include "chpl/AST/Symbol.h"
+#include "chpl/AST/Sym.h"
 #include "chpl/AST/Location.h"
 
 namespace chpl {
@@ -41,9 +41,9 @@ class Builder;
       param e = "hi";
   \endrst
 
-  each of these is a VariableDecl that refers to a Variable Symbol.
+  each of these is a VariableDecl that refers to a Variable Sym.
  */
-class Variable final : public Symbol {
+class Variable final : public Sym {
  friend class Builder;
  friend class VariableDecl;
 
@@ -58,13 +58,13 @@ class Variable final : public Symbol {
 
  private:
   Tag tag_;
-  int8_t typeExprChildNum;
-  int8_t initExprChildNum;
+  int8_t typeExpChildNum;
+  int8_t initExpChildNum;
 
   Variable(ASTList children,
-           UniqueString name, Symbol::Visibility vis, Tag tag,
-           int8_t typeExprChildNum, int8_t initExprChildNum);
-  bool contentsMatchInner(const BaseAST* other) const override;
+           UniqueString name, Sym::Visibility vis, Tag tag,
+           int8_t typeExpChildNum, int8_t initExpChildNum);
+  bool contentsMatchInner(const ASTBase* other) const override;
 
  public:
   ~Variable() override = default;
@@ -73,11 +73,11 @@ class Variable final : public Symbol {
     Returns the type expression used in the variable's declaration, or nullptr
     if there wasn't one.
     */
-  const Expr* typeExpr() const {
-    if (typeExprChildNum >= 0) {
-      const BaseAST* ast = this->child(typeExprChildNum);
-      assert(ast->isExpr());
-      return (const Expr*)ast;
+  const Exp* typeExp() const {
+    if (typeExpChildNum >= 0) {
+      const ASTBase* ast = this->child(typeExpChildNum);
+      assert(ast->isExp());
+      return (const Exp*)ast;
     } else {
       return nullptr;
     }
@@ -86,11 +86,11 @@ class Variable final : public Symbol {
     Returns the init expression used in the variable's declaration, or nullptr
     if there wasn't one.
     */
-  const Expr* initExpr() const {
-    if (initExprChildNum >= 0) {
-      const BaseAST* ast = this->child(initExprChildNum);
-      assert(ast->isExpr());
-      return (const Expr*)ast;
+  const Exp* initExp() const {
+    if (initExpChildNum >= 0) {
+      const ASTBase* ast = this->child(initExpChildNum);
+      assert(ast->isExp());
+      return (const Exp*)ast;
     } else {
       return nullptr;
     }

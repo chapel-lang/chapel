@@ -17,10 +17,10 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_AST_SYMBOL_H
-#define CHPL_AST_SYMBOL_H
+#ifndef CHPL_AST_SYM_H
+#define CHPL_AST_SYM_H
 
-#include "chpl/AST/BaseAST.h"
+#include "chpl/AST/ASTBase.h"
 #include "chpl/AST/UniqueString.h"
 
 namespace chpl {
@@ -29,7 +29,7 @@ namespace ast {
 /**
   This is an abstract base class for Symbols
  */
-class Symbol : public BaseAST {
+class Sym : public ASTBase {
 
  public:
   enum Visibility {
@@ -43,16 +43,16 @@ class Symbol : public BaseAST {
   Visibility visibility_;
 
  protected:
-  Symbol(asttags::ASTTag tag, UniqueString name, Visibility vis);
-  Symbol(asttags::ASTTag tag, ASTList children,
+  Sym(asttags::ASTTag tag, UniqueString name, Visibility vis);
+  Sym(asttags::ASTTag tag, ASTList children,
          UniqueString name, Visibility vis);
-  bool symbolContentsMatchInner(const Symbol* other) const {
+  bool symbolContentsMatchInner(const Sym* other) const {
     return this->name_ == other->name_ &&
            this->visibility_ == other->visibility_;
   }
 
  public:
-  virtual ~Symbol() = 0; // this is an abstract base class
+  virtual ~Sym() = 0; // this is an abstract base class
 
   UniqueString name() const { return name_; }
   Visibility visibility() const { return visibility_; }

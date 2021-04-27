@@ -46,15 +46,15 @@ namespace ast {
 #undef AST_DECL
 
 // forward declare other classes
-class BaseAST;
+class ASTBase;
 class Builder;
 
 /**
   ASTList is just a list that owns some AST nodes.
  */
-using ASTList = std::vector<owned<BaseAST>>;
+using ASTList = std::vector<owned<ASTBase>>;
 
-static inline ASTList makeASTList(owned<BaseAST> ast) {
+static inline ASTList makeASTList(owned<ASTBase> ast) {
   ASTList lst;
   lst.push_back(std::move(ast));
   return lst;

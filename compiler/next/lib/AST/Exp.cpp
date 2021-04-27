@@ -17,24 +17,21 @@
  * limitations under the License.
  */
 
-#include "chpl/AST/Symbol.h"
+#include "chpl/AST/Exp.h"
 
 namespace chpl {
 namespace ast {
 
 
-Symbol::Symbol(asttags::ASTTag tag,
-               UniqueString name, Symbol::Visibility visibility)
-  : BaseAST(tag), name_(name), visibility_(visibility) {
+Exp::Exp(asttags::ASTTag tag)
+  : ASTBase(tag) {
 }
 
-Symbol::Symbol(asttags::ASTTag tag, ASTList children,
-               UniqueString name, Symbol::Visibility visibility)
-  : BaseAST(tag, std::move(children)),
-    name_(name), visibility_(visibility) {
+Exp::Exp(asttags::ASTTag tag, ASTList children)
+  : ASTBase(tag, std::move(children)) {
 }
 
-Symbol::~Symbol() {
+Exp::~Exp() {
 }
 
 

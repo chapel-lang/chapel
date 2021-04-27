@@ -17,31 +17,31 @@
  * limitations under the License.
  */
 
-#include "chpl/AST/BaseAST.h"
+#include "chpl/AST/ASTBase.h"
 
 #include "chpl/AST/Decl.h"
-#include "chpl/AST/Expr.h"
+#include "chpl/AST/Exp.h"
 #include "chpl/AST/Identifier.h"
-#include "chpl/AST/Symbol.h"
+#include "chpl/AST/Sym.h"
 
 namespace chpl {
 namespace ast {
 
-BaseAST::BaseAST(asttags::ASTTag tag)
+ASTBase::ASTBase(asttags::ASTTag tag)
   : tag_(tag), id_(), children_() {
 }
 
-BaseAST::BaseAST(asttags::ASTTag tag, ASTList children)
+ASTBase::ASTBase(asttags::ASTTag tag, ASTList children)
   : tag_(tag), id_(), children_(std::move(children)) {
 }
 
 
-BaseAST::~BaseAST() {
+ASTBase::~ASTBase() {
 }
 
-bool BaseAST::shallowMatch(const BaseAST* other) const {
-  const BaseAST* lhs = this;
-  const BaseAST* rhs = other;
+bool ASTBase::shallowMatch(const ASTBase* other) const {
+  const ASTBase* lhs = this;
+  const ASTBase* rhs = other;
   if (lhs->tag() != rhs->tag())
     return false;
   if (lhs->id().symbolPath() != rhs->id().symbolPath())
@@ -52,13 +52,13 @@ bool BaseAST::shallowMatch(const BaseAST* other) const {
   const Decl* lhsDecl = lhs->toDecl();
   const Decl* rhsDecl = rhs->toDecl();
   if (lhsDecl && rhsDecl &&
-      lhsDecl->symbol()->name() != rhsDecl->symbol()->name())
+      lhsDecl->sym()->name() != rhsDecl->sym()->name())
     return false;
 
   return true;
 }
 
-bool BaseAST::updateAST(owned<BaseAST>& keep, owned<BaseAST>& addin) {
+bool ASTBase::updateAST(owned<ASTBase>& keep, owned<ASTBase>& addin) {
   if (keep->shallowMatch(addin.get())) {
     // run updateASTList on the child list
     return updateASTList(keep->children_, addin->children_);
@@ -69,7 +69,7 @@ bool BaseAST::updateAST(owned<BaseAST>& keep, owned<BaseAST>& addin) {
   }
 }
 
-static void dumpHelper(const BaseAST* ast, int depth) {
+static void dumpHelper(const ASTBase* ast, int depth) {
   for (int i = 0; i < depth; i++) {
     printf("  ");
   }
@@ -79,7 +79,7 @@ static void dumpHelper(const BaseAST* ast, int depth) {
   }
   ID emptyId;
   if (ast->id() != emptyId) {
-    if (const Symbol* sym = ast->toSymbol()) {
+    if (const Sym* sym = ast->toSym()) {
       printf("%s %s@%i %p %s\n",
              asttags::tagToString(ast->tag()),
              ast->id().symbolPath().c_str(),
@@ -111,7 +111,7 @@ static void dumpHelper(const BaseAST* ast, int depth) {
   }
 }
 
-void BaseAST::dump(const BaseAST* ast) {
+void ASTBase::dump(const ASTBase* ast) {
   dumpHelper(ast, 0);
 }
 

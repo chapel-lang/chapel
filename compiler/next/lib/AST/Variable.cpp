@@ -26,31 +26,31 @@ namespace ast {
 
 
 Variable::Variable(ASTList children,
-                   UniqueString name, Symbol::Visibility vis,
+                   UniqueString name, Sym::Visibility vis,
                    Variable::Tag tag,
-                   int8_t typeExprChildNum, int8_t initExprChildNum)
-  : Symbol(asttags::Variable, std::move(children), name, vis),
+                   int8_t typeExpChildNum, int8_t initExpChildNum)
+  : Sym(asttags::Variable, std::move(children), name, vis),
     tag_(tag),
-    typeExprChildNum(typeExprChildNum), initExprChildNum(initExprChildNum) {
+    typeExpChildNum(typeExpChildNum), initExpChildNum(initExpChildNum) {
 
-  assert(-1 <= typeExprChildNum && typeExprChildNum <= 1);
-  assert(-1 <= initExprChildNum && initExprChildNum <= 1);
+  assert(-1 <= typeExpChildNum && typeExpChildNum <= 1);
+  assert(-1 <= initExpChildNum && initExpChildNum <= 1);
   assert(numChildren() <= 2);
 #ifndef NDEBUG
-  // check that all children are exprs (and not, say, Symbols)
+  // check that all children are exprs (and not, say, Syms)
   for (int i = 0; i < this->numChildren(); i++) {
-    assert(child(i)->isExpr());
+    assert(child(i)->isExp());
   }
 #endif
 }
 
-bool Variable::contentsMatchInner(const BaseAST* other) const {
+bool Variable::contentsMatchInner(const ASTBase* other) const {
   const Variable* lhs = this;
   const Variable* rhs = (const Variable*) other;
   return lhs->symbolContentsMatchInner(rhs) &&
          lhs->tag_ == rhs->tag_ &&
-         lhs->typeExprChildNum == rhs->typeExprChildNum &&
-         lhs->initExprChildNum == rhs->initExprChildNum;
+         lhs->typeExpChildNum == rhs->typeExpChildNum &&
+         lhs->initExpChildNum == rhs->initExpChildNum;
 }
 
 

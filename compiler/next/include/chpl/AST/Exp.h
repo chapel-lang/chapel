@@ -17,23 +17,27 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_AST_STMT_H
-#define CHPL_AST_STMT_H
+#ifndef CHPL_AST_EXP_H
+#define CHPL_AST_EXP_H
 
-#include "chpl/AST/Expr.h"
+#include "chpl/AST/ASTBase.h"
 
 namespace chpl {
 namespace ast {
 
 /**
-  This is an abstract base class for statements
+  This is an abstract base class for expressions
  */
-class Stmt : public Expr {
+class Exp : public ASTBase {
  protected:
-  Stmt(asttags::ASTTag tag);
-  Stmt(asttags::ASTTag tag, ASTList children);
+  Exp(asttags::ASTTag tag);
+  Exp(asttags::ASTTag tag, ASTList children);
+  bool expContentsMatchInner(const Exp* other) const {
+    return true;
+  }
+
  public:
-  virtual ~Stmt() = 0; // this is an abstract base class
+  virtual ~Exp() = 0; // this is an abstract base class
 };
 
 } // end namespace ast

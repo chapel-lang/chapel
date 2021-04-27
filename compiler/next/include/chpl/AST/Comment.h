@@ -20,7 +20,7 @@
 #ifndef CHPL_AST_COMMENT_H
 #define CHPL_AST_COMMENT_H
 
-#include "chpl/AST/Expr.h"
+#include "chpl/AST/Exp.h"
 #include "chpl/AST/Location.h"
 
 #include <string>
@@ -36,14 +36,14 @@ class Builder;
   go anywhere and that would be hard to represent). However, comments that
   are at a statement level will be represented with this type.
  */
-class Comment final : public Expr {
+class Comment final : public Exp {
  friend class Builder;
 
  private:
   std::string comment_;
 
   Comment(std::string s);
-  bool contentsMatchInner(const BaseAST* other) const override;
+  bool contentsMatchInner(const ASTBase* other) const override;
 
  public:
   ~Comment() override = default;

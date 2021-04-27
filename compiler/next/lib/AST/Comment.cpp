@@ -27,13 +27,13 @@ namespace chpl {
 namespace ast {
 
 Comment::Comment(std::string s)
- : Expr(asttags::Comment), comment_(std::move(s)) {
+ : Exp(asttags::Comment), comment_(std::move(s)) {
 }
 
-bool Comment::contentsMatchInner(const BaseAST* other) const {
+bool Comment::contentsMatchInner(const ASTBase* other) const {
   const Comment* lhs = this;
   const Comment* rhs = (const Comment*) other;
-  return lhs->exprContentsMatchInner(rhs) &&
+  return lhs->expContentsMatchInner(rhs) &&
          lhs->comment_ == rhs->comment_ ;
 }
 

@@ -19,13 +19,13 @@
 
 #include "chpl/AST/Decl.h"
 
-#include "chpl/AST/Expr.h"
+#include "chpl/AST/Exp.h"
 
 namespace chpl {
 namespace ast {
 
-Decl::Decl(asttags::ASTTag tag, owned<Symbol> symbol)
-  : Expr(tag, makeASTList(std::move(symbol))) {
+Decl::Decl(asttags::ASTTag tag, owned<Sym> sym)
+  : Exp(tag, makeASTList(std::move(sym))) {
 }
 
 Decl::~Decl() {

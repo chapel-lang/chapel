@@ -20,7 +20,7 @@
 #include "chpl/AST/Builder.h"
 
 #include "chpl/AST/ErrorMessage.h"
-#include "chpl/AST/Expr.h"
+#include "chpl/AST/Exp.h"
 #include "chpl/AST/ModuleDecl.h"
 
 #include <cstring>
@@ -35,7 +35,7 @@ Builder::Builder(Context* context,
   : context_(context),
     filepath_(filepath),
     inferredModuleName_(inferredModuleName),
-    topLevelExprs_(), errors_(), locations_() {
+    topLevelExps_(), errors_(), locations_() {
 }
 
 static std::string filenameToModulename(const char* filename) {
@@ -63,15 +63,15 @@ owned<Builder> Builder::build(Context* context, const char* filepath) {
   return toOwned(b);
 }
 
-void Builder::addToplevelExpr(owned<Expr> e) {
-  this->topLevelExprs_.push_back(std::move(e));
+void Builder::addToplevelExp(owned<Exp> e) {
+  this->topLevelExps_.push_back(std::move(e));
 }
 
 void Builder::addError(ErrorMessage e) {
   this->errors_.push_back(std::move(e));
 }
 
-void Builder::noteLocation(BaseAST* ast, Location loc) {
+void Builder::noteLocation(ASTBase* ast, Location loc) {
   this->locations_.push_back(std::make_pair(ast->id(), loc));
 }
 
@@ -86,7 +86,7 @@ Builder::Result Builder::result() {
   // (i.e. good cache behavior).
 
   Builder::Result ret;
-  ret.topLevelExprs.swap(topLevelExprs_);
+  ret.topLevelExps.swap(topLevelExps_);
   ret.errors.swap(errors_);
   ret.locations.swap(locations_);
   return ret;
@@ -97,8 +97,8 @@ Builder::Result Builder::result() {
 UniqueString Builder::createImplicitModuleIfNeeded() {
   bool containsOnlyModules = true;
   bool containsAnyModules = false;
-  for (auto const& ownedExpr: topLevelExprs_) {
-    if (ownedExpr->isModuleDecl()) {
+  for (auto const& ownedExp: topLevelExps_) {
+    if (ownedExp->isModuleDecl()) {
       containsAnyModules = true;
     } else {
       containsOnlyModules = false;
@@ -110,13 +110,13 @@ UniqueString Builder::createImplicitModuleIfNeeded() {
   } else {
     // create a new module containing all of the statements
     ASTList stmts;
-    stmts.swap(topLevelExprs_);
+    stmts.swap(topLevelExps_);
     auto implicitModule = ModuleDecl::build(this, Location(filepath_),
                                             inferredModuleName_,
-                                            Symbol::VISIBILITY_DEFAULT,
+                                            Sym::VISIBILITY_DEFAULT,
                                             Module::IMPLICIT,
                                             std::move(stmts));
-    topLevelExprs_.push_back(std::move(implicitModule));
+    topLevelExps_.push_back(std::move(implicitModule));
     // return the name of the module
     return inferredModuleName_;
   }
@@ -129,13 +129,13 @@ void Builder::assignIDs(UniqueString inferredModule) {
   if (!inferredModule.isEmpty())
     path.push_back(std::make_pair(inferredModule, 0));
 
-  for (auto const& ownedExpr: topLevelExprs_) {
-    const BaseAST* ast = ownedExpr.get();
-    assignIDs((BaseAST*)ast, path, decl); 
+  for (auto const& ownedExp: topLevelExps_) {
+    const ASTBase* ast = ownedExp.get();
+    assignIDs((ASTBase*)ast, path, decl); 
   }
 }
 
-void Builder::assignIDs(BaseAST* ast, pathVecT& path, declaredHereT& decl) {
+void Builder::assignIDs(ASTBase* ast, pathVecT& path, declaredHereT& decl) {
   // TODO: if it's a decl, adjust the path&decl
   // For now, we will just do the postorder traversal
 
@@ -156,14 +156,14 @@ void Builder::assignIDs(BaseAST* ast, pathVecT& path, declaredHereT& decl) {
   assignIDsPostorder(ast, symbolPath, curId);
 }
 
-void Builder::assignIDsPostorder(BaseAST* ast, UniqueString symbolPath, int& i) {
+void Builder::assignIDsPostorder(ASTBase* ast, UniqueString symbolPath, int& i) {
   // Don't consider comments when computing AST ids.
   if (ast->isComment())
     return;
 
   int firstChildID = i;
   for (int j = 0; j < ast->numChildren(); j++) {
-    BaseAST* child = (BaseAST*) ast->child(j);
+    ASTBase* child = (ASTBase*) ast->child(j);
     this->assignIDsPostorder(child, symbolPath, i);
   }
   int afterChildID = i;
@@ -181,7 +181,7 @@ bool Builder::Result::update(Result& keep, Result& addin) {
   match &= defaultUpdate(keep.locations, addin.locations);
 
   // merge the ASTs
-  match &= updateASTList(keep.topLevelExprs, addin.topLevelExprs);
+  match &= updateASTList(keep.topLevelExps, addin.topLevelExps);
 
   return match;
 }

@@ -17,28 +17,43 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_AST_OPCALLEXPR_H
-#define CHPL_AST_OPCALLEXPR_H
+#ifndef CHPL_AST_BLOCK_H
+#define CHPL_AST_BLOCK_H
 
-#include "chpl/AST/CallExpr.h"
+#include "chpl/AST/Exp.h"
+#include "chpl/AST/Location.h"
 
 namespace chpl {
 namespace ast {
 
 /**
-  This class represents a call to an operator.
+  This class represents a { } block.
  */
-class OpCallExpr final : public CallExpr {
+class Block final : public Exp {
  private:
-  // which operator
-  UniqueString op_;
+  Block(ASTList stmts);
+  bool contentsMatchInner(const ASTBase* other) const override;
 
-  bool matchesInner(const BaseAST* other) const override;
  public:
-  ~OpCallExpr() override = default;
+  /**
+   Create and return a Block containing the passed stmts.
+   */
+  static owned<Block> build(Builder* builder, Location loc, ASTList stmts);
 
-  /** Returns the name of the operator called */
-  UniqueString operatorName() const { return op_; }
+  /**
+   Return the number of statements in the block.
+   */
+  int numStmts() const {
+    return this->numChildren();
+  }
+  /**
+   Return the i'th statement in the block.
+   */
+  const Exp* stmt(int i) const {
+    const ASTBase* ast = this->child(i);
+    assert(ast->isExp());
+    return (const Exp*)ast;
+  }
 };
 
 } // end namespace ast

@@ -30,7 +30,7 @@ struct ParserError {
   // when it goes to report errors.
   //
   // When an error occurs during parsing, the parser should
-  // emit errors here and create a stand-in ErroneousExpr AST
+  // emit errors here and create a stand-in ErroneousExp AST
   // node.
   YYLTYPE location;
   std::string message;
@@ -65,7 +65,7 @@ struct ParserContext {
 
   // Tracking a current state for these makes it easier to write
   // the parser rules.
-  Symbol::Visibility visibility;
+  Sym::Visibility visibility;
   Variable::Tag varDeclTag;
 
   ParserContext(const char* filename, Builder* builder)
@@ -77,7 +77,7 @@ struct ParserContext {
     this->builder            = builder;
     this->topLevelStatements = nullptr;
     this->comments           = nullptr;
-    this->visibility         = Symbol::VISIBILITY_DEFAULT;
+    this->visibility         = Sym::VISIBILITY_DEFAULT;
     this->varDeclTag         = Variable::VAR;
   }
 
@@ -88,15 +88,15 @@ struct ParserContext {
   void clearComments();
   ParserExprList* makeList();
   ParserExprList* makeList(ParserExprList* lst);
-  ParserExprList* makeList(Expr* e);
-  ParserExprList* makeList(owned<Expr> e) {
+  ParserExprList* makeList(Exp* e);
+  ParserExprList* makeList(owned<Exp> e) {
     return this->makeList(e.release());
   }
   ParserExprList* makeList(CommentsAndStmt cs);
 
   void appendList(ParserExprList* dst, ParserExprList* lst);
-  void appendList(ParserExprList* dst, Expr* e);
-  void appendList(ParserExprList* dst, owned<Expr> e) {
+  void appendList(ParserExprList* dst, Exp* e);
+  void appendList(ParserExprList* dst, owned<Exp> e) {
     this->appendList(dst, e.release());
   }
   void appendList(ParserExprList* dst, std::vector<ParserComment>* comments);
@@ -111,8 +111,8 @@ struct ParserContext {
   // to handle things like this
   //     { /* doc comment } proc myproc()
   CommentsAndStmt finishStmt(CommentsAndStmt cs);
-  CommentsAndStmt finishStmt(Expr* e);
-  CommentsAndStmt finishStmt(owned<Expr> e) {
+  CommentsAndStmt finishStmt(Exp* e);
+  CommentsAndStmt finishStmt(owned<Exp> e) {
     return this->finishStmt(e.release());
   }
 
@@ -130,16 +130,16 @@ struct ParserContext {
   // If there is any argument, it will
   // be also appended to the returned list.
   ParserExprList* enterStmt(YYLTYPE location, ParserExprList* lst);
-  ParserExprList* enterStmt(YYLTYPE location, Expr* e);
-  ParserExprList* enterStmt(YYLTYPE location, owned<Expr> e) {
+  ParserExprList* enterStmt(YYLTYPE location, Exp* e);
+  ParserExprList* enterStmt(YYLTYPE location, owned<Exp> e) {
     return this->enterStmt(location, e.release());
   }
   ParserExprList* enterStmt(YYLTYPE location);
 
   // These should clear the comments (since there might be some inside the stmt)
   ParserExprList* exitStmt(ParserExprList* lst);
-  ParserExprList* exitStmt(Expr* e);
-  ParserExprList* exitStmt(owned<Expr> e) {
+  ParserExprList* exitStmt(Exp* e);
+  ParserExprList* exitStmt(owned<Exp> e) {
     return this->exitStmt(e.release());
   }
 

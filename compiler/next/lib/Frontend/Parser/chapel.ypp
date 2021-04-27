@@ -40,7 +40,7 @@
 
 // A note about memory management within the parser:
 //
-//  Several grammar rules produce an allocated type (e.g. Expr*
+//  Several grammar rules produce an allocated type (e.g. Exp*
 //  pointing to some sort of allocated Expr). When one of these
 //  rules produces a result, that result needs to be either
 //  freed or wired up into another structure to be freed later.
@@ -151,30 +151,30 @@
     LinkageTag_EXPORT,
   };
 
-  using ParserExprList = std::vector<Expr*>;
+  using ParserExprList = std::vector<Exp*>;
   using UniqueStrList = std::vector<PODUniqueString>;
 
   struct PotentialRename {
     enum {SINGLE, DOUBLE} tag;
 
-    Expr* elem;
-    std::pair<Expr*, Expr*> renamed;
+    Exp* elem;
+    std::pair<Exp*, Exp*> renamed;
 
-    PotentialRename(Expr* elem) {
+    PotentialRename(Exp* elem) {
       this->tag = SINGLE;
       this->elem = elem;
-      this->renamed = std::make_pair((Expr*)nullptr, (Expr*)nullptr);
+      this->renamed = std::make_pair((Exp*)nullptr, (Exp*)nullptr);
     }
-    PotentialRename(owned<Expr> elem) : PotentialRename(elem.release()) { }
-    PotentialRename(Expr* from, Expr* to)
+    PotentialRename(owned<Exp> elem) : PotentialRename(elem.release()) { }
+    PotentialRename(Exp* from, Exp* to)
     {
       this->tag = DOUBLE;
       this->elem = nullptr;
       this->renamed = std::make_pair(from, to);
     }
-    PotentialRename(owned<Expr> from, owned<Expr> to)
+    PotentialRename(owned<Exp> from, owned<Exp> to)
     : PotentialRename(from.release(), to.release()) { }
-    PotentialRename(Expr* from, owned<Expr> to)
+    PotentialRename(Exp* from, owned<Exp> to)
     : PotentialRename(from, to.release()) { }
 
   };
@@ -186,11 +186,11 @@
   // they only have pointer or numeric fields.
 
   struct WhereAndLifetime {
-    Expr* where;
+    Exp* where;
     ParserExprList* lifetime;
   };
   static inline
-  WhereAndLifetime makeWhereAndLifetime(Expr* w, ParserExprList* lt) {
+  WhereAndLifetime makeWhereAndLifetime(Exp* w, ParserExprList* lt) {
     WhereAndLifetime ret;
     ret.where = w;
     ret.lifetime = lt;
@@ -199,17 +199,17 @@
 
   struct CommentsAndStmt {
     std::vector<ParserComment>* comments;
-    Expr* stmt;
+    Exp* stmt;
   };
   static inline
-  CommentsAndStmt makeCommentsAndStmt(std::vector<ParserComment>* comments, Expr* stmt) {
+  CommentsAndStmt makeCommentsAndStmt(std::vector<ParserComment>* comments, Exp* stmt) {
     CommentsAndStmt ret;
     ret.comments = comments;
     ret.stmt = stmt;
     return ret;
   }
   static inline
-  CommentsAndStmt makeCommentsAndStmt(std::vector<ParserComment>* comments, owned<Expr> stmt) {
+  CommentsAndStmt makeCommentsAndStmt(std::vector<ParserComment>* comments, owned<Exp> stmt) {
     return makeCommentsAndStmt(comments, stmt.release());
   }
 
@@ -249,13 +249,13 @@
     ShadowTag                  shadowTag;
     ThrowsTag                  throwsTag;
     Variable::Tag              variableTag;
-    Symbol::Visibility         visibilityTag;
+    Sym::Visibility            visibilityTag;
 
     // simple pointer values 
-    BlockStmt*                 blockStmt;
-    CallExpr*                  callExpr;
+    Block*                     block;
+    Call*                      call;
     Decl*                      decl;
-    Expr*                      expr;
+    Exp*                       expr;
     Function*                  function;
     Module*                    module;
 
@@ -648,7 +648,7 @@ stmt:
 | TYIELD expr TSEMI         { $$ = context->finishStmt(TODOSTMT(@$)); }
 | error TSEMI
   {
-    $$ = STMT(@$, ErroneousExpr::build(BUILDER, LOC(@1)));
+    $$ = STMT(@$, ErroneousExp::build(BUILDER, LOC(@1)));
   }
 ;
 
@@ -656,7 +656,7 @@ module_decl_start:
   access_control opt_prototype TMODULE ident_def
     {
       $$ = TODOSTMT(@$);
-      context->visibility = Symbol::VISIBILITY_DEFAULT;
+      context->visibility = Sym::VISIBILITY_DEFAULT;
     }
 ;
 
@@ -668,15 +668,15 @@ module_decl_stmt:
 | module_decl_start TLCBR error TRCBR
     {
       ParserExprList* errList = nullptr;
-      errList = context->makeList(ErroneousExpr::build(BUILDER, LOC(@3)));
+      errList = context->makeList(ErroneousExp::build(BUILDER, LOC(@3)));
       $$ = TODOSTMT(@$); // should be a module containing errList
     }
 ;
 
 access_control:
-           { $$ = Symbol::VISIBILITY_DEFAULT; context->visibility = $$; }
-| TPUBLIC  { $$ = Symbol::VISIBILITY_PUBLIC;  context->visibility = $$; }
-| TPRIVATE { $$ = Symbol::VISIBILITY_PRIVATE; context->visibility = $$; }
+           { $$ = Sym::VISIBILITY_DEFAULT; context->visibility = $$; }
+| TPUBLIC  { $$ = Sym::VISIBILITY_PUBLIC;  context->visibility = $$; }
+| TPRIVATE { $$ = Sym::VISIBILITY_PRIVATE; context->visibility = $$; }
 ;
 
 opt_prototype:
@@ -688,7 +688,7 @@ include_module_stmt:
  TINCLUDE access_control opt_prototype TMODULE ident_def TSEMI
    {
      $$ = TODOSTMT(@$);
-     context->visibility = Symbol::VISIBILITY_DEFAULT;
+     context->visibility = Sym::VISIBILITY_DEFAULT;
    }
 ;
 
@@ -711,7 +711,7 @@ block_stmt:
     // add also any comments appearing after all statements
     // and before the closing close bracket.
     context->appendList(lst, context->gatherComments(@2));
-    auto blockstmt = BlockStmt::build(BUILDER, LOC(@$), context->consumeList(lst));
+    auto blockstmt = Block::build(BUILDER, LOC(@$), context->consumeList(lst));
     cs.stmt = blockstmt.release();
     $$ = cs;
   }
@@ -733,7 +733,7 @@ block_stmt:
     cs.comments = context->gatherCommentsFromList(lst, @1);;
 
     // create the BlockStmt
-    auto blockstmt = BlockStmt::build(BUILDER, LOC(@$), context->consumeList(lst));
+    auto blockstmt = Block::build(BUILDER, LOC(@$), context->consumeList(lst));
     cs.stmt = blockstmt.release();
     $$ = cs;
   }
@@ -741,10 +741,10 @@ block_stmt:
   {
     // gather the comments before the opening bracket
     CommentsAndStmt cs = STMT(@1, nullptr);
-    // create a list of stmts that just has an ErroneousExpr
-    ParserExprList* lst = context->makeList(ErroneousExpr::build(BUILDER, LOC(@2)));
+    // create a list of stmts that just has an ErroneousExp
+    ParserExprList* lst = context->makeList(ErroneousExp::build(BUILDER, LOC(@2)));
     // create the BlockStmt
-    auto blockstmt = BlockStmt::build(BUILDER, LOC(@$), context->consumeList(lst));
+    auto blockstmt = Block::build(BUILDER, LOC(@$), context->consumeList(lst));
     cs.stmt = blockstmt.release();
     $$ = cs;
   }
@@ -844,37 +844,37 @@ use_stmt:
   access_control TUSE use_renames_ls TSEMI
     {
       $$ = TODOSTMT(@$);
-      context->visibility = Symbol::VISIBILITY_DEFAULT;
+      context->visibility = Sym::VISIBILITY_DEFAULT;
     }
 | access_control TUSE expr TEXCEPT except_ls TSEMI
     {
       $$ = TODOSTMT(@$);
-      context->visibility = Symbol::VISIBILITY_DEFAULT;
+      context->visibility = Sym::VISIBILITY_DEFAULT;
     }
 | access_control TUSE expr TAS expr TEXCEPT except_ls TSEMI
     {
       $$ = TODOSTMT(@$);
-      context->visibility = Symbol::VISIBILITY_DEFAULT;
+      context->visibility = Sym::VISIBILITY_DEFAULT;
     }
 | access_control TUSE expr TAS TUNDERSCORE TEXCEPT except_ls TSEMI
     {
       $$ = TODOSTMT(@$);
-      context->visibility = Symbol::VISIBILITY_DEFAULT;
+      context->visibility = Sym::VISIBILITY_DEFAULT;
     }
 | access_control TUSE expr TONLY opt_only_ls TSEMI
     {
       $$ = TODOSTMT(@$);
-      context->visibility = Symbol::VISIBILITY_DEFAULT;
+      context->visibility = Sym::VISIBILITY_DEFAULT;
     }
 | access_control TUSE expr TAS expr TONLY opt_only_ls TSEMI
     {
       $$ = TODOSTMT(@$);
-      context->visibility = Symbol::VISIBILITY_DEFAULT;
+      context->visibility = Sym::VISIBILITY_DEFAULT;
     }
 | access_control TUSE expr TAS TUNDERSCORE TONLY opt_only_ls TSEMI
     {
       $$ = TODOSTMT(@$);
-      context->visibility = Symbol::VISIBILITY_DEFAULT;
+      context->visibility = Sym::VISIBILITY_DEFAULT;
     }
 ;
 
@@ -882,7 +882,7 @@ import_stmt:
   access_control TIMPORT import_ls TSEMI
     {
       $$ = TODOSTMT(@$);
-      context->visibility = Symbol::VISIBILITY_DEFAULT;
+      context->visibility = Sym::VISIBILITY_DEFAULT;
     }
 ;
 
@@ -1052,17 +1052,17 @@ class_level_stmt:
     {
       // visibility should be default when inner_class_level_stmt is parsed
       $$ = context->finishStmt($1);
-      context->visibility = Symbol::VISIBILITY_DEFAULT;
+      context->visibility = Sym::VISIBILITY_DEFAULT;
     }
-| TPUBLIC {context->visibility = Symbol::VISIBILITY_PUBLIC;} inner_class_level_stmt
+| TPUBLIC {context->visibility = Sym::VISIBILITY_PUBLIC;} inner_class_level_stmt
     {
       $$ = context->finishStmt($3);
-      context->visibility = Symbol::VISIBILITY_DEFAULT;
+      context->visibility = Sym::VISIBILITY_DEFAULT;
     }
-| TPRIVATE {context->visibility = Symbol::VISIBILITY_PRIVATE;} inner_class_level_stmt
+| TPRIVATE {context->visibility = Sym::VISIBILITY_PRIVATE;} inner_class_level_stmt
     {
       $$ = context->finishStmt($3);
-      context->visibility = Symbol::VISIBILITY_DEFAULT;
+      context->visibility = Sym::VISIBILITY_DEFAULT;
     }
 ;
 
@@ -1536,7 +1536,7 @@ enum_decl_stmt:
     {
       CommentsAndStmt cs = $1;
       if (cs.stmt) delete cs.stmt;
-      cs.stmt = ErroneousExpr::build(BUILDER, LOC(@3)).release();
+      cs.stmt = ErroneousExp::build(BUILDER, LOC(@3)).release();
       $$ = cs;
     }
 ;
@@ -1975,7 +1975,7 @@ opt_ret_type:
 | TCOLON type_level_expr         { $$ = $2; }
 | TCOLON ret_array_type          { $$ = $2; }
 | TCOLON reserved_type_ident_use { $$ = Identifier::build(BUILDER, LOC(@2), $2).release(); }
-| error                          { $$ = ErroneousExpr::build(BUILDER, LOC(@1)).release(); }
+| error                          { $$ = ErroneousExp::build(BUILDER, LOC(@1)).release(); }
 ;
 
 
@@ -1984,7 +1984,7 @@ opt_type:
 | TCOLON type_level_expr         { $$ = $2; }
 | TCOLON array_type              { $$ = $2; }
 | TCOLON reserved_type_ident_use { $$ = Identifier::build(BUILDER, LOC(@2), $2).release(); }
-| error                          { $$ = ErroneousExpr::build(BUILDER, LOC(@1)).release(); }
+| error                          { $$ = ErroneousExp::build(BUILDER, LOC(@1)).release(); }
 ;
 
 /* NOTE: Some things about the following rule concern me (blc), but I
@@ -2018,7 +2018,7 @@ array_type:
     }
 | TLSBR error TRSBR
     {
-      $$ = ErroneousExpr::build(BUILDER, LOC(@2)).release();
+      $$ = ErroneousExp::build(BUILDER, LOC(@2)).release();
     }
 ;
 

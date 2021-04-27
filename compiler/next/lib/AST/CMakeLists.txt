@@ -20,20 +20,19 @@ target_sources(libchplcomp-obj
 
                ASTTag.cpp
                ASTTypes.cpp
-               BaseAST.cpp
-               BlockStmt.cpp
+               ASTBase.cpp
+               Block.cpp
                Builder.cpp
                Comment.cpp
                Decl.cpp
-               ErroneousExpr.cpp
+               ErroneousExp.cpp
                ErrorMessage.cpp
-               Expr.cpp
+               Exp.cpp
                ID.cpp
                Identifier.cpp
                Module.cpp
                ModuleDecl.cpp
-               Stmt.cpp
-               Symbol.cpp
+               Sym.cpp
                UniqueString.cpp
                Variable.cpp
                VariableDecl.cpp

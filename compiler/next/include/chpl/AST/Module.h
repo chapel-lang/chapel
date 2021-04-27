@@ -20,7 +20,7 @@
 #ifndef CHPL_AST_MODULE_H
 #define CHPL_AST_MODULE_H
 
-#include "chpl/AST/Symbol.h"
+#include "chpl/AST/Sym.h"
 #include "chpl/AST/Location.h"
 
 namespace chpl {
@@ -35,9 +35,9 @@ namespace ast {
       module M { }
   \endrst
 
-  contains a ModuleDecl that refers to a Module Symbol.
+  contains a ModuleDecl that refers to a Module Sym.
  */
-class Module final : public Symbol {
+class Module final : public Sym {
  friend class Builder;
  friend class ModuleDecl;
 
@@ -52,9 +52,9 @@ class Module final : public Symbol {
   Tag tag_;
 
   Module(ASTList children,
-         UniqueString name, Symbol::Visibility vis,
+         UniqueString name, Sym::Visibility vis,
          Module::Tag tag);
-  bool contentsMatchInner(const BaseAST* other) const override;
+  bool contentsMatchInner(const ASTBase* other) const override;
 
  public:
   ~Module() override = default;
@@ -62,10 +62,10 @@ class Module final : public Symbol {
   int numStmts() const {
     return this->numChildren();
   }
-  const Expr* stmt(int i) const {
-    const BaseAST* ast = this->child(i);
-    assert(ast->isExpr());
-    return (Expr*) ast;
+  const Exp* stmt(int i) const {
+    const ASTBase* ast = this->child(i);
+    assert(ast->isExp());
+    return (Exp*) ast;
   }
 };
 

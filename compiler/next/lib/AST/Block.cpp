@@ -17,30 +17,37 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_AST_EXPR_H
-#define CHPL_AST_EXPR_H
+#include "chpl/AST/Block.h"
 
-#include "chpl/AST/BaseAST.h"
+#include "chpl/AST/Builder.h"
 
 namespace chpl {
 namespace ast {
 
-/**
-  This is an abstract base class for expressions
- */
-class Expr : public BaseAST {
- protected:
-  Expr(asttags::ASTTag tag);
-  Expr(asttags::ASTTag tag, ASTList children);
-  bool exprContentsMatchInner(const Expr* other) const {
-    return true;
+
+Block::Block(ASTList stmts) :
+  Exp(asttags::Block, std::move(stmts)) {
+
+#ifndef NDEBUG
+  // check that all children are exprs (and not, say, Symbols)
+  for (int i = 0; i < this->numChildren(); i++) {
+    assert(child(i)->isExp());
   }
-
- public:
-  virtual ~Expr() = 0; // this is an abstract base class
-};
-
-} // end namespace ast
-} // end namespace chpl
-
 #endif
+}
+
+bool Block::contentsMatchInner(const ASTBase* other) const {
+  return true;
+}
+
+owned<Block> Block::build(Builder* builder,
+                          Location loc,
+                          ASTList stmts) {
+  Block* ret = new Block(std::move(stmts));
+  builder->noteLocation(ret, loc);
+  return toOwned(ret);
+}
+
+
+} // namespace ast
+} // namespace chpl

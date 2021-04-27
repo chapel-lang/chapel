@@ -25,13 +25,13 @@ namespace chpl {
 namespace ast {
 
 Identifier::Identifier(UniqueString name)
-  : Expr(asttags::Identifier), name_(name) {
+  : Exp(asttags::Identifier), name_(name) {
 }
 
-bool Identifier::contentsMatchInner(const BaseAST* other) const {
+bool Identifier::contentsMatchInner(const ASTBase* other) const {
   const Identifier* lhs = this;
   const Identifier* rhs = (const Identifier*) other;
-  return lhs->exprContentsMatchInner(rhs) &&
+  return lhs->expContentsMatchInner(rhs) &&
          lhs->name_ == rhs->name_;
 }
 

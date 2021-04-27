@@ -49,36 +49,63 @@
 // the following comment disables doxygen for these
 /// \cond DO_NOT_DOCUMENT
 
-AST_BEGIN_SUBCLASSES(Expr)
+AST_BEGIN_SUBCLASSES(Exp)              // old AST: Expr
 
-  AST_LEAF(Comment)
-  AST_LEAF(ErroneousExpr)
-  AST_LEAF(Identifier)
+  AST_LEAF(Comment)                    //
+  AST_LEAF(ErroneousExp)               //
+  AST_LEAF(Identifier)                 // old AST: UnresolvedSymExpr
 
-  AST_NODE(IfExpr)
-  AST_NODE(TryExpr)
-  AST_NODE(DotExpr)
+  AST_NODE(Block)                      // old AST: BlockStmt
+  AST_NODE(ExternBlock)                // old AST: ExternBlockStmt
+  AST_NODE(Implements)                 // old AST: ImplementsStmt
+  AST_NODE(Import)                     // old AST: ImportStmt
+  AST_NODE(Local)                      //
+  AST_NODE(Require)                    //
+  AST_NODE(Serial)                     //
+  AST_NODE(Use)                        // old AST: UseStmt
 
-  AST_BEGIN_SUBCLASSES(LoopExpr)
-    AST_NODE(ForExpr)
-    AST_NODE(ForallExpr)
-    AST_NODE(ForeachExpr)
-  AST_END_SUBCLASSES(LoopExpr)
+  AST_BEGIN_SUBCLASSES(ControlFlow)
 
-  AST_BEGIN_SUBCLASSES(LiteralExpr)
-    AST_LEAF(StringLiteral) // includes bytes
+    AST_NODE(Begin)                    //
+    AST_NODE(Cobegin)                  //
+    AST_NODE(Break)                    // old AST: GotoStmt
+    AST_NODE(Conditional)              // old AST: IfExpr/CondStmt
+    AST_NODE(Continue)                 // old AST: GotoStmt
+    AST_NODE(Defer)                    // old AST: DeferStmt
+    AST_NODE(On)                       //
+    AST_NODE(Return)                   //
+    AST_NODE(Select)                   //
+    AST_NODE(Sync)                     //
+    AST_NODE(TryCatch)                 // old AST: TryStmt/CatchStmt
+
+    AST_BEGIN_SUBCLASSES(Loop)         // old AST: LoopExpr / LoopStmt
+      AST_NODE(Coforall)
+      AST_NODE(DoWhile)                // old AST: DoWhileStmt
+      AST_NODE(For)                    // old AST: ForLoop / LoopExpr
+      AST_NODE(Forall)                 // old AST: ForallStmt / LoopExpr
+      AST_NODE(Foreach)                //
+      AST_NODE(While)                  // old AST: WhileStmt
+    AST_END_SUBCLASSES(Loop)
+
+  AST_END_SUBCLASSES(ControlFlow)
+
+
+  AST_BEGIN_SUBCLASSES(Literal)        // old AST: Immediate
     AST_LEAF(NumericLiteral)
-    AST_NODE(TupleLiteral)
+    AST_LEAF(StringLiteral) // includes bytes
     AST_NODE(ArrayLiteral)
     AST_NODE(DomainLiteral)
-  AST_END_SUBCLASSES(LiteralExpr)
+    AST_NODE(TupleLiteral)
+  AST_END_SUBCLASSES(Literal)
 
-  AST_BEGIN_SUBCLASSES(CallExpr)
-    AST_NODE(PrimCallExpr)
-    AST_NODE(NewExpr)
-    AST_NODE(FnCallExpr)
-    AST_NODE(OpCallExpr)
-  AST_END_SUBCLASSES(CallExpr)
+  AST_BEGIN_SUBCLASSES(Call)           // old AST:  CallExpr
+    AST_NODE(Dot)                      //
+    AST_NODE(FnCall)
+    AST_NODE(New)
+    AST_NODE(OpCall)
+    AST_NODE(PrimCall)                 // old AST: CallExpr/PrimitiveOp
+    AST_NODE(Try)                      //
+  AST_END_SUBCLASSES(Call)
 
   AST_BEGIN_SUBCLASSES(Decl)
     AST_NODE(FieldDecl)
@@ -89,54 +116,29 @@ AST_BEGIN_SUBCLASSES(Expr)
     AST_NODE(VariableDecl)
   AST_END_SUBCLASSES(Decl)
 
-  AST_BEGIN_SUBCLASSES(Stmt)
-    AST_NODE(BeginStmt)
-    AST_NODE(BlockStmt)
-    AST_NODE(BreakStmt)
-    AST_NODE(CatchStmt)
-    AST_NODE(CoforallStmt)
-    AST_NODE(ContinueStmt)
-    AST_NODE(DeferStmt)
-    AST_NODE(DoWhileStmt)
-    AST_NODE(ExternBlockStmt)
-    AST_NODE(ForStmt)
-    AST_NODE(ForallStmt)
-    AST_NODE(ForeachStmt)
-    AST_NODE(IfStmt) // CondStmt
-    AST_NODE(ImplementsStmt)
-    AST_NODE(ImportStmt)
-    AST_NODE(LocalStmt)
-    AST_NODE(OnStmt)
-    AST_NODE(RequireStmt)
-    AST_NODE(SelectStmt)
-    AST_NODE(SerialStmt)
-    AST_NODE(TryStmt)
-    AST_NODE(UseStmt)
-    AST_NODE(WhileStmt)
-  AST_END_SUBCLASSES(Stmt)
+AST_END_SUBCLASSES(Exp)
 
-AST_END_SUBCLASSES(Expr)
+AST_BEGIN_SUBCLASSES(Sym)              // old AST: Symbol
+  AST_NODE(EnumElement)                // old AST: EnumSymbol
+  AST_NODE(Formal)                     // old AST: ArgSymbol
+  AST_NODE(Function)                   // old AST: FnSymbol
+  AST_NODE(Interface)                  // old AST: InterfaceSymbol
+  AST_NODE(Module)                     // old AST: ModuleSymbol
+  AST_NODE(Variable)                   // old AST: VarSymbol
+                                       // old AST: ShadowVarSymbol
 
-AST_BEGIN_SUBCLASSES(Symbol)
-  AST_NODE(EnumElement)
-  AST_NODE(Formal)
-  AST_NODE(Function)
-  AST_NODE(Interface)
-  AST_NODE(Module)
-  AST_NODE(Variable)
+  AST_BEGIN_SUBCLASSES(TypeSym)        // old AST: TypeSymbol/Type
+    AST_NODE(Enum)                     // old AST: EnumType
+    AST_NODE(SimpleType)               //
 
-  AST_BEGIN_SUBCLASSES(Type)
-    AST_NODE(Enum)
-    AST_NODE(SimpleType)
+    AST_BEGIN_SUBCLASSES(AggregateTypeSym) // old AST: AggregateType
+      AST_NODE(Class)                  //
+      AST_NODE(Record)                 //
+      AST_NODE(Union)                  //
+    AST_END_SUBCLASSES(AggregateTypeSym)
 
-    AST_BEGIN_SUBCLASSES(Aggregate)
-      AST_NODE(Class)
-      AST_NODE(Record)
-      AST_NODE(Union)
-    AST_END_SUBCLASSES(Aggregate)
+  AST_END_SUBCLASSES(TypeSym)
 
-  AST_END_SUBCLASSES(Type)
-
-AST_END_SUBCLASSES(Symbol)
+AST_END_SUBCLASSES(Sym)
 
 /// \endcond
