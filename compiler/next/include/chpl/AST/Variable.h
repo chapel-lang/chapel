@@ -26,6 +26,7 @@
 namespace chpl {
 namespace ast {
 
+
 class Builder;
 
 /**
@@ -96,6 +97,7 @@ class Variable final : public Sym {
     }
   }
 };
+
 
 } // end namespace ast
 } // end namespace chpl

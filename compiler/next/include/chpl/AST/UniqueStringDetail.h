@@ -35,6 +35,7 @@ class Context;
 namespace ast {
 namespace detail {
 
+
 // We can make it store 6 bytes in line this way:
 // alloc all such strings aligned to 2 bytes
 // store in the low-order byte an odd number
@@ -179,6 +180,7 @@ struct PODUniqueString {
   }
 };
 
+
 } // end namespace detail
 } // end namespace ast
 
@@ -209,6 +211,7 @@ template<> struct update<std::string> {
     return defaultUpdate(keep, addin);
   }
 };
+
 
 } // end namespace chpl
 /// \endcond

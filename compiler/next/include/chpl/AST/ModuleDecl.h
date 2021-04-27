@@ -27,6 +27,7 @@
 namespace chpl {
 namespace ast {
 
+
 class Builder;
 
 /**
@@ -58,6 +59,7 @@ class ModuleDecl final : public Decl {
   }
   const Module::Tag tag() const { return this->module()->tag(); }
 };
+
 
 } // end namespace ast
 } // end namespace chpl

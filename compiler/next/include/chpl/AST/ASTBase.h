@@ -30,6 +30,7 @@
 namespace chpl {
 namespace ast {
 
+
 /**
   This is the base class for AST types.
 
@@ -53,6 +54,8 @@ class ASTBase {
  private:
   asttags::ASTTag tag_;
   ID id_;
+
+ protected:
   ASTList children_;
 
   /**
@@ -92,6 +95,14 @@ class ASTBase {
   int numChildren() const {
     return children_.size();
   }
+
+  /**
+    Return a way to iterate over the children.
+    */
+  ASTListIteratorPair<ASTBase> children() const {
+    return ASTListIteratorPair<ASTBase>(children_.begin(), children_.end());
+  }
+
   /**
     Returns the i'th child AST node in the tree directly under this one.
     This function returns a "borrow" of the AST node. It is managed
@@ -169,8 +180,8 @@ class ASTBase {
   #undef AST_TO
 };
 
-} // end namespace ast
 
+} // end namespace ast
 } // end namespace chpl
 
 /// \cond DO_NOT_DOCUMENT

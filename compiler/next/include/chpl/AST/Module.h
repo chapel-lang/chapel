@@ -26,6 +26,7 @@
 namespace chpl {
 namespace ast {
 
+
 /**
   This class represents a module. For example:
 
@@ -59,6 +60,11 @@ class Module final : public Sym {
  public:
   ~Module() override = default;
   const Tag tag() const { return this->tag_; }
+
+  ASTListIteratorPair<Exp> stmts() const {
+    return ASTListIteratorPair<Exp>(children_.begin(), children_.end());
+  }
+
   int numStmts() const {
     return this->numChildren();
   }
@@ -68,6 +74,7 @@ class Module final : public Sym {
     return (Exp*) ast;
   }
 };
+
 
 } // end namespace ast
 } // end namespace chpl

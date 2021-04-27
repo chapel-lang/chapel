@@ -105,9 +105,8 @@ static void dumpHelper(const ASTBase* ast, int depth) {
            asttags::tagToString(ast->tag()),
            ast);
   }
-  int nChildren = ast->numChildren();
-  for (int i = 0; i < nChildren; i++) {
-    dumpHelper(ast->child(i), depth+1);
+  for (const ASTBase* child : ast->children()) {
+    dumpHelper(child, depth+1);
   }
 }
 

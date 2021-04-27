@@ -26,6 +26,7 @@
 namespace chpl {
 namespace ast {
 
+
 /**
   This is an abstract base class for Symbols
  */
@@ -57,6 +58,7 @@ class Sym : public ASTBase {
   UniqueString name() const { return name_; }
   Visibility visibility() const { return visibility_; }
 };
+
 
 } // end namespace ast
 } // end namespace chpl

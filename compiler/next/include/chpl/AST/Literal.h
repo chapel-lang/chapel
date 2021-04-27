@@ -25,6 +25,7 @@
 namespace chpl {
 namespace ast {
 
+
 /**
   This class represents a literal.
 
@@ -39,6 +40,7 @@ namespace ast {
 class Literal final : public Exp {
   // TODO: move over 'ifa' code
 };
+
 
 } // end namespace ast
 } // end namespace chpl

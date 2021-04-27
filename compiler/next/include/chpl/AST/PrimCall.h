@@ -22,10 +22,9 @@
 
 #include "chpl/AST/Call.h"
 
-#include <vector>
-
 namespace chpl {
 namespace ast {
+
 
 /**
   This class represents a primitive call
@@ -36,10 +35,9 @@ class PrimCall final : public Call {
  public:
   ~PrimCall() override = default;
 
-  // TODO: which primitive?
-  int numActuals() const override { return this->numChildren(); }
-  Exp* actual(int i) const override { return this->getChild(i); }
+  // TODO: which primitive? Store that in child 0, somehow
 };
+
 
 } // end namespace ast
 } // end namespace chpl

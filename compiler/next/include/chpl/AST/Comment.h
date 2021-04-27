@@ -28,6 +28,7 @@
 namespace chpl {
 namespace ast {
 
+
 class Builder;
 
 /**
@@ -51,6 +52,7 @@ class Comment final : public Exp {
   const char* c_str() const { return comment_.c_str(); }
   const std::string& str() const { return comment_; }
 };
+
 
 } // end namespace ast
 } // end namespace chpl

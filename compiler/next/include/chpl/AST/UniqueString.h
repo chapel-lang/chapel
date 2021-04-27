@@ -37,6 +37,7 @@ class Context;
 
 namespace ast {
 
+
 /**
   This class represents a unique'd NULL-terminated string.
   Unique'd strings allow:

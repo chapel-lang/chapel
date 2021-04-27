@@ -30,8 +30,8 @@ Block::Block(ASTList stmts) :
 
 #ifndef NDEBUG
   // check that all children are exprs (and not, say, Symbols)
-  for (int i = 0; i < this->numChildren(); i++) {
-    assert(child(i)->isExp());
+  for (const ASTBase* child : this->children()) {
+    assert(child->isExp());
   }
 #endif
 }

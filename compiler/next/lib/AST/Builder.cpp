@@ -29,6 +29,7 @@
 namespace chpl {
 namespace ast {
 
+
 Builder::Builder(Context* context,
                  UniqueString filepath,
                  UniqueString inferredModuleName)
@@ -162,9 +163,9 @@ void Builder::assignIDsPostorder(ASTBase* ast, UniqueString symbolPath, int& i) 
     return;
 
   int firstChildID = i;
-  for (int j = 0; j < ast->numChildren(); j++) {
-    ASTBase* child = (ASTBase*) ast->child(j);
-    this->assignIDsPostorder(child, symbolPath, i);
+  for (auto & child : ast->children_) {
+    ASTBase* ptr = child.get();
+    this->assignIDsPostorder(ptr, symbolPath, i);
   }
   int afterChildID = i;
   int myID = afterChildID;
@@ -185,6 +186,7 @@ bool Builder::Result::update(Result& keep, Result& addin) {
 
   return match;
 }
+
 
 } // namespace ast
 } // namespace chpl

@@ -27,6 +27,7 @@
 namespace chpl {
 namespace ast {
 
+
 /**
   This is an abstract base class for declarations
  */
@@ -53,6 +54,7 @@ class Decl : public Exp {
     return sym()->visibility();
   }
 };
+
 
 } // end namespace ast
 } // end namespace chpl

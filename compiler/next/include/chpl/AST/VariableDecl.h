@@ -29,6 +29,7 @@
 namespace chpl {
 namespace ast {
 
+
 class Builder;
 
 /**
@@ -75,6 +76,7 @@ class VariableDecl final : public Decl {
     return this->variable()->initExp();
   }
 };
+
 
 } // end namespace ast
 } // end namespace chpl

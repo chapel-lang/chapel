@@ -26,6 +26,7 @@
 namespace chpl {
 namespace ast {
 
+
 /**
   This class represents some missing AST due to an error.
  */
@@ -38,6 +39,7 @@ class ErroneousExp final : public Exp {
   ~ErroneousExp() = default;
   static owned<ErroneousExp> build(Builder* builder, Location loc);
 };
+
 
 } // end namespace ast
 } // end namespace chpl

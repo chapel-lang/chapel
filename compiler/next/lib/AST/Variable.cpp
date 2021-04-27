@@ -38,8 +38,8 @@ Variable::Variable(ASTList children,
   assert(numChildren() <= 2);
 #ifndef NDEBUG
   // check that all children are exprs (and not, say, Syms)
-  for (int i = 0; i < this->numChildren(); i++) {
-    assert(child(i)->isExp());
+  for (const ASTBase* child : this->children()) {
+    assert(child->isExp());
   }
 #endif
 }
@@ -52,7 +52,6 @@ bool Variable::contentsMatchInner(const ASTBase* other) const {
          lhs->typeExpChildNum == rhs->typeExpChildNum &&
          lhs->initExpChildNum == rhs->initExpChildNum;
 }
-
 
 
 } // namespace ast

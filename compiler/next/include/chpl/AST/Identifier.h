@@ -27,6 +27,7 @@
 namespace chpl {
 namespace ast {
 
+
 class Builder;
 
 /**
@@ -53,6 +54,7 @@ class Identifier final : public Exp {
   static owned<Identifier> build(Builder* builder, Location loc, UniqueString name);
   UniqueString name() const { return name_; }
 };
+
 
 } // end namespace ast
 } // end namespace chpl

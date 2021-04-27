@@ -27,6 +27,7 @@
 namespace chpl {
 namespace ast {
 
+
 /**
   This abstract class represents something call-like
  */
@@ -38,6 +39,10 @@ class Call : public Exp {
   // 0'th child is the called expression, which does
   // not count as an "actual".
 
+  ASTListIteratorPair<Exp> actuals() const {
+    return ASTListIteratorPair<Exp>(children_.begin()+1, children_.end());
+  }
+
   int numActuals() const {
     return this->numChildren() - 1;
   }
@@ -48,6 +53,7 @@ class Call : public Exp {
     return this->getChild(0);
   }
 };
+
 
 } // end namespace ast
 } // end namespace chpl

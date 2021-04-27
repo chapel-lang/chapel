@@ -26,6 +26,7 @@
 namespace chpl {
 namespace ast {
 
+
 /**
   This class represents a { } block.
  */
@@ -39,6 +40,13 @@ class Block final : public Exp {
    Create and return a Block containing the passed stmts.
    */
   static owned<Block> build(Builder* builder, Location loc, ASTList stmts);
+
+  /**
+    Return a way to iterate over the statements.
+   */
+  ASTListIteratorPair<Exp> stmts() const {
+    return ASTListIteratorPair<Exp>(children_.begin(), children_.end());
+  }
 
   /**
    Return the number of statements in the block.
@@ -55,6 +63,7 @@ class Block final : public Exp {
     return (const Exp*)ast;
   }
 };
+
 
 } // end namespace ast
 } // end namespace chpl

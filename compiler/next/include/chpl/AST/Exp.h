@@ -25,6 +25,7 @@
 namespace chpl {
 namespace ast {
 
+
 /**
   This is an abstract base class for expressions
  */
@@ -39,6 +40,7 @@ class Exp : public ASTBase {
  public:
   virtual ~Exp() = 0; // this is an abstract base class
 };
+
 
 } // end namespace ast
 } // end namespace chpl

@@ -27,6 +27,7 @@
 namespace chpl {
 namespace ast {
 
+
 /**
   This class represents an error/warning message. The message
   is saved (in the event it needs to be reported again).
@@ -72,6 +73,7 @@ class ErrorMessage final {
 // TODO: Should it be moved out of the ast namespace? What directory
 // should it go in?
 using chpl::ast::ErrorMessage;
+
 
 } // end namespace chpl
 

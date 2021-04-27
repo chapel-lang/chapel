@@ -25,6 +25,7 @@
 namespace chpl {
 namespace ast {
 
+
 /**
   This class represents a call to an operator.
  */
@@ -40,6 +41,7 @@ class OpCall final : public Call {
   /** Returns the name of the operator called */
   UniqueString operatorName() const { return op_; }
 };
+
 
 } // end namespace ast
 } // end namespace chpl

@@ -36,5 +36,6 @@ target_sources(libchplcomp-obj
                UniqueString.cpp
                Variable.cpp
                VariableDecl.cpp
+               Visitor.cpp
 
               )
