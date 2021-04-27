@@ -52,7 +52,7 @@ struct UniqueStrHash final {
 
 namespace querydetail {
 
-typedef int64_t RevisionNumber;
+using RevisionNumber = int64_t;
 class QueryMapResultBase;
 
 // define a hash function for std::tuple since the standard doesn't
@@ -83,7 +83,7 @@ template<>
 std::size_t queryArgsHash<>(const std::tuple<>& tuple);
 
 // define an equality function for std::tuple. the standard will call ==
-// but we want to always compare our keys with equal_to 
+// but we want to always compare our keys with equal_to
 template<typename T>
 static bool queryArgsEqualsOne(const T& lhs, const T& rhs) {
   std::equal_to<T> eq;
@@ -158,8 +158,8 @@ static void queryArgsPrint(const std::tuple<Ts...>& tuple) {
 template<>
 void queryArgsPrint<>(const std::tuple<>& tuple);
 
-typedef std::vector<QueryMapResultBase*> QueryDependencyVec;
-typedef std::vector<ErrorMessage> QueryErrorVec;
+using QueryDependencyVec = std::vector<QueryMapResultBase*>;
+using QueryErrorVec = std::vector<ErrorMessage>;
 
 class QueryMapResultBase {
  public:
@@ -216,11 +216,11 @@ class QueryMapBase {
 template<typename ResultType, typename... ArgTs>
 class QueryMap final : public QueryMapBase {
  public:
-  typedef QueryMapResult<ResultType> TheResultType;
-  typedef std::unordered_map<std::tuple<ArgTs...>,
-                     TheResultType,
-                     QueryMapArgTupleHash<ArgTs...>,
-                     QueryMapArgTupleEqual<ArgTs...>> MapType;
+  using TheResultType = QueryMapResult<ResultType>;
+  using MapType = std::unordered_map<std::tuple<ArgTs...>,
+                                     TheResultType,
+                                     QueryMapArgTupleHash<ArgTs...>,
+                                     QueryMapArgTupleEqual<ArgTs...>>;
   // the main map
   MapType map;
   // old results stores replaced results long enough for dependent

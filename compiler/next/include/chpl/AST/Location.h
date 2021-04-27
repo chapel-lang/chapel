@@ -31,15 +31,13 @@ namespace ast {
 class Location final {
  private:
   UniqueString path_;
-  int firstLine_;
-  int firstColumn_;
-  int lastLine_;
-  int lastColumn_;
+  int firstLine_ = -1;
+  int firstColumn_ = -1;
+  int lastLine_ = -1;
+  int lastColumn_ = -1;
  public:
   Location()
-    : path_(),
-      firstLine_(-1), firstColumn_(-1),
-      lastLine_(-1), lastColumn_(-1) {
+    : path_() {
   }
 
   Location(UniqueString path,
@@ -60,11 +58,7 @@ class Location final {
            this->lastColumn_ == other.lastColumn_;
   }
   inline bool operator!=(const Location other) const {
-    return this->path_ != other.path_ ||
-           this->firstLine_ != other.firstLine_ ||
-           this->firstColumn_ != other.firstColumn_ ||
-           this->lastLine_ != other.lastLine_ ||
-           this->lastColumn_ != other.lastColumn_;
+    return !(*this == other);
   }
 
   size_t hash() const {
