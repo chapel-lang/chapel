@@ -1,3 +1,4 @@
+$CHPL_HOME/modules/standard/Regexp.chpl:23: warning: 'Regexp' module is deprecated; please use 'Regex' module instead.
 agggtaaa|tttaccct 1
 [cgt]gggtaaa|tttaccc[acg] 0
 a[act]ggtaaa|tttacc[agt]t 0
