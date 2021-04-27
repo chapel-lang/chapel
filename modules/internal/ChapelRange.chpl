@@ -656,6 +656,12 @@ module ChapelRange {
     if !hasHighBound() {
       compilerError("can't query the high bound of a range without one");
     }
+    if chpl__singleValIdxType(idxType) {
+      if size == 0 {
+        warning("This range is empty and has a single-value idxType, so its high bound isn't trustworthy");
+        return chpl_intToIdx(_low);
+      }
+    }
     return chpl_intToIdx(_high);
   }
 
@@ -686,6 +692,12 @@ module ChapelRange {
   inline proc range.alignedHigh : idxType {
     if !hasHighBound() {
       compilerError("can't query the high bound of a range without one");
+    }
+    if chpl__singleValIdxType(idxType) {
+      if size == 0 {
+        warning("This range is empty and has a single-value idxType, so its high bound isn't trustworthy");
+        return chpl_intToIdx(_low);
+      }
     }
     return chpl_intToIdx(this.alignedHighAsInt);
   }
@@ -2726,23 +2738,11 @@ operator :(r: range(?), type t: range(?)) {
   }
 
   inline proc chpl__intToIdx(type idxType: enum, i: integral) {
-    if chpl__singleValIdxType(idxType) {
-      if (i != 0) then
-        warning("result can't be trusted");
-      return chpl__orderToEnum(0, idxType);
-    } else {
-      return chpl__orderToEnum(i, idxType);
-    }
+    return chpl__orderToEnum(i, idxType);
   }
 
   inline proc chpl__intToIdx(type idxType: enum, param i: integral) param {
-    if chpl__singleValIdxType(idxType) {
-      if (i != 0) then
-        compilerError("result can't be trusted");
-      return chpl__orderToEnum(0, idxType);
-    } else {
-      return chpl__orderToEnum(i, idxType);
-    }
+    return chpl__orderToEnum(i, idxType);
   }
 
   inline proc chpl__intToIdx(type idxType, i: integral) where isBoolType(idxType) {

@@ -181,7 +181,7 @@ r[subr]           = red..<red
 r[subr] == subr[r]= true
 Copying...        = red..<red
 
-./rangeAPItest.chpl:21: warning: result can't be trusted
-./rangeAPItest.chpl:23: warning: result can't be trusted
-./rangeAPItest.chpl:21: warning: result can't be trusted
-./rangeAPItest.chpl:23: warning: result can't be trusted
+./rangeAPItest.chpl:21: warning: This range is empty and has a single-value idxType, so its high bound isn't trustworthy
+./rangeAPItest.chpl:23: warning: This range is empty and has a single-value idxType, so its high bound isn't trustworthy
+./rangeAPItest.chpl:21: warning: This range is empty and has a single-value idxType, so its high bound isn't trustworthy
+./rangeAPItest.chpl:23: warning: This range is empty and has a single-value idxType, so its high bound isn't trustworthy

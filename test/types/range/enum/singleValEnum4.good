@@ -296,6 +296,6 @@ Par B Loop:
 Par C Loop:
 0
 
-singleValEnum4.chpl:46: warning: result can't be trusted
-singleValEnum4.chpl:46: warning: result can't be trusted
-singleValEnum4.chpl:46: warning: result can't be trusted
+singleValEnum4.chpl:46: warning: This range is empty and has a single-value idxType, so its high bound isn't trustworthy
+singleValEnum4.chpl:46: warning: This range is empty and has a single-value idxType, so its high bound isn't trustworthy
+singleValEnum4.chpl:46: warning: This range is empty and has a single-value idxType, so its high bound isn't trustworthy
