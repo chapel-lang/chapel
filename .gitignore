@@ -274,6 +274,9 @@ tags
 /test/parallel/taskPar/taskIntents/src/*.d
 /test/parallel/taskPar/taskIntents/src/*.o
 
+/test/parsing/king-11/aaa*.chpl
+/test/parsing/king-11/longName.good
+
 /test/performance/compiler/elliot/passCheck.good
 
 /test/performance/vectorization/vectorPragmas/*.good

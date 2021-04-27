@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+NAME_MAX=`getconf NAME_MAX /`
+NAME_MAX=$((NAME_MAX - 15))
+LIMIT=$((NAME_MAX - 1))
+VAL=`realpath "$0" | sed 's|\(.*\)/.*|\1|'`
+
+repeatChar() {
+    local input="$1"
+    local count="$2"
+    printf -v myString "%*s" "$count"
+    printf '%s\n' "${myString// /$input}"
+}
+
+FILENAME=$(repeatChar a $NAME_MAX).chpl
+printf 'module LongName {\n\tfunc printSomething() {\n\t\twrite(%s); \n\t}\n}' "'Won't Compile'" > $VAL/$FILENAME
+FILENAME=$(repeatChar a $LIMIT)
+BOLD_ERROR=`echo -e '\033[1merror:\033[0m'`
+printf "%s %s, filename is longer than maximum allowed length of %s\n" $BOLD_ERROR $FILENAME $LIMIT > $VAL/longName.good
