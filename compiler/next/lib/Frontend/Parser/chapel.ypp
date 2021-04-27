@@ -151,8 +151,8 @@
     LinkageTag_EXPORT,
   };
 
-  typedef std::vector<Expr*> ParserExprList;
-  typedef std::vector<PODUniqueString> UniqueStrList;
+  using ParserExprList = std::vector<Expr*>;
+  using UniqueStrList = std::vector<PODUniqueString>;
 
   struct PotentialRename {
     enum {SINGLE, DOUBLE} tag;
@@ -179,7 +179,7 @@
 
   };
 
-  typedef std::vector<PotentialRename> RenameList;
+  using RenameList = std::vector<PotentialRename>;
 
   // these structures do not use constructors to avoid
   // errors about being in the union below. Additionally
