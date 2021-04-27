@@ -266,41 +266,39 @@ static const char* mcmModeNames[] = { "undefined",
 
 static void emit_delayedFixedHeapMsgs(void);
 
-static inline struct perTxCtxInfo_t* tciAlloc(void);
-static inline struct perTxCtxInfo_t* tciAllocForAmHandler(void);
-static inline chpl_bool tciAllocTabEntry(struct perTxCtxInfo_t*);
-static inline void tciFree(struct perTxCtxInfo_t*);
-static inline void waitForCQSpace(struct perTxCtxInfo_t*, size_t);
-static inline chpl_comm_nb_handle_t ofi_put(const void*, c_nodeid_t,
-                                            void*, size_t);
+static struct perTxCtxInfo_t* tciAlloc(void);
+static struct perTxCtxInfo_t* tciAllocForAmHandler(void);
+static chpl_bool tciAllocTabEntry(struct perTxCtxInfo_t*);
+static void tciFree(struct perTxCtxInfo_t*);
+static void waitForCQSpace(struct perTxCtxInfo_t*, size_t);
+static chpl_comm_nb_handle_t ofi_put(const void*, c_nodeid_t, void*, size_t);
 static void ofi_put_lowLevel(const void*, void*, c_nodeid_t,
                              uint64_t, uint64_t, size_t, void*,
                              uint64_t, struct perTxCtxInfo_t*);
-static inline void do_remote_put_buff(void*, c_nodeid_t, void*, size_t);
-static inline chpl_comm_nb_handle_t ofi_get(void*, c_nodeid_t,
-                                            void*, size_t);
+static void do_remote_put_buff(void*, c_nodeid_t, void*, size_t);
+static chpl_comm_nb_handle_t ofi_get(void*, c_nodeid_t, void*, size_t);
 static void ofi_get_lowLevel(void*, void*, c_nodeid_t,
                              uint64_t, uint64_t, size_t, void*,
                              uint64_t, struct perTxCtxInfo_t*);
-static inline void do_remote_get_buff(void*, c_nodeid_t, void*, size_t);
-static inline void do_remote_amo_nf_buff(void*, c_nodeid_t, void*, size_t,
-                                         enum fi_op, enum fi_datatype);
+static void do_remote_get_buff(void*, c_nodeid_t, void*, size_t);
+static void do_remote_amo_nf_buff(void*, c_nodeid_t, void*, size_t,
+                                  enum fi_op, enum fi_datatype);
 static void amEnsureProgress(struct perTxCtxInfo_t*);
 static void checkRxRmaCmplsCQ(void);
 static void checkRxRmaCmplsCntr(void);
 static void checkTxCmplsCQ(struct perTxCtxInfo_t*);
 static void checkTxCmplsCntr(struct perTxCtxInfo_t*);
-static inline size_t readCQ(struct fid_cq*, void*, size_t);
+static size_t readCQ(struct fid_cq*, void*, size_t);
 static void reportCQError(struct fid_cq*);
-static inline void waitForTxnComplete(struct perTxCtxInfo_t*, void* ctx);
-static inline void forceMemFxVisOneNode(c_nodeid_t, chpl_bool, chpl_bool,
-                                        struct perTxCtxInfo_t*);
-static inline void forceMemFxVisAllNodes(chpl_bool, chpl_bool, c_nodeid_t,
-                                         struct perTxCtxInfo_t*);
-static inline void forceMemFxVisAllNodes_noTcip(chpl_bool, chpl_bool);
+static void waitForTxnComplete(struct perTxCtxInfo_t*, void* ctx);
+static void forceMemFxVisOneNode(c_nodeid_t, chpl_bool, chpl_bool,
+                                 struct perTxCtxInfo_t*);
+static void forceMemFxVisAllNodes(chpl_bool, chpl_bool, c_nodeid_t,
+                                  struct perTxCtxInfo_t*);
+static void forceMemFxVisAllNodes_noTcip(chpl_bool, chpl_bool);
 static void* allocBounceBuf(size_t);
 static void freeBounceBuf(void*);
-static inline void local_yield(void);
+static void local_yield(void);
 
 static void time_init(void);
 
@@ -938,9 +936,9 @@ static void init_broadcast_private(void);
 //
 // forward decls
 //
-static inline chpl_bool mrGetKey(uint64_t*, uint64_t*, int, void*, size_t);
-static inline chpl_bool mrGetLocalKey(void*, size_t);
-static inline chpl_bool mrGetDesc(void**, void*, size_t);
+static chpl_bool mrGetKey(uint64_t*, uint64_t*, int, void*, size_t);
+static chpl_bool mrGetLocalKey(void*, size_t);
+static chpl_bool mrGetDesc(void**, void*, size_t);
 
 void chpl_comm_init(int *argc_p, char ***argv_p) {
   chpl_comm_ofi_abort_on_error =
@@ -2353,7 +2351,7 @@ void init_ofiForAms(void) {
 }
 
 
-static inline void amRequestNop(c_nodeid_t, chpl_bool, struct perTxCtxInfo_t*);
+static void amRequestNop(c_nodeid_t, chpl_bool, struct perTxCtxInfo_t*);
 
 static
 void init_ofiConnections(void) {
@@ -2956,7 +2954,7 @@ void* mrLocalizeTargetRemote(const void* addr, size_t size,
 // Interface: memory consistency
 //
 
-static inline void retireDelayedAmDone(chpl_bool);
+static void retireDelayedAmDone(chpl_bool);
 
 
 static inline
@@ -3166,11 +3164,11 @@ static void amRequestRmaGet(c_nodeid_t, void*, void*, size_t);
 static void amRequestAMO(c_nodeid_t, void*, const void*, const void*, void*,
                          int, enum fi_datatype, size_t);
 static void amRequestFree(c_nodeid_t, void*);
-static inline void amRequestNop(c_nodeid_t, chpl_bool, struct perTxCtxInfo_t*);
+static void amRequestNop(c_nodeid_t, chpl_bool, struct perTxCtxInfo_t*);
 static void amRequestCommon(c_nodeid_t, amRequest_t*, size_t,
                             amDone_t**, chpl_bool, struct perTxCtxInfo_t*);
-static inline void amWaitForDone(amDone_t*);
-static inline chpl_bool setUpDelayedAmDone(chpl_comm_taskPrvData_t**, void**);
+static void amWaitForDone(amDone_t*);
+static chpl_bool setUpDelayedAmDone(chpl_comm_taskPrvData_t**, void**);
 
 
 void chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
@@ -3851,17 +3849,17 @@ static pthread_mutex_t amStartStopMutex = PTHREAD_MUTEX_INITIALIZER;
 static void amHandler(void*);
 static void processRxAmReq(struct perTxCtxInfo_t*);
 static void amHandleExecOn(chpl_comm_on_bundle_t*);
-static inline void amWrapExecOnBody(void*);
+static void amWrapExecOnBody(void*);
 static void amHandleExecOnLrg(chpl_comm_on_bundle_t*);
 static void amWrapExecOnLrgBody(struct amRequest_execOnLrg_t*);
 static void amWrapGet(struct taskArg_RMA_t*);
 static void amWrapPut(struct taskArg_RMA_t*);
 static void amHandleAMO(struct amRequest_AMO_t*);
-static inline void amPutDone(c_nodeid_t, amDone_t*);
-static inline void amCheckLiveness(void);
+static void amPutDone(c_nodeid_t, amDone_t*);
+static void amCheckLiveness(void);
 
-static inline void doCpuAMO(void*, const void*, const void*, void*,
-                            enum fi_op, enum fi_datatype, size_t size);
+static void doCpuAMO(void*, const void*, const void*, void*,
+                     enum fi_op, enum fi_datatype, size_t size);
 
 
 static
@@ -4636,7 +4634,7 @@ void chpl_comm_getput_unordered_task_fence(void) {
 // Internal communication support
 //
 
-static inline struct perTxCtxInfo_t* tciAllocCommon(chpl_bool);
+static struct perTxCtxInfo_t* tciAllocCommon(chpl_bool);
 static struct perTxCtxInfo_t* findFreeTciTabEntry(chpl_bool);
 
 static __thread struct perTxCtxInfo_t* _ttcip;
@@ -6304,8 +6302,8 @@ void local_yield(void) {
 // Interface: network atomics
 //
 
-static inline void doAMO(c_nodeid_t, void*, const void*, const void*, void*,
-                         int, enum fi_datatype, size_t);
+static void doAMO(c_nodeid_t, void*, const void*, const void*, void*,
+                  int, enum fi_datatype, size_t);
 
 
 //
