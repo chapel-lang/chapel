@@ -22,7 +22,7 @@
 #include "chpl/AST/Builder.h"
 
 namespace chpl {
-namespace ast {
+namespace uast {
 
 
 ModuleDecl::ModuleDecl(owned<Module> module)
@@ -48,5 +48,5 @@ ModuleDecl::build(Builder* builder, Location loc,
 }
 
 
-} // namespace ast
+} // namespace uast
 } // namespace chpl

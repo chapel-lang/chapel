@@ -48,8 +48,8 @@
 #include <vector>
 
 using namespace chpl;
-using namespace ast;
-using chpl::ast::detail::PODUniqueString;
+using namespace uast;
+using chpl::uast::detail::PODUniqueString;
 
 struct ParserError;
 struct ParserComment;

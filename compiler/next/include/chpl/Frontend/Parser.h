@@ -57,12 +57,12 @@ class Parser final {
    /**
      Parse a file at a particular path.
     */
-   ast::Builder::Result parseFile(const char* path);
+   uast::Builder::Result parseFile(const char* path);
    /**
      Parse source code in a string.
      'path' is only used for certain errors.
     */
-   ast::Builder::Result parseString(const char* path, const char* str);
+   uast::Builder::Result parseString(const char* path, const char* str);
 };
 
 } // end namespace chpl

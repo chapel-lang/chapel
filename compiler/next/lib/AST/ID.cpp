@@ -22,7 +22,8 @@
 #include <cstring>
 
 namespace chpl {
-namespace ast {
+namespace uast {
+
 
 ID::ID()
   : symbolPath_(), postOrderId_(-1), numChildIds_(0) {
@@ -67,5 +68,6 @@ int ID::compare(const ID other) const {
   return this->postOrderId() - other.postOrderId();
 }
 
-} // end namespace ast
+
+} // end namespace uast
 } // end namespace chpl

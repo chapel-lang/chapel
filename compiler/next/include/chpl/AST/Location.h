@@ -23,7 +23,7 @@
 #include "chpl/AST/UniqueString.h"
 
 namespace chpl {
-namespace ast {
+namespace uast {
 
 
 /**
@@ -78,21 +78,21 @@ class Location final {
   }
 };
 
-} // end namespace ast
+} // end namespace uast
 
-template<> struct update<chpl::ast::Location> {
-  bool operator()(chpl::ast::Location& keep,
-                  chpl::ast::Location& addin) const {
+template<> struct update<chpl::uast::Location> {
+  bool operator()(chpl::uast::Location& keep,
+                  chpl::uast::Location& addin) const {
     return defaultUpdate(keep, addin);
   }
 };
 
 
-// Allow chpl::ast::Location to be just called chpl::Location
+// Allow chpl::uast::Location to be just called chpl::Location
 // TODO: Should it be moved out of the ast namespace? What directory
 // should it go in?
 
-using chpl::ast::Location;
+using chpl::uast::Location;
 
 } // end namespace chpl
 

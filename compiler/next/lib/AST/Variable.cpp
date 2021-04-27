@@ -22,7 +22,7 @@
 #include "chpl/AST/Builder.h"
 
 namespace chpl {
-namespace ast {
+namespace uast {
 
 
 Variable::Variable(ASTList children,
@@ -54,5 +54,5 @@ bool Variable::contentsMatchInner(const ASTBase* other) const {
 }
 
 
-} // namespace ast
+} // namespace uast
 } // namespace chpl

@@ -21,7 +21,7 @@
 #define CHPL_AST_ASTTAG_H
 
 namespace chpl {
-namespace ast {
+namespace uast {
 namespace asttags {
 
 
@@ -93,7 +93,7 @@ const char* tagToString(ASTTag tag);
 
 
 } // end namespace tags
-} // end namespace ast
+} // end namespace uast
 } // end namespace chpl
 
 #endif

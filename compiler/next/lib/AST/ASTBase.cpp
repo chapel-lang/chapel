@@ -25,7 +25,7 @@
 #include "chpl/AST/Sym.h"
 
 namespace chpl {
-namespace ast {
+namespace uast {
 
 ASTBase::ASTBase(asttags::ASTTag tag)
   : tag_(tag), id_(), children_() {
@@ -115,5 +115,5 @@ void ASTBase::dump(const ASTBase* ast) {
 }
 
 
-} // end namespace ast
+} // end namespace uast
 } // end namespace chpl

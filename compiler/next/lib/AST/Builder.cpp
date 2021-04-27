@@ -27,7 +27,7 @@
 #include <string>
 
 namespace chpl {
-namespace ast {
+namespace uast {
 
 
 Builder::Builder(Context* context,
@@ -188,5 +188,5 @@ bool Builder::Result::update(Result& keep, Result& addin) {
 }
 
 
-} // namespace ast
+} // namespace uast
 } // namespace chpl

@@ -33,7 +33,7 @@
 #include <cassert>
 
 using namespace chpl;
-using namespace ast;
+using namespace uast;
 
 void testPerformance(Context* ctx, const char* inputFile, bool printTiming) {
   int outerRepeat = 10;

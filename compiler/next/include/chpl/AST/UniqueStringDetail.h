@@ -32,7 +32,7 @@
 /// \cond DO_NOT_DOCUMENT
 namespace chpl {
 class Context;
-namespace ast {
+namespace uast {
 namespace detail {
 
 
@@ -182,7 +182,7 @@ struct PODUniqueString {
 
 
 } // end namespace detail
-} // end namespace ast
+} // end namespace uast
 
 // TODO: should these go somewhere else?
 static inline

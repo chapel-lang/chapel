@@ -22,7 +22,7 @@
 #include "chpl/AST/Builder.h"
 
 namespace chpl {
-namespace ast {
+namespace uast {
 
 
 ErroneousExp::ErroneousExp()
@@ -42,5 +42,5 @@ owned<ErroneousExp> ErroneousExp::build(Builder* builder, Location loc) {
 }
 
 
-} // namespace ast
+} // namespace uast
 } // namespace chpl

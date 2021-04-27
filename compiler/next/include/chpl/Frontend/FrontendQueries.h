@@ -35,13 +35,13 @@ namespace chpl {
 // This could alternatively be a class with static methods
 namespace FrontendQueries {
   const std::string& fileText(Context* context, UniqueString path);
-  const ast::Builder::Result* parseFile(Context* context, UniqueString path);
+  const uast::Builder::Result* parseFile(Context* context, UniqueString path);
 
   using LocationsMap = std::unordered_map<ID, Location>;
   const LocationsMap& fileLocations(Context* context, UniqueString path);
   Location locate(Context* context, ID id);
 
-  using ModuleDeclVec = std::vector<const ast::ModuleDecl*>;
+  using ModuleDeclVec = std::vector<const uast::ModuleDecl*>;
   const ModuleDeclVec& parse(Context* context, UniqueString path);
 
   /*
@@ -76,10 +76,10 @@ namespace FrontendQueries {
 
   struct DefinedTopLevelNames {
     // the module
-    const ast::Module* module;
+    const uast::Module* module;
     // these are in program order
     std::vector<UniqueString> topLevelNames;
-    DefinedTopLevelNames(const ast::Module* module,
+    DefinedTopLevelNames(const uast::Module* module,
                          std::vector<UniqueString> topLevelNames)
       : module(module), topLevelNames(std::move(topLevelNames)) {
     }
@@ -98,7 +98,7 @@ namespace FrontendQueries {
   /*using FunctionResolutionResult =
     std::unordered_map<FnSymbol*,owned<ResolutionResult>>; */
 
-  //const ast::BaseAST* ast(Context* context, ID id);
+  //const uast::BaseAST* ast(Context* context, ID id);
 };
 
 } // end namespace chpl

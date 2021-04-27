@@ -22,7 +22,7 @@
 #include "chpl/AST/ASTBase.h"
 
 namespace chpl {
-namespace ast {
+namespace uast {
 
 
 bool updateASTList(ASTList& keep, ASTList& addin) {
@@ -179,5 +179,5 @@ bool updateASTList(ASTList& keep, ASTList& addin) {
 }
 
 
-} // end namespace ast
+} // end namespace uast
 } // end namespace chpl

@@ -90,8 +90,8 @@ const std::string& fileText(Context* context, UniqueString path) {
   return QUERY_END(result);
 }
 
-const ast::Builder::Result* parseFile(Context* context, UniqueString path) {
-  QUERY_BEGIN(context, owned<ast::Builder::Result>, path);
+const uast::Builder::Result* parseFile(Context* context, UniqueString path) {
+  QUERY_BEGIN(context, owned<uast::Builder::Result>, path);
   if (QUERY_USE_SAVED()) {
     return QUERY_GET_SAVED().get();
   }
@@ -99,11 +99,11 @@ const ast::Builder::Result* parseFile(Context* context, UniqueString path) {
   // Run the fileText query to get the file contents
   const std::string& text = fileText(context, path);
 
-  ast::Builder::Result* result = new ast::Builder::Result();
+  uast::Builder::Result* result = new uast::Builder::Result();
   auto parser = Parser::build(context);
   const char* pathc = path.c_str();
   const char* textc = text.c_str();
-  ast::Builder::Result tmpResult = parser->parseString(pathc, textc);
+  uast::Builder::Result tmpResult = parser->parseString(pathc, textc);
   result->topLevelExps.swap(tmpResult.topLevelExps);
   result->locations.swap(tmpResult.locations);
   for (ErrorMessage& e : tmpResult.errors) {
@@ -128,7 +128,7 @@ const LocationsMap& fileLocations(Context* context, UniqueString path) {
   }
 
   // Get the result of parsing
-  const ast::Builder::Result* p = parseFile(context, path);
+  const uast::Builder::Result* p = parseFile(context, path);
   // Create a map of ID to Location
   std::unordered_map<ID, Location> result;
   for (auto pair : p->locations) {
@@ -166,11 +166,11 @@ const ModuleDeclVec& parse(Context* context, UniqueString path) {
   }
 
   // Get the result of parsing
-  const ast::Builder::Result* p = parseFile(context, path);
+  const uast::Builder::Result* p = parseFile(context, path);
   // Compute a vector of ModuleDecls
   ModuleDeclVec result;
   for (auto & topLevelExp : p->topLevelExps) {
-    if (const ast::ModuleDecl* modDecl = topLevelExp->toModuleDecl()) {
+    if (const uast::ModuleDecl* modDecl = topLevelExp->toModuleDecl()) {
       result.push_back(modDecl);
     }
   }
@@ -232,13 +232,13 @@ const ResolutionResultByPostorderID& resolve(Context* context, Exp* e) {
 }
 */
 
-static std::vector<UniqueString> getTopLevelNames(const ast::Module* module) {
+static std::vector<UniqueString> getTopLevelNames(const uast::Module* module) {
   std::vector<UniqueString> result;
   int nStmts = module->numStmts();
   for (int i = 0; i < nStmts; i++) {
-    const ast::Exp* expr = module->stmt(i);
-    if (const ast::Decl* decl = expr->toDecl()) {
-      const ast::Sym* sym = decl->sym();
+    const uast::Exp* expr = module->stmt(i);
+    if (const uast::Decl* decl = expr->toDecl()) {
+      const uast::Sym* sym = decl->sym();
       result.push_back(sym->name());
     }
   }
@@ -256,8 +256,8 @@ const DefinedTopLevelNamesVec& moduleLevelDeclNames(Context* context,
 
   // Get the result of parsing modules
   const ModuleDeclVec& p = parse(context, path);
-  for (const ast::ModuleDecl* modDecl : p) {
-    const ast::Module* module = modDecl->module();
+  for (const uast::ModuleDecl* modDecl : p) {
+    const uast::Module* module = modDecl->module();
     result.push_back(DefinedTopLevelNames(module, getTopLevelNames(module)));
   }
 

@@ -23,7 +23,7 @@
 #include "chpl/AST/UniqueString.h"
 
 namespace chpl {
-namespace ast {
+namespace uast {
 
 
 /**
@@ -114,37 +114,37 @@ class ID final {
   }
 };
 
-} // end namespace ast
+} // end namespace uast
 
-template<> struct update<chpl::ast::ID> {
-  bool operator()(chpl::ast::ID& keep,
-                  chpl::ast::ID& addin) const {
+template<> struct update<chpl::uast::ID> {
+  bool operator()(chpl::uast::ID& keep,
+                  chpl::uast::ID& addin) const {
     return defaultUpdate(keep, addin);
   }
 };
 
-// Allow chpl::ast::ID to be just called chpl::ID
-// TODO: Should it be moved out of the ast namespace? What directory
+// Allow chpl::uast::ID to be just called chpl::ID
+// TODO: Should it be moved out of the uast namespace? What directory
 // should it go in?
-using chpl::ast::ID;
+using chpl::uast::ID;
 
 
 } // end namespace chpl
 
 namespace std {
-  template<> struct less<chpl::ast::ID> {
-    bool operator()(const chpl::ast::ID lhs, const chpl::ast::ID rhs) const {
+  template<> struct less<chpl::uast::ID> {
+    bool operator()(const chpl::uast::ID lhs, const chpl::uast::ID rhs) const {
       return lhs.compare(rhs) < 0;
     }
   };
-  template<> struct hash<chpl::ast::ID> {
-    size_t operator()(const chpl::ast::ID key) const {
+  template<> struct hash<chpl::uast::ID> {
+    size_t operator()(const chpl::uast::ID key) const {
       return (size_t) key.hash();
     }
   };
-  template<> struct equal_to<chpl::ast::ID> {
-    bool operator()(const chpl::ast::ID lhs,
-                    const chpl::ast::ID rhs) const {
+  template<> struct equal_to<chpl::uast::ID> {
+    bool operator()(const chpl::uast::ID lhs,
+                    const chpl::uast::ID rhs) const {
       return lhs == rhs;
     }
   };

@@ -26,7 +26,7 @@
 #include <vector>
 
 namespace chpl {
-namespace ast {
+namespace uast {
 
 
 // forward declare the various AST types
@@ -210,7 +210,7 @@ struct ASTListIteratorPair {
 };
 
 
-} // end namespace ast
+} // end namespace uast
 } // end namespace chpl
 
 #endif

@@ -22,7 +22,7 @@
 #include "chpl/AST/Builder.h"
 
 namespace chpl {
-namespace ast {
+namespace uast {
 
 
 Block::Block(ASTList stmts) :
@@ -49,5 +49,5 @@ owned<Block> Block::build(Builder* builder,
 }
 
 
-} // namespace ast
+} // namespace uast
 } // namespace chpl

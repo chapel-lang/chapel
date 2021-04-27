@@ -20,7 +20,7 @@
 #include "chpl/AST/Exp.h"
 
 namespace chpl {
-namespace ast {
+namespace uast {
 
 
 Exp::Exp(asttags::ASTTag tag)
@@ -35,5 +35,5 @@ Exp::~Exp() {
 }
 
 
-} // namespace ast
+} // namespace uast
 } // namespace chpl

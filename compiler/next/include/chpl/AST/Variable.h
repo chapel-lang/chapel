@@ -24,7 +24,7 @@
 #include "chpl/AST/Location.h"
 
 namespace chpl {
-namespace ast {
+namespace uast {
 
 
 class Builder;
@@ -99,7 +99,7 @@ class Variable final : public Sym {
 };
 
 
-} // end namespace ast
+} // end namespace uast
 } // end namespace chpl
 
 #endif

@@ -25,7 +25,7 @@
 #include <vector>
 
 namespace chpl {
-namespace ast {
+namespace uast {
 
 /**
   This class represents a function call or method call, including virtual and
@@ -52,7 +52,7 @@ class FnCall final : public Call {
 };
 
 
-} // end namespace ast
+} // end namespace uast
 } // end namespace chpl
 
 #endif

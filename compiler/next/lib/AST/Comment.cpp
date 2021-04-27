@@ -24,7 +24,8 @@
 #include <cstdlib>
 
 namespace chpl {
-namespace ast {
+namespace uast {
+
 
 Comment::Comment(std::string s)
  : Exp(asttags::Comment), comment_(std::move(s)) {
@@ -43,5 +44,6 @@ owned<Comment> Comment::build(Builder* builder, Location loc, std::string c) {
   return toOwned(ret);
 }
 
-} // namespace ast
+
+} // namespace uast
 } // namespace chpl

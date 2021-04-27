@@ -20,7 +20,7 @@
 #include "chpl/AST/Sym.h"
 
 namespace chpl {
-namespace ast {
+namespace uast {
 
 
 Sym::Sym(asttags::ASTTag tag,
@@ -38,5 +38,5 @@ Sym::~Sym() {
 }
 
 
-} // namespace ast
+} // namespace uast
 } // namespace chpl

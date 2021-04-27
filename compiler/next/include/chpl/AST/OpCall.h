@@ -23,7 +23,7 @@
 #include "chpl/AST/Call.h"
 
 namespace chpl {
-namespace ast {
+namespace uast {
 
 
 /**
@@ -43,7 +43,7 @@ class OpCall final : public Call {
 };
 
 
-} // end namespace ast
+} // end namespace uast
 } // end namespace chpl
 
 #endif

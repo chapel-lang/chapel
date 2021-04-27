@@ -22,7 +22,8 @@
 #include "chpl/AST/Exp.h"
 
 namespace chpl {
-namespace ast {
+namespace uast {
+
 
 Decl::Decl(asttags::ASTTag tag, owned<Sym> sym)
   : Exp(tag, makeASTList(std::move(sym))) {
@@ -32,5 +33,5 @@ Decl::~Decl() {
 }
 
 
-} // namespace ast
+} // namespace uast
 } // namespace chpl

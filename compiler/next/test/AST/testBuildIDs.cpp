@@ -33,7 +33,7 @@
 #endif
 
 using namespace chpl;
-using namespace ast;
+using namespace uast;
 
 void test0() {
   // test some operations on locations

@@ -22,7 +22,8 @@
 #include "chpl/AST/Builder.h"
 
 namespace chpl {
-namespace ast {
+namespace uast {
+
 
 Identifier::Identifier(UniqueString name)
   : Exp(asttags::Identifier), name_(name) {
@@ -42,5 +43,6 @@ owned<Identifier> Identifier::build(Builder* builder,
   return toOwned(ret);
 }
 
-} // namespace ast
+
+} // namespace uast
 } // namespace chpl

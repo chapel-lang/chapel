@@ -23,7 +23,7 @@
 #include "chpl/AST/ASTBase.h"
 
 namespace chpl {
-namespace ast {
+namespace uast {
 
 
 /**
@@ -42,7 +42,7 @@ class Exp : public ASTBase {
 };
 
 
-} // end namespace ast
+} // end namespace uast
 } // end namespace chpl
 
 #endif

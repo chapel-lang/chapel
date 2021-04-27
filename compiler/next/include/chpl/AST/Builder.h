@@ -31,7 +31,7 @@ namespace chpl {
 
 class Context;
 
-namespace ast {
+namespace uast {
 
 class ErrorMessage;
 class Exp;
@@ -85,7 +85,7 @@ class Builder final {
     This struct records the result of building some AST.
    */
   struct Result final {
-    ast::ASTList topLevelExps;
+    uast::ASTList topLevelExps;
     std::vector<ErrorMessage> errors;
     std::vector<std::pair<ID, Location>> locations;
 
@@ -108,12 +108,12 @@ class Builder final {
   // elements. This prevents the Builder API from growing unreasonably large.
 };
 
-} // end namespace ast
+} // end namespace uast
 
-template<> struct update<owned<chpl::ast::Builder::Result>> {
-  bool operator()(owned<chpl::ast::Builder::Result>& keep,
-                  owned<chpl::ast::Builder::Result>& addin) const {
-    return chpl::ast::Builder::Result::update(*keep, *addin);
+template<> struct update<owned<chpl::uast::Builder::Result>> {
+  bool operator()(owned<chpl::uast::Builder::Result>& keep,
+                  owned<chpl::uast::Builder::Result>& addin) const {
+    return chpl::uast::Builder::Result::update(*keep, *addin);
   }
 };
 

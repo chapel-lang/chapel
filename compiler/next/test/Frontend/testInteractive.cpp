@@ -29,7 +29,7 @@
 #include <cassert>
 
 using namespace chpl;
-using namespace ast;
+using namespace uast;
 
 int main(int argc, char** argv) {
 
@@ -51,7 +51,7 @@ int main(int argc, char** argv) {
         FrontendQueries::moduleLevelDeclNames(ctx, filepath);
 
       for (const auto& elt : vec) {
-        const ast::Module* module = elt.module;
+        const Module* module = elt.module;
         const std::vector<UniqueString>& topLevelNames = elt.topLevelNames;
 
         printf("Module %s:\n", module->name().c_str());

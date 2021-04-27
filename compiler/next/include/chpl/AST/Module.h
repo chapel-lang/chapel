@@ -24,7 +24,7 @@
 #include "chpl/AST/Location.h"
 
 namespace chpl {
-namespace ast {
+namespace uast {
 
 
 /**
@@ -76,7 +76,7 @@ class Module final : public Sym {
 };
 
 
-} // end namespace ast
+} // end namespace uast
 } // end namespace chpl
 
 #endif

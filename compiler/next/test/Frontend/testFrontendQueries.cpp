@@ -29,7 +29,7 @@
 #include <cassert>
 
 using namespace chpl;
-using namespace ast;
+using namespace uast;
 
 static void test0() {
   printf("test0\n");

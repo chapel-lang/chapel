@@ -25,7 +25,7 @@
 #include "chpl/AST/Module.h"
 
 namespace chpl {
-namespace ast {
+namespace uast {
 
 
 class Builder;
@@ -61,7 +61,7 @@ class ModuleDecl final : public Decl {
 };
 
 
-} // end namespace ast
+} // end namespace uast
 } // end namespace chpl
 
 #endif

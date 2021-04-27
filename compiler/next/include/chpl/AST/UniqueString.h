@@ -35,7 +35,7 @@
 namespace chpl {
 class Context;
 
-namespace ast {
+namespace uast {
 
 
 /**
@@ -144,38 +144,38 @@ class UniqueString final {
 };
 
 
-} // end namespace ast
+} // end namespace uast
 
-template<> struct update<chpl::ast::UniqueString> {
-  bool operator()(chpl::ast::UniqueString& keep,
-                  chpl::ast::UniqueString& addin) const {
+template<> struct update<chpl::uast::UniqueString> {
+  bool operator()(chpl::uast::UniqueString& keep,
+                  chpl::uast::UniqueString& addin) const {
     return defaultUpdate(keep, addin);
   }
 };
 
-// Allow chpl::ast::UniqueString to be just called chpl::UniqueString
-// TODO: Should it be moved out of the ast namespace? What directory
+// Allow chpl::uast::UniqueString to be just called chpl::UniqueString
+// TODO: Should it be moved out of the uast namespace? What directory
 // should it go in?
-using chpl::ast::UniqueString;
+using chpl::uast::UniqueString;
 
 
 } // end namespace chpl
 
 namespace std {
-  template<> struct less<chpl::ast::UniqueString> {
-    bool operator()(const chpl::ast::UniqueString lhs,
-                    const chpl::ast::UniqueString rhs) const {
+  template<> struct less<chpl::uast::UniqueString> {
+    bool operator()(const chpl::uast::UniqueString lhs,
+                    const chpl::uast::UniqueString rhs) const {
       return lhs.compare(rhs) < 0;
     }
   };
-  template<> struct hash<chpl::ast::UniqueString> {
-    size_t operator()(const chpl::ast::UniqueString key) const {
+  template<> struct hash<chpl::uast::UniqueString> {
+    size_t operator()(const chpl::uast::UniqueString key) const {
       return (size_t) key.hash();
     }
   };
-  template<> struct equal_to<chpl::ast::UniqueString> {
-    bool operator()(const chpl::ast::UniqueString lhs,
-                    const chpl::ast::UniqueString rhs) const {
+  template<> struct equal_to<chpl::uast::UniqueString> {
+    bool operator()(const chpl::uast::UniqueString lhs,
+                    const chpl::uast::UniqueString rhs) const {
       return lhs == rhs;
     }
   };

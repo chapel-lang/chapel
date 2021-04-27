@@ -24,7 +24,8 @@
 #include <cstdlib>
 
 namespace chpl {
-namespace ast {
+namespace uast {
+
 
 static std::string vprint_to_string(const char* format, va_list vl) {
   int size = 128;
@@ -70,5 +71,6 @@ void ErrorMessage::swap(ErrorMessage& other) {
   this->message_.swap(other.message_);
 }
 
-} // namespace ast
+
+} // namespace uast
 } // namespace chpl

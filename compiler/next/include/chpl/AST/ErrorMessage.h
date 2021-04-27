@@ -25,7 +25,7 @@
 #include <string>
 
 namespace chpl {
-namespace ast {
+namespace uast {
 
 
 /**
@@ -67,12 +67,12 @@ class ErrorMessage final {
   void swap(ErrorMessage& other);
 };
 
-} // end namespace ast
+} // end namespace uast
 
 // Allow chpl::ast::ErrorMessage to be just called chpl::ErrorMessage
 // TODO: Should it be moved out of the ast namespace? What directory
 // should it go in?
-using chpl::ast::ErrorMessage;
+using chpl::uast::ErrorMessage;
 
 
 } // end namespace chpl

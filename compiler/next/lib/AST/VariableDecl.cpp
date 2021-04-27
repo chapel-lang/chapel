@@ -22,7 +22,7 @@
 #include "chpl/AST/Builder.h"
 
 namespace chpl {
-namespace ast {
+namespace uast {
 
 
 VariableDecl::VariableDecl(owned<Variable> variable)
@@ -60,5 +60,5 @@ VariableDecl::build(Builder* builder, Location loc,
 }
 
 
-} // namespace ast
+} // namespace uast
 } // namespace chpl

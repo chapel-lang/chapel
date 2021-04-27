@@ -28,7 +28,7 @@
 #include <cassert>
 
 namespace chpl {
-namespace ast {
+namespace uast {
 
 
 /**
@@ -181,7 +181,7 @@ class ASTBase {
 };
 
 
-} // end namespace ast
+} // end namespace uast
 } // end namespace chpl
 
 /// \cond DO_NOT_DOCUMENT
@@ -191,15 +191,15 @@ namespace std {
 // using macros and ASTClassesList.h
 /// \cond DO_NOT_DOCUMENT
 #define AST_LESS(NAME) \
-  template<> struct less<chpl::ast::NAME*> { \
-    bool operator()(const chpl::ast::NAME* lhs, \
-                    const chpl::ast::NAME* rhs) const { \
+  template<> struct less<chpl::uast::NAME*> { \
+    bool operator()(const chpl::uast::NAME* lhs, \
+                    const chpl::uast::NAME* rhs) const { \
       if (lhs == nullptr && rhs != nullptr) return true; \
       if (rhs == nullptr) return false; \
-      std::less<chpl::ast::ID> lessID; \
+      std::less<chpl::uast::ID> lessID; \
       /* cast in the next line is so it compiles with only forward decls */ \
-      return lessID(((const chpl::ast::ASTBase*)lhs)->id(), \
-                    ((const chpl::ast::ASTBase*)rhs)->id()); \
+      return lessID(((const chpl::uast::ASTBase*)lhs)->id(), \
+                    ((const chpl::uast::ASTBase*)rhs)->id()); \
     } \
   };
 #define AST_NODE(NAME) AST_LESS(NAME)

@@ -22,7 +22,7 @@
 #include "chpl/AST/Builder.h"
 
 namespace chpl {
-namespace ast {
+namespace uast {
 
 
 Module::Module(ASTList children, UniqueString name, Sym::Visibility vis,
@@ -44,5 +44,6 @@ bool Module::contentsMatchInner(const ASTBase* other) const {
          lhs->tag_ == rhs->tag_;
 }
 
-} // namespace ast
+
+} // namespace uast
 } // namespace chpl
