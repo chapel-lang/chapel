@@ -31,7 +31,7 @@ configure_file(${CHPL_MAIN_INCLUDE_DIR}/chpl/Config/config.h.cmake
 # for instructions on extending this to include LLVM dependencies
 
 # request C++11
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # set include directories for -I
