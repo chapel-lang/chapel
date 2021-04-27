@@ -1578,7 +1578,11 @@ static void buildRecordHashFunction(AggregateType *ct) {
     bool first = true;
     int i = 1;
     for_fields(field, ct) {
-      if (!field->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD)) {
+
+      // See #11613 for rationale behind skipping type and param fields.
+      if (!(field->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD) ||
+            field->hasFlag(FLAG_TYPE_VARIABLE) ||
+            field->hasFlag(FLAG_PARAM))) {
         CallExpr *field_access = new CallExpr(field->name, gMethodToken, arg);
         if (first) {
           call = new CallExpr("chpl__defaultHash", field_access);
@@ -1592,8 +1596,15 @@ static void buildRecordHashFunction(AggregateType *ct) {
       }
       i++;
     }
-    fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
+
+    if (call) {
+      fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
+    } else {
+      fn->insertAtTail(new CallExpr(PRIM_RETURN, new_UIntSymbol(0)));
+      fn->addFlag(FLAG_INLINE);
+    }
   }
+
   DefExpr *def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
   reset_ast_loc(def, ct->symbol);

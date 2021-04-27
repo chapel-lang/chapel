@@ -16,7 +16,7 @@ record myrecord {
   var c:unmanaged MyClass = new unmanaged MyClass(5);
   proc deinit() { delete c; }
 }
-proc =(ref ret:myrecord, x:myrecord)
+operator myrecord.=(ref ret:myrecord, x:myrecord)
 {
   delete ret.c;
   ret.c = new unmanaged MyClass(x.c.x);

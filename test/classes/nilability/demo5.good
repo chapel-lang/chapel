@@ -1,2 +1,3 @@
+demo5.chpl:1: In module 'demo':
 demo5.chpl:14: error: applying postfix-! to nil
 demo5.chpl:12: note: 'x' is set to nil here

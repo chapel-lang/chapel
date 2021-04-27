@@ -156,6 +156,8 @@ private:
   void                   appendExpr(DefExpr*           expr,
                                     bool               printingType);
 
+  void                   appendExprTypeVar(DefExpr*           expr);
+
   void                   appendExpr(NamedExpr*         expr,
                                     bool               printingType);
 

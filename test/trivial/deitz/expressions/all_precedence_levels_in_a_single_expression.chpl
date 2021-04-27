@@ -1,6 +1,6 @@
 class D { var x = 1; }
 class C: D { var y = 2; }
-proc **(d:borrowed D,i:int) return d.x..i;
+operator **(d:borrowed D,i:int) return d.x..i;
 
 write("C(): ");
 writeln(borrowed C():string);

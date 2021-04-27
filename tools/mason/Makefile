@@ -16,8 +16,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-
 ifndef CHPL_MAKE_HOME
 export CHPL_MAKE_HOME=$(realpath $(shell pwd)/../..)
 endif
@@ -39,8 +37,8 @@ mason: $(bdir)/mason FORCE
 install: $(bdir)/mason FORCE
 
 $(bdir)/mason: $(MASON_SOURCES)
-	@if [ $(shell $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/chplenv/chpl_regexp.py) != re2 ]; then \
-        echo "CHPL_REGEXP=re2 is required to build mason"; \
+	@if [ $(shell $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/chplenv/chpl_re2.py) != bundled ]; then \
+        echo "CHPL_RE2=bundled is required to build mason"; \
         exit 1;\
 	fi;
 	@echo "Building Mason..."

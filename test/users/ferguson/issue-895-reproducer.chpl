@@ -122,7 +122,7 @@ record R {
     if printInitDeinitR then writeln("deinit ", this.x);
   }
 }
-proc =(ref lhs:R, rhs:R) {
+operator R.=(ref lhs:R, rhs:R) {
   if printInitDeinitR then writeln("= ", lhs.x, " ", rhs.x);
   lhs.x = rhs.x;
 }

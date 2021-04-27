@@ -18,14 +18,14 @@ record Foo {
   }
 }
 
-proc =(ref lhs: Foo, const ref rhs: Foo) {
+operator Foo.=(ref lhs: Foo, const ref rhs: Foo) {
   lhs.x = rhs.x;
   lhs.y = rhs.y;
 }
 
 var one = new Foo(1);
 
-proc *(a: Foo, b: Foo) {
+operator Foo.*(a: Foo, b: Foo) {
   var ret = new Foo(a.x*b.x);
   return ret;
 }

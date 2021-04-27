@@ -906,14 +906,12 @@ proc BlockDom.dsiBuildArray(type eltType, param initElts:bool) {
   var myLocArrTemp: unmanaged LocBlockArr(eltType, rank, idxType, stridable)?;
 
   // formerly in BlockArr.setup()
-  coforall (loc, locDomsElt, locArrTempElt)
-           in zip(dom.dist.targetLocales, dom.locDoms, locArrTemp)
-           with (ref myLocArrTemp) {
-    on loc {
+  coforall localeIdx in dom.dist.targetLocDom with (ref myLocArrTemp) {
+    on dom.dist.targetLocales(localeIdx) {
       const LBA = new unmanaged LocBlockArr(eltType, rank, idxType, stridable,
-                                            locDomsElt,
+                                            dom.getLocDom(localeIdx),
                                             initElts=initElts);
-      locArrTempElt = LBA;
+      locArrTemp(localeIdx) = LBA;
       if here.id == creationLocale then
         myLocArrTemp = LBA;
     }

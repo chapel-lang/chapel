@@ -2,7 +2,7 @@ class C {
   var val: int;
 }
 
-proc +=(rhs: C, lhs: C) {
+operator C.+=(rhs: C, lhs: C) {
   rhs.val += lhs.val;
 }
 

@@ -4,19 +4,19 @@ class T {
   var value = 0;
 }
 
-proc <(const ref left: T, const ref right: T) {
+operator T.<(const ref left: T, const ref right: T) {
   return left.value < right.value;
 }
-proc <(const ref left: T?, const ref right: T?) {
+operator T.<(const ref left: T?, const ref right: T?) {
   if (left == nil || right == nil) then return false;
   return left!.value < right!.value;
 }
 
 // It's needed for comparing (T, T)
-proc >(const ref left: T, const ref right: T) {
+operator T.>(const ref left: T, const ref right: T) {
   return left.value > right.value;
 }
-proc >(const ref left: T?, const ref right: T?) {
+operator T.>(const ref left: T?, const ref right: T?) {
   if (left == nil || right == nil) then return false;
   return left!.value > right!.value;
 }

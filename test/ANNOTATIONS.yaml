@@ -461,6 +461,12 @@ all:
       config: 16-node-xc, 16-node-cs, 16-node-cs-hdr
     - text: Set the number of launcher cores per locale for Cray CS perf testing (#17407)
       config: 16-node-cs
+  03/30/21:
+    - text: OS upgrade
+      config: 16-node-cs-hdr
+  04/01/21:
+    - text: Upgrade to GASNet-EX 2021.3.0 (#17505)
+      config: 16-node-cs, 16-node-cs-hdr
 
 # End all
 
@@ -737,6 +743,8 @@ distCreate-arrays-deinit.cc-perf: &distCreate-base
     - Address performance issues with stencil and block-cyclic array init (#15741)
   03/23/21:
     - A few communication micro-optimizations to improve Block array creation (#17354)
+  04/07/21:
+    - Revert a recent change in block array creation that caused performance regression (#17531)
 
 distCreate-arrays-init.cc-perf:
   <<: *distCreate-base
@@ -1398,6 +1406,10 @@ memleaksfull:
     - Fix some issues with new tests locking in bug fixes (#17320)
   03/24/21:
     - Add module OrderedMap (#16271)
+  03/26/21:
+    - Two fixes in OrderedMap (#17463)
+  03/27/21:
+    - CG Adjust in-intent handling to fix a memleak (#17480)
 # End memleaksfull
 
 meteor:
@@ -2115,6 +2127,13 @@ arkouda: &arkouda-base
     - Increase the problem size for string benchmarks (mhmerrill/arkouda#676)
   02/19/21:
     - Skip long string partitioning in string argsort (mhmerrill/arkouda#681)
+  03/23/21:
+    - A few communication micro-optimizations to improve Block array creation (#17354)
+  03/25/21:
+    - fix groupby benchmark bug (mhmerrill/arkouda#712)
+  04/07/21:
+    - Increase the aggregation buffer sizes for non-ugni configurations (mhmerrill/arkouda#732)
+    - Revert a recent change in block array creation that caused performance regression (#17531)
 
 arkouda-string:
   <<: *arkouda-base

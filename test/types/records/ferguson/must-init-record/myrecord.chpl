@@ -68,7 +68,7 @@ proc R.init=(const ref arg: R) {
   }
 }
 
-proc =(ref lhs: R, rhs: R) {
+operator R.=(ref lhs: R, rhs: R) {
   // both LHS and RHS should be initialized.
   if lhs.canary != 42 {
     writeln("= with uninitialized lhs!");

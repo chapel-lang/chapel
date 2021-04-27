@@ -66,7 +66,7 @@ record Rec
   }
 }
 
-proc = (ref lhs: Rec, rhs : Rec)
+operator Rec.= (ref lhs: Rec, rhs : Rec)
 {
   if (sDebug == true) then
     writeln("Assigning    Rec       lhs: ", lhs.id, " rhs: ", rhs.id);

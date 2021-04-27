@@ -1607,21 +1607,30 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType, const char *outer,
   }
 }
 
+void AstToText::appendExprTypeVar(DefExpr* expr)
+{
+  mText += expr->sym->name;
+  if (expr->init) {
+    mText += " = ";
+    appendExpr(expr->init, true);
+  }
+}
+
 void AstToText::appendExpr(DefExpr* expr, bool printingType)
 {
   if (printingType)
     {
 
-    mText += '?';
+      mText += '?';
 
-    // This section initially was ensuring the sym field referred to
-    // a VarSymbol in this case.  However, since we were only accessing the
-    // name field - which is present for all Symbols - this check was not
-    // necessary.  Should something go wrong with this section, perhaps
-    // first check if expr->sym is a VarSymbol as was initially expected?
-    const char* name = expr->sym->name;
-    if (strncmp(name, "chpl__query", 11) != 0)
-      mText += name;
+      // This section initially was ensuring the sym field referred to
+      // a VarSymbol in this case.  However, since we were only accessing the
+      // name field - which is present for all Symbols - this check was not
+      // necessary.  Should something go wrong with this section, perhaps
+      // first check if expr->sym is a VarSymbol as was initially expected?
+      const char* name = expr->sym->name;
+      if (strncmp(name, "chpl__query", 11) != 0)
+        mText += name;
 
     }
   else
@@ -1982,5 +1991,8 @@ void AstToText::appendEnumConstants(EnumType* et) {
 }
 
 void AstToText::appendVarDef(VarSymbol* var) {
-  appendExpr(var->defPoint, false);
+  if (var->isType())
+    appendExprTypeVar(var->defPoint);
+  else
+    appendExpr(var->defPoint, false);
 }

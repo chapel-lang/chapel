@@ -1,4 +1,4 @@
-motivated-by-expiring-values.chpl:26: In function '=':
+motivated-by-expiring-values.chpl:26: In method '=':
 motivated-by-expiring-values.chpl:28: error: Setting borrowed formal illegal without specifying formal lifetime constraint
 motivated-by-expiring-values.chpl:26: note: consider scope of rhs
 motivated-by-expiring-values.chpl:50: In function 'captureA':

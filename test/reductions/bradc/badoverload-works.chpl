@@ -3,7 +3,7 @@ record foo
   var v:int;
 }
 
-proc +(a:foo,b:foo):foo
+operator foo.+(a:foo,b:foo):foo
 {
   return new foo(a.v+b.v);
 }

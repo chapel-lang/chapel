@@ -1812,14 +1812,40 @@ static void checkForErroneousInitCopies() {
 
     forv_Vec(CallExpr, call, *fn->calledBy) {
       if (SymExpr* actual = getActualBeforeCopyInit(call, formal)) {
+        SymExpr* nextUse = nullptr;
 
-        // TODO: Tweak output if it prints something like 'with <temp>'.
-        // Not sure if that can ever happen, thanks to copy elision, but
-        // leave this comment just in case.
-        USR_FATAL_CONT(call, "calling '%s' with actual '%s' would result "
-                             "in a copy",
-                             fn->name,
-                             toString(actual->symbol(), false));
+        // Conservatively look for the nearest following use.
+        for (Expr* look = call->next; look && !nextUse;
+             look = look->next) {
+          std::vector<SymExpr*> uses;
+
+          collectSymExprsFor(look, actual->symbol(), uses);
+          for (auto se : uses) {
+            if (CallExpr* useCall = toCallExpr(se->parentExpr)) {
+              // TODO: May have to expand this to cover more cases...
+              if (!useCall->isPrimitive(PRIM_END_OF_STATEMENT) &&
+                  !useCall->isNamedAstr("chpl__autoDestroy")) {
+                nextUse = se;
+                break;
+              }
+            }
+          }
+        }
+
+        const char* actualStr = toString(actual->symbol(), false);
+
+        if (nextUse) {
+          USR_FATAL_CONT(call, "cannot call '%s' because this is not the "
+                               "last use of '%s'",
+                               fn->name,
+                               actualStr);
+          USR_PRINT(nextUse, "next use of '%s' is here", actualStr);
+        } else {
+          USR_FATAL_CONT(call, "cannot call '%s' because '%s' might be "
+                               "used elsewhere",
+                               fn->name,
+                               actualStr);
+        }
       }
     }
   }

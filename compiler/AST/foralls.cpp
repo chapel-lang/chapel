@@ -1102,31 +1102,29 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
                                 iterExpr);
 
   if (fNoFastFollowers == false) {
-    Symbol* T1 = newTemp();
-    Symbol* T2 = newTemp();
+    Symbol* staticCheckFlag = newTemp();
+    Symbol* overallCheckFlag = newTemp();
 
     VarSymbol* fastFollowIdx   = newTemp("chpl__fastFollowIdx");
     VarSymbol* fastFollowIter  = newTemp("chpl__fastFollowIter");
     BlockStmt* fastFollowBlock = NULL;
 
 
-    T1->addFlag(FLAG_EXPR_TEMP);
-    T1->addFlag(FLAG_MAYBE_PARAM);
+    staticCheckFlag->addFlag(FLAG_EXPR_TEMP);
+    staticCheckFlag->addFlag(FLAG_MAYBE_PARAM);
 
-    T2->addFlag(FLAG_EXPR_TEMP);
-    T2->addFlag(FLAG_MAYBE_PARAM);
+    overallCheckFlag->addFlag(FLAG_EXPR_TEMP);
+    overallCheckFlag->addFlag(FLAG_MAYBE_PARAM);
 
-    leadForLoop->insertAtTail(new DefExpr(T1));
-    leadForLoop->insertAtTail(new DefExpr(T2));
+    leadForLoop->insertAtTail(new DefExpr(staticCheckFlag));
+    leadForLoop->insertAtTail(new DefExpr(overallCheckFlag));
 
     if (zippered == false) {
-      leadForLoop->insertAtTail("'move'(%S, chpl__staticFastFollowCheck(%S))",    T1, iterRec);
-      leadForLoop->insertAtTail(new CondStmt(new SymExpr(T1),
-                                          new_Expr("'move'(%S, chpl__dynamicFastFollowCheck(%S))",    T2, iterRec),
-                                          new_Expr("'move'(%S, %S)", T2, gFalse)));
+      leadForLoop->insertAtTail("'move'(%S, chpl__staticFastFollowCheck(%S))",
+                                overallCheckFlag, iterRec);
     } else {
       CallExpr *checkCall = generateFastFollowCheck(iterExpr, /*isStatic=*/true);
-      CallExpr *moveToFlag = new CallExpr(PRIM_MOVE, T1, checkCall);
+      CallExpr *moveToFlag = new CallExpr(PRIM_MOVE, staticCheckFlag, checkCall);
       leadForLoop->insertAtTail(moveToFlag);
 
       TransformLogicalShortCircuit handleAndsOrs;
@@ -1135,14 +1133,19 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
 
       // override the dynamic check if the compiler can prove it's safe
       if (pfs->optInfo.hasAlignedFollowers) {
-        leadForLoop->insertAtTail(new_Expr("'move'(%S, %S)", T2, T1));
+        leadForLoop->insertAtTail(new_Expr("'move'(%S, %S)", overallCheckFlag,
+                                           staticCheckFlag));
       }
       else {
-        CallExpr *checkCall = generateFastFollowCheck(iterExpr, /*isStatic=*/false);
-        CallExpr *moveToFlag = new CallExpr(PRIM_MOVE, T2, checkCall);
-        leadForLoop->insertAtTail(new CondStmt(new SymExpr(T1),
+        CallExpr *checkCall = generateFastFollowCheck(iterExpr,
+                                                      /*isStatic=*/false);
+        CallExpr *moveToFlag = new CallExpr(PRIM_MOVE, overallCheckFlag,
+                                            checkCall);
+        leadForLoop->insertAtTail(new CondStmt(new SymExpr(staticCheckFlag),
                                                moveToFlag,
-                                               new CallExpr(PRIM_MOVE, T2, gFalse)));
+                                               new CallExpr(PRIM_MOVE,
+                                                            overallCheckFlag,
+                                                            gFalse)));
 
         moveToFlag->getStmtExpr()->accept(&handleAndsOrs);
         normalize(leadForLoop);
@@ -1166,7 +1169,9 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
                                       pfs->isForallExpr(),
                                       iterExpr);
 
-    leadForLoop->insertAtTail(new CondStmt(new SymExpr(T2), fastFollowBlock, followBlock));
+    leadForLoop->insertAtTail(new CondStmt(new SymExpr(overallCheckFlag),
+                                           fastFollowBlock,
+                                           followBlock));
   } else {
     leadForLoop->insertAtTail(followBlock);
   }

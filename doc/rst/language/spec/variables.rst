@@ -730,7 +730,7 @@ are deinitialized at the end of the containing statement.
           writeln("deinit ", x);
         }
       }
-      proc =(ref lhs:R, rhs:R) {
+      operator R.=(ref lhs:R, rhs:R) {
         writeln("lhs ", lhs.x, " = rhs ", rhs.x);
         lhs.x = rhs.x;
       }
@@ -931,7 +931,7 @@ blocks, ``try!`` blocks, and conditionals.
           writeln("deinit ", x);
         }
       }
-      proc =(ref lhs:R, rhs:R) {
+      operator R.=(ref lhs:R, rhs:R) {
         writeln("lhs ", lhs.x, " = rhs ", rhs.x);
         lhs.x = rhs.x;
       }

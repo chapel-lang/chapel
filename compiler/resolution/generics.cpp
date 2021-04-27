@@ -76,9 +76,8 @@ explainInstantiation(FnSymbol* fn) {
   int len = sprintf(msg, "instantiated %s(", fn->name);
   bool first = true;
   for_formals(formal, fn) {
-    for (auto pair: elts) {
-      ArgSymbol* arg = toArgSymbol(pair.first); // this is the key
-      Symbol* value = pair.second;
+    for (auto elem: elts) {
+      ArgSymbol* arg = toArgSymbol(elem.key);
 
       if (!strcmp(formal->name, arg->name)) {
         if (first)
@@ -88,7 +87,7 @@ explainInstantiation(FnSymbol* fn) {
         INT_ASSERT(arg);
         if (strcmp(fn->name, tupleInitName))
           len += sprintf(msg+len, "%s = ", arg->name);
-        if (VarSymbol* vs = toVarSymbol(value)) {
+        if (VarSymbol* vs = toVarSymbol(elem.value)) {
           if (vs->immediate && vs->immediate->const_kind == NUM_KIND_INT)
             len += sprintf(msg+len, "%" PRId64, vs->immediate->int_value());
           else if (vs->immediate && vs->immediate->const_kind == CONST_KIND_STRING)
@@ -96,7 +95,7 @@ explainInstantiation(FnSymbol* fn) {
           else
             len += sprintf(msg+len, "%s", vs->name);
         }
-        else if (Symbol* s = toSymbol(value))
+        else if (Symbol* s = toSymbol(elem.value))
       // For a generic symbol, just print the name.
       // Additional clauses for specific symbol types should precede this one.
           len += sprintf(msg+len, "%s", s->name);

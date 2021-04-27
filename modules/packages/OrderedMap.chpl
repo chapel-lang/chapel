@@ -227,7 +227,7 @@ module OrderedMap {
     */
     proc const contains(const k: keyType): bool {
       _enter(); defer _leave();
-      return _set.contains((k, nil):_eltType);
+      return _set.contains((k, nil));
     }
 
     /*
@@ -243,7 +243,7 @@ module OrderedMap {
         compilerError("updating map with non-copyable type");
 
       for key in other.keys() {
-        _set.remove((key, nil):_eltType);
+        _set.remove((key, nil));
         _set.add((key, new shared _valueWrapper(other.getValue(key))?));
       }
     }
@@ -260,13 +260,12 @@ module OrderedMap {
     proc ref this(k: keyType) ref where isDefaultInitializable(valType) {
       _enter(); defer _leave();
 
-      // TODO we need to cast the argument to workaround a leak
-      if !_set.contains((k, nil):_eltType) then {
+      if !_set.contains((k, nil)) then {
         var defaultValue: valType;
         _set.add((k, new shared _valueWrapper(defaultValue)?));
       } 
 
-      ref e = _set.instance._getReference((k, nil):_eltType);
+      ref e = _set.instance._getReference((k, nil));
 
       ref result = e[1]!.val;
       return result;
@@ -278,7 +277,7 @@ module OrderedMap {
       _enter(); defer _leave();
 
       // Could halt
-      var e = _set.instance._getValue((k, nil):_eltType);
+      var e = _set.instance._getValue((k, nil));
 
       const result = e[1]!.val;
       return result;
@@ -290,7 +289,7 @@ module OrderedMap {
       _enter(); defer _leave();
 
       // Could halt
-      var e = _set.instance._getValue((k, nil):_eltType);
+      var e = _set.instance._getValue((k, nil));
 
       const ref result = e[1]!.val;
       return result;
@@ -309,7 +308,7 @@ module OrderedMap {
       _enter(); defer _leave();
 
       // This could halt
-      ref element = _set.instance._getReference((k, nil):_eltType);
+      ref element = _set.instance._getReference((k, nil));
 
       var result = element[1]!.val.borrow();
 
@@ -324,7 +323,7 @@ module OrderedMap {
       _enter(); defer _leave();
 
       // This could halt
-      ref element = _set.instance._getReference((k, nil):_eltType);
+      ref element = _set.instance._getReference((k, nil));
 
       ref result = element[1]!.val;
 
@@ -344,7 +343,7 @@ module OrderedMap {
 
       var result: _eltType;
       var found: bool;
-      (found, result) = _set.lowerBound((k, nil):_eltType);
+      (found, result) = _set.lowerBound((k, nil));
       if !found || comparator.compare(result[0], k) != 0 then
         boundsCheckHalt("orderedMap index " + k:string + " out of bounds");
       return result[1]!.val;
@@ -357,11 +356,11 @@ module OrderedMap {
 
       var result: _eltType;
       var found: bool;
-      (found, result) = _set.lowerBound((k, nil):_eltType);
+      (found, result) = _set.lowerBound((k, nil));
       if !found || comparator.compare(result[0], k) != 0 then
         boundsCheckHalt("orderedMap index " + k:string + " out of bounds");
 
-      _set.remove((k, nil):_eltType);
+      _set.remove((k, nil));
 
       return result[1]!.val;
     }
@@ -455,7 +454,7 @@ module OrderedMap {
     proc add(in k: keyType, in v: valType): bool lifetime this < v {
       _enter(); defer _leave();
       
-      if _set.contains((k, nil):_eltType) {
+      if _set.contains((k, nil)) {
         return false;
       }
 
@@ -481,11 +480,11 @@ module OrderedMap {
     proc set(k: keyType, in v: valType): bool {
       _enter(); defer _leave();
 
-      if _set.contains((k, nil):_eltType) == false {
+      if _set.contains((k, nil)) == false {
         return false;
       }
 
-      ref e = _set.instance._getReference((k, nil):_eltType);
+      ref e = _set.instance._getReference((k, nil));
       e[1] = new shared _valueWrapper(v)?;
 
       return true;
@@ -497,7 +496,7 @@ module OrderedMap {
      */
     proc addOrSet(in k: keyType, in v: valType) {
       _enter(); defer _leave();
-      _set.remove((k, nil):_eltType);
+      _set.remove((k, nil));
       _set.add((k, new shared _valueWrapper(v)?));
     }
 
@@ -511,7 +510,7 @@ module OrderedMap {
     */
     proc remove(k: keyType): bool {
       _enter(); defer _leave();
-      return _set.remove((k, nil):_eltType);
+      return _set.remove((k, nil));
     }
 
     /*
@@ -588,7 +587,8 @@ module OrderedMap {
     :arg lhs: The orderedMap to assign to.
     :arg rhs: The orderedMap to assign from. 
   */
-  proc =(ref lhs: orderedMap(?kt, ?vt, ?ps), const ref rhs: orderedMap(kt, vt, ps)) {
+  operator orderedMap.=(ref lhs: orderedMap(?kt, ?vt, ?ps),
+                        const ref rhs: orderedMap(kt, vt, ps)) {
 
     if !isCopyableType(kt) || !isCopyableType(vt) then
       compilerError("assigning orderedMap with non-copyable type");
@@ -610,7 +610,8 @@ module OrderedMap {
     :return: `true` if the contents of two orderedMaps are equal.
     :rtype: `bool`
   */
-  proc ==(const ref a: orderedMap(?kt, ?vt, ?ps), const ref b: orderedMap(kt, vt, ps)): bool {
+  operator orderedMap.==(const ref a: orderedMap(?kt, ?vt, ?ps),
+                         const ref b: orderedMap(kt, vt, ps)): bool {
     if a.size != b.size then return false;
     for (e1, e2) in zip(a.items(), b.items()) {
       if e1 != e2 then return false;
@@ -628,15 +629,16 @@ module OrderedMap {
     :return: `true` if the contents of two orderedMaps are not equal.
     :rtype: `bool`
   */
-  proc !=(const ref a: orderedMap(?kt, ?vt, ?ps), const ref b: orderedMap(kt, vt, ps)): bool {
+  operator orderedMap.!=(const ref a: orderedMap(?kt, ?vt, ?ps),
+                         const ref b: orderedMap(kt, vt, ps)): bool {
     return !(a == b);
   }
 
   /*
     Returns a new orderedMap containing the keys and values in either a or b.
   */
-  proc +(a: orderedMap(?keyType, ?valueType, ?parSafe),
-         b: orderedMap(keyType, valueType, parSafe)) {
+  operator orderedMap.+(a: orderedMap(?keyType, ?valueType, ?parSafe),
+                        b: orderedMap(keyType, valueType, parSafe)) {
     return a | b;
   }
 
@@ -644,16 +646,16 @@ module OrderedMap {
     Sets the left-hand side orderedMap to contain the keys and values in either
     a or b.
    */
-  proc +=(ref a: orderedMap(?keyType, ?valueType, ?parSafe),
-          b: orderedMap(keyType, valueType, parSafe)) {
+  operator orderedMap.+=(ref a: orderedMap(?keyType, ?valueType, ?parSafe),
+                         b: orderedMap(keyType, valueType, parSafe)) {
     a |= b;
   }
 
   /*
     Returns a new orderedMap containing the keys and values in either a or b.
   */
-  proc |(a: orderedMap(?keyType, ?valueType, ?parSafe),
-         b: orderedMap(keyType, valueType, parSafe)) {
+  operator orderedMap.|(a: orderedMap(?keyType, ?valueType, ?parSafe),
+                        b: orderedMap(keyType, valueType, parSafe)) {
     var newMap = new orderedMap(keyType, valueType, parSafe, a.comparator);
 
     newMap |= a;
@@ -665,8 +667,8 @@ module OrderedMap {
   /* Sets the left-hand side map to contain the keys and values in either
      a or b.
    */
-  proc |=(ref a: orderedMap(?keyType, ?valueType, ?parSafe),
-          b: orderedMap(keyType, valueType, parSafe)) {
+  operator orderedMap.|=(ref a: orderedMap(?keyType, ?valueType, ?parSafe),
+                         b: orderedMap(keyType, valueType, parSafe)) {
     // add keys/values from b to a if they weren't already in a
     for e in b.items() do a.add(e[0], e[1]);
   }
@@ -674,8 +676,8 @@ module OrderedMap {
   /*
     Returns a new orderedMap containing the keys that are in both a and b.
   */
-  proc &(a: orderedMap(?keyType, ?valueType, ?parSafe),
-         b: orderedMap(keyType, valueType, parSafe)) {
+  operator orderedMap.&(a: orderedMap(?keyType, ?valueType, ?parSafe),
+                        b: orderedMap(keyType, valueType, parSafe)) {
     var newMap = new orderedMap(keyType, valueType, parSafe, a.comparator);
     for (k, v) in a.items() {
       if b.contains(k) then
@@ -692,16 +694,16 @@ module OrderedMap {
       `lhs`.
 
    */
-  proc &=(ref a: orderedMap(?keyType, ?valueType, ?parSafe),
-          b: orderedMap(keyType, valueType, parSafe)) {
+  operator orderedMap.&=(ref a: orderedMap(?keyType, ?valueType, ?parSafe),
+                         b: orderedMap(keyType, valueType, parSafe)) {
     a = a & b;
   }
 
   /*
     Returns a new orderedMap containing the keys that are only in a, but not b.
   */
-  proc -(a: orderedMap(?keyType, ?valueType, ?parSafe),
-         b: orderedMap(keyType, valueType, parSafe)) {
+  operator orderedMap.-(a: orderedMap(?keyType, ?valueType, ?parSafe),
+                        b: orderedMap(keyType, valueType, parSafe)) {
     var newMap = new orderedMap(keyType, valueType, parSafe, a.comparator);
 
     for (k, v) in a.items() {
@@ -714,8 +716,8 @@ module OrderedMap {
 
   /* Sets the left-hand side orderedMap to contain the keys that are in the
      left-hand orderedMap, but not the right-hand orderedMap. */
-  proc -=(ref a: orderedMap(?keyType, ?valueType, ?parSafe),
-          b: orderedMap(keyType, valueType, parSafe)) {
+  operator orderedMap.-=(ref a: orderedMap(?keyType, ?valueType, ?parSafe),
+                         b: orderedMap(keyType, valueType, parSafe)) {
     for k in b.keys() {
       a.remove(k);
     }
@@ -726,8 +728,8 @@ module OrderedMap {
     not both.
 
   */
-  proc ^(a: orderedMap(?keyType, ?valueType, ?parSafe),
-         b: orderedMap(keyType, valueType, parSafe)) {
+  operator orderedMap.^(a: orderedMap(?keyType, ?valueType, ?parSafe),
+                        b: orderedMap(keyType, valueType, parSafe)) {
     var newMap = new orderedMap(keyType, valueType, parSafe, a.comparator);
 
     for k in a.keys() do
@@ -739,8 +741,8 @@ module OrderedMap {
 
   /* Sets the left-hand side orderedMap to contain the keys that are in either the
      left-hand orderedMap or the right-hand orderedMap, but not both. */
-  proc ^=(ref a: orderedMap(?keyType, ?valueType, ?parSafe),
-          b: orderedMap(keyType, valueType, parSafe)) {
+  operator orderedMap.^=(ref a: orderedMap(?keyType, ?valueType, ?parSafe),
+                         b: orderedMap(keyType, valueType, parSafe)) {
     for k in b.keys() {
       if a.contains(k) then a.remove(k);
       else a[k] = b[k];

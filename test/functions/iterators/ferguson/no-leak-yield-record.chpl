@@ -18,7 +18,7 @@ proc chpl__initCopy(other : R, definedConst: bool) {
   return ret;
 }
 
-proc =(ref dst:R, src:R) {
+operator R.=(ref dst:R, src:R) {
   writeln("copy/assign ", src.c);
 }
 

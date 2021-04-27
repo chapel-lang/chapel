@@ -34,7 +34,8 @@ module Graph500_defs
   }
 
 // Here we have overloaded the + operator
-  proc +(l: directed_vertex_pair, r: directed_vertex_pair)
+  operator directed_vertex_pair.+(l: directed_vertex_pair,
+                                  r: directed_vertex_pair)
       return new directed_vertex_pair (l.start + r.start, l.end + r.end);
 
 // The data structures below are chosen with the intention of later defining

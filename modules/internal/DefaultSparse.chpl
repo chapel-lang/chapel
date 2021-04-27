@@ -30,6 +30,8 @@ module DefaultSparse {
 
   config param debugDefaultSparse = false;
 
+  config param defaultSparseSupportsAutoLocalAccess = true;
+
   class DefaultSparseDom: BaseSparseDomImpl {
     var dist: unmanaged DefaultDist;
     var _nnz = 0;
@@ -395,6 +397,10 @@ module DefaultSparse {
         const copy = new unmanaged DefaultSparseDom(rank, idxType, dist, parentDom);
         return new _domain(copy);
       }
+    }
+
+    override proc dsiSupportsAutoLocalAccess() param {
+      return defaultSparseSupportsAutoLocalAccess;
     }
   }
 

@@ -1,1 +1,2 @@
+noUseTop2.chpl:7: In module 'NNN':
 noUseTop2.chpl:8: error: 'MMM' undeclared (first use this function)

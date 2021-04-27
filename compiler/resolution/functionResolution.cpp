@@ -753,6 +753,45 @@ Type* getConcreteParentForGenericFormal(Type* actualType, Type* formalType) {
   return retval;
 }
 
+// For when getConcreteParentForGenericFormal wouldn't return but there's
+// still a valid relationship between the types.
+Type* getMoreInstantiatedParentForGenericFormal(Type* actualType,
+                                                Type* formalType) {
+  Type* retval = NULL;
+
+  if (AggregateType* at = toAggregateType(actualType)) {
+    forv_Vec(AggregateType, parent, at->dispatchParents) {
+      if (isInstantiation(parent, formalType) == true) {
+        retval = parent;
+        break;
+
+      } else if (parent == formalType) {
+        // There might be a better match, so don't break, but it's still a
+        // match
+        retval = parent;
+
+      } else if (Type* t = getMoreInstantiatedParentForGenericFormal(parent, formalType)) {
+        retval = t;
+        break;
+      }
+    }
+
+    if (retval == NULL) {
+      if (isClass(formalType)) {
+        // Handle e.g. Owned(GenericClass) passed to a formal : GenericClass
+        if (isManagedPtrType(at)) {
+          Type* classType = getManagedPtrBorrowType(actualType);
+          if (canInstantiate(classType, formalType)) {
+            retval = classType;
+          }
+        }
+      }
+    }
+  }
+
+  return retval;
+}
+
 static bool instantiatedFieldsMatch(Type* actualType, Type* formalType) {
 
   AggregateType* actual = toAggregateType(actualType);
@@ -11280,12 +11319,11 @@ static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val,
 
   CallExpr* initCall = new CallExpr("init", gMethodToken, new NamedExpr("this", new SymExpr(val)));
 
-  SymbolMapVector elts = sortedSymbolMapElts(at->substitutions);
-  for (auto pair: elts) {
-    Symbol* key = pair.first;
-    Symbol* value = pair.second;
+  for (auto elem: sortedSymbolMapElts(at->substitutions)) {
+    const char* keyName = elem.key->name;
+    Symbol*     value   = elem.value;
 
-    Symbol* field = root->getField(key->name);
+    Symbol* field = root->getField(keyName);
     bool hasDefault = false;
     bool isGenericField = root->fieldIsGeneric(field, hasDefault);
 
@@ -11301,7 +11339,7 @@ static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val,
         // fields for default-initialized records, and avoid crashing.
         VarSymbol* tmp = newTemp("default_runtime_temp");
         tmp->addFlag(FLAG_TYPE_VARIABLE);
-        CallExpr* query = new CallExpr(PRIM_QUERY_TYPE_FIELD, at->symbol, new_CStringSymbol(key->name));
+        CallExpr* query = new CallExpr(PRIM_QUERY_TYPE_FIELD, at->symbol, new_CStringSymbol(keyName));
         CallExpr* move = new CallExpr(PRIM_MOVE, tmp, query);
 
         call->insertBefore(new DefExpr(tmp));
@@ -11349,7 +11387,7 @@ static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val,
       INT_FATAL("Unhandled case for default-init");
     }
 
-    appendExpr = new NamedExpr(key->name, appendExpr);
+    appendExpr = new NamedExpr(keyName, appendExpr);
 
     initCall->insertAtTail(appendExpr);
   }

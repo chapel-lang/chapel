@@ -3,7 +3,7 @@ module Library {
     var x: int;
   }
 
-  private inline proc +(a: Foo, b: Foo) {
+  private inline operator +(a: Foo, b: Foo) {
     writeln("In private +");
     return new Foo(a.x + b.x);
   }
