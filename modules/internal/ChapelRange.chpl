@@ -276,7 +276,7 @@ module ChapelRange {
               _low = chpl__defaultLowBound(idxType),
               _high = chpl__defaultHighBound(idxType),
               _stride = 1:chpl__rangeStrideType(idxType),
-              _alignment = chpl__defaultLowBound(idxType),
+              _alignment = 0:chpl__idxTypeToIntIdxType(idxType),
               _aligned = true);
   }
 
