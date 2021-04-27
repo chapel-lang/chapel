@@ -26,7 +26,7 @@ about your environment for using Chapel:
 
   * You have access to gmake or a GNU-compatible version of make.
 
-  * You have access to standard C and C++11 compilers. We test our code
+  * You have access to standard C and C++14 compilers. We test our code
     using a range of compilers on a nightly basis; these include
     relatively recent versions of gcc/g++, clang, and compilers from
     HPE Cray and Intel. If using GCC, we recommend GCC version 5 or newer.
