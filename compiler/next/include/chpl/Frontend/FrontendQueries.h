@@ -37,11 +37,11 @@ namespace FrontendQueries {
   const std::string& fileText(Context* context, UniqueString path);
   const ast::Builder::Result* parseFile(Context* context, UniqueString path);
 
-  typedef std::unordered_map<ID, Location> LocationsMap;
+  using LocationsMap = std::unordered_map<ID, Location>;
   const LocationsMap& fileLocations(Context* context, UniqueString path);
   Location locate(Context* context, ID id);
 
-  typedef std::vector<const ast::ModuleDecl*> ModuleDeclVec;
+  using ModuleDeclVec = std::vector<const ast::ModuleDecl*>;
   const ModuleDeclVec& parse(Context* context, UniqueString path);
 
   /*
@@ -84,7 +84,7 @@ namespace FrontendQueries {
       : module(module), topLevelNames(std::move(topLevelNames)) {
     }
   };
-  typedef std::vector<DefinedTopLevelNames> DefinedTopLevelNamesVec;
+  using DefinedTopLevelNamesVec = std::vector<DefinedTopLevelNames>;
 
   const DefinedTopLevelNamesVec& moduleLevelDeclNames(Context* context,
                                                       UniqueString path);
@@ -93,10 +93,10 @@ namespace FrontendQueries {
     // index is the postorder ID
     std::vector<Symbol*> idToSymbol;
   };
-  typedef std::unordered_map<Module*,owned<ResolutionGroup>>
-    ModuleInitResolutionResult;*/
-  /*typedef std::unordered_map<FnSymbol*,owned<ResolutionResult>>
-    FunctionResolutionResult;*/
+  using ModuleInitResolutionResult = std::unordered_map<Module*,owned<ResolutionGroup>>;
+    */
+  /*using FunctionResolutionResult =
+    std::unordered_map<FnSymbol*,owned<ResolutionResult>>; */
 
   //const ast::BaseAST* ast(Context* context, ID id);
 };
