@@ -1201,10 +1201,6 @@ module DefaultRectangular {
     }
 
     proc setupFieldsAndAllocate(param initElts) {
-/*
-      if dom.dsiNumIndices == 0 then
-        return;
-*/
       for param dim in 0..rank-1 {
         off(dim) = dom.dsiDim(dim).alignedLow;
         str(dim) = dom.dsiDim(dim).stride;
@@ -1676,7 +1672,6 @@ module DefaultRectangular {
       if dim == rank-1 {
         var first = true;
         if debugDefaultDist && f.writing then f.writeln(dom.dsiDim(dim));
-//        writeln("dom.dsiDim(dim) = ", dom.dsiDim(dim) by makeStridePositive);
         for j in dom.dsiDim(dim) by makeStridePositive {
           if first then first = false;
           else if isspace then f <~> new ioLiteral(" ");

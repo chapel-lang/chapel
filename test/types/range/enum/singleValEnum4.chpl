@@ -56,7 +56,7 @@ proc testit(r) {
   writeln("serial leader:");
   for i in zip(r, 1..) do
     writeln(i);
-  
+
   writeln("standalone par iter:");
   forall i in r do
     writeln(i);
@@ -68,7 +68,7 @@ proc testit(r) {
   writeln("parallel leader:");
   forall i in zip(r, 1..) do
     writeln(i);
-  
+
   const D = {r};
   const D2 = {r, r};
 
@@ -99,7 +99,7 @@ proc testit(r) {
 
   writeln("D2 zip with self:");
   forall (i,j) in zip(D2, D2) do
-    writeln((i,j));  
+    writeln((i,j));
 
   var A: [D] int;
   var B: [D2] int;

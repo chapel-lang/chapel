@@ -375,8 +375,10 @@ Default values of ranges with boolean ``idxType`` are similar, but
 substituting ``false`` and ``true`` for 0 and 1 above.  Ranges with
 ``enum`` ``idxType`` use the 0th and 1st values in the enumeration in
 place of 0 and 1 above.  If the enum only has a single value, the
-default value for the range is not specified by the language.
-   
+default value uses the 0th value as the low bound and has an undefined
+high bound; the ``.size`` query should be used with such ranges to
+determine whether or not the high bound is valid.
+
 .. _Ranges_Common_Operations:
 
 Common Operations

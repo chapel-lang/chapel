@@ -289,8 +289,6 @@ module ChapelRange {
                   _stride,
                   _alignment,
                   _aligned = true) {
-
-//    writeln("In internal initializer");
     this.idxType     = idxType;
     this.boundedType = boundedType;
     this.stridable   = stridable;
@@ -303,80 +301,6 @@ module ChapelRange {
       this._aligned   = _aligned;
     }
   }
-
-/*    
-  pragma "no doc"
-  proc range.oldinit(type idxType = int,
-                  param boundedType : BoundedRangeType = BoundedRangeType.bounded,
-                  param stridable : bool = false
-                 ) {
-    this.idxType     = idxType;
-    this.boundedType = boundedType;
-    this.stridable   = stridable;
-    this._low = chpl__defaultLowBound(idxType);
-    this._high = chpl__defaultHighBound(idxType);
-    this.complete();
-    if stridable {
-      this._stride    = 1: this._stride.type;
-      this._alignment = 0: this._alignment.type;
-      this._aligned   = true;
-    }
-  }
-
-  pragma "no doc"
-  proc range.oldinit(type idxType = int,
-                  param boundedType : BoundedRangeType = BoundedRangeType.bounded,
-                  param stridable : bool = false,
-                  _low : idxType,
-                  _high : idxType,
-                  _stride : chpl__rangeStrideType(idxType) = 1,
-                  _alignment : idxType = chpl__intToIdx(idxType, 0),
-                  _aligned : bool = true) {
-    this.idxType     = idxType;
-    this.boundedType = boundedType;
-    this.stridable   = stridable;
-    this._low = chpl__idxToInt(_low);
-    this._high = chpl__idxToInt(_high);
-    this.complete();
-    if stridable {
-      this._stride    = _stride;
-      this._alignment = chpl__idxToInt(_alignment);
-      this._aligned   = _aligned;
-    }
-    
-    if !stridable && boundsChecking then
-      assert(_stride == 1);
-  }
-
-  private proc _isAnyNothing(args...) param : bool {
-    for param i in 0..args.size-1 {
-      if isNothingType(args(i).type) then return true;
-    }
-    return false;
-  }
-
-
-  pragma "no doc"
-  proc range.init(type idxType = int,
-                  param boundedType : BoundedRangeType = BoundedRangeType.bounded,
-                  param stridable : bool = false,
-                  _low : idxType = chpl__intToIdx(idxType, 1),
-                  _high : idxType = chpl__intToIdx(idxType, 0),
-                  _stride,
-                  _alignment,
-                  _aligned)
-    where _isAnyNothing(_stride, _alignment, _aligned) {
-
-    this.idxType     = idxType;
-    this.boundedType = boundedType;
-    this.stridable   = stridable;
-    this._low        = chpl__idxToInt(_low);
-    this._high       = chpl__idxToInt(_high);
-    this.complete();
-    if stridable then
-      compilerError("non-stridable range initializer called with stridable=true");
-  }
-*/
 
   pragma "no doc"
   proc range.init=(other : range(?i,?b,?s)) {
@@ -398,30 +322,6 @@ module ChapelRange {
               str,
               chpl__idxToInt(other.alignment),
               other.aligned);
-  }
-
-    pragma "no doc"
-  proc range.init=(other : range(?i,?b,?s)) where chpl__singleValIdxType(i) {
-    type idxType      = if this.type.idxType     == ? then i else this.type.idxType;
-    param boundedType = if this.type.boundedType == ? then b else this.type.boundedType;
-    param stridable   = if this.type.stridable   == ? then s else this.type.stridable;
-
-    if boundedType != b {
-      compilerError("range(boundedType=" + this.type.boundedType:string + ") cannot be initialized from range(boundedType=" + b:string + ")");
-    }
-
-    if !stridable && s then
-      compilerError("cannot initialize a non-stridable range from a stridable range");
-
-    const str = if stridable && s then other.stride else 1:chpl__rangeStrideType(idxType);
-    this.init(idxType, boundedType, stridable);
-    this._low = other._low;
-    this._high = other._high;
-    if (this.stridable) {
-      this._stride = other._stride;
-      this._alignment = other._alignment;
-      this._aligned = other._aligned;
-    }
   }
 
   /////////////////////////////////
@@ -702,7 +602,7 @@ module ChapelRange {
   /* Returns the alignment of the range */
   inline proc range.alignment where stridable return chpl_intToIdx(_alignment);
   pragma "no doc"
-  proc range.alignment where !stridable && hasLowBound() && !chpl__singleValIdxType(idxType) return low;
+  proc range.alignment where !stridable && hasLowBound() return low;
   pragma "no doc"
   proc range.alignment return chpl_intToIdx(0);
 
@@ -794,25 +694,19 @@ module ChapelRange {
   inline proc range.alignedHighAsInt {
     if ! stridable then
       return _high;
-    else {
+    else
       // Adjust _high downward by the difference between _high and _alignment.
-//      writeln("alignedHighAsInt: ", _high, _alignment, stride, chpl__diffMod(_high, _alignment, stride));
       return _high - chpl__diffMod(_high, _alignment, stride);
-    }
   }
 
   /* If the sequence represented by the range is empty, return true.  An
      error is reported if the range is ambiguous.
    */
   inline proc range.isEmpty() {
-    /*
-    writeln("In isEmpty");
-    writeln("this.alignedLow = ", this.alignedLow);
-    writeln("this.alignedHigh = ", this.alignedHigh);
-*/
     if boundsChecking && isAmbiguous() then
       HaltWrappers.boundsCheckHalt("isEmpty() is invoked on an ambiguously-aligned range");
-    return isBoundedRange(this) && this.alignedLowAsInt > this.alignedHighAsInt;
+    else
+      return isBoundedRange(this) && this.alignedLowAsInt > this.alignedHighAsInt;
   }
 
 
@@ -940,7 +834,7 @@ module ChapelRange {
 
     if this.isBounded() && this.size == 0 then
       return other.isBounded() && other.size == 0;;
-    
+
     // Since slicing preserves the direction of the first arg, may need
     // to negate one of the strides (shouldn't matter which).
     if stridable {
@@ -1516,7 +1410,7 @@ operator :(r: range(?), type t: range(?)) {
           if r.stridable then (r.aligned, r._alignment)
                          else (false, 0:r.intIdxType);
 
-    return new range(i, b, true, lw, hh, st, alt, ald);
+    return new range(i, b, true,  lw, hh, st, alt, ald);
   }
 
   /*
@@ -1895,7 +1789,6 @@ operator :(r: range(?), type t: range(?)) {
                      _stride = if r.stridable then r.stride: strType else none,
                      _alignment = if r.stridable then r._alignment else none,
                      _aligned = r.aligned);
-//                     _aligned = if r.stridable then r.aligned else none);
   }
 
   operator #(r:range(?i), count:chpl__rangeStrideType(i)) {
@@ -1996,7 +1889,8 @@ operator :(r: range(?), type t: range(?)) {
     for i in r do yield i;
   }
 
-  iter chpl_direct_range_iter(low: enum, high: enum, stride: integral) {
+  iter chpl_direct_range_iter(low: enum, high: enum,
+                              stride: integral) {
     const r = low..high by stride;
     for i in r do yield i;
   }
@@ -2243,24 +2137,19 @@ operator :(r: range(?), type t: range(?)) {
   pragma "order independent yielding loops"
   iter range.these()
     where boundedType == BoundedRangeType.bounded && stridable == true {
-      if (useOptimizedRangeIterators) {
-//        writeln("Before boundsChecking");
+    if (useOptimizedRangeIterators) {
       if boundsChecking {
         checkIfIterWillOverflow();
         if this.isAmbiguous() then
           HaltWrappers.boundsCheckHalt("these -- Attempt to iterate over a range with ambiguous alignment.");
       }
-//        writeln("After boundsChecking");
 
       // must use first/last since we have no knowledge of stride
       // must check if low > high (something like 10..1) because of the !=
       // relational operator. Such ranges are supposed to iterate 0 times
-        var i: intIdxType;
-//        writeln("About to query start");
-        const start = this.firstAsInt;
-//        writeln("About to compute end");
+      var i: intIdxType;
+      const start = this.firstAsInt;
       const end: intIdxType = if this._low > this._high then start else this.lastAsInt + stride: intIdxType;
-//      writeln("In loop: ", start, "..", end);
       while __primitive("C for loop",
                         __primitive( "=", i, start),
                         __primitive("!=", i, end),
@@ -2276,7 +2165,7 @@ operator :(r: range(?), type t: range(?)) {
   pragma "no doc"
   pragma "order independent yielding loops"
   iter range.these()
-  where boundedType == BoundedRangeType.bounded && stridable == false {
+    where boundedType == BoundedRangeType.bounded && stridable == false {
     if (useOptimizedRangeIterators) {
       if boundsChecking then checkIfIterWillOverflow();
 
@@ -2597,9 +2486,8 @@ operator :(r: range(?), type t: range(?)) {
   operator :(x: range(?), type t: string) {
     var ret: string;
 
-    if x.hasLowBound() {
+    if x.hasLowBound() then
       ret += x.low:string;
-    }
     ret += "..";
     if x.hasHighBound() {
       // handle the special case of an empty range with a singleton idxType
@@ -2806,8 +2694,6 @@ operator :(r: range(?), type t: range(?)) {
       // empty ranges like 1..0.  If an enum only defines a single
       // symbol, we can't create such a range, so print the following
       // error message to avoid going off the rails.
-//      if idxType.size < 2 then
-//        compilerError("ranges are not currently supported for enums with fewer than two values");
       return int;
     } else {
       return idxType;
