@@ -1982,10 +1982,13 @@ operator :(r: range(?), type t: range(?)) {
 
   // case for when low and high aren't compatible types and can't be coerced
   iter chpl_direct_range_iter(low, high, stride) {
+    chpl_build_bounded_range(low, high);  // use general error if possible
+    // otherwise, generate a more specific one (though I don't think it's
+    // possible to get here)
     if (low.type == high.type) then
-      compilerError("Ranges defined using bounds of type '" + low.type:string + "' are not currently supported");
+      compilerError("Ranges defined using bounds of type '" + low.type:string + "' and strides of type '" + stride.type:string + "' are not currently supported");
     else
-      compilerError("Ranges defined using bounds of type '" + low.type:string + ".." + high.type:string + "' are not currently supported");
+      compilerError("Ranges defined using bounds of type '" + low.type:string + ".." + high.type:string + "' and strides of type '" + stride.type:string + "' are not currently supported");
   }
 
 

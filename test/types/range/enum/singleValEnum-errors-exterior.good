@@ -1,0 +1,1 @@
+singleValEnum-errors.chpl:15: error: can't apply '.exterior()' to a range whose 'idxType' only has one value
