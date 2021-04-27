@@ -43,8 +43,8 @@ class Location;
  */
 class Builder final {
  private:
-  typedef std::vector<std::pair<UniqueString,int>> pathVecT;
-  typedef std::unordered_map<UniqueString,int> declaredHereT;
+  using pathVecT = std::vector<std::pair<UniqueString,int>>;
+  using declaredHereT = std::unordered_map<UniqueString,int>;
 
   Context* context_;
   UniqueString filepath_;

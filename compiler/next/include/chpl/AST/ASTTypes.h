@@ -52,7 +52,7 @@ class Builder;
 /**
   ASTList is just a list that owns some AST nodes.
  */
-typedef std::vector<owned<BaseAST>> ASTList;
+using ASTList = std::vector<owned<BaseAST>>;
 
 static inline ASTList makeASTList(owned<BaseAST> ast) {
   ASTList lst;
