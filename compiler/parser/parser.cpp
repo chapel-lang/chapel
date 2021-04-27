@@ -340,15 +340,10 @@ static void parseCommandLineFiles() {
         char reducedFileName[maxFileName];
         // sprintf fileName to allowed length buffer
         strncpy(reducedFileName, inputFileName, maxFileName);
-        // error message format with fileName and allowed length
-        const char *errorFormat = "%s, filename is longer than maximum allowed length of %d";
-        // allow max length in error with error
-        const size_t errorLength = maxFileName + strlen(errorFormat) - 4 + 3;
-        // buffer to store errorMessage
-        char errorMessage[errorLength];
-        snprintf(errorMessage, errorLength, errorFormat, reducedFileName, maxFileName);
-        // throw error
-        USR_FATAL(errorMessage);
+        // error message to print between filename and filename limit
+        const char *errorMessage = "%s, filename is longer than maximum allowed length of %d\n";
+        // throwr error will concatenated messages
+        USR_FATAL(errorMessage, reducedFileName, maxFileName);
       }
       parseFile(inputFileName, MOD_USER, true, false);
     }
