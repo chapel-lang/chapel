@@ -22,6 +22,7 @@
 
 #include "chpl/AST/ASTTag.h"
 #include "chpl/AST/ID.h"
+#include "chpl/AST/ASTList.h"
 #include "chpl/AST/ASTTypes.h"
 #include "chpl/Util/memory.h"
 
@@ -29,6 +30,8 @@
 
 namespace chpl {
 namespace uast {
+
+
 
 
 /**
