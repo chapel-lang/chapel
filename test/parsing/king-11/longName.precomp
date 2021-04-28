@@ -3,7 +3,7 @@
 NAME_MAX=`getconf NAME_MAX /`
 NAME_MAX=$((NAME_MAX - 15))
 LIMIT=$((NAME_MAX - 1))
-VAL=`realpath "$0" | sed 's|\(.*\)/.*|\1|'`
+VAL="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
 repeatChar() {
     local input="$1"
@@ -12,8 +12,8 @@ repeatChar() {
     printf '%s\n' "${myString// /$input}"
 }
 
-FILENAME=$(repeatChar a $NAME_MAX).chpl
-printf 'module LongName {\n\tfunc printSomething() {\n\t\twrite(%s); \n\t}\n}' "'Won't Compile'" > $VAL/$FILENAME
+FILENAME=$(repeatChar a $NAME_MAX)
+printf 'module LongName {\n\tfunc printSomething() {\n\t\twrite(%s); \n\t}\n}' "'Won't Compile'" > $VAL/$FILENAME.chpl
 FILENAME=$(repeatChar a $LIMIT)
 BOLD_ERROR=`echo -e '\033[1merror:\033[0m'`
-printf "%s %s, filename is longer than maximum allowed length of %s\n" $BOLD_ERROR $FILENAME $LIMIT > $VAL/longName.good
+printf "%s %s, filename is longer than maximum allowed length of %s" $BOLD_ERROR $FILENAME $LIMIT > $VAL/longName.good
