@@ -1,0 +1,99 @@
+# Copyright 2021 Hewlett Packard Enterprise Development LP
+# Other additional copyright holders may be indicated within.
+#
+# The entirety of this work is licensed under the Apache License,
+# Version 2.0 (the "License"); you may not use this file except
+# in compliance with the License.
+#
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+# Copyright 2004-2019 Cray Inc.
+# Other additional copyright holders may be indicated within.
+# 
+# The entirety of this work is licensed under the Apache License,
+# Version 2.0 (the "License"); you may not use this file except
+# in compliance with the License.
+# 
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+ifndef CHPL_MAKE_HOME
+export CHPL_MAKE_HOME=$(shell pwd)/../..
+endif
+
+COMPILER_ROOT = ..
+COMPILER_SUBDIR = next
+
+#
+# standard header
+#
+include $(COMPILER_ROOT)/make/Makefile.compiler.head
+
+LIB_CMAKE_ARG := -DCMAKE_BUILD_TYPE=Release
+LIBCOMPILER_BUILD_DIR := $(COMPILER_BUILD)/next/Release
+ifdef CHPL_DEVELOPER
+  LIB_CMAKE_ARG := -DCMAKE_BUILD_TYPE=Debug
+  LIBCOMPILER_BUILD_DIR := $(COMPILER_BUILD)/next/Debug
+endif
+CMAKE ?= cmake
+
+# TODO - also have a unique build path
+
+$(LIBCOMPILER_BUILD_DIR):
+	@echo "Configuring the compiler library..."
+	@mkdir -p $(LIBCOMPILER_BUILD_DIR)
+	cd $(LIBCOMPILER_BUILD_DIR) && \
+	  $(CMAKE) $(CHPL_MAKE_HOME)/compiler/next \
+	    $(LIB_CMAKE_ARG)
+
+libchplcomp-parser: $(LIBCOMPILER_BUILD_DIR) FORCE
+	cd $(LIBCOMPILER_BUILD_DIR)/lib/Frontend/Parser && cmake --build . --target parser
+
+libchplcomp: $(LIBCOMPILER_BUILD_DIR) FORCE
+	@echo "Making the compiler library..."
+	@if [ -f $(LIBCOMPILER_BUILD_DIR)/Makefile ]; then \
+	  cd $(LIBCOMPILER_BUILD_DIR) && $(MAKE) libchplcomp ; \
+	else \
+	  cd $(LIBCOMPILER_BUILD_DIR) && cmake --build .  --target libchplcomp ; \
+	fi
+
+COPY_IF_DIFFERENT = $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/config/update-if-different --copy
+
+libchplcomp-docs: $(LIBCOMPILER_BUILD_DIR) FORCE
+	@echo "Making the compiler library docs..."
+	cd $(LIBCOMPILER_BUILD_DIR) && cmake --build .  --target api-docs
+	# copy the generated doxygen output to the build directory
+	@if [ -d $(LIBCOMPILER_BUILD_DIR)/doc/doxygen ]; then \
+	  $(COPY_IF_DIFFERENT) $(LIBCOMPILER_BUILD_DIR)/doc/doxygen $(CHPL_MAKE_HOME)/build/doc/doxygen ; \
+	fi
+
+test-libchplcomp: $(LIBCOMPILER_BUILD_DIR) FORCE
+	@echo "Making and running the tests..."
+	@if [ -f $(LIBCOMPILER_BUILD_DIR)/Makefile ]; then \
+	  cd $(LIBCOMPILER_BUILD_DIR) && $(MAKE) tests && ctest . ; \
+	else \
+	  cd $(LIBCOMPILER_BUILD_DIR) && cmake --build .  --target tests && ctest . ; \
+	fi
+
+FORCE:
+
+#
+# standard footer
+#
+include $(COMPILER_ROOT)/make/Makefile.compiler.foot

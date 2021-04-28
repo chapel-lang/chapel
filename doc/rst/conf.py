@@ -36,7 +36,10 @@ extensions = [
     'sphinxcontrib.chapeldomain',
     'sphinx.ext.mathjax',
     'util.disguise',
+    'breathe',
 ]
+
+breathe_default_project = "libchplcomp"
 
 nitpick_ignore = []
 for line in open('../util/nitpick_ignore'):

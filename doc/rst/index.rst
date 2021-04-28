@@ -36,6 +36,14 @@ Chapel Documentation
    Chapel Evolution <language/evolution>
    Documentation Archives <language/archivedSpecs>
 
+.. toctree::
+   :caption: Compiler Internals
+   :maxdepth: 1
+
+   compiler-internals/index
+
+
+
 Index
 -----
 
