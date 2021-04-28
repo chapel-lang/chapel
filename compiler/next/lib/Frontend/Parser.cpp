@@ -85,7 +85,7 @@ Builder::Result Parser::parseFile(const char* path) {
     return builder->result();
   }
 
-  // Otherwise, we have successfully openned the file.
+  // Otherwise, we have successfully opened the file.
 
   // Set the (global) parser debug state
   if (DEBUG_PARSER)

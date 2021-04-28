@@ -104,7 +104,7 @@
     ThrowsTag_THROWS,
   };
 
-  enum NewTag {
+  enum NewTag { // TODO: mabye should be named ClassManageTag?
     NewTag_BLANK,
     NewTag_OWNED,
     NewTag_SHARED,
@@ -143,7 +143,7 @@
     IntentTag_TYPE,
   };
 
-  enum LinkageTag {
+  enum LinkageTag { // TODO: what about combinations of these?
     LinkageTag_DEFAULT,
     LinkageTag_INLINE,
     LinkageTag_OVERRIDE,
@@ -567,7 +567,7 @@
 %type <exprList> forall_intent_clause forall_intent_ls
 
 %type <commentsAndStmt> fn_decl_stmt_start fn_decl_stmt_inner
-%type <exprList> opt_formal_ls req_formal_ls formal_ls
+%type <exprList> opt_formal_ls req_formal_ls formal_ls formal_ls_inner
 %type <expr> fn_decl_receiver_expr
 %type <functionTag> proc_iter_or_op
 %type <linkageTag> linkage_spec
@@ -702,7 +702,7 @@ include_module_stmt:
    the statement level.
 */
 block_stmt:
-  TLCBR         TRCBR
+  TLCBR TRCBR
   {
     // gather the comments before the opening bracket
     CommentsAndStmt cs = STMT(@1, nullptr);
@@ -737,7 +737,7 @@ block_stmt:
     cs.stmt = blockstmt.release();
     $$ = cs;
   }
-| TLCBR error   TRCBR
+| TLCBR error TRCBR
   {
     // gather the comments before the opening bracket
     CommentsAndStmt cs = STMT(@1, nullptr);
@@ -1690,10 +1690,14 @@ req_formal_ls:
   TLP formal_ls TRP  { $$ = $2; }
 ;
 
+formal_ls_inner:
+  formal                         { $$ = TODOLIST(@$); }
+| formal_ls_inner TCOMMA formal  { $$ = TODOLIST(@$); }
+;
+
 formal_ls:
                            { $$ = TODOLIST(@$); }
-| formal                   { $$ = TODOLIST(@$); }
-| formal_ls TCOMMA formal  { $$ = TODOLIST(@$); }
+| formal_ls_inner          { $$ = $1; }
 ;
 
 formal:
@@ -2331,6 +2335,14 @@ expr:
     { $$ = TODOEXPR(@$); }
 | expr TDOTDOTOPENHIGH expr
     { $$ = TODOEXPR(@$); }
+| expr TDOTDOT
+    { $$ = TODOEXPR(@$); }
+| TDOTDOT expr
+    { $$ = TODOEXPR(@$); }
+| TDOTDOTOPENHIGH expr
+    { $$ = TODOEXPR(@$); }
+| TDOTDOT
+    { $$ = TODOEXPR(@$); }
 
 /* The following cases would extend the current '..<' open range
    interval constructor to also support '<..' and '<..<'.  This
@@ -2344,14 +2356,7 @@ expr:
 | expr TDOTDOTOPENLOW
     { $$ = TODOEXPR(@$); }
 */
-| expr TDOTDOT
-    { $$ = TODOEXPR(@$); }
-| TDOTDOT expr
-    { $$ = TODOEXPR(@$); }
-| TDOTDOTOPENHIGH expr
-    { $$ = TODOEXPR(@$); }
-| TDOTDOT
-    { $$ = TODOEXPR(@$); }
+
 ;
 
 opt_expr:

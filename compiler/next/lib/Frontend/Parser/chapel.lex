@@ -307,11 +307,11 @@ zip              return processToken(yyscanner, TZIP);
 "b\"\"\""        return processTripleStringLiteral(yyscanner, "\"", BYTESLITERAL);
 "b'''"           return processTripleStringLiteral(yyscanner, "'", BYTESLITERAL);
 "\""             return processStringLiteral(yyscanner, "\"", STRINGLITERAL);
-"\'"             return processStringLiteral(yyscanner, "\'", STRINGLITERAL);
+"'"              return processStringLiteral(yyscanner, "'", STRINGLITERAL);
 "b\""            return processStringLiteral(yyscanner, "\"", BYTESLITERAL);
-"b\'"            return processStringLiteral(yyscanner, "\'", BYTESLITERAL);
+"b'"             return processStringLiteral(yyscanner, "'", BYTESLITERAL);
 "c\""            return processStringLiteral(yyscanner, "\"", CSTRINGLITERAL);
-"c\'"            return processStringLiteral(yyscanner, "\'", CSTRINGLITERAL);
+"c'"             return processStringLiteral(yyscanner, "'", CSTRINGLITERAL);
 "//"             return processSingleLineComment(yyscanner);
 "/*"             return processBlockComment(yyscanner);
 
