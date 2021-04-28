@@ -30,6 +30,7 @@
 #include <vector>
 
 namespace chpl {
+namespace frontend {
 
 /**
   A class for parsing
@@ -65,6 +66,7 @@ class Parser final {
    uast::Builder::Result parseString(const char* path, const char* str);
 };
 
+} // end namespace frontend
 } // end namespace chpl
 
 #endif

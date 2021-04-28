@@ -33,6 +33,7 @@
 
 using namespace chpl;
 using namespace uast;
+using namespace frontend;
 
 static void test0(Parser* parser) {
   auto parseResult = parser->parseString("test0.chpl", "");

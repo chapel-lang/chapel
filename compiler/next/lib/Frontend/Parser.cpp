@@ -35,8 +35,10 @@
 #define DEBUG_PARSER 0
 
 namespace chpl {
+namespace frontend {
 
-using namespace uast;
+
+using namespace chpl::uast;
 
 Parser::Parser(Context* context)
   : context_(context) {
@@ -202,4 +204,6 @@ Builder::Result Parser::parseString(const char* path, const char* str) {
   return builder->result();
 }
 
+
+} // namespace frontend
 } // namespace chpl
