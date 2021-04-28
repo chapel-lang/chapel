@@ -26,10 +26,10 @@ about your environment for using Chapel:
 
   * You have access to gmake or a GNU-compatible version of make.
 
-  * You have access to standard C and C++14 compilers. We test our code
-    using a range of compilers on a nightly basis; these include
-    relatively recent versions of gcc/g++, clang, and compilers from
-    HPE Cray and Intel.
+  * You have access to standard C and C++14 compilers. The C++14 support
+    is required for building the compiler itself. For GCC specifically,
+    GCC 5 or newer is required for C++14 support. Note that C11 support,
+    while not required, will enable faster atomic operations.
 
   * Building GMP requires an M4 macro processor.
 
