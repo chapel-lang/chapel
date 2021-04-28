@@ -946,10 +946,11 @@ module ChapelArray {
 
   /* Return true if ``d`` is an associative domain. Otherwise return false. */
   proc isAssociativeDom(d: domain) param {
-    proc isAssociativeDomClass(dc: BaseAssociativeDom) param return true;
-    proc isAssociativeDomClass(dc) param return false;
-    return isAssociativeDomClass(_to_borrowed(d._value));
+    return chpl_isAssociativeDomClass(_to_borrowed(d._value));
   }
+
+  proc chpl_isAssociativeDomClass(dc: BaseAssociativeDom) param return true;
+  proc chpl_isAssociativeDomClass(dc) param return false;
 
   /* Return true if ``a`` is an array with an associative domain. Otherwise
      return false. */
@@ -2618,7 +2619,16 @@ module ChapelArray {
     pragma "always propagate line file info"
     pragma "no doc"
     proc checkSlice(d: domain, value) {
-      checkSlice((...d.dsiDims()), value=value);
+      if (isRectangularDom(d)) {
+        checkSlice((...d.dsiDims()), value=value);
+      } else if (isAssociativeDom(d)) {
+        use HaltWrappers;
+        forall i in d do
+          if !this.domain.dsiMember(i) then
+            HaltWrappers.boundsCheckHalt("index " + i + " is out-of-bounds");
+      } else {
+        compilerError("This style of array slicing is not yet supported");
+      }
     }
 
     pragma "insert line file info"

@@ -523,6 +523,10 @@ module DefaultAssociative {
       _ddata_free(data, dom.table.tableSize);
     }
 
+    proc rank param {
+      return 1;
+    }
+
     //
     // Standard internal array interface
     //
@@ -547,6 +551,10 @@ module DefaultAssociative {
       }
     }
 
+    proc dsiAccess(idx: 1*idxType) ref {
+      return dsiAccess(idx(0));
+    }
+
     // value version for POD types
     proc dsiAccess(idx : idxType)
     where shouldReturnRvalueByValue(eltType) {
@@ -559,6 +567,12 @@ module DefaultAssociative {
         return data(0);
       }
     }
+
+    proc dsiAccess(idx : 1*idxType) ref
+    where shouldReturnRvalueByValue(eltType) {
+      return dsiAccess(idx(0));
+    }
+
     // const ref version for strings, records with copy ctor
     proc dsiAccess(idx : idxType) const ref
     where shouldReturnRvalueByConstRef(eltType) {
@@ -570,6 +584,11 @@ module DefaultAssociative {
         halt("array index out of bounds: ", idx);
         return data(0);
       }
+    }
+
+    proc dsiAccess(idx : 1*idxType) const ref
+    where shouldReturnRvalueByConstRef(eltType) {
+      return dsiAccess(idx(0));
     }
 
     inline proc dsiLocalAccess(i) ref
@@ -841,5 +860,37 @@ module DefaultAssociative {
       }
       this.eltsNeedDeinit = false;
     }
+  }
+
+  proc chpl_serialReadWriteAssociativeHelper(f, arr, dom) throws {
+    var binary = f.binary();
+    var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
+    var isspace = arrayStyle == QIO_ARRAY_FORMAT_SPACE && !binary;
+    var isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
+    var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !binary;
+
+    if !f.writing && ischpl {
+      halt("This form of I/O on a default array slice is not yet supported");
+      return;
+    }
+
+    if isjson || ischpl then f <~> new ioLiteral("[");
+
+    var first = true;
+
+    for key in dom {
+      if first then first = false;
+      else if isspace then f <~> new ioLiteral(" ");
+      else if isjson || ischpl then f <~> new ioLiteral(", ");
+
+      if f.writing && ischpl {
+        f <~> key;
+        f <~> new ioLiteral(" => ");
+      }
+
+      f <~> arr.dsiAccess(key);
+    }
+
+    if isjson || ischpl then f <~> new ioLiteral("]");
   }
 }
