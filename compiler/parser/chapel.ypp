@@ -499,6 +499,7 @@
 %type <pcallexpr> forall_intent_clause forall_intent_ls
 
 %type <pfnsymbol> fn_decl_stmt_inner formal_ls opt_formal_ls req_formal_ls
+%type <pfnsymbol> formal_ls_inner
 %type <pexpr> fn_decl_receiver_expr
 %type <procIterOp> proc_iter_or_op
 %type <pfnsymbol> linkage_spec
@@ -1538,10 +1539,14 @@ req_formal_ls:
   TLP formal_ls TRP  { $$ = $2; }
 ;
 
+formal_ls_inner:
+  formal                         { $$ = buildFunctionFormal(NULL, $1); }
+| formal_ls_inner TCOMMA formal  { $$ = buildFunctionFormal($1, $3); }
+;
+
 formal_ls:
                            { $$ = buildFunctionFormal(NULL, NULL); }
-| formal                   { $$ = buildFunctionFormal(NULL, $1); }
-| formal_ls TCOMMA formal  { $$ = buildFunctionFormal($1, $3); }
+| formal_ls_inner          { $$ = $1; }
 ;
 
 formal:
