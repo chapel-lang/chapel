@@ -33,8 +33,6 @@ namespace uast {
  */
 class FnCall final : public Call {
  private:
-  // this represents the called expression e.g. 'f' in 'f(1,2,3)'
-  Exp* baseExp_;
   // for each actual (matching CallExpr's actuals), what are the names?
   // if the actual is unnamed, it is the empty string.
   std::vector<UniqueString> actualNames_;
@@ -43,8 +41,6 @@ class FnCall final : public Call {
  public:
   ~FnCall() override = default;
 
-  /** Returns the base expression e.g. 'f' in 'f(1,2,3)' */
-  Exp* baseExp() const { return baseExp_; }
   /** Returns whether actual i is named as with 'f(a=3)' */
   bool actualIsNamed(int i) const { return !actualNames_[i].isEmpty(); }
   /** Returns the name of the actual, if used; otherwise the empty string */

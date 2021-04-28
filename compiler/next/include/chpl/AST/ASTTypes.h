@@ -77,7 +77,8 @@ static inline ASTList makeASTList(owned<ASTBase> ast) {
  'addin' is some new AST we wish to replace it with
 
  on exit, 'keep' stores the AST we need to 'keep', and anything
- not kept is stored in 'addin'.
+ not kept is stored in 'addin'. On exit, the order of nodes stored
+ in 'addin' does not matter.
 
  The function returns 'true' if anything changed in 'keep'.
  */

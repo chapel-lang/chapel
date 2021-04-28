@@ -35,22 +35,22 @@ class Call : public Exp {
  public:
   ~Call() override = 0;
 
-  // note: the reason for the +/- 1 below is that the
-  // 0'th child is the called expression, which does
-  // not count as an "actual".
-
   ASTListIteratorPair<Exp> actuals() const {
     return ASTListIteratorPair<Exp>(children_.begin()+1, children_.end());
   }
+
+  // note: the reason for the +/- 1 below is that the
+  // 0'th child is the called expression, which does
+  // not count as an "actual".
 
   int numActuals() const {
     return this->numChildren() - 1;
   }
   const Exp* actual(int i) const {
-    return this->getChild(i+1);
+    return this->child(i+1);
   }
   Exp* baseExpr() const {
-    return this->getChild(0);
+    return this->child(0);
   }
 };
 
