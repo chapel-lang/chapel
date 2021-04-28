@@ -236,9 +236,7 @@ module ChapelRange {
   //# Initializers
   //#
 
-  // Declare this as an initializer, so we can capture range creation.
-  // If it is not an initializer, then the user can still create a maximal
-  // range (for example) without being warned.
+  // This is the initializer for a low..high bounded range
   //
   pragma "no doc"
   proc range.init(type idxType, low: idxType, high: idxType) {
@@ -248,6 +246,8 @@ module ChapelRange {
     this._high = chpl__idxToInt(high);
   }
 
+  // This is the initializer for a low.. unbounded range
+  //
   pragma "no doc"
   proc range.init(low: ?t) {
     this.idxType = t;
@@ -255,6 +255,8 @@ module ChapelRange {
     this._low = chpl__idxToInt(low);
   }
 
+  // This is the initializer for a ..high unbounded range
+  //
   pragma "no doc"
   proc range.init(high: ?t) {
     this.idxType = t;
@@ -262,12 +264,16 @@ module ChapelRange {
     this._high = chpl__idxToInt(high);
   }
 
+  // This is the initializer for a .. unbounded range
+  //
   pragma "no doc"
   proc range.init() {
     this.idxType = int;
     this.boundedType = BoundedRangeType.boundedNone;
   }
 
+  // This is an initializer for defining a default range value
+  //
   pragma "no doc"
   proc range.init(type idxType,
                   param boundedType: BoundedRangeType,
@@ -280,6 +286,9 @@ module ChapelRange {
               _aligned = true);
   }
 
+  // This is an initializer for defining a range value in terms of its
+  // internal field values
+  //
   pragma "no doc"
   proc range.init(type idxType,
                   param boundedType : BoundedRangeType,
@@ -302,6 +311,8 @@ module ChapelRange {
     }
   }
 
+  // This is the range copy initializer
+  //
   pragma "no doc"
   proc range.init=(other : range(?i,?b,?s)) {
     type idxType      = if this.type.idxType     == ? then i else this.type.idxType;
@@ -845,7 +856,7 @@ module ChapelRange {
     if this.isAmbiguous() || other.isAmbiguous() then return false;
 
     if this.isBounded() && this.size == 0 then
-      return other.isBounded() && other.size == 0;;
+      return other.isBounded() && other.size == 0;
 
     // Since slicing preserves the direction of the first arg, may need
     // to negate one of the strides (shouldn't matter which).
@@ -2201,7 +2212,6 @@ operator :(r: range(?), type t: range(?)) {
       for i in this.generalIterator() do yield i;
     }
   }
-
 
   //################################################################################
   //# General, Unoptimized Serial Iterator
