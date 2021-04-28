@@ -125,11 +125,9 @@ Context::updateResultForQuery(const std::tuple<ArgTs...>& tupleOfArgs,
       queryMap->map.emplace_hint(
         search,
         std::make_pair(tupleOfArgs,
-                       QueryMapResult<ResultType>(QueryDependencyVec(),
-                                                  0,
+                       QueryMapResult<ResultType>(0,
                                                   this->currentRevisionNumber,
                                                   this->currentRevisionNumber,
-                                                  QueryErrorVec(),
                                                   std::move(result))));
     QueryMapResult<ResultType>* newResult = &(iter->second);
     changedOut = true;
@@ -258,6 +256,9 @@ ResultType& Context::queryEnd(UniqueString queryName, const char* func,
 
 #define QUERY_ERROR(error) \
   BEGIN_QUERY_CONTEXT->queryNoteError(error)
+
+#define QUERY_DEPENDS_INPUT() \
+  BEGIN_QUERY_CONTEXT->queryNoteInputDependency()
 
 #define QUERY_END(result) \
   /* must not use BEGIN_QUERY_SEARCH1 (iterator could be invalidated) */ \

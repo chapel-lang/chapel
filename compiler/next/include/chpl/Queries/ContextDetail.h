@@ -170,17 +170,17 @@ class QueryMapResultBase {
   // errors includes errors from dependencies, transitively,
   // so that the dependencies can be forgotten and errors still reported.
   QueryErrorVec errors;
+  bool inputDependency;
 
-  QueryMapResultBase(QueryDependencyVec deps,
-                     RevisionNumber lastCheckedAndReused,
+  QueryMapResultBase(RevisionNumber lastCheckedAndReused,
                      RevisionNumber lastComputed,
-                     RevisionNumber lastChanged,
-                     QueryErrorVec errors)
-    : dependencies(std::move(deps)),
+                     RevisionNumber lastChanged)
+    : dependencies(),
       lastCheckedAndReused(lastCheckedAndReused),
       lastComputed(lastComputed),
       lastChanged(lastChanged),
-      errors(std::move(errors)) {
+      errors(),
+      inputDependency(false) {
   }
   virtual ~QueryMapResultBase() = 0; // this is an abstract base class
 };
@@ -188,15 +188,11 @@ template<typename ResultType>
 class QueryMapResult final : public QueryMapResultBase {
  public:
   ResultType result;
-  QueryMapResult(QueryDependencyVec deps,
-                 RevisionNumber lastCheckedAndReused,
+  QueryMapResult(RevisionNumber lastCheckedAndReused,
                  RevisionNumber lastComputed,
                  RevisionNumber lastChanged,
-                 QueryErrorVec errors,
                  ResultType result)
-    : QueryMapResultBase(std::move(deps),
-                         lastCheckedAndReused, lastComputed, lastChanged,
-                         std::move(errors)),
+    : QueryMapResultBase(lastCheckedAndReused, lastComputed, lastChanged),
       result(std::move(result)) {
   }
 };

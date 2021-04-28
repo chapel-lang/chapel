@@ -59,7 +59,14 @@ bool ASTBase::shallowMatch(const ASTBase* other) const {
 }
 
 bool ASTBase::updateAST(owned<ASTBase>& keep, owned<ASTBase>& addin) {
+  printf("IN updateAST keep is\n");
+  ASTBase::dump(keep.get(), 2);
+  printf("IN updateAST addin is\n");
+  ASTBase::dump(addin.get(), 2);
+  printf("\n");
+
   if (keep->shallowMatch(addin.get())) {
+    printf("Shallow Match\n");
     // run updateASTList on the child list
     return updateASTList(keep->children_, addin->children_);
   } else {
@@ -80,10 +87,9 @@ static void dumpHelper(const ASTBase* ast, int depth) {
   ID emptyId;
   if (ast->id() != emptyId) {
     if (const Sym* sym = ast->toSym()) {
-      printf("%s %s@%i %p %s\n",
+      printf("%s %s %p %s\n",
              asttags::tagToString(ast->tag()),
              ast->id().symbolPath().c_str(),
-             ast->id().postOrderId(),
              ast,
              sym->name().c_str());
     } else if (const Identifier* ident = ast->toIdentifier()) {
@@ -110,8 +116,8 @@ static void dumpHelper(const ASTBase* ast, int depth) {
   }
 }
 
-void ASTBase::dump(const ASTBase* ast) {
-  dumpHelper(ast, 0);
+void ASTBase::dump(const ASTBase* ast, int leadingSpaces) {
+  dumpHelper(ast, leadingSpaces);
 }
 
 

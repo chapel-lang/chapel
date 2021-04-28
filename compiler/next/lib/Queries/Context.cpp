@@ -138,8 +138,9 @@ void Context::advanceToNextRevision(bool prepareToGC) {
     this->lastPrepareToGCRevisionNumber = this->currentRevisionNumber;
     gcCounter++;
   }
-  printf("CURRENT REVISION NUMBER IS NOW %i\n",
-         (int) this->currentRevisionNumber);
+  printf("CURRENT REVISION NUMBER IS NOW %i %s\n",
+         (int) this->currentRevisionNumber,
+         prepareToGC?"PREPARING GC":"");
 }
 
 void Context::collectGarbage() {
@@ -178,6 +179,9 @@ bool Context::setFilePathForModuleName(UniqueString modName, UniqueString path) 
   bool changed = false;
   auto queryMapResult = updateResultForQuery(tupleOfArgs, path,
                                              changed, queryName);
+  printf("SETTING FILE PATH FOR MODULE %s -> %s\n",
+         modName.c_str(), path.c_str());
+
   return changed;
 }
 
@@ -205,7 +209,14 @@ bool Context::queryCanUseSavedResult(QueryMapResultBase* resultEntry) {
 
   // Otherwise, check the dependencies. Have any of them
   // changed since the last revision in which we computed this?
-  if (resultEntry->dependencies.size() > 0) {
+
+  if (resultEntry->inputDependency) {
+    // Run it again because it needs to check the input didn't change
+    return false;
+  } else if (this->currentRevisionNumber==this->lastPrepareToGCRevisionNumber) {
+    // Run it again if we are GC'ing since we need to traverse everything
+    return false;
+  } else {
     for (QueryMapResultBase* dependency : resultEntry->dependencies) {
       if (dependency->lastChanged > resultEntry->lastComputed) {
         return false;
@@ -214,13 +225,6 @@ bool Context::queryCanUseSavedResult(QueryMapResultBase* resultEntry) {
       if (!queryCanUseSavedResult(dependency)) {
         return false;
       }
-    }
-  } else {
-    // If there are no dependencies, assume it is some external
-    // input that is managed by the currentRevisionNumber.
-    // So, recompute it if the current revision number has changed.
-    if (this->currentRevisionNumber > resultEntry->lastComputed) {
-      return false;
     }
   }
 
@@ -238,7 +242,7 @@ bool Context::queryCanUseSavedResultAndPushIfNot(UniqueString queryName, const c
     // so push something to queryDeps
     queryDeps.push_back(QueryDepsEntry(queryName));
   } else {
-    printf("QUERY END       %s (...) REUSING\n", queryFunc);
+    printf("QUERY END       %s (...) REUSING BASED ON DEPS\n", queryFunc);
   }
   return ret;
 }
@@ -260,8 +264,12 @@ void Context::saveDependenciesAndErrorsInParent(QueryMapResultBase* resultEntry)
 void Context::endQueryHandleDependency(QueryMapResultBase* result) {
   // queryDeps.back() is the dependency vector for this query
   // which is now ending. So, replace result->dependencies with it.
-  result->dependencies.swap(queryDeps.back().dependencies);
-  result->errors.swap(queryDeps.back().errors);
+  {
+    QueryDepsEntry& back = queryDeps.back();
+    result->dependencies.swap(back.dependencies);
+    result->errors.swap(back.errors);
+    result->inputDependency = back.inputDependency;
+  }
   queryDeps.pop_back();
   // additionally, we've run a query and there might well be
   // a parent query. In that event, we should update the dependency
@@ -272,6 +280,11 @@ void Context::endQueryHandleDependency(QueryMapResultBase* result) {
 void Context::queryNoteError(ErrorMessage error) {
   assert(queryDeps.size() > 0);
   queryDeps.back().errors.push_back(std::move(error));
+}
+
+void Context::queryNoteInputDependency() {
+  assert(queryDeps.size() > 0);
+  queryDeps.back().inputDependency = true;
 }
 
 

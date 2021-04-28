@@ -30,6 +30,7 @@
 
 using namespace chpl;
 using namespace uast;
+using namespace frontend;
 
 int main(int argc, char** argv) {
 
@@ -38,15 +39,22 @@ int main(int argc, char** argv) {
     return 0; // need this to return 0 for testing to be happy
   }
 
+  bool gc = false;
   auto context = Context::build();
   Context* ctx = context.get();
   while (true) {
-    ctx->advanceToNextRevision(true);
+    ctx->advanceToNextRevision(gc);
     for (int i = 1; i < argc; i++) {
       auto filepath = UniqueString::build(ctx, argv[i]);
       //const frontend::ModuleDeclVec& mods
       //  = frontend::parse(ctx, filepath);
 
+      // update fileText and parseFile so that
+      // the later query can reuse results.
+      fileText(ctx, filepath);
+      //parseFile(ctx, filepath);
+
+      /*
       const frontend::DefinedTopLevelNamesVec& vec =
         frontend::moduleLevelDeclNames(ctx, filepath);
 
@@ -61,15 +69,45 @@ int main(int argc, char** argv) {
         for (const UniqueString& name : topLevelNames) {
           printf("%s\n", name.c_str());
         }
+      }*/
+
+      const ResolvedModuleVec& rmods = resolveFile(ctx, filepath);
+      for (const auto& elt : rmods) {
+        const Module* module = elt.module;
+
+        printf("Module %s:\n", module->name().c_str());
+        ASTBase::dump(module);
+        printf("\n");
+
+        const ResolutionResultByPostorderID& resolution = *elt.resolution;
+        for (const auto& rr : resolution) {
+          if (rr.exp != nullptr && rr.decl != nullptr) {
+            printf("Resolved:\n");
+            ASTBase::dump(rr.exp, 2);
+            printf("to:\n");
+            ASTBase::dump(rr.decl, 2);
+            printf("\n");
+          }
+        }
       }
     }
-    ctx->collectGarbage();
+    if (gc) {
+      ctx->collectGarbage();
+      gc = false;
+    }
 
     // ask the user if they want to run it again
     printf ("Would you like to incrementally parse again? [Y]: ");
-    int ch = getc(stdin);
-    if (!(ch == 'Y' || ch == 'y' || ch == '\n'))
+    int ch = 0;
+    do {
+      ch = getc(stdin);
+    } while (ch != 0 && (ch == ' ' || ch == '\n'));
+
+    if (ch == 'g' || ch == 'G') {
+      gc = true;
+    } else if (!(ch == 'Y' || ch == 'y' || ch == '\n')) {
       break;
+    }
     printf("\n");
   }
 

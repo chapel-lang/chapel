@@ -63,6 +63,10 @@ ErrorMessage ErrorMessage::build(Location loc, const char* fmt, ...) {
   return ErrorMessage(loc, ret);
 }
 
+void ErrorMessage::addDetail(ErrorMessage err) {
+  details.push_back(std::move(err));
+}
+
 void ErrorMessage::swap(ErrorMessage& other) {
   int oldThisLevel = this->level_;
   this->level_ = other.level_;

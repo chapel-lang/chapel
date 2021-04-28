@@ -23,6 +23,7 @@
 #include "chpl/AST/Location.h"
 
 #include <string>
+#include <vector>
 
 namespace chpl {
 namespace uast {
@@ -38,14 +39,16 @@ class ErrorMessage final {
   Location location_;
   std::string message_;
 
+  // sometimes an error message wants to point to a bunch of
+  // related line numbers. That can go here.
+  std::vector<ErrorMessage> details;
+
   // TODO: how to handle a callstack of sorts?
 
  public:
   ErrorMessage();
   ErrorMessage(Location location, std::string message);
   ErrorMessage(Location location, const char* message);
-
-
 
   static ErrorMessage build(Location loc, const char* fmt, ...)
 #ifndef DOXYGEN
@@ -54,6 +57,8 @@ class ErrorMessage final {
     __attribute__ ((format (printf, 2, 3)))
 #endif
   ;
+
+  void addDetail(ErrorMessage err);
 
   inline bool operator==(const ErrorMessage& other) const {
     return this->level_ == other.level_ &&

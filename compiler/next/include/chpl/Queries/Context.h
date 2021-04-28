@@ -194,10 +194,12 @@ class Context {
 
   struct QueryDepsEntry {
     UniqueString queryName;
+    bool inputDependency;
     chpl::querydetail::QueryDependencyVec dependencies;
     std::vector<ErrorMessage> errors;
     QueryDepsEntry(UniqueString queryName)
-      : queryName(queryName), dependencies(), errors() {
+      : queryName(queryName), inputDependency(false),
+        dependencies(), errors() {
     }
   };
 
@@ -349,6 +351,9 @@ class Context {
   const ResultType& queryGetSavedResult(chpl::querydetail::QueryMapResult<ResultType>* resultEntry);
 
   void queryNoteError(ErrorMessage error);
+  void queryNoteError(Location loc, std::string error);
+  void queryNoteInputDependency();
+
   template<typename ResultType, typename... ArgTs>
   ResultType& queryEnd(UniqueString queryName, const char* func,
                       ResultType result,

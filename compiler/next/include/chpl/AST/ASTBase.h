@@ -32,8 +32,6 @@ namespace chpl {
 namespace uast {
 
 
-
-
 /**
   This is the base class for AST types.
 
@@ -134,7 +132,7 @@ class ASTBase {
   // the function returns 'true' if anything changed in 'keep'.
   static bool updateAST(owned<ASTBase>& keep, owned<ASTBase>& addin);
 
-  static void dump(const ASTBase* ast);
+  static void dump(const ASTBase* ast, int leadingSpaces=0);
 
   // define is__ methods for the various AST types
   // using macros and ASTClassesList.h

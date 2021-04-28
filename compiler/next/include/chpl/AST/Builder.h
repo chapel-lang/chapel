@@ -57,8 +57,8 @@ class Builder final {
           UniqueString filepath, UniqueString inferredModuleName);
   UniqueString createImplicitModuleIfNeeded();
   void assignIDs(UniqueString inferredModule);
-  void assignIDs(ASTBase* ast, pathVecT& path, declaredHereT& decl);
-  void assignIDsPostorder(ASTBase* ast, UniqueString symbolPath, int& i);
+  void doAssignIDs(ASTBase* ast, UniqueString symbolPath, int& i,
+                   pathVecT& pathVec, declaredHereT& duplicates);
 
  public:
   static owned<Builder> build(Context* context, const char* filepath);

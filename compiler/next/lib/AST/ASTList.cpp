@@ -87,7 +87,7 @@ bool updateASTList(ASTList& keep, ASTList& addin) {
       junkList.push_back(std::move(addinElt));
       addinIdx++;
       keepIdx++;
-    } else if (addinIdx+1 < addinSize &&
+    } else if (keepIdx < keepSize && addinIdx+1 < addinSize &&
                keep[keepIdx]->shallowMatch(addin[addinIdx+1].get())) {
       // like an element was added in addin,
       // so add two elements from addin and pass 1 keep element
@@ -125,7 +125,7 @@ bool updateASTList(ASTList& keep, ASTList& addin) {
       junkList.push_back(std::move(addinElt));
       addinIdx++;
       keepIdx += 2;
-    } else if (addinIdx+1 < addinSize && keepIdx+1 < keepSize &&
+    } else if (keepIdx+1 < keepSize && addinIdx+1 < addinSize &&
                keep[keepIdx+1]->shallowMatch(addin[addinIdx+1].get())) {
       // like an element was replaced from keep,
       // so add 2 elements from addin and pass 2 keep elements

@@ -59,6 +59,8 @@ class Variable final : public Sym {
 
  private:
   Tag tag_;
+  // TODO: Can we use an instance of a class that means "nothing",
+  // or maybe nullptr in the children?
   int8_t typeExpChildNum;
   int8_t initExpChildNum;
 

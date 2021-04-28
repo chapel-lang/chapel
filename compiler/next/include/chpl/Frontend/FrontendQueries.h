@@ -43,35 +43,38 @@ namespace frontend {
   using ModuleDeclVec = std::vector<const uast::ModuleDecl*>;
   const ModuleDeclVec& parse(Context* context, UniqueString path);
 
-  /*
-  typedef std::unordered_map<UniqueString, Symbol*> SymbolsByName;
-  const SymbolsByName& symbolsDeclaredIn(Context* context, Expr* expr);
-
   struct ResolutionResult {
     // the expr that is resolved
-    Expr* expr;
+    const uast::Exp* exp;
     // in simple cases, this is set
-    Symbol* symbol;
+    const uast::Decl* decl;
     // TODO:
     //  return-intent overloading
     //  generic instantiation
     //  establish concrete intents
     //  establish copy-init vs move
-    ResolutionResult() : expr(NULL), symbol(NULL) { }
+    ResolutionResult() : exp(nullptr), decl(nullptr) { }
   };
 
-  typedef std::vector<ResolutionResult> ResolutionResultByPostorderID;
+  // postorder ID (int) -> ResolutionResult
+  using ResolutionResultByPostorderID = std::vector<ResolutionResult>;
 
-    If resolve is called on a Decl, it will traverse into the declared
-    Symbol. So to resolve a function, run resolve on the FunctionDecl.
-  const ResolutionResultByPostorderID& resolve(Context* context, Expr* e);
-  */
+  // Resolves the top-level declarations in a module
+  const ResolutionResultByPostorderID*
+  resolveModule(Context* context, const uast::Module* mod);
 
-  /*
-  struct DeclaredByName {
-    std::unordered_map<UniqueString, Symbol*> declaredSymbols;
-  };*/
+  struct ResolvedModule {
+    const uast::Module* module;
+    const ResolutionResultByPostorderID* resolution;
+    ResolvedModule(const uast::Module* module,
+                   const ResolutionResultByPostorderID* resolution)
+      : module(module), resolution(resolution) {
+    }
+    static bool update(ResolvedModule& keep, ResolvedModule& addin);
+  };
+  using ResolvedModuleVec = std::vector<ResolvedModule>;
 
+  const ResolvedModuleVec& resolveFile(Context* context, UniqueString path);
 
   struct DefinedTopLevelNames {
     // the module
@@ -87,15 +90,6 @@ namespace frontend {
 
   const DefinedTopLevelNamesVec& moduleLevelDeclNames(Context* context,
                                                       UniqueString path);
-
-  /*struct ResolutionGroup {
-    // index is the postorder ID
-    std::vector<Symbol*> idToSymbol;
-  };
-  using ModuleInitResolutionResult = std::unordered_map<Module*,owned<ResolutionGroup>>;
-    */
-  /*using FunctionResolutionResult =
-    std::unordered_map<FnSymbol*,owned<ResolutionResult>>; */
 
   //const uast::BaseAST* ast(Context* context, ID id);
 };

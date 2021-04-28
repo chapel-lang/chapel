@@ -28,6 +28,7 @@
 #include <cassert>
 #include <cstring>
 #include <string>
+#include <vector>
 
 /// \cond DO_NOT_DOCUMENT
 namespace chpl {
@@ -206,6 +207,40 @@ static inline bool defaultUpdate(T& keep, T& addin) {
     return true;
   }
 }
+template<typename T> struct update<T*> {
+  bool operator()(T*& keep, T*& addin) const {
+    if (keep == addin) {
+      return false; // no change
+    } else {
+      keep = addin;
+      return true; // updated
+    }
+  }
+};
+
+template<typename T>
+static inline bool defaultUpdateVec(std::vector<T>& keep, std::vector<T>& addin)
+{
+  if (keep.size() == addin.size()) {
+    bool anyUpdated = false;
+    // try updating the elements indivdually
+    size_t nElts = keep.size();
+    for (size_t i = 0; i < nElts; i++) {
+      chpl::update<T> combiner;
+      bool updated = combiner(keep[i], addin[i]);
+      anyUpdated = anyUpdated || updated;
+    }
+    return anyUpdated;
+  } else {
+    keep.swap(addin);
+    return true; // updated
+  }
+}
+template<typename T> struct update<std::vector<T>> {
+  bool operator()(std::vector<T>& keep, std::vector<T>& addin) const {
+    return defaultUpdateVec(keep, addin);
+  }
+};
 template<> struct update<std::string> {
   bool operator()(std::string& keep, std::string& addin) const {
     return defaultUpdate(keep, addin);

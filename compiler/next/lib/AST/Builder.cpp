@@ -124,54 +124,86 @@ UniqueString Builder::createImplicitModuleIfNeeded() {
 }
 
 void Builder::assignIDs(UniqueString inferredModule) {
-  pathVecT path;
-  declaredHereT decl;
-
-  if (!inferredModule.isEmpty())
-    path.push_back(std::make_pair(inferredModule, 0));
+  pathVecT pathVec;
+  declaredHereT duplicates;
+  int i = 0;
 
   for (auto const& ownedExp: topLevelExps_) {
-    const ASTBase* ast = ownedExp.get();
-    assignIDs((ASTBase*)ast, path, decl); 
+    if (ModuleDecl* moduleDecl = ownedExp->toModuleDecl()) {
+      UniqueString emptyString;
+      doAssignIDs(moduleDecl, emptyString, i, pathVec, duplicates);
+    } else {
+      assert(false && "topLevelExprs should only be module decls");
+    }
   }
 }
 
-void Builder::assignIDs(ASTBase* ast, pathVecT& path, declaredHereT& decl) {
-  // TODO: if it's a decl, adjust the path&decl
-  // For now, we will just do the postorder traversal
-
-  std::string pathStr;
-  bool first = true;
-  for (auto p : path) {
-    UniqueString name = p.first;
-    int repeat = p.second;
-    if (first == false)
-      pathStr += ".";
-    first = false;
-    pathStr += name.c_str();
-    pathStr += "#";
-    pathStr += std::to_string(repeat);
-  }
-  auto symbolPath = UniqueString::build(this->context(), pathStr);
-  int curId = 0;
-  assignIDsPostorder(ast, symbolPath, curId);
-}
-
-void Builder::assignIDsPostorder(ASTBase* ast, UniqueString symbolPath, int& i) {
+void Builder::doAssignIDs(ASTBase* ast, UniqueString symbolPath, int& i,
+                          pathVecT& pathVec, declaredHereT& duplicates) {
   // Don't consider comments when computing AST ids.
   if (ast->isComment())
     return;
 
   int firstChildID = i;
-  for (auto & child : ast->children_) {
-    ASTBase* ptr = child.get();
-    this->assignIDsPostorder(ptr, symbolPath, i);
+
+  Decl* decl = ast->toDecl();
+
+  if (decl == nullptr) {
+    // visit the children now to get integer part of ids in postorder
+    for (auto & child : ast->children_) {
+      ASTBase* ptr = child.get();
+      this->doAssignIDs(ptr, symbolPath, i, pathVec, duplicates);
+    }
   }
   int afterChildID = i;
   int myID = afterChildID;
   i++; // count the ID for the node we are currently visiting
   int numContainedIDs = afterChildID - firstChildID;
   ast->setID(ID(symbolPath, myID, numContainedIDs));
+
+  // for decls, adjust the symbolPath and then visit the defined symbol
+  if (decl != nullptr) {
+    assert(decl->numChildren() == 1);
+    assert(decl->child(0)->isSym());
+    Sym* sym = (Sym*) decl->child(0);
+    UniqueString name = sym->name();
+    int repeat = 0;
+
+    auto search = duplicates.find(name);
+    if (search != duplicates.end()) {
+      // it's already there, so increment the repeat counter
+      repeat = search->second;
+      repeat++;
+      search->second = repeat;
+    } else {
+      duplicates.insert(search, std::make_pair(name, 0));
+    }
+
+    // push the path component
+    pathVec.push_back(std::make_pair(name, repeat));
+
+    std::string pathStr;
+    bool first = true;
+    for (const auto& p : pathVec) {
+      UniqueString name = p.first;
+      int repeat = p.second;
+      if (first == false)
+        pathStr += ".";
+      first = false;
+      pathStr += name.c_str();
+      if (repeat != 0) {
+        pathStr += "#";
+        pathStr += std::to_string(repeat);
+      }
+    }
+    auto symbolPath = UniqueString::build(this->context(), pathStr);
+    // get a fresh postorder traversal counter and duplicates map
+    int freshId = 0;
+    declaredHereT freshMap;
+    doAssignIDs(sym, symbolPath, freshId, pathVec, freshMap);
+    // pop the path component we just added
+    pathVec.pop_back();
+  }
 }
 
 bool Builder::Result::update(Result& keep, Result& addin) {

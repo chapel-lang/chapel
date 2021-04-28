@@ -49,9 +49,11 @@ class Call : public Exp {
   const Exp* actual(int i) const {
     return this->child(i+1);
   }
-  Exp* baseExpr() const {
+  /* Should we have baseExpr? Or should it be defined in child classes?
+     What does actual/numActuals do for the child classes?
+     Exp* baseExpr() const {
     return this->child(0);
-  }
+  }*/
 };
 
 
