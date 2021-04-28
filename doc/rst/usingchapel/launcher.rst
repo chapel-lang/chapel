@@ -74,7 +74,7 @@ If ``CHPL_LAUNCHER`` is left unset, a default is picked as follows:
 * if ``CHPL_COMM`` is gasnet and ``CHPL_COMM_SUBSTRATE`` is udp
   ``CHPL_LAUNCHER`` is set to amudprun
 
-* otherwise, if ``CHPL_PLATFORM`` is cray-xc or hpe-cray-ex:
+* otherwise, if ``CHPL_TARGET_PLATFORM`` is cray-xc or hpe-cray-ex:
 
   ==================================  ===================================
   If                                  CHPL_LAUNCHER
@@ -85,7 +85,7 @@ If ``CHPL_LAUNCHER`` is left unset, a default is picked as follows:
   otherwise                           none
   ==================================  ===================================
 
-* otherwise, if ``CHPL_PLATFORM`` is cray-cs and ``CHPL_COMM`` is gasnet and
+* otherwise, if ``CHPL_TARGET_PLATFORM`` is cray-cs and ``CHPL_COMM`` is gasnet and
   salloc is in the user's path:
 
   =======================  ==============================================
@@ -95,7 +95,7 @@ If ``CHPL_LAUNCHER`` is left unset, a default is picked as follows:
   CHPL_COMM_SUBSTRATE=mpi  slurm-gasnetrun_mpi
   =======================  ==============================================
 
-* otherwise, if ``CHPL_PLATFORM`` is cray-cs and srun is in the users path
+* otherwise, if ``CHPL_TARGET_PLATFORM`` is cray-cs and srun is in the users path
   ``CHPL_LAUNCHER`` is set to slurm-srun
 
 * otherwise, if ``CHPL_COMM`` is gasnet:
