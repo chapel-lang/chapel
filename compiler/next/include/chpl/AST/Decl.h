@@ -33,7 +33,7 @@ namespace uast {
  */
 class Decl : public Exp {
  protected:
-  Decl(asttags::ASTTag tag, owned<Sym> symbol);
+  Decl(ASTTag tag, owned<Sym> symbol);
   bool declContentsMatchInner(const Decl* other) const {
     return true;
   }

@@ -44,9 +44,8 @@ class Sym : public ASTBase {
   Visibility visibility_;
 
  protected:
-  Sym(asttags::ASTTag tag, UniqueString name, Visibility vis);
-  Sym(asttags::ASTTag tag, ASTList children,
-         UniqueString name, Visibility vis);
+  Sym(ASTTag tag, UniqueString name, Visibility vis);
+  Sym(ASTTag tag, ASTList children, UniqueString name, Visibility vis);
   bool symbolContentsMatchInner(const Sym* other) const {
     return this->name_ == other->name_ &&
            this->visibility_ == other->visibility_;

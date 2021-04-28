@@ -23,12 +23,12 @@ namespace chpl {
 namespace uast {
 
 
-Sym::Sym(asttags::ASTTag tag,
+Sym::Sym(ASTTag tag,
          UniqueString name, Sym::Visibility visibility)
   : ASTBase(tag), name_(name), visibility_(visibility) {
 }
 
-Sym::Sym(asttags::ASTTag tag, ASTList children,
+Sym::Sym(ASTTag tag, ASTList children,
          UniqueString name, Sym::Visibility visibility)
   : ASTBase(tag, std::move(children)),
     name_(name), visibility_(visibility) {

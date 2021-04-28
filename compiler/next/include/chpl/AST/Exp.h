@@ -31,8 +31,8 @@ namespace uast {
  */
 class Exp : public ASTBase {
  protected:
-  Exp(asttags::ASTTag tag);
-  Exp(asttags::ASTTag tag, ASTList children);
+  Exp(ASTTag tag);
+  Exp(ASTTag tag, ASTList children);
   bool expContentsMatchInner(const Exp* other) const {
     return true;
   }

@@ -25,7 +25,7 @@ namespace chpl {
 namespace uast {
 
 
-Decl::Decl(asttags::ASTTag tag, owned<Sym> sym)
+Decl::Decl(ASTTag tag, owned<Sym> sym)
   : Exp(tag, makeASTList(std::move(sym))) {
 }
 

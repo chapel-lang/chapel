@@ -92,7 +92,11 @@ enum ASTTag {
 const char* tagToString(ASTTag tag);
 
 
-} // end namespace tags
+} // end namespace asttags
+
+// Enable ASTTag to be used as chpl::uast::ASTTag
+using chpl::uast::asttags::ASTTag;
+
 } // end namespace uast
 } // end namespace chpl
 

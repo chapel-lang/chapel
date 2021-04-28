@@ -27,11 +27,11 @@
 namespace chpl {
 namespace uast {
 
-ASTBase::ASTBase(asttags::ASTTag tag)
+ASTBase::ASTBase(ASTTag tag)
   : tag_(tag), id_(), children_() {
 }
 
-ASTBase::ASTBase(asttags::ASTTag tag, ASTList children)
+ASTBase::ASTBase(ASTTag tag, ASTList children)
   : tag_(tag), id_(), children_(std::move(children)) {
 }
 

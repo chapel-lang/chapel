@@ -55,7 +55,7 @@ class ASTBase {
  friend class Builder;
 
  private:
-  asttags::ASTTag tag_;
+  ASTTag tag_;
   ID id_;
 
  protected:
@@ -70,8 +70,8 @@ class ASTBase {
   virtual bool contentsMatchInner(const ASTBase* other) const = 0;
 
  protected:
-  ASTBase(asttags::ASTTag tag);
-  ASTBase(asttags::ASTTag tag, ASTList children);
+  ASTBase(ASTTag tag);
+  ASTBase(ASTTag tag, ASTList children);
   // called by the Builder
   void setID(ID id) { id_ = id; }
 
@@ -81,7 +81,7 @@ class ASTBase {
   /**
     Returns the tag indicating which ASTBase subclass this is.
    */
-  asttags::ASTTag tag() const {
+  ASTTag tag() const {
     return tag_;
   }
 
