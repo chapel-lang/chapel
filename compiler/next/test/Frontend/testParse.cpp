@@ -249,6 +249,43 @@ static void test13(Parser* parser) {
   assert(module->stmt(1)->isIdentifier());
 }
 
+static void test14(Parser* parser) {
+  auto parseResult = parser->parseString("test14.chpl",
+                                         "{\n"
+                                         " //a\n"
+                                         " //b\n"
+                                         "}\n");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExps.size() == 1);
+  assert(parseResult.topLevelExps[0]->isModuleDecl());
+  auto module = parseResult.topLevelExps[0]->toModuleDecl()->module();
+  assert(module->numStmts() == 1);
+  assert(module->stmt(0)->isBlock());
+  auto block = module->stmt(0)->toBlock();
+  assert(block->numStmts() == 2);
+  assert(block->stmt(0)->isComment());
+  assert(block->stmt(1)->isComment());
+}
+
+static void test15(Parser* parser) {
+  auto parseResult = parser->parseString("test15.chpl",
+                                         "{\n"
+                                         " x;\n"
+                                         " //a\n"
+                                         " //b\n"
+                                         "}\n");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExps.size() == 1);
+  assert(parseResult.topLevelExps[0]->isModuleDecl());
+  auto module = parseResult.topLevelExps[0]->toModuleDecl()->module();
+  assert(module->numStmts() == 1);
+  assert(module->stmt(0)->isBlock());
+  auto block = module->stmt(0)->toBlock();
+  assert(block->numStmts() == 3);
+  assert(block->stmt(0)->isIdentifier());
+  assert(block->stmt(1)->isComment());
+  assert(block->stmt(2)->isComment());
+}
 
 int main() {
   auto context = Context::build();
@@ -270,6 +307,8 @@ int main() {
   test11(p);
   test12(p);
   test13(p);
+  test14(p);
+  test15(p);
 
   return 0;
 }

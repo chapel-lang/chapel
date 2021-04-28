@@ -18,6 +18,12 @@
  * limitations under the License.
  */
 
+static bool locationLessEq(YYLTYPE lhs, YYLTYPE rhs) {
+  return (lhs.first_line < rhs.first_line) ||
+         (lhs.first_line == rhs.first_line &&
+          lhs.first_column <= rhs.first_column);
+}
+
 std::vector<ParserComment>* ParserContext::gatherComments(YYLTYPE location) {
 
   // If there were no comments, there is nothing to do.
@@ -37,8 +43,7 @@ std::vector<ParserComment>* ParserContext::gatherComments(YYLTYPE location) {
   {
     size_t i = 0;
     for (ParserComment comment : *this->comments) {
-      if (comment.location.first_line <= location.first_line &&
-          comment.location.first_column <= location.first_column) {
+      if (locationLessEq(comment.location, location)) {
         // OK, we can gather this comment (and any earlier ones)
         lastCommentToGather = i;
       }
@@ -50,8 +55,7 @@ std::vector<ParserComment>* ParserContext::gatherComments(YYLTYPE location) {
 
   if (lastCommentToGather < 0) {
     // don't need to return any comments
-    std::vector<ParserComment>* ret = nullptr;
-    return ret;
+    return nullptr;
   }
 
   if (lastCommentToGather == this->comments->size()-1) {
@@ -168,8 +172,7 @@ ParserContext::gatherCommentsFromList(ParserExprList* lst,
       auto search = this->commentLocations.find(c);
       assert(search != this->commentLocations.end());
       YYLTYPE commentLocation = search->second;
-      if (commentLocation.first_line <= location.first_line &&
-          commentLocation.first_column <= location.first_column) {
+      if (locationLessEq(commentLocation, location)) {
         nToMove++;
         continue;
       }

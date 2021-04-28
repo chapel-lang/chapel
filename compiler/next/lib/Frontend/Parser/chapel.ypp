@@ -704,13 +704,15 @@ include_module_stmt:
 block_stmt:
   TLCBR TRCBR
   {
-    // gather the comments before the opening bracket
-    CommentsAndStmt cs = STMT(@1, nullptr);
     // create a list of the statements
     ParserExprList* lst = new ParserExprList();
     // add also any comments appearing after all statements
     // and before the closing close bracket.
     context->appendList(lst, context->gatherComments(@2));
+
+    CommentsAndStmt cs = {0};
+    cs.comments = context->gatherCommentsFromList(lst, @1);
+
     auto blockstmt = Block::build(BUILDER, LOC(@$), context->consumeList(lst));
     cs.stmt = blockstmt.release();
     $$ = cs;
@@ -730,7 +732,7 @@ block_stmt:
     // (This would be simpler to handle with midrule actions but those
     //  lead to parser conflicts).
     CommentsAndStmt cs = {0};
-    cs.comments = context->gatherCommentsFromList(lst, @1);;
+    cs.comments = context->gatherCommentsFromList(lst, @1);
 
     // create the BlockStmt
     auto blockstmt = Block::build(BUILDER, LOC(@$), context->consumeList(lst));
@@ -739,10 +741,12 @@ block_stmt:
   }
 | TLCBR error TRCBR
   {
-    // gather the comments before the opening bracket
-    CommentsAndStmt cs = STMT(@1, nullptr);
     // create a list of stmts that just has an ErroneousExp
     ParserExprList* lst = context->makeList(ErroneousExp::build(BUILDER, LOC(@2)));
+
+    CommentsAndStmt cs = {0};
+    cs.comments = context->gatherCommentsFromList(lst, @1);
+
     // create the BlockStmt
     auto blockstmt = Block::build(BUILDER, LOC(@$), context->consumeList(lst));
     cs.stmt = blockstmt.release();
