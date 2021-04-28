@@ -138,8 +138,6 @@ void Context::advanceToNextRevision(bool prepareToGC) {
     this->lastPrepareToGCRevisionNumber = this->currentRevisionNumber;
     gcCounter++;
   }
-  printf("CURRENT REVISION NUMBER IS NOW %i\n",
-         (int) this->currentRevisionNumber);
 }
 
 void Context::collectGarbage() {
