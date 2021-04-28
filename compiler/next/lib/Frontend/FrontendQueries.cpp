@@ -30,29 +30,29 @@
 
 namespace chpl {
 
-template<> struct update<FrontendQueries::LocationsMap> {
-  bool operator()(FrontendQueries::LocationsMap& keep,
-                  FrontendQueries::LocationsMap& addin) const {
+template<> struct update<frontend::LocationsMap> {
+  bool operator()(frontend::LocationsMap& keep,
+                  frontend::LocationsMap& addin) const {
     return defaultUpdate(keep, addin);
   }
 };
-template<> struct update<FrontendQueries::ModuleDeclVec> {
-  bool operator()(FrontendQueries::ModuleDeclVec& keep,
-                  FrontendQueries::ModuleDeclVec& addin) const {
+template<> struct update<frontend::ModuleDeclVec> {
+  bool operator()(frontend::ModuleDeclVec& keep,
+                  frontend::ModuleDeclVec& addin) const {
     return defaultUpdate(keep, addin);
   }
 };
-template<> struct update<FrontendQueries::DefinedTopLevelNamesVec> {
-  bool operator()(FrontendQueries::DefinedTopLevelNamesVec& keep,
-                  FrontendQueries::DefinedTopLevelNamesVec& addin) const {
+template<> struct update<frontend::DefinedTopLevelNamesVec> {
+  bool operator()(frontend::DefinedTopLevelNamesVec& keep,
+                  frontend::DefinedTopLevelNamesVec& addin) const {
 
     size_t nKeep = keep.size();
     size_t nAddin = addin.size();
     bool match = true;
     if (nKeep == nAddin) {
       for (size_t i = 0; i < nKeep; i++) {
-        FrontendQueries::DefinedTopLevelNames& keepElt = keep[i];
-        FrontendQueries::DefinedTopLevelNames& addinElt = addin[i];
+        frontend::DefinedTopLevelNames& keepElt = keep[i];
+        frontend::DefinedTopLevelNames& addinElt = addin[i];
         if (keepElt.module != addinElt.module ||
             keepElt.topLevelNames != addinElt.topLevelNames) {
           match = false;
@@ -72,7 +72,7 @@ template<> struct update<FrontendQueries::DefinedTopLevelNamesVec> {
   }
 };
 
-namespace FrontendQueries {
+namespace frontend {
 
 const std::string& fileText(Context* context, UniqueString path) {
   QUERY_BEGIN_NAMED(context, std::string, "fileText", path);
@@ -269,5 +269,5 @@ const DefinedTopLevelNamesVec& moduleLevelDeclNames(Context* context,
   return nullptr;
 }*/
 
-} // end namespace FrontendQueries
+} // end namespace frontend
 } // end namespace chpl

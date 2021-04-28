@@ -40,7 +40,7 @@ static void test0() {
   std::string contents = "/* this is a test */";
   ctx->setFileText(path, contents);
  
-  std::string gotContents = FrontendQueries::fileText(ctx, path);
+  std::string gotContents = frontend::fileText(ctx, path);
   assert(gotContents == contents);
 }
 
@@ -53,12 +53,11 @@ static void test1() {
   std::string contents = "/* this is a test */";
   ctx->setFileText(path, contents);
  
-  FrontendQueries::parse(ctx, path);
+  frontend::parse(ctx, path);
 }
 
 static const Module* parseOneModule(Context* ctx, UniqueString filepath) {
-  const FrontendQueries::ModuleDeclVec& v =
-    FrontendQueries::parse(ctx, filepath);
+  const frontend::ModuleDeclVec& v = frontend::parse(ctx, filepath);
   assert(v.size() == 1);
   return v[0]->module();
 }

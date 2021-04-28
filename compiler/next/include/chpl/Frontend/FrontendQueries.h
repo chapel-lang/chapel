@@ -32,8 +32,7 @@
 
 namespace chpl {
 
-// This could alternatively be a class with static methods
-namespace FrontendQueries {
+namespace frontend {
   const std::string& fileText(Context* context, UniqueString path);
   const uast::Builder::Result* parseFile(Context* context, UniqueString path);
 

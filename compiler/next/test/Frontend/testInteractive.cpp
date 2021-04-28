@@ -44,11 +44,11 @@ int main(int argc, char** argv) {
     ctx->advanceToNextRevision(true);
     for (int i = 1; i < argc; i++) {
       auto filepath = UniqueString::build(ctx, argv[i]);
-      //const FrontendQueries::ModuleDeclVec& mods
-      //  = FrontendQueries::parse(ctx, filepath);
+      //const frontend::ModuleDeclVec& mods
+      //  = frontend::parse(ctx, filepath);
 
-      const FrontendQueries::DefinedTopLevelNamesVec& vec =
-        FrontendQueries::moduleLevelDeclNames(ctx, filepath);
+      const frontend::DefinedTopLevelNamesVec& vec =
+        frontend::moduleLevelDeclNames(ctx, filepath);
 
       for (const auto& elt : vec) {
         const Module* module = elt.module;
