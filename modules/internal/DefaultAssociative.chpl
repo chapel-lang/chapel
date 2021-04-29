@@ -523,10 +523,6 @@ module DefaultAssociative {
       _ddata_free(data, dom.table.tableSize);
     }
 
-    proc rank param {
-      return 1;
-    }
-
     //
     // Standard internal array interface
     //

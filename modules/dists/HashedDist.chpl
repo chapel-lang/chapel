@@ -756,10 +756,6 @@ class UserMapAssocArr: AbsBaseArr {
 
   // GLOBAL ARRAY INTERFACE:
 
-  proc rank param {
-    return 1;
-  }
-
   //
   // the global accessor for the array
   //
