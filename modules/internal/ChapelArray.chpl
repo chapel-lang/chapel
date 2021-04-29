@@ -2619,7 +2619,7 @@ module ChapelArray {
     pragma "always propagate line file info"
     pragma "no doc"
     proc checkSlice(d: domain, value) {
-      if (isRectangularDom(d)) {
+      if (isRectangularDom(d) || isSparseDom(d)) {
         checkSlice((...d.dsiDims()), value=value);
       } else if (isAssociativeDom(d)) {
         use HaltWrappers;
