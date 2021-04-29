@@ -2625,7 +2625,7 @@ module ChapelArray {
         use HaltWrappers;
         forall i in d do
           if !this.domain.dsiMember(i) then
-            HaltWrappers.boundsCheckHalt("index " + i + " is out-of-bounds");
+            HaltWrappers.boundsCheckHalt("index '" + i:string + "' is out-of-bounds");
       } else {
         compilerError("This style of array slicing is not yet supported");
       }
