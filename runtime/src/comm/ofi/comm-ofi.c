@@ -110,7 +110,6 @@ int chpl_comm_ofi_abort_on_error;
 static struct fi_info* ofi_info;        // fabric interface info
 static struct fid_fabric* ofi_fabric;   // fabric domain
 static struct fid_domain* ofi_domain;   // fabric access domain
-static int useScalableTxEp;             // use a scalable tx endpoint?
 static struct fid_ep* ofi_txEpScal;     // scalable transmit endpoint
 static struct fid_poll* ofi_amhPollSet; // poll set for AM handler
 static int pollSetSize = 0;             // number of fids in the poll set
@@ -138,6 +137,9 @@ static fi_addr_t* ofi_rxAddrs;          // table of remote endpoint addresses
 //
 // Transmit support.
 //
+static chpl_bool envPreferScalableTxEp;  // env: prefer scalable tx endpoint?
+static int envCommConcurrency;          // env: communication concurrency
+
 static int numTxCtxs;
 static int numRxCtxs;
 
@@ -161,7 +163,7 @@ struct perTxCtxInfo_t {
 
 static int tciTabLen;
 static struct perTxCtxInfo_t* tciTab;
-static chpl_bool tciTabFixedAssignments;
+static chpl_bool tciTabBindTxCtxs;
 
 static size_t txCQLen;
 
@@ -919,7 +921,6 @@ static void init_ofi(void);
 static void init_ofiFabricDomain(void);
 static void init_ofiDoProviderChecks(void);
 static void init_ofiEp(void);
-static void init_ofiEpNumCtxs(void);
 static void init_ofiEpTxCtx(int, chpl_bool,
                             struct fi_cq_attr*, struct fi_cntr_attr*);
 static void init_ofiExchangeAvInfo(void);
@@ -1022,19 +1023,19 @@ void init_ofi(void) {
              ofi_iov_reqs[ofi_msg_i].iov_len / (1L << 20),
              (ofi_amhPollSet == NULL) ? "explicit polling" : "poll+wait sets",
              (tciTab[tciTabLen - 1].txCQ != NULL) ? "CQ" : "counter");
-  if (useScalableTxEp) {
+  if (ofi_txEpScal != NULL) {
     DBG_PRINTF(DBG_CFG,
-               "per node config: 1 scalable tx ep + %d tx ctx%s (%d fixed), "
+               "per node config: 1 scalable tx ep + %d tx ctx%s (%d bound), "
                "%d rx ctx%s",
                numTxCtxs, (numTxCtxs == 1) ? "" : "s",
-               tciTabFixedAssignments ? chpl_task_getFixedNumThreads() : 0,
+               tciTabBindTxCtxs ? chpl_task_getFixedNumThreads() : 0,
                numRxCtxs, (numRxCtxs == 1) ? "" : "s");
   } else {
     DBG_PRINTF(DBG_CFG,
-               "per node config: %d regular tx ep+ctx%s (%d fixed), "
+               "per node config: %d regular tx ep+ctx%s (%d bound), "
                "%d rx ctx%s",
                numTxCtxs, (numTxCtxs == 1) ? "" : "s",
-               tciTabFixedAssignments ? chpl_task_getFixedNumThreads() : 0,
+               tciTabBindTxCtxs ? chpl_task_getFixedNumThreads() : 0,
                numRxCtxs, (numRxCtxs == 1) ? "" : "s");
   }
 }
@@ -1312,6 +1313,72 @@ chpl_bool findProvGivenList(struct fi_info** p_infoOut,
 }
 
 
+static
+chpl_bool canBindTxCtxs(struct fi_info* info) {
+  //
+  // This function decides whether we will be able to run with bound
+  // transmit contexts if we choose to use the passed-in provider.
+  //
+
+  //
+  // We can only support contexts bound to threads if the tasking layer
+  // uses a fixed number of threads.
+  //
+  int fixedNumThreads = chpl_task_getFixedNumThreads();
+  if (fixedNumThreads <= 0) {
+    return false;
+  }
+
+  //
+  // Gather invariant info.  The simplistic first-time check here is
+  // sufficent because we only get called from single-threaded code
+  // while examining provider candidates.
+  //
+  static chpl_bool haveInvariants = false;
+  if (!haveInvariants) {
+    haveInvariants = true;
+    envPreferScalableTxEp = chpl_env_rt_get_bool("COMM_OFI_PREFER_SCALABLE_EP",
+                                                 true);
+    envCommConcurrency = chpl_env_rt_get_int("COMM_CONCURRENCY", 0);
+    if (envCommConcurrency < 0) {
+      chpl_warning("CHPL_RT_COMM_CONCURRENCY < 0, ignored", 0, 0);
+      envCommConcurrency = 0;
+    }
+  }
+
+  //
+  // Note for future maintainers: if interoperability between Chapel
+  // and other languages someday results in non-tasking layer threads
+  // calling Chapel code which then tries to communicate across nodes,
+  // then some of this may need adjusting, notably the fixed-threads
+  // logic.
+  //
+
+  //
+  // Start with the maximum number of transmit contexts/endpoints the
+  // provider could support.  Reduce that to allow for one tx context to
+  // be shared among non-worker pthreads including the process itself,
+  // and for one private tx context for each AM handler.  If the user
+  // limited communication concurrency via the environment to less than
+  // what's left, reduce further.  If this leaves us with at least as
+  // many tx contexts as the tasking layer's fixed thread count then
+  // we'll use bound tx contexts with this provider.
+  //
+  const struct fi_domain_attr* dom_attr = info->domain_attr;
+  int numWorkerTxCtxs = ((envPreferScalableTxEp
+                          && dom_attr->max_ep_tx_ctx > 1)
+                         ? dom_attr->max_ep_tx_ctx
+                         : dom_attr->ep_cnt)
+                        - 1
+                        - numAmHandlers;
+  if (envCommConcurrency > 0 && envCommConcurrency < numWorkerTxCtxs) {
+    numWorkerTxCtxs = envCommConcurrency;
+  }
+
+  return fixedNumThreads <= numWorkerTxCtxs;
+}
+
+
 //
 // The find*Prov() functions operate in one of two ways, as selected by
 // the inputIsHints flag.  We call them in some order the first time to
@@ -1377,9 +1444,16 @@ struct fi_info* setCheckMsgOrderFenceProv(struct fi_info* info,
     info->rx_attr->msg_order = need_msg_orders;
     return info;
   } else {
+    //
+    // In addition to needing to be able to support the specific message
+    // ordering settings we require, for message-order-fence mode the
+    // provider has to support bound tx contexts so that we can benefit
+    // from delaying memory visibility.
+    //
     return ((info->caps & need_caps) == need_caps
             && (info->tx_attr->msg_order & need_msg_orders) == need_msg_orders
-            && (info->rx_attr->msg_order & need_msg_orders) == need_msg_orders)
+            && (info->rx_attr->msg_order & need_msg_orders) == need_msg_orders
+            && canBindTxCtxs(info))
            ? info
            : NULL;
   }
@@ -1391,11 +1465,6 @@ chpl_bool findMsgOrderFenceProv(struct fi_info** p_infoOut,
                                 enum mcmMode_t* p_modeOut,
                                 struct fi_info* infoIn,
                                 chpl_bool inputIsHints) {
-  //
-  // TODO: Short-circuit this to fail if we don't have fixed threads,
-  //       because it won't work well without that.
-  //
-
   //
   // Try to find a provider that can conform to the MCM using atomic
   // message orderings plus fences.  We try to avoid using either the
@@ -1842,10 +1911,20 @@ void init_ofiEp(void) {
   // Compute numbers of transmit and receive contexts, and then create
   // the transmit context table.
   //
-  useScalableTxEp = (ofi_info->domain_attr->max_ep_tx_ctx > 1
-                     && chpl_env_rt_get_bool("COMM_OFI_USE_SCALABLE_EP",
-                                             true));
-  init_ofiEpNumCtxs();
+  tciTabBindTxCtxs = canBindTxCtxs(ofi_info);
+  if (tciTabBindTxCtxs) {
+    numTxCtxs = chpl_task_getFixedNumThreads() + numAmHandlers + 1;
+  } else {
+    numTxCtxs = chpl_task_getMaxPar() + numAmHandlers + 1;
+  }
+  const chpl_bool useScalEp = envPreferScalableTxEp
+                              && ofi_info->domain_attr->max_ep_tx_ctx > 1;
+  if (useScalEp) {
+    ofi_info->ep_attr->tx_ctx_cnt = numTxCtxs;
+  }
+
+  CHK_TRUE(ofi_info->domain_attr->max_ep_rx_ctx >= numAmHandlers);
+  numRxCtxs = numAmHandlers;
 
   tciTabLen = numTxCtxs;
   CHPL_CALLOC(tciTab, tciTabLen);
@@ -1873,7 +1952,7 @@ void init_ofiEp(void) {
 
   OFI_CHK(fi_av_open(ofi_domain, &avAttr, &ofi_av, NULL));
 
-  if (useScalableTxEp) {
+  if (useScalEp) {
     //
     // Use a scalable transmit endpoint and multiple tx contexts.  Make
     // just one address vector, in the first tciTab[] entry.  The others
@@ -1986,89 +2065,6 @@ void init_ofiEp(void) {
 
 
 static
-void init_ofiEpNumCtxs(void) {
-  CHK_TRUE(numAmHandlers == 1); // force reviewing this if #AM handlers changes
-
-  //
-  // Note for future maintainers: if interoperability between Chapel
-  // and other languages someday results in non-tasking layer threads
-  // calling Chapel code which then tries to communicate across nodes,
-  // then some of this may have to be adjusted, especially e.g. the
-  // tciTabFixedAssignments part.
-  //
-
-  //
-  // Start with the maximum number of transmit contexts.  We'll reduce
-  // the number incrementally as we discover we don't need that many.
-  // Initially, just make sure there are enough for each AM handler to
-  // have its own, plus at least one more.
-  //
-  const struct fi_domain_attr* dom_attr = ofi_info->domain_attr;
-  int maxWorkerTxCtxs;
-  if (useScalableTxEp)
-    maxWorkerTxCtxs = dom_attr->max_ep_tx_ctx - numAmHandlers;
-  else
-    maxWorkerTxCtxs = dom_attr->ep_cnt - numAmHandlers;
-
-  CHK_TRUE(maxWorkerTxCtxs > 0);
-
-  //
-  // If the user manually limited the communication concurrency, take
-  // that into account.
-  //
-  const int commConcurrency = chpl_env_rt_get_int("COMM_CONCURRENCY", 0);
-  if (commConcurrency > 0) {
-    if (maxWorkerTxCtxs > commConcurrency) {
-      maxWorkerTxCtxs = commConcurrency;
-    }
-  } else if (commConcurrency < 0) {
-    chpl_warning("CHPL_RT_COMM_CONCURRENCY < 0, ignored", 0, 0);
-  }
-
-  const int fixedNumThreads = chpl_task_getFixedNumThreads();
-  if (fixedNumThreads > 0) {
-    //
-    // The tasking layer uses a fixed number of threads.  If we can
-    // have at least that many worker tx contexts, plus 1 for threads
-    // that aren't fixed workers (like the process itself for example),
-    // then each tasking layer fixed thread can have a private context
-    // for the duration of the run.
-    //
-    CHK_TRUE(fixedNumThreads == chpl_task_getMaxPar()); // sanity
-    if (maxWorkerTxCtxs > fixedNumThreads + 1)
-      maxWorkerTxCtxs = fixedNumThreads + 1;
-    tciTabFixedAssignments = (maxWorkerTxCtxs == fixedNumThreads + 1);
-  } else {
-    //
-    // The tasking layer doesn't have a fixed number of threads, but
-    // it still must have a maximum useful level of parallelism.  We
-    // shouldn't need more worker tx contexts than whatever that is.
-    //
-    const int taskMaxPar = chpl_task_getMaxPar();
-    if (maxWorkerTxCtxs > taskMaxPar)
-      maxWorkerTxCtxs = taskMaxPar;
-
-    tciTabFixedAssignments = false;
-  }
-
-  //
-  // Now we know how many transmit contexts we'll have.
-  //
-  numTxCtxs = maxWorkerTxCtxs + numAmHandlers;
-  if (useScalableTxEp) {
-    ofi_info->ep_attr->tx_ctx_cnt = numTxCtxs;
-  }
-
-  //
-  // Receive contexts are much easier -- we just need one
-  // for each AM handler.
-  //
-  CHK_TRUE(dom_attr->max_ep_rx_ctx >= numAmHandlers);
-  numRxCtxs = numAmHandlers;
-}
-
-
-static
 void init_ofiEpTxCtx(int i, chpl_bool isAMHandler,
                      struct fi_cq_attr* cqAttr,
                      struct fi_cntr_attr* cntrAttr) {
@@ -2076,11 +2072,11 @@ void init_ofiEpTxCtx(int i, chpl_bool isAMHandler,
   atomic_init_bool(&tcip->allocated, false);
   tcip->bound = false;
 
-  if (useScalableTxEp) {
-    OFI_CHK(fi_tx_context(ofi_txEpScal, i, NULL, &tcip->txCtx, NULL));
-  } else {
+  if (ofi_txEpScal == NULL) {
     OFI_CHK(fi_endpoint(ofi_domain, ofi_info, &tcip->txCtx, NULL));
     OFI_CHK(fi_ep_bind(tcip->txCtx, &ofi_av->fid, 0));
+  } else {
+    OFI_CHK(fi_tx_context(ofi_txEpScal, i, NULL, &tcip->txCtx, NULL));
   }
 
   if (cqAttr != NULL) {
@@ -2577,7 +2573,7 @@ void fini_ofi(void) {
     OFI_CHK(fi_close(tciTab[i].txCmplFid));
   }
 
-  if (useScalableTxEp) {
+  if (ofi_txEpScal != NULL) {
     OFI_CHK(fi_close(&ofi_txEpScal->fid));
   }
 
@@ -4677,7 +4673,7 @@ struct perTxCtxInfo_t* tciAllocCommon(chpl_bool bindToAmHandler) {
   //
   _ttcip = findFreeTciTabEntry(bindToAmHandler);
   if (bindToAmHandler
-      || (tciTabFixedAssignments && chpl_task_isFixedThread())) {
+      || (tciTabBindTxCtxs && chpl_task_isFixedThread())) {
     _ttcip->bound = true;
     _ttcip->putVisBitmap = bitmapAlloc(chpl_numNodes);
     if ((ofi_info->caps & FI_ATOMIC) != 0) {
@@ -6288,7 +6284,7 @@ void local_yield(void) {
 #ifdef CHPL_COMM_DEBUG
   //
   // There are things in the comm layer that will break if tasks can
-  // switch threads when they think their thread is fixed.
+  // switch threads when they think their thread is a fixed worker.
   //
   if (chpl_task_isFixedThread()) {
     CHK_TRUE(pthread_self() == pthreadWas);
