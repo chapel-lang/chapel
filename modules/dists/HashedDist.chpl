@@ -526,6 +526,17 @@ class UserMapAssocDom: BaseAssociativeDom {
 
   }
 
+  proc dsiHasSingleLocalSubdomain() param return false;
+
+  pragma "order independent yielding loops"
+  iter dsiLocalSubdomains(loc: locale) {
+    for (idx,l) in zip(dist.targetLocDom, dist.targetLocales) {
+      if l == loc {
+        yield locDoms[idx]!.myInds;
+      }
+    }
+  }
+
   override proc dsiSupportsAutoLocalAccess() param { return true; }
 
   override proc dsiSupportsPrivatization() param return true;
@@ -745,6 +756,10 @@ class UserMapAssocArr: AbsBaseArr {
 
   // GLOBAL ARRAY INTERFACE:
 
+  proc rank param {
+    return 1;
+  }
+
   //
   // the global accessor for the array
   //
@@ -760,6 +775,11 @@ class UserMapAssocArr: AbsBaseArr {
     }
     return locArr[i];
   }
+
+  proc dsiAccess(i: 1*idxType) ref {
+    return dsiAccess(i(0));
+  }
+
   proc dsiAccess(i: idxType)
   where shouldReturnRvalueByValue(eltType) {
     const localeIndex = dom.dist.indexToLocaleIndex(i);
@@ -771,6 +791,12 @@ class UserMapAssocArr: AbsBaseArr {
     }
     return locArr[i];
   }
+
+  proc dsiAccess(i: 1*idxType)
+  where shouldReturnRvalueByValue(eltType) {
+    return dsiAccess(i(0));
+  }
+
   proc dsiAccess(i: idxType) const ref
   where shouldReturnRvalueByConstRef(eltType) {
     const localeIndex = dom.dist.indexToLocaleIndex(i);
@@ -781,6 +807,11 @@ class UserMapAssocArr: AbsBaseArr {
       }
     }
     return locArr[i];
+  }
+
+  proc dsiAccess(i: 1*idxType) const ref
+  where shouldReturnRvalueByConstRef(eltType) {
+    return dsiAccess(i(0));
   }
 
   inline proc dsiLocalAccess(i) ref {
@@ -811,11 +842,8 @@ class UserMapAssocArr: AbsBaseArr {
 
   pragma "order independent yielding loops"
   iter dsiLocalSubdomains(loc: locale) {
-    for (idx,l) in zip(dom.dist.targetLocDom, dom.dist.targetLocales) {
-      if l == loc {
-        yield dom.locDoms[idx]!.myInds;
-      }
-    }
+    for locdom in dom.dsiLocalSubdomains(loc) do
+      yield locdom;
   }
 
   //

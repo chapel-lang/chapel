@@ -8,7 +8,10 @@ $testname = $ARGV[0];
 $goodfile = $ARGV[1];
 $comp = $ARGV[2];
 
-$tmp_file = "$testname.exec.out.tmp";
+# We should really have prediff pass in the precise name of the tmp
+# file being pre-diff'd but apprently we don't?  This is a lame way
+# to make a good guess at it, that's fragile if things break.
+$tmp_file = glob "$testname.*exec.out.tmp";
 
 open TMPFILE, "$tmp_file" or die "can't open $tmp_file $!";
 my @lines = <TMPFILE>;
