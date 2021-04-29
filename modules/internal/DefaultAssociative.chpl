@@ -658,7 +658,7 @@ module DefaultAssociative {
       }
     }
 
-    proc dsiSerialReadWrite(f /*: channel*/) throws {
+    proc dsiSerialReadWrite(f /*: channel*/, in printBraces=true, inout first = true) throws {
       var binary = f.binary();
       var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
       var isspace = arrayStyle == QIO_ARRAY_FORMAT_SPACE && !binary;
@@ -670,9 +670,9 @@ module DefaultAssociative {
         return;
       }
 
-      if isjson || ischpl then f <~> new ioLiteral("[");
+      printBraces &&= (isjson || ischpl);
 
-      var first = true;
+      if printBraces then f <~> new ioLiteral("[");
 
       for (key, val) in zip(this.dom, this) {
         if first then first = false;
@@ -687,7 +687,7 @@ module DefaultAssociative {
         f <~> val;
       }
 
-      if isjson || ischpl then f <~> new ioLiteral("]");
+      if printBraces then f <~> new ioLiteral("]");
     }
 
     proc readChapelStyleAssocArray(f) throws {

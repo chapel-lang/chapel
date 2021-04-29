@@ -893,21 +893,24 @@ class UserMapAssocArr: AbsBaseArr {
   //
   // how to print out the whole array, sequentially
   //
-  proc dsiSerialWrite(x) {
+  proc dsiSerialWrite(f) {
     use IO;
+
+    var binary = f.binary();
+    var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
+    var isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
+    var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !binary;
+
+    var printBraces = (isjson || ischpl);
+
+    if printBraces then f <~> new ioLiteral("[");
 
     var first = true;
     for locArr in locArrs {
-      if locArr!.size {
-        if first {
-          first = false;
-        } else {
-          x <~> " ";
-        }
-      }
-      x <~> locArr;
-      try! stdout.flush();
+      locArr!.myElems._value.dsiSerialReadWrite(f, printBraces=false, first);
     }
+    if printBraces then f <~> new ioLiteral("]");
+
   }
 
   override proc dsiDisplayRepresentation() {
