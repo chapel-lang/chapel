@@ -276,6 +276,7 @@ tags
 
 /test/parsing/king-11/aaa*
 /test/parsing/king-11/longName.good
+/test/parsing/king-11/longNameHelper*
 
 /test/performance/compiler/elliot/passCheck.good
 

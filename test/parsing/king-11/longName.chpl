@@ -1,3 +1,1 @@
-use LongName;
-
-printSomething();
+require "longNameHelper.chpl";
