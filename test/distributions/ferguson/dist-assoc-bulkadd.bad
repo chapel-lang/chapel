@@ -5,4 +5,4 @@ $CHPL_HOME/modules/internal/DefaultRectangular.chpl:955: note: is passed to form
 dist-assoc-bulkadd.chpl:7: note: other candidates are:
 $CHPL_HOME/modules/internal/ChapelDistribution.chpl:360: note:   BaseRectangularDom.rank
 $CHPL_HOME/modules/internal/ChapelDistribution.chpl:581: note:   BaseSparseDom.rank
-note: and 18 other candidates, use --print-all-candidates to see them
+note: and 19 other candidates, use --print-all-candidates to see them
