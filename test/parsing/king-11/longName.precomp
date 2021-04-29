@@ -14,6 +14,8 @@ repeatChar() {
 
 FILENAME=$(repeatChar a $NAME_MAX)
 printf 'module LongName {\n\tfunc printSomething() {\n\t\twrite(%s); \n\t}\n}' "'Won't Compile'" > $VAL/$FILENAME.chpl
+touch $VAL/$FILENAME.notest
+printf 'require %s;' "'$FILENAME.chpl'" > $VAL/longNameHelper.chpl
+touch $VAL/longNameHelper.notest
 FILENAME=$(repeatChar a $LIMIT)
-BOLD_ERROR=`echo -e '\033[1merror:\033[0m'`
-printf "%s %s, filename is longer than maximum allowed length of %s" $BOLD_ERROR $FILENAME $LIMIT > $VAL/longName.good
+printf "error: %s, filename is longer than maximum allowed length of %d\n\n" $FILENAME $LIMIT > $VAL/longName.good
