@@ -150,9 +150,8 @@ module Set {
       this.parSafe = parSafe;
     }
 
-    // If the element is serializable then it will likely be RVF'd. In that
-    // case, introduce a copy / do things the normal way to prevent leaks
-    // when doing remote adds. See issue:
+    // Do things the slow/copy way if the element is serializable.
+    // See issue: #17477
     pragma "no doc"
     proc _addElem(pragma "no auto destroy" in elem: eltType): bool
     where _isSerializable(eltType) {
@@ -170,7 +169,8 @@ module Set {
       return result;
     }
 
-    // Returns true if the key was added to the hashtable.
+    // For types that aren't serializable, avoid an extra copy by moving
+    // the value across locales.
     pragma "no doc"
     proc _addElem(pragma "no auto destroy" in elem: eltType): bool {
       use Memory.Initialization;
