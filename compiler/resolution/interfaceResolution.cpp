@@ -858,21 +858,26 @@ static bool checkReturnType(InterfaceSymbol* isym,  ImplementsStmt* istm,
 static bool checkReturnIntent(InterfaceSymbol* isym,  ImplementsStmt* istm,
                               FnSymbol*      target,  FnSymbol*      reqFn,
                               bool   reportErrors) {
-  if (target->retTag != reqFn->retTag) {
-    if (reportErrors) {
-      USR_FATAL_CONT(istm, "when checking this implements statement");
-      USR_PRINT(target, "this implementation of the required function %s",
-                         reqFn->name);
-      USR_PRINT(target, "has return intent '%s'",
-                        retTagDescrString(target->retTag));
-      USR_PRINT(reqFn, "which does not match the required intent '%s'",
-                        retTagDescrString(reqFn->retTag));
-      USR_PRINT(reqFn, "the required function %s in the interface %s"
-                       " is declared here", reqFn->name, isym->name);
-    }
-    return false;
+  if (target->retTag == reqFn->retTag)
+    return true;
+
+  if ((reqFn->retTag == RET_VALUE || reqFn->retTag == RET_CONST_REF) &&
+      (target->retTag == RET_REF  || target->retTag == RET_CONST_REF) )
+    return true;
+
+  if (reportErrors) {
+    USR_FATAL_CONT(istm, "when checking this implements statement");
+    USR_PRINT(target, "this implementation of the required function %s",
+                       reqFn->name);
+    USR_PRINT(target, "has return intent '%s'",
+                      retTagDescrString(target->retTag));
+    USR_PRINT(reqFn, "which does not match the required intent '%s'",
+                      retTagDescrString(reqFn->retTag));
+    USR_PRINT(reqFn, "the required function %s in the interface %s"
+                     " is declared here", reqFn->name, isym->name);
   }
-  return true;
+
+  return false;
 }
 
 // Returns whether an implementation of 'reqFn has been established
