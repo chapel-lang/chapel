@@ -83,13 +83,13 @@ proc cgFun(cgArg: ?Q) where Q implements IFC1 {
   cgArg.reqMethod();
 }
 
-//inferred: MyRec implements IFC1;
+MyRec implements IFC1;
 cgFun(myInst1);
 cgFun(myInst2);
 
-//would be incorrect:
-NotherRec implements IFC1;  // error: reqFun is not implemented
-cgFun(myInst3);             // error; compilation aborts before checking this
+// The following implements stmt is generic, so is checked only when used.
+NotherRec implements IFC1;  // error: reqFun is not implemented (not reported)
+cgFun(myInst3);             // reports the error for the previous line
 
 //---------------------------------------------------------------------------
 

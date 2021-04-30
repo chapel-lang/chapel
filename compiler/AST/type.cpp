@@ -460,11 +460,6 @@ void ConstrainedType::verify() {
     // These arise during resolution and are pruned at resolution end.
     INT_FATAL(this, "unexpected");
     break;
-  }
-  case CT_GENERIC_STANDIN: {
-    // This/these arise during resolution and are pruned at resolution end.
-    INT_FATAL(this, "unexpected");
-    break;
   }}
 }
 
@@ -474,7 +469,6 @@ const char* ConstrainedType::useString() const {
   case CT_IFC_ASSOC_TYPE:   return "CT_IFC_ASSOC_TYPE";
   case CT_CGFUN_FORMAL:     return "CT_CGFUN_FORMAL";
   case CT_CGFUN_ASSOC_TYPE: return "CT_CGFUN_ASSOC_TYPE";
-  case CT_GENERIC_STANDIN:  return "CT_GENERIC_STANDIN";
   }
   INT_FATAL(this, "unknown ConstrainedType use");
   return NULL;
