@@ -885,9 +885,8 @@ module ChapelLocale {
     on this do queuedTasks = chpl_task_getNumQueuedTasks();
     return queuedTasks;
   }
-
+  // Returns the number of tasks in a locale that begun executing, but have not finished yet.
   pragma "fn synchronization free"
-  pragma "no doc"
   proc locale.runningTasks() {
     return this.runningTaskCnt();
   }
