@@ -194,8 +194,8 @@ void adjustForCGinstantiation(FnSymbol* fn, SymbolMap& substitutions,
                               bool isInterimInstantiation);
 bool cgActualCanMatch(FnSymbol* fn, Type* formalT, ConstrainedType* actualCT);
 bool cgFormalCanMatch(FnSymbol* fn, Type* formalT);
-void createGenericStandins();
-void cleanupGenericStandins();
+void startInterfaceChecking();
+void finishInterfaceChecking();
 
 FnSymbol* instantiateWithoutCall(FnSymbol* fn, SymbolMap& subs);
 FnSymbol* instantiateSignature(FnSymbol* fn, SymbolMap& subs,
