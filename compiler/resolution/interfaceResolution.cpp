@@ -861,9 +861,12 @@ static bool checkReturnIntent(InterfaceSymbol* isym,  ImplementsStmt* istm,
   if (target->retTag == reqFn->retTag)
     return true;
 
-  if ((reqFn->retTag == RET_VALUE || reqFn->retTag == RET_CONST_REF) &&
-      (target->retTag == RET_REF  || target->retTag == RET_CONST_REF) )
-    return true;
+  if (reqFn->retTag == RET_VALUE &&
+      (target->retTag == RET_REF  || target->retTag == RET_CONST_REF))
+    return true;  // ok to use a [const] ref as a value
+
+  if (reqFn->retTag == RET_CONST_REF && target->retTag == RET_REF)
+    return true;  // ok to use a ref as a const ref
 
   if (reportErrors) {
     USR_FATAL_CONT(istm, "when checking this implements statement");
