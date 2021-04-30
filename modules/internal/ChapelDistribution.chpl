@@ -677,6 +677,9 @@ module ChapelDistribution {
       return 0;
     }
 
+    proc rank param {
+      return 1;
+    }
   }
 
   //
@@ -850,6 +853,10 @@ module ChapelDistribution {
         // unlink domain referred to by eltType
         chpl_decRefCountsForDomainsInArrayEltTypes(_to_unmanaged(this), eltType);
       }
+    }
+
+    proc rank param {
+      return 1;
     }
   }
 
