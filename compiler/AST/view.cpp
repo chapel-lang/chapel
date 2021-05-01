@@ -1221,10 +1221,20 @@ void set_view(std::set<BlockStmt*>* bss) {
 
 void set_view(std::set<BlockStmt*>& bss) {
   printf("set<BlockStmt> %d elm(s)\n", (int)bss.size());
-  std::set<BlockStmt*>::iterator it = bss.begin();
-  while (it != bss.end()) {
-    debugSummary(*(it++));
-  }
+  for (BlockStmt* elm: bss)
+    if (elm) showBlock(elm);
+    else     printf("  <null>\n");
+}
+
+void set_view(std::set<FnSymbol*>* bss) {
+  set_view(*bss);
+}
+
+void set_view(std::set<FnSymbol*>& bss) {
+  printf("set<FnSymbol> %d elm(s)\n", (int)bss.size());
+  for (FnSymbol* elm: bss)
+    if (elm) showFnSymbol(elm);
+    else     printf("  <null>\n");
 }
 
 //
