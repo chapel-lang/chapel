@@ -498,7 +498,7 @@ void FnSymbol::finalizeCopy() {
 
     // For CG fns calling to other CG fns.
     if (InterfaceInfo* ifcInfo = partialCopySource->interfaceInfo)
-      handleCallsToOtherCGfuns(partialCopySource, ifcInfo, this);
+      handleCallsToOtherCGfuns(partialCopySource, ifcInfo, *map, this);
 
     // Clean up book keeping information.
     clearPartialCopyData(this);

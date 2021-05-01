@@ -1227,6 +1227,16 @@ void set_view(std::set<BlockStmt*>& bss) {
   }
 }
 
+void set_view(std::set<FnSymbol*>* bss) {
+  set_view(*bss);
+}
+
+void set_view(std::set<FnSymbol*>& bss) {
+  printf("set<FnSymbol> %d elm(s)\n", (int)bss.size());
+  for (FnSymbol* elm: bss)
+    showFnSymbol(elm);
+}
+
 //
 // typesWithName: print all TypeSymbols with the given name
 //
