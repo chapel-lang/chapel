@@ -280,7 +280,7 @@ module ChapelSyncvar {
     return wrapped.isFull;
   }
 
-  proc   = (ref lhs : _syncvar(?t), rhs : t) {
+  operator =(ref lhs : _syncvar(?t), rhs : t) {
     compilerWarning("Direct assignment to 'sync' variables is deprecated; apply a 'write??()' method to modify one");
     lhs.wrapped.writeEF(rhs);
   }
@@ -294,57 +294,57 @@ module ChapelSyncvar {
     return new _syncvar(from);
   }
 
-  proc  += (ref lhs : _syncvar(?t), rhs : t) {
+  operator +=(ref lhs : _syncvar(?t), rhs : t) {
     compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() +  rhs);
   }
 
-  proc  -= (ref lhs : _syncvar(?t), rhs : t) {
+  operator -=(ref lhs : _syncvar(?t), rhs : t) {
     compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() -  rhs);
   }
 
-  proc  *= (ref lhs : _syncvar(?t), rhs : t) {
+  operator *=(ref lhs : _syncvar(?t), rhs : t) {
     compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() *  rhs);
   }
 
-  proc  /= (ref lhs : _syncvar(?t), rhs : t) {
+  operator /=(ref lhs : _syncvar(?t), rhs : t) {
     compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() /  rhs);
   }
 
-  proc  %= (ref lhs : _syncvar(?t), rhs : t) {
+  operator %=(ref lhs : _syncvar(?t), rhs : t) {
     compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() %  rhs);
   }
 
-  proc **= (ref lhs : _syncvar(?t), rhs : t) {
+  operator **=(ref lhs : _syncvar(?t), rhs : t) {
     compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() ** rhs);
   }
 
-  proc  &= (ref lhs : _syncvar(?t), rhs : t) {
+  operator &=(ref lhs : _syncvar(?t), rhs : t) {
     compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() &  rhs);
   }
 
-  proc  |= (ref lhs : _syncvar(?t), rhs : t) {
+  operator |=(ref lhs : _syncvar(?t), rhs : t) {
     compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() |  rhs);
   }
 
-  proc  ^= (ref lhs : _syncvar(?t), rhs : t) {
+  operator ^=(ref lhs : _syncvar(?t), rhs : t) {
     compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() ^  rhs);
   }
 
-  proc >>= (ref lhs : _syncvar(?t), rhs : t) {
+  operator >>=(ref lhs : _syncvar(?t), rhs : t) {
     compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() >> rhs);
   }
 
-  proc <<= (ref lhs : _syncvar(?t), rhs : t) {
+  operator <<=(ref lhs : _syncvar(?t), rhs : t) {
     compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() << rhs);
   }
@@ -387,21 +387,21 @@ module ChapelSyncvar {
   pragma "no doc"
   proc chpl__readXX(const ref x : _syncvar(?)) return x.readXX();
 
-  proc <=>(lhs : _syncvar, ref rhs) {
+  operator <=>(lhs : _syncvar, ref rhs) {
     const tmp = lhs;
 
     lhs = rhs;
     rhs = tmp;
   }
 
-  proc <=>(ref lhs, rhs : _syncvar) {
+  operator <=>(ref lhs, rhs : _syncvar) {
     const tmp = lhs;
 
     lhs = rhs;
     rhs = tmp;
   }
 
-  proc <=>(lhs : _syncvar, rhs : _syncvar) {
+  operator <=>(lhs : _syncvar, rhs : _syncvar) {
     compilerWarning("Swapping 'sync' variables is deprecated; perform the swap manually using explicit '.read??'/'.write??' methods");
     const tmp = lhs.readFE();
     lhs.writeEF(rhs.readFE());
@@ -818,7 +818,7 @@ module ChapelSyncvar {
     return wrapped.isFull;
   }
 
-  proc =(ref lhs : _singlevar(?t), rhs : t) {
+  operator =(ref lhs : _singlevar(?t), rhs : t) {
     compilerWarning("Direct assignment to 'single' variables is deprecated; apply '.writeEF()' to modify one");
     lhs.wrapped.writeEF(rhs);
   }

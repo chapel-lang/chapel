@@ -203,11 +203,17 @@ module ArrayViewSlice {
     //
 
     proc dsiSerialWrite(f) throws {
-      chpl_serialReadWriteRectangular(f, arr, privDom);
+      if chpl_isAssociativeDomClass(privDom) then
+        chpl_serialReadWriteAssociativeHelper(f, arr, privDom);
+      else
+        chpl_serialReadWriteRectangular(f, arr, privDom);
     }
 
     proc dsiSerialRead(f) throws {
-      chpl_serialReadWriteRectangular(f, arr, privDom);
+      if chpl_isAssociativeDomClass(privDom) then
+        chpl_serialReadWriteAssociativeHelper(f, arr, privDom);
+      else
+        chpl_serialReadWriteRectangular(f, arr, privDom);
     }
 
     override proc dsiDisplayRepresentation() {
@@ -281,6 +287,12 @@ module ArrayViewSlice {
 
     proc dsiLocalSubdomain(loc: locale) {
       return privDom.dsiLocalSubdomain(loc);
+    }
+
+    pragma "order independent yielding loops"
+    iter dsiLocalSubdomains(loc: locale) {
+      for l in privDom.dsiLocalSubdomains(loc) do
+        yield l;
     }
 
 

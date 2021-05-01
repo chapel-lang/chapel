@@ -11,7 +11,7 @@ proc Wrap.init=(other) {
   this._value = other;
 }
 
-proc =(ref lhs:Wrap, rhs) {
+operator =(ref lhs:Wrap, rhs) {
   lhs._value.clearHelp();
 }
 

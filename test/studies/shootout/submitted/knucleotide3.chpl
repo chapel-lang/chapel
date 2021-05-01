@@ -76,18 +76,18 @@ proc writeCount(data, param str) {
 proc calculate(data, param nclSize) {
   var freqs = new map(int, int);
 
-  var lock$: sync bool = true;
+  var lock: sync bool = true;
   const numTasks = here.maxTaskPar;
-  coforall tid in 1..numTasks {
+  coforall tid in 1..numTasks with (ref freqs) {
     var myFreqs = new map(int, int);
 
     for i in tid..(data.size-nclSize) by numTasks do
       myFreqs[hash(data, i, nclSize)] += 1;
 
-    lock$;        // acquire lock
+    lock.readFE();      // acquire lock
     for (k,v) in myFreqs.items() do
       freqs[k] += v;
-    lock$ = true; // release lock
+    lock.writeEF(true); // release lock
   }
 
   return freqs;

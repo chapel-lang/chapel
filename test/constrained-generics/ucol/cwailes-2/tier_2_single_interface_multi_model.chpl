@@ -8,7 +8,7 @@ module ILib {
     proc f(x:T):T;
   }
   interface Addable(U,V) {
-    proc +(arg1: U, arg2: V): U;
+    operator +(arg1: U, arg2: V): U;
   }
 }
 

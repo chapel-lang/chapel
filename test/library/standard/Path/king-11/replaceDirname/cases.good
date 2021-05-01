@@ -1,0 +1,18 @@
+chapel/foo.c
+chapel/foo.c
+chapel/baz
+chapel/baz
+chapel/baz ending.
+chapel/baz ending.
+chapel/foo
+chapel/.foo
+chapel/../foo
+chapel/foo
+
+
+
+bar
+/
+foo/
+baz/bar.txt
+baz/bar.txt

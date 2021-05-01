@@ -193,8 +193,10 @@ module ChapelDistribution {
     pragma "dont disable remote value forwarding"
     proc remove() : (unmanaged BaseDom?, unmanaged BaseDist?) {
 
-      // TODO -- remove dsiLinksDistribution
-      assert( dsiMyDist().dsiTrackDomains() == dsiLinksDistribution() );
+      if boundsChecking {
+        // TODO -- remove dsiLinksDistribution
+        assert( dsiMyDist().dsiTrackDomains() == dsiLinksDistribution() );
+      }
 
       var ret_dom:unmanaged BaseDom? = nil;
       var ret_dist:unmanaged BaseDist? = nil;
@@ -675,6 +677,9 @@ module ChapelDistribution {
       return 0;
     }
 
+    proc rank param {
+      return 1;
+    }
   }
 
   //
@@ -848,6 +853,10 @@ module ChapelDistribution {
         // unlink domain referred to by eltType
         chpl_decRefCountsForDomainsInArrayEltTypes(_to_unmanaged(this), eltType);
       }
+    }
+
+    proc rank param {
+      return 1;
     }
   }
 

@@ -1,6 +1,6 @@
 
 extern proc printf(f:c_string, x);
-proc =(ref lhs, rhs) { __primitive(c"=", lhs, rhs); }
+operator =(ref lhs, rhs) { __primitive(c"=", lhs, rhs); }
 
 proc foo(ref x) {
   printf(c"%d\n", x);

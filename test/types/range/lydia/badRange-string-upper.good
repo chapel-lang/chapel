@@ -1,2 +1,2 @@
 badRange-string-upper.chpl:1: In function 'main':
-badRange-string-upper.chpl:2: error: Range bounds must be integers of compatible types in param for-loops
+badRange-string-upper.chpl:2: error: param for-loops defined using bounds of type 'int(64)..string' are not currently supported

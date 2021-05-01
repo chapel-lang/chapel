@@ -4,7 +4,7 @@ record InitEqOtherOnly {
 proc InitEqOtherOnly.init=(other:int) {
   this.x = other;
 }
-proc =(ref lhs:InitEqOtherOnly, rhs:InitEqOtherOnly) {
+operator InitEqOtherOnly.=(ref lhs:InitEqOtherOnly, rhs:InitEqOtherOnly) {
   lhs.x = rhs.x;
 }
 operator :(from: int, type t: InitEqOtherOnly) {

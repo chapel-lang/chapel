@@ -110,7 +110,7 @@ Utilities
 
    DateTime <standard/DateTime>
    Help <standard/Help>
-   Regexp <standard/Regexp>
+   Regex <standard/Regex>
    Time <standard/Time>
    Version <standard/Version>
 

@@ -1,6 +1,6 @@
 ./rangeAPItest.chpl:3: In function 'testRangeAPI':
-./rangeAPItest.chpl:44: warning: invoking 'offset' on an unstrided range has no effect.
-  simpleRangeTest.chpl:4: called as testRangeAPI(lbl: string, r: range(int(64),bounded,false), idx: int(64), subr: range(int(64),bounded,false))
+./rangeAPItest.chpl:46: warning: invoking 'offset' on an unstrided range has no effect.
+  simpleRangeTest.chpl:4: called as testRangeAPI(lbl: string, r: range(int(64),bounded,false), idx: int(64), subr: range(int(64),bounded,false), offset: int(64), count: int(64))
 basic range
 ------------
 1..10
@@ -175,11 +175,11 @@ stride           = 1
 alignment        = 1
 aligned          = true
 first            = 1
-last             = 0
+last             = undefined
 low              = 1
-high             = 0
+high             = undefined
 alignedLow       = 1
-alignedHigh      = 0
+alignedHigh      = undefined
 isEmpty()        = false
 hasFirst()       = true
 hasLast()        = false
@@ -222,11 +222,11 @@ hasHighBound()   = true
 stride           = 1
 alignment        = 0
 aligned          = false
-first            = 1
+first            = undefined
 last             = 10
-low              = 1
+low              = undefined
 high             = 10
-alignedLow       = 1
+alignedLow       = undefined
 alignedHigh      = 10
 isEmpty()        = false
 hasFirst()       = false
@@ -267,10 +267,10 @@ stride           = -1
 alignment        = 10
 aligned          = true
 first            = 10
-last             = 1
-low              = 1
+last             = undefined
+low              = undefined
 high             = 10
-alignedLow       = 1
+alignedLow       = undefined
 alignedHigh      = 10
 isEmpty()        = false
 hasFirst()       = true
@@ -314,12 +314,12 @@ hasHighBound()   = false
 stride           = 1
 alignment        = 0
 aligned          = false
-first            = 1
-last             = 0
-low              = 1
-high             = 0
-alignedLow       = 1
-alignedHigh      = 0
+first            = undefined
+last             = undefined
+low              = undefined
+high             = undefined
+alignedLow       = undefined
+alignedHigh      = undefined
 isEmpty()        = false
 hasFirst()       = false
 hasLast()        = false

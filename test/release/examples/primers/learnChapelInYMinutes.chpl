@@ -167,7 +167,7 @@ a = thisInt ^ thatInt; // Bitwise exclusive-or
 a += thisInt;          // Addition-equals (a = a + thisInt;)
 a *= thatInt;          // Times-equals (a = a * thatInt;)
 b &&= thatBool;        // Logical-and-equals (b = b && thatBool;)
-a <<= 3;               // Left-bit-shift-equals (a = a << 10;)
+a <<= 3;               // Left-bit-shift-equals (a = a << 3;)
 
 // Unlike other C family languages, there are no
 // pre/post-increment/decrement operators, such as:
@@ -659,7 +659,7 @@ Operator Definitions
 // ``+= -= *= /= %= **= &= |= ˆ= <<= >>= <=>``
 
 // Boolean exclusive or operator.
-proc ^(left : bool, right : bool): bool {
+operator ^(left : bool, right : bool): bool {
   return (left || right) && !(left && right);
 }
 
@@ -669,7 +669,7 @@ writeln(true  ^ false);
 writeln(false ^ false);
 
 // Define a ``*`` operator on any two types that returns a tuple of those types.
-proc *(left : ?ltype, right : ?rtype): (ltype, rtype) {
+operator *(left : ?ltype, right : ?rtype): (ltype, rtype) {
   writeln("\tIn our '*' overload!");
   return (left, right);
 }
@@ -682,7 +682,7 @@ writeln(1 * 2);   // Uses the default ``*`` operator.
 
 /* .. code-block:: chapel
 
-      proc +(left: int, right: int): int {
+      operator +(left: int, right: int): int {
         return left - right;
       }
 */
@@ -843,7 +843,7 @@ class MyClass {
 
   // We can define an operator on our class as well, but
   // the definition has to be outside the class definition.
-  proc +(A : MyClass, B : MyClass) : owned MyClass {
+  operator MyClass.+(A : MyClass, B : MyClass) : owned MyClass {
     return
       new MyClass(memberInt = A.getMemberInt() + B.getMemberInt(),
                   memberBool = A.getMemberBool() || B.getMemberBool());

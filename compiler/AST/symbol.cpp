@@ -2098,7 +2098,7 @@ bool isAstrOpName(const char* name) {
       strcmp(name, "|=") == 0 || strcmp(name, "^=") == 0 ||
       strcmp(name, ">>=") == 0 || strcmp(name, "<<=") == 0 ||
       strcmp(name, "#") == 0 || strcmp(name, "by") == 0 ||
-      strcmp(name, "align") == 0) {
+      strcmp(name, "align") == 0 || name == astrScolon) {
     return true;
   } else {
     return false;
@@ -2331,4 +2331,22 @@ const char* toString(Symbol* sym, bool withType) {
     return toString(arg, withType);
 
   return sym->name;
+}
+
+struct SymbolPairComparator {
+  bool operator()(SymbolMapKeyValue lhs, SymbolMapKeyValue rhs) {
+    // use the same logic as other set/map ordering
+    std::less<Symbol*> lessSym;
+
+    return lessSym(lhs.key, rhs.key);
+  }
+};
+
+SymbolMapVector sortedSymbolMapElts(const SymbolMap& map) {
+  SymbolMapVector elts;
+  form_Map(SymbolMapElem, e, map) {
+    elts.push_back(SymbolMapKeyValue(e->key, e->value));
+  }
+  std::sort(elts.begin(), elts.end(), SymbolPairComparator());
+  return elts;
 }

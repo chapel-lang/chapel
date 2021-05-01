@@ -121,7 +121,7 @@ Parser module with the Toml class for the Chapel TOML library.
 */
 module TomlParser {
 
-  private use Regexp;
+  private use Regex;
   use DateTime;
   use Map, List;
   import IO.channel;
@@ -354,7 +354,8 @@ module TomlParser {
         }
         // DateTime
         else if dt.match(val) {
-          var date = datetime.strptime(getToken(source), "%Y-%m-%dT%H:%M:%SZ");
+          var date : datetime;
+          date.strptime(getToken(source), "%Y-%m-%dT%H:%M:%S");
           return new unmanaged Toml(date);
         }
         // Date
@@ -453,7 +454,7 @@ pragma "no doc"
  private use fieldtag;
 
  pragma "no doc"
- proc =(ref t: unmanaged Toml, s: string) {
+ operator Toml.=(ref t: unmanaged Toml, s: string) {
    compilerWarning("= overloads for Toml are deprecated");
    if t == nil {
      t = new unmanaged Toml(s);
@@ -464,7 +465,7 @@ pragma "no doc"
  }
 
  pragma "no doc"
- proc =(ref t: unmanaged Toml, i: int) {
+ operator Toml.=(ref t: unmanaged Toml, i: int) {
    compilerWarning("= overloads for Toml are deprecated");
    if t == nil {
      t = new unmanaged Toml(i);
@@ -475,7 +476,7 @@ pragma "no doc"
  }
 
  pragma "no doc"
- proc =(ref t: unmanaged Toml, b: bool) {
+ operator Toml.=(ref t: unmanaged Toml, b: bool) {
    compilerWarning("= overloads for Toml are deprecated");
    if t == nil {
      t = new unmanaged Toml(b);
@@ -486,7 +487,7 @@ pragma "no doc"
  }
 
  pragma "no doc"
- proc =(ref t: unmanaged Toml, r: real) {
+ operator Toml.=(ref t: unmanaged Toml, r: real) {
    compilerWarning("= overloads for Toml are deprecated");
    if t == nil {
      t = new unmanaged Toml(r);
@@ -497,7 +498,7 @@ pragma "no doc"
  }
 
  pragma "no doc"
- proc =(ref t: unmanaged Toml, ld: date) {
+ operator Toml.=(ref t: unmanaged Toml, ld: date) {
    compilerWarning("= overloads for Toml are deprecated");
    if t == nil {
      t = new unmanaged Toml(ld);
@@ -508,7 +509,7 @@ pragma "no doc"
  }
 
  pragma "no doc"
- proc =(ref t: unmanaged Toml, ti: time) {
+ operator Toml.=(ref t: unmanaged Toml, ti: time) {
    compilerWarning("= overloads for Toml are deprecated");
    if t == nil {
      t = new unmanaged Toml(ti);
@@ -519,7 +520,7 @@ pragma "no doc"
  }
 
  pragma "no doc"
- proc =(ref t: unmanaged Toml, dt: datetime) {
+ operator Toml.=(ref t: unmanaged Toml, dt: datetime) {
    compilerWarning("= overloads for Toml are deprecated");
    if t == nil {
      t = new unmanaged Toml(dt);
@@ -530,7 +531,8 @@ pragma "no doc"
  }
 
  pragma "no doc"
- proc =(ref t: unmanaged Toml, A: [?D] unmanaged Toml) where isAssociativeDom(D) {
+ operator Toml.=(ref t: unmanaged Toml,
+                 A: [?D] unmanaged Toml) where isAssociativeDom(D) {
    compilerWarning("= overloads for Toml are deprecated");
    setupToml(t, A);
  }
@@ -558,7 +560,7 @@ pragma "no doc"
 
 
  pragma "no doc"
- proc =(ref t: unmanaged Toml, arr: [?dom] unmanaged Toml) where !isAssociativeDom(dom){
+ operator Toml.=(ref t: unmanaged Toml, arr: [?dom] unmanaged Toml) where !isAssociativeDom(dom){
    compilerWarning("= overloads for Toml are deprecated");
    setupToml(t, arr);
  }
@@ -1125,7 +1127,7 @@ module TomlReader {
  use List;
  import TOML.TomlError;
 
- private use Regexp;
+ private use Regex;
 
  config const debugTomlReader = false;
 

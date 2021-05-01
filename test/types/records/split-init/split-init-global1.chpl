@@ -12,7 +12,7 @@ record R {
     this.field = other.field;
   }
 }
-proc =(ref lhs: R, rhs: R) {
+operator =(ref lhs: R, rhs: R) {
   writeln(lhs, " = ", rhs);
   lhs.field = rhs.field;
 }

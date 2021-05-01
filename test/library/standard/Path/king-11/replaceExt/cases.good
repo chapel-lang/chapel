@@ -1,0 +1,13 @@
+foo.txt
+foo.txt
+foo.txt
+illegal argument 'foo/': has an empty basename
+foo
+illegal argument '.chp/l': extension can't contain path separators
+illegal argument '.chpl       henlo': extension can't contain spaces
+illegal argument '': has an empty basename
+.bashrc.newext
+.exec.out.newext
+./foo.newext
+/./foo.newext
+illegal argument '/./': has an empty basename

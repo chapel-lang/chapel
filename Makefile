@@ -73,6 +73,10 @@ notcompiler: FORCE
 	@$(MAKE) runtime
 	@$(MAKE) modules
 
+libchplcomp: FORCE
+	@echo "Making the compiler library..."
+	@cd compiler/next && $(MAKE) -f Makefile.help libchplcomp
+
 compiler: FORCE
 	@echo "Making the compiler..."
 	@cd third-party && $(MAKE) llvm
@@ -105,7 +109,7 @@ third-party: FORCE
 third-party-try-opt: third-party-try-re2 third-party-try-gmp
 
 third-party-try-re2: FORCE
-	-@if [ -z "$$CHPL_REGEXP" ]; then \
+	-@if [ "$$CHPL_RE2" != none ]; then \
 	cd third-party && CHPL_LLVM_CODEGEN=0 $(MAKE) try-re2; \
 	if [ ! -z `${NEEDS_LLVM_RUNTIME}` ]; then \
 	CHPL_LLVM_CODEGEN=1 $(MAKE) try-re2; \

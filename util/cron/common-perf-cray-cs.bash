@@ -3,6 +3,7 @@
 # Configure settings for Cray CS performance testing.
 
 export CHPL_LAUNCHER_PARTITION=bdw18
+export CHPL_LAUNCHER_CORES_PER_LOCALE=72
 export CHPL_TARGET_CPU=broadwell
 
 # the lengths we go to, to avoid line wrap ...

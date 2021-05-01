@@ -64,7 +64,7 @@ static void print_on_its_own_line(int indent, const char* msg,
 }
 
 static void
-list_sym(const Symbol* sym, bool type = true) {
+list_sym(const Symbol* sym, bool type = true, bool intents = true) {
   if (const VarSymbol* var = toConstVarSymbol(sym)) {
     if (var->immediate) {
       if (var->immediate->const_kind == NUM_KIND_INT) {
@@ -79,7 +79,8 @@ list_sym(const Symbol* sym, bool type = true) {
   if (isFnSymbol(sym)) {
     printf("fn ");
   } else if (const ArgSymbol* arg = toConstArgSymbol(sym)) {
-    printf("arg intent-%s ", arg->intentDescrString());
+    if (intents)
+      printf("arg intent-%s ", arg->intentDescrString());
   } else if (isTypeSymbol(sym)) {
     printf("type ");
   } else if (isInterfaceSymbol(sym)) {
@@ -314,7 +315,7 @@ list_ast(const BaseAST* ast, const BaseAST* parentAst = NULL, int indent = 0) {
         printf("def ");
       }
     } else if (const SymExpr* e = toConstSymExpr(expr)) {
-      list_sym(e->symbol(), false);
+      list_sym(e->symbol(), false, parentAst == nullptr);
     } else if (const UnresolvedSymExpr* e = toConstUnresolvedSymExpr(expr)) {
       printf("%s ", e->unresolved);
     } else if (isUseStmt(expr)) {

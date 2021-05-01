@@ -364,14 +364,15 @@ module ChapelIteratorSupport {
     }
   }
 
-  proc =(ref ic: _iteratorRecord, xs) {
+  operator _iteratorRecord.=(ref ic: _iteratorRecord, xs) {
     for (e, x) in zip(ic, xs) do
       e = x;
   }
 
   // TODO: replace use of iteratorIndexType?
   pragma "suppress lvalue error"
-  proc =(ref ic: _iteratorRecord, x: iteratorIndexType(ic)) {
+  operator _iteratorRecord.=(ref ic: _iteratorRecord,
+                             x: iteratorIndexType(ic)) {
     for e in ic do
       e = x;
   }

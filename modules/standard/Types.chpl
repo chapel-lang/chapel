@@ -391,6 +391,12 @@ proc isConstAssignable(type t) param  return isConstAssignableType(t);
 pragma "no doc"
 proc isDefaultInitializable(type t) param return isDefaultInitializableType(t);
 
+/* Returns `true` if the argument is `none` or the `nothing` type.
+ as defined by the language specification.*/
+proc isNothing(type t)  param return isNothingType(t);
+proc isNothing(e)   param return isNothingType(e.type);
+
+
 // Set 2 - values.
 /*
 Returns `true` if the argument is a primitive type,
@@ -930,22 +936,22 @@ proc isProperSubtype(type sub, type super) param {
 
 /* :returns: isProperSubtype(a,b) */
 pragma "docs only"
-proc <(type a, type b) param {
+operator <(type a, type b) param {
   return isProperSubtype(a,b);
 }
 /* :returns: isSubtype(a,b) */
 pragma "docs only"
-proc <=(type a, type b) param {
+operator <=(type a, type b) param {
   return isSubtype(a,b);
 }
 /* :returns: isProperSubtype(b,a) */
 pragma "docs only"
-proc >(type a, type b) param {
+operator >(type a, type b) param {
   return isProperSubtype(b,a);
 }
 /* :returns: isSubtype(b,a) */
 pragma "docs only"
-proc >=(type a, type b) param {
+operator >=(type a, type b) param {
   return isSubtype(b,a);
 }
 

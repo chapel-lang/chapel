@@ -14,8 +14,158 @@ GASNet-EX ChangeLog
   - Portable UDP (udp-conduit)
   - Portable MPI (mpi-conduit)
   - Unified Communication X (ucx-conduit) [EXPERIMENTAL]
+  - Libfabric (ofi-conduit) [EXPERIMENTAL]
   Users wishing to use other retired conduits may need to download 
   the GASNet v1.x distribution from https://gasnet.lbl.gov.
+
+----------------------------------------------------------------------
+2021-03-31: GASNet-EX 2021.3.0 Release
+
+* General and Misc.
+  - Performance improvement for Negotiated-Payload Active Message (NPAM) Long 
+    with GASNet-allocated buffer over shared-memory (PSHM) and the reference
+    implementation of NPAM (Medium and Long) used by ucx, udp and mpi conduits.
+  - Calls to gex_EP_Create() which would exceed GASNET_MAXEPS now return
+    GASNET_ERR_RESOURCE rather than aborting.
+  - NEW: configure option `--with-maxeps=N` permits setting GASNET_MAXEPS,
+    subject to per-conduit limits.
+  - Additional debug checks for use of calls which are prohibited in an
+    AM handler context, and in the NPAM Prepare/Commit interval.
+  - The `GASNetGitHash` ident string is now available in most development builds,
+    and `pkg-config --modversion` installed from a development build should
+    include the GASNet git hash.
+
+* Memory Kinds (support for non-host memory)
+  - This is the first production release to include "Memory Kinds", the GASNet
+    feature supporting communication using non-host memory (such as GPU memory).
+    See docs/memory_kinds.md for more information.
+  - Users of the "GASNet-2020.11.0-memory_kinds_prototype" release should be
+    aware that the behavior of configure in this release differs in that one
+    must enable memory kinds explicitly using `--enable-memory-kinds` or an
+    `--enable-kind-[...]` option for a specific kind.
+  - New preprocessor identifer 'GASNET_HAVE_MK_CLASS_MULTIPLE' (undefined or
+    defined to '1') indicates whether kinds support for anything other than
+    host memory has been compiled-in.
+
+* InfiniBand Verbs (details in ibv-conduit README)
+  - NPAM Long is implemented natively for ibv-conduit in the default FAST
+    segment mode, replacing use of the portable reference implementation.
+  - Add support for ODP APIs from the Linux "RDMA Core" distribution, where
+    previously only the Mellanox variant was supported (bug 4122).
+  - Improved startup times on jobs larger than a few tens of nodes with
+    multiple processes per-node (bug 4194).
+  - A new family of `GASNET_IBV_PORTS_*` environment variables provides more
+    control over which InfiniBand ports are used by which processes.
+    Support is conditional on configure finding hwloc lib, which is optional.
+  - NEW: configure option --with-ibv-ports=... can be used to set a default
+    value for the GASNET_IBV_PORTS environment variable.
+  - GASNET_DISABLE_MUNMAP=1 is now the ibv-conduit default on 64-bit platforms, 
+    regardless of whether ODP is enabled or not.  Previously, enabling ODP
+    would change the default to 0.
+  - Improved handling of non-default parameter settings for the firehose
+    dynamic memory registration library.  Corner cases with default settings
+    are also handled better.  See GASNET_FIREHOSE_* in ibv-conduit README.
+  - Significantly increase the default firehose resources on modern InfiniBand
+    HCAs, leading to improved performance in various circumstances.
+  - A new GASNET_PINNED_REGIONS_MAX environment variable allows control over
+    the host-wide number of pinned regions (a bounded HCA resource) which may
+    be used by ibv-conduit.
+
+* Cray XC uGNI (details in aries-conduit README)
+  - A new environment variable GASNET_GNI_MAX_MEDIUM enables selecting the
+    size of AM Medium buffers at job launch, and the existing configure
+    option `--with-aries-max-medium` now sets the default value.
+
+* Libfabric [EXPERIMENTAL] (details in ofi-conduit README)
+  - NEW ofi-conduit, previously available only in GASNet-1, has been partially
+    ported to GASNet-EX where it now holds "experimental" status.
+  - The work completed to date is believed to be functionally complete and
+    correct when run with OFI's sockets provider and default settings.
+
+* Portable UDP support (details in udp-conduit README)
+  - udp-conduit now defaults to grouping co-located processes into
+    contiguous rank ids. 
+  - Interfaces have been added for explicit control over rank assignment 
+
+* Platform support/portability
+  - This release adds support for macOS on AARCH64 (aka ARM64, "Apple M1" and
+    "Apple Silicon").
+
+* GASNet-EX Spec v0.13: (details in docs/GASNet-EX.txt)
+  - Add GASNET_NATIVE_NP_ALLOC_{REQ,REP}_{MEDIUM,LONG} defines
+  - Add gex_System_{Get,Set}VerboseErrors()
+  - Add gex_System_QueryMaxThreads()
+  - Add gex_EP_QueryBoundSegmentNB()
+
+* GASNet tools (spec v1.17): (details in README-tools)
+  - Add GASNETT_UNUSED_ARGS*() family of macros
+  - Added documentation for an interface providing programmatic control
+    of stats/trace features in conduit-mode libraries.
+  - Add GASNETT_STATS_DUMP() to allow dumping and optionally resetting stats
+    counters at runtime. 
+  - Add GASNETT_STATS_PRINTF(_FORCE)() to generate stats output.
+
+* GASNet-1 legacy API
+  - Calls to the legacy gasnet_attach() requesting a zero-length segment are
+    now silently rounded up to one page.
+
+* Notable bugs fixed in this release: (details at https://gasnet-bugs.lbl.gov)
+  - bug2036: Teach AMUDP to respect externally-imposed node ids
+  - bug4122: ODP support broken with recent libibverbs releases
+  - bug4126: ibv: debug-only exit timeout for large multi-rail jobs on Summit
+  - bug4141: SRQ-specific test failures
+  - bug4145: Vector/Indexed incorrect with non-primordial teams and loopback/PSHM
+  - bug4159: AM max-payload queries do not evaluate arguments
+  - bug4166: ibv: debug-only crash at exit from an MPI hybrid application
+  - bug4173: ibv: race in firehose on powerpc
+  - bug4175: thread-safety of gex_EP_RegisterHandlers()
+  - bug4193: Firehose env var "misbehavior"
+  - bug4194: ibv: unnecessarily slow startup
+  - bug4195: ibv dynamic connection support broken
+  - bug4203: Improve error message when passwordless ssh isn't set up
+  - bug4208: unfortunate multi-rail interactions with PSHM and XRC
+
+* Removal of unmaintained platform support
+  - This release no longer supports the following platforms:
+    + IA-64 (aka Itanium)
+
+----------------------------------------------------------------------
+2020-10-30: GASNet-EX 2020.11.0 "Memory Kinds" Prototype Release
+
+* General and Misc.
+  - Initial implementation of "Memory Kinds": support for GASNet-EX remote
+    segments comprised of non-host memory.  This initial version supports only
+    UVA-based CUDA device memory and the GASNet-EX RMA APIs.  The file
+    docs/memory_kinds.txt provides an up-to-date summary of the status of the
+    memory kinds implementation.
+  - New GASNet trace/stats tracemask categories:
+    + O - Object creation, modification and destruction
+    + X - AMPoll
+
+* GASNet-EX Spec v0.11:
+  - Deprecate GEX_FLAG_TM_SCRATCH_SIZE_MIN flag and remove the corresponding
+    GASNET_COLL_MIN_SCRATCH_SIZE environment variable.
+  - Add GEX_FLAG_TM_NO_SCRATCH support in gex_TM_{Split,Create}(), eliminating
+    the requirement that a client always provide a collectives scratch space.
+
+* GASNet-EX Spec v0.12:
+  - Add the following APIs, types and constants as documented in "GASNet-EX API
+    Proposal: Memory Kinds, Revision 2020.11.0" (available on request):
+    + gex_TM_Pair()
+    + gex_Segment_Create()
+    + gex_EP_Create()
+    + gex_EP_BindSegment()
+    + gex_EP_PublishBoundSegment()
+    + gex_MK_t
+    + gex_MK_Class_t
+    + gex_MK_Create_args_t
+    + gex_MK_Create()
+    + gex_MK_Destroy()
+    + GEX_MK_HOST
+  - Add the following constants (zero values of the appropriate types)
+    + GEX_CLIENT_INVALID
+    + GEX_EP_INVALID
+    + GEX_MK_INVALID
 
 ----------------------------------------------------------------------
 2020-10-30: GASNet-EX 2020.10.0 Release

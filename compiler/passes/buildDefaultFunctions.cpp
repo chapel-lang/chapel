@@ -1364,15 +1364,18 @@ static void buildEnumToOrderFunction(EnumType* et, bool paramVersion) {
 //
 //   'proc chpl_enumToOrder(i: integral, type et: et): et'
 //
-static void buildOrderToEnumFunction(EnumType* et) {
+static void buildOrderToEnumFunction(EnumType* et, bool paramVersion) {
   FnSymbol* fn = new FnSymbol(astr("chpl__orderToEnum"));
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_LAST_RESORT);
-  ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "i", dtIntegral);
+  ArgSymbol* arg1 = new ArgSymbol(paramVersion ? INTENT_PARAM : INTENT_BLANK,
+                                  "i", dtIntegral);
   ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "et", et);
   arg2->addFlag(FLAG_TYPE_VARIABLE);
   fn->insertFormalAtTail(arg1);
   fn->insertFormalAtTail(arg2);
+  if (paramVersion)
+    fn->retTag = RET_PARAM;
 
   // Generate a select statement with when clauses for each of the
   // enumeration constants, and an otherwise clause that calls halt.
@@ -1388,7 +1391,7 @@ static void buildOrderToEnumFunction(EnumType* et) {
   const char * errorString = "enumerated type out of bounds in chpl__orderToEnum()";
   CondStmt* otherwise =
     new CondStmt(new CallExpr(PRIM_WHEN),
-                 new BlockStmt(new CallExpr("halt",
+                 new BlockStmt(new CallExpr(paramVersion ? "compilerError" : "halt",
                                             new_StringSymbol(errorString))));
   whenstmts->insertAtTail(otherwise);
   fn->insertAtTail(buildSelectStmt(new SymExpr(arg1), whenstmts));
@@ -1410,7 +1413,8 @@ static void buildEnumOrderFunctions(EnumType* et) {
   //
   buildEnumToOrderFunction(et, true);
   buildEnumToOrderFunction(et, false);
-  buildOrderToEnumFunction(et);
+  buildOrderToEnumFunction(et, true);
+  buildOrderToEnumFunction(et, false);
 }
 
 
@@ -1574,7 +1578,11 @@ static void buildRecordHashFunction(AggregateType *ct) {
     bool first = true;
     int i = 1;
     for_fields(field, ct) {
-      if (!field->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD)) {
+
+      // See #11613 for rationale behind skipping type and param fields.
+      if (!(field->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD) ||
+            field->hasFlag(FLAG_TYPE_VARIABLE) ||
+            field->hasFlag(FLAG_PARAM))) {
         CallExpr *field_access = new CallExpr(field->name, gMethodToken, arg);
         if (first) {
           call = new CallExpr("chpl__defaultHash", field_access);
@@ -1588,8 +1596,15 @@ static void buildRecordHashFunction(AggregateType *ct) {
       }
       i++;
     }
-    fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
+
+    if (call) {
+      fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
+    } else {
+      fn->insertAtTail(new CallExpr(PRIM_RETURN, new_UIntSymbol(0)));
+      fn->addFlag(FLAG_INLINE);
+    }
   }
+
   DefExpr *def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
   reset_ast_loc(def, ct->symbol);

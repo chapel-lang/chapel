@@ -729,13 +729,19 @@ proc BlockCyclic1locdom.dsiLocalSliceStorageIndices1d(globDD, sliceRange)
     // to be done: figure out sliceRange's stride vs. globDD.wholeR.stride
     compilerError("localSlice is not implemented for the Dimensional distribution with a block-cyclic dimension specifier when the slice is stridable");
   } else {
-    const lowSid = if sliceRange.hasLowBound()
-      then globDD._dsiStorageIdx(sliceRange.low)
-      else 0: stoIndexT;
-    const highSid = if sliceRange.hasHighBound()
-      then globDD._dsiStorageIdx(sliceRange.high)
-      else 0: stoIndexT;
-    return new range(stoIndexT, sliceRange.boundedType, false, lowSid, highSid);
+    if sliceRange.hasLowBound() {
+      if sliceRange.hasHighBound() {
+        return globDD._dsiStorageIdx(sliceRange.low)..globDD._dsiStorageIdx(sliceRange.high);
+      } else {
+        return globDD._dsiStorageIdx(sliceRange.low)..;
+      }
+    } else {
+      if sliceRange.hasHighBound() {
+        return ..globDD._dsiStorageIdx(sliceRange.high);
+      } else {
+        return ..;
+      }
+    }
   }
 }
 

@@ -158,6 +158,17 @@ GASNETI_BEGIN_NOWARN
 #define gasnett_unreachable             gasneti_unreachable
 
 /* ------------------------------------------------------------------------------------ */
+/* discard macro aguments w/ compiler-specific warning supression */
+#define GASNETT_UNUSED_ARGS1            GASNETI_UNUSED_ARGS1
+#define GASNETT_UNUSED_ARGS2            GASNETI_UNUSED_ARGS2
+#define GASNETT_UNUSED_ARGS3            GASNETI_UNUSED_ARGS3
+#define GASNETT_UNUSED_ARGS4            GASNETI_UNUSED_ARGS4
+#define GASNETT_UNUSED_ARGS5            GASNETI_UNUSED_ARGS5
+#define GASNETT_UNUSED_ARGS6            GASNETI_UNUSED_ARGS6
+#define GASNETT_UNUSED_ARGS7            GASNETI_UNUSED_ARGS7
+#define GASNETT_UNUSED_ARGS8            GASNETI_UNUSED_ARGS8
+
+/* ------------------------------------------------------------------------------------ */
 /* portable memory barriers */
 
 #define gasnett_local_wmb()          gasneti_local_wmb()
@@ -535,10 +546,21 @@ static void _gasnett_trace_printf_noop(const char *_format, ...)) {
     (gasnett_stats_callback = (callbackfn), GASNETI_STATS_ENABLED(H))
   #define GASNETT_STATS_GETMASK()     GASNETI_STATS_GETMASK()
   #define GASNETT_STATS_SETMASK(mask) GASNETI_STATS_SETMASK(mask)
+  #define GASNETT_STATS_DUMP(reset)   gasneti_stats_dump(reset)
+  extern void gasneti_stats_dump(int _reset);
+  GASNETI_FORMAT_PRINTF(_gasnett_stats_printf,1,2,
+  extern void _gasnett_stats_printf(const char *format, ...));
+  GASNETI_FORMAT_PRINTF(_gasnett_stats_printf_force,1,2,
+  extern void _gasnett_stats_printf_force(const char *format, ...));
+  #define GASNETT_STATS_PRINTF        _gasnett_stats_printf
+  #define GASNETT_STATS_PRINTF_FORCE  _gasnett_stats_printf_force
 #else
   #define GASNETT_STATS_INIT(callbackfn) 0
   #define GASNETT_STATS_GETMASK()     ""
   #define GASNETT_STATS_SETMASK(mask) ((void)0)
+  #define GASNETT_STATS_DUMP(reset)   ((void)0)
+  #define GASNETT_STATS_PRINTF        _gasnett_trace_printf_noop
+  #define GASNETT_STATS_PRINTF_FORCE  _gasnett_trace_printf_noop
 #endif
 
 /* ------------------------------------------------------------------------------------ */

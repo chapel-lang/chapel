@@ -1,6 +1,6 @@
 config param testError = 0, testDisplayRepresentation = false;
 
-proc testRangeAPI(lbl, r: range(?), idx, subr) {
+proc testRangeAPI(lbl, r: range(?), idx, subr, offset=3, count=2) {
   writeln(lbl);
   writeln("------------");
   writeln(r);
@@ -15,12 +15,12 @@ proc testRangeAPI(lbl, r: range(?), idx, subr) {
   writeln("stride           = ", r.stride);
   writeln("alignment        = ", r.alignment);
   writeln("aligned          = ", r.aligned);
-  writeln("first            = ", r.first);
-  writeln("last             = ", r.last);
-  writeln("low              = ", r.low);
-  writeln("high             = ", r.high);
-  writeln("alignedLow       = ", r.alignedLow);
-  writeln("alignedHigh      = ", r.alignedHigh);
+  writeln("first            = ", if r.hasFirst() then r.first:string else "undefined");
+  writeln("last             = ", if r.hasLast() then r.last:string else "undefined");
+  writeln("low              = ", if r.hasLowBound() then r.low else "undefined");
+  writeln("high             = ", if r.hasHighBound() then r.high else "undefined");
+  writeln("alignedLow       = ", if r.hasLowBound() then r.alignedLow else "undefined");
+  writeln("alignedHigh      = ", if r.hasHighBound() then r.alignedHigh else "undefined");
   writeln("isEmpty()        = ", r.isEmpty());
   if (isBoundedRange(r)) {
     writeln("size             = ", r.size);
@@ -38,18 +38,24 @@ proc testRangeAPI(lbl, r: range(?), idx, subr) {
   writeln("boundsCheck(", subr, ") = ", r.boundsCheck(subr));
   writeln("indexOrder(", idx, ") = ", r.indexOrder(idx));
   if (r.hasFirst()) then
-    writeln("orderToIndex(3)  = ", r.orderToIndex(3));
+    writeln("orderToIndex(", offset, ")  = ", r.orderToIndex(offset));
   if (isBoundedRange(r)) {
-    writeln("expand(2)        = ", r.expand(2));
-    writeln("offset(1)        = ", r.offset(1));
+    if !chpl__singleValIdxType(r.idxType) {
+      writeln("expand(2)        = ", r.expand(2));
+    }
+    if r.hasFirst() then writeln("offset(1)        = ", r.offset(1));
   }
-  writeln("translate(2)     = ", r.translate(2));
-  writeln("translate(-2)    = ", r.translate(-2));
+  if !chpl__singleValIdxType(r.idxType) {
+    writeln("translate(2)     = ", r.translate(2));
+    writeln("translate(-2)    = ", r.translate(-2));
+  }
   if (isBoundedRange(r)) {
-    writeln("exterior(2)      = ", r.exterior(2));
-    writeln("exterior(-2)     = ", r.exterior(-2));
-    writeln("interior(2)      = ", r.interior(2));
-    writeln("interior(-2)     = ", r.interior(-2));
+    if !chpl__singleValIdxType(r.idxType) {
+      writeln("exterior(2)      = ", r.exterior(2));
+      writeln("exterior(-2)     = ", r.exterior(-2));
+    }
+    writeln("interior(",count,")      = ", r.interior(count));
+    writeln("interior(",-count,")     = ", r.interior(-count));
   }
           
   writeln("serial iteration = ");
@@ -74,9 +80,9 @@ proc testRangeAPI(lbl, r: range(?), idx, subr) {
   writeln();
 
   if r.hasFirst() then
-    writeln("r#2               = ", r#2);
+    writeln("r#",count,"               = ", r#count);
   if r.hasLast() then
-    writeln("r#-2              = ", r#-2);
+    writeln("r#-",count,"              = ", r#-count);
   writeln("r == subr         = ", r == subr);
   writeln("r != subr         = ", r != subr);
   writeln("r[subr]           = ", r[subr]);

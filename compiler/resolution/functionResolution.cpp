@@ -753,6 +753,45 @@ Type* getConcreteParentForGenericFormal(Type* actualType, Type* formalType) {
   return retval;
 }
 
+// For when getConcreteParentForGenericFormal wouldn't return but there's
+// still a valid relationship between the types.
+Type* getMoreInstantiatedParentForGenericFormal(Type* actualType,
+                                                Type* formalType) {
+  Type* retval = NULL;
+
+  if (AggregateType* at = toAggregateType(actualType)) {
+    forv_Vec(AggregateType, parent, at->dispatchParents) {
+      if (isInstantiation(parent, formalType) == true) {
+        retval = parent;
+        break;
+
+      } else if (parent == formalType) {
+        // There might be a better match, so don't break, but it's still a
+        // match
+        retval = parent;
+
+      } else if (Type* t = getMoreInstantiatedParentForGenericFormal(parent, formalType)) {
+        retval = t;
+        break;
+      }
+    }
+
+    if (retval == NULL) {
+      if (isClass(formalType)) {
+        // Handle e.g. Owned(GenericClass) passed to a formal : GenericClass
+        if (isManagedPtrType(at)) {
+          Type* classType = getManagedPtrBorrowType(actualType);
+          if (canInstantiate(classType, formalType)) {
+            retval = classType;
+          }
+        }
+      }
+    }
+  }
+
+  return retval;
+}
+
 static bool instantiatedFieldsMatch(Type* actualType, Type* formalType) {
 
   AggregateType* actual = toAggregateType(actualType);
@@ -11279,16 +11318,20 @@ static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val,
   val->type = root;
 
   CallExpr* initCall = new CallExpr("init", gMethodToken, new NamedExpr("this", new SymExpr(val)));
-  form_Map(SymbolMapElem, e, at->substitutions) {
-    Symbol* field = root->getField(e->key->name);
+
+  for (auto elem: sortedSymbolMapElts(at->substitutions)) {
+    const char* keyName = elem.key->name;
+    Symbol*     value   = elem.value;
+
+    Symbol* field = root->getField(keyName);
     bool hasDefault = false;
     bool isGenericField = root->fieldIsGeneric(field, hasDefault);
 
     Expr* appendExpr = NULL;
     if (field->isParameter()) {
-      appendExpr = new SymExpr(e->value);
+      appendExpr = new SymExpr(value);
     } else if (field->hasFlag(FLAG_TYPE_VARIABLE)) {
-      if (e->value->getValType()->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
+      if (value->getValType()->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
         // BHARSH 2018-11-02: This technically generates code that would
         // crash at runtime because aggregate types don't contain the runtime
         // type information for their fields, so this temporary will go
@@ -11296,7 +11339,7 @@ static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val,
         // fields for default-initialized records, and avoid crashing.
         VarSymbol* tmp = newTemp("default_runtime_temp");
         tmp->addFlag(FLAG_TYPE_VARIABLE);
-        CallExpr* query = new CallExpr(PRIM_QUERY_TYPE_FIELD, at->symbol, new_CStringSymbol(e->key->name));
+        CallExpr* query = new CallExpr(PRIM_QUERY_TYPE_FIELD, at->symbol, new_CStringSymbol(keyName));
         CallExpr* move = new CallExpr(PRIM_MOVE, tmp, query);
 
         call->insertBefore(new DefExpr(tmp));
@@ -11307,7 +11350,7 @@ static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val,
 
         appendExpr = new SymExpr(tmp);
       } else {
-        appendExpr = new SymExpr(e->value);
+        appendExpr = new SymExpr(value);
       }
     } else if (isGenericField) {
 
@@ -11321,8 +11364,8 @@ static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val,
         // convert the  default initialization into
         //   var default_field_tmp: int;
         //   var myR = new R(x=default_field_tmp)
-        VarSymbol* temp = newTemp("default_field_temp", e->value->typeInfo());
-        CallExpr* tempCall = new CallExpr(PRIM_DEFAULT_INIT_VAR, temp, e->value);
+        VarSymbol* temp = newTemp("default_field_temp", value->typeInfo());
+        CallExpr* tempCall = new CallExpr(PRIM_DEFAULT_INIT_VAR, temp, value);
 
         call->insertBefore(new DefExpr(temp));
         call->insertBefore(tempCall);
@@ -11344,7 +11387,7 @@ static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val,
       INT_FATAL("Unhandled case for default-init");
     }
 
-    appendExpr = new NamedExpr(e->key->name, appendExpr);
+    appendExpr = new NamedExpr(keyName, appendExpr);
 
     initCall->insertAtTail(appendExpr);
   }

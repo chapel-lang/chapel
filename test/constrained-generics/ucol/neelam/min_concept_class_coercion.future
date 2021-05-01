@@ -1,0 +1,7 @@
+unimplemented feature: allow implicit conversions for implementations
+
+This test wants to implement 'proc LT(x:T, y:T):bool' for T=D
+using a proc on D's superclass: 'proc LT(x:C, y:C) : bool'.
+Currently this is not implemented.
+
+See also #16412 for the design question: should this be allowed at all?

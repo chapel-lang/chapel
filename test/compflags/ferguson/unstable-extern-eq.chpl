@@ -6,7 +6,7 @@ extern proc return_a_mytype():mytype;
 // because later on we might require an init=.
 // When that happens (or something else replaces it),
 // this test should be removed.
-proc =(lhs: mytype, rhs: real) {
+operator =(lhs: mytype, rhs: real) {
   writeln("in = ");
 }
 operator :(from: real, type toType: mytype) {

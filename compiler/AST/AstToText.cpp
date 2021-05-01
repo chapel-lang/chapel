@@ -1026,6 +1026,18 @@ static bool needParens(const char *outer, const char *inner,
 }
 
 /*
+ * Do we want to print spaces around this binary operator?
+ */
+static bool wantSpaces(const char *op, bool printingType)
+{
+  if (strcmp(op, "**") == 0)
+    return false;
+  if (printingType)
+    return false;
+  return true;
+}
+
+/*
  * Args needed just for needsParens() call above, described in more
  * detail there:
  *
@@ -1395,10 +1407,18 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType, const char *outer,
           // Binary operator, infix notation
           bool needsParens = needParens(outer, fnName, unary, postfix,
                                         false, false, isRHS);
+          bool wantsSpaces = wantSpaces(fnName, printingType);
+
           if (needsParens)
             mText += "(";
           appendExpr(expr->get(1), printingType, fnName, false, false, false);
+
+          if (wantsSpaces)
+            mText += " ";
           appendExpr(expr->baseExpr, printingType);
+          if (wantsSpaces)
+            mText += " ";
+
           appendExpr(expr->get(2), printingType, fnName, false, false, true);
           if (needsParens)
             mText += ")";
@@ -1449,7 +1469,17 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType, const char *outer,
         if (i > 1)
           mText += ", ";
 
-        appendExpr(expr->get(i), printingType);
+        if (isSymExpr(expr->get(i)) 
+          && isVarSymbol(toSymExpr(expr->get(i))->symbol()) 
+          && toVarSymbol(toSymExpr(expr->get(i))->symbol())->isImmediate() 
+          && toVarSymbol(toSymExpr(expr->get(i))->symbol())->immediate->const_kind == CONST_KIND_STRING)
+        {
+          mText += "\"";
+          appendExpr(expr->get(i), printingType);
+          mText += "\"";
+        }
+        else
+          appendExpr(expr->get(i), printingType);
       }
 
       mText += ')';
@@ -1577,21 +1607,30 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType, const char *outer,
   }
 }
 
+void AstToText::appendExprTypeVar(DefExpr* expr)
+{
+  mText += expr->sym->name;
+  if (expr->init) {
+    mText += " = ";
+    appendExpr(expr->init, true);
+  }
+}
+
 void AstToText::appendExpr(DefExpr* expr, bool printingType)
 {
   if (printingType)
     {
 
-    mText += '?';
+      mText += '?';
 
-    // This section initially was ensuring the sym field referred to
-    // a VarSymbol in this case.  However, since we were only accessing the
-    // name field - which is present for all Symbols - this check was not
-    // necessary.  Should something go wrong with this section, perhaps
-    // first check if expr->sym is a VarSymbol as was initially expected?
-    const char* name = expr->sym->name;
-    if (strncmp(name, "chpl__query", 11) != 0)
-      mText += name;
+      // This section initially was ensuring the sym field referred to
+      // a VarSymbol in this case.  However, since we were only accessing the
+      // name field - which is present for all Symbols - this check was not
+      // necessary.  Should something go wrong with this section, perhaps
+      // first check if expr->sym is a VarSymbol as was initially expected?
+      const char* name = expr->sym->name;
+      if (strncmp(name, "chpl__query", 11) != 0)
+        mText += name;
 
     }
   else
@@ -1737,7 +1776,17 @@ void AstToText::appendExpr(CallExpr* expr, const char* fnName, bool printingType
     if (i > 1)
       mText += ", ";
 
-    appendExpr(expr->get(i), printingType);
+    if (isSymExpr(expr->get(i)) 
+      && isVarSymbol(toSymExpr(expr->get(i))->symbol()) 
+      && toVarSymbol(toSymExpr(expr->get(i))->symbol())->isImmediate() 
+      && toVarSymbol(toSymExpr(expr->get(i))->symbol())->immediate->const_kind == CONST_KIND_STRING)
+    {
+      mText += "\"";
+      appendExpr(expr->get(i), printingType);
+      mText += "\"";
+    }
+    else
+      appendExpr(expr->get(i), printingType);
   }
 
   // 1-tuples get a trailing "," inside the parens.
@@ -1942,5 +1991,8 @@ void AstToText::appendEnumConstants(EnumType* et) {
 }
 
 void AstToText::appendVarDef(VarSymbol* var) {
-  appendExpr(var->defPoint, false);
+  if (var->isType())
+    appendExprTypeVar(var->defPoint);
+  else
+    appendExpr(var->defPoint, false);
 }

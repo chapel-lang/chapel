@@ -403,7 +403,7 @@ record buffer1 {
   }
 }
 
-proc =(ref lhs:buffer1, rhs:buffer1) {
+operator buffer1.=(ref lhs:buffer1, rhs:buffer1) {
   for i in 1..64 do
     lhs.b[i] = rhs.b[i];
 
@@ -447,7 +447,7 @@ record buffer2 {
   }
 }
 
-proc =(ref lhs:buffer2, rhs:buffer2) {
+operator buffer2.=(ref lhs:buffer2, rhs:buffer2) {
   for i in 1..64 do
     lhs.b[i] = rhs.b[i];
 

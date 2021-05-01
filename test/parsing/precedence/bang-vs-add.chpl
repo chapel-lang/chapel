@@ -3,10 +3,10 @@ class C {
   var x: int;
 }
 
-proc +(a: borrowed C, b: borrowed C) {
+operator C.+(a: borrowed C, b: borrowed C) {
   return a;
 }
-proc +(a: borrowed C?, b: borrowed C?) {
+operator C.+(a: borrowed C?, b: borrowed C?) {
   return b;
 }
 

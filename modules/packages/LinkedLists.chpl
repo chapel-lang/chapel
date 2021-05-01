@@ -37,7 +37,7 @@ class listNode {
 
 
   pragma "no doc"
-  proc =(ref l1: LinkedList(?t), const ref l2: LinkedList(?t2)) {
+  operator LinkedList.=(ref l1: LinkedList(?t), const ref l2: LinkedList(?t2)) {
     l1.destroy();
     for i in l2 do
       l1.append(i);

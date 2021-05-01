@@ -55,7 +55,7 @@ module DefaultRectangular {
   config param earlyShiftData = true;
   config param usePollyArrayIndex = false;
 
-  config param defaultRectangularSupportsAutoLocalAccess = false;
+  config param defaultRectangularSupportsAutoLocalAccess = true;
 
   enum ArrayStorageOrder { RMO, CMO }
   config param defaultStorageOrder = ArrayStorageOrder.RMO;
@@ -1362,17 +1362,6 @@ module DefaultRectangular {
       return theData(dataInd);
     }
 
-
-    inline proc dsiLocalAccess(i) ref
-      return dsiAccess(i);
-
-    inline proc dsiLocalAccess(i)
-    where shouldReturnRvalueByValue(eltType)
-      return dsiAccess(i);
-
-    inline proc dsiLocalAccess(i) const ref
-    where shouldReturnRvalueByConstRef(eltType)
-      return dsiAccess(i);
 
     inline proc dsiBoundsCheck(i) {
       return dom.dsiMember(i);

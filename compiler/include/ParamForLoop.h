@@ -85,6 +85,9 @@ private:
   void                   validateLoop(VarSymbol* lvar,
                                       VarSymbol* hvar,
                                       VarSymbol* svar);
+  void                   validateLoop(EnumSymbol* lvar,
+                                      EnumSymbol* hvar,
+                                      VarSymbol* svar);
 
   //
   // NOAKES 2014/12/11

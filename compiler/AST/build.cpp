@@ -2510,36 +2510,27 @@ BlockStmt* handleConfigTypes(BlockStmt* blk) {
   return blk;
 }
 
-static VarSymbol* one = NULL;
-
-static SymExpr* buildOneExpr() {
-  if (one == NULL) {
-    one = new_IntSymbol(1);
-  }
-  return new SymExpr(one);
-}
-
 CallExpr* buildBoundedRange(Expr* low, Expr* high,
                             bool openlow, bool openhigh) {
   if (openlow) {
-    low = new CallExpr("+", low, buildOneExpr());
+    low = new CallExpr("chpl__nudgeLowBound", low);
   }
   if (openhigh) {
-    high = new CallExpr("-", high, buildOneExpr());
+    high = new CallExpr("chpl__nudgeHighBound", high);
   }
   return new CallExpr("chpl_build_bounded_range",low, high);
 }
 
 CallExpr* buildLowBoundedRange(Expr* low, bool open) {
   if (open) {
-    low = new CallExpr("+", low, buildOneExpr());
+    low = new CallExpr("chpl__nudgeLowBound", low);
   }
   return new CallExpr("chpl_build_low_bounded_range", low);
 }
 
 CallExpr* buildHighBoundedRange(Expr* high, bool open) {
   if (open) {
-    high = new CallExpr("-", high, buildOneExpr());
+    high = new CallExpr("chpl__nudgeHighBound", high);
   }
   return new CallExpr("chpl_build_high_bounded_range", high);
 }

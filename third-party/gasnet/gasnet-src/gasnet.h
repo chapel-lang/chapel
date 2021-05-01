@@ -85,6 +85,7 @@ GASNETT_INLINE(gasnet_attach)
 int gasnet_attach( gasnet_handlerentry_t *_table, int _numentries,
                    uintptr_t _segsize, uintptr_t _minheapoffset ) {
   gasneti_legacy_attach_checks(0);
+  if (! _segsize) _segsize = GASNET_PAGESIZE;
   int _result = gasnetc_attach( gasneti_thunk_tm, _table, _numentries, _segsize);
   #if GASNET_SEGMENT_EVERYTHING
     gasneti_legacy_attach_checks(0);

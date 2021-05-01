@@ -21,3 +21,5 @@ chpl:chplref map (with same keyType and valType)
 chpl:chplref keyType
 chpl:chplref valueType
 
+# compiler-internals
+cpp:identifier chpl

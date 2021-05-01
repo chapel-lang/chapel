@@ -17,33 +17,33 @@ or
 
    import variablePrecedence;
 
-.. data:: var pp = a+b+c
+.. data:: var pp = a + b + c
 
-.. data:: var Pp = a+b+c
+.. data:: var Pp = a + b + c
 
-.. data:: var pP = a+b+c
+.. data:: var pP = a + b + c
 
-.. data:: var pppp = a+b+c+d+e
+.. data:: var pppp = a + b + c + d + e
 
-.. data:: var PpPp = a+b+c+d+e
+.. data:: var PpPp = a + b + c + d + e
 
-.. data:: var mm = a-b-c
+.. data:: var mm = a - b - c
 
-.. data:: var Mm = a-b-c
+.. data:: var Mm = a - b - c
 
-.. data:: var mM = a-(b-c)
+.. data:: var mM = a - (b - c)
 
-.. data:: var pm = a+b-c
+.. data:: var pm = a + b - c
 
-.. data:: var Pm = a+b-c
+.. data:: var Pm = a + b - c
 
-.. data:: var pM = a+b-c
+.. data:: var pM = a + b - c
 
-.. data:: var mp = a-b+c
+.. data:: var mp = a - b + c
 
-.. data:: var Mp = a-b+c
+.. data:: var Mp = a - b + c
 
-.. data:: var mP = a-(b+c)
+.. data:: var mP = a - (b + c)
 
 .. data:: var unarypunaryp = ++a
 
@@ -53,21 +53,21 @@ or
 
 .. data:: var unarymunaryp = -+a
 
-.. data:: var unarypP = +(a+b)
+.. data:: var unarypP = +(a + b)
 
-.. data:: var unarypM = +(a-b)
+.. data:: var unarypM = +(a - b)
 
-.. data:: var unarymP = -(a+b)
+.. data:: var unarymP = -(a + b)
 
-.. data:: var unarymM = -(a-b)
+.. data:: var unarymM = -(a - b)
 
-.. data:: var unarynp = ~(a+b)
+.. data:: var unarynp = ~(a + b)
 
-.. data:: var binpunarym = a+-b
+.. data:: var binpunarym = a + -b
 
-.. data:: var andub = a&&!b
+.. data:: var andub = a && !b
 
-.. data:: var andubor = a&&!(b||c)
+.. data:: var andubor = a && !(b || c)
 
 .. data:: var unarympow = -a**b
 
@@ -75,47 +75,47 @@ or
 
 .. data:: var powunarym = a**-b
 
-.. data:: var powunarymP = a**-(b+c)
+.. data:: var powunarymP = a**-(b + c)
 
 .. data:: var unarymcast = -a: uint
 
 .. data:: var Unarymcast = (-a): uint
 
-.. data:: var tp = a*b+c
+.. data:: var tp = a * b + c
 
-.. data:: var Tp = a*b+c
+.. data:: var Tp = a * b + c
 
-.. data:: var tP = a*(b+c)
+.. data:: var tP = a * (b + c)
 
-.. data:: var pt = a+b*c
+.. data:: var pt = a + b * c
 
-.. data:: var Pt = (a+b)*c
+.. data:: var Pt = (a + b) * c
 
-.. data:: var pT = a+b*c
+.. data:: var pT = a + b * c
 
-.. data:: var td = a*b/c
+.. data:: var td = a * b / c
 
-.. data:: var Td = a*b/c
+.. data:: var Td = a * b / c
 
-.. data:: var tD = a*b/c
+.. data:: var tD = a * b / c
 
-.. data:: var dt = a/b*c
+.. data:: var dt = a / b * c
 
-.. data:: var Dt = a/b*c
+.. data:: var Dt = a / b * c
 
-.. data:: var dT = a/(b*c)
+.. data:: var dT = a / (b * c)
 
-.. data:: var ll = a<<b<<c
+.. data:: var ll = a << b << c
 
-.. data:: var Ll = a<<b<<c
+.. data:: var Ll = a << b << c
 
-.. data:: var lL = a<<(b<<c)
+.. data:: var lL = a << (b << c)
 
-.. data:: var ee = a==b==c
+.. data:: var ee = a == b == c
 
-.. data:: var Ee = a==b==c
+.. data:: var Ee = a == b == c
 
-.. data:: var eE = a==(b==c)
+.. data:: var eE = a == (b == c)
 
 .. data:: var xx = a**b**c
 
@@ -123,71 +123,71 @@ or
 
 .. data:: var Xx = (a**b)**c
 
-.. data:: var xpx = a**b+c**d
+.. data:: var xpx = a**b + c**d
 
-.. data:: var xPx = a**(b+c)**d
+.. data:: var xPx = a**(b + c)**d
 
-.. data:: var xPX = a**(b+c**d)
+.. data:: var xPX = a**(b + c**d)
 
-.. data:: var ooo = a||b||c||d
+.. data:: var ooo = a || b || c || d
 
-.. data:: var oao = a||b&&c||d
+.. data:: var oao = a || b && c || d
 
-.. data:: var Oao = (a||b)&&c||d
+.. data:: var Oao = (a || b) && c || d
 
-.. data:: var OAo = (a||b)&&c||d
+.. data:: var OAo = (a || b) && c || d
 
-.. data:: var OaO = (a||b)&&(c||d)
+.. data:: var OaO = (a || b) && (c || d)
 
-.. data:: var oaO = a||b&&(c||d)
+.. data:: var oaO = a || b && (c || d)
 
-.. data:: var oAO = a||b&&(c||d)
+.. data:: var oAO = a || b && (c || d)
 
-.. data:: var oAo = a||b&&c||d
+.. data:: var oAo = a || b && c || d
 
-.. data:: var unarybo = !a||b
+.. data:: var unarybo = !a || b
 
-.. data:: var unarybO = !(a||b)
+.. data:: var unarybO = !(a || b)
 
-.. data:: var booo = a|b|c|d
+.. data:: var booo = a | b | c | d
 
-.. data:: var boao = a|b&c|d
+.. data:: var boao = a | b & c | d
 
-.. data:: var bOao = (a|b)&c|d
+.. data:: var bOao = (a | b) & c | d
 
-.. data:: var bOAo = (a|b)&c|d
+.. data:: var bOAo = (a | b) & c | d
 
-.. data:: var bOaO = (a|b)&(c|d)
+.. data:: var bOaO = (a | b) & (c | d)
 
-.. data:: var boaO = a|b&(c|d)
+.. data:: var boaO = a | b & (c | d)
 
-.. data:: var boAO = a|b&(c|d)
+.. data:: var boAO = a | b & (c | d)
 
-.. data:: var boAo = a|b&c|d
+.. data:: var boAo = a | b & c | d
 
-.. data:: var boxo = a|b^c|d
+.. data:: var boxo = a | b ^ c | d
 
-.. data:: var bOxo = (a|b)^c|d
+.. data:: var bOxo = (a | b) ^ c | d
 
-.. data:: var bOxO = (a|b)^(c|d)
+.. data:: var bOxO = (a | b) ^ (c | d)
 
-.. data:: var boXo = a|b^c|d
+.. data:: var boXo = a | b ^ c | d
 
-.. data:: var bxxx = a^b^c^d
+.. data:: var bxxx = a ^ b ^ c ^ d
 
-.. data:: var bxax = a^b&c^d
+.. data:: var bxax = a ^ b & c ^ d
 
-.. data:: var bXax = (a^b)&c^d
+.. data:: var bXax = (a ^ b) & c ^ d
 
-.. data:: var bXaX = (a^b)&(c^d)
+.. data:: var bXaX = (a ^ b) & (c ^ d)
 
-.. data:: var bxAx = a^b&c^d
+.. data:: var bxAx = a ^ b & c ^ d
 
 .. function:: proc foo(x)
 
-.. data:: var addfoo = a+foo(b)
+.. data:: var addfoo = a + foo(b)
 
-.. data:: var fooadd = foo(a)+b
+.. data:: var fooadd = foo(a) + b
 
-.. data:: var fooAdd = foo(a+b)
+.. data:: var fooAdd = foo(a + b)
 

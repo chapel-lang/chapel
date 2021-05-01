@@ -911,7 +911,7 @@ AC_DEFUN([GASNET_DISPLAY_VERSION],[
     display_version_info="$display_version_info AC_PACKAGE_VERSION"
   ])
   if test -d "$srcdir/.git" ; then 
-     git_describe=`${GIT=git} --git-dir="$srcdir/.git" describe 2> /dev/null`
+     git_describe=`( cd "$srcdir" && ${GIT=git} describe --long --dirty --always ) 2> /dev/null`
      if test -n "$git_describe"; then
        display_version_info="$display_version_info ($git_describe)"
      fi

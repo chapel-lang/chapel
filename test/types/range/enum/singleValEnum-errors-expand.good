@@ -1,0 +1,1 @@
+singleValEnum-errors.chpl:18: error: can't apply '.expand()' to a range whose 'idxType' only has one value

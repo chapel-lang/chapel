@@ -71,12 +71,12 @@ proc main() {
 //
 // Helper functions to add/compare an 8-tuple and a singleton
 //
-inline proc +(cr, ci) {
+inline operator +(cr, ci) {
   return (cr(0)+ci, cr(1)+ci, cr(2)+ci, cr(3)+ci,
           cr(4)+ci, cr(5)+ci, cr(6)+ci, cr(7)+ci);
 }
 
-inline proc >(x, y) {
+inline operator >(x, y) {
   for param i in 0..<bitsPerElt do
     if x(i) <= y then
       return false;

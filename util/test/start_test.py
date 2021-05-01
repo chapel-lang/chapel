@@ -63,7 +63,7 @@ def main():
     check_environment_with_args()
 
     invocation_dir = os.getcwd()
-    
+
     run_tests(args.tests)
 
     # in case we've changed directories
@@ -300,11 +300,13 @@ def test_directory(test, test_type):
         # run tests in directory
         # don't run if only doing performance graphs
         if not test_type == "graph":
-            # check for .chpl, .test.c, or .ml-test.c files, and for NOTEST
+            # check for .chpl, .test.c(pp), or .ml-test.c(pp) files
+            # and for NOTEST
             are_tests = False
             for f in files:
                 if not test_type == "performance":
-                    if f.endswith((".chpl", ".test.c", ".ml-test.c")) :
+                    if f.endswith((".chpl", ".test.c", ".ml-test.c",
+                                   ".test.cpp", ".ml-test.cpp")) :
                         are_tests = True
                         break
                 else:
@@ -322,12 +324,12 @@ def test_directory(test, test_type):
                     if not args.clean_only:
                         # run all tests in dir
                         error = run_sub_test()
-                        # check for errors - 173 is an internal sub_test 
+                        # check for errors - 173 is an internal sub_test
                         # error that would have already reported.
                         if not error == 0 and not error == 173:
                             logger.write("[Error {1} running sub_test in {0}]"
                                     .format(root, error))
-                                
+
             # let user know no tests were found
             else:
                 logger.write("[No tests in directory {0}]".format(root))
@@ -470,8 +472,11 @@ def run_sub_test(test=False):
 def generate_graphs(test=False):
     if test:
         basedir = os.path.dirname(test)
-        remove_dot = test.replace(".chpl", "").replace(".test.c", "")
+        remove_dot = test.replace(".chpl", "")
+        remove_dot = remove_dot.replace(".ml-test.cpp", "")
         remove_dot = remove_dot.replace(".ml-test.c", "")
+        remove_dot = remove_dot.replace(".test.cpp", "")
+        remove_dot = remove_dot.replace(".test.c", "")
         graph_files = [(remove_dot + ".graph")]
         # exit if it isn't actually a file
         if not os.path.isfile(graph_files[0]):
@@ -525,7 +530,7 @@ def compiler_performance():
 
     cmd = [create_graphs]
     cmd += args.gen_graph_opts.split(" ")
-    cmd += ["-p", comp_perf_dir, "-o", comp_perf_html_dir, "-a", title, "-n", 
+    cmd += ["-p", comp_perf_dir, "-o", comp_perf_html_dir, "-a", title, "-n",
             compperf_test_name]
     cmd += start_date_t.split(" ")
     cmd += ["-g", comp_graph_list, "-t", test_dir]
@@ -558,7 +563,7 @@ def generate_graph_files_graphs():
             perf_test_name]
     cmd += start_date_t.split(" ")
     cmd += [args.graphs_disp_range, "-r", args.graphs_gen_default, "-g",
-        exec_graph_list] 
+        exec_graph_list]
     status = run_and_log(cmd)
 
     if status == 0:
@@ -808,7 +813,7 @@ def set_up_general():
     # valgrind
     if args.valgrind:
         logger.write("[valgrind: ON]")
-        try: 
+        try:
             # get first line of output
             binary = run_command(["which", "valgrind"]).split("\n")[0]
         except:
@@ -848,8 +853,8 @@ def set_up_general():
         if chpl_mem.get('target') != "cstdlib":
             logger.write("[Error: valgrind requires mem=cstdlib - try quickstart]")
             finish()
-        if chpl_regexp.get() == 're2' and not re2_supports_valgrind.get():
-            logger.write("[Error: valgrind requires regexp=none or re2 built with CHPL_RE2_VALGRIND_SUPPORT]")
+        if chpl_re2.get() != 'none' and not re2_supports_valgrind.get():
+            logger.write("[Error: valgrind requires re2=none or re2 built with CHPL_RE2_VALGRIND_SUPPORT]")
             finish()
 
 
@@ -1276,7 +1281,7 @@ def jUnit():
         # if --test-root was thrown, remove it from junit report
         junit_args.append("--remove-prefix={0}".format(args.test_root_dir))
 
-    cmd = [os.path.join(util_dir, "test", 
+    cmd = [os.path.join(util_dir, "test",
             "convert_start_test_log_to_junit_xml.py")]
 
     try:
@@ -1302,10 +1307,10 @@ def parser_setup():
     # main args
     p = parser.add_argument("tests", nargs="*", help="test files or directories")
     if argcomplete:
-        p.completer = argcomplete.completers.FilesCompleter([".chpl", ".test.c", ".ml-test.c"])
+        p.completer = argcomplete.completers.FilesCompleter([".chpl", ".test.c", ".test.cpp", ".ml-test.c", ".ml-test.cpp"])
 
     # executing options
-    parser.add_argument("-execopts", "--execopts", action="append", 
+    parser.add_argument("-execopts", "--execopts", action="append",
             dest="execopts", help="set options for executing tests")
     # lame hack to prevent abbreviations from not getting preprocessed in
     # preprocess_options() (makes things like --execop ambiguous)
@@ -1410,7 +1415,7 @@ def parser_setup():
             dest="graphs_gen_default",
             help=help_all("set default method to reduce multiple trials"))
     parser.add_argument("-startdate", "--startdate", action="store",
-            dest="start_date", metavar="<MM/DD/YY>", 
+            dest="start_date", metavar="<MM/DD/YY>",
             help="set graph start date")
     parser.add_argument("-gengraphopts", "--gengraphopts", "-genGraphOpts",
             "--genGraphOpts", action="store", dest="gen_graph_opts",
@@ -1438,7 +1443,7 @@ def parser_setup():
             action="store_true", dest="stdin_redirect",
             help=help_all("force stdin redirection from /dev/null"))
     # launcher timeout
-    parser.add_argument("-launchertimeout", "--launchertimeout", 
+    parser.add_argument("-launchertimeout", "--launchertimeout",
             action="store", dest="launcher_timeout",
             help=help_all("rely on the launcher to enforce the timeout"))
     # no chpl home warning

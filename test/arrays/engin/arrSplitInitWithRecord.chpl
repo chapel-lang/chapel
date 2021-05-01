@@ -3,7 +3,7 @@ record Point {
       var y: real;
 }
 
-proc =(ref arr: [?d], ref r: Point) {
+operator =(ref arr: [?d], ref r: Point) {
     arr[d.first] = r.x;
       arr[d.first+1] = r.y;
 }

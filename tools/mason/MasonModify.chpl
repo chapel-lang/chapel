@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-use Regexp;
+use Regex;
 use FileSystem;
 use TOML;
 use MasonUtils;

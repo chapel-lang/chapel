@@ -61,51 +61,51 @@ or
 
    .. attribute:: var isNilDefault: nilable C = nil
 
-   .. attribute:: var plusDefault = x+y
+   .. attribute:: var plusDefault = x + y
 
-   .. attribute:: var minusDefault = x-y
+   .. attribute:: var minusDefault = x - y
 
-   .. attribute:: var multDefault = x*y
+   .. attribute:: var multDefault = x * y
 
-   .. attribute:: var divDefault = x/y
+   .. attribute:: var divDefault = x / y
 
-   .. attribute:: var modDefault = x%y
+   .. attribute:: var modDefault = x % y
 
-   .. attribute:: var orDefault = x||y
+   .. attribute:: var orDefault = x || y
 
-   .. attribute:: var binOrDefault = x|y
+   .. attribute:: var binOrDefault = x | y
 
-   .. attribute:: var andDefault = x&&y
+   .. attribute:: var andDefault = x && y
 
-   .. attribute:: var binAndDefault = x&y
+   .. attribute:: var binAndDefault = x & y
 
-   .. attribute:: var binXorDefault = x^y
+   .. attribute:: var binXorDefault = x ^ y
 
-   .. attribute:: var threeOrDefault = x||y||z
+   .. attribute:: var threeOrDefault = x || y || z
 
-   .. attribute:: var threeBinOrDefault = x|y|z
+   .. attribute:: var threeBinOrDefault = x | y | z
 
-   .. attribute:: var threeAndDefault = x&&y&&z
+   .. attribute:: var threeAndDefault = x && y && z
 
-   .. attribute:: var threeBinAndDefault = x&y&z
+   .. attribute:: var threeBinAndDefault = x & y & z
 
    .. attribute:: var powDefault = x**y
 
-   .. attribute:: var lshiftDefault = x<<y
+   .. attribute:: var lshiftDefault = x << y
 
-   .. attribute:: var rshiftDefault = x>>y
+   .. attribute:: var rshiftDefault = x >> y
 
-   .. attribute:: var eqDefault = x==y
+   .. attribute:: var eqDefault = x == y
 
-   .. attribute:: var neqDefault = x!=y
+   .. attribute:: var neqDefault = x != y
 
-   .. attribute:: var lessDefault = x<y
+   .. attribute:: var lessDefault = x < y
 
-   .. attribute:: var gtDefault = x>y
+   .. attribute:: var gtDefault = x > y
 
-   .. attribute:: var lessEqDefault = x<=y
+   .. attribute:: var lessEqDefault = x <= y
 
-   .. attribute:: var gtEqDefault = x>=y
+   .. attribute:: var gtEqDefault = x >= y
 
    .. attribute:: var minDefault = min(int)
 

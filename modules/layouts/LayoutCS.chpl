@@ -24,6 +24,9 @@ pragma "no doc"
 /* Debug flag */
 config param debugCS = false;
 
+pragma "no doc"
+config param csLayoutSupportsAutoLocalAccess = true;
+
 /* Default sparse dimension index sorting mode for LayoutCS.
 Sparse dimension indices will default to sorted order if true, inserted order if false */
 config param LayoutCSDefaultToSorted = true;
@@ -638,6 +641,10 @@ class CSDom: BaseSparseDomImpl {
       }
     }
     f <~> "}\n";
+  }
+
+  override proc dsiSupportsAutoLocalAccess() param {
+    return csLayoutSupportsAutoLocalAccess;
   }
 
 } // CSDom

@@ -15,8 +15,8 @@
   #else
     #include <infiniband/verbs.h>
   #endif
-  #ifdef GASNETC_IBV_MAX_HCAS
-    #define GASNETC_IB_MAX_HCAS GASNETC_IBV_MAX_HCAS
+  #ifdef GASNETC_IBV_MAX_HCAS_CONFIGURE
+    #define GASNETC_IB_MAX_HCAS GASNETC_IBV_MAX_HCAS_CONFIGURE
   #else /* no multi-rail support */
     #define GASNETC_IB_MAX_HCAS 1
   #endif
