@@ -25,7 +25,9 @@
 #include "chpl/Queries/ContextDetail.h"
 #include "chpl/Util/memory.h"
 
+#include <memory>
 #include <unordered_map>
+#include <unordered_set>
 
 namespace chpl {
 
@@ -84,7 +86,7 @@ myKey2:
     const MyResultType& myQueryFunction(Context* context,
                                         MyArgType MyArg1,
                                         MyOtherArgType MyArg2) {
-      QUERY_BEGIN(context, MyResultType, myKey1, myKey2)
+      QUERY_BEGIN(myQueryFunction, context, myKey1, myKey2)
       if (QUERY_USE_SAVED()) {
         return QUERY_GET_SAVED();
       }
@@ -178,13 +180,15 @@ element pointers, but not owning them. The ``listSymbols`` query needs to use a
 class Context {
  private:
   // map that supports uniqueCString / UniqueString
+  // TODO this could be an unordered_set
   using UniqueStringsTableType = std::unordered_map<const char*, char*, chpl::detail::UniqueStrHash, chpl::detail::UniqueStrEqual>;
   UniqueStringsTableType uniqueStringsTable;
 
-  // map from a query name to appropriate QueryMap object.
-  // maps to an 'owned' heap-allocated thing to manage having subclasses
+  // Map from a query function pointer to appropriate QueryMap object.
+  // Maps to an 'owned' heap-allocated thing to manage having subclasses
   // without slicing.
-  std::unordered_map<UniqueString, owned<chpl::querydetail::QueryMapBase>> queryDB;
+  // It assumes that the query name is already unique.
+  std::unordered_map<const void*, owned<querydetail::QueryMapBase>> queryDB;
 
   // Since IDs include module names but not file paths, use this
   // map to go from module name to file path.
@@ -193,43 +197,76 @@ class Context {
   std::unordered_map<UniqueString, UniqueString> modNameToFilepath;
 
   struct QueryDepsEntry {
-    UniqueString queryName;
-    bool inputDependency;
-    chpl::querydetail::QueryDependencyVec dependencies;
+    const void* queryFunction;
+    querydetail::QueryDependencyVec dependencies;
     std::vector<ErrorMessage> errors;
-    QueryDepsEntry(UniqueString queryName)
-      : queryName(queryName), inputDependency(false),
-        dependencies(), errors() {
+    QueryDepsEntry(const void* queryFunction)
+      : queryFunction(queryFunction), dependencies(), errors() {
     }
   };
 
   // this is used to compute the dependencies
   std::vector<QueryDepsEntry> queryDeps;
 
-  chpl::querydetail::RevisionNumber currentRevisionNumber;
-  chpl::querydetail::RevisionNumber lastPrepareToGCRevisionNumber;
-  chpl::querydetail::RevisionNumber gcCounter;
+  querydetail::RevisionNumber currentRevisionNumber;
+
+  // The following are only used for UniqueString
+  querydetail::RevisionNumber lastPrepareToGCRevisionNumber;
+  querydetail::RevisionNumber gcCounter;
 
   Context();
   const char* getOrCreateUniqueString(const char* s);
-  bool queryCanUseSavedResult(chpl::querydetail::QueryMapResultBase* resultEntry);
-  void saveDependenciesAndErrorsInParent(chpl::querydetail::QueryMapResultBase* resultEntry);
-  void endQueryHandleDependency(chpl::querydetail::QueryMapResultBase* result);
 
-  template<typename ResultType, typename... ArgTs>
-  chpl::querydetail::QueryMapResult<ResultType>*
-  updateResultForQuery(
+  void saveDependenciesInParent(const querydetail::QueryMapResultBase* resultEntry);
+  void endQueryHandleDependency(const querydetail::QueryMapResultBase* result);
+
+  template<typename ResultType,
+           typename... ArgTs>
+  querydetail::QueryMap<ResultType, ArgTs...>*
+  getMap(const ResultType& (*queryFunction)(Context* context, ArgTs...),
+         const std::tuple<ArgTs...>& tupleOfArgs,
+         const char* traceQueryName,
+         bool isInputQuery);
+
+  template<typename ResultType,
+           typename... ArgTs>
+  const querydetail::QueryMapResult<ResultType, ArgTs...>*
+  getResult(querydetail::QueryMap<ResultType, ArgTs...>* queryMap,
+            const std::tuple<ArgTs...>& tupleOfArgs);
+
+  template<typename ResultType,
+           typename... ArgTs>
+  const querydetail::QueryMapResult<ResultType, ArgTs...>*
+  updateResultForQueryMapR(
+      querydetail::QueryMap<ResultType, ArgTs...>* queryMap,
+      const querydetail::QueryMapResult<ResultType, ArgTs...>* r,
       const std::tuple<ArgTs...>& tupleOfArgs,
-      ResultType result,
-      bool& changedOut,
-      chpl::querydetail::QueryMap<ResultType,ArgTs...>* queryMap);
+      ResultType result);
 
-  template<typename ResultType, typename... ArgTs>
-  chpl::querydetail::QueryMapResult<ResultType>*
-  updateResultForQuery(const std::tuple<ArgTs...>& tupleOfArgs,
-                       ResultType result,
-                       bool& changedOut,
-                       UniqueString queryName);
+  template<typename ResultType,
+           typename... ArgTs>
+  const querydetail::QueryMapResult<ResultType, ArgTs...>*
+  updateResultForQueryMap(
+      querydetail::QueryMap<ResultType, ArgTs...>* queryMap,
+      const std::tuple<ArgTs...>& tupleOfArgs,
+      ResultType result);
+
+  template<typename ResultType,
+           typename... ArgTs>
+  const querydetail::QueryMapResult<ResultType, ArgTs...>*
+  updateResultForQuery(
+       const ResultType& (*queryFunction)(Context* context, ArgTs...),
+       const std::tuple<ArgTs...>& tupleOfArgs,
+       ResultType result,
+       const char* traceQueryName,
+       bool isInputQuery);
+
+  // returns 'true' if the result can be reused
+  bool checkAndRecomputeDependencies(const querydetail::QueryMapResultBase* resultEntry);
+
+  bool queryCanUseSavedResultAndPushIfNot(
+            const void* queryFunction,
+            const querydetail::QueryMapResultBase* resultEntry);
 
   // Future Work: support marking used strings and garbage collecting the rest
   // Could store an atomic uint_8 just after the string for the mark.
@@ -293,8 +330,8 @@ class Context {
     be used to provide the input at that revision.
 
     If the prepareToGC argument is true, when processing queries
-    in that revision, will prepare to garbage collect (by marking
-    elements appropriately).
+    in that revision, will prepare to garbage collect UniqueStrings
+    (by marking elements appropriately).
    */
   void advanceToNextRevision(bool prepareToGC);
 
@@ -308,57 +345,78 @@ class Context {
   // setters for named queries.
 
   /**
-    Sets the file path for the given toplevel module name. It does not bump
-    the current revision counter so is suitable for calling from
-    a parse query.
-    Returns 'true' if this function caused a new result to be saved
-    in the context.
+    Sets the file path for the given toplevel module name. This
+    is suitable to call from a parse query.
    */
-  bool setFilePathForModuleName(UniqueString modName, UniqueString path);
-
-  /**
-    setFileText will set the text for a particular file path.
-    Returns 'true' if this function caused a new result to be saved
-    in the context. In that event, the revision updated for the
-    file text result will be updated.
-   */
-  bool setFileText(UniqueString path, std::string data);
+  void setFilePathForModuleName(UniqueString modName, UniqueString path);
 
   // the following functions are called by the macros defined in QueryImpl.h
   // and should not be called directly
 
   /// \cond DO_NOT_DOCUMENT
   template<typename... ArgTs>
-  void queryTraceBegin(UniqueString queryName, const char* func,
+  void queryBeginTrace(const char* traceQueryName,
                        const std::tuple<ArgTs...>& tupleOfArg);
 
-  template<typename... ArgTs>
-  void queryTraceEnd(UniqueString queryName, const char* func,
-                     const std::tuple<ArgTs...>& tupleOfArg,
-                     bool changed);
+  template<typename ResultType,
+           typename... ArgTs>
+  querydetail::QueryMap<ResultType, ArgTs...>*
+  queryBeginGetMap(
+       const ResultType& (*queryFunction)(Context* context, ArgTs...),
+       const std::tuple<ArgTs...>& tupleOfArgs,
+       const char* traceQueryName,
+       bool isInputQuery);
 
+  template<typename ResultType,
+           typename... ArgTs>
+  const querydetail::QueryMapResult<ResultType, ArgTs...>*
+  queryBeginGetResult(querydetail::QueryMap<ResultType, ArgTs...>* queryMap,
+                      const std::tuple<ArgTs...>& tupleOfArgs);
+
+
+  template<typename ResultType,
+           typename... ArgTs>
+  bool queryUseSaved(
+         const ResultType& (*queryFunction)(Context* context, ArgTs...),
+         const querydetail::QueryMapResult<ResultType, ArgTs...>* r,
+         const char* traceQueryName);
 
   template<typename ResultType, typename... ArgTs>
-  chpl::querydetail::QueryMap<ResultType,ArgTs...>*
-    queryGetMap(UniqueString queryName, const std::tuple<ArgTs...>& tupleOfArgs);
-
-  // queryFunc is only used for tracing
-  bool queryCanUseSavedResultAndPushIfNot(UniqueString queryName,
-      const char* queryFunc,
-      chpl::querydetail::QueryMapResultBase* resultEntry);
-
-  template<typename ResultType>
-  const ResultType& queryGetSavedResult(chpl::querydetail::QueryMapResult<ResultType>* resultEntry);
+  const ResultType&
+  queryGetSaved(const querydetail::QueryMapResult<ResultType, ArgTs...>* r);
 
   void queryNoteError(ErrorMessage error);
   void queryNoteError(Location loc, std::string error);
   void queryNoteInputDependency();
 
-  template<typename ResultType, typename... ArgTs>
-  ResultType& queryEnd(UniqueString queryName, const char* func,
-                      ResultType result,
-                      const std::tuple<ArgTs...>& tupleOfArgs,
-                      chpl::querydetail::QueryMap<ResultType,ArgTs...>* queryMap);
+  template<typename ResultType,
+           typename... ArgTs>
+  const ResultType& queryEnd(
+      const ResultType& (*queryFunction)(Context* context, ArgTs...),
+      querydetail::QueryMap<ResultType, ArgTs...>* queryMap,
+      const querydetail::QueryMapResult<ResultType, ArgTs...>* r,
+      const std::tuple<ArgTs...>& tupleOfArgs,
+      ResultType result,
+      const char* traceQueryName);
+
+  /*
+  template<typename ResultType,
+           typename... ArgTs>
+  void queryRecomputedUpdateResult(
+      querydetail::QueryMap<ResultType, ArgTs...>* queryMap,
+      const std::tuple<ArgTs...>& tupleOfArgs,
+      ResultType result);
+   */
+  template<typename ResultType,
+           typename... ArgTs>
+  void querySetterUpdateResult(
+      const ResultType& (*queryFunction)(Context* context, ArgTs...),
+      const std::tuple<ArgTs...>& tupleOfArgs,
+      ResultType result,
+      const char* traceQueryName,
+      bool isInputQuery);
+
+
   /// \endcond
 };
 

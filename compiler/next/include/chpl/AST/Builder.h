@@ -89,6 +89,11 @@ class Builder final {
     std::vector<ErrorMessage> errors;
     std::vector<std::pair<ID, Location>> locations;
 
+    Result();
+    Result(Result&&) = default; // move-constructable
+    Result(const Result&) = delete; // not copy-constructable
+    Result& operator=(const Result&) = delete; // not assignable
+
     static bool update(Result& keep, Result& addin);
   };
 
@@ -110,10 +115,10 @@ class Builder final {
 
 } // end namespace uast
 
-template<> struct update<owned<chpl::uast::Builder::Result>> {
-  bool operator()(owned<chpl::uast::Builder::Result>& keep,
-                  owned<chpl::uast::Builder::Result>& addin) const {
-    return chpl::uast::Builder::Result::update(*keep, *addin);
+template<> struct update<chpl::uast::Builder::Result> {
+  bool operator()(chpl::uast::Builder::Result& keep,
+                  chpl::uast::Builder::Result& addin) const {
+    return chpl::uast::Builder::Result::update(keep, addin);
   }
 };
 

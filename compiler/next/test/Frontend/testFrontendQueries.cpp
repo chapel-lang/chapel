@@ -30,6 +30,7 @@
 
 using namespace chpl;
 using namespace uast;
+using namespace frontend;
 
 static void test0() {
   printf("test0\n");
@@ -38,9 +39,9 @@ static void test0() {
 
   auto path = UniqueString::build(ctx, "input.chpl");
   std::string contents = "/* this is a test */";
-  ctx->setFileText(path, contents);
+  setFileText(ctx, path, contents);
  
-  std::string gotContents = frontend::fileText(ctx, path);
+  std::string gotContents = fileText(ctx, path);
   assert(gotContents == contents);
 }
 
@@ -51,13 +52,13 @@ static void test1() {
 
   auto path = UniqueString::build(ctx, "input.chpl");
   std::string contents = "/* this is a test */";
-  ctx->setFileText(path, contents);
+  setFileText(ctx, path, contents);
  
-  frontend::parse(ctx, path);
+  parse(ctx, path);
 }
 
 static const Module* parseOneModule(Context* ctx, UniqueString filepath) {
-  const frontend::ModuleDeclVec& v = frontend::parse(ctx, filepath);
+  const ModuleDeclVec& v = parse(ctx, filepath);
   assert(v.size() == 1);
   return v[0]->module();
 }
@@ -71,11 +72,11 @@ static void test2() {
   auto modOnePath = UniqueString::build(ctx, "modOne.chpl");
   std::string modOneContents = "/* this is a test */\n"
                                "a;\n";
-  ctx->setFileText(modOnePath, modOneContents);
+  setFileText(ctx, modOnePath, modOneContents);
   auto modTwoPath = UniqueString::build(ctx, "modTwo.chpl");
   std::string modTwoContents = "/* this is a another test */"
                                "a;\n";
-  ctx->setFileText(modTwoPath, modTwoContents);
+  setFileText(ctx, modTwoPath, modTwoContents);
  
   const Module* moduleOne = nullptr;
   const Module* moduleTwo = nullptr;
@@ -98,8 +99,8 @@ static void test2() {
                    "\n"
                    "\n"
                    "a;\n";
-  ctx->setFileText(modOnePath, modOneContents);
-  ctx->setFileText(modTwoPath, modTwoContents);
+  setFileText(ctx, modOnePath, modOneContents);
+  setFileText(ctx, modTwoPath, modTwoContents);
 
   printf("test2 parsing modOne.chpl\n");
   moduleOne = parseOneModule(ctx, modOnePath);
@@ -136,7 +137,7 @@ static void test3() {
                    "a;\n"
                    "b;\n";
   ctx->advanceToNextRevision(true);
-  ctx->setFileText(modulePath, moduleContents);
+  setFileText(ctx, modulePath, moduleContents);
   module = parseOneModule(ctx, modulePath);
   ctx->collectGarbage();
 
@@ -159,7 +160,7 @@ static void test3() {
                    "{ y; }\n"
                    "b;\n";
   ctx->advanceToNextRevision(true);
-  ctx->setFileText(modulePath, moduleContents);
+  setFileText(ctx, modulePath, moduleContents);
   module = parseOneModule(ctx, modulePath);
   ctx->collectGarbage();
 
@@ -187,7 +188,7 @@ static void test3() {
                    "{ yy; }\n"
                    "b;\n";
   ctx->advanceToNextRevision(true);
-  ctx->setFileText(modulePath, moduleContents);
+  setFileText(ctx, modulePath, moduleContents);
   module = parseOneModule(ctx, modulePath);
   ctx->collectGarbage();
 
@@ -213,7 +214,7 @@ static void test3() {
                    "a;\n"
                    "b;\n";
   ctx->advanceToNextRevision(true);
-  ctx->setFileText(modulePath, moduleContents);
+  setFileText(ctx, modulePath, moduleContents);
   module = parseOneModule(ctx, modulePath);
   ctx->collectGarbage();
 
@@ -237,7 +238,7 @@ static void test3() {
                    "aa;\n"
                    "b;\n";
   ctx->advanceToNextRevision(true);
-  ctx->setFileText(modulePath, moduleContents);
+  setFileText(ctx, modulePath, moduleContents);
   module = parseOneModule(ctx, modulePath);
   ctx->collectGarbage();
 
@@ -273,7 +274,7 @@ static void test4() {
                    "var a;\n"
                    "var b;\n";
   ctx->advanceToNextRevision(true);
-  ctx->setFileText(modulePath, moduleContents);
+  setFileText(ctx, modulePath, moduleContents);
   module = parseOneModule(ctx, modulePath);
   ctx->collectGarbage();
 
@@ -296,7 +297,7 @@ static void test4() {
                    "{ var y; }\n"
                    "var b;\n";
   ctx->advanceToNextRevision(true);
-  ctx->setFileText(modulePath, moduleContents);
+  setFileText(ctx, modulePath, moduleContents);
   module = parseOneModule(ctx, modulePath);
   ctx->collectGarbage();
 
@@ -324,7 +325,7 @@ static void test4() {
                    "{ var yy; }\n"
                    "var b;\n";
   ctx->advanceToNextRevision(true);
-  ctx->setFileText(modulePath, moduleContents);
+  setFileText(ctx, modulePath, moduleContents);
   module = parseOneModule(ctx, modulePath);
   ctx->collectGarbage();
 
@@ -350,7 +351,7 @@ static void test4() {
                    "var a;\n"
                    "var b;\n";
   ctx->advanceToNextRevision(true);
-  ctx->setFileText(modulePath, moduleContents);
+  setFileText(ctx, modulePath, moduleContents);
   module = parseOneModule(ctx, modulePath);
   ctx->collectGarbage();
 
@@ -374,7 +375,7 @@ static void test4() {
                    "var aa;\n"
                    "var b;\n";
   ctx->advanceToNextRevision(true);
-  ctx->setFileText(modulePath, moduleContents);
+  setFileText(ctx, modulePath, moduleContents);
   module = parseOneModule(ctx, modulePath);
   ctx->collectGarbage();
 

@@ -59,10 +59,10 @@ template<> struct update<frontend::ResolutionResult> {
     }
   }
 };
-template<> struct update<owned<frontend::ResolutionResultByPostorderID>> {
-  bool operator()(owned<frontend::ResolutionResultByPostorderID>& keep,
-                  owned<frontend::ResolutionResultByPostorderID>& addin) const {
-    return defaultUpdateVec(*keep, *addin);
+template<> struct update<frontend::ResolutionResultByPostorderID> {
+  bool operator()(frontend::ResolutionResultByPostorderID& keep,
+                  frontend::ResolutionResultByPostorderID& addin) const {
+    return defaultUpdateVec(keep, addin);
   }
 };
 template<> struct update<frontend::ResolvedModule> {
@@ -98,12 +98,7 @@ namespace frontend {
 using namespace uast;
 
 const std::string& fileText(Context* context, UniqueString path) {
-  QUERY_BEGIN_NAMED(context, std::string, "fileText", path);
-  if (QUERY_USE_SAVED()) {
-    return QUERY_GET_SAVED();
-  }
-
-  QUERY_DEPENDS_INPUT();
+  QUERY_BEGIN_INPUT(fileText, context, path);
 
   ErrorMessage error;
   std::string result;
@@ -115,22 +110,27 @@ const std::string& fileText(Context* context, UniqueString path) {
   return QUERY_END(result);
 }
 
-const uast::Builder::Result* parseFile(Context* context, UniqueString path) {
-  QUERY_BEGIN(context, owned<uast::Builder::Result>, path);
-  if (QUERY_USE_SAVED()) {
-    return QUERY_GET_SAVED().get();
-  }
+void setFileText(Context* context, UniqueString path, std::string result) {
+  context->querySetterUpdateResult(fileText,
+                                   std::make_tuple(path),
+                                   std::move(result),
+                                   "fileText",
+                                   true);
+}
+
+const uast::Builder::Result& parseFile(Context* context, UniqueString path) {
+  QUERY_BEGIN(parseFile, context, path);
 
   // Run the fileText query to get the file contents
   const std::string& text = fileText(context, path);
 
-  uast::Builder::Result* result = new uast::Builder::Result();
+  uast::Builder::Result result;
   auto parser = Parser::build(context);
   const char* pathc = path.c_str();
   const char* textc = text.c_str();
   uast::Builder::Result tmpResult = parser->parseString(pathc, textc);
-  result->topLevelExps.swap(tmpResult.topLevelExps);
-  result->locations.swap(tmpResult.locations);
+  result.topLevelExps.swap(tmpResult.topLevelExps);
+  result.locations.swap(tmpResult.locations);
   for (ErrorMessage& e : tmpResult.errors) {
     ErrorMessage tmp;
     tmp.swap(e);
@@ -138,7 +138,7 @@ const uast::Builder::Result* parseFile(Context* context, UniqueString path) {
   }
 
   // Update the filePathForModuleName query
-  for (auto & topLevelExp : result->topLevelExps) {
+  for (auto & topLevelExp : result.topLevelExps) {
     if (ModuleDecl* moduleDecl = topLevelExp->toModuleDecl()) {
       UniqueString moduleName = moduleDecl->name();
       context->setFilePathForModuleName(moduleName, path);
@@ -147,20 +147,17 @@ const uast::Builder::Result* parseFile(Context* context, UniqueString path) {
     }
   }
 
-  return QUERY_END(toOwned(result)).get();
+  return QUERY_END(result);
 }
 
 const LocationsMap& fileLocations(Context* context, UniqueString path) {
-  QUERY_BEGIN(context, LocationsMap, path);
-  if (QUERY_USE_SAVED()) {
-    return QUERY_GET_SAVED();
-  }
+  QUERY_BEGIN(fileLocations, context, path);
 
   // Get the result of parsing
-  const uast::Builder::Result* p = parseFile(context, path);
+  const uast::Builder::Result& p = parseFile(context, path);
   // Create a map of ID to Location
   std::unordered_map<ID, Location> result;
-  for (auto pair : p->locations) {
+  for (auto pair : p.locations) {
     ID id = pair.first;
     Location loc = pair.second;
     result.insert({id, loc});
@@ -169,11 +166,8 @@ const LocationsMap& fileLocations(Context* context, UniqueString path) {
   return QUERY_END(result);
 }
 
-Location locate(Context* context, ID id) {
-  QUERY_BEGIN(context, Location, id);
-  if (QUERY_USE_SAVED()) {
-    return QUERY_GET_SAVED();
-  }
+const Location& locate(Context* context, ID id) {
+  QUERY_BEGIN(locate, context, id);
 
   // Ask the context for the filename from the ID
   UniqueString path = context->filePathForID(id);
@@ -189,16 +183,13 @@ Location locate(Context* context, ID id) {
 }
 
 const ModuleDeclVec& parse(Context* context, UniqueString path) {
-  QUERY_BEGIN(context, ModuleDeclVec, path);
-  if (QUERY_USE_SAVED()) {
-    return QUERY_GET_SAVED();
-  }
+  QUERY_BEGIN(parse, context, path);
 
   // Get the result of parsing
-  const uast::Builder::Result* p = parseFile(context, path);
+  const uast::Builder::Result& p = parseFile(context, path);
   // Compute a vector of ModuleDecls
   ModuleDeclVec result;
-  for (auto & topLevelExp : p->topLevelExps) {
+  for (auto & topLevelExp : p.topLevelExps) {
     if (const uast::ModuleDecl* modDecl = topLevelExp->toModuleDecl()) {
       result.push_back(modDecl);
     }
@@ -222,10 +213,7 @@ static std::vector<UniqueString> getTopLevelNames(const uast::Module* module) {
 
 const DefinedTopLevelNamesVec& moduleLevelDeclNames(Context* context,
                                                     UniqueString path) {
-  QUERY_BEGIN(context, DefinedTopLevelNamesVec, path);
-  if (QUERY_USE_SAVED()) {
-    return QUERY_GET_SAVED();
-  }
+  QUERY_BEGIN(moduleLevelDeclNames, context, path);
 
   DefinedTopLevelNamesVec result;
 
@@ -344,26 +332,19 @@ static void resolveAST(Context* context,
   }
 }
 
-const ResolutionResultByPostorderID*
+const ResolutionResultByPostorderID&
 resolveModule(Context* context, const Module* mod) {
-  QUERY_BEGIN(context, owned<ResolutionResultByPostorderID>, mod);
-  if (QUERY_USE_SAVED()) {
-    return QUERY_GET_SAVED().get();
-  }
+  QUERY_BEGIN(resolveModule, context, mod);
 
-  ResolutionResultByPostorderID* result = new ResolutionResultByPostorderID();
-
+  ResolutionResultByPostorderID result;
   std::set<UniqueString> undefined;
-  resolveAST(context, mod, nullptr, *result, undefined);
+  resolveAST(context, mod, nullptr, result, undefined);
 
-  return QUERY_END(toOwned(result)).get();
+  return QUERY_END(result);
 }
 
 const ResolvedModuleVec& resolveFile(Context* context, UniqueString path) {
-  QUERY_BEGIN(context, ResolvedModuleVec, path);
-  if (QUERY_USE_SAVED()) {
-    return QUERY_GET_SAVED();
-  }
+  QUERY_BEGIN(resolveFile, context, path);
 
   ResolvedModuleVec result;
 
@@ -371,8 +352,9 @@ const ResolvedModuleVec& resolveFile(Context* context, UniqueString path) {
   const ModuleDeclVec& p = parse(context, path);
   for (const uast::ModuleDecl* modDecl : p) {
     const uast::Module* module = modDecl->module();
-    auto resolution = resolveModule(context, module);
-    result.push_back(ResolvedModule(module, resolution));
+    const ResolutionResultByPostorderID& resolution =
+      resolveModule(context, module);
+    result.push_back(ResolvedModule(module, &resolution));
   }
 
   return QUERY_END(result);

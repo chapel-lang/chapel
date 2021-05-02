@@ -122,14 +122,19 @@ UniqueString Context::filePathForID(ID id) {
   return this->filePathForModuleName(modName);
 }
 
-UniqueString Context::filePathForModuleName(UniqueString modName) {
-  QUERY_BEGIN_NAMED(this, UniqueString, "filePathForModuleName", modName);
-  if (QUERY_USE_SAVED()) {
-    return QUERY_GET_SAVED();
-  }
+static
+const UniqueString& filePathForModuleNameQuery(Context* context,
+                                               UniqueString modName) {
+  QUERY_BEGIN(filePathForModuleNameQuery, context, modName);
+
   assert(false && "This query should always use a saved result");
-  auto result = UniqueString::build(this, "<unknown file path>");
+  auto result = UniqueString::build(context, "<unknown file path>");
+
   return QUERY_END(result);
+}
+
+UniqueString Context::filePathForModuleName(UniqueString modName) {
+  return filePathForModuleNameQuery(this, modName);
 }
 
 void Context::advanceToNextRevision(bool prepareToGC) {
@@ -144,147 +149,149 @@ void Context::advanceToNextRevision(bool prepareToGC) {
 }
 
 void Context::collectGarbage() {
-  // if there are no parent queries, we can clear out the saved oldResults
-  if (queryDeps.size() == 0 &&
-      this->lastPrepareToGCRevisionNumber == this->currentRevisionNumber) {
-    // warning: these loops proceeds in a nondeterministic order
+  // if there are no parent queries, collect some garbage
+  if (queryDeps.size() == 0) {
+    // clear out the saved old results
+    // warning: this loop proceeds in a nondeterministic order
     for (auto& dbEntry: queryDB) {
       QueryMapBase* queryMapBase = dbEntry.second.get();
       queryMapBase->clearOldResults(this->currentRevisionNumber);
     }
-    // Performance: Would it be better to modify the table in-place
-    // rather than creating a new table as is done here?
-    char gcMark = this->gcCounter & 0xff;
-    UniqueStringsTableType newTable;
-    std::vector<char*> toFree;
-    for (auto& e: uniqueStringsTable) {
-      const char* key = e.first;
-      char* buf = e.second;
-      if (buf[0] == gcMark) {
-        newTable.insert(std::make_pair(key, buf));
-      } else {
-        toFree.push_back(buf);
+
+    if (this->lastPrepareToGCRevisionNumber == this->currentRevisionNumber) {
+      // remove UniqueStrings that have not been marked
+
+      // Performance: Would it be better to modify the table in-place
+      // rather than creating a new table as is done here?
+      char gcMark = this->gcCounter & 0xff;
+      UniqueStringsTableType newTable;
+      std::vector<char*> toFree;
+      // warning: this loop proceeds in a nondeterministic order
+      for (auto& e: uniqueStringsTable) {
+        const char* key = e.first;
+        char* buf = e.second;
+        if (buf[0] == gcMark) {
+          newTable.insert(std::make_pair(key, buf));
+        } else {
+          toFree.push_back(buf);
+        }
       }
+      for (char* buf: toFree) {
+        free(buf);
+      }
+      uniqueStringsTable.swap(newTable);
     }
-    for (char* buf: toFree) {
-      free(buf);
-    }
-    uniqueStringsTable.swap(newTable);
   }
 }
 
-bool Context::setFilePathForModuleName(UniqueString modName, UniqueString path) {
-  UniqueString queryName = UniqueString::build(this, "filePathForModuleName");
+void Context::setFilePathForModuleName(UniqueString modName, UniqueString path) {
   auto tupleOfArgs = std::make_tuple(modName);
-  bool changed = false;
-  auto queryMapResult = updateResultForQuery(tupleOfArgs, path,
-                                             changed, queryName);
+  auto queryMapResult = updateResultForQuery(filePathForModuleNameQuery,
+                                             tupleOfArgs, path,
+                                             "filePathForModuleNameQuery",
+                                             false);
   printf("SETTING FILE PATH FOR MODULE %s -> %s\n",
          modName.c_str(), path.c_str());
-
-  return changed;
 }
 
-bool Context::setFileText(UniqueString path, std::string data) {
-  UniqueString queryName = UniqueString::build(this, "fileText");
-  auto tupleOfArgs = std::make_tuple(path);
-  bool changed = false;
-  auto queryMapResult = updateResultForQuery(tupleOfArgs, std::move(data),
-                                             changed, queryName);
-  return changed;
-}
+bool Context::checkAndRecomputeDependencies(const QueryMapResultBase* resultEntry) {
 
-bool Context::queryCanUseSavedResult(QueryMapResultBase* resultEntry) {
-  // If there was no result, we can't reuse it
-  if (resultEntry == nullptr) {
-    return false;
-  }
-
-  // If we already checked this query in this revision,
-  // we can use this result
-  if (resultEntry->lastComputed == this->currentRevisionNumber ||
-      resultEntry->lastCheckedAndReused == this->currentRevisionNumber) {
+  if (this->currentRevisionNumber == resultEntry->lastChecked) {
+    // No need to check the dependencies again.
+    // We already know that we can reuse the result.
     return true;
   }
 
   // Otherwise, check the dependencies. Have any of them
   // changed since the last revision in which we computed this?
+  bool dependencyMet = true;
+  for (const QueryMapResultBase* dependency : resultEntry->dependencies) {
+    if (this->currentRevisionNumber == dependency->lastChecked) {
+      // No need to check the dependency
+    } else if (dependency->parentQueryMap->isInputQuery) {
+      // For an input query, always try to compute it again,
+      // ignoring the dependencies.
+      // (e.g. if it is reading a file, we need to check that the file
+      //  has not changed.)
+      resultEntry->recompute(this);
+      assert(dependency->lastChecked == this->currentRevisionNumber);
+    } else {
+      // check the dependencies, transitively.
+      bool canReuse = checkAndRecomputeDependencies(dependency);
+      dependencyMet = dependencyMet && canReuse;
+    }
 
-  if (resultEntry->inputDependency) {
-    // Run it again because it needs to check the input didn't change
-    return false;
-  } else if (this->currentRevisionNumber==this->lastPrepareToGCRevisionNumber) {
-    // Run it again if we are GC'ing since we need to traverse everything
-    return false;
-  } else {
-    for (QueryMapResultBase* dependency : resultEntry->dependencies) {
-      if (dependency->lastChanged > resultEntry->lastComputed) {
-        return false;
-      }
-      // check the dependencies, transitively
-      if (!queryCanUseSavedResult(dependency)) {
-        return false;
-      }
+    if (dependency->lastChanged > resultEntry->lastChanged) {
+      dependencyMet = false;
+    }
+
+    if (dependencyMet == false) {
+      break;
     }
   }
-
-  // Otherwise, all of the inputs have not changed
-  // since this result was last computed.
-  resultEntry->lastCheckedAndReused = this->currentRevisionNumber;
-  return true;
-}
-
-bool Context::queryCanUseSavedResultAndPushIfNot(UniqueString queryName, const char* queryFunc, QueryMapResultBase* resultEntry) {
-  bool ret = this->queryCanUseSavedResult(resultEntry);
-  if (ret == false) {
-    printf("QUERY COMPUTING %s (...)\n", queryFunc);
-    // since the result cannot be used, the query will be evaluated
-    // so push something to queryDeps
-    queryDeps.push_back(QueryDepsEntry(queryName));
-  } else {
-    printf("QUERY END       %s (...) REUSING BASED ON DEPS\n", queryFunc);
+  if (dependencyMet) {
+    if (this->currentRevisionNumber==this->lastPrepareToGCRevisionNumber) {
+      // mark unique strings in the reused result
+      /* TODO TODO
+      chpl::markUniqueStrings<ResultType> marker;
+      marker(this, resultEntry->result);
+       */
+    }
+    resultEntry->lastChecked = this->currentRevisionNumber;
   }
-  return ret;
+
+  return dependencyMet;
 }
 
-void Context::saveDependenciesAndErrorsInParent(QueryMapResultBase* resultEntry) {
+bool Context::queryCanUseSavedResultAndPushIfNot(
+                   const void* queryFunction,
+                   const QueryMapResultBase* resultEntry) {
+
+  bool useSaved = false;
+
+  if (resultEntry == nullptr) {
+    // If there was no result, we can't reuse it
+    useSaved = false;
+  } else {
+    useSaved = checkAndRecomputeDependencies(resultEntry);
+  }
+
+  if (useSaved == false) {
+    // Since the result cannot be reused, the query will be evaluated.
+    // So, push something to queryDeps
+    queryDeps.push_back(QueryDepsEntry(queryFunction));
+  }
+
+  return useSaved;
+}
+
+void Context::saveDependenciesInParent(const QueryMapResultBase* resultEntry) {
   // Record that the parent query depends upon this one.
   //
   // we haven't pushed the query beginning yet, so the
   // parent query is at queryDeps.back()
   if (queryDeps.size() > 0) {
     queryDeps.back().dependencies.push_back(resultEntry);
-    if (resultEntry->errors.size() > 0) {
-      for (const ErrorMessage& e : resultEntry->errors) {
-        queryDeps.back().errors.push_back(e);
-      }
-    }
   }
 }
-void Context::endQueryHandleDependency(QueryMapResultBase* result) {
+void Context::endQueryHandleDependency(const QueryMapResultBase* result) {
   // queryDeps.back() is the dependency vector for this query
   // which is now ending. So, replace result->dependencies with it.
   {
     QueryDepsEntry& back = queryDeps.back();
     result->dependencies.swap(back.dependencies);
     result->errors.swap(back.errors);
-    result->inputDependency = back.inputDependency;
   }
   queryDeps.pop_back();
   // additionally, we've run a query and there might well be
   // a parent query. In that event, we should update the dependency
   // vector for the parent query.
-  saveDependenciesAndErrorsInParent(result);
+  saveDependenciesInParent(result);
 }
 
 void Context::queryNoteError(ErrorMessage error) {
   assert(queryDeps.size() > 0);
   queryDeps.back().errors.push_back(std::move(error));
-}
-
-void Context::queryNoteInputDependency() {
-  assert(queryDeps.size() > 0);
-  queryDeps.back().inputDependency = true;
 }
 
 

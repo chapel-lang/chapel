@@ -34,11 +34,13 @@ namespace chpl {
 
 namespace frontend {
   const std::string& fileText(Context* context, UniqueString path);
-  const uast::Builder::Result* parseFile(Context* context, UniqueString path);
+  void setFileText(Context* context, UniqueString path, std::string result);
+
+  const uast::Builder::Result& parseFile(Context* context, UniqueString path);
 
   using LocationsMap = std::unordered_map<ID, Location>;
   const LocationsMap& fileLocations(Context* context, UniqueString path);
-  Location locate(Context* context, ID id);
+  const Location& locate(Context* context, ID id);
 
   using ModuleDeclVec = std::vector<const uast::ModuleDecl*>;
   const ModuleDeclVec& parse(Context* context, UniqueString path);
@@ -60,7 +62,7 @@ namespace frontend {
   using ResolutionResultByPostorderID = std::vector<ResolutionResult>;
 
   // Resolves the top-level declarations in a module
-  const ResolutionResultByPostorderID*
+  const ResolutionResultByPostorderID&
   resolveModule(Context* context, const uast::Module* mod);
 
   struct ResolvedModule {

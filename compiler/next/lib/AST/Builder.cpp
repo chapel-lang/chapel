@@ -90,7 +90,7 @@ Builder::Result Builder::result() {
   ret.topLevelExps.swap(topLevelExps_);
   ret.errors.swap(errors_);
   ret.locations.swap(locations_);
-  return ret;
+  return std::move(ret);
 }
 
 // Returns the name of the implicit module, or "" if there is none
@@ -204,6 +204,11 @@ void Builder::doAssignIDs(ASTBase* ast, UniqueString symbolPath, int& i,
     // pop the path component we just added
     pathVec.pop_back();
   }
+}
+
+Builder::Result::Result()
+  : topLevelExps(), errors(), locations()
+{
 }
 
 bool Builder::Result::update(Result& keep, Result& addin) {
