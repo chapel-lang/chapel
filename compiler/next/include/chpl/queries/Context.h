@@ -60,24 +60,6 @@ written in a stylized way to interact with the context.
 
 For example, here is a query that computes MyResultType from myArg1 and
 myArg2:
-=======
-This class stores the compilation-wide context. It handles unique'd strings
-and also a *program database* which is basically a bunch of maps storing the
-results of queries (so that they are are memoized) but that updates these
-results according to a dependency graph and revision number.
-
-Queries are just functions that are written in a stylized manner to interact
-with the program database in the context.
-
-To write a query, create a function that uses the ``QUERY_`` macros defined in
-QueryImpl.h. The arguments to the function need to be POD (so
-``UniqueString``, ``ID``, ``Location``, are OK but AST pointers or
-``std::vector`` e.g. are not). The function will return a result, which need
-not be POD and can include AST pointers (but see below). The function needs to
-be written in a stylized way to interact with the program database.
-
-For example, here is a query that computes MyResultType from myKey1 and
-myKey2:
 
 .. code-block:: c++
 
@@ -87,9 +69,7 @@ myKey2:
                                         MyArgType MyArg1,
                                         MyOtherArgType MyArg2) {
       QUERY_BEGIN(myQueryFunction, context, myKey1, myKey2)
-      if (QUERY_USE_SAVED()) {
-        return QUERY_GET_SAVED();
-      }
+
       // do steps to compute the result
       MyResultType result = ...;
       // if an error is encountered, it can be saved with QUERY_ERROR(error)
@@ -97,35 +77,37 @@ myKey2:
       return QUERY_END(result);
     }
 
+To call the query, just write e.g. ``myQueryFunction(context, arg1, arg2)``.
 
-To call the query, just write e.g. ``myQueryFunction(context, key1, key2)``.
+The query function will check for a result already stored in the program
+database that can be reused. If a result is reused, QUERY_BEGIN will return that
+result. If not, the query proceeds to compute the result. When doing so, any
+queries called will be automatically recorded as dependencies. It will then
+compare the computed result with the saved result, if any, and in some cases
+combine the results. Finally, the saved result (which might have been updated)
+is returned.
 
-The query function will check for a result stored already in the program
-database that can be reused and the first return accounts for that case.  After
-that, the query proceeds to compute the result. When doing so, any queries
-called will be automatically recorded as dependencies. It will then compare the
-computed result with the saved result, if any, and in some cases combine the
-results. Finally, the saved result (which might have been updated) is returned.
+Note that a query must currently return a const-reference to the result to be
+stored in the program database.
 
-Note that a query can return a value or a pointer in addition to a const
-reference.
+There are some requirements on query argument/key types and on result types:
 
-There are some requirements on query argument/key types and on result types.
-
-Since the argument/key types are stored in a hashtable, we need
-``std::hash<KeyType>`` and ``std::equal_to<KeyType>`` to be implemented, e.g.
+ * argument/key types must have ``std::hash<KeyType>`` and
+   ``std::equal_to<KeyType>`` implemented for them.
+ * result types must have ``chpl::update<MyResultType>`` implemented for them
+   and also must currently be default constructable.
 
 .. code-block:: c++
 
     namespace std {
-      template<> struct hash<chpl::MyPodKeyType> {
-        size_t operator()(const chpl::ast::UniqueString key) const {
+      template<> struct hash<chpl::MyArgType> {
+        size_t operator()(const chpl::MyArgType key) const {
           return doSomethingToComputeHash...;
         }
       };
-      template<> struct equal_to<chpl::MyPodKeyType> {
-        bool operator()(const chpl::MyPodKeyType lhs,
-                        const chpl::MyPodKeyType rhs) const {
+      template<> struct equal_to<chpl::MyArgType> {
+        bool operator()(const chpl::MyArgType lhs,
+                        const chpl::MyArgType rhs) const {
           return doSomethingToCheckIfEqual...;
         }
       };
@@ -138,8 +120,8 @@ result requires that the result type implement ``chpl::update``:
 
     namespace chpl {
       template<> struct update<MyResultType> {
-        bool operator()(chpl::ast::UniqueString& keep,
-                        chpl::ast::UniqueString& addin) const {
+        bool operator()(chpl::MyResultType& keep,
+                        chpl::MyResultType& addin) const {
           return doSomethingToCombine...;
         }
       };
@@ -164,15 +146,16 @@ avoid updating everything if just one element changed.
 
 Queries *can* return results that contain non-owning pointers to results from
 dependent queries. In that event, the update function should not rely on the
-contents of these pointers. The system will make sure that they refer to valid
-memory but they might be a combination of old results. Additionally, the system
-will ensure that any old results being replaced will remain allocated until the
-garbage collection runs outside of any query.
+contents of these pointers from the ``keep`` value. The system will make sure
+that they refer to valid memory but they might be a combination of old results.
+Additionally, the system will ensure that any old results being replaced will
+remain allocated until the garbage collection runs outside of any query.
 
 For example, a ``parse`` query might result in a list of ``owned`` AST element
-pointers. A follow-on ``listSymbols`` result in something containing these AST
-element pointers, but not owning them. The ``listSymbols`` query needs to use a
-``update`` function that does not look into these queries.
+pointers. A follow-on query, ``listSymbols``, can result in something containing
+these AST element pointers, but not owning them. In that event, the
+``listSymbols`` query needs to use a ``update`` function that does not look
+into the AST element pointers.
 
 \endrst
 
