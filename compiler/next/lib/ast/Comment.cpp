@@ -37,6 +37,10 @@ bool Comment::contentsMatchInner(const ASTBase* other) const {
   return lhs->expContentsMatchInner(rhs) &&
          lhs->comment_ == rhs->comment_ ;
 }
+void Comment::markUniqueStringsInner(Context* context) const {
+  return expMarkUniqueStringsInner(context);
+}
+
 
 owned<Comment> Comment::build(Builder* builder, Location loc, std::string c) {
   Comment* ret = new Comment(std::move(c));

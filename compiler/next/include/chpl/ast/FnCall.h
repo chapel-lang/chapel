@@ -38,6 +38,7 @@ class FnCall final : public Call {
   std::vector<UniqueString> actualNames_;
   // TODO: do we need partialTag / methodTag?
   bool matchesInner(const ASTBase* other) const override;
+  void markUniqueStringsInner(Context* context) const override;
  public:
   ~FnCall() override = default;
 

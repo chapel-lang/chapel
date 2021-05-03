@@ -46,9 +46,12 @@ class Sym : public ASTBase {
  protected:
   Sym(ASTTag tag, UniqueString name, Visibility vis);
   Sym(ASTTag tag, ASTList children, UniqueString name, Visibility vis);
-  bool symbolContentsMatchInner(const Sym* other) const {
+  bool symContentsMatchInner(const Sym* other) const {
     return this->name_ == other->name_ &&
            this->visibility_ == other->visibility_;
+  }
+  void symMarkUniqueStringsInner(Context* context) const {
+    name_.mark(context);
   }
 
  public:

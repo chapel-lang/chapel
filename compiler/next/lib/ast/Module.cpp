@@ -40,8 +40,11 @@ Module::Module(ASTList children, UniqueString name, Sym::Visibility vis,
 bool Module::contentsMatchInner(const ASTBase* other) const {
   const Module* lhs = this;
   const Module* rhs = (const Module*) other;
-  return lhs->symbolContentsMatchInner(rhs) &&
+  return lhs->symContentsMatchInner(rhs) &&
          lhs->tag_ == rhs->tag_;
+}
+void Module::markUniqueStringsInner(Context* context) const {
+  symMarkUniqueStringsInner(context);
 }
 
 

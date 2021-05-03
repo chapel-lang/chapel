@@ -199,6 +199,7 @@ class QueryMapResultBase {
   }
   virtual ~QueryMapResultBase() = 0; // this is an abstract base class
   virtual void recompute(Context* context) const = 0;
+  virtual void markUniqueStrings(Context* context) const = 0;
 };
 
 template<typename ResultType, typename... ArgTs>
@@ -226,6 +227,7 @@ class QueryMapResult final : public QueryMapResultBase {
       result(std::move(result)) {
   }
   void recompute(Context* context) const;
+  void markUniqueStrings(Context* context) const;
 };
 
 class QueryMapBase {

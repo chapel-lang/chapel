@@ -54,6 +54,7 @@ class VariableDecl final : public Decl {
  private:
   VariableDecl(owned<Variable> variable);
   bool contentsMatchInner(const ASTBase* other) const override;
+  void markUniqueStringsInner(Context* context) const override;
 
  public:
   ~VariableDecl() override = default;

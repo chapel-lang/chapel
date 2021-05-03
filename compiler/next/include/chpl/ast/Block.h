@@ -34,6 +34,7 @@ class Block final : public Exp {
  private:
   Block(ASTList stmts);
   bool contentsMatchInner(const ASTBase* other) const override;
+  void markUniqueStringsInner(Context* context) const override;
 
  public:
   /**

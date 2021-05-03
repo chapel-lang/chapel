@@ -36,6 +36,8 @@ class Exp : public ASTBase {
   bool expContentsMatchInner(const Exp* other) const {
     return true;
   }
+  void expMarkUniqueStringsInner(Context* context) const {
+  }
 
  public:
   virtual ~Exp() = 0; // this is an abstract base class

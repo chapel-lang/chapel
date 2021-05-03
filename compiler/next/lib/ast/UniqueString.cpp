@@ -57,5 +57,16 @@ InlinedString InlinedString::buildUsingContextTable(Context* context,
 
 
 } // end namespace detail
+
+
+void UniqueString::mark(Context* context) const {
+  if (this->s.i.isInline()) {
+    // nothing to do since string data is stored inline, not in map
+  } else {
+    context->markUniqueCString(this->c_str());
+  }
+}
+
+
 } // end namespace uast
 } // end namespace chpl

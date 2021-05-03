@@ -44,13 +44,20 @@ static void helpRecompute(Context* context,
 }
 
 template<typename ResultType, typename... ArgTs>
-void QueryMapResult<ResultType,ArgTs...>::recompute(Context* context) const
-{
+void
+QueryMapResult<ResultType,ArgTs...>::recompute(Context* context) const {
   QueryMap<ResultType, ArgTs...>* queryMap =
     (QueryMap<ResultType, ArgTs...>*) this->parentQueryMap;
 
   const std::tuple<ArgTs...>& args = this->tupleOfArgs;
   helpRecompute(context, queryMap, args, std::index_sequence_for<ArgTs...> {});
+}
+
+template<typename ResultType, typename... ArgTs>
+void
+QueryMapResult<ResultType,ArgTs...>::markUniqueStrings(Context* context) const {
+  chpl::mark<ResultType> marker;
+  marker(context, this->result);
 }
 
 template<typename... ArgTs>

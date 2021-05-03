@@ -37,6 +37,8 @@ class Decl : public Exp {
   bool declContentsMatchInner(const Decl* other) const {
     return true;
   }
+  void declMarkUniqueStringsInner(Context* context) const {
+  }
 
  public:
   virtual ~Decl() = 0; // this is an abstract base class

@@ -76,6 +76,10 @@ class Location final {
     *this = other;
     other = oldThis;
   }
+  
+  void markUniqueStrings(Context* context) const {
+    this->path_.mark(context);
+  }
 };
 
 } // end namespace uast
@@ -88,6 +92,12 @@ template<> struct update<chpl::uast::Location> {
     return defaultUpdate(keep, addin);
   }
 };
+template<> struct mark<chpl::uast::Location> {
+  void operator()(Context* context, const chpl::uast::Location& keep) const {
+    keep.markUniqueStrings(context);
+  }
+};
+
 /// \endcond
 
 

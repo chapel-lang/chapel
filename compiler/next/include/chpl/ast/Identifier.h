@@ -49,6 +49,8 @@ class Identifier final : public Exp {
 
   Identifier(UniqueString name);
   bool contentsMatchInner(const ASTBase* other) const override;
+  void markUniqueStringsInner(Context* context) const override;
+
  public:
   ~Identifier() override = default;
   static owned<Identifier> build(Builder* builder, Location loc, UniqueString name);

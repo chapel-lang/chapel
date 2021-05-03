@@ -32,6 +32,7 @@ namespace uast {
 class PrimCall final : public Call {
  private:
   bool matchesInner(const ASTBase* other) const override;
+  void markUniqueStringsInner(Context* context) const override;
  public:
   ~PrimCall() override = default;
 

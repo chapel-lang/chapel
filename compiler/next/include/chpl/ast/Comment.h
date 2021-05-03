@@ -45,6 +45,7 @@ class Comment final : public Exp {
 
   Comment(std::string s);
   bool contentsMatchInner(const ASTBase* other) const override;
+  void markUniqueStringsInner(Context* context) const override;
 
  public:
   ~Comment() override = default;

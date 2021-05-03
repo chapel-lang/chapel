@@ -34,6 +34,9 @@ bool ModuleDecl::contentsMatchInner(const ASTBase* other) const {
   const ModuleDecl* rhs = (const ModuleDecl*) other;
   return lhs->declContentsMatchInner(rhs);
 }
+void ModuleDecl::markUniqueStringsInner(Context* context) const {
+  return declMarkUniqueStringsInner(context);
+}
 
 owned<ModuleDecl>
 ModuleDecl::build(Builder* builder, Location loc,

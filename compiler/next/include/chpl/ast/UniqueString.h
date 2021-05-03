@@ -141,6 +141,8 @@ class UniqueString final {
     *this = other;
     other = oldThis;
   }
+
+  void mark(Context* context) const;
 };
 
 
@@ -154,6 +156,14 @@ template<> struct update<chpl::uast::UniqueString> {
     return defaultUpdate(keep, addin);
   }
 };
+template<> struct mark<chpl::uast::UniqueString> {
+  void operator()(Context* context,
+                  const chpl::uast::UniqueString& keep) const {
+    printf("MARKING UNIQUE STRING %s\n", keep.c_str());
+    keep.mark(context);
+  }
+};
+
 /// \endcond
 
 // Allow chpl::uast::UniqueString to be just called chpl::UniqueString

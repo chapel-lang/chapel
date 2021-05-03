@@ -34,6 +34,7 @@ class ErroneousExp final : public Exp {
  private:
   ErroneousExp();
   bool contentsMatchInner(const ASTBase* other) const override;
+  void markUniqueStringsInner(Context* context) const override;
 
  public:
   ~ErroneousExp() = default;

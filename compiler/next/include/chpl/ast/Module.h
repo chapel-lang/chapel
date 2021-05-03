@@ -56,6 +56,7 @@ class Module final : public Sym {
          UniqueString name, Sym::Visibility vis,
          Module::Tag tag);
   bool contentsMatchInner(const ASTBase* other) const override;
+  void markUniqueStringsInner(Context* context) const override;
 
  public:
   ~Module() override = default;

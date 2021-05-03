@@ -67,18 +67,15 @@ static char* allocateEvenAligned(size_t amt) {
 }
 
 const char* Context::getOrCreateUniqueString(const char* str) {
-  char gcMark = this->gcCounter & 0xff;
   auto search = this->uniqueStringsTable.find(str);
   if (search != this->uniqueStringsTable.end()) {
     char* buf = search->second;
-    // update the GC mark
-    // Performance: Would it be better to do this store unconditionally?
-    if (this->currentRevisionNumber == this->lastPrepareToGCRevisionNumber) {
-      buf[0] = gcMark;
-    }
     const char* key = buf+2; // pass the 2 bytes of metadata
+    // update the GC mark
+    this->markUniqueCString(key);
     return key;
   }
+  char gcMark = this->gcCounter & 0xff;
   size_t strLen = strlen(str);
   size_t allocLen = strLen+3; // 2 bytes of metadata, str data, '\0'
   char* buf = allocateEvenAligned(allocLen);
@@ -98,6 +95,19 @@ const char* Context::uniqueCString(const char* s) {
   if (s == nullptr) s = "";
   return this->getOrCreateUniqueString(s);
 }
+
+void Context::markUniqueCString(const char* s) {
+  // Performance: Would it be better to do this store unconditionally?
+  if (this->currentRevisionNumber == this->lastPrepareToGCRevisionNumber &&
+      s != nullptr) {
+    char gcMark = this->gcCounter & 0xff;
+    char* buf = (char*) s;
+    buf -= 2; // the string is preceeded by gcMark and 0x02
+    assert(buf[1] == 0x02);
+    buf[0] = gcMark;
+  }
+}
+
 
 UniqueString Context::moduleNameForID(ID id) {
   // If the symbol path is empty, this ID doesn't have a module.
@@ -231,11 +241,9 @@ bool Context::checkAndRecomputeDependencies(const QueryMapResultBase* resultEntr
   }
   if (dependencyMet) {
     if (this->currentRevisionNumber==this->lastPrepareToGCRevisionNumber) {
+      printf("CALLING MARK UNIQUE STRINGS ON RESULT\n");
       // mark unique strings in the reused result
-      /* TODO TODO
-      chpl::markUniqueStrings<ResultType> marker;
-      marker(this, resultEntry->result);
-       */
+      resultEntry->markUniqueStrings(this);
     }
     resultEntry->lastChecked = this->currentRevisionNumber;
   }

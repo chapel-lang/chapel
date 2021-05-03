@@ -294,6 +294,13 @@ class Context {
   const char* uniqueCString(const char* s);
 
   /**
+   When the context is configured to run with garbage collection
+   enabled, unique strings that are reused need to be marked.
+   This function does that for a C string stored in the map.
+   */
+  void markUniqueCString(const char* s);
+
+  /**
     Return the name of the module containing this ID.
    */
   UniqueString moduleNameForID(ID id);

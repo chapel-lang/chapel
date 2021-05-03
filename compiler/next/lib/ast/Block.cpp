@@ -37,7 +37,12 @@ Block::Block(ASTList stmts) :
 }
 
 bool Block::contentsMatchInner(const ASTBase* other) const {
-  return true;
+  const Block* lhs = this;
+  const Block* rhs = (const Block*) other;
+  return lhs->expContentsMatchInner(rhs);
+}
+void Block::markUniqueStringsInner(Context* context) const {
+  expMarkUniqueStringsInner(context);
 }
 
 owned<Block> Block::build(Builder* builder,

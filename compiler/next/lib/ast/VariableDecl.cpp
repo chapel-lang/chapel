@@ -34,6 +34,9 @@ bool VariableDecl::contentsMatchInner(const ASTBase* other) const {
   const VariableDecl* rhs = (const VariableDecl*) other;
   return lhs->declContentsMatchInner(rhs);
 }
+void VariableDecl::markUniqueStringsInner(Context* context) const {
+  return declMarkUniqueStringsInner(context);
+}
 
 owned<VariableDecl>
 VariableDecl::build(Builder* builder, Location loc,

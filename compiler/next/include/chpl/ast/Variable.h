@@ -68,6 +68,7 @@ class Variable final : public Sym {
            UniqueString name, Sym::Visibility vis, Tag tag,
            int8_t typeExpChildNum, int8_t initExpChildNum);
   bool contentsMatchInner(const ASTBase* other) const override;
+  void markUniqueStringsInner(Context* context) const override;
 
  public:
   ~Variable() override = default;

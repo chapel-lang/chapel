@@ -112,6 +112,10 @@ class ID final {
     *this = other;
     other = oldThis;
   }
+
+  void markUniqueStrings(Context* context) const {
+    this->symbolPath_.mark(context);
+  }
 };
 
 } // end namespace uast
@@ -122,6 +126,11 @@ template<> struct update<chpl::uast::ID> {
   bool operator()(chpl::uast::ID& keep,
                   chpl::uast::ID& addin) const {
     return defaultUpdate(keep, addin);
+  }
+};
+template<> struct mark<chpl::uast::ID> {
+  void operator()(Context* context, const chpl::uast::ID& keep) const {
+    keep.markUniqueStrings(context);
   }
 };
 /// \endcond

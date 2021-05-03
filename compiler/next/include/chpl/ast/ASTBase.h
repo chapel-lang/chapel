@@ -67,6 +67,14 @@ class ASTBase {
    */
   virtual bool contentsMatchInner(const ASTBase* other) const = 0;
 
+  /**
+   This function need sto be defined by subclasses.
+   It should call the 'mark' method on any UniqueStrings
+   stored as fields. It need not worry about the children nodes
+   or the UniqueStrings stored in the ID.
+   */
+  virtual void markUniqueStringsInner(Context* context) const = 0;
+
  protected:
   ASTBase(ASTTag tag);
   ASTBase(ASTTag tag, ASTList children);
@@ -132,6 +140,8 @@ class ASTBase {
   // the function returns 'true' if anything changed in 'keep'.
   static bool updateAST(owned<ASTBase>& keep, owned<ASTBase>& addin);
 
+  static void markAST(Context* context, const ASTBase* keep);
+
   static void dump(const ASTBase* ast, int leadingSpaces=0);
 
   // define is__ methods for the various AST types
@@ -183,6 +193,35 @@ class ASTBase {
 
 
 } // end namespace uast
+
+#if 0
+/// \cond DO_NOT_DOCUMENT
+#define AST_MARK(NAME) \
+  template<> struct mark<uast::NAME*> { \
+    void operator()(Context* context, const uast::NAME*& keep) const { \
+      /* cast in the next line is so it compiles with only forward decls */ \
+      uast::ASTBase::markAST(context, (const uast::ASTBase*) keep); \
+    } \
+  };
+#define AST_NODE(NAME) AST_MARK(NAME)
+#define AST_LEAF(NAME) AST_MARK(NAME)
+#define AST_BEGIN_SUBCLASSES(NAME) AST_MARK(NAME)
+#define AST_END_SUBCLASSES(NAME)
+/// \endcond
+// Apply the above macros to ASTClassesList.h
+#include "chpl/ast/ASTClassesList.h"
+// Additionally, apply the macro to ASTBase
+AST_MARK(ASTBase)
+// clear the macros
+#undef AST_NODE
+#undef AST_LEAF
+#undef AST_BEGIN_SUBCLASSES
+#undef AST_END_SUBCLASSES
+#undef AST_MARK
+/// \endcond
+#endif
+
+
 } // end namespace chpl
 
 /// \cond DO_NOT_DOCUMENT

@@ -34,6 +34,9 @@ bool ErroneousExp::contentsMatchInner(const ASTBase* other) const {
   const ErroneousExp* rhs = (const ErroneousExp*) other;
   return lhs->expContentsMatchInner(rhs);
 }
+void ErroneousExp::markUniqueStringsInner(Context* context) const {
+  expMarkUniqueStringsInner(context);
+}
 
 owned<ErroneousExp> ErroneousExp::build(Builder* builder, Location loc) {
   ErroneousExp* ret = new ErroneousExp();

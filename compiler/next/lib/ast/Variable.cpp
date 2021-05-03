@@ -47,11 +47,15 @@ Variable::Variable(ASTList children,
 bool Variable::contentsMatchInner(const ASTBase* other) const {
   const Variable* lhs = this;
   const Variable* rhs = (const Variable*) other;
-  return lhs->symbolContentsMatchInner(rhs) &&
+  return lhs->symContentsMatchInner(rhs) &&
          lhs->tag_ == rhs->tag_ &&
          lhs->typeExpChildNum == rhs->typeExpChildNum &&
          lhs->initExpChildNum == rhs->initExpChildNum;
 }
+void Variable::markUniqueStringsInner(Context* context) const {
+  symMarkUniqueStringsInner(context);
+}
+
 
 
 } // namespace uast

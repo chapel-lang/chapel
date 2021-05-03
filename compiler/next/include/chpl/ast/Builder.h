@@ -95,6 +95,7 @@ class Builder final {
     Result& operator=(const Result&) = delete; // not assignable
 
     static bool update(Result& keep, Result& addin);
+    static void mark(Context* context, const Result& keep);
   };
 
   /**
@@ -121,6 +122,12 @@ template<> struct update<chpl::uast::Builder::Result> {
   bool operator()(chpl::uast::Builder::Result& keep,
                   chpl::uast::Builder::Result& addin) const {
     return chpl::uast::Builder::Result::update(keep, addin);
+  }
+};
+template<> struct mark<chpl::uast::Builder::Result> {
+  void operator()(Context* context,
+                  const chpl::uast::Builder::Result& keep) const {
+    chpl::uast::Builder::Result::mark(context, keep);
   }
 };
 /// \endcond

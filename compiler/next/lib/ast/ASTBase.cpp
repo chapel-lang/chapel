@@ -76,6 +76,16 @@ bool ASTBase::updateAST(owned<ASTBase>& keep, owned<ASTBase>& addin) {
   }
 }
 
+void ASTBase::markAST(Context* context, const ASTBase* keep) {
+  if (keep == nullptr) return;
+  // mark the unique string stored in the ID
+  keep->id_.markUniqueStrings(context);
+  // run markUniqueStrings on the node
+  keep->markUniqueStringsInner(context);
+  // run markASTList on the child list
+  markASTList(context, keep->children_);
+}
+
 static void dumpHelper(const ASTBase* ast, int depth) {
   for (int i = 0; i < depth; i++) {
     printf("  ");

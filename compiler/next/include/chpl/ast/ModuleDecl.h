@@ -47,6 +47,7 @@ class ModuleDecl final : public Decl {
  private:
   ModuleDecl(owned<Module> module);
   bool contentsMatchInner(const ASTBase* other) const override;
+  void markUniqueStringsInner(Context* context) const override;
 
  public:
   ~ModuleDecl() override = default;

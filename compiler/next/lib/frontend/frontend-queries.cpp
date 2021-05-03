@@ -19,6 +19,7 @@
 
 #include "chpl/frontend/frontend-queries.h"
 
+#include "chpl/ast/ASTBase.h"
 #include "chpl/ast/ErrorMessage.h"
 #include "chpl/ast/Identifier.h"
 #include "chpl/ast/Module.h"
@@ -33,18 +34,6 @@
 
 namespace chpl {
 
-template<> struct update<frontend::LocationsMap> {
-  bool operator()(frontend::LocationsMap& keep,
-                  frontend::LocationsMap& addin) const {
-    return defaultUpdate(keep, addin);
-  }
-};
-template<> struct update<frontend::ModuleDeclVec> {
-  bool operator()(frontend::ModuleDeclVec& keep,
-                  frontend::ModuleDeclVec& addin) const {
-    return defaultUpdateVec(keep, addin);
-  }
-};
 template<> struct update<frontend::ResolutionResult> {
   bool operator()(frontend::ResolutionResult& keep,
                   frontend::ResolutionResult& addin) const {
@@ -59,12 +48,7 @@ template<> struct update<frontend::ResolutionResult> {
     }
   }
 };
-template<> struct update<frontend::ResolutionResultByPostorderID> {
-  bool operator()(frontend::ResolutionResultByPostorderID& keep,
-                  frontend::ResolutionResultByPostorderID& addin) const {
-    return defaultUpdateVec(keep, addin);
-  }
-};
+
 template<> struct update<frontend::ResolvedModule> {
   bool operator()(frontend::ResolvedModule& keep,
                   frontend::ResolvedModule& addin) const {
@@ -79,6 +63,7 @@ template<> struct update<frontend::ResolvedModule> {
     }
   }
 };
+
 template<> struct update<frontend::DefinedTopLevelNames> {
   bool operator()(frontend::DefinedTopLevelNames& keep,
                   frontend::DefinedTopLevelNames& addin) const {
@@ -90,6 +75,13 @@ template<> struct update<frontend::DefinedTopLevelNames> {
       keep.topLevelNames.swap(addin.topLevelNames);
       return false;
     }
+  }
+};
+template<> struct mark<frontend::DefinedTopLevelNames> {
+  void operator()(Context* context,
+                  const frontend::DefinedTopLevelNames& keep) const {
+    printf("MARKING DEFINED TOPLEVELS\n");
+    defaultMarkVec(context, keep.topLevelNames);
   }
 };
 

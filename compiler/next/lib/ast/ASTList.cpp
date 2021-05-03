@@ -178,6 +178,12 @@ bool updateASTList(ASTList& keep, ASTList& addin) {
   return anyChanged;
 }
 
+void markASTList(Context* context, const ASTList& keep) {
+  for (const auto& elt: keep) {
+    ASTBase::markAST(context, elt.get());
+  }
+}
+
 
 } // end namespace uast
 } // end namespace chpl

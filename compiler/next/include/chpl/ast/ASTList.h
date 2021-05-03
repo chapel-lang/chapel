@@ -64,6 +64,11 @@ static inline ASTList makeASTList(owned<ASTBase> ast) {
 bool updateASTList(ASTList& keep, ASTList& addin);
 
 /**
+ Mark UniqueStrings in an AST list.
+ */
+void markASTList(Context* context, const ASTList& keep);
+
+/**
  Defines an iterator over the AST list elements.
  The iterator hides the ownership (it always returns a pointer e.g. ASTBase*)
  and casts elements to a particular type.

@@ -35,6 +35,7 @@ class OpCall final : public Call {
   UniqueString op_;
 
   bool matchesInner(const ASTBase* other) const override;
+  void markUniqueStringsInner(Context* context) const override;
  public:
   ~OpCall() override = default;
 

@@ -35,6 +35,10 @@ bool Identifier::contentsMatchInner(const ASTBase* other) const {
   return lhs->expContentsMatchInner(rhs) &&
          lhs->name_ == rhs->name_;
 }
+void Identifier::markUniqueStringsInner(Context* context) const {
+  expMarkUniqueStringsInner(context);
+  this->name_.mark(context);
+}
 
 owned<Identifier> Identifier::build(Builder* builder,
                                     Location loc, UniqueString name) {

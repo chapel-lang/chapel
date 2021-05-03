@@ -51,7 +51,7 @@ int main(int argc, char** argv) {
 
       // update fileText and parseFile so that
       // the later query can reuse results.
-      fileText(ctx, filepath);
+      //fileText(ctx, filepath);
       //parseFile(ctx, filepath);
 
       /*

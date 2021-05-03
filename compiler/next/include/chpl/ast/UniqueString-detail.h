@@ -28,6 +28,7 @@
 #include <cassert>
 #include <cstring>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 /// \cond DO_NOT_DOCUMENT
@@ -197,6 +198,7 @@ size_t hash_combine(size_t hash1, size_t hash2) {
 template<typename T> struct update {
   bool operator()(T& keep, T& addin) const = 0;
 };
+
 template<typename T>
 static inline bool defaultUpdate(T& keep, T& addin) {
   std::equal_to<T> eq;
@@ -236,16 +238,54 @@ static inline bool defaultUpdateVec(std::vector<T>& keep, std::vector<T>& addin)
     return true; // updated
   }
 }
-template<typename T> struct update<std::vector<T>> {
-  bool operator()(std::vector<T>& keep, std::vector<T>& addin) const {
-    return defaultUpdateVec(keep, addin);
-  }
-};
 template<> struct update<std::string> {
   bool operator()(std::string& keep, std::string& addin) const {
     return defaultUpdate(keep, addin);
   }
 };
+template<typename T> struct update<std::vector<T>> {
+  bool operator()(std::vector<T>& keep, std::vector<T>& addin) const {
+    return defaultUpdateVec(keep, addin);
+  }
+};
+template<typename K, typename V> struct update<std::unordered_map<K,V>> {
+  bool operator()(std::unordered_map<K,V>& keep,
+                  std::unordered_map<K,V>& addin) const {
+    return defaultUpdate(keep, addin);
+  }
+};
+
+
+template<typename T> struct mark {
+  void operator()(Context* context, const T& keep) const { }
+};
+/*template<typename T>
+static inline void defaultMarkVec(Context* context, const std::vector<T>& keep) {
+  chpl::mark<T> marker;
+  for (auto& elt : keep) {
+    marker(context, elt);
+  }
+}
+template<typename K, typename V>
+static inline
+void defaultMarkUMap(Context* context, const std::unordered_map<K,V>& keep) {
+  chpl::mark<K> keyMarker;
+  chpl::mark<V> valMarker;
+  for (auto& elt : keep) {
+    keyMarker(context, elt.first);
+    valMarker(context, elt.second);
+  }
+}
+template<typename T> struct mark<std::vector<T>> {
+  void operator()(Context* context, const std::vector<T>& keep) const {
+    defaultMarkVec(context, keep);
+  }
+};
+template<typename K, typename V> struct mark<std::unordered_map<K,V>> {
+  void operator()(Context* context, const std::unordered_map<K,V>& keep) const {
+    defaultMarkUMap(context, keep);
+  }
+};*/
 
 
 } // end namespace chpl

@@ -224,6 +224,19 @@ bool Builder::Result::update(Result& keep, Result& addin) {
   return match;
 }
 
+void Builder::Result::mark(Context* context, const Result& keep) {
+
+  // mark UniqueStrings in the locations
+  for (const auto& pair : keep.locations) {
+    pair.first.markUniqueStrings(context);
+    pair.second.markUniqueStrings(context);
+  }
+
+  // mare UniqueStrings in the ASTs
+  markASTList(context, keep.topLevelExps);
+}
+
+
 
 } // namespace uast
 } // namespace chpl
