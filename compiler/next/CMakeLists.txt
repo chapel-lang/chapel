@@ -24,8 +24,8 @@ set(CHPL_MAIN_INCLUDE_DIR ${CHPL_MAIN_SRC_DIR}/include)
 set(CHPL_INCLUDE_DIR      ${CMAKE_CURRENT_BINARY_DIR}/include)
 
 # save the version
-configure_file(${CHPL_MAIN_INCLUDE_DIR}/chpl/Config/config.h.cmake
-               ${CHPL_INCLUDE_DIR}/chpl/Config/config.h)
+configure_file(${CHPL_MAIN_INCLUDE_DIR}/chpl/config/config.h.cmake
+               ${CHPL_INCLUDE_DIR}/chpl/config/config.h)
 
 # see https://llvm.org/docs/CMake.html
 # for instructions on extending this to include LLVM dependencies
