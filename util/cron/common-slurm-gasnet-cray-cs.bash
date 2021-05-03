@@ -11,6 +11,8 @@ CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $CWD/common.bash
 source $CWD/common-cray-cs.bash y
 
+export COMPILER_PATH=/opt/gcc/9.1.0/snos
+
 export CHPL_COMM=gasnet
 
 unset CHPL_START_TEST_ARGS
