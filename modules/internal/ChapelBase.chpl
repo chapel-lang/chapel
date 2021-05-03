@@ -2365,4 +2365,16 @@ module ChapelBase {
   inline proc _removed_cast(in x) {
     return x;
   }
+
+  // This is a helper function that I injected to reduce the
+  // compiler's reliance on 'iterable.size' for coforall loops because
+  // we started generating warnings for the return type of
+  // 'range.size' changing.
+  //
+  proc chpl_coforallSize(iterable) {
+    if (isRange(iterable)) then
+      return iterable.sizeAs(iterable.idxType);
+    else
+      return iterable.size;
+  }
 }
