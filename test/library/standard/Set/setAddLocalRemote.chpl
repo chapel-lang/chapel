@@ -19,8 +19,18 @@ proc create(type T) {
   return new T();
 }
 
-proc testAddToSetRemote(type T) {
-  writeln('Adding to set of ' + T:string + ' remotely');
+proc testAddLocalElementRemote(type T) {
+  writeln('Adding local element ' + T:string + ' remotely');
+  var s: set(T);
+  var x = create(T);
+  on Locales[1] {
+    s.add(x);
+  }
+  writeln(s);
+}
+
+proc testAddRemoteElementRemote(type T) {
+  writeln('Adding remote element ' + T:string + ' remotely');
   var s: set(T);
   on Locales[1] {
     var x = create(T);
@@ -29,8 +39,20 @@ proc testAddToSetRemote(type T) {
   writeln(s);
 }
 
-proc testAddToSetLocal(type T) {
-  writeln('Adding to set of ' + T:string + ' locally');
+proc testAddRemoteElementLocal(type T) {
+  writeln('Adding remote element ' + T:string + ' locally');
+  var s: set(T);
+  on Locales[1] {
+    var x = create(T);
+    on Locales[0] {
+      s.add(x);
+    }
+  }
+  writeln(s);
+}
+
+proc testAddLocalElementLocal(type T) {
+  writeln('Adding local element ' + T:string + ' locally');
   var s: set(T);
   var x = create(T);
   s.add(x);
@@ -38,8 +60,10 @@ proc testAddToSetLocal(type T) {
 }
 
 proc testAddToSetLocalAndRemote(type T) {
-  testAddToSetRemote(T);
-  testAddToSetLocal(T);
+  testAddLocalElementRemote(T);
+  testAddRemoteElementRemote(T);
+  testAddRemoteElementLocal(T);
+  testAddLocalElementLocal(T);
 }
 
 proc test() {
@@ -49,7 +73,9 @@ proc test() {
   testAddToSetLocalAndRemote(bytes);
   testAddToSetLocalAndRemote(r);
   testAddToSetLocalAndRemote(shared C);
-  testAddToSetLocalAndRemote(owned C);
+
+  // Use nilable owned to avoid lifetime error complaints.
+  testAddToSetLocalAndRemote(owned C?);
 }
 test();
 

@@ -153,7 +153,7 @@ module Set {
     // Do things the slow/copy way if the element is serializable.
     // See issue: #17477
     pragma "no doc"
-    proc _addElem(pragma "no auto destroy" in elem: eltType): bool
+    proc _addElem(in elem: eltType): bool
     where _isSerializable(eltType) {
         var result = true;
 
