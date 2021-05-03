@@ -208,17 +208,15 @@ static inline bool defaultUpdate(T& keep, T& addin) {
     return true;
   }
 }
-template<typename T> struct update<T*> {
-  bool operator()(T*& keep, T*& addin) const {
-    if (keep == addin) {
-      return false; // no change
-    } else {
-      keep = addin;
-      return true; // updated
-    }
+template<typename T>
+static inline bool defaultUpdateBasic(T& keep, T& addin) {
+  if (keep == addin) {
+    return false;
+  } else {
+    keep = addin;
+    return true;
   }
-};
-
+}
 template<typename T>
 static inline bool defaultUpdateVec(std::vector<T>& keep, std::vector<T>& addin)
 {
@@ -240,6 +238,21 @@ static inline bool defaultUpdateVec(std::vector<T>& keep, std::vector<T>& addin)
 template<> struct update<std::string> {
   bool operator()(std::string& keep, std::string& addin) const {
     return defaultUpdate(keep, addin);
+  }
+};
+template<typename T> struct update<T*> {
+  bool operator()(T*& keep, T*& addin) const {
+    return defaultUpdateBasic(keep, addin);
+  }
+};
+template<> struct update<int> {
+  bool operator()(int& keep, int& addin) const {
+    return defaultUpdateBasic(keep, addin);
+  }
+};
+template<> struct update<bool> {
+  bool operator()(bool& keep, bool& addin) const {
+    return defaultUpdateBasic(keep, addin);
   }
 };
 template<typename T> struct update<std::vector<T>> {

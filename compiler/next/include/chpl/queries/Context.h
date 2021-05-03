@@ -58,6 +58,9 @@ QueryImpl.h. The arguments to the function need to be efficient to copy (so
 POD and can include AST pointers (but see below). The function needs to be
 written in a stylized way to interact with the context.
 
+Queries should not have side effects. They should not manipulate global state.
+Instead, they should return a result that includes all of the output.
+
 For example, here is a query that computes MyResultType from myArg1 and
 myArg2:
 
@@ -244,8 +247,7 @@ class Context {
        const char* traceQueryName,
        bool isInputQuery);
 
-  // returns 'true' if the result can be reused
-  bool checkAndRecomputeDependencies(const querydetail::QueryMapResultBase* resultEntry);
+  void recomputeIfNeeded(const querydetail::QueryMapResultBase* resultEntry);
 
   bool queryCanUseSavedResultAndPushIfNot(
             const void* queryFunction,

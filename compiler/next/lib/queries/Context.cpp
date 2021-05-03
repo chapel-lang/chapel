@@ -213,55 +213,56 @@ void Context::setFilePathForModuleName(UniqueString modName, UniqueString path) 
          modName.c_str(), path.c_str());
 }
 
-bool Context::checkAndRecomputeDependencies(const QueryMapResultBase* resultEntry) {
+void Context::recomputeIfNeeded(const QueryMapResultBase* resultEntry) {
 
   if (this->currentRevisionNumber == resultEntry->lastChecked) {
     // No need to check the dependencies again.
     // We already know that we can reuse the result.
-    return true;
+    return;
   }
 
-  printf("CHECKING DEPENDENCIES FOR %s\n",
+  printf("RECOMPUTING IF NEEDED FOR %s\n",
          resultEntry->parentQueryMap->queryName);
+
+  if (resultEntry->parentQueryMap->isInputQuery) {
+    // For an input query, compute it once per revision, ignoring
+    // dependencies (e.g. if it is reading a file, we need to check that the
+    // file has not changed.)
+    resultEntry->recompute(this);
+    assert(resultEntry->lastChecked == this->currentRevisionNumber);
+    return;
+  }
 
   // Otherwise, check the dependencies. Have any of them
   // changed since the last revision in which we computed this?
-  bool dependencyMet = true;
+  // If so, compute it again.
+  bool useSaved = true;
   for (const QueryMapResultBase* dependency : resultEntry->dependencies) {
-    if (this->currentRevisionNumber == dependency->lastChecked) {
-      // No need to check the dependency
-    } else if (dependency->parentQueryMap->isInputQuery) {
-      // For an input query, always try to compute it again,
-      // ignoring the dependencies.
-      // (e.g. if it is reading a file, we need to check that the file
-      //  has not changed.)
-      dependency->recompute(this);
-      assert(dependency->lastChecked == this->currentRevisionNumber);
-    } else {
-      // check the dependencies, transitively.
-      bool canReuse = checkAndRecomputeDependencies(dependency);
-      dependencyMet = dependencyMet && canReuse;
-    }
-
     if (dependency->lastChanged > resultEntry->lastChanged) {
-      dependencyMet = false;
-    }
-
-    if (dependencyMet == false) {
+      useSaved = false;
       break;
+    } else if (this->currentRevisionNumber == dependency->lastChecked) {
+      // No need to check the dependency again; already did and it was OK
+    } else {
+      recomputeIfNeeded(dependency);
+      // we might have recomputed the dependency, so check its lastChanged
+      if (dependency->lastChanged > resultEntry->lastChanged) {
+        useSaved = false;
+        break;
+      }
     }
   }
-  if (dependencyMet) {
-    if (this->currentRevisionNumber==this->lastPrepareToGCRevisionNumber) {
-      //printf("CALLING MARK UNIQUE STRINGS ON RESULT %s\n",
-      //        resultEntry->parentQueryMap->queryName);
-      // mark unique strings in the reused result
-      resultEntry->markUniqueStrings(this);
-    }
+
+  if (useSaved == false) {
+    resultEntry->recompute(this);
+    assert(resultEntry->lastChecked == this->currentRevisionNumber);
+    return;
+  } else {
     resultEntry->lastChecked = this->currentRevisionNumber;
   }
 
-  return dependencyMet;
+  printf("DONE RECOMPUTING IF NEEDED FOR %s\n",
+         resultEntry->parentQueryMap->queryName);
 }
 
 bool Context::queryCanUseSavedResultAndPushIfNot(
@@ -273,13 +274,21 @@ bool Context::queryCanUseSavedResultAndPushIfNot(
   if (resultEntry == nullptr) {
     // If there was no result, we can't reuse it
     useSaved = false;
-  } else {
-    useSaved = checkAndRecomputeDependencies(resultEntry);
-
+  } else if (this->currentRevisionNumber == resultEntry->lastChecked) {
+    // the query was already checked/run in this revision
+    useSaved = true;
+  } else if (resultEntry->parentQueryMap->isInputQuery) {
     // be sure to re-run input queries
-    if (resultEntry->parentQueryMap->isInputQuery &&
-        this->currentRevisionNumber != resultEntry->lastChecked) {
-      useSaved = false;
+    useSaved = false;
+  } else {
+    useSaved = true;
+    for (const QueryMapResultBase* dependency : resultEntry->dependencies) {
+      recomputeIfNeeded(dependency);
+      assert(dependency->lastChecked == this->currentRevisionNumber);
+      if (dependency->lastChanged > resultEntry->lastChanged) {
+        useSaved = false;
+        break;
+      }
     }
   }
 
