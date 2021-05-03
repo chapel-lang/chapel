@@ -1,0 +1,4 @@
+These tests only run with LLVM. Before we switch to LLVM-by-default, we weren't
+testing them with "advanced" configs like ASAN or memleaks. There are different
+tests that causes failures on both of those modes. Until we figure out what's
+happening, we're NOTEST'ing this directory.
