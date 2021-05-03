@@ -26,6 +26,9 @@ else
   [ "$1" == y ] && log_info "Expected Cray CS, but does not seem to be one."
 fi
 
+# Point clang to standard libraries
+export COMPILER_PATH=/opt/gcc/9.1.0/snos
+
 # https://github.com/Cray/chapel-private/issues/1601
 export SLURM_CPU_FREQ_REQ=high
 
