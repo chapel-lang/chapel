@@ -80,12 +80,15 @@ class Location final {
 
 } // end namespace uast
 
+// docs are turned off for this as a workaround for breathe errors
+/// \cond DO_NOT_DOCUMENT
 template<> struct update<chpl::uast::Location> {
   bool operator()(chpl::uast::Location& keep,
                   chpl::uast::Location& addin) const {
     return defaultUpdate(keep, addin);
   }
 };
+/// \endcond
 
 
 // Allow chpl::uast::Location to be just called chpl::Location

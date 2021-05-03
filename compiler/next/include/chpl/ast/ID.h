@@ -116,12 +116,15 @@ class ID final {
 
 } // end namespace uast
 
+// docs are turned off for this as a workaround for breathe errors
+/// \cond DO_NOT_DOCUMENT
 template<> struct update<chpl::uast::ID> {
   bool operator()(chpl::uast::ID& keep,
                   chpl::uast::ID& addin) const {
     return defaultUpdate(keep, addin);
   }
 };
+/// \endcond
 
 // Allow chpl::uast::ID to be just called chpl::ID
 // TODO: Should it be moved out of the uast namespace? What directory

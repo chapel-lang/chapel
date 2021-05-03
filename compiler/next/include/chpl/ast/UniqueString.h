@@ -146,12 +146,15 @@ class UniqueString final {
 
 } // end namespace uast
 
+// docs are turned off for this as a workaround for breathe errors
+/// \cond DO_NOT_DOCUMENT
 template<> struct update<chpl::uast::UniqueString> {
   bool operator()(chpl::uast::UniqueString& keep,
                   chpl::uast::UniqueString& addin) const {
     return defaultUpdate(keep, addin);
   }
 };
+/// \endcond
 
 // Allow chpl::uast::UniqueString to be just called chpl::UniqueString
 // TODO: Should it be moved out of the uast namespace? What directory

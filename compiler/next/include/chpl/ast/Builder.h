@@ -115,13 +115,15 @@ class Builder final {
 
 } // end namespace uast
 
+// docs are turned off for this as a workaround for breathe errors
+/// \cond DO_NOT_DOCUMENT
 template<> struct update<chpl::uast::Builder::Result> {
   bool operator()(chpl::uast::Builder::Result& keep,
                   chpl::uast::Builder::Result& addin) const {
     return chpl::uast::Builder::Result::update(keep, addin);
   }
 };
-
+/// \endcond
 
 } // end namespace chpl
 
