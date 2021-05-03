@@ -126,7 +126,7 @@ def run_tests(tests):
     # futures or notests
     os.environ["CHPL_TEST_FUTURES"] = "1"
     os.environ["CHPL_TEST_NOTESTS"] = "1"
-    #if the user throws --respect-skipifs, skipifs will be respected for single tests
+    # if the user throws --respect-skipifs, skipifs will be respected for single tests
     if args.respect_skipifs:
         os.environ["CHPL_TEST_SINGLES"] = "0"
     else:
