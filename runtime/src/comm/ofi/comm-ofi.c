@@ -253,12 +253,10 @@ enum mcmMode_t {
 
 static enum mcmMode_t mcmMode;          // overall operational mode
 
-#ifdef CHPL_COMM_DEBUG
 static const char* mcmModeNames[] = { "undefined",
-                                      "atomic message orderings w/ fences",
-                                      "message orderings",
+                                      "message-order-fence",
+                                      "message-order",
                                       "delivery-complete", };
-#endif
 
 
 ////////////////////////////////////////
@@ -1815,8 +1813,8 @@ void init_ofiFabricDomain(void) {
 
   if (verbosity >= 2) {
     if (chpl_nodeID == 0) {
-      printf("COMM=ofi: using \"%s\" provider\n",
-             ofi_info->fabric_attr->prov_name);
+      printf("COMM=ofi: in %s MCM mode, using the \"%s\" provider\n",
+             mcmModeNames[mcmMode], ofi_info->fabric_attr->prov_name);
     }
   }
 
