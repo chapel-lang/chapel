@@ -232,39 +232,39 @@
   // C++ mode of using bison.
   union YYSTYPE {
     // The lexer only uses these two
-    PODUniqueString            uniqueStr;
-    SizedStr                   sizedStr;
+    PODUniqueString uniqueStr;
+    SizedStr sizedStr;
 
     // The remaining types are for parser productions
 
     // integer/enum values
 
-    AggregateTag               aggregateTag;
-    FunctionTag                functionTag;
-    IntentTag                  intentTag;
-    LinkageTag                 linkageTag;
-    NewTag                     newTag;
-    PrototypeTag               prototypeTag;
-    ReturnTag                  returnTag;
-    ShadowTag                  shadowTag;
-    ThrowsTag                  throwsTag;
-    Variable::Tag              variableTag;
-    Sym::Visibility            visibilityTag;
+    AggregateTag aggregateTag;
+    FunctionTag functionTag;
+    IntentTag intentTag;
+    LinkageTag linkageTag;
+    NewTag newTag;
+    PrototypeTag prototypeTag;
+    ReturnTag returnTag;
+    ShadowTag shadowTag;
+    ThrowsTag throwsTag;
+    Variable::Tag variableTag;
+    Sym::Visibility visibilityTag;
 
     // simple pointer values 
-    Block*                     block;
-    Call*                      call;
-    Decl*                      decl;
-    Exp*                       expr;
-    Function*                  function;
-    Module*                    module;
+    Block* block;
+    Call* call;
+    Decl* decl;
+    Exp* expr;
+    Function* function;
+    Module* module;
 
     // values that are temporary groupings
-    CommentsAndStmt            commentsAndStmt;
-    ParserExprList*            exprList;
-    RenameList*                renameList;
-    UniqueStrList*             uniqueStrList;
-    WhereAndLifetime           lifetimeAndWhere;
+    CommentsAndStmt commentsAndStmt;
+    ParserExprList* exprList;
+    RenameList* renameList;
+    UniqueStrList* uniqueStrList;
+    WhereAndLifetime lifetimeAndWhere;
 
     // TODO
     //Type*                     ptype;
