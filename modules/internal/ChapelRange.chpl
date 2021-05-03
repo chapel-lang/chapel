@@ -884,8 +884,8 @@ module ChapelRange {
   {
     if this.isAmbiguous() || other.isAmbiguous() then return false;
 
-    if this.isBounded() && this.size == 0 then
-      return other.isBounded() && other.size == 0;
+    if this.isBounded() && this.sizeAs(int) == 0 then
+      return other.isBounded() && other.sizeAs(int) == 0;
 
     // Since slicing preserves the direction of the first arg, may need
     // to negate one of the strides (shouldn't matter which).
@@ -1236,8 +1236,8 @@ operator :(r: range(?), type t: range(?)) {
   proc range.interior(offset: integral)
   {
     if boundsChecking then
-      if offset > this.size then
-        HaltWrappers.boundsCheckHalt("can't compute the interior " + offset:string + " elements of a range with size " + this.size:string);
+      if offset > this.sizeAs(int) then
+        HaltWrappers.boundsCheckHalt("can't compute the interior " + offset:string + " elements of a range with size " + this.sizeAs(int):string);
 
     const i = offset.safeCast(intIdxType);
     if i < 0 then
