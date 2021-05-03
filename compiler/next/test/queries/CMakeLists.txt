@@ -32,5 +32,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-comp_unit_test(testFailure)
-set_tests_properties(testFailure PROPERTIES WILL_FAIL TRUE)
+comp_unit_test(testRecursionFails)
+set_tests_properties(testRecursionFails PROPERTIES WILL_FAIL TRUE)

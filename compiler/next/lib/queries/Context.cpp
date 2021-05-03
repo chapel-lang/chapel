@@ -287,6 +287,14 @@ bool Context::queryCanUseSavedResultAndPushIfNot(
     // Since the result cannot be reused, the query will be evaluated.
     // So, push something to queryDeps
     queryDeps.push_back(QueryDepsEntry(queryFunction));
+
+    size_t n = queryDeps.size();
+    if (n > 10000) {
+      fprintf(stderr, "Error: query depth is too high - is there a cycle?\n");
+      exit(1);
+      // TODO - do something smarter; for example, could
+      // check for cycles every time n reaches a power of two
+    }
   }
 
   return useSaved;

@@ -30,6 +30,20 @@
 
 using namespace chpl;
 
+const UniqueString& recursiveQuery(Context* context, UniqueString arg) {
+  QUERY_BEGIN(recursiveQuery, context, arg);
+
+  UniqueString result = recursiveQuery(context, arg);
+
+  return QUERY_END(result);
+}
+
 int main() {
-  exit(1);
+  auto context = Context::build();
+  Context* ctx = context.get();
+
+  auto s = UniqueString::build(ctx, "Nice To See You Again World, Hello");
+  recursiveQuery(ctx, s);
+
+  return 0;
 }
