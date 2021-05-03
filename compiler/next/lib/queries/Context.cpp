@@ -161,6 +161,7 @@ void Context::advanceToNextRevision(bool prepareToGC) {
 void Context::collectGarbage() {
   // if there are no parent queries, collect some garbage
   if (queryDeps.size() == 0) {
+    printf("COLLECTING GARBAGE\n");
     // clear out the saved old results
     // warning: this loop proceeds in a nondeterministic order
     for (auto& dbEntry: queryDB) {
@@ -170,6 +171,8 @@ void Context::collectGarbage() {
 
     if (this->lastPrepareToGCRevisionNumber == this->currentRevisionNumber) {
       // remove UniqueStrings that have not been marked
+
+      size_t nUniqueStringsBefore = uniqueStringsTable.size();
 
       // Performance: Would it be better to modify the table in-place
       // rather than creating a new table as is done here?
@@ -181,8 +184,10 @@ void Context::collectGarbage() {
         const char* key = e.first;
         char* buf = e.second;
         if (buf[0] == gcMark) {
+          printf("COPYING OVER UNIQUESTRING %s\n", key);
           newTable.insert(std::make_pair(key, buf));
         } else {
+          printf("WILL FREE UNIQUESTRING %s\n", key);
           toFree.push_back(buf);
         }
       }
@@ -190,6 +195,10 @@ void Context::collectGarbage() {
         free(buf);
       }
       uniqueStringsTable.swap(newTable);
+
+      size_t nUniqueStringsAfter = uniqueStringsTable.size();
+      printf("COLLECTED %i UniqueStrings\n",
+             (int)(nUniqueStringsBefore-nUniqueStringsAfter));
     }
   }
 }
@@ -212,6 +221,9 @@ bool Context::checkAndRecomputeDependencies(const QueryMapResultBase* resultEntr
     return true;
   }
 
+  printf("CHECKING DEPENDENCIES FOR %s\n",
+         resultEntry->parentQueryMap->queryName);
+
   // Otherwise, check the dependencies. Have any of them
   // changed since the last revision in which we computed this?
   bool dependencyMet = true;
@@ -223,7 +235,7 @@ bool Context::checkAndRecomputeDependencies(const QueryMapResultBase* resultEntr
       // ignoring the dependencies.
       // (e.g. if it is reading a file, we need to check that the file
       //  has not changed.)
-      resultEntry->recompute(this);
+      dependency->recompute(this);
       assert(dependency->lastChecked == this->currentRevisionNumber);
     } else {
       // check the dependencies, transitively.
@@ -241,7 +253,8 @@ bool Context::checkAndRecomputeDependencies(const QueryMapResultBase* resultEntr
   }
   if (dependencyMet) {
     if (this->currentRevisionNumber==this->lastPrepareToGCRevisionNumber) {
-      printf("CALLING MARK UNIQUE STRINGS ON RESULT\n");
+      //printf("CALLING MARK UNIQUE STRINGS ON RESULT %s\n",
+      //        resultEntry->parentQueryMap->queryName);
       // mark unique strings in the reused result
       resultEntry->markUniqueStrings(this);
     }
@@ -262,6 +275,12 @@ bool Context::queryCanUseSavedResultAndPushIfNot(
     useSaved = false;
   } else {
     useSaved = checkAndRecomputeDependencies(resultEntry);
+
+    // be sure to re-run input queries
+    if (resultEntry->parentQueryMap->isInputQuery &&
+        this->currentRevisionNumber != resultEntry->lastChecked) {
+      useSaved = false;
+    }
   }
 
   if (useSaved == false) {

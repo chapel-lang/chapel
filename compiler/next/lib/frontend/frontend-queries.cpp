@@ -77,13 +77,13 @@ template<> struct update<frontend::DefinedTopLevelNames> {
     }
   }
 };
-template<> struct mark<frontend::DefinedTopLevelNames> {
+/*template<> struct mark<frontend::DefinedTopLevelNames> {
   void operator()(Context* context,
                   const frontend::DefinedTopLevelNames& keep) const {
     printf("MARKING DEFINED TOPLEVELS\n");
     defaultMarkVec(context, keep.topLevelNames);
   }
-};
+};*/
 
 namespace frontend {
 

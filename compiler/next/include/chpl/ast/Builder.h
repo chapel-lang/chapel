@@ -127,6 +127,7 @@ template<> struct update<chpl::uast::Builder::Result> {
 template<> struct mark<chpl::uast::Builder::Result> {
   void operator()(Context* context,
                   const chpl::uast::Builder::Result& keep) const {
+    printf("IN BUILDER RESULT MARK\n");
     chpl::uast::Builder::Result::mark(context, keep);
   }
 };
