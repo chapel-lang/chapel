@@ -22,7 +22,7 @@
 
 #include "../util/files.h"
 
-#include "chpl/uast/ErrorMessage.h"
+#include "chpl/queries/ErrorMessage.h"
 #include "chpl/uast/Comment.h"
 #include "chpl/uast/Exp.h"
 

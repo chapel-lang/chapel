@@ -17,11 +17,11 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_AST_VARIABLEDECL_H
-#define CHPL_AST_VARIABLEDECL_H
+#ifndef CHPL_UAST_VARIABLEDECL_H
+#define CHPL_UAST_VARIABLEDECL_H
 
+#include "chpl/queries/Location.h"
 #include "chpl/uast/Decl.h"
-#include "chpl/uast/Location.h"
 #include "chpl/uast/Variable.h"
 
 #include <cassert>

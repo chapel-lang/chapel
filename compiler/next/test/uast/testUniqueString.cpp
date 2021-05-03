@@ -18,7 +18,7 @@
  */
 
 #include "chpl/queries/Context.h"
-#include "chpl/uast/UniqueString.h"
+#include "chpl/queries/UniqueString.h"
 
 // always check assertions in this test
 #ifdef NDEBUG
@@ -33,7 +33,6 @@
 #include <cassert>
 
 using namespace chpl;
-using namespace uast;
 
 void testPerformance(Context* ctx, const char* inputFile, bool printTiming) {
   int outerRepeat = 10;

@@ -17,11 +17,11 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_AST_SYM_H
-#define CHPL_AST_SYM_H
+#ifndef CHPL_UAST_SYM_H
+#define CHPL_UAST_SYM_H
 
 #include "chpl/uast/ASTBase.h"
-#include "chpl/uast/UniqueString.h"
+#include "chpl/queries/UniqueString.h"
 
 namespace chpl {
 namespace uast {

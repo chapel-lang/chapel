@@ -17,10 +17,10 @@
  * limitations under the License.
  */
 
-#ifndef FILES_H
-#define FILES_H
+#ifndef CHPL_UTIL_FILES_H
+#define CHPL_UTIL_FILES_H
 
-#include "chpl/uast/ErrorMessage.h"
+#include "chpl/queries/ErrorMessage.h"
 
 #include <cstdio>
 #include <string>

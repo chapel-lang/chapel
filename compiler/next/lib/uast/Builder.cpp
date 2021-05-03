@@ -19,7 +19,7 @@
 
 #include "chpl/uast/Builder.h"
 
-#include "chpl/uast/ErrorMessage.h"
+#include "chpl/queries/ErrorMessage.h"
 #include "chpl/uast/Exp.h"
 #include "chpl/uast/ModuleDecl.h"
 

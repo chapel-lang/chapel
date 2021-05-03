@@ -17,15 +17,15 @@
  * limitations under the License.
  */
 
+#include "chpl/queries/Context.h"
+#include "chpl/queries/ErrorMessage.h"
+#include "chpl/queries/Location.h"
+#include "chpl/queries/UniqueString.h"
 #include "chpl/uast/Block.h"
 #include "chpl/uast/Builder.h"
-#include "chpl/uast/ErrorMessage.h"
 #include "chpl/uast/Exp.h"
 #include "chpl/uast/Identifier.h"
-#include "chpl/uast/Location.h"
 #include "chpl/uast/ModuleDecl.h"
-#include "chpl/uast/UniqueString.h"
-#include "chpl/queries/Context.h"
 
 // always check assertions in this test
 #ifdef NDEBUG

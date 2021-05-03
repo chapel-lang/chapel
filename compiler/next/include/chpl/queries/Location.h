@@ -17,13 +17,12 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_AST_LOCATION_H
-#define CHPL_AST_LOCATION_H
+#ifndef CHPL_QUERIES_LOCATION_H
+#define CHPL_QUERIES_LOCATION_H
 
-#include "chpl/uast/UniqueString.h"
+#include "chpl/queries/UniqueString.h"
 
 namespace chpl {
-namespace uast {
 
 
 /**
@@ -82,30 +81,21 @@ class Location final {
   }
 };
 
-} // end namespace uast
-
 // docs are turned off for this as a workaround for breathe errors
 /// \cond DO_NOT_DOCUMENT
-template<> struct update<chpl::uast::Location> {
-  bool operator()(chpl::uast::Location& keep,
-                  chpl::uast::Location& addin) const {
+template<> struct update<chpl::Location> {
+  bool operator()(chpl::Location& keep,
+                  chpl::Location& addin) const {
     return defaultUpdate(keep, addin);
   }
 };
-template<> struct mark<chpl::uast::Location> {
-  void operator()(Context* context, const chpl::uast::Location& keep) const {
+template<> struct mark<chpl::Location> {
+  void operator()(Context* context, const chpl::Location& keep) const {
     keep.markUniqueStrings(context);
   }
 };
-
 /// \endcond
 
-
-// Allow chpl::uast::Location to be just called chpl::Location
-// TODO: Should it be moved out of the ast namespace? What directory
-// should it go in?
-
-using chpl::uast::Location;
 
 } // end namespace chpl
 

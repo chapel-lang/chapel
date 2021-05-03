@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_AST_ASTLIST_H
-#define CHPL_AST_ASTLIST_H
+#ifndef CHPL_UAST_ASTLIST_H
+#define CHPL_UAST_ASTLIST_H
 
 #include "chpl/uast/ASTTypes.h"
 #include "chpl/util/memory.h"
@@ -27,6 +27,8 @@
 #include <vector>
 
 namespace chpl {
+class Context;
+
 namespace uast {
 
 

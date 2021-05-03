@@ -26,14 +26,11 @@ target_sources(libchplcomp-obj
                Comment.cpp
                Decl.cpp
                ErroneousExp.cpp
-               ErrorMessage.cpp
                Exp.cpp
-               ID.cpp
                Identifier.cpp
                Module.cpp
                ModuleDecl.cpp
                Sym.cpp
-               UniqueString.cpp
                Variable.cpp
                VariableDecl.cpp
                Visitor.cpp

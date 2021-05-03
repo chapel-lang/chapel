@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_AST_VISITOR_H
-#define CHPL_AST_VISITOR_H
+#ifndef CHPL_UAST_VISITOR_H
+#define CHPL_UAST_VISITOR_H
 
 #include "chpl/uast/ASTBase.h"
 

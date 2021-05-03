@@ -20,13 +20,13 @@
 #ifndef CHPL_FRONTEND_FRONTENDQUERIES_H
 #define CHPL_FRONTEND_FRONTENDQUERIES_H
 
+#include "chpl/queries/Context.h"
+#include "chpl/queries/ID.h"
+#include "chpl/queries/Location.h"
 #include "chpl/uast/ASTBase.h"
 #include "chpl/uast/Builder.h"
 #include "chpl/uast/Exp.h"
-#include "chpl/uast/ID.h"
-#include "chpl/uast/Location.h"
 #include "chpl/uast/ModuleDecl.h"
-#include "chpl/queries/Context.h"
 
 #include <vector>
 

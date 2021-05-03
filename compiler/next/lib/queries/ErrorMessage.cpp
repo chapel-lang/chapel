@@ -17,14 +17,13 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/ErrorMessage.h"
+#include "chpl/queries/ErrorMessage.h"
 
 #include <cassert>
 #include <cstdarg>
 #include <cstdlib>
 
 namespace chpl {
-namespace uast {
 
 
 static std::string vprint_to_string(const char* format, va_list vl) {
@@ -76,5 +75,4 @@ void ErrorMessage::swap(ErrorMessage& other) {
 }
 
 
-} // namespace uast
 } // namespace chpl

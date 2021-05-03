@@ -19,5 +19,8 @@ target_sources(libchplcomp-obj
                PRIVATE
 
                Context.cpp
+               ErrorMessage.cpp
+               ID.cpp
+               UniqueString.cpp
 
               )

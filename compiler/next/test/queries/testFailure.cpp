@@ -29,7 +29,6 @@
 #include <cstdlib>
 
 using namespace chpl;
-using namespace uast;
 
 int main() {
   exit(1);

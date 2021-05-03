@@ -21,6 +21,9 @@
 // It is split out into this separate file for easier maintenance.
 // It contains any #includes necessary for the parser.
 
+#include "chpl/queries/Context.h"
+#include "chpl/queries/Location.h"
+#include "chpl/queries/UniqueString.h"
 #include "chpl/uast/ASTBase.h"
 #include "chpl/uast/Block.h"
 #include "chpl/uast/Builder.h"
@@ -29,14 +32,11 @@
 #include "chpl/uast/ErroneousExp.h"
 #include "chpl/uast/Exp.h"
 #include "chpl/uast/Identifier.h"
-#include "chpl/uast/Location.h"
 #include "chpl/uast/Module.h"
 #include "chpl/uast/ModuleDecl.h"
-#include "chpl/uast/UniqueString.h"
 #include "chpl/uast/Sym.h"
 #include "chpl/uast/Variable.h"
 #include "chpl/uast/VariableDecl.h"
-#include "chpl/queries/Context.h"
 
 #include <cstdint>
 #include <cstdio>
@@ -49,7 +49,7 @@
 
 using namespace chpl;
 using namespace uast;
-using chpl::uast::detail::PODUniqueString;
+using chpl::detail::PODUniqueString;
 
 struct ParserError;
 struct ParserComment;

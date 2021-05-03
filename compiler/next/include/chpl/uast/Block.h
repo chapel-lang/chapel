@@ -17,11 +17,11 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_AST_BLOCK_H
-#define CHPL_AST_BLOCK_H
+#ifndef CHPL_UAST_BLOCK_H
+#define CHPL_UAST_BLOCK_H
 
+#include "chpl/queries/Location.h"
 #include "chpl/uast/Exp.h"
-#include "chpl/uast/Location.h"
 
 namespace chpl {
 namespace uast {

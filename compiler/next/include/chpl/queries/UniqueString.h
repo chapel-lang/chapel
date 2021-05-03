@@ -22,10 +22,10 @@
   comparison and memory management.
  */
 
-#ifndef CHPL_AST_UNIQUE_STRING_H
-#define CHPL_AST_UNIQUE_STRING_H
+#ifndef CHPL_QUERIES_UNIQUE_STRING_H
+#define CHPL_QUERIES_UNIQUE_STRING_H
 
-#include "chpl/uast/UniqueString-detail.h"
+#include "chpl/queries/UniqueString-detail.h"
 
 #include <cassert>
 #include <cstring>
@@ -34,8 +34,6 @@
 
 namespace chpl {
 class Context;
-
-namespace uast {
 
 
 /**
@@ -146,49 +144,41 @@ class UniqueString final {
 };
 
 
-} // end namespace uast
-
 // docs are turned off for this as a workaround for breathe errors
 /// \cond DO_NOT_DOCUMENT
-template<> struct update<chpl::uast::UniqueString> {
-  bool operator()(chpl::uast::UniqueString& keep,
-                  chpl::uast::UniqueString& addin) const {
+template<> struct update<chpl::UniqueString> {
+  bool operator()(chpl::UniqueString& keep,
+                  chpl::UniqueString& addin) const {
     return defaultUpdate(keep, addin);
   }
 };
-template<> struct mark<chpl::uast::UniqueString> {
+template<> struct mark<chpl::UniqueString> {
   void operator()(Context* context,
-                  const chpl::uast::UniqueString& keep) const {
+                  const chpl::UniqueString& keep) const {
     printf("MARKING UNIQUE STRING %s\n", keep.c_str());
     keep.mark(context);
   }
 };
-
 /// \endcond
-
-// Allow chpl::uast::UniqueString to be just called chpl::UniqueString
-// TODO: Should it be moved out of the uast namespace? What directory
-// should it go in?
-using chpl::uast::UniqueString;
 
 
 } // end namespace chpl
 
 namespace std {
-  template<> struct less<chpl::uast::UniqueString> {
-    bool operator()(const chpl::uast::UniqueString lhs,
-                    const chpl::uast::UniqueString rhs) const {
+  template<> struct less<chpl::UniqueString> {
+    bool operator()(const chpl::UniqueString lhs,
+                    const chpl::UniqueString rhs) const {
       return lhs.compare(rhs) < 0;
     }
   };
-  template<> struct hash<chpl::uast::UniqueString> {
-    size_t operator()(const chpl::uast::UniqueString key) const {
+  template<> struct hash<chpl::UniqueString> {
+    size_t operator()(const chpl::UniqueString key) const {
       return (size_t) key.hash();
     }
   };
-  template<> struct equal_to<chpl::uast::UniqueString> {
-    bool operator()(const chpl::uast::UniqueString lhs,
-                    const chpl::uast::UniqueString rhs) const {
+  template<> struct equal_to<chpl::UniqueString> {
+    bool operator()(const chpl::UniqueString lhs,
+                    const chpl::UniqueString rhs) const {
       return lhs == rhs;
     }
   };

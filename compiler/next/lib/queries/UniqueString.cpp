@@ -22,7 +22,7 @@
 #include "../util/sys_basic.h"
 #include "../util/bswap.h"
 
-#include "chpl/uast/UniqueString.h"
+#include "chpl/queries/UniqueString.h"
 
 #include "chpl/queries/Context.h"
 
@@ -30,7 +30,6 @@
 #include <cstring>
 
 namespace chpl {
-namespace uast {
 namespace detail {
 
 
@@ -68,5 +67,4 @@ void UniqueString::mark(Context* context) const {
 }
 
 
-} // end namespace uast
 } // end namespace chpl

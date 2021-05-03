@@ -20,9 +20,9 @@
 #ifndef CHPL_QUERIES_CONTEXT_H
 #define CHPL_QUERIES_CONTEXT_H
 
-#include "chpl/uast/UniqueString.h"
-#include "chpl/uast/ID.h"
 #include "chpl/queries/Context-detail.h"
+#include "chpl/queries/ID.h"
+#include "chpl/queries/UniqueString.h"
 #include "chpl/util/memory.h"
 
 #include <memory>

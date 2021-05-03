@@ -17,12 +17,11 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/ID.h"
+#include "chpl/queries/ID.h"
 
 #include <cstring>
 
 namespace chpl {
-namespace uast {
 
 
 ID::ID()
@@ -69,5 +68,4 @@ int ID::compare(const ID other) const {
 }
 
 
-} // end namespace uast
 } // end namespace chpl

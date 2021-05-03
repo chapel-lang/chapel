@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_AST_ASTTYPES_H
-#define CHPL_AST_ASTTYPES_H
+#ifndef CHPL_UAST_ASTTYPES_H
+#define CHPL_UAST_ASTTYPES_H
 
 #include "chpl/util/memory.h"
 

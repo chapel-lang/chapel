@@ -17,11 +17,11 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_AST_BUILDER_H
-#define CHPL_AST_BUILDER_H
+#ifndef CHPL_UAST_BUILDER_H
+#define CHPL_UAST_BUILDER_H
 
 #include "chpl/uast/ASTBase.h"
-#include "chpl/uast/UniqueString.h"
+#include "chpl/queries/UniqueString.h"
 
 #include <vector>
 #include <unordered_map>
@@ -30,12 +30,12 @@
 namespace chpl {
 
 class Context;
+class ErrorMessage;
+class Location;
 
 namespace uast {
 
-class ErrorMessage;
 class Exp;
-class Location;
 
 /**
   This class helps to build AST. It should only build AST

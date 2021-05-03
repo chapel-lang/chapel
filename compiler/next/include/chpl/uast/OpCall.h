@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_AST_OPCALL_H
-#define CHPL_AST_OPCALL_H
+#ifndef CHPL_UAST_OPCALL_H
+#define CHPL_UAST_OPCALL_H
 
 #include "chpl/uast/Call.h"
 

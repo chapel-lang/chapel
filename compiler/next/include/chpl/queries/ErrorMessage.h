@@ -17,16 +17,15 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_AST_ERRORMESSAGE_H
-#define CHPL_AST_ERRORMESSAGE_H
+#ifndef CHPL_QUERIES_ERRORMESSAGE_H
+#define CHPL_QUERIES_ERRORMESSAGE_H
 
-#include "chpl/uast/Location.h"
+#include "chpl/queries/Location.h"
 
 #include <string>
 #include <vector>
 
 namespace chpl {
-namespace uast {
 
 
 /**
@@ -71,13 +70,6 @@ class ErrorMessage final {
 
   void swap(ErrorMessage& other);
 };
-
-} // end namespace uast
-
-// Allow chpl::ast::ErrorMessage to be just called chpl::ErrorMessage
-// TODO: Should it be moved out of the ast namespace? What directory
-// should it go in?
-using chpl::uast::ErrorMessage;
 
 
 } // end namespace chpl

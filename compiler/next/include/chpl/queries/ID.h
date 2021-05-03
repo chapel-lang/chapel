@@ -17,13 +17,12 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_AST_ID_H
-#define CHPL_AST_ID_H
+#ifndef CHPL_QUERIES_ID_H
+#define CHPL_QUERIES_ID_H
 
-#include "chpl/uast/UniqueString.h"
+#include "chpl/queries/UniqueString.h"
 
 namespace chpl {
-namespace uast {
 
 
 /**
@@ -118,45 +117,38 @@ class ID final {
   }
 };
 
-} // end namespace uast
-
 // docs are turned off for this as a workaround for breathe errors
 /// \cond DO_NOT_DOCUMENT
-template<> struct update<chpl::uast::ID> {
-  bool operator()(chpl::uast::ID& keep,
-                  chpl::uast::ID& addin) const {
+template<> struct update<chpl::ID> {
+  bool operator()(chpl::ID& keep,
+                  chpl::ID& addin) const {
     return defaultUpdate(keep, addin);
   }
 };
-template<> struct mark<chpl::uast::ID> {
-  void operator()(Context* context, const chpl::uast::ID& keep) const {
+template<> struct mark<chpl::ID> {
+  void operator()(Context* context, const chpl::ID& keep) const {
     keep.markUniqueStrings(context);
   }
 };
 /// \endcond
 
-// Allow chpl::uast::ID to be just called chpl::ID
-// TODO: Should it be moved out of the uast namespace? What directory
-// should it go in?
-using chpl::uast::ID;
-
 
 } // end namespace chpl
 
 namespace std {
-  template<> struct less<chpl::uast::ID> {
-    bool operator()(const chpl::uast::ID lhs, const chpl::uast::ID rhs) const {
+  template<> struct less<chpl::ID> {
+    bool operator()(const chpl::ID lhs, const chpl::ID rhs) const {
       return lhs.compare(rhs) < 0;
     }
   };
-  template<> struct hash<chpl::uast::ID> {
-    size_t operator()(const chpl::uast::ID key) const {
+  template<> struct hash<chpl::ID> {
+    size_t operator()(const chpl::ID key) const {
       return (size_t) key.hash();
     }
   };
-  template<> struct equal_to<chpl::uast::ID> {
-    bool operator()(const chpl::uast::ID lhs,
-                    const chpl::uast::ID rhs) const {
+  template<> struct equal_to<chpl::ID> {
+    bool operator()(const chpl::ID lhs,
+                    const chpl::ID rhs) const {
       return lhs == rhs;
     }
   };

@@ -20,8 +20,8 @@
 #ifndef CHPL_QUERIES_CONTEXT_DETAIL_H
 #define CHPL_QUERIES_CONTEXT_DETAIL_H
 
-#include "chpl/uast/UniqueString.h"
-#include "chpl/uast/ErrorMessage.h"
+#include "chpl/queries/ErrorMessage.h"
+#include "chpl/queries/UniqueString.h"
 #include "chpl/util/memory.h"
 
 #include <cstring>
@@ -32,6 +32,7 @@
 namespace chpl {
 
 class Contex;
+class ID;
 
 namespace detail {
 

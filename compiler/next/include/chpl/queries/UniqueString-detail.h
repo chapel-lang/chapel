@@ -22,8 +22,8 @@
   comparison and memory management.
  */
 
-#ifndef CHPL_AST_UNIQUE_STRING_DETAIL_H
-#define CHPL_AST_UNIQUE_STRING_DETAIL_H
+#ifndef CHPL_QUERIES_UNIQUE_STRING_DETAIL_H
+#define CHPL_QUERIES_UNIQUE_STRING_DETAIL_H
 
 #include <cassert>
 #include <cstring>
@@ -34,7 +34,7 @@
 /// \cond DO_NOT_DOCUMENT
 namespace chpl {
 class Context;
-namespace uast {
+
 namespace detail {
 
 
@@ -184,7 +184,6 @@ struct PODUniqueString {
 
 
 } // end namespace detail
-} // end namespace uast
 
 // TODO: should these go somewhere else?
 static inline

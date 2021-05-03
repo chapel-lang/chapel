@@ -17,11 +17,11 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_AST_MODULE_H
-#define CHPL_AST_MODULE_H
+#ifndef CHPL_UAST_MODULE_H
+#define CHPL_UAST_MODULE_H
 
 #include "chpl/uast/Sym.h"
-#include "chpl/uast/Location.h"
+#include "chpl/queries/Location.h"
 
 namespace chpl {
 namespace uast {

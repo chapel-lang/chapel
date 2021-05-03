@@ -17,12 +17,12 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_AST_ASTBASE_H
-#define CHPL_AST_ASTBASE_H
+#ifndef CHPL_UAST_ASTBASE_H
+#define CHPL_UAST_ASTBASE_H
 
-#include "chpl/uast/ASTTag.h"
-#include "chpl/uast/ID.h"
+#include "chpl/queries/ID.h"
 #include "chpl/uast/ASTList.h"
+#include "chpl/uast/ASTTag.h"
 #include "chpl/uast/ASTTypes.h"
 #include "chpl/util/memory.h"
 
@@ -236,7 +236,7 @@ namespace std {
                     const chpl::uast::NAME* rhs) const { \
       if (lhs == nullptr && rhs != nullptr) return true; \
       if (rhs == nullptr) return false; \
-      std::less<chpl::uast::ID> lessID; \
+      std::less<chpl::ID> lessID; \
       /* cast in the next line is so it compiles with only forward decls */ \
       return lessID(((const chpl::uast::ASTBase*)lhs)->id(), \
                     ((const chpl::uast::ASTBase*)rhs)->id()); \
