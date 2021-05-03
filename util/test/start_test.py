@@ -126,6 +126,7 @@ def run_tests(tests):
     # futures or notests
     os.environ["CHPL_TEST_FUTURES"] = "1"
     os.environ["CHPL_TEST_NOTESTS"] = "1"
+    #if the user throws --respect-skipifs, skipifs will be respected for single tests
     if args.respect_skipifs:
         os.environ["CHPL_TEST_SINGLES"] = "0"
     else:
@@ -1470,7 +1471,7 @@ def parser_setup():
             help=help_all("<prefix> to remove from tests in jUnit report"))
     # respect skipifs
     parser.add_argument("-respect-skipifs", "--respect-skipifs",
-            action="store", dest="respect_skipifs")
+            action="store_true", dest="respect_skipifs")
     # extra help
     parser.add_argument("-help", action="help", help=argparse.SUPPRESS)
     parser.add_argument("--help-all", action="help",
