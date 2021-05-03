@@ -41,7 +41,7 @@ target_sources(libchplcomp-obj
                parser-help.h
                ParserContext.h
                ParserContextImpl.h
-               ParserDependencies.h
+               parser-dependencies.h
               )
 
 add_custom_target(parser

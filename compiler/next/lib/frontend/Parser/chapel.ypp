@@ -50,7 +50,7 @@
 // Note that the generated flex scanner includes the generated bison .h
 // file, so something in "%code requires" is available in the scanner, too.
 %code requires {
-  #include "ParserDependencies.h"
+  #include "parser-dependencies.h"
 }
 
 // It would be better if Flex could generate these for itself
