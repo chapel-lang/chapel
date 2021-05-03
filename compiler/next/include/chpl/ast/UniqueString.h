@@ -25,7 +25,7 @@
 #ifndef CHPL_AST_UNIQUE_STRING_H
 #define CHPL_AST_UNIQUE_STRING_H
 
-#include "chpl/ast/UniqueStringDetail.h"
+#include "chpl/ast/UniqueString-detail.h"
 
 #include <cassert>
 #include <cstring>
