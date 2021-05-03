@@ -1,4 +1,4 @@
 256
 65536
 4294967296
-rangeLengthOverflow.chpl:5: error: halt reached - range.size exceeds max(int(64))
+rangeLengthOverflow.chpl:5: error: halt reached - range.size exceeds max(int(64)) for: '0..18446744073709551615'
