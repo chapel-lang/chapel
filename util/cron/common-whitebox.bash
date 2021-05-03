@@ -128,14 +128,18 @@ fi
 export CHPL_LAUNCHER=none
 export CHPL_COMM=none
 
-# Make LLVM available
+# Make LLVM available. This has to happen after loading the PrgEnv or else
+# CCE's LLVM is added to PATHs etc. ahead of ours.
 if [ -z "${OFFICIAL_SYSTEM_LLVM}" ] ; then
   if [ -f /data/cf/chapel/setup_system_llvm.bash ] ; then
     source /data/cf/chapel/setup_system_llvm.bash
   elif [ -f /cray/css/users/chapelu/setup_system_llvm.bash ] ; then
     source /cray/css/users/chapelu/setup_system_llvm.bash
   fi
+  # Make clang aware of standard libraries
+  export COMPILER_PATH=/opt/gcc/10.3.0/snos
 fi
+
 
 # Set some vars that nightly cares about.
 export CHPL_NIGHTLY_LOGDIR=${CHPL_NIGHTLY_LOGDIR:-/data/sea/chapel/Nightly}
