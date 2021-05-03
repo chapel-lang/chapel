@@ -22,9 +22,9 @@
 
 #include "../util/files.h"
 
-#include "chpl/ast/ErrorMessage.h"
-#include "chpl/ast/Comment.h"
-#include "chpl/ast/Exp.h"
+#include "chpl/uast/ErrorMessage.h"
+#include "chpl/uast/Comment.h"
+#include "chpl/uast/Exp.h"
 
 #include "Parser/bison-chapel.h"
 #include "Parser/flex-chapel.h"

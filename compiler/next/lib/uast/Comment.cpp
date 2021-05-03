@@ -17,32 +17,37 @@
  * limitations under the License.
  */
 
-#ifndef FILES_H
-#define FILES_H
+#include "chpl/uast/Comment.h"
 
-#include "chpl/uast/ErrorMessage.h"
+#include "chpl/uast/Builder.h"
 
-#include <cstdio>
-#include <string>
+#include <cstdlib>
 
 namespace chpl {
+namespace uast {
 
-/**
-  Open a file. If the open failed, return nullptr and set errorOut.
- */
-FILE* openfile(const char* path, const char* mode, ErrorMessage& errorOut);
 
-/**
-  Close a file. If the close failed, return false and set errorOut.
- */
-bool closefile(FILE* fp, const char* path, ErrorMessage& errorOut);
+Comment::Comment(std::string s)
+ : Exp(asttags::Comment), comment_(std::move(s)) {
+}
 
-/**
-  Reads the contents of a file into a string.
-  If something failed, returns false and sets errorOut.
- */
-bool readfile(const char* path, std::string& strOut, ErrorMessage& errorOut);
+bool Comment::contentsMatchInner(const ASTBase* other) const {
+  const Comment* lhs = this;
+  const Comment* rhs = (const Comment*) other;
+  return lhs->expContentsMatchInner(rhs) &&
+         lhs->comment_ == rhs->comment_ ;
+}
+void Comment::markUniqueStringsInner(Context* context) const {
+  return expMarkUniqueStringsInner(context);
+}
 
-} // end namespace chpl
 
-#endif
+owned<Comment> Comment::build(Builder* builder, Location loc, std::string c) {
+  Comment* ret = new Comment(std::move(c));
+  builder->noteLocation(ret, loc);
+  return toOwned(ret);
+}
+
+
+} // namespace uast
+} // namespace chpl

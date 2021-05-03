@@ -17,32 +17,23 @@
  * limitations under the License.
  */
 
-#ifndef FILES_H
-#define FILES_H
-
-#include "chpl/uast/ErrorMessage.h"
-
-#include <cstdio>
-#include <string>
+#include "chpl/uast/Exp.h"
 
 namespace chpl {
+namespace uast {
 
-/**
-  Open a file. If the open failed, return nullptr and set errorOut.
- */
-FILE* openfile(const char* path, const char* mode, ErrorMessage& errorOut);
 
-/**
-  Close a file. If the close failed, return false and set errorOut.
- */
-bool closefile(FILE* fp, const char* path, ErrorMessage& errorOut);
+Exp::Exp(asttags::ASTTag tag)
+  : ASTBase(tag) {
+}
 
-/**
-  Reads the contents of a file into a string.
-  If something failed, returns false and sets errorOut.
- */
-bool readfile(const char* path, std::string& strOut, ErrorMessage& errorOut);
+Exp::Exp(asttags::ASTTag tag, ASTList children)
+  : ASTBase(tag, std::move(children)) {
+}
 
-} // end namespace chpl
+Exp::~Exp() {
+}
 
-#endif
+
+} // namespace uast
+} // namespace chpl

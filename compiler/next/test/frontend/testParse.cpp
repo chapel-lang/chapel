@@ -17,10 +17,10 @@
  * limitations under the License.
  */
 
-#include "chpl/ast/Block.h"
-#include "chpl/ast/Exp.h"
-#include "chpl/ast/Identifier.h"
-#include "chpl/ast/ModuleDecl.h"
+#include "chpl/uast/Block.h"
+#include "chpl/uast/Exp.h"
+#include "chpl/uast/Identifier.h"
+#include "chpl/uast/ModuleDecl.h"
 #include "chpl/frontend/Parser.h"
 #include "chpl/queries/Context.h"
 

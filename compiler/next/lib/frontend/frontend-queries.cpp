@@ -19,11 +19,11 @@
 
 #include "chpl/frontend/frontend-queries.h"
 
-#include "chpl/ast/ASTBase.h"
-#include "chpl/ast/ErrorMessage.h"
-#include "chpl/ast/Identifier.h"
-#include "chpl/ast/Module.h"
-#include "chpl/ast/Visitor.h"
+#include "chpl/uast/ASTBase.h"
+#include "chpl/uast/ErrorMessage.h"
+#include "chpl/uast/Identifier.h"
+#include "chpl/uast/Module.h"
+#include "chpl/uast/Visitor.h"
 #include "chpl/frontend/Parser.h"
 #include "chpl/queries/query-impl.h"
 

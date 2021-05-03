@@ -20,8 +20,8 @@
 #ifndef CHPL_QUERIES_CONTEXT_DETAIL_H
 #define CHPL_QUERIES_CONTEXT_DETAIL_H
 
-#include "chpl/ast/UniqueString.h"
-#include "chpl/ast/ErrorMessage.h"
+#include "chpl/uast/UniqueString.h"
+#include "chpl/uast/ErrorMessage.h"
 #include "chpl/util/memory.h"
 
 #include <cstring>

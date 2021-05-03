@@ -21,8 +21,8 @@
 
 #include "./mystrerror.h"
 
-#include "chpl/ast/ErrorMessage.h"
-#include "chpl/ast/Location.h"
+#include "chpl/uast/ErrorMessage.h"
+#include "chpl/uast/Location.h"
 
 #include <cerrno>
 

@@ -20,11 +20,11 @@
 #ifndef CHPL_FRONTEND_PARSER_H
 #define CHPL_FRONTEND_PARSER_H
 
-#include "chpl/ast/ASTBase.h"
-#include "chpl/ast/Builder.h"
-#include "chpl/ast/Exp.h"
-#include "chpl/ast/ErrorMessage.h"
-#include "chpl/ast/Location.h"
+#include "chpl/uast/ASTBase.h"
+#include "chpl/uast/Builder.h"
+#include "chpl/uast/Exp.h"
+#include "chpl/uast/ErrorMessage.h"
+#include "chpl/uast/Location.h"
 #include "chpl/util/memory.h"
 
 #include <vector>

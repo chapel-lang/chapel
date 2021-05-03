@@ -17,32 +17,34 @@
  * limitations under the License.
  */
 
-#ifndef FILES_H
-#define FILES_H
+#ifndef CHPL_AST_OPCALL_H
+#define CHPL_AST_OPCALL_H
 
-#include "chpl/uast/ErrorMessage.h"
-
-#include <cstdio>
-#include <string>
+#include "chpl/uast/Call.h"
 
 namespace chpl {
+namespace uast {
+
 
 /**
-  Open a file. If the open failed, return nullptr and set errorOut.
+  This class represents a call to an operator.
  */
-FILE* openfile(const char* path, const char* mode, ErrorMessage& errorOut);
+class OpCall final : public Call {
+ private:
+  // which operator
+  UniqueString op_;
 
-/**
-  Close a file. If the close failed, return false and set errorOut.
- */
-bool closefile(FILE* fp, const char* path, ErrorMessage& errorOut);
+  bool matchesInner(const ASTBase* other) const override;
+  void markUniqueStringsInner(Context* context) const override;
+ public:
+  ~OpCall() override = default;
 
-/**
-  Reads the contents of a file into a string.
-  If something failed, returns false and sets errorOut.
- */
-bool readfile(const char* path, std::string& strOut, ErrorMessage& errorOut);
+  /** Returns the name of the operator called */
+  UniqueString operatorName() const { return op_; }
+};
 
+
+} // end namespace uast
 } // end namespace chpl
 
 #endif

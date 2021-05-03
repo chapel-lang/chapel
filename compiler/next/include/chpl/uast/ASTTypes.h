@@ -17,32 +17,42 @@
  * limitations under the License.
  */
 
-#ifndef FILES_H
-#define FILES_H
+#ifndef CHPL_AST_ASTTYPES_H
+#define CHPL_AST_ASTTYPES_H
 
-#include "chpl/uast/ErrorMessage.h"
+#include "chpl/util/memory.h"
 
-#include <cstdio>
-#include <string>
+#include <iterator>
+#include <vector>
 
 namespace chpl {
+namespace uast {
 
-/**
-  Open a file. If the open failed, return nullptr and set errorOut.
- */
-FILE* openfile(const char* path, const char* mode, ErrorMessage& errorOut);
 
-/**
-  Close a file. If the close failed, return false and set errorOut.
- */
-bool closefile(FILE* fp, const char* path, ErrorMessage& errorOut);
+// forward declare the various AST types
+// using macros and ASTClassesList.h
+/// \cond DO_NOT_DOCUMENT
+#define AST_DECL(NAME) class NAME;
+#define AST_NODE(NAME) AST_DECL(NAME)
+#define AST_LEAF(NAME) AST_DECL(NAME)
+#define AST_BEGIN_SUBCLASSES(NAME) AST_DECL(NAME)
+#define AST_END_SUBCLASSES(NAME)
+/// \endcond
+// Apply the above macros to ASTClassesList.h
+#include "chpl/uast/ASTClassesList.h"
+// clear the macros
+#undef AST_NODE
+#undef AST_LEAF
+#undef AST_BEGIN_SUBCLASSES
+#undef AST_END_SUBCLASSES
+#undef AST_DECL
 
-/**
-  Reads the contents of a file into a string.
-  If something failed, returns false and sets errorOut.
- */
-bool readfile(const char* path, std::string& strOut, ErrorMessage& errorOut);
+// forward declare other classes
+class ASTBase;
+class Builder;
 
+
+} // end namespace uast
 } // end namespace chpl
 
 #endif

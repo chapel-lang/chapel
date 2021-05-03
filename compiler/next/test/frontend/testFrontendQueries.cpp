@@ -19,7 +19,7 @@
 
 #include "chpl/frontend/frontend-queries.h"
 
-#include "chpl/ast/ModuleDecl.h"
+#include "chpl/uast/ModuleDecl.h"
 
 // always check assertions in this test
 #ifdef NDEBUG

@@ -17,32 +17,34 @@
  * limitations under the License.
  */
 
-#ifndef FILES_H
-#define FILES_H
+#ifndef CHPL_AST_EXP_H
+#define CHPL_AST_EXP_H
 
-#include "chpl/uast/ErrorMessage.h"
-
-#include <cstdio>
-#include <string>
+#include "chpl/uast/ASTBase.h"
 
 namespace chpl {
+namespace uast {
+
 
 /**
-  Open a file. If the open failed, return nullptr and set errorOut.
+  This is an abstract base class for expressions
  */
-FILE* openfile(const char* path, const char* mode, ErrorMessage& errorOut);
+class Exp : public ASTBase {
+ protected:
+  Exp(ASTTag tag);
+  Exp(ASTTag tag, ASTList children);
+  bool expContentsMatchInner(const Exp* other) const {
+    return true;
+  }
+  void expMarkUniqueStringsInner(Context* context) const {
+  }
 
-/**
-  Close a file. If the close failed, return false and set errorOut.
- */
-bool closefile(FILE* fp, const char* path, ErrorMessage& errorOut);
+ public:
+  virtual ~Exp() = 0; // this is an abstract base class
+};
 
-/**
-  Reads the contents of a file into a string.
-  If something failed, returns false and sets errorOut.
- */
-bool readfile(const char* path, std::string& strOut, ErrorMessage& errorOut);
 
+} // end namespace uast
 } // end namespace chpl
 
 #endif

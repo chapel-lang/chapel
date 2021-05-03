@@ -20,12 +20,12 @@
 #ifndef CHPL_FRONTEND_FRONTENDQUERIES_H
 #define CHPL_FRONTEND_FRONTENDQUERIES_H
 
-#include "chpl/ast/ASTBase.h"
-#include "chpl/ast/Builder.h"
-#include "chpl/ast/Exp.h"
-#include "chpl/ast/ID.h"
-#include "chpl/ast/Location.h"
-#include "chpl/ast/ModuleDecl.h"
+#include "chpl/uast/ASTBase.h"
+#include "chpl/uast/Builder.h"
+#include "chpl/uast/Exp.h"
+#include "chpl/uast/ID.h"
+#include "chpl/uast/Location.h"
+#include "chpl/uast/ModuleDecl.h"
 #include "chpl/queries/Context.h"
 
 #include <vector>

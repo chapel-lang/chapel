@@ -17,32 +17,32 @@
  * limitations under the License.
  */
 
-#ifndef FILES_H
-#define FILES_H
+#ifndef CHPL_AST_LITERAL_H
+#define CHPL_AST_LITERAL_H
 
-#include "chpl/uast/ErrorMessage.h"
-
-#include <cstdio>
-#include <string>
+#include "chpl/uast/Exp.h"
 
 namespace chpl {
+namespace uast {
+
 
 /**
-  Open a file. If the open failed, return nullptr and set errorOut.
- */
-FILE* openfile(const char* path, const char* mode, ErrorMessage& errorOut);
+  This class represents a literal.
 
-/**
-  Close a file. If the close failed, return false and set errorOut.
- */
-bool closefile(FILE* fp, const char* path, ErrorMessage& errorOut);
+  Here are some example literals:
 
-/**
-  Reads the contents of a file into a string.
-  If something failed, returns false and sets errorOut.
- */
-bool readfile(const char* path, std::string& strOut, ErrorMessage& errorOut);
+  \rst
+  .. code-block:: chapel
 
+    1 2.0 3.0i "string" b"bytes"
+  \endrst
+ */
+class Literal final : public Exp {
+  // TODO: move over 'ifa' code
+};
+
+
+} // end namespace uast
 } // end namespace chpl
 
 #endif
