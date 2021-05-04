@@ -30,7 +30,7 @@ configure_file(${CHPL_MAIN_INCLUDE_DIR}/chpl/config/config.h.cmake
 # see https://llvm.org/docs/CMake.html
 # for instructions on extending this to include LLVM dependencies
 
-# request C++11
+# request C++14
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
