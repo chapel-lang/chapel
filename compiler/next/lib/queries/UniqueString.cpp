@@ -58,6 +58,32 @@ InlinedString InlinedString::buildUsingContextTable(Context* context,
 } // end namespace detail
 
 
+static bool stringContainsZeroBytes(const char* s, size_t len) {
+  for (size_t i = 0; i < len; i++) {
+    if (s[i] == '\0')
+      return true;
+  }
+  return false;
+}
+
+UniqueString UniqueString::build(Context* context,
+                                 const char* s, size_t len) {
+  const char* u;
+  assert(!stringContainsZeroBytes(s, len));
+  if (s[len] == '\0') {
+    // string is already appropriately null terminated
+    detail::PODUniqueString ret =
+      detail::PODUniqueString::build(context, s, len);
+    return UniqueString(ret);
+  } else {
+    // otherwise, construct a truncated string
+    std::string str(s, len);
+    detail::PODUniqueString ret =
+      detail::PODUniqueString::build(context, str.c_str(), len);
+    return UniqueString(ret);
+  }
+}
+
 void UniqueString::mark(Context* context) const {
   if (this->s.i.isInline()) {
     // nothing to do since string data is stored inline, not in map

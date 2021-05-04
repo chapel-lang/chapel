@@ -101,6 +101,10 @@ class ID final {
            this->postOrderId_ != other.postOrderId_;
   }
 
+  bool isEmpty() const {
+    return symbolPath_.isEmpty();
+  }
+
   size_t hash() const {
     std::hash<int> hasher;
     return hash_combine(symbolPath_.hash(), hasher(postOrderId_));

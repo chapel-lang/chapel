@@ -73,7 +73,7 @@ void Builder::addError(ErrorMessage e) {
 }
 
 void Builder::noteLocation(ASTBase* ast, Location loc) {
-  this->locations_.push_back(std::make_pair(ast->id(), loc));
+  this->locations_.push_back(std::make_pair(ast, loc));
 }
 
 Builder::Result Builder::result() {
@@ -228,7 +228,6 @@ void Builder::Result::mark(Context* context, const Result& keep) {
 
   // mark UniqueStrings in the locations
   for (const auto& pair : keep.locations) {
-    pair.first.markUniqueStrings(context);
     pair.second.markUniqueStrings(context);
   }
 

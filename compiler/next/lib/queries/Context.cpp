@@ -28,9 +28,26 @@ namespace chpl {
 
 using namespace chpl::querydetail;
 
+static void defaultReportErrorPrintDetail(const ErrorMessage& err) {
+  printf("  %s:%i: note: %s\n",
+         err.path().c_str(), err.line(), err.message().c_str());
+  for (const auto& detail : err.details()) {
+    defaultReportErrorPrintDetail(detail);
+  }
+}
+static void defaultReportError(const ErrorMessage& err) {
+  printf("%s:%i: error: %s\n",
+         err.path().c_str(), err.line(), err.message().c_str());
+  for (const auto& detail : err.details()) {
+    defaultReportErrorPrintDetail(detail);
+  }
+}
+
 Context::Context()
   : uniqueStringsTable(), queryDB(), queryStack(),
-    currentRevisionNumber(1), lastPrepareToGCRevisionNumber(0), gcCounter(1) {
+    currentRevisionNumber(1),
+    reportError(defaultReportError),
+    lastPrepareToGCRevisionNumber(0), gcCounter(1) {
 }
 
 Context::~Context() {
@@ -39,6 +56,9 @@ Context::~Context() {
     const char* s = item.second;
     free((void*)s);
   }
+}
+
+void Context::setErrorHandler(void (*reportError)(const ErrorMessage& err)) {
 }
 
 #define ALIGN_DN(i, size)  ((i) & ~((size) - 1))
@@ -254,19 +274,31 @@ void Context::recomputeIfNeeded(const QueryMapResultBase* resultEntry) {
     assert(resultEntry->lastChecked == this->currentRevisionNumber);
     return;
   } else {
-    // if we are GC'ing, mark unique strings
-    if (this->currentRevisionNumber == this->lastPrepareToGCRevisionNumber) {
-      resultEntry->markUniqueStringsInResult(this);
-      // and also mark unique strings in the errors
-      for (const auto& err: resultEntry->errors) {
-        err.markUniqueStrings(this);
-      }
-    }
-    resultEntry->lastChecked = this->currentRevisionNumber;
+    updateForReuse(resultEntry);
   }
 
   printf("DONE RECOMPUTING IF NEEDED FOR %s\n",
          resultEntry->parentQueryMap->queryName);
+}
+
+// this should be called once each revision the first time
+// the result is reused. It sets lastChecked = currentRevisionNumber
+// and takes some steps to support garbage collection.
+void Context::updateForReuse(const QueryMapResultBase* resultEntry) {
+  // if we are GC'ing, mark unique strings
+  if (this->currentRevisionNumber == this->lastPrepareToGCRevisionNumber) {
+    resultEntry->markUniqueStringsInResult(this);
+    // and also mark unique strings in the errors
+    for (const auto& err: resultEntry->errors) {
+      err.markUniqueStrings(this);
+    }
+  }
+  resultEntry->lastChecked = this->currentRevisionNumber;
+
+  // Re-report any errors in the query
+  for (const auto& err: resultEntry->errors) {
+    reportError(err);
+  }
 }
 
 bool Context::queryCanUseSavedResultAndPushIfNot(
@@ -297,7 +329,7 @@ bool Context::queryCanUseSavedResultAndPushIfNot(
       }
     }
     if (useSaved == true) {
-      resultEntry->lastChecked = this->currentRevisionNumber;
+      updateForReuse(resultEntry);
     }
   }
 
@@ -334,6 +366,7 @@ void Context::endQueryHandleDependency(const QueryMapResultBase* resultEntry) {
 void Context::queryNoteError(ErrorMessage error) {
   assert(queryStack.size() > 0);
   queryStack.back()->errors.push_back(std::move(error));
+  reportError(queryStack.back()->errors.back());
 }
 
 

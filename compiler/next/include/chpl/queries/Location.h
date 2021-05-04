@@ -48,7 +48,12 @@ class Location final {
       lastLine_(lastLine), lastColumn_(lastColumn) {
   }
 
-  UniqueString path() { return path_; }
+  UniqueString path() const { return path_; }
+  int firstLine() const { return firstLine_; }
+  int firstColumn() const { return firstColumn_; }
+  int lastLine() const { return lastLine_; }
+  int lastColumn() const { return lastColumn_; }
+  int line() const { return firstLine(); }
 
   inline bool operator==(const Location other) const {
     return this->path_ == other.path_ &&

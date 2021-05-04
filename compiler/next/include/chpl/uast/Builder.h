@@ -51,7 +51,7 @@ class Builder final {
   UniqueString inferredModuleName_;
   ASTList topLevelExps_;
   std::vector<ErrorMessage> errors_;
-  std::vector<std::pair<ID, Location>> locations_;
+  std::vector<std::pair<const ASTBase*, Location>> locations_;
 
   Builder(Context* context,
           UniqueString filepath, UniqueString inferredModuleName);
@@ -87,7 +87,7 @@ class Builder final {
   struct Result final {
     uast::ASTList topLevelExps;
     std::vector<ErrorMessage> errors;
-    std::vector<std::pair<ID, Location>> locations;
+    std::vector<std::pair<const ASTBase*, Location>> locations;
 
     Result();
     Result(Result&&) = default; // move-constructable

@@ -184,9 +184,12 @@ class Context {
 
   std::vector<const querydetail::QueryMapResultBase*> queryStack;
 
+
   querydetail::RevisionNumber currentRevisionNumber;
 
-  // The following are only used for UniqueString
+  void (*reportError)(const ErrorMessage& err);
+
+  // The following are only used for UniqueString garbage collection
   querydetail::RevisionNumber lastPrepareToGCRevisionNumber;
   querydetail::RevisionNumber gcCounter;
 
@@ -242,6 +245,7 @@ class Context {
        bool isInputQuery);
 
   void recomputeIfNeeded(const querydetail::QueryMapResultBase* resultEntry);
+  void updateForReuse(const querydetail::QueryMapResultBase* resultEntry);
 
   bool queryCanUseSavedResultAndPushIfNot(
             const void* queryFunction,

@@ -147,26 +147,28 @@ const LocationsMap& fileLocations(Context* context, UniqueString path) {
 
   // Get the result of parsing
   const uast::Builder::Result& p = parseFile(context, path);
-  // Create a map of ID to Location
-  std::unordered_map<ID, Location> result;
+  // Create a map of ast to Location
+  std::unordered_map<const ASTBase*, Location> result;
   for (auto pair : p.locations) {
-    ID id = pair.first;
+    const ASTBase* ast = pair.first;
     Location loc = pair.second;
-    result.insert({id, loc});
+    if (ast != nullptr) {
+      result.insert({ast, loc});
+    }
   }
 
   return QUERY_END(result);
 }
 
-const Location& locate(Context* context, ID id) {
-  QUERY_BEGIN(locate, context, id);
+const Location& locate(Context* context, const ASTBase* ast) {
+  QUERY_BEGIN(locate, context, ast);
 
   // Ask the context for the filename from the ID
-  UniqueString path = context->filePathForID(id);
+  UniqueString path = context->filePathForID(ast->id());
   // Get the map of ID to Location
   Location result(path);
   const LocationsMap& map = fileLocations(context, path);
-  auto search = map.find(id);
+  auto search = map.find(ast);
   if (search != map.end()) {
     result = search->second;
   }
@@ -274,9 +276,10 @@ static void resolveAST(Context* context,
       // nothing found in the map, so give an undefined symbol error,
       // unless we've already done so.
       if (undefined.count(name) == 0) {
-        Location loc = locate(context, ident->id());
+        Location loc = locate(context, ident);
         auto error = ErrorMessage::build(loc,
                      "'%s' undeclared (first use this function)", name.c_str());
+        context->queryNoteError(std::move(error));
         undefined.insert(name);
       }
     }
@@ -292,8 +295,8 @@ static void resolveAST(Context* context,
       if (search != newScope.declsDefinedHere.end()) {
         const Decl* prevDecl = search->second;
         // found an existing entry in the map, so give an error.
-        Location prevLoc = locate(context, prevDecl->id());
-        Location curLoc = locate(context, decl->id());
+        Location prevLoc = locate(context, prevDecl);
+        Location curLoc = locate(context, decl);
         auto error = ErrorMessage::build(prevLoc,
                      "'%s' has multiple definitions", name.c_str());
         error.addDetail(ErrorMessage::build(curLoc, "redefined here"));

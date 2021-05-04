@@ -63,7 +63,7 @@ ErrorMessage ErrorMessage::build(Location loc, const char* fmt, ...) {
 }
 
 void ErrorMessage::addDetail(ErrorMessage err) {
-  details.push_back(std::move(err));
+  details_.push_back(std::move(err));
 }
 
 void ErrorMessage::swap(ErrorMessage& other) {
@@ -72,6 +72,7 @@ void ErrorMessage::swap(ErrorMessage& other) {
   other.level_ = oldThisLevel;
   this->location_.swap(other.location_);
   this->message_.swap(other.message_);
+  this->details_.swap(other.details_);
 }
 
 void ErrorMessage::markUniqueStrings(Context* context) const {

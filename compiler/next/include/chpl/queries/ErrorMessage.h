@@ -40,7 +40,7 @@ class ErrorMessage final {
 
   // sometimes an error message wants to point to a bunch of
   // related line numbers. That can go here.
-  std::vector<ErrorMessage> details;
+  std::vector<ErrorMessage> details_;
 
   // TODO: how to handle a callstack of sorts?
 
@@ -58,6 +58,19 @@ class ErrorMessage final {
   ;
 
   void addDetail(ErrorMessage err);
+
+  Location location() const { return location_; }
+
+  UniqueString path() const { return location_.path(); }
+  int firstLine() const { return location_.firstLine(); }
+  int firstColumn() const { return location_.firstColumn(); }
+  int lastLine() const { return location_.lastLine(); }
+  int lastColumn() const { return location_.lastColumn(); }
+  int line() const { return location_.line(); }
+
+  const std::string& message() const { return message_; }
+
+  const std::vector<ErrorMessage>& details() const { return details_; }
 
   inline bool operator==(const ErrorMessage& other) const {
     return this->level_ == other.level_ &&

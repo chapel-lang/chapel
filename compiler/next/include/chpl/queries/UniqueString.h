@@ -71,18 +71,15 @@ class UniqueString final {
     return UniqueString(ret);
   }
 
+
   /**
     Get or create a unique string for a string from a pointer
     and a length. If the length is 0, this function will return
     the UniqueString representing "".
+    The length can be passed to truncate a string but it's
+    an error if the string contains a zero byte.
    */
-  static inline UniqueString build(Context* context,
-                                   const char* s, size_t len) {
-    detail::PODUniqueString ret =
-      detail::PODUniqueString::build(context, s, len);
-    return UniqueString(ret);
-  }
-
+  static UniqueString build(Context* context, const char* s, size_t len);
 
   /**
     Get or create a unique string for a C++ string

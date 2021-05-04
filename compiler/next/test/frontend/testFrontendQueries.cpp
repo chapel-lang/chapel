@@ -19,7 +19,9 @@
 
 #include "chpl/frontend/frontend-queries.h"
 
+#include "chpl/uast/Comment.h"
 #include "chpl/uast/ModuleDecl.h"
+#include "chpl/uast/VariableDecl.h"
 
 // always check assertions in this test
 #ifdef NDEBUG
@@ -393,7 +395,60 @@ static void test4() {
   assert(declB == oldDeclB);
 }
 
-// TODO: test locate
+static void test5() {
+  printf("test5\n");
+  Context context;
+  Context* ctx = &context;
+
+  auto modulePath = UniqueString::build(ctx, "MyModule.chpl");
+  const Module* module = nullptr;
+  const Comment* comment = nullptr;
+  const VariableDecl* declA = nullptr;
+  const VariableDecl* declB = nullptr;
+  const Block* block = nullptr;
+
+  std::string moduleContents;
+
+  moduleContents = "/* this is a test */\n"
+                   "var a;\n"
+                   "var b;\n";
+
+  // run the below several times to check that GC+reuse doesn't mess
+  // anything up
+  for (int i = 0; i < 3; i++) {
+    ctx->advanceToNextRevision(true);
+    setFileText(ctx, modulePath, moduleContents);
+    module = parseOneModule(ctx, modulePath);
+
+    ASTBase::dump(module);
+    assert(module->numStmts() == 3);
+    comment = module->stmt(0)->toComment();
+    declA = module->stmt(1)->toVariableDecl();
+    declB = module->stmt(2)->toVariableDecl();
+    assert(comment);
+    assert(declA);
+    assert(declB);
+
+    // Now check their locations
+    //Location commentLoc = locate(ctx, comment); // not currently working
+    Location declALoc = locate(ctx, declA);
+    Location aLoc = locate(ctx, declA->variable());
+    Location declBLoc = locate(ctx, declB);
+    Location bLoc = locate(ctx, declB->variable());
+    //assert(commentLoc.path() == modulePath);
+    assert(declALoc.path() == modulePath);
+    assert(aLoc.path() == modulePath);
+    assert(declBLoc.path() == modulePath);
+    assert(bLoc.path() == modulePath);
+    //assert(commentLoc.line() == 1);
+    assert(declALoc.line() == 2);
+    assert(aLoc.line() == 2);
+    assert(declBLoc.line() == 3);
+    assert(bLoc.line() == 3);
+
+    ctx->collectGarbage();
+  }
+}
 
 int main() {
   test0();
@@ -401,6 +456,7 @@ int main() {
   test2();
   test3();
   test4();
+  test5();
 
   return 0;
 }
