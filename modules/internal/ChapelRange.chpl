@@ -2302,7 +2302,7 @@ operator :(r: range(?), type t: range(?)) {
       chpl_debug_writeln("*** In range standalone iterator:");
     }
 
-    const len = this.sizeAs(idxType);
+    const len = this.sizeAs(intIdxType);
     const numChunks = if __primitive("task_get_serial") then
                       1 else _computeNumChunks(len);
 
@@ -2346,7 +2346,7 @@ operator :(r: range(?), type t: range(?)) {
     const numSublocs = here.getChildCount();
 
     if localeModelHasSublocales && numSublocs != 0 {
-      const len = this.sizeAs(idxType);
+      const len = this.sizeAs(intIdxType);
       const tasksPerLocale = dataParTasksPerLocale;
       const ignoreRunning = dataParIgnoreRunningTasks;
       const minIndicesPerTask = dataParMinGranularity;
@@ -2383,7 +2383,7 @@ operator :(r: range(?), type t: range(?)) {
           }
           const (lo,hi) = _computeBlock(len, numChunks, chunk, len-1);
           const locRange = lo..hi;
-          const locLen = locRange.sizeAs(idxType);
+          const locLen = locRange.sizeAs(intIdxType);
           // Divide the locale's tasks approximately evenly
           // among the sublocales
           const numSublocTasks = (if chunk < dptpl % numChunks
@@ -2405,7 +2405,7 @@ operator :(r: range(?), type t: range(?)) {
       }
 
     } else {
-      var v = this.sizeAs(idxType);
+      var v = this.sizeAs(intIdxType);
       const numChunks = if __primitive("task_get_serial") then
                         1 else _computeNumChunks(v);
 
@@ -2463,11 +2463,11 @@ operator :(r: range(?), type t: range(?)) {
     if (isBoundedRange(myFollowThis) && !myFollowThis.stridable) ||
        myFollowThis.hasLast()
     {
-      const flwlen = myFollowThis.sizeAs(myFollowThis.idxType);
+      const flwlen = myFollowThis.sizeAs(myFollowThis.intIdxType);
       if boundsChecking && this.hasLast() {
         // this check is for typechecking only
         if isBoundedRange(this) {
-          if this.sizeAs(idxType) < flwlen then
+          if this.sizeAs(intIdxType) < flwlen then
             HaltWrappers.boundsCheckHalt("zippered iteration over a range with too few indices");
         } else
           assert(false, "hasFirst && hasLast do not imply isBoundedRange");

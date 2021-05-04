@@ -330,7 +330,7 @@ module DefaultRectangular {
       // library...
       coforall chunk in 0..#numChunks {
         var block = ranges;
-        const len = if (!ranges(parDim).stridable) then ranges(parDim).sizeAs(ranges(parDim).idxType)
+        const len = if (!ranges(parDim).stridable) then ranges(parDim).sizeAs(ranges(parDim).intIdxType)
             else ranges(parDim).sizeAs(uint) * abs(ranges(parDim).stride):uint;
         const (lo,hi) = _computeBlock(len,
                                       numChunks, chunk,

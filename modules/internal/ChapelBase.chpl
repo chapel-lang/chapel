@@ -2373,7 +2373,7 @@ module ChapelBase {
   //
   proc chpl_coforallSize(iterable) {
     if (isRange(iterable)) then
-      return iterable.sizeAs(iterable.idxType);
+      return iterable.sizeAs(iterable.intIdxType);
     else
       return iterable.size;
   }
