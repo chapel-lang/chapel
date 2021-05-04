@@ -55,7 +55,7 @@ QueryMapResult<ResultType,ArgTs...>::recompute(Context* context) const {
 
 template<typename ResultType, typename... ArgTs>
 void
-QueryMapResult<ResultType,ArgTs...>::markUniqueStrings(Context* context) const {
+QueryMapResult<ResultType,ArgTs...>::markUniqueStringsInResult(Context* context) const {
   chpl::mark<ResultType> marker;
   marker(context, this->result);
 }

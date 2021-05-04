@@ -274,6 +274,11 @@ class Context {
   ~Context();
 
   /**
+   Set the error handling function
+   */
+  void setErrorHandler(void (*reportError)(const ErrorMessage& err));
+
+  /**
     Get or create a unique string for a NULL-terminated C string
     and return it as a C string. If the passed string is NULL,
     this function will return an empty string.
@@ -371,8 +376,6 @@ class Context {
   queryGetSaved(const querydetail::QueryMapResult<ResultType, ArgTs...>* r);
 
   void queryNoteError(ErrorMessage error);
-  void queryNoteError(Location loc, std::string error);
-  void queryNoteInputDependency();
 
   template<typename ResultType,
            typename... ArgTs>

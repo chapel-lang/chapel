@@ -74,5 +74,9 @@ void ErrorMessage::swap(ErrorMessage& other) {
   this->message_.swap(other.message_);
 }
 
+void ErrorMessage::markUniqueStrings(Context* context) const {
+  this->location_.markUniqueStrings(context);
+}
+
 
 } // namespace chpl

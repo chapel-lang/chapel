@@ -69,6 +69,8 @@ class ErrorMessage final {
   }
 
   void swap(ErrorMessage& other);
+
+  void markUniqueStrings(Context* context) const;
 };
 
 

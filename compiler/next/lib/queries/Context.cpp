@@ -256,7 +256,11 @@ void Context::recomputeIfNeeded(const QueryMapResultBase* resultEntry) {
   } else {
     // if we are GC'ing, mark unique strings
     if (this->currentRevisionNumber == this->lastPrepareToGCRevisionNumber) {
-      resultEntry->markUniqueStrings(this);
+      resultEntry->markUniqueStringsInResult(this);
+      // and also mark unique strings in the errors
+      for (const auto& err: resultEntry->errors) {
+        err.markUniqueStrings(this);
+      }
     }
     resultEntry->lastChecked = this->currentRevisionNumber;
   }
