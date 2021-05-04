@@ -27,7 +27,7 @@ else
 fi
 
 # Point clang to standard libraries
-export COMPILER_PATH=/opt/gcc/9.1.0/snos
+export COMPILER_PATH=$GCC_X86_64
 
 # https://github.com/Cray/chapel-private/issues/1601
 export SLURM_CPU_FREQ_REQ=high
