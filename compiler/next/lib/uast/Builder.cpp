@@ -140,9 +140,12 @@ void Builder::assignIDs(UniqueString inferredModule) {
 
 void Builder::doAssignIDs(ASTBase* ast, UniqueString symbolPath, int& i,
                           pathVecT& pathVec, declaredHereT& duplicates) {
-  // Don't consider comments when computing AST ids.
-  if (ast->isComment())
-    return;
+  // It is appealing not to consider comments when computing AST ids,
+  // but if that happens then we can't figure out source line numbers
+  // for comments, which would be an issue in some documentation use cases.
+  //
+  // However we could make this be a flag on the Context - whether or not
+  // comments can be ignored entirely.
 
   int firstChildID = i;
 

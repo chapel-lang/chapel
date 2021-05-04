@@ -430,17 +430,17 @@ static void test5() {
     assert(declB);
 
     // Now check their locations
-    //Location commentLoc = locate(ctx, comment); // not currently working
+    Location commentLoc = locate(ctx, comment);
     Location declALoc = locate(ctx, declA);
     Location aLoc = locate(ctx, declA->variable());
     Location declBLoc = locate(ctx, declB);
     Location bLoc = locate(ctx, declB->variable());
-    //assert(commentLoc.path() == modulePath);
+    assert(commentLoc.path() == modulePath);
     assert(declALoc.path() == modulePath);
     assert(aLoc.path() == modulePath);
     assert(declBLoc.path() == modulePath);
     assert(bLoc.path() == modulePath);
-    //assert(commentLoc.line() == 1);
+    assert(commentLoc.line() == 1);
     assert(declALoc.line() == 2);
     assert(aLoc.line() == 2);
     assert(declBLoc.line() == 3);
