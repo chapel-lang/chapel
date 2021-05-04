@@ -686,7 +686,7 @@ proc Block.targetLocsIdx(ind: idxType) where rank == 1 {
 proc Block.targetLocsIdx(ind: rank*idxType) {
   var result: rank*int;
   for param i in 0..rank-1 do
-    result(i) = max(0, min((targetLocDom.dim(i).sizeAs(int)-1):int,
+    result(i) = max(0, min(targetLocDom.dim(i).sizeAs(int)-1,
                            (((ind(i) - boundingBox.dim(i).low) *
                              targetLocDom.dim(i).sizeAs(idxType)) /
                             boundingBox.dim(i).sizeAs(idxType)):int));

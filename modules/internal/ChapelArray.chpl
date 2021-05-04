@@ -1504,11 +1504,10 @@ module ChapelArray {
 
       const rcdistRec = new _distribution(rcdist);
 
-      var r = new _domain(rcdistRec, uprank,
+      return new _domain(rcdistRec, uprank,
                                     upranges(0).idxType,
                                     upranges(0).stridable,
                                     upranges); 
-      return r;
     }
 
     // error case for all-int access
@@ -1558,6 +1557,7 @@ module ChapelArray {
    /* Return a tuple of :proc:`intIdxType` describing the size of each dimension.
       For a sparse domain, return the shape of the parent domain.*/
     proc shape where isRectangularDom(this) || isSparseDom(this) {
+      // TODO: need to deprecate this change more gently
       var s: rank*int;
       for (i, r) in zip(0..#s.size, dims()) do
         s(i) = r.sizeAs(int);
@@ -3133,7 +3133,7 @@ module ChapelArray {
                       " dimension(s) to " + newDims.size:string);
 
       for param i in 0..rank-1 do
-        if newDims(i).sizeAs(int) != _value.dom.dsiDim(i).sizeAs(int) then
+        if newDims(i).sizeAs(uint) != _value.dom.dsiDim(i).sizeAs(uint) then
           halt("extent in dimension ", i, " does not match actual");
 
       const thisDomClass = this._value.dom;
@@ -3483,7 +3483,7 @@ module ChapelArray {
     //
     if isRectangularDom(this.domain) && isRectangularDom(that.domain) {
       for d in 0..#this.rank do
-        if this.domain.dim(d).sizeAs(int) != that.domain.dim(d).sizeAs(int) then
+        if this.domain.dim(d).sizeAs(uint) != that.domain.dim(d).sizeAs(uint) then
           return false;
     }
 
@@ -3931,10 +3931,10 @@ module ChapelArray {
             bDims = b._value.dom.dsiDims();
       compilerAssert(aDims.size == bDims.size);
       for param i in 0..aDims.size-1 {
-        if aDims(i).sizeAs(int) != bDims(i).sizeAs(int) then
+        if aDims(i).sizeAs(uint) != bDims(i).sizeAs(uint) then
           halt(if forSwap then "swapping" else "assigning",
                " between arrays of different shapes in dimension ",
-               i, ": ", aDims(i).sizeAs(int), " vs. ", bDims(i).sizeAs(int));
+               i, ": ", aDims(i).sizeAs(uint), " vs. ", bDims(i).sizeAs(uint));
       }
     } else {
       // may not have dsiDims(), so can't check them as above

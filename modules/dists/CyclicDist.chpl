@@ -216,7 +216,7 @@ class Cyclic: BaseDist {
     var startIdxTemp: rank*idxType;
     for param i in 0..rank-1 {
       const startIdxI = if isTuple(startIdx) then startIdx(i) else startIdx;
-      startIdxTemp(i) = chpl__mod(startIdxI, targetLocDom.dim(i).size);
+      startIdxTemp(i) = chpl__mod(startIdxI, targetLocDom.dim(i).sizeAs(int));
     }
     this.startIdx = startIdxTemp;
 
@@ -413,7 +413,7 @@ proc Cyclic.targetLocsIdx(i: idxType) {
 proc Cyclic.targetLocsIdx(ind: rank*idxType) {
   var x: rank*int;
   for param i in 0..rank-1 {
-    var dimLen = targetLocDom.dim(i).size;
+    var dimLen = targetLocDom.dim(i).sizeAs(int);
     //x(i) = ((ind(i) - startIdx(i)) % dimLen):int;
     x(i) = chpl__diffMod(ind(i), startIdx(i), dimLen):int;
   }
@@ -1116,7 +1116,7 @@ class LocCyclicRADCache /* : LocRADCache */ {
 
     for param i in 0..rank-1 do
       // NOTE: Not bothering to check to see if length can fit into idxType
-      targetLocDomDimLength(i) = targetLocDom.dim(i).size;
+      targetLocDomDimLength(i) = targetLocDom.dim(i).sizeAs(int);
   }
 }
 
@@ -1157,8 +1157,8 @@ where canDoAnyToCyclic(this, destDom, Src, srcDom) {
         //were different, we need to calculate the correct stride in r1
         for param t in 0..rank-1 {
           r1[t] = (ini[t]:el..end[t]:el by sb[t]);
-          if r1[t].size != r2[t].size then
-            r1[t] = (ini[t]:el..end[t]:el by (end[t] - ini[t]):el/(r2[t].size-1));
+          if r1[t].sizeAs(int) != r2[t].sizeAs(int) then
+            r1[t] = (ini[t]:el..end[t]:el by (end[t] - ini[t]):el/(r2[t].sizeAs(int)-1));
         }
 
         if debugCyclicDistBulkTransfer then
@@ -1199,8 +1199,8 @@ where useBulkTransferDist {
         //were different, we need to calculate the correct stride in r1
         for param t in 0..rank-1 {
           r1[t] = (ini[t]:el..end[t]:el by sa[t]);
-          if r1[t].size != r2[t].size then
-            r1[t] = (ini[t]:el..end[t]:el by (end[t] - ini[t]):el/(r2[t].size-1));
+          if r1[t].sizeAs(int) != r2[t].sizeAs(int) then
+            r1[t] = (ini[t]:el..end[t]:el by (end[t] - ini[t]):el/(r2[t].sizeAs(int)-1));
         }
 
         if debugCyclicDistBulkTransfer then
@@ -1239,8 +1239,8 @@ where useBulkTransferDist {
         //were different, we need to calculate the correct stride in r1
         for param t in 0..rank-1 {
           r1[t] = (ini[t]:el..end[t]:el by sb[t]);
-          if r1[t].size != r2[t].size then
-            r1[t] = (ini[t]:el..end[t]:el by (end[t] - ini[t]):el/(r2[t].size-1));
+          if r1[t].sizeAs(int) != r2[t].sizeAs(int) then
+            r1[t] = (ini[t]:el..end[t]:el by (end[t] - ini[t]):el/(r2[t].sizeAs(int)-1));
         }
 
         if debugCyclicDistBulkTransfer then

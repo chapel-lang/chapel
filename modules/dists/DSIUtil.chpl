@@ -302,7 +302,7 @@ proc densify(s: range(?,boundedType=?B), w: range(?IT,?,stridable=true), userErr
     return 1:IT .. 0:IT;
 
   } else {
-    ensure(w.sizeAs(int) > 0, "densify(s=", s, ", w=", w, "): w is empty while s is not");
+    ensure(w.sizeAs(uint) > 0, "densify(s=", s, ", w=", w, "): w is empty while s is not");
 
     var low: IT = w.indexOrder(s.first);
     ensure(low >= 0, "densify(s=", s, ", w=", w, "): s.first is not in w");
@@ -407,7 +407,7 @@ proc unDensify(denses, wholes, userErrors = true)
   return result;
 }
 
-proc unDensify(dense: range(?,boundedType=?B), whole: range(?IT,?,stridable=true)) : range(IT,B,true)
+proc unDensify(dense: range(?dIT,boundedType=?B), whole: range(?IT,?,stridable=true)) : range(IT,B,true)
 {
   _undensEnsureBounded(dense);
   if whole.boundedType == BoundedRangeType.boundedNone then
@@ -421,10 +421,10 @@ proc unDensify(dense: range(?,boundedType=?B), whole: range(?IT,?,stridable=true
     halt("unDensify() is invoked with the 'whole' range that has no first index");
 
   var low :IT = whole.orderToIndex(dense.first);
-  // should we special-case dense.sizeAs(int)==1?
-  // if dense.sizeAs(int) == 1 then return low .. low;
+  // should we special-case dense.sizeAs(dIT)==1?
+  // if dense.sizeAs(dIT) == 1 then return low .. low;
   const stride = whole.stride * dense.stride;
-  var high :IT = chpl__addRangeStrides(low, stride, dense.sizeAs(int) - 1);
+  var high :IT = chpl__addRangeStrides(low, stride, dense.sizeAs(dIT) - 1);
   assert(high == whole.orderToIndex(dense.last));
   if stride < 0 then low <=> high;
 
@@ -518,10 +518,10 @@ proc bulkCommComputeActiveDims(LeftDims, RightDims) {
   var li = 0, ri = 0;
   proc advance() {
     // Advance to positions in each domain where the sizes are equal.
-    while LeftDims(li).sizeAs(int) == 1 && LeftDims(li).sizeAs(int) != RightDims(ri).sizeAs(int) do li += 1;
-    while RightDims(ri).sizeAs(int) == 1 && RightDims(ri).sizeAs(int) != LeftDims(li).sizeAs(int) do ri += 1;
+    while LeftDims(li).sizeAs(int) == 1 && LeftDims(li).sizeAs(uint) != RightDims(ri).sizeAs(uint) do li += 1;
+    while RightDims(ri).sizeAs(int) == 1 && RightDims(ri).sizeAs(uint) != LeftDims(li).sizeAs(uint) do ri += 1;
 
-    assert(LeftDims(li).sizeAs(int) == RightDims(ri).sizeAs(int));
+    assert(LeftDims(li).sizeAs(uint) == RightDims(ri).sizeAs(uint));
   }
 
   do {

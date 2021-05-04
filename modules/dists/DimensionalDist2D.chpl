@@ -1279,7 +1279,7 @@ iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
               //   if myPiece.size == 0 then do not yield anything
 // TODO: can it be enabled for test_strided_slice1.chpl with 1d block-cyclic?
 //              assert(myPiece.size > 0);
-              if myPiece.sizeAs(int) > 0 then
+              if myPiece.sizeAs(uint) > 0 then
                 yield myPiece;
             }
           }

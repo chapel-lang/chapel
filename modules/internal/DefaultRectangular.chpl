@@ -21,9 +21,6 @@
 // DefaultRectangular.chpl
 //
 module DefaultRectangular {
-//  proc debug(param s) compilerWarning(s);
-  proc debug(param s) { }
-  
   config const dataParTasksPerLocale = 0;
   config const dataParIgnoreRunningTasks = false;
   config const dataParMinGranularity: int = 1;
@@ -314,7 +311,7 @@ module DefaultRectangular {
                                                      ranges);
       if debugDefaultDist {
         chpl_debug_writeln("    numChunks=", numChunks, " parDim=", parDim,
-                           " ranges(", parDim, ").size=", ranges(parDim).sizeAs(int));
+                           " ranges(", parDim, ").size=", ranges(parDim).sizeAs(uint));
       }
       if debugDataPar {
         chpl_debug_writeln("### numTasksPerLoc = ", numTasks, "\n",
@@ -333,7 +330,7 @@ module DefaultRectangular {
       // library...
       coforall chunk in 0..#numChunks {
         var block = ranges;
-        const len = if (!ranges(parDim).stridable) then ranges(parDim).sizeAs(int)
+        const len = if (!ranges(parDim).stridable) then ranges(parDim).sizeAs(ranges(parDim).idxType)
             else ranges(parDim).sizeAs(uint) * abs(ranges(parDim).stride):uint;
         const (lo,hi) = _computeBlock(len,
                                       numChunks, chunk,
@@ -402,9 +399,9 @@ module DefaultRectangular {
                                     else dptpl / numChunks);
             var locBlock: rank*range(intIdxType);
             for param i in 0..rank-1 do
-              locBlock(i) = offset(i)..#(ranges(i).sizeAs(offset(i).type));
+              locBlock(i) = offset(i)..#(ranges(i).sizeAs(intIdxType));
             var followMe: rank*range(intIdxType) = locBlock;
-            const (lo,hi) = _computeBlock(locBlock(parDim).sizeAs(int),
+            const (lo,hi) = _computeBlock(locBlock(parDim).sizeAs(intIdxType),
                                           numChunks, chunk,
                                           locBlock(parDim)._high,
                                           locBlock(parDim)._low,
@@ -421,7 +418,7 @@ module DefaultRectangular {
               var followMe2: rank*range(intIdxType) = locBlock2;
               const low  = locBlock2(parDim2)._low,
                 high = locBlock2(parDim2)._high;
-              const (lo,hi) = _computeBlock(locBlock2(parDim2).sizeAs(int),
+              const (lo,hi) = _computeBlock(locBlock2(parDim2).sizeAs(intIdxType),
                                             numChunks2, chunk2,
                                             high, low, low);
               followMe2(parDim2) = lo..hi;
@@ -452,7 +449,7 @@ module DefaultRectangular {
                                                        ranges);
         if debugDefaultDist then
           chpl_debug_writeln("    numChunks=", numChunks, " parDim=", parDim,
-                  " ranges(", parDim, ").size=", ranges(parDim).sizeAs(int));
+                  " ranges(", parDim, ").size=", ranges(parDim).sizeAs(uint));
 
         if debugDataPar {
           chpl_debug_writeln("### numTasksPerLoc = ", numTasks, "\n",
@@ -464,12 +461,12 @@ module DefaultRectangular {
 
         var locBlock: rank*range(intIdxType);
         for param i in 0..rank-1 do
-          locBlock(i) = offset(i)..#(ranges(i).sizeAs(offset(i).type));
+          locBlock(i) = offset(i)..#(ranges(i).sizeAs(intIdxType));
         if debugDefaultDist then
           chpl_debug_writeln("*** DI: locBlock = ", locBlock);
         coforall chunk in 0..#numChunks {
           var followMe: rank*range(intIdxType) = locBlock;
-          const (lo,hi) = _computeBlock(locBlock(parDim).sizeAs(int),
+          const (lo,hi) = _computeBlock(locBlock(parDim).sizeAs(intIdxType),
                                         numChunks, chunk,
                                         locBlock(parDim)._high,
                                         locBlock(parDim)._low,
@@ -510,21 +507,15 @@ module DefaultRectangular {
                 fSignedStride = followThis(i).stride:strType;
           if rStride > 0 {
             const riStride = rStride:intIdxType;
-            debug("A: " + followThis(i).low.type:string + ", " +
-                            riStride.type:string);
             const low = ranges(i).alignedLowAsInt + followThis(i).low*riStride,
                   high = ranges(i).alignedLowAsInt + followThis(i).high*riStride,
                   stride = (rSignedStride * fSignedStride):strType;
-            debug("A Done");
             block(i) = low..high by stride;
           } else {
             const irStride = (-rStride):intIdxType;
-            debug("B: " + followThis(i).high.type:string + ", " +
-                            irStride.type:string);
             const low = ranges(i).alignedHighAsInt - followThis(i).high*irStride,
                   high = ranges(i).alignedHighAsInt - followThis(i).low*irStride,
                   stride = (rSignedStride * fSignedStride):strType;
-            debug("B Done");
             block(i) = low..high by stride;
           }
         }
@@ -558,10 +549,8 @@ module DefaultRectangular {
         const orderD = ranges(d).indexOrder(ind(d));
         // NOTE: This follows from the implementation of indexOrder()
         if (orderD == (-1):intIdxType) then return orderD;
-        debug("C: " + orderD.type:string + ", " + blk.type:string);
         totOrder += orderD * blk;
         blk *= ranges(d).sizeAs(int);
-        debug("C Done");
       }
       return totOrder;
     }
@@ -792,7 +781,6 @@ module DefaultRectangular {
   // Copied from DefaultRectangularArr.getDataIndex
   //
   inline proc _remoteAccessData.getDataIndex(ind: rank*idxType) {
-    debug("D: In RAD code");
     if stridable {
       var sum = origin;
       for param i in 0..rank-1 do
@@ -802,28 +790,28 @@ module DefaultRectangular {
       // optimize common case to get cleaner generated code
       if (rank == 1 && earlyShiftData) {
         if blkChanged {
-          return chpl__idxToInt(ind(0)):int * blk(0);
+          return chpl__idxToInt(ind(0)).safeCast(int) * blk(0);
         } else {
-          return chpl__idxToInt(ind(0)):int;
+          return chpl__idxToInt(ind(0)).safeCast(int);
         }
       } else {
         var sum = if earlyShiftData then 0 else origin;
 
         if blkChanged {
           for param i in 0..rank-1 {
-            sum += chpl__idxToInt(ind(i)):int * blk(i);
+            sum += chpl__idxToInt(ind(i)).safeCast(int) * blk(i);
           }
         } else {
           if storageOrder == ArrayStorageOrder.RMO {
             for param i in 0..rank-2 {
-              sum += chpl__idxToInt(ind(i)):int * blk(i);
+              sum += chpl__idxToInt(ind(i)).safeCast(int) * blk(i);
             }
-            sum += chpl__idxToInt(ind(rank-1)):int;
+            sum += chpl__idxToInt(ind(rank-1)).safeCast(int);
           } else {
             for param i in 1..rank-1 {
-              sum += chpl__idxToInt(ind(i)):int * blk(i);
+              sum += chpl__idxToInt(ind(i)).safeCast(int) * blk(i);
             }
-            sum += chpl__idxToInt(ind(0)):int;
+            sum += chpl__idxToInt(ind(0)).safeCast(int);
           }
         }
 
@@ -834,10 +822,9 @@ module DefaultRectangular {
   }
 
   proc _remoteAccessData.computeFactoredOffs() {
-    debug("E: In RAD code");
     factoredOffs = 0;
     for param i in 0..rank-1 do {
-      factoredOffs = factoredOffs + blk(i) * chpl__idxToInt(off(i)):int;
+      factoredOffs = factoredOffs + blk(i) * chpl__idxToInt(off(i)).safeCast(int);
     }
   }
 
@@ -850,11 +837,9 @@ module DefaultRectangular {
     }
   }
 
-  proc _remoteAccessData.strideAlignUp(lo, r) {
-  debug("F: In RAD code");
+  proc _remoteAccessData.strideAlignUp(lo, r)
     return r.low + (lo - r.low + abs(r.stride):idxType - 1)
-      / abs(r.stride):idxType * abs(r.stride):idxType;
-  }
+           / abs(r.stride):idxType * abs(r.stride):idxType;
 
   proc _remoteAccessData.strideAlignDown(hi, r)
     return hi - (hi - r.low) % abs(r.stride):idxType;
@@ -879,7 +864,6 @@ module DefaultRectangular {
     rad.off         = chpl__tuplify(newDom.dsiLow);
     rad.str         = chpl__tuplify(newDom.dsiStride);
 
-    debug("G: In RAD code");
     for param i in 0..rank-1 {
       const shift = this.blk(i) * (chpl__idxToInt(newDom.dsiDim(i).low) - chpl__idxToInt(this.off(i))).safeCast(int) / abs(this.str(i));
       if this.str(i) > 0 {
@@ -1193,11 +1177,9 @@ module DefaultRectangular {
 
     proc computeFactoredOffs() {
       factoredOffs = 0;
-      debug("H: " + blk(0).type:string + ", " + chpl__idxToInt(off(0)).type:string);
       for param i in 0..rank-1 do {
-        factoredOffs = factoredOffs + blk(i) * chpl__idxToInt(off(i)):int;
+        factoredOffs = factoredOffs + blk(i) * chpl__idxToInt(off(i)).safeCast(int);
       }
-      debug("H done");
     }
 
     inline proc initShiftedData() {
@@ -1225,17 +1207,13 @@ module DefaultRectangular {
       }
       if storageOrder == ArrayStorageOrder.RMO {
         blk(rank-1) = 1;
-        debug("I: " + blk(0).type:string + ", " + dom.dsiDim(0).sizeAs(int).type:string);
         for param dim in 0..(rank-2) by -1 do
           blk(dim) = blk(dim+1) * dom.dsiDim(dim+1).sizeAs(int);
-        debug("I done");
       } else if storageOrder == ArrayStorageOrder.CMO {
         blk(0) = 1;
-        debug("J: " + blk(0).type:string + ", " + dom.dsiDim(0).sizeAs(int).type:string);
         for param dim in 1..rank-1 {
           blk(dim) = blk(dim-1) * dom.dsiDim(dim-1).sizeAs(int);
         }
-        debug("J done");
       } else {
         halt("unknown array storage order");
       }
@@ -1292,7 +1270,7 @@ module DefaultRectangular {
 
         // optimize common case to get cleaner generated code
         if (rank == 1 && wantShiftedIndex) {
-          return chpl__idxToInt(ind(0)):int;
+          return chpl__idxToInt(ind(0)).safeCast(int);
         } else {
           var sum = 0;
           var useInd = ind;
@@ -1312,14 +1290,14 @@ module DefaultRectangular {
           } else {
             if storageOrder == ArrayStorageOrder.RMO {
               for param i in 0..rank-2 {
-                sum += chpl__idxToInt(ind(i)):int * blk(i);
+                sum += chpl__idxToInt(ind(i)).safeCast(int) * blk(i);
               }
-              sum += chpl__idxToInt(ind(rank-1)):int;
+              sum += chpl__idxToInt(ind(rank-1)).safeCast(int);
             } else {
               for param i in 1..rank-1 {
-                sum += chpl__idxToInt(ind(i)):int * blk(i);
+                sum += chpl__idxToInt(ind(i)).safeCast(int) * blk(i);
               }
-              sum += chpl__idxToInt(ind(0)):int;
+              sum += chpl__idxToInt(ind(0)).safeCast(int);
             }
             if !wantShiftedIndex then sum -= factoredOffs;
             return sum;

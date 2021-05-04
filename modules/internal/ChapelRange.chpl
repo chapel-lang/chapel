@@ -166,6 +166,13 @@ module ChapelRange {
   pragma "no doc"
   config param useOptimizedRangeIterators = true;
 
+  // Chapel is in the process of changing '.size' routines to return
+  // 'int' by default.  This config permits codes to opt into this
+  // change now rather than waiting for a future release.
+  //
+  config param sizeReturnsInt = false;
+
+
   /*
     The ``BoundedRangeType`` enum is used to specify the types of bounds a
     range is required to have.
@@ -668,7 +675,7 @@ module ChapelRange {
       compilerError("can't query the high bound of a range without one");
     }
     if chpl__singleValIdxType(idxType) {
-      if _low > _high {
+      if _low > _high { // avoid circularity of calling .size which calls .high
         warning("This range is empty and has a single-value idxType, so its high bound isn't trustworthy");
         return chpl_intToIdx(_low);
       }
@@ -732,8 +739,9 @@ module ChapelRange {
       return isBoundedRange(this) && this.alignedLowAsInt > this.alignedHighAsInt;
   }
 
-  config param sizeReturnsInt = false;
-
+  // is this type one for which a range of this type will have a change in
+  // '.size' behavior?
+  //
   private proc chpl_idxTypeSizeChange(type t) param {
     return (t != int &&
             !isEnumType(t) &&
@@ -776,8 +784,6 @@ module ChapelRange {
       HaltWrappers.boundsCheckHalt("range.size exceeds max("+t:string+") for: '" + this:string + "'");
     return lenAsUint: t;
   }
-  
-
 
   /* Return true if the range has a first index, false otherwise */
   proc range.hasFirst() param where !stridable && !hasHighBound()
@@ -884,8 +890,8 @@ module ChapelRange {
   {
     if this.isAmbiguous() || other.isAmbiguous() then return false;
 
-    if this.isBounded() && this.sizeAs(int) == 0 then
-      return other.isBounded() && other.sizeAs(int) == 0;
+    if this.isBounded() && this.sizeAs(uint) == 0 then
+      return other.isBounded() && other.sizeAs(uint) == 0;
 
     // Since slicing preserves the direction of the first arg, may need
     // to negate one of the strides (shouldn't matter which).
@@ -1155,9 +1161,9 @@ operator :(r: range(?), type t: range(?)) {
       if ord < 0 then
         HaltWrappers.boundsCheckHalt("invoking orderToIndex on a negative integer: " + ord:string);
 
-      if isBoundedRange(this) && ord >= this.sizeAs(int) then
+      if isBoundedRange(this) && ord >= this.sizeAs(uint) then
         HaltWrappers.boundsCheckHalt("invoking orderToIndex on an integer " +
-            ord:string + " that is larger than the range's number of indices " + this.sizeAs(int):string);
+            ord:string + " that is larger than the range's number of indices " + this.sizeAs(uint):string);
     }
 
     return chpl_intToIdx(chpl__addRangeStrides(this.firstAsInt, this.stride,
@@ -1236,8 +1242,8 @@ operator :(r: range(?), type t: range(?)) {
   proc range.interior(offset: integral)
   {
     if boundsChecking then
-      if offset > this.sizeAs(int) then
-        HaltWrappers.boundsCheckHalt("can't compute the interior " + offset:string + " elements of a range with size " + this.sizeAs(int):string);
+      if offset > this.sizeAs(uint) then
+        HaltWrappers.boundsCheckHalt("can't compute the interior " + offset:string + " elements of a range with size " + this.sizeAs(uint):string);
 
     const i = offset.safeCast(intIdxType);
     if i < 0 then
@@ -1794,7 +1800,7 @@ operator :(r: range(?), type t: range(?)) {
     if boundsChecking && !r.hasLast()  && count < 0 then
       boundsCheckHalt("With a negative count, the range must have a last index.");
     if boundsChecking && r.boundedType == BoundedRangeType.bounded &&
-      abs(count:chpl__maxIntTypeSameSign(count.type)):uint(64) > r.sizeAs(uint(64)) then {
+      abs(count:chpl__maxIntTypeSameSign(count.type)):uint > r.sizeAs(uint) then {
       boundsCheckHalt("bounded range is too small to access " + abs(count):string + " elements");
     }
 
@@ -2296,7 +2302,7 @@ operator :(r: range(?), type t: range(?)) {
       chpl_debug_writeln("*** In range standalone iterator:");
     }
 
-    const len = this.sizeAs(int);
+    const len = this.sizeAs(idxType);
     const numChunks = if __primitive("task_get_serial") then
                       1 else _computeNumChunks(len);
 
@@ -2340,7 +2346,7 @@ operator :(r: range(?), type t: range(?)) {
     const numSublocs = here.getChildCount();
 
     if localeModelHasSublocales && numSublocs != 0 {
-      const len = this.sizeAs(int);
+      const len = this.sizeAs(idxType);
       const tasksPerLocale = dataParTasksPerLocale;
       const ignoreRunning = dataParIgnoreRunningTasks;
       const minIndicesPerTask = dataParMinGranularity;
@@ -2377,7 +2383,7 @@ operator :(r: range(?), type t: range(?)) {
           }
           const (lo,hi) = _computeBlock(len, numChunks, chunk, len-1);
           const locRange = lo..hi;
-          const locLen = locRange.sizeAs(int);
+          const locLen = locRange.sizeAs(idxType);
           // Divide the locale's tasks approximately evenly
           // among the sublocales
           const numSublocTasks = (if chunk < dptpl % numChunks
@@ -2399,7 +2405,7 @@ operator :(r: range(?), type t: range(?)) {
       }
 
     } else {
-      var v = this.sizeAs(int);
+      var v = this.sizeAs(idxType);
       const numChunks = if __primitive("task_get_serial") then
                         1 else _computeNumChunks(v);
 
@@ -2457,11 +2463,11 @@ operator :(r: range(?), type t: range(?)) {
     if (isBoundedRange(myFollowThis) && !myFollowThis.stridable) ||
        myFollowThis.hasLast()
     {
-      const flwlen = myFollowThis.sizeAs(int);
+      const flwlen = myFollowThis.sizeAs(myFollowThis.idxType);
       if boundsChecking && this.hasLast() {
         // this check is for typechecking only
         if isBoundedRange(this) {
-          if this.sizeAs(int) < flwlen then
+          if this.sizeAs(idxType) < flwlen then
             HaltWrappers.boundsCheckHalt("zippered iteration over a range with too few indices");
         } else
           assert(false, "hasFirst && hasLast do not imply isBoundedRange");
