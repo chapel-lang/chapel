@@ -48,11 +48,10 @@ bool updateASTList(ASTList& keep, ASTList& addin) {
 
   // handle some common short scenarios directly
   if (keepSize == 0 && addinSize == 0) {
+    // both have zero length
     return false;
-  } else if (keepSize == 1 && addinSize == 0) {
-    keep.swap(addin);
-    return true;
-  } else if (keepSize == 0 && addinSize == 1) {
+  } else if (keepSize == 0 || addinSize == 0) {
+    // one has zero length but the other does not
     keep.swap(addin);
     return true;
   } else if (keepSize == 1 && addinSize == 1) {

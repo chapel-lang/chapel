@@ -118,20 +118,32 @@ template<typename ResultType,
          typename... ArgTs>
 const QueryMapResult<ResultType, ArgTs...>*
 Context::getResult(QueryMap<ResultType, ArgTs...>* queryMap,
-          const std::tuple<ArgTs...>& tupleOfArgs) {
+                   const std::tuple<ArgTs...>& tupleOfArgs) {
 
-  // The below call default-initializes the result in QueryMapResult
-  // in order to construct something we can use as the key in the find call.
-  // This default-initialization could be avoided with some hacks to
-  // the current implementation. However, C++20 enables a principled
-  // solution to the problem using is_transparent and transparent_key_equal.
-  auto search = queryMap->map.find(
-                     QueryMapResult<ResultType, ArgTs...>(tupleOfArgs));
-  const QueryMapResult<ResultType, ArgTs...>* ret = nullptr;
-  if (search != queryMap->map.end()) {
-    ret = &(*search);
+  // Run the constructor QueryMapResult(queryMap, tupleOfArgs)
+  // and insert the result into the map if it is not already present.
+  auto pair = queryMap->map.emplace(queryMap, tupleOfArgs);
+  auto savedElement = &(*pair.first); // pointer to element in map (added/not)
+  bool newElementWasAdded = pair.second;
+
+  if (newElementWasAdded)
+    printf("Added new result %p %s\n", savedElement, queryMap->queryName);
+  else
+    printf("Found result %p %s\n", savedElement, queryMap->queryName);
+
+  if (newElementWasAdded == false && savedElement->lastChanged == -1) {
+    // If an old element present has lastChanged == -1, that means that
+    // we trying to compute it when a recursive call was made. In that event
+    // it is a severe error with the compiler implementation.
+    // This is a severe internal error and compilation cannot proceed.
+    // This uses 'exit' so that it can be tested but in the future we could
+    // make it call an internal error function that also exits.
+    // If this happens, the solution is to fix the query not to recurse.
+    fprintf(stderr, "Error: recursion encountered in query %s\n",
+            queryMap->queryName);
+    exit(-1);
   }
-  return ret;
+  return savedElement;
 }
 
 template<typename ResultType,
@@ -153,6 +165,7 @@ Context::queryUseSaved(
   bool useSaved = queryCanUseSavedResultAndPushIfNot(queryFuncV, r);
   if (useSaved) {
     printf("QUERY END       %s (...) REUSING BASED ON DEPS\n", traceQueryName);
+    assert(r->lastChecked == this->currentRevisionNumber);
   } else {
     printf("QUERY COMPUTING %s (...)\n", traceQueryName);
   }
@@ -162,7 +175,7 @@ Context::queryUseSaved(
 template<typename ResultType, typename... ArgTs>
 const ResultType&
 Context::queryGetSaved(const QueryMapResult<ResultType, ArgTs...>* r) {
-  this->saveDependenciesInParent(r);
+  this->saveDependencyInParent(r);
   return r->result;
 }
 
@@ -177,18 +190,18 @@ Context::queryEnd(
               ResultType result,
               const char* traceQueryName) {
 
-  // At this point, queryDeps is the dependency vector for this query
-  assert(queryDeps.size() > 0);
-  assert(queryDeps.back().queryFunction == queryFunction);
+  // must be in a query to be running one!
+  assert(queryStack.size() > 0);
 
   const QueryMapResult<ResultType, ArgTs...>* ret =
     this->updateResultForQueryMapR(queryMap, r, tupleOfArgs, std::move(result));
 
-  {
+  { // this is just tracing code
     bool changed = ret->lastChanged == this->currentRevisionNumber;
     printf("QUERY END       %s (", traceQueryName);
     queryArgsPrint(tupleOfArgs);
     printf(") %s\n", changed?"UPDATED":"NO CHANGE");
+    assert(r->lastChecked == this->currentRevisionNumber);
   }
 
   endQueryHandleDependency(ret);
@@ -203,39 +216,33 @@ Context::updateResultForQueryMapR(QueryMap<ResultType, ArgTs...>* queryMap,
                                   const QueryMapResult<ResultType, ArgTs...>* r,
                                   const std::tuple<ArgTs...>& tupleOfArgs,
                                   ResultType result) {
-  if (r != nullptr) {
-    // If we already have found a result, use that.
-    //
-    // Call a chpl::update function. That leaves the result in the 1st argument
-    // and returns whether or not it needed to change. The 2nd argument contains
-    // junk. If we wait until a garbageCollect call to free the junk, we can
-    // avoid certain cases where a pointer could be allocated, freed, and then
-    // allocated; leading to a sort of ABA issue.
-    chpl::update<ResultType> combiner;
-    bool changed = combiner(r->result, result);
-    // now 'r->result' is updated and 'result' is garbage for collection
-    queryMap->oldResults.push_back(std::move(result));
-    // TODO: also check if the errors have changed
-    auto currentRevision = this->currentRevisionNumber;
-    r->lastChecked = currentRevision;
-    if (changed) {
-      r->lastChanged  = currentRevision;
-    }
-    return r;
+  assert(r != nullptr);
 
-  } else {
-    // Otherwise, store a new result entry in the map.
-    auto currentRevision = this->currentRevisionNumber;
-    auto iv = queryMap->map.insert(
-                    QueryMapResult<ResultType, ArgTs...>(currentRevision,
-                                                         currentRevision,
-                                                         queryMap,
-                                                         tupleOfArgs,
-                                                         std::move(result)));
-    const QueryMapResult<ResultType, ArgTs...>* newResult = &(*iv.first);
-    assert(iv.second && "expected insertion to take place");
-    return const_cast<QueryMapResult<ResultType, ArgTs...>*>(newResult);
+  // If we already have found a result, use that.
+  //
+  // Call a chpl::update function. That leaves the result in the 1st argument
+  // and returns whether or not it needed to change. The 2nd argument contains
+  // junk. If we wait until a garbageCollect call to free the junk, we can
+  // avoid certain cases where a pointer could be allocated, freed, and then
+  // allocated; leading to a sort of ABA issue.
+  chpl::update<ResultType> combiner;
+  bool changed = combiner(r->result, result);
+  bool initialResult = (r->lastChanged == -1);
+  // now 'r->result' is updated and 'result' is garbage for collection
+
+  // save old result when appropriate
+  // no need to save old result 1st time running this query
+  // no need to save new result when old one is used due to no changes
+  if (changed==false && initialResult==false) {
+    queryMap->oldResults.push_back(std::move(result));
   }
+
+  auto currentRevision = this->currentRevisionNumber;
+  r->lastChecked = currentRevision;
+  if (changed || initialResult) {
+    r->lastChanged  = currentRevision;
+  }
+  return r;
 }
 
 template<typename ResultType,
@@ -247,7 +254,7 @@ Context::updateResultForQueryMap(QueryMap<ResultType, ArgTs...>* queryMap,
   // Look up the current entry
   const QueryMapResult<ResultType, ArgTs...>* r
     = getResult(queryMap, tupleOfArgs);
- 
+
   // Run the version of the function accepting the map and result entry
   return updateResultForQueryMapR(queryMap, r, tupleOfArgs, std::move(result));
 }

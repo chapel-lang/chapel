@@ -208,13 +208,13 @@ class QueryMapResult final : public QueryMapResultBase {
  public:
   std::tuple<ArgTs...> tupleOfArgs;
   mutable ResultType result;
-  // This requires results be default-constructable but that's
-  // not strictly necessary. This function is just used when
-  // creating a value to use when querying the map.
-  // This requirement can be removed with C++20 features or with
-  // some hacky changes here.
-  QueryMapResult(std::tuple<ArgTs...> tupleOfArgs)
-    : QueryMapResultBase(-1, -1, nullptr),
+
+  // This constructor creates an entry with
+  //  * lastChecked and lastChanged = -1
+  //  * a default-constructed result
+  QueryMapResult(QueryMap<ResultType, ArgTs...>* parentQueryMap,
+                 std::tuple<ArgTs...> tupleOfArgs)
+    : QueryMapResultBase(-1, -1, parentQueryMap),
       tupleOfArgs(std::move(tupleOfArgs)),
       result() {
   }
@@ -279,6 +279,7 @@ class QueryMap final : public QueryMapBase {
         // Keep the result
         ++iter;
       } else {
+        printf("Removing result %p %s\n", &result, queryName);
         // Remove the result
         iter = map.erase(iter);
       }

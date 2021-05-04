@@ -95,10 +95,10 @@ stored in the program database.
 
 There are some requirements on query argument/key types and on result types:
 
- * argument/key types must have ``std::hash<KeyType>`` and
-   ``std::equal_to<KeyType>`` implemented for them.
- * result types must have ``chpl::update<MyResultType>`` implemented for them
-   and also must currently be default constructable.
+ * argument/key types must have ``std::hash<KeyType>``
+ * argument/key types must have ``std::equal_to<KeyType>``
+ * result types must have ``chpl::update<MyResultType>`` implemented
+ * result types must be default constructable
 
 .. code-block:: c++
 
@@ -182,17 +182,7 @@ class Context {
   //  start including file path in IDs).
   std::unordered_map<UniqueString, UniqueString> modNameToFilepath;
 
-  struct QueryDepsEntry {
-    const void* queryFunction;
-    querydetail::QueryDependencyVec dependencies;
-    std::vector<ErrorMessage> errors;
-    QueryDepsEntry(const void* queryFunction)
-      : queryFunction(queryFunction), dependencies(), errors() {
-    }
-  };
-
-  // this is used to compute the dependencies
-  std::vector<QueryDepsEntry> queryDeps;
+  std::vector<const querydetail::QueryMapResultBase*> queryStack;
 
   querydetail::RevisionNumber currentRevisionNumber;
 
@@ -203,7 +193,9 @@ class Context {
   Context();
   const char* getOrCreateUniqueString(const char* s);
 
-  void saveDependenciesInParent(const querydetail::QueryMapResultBase* resultEntry);
+  // saves the dependency in the parent query, which is assumed
+  // to be at queryStack.back().
+  void saveDependencyInParent(const querydetail::QueryMapResultBase* resultEntry);
   void endQueryHandleDependency(const querydetail::QueryMapResultBase* result);
 
   template<typename ResultType,
@@ -214,6 +206,9 @@ class Context {
          const char* traceQueryName,
          bool isInputQuery);
 
+  // if the result is present in the map, getResult returns it.
+  // if not, it adds a new default-constructed result to the map
+  // which will have lastChecked and lastChanged set to -1.
   template<typename ResultType,
            typename... ArgTs>
   const querydetail::QueryMapResult<ResultType, ArgTs...>*
@@ -252,9 +247,6 @@ class Context {
   bool queryCanUseSavedResultAndPushIfNot(
             const void* queryFunction,
             const querydetail::QueryMapResultBase* resultEntry);
-
-  // Future Work: support marking used strings and garbage collecting the rest
-  // Could store an atomic uint_8 just after the string for the mark.
 
   // Future Work: make the context thread-safe
 
@@ -328,9 +320,11 @@ class Context {
   void advanceToNextRevision(bool prepareToGC);
 
   /**
-    This function runs garbage collection, but it only has an effect
-    if the last call to advanceToNextRevision passed
-    prepareToGC=true.
+    This function runs garbage collection. It will collect UniqueStrings
+    if the last call to advanceToNextRevision passed prepareToGC=true.
+
+    It is an implementation error to call this function while a query
+    is running.
    */
   void collectGarbage();
 

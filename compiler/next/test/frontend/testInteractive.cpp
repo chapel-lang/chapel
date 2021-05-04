@@ -46,13 +46,16 @@ int main(int argc, char** argv) {
     ctx->advanceToNextRevision(gc);
     for (int i = 1; i < argc; i++) {
       auto filepath = UniqueString::build(ctx, argv[i]);
-      //const frontend::ModuleDeclVec& mods
-      //  = frontend::parse(ctx, filepath);
 
-      // update fileText and parseFile so that
-      // the later query can reuse results.
-      //fileText(ctx, filepath);
-      //parseFile(ctx, filepath);
+      /*
+      const frontend::ModuleDeclVec& mods = frontend::parse(ctx, filepath);
+      for (const auto elt : mods) {
+        const Module* module = elt->module();
+
+        printf("Module %s:\n", module->name().c_str());
+        ASTBase::dump(module);
+        printf("\n");
+      }*/
 
       /*
       const frontend::DefinedTopLevelNamesVec& vec =

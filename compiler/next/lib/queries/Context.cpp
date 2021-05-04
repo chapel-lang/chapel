@@ -29,7 +29,7 @@ namespace chpl {
 using namespace chpl::querydetail;
 
 Context::Context()
-  : uniqueStringsTable(), queryDB(), queryDeps(),
+  : uniqueStringsTable(), queryDB(), queryStack(),
     currentRevisionNumber(1), lastPrepareToGCRevisionNumber(0), gcCounter(1) {
 }
 
@@ -160,46 +160,46 @@ void Context::advanceToNextRevision(bool prepareToGC) {
 
 void Context::collectGarbage() {
   // if there are no parent queries, collect some garbage
-  if (queryDeps.size() == 0) {
-    printf("COLLECTING GARBAGE\n");
-    // clear out the saved old results
+  assert(queryStack.size() == 0);
+
+  printf("COLLECTING GARBAGE\n");
+  // clear out the saved old results
+  // warning: this loop proceeds in a nondeterministic order
+  for (auto& dbEntry: queryDB) {
+    QueryMapBase* queryMapBase = dbEntry.second.get();
+    queryMapBase->clearOldResults(this->currentRevisionNumber);
+  }
+
+  if (this->lastPrepareToGCRevisionNumber == this->currentRevisionNumber) {
+    // remove UniqueStrings that have not been marked
+
+    size_t nUniqueStringsBefore = uniqueStringsTable.size();
+
+    // Performance: Would it be better to modify the table in-place
+    // rather than creating a new table as is done here?
+    char gcMark = this->gcCounter & 0xff;
+    UniqueStringsTableType newTable;
+    std::vector<char*> toFree;
     // warning: this loop proceeds in a nondeterministic order
-    for (auto& dbEntry: queryDB) {
-      QueryMapBase* queryMapBase = dbEntry.second.get();
-      queryMapBase->clearOldResults(this->currentRevisionNumber);
-    }
-
-    if (this->lastPrepareToGCRevisionNumber == this->currentRevisionNumber) {
-      // remove UniqueStrings that have not been marked
-
-      size_t nUniqueStringsBefore = uniqueStringsTable.size();
-
-      // Performance: Would it be better to modify the table in-place
-      // rather than creating a new table as is done here?
-      char gcMark = this->gcCounter & 0xff;
-      UniqueStringsTableType newTable;
-      std::vector<char*> toFree;
-      // warning: this loop proceeds in a nondeterministic order
-      for (auto& e: uniqueStringsTable) {
-        const char* key = e.first;
-        char* buf = e.second;
-        if (buf[0] == gcMark) {
-          printf("COPYING OVER UNIQUESTRING %s\n", key);
-          newTable.insert(std::make_pair(key, buf));
-        } else {
-          printf("WILL FREE UNIQUESTRING %s\n", key);
-          toFree.push_back(buf);
-        }
+    for (auto& e: uniqueStringsTable) {
+      const char* key = e.first;
+      char* buf = e.second;
+      if (buf[0] == gcMark) {
+        printf("COPYING OVER UNIQUESTRING %s\n", key);
+        newTable.insert(std::make_pair(key, buf));
+      } else {
+        printf("WILL FREE UNIQUESTRING %s\n", key);
+        toFree.push_back(buf);
       }
-      for (char* buf: toFree) {
-        free(buf);
-      }
-      uniqueStringsTable.swap(newTable);
-
-      size_t nUniqueStringsAfter = uniqueStringsTable.size();
-      printf("COLLECTED %i UniqueStrings\n",
-             (int)(nUniqueStringsBefore-nUniqueStringsAfter));
     }
+    for (char* buf: toFree) {
+      free(buf);
+    }
+    uniqueStringsTable.swap(newTable);
+
+    size_t nUniqueStringsAfter = uniqueStringsTable.size();
+    printf("COLLECTED %i UniqueStrings\n",
+           (int)(nUniqueStringsBefore-nUniqueStringsAfter));
   }
 }
 
@@ -258,6 +258,10 @@ void Context::recomputeIfNeeded(const QueryMapResultBase* resultEntry) {
     assert(resultEntry->lastChecked == this->currentRevisionNumber);
     return;
   } else {
+    // if we are GC'ing, mark unique strings
+    if (this->currentRevisionNumber == this->lastPrepareToGCRevisionNumber) {
+      resultEntry->markUniqueStrings(this);
+    }
     resultEntry->lastChecked = this->currentRevisionNumber;
   }
 
@@ -271,8 +275,10 @@ bool Context::queryCanUseSavedResultAndPushIfNot(
 
   bool useSaved = false;
 
-  if (resultEntry == nullptr) {
-    // If there was no result, we can't reuse it
+  assert(resultEntry != nullptr);
+
+  if (resultEntry->lastChanged == -1) {
+    // If it is a new entry, we can't reuse it
     useSaved = false;
   } else if (this->currentRevisionNumber == resultEntry->lastChecked) {
     // the query was already checked/run in this revision
@@ -290,52 +296,44 @@ bool Context::queryCanUseSavedResultAndPushIfNot(
         break;
       }
     }
+    if (useSaved == true) {
+      resultEntry->lastChecked = this->currentRevisionNumber;
+    }
   }
 
   if (useSaved == false) {
     // Since the result cannot be reused, the query will be evaluated.
     // So, push something to queryDeps
-    queryDeps.push_back(QueryDepsEntry(queryFunction));
-
-    size_t n = queryDeps.size();
-    if (n > 10000) {
-      fprintf(stderr, "Error: query depth is too high - is there a cycle?\n");
-      exit(1);
-      // TODO - do something smarter; for example, could
-      // check for cycles every time n reaches a power of two
-    }
+    queryStack.push_back(resultEntry);
   }
 
   return useSaved;
 }
 
-void Context::saveDependenciesInParent(const QueryMapResultBase* resultEntry) {
+void Context::saveDependencyInParent(const QueryMapResultBase* resultEntry) {
   // Record that the parent query depends upon this one.
   //
-  // we haven't pushed the query beginning yet, so the
-  // parent query is at queryDeps.back()
-  if (queryDeps.size() > 0) {
-    queryDeps.back().dependencies.push_back(resultEntry);
+  // We haven't pushed the query beginning yet; on already popped it.
+  // So, the parent query is at queryDeps.back().
+  if (queryStack.size() > 0) {
+    assert(queryStack.back() != resultEntry); // should be parent query
+    queryStack.back()->dependencies.push_back(resultEntry);
   }
 }
-void Context::endQueryHandleDependency(const QueryMapResultBase* result) {
-  // queryDeps.back() is the dependency vector for this query
-  // which is now ending. So, replace result->dependencies with it.
-  {
-    QueryDepsEntry& back = queryDeps.back();
-    result->dependencies.swap(back.dependencies);
-    result->errors.swap(back.errors);
-  }
-  queryDeps.pop_back();
-  // additionally, we've run a query and there might well be
-  // a parent query. In that event, we should update the dependency
-  // vector for the parent query.
-  saveDependenciesInParent(result);
+void Context::endQueryHandleDependency(const QueryMapResultBase* resultEntry) {
+  // Remove the current query from the stack
+  assert(queryStack.back() == resultEntry);
+  queryStack.pop_back();
+
+  // We've just the query represented by 'resultEntry'. If that query
+  // was called from another query, we need to record that the calling
+  // query depends on 'resultEntry'.
+  saveDependencyInParent(resultEntry);
 }
 
 void Context::queryNoteError(ErrorMessage error) {
-  assert(queryDeps.size() > 0);
-  queryDeps.back().errors.push_back(std::move(error));
+  assert(queryStack.size() > 0);
+  queryStack.back()->errors.push_back(std::move(error));
 }
 
 
