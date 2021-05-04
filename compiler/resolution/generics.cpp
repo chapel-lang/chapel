@@ -128,7 +128,7 @@ copyGenericSub(SymbolMap& subs, FnSymbol* root, FnSymbol* fn, Symbol* key, Symbo
   }
 }
 
-TypeSymbol*
+static TypeSymbol*
 getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* actualTS) {
   if (fn->hasEitherFlag(FLAG_TUPLE,FLAG_PARTIAL_TUPLE)) {
     return actualTS;
@@ -139,9 +139,11 @@ getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* actualTS) {
     // With FLAG_REF on the function, that means it's a constructor
     // for the ref type, so re-instantiate it with whatever actualTS is.
     return actualTS;
-  } else if (actualTS->hasFlag(FLAG_REF)) {
+  } else if (actualTS->hasFlag(FLAG_REF) &&
+          !(key->hasFlag(FLAG_REF) && isConstrainedType(key->getValType())) ) {
     // the value is a ref and
     // instantiation of a formal of ref type loses ref
+    // except when we are mapping a CG type
     return getNewSubType(fn, key, actualTS->getValType()->symbol);
   } else {
     return actualTS;

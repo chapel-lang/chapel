@@ -1,4 +1,4 @@
 tier_1_interface_method.chpl:20: In 'implements LessThan' statement:
 tier_1_interface_method.chpl:20: error: when checking this implements statement
-tier_1_interface_method.chpl:20: note: the required function less_than is not implemented
+tier_1_interface_method.chpl:15: note: this implementation of the required function less_than requires implicit conversion(s), which is currently disallowed
 tier_1_interface_method.chpl:2: note: the required function less_than in the interface LessThan is declared here

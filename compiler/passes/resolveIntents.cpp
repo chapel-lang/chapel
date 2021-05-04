@@ -25,12 +25,6 @@
 
 bool intentsResolved = false;
 
-static bool isConstrainedTypeWrapper(Type* t) {
-  bool result = isConstrainedType(t);
-  //if (result) INT_FATAL("CG case"); // used for testing
-  return result;
-}
-
 IntentTag constIntentForType(Type* t) {
   if (is_bool_type(t) ||
       is_int_type(t) ||
@@ -60,7 +54,7 @@ IntentTag constIntentForType(Type* t) {
              isSingleType(t)        ||
              isRecordWrappedType(t) ||  // domain, array, or distribution
              isManagedPtrType(t) ||
-             isConstrainedTypeWrapper(t) ||
+             isConstrainedType(t) ||
              isAtomicType(t) ||
              isUnion(t) ||
              isRecord(t)) { // may eventually want to decide based on size
@@ -155,7 +149,7 @@ IntentTag blankIntentForType(Type* t) {
              isRecord(t)                             ||
              // Note: isRecord(t) includes range (FLAG_RANGE)
              isUnion(t)                              ||
-             isConstrainedTypeWrapper(t)             ||
+             isConstrainedType(t)                    ||
              t == dtTaskID                           ||
              t == dtFile                             ||
              t == dtNil                              ||
@@ -232,7 +226,7 @@ static IntentTag blankIntentForThisArg(Type* t) {
   // the intent for this is INTENT_REF_MAYBE_CONST
   //
   // This applies to both arguments of type _ref(t) and t
-  if (isRecord(valType) || isUnion(valType) ||
+  if (isRecord(valType) || isUnion(valType) || isConstrainedType(valType) ||
       valType->symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF_MAYBE_CONST))
     return INTENT_REF_MAYBE_CONST;
 
