@@ -175,9 +175,11 @@ SystemOrDie("make spectests");
 # (chpldoc) with a clobber
 print "[gen_release] Building the docs...\n";
 # Set CHPL_COMM to none to avoid issues with gasnet generated makefiles not
-# existing because we haven't built the third-party libs
+# existing because we haven't built the third-party libs and set CHPL_LLVM to
+# none since we don't need it to build the docs
 $ENV{'CHPL_HOME'} = "$archive_dir";
 $ENV{'CHPL_COMM'} = "none";
+$ENV{'CHPL_LLVM'} = "none";
 print "[gen_release] CHPL_HOME is set to: $ENV{'CHPL_HOME'}\n";
 
 if (not exists($ENV{"CHPL_GEN_RELEASE_SKIP_DOCS"})) {
