@@ -39,11 +39,11 @@ const UniqueString& recursiveQuery(Context* context, UniqueString arg) {
 }
 
 int main() {
-  auto context = Context::build();
-  Context* ctx = context.get();
+  Context ctx;
+  Context* context = &ctx;
 
-  auto s = UniqueString::build(ctx, "Nice To See You Again World, Hello");
-  recursiveQuery(ctx, s);
+  auto s = UniqueString::build(context, "Nice To See You Again World, Hello");
+  recursiveQuery(context, s);
 
   return 0;
 }

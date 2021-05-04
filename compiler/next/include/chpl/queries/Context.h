@@ -190,7 +190,6 @@ class Context {
   querydetail::RevisionNumber lastPrepareToGCRevisionNumber;
   querydetail::RevisionNumber gcCounter;
 
-  Context();
   const char* getOrCreateUniqueString(const char* s);
 
   // saves the dependency in the parent query, which is assumed
@@ -271,7 +270,7 @@ class Context {
   /**
     Create a new AST Context.
    */
-  static owned<Context> build();
+  Context();
   ~Context();
 
   /**

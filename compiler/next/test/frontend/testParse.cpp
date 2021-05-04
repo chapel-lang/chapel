@@ -288,8 +288,9 @@ static void test15(Parser* parser) {
 }
 
 int main() {
-  auto context = Context::build();
-  Context* ctx = context.get();
+  Context context;
+  Context* ctx = &context;
+
   auto parser = Parser::build(ctx);
   Parser* p = parser.get();
 

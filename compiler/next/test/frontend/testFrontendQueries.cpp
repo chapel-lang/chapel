@@ -34,8 +34,8 @@ using namespace frontend;
 
 static void test0() {
   printf("test0\n");
-  auto context = Context::build();
-  Context* ctx = context.get();
+  Context context;
+  Context* ctx = &context;
 
   auto path = UniqueString::build(ctx, "input.chpl");
   std::string contents = "/* this is a test */";
@@ -47,8 +47,8 @@ static void test0() {
 
 static void test1() {
   printf("test1\n");
-  auto context = Context::build();
-  Context* ctx = context.get();
+  Context context;
+  Context* ctx = &context;
 
   auto path = UniqueString::build(ctx, "input.chpl");
   std::string contents = "/* this is a test */";
@@ -65,8 +65,8 @@ static const Module* parseOneModule(Context* ctx, UniqueString filepath) {
 
 static void test2() {
   printf("test2\n");
-  auto context = Context::build();
-  Context* ctx = context.get();
+  Context context;
+  Context* ctx = &context;
 
   ctx->advanceToNextRevision(true);
   auto modOnePath = UniqueString::build(ctx, "modOne.chpl");
@@ -121,8 +121,8 @@ static void test2() {
 
 static void test3() {
   printf("test3\n");
-  auto context = Context::build();
-  Context* ctx = context.get();
+  Context context;
+  Context* ctx = &context;
 
   auto modulePath = UniqueString::build(ctx, "MyModule.chpl");
   const Module* module = nullptr;
@@ -258,8 +258,8 @@ static void test3() {
 
 static void test4() {
   printf("test4\n");
-  auto context = Context::build();
-  Context* ctx = context.get();
+  Context context;
+  Context* ctx = &context;
 
   auto modulePath = UniqueString::build(ctx, "MyModule.chpl");
   const Module* module = nullptr;

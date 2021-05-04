@@ -33,10 +33,6 @@ Context::Context()
     currentRevisionNumber(1), lastPrepareToGCRevisionNumber(0), gcCounter(1) {
 }
 
-owned<Context> Context::build() {
-  return toOwned(new Context());
-}
-
 Context::~Context() {
   // free all of the unique'd strings
   for (auto& item: this->uniqueStringsTable) {

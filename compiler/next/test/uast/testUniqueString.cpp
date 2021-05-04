@@ -95,8 +95,8 @@ void testPerformance(Context* ctx, const char* inputFile, bool printTiming) {
 }
 
 void test0() {
-  auto context = Context::build();
-  Context* ctx = context.get();
+  Context context;
+  Context* ctx = &context;
 
   // First, add some strings to the map and make sure we get uniqueness.
   // needs to be long enough to require strdup etc.
@@ -127,8 +127,8 @@ void test0() {
 
 
 void test1() {
-  auto context = Context::build();
-  Context* ctx = context.get();
+  Context context;
+  Context* ctx = &context;
 
   // First, add some strings to the map and make sure we get uniqueness.
   // needs to be long enough to require strdup etc.
@@ -200,8 +200,8 @@ int main(int argc, char** argv) {
   test0();
   test1();
 
-  auto context = Context::build();
-  Context* ctx = context.get();
+  Context context;
+  Context* ctx = &context;
 
   // Next, measure performance
   testPerformance(ctx, inputFile, printTiming);

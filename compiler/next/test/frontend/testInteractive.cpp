@@ -40,8 +40,9 @@ int main(int argc, char** argv) {
   }
 
   bool gc = false;
-  auto context = Context::build();
-  Context* ctx = context.get();
+  Context context;
+  Context* ctx = &context;
+
   while (true) {
     ctx->advanceToNextRevision(gc);
     for (int i = 1; i < argc; i++) {

@@ -129,8 +129,8 @@ const std::string& querySix(Context* context, int unused) {
 void test0() {
   printf("test0\n");
 
-  auto ownedContext = Context::build();
-  Context* context = ownedContext.get();
+  Context ctx;
+  Context* context = &ctx;
 
   printf("part 1\n");
   // test that an input query is run exactly once when requested
@@ -153,8 +153,8 @@ void test0() {
 void test1() {
   printf("test1\n");
 
-  auto ownedContext = Context::build();
-  Context* context = ownedContext.get();
+  Context ctx;
+  Context* context = &ctx;
 
   printf("part 1\n");
   // test that the queries are run just once
@@ -192,8 +192,8 @@ void test1() {
 void test2() {
   printf("test2\n");
 
-  auto ownedContext = Context::build();
-  Context* context = ownedContext.get();
+  Context ctx;
+  Context* context = &ctx;
 
   context->advanceToNextRevision(false);
   inputString = "hello there giant world";
@@ -219,8 +219,8 @@ void test2() {
 void test3() {
   printf("test3\n");
 
-  auto ownedContext = Context::build();
-  Context* context = ownedContext.get();
+  Context ctx;
+  Context* context = &ctx;
 
   // get a baseline
   printf("part 1\n");
@@ -259,8 +259,8 @@ void test3() {
 void test4() {
   printf("test4\n");
 
-  auto ownedContext = Context::build();
-  Context* context = ownedContext.get();
+  Context ctx;
+  Context* context = &ctx;
 
   // get a baseline
   printf("part 1\n");
@@ -331,8 +331,8 @@ void test4() {
 void test5() {
   printf("test5\n");
 
-  auto ownedContext = Context::build();
-  Context* context = ownedContext.get();
+  Context ctx;
+  Context* context = &ctx;
 
   // get a baseline
   printf("part 1\n");

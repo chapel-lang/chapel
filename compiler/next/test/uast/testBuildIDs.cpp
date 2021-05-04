@@ -36,9 +36,10 @@ using namespace chpl;
 using namespace uast;
 
 void test0() {
+  Context context;
+  Context* ctx = &context;
+
   // test some operations on locations
-  auto context = Context::build();
-  Context* ctx = context.get();
   Location locOne(UniqueString::build(ctx, "a.chpl"));
   Location locTwo(UniqueString::build(ctx, "aVeryLongFilenameIndeed.chpl"));
   Location locOneCopy(locOne.path());
@@ -94,9 +95,10 @@ void test0() {
 }
 
 void test1() {
+  Context context;
+  Context* ctx = &context;
+
   // test some operations on IDs
-  auto context = Context::build();
-  Context* ctx = context.get();
   auto shortpath = UniqueString::build(ctx, "a.chpl");
   auto longpath = UniqueString::build(ctx, "aVeryLongFilenameIndeed.chpl");
 
@@ -142,8 +144,9 @@ void test1() {
 }
 
 void test2() {
-  auto context = Context::build();
-  Context* ctx = context.get();
+  Context context;
+  Context* ctx = &context;
+
   auto builder = Builder::build(ctx, "path/to/test.chpl");
   Builder* b   = builder.get();
   Location emptyLoc;
@@ -230,8 +233,9 @@ void test2() {
 }
 
 void test3() {
-  auto context = Context::build();
-  Context* ctx = context.get();
+  Context context;
+  Context* ctx = &context;
+
   auto builder = Builder::build(ctx, "path/to/test.chpl");
   Builder* b   = builder.get();
   Location emptyLoc;
