@@ -254,6 +254,15 @@ void deleteTmpDir() {
     deleteDir(tmpdirname);
     tmpdirname = NULL;
   }
+  if (doctmpdirname != NULL) {
+    if (strlen(doctmpdirname) < 1 ||
+        strchr(doctmpdirname, '*') != NULL ||
+        strcmp(doctmpdirname, "//") == 0) {
+      INT_FATAL("doc tmp directory name looks fishy");
+    }
+    deleteDir(doctmpdirname);
+    doctmpdirname = NULL;
+  }
 #endif
 
   inDeleteTmpDir = 0;
