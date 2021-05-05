@@ -39,7 +39,6 @@ namespace uast {
   contains a ModuleDecl that refers to a Module Sym.
  */
 class Module final : public Sym {
- friend class Builder;
  friend class ModuleDecl;
 
  public:

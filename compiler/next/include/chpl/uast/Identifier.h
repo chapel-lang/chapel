@@ -28,8 +28,6 @@ namespace chpl {
 namespace uast {
 
 
-class Builder;
-
 /**
   This class represents a reference to a symbol by name.
   E.g. in
@@ -42,7 +40,6 @@ class Builder;
   \endrst
  */
 class Identifier final : public Expression {
- friend class Builder;
 
  private:
   UniqueString name_;
