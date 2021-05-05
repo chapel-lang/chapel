@@ -117,6 +117,8 @@ const uast::Builder::Result& parseFile(Context* context, UniqueString path) {
   const std::string& text = fileText(context, path);
 
   uast::Builder::Result result;
+  result.filePath = path;
+
   auto parser = Parser::build(context);
   const char* pathc = path.c_str();
   const char* textc = text.c_str();
@@ -129,15 +131,7 @@ const uast::Builder::Result& parseFile(Context* context, UniqueString path) {
     QUERY_ERROR(std::move(tmp));
   }
 
-  // Update the filePathForModuleName query
-  for (auto & topLevelExp : result.topLevelExps) {
-    if (ModuleDecl* moduleDecl = topLevelExp->toModuleDecl()) {
-      UniqueString moduleName = moduleDecl->name();
-      context->setFilePathForModuleName(moduleName, path);
-    } else {
-      assert(false && "topLevelExprs should only be module decls");
-    }
-  }
+  Builder::Result::updateFilePaths(context, result);
 
   return QUERY_END(result);
 }

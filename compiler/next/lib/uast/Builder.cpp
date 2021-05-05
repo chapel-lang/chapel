@@ -19,6 +19,7 @@
 
 #include "chpl/uast/Builder.h"
 
+#include "chpl/queries/Context.h"
 #include "chpl/queries/ErrorMessage.h"
 #include "chpl/uast/Exp.h"
 #include "chpl/uast/ModuleDecl.h"
@@ -87,6 +88,7 @@ Builder::Result Builder::result() {
   // (i.e. good cache behavior).
 
   Builder::Result ret;
+  ret.filePath = filepath_;
   ret.topLevelExps.swap(topLevelExps_);
   ret.errors.swap(errors_);
   ret.locations.swap(locations_);
@@ -210,12 +212,15 @@ void Builder::doAssignIDs(ASTBase* ast, UniqueString symbolPath, int& i,
 }
 
 Builder::Result::Result()
-  : topLevelExps(), errors(), locations()
+  : filePath(), topLevelExps(), errors(), locations()
 {
 }
 
 bool Builder::Result::update(Result& keep, Result& addin) {
   bool changed = false;
+
+  // update the filePath
+  changed |= defaultUpdate(keep.filePath, addin.filePath);
 
   // update the errors and locations
   changed |= defaultUpdate(keep.errors, addin.errors);
@@ -229,15 +234,33 @@ bool Builder::Result::update(Result& keep, Result& addin) {
 
 void Builder::Result::mark(Context* context, const Result& keep) {
 
+  // mark the UniqueString file path
+  keep.filePath.mark(context);
+
   // mark UniqueStrings in the locations
   for (const auto& pair : keep.locations) {
     pair.second.markUniqueStrings(context);
   }
 
-  // mare UniqueStrings in the ASTs
+  // mark UniqueStrings in the ASTs
   markASTList(context, keep.topLevelExps);
+
+  // update the filePathForModuleName query
+  Builder::Result::updateFilePaths(context, keep);
 }
 
+void Builder::Result::updateFilePaths(Context* context, const Result& keep) {
+  UniqueString path = keep.filePath;
+  // Update the filePathForModuleName query
+  for (auto & topLevelExp : keep.topLevelExps) {
+    if (ModuleDecl* moduleDecl = topLevelExp->toModuleDecl()) {
+      UniqueString moduleName = moduleDecl->name();
+      context->setFilePathForModuleName(moduleName, path);
+    } else {
+      assert(false && "topLevelExprs should only be module decls");
+    }
+  }
+}
 
 
 } // namespace uast

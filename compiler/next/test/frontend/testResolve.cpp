@@ -103,8 +103,8 @@ static void test2() {
     context->collectGarbage();
   }
 
-  {
-    printf("part 3\n");
+  for (int i = 0; i < 3; i++) {
+    printf("part %i\n", 3+i);
     context->advanceToNextRevision(true);
     auto path = UniqueString::build(context, "input.chpl");
     std::string contents = "var x;\n"
@@ -130,6 +130,7 @@ static void test2() {
     context->collectGarbage();
   }
 }
+
 
 int main() {
   test1();

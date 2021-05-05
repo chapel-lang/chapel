@@ -85,6 +85,7 @@ class Builder final {
     This struct records the result of building some AST.
    */
   struct Result final {
+    UniqueString filePath;
     uast::ASTList topLevelExps;
     std::vector<ErrorMessage> errors;
     std::vector<std::pair<const ASTBase*, Location>> locations;
@@ -96,6 +97,7 @@ class Builder final {
 
     static bool update(Result& keep, Result& addin);
     static void mark(Context* context, const Result& keep);
+    static void updateFilePaths(Context* context, const Result& keep);
   };
 
   /**

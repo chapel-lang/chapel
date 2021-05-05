@@ -231,8 +231,8 @@ void Context::setFilePathForModuleName(UniqueString modName, UniqueString path) 
 
 void Context::recomputeIfNeeded(const QueryMapResultBase* resultEntry) {
 
-  printf("RECOMPUTING IF NEEDED FOR %p %s\n",
-         resultEntry, resultEntry->parentQueryMap->queryName);
+  printf("RECOMPUTING IF NEEDED FOR %p %s\n", resultEntry,
+         resultEntry->parentQueryMap->queryName);
 
   if (this->currentRevisionNumber == resultEntry->lastChecked) {
     // No need to check the dependencies again.
@@ -339,6 +339,13 @@ bool Context::queryCanUseSavedResultAndPushIfNot(
     // Since the result cannot be reused, the query will be evaluated.
     // So, push something to queryDeps
     queryStack.push_back(resultEntry);
+    // Record that this query is being recomputed
+    // (to enable detecting recursion)
+    resultEntry->lastChecked = -1;
+    // Clear out the dependencies and errors since these will be recomputed
+    // by evaluating the query.
+    resultEntry->dependencies.clear();
+    resultEntry->errors.clear();
   }
 
   return useSaved;

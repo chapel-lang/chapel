@@ -164,10 +164,11 @@ Context::queryUseSaved(
   const void* queryFuncV = (const void*) queryFunction;
   bool useSaved = queryCanUseSavedResultAndPushIfNot(queryFuncV, r);
   if (useSaved) {
-    printf("QUERY END       %s (...) REUSING BASED ON DEPS\n", traceQueryName);
+    printf("QUERY END       %s (...) REUSING BASED ON DEPS %p\n",
+           traceQueryName, r);
     assert(r->lastChecked == this->currentRevisionNumber);
   } else {
-    printf("QUERY COMPUTING %s (...)\n", traceQueryName);
+    printf("QUERY COMPUTING %s (...) %p\n", traceQueryName, r);
   }
   return useSaved;
 }
@@ -200,8 +201,11 @@ Context::queryEnd(
     bool changed = ret->lastChanged == this->currentRevisionNumber;
     printf("QUERY END       %s (", traceQueryName);
     queryArgsPrint(tupleOfArgs);
-    printf(") %s\n", changed?"UPDATED":"NO CHANGE");
+    printf(") %s %p\n", changed?"UPDATED":"NO CHANGE", r);
     assert(r->lastChecked == this->currentRevisionNumber);
+    for (auto dep : r->dependencies) {
+      printf("  with dependency %p %s\n", dep, dep->parentQueryMap->queryName);
+    }
   }
 
   endQueryHandleDependency(ret);
