@@ -19,8 +19,6 @@
 
 #include "chpl/uast/Decl.h"
 
-#include "chpl/uast/Expression.h"
-
 namespace chpl {
 namespace uast {
 

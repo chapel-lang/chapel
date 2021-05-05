@@ -20,9 +20,9 @@
 #ifndef CHPL_UAST_IDENTIFIER_H
 #define CHPL_UAST_IDENTIFIER_H
 
-#include "chpl/uast/Expression.h"
 #include "chpl/queries/Location.h"
 #include "chpl/queries/UniqueString.h"
+#include "chpl/uast/Expression.h"
 
 namespace chpl {
 namespace uast {
