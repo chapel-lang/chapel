@@ -31,7 +31,7 @@
 /// \cond DO_NOT_DOCUMENT
 namespace chpl {
 
-class Contex;
+class Context;
 class ID;
 
 namespace detail {
