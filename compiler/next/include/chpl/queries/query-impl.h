@@ -131,18 +131,10 @@ Context::getResult(QueryMap<ResultType, ArgTs...>* queryMap,
   else
     printf("Found result %p %s\n", savedElement, queryMap->queryName);
 
-  if (newElementWasAdded == false && savedElement->lastChanged == -1) {
-    // If an old element present has lastChanged == -1, that means that
-    // we trying to compute it when a recursive call was made. In that event
-    // it is a severe error with the compiler implementation.
-    // This is a severe internal error and compilation cannot proceed.
-    // This uses 'exit' so that it can be tested but in the future we could
-    // make it call an internal error function that also exits.
-    // If this happens, the solution is to fix the query not to recurse.
-    fprintf(stderr, "Error: recursion encountered in query %s\n",
-            queryMap->queryName);
-    exit(-1);
+  if (newElementWasAdded == false && savedElement->lastChecked == -1) {
+    haltForRecursiveQuery(savedElement);
   }
+
   return savedElement;
 }
 

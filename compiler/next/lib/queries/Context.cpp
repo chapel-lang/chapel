@@ -372,6 +372,19 @@ void Context::endQueryHandleDependency(const QueryMapResultBase* resultEntry) {
   saveDependencyInParent(resultEntry);
 }
 
+void Context::haltForRecursiveQuery(const querydetail::QueryMapResultBase* r) {
+  // If an old element present has lastChecked == -1, that means that
+  // we trying to compute it when a recursive call was made. In that event
+  // it is a severe error with the compiler implementation.
+  // This is a severe internal error and compilation cannot proceed.
+  // This uses 'exit' so that it can be tested but in the future we could
+  // make it call an internal error function that also exits.
+  // If this happens, the solution is to fix the query not to recurse.
+  fprintf(stderr, "Error: recursion encountered in query %s\n",
+          r->parentQueryMap->queryName);
+  exit(-1);
+}
+
 void Context::queryNoteError(ErrorMessage error) {
   assert(queryStack.size() > 0);
   queryStack.back()->errors.push_back(std::move(error));
