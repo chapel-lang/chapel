@@ -743,9 +743,7 @@ module ChapelRange {
   // '.size' behavior?
   //
   proc chpl_idxTypeSizeChange(type t) param {
-    return (t != int &&
-            !isEnumType(t) &&
-            !isBoolType(t));
+    return (isIntegralType(t) && t != int);
   }
   
   /* Returns the number of elements in this range as an integer.

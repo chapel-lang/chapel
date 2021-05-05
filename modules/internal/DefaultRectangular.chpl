@@ -1921,7 +1921,7 @@ module DefaultRectangular {
     for param i in 0..rank-1 do
       Blo(i) = Bdims(i).first;
 
-    const len = aView.size.safeCast(size_t);
+    const len = aView.sizeAs(aView.intIdxType).safeCast(size_t);
 
     if len == 0 then return;
 
@@ -2151,7 +2151,7 @@ module DefaultRectangular {
     count[stridelevels+1] *= DimSizes(1).safeCast(size_t);
 
     assert(stridelevels <= inferredRank, "BulkTransferStride: stride levels greater than rank.");
-    if stridelevels == 0 then assert(count[1] == LViewDom.size, "BulkTransferStride: bulk-count incorrect for stride level of 0: ", count[1], " != ", LViewDom.size);
+    if stridelevels == 0 then assert(count[1] == LViewDom.sizeAs(size_t), "BulkTransferStride: bulk-count incorrect for stride level of 0: ", count[1], " != ", LViewDom.sizeAs(size_t));
 
     countDom  = {1..stridelevels+1};
     strideDom = {1..stridelevels};
