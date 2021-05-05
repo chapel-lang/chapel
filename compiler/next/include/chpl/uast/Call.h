@@ -20,23 +20,40 @@
 #ifndef CHPL_UAST_CALL_H
 #define CHPL_UAST_CALL_H
 
-#include "chpl/uast/Exp.h"
-
-#include <vector>
+#include "chpl/uast/Expression.h"
 
 namespace chpl {
 namespace uast {
 
 
 /**
-  This abstract class represents something call-like
+  This abstract class represents something call-like.
+  It represents a called expression as well as a number of actuals.
+
+  For example `f(1,2)`, `f` is the called expression and `1`, `2`
+  are the actuals.
  */
-class Call : public Exp {
+class Call : public Expression {
+ protected:
+  int8_t hasCalledExpression_; // 0 or 1
+  Call(ASTTag tag);
+  Call(ASTTag tag, ASTList children, int8_t hasCalledExpression);
+  bool callContentsMatchInner(const Call* other) const {
+    return true;
+  }
+  void callMarkUniqueStringsInner(Context* context) const {
+  }
+
  public:
   ~Call() override = 0;
 
-  ASTListIteratorPair<Exp> actuals() const {
-    return ASTListIteratorPair<Exp>(children_.begin()+1, children_.end());
+  /**
+   Returns an iterable expression over the actuals of a call.
+   */
+  ASTListIteratorPair<Expression> actuals() const {
+    return
+      ASTListIteratorPair<Expression>(children_.begin()+hasCalledExpression_,
+                                      children_.end());
   }
 
   // note: the reason for the +/- 1 below is that the
@@ -44,16 +61,29 @@ class Call : public Exp {
   // not count as an "actual".
 
   int numActuals() const {
-    return this->numChildren() - 1;
+    return this->numChildren() - hasCalledExpression_;
   }
-  const Exp* actual(int i) const {
-    return this->child(i+1);
+  const Expression* actual(int i) const {
+    const ASTNode* ast = this->child(i+hasCalledExpression_);
+    assert(ast->isExpression());
+    return (const Expression*) ast;
   }
-  /* Should we have baseExpr? Or should it be defined in child classes?
-     What does actual/numActuals do for the child classes?
-     Exp* baseExpr() const {
-    return this->child(0);
-  }*/
+
+  /**
+    Returns the called expression, or nullptr if there is not for this call.
+
+    Note that some subclasses of Call will never have a called expression
+    and will always return nullptr from this function.
+   */
+  const Expression* calledExpression() const {
+    if (hasCalledExpression_ == 0) {
+      return nullptr;
+    } else {
+      const ASTNode* ast = this->child(0);
+      assert(ast->isExpression());
+      return (const Expression*) ast;
+    }
+  }
 };
 
 
