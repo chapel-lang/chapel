@@ -68,7 +68,7 @@ class ASTBase {
   virtual bool contentsMatchInner(const ASTBase* other) const = 0;
 
   /**
-   This function need sto be defined by subclasses.
+   This function needs to be defined by subclasses.
    It should call the 'mark' method on any UniqueStrings
    stored as fields. It need not worry about the children nodes
    or the UniqueStrings stored in the ID.
