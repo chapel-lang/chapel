@@ -403,7 +403,7 @@ proc Cyclic.writeThis(x) throws {
 }
 
 proc Cyclic.targetLocsIdx(i: idxType) {
-  const numLocs:idxType = targetLocDom.size:idxType;
+  const numLocs:idxType = targetLocDom.sizeAs(idxType);
   // this is wrong if i is less than startIdx
   //return ((i - startIdx(0)) % numLocs):int;
   // this works even if i is less than startIdx
@@ -447,7 +447,7 @@ proc chpl__computeCyclic(type idxType, locid, targetLocBox, startIdx) {
       const lo = chpl__tuplify(startIdx)(i): idxType;
       const myloc = chpl__tuplify(locid)(i): idxType;
       // NOTE: Not checking for overflow here when casting to strType
-      const numlocs = targetLocBox(i).size: strType;
+      const numlocs = targetLocBox(i).sizeAs(strType);
       inds(i) = chpl__computeCyclicDim(idxType, lo, myloc, numlocs);
     }
     return inds;
@@ -608,7 +608,7 @@ proc CyclicDom.dsiSerialWrite(x) {
   }
 }
 
-proc CyclicDom.dsiNumIndices return whole.size;
+proc CyclicDom.dsiNumIndices return whole.sizeAs(uint);
 
 iter CyclicDom.these() {
   for i in whole do
@@ -1146,7 +1146,7 @@ where canDoAnyToCyclic(this, destDom, Src, srcDom) {
     on Dest.dom.dist.targetLocs(i) {
       const regionDest = Dest.dom.locDoms(i).myBlock[destDom];
       const regionSrc = Src.dom.locDoms(i).myBlock[srcDom];
-      if regionDest.size > 0 {
+      if regionDest.sizeAs(int) > 0 {
         const ini = bulkCommConvertCoordinate(regionDest.first, destDom, srcDom);
         const end = bulkCommConvertCoordinate(regionDest.last, destDom, srcDom);
         const sb  = chpl__tuplify(regionSrc.stride);
@@ -1185,7 +1185,7 @@ where useBulkTransferDist {
   coforall j in Src.dom.dist.targetLocDom {
     on Src.dom.dist.targetLocs(j) {
       const inters = Src.dom.locDoms(j).myBlock[srcDom];
-      if inters.size > 0 {
+      if inters.sizeAs(int) > 0 {
         const ini = bulkCommConvertCoordinate(inters.first, srcDom, destDom);
         const end = bulkCommConvertCoordinate(inters.last, srcDom, destDom);
         const sa  = chpl__tuplify(destDom.stride);
@@ -1228,7 +1228,7 @@ where useBulkTransferDist {
   coforall j in Dest.dom.dist.targetLocDom {
     on Dest.dom.dist.targetLocs(j) {
       const inters = Dest.dom.locDoms(j).myBlock[destDom];
-      if inters.size > 0 {
+      if inters.sizeAs(int) > 0 {
         const ini = bulkCommConvertCoordinate(inters.first, destDom, srcDom);
         const end = bulkCommConvertCoordinate(inters.last, destDom, srcDom);
         const sb  = chpl__tuplify(srcDom.stride);

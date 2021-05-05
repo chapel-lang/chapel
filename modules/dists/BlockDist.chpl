@@ -471,7 +471,7 @@ proc Block.init(boundingBox: domain,
   if rank != 2 && isCSType(sparseLayoutType) then
     compilerError("CS layout is only supported for 2 dimensional domains");
 
-  if boundingBox.size == 0 then
+  if boundingBox.sizeAs(uint) == 0 then
     halt("Block() requires a non-empty boundingBox");
 
   this.boundingBox = boundingBox : domain(rank, idxType, stridable = false);
@@ -665,7 +665,7 @@ proc Block.getChunk(inds, locid) {
   //
   const chunk = locDist(locid).myChunk((...inds.getIndices()));
   if sanityCheckDistribution then
-    if chunk.size > 0 {
+    if chunk.sizeAs(int) > 0 {
       if targetLocsIdx(chunk.low) != locid then
         writeln("[", here.id, "] ", chunk.low, " is in my chunk but maps to ",
                 targetLocsIdx(chunk.low));
@@ -719,7 +719,7 @@ iter Block.activeTargetLocales(const space : domain = boundingBox) {
   for i in {(...dims)} {
     const chunk = chpl__computeBlock(i, targetLocDom, boundingBox, boundingBox.dims());
     // TODO: Want 'contains' for a domain. Slicing is a workaround.
-    if locSpace[(...chunk)].size > 0 then
+    if locSpace[(...chunk)].sizeAs(int) > 0 then
       yield i;
   }
 }
@@ -928,7 +928,7 @@ proc BlockDom.dsiBuildArray(type eltType, param initElts:bool) {
   return arr;
 }
 
-proc BlockDom.dsiNumIndices return whole.size;
+proc BlockDom.dsiNumIndices return whole.sizeAs(uint);
 proc BlockDom.dsiLow return whole.low;
 proc BlockDom.dsiHigh return whole.high;
 proc BlockDom.dsiStride return whole.stride;
@@ -1652,7 +1652,7 @@ private proc _doSimpleBlockTransfer(Dest, destDom, Src, srcDom) {
       // Compute the local portion of the destination domain, and find the
       // corresponding indices in the source's domain.
       const localDestBlock = dst.dom.locDoms[i].myBlock[destDom];
-      assert(localDestBlock.size > 0);
+      assert(localDestBlock.sizeAs(int) > 0);
       const corSrcBlock    = bulkCommTranslateDomain(localDestBlock, destDom, srcDom);
       if debugBlockDistBulkTransfer then
         writeln("  Dest[",localDestBlock,"] = Src[", corSrcBlock,"]");
@@ -1732,7 +1732,7 @@ where !disableBlockDistBulkTransfer {
       // Grab privatized copy of 'this' to avoid extra GETs
       const Dest = if _privatization then chpl_getPrivatizedCopy(this.type, pid) else this;
       const inters = Dest.dom.locDoms(j).myBlock[destDom];
-      assert(inters.size > 0);
+      assert(inters.sizeAs(int) > 0);
 
       const srcChunk = bulkCommTranslateDomain(inters, destDom, srcDom);
 

@@ -1415,10 +1415,11 @@ module DefaultRectangular {
             writeln("reallocating in-place");
 
           sizesPerDim(0) = reallocD.dsiDim(0).sizeAs(int);
+          const oldSize = dom.dsiNumIndices;
           data = _ddata_reallocate(data,
                                    eltType,
-                                   oldSize=dom.dsiNumIndices,
-                                   newSize=reallocD.size);
+                                   oldSize,
+                                   newSize=reallocD.sizeAs(oldSize.type));
           initShiftedData();
         } else {
           var copy = new unmanaged DefaultRectangularArr(eltType=eltType,

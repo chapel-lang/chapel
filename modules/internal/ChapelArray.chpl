@@ -2146,7 +2146,7 @@ module ChapelArray {
 
      /* Return true if the domain has no indices */
      proc isEmpty(): bool {
-       return this.size == 0;
+       return this.sizeAs(uint) == 0;
      }
 
     //
@@ -2487,7 +2487,7 @@ module ChapelArray {
   inline operator ==(d1: domain, d2: domain) where isAssociativeDom(d1) &&
                                                    isAssociativeDom(d2) {
     if d1._value == d2._value then return true;
-    if d1.size != d2.size then return false;
+    if d1.sizeAs(uint) != d2.sizeAs(uint) then return false;
     // Should eventually be a forall+reduction
     for idx in d1 do
       if !d2.contains(idx) then return false;
@@ -2502,7 +2502,7 @@ module ChapelArray {
   inline operator ==(d1: domain, d2: domain) where isSparseDom(d1) &&
                                                    isSparseDom(d2) {
     if d1._value == d2._value then return true;
-    if d1.size != d2.size then return false;
+    if d1.sizeAs(uint) != d2.sizeAs(uint) then return false;
     if d1._value.parentDom != d2._value.parentDom then return false;
     // Should eventually be a forall+reduction
     for idx in d1 do
