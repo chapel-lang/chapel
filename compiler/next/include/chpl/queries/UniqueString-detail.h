@@ -271,33 +271,6 @@ template<typename K, typename V> struct update<std::unordered_map<K,V>> {
 template<typename T> struct mark {
   void operator()(Context* context, const T& keep) const { }
 };
-/*template<typename T>
-static inline void defaultMarkVec(Context* context, const std::vector<T>& keep) {
-  chpl::mark<T> marker;
-  for (auto& elt : keep) {
-    marker(context, elt);
-  }
-}
-template<typename K, typename V>
-static inline
-void defaultMarkUMap(Context* context, const std::unordered_map<K,V>& keep) {
-  chpl::mark<K> keyMarker;
-  chpl::mark<V> valMarker;
-  for (auto& elt : keep) {
-    keyMarker(context, elt.first);
-    valMarker(context, elt.second);
-  }
-}
-template<typename T> struct mark<std::vector<T>> {
-  void operator()(Context* context, const std::vector<T>& keep) const {
-    defaultMarkVec(context, keep);
-  }
-};
-template<typename K, typename V> struct mark<std::unordered_map<K,V>> {
-  void operator()(Context* context, const std::unordered_map<K,V>& keep) const {
-    defaultMarkUMap(context, keep);
-  }
-};*/
 
 
 } // end namespace chpl
