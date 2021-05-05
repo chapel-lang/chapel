@@ -20,7 +20,7 @@
 #ifndef CHPL_UAST_IDENTIFIER_H
 #define CHPL_UAST_IDENTIFIER_H
 
-#include "chpl/uast/Exp.h"
+#include "chpl/uast/Expression.h"
 #include "chpl/queries/Location.h"
 #include "chpl/queries/UniqueString.h"
 
@@ -41,14 +41,14 @@ class Builder;
       f(x);      // here, 'f' and 'x' are Identifiers
   \endrst
  */
-class Identifier final : public Exp {
+class Identifier final : public Expression {
  friend class Builder;
 
  private:
   UniqueString name_;
 
   Identifier(UniqueString name);
-  bool contentsMatchInner(const ASTBase* other) const override;
+  bool contentsMatchInner(const ASTNode* other) const override;
   void markUniqueStringsInner(Context* context) const override;
 
  public:

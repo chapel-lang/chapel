@@ -24,7 +24,7 @@
 
 #include "chpl/queries/ErrorMessage.h"
 #include "chpl/uast/Comment.h"
-#include "chpl/uast/Exp.h"
+#include "chpl/uast/Expression.h"
 
 #include "Parser/bison-chapel.h"
 #include "Parser/flex-chapel.h"
@@ -54,15 +54,15 @@ static void updateParseResult(ParserContext* parserContext) {
 
   // Save the top-level exprs
   if (parserContext->topLevelStatements != nullptr) {
-    for (Exp* stmt : *parserContext->topLevelStatements) {
-      builder->addToplevelExp(toOwned(stmt));
+    for (Expression* stmt : *parserContext->topLevelStatements) {
+      builder->addToplevelExpression(toOwned(stmt));
     }
     delete parserContext->topLevelStatements;
   }
   // Save any remaining top-level comments
   if (parserContext->comments != nullptr) {
     for (ParserComment parserComment : *parserContext->comments) {
-      builder->addToplevelExp(toOwned(parserComment.comment));
+      builder->addToplevelExpression(toOwned(parserComment.comment));
     }
     delete parserContext->comments;
   }

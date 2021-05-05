@@ -20,7 +20,7 @@
 #ifndef CHPL_UAST_DECL_H
 #define CHPL_UAST_DECL_H
 
-#include "chpl/uast/Exp.h"
+#include "chpl/uast/Expression.h"
 #include "chpl/uast/Sym.h"
 #include "chpl/queries/UniqueString.h"
 
@@ -31,7 +31,7 @@ namespace uast {
 /**
   This is an abstract base class for declarations
  */
-class Decl : public Exp {
+class Decl : public Expression {
  protected:
   Decl(ASTTag tag, owned<Sym> symbol);
   bool declContentsMatchInner(const Decl* other) const {
@@ -45,7 +45,7 @@ class Decl : public Exp {
 
   /** Returns the symbol declared by the declaration. */
   const Sym* sym() const {
-    const ASTBase* ast = child(0);
+    const ASTNode* ast = child(0);
     assert(ast->isSym());
     return (const Sym*) ast;
   }

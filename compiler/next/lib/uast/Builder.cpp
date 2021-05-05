@@ -21,7 +21,7 @@
 
 #include "chpl/queries/Context.h"
 #include "chpl/queries/ErrorMessage.h"
-#include "chpl/uast/Exp.h"
+#include "chpl/uast/Expression.h"
 #include "chpl/uast/ModuleDecl.h"
 
 #include <cstring>
@@ -37,7 +37,7 @@ Builder::Builder(Context* context,
   : context_(context),
     filepath_(filepath),
     inferredModuleName_(inferredModuleName),
-    topLevelExps_(), errors_(), locations_() {
+    topLevelExpressions_(), errors_(), locations_() {
 }
 
 static std::string filenameToModulename(const char* filename) {
@@ -65,15 +65,15 @@ owned<Builder> Builder::build(Context* context, const char* filepath) {
   return toOwned(b);
 }
 
-void Builder::addToplevelExp(owned<Exp> e) {
-  this->topLevelExps_.push_back(std::move(e));
+void Builder::addToplevelExpression(owned<Expression> e) {
+  this->topLevelExpressions_.push_back(std::move(e));
 }
 
 void Builder::addError(ErrorMessage e) {
   this->errors_.push_back(std::move(e));
 }
 
-void Builder::noteLocation(ASTBase* ast, Location loc) {
+void Builder::noteLocation(ASTNode* ast, Location loc) {
   this->locations_.push_back(std::make_pair(ast, loc));
 }
 
@@ -89,7 +89,7 @@ Builder::Result Builder::result() {
 
   Builder::Result ret;
   ret.filePath = filepath_;
-  ret.topLevelExps.swap(topLevelExps_);
+  ret.topLevelExpressions.swap(topLevelExpressions_);
   ret.errors.swap(errors_);
   ret.locations.swap(locations_);
   return std::move(ret);
@@ -100,8 +100,8 @@ Builder::Result Builder::result() {
 UniqueString Builder::createImplicitModuleIfNeeded() {
   bool containsOnlyModules = true;
   bool containsAnyModules = false;
-  for (auto const& ownedExp: topLevelExps_) {
-    if (ownedExp->isModuleDecl()) {
+  for (auto const& ownedExpression: topLevelExpressions_) {
+    if (ownedExpression->isModuleDecl()) {
       containsAnyModules = true;
     } else {
       containsOnlyModules = false;
@@ -113,13 +113,13 @@ UniqueString Builder::createImplicitModuleIfNeeded() {
   } else {
     // create a new module containing all of the statements
     ASTList stmts;
-    stmts.swap(topLevelExps_);
+    stmts.swap(topLevelExpressions_);
     auto implicitModule = ModuleDecl::build(this, Location(filepath_),
                                             inferredModuleName_,
                                             Sym::VISIBILITY_DEFAULT,
                                             Module::IMPLICIT,
                                             std::move(stmts));
-    topLevelExps_.push_back(std::move(implicitModule));
+    topLevelExpressions_.push_back(std::move(implicitModule));
     // return the name of the module
     return inferredModuleName_;
   }
@@ -130,17 +130,17 @@ void Builder::assignIDs(UniqueString inferredModule) {
   declaredHereT duplicates;
   int i = 0;
 
-  for (auto const& ownedExp: topLevelExps_) {
-    if (ModuleDecl* moduleDecl = ownedExp->toModuleDecl()) {
+  for (auto const& ownedExpression: topLevelExpressions_) {
+    if (ModuleDecl* moduleDecl = ownedExpression->toModuleDecl()) {
       UniqueString emptyString;
       doAssignIDs(moduleDecl, emptyString, i, pathVec, duplicates);
     } else {
-      assert(false && "topLevelExprs should only be module decls");
+      assert(false && "topLevelExpressionss should only be module decls");
     }
   }
 }
 
-void Builder::doAssignIDs(ASTBase* ast, UniqueString symbolPath, int& i,
+void Builder::doAssignIDs(ASTNode* ast, UniqueString symbolPath, int& i,
                           pathVecT& pathVec, declaredHereT& duplicates) {
   // It is appealing not to consider comments when computing AST ids,
   // but if that happens then we can't figure out source line numbers
@@ -156,7 +156,7 @@ void Builder::doAssignIDs(ASTBase* ast, UniqueString symbolPath, int& i,
   if (decl == nullptr) {
     // visit the children now to get integer part of ids in postorder
     for (auto & child : ast->children_) {
-      ASTBase* ptr = child.get();
+      ASTNode* ptr = child.get();
       this->doAssignIDs(ptr, symbolPath, i, pathVec, duplicates);
     }
   }
@@ -212,7 +212,7 @@ void Builder::doAssignIDs(ASTBase* ast, UniqueString symbolPath, int& i,
 }
 
 Builder::Result::Result()
-  : filePath(), topLevelExps(), errors(), locations()
+  : filePath(), topLevelExpressions(), errors(), locations()
 {
 }
 
@@ -227,7 +227,7 @@ bool Builder::Result::update(Result& keep, Result& addin) {
   changed |= defaultUpdate(keep.locations, addin.locations);
 
   // update the ASTs
-  changed |= updateASTList(keep.topLevelExps, addin.topLevelExps);
+  changed |= updateASTList(keep.topLevelExpressions, addin.topLevelExpressions);
 
   return changed;
 }
@@ -243,7 +243,7 @@ void Builder::Result::mark(Context* context, const Result& keep) {
   }
 
   // mark UniqueStrings in the ASTs
-  markASTList(context, keep.topLevelExps);
+  markASTList(context, keep.topLevelExpressions);
 
   // update the filePathForModuleName query
   Builder::Result::updateFilePaths(context, keep);
@@ -252,12 +252,12 @@ void Builder::Result::mark(Context* context, const Result& keep) {
 void Builder::Result::updateFilePaths(Context* context, const Result& keep) {
   UniqueString path = keep.filePath;
   // Update the filePathForModuleName query
-  for (auto & topLevelExp : keep.topLevelExps) {
-    if (ModuleDecl* moduleDecl = topLevelExp->toModuleDecl()) {
+  for (auto & topLevelExpression : keep.topLevelExpressions) {
+    if (ModuleDecl* moduleDecl = topLevelExpression->toModuleDecl()) {
       UniqueString moduleName = moduleDecl->name();
       context->setFilePathForModuleName(moduleName, path);
     } else {
-      assert(false && "topLevelExprs should only be module decls");
+      assert(false && "topLevelExpressions should only be module decls");
     }
   }
 }

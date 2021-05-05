@@ -20,7 +20,7 @@
 #ifndef CHPL_UAST_VISITOR_H
 #define CHPL_UAST_VISITOR_H
 
-#include "chpl/uast/ASTBase.h"
+#include "chpl/uast/ASTNode.h"
 
 namespace chpl {
 namespace uast {
@@ -61,7 +61,7 @@ class Visitor {
 #undef VISIT_LEAF
 
   // entry point into the visiting
-  void visit(const ASTBase* ast);
+  void visit(const ASTNode* ast);
 };
 
 

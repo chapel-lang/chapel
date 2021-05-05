@@ -82,7 +82,7 @@ static void test2() {
     auto& vec = resolveFile(context, path);
     assert(vec.size() == 1);
     const Module* module = vec[0].module;
-    ASTBase::dump(module, 2);
+    ASTNode::dump(module, 2);
     context->collectGarbage();
   }
 
@@ -96,7 +96,7 @@ static void test2() {
     auto& vec = resolveFile(context, path);
     assert(vec.size() == 1);
     const Module* module = vec[0].module;
-    ASTBase::dump(module, 2);
+    ASTNode::dump(module, 2);
     const VariableDecl* varDecl = module->child(0)->toVariableDecl();
     assert(varDecl);
     assert(0 == varDecl->name().compare("x"));
@@ -114,7 +114,7 @@ static void test2() {
     auto& vec = resolveFile(context, path);
     assert(vec.size() == 1);
     const Module* module = vec[0].module;
-    ASTBase::dump(module, 2);
+    ASTNode::dump(module, 2);
     const auto* byId = vec[0].resolution; 
     const VariableDecl* varDecl = module->child(0)->toVariableDecl();
     const Identifier* identifier = module->child(1)->toIdentifier();

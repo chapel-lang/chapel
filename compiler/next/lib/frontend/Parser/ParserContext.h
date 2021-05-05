@@ -30,7 +30,7 @@ struct ParserError {
   // when it goes to report errors.
   //
   // When an error occurs during parsing, the parser should
-  // emit errors here and create a stand-in ErroneousExp AST
+  // emit errors here and create a stand-in ErroneousExpression AST
   // node.
   YYLTYPE location;
   std::string message;
@@ -88,15 +88,15 @@ struct ParserContext {
   void clearComments();
   ParserExprList* makeList();
   ParserExprList* makeList(ParserExprList* lst);
-  ParserExprList* makeList(Exp* e);
-  ParserExprList* makeList(owned<Exp> e) {
+  ParserExprList* makeList(Expression* e);
+  ParserExprList* makeList(owned<Expression> e) {
     return this->makeList(e.release());
   }
   ParserExprList* makeList(CommentsAndStmt cs);
 
   void appendList(ParserExprList* dst, ParserExprList* lst);
-  void appendList(ParserExprList* dst, Exp* e);
-  void appendList(ParserExprList* dst, owned<Exp> e) {
+  void appendList(ParserExprList* dst, Expression* e);
+  void appendList(ParserExprList* dst, owned<Expression> e) {
     this->appendList(dst, e.release());
   }
   void appendList(ParserExprList* dst, std::vector<ParserComment>* comments);
@@ -111,8 +111,8 @@ struct ParserContext {
   // to handle things like this
   //     { /* doc comment } proc myproc()
   CommentsAndStmt finishStmt(CommentsAndStmt cs);
-  CommentsAndStmt finishStmt(Exp* e);
-  CommentsAndStmt finishStmt(owned<Exp> e) {
+  CommentsAndStmt finishStmt(Expression* e);
+  CommentsAndStmt finishStmt(owned<Expression> e) {
     return this->finishStmt(e.release());
   }
 
@@ -130,16 +130,16 @@ struct ParserContext {
   // If there is any argument, it will
   // be also appended to the returned list.
   ParserExprList* enterStmt(YYLTYPE location, ParserExprList* lst);
-  ParserExprList* enterStmt(YYLTYPE location, Exp* e);
-  ParserExprList* enterStmt(YYLTYPE location, owned<Exp> e) {
+  ParserExprList* enterStmt(YYLTYPE location, Expression* e);
+  ParserExprList* enterStmt(YYLTYPE location, owned<Expression> e) {
     return this->enterStmt(location, e.release());
   }
   ParserExprList* enterStmt(YYLTYPE location);
 
   // These should clear the comments (since there might be some inside the stmt)
   ParserExprList* exitStmt(ParserExprList* lst);
-  ParserExprList* exitStmt(Exp* e);
-  ParserExprList* exitStmt(owned<Exp> e) {
+  ParserExprList* exitStmt(Expression* e);
+  ParserExprList* exitStmt(owned<Expression> e) {
     return this->exitStmt(e.release());
   }
 

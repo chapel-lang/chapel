@@ -19,14 +19,14 @@ target_sources(libchplcomp-obj
                PRIVATE
 
                ASTList.cpp
-               ASTBase.cpp
+               ASTNode.cpp
                ASTTag.cpp
                Block.cpp
                Builder.cpp
                Comment.cpp
                Decl.cpp
-               ErroneousExp.cpp
-               Exp.cpp
+               ErroneousExpression.cpp
+               Expression.cpp
                Identifier.cpp
                Module.cpp
                ModuleDecl.cpp

@@ -53,7 +53,7 @@ class VariableDecl final : public Decl {
 
  private:
   VariableDecl(owned<Variable> variable);
-  bool contentsMatchInner(const ASTBase* other) const override;
+  bool contentsMatchInner(const ASTNode* other) const override;
   void markUniqueStringsInner(Context* context) const override;
 
  public:
@@ -61,7 +61,8 @@ class VariableDecl final : public Decl {
   static owned<VariableDecl> build(Builder* builder, Location loc,
                                    UniqueString name, Sym::Visibility vis,
                                    Variable::Tag tag,
-                                   owned<Exp> typeExp, owned<Exp> initExp);
+                                   owned<Expression> typeExpression,
+                                   owned<Expression> initExpression);
   const Variable* variable() const {
     const Sym* sym = this->sym();
     assert(sym->isVariable());
@@ -70,11 +71,11 @@ class VariableDecl final : public Decl {
   const Variable::Tag tag() const {
     return this->variable()->tag();
   }
-  const Exp* typeExp() const {
-    return this->variable()->typeExp();
+  const Expression* typeExpression() const {
+    return this->variable()->typeExpression();
   }
-  const Exp* initExp() const {
-    return this->variable()->initExp();
+  const Expression* initExpression() const {
+    return this->variable()->initExpression();
   }
 };
 

@@ -35,13 +35,13 @@ namespace uast {
 /**
   ASTList is just a list that owns some AST nodes.
  */
-using ASTList = std::vector<owned<ASTBase>>;
+using ASTList = std::vector<owned<ASTNode>>;
 
 /**
   Create an ASTList containing a single ast element, transferring
   ownership of that element to the list.
  */
-static inline ASTList makeASTList(owned<ASTBase> ast) {
+static inline ASTList makeASTList(owned<ASTNode> ast) {
   ASTList lst;
   lst.push_back(std::move(ast));
   return lst;
@@ -72,7 +72,7 @@ void markASTList(Context* context, const ASTList& keep);
 
 /**
  Defines an iterator over the AST list elements.
- The iterator hides the ownership (it always returns a pointer e.g. ASTBase*)
+ The iterator hides the ownership (it always returns a pointer e.g. ASTNode*)
  and casts elements to a particular type.
  */
 template<typename CastToType>

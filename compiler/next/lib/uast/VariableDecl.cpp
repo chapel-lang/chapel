@@ -29,7 +29,7 @@ VariableDecl::VariableDecl(owned<Variable> variable)
   : Decl(asttags::VariableDecl, std::move(variable)) {
 }
 
-bool VariableDecl::contentsMatchInner(const ASTBase* other) const {
+bool VariableDecl::contentsMatchInner(const ASTNode* other) const {
   const VariableDecl* lhs = this;
   const VariableDecl* rhs = (const VariableDecl*) other;
   return lhs->declContentsMatchInner(rhs);
@@ -42,20 +42,21 @@ owned<VariableDecl>
 VariableDecl::build(Builder* builder, Location loc,
                     UniqueString name, Sym::Visibility vis,
                     Variable::Tag tag,
-                    owned<Exp> typeExp, owned<Exp> initExp) {
+                    owned<Expression> typeExpression,
+                    owned<Expression> initExpression) {
   ASTList lst;
-  int8_t typeExpChildNum = -1;
-  int8_t initExpChildNum = -1;
-  if (typeExp.get() != nullptr) {
-    lst.push_back(std::move(typeExp));
-    typeExpChildNum = lst.size() - 1;
+  int8_t typeExpressionChildNum = -1;
+  int8_t initExpressionChildNum = -1;
+  if (typeExpression.get() != nullptr) {
+    lst.push_back(std::move(typeExpression));
+    typeExpressionChildNum = lst.size() - 1;
   }
-  if (initExp.get() != nullptr) {
-    lst.push_back(std::move(initExp));
-    initExpChildNum = lst.size() - 1;
+  if (initExpression.get() != nullptr) {
+    lst.push_back(std::move(initExpression));
+    initExpressionChildNum = lst.size() - 1;
   }
   Variable* sym = new Variable(std::move(lst), name, vis, tag,
-                               typeExpChildNum, initExpChildNum);
+                               typeExpressionChildNum, initExpressionChildNum);
   builder->noteLocation(sym, loc);
   VariableDecl* ret = new VariableDecl(toOwned(sym));
   builder->noteLocation(ret, loc);

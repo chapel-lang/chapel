@@ -61,13 +61,13 @@ class Variable final : public Sym {
   Tag tag_;
   // TODO: Can we use an instance of a class that means "nothing",
   // or maybe nullptr in the children?
-  int8_t typeExpChildNum;
-  int8_t initExpChildNum;
+  int8_t typeExpressionChildNum;
+  int8_t initExpressionChildNum;
 
   Variable(ASTList children,
            UniqueString name, Sym::Visibility vis, Tag tag,
-           int8_t typeExpChildNum, int8_t initExpChildNum);
-  bool contentsMatchInner(const ASTBase* other) const override;
+           int8_t typeExpressionChildNum, int8_t initExpressionChildNum);
+  bool contentsMatchInner(const ASTNode* other) const override;
   void markUniqueStringsInner(Context* context) const override;
 
  public:
@@ -77,11 +77,11 @@ class Variable final : public Sym {
     Returns the type expression used in the variable's declaration, or nullptr
     if there wasn't one.
     */
-  const Exp* typeExp() const {
-    if (typeExpChildNum >= 0) {
-      const ASTBase* ast = this->child(typeExpChildNum);
-      assert(ast->isExp());
-      return (const Exp*)ast;
+  const Expression* typeExpression() const {
+    if (typeExpressionChildNum >= 0) {
+      const ASTNode* ast = this->child(typeExpressionChildNum);
+      assert(ast->isExpression());
+      return (const Expression*)ast;
     } else {
       return nullptr;
     }
@@ -90,11 +90,11 @@ class Variable final : public Sym {
     Returns the init expression used in the variable's declaration, or nullptr
     if there wasn't one.
     */
-  const Exp* initExp() const {
-    if (initExpChildNum >= 0) {
-      const ASTBase* ast = this->child(initExpChildNum);
-      assert(ast->isExp());
-      return (const Exp*)ast;
+  const Expression* initExpression() const {
+    if (initExpressionChildNum >= 0) {
+      const ASTNode* ast = this->child(initExpressionChildNum);
+      assert(ast->isExpression());
+      return (const Expression*)ast;
     } else {
       return nullptr;
     }

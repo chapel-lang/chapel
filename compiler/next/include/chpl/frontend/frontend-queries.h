@@ -23,9 +23,9 @@
 #include "chpl/queries/Context.h"
 #include "chpl/queries/ID.h"
 #include "chpl/queries/Location.h"
-#include "chpl/uast/ASTBase.h"
+#include "chpl/uast/ASTNode.h"
 #include "chpl/uast/Builder.h"
-#include "chpl/uast/Exp.h"
+#include "chpl/uast/Expression.h"
 #include "chpl/uast/ModuleDecl.h"
 
 #include <vector>
@@ -38,16 +38,16 @@ namespace frontend {
 
   const uast::Builder::Result& parseFile(Context* context, UniqueString path);
 
-  using LocationsMap = std::unordered_map<const uast::ASTBase*, Location>;
+  using LocationsMap = std::unordered_map<const uast::ASTNode*, Location>;
   const LocationsMap& fileLocations(Context* context, UniqueString path);
-  const Location& locate(Context* context, const uast::ASTBase* ast);
+  const Location& locate(Context* context, const uast::ASTNode* ast);
 
   using ModuleDeclVec = std::vector<const uast::ModuleDecl*>;
   const ModuleDeclVec& parse(Context* context, UniqueString path);
 
   struct ResolutionResult {
     // the expr that is resolved
-    const uast::Exp* exp;
+    const uast::Expression* exp;
     // in simple cases, this is set
     const uast::Decl* decl;
     // TODO:

@@ -25,12 +25,12 @@ namespace uast {
 
 Sym::Sym(ASTTag tag,
          UniqueString name, Sym::Visibility visibility)
-  : ASTBase(tag), name_(name), visibility_(visibility) {
+  : ASTNode(tag), name_(name), visibility_(visibility) {
 }
 
 Sym::Sym(ASTTag tag, ASTList children,
          UniqueString name, Sym::Visibility visibility)
-  : ASTBase(tag, std::move(children)),
+  : ASTNode(tag, std::move(children)),
     name_(name), visibility_(visibility) {
 }
 

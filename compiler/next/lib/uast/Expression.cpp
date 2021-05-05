@@ -17,32 +17,23 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_UAST_ERRONEOUSEXP_H
-#define CHPL_UAST_ERRONEOUSEXP_H
-
-#include "chpl/uast/Exp.h"
-#include "chpl/queries/Location.h"
+#include "chpl/uast/Expression.h"
 
 namespace chpl {
 namespace uast {
 
 
-/**
-  This class represents some missing AST due to an error.
- */
-class ErroneousExp final : public Exp {
- private:
-  ErroneousExp();
-  bool contentsMatchInner(const ASTBase* other) const override;
-  void markUniqueStringsInner(Context* context) const override;
+Expression::Expression(asttags::ASTTag tag)
+  : ASTNode(tag) {
+}
 
- public:
-  ~ErroneousExp() = default;
-  static owned<ErroneousExp> build(Builder* builder, Location loc);
-};
+Expression::Expression(asttags::ASTTag tag, ASTList children)
+  : ASTNode(tag, std::move(children)) {
+}
+
+Expression::~Expression() {
+}
 
 
-} // end namespace uast
-} // end namespace chpl
-
-#endif
+} // namespace uast
+} // namespace chpl

@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/ErroneousExp.h"
+#include "chpl/uast/ErroneousExpression.h"
 
 #include "chpl/uast/Builder.h"
 
@@ -25,21 +25,22 @@ namespace chpl {
 namespace uast {
 
 
-ErroneousExp::ErroneousExp()
-  : Exp(asttags::ErroneousExp) {
+ErroneousExpression::ErroneousExpression()
+  : Expression(asttags::ErroneousExpression) {
 }
 
-bool ErroneousExp::contentsMatchInner(const ASTBase* other) const {
-  const ErroneousExp* lhs = this;
-  const ErroneousExp* rhs = (const ErroneousExp*) other;
-  return lhs->expContentsMatchInner(rhs);
+bool ErroneousExpression::contentsMatchInner(const ASTNode* other) const {
+  const ErroneousExpression* lhs = this;
+  const ErroneousExpression* rhs = (const ErroneousExpression*) other;
+  return lhs->expressionContentsMatchInner(rhs);
 }
-void ErroneousExp::markUniqueStringsInner(Context* context) const {
-  expMarkUniqueStringsInner(context);
+void ErroneousExpression::markUniqueStringsInner(Context* context) const {
+  expressionMarkUniqueStringsInner(context);
 }
 
-owned<ErroneousExp> ErroneousExp::build(Builder* builder, Location loc) {
-  ErroneousExp* ret = new ErroneousExp();
+owned<ErroneousExpression> ErroneousExpression::build(Builder* builder,
+                                                      Location loc) {
+  ErroneousExpression* ret = new ErroneousExpression();
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

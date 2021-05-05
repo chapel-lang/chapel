@@ -28,17 +28,17 @@ namespace uast {
 
 
 Comment::Comment(std::string s)
- : Exp(asttags::Comment), comment_(std::move(s)) {
+ : Expression(asttags::Comment), comment_(std::move(s)) {
 }
 
-bool Comment::contentsMatchInner(const ASTBase* other) const {
+bool Comment::contentsMatchInner(const ASTNode* other) const {
   const Comment* lhs = this;
   const Comment* rhs = (const Comment*) other;
-  return lhs->expContentsMatchInner(rhs) &&
+  return lhs->expressionContentsMatchInner(rhs) &&
          lhs->comment_ == rhs->comment_ ;
 }
 void Comment::markUniqueStringsInner(Context* context) const {
-  return expMarkUniqueStringsInner(context);
+  return expressionMarkUniqueStringsInner(context);
 }
 
 

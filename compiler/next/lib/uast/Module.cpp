@@ -31,13 +31,13 @@ Module::Module(ASTList children, UniqueString name, Sym::Visibility vis,
 
 #ifndef NDEBUG
   // check that all children are exprs (and not, say, Syms)
-  for (const ASTBase* child : this->children()) {
-    assert(child->isExp());
+  for (const ASTNode* child : this->children()) {
+    assert(child->isExpression());
   }
 #endif
 }
 
-bool Module::contentsMatchInner(const ASTBase* other) const {
+bool Module::contentsMatchInner(const ASTNode* other) const {
   const Module* lhs = this;
   const Module* rhs = (const Module*) other;
   return lhs->symContentsMatchInner(rhs) &&

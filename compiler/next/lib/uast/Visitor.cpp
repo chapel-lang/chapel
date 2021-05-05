@@ -26,7 +26,7 @@ namespace uast {
 Visitor::~Visitor() {
 }
 
-void Visitor::visit(const ASTBase* ast) {
+void Visitor::visit(const ASTNode* ast) {
 
   switch (ast->tag()) {
 

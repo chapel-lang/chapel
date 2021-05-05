@@ -31,14 +31,14 @@ void noteError(YYLTYPE location, ParserContext* context, const std::string s) {
   context->errors.push_back(ParserError(location, s));
 }
 
-static ErroneousExp* raiseError(YYLTYPE location,
-                                ParserContext* context,
-                                const char* errorMessage) {
+static ErroneousExpression* raiseError(YYLTYPE location,
+                                       ParserContext* context,
+                                       const char* errorMessage) {
   // note the error for printing
   yyerror(&location, context, errorMessage);
   Location ll = context->convertLocation(location);
   // return an error sentinel
-  return ErroneousExp::build(context->builder, ll).release();
+  return ErroneousExpression::build(context->builder, ll).release();
 }
 
 // these helpers can be used in the semantic actions
@@ -49,7 +49,7 @@ static ErroneousExp* raiseError(YYLTYPE location,
 #define STR(s) PODUniqueString::build(context->context(), s)
 #define LOC(loc) context->convertLocation(loc)
 
-// ERROR creates an error and returns an error sentinel Expr
+// ERROR creates an error and returns an error sentinel Expression
 #define ERROR(LOC,MSG) raiseError(LOC, context, MSG)
 
 #define TODOEXPR(LOC) raiseError(LOC, context, "not implemented yet")
