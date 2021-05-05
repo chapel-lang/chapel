@@ -34,6 +34,10 @@ configure_file(${CHPL_MAIN_INCLUDE_DIR}/chpl/config/config.h.cmake
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
+# request C11
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED True)
+
 # set include directories for -I
 #include_directories(include)
 

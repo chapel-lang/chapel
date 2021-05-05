@@ -21,8 +21,12 @@
 
 #include "chpl/queries/query-impl.h"
 
+
+#include <cstddef>
 #include <cstdlib>
 #include <cassert>
+
+#include "my_aligned_alloc.h" // assumes size_t defined
 
 namespace chpl {
 
@@ -75,7 +79,7 @@ static char* allocateEvenAligned(size_t amt) {
     // try again with an aligned allocation
     size_t alignment = sizeof(void *);
     size_t align_up_len = ALIGN_UP(amt, sizeof(void*));
-    buf = (char*) aligned_alloc(alignment, align_up_len);
+    buf = (char*) my_aligned_alloc(alignment, align_up_len);
   }
   assert(buf);
   assert((((uintptr_t)buf) & 1) == 0);
