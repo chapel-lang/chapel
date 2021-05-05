@@ -400,7 +400,7 @@ module CPtr {
   }
 
   pragma "no doc"
-  inline proc c_ptr._cond_test() return this != c_nil;
+  inline proc c_ptr.chpl_cond_test_method() return this != c_nil;
 
   pragma "no doc"
   inline operator c_ptr.!(x: c_ptr) return x == c_nil;
