@@ -131,6 +131,7 @@ class ASTBase {
   }
 
   bool shallowMatch(const ASTBase* other) const;
+  bool completeMatch(const ASTBase* other) const;
 
   // keep is some old AST
   // addin is some new AST we wish to combine with it
@@ -193,35 +194,6 @@ class ASTBase {
 
 
 } // end namespace uast
-
-#if 0
-/// \cond DO_NOT_DOCUMENT
-#define AST_MARK(NAME) \
-  template<> struct mark<uast::NAME*> { \
-    void operator()(Context* context, const uast::NAME*& keep) const { \
-      /* cast in the next line is so it compiles with only forward decls */ \
-      uast::ASTBase::markAST(context, (const uast::ASTBase*) keep); \
-    } \
-  };
-#define AST_NODE(NAME) AST_MARK(NAME)
-#define AST_LEAF(NAME) AST_MARK(NAME)
-#define AST_BEGIN_SUBCLASSES(NAME) AST_MARK(NAME)
-#define AST_END_SUBCLASSES(NAME)
-/// \endcond
-// Apply the above macros to ASTClassesList.h
-#include "chpl/ast/ASTClassesList.h"
-// Additionally, apply the macro to ASTBase
-AST_MARK(ASTBase)
-// clear the macros
-#undef AST_NODE
-#undef AST_LEAF
-#undef AST_BEGIN_SUBCLASSES
-#undef AST_END_SUBCLASSES
-#undef AST_MARK
-/// \endcond
-#endif
-
-
 } // end namespace chpl
 
 /// \cond DO_NOT_DOCUMENT

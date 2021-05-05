@@ -152,7 +152,7 @@ bool updateASTList(ASTList& keep, ASTList& addin) {
       break;
     }
 
-    anyChanged = anyChanged || eltChanged;
+    anyChanged |= eltChanged;
   }
 
   // if we gave up trying to match things, we end up in this loop

@@ -58,21 +58,69 @@ bool ASTBase::shallowMatch(const ASTBase* other) const {
   return true;
 }
 
-bool ASTBase::updateAST(owned<ASTBase>& keep, owned<ASTBase>& addin) {
-  printf("IN updateAST keep is\n");
-  ASTBase::dump(keep.get(), 2);
-  printf("IN updateAST addin is\n");
-  ASTBase::dump(addin.get(), 2);
-  printf("\n");
+bool ASTBase::completeMatch(const ASTBase* other) const {
+  const ASTBase* lhs = this;
+  const ASTBase* rhs = other;
 
-  if (keep->shallowMatch(addin.get())) {
-    printf("Shallow Match\n");
-    // run updateASTList on the child list
-    return updateASTList(keep->children_, addin->children_);
+  // check the node itself
+  if (!lhs->shallowMatch(rhs)) {
+    return false;
+  }
+
+  // check the numeric elements of the id and the number of children
+  if (lhs->id().postOrderId() != rhs->id().postOrderId() ||
+      lhs->id().numContainedChildren() != rhs->id().numContainedChildren() ||
+      lhs->children_.size() != rhs->children_.size()) {
+    return false;
+  }
+
+  // check the child nodes recursively
+  bool allMatch = true;
+  size_t nChildren = lhs->children_.size();
+  for (size_t i = 0; i < nChildren; i++) {
+    const ASTBase* lhsChild = lhs->children_[i].get();
+    const ASTBase* rhsChild = rhs->children_[i].get();
+    bool childMatch = lhsChild->completeMatch(rhsChild);
+    if (!childMatch) {
+      allMatch = false;
+      break;
+    }
+  }
+  return allMatch;
+}
+
+bool ASTBase::updateAST(owned<ASTBase>& keep, owned<ASTBase>& addin) {
+  // If any of the children changed, it's important to create
+  // a new AST node for the parent, so that any queries referring
+  // to that AST node get a new version.
+  //
+  // This might come up with a Module where one declaration in its body
+  // changed.
+  //
+  // However, a Function contained in that module that did not change
+  // is OK to reuse that. In other words, nodes can be reused up to
+  // the level that there are no changes contained within them, as a tree.
+  //
+  // This matches a sort of "isolated from above" property.
+
+  if (keep->completeMatch(addin.get())) {
+    // no changes are necessary
+    return false;
+  } else if (keep->shallowMatch(addin.get())) {
+    // always get a new pointer for the node
+    keep.swap(addin);
+    // after that, keep.children_ is the child nodes from addin
+
+    keep->children_.swap(addin->children_);
+    // now keep is a new pointer
+    // keep.children are the child nodes from keep
+
+    updateASTList(keep->children_, addin->children_);
+    return true; // updated
   } else {
     // swap the AST
     keep.swap(addin);
-    return false;
+    return true;
   }
 }
 

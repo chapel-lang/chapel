@@ -231,14 +231,14 @@ void Context::setFilePathForModuleName(UniqueString modName, UniqueString path) 
 
 void Context::recomputeIfNeeded(const QueryMapResultBase* resultEntry) {
 
+  printf("RECOMPUTING IF NEEDED FOR %p %s\n",
+         resultEntry, resultEntry->parentQueryMap->queryName);
+
   if (this->currentRevisionNumber == resultEntry->lastChecked) {
     // No need to check the dependencies again.
     // We already know that we can reuse the result.
     return;
   }
-
-  printf("RECOMPUTING IF NEEDED FOR %s\n",
-         resultEntry->parentQueryMap->queryName);
 
   if (resultEntry->parentQueryMap->isInputQuery) {
     // For an input query, compute it once per revision, ignoring
@@ -272,13 +272,15 @@ void Context::recomputeIfNeeded(const QueryMapResultBase* resultEntry) {
   if (useSaved == false) {
     resultEntry->recompute(this);
     assert(resultEntry->lastChecked == this->currentRevisionNumber);
+    printf("DONE RECOMPUTING IF NEEDED -- RECOMPUTED FOR %s\n",
+           resultEntry->parentQueryMap->queryName);
     return;
   } else {
+    printf("DONE RECOMPUTING IF NEEDED -- REUSED FOR %s\n",
+           resultEntry->parentQueryMap->queryName);
     updateForReuse(resultEntry);
   }
 
-  printf("DONE RECOMPUTING IF NEEDED FOR %s\n",
-         resultEntry->parentQueryMap->queryName);
 }
 
 // this should be called once each revision the first time

@@ -35,3 +35,4 @@
 comp_unit_test(testParse)
 comp_unit_test(testFrontendQueries)
 comp_unit_test(testInteractive)
+comp_unit_test(testResolve)

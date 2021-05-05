@@ -179,8 +179,11 @@ static void test3() {
   assert(identifierA);
   assert(identifierB);
   assert(comment == oldComment);
-  assert(identifierA == oldIdentifierA);
-  assert(identifierB == oldIdentifierB);
+  // These should not match because they have different IDs
+  assert(identifierA != oldIdentifierA);
+  assert(identifierB != oldIdentifierB);
+  oldIdentifierA = identifierA;
+  oldIdentifierB = identifierB;
   const Block* oldBlock = block;
 
   printf("test3 changing Identifier in Blocks\n");
@@ -206,7 +209,9 @@ static void test3() {
   assert(identifierA);
   assert(identifierB);
   assert(comment == oldComment);
-  assert(block == oldBlock);
+  // This should not match because the contents changed
+  assert(block != oldBlock);
+  // These should match because they have the same contents and IDs
   assert(identifierA == oldIdentifierA);
   assert(identifierB == oldIdentifierB);
   oldBlock = nullptr; // it will be invalid after this point
@@ -231,9 +236,11 @@ static void test3() {
   assert(identifierA);
   assert(identifierB);
   assert(comment == oldComment);
-  assert(identifierA == oldIdentifierA);
-  assert(identifierB == oldIdentifierB);
-  oldIdentifierA = nullptr; // it will be invalid after this point
+  // These should not match because they have different IDs
+  assert(identifierA != oldIdentifierA);
+  assert(identifierB != oldIdentifierB);
+  oldIdentifierA = identifierA;
+  oldIdentifierB = identifierB;
 
   printf("test3 replacing first Identifier\n");
   moduleContents = "/* this is a test */\n"
@@ -255,6 +262,7 @@ static void test3() {
   assert(identifierA);
   assert(identifierB);
   assert(comment == oldComment);
+  assert(identifierA != oldIdentifierA); // different contents
   assert(identifierB == oldIdentifierB);
 }
 
@@ -266,8 +274,10 @@ static void test4() {
   auto modulePath = UniqueString::build(ctx, "MyModule.chpl");
   const Module* module = nullptr;
   const Comment* comment = nullptr;
-  const Decl* declA = nullptr;
-  const Decl* declB = nullptr;
+  const VariableDecl* declA = nullptr;
+  const VariableDecl* declB = nullptr;
+  const Variable* A = nullptr;
+  const Variable* B = nullptr;
   const Block* block = nullptr;
 
   std::string moduleContents;
@@ -283,14 +293,21 @@ static void test4() {
   ASTBase::dump(module);
   assert(module->numStmts() == 3);
   comment = module->stmt(0)->toComment();
-  declA = module->stmt(1)->toDecl();
-  declB = module->stmt(2)->toDecl();
+  declA = module->stmt(1)->toVariableDecl();
+  declB = module->stmt(2)->toVariableDecl();
   assert(comment);
   assert(declA);
   assert(declB);
+  A = declA->variable();
+  B = declB->variable();
+  assert(A);
+  assert(B);
+  const Module* oldModule = module;
   const Comment* oldComment = comment;
-  const Decl* oldDeclA = declA;
-  const Decl* oldDeclB = declB;
+  const VariableDecl* oldDeclA = declA;
+  const VariableDecl* oldDeclB = declB;
+  const Variable* oldA = A;
+  const Variable* oldB = B;
 
   printf("test4 adding Blocks\n");
   moduleContents = "/* this is a test */\n"
@@ -310,14 +327,29 @@ static void test4() {
   assert(module->numStmts() == 5);
   comment = module->stmt(0)->toComment();
   block = module->stmt(1)->toBlock();
-  declA = module->stmt(2)->toDecl();
-  declB = module->stmt(4)->toDecl();
+  declA = module->stmt(2)->toVariableDecl();
+  declB = module->stmt(4)->toVariableDecl();
   assert(comment);
   assert(declA);
   assert(declB);
+  A = declA->variable();
+  B = declB->variable();
+  assert(A);
+  assert(B);
+
+  // should not match because the contents changed
+  assert(module != oldModule);
+  oldModule = module;
+
   assert(comment == oldComment);
-  assert(declA == oldDeclA);
-  assert(declB == oldDeclB);
+  // these should not match because they have different IDs
+  assert(declA != oldDeclA);
+  oldDeclA = declA;
+  assert(declB != oldDeclB);
+  oldDeclB = declB;
+  // these should match though
+  assert(A == oldA);
+  assert(B == oldB);
   const Block* oldBlock = block;
 
   printf("test4 changing Identifier in Blocks\n");
@@ -337,16 +369,27 @@ static void test4() {
   assert(module->numStmts() == 5);
   comment = module->stmt(0)->toComment();
   block = module->stmt(1)->toBlock();
-  declA = module->stmt(2)->toDecl();
-  declB = module->stmt(4)->toDecl();
+  declA = module->stmt(2)->toVariableDecl();
+  declB = module->stmt(4)->toVariableDecl();
   assert(comment);
   assert(declA);
   assert(declB);
+  A = declA->variable();
+  B = declB->variable();
+  assert(A);
+  assert(B);
+
+  // should not match because the contents changed
+  assert(module != oldModule);
+  oldModule = module;
+
   assert(comment == oldComment);
-  assert(block == oldBlock);
+  assert(block != oldBlock); // should not match because contents changed
+  // these have the same Id and should match
   assert(declA == oldDeclA);
   assert(declB == oldDeclB);
-  oldBlock = nullptr; // it will be invalid after this point
+  assert(A == oldA);
+  assert(B == oldB);
 
   printf("test4 removing the Blocks\n");
   moduleContents = "/* this is a test */\n"
@@ -362,15 +405,29 @@ static void test4() {
   // Check that the comment and identifiers match
   assert(module->numStmts() == 3);
   comment = module->stmt(0)->toComment();
-  declA = module->stmt(1)->toDecl();
-  declB = module->stmt(2)->toDecl();
+  declA = module->stmt(1)->toVariableDecl();
+  declB = module->stmt(2)->toVariableDecl();
   assert(comment);
   assert(declA);
   assert(declB);
+  A = declA->variable();
+  B = declB->variable();
+  assert(A);
+  assert(B);
+
+  // should not match because the contents changed
+  assert(module != oldModule);
+  oldModule = module;
+
   assert(comment == oldComment);
-  assert(declA == oldDeclA);
-  assert(declB == oldDeclB);
-  oldDeclA = nullptr; // it will be invalid after this point
+  // should not match because they have different IDs
+  assert(declA != oldDeclA);
+  oldDeclA = declA;
+  assert(declB != oldDeclB);
+  oldDeclB = declB;
+  // these should match though.
+  assert(A == oldA);
+  assert(B == oldB);
 
   printf("test4 replacing first Decl\n");
   moduleContents = "/* this is a test */\n"
@@ -386,13 +443,27 @@ static void test4() {
   // Check that the comment and identifiers match
   assert(module->numStmts() == 3);
   comment = module->stmt(0)->toComment();
-  declA = module->stmt(1)->toDecl();
-  declB = module->stmt(2)->toDecl();
+  declA = module->stmt(1)->toVariableDecl();
+  declB = module->stmt(2)->toVariableDecl();
   assert(comment);
   assert(declA);
   assert(declB);
+  A = declA->variable();
+  B = declB->variable();
+  assert(A);
+  assert(B);
+
+  // should not match because the contents changed
+  assert(module != oldModule);
+  oldModule = module;
+
   assert(comment == oldComment);
+
+  assert(declA != oldDeclA); // contents changed
+  assert(A != oldA); // name changed
+
   assert(declB == oldDeclB);
+  assert(B == oldB);
 }
 
 static void test5() {

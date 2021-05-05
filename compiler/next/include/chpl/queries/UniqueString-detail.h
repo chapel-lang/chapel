@@ -227,7 +227,7 @@ static inline bool defaultUpdateVec(std::vector<T>& keep, std::vector<T>& addin)
     for (size_t i = 0; i < nElts; i++) {
       chpl::update<T> combiner;
       bool updated = combiner(keep[i], addin[i]);
-      anyUpdated = anyUpdated || updated;
+      anyUpdated |= updated;
     }
     return anyUpdated;
   } else {

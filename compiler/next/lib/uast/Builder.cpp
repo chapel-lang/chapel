@@ -215,16 +215,16 @@ Builder::Result::Result()
 }
 
 bool Builder::Result::update(Result& keep, Result& addin) {
-  bool match = true;
+  bool changed = false;
 
-  // merge the errors and locations
-  match &= defaultUpdate(keep.errors, addin.errors);
-  match &= defaultUpdate(keep.locations, addin.locations);
+  // update the errors and locations
+  changed |= defaultUpdate(keep.errors, addin.errors);
+  changed |= defaultUpdate(keep.locations, addin.locations);
 
-  // merge the ASTs
-  match &= updateASTList(keep.topLevelExps, addin.topLevelExps);
+  // update the ASTs
+  changed |= updateASTList(keep.topLevelExps, addin.topLevelExps);
 
-  return match;
+  return changed;
 }
 
 void Builder::Result::mark(Context* context, const Result& keep) {
