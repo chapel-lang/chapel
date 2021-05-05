@@ -742,7 +742,7 @@ module ChapelRange {
   // is this type one for which a range of this type will have a change in
   // '.size' behavior?
   //
-  private proc chpl_idxTypeSizeChange(type t) param {
+  proc chpl_idxTypeSizeChange(type t) param {
     return (t != int &&
             !isEnumType(t) &&
             !isBoolType(t));

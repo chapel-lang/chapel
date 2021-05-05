@@ -1790,8 +1790,37 @@ module ChapelArray {
     }
 
     /* Return the number of indices in this domain */
-    proc size return _value.dsiNumIndices;
-    /* Return the lowest index in this domain */
+    proc size {
+      use ChapelRange;
+      if (chpl_idxTypeSizeChange(idxType) && sizeReturnsInt == false) {
+        compilerWarning("'.size' queries for domains and arrays with 'idxType == " +
+                        idxType:string +
+                        "' are changing to return 'int' values rather than '"+
+                        idxType:string+"'\n"+
+                        "  (to opt into the change now, re-compile with '-ssizeReturnsInt=true'\n" +
+                        "  or switch to the new '.sizeAs(type t: integral)' method)");
+        return this.sizeAs(this.intIdxType);
+      } else {
+        return this.sizeAs(int);
+      }
+    }
+
+    /* Return the number of indices in this domain as the specified type */
+    proc sizeAs(type t: integral): t {
+      use HaltWrappers;
+      const size = _value.dsiNumIndices;
+      if (size > max(t)) {
+        var error = ".size query exceeds max(" + t:string + ")";
+        if isRectangularDom(this) {
+          error += " for: '" + this:string + "'";
+        }
+        HaltWrappers.boundsCheckHalt(error);
+      }
+      return size: t;
+    }
+
+
+    /* return the lowest index in this domain */
     proc low return _value.dsiLow;
     /* Return the highest index in this domain */
     proc high return _value.dsiHigh;
@@ -3024,6 +3053,9 @@ module ChapelArray {
 
     /* Return the number of elements in the array */
     proc size return _value.dom.dsiNumIndices;
+
+    /* Return the number of elements in the array as the specified type. */
+    proc sizeAs(type t: integral) return _value.dom.dsiNumIndices;
 
     //
     // This routine determines whether an actual array argument
