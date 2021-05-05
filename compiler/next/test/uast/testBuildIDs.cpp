@@ -23,7 +23,7 @@
 #include "chpl/queries/UniqueString.h"
 #include "chpl/uast/Block.h"
 #include "chpl/uast/Builder.h"
-#include "chpl/uast/Exp.h"
+#include "chpl/uast/Expression.h"
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/ModuleDecl.h"
 
@@ -162,14 +162,14 @@ void test2() {
     children.push_back(Identifier::build(b, emptyLoc, strB));
     children.push_back(Identifier::build(b, emptyLoc, strC));
     auto block = Block::build(b, emptyLoc, std::move(children));
-    b->addToplevelExp(std::move(block));
+    b->addToplevelExpression(std::move(block));
   }
 
   Builder::Result r = b->result();
   assert(r.errors.size() == 0);
-  assert(r.topLevelExps.size() == 1);
-  assert(r.topLevelExps[0]->isModuleDecl());
-  auto module = r.topLevelExps[0]->toModuleDecl()->module();
+  assert(r.topLevelExpressions.size() == 1);
+  assert(r.topLevelExpressions[0]->isModuleDecl());
+  auto module = r.topLevelExpressions[0]->toModuleDecl()->module();
   assert(r.locations.size() == 6); // +1 module decl +1 module sym
   assert(module->stmt(0)->isBlock());
   const Block* block = module->stmt(0)->toBlock();
@@ -259,14 +259,14 @@ void test3() {
     }
     outer.push_back(Identifier::build(b, emptyLoc, strC));
     auto block = Block::build(b, emptyLoc, std::move(outer));
-    b->addToplevelExp(std::move(block));
+    b->addToplevelExpression(std::move(block));
   }
 
   Builder::Result r = b->result();
   assert(r.errors.size() == 0);
-  assert(r.topLevelExps.size() == 1);
-  assert(r.topLevelExps[0]->isModuleDecl());
-  auto module = r.topLevelExps[0]->toModuleDecl()->module();
+  assert(r.topLevelExpressions.size() == 1);
+  assert(r.topLevelExpressions[0]->isModuleDecl());
+  auto module = r.topLevelExpressions[0]->toModuleDecl()->module();
   assert(r.locations.size() == 8); // +1 module decl +1 module sym
   assert(module->stmt(0)->isBlock());
   const Block* outer = module->stmt(0)->toBlock();

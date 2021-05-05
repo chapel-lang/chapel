@@ -54,7 +54,7 @@ int main(int argc, char** argv) {
         const Module* module = elt->module();
 
         printf("Module %s:\n", module->name().c_str());
-        ASTBase::dump(module);
+        ASTNode::dump(module);
         printf("\n");
       }*/
 
@@ -67,7 +67,7 @@ int main(int argc, char** argv) {
         const std::vector<UniqueString>& topLevelNames = elt.topLevelNames;
 
         printf("Module %s:\n", module->name().c_str());
-        ASTBase::dump(module);
+        ASTNode::dump(module);
 
         printf("Defines these toplevel names:\n");
         for (const UniqueString& name : topLevelNames) {
@@ -80,16 +80,16 @@ int main(int argc, char** argv) {
         const Module* module = elt.module;
 
         printf("Module %s:\n", module->name().c_str());
-        ASTBase::dump(module);
+        ASTNode::dump(module);
         printf("\n");
 
         const ResolutionResultByPostorderID& resolution = *elt.resolution;
         for (const auto& rr : resolution) {
           if (rr.exp != nullptr && rr.decl != nullptr) {
             printf("Resolved:\n");
-            ASTBase::dump(rr.exp, 2);
+            ASTNode::dump(rr.exp, 2);
             printf("to:\n");
-            ASTBase::dump(rr.decl, 2);
+            ASTNode::dump(rr.decl, 2);
             printf("\n");
           }
         }

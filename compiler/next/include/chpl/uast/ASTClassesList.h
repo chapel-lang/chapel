@@ -49,10 +49,10 @@
 // the following comment disables doxygen for these
 /// \cond DO_NOT_DOCUMENT
 
-AST_BEGIN_SUBCLASSES(Exp)              // old AST: Expr
+AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
 
   AST_LEAF(Comment)                    //
-  AST_LEAF(ErroneousExp)               //
+  AST_LEAF(ErroneousExpression)        //
   AST_LEAF(Identifier)                 // old AST: UnresolvedSymExpr
 
   AST_NODE(Block)                      // old AST: BlockStmt
@@ -116,7 +116,7 @@ AST_BEGIN_SUBCLASSES(Exp)              // old AST: Expr
     AST_NODE(VariableDecl)
   AST_END_SUBCLASSES(Decl)
 
-AST_END_SUBCLASSES(Exp)
+AST_END_SUBCLASSES(Expression)
 
 AST_BEGIN_SUBCLASSES(Sym)              // old AST: Symbol
   AST_NODE(EnumElement)                // old AST: EnumSymbol

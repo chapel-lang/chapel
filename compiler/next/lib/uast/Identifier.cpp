@@ -26,17 +26,17 @@ namespace uast {
 
 
 Identifier::Identifier(UniqueString name)
-  : Exp(asttags::Identifier), name_(name) {
+  : Expression(asttags::Identifier), name_(name) {
 }
 
-bool Identifier::contentsMatchInner(const ASTBase* other) const {
+bool Identifier::contentsMatchInner(const ASTNode* other) const {
   const Identifier* lhs = this;
   const Identifier* rhs = (const Identifier*) other;
-  return lhs->expContentsMatchInner(rhs) &&
+  return lhs->expressionContentsMatchInner(rhs) &&
          lhs->name_ == rhs->name_;
 }
 void Identifier::markUniqueStringsInner(Context* context) const {
-  expMarkUniqueStringsInner(context);
+  expressionMarkUniqueStringsInner(context);
   this->name_.mark(context);
 }
 

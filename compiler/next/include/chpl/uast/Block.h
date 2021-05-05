@@ -21,7 +21,7 @@
 #define CHPL_UAST_BLOCK_H
 
 #include "chpl/queries/Location.h"
-#include "chpl/uast/Exp.h"
+#include "chpl/uast/Expression.h"
 
 namespace chpl {
 namespace uast {
@@ -30,10 +30,10 @@ namespace uast {
 /**
   This class represents a { } block.
  */
-class Block final : public Exp {
+class Block final : public Expression {
  private:
   Block(ASTList stmts);
-  bool contentsMatchInner(const ASTBase* other) const override;
+  bool contentsMatchInner(const ASTNode* other) const override;
   void markUniqueStringsInner(Context* context) const override;
 
  public:
@@ -45,8 +45,8 @@ class Block final : public Exp {
   /**
     Return a way to iterate over the statements.
    */
-  ASTListIteratorPair<Exp> stmts() const {
-    return ASTListIteratorPair<Exp>(children_.begin(), children_.end());
+  ASTListIteratorPair<Expression> stmts() const {
+    return ASTListIteratorPair<Expression>(children_.begin(), children_.end());
   }
 
   /**
@@ -58,10 +58,10 @@ class Block final : public Exp {
   /**
    Return the i'th statement in the block.
    */
-  const Exp* stmt(int i) const {
-    const ASTBase* ast = this->child(i);
-    assert(ast->isExp());
-    return (const Exp*)ast;
+  const Expression* stmt(int i) const {
+    const ASTNode* ast = this->child(i);
+    assert(ast->isExpression());
+    return (const Expression*)ast;
   }
 };
 

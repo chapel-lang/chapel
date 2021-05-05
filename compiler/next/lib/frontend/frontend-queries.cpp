@@ -22,7 +22,7 @@
 #include "chpl/frontend/Parser.h"
 #include "chpl/queries/ErrorMessage.h"
 #include "chpl/queries/query-impl.h"
-#include "chpl/uast/ASTBase.h"
+#include "chpl/uast/ASTNode.h"
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
 #include "chpl/uast/Visitor.h"
@@ -123,7 +123,7 @@ const uast::Builder::Result& parseFile(Context* context, UniqueString path) {
   const char* pathc = path.c_str();
   const char* textc = text.c_str();
   uast::Builder::Result tmpResult = parser->parseString(pathc, textc);
-  result.topLevelExps.swap(tmpResult.topLevelExps);
+  result.topLevelExpressions.swap(tmpResult.topLevelExpressions);
   result.locations.swap(tmpResult.locations);
   for (ErrorMessage& e : tmpResult.errors) {
     ErrorMessage tmp;
@@ -142,9 +142,9 @@ const LocationsMap& fileLocations(Context* context, UniqueString path) {
   // Get the result of parsing
   const uast::Builder::Result& p = parseFile(context, path);
   // Create a map of ast to Location
-  std::unordered_map<const ASTBase*, Location> result;
+  std::unordered_map<const ASTNode*, Location> result;
   for (auto pair : p.locations) {
-    const ASTBase* ast = pair.first;
+    const ASTNode* ast = pair.first;
     Location loc = pair.second;
     if (ast != nullptr) {
       result.insert({ast, loc});
@@ -154,7 +154,7 @@ const LocationsMap& fileLocations(Context* context, UniqueString path) {
   return QUERY_END(result);
 }
 
-const Location& locate(Context* context, const ASTBase* ast) {
+const Location& locate(Context* context, const ASTNode* ast) {
   QUERY_BEGIN(locate, context, ast);
 
   // Ask the context for the filename from the ID
@@ -177,8 +177,8 @@ const ModuleDeclVec& parse(Context* context, UniqueString path) {
   const uast::Builder::Result& p = parseFile(context, path);
   // Compute a vector of ModuleDecls
   ModuleDeclVec result;
-  for (auto & topLevelExp : p.topLevelExps) {
-    if (const uast::ModuleDecl* modDecl = topLevelExp->toModuleDecl()) {
+  for (auto & topLevelExpression : p.topLevelExpressions) {
+    if (const uast::ModuleDecl* modDecl = topLevelExpression->toModuleDecl()) {
       result.push_back(modDecl);
     }
   }
@@ -190,7 +190,7 @@ static std::vector<UniqueString> getTopLevelNames(const uast::Module* module) {
   std::vector<UniqueString> result;
   int nStmts = module->numStmts();
   for (int i = 0; i < nStmts; i++) {
-    const uast::Exp* expr = module->stmt(i);
+    const uast::Expression* expr = module->stmt(i);
     if (const uast::Decl* decl = expr->toDecl()) {
       const uast::Sym* sym = decl->sym();
       result.push_back(sym->name());
@@ -216,7 +216,7 @@ const DefinedTopLevelNamesVec& moduleLevelDeclNames(Context* context,
 }
 
 
-/*const ast::ASTBase* ast(Context* context, ID id) {
+/*const ast::ASTNode* ast(Context* context, ID id) {
   return nullptr;
 }*/
 
@@ -246,7 +246,7 @@ struct ResolvingScope {
 
 // resolve some ast, recursively
 static void resolveAST(Context* context,
-                       const ASTBase* ast,
+                       const ASTNode* ast,
                        const ResolvingScope* parentScope,
                        ResolutionResultByPostorderID& resultByPostorderID,
                        std::set<UniqueString>& undefined) {
@@ -282,7 +282,7 @@ static void resolveAST(Context* context,
 
   ResolvingScope newScope(parentScope);
 
-  for (const ASTBase* child : ast->children()) {
+  for (const ASTNode* child : ast->children()) {
     if (const Decl* decl = child->toDecl()) {
       UniqueString name = decl->name();
       auto search = newScope.declsDefinedHere.find(name);
@@ -316,7 +316,7 @@ static void resolveAST(Context* context,
   }
 
   // Delve further into the children of the node
-  for (const ASTBase* child : ast->children()) {
+  for (const ASTNode* child : ast->children()) {
     resolveAST(context, child, useScope, resultByPostorderID, undefined);
   }
 }

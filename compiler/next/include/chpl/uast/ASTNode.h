@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_UAST_ASTBASE_H
-#define CHPL_UAST_ASTBASE_H
+#ifndef CHPL_UAST_ASTNODE_H
+#define CHPL_UAST_ASTNODE_H
 
 #include "chpl/queries/ID.h"
 #include "chpl/uast/ASTList.h"
@@ -40,7 +40,7 @@ namespace uast {
    * an ID (a sort of scoped location used as a key in maps)
    * a list of child AST nodes
 
-  The list of child nodes is included in ASTBase to allow for
+  The list of child nodes is included in ASTNode to allow for
   generic tree traversals of the AST.
 
   Functions like someAst->isCall() / someAst->toCall() are available and
@@ -49,7 +49,7 @@ namespace uast {
   std::less is defined for every AST class and it compares IDs.
 
  */
-class ASTBase {
+class ASTNode {
  friend class Builder;
 
  private:
@@ -62,10 +62,10 @@ class ASTBase {
   /**
     This function needs to be defined by subclasses.
     It should check only those fields defined in subclasses
-    (it should not check the ASTBase fields tag, ID, or children).
+    (it should not check the ASTNode fields tag, ID, or children).
     It can assume that other has the same type as the receiver.
    */
-  virtual bool contentsMatchInner(const ASTBase* other) const = 0;
+  virtual bool contentsMatchInner(const ASTNode* other) const = 0;
 
   /**
    This function needs to be defined by subclasses.
@@ -76,16 +76,16 @@ class ASTBase {
   virtual void markUniqueStringsInner(Context* context) const = 0;
 
  protected:
-  ASTBase(ASTTag tag);
-  ASTBase(ASTTag tag, ASTList children);
+  ASTNode(ASTTag tag);
+  ASTNode(ASTTag tag, ASTList children);
   // called by the Builder
   void setID(ID id) { id_ = id; }
 
  public:
-  virtual ~ASTBase() = 0; // this is an abstract base class
+  virtual ~ASTNode() = 0; // this is an abstract base class
 
   /**
-    Returns the tag indicating which ASTBase subclass this is.
+    Returns the tag indicating which ASTNode subclass this is.
    */
   ASTTag tag() const {
     return tag_;
@@ -108,8 +108,8 @@ class ASTBase {
   /**
     Return a way to iterate over the children.
     */
-  ASTListIteratorPair<ASTBase> children() const {
-    return ASTListIteratorPair<ASTBase>(children_.begin(), children_.end());
+  ASTListIteratorPair<ASTNode> children() const {
+    return ASTListIteratorPair<ASTNode>(children_.begin(), children_.end());
   }
 
   /**
@@ -117,7 +117,7 @@ class ASTBase {
     This function returns a "borrow" of the AST node. It is managed
     by this object.
    */
-  const ASTBase* child(int i) const {
+  const ASTNode* child(int i) const {
     assert(0 <= i && i < children_.size());
     return children_[i].get();
   }
@@ -126,12 +126,12 @@ class ASTBase {
     Returns 'true' if this symbol contains another AST node.
     This is an operation on the IDs.
    */
-  bool contains(const ASTBase* other) const {
+  bool contains(const ASTNode* other) const {
     return this->id_.contains(other->id_);
   }
 
-  bool shallowMatch(const ASTBase* other) const;
-  bool completeMatch(const ASTBase* other) const;
+  bool shallowMatch(const ASTNode* other) const;
+  bool completeMatch(const ASTNode* other) const;
 
   // keep is some old AST
   // addin is some new AST we wish to combine with it
@@ -139,11 +139,11 @@ class ASTBase {
   // on exit, keep stores the AST we need to keep, and anything
   // not kept is stored in 'addin'.
   // the function returns 'true' if anything changed in 'keep'.
-  static bool updateAST(owned<ASTBase>& keep, owned<ASTBase>& addin);
+  static bool updateAST(owned<ASTNode>& keep, owned<ASTNode>& addin);
 
-  static void markAST(Context* context, const ASTBase* keep);
+  static void markAST(Context* context, const ASTNode* keep);
 
-  static void dump(const ASTBase* ast, int leadingSpaces=0);
+  static void dump(const ASTNode* ast, int leadingSpaces=0);
 
   // define is__ methods for the various AST types
   // using macros and ASTClassesList.h
@@ -210,8 +210,8 @@ namespace std {
       if (rhs == nullptr) return false; \
       std::less<chpl::ID> lessID; \
       /* cast in the next line is so it compiles with only forward decls */ \
-      return lessID(((const chpl::uast::ASTBase*)lhs)->id(), \
-                    ((const chpl::uast::ASTBase*)rhs)->id()); \
+      return lessID(((const chpl::uast::ASTNode*)lhs)->id(), \
+                    ((const chpl::uast::ASTNode*)rhs)->id()); \
     } \
   };
 #define AST_NODE(NAME) AST_LESS(NAME)
@@ -221,8 +221,8 @@ namespace std {
 /// \endcond
 // Apply the above macros to ASTClassesList.h
 #include "chpl/uast/ASTClassesList.h"
-// Additionally, apply the macro to ASTBase
-AST_LESS(ASTBase)
+// Additionally, apply the macro to ASTNode
+AST_LESS(ASTNode)
 // clear the macros
 #undef AST_NODE
 #undef AST_LEAF

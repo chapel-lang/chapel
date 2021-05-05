@@ -55,24 +55,24 @@ class Module final : public Sym {
   Module(ASTList children,
          UniqueString name, Sym::Visibility vis,
          Module::Tag tag);
-  bool contentsMatchInner(const ASTBase* other) const override;
+  bool contentsMatchInner(const ASTNode* other) const override;
   void markUniqueStringsInner(Context* context) const override;
 
  public:
   ~Module() override = default;
   const Tag tag() const { return this->tag_; }
 
-  ASTListIteratorPair<Exp> stmts() const {
-    return ASTListIteratorPair<Exp>(children_.begin(), children_.end());
+  ASTListIteratorPair<Expression> stmts() const {
+    return ASTListIteratorPair<Expression>(children_.begin(), children_.end());
   }
 
   int numStmts() const {
     return this->numChildren();
   }
-  const Exp* stmt(int i) const {
-    const ASTBase* ast = this->child(i);
-    assert(ast->isExp());
-    return (Exp*) ast;
+  const Expression* stmt(int i) const {
+    const ASTNode* ast = this->child(i);
+    assert(ast->isExpression());
+    return (Expression*) ast;
   }
 };
 

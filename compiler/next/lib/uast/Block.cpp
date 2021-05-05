@@ -26,23 +26,23 @@ namespace uast {
 
 
 Block::Block(ASTList stmts) :
-  Exp(asttags::Block, std::move(stmts)) {
+  Expression(asttags::Block, std::move(stmts)) {
 
 #ifndef NDEBUG
   // check that all children are exprs (and not, say, Symbols)
-  for (const ASTBase* child : this->children()) {
-    assert(child->isExp());
+  for (const ASTNode* child : this->children()) {
+    assert(child->isExpression());
   }
 #endif
 }
 
-bool Block::contentsMatchInner(const ASTBase* other) const {
+bool Block::contentsMatchInner(const ASTNode* other) const {
   const Block* lhs = this;
   const Block* rhs = (const Block*) other;
-  return lhs->expContentsMatchInner(rhs);
+  return lhs->expressionContentsMatchInner(rhs);
 }
 void Block::markUniqueStringsInner(Context* context) const {
-  expMarkUniqueStringsInner(context);
+  expressionMarkUniqueStringsInner(context);
 }
 
 owned<Block> Block::build(Builder* builder,

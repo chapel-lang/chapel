@@ -40,8 +40,8 @@
 
 // A note about memory management within the parser:
 //
-//  Several grammar rules produce an allocated type (e.g. Exp*
-//  pointing to some sort of allocated Expr). When one of these
+//  Several grammar rules produce an allocated type (e.g. Expression*
+//  pointing to some sort of allocated expression). When one of these
 //  rules produces a result, that result needs to be either
 //  freed or wired up into another structure to be freed later.
 
@@ -151,30 +151,30 @@
     LinkageTag_EXPORT,
   };
 
-  using ParserExprList = std::vector<Exp*>;
+  using ParserExprList = std::vector<Expression*>;
   using UniqueStrList = std::vector<PODUniqueString>;
 
   struct PotentialRename {
     enum {SINGLE, DOUBLE} tag;
 
-    Exp* elem;
-    std::pair<Exp*, Exp*> renamed;
+    Expression* elem;
+    std::pair<Expression*, Expression*> renamed;
 
-    PotentialRename(Exp* elem) {
+    PotentialRename(Expression* elem) {
       this->tag = SINGLE;
       this->elem = elem;
-      this->renamed = std::make_pair((Exp*)nullptr, (Exp*)nullptr);
+      this->renamed = std::make_pair((Expression*)nullptr, (Expression*)nullptr);
     }
-    PotentialRename(owned<Exp> elem) : PotentialRename(elem.release()) { }
-    PotentialRename(Exp* from, Exp* to)
+    PotentialRename(owned<Expression> elem) : PotentialRename(elem.release()) { }
+    PotentialRename(Expression* from, Expression* to)
     {
       this->tag = DOUBLE;
       this->elem = nullptr;
       this->renamed = std::make_pair(from, to);
     }
-    PotentialRename(owned<Exp> from, owned<Exp> to)
+    PotentialRename(owned<Expression> from, owned<Expression> to)
     : PotentialRename(from.release(), to.release()) { }
-    PotentialRename(Exp* from, owned<Exp> to)
+    PotentialRename(Expression* from, owned<Expression> to)
     : PotentialRename(from, to.release()) { }
 
   };
@@ -186,11 +186,11 @@
   // they only have pointer or numeric fields.
 
   struct WhereAndLifetime {
-    Exp* where;
+    Expression* where;
     ParserExprList* lifetime;
   };
   static inline
-  WhereAndLifetime makeWhereAndLifetime(Exp* w, ParserExprList* lt) {
+  WhereAndLifetime makeWhereAndLifetime(Expression* w, ParserExprList* lt) {
     WhereAndLifetime ret;
     ret.where = w;
     ret.lifetime = lt;
@@ -199,17 +199,19 @@
 
   struct CommentsAndStmt {
     std::vector<ParserComment>* comments;
-    Exp* stmt;
+    Expression* stmt;
   };
   static inline
-  CommentsAndStmt makeCommentsAndStmt(std::vector<ParserComment>* comments, Exp* stmt) {
+  CommentsAndStmt makeCommentsAndStmt(std::vector<ParserComment>* comments,
+                                      Expression* stmt) {
     CommentsAndStmt ret;
     ret.comments = comments;
     ret.stmt = stmt;
     return ret;
   }
   static inline
-  CommentsAndStmt makeCommentsAndStmt(std::vector<ParserComment>* comments, owned<Exp> stmt) {
+  CommentsAndStmt makeCommentsAndStmt(std::vector<ParserComment>* comments,
+                                      owned<Expression> stmt) {
     return makeCommentsAndStmt(comments, stmt.release());
   }
 
@@ -255,7 +257,7 @@
     Block* block;
     Call* call;
     Decl* decl;
-    Exp* expr;
+    Expression* expr;
     Function* function;
     Module* module;
 
@@ -648,7 +650,7 @@ stmt:
 | TYIELD expr TSEMI         { $$ = context->finishStmt(TODOSTMT(@$)); }
 | error TSEMI
   {
-    $$ = STMT(@$, ErroneousExp::build(BUILDER, LOC(@1)));
+    $$ = STMT(@$, ErroneousExpression::build(BUILDER, LOC(@1)));
   }
 ;
 
@@ -668,7 +670,7 @@ module_decl_stmt:
 | module_decl_start TLCBR error TRCBR
     {
       ParserExprList* errList = nullptr;
-      errList = context->makeList(ErroneousExp::build(BUILDER, LOC(@3)));
+      errList = context->makeList(ErroneousExpression::build(BUILDER, LOC(@3)));
       $$ = TODOSTMT(@$); // should be a module containing errList
     }
 ;
@@ -742,7 +744,7 @@ block_stmt:
 | TLCBR error TRCBR
   {
     // create a list of stmts that just has an ErroneousExp
-    ParserExprList* lst = context->makeList(ErroneousExp::build(BUILDER, LOC(@2)));
+    ParserExprList* lst = context->makeList(ErroneousExpression::build(BUILDER, LOC(@2)));
 
     CommentsAndStmt cs = {0};
     cs.comments = context->gatherCommentsFromList(lst, @1);
@@ -1540,7 +1542,7 @@ enum_decl_stmt:
     {
       CommentsAndStmt cs = $1;
       if (cs.stmt) delete cs.stmt;
-      cs.stmt = ErroneousExp::build(BUILDER, LOC(@3)).release();
+      cs.stmt = ErroneousExpression::build(BUILDER, LOC(@3)).release();
       $$ = cs;
     }
 ;
@@ -1979,7 +1981,7 @@ opt_ret_type:
 | TCOLON type_level_expr         { $$ = $2; }
 | TCOLON ret_array_type          { $$ = $2; }
 | TCOLON reserved_type_ident_use { $$ = Identifier::build(BUILDER, LOC(@2), $2).release(); }
-| error                          { $$ = ErroneousExp::build(BUILDER, LOC(@1)).release(); }
+| error                          { $$ = ErroneousExpression::build(BUILDER, LOC(@1)).release(); }
 ;
 
 
@@ -1988,7 +1990,7 @@ opt_type:
 | TCOLON type_level_expr         { $$ = $2; }
 | TCOLON array_type              { $$ = $2; }
 | TCOLON reserved_type_ident_use { $$ = Identifier::build(BUILDER, LOC(@2), $2).release(); }
-| error                          { $$ = ErroneousExp::build(BUILDER, LOC(@1)).release(); }
+| error                          { $$ = ErroneousExpression::build(BUILDER, LOC(@1)).release(); }
 ;
 
 /* NOTE: Some things about the following rule concern me (blc), but I
@@ -2022,7 +2024,7 @@ array_type:
     }
 | TLSBR error TRSBR
     {
-      $$ = ErroneousExp::build(BUILDER, LOC(@2)).release();
+      $$ = ErroneousExpression::build(BUILDER, LOC(@2)).release();
     }
 ;
 

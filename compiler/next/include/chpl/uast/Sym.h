@@ -20,7 +20,7 @@
 #ifndef CHPL_UAST_SYM_H
 #define CHPL_UAST_SYM_H
 
-#include "chpl/uast/ASTBase.h"
+#include "chpl/uast/ASTNode.h"
 #include "chpl/queries/UniqueString.h"
 
 namespace chpl {
@@ -30,7 +30,7 @@ namespace uast {
 /**
   This is an abstract base class for Symbols
  */
-class Sym : public ASTBase {
+class Sym : public ASTNode {
 
  public:
   enum Visibility {

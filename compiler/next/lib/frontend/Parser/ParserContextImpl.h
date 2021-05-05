@@ -103,7 +103,7 @@ ParserExprList* ParserContext::makeList() {
 ParserExprList* ParserContext::makeList(ParserExprList* lst) {
   return lst;
 }
-ParserExprList* ParserContext::makeList(Exp* e) {
+ParserExprList* ParserContext::makeList(Expression* e) {
   ParserExprList* ret = new ParserExprList();
   ret->push_back(e);
   return ret;
@@ -115,13 +115,13 @@ ParserExprList* ParserContext::makeList(CommentsAndStmt cs) {
 }
 
 void ParserContext::appendList(ParserExprList* dst, ParserExprList* lst) {
-  for (Exp* elt : *lst) {
+  for (Expression* elt : *lst) {
     dst->push_back(elt);
   }
   delete lst;
 }
 
-void ParserContext::appendList(ParserExprList* dst, Exp* e) {
+void ParserContext::appendList(ParserExprList* dst, Expression* e) {
   dst->push_back(e);
 }
 
@@ -149,7 +149,7 @@ void ParserContext::appendList(ParserExprList* dst, CommentsAndStmt cs) {
 ASTList ParserContext::consumeList(ParserExprList* lst) {
   ASTList ret;
   if (lst != nullptr) {
-    for (Exp* e : *lst) {
+    for (Expression* e : *lst) {
       ret.push_back(toOwned(e));
     }
     delete lst;
@@ -167,7 +167,7 @@ ParserContext::gatherCommentsFromList(ParserExprList* lst,
 
   size_t nToMove = 0;
   while (lst->size() > nToMove) {
-    Exp* e = (*lst)[nToMove];
+    Expression* e = (*lst)[nToMove];
     if (Comment* c = e->toComment()) {
       auto search = this->commentLocations.find(c);
       assert(search != this->commentLocations.end());
@@ -221,7 +221,7 @@ CommentsAndStmt ParserContext::finishStmt(CommentsAndStmt cs) {
   this->clearComments();
   return cs;
 }
-CommentsAndStmt ParserContext::finishStmt(Exp* e) {
+CommentsAndStmt ParserContext::finishStmt(Expression* e) {
   this->clearComments();
   return makeCommentsAndStmt(NULL, e);
 }

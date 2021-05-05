@@ -20,7 +20,7 @@
 #ifndef CHPL_UAST_BUILDER_H
 #define CHPL_UAST_BUILDER_H
 
-#include "chpl/uast/ASTBase.h"
+#include "chpl/uast/ASTNode.h"
 #include "chpl/queries/UniqueString.h"
 
 #include <vector>
@@ -35,7 +35,7 @@ class Location;
 
 namespace uast {
 
-class Exp;
+class Expression;
 
 /**
   This class helps to build AST. It should only build AST
@@ -49,15 +49,15 @@ class Builder final {
   Context* context_;
   UniqueString filepath_;
   UniqueString inferredModuleName_;
-  ASTList topLevelExps_;
+  ASTList topLevelExpressions_;
   std::vector<ErrorMessage> errors_;
-  std::vector<std::pair<const ASTBase*, Location>> locations_;
+  std::vector<std::pair<const ASTNode*, Location>> locations_;
 
   Builder(Context* context,
           UniqueString filepath, UniqueString inferredModuleName);
   UniqueString createImplicitModuleIfNeeded();
   void assignIDs(UniqueString inferredModule);
-  void doAssignIDs(ASTBase* ast, UniqueString symbolPath, int& i,
+  void doAssignIDs(ASTNode* ast, UniqueString symbolPath, int& i,
                    pathVecT& pathVec, declaredHereT& duplicates);
 
  public:
@@ -69,7 +69,7 @@ class Builder final {
     Save a toplevel expression in to the builder.
     This is called by the parser.
    */
-  void addToplevelExp(owned<Exp> e);
+  void addToplevelExpression(owned<Expression> e);
 
   /**
     Save an error.
@@ -79,16 +79,16 @@ class Builder final {
   /**
     Record the location of an AST element.
    */
-  void noteLocation(ASTBase* ast, Location loc);
+  void noteLocation(ASTNode* ast, Location loc);
 
   /**
     This struct records the result of building some AST.
    */
   struct Result final {
     UniqueString filePath;
-    uast::ASTList topLevelExps;
+    uast::ASTList topLevelExpressions;
     std::vector<ErrorMessage> errors;
-    std::vector<std::pair<const ASTBase*, Location>> locations;
+    std::vector<std::pair<const ASTNode*, Location>> locations;
 
     Result();
     Result(Result&&) = default; // move-constructable

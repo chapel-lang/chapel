@@ -17,10 +17,10 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_UAST_EXP_H
-#define CHPL_UAST_EXP_H
+#ifndef CHPL_UAST_EXPRESSION_H
+#define CHPL_UAST_EXPRESSION_H
 
-#include "chpl/uast/ASTBase.h"
+#include "chpl/uast/ASTNode.h"
 
 namespace chpl {
 namespace uast {
@@ -29,18 +29,18 @@ namespace uast {
 /**
   This is an abstract base class for expressions
  */
-class Exp : public ASTBase {
+class Expression : public ASTNode {
  protected:
-  Exp(ASTTag tag);
-  Exp(ASTTag tag, ASTList children);
-  bool expContentsMatchInner(const Exp* other) const {
+  Expression(ASTTag tag);
+  Expression(ASTTag tag, ASTList children);
+  bool expressionContentsMatchInner(const Expression* other) const {
     return true;
   }
-  void expMarkUniqueStringsInner(Context* context) const {
+  void expressionMarkUniqueStringsInner(Context* context) const {
   }
 
  public:
-  virtual ~Exp() = 0; // this is an abstract base class
+  virtual ~Expression() = 0; // this is an abstract base class
 };
 
 

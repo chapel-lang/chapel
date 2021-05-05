@@ -17,31 +17,31 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/ASTBase.h"
+#include "chpl/uast/ASTNode.h"
 
 #include "chpl/uast/Decl.h"
-#include "chpl/uast/Exp.h"
+#include "chpl/uast/Expression.h"
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Sym.h"
 
 namespace chpl {
 namespace uast {
 
-ASTBase::ASTBase(ASTTag tag)
+ASTNode::ASTNode(ASTTag tag)
   : tag_(tag), id_(), children_() {
 }
 
-ASTBase::ASTBase(ASTTag tag, ASTList children)
+ASTNode::ASTNode(ASTTag tag, ASTList children)
   : tag_(tag), id_(), children_(std::move(children)) {
 }
 
 
-ASTBase::~ASTBase() {
+ASTNode::~ASTNode() {
 }
 
-bool ASTBase::shallowMatch(const ASTBase* other) const {
-  const ASTBase* lhs = this;
-  const ASTBase* rhs = other;
+bool ASTNode::shallowMatch(const ASTNode* other) const {
+  const ASTNode* lhs = this;
+  const ASTNode* rhs = other;
   if (lhs->tag() != rhs->tag())
     return false;
   if (lhs->id().symbolPath() != rhs->id().symbolPath())
@@ -58,9 +58,9 @@ bool ASTBase::shallowMatch(const ASTBase* other) const {
   return true;
 }
 
-bool ASTBase::completeMatch(const ASTBase* other) const {
-  const ASTBase* lhs = this;
-  const ASTBase* rhs = other;
+bool ASTNode::completeMatch(const ASTNode* other) const {
+  const ASTNode* lhs = this;
+  const ASTNode* rhs = other;
 
   // check the node itself
   if (!lhs->shallowMatch(rhs)) {
@@ -78,8 +78,8 @@ bool ASTBase::completeMatch(const ASTBase* other) const {
   bool allMatch = true;
   size_t nChildren = lhs->children_.size();
   for (size_t i = 0; i < nChildren; i++) {
-    const ASTBase* lhsChild = lhs->children_[i].get();
-    const ASTBase* rhsChild = rhs->children_[i].get();
+    const ASTNode* lhsChild = lhs->children_[i].get();
+    const ASTNode* rhsChild = rhs->children_[i].get();
     bool childMatch = lhsChild->completeMatch(rhsChild);
     if (!childMatch) {
       allMatch = false;
@@ -89,7 +89,7 @@ bool ASTBase::completeMatch(const ASTBase* other) const {
   return allMatch;
 }
 
-bool ASTBase::updateAST(owned<ASTBase>& keep, owned<ASTBase>& addin) {
+bool ASTNode::updateAST(owned<ASTNode>& keep, owned<ASTNode>& addin) {
   // If any of the children changed, it's important to create
   // a new AST node for the parent, so that any queries referring
   // to that AST node get a new version.
@@ -124,7 +124,7 @@ bool ASTBase::updateAST(owned<ASTBase>& keep, owned<ASTBase>& addin) {
   }
 }
 
-void ASTBase::markAST(Context* context, const ASTBase* keep) {
+void ASTNode::markAST(Context* context, const ASTNode* keep) {
   if (keep == nullptr) return;
   // mark the unique string stored in the ID
   keep->id_.markUniqueStrings(context);
@@ -134,7 +134,7 @@ void ASTBase::markAST(Context* context, const ASTBase* keep) {
   markASTList(context, keep->children_);
 }
 
-static void dumpHelper(const ASTBase* ast, int depth) {
+static void dumpHelper(const ASTNode* ast, int depth) {
   for (int i = 0; i < depth; i++) {
     printf("  ");
   }
@@ -169,12 +169,12 @@ static void dumpHelper(const ASTBase* ast, int depth) {
            asttags::tagToString(ast->tag()),
            ast);
   }
-  for (const ASTBase* child : ast->children()) {
+  for (const ASTNode* child : ast->children()) {
     dumpHelper(child, depth+1);
   }
 }
 
-void ASTBase::dump(const ASTBase* ast, int leadingSpaces) {
+void ASTNode::dump(const ASTNode* ast, int leadingSpaces) {
   dumpHelper(ast, leadingSpaces);
 }
 

@@ -28,29 +28,31 @@ namespace uast {
 Variable::Variable(ASTList children,
                    UniqueString name, Sym::Visibility vis,
                    Variable::Tag tag,
-                   int8_t typeExpChildNum, int8_t initExpChildNum)
+                   int8_t typeExpressionChildNum,
+                   int8_t initExpressionChildNum)
   : Sym(asttags::Variable, std::move(children), name, vis),
     tag_(tag),
-    typeExpChildNum(typeExpChildNum), initExpChildNum(initExpChildNum) {
+    typeExpressionChildNum(typeExpressionChildNum),
+    initExpressionChildNum(initExpressionChildNum) {
 
-  assert(-1 <= typeExpChildNum && typeExpChildNum <= 1);
-  assert(-1 <= initExpChildNum && initExpChildNum <= 1);
+  assert(-1 <= typeExpressionChildNum && typeExpressionChildNum <= 1);
+  assert(-1 <= initExpressionChildNum && initExpressionChildNum <= 1);
   assert(numChildren() <= 2);
 #ifndef NDEBUG
   // check that all children are exprs (and not, say, Syms)
-  for (const ASTBase* child : this->children()) {
-    assert(child->isExp());
+  for (const ASTNode* child : this->children()) {
+    assert(child->isExpression());
   }
 #endif
 }
 
-bool Variable::contentsMatchInner(const ASTBase* other) const {
+bool Variable::contentsMatchInner(const ASTNode* other) const {
   const Variable* lhs = this;
   const Variable* rhs = (const Variable*) other;
   return lhs->symContentsMatchInner(rhs) &&
          lhs->tag_ == rhs->tag_ &&
-         lhs->typeExpChildNum == rhs->typeExpChildNum &&
-         lhs->initExpChildNum == rhs->initExpChildNum;
+         lhs->typeExpressionChildNum == rhs->typeExpressionChildNum &&
+         lhs->initExpressionChildNum == rhs->initExpressionChildNum;
 }
 void Variable::markUniqueStringsInner(Context* context) const {
   symMarkUniqueStringsInner(context);
