@@ -17,12 +17,14 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/Block.h"
-#include "chpl/uast/Expression.h"
-#include "chpl/uast/Identifier.h"
-#include "chpl/uast/ModuleDecl.h"
 #include "chpl/frontend/Parser.h"
 #include "chpl/queries/Context.h"
+#include "chpl/uast/Block.h"
+#include "chpl/uast/Call.h"
+#include "chpl/uast/Expression.h"
+#include "chpl/uast/FnCall.h"
+#include "chpl/uast/Identifier.h"
+#include "chpl/uast/ModuleDecl.h"
 
 // always check assertions in this test
 #ifdef NDEBUG
@@ -287,6 +289,67 @@ static void test15(Parser* parser) {
   assert(block->stmt(2)->isComment());
 }
 
+static void testCalls1(Parser* parser) {
+  auto parseResult = parser->parseString("testCalls1.chpl",
+                                         "f();\n");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
+  auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(module->numStmts() == 1);
+  auto fnCall = module->stmt(0)->toFnCall();
+  assert(fnCall);
+  assert(fnCall->callUsedSquareBrackets() == false);
+  auto baseExpr = fnCall->calledExpression();
+  assert(baseExpr);
+  auto baseExprIdent = baseExpr->toIdentifier();
+  assert(0 == baseExprIdent->name().compare("f"));
+  assert(fnCall->numActuals() == 0);
+}
+
+static void testCalls2(Parser* parser) {
+  auto parseResult = parser->parseString("testCalls2.chpl",
+                                         "f(x);\n");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
+  auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(module->numStmts() == 1);
+  auto fnCall = module->stmt(0)->toFnCall();
+  assert(fnCall);
+  assert(fnCall->callUsedSquareBrackets() == false);
+  auto baseExpr = fnCall->calledExpression();
+  assert(baseExpr);
+  auto baseExprIdent = baseExpr->toIdentifier();
+  assert(0 == baseExprIdent->name().compare("f"));
+  assert(fnCall->numActuals() == 1);
+  auto actualExprIdent = fnCall->actual(0)->toIdentifier();
+  assert(0 == actualExprIdent->name().compare("x"));
+}
+
+static void testCalls3(Parser* parser) {
+  auto parseResult = parser->parseString("testCalls2.chpl",
+                                         "f[x];\n");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
+  auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(module->numStmts() == 1);
+  auto fnCall = module->stmt(0)->toFnCall();
+  assert(fnCall);
+  assert(fnCall->callUsedSquareBrackets() == true);
+  auto baseExpr = fnCall->calledExpression();
+  assert(baseExpr);
+  auto baseExprIdent = baseExpr->toIdentifier();
+  assert(0 == baseExprIdent->name().compare("f"));
+  assert(fnCall->numActuals() == 1);
+  auto actualExprIdent = fnCall->actual(0)->toIdentifier();
+  assert(0 == actualExprIdent->name().compare("x"));
+}
+
+
+
+
 int main() {
   Context context;
   Context* ctx = &context;
@@ -310,6 +373,10 @@ int main() {
   test13(p);
   test14(p);
   test15(p);
+
+  testCalls1(p);
+  testCalls2(p);
+  testCalls3(p);
 
   return 0;
 }

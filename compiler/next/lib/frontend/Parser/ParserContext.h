@@ -94,13 +94,15 @@ struct ParserContext {
   }
   ParserExprList* makeList(CommentsAndStmt cs);
 
-  void appendList(ParserExprList* dst, ParserExprList* lst);
-  void appendList(ParserExprList* dst, Expression* e);
-  void appendList(ParserExprList* dst, owned<Expression> e) {
+  ParserExprList* appendList(ParserExprList* dst, ParserExprList* lst);
+  ParserExprList* appendList(ParserExprList* dst, Expression* e);
+  ParserExprList* appendList(ParserExprList* dst, owned<Expression> e) {
     this->appendList(dst, e.release());
+    return dst;
   }
-  void appendList(ParserExprList* dst, std::vector<ParserComment>* comments);
-  void appendList(ParserExprList* dst, CommentsAndStmt cs);
+  ParserExprList* appendList(ParserExprList* dst,
+                             std::vector<ParserComment>* comments);
+  ParserExprList* appendList(ParserExprList* dst, CommentsAndStmt cs);
   ASTList consumeList(ParserExprList* lst);
 
   std::vector<ParserComment>* gatherCommentsFromList(ParserExprList* lst,
