@@ -1673,7 +1673,7 @@ module ChapelArray {
         isUnique=false, preserveInds=true, addOn=nilLocale)
         where isSparseDom(this) && _value.rank==1 {
 
-      if inds.size == 0 then return 0;
+        if inds.sizeAs(uint) == 0 then return 0;
 
       return _value.dsiBulkAdd(inds, dataSorted, isUnique, preserveInds, addOn);
     }
@@ -1762,7 +1762,7 @@ module ChapelArray {
         dataSorted=false, isUnique=false, preserveInds=true, addOn=nilLocale)
         where isSparseDom(this) && _value.rank>1 {
 
-      if inds.size == 0 then return 0;
+        if inds.sizeAs(uint) == 0 then return 0;
 
       return _value.dsiBulkAdd(inds, dataSorted, isUnique, preserveInds, addOn);
     }
@@ -1949,7 +1949,7 @@ module ChapelArray {
 
       var rankOrder = order;
       var idx: (rank*_value.idxType);
-      var div = this.size;
+      var div = this.sizeAs(int);
 
       for param i in 0..<rank {
           var currDim = this.dim(i);
@@ -1974,8 +1974,8 @@ module ChapelArray {
 
     pragma "no doc"
     proc checkOrderBounds(order: int){
-      if order >= this.size || order < 0 then
-        halt("Order out of bounds. Order must lie in 0..",this.size-1);
+      if order >= this.sizeAs(uint) || order < 0 then
+        halt("Order out of bounds. Order must lie in 0..",this.sizeAs(uint)-1);
     }
 
     pragma "no doc"
@@ -3321,7 +3321,7 @@ module ChapelArray {
 
     /* Return true if the array has no elements */
     proc isEmpty(): bool {
-      return this.size == 0;
+      return this.sizeAs(uint) == 0;
     }
 
     /* Return the first value in the array */
@@ -3371,7 +3371,7 @@ module ChapelArray {
       if (!chpl__isDense1DArray()) then
         compilerError("reverse() is only supported on dense 1D arrays");
       const lo = this.domain.low,
-            mid = this.domain.size / 2,
+            mid = this.domain.sizeAs(this.idxType) / 2,
             hi = this.domain.high;
       for i in 0..#mid {
         this[lo + i] <=> this[hi - i];
@@ -3507,7 +3507,7 @@ module ChapelArray {
     if this.rank != that.rank then
       return false;
 
-    if this.size != that.size then
+    if this.sizeAs(uint) != that.sizeAs(uint) then
       return false;
 
     //
@@ -3679,7 +3679,7 @@ module ChapelArray {
   // BaseSparseDom operator overloads
   //
   operator +=(ref sd: domain, inds: [] index(sd)) where isSparseDom(sd) {
-    if inds.size == 0 then return;
+    if inds.sizeAs(int) == 0 then return;
 
     sd._value.dsiBulkAdd(inds);
   }
@@ -3688,9 +3688,9 @@ module ChapelArray {
   // TODO: Currently not optimized
   operator +=(ref sd: domain, d: domain)
   where isSparseDom(sd) && d.rank==sd.rank && sd.idxType==d.idxType {
-    if d.size == 0 then return;
+    if d.sizeAs(int) == 0 then return;
 
-    const indCount = d.size;
+    const indCount = d.sizeAs(int);
     var arr: [{0..#indCount}] index(sd);
 
     for (i,j) in zip(d, 0..) do arr[j] = i;
@@ -3991,7 +3991,7 @@ module ChapelArray {
       return;
     }
 
-    if a.size == 0 && b.size == 0 then
+    if a.sizeAs(uint) == 0 && b.sizeAs(uint) == 0 then
       // Do nothing for zero-length assignments
       return;
 
@@ -4596,9 +4596,9 @@ module ChapelArray {
   proc reshape(A: [], D: domain) {
     if !isRectangularDom(D) then
       compilerError("reshape(A,D) is meaningful only when D is a rectangular domain; got D: ", D.type:string);
-    if A.size != D.size then
-      halt("reshape(A,D) is invoked when A has ", A.size,
-           " elements, but D has ", D.size, " indices");
+    if A.sizeAs(int) != D.sizeAs(int) then
+      halt("reshape(A,D) is invoked when A has ", A.sizeAs(int),
+           " elements, but D has ", D.sizeAs(int), " indices");
     var B: [D] A.eltType = for (i,a) in zip(D, A) do a;
     return B;
   }
@@ -4858,7 +4858,7 @@ module ChapelArray {
       // default initializer is a forall expr. E.g. arrayInClassRecord.chpl.
     } else if lhs._value == rhs._value {
       // do nothing (assert?)
-    } else if lhs.size == 0 && rhs.size == 0 {
+    } else if lhs.sizeAs(int) == 0 && rhs.sizeAs(int) == 0 {
       // Do nothing for zero-length assignments
     } else {
       if boundsChecking then
@@ -4906,7 +4906,7 @@ module ChapelArray {
       // default initializer is a forall expr. E.g. arrayInClassRecord.chpl.
     } else if lhs._value == rhs._value {
       // do nothing (assert?)
-    } else if lhs.size == 0 && rhs.size == 0 {
+    } else if lhs.sizeAs(int) == 0 && rhs.sizeAs(int) == 0 {
       // Do nothing for zero-length assignments
     } else {
       if boundsChecking then
@@ -5316,7 +5316,7 @@ module ChapelArray {
     var r = if shapeful then ir._shape_ else 1..0;
 
     var i  = 0;
-    var size = r.size : size_t;
+    var size = r.sizeAs(size_t);
     type elemType = iteratorToArrayElementType(ir.type);
     var data:_ddata(elemType) = nil;
 
@@ -5383,7 +5383,7 @@ module ChapelArray {
     // there is an exception in the above 'for elt' loop.
     // If not for that, we could probably assert(r.size == i).
     // Todo: what if _shape_ is unbounded? Can we reach this point somehow?
-    if shapeful && i < r.size then
+    if shapeful && i < r.sizeAs(uint) then
       r = r #i;
 
     if !shapeful then
