@@ -2369,10 +2369,10 @@ module ChapelBase {
   // This is a helper function that I injected to reduce the
   // compiler's reliance on 'iterable.size' for coforall loops because
   // we started generating warnings for the return type of
-  // 'range.size' changing.
+  // '[range|domain|array].size' changing.
   //
   proc chpl_coforallSize(iterable) {
-    if (isRange(iterable)) then
+    if (isRange(iterable) || isDomain(iterable) || isArray(iterable)) then
       return iterable.sizeAs(iterable.intIdxType);
     else
       return iterable.size;

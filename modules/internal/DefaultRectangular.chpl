@@ -1475,7 +1475,7 @@ module DefaultRectangular {
             // from removing this line seemed inconclusive, which may indicate
             // that the check is not necessary, but it seemed like unnecessary
             // work for something with no immediate reward.
-            if reallocD.size > 0 {
+            if reallocD.sizeAs(uint) > 0 {
               shiftedData = copy.shiftedData;
             }
           }

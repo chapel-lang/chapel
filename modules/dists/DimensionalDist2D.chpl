@@ -757,7 +757,7 @@ proc DimensionalDom.dsiDim(param d)       return whole.dim(d);
 proc DimensionalDom.dsiLow                return whole.low;
 proc DimensionalDom.dsiHigh               return whole.high;
 proc DimensionalDom.dsiStride             return whole.stride;
-proc DimensionalDom.dsiNumIndices         return whole.size;
+proc DimensionalDom.dsiNumIndices         return whole.sizeAs(uint);
 proc DimensionalDom.dsiMember(indexx)     return whole.contains(indexx);
 proc DimensionalDom.dsiIndexOrder(indexx) return whole.indexOrder(indexx);
 

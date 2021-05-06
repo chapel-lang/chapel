@@ -12,7 +12,7 @@ for param i in 0..#loStartHi.size {
   var (lo,start,hi) = loStartHi(i);
   var A : [lo..hi] int;
   forall i in A.domain do
-    A[i] = (A.size:(i.type) - (i - A.domain.low)):int;
+    A[i] = (A.sizeAs(i.type) - (i - A.domain.low)):int;
 
   writeln(A);
   shellSort(A, start=start, end=hi);
