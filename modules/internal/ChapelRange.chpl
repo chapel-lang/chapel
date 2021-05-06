@@ -2745,16 +2745,12 @@ operator :(r: range(?), type t: range(?)) {
 
   pragma "no doc"
   proc chpl__idxTypeToIntIdxType(type idxType) type {
-    if isBoolType(idxType) {
-      return int;
-    } else if isEnumType(idxType) {
-      // Most range/array code currently relies on being able to store
-      // empty ranges like 1..0.  If an enum only defines a single
-      // symbol, we can't create such a range, so print the following
-      // error message to avoid going off the rails.
-      return int;
-    } else {
+    if isIntegralType(idxType) {
+      // integer idxTypes are their own integer idxType
       return idxType;
+    } else {
+      // other types (bool, enum, ...) use 'int'
+      return int;
     }
   }
 
