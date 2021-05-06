@@ -215,6 +215,11 @@
     return makeCommentsAndStmt(comments, stmt.release());
   }
 
+  struct BlockOrDo {
+    Expression* stmt;
+    bool usesDo;
+  };
+
   struct SizedStr {
     const char* allocatedData; // *not* a uniqued string!
     long size;
@@ -262,6 +267,7 @@
     Module* module;
 
     // values that are temporary groupings
+    BlockOrDo blockOrDo;
     CommentsAndStmt commentsAndStmt;
     ParserExprList* exprList;
     RenameList* renameList;
@@ -500,7 +506,7 @@
 %type <exprList> class_level_stmt_ls
 
 %type <commentsAndStmt> stmt
-%type <expr> do_stmt
+%type <BlockOrDo> do_stmt
 %type <commentsAndStmt> if_stmt loop_stmt
 %type <commentsAndStmt> select_stmt
 %type <commentsAndStmt> assignment_stmt
@@ -641,11 +647,27 @@ stmt:
 | TCONTINUE opt_label_ident TSEMI        { $$ = context->finishStmt(TODOSTMT(@$)); }
 | TDELETE simple_expr_ls TSEMI           { $$ = context->finishStmt(TODOSTMT(@$)); }
 | TLABEL ident_def stmt     { $$ = context->finishStmt(TODOSTMT(@$)); }
-| TLOCAL expr do_stmt       { $$ = context->finishStmt(TODOSTMT(@$)); }
-| TLOCAL do_stmt            { $$ = context->finishStmt(TODOSTMT(@$)); }
+| TLOCAL expr do_stmt
+  {
+    auto node = Local::build(BUILDER, LOC(@1), $2, $3.stmt, $3.usesDo);
+    $$ = context->finishStmt(STMT(@1, node));
+  }
+| TLOCAL do_stmt 
+  {
+    auto node = Local::build(BUILDER, LOC(@1), nullptr, $2.stmt, $2.usesDo);
+    $$ = context->finishStmt(STMT(@1, node));
+  }
 | TON expr do_stmt          { $$ = context->finishStmt(TODOSTMT(@$)); }
-| TSERIAL expr do_stmt      { $$ = context->finishStmt(TODOSTMT(@$)); }
-| TSERIAL do_stmt           { $$ = context->finishStmt(TODOSTMT(@$)); }
+| TSERIAL expr do_stmt
+  {
+    auto node = Serial::build(BUILDER, LOC(@1), $2, $3.stmt, $3.usesDo);
+    $$ = context->finishStmt(STMT(@1, node));
+  }
+| TSERIAL do_stmt
+  {
+    auto node = Serial::build(BUILDER, LOC(@1), nullptr, $2.stmt, $2.usesDo);
+    $$ = context->finishStmt(STMT(@1, node));
+  }
 | TSYNC stmt                { $$ = context->finishStmt(TODOSTMT(@$)); }
 | TYIELD expr TSEMI         { $$ = context->finishStmt(TODOSTMT(@$)); }
 | error TSEMI
@@ -1034,8 +1056,8 @@ reserved_type_ident_use:
 ;
 
 do_stmt:
-  TDO stmt    { $$ = $2.stmt; delete $2.comments; }
-| block_stmt  { $$ = $1.stmt; delete $1.comments; }
+  TDO stmt    { $$ = { $2, true }; delete $2.comments; }
+| block_stmt  { $$ = { $1, false }; delete $1.comments; }
 ;
 
 return_stmt:
