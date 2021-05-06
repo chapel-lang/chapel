@@ -44,8 +44,17 @@ class Sym : public ASTNode {
   Visibility visibility_;
 
  protected:
-  Sym(ASTTag tag, UniqueString name, Visibility vis);
-  Sym(ASTTag tag, ASTList children, UniqueString name, Visibility vis);
+ Sym(ASTTag tag,
+     UniqueString name, Sym::Visibility visibility)
+   : ASTNode(tag), name_(name), visibility_(visibility) {
+  }
+
+ Sym(ASTTag tag, ASTList children,
+     UniqueString name, Sym::Visibility visibility)
+   : ASTNode(tag, std::move(children)),
+    name_(name), visibility_(visibility) {
+  }
+
   bool symContentsMatchInner(const Sym* other) const {
     return this->name_ == other->name_ &&
            this->visibility_ == other->visibility_;

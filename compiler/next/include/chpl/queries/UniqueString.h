@@ -26,6 +26,7 @@
 #define CHPL_QUERIES_UNIQUE_STRING_H
 
 #include "chpl/queries/UniqueString-detail.h"
+#include "chpl/util/hash.h"
 
 #include <cassert>
 #include <cstring>
@@ -57,8 +58,8 @@ class UniqueString final {
   /** create a UniqueString from a PODUniqueString.
       this constructor intentionally allows implicit conversion.
    */
-  UniqueString(detail::PODUniqueString s) {
-    this->s = s;
+  UniqueString(detail::PODUniqueString s)
+    : s(s) {
   }
 
   /**
@@ -116,13 +117,10 @@ class UniqueString final {
     return this->s.i.v == other.s.i.v;
   }
   inline bool operator!=(const UniqueString other) const {
-    return this->s.i.v != other.s.i.v;
+    return !(*this == other);
   }
   int compare(const UniqueString other) const {
-    if (this->s.i.v == other.s.i.v)
-      return 0;
-    else
-      return strcmp(this->c_str(), other.c_str());
+    return *this == other ? 0 : compare(other.c_str());
   }
   int compare(const char* other) const {
     return strcmp(this->c_str(), other);
@@ -170,7 +168,7 @@ namespace std {
   };
   template<> struct hash<chpl::UniqueString> {
     size_t operator()(const chpl::UniqueString key) const {
-      return (size_t) key.hash();
+      return key.hash();
     }
   };
   template<> struct equal_to<chpl::UniqueString> {

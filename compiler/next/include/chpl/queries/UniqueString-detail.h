@@ -27,6 +27,7 @@
 
 #include <cassert>
 #include <cstring>
+#include <functional>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -91,8 +92,20 @@ struct InlinedString {
     return (val == 0) || ((val & 0xff) == INLINE_TAG);
   }
 
-  // Performance: Does this function need to be inlined?
-  static char* dataAssumingTag(void* vptr);
+  static char* dataAssumingTag(void* vptr) {
+    char* ptr = (char*) vptr;
+
+    // assuming the tag is present, where is the string data?
+    // on a little endian system, need to pass over the tag.
+    // on big endian systems, the tag is after the null terminator,
+    // so no action is necessary.
+
+    #if __BYTE_ORDER == __LITTLE_ENDIAN
+      ptr += 1; // pass over the tag
+    #endif
+
+    return ptr;
+  }
 
   /**
     Creates an InlinedString from a pointer.
@@ -100,13 +113,10 @@ struct InlinedString {
     Otherwise, it will point to s and this code assumes
     that alignmentIndicatesTag(s)==false.
    */
-  static inline InlinedString buildFromAligned(const char* s, int len) {
+  static inline InlinedString buildFromAligned(const char* s, size_t len) {
     // Store empty strings as nullptr
-    if (s == nullptr || len == 0) {
-      InlinedString ret;
-      ret.v = nullptr;
-      return ret;
-    }
+    if (s == nullptr || len == 0)
+      return { nullptr };
 
     // Would the tag, null terminator, and data fit?
     if (len <= MAX_SIZE_INLINED) {
@@ -115,20 +125,16 @@ struct InlinedString {
       // store the data (possibly after the tag), not including null byte
       // (since null byte will come from the zeros in val)
       memcpy(dst, s, len);
-      // store the value we created into the struct and return it
-      InlinedString ret;
-      ret.v = (const char*) val;
-      return ret;
+      // create a struct with the value we created and return it
+      return { (const char*) val };
     }
 
     assert(!alignmentIndicatesTag(s));
-    InlinedString ret;
-    ret.v = s;
-    return ret;
+    return { s };
   }
 
   static InlinedString buildUsingContextTable(Context* context,
-                                              const char* s, int len);
+                                              const char* s, size_t len);
 
   static InlinedString build(Context* context, const char* s, size_t len) {
     if (len <= MAX_SIZE_INLINED) {
@@ -162,37 +168,23 @@ struct InlinedString {
 // This class is POD and has only the trivial constructor to help the parser
 // (which uses it in a union).
 // All UniqueStrings are actually POD; the difference is that this one
-// does not have a default constructor.
+// does not have a user-defined constructor.
 // TODO: rename it
 struct PODUniqueString {
   InlinedString i;
-  static inline PODUniqueString build(Context* context,
-                                      const char* s, size_t len) {
-    PODUniqueString ret;
-    ret.i = InlinedString::build(context, s, len);
-    return ret;
+  static PODUniqueString build(Context* context, const char* s, size_t len) {
+    return { InlinedString::build(context, s, len) };
   }
-  static inline PODUniqueString build(Context* context, const char* s) {
-    PODUniqueString ret;
-    ret.i = InlinedString::build(context, s);
-    return ret;
+  static PODUniqueString build(Context* context, const char* s) {
+    return { InlinedString::build(context, s) };
   }
   const char* c_str() const {
-    return this->i.c_str();
+    return i.c_str();
   }
 };
 
 
 } // end namespace detail
-
-// TODO: should these go somewhere else?
-static inline
-size_t hash_combine(size_t hash1, size_t hash2) {
-  size_t hash = hash1;
-  size_t other = hash2;
-  hash ^= other + 0x9e3779b9 + (other << 6) + (other >> 2);
-  return hash;
-}
 
 template<typename T> struct update {
   bool operator()(T& keep, T& addin) const = 0;

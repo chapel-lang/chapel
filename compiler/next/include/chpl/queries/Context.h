@@ -24,10 +24,14 @@
 #include "chpl/queries/ID.h"
 #include "chpl/queries/UniqueString.h"
 #include "chpl/util/memory.h"
+#include "chpl/util/hash.h"
 
 #include <memory>
+#include <tuple>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
+#include <vector>
 
 namespace chpl {
 
@@ -185,13 +189,14 @@ class Context {
   std::vector<const querydetail::QueryMapResultBase*> queryStack;
 
 
-  querydetail::RevisionNumber currentRevisionNumber;
+  querydetail::RevisionNumber currentRevisionNumber = 1;
 
-  void (*reportError)(const ErrorMessage& err);
+  static void defaultReportError(const ErrorMessage& err);
+  void (*reportError)(const ErrorMessage& err) = defaultReportError;
 
   // The following are only used for UniqueString garbage collection
-  querydetail::RevisionNumber lastPrepareToGCRevisionNumber;
-  querydetail::RevisionNumber gcCounter;
+  querydetail::RevisionNumber lastPrepareToGCRevisionNumber = 0;
+  querydetail::RevisionNumber gcCounter = 1;
 
   const char* getOrCreateUniqueString(const char* s);
 
@@ -276,13 +281,16 @@ class Context {
   /**
     Create a new AST Context.
    */
-  Context();
+  Context() = default;
   ~Context();
 
   /**
    Set the error handling function
    */
-  void setErrorHandler(void (*reportError)(const ErrorMessage& err));
+  void setErrorHandler(void (*reportError)(const ErrorMessage& err))
+  {
+    this->reportError = reportError;
+  }
 
   /**
     Get or create a unique string for a NULL-terminated C string

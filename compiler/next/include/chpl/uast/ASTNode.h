@@ -27,6 +27,7 @@
 #include "chpl/util/memory.h"
 
 #include <cassert>
+#include <functional>
 
 namespace chpl {
 namespace uast {
@@ -95,7 +96,7 @@ class ASTNode {
     Returns the ID of this AST node.
    */
   ID id() const {
-    return id_; 
+    return id_;
   }
 
   /**

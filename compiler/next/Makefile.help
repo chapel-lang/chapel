@@ -87,7 +87,7 @@ libchplcomp-docs: $(LIBCOMPILER_BUILD_DIR) FORCE
 	  $(COPY_IF_DIFFERENT) $(LIBCOMPILER_BUILD_DIR)/doc/doxygen $(CHPL_MAKE_HOME)/build/doc/doxygen ; \
 	fi
 
-test-libchplcomp: $(LIBCOMPILER_BUILD_DIR) FORCE
+test-libchplcomp: libchplcomp FORCE
 	@echo "Making and running the tests..."
 	@if [ -f $(LIBCOMPILER_BUILD_DIR)/Makefile ]; then \
 	  cd $(LIBCOMPILER_BUILD_DIR) && $(MAKE) tests && ctest . ; \
@@ -101,3 +101,5 @@ FORCE:
 # standard footer
 #
 include $(COMPILER_ROOT)/make/Makefile.compiler.foot
+
+.NOTPARALLEL:

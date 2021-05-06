@@ -18,6 +18,8 @@
  * limitations under the License.
  */
 
+#include <string>
+
 void yyerror(YYLTYPE*       loc,
              ParserContext* context,
              const char*    errorMessage) {
