@@ -655,52 +655,44 @@ stmt:
 | TLABEL ident_def stmt     { $$ = context->finishStmt(TODOSTMT(@$)); }
 | TLOCAL expr do_stmt
   {
-    CommentsAndStmt cs = {0};
     // Pull up any comments that appear before the TLOCAL keyword.
-    cs.comments = context->gatherCommentsFromList($3.exprList, @1);
+    auto comments = context->gatherCommentsFromList($3.exprList, @1);
     // Create the Local stmt.
     auto node = Local::build(BUILDER, LOC(@1), std::move(toOwned($2)),
                              std::move(context->consumeList($3.exprList)),
                              $3.usesDo);
-    cs.stmt = node.release();
-    $$ = cs;
+    $$ = { .comments=comments, .stmt=node.release() };
   }
 | TLOCAL do_stmt 
   {
-    CommentsAndStmt cs = {0};
     // Pull up any comments that appear before the TLOCAL keyword.
-    cs.comments = context->gatherCommentsFromList($2.exprList, @1);
+    auto comments = context->gatherCommentsFromList($2.exprList, @1);
     // Create the Local stmt.
     auto node = Local::build(BUILDER, LOC(@1),
                              std::move(context->consumeList($2.exprList)),
                              $2.usesDo);
-    cs.stmt = node.release();
-    $$ = cs;
+    $$ = { .comments=comments, .stmt=node.release() };
   }
 | TON expr do_stmt          { $$ = context->finishStmt(TODOSTMT(@$)); }
 | TSERIAL expr do_stmt
   {
-    CommentsAndStmt cs = {0};
-    // Pull up any comments that appear before the TLOCAL keyword.
-    cs.comments = context->gatherCommentsFromList($3.exprList, @1);
+    // Pull up any comments that appear before the TSERIAL keyword.
+    auto comments = context->gatherCommentsFromList($3.exprList, @1);
     // Create the Serial stmt.
     auto node = Serial::build(BUILDER, LOC(@1), std::move(toOwned($2)),
                               std::move(context->consumeList($3.exprList)),
                               $3.usesDo);
-    cs.stmt = node.release();
-    $$ = cs;
+    $$ = { .comments=comments, .stmt=node.release() };
   }
 | TSERIAL do_stmt
   {
-    CommentsAndStmt cs = {0};
-    // Pull up any comments that appear before the TLOCAL keyword.
-    cs.comments = context->gatherCommentsFromList($2.exprList, @1);
+    // Pull up any comments that appear before the TSERIAL keyword.
+    auto comments = context->gatherCommentsFromList($2.exprList, @1);
     // Create the Serial stmt.
     auto node = Serial::build(BUILDER, LOC(@1),
                               std::move(context->consumeList($2.exprList)),
                               $2.usesDo);
-    cs.stmt = node.release();
-    $$ = cs;
+    $$ = { .comments=comments, .stmt=node.release() };
   }
 | TSYNC stmt                { $$ = context->finishStmt(TODOSTMT(@$)); }
 | TYIELD expr TSEMI         { $$ = context->finishStmt(TODOSTMT(@$)); }
