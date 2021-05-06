@@ -33,7 +33,9 @@ namespace uast {
  */
 class Decl : public Expression {
  protected:
-  Decl(ASTTag tag, owned<Sym> symbol);
+  Decl(ASTTag tag, owned<Sym> sym)
+    : Expression(tag, makeASTList(std::move(sym))) {
+  }
   bool declContentsMatchInner(const Decl* other) const {
     return true;
   }

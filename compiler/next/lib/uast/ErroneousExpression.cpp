@@ -25,10 +25,6 @@ namespace chpl {
 namespace uast {
 
 
-ErroneousExpression::ErroneousExpression()
-  : Expression(asttags::ErroneousExpression) {
-}
-
 bool ErroneousExpression::contentsMatchInner(const ASTNode* other) const {
   const ErroneousExpression* lhs = this;
   const ErroneousExpression* rhs = (const ErroneousExpression*) other;

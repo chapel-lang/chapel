@@ -41,7 +41,9 @@ namespace uast {
  */
 class ModuleDecl final : public Decl {
  private:
-  ModuleDecl(owned<Module> module);
+  ModuleDecl(owned<Module> module)
+    : Decl(asttags::ModuleDecl, std::move(module)) {
+  }
   bool contentsMatchInner(const ASTNode* other) const override;
   void markUniqueStringsInner(Context* context) const override;
 

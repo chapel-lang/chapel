@@ -25,10 +25,6 @@ namespace chpl {
 namespace uast {
 
 
-VariableDecl::VariableDecl(owned<Variable> variable)
-  : Decl(asttags::VariableDecl, std::move(variable)) {
-}
-
 bool VariableDecl::contentsMatchInner(const ASTNode* other) const {
   const VariableDecl* lhs = this;
   const VariableDecl* rhs = (const VariableDecl*) other;
