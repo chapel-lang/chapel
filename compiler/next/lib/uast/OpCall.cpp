@@ -28,10 +28,10 @@ bool OpCall::contentsMatchInner(const ASTNode* other) const {
   const OpCall* lhs = this;
   const OpCall* rhs = (const OpCall*) other;
 
-  if (!lhs->callContentsMatchInner(rhs))
+  if (lhs->op_ != rhs->op_)
     return false;
 
-  if (lhs->op_ != rhs->op_)
+  if (!lhs->callContentsMatchInner(rhs))
     return false;
 
   return true;
@@ -48,12 +48,12 @@ owned<OpCall> OpCall::build(Builder* builder,
                             UniqueString op,
                             owned<Expression> lhs,
                             owned<Expression> rhs) {
-  ASTList lst;
+  ASTList list;
 
-  lst.push_back(std::move(lhs));
-  lst.push_back(std::move(rhs));
+  list.push_back(std::move(lhs));
+  list.push_back(std::move(rhs));
 
-  OpCall* ret = new OpCall(std::move(lst), op);
+  OpCall* ret = new OpCall(std::move(list), op);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
@@ -61,11 +61,11 @@ owned<OpCall> OpCall::build(Builder* builder,
                             Location loc,
                             UniqueString op,
                             owned<Expression> expr) {
-  ASTList lst;
+  ASTList list;
 
-  lst.push_back(std::move(expr));
+  list.push_back(std::move(expr));
 
-  OpCall* ret = new OpCall(std::move(lst), op);
+  OpCall* ret = new OpCall(std::move(list), op);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
