@@ -3052,10 +3052,10 @@ module ChapelArray {
     }
 
     /* Return the number of elements in the array */
-    proc size return _value.dom.dsiNumIndices;
+    proc size return _dom.size;
 
     /* Return the number of elements in the array as the specified type. */
-    proc sizeAs(type t: integral) return _value.dom.dsiNumIndices;
+    proc sizeAs(type t: integral) return _dom.sizeAs(t);
 
     //
     // This routine determines whether an actual array argument
