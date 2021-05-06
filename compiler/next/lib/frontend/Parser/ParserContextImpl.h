@@ -163,6 +163,24 @@ ASTList ParserContext::consumeList(ParserExprList* lst) {
   return ret;
 }
 
+void ParserContext::consumeNamedActuals(MaybeNamedActualList* lst,
+                                        ASTList& actualsOut,
+                                        std::vector<UniqueString>& namesOut) {
+  bool anyActualNames = false;
+  if (lst != nullptr) {
+    for (auto& elt : *lst) {
+      if (!elt.name.isEmpty())
+        anyActualNames = true;
+    }
+    for (auto& elt : *lst) {
+      actualsOut.push_back(toOwned(elt.expr));
+      if (anyActualNames)
+        namesOut.push_back(elt.name);
+    }
+    delete lst;
+  }
+}
+
 std::vector<ParserComment>*
 ParserContext::gatherCommentsFromList(ParserExprList* lst,
                                       YYLTYPE location) {

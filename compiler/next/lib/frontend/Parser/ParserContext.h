@@ -105,6 +105,10 @@ struct ParserContext {
   ParserExprList* appendList(ParserExprList* dst, CommentsAndStmt cs);
   ASTList consumeList(ParserExprList* lst);
 
+ void consumeNamedActuals(MaybeNamedActualList* lst,
+                          ASTList& actualsOut,
+                          std::vector<UniqueString>& namesOut);
+
   std::vector<ParserComment>* gatherCommentsFromList(ParserExprList* lst,
                                                      YYLTYPE location);
   void appendComments(CommentsAndStmt*cs, std::vector<ParserComment>* comments);

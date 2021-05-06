@@ -191,9 +191,7 @@
   };
   static inline
   WhereAndLifetime makeWhereAndLifetime(Expression* w, ParserExprList* lt) {
-    WhereAndLifetime ret;
-    ret.where = w;
-    ret.lifetime = lt;
+    WhereAndLifetime ret = {w, lt};
     return ret;
   }
 
@@ -204,9 +202,7 @@
   static inline
   CommentsAndStmt makeCommentsAndStmt(std::vector<ParserComment>* comments,
                                       Expression* stmt) {
-    CommentsAndStmt ret;
-    ret.comments = comments;
-    ret.stmt = stmt;
+    CommentsAndStmt ret = {comments, stmt};
     return ret;
   }
   static inline
@@ -221,12 +217,28 @@
   };
   static inline
   SizedStr makeSizedStr(const char* allocatedData, long size) {
-    SizedStr ret;
-    ret.allocatedData = allocatedData;
-    ret.size = size;
+    SizedStr ret = {allocatedData, size};
     return ret;
   }
 
+  struct MaybeNamedActual {
+    Expression* expr;
+    PODUniqueString name;
+  };
+  static inline
+  MaybeNamedActual makeMaybeNamedActual(Expression* expr,
+                                        PODUniqueString name) {
+    MaybeNamedActual ret = {expr, name};
+    return ret;
+  }
+  static inline
+  MaybeNamedActual makeMaybeNamedActual(Expression* expr) {
+    PODUniqueString emptyName = PODUniqueString::build();
+    MaybeNamedActual ret = {expr, emptyName};
+    return ret;
+  }
+
+  using MaybeNamedActualList = std::vector<MaybeNamedActual>;
 
   // These currently all need to be POD types (i.e. pointers and ints)
   // rather than say std::vector to keep bison working with the current
@@ -267,6 +279,8 @@
     RenameList* renameList;
     UniqueStrList* uniqueStrList;
     WhereAndLifetime lifetimeAndWhere;
+    MaybeNamedActual maybeNamedActual;
+    MaybeNamedActualList* maybeNamedActualList;
 
     // TODO
     //Type*                     ptype;
@@ -546,7 +560,8 @@
 %type <expr> call_base_expr call_expr dot_expr
 %type <expr> lhs_expr
 %type <expr> unary_op_expr binary_op_expr
-%type <expr> parenthesized_expr expr actual_expr
+%type <expr> parenthesized_expr expr
+%type <maybeNamedActual> actual_expr
 %type <expr> bool_literal str_bytes_literal literal_expr
 %type <expr> stmt_level_expr sub_type_level_expr type_level_expr scalar_type
 %type <exprList> lifetime_components_expr
@@ -564,7 +579,7 @@
 
 %type <newTag> new_maybe_decorated
 %type <exprList> opt_inherit simple_expr_ls expr_ls assoc_expr_ls tuple_expr_ls
-%type <exprList> opt_actual_ls actual_ls
+%type <maybeNamedActualList> opt_actual_ls actual_ls
 %type <exprList> opt_task_intent_ls task_intent_ls task_intent_clause
 %type <exprList> forall_intent_clause forall_intent_ls
 
@@ -2085,20 +2100,29 @@ tuple_expr_ls:
 ;
 
 opt_actual_ls:
-             { $$ = context->makeList(); }
+             { $$ = new MaybeNamedActualList(); }
 | actual_ls  { $$ = $1; }
 ;
 
 actual_ls:
-  actual_expr                   { $$ = context->makeList($1); }
-| actual_ls TCOMMA actual_expr  { $$ = context->appendList($1, $3); }
+  actual_expr
+    { MaybeNamedActualList* lst = new MaybeNamedActualList();
+      lst->push_back($1);
+      $$ = lst;
+    }
+| actual_ls TCOMMA actual_expr
+    {
+      MaybeNamedActualList* lst = $1;
+      lst->push_back($3);
+      $$ = lst;
+    }
 ;
 
 actual_expr:
-  ident_use TASSIGN query_expr   { $$ = TODOEXPR(@$); }
-| ident_use TASSIGN opt_try_expr { $$ = TODOEXPR(@$); }
-| query_expr                     { $$ = $1; }
-| opt_try_expr                   { $$ = $1; }
+  ident_use TASSIGN query_expr   { $$ = makeMaybeNamedActual($3, $1); }
+| ident_use TASSIGN opt_try_expr { $$ = makeMaybeNamedActual($3, $1); }
+| query_expr                     { $$ = makeMaybeNamedActual($1); }
+| opt_try_expr                   { $$ = makeMaybeNamedActual($1); }
 ;
 
 ident_expr:
@@ -2399,17 +2423,25 @@ call_base_expr:
 call_expr:
   call_base_expr TLP opt_actual_ls TRP
     {
+      ASTList actuals;
+      std::vector<UniqueString> actualNames;
+      context->consumeNamedActuals($3, actuals, actualNames);
       auto fnCall = FnCall::build(BUILDER, LOC(@$),
                                   toOwned($1),
-                                  context->consumeList($3),
+                                  std::move(actuals),
+                                  std::move(actualNames),
                                   /* square */ false);
       $$ = fnCall.release();
     }
 | call_base_expr TLSBR opt_actual_ls TRSBR
     {
+      ASTList actuals;
+      std::vector<UniqueString> actualNames;
+      context->consumeNamedActuals($3, actuals, actualNames);
       auto fnCall = FnCall::build(BUILDER, LOC(@$),
                                   toOwned($1),
-                                  context->consumeList($3),
+                                  std::move(actuals),
+                                  std::move(actualNames),
                                   /* square */ true);
       $$ = fnCall.release();
     }
