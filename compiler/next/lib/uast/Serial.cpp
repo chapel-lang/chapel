@@ -55,7 +55,7 @@ owned<Serial> Serial::build(Builder* builder,
   int8_t condChildNum = -1;
 
   for (auto& stmt : stmts) {
-    lst.push_back(std::move(toOwned(stmt.release())));
+    lst.push_back(std::move(stmt));
   }
 
   Serial* ret = new Serial(std::move(lst), condChildNum, usesDo);
@@ -77,12 +77,11 @@ owned<Serial> Serial::build(Builder* builder,
 
   if (condition.get() != nullptr) {
     condChildNum = lst.size();
-    ASTNode* ptr = condition.release();
-    lst.push_back(std::move(toOwned(ptr)));
+    lst.push_back(std::move(condition));
   }
 
   for (auto& stmt : stmts) {
-    lst.push_back(std::move(toOwned(stmt.release())));
+    lst.push_back(std::move(stmt));
   }
 
   Serial* ret = new Serial(std::move(lst), condChildNum, usesDo);
