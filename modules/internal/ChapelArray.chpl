@@ -2591,6 +2591,7 @@ module ChapelArray {
 
     /* The type of indices used in the array's domain */
     proc idxType type return _value.idxType;
+    proc intIdxType type return chpl__idxTypeToIntIdxType(_value.idxType);
 
     pragma "no copy return"
     pragma "return not owned"
