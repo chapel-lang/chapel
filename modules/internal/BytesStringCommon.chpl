@@ -724,71 +724,97 @@ module BytesStringCommon {
 
         const numChar = 256;
 
-        for i in 0..#numChar {
-          chpl_bmh_badChar[i] = nLen: int(32);
-        }
+        if nLen <= 10 || xLen <= 100 {
+          // i *is not* an index into anything, it is the order of the element
+          // of view we are searching from.
+          const numPossible = xLen - nLen + 1;
+          const searchSpace = if fromLeft
+              then 0..#(numPossible)
+              else 0..#(numPossible) by -1;
+          for i in searchSpace {
+            // j *is* the index into the localNeedle's buffer
+            for j in 0..#nLen {
+              const idx = view.orderToIndex(i+j); // 0s based idx
+              if x.buff[idx] != localNeedle.buff[j] then break;
 
-        if fromLeft {
-          // Preprocessing bad character heurestic
-          for i in 0..#nLen {
-            chpl_bmh_badChar[localNeedle.byte(i)] = (nLen - 1 - i):int(32);
-          }
-          // End preprocessing
-
-          var idx = 0;
-
-          while idx <= (xLen - nLen) {
-            var j = nLen - 1;
-
-            while j >= 0 {
-              const idx1 = view.orderToIndex(idx+j);
-              if x.buff[idx1] != localNeedle.buff[j] then break;
-              j -= 1;
-            }
-
-            if j < 0 {
-              if count {
-                localRet += 1;
-              }
-              else {
-                localRet = view.orderToIndex(idx);
-                break;
+              if j == nLen-1 {
+                if count {
+                  localRet += 1;
+                } else { // find
+                  localRet = view.orderToIndex(i);
+                }
               }
             }
-            const idx1 = view.orderToIndex(idx + nLen - 1);
-            idx += max(1, chpl_bmh_badChar[x.byte(idx1)]);
+            if !count && localRet != -1 then break;
           }
-          if count then localRet += 1;
-          ret = localRet;
         }
         else {
-          // Preprocessing bad character heurestic
-          for i in 0..(nLen - 1) by -1 {
-            chpl_bmh_badChar[localNeedle.byte(i)] = i:int(32);
+          for i in 0..#numChar {
+            chpl_bmh_badChar[i] = nLen: int(32);
           }
-          // End preprocessing
 
-          var idx = xLen - 1;
+          if fromLeft {
+            // Preprocessing bad character heurestic
+            for i in 0..#nLen {
+              chpl_bmh_badChar[localNeedle.byte(i)] = (nLen - 1 - i):int(32);
+            }
+            // End preprocessing
 
-          while idx >= nLen - 1 {
-            var j = nLen - 1;
+            var idx = 0;
 
-            while j >= 0 {
-              const idx1 = view.orderToIndex(idx - j);
-              if x.buff[idx1] != localNeedle.buff[nLen - 1 - j] then break;
-              j -= 1;
+            while idx <= (xLen - nLen) {
+              var j = nLen - 1;
+
+              while j >= 0 {
+                const idx1 = view.orderToIndex(idx+j);
+                if x.buff[idx1] != localNeedle.buff[j] then break;
+                j -= 1;
+              }
+
+              if j < 0 {
+                if count {
+                  localRet += 1;
+                }
+                else {
+                  localRet = view.orderToIndex(idx);
+                  break;
+                }
+              }
+              const idx1 = view.orderToIndex(idx + nLen - 1);
+              idx += max(1, chpl_bmh_badChar[x.byte(idx1)]);
             }
 
-            if j < 0 {
-              localRet = view.orderToIndex(idx - (nLen - 1));
-              break;
-            }
-            const idx1 = view.orderToIndex(idx - (nLen - 1));
-            idx -= max(1, chpl_bmh_badChar[x.byte(idx1)]);
           }
-          ret = localRet;
+          else {
+            // Preprocessing bad character heurestic
+            for i in 0..(nLen - 1) by -1 {
+              chpl_bmh_badChar[localNeedle.byte(i)] = i:int(32);
+            }
+            // End preprocessing
+
+            var idx = xLen - 1;
+
+            while idx >= nLen - 1 {
+              var j = nLen - 1;
+
+              while j >= 0 {
+                const idx1 = view.orderToIndex(idx - j);
+                if x.buff[idx1] != localNeedle.buff[nLen - 1 - j] then break;
+                j -= 1;
+              }
+
+              if j < 0 {
+                localRet = view.orderToIndex(idx - (nLen - 1));
+                break;
+              }
+              const idx1 = view.orderToIndex(idx - (nLen - 1));
+              idx -= max(1, chpl_bmh_badChar[x.byte(idx1)]);
+            }
+          }
         }
       }
+      if count then localRet += 1;
+      ret = localRet;
     }
     return ret;
   }
