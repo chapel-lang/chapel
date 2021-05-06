@@ -137,7 +137,7 @@ if [ -z "${OFFICIAL_SYSTEM_LLVM}" ] ; then
     source /cray/css/users/chapelu/setup_system_llvm.bash
   fi
   # Make clang aware of standard libraries
-  export COMPILER_PATH=$GCC_X86_64
+  export COMPILER_PATH=/opt/gcc/default/snos
 fi
 
 

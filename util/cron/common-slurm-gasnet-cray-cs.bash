@@ -11,11 +11,7 @@ CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $CWD/common.bash
 source $CWD/common-cray-cs.bash y
 
-if [[ ! -z ${GCC_X86_64} ]] ; then
-  export COMPILER_PATH=$GCC_X86_64
-elif [[ ! -z ${GCC_PATH} ]] ; then
-  export COMPILER_PATH=$GCC_PATH/snos
-fi
+export COMPILER_PATH=/opt/gcc/default/snos
 
 export CHPL_COMM=gasnet
 
