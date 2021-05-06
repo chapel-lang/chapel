@@ -35,15 +35,20 @@ namespace uast {
  */
 class FnCall : public Call {
  private:
-  FnCall(ASTList children, std::vector<UniqueString> actualNames,
-         bool callUsedSquareBrackets);
-  bool contentsMatchInner(const ASTNode* other) const override;
-  void markUniqueStringsInner(Context* context) const override;
   // For each actual (matching Call's actuals), what are the names?
   // if the actual is unnamed, it is the empty string.
   // If no actuals are named, it is the empty vector.
   std::vector<UniqueString> actualNames_;
   bool callUsedSquareBrackets_;
+
+  FnCall(ASTList children, std::vector<UniqueString> actualNames,
+         bool callUsedSquareBrackets)
+    : Call(asttags::FnCall, std::move(children), /* hasCalledExpression */ 1),
+      actualNames_(std::move(actualNames)),
+      callUsedSquareBrackets_(callUsedSquareBrackets) {
+  }
+  bool contentsMatchInner(const ASTNode* other) const override;
+  void markUniqueStringsInner(Context* context) const override;
 
  public:
   ~FnCall() override = default;
