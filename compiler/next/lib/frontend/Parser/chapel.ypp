@@ -671,7 +671,7 @@ stmt:
     // Pull up any comments that appear before the TLOCAL keyword.
     cs.comments = context->gatherCommentsFromList($2.exprList, @1);
     // Create the Local stmt.
-    auto node = Local::build(BUILDER, LOC(@1), nullptr,
+    auto node = Local::build(BUILDER, LOC(@1),
                              std::move(context->consumeList($2.exprList)),
                              $2.usesDo);
     cs.stmt = node.release();
@@ -696,7 +696,7 @@ stmt:
     // Pull up any comments that appear before the TLOCAL keyword.
     cs.comments = context->gatherCommentsFromList($2.exprList, @1);
     // Create the Serial stmt.
-    auto node = Serial::build(BUILDER, LOC(@1), nullptr,
+    auto node = Serial::build(BUILDER, LOC(@1),
                               std::move(context->consumeList($2.exprList)),
                               $2.usesDo);
     cs.stmt = node.release();

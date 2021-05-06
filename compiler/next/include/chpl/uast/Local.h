@@ -57,9 +57,15 @@ class Local final : public Expression {
  public:
 
   /**
+    Create and return a local statement containing the passed statements.
+  */
+  static owned<Local> build(Builder* builder, Location loc,
+                            ASTList stmts,
+                            bool usesDo);
+
+  /**
     Create and return a local statement with the given condition and
-    containing the passed statements. If condition is nullptr, the
-    local statement will always execute.
+    containing the passed statements.
   */
   static owned<Local> build(Builder* builder, Location loc,
                             owned<Expression> condition,

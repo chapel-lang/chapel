@@ -57,9 +57,15 @@ class Serial final : public Expression {
  public:
 
   /**
+    Create and return a serial statement containing the passed statements.
+  */
+  static owned<Serial> build(Builder* builder, Location loc,
+                            ASTList stmts,
+                            bool usesDo);
+
+  /**
     Create and return a serial statement with the given condition and
-    containing the passed statements. If condition is nullptr, the
-    serial statement will always execute.
+    containing the passed statements.
   */
   static owned<Serial> build(Builder* builder, Location loc,
                             owned<Expression> condition,
