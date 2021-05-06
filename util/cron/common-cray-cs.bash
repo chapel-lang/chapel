@@ -27,7 +27,7 @@ else
 fi
 
 # Point clang to standard libraries
-export COMPILER_PATH=/opt/gcc/default/snos
+export COMPILER_PATH="$(dirname $(dirname $(g++ --print-file-name=libstdc++.so)))"
 
 # https://github.com/Cray/chapel-private/issues/1601
 export SLURM_CPU_FREQ_REQ=high
