@@ -35,7 +35,7 @@ class Local final : public Expression {
   Local(ASTList stmts, bool exprExists, bool usesDo);
   bool contentsMatchInner(const ASTNode* other) const override;
   void markUniqueStringsInner(Context* context) const override;
-  bool exprExists_;
+  bool condExists_;
   bool usesDo_;
 
  public:
@@ -54,31 +54,31 @@ class Local final : public Expression {
     Return a way to iterate over the statements.
   */
   ASTListIteratorPair<Expression> stmts() const {
-    auto begin = exprExists_ ? children_.begin()++ : children_.begin();
+    auto begin = condExists_ ? children_.begin()++ : children_.begin();
     auto end = children_.end();
     return ASTListIteratorPair<Expression>(begin, end);
   }
 
   /**
-    Returns the expression this local statement was rooted on, or nullptr if
-    it does not exist.
+    Returns the conditional of this local statement, or nullptr if it does
+    not exist.
   */
-  const Expression* expr() const {
-    return exprExists_ ? (const Expression*)child(0) : nullptr;
+  const Expression* conditional() const {
+    return condExists_ ? (const Expression*)child(0) : nullptr;
   }
 
   /**
     Return the number of statements in the local statement.
   */
   int numStmts() const {
-    return exprExists_ ? (numChildren()-1) : numChildren();
+    return condExists_ ? (numChildren()-1) : numChildren();
   }
 
   /**
     Return the i'th statement in the local statement.
   */
   const Expression* stmt(int i) const {
-    int idx = exprExists_ ? (i+1) : i;
+    int idx = condExists_ ? (i+1) : i;
     const ASTNode* ast = child(idx);
     assert(ast->isExpression());
     return (const Expression*)ast;
