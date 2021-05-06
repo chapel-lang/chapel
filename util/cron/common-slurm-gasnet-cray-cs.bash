@@ -11,7 +11,7 @@ CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $CWD/common.bash
 source $CWD/common-cray-cs.bash y
 
-export COMPILER_PATH="$(dirname $(dirname $(g++ --print-file-name=libstdc++.so)))"
+source $CWD/common-llvm-comp-path.bash
 
 export CHPL_COMM=gasnet
 
