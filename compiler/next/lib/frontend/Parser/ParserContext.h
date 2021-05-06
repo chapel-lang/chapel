@@ -116,9 +116,9 @@ struct ParserContext {
     return this->finishStmt(e.release());
   }
 
-  // Given '{' [ParserExprList] '}', convert to a single ParserExprList.
-  ParserExprList* blockToParserExprList(YYLTYPE lbrLoc, YYLTYPE rbrLoc,
-                                        ParserExprList* body);
+  // Create a ParserExprList containing the passed statements, and any
+  // comments before the right brace brace location.
+  ParserExprList* blockToParserExprList(YYLTYPE rbrLoc, ParserExprList* body);
 
   // TODO: move these to astContext
 

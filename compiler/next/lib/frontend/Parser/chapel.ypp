@@ -762,11 +762,11 @@ include_module_stmt:
 block_stmt_body:
   TLCBR TRCBR
   {
-    $$ = context->blockToParserExprList(@1, @2, nullptr);
+    $$ = context->blockToParserExprList(@2, nullptr);
   }
 | TLCBR stmt_ls TRCBR
   {
-    $$ = context->blockToParserExprList(@1, @3, $2);
+    $$ = context->blockToParserExprList(@3, $2);
   }
 | TLCBR error TRCBR
   {

@@ -28,25 +28,41 @@ namespace uast {
 
 
 /**
-  This class represents a serial statement.
+  This class represents a serial statement. For example:
+
+  \rst
+  .. code-block:: chapel
+
+      // Example 1:
+      const flag = true;
+      serial flag {
+        var x = 0;
+        writeln(x);
+      }
+
+      // Example 2:
+      var x = 0;
+      serial do writeln(x);
+  \endrst
+
  */
 class Serial final : public Expression {
  private:
-  Serial(ASTList stmts, bool exprExists, bool usesDo);
+  Serial(ASTList stmts, int8_t condChildNum, bool usesDo);
   bool contentsMatchInner(const ASTNode* other) const override;
   void markUniqueStringsInner(Context* context) const override;
-  bool condExists_;
+  int8_t condChildNum_;
   bool usesDo_;
 
  public:
 
   /**
-    Create and return a serial statement rooted on the given expression and
-    containing the passed statements. If expression is nullptr, the serial
-    statement was not rooted on anything.
+    Create and return a serial statement with the given condition and
+    containing the passed statements. If condition is nullptr, the
+    serial statement will always execute.
   */
   static owned<Serial> build(Builder* builder, Location loc,
-                            owned<Expression> expr,
+                            owned<Expression> condition,
                             ASTList stmts,
                             bool usesDo);
 
@@ -54,31 +70,32 @@ class Serial final : public Expression {
     Return a way to iterate over the statements.
   */
   ASTListIteratorPair<Expression> stmts() const {
-    auto begin = condExists_ ? children_.begin()++ : children_.begin();
+    auto begin = condition() ? children_.begin()++ : children_.begin();
     auto end = children_.end();
     return ASTListIteratorPair<Expression>(begin, end);
   }
 
   /**
-    Returns the conditional of this serial statement, or nullptr if it does
+    Returns the condition of this serial statement, or nullptr if it does
     not exist.
   */
-  const Expression* conditional() const {
-    return condExists_ ? (const Expression*)child(0) : nullptr;
+  const Expression* condition() const {
+    return condChildNum_ < 0 ? nullptr
+      : (const Expression*)child(condChildNum_);
   }
 
   /**
     Return the number of statements in the serial statement.
   */
   int numStmts() const {
-    return condExists_ ? (numChildren()-1) : numChildren();
+    return condition() ? (numChildren()-1) : numChildren();
   }
 
   /**
     Return the i'th statement in the serial statement.
   */
   const Expression* stmt(int i) const {
-    int idx = condExists_ ? (i+1) : i;
+    int idx = condition() ? (i+1) : i;
     const ASTNode* ast = child(idx);
     assert(ast->isExpression());
     return (const Expression*)ast;

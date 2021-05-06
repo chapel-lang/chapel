@@ -25,9 +25,9 @@ namespace chpl {
 namespace uast {
 
 
-Serial::Serial(ASTList stmts, bool condExists, bool usesDo) :
+Serial::Serial(ASTList stmts, int8_t condChildNum, bool usesDo) :
     Expression(asttags::Serial, std::move(stmts)),
-    condExists_(condExists),
+    condChildNum_(condChildNum),
     usesDo_(usesDo) {
 
 #ifndef NDEBUG
@@ -49,14 +49,15 @@ void Serial::markUniqueStringsInner(Context* context) const {
 
 owned<Serial> Serial::build(Builder* builder,
                           Location loc,
-                          owned<Expression> expr,
+                          owned<Expression> condition,
                           ASTList stmts,
                           bool usesDo) {
   ASTList lst;
-  bool condExists = expr.get() != nullptr;
+  int8_t condChildNum = -1;
 
-  if (condExists) {
-    ASTNode* ptr = expr.release();
+  if (condition.get() != nullptr) {
+    condChildNum = lst.size();
+    ASTNode* ptr = condition.release();
     lst.push_back(std::move(toOwned(ptr)));
   }
 
@@ -64,7 +65,7 @@ owned<Serial> Serial::build(Builder* builder,
     lst.push_back(std::move(toOwned(stmt.release())));
   }
 
-  Serial* ret = new Serial(std::move(lst), condExists, usesDo);
+  Serial* ret = new Serial(std::move(lst), condChildNum, usesDo);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

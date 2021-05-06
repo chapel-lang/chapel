@@ -46,10 +46,10 @@ static void test0(Parser* parser) {
   auto mod = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
   assert(mod->numStmts() == 2);
   assert(mod->stmt(0)->isComment());
-  assert(mod->stmt(0)->isSerial());
-  const Serial* serial = mod->stmt(0)->toSerial();
+  assert(mod->stmt(1)->isSerial());
+  const Serial* serial = mod->stmt(1)->toSerial();
   assert(serial != nullptr);
-  assert(serial->expr() == nullptr);
+  assert(serial->condition() == nullptr);
   assert(serial->numStmts() == 1);
   assert(serial->usesDo());
   assert(serial->stmt(0)->isVariableDecl());
@@ -65,11 +65,11 @@ static void test1(Parser* parser) {
   auto mod = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
   assert(mod->numStmts() == 2);
   assert(mod->stmt(0)->isComment());
-  assert(mod->stmt(0)->isSerial());
-  const Serial* serial = mod->stmt(0)->toSerial();
+  assert(mod->stmt(1)->isSerial());
+  const Serial* serial = mod->stmt(1)->toSerial();
   assert(serial != nullptr);
-  assert(serial->expr() != nullptr);
-  assert(serial->expr()->isIdentifier());
+  assert(serial->condition() != nullptr);
+  assert(serial->condition()->isIdentifier());
   assert(serial->numStmts() == 1);
   assert(serial->usesDo());
   assert(serial->stmt(0)->isVariableDecl());
@@ -85,10 +85,10 @@ static void test2(Parser* parser) {
   auto mod = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
   assert(mod->numStmts() == 2);
   assert(mod->stmt(0)->isComment());
-  assert(mod->stmt(0)->isSerial());
-  const Serial* serial = mod->stmt(0)->toSerial();
+  assert(mod->stmt(1)->isSerial());
+  const Serial* serial = mod->stmt(1)->toSerial();
   assert(serial != nullptr);
-  assert(serial->expr() == nullptr);
+  assert(serial->condition() == nullptr);
   assert(serial->numStmts() == 1);
   assert(!serial->usesDo());
   assert(serial->stmt(0)->isVariableDecl());
@@ -104,11 +104,11 @@ static void test3(Parser* parser) {
   auto mod = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
   assert(mod->numStmts() == 2);
   assert(mod->stmt(0)->isComment());
-  assert(mod->stmt(0)->isSerial());
-  const Serial* serial = mod->stmt(0)->toSerial();
+  assert(mod->stmt(1)->isSerial());
+  const Serial* serial = mod->stmt(1)->toSerial();
   assert(serial != nullptr);
-  assert(serial->expr() != nullptr);
-  assert(serial->expr()->isIdentifier());
+  assert(serial->condition() != nullptr);
+  assert(serial->condition()->isIdentifier());
   assert(serial->numStmts() == 1);
   assert(!serial->usesDo());
   assert(serial->stmt(0)->isVariableDecl());
@@ -124,10 +124,10 @@ static void test4(Parser* parser) {
   auto mod = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
   assert(mod->numStmts() == 2);
   assert(mod->stmt(0)->isComment());
-  assert(mod->stmt(0)->isSerial());
-  const Serial* serial = mod->stmt(0)->toSerial();
+  assert(mod->stmt(1)->isSerial());
+  const Serial* serial = mod->stmt(1)->toSerial();
   assert(serial != nullptr);
-  assert(serial->expr() == nullptr);
+  assert(serial->condition() == nullptr);
   assert(serial->numStmts() == 1);
   assert(serial->usesDo());
   assert(serial->stmt(0)->isBlock());
@@ -143,14 +143,15 @@ static void test5(Parser* parser) {
   auto mod = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
   assert(mod->numStmts() == 2);
   assert(mod->stmt(0)->isComment());
-  assert(mod->stmt(0)->isSerial());
-  const Serial* serial = mod->stmt(0)->toSerial();
+  assert(mod->stmt(1)->isSerial());
+  const Serial* serial = mod->stmt(1)->toSerial();
   assert(serial != nullptr);
-  assert(serial->expr() != nullptr);
+  assert(serial->condition() != nullptr);
   assert(serial->numStmts() == 1);
   assert(serial->usesDo());
   assert(serial->stmt(0)->isBlock());
 }
+
 //TODO
 static void test6(Parser* parser) {
   auto parseResult = parser->parseString("test0.chpl",

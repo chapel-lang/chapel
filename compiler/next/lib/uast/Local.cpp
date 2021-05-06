@@ -25,9 +25,9 @@ namespace chpl {
 namespace uast {
 
 
-Local::Local(ASTList stmts, bool condExists, bool usesDo) :
+Local::Local(ASTList stmts, int8_t condChildNum, bool usesDo) :
     Expression(asttags::Local, std::move(stmts)),
-    condExists_(condExists),
+    condChildNum_(condChildNum),
     usesDo_(usesDo) {
 
 #ifndef NDEBUG
@@ -49,14 +49,15 @@ void Local::markUniqueStringsInner(Context* context) const {
 
 owned<Local> Local::build(Builder* builder,
                           Location loc,
-                          owned<Expression> expr,
+                          owned<Expression> condition,
                           ASTList stmts,
                           bool usesDo) {
   ASTList lst;
-  bool condExists = expr.get() != nullptr;
+  int8_t condChildNum = -1;
 
-  if (condExists) {
-    ASTNode* ptr = expr.release();
+  if (condition.get() != nullptr) {
+    condChildNum = lst.size();
+    ASTNode* ptr = condition.release();
     lst.push_back(std::move(toOwned(ptr)));
   }
 
@@ -64,7 +65,7 @@ owned<Local> Local::build(Builder* builder,
     lst.push_back(std::move(toOwned(stmt.release())));
   }
 
-  Local* ret = new Local(std::move(lst), condExists, usesDo);
+  Local* ret = new Local(std::move(lst), condChildNum, usesDo);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

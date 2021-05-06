@@ -227,23 +227,9 @@ CommentsAndStmt ParserContext::finishStmt(Expression* e) {
 }
 
 ParserExprList*
-ParserContext::blockToParserExprList(YYLTYPE lbrLoc, YYLTYPE rbrLoc,
-                                     ParserExprList* body) {
-  /*
-  // create a list of the statements
-  ParserExprList* lst = $2;
-  assert(lst != nullptr);
-  // add also any comments appearing after all statements
-  // and before the closing close bracket.
-  context->appendList(lst, context->gatherComments(@3));
-  */
-
+ParserContext::blockToParserExprList(YYLTYPE rbrLoc, ParserExprList* body) {
   ParserExprList* ret = body != nullptr ? body : new ParserExprList();
-
-  // Add any comments appearing after all statements and before the closing
-  // close bracket.
   this->appendList(ret, this->gatherComments(rbrLoc));
-
   return ret;
 }
 
