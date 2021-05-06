@@ -47,7 +47,7 @@ class Serial final : public Expression {
   */
   static owned<Serial> build(Builder* builder, Location loc,
                             owned<Expression> expr,
-                            owned<Expression> stmt,
+                            ASTList stmts,
                             bool usesDo);
 
   /**

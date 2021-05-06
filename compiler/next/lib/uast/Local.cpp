@@ -50,31 +50,21 @@ void Local::markUniqueStringsInner(Context* context) const {
 owned<Local> Local::build(Builder* builder,
                           Location loc,
                           owned<Expression> expr,
-                          owned<Expression> stmt,
+                          ASTList stmts,
                           bool usesDo) {
-#ifndef NDEBUG
-  assert(stmt.get() != nullptr);
-#endif
+  ASTList lst;
+  bool exprExists = expr.get() != nullptr;
 
-  ASTList list;
-  bool exprExists = false;
-
-  if (expr.get() != nullptr) {
+  if (exprExists) {
     ASTNode* ptr = expr.release();
-    list.push_back(std::move(toOwned(ptr)));
-    exprExists = true;
+    lst.push_back(std::move(toOwned(ptr)));
   }
 
-  if (stmt->isBlock()) {
-    for (auto& child : stmt->children_) {
-      ASTNode* ptr = child.release();
-      list.push_back(std::move(toOwned(ptr)));
-    }
-  } else {
-    list.push_back(std::move(stmt));
+  for (auto& stmt : stmts) {
+    lst.push_back(std::move(toOwned(stmt.release())));
   }
 
-  Local* ret = new Local(std::move(list), exprExists, usesDo);
+  Local* ret = new Local(std::move(lst), exprExists, usesDo);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

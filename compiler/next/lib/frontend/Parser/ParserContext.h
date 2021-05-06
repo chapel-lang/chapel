@@ -116,6 +116,10 @@ struct ParserContext {
     return this->finishStmt(e.release());
   }
 
+  // Given '{' [ParserExprList] '}', convert to a single ParserExprList.
+  ParserExprList* blockToParserExprList(YYLTYPE lbrLoc, YYLTYPE rbrLoc,
+                                        ParserExprList* body);
+
   // TODO: move these to astContext
 
   // These adjust for the IDs

@@ -47,9 +47,8 @@ class Local final : public Expression {
   */
   static owned<Local> build(Builder* builder, Location loc,
                             owned<Expression> expr,
-                            owned<Expression> stmt,
-                            bool usesDo,
-                            ASTList precedingComments);
+                            ASTList stmts,
+                            bool usesDo);
 
   /**
     Return a way to iterate over the statements.

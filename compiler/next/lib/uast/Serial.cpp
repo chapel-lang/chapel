@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/Local.h"
+#include "chpl/uast/Serial.h"
 
 #include "chpl/uast/Builder.h"
 
@@ -25,8 +25,8 @@ namespace chpl {
 namespace uast {
 
 
-Local::Local(ASTList stmts, bool exprExists, bool usesDo) :
-    Expression(asttags::Local, std::move(stmts)),
+Serial::Serial(ASTList stmts, bool exprExists, bool usesDo) :
+    Expression(asttags::Serial, std::move(stmts)),
     exprExists_(exprExists),
     usesDo_(usesDo) {
 
@@ -38,43 +38,33 @@ Local::Local(ASTList stmts, bool exprExists, bool usesDo) :
 #endif
 }
 
-bool Local::contentsMatchInner(const ASTNode* other) const {
-  const Local* lhs = this;
-  const Local* rhs = (const Local*) other;
+bool Serial::contentsMatchInner(const ASTNode* other) const {
+  const Serial* lhs = this;
+  const Serial* rhs = (const Serial*) other;
   return lhs->expressionContentsMatchInner(rhs);
 }
-void Local::markUniqueStringsInner(Context* context) const {
+void Serial::markUniqueStringsInner(Context* context) const {
   expressionMarkUniqueStringsInner(context);
 }
 
-owned<Local> Local::build(Builder* builder,
+owned<Serial> Serial::build(Builder* builder,
                           Location loc,
                           owned<Expression> expr,
-                          owned<Expression> stmt,
+                          ASTList stmts,
                           bool usesDo) {
-#ifndef NDEBUG
-  assert(stmt.get() != nullptr);
-#endif
+  ASTList lst;
+  bool exprExists = expr.get() != nullptr;
 
-  ASTList list;
-  bool exprExists = false;
-
-  if (expr.get() != nullptr) {
+  if (exprExists) {
     ASTNode* ptr = expr.release();
-    list.push_back(std::move(toOwned(ptr)));
-    exprExists = true;
+    lst.push_back(std::move(toOwned(ptr)));
   }
 
-  if (stmt->isBlock()) {
-    for (auto& child : stmt->children_) {
-      ASTNode* ptr = child.release();
-      list.push_back(std::move(toOwned(ptr)));
-    }
-  } else {
-    list.push_back(std::move(stmt));
+  for (auto& stmt : stmts) {
+    lst.push_back(std::move(toOwned(stmt.release())));
   }
 
-  Local* ret = new Local(std::move(list), exprExists, usesDo);
+  Serial* ret = new Serial(std::move(lst), exprExists, usesDo);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
