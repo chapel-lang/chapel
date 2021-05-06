@@ -682,7 +682,15 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
     temp->addFlag(FLAG_MAYBE_REF);
 
   if (formalIntent != INTENT_INOUT && formalIntent != INTENT_OUT) {
-    temp->addFlag(FLAG_MAYBE_PARAM);
+    // If this is a default argument function being defined for a
+    // class, we don't want to make the method a 'param' method
+    // because they don't dynamically dispatch, and we need that to
+    // happen to have intuitive default argument behavior.
+    // as an example, see:
+    //   test/functions/default-arguments/default-argument-class-override.chpl
+
+    if (!wrapper->_this)
+      temp->addFlag(FLAG_MAYBE_PARAM);
     temp->addFlag(FLAG_EXPR_TEMP); // ? is this needed?
   }
 
