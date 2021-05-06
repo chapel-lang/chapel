@@ -331,19 +331,23 @@ static void parseCommandLineFiles() {
     if (isChplSource(inputFileName))
     {
       /*
-      Ensure that all the files parsed don't exceed the
-      (NAME_MAX - 16) i.e. 239 bytes Limits
+      Selection of 16 is did so as to provide
+      enough space for generating files like .tmp.obj
+      whose length is 8 so selection of double the required
       */
-      const size_t maxFileName = NAME_MAX - 16;
+      const size_t reductionMaxLength = 16;
+      /*
+      Ensure that all the files parsed don't exceed
+      (NAME_MAX - reductionMaxLength) e.g. 239 bytes on
+      unix and linux system.
+      */
+      const size_t maxFileName = NAME_MAX - reductionMaxLength;
       if (strlen(inputFileName) > maxFileName)
       {
-        char reducedFileName[maxFileName];
-        // sprintf fileName to allowed length buffer
-        strncpy(reducedFileName, inputFileName, maxFileName);
-        // error message to print between filename and filename limit
+        // error message to print placeholders for fileName and maxLength
         const char *errorMessage = "%s, filename is longer than maximum allowed length of %d\n";
         // throwr error will concatenated messages
-        USR_FATAL(errorMessage, reducedFileName, maxFileName);
+        USR_FATAL(errorMessage, inputFileName, maxFileName);
       }
       parseFile(inputFileName, MOD_USER, true, false);
     }

@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 
 NAME_MAX=`getconf NAME_MAX /`
-NAME_MAX=$((NAME_MAX - 15))
-LIMIT=$((NAME_MAX - 1))
+REDUCTIONMAXLENGTH=16
+LIMIT=$((NAME_MAX - REDUCTIONMAXLENGTH))
+OUTOFBOUND=$((LIMIT + 1))
 VAL="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
 repeatChar() {
@@ -12,10 +13,9 @@ repeatChar() {
     printf '%s\n' "${myString// /$input}"
 }
 
-FILENAME=$(repeatChar a $NAME_MAX)
+FILENAME=$(repeatChar a $OUTOFBOUND)
 printf 'module LongName {\n\tfunc printSomething() {\n\t\twrite(%s); \n\t}\n}' "'Won't Compile'" > $VAL/$FILENAME.chpl
 touch $VAL/$FILENAME.notest
 printf 'require %s;' "'$FILENAME.chpl'" > $VAL/longNameHelper.chpl
 touch $VAL/longNameHelper.notest
-FILENAME=$(repeatChar a $LIMIT)
-printf "error: %s, filename is longer than maximum allowed length of %d\n\n" $FILENAME $LIMIT > $VAL/longName.good
+printf "error: %s, filename is longer than maximum allowed length of %d\n\n" $FILENAME.chpl $LIMIT > $VAL/longName.good
