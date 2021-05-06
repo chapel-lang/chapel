@@ -80,7 +80,7 @@ static std::set<const char*> typeHelperNames;
 static bool useMethodVisibilityRules(CallExpr* call, const char* name) {
   return (call->numActuals() >=2 &&
           call->get(1)->typeInfo() == dtMethodToken)
-         || typeHelperNames.count(name);
+          || typeHelperNames.count(name) || isAstrOpName(name);
 }
 
 
@@ -263,15 +263,6 @@ static void buildVisibleFunctionMap() {
 
 // Build the cache of names we care about even though they aren't methods
 void initTypeHelperNames() {
-  typeHelperNames.insert(astrSassign);
-  typeHelperNames.insert(astrSeq);
-  typeHelperNames.insert(astrSne);
-  typeHelperNames.insert(astrSgt);
-  typeHelperNames.insert(astrSgte);
-  typeHelperNames.insert(astrSlt);
-  typeHelperNames.insert(astrSlte);
-  typeHelperNames.insert(astrSswap); // ?
-  typeHelperNames.insert(astrScolon);
   typeHelperNames.insert(astr_defaultOf);
   typeHelperNames.insert(astrNew);
   typeHelperNames.insert(astr_initCopy);
