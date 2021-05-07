@@ -83,20 +83,22 @@ class Function final : public Sym {
   //   where
   //   lifetime
   //   body
-  int linkageNameExprChildNum;
-  int formalsChildNum;
-  int thisFormalChildNum;
+  int linkageNameExprChildNum_;
+  int formalsChildNum_;
+  int thisFormalChildNum_;
   int numFormals_; // includes 'this' formal for methods
-  int returnTypeChildNum;
-  int whereChildNum;
-  int lifetimeChildNum;
+  int returnTypeChildNum_;
+  int whereChildNum_;
+  int lifetimeChildNum_;
   int numLifetimeParts_;
-  int bodyChildNum;
-  int numBodyStmts;
+  int bodyChildNum_;
+  int numBodyStmts_;
 
   Function(ASTList children,
            UniqueString name, Sym::Visibility vis,
            Linkage linkage,
+           bool inline_,
+           bool override_,
            Kind kind,
            ReturnIntent returnIntent,
            bool throws,
@@ -110,33 +112,46 @@ class Function final : public Sym {
            int numLifetimeParts,
            int bodyChildNum,
            int numBodyStmts)
-    : Sym(asttags::Variable, std::move(children), name, vis),
+    : Sym(asttags::Function, std::move(children), name, vis),
       linkage_(linkage),
+      inline_(inline_),
+      override_(override_),
       kind_(kind),
       returnIntent_(returnIntent),
       throws_(throws),
-      linkageNameExprChildNum(linkageNameExprChildNum),
-      formalsChildNum(formalsChildNum),
-      thisFormalChildNum(thisFormalChildNum),
+      linkageNameExprChildNum_(linkageNameExprChildNum),
+      formalsChildNum_(formalsChildNum),
+      thisFormalChildNum_(thisFormalChildNum),
       numFormals_(numFormals),
-      returnTypeChildNum(returnTypeChildNum),
-      whereChildNum(whereChildNum),
-      lifetimeChildNum(lifetimeChildNum),
+      returnTypeChildNum_(returnTypeChildNum),
+      whereChildNum_(whereChildNum),
+      lifetimeChildNum_(lifetimeChildNum),
       numLifetimeParts_(numLifetimeParts),
-      bodyChildNum(bodyChildNum),
-      numBodyStmts(numBodyStmts) {
+      bodyChildNum_(bodyChildNum),
+      numBodyStmts_(numBodyStmts) {
 
-    assert(-1 <= linkageNameExprChildNum &&
-                 linkageNameExprChildNum < children_.size());
-    assert(-1 <= formalsChildNum && formalsChildNum < children_.size());
-    assert(-1 <= thisFormalChildNum && thisFormalChildNum < children_.size());
-    assert(0 <= numFormals_ && numFormals_ < children_.size());
-    assert(-1 <= returnTypeChildNum && returnTypeChildNum < children_.size());
-    assert(-1 <= whereChildNum && whereChildNum < children_.size());
-    assert(-1 <= lifetimeChildNum && lifetimeChildNum < children_.size());
-    assert(0 <= numLifetimeParts && numLifetimeParts < children_.size());
-    assert(-1 <= bodyChildNum && bodyChildNum < children_.size());
-    assert(0 <= numBodyStmts && numBodyStmts < children_.size());
+    assert(-1 <= linkageNameExprChildNum_ &&
+                 linkageNameExprChildNum_ < (ssize_t)children_.size());
+    assert(-1 <= linkageNameExprChildNum_ &&
+                 linkageNameExprChildNum_ < (ssize_t)children_.size());
+    assert(-1 <= formalsChildNum_ &&
+                 formalsChildNum_ < (ssize_t)children_.size());
+    assert(-1 <= thisFormalChildNum_ &&
+                 thisFormalChildNum_ < (ssize_t)children_.size());
+    assert(0 <= numFormals_ &&
+                numFormals_ <= (ssize_t)children_.size());
+    assert(-1 <= returnTypeChildNum_ &&
+                 returnTypeChildNum_ < (ssize_t)children_.size());
+    assert(-1 <= whereChildNum_ &&
+                 whereChildNum_ < (ssize_t)children_.size());
+    assert(-1 <= lifetimeChildNum_ &&
+                 lifetimeChildNum_ < (ssize_t)children_.size());
+    assert(0 <= numLifetimeParts_ &&
+                numLifetimeParts_ <= (ssize_t)children_.size());
+    assert(-1 <= bodyChildNum_ &&
+                 bodyChildNum_ < (ssize_t)children_.size());
+    assert(0 <= numBodyStmts_ &&
+                numBodyStmts_ <= (ssize_t)children_.size());
     assert(isExpressionASTList(children_));
   }
   bool contentsMatchInner(const ASTNode* other) const override;
@@ -163,8 +178,8 @@ class Function final : public Sym {
     \endrst
    */
   const Expression* linkageNameExpression() const {
-    if (linkageNameExprChildNum >= 0) {
-      const ASTNode* ast = children_[linkageNameExprChildNum].get();
+    if (linkageNameExprChildNum_ >= 0) {
+      const ASTNode* ast = child(linkageNameExprChildNum_);
       assert(ast->isExpression());
       return (const Expression*) ast;
     } else {
@@ -184,8 +199,8 @@ class Function final : public Sym {
     if (numFormals_ == 0) {
       return ASTListIteratorPair<FormalDecl>(children_.end(), children_.end());
     } else {
-      auto start = children_.begin()+formalsChildNum;
-      return ASTListIteratorPair<FormalDecl>(start, start+numFormals_);
+      auto start = children_.begin() + formalsChildNum_;
+      return ASTListIteratorPair<FormalDecl>(start, start + numFormals_);
     }
   }
 
@@ -200,20 +215,31 @@ class Function final : public Sym {
    Return the i'th formal
    */
   const Formal* formal(int i) const {
-    assert(numFormals_ > 0 && formalsChildNum >= 0);
+    assert(numFormals_ > 0 && formalsChildNum_ >= 0);
     assert(0 <= i && i < numFormals_);
-    const ASTNode* ast = this->child(formalsChildNum + i);
+    const ASTNode* ast = this->child(formalsChildNum_ + i);
     assert(ast->isFormalDecl());
-    const FormalDecl* d = (FormalDecl*) ast;
+    const FormalDecl* d = (const FormalDecl*) ast;
     return d->formal();
+  }
+
+  const Formal* thisFormal() const {
+    if (thisFormalChildNum_ >= 0) {
+      const ASTNode* ast = this->child(thisFormalChildNum_);
+      assert(ast->isFormalDecl());
+      const FormalDecl* d = (const FormalDecl*) ast;
+      return d->formal();
+    } else {
+      return nullptr;
+    }
   }
 
   /**
    Returns the expression for the return type or nullptr if there was none.
    */
   const Expression* returnType() const {
-    if (returnTypeChildNum >= 0) {
-      const ASTNode* ast = this->child(returnTypeChildNum);
+    if (returnTypeChildNum_ >= 0) {
+      const ASTNode* ast = this->child(returnTypeChildNum_);
       assert(ast->isExpression());
       return (Expression*) ast; 
     } else {
@@ -225,8 +251,8 @@ class Function final : public Sym {
    Returns the expression for the where clause or nullptr if there was none.
    */
   const Expression* whereClause() const {
-    if (whereChildNum >= 0) {
-      const ASTNode* ast = this->child(whereChildNum);
+    if (whereChildNum_ >= 0) {
+      const ASTNode* ast = this->child(whereChildNum_);
       assert(ast->isExpression());
       return (const Expression*) ast;
     } else {
@@ -241,8 +267,8 @@ class Function final : public Sym {
     if (numLifetimeParts_ == 0) {
       return ASTListIteratorPair<Expression>(children_.end(), children_.end());
     } else {
-      auto start = children_.begin()+lifetimeChildNum;
-      return ASTListIteratorPair<Expression>(start, start+numLifetimeParts_);
+      auto start = children_.begin() + lifetimeChildNum_;
+      return ASTListIteratorPair<Expression>(start, start + numLifetimeParts_);
     }
   }
 
@@ -257,9 +283,9 @@ class Function final : public Sym {
    Return the i'th lifetime clause
    */
   const Expression* lifetimeClause(int i) const {
-    assert(numLifetimeParts_ > 0 && lifetimeChildNum >= 0);
+    assert(numLifetimeParts_ > 0 && lifetimeChildNum_ >= 0);
     assert(0 <= i && i < numLifetimeParts_);
-    const ASTNode* ast = this->child(lifetimeChildNum + i);
+    const ASTNode* ast = this->child(lifetimeChildNum_ + i);
     assert(ast->isExpression());
     return (const Expression*) ast;
   }
@@ -268,11 +294,11 @@ class Function final : public Sym {
     Return a way to iterate over the statements in the function body.
    */
   ASTListIteratorPair<Expression> stmts() const {
-    if (numBodyStmts == 0) {
+    if (numBodyStmts_ == 0) {
       return ASTListIteratorPair<Expression>(children_.end(), children_.end());
     } else {
-      auto start = children_.begin()+bodyChildNum;
-      return ASTListIteratorPair<Expression>(start, start+numBodyStmts);
+      auto start = children_.begin() + bodyChildNum_;
+      return ASTListIteratorPair<Expression>(start, start + numBodyStmts_);
     }
   }
 
@@ -280,16 +306,16 @@ class Function final : public Sym {
    Return the number of statements in the function body.
    */
   int numStmts() const {
-    return numBodyStmts;
+    return numBodyStmts_;
   }
 
   /**
    Return the i'th statement in the function body.
    */
   const Expression* stmt(int i) const {
-    assert(numBodyStmts > 0 && bodyChildNum >= 0);
-    assert(0 <= i && i < numBodyStmts);
-    const ASTNode* ast = this->child(bodyChildNum + i);
+    assert(numBodyStmts_ > 0 && bodyChildNum_ >= 0);
+    assert(0 <= i && i < numBodyStmts_);
+    const ASTNode* ast = this->child(bodyChildNum_ + i);
     assert(ast->isExpression());
     return (const Expression*) ast;
   }

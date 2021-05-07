@@ -60,6 +60,8 @@ class FunctionDecl final : public Decl {
                                    UniqueString name, Sym::Visibility vis,
                                    Function::Linkage linkage,
                                    owned<Expression> linkageNameExpr,
+                                   bool inline_,
+                                   bool override_,
                                    Function::Kind kind,
                                    owned<FormalDecl> receiver,
                                    Function::ReturnIntent returnIntent,
@@ -111,6 +113,9 @@ class FunctionDecl final : public Decl {
   }
   const Formal* formal(int i) const {
     return function()->formal(i);
+  }
+  const Formal* thisFormal() const {
+    return function()->thisFormal();
   }
   const Expression* returnType() const {
     return function()->returnType();

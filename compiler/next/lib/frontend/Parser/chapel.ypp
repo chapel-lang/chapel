@@ -1095,18 +1095,18 @@ internal_type_ident_def:
 ;
 
 scalar_type:
-  TBOOL    { $$ = TODOEXPR(@$); }
-| TENUM    { $$ = TODOEXPR(@$); }
-| TINT     { $$ = TODOEXPR(@$); }
-| TUINT    { $$ = TODOEXPR(@$); }
-| TREAL    { $$ = TODOEXPR(@$); }
-| TIMAG    { $$ = TODOEXPR(@$); }
-| TCOMPLEX { $$ = TODOEXPR(@$); }
-| TBYTES   { $$ = TODOEXPR(@$); }
-| TSTRING  { $$ = TODOEXPR(@$); }
-| TLOCALE  { $$ = TODOEXPR(@$); }
-| TNOTHING { $$ = TODOEXPR(@$); }
-| TVOID    { $$ = TODOEXPR(@$); }
+  TBOOL    { $$ = context->buildIdent(@$, $1); }
+| TENUM    { $$ = context->buildIdent(@$, $1); }
+| TINT     { $$ = context->buildIdent(@$, $1); }
+| TUINT    { $$ = context->buildIdent(@$, $1); }
+| TREAL    { $$ = context->buildIdent(@$, $1); }
+| TIMAG    { $$ = context->buildIdent(@$, $1); }
+| TCOMPLEX { $$ = context->buildIdent(@$, $1); }
+| TBYTES   { $$ = context->buildIdent(@$, $1); }
+| TSTRING  { $$ = context->buildIdent(@$, $1); }
+| TLOCALE  { $$ = context->buildIdent(@$, $1); }
+| TNOTHING { $$ = context->buildIdent(@$, $1); }
+| TVOID    { $$ = context->buildIdent(@$, $1); }
 ;
 
 reserved_type_ident_use:
@@ -1844,18 +1844,19 @@ req_formal_ls:
 ;
 
 formal_ls_inner:
-  formal                         { $$ = TODOLIST(@$); }
-| formal_ls_inner TCOMMA formal  { $$ = TODOLIST(@$); }
+  formal                         { $$ = context->makeList($1); }
+| formal_ls_inner TCOMMA formal  { $$ = context->appendList($1, $3); }
 ;
 
 formal_ls:
-                           { $$ = TODOLIST(@$); }
+                           { $$ = context->makeList(); }
 | formal_ls_inner          { $$ = $1; }
 ;
 
 formal:
   opt_intent_tag ident_def opt_formal_type opt_init_expr
-    { $$ = TODOEXPR(@$); }
+    { $$ = FormalDecl::build(BUILDER, LOC(@$), $2, $1,
+                             toOwned($3), toOwned($4)).release(); }
 | pragma_ls opt_intent_tag ident_def opt_formal_type opt_init_expr
     { $$ = TODOEXPR(@$); }
 | opt_intent_tag ident_def opt_formal_type var_arg_expr
@@ -1921,8 +1922,8 @@ opt_function_body_stmt:
 ;
 
 function_body_stmt:
-  block_stmt   { $$ = TODOLIST(@$); }
-| return_stmt  { $$ = TODOLIST(@$); }
+  block_stmt_body   { $$ = $1; }
+| return_stmt       { $$ = context->makeList($1); }
 ;
 
 query_expr:

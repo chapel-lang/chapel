@@ -67,7 +67,7 @@ class Formal final : public Sym {
          Formal::Intent intent,
          int8_t typeExpressionChildNum,
          int8_t initExpressionChildNum)
-    : Sym(asttags::Variable, std::move(children),
+    : Sym(asttags::Formal, std::move(children),
           name, Sym::DEFAULT_VISIBILITY),
       intent_(intent),
       typeExpressionChildNum(typeExpressionChildNum),
