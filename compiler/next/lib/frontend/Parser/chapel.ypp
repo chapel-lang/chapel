@@ -747,8 +747,8 @@ module_decl_stmt:
 
 access_control:
            { $$ = Sym::VISIBILITY_DEFAULT; context->visibility = $$; }
-| TPUBLIC  { $$ = Sym::VISIBILITY_PUBLIC;  context->visibility = $$; }
-| TPRIVATE { $$ = Sym::VISIBILITY_PRIVATE; context->visibility = $$; }
+| TPUBLIC  { $$ = Sym::PUBLIC;  context->visibility = $$; }
+| TPRIVATE { $$ = Sym::PRIVATE; context->visibility = $$; }
 ;
 
 opt_prototype:
@@ -1112,12 +1112,12 @@ class_level_stmt:
       $$ = context->finishStmt($1);
       context->visibility = Sym::VISIBILITY_DEFAULT;
     }
-| TPUBLIC {context->visibility = Sym::VISIBILITY_PUBLIC;} inner_class_level_stmt
+| TPUBLIC {context->visibility = Sym::PUBLIC;} inner_class_level_stmt
     {
       $$ = context->finishStmt($3);
       context->visibility = Sym::VISIBILITY_DEFAULT;
     }
-| TPRIVATE {context->visibility = Sym::VISIBILITY_PRIVATE;} inner_class_level_stmt
+| TPRIVATE {context->visibility = Sym::PRIVATE;} inner_class_level_stmt
     {
       $$ = context->finishStmt($3);
       context->visibility = Sym::VISIBILITY_DEFAULT;

@@ -35,8 +35,8 @@ class Sym : public ASTNode {
  public:
   enum Visibility {
     VISIBILITY_DEFAULT,
-    VISIBILITY_PUBLIC,
-    VISIBILITY_PRIVATE,
+    PUBLIC,
+    PRIVATE,
   };
 
  private:
