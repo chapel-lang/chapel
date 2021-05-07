@@ -17,17 +17,30 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/Decl.h"
+#include "chpl/uast/Call.h"
 
 namespace chpl {
 namespace uast {
 
 
-Decl::Decl(ASTTag tag, owned<Sym> sym)
-  : Expression(tag, makeASTList(std::move(sym))) {
+Call::Call(ASTTag tag)
+  : Expression(tag), hasCalledExpression_(0) {
 }
 
-Decl::~Decl() {
+Call::Call(ASTTag tag, ASTList children, int8_t hasCalledExpression)
+  : Expression(tag, std::move(children)),
+    hasCalledExpression_(hasCalledExpression) {
+
+  assert(0 <= hasCalledExpression_ && hasCalledExpression_ <= 1);
+#ifndef NDEBUG
+  // check that all children are exprs (and not, say, Syms)
+  for (const ASTNode* child : this->children()) {
+    assert(child->isExpression());
+  }
+#endif
+}
+
+Call::~Call() {
 }
 
 

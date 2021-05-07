@@ -27,8 +27,6 @@ namespace chpl {
 namespace uast {
 
 
-class Builder;
-
 /**
   This class represents a variable. For example:
 
@@ -45,7 +43,6 @@ class Builder;
   each of these is a VariableDecl that refers to a Variable Sym.
  */
 class Variable final : public Sym {
- friend class Builder;
  friend class VariableDecl;
 
  public:

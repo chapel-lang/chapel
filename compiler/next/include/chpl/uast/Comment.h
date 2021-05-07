@@ -38,8 +38,6 @@ class Builder;
   are at a statement level will be represented with this type.
  */
 class Comment final : public Expression {
- friend class Builder;
-
  private:
   std::string comment_;
 

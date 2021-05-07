@@ -20,32 +20,67 @@
 #ifndef CHPL_UAST_FNCALL_H
 #define CHPL_UAST_FNCALL_H
 
+#include "chpl/queries/Location.h"
+#include "chpl/queries/UniqueString.h"
 #include "chpl/uast/Call.h"
-
-#include <vector>
 
 namespace chpl {
 namespace uast {
 
+
 /**
-  This class represents a function call or method call, including virtual and
-  non-virtual calls (since the difference is not known before resolution).
+  This class represents a call to a function.
+
+  For example `f(1,2)`, is a call to a function `f`.
  */
-class FnCall final : public Call {
+class FnCall : public Call {
  private:
-  // for each actual (matching CallExpr's actuals), what are the names?
-  // if the actual is unnamed, it is the empty string.
-  std::vector<UniqueString> actualNames_;
-  // TODO: do we need partialTag / methodTag?
-  bool matchesInner(const ASTNode* other) const override;
+  FnCall(ASTList children, std::vector<UniqueString> actualNames,
+         bool callUsedSquareBrackets);
+  bool contentsMatchInner(const ASTNode* other) const override;
   void markUniqueStringsInner(Context* context) const override;
+  // For each actual (matching Call's actuals), what are the names?
+  // if the actual is unnamed, it is the empty string.
+  // If no actuals are named, it is the empty vector.
+  std::vector<UniqueString> actualNames_;
+  bool callUsedSquareBrackets_;
+
  public:
   ~FnCall() override = default;
+  static owned<FnCall> build(Builder* builder,
+                             Location loc,
+                             owned<Expression> calledExpression,
+                             ASTList actuals,
+                             std::vector<UniqueString> actualNames,
+                             bool callUsedSquareBrackets);
+  static owned<FnCall> build(Builder* builder,
+                             Location loc,
+                             owned<Expression> calledExpression,
+                             ASTList actuals,
+                             bool callUsedSquareBrackets);
 
-  /** Returns whether actual i is named as with 'f(a=3)' */
-  bool actualIsNamed(int i) const { return !actualNames_[i].isEmpty(); }
+  /** Returns whether actual i is named as with 'f(a=3)'
+      where the actual is 3 and the name is 'a'. */
+  bool isNamedActual(int i) const {
+    if (i < 0 || i >= actualNames_.size())
+      return false;
+
+    return !actualNames_[i].isEmpty();
+  }
+
   /** Returns the name of the actual, if used; otherwise the empty string */
-  UniqueString actualName(int i) const { return actualNames_[i]; }
+  UniqueString actualName(int i) const {
+    if (actualNames_.size() == 0)
+      return UniqueString();
+
+    return actualNames_[i];
+  }
+
+  /** Returns true if the call used square brackets e.g. f[1];
+      the alternative is parentheses e.g. f(1). */
+  bool callUsedSquareBrackets() const {
+    return callUsedSquareBrackets_;
+  }
 };
 
 

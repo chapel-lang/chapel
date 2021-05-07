@@ -114,19 +114,22 @@ ParserExprList* ParserContext::makeList(CommentsAndStmt cs) {
   return ret;
 }
 
-void ParserContext::appendList(ParserExprList* dst, ParserExprList* lst) {
+ParserExprList* ParserContext::appendList(ParserExprList* dst,
+                                          ParserExprList* lst) {
   for (Expression* elt : *lst) {
     dst->push_back(elt);
   }
   delete lst;
+  return dst;
 }
 
-void ParserContext::appendList(ParserExprList* dst, Expression* e) {
+ParserExprList* ParserContext::appendList(ParserExprList* dst, Expression* e) {
   dst->push_back(e);
+  return dst;
 }
 
-void ParserContext::appendList(ParserExprList* dst,
-                               std::vector<ParserComment>* comments) {
+ParserExprList* ParserContext::appendList(ParserExprList* dst,
+                                          std::vector<ParserComment>* comments) {
   if (comments != nullptr) {
     for (ParserComment parserComment : *comments) {
       Comment* c = parserComment.comment;
@@ -135,15 +138,18 @@ void ParserContext::appendList(ParserExprList* dst,
     }
     delete comments;
   }
+  return dst;
 }
 
-void ParserContext::appendList(ParserExprList* dst, CommentsAndStmt cs) {
+ParserExprList* ParserContext::appendList(ParserExprList* dst,
+                                          CommentsAndStmt cs) {
   // append the comments
   this->appendList(dst, cs.comments);
   // then append the statement
   if (cs.stmt != nullptr) {
     dst->push_back(cs.stmt);
   }
+  return dst;
 }
 
 ASTList ParserContext::consumeList(ParserExprList* lst) {
@@ -155,6 +161,24 @@ ASTList ParserContext::consumeList(ParserExprList* lst) {
     delete lst;
   }
   return ret;
+}
+
+void ParserContext::consumeNamedActuals(MaybeNamedActualList* lst,
+                                        ASTList& actualsOut,
+                                        std::vector<UniqueString>& namesOut) {
+  bool anyActualNames = false;
+  if (lst != nullptr) {
+    for (auto& elt : *lst) {
+      if (!elt.name.isEmpty())
+        anyActualNames = true;
+    }
+    for (auto& elt : *lst) {
+      actualsOut.push_back(toOwned(elt.expr));
+      if (anyActualNames)
+        namesOut.push_back(elt.name);
+    }
+    delete lst;
+  }
 }
 
 std::vector<ParserComment>*
