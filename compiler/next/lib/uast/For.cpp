@@ -43,6 +43,7 @@ For::For(ASTList children, int8_t indexVarChildNum, int8_t iterandChildNum,
     param_(param) {
 
 #ifndef NDEBUG
+  assert(iterandChildNum >= 0);
   // check that all children are exprs (and not, say, Symbols)
   for (const ASTNode* child : this->children()) {
     assert(child->isExpression());
