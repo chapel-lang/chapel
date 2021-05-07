@@ -213,6 +213,36 @@
     return makeCommentsAndStmt(comments, stmt.release());
   }
 
+  // for extern_export_decl_stmt_start
+  struct CommentsAndLinkage {
+    std::vector<ParserComment>* comments;
+    LinkageTag linkage;
+  };
+
+  // A struct for storing a partially constructed function prototype
+  // during parsing for linkage_spec/fn_decl_stmt/etc
+  // It is just saving some components of a function to be used
+  // when building the FunctionDecl.
+  struct FunctionParts {
+    std::vector<ParserComment>* comments;
+    ErroneousExpression* errorExpr; // only used for parser error
+    Sym::Visibility visibility;
+    Function::Linkage linkage;
+    Expression* linkageNameExpr;
+    bool isInline;
+    bool isOverride;
+    Function::Kind kind;
+    FormalDecl* receiver;
+    PODUniqueString name;
+    Function::ReturnIntent returnIntent;
+    bool throws;
+    ParserExprList* formals;
+    Expression* returnType;
+    Expression* where;
+    ParserExprList* lifetime;
+    ParserExprList* body;
+  };
+
   // This is produced by do_stmt. It records whether the do_stmt statements
   // were produced following a 'do' or not. E.g...
   // do { ... } vs { ... }
@@ -264,18 +294,18 @@
     // integer/enum values
 
     AggregateTag aggregateTag;
-    FunctionTag functionTag;
-    IntentTag intentTag;
+    Function::Kind functionKind;
+    Formal::Intent intentTag;
     LinkageTag linkageTag;
     NewTag newTag;
     PrototypeTag prototypeTag;
-    ReturnTag returnTag;
+    Function::ReturnIntent returnTag;
     ShadowTag shadowTag;
     ThrowsTag throwsTag;
     Variable::Kind variableKind;
     Sym::Visibility visibilityTag;
 
-    // simple pointer values 
+    // simple pointer values
     Block* block;
     Call* call;
     Decl* decl;
@@ -285,7 +315,9 @@
 
     // values that are temporary groupings
     BlockOrDo blockOrDo;
+    CommentsAndLinkage commentsAndLinkage;
     CommentsAndStmt commentsAndStmt;
+    FunctionParts functionParts;
     ParserExprList* exprList;
     RenameList* renameList;
     UniqueStrList* uniqueStrList;
@@ -542,7 +574,7 @@
 %type <commentsAndStmt> inner_class_level_stmt
 %type <commentsAndStmt> forwarding_decl_stmt forwarding_decl_start
 %type <commentsAndStmt> extern_export_decl_stmt
-%type <commentsAndStmt> extern_export_decl_stmt_start
+%type <commentsAndLinkage> extern_export_decl_stmt_start
 %type <commentsAndStmt> extern_block_stmt
 %type <commentsAndStmt> return_stmt
 %type <commentsAndStmt> defer_stmt
@@ -556,7 +588,9 @@
 
 %type <commentsAndStmt> type_alias_decl_stmt type_alias_decl_stmt_start
 %type <expr> type_alias_decl_stmt_inner
-%type <commentsAndStmt> fn_decl_stmt class_decl_stmt
+%type <functionParts> fn_decl_stmt
+%type <commentsAndStmt> fn_decl_stmt_complete
+%type <commentsAndStmt> class_decl_stmt
 %type <commentsAndStmt> enum_decl_stmt
 
 %type <commentsAndStmt> var_decl_stmt
@@ -602,11 +636,11 @@
 %type <exprList> opt_task_intent_ls task_intent_ls task_intent_clause
 %type <exprList> forall_intent_clause forall_intent_ls
 
-%type <commentsAndStmt> fn_decl_stmt_start fn_decl_stmt_inner
+%type <functionParts> fn_decl_stmt_start fn_decl_stmt_inner
 %type <exprList> opt_formal_ls req_formal_ls formal_ls formal_ls_inner
 %type <expr> fn_decl_receiver_expr
-%type <functionTag> proc_iter_or_op
-%type <linkageTag> linkage_spec
+%type <functionKind> proc_iter_or_op
+%type <functionParts> linkage_spec
 %type <linkageTag> extern_or_export
 %type <expr> intent_expr
 %type <shadowTag> shadow_var_prefix
@@ -1110,22 +1144,22 @@ class_level_stmt:
     {
       // visibility should be default when inner_class_level_stmt is parsed
       $$ = context->finishStmt($1);
-      context->visibility = Sym::VISIBILITY_DEFAULT;
+      context->visibility = Sym::DEFAULT_VISIBILITY;
     }
 | TPUBLIC {context->visibility = Sym::PUBLIC;} inner_class_level_stmt
     {
       $$ = context->finishStmt($3);
-      context->visibility = Sym::VISIBILITY_DEFAULT;
+      context->visibility = Sym::DEFAULT_VISIBILITY;
     }
 | TPRIVATE {context->visibility = Sym::PRIVATE;} inner_class_level_stmt
     {
       $$ = context->finishStmt($3);
-      context->visibility = Sym::VISIBILITY_DEFAULT;
+      context->visibility = Sym::DEFAULT_VISIBILITY;
     }
 ;
 
 inner_class_level_stmt:
-  fn_decl_stmt
+  fn_decl_stmt_complete
 | var_decl_stmt
 | enum_decl_stmt
 | type_alias_decl_stmt
@@ -1180,35 +1214,53 @@ extern_or_export:
 extern_export_decl_stmt_start:
   extern_or_export
     {
-      $$ = TODOSTMT(@$);
+      CommentsAndLinkage cl = {context->gatherComments(@1), $1};
+      $$ = cl;
     }
 ;
 
 extern_export_decl_stmt:
   extern_export_decl_stmt_start TRECORD ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
     {
-      CommentsAndStmt cs = $1;
-      cs.stmt = TODOEXPR(@$); // TODO
-      context->appendComments(&cs, context->gatherComments(@7));
+      CommentsAndLinkage cl = $1;
+      auto comments = context->gatherComments(@7);
+      // TODO: store comments into the generated list
+      CommentsAndStmt cs = {cl.comments, TODOEXPR(@$)};
       $$ = cs;
     }
 | extern_export_decl_stmt_start STRINGLITERAL TRECORD ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
     {
-      CommentsAndStmt cs = $1;
-      cs.stmt = TODOEXPR(@$); // TODO
-      context->appendComments(&cs, context->gatherComments(@8));
+      CommentsAndLinkage cl = $1;
+      auto comments = context->gatherComments(@8);
+      // TODO: store comments into the generated list
+      CommentsAndStmt cs = {cl.comments, TODOEXPR(@$)};
       $$ = cs;
     }
 | extern_export_decl_stmt_start opt_expr fn_decl_stmt
     {
-      CommentsAndStmt cs = $1;
-      cs.stmt = TODOEXPR(@$); // TODO
-      $$ = cs;
+      CommentsAndLinkage cl = $1;
+      Expression* optExpr = $2;
+      FunctionParts fp = $3;
+      LinkageTag tag = cl.linkage;
+      if (tag == LinkageTag_EXTERN)
+        fp.linkage = Function::EXTERN;
+      else if (tag == LinkageTag_EXPORT)
+        fp.linkage = Function::EXPORT;
+      else
+        assert(false && "extern_export returned invalid linkage");
+
+      if (fp.comments)
+        delete fp.comments;
+      fp.comments = cl.comments;
+      fp.linkageNameExpr = optExpr;
+
+      $$ = context->buildFunctionDecl(@$, fp);
     }
 | extern_export_decl_stmt_start opt_expr var_decl_type var_decl_stmt_inner_ls TSEMI
     {
-      CommentsAndStmt cs = $1;
-      cs.stmt = TODOEXPR(@$); // TODO
+      CommentsAndLinkage cl = $1;
+      context->clearComments();
+      CommentsAndStmt cs = {cl.comments, TODOEXPR(@$)};
       $$ = cs;
     }
 ;
@@ -1635,10 +1687,20 @@ lambda_decl_expr:
     }
 ;
 
+linkage_spec_empty:
+;
+
 linkage_spec:
-                { $$ = LinkageTag_DEFAULT; }
-| TINLINE       { $$ = LinkageTag_INLINE; }
-| TOVERRIDE     { $$ = LinkageTag_OVERRIDE; }
+  linkage_spec_empty { $$ = context->makeFunctionParts(@1, false, false); }
+| TINLINE            { $$ = context->makeFunctionParts(@1, true, false); }
+| TOVERRIDE          { $$ = context->makeFunctionParts(@1, false, true); }
+;
+
+fn_decl_stmt_complete:
+  fn_decl_stmt
+    {
+      $$ = context->buildFunctionDecl(@$, $1);
+    }
 ;
 
 fn_decl_stmt:
@@ -1646,42 +1708,73 @@ fn_decl_stmt:
   opt_ret_tag opt_ret_type
   opt_throws_error opt_lifetime_where opt_function_body_stmt
     {
-      CommentsAndStmt cs = $1;
-      FnDecl* decl = cs.stmt->toFnDecl();
-      ParserExprList* body = TODOLIST(@$);
-      //decl->setBody(body); TODO
-      $$ = cs;
+      FunctionParts fp = $1;
+      fp.returnIntent = $2;
+      fp.returnType = $3;
+      fp.throws = ($4 == ThrowsTag_THROWS) ? true : false;
+      WhereAndLifetime wl = $5;
+      fp.body = $6;
+
+      fp.lifetime = wl.lifetime;
+      fp.where = wl.where;
+
+      context->clearComments();
+
+      $$ = fp;
     }
 ;
 
 fn_decl_stmt_inner:
   fn_decl_stmt_start opt_this_intent_tag fn_ident opt_formal_ls
     {
-      $$ = TODOSTMT(@$);
+      FunctionParts fp = $1;
+      // TODO -- do something with $2
+      fp.name = $3;
+      fp.formals = $4;
+      $$ = fp;
     }
 | fn_decl_stmt_start opt_this_intent_tag assignop_ident opt_formal_ls
     {
-      $$ = TODOSTMT(@$);
+      FunctionParts fp = $1;
+      // TODO -- do something with $2
+      fp.name = $3;
+      fp.formals = $4;
+      $$ = fp;
     }
 | fn_decl_stmt_start opt_this_intent_tag fn_decl_receiver_expr TDOT fn_ident opt_formal_ls
     {
-      $$ = TODOSTMT(@$);
+      FunctionParts fp = $1;
+      fp.receiver = FormalDecl::build(BUILDER, LOC(@3),
+                                      STR("this"), $2, toOwned($3),
+                                      nullptr).release();
+      fp.name = $5;
+      fp.formals = $6;
+      $$ = fp;
     }
 | fn_decl_stmt_start opt_this_intent_tag fn_decl_receiver_expr TDOT assignop_ident opt_formal_ls
     {
-      $$ = TODOSTMT(@$);
+      FunctionParts fp = $1;
+      fp.receiver = FormalDecl::build(BUILDER, LOC(@3),
+                                      STR("this"), $2, toOwned($3),
+                                      nullptr).release();
+      fp.name = $5;
+      fp.formals = $6;
+      $$ = fp;
     }
 | fn_decl_stmt_start opt_this_intent_tag error opt_formal_ls
     {
-      // TODO
-      $$ = TODOSTMT(@$);
+      FunctionParts fp = $1;
+      fp.errorExpr = ErroneousExpression::build(BUILDER, LOC(@$)).release();
+      $$ = fp;
     }
 ;
 
 fn_decl_stmt_start:
   linkage_spec proc_iter_or_op
     {
-      $$ = TODOSTMT(@$);
+      FunctionParts fp = $1;
+      fp.kind = $2;
+      $$ = fp;
     }
 ;
 
@@ -1778,44 +1871,44 @@ formal:
 ;
 
 opt_intent_tag:
-                      { $$ = IntentTag_DEFAULT; }
+                      { $$ = Formal::DEFAULT_INTENT; }
 | required_intent_tag { $$ = $1; }
 ;
 
 required_intent_tag:
-  TIN         { $$ = IntentTag_IN; }
-| TINOUT      { $$ = IntentTag_INOUT; }
-| TOUT        { $$ = IntentTag_OUT; }
-| TCONST TIN  { $$ = IntentTag_CONST_IN; }
-| TCONST TREF { $$ = IntentTag_CONST_REF; }
-| TCONST      { $$ = IntentTag_CONST; }
-| TPARAM      { $$ = IntentTag_PARAM; }
-| TREF        { $$ = IntentTag_REF; }
-| TTYPE       { $$ = IntentTag_TYPE; }
+  TIN         { $$ = Formal::IN; }
+| TINOUT      { $$ = Formal::INOUT; }
+| TOUT        { $$ = Formal::OUT; }
+| TCONST TIN  { $$ = Formal::CONST_IN; }
+| TCONST TREF { $$ = Formal::CONST_REF; }
+| TCONST      { $$ = Formal::CONST; }
+| TPARAM      { $$ = Formal::PARAM; }
+| TREF        { $$ = Formal::REF; }
+| TTYPE       { $$ = Formal::TYPE; }
 ;
 
 opt_this_intent_tag:
-                { $$ = IntentTag_DEFAULT; }
-| TPARAM        { $$ = IntentTag_PARAM; }
-| TREF          { $$ = IntentTag_REF;   }
-| TCONST TREF   { $$ = IntentTag_CONST_REF;   }
-| TCONST        { $$ = IntentTag_CONST;   }
-| TTYPE         { $$ = IntentTag_TYPE;  }
+                { $$ = Formal::DEFAULT_INTENT; }
+| TPARAM        { $$ = Formal::PARAM; }
+| TREF          { $$ = Formal::REF; }
+| TCONST TREF   { $$ = Formal::CONST_REF; }
+| TCONST        { $$ = Formal::CONST; }
+| TTYPE         { $$ = Formal::TYPE; }
 ;
 
 proc_iter_or_op:
-  TPROC     { $$ = FunctionTag_PROC; }
-| TITER     { $$ = FunctionTag_ITER; }
-| TOPERATOR { $$ = FunctionTag_OPERATOR; }
+  TPROC     { $$ = Function::PROC; }
+| TITER     { $$ = Function::ITER; }
+| TOPERATOR { $$ = Function::OPERATOR; }
 ;
 
 opt_ret_tag:
-              { $$ = ReturnTag_DEFAULT; }
-| TCONST      { $$ = ReturnTag_CONST; }
-| TCONST TREF { $$ = ReturnTag_CONST_REF; }
-| TREF        { $$ = ReturnTag_REF; }
-| TPARAM      { $$ = ReturnTag_PARAM; }
-| TTYPE       { $$ = ReturnTag_TYPE; }
+              { $$ = Function::DEFAULT_RETURN_INTENT; }
+| TCONST      { $$ = Function::CONST; }
+| TCONST TREF { $$ = Function::CONST_REF; }
+| TREF        { $$ = Function::REF; }
+| TPARAM      { $$ = Function::PARAM; }
+| TTYPE       { $$ = Function::TYPE; }
 ;
 
 opt_throws_error:

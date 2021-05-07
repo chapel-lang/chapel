@@ -29,6 +29,10 @@ target_sources(libchplcomp-obj
                ErroneousExpression.cpp
                Expression.cpp
                FnCall.cpp
+               Formal.cpp
+               FormalDecl.cpp
+               Function.cpp
+               FunctionDecl.cpp
                Identifier.cpp
                Local.cpp
                Module.cpp

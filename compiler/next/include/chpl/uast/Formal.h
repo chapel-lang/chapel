@@ -45,16 +45,16 @@ class Formal final : public Sym {
 
  public:
   enum Intent {
-    DEFAULT,
+    DEFAULT_INTENT,
     CONST,
     CONST_REF,
     REF,
+    PARAM,
+    TYPE,
     IN,
     CONST_IN,
     OUT,
     INOUT,
-    PARAM,
-    TYPE,
   };
 
  private:
@@ -64,11 +64,12 @@ class Formal final : public Sym {
 
   Formal(ASTList children,
          UniqueString name,
-         Formal::IntentTag intent,
+         Formal::Intent intent,
          int8_t typeExpressionChildNum,
          int8_t initExpressionChildNum)
-    : Sym(asttags::Variable, std::move(children), name, vis),
-      tag_(tag),
+    : Sym(asttags::Variable, std::move(children),
+          name, Sym::DEFAULT_VISIBILITY),
+      intent_(intent),
       typeExpressionChildNum(typeExpressionChildNum),
       initExpressionChildNum(initExpressionChildNum) {
 
@@ -81,12 +82,20 @@ class Formal final : public Sym {
   void markUniqueStringsInner(Context* context) const override;
 
  public:
-  ~Variable() override = default;
-  const Tag tag() const { return this->tag_; }
+  ~Formal() override = default;
+
   /**
-    Returns the type expression used in the variable's declaration, or nullptr
-    if there wasn't one.
-    */
+   Returns the intent of the formal, e.g. in `proc f(const ref y: int)`,
+   the formal `y` has intent `const ref`.
+   */
+  const Intent intent() const { return this->intent_; }
+
+  /**
+   Returns the type expression used in the formal's declaration, or nullptr
+   if there wasn't one.
+
+   For example, in `proc f(y: int)`, the formal `y` has type expression `int`.
+   */
   const Expression* typeExpression() const {
     if (typeExpressionChildNum >= 0) {
       const ASTNode* ast = this->child(typeExpressionChildNum);
@@ -96,9 +105,12 @@ class Formal final : public Sym {
       return nullptr;
     }
   }
+
   /**
-    Returns the init expression used in the variable's declaration, or nullptr
+    Returns the init expression used in the formal's declaration, or nullptr
     if there wasn't one.
+
+    For example, in `proc f(z = 3)`, the formal `z` has init expression `3`.
     */
   const Expression* initExpression() const {
     if (initExpressionChildNum >= 0) {

@@ -51,7 +51,8 @@ class Variable final : public Sym {
     CONST,
     CONST_REF,
     REF,
-    PARAM
+    PARAM,
+    TYPE
   };
 
  private:

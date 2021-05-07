@@ -44,12 +44,12 @@ VariableDecl::build(Builder* builder, Location loc,
   int8_t typeExpressionChildNum = -1;
   int8_t initExpressionChildNum = -1;
   if (typeExpression.get() != nullptr) {
+    typeExpressionChildNum = lst.size();
     lst.push_back(std::move(typeExpression));
-    typeExpressionChildNum = lst.size() - 1;
   }
   if (initExpression.get() != nullptr) {
+    initExpressionChildNum = lst.size();
     lst.push_back(std::move(initExpression));
-    initExpressionChildNum = lst.size() - 1;
   }
   Variable* sym = new Variable(std::move(lst), name, vis, kind,
                                typeExpressionChildNum, initExpressionChildNum);

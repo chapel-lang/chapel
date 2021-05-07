@@ -162,7 +162,10 @@ struct ParserContext {
   OpCall* buildUnaryOp(YYLTYPE location,
                        PODUniqueString op, Expression* expr);
 
-
+  FunctionParts makeFunctionParts(YYLTYPE location,
+                                  bool isInline,
+                                  bool isOverride);
+  CommentsAndStmt buildFunctionDecl(YYLTYPE location, FunctionParts& fp);
 
   // Do we really need these?
   /*

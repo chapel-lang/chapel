@@ -38,6 +38,5 @@ void Variable::markUniqueStringsInner(Context* context) const {
 }
 
 
-
 } // namespace uast
 } // namespace chpl

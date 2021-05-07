@@ -286,3 +286,47 @@ OpCall* ParserContext::buildUnaryOp(YYLTYPE location,
   return OpCall::build(builder, convertLocation(location),
                        op, toOwned(expr)).release();
 }
+
+FunctionParts ParserContext::makeFunctionParts(YYLTYPE location,
+                                               bool isInline,
+                                               bool isOverride) {
+  FunctionParts fp = {this->gatherComments(location),
+                      nullptr,
+                      this->visibility,
+                      Function::DEFAULT_LINKAGE,
+                      nullptr,
+                      isInline,
+                      isOverride,
+                      Function::PROC,
+                      nullptr,
+                      PODUniqueString::build(),
+                      Function::DEFAULT_RETURN_INTENT,
+                      false,
+                      nullptr, nullptr, nullptr, nullptr,
+                      nullptr};
+  return fp;
+}
+
+CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
+                                                 FunctionParts& fp) {
+  CommentsAndStmt cs = {fp.comments, nullptr};
+  if (fp.errorExpr == nullptr) {
+    auto f = FunctionDecl::build(builder, this->convertLocation(location),
+                                 fp.name, this->visibility,
+                                 fp.linkage, toOwned(fp.linkageNameExpr),
+                                 fp.kind,
+                                 toOwned(fp.receiver),
+                                 fp.returnIntent,
+                                 fp.throws,
+                                 this->consumeList(fp.formals),
+                                 toOwned(fp.returnType),
+                                 toOwned(fp.where),
+                                 this->consumeList(fp.lifetime),
+                                 this->consumeList(fp.body));
+    cs.stmt = f.release();
+  } else {
+    cs.stmt = fp.errorExpr;
+  }
+  this->clearComments();
+  return cs;
+}

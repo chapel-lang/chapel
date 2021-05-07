@@ -53,25 +53,29 @@ class FunctionDecl final : public Decl {
   void markUniqueStringsInner(Context* context) const override;
 
  public:
-  enum FunctionKind {
-    PROC,
-    ITER,
-    OPERATOR,
-  };
-
   ~FunctionDecl() override = default;
+
+  // if isMethod is true, the first formal is the 'this' formal
   static owned<FunctionDecl> build(Builder* builder, Location loc,
                                    UniqueString name, Sym::Visibility vis,
+                                   Function::Linkage linkage,
+                                   owned<Expression> linkageNameExpr,
+                                   Function::Kind kind,
+                                   owned<FormalDecl> receiver,
+                                   Function::ReturnIntent returnIntent,
+                                   bool throws,
                                    ASTList formals,
+                                   owned<Expression> returnType,
                                    owned<Expression> where,
-                                   owned<Expression> lifetime,
-                                   Function::FunctionKind kind,
-                                   bool throws);
+                                   ASTList lifetime,
+                                   ASTList body);
+
   const Function* function() const {
     const Sym* sym = this->sym();
     assert(sym->isFunction());
     return (Function*)sym;
   }
+
   // TODO: convenience forwards to Function
 };
 
