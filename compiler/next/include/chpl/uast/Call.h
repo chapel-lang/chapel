@@ -35,7 +35,7 @@ namespace uast {
  */
 class Call : public Expression {
  protected:
-  int8_t hasCalledExpression_; // 0 or 1
+  bool hasCalledExpression_;
   Call(ASTTag tag);
   Call(ASTTag tag, ASTList children, int8_t hasCalledExpression);
   bool callContentsMatchInner(const Call* other) const {
