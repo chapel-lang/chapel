@@ -24,11 +24,14 @@ target_sources(libchplcomp-obj
                Block.cpp
                Builder.cpp
                Comment.cpp
+               ControlFlow.cpp
                Decl.cpp
                ErroneousExpression.cpp
                Expression.cpp
+               For.cpp
                Identifier.cpp
                Local.cpp
+               Loop.cpp
                Module.cpp
                ModuleDecl.cpp
                Serial.cpp

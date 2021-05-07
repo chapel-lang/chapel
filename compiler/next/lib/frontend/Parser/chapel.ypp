@@ -1224,25 +1224,56 @@ loop_stmt:
       $$ = TODOSTMT(@$);
     }
 | TFOR expr TIN expr do_stmt
-    {
-      $$ = TODOSTMT(@$);
-    }
+  {
+    auto comments = context->gatherCommentsFromList($5.exprList, @1);
+    auto node = For::build(BUILDER, LOC(@1), std::move(toOwned($2)),
+                           std::move(toOwned($4)),
+                           std::move(context->consumeList($5.exprList)),
+                           $5.usesDo,
+                           /* expressionLevel */ false,
+                           /* param */ false);
+    $$ = { .comments=comments, .stmt=node.release() };
+  }
 | TFOR expr TIN zippered_iterator do_stmt
-    {
-      $$ = TODOSTMT(@$);
-    }
+  {
+    auto comments = context->gatherCommentsFromList($5.exprList, @1);
+    auto node = For::build(BUILDER, LOC(@1), std::move(toOwned($2)),
+                           std::move(toOwned($4)),
+                           std::move(context->consumeList($5.exprList)),
+                           $5.usesDo,
+                           /* expressionLevel */ false,
+                           /* param */ false);
+    $$ = { .comments=comments, .stmt=node.release() };
+  }
 | TFOR expr do_stmt
-    {
-      $$ = TODOSTMT(@$);
-    }
+  {
+    auto comments = context->gatherCommentsFromList($3.exprList, @1);
+    auto node = For::build(BUILDER, LOC(@1), std::move(toOwned($2)),
+                           std::move(context->consumeList($3.exprList)),
+                           $3.usesDo);
+    $$ = { .comments=comments, .stmt=node.release() };
+  }
 | TFOR zippered_iterator do_stmt
-    {
-      $$ = TODOSTMT(@$);
-    }
+  {
+    auto comments = context->gatherCommentsFromList($3.exprList, @1);
+    auto node = Local::build(BUILDER, LOC(@1), std::move(toOwned($2)),
+                             std::move(context->consumeList($3.exprList)),
+                             $3.usesDo);
+    $$ = { .comments=comments, .stmt=node.release() };
+  }
 | TFOR TPARAM ident_def TIN expr do_stmt
-    {
-      $$ = TODOSTMT(@$);
-    }
+  {
+    auto comments = context->gatherCommentsFromList($6.exprList, @1);
+    // TODO: Build Identifier out of $3.
+    Expression* indexVar = nullptr;
+    auto node = For::build(BUILDER, LOC(@1), std::move(indexVar),
+                           std::move(toOwned($5)),
+                           std::move(context->consumeList($6.exprList)),
+                           $6.usesDo,
+                           /* expressionLevel */ false,
+                           /* param */ true);
+    $$ = { .comments=comments, .stmt=node.release() };
+  }
 | TFORALL expr TIN expr                                   do_stmt
     {
       $$ = TODOSTMT(@$);
