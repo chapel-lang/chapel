@@ -172,16 +172,20 @@ class Function final : public Sym {
     }
   }
 
+  // TODO: should formals() result in Formal or FormalDecl?
+  //       should getFormal() result in the same type?
+  //       do we need two variants of these?
+
   /**
    Return a way to iterate over the formals, including the method
    receiver, if present, as the first formal.
    */
-  ASTListIteratorPair<Expression> formals() const {
+  ASTListIteratorPair<FormalDecl> formals() const {
     if (numFormals_ == 0) {
-      return ASTListIteratorPair<Expression>(children_.end(), children_.end());
+      return ASTListIteratorPair<FormalDecl>(children_.end(), children_.end());
     } else {
       auto start = children_.begin()+formalsChildNum;
-      return ASTListIteratorPair<Expression>(start, start+numFormals_);
+      return ASTListIteratorPair<FormalDecl>(start, start+numFormals_);
     }
   }
 
@@ -207,7 +211,7 @@ class Function final : public Sym {
   /**
    Returns the expression for the return type or nullptr if there was none.
    */
-  const Expression* returnType() {
+  const Expression* returnType() const {
     if (returnTypeChildNum >= 0) {
       const ASTNode* ast = this->child(returnTypeChildNum);
       assert(ast->isExpression());
@@ -220,7 +224,7 @@ class Function final : public Sym {
   /**
    Returns the expression for the where clause or nullptr if there was none.
    */
-  const Expression* whereClause() {
+  const Expression* whereClause() const {
     if (whereChildNum >= 0) {
       const ASTNode* ast = this->child(whereChildNum);
       assert(ast->isExpression());

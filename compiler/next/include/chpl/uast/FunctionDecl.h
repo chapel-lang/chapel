@@ -70,13 +70,72 @@ class FunctionDecl final : public Decl {
                                    ASTList lifetime,
                                    ASTList body);
 
+  /**
+   Return the Function declared by this FunctionDecl
+   */
   const Function* function() const {
     const Sym* sym = this->sym();
     assert(sym->isFunction());
     return (Function*)sym;
   }
 
-  // TODO: convenience forwards to Function
+  // convenience methods
+  Function::Linkage linkage() const {
+    return function()->linkage();
+  }
+  Function::Kind kind() const {
+    return function()->kind();
+  }
+  Function::ReturnIntent returnIntent() const {
+    return function()->returnIntent();
+  }
+  bool isInline() const {
+    return function()->isInline();
+  }
+  bool isOverride() const {
+    return function()->isOverride();
+  }
+  bool throws() const {
+    return function()->throws();
+  }
+
+  const Expression* linkageNameExpression() const {
+    return function()->linkageNameExpression();
+  }
+
+  ASTListIteratorPair<FormalDecl> formals() const {
+    return function()->formals();
+  }
+  int numFormals() const {
+    return function()->numFormals();
+  }
+  const Formal* formal(int i) const {
+    return function()->formal(i);
+  }
+  const Expression* returnType() const {
+    return function()->returnType();
+  }
+  const Expression* whereClause() const {
+    return function()->whereClause();
+  }
+  ASTListIteratorPair<Expression> lifetimeClauses() const {
+    return function()->lifetimeClauses();
+  }
+  int numLifetimeClauses() const {
+    return function()->numLifetimeClauses();
+  }
+  const Expression* lifetimeClause(int i) const {
+    return function()->lifetimeClause(i);
+  }
+  ASTListIteratorPair<Expression> stmts() const {
+    return function()->stmts();
+  }
+  int numStmts() const {
+    return function()->numStmts();
+  }
+  const Expression* stmt(int i) const {
+    return function()->stmt(i);
+  }
 };
 
 
