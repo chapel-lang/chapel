@@ -23,14 +23,6 @@ namespace chpl {
 namespace uast {
 
 
-Expression::Expression(asttags::ASTTag tag)
-  : ASTNode(tag) {
-}
-
-Expression::Expression(asttags::ASTTag tag, ASTList children)
-  : ASTNode(tag, std::move(children)) {
-}
-
 Expression::~Expression() {
 }
 

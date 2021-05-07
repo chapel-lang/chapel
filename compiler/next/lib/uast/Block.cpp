@@ -25,17 +25,6 @@ namespace chpl {
 namespace uast {
 
 
-Block::Block(ASTList stmts) :
-  Expression(asttags::Block, std::move(stmts)) {
-
-#ifndef NDEBUG
-  // check that all children are exprs (and not, say, Symbols)
-  for (const ASTNode* child : this->children()) {
-    assert(child->isExpression());
-  }
-#endif
-}
-
 bool Block::contentsMatchInner(const ASTNode* other) const {
   const Block* lhs = this;
   const Block* rhs = (const Block*) other;

@@ -7,6 +7,7 @@ source $CWD/common.bash
 
 source /data/cf/chapel/setup_clang38.bash     # host-specific setup for target compiler
 export CHPL_HOST_COMPILER=clang
+export CHPL_LLVM=none
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="linux64-clang38"
 

@@ -20,7 +20,7 @@
 #ifndef CHPL_UAST_LITERAL_H
 #define CHPL_UAST_LITERAL_H
 
-#include "chpl/uast/Exp.h"
+#include "chpl/uast/Expression.h"
 
 namespace chpl {
 namespace uast {
@@ -37,7 +37,7 @@ namespace uast {
     1 2.0 3.0i "string" b"bytes"
   \endrst
  */
-class Literal final : public Exp {
+class Literal final : public Expression {
   // TODO: move over 'ifa' code
 };
 

@@ -183,6 +183,14 @@ void markASTList(Context* context, const ASTList& keep) {
   }
 }
 
+bool isExpressionASTList(const ASTList& list) {
+  for (const auto& elt: list) {
+    if (!elt->isExpression())
+      return false;
+  }
+  return true;
+}
+
 
 } // end namespace uast
 } // end namespace chpl

@@ -32,7 +32,9 @@ namespace uast {
  */
 class ErroneousExpression final : public Expression {
  private:
-  ErroneousExpression();
+  ErroneousExpression()
+    : Expression(asttags::ErroneousExpression) {
+  }
   bool contentsMatchInner(const ASTNode* other) const override;
   void markUniqueStringsInner(Context* context) const override;
 

@@ -28,8 +28,6 @@ namespace chpl {
 namespace uast {
 
 
-class Builder;
-
 /**
   This class represents a module declaration.
 
@@ -42,10 +40,10 @@ class Builder;
   contains a module declaration referring to the symbol for module M.
  */
 class ModuleDecl final : public Decl {
- friend class Builder;
-
  private:
-  ModuleDecl(owned<Module> module);
+  ModuleDecl(owned<Module> module)
+    : Decl(asttags::ModuleDecl, std::move(module)) {
+  }
   bool contentsMatchInner(const ASTNode* other) const override;
   void markUniqueStringsInner(Context* context) const override;
 

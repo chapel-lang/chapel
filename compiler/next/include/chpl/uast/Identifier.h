@@ -20,15 +20,13 @@
 #ifndef CHPL_UAST_IDENTIFIER_H
 #define CHPL_UAST_IDENTIFIER_H
 
-#include "chpl/uast/Expression.h"
 #include "chpl/queries/Location.h"
 #include "chpl/queries/UniqueString.h"
+#include "chpl/uast/Expression.h"
 
 namespace chpl {
 namespace uast {
 
-
-class Builder;
 
 /**
   This class represents a reference to a symbol by name.
@@ -42,12 +40,16 @@ class Builder;
   \endrst
  */
 class Identifier final : public Expression {
- friend class Builder;
 
  private:
   UniqueString name_;
 
-  Identifier(UniqueString name);
+  Identifier(UniqueString name)
+    : Expression(asttags::Identifier), name_(name) {
+
+    assert(!name.isEmpty());
+  }
+
   bool contentsMatchInner(const ASTNode* other) const override;
   void markUniqueStringsInner(Context* context) const override;
 

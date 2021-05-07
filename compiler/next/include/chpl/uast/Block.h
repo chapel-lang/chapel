@@ -32,7 +32,12 @@ namespace uast {
  */
 class Block final : public Expression {
  private:
-  Block(ASTList stmts);
+  Block(ASTList stmts)
+    : Expression(asttags::Block, std::move(stmts)) {
+
+    assert(isExpressionASTList(children_));
+  }
+
   bool contentsMatchInner(const ASTNode* other) const override;
   void markUniqueStringsInner(Context* context) const override;
 

@@ -27,8 +27,6 @@ namespace chpl {
 namespace uast {
 
 
-class Builder;
-
 /**
   This class represents a variable. For example:
 
@@ -45,7 +43,6 @@ class Builder;
   each of these is a VariableDecl that refers to a Variable Sym.
  */
 class Variable final : public Sym {
- friend class Builder;
  friend class VariableDecl;
 
  public:
@@ -65,8 +62,20 @@ class Variable final : public Sym {
   int8_t initExpressionChildNum;
 
   Variable(ASTList children,
-           UniqueString name, Sym::Visibility vis, Tag tag,
-           int8_t typeExpressionChildNum, int8_t initExpressionChildNum);
+           UniqueString name, Sym::Visibility vis,
+           Variable::Tag tag,
+           int8_t typeExpressionChildNum,
+           int8_t initExpressionChildNum)
+    : Sym(asttags::Variable, std::move(children), name, vis),
+      tag_(tag),
+      typeExpressionChildNum(typeExpressionChildNum),
+      initExpressionChildNum(initExpressionChildNum) {
+
+    assert(-1 <= typeExpressionChildNum && typeExpressionChildNum <= 1);
+    assert(-1 <= initExpressionChildNum && initExpressionChildNum <= 1);
+    assert(numChildren() <= 2);
+    assert(isExpressionASTList(children_));
+  }
   bool contentsMatchInner(const ASTNode* other) const override;
   void markUniqueStringsInner(Context* context) const override;
 

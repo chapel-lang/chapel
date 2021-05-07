@@ -17,13 +17,13 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/Decl.h"
+#include "chpl/uast/Call.h"
 
 namespace chpl {
 namespace uast {
 
 
-Decl::~Decl() {
+Call::~Call() {
 }
 
 

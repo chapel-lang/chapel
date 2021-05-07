@@ -23,17 +23,20 @@ target_sources(libchplcomp-obj
                ASTTag.cpp
                Block.cpp
                Builder.cpp
+               Call.cpp
                Comment.cpp
                ControlFlow.cpp
                Decl.cpp
                ErroneousExpression.cpp
                Expression.cpp
+               FnCall.cpp
                For.cpp
                Identifier.cpp
                Local.cpp
                Loop.cpp
                Module.cpp
                ModuleDecl.cpp
+               OpCall.cpp
                Serial.cpp
                Sym.cpp
                Variable.cpp
