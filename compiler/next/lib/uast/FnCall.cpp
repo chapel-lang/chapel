@@ -24,14 +24,6 @@
 namespace chpl {
 namespace uast {
 
-FnCall::FnCall(ASTList children,
-               std::vector<UniqueString> actualNames,
-               bool callUsedSquareBrackets)
-  : Call(asttags::FnCall, std::move(children), /* hasCalledExpression */ 1),
-    actualNames_(std::move(actualNames)),
-    callUsedSquareBrackets_(callUsedSquareBrackets) {
-}
-
 bool FnCall::contentsMatchInner(const ASTNode* other) const {
   const FnCall* lhs = this;
   const FnCall* rhs = (const FnCall*) other;

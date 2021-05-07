@@ -20,6 +20,8 @@
 #ifndef CHPL_UAST_OPCALL_H
 #define CHPL_UAST_OPCALL_H
 
+#include "chpl/queries/Location.h"
+#include "chpl/queries/UniqueString.h"
 #include "chpl/uast/Call.h"
 
 namespace chpl {
@@ -34,13 +36,32 @@ class OpCall final : public Call {
   // which operator
   UniqueString op_;
 
-  bool matchesInner(const ASTNode* other) const override;
+  OpCall(ASTList children, UniqueString op)
+    : Call(asttags::OpCall, std::move(children),
+           /* hasCalledExpression */ false),
+      op_(op) {
+  }
+  bool contentsMatchInner(const ASTNode* other) const override;
   void markUniqueStringsInner(Context* context) const override;
+
  public:
   ~OpCall() override = default;
+  static owned<OpCall> build(Builder* builder,
+                             Location loc,
+                             UniqueString op,
+                             owned<Expression> lhs,
+                             owned<Expression> rhs);
+  static owned<OpCall> build(Builder* builder,
+                             Location loc,
+                             UniqueString op,
+                             owned<Expression> expr);
 
   /** Returns the name of the operator called */
-  UniqueString operatorName() const { return op_; }
+  UniqueString op() const { return op_; }
+  /** Returns true if this is a binary operator */
+  bool isBinaryOp() const { return children_.size() == 2; }
+  /** Returns true if this is a unary operator */
+  bool isUnaryOp() const { return children_.size() == 1; }
 };
 
 

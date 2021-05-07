@@ -48,7 +48,9 @@ namespace uast {
  */
 class VariableDecl final : public Decl {
  private:
-  VariableDecl(owned<Variable> variable);
+  VariableDecl(owned<Variable> variable)
+    : Decl(asttags::VariableDecl, std::move(variable)) {
+  }
   bool contentsMatchInner(const ASTNode* other) const override;
   void markUniqueStringsInner(Context* context) const override;
 

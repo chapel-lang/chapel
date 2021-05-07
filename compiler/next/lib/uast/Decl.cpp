@@ -23,10 +23,6 @@ namespace chpl {
 namespace uast {
 
 
-Decl::Decl(ASTTag tag, owned<Sym> sym)
-  : Expression(tag, makeASTList(std::move(sym))) {
-}
-
 Decl::~Decl() {
 }
 

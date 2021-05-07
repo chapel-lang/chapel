@@ -264,3 +264,25 @@ Location ParserContext::convertLocation(YYLTYPE location) {
                   location.last_line,
                   location.last_column);
 }
+
+Identifier* ParserContext::buildEmptyIdent(YYLTYPE location) {
+  UniqueString empty;
+  return Identifier::build(builder, convertLocation(location), empty).release();
+}
+Identifier* ParserContext::buildIdent(YYLTYPE location, PODUniqueString name) {
+  return Identifier::build(builder, convertLocation(location), name).release();
+}
+
+OpCall* ParserContext::buildBinOp(YYLTYPE location,
+                                  Expression* lhs,
+                                  PODUniqueString op,
+                                  Expression* rhs) {
+  return OpCall::build(builder, convertLocation(location),
+                       op, toOwned(lhs), toOwned(rhs)).release();
+}
+OpCall* ParserContext::buildUnaryOp(YYLTYPE location,
+                                    PODUniqueString op,
+                                    Expression* expr) {
+  return OpCall::build(builder, convertLocation(location),
+                       op, toOwned(expr)).release();
+}

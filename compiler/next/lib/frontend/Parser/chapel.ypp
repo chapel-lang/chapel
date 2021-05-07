@@ -400,50 +400,57 @@
 //
 // keywords (alphabetical)
 //
-%token TALIGN TAS TATOMIC
-%token TBEGIN TBREAK TBOOL TBORROWED TBY TBYTES
-%token TCATCH TCLASS TCOBEGIN TCOFORALL TCOMPLEX TCONFIG TCONST TCONTINUE
-%token TDEFER TDELETE TDMAPPED TDO TDOMAIN
-%token TELSE TENUM TEXCEPT TEXPORT TEXTERN
-%token TFALSE TFOR TFORALL TFOREACH TFORWARDING
-%token TIF TIMAG TIMPORT TIN TINCLUDE
-%token TINDEX TINLINE TINOUT TINT TITER TINITEQUALS
-%token TIMPLEMENTS TINTERFACE
-%token TLABEL TLAMBDA TLET TLIFETIME TLOCAL TLOCALE
-%token TMINUSMINUS TMODULE
-%token TNEW TNIL TNOINIT TNONE TNOTHING
-%token TON TONLY TOPERATOR TOTHERWISE TOUT TOVERRIDE TOWNED
-%token TPARAM TPLUSPLUS TPRAGMA TPRIMITIVE TPRIVATE TPROC TPROTOTYPE TPUBLIC
-%token TREAL TRECORD TREDUCE TREF TREQUIRE TRETURN
-%token TSCAN TSELECT TSERIAL TSHARED TSINGLE TSPARSE TSTRING TSUBDOMAIN TSYNC
-%token TTHEN TTHIS TTHROW TTHROWS TTRUE TTRY TTRYBANG TTYPE
-%token TUINT TUNDERSCORE TUNION TUNMANAGED TUSE
-%token TVAR TVOID
-%token TWHEN TWHERE TWHILE TWITH
-%token TYIELD
-%token TZIP
+%token <uniqueStr> TALIGN TAS TATOMIC
+%token <uniqueStr> TBEGIN TBREAK TBOOL TBORROWED TBY TBYTES
+%token <uniqueStr> TCATCH TCLASS TCOBEGIN TCOFORALL TCOMPLEX
+%token <uniqueStr> TCONFIG TCONST TCONTINUE
+%token <uniqueStr> TDEFER TDELETE TDMAPPED TDO TDOMAIN
+%token <uniqueStr> TELSE TENUM TEXCEPT TEXPORT TEXTERN
+%token <uniqueStr> TFALSE TFOR TFORALL TFOREACH TFORWARDING
+%token <uniqueStr> TIF TIMAG TIMPORT TIN TINCLUDE
+%token <uniqueStr> TINDEX TINLINE TINOUT TINT TITER TINITEQUALS
+%token <uniqueStr> TIMPLEMENTS TINTERFACE
+%token <uniqueStr> TLABEL TLAMBDA TLET TLIFETIME TLOCAL TLOCALE
+%token <uniqueStr> TMINUSMINUS TMODULE
+%token <uniqueStr> TNEW TNIL TNOINIT TNONE TNOTHING
+%token <uniqueStr> TON TONLY TOPERATOR TOTHERWISE TOUT TOVERRIDE TOWNED
+%token <uniqueStr> TPARAM TPLUSPLUS TPRAGMA TPRIMITIVE TPRIVATE
+%token <uniqueStr> TPROC TPROTOTYPE TPUBLIC
+%token <uniqueStr> TREAL TRECORD TREDUCE TREF TREQUIRE TRETURN
+%token <uniqueStr> TSCAN TSELECT TSERIAL TSHARED TSINGLE TSPARSE
+%token <uniqueStr> TSTRING TSUBDOMAIN TSYNC
+%token <uniqueStr> TTHEN TTHIS TTHROW TTHROWS TTRUE TTRY TTRYBANG TTYPE
+%token <uniqueStr> TUINT TUNDERSCORE TUNION TUNMANAGED TUSE
+%token <uniqueStr> TVAR TVOID
+%token <uniqueStr> TWHEN TWHERE TWHILE TWITH
+%token <uniqueStr> TYIELD
+%token <uniqueStr> TZIP
 
 //
 // operators and punctuation (alphabetical)
 //
-%token TALIAS TAND TASSIGN TASSIGNBAND TASSIGNBOR TASSIGNBXOR TASSIGNDIVIDE
-%token TASSIGNEXP TASSIGNLAND TASSIGNLOR TASSIGNMINUS TASSIGNMOD
-%token TASSIGNMULTIPLY TASSIGNPLUS TASSIGNREDUCE TASSIGNSL TASSIGNSR
-%token TBANG TBAND TBNOT TBOR TBXOR
-%token TCOLON TCOMMA
-%token TDIVIDE TDOT TDOTDOT TDOTDOTDOT
-%token TEQUAL TEXP TGREATER
-%token TGREATEREQUAL
-%token THASH
-%token TIO
-%token TLESS
-%token TLESSEQUAL
-%token TMINUS TMOD
-%token TNOTEQUAL
-%token TOR
-%token TPLUS
-%token TQUESTION
-%token TSEMI TSHIFTLEFT TSHIFTRIGHT TSTAR TSWAP
+%token <uniqueStr> TALIAS TAND
+%token <uniqueStr> TASSIGN
+%token <uniqueStr> TASSIGNBAND TASSIGNBOR TASSIGNBXOR
+%token <uniqueStr> TASSIGNDIVIDE TASSIGNEXP
+%token <uniqueStr> TASSIGNLAND TASSIGNLOR TASSIGNMINUS TASSIGNMOD
+%token <uniqueStr> TASSIGNMULTIPLY TASSIGNPLUS TASSIGNREDUCE
+%token <uniqueStr> TASSIGNSL TASSIGNSR
+%token <uniqueStr> TBANG TBAND TBNOT TBOR TBXOR
+%token <uniqueStr> TCOLON TCOMMA
+%token <uniqueStr> TDIVIDE TDOT TDOTDOT TDOTDOTDOT
+%token <uniqueStr> TEQUAL TEXP TGREATER
+%token <uniqueStr> TGREATEREQUAL
+%token <uniqueStr> THASH
+%token <uniqueStr> TIO
+%token <uniqueStr> TLESS
+%token <uniqueStr> TLESSEQUAL
+%token <uniqueStr> TMINUS TMOD
+%token <uniqueStr> TNOTEQUAL
+%token <uniqueStr> TOR
+%token <uniqueStr> TPLUS
+%token <uniqueStr> TQUESTION
+%token <uniqueStr> TSEMI TSHIFTLEFT TSHIFTRIGHT TSTAR TSWAP
 
 //
 // braces
@@ -850,7 +857,7 @@ use_renames_ls:
 | expr TAS TUNDERSCORE
     {
       $$ = new RenameList();
-      PotentialRename cur($1, Identifier::build(BUILDER, LOC(@3), STR("_")));
+      PotentialRename cur($1, context->buildIdent(@3, $3));
       $$->push_back(cur);
     }
 | use_renames_ls TCOMMA expr
@@ -865,7 +872,7 @@ use_renames_ls:
      }
 | use_renames_ls TCOMMA expr TAS TUNDERSCORE
      {
-       PotentialRename cur($3, Identifier::build(BUILDER, LOC(@5), STR("_")));
+       PotentialRename cur($3, context->buildIdent(@5, $5));
        $1->push_back(cur);
      }
 ;
@@ -875,7 +882,7 @@ opt_only_ls:
   /* nothing */
     {
       $$ = new RenameList();
-      PotentialRename cur(Identifier::build(BUILDER, LOC(@$), STR("")));
+      PotentialRename cur(context->buildEmptyIdent(@$));
       $$->push_back(cur);
     }
 | renames_ls
@@ -885,7 +892,7 @@ except_ls:
   TSTAR
     {
       $$ = new RenameList();
-      PotentialRename cur(Identifier::build(BUILDER, LOC(@1), STR("")));
+      PotentialRename cur(context->buildEmptyIdent(@1));
       $$->push_back(cur);
      }
 | renames_ls
@@ -963,27 +970,27 @@ require_stmt:
 assignment_stmt:
   lhs_expr assignop_ident opt_try_expr TSEMI
     {
-      $$ = TODOSTMT(@$);
+      $$ = STMT(@$, context->buildBinOp(@$, $1, $2, $3));
     }
 | lhs_expr TSWAP           opt_try_expr TSEMI
     {
-      $$ = TODOSTMT(@$);
+      $$ = STMT(@$, context->buildBinOp(@$, $1, $2, $3));
     }
 | lhs_expr TASSIGNREDUCE   opt_try_expr TSEMI
     {
-      $$ = TODOSTMT(@$);
+      $$ = STMT(@$, context->buildBinOp(@$, $1, $2, $3));
     }
 | lhs_expr TASSIGNLAND     opt_try_expr TSEMI
     {
-      $$ = TODOSTMT(@$);
+      $$ = STMT(@$, context->buildBinOp(@$, $1, $2, $3));
     }
 | lhs_expr TASSIGNLOR      opt_try_expr TSEMI
     {
-      $$ = TODOSTMT(@$);
+      $$ = STMT(@$, context->buildBinOp(@$, $1, $2, $3));
     }
 | lhs_expr TASSIGN         TNOINIT TSEMI
     {
-      $$ = TODOSTMT(@$);
+      $$ = STMT(@$, context->buildBinOp(@$, $1, $2, context->buildIdent(@3, $3)));
     }
 ;
 
@@ -996,18 +1003,18 @@ opt_label_ident:
 
 ident_fn_def:
   TIDENT                   { $$ = $1; }
-| TNONE                    { $$ = STR("none"); ERROR(@$, "redefining reserved word 'none'"); }
-| TTHIS                    { $$ = STR("this"); }
-| TFALSE                   { $$ = STR("false"); ERROR(@$, "redefining reserved word 'false'"); }
-| TTRUE                    { $$ = STR("true"); ERROR(@$, "redefining reserved word 'true'"); }
+| TNONE                    { $$ = $1; ERROR(@$, "redefining reserved word 'none'"); }
+| TTHIS                    { $$ = $1; }
+| TFALSE                   { $$ = $1; ERROR(@$, "redefining reserved word 'false'"); }
+| TTRUE                    { $$ = $1; ERROR(@$, "redefining reserved word 'true'"); }
 | internal_type_ident_def  { $$ = $1; ERROR(@$, "redefining reserved word"); }
 
 ident_def:
   TIDENT                   { $$ = $1; }
-| TNONE                    { $$ = STR("none"); ERROR(@$, "redefining reserved word 'none'"); }
-| TTHIS                    { $$ = STR("this"); ERROR(@$, "redefining reserved word 'this'"); }
-| TFALSE                   { $$ = STR("false"); ERROR(@$, "redefining reserved word 'false'"); }
-| TTRUE                    { $$ = STR("true"); ERROR(@$, "redefining reserved word 'true'"); }
+| TNONE                    { $$ = $1; ERROR(@$, "redefining reserved word 'none'"); }
+| TTHIS                    { $$ = $1; ERROR(@$, "redefining reserved word 'this'"); }
+| TFALSE                   { $$ = $1; ERROR(@$, "redefining reserved word 'false'"); }
+| TTRUE                    { $$ = $1; ERROR(@$, "redefining reserved word 'true'"); }
 | internal_type_ident_def  { $$ = $1; ERROR(@$, "redefining reserved word"); }
 ;
 
@@ -1021,7 +1028,7 @@ ident_def:
  */
 ident_use:
   TIDENT                   { $$ = $1; }
-| TTHIS                    { $$ = STR("this"); }
+| TTHIS                    { $$ = $1; }
 ;
 
 internal_type_ident_def:
@@ -1032,25 +1039,25 @@ internal_type_ident_def:
     Uses of these types are parsed differently.
     See scalar_type and reserved_type_ident_use.
   */
-  TBOOL      { $$ = STR("bool"); }
-| TINT       { $$ = STR("int"); }
-| TUINT      { $$ = STR("uint"); }
-| TREAL      { $$ = STR("real"); }
-| TIMAG      { $$ = STR("imag"); }
-| TCOMPLEX   { $$ = STR("complex"); }
-| TBYTES     { $$ = STR("bytes"); }
-| TSTRING    { $$ = STR("string"); }
-| TSYNC      { $$ = STR("sync"); }
-| TSINGLE    { $$ = STR("single"); }
-| TOWNED     { $$ = STR("owned"); }
-| TSHARED    { $$ = STR("shared"); }
-| TBORROWED  { $$ = STR("borrowed"); }
-| TUNMANAGED { $$ = STR("unmanaged"); }
-| TDOMAIN    { $$ = STR("domain"); }
-| TINDEX     { $$ = STR("index"); }
-| TLOCALE    { $$ = STR("locale"); }
-| TNOTHING   { $$ = STR("nothing"); }
-| TVOID      { $$ = STR("void"); }
+  TBOOL
+| TINT
+| TUINT
+| TREAL
+| TIMAG
+| TCOMPLEX
+| TBYTES
+| TSTRING
+| TSYNC
+| TSINGLE
+| TOWNED
+| TSHARED
+| TBORROWED
+| TUNMANAGED
+| TDOMAIN
+| TINDEX
+| TLOCALE
+| TNOTHING
+| TVOID
 ;
 
 scalar_type:
@@ -2025,7 +2032,7 @@ opt_ret_type:
                                  { $$ = nullptr; }
 | TCOLON type_level_expr         { $$ = $2; }
 | TCOLON ret_array_type          { $$ = $2; }
-| TCOLON reserved_type_ident_use { $$ = Identifier::build(BUILDER, LOC(@2), $2).release(); }
+| TCOLON reserved_type_ident_use { $$ = context->buildIdent(@2, $2); }
 | error                          { $$ = ErroneousExpression::build(BUILDER, LOC(@1)).release(); }
 ;
 
@@ -2034,7 +2041,7 @@ opt_type:
                                  { $$ = nullptr; }
 | TCOLON type_level_expr         { $$ = $2; }
 | TCOLON array_type              { $$ = $2; }
-| TCOLON reserved_type_ident_use { $$ = Identifier::build(BUILDER, LOC(@2), $2).release(); }
+| TCOLON reserved_type_ident_use { $$ = context->buildIdent(@2, $2); }
 | error                          { $$ = ErroneousExpression::build(BUILDER, LOC(@1)).release(); }
 ;
 
@@ -2100,7 +2107,7 @@ opt_formal_type:
                                  { $$ = nullptr; }
 | TCOLON type_level_expr         { $$ = $2; }
 | TCOLON query_expr              { $$ = $2; }
-| TCOLON reserved_type_ident_use { $$ = Identifier::build(BUILDER, LOC(@2), $2).release(); }
+| TCOLON reserved_type_ident_use { $$ = context->buildIdent(@2, $2); }
 | TCOLON formal_array_type       { $$ = $2; }
 ;
 
@@ -2119,7 +2126,7 @@ simple_expr_ls:
 ;
 
 tuple_component:
-  TUNDERSCORE   { $$ = Identifier::build(BUILDER, LOC(@1), STR("_")).release(); }
+  TUNDERSCORE   { $$ = context->buildIdent(@1, $1); }
 | opt_try_expr  { $$ = $1; }
 | query_expr    { $$ = $1; }
 ;
@@ -2156,7 +2163,7 @@ actual_expr:
 ;
 
 ident_expr:
-  ident_use      { $$ = Identifier::build(BUILDER, LOC(@1), $1).release(); }
+  ident_use      { $$ = context->buildIdent(@1, $1); }
 | scalar_type    { $$ = $1; }
 ;
 
@@ -2269,7 +2276,7 @@ cond_expr:
 ;
 
 nil_expr:
-  TNIL      { $$ = Identifier::build(BUILDER, LOC(@1), STR("nil")).release(); }
+  TNIL      { $$ = context->buildIdent(@1, $1); }
 ;
 
 /* Expressions permitted at the statement level as <stmt_level_expr> TSEMI.
@@ -2536,39 +2543,41 @@ assoc_expr_ls:
 ;
 
 binary_op_expr:
-  expr TPLUS expr          { $$ = TODOEXPR(@$); }
-| expr TMINUS expr         { $$ = TODOEXPR(@$); }
-| expr TSTAR expr          { $$ = TODOEXPR(@$); }
-| expr TDIVIDE expr        { $$ = TODOEXPR(@$); }
-| expr TSHIFTLEFT expr     { $$ = TODOEXPR(@$); }
-| expr TSHIFTRIGHT expr    { $$ = TODOEXPR(@$); }
-| expr TMOD expr           { $$ = TODOEXPR(@$); }
-| expr TEQUAL expr         { $$ = TODOEXPR(@$); }
-| expr TNOTEQUAL expr      { $$ = TODOEXPR(@$); }
-| expr TLESSEQUAL expr     { $$ = TODOEXPR(@$); }
-| expr TGREATEREQUAL expr  { $$ = TODOEXPR(@$); }
-| expr TLESS expr          { $$ = TODOEXPR(@$); }
-| expr TGREATER expr       { $$ = TODOEXPR(@$); }
-| expr TBAND expr          { $$ = TODOEXPR(@$); }
-| expr TBOR expr           { $$ = TODOEXPR(@$); }
-| expr TBXOR expr          { $$ = TODOEXPR(@$); }
-| expr TAND expr           { $$ = TODOEXPR(@$); }
-| expr TOR  expr           { $$ = TODOEXPR(@$); }
-| expr TEXP expr           { $$ = TODOEXPR(@$); }
-| expr TBY expr            { $$ = TODOEXPR(@$); }
-| expr TALIGN expr         { $$ = TODOEXPR(@$); }
-| expr THASH expr          { $$ = TODOEXPR(@$); }
-| expr TDMAPPED expr       { $$ = TODOEXPR(@$); }
+  expr TPLUS expr          { $$ = context->buildBinOp(@$, $1, $2, $3); }
+| expr TMINUS expr         { $$ = context->buildBinOp(@$, $1, $2, $3); }
+| expr TSTAR expr          { $$ = context->buildBinOp(@$, $1, $2, $3); }
+| expr TDIVIDE expr        { $$ = context->buildBinOp(@$, $1, $2, $3); }
+| expr TSHIFTLEFT expr     { $$ = context->buildBinOp(@$, $1, $2, $3); }
+| expr TSHIFTRIGHT expr    { $$ = context->buildBinOp(@$, $1, $2, $3); }
+| expr TMOD expr           { $$ = context->buildBinOp(@$, $1, $2, $3); }
+| expr TEQUAL expr         { $$ = context->buildBinOp(@$, $1, $2, $3); }
+| expr TNOTEQUAL expr      { $$ = context->buildBinOp(@$, $1, $2, $3); }
+| expr TLESSEQUAL expr     { $$ = context->buildBinOp(@$, $1, $2, $3); }
+| expr TGREATEREQUAL expr  { $$ = context->buildBinOp(@$, $1, $2, $3); }
+| expr TLESS expr          { $$ = context->buildBinOp(@$, $1, $2, $3); }
+| expr TGREATER expr       { $$ = context->buildBinOp(@$, $1, $2, $3); }
+| expr TBAND expr          { $$ = context->buildBinOp(@$, $1, $2, $3); }
+| expr TBOR expr           { $$ = context->buildBinOp(@$, $1, $2, $3); }
+| expr TBXOR expr          { $$ = context->buildBinOp(@$, $1, $2, $3); }
+| expr TAND expr           { $$ = context->buildBinOp(@$, $1, $2, $3); }
+| expr TOR  expr           { $$ = context->buildBinOp(@$, $1, $2, $3); }
+| expr TEXP expr           { $$ = context->buildBinOp(@$, $1, $2, $3); }
+| expr TBY expr            { $$ = context->buildBinOp(@$, $1, $2, $3); }
+| expr TALIGN expr         { $$ = context->buildBinOp(@$, $1, $2, $3); }
+| expr THASH expr          { $$ = context->buildBinOp(@$, $1, $2, $3); }
+| expr TDMAPPED expr       { $$ = context->buildBinOp(@$, $1, $2, $3); }
 ;
 
 unary_op_expr:
-  TPLUS expr %prec TUPLUS         { $$ = TODOEXPR(@$); }
-| TMINUS expr %prec TUMINUS       { $$ = TODOEXPR(@$); }
-| TMINUSMINUS expr %prec TUMINUS  { $$ = TODOEXPR(@$); /* warn */ }
-| TPLUSPLUS expr %prec TUPLUS     { $$ = TODOEXPR(@$); /* warn */ }
-| TBANG expr %prec TLNOT          { $$ = TODOEXPR(@$); }
-| expr TBANG                      { $$ = TODOEXPR(@$); }
-| TBNOT expr                      { $$ = TODOEXPR(@$); }
+  TPLUS expr %prec TUPLUS        { $$ = context->buildUnaryOp(@$, $1, $2); }
+| TMINUS expr %prec TUMINUS      { $$ = context->buildUnaryOp(@$, $1, $2); }
+| TMINUSMINUS expr %prec TUMINUS { $$ = TODOEXPR(@$); /* warn */ }
+| TPLUSPLUS expr %prec TUPLUS    { $$ = TODOEXPR(@$); /* warn */ }
+| TBANG expr %prec TLNOT         { $$ = context->buildUnaryOp(@$, $1, $2); }
+| expr TBANG                     { $$ = context->buildUnaryOp(@$,
+                                                              STR("postfix!"),
+                                                              $1); }
+| TBNOT expr                     { $$ = context->buildUnaryOp(@$, $1, $2); }
 ;
 
 reduce_expr:

@@ -25,10 +25,6 @@ namespace chpl {
 namespace uast {
 
 
-Identifier::Identifier(UniqueString name)
-  : Expression(asttags::Identifier), name_(name) {
-}
-
 bool Identifier::contentsMatchInner(const ASTNode* other) const {
   const Identifier* lhs = this;
   const Identifier* rhs = (const Identifier*) other;

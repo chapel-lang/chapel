@@ -51,9 +51,12 @@ class Module final : public Sym {
  private:
   Tag tag_;
 
-  Module(ASTList children,
-         UniqueString name, Sym::Visibility vis,
-         Module::Tag tag);
+  Module(ASTList children, UniqueString name,
+         Sym::Visibility vis, Module::Tag tag)
+    : Sym(asttags::Module, std::move(children), name, vis), tag_(tag) {
+
+    assert(isExpressionASTList(children_));
+  }
   bool contentsMatchInner(const ASTNode* other) const override;
   void markUniqueStringsInner(Context* context) const override;
 

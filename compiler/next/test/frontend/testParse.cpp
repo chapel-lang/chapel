@@ -25,6 +25,7 @@
 #include "chpl/uast/FnCall.h"
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/ModuleDecl.h"
+#include "chpl/uast/OpCall.h"
 
 // always check assertions in this test
 #ifdef NDEBUG
@@ -112,7 +113,7 @@ static void test5(Parser* parser) {
   assert(module->stmt(2)->isComment());
 }
 
-static void test6(Parser* parser) { 
+static void test6(Parser* parser) {
   auto parseResult = parser->parseString("test6.chpl",
                                          "{ }");
   assert(parseResult.errors.size() == 0);
@@ -474,7 +475,45 @@ static void testCalls7(Parser* parser) {
   assert(0 == fnCall->actual(2)->toIdentifier()->name().compare("cc"));
 }
 
+static void testOp1(Parser* parser) {
+  auto parseResult = parser->parseString("testOp1.chpl",
+                                         "a=b;\n");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
+  auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(module->numStmts() == 1);
+  auto opCall = module->stmt(0)->toOpCall();
+  assert(opCall);
+  assert(0 == opCall->op().compare("="));
+  assert(opCall->isBinaryOp());
+  assert(!opCall->isUnaryOp());
+  assert(0 == opCall->actual(0)->toIdentifier()->name().compare("a"));
+  assert(0 == opCall->actual(1)->toIdentifier()->name().compare("b"));
+}
 
+static void testOp2(Parser* parser) {
+  auto parseResult = parser->parseString("testOp1.chpl",
+                                         "a=b+c;\n");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
+  auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(module->numStmts() == 1);
+  auto opCall = module->stmt(0)->toOpCall();
+  assert(opCall);
+  assert(0 == opCall->op().compare("="));
+  assert(opCall->isBinaryOp());
+  assert(!opCall->isUnaryOp());
+  assert(0 == opCall->actual(0)->toIdentifier()->name().compare("a"));
+  auto subOpCall = opCall->actual(1)->toOpCall();
+  assert(subOpCall);
+  assert(0 == subOpCall->op().compare("+"));
+  assert(subOpCall->isBinaryOp());
+  assert(!subOpCall->isUnaryOp());
+  assert(0 == subOpCall->actual(0)->toIdentifier()->name().compare("b"));
+  assert(0 == subOpCall->actual(1)->toIdentifier()->name().compare("c"));
+}
 
 
 
@@ -514,6 +553,9 @@ int main() {
   testCalls5(p);
   testCalls6(p);
   testCalls7(p);
+
+  testOp1(p);
+  testOp2(p);
 
   return 0;
 }

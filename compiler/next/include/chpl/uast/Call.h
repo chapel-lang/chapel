@@ -36,8 +36,16 @@ namespace uast {
 class Call : public Expression {
  protected:
   bool hasCalledExpression_;
-  Call(ASTTag tag);
-  Call(ASTTag tag, ASTList children, int8_t hasCalledExpression);
+  Call(ASTTag tag)
+    : Expression(tag), hasCalledExpression_(false) {
+  }
+  Call(ASTTag tag, ASTList children, bool hasCalledExpression)
+    : Expression(tag, std::move(children)),
+      hasCalledExpression_(hasCalledExpression) {
+
+    assert(isExpressionASTList(children_));
+  }
+
   bool callContentsMatchInner(const Call* other) const {
     return true;
   }

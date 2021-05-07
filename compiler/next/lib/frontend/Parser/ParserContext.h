@@ -155,6 +155,15 @@ struct ParserContext {
 
   Location convertLocation(YYLTYPE location);
 
+  Identifier* buildEmptyIdent(YYLTYPE location);
+  Identifier* buildIdent(YYLTYPE location, PODUniqueString name);
+  OpCall* buildBinOp(YYLTYPE location,
+                     Expression* lhs, PODUniqueString op, Expression* rhs);
+  OpCall* buildUnaryOp(YYLTYPE location,
+                       PODUniqueString op, Expression* expr);
+
+
+
   // Do we really need these?
   /*
   int         captureTokens; // no, new AST meant to be more faithful to src;

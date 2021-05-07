@@ -33,6 +33,7 @@ target_sources(libchplcomp-obj
                Local.cpp
                Module.cpp
                ModuleDecl.cpp
+               OpCall.cpp
                Serial.cpp
                Sym.cpp
                Variable.cpp

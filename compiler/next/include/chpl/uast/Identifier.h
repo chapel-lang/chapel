@@ -44,7 +44,12 @@ class Identifier final : public Expression {
  private:
   UniqueString name_;
 
-  Identifier(UniqueString name);
+  Identifier(UniqueString name)
+    : Expression(asttags::Identifier), name_(name) {
+
+    assert(!name.isEmpty());
+  }
+
   bool contentsMatchInner(const ASTNode* other) const override;
   void markUniqueStringsInner(Context* context) const override;
 

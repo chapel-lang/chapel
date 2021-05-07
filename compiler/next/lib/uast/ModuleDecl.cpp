@@ -25,10 +25,6 @@ namespace chpl {
 namespace uast {
 
 
-ModuleDecl::ModuleDecl(owned<Module> module)
-  : Decl(asttags::ModuleDecl, std::move(module)) {
-}
-
 bool ModuleDecl::contentsMatchInner(const ASTNode* other) const {
   const ModuleDecl* lhs = this;
   const ModuleDecl* rhs = (const ModuleDecl*) other;

@@ -71,6 +71,11 @@ bool updateASTList(ASTList& keep, ASTList& addin);
 void markASTList(Context* context, const ASTList& keep);
 
 /**
+ Returns true if this list only contains Expressions.
+ */
+bool isExpressionASTList(const ASTList& list);
+
+/**
  Defines an iterator over the AST list elements.
  The iterator hides the ownership (it always returns a pointer e.g. ASTNode*)
  and casts elements to a particular type.
