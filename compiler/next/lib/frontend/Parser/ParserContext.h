@@ -116,6 +116,10 @@ struct ParserContext {
     return this->finishStmt(e.release());
   }
 
+  // Create a ParserExprList containing the passed statements, and any
+  // comments before the right brace brace location.
+  ParserExprList* blockToParserExprList(YYLTYPE rbrLoc, ParserExprList* body);
+
   // TODO: move these to astContext
 
   // These adjust for the IDs

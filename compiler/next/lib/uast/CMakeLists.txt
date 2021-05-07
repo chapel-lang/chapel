@@ -28,8 +28,10 @@ target_sources(libchplcomp-obj
                ErroneousExpression.cpp
                Expression.cpp
                Identifier.cpp
+               Local.cpp
                Module.cpp
                ModuleDecl.cpp
+               Serial.cpp
                Sym.cpp
                Variable.cpp
                VariableDecl.cpp

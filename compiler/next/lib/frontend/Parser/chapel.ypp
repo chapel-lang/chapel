@@ -197,6 +197,8 @@
     return ret;
   }
 
+  // This is used to propagate any comments that hug the top of a statement
+  // upwards through parser rules.
   struct CommentsAndStmt {
     std::vector<ParserComment>* comments;
     Expression* stmt;
@@ -214,6 +216,14 @@
                                       owned<Expression> stmt) {
     return makeCommentsAndStmt(comments, stmt.release());
   }
+
+  // This is produced by do_stmt. It records whether the do_stmt statements
+  // were produced following a 'do' or not. E.g...
+  // do { ... } vs { ... }
+  struct BlockOrDo {
+    ParserExprList* exprList;
+    bool usesDo;
+  };
 
   struct SizedStr {
     const char* allocatedData; // *not* a uniqued string!
@@ -262,6 +272,7 @@
     Module* module;
 
     // values that are temporary groupings
+    BlockOrDo blockOrDo;
     CommentsAndStmt commentsAndStmt;
     ParserExprList* exprList;
     RenameList* renameList;
@@ -485,6 +496,7 @@
 %type <commentsAndStmt> module_decl_start
 %type <commentsAndStmt> module_decl_stmt
 %type <commentsAndStmt> include_module_stmt
+%type <exprList> block_stmt_body
 %type <commentsAndStmt> block_stmt
 
 %type <expr> import_expr
@@ -500,7 +512,7 @@
 %type <exprList> class_level_stmt_ls
 
 %type <commentsAndStmt> stmt
-%type <expr> do_stmt
+%type <blockOrDo> do_stmt
 %type <commentsAndStmt> if_stmt loop_stmt
 %type <commentsAndStmt> select_stmt
 %type <commentsAndStmt> assignment_stmt
@@ -641,11 +653,47 @@ stmt:
 | TCONTINUE opt_label_ident TSEMI        { $$ = context->finishStmt(TODOSTMT(@$)); }
 | TDELETE simple_expr_ls TSEMI           { $$ = context->finishStmt(TODOSTMT(@$)); }
 | TLABEL ident_def stmt     { $$ = context->finishStmt(TODOSTMT(@$)); }
-| TLOCAL expr do_stmt       { $$ = context->finishStmt(TODOSTMT(@$)); }
-| TLOCAL do_stmt            { $$ = context->finishStmt(TODOSTMT(@$)); }
+| TLOCAL expr do_stmt
+  {
+    // Pull up any comments that appear before the TLOCAL keyword.
+    auto comments = context->gatherCommentsFromList($3.exprList, @1);
+    // Create the Local stmt.
+    auto node = Local::build(BUILDER, LOC(@1), std::move(toOwned($2)),
+                             std::move(context->consumeList($3.exprList)),
+                             $3.usesDo);
+    $$ = { .comments=comments, .stmt=node.release() };
+  }
+| TLOCAL do_stmt 
+  {
+    // Pull up any comments that appear before the TLOCAL keyword.
+    auto comments = context->gatherCommentsFromList($2.exprList, @1);
+    // Create the Local stmt.
+    auto node = Local::build(BUILDER, LOC(@1),
+                             std::move(context->consumeList($2.exprList)),
+                             $2.usesDo);
+    $$ = { .comments=comments, .stmt=node.release() };
+  }
 | TON expr do_stmt          { $$ = context->finishStmt(TODOSTMT(@$)); }
-| TSERIAL expr do_stmt      { $$ = context->finishStmt(TODOSTMT(@$)); }
-| TSERIAL do_stmt           { $$ = context->finishStmt(TODOSTMT(@$)); }
+| TSERIAL expr do_stmt
+  {
+    // Pull up any comments that appear before the TSERIAL keyword.
+    auto comments = context->gatherCommentsFromList($3.exprList, @1);
+    // Create the Serial stmt.
+    auto node = Serial::build(BUILDER, LOC(@1), std::move(toOwned($2)),
+                              std::move(context->consumeList($3.exprList)),
+                              $3.usesDo);
+    $$ = { .comments=comments, .stmt=node.release() };
+  }
+| TSERIAL do_stmt
+  {
+    // Pull up any comments that appear before the TSERIAL keyword.
+    auto comments = context->gatherCommentsFromList($2.exprList, @1);
+    // Create the Serial stmt.
+    auto node = Serial::build(BUILDER, LOC(@1),
+                              std::move(context->consumeList($2.exprList)),
+                              $2.usesDo);
+    $$ = { .comments=comments, .stmt=node.release() };
+  }
 | TSYNC stmt                { $$ = context->finishStmt(TODOSTMT(@$)); }
 | TYIELD expr TSEMI         { $$ = context->finishStmt(TODOSTMT(@$)); }
 | error TSEMI
@@ -703,54 +751,36 @@ include_module_stmt:
    without blank productions to allow the full version of dot_expr to appear at
    the statement level.
 */
-block_stmt:
+block_stmt_body:
   TLCBR TRCBR
   {
-    // create a list of the statements
-    ParserExprList* lst = new ParserExprList();
-    // add also any comments appearing after all statements
-    // and before the closing close bracket.
-    context->appendList(lst, context->gatherComments(@2));
-
-    CommentsAndStmt cs = {0};
-    cs.comments = context->gatherCommentsFromList(lst, @1);
-
-    auto blockstmt = Block::build(BUILDER, LOC(@$), context->consumeList(lst));
-    cs.stmt = blockstmt.release();
-    $$ = cs;
+    $$ = context->blockToParserExprList(@2, nullptr);
   }
 | TLCBR stmt_ls TRCBR
   {
-    // create a list of the statements
-    ParserExprList* lst = $2;
-    assert(lst != nullptr);
-    // add also any comments appearing after all statements
-    // and before the closing close bracket.
-    context->appendList(lst, context->gatherComments(@3));
+    $$ = context->blockToParserExprList(@3, $2);
+  }
+| TLCBR error TRCBR
+  {
+    // create a list of stmts that just has an ErroneousExp
+    ParserExprList* lst = context->makeList(ErroneousExpression::build(BUILDER, LOC(@2)));
+    $$ = lst;
+  }
+;
 
+block_stmt:
+  block_stmt_body
+  {
     // comments from before the opening bracket will have been
     // gathered into stmt_ls when that was parsed, so pull out any
     // comments that occur before the opening bracket.
     // (This would be simpler to handle with midrule actions but those
     //  lead to parser conflicts).
     CommentsAndStmt cs = {0};
-    cs.comments = context->gatherCommentsFromList(lst, @1);
+    cs.comments = context->gatherCommentsFromList($1, @1);
 
-    // create the BlockStmt
-    auto blockstmt = Block::build(BUILDER, LOC(@$), context->consumeList(lst));
-    cs.stmt = blockstmt.release();
-    $$ = cs;
-  }
-| TLCBR error TRCBR
-  {
-    // create a list of stmts that just has an ErroneousExp
-    ParserExprList* lst = context->makeList(ErroneousExpression::build(BUILDER, LOC(@2)));
-
-    CommentsAndStmt cs = {0};
-    cs.comments = context->gatherCommentsFromList(lst, @1);
-
-    // create the BlockStmt
-    auto blockstmt = Block::build(BUILDER, LOC(@$), context->consumeList(lst));
+    // Create the BlockStmt
+    auto blockstmt = Block::build(BUILDER, LOC(@$), context->consumeList($1));
     cs.stmt = blockstmt.release();
     $$ = cs;
   }
@@ -1034,8 +1064,8 @@ reserved_type_ident_use:
 ;
 
 do_stmt:
-  TDO stmt    { $$ = $2.stmt; delete $2.comments; }
-| block_stmt  { $$ = $1.stmt; delete $1.comments; }
+  TDO stmt            { $$ = { context->makeList($2), true }; }
+| block_stmt_body     { $$ = { $1, false }; }
 ;
 
 return_stmt:

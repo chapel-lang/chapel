@@ -226,6 +226,13 @@ CommentsAndStmt ParserContext::finishStmt(Expression* e) {
   return makeCommentsAndStmt(NULL, e);
 }
 
+ParserExprList*
+ParserContext::blockToParserExprList(YYLTYPE rbrLoc, ParserExprList* body) {
+  ParserExprList* ret = body != nullptr ? body : new ParserExprList();
+  this->appendList(ret, this->gatherComments(rbrLoc));
+  return ret;
+}
+
 Location ParserContext::convertLocation(YYLTYPE location) {
   return Location(this->filename,
                   location.first_line,
