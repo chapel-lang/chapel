@@ -685,7 +685,7 @@ stmt:
                              $3.usesDo);
     $$ = { .comments=comments, .stmt=node.release() };
   }
-| TLOCAL do_stmt 
+| TLOCAL do_stmt
   {
     // Pull up any comments that appear before the TLOCAL keyword.
     auto comments = context->gatherCommentsFromList($2.exprList, @1);
@@ -1079,10 +1079,10 @@ reserved_type_ident_use:
   /* These reserved words can also be used as types but in fewer
      places in the parser. Additionally their type versions have
      different names. */
-  TSYNC      { $$ = STR("sync"); }
-| TSINGLE    { $$ = STR("single"); }
-| TDOMAIN    { $$ = STR("domain"); }
-| TINDEX     { $$ = STR("index"); }
+  TSYNC
+| TSINGLE
+| TDOMAIN
+| TINDEX
 ;
 
 do_stmt:
@@ -1387,7 +1387,7 @@ if_stmt:
 
 | TIF expr assignop_ident expr TTHEN stmt %prec TNOELSE
     { $$ = TODOSTMT(@$); }
-| TIF expr assignop_ident expr block_stmt %prec TNOELSE 
+| TIF expr assignop_ident expr block_stmt %prec TNOELSE
     { $$ = TODOSTMT(@$); }
 | TIF expr assignop_ident expr TTHEN stmt TELSE stmt
     { $$ = TODOSTMT(@$); }
@@ -1419,18 +1419,18 @@ ifc_formal:
 
 // which types are allowed in 'T implements IFC'
 implements_type_ident:
-  TIDENT     { $$ = $1; }
-| TBOOL      { $$ = STR("bool"); }
-| TINT       { $$ = STR("int"); }
-| TUINT      { $$ = STR("uint"); }
-| TREAL      { $$ = STR("real"); }
-| TIMAG      { $$ = STR("imag"); }
-| TCOMPLEX   { $$ = STR("complex"); }
-| TBYTES     { $$ = STR("bytes"); }
-| TSTRING    { $$ = STR("string"); }
-| TLOCALE    { $$ = STR("locale"); }
-| TNOTHING   { $$ = STR("nothing"); }
-| TVOID      { $$ = STR("void"); }
+  TIDENT
+| TBOOL
+| TINT
+| TUINT
+| TREAL
+| TIMAG
+| TCOMPLEX
+| TBYTES
+| TSTRING
+| TLOCALE
+| TNOTHING
+| TVOID
 | implements_type_error_ident
   {
     std::string s = "type ";
@@ -1443,20 +1443,20 @@ implements_type_ident:
 
 // these are not allowed as types in 'T implements IFC'
 implements_type_error_ident:
-  TNONE      { $$ = STR("none"); }
-| TTHIS      { $$ = STR("this"); }
-| TFALSE     { $$ = STR("false"); }
-| TTRUE      { $$ = STR("true"); }
+  TNONE
+| TTHIS
+| TFALSE
+| TTRUE
 /* it would be nice to include these, alas they cause shift/reduce conflicts:
-| TSYNC      { $$ = STR("sync"); }
-| TSINGLE    { $$ = STR("single"); }
-| TOWNED     { $$ = STR("owned"); }
-| TSHARED    { $$ = STR("shared"); }
-| TBORROWED  { $$ = STR("borrowed"); }
-| TUNMANAGED { $$ = STR("unmanaged"); }
+| TSYNC
+| TSINGLE
+| TOWNED
+| TSHARED
+| TBORROWED
+| TUNMANAGED
 */
-| TDOMAIN    { $$ = STR("domain"); }
-| TINDEX     { $$ = STR("index"); }
+| TDOMAIN
+| TINDEX
 ;
 
 implements_stmt:
@@ -1588,7 +1588,7 @@ enum_decl_stmt:
     {
       /* TODO: attach enum values to the decl */
       CommentsAndStmt cs = $1;
-      $$ = cs; 
+      $$ = cs;
     }
 | enum_header TLCBR error TRCBR
     {
@@ -1600,7 +1600,7 @@ enum_decl_stmt:
 ;
 
 enum_header:
-  TENUM ident_def 
+  TENUM ident_def
     {
       $$ = TODOSTMT(@$);
     }
@@ -1691,52 +1691,54 @@ fn_decl_receiver_expr:
 ;
 
 fn_ident:
-  ident_fn_def   { $$ = $1; }
-| TBAND          { $$ = STR("&"); }
-| TBOR           { $$ = STR("|"); }
-| TBXOR          { $$ = STR("^"); }
-| TBNOT          { $$ = STR("~"); }
-| TEQUAL         { $$ = STR("=="); }
-| TNOTEQUAL      { $$ = STR("!="); }
-| TLESSEQUAL     { $$ = STR("<="); }
-| TGREATEREQUAL  { $$ = STR(">="); }
-| TLESS          { $$ = STR("<"); }
-| TGREATER       { $$ = STR(">"); }
-| TPLUS          { $$ = STR("+"); }
-| TMINUS         { $$ = STR("-"); }
-| TSTAR          { $$ = STR("*"); }
-| TDIVIDE        { $$ = STR("/"); }
-| TSHIFTLEFT     { $$ = STR("<<"); }
-| TSHIFTRIGHT    { $$ = STR(">>"); }
-| TMOD           { $$ = STR("%"); }
-| TEXP           { $$ = STR("**"); }
-| TBANG          { $$ = STR("!"); }
-| TBY            { $$ = STR("by"); }
-| THASH          { $$ = STR("#"); }
-| TALIGN         { $$ = STR("align"); }
-| TSWAP          { $$ = STR("<=>"); }
-| TIO            { $$ = STR("<~>"); }
-| TINITEQUALS    { $$ = STR("init="); }
-| TCOLON         { $$ = STR(":"); }
+  ident_fn_def
+| TBAND
+| TBOR
+| TBXOR
+| TBNOT
+| TEQUAL
+| TNOTEQUAL
+| TLESSEQUAL
+| TGREATEREQUAL
+| TLESS
+| TGREATER
+| TPLUS
+| TMINUS
+| TSTAR
+| TDIVIDE
+| TSHIFTLEFT
+| TSHIFTRIGHT
+| TMOD
+| TEXP
+| TBANG
+| TBY
+| THASH
+| TALIGN
+| TSWAP
+| TIO
+| TINITEQUALS
+| TCOLON
 | ident_def TBANG
-  { std::string s = $1.c_str(); s += "!";
+  {
+    std::string s = $1.c_str();
+    s += "!";
     $$ = STR(s.c_str());
   }
 ;
 
 assignop_ident:
-  TASSIGN         { $$ = STR("="); }
-| TASSIGNPLUS     { $$ = STR("+="); }
-| TASSIGNMINUS    { $$ = STR("-="); }
-| TASSIGNMULTIPLY { $$ = STR("*="); }
-| TASSIGNDIVIDE   { $$ = STR("/="); }
-| TASSIGNMOD      { $$ = STR("%="); }
-| TASSIGNEXP      { $$ = STR("**="); }
-| TASSIGNBAND     { $$ = STR("&="); }
-| TASSIGNBOR      { $$ = STR("|="); }
-| TASSIGNBXOR     { $$ = STR("^="); }
-| TASSIGNSR       { $$ = STR(">>="); }
-| TASSIGNSL       { $$ = STR("<<="); }
+  TASSIGN
+| TASSIGNPLUS
+| TASSIGNMINUS
+| TASSIGNMULTIPLY
+| TASSIGNDIVIDE
+| TASSIGNMOD
+| TASSIGNEXP
+| TASSIGNBAND
+| TASSIGNBOR
+| TASSIGNBXOR
+| TASSIGNSR
+| TASSIGNSL
 ;
 
 opt_formal_ls:
