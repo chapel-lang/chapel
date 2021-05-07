@@ -345,6 +345,33 @@ static void testCalls3(Parser* parser) {
   assert(0 == actualExprIdent->name().compare("x"));
 }
 
+static void testCalls3a(Parser* parser) {
+  auto parseResult = parser->parseString("testCalls3a.chpl",
+                                         "f(g(x));\n");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
+  auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(module->numStmts() == 1);
+  auto fnCall = module->stmt(0)->toFnCall();
+  assert(fnCall);
+  assert(fnCall->callUsedSquareBrackets() == false);
+  auto baseExpr = fnCall->calledExpression();
+  assert(baseExpr);
+  auto baseExprIdent = baseExpr->toIdentifier();
+  assert(0 == baseExprIdent->name().compare("f"));
+  assert(fnCall->numActuals() == 1);
+  auto subCall = fnCall->actual(0)->toFnCall();
+  assert(subCall);
+  assert(subCall->numActuals() == 1);
+  auto subBaseExpr = subCall->calledExpression();
+  assert(subBaseExpr);
+  auto subBaseExprIdent = subBaseExpr->toIdentifier();
+  assert(0 == subBaseExprIdent->name().compare("g"));
+  auto subActualExprIdent = subCall->actual(0)->toIdentifier();
+  assert(0 == subActualExprIdent->name().compare("x"));
+}
+
 static void testCalls4(Parser* parser) {
   auto parseResult = parser->parseString("testCalls4.chpl",
                                          "f[x];\n");
@@ -482,6 +509,7 @@ int main() {
   testCalls1(p);
   testCalls2(p);
   testCalls3(p);
+  testCalls3a(p);
   testCalls4(p);
   testCalls5(p);
   testCalls6(p);
