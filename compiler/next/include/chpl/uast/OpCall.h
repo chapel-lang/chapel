@@ -37,7 +37,8 @@ class OpCall final : public Call {
   UniqueString op_;
 
   OpCall(ASTList children, UniqueString op)
-    : Call(asttags::OpCall, std::move(children), /* hasCalledExpression */ 0),
+    : Call(asttags::OpCall, std::move(children),
+           /* hasCalledExpression */ false),
       op_(op) {
   }
   bool contentsMatchInner(const ASTNode* other) const override;

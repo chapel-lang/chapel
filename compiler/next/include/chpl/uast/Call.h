@@ -39,7 +39,7 @@ class Call : public Expression {
   Call(ASTTag tag)
     : Expression(tag), hasCalledExpression_(false) {
   }
-  Call(ASTTag tag, ASTList children, int8_t hasCalledExpression)
+  Call(ASTTag tag, ASTList children, bool hasCalledExpression)
     : Expression(tag, std::move(children)),
       hasCalledExpression_(hasCalledExpression) {
 
