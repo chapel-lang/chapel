@@ -67,27 +67,41 @@ static void test1(Parser* parser) {
   assert(functionDecl->numStmts() == 0);
 }
 
-static void test2(Parser* parser) {
-  auto parseResult = parser->parseString("test2.chpl",
-                                         "inline proc f(a: int) ref { x; }");
+static Builder::Result parseFunction(Parser* parser,
+                                     const char* filename,
+                                     const Function*& f,
+                                     const char* contents) {
+  auto parseResult = parser->parseString(filename, contents);
   assert(parseResult.errors.size() == 0);
   assert(parseResult.topLevelExpressions.size() == 1);
   assert(parseResult.topLevelExpressions[0]->isModuleDecl());
   auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
-  assert(module->name().compare("test2") == 0);
   assert(module->numStmts() == 1);
   auto functionDecl = module->stmt(0)->toFunctionDecl();
   assert(functionDecl);
-  assert(functionDecl->name().compare("f") == 0);
-  assert(functionDecl->linkage() == Function::DEFAULT_LINKAGE);
-  assert(functionDecl->kind() == Function::PROC);
-  assert(functionDecl->returnIntent() == Function::REF);
-  assert(functionDecl->isInline() == true);
-  assert(functionDecl->isOverride() == false);
-  assert(functionDecl->throws() == false);
-  assert(functionDecl->linkageNameExpression() == nullptr);
-  assert(functionDecl->numFormals() == 1);
-  auto formal = functionDecl->formal(0);
+  assert(functionDecl->function());
+  f = functionDecl->function();
+  return std::move(parseResult);
+}
+
+static void test2(Parser* parser) {
+  const Function* function = nullptr;
+  auto parse = parseFunction(
+      parser,
+      "test2.chpl",
+      function,
+      "inline proc f(a: int) ref { x; }");
+
+  assert(function->name().compare("f") == 0);
+  assert(function->linkage() == Function::DEFAULT_LINKAGE);
+  assert(function->kind() == Function::PROC);
+  assert(function->returnIntent() == Function::REF);
+  assert(function->isInline() == true);
+  assert(function->isOverride() == false);
+  assert(function->throws() == false);
+  assert(function->linkageNameExpression() == nullptr);
+  assert(function->numFormals() == 1);
+  auto formal = function->formal(0);
   assert(formal);
   assert(formal->intent() == Formal::DEFAULT_INTENT);
   assert(formal->name().compare("a") == 0);
@@ -96,38 +110,34 @@ static void test2(Parser* parser) {
   assert(typeExpr->isIdentifier());
   assert(typeExpr->toIdentifier()->name().compare("int") == 0);
   assert(formal->initExpression() == nullptr);
-  assert(functionDecl->thisFormal() == nullptr);
-  assert(functionDecl->returnType() == nullptr);
-  assert(functionDecl->numLifetimeClauses() == 0);
-  assert(functionDecl->numStmts() == 1);
-  auto stmt = functionDecl->stmt(0);
+  assert(function->thisFormal() == nullptr);
+  assert(function->returnType() == nullptr);
+  assert(function->numLifetimeClauses() == 0);
+  assert(function->numStmts() == 1);
+  auto stmt = function->stmt(0);
   assert(stmt);
   assert(stmt->isIdentifier());
   assert(stmt->toIdentifier()->name().compare("x") == 0);
 }
 
 static void test3(Parser* parser) {
-  auto parseResult = parser->parseString( "test3.chpl",
-               "override proc const R.f(ref a: int = b) const ref { }");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
-  auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
-  assert(module->name().compare("test3") == 0);
-  assert(module->numStmts() == 1);
-  auto functionDecl = module->stmt(0)->toFunctionDecl();
-  assert(functionDecl);
-  assert(functionDecl->name().compare("f") == 0);
-  assert(functionDecl->linkage() == Function::DEFAULT_LINKAGE);
-  assert(functionDecl->kind() == Function::PROC);
-  assert(functionDecl->returnIntent() == Function::CONST_REF);
-  assert(functionDecl->isInline() == false);
-  assert(functionDecl->isOverride() == true);
-  assert(functionDecl->throws() == false);
-  assert(functionDecl->linkageNameExpression() == nullptr);
-  assert(functionDecl->numFormals() == 2); // 'this' and 'a'
+  const Function* function = nullptr;
+  auto parse = parseFunction(
+      parser,
+      "test3.chpl",
+      function,
+      "override proc const R.f(ref a: int = b) const ref { }");
+  assert(function->name().compare("f") == 0);
+  assert(function->linkage() == Function::DEFAULT_LINKAGE);
+  assert(function->kind() == Function::PROC);
+  assert(function->returnIntent() == Function::CONST_REF);
+  assert(function->isInline() == false);
+  assert(function->isOverride() == true);
+  assert(function->throws() == false);
+  assert(function->linkageNameExpression() == nullptr);
+  assert(function->numFormals() == 2); // 'this' and 'a'
 
-  auto thisFormal = functionDecl->formal(0);
+  auto thisFormal = function->formal(0);
   assert(thisFormal);
   assert(thisFormal->intent() == Formal::CONST);
   assert(thisFormal->name().compare("this") == 0);
@@ -137,7 +147,7 @@ static void test3(Parser* parser) {
   assert(thisTypeExpr->toIdentifier()->name().compare("R") == 0);
   assert(thisFormal->initExpression() == nullptr);
 
-  auto formal = functionDecl->formal(1);
+  auto formal = function->formal(1);
   assert(formal);
   assert(formal->intent() == Formal::REF);
   assert(formal->name().compare("a") == 0);
@@ -150,10 +160,10 @@ static void test3(Parser* parser) {
   assert(initExpr->isIdentifier());
   assert(initExpr->toIdentifier()->name().compare("b") == 0);
 
-  assert(functionDecl->thisFormal() == thisFormal);
-  assert(functionDecl->returnType() == nullptr);
-  assert(functionDecl->numLifetimeClauses() == 0);
-  assert(functionDecl->numStmts() == 0);
+  assert(function->thisFormal() == thisFormal);
+  assert(function->returnType() == nullptr);
+  assert(function->numLifetimeClauses() == 0);
+  assert(function->numStmts() == 0);
 }
 
 
