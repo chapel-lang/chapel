@@ -61,7 +61,7 @@ class FnCall : public Call {
 
   /** Returns whether actual i is named as with 'f(a=3)'
       where the actual is 3 and the name is 'a'. */
-  bool actualIsNamed(int i) const {
+  bool isNamedActual(int i) const {
     if (i < 0 || i >= actualNames_.size())
       return false;
 

@@ -408,9 +408,9 @@ static void testCalls5(Parser* parser) {
   auto baseExprIdent = baseExpr->toIdentifier();
   assert(0 == baseExprIdent->name().compare("f"));
   assert(fnCall->numActuals() == 3);
-  assert(!fnCall->actualIsNamed(0));
-  assert(!fnCall->actualIsNamed(1));
-  assert(!fnCall->actualIsNamed(2));
+  assert(!fnCall->isNamedActual(0));
+  assert(!fnCall->isNamedActual(1));
+  assert(!fnCall->isNamedActual(2));
   UniqueString emptyStr;
   assert(fnCall->actualName(0) == emptyStr);
   assert(fnCall->actualName(1) == emptyStr);
@@ -436,9 +436,9 @@ static void testCalls6(Parser* parser) {
   auto baseExprIdent = baseExpr->toIdentifier();
   assert(0 == baseExprIdent->name().compare("f"));
   assert(fnCall->numActuals() == 3);
-  assert(fnCall->actualIsNamed(0));
-  assert(fnCall->actualIsNamed(1));
-  assert(fnCall->actualIsNamed(2));
+  assert(fnCall->isNamedActual(0));
+  assert(fnCall->isNamedActual(1));
+  assert(fnCall->isNamedActual(2));
   assert(0 == fnCall->actualName(0).compare("a"));
   assert(0 == fnCall->actualName(1).compare("b"));
   assert(0 == fnCall->actualName(2).compare("c"));
@@ -463,9 +463,9 @@ static void testCalls7(Parser* parser) {
   auto baseExprIdent = baseExpr->toIdentifier();
   assert(0 == baseExprIdent->name().compare("f"));
   assert(fnCall->numActuals() == 3);
-  assert(!fnCall->actualIsNamed(0));
-  assert(fnCall->actualIsNamed(1));
-  assert(!fnCall->actualIsNamed(2));
+  assert(!fnCall->isNamedActual(0));
+  assert(fnCall->isNamedActual(1));
+  assert(!fnCall->isNamedActual(2));
   assert(0 == fnCall->actualName(0).compare(""));
   assert(0 == fnCall->actualName(1).compare("b"));
   assert(0 == fnCall->actualName(2).compare(""));
