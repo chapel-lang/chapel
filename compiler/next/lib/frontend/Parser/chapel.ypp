@@ -728,7 +728,7 @@ module_decl_start:
   access_control opt_prototype TMODULE ident_def
     {
       $$ = TODOSTMT(@$);
-      context->visibility = Sym::VISIBILITY_DEFAULT;
+      context->visibility = Sym::DEFAULT_VISIBILITY;
     }
 ;
 
@@ -746,7 +746,7 @@ module_decl_stmt:
 ;
 
 access_control:
-           { $$ = Sym::VISIBILITY_DEFAULT; context->visibility = $$; }
+           { $$ = Sym::DEFAULT_VISIBILITY; context->visibility = $$; }
 | TPUBLIC  { $$ = Sym::PUBLIC;  context->visibility = $$; }
 | TPRIVATE { $$ = Sym::PRIVATE; context->visibility = $$; }
 ;
@@ -760,7 +760,7 @@ include_module_stmt:
  TINCLUDE access_control opt_prototype TMODULE ident_def TSEMI
    {
      $$ = TODOSTMT(@$);
-     context->visibility = Sym::VISIBILITY_DEFAULT;
+     context->visibility = Sym::DEFAULT_VISIBILITY;
    }
 ;
 
@@ -902,37 +902,37 @@ use_stmt:
   access_control TUSE use_renames_ls TSEMI
     {
       $$ = TODOSTMT(@$);
-      context->visibility = Sym::VISIBILITY_DEFAULT;
+      context->visibility = Sym::DEFAULT_VISIBILITY;
     }
 | access_control TUSE expr TEXCEPT except_ls TSEMI
     {
       $$ = TODOSTMT(@$);
-      context->visibility = Sym::VISIBILITY_DEFAULT;
+      context->visibility = Sym::DEFAULT_VISIBILITY;
     }
 | access_control TUSE expr TAS expr TEXCEPT except_ls TSEMI
     {
       $$ = TODOSTMT(@$);
-      context->visibility = Sym::VISIBILITY_DEFAULT;
+      context->visibility = Sym::DEFAULT_VISIBILITY;
     }
 | access_control TUSE expr TAS TUNDERSCORE TEXCEPT except_ls TSEMI
     {
       $$ = TODOSTMT(@$);
-      context->visibility = Sym::VISIBILITY_DEFAULT;
+      context->visibility = Sym::DEFAULT_VISIBILITY;
     }
 | access_control TUSE expr TONLY opt_only_ls TSEMI
     {
       $$ = TODOSTMT(@$);
-      context->visibility = Sym::VISIBILITY_DEFAULT;
+      context->visibility = Sym::DEFAULT_VISIBILITY;
     }
 | access_control TUSE expr TAS expr TONLY opt_only_ls TSEMI
     {
       $$ = TODOSTMT(@$);
-      context->visibility = Sym::VISIBILITY_DEFAULT;
+      context->visibility = Sym::DEFAULT_VISIBILITY;
     }
 | access_control TUSE expr TAS TUNDERSCORE TONLY opt_only_ls TSEMI
     {
       $$ = TODOSTMT(@$);
-      context->visibility = Sym::VISIBILITY_DEFAULT;
+      context->visibility = Sym::DEFAULT_VISIBILITY;
     }
 ;
 
@@ -940,7 +940,7 @@ import_stmt:
   access_control TIMPORT import_ls TSEMI
     {
       $$ = TODOSTMT(@$);
-      context->visibility = Sym::VISIBILITY_DEFAULT;
+      context->visibility = Sym::DEFAULT_VISIBILITY;
     }
 ;
 

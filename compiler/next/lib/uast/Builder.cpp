@@ -116,7 +116,7 @@ UniqueString Builder::createImplicitModuleIfNeeded() {
     stmts.swap(topLevelExpressions_);
     auto implicitModule = ModuleDecl::build(this, Location(filepath_),
                                             inferredModuleName_,
-                                            Sym::VISIBILITY_DEFAULT,
+                                            Sym::DEFAULT_VISIBILITY,
                                             Module::IMPLICIT,
                                             std::move(stmts));
     topLevelExpressions_.push_back(std::move(implicitModule));

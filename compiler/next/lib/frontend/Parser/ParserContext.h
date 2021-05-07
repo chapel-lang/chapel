@@ -77,7 +77,7 @@ struct ParserContext {
     this->builder            = builder;
     this->topLevelStatements = nullptr;
     this->comments           = nullptr;
-    this->visibility         = Sym::VISIBILITY_DEFAULT;
+    this->visibility         = Sym::DEFAULT_VISIBILITY;
     this->varDeclKind        = Variable::VAR;
   }
 
