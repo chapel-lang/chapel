@@ -27,10 +27,7 @@ namespace uast {
 
 static int32_t computeStatementChildNum(int8_t indexVarChildNum,
                                         int8_t iterandChildNum) {
-  int32_t ret = 0;
-  ret += indexVarChildNum < 0 ? 0 : indexVarChildNum;
-  ret += iterandChildNum < 0 ? 0 : iterandChildNum;
-  return ret;
+  return (indexVarChildNum >= 0) + (iterandChildNum >= 0);
 }
 
 For::For(ASTList children, int8_t indexVarChildNum, int8_t iterandChildNum,

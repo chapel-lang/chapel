@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_UAST_LOCAL_H
-#define CHPL_UAST_LOCAL_H
+#ifndef CHPL_UAST_FOR_H
+#define CHPL_UAST_FOR_H
 
 #include "chpl/queries/Location.h"
 #include "chpl/uast/Loop.h"

@@ -33,6 +33,7 @@
 # limitations under the License.
 
 comp_unit_test(testParse)
+comp_unit_test(testParseFor)
 comp_unit_test(testParseLocal)
 comp_unit_test(testParseSerial)
 comp_unit_test(testFrontendQueries)

@@ -1278,17 +1278,16 @@ loop_stmt:
 | TFOR zippered_iterator do_stmt
   {
     auto comments = context->gatherCommentsFromList($3.exprList, @1);
-    auto node = Local::build(BUILDER, LOC(@1), std::move(toOwned($2)),
-                             std::move(context->consumeList($3.exprList)),
-                             $3.usesDo);
+    auto node = For::build(BUILDER, LOC(@1), std::move(toOwned($2)),
+                           std::move(context->consumeList($3.exprList)),
+                           $3.usesDo);
     $$ = { .comments=comments, .stmt=node.release() };
   }
 | TFOR TPARAM ident_def TIN expr do_stmt
   {
     auto comments = context->gatherCommentsFromList($6.exprList, @1);
-    // TODO: Build Identifier out of $3.
-    Expression* indexVar = nullptr;
-    auto node = For::build(BUILDER, LOC(@1), std::move(indexVar),
+    Expression* indexVar = context->buildIdent(@3, $3);
+    auto node = For::build(BUILDER, LOC(@1), std::move(toOwned(indexVar)),
                            std::move(toOwned($5)),
                            std::move(context->consumeList($6.exprList)),
                            $6.usesDo,
