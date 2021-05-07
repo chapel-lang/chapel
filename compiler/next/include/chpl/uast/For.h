@@ -68,8 +68,7 @@ class For final : public Loop {
                           bool param);
 
   /**
-    Create and return a for loop without an index variable. This variation
-    cannot be param and cannot appear at the expression level.
+    Create and return a for loop without an index variable.
   */
   static owned<For> build(Builder* builder, Location loc,
                           owned<Expression> iterand,
