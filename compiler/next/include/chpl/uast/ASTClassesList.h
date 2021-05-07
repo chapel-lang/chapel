@@ -109,7 +109,7 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
 
   AST_BEGIN_SUBCLASSES(Decl)
     AST_NODE(FieldDecl)
-    AST_NODE(FnDecl)
+    AST_NODE(FunctionDecl)
     AST_NODE(ForwardingDecl)
     AST_NODE(ModuleDecl)
     AST_NODE(TypeDecl)
