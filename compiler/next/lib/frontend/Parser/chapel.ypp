@@ -272,7 +272,7 @@
     ReturnTag returnTag;
     ShadowTag shadowTag;
     ThrowsTag throwsTag;
-    Variable::Tag variableTag;
+    Variable::Kind variableKind;
     Sym::Visibility visibilityTag;
 
     // simple pointer values 
@@ -552,7 +552,7 @@
 %type <expr> catch_expr
 %type <expr> catch_expr_inner
 
-%type <variableTag> var_decl_type
+%type <variableKind> var_decl_type
 
 %type <commentsAndStmt> type_alias_decl_stmt type_alias_decl_stmt_start
 %type <expr> type_alias_decl_stmt_inner
@@ -1923,18 +1923,18 @@ opt_init_type:
 ;
 
 var_decl_type:
-  TPARAM      { $$ = Variable::PARAM;     context->varDeclTag = $$;}
-| TCONST TREF { $$ = Variable::CONST_REF; context->varDeclTag = $$;}
-| TREF        { $$ = Variable::REF;       context->varDeclTag = $$;}
-| TCONST      { $$ = Variable::CONST;     context->varDeclTag = $$;}
-| TVAR        { $$ = Variable::VAR;       context->varDeclTag = $$;}
+  TPARAM      { $$ = Variable::PARAM;     context->varDeclKind = $$;}
+| TCONST TREF { $$ = Variable::CONST_REF; context->varDeclKind = $$;}
+| TREF        { $$ = Variable::REF;       context->varDeclKind = $$;}
+| TCONST      { $$ = Variable::CONST;     context->varDeclKind = $$;}
+| TVAR        { $$ = Variable::VAR;       context->varDeclKind = $$;}
 ;
 
 var_decl_stmt:
   TCONFIG var_decl_type var_decl_stmt_inner_ls TSEMI
     {
       $$ = TODOSTMT(@$);
-      context->varDeclTag = Variable::VAR;
+      context->varDeclKind = Variable::VAR;
     }
 | var_decl_type var_decl_stmt_inner_ls TSEMI
     {
@@ -1945,7 +1945,7 @@ var_decl_stmt:
         $$ = TODOSTMT(@$);
       }
       delete lst;
-      context->varDeclTag = Variable::VAR;
+      context->varDeclKind = Variable::VAR;
     }
 ;
 
@@ -1964,7 +1964,7 @@ var_decl_stmt_inner:
   ident_def opt_type opt_init_expr
     { $$ = VariableDecl::build(BUILDER, LOC(@$),
                                $1, context->visibility,
-                               context->varDeclTag,
+                               context->varDeclKind,
                                toOwned($2), toOwned($3)).release(); }
 | TLP tuple_var_decl_stmt_inner_ls TRP opt_type opt_init_expr
     { $$ = TODOEXPR(@$); }

@@ -58,7 +58,7 @@ class VariableDecl final : public Decl {
   ~VariableDecl() override = default;
   static owned<VariableDecl> build(Builder* builder, Location loc,
                                    UniqueString name, Sym::Visibility vis,
-                                   Variable::Tag tag,
+                                   Variable::Kind kind,
                                    owned<Expression> typeExpression,
                                    owned<Expression> initExpression);
   const Variable* variable() const {
@@ -66,8 +66,8 @@ class VariableDecl final : public Decl {
     assert(sym->isVariable());
     return (Variable*)sym;
   }
-  const Variable::Tag tag() const {
-    return this->variable()->tag();
+  const Variable::Kind kind() const {
+    return this->variable()->kind();
   }
   const Expression* typeExpression() const {
     return this->variable()->typeExpression();

@@ -66,7 +66,7 @@ struct ParserContext {
   // Tracking a current state for these makes it easier to write
   // the parser rules.
   Sym::Visibility visibility;
-  Variable::Tag varDeclTag;
+  Variable::Kind varDeclKind;
 
   ParserContext(const char* filename, Builder* builder)
   {
@@ -78,7 +78,7 @@ struct ParserContext {
     this->topLevelStatements = nullptr;
     this->comments           = nullptr;
     this->visibility         = Sym::VISIBILITY_DEFAULT;
-    this->varDeclTag         = Variable::VAR;
+    this->varDeclKind        = Variable::VAR;
   }
 
   Context* context() { return builder->context(); }

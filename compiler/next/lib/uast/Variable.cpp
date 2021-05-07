@@ -29,7 +29,7 @@ bool Variable::contentsMatchInner(const ASTNode* other) const {
   const Variable* lhs = this;
   const Variable* rhs = (const Variable*) other;
   return lhs->symContentsMatchInner(rhs) &&
-         lhs->tag_ == rhs->tag_ &&
+         lhs->kind_ == rhs->kind_ &&
          lhs->typeExpressionChildNum == rhs->typeExpressionChildNum &&
          lhs->initExpressionChildNum == rhs->initExpressionChildNum;
 }
