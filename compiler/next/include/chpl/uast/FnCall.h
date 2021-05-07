@@ -32,6 +32,21 @@ namespace uast {
   This class represents a call to a function.
 
   For example `f(1,2)`, is a call to a function `f`.
+
+  Note that calls to paren-less functions are not
+  represented with this type since early in compilation
+  they are just Identifiers.
+
+  For example, in
+  \rst
+  .. code-block:: chapel
+
+      proc x { }
+
+      x; // here 'x' is represented as an Identifier, not as a Call
+  \endrst
+
+
  */
 class FnCall : public Call {
  private:
