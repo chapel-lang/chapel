@@ -43,7 +43,7 @@ class Module final : public Sym {
 
  public:
   enum Kind {
-    DEFAULT,
+    DEFAULT_MODULE_KIND,
     PROTOTYPE,
     IMPLICIT,
   };

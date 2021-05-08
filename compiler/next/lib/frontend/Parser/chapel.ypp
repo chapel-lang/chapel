@@ -94,11 +94,6 @@
     AggregateTag_UNION,
   };
 
-  enum PrototypeTag {
-    PrototypeTag_DEFAULT,
-    PrototypeTag_PROTOTYPE,
-  };
-
   enum ThrowsTag {
     ThrowsTag_DEFAULT,
     ThrowsTag_THROWS,
@@ -243,6 +238,14 @@
     ParserExprList* body;
   };
 
+  // a struct to store the values in module_decl_start 
+  struct ModuleParts {
+    std::vector<ParserComment>* comments;
+    Sym::Visibility visibility;
+    Module::Kind kind;
+    PODUniqueString name;
+  };
+
   // This is produced by do_stmt. It records whether the do_stmt statements
   // were produced following a 'do' or not. E.g...
   // do { ... } vs { ... }
@@ -294,16 +297,16 @@
     // integer/enum values
 
     AggregateTag aggregateTag;
-    Function::Kind functionKind;
     Formal::Intent intentTag;
-    LinkageTag linkageTag;
-    NewTag newTag;
-    PrototypeTag prototypeTag;
+    Function::Kind functionKind;
     Function::ReturnIntent returnTag;
+    LinkageTag linkageTag;
+    Module::Kind moduleKind;
+    NewTag newTag;
     ShadowTag shadowTag;
+    Sym::Visibility visibilityTag;
     ThrowsTag throwsTag;
     Variable::Kind variableKind;
-    Sym::Visibility visibilityTag;
 
     // simple pointer values
     Block* block;
@@ -317,8 +320,9 @@
     BlockOrDo blockOrDo;
     CommentsAndLinkage commentsAndLinkage;
     CommentsAndStmt commentsAndStmt;
-    FunctionParts functionParts;
     ParserExprList* exprList;
+    FunctionParts functionParts;
+    ModuleParts moduleParts;
     RenameList* renameList;
     UniqueStrList* uniqueStrList;
     WhereAndLifetime lifetimeAndWhere;
@@ -525,7 +529,7 @@
 
 
 %type <throwsTag> opt_throws_error
-%type <prototypeTag> opt_prototype
+%type <moduleKind> opt_prototype
 %type <visibilityTag> access_control
 %type <intentTag> required_intent_tag opt_intent_tag opt_this_intent_tag
 
@@ -546,7 +550,7 @@
 
 // individual statements
 %type <commentsAndStmt> toplevel_stmt
-%type <commentsAndStmt> module_decl_start
+%type <moduleParts> module_decl_start
 %type <commentsAndStmt> module_decl_stmt
 %type <commentsAndStmt> include_module_stmt
 %type <exprList> block_stmt_body
@@ -761,21 +765,45 @@ stmt:
 module_decl_start:
   access_control opt_prototype TMODULE ident_def
     {
-      $$ = TODOSTMT(@$);
+      ModuleParts parts = {context->gatherComments(@1), $1, $2, $4};
+      $$ = parts;
       context->visibility = Sym::DEFAULT_VISIBILITY;
     }
 ;
 
 module_decl_stmt:
    module_decl_start TLCBR TRCBR
-    { $$ = TODOSTMT(@$); }
+    {
+      ModuleParts parts = $1;
+      ParserExprList* body = context->makeList(); 
+      context->appendList(body, context->gatherComments(@3));
+      auto mod = ModuleDecl::build(BUILDER, LOC(@1),
+                                   parts.name, parts.visibility, parts.kind,
+                                   context->consumeList(body));
+      CommentsAndStmt cs = {parts.comments, mod.release()};
+      $$ = cs;
+    }
 | module_decl_start TLCBR stmt_ls TRCBR
-    { $$ = TODOSTMT(@$); }
+    {
+      ModuleParts parts = $1;
+      ParserExprList* body = $3;
+      context->appendList(body, context->gatherComments(@4));
+      auto mod = ModuleDecl::build(BUILDER, LOC(@1),
+                                   parts.name, parts.visibility, parts.kind,
+                                   context->consumeList(body));
+      CommentsAndStmt cs = {parts.comments, mod.release()};
+      $$ = cs;
+    }
 | module_decl_start TLCBR error TRCBR
     {
-      ParserExprList* errList = nullptr;
-      errList = context->makeList(ErroneousExpression::build(BUILDER, LOC(@3)));
-      $$ = TODOSTMT(@$); // should be a module containing errList
+      ModuleParts parts = $1;
+      ParserExprList* body =
+              context->makeList(ErroneousExpression::build(BUILDER, LOC(@3)));
+      auto mod = ModuleDecl::build(BUILDER, LOC(@1),
+                                   parts.name, parts.visibility, parts.kind,
+                                   context->consumeList(body));
+      CommentsAndStmt cs = {parts.comments, mod.release()};
+      $$ = cs;
     }
 ;
 
@@ -786,8 +814,8 @@ access_control:
 ;
 
 opt_prototype:
-             { $$ = PrototypeTag_DEFAULT; }
-| TPROTOTYPE { $$ = PrototypeTag_PROTOTYPE;  }
+             { $$ = Module::DEFAULT_MODULE_KIND; }
+| TPROTOTYPE { $$ = Module::PROTOTYPE;  }
 ;
 
 include_module_stmt:
