@@ -238,7 +238,7 @@
     ParserExprList* body;
   };
 
-  // a struct to store the values in module_decl_start 
+  // a struct to store the values in module_decl_start
   struct ModuleParts {
     std::vector<ParserComment>* comments;
     Sym::Visibility visibility;
@@ -765,7 +765,13 @@ stmt:
 module_decl_start:
   access_control opt_prototype TMODULE ident_def
     {
-      ModuleParts parts = {context->gatherComments(@1), $1, $2, $4};
+      // figure out the location to use (ignoring comments
+      // between, say 'prototype' and 'module')
+      auto loc = @3;
+      if ($1 != Sym::DEFAULT_VISIBILITY) loc = @1;
+      else if ($2 != Module::DEFAULT_MODULE_KIND) loc = @2;
+
+      ModuleParts parts = {context->gatherComments(loc), $1, $2, $4};
       $$ = parts;
       context->visibility = Sym::DEFAULT_VISIBILITY;
     }
@@ -775,7 +781,7 @@ module_decl_stmt:
    module_decl_start TLCBR TRCBR
     {
       ModuleParts parts = $1;
-      ParserExprList* body = context->makeList(); 
+      ParserExprList* body = context->makeList();
       context->appendList(body, context->gatherComments(@3));
       auto mod = ModuleDecl::build(BUILDER, LOC(@1),
                                    parts.name, parts.visibility, parts.kind,
