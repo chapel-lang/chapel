@@ -42,18 +42,18 @@ class Module final : public Sym {
  friend class ModuleDecl;
 
  public:
-  enum Tag {
+  enum Kind {
     DEFAULT,
     PROTOTYPE,
     IMPLICIT,
   };
 
  private:
-  Tag tag_;
+  Kind kind_;
 
   Module(ASTList children, UniqueString name,
-         Sym::Visibility vis, Module::Tag tag)
-    : Sym(asttags::Module, std::move(children), name, vis), tag_(tag) {
+         Sym::Visibility vis, Kind kind)
+    : Sym(asttags::Module, std::move(children), name, vis), kind_(kind) {
 
     assert(isExpressionASTList(children_));
   }
@@ -62,7 +62,7 @@ class Module final : public Sym {
 
  public:
   ~Module() override = default;
-  const Tag tag() const { return this->tag_; }
+  const Kind kind() const { return this->kind_; }
 
   ASTListIteratorPair<Expression> stmts() const {
     return ASTListIteratorPair<Expression>(children_.begin(), children_.end());

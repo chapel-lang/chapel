@@ -37,9 +37,9 @@ void ModuleDecl::markUniqueStringsInner(Context* context) const {
 owned<ModuleDecl>
 ModuleDecl::build(Builder* builder, Location loc,
                   UniqueString name, Sym::Visibility vis,
-                  Module::Tag tag, ASTList stmts) {
+                  Module::Kind kind, ASTList stmts) {
 
-  Module* sym = new Module(std::move(stmts), name, vis, tag);
+  Module* sym = new Module(std::move(stmts), name, vis, kind);
   ModuleDecl* ret = new ModuleDecl(toOwned(sym));
   builder->noteLocation(sym, loc);
   builder->noteLocation(ret, loc);
