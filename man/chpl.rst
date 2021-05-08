@@ -672,7 +672,7 @@ OPTIONS
     flag corresponds with and overrides the $CHPL\_MEM environment variable
     (defaults to a best guess based on $CHPL\_COMM).
 
-**\--re2 <re2>**
+**\--regexp <regexp>**
 
     Specify the regular expression library to use. This flag corresponds
     with and overrides the $CHPL\_REGEXP environment variable (defaults to
