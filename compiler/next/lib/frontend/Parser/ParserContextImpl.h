@@ -26,6 +26,8 @@ static bool locationLessEq(YYLTYPE lhs, YYLTYPE rhs) {
 
 std::vector<ParserComment>* ParserContext::gatherComments(YYLTYPE location) {
 
+  printf("GATHERING COMMENTS\n");
+
   // If there were no comments, there is nothing to do.
   if (this->comments == nullptr) {
     return nullptr;
@@ -33,6 +35,7 @@ std::vector<ParserComment>* ParserContext::gatherComments(YYLTYPE location) {
 
   if (this->comments->size() == 0) {
     delete this->comments;
+    this->comments = nullptr;
     return nullptr;
   }
 
@@ -75,7 +78,34 @@ std::vector<ParserComment>* ParserContext::gatherComments(YYLTYPE location) {
   return ret;
 }
 
+void ParserContext::noteDeclStartLoc(YYLTYPE loc) {
+  if (this->declStartLocation.first_line == 0)
+    this->declStartLocation = loc;
+}
+Sym::Visibility ParserContext::noteVisibility(Sym::Visibility visibility) {
+  this->visibility = visibility;
+  return this->visibility;
+}
+Variable::Kind ParserContext::noteVarDeclKind(Variable::Kind varDeclKind) {
+  this->varDeclKind = varDeclKind;
+  return this->varDeclKind;
+}
+YYLTYPE ParserContext::declStartLoc(YYLTYPE curLoc) {
+  if (this->declStartLocation.first_line == 0)
+    return curLoc;
+  else
+    return this->declStartLocation;
+}
+void ParserContext::resetDeclState() {
+  this->varDeclKind = Variable::VAR;
+  this->visibility = Sym::DEFAULT_VISIBILITY;
+  YYLTYPE emptyLoc = {0};
+  this->declStartLocation = emptyLoc;
+}
+
 void ParserContext::noteComment(YYLTYPE loc, const char* data, long size) {
+  printf("NOTING COMMENT %s\n", data);
+
   if (this->comments == nullptr) {
     this->comments = new std::vector<ParserComment>();
   }
@@ -88,7 +118,19 @@ void ParserContext::noteComment(YYLTYPE loc, const char* data, long size) {
   this->comments->push_back(c);
 }
 
+void ParserContext::clearCommentsBefore(YYLTYPE loc) {
+  printf("CLEARING COMMENTS BEFORE\n");
+  auto comments = this->gatherComments(loc);
+  if (comments != nullptr) {
+    for (ParserComment parserComment : *this->comments) {
+      delete parserComment.comment;
+    }
+    delete comments;
+  }
+}
 void ParserContext::clearComments() {
+  printf("CLEARING COMMENTS\n");
+
   if (this->comments != nullptr) {
     for (ParserComment parserComment : *this->comments) {
       delete parserComment.comment;

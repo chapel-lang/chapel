@@ -765,21 +765,21 @@ stmt:
 module_decl_start:
   access_control opt_prototype TMODULE ident_def
     {
-      // figure out the location to use (ignoring comments
-      // between, say 'prototype' and 'module')
-      auto loc = @3;
-      if ($1 != Sym::DEFAULT_VISIBILITY) loc = @1;
-      else if ($2 != Module::DEFAULT_MODULE_KIND) loc = @2;
+      // take into account location of public/private, if any
+      auto loc = context->declStartLoc(@3);
 
       ModuleParts parts = {context->gatherComments(loc), $1, $2, $4};
       $$ = parts;
-      context->visibility = Sym::DEFAULT_VISIBILITY;
+      context->resetDeclState();
+      context->clearComments();
     }
 ;
 
 module_decl_stmt:
    module_decl_start TLCBR TRCBR
     {
+      context->clearCommentsBefore(@2);
+
       ModuleParts parts = $1;
       ParserExprList* body = context->makeList();
       context->appendList(body, context->gatherComments(@3));
@@ -791,6 +791,8 @@ module_decl_stmt:
     }
 | module_decl_start TLCBR stmt_ls TRCBR
     {
+      context->clearCommentsBefore(@2);
+
       ModuleParts parts = $1;
       ParserExprList* body = $3;
       context->appendList(body, context->gatherComments(@4));
@@ -814,14 +816,17 @@ module_decl_stmt:
 ;
 
 access_control:
-           { $$ = Sym::DEFAULT_VISIBILITY; context->visibility = $$; }
-| TPUBLIC  { $$ = Sym::PUBLIC;  context->visibility = $$; }
-| TPRIVATE { $$ = Sym::PRIVATE; context->visibility = $$; }
+           { $$ = context->noteVisibility(Sym::DEFAULT_VISIBILITY); }
+| TPUBLIC  { context->noteDeclStartLoc(@1);
+             $$ = context->noteVisibility(Sym::PUBLIC); }
+| TPRIVATE { context->noteDeclStartLoc(@1);
+             $$ = context->noteVisibility(Sym::PRIVATE); }
 ;
 
 opt_prototype:
              { $$ = Module::DEFAULT_MODULE_KIND; }
-| TPROTOTYPE { $$ = Module::PROTOTYPE;  }
+| TPROTOTYPE { context->noteDeclStartLoc(@1);
+               $$ = Module::PROTOTYPE;  }
 ;
 
 include_module_stmt:
@@ -1725,7 +1730,8 @@ linkage_spec_empty:
 ;
 
 linkage_spec:
-  linkage_spec_empty { $$ = context->makeFunctionParts(@1, false, false); }
+  linkage_spec_empty { // uses yylloc to get the location of the next token
+                       $$ = context->makeFunctionParts(yylloc, false, false); }
 | TINLINE            { $$ = context->makeFunctionParts(@1, true, false); }
 | TOVERRIDE          { $$ = context->makeFunctionParts(@1, false, true); }
 ;
@@ -1807,6 +1813,10 @@ fn_decl_stmt_start:
   linkage_spec proc_iter_or_op
     {
       FunctionParts fp = $1;
+      /*if (fp.isInline == false && fp.isOverride == false) {
+        // fix comment gathering to account for empty linkage_spec
+        // having the previous, not next, token information.
+      auto comments = context->gatherComments(@2)*/
       fp.kind = $2;
       $$ = fp;
     }
@@ -2053,29 +2063,29 @@ opt_init_type:
 ;
 
 var_decl_type:
-  TPARAM      { $$ = Variable::PARAM;     context->varDeclKind = $$;}
-| TCONST TREF { $$ = Variable::CONST_REF; context->varDeclKind = $$;}
-| TREF        { $$ = Variable::REF;       context->varDeclKind = $$;}
-| TCONST      { $$ = Variable::CONST;     context->varDeclKind = $$;}
-| TVAR        { $$ = Variable::VAR;       context->varDeclKind = $$;}
+  TPARAM      { $$ = context->noteVarDeclKind(Variable::PARAM); }
+| TCONST TREF { $$ = context->noteVarDeclKind(Variable::CONST_REF); }
+| TREF        { $$ = context->noteVarDeclKind(Variable::REF); }
+| TCONST      { $$ = context->noteVarDeclKind(Variable::CONST); }
+| TVAR        { $$ = context->noteVarDeclKind(Variable::VAR); }
 ;
 
 var_decl_stmt:
   TCONFIG var_decl_type var_decl_stmt_inner_ls TSEMI
     {
       $$ = TODOSTMT(@$);
-      context->varDeclKind = Variable::VAR;
+      context->resetDeclState();
     }
 | var_decl_type var_decl_stmt_inner_ls TSEMI
     {
       ParserExprList* lst = $2;
       if (lst->size() == 1) {
-        $$ = STMT(@$, (*lst)[0]);
+        $$ = STMT(@1, (*lst)[0]);
       } else {
         $$ = TODOSTMT(@$);
       }
       delete lst;
-      context->varDeclKind = Variable::VAR;
+      context->resetDeclState();
     }
 ;
 

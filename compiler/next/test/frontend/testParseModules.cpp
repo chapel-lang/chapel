@@ -162,7 +162,44 @@ static void test1c(Parser* parser) {
   assert(module->stmt(1)->isComment());
 }
 
+static void test1d(Parser* parser) {
+  auto parseResult = parser->parseString("test1d.chpl",
+                                         "module /* comment */ M {\n"
+                                         "}\n");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
+  auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(module->kind() == Module::DEFAULT_MODULE_KIND);
+  assert(module->name().compare("M") == 0);
+  assert(module->numStmts() == 0);
+}
 
+static void test1e(Parser* parser) {
+  auto parseResult = parser->parseString("test1d.chpl",
+                                         "prototype /* comment */ module M {\n"
+                                         "}\n");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
+  auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(module->kind() == Module::PROTOTYPE);
+  assert(module->name().compare("M") == 0);
+  assert(module->numStmts() == 0);
+}
+
+static void test1f(Parser* parser) {
+  auto parseResult = parser->parseString("test1f.chpl",
+                                         "public /* comment */ module M {\n"
+                                         "}\n");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
+  auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(module->kind() == Module::DEFAULT_MODULE_KIND);
+  assert(module->name().compare("M") == 0);
+  assert(module->numStmts() == 0);
+}
 
 
 static void test2(Parser* parser) {
@@ -294,6 +331,9 @@ int main() {
   test1(p);
   test1b(p);
   test1c(p);
+  test1d(p);
+  test1e(p);
+  test1f(p);
   test2(p);
   test2a(p);
   test2b(p);

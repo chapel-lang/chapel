@@ -67,6 +67,7 @@ struct ParserContext {
   // the parser rules.
   Sym::Visibility visibility;
   Variable::Kind varDeclKind;
+  YYLTYPE declStartLocation;
 
   ParserContext(const char* filename, Builder* builder)
   {
@@ -79,12 +80,21 @@ struct ParserContext {
     this->comments           = nullptr;
     this->visibility         = Sym::DEFAULT_VISIBILITY;
     this->varDeclKind        = Variable::VAR;
+    YYLTYPE emptyLoc = {0};
+    this->declStartLocation = emptyLoc;
   }
 
   Context* context() { return builder->context(); }
 
+  void noteDeclStartLoc(YYLTYPE loc);
+  Sym::Visibility noteVisibility(Sym::Visibility visibility);
+  Variable::Kind noteVarDeclKind(Variable::Kind varDeclKind);
+  YYLTYPE declStartLoc(YYLTYPE curLoc);
+  void resetDeclState();
+
   void noteComment(YYLTYPE loc, const char* data, long size);
   std::vector<ParserComment>* gatherComments(YYLTYPE location);
+  void clearCommentsBefore(YYLTYPE loc);
   void clearComments();
   ParserExprList* makeList();
   ParserExprList* makeList(ParserExprList* lst);
