@@ -157,7 +157,9 @@ static void test1d(Parser* parser) {
 
 static void test1e(Parser* parser) {
   auto parseResult = parser->parseString("test1e.chpl",
-                                         "public inline /* comment 1 */\n"
+                                         "public\n"
+                                         "inline\n"
+                                         "/* comment 1 */\n"
                                          "proc f() {\n"
                                          "  x;\n"
                                          "}\n");
@@ -173,6 +175,109 @@ static void test1e(Parser* parser) {
   assert(functionDecl->numStmts() == 1);
   assert(functionDecl->stmt(0)->isIdentifier());
 }
+
+static void test1f(Parser* parser) {
+  auto parseResult = parser->parseString("test1f.chpl",
+                                         "proc f(/* comment 1 */) {\n"
+                                         "  x;\n"
+                                         "}\n");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
+  auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(module->name().compare("test1f") == 0);
+  assert(module->numStmts() == 1);
+  assert(module->stmt(0)->isFunctionDecl());
+  auto functionDecl = module->stmt(0)->toFunctionDecl();
+  assert(functionDecl);
+  assert(functionDecl->numStmts() == 1);
+  assert(functionDecl->stmt(0)->isIdentifier());
+}
+
+static void test1g(Parser* parser) {
+  auto parseResult = parser->parseString("test1g.chpl",
+                                         "proc f()\n"
+                                         "/* comment 1 */ where a \n"
+                                         "{\n"
+                                         "  x;\n"
+                                         "}\n");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
+  auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(module->name().compare("test1g") == 0);
+  assert(module->numStmts() == 1);
+  assert(module->stmt(0)->isFunctionDecl());
+  auto functionDecl = module->stmt(0)->toFunctionDecl();
+  assert(functionDecl);
+  assert(functionDecl->numStmts() == 1);
+  assert(functionDecl->stmt(0)->isIdentifier());
+}
+
+static void test1h(Parser* parser) {
+  auto parseResult = parser->parseString("test1h.chpl",
+                                         "proc f()\n"
+                                         "where a /* comment 1 */\n"
+                                         "{\n"
+                                         "  x;\n"
+                                         "}\n");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
+  auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(module->name().compare("test1h") == 0);
+  assert(module->numStmts() == 1);
+  assert(module->stmt(0)->isFunctionDecl());
+  auto functionDecl = module->stmt(0)->toFunctionDecl();
+  assert(functionDecl);
+  assert(functionDecl->numStmts() == 1);
+  assert(functionDecl->stmt(0)->isIdentifier());
+}
+
+static void test1i(Parser* parser) {
+  auto parseResult = parser->parseString("test1i.chpl",
+                                         "proc f()\n"
+                                         "lifetime /* comment 1 */ a=b\n"
+                                         "{\n"
+                                         "  x;\n"
+                                         "}\n");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
+  auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(module->name().compare("test1i") == 0);
+  assert(module->numStmts() == 1);
+  assert(module->stmt(0)->isFunctionDecl());
+  auto functionDecl = module->stmt(0)->toFunctionDecl();
+  assert(functionDecl);
+  assert(functionDecl->numStmts() == 1);
+  assert(functionDecl->stmt(0)->isIdentifier());
+}
+
+static void test1j(Parser* parser) {
+  auto parseResult = parser->parseString("test1j.chpl",
+                                         "proc f()\n"
+                                         "lifetime a=b /* comment 1 */\n"
+                                         "{\n"
+                                         "  x;\n"
+                                         "}\n");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
+  auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(module->name().compare("test1j") == 0);
+  assert(module->numStmts() == 1);
+  assert(module->stmt(0)->isFunctionDecl());
+  auto functionDecl = module->stmt(0)->toFunctionDecl();
+  assert(functionDecl);
+  assert(functionDecl->numStmts() == 1);
+  assert(functionDecl->stmt(0)->isIdentifier());
+}
+
+
+
+
+
 
 static Builder::Result parseFunction(Parser* parser,
                                      const char* filename,
@@ -288,6 +393,10 @@ int main() {
   test1c(p);
   test1d(p);
   test1e(p);
+  test1f(p);
+  test1g(p);
+  test1h(p);
+  test1i(p);
   test2(p);
   test3(p);
 
