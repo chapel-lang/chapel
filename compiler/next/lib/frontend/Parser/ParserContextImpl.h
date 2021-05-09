@@ -79,8 +79,10 @@ std::vector<ParserComment>* ParserContext::gatherComments(YYLTYPE location) {
 }
 
 void ParserContext::noteDeclStartLoc(YYLTYPE loc) {
-  if (this->declStartLocation.first_line == 0)
+  if (this->declStartLocation.first_line == 0) {
+    printf("NOTING DECL START %i\n", loc.first_line);
     this->declStartLocation = loc;
+  }
 }
 Sym::Visibility ParserContext::noteVisibility(Sym::Visibility visibility) {
   this->visibility = visibility;
@@ -293,7 +295,9 @@ CommentsAndStmt ParserContext::finishStmt(Expression* e) {
 }
 
 ParserExprList*
-ParserContext::blockToParserExprList(YYLTYPE rbrLoc, ParserExprList* body) {
+ParserContext::blockToParserExprList(YYLTYPE lbrLoc, YYLTYPE rbrLoc,
+                                     ParserExprList* body) {
+  this->clearCommentsBefore(lbrLoc);
   ParserExprList* ret = body != nullptr ? body : new ParserExprList();
   this->appendList(ret, this->gatherComments(rbrLoc));
   return ret;
@@ -329,10 +333,9 @@ OpCall* ParserContext::buildUnaryOp(YYLTYPE location,
                        op, toOwned(expr)).release();
 }
 
-FunctionParts ParserContext::makeFunctionParts(YYLTYPE location,
-                                               bool isInline,
+FunctionParts ParserContext::makeFunctionParts(bool isInline,
                                                bool isOverride) {
-  FunctionParts fp = {this->gatherComments(location),
+  FunctionParts fp = {nullptr,
                       nullptr,
                       this->visibility,
                       Function::DEFAULT_LINKAGE,

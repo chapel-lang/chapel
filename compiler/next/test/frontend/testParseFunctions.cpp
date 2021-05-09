@@ -115,7 +115,8 @@ static void test1b(Parser* parser) {
 
 static void test1c(Parser* parser) {
   auto parseResult = parser->parseString("test1c.chpl",
-                                         "inline /* comment 1 */\n"
+                                         "/* comment 1 */\n"
+                                         "public inline\n"
                                          "proc f() {\n"
                                          "  x;\n"
                                          "}\n");
@@ -124,6 +125,28 @@ static void test1c(Parser* parser) {
   assert(parseResult.topLevelExpressions[0]->isModuleDecl());
   auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
   assert(module->name().compare("test1c") == 0);
+  assert(module->numStmts() == 2);
+  assert(module->stmt(0)->isComment());
+  assert(module->stmt(1)->isFunctionDecl());
+  auto functionDecl = module->stmt(1)->toFunctionDecl();
+  assert(functionDecl);
+  assert(functionDecl->numStmts() == 1);
+  assert(functionDecl->stmt(0)->isIdentifier());
+}
+
+static void test1d(Parser* parser) {
+  auto parseResult = parser->parseString("test1d.chpl",
+                                         "public\n"
+                                         "/* comment 1 */\n"
+                                         "inline\n"
+                                         "proc f() {\n"
+                                         "  x;\n"
+                                         "}\n");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
+  auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(module->name().compare("test1d") == 0);
   assert(module->numStmts() == 1);
   assert(module->stmt(0)->isFunctionDecl());
   auto functionDecl = module->stmt(0)->toFunctionDecl();
@@ -132,8 +155,24 @@ static void test1c(Parser* parser) {
   assert(functionDecl->stmt(0)->isIdentifier());
 }
 
-
-
+static void test1e(Parser* parser) {
+  auto parseResult = parser->parseString("test1e.chpl",
+                                         "public inline /* comment 1 */\n"
+                                         "proc f() {\n"
+                                         "  x;\n"
+                                         "}\n");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
+  auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(module->name().compare("test1e") == 0);
+  assert(module->numStmts() == 1);
+  assert(module->stmt(0)->isFunctionDecl());
+  auto functionDecl = module->stmt(0)->toFunctionDecl();
+  assert(functionDecl);
+  assert(functionDecl->numStmts() == 1);
+  assert(functionDecl->stmt(0)->isIdentifier());
+}
 
 static Builder::Result parseFunction(Parser* parser,
                                      const char* filename,
@@ -247,6 +286,8 @@ int main() {
   test1a(p);
   test1b(p);
   test1c(p);
+  test1d(p);
+  test1e(p);
   test2(p);
   test3(p);
 

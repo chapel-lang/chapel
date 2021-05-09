@@ -134,16 +134,8 @@ struct ParserContext {
 
   // Create a ParserExprList containing the passed statements, and any
   // comments before the right brace brace location.
-  ParserExprList* blockToParserExprList(YYLTYPE rbrLoc, ParserExprList* body);
-
-  // TODO: move these to astContext
-
-  // These adjust for the IDs
-  // and call enterStmt / exitStmt.
-  //ParserExprList* enterModule(YYLTYPE loc, const char* name, Expr* decl);
-  //ParserExprList* exitModule(ParserExprList* decl, ParserExprList* body);
-  //ParserExprList* enterFunction(YYLTYPE loc, const char* name, Expr* decl);
-  //ParserExprList* exitFunction(ParserExprList* decl, ParserExprList* body);
+  ParserExprList* blockToParserExprList(YYLTYPE lbrLoc, YYLTYPE rbrLoc,
+                                        ParserExprList* body);
 
   // This should consume the comments that occur before
   // and return them. (Including looking at source locations).
@@ -172,8 +164,7 @@ struct ParserContext {
   OpCall* buildUnaryOp(YYLTYPE location,
                        PODUniqueString op, Expression* expr);
 
-  FunctionParts makeFunctionParts(YYLTYPE location,
-                                  bool isInline,
+  FunctionParts makeFunctionParts(bool isInline,
                                   bool isOverride);
   CommentsAndStmt buildFunctionDecl(YYLTYPE location, FunctionParts& fp);
 

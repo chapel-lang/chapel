@@ -849,14 +849,15 @@ include_module_stmt:
 block_stmt_body:
   TLCBR TRCBR
   {
-    $$ = context->blockToParserExprList(@2, nullptr);
+    $$ = context->blockToParserExprList(@1, @2, nullptr);
   }
 | TLCBR stmt_ls TRCBR
   {
-    $$ = context->blockToParserExprList(@3, $2);
+    $$ = context->blockToParserExprList(@1, @3, $2);
   }
 | TLCBR error TRCBR
   {
+    context->clearComments();
     // create a list of stmts that just has an ErroneousExp
     ParserExprList* lst = context->makeList(ErroneousExpression::build(BUILDER, LOC(@2)));
     $$ = lst;
@@ -1185,12 +1186,14 @@ class_level_stmt:
       $$ = context->finishStmt($1);
       context->visibility = Sym::DEFAULT_VISIBILITY;
     }
-| TPUBLIC {context->visibility = Sym::PUBLIC;} inner_class_level_stmt
+| TPUBLIC {context->noteDeclStartLoc(@1);
+           context->noteVisibility(Sym::PUBLIC);} inner_class_level_stmt
     {
       $$ = context->finishStmt($3);
       context->visibility = Sym::DEFAULT_VISIBILITY;
     }
-| TPRIVATE {context->visibility = Sym::PRIVATE;} inner_class_level_stmt
+| TPRIVATE {context->noteDeclStartLoc(@1);
+            context->noteVisibility(Sym::PRIVATE);} inner_class_level_stmt
     {
       $$ = context->finishStmt($3);
       context->visibility = Sym::DEFAULT_VISIBILITY;
@@ -1730,10 +1733,11 @@ linkage_spec_empty:
 ;
 
 linkage_spec:
-  linkage_spec_empty { // uses yylloc to get the location of the next token
-                       $$ = context->makeFunctionParts(yylloc, false, false); }
-| TINLINE            { $$ = context->makeFunctionParts(@1, true, false); }
-| TOVERRIDE          { $$ = context->makeFunctionParts(@1, false, true); }
+  linkage_spec_empty { $$ = context->makeFunctionParts(false, false); }
+| TINLINE            { context->noteDeclStartLoc(@1);
+                       $$ = context->makeFunctionParts(true, false); }
+| TOVERRIDE          { context->noteDeclStartLoc(@1);
+                       $$ = context->makeFunctionParts(false, true); }
 ;
 
 fn_decl_stmt_complete:
@@ -1746,14 +1750,16 @@ fn_decl_stmt_complete:
 fn_decl_stmt:
   fn_decl_stmt_inner
   opt_ret_tag opt_ret_type
-  opt_throws_error opt_lifetime_where opt_function_body_stmt
+  opt_throws_error opt_lifetime_where
+    { context->clearComments(); }
+  opt_function_body_stmt
     {
       FunctionParts fp = $1;
       fp.returnIntent = $2;
       fp.returnType = $3;
       fp.throws = ($4 == ThrowsTag_THROWS) ? true : false;
       WhereAndLifetime wl = $5;
-      fp.body = $6;
+      fp.body = $7;
 
       fp.lifetime = wl.lifetime;
       fp.where = wl.where;
@@ -1813,10 +1819,8 @@ fn_decl_stmt_start:
   linkage_spec proc_iter_or_op
     {
       FunctionParts fp = $1;
-      /*if (fp.isInline == false && fp.isOverride == false) {
-        // fix comment gathering to account for empty linkage_spec
-        // having the previous, not next, token information.
-      auto comments = context->gatherComments(@2)*/
+      auto loc = context->declStartLoc(@2);
+      fp.comments = context->gatherComments(loc);
       fp.kind = $2;
       $$ = fp;
     }
@@ -1961,13 +1965,13 @@ opt_throws_error:
 | TTHROWS { $$ = ThrowsTag_THROWS; }
 
 opt_function_body_stmt:
-  TSEMI               { $$ = nullptr; }
+  TSEMI               { context->clearComments(); $$ = nullptr; }
 | function_body_stmt  { $$ = $1; }
 ;
 
 function_body_stmt:
   block_stmt_body   { $$ = $1; }
-| return_stmt       { $$ = context->makeList($1); }
+| return_stmt       { context->clearComments(); $$ = context->makeList($1); }
 ;
 
 query_expr:
