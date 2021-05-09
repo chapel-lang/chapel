@@ -26,8 +26,6 @@ static bool locationLessEq(YYLTYPE lhs, YYLTYPE rhs) {
 
 std::vector<ParserComment>* ParserContext::gatherComments(YYLTYPE location) {
 
-  printf("GATHERING COMMENTS\n");
-
   // If there were no comments, there is nothing to do.
   if (this->comments == nullptr) {
     return nullptr;
@@ -80,7 +78,6 @@ std::vector<ParserComment>* ParserContext::gatherComments(YYLTYPE location) {
 
 void ParserContext::noteDeclStartLoc(YYLTYPE loc) {
   if (this->declStartLocation.first_line == 0) {
-    printf("NOTING DECL START %i\n", loc.first_line);
     this->declStartLocation = loc;
   }
 }
@@ -106,8 +103,6 @@ void ParserContext::resetDeclState() {
 }
 
 void ParserContext::noteComment(YYLTYPE loc, const char* data, long size) {
-  printf("NOTING COMMENT %s\n", data);
-
   if (this->comments == nullptr) {
     this->comments = new std::vector<ParserComment>();
   }
@@ -121,7 +116,6 @@ void ParserContext::noteComment(YYLTYPE loc, const char* data, long size) {
 }
 
 void ParserContext::clearCommentsBefore(YYLTYPE loc) {
-  printf("CLEARING COMMENTS BEFORE\n");
   auto comments = this->gatherComments(loc);
   if (comments != nullptr) {
     for (ParserComment parserComment : *this->comments) {
@@ -131,8 +125,6 @@ void ParserContext::clearCommentsBefore(YYLTYPE loc) {
   }
 }
 void ParserContext::clearComments() {
-  printf("CLEARING COMMENTS\n");
-
   if (this->comments != nullptr) {
     for (ParserComment parserComment : *this->comments) {
       delete parserComment.comment;
