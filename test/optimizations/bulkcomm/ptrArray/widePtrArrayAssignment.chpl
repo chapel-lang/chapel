@@ -46,82 +46,27 @@ record R {
   }
 }
 
-var a: [LocaleSpace] srcType;
+config const elemPerLocale = 10;
+const elemRange = 0..#(numLocales*elemPerLocale);
+
+var a: [elemRange] srcType;
 for l in Locales do on l {
-  a[here.id] = createObj(here.id);
+  for i in 0..#elemPerLocale {
+    a[here.id*elemPerLocale+i] = createObj(here.id);
+  }
 }
 
 on Locales[1] {
-  var b: [LocaleSpace] dstType;
+  var b: [elemRange] dstType;
 
   if verboseComm then startVerboseCommHere();
   startCommDiagnosticsHere();
+
   b = a;
+
   stopCommDiagnosticsHere();
   if verboseComm then stopVerboseCommHere();
-  /*writeln(getCommDiagnosticsHere());*/
-
-  if mode==0 {
-    if ptrArrEq(a, b) {
-      writeln("Success");
-    }
-    else {
-      writeln("Pointer arrays differ");
-      writeln("Post assignment a");
-      arrPrint(a);
-      writeln("Post assignment b");
-      arrPrint(b);
-      writeln();
-    }
-  }
-  // owned transfer can't be done in bulk
-  // record arrays are transferred by value
-  else {
-    if ptrArrEq(a, b) {
-      writeln("FAILED, pointer arrays should be different");
-      writeln("Post assignment a");
-      arrPrint(a);
-      writeln("Post assignment b");
-      arrPrint(b);
-      writeln();
-    }
-    else {
-      writeln("Success");
-    }
-  }
+  writeln(getCommDiagnosticsHere());
 }
 
 cleanup(a);
-
-proc getWidePtrTup(p) {
-  if !__primitive("is wide pointer", p) {
-    writeln("You have to pass a wide pointer to this helper");
-  }
-  const locID = __primitive("_wide_get_locale", p);
-  const nodeID = chpl_nodeFromLocaleID(locID);
-  const sublocID = chpl_sublocFromLocaleID(locID);
-  const addr = __primitive("_wide_get_addr", p);
-
-  return (nodeID, sublocID, addr);
-}
-
-proc arrPrint(a) {
-  for elem in a{
-    const (nodeID, sublocID, addr) = getWidePtrTup(elem);
-    writeln("nodeID: ", nodeID, " sublocID ", sublocID, " addr ", addr);
-  }
-}
-
-proc ptrEq(p1, p2) {
-  return getWidePtrTup(p1) == getWidePtrTup(p2);
-}
-
-proc ptrArrEq(a, b) {
-  var eq = true;
-  for (aa, bb) in zip(a, b) {
-    if !ptrEq(aa, bb) then eq = false;
-  }
-  return eq;
-}
-
-
