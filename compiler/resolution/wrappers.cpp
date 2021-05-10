@@ -689,7 +689,7 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
     // as an example, see:
     //   test/functions/default-arguments/default-argument-class-override.chpl
     //
-    bool classDefaultArgCase = (fn->isMethod() &&
+    bool classDefaultArgCase = (fn->_this &&
                                 isClassLikeOrManaged(fn->_this->type));
 
     if (!classDefaultArgCase) {
