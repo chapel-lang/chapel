@@ -25,6 +25,59 @@
 
 /**
   This file should be included by .cpp files implementing queries.
+
+  This comment describes how the query framework works. For how to use it, see
+  the comment describing the Context class.
+
+  Queries are just functions that call special macros at the start and end of
+  the functions. The query framework uses these macros to cache the results of
+  queries and to recompute these results when needed according to a dependency
+  graph.
+
+  What do these functions do, in more detail?
+
+  At the start of a query:
+
+   * if the query has been run before, check to see if any dependencies have
+     changed.
+
+     * this is done in a recursive manner; the dependencies of a query are
+       processed before that query itself
+     * input queries are recomputed if the current revision number has changed.
+       This is so that e.g. file contents on disk are read again and
+       checked for changes.
+     * after a dependency is recomputed, it is checked whether or not it has
+       changed. If it has not changed, it is marked as checked (lastChecked is
+       set) and the lastChanged value is what it was before. The result is that
+       queries that depend on it do not need to be recomputed. If it has
+       changed, lastChanged is updated, which will causes queries that depend on
+       it to, in turn, run again.
+
+   * if any of the dependencies have changed, or if this is an input query and
+     it hasn't been run in the current revision number, or if there is no cached
+     result for this query, the query is run.
+     Otherwise, the cached result is reused (and the function returns early,
+     without running the main body of the query).
+
+  When reusing the cached result of a query:
+
+   * the function returns early, after the dependency checking, with
+     the old result
+   * the `mark` function is called for the old result, to mark any UniqueStrings
+     stored in the result so that they are not garbage collected. This is not
+     necessary when recomputing the result since the UniqueString build function
+     also marks the UniqueStrings.
+
+  When running the body of the query:
+
+   * any query that is called by it will be recorded automatically in the list
+     of dependencies.
+
+   * at the end of the function, the result of the query is compared with the
+     old result. If it changed, the 'lastChanged' value is updated. If it did
+     not change, the old result is kept in the maps and the new result is
+     discarded.
+
  */
 
 /// \cond DO_NOT_DOCUMENT
