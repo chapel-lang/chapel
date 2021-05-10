@@ -145,7 +145,7 @@ inline operator syserr.!=(a: int(64), b: syserr) return !(a == b);
 pragma "no doc"
 inline operator syserr.!(a: syserr) return (qio_err_iserr(a) == 0:c_int);
 pragma "no doc"
-inline proc _cond_test(a: syserr) return (qio_err_iserr(a) != 0:c_int);
+inline proc syserr.chpl_cond_test_method() return (qio_err_iserr(this) != 0:c_int);
 pragma "no doc"
 inline operator :(x: syserr, type t: int(32)) return qio_err_to_int(x);
 pragma "no doc"
