@@ -25,19 +25,6 @@ namespace chpl {
 namespace uast {
 
 
-Serial::Serial(ASTList stmts, int8_t condChildNum, bool usesDo) :
-    Expression(asttags::Serial, std::move(stmts)),
-    condChildNum_(condChildNum),
-    usesDo_(usesDo) {
-
-#ifndef NDEBUG
-  // check that all children are exprs (and not, say, Symbols)
-  for (const ASTNode* child : this->children()) {
-    assert(child->isExpression());
-  }
-#endif
-}
-
 bool Serial::contentsMatchInner(const ASTNode* other) const {
   const Serial* lhs = this;
   const Serial* rhs = (const Serial*) other;
