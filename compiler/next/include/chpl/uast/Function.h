@@ -192,7 +192,7 @@ class Function final : public Sym {
    receiver, if present, as the first formal.
    */
   ASTListIteratorPair<FormalDecl> formalDecls() const {
-    if (numFormals_ == 0) {
+    if (numFormals() == 0) {
       return ASTListIteratorPair<FormalDecl>(children_.end(), children_.end());
     } else {
       auto start = children_.begin() + formalsChildNum_;
@@ -205,7 +205,7 @@ class Function final : public Sym {
    receiver, if present, as the first formal.
    */
   DeclListSymIteratorPair<Formal> formals() const {
-    if (numFormals_ == 0) {
+    if (numFormals() == 0) {
       return DeclListSymIteratorPair<Formal>(children_.end(), children_.end());
     } else {
       auto start = children_.begin() + formalsChildNum_;
@@ -300,7 +300,7 @@ class Function final : public Sym {
    Return a way to iterate over the lifetime clauses.
    */
   ASTListIteratorPair<Expression> lifetimeClauses() const {
-    if (numLifetimeParts_ == 0) {
+    if (numLifetimeClauses() == 0) {
       return ASTListIteratorPair<Expression>(children_.end(), children_.end());
     } else {
       auto start = children_.begin() + lifetimeChildNum_;
@@ -319,8 +319,8 @@ class Function final : public Sym {
    Return the i'th lifetime clause
    */
   const Expression* lifetimeClause(int i) const {
-    assert(numLifetimeParts_ > 0 && lifetimeChildNum_ >= 0);
-    assert(0 <= i && i < numLifetimeParts_);
+    assert(numLifetimeClauses() > 0 && lifetimeChildNum_ >= 0);
+    assert(0 <= i && i < numLifetimeClauses());
     const ASTNode* ast = this->child(lifetimeChildNum_ + i);
     assert(ast->isExpression());
     return (const Expression*) ast;
