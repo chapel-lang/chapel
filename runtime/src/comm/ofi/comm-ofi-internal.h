@@ -72,6 +72,7 @@ extern "C" {
   m(MR,                     "mem reg: regions")                         \
   m(MR_DESC,                "mem reg: local region descs")              \
   m(MR_KEY,                 "mem reg: remote region keys")              \
+  m(MR_BB,                  "mem reg: bounce buffers")                  \
   m(HUGEPAGES,              "hugepages")                                \
   m(TCIPS,                  "tx context alloc/free")                    \
   m(OOB,                    "out-of-band calls")                        \
@@ -126,11 +127,6 @@ char* chpl_comm_ofi_dbg_val(const void*, enum fi_datatype);
     } while (0)
 
 #define DBG_VAL(pV, typ) chpl_comm_ofi_dbg_val(pV, typ)
-
-//#define DEBUG_CRC_MSGS
-#ifdef DEBUG_CRC_MSGS
-#include <libiberty.h>
-#endif
 
 #else // CHPL_COMM_DEBUG
 
