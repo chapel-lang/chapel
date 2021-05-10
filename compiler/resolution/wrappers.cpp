@@ -688,9 +688,13 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
     // happen to have intuitive default argument behavior.
     // as an example, see:
     //   test/functions/default-arguments/default-argument-class-override.chpl
+    //
+    bool classDefaultArgCase = (fn->isMethod() &&
+                                isClassLikeOrManaged(fn->_this->type));
 
-    if (!wrapper->_this)
+    if (!classDefaultArgCase) {
       temp->addFlag(FLAG_MAYBE_PARAM);
+    }
     temp->addFlag(FLAG_EXPR_TEMP); // ? is this needed?
   }
 
