@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_UAST_VARIABLE_H
-#define CHPL_UAST_VARIABLE_H
+#ifndef CHPL_UAST_FORMAL_H
+#define CHPL_UAST_FORMAL_H
 
 #include "chpl/queries/Location.h"
 #include "chpl/uast/Sym.h"
@@ -28,45 +28,48 @@ namespace uast {
 
 
 /**
-  This class represents a variable. For example:
+  This class represents a formal. For example, `x` is a formal
+  in the below:
 
   \rst
   .. code-block:: chapel
 
-      var a = 1;
-      ref b = a;
-      const c = 2;
-      const ref d = c;
-      param e = "hi";
+      proc f( x ) { }
   \endrst
 
-  each of these is a VariableDecl that refers to a Variable Sym.
+  each Formal has a FormalDecl that refers to the FormalSym. The
+  FormalDecls are stored inside of a Function.
  */
-class Variable final : public Sym {
- friend class VariableDecl;
+class Formal final : public Sym {
+ friend class FormalDecl;
 
  public:
-  enum Kind {
-    VAR,
+  enum Intent {
+    DEFAULT_INTENT,
     CONST,
     CONST_REF,
     REF,
     PARAM,
-    TYPE
+    TYPE,
+    IN,
+    CONST_IN,
+    OUT,
+    INOUT,
   };
 
  private:
-  Kind kind_;
+  Intent intent_;
   int8_t typeExpressionChildNum;
   int8_t initExpressionChildNum;
 
-  Variable(ASTList children,
-           UniqueString name, Sym::Visibility vis,
-           Variable::Kind kind,
-           int8_t typeExpressionChildNum,
-           int8_t initExpressionChildNum)
-    : Sym(asttags::Variable, std::move(children), name, vis),
-      kind_(kind),
+  Formal(ASTList children,
+         UniqueString name,
+         Formal::Intent intent,
+         int8_t typeExpressionChildNum,
+         int8_t initExpressionChildNum)
+    : Sym(asttags::Formal, std::move(children),
+          name, Sym::DEFAULT_VISIBILITY),
+      intent_(intent),
       typeExpressionChildNum(typeExpressionChildNum),
       initExpressionChildNum(initExpressionChildNum) {
 
@@ -79,15 +82,20 @@ class Variable final : public Sym {
   void markUniqueStringsInner(Context* context) const override;
 
  public:
-  ~Variable() override = default;
+  ~Formal() override = default;
+
   /**
-    Returns the kind of the variable (`var` / `const` / `param` etc).
+   Returns the intent of the formal, e.g. in `proc f(const ref y: int)`,
+   the formal `y` has intent `const ref`.
    */
-  const Kind kind() const { return this->kind_; }
+  const Intent intent() const { return this->intent_; }
+
   /**
-    Returns the type expression used in the variable's declaration, or nullptr
-    if there wasn't one.
-    */
+   Returns the type expression used in the formal's declaration, or nullptr
+   if there wasn't one.
+
+   For example, in `proc f(y: int)`, the formal `y` has type expression `int`.
+   */
   const Expression* typeExpression() const {
     if (typeExpressionChildNum >= 0) {
       const ASTNode* ast = this->child(typeExpressionChildNum);
@@ -97,9 +105,12 @@ class Variable final : public Sym {
       return nullptr;
     }
   }
+
   /**
-    Returns the init expression used in the variable's declaration, or nullptr
+    Returns the init expression used in the formal's declaration, or nullptr
     if there wasn't one.
+
+    For example, in `proc f(z = 3)`, the formal `z` has init expression `3`.
     */
   const Expression* initExpression() const {
     if (initExpressionChildNum >= 0) {

@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/ModuleDecl.h"
+#include "chpl/uast/Formal.h"
 
 #include "chpl/uast/Builder.h"
 
@@ -25,25 +25,16 @@ namespace chpl {
 namespace uast {
 
 
-bool ModuleDecl::contentsMatchInner(const ASTNode* other) const {
-  const ModuleDecl* lhs = this;
-  const ModuleDecl* rhs = (const ModuleDecl*) other;
-  return lhs->declContentsMatchInner(rhs);
+bool Formal::contentsMatchInner(const ASTNode* other) const {
+  const Formal* lhs = this;
+  const Formal* rhs = (const Formal*) other;
+  return lhs->symContentsMatchInner(rhs) &&
+         lhs->intent_ == rhs->intent_ &&
+         lhs->typeExpressionChildNum == rhs->typeExpressionChildNum &&
+         lhs->initExpressionChildNum == rhs->initExpressionChildNum;
 }
-void ModuleDecl::markUniqueStringsInner(Context* context) const {
-  return declMarkUniqueStringsInner(context);
-}
-
-owned<ModuleDecl>
-ModuleDecl::build(Builder* builder, Location loc,
-                  UniqueString name, Sym::Visibility vis,
-                  Module::Kind kind, ASTList stmts) {
-
-  Module* sym = new Module(std::move(stmts), name, vis, kind);
-  ModuleDecl* ret = new ModuleDecl(toOwned(sym));
-  builder->noteLocation(sym, loc);
-  builder->noteLocation(ret, loc);
-  return toOwned(ret);
+void Formal::markUniqueStringsInner(Context* context) const {
+  symMarkUniqueStringsInner(context);
 }
 
 

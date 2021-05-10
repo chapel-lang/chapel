@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/VariableDecl.h"
+#include "chpl/uast/FormalDecl.h"
 
 #include "chpl/uast/Builder.h"
 
@@ -25,21 +25,21 @@ namespace chpl {
 namespace uast {
 
 
-bool VariableDecl::contentsMatchInner(const ASTNode* other) const {
-  const VariableDecl* lhs = this;
-  const VariableDecl* rhs = (const VariableDecl*) other;
+bool FormalDecl::contentsMatchInner(const ASTNode* other) const {
+  const FormalDecl* lhs = this;
+  const FormalDecl* rhs = (const FormalDecl*) other;
   return lhs->declContentsMatchInner(rhs);
 }
-void VariableDecl::markUniqueStringsInner(Context* context) const {
+void FormalDecl::markUniqueStringsInner(Context* context) const {
   return declMarkUniqueStringsInner(context);
 }
 
-owned<VariableDecl>
-VariableDecl::build(Builder* builder, Location loc,
-                    UniqueString name, Sym::Visibility vis,
-                    Variable::Kind kind,
-                    owned<Expression> typeExpression,
-                    owned<Expression> initExpression) {
+owned<FormalDecl>
+FormalDecl::build(Builder* builder, Location loc,
+                  UniqueString name,
+                  Formal::Intent intent,
+                  owned<Expression> typeExpression,
+                  owned<Expression> initExpression) {
   ASTList lst;
   int8_t typeExpressionChildNum = -1;
   int8_t initExpressionChildNum = -1;
@@ -51,10 +51,10 @@ VariableDecl::build(Builder* builder, Location loc,
     initExpressionChildNum = lst.size();
     lst.push_back(std::move(initExpression));
   }
-  Variable* sym = new Variable(std::move(lst), name, vis, kind,
-                               typeExpressionChildNum, initExpressionChildNum);
+  Formal* sym = new Formal(std::move(lst), name, intent,
+                           typeExpressionChildNum, initExpressionChildNum);
   builder->noteLocation(sym, loc);
-  VariableDecl* ret = new VariableDecl(toOwned(sym));
+  FormalDecl* ret = new FormalDecl(toOwned(sym));
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

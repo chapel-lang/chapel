@@ -17,12 +17,12 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_UAST_VARIABLEDECL_H
-#define CHPL_UAST_VARIABLEDECL_H
+#ifndef CHPL_UAST_FORMALDECL_H
+#define CHPL_UAST_FORMALDECL_H
 
 #include "chpl/queries/Location.h"
 #include "chpl/uast/Decl.h"
-#include "chpl/uast/Variable.h"
+#include "chpl/uast/Formal.h"
 
 #include <cassert>
 
@@ -31,49 +31,47 @@ namespace uast {
 
 
 /**
-  This class represents a variable declaration
-  E.g. here are some examples
+  This class represents a formal declaration..
+  
+  For example, the Function `f` below has
+  a FormalDecl for `x` than refers to a Formal sym.
 
   \rst
   .. code-block:: chapel
 
-      var a = 1;
-      ref b = a;
-      const c = 2;
-      const ref d = c;
-      param e = "hi";
+      proc f( x ) { }
   \endrst
 
-  Each of these is a VariableDecl that refers to a Variable Sym.
  */
-class VariableDecl final : public Decl {
+class FormalDecl final : public Decl {
  private:
-  VariableDecl(owned<Variable> variable)
-    : Decl(asttags::VariableDecl, std::move(variable)) {
+  FormalDecl(owned<Formal> formal)
+    : Decl(asttags::FormalDecl, std::move(formal)) {
   }
   bool contentsMatchInner(const ASTNode* other) const override;
   void markUniqueStringsInner(Context* context) const override;
 
  public:
-  ~VariableDecl() override = default;
-  static owned<VariableDecl> build(Builder* builder, Location loc,
-                                   UniqueString name, Sym::Visibility vis,
-                                   Variable::Kind kind,
-                                   owned<Expression> typeExpression,
-                                   owned<Expression> initExpression);
-  const Variable* variable() const {
+  ~FormalDecl() override = default;
+  static owned<FormalDecl> build(Builder* builder, Location loc,
+                                 UniqueString name,
+                                 Formal::Intent intent,
+                                 owned<Expression> typeExpression,
+                                 owned<Expression> initExpression);
+
+  const Formal* formal() const {
     const Sym* sym = this->sym();
-    assert(sym->isVariable());
-    return (Variable*)sym;
+    assert(sym->isFormal());
+    return (Formal*)sym;
   }
-  const Variable::Kind kind() const {
-    return this->variable()->kind();
+  const Formal::Intent intent() const {
+    return this->formal()->intent();
   }
   const Expression* typeExpression() const {
-    return this->variable()->typeExpression();
+    return this->formal()->typeExpression();
   }
   const Expression* initExpression() const {
-    return this->variable()->initExpression();
+    return this->formal()->initExpression();
   }
 };
 
