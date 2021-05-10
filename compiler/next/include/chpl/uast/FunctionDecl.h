@@ -55,7 +55,6 @@ class FunctionDecl final : public Decl {
  public:
   ~FunctionDecl() override = default;
 
-  // if isMethod is true, the first formal is the 'this' formal
   static owned<FunctionDecl> build(Builder* builder, Location loc,
                                    UniqueString name, Sym::Visibility vis,
                                    Function::Linkage linkage,
@@ -105,18 +104,28 @@ class FunctionDecl final : public Decl {
     return function()->linkageNameExpression();
   }
 
-  ASTListIteratorPair<FormalDecl> formals() const {
+  ASTListIteratorPair<FormalDecl> formalDecls() const {
+    return function()->formalDecls();
+  }
+  DeclListSymIteratorPair<Formal> formals() const {
     return function()->formals();
   }
   int numFormals() const {
     return function()->numFormals();
   }
+  const FormalDecl* formalDecl(int i) const {
+    return function()->formalDecl(i);
+  }
   const Formal* formal(int i) const {
     return function()->formal(i);
+  }
+  const FormalDecl* thisFormalDecl() const {
+    return function()->thisFormalDecl();
   }
   const Formal* thisFormal() const {
     return function()->thisFormal();
   }
+
   const Expression* returnType() const {
     return function()->returnType();
   }

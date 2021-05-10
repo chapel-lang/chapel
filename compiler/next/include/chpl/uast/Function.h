@@ -187,15 +187,11 @@ class Function final : public Sym {
     }
   }
 
-  // TODO: should formals() result in Formal or FormalDecl?
-  //       should getFormal() result in the same type?
-  //       do we need two variants of these?
-
   /**
-   Return a way to iterate over the formals, including the method
+   Return a way to iterate over the formals Decls, including the method
    receiver, if present, as the first formal.
    */
-  ASTListIteratorPair<FormalDecl> formals() const {
+  ASTListIteratorPair<FormalDecl> formalDecls() const {
     if (numFormals_ == 0) {
       return ASTListIteratorPair<FormalDecl>(children_.end(), children_.end());
     } else {
@@ -205,33 +201,73 @@ class Function final : public Sym {
   }
 
   /**
+   Return a way to iterate over the formals Syms, including the method
+   receiver, if present, as the first formal.
+   */
+  DeclListSymIteratorPair<Formal> formals() const {
+    if (numFormals_ == 0) {
+      return DeclListSymIteratorPair<Formal>(children_.end(), children_.end());
+    } else {
+      auto start = children_.begin() + formalsChildNum_;
+      return DeclListSymIteratorPair<Formal>(start, start + numFormals_);
+    }
+  }
+
+  /**
    Return the number of formals
+   (which is the number of formal Decls and the number of formal Syms
+    since each Decl contains one Sym)
    */
   int numFormals() const {
     return numFormals_; 
   }
 
   /**
-   Return the i'th formal
+   Return the i'th formal Decl
    */
-  const Formal* formal(int i) const {
+  const FormalDecl* formalDecl(int i) const {
     assert(numFormals_ > 0 && formalsChildNum_ >= 0);
     assert(0 <= i && i < numFormals_);
     const ASTNode* ast = this->child(formalsChildNum_ + i);
     assert(ast->isFormalDecl());
     const FormalDecl* d = (const FormalDecl*) ast;
-    return d->formal();
+    return d;
   }
 
-  const Formal* thisFormal() const {
+
+  /**
+   Return the i'th formal Sym
+   */
+  const Formal* formal(int i) const {
+    return this->formalDecl(i)->formal();
+  }
+
+  /**
+   Returns the FormalDecl for the 'this' formal argument,
+   or 'nullptr' if there is none.
+   */
+  const FormalDecl* thisFormalDecl() const {
     if (thisFormalChildNum_ >= 0) {
       const ASTNode* ast = this->child(thisFormalChildNum_);
       assert(ast->isFormalDecl());
       const FormalDecl* d = (const FormalDecl*) ast;
-      return d->formal();
+      return d;
     } else {
       return nullptr;
     }
+  }
+
+ /**
+   Returns the Formal for the 'this' formal argument,
+   or 'nullptr' if there is none.
+   */
+  const Formal* thisFormal() const {
+    const FormalDecl* d = this->thisFormalDecl();
+    if (d == nullptr) {
+      return nullptr;
+    }
+
+    return d->formal();
   }
 
   /**

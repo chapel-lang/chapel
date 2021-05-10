@@ -378,6 +378,48 @@ static void test3(Parser* parser) {
   assert(function->numStmts() == 0);
 }
 
+static void test4(Parser* parser) {
+  const Function* function = nullptr;
+  auto parse = parseFunction(
+      parser,
+      "test4.chpl",
+      function,
+      "proc f(a: int, b = x) ref { y; z; }");
+
+  // this test is focused on checking the function iterators
+  assert(function->name().compare("f") == 0);
+  assert(function->numFormals() == 2);
+  auto formalA = function->formal(0);
+  assert(formalA);
+  auto formalB = function->formal(1);
+  assert(formalB);
+  assert(function->numStmts() == 2);
+  auto bodyY = function->stmt(0);
+  assert(bodyY);
+  auto bodyZ = function->stmt(1);
+  assert(bodyZ);
+
+  // Now check the various alternative access methods.
+  assert(function->formalDecl(0)->formal() == formalA);
+  assert(function->formalDecl(1)->formal() == formalB);
+
+  int i;
+
+  i = 0;
+  for (auto decl : function->formalDecls()) {
+    if (i == 0) assert(decl->formal() == formalA);
+    if (i == 1) assert(decl->formal() == formalB);
+    i++;
+  }
+
+  i = 0;
+  for (auto formal : function->formals()) {
+    if (i == 0) assert(formal == formalA);
+    if (i == 1) assert(formal == formalB);
+    i++;
+  }
+}
+
 
 
 int main() {
@@ -399,6 +441,7 @@ int main() {
   test1i(p);
   test2(p);
   test3(p);
+  test4(p);
 
   return 0;
 }
