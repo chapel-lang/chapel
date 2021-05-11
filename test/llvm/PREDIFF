@@ -24,6 +24,6 @@ mv $OUTFILE $TMPFILE
 $FILECHECK --input-file $TMPFILE $TESTNAME.chpl 2> $OUTFILE
 
 # Make sure to propagate memory leaks
-awk '/=* Memory Leaks =*/ {intable=1} {if (intable) {print($0);}}' <$TMPFILE >$OUTFILE
+awk '/=* Memory Leaks =*/ {intable=1} {if (intable) {print($0);}}' <$TMPFILE >>$OUTFILE
 
 rm $TMPFILE
