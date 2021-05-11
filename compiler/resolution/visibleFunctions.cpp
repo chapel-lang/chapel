@@ -561,6 +561,7 @@ static void getVisibleMethodsFirstVisit(const char* name, CallExpr* call,
           // When private methods and fields are supported, we'll need to extend
           // this
           visibleFns.add(fn);
+
         } else if (fn->hasFlag(FLAG_OPERATOR)) {
           // Respect operator function privacy.
           if (fn->hasFlag(FLAG_PRIVATE) && fn->isVisible(call)) {
