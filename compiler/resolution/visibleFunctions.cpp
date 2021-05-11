@@ -555,9 +555,20 @@ static void getVisibleMethodsFirstVisit(const char* name, CallExpr* call,
 
     if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(name)) {
       forv_Vec(FnSymbol, fn, *fns) {
-        // When private methods and fields are supported, we'll need to extend
-        // this
-        visibleFns.add(fn);
+        // Don't allow operators that aren't methods to be found unless they're
+        // publicly visible
+        if (fn->hasFlag(FLAG_METHOD) || !fn->hasFlag(FLAG_OPERATOR)) {
+          // When private methods and fields are supported, we'll need to extend
+          // this
+          visibleFns.add(fn);
+        } else if (fn->hasFlag(FLAG_OPERATOR)) {
+          // Respect operator function privacy.
+          if (fn->hasFlag(FLAG_PRIVATE) && fn->isVisible(call)) {
+            visibleFns.add(fn);
+          } else if (!fn->hasFlag(FLAG_PRIVATE)) {
+            visibleFns.add(fn);
+          }
+        }
       }
     }
   }
