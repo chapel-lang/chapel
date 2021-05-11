@@ -84,6 +84,19 @@ owned<FnCall> FnCall::build(Builder* builder,
                        std::move(emptyActualNames),
                        callUsedSquareBrackets);
 }
+owned<FnCall> FnCall::build(Builder* builder,
+                            Location loc,
+                            owned<Expression> calledExpression,
+                            bool callUsedSquareBrackets) {
+  ASTList emptyActuals;
+  std::vector<UniqueString> emptyActualNames;
+
+  return FnCall::build(builder, loc,
+                       std::move(calledExpression),
+                       std::move(emptyActuals),
+                       std::move(emptyActualNames),
+                       callUsedSquareBrackets);
+}
 
 
 } // namespace uast

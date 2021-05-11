@@ -2635,11 +2635,26 @@ call_expr:
 ;
 
 dot_expr:
-  expr TDOT ident_use          { $$ = TODOEXPR(@$); }
-| expr TDOT TTYPE              { $$ = TODOEXPR(@$); }
-| expr TDOT TDOMAIN            { $$ = TODOEXPR(@$); }
-| expr TDOT TLOCALE            { $$ = TODOEXPR(@$); }
-| expr TDOT TBYTES TLP TRP     { $$ = TODOEXPR(@$); }
+  expr TDOT ident_use
+    { $$ = Dot::build(BUILDER, LOC(@$), toOwned($1), $3).release(); }
+| expr TDOT TTYPE
+    { $$ = Dot::build(BUILDER, LOC(@$), toOwned($1), $3).release(); }
+| expr TDOT TDOMAIN
+    { $$ = Dot::build(BUILDER, LOC(@$), toOwned($1), $3).release(); }
+| expr TDOT TLOCALE
+    { $$ = Dot::build(BUILDER, LOC(@$), toOwned($1), $3).release(); }
+| expr TDOT TBYTES TLP TRP
+    {
+      $$ = FnCall::build(BUILDER, LOC(@$),
+                         Dot::build(BUILDER, LOC(@$), toOwned($1), $3),
+                         false).release();
+    }
+| expr TDOT TBYTES TLSBR TRSBR
+    {
+      $$ = FnCall::build(BUILDER, LOC(@$),
+                         Dot::build(BUILDER, LOC(@$), toOwned($1), $3),
+                         true).release();
+    }
 ;
 
 /* ( <expr> ) -- A parenthesized expression.  The parens are stripped.
