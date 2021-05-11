@@ -27,14 +27,6 @@
 namespace chpl {
 namespace uast {
 
-ASTNode::ASTNode(ASTTag tag)
-  : tag_(tag), id_(), children_() {
-}
-
-ASTNode::ASTNode(ASTTag tag, ASTList children)
-  : tag_(tag), id_(), children_(std::move(children)) {
-}
-
 
 ASTNode::~ASTNode() {
 }

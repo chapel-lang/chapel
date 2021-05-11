@@ -31,15 +31,6 @@ namespace chpl {
 namespace uast {
 
 
-Builder::Builder(Context* context,
-                 UniqueString filepath,
-                 UniqueString inferredModuleName)
-  : context_(context),
-    filepath_(filepath),
-    inferredModuleName_(inferredModuleName),
-    topLevelExpressions_(), errors_(), locations_() {
-}
-
 static std::string filenameToModulename(const char* filename) {
   const char* moduleName = filename;
   const char* firstSlash = strrchr(moduleName, '/');

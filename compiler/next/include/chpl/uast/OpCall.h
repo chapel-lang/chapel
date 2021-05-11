@@ -30,6 +30,10 @@ namespace uast {
 
 /**
   This class represents a call to an operator.
+
+  For example `a + b` and `x = y` are calls to operators (where `+` and `=` are
+  the operators called).
+
  */
 class OpCall final : public Call {
  private:
