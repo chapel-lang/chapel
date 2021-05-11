@@ -101,7 +101,7 @@ public:
   std::vector<ArgSymbol*> actualIdxToFormal;
 
   // One ImplementsStmt per IfcConstraint when 'fn' is CG
-  std::vector<ImplementsStmt*> witnesses;
+  std::vector<ImplementsStmt*> witnessIstms;
   // Is this a CG "interim instantiation"?
   bool                    isInterimInstantiation;
 
