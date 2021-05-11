@@ -836,7 +836,6 @@ class UserMapAssocArr: AbsBaseArr {
 
   proc dsiHasSingleLocalSubdomain() param return false;
 
-  pragma "order independent yielding loops"
   iter dsiLocalSubdomains(loc: locale) {
     for locdom in dom.dsiLocalSubdomains(loc) do
       yield locdom;
