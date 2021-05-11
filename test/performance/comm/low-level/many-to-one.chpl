@@ -126,7 +126,7 @@ proc main() {
             if nops == nopsAtCheck {
               tElapsed = t.elapsed();
               if tElapsed >= runSecs then break;
-              nopsAtCheck = (nops * (0.75 * runSecs / tElapsed)):int;
+              nopsAtCheck += (0.99 * nops * (runSecs / tElapsed - 1)):int;
               if nopsAtCheck - nops < minOpsPerTimerCheck then
                 nopsAtCheck = nops + minOpsPerTimerCheck;
             }
