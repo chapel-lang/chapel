@@ -42,11 +42,13 @@
 #define baseSBATCHFilename ".chpl-slurm-sbatch-"
 
 #define CHPL_WALLTIME_FLAG "--walltime"
+#define CHPL_NODELIST_FLAG "--nodelist"
 #define CHPL_PARTITION_FLAG "--partition"
 #define CHPL_EXCLUDE_FLAG "--exclude"
 
 static char* debug = NULL;
 static char* walltime = NULL;
+static char* nodelist = NULL;
 static char* partition = NULL;
 static char* exclude = NULL;
 char slurmFilename[FILENAME_MAX];
@@ -107,6 +109,11 @@ static void genNumLocalesOptions(FILE* slurmFile, sbatchVersion sbatch,
     walltime = getenv("CHPL_LAUNCHER_WALLTIME");
   }
 
+  // command line nodelist takes precedence over env var
+  if (!nodelist) {
+    nodelist = getenv("CHPL_LAUNCHER_NODELIST");
+  }
+
   // command line partition takes precedence over env var
   if (!partition) {
     partition = getenv("CHPL_LAUNCHER_PARTITION");
@@ -119,6 +126,8 @@ static void genNumLocalesOptions(FILE* slurmFile, sbatchVersion sbatch,
 
   if (walltime) 
     fprintf(slurmFile, "#SBATCH --time=%s\n", walltime);
+  if (nodelist)
+    fprintf(slurmFile, "#SBATCH --nodelist=%s\n", nodelist);
   if (partition)
     fprintf(slurmFile, "#SBATCH --partition=%s\n", partition);
   if (exclude)
@@ -282,6 +291,8 @@ static char* chpl_launch_create_command(int argc, char* argv[],
       len += sprintf(iCom+len, "--%s ", nodeAccessStr);
     if (walltime)
       len += sprintf(iCom+len, "--time=%s ", walltime);
+    if (nodelist)
+      len += sprintf(iCom+len, "--nodelist=%s ", nodelist);
     if(partition)
       len += sprintf(iCom+len, "--partition=%s ", partition);
     if(exclude)
@@ -346,6 +357,15 @@ int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
     return 1;
   }
 
+  // handle --nodelist <nodelist> or --nodelist=<nodelist>
+  if (!strcmp(argv[argNum], CHPL_NODELIST_FLAG)) {
+    nodelist = argv[argNum+1];
+    return 2;
+  } else if (!strncmp(argv[argNum], CHPL_NODELIST_FLAG"=", strlen(CHPL_NODELIST_FLAG))) {
+    nodelist = &(argv[argNum][strlen(CHPL_NODELIST_FLAG)+1]);
+    return 1;
+  }
+
   // handle --partition <partition> or --partition=<partition>
   if (!strcmp(argv[argNum], CHPL_PARTITION_FLAG)) {
     partition = argv[argNum+1];
@@ -372,6 +392,8 @@ void chpl_launch_print_help(void) {
   fprintf(stdout, "===============\n");
   fprintf(stdout, "  %s <HH:MM:SS> : specify a wallclock time limit\n", CHPL_WALLTIME_FLAG);
   fprintf(stdout, "                           (or use $CHPL_LAUNCHER_WALLTIME)\n");
+  fprintf(stdout, "  %s <nodelist> : specify a nodelist to use\n", CHPL_NODELIST_FLAG);
+  fprintf(stdout, "                           (or use $CHPL_LAUNCHER_NODELIST)\n");
   fprintf(stdout, "  %s <partition> : specify a partition to use\n", CHPL_PARTITION_FLAG);
   fprintf(stdout, "                           (or use $CHPL_LAUNCHER_PARTITION)\n");
   fprintf(stdout, "  %s <nodes> : specify node(s) to exclude\n", CHPL_EXCLUDE_FLAG);
