@@ -50,7 +50,7 @@
        changed. If it has not changed, it is marked as checked (lastChecked is
        set) and the lastChanged value is what it was before. The result is that
        queries that depend on it do not need to be recomputed. If it has
-       changed, lastChanged is updated, which will causes queries that depend on
+       changed, lastChanged is updated, which will cause queries that depend on
        it to, in turn, run again.
 
    * if any of the dependencies have changed, or if this is an input query and
