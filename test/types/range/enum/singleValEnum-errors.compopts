@@ -1,4 +1,4 @@
 -serrorCase=1  # singleValEnum-errors-xlate.good
--serrorCase=2  # singleValEnum-errors-interior.good
+-serrorCase=2 --bounds-checks  # singleValEnum-errors-interior.good
 -serrorCase=3  # singleValEnum-errors-exterior.good
 -serrorCase=4  # singleValEnum-errors-expand.good
