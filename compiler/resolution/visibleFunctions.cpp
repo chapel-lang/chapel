@@ -21,6 +21,7 @@
 #include "visibleFunctions.h"
 
 #include "callInfo.h"
+#include "DecoratedClassType.h"
 #include "driver.h"
 #include "expr.h"
 #include "ImportStmt.h"
@@ -478,6 +479,12 @@ static void lookAtTypeFirst(const char* name, CallExpr* call, BlockStmt* block,
 
   lookAtTypeFirstHelper(name, call, block, t, visInfo, visited, visibleFns);
 
+  Type* canonT = canonicalClassType(t);
+  if (t != canonT) {
+    lookAtTypeFirstHelper(name, call, block, canonT, visInfo, visited,
+                          visibleFns);
+  }
+
   if (!call->isPrimitive()) {
     UnresolvedSymExpr* base = toUnresolvedSymExpr(call->baseExpr);
     INT_ASSERT(base);
@@ -490,6 +497,12 @@ static void lookAtTypeFirst(const char* name, CallExpr* call, BlockStmt* block,
         lookAtTypeFirstHelper(name, call, block, t2, visInfo, visited,
                               visibleFns);
 
+        Type* canonT2 = canonicalClassType(t2);
+        if (t2 != canonT2) {
+          lookAtTypeFirstHelper(name, call, block, canonT2, visInfo, visited,
+                                visibleFns);
+        }
+
       } else if (call->get(1)->typeInfo() == dtMethodToken &&
                  call->numActuals() > 2) {
         // It is a method call.  So we've only checked against the type we set
@@ -498,10 +511,23 @@ static void lookAtTypeFirst(const char* name, CallExpr* call, BlockStmt* block,
         Type* t2 = call->get(3)->getValType();
         lookAtTypeFirstHelper(name, call, block, t2, visInfo, visited,
                               visibleFns);
+
+        Type* canonT2 = canonicalClassType(t2);
+        if (t2 != canonT2) {
+          lookAtTypeFirstHelper(name, call, block, canonT2, visInfo, visited,
+                                visibleFns);
+        }
+
         if (call->numActuals() == 4) {
           Type* t3 = call->get(2)->getValType();
           lookAtTypeFirstHelper(name, call, block, t3, visInfo, visited,
                                 visibleFns);
+
+          Type* canonT3 = canonicalClassType(t3);
+          if (t3 != canonT3) {
+            lookAtTypeFirstHelper(name, call, block, canonT3, visInfo, visited,
+                                  visibleFns);
+          }
         }
         // If we ever allow trinary or greater operators, we'd do something
         // about that here
