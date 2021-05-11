@@ -1,6 +1,3 @@
-./rangeAPItest.chpl:3: In function 'testRangeAPI':
-./rangeAPItest.chpl:45: warning: invoking 'offset' on an unstrided range has no effect.
-  singleEnumAPITest.chpl:6: called as testRangeAPI(lbl: string, r: range(color,bounded,false), idx: color, subr: range(color,bounded,false), offset: int(64), count: int(64))
 trivial enum range
 ------------
 red..red
@@ -35,7 +32,6 @@ boundsCheck(red) = true
 boundsCheck(red..red) = true
 indexOrder(red) = 0
 orderToIndex(0)  = red
-offset(1)        = red..red
 interior(1)      = red..red
 interior(-1)     = red..red
 serial iteration = 
@@ -125,7 +121,6 @@ boundsCheck(red) = true
 boundsCheck(red..red) = true
 indexOrder(red) = 0
 orderToIndex(0)  = red
-offset(1)        = red..red
 interior(1)      = red..red
 interior(-1)     = red..red
 serial iteration = 

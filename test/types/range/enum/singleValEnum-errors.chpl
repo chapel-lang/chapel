@@ -17,3 +17,5 @@ if errorCase == 3 then
 if errorCase == 4 then
   writeln(r.expand(0));
 
+if errorCase == 5 then
+  writeln(r.offset(0));
