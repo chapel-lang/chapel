@@ -55,7 +55,7 @@ static inline c_nodeid_t get_chpl_nodeID(void) {
 
 extern int32_t chpl_numNodes; // number of nodes
 
-size_t chpl_comm_getenvMaxHeapSize(void);
+ssize_t chpl_comm_getenvMaxHeapSize(void);
 
 
 //

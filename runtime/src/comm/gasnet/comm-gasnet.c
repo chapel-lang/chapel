@@ -797,12 +797,12 @@ static void set_max_segsize_env_var(size_t size) {
 }
 
 static void set_max_segsize() {
-  size_t size;
+  ssize_t size;
 
   // GASNet defaults to 85% of physical memory, which is a good default for us,
   // so only override if a user explicitly set CHPL_RT_MAX_HEAP_SIZE
-  if ((size = (size_t) chpl_comm_getenvMaxHeapSize()) != 0) {
-    set_max_segsize_env_var(size);
+  if ((size = chpl_comm_getenvMaxHeapSize()) > 0) {
+    set_max_segsize_env_var((size_t) size);
     return;
   }
 }

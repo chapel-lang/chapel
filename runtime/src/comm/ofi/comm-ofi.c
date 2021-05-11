@@ -2613,7 +2613,7 @@ void init_fixedHeap(void) {
   // on a Cray XC system or the user has explicitly specified a heap
   // size.
   //
-  size_t size = chpl_comm_getenvMaxHeapSize();
+  ssize_t size = chpl_comm_getenvMaxHeapSize();
   if ( ! (chpl_numNodes > 1
           && (strcmp(CHPL_TARGET_PLATFORM, "cray-xc") == 0 || size > 0))) {
     return;

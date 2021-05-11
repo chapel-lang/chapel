@@ -1955,7 +1955,7 @@ void chpl_comm_post_task_init(void)
       chpl_warning("without hugepages, communication performance will suffer",
                    0, 0);
     }
-  } else if (chpl_comm_getenvMaxHeapSize() == 0) {
+  } else if (chpl_comm_getenvMaxHeapSize() <= 0) {
     if (chpl_nodeID == 0) {
       if (getenv("HUGETLB_NO_RESERVE") == NULL) {
         chpl_warning("dynamic heap on hugepages "
@@ -2985,11 +2985,11 @@ static
 void make_registered_heap(void)
 {
   size_t page_size = get_hugepage_size();
-  size_t size_from_env;
+  ssize_t size_from_env;
 
   if (page_size == 0
       || getenv("HUGETLB_MORECORE") == NULL
-      || (size_from_env = chpl_comm_getenvMaxHeapSize()) == 0) {
+      || (size_from_env = chpl_comm_getenvMaxHeapSize()) <= 0) {
     registered_heap_size  = 0;
     registered_heap_start = NULL;
     registered_heap_info_set = 1;
