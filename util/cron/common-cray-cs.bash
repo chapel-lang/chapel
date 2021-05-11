@@ -5,6 +5,8 @@
 #             Cray CS system, otherwise silent 
 #  output: iff this seems to be a CS, CHPL_HOST_PLATFORM=cray-cs
 
+CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+
 function loadCSModule()
 {
   local m=$@
@@ -27,7 +29,7 @@ else
 fi
 
 # Point clang to standard libraries
-export COMPILER_PATH=$GCC_X86_64
+source $CWD/common-llvm-comp-path.bash
 
 # https://github.com/Cray/chapel-private/issues/1601
 export SLURM_CPU_FREQ_REQ=high

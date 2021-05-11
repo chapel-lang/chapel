@@ -72,8 +72,6 @@ std::vector<const char*>   libFiles;
 // directory for intermediates; tmpdir or saveCDir
 static const char* intDirName        = NULL;
 
-static const int   MAX_CHARS_PER_PID = 32;
-
 static void addPath(const char* pathVar, std::vector<const char*>* pathvec) {
   char* dirString = strdup(pathVar);
 
@@ -161,15 +159,7 @@ static const char* getTempDir() {
 
 const char* makeTempDir(const char* dirPrefix) {
   const char* tmpdirprefix = astr(getTempDir(), "/", dirPrefix);
-  const char* tmpdirsuffix = ".deleteme";
-
-  pid_t mypid = getpid();
-#ifdef DEBUGTMPDIR
-  mypid = 0;
-#endif
-
-  char mypidstr[MAX_CHARS_PER_PID];
-  snprintf(mypidstr, MAX_CHARS_PER_PID, "-%d", (int)mypid);
+  const char* tmpdirsuffix = ".deleteme-XXXXXX";
 
   struct passwd* passwdinfo = getpwuid(geteuid());
   const char* userid;
@@ -181,12 +171,12 @@ const char* makeTempDir(const char* dirPrefix) {
   char* myuserid = strdup(userid);
   removeSpacesBackslashesFromString(myuserid);
 
-  const char* tmpDir = astr(tmpdirprefix, myuserid, mypidstr, tmpdirsuffix);
-  ensureDirExists(tmpDir, "making temporary directory");
+  const char* tmpDir = astr(tmpdirprefix, myuserid, tmpdirsuffix);
+  const char* dirRes = mkdtemp((char*) tmpDir);
 
   free(myuserid); myuserid = NULL;
 
-  return tmpDir;
+  return dirRes;
 }
 
 static void ensureTmpDirExists() {
@@ -253,6 +243,15 @@ void deleteTmpDir() {
     }
     deleteDir(tmpdirname);
     tmpdirname = NULL;
+  }
+  if (doctmpdirname != NULL) {
+    if (strlen(doctmpdirname) < 1 ||
+        strchr(doctmpdirname, '*') != NULL ||
+        strcmp(doctmpdirname, "//") == 0) {
+      INT_FATAL("doc tmp directory name looks fishy");
+    }
+    deleteDir(doctmpdirname);
+    doctmpdirname = NULL;
   }
 #endif
 

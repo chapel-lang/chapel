@@ -11,7 +11,7 @@ CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $CWD/common.bash
 source $CWD/common-cray-cs.bash y
 
-export COMPILER_PATH=$GCC_X86_64
+source $CWD/common-llvm-comp-path.bash
 
 export CHPL_COMM=gasnet
 
