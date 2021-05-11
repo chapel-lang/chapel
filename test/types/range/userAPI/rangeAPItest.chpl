@@ -41,6 +41,7 @@ proc testRangeAPI(lbl, r: range(?), idx, subr, offset=3, count=2) {
   if (isBoundedRange(r)) {
     if !chpl__singleValIdxType(r.idxType) {
       writeln("expand(2)        = ", r.expand(2));
+
       if r.hasFirst() then writeln("offset(1)        = ", r.offset(1));
     }
   }
