@@ -218,6 +218,7 @@ if ($printusage == 1) {
     print "\t-multilocale                   : run multilocale tests only\n";
     print "\t-no-buildcheck                 : do not run `make check` before running tests\n";
     print "\t-no-futures                    : do not run future tests\n";
+    print "\t-no-llvm                       : run tests with --no-llvm\n";
     print "\t-no-local                      : run tests using --no-local\n";
     print "\t-noruntime                     : don't build the runtime or run the tests\n";
     print "\t-notest                        : don't run the tests (check the build only)\n";
