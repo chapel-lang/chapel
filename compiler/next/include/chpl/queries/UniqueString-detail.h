@@ -31,6 +31,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include "chpl/util/memory.h"
 
 /// \cond DO_NOT_DOCUMENT
 namespace chpl {

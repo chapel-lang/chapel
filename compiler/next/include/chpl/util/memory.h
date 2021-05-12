@@ -43,6 +43,10 @@ static inline owned<T> toOwned(T* takeFrom) {
 // as a constexpr function), most compilers will optimize away this function as
 // always returning true or false. Verified that both GCC and Clang optimize
 // this away at compile-time.
+//
+// This could alternatively be implemented in terms of the macro test
+//   #if __BYTE_ORDER == __LITTLE_ENDIAN
+// but that is less portable.
 inline bool little_endian()
 {
   int endian  =  1;

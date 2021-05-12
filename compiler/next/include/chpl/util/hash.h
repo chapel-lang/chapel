@@ -40,7 +40,7 @@ constexpr size_t FNV_prime        = 0x100000001b3;
 inline size_t hash(const char* s)
 {
   size_t seed = FNV_offset_basis;
-  for(char c; c = *s; ++s)
+  for(char c; (c = *s) != '\0'; ++s)
     seed = (seed ^ static_cast<unsigned char>(c)) * FNV_prime;
   return seed;
 }

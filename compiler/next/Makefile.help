@@ -18,15 +18,15 @@
 # Copyright 2020-2021 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
-# 
+#
 # The entirety of this work is licensed under the Apache License,
 # Version 2.0 (the "License"); you may not use this file except
 # in compliance with the License.
-# 
+#
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -83,12 +83,12 @@ COPY_IF_DIFFERENT = $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/config/update-if-
 libchplcomp-docs: $(LIBCOMPILER_BUILD_DIR) FORCE
 	@echo "Making the compiler library docs..."
 	cd $(LIBCOMPILER_BUILD_DIR) && cmake --build .  --target api-docs
-	# copy the generated doxygen output to the build directory
+# copy the generated doxygen output to the build directory
 	@if [ -d $(LIBCOMPILER_BUILD_DIR)/doc/doxygen ]; then \
 	  $(COPY_IF_DIFFERENT) $(LIBCOMPILER_BUILD_DIR)/doc/doxygen $(CHPL_MAKE_HOME)/build/doc/doxygen ; \
 	fi
 
-test-libchplcomp: libchplcomp FORCE
+test-libchplcomp: $(LIBCOMPILER_BUILD_DIR) FORCE
 	@echo "Making and running the tests..."
 	@if [ -f $(LIBCOMPILER_BUILD_DIR)/Makefile ]; then \
 	  cd $(LIBCOMPILER_BUILD_DIR) && $(MAKE) tests && ctest . ; \
