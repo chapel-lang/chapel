@@ -734,18 +734,6 @@ struct bitmap_t* bitmapAlloc(size_t len) {
   return b;
 }
 
-static inline
-void bitmapFree(struct bitmap_t* b) {
-  if (DBG_TEST_MASK(DBG_ORDER)) {
-    BITMAP_FOREACH_SET(b, node) {
-      INTERNAL_ERROR_V("bitmapFree(): bitmap is not empty; first node %d",
-                       (int) node);
-    } BITMAP_FOREACH_SET_END
-  }
-
-  CHPL_FREE(b);
-}
-
 
 ////////////////////////////////////////
 //
