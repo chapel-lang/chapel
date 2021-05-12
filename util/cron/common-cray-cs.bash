@@ -5,6 +5,8 @@
 #             Cray CS system, otherwise silent 
 #  output: iff this seems to be a CS, CHPL_HOST_PLATFORM=cray-cs
 
+CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+
 function loadCSModule()
 {
   local m=$@
@@ -25,6 +27,9 @@ if module avail craype- 2>&1 | grep -q craype- ; then
 else
   [ "$1" == y ] && log_info "Expected Cray CS, but does not seem to be one."
 fi
+
+# Point clang to standard libraries
+source $CWD/common-llvm-comp-path.bash
 
 # https://github.com/Cray/chapel-private/issues/1601
 export SLURM_CPU_FREQ_REQ=high

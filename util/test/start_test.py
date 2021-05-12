@@ -126,7 +126,11 @@ def run_tests(tests):
     # futures or notests
     os.environ["CHPL_TEST_FUTURES"] = "1"
     os.environ["CHPL_TEST_NOTESTS"] = "1"
-    os.environ["CHPL_TEST_SINGLES"] = "1"
+    # if the user throws --respect-skipifs, skipifs will be respected for single tests
+    if args.respect_skipifs:
+        os.environ["CHPL_TEST_SINGLES"] = "0"
+    else:
+        os.environ["CHPL_TEST_SINGLES"] = "1"
 
     for test in files:
         test_file(test)
@@ -1465,6 +1469,9 @@ def parser_setup():
     parser.add_argument("-junit-remove-prefix", "--junit-remove-prefix",
             action="store", dest="junit_remove_prefix", metavar="<prefix>",
             help=help_all("<prefix> to remove from tests in jUnit report"))
+    # respect skipifs
+    parser.add_argument("-respect-skipifs", "--respect-skipifs",
+            action="store_true", dest="respect_skipifs")
     # extra help
     parser.add_argument("-help", action="help", help=argparse.SUPPRESS)
     parser.add_argument("--help-all", action="help",

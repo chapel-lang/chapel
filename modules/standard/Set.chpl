@@ -93,6 +93,15 @@ module Set {
     }
   }
 
+  // If we have "chpl__serialize", assume we have "chpl__deserialize".
+  pragma "no doc"
+  proc _isSerializable(type T) param {
+    use Reflection;
+    pragma "no init"
+    var x: T;
+    return canResolveMethod(x, "chpl__serialize");
+  }
+
   /*
     A set is a collection of unique elements. Attempting to add a duplicate
     element to a set has no effect.
@@ -141,7 +150,27 @@ module Set {
       this.parSafe = parSafe;
     }
 
-    // Returns true if the key was added to the hashtable.
+    // Do things the slow/copy way if the element is serializable.
+    // See issue: #17477
+    pragma "no doc"
+    proc _addElem(in elem: eltType): bool
+    where _isSerializable(eltType) {
+        var result = true;
+
+        on this {
+          var (isFullSlot, idx) = _htb.findAvailableSlot(elem);
+
+          if !isFullSlot {
+            _htb.fillSlot(idx, elem, none);
+            result = true;
+          }
+        }
+
+      return result;
+    }
+
+    // For types that aren't serializable, avoid an extra copy by moving
+    // the value across locales.
     pragma "no doc"
     proc _addElem(pragma "no auto destroy" in elem: eltType): bool {
       use Memory.Initialization;
@@ -391,14 +420,14 @@ module Set {
       :yields: A constant reference to an element in this set.
     */
     pragma "order independent yielding loops"
-    iter const these() {
+    iter const these() const ref {
       for idx in 0..#_htb.tableSize do
         if _htb.isSlotFull(idx) then yield _htb.table[idx].key;
     }
 
     pragma "no doc"
     pragma "order independent yielding loops"
-    iter const these(param tag) where tag == iterKind.standalone {
+    iter const these(param tag) const ref where tag == iterKind.standalone {
       var space = 0..#_htb.tableSize;
       for idx in space.these(tag) do
         if _htb.isSlotFull(idx) then yield _htb.table[idx].key;
@@ -414,7 +443,7 @@ module Set {
 
     pragma "no doc"
     pragma "order independent yielding loops"
-    iter const these(param tag, followThis)
+    iter const these(param tag, followThis) const ref
     where tag == iterKind.follower {
       for idx in followThis(0) do
         if _htb.isSlotFull(idx) then yield _htb.table[idx].key;

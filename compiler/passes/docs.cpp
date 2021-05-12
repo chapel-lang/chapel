@@ -40,6 +40,7 @@
 #include "stmt.h"
 #include "symbol.h"
 #include "stringutil.h"
+#include "tmpdirname.h"
 
 static int compareNames(const void* v1, const void* v2) {
   Symbol* s1 = *(Symbol* const *)v1;
@@ -68,13 +69,12 @@ void docs(void) {
 
     // Root of the sphinx project and generated rst files. If
     // --docs-save-sphinx is not specified, it will be a temp dir.
-    std::string docsTempDir = "";
     std::string docsSphinxDir;
     if (strlen(fDocsSphinxDir) > 0) {
       docsSphinxDir = fDocsSphinxDir;
     } else {
-      docsTempDir = makeTempDir("chpldoc-");
-      docsSphinxDir = docsTempDir;
+      doctmpdirname = makeTempDir("chpldoc-");
+      docsSphinxDir = doctmpdirname;
     }
 
     // Make the intermediate dir and output dir.
@@ -112,10 +112,6 @@ void docs(void) {
 
     if (!fDocsTextOnly && fDocsHTML) {
       generateSphinxOutput(docsSphinxDir, docsOutputDir);
-    }
-
-    if (docsTempDir.length() > 0) {
-      deleteDir(docsTempDir.c_str());
     }
   }
 }

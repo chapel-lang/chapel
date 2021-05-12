@@ -743,10 +743,16 @@ module ChapelBase {
   inline proc _cond_test(param x: integral) param return x != 0:x.type;
 
   inline proc _cond_test(x) {
-   if !( x.type <= _iteratorRecord ) then
-    compilerError("type '", x.type:string, "' used in if or while condition");
-   else
-    compilerError("iterator or promoted expression ", x.type:string, " used in if or while condition");
+    if !( x.type <= _iteratorRecord ) {
+      use Reflection;
+      if canResolveMethod(x, "chpl_cond_test_method") {
+        return x.chpl_cond_test_method();
+      } else {
+        compilerError("type '", x.type:string, "' used in if or while condition");
+      }
+    } else {
+      compilerError("iterator or promoted expression ", x.type:string, " used in if or while condition");
+    }
   }
 
   proc _cond_invalid(x: borrowed object?) param return false;

@@ -133,7 +133,7 @@ void FnSymbol::verify() {
     for_alist(ic, ifcInfo->interfaceConstraints)
       INT_ASSERT(isIfcConstraint(ic));
 
-    // ifcInfo->repsForIfcSymbols is created during resolution
+    // ifcInfo->ifcReps is created during resolution
     // and disappears together with its parent function at the end of
     // resolution, so we never see it here.
 
@@ -498,7 +498,7 @@ void FnSymbol::finalizeCopy() {
 
     // For CG fns calling to other CG fns.
     if (InterfaceInfo* ifcInfo = partialCopySource->interfaceInfo)
-      handleCallsToOtherCGfuns(partialCopySource, ifcInfo, this);
+      handleCallsToOtherCGfuns(partialCopySource, ifcInfo, *map, this);
 
     // Clean up book keeping information.
     clearPartialCopyData(this);

@@ -1539,6 +1539,10 @@ operator :(r: range(?), type t: range(?)) {
    */
   proc range.offset(in offset: integral)
   {
+    if (chpl__singleValIdxType(idxType)) {
+      compilerError("can't apply '.offset()' to a range whose 'idxType' only has one value");
+    }
+
     var offs = offset.safeCast(intIdxType);
     if !stridable {
       if !this.hasLowBound() then

@@ -128,14 +128,10 @@ fi
 export CHPL_LAUNCHER=none
 export CHPL_COMM=none
 
-# Make LLVM available
-if [ -z "${OFFICIAL_SYSTEM_LLVM}" ] ; then
-  if [ -f /data/cf/chapel/setup_system_llvm.bash ] ; then
-    source /data/cf/chapel/setup_system_llvm.bash
-  elif [ -f /cray/css/users/chapelu/setup_system_llvm.bash ] ; then
-    source /cray/css/users/chapelu/setup_system_llvm.bash
-  fi
-fi
+# Disable llvm for now, since we're explicitly trying to test different C
+# backends
+export CHPL_LLVM=none
+
 
 # Set some vars that nightly cares about.
 export CHPL_NIGHTLY_LOGDIR=${CHPL_NIGHTLY_LOGDIR:-/data/sea/chapel/Nightly}

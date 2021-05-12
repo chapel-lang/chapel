@@ -23,3 +23,12 @@ chpl:chplref valueType
 
 # compiler-internals
 cpp:identifier chpl
+cpp:identifier UniqueString
+cpp:identifier ID
+cpp:identifier Location
+cpp:identifier ASTTag
+cpp:identifier ASTList::const_iterator
+cpp:identifier size_t
+cpp:identifier detail
+cpp:identifier detail::PODUniqueString
+cpp:identifier ASTList::const_iterator::difference_type

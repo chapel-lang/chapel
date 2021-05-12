@@ -9244,7 +9244,7 @@ static void adjustInternalSymbols() {
   gDummyRef->addFlag(FLAG_REF);
   gDummyRef->removeFlag(FLAG_CONST);
 
-  createGenericStandins();
+  startInterfaceChecking();
 }
 
 
@@ -9345,7 +9345,7 @@ void resolve() {
 
   USR_STOP();
 
-  cleanupGenericStandins();  // should happen before resolveAutoCopies
+  finishInterfaceChecking();  // should happen before resolveAutoCopies
 
   resolveExports();
 

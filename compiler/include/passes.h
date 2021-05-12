@@ -124,7 +124,7 @@ void  markImplStmtWrapFnAsFailure(FnSymbol* wrapFn);
 void  wrapImplementsStatements();
 FnSymbol* wrapOneImplementsStatement(ImplementsStmt* istm);
 void  handleCallsToOtherCGfuns(FnSymbol* origFn, InterfaceInfo* ifcInfo,
-                               FnSymbol* newFn);
+                               SymbolMap& copyMap, FnSymbol* newFn);
 
 // iterator.cpp
 CallExpr* setIteratorRecordShape(Expr* ref, Symbol* ir, Symbol* shapeSpec,

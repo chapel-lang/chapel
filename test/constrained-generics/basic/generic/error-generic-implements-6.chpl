@@ -26,3 +26,5 @@ proc reqFun(cgFormal1: MyRec1, cgFormal2: MyRec2): void {
 implements IFC2(MyRec1, MyRec2);  // ok
 
 implements IFC2(MyRec2, MyRec1);  // error: no reqFun(MyRec2,MyRec1)
+
+cgFun(new MyRec2("hello"), new MyRec1(locale));  // report the above error

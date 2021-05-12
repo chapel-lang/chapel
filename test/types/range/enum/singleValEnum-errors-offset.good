@@ -1,0 +1,1 @@
+singleValEnum-errors.chpl:21: error: can't apply '.offset()' to a range whose 'idxType' only has one value

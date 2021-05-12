@@ -239,7 +239,7 @@ static void removeRandomPrimitives() {
 
 
 // remove ASTs that supported CG (constrained generics / interfaces)
-// see also cleanupGenericStandins()
+// see also finishInterfaceChecking()
 static void cleanupConstrainedGenerics() {
   // This should be done before removing InterfaceSymbols
   // so we can get at and remove refTypes.

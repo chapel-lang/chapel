@@ -137,6 +137,13 @@ enum ShadowVarPrefix {
   SVP_VAR,
 };
 
+// Ensures consistent iteration order over std::map<const char*,...>
+struct CharStarComparator {
+  bool operator()(const char* lhs, const char* rhs) const {
+    return strcmp(lhs, rhs) < 0;
+  }
+};
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -584,7 +591,8 @@ public:
   void  replaceChild(BaseAST* oldAst, BaseAST* newAst)   override;
   void  printDocs(std::ostream* file, unsigned int tabs);
 
-  int   numFormals() const { return ifcFormals.length; }
+  int   numFormals()   const { return ifcFormals.length; }
+  int   numAssocCons() const { return associatedConstraints.size(); }
 
   // the DefExprs for each interface formal
   AList      ifcFormals;
@@ -594,7 +602,7 @@ public:
 
   // maps name to the ConstrainedType for an associated type
   // their DefExprs are in ifcBody
-  std::map<const char*, ConstrainedType*> associatedTypes;
+  std::map<const char*, ConstrainedType*, CharStarComparator> associatedTypes;
 
   // constraints to be checked for each implementation
   std::vector<IfcConstraint*> associatedConstraints;
