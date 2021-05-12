@@ -238,7 +238,7 @@
     PODUniqueString name;
   };
 
-  // a struct to store the values in enum_header
+  // a struct to store the values in enum_header_lcbr
   struct EnumParts {
     std::vector<ParserComment>* comments;
     Sym::Visibility visibility;
@@ -610,7 +610,7 @@
 %type <expr> array_type
 %type <expr> opt_type opt_ret_type ret_array_type
 %type <expr> opt_formal_type formal_array_type opt_formal_array_elt_type lambda_decl_expr
-%type <enumParts> enum_header
+%type <enumParts> enum_header_lcbr
 %type <exprList> enum_ls
 
 %type <expr> zippered_iterator
@@ -1711,21 +1711,25 @@ class_level_stmt_ls:
 ;
 
 enum_decl_stmt:
-  enum_header TLCBR enum_ls TRCBR
+  enum_header_lcbr enum_ls TRCBR
     {
       EnumParts parts = $1;
+      ParserExprList* list = $2;
+      // get any comments after the last element but before the closing brace
+      context->appendList(list, context->gatherComments(@3));
+
       auto decl = EnumDecl::build(BUILDER, LOC(@$),
                                   parts.name, parts.visibility,
-                                  context->consumeList($3));
+                                  context->consumeList(list));
       CommentsAndStmt cs = {parts.comments, decl.release()};
       $$ = cs;
       context->resetDeclState();
       context->clearComments();
     }
-| enum_header TLCBR error TRCBR
+| enum_header_lcbr error TRCBR
     {
       EnumParts parts = $1;
-      auto err = ErroneousExpression::build(BUILDER, LOC(@3));
+      auto err = ErroneousExpression::build(BUILDER, LOC(@2));
       CommentsAndStmt cs = {parts.comments, err.release()};
       $$ = cs;
       context->resetDeclState();
@@ -1733,14 +1737,16 @@ enum_decl_stmt:
     }
 ;
 
-enum_header:
-  TENUM ident_def
+enum_header_lcbr:
+  TENUM ident_def TLCBR
     {
       // take into account location of public/private, if any
       auto loc = context->declStartLoc(@1);
 
       EnumParts parts = {context->gatherComments(loc), context->visibility, $2};
       $$ = parts;
+
+      context->clearComments();
     }
 ;
 
@@ -1752,10 +1758,11 @@ enum_ls:
 | enum_ls TCOMMA
     {
       $$ = $1;
+      context->clearCommentsBefore(@2);
     }
-| enum_ls TCOMMA enum_item
+| enum_ls TCOMMA {context->clearCommentsBefore(@2);} enum_item
     {
-      context->appendList($1, $3);
+      context->appendList($1, $4);
     }
 ;
 
@@ -1764,14 +1771,13 @@ enum_item:
     {
       auto decl = EnumElementDecl::build(BUILDER, LOC(@$), $1);
       $$ = STMT(@$, decl.release());
-      context->clearComments();
     }
 | ident_def TASSIGN expr
     {
       auto decl = EnumElementDecl::build(BUILDER, LOC(@$), $1,
                                          toOwned($3));
       $$ = STMT(@$, decl.release());
-      context->clearComments();
+      context->clearCommentsBefore(@3);
     }
 ;
 

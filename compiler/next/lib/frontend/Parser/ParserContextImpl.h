@@ -121,7 +121,7 @@ void ParserContext::noteComment(YYLTYPE loc, const char* data, long size) {
 void ParserContext::clearCommentsBefore(YYLTYPE loc) {
   auto comments = this->gatherComments(loc);
   if (comments != nullptr) {
-    for (ParserComment parserComment : *this->comments) {
+    for (ParserComment parserComment : *comments) {
       delete parserComment.comment;
     }
     delete comments;

@@ -28,10 +28,10 @@ namespace uast {
 bool EnumElementDecl::contentsMatchInner(const ASTNode* other) const {
   const EnumElementDecl* lhs = this;
   const EnumElementDecl* rhs = (const EnumElementDecl*) other;
-  return lhs->declContentsMatchInner(rhs);
+  return lhs->symDeclContentsMatchInner(rhs);
 }
 void EnumElementDecl::markUniqueStringsInner(Context* context) const {
-  return declMarkUniqueStringsInner(context);
+  return symDeclMarkUniqueStringsInner(context);
 }
 
 owned<EnumElementDecl>

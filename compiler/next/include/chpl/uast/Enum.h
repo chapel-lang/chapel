@@ -60,20 +60,20 @@ class Enum final : public TypeSym {
   /**
     Return a way to iterate over the EnumElements and Comments.
    */
-  ASTListIteratorPair<Expression> stmts() const {
+  ASTListIteratorPair<Expression> declOrComments() const {
     return ASTListIteratorPair<Expression>(children_.begin(), children_.end());
   }
 
   /**
    Return the number of EnumElements and Comments contained in this Enum.
    */
-  int numStmts() const {
+  int numDeclOrComments() const {
     return this->numChildren();
   }
   /**
    Return the i'th EnumElement or Comment in this Enum.
    */
-  const Expression* stmt(int i) const {
+  const Expression* declOrComment(int i) const {
     const ASTNode* ast = this->child(i);
     assert(ast->isExpression());
     return (const Expression*)ast;

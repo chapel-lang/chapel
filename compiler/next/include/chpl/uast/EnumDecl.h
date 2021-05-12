@@ -21,7 +21,7 @@
 #define CHPL_UAST_ENUMDECL_H
 
 #include "chpl/queries/Location.h"
-#include "chpl/uast/Decl.h"
+#include "chpl/uast/SymDecl.h"
 #include "chpl/uast/Enum.h"
 
 namespace chpl {
@@ -31,10 +31,10 @@ namespace uast {
 /**
   This class represents a declaration of an enum.
  */
-class EnumDecl final : public Decl {
+class EnumDecl final : public SymDecl {
  private:
   EnumDecl(owned<Enum> enumSym)
-    : Decl(asttags::EnumDecl, std::move(enumSym)) {
+    : SymDecl(asttags::EnumDecl, std::move(enumSym)) {
   }
   bool contentsMatchInner(const ASTNode* other) const override;
   void markUniqueStringsInner(Context* context) const override;
@@ -54,14 +54,14 @@ class EnumDecl final : public Decl {
     return (const Enum*)sym;
   }
 
-  ASTListIteratorPair<Expression> stmts() const {
-    return enumSym()->stmts();
+  ASTListIteratorPair<Expression> declOrComments() const {
+    return enumSym()->declOrComments();
   }
-  int numStmts() const {
-    return enumSym()->numStmts();
+  int numDeclOrComments() const {
+    return enumSym()->numDeclOrComments();
   }
-  const Expression* stmt(int i) const {
-    return enumSym()->stmt(i);
+  const Expression* declOrComment(int i) const {
+    return enumSym()->declOrComment(i);
   }
 
 };
