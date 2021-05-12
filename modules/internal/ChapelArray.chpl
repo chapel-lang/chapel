@@ -1507,7 +1507,7 @@ module ChapelArray {
       return new _domain(rcdistRec, uprank,
                                     upranges(0).idxType,
                                     upranges(0).stridable,
-                                    upranges); 
+                                    upranges);
     }
 
     // error case for all-int access
@@ -1557,10 +1557,24 @@ module ChapelArray {
    /* Return a tuple of :proc:`intIdxType` describing the size of each dimension.
       For a sparse domain, return the shape of the parent domain.*/
     proc shape where isRectangularDom(this) || isSparseDom(this) {
-      // TODO: need to deprecate this change more gently
-      var s: rank*int;
+      use ChapelRange;
+      if (chpl_idxTypeSizeChange(idxType) && sizeReturnsInt == false) {
+        compilerWarning("'.shape' queries for domains and arrays with 'idxType = " +
+                        idxType:string +
+                        "' are changing to return '" + rank:string +
+                        "int' values rather than '" + rank:string + "*" +
+                        idxType:string+"'\n"+
+                        "  (to opt into the change now, re-compile with '-ssizeReturnsInt=true'\n");
+        return chpl_shapeAs(idxType);
+      } else {
+        return chpl_shapeAs(int);
+      }
+    }
+
+    proc chpl_shapeAs(type t: integral) {
+      var s: rank*t;
       for (i, r) in zip(0..#s.size, dims()) do
-        s(i) = r.sizeAs(int);
+        s(i) = r.sizeAs(t);
       return s;
     }
 

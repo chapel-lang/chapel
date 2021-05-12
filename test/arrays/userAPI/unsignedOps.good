@@ -2,21 +2,33 @@
 ./arrayAPItest.chpl:117: warning: '.size' queries for domains and arrays with 'idxType == uint(64)' are changing to return 'int' values rather than 'uint(64)'
   (to opt into the change now, re-compile with '-ssizeReturnsInt=true'
   or switch to the new '.sizeAs(type t: integral)' method)
+./arrayAPItest.chpl:119: warning: '.shape' queries for domains and arrays with 'idxType = uint(64)' are changing to return '2int' values rather than '2*uint(64)'
+  (to opt into the change now, re-compile with '-ssizeReturnsInt=true'
+
   unsignedOps.chpl:6: called as testArrayAPI2D(lbl: string, X: [domain(2,uint(64),false)] real(64), sliceDom: domain(2,uint(64),false), reindexDom: domain(2,uint(64),true))
 ./arrayAPItest.chpl:105: In function 'testArrayAPI2D':
 ./arrayAPItest.chpl:117: warning: '.size' queries for domains and arrays with 'idxType == uint(64)' are changing to return 'int' values rather than 'uint(64)'
   (to opt into the change now, re-compile with '-ssizeReturnsInt=true'
   or switch to the new '.sizeAs(type t: integral)' method)
+./arrayAPItest.chpl:119: warning: '.shape' queries for domains and arrays with 'idxType = uint(64)' are changing to return '2int' values rather than '2*uint(64)'
+  (to opt into the change now, re-compile with '-ssizeReturnsInt=true'
+
   unsignedOps.chpl:12: called as testArrayAPI2D(lbl: string, X: [domain(2,uint(64),false)] real(64), sliceDom: domain(2,uint(64),false), reindexDom: domain(2,uint(64),true))
 ./arrayAPItest.chpl:105: In function 'testArrayAPI2D':
 ./arrayAPItest.chpl:117: warning: '.size' queries for domains and arrays with 'idxType == uint(64)' are changing to return 'int' values rather than 'uint(64)'
   (to opt into the change now, re-compile with '-ssizeReturnsInt=true'
   or switch to the new '.sizeAs(type t: integral)' method)
+./arrayAPItest.chpl:119: warning: '.shape' queries for domains and arrays with 'idxType = uint(64)' are changing to return '2int' values rather than '2*uint(64)'
+  (to opt into the change now, re-compile with '-ssizeReturnsInt=true'
+
   unsignedOps.chpl:18: called as testArrayAPI2D(lbl: string, X: [ArrayViewReindexDom(2,uint(64),true,int(64),unmanaged domain(2,uint(64),false),int(64),unmanaged ArrayViewReindexDist(unmanaged DefaultDist,unmanaged domain(2,uint(64),true),int(64),unmanaged domain(2,uint(64),false)))] real(64), sliceDom: domain(2,uint(64),true), reindexDom: domain(2,uint(64),true))
 ./arrayAPItest.chpl:105: In function 'testArrayAPI2D':
 ./arrayAPItest.chpl:117: warning: '.size' queries for domains and arrays with 'idxType == uint(64)' are changing to return 'int' values rather than 'uint(64)'
   (to opt into the change now, re-compile with '-ssizeReturnsInt=true'
   or switch to the new '.sizeAs(type t: integral)' method)
+./arrayAPItest.chpl:119: warning: '.shape' queries for domains and arrays with 'idxType = uint(64)' are changing to return '2int' values rather than '2*uint(64)'
+  (to opt into the change now, re-compile with '-ssizeReturnsInt=true'
+
   unsignedOps.chpl:24: called as testArrayAPI2D(lbl: string, X: [ArrayViewRankChangeDom(2,uint(64),false,3*bool,3*uint(64),int(64),unmanaged ArrayViewRankChangeDist(unmanaged DefaultDist,3*bool,3*uint(64)))] real(64), sliceDom: domain(2,uint(64),false), reindexDom: domain(2,uint(64),true))
 Array with unsigned domain
 ----------------
