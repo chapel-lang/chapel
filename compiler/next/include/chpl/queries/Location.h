@@ -21,6 +21,7 @@
 #define CHPL_QUERIES_LOCATION_H
 
 #include "chpl/queries/UniqueString.h"
+#include "chpl/util/hash.h"
 
 namespace chpl {
 
@@ -29,21 +30,20 @@ namespace chpl {
   This class represents a source location.
  */
 class Location final {
- private:
   UniqueString path_;
-  int firstLine_ = -1;
+  int firstLine_   = -1;
   int firstColumn_ = -1;
-  int lastLine_ = -1;
-  int lastColumn_ = -1;
- public:
-  Location()
-    : path_() {
-  }
+  int lastLine_    = -1;
+  int lastColumn_  = -1;
 
+public:
+  Location() = default;
+
+  explicit
   Location(UniqueString path,
            int firstLine=-1, int firstColumn=-1,
            int lastLine=-1, int lastColumn=-1)
-    : path_(path),
+    : path_(std::move(path)),
       firstLine_(firstLine), firstColumn_(firstColumn),
       lastLine_(lastLine), lastColumn_(lastColumn) {
   }
@@ -55,24 +55,20 @@ class Location final {
   int lastColumn() const { return lastColumn_; }
   int line() const { return firstLine(); }
 
-  inline bool operator==(const Location other) const {
+  inline bool operator==(const Location& other) const {
     return this->path_ == other.path_ &&
            this->firstLine_ == other.firstLine_ &&
            this->firstColumn_ == other.firstColumn_ &&
            this->lastLine_ == other.lastLine_ &&
            this->lastColumn_ == other.lastColumn_;
   }
-  inline bool operator!=(const Location other) const {
+
+  inline bool operator!=(const Location& other) const {
     return !(*this == other);
   }
 
   size_t hash() const {
-    size_t h = this->path_.hash();
-    h = hash_combine(h, this->firstLine_);
-    h = hash_combine(h, this->firstColumn_);
-    h = hash_combine(h, this->lastLine_);
-    h = hash_combine(h, this->lastColumn_);
-    return h;
+    return chpl::hash(path_, firstLine_, firstColumn_, lastLine_, lastColumn_);
   }
 
   void swap(Location& other) {
@@ -80,7 +76,7 @@ class Location final {
     *this = other;
     other = oldThis;
   }
-  
+
   void markUniqueStrings(Context* context) const {
     this->path_.mark(context);
   }
@@ -100,7 +96,6 @@ template<> struct mark<chpl::Location> {
   }
 };
 /// \endcond
-
 
 } // end namespace chpl
 

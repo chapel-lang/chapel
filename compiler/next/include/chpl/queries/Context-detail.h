@@ -23,9 +23,13 @@
 #include "chpl/queries/ErrorMessage.h"
 #include "chpl/queries/UniqueString.h"
 #include "chpl/util/memory.h"
+#include "chpl/util/hash.h"
 
+#include <cstdint>
 #include <cstring>
+#include <tuple>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 /// \cond DO_NOT_DOCUMENT
@@ -44,11 +48,8 @@ struct UniqueStrEqual final {
 };
 
 struct UniqueStrHash final {
-  std::size_t operator()(const char* s) const {
-    // this hash is from StringHashFns in the old map.h
-    unsigned int h = 0;
-    while (*s) h = h * 27 + (unsigned char)*s++;
-    return h;
+  size_t operator()(const char* s) const {
+    return chpl::hash(s);
   }
 };
 
@@ -64,72 +65,42 @@ template<typename ResultType, typename... ArgTs> class QueryMapResult;
 class QueryMapBase;
 template<typename ResultType, typename... ArgTs> class QueryMap;
 
-// define a hash function for std::tuple since the standard doesn't
-// include one.
-template<typename T>
-static std::size_t queryArgsHashOne(const T& v) {
-  std::hash<T> hasher;
-  return hasher(v);
-}
+template<typename TUP, size_t... I>
+static inline bool queryArgsEqualsImpl(const TUP& lhs, const TUP& rhs, std::index_sequence<I...>)
+{
+  // Lambda wrapper to std::equal_to
+  auto eq = [](const auto& x, const auto& y) {
+    std::equal_to<std::decay_t<decltype(x)>> equal_to;
+    return equal_to(x,y);
+  };
 
-template<size_t I, typename... Ts>
-static std::size_t queryArgsHashImpl(const std::tuple<Ts...>& tuple) {
-  size_t myhash = queryArgsHashOne(std::get<I>(tuple));
-  if (I + 1 < sizeof...(Ts)) {
-    size_t resthash =
-      queryArgsHashImpl<(I + 1 < sizeof... (Ts) ? I + 1 : I)>(tuple);
-    return chpl::hash_combine(myhash, resthash);
-  } else {
-    return myhash;
-  }
-}
+  // TODO: C++17 fold expression
+  // return(... && eq(std::get<I>(lhs), std::get<I>(rhs)));
 
-template<typename... Ts>
-static std::size_t queryArgsHash(const std::tuple<Ts...>& tuple) {
-  return queryArgsHashImpl<0>(tuple);
-}
-template<>
-std::size_t queryArgsHash<>(const std::tuple<>& tuple);
-
-// define an equality function for std::tuple. the standard will call ==
-// but we want to always compare our keys with equal_to
-template<typename T>
-static bool queryArgsEqualsOne(const T& lhs, const T& rhs) {
-  std::equal_to<T> eq;
-  return eq(lhs, rhs);
-}
-
-template<size_t I, typename... Ts>
-static bool queryArgsEqualsImpl(const std::tuple<Ts...>& lhs,
-                                const std::tuple<Ts...>& rhs) {
-  bool myeq = queryArgsEqualsOne(std::get<I>(lhs), std::get<I>(rhs));
-  if (myeq == false)
-    return false;
-
-  if (I + 1 < sizeof...(Ts)) {
-    return queryArgsEqualsImpl<(I + 1 < sizeof... (Ts) ? I + 1 : I)>(lhs, rhs);
-  } else {
-    return true;
-  }
+  // C++14 code
+  // This expands the ret = ret && std::get<I>(lhs) == std::get<I>(rhs)
+  // assignments into a brace initializer list, evaluating the elements of
+  // TUP in left-to-right order. The value of ret is true iff all elements
+  // compare equal. The compiler optimizes the short-circuiting and
+  // sometimes generates SSE instructions to compare multiple words at once.
+  // The dummy variable is optimized away, as it is unused.
+  bool ret = true;
+  auto dummy = {(ret = ret && eq(std::get<I>(lhs), std::get<I>(rhs)))...};
+  return ret;
 }
 
 template<typename... Ts>
-static bool queryArgsEquals(const std::tuple<Ts...>& lhs,
-                            const std::tuple<Ts...>& rhs) {
-  return queryArgsEqualsImpl<0>(lhs, rhs);
+bool queryArgsEquals(const std::tuple<Ts...>& lhs, const std::tuple<Ts...>& rhs)
+{
+  return queryArgsEqualsImpl(lhs, rhs, std::index_sequence_for<Ts...>{});
 }
-
-template<>
-bool queryArgsEquals<>(const std::tuple<>& lhs,
-                       const std::tuple<>& rhs);
 
 template<typename ResultType, typename... ArgTs>
 struct QueryMapArgTupleHash final {
-  std::size_t operator()(const QueryMapResult<ResultType, ArgTs...>& r) const {
-    return queryArgsHash(r.tupleOfArgs);
+  size_t operator()(const QueryMapResult<ResultType, ArgTs...>& r) const {
+    return chpl::hash(r.tupleOfArgs);
   }
 };
-
 
 template<typename ResultType, typename... ArgTs>
 struct QueryMapArgTupleEqual final {
@@ -151,21 +122,29 @@ static void queryArgsPrintOne(const T& v) {
 void queryArgsPrintOne(const ID& v);
 void queryArgsPrintOne(const UniqueString& v);
 
-template<size_t I, typename... Ts>
-static void queryArgsPrintImpl(const std::tuple<Ts...>& tuple) {
-  queryArgsPrintOne(std::get<I>(tuple));
-  if (I + 1 < sizeof...(Ts)) {
-    queryArgsPrintSep();
-    queryArgsPrintImpl<(I + 1 < sizeof... (Ts) ? I + 1 : I)>(tuple);
-  }
+template<typename TUP, size_t... I>
+static inline void queryArgsPrintImpl(const TUP& tuple, std::index_sequence<I...>) {
+  // lambda to optionally print separator, then print element
+  auto print = [](bool printsep, const auto& elem) {
+      if(printsep)
+        queryArgsPrintSep();
+      queryArgsPrintOne(elem);
+  };
+
+  // TODO: C++17 comma fold expression
+  // (... , print(I != 0, std::get<I>(tuple)));
+
+  // C++14 code
+  // This prints the elements in order, with a separator in-between.
+  // The comma (, 0) is used to initialize a dummy initializer_list.
+  // The compiler optimizes away the dummy variable and list of 0s.
+  auto dummy = { (print(I != 0, std::get<I>(tuple)), 0) ... };
 }
 
 template<typename... Ts>
-static void queryArgsPrint(const std::tuple<Ts...>& tuple) {
-  queryArgsPrintImpl<0>(tuple);
+void queryArgsPrint(const std::tuple<Ts...>& tuple) {
+  queryArgsPrintImpl(tuple, std::index_sequence_for<Ts...>{});
 }
-template<>
-void queryArgsPrint<>(const std::tuple<>& tuple);
 
 using QueryDependencyVec = std::vector<const QueryMapResultBase*>;
 using QueryErrorVec = std::vector<ErrorMessage>;
@@ -249,8 +228,8 @@ class QueryMap final : public QueryMapBase {
  public:
   using TheResultType = QueryMapResult<ResultType, ArgTs...>;
   using MapType = std::unordered_set<TheResultType,
-                                     QueryMapArgTupleHash<ResultType,ArgTs...>,
-                                     QueryMapArgTupleEqual<ResultType,ArgTs...>>;
+                                     QueryMapArgTupleHash<ResultType, ArgTs...>,
+                                     QueryMapArgTupleEqual<ResultType, ArgTs...>>;
   using QueryFunctionType = const ResultType& (*)(Context* context, ArgTs...);
 
   // the main map (which is actually a set since the result needs to
@@ -267,8 +246,8 @@ class QueryMap final : public QueryMapBase {
        map(), oldResults(),
        queryFunction(queryFunction) {
   }
-
   ~QueryMap() = default;
+
   void clearOldResults(RevisionNumber currentRevisionNumber) override {
     // Performance: Would it be better to move everything to a new map
     // rather than modify it in place as is done here?
@@ -288,7 +267,7 @@ class QueryMap final : public QueryMapBase {
     oldResults.clear();
   }
 };
- 
+
 } // end namespace querydetail
 } // end namespace chpl
 /// \endcond

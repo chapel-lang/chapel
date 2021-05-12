@@ -31,6 +31,11 @@
 
 #include <cstdio>
 #include <set>
+#include <string>
+#include <tuple>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 namespace chpl {
 
@@ -126,9 +131,7 @@ const uast::Builder::Result& parseFile(Context* context, UniqueString path) {
   result.topLevelExpressions.swap(tmpResult.topLevelExpressions);
   result.locations.swap(tmpResult.locations);
   for (ErrorMessage& e : tmpResult.errors) {
-    ErrorMessage tmp;
-    tmp.swap(e);
-    QUERY_ERROR(std::move(tmp));
+    QUERY_ERROR(std::move(e));
   }
 
   Builder::Result::updateFilePaths(context, result);
@@ -142,13 +145,10 @@ const LocationsMap& fileLocations(Context* context, UniqueString path) {
   // Get the result of parsing
   const uast::Builder::Result& p = parseFile(context, path);
   // Create a map of ast to Location
-  std::unordered_map<const ASTNode*, Location> result;
-  for (auto pair : p.locations) {
-    const ASTNode* ast = pair.first;
-    Location loc = pair.second;
-    if (ast != nullptr) {
-      result.insert({ast, loc});
-    }
+  std::unordered_map<const ASTNode*, Location> result(p.locations.size());
+  for (auto& pair : p.locations) {
+    if (pair.first != nullptr)
+      result.insert(pair); // Insert { ASTNode, Location } into result map
   }
 
   return QUERY_END(result);
