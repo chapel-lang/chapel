@@ -29,13 +29,26 @@ namespace chpl {
  It is shorter and uses the Chapel term for it.
  */
 template<typename T>
-  using owned = std::unique_ptr<T>;
+using owned = std::unique_ptr<T>;
 /**
  give a raw pointer to an owned<T> to manage it.
  */
 template<typename T>
 static inline owned<T> toOwned(T* takeFrom) {
   return owned<T>(takeFrom);
+}
+
+// Determine endianness
+// Although not technically allowed to be determinable at compile-time (e.g.,
+// as a constexpr function), most compilers will optimize away this function as
+// always returning true or false. Verified that both GCC and Clang optimize
+// this away at compile-time.
+inline bool little_endian()
+{
+  int endian  =  1;
+  static_assert(sizeof(endian) > 1,
+                "endian must be more than one byte in size");
+  return *(unsigned char*)(&endian) != 0;
 }
 
 } // end namespace chpl

@@ -100,9 +100,8 @@ struct InlinedString {
     // on big endian systems, the tag is after the null terminator,
     // so no action is necessary.
 
-    #if __BYTE_ORDER == __LITTLE_ENDIAN
+    if (little_endian())
       ptr += 1; // pass over the tag
-    #endif
 
     return ptr;
   }
