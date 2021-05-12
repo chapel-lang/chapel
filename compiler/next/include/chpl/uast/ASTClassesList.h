@@ -63,6 +63,7 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
   AST_NODE(Require)                    //
   AST_NODE(Serial)                     //
   AST_NODE(Use)                        // old AST: UseStmt
+  AST_NODE(MultiVarDeclaration)        //
 
   AST_BEGIN_SUBCLASSES(ControlFlow)
 
@@ -130,7 +131,7 @@ AST_BEGIN_SUBCLASSES(Sym)              // old AST: Symbol
 
   AST_BEGIN_SUBCLASSES(TypeSym)        // old AST: TypeSymbol/Type
     AST_NODE(Enum)                     // old AST: EnumType
-    AST_NODE(SimpleType)               //
+    //AST_NODE(SimpleType)             //
 
     AST_BEGIN_SUBCLASSES(AggregateTypeSym) // old AST: AggregateType
       AST_NODE(Class)                  //

@@ -38,6 +38,7 @@ target_sources(libchplcomp-obj
                Local.cpp
                Module.cpp
                ModuleDecl.cpp
+               MultiVarDeclaration.cpp
                OpCall.cpp
                Serial.cpp
                Sym.cpp

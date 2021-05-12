@@ -24,8 +24,6 @@
 #include "chpl/uast/Decl.h"
 #include "chpl/uast/Variable.h"
 
-#include <cassert>
-
 namespace chpl {
 namespace uast {
 
