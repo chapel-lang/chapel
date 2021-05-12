@@ -31,7 +31,7 @@ namespace uast {
  */
 class Expression : public ASTNode {
  protected:
-   Expression(asttags::ASTTag tag)
+  Expression(asttags::ASTTag tag)
     : ASTNode(tag) {
   }
   Expression(asttags::ASTTag tag, ASTList children)

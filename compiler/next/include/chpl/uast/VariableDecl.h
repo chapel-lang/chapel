@@ -87,7 +87,7 @@ class VariableDecl final : public SymDecl {
   const Variable* variable() const {
     const Sym* sym = this->sym();
     assert(sym->isVariable());
-    return (Variable*)sym;
+    return (const Variable*)sym;
   }
 
   /**

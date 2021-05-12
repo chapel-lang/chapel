@@ -238,6 +238,13 @@
     PODUniqueString name;
   };
 
+  // a struct to store the values in enum_header
+  struct EnumParts {
+    std::vector<ParserComment>* comments;
+    Sym::Visibility visibility;
+    PODUniqueString name;
+  };
+
   // This is produced by do_stmt. It records whether the do_stmt statements
   // were produced following a 'do' or not. E.g...
   // do { ... } vs { ... }
@@ -312,14 +319,15 @@
     BlockOrDo blockOrDo;
     CommentsAndLinkage commentsAndLinkage;
     CommentsAndStmt commentsAndStmt;
-    ParserExprList* exprList;
+    EnumParts enumParts;
     FunctionParts functionParts;
+    MaybeNamedActual maybeNamedActual;
+    MaybeNamedActualList* maybeNamedActualList;
     ModuleParts moduleParts;
+    ParserExprList* exprList;
     RenameList* renameList;
     UniqueStrList* uniqueStrList;
     WhereAndLifetime lifetimeAndWhere;
-    MaybeNamedActual maybeNamedActual;
-    MaybeNamedActualList* maybeNamedActualList;
 
     // TODO
     //Type*                     ptype;
@@ -602,7 +610,7 @@
 %type <expr> array_type
 %type <expr> opt_type opt_ret_type ret_array_type
 %type <expr> opt_formal_type formal_array_type opt_formal_array_elt_type lambda_decl_expr
-%type <commentsAndStmt> enum_header
+%type <enumParts> enum_header
 %type <exprList> enum_ls
 
 %type <expr> zippered_iterator
@@ -1705,23 +1713,34 @@ class_level_stmt_ls:
 enum_decl_stmt:
   enum_header TLCBR enum_ls TRCBR
     {
-      /* TODO: attach enum values to the decl */
-      CommentsAndStmt cs = $1;
+      EnumParts parts = $1;
+      auto decl = EnumDecl::build(BUILDER, LOC(@$),
+                                  parts.name, parts.visibility,
+                                  context->consumeList($3));
+      CommentsAndStmt cs = {parts.comments, decl.release()};
       $$ = cs;
+      context->resetDeclState();
+      context->clearComments();
     }
 | enum_header TLCBR error TRCBR
     {
-      CommentsAndStmt cs = $1;
-      if (cs.stmt) delete cs.stmt;
-      cs.stmt = ErroneousExpression::build(BUILDER, LOC(@3)).release();
+      EnumParts parts = $1;
+      auto err = ErroneousExpression::build(BUILDER, LOC(@3));
+      CommentsAndStmt cs = {parts.comments, err.release()};
       $$ = cs;
+      context->resetDeclState();
+      context->clearComments();
     }
 ;
 
 enum_header:
   TENUM ident_def
     {
-      $$ = TODOSTMT(@$);
+      // take into account location of public/private, if any
+      auto loc = context->declStartLoc(@1);
+
+      EnumParts parts = {context->gatherComments(loc), context->visibility, $2};
+      $$ = parts;
     }
 ;
 
@@ -1742,9 +1761,18 @@ enum_ls:
 
 enum_item:
   ident_def
-    { $$ = TODOSTMT(@$); }
+    {
+      auto decl = EnumElementDecl::build(BUILDER, LOC(@$), $1);
+      $$ = STMT(@$, decl.release());
+      context->clearComments();
+    }
 | ident_def TASSIGN expr
-    { $$ = TODOSTMT(@$); }
+    {
+      auto decl = EnumElementDecl::build(BUILDER, LOC(@$), $1,
+                                         toOwned($3));
+      $$ = STMT(@$, decl.release());
+      context->clearComments();
+    }
 ;
 
 lambda_decl_expr:
