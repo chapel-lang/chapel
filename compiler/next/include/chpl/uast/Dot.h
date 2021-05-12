@@ -27,16 +27,21 @@ namespace chpl {
 namespace uast {
 
 /**
-  This class represents a dot expression. A dot expression might
-  indicate a method to be called or it might represent field access.
+  This class represents a dot expression. A dot expression might be:
 
-  For example, `a.b`, and `this.type` are dot expressions.
+   * a method call
+   * field access
+   * qualified access within a module or enum
+
+  For example, `a.b`, `this.type`, `Module.myFunc` are dot expressions.
 
   Consider `myObject.myMethod()`, or `x.f(a=3)`. These are method
   calls that also involve Dot expressions. These are represented as
   an FnCall containing a Dot expression. For example, for `x.f(a=3)`,
   it is represented as
+
     FnCall(calledExpression=`x.f`, actuals=[3], names=[a]);
+
   where the `x.f` is a Dot expression.
 
  */
