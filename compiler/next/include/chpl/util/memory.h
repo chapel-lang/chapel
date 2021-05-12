@@ -49,7 +49,7 @@ static inline owned<T> toOwned(T* takeFrom) {
 // but that is less portable.
 inline bool little_endian()
 {
-  int endian  =  1;
+  unsigned endian  =  1;
   static_assert(sizeof(endian) > 1,
                 "endian must be more than one byte in size");
   return *(unsigned char*)(&endian) != 0;
