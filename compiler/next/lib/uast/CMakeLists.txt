@@ -48,6 +48,7 @@ target_sources(libchplcomp-obj
                Serial.cpp
                Sym.cpp
                SymDecl.cpp
+               TypeSym.cpp
                Variable.cpp
                VariableDecl.cpp
                Visitor.cpp
