@@ -48,7 +48,13 @@ namespace uast {
  */
 class Serial final : public Expression {
  private:
-  Serial(ASTList stmts, int8_t condChildNum, bool usesDo);
+  Serial(ASTList stmts, int8_t condChildNum, bool usesDo)
+    : Expression(asttags::Serial, std::move(stmts)),
+      condChildNum_(condChildNum),
+      usesDo_(usesDo) {
+    assert(isExpressionASTList(children_));
+  }
+
   bool contentsMatchInner(const ASTNode* other) const override;
   void markUniqueStringsInner(Context* context) const override;
   int8_t condChildNum_;

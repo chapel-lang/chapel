@@ -29,7 +29,7 @@ bool Module::contentsMatchInner(const ASTNode* other) const {
   const Module* lhs = this;
   const Module* rhs = (const Module*) other;
   return lhs->symContentsMatchInner(rhs) &&
-         lhs->tag_ == rhs->tag_;
+         lhs->kind_ == rhs->kind_;
 }
 void Module::markUniqueStringsInner(Context* context) const {
   symMarkUniqueStringsInner(context);

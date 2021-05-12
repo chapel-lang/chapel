@@ -48,7 +48,13 @@ namespace uast {
  */
 class Local final : public Expression {
  private:
-  Local(ASTList stmts, int8_t condChildNum, bool usesDo);
+  Local(ASTList stmts, int8_t condChildNum, bool usesDo)
+    : Expression(asttags::Local, std::move(stmts)),
+      condChildNum_(condChildNum),
+      usesDo_(usesDo) {
+    assert(isExpressionASTList(children_));
+  }
+
   bool contentsMatchInner(const ASTNode* other) const override;
   void markUniqueStringsInner(Context* context) const override;
   int8_t condChildNum_;

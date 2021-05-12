@@ -31,15 +31,6 @@ namespace chpl {
 namespace uast {
 
 
-Builder::Builder(Context* context,
-                 UniqueString filepath,
-                 UniqueString inferredModuleName)
-  : context_(context),
-    filepath_(filepath),
-    inferredModuleName_(inferredModuleName),
-    topLevelExpressions_(), errors_(), locations_() {
-}
-
 static std::string filenameToModulename(const char* filename) {
   const char* moduleName = filename;
   const char* firstSlash = strrchr(moduleName, '/');
@@ -101,7 +92,9 @@ UniqueString Builder::createImplicitModuleIfNeeded() {
   bool containsOnlyModules = true;
   bool containsAnyModules = false;
   for (auto const& ownedExpression: topLevelExpressions_) {
-    if (ownedExpression->isModuleDecl()) {
+    if (ownedExpression->isComment()) {
+      // ignore comments for this analysis
+    } else if (ownedExpression->isModuleDecl()) {
       containsAnyModules = true;
     } else {
       containsOnlyModules = false;
@@ -116,7 +109,7 @@ UniqueString Builder::createImplicitModuleIfNeeded() {
     stmts.swap(topLevelExpressions_);
     auto implicitModule = ModuleDecl::build(this, Location(filepath_),
                                             inferredModuleName_,
-                                            Sym::VISIBILITY_DEFAULT,
+                                            Sym::DEFAULT_VISIBILITY,
                                             Module::IMPLICIT,
                                             std::move(stmts));
     topLevelExpressions_.push_back(std::move(implicitModule));
@@ -134,8 +127,10 @@ void Builder::assignIDs(UniqueString inferredModule) {
     if (ModuleDecl* moduleDecl = ownedExpression->toModuleDecl()) {
       UniqueString emptyString;
       doAssignIDs(moduleDecl, emptyString, i, pathVec, duplicates);
+    } else if (ownedExpression->isComment()) {
+      // ignore comments
     } else {
-      assert(false && "topLevelExpressionss should only be module decls");
+      assert(false && "topLevelExpressions should only be module decls or comments");
     }
   }
 }
@@ -256,6 +251,8 @@ void Builder::Result::updateFilePaths(Context* context, const Result& keep) {
     if (ModuleDecl* moduleDecl = topLevelExpression->toModuleDecl()) {
       UniqueString moduleName = moduleDecl->name();
       context->setFilePathForModuleName(moduleName, path);
+    } else if (topLevelExpression->isComment()) {
+      // ignore comments
     } else {
       assert(false && "topLevelExpressions should only be module decls");
     }

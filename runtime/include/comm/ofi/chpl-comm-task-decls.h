@@ -41,7 +41,6 @@ typedef struct {
   chpl_bool taskIsEnding;       // task is ending? (anticipate _downEndCount())
   chpl_bool amDonePending;      // some delayed AM 'done' is expected?
   uint8_t amDone;               // delayed 'done' indicator
-  void* putBitmap;              // PUT target nodes
   chpl_cache_taskPrvData_t cache_data;
   void* amo_nf_buff;
   void* get_buff;
@@ -60,7 +59,6 @@ typedef struct {
   void* pAmDone;                // initiator's 'amDone' flag; NULL means nonblk
 #ifdef CHPL_COMM_DEBUG
   uint64_t seq;
-  uint32_t crc;
 #endif
 } chpl_comm_bundleData_t;
 

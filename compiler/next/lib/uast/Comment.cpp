@@ -27,10 +27,6 @@ namespace chpl {
 namespace uast {
 
 
-Comment::Comment(std::string s)
- : Expression(asttags::Comment), comment_(std::move(s)) {
-}
-
 bool Comment::contentsMatchInner(const ASTNode* other) const {
   const Comment* lhs = this;
   const Comment* rhs = (const Comment*) other;

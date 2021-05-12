@@ -32,10 +32,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-comp_unit_test(testParse)
-comp_unit_test(testParseFor)
-comp_unit_test(testParseLocal)
-comp_unit_test(testParseSerial)
 comp_unit_test(testFrontendQueries)
 comp_unit_test(testInteractive)
+comp_unit_test(testParse)
+comp_unit_test(testParseFor)
+comp_unit_test(testParseFunctions)
+comp_unit_test(testParseLocal)
+comp_unit_test(testParseModules)
+comp_unit_test(testParseSerial)
 comp_unit_test(testResolve)

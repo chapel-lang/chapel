@@ -58,6 +58,7 @@ CMAKE ?= cmake
 $(LIBCOMPILER_BUILD_DIR):
 	@echo "Configuring the compiler library..."
 	@mkdir -p $(LIBCOMPILER_BUILD_DIR)
+	@touch $(CHPL_MAKE_HOME)/compiler/next/lib/frontend/Parser/{bison-chapel.cpp,bison-chapel.h,flex-chapel.cpp,flex-chapel.h}
 	cd $(LIBCOMPILER_BUILD_DIR) && \
 	  $(CMAKE) $(CHPL_MAKE_HOME)/compiler/next \
 	    $(LIB_CMAKE_ARG) \

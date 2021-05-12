@@ -554,7 +554,7 @@ pragma "no doc"
 inline operator regexMatch.!(m: regexMatch) return !m.matched;
 
 pragma "no doc"
-inline proc _cond_test(m: regexMatch) return m.matched;
+inline proc regexMatch.chpl_cond_test_method() return this.matched;
 
 /*  This function extracts the part of a string matching a regular
     expression or capture group. This method is intended to be

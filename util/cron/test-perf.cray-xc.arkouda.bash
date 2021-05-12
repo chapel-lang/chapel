@@ -9,7 +9,6 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.cray-xc.arkouda"
 
 # setup arkouda
 source $CWD/common-arkouda.bash
-source $CWD/common-llvm-comp-path.bash
 export ARKOUDA_NUMLOCALES=16
 
 module list
@@ -21,6 +20,7 @@ module unload $(module -t list 2>&1 | grep craype-hugepages)
 module load craype-hugepages16M
 module unload perftools-base
 module unload atp
+source $CWD/common-llvm-comp-path.bash
 
 module list
 

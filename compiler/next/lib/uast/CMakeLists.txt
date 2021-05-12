@@ -31,6 +31,10 @@ target_sources(libchplcomp-obj
                Expression.cpp
                FnCall.cpp
                For.cpp
+               Formal.cpp
+               FormalDecl.cpp
+               Function.cpp
+               FunctionDecl.cpp
                Identifier.cpp
                Local.cpp
                Loop.cpp

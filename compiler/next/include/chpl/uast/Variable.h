@@ -46,28 +46,27 @@ class Variable final : public Sym {
  friend class VariableDecl;
 
  public:
-  enum Tag {
+  enum Kind {
     VAR,
     CONST,
     CONST_REF,
     REF,
-    PARAM
+    PARAM,
+    TYPE
   };
 
  private:
-  Tag tag_;
-  // TODO: Can we use an instance of a class that means "nothing",
-  // or maybe nullptr in the children?
+  Kind kind_;
   int8_t typeExpressionChildNum;
   int8_t initExpressionChildNum;
 
   Variable(ASTList children,
            UniqueString name, Sym::Visibility vis,
-           Variable::Tag tag,
+           Variable::Kind kind,
            int8_t typeExpressionChildNum,
            int8_t initExpressionChildNum)
     : Sym(asttags::Variable, std::move(children), name, vis),
-      tag_(tag),
+      kind_(kind),
       typeExpressionChildNum(typeExpressionChildNum),
       initExpressionChildNum(initExpressionChildNum) {
 
@@ -81,7 +80,10 @@ class Variable final : public Sym {
 
  public:
   ~Variable() override = default;
-  const Tag tag() const { return this->tag_; }
+  /**
+    Returns the kind of the variable (`var` / `const` / `param` etc).
+   */
+  const Kind kind() const { return this->kind_; }
   /**
     Returns the type expression used in the variable's declaration, or nullptr
     if there wasn't one.
