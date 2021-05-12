@@ -28,6 +28,10 @@ target_sources(libchplcomp-obj
                ControlFlow.cpp
                Decl.cpp
                Dot.cpp
+               Enum.cpp
+               EnumDecl.cpp
+               EnumElement.cpp
+               EnumElementDecl.cpp
                ErroneousExpression.cpp
                Expression.cpp
                FnCall.cpp
