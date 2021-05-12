@@ -17,9 +17,10 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_UAST_NEW_H_
+#ifndef CHPL_UAST_NEW_H
 #define CHPL_UAST_NEW_H
 
+#include "chpl/queries/Location.h"
 #include "chpl/uast/Expression.h"
 
 namespace chpl {
@@ -31,67 +32,58 @@ namespace uast {
   \rst
   .. code-block:: chapel
 
-    // Example 1:
     var foo = new bar(a = 1, 2);
   \endrst
 
- */
-class New : public Call {
+  Creates a call expression where the base expression is 'new bar'.
+*/
+class New : public Expression {
  public:
 
   /**
     Possible management flavors for a new expression.
   */
   enum struct Management {
-    None,
     Borrowed,
     Owned,
     Shared,
-    Unmanaged
+    Unmanaged,
+    None
   };
 
  private:
-  New(Management::Style management, ASTList children,
-      std::vecctor<UniqueString> actualNames);
-  bool callContentsMatchInner(const New* other) const;
-  void callMarkUniqueStringsInner(Context* context) const;
+  New(ASTList children, New::Management management)
+    : Expression(asttags::New, std::move(children)),
+      management_(management) {}
+  bool contentsMatchInner(const ASTNode* other) const;
+  void markUniqueStringsInner(Context* context) const {}
   Management management_;
 
  public:
 
   /**
-    Create and return a new expression with the given management style,
+    Create and return a new expression with the given type expression and
+    management style.
   */
   static owned<New> build(Builder* builder, Location loc,
-                          Management management,
-                          owned<Expression> calledExpression,
-                          ASTList actuals,
-                          std::vector<UniqueString> actualNames);
+                          owned<Expression> typeExpression,
+                          Management management);
 
   /**
-    Create and return a new expression with no management style,
+    Returns the type expression of this new expression.
   */
-  static owned<New> build(Builder* builder, Location loc,
-                          owned<Expression> calledExpression,
-                          ASTList actuals,
-                          std::vector<UniqueString> actualNames);
-
-  /**
-    Returns whether the i'th actual is named as with 'f(a=3)' where the
-    actual is '3' and the name is 'a'.
-  */
-  bool isNamedActual(int i) const;
-
-  /**
-    Returns the name of the i'th actual, or the empty string if the actual
-    was not named.
-  */
-  UniqueString actualName(int i) const;
+  const Expression* typeExpression() const {
+    assert(children_.size());
+    return (const Expression*)children_[0].get();
+  }
 
   /**
     Returns the management style of this new expression.
   */
-  Management management() const;
+  Management management() const {
+    return management_;
+  }
+
 };
 
 

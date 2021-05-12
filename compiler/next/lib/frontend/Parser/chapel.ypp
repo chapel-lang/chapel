@@ -2362,18 +2362,78 @@ new_maybe_decorated:
 ;
 
 new_expr:
-  /* handles the typical new cases, e.g. new C(); new owned C() */
+  /* Handles the typical new cases, e.g. new (); new owned C() */
   new_maybe_decorated expr %prec TNEW
-    { TODOEXPR(@$); }
-  /* handles e.g. new (typefn())(initargs) */
+  {
+    auto management = New::Management::None;
+    switch ($1) {
+      case NewTag_BORROWED: management = New::Management::Borrowed; break;
+      case NewTag_OWNED: management = New::Management::Owned; break;
+      case NewTag_SHARED: management = New::Management::Shared; break;
+      case NewTag_UNMANAGED: management = New::Management::Unmanaged; break;
+      case NewTag_BLANK: management = New::Management::None; break;
+    }
+
+    Call* fnCall = $2->toFnCall();
+
+    // If the type expression is a call that uses parens and has a base
+    // expression, we can modify it in place. What we will do is wrap the
+    // base expression of the call in a 'New'.
+    if (fnCall && fnCall->calledExpression()) {
+      const Expression* calledExprPtr = fnCall->calledExpression();
+
+      // Get the address of the child slot containing the base expression.
+      owned<ASTNode>* swapout = nullptr;
+      for (auto& child : BUILDER->mutableRefToChildren(fnCall)) {
+        if (child.get() == calledExprPtr) {
+          swapout = &child;
+          break;
+        }
+      }
+
+      // We should have found something.
+      assert(swapout);
+
+      // Read the base expression, leaving it nullptr.
+      auto calledExpr = std::move(*swapout).release()->toExpression();
+      assert(calledExpr);
+
+      // Construct the new expression using the base expression.
+      auto newExpr = New::build(BUILDER, LOC(@$), toOwned(calledExpr),
+                                management);
+
+      // Swap the new expression into place.
+      *swapout = std::move(newExpr);
+
+      // Done.
+      $$ = $2;
+
+    // It's an error for one reason or another. TODO: Specialize these
+    // errors later (e.g. 'new a.field' would require parens around
+    // the expression 'a.field'; 'new foo' would require an argument
+    // list for 'foo'; and something like 'new __primitive()' just
+    // doesn't make any sense...
+    } else {
+      $$ = raiseError(@$, context, "Invalid form for new expression");
+    }
+  }
+  /* TODO: handles e.g. new (typefn())(initargs) */
 | TNEW TOWNED TLP expr TRP TLP opt_actual_ls TRP %prec TNOELSE
-    { $$ = TODOEXPR(@$); }
+  {
+    $$ = TODOEXPR(@$);
+  }
 | TNEW TSHARED TLP expr TRP TLP opt_actual_ls TRP %prec TNOELSE
-    { $$ = TODOEXPR(@$); }
+  {
+    $$ = TODOEXPR(@$);
+  }
 | TNEW TOWNED TLP expr TRP TLP opt_actual_ls TRP TQUESTION
-    { $$ = TODOEXPR(@$); }
+  {
+    $$ = TODOEXPR(@$);
+  }
 | TNEW TSHARED TLP expr TRP TLP opt_actual_ls TRP TQUESTION
-    { $$ = TODOEXPR(@$); }
+  {
+    $$ = TODOEXPR(@$);
+  }
 ;
 
 let_expr:

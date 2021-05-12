@@ -114,6 +114,14 @@ class Builder final {
 
   // Builder methods are actually type methods on the individual AST
   // elements. This prevents the Builder API from growing unreasonably large.
+
+  // Use this in the parser to get a mutable view of a node's children so
+  // that the node can be modified in place. Later we can also add a method
+  // such as 'swapChildren' if we need it.
+  /// \cond DO_NOT_DOCUMENT
+  ASTList& mutableRefToChildren(ASTNode* ast) {
+    return ast->children_;
+  }
 };
 
 } // end namespace uast
