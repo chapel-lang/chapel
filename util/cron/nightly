@@ -53,7 +53,7 @@ $nolocal = 0;
 $verify = 0;
 $retaintree = 0;
 $dist = "";
-$llvm = 0;
+$llvm = 1;
 $memleaks = 0;
 $memleakslog = "";
 $multilocale = 0;
@@ -151,8 +151,8 @@ while (@ARGV) {
         $svnrevopt = "-r " . shift @ARGV;
     } elsif ($flag eq "-cron-recipient") {
         $cronrecipient = shift @ARGV;
-    } elsif ($flag eq "-llvm") {
-        $llvm = 1;
+    } elsif ($flag eq "-no-llvm") {
+        $llvm = 0;
     } elsif ($flag eq "-junit-xml") {
         $junit_xml = 1;
     } elsif ($flag eq "-asserts") {
@@ -696,6 +696,9 @@ if ($nolocal == 1) {
 }
 if ($verify == 1) {
     $testflags = "$testflags -compopts --verify";
+}
+if ($llvm == 0) {
+    $testflags = "$testflags -compopts --no-llvm";
 }
 if ($launchcmd) {
     $testflags = "-launchcmd \"$launchcmd\" $testflags";
