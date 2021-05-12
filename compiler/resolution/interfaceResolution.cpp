@@ -41,7 +41,8 @@
 
 #define nameBuffSize 256
 static char nameBuff[nameBuffSize];
-static char idBuff[32];
+#define idBuffSize 32
+static char idBuff[idBuffSize];
 
 // show 'sym' as name[id] upon --devel, otherwise 'id'
 static const char* symstring(Symbol* sym) {
@@ -59,9 +60,9 @@ static const char* idstring(const char* prefix, BaseAST* ast) {
   if (!ast)
     return "<no node provided>";
   if (developer)
-    sprintf(idBuff, "%s [%d]", prefix, ast->id);
+    snprintf(idBuff, idBuffSize, "%s [%d]", prefix, ast->id);
   else
-    idBuff[0] = '\0'; // gcc 4.8 does not allow sprintf(idBuff, "");
+    sprintf(idBuff, "");
   return idBuff;
 }
 
@@ -507,6 +508,59 @@ static FnSymbol* makeRepForRequiredFn(FnSymbol* cgFun, SymbolMap &fml2act,
   return instantiated;
 }
 
+static int repsMaxDepth = 3;
+
+// For each required function of each interface, make an instantiation of
+// its signature visible to the function body.
+static void createRepsForConstraint(FnSymbol*     fn, InterfaceInfo* ifcInfo,
+                                 IfcConstraint* icon, InterfaceReps& repData,
+                                 int           depth) {
+  depth++; INT_ASSERT(depth <= repsMaxDepth);
+
+  InterfaceSymbol* isym = icon->ifcSymbol();
+  resolveInterfaceSymbol(isym);
+  INT_ASSERT(repData.empty());   // we have not filled it yet
+
+  SymbolMap fml2act;
+  buildAndCheckFormals2Actuals(isym, icon, "interface constraint", fml2act);
+
+  // Create reps for isym's associated types.
+  // Do this before instantiating the required functions
+  // because those can reference associated types.
+  for (auto& elem: isym->associatedTypes) {
+    ConstrainedType* required = elem.second;
+    TypeSymbol*  instantiated = ConstrainedType::buildSym(elem.first,
+                                                  CT_CGFUN_ASSOC_TYPE);
+    ifcInfo->constrainedTypes.insertAtTail(new DefExpr(instantiated));
+    instantiated->addFlag(FLAG_CG_REPRESENTATIVE);
+    repData.symReps.put(required->symbol, instantiated);
+    fml2act.put(required->symbol, instantiated);
+  }
+
+  for (auto elem: sortedSymbolMapElts(isym->requiredFns)) {
+    FnSymbol* required = toFnSymbol(elem.key);
+    FnSymbol* instantiated = makeRepForRequiredFn(fn, fml2act, required);
+    // We may also want to make 'instantiated' visible in fn->where.
+    fn->body->insertAtHead(new DefExpr(instantiated));
+    repData.symReps.put(required, instantiated);
+  }
+
+  // Also account for the interfaces in the associated constraints.
+  if (depth >= repsMaxDepth)  return; // an arbitrary recursion limiter
+  
+  int aconNum = isym->associatedConstraints.size();
+  repData.conReps.resize(aconNum);
+  for (int aconIdx = 0; aconIdx < aconNum; aconIdx++) {
+    InterfaceReps* aconReps = new InterfaceReps();
+    repData.conReps[aconIdx] = aconReps;
+
+    IfcConstraint* aconOrig = isym->associatedConstraints[aconIdx];
+    IfcConstraint* aconInst = aconOrig->copy(&fml2act);
+
+    createRepsForConstraint(fn, ifcInfo, aconInst, *aconReps, depth);
+  }
+}
+
 //
 // Implements visibility of interface functions within a CG function.
 // Ex. worker() should be visible within fun():
@@ -514,43 +568,35 @@ static FnSymbol* makeRepForRequiredFn(FnSymbol* cgFun, SymbolMap &fml2act,
 //   interface IFC(T) { proc worker(arg:T); }
 //   proc fun(x) where implements IFC(x.type) { worker(x); }
 //
+// For that, creates a "representative" FnSymbol for each required function,
+// such as fun(), for use temporarily while 'fn' is being resolved.
+//
 static void createRepsForIfcSymbols(FnSymbol* fn, InterfaceInfo* ifcInfo) {
-  INT_ASSERT(ifcInfo->repsForIfcSymbols.empty()); // first time resolving 'fn'
+  INT_ASSERT(ifcInfo->ifcReps.empty()); // first time resolving 'fn'
+  ifcInfo->ifcReps.resize(ifcInfo->interfaceConstraints.length);
+  int consIdx = 0;
 
-  // For each required function of each interface, make an instantiation of
-  // its signature visible to the function body.
   for_alist(iconExpr, ifcInfo->interfaceConstraints) {
     IfcConstraint* icon = toIfcConstraint(iconExpr);
-    InterfaceSymbol* isym = icon->ifcSymbol();
-    resolveInterfaceSymbol(isym);
-
-    SymbolMap reps;
-    SymbolMap fml2act;
-    buildAndCheckFormals2Actuals(isym, icon, "interface constraint", fml2act);
-
-    // Create reps for isym's associated types.
-    // Do this before instantiating the required functions
-    // because those can reference associated types.
-    for (auto& elem: isym->associatedTypes) {
-      ConstrainedType* required = elem.second;
-      TypeSymbol*  instantiated = ConstrainedType::buildSym(elem.first,
-                                                    CT_CGFUN_ASSOC_TYPE);
-      ifcInfo->constrainedTypes.insertAtTail(new DefExpr(instantiated));
-      instantiated->addFlag(FLAG_CG_REPRESENTATIVE);
-      reps.put(required->symbol, instantiated);
-      fml2act.put(required->symbol, instantiated);
-    }
-
-    for (auto elem: sortedSymbolMapElts(isym->requiredFns)) {
-      FnSymbol* required = toFnSymbol(elem.key);
-      FnSymbol* instantiated = makeRepForRequiredFn(fn, fml2act, required);
-      // We may also want to make 'instantiated' visible in fn->where.
-      fn->body->insertAtHead(new DefExpr(instantiated));
-      reps.put(required, instantiated);
-    }
-
-    ifcInfo->repsForIfcSymbols.push_back(reps);
+    InterfaceReps& repData = ifcInfo->ifcReps[consIdx++];
+    
+    createRepsForConstraint(fn, ifcInfo, icon, repData, 0);
   }
+}
+
+static void removeRepsForIfcSymbols(FnSymbol* fn, InterfaceReps& repData,
+                                    int depth) {
+  depth++; INT_ASSERT(depth <= repsMaxDepth);
+
+  form_Map(SymbolMapElem, elem, repData.symReps) {
+    if (FnSymbol* instantiated = toFnSymbol(elem->value)) {
+      INT_ASSERT(instantiated->defPoint->parentExpr == fn->body);
+      instantiated->defPoint->remove();
+    }
+  }
+
+  for(InterfaceReps* nestedData: repData.conReps)
+    removeRepsForIfcSymbols(fn, *nestedData, depth);
 }
 
 // If 'fn' is a CG function and has not been resolved yet, resolve it.
@@ -600,14 +646,8 @@ void resolveConstrainedGenericFun(FnSymbol* fn) {
   // which were needed during resolveFunction(fn).
   // This way they do not show in instantiations of 'fn'.
   // BTW no need to clean 'fn' itself -- it will be pruned.
-  for (SymbolMap& reps: ifcInfo->repsForIfcSymbols) {
-    form_Map(SymbolMapElem, elem, reps) {
-      if (FnSymbol* instantiated = toFnSymbol(elem->value)) {
-        INT_ASSERT(instantiated->defPoint->parentExpr == fn->body);
-        instantiated->defPoint->remove();
-      }
-    }
-  }
+  for (InterfaceReps& repData: ifcInfo->ifcReps)
+    removeRepsForIfcSymbols(fn, repData, 0);
 
   // For calls to reps that are interface-constrained:
   // - they are resolved to instantiations of those reps,
@@ -699,7 +739,7 @@ static bool resolveOneAssocType(InterfaceSymbol* isym,  ImplementsStmt*   istm,
   cleanupHolder(holder);
   if (implAT != nullptr) {
     fml2act.put(ifcAT->symbol, implAT->symbol);
-    istm->witnesses.put(ifcAT->symbol, implAT->symbol);
+    istm->witnesses.symWits.put(ifcAT->symbol, implAT->symbol);
     if (implAT->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE))
       USR_FATAL_CONT(istm, "the associated type %s is instantiated with a"
                      " runtime type '%s', which is currently not implemented",
@@ -779,6 +819,7 @@ static bool checkAssocConstraints(InterfaceSymbol* isym,  ImplementsStmt* istm,
                                   //bool nested, const char* indent,
                                   CallExpr*    callsite,  bool  reportErrors) {
   bool acSuccess = true;
+  INT_ASSERT(istm->witnesses.conWits.empty());  // we have not filled it yet
 
   for (IfcConstraint* assocCons: isym->associatedConstraints) {
     cgprintAssocConstraint(assocCons);
@@ -789,19 +830,18 @@ static bool checkAssocConstraints(InterfaceSymbol* isym,  ImplementsStmt* istm,
     cleanupHolder(holder);
     //CG TODO: incorporate csat.istm->witnesses ?
 
-    if (csat.istm != nullptr) {
-      auto insertVal = std::make_pair(assocCons, csat.istm);
-      auto insertResult = istm->aconsWitnesses.insert(insertVal);
-      INT_ASSERT(insertResult.second); // no prior mapping for 'assocCon'
-
-    } else {
+    if (csat.istm == nullptr) {
       INT_ASSERT(csat.icon == nullptr); // we are not in a CG function
       if (! reportErrors) return false;
       USR_FATAL_CONT(istm, "when checking this implements statement");
       USR_PRINT(assocCons, "this associated constraint is not satisfied");
       acSuccess = false;
     }
+
+    istm->witnesses.conWits.push_back(csat.istm);
   }
+
+  INT_ASSERT(istm->witnesses.numAssocCons() == isym->numAssocCons());
 
   return acSuccess;
 }
@@ -1020,7 +1060,7 @@ static bool resolveOneRequiredFn(InterfaceSymbol* isym,  ImplementsStmt*  istm,
   if (reqFnIsIC && target != nullptr)
     target = getICcopySource(target);
 
-  istm->witnesses.put(reqFn, target);
+  istm->witnesses.symWits.put(reqFn, target);
   return target != NULL;
 }
 
@@ -1030,7 +1070,7 @@ static bool resolveRequiredFns(InterfaceSymbol* isym,  ImplementsStmt* istm,
   bool rfSuccess = true;
   std::vector<FnSymbol*> instantiatedDefaults;
 
-  for (auto wit: sortedSymbolMapElts(istm->witnesses)) {
+  for (auto wit: sortedSymbolMapElts(istm->witnesses.symWits)) {
     if (FnSymbol* reqFn = toFnSymbol(wit.key))
       rfSuccess &= resolveOneRequiredFn(isym, istm, fml2act, holder,
                                         instantiatedDefaults, indent,
@@ -1043,7 +1083,7 @@ static bool resolveRequiredFns(InterfaceSymbol* isym,  ImplementsStmt* istm,
     for(FnSymbol* iDflt: instantiatedDefaults)
       // Update references to now-instantiated required functions
       // within default implementations.
-      update_symbols(iDflt, &(istm->witnesses));
+      update_symbols(iDflt, &(istm->witnesses.symWits));
   }
 
   return rfSuccess;
@@ -1100,8 +1140,8 @@ static bool resolveImplementsStmt(FnSymbol* wrapFn, ImplementsStmt* istm,
   BlockStmt* holder = new BlockStmt();
   istm->implBody->insertAtTail(holder);
 
-  INT_ASSERT(istm->witnesses.n == 0);      // we have not filled it yet
-  istm->witnesses.copy(isym->requiredFns); // start with the defaults impls
+  INT_ASSERT(istm->witnesses.symWits.n == 0);     // we have not filled it yet
+  istm->witnesses.symWits.copy(isym->requiredFns);  // start with the defaults
 
   SymbolMap fml2act; // isym formal -> istm actual
   buildAndCheckFormals2Actuals(isym, icon, "implements statement", fml2act);
@@ -1564,16 +1604,17 @@ ConstraintSat constraintIsSatisfiedAtCallSite(CallExpr*      callsite,
 //
 // This populates 'substitutions' with the mapping from each associated type
 // in 'fn' for indx-th constraint to the A.T.'s instantiation.
-// 
-void copyIfcRepsToSubstitutions(FnSymbol* fn, Expr* anchor, int indx,
-                             ImplementsStmt* istm, SymbolMap& substitutions) {
-  // repsForIfcSymbols include mapping for associated types, if any
-  form_Map(SymbolMapElem, elem,
-           fn->interfaceInfo->repsForIfcSymbols[indx])
+//
+static void addRepsHelper(FnSymbol*         fn, SymbolMap& substitutions,
+                          ImplementsStmt* istm, InterfaceReps&   repData,
+                          int            depth) {
+  depth++; INT_ASSERT(depth <= repsMaxDepth);
+
+  form_Map(SymbolMapElem, elem, repData.symReps)
   {
     Symbol* required = elem->key;
     Symbol* usedInFn = elem->value;
-    Symbol* implem   = istm->witnesses.get(required);
+    Symbol* implem   = istm->witnesses.symWits.get(required);
     if (isFnSymbol(required)) {
       INT_ASSERT(usedInFn->hasFlag(FLAG_CG_REPRESENTATIVE));
       INT_ASSERT(isFnSymbol(usedInFn));
@@ -1585,6 +1626,28 @@ void copyIfcRepsToSubstitutions(FnSymbol* fn, Expr* anchor, int indx,
     substitutions.put(usedInFn, implem);
   }
 
+  int aconNum = repData.numAssocCons();
+  if (depth >= repsMaxDepth)
+    INT_ASSERT(aconNum == 0); // createRepsForConstraint() cut recursion
+  else
+    INT_ASSERT(aconNum == istm->witnesses.numAssocCons());
+
+  for (int aconIdx = 0; aconIdx < aconNum; aconIdx++)
+    addRepsHelper(fn, substitutions, istm->witnesses.conWits[aconIdx],
+                  *repData.conReps[aconIdx], depth);
+}
+
+void cgAddRepsToSubstitutions(FnSymbol* fn, SymbolMap& substitutions,
+                              ImplementsStmt* istm, int indx) {
+  addRepsHelper(fn, substitutions, istm,
+                fn->interfaceInfo->ifcReps[indx], 0);
+}
+
+// Redirect the components of aggregate types used in 'fn', when needed,
+// from the original CT types to their representatives.
+void cgConvertAggregateTypes(FnSymbol* fn, Expr* anchor,
+                             SymbolMap& substitutions)
+{
   std::vector<DefExpr*> defExprs;
   collectDefExprs(fn, defExprs);
   for (DefExpr* def: defExprs)
@@ -1656,7 +1719,7 @@ static void adjustCGtype(SymbolMap &substitutions, Type* &type) {
 }
 
 //
-// The substitutions from repsForIfcSymbols to their implementations,
+// The substitutions in ifcReps - now copied to 'substitutions',
 // which we worked so hard to compute, are dropped on the floor
 // by instantiateSignature() -> partialCopy().
 // Recover them so they take effect later upon finalizeCopy().
@@ -1735,8 +1798,7 @@ static void issueAssocTypeAmbiguousError(IfcConstraint*   assocCons1,
   USR_STOP();
 }
 
-// Convert the call 'CT.assocType' to the corresponding entry
-// from 'repsForIfcSymbols'.
+// Convert the call 'CT.assocType' to the corresponding entry from ifcReps.
 Expr* resolveCallToAssociatedType(CallExpr* call, ConstrainedType* recv) {
   if (recv->ctUse != CT_CGFUN_FORMAL)
     USR_FATAL(call, "this use of a constrained type '%s'"
@@ -1774,12 +1836,12 @@ Expr* resolveCallToAssociatedType(CallExpr* call, ConstrainedType* recv) {
       issueAssocTypeAmbiguousError(assocCon, icon, call, atName);
     assocCon = icon;
 
-    // Fetch the corresponding ConstrainedType from repsForIfcSymbols.
+    // Fetch the corresponding ConstrainedType from ifcReps->symReps.
     // We could have lazy creation of these ConstrainedTypes here, i.e.
-    // create one if it is not already in repsForIfcSymbols. However,
-    // we will use repsForIfcSymbols in a copy() later, which does not
+    // create one if it is not already in ifcReps. However,
+    // we will use ifcReps map(s) in a copy() later, which does not
     // give us an option for lazy creation.
-    Symbol* atRep = ifcInfo->repsForIfcSymbols[indx].get(
+    Symbol* atRep = ifcInfo->ifcReps[indx].symReps.get(
                                assocTypeIT->second->symbol);
     assocType = toConstrainedType(toTypeSymbol(atRep)->type);
     INT_ASSERT(assocType->ctUse == CT_CGFUN_ASSOC_TYPE);
