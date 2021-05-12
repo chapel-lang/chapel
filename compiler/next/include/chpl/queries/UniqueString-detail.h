@@ -150,6 +150,9 @@ struct InlinedString {
     if (s != NULL) len = strlen(s);
     return InlinedString::build(context, s, len);
   }
+  static InlinedString build() {
+    return InlinedString::buildFromAligned("", 0);
+  }
 
   bool isInline() const {
     return alignmentIndicatesTag(this->v);
@@ -177,8 +180,15 @@ struct PODUniqueString {
   static PODUniqueString build(Context* context, const char* s) {
     return { InlinedString::build(context, s) };
   }
+  static inline PODUniqueString build() {
+    PODUniqueString ret = {InlinedString::build()};
+    return ret;
+  }
   const char* c_str() const {
     return i.c_str();
+  }
+  bool isEmpty() const {
+    return i.c_str()[0] == '\0';
   }
 };
 

@@ -27,8 +27,6 @@ namespace chpl {
 namespace uast {
 
 
-class Builder;
-
 /**
   This class represents a variable. For example:
 
@@ -45,34 +43,47 @@ class Builder;
   each of these is a VariableDecl that refers to a Variable Sym.
  */
 class Variable final : public Sym {
- friend class Builder;
  friend class VariableDecl;
 
  public:
-  enum Tag {
+  enum Kind {
     VAR,
     CONST,
     CONST_REF,
     REF,
-    PARAM
+    PARAM,
+    TYPE
   };
 
  private:
-  Tag tag_;
-  // TODO: Can we use an instance of a class that means "nothing",
-  // or maybe nullptr in the children?
+  Kind kind_;
   int8_t typeExpressionChildNum;
   int8_t initExpressionChildNum;
 
   Variable(ASTList children,
-           UniqueString name, Sym::Visibility vis, Tag tag,
-           int8_t typeExpressionChildNum, int8_t initExpressionChildNum);
+           UniqueString name, Sym::Visibility vis,
+           Variable::Kind kind,
+           int8_t typeExpressionChildNum,
+           int8_t initExpressionChildNum)
+    : Sym(asttags::Variable, std::move(children), name, vis),
+      kind_(kind),
+      typeExpressionChildNum(typeExpressionChildNum),
+      initExpressionChildNum(initExpressionChildNum) {
+
+    assert(-1 <= typeExpressionChildNum && typeExpressionChildNum <= 1);
+    assert(-1 <= initExpressionChildNum && initExpressionChildNum <= 1);
+    assert(numChildren() <= 2);
+    assert(isExpressionASTList(children_));
+  }
   bool contentsMatchInner(const ASTNode* other) const override;
   void markUniqueStringsInner(Context* context) const override;
 
  public:
   ~Variable() override = default;
-  const Tag tag() const { return this->tag_; }
+  /**
+    Returns the kind of the variable (`var` / `const` / `param` etc).
+   */
+  const Kind kind() const { return this->kind_; }
   /**
     Returns the type expression used in the variable's declaration, or nullptr
     if there wasn't one.

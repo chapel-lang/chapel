@@ -36,6 +36,7 @@ std::vector<ParserComment>* ParserContext::gatherComments(YYLTYPE location) {
 
   if (this->comments->size() == 0) {
     delete this->comments;
+    this->comments = nullptr;
     return nullptr;
   }
 
@@ -78,6 +79,32 @@ std::vector<ParserComment>* ParserContext::gatherComments(YYLTYPE location) {
   return ret;
 }
 
+void ParserContext::noteDeclStartLoc(YYLTYPE loc) {
+  if (this->declStartLocation.first_line == 0) {
+    this->declStartLocation = loc;
+  }
+}
+Sym::Visibility ParserContext::noteVisibility(Sym::Visibility visibility) {
+  this->visibility = visibility;
+  return this->visibility;
+}
+Variable::Kind ParserContext::noteVarDeclKind(Variable::Kind varDeclKind) {
+  this->varDeclKind = varDeclKind;
+  return this->varDeclKind;
+}
+YYLTYPE ParserContext::declStartLoc(YYLTYPE curLoc) {
+  if (this->declStartLocation.first_line == 0)
+    return curLoc;
+  else
+    return this->declStartLocation;
+}
+void ParserContext::resetDeclState() {
+  this->varDeclKind = Variable::VAR;
+  this->visibility = Sym::DEFAULT_VISIBILITY;
+  YYLTYPE emptyLoc = {0};
+  this->declStartLocation = emptyLoc;
+}
+
 void ParserContext::noteComment(YYLTYPE loc, const char* data, long size) {
   if (this->comments == nullptr) {
     this->comments = new std::vector<ParserComment>();
@@ -91,6 +118,15 @@ void ParserContext::noteComment(YYLTYPE loc, const char* data, long size) {
   this->comments->push_back(c);
 }
 
+void ParserContext::clearCommentsBefore(YYLTYPE loc) {
+  auto comments = this->gatherComments(loc);
+  if (comments != nullptr) {
+    for (ParserComment parserComment : *this->comments) {
+      delete parserComment.comment;
+    }
+    delete comments;
+  }
+}
 void ParserContext::clearComments() {
   if (this->comments != nullptr) {
     for (ParserComment parserComment : *this->comments) {
@@ -117,19 +153,22 @@ ParserExprList* ParserContext::makeList(CommentsAndStmt cs) {
   return ret;
 }
 
-void ParserContext::appendList(ParserExprList* dst, ParserExprList* lst) {
+ParserExprList* ParserContext::appendList(ParserExprList* dst,
+                                          ParserExprList* lst) {
   for (Expression* elt : *lst) {
     dst->push_back(elt);
   }
   delete lst;
+  return dst;
 }
 
-void ParserContext::appendList(ParserExprList* dst, Expression* e) {
+ParserExprList* ParserContext::appendList(ParserExprList* dst, Expression* e) {
   dst->push_back(e);
+  return dst;
 }
 
-void ParserContext::appendList(ParserExprList* dst,
-                               std::vector<ParserComment>* comments) {
+ParserExprList* ParserContext::appendList(ParserExprList* dst,
+                                          std::vector<ParserComment>* comments) {
   if (comments != nullptr) {
     for (ParserComment parserComment : *comments) {
       Comment* c = parserComment.comment;
@@ -138,15 +177,18 @@ void ParserContext::appendList(ParserExprList* dst,
     }
     delete comments;
   }
+  return dst;
 }
 
-void ParserContext::appendList(ParserExprList* dst, CommentsAndStmt cs) {
+ParserExprList* ParserContext::appendList(ParserExprList* dst,
+                                          CommentsAndStmt cs) {
   // append the comments
   this->appendList(dst, cs.comments);
   // then append the statement
   if (cs.stmt != nullptr) {
     dst->push_back(cs.stmt);
   }
+  return dst;
 }
 
 ASTList ParserContext::consumeList(ParserExprList* lst) {
@@ -158,6 +200,24 @@ ASTList ParserContext::consumeList(ParserExprList* lst) {
     delete lst;
   }
   return ret;
+}
+
+void ParserContext::consumeNamedActuals(MaybeNamedActualList* lst,
+                                        ASTList& actualsOut,
+                                        std::vector<UniqueString>& namesOut) {
+  bool anyActualNames = false;
+  if (lst != nullptr) {
+    for (auto& elt : *lst) {
+      if (!elt.name.isEmpty())
+        anyActualNames = true;
+    }
+    for (auto& elt : *lst) {
+      actualsOut.push_back(toOwned(elt.expr));
+      if (anyActualNames)
+        namesOut.push_back(elt.name);
+    }
+    delete lst;
+  }
 }
 
 std::vector<ParserComment>*
@@ -229,10 +289,86 @@ CommentsAndStmt ParserContext::finishStmt(Expression* e) {
   return makeCommentsAndStmt(NULL, e);
 }
 
+ParserExprList*
+ParserContext::blockToParserExprList(YYLTYPE lbrLoc, YYLTYPE rbrLoc,
+                                     ParserExprList* body) {
+  this->clearCommentsBefore(lbrLoc);
+  ParserExprList* ret = body != nullptr ? body : new ParserExprList();
+  this->appendList(ret, this->gatherComments(rbrLoc));
+  return ret;
+}
+
 Location ParserContext::convertLocation(YYLTYPE location) {
   return Location(this->filename,
                   location.first_line,
                   location.first_column,
                   location.last_line,
                   location.last_column);
+}
+
+Identifier* ParserContext::buildEmptyIdent(YYLTYPE location) {
+  UniqueString empty;
+  return Identifier::build(builder, convertLocation(location), empty).release();
+}
+Identifier* ParserContext::buildIdent(YYLTYPE location, PODUniqueString name) {
+  return Identifier::build(builder, convertLocation(location), name).release();
+}
+
+OpCall* ParserContext::buildBinOp(YYLTYPE location,
+                                  Expression* lhs,
+                                  PODUniqueString op,
+                                  Expression* rhs) {
+  return OpCall::build(builder, convertLocation(location),
+                       op, toOwned(lhs), toOwned(rhs)).release();
+}
+OpCall* ParserContext::buildUnaryOp(YYLTYPE location,
+                                    PODUniqueString op,
+                                    Expression* expr) {
+  return OpCall::build(builder, convertLocation(location),
+                       op, toOwned(expr)).release();
+}
+
+FunctionParts ParserContext::makeFunctionParts(bool isInline,
+                                               bool isOverride) {
+  FunctionParts fp = {nullptr,
+                      nullptr,
+                      this->visibility,
+                      Function::DEFAULT_LINKAGE,
+                      nullptr,
+                      isInline,
+                      isOverride,
+                      Function::PROC,
+                      nullptr,
+                      PODUniqueString::build(),
+                      Function::DEFAULT_RETURN_INTENT,
+                      false,
+                      nullptr, nullptr, nullptr, nullptr,
+                      nullptr};
+  return fp;
+}
+
+CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
+                                                 FunctionParts& fp) {
+  CommentsAndStmt cs = {fp.comments, nullptr};
+  if (fp.errorExpr == nullptr) {
+    auto f = FunctionDecl::build(builder, this->convertLocation(location),
+                                 fp.name, this->visibility,
+                                 fp.linkage, toOwned(fp.linkageNameExpr),
+                                 fp.isInline,
+                                 fp.isOverride,
+                                 fp.kind,
+                                 toOwned(fp.receiver),
+                                 fp.returnIntent,
+                                 fp.throws,
+                                 this->consumeList(fp.formals),
+                                 toOwned(fp.returnType),
+                                 toOwned(fp.where),
+                                 this->consumeList(fp.lifetime),
+                                 this->consumeList(fp.body));
+    cs.stmt = f.release();
+  } else {
+    cs.stmt = fp.errorExpr;
+  }
+  this->clearComments();
+  return cs;
 }

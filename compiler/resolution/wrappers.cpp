@@ -682,7 +682,27 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
     temp->addFlag(FLAG_MAYBE_REF);
 
   if (formalIntent != INTENT_INOUT && formalIntent != INTENT_OUT) {
-    temp->addFlag(FLAG_MAYBE_PARAM);
+    // If this is a default argument function being defined for a
+    // class, we don't want to make the method a 'param' method
+    // because they don't dynamically dispatch, and we need that to
+    // happen to have intuitive default argument behavior.
+    // as an example, see:
+    //   test/functions/default-arguments/default-argument-class-override.chpl
+    //
+    // Why do we also check for the FLAG_PROMOTION_WRAPPER?  Because
+    // when we didn't, tests like release/examples/primers/associative.chpl
+    // and reductions/bradc/manual/promote.chpl failed their '--verify'
+    // test runs for reasons that seemed puzzling and related to the
+    // intracacies of the _toFollower() code path; and it seemed unlikely
+    // that they would care about default arguments and inheritance.
+    //
+    bool classDefaultArgCase = (fn->_this &&
+                                isClassLikeOrManaged(fn->_this->type) &&
+                                !fn->hasFlag(FLAG_PROMOTION_WRAPPER));
+
+    if (!classDefaultArgCase) {
+      temp->addFlag(FLAG_MAYBE_PARAM);
+    }
     temp->addFlag(FLAG_EXPR_TEMP); // ? is this needed?
   }
 

@@ -17,12 +17,17 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/Block.h"
-#include "chpl/uast/Expression.h"
-#include "chpl/uast/Identifier.h"
-#include "chpl/uast/ModuleDecl.h"
 #include "chpl/frontend/Parser.h"
 #include "chpl/queries/Context.h"
+#include "chpl/uast/Block.h"
+#include "chpl/uast/Call.h"
+#include "chpl/uast/Dot.h"
+#include "chpl/uast/Expression.h"
+#include "chpl/uast/FnCall.h"
+#include "chpl/uast/Identifier.h"
+#include "chpl/uast/ModuleDecl.h"
+#include "chpl/uast/OpCall.h"
+#include "chpl/uast/VariableDecl.h"
 
 // always check assertions in this test
 #ifdef NDEBUG
@@ -110,7 +115,7 @@ static void test5(Parser* parser) {
   assert(module->stmt(2)->isComment());
 }
 
-static void test6(Parser* parser) { 
+static void test6(Parser* parser) {
   auto parseResult = parser->parseString("test6.chpl",
                                          "{ }");
   assert(parseResult.errors.size() == 0);
@@ -287,6 +292,497 @@ static void test15(Parser* parser) {
   assert(block->stmt(2)->isComment());
 }
 
+static void testCalls1(Parser* parser) {
+  auto parseResult = parser->parseString("testCalls1.chpl",
+                                         "f();\n");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
+  auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(module->numStmts() == 1);
+  auto fnCall = module->stmt(0)->toFnCall();
+  assert(fnCall);
+  assert(fnCall->callUsedSquareBrackets() == false);
+  auto baseExpr = fnCall->calledExpression();
+  assert(baseExpr);
+  auto baseExprIdent = baseExpr->toIdentifier();
+  assert(0 == baseExprIdent->name().compare("f"));
+  assert(fnCall->numActuals() == 0);
+}
+
+static void testCalls2(Parser* parser) {
+  auto parseResult = parser->parseString("testCalls2.chpl",
+                                         "f[];\n");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
+  auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(module->numStmts() == 1);
+  auto fnCall = module->stmt(0)->toFnCall();
+  assert(fnCall);
+  assert(fnCall->callUsedSquareBrackets() == true);
+  auto baseExpr = fnCall->calledExpression();
+  assert(baseExpr);
+  auto baseExprIdent = baseExpr->toIdentifier();
+  assert(0 == baseExprIdent->name().compare("f"));
+  assert(fnCall->numActuals() == 0);
+}
+
+static void testCalls3(Parser* parser) {
+  auto parseResult = parser->parseString("testCalls3.chpl",
+                                         "f(x);\n");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
+  auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(module->numStmts() == 1);
+  auto fnCall = module->stmt(0)->toFnCall();
+  assert(fnCall);
+  assert(fnCall->callUsedSquareBrackets() == false);
+  auto baseExpr = fnCall->calledExpression();
+  assert(baseExpr);
+  auto baseExprIdent = baseExpr->toIdentifier();
+  assert(0 == baseExprIdent->name().compare("f"));
+  assert(fnCall->numActuals() == 1);
+  auto actualExprIdent = fnCall->actual(0)->toIdentifier();
+  assert(0 == actualExprIdent->name().compare("x"));
+}
+
+static void testCalls3a(Parser* parser) {
+  auto parseResult = parser->parseString("testCalls3a.chpl",
+                                         "f(g(x));\n");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
+  auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(module->numStmts() == 1);
+  auto fnCall = module->stmt(0)->toFnCall();
+  assert(fnCall);
+  assert(fnCall->callUsedSquareBrackets() == false);
+  auto baseExpr = fnCall->calledExpression();
+  assert(baseExpr);
+  auto baseExprIdent = baseExpr->toIdentifier();
+  assert(0 == baseExprIdent->name().compare("f"));
+  assert(fnCall->numActuals() == 1);
+  auto subCall = fnCall->actual(0)->toFnCall();
+  assert(subCall);
+  assert(subCall->numActuals() == 1);
+  auto subBaseExpr = subCall->calledExpression();
+  assert(subBaseExpr);
+  auto subBaseExprIdent = subBaseExpr->toIdentifier();
+  assert(0 == subBaseExprIdent->name().compare("g"));
+  auto subActualExprIdent = subCall->actual(0)->toIdentifier();
+  assert(0 == subActualExprIdent->name().compare("x"));
+}
+
+static void testCalls4(Parser* parser) {
+  auto parseResult = parser->parseString("testCalls4.chpl",
+                                         "f[x];\n");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
+  auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(module->numStmts() == 1);
+  auto fnCall = module->stmt(0)->toFnCall();
+  assert(fnCall);
+  assert(fnCall->callUsedSquareBrackets() == true);
+  auto baseExpr = fnCall->calledExpression();
+  assert(baseExpr);
+  auto baseExprIdent = baseExpr->toIdentifier();
+  assert(0 == baseExprIdent->name().compare("f"));
+  assert(fnCall->numActuals() == 1);
+  auto actualExprIdent = fnCall->actual(0)->toIdentifier();
+  assert(0 == actualExprIdent->name().compare("x"));
+}
+
+static void testCalls5(Parser* parser) {
+  auto parseResult = parser->parseString("testCalls5.chpl",
+                                         "f(a,b,c);\n");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
+  auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(module->numStmts() == 1);
+  auto fnCall = module->stmt(0)->toFnCall();
+  assert(fnCall);
+  assert(fnCall->callUsedSquareBrackets() == false);
+  auto baseExpr = fnCall->calledExpression();
+  assert(baseExpr);
+  auto baseExprIdent = baseExpr->toIdentifier();
+  assert(0 == baseExprIdent->name().compare("f"));
+  assert(fnCall->numActuals() == 3);
+  assert(!fnCall->isNamedActual(0));
+  assert(!fnCall->isNamedActual(1));
+  assert(!fnCall->isNamedActual(2));
+  UniqueString emptyStr;
+  assert(fnCall->actualName(0) == emptyStr);
+  assert(fnCall->actualName(1) == emptyStr);
+  assert(fnCall->actualName(2) == emptyStr);
+  assert(0 == fnCall->actual(0)->toIdentifier()->name().compare("a"));
+  assert(0 == fnCall->actual(1)->toIdentifier()->name().compare("b"));
+  assert(0 == fnCall->actual(2)->toIdentifier()->name().compare("c"));
+}
+
+static void testCalls6(Parser* parser) {
+  auto parseResult = parser->parseString("testCalls6.chpl",
+                                         "f(a=aa,b=bb,c=cc);\n");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
+  auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(module->numStmts() == 1);
+  auto fnCall = module->stmt(0)->toFnCall();
+  assert(fnCall);
+  assert(fnCall->callUsedSquareBrackets() == false);
+  auto baseExpr = fnCall->calledExpression();
+  assert(baseExpr);
+  auto baseExprIdent = baseExpr->toIdentifier();
+  assert(0 == baseExprIdent->name().compare("f"));
+  assert(fnCall->numActuals() == 3);
+  assert(fnCall->isNamedActual(0));
+  assert(fnCall->isNamedActual(1));
+  assert(fnCall->isNamedActual(2));
+  assert(0 == fnCall->actualName(0).compare("a"));
+  assert(0 == fnCall->actualName(1).compare("b"));
+  assert(0 == fnCall->actualName(2).compare("c"));
+  assert(0 == fnCall->actual(0)->toIdentifier()->name().compare("aa"));
+  assert(0 == fnCall->actual(1)->toIdentifier()->name().compare("bb"));
+  assert(0 == fnCall->actual(2)->toIdentifier()->name().compare("cc"));
+}
+
+static void testCalls7(Parser* parser) {
+  auto parseResult = parser->parseString("testCalls6.chpl",
+                                         "f(aa,b=bb,cc);\n");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
+  auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(module->numStmts() == 1);
+  auto fnCall = module->stmt(0)->toFnCall();
+  assert(fnCall);
+  assert(fnCall->callUsedSquareBrackets() == false);
+  auto baseExpr = fnCall->calledExpression();
+  assert(baseExpr);
+  auto baseExprIdent = baseExpr->toIdentifier();
+  assert(0 == baseExprIdent->name().compare("f"));
+  assert(fnCall->numActuals() == 3);
+  assert(!fnCall->isNamedActual(0));
+  assert(fnCall->isNamedActual(1));
+  assert(!fnCall->isNamedActual(2));
+  assert(0 == fnCall->actualName(0).compare(""));
+  assert(0 == fnCall->actualName(1).compare("b"));
+  assert(0 == fnCall->actualName(2).compare(""));
+  assert(0 == fnCall->actual(0)->toIdentifier()->name().compare("aa"));
+  assert(0 == fnCall->actual(1)->toIdentifier()->name().compare("bb"));
+  assert(0 == fnCall->actual(2)->toIdentifier()->name().compare("cc"));
+}
+
+static void testOp1(Parser* parser) {
+  auto parseResult = parser->parseString("testOp1.chpl",
+                                         "a=b;\n");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
+  auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(module->numStmts() == 1);
+  auto opCall = module->stmt(0)->toOpCall();
+  assert(opCall);
+  assert(0 == opCall->op().compare("="));
+  assert(opCall->isBinaryOp());
+  assert(!opCall->isUnaryOp());
+  assert(0 == opCall->actual(0)->toIdentifier()->name().compare("a"));
+  assert(0 == opCall->actual(1)->toIdentifier()->name().compare("b"));
+}
+
+static void testOp2(Parser* parser) {
+  auto parseResult = parser->parseString("testOp1.chpl",
+                                         "a=b+c;\n");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
+  auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(module->numStmts() == 1);
+  auto opCall = module->stmt(0)->toOpCall();
+  assert(opCall);
+  assert(0 == opCall->op().compare("="));
+  assert(opCall->isBinaryOp());
+  assert(!opCall->isUnaryOp());
+  assert(0 == opCall->actual(0)->toIdentifier()->name().compare("a"));
+  auto subOpCall = opCall->actual(1)->toOpCall();
+  assert(subOpCall);
+  assert(0 == subOpCall->op().compare("+"));
+  assert(subOpCall->isBinaryOp());
+  assert(!subOpCall->isUnaryOp());
+  assert(0 == subOpCall->actual(0)->toIdentifier()->name().compare("b"));
+  assert(0 == subOpCall->actual(1)->toIdentifier()->name().compare("c"));
+}
+
+static void testVarDecl1(Parser* parser) {
+  auto parseResult = parser->parseString("testVarDecl1.chpl",
+                                         "var a: int;\n");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
+  auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(module->numStmts() == 1);
+
+  auto varDecl = module->stmt(0)->toVariableDecl();
+  assert(varDecl);
+
+  auto typeExpr = varDecl->typeExpression();
+  assert(typeExpr);
+  assert(typeExpr->isIdentifier());
+  assert(0 == typeExpr->toIdentifier()->name().compare("int"));
+
+  assert(varDecl->initExpression() == nullptr);
+}
+
+static void testVarDecl2(Parser* parser) {
+  auto parseResult = parser->parseString("testVarDecl2.chpl",
+                                         "var a = b;\n");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
+  auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(module->numStmts() == 1);
+
+  auto varDecl = module->stmt(0)->toVariableDecl();
+  assert(varDecl);
+
+  assert(varDecl->typeExpression() == nullptr);
+
+  auto initExpr = varDecl->initExpression();
+  assert(initExpr);
+  assert(initExpr->isIdentifier());
+  assert(0 == initExpr->toIdentifier()->name().compare("b"));
+}
+
+static void testVarDecl3(Parser* parser) {
+  auto parseResult = parser->parseString("testVarDecl3.chpl",
+                                         "var a: int = b;\n");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
+  auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(module->numStmts() == 1);
+
+  auto varDecl = module->stmt(0)->toVariableDecl();
+  assert(varDecl);
+
+  auto typeExpr = varDecl->typeExpression();
+  assert(typeExpr);
+  assert(typeExpr->isIdentifier());
+  assert(0 == typeExpr->toIdentifier()->name().compare("int"));
+
+  auto initExpr = varDecl->initExpression();
+  assert(initExpr);
+  assert(initExpr->isIdentifier());
+  assert(0 == initExpr->toIdentifier()->name().compare("b"));
+}
+
+static void testVarDecl3a(Parser* parser) {
+  auto parseResult = parser->parseString("testVarDecl3a.chpl",
+                                         "var /* comment */ a: int = b;\n");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
+  auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(module->numStmts() == 1);
+
+  auto varDecl = module->stmt(0)->toVariableDecl();
+  assert(varDecl);
+
+  auto typeExpr = varDecl->typeExpression();
+  assert(typeExpr);
+  assert(typeExpr->isIdentifier());
+  assert(0 == typeExpr->toIdentifier()->name().compare("int"));
+
+  auto initExpr = varDecl->initExpression();
+  assert(initExpr);
+  assert(initExpr->isIdentifier());
+  assert(0 == initExpr->toIdentifier()->name().compare("b"));
+}
+
+static void testVarDecl3b(Parser* parser) {
+  auto parseResult = parser->parseString("testVarDecl3b.chpl",
+                                         "var a /* comment */ : int = b;\n");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
+  auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(module->numStmts() == 1);
+
+  auto varDecl = module->stmt(0)->toVariableDecl();
+  assert(varDecl);
+
+  auto typeExpr = varDecl->typeExpression();
+  assert(typeExpr);
+  assert(typeExpr->isIdentifier());
+  assert(0 == typeExpr->toIdentifier()->name().compare("int"));
+
+  auto initExpr = varDecl->initExpression();
+  assert(initExpr);
+  assert(initExpr->isIdentifier());
+  assert(0 == initExpr->toIdentifier()->name().compare("b"));
+}
+
+static void testVarDecl3c(Parser* parser) {
+  auto parseResult = parser->parseString("testVarDecl3c.chpl",
+                                         "var a : /* comment */ int = b;\n");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
+  auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(module->numStmts() == 1);
+
+  auto varDecl = module->stmt(0)->toVariableDecl();
+  assert(varDecl);
+
+  auto typeExpr = varDecl->typeExpression();
+  assert(typeExpr);
+  assert(typeExpr->isIdentifier());
+  assert(0 == typeExpr->toIdentifier()->name().compare("int"));
+
+  auto initExpr = varDecl->initExpression();
+  assert(initExpr);
+  assert(initExpr->isIdentifier());
+  assert(0 == initExpr->toIdentifier()->name().compare("b"));
+}
+
+static void testVarDecl3d(Parser* parser) {
+  auto parseResult = parser->parseString("testVarDecl3d.chpl",
+                                         "var a : int /* comment */ = b;\n");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
+  auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(module->numStmts() == 1);
+
+  auto varDecl = module->stmt(0)->toVariableDecl();
+  assert(varDecl);
+
+  auto typeExpr = varDecl->typeExpression();
+  assert(typeExpr);
+  assert(typeExpr->isIdentifier());
+  assert(0 == typeExpr->toIdentifier()->name().compare("int"));
+
+  auto initExpr = varDecl->initExpression();
+  assert(initExpr);
+  assert(initExpr->isIdentifier());
+  assert(0 == initExpr->toIdentifier()->name().compare("b"));
+}
+
+static void testVarDecl3e(Parser* parser) {
+  auto parseResult = parser->parseString("testVarDecl3e.chpl",
+                                         "var a : int = /* comment */ b;\n");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
+  auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(module->numStmts() == 1);
+
+  auto varDecl = module->stmt(0)->toVariableDecl();
+  assert(varDecl);
+
+  auto typeExpr = varDecl->typeExpression();
+  assert(typeExpr);
+  assert(typeExpr->isIdentifier());
+  assert(0 == typeExpr->toIdentifier()->name().compare("int"));
+
+  auto initExpr = varDecl->initExpression();
+  assert(initExpr);
+  assert(initExpr->isIdentifier());
+  assert(0 == initExpr->toIdentifier()->name().compare("b"));
+}
+
+static void testVarDecl3f(Parser* parser) {
+  auto parseResult = parser->parseString("testVarDecl3f.chpl",
+                                         "var a : int = b /* comment */;\n");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
+  auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(module->numStmts() == 1);
+
+  auto varDecl = module->stmt(0)->toVariableDecl();
+  assert(varDecl);
+
+  auto typeExpr = varDecl->typeExpression();
+  assert(typeExpr);
+  assert(typeExpr->isIdentifier());
+  assert(0 == typeExpr->toIdentifier()->name().compare("int"));
+
+  auto initExpr = varDecl->initExpression();
+  assert(initExpr);
+  assert(initExpr->isIdentifier());
+  assert(0 == initExpr->toIdentifier()->name().compare("b"));
+}
+
+static void testDot1(Parser* parser) {
+  auto parseResult = parser->parseString("testDot1.chpl",
+                                         "a.b;\n");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
+  auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(module->numStmts() == 1);
+
+  auto dotExpr = module->stmt(0)->toDot();
+  assert(dotExpr);
+  auto receiverIdent = dotExpr->receiver()->toIdentifier();
+  assert(receiverIdent);
+
+  assert(0 == receiverIdent->name().compare("a"));
+  assert(0 == dotExpr->field().compare("b"));
+}
+
+static void testDot2(Parser* parser) {
+  auto parseResult = parser->parseString("testDot2.chpl",
+                                         "a.type;\n");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
+  auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(module->numStmts() == 1);
+
+  auto dotExpr = module->stmt(0)->toDot();
+  assert(dotExpr);
+  auto receiverIdent = dotExpr->receiver()->toIdentifier();
+  assert(receiverIdent);
+
+  assert(0 == receiverIdent->name().compare("a"));
+  assert(0 == dotExpr->field().compare("type"));
+}
+
+static void testDot3(Parser* parser) {
+  auto parseResult = parser->parseString("testDot3.chpl",
+                                         "a.f(b=c);\n");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
+  auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(module->numStmts() == 1);
+
+  auto fnCall = module->stmt(0)->toFnCall();
+  assert(fnCall);
+
+  auto dotExpr = fnCall->calledExpression()->toDot();
+  assert(dotExpr);
+  auto receiverIdent = dotExpr->receiver()->toIdentifier();
+  assert(receiverIdent);
+
+  assert(0 == receiverIdent->name().compare("a"));
+  assert(0 == dotExpr->field().compare("f"));
+  assert(1 == fnCall->numActuals());
+  auto actualIdent = fnCall->actual(0)->toIdentifier();
+  assert(actualIdent);
+  assert(0 == fnCall->actualName(0).compare("b"));
+  assert(0 == actualIdent->name().compare("c"));
+}
+
+
+
+
 int main() {
   Context context;
   Context* ctx = &context;
@@ -310,6 +806,32 @@ int main() {
   test13(p);
   test14(p);
   test15(p);
+
+  testCalls1(p);
+  testCalls2(p);
+  testCalls3(p);
+  testCalls3a(p);
+  testCalls4(p);
+  testCalls5(p);
+  testCalls6(p);
+  testCalls7(p);
+
+  testOp1(p);
+  testOp2(p);
+
+  testVarDecl1(p);
+  testVarDecl2(p);
+  testVarDecl3(p);
+  testVarDecl3a(p);
+  testVarDecl3b(p);
+  testVarDecl3c(p);
+  testVarDecl3d(p);
+  testVarDecl3e(p);
+  testVarDecl3f(p);
+
+  testDot1(p);
+  testDot2(p);
+  testDot3(p);
 
   return 0;
 }

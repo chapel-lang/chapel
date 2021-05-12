@@ -30,8 +30,6 @@ namespace chpl {
 namespace uast {
 
 
-class Builder;
-
 /**
   This class represents a variable declaration
   E.g. here are some examples
@@ -49,10 +47,10 @@ class Builder;
   Each of these is a VariableDecl that refers to a Variable Sym.
  */
 class VariableDecl final : public Decl {
- friend class Builder;
-
  private:
-  VariableDecl(owned<Variable> variable);
+  VariableDecl(owned<Variable> variable)
+    : Decl(asttags::VariableDecl, std::move(variable)) {
+  }
   bool contentsMatchInner(const ASTNode* other) const override;
   void markUniqueStringsInner(Context* context) const override;
 
@@ -60,7 +58,7 @@ class VariableDecl final : public Decl {
   ~VariableDecl() override = default;
   static owned<VariableDecl> build(Builder* builder, Location loc,
                                    UniqueString name, Sym::Visibility vis,
-                                   Variable::Tag tag,
+                                   Variable::Kind kind,
                                    owned<Expression> typeExpression,
                                    owned<Expression> initExpression);
   const Variable* variable() const {
@@ -68,8 +66,8 @@ class VariableDecl final : public Decl {
     assert(sym->isVariable());
     return (Variable*)sym;
   }
-  const Variable::Tag tag() const {
-    return this->variable()->tag();
+  const Variable::Kind kind() const {
+    return this->variable()->kind();
   }
   const Expression* typeExpression() const {
     return this->variable()->typeExpression();

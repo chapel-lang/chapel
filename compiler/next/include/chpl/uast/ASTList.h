@@ -71,6 +71,11 @@ bool updateASTList(ASTList& keep, ASTList& addin);
 void markASTList(Context* context, const ASTList& keep);
 
 /**
+ Returns true if this list only contains Expressions.
+ */
+bool isExpressionASTList(const ASTList& list);
+
+/**
  Defines an iterator over the AST list elements.
  The iterator hides the ownership (it always returns a pointer e.g. ASTNode*)
  and casts elements to a particular type.
@@ -106,10 +111,10 @@ class ASTListIterator {
 
   // needs to support * and ->
   const CastToType* operator*() const {
-    return this->it->get();
+    return (const CastToType*) this->it->get();
   }
   const CastToType* operator->() const {
-    return this->it->get();
+    return (const CastToType*) this->it->get();
   }
 
   // needs to support preincrement and postincrement
@@ -171,7 +176,7 @@ class ASTListIterator {
 
   // support the [] operator
   const CastToType* operator[](const int rhs) {
-    return this->it[rhs];
+    return (const CastToType*) this->it[rhs];
   }
 
   // must be swappable but that should work with the default impl

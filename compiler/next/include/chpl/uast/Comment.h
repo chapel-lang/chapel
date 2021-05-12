@@ -38,12 +38,13 @@ class Builder;
   are at a statement level will be represented with this type.
  */
 class Comment final : public Expression {
- friend class Builder;
-
  private:
   std::string comment_;
 
-  Comment(std::string s);
+  Comment(std::string s)
+   : Expression(asttags::Comment), comment_(std::move(s)) {
+  }
+
   bool contentsMatchInner(const ASTNode* other) const override;
   void markUniqueStringsInner(Context* context) const override;
 

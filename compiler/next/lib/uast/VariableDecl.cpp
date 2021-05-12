@@ -25,10 +25,6 @@ namespace chpl {
 namespace uast {
 
 
-VariableDecl::VariableDecl(owned<Variable> variable)
-  : Decl(asttags::VariableDecl, std::move(variable)) {
-}
-
 bool VariableDecl::contentsMatchInner(const ASTNode* other) const {
   const VariableDecl* lhs = this;
   const VariableDecl* rhs = (const VariableDecl*) other;
@@ -41,21 +37,21 @@ void VariableDecl::markUniqueStringsInner(Context* context) const {
 owned<VariableDecl>
 VariableDecl::build(Builder* builder, Location loc,
                     UniqueString name, Sym::Visibility vis,
-                    Variable::Tag tag,
+                    Variable::Kind kind,
                     owned<Expression> typeExpression,
                     owned<Expression> initExpression) {
   ASTList lst;
   int8_t typeExpressionChildNum = -1;
   int8_t initExpressionChildNum = -1;
   if (typeExpression.get() != nullptr) {
+    typeExpressionChildNum = lst.size();
     lst.push_back(std::move(typeExpression));
-    typeExpressionChildNum = lst.size() - 1;
   }
   if (initExpression.get() != nullptr) {
+    initExpressionChildNum = lst.size();
     lst.push_back(std::move(initExpression));
-    initExpressionChildNum = lst.size() - 1;
   }
-  Variable* sym = new Variable(std::move(lst), name, vis, tag,
+  Variable* sym = new Variable(std::move(lst), name, vis, kind,
                                typeExpressionChildNum, initExpressionChildNum);
   builder->noteLocation(sym, loc);
   VariableDecl* ret = new VariableDecl(toOwned(sym));

@@ -19,15 +19,9 @@
 
 #include "chpl/uast/Decl.h"
 
-#include "chpl/uast/Expression.h"
-
 namespace chpl {
 namespace uast {
 
-
-Decl::Decl(ASTTag tag, owned<Sym> sym)
-  : Expression(tag, makeASTList(std::move(sym))) {
-}
 
 Decl::~Decl() {
 }

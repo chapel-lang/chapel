@@ -25,23 +25,11 @@ namespace chpl {
 namespace uast {
 
 
-Module::Module(ASTList children, UniqueString name, Sym::Visibility vis,
-               Module::Tag tag)
-  : Sym(asttags::Module, std::move(children), name, vis), tag_(tag) {
-
-#ifndef NDEBUG
-  // check that all children are exprs (and not, say, Syms)
-  for (const ASTNode* child : this->children()) {
-    assert(child->isExpression());
-  }
-#endif
-}
-
 bool Module::contentsMatchInner(const ASTNode* other) const {
   const Module* lhs = this;
   const Module* rhs = (const Module*) other;
   return lhs->symContentsMatchInner(rhs) &&
-         lhs->tag_ == rhs->tag_;
+         lhs->kind_ == rhs->kind_;
 }
 void Module::markUniqueStringsInner(Context* context) const {
   symMarkUniqueStringsInner(context);

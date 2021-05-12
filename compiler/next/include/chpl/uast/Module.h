@@ -39,28 +39,30 @@ namespace uast {
   contains a ModuleDecl that refers to a Module Sym.
  */
 class Module final : public Sym {
- friend class Builder;
  friend class ModuleDecl;
 
  public:
-  enum Tag {
-    DEFAULT,
+  enum Kind {
+    DEFAULT_MODULE_KIND,
     PROTOTYPE,
     IMPLICIT,
   };
 
  private:
-  Tag tag_;
+  Kind kind_;
 
-  Module(ASTList children,
-         UniqueString name, Sym::Visibility vis,
-         Module::Tag tag);
+  Module(ASTList children, UniqueString name,
+         Sym::Visibility vis, Kind kind)
+    : Sym(asttags::Module, std::move(children), name, vis), kind_(kind) {
+
+    assert(isExpressionASTList(children_));
+  }
   bool contentsMatchInner(const ASTNode* other) const override;
   void markUniqueStringsInner(Context* context) const override;
 
  public:
   ~Module() override = default;
-  const Tag tag() const { return this->tag_; }
+  const Kind kind() const { return this->kind_; }
 
   ASTListIteratorPair<Expression> stmts() const {
     return ASTListIteratorPair<Expression>(children_.begin(), children_.end());

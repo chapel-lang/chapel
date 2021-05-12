@@ -66,7 +66,8 @@ struct ParserContext {
   // Tracking a current state for these makes it easier to write
   // the parser rules.
   Sym::Visibility visibility;
-  Variable::Tag varDeclTag;
+  Variable::Kind varDeclKind;
+  YYLTYPE declStartLocation;
 
   ParserContext(const char* filename, Builder* builder)
   {
@@ -77,14 +78,23 @@ struct ParserContext {
     this->builder            = builder;
     this->topLevelStatements = nullptr;
     this->comments           = nullptr;
-    this->visibility         = Sym::VISIBILITY_DEFAULT;
-    this->varDeclTag         = Variable::VAR;
+    this->visibility         = Sym::DEFAULT_VISIBILITY;
+    this->varDeclKind        = Variable::VAR;
+    YYLTYPE emptyLoc = {0};
+    this->declStartLocation = emptyLoc;
   }
 
   Context* context() { return builder->context(); }
 
+  void noteDeclStartLoc(YYLTYPE loc);
+  Sym::Visibility noteVisibility(Sym::Visibility visibility);
+  Variable::Kind noteVarDeclKind(Variable::Kind varDeclKind);
+  YYLTYPE declStartLoc(YYLTYPE curLoc);
+  void resetDeclState();
+
   void noteComment(YYLTYPE loc, const char* data, long size);
   std::vector<ParserComment>* gatherComments(YYLTYPE location);
+  void clearCommentsBefore(YYLTYPE loc);
   void clearComments();
   ParserExprList* makeList();
   ParserExprList* makeList(ParserExprList* lst);
@@ -94,14 +104,20 @@ struct ParserContext {
   }
   ParserExprList* makeList(CommentsAndStmt cs);
 
-  void appendList(ParserExprList* dst, ParserExprList* lst);
-  void appendList(ParserExprList* dst, Expression* e);
-  void appendList(ParserExprList* dst, owned<Expression> e) {
+  ParserExprList* appendList(ParserExprList* dst, ParserExprList* lst);
+  ParserExprList* appendList(ParserExprList* dst, Expression* e);
+  ParserExprList* appendList(ParserExprList* dst, owned<Expression> e) {
     this->appendList(dst, e.release());
+    return dst;
   }
-  void appendList(ParserExprList* dst, std::vector<ParserComment>* comments);
-  void appendList(ParserExprList* dst, CommentsAndStmt cs);
+  ParserExprList* appendList(ParserExprList* dst,
+                             std::vector<ParserComment>* comments);
+  ParserExprList* appendList(ParserExprList* dst, CommentsAndStmt cs);
   ASTList consumeList(ParserExprList* lst);
+
+ void consumeNamedActuals(MaybeNamedActualList* lst,
+                          ASTList& actualsOut,
+                          std::vector<UniqueString>& namesOut);
 
   std::vector<ParserComment>* gatherCommentsFromList(ParserExprList* lst,
                                                      YYLTYPE location);
@@ -116,14 +132,10 @@ struct ParserContext {
     return this->finishStmt(e.release());
   }
 
-  // TODO: move these to astContext
-
-  // These adjust for the IDs
-  // and call enterStmt / exitStmt.
-  //ParserExprList* enterModule(YYLTYPE loc, const char* name, Expr* decl);
-  //ParserExprList* exitModule(ParserExprList* decl, ParserExprList* body);
-  //ParserExprList* enterFunction(YYLTYPE loc, const char* name, Expr* decl);
-  //ParserExprList* exitFunction(ParserExprList* decl, ParserExprList* body);
+  // Create a ParserExprList containing the passed statements, and any
+  // comments before the right brace brace location.
+  ParserExprList* blockToParserExprList(YYLTYPE lbrLoc, YYLTYPE rbrLoc,
+                                        ParserExprList* body);
 
   // This should consume the comments that occur before
   // and return them. (Including looking at source locations).
@@ -144,6 +156,17 @@ struct ParserContext {
   }
 
   Location convertLocation(YYLTYPE location);
+
+  Identifier* buildEmptyIdent(YYLTYPE location);
+  Identifier* buildIdent(YYLTYPE location, PODUniqueString name);
+  OpCall* buildBinOp(YYLTYPE location,
+                     Expression* lhs, PODUniqueString op, Expression* rhs);
+  OpCall* buildUnaryOp(YYLTYPE location,
+                       PODUniqueString op, Expression* expr);
+
+  FunctionParts makeFunctionParts(bool isInline,
+                                  bool isOverride);
+  CommentsAndStmt buildFunctionDecl(YYLTYPE location, FunctionParts& fp);
 
   // Do we really need these?
   /*
