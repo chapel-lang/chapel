@@ -2,11 +2,14 @@
 
 # Developers: To test changes with nightly against a clean repo, use this command:
 #
-# cd /tmp && \
+# export OLD_CHPL_HOME=$CHPL_HOME && \
+#   cd /tmp && \
 #   git clone $CHPL_HOME/.git test-chapel-nightly-debug && \
 #   cd test-chapel-nightly-debug && \
 #   source util/setchplenv.bash && \
-#   ./util/cron/nightly -debug -hellos
+#   CHPL_NIGHTLY_CRON_LOGDIR=/tmp/test-chapel-nightly-debug/cronlog \
+#   CHPL_NIGHTLY_DEBUG_EMAIL=<your email> \
+#     $OLD_CHPL_HOME/util/cron/nightly -debug -hellos
 
 use File::Basename;
 use File::Path qw(mkpath);
@@ -242,8 +245,7 @@ if ($printusage == 1) {
 
 print "\n";
 system("printenv");
-$modulecmd = "/sw/modules/bin/linux/modulecmd"; # heuristic
-if (-x $modulecmd) { system("$modulecmd bash list"); }
+system("module list");
 print "\n";
 
 # When JENKINS_URL is set in environment, assume running in jenkins job and
