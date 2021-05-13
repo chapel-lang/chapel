@@ -20,7 +20,7 @@
 #ifndef CHPL_UAST_MULTIDECL_H
 #define CHPL_UAST_MULTIDECL_H
 
-#include "chpl/uast/Expression.h"
+#include "chpl/uast/Decl.h"
 #include "chpl/queries/Location.h"
 
 #include <cassert>
@@ -51,10 +51,10 @@ namespace uast {
   subclass of Decl. Rather, it contains several VariableDecls.
 
  */
-class MultiDecl final : public Expression {
+class MultiDecl final : public Decl {
  private:
   MultiDecl(ASTList children)
-    : Expression(asttags::MultiDecl, std::move(children)) {
+    : Decl(asttags::MultiDecl, std::move(children)) {
 
     assert(isVariableDeclAndCommentList(children_));
   }

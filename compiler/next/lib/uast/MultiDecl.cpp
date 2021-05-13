@@ -38,10 +38,10 @@ bool MultiDecl::isVariableDeclAndCommentList(const ASTList& list) {
 bool MultiDecl::contentsMatchInner(const ASTNode* other) const {
   const MultiDecl* lhs = this;
   const MultiDecl* rhs = (const MultiDecl*) other;
-  return lhs->expressionContentsMatchInner(rhs);
+  return lhs->declContentsMatchInner(rhs);
 }
 void MultiDecl::markUniqueStringsInner(Context* context) const {
-  expressionMarkUniqueStringsInner(context);
+  declMarkUniqueStringsInner(context);
 }
 
 owned<MultiDecl> MultiDecl::build(Builder* builder,

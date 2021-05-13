@@ -20,7 +20,7 @@
 #ifndef CHPL_UAST_SYMDECL_H
 #define CHPL_UAST_SYMDECL_H
 
-#include "chpl/uast/Expression.h"
+#include "chpl/uast/Decl.h"
 #include "chpl/uast/Sym.h"
 #include "chpl/queries/UniqueString.h"
 
@@ -30,19 +30,18 @@ namespace uast {
 
 /**
   This is an abstract base class for declarations that
-  declare a single symbol.
+  declare a single symbol. All Syms have a corresponding SymDecl.
  */
-class SymDecl : public Expression {
+class SymDecl : public Decl {
  protected:
   SymDecl(ASTTag tag, owned<Sym> sym)
-    : Expression(tag, makeASTList(std::move(sym))) {
+    : Decl(tag, makeASTList(std::move(sym))) {
   }
   bool symDeclContentsMatchInner(const SymDecl* other) const {
-    // TODO return declContentsMatchInner(other);
-    return true;
+    return declContentsMatchInner(other);
   }
   void symDeclMarkUniqueStringsInner(Context* context) const {
-    // TODO declMarkUniqueStringsInner(context);
+    declMarkUniqueStringsInner(context);
   }
 
  public:

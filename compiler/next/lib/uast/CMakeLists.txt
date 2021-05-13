@@ -25,6 +25,7 @@ target_sources(libchplcomp-obj
                Builder.cpp
                Call.cpp
                Comment.cpp
+               Decl.cpp
                Dot.cpp
                ErroneousExpression.cpp
                Expression.cpp
