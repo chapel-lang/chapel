@@ -32,37 +32,23 @@ namespace chpl {
 
 using namespace chpl::querydetail;
 
-static void defaultReportErrorPrintDetail(const ErrorMessage& err) {
-  printf("  %s:%i: note: %s\n",
-         err.path().c_str(), err.line(), err.message().c_str());
-  for (const auto& detail : err.details()) {
-    defaultReportErrorPrintDetail(detail);
-  }
-}
-static void defaultReportError(const ErrorMessage& err) {
-  printf("%s:%i: error: %s\n",
-         err.path().c_str(), err.line(), err.message().c_str());
+static void defaultReportErrorPrintDetail(const ErrorMessage& err,
+                                          const char* kind = "note") {
+  printf("  %s:%i: %s: %s\n", err.path().c_str(), err.line(), kind,
+         err.message().c_str());
   for (const auto& detail : err.details()) {
     defaultReportErrorPrintDetail(detail);
   }
 }
 
-Context::Context()
-  : uniqueStringsTable(), queryDB(), queryStack(),
-    currentRevisionNumber(1),
-    reportError(defaultReportError),
-    lastPrepareToGCRevisionNumber(0), gcCounter(1) {
+void Context::defaultReportError(const ErrorMessage& err) {
+  defaultReportErrorPrintDetail(err, "error");
 }
 
 Context::~Context() {
   // free all of the unique'd strings
-  for (auto& item: this->uniqueStringsTable) {
-    const char* s = item.second;
-    free((void*)s);
-  }
-}
-
-void Context::setErrorHandler(void (*reportError)(const ErrorMessage& err)) {
+  for (auto& item: uniqueStringsTable)
+    free(item.second);
 }
 
 #define ALIGN_DN(i, size)  ((i) & ~((size) - 1))
@@ -398,21 +384,6 @@ void Context::queryNoteError(ErrorMessage error) {
 
 namespace querydetail {
 
-
-template<>
-std::size_t queryArgsHash<>(const std::tuple<>& tuple) {
-  return 0;
-}
-
-template<>
-bool queryArgsEquals<>(const std::tuple<>& lhs,
-                       const std::tuple<>& rhs) {
-  return true;
-}
-
-template<>
-void queryArgsPrint<>(const std::tuple<>& tuple) {
-}
 
 void queryArgsPrintSep() {
   printf(", ");

@@ -146,7 +146,7 @@ void Builder::doAssignIDs(ASTNode* ast, UniqueString symbolPath, int& i,
 
   int firstChildID = i;
 
-  Decl* decl = ast->toDecl();
+  SymDecl* decl = ast->toSymDecl();
 
   if (decl == nullptr) {
     // visit the children now to get integer part of ids in postorder

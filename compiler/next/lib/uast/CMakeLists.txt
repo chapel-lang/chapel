@@ -27,6 +27,7 @@ target_sources(libchplcomp-obj
                Comment.cpp
                ControlFlow.cpp
                Decl.cpp
+               Dot.cpp
                ErroneousExpression.cpp
                Expression.cpp
                FnCall.cpp
@@ -41,9 +42,11 @@ target_sources(libchplcomp-obj
                Loop.cpp
                Module.cpp
                ModuleDecl.cpp
+               MultiDecl.cpp
                OpCall.cpp
                Serial.cpp
                Sym.cpp
+               SymDecl.cpp
                Variable.cpp
                VariableDecl.cpp
                Visitor.cpp

@@ -31,6 +31,11 @@
 
 #include <cstdio>
 #include <set>
+#include <string>
+#include <tuple>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 namespace chpl {
 
@@ -126,9 +131,7 @@ const uast::Builder::Result& parseFile(Context* context, UniqueString path) {
   result.topLevelExpressions.swap(tmpResult.topLevelExpressions);
   result.locations.swap(tmpResult.locations);
   for (ErrorMessage& e : tmpResult.errors) {
-    ErrorMessage tmp;
-    tmp.swap(e);
-    QUERY_ERROR(std::move(tmp));
+    QUERY_ERROR(std::move(e));
   }
 
   Builder::Result::updateFilePaths(context, result);
@@ -142,13 +145,10 @@ const LocationsMap& fileLocations(Context* context, UniqueString path) {
   // Get the result of parsing
   const uast::Builder::Result& p = parseFile(context, path);
   // Create a map of ast to Location
-  std::unordered_map<const ASTNode*, Location> result;
-  for (auto pair : p.locations) {
-    const ASTNode* ast = pair.first;
-    Location loc = pair.second;
-    if (ast != nullptr) {
-      result.insert({ast, loc});
-    }
+  std::unordered_map<const ASTNode*, Location> result(p.locations.size());
+  for (auto& pair : p.locations) {
+    if (pair.first != nullptr)
+      result.insert(pair); // Insert { ASTNode, Location } into result map
   }
 
   return QUERY_END(result);
@@ -191,7 +191,7 @@ static std::vector<UniqueString> getTopLevelNames(const uast::Module* module) {
   int nStmts = module->numStmts();
   for (int i = 0; i < nStmts; i++) {
     const uast::Expression* expr = module->stmt(i);
-    if (const uast::Decl* decl = expr->toDecl()) {
+    if (const uast::SymDecl* decl = expr->toSymDecl()) {
       const uast::Sym* sym = decl->sym();
       result.push_back(sym->name());
     }
@@ -220,7 +220,7 @@ const DefinedTopLevelNamesVec& moduleLevelDeclNames(Context* context,
   return nullptr;
 }*/
 
-using DeclsByName = std::unordered_map<UniqueString, const Decl*>;
+using DeclsByName = std::unordered_map<UniqueString, const SymDecl*>;
 
 struct ResolvingScope {
   DeclsByName declsDefinedHere;
@@ -230,7 +230,7 @@ struct ResolvingScope {
     : declsDefinedHere(), parentScope(parentScope) {
   }
 
-  const Decl* findDeclForName(UniqueString name) const {
+  const SymDecl* findDeclForName(UniqueString name) const {
     const ResolvingScope* cur = this;
     while (cur != nullptr) {
       auto search = cur->declsDefinedHere.find(name);
@@ -255,7 +255,7 @@ static void resolveAST(Context* context,
   // since an Identifier can't create a new scope.
   if (const Identifier* ident = ast->toIdentifier()) {
     UniqueString name = ident->name();
-    const Decl* decl = parentScope->findDeclForName(name);
+    const SymDecl* decl = parentScope->findDeclForName(name);
     if (decl != nullptr) {
       // found an existing entry in the map, so we can add a resolution result.
       int postorderId = ident->id().postOrderId();
@@ -283,11 +283,11 @@ static void resolveAST(Context* context,
   ResolvingScope newScope(parentScope);
 
   for (const ASTNode* child : ast->children()) {
-    if (const Decl* decl = child->toDecl()) {
+    if (const SymDecl* decl = child->toSymDecl()) {
       UniqueString name = decl->name();
       auto search = newScope.declsDefinedHere.find(name);
       if (search != newScope.declsDefinedHere.end()) {
-        const Decl* prevDecl = search->second;
+        const SymDecl* prevDecl = search->second;
         // found an existing entry in the map, so give an error.
         Location prevLoc = locate(context, prevDecl);
         Location curLoc = locate(context, decl);

@@ -22,21 +22,8 @@
 namespace chpl {
 namespace uast {
 
-
-Sym::Sym(ASTTag tag,
-         UniqueString name, Sym::Visibility visibility)
-  : ASTNode(tag), name_(name), visibility_(visibility) {
-}
-
-Sym::Sym(ASTTag tag, ASTList children,
-         UniqueString name, Sym::Visibility visibility)
-  : ASTNode(tag, std::move(children)),
-    name_(name), visibility_(visibility) {
-}
-
 Sym::~Sym() {
 }
-
 
 } // namespace uast
 } // namespace chpl

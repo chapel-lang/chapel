@@ -23,6 +23,7 @@
 #include "chpl/util/memory.h"
 
 #include <iterator>
+#include <utility>
 #include <vector>
 
 namespace chpl {

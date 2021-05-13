@@ -311,7 +311,7 @@
     // simple pointer values
     Block* block;
     Call* call;
-    Decl* decl;
+    SymDecl* symDecl;
     Expression* expr;
     Function* function;
     Module* module;
@@ -599,7 +599,7 @@
 
 %type <commentsAndStmt> var_decl_stmt
 %type <exprList> var_decl_stmt_inner_ls tuple_var_decl_stmt_inner_ls
-%type <expr> var_decl_stmt_inner
+%type <commentsAndStmt> var_decl_stmt_inner
 
 
 %type <exprList> function_body_stmt opt_function_body_stmt
@@ -2121,12 +2121,39 @@ var_decl_stmt:
 | var_decl_type var_decl_stmt_inner_ls TSEMI
     {
       ParserExprList* lst = $2;
-      if (lst->size() == 1) {
-        $$ = STMT(@1, (*lst)[0]);
-      } else {
-        $$ = TODOSTMT(@$);
+      int nVarDecls = 0;
+      VariableDecl* lastVariableDecl = nullptr;
+      for (auto elt : *lst) {
+        if (VariableDecl* d = elt->toVariableDecl()) {
+          lastVariableDecl = d;
+          nVarDecls++;
+        }
       }
-      delete lst;
+      assert(nVarDecls > 0);
+      assert(lastVariableDecl);
+      if (nVarDecls == 1) {
+        // gather any comments from before the 'var'
+        // intentionally ignores comments after 'var'
+        CommentsAndStmt cs = {context->gatherCommentsFromList(lst, @1),
+                              lastVariableDecl};
+        $$ = cs;
+        // delete any comments left in lst
+        for (auto elt : *lst) {
+          if (elt->isComment()) {
+            delete elt;
+          }
+        }
+        // delete the list
+        delete lst;
+      } else {
+        // gather any comments from before the 'var'
+        CommentsAndStmt cs = {context->gatherCommentsFromList(lst, @1),
+                              nullptr};
+        auto multi = MultiDecl::build(BUILDER, LOC(@$),
+                                      context->consumeList(lst));
+        cs.stmt = multi.release();
+        $$ = cs;
+      }
       context->resetDeclState();
     }
 ;
@@ -2138,18 +2165,26 @@ var_decl_stmt_inner_ls:
     }
 | var_decl_stmt_inner_ls TCOMMA var_decl_stmt_inner
     {
-      $$ = TODOLIST(@$);
+      $$ = context->appendList($1, $3);
     }
 ;
 
 var_decl_stmt_inner:
   ident_def opt_type opt_init_expr
-    { $$ = VariableDecl::build(BUILDER, LOC(@$),
-                               $1, context->visibility,
-                               context->varDeclKind,
-                               toOwned($2), toOwned($3)).release(); }
+    {
+      auto varDecl = VariableDecl::build(BUILDER, LOC(@$),
+                                         $1, context->visibility,
+                                         context->varDeclKind,
+                                         toOwned($2), toOwned($3));
+      // gather the comments like a statement does
+      $$ = STMT(@1, varDecl.release());
+      context->clearComments();
+    }
 | TLP tuple_var_decl_stmt_inner_ls TRP opt_type opt_init_expr
-    { $$ = TODOEXPR(@$); }
+    {
+      $$ = TODOSTMT(@$);
+      context->clearComments();
+    }
 ;
 
 tuple_var_decl_component:
@@ -2668,11 +2703,26 @@ call_expr:
 ;
 
 dot_expr:
-  expr TDOT ident_use          { $$ = TODOEXPR(@$); }
-| expr TDOT TTYPE              { $$ = TODOEXPR(@$); }
-| expr TDOT TDOMAIN            { $$ = TODOEXPR(@$); }
-| expr TDOT TLOCALE            { $$ = TODOEXPR(@$); }
-| expr TDOT TBYTES TLP TRP     { $$ = TODOEXPR(@$); }
+  expr TDOT ident_use
+    { $$ = Dot::build(BUILDER, LOC(@$), toOwned($1), $3).release(); }
+| expr TDOT TTYPE
+    { $$ = Dot::build(BUILDER, LOC(@$), toOwned($1), $3).release(); }
+| expr TDOT TDOMAIN
+    { $$ = Dot::build(BUILDER, LOC(@$), toOwned($1), $3).release(); }
+| expr TDOT TLOCALE
+    { $$ = Dot::build(BUILDER, LOC(@$), toOwned($1), $3).release(); }
+| expr TDOT TBYTES TLP TRP
+    {
+      $$ = FnCall::build(BUILDER, LOC(@$),
+                         Dot::build(BUILDER, LOC(@$), toOwned($1), $3),
+                         false).release();
+    }
+| expr TDOT TBYTES TLSBR TRSBR
+    {
+      $$ = FnCall::build(BUILDER, LOC(@$),
+                         Dot::build(BUILDER, LOC(@$), toOwned($1), $3),
+                         true).release();
+    }
 ;
 
 /* ( <expr> ) -- A parenthesized expression.  The parens are stripped.

@@ -185,9 +185,10 @@ class ConstraintSat { public: ImplementsStmt* istm; IfcConstraint* icon;
 ConstraintSat constraintIsSatisfiedAtCallSite(CallExpr* call,
                                                 IfcConstraint* constraint,
                                                 SymbolMap& substitutions);
-void copyIfcRepsToSubstitutions(FnSymbol* fn, Expr* anchor, int indx,
-                                ImplementsStmt* istm,
-                                SymbolMap& substitutions);
+void cgAddRepsToSubstitutions(FnSymbol* fn, SymbolMap& substitutions,
+                              ImplementsStmt* istm, int indx);
+void cgConvertAggregateTypes(FnSymbol* fn, Expr* anchor,
+                             SymbolMap& substitutions);
 void recordCGInterimInstantiations(CallExpr* call, ResolutionCandidate* best1,
                        ResolutionCandidate* best2, ResolutionCandidate* best3);
 void adjustForCGinstantiation(FnSymbol* fn, SymbolMap& substitutions,

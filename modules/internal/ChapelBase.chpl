@@ -741,6 +741,7 @@ module ChapelBase {
 
   inline proc _cond_test(param x: bool) param return x;
   inline proc _cond_test(param x: integral) param return x != 0:x.type;
+  inline proc _cond_test(x: c_ptr) return x != c_nil;
 
   inline proc _cond_test(x) {
     if !( x.type <= _iteratorRecord ) {

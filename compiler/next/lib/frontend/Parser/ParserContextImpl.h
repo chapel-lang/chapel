@@ -18,6 +18,9 @@
  * limitations under the License.
  */
 
+#include <string>
+#include <vector>
+
 static bool locationLessEq(YYLTYPE lhs, YYLTYPE rhs) {
   return (lhs.first_line < rhs.first_line) ||
          (lhs.first_line == rhs.first_line &&

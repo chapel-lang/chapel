@@ -42,6 +42,36 @@ enum TagGenericResult {
   TGR_TAGGING_ABORTED
 };
 
+//
+// This helper class holds mappings for the interface representatives
+// that are used while resolving interface-constrained functions.
+//
+// Each IfcConstraint in 'interfaceConstraints' has its own InterfaceReps
+// instance. A single instance for all constraints in a CG function is not
+// sufficient because it does not handle this case:
+//   proc icFun(arg1: ?Q1, arg2: ?Q2) where
+//     Q1 implements IFC && Q2 implements IFC { ... }
+//
+// Given a constraint Q implements IFC:
+//
+// 'symReps' maps each FnSymbol for IFC's required function and each TypeSymbol
+//           for IFC's associated type to their representatives;
+//
+// 'conReps' implements recursion due to IFC's associated constraints, if any.
+//
+struct InterfaceReps {
+  // for interface's required fns / assoc types
+  SymbolMap symReps;
+
+  // one for each assoc constraint
+  std::vector<InterfaceReps*> conReps;
+
+  int  numAssocCons() const { return conReps.size(); }
+  bool empty()        const { return symReps.n == 0 && conReps.empty(); }
+
+  ~InterfaceReps() { for (InterfaceReps* ar: conReps) delete ar; }
+};
+
 // Additional data for interface constraints / constrained generics / CG.
 // Stored in a FnSymbol for a constrained-generic function.
 class InterfaceInfo {
@@ -58,21 +88,11 @@ public:
   // an interface constraint of this function
   AList interfaceConstraints;
 
-  //
-  // Contains one SymbolMap per IfcConstraint in 'interfaceConstraints'.
-  // If IFC is the constraint's interface, the corresponding SymbolMap
-  // is a mapping:
-  // - from each symbol defined in IFC body, such as a required function or
-  //   an associated type,
-  // - to the symbol that represents that throughout the body of this function
-  //
-  // a single SymbolMap for all constraints in a CG function is not sufficient
-  // when the same interface is implemented by different ConstrainedTypes
-  //
-  std::vector<SymbolMap> repsForIfcSymbols;
+  // one InterfaceReps instance per IfcConstraint in 'interfaceConstraints'
+  std::vector<InterfaceReps> ifcReps;
 
-  // "Interim instantiation" copies of CG functions invoked from this function
-  // for those calls that rely on this function's interfaceConstraints.
+  // "interim instantiation" copies of CG functions invoked from this function
+  // for those calls that rely on this function's interfaceConstraints
   std::set<FnSymbol*> invokedCGfns;
 };
 

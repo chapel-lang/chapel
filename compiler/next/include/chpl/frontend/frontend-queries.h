@@ -49,7 +49,7 @@ namespace frontend {
     // the expr that is resolved
     const uast::Expression* exp;
     // in simple cases, this is set
-    const uast::Decl* decl;
+    const uast::SymDecl* decl;
     // TODO:
     //  return-intent overloading
     //  generic instantiation
