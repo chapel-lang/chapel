@@ -79,14 +79,15 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
     AST_NODE(TryCatch)                 // old AST: TryStmt/CatchStmt
 
     AST_BEGIN_SUBCLASSES(Loop)         // old AST: LoopExpr / LoopStmt
-      AST_NODE(Coforall)
       AST_NODE(DoWhile)                // old AST: DoWhileStmt
-      AST_NODE(For)                    // old AST: ForLoop / LoopExpr
-      AST_NODE(Forall)                 // old AST: ForallStmt / LoopExpr
-      AST_NODE(Foreach)                //
+      AST_BEGIN_SUBCLASSES(IndexableLoop)
+        AST_NODE(Coforall)
+        AST_NODE(For)                    // old AST: ForLoop / LoopExpr
+        AST_NODE(Forall)                 // old AST: ForallStmt / LoopExpr
+        AST_NODE(Foreach)                //
+      AST_END_SUBCLASSES(IndexableLoop)
       AST_NODE(While)                  // old AST: WhileStmt
     AST_END_SUBCLASSES(Loop)
-
   AST_END_SUBCLASSES(ControlFlow)
 
 

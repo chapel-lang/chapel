@@ -25,78 +25,65 @@ namespace chpl {
 namespace uast {
 
 
-static int32_t computeStatementChildNum(int8_t indexVarChildNum,
-                                        int8_t iterandChildNum) {
-  return (indexVarChildNum >= 0) + (iterandChildNum >= 0);
-}
-
-For::For(ASTList children, int8_t indexVarChildNum, int8_t iterandChildNum,
-         bool usesDo,
-         bool expressionLevel,
-         bool param)
-  : Loop(asttags::For, std::move(children),
-         computeStatementChildNum(indexVarChildNum, iterandChildNum),
-         usesDo),
-    indexVarChildNum_(indexVarChildNum),
-    iterandChildNum_(iterandChildNum),
-    expressionLevel_(expressionLevel),
-    param_(param) {
-
-#ifndef NDEBUG
-  assert(iterandChildNum >= 0);
-  // check that all children are exprs (and not, say, Symbols)
-  for (const ASTNode* child : this->children()) {
-    assert(child->isExpression());
-  }
-#endif
-}
-
 bool For::contentsMatchInner(const ASTNode* other) const {
   const For* lhs = this;
   const For* rhs = (const For*) other;
-  return lhs->expressionContentsMatchInner(rhs);
+
+  if (!lhs->indexableLoopContentsMatchInner(rhs))
+    return false;
+
+  if (lhs->isExpressionLevel_ != rhs->isExpressionLevel_)
+    return false;
+
+  if (lhs->isParam_ != rhs->isParam_)
+    return false;
+
+  return true;
 }
 
 void For::markUniqueStringsInner(Context* context) const {
-  expressionMarkUniqueStringsInner(context);
+  loopMarkUniqueStringsInner(context);
 }
 
 owned<For> For::build(Builder* builder,
                       Location loc,
-                      owned<Expression> indexVar,
+                      ASTList indexVariables,
                       owned<Expression> iterand,
                       ASTList stmts,
                       bool usesDo,
-                      bool expressionLevel,
-                      bool param) {
-#ifndef NDEBUG
-  assert(indexVar.get() != nullptr);
+                      bool isExpressionLevel,
+                      bool isParam) {
   assert(iterand.get() != nullptr);
-  assert(param ? !expressionLevel : true);
-#endif
+  if (isParam) assert(!isExpressionLevel);
 
   ASTList lst;
-  int8_t indexVarChildNum = -1;
+  const int numIndexVariables = indexVariables.size();
+  int8_t indexVariableDeclStartChildNum = -1;
   int8_t iterandChildNum = -1;
-
-  if (indexVar.get() != nullptr) {
-    indexVarChildNum = lst.size();
-    lst.push_back(std::move(indexVar));
-  }
 
   if (iterand.get() != nullptr) {
     iterandChildNum = lst.size();
     lst.push_back(std::move(iterand));
   }
 
+  if (numIndexVariables) {
+    indexVariableDeclStartChildNum = lst.size();
+    for (auto& ivar : indexVariables) {
+      assert(ivar->isVariableDecl());
+      lst.push_back(std::move(ivar));
+    }
+  }
+
   for (auto& stmt : stmts) {
     lst.push_back(std::move(stmt));
   }
 
-  For* ret = new For(std::move(lst), indexVarChildNum, iterandChildNum,
+  For* ret = new For(std::move(lst), iterandChildNum,
+                     indexVariableDeclStartChildNum,
+                     numIndexVariables,
                      usesDo,
-                     expressionLevel,
-                     param);
+                     isExpressionLevel,
+                     isParam);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
@@ -106,32 +93,11 @@ owned<For> For::build(Builder* builder,
                       owned<Expression> iterand,
                       ASTList stmts,
                       bool usesDo) {
-#ifndef NDEBUG
-  assert(iterand.get() != nullptr);
-#endif
-
-  const bool expressionLevel = false;
-  const bool param = false;
-  const int8_t indexVarChildNum = -1;
-
-  ASTList lst;
-  int8_t iterandChildNum = -1;
-
-  if (iterand.get() != nullptr) {
-    iterandChildNum = lst.size();
-    lst.push_back(std::move(iterand));
-  }
-
-  for (auto& stmt : stmts) {
-    lst.push_back(std::move(stmt));
-  }
-
-  For* ret = new For(std::move(lst), indexVarChildNum, iterandChildNum,
-                     usesDo,
-                     expressionLevel,
-                     param);
-  builder->noteLocation(ret, loc);
-  return toOwned(ret);
+  return For::build(builder, loc, std::move(ASTList()), std::move(iterand),
+                    std::move(stmts),
+                    usesDo,
+                    /*isExpressionLevel*/ false,
+                    /*isParam*/ false);
 }
 
 

@@ -31,12 +31,14 @@ namespace uast {
  */
 class ControlFlow : public Expression {
  protected:
-  ControlFlow(ASTTag tag);
-  ControlFlow(ASTTag tag, ASTList children);
-  bool expressionContentsMatchInner(const ControlFlow* other) const {
-    return true;
+  ControlFlow(ASTTag tag) : Expression(tag) {}
+  ControlFlow(ASTTag tag, ASTList children)
+    : Expression(tag, std::move(children)) {};
+  bool controlFlowContentsMatchInner(const ControlFlow* other) const {
+    return this->expressionContentsMatchInner(other);
   }
-  void expressionMarkUniqueStringsInner(Context* context) const {
+  void controlFlowMarkUniqueStringsInner(Context* context) const {
+    this->expressionMarkUniqueStringsInner(context);
   }
 
  public:

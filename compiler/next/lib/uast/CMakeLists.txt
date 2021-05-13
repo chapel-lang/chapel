@@ -36,6 +36,7 @@ target_sources(libchplcomp-obj
                Function.cpp
                FunctionDecl.cpp
                Identifier.cpp
+               IndexableLoop.cpp
                Local.cpp
                Loop.cpp
                Module.cpp

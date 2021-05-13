@@ -31,6 +31,7 @@
 #endif
 
 #include <cassert>
+#include <iostream>
 
 using namespace chpl;
 using namespace uast;
@@ -51,13 +52,14 @@ static void test0(Parser* parser) {
   assert(mod->stmt(1)->isFor());
   const For* forLoop = mod->stmt(1)->toFor();
   assert(forLoop != nullptr);
-  assert(forLoop->indexVar() == nullptr);
+  assert(forLoop->numIndexVariables() == 0);
+  assert(forLoop->indexVariable() == nullptr);
   assert(forLoop->iterand() != nullptr);
   assert(forLoop->iterand()->isIdentifier());
   assert(forLoop->numStmts() == 2);
   assert(forLoop->usesDo());
-  assert(!forLoop->expressionLevel());
-  assert(!forLoop->param());
+  assert(!forLoop->isExpressionLevel());
+  assert(!forLoop->isParam());
   assert(forLoop->stmt(0)->isComment());
   assert(forLoop->stmt(1)->isVariableDecl());
 }
@@ -77,14 +79,15 @@ static void test1(Parser* parser) {
   assert(mod->stmt(1)->isFor());
   const For* forLoop = mod->stmt(1)->toFor();
   assert(forLoop != nullptr);
-  assert(forLoop->indexVar() != nullptr);
-  assert(forLoop->indexVar()->isIdentifier());
+  assert(forLoop->numIndexVariables() == 1);
+  assert(forLoop->indexVariable() != nullptr);
+  assert(forLoop->indexVariable()->isVariable());
   assert(forLoop->iterand() != nullptr);
   assert(forLoop->iterand()->isIdentifier());
   assert(forLoop->numStmts() == 2);
   assert(forLoop->usesDo());
-  assert(!forLoop->expressionLevel());
-  assert(!forLoop->param());
+  assert(!forLoop->isExpressionLevel());
+  assert(!forLoop->isParam());
   assert(forLoop->stmt(0)->isComment());
   assert(forLoop->stmt(1)->isVariableDecl());
 }
@@ -104,14 +107,15 @@ static void test2(Parser* parser) {
   assert(mod->stmt(1)->isFor());
   const For* forLoop = mod->stmt(1)->toFor();
   assert(forLoop != nullptr);
-  assert(forLoop->indexVar() != nullptr);
-  assert(forLoop->indexVar()->isIdentifier());
+  assert(forLoop->numIndexVariables() == 1);
+  assert(forLoop->indexVariable() != nullptr);
+  assert(forLoop->indexVariable()->isVariable());
   assert(forLoop->iterand() != nullptr);
   assert(forLoop->iterand()->isIdentifier());
   assert(forLoop->numStmts() == 2);
   assert(forLoop->usesDo());
-  assert(!forLoop->expressionLevel());
-  assert(forLoop->param());
+  assert(!forLoop->isExpressionLevel());
+  assert(forLoop->isParam());
   assert(forLoop->stmt(0)->isComment());
   assert(forLoop->stmt(1)->isVariableDecl());
 }
@@ -133,14 +137,15 @@ static void test3(Parser* parser) {
   assert(mod->stmt(1)->isFor());
   const For* forLoop = mod->stmt(1)->toFor();
   assert(forLoop != nullptr);
-  assert(forLoop->indexVar() != nullptr);
-  assert(forLoop->indexVar()->isIdentifier());
+  assert(forLoop->numIndexVariables() == 1);
+  assert(forLoop->indexVariable() != nullptr);
+  assert(forLoop->indexVariable()->isVariable());
   assert(forLoop->iterand() != nullptr);
   assert(forLoop->iterand()->isIdentifier());
   assert(forLoop->numStmts() == 3);
   assert(!forLoop->usesDo());
-  assert(!forLoop->expressionLevel());
-  assert(!forLoop->param());
+  assert(!forLoop->isExpressionLevel());
+  assert(!forLoop->isParam());
   assert(forLoop->stmt(0)->isComment());
   assert(forLoop->stmt(1)->isVariableDecl());
   assert(forLoop->stmt(2)->isComment());
@@ -165,14 +170,15 @@ static void test4(Parser* parser) {
   assert(mod->stmt(1)->isFor());
   const For* forLoop = mod->stmt(1)->toFor();
   assert(forLoop != nullptr);
-  assert(forLoop->indexVar() != nullptr);
-  assert(forLoop->indexVar()->isIdentifier());
+  assert(forLoop->numIndexVariables() == 1);
+  assert(forLoop->indexVariable() != nullptr);
+  assert(forLoop->indexVariable()->isVariable());
   assert(forLoop->iterand() != nullptr);
   assert(forLoop->iterand()->isIdentifier());
   assert(forLoop->numStmts() == 2);
   assert(forLoop->usesDo());
-  assert(!forLoop->expressionLevel());
-  assert(!forLoop->param());
+  assert(!forLoop->isExpressionLevel());
+  assert(!forLoop->isParam());
   assert(forLoop->stmt(0)->isComment());
   assert(forLoop->stmt(1)->isBlock());
   const Block* block = forLoop->stmt(1)->toBlock();

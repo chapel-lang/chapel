@@ -21,7 +21,7 @@
 #define CHPL_UAST_FOR_H
 
 #include "chpl/queries/Location.h"
-#include "chpl/uast/Loop.h"
+#include "chpl/uast/IndexableLoop.h"
 
 namespace chpl {
 namespace uast {
@@ -41,18 +41,29 @@ namespace uast {
   \endrst
 
  */
-class For final : public Loop {
+class For final : public IndexableLoop {
  private:
-  For(ASTList children, int8_t indexVarChildNum, int8_t iterandChildNum,
-      bool usesDo,
-      bool expressionLevel,
-      bool param);
+  For(ASTList children, int8_t iterandChildNum,
+         int8_t indexVariableDeclStartChildNum,
+         int numIndexVariables,
+         bool usesDo,
+         bool isExpressionLevel,
+         bool isParam)
+    : IndexableLoop(asttags::For, std::move(children), iterandChildNum,
+                    indexVariableDeclStartChildNum,
+                    numIndexVariables,
+                    usesDo),
+      isExpressionLevel_(isExpressionLevel),
+      isParam_(isParam) {
+
+    assert(isExpressionASTList(children_));
+  }
+
   bool contentsMatchInner(const ASTNode* other) const;
   void markUniqueStringsInner(Context* context) const;
-  int8_t indexVarChildNum_;
-  int8_t iterandChildNum_;
-  bool expressionLevel_;
-  bool param_;
+
+  bool isExpressionLevel_;
+  bool isParam_;
 
  public:
 
@@ -60,12 +71,12 @@ class For final : public Loop {
     Create and return a for loop. 
   */
   static owned<For> build(Builder* builder, Location loc,
-                          owned<Expression> indexVar,
+                          ASTList indexVariables,
                           owned<Expression> iterand,
                           ASTList stmts,
                           bool usesDo,
-                          bool expressionLevel,
-                          bool param);
+                          bool isExpressionLevel,
+                          bool isParam);
 
   /**
     Create and return a for loop without an index variable.
@@ -76,33 +87,17 @@ class For final : public Loop {
                           bool usesDo);
 
   /**
-    Returns the index variable of this for loop.
-  */
-  const Expression* indexVar() const {
-    return indexVarChildNum_ < 0 ? nullptr
-      : (const Expression*)child(indexVarChildNum_);
-  }
-
-  /**
-    Returns the iterand of this for loop.
-  */
-  const Expression* iterand() const {
-    return iterandChildNum_ < 0 ? nullptr
-      : (const Expression*)child(iterandChildNum_);
-  }
-
-  /**
     Returns true if this for loop appears at the expression level. 
   */
-  bool expressionLevel() const {
-    return expressionLevel_;
+  bool isExpressionLevel() const {
+    return isExpressionLevel_;
   }
 
   /**
     Returns true if this for loop is param.
   */
-  bool param() const {
-    return param_;
+  bool isParam() const {
+    return isParam_;
   }
 
 

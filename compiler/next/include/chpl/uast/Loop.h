@@ -32,12 +32,24 @@ namespace uast {
  */
 class Loop: public ControlFlow {
  protected:
-  Loop(ASTTag tag, ASTList children, int32_t statementChildNum, bool usesDo);
-  bool expressionContentsMatchInner(const Expression* other) const {
-    return true;
+  Loop(asttags::ASTTag tag, ASTList children, int32_t loopBodyChildNum,
+       bool usesDo)
+    : ControlFlow(tag, std::move(children)),
+      loopBodyChildNum_(loopBodyChildNum),
+      usesDo_(usesDo) {
+    assert(loopBodyChildNum_ >= 0);
+    assert(loopBodyChildNum < this->numChildren());
   }
-  void expressionMarkUniqueStringsInner(Context* context) const {}
-  int32_t statementChildNum_;
+
+  bool loopContentsMatchInner(const Loop* other) const {
+    return this->controlFlowContentsMatchInner((const ControlFlow*)other);
+  }
+
+  void loopMarkUniqueStringsInner(Context* context) const {
+    this->controlFlowMarkUniqueStringsInner(context);
+  }
+
+  int32_t loopBodyChildNum_;
   bool usesDo_;
 
  public:
@@ -47,7 +59,7 @@ class Loop: public ControlFlow {
     Return a way to iterate over the statements of this loop.
    */
   ASTListIteratorPair<Expression> stmts() const {
-    auto begin = children_.begin() + statementChildNum_;
+    auto begin = children_.begin() + loopBodyChildNum_;
     auto end = children_.end();
     return ASTListIteratorPair<Expression>(begin, end);
   }
@@ -56,21 +68,20 @@ class Loop: public ControlFlow {
    Return the number of statements in the loop.
    */
   int numStmts() const {
-    return this->numChildren() - statementChildNum_;
+    return this->numChildren() - loopBodyChildNum_;
   }
 
   /**
    Return the i'th statement in the loop.
    */
   const Expression* stmt(int i) const {
-    const ASTNode* ast = this->child(i+statementChildNum_);
+    const ASTNode* ast = this->child(i+loopBodyChildNum_);
     assert(ast->isExpression());
     return (const Expression*)ast;
   }
 
   /**
-    Returns true if the first child statement of this loop is preceded
-    by a 'do'.
+    Returns true if the body of this loop is introduced by a 'do' keyword.
   */
   bool usesDo() const {
     return usesDo_;

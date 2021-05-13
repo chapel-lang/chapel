@@ -23,19 +23,6 @@ namespace chpl {
 namespace uast {
 
 
-Loop::Loop(asttags::ASTTag tag, ASTList children, int32_t statementChildNum,
-           bool usesDo)
-  : ControlFlow(tag, std::move(children)),
-    statementChildNum_(statementChildNum),
-    usesDo_(usesDo) {
-
-#ifndef NDEBUG
-  assert(statementChildNum_ >= 0);
-  assert(statementChildNum < this->numChildren());
-#endif
-
-}
-
 Loop::~Loop() {
 }
 
