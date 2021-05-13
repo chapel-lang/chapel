@@ -66,14 +66,7 @@ static void test0(Parser* parser) {
 static void test1(Parser* parser) {
   auto parseResult = parser->parseString("test1.chpl",
       "/* comment 1 */\n"
-      "x = new r(a=1, 2);\n");
-
-  if (parseResult.errors.size()) {
-    for (auto e : parseResult.errors) {
-      std::cout << e.message() << std::endl;
-    }
-  }
-
+      "x = new r(a=b, c);\n");
   assert(parseResult.errors.size() == 0);
   assert(parseResult.topLevelExpressions.size() == 1);
   assert(parseResult.topLevelExpressions[0]->isModuleDecl());
@@ -98,7 +91,7 @@ static void test1(Parser* parser) {
 static void test2(Parser* parser) {
   auto parseResult = parser->parseString("test2.chpl",
       "/* comment 1 */\n"
-      "x = new r(a=1, 2);\n");
+      "x = new owned C(a=b, c);\n");
   assert(parseResult.errors.size() == 0);
   assert(parseResult.topLevelExpressions.size() == 1);
   assert(parseResult.topLevelExpressions[0]->isModuleDecl());
@@ -116,10 +109,84 @@ static void test2(Parser* parser) {
   assert(!fnCall->isNamedActual(1));
   assert(fnCall->calledExpression());
   const New* newExpr = fnCall->calledExpression()->toNew();
-  assert(newExpr->management() == New::Management::None);
+  assert(newExpr->management() == New::Management::Owned);
   assert(newExpr->typeExpression()->isIdentifier());
 }
 
+static void test3(Parser* parser) {
+  auto parseResult = parser->parseString("test3.chpl",
+      "/* comment 1 */\n"
+      "x = new shared C(a=b, c);\n");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
+  auto mod = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(mod->numStmts() == 2);
+  assert(mod->stmt(0)->isComment());
+  assert(mod->stmt(1)->isOpCall());
+  const OpCall* assign = mod->stmt(1)->toOpCall();
+  assert(assign);
+  assert(assign->isBinaryOp());
+  const FnCall* fnCall = assign->actual(1)->toFnCall();
+  assert(fnCall);
+  assert(fnCall->numActuals() == 2);
+  assert(fnCall->isNamedActual(0));
+  assert(!fnCall->isNamedActual(1));
+  assert(fnCall->calledExpression());
+  const New* newExpr = fnCall->calledExpression()->toNew();
+  assert(newExpr->management() == New::Management::Shared);
+  assert(newExpr->typeExpression()->isIdentifier());
+}
+
+static void test4(Parser* parser) {
+  auto parseResult = parser->parseString("test4.chpl",
+      "/* comment 1 */\n"
+      "x = new borrowed C(a=b, c);\n");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
+  auto mod = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(mod->numStmts() == 2);
+  assert(mod->stmt(0)->isComment());
+  assert(mod->stmt(1)->isOpCall());
+  const OpCall* assign = mod->stmt(1)->toOpCall();
+  assert(assign);
+  assert(assign->isBinaryOp());
+  const FnCall* fnCall = assign->actual(1)->toFnCall();
+  assert(fnCall);
+  assert(fnCall->numActuals() == 2);
+  assert(fnCall->isNamedActual(0));
+  assert(!fnCall->isNamedActual(1));
+  assert(fnCall->calledExpression());
+  const New* newExpr = fnCall->calledExpression()->toNew();
+  assert(newExpr->management() == New::Management::Borrowed);
+  assert(newExpr->typeExpression()->isIdentifier());
+}
+
+static void test5(Parser* parser) {
+  auto parseResult = parser->parseString("test5.chpl",
+      "/* comment 1 */\n"
+      "x = new unmanaged C(a=b, c);\n");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
+  auto mod = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(mod->numStmts() == 2);
+  assert(mod->stmt(0)->isComment());
+  assert(mod->stmt(1)->isOpCall());
+  const OpCall* assign = mod->stmt(1)->toOpCall();
+  assert(assign);
+  assert(assign->isBinaryOp());
+  const FnCall* fnCall = assign->actual(1)->toFnCall();
+  assert(fnCall);
+  assert(fnCall->numActuals() == 2);
+  assert(fnCall->isNamedActual(0));
+  assert(!fnCall->isNamedActual(1));
+  assert(fnCall->calledExpression());
+  const New* newExpr = fnCall->calledExpression()->toNew();
+  assert(newExpr->management() == New::Management::Unmanaged);
+  assert(newExpr->typeExpression()->isIdentifier());
+}
 int main() {
   Context context;
   Context* ctx = &context;
@@ -130,6 +197,9 @@ int main() {
   test0(p);
   test1(p);
   test2(p);
+  test3(p);
+  test4(p);
+  test5(p);
 
   return 0;
 }
