@@ -34,7 +34,7 @@ namespace uast {
   .. code-block:: chapel
 
       // Example 1:
-      for i in foo {
+      for i in myRange {
         var x;
       }
 
