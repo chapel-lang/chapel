@@ -289,7 +289,6 @@ module ArrayViewSlice {
       return privDom.dsiLocalSubdomain(loc);
     }
 
-    pragma "order independent yielding loops"
     iter dsiLocalSubdomains(loc: locale) {
       for l in privDom.dsiLocalSubdomains(loc) do
         yield l;

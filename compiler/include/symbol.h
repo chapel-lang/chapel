@@ -591,7 +591,8 @@ public:
   void  replaceChild(BaseAST* oldAst, BaseAST* newAst)   override;
   void  printDocs(std::ostream* file, unsigned int tabs);
 
-  int   numFormals() const { return ifcFormals.length; }
+  int   numFormals()   const { return ifcFormals.length; }
+  int   numAssocCons() const { return associatedConstraints.size(); }
 
   // the DefExprs for each interface formal
   AList      ifcFormals;

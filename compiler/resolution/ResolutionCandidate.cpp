@@ -155,7 +155,7 @@ bool ResolutionCandidate::isApplicableGeneric(CallInfo& info,
 }
 
 // Computes whether fn's interface constraints are satisfied at the call site.
-// Stores witnesses in this->witnesses, if yes.
+// Stores witnesses in this->witnessIstms, if yes.
 // Should this be entirely in interfaceResolution.cpp ?
 bool ResolutionCandidate::isApplicableCG(CallInfo& info,
                                          VisibilityInfo* visInfo) {
@@ -165,9 +165,8 @@ bool ResolutionCandidate::isApplicableCG(CallInfo& info,
                              toIfcConstraint(iconExpr), substitutions);
     if (csat.istm != nullptr) {
       // satisfied with an implements statement
-      witnesses.push_back(csat.istm);
-      copyIfcRepsToSubstitutions(fn, info.call, indx++,
-                                 csat.istm, substitutions);
+      witnessIstms.push_back(csat.istm);
+      cgAddRepsToSubstitutions(fn, substitutions, csat.istm, indx++);
 
     } else if (csat.icon != nullptr) {
       // satisfied with a constraint of the enclosing GC function
@@ -178,6 +177,8 @@ bool ResolutionCandidate::isApplicableCG(CallInfo& info,
       return false;
     }
   }
+
+  cgConvertAggregateTypes(fn, info.call, substitutions);
 
   return true; // all constraints are satisfied
 }

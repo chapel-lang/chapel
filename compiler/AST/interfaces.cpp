@@ -273,7 +273,7 @@ ImplementsStmt::ImplementsStmt(IfcConstraint* con, BlockStmt* body)
 }
 
 ImplementsStmt* ImplementsStmt::copyInner(SymbolMap* map) {
-  if (witnesses.n > 0 || aconsWitnesses.size() > 0)
+  if (! witnesses.empty())
     USR_FATAL(this,
       "implements statements in this context are currently unsupported");
 
@@ -285,7 +285,7 @@ static void verifyWitnesses(ImplementsStmt* istm) {
   if (!normalized) return;
   IfcConstraint* icon = istm->iConstraint;
   InterfaceSymbol* isym = icon->ifcSymbol();
-  form_Map(SymbolMapElem, witn, istm->witnesses) {
+  form_Map(SymbolMapElem, witn, istm->witnesses.symWits) {
     INT_ASSERT(witn->key->defPoint->parentSymbol == isym);
     // witn->value can be defined anywhere
   }
@@ -311,7 +311,7 @@ void ImplementsStmt::accept(AstVisitor* visitor) {
 
 void ImplementsStmt::replaceChild(Expr* oldAst, Expr* newAst) {
   // CG TODO: update 'witnesses' appropriately if there are any?
-  if (witnesses.n > 0)
+  if (! witnesses.empty())
     USR_FATAL(this, "unsupported copying of this implements statement");
 
   if (oldAst == iConstraint)

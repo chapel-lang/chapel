@@ -21,6 +21,7 @@
 #define CHPL_UAST_BUILDER_H
 
 #include "chpl/uast/ASTNode.h"
+#include "chpl/queries/ErrorMessage.h"
 #include "chpl/queries/UniqueString.h"
 
 #include <vector>
@@ -30,7 +31,6 @@
 namespace chpl {
 
 class Context;
-class ErrorMessage;
 class Location;
 
 namespace uast {
@@ -54,7 +54,14 @@ class Builder final {
   std::vector<std::pair<const ASTNode*, Location>> locations_;
 
   Builder(Context* context,
-          UniqueString filepath, UniqueString inferredModuleName);
+          UniqueString filepath,
+          UniqueString inferredModuleName)
+  : context_(context),
+    filepath_(filepath),
+    inferredModuleName_(inferredModuleName),
+    topLevelExpressions_(), errors_(), locations_() {
+  }
+
   UniqueString createImplicitModuleIfNeeded();
   void assignIDs(UniqueString inferredModule);
   void doAssignIDs(ASTNode* ast, UniqueString symbolPath, int& i,

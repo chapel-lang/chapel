@@ -41,7 +41,10 @@ class Comment final : public Expression {
  private:
   std::string comment_;
 
-  Comment(std::string s);
+  Comment(std::string s)
+   : Expression(asttags::Comment), comment_(std::move(s)) {
+  }
+
   bool contentsMatchInner(const ASTNode* other) const override;
   void markUniqueStringsInner(Context* context) const override;
 

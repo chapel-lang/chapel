@@ -111,10 +111,10 @@ class ASTListIterator {
 
   // needs to support * and ->
   const CastToType* operator*() const {
-    return this->it->get();
+    return (const CastToType*) this->it->get();
   }
   const CastToType* operator->() const {
-    return this->it->get();
+    return (const CastToType*) this->it->get();
   }
 
   // needs to support preincrement and postincrement
@@ -176,7 +176,7 @@ class ASTListIterator {
 
   // support the [] operator
   const CastToType* operator[](const int rhs) {
-    return this->it[rhs];
+    return (const CastToType*) this->it[rhs];
   }
 
   // must be swappable but that should work with the default impl

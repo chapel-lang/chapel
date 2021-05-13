@@ -25,19 +25,6 @@ namespace chpl {
 namespace uast {
 
 
-Local::Local(ASTList stmts, int8_t condChildNum, bool usesDo) :
-    Expression(asttags::Local, std::move(stmts)),
-    condChildNum_(condChildNum),
-    usesDo_(usesDo) {
-
-#ifndef NDEBUG
-  // check that all children are exprs (and not, say, Symbols)
-  for (const ASTNode* child : this->children()) {
-    assert(child->isExpression());
-  }
-#endif
-}
-
 bool Local::contentsMatchInner(const ASTNode* other) const {
   const Local* lhs = this;
   const Local* rhs = (const Local*) other;

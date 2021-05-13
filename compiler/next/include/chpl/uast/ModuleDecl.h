@@ -51,12 +51,12 @@ class ModuleDecl final : public Decl {
   ~ModuleDecl() override = default;
   static owned<ModuleDecl> build(Builder* builder, Location loc,
                                  UniqueString name, Sym::Visibility vis,
-                                 Module::Tag tag, ASTList stmts);
+                                 Module::Kind kind, ASTList stmts);
   const Module* module() const {
     assert(this->sym()->isModule());
     return (Module*)this->sym();
   }
-  const Module::Tag tag() const { return this->module()->tag(); }
+  const Module::Kind kind() const { return this->module()->kind(); }
 };
 
 

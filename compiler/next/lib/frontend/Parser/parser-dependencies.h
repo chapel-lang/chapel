@@ -30,9 +30,14 @@
 #include "chpl/uast/Call.h"
 #include "chpl/uast/Comment.h"
 #include "chpl/uast/Decl.h"
+#include "chpl/uast/Dot.h"
 #include "chpl/uast/ErroneousExpression.h"
 #include "chpl/uast/Expression.h"
 #include "chpl/uast/FnCall.h"
+#include "chpl/uast/Formal.h"
+#include "chpl/uast/FormalDecl.h"
+#include "chpl/uast/Function.h"
+#include "chpl/uast/FunctionDecl.h"
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Local.h"
 #include "chpl/uast/Module.h"
@@ -48,6 +53,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <set>
 #include <string>
 #include <unordered_map>
 #include <utility>

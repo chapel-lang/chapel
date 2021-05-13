@@ -18,6 +18,9 @@
  * limitations under the License.
  */
 
+#include <string>
+#include <vector>
+
 static bool locationLessEq(YYLTYPE lhs, YYLTYPE rhs) {
   return (lhs.first_line < rhs.first_line) ||
          (lhs.first_line == rhs.first_line &&
@@ -33,6 +36,7 @@ std::vector<ParserComment>* ParserContext::gatherComments(YYLTYPE location) {
 
   if (this->comments->size() == 0) {
     delete this->comments;
+    this->comments = nullptr;
     return nullptr;
   }
 
@@ -75,6 +79,32 @@ std::vector<ParserComment>* ParserContext::gatherComments(YYLTYPE location) {
   return ret;
 }
 
+void ParserContext::noteDeclStartLoc(YYLTYPE loc) {
+  if (this->declStartLocation.first_line == 0) {
+    this->declStartLocation = loc;
+  }
+}
+Sym::Visibility ParserContext::noteVisibility(Sym::Visibility visibility) {
+  this->visibility = visibility;
+  return this->visibility;
+}
+Variable::Kind ParserContext::noteVarDeclKind(Variable::Kind varDeclKind) {
+  this->varDeclKind = varDeclKind;
+  return this->varDeclKind;
+}
+YYLTYPE ParserContext::declStartLoc(YYLTYPE curLoc) {
+  if (this->declStartLocation.first_line == 0)
+    return curLoc;
+  else
+    return this->declStartLocation;
+}
+void ParserContext::resetDeclState() {
+  this->varDeclKind = Variable::VAR;
+  this->visibility = Sym::DEFAULT_VISIBILITY;
+  YYLTYPE emptyLoc = {0};
+  this->declStartLocation = emptyLoc;
+}
+
 void ParserContext::noteComment(YYLTYPE loc, const char* data, long size) {
   if (this->comments == nullptr) {
     this->comments = new std::vector<ParserComment>();
@@ -88,6 +118,15 @@ void ParserContext::noteComment(YYLTYPE loc, const char* data, long size) {
   this->comments->push_back(c);
 }
 
+void ParserContext::clearCommentsBefore(YYLTYPE loc) {
+  auto comments = this->gatherComments(loc);
+  if (comments != nullptr) {
+    for (ParserComment parserComment : *this->comments) {
+      delete parserComment.comment;
+    }
+    delete comments;
+  }
+}
 void ParserContext::clearComments() {
   if (this->comments != nullptr) {
     for (ParserComment parserComment : *this->comments) {
@@ -251,7 +290,9 @@ CommentsAndStmt ParserContext::finishStmt(Expression* e) {
 }
 
 ParserExprList*
-ParserContext::blockToParserExprList(YYLTYPE rbrLoc, ParserExprList* body) {
+ParserContext::blockToParserExprList(YYLTYPE lbrLoc, YYLTYPE rbrLoc,
+                                     ParserExprList* body) {
+  this->clearCommentsBefore(lbrLoc);
   ParserExprList* ret = body != nullptr ? body : new ParserExprList();
   this->appendList(ret, this->gatherComments(rbrLoc));
   return ret;
@@ -285,4 +326,49 @@ OpCall* ParserContext::buildUnaryOp(YYLTYPE location,
                                     Expression* expr) {
   return OpCall::build(builder, convertLocation(location),
                        op, toOwned(expr)).release();
+}
+
+FunctionParts ParserContext::makeFunctionParts(bool isInline,
+                                               bool isOverride) {
+  FunctionParts fp = {nullptr,
+                      nullptr,
+                      this->visibility,
+                      Function::DEFAULT_LINKAGE,
+                      nullptr,
+                      isInline,
+                      isOverride,
+                      Function::PROC,
+                      nullptr,
+                      PODUniqueString::build(),
+                      Function::DEFAULT_RETURN_INTENT,
+                      false,
+                      nullptr, nullptr, nullptr, nullptr,
+                      nullptr};
+  return fp;
+}
+
+CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
+                                                 FunctionParts& fp) {
+  CommentsAndStmt cs = {fp.comments, nullptr};
+  if (fp.errorExpr == nullptr) {
+    auto f = FunctionDecl::build(builder, this->convertLocation(location),
+                                 fp.name, this->visibility,
+                                 fp.linkage, toOwned(fp.linkageNameExpr),
+                                 fp.isInline,
+                                 fp.isOverride,
+                                 fp.kind,
+                                 toOwned(fp.receiver),
+                                 fp.returnIntent,
+                                 fp.throws,
+                                 this->consumeList(fp.formals),
+                                 toOwned(fp.returnType),
+                                 toOwned(fp.where),
+                                 this->consumeList(fp.lifetime),
+                                 this->consumeList(fp.body));
+    cs.stmt = f.release();
+  } else {
+    cs.stmt = fp.errorExpr;
+  }
+  this->clearComments();
+  return cs;
 }

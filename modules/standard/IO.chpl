@@ -6115,6 +6115,7 @@ proc channel._read_complex(width:uint(32), out t:complex, i:int)
 // note here that the main benefit of this helper is that we don't pass all the
 // arguments from writef. This way, we can use the same code for an `arg` type
 // for which we have already created and instantiation of this.
+pragma "no doc"
 proc channel._writefOne(fmtStr, ref arg, i: int,
                         ref cur: size_t, ref j: int,
                         ref r: unmanaged _channel_regex_info?,

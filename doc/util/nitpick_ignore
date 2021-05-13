@@ -31,3 +31,4 @@ cpp:identifier ASTList::const_iterator
 cpp:identifier size_t
 cpp:identifier detail
 cpp:identifier detail::PODUniqueString
+cpp:identifier ASTList::const_iterator::difference_type

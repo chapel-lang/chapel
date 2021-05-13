@@ -284,7 +284,19 @@ class GotoStmt final : public Stmt {
 *                                                                             *
 ************************************** | *************************************/
 
-typedef std::map<IfcConstraint*, ImplementsStmt*> aconsWitnMap;
+// This helper class shows how the interface requirements are satisfied.
+struct Witnesses {
+  // for each associated type or required function in the interface,
+  // this map points to its implementation for this ImplementsStmt
+  SymbolMap symWits;
+
+  // for each associated constraint in the interface,
+  // this vector contains the istm that satisfies it
+  std::vector<ImplementsStmt*> conWits;
+
+  int  numAssocCons() const { return conWits.size(); }
+  bool empty()        const { return symWits.n == 0 && conWits.empty(); }
+};
 
 class ImplementsStmt final : public Stmt {
 public:
@@ -312,12 +324,8 @@ public:
   // (possibly empty) body of this statement, always non-null
   BlockStmt*     implBody;
 
-  // for each associated type or required function in the interface,
-  // the map points to its implementation for this ImplementsStmt
-  SymbolMap      witnesses;
-
-  // each associated constraint in the ifc --> its implementation
-  aconsWitnMap   aconsWitnesses;
+  // info on how the interface requirements are satisfied by this istm
+  Witnesses      witnesses;
 };
 
 // support for implements wrapper functions

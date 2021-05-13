@@ -27,6 +27,7 @@
 #include "chpl/util/memory.h"
 
 #include <cassert>
+#include <functional>
 
 namespace chpl {
 namespace uast {
@@ -76,8 +77,13 @@ class ASTNode {
   virtual void markUniqueStringsInner(Context* context) const = 0;
 
  protected:
-  ASTNode(ASTTag tag);
-  ASTNode(ASTTag tag, ASTList children);
+  ASTNode(ASTTag tag)
+    : tag_(tag), id_(), children_() {
+  }
+  ASTNode(ASTTag tag, ASTList children)
+    : tag_(tag), id_(), children_(std::move(children)) {
+  }
+
   // called by the Builder
   void setID(ID id) { id_ = id; }
 
@@ -95,7 +101,7 @@ class ASTNode {
     Returns the ID of this AST node.
    */
   ID id() const {
-    return id_; 
+    return id_;
   }
 
   /**
