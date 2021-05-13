@@ -17,14 +17,14 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/MultiVarDeclaration.h"
+#include "chpl/uast/MultiDecl.h"
 
 #include "chpl/uast/Builder.h"
 
 namespace chpl {
 namespace uast {
 
-bool MultiVarDeclaration::isVariableDeclAndCommentList(const ASTList& list) {
+bool MultiDecl::isVariableDeclAndCommentList(const ASTList& list) {
   for (const auto& elt: list) {
     if (elt->isVariableDecl() || elt->isComment()) {
       // OK
@@ -35,19 +35,19 @@ bool MultiVarDeclaration::isVariableDeclAndCommentList(const ASTList& list) {
   return true;
 }
 
-bool MultiVarDeclaration::contentsMatchInner(const ASTNode* other) const {
-  const MultiVarDeclaration* lhs = this;
-  const MultiVarDeclaration* rhs = (const MultiVarDeclaration*) other;
+bool MultiDecl::contentsMatchInner(const ASTNode* other) const {
+  const MultiDecl* lhs = this;
+  const MultiDecl* rhs = (const MultiDecl*) other;
   return lhs->expressionContentsMatchInner(rhs);
 }
-void MultiVarDeclaration::markUniqueStringsInner(Context* context) const {
+void MultiDecl::markUniqueStringsInner(Context* context) const {
   expressionMarkUniqueStringsInner(context);
 }
 
-owned<MultiVarDeclaration> MultiVarDeclaration::build(Builder* builder,
-                                                      Location loc,
-                                                      ASTList varDecls) {
-  MultiVarDeclaration* ret = new MultiVarDeclaration(std::move(varDecls));
+owned<MultiDecl> MultiDecl::build(Builder* builder,
+                                  Location loc,
+                                  ASTList varDecls) {
+  MultiDecl* ret = new MultiDecl(std::move(varDecls));
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

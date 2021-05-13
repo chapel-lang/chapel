@@ -21,7 +21,7 @@
 #define CHPL_UAST_VARIABLEDECL_H
 
 #include "chpl/queries/Location.h"
-#include "chpl/uast/Decl.h"
+#include "chpl/uast/SymDecl.h"
 #include "chpl/uast/Variable.h"
 
 namespace chpl {
@@ -44,10 +44,10 @@ namespace uast {
 
   Each of these is a VariableDecl that refers to a Variable Sym.
  */
-class VariableDecl final : public Decl {
+class VariableDecl final : public SymDecl {
  private:
   VariableDecl(owned<Variable> variable)
-    : Decl(asttags::VariableDecl, std::move(variable)) {
+    : SymDecl(asttags::VariableDecl, std::move(variable)) {
   }
   bool contentsMatchInner(const ASTNode* other) const override;
   void markUniqueStringsInner(Context* context) const override;

@@ -63,7 +63,6 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
   AST_NODE(Require)                    //
   AST_NODE(Serial)                     //
   AST_NODE(Use)                        // old AST: UseStmt
-  AST_NODE(MultiVarDeclaration)        //
 
   AST_BEGIN_SUBCLASSES(ControlFlow)
 
@@ -108,15 +107,21 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
     AST_NODE(Try)                      //
   AST_END_SUBCLASSES(Call)
 
-  AST_BEGIN_SUBCLASSES(Decl)
-    AST_NODE(FieldDecl)
-    AST_NODE(FormalDecl)
-    AST_NODE(ForwardingDecl)
-    AST_NODE(FunctionDecl)
-    AST_NODE(ModuleDecl)
-    AST_NODE(TypeDecl)
-    AST_NODE(VariableDecl)
-  AST_END_SUBCLASSES(Decl)
+
+//  AST_BEGIN_SUBCLASSES(Decl)
+    AST_NODE(MultiDecl)
+    AST_NODE(TupleDecl)
+
+    AST_BEGIN_SUBCLASSES(SymDecl)
+      //AST_NODE(FieldDecl)
+      AST_NODE(FormalDecl)
+      //AST_NODE(ForwardingDecl)
+      AST_NODE(FunctionDecl)
+      AST_NODE(ModuleDecl)
+      //AST_NODE(TypeDecl)
+      AST_NODE(VariableDecl)
+    AST_END_SUBCLASSES(SymDecl)
+//  AST_END_SUBCLASSES(Decl)
 
 AST_END_SUBCLASSES(Expression)
 

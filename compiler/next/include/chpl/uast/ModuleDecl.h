@@ -20,7 +20,7 @@
 #ifndef CHPL_UAST_MODULEDECL_H
 #define CHPL_UAST_MODULEDECL_H
 
-#include "chpl/uast/Decl.h"
+#include "chpl/uast/SymDecl.h"
 #include "chpl/uast/Module.h"
 #include "chpl/queries/Location.h"
 
@@ -39,10 +39,10 @@ namespace uast {
 
   contains a module declaration referring to the symbol for module M.
  */
-class ModuleDecl final : public Decl {
+class ModuleDecl final : public SymDecl {
  private:
   ModuleDecl(owned<Module> module)
-    : Decl(asttags::ModuleDecl, std::move(module)) {
+    : SymDecl(asttags::ModuleDecl, std::move(module)) {
   }
   bool contentsMatchInner(const ASTNode* other) const override;
   void markUniqueStringsInner(Context* context) const override;

@@ -17,11 +17,11 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_UAST_MULTIVARDECLARATION_H
-#define CHPL_UAST_MULTIVARDECLARATION_H
+#ifndef CHPL_UAST_MULTIDECL_H
+#define CHPL_UAST_MULTIDECL_H
 
+#include "chpl/uast/Expression.h"
 #include "chpl/queries/Location.h"
-#include "chpl/uast/VariableDecl.h"
 
 #include <cassert>
 
@@ -51,10 +51,10 @@ namespace uast {
   subclass of Decl. Rather, it contains several VariableDecls.
 
  */
-class MultiVarDeclaration final : public Expression {
+class MultiDecl final : public Expression {
  private:
-  MultiVarDeclaration(ASTList children)
-    : Expression(asttags::MultiVarDeclaration, std::move(children)) {
+  MultiDecl(ASTList children)
+    : Expression(asttags::MultiDecl, std::move(children)) {
 
     assert(isVariableDeclAndCommentList(children_));
   }
@@ -63,9 +63,9 @@ class MultiVarDeclaration final : public Expression {
   void markUniqueStringsInner(Context* context) const override;
 
  public:
-  ~MultiVarDeclaration() override = default;
-  static owned<MultiVarDeclaration> build(Builder* builder, Location loc,
-                                          ASTList varDecls);
+  ~MultiDecl() override = default;
+  static owned<MultiDecl> build(Builder* builder, Location loc,
+                                ASTList varDecls);
 
   /**
     Return a way to iterate over the contained VariableDecls and Comments.

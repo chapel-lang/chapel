@@ -311,7 +311,7 @@
     // simple pointer values
     Block* block;
     Call* call;
-    Decl* decl;
+    SymDecl* symDecl;
     Expression* expr;
     Function* function;
     Module* module;
@@ -2116,8 +2116,8 @@ var_decl_stmt:
         // gather any comments from before the 'var'
         CommentsAndStmt cs = {context->gatherCommentsFromList(lst, @1),
                               nullptr};
-        auto multi = MultiVarDeclaration::build(BUILDER, LOC(@$),
-                                                context->consumeList(lst));
+        auto multi = MultiDecl::build(BUILDER, LOC(@$),
+                                      context->consumeList(lst));
         cs.stmt = multi.release();
         $$ = cs;
       }

@@ -17,13 +17,13 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/Decl.h"
+#include "chpl/uast/SymDecl.h"
 
 namespace chpl {
 namespace uast {
 
 
-Decl::~Decl() {
+SymDecl::~SymDecl() {
 }
 
 

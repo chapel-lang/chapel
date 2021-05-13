@@ -28,10 +28,10 @@ namespace uast {
 bool FormalDecl::contentsMatchInner(const ASTNode* other) const {
   const FormalDecl* lhs = this;
   const FormalDecl* rhs = (const FormalDecl*) other;
-  return lhs->declContentsMatchInner(rhs);
+  return lhs->symDeclContentsMatchInner(rhs);
 }
 void FormalDecl::markUniqueStringsInner(Context* context) const {
-  return declMarkUniqueStringsInner(context);
+  return symDeclMarkUniqueStringsInner(context);
 }
 
 owned<FormalDecl>

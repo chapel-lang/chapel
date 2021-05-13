@@ -25,7 +25,6 @@ target_sources(libchplcomp-obj
                Builder.cpp
                Call.cpp
                Comment.cpp
-               Decl.cpp
                Dot.cpp
                ErroneousExpression.cpp
                Expression.cpp
@@ -38,10 +37,11 @@ target_sources(libchplcomp-obj
                Local.cpp
                Module.cpp
                ModuleDecl.cpp
-               MultiVarDeclaration.cpp
+               MultiDecl.cpp
                OpCall.cpp
                Serial.cpp
                Sym.cpp
+               SymDecl.cpp
                Variable.cpp
                VariableDecl.cpp
                Visitor.cpp

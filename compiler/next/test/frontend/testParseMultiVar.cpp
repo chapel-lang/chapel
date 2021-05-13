@@ -20,7 +20,7 @@
 #include "chpl/frontend/Parser.h"
 #include "chpl/queries/Context.h"
 #include "chpl/uast/ModuleDecl.h"
-#include "chpl/uast/MultiVarDeclaration.h"
+#include "chpl/uast/MultiDecl.h"
 #include "chpl/uast/VariableDecl.h"
 
 // always check assertions in this test
@@ -41,7 +41,7 @@ static void test1(Parser* parser) {
   assert(parseResult.topLevelExpressions[0]->isModuleDecl());
   auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
   assert(module->numStmts() == 1);
-  auto multi = module->stmt(0)->toMultiVarDeclaration();
+  auto multi = module->stmt(0)->toMultiDecl();
   assert(multi->numDeclOrComments() == 2);
   auto x = multi->declOrComment(0)->toVariableDecl();
   auto y = multi->declOrComment(1)->toVariableDecl();
@@ -60,7 +60,7 @@ static void test2(Parser* parser) {
   assert(parseResult.topLevelExpressions[0]->isModuleDecl());
   auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
   assert(module->numStmts() == 1);
-  auto multi = module->stmt(0)->toMultiVarDeclaration();
+  auto multi = module->stmt(0)->toMultiDecl();
   assert(multi->numDeclOrComments() == 2);
   auto x = multi->declOrComment(0)->toVariableDecl();
   auto y = multi->declOrComment(1)->toVariableDecl();
@@ -79,7 +79,7 @@ static void test3(Parser* parser) {
   assert(parseResult.topLevelExpressions[0]->isModuleDecl());
   auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
   assert(module->numStmts() == 1);
-  auto multi = module->stmt(0)->toMultiVarDeclaration();
+  auto multi = module->stmt(0)->toMultiDecl();
   assert(multi->numDeclOrComments() == 2);
   auto x = multi->declOrComment(0)->toVariableDecl();
   auto y = multi->declOrComment(1)->toVariableDecl();
@@ -102,7 +102,7 @@ static void test4(Parser* parser) {
   assert(parseResult.topLevelExpressions[0]->isModuleDecl());
   auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
   assert(module->numStmts() == 1);
-  auto multi = module->stmt(0)->toMultiVarDeclaration();
+  auto multi = module->stmt(0)->toMultiDecl();
   assert(multi->numDeclOrComments() == 4);
   auto a = multi->declOrComment(0)->toVariableDecl();
   auto b = multi->declOrComment(1)->toVariableDecl();
@@ -135,7 +135,7 @@ static void test4a(Parser* parser) {
   auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
   assert(module->numStmts() == 2);
   assert(module->stmt(0)->isComment());
-  auto multi = module->stmt(1)->toMultiVarDeclaration();
+  auto multi = module->stmt(1)->toMultiDecl();
   assert(multi->numDeclOrComments() == 4);
   auto a = multi->declOrComment(0)->toVariableDecl();
   auto b = multi->declOrComment(1)->toVariableDecl();
@@ -158,7 +158,7 @@ static void test4b(Parser* parser) {
   assert(parseResult.topLevelExpressions[0]->isModuleDecl());
   auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
   assert(module->numStmts() == 1);
-  auto multi = module->stmt(0)->toMultiVarDeclaration();
+  auto multi = module->stmt(0)->toMultiDecl();
   assert(multi->numDeclOrComments() == 5);
   assert(multi->declOrComment(0)->isComment());
   auto a = multi->declOrComment(1)->toVariableDecl();
@@ -182,7 +182,7 @@ static void test4c(Parser* parser) {
   assert(parseResult.topLevelExpressions[0]->isModuleDecl());
   auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
   assert(module->numStmts() == 1);
-  auto multi = module->stmt(0)->toMultiVarDeclaration();
+  auto multi = module->stmt(0)->toMultiDecl();
   assert(multi->numDeclOrComments() == 5);
   auto a = multi->declOrComment(0)->toVariableDecl();
   assert(multi->declOrComment(1)->isComment());
@@ -206,7 +206,7 @@ static void test4d(Parser* parser) {
   assert(parseResult.topLevelExpressions[0]->isModuleDecl());
   auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
   assert(module->numStmts() == 1);
-  auto multi = module->stmt(0)->toMultiVarDeclaration();
+  auto multi = module->stmt(0)->toMultiDecl();
   assert(multi->numDeclOrComments() == 4);
   auto a = multi->declOrComment(0)->toVariableDecl();
   auto b = multi->declOrComment(1)->toVariableDecl();
@@ -229,7 +229,7 @@ static void test4e(Parser* parser) {
   assert(parseResult.topLevelExpressions[0]->isModuleDecl());
   auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
   assert(module->numStmts() == 1);
-  auto multi = module->stmt(0)->toMultiVarDeclaration();
+  auto multi = module->stmt(0)->toMultiDecl();
   assert(multi->numDeclOrComments() == 4);
   auto a = multi->declOrComment(0)->toVariableDecl();
   auto b = multi->declOrComment(1)->toVariableDecl();
@@ -252,7 +252,7 @@ static void test4f(Parser* parser) {
   assert(parseResult.topLevelExpressions[0]->isModuleDecl());
   auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
   assert(module->numStmts() == 1);
-  auto multi = module->stmt(0)->toMultiVarDeclaration();
+  auto multi = module->stmt(0)->toMultiDecl();
   assert(multi->numDeclOrComments() == 5);
   auto a = multi->declOrComment(0)->toVariableDecl();
   auto b = multi->declOrComment(1)->toVariableDecl();
@@ -276,7 +276,7 @@ static void test4g(Parser* parser) {
   assert(parseResult.topLevelExpressions[0]->isModuleDecl());
   auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
   assert(module->numStmts() == 1);
-  auto multi = module->stmt(0)->toMultiVarDeclaration();
+  auto multi = module->stmt(0)->toMultiDecl();
   assert(multi->numDeclOrComments() == 5);
   auto a = multi->declOrComment(0)->toVariableDecl();
   auto b = multi->declOrComment(1)->toVariableDecl();
@@ -300,7 +300,7 @@ static void test4h(Parser* parser) {
   assert(parseResult.topLevelExpressions[0]->isModuleDecl());
   auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
   assert(module->numStmts() == 1);
-  auto multi = module->stmt(0)->toMultiVarDeclaration();
+  auto multi = module->stmt(0)->toMultiDecl();
   assert(multi->numDeclOrComments() == 4);
   auto a = multi->declOrComment(0)->toVariableDecl();
   auto b = multi->declOrComment(1)->toVariableDecl();
@@ -323,7 +323,7 @@ static void test4i(Parser* parser) {
   assert(parseResult.topLevelExpressions[0]->isModuleDecl());
   auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
   assert(module->numStmts() == 1);
-  auto multi = module->stmt(0)->toMultiVarDeclaration();
+  auto multi = module->stmt(0)->toMultiDecl();
   assert(multi->numDeclOrComments() == 4);
   auto a = multi->declOrComment(0)->toVariableDecl();
   auto b = multi->declOrComment(1)->toVariableDecl();
@@ -346,7 +346,7 @@ static void test4j(Parser* parser) {
   assert(parseResult.topLevelExpressions[0]->isModuleDecl());
   auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
   assert(module->numStmts() == 1);
-  auto multi = module->stmt(0)->toMultiVarDeclaration();
+  auto multi = module->stmt(0)->toMultiDecl();
   assert(multi->numDeclOrComments() == 4);
   auto a = multi->declOrComment(0)->toVariableDecl();
   auto b = multi->declOrComment(1)->toVariableDecl();
