@@ -1255,13 +1255,12 @@ static void setupLLVMCodeGen() {
     } else {
 #ifdef HAVE_LLVM
       const char* chpl_llvm_by_default = getenv("CHPL_LLVM_BY_DEFAULT");
-      if (chpl_llvm_by_default != NULL &&
+      if (chpl_llvm_by_default == NULL ||
           0 != strcmp(chpl_llvm_by_default, "0")) {
-        // LLVM-by-default was requested
+        // LLVM-by-default
         fLlvmCodegen = true;
       } else {
-        // LLVM-by-default not requested
-        // (in the future, this will change to `true`)
+        // No-LLVM-by-default was requested via environment variable
         fLlvmCodegen = false;
       }
 #else
