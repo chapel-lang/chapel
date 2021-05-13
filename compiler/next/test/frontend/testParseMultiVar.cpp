@@ -48,9 +48,31 @@ static void test1(Parser* parser) {
   assert(0 == x->name().compare("x"));
   assert(x->typeExpression() == nullptr);
   assert(x->initExpression() == nullptr);
+  assert(x->kind() == Variable::VAR);
   assert(0 == y->name().compare("y"));
   assert(y->typeExpression() == nullptr);
   assert(y->initExpression() == nullptr);
+  assert(y->kind() == Variable::VAR);
+}
+static void test1a(Parser* parser) {
+  auto parseResult = parser->parseString("test1a.chpl", "const x, y;");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
+  auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(module->numStmts() == 1);
+  auto multi = module->stmt(0)->toMultiDecl();
+  assert(multi->numDeclOrComments() == 2);
+  auto x = multi->declOrComment(0)->toVariableDecl();
+  auto y = multi->declOrComment(1)->toVariableDecl();
+  assert(0 == x->name().compare("x"));
+  assert(x->typeExpression() == nullptr);
+  assert(x->initExpression() == nullptr);
+  assert(x->kind() == Variable::CONST);
+  assert(0 == y->name().compare("y"));
+  assert(y->typeExpression() == nullptr);
+  assert(y->initExpression() == nullptr);
+  assert(y->kind() == Variable::CONST);
 }
 
 static void test2(Parser* parser) {
@@ -366,6 +388,7 @@ int main() {
   Parser* p = parser.get();
 
   test1(p);
+  test1a(p);
   test2(p);
   test3(p);
   test4(p);
