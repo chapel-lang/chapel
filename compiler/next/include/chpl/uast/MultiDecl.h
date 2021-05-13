@@ -43,11 +43,11 @@ namespace uast {
 
   \endrst
 
-  Each of the lines above is represented by a MultiVarDeclaration containing a
+  Each of the lines above is represented by a MultiDecl containing a
   list of VariableDecls.  Note that the initial value and/or type is inferred
   from later declarations.
 
-  Since the MultiVarDeclaration does not declare a Sym itself, it is not a
+  Since the MultiDecl does not declare a Sym itself, it is not a
   subclass of Decl. Rather, it contains several VariableDecls.
 
  */
