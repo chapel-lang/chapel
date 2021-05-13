@@ -29,7 +29,10 @@ namespace uast {
 
 
 /**
-  This is an abstract base class for declarations
+  This is an abstract base class for declarations.
+  It is for declarations that declare a single symbol.
+  See also MultiVarDeclaration which declares several
+  Variables at once (by containing several Decls).
  */
 class Decl : public Expression {
  protected:
