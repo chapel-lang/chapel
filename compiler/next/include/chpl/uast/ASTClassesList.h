@@ -107,15 +107,21 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
     AST_NODE(Try)                      //
   AST_END_SUBCLASSES(Call)
 
-  AST_BEGIN_SUBCLASSES(Decl)
-    AST_NODE(FieldDecl)
-    AST_NODE(FormalDecl)
-    AST_NODE(ForwardingDecl)
-    AST_NODE(FunctionDecl)
-    AST_NODE(ModuleDecl)
-    AST_NODE(TypeDecl)
-    AST_NODE(VariableDecl)
-  AST_END_SUBCLASSES(Decl)
+
+//  AST_BEGIN_SUBCLASSES(Decl)
+    AST_NODE(MultiDecl)
+    AST_NODE(TupleDecl)
+
+    AST_BEGIN_SUBCLASSES(SymDecl)
+      //AST_NODE(FieldDecl)
+      AST_NODE(FormalDecl)
+      //AST_NODE(ForwardingDecl)
+      AST_NODE(FunctionDecl)
+      AST_NODE(ModuleDecl)
+      //AST_NODE(TypeDecl)
+      AST_NODE(VariableDecl)
+    AST_END_SUBCLASSES(SymDecl)
+//  AST_END_SUBCLASSES(Decl)
 
 AST_END_SUBCLASSES(Expression)
 
@@ -130,7 +136,7 @@ AST_BEGIN_SUBCLASSES(Sym)              // old AST: Symbol
 
   AST_BEGIN_SUBCLASSES(TypeSym)        // old AST: TypeSymbol/Type
     AST_NODE(Enum)                     // old AST: EnumType
-    AST_NODE(SimpleType)               //
+    //AST_NODE(SimpleType)             //
 
     AST_BEGIN_SUBCLASSES(AggregateTypeSym) // old AST: AggregateType
       AST_NODE(Class)                  //

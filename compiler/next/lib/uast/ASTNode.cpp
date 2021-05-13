@@ -19,7 +19,7 @@
 
 #include "chpl/uast/ASTNode.h"
 
-#include "chpl/uast/Decl.h"
+#include "chpl/uast/SymDecl.h"
 #include "chpl/uast/Expression.h"
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Sym.h"
@@ -41,8 +41,8 @@ bool ASTNode::shallowMatch(const ASTNode* other) const {
   if (!lhs->contentsMatchInner(rhs))
     return false;
   // Also check declaration names
-  const Decl* lhsDecl = lhs->toDecl();
-  const Decl* rhsDecl = rhs->toDecl();
+  const SymDecl* lhsDecl = lhs->toSymDecl();
+  const SymDecl* rhsDecl = rhs->toSymDecl();
   if (lhsDecl && rhsDecl &&
       lhsDecl->sym()->name() != rhsDecl->sym()->name())
     return false;

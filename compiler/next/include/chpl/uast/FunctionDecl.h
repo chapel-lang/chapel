@@ -21,7 +21,7 @@
 #define CHPL_UAST_FUNCTIONDECL_H
 
 #include "chpl/queries/Location.h"
-#include "chpl/uast/Decl.h"
+#include "chpl/uast/SymDecl.h"
 #include "chpl/uast/Function.h"
 
 #include <cassert>
@@ -44,10 +44,10 @@ namespace uast {
 
   Each of these is a FunctionDecl that refers to a Function Sym.
  */
-class FunctionDecl final : public Decl {
+class FunctionDecl final : public SymDecl {
  private:
   FunctionDecl(owned<Function> function)
-    : Decl(asttags::FunctionDecl, std::move(function)) {
+    : SymDecl(asttags::FunctionDecl, std::move(function)) {
   }
   bool contentsMatchInner(const ASTNode* other) const override;
   void markUniqueStringsInner(Context* context) const override;
@@ -107,7 +107,7 @@ class FunctionDecl final : public Decl {
   ASTListIteratorPair<FormalDecl> formalDecls() const {
     return function()->formalDecls();
   }
-  DeclListSymIteratorPair<Formal> formals() const {
+  SymDeclListSymIteratorPair<Formal> formals() const {
     return function()->formals();
   }
   int numFormals() const {

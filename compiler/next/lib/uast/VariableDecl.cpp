@@ -28,10 +28,10 @@ namespace uast {
 bool VariableDecl::contentsMatchInner(const ASTNode* other) const {
   const VariableDecl* lhs = this;
   const VariableDecl* rhs = (const VariableDecl*) other;
-  return lhs->declContentsMatchInner(rhs);
+  return lhs->symDeclContentsMatchInner(rhs);
 }
 void VariableDecl::markUniqueStringsInner(Context* context) const {
-  return declMarkUniqueStringsInner(context);
+  return symDeclMarkUniqueStringsInner(context);
 }
 
 owned<VariableDecl>

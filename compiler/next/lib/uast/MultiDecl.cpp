@@ -17,31 +17,37 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/ModuleDecl.h"
+#include "chpl/uast/MultiDecl.h"
 
 #include "chpl/uast/Builder.h"
 
 namespace chpl {
 namespace uast {
 
-
-bool ModuleDecl::contentsMatchInner(const ASTNode* other) const {
-  const ModuleDecl* lhs = this;
-  const ModuleDecl* rhs = (const ModuleDecl*) other;
-  return lhs->symDeclContentsMatchInner(rhs);
+bool MultiDecl::isVariableDeclAndCommentList(const ASTList& list) {
+  for (const auto& elt: list) {
+    if (elt->isVariableDecl() || elt->isComment()) {
+      // OK
+    } else {
+      return false;
+    }
+  }
+  return true;
 }
-void ModuleDecl::markUniqueStringsInner(Context* context) const {
-  return symDeclMarkUniqueStringsInner(context);
+
+bool MultiDecl::contentsMatchInner(const ASTNode* other) const {
+  const MultiDecl* lhs = this;
+  const MultiDecl* rhs = (const MultiDecl*) other;
+  return lhs->declContentsMatchInner(rhs);
+}
+void MultiDecl::markUniqueStringsInner(Context* context) const {
+  declMarkUniqueStringsInner(context);
 }
 
-owned<ModuleDecl>
-ModuleDecl::build(Builder* builder, Location loc,
-                  UniqueString name, Sym::Visibility vis,
-                  Module::Kind kind, ASTList stmts) {
-
-  Module* sym = new Module(std::move(stmts), name, vis, kind);
-  ModuleDecl* ret = new ModuleDecl(toOwned(sym));
-  builder->noteLocation(sym, loc);
+owned<MultiDecl> MultiDecl::build(Builder* builder,
+                                  Location loc,
+                                  ASTList varDecls) {
+  MultiDecl* ret = new MultiDecl(std::move(varDecls));
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

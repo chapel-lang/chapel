@@ -21,7 +21,7 @@
 #define CHPL_UAST_FORMALDECL_H
 
 #include "chpl/queries/Location.h"
-#include "chpl/uast/Decl.h"
+#include "chpl/uast/SymDecl.h"
 #include "chpl/uast/Formal.h"
 
 #include <cassert>
@@ -43,10 +43,10 @@ namespace uast {
   \endrst
 
  */
-class FormalDecl final : public Decl {
+class FormalDecl final : public SymDecl {
  private:
   FormalDecl(owned<Formal> formal)
-    : Decl(asttags::FormalDecl, std::move(formal)) {
+    : SymDecl(asttags::FormalDecl, std::move(formal)) {
   }
   bool contentsMatchInner(const ASTNode* other) const override;
   void markUniqueStringsInner(Context* context) const override;
