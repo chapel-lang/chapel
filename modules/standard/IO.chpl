@@ -88,6 +88,25 @@ Then, the following program can be used to read the integer:
   // prints out:
   // 17
 
+The :proc:`~IO.read` functions allow one to read values into variables as
+the following example demonstrates. It shows three ways to read values into
+a pair of variables ``x`` and ``y``.
+
+.. code-block:: chapel
+
+  var x: int;
+  var y: real;
+  /* reading into variable expressions, returning
+     true if the values were read, false on EOF */
+  var ok:bool = read(x, y);
+
+  /* reading via a single type argument */
+  x = read(int);
+  y = read(real);
+
+  /* reading via multiple type arguments */
+  (x, y) = read(int, real);
+
 Design Rationale
 ----------------
 
