@@ -1167,8 +1167,59 @@ module Random {
         return _choice(this, x, size=size, replace=replace, prob=prob);
       }
 
+      /* Fisher Yates Shuffle */
+      inline proc FisherYates(arr: [?D] ?eltType, l: int, r: int) {
+        var PCGRandomStreamPrivate_rngs: numGenerators(eltType) * pcg_setseq_64_xsh_rr_32_rng;
+        var PCGRandomStreamPrivate_count: int(64) = this.PCGRandomStreamPrivate_count;
+        const stride = D.stride;
+        for j in l..r by (-1 * stride) {
+           var k = randlc_bounded(D.idxType,
+                                PCGRandomStreamPrivate_rngs,
+                                seed, PCGRandomStreamPrivate_count,
+                                0, (j - l) / stride);
+
+          arr[j] <=> arr[l + k * stride];
+        }
+      }
+
+      inline proc _Merge(arr: [?D] ?eltType, start: int, mid: int, n: int) {
+        var PCGRandomStreamPrivate_rngs: numGenerators(eltType) * pcg_setseq_64_xsh_rr_32_rng;
+        var PCGRandomStreamPrivate_count: int(64) = this.PCGRandomStreamPrivate_count;
+        var i = start, j = mid;
+        if(mid > n) then return;
+        var k: int;
+        const stride = D.stride;
+
+        while true{
+          k = randlc_bounded(int,
+                          PCGRandomStreamPrivate_rngs,
+                          seed, PCGRandomStreamPrivate_count,
+                          0, 1);
+                
+          if k == 0{
+            if i == j then break;
+          }
+          else {
+            if j == n then break;
+            arr[i] <=> arr[j];
+            j += stride;
+          }
+          i += stride;
+        }
+
+        while i < n {
+          k = randlc_bounded(int,
+                          PCGRandomStreamPrivate_rngs,
+                          seed, PCGRandomStreamPrivate_count,
+                          0, (i - start) / stride);
+
+          arr[i] <=> arr[start + k * stride];
+          i += stride;
+        }
+      }
+
       /* Randomly shuffle a 1-D array. */
-      proc shuffle(arr: [?D] ?eltType ) {
+      proc shuffle(arr: [?D] ?eltType, blockSize = 256) {
 
         if(!isRectangularArr(arr)) then
           compilerError("shuffle does not support non-rectangular arrays");
@@ -1176,36 +1227,24 @@ module Random {
         if D.rank != 1 then
           compilerError("Shuffle requires 1-D array");
 
-        const low = D.alignedLow,
-              stride = abs(D.stride);
+        const lo = D.alignedLow;
+        const hi = D.alignedHigh;
+        const stride = D.stride;
+        const size = (hi - lo) / stride + 1;
 
-        _lock();
-
-        // Fisher-Yates shuffle
-        for i in 0..#D.size by -1 {
-          var k = randlc_bounded(D.idxType,
-                                 PCGRandomStreamPrivate_rngs,
-                                 seed, PCGRandomStreamPrivate_count,
-                                 0, i);
-
-          var j = i;
-
-          // Strided case
-          if stride > 1 {
-            k *= stride;
-            j *= stride;
-          }
-
-          // Alignment offsets
-          k += low;
-          j += low;
-
-          arr[k] <=> arr[j];
+        forall i in lo..hi by (blockSize * stride) {
+          var l = i, r = min(hi, i + (blockSize - 1) * stride);
+          FisherYates(arr, l, r);
         }
-
-        PCGRandomStreamPrivate_count += D.size;
-
-        _unlock();
+        var numSize = blockSize * stride;
+        while (numSize / stride) < size {
+          forall it in lo..hi by (2 * numSize) {
+            var start = it, mid = it + numSize, n = min(hi, it + 2 * numSize - stride) + stride;
+            _Merge(arr, start, mid, n);
+          }
+          numSize += numSize;
+        }
+        
       }
 
       /* Produce a random permutation, storing it in a 1-D array.
