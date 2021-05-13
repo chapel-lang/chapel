@@ -43,12 +43,12 @@ class New : public Expression {
   /**
     Possible management flavors for a new expression.
   */
-  enum struct Management {
-    Borrowed,
-    Owned,
-    Shared,
-    Unmanaged,
-    None
+  enum Management {
+    DEFAULT_MANAGEMENT,
+    BORROWED,
+    OWNED,
+    SHARED,
+    UNMANAGED
   };
 
  private:
@@ -73,7 +73,7 @@ class New : public Expression {
     Returns the type expression of this new expression.
   */
   const Expression* typeExpression() const {
-    assert(children_.size());
+    assert(children_.size() > 0);
     return (const Expression*)children_[0].get();
   }
 

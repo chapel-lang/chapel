@@ -129,6 +129,7 @@ class Builder final {
   ASTList& mutableRefToChildren(ASTNode* ast) {
     return ast->children_;
   }
+  /// \endcond
 };
 
 } // end namespace uast

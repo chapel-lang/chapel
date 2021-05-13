@@ -59,7 +59,7 @@ static void test0(Parser* parser) {
   assert(fnCall->numActuals() == 0);
   assert(fnCall->calledExpression());
   const New* newExpr = fnCall->calledExpression()->toNew();
-  assert(newExpr->management() == New::Management::None);
+  assert(newExpr->management() == New::DEFAULT_MANAGEMENT);
   assert(newExpr->typeExpression()->isIdentifier());
 }
 
@@ -84,7 +84,7 @@ static void test1(Parser* parser) {
   assert(!fnCall->isNamedActual(1));
   assert(fnCall->calledExpression());
   const New* newExpr = fnCall->calledExpression()->toNew();
-  assert(newExpr->management() == New::Management::None);
+  assert(newExpr->management() == New::DEFAULT_MANAGEMENT);
   assert(newExpr->typeExpression()->isIdentifier());
 }
 
@@ -109,7 +109,7 @@ static void test2(Parser* parser) {
   assert(!fnCall->isNamedActual(1));
   assert(fnCall->calledExpression());
   const New* newExpr = fnCall->calledExpression()->toNew();
-  assert(newExpr->management() == New::Management::Owned);
+  assert(newExpr->management() == New::OWNED);
   assert(newExpr->typeExpression()->isIdentifier());
 }
 
@@ -134,7 +134,7 @@ static void test3(Parser* parser) {
   assert(!fnCall->isNamedActual(1));
   assert(fnCall->calledExpression());
   const New* newExpr = fnCall->calledExpression()->toNew();
-  assert(newExpr->management() == New::Management::Shared);
+  assert(newExpr->management() == New::SHARED);
   assert(newExpr->typeExpression()->isIdentifier());
 }
 
@@ -159,7 +159,7 @@ static void test4(Parser* parser) {
   assert(!fnCall->isNamedActual(1));
   assert(fnCall->calledExpression());
   const New* newExpr = fnCall->calledExpression()->toNew();
-  assert(newExpr->management() == New::Management::Borrowed);
+  assert(newExpr->management() == New::BORROWED);
   assert(newExpr->typeExpression()->isIdentifier());
 }
 
@@ -184,7 +184,7 @@ static void test5(Parser* parser) {
   assert(!fnCall->isNamedActual(1));
   assert(fnCall->calledExpression());
   const New* newExpr = fnCall->calledExpression()->toNew();
-  assert(newExpr->management() == New::Management::Unmanaged);
+  assert(newExpr->management() == New::UNMANAGED);
   assert(newExpr->typeExpression()->isIdentifier());
 }
 int main() {
