@@ -1,4 +1,4 @@
 parenthesis-less-function-string.chpl:2: error: unresolved call 'real(64).x'
-parenthesis-less-function-string.chpl:1: note: this candidate did not match: int.x
+parenthesis-less-function-string.chpl:1: note: this candidate did not match: int.xreturn
 parenthesis-less-function-string.chpl:2: note: because method call receiver with type 'real(64)'
 parenthesis-less-function-string.chpl:1: note: is passed to formal 'this: int(64)'
