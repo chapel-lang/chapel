@@ -1,0 +1,5 @@
+min_concept_auto_promote.chpl:18: In 'implements LessThan' statement:
+min_concept_auto_promote.chpl:18: error: when checking this implements statement
+min_concept_auto_promote.chpl:5: note: this implementation of the required function LT
+min_concept_auto_promote.chpl:18: note: has a non-void return type and needs to be promoted
+min_concept_auto_promote.chpl:2: note: the required function LT in the interface LessThan is declared here

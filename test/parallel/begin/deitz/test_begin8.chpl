@@ -1,17 +1,17 @@
 var s, t: sync bool;
 
 begin {
-  s = true;
+  s.writeEF(true);
 }
-s;
+s.readFE();
 
 begin {
-  s;
-  t = true;
+  s.readFE();
+  t.writeEF(true);
 }
 begin {
-  s = true;
+  s.writeEF(true);
 }
-t;
+t.readFE();
 
 writeln("finished");

@@ -4,17 +4,10 @@
 Using Chapel with libfabric
 ============================
 
-This document describes how to run Chapel across multiple machines using
+This document describes how to run Chapel across multiple compute nodes using
 the OpenFabrics Interfaces libfabric-based ``ofi`` communication layer.
 :ref:`readme-multilocale` gives general information about running Chapel
 in a multilocale configuration.
-
-.. note::
-  The ofi communication layer is new as of the Chapel 1.19 release.  It is
-  complete in terms of initial development and passes Chapel testing, but
-  it is still something of an early-access configuration in the sense that
-  users may need to supply supporting packages and performance may leave
-  something to be desired.
 
 Building Chapel with the ofi Communication Layer
 ++++++++++++++++++++++++++++++++++++++++++++++++
@@ -28,30 +21,31 @@ Building Chapel with the ofi Communication Layer
 
      export CHPL_COMM=ofi
 
-#. Set the variable indicating the path to a libfabric installation.
-   It may be possible to skip this step, if your system has libfabric
-   already installed and your target compiler can find its include and
-   library files itself.  But this is not common, so you will probably
-   need to do:
+#. Set the ``CHPL_LIBFABRIC`` environment variable indicating whether to
+   use a system-installed libfabric or the bundled one. Current options
+   are:
+
+       =======  ====================================================
+       Value     Description
+       =======  ====================================================
+       system   use a system install of libfabric
+       bundled  use the libfabric bundled with Chapel in third-party
+       =======  ====================================================
+
+   If unset, Chapel will attempt to find a libfabric installation using
+   the command
 
    .. code-block:: bash
 
-     export LIBFABRIC_DIR=<Place where libfabric is installed>
+     pkg-config --exists libfabric
 
-   The ``<Place where libfabric is installed>`` should be a directory with
-   an ``include/rdma`` subdirectory that contains the libfabric include
-   files and a ``lib`` subdirectory that contains the libfabric library
-   files.  If your system does not have those installed already, you will
-   need to download libfabric and possibly build it.
+   with the specific paths involved filled in using other pkg-config
+   options.  Note that in particular on HPE Cray EX systems, we expect
+   to always use a system-installed libfabric, so much so that if the
+   environment variable is set to 'bundled' or the default search fails
+   to find a libfabric on such systems, a warning will result.
 
-   Note: On a Mac OS X system, libfabric can be obtained through
-   Homebrew_ with the following command.
-
-   .. code-block:: bash
-
-     brew install libfabric
-
-#. Select a launcher.  On Cray XC systems you can skip this step,
+#. Select a launcher.  On Cray XC and HPE Cray EX systems you can skip this step,
    because on those systems the automatically-selected ``aprun`` or
    ``srun`` launcher settings will work with the ofi communication
    layer.  But on other systems, select the Chapel ``mpirun4ofi``
@@ -64,11 +58,11 @@ Building Chapel with the ofi Communication Layer
      export CHPL_LAUNCHER=mpirun4ofi
 
 
-#. Having done this, set the variable indicating the path to an OpenMPI
-   installation.  It may be possible to skip this step, if your system
-   has OpenMPI already installed and your target compiler can find its
-   include and library files itself.  But this is not common, so you
-   will probably need to do:
+#. If you are using the mpirun4ofi launcher, set the variable indicating
+   the path to an OpenMPI installation.  It may be possible to skip this
+   step, if your system has OpenMPI already installed and your target
+   compiler can find its include and library files itself.  But this is
+   not common, so you will probably need to do:
 
    .. code-block:: bash
 
@@ -85,7 +79,7 @@ Building Chapel with the ofi Communication Layer
      package in addition to supporting the OpenMPI MPI package, and to use
      the regular Chapel ``mpirun`` launcher with the ofi communication
      layer, but for now OpenMPI and mpirun4ofi are the only options on
-     platforms other than Cray XC systems.
+     platforms other than Cray XC and HPE Cray EX systems.
 
    Note: On a Mac OS X system, OpenMPI can be obtained through Homebrew_
    with the following command.
@@ -141,13 +135,13 @@ different providers:
     libfabric and gni will probably never match what can be achieved
     using the native ugni communication layer.
 
-  sockets
-    The ``sockets`` provider works on all platforms.  It is built on
-    POSIX sockets and communicates over any network interface on which
+  tcp
+    The ``tcp`` provider should work on all platforms.  It is built on
+    TCP sockets and communicates over any network interface on which
     the OS can provide sockets support.  This is the default provider on
-    all systems other than Cray XC.  The sockets provider is fully
+    all systems other than Cray XC and HPE Cray EX.  The tcp provider is fully
     functional, indeed to the extent libfabric has a reference provider
-    the sockets provider is it, but its emphasis is definitely
+    the tcp provider is it, but its emphasis is definitely
     functionality rather than performance.
 
   verbs
@@ -161,33 +155,35 @@ different providers:
     plus a utility provider which supports reliable datagrams for remote
     memory access operations.)
 
-The ``CHPL_RT_COMM_OFI_PROVIDER`` environment variable can be set to
-force use of a provider other than the default.  In particular, it can
-force use of the sockets provider on Cray XC systems, or the verbs
+The ``CHPL_RT_COMM_OFI_PROVIDER`` or ``FI_PROVIDER`` environment
+variables can be set to force use of a provider other than the default,
+with the former overriding the latter if both are set.  In particular,
+this can force use of the tcp provider on Cray XC systems, or the verbs
 provider on verbs-based systems where the default would otherwise be the
-sockets provider.  For example, the following would force use of the
-verbs provider:
+tcp provider.  For example, the following would force use of the verbs
+provider:
 
    .. code-block:: bash
 
      export CHPL_RT_COMM_OFI_PROVIDER=verbs
 
 The Chapel group has done full testing both on a Cray XC system with the
-gni and sockets providers, and on an InfiniBand-based system with the
-sockets and verbs providers.  Some additional testing has been done with
-the sockets provider on a MacBook running Mac OS X.  All of these
-configurations are expected to work.  Provider settings we have not
-tested with the ofi communication layer may lead to internal errors.
+gni and tcp providers, and on InfiniBand-based Cray CS and HPE Cray EX
+systems with the tcp and verbs providers.  Some additional testing has
+been done with the tcp provider on a MacBook running Mac OS X.  All of
+these configurations are expected to work.  Provider settings we have
+not tested with the ofi communication layer may lead to internal errors.
 Settings which are at odds with the available networks, such as
 specifying the gni provider on a vanilla Linux cluster, will definitely
 lead to internal errors.
 
-As the ofi communication layer evolves toward completion we expect to
-move from the current name-based technique for selecting the provider to
-a more capability-based one.  Users will probably still be able to force
-use of a particular provider by naming it, but the need to do so for
-other than curiosity's (or performance comparison's) sake should be
-reduced.
+Although the discussion here has revolved around selecting providers as
+such, in reality the selection is capability-based and precisely which
+provider ends up getting selected doesn't particularly matter to the
+communication layer.  There is no expectation that users or programmers
+should concern themselves with providers.  Providers are simply the
+mechanism of portability when using libfabric.
+
 
 The gni Provider, Memory Registration, and the Heap
 ___________________________________________________
@@ -238,10 +234,10 @@ layer and the libfabric gni provider.
 The mpirun4ofi Launcher
 _______________________
 
-Programs built with the ofi communication layer on Cray XC systems can
-use the existing launchers.  On other systems, for now they must use the
-``mpirun4ofi`` launcher, which is a provisional, thin wrapper around
-OpenMPI ``mpirun``.
+Programs built with the ofi communication layer on Cray XC and HPE Cray
+EX systems can use the existing launchers.  On other systems, for now
+they must use the ``mpirun4ofi`` launcher, which is a provisional, thin
+wrapper around OpenMPI ``mpirun``.
 
 The mpirun4ofi launcher can run libfabric-based Chapel programs either
 with or without slurm.  Outside of a slurm job, it will run all of the

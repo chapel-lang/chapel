@@ -778,8 +778,13 @@ module ChapelIO {
     if hasLowBound() then
       f <~> low;
     f <~> new ioLiteral("..");
-    if hasHighBound() then
-      f <~> high;
+    if hasHighBound() {
+      if (chpl__singleValIdxType(this.idxType) && this._low != this._high) {
+        f <~> new ioLiteral("<") <~> low;
+      } else {
+        f <~> high;
+      }
+    }
     if stride != 1 then
       f <~> new ioLiteral(" by ") <~> stride;
 
@@ -879,7 +884,7 @@ module ChapelIO {
   // (primitive types should support :string directly)
   pragma "no doc"
   pragma "last resort"
-  proc _cast(type t, x) where t == string && ! isPrimitiveType(x.type) {
+  operator :(x, type t:string) where !isPrimitiveType(x.type) {
     return stringify(x);
   }
 }

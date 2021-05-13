@@ -1,0 +1,40 @@
+.TH qthread_syncvar_empty/fill 3 "APRIL 2011" libqthread "libqthread"
+.SH NAME
+.BR qthread_syncvar_empty ,
+.B qthread_syncvar_fill
+\- sets the given syncvar to either "empty" or "full"
+.SH SYNOPSIS
+.B #include <qthread.h>
+
+.I int
+.br
+.B qthread_syncvar_empty
+.RI "(syncvar_t *" dest );
+.PP
+.I int
+.br
+.B qthread_syncvar_fill
+.RI "(syncvar_t *" dest );
+.SH DESCRIPTION
+The
+.BR qthread_syncvar_empty ()
+and
+.BR qthread_syncvar_fill ()
+functions assert the empty or full state of the given
+.I dest
+addresses. They do not wait for the addresses to be in any particular state.
+.SH RETURN VALUE
+On success, the full/empty bits are modified and 0 is returned. On error, an
+non-zero error code is returned.
+.SH ERRORS
+.TP 12
+.B QTHREAD_TIMEOUT
+Could not obtain the lock on the syncvar_t's status bits. This may be caused by
+many things, including memory corruption, invalid syncvar, or even absurdly
+excessive contention (because its protected by a naive spinlock rather than a
+fair spinlock).
+.SH SEE ALSO
+.BR qthread_syncvar_writeF (3),
+.BR qthread_syncvar_writeEF (3),
+.BR qthread_syncvar_readFF (3),
+.BR qthread_syncvar_readFE (3)

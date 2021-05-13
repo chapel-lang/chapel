@@ -29,11 +29,12 @@ struct fid_domain*    gasnetc_ofi_domainfd;
 struct fid_av*        gasnetc_ofi_avfd;
 struct fid_cq*        gasnetc_ofi_tx_cqfd; /* CQ for both AM and RDMA tx ops */
 struct fid_ep*        gasnetc_ofi_rdma_epfd;
-struct fid_mr*        gasnetc_ofi_rdma_mrfd;
 struct fid_ep*        gasnetc_ofi_request_epfd;
 struct fid_ep*        gasnetc_ofi_reply_epfd;
 struct fid_cq*        gasnetc_ofi_request_cqfd;
 struct fid_cq*        gasnetc_ofi_reply_cqfd;
+struct fid_mr*        gasnetc_segment_mrfd = NULL;
+struct fid_mr*        gasnetc_auxseg_mrfd = NULL;
 size_t gasnetc_ofi_bbuf_threshold;
 
 typedef struct gasnetc_ofi_recv_metadata {
@@ -56,19 +57,30 @@ static addr_table_t  *addr_table;
 #define GET_RDMA_DEST(dest) (fi_addr_t)((dest)*NUM_OFI_ENDPOINTS+2)
 #endif
 
+// TODO: multi-EP/multi-segment will require generalizing this (and callers)
+// CAUTION: macro arguments may be evaluated multiple times (or zero)
 #if GASNET_SEGMENT_FAST || GASNET_SEGMENT_LARGE
-#define GET_REMOTEADDR(remote_addr, dest) (uintptr_t)((char*)remote_addr - (char*)gasneti_seginfo[dest].addr)
+#define GASNETC_OFI_IS_AUX(_addr,jobrank) \
+        ((uintptr_t)(_addr) - (uintptr_t)gasneti_seginfo_aux[jobrank].addr < gasneti_seginfo_aux[jobrank].size)
+#define GET_REMOTEADDR_AUX(remote_addr, jobrank, is_auxseg) \
+        ((uintptr_t)remote_addr - \
+         (uintptr_t)((is_auxseg) ? gasneti_seginfo_aux[jobrank].addr : gasneti_seginfo[jobrank].addr))
+#define GET_REMOTEADDR(remote_addr, jobrank) \
+        GET_REMOTEADDR_AUX(remote_addr, jobrank, GASNETC_OFI_IS_AUX(remote_addr, jobrank))
 #else
-#define GET_REMOTEADDR(remote_addr, dest) (uintptr_t)remote_addr
+#define GASNETC_OFI_IS_AUX(addr,jobrank) 0
+#define GET_REMOTEADDR_AUX(remote_addr, jobrank, is_auxseg) ((uintptr_t)remote_addr)
+#define GET_REMOTEADDR(remote_addr, jobrank) ((uintptr_t)remote_addr)
 #endif
 
 
 #define SCALABLE_NOT_AUTO_DETECTED (-1)
 
 static short has_mr_scalable = SCALABLE_NOT_AUTO_DETECTED;
-/* This pointer will only be malloced if GASNETC_OFI_HAS_MR_SCALABLE is
- * true at runtime */
+/* These two pointers will only be malloced if GASNETC_OFI_HAS_MR_SCALABLE is
+ * false at runtime */
 static uint64_t* gasnetc_ofi_target_keys;
+static uint64_t* gasnetc_ofi_target_aux_keys;
 #ifndef GASNETC_OFI_HAS_MR_SCALABLE
 #define GASNETC_OFI_HAS_MR_SCALABLE has_mr_scalable
 #endif
@@ -77,30 +89,35 @@ static uint64_t* gasnetc_ofi_target_keys;
 #define GET_REMOTEADDR_PER_MR_MODE(dest_addr, dest)\
     GASNETC_OFI_HAS_MR_SCALABLE ? GET_REMOTEADDR(dest_addr, dest) : (uintptr_t)dest_addr
 
-#define GASNETC_OFI_GET_MR_KEY(dest) (gasneti_assert(!GASNETC_OFI_HAS_MR_SCALABLE),\
-        gasnetc_ofi_target_keys[dest])
+#define GASNETC_OFI_GET_MR_KEY_AUX(jobrank,is_auxseg) (gasneti_assert(!GASNETC_OFI_HAS_MR_SCALABLE),\
+        (is_auxseg) ? gasnetc_ofi_target_aux_keys[jobrank] \
+                    : gasnetc_ofi_target_keys[jobrank])
+#define GASNETC_OFI_GET_MR_KEY(addr,jobrank) (gasneti_assert(!GASNETC_OFI_HAS_MR_SCALABLE),\
+        GASNETC_OFI_GET_MR_KEY_AUX(jobrank,GASNETC_OFI_IS_AUX(addr,jobrank)))
 
 #define OFI_WRITE(ep, src_addr, nbytes, dest, dest_addr, ctxt_ptr)\
     do {\
+        int _is_auxseg = GASNETC_OFI_IS_AUX(dest_addr, dest); /* also the SCALABLE key */\
         if (GASNETC_OFI_HAS_MR_SCALABLE){\
             ret = fi_write(ep, src_addr, nbytes, NULL, GET_RDMA_DEST(dest), \
-                GET_REMOTEADDR(dest_addr, dest), 0, ctxt_ptr);\
+                GET_REMOTEADDR_AUX(dest_addr, dest, _is_auxseg), _is_auxseg, ctxt_ptr);\
         }\
         else {\
             ret = fi_write(ep, src_addr, nbytes, NULL, GET_RDMA_DEST(dest), \
-                (uintptr_t)dest_addr, GASNETC_OFI_GET_MR_KEY(dest), ctxt_ptr);\
+                (uintptr_t)dest_addr, GASNETC_OFI_GET_MR_KEY_AUX(dest,_is_auxseg), ctxt_ptr);\
         }\
     } while(0)
 
 #define OFI_READ(ep, dest_buf, nbytes, src, src_addr, ctxt_ptr)\
     do {\
+        int _is_auxseg = GASNETC_OFI_IS_AUX(src_addr, src); /* also the SCALABLE key */\
         if (GASNETC_OFI_HAS_MR_SCALABLE) {\
             ret = fi_read(ep, dest_buf, nbytes, NULL, GET_RDMA_DEST(src), \
-                GET_REMOTEADDR(src_addr, src), 0, ctxt_ptr);\
+                GET_REMOTEADDR_AUX(src_addr, src, _is_auxseg), _is_auxseg, ctxt_ptr);\
         }\
         else {\
             ret = fi_read(ep, dest_buf, nbytes, NULL, GET_RDMA_DEST(src), \
-                (uintptr_t)src_addr, GASNETC_OFI_GET_MR_KEY(dest),ctxt_ptr);\
+                (uintptr_t)src_addr, GASNETC_OFI_GET_MR_KEY_AUX(src, _is_auxseg),ctxt_ptr);\
         }\
     } while(0)
 
@@ -640,8 +657,8 @@ done:
   fi_freeinfo(hints);
 
   if (!GASNETC_OFI_HAS_MR_SCALABLE) {
-      gasnetc_ofi_target_keys = gasneti_malloc(sizeof(uint64_t)*gasneti_nodes);
-      gasneti_assert(gasnetc_ofi_target_keys);
+      gasnetc_ofi_target_keys = gasneti_calloc(2*gasneti_nodes, sizeof(uint64_t));
+      gasnetc_ofi_target_aux_keys = gasnetc_ofi_target_keys + gasneti_nodes;
   }
 
   receive_region_start = gasneti_malloc_aligned(GASNETI_PAGESIZE, multirecv_buff_size*num_multirecv_buffs);
@@ -768,8 +785,24 @@ void gasnetc_ofi_exit(void)
     gasneti_fatalerror("close rdma epfd failed\n");
   }
 
-  if(fi_close(&gasnetc_ofi_rdma_mrfd->fid)!=FI_SUCCESS) {
+#if GASNET_SEGMENT_FAST || GASNET_SEGMENT_LARGE
+  GASNETI_SEGTBL_LOCK();
+    gasneti_Segment_t seg;
+    GASNETI_SEGTBL_FOR_EACH(seg) {
+      struct fid_mr* mrfd = ((gasnetc_Segment_t)seg)->mrfd;
+      if(mrfd && (fi_close(&mrfd->fid)!=FI_SUCCESS)) {
+        gasneti_fatalerror("close mrfd failed\n");
+      }
+    }
+  GASNETI_SEGTBL_UNLOCK();
+#else
+  if(gasnetc_segment_mrfd && (fi_close(&gasnetc_segment_mrfd->fid)!=FI_SUCCESS)) {
     gasneti_fatalerror("close mrfd failed\n");
+  }
+#endif
+
+  if (gasnetc_auxseg_mrfd && (fi_close(&gasnetc_auxseg_mrfd->fid) != FI_SUCCESS)) {
+    gasneti_fatalerror("close auxseg mrfd failed\n");
   }
 
   if(fi_close(&gasnetc_ofi_tx_cqfd->fid)!=FI_SUCCESS) {
@@ -974,33 +1007,96 @@ void gasnetc_ofi_handle_bounce_rdma(void *buf)
 /*------------------------------------------------
  * Pre-post or pin-down memory
  * ----------------------------------------------*/
-void gasnetc_ofi_attach(void *segbase, uintptr_t segsize)
-{
-	int ret = FI_SUCCESS;
-    uint64_t local_mr_key;
 
-	/* Pin-down Memory Region */
+// Local registration of segment memory
+int gasnetc_segment_register(gasnetc_Segment_t segment)
+{
 #if GASNET_SEGMENT_FAST || GASNET_SEGMENT_LARGE
-	ret = fi_mr_reg(gasnetc_ofi_domainfd, segbase, segsize, FI_REMOTE_READ | FI_REMOTE_WRITE, 0ULL, 0ULL, 0ULL, &gasnetc_ofi_rdma_mrfd, NULL);
+    void *segbase = segment->_addr;
+    uintptr_t segsize = segment->_size;
+    struct fid_mr** mrfd_p = &segment->mrfd;
 #else
-	ret = fi_mr_reg(gasnetc_ofi_domainfd, (void *)0, UINT64_MAX, FI_REMOTE_READ | FI_REMOTE_WRITE, 0ULL, 0ULL, 0ULL, &gasnetc_ofi_rdma_mrfd, NULL);
+    void *segbase = (void *)0;
+    uintptr_t segsize = UINT64_MAX;
+    struct fid_mr** mrfd_p = &gasnetc_segment_mrfd;
     if (!GASNETC_OFI_HAS_MR_SCALABLE) {
         gasneti_fatalerror("GASNET_SEGMENT_EVERYTHING is not supported when using FI_MR_BASIC.\n"
                            "Pick an OFI provider that supports FI_MR_SCALABLE if EVERYTHING\n"
                            "is needed.\n");
     }
 #endif
-	if (FI_SUCCESS != ret) gasneti_fatalerror("fi_mr_reg for rdma failed: %d\n", ret);
-
-    /* Exchange memory keys with other nodes.*/
-    if (!GASNETC_OFI_HAS_MR_SCALABLE) {
-        local_mr_key = fi_mr_key(gasnetc_ofi_rdma_mrfd);
-        gasneti_bootstrapExchange(&local_mr_key, sizeof(uint64_t),
-                gasnetc_ofi_target_keys);
+    int ret = fi_mr_reg(gasnetc_ofi_domainfd, segbase, segsize,
+                        FI_REMOTE_READ | FI_REMOTE_WRITE, 0ULL, 0ULL, 0ULL,
+                        mrfd_p, NULL);
+    if (FI_SUCCESS != ret) {
+      gasneti_fatalerror("fi_mr_reg for rdma failed: %d(%s)\n", ret, fi_strerror(-ret));
     }
 
+    return GASNET_OK;
 }
 
+// Exchange memory keys with other nodes.
+void gasnetc_segment_exchange(gex_TM_t tm, gex_EP_t *eps, size_t num_eps)
+{
+  if (GASNETC_OFI_HAS_MR_SCALABLE) return;
+
+  // Exchange a 64-bit mr key
+  struct exchg_data {
+    gex_EP_Location_t loc;
+    uint64_t mr_key;
+  } *local, *global, *p;
+
+  size_t elem_sz = sizeof(struct exchg_data);
+  local = gasneti_malloc(num_eps * elem_sz);
+
+  // Pack
+  p = local;
+  for (gex_Rank_t i = 0; i < num_eps; ++i) {
+    gex_EP_t ep = eps[i];
+    gasnetc_Segment_t segment = (gasnetc_Segment_t) gasneti_import_ep(ep)->_segment;
+    if (! segment) continue;
+    p->loc.gex_rank = gasneti_mynode;
+    p->loc.gex_ep_index = gex_EP_QueryIndex(ep);
+    p->mr_key = fi_mr_key(segment->mrfd);
+    ++p;
+  }
+
+  size_t local_bytes = elem_sz * (p - local);
+  size_t total_bytes = gasneti_blockingRotatedExchangeV(tm, local, local_bytes, (void**)&global, NULL);
+  size_t total_eps = total_bytes / elem_sz;
+  gasneti_free(local);
+
+  // Unpack
+  p = global;
+  for (size_t i = 0; i < total_eps; ++i, ++p) {
+    gex_Rank_t jobrank = p->loc.gex_rank;
+    if (! p->loc.gex_ep_index ) { // Primordial EP (includes loopback)
+      gasneti_assert(!gasnetc_ofi_target_keys[jobrank] ||
+                     gasnetc_ofi_target_keys[jobrank] == p->mr_key);
+      gasnetc_ofi_target_keys[jobrank] = p->mr_key;
+    } else {
+      // Non-primordial
+      gasneti_unreachable_error(("gex_EP_PublishBoundSegment does not yet handle non-primordial EPs"));
+    }
+  }
+  gasneti_free(global);
+}
+
+void gasnetc_auxseg_register(gasnet_seginfo_t si)
+{
+  int ret = fi_mr_reg(gasnetc_ofi_domainfd, si.addr, si.size,
+                      FI_REMOTE_READ | FI_REMOTE_WRITE, 0ULL, 1ULL, 0ULL,
+                      &gasnetc_auxseg_mrfd, NULL);
+  if (FI_SUCCESS != ret) {
+    gasneti_fatalerror("fi_mr_reg for aux_seg failed: %d(%s)\n", ret, fi_strerror(-ret));
+  }
+
+  if (GASNETC_OFI_HAS_MR_SCALABLE) return;
+
+  uint64_t mr_key = fi_mr_key(gasnetc_auxseg_mrfd);
+  gasneti_assert(gasnetc_ofi_target_aux_keys);
+  gasneti_bootstrapExchange(&mr_key, sizeof(mr_key), gasnetc_ofi_target_aux_keys);
+}
 
 /*------------------------------------------------
  * OFI conduit network poll function
@@ -1436,7 +1532,7 @@ int gasnetc_rdma_put_non_bulk(gex_Rank_t dest, void* dest_addr, void* src_addr,
         iovec.iov_len = nbytes;
         rma_iov.addr = dest_ptr;
         rma_iov.len = nbytes;
-        rma_iov.key = GASNETC_OFI_HAS_MR_SCALABLE ? 0 : GASNETC_OFI_GET_MR_KEY(dest);
+        rma_iov.key = GASNETC_OFI_GET_MR_KEY(dest_addr, dest);
 
         msg.context = ctxt_ptr;
         msg.msg_iov = &iovec;

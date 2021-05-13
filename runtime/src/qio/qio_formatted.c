@@ -3245,7 +3245,7 @@ int _ftoa_core(char* buf, size_t buf_sz, double num,
           //It can also be done starting from the number itself
           //but this way avoids to deal with the loss of precision
           //caused by floating point representation
-          if(buf_sz > 0)
+          if(got >= 0 && got < buf_sz)
             got = snprintf(buf, buf_sz, "%.*E",_find_prec(buf, got), num);
         }
         else
@@ -3253,7 +3253,7 @@ int _ftoa_core(char* buf, size_t buf_sz, double num,
       } else {
         if(num >= 100000.0 && num < 1000000.0){
           got = snprintf(buf, buf_sz, "%.5e", num);
-          if(buf_sz > 0)
+          if(got >= 0 && got < buf_sz)
             got = snprintf(buf, buf_sz, "%.*e",_find_prec(buf, got), num);
         }
         else
@@ -4506,7 +4506,7 @@ static const char* upper_hex_num = "0123456789ABCDEF";
 static const char* hex_num = "0123456789ABCDEFabcdef";
 static const char* pound_conv = "#.";*/
 static const char* lit_chars = "% \f\n\r\t\v";
-static const char* regexp_flag_chars = "imsU";
+static const char* regex_flag_chars = "imsU";
 
 static inline int istype(char x, const char* allow)
 {
@@ -4529,9 +4529,9 @@ void qio_conv_init(qio_conv_t* spec_out)
   memset(spec_out, 0, sizeof(qio_conv_t));
 }
 
-int _qio_regexp_flags_then_rcurly(const char* ptr, int * len);
+int _qio_regex_flags_then_rcurly(const char* ptr, int * len);
 
-int _qio_regexp_flags_then_rcurly(const char* ptr, int * len)
+int _qio_regex_flags_then_rcurly(const char* ptr, int * len)
 {
   int i = 0;
   while( ptr[i] ) {
@@ -4540,7 +4540,7 @@ int _qio_regexp_flags_then_rcurly(const char* ptr, int * len)
       *len = i;
       return 1;
     }
-    if( ! istype(ptr[i], regexp_flag_chars) ) break;
+    if( ! istype(ptr[i], regex_flag_chars) ) break;
     i++;
   }
   *len = i;
@@ -5012,14 +5012,14 @@ qioerr qio_conv_parse(c_string fmt,
           // Next argument contains the RE to match
           i++; // pass *
           i++; // pass '/'
-          spec_out->argType = QIO_CONV_ARG_TYPE_REGEXP;
+          spec_out->argType = QIO_CONV_ARG_TYPE_REGEX;
         } else {
           // RE right here
           int start = i;
           int end;
           int flagslen = 0;
           int flagsstart = 0;
-          spec_out->argType = QIO_CONV_ARG_TYPE_NONE_REGEXP_LITERAL;
+          spec_out->argType = QIO_CONV_ARG_TYPE_NONE_REGEX_LITERAL;
           // read until '/' or, if we are in a group,
           // from the '%{/' to the '/}'
           if( in_group ) {
@@ -5038,7 +5038,7 @@ qioerr qio_conv_parse(c_string fmt,
               if( curlydepth == 0 &&
                   fmt[i-1] != '\\' &&
                   fmt[i] == '/' &&
-                  _qio_regexp_flags_then_rcurly(&fmt[i+1], &flagslen) ) {
+                  _qio_regex_flags_then_rcurly(&fmt[i+1], &flagslen) ) {
                 // OK!
                 break;
               }
@@ -5058,13 +5058,13 @@ qioerr qio_conv_parse(c_string fmt,
             end = i;
             i++; // pass the final '/'
           }
-          // Now, from start...i is the literal regexp.
+          // Now, from start...i is the literal regex.
           // and from i+1..flagslen is the flags
           //  (if flagslen > 0)
-          spec_out->regexp_length = end - start;
-          spec_out->regexp = (int8_t*) &fmt[start];
-          spec_out->regexp_flags_length = flagslen;
-          spec_out->regexp_flags = (int8_t*) &fmt[flagsstart];
+          spec_out->regex_length = end - start;
+          spec_out->regex = (int8_t*) &fmt[start];
+          spec_out->regex_flags_length = flagslen;
+          spec_out->regex_flags = (int8_t*) &fmt[flagsstart];
         }
       }
     } else if( specifier == 't' ) {
@@ -5217,19 +5217,16 @@ qioerr qio_format_error_arg_mismatch(int64_t arg)
    return err;
 }
 
-qioerr qio_format_error_bad_regexp(void)
+qioerr qio_format_error_bad_regex(void)
 {
    qioerr err;
    QIO_GET_CONSTANT_ERROR(err, EINVAL, "Bad regular expression in format string");
    return err;
 }
 
-qioerr qio_format_error_write_regexp(void)
+qioerr qio_format_error_write_regex(void)
 {
    qioerr err;
    QIO_GET_CONSTANT_ERROR(err, EINVAL, "Regular expressions are not supported in writef format strings");
    return err;
 }
-
-
-

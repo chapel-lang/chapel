@@ -22,7 +22,7 @@ Initializing Modules:
            ChapelLocks
            IO
             FormattedIO
-             Regexp
+             Regex
           MSBRadixSort
            RadixSortHelp
            ShellSort

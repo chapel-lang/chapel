@@ -454,6 +454,20 @@ all:
       config: 16-node-xc, 16-node-cs
   11/19/20:
     - Improve the speed of tracking arrays declared over a domain (#16740)
+  02/01/21:
+    - Enable the cache for remote data by default (#17044)
+  03/18/21:
+    - text: Improve NUMA affinity and startup times for configs that use a fixed heap (#17405)
+      config: 16-node-xc, 16-node-cs, 16-node-cs-hdr
+    - text: Set the number of launcher cores per locale for Cray CS perf testing (#17407)
+      config: 16-node-cs
+  03/30/21:
+    - text: OS upgrade
+      config: 16-node-cs-hdr
+  04/01/21:
+    - text: Upgrade to GASNet-EX 2021.3.0 (#17505)
+      config: 16-node-cs, 16-node-cs-hdr
+
 # End all
 
 AllCompTime: &timecomp-base
@@ -496,6 +510,11 @@ AllCompTime: &timecomp-base
     - Remove calls to getUserInstantiationPoint (#15051)
   06/11/20:
     - Fix split init of const variables and update lvalue errors (#15800)
+  02/17/21:
+    - GPU code generation (#17116)
+  02/25/21:
+    - Restore timing for makeBinary (#17253)
+    - Stop converting PRIM_ZIP to tuples for forall statements (#17212)
 
 allocate:
   06/11/20:
@@ -599,6 +618,8 @@ binarytrees-submitted:
 blackscholes:
   10/21/16:
     - Improvements to scalarReplace, refPropagation and copyPropagation (#4761)
+  01/06/21:
+    - Remove lots of inlines in IO.chpl for non-trivial procedures (#16887)
 
 blackscholes_promote:
   10/21/16:
@@ -720,6 +741,10 @@ distCreate-arrays-deinit.cc-perf: &distCreate-base
     - Make locale-related comm improvements (#15288)
   06/02/20:
     - Address performance issues with stencil and block-cyclic array init (#15741)
+  03/23/21:
+    - A few communication micro-optimizations to improve Block array creation (#17354)
+  04/07/21:
+    - Revert a recent change in block array creation that caused performance regression (#17531)
 
 distCreate-arrays-init.cc-perf:
   <<: *distCreate-base
@@ -858,6 +883,8 @@ fastaredux:
     - Optimize enum->int casts for concrete types (#10308)
   01/29/20:
     - Propagate user thrown errors out of IO routines (#14739)
+  01/06/21:
+    - Remove lots of inlines in IO.chpl for non-trivial procedures (#16887)
 
 fft:
   05/15/19:
@@ -1369,6 +1396,20 @@ memleaksfull:
     - Fix memory leak for classes/io/classToString (#16949)
   01/26/21:
     - Support fixed sized arrays of tuples containing non-nilable classes (#16802)
+  02/21/21:
+    - CG enable return types and calling required functions (#17197)
+  02/25/21:
+    - Deprecate regexp ok and error() methods (#17245)
+  03/02/21:
+    - File tests locking in fixes to issue #14226 (#17291)
+  03/03/21:
+    - Fix some issues with new tests locking in bug fixes (#17320)
+  03/24/21:
+    - Add module OrderedMap (#16271)
+  03/26/21:
+    - Two fixes in OrderedMap (#17463)
+  03/27/21:
+    - CG Adjust in-intent handling to fix a memleak (#17480)
 # End memleaksfull
 
 meteor:
@@ -1621,6 +1662,8 @@ regexdna: &regexdna-base
     - Add support for escaping non-UTF8 sequences in strings (#14743)
   06/11/20:
     - Add a field to the string record to store a cached size (#15758)
+  02/24/21:
+    - Upgrade to re2 2021-02-02 (#17230)
 regexdna-redux:
   <<: *regexdna-base
 regexdna-submitted:
@@ -1765,6 +1808,11 @@ split-whitespace-perf:
 SSCA2_main:
   06/12/13:
     - Initial support for hierarchical locales (21480)
+
+SSCA2_main.ml-perf:
+  11/03/20:
+    - text: Do fewer GETs to force PUTs into a visible state, and do them later (#16634)
+      config: 16-node-cs
 
 STREAM_study_fragmented:
   09/06/13:
@@ -1921,6 +1969,8 @@ time_iterate:
 time-write:
   03/05/15:
     - no strings with externs update
+  01/06/21:
+    - Remove lots of inlines in IO.chpl for non-trivial procedures (#16887)
 
 timeMapMinusEqual:
   07/10/20:
@@ -2018,6 +2068,11 @@ compilerAndTestingStats: &compiler-perf-base
     - Refactor string iterators to reduce generated code size (#16266)
   09/03/20:
     - Improve string to numerical casts' compilation and execution performance (#16278)
+  02/17/21:
+    - GPU code generation (#17116)
+  02/25/21:
+    - Restore timing for makeBinary (#17253)
+    - Stop converting PRIM_ZIP to tuples for forall statements (#17212)
 
 allTotalTime:
   <<: *compiler-perf-base
@@ -2064,7 +2119,24 @@ arkouda: &arkouda-base
     - Optimize scans by using noinit for the result array (#16919)
   01/15/21:
     - Optimize int64 prod reduce (mhmerrill/arkouda#628)
+  02/12/21:
+    - 624 convert message format to json (mhmerrill/arkouda#639)
+  02/16/21:
+    - Optimize string argsort (mhmerrill/arkouda#671)
+  02/18/21:
+    - Increase the problem size for string benchmarks (mhmerrill/arkouda#676)
+  02/19/21:
+    - Skip long string partitioning in string argsort (mhmerrill/arkouda#681)
+  03/23/21:
+    - A few communication micro-optimizations to improve Block array creation (#17354)
+  03/25/21:
+    - fix groupby benchmark bug (mhmerrill/arkouda#712)
+  04/07/21:
+    - Increase the aggregation buffer sizes for non-ugni configurations (mhmerrill/arkouda#732)
+    - Revert a recent change in block array creation that caused performance regression (#17531)
 
+arkouda-string:
+  <<: *arkouda-base
 
 arkouda-comp:
   <<: *arkouda-base
@@ -2082,3 +2154,5 @@ arkouda-comp:
     - Stop inlining many string casts (#16355)
   09/17/20:
     - Fix some issues with constant domain optimization (#16397)
+  02/25/21:
+    - Stop converting PRIM_ZIP to tuples for forall statements (#17212)

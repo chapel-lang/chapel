@@ -47,4 +47,7 @@ proc main() {
   var deltaABACnt = atomicObj.readABA().getABACount() - currABACnt;
   writeln(deltaABACnt);
   assert(deltaABACnt == 1024 * 1024);
+
+  delete x;
+  delete w;
 }

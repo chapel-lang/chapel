@@ -1,0 +1,3 @@
+issue-17196.chpl:12: In function 'acceptTwoRs':
+issue-17196.chpl:18: error: Split initialization uses multiple types; another initialization has type 2*R but this initialization has type 2*R
+  issue-17196.chpl:23: called as acceptTwoRs(arg: 2*R)

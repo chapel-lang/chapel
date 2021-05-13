@@ -25,8 +25,8 @@
 
 class CollapseBlocks final : public AstVisitor {
 public:
-   CollapseBlocks();
-  ~CollapseBlocks();
+   CollapseBlocks()          = default;
+  ~CollapseBlocks() override = default;
 
   //
   // The sub-classes of Type

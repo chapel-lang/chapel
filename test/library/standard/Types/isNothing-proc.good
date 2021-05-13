@@ -1,0 +1,8 @@
+nothing true true
+int(64) false false
+string false false
+bool false false
+bytes false false
+real(64) false false
+imag(64) false false
+complex(128) false false

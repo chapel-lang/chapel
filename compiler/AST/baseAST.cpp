@@ -362,12 +362,7 @@ BaseAST::BaseAST(AstTag type) :
   }
 }
 
-
 const std::string BaseAST::tabText = "   ";
-
-
-BaseAST::~BaseAST() {
-}
 
 int BaseAST::linenum() const {
   return astloc.lineno;
@@ -378,11 +373,7 @@ const char* BaseAST::fname() const {
 }
 
 const char* BaseAST::stringLoc(void) const {
-  const int tmpBuffSize = 256;
-  char tmpBuff[tmpBuffSize];
-
-  snprintf(tmpBuff, tmpBuffSize, "%s:%d", fname(), linenum());
-  return astr(tmpBuff);
+  return astloc.stringLoc();
 }
 
 
@@ -644,7 +635,6 @@ void update_symbols(BaseAST* ast, SymbolMap* map) {
       if (LabelSymbol* y = toLabelSymbol(map->get(forall->fErrorHandlerLabel)))
           forall->fErrorHandlerLabel = y;
     }
-
   } else if (VarSymbol* ps = toVarSymbol(ast)) {
     SUB_TYPE(ps->type);
 

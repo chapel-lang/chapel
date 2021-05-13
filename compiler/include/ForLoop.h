@@ -68,17 +68,18 @@ private:
   // Instance Interface
   //
 public:
+
+                        ~ForLoop() override = default;
                          ForLoop(VarSymbol* index,
                                  VarSymbol* iterator,
                                  BlockStmt* initBody,
                                  bool       zippered,
                                  bool       isLoweredForall,
                                  bool       isForExpr);
-                        ~ForLoop();
 
   DECLARE_COPY(ForLoop);
   ForLoop* copyInner(SymbolMap* map) override;
- 
+
   GenRet         codegen()                                         override;
   void           verify()                                          override;
   void           accept(AstVisitor* visitor)                       override;
@@ -88,7 +89,9 @@ public:
   Expr*          getFirstExpr()                                    override;
   Expr*          getNextExpr(Expr* expr)                           override;
 
-  bool           isForLoop()                                 const override;
+  bool           isForLoop()                                 const override
+                 { return true; }
+
   bool           isCoforallLoop()                            const override;
 
   bool           deadBlockCleanup()                                override;
@@ -128,4 +131,3 @@ private:
 };
 
 #endif
-

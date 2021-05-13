@@ -137,6 +137,13 @@ enum ShadowVarPrefix {
   SVP_VAR,
 };
 
+// Ensures consistent iteration order over std::map<const char*,...>
+struct CharStarComparator {
+  bool operator()(const char* lhs, const char* rhs) const {
+    return strcmp(lhs, rhs) < 0;
+  }
+};
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -232,11 +239,9 @@ protected:
                             const char* init_name,
                             Type*       init_type = dtUnknown);
 
-  virtual           ~Symbol();
+                    ~Symbol() override;
 
 private:
-                     Symbol();
-
   virtual void       codegenPrototype(); // ie type decl
   virtual Symbol*    copyInner(SymbolMap* map) = 0;
 
@@ -285,10 +290,9 @@ protected:
                       const char* initName,
                       Type*       initType);
 
-  virtual  ~LcnSymbol();
+           ~LcnSymbol() override = default;
 
 private:
-            LcnSymbol();
 
   int       mDepth;                // Lexical depth relative to root
   int       mOffset;               // Byte offset within frame
@@ -309,7 +313,7 @@ public:
   //changed isconstant flag to reflect var, const, param: 0, 1, 2
   VarSymbol(const char* init_name, Type* init_type = dtUnknown);
   VarSymbol(const char* init_name, QualifiedType qType);
-  virtual ~VarSymbol();
+ ~VarSymbol() override;
 
   void   verify()                                            override;
   void   accept(AstVisitor* visitor)                         override;
@@ -587,13 +591,21 @@ public:
   void  replaceChild(BaseAST* oldAst, BaseAST* newAst)   override;
   void  printDocs(std::ostream* file, unsigned int tabs);
 
-  int   numFormals() const { return ifcFormals.length; }
+  int   numFormals()   const { return ifcFormals.length; }
+  int   numAssocCons() const { return associatedConstraints.size(); }
 
   // the DefExprs for each interface formal
   AList      ifcFormals;
 
   // the body block of the interface declaration, always non-null
   BlockStmt* ifcBody;
+
+  // maps name to the ConstrainedType for an associated type
+  // their DefExprs are in ifcBody
+  std::map<const char*, ConstrainedType*, CharStarComparator> associatedTypes;
+
+  // constraints to be checked for each implementation
+  std::vector<IfcConstraint*> associatedConstraints;
 
   // each FnSymbol for the interface's required function is mapped
   //  - to itself, if there is a default implementation
@@ -743,6 +755,7 @@ extern const char* astrSgte;    // >=
 extern const char* astrSlt;     // <
 extern const char* astrSlte;    // <=
 extern const char* astrSswap;   // <=>
+extern const char* astrScolon;  // :
 extern const char* astr_cast;
 extern const char* astr_defaultOf;
 extern const char* astrInit;
@@ -769,6 +782,8 @@ extern const char* astr_initCopy;
 extern const char* astr_coerceCopy;
 extern const char* astr_coerceCopy;
 extern const char* astr_coerceMove;
+
+bool isAstrOpName(const char* name);
 
 void initAstrConsts();
 
@@ -879,7 +894,15 @@ void printLlvmIr(const char* name, llvm::Function *func, llvmStageNum_t numStage
 void preparePrintLlvmIrForCodegen();
 void completePrintLlvmIrStage(llvmStageNum_t numStage);
 
-const char* toString(ArgSymbol* arg, bool withType);
+const char* toString(ArgSymbol* arg, bool withTypeAndIntent);
 const char* toString(VarSymbol* var, bool withType);
+const char* toString(Symbol* sym, bool withTypeAndIntent);
+
+struct SymbolMapKeyValue {
+  Symbol *key, *value;
+  SymbolMapKeyValue(Symbol* k, Symbol* v): key(k), value(v) { }
+};
+typedef std::vector<SymbolMapKeyValue> SymbolMapVector;
+SymbolMapVector sortedSymbolMapElts(const SymbolMap& map);
 
 #endif

@@ -15,13 +15,19 @@
   #error "VAPI-conduit is no longer supported"
 #endif
 
-#define GASNET_CORE_VERSION      2.5
+#define GASNET_CORE_VERSION      2.7
 #define GASNET_CORE_VERSION_STR  _STRINGIFY(GASNET_CORE_VERSION)
 #define GASNET_CORE_NAME         IBV
 #define GASNET_CORE_NAME_STR     _STRINGIFY(GASNET_CORE_NAME)
 #define GASNET_CONDUIT_NAME      GASNET_CORE_NAME
 #define GASNET_CONDUIT_NAME_STR  _STRINGIFY(GASNET_CONDUIT_NAME)
 #define GASNET_CONDUIT_IBV       1
+
+#if defined(GASNET_SEGMENT_FAST)
+  #define GASNETC_PIN_SEGMENT 1
+#else
+  #define GASNETC_PIN_SEGMENT 0
+#endif
 
 // Size of a buffer to contain any AM with all its header, padding and payload
 #define GASNETC_BUFSZ GASNETC_IBV_MAX_MEDIUM
@@ -53,6 +59,9 @@
 #define GASNETI_SUPPORTS_OUTOFSEGMENT_PUTGET 1
 #endif
 
+  // uncomment for each MK_CLASS which the conduit supports. leave commented otherwise
+#define GASNET_HAVE_MK_CLASS_CUDA_UVA (GASNETI_MK_CLASS_CUDA_UVA_ENABLED && GASNET_SEGMENT_FAST)
+
   /* conduits should define GASNETI_CONDUIT_THREADS to 1 if they have one or more 
      "private" threads which may be used to run AM handlers, even under GASNET_SEQ
      this ensures locking is still done correctly, etc
@@ -81,22 +90,27 @@
      your conduit must provide the V-suffixed functions for any of these that
      are not defined.
    */
-#define GASNETC_HAVE_NP_REQ_MEDIUM 1
-#define GASNETC_HAVE_NP_REP_MEDIUM 1
-/* #define GASNETC_HAVE_NP_REQ_LONG 1 */
-/* #define GASNETC_HAVE_NP_REP_LONG 1 */
+#define GASNET_NATIVE_NP_ALLOC_REQ_MEDIUM 1
+#define GASNET_NATIVE_NP_ALLOC_REP_MEDIUM 1
+#if GASNETC_PIN_SEGMENT
+#define GASNET_NATIVE_NP_ALLOC_REQ_LONG 1
+#define GASNET_NATIVE_NP_ALLOC_REP_LONG 1
+#endif
 
-  /* uncomment for each GASNETC_HAVE_NP_* enabled above if the Commit function
+  /* uncomment for each GASNET_NATIVE_NP_ALLOC_* enabled above if the Commit function
      has the numargs argument even in an NDEBUG build (it is always passed in
      DEBUG builds).
    */
 #define GASNETC_AM_COMMIT_REQ_MEDIUM_NARGS 1
 #define GASNETC_AM_COMMIT_REP_MEDIUM_NARGS 1
-//#define GASNETC_AM_COMMIT_REQ_LONG_NARGS 1
-//#define GASNETC_AM_COMMIT_REP_LONG_NARGS 1
+#if GASNETC_PIN_SEGMENT
+#define GASNETC_AM_COMMIT_REQ_LONG_NARGS 1
+#define GASNETC_AM_COMMIT_REP_LONG_NARGS 1
+#endif
 
 #define GASNETI_AM_SRCDESC_EXTRA \
         int                 _have_flow;         \
+        int                 _head_len;          \
         void *              _buf_alloc;         \
         void *              _cep;               \
         void *              _ep;                \
@@ -106,9 +120,63 @@
      include a call to gasneti_AMPoll (or equivalent) for progress.
      The preferred implementation is to Poll only in the M-suffixed calls
      and not the V-suffixed calls (and GASNETC_REQUESTV_POLLS undefined).
-     Used if (and only if) any of the GASNETC_HAVE_NP_* values above are unset.
+     Used if (and only if) any of the GASNET_NATIVE_NP_ALLOC_* values above are unset.
    */
 /* #define GASNETC_REQUESTV_POLLS 1 */
+
+  // uncomment if conduit provides a gasnetc-prefixed override
+  // TODO: this should be a hook rather than an override
+#if GASNETC_PIN_SEGMENT
+  #define GASNETC_HAVE_EP_PUBLISHBOUNDSEGMENT 1
+#endif
+
+  /* If your conduit uses conduit-specific extensions to the basic object
+     types, then define the corresponding SIZEOF macros below to return
+     the total length of the conduit-specific object, including the prefix
+     portion which must be the matching GASNETI_[OBJECT]_COMMON fields.
+     Similarly, *_HOOK macros should be defined as callbacks to perform
+     conduit-specific initialization and finalization tasks, if any.
+     If a given SIZEOF macro is defined, but the corresponding INIT_HOOK is
+     not, then space beyond the COMMON fields will be zero-initialized.
+     In all cases, GASNETC_[OBJECT]_EXTRA_DECLS provides the place to
+     provide necessary declarations (since this file is included very early).
+    */
+
+//#define GASNETC_CLIENT_EXTRA_DECLS (###)
+//#define GASNETC_CLIENT_INIT_HOOK(i_client) (###)
+//#define GASNETC_CLIENT_FINI_HOOK(i_client) (###)
+//#define GASNETC_SIZEOF_CLIENT_T() (###)
+
+#define GASNETC_SEGMENT_EXTRA_DECLS \
+  extern size_t gasnetc_sizeof_segment_t(void);
+//#define GASNETC_SEGMENT_INIT_HOOK(i_segment) (###)
+//#define GASNETC_SEGMENT_FINI_HOOK(i_segment) (###)
+#define GASNETC_SIZEOF_SEGMENT_T() \
+  gasnetc_sizeof_segment_t()
+
+//#define GASNETC_TM_EXTRA_DECLS (###)
+//#define GASNETC_TM_INIT_HOOK(i_tm) (###)
+//#define GASNETC_TM_FINI_HOOK(i_tm) (###)
+//#define GASNETC_SIZEOF_TM_T() (###)
+
+#define GASNETC_EP_EXTRA_DECLS \
+  extern size_t gasnetc_sizeof_ep_t(void); \
+  extern int gasnetc_ep_init_hook(gasneti_EP_t);
+#define GASNETC_EP_INIT_HOOK(i_ep) \
+    gasnetc_ep_init_hook(i_ep)
+//#define GASNETC_EP_FINI_HOOK(i_ep) (###)
+#define GASNETC_SIZEOF_EP_T() \
+  gasnetc_sizeof_ep_t()
+
+#if GASNETC_PIN_SEGMENT // multi-EP NOT supported with remote firehose
+// If conduit supports GASNET_MAXEPS!=1, set default and (optional) max values here.
+// Leaving GASNETC_MAXEPS_DFLT unset will result in GASNET_MAXEPS=1, independent
+// of all other settings (appropriate for conduits without multi-ep support).
+// If set, GASNETC_MAXEPS_MAX it is used to limit a user's --with-maxeps (and a
+// global default limit is used otherwise).
+#define GASNETC_MAXEPS_DFLT 33 // Initial (limited) multi-EP support
+//#define GASNETC_MAXEPS_MAX ### // leave unset for default
+#endif
 
   /* this can be used to add conduit-specific 
      statistical collection values (see gasnet_trace.h) */
@@ -160,11 +228,11 @@
 	VAL(C, FIREHOSE_UNPIN, pages)
 
 #define GASNETC_FATALSIGNAL_CALLBACK(sig) gasnetc_fatalsignal_callback(sig)
-	extern void gasnetc_fatalsignal_callback(int sig);
+	extern void gasnetc_fatalsignal_callback(int _sig);
 
 #if GASNETC_IBV_ODP
   #define GASNETC_FATALSIGNAL_CLEANUP_CALLBACK(sig) gasnetc_fatalsignal_cleanup_callback(sig)
-  extern void gasnetc_fatalsignal_cleanup_callback(int sig);
+  extern void gasnetc_fatalsignal_cleanup_callback(int _sig);
 #endif
 
 #if PLATFORM_OS_DARWIN && !GASNET_SEQ

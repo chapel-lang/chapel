@@ -1,0 +1,6 @@
+test1
+h arg=false
+false
+test2
+i arg=false
+true

@@ -38,7 +38,20 @@
 #endif
 
 #if GASNETC_BUILD_GNIRATOMIC
-  #define GASNETI_AD_CREATE_HOOK gasnete_gniratomic_create_hook
+  // Hooks for conduit-specific extension to create and destroy
+  //
+  // These hooks are analogous to the following:
+  //     GASNETC_CLIENT_EXTRA_DECLS
+  //     GASNETC_CLIENT_INIT_HOOK
+  //     GASNETC_CLIENT_FINI_HOOK
+  //     GASNETC_SIZEOF_CLIENT_T
+  // which are documented in template-conduit/gasnet_core_fwd.h
+
+  #define GASNETC_AD_EXTRA_DECLS \
+    extern void gasnete_gniratomic_init_hook(gasneti_AD_t);
+  #define GASNETC_AD_INIT_HOOK(i_ad) gasnete_gniratomic_init_hook(i_ad)
+  //#define GASNETC_AD_FINI_HOOK(i_ad) (###)
+  //#define GASNETC_SIZEOF_AD_T() (###)
 
   /* stats needed by the GNI-specific atomics implementation */
   #ifndef GASNETI_RATOMIC_STATS

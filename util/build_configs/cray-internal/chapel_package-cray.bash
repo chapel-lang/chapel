@@ -188,7 +188,9 @@ fi
 # Generate modulefile, w versions
 
 log_debug "Generate modulefile-$pkg_version ..."
-$cwd/generate-modulefile.bash > "$rpmbuild_dir/modulefile-$pkg_version"
+$cwd/process-template.py pkg_version="$pkg_version" \
+			 --template $cwd/chapel.modulefile.tcl.template \
+			 --output $rpmbuild_dir/modulefile-$pkg_version
 chmod 644 "$rpmbuild_dir/modulefile-$pkg_version"
 
 # Generate Lua modulefile for PE Lmod Hierarchy.

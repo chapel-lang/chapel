@@ -42,8 +42,8 @@ class PrimitiveOp;
 
 class Expr : public BaseAST {
 public:
-                  Expr(AstTag astTag);
-  virtual        ~Expr();
+   Expr(AstTag astTag);
+  ~Expr() override = default;
 
   // Interface for BaseAST
           bool    inTree()                                        override;
@@ -117,9 +117,10 @@ private:
 
 class DefExpr final : public Expr {
 public:
-                  DefExpr(Symbol*  initSym      = NULL,
-                          BaseAST* initInit     = NULL,
-                          BaseAST* initExprType = NULL);
+  DefExpr(Symbol*  initSym      = NULL,
+          BaseAST* initInit     = NULL,
+          BaseAST* initExprType = NULL);
+ ~DefExpr() override = default;
 
   void    verify()                                   override;
 
@@ -158,6 +159,7 @@ class SymExpr final : public Expr {
   SymExpr* symbolSymExprsNext;
 
   SymExpr(Symbol* init_var);
+ ~SymExpr() override = default;
 
   DECLARE_COPY(SymExpr);
   SymExpr* copyInner(SymbolMap* map)                  override;
@@ -185,6 +187,7 @@ class UnresolvedSymExpr final : public Expr {
   const char* unresolved;
 
   UnresolvedSymExpr(const char* init_var);
+ ~UnresolvedSymExpr() override = default;
 
   DECLARE_COPY(UnresolvedSymExpr);
   UnresolvedSymExpr* copyInner(SymbolMap* map)        override;
@@ -231,7 +234,8 @@ class UnresolvedSymExpr final : public Expr {
 //
 class ContextCallExpr final : public Expr {
 public:
-                         ContextCallExpr();
+  ContextCallExpr();
+ ~ContextCallExpr() override = default;
 
   DECLARE_COPY(ContextCallExpr);
   ContextCallExpr* copyInner(SymbolMap* map)              override;
@@ -273,6 +277,7 @@ class NamedExpr final : public Expr {
   Expr*           actual;
 
   NamedExpr(const char* init_name, Expr* init_actual);
+ ~NamedExpr() override = default;
 
   void    verify()                                    override;
 
@@ -293,12 +298,13 @@ class NamedExpr final : public Expr {
 //   implements InterfaceName(actualType...)
 // or
 //   actualType implements InterfaceName
-//   
+//
 class IfcConstraint final : public Expr {
 public:
   static IfcConstraint* build(const char* name,
                               CallExpr* actuals);
   IfcConstraint(Expr* iifc);
+ ~IfcConstraint() override = default;
 
   DECLARE_COPY(IfcConstraint);
   IfcConstraint* copyInner(SymbolMap* map)            override;
@@ -321,7 +327,7 @@ public:
 
 // valid after scopeResolve
 inline InterfaceSymbol* IfcConstraint::ifcSymbol() const {
-  return toInterfaceSymbol(toSymExpr(interfaceExpr)->symbol());  
+  return toInterfaceSymbol(toSymExpr(interfaceExpr)->symbol());
 }
 
 

@@ -798,6 +798,7 @@ initPrimitive() {
   prim_def(PRIM_GET_DYNAMIC_END_COUNT, "get dynamic end count", returnInfoEndCount);
   prim_def(PRIM_SET_DYNAMIC_END_COUNT, "set dynamic end count", returnInfoVoid, true);
 
+  prim_def(PRIM_GPU_KERNEL_LAUNCH, "gpu kernel launch", returnInfoVirtualMethodCall, true);
 
   // task primitives
   // get serial state

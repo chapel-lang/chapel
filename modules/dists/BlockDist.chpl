@@ -468,7 +468,7 @@ proc Block.init(boundingBox: domain,
     compilerError("specified Block rank != rank of specified bounding box");
   if idxType != boundingBox.idxType then
     compilerError("specified Block index type != index type of specified bounding box");
-  if rank != 2 && isCSType(sparseLayoutType) then 
+  if rank != 2 && isCSType(sparseLayoutType) then
     compilerError("CS layout is only supported for 2 dimensional domains");
 
   if boundingBox.size == 0 then
@@ -483,10 +483,20 @@ proc Block.init(boundingBox: domain,
   // Instead of 'dummyLB', we could give 'locDistTemp' a nilable element type.
   const dummyLB = new unmanaged LocBlock(rank, idxType, dummy=true);
   var locDistTemp: [targetLocDom] unmanaged LocBlock(rank, idxType) = dummyLB;
-  coforall locid in targetLocDom do
-    on this.targetLocales(locid) do
-      locDistTemp(locid) = new unmanaged LocBlock(rank, idxType, locid,
-                                                  boundingBox, targetLocDom);
+
+  // Store a const copy of the dims for RVF
+  // Use a zippered coforall to get nonblocking ons but create
+  // the reference into locDistTemp before launching the remote task.
+  const boundingBoxDims = boundingBox.dims();
+  coforall (locid, loc, locDistTempElt)
+           in zip(targetLocDom, targetLocales, locDistTemp) {
+    on loc {
+      locDistTempElt = new unmanaged LocBlock(rank, idxType, locid,
+                                              boundingBox, boundingBoxDims,
+                                              targetLocDom);
+    }
+  }
+
   delete dummyLB;
   this.locDist = locDistTemp; //make this a serial loop instead?
 
@@ -510,9 +520,12 @@ proc Block.init(boundingBox: domain,
 }
 
 proc Block.dsiAssign(other: this.type) {
-  coforall locid in targetLocDom do
-    on targetLocales(locid) do
-      delete locDist(locid);
+
+  coforall (loc, locDistElt) in zip(targetLocales, locDist) {
+    on loc {
+      delete locDistElt;
+    }
+  }
   boundingBox = other.boundingBox;
   targetLocDom = other.targetLocDom;
   targetLocales = other.targetLocales;
@@ -520,10 +533,13 @@ proc Block.dsiAssign(other: this.type) {
   dataParIgnoreRunningTasks = other.dataParIgnoreRunningTasks;
   dataParMinGranularity = other.dataParMinGranularity;
 
-  coforall locid in targetLocDom do
-    on targetLocales(locid) do
-      locDist(locid) = new unmanaged LocBlock(rank, idxType, locid, boundingBox,
-                                    targetLocDom);
+  coforall (locid, loc, locDistElt)
+           in zip(targetLocDom, targetLocales, locDist) {
+    on loc {
+      locDistElt = new unmanaged LocBlock(rank, idxType, locid, boundingBox,
+                                          targetLocDom);
+    }
+  }
 }
 
 //
@@ -582,10 +598,13 @@ override proc Block.dsiNewRectangularDom(param rank: int, type idxType,
   const dummyLBD = new unmanaged LocBlockDom(rank, idxType, stridable);
   var locDomsTemp: [this.targetLocDom]
                   unmanaged LocBlockDom(rank, idxType, stridable) = dummyLBD;
-  coforall localeIdx in this.targetLocDom do
-   on this.targetLocales(localeIdx) do
-    locDomsTemp(localeIdx) = new unmanaged LocBlockDom(rank, idxType, stridable,
-                                             this.getChunk(whole, localeIdx));
+  coforall (localeIdx, loc, locDomsTempElt)
+           in zip(this.targetLocDom, this.targetLocales, locDomsTemp) {
+    on loc {
+      locDomsTempElt = new unmanaged LocBlockDom(rank, idxType, stridable,
+                                                 this.getChunk(whole, localeIdx));
+    }
+  }
   delete dummyLBD;
 
   var dom = new unmanaged BlockDom(rank, idxType, stridable, sparseLayoutType,
@@ -698,20 +717,21 @@ iter Block.activeTargetLocales(const space : domain = boundingBox) {
   //
   // The subset {1..10 by 4} will involve locales 0, 1, and 3.
   for i in {(...dims)} {
-    const chunk = chpl__computeBlock(i, targetLocDom, boundingBox);
+    const chunk = chpl__computeBlock(i, targetLocDom, boundingBox, boundingBox.dims());
     // TODO: Want 'contains' for a domain. Slicing is a workaround.
     if locSpace[(...chunk)].size > 0 then
       yield i;
   }
 }
 
-proc chpl__computeBlock(locid, targetLocBox, boundingBox) {
+proc chpl__computeBlock(locid, targetLocBox:domain, boundingBox:domain,
+                        boundingBoxDims /* boundingBox.dims() */) {
   param rank = targetLocBox.rank;
-  type idxType = chpl__tuplify(boundingBox)(0).idxType;
+  type idxType = boundingBox.idxType;
   var inds: rank*range(idxType);
   for param i in 0..rank-1 {
-    const lo = boundingBox.dim(i).low;
-    const hi = boundingBox.dim(i).high;
+    const lo = boundingBoxDims(i).low;
+    const hi = boundingBoxDims(i).high;
     const numelems = hi - lo + 1;
     const numlocs = targetLocBox.dim(i).size;
     const (blo, bhi) = _computeBlock(numelems, numlocs, chpl__tuplify(locid)(i),
@@ -724,11 +744,12 @@ proc chpl__computeBlock(locid, targetLocBox, boundingBox) {
 proc LocBlock.init(param rank: int,
                    type idxType,
                    locid, // the locale index from the target domain
-                   boundingBox,
+                   boundingBox: domain,
+                   boundingBoxDims /* boundingBox.dims() */,
                    targetLocDom: domain(rank)) {
   this.rank = rank;
   this.idxType = idxType;
-  const inds = chpl__computeBlock(chpl__tuplify(locid), targetLocDom, boundingBox);
+  const inds = chpl__computeBlock(chpl__tuplify(locid), targetLocDom, boundingBox, boundingBoxDims);
   myChunk = {(...inds)};
 }
 
@@ -962,16 +983,19 @@ proc BlockDom.dsiLocalSlice(param stridable: bool, ranges) {
 }
 
 proc BlockDom.setup() {
-    coforall localeIdx in dist.targetLocDom do {
-      on dist.targetLocales(localeIdx) do
-        locDoms(localeIdx).myBlock = dist.getChunk(whole, localeIdx);
+  coforall (localeIdx, loc, locDomsElt)
+           in zip(dist.targetLocDom, dist.targetLocales, locDoms) {
+    on loc {
+      locDomsElt.myBlock = dist.getChunk(whole, localeIdx);
     }
+  }
 }
 
 override proc BlockDom.dsiDestroyDom() {
-  coforall localeIdx in dist.targetLocDom do {
-    on locDoms(localeIdx) do
-      delete locDoms(localeIdx);
+  coforall (loc, locDomsElt) in zip(dist.targetLocales, locDoms) {
+    on loc {
+      delete locDomsElt;
+    }
   }
 }
 
@@ -1034,25 +1058,25 @@ proc BlockArr.setupRADOpt() {
 }
 
 override proc BlockArr.dsiElementInitializationComplete() {
-  coforall localeIdx in dom.dist.targetLocDom {
-    on locArr(localeIdx) {
-      locArr(localeIdx).myElems.dsiElementInitializationComplete();
+  coforall locArrElt in locArr {
+    on locArrElt {
+      locArrElt.myElems.dsiElementInitializationComplete();
     }
   }
 }
 
 override proc BlockArr.dsiElementDeinitializationComplete() {
-  coforall localeIdx in dom.dist.targetLocDom {
-    on locArr(localeIdx) {
-      locArr(localeIdx).myElems.dsiElementDeinitializationComplete();
+  coforall locArrElt in locArr {
+    on locArrElt {
+      locArrElt.myElems.dsiElementDeinitializationComplete();
     }
   }
 }
 
 override proc BlockArr.dsiDestroyArr(deinitElts:bool) {
-  coforall localeIdx in dom.dist.targetLocDom {
-    on locArr(localeIdx) {
-      var arr = locArr(localeIdx);
+  coforall locArrElt in locArr {
+    on locArrElt {
+      var arr = locArrElt;
       if deinitElts then
         _deinitElements(arr.myElems);
       arr.myElems.dsiElementDeinitializationComplete();
@@ -1491,7 +1515,7 @@ proc BlockArr.dsiLocalSubdomain(loc: locale) {
 proc BlockDom.dsiLocalSubdomain(loc: locale) {
   const (gotit, locid) = dist.chpl__locToLocIdx(loc);
   if (gotit) {
-    var inds = chpl__computeBlock(locid, dist.targetLocDom, dist.boundingBox);
+    var inds = chpl__computeBlock(locid, dist.targetLocDom, dist.boundingBox, dist.boundingBox.dims());
     return whole[(...inds)];
   } else {
     var d: domain(rank, idxType, stridable);
@@ -1573,12 +1597,12 @@ proc BlockArr.canDoOptimizedSwap(other) {
 //
 // TODO: stridability causes issues with RAD swap, and somehow isn't captured by
 // the formal type when we check whether this resolves.
-proc BlockArr.doiOptimizedSwap(other: this.type)  
+proc BlockArr.doiOptimizedSwap(other: this.type)
   where this.stridable == other.stridable {
 
   if(canDoOptimizedSwap(other)) {
     if debugOptimizedSwap {
-      writeln("BlockArr doing optimized swap. Domains: ", 
+      writeln("BlockArr doing optimized swap. Domains: ",
               this.dom.whole, " ", other.dom.whole, " Bounding boxes: ",
               this.dom.dist.boundingBox, " ", other.dom.dist.boundingBox);
     }
@@ -1591,7 +1615,7 @@ proc BlockArr.doiOptimizedSwap(other: this.type)
     return true;
   } else {
     if debugOptimizedSwap {
-      writeln("BlockArr doing unoptimized swap. Domains: ", 
+      writeln("BlockArr doing unoptimized swap. Domains: ",
               this.dom.whole, " ", other.dom.whole, " Bounding boxes: ",
               this.dom.dist.boundingBox, " ", other.dom.dist.boundingBox);
     }
@@ -1763,7 +1787,7 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
 
       // save our local scan total away and signal that it's ready
       elemPerLoc[1] = tot;
-      inputReady$[1] = true;
+      inputReady$[1].writeEF(true);
 
       // the "first" locale scans the per-locale contributions as they
       // become ready
@@ -1773,12 +1797,12 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
         var next: resType = metaop.identity;
         for locid in dom.dist.targetLocDom {
           const targetloc = targetLocs[locid];
-          const locready = inputReady$.replicand(targetloc)[1];
+          const locready = inputReady$.replicand(targetloc)[1].readFE();
 
           // store the scan value and mark that it's ready
           ref locVal = elemPerLoc.replicand(targetloc)[1];
           locVal <=> next;
-          outputReady$.replicand(targetloc)[1] = true;
+          outputReady$.replicand(targetloc)[1].writeEF(true);
 
           // accumulate to prep for the next iteration
           metaop.accumulateOntoState(next, locVal);
@@ -1788,7 +1812,7 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
 
       // block until someone tells us that our local value has been updated
       // and then read it
-      const resready = outputReady$[1];
+      const resready = outputReady$[1].readFE();
       const myadjust = elemPerLoc[1];
       if debugBlockScan then
         writeln(locid, ": myadjust = ", myadjust);

@@ -308,7 +308,7 @@ tasks only for data parallelism it may be unnecessarily large.  Stacks
 that are unnecessarily large are typically only a problem for programs
 in which many tasks (thus their stacks) exist at once, when using a comm
 layer that has to pre-register memory.  For the particular case of using
-the native runtime communication and tasking layers on Cray X* systems,
+the native runtime communication layers on Cray XC and HPE Cray EX systems,
 further discussion about this can be found in :ref:`readme-cray`.
 
 The following environment variable can be used to change the task call

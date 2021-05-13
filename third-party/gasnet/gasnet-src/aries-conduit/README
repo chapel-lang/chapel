@@ -26,9 +26,13 @@ Optional configure-time settings:
    By default gasnet_AMMaxMedium() is 4032: a 4096 byte buffer minus
    64 bytes reserved for up to 16 handler arguments.  This configure
    option allows control over the value of gasnet_AMMaxMedium().
-   The value must be a multiple of 64, and cannot be less than 512.
+   The value must be a multiple of 64, and cannot be less than 512 or
+   greater than 65408.
    It is recommended to use values that are 64-bytes less than a
-   power-of-two, to preserve efficient memory use.
+   power-of-two, to preserve efficient memory use.  By default,
+   values will be rounded down to the nearest such recommended value
+   or to the minimum value of 512.  One may prefix '+' to the
+   setting to prevent this behavior.
    The default value is 4032.
 
 --enable-aries-multi-domain
@@ -156,6 +160,16 @@ GASNET_GNI_AM_RVOUS_BUFFERS - number of AM rendezvous buffers
   Rendezvous protocol
   The default value is 64, and the minimum is 1.
 
+GASNET_GNI_MAX_MEDIUM - max payload of 16-argument AM Mediums
+  This determines the maximum size of AM Medium payloads with 16 arguments.
+  More specifically, this is the value returned by gex_AM_LUBRequestMedium(),
+  gex_AM_LUBReplyMedium() and the legacy API gasnet_AMMaxMedium().
+  The value must be a multiple of 64, between 512 and 65408, inclusive.
+  See the documentation for --with-aries-max-medium, above, for recommended
+  values and corresponding convenience aliases.
+  The default value is 4032, unless a different default was set at configure
+  time using --with-aries-max-medium=N.
+
 GASNET_NETWORKDEPTH_TOTAL - depth of out-going AM Request queue
   This determines the maximum number of AM Requests that can be
   outstanding from one endpoint to all others before flow-control.
@@ -174,10 +188,17 @@ GASNET_NETWORKDEPTH_SPACE - volume of Eager AM Request queue
   outstanding between a given pair of peers before flow-control in the Eager
   AM protocol, even if less than GASNET_NETWORKDEPTH Requests are outstanding.
   Values smaller than two maximum-size Medium AMs, or larger than 64 maximum-
-  sized Medium AMs, will be silently adjusted to that range.  Additionally,
-  values will be silently rounded down to the product of GASNET_NETWORKDEPTH
-  times a power-of-two.
-  The default value is 16K.
+  sized Medium AMs, will be silently adjusted to that range.
+  Additionally, values will be silently rounded down to the product of a power
+  power-of-two times GASNET_NETWORKDEPTH.  When GASNET_GNI_MAX_MEDIUM is set
+  to a recommended value, this adjustment results in an exact multiple of the
+  maximum size of a AM medium.  For all other values, however, there will not
+  be such an alignment of sizes and the maximum number of max-size AM Mediums
+  in flight simultaneously may be reduced as a result.
+  The default value (prior to the adjustment noted above) is four maximum-size
+  Medium AMs (16K with all defaults).
+  See also GASNET_GNI_MAX_MEDIUM, above, regarding the maximum size of a
+  Medium AM and recommended values.
 
 GASNET_LONG_DEPTH - depth of per-peer Long tracking
   This determines the maximum number of AM Long Requests payload transfers

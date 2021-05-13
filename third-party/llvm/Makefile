@@ -125,7 +125,7 @@ $(LLVM_CONFIGURED_HEADER_FILE): $(LLVM_SRC_FILE)
 	    -DCLANG_ENABLE_ARCMT=0 \
 	    -DCLANG_ANALYZER_ENABLE_Z3_SOLVER=0 \
 	    -DCLANG_ENABLE_STATIC_ANALYZER=0 \
-	    -DLLVM_TARGETS_TO_BUILD="host;X86;AArch64" \
+	    -DLLVM_TARGETS_TO_BUILD="host;X86;AArch64;NVPTX" \
 	    -DLLVM_INSTALL_UTILS=ON \
 	    -DLLVM_INCLUDE_TESTS=OFF \
 	    $(CHPL_LLVM_ENABLE_PROJECTS) \
@@ -204,6 +204,15 @@ system: $(LLVM_CLANG_CONFIG_FILE)
 system-minimal:
 
 none:
+ifndef CHPL_LLVM
+	@echo "Error: Please set the environment variable CHPL_LLVM to a supported value."
+	@echo "Supported values are:"
+	@echo "  1) 'none' to build without LLVM support"
+	@echo "  2) 'bundled' to build with the LLVM packaged in the third-party directory"
+	@echo "  3) 'system' to use a pre-installed system-wide LLVM"
+	@echo "See: https://chapel-lang.org/docs/latest/usingchapel/chplenv.html#chpl-llvm"
+	@exit 1
+endif
 
 FORCE:
 

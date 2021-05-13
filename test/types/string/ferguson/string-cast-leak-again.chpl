@@ -16,7 +16,7 @@ record R {
   var s:string;
 }
 
-proc _cast(type t, x:R) where t == string {
+operator :(x:R, type t:string) {
   return x.s;
 }
 

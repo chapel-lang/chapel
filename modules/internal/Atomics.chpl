@@ -352,7 +352,7 @@ module Atomics {
 
   }
 
-  proc _cast(type t:AtomicBool, rhs: bool) {
+  operator :(rhs: bool, type t:AtomicBool) {
     var lhs: AtomicBool = rhs; // use init=
     return lhs;
   }
@@ -684,8 +684,9 @@ module Atomics {
 
   }
 
-  proc _cast(type t:AtomicT(?T), rhs: T) {
-    var lhs: AtomicT(T) = rhs; // use init=
+  operator :(rhs, type t:AtomicT)
+  where rhs.type == t.T {
+    var lhs: t = rhs; // use init=
     return lhs;
   }
 
@@ -699,35 +700,35 @@ module Atomics {
   // We need to explicitly define these for all types because the atomic
   // types are records and unless explicitly defined, it will resolve
   // to the normal record version of the function.  Sigh.
-  inline proc =(ref a:AtomicBool, const ref b:AtomicBool) {
+  inline operator =(ref a:AtomicBool, const ref b:AtomicBool) {
     a.write(b.read());
   }
-  inline proc =(ref a:AtomicBool, b) {
+  inline operator =(ref a:AtomicBool, b) {
     compilerError("Cannot directly assign atomic variables");
   }
-  inline proc =(ref a:AtomicT, const ref b:AtomicT) {
+  inline operator =(ref a:AtomicT, const ref b:AtomicT) {
     a.write(b.read());
   }
-  inline proc =(ref a:AtomicT, b) {
+  inline operator =(ref a:AtomicT, b) {
     compilerError("Cannot directly assign atomic variables");
   }
-  inline proc +(a:AtomicT, b) {
+  inline operator +(a:AtomicT, b) {
     compilerError("Cannot directly add atomic variables");
     return a;
   }
-  inline proc -(a:AtomicT, b) {
+  inline operator -(a:AtomicT, b) {
     compilerError("Cannot directly subtract atomic variables");
     return a;
   }
-  inline proc *(a:AtomicT, b) {
+  inline operator *(a:AtomicT, b) {
     compilerError("Cannot directly multiply atomic variables");
     return a;
   }
-  inline proc /(a:AtomicT, b) {
+  inline operator /(a:AtomicT, b) {
     compilerError("Cannot directly divide atomic variables");
     return a;
   }
-  inline proc %(a:AtomicT, b) {
+  inline operator %(a:AtomicT, b) {
     compilerError("Cannot directly divide atomic variables");
     return a;
   }

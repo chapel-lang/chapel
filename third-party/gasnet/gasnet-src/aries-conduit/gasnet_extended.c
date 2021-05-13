@@ -138,7 +138,7 @@ gasnete_get_bulk_inner(void *dest, gex_TM_t tm, gex_Rank_t rank, void *src, size
   gasnetc_post_descriptor_t *gpd;
   size_t chunksz;
 
-  gasneti_EP_t ep = gasneti_import_tm(tm)->_ep;
+  gasneti_EP_t ep = gasneti_e_tm_to_i_ep(tm);
   chunksz = gasneti_in_local_fullsegment(ep, dest, nbytes) ? GC_MAXRDMA_IN : GC_MAXRDMA_OUT;
 
   if (nbytes > 2*chunksz) {
@@ -252,7 +252,7 @@ gasnete_put_inner(gex_TM_t tm, gex_Rank_t rank, void *dest, void *src, size_t nb
   gasnetc_post_descriptor_t *gpd;
   size_t chunksz;
 
-  gasneti_EP_t ep = gasneti_import_tm(tm)->_ep;
+  gasneti_EP_t ep = gasneti_e_tm_to_i_ep(tm);
   chunksz = gasneti_in_local_fullsegment(ep, src, nbytes) ? GC_MAXRDMA_IN : GC_MAXRDMA_OUT;
 
   gasneti_suspend_spinpollers();
@@ -316,7 +316,7 @@ gasnete_put_bulk_inner(gex_TM_t tm, gex_Rank_t rank, void *dest, void *src, size
   gasnetc_post_descriptor_t *gpd;
   size_t chunksz;
 
-  gasneti_EP_t ep = gasneti_import_tm(tm)->_ep;
+  gasneti_EP_t ep = gasneti_e_tm_to_i_ep(tm);
   chunksz = gasneti_in_local_fullsegment(ep, src, nbytes) ? GC_MAXRDMA_IN : GC_MAXRDMA_OUT;
 
   gasneti_suspend_spinpollers();

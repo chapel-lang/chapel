@@ -37,8 +37,8 @@
 class AstVisitorTraverse : public AstVisitor
 {
 public:
-                 AstVisitorTraverse();
-  virtual       ~AstVisitorTraverse();
+  AstVisitorTraverse()          = default;
+ ~AstVisitorTraverse() override = default;
 
   //
   // The sub-classes of Type

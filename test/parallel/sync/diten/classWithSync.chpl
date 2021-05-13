@@ -3,8 +3,8 @@ class C {
 }
 
 var c = new unmanaged C();
-c.s = true;
-c.s;
+c.s.writeEF(true);
+c.s.readFE();
 
 if (c.s.isFull) then halt("Should never get here.");
 

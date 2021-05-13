@@ -104,7 +104,7 @@ proc R.verify() {
   }
 }
 
-proc =(ref lhs: R, rhs: R) {
+operator R.=(ref lhs: R, rhs: R) {
   extern proc printf(fmt:c_string, arg:C?);
   extern proc printf(fmt:c_string, arg:C?, arg2:C?);
   if debug {

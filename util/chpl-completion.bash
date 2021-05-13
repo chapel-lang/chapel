@@ -280,7 +280,7 @@ _chpl ()
 --print-unused-functions \
 --print-unused-internal-functions \
 --privatization \
---regexp \
+--re2 \
 --region-vectorizer \
 --remote-serialization \
 --remote-value-forwarding \
@@ -483,7 +483,7 @@ _chpl ()
 --print-search-dirs \
 --print-unused-functions \
 --privatization \
---regexp \
+--re2 \
 --remote-serialization \
 --remote-value-forwarding \
 --remove-copy-calls \

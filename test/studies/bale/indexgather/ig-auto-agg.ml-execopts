@@ -1,0 +1,4 @@
+# other versions of this test chooses N based on the comm layer and the version
+# of the benchmark kernel. However, in auto/manual aggregation we always use
+# larger N. See ig.ml-execopts
+--N=1000000 --printStats --mode=Mode.ordered    # bale-ig-auto-aggregated

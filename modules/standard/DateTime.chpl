@@ -471,42 +471,42 @@ module DateTime {
 
   /* Operators on date values */
   pragma "no doc"
-  proc +(d: date, t: timedelta): date {
+  operator date.+(d: date, t: timedelta): date {
     return date.fromordinal(d.toordinal() + t.days);
   }
 
   pragma "no doc"
-  proc +(t: timedelta, d: date): date {
+  operator date.+(t: timedelta, d: date): date {
     return d + t;
   }
 
   pragma "no doc"
-  proc -(d: date, t: timedelta): date {
+  operator date.-(d: date, t: timedelta): date {
     return date.fromordinal(d.toordinal() - t.days);
   }
 
   pragma "no doc"
-  proc -(d1: date, d2: date): timedelta {
+  operator date.-(d1: date, d2: date): timedelta {
     return new timedelta(days=d1.toordinal() - d2.toordinal());
   }
 
   pragma "no doc"
-  proc <(d1: date, d2: date) {
+  operator date.<(d1: date, d2: date) {
     return d1.toordinal() < d2.toordinal();
   }
 
   pragma "no doc"
-  proc <=(d1: date, d2: date) {
+  operator date.<=(d1: date, d2: date) {
     return d1.toordinal() <= d2.toordinal();
   }
 
   pragma "no doc"
-  proc >(d1: date, d2: date) {
+  operator date.>(d1: date, d2: date) {
     return d1.toordinal() > d2.toordinal();
   }
 
   pragma "no doc"
-  proc >=(d1: date, d2: date) {
+  operator date.>=(d1: date, d2: date) {
     return d1.toordinal() >= d2.toordinal();
   }
 
@@ -721,19 +721,19 @@ module DateTime {
   /* Operators on time values */
 
   pragma "no doc"
-  proc ==(t1: time, t2: time): bool {
+  operator time.==(t1: time, t2: time): bool {
     var dt1 = datetime.combine(d=new date(2000, 1, 1), t=t1);
     var dt2 = datetime.combine(d=new date(2000, 1, 1), t=t2);
     return dt1 == dt2;
   }
 
   pragma "no doc"
-  proc !=(t1: time, t2: time) {
+  operator time.!=(t1: time, t2: time) {
     return !(t1 == t2);
   }
 
   pragma "no doc"
-  proc <(t1: time, t2: time): bool {
+  operator time.<(t1: time, t2: time): bool {
     if (t1.tzinfo.borrow() != nil && t2.tzinfo.borrow() == nil) ||
         (t1.tzinfo.borrow() == nil && t2.tzinfo.borrow() != nil) {
       halt("both datetimes must both be either naive or aware");
@@ -771,7 +771,7 @@ module DateTime {
   }
 
   pragma "no doc"
-  proc <=(t1: time, t2: time): bool {
+  operator time.<=(t1: time, t2: time): bool {
     if (t1.tzinfo.borrow() != nil && t2.tzinfo.borrow() == nil) ||
         (t1.tzinfo.borrow() == nil && t2.tzinfo.borrow() != nil) {
       halt("both datetimes must both be either naive or aware");
@@ -794,7 +794,7 @@ module DateTime {
   }
 
   pragma "no doc"
-  proc >(t1: time, t2: time): bool {
+  operator time.>(t1: time, t2: time): bool {
     if (t1.tzinfo.borrow() != nil && t2.tzinfo.borrow() == nil) ||
         (t1.tzinfo.borrow() == nil && t2.tzinfo.borrow() != nil) {
       halt("both datetimes must both be either naive or aware");
@@ -817,7 +817,7 @@ module DateTime {
   }
 
   pragma "no doc"
-  proc >=(t1: time, t2: time): bool {
+  operator time.>=(t1: time, t2: time): bool {
     if (t1.tzinfo.borrow() != nil && t2.tzinfo.borrow() == nil) ||
         (t1.tzinfo.borrow() == nil && t2.tzinfo.borrow() != nil) {
       halt("both datetimes must both be either naive or aware");
@@ -999,6 +999,14 @@ module DateTime {
                       second=second, microsecond=microsecond);
   }
 
+  /* Get the `time` since Unix Epoch in seconds
+  */
+  proc type datetime.timeSinceEpoch():real {
+    var (seconds,microseconds):(real,real) = getTimeOfDay();
+    microseconds = microseconds/1000000.0;
+    return seconds + microseconds;
+  }
+
   /* Get the `time` portion of the `datetime` value including the
      `tzinfo` field
    */
@@ -1157,17 +1165,54 @@ module DateTime {
   }
 
   /* Create a `datetime` as described by the `date_string` and `format`
-     string */
-  proc type datetime.strptime(date_string: string, format: string) {
-    extern proc strptime(buf: c_string, format: c_string, ref ts: tm);
+     string. Fields not specified by format will have defaults. This is
+     deprecated. */
+  pragma "no doc"
+  proc type datetime.strptime(date_string: string, format: string = "%a %b %d %H:%M:%S %Y") {
+    compilerWarning("proc type datetype.strptime() is deprecated.\nPlease use proc datetime.strptime() instead.");
+    /* intialization to epoch time */
+    var dt: datetime = new datetime(1970, 1, 1);
+    try! dt.strptime(date_string, format);
+    return dt;
+  }
+
+  /* Modify a `datetime` as described by the `date_string` and `format`
+     string. Fields not specified by format are not modified. */
+  proc ref datetime.strptime(date_string: string, format: string = "%a %b %d %H:%M:%S %Y") throws {
+    extern proc chpl_strptime(buf: c_string, format: c_string, ref ts: tm, ref ms: c_ulong): c_string;
     var timeStruct: tm;
-    strptime(date_string.c_str(), format.c_str(), timeStruct);
-    return new datetime(timeStruct.tm_year + 1900,
-                        timeStruct.tm_mon + 1,
-                        timeStruct.tm_mday,
-                        timeStruct.tm_hour,
-                        timeStruct.tm_min,
-                        timeStruct.tm_sec);
+
+    timeStruct.tm_year = (chpl_date.year - 1900) : int(32);
+    timeStruct.tm_mon  = (chpl_date.month - 1) : int(32);
+    timeStruct.tm_mday = chpl_date.day : int(32);
+    timeStruct.tm_hour = chpl_time.hour : int(32);
+    timeStruct.tm_min  = chpl_time.minute : int(32);
+    timeStruct.tm_sec  = chpl_time.second : int(32);
+    var microSeconds   = chpl_time.microsecond : c_ulong;
+
+    if tzinfo.borrow() != nil {
+      timeStruct.tm_gmtoff = abs(utcoffset()).seconds: c_long;
+      timeStruct.tm_zone = __primitive("cast", tm_zoneType, tzname().c_str());
+      timeStruct.tm_isdst = dst().seconds: int(32);
+    } else {
+      timeStruct.tm_gmtoff = 0;
+      timeStruct.tm_zone = __primitive("cast", tm_zoneType, "".c_str());
+      timeStruct.tm_isdst = -1;
+    }
+
+    const checkNil = chpl_strptime(date_string.c_str(), format.c_str(), timeStruct, microSeconds);
+    if is_c_nil(checkNil) {
+      throw new owned IllegalArgumentError("Invalid Arguments Provided");
+    }
+
+    chpl_date.chpl_year   = timeStruct.tm_year + 1900;
+    chpl_date.chpl_month  = timeStruct.tm_mon + 1;
+    chpl_date.chpl_day    = timeStruct.tm_mday;
+    chpl_time.chpl_hour   = timeStruct.tm_hour;
+    chpl_time.chpl_minute = timeStruct.tm_min;
+    chpl_time.chpl_second = timeStruct.tm_sec;
+    chpl_time.chpl_microsecond = microSeconds : int(64);
+    // TODO: How to handle tm_zone
   }
 
   /* Create a `string` from a `datetime` matching the `format` string */
@@ -1281,7 +1326,7 @@ module DateTime {
   /* Operators on datetime values */
 
   pragma "no doc"
-  proc +(td: timedelta, dt: datetime) {
+  operator datetime.+(td: timedelta, dt: datetime) {
     var newmicro = dt.microsecond + td.microseconds;
     var newsec = dt.second + td.seconds;
     var newmin = dt.minute;
@@ -1308,12 +1353,12 @@ module DateTime {
   }
 
   pragma "no doc"
-  proc +(dt: datetime, td: timedelta) {
+  operator datetime.+(dt: datetime, td: timedelta) {
     return td + dt;
   }
 
   pragma "no doc"
-  proc -(dt: datetime, td: timedelta) {
+  operator datetime.-(dt: datetime, td: timedelta) {
     var deltasec  = td.seconds % 60;
     var deltamin  = (td.seconds / 60) % 60;
     var deltahour = td.seconds / (60*60);
@@ -1348,7 +1393,7 @@ module DateTime {
   }
 
   pragma "no doc"
-  proc -(dt1: datetime, dt2: datetime): timedelta {
+  operator datetime.-(dt1: datetime, dt2: datetime): timedelta {
     if (dt1.tzinfo.borrow() != nil && dt2.tzinfo.borrow() == nil) ||
        (dt1.tzinfo.borrow() == nil && dt2.tzinfo.borrow() != nil) {
       halt("both datetimes must both be either naive or aware");
@@ -1369,7 +1414,14 @@ module DateTime {
   }
 
   pragma "no doc"
-  proc ==(dt1: datetime, dt2: datetime): bool {
+  operator datetime.-(dt: datetime, d: date):timedelta {
+    // convert date to datetime and use the default zero time
+    var castDate = datetime.combine(d,new time());
+    return dt - castDate;
+  }
+
+  pragma "no doc"
+  operator datetime.==(dt1: datetime, dt2: datetime): bool {
     if dt1.tzinfo.borrow() == nil && dt2.tzinfo.borrow() != nil ||
        dt1.tzinfo.borrow() != nil && dt2.tzinfo.borrow() == nil {
       halt("Cannot compare naive datetime to aware datetime");
@@ -1391,12 +1443,12 @@ module DateTime {
   }
 
   pragma "no doc"
-  proc !=(dt1: datetime, dt2: datetime) {
+  operator datetime.!=(dt1: datetime, dt2: datetime) {
     return !(dt1 == dt2);
   }
 
   pragma "no doc"
-  proc <(dt1: datetime, dt2: datetime): bool {
+  operator datetime.<(dt1: datetime, dt2: datetime): bool {
     if (dt1.tzinfo.borrow() != nil && dt2.tzinfo.borrow() == nil) ||
         (dt1.tzinfo.borrow() == nil && dt2.tzinfo.borrow() != nil) {
       halt("both datetimes must both be either naive or aware");
@@ -1413,7 +1465,7 @@ module DateTime {
   }
 
   pragma "no doc"
-  proc <=(dt1: datetime, dt2: datetime): bool {
+  operator datetime.<=(dt1: datetime, dt2: datetime): bool {
     if (dt1.tzinfo.borrow() != nil && dt2.tzinfo.borrow() == nil) ||
         (dt1.tzinfo.borrow() == nil && dt2.tzinfo.borrow() != nil) {
       halt("both datetimes must both be either naive or aware");
@@ -1430,7 +1482,7 @@ module DateTime {
   }
 
   pragma "no doc"
-  proc >(dt1: datetime, dt2: datetime): bool {
+  operator datetime.>(dt1: datetime, dt2: datetime): bool {
     if (dt1.tzinfo.borrow() != nil && dt2.tzinfo.borrow() == nil) ||
         (dt1.tzinfo.borrow() == nil && dt2.tzinfo.borrow() != nil) {
       halt("both datetimes must both be either naive or aware");
@@ -1447,7 +1499,7 @@ module DateTime {
   }
 
   pragma "no doc"
-  proc >=(dt1: datetime, dt2: datetime): bool {
+  operator datetime.>=(dt1: datetime, dt2: datetime): bool {
     if (dt1.tzinfo.borrow() != nil && dt2.tzinfo.borrow() == nil) ||
         (dt1.tzinfo.borrow() == nil && dt2.tzinfo.borrow() != nil) {
       halt("both datetimes must both be either naive or aware");
@@ -1580,17 +1632,17 @@ module DateTime {
   /* Operators on timedelta values */
 
   pragma "no doc"
-  proc *(i: int, t: timedelta) {
+  operator timedelta.*(i: int, t: timedelta) {
     return new timedelta(days=i*t.days, seconds=i*t.seconds, microseconds=i*t.microseconds);
   }
 
   pragma "no doc"
-  proc *(t: timedelta, i: int) {
+  operator timedelta.*(t: timedelta, i: int) {
     return new timedelta(days=i*t.days, seconds=i*t.seconds, microseconds=i*t.microseconds);
   }
 
   pragma "no doc"
-  proc /(t: timedelta, i: int) {
+  operator timedelta./(t: timedelta, i: int) {
     var day = t.days / i;
     var second = t.seconds + (t.days % i)*24*60*60;
     var microsecond = t.microseconds + (second % i)*1000000;
@@ -1605,31 +1657,31 @@ module DateTime {
   }
 
   pragma "no doc"
-  proc +(t: timedelta) {
+  operator timedelta.+(t: timedelta) {
     return t;
   }
 
   pragma "no doc"
-  proc -(t: timedelta) {
+  operator timedelta.-(t: timedelta) {
     return new timedelta(days=-t.days, seconds=-t.seconds, microseconds=-t.microseconds);
   }
 
   pragma "no doc"
-  proc +(lhs: timedelta, rhs: timedelta) {
+  operator timedelta.+(lhs: timedelta, rhs: timedelta) {
     return new timedelta(days=lhs.days+rhs.days,
                          seconds=lhs.seconds+rhs.seconds,
                          microseconds=lhs.microseconds+rhs.microseconds);
   }
 
   pragma "no doc"
-  proc -(lhs: timedelta, rhs: timedelta) {
+  operator timedelta.-(lhs: timedelta, rhs: timedelta) {
     return new timedelta(days=lhs.days-rhs.days,
                          seconds=lhs.seconds-rhs.seconds,
                          microseconds=lhs.microseconds-rhs.microseconds);
   }
 
   pragma "no doc"
-  proc >(lhs: timedelta, rhs: timedelta) {
+  operator timedelta.>(lhs: timedelta, rhs: timedelta) {
     const ls = (lhs.days*(24*60*60) + lhs.seconds);
     const rs = (rhs.days*(24*60*60) + rhs.seconds);
     if ls > rs then return true;
@@ -1638,12 +1690,12 @@ module DateTime {
   }
 
   pragma "no doc"
-  proc >=(lhs: timedelta, rhs: timedelta) {
+  operator timedelta.>=(lhs: timedelta, rhs: timedelta) {
     return lhs > rhs || lhs == rhs;
   }
 
   pragma "no doc"
-  proc <(lhs: timedelta, rhs: timedelta) {
+  operator timedelta.<(lhs: timedelta, rhs: timedelta) {
     const ls = (lhs.days*(24*60*60) + lhs.seconds);
     const rs = (rhs.days*(24*60*60) + rhs.seconds);
     if ls < rs then return true;
@@ -1652,7 +1704,7 @@ module DateTime {
   }
 
   pragma "no doc"
-  proc <=(lhs: timedelta, rhs: timedelta) {
+  operator timedelta.<=(lhs: timedelta, rhs: timedelta) {
     return lhs < rhs || lhs == rhs;
   }
 
@@ -1667,7 +1719,7 @@ module DateTime {
   }
 
   pragma "no doc"
-  proc _cast(type s, t: timedelta) where s == string {
+  operator :(t: timedelta, type s:string) {
     var str: string;
     if t.days != 0 {
       str = t.days: string + " day";

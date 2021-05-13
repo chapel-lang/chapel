@@ -77,7 +77,8 @@ class LicenseCommenter(object):
             """
             return map(lambda l: commentate_line(comment_prefix, l), lines)
 
-        if 'Makefile' in source_filename:
+        if ('Makefile' in source_filename or
+            source_filename.endswith('CMakeLists.txt')):
             # Add "# " to each line.
             return '\n'.join(commentate_lines('#', self.comment_text_lines)) + '\n\n'
 

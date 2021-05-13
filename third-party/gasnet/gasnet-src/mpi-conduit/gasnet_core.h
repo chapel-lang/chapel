@@ -24,7 +24,7 @@
   ==============
 */
 
-extern void gasnetc_exit(int exitcode) GASNETI_NORETURN;
+extern void gasnetc_exit(int _exitcode) GASNETI_NORETURN;
 GASNETI_NORETURNP(gasnetc_exit)
 #define gasnet_exit gasnetc_exit
 
@@ -37,31 +37,34 @@ GASNETI_NORETURNP(gasnetc_exit)
 #endif
 /* ------------------------------------------------------------------------------------ */
 extern int gasnetc_Client_Init(
-                gex_Client_t           *client_p,
-                gex_EP_t               *ep_p,
-                gex_TM_t               *tm_p,
-                const char             *clientName,
-                int                    *argc,
-                char                   ***argv,
-                gex_Flags_t            flags);
+                gex_Client_t           *_client_p,
+                gex_EP_t               *_ep_p,
+                gex_TM_t               *_tm_p,
+                const char             *_clientName,
+                int                    *_argc,
+                char                   ***_argv,
+                gex_Flags_t            _flags);
 // gasnetex.h handles name-shifting of gex_Client_Init()
 
 extern int gasnetc_Segment_Attach(
-                gex_Segment_t          *segment_p,
-                gex_TM_t               tm,
-                uintptr_t              length);
+                gex_Segment_t          *_segment_p,
+                gex_TM_t               _tm,
+                uintptr_t              _length);
 #define gex_Segment_Attach gasnetc_Segment_Attach
 
-extern int gasnetc_EP_Create(
-                gex_EP_t                *ep_p,
-                gex_Client_t            client,
-                gex_Flags_t             flags);
-#define gex_EP_Create gasnetc_EP_Create
+extern int gasnetc_Segment_Create(
+                gex_Segment_t          *_segment_p,
+                gex_Client_t           _client,
+                gex_Addr_t             _address,
+                uintptr_t              _length,
+                gex_MK_t               _kind,
+                gex_Flags_t            _flags);
+#define gex_Segment_Create gasnetc_Segment_Create
 
 extern int gasnetc_EP_RegisterHandlers(
-                gex_EP_t                ep,
-                gex_AM_Entry_t          *table,
-                size_t                  numentries);
+                gex_EP_t                _ep,
+                gex_AM_Entry_t          *_table,
+                size_t                  _numentries);
 #define gex_EP_RegisterHandlers gasnetc_EP_RegisterHandlers
 /* ------------------------------------------------------------------------------------ */
 /*
@@ -127,11 +130,11 @@ typedef struct gasneti_hsl_s {
   #define gex_HSL_Unlock(hsl)
   #define gex_HSL_Trylock(hsl)	GASNET_OK
 #else
-  extern void gasnetc_hsl_init   (gex_HSL_t *hsl);
-  extern void gasnetc_hsl_destroy(gex_HSL_t *hsl);
-  extern void gasnetc_hsl_lock   (gex_HSL_t *hsl);
-  extern void gasnetc_hsl_unlock (gex_HSL_t *hsl);
-  extern int  gasnetc_hsl_trylock(gex_HSL_t *hsl) GASNETI_WARN_UNUSED_RESULT;
+  extern void gasnetc_hsl_init   (gex_HSL_t *_hsl);
+  extern void gasnetc_hsl_destroy(gex_HSL_t *_hsl);
+  extern void gasnetc_hsl_lock   (gex_HSL_t *_hsl);
+  extern void gasnetc_hsl_unlock (gex_HSL_t *_hsl);
+  extern int  gasnetc_hsl_trylock(gex_HSL_t *_hsl) GASNETI_WARN_UNUSED_RESULT;
 
   #define gex_HSL_Init    gasnetc_hsl_init
   #define gex_HSL_Destroy gasnetc_hsl_destroy
@@ -141,10 +144,10 @@ typedef struct gasneti_hsl_s {
 #endif
 
 #if GASNET_PSHM && GASNETC_HSL_ERRCHECK && !GASNETC_NULL_HSL
-  extern void gasnetc_enteringHandler_hook_hsl(int cat, int isReq, int handlerId, gex_Token_t token,
-                                               void *buf, size_t nbytes, int numargs,
-                                               gex_AM_Arg_t *args);
-  extern void gasnetc_leavingHandler_hook_hsl(int cat, int isReq);
+  extern void gasnetc_enteringHandler_hook_hsl(int _cat, int _isReq, int _handlerId, gex_Token_t _token,
+                                               void *_buf, size_t _nbytes, int _numargs,
+                                               gex_AM_Arg_t *_args);
+  extern void gasnetc_leavingHandler_hook_hsl(int _cat, int _isReq);
 
   #define GASNETC_ENTERING_HANDLER_HOOK gasnetc_enteringHandler_hook_hsl
   #define GASNETC_LEAVING_HANDLER_HOOK  gasnetc_leavingHandler_hook_hsl
@@ -164,12 +167,28 @@ typedef struct gasneti_hsl_s {
 #define gex_AM_LUBReplyLong()       ((size_t)AM_MaxLong())
 
   // TODO-EX: Can these be improved upon, at least for PSHM case
-#define gasnetc_AM_MaxRequestMedium(tm,rank,lc_opt,flags,nargs)  gex_AM_LUBRequestMedium()
-#define gasnetc_AM_MaxReplyMedium(tm,rank,lc_opt,flags,nargs)    gex_AM_LUBReplyMedium()
-#define gasnetc_AM_MaxRequestLong(tm,rank,lc_opt,flags,nargs)    gex_AM_LUBRequestLong()
-#define gasnetc_AM_MaxReplyLong(tm,rank,lc_opt,flags,nargs)      gex_AM_LUBReplyLong()
-#define gasnetc_Token_MaxReplyMedium(token,lc_opt,flags,nargs)   gex_AM_LUBReplyMedium()
-#define gasnetc_Token_MaxReplyLong(token,lc_opt,flags,nargs)     gex_AM_LUBReplyLong()
+#define gasnetc_AM_MaxRequestMedium(tm,rank,lc_opt,flags,nargs)  \
+        (GASNETI_UNUSED_ARGS5(tm,rank,lc_opt,flags,nargs),gex_AM_LUBRequestMedium())
+#define gasnetc_AM_MaxReplyMedium(tm,rank,lc_opt,flags,nargs)    \
+        (GASNETI_UNUSED_ARGS5(tm,rank,lc_opt,flags,nargs),gex_AM_LUBReplyMedium())
+#define gasnetc_Token_MaxReplyMedium(token,lc_opt,flags,nargs)   \
+        (GASNETI_UNUSED_ARGS4(token,lc_opt,flags,nargs),gex_AM_LUBReplyMedium())
+
+#define gasnetc_AM_MaxRequestLong(tm,rank,lc_opt,flags,nargs)    \
+        (GASNETI_UNUSED_ARGS4(tm,rank,lc_opt,nargs), \
+         ((flags) & GEX_FLAG_AM_PREPARE_LEAST_ALLOC  \
+                  ? GASNETC_REF_NPAM_MAX_ALLOC       \
+                  : gex_AM_LUBRequestLong()))
+#define gasnetc_AM_MaxReplyLong(tm,rank,lc_opt,flags,nargs)      \
+        (GASNETI_UNUSED_ARGS4(tm,rank,lc_opt,nargs), \
+         ((flags) & GEX_FLAG_AM_PREPARE_LEAST_ALLOC  \
+                  ? GASNETC_REF_NPAM_MAX_ALLOC       \
+                  : gex_AM_LUBReplyLong()))
+#define gasnetc_Token_MaxReplyLong(token,lc_opt,flags,nargs)     \
+        (GASNETI_UNUSED_ARGS3(token,lc_opt,nargs),   \
+         ((flags) & GEX_FLAG_AM_PREPARE_LEAST_ALLOC  \
+                  ? GASNETC_REF_NPAM_MAX_ALLOC       \
+                  : gex_AM_LUBReplyLong()))
 
 /* ------------------------------------------------------------------------------------ */
 /*

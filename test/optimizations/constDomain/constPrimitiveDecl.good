@@ -1,1 +1,2 @@
+constPrimitiveDecl.chpl:5: warning: implicitly reading from a sync is deprecated; apply a 'read??()' method to the actual
 3

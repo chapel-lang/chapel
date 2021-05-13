@@ -18,7 +18,6 @@ module load openmpi/gcc
 
 export CHPL_COMM_SUBSTRATE=mpi
 export GASNET_QUIET=y
-export CHPL_LAUNCHER=slurm-gasnetrun_mpi
 nightly_args="${nightly_args} -no-buildcheck"
 perf_args="-performance-description gn-mpi -numtrials 1"
 

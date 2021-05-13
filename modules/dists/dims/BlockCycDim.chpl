@@ -616,7 +616,7 @@ iter BlockCyclic1locdom.dsiMyDensifiedRangeForSingleTask1d(globDD) {
 
   // Right now explicit cast range(64) to range(32) is not implemented.
   // We are doing it by hand here. Cf. proc =(range, range).
-  proc rangecast(out r1: range(?), r2: range(?)): void {
+  proc rangecast(ref r1: range(?), r2: range(?)): void {
     compilerAssert(r1.boundedType == r2.boundedType);
     if !r1.stridable && r2.stridable && r2._stride != 1 then
       halt("range with non-unit stride is cast to non-stridable range");
@@ -729,13 +729,19 @@ proc BlockCyclic1locdom.dsiLocalSliceStorageIndices1d(globDD, sliceRange)
     // to be done: figure out sliceRange's stride vs. globDD.wholeR.stride
     compilerError("localSlice is not implemented for the Dimensional distribution with a block-cyclic dimension specifier when the slice is stridable");
   } else {
-    const lowSid = if sliceRange.hasLowBound()
-      then globDD._dsiStorageIdx(sliceRange.low)
-      else 0: stoIndexT;
-    const highSid = if sliceRange.hasHighBound()
-      then globDD._dsiStorageIdx(sliceRange.high)
-      else 0: stoIndexT;
-    return new range(stoIndexT, sliceRange.boundedType, false, lowSid, highSid);
+    if sliceRange.hasLowBound() {
+      if sliceRange.hasHighBound() {
+        return globDD._dsiStorageIdx(sliceRange.low)..globDD._dsiStorageIdx(sliceRange.high);
+      } else {
+        return globDD._dsiStorageIdx(sliceRange.low)..;
+      }
+    } else {
+      if sliceRange.hasHighBound() {
+        return ..globDD._dsiStorageIdx(sliceRange.high);
+      } else {
+        return ..;
+      }
+    }
   }
 }
 

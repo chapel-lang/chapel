@@ -21,6 +21,7 @@
 #include "visibleFunctions.h"
 
 #include "callInfo.h"
+#include "DecoratedClassType.h"
 #include "driver.h"
 #include "expr.h"
 #include "ImportStmt.h"
@@ -80,7 +81,7 @@ static std::set<const char*> typeHelperNames;
 static bool useMethodVisibilityRules(CallExpr* call, const char* name) {
   return (call->numActuals() >=2 &&
           call->get(1)->typeInfo() == dtMethodToken)
-         || typeHelperNames.count(name);
+          || typeHelperNames.count(name) || isAstrOpName(name);
 }
 
 
@@ -263,15 +264,6 @@ static void buildVisibleFunctionMap() {
 
 // Build the cache of names we care about even though they aren't methods
 void initTypeHelperNames() {
-  typeHelperNames.insert(astrSassign);
-  typeHelperNames.insert(astrSeq);
-  typeHelperNames.insert(astrSne);
-  typeHelperNames.insert(astrSgt);
-  typeHelperNames.insert(astrSgte);
-  typeHelperNames.insert(astrSlt);
-  typeHelperNames.insert(astrSlte);
-  typeHelperNames.insert(astrSswap); // ?
-  typeHelperNames.insert(astr_cast);
   typeHelperNames.insert(astr_defaultOf);
   typeHelperNames.insert(astrNew);
   typeHelperNames.insert(astr_initCopy);
@@ -448,7 +440,7 @@ static void getVisibleMethods(const char* name, CallExpr* call,
 }
 
 static void lookAtTypeFirstHelper(const char* name, CallExpr* call,
-                                  BlockStmt* block, AggregateType* curType,
+                                  BlockStmt* block, Type* curType,
                                   VisibilityInfo* visInfo,
                                   std::set<BlockStmt*>& visited,
                                   Vec<FnSymbol*>& visibleFns) {
@@ -461,9 +453,12 @@ static void lookAtTypeFirstHelper(const char* name, CallExpr* call,
   getVisibleMethodsImpl(name, call, typeScope, visInfo, visited, visibleFns,
                         inScopeJump);
 
-  // Follow inheritance, if necessary
-  forv_Vec(AggregateType, pt, curType->dispatchParents) {
-    lookAtTypeFirstHelper(name, call, block, pt, visInfo, visited, visibleFns);
+  if (AggregateType* at = toAggregateType(curType)) {
+    // Follow inheritance, if necessary
+    forv_Vec(AggregateType, pt, at->dispatchParents) {
+      lookAtTypeFirstHelper(name, call, block, pt, visInfo, visited,
+                            visibleFns);
+    }
   }
 }
 
@@ -482,20 +477,61 @@ static void lookAtTypeFirst(const char* name, CallExpr* call, BlockStmt* block,
   }
   Type* t = typeActual->getValType();
 
-  BlockStmt* typeScope = getVisibilityScope(t->symbol->defPoint);
-  // When searching the type scope, don't follow private uses and imports if we
-  // aren't already in the scope where the type is defined.
-  bool inScopeJump = typeScope != block;
+  lookAtTypeFirstHelper(name, call, block, t, visInfo, visited, visibleFns);
 
-  // Look at own methods
-  getVisibleMethodsImpl(name, call, typeScope, visInfo, visited, visibleFns,
-                        inScopeJump);
+  Type* canonT = canonicalClassType(t);
+  if (t != canonT) {
+    lookAtTypeFirstHelper(name, call, block, canonT, visInfo, visited,
+                          visibleFns);
+  }
 
-  if (AggregateType* at = toAggregateType(t)) {
-    // Follow inheritance, if necessary
-    forv_Vec(AggregateType, pt, at->dispatchParents) {
-      lookAtTypeFirstHelper(name, call, block, pt, visInfo, visited,
-                            visibleFns);
+  if (!call->isPrimitive()) {
+    UnresolvedSymExpr* base = toUnresolvedSymExpr(call->baseExpr);
+    INT_ASSERT(base);
+    if (isAstrOpName(base->unresolved)) {
+      if (call->get(1)->typeInfo() != dtMethodToken &&
+          call->numActuals() == 2) {
+        // It's not currently set up as a method call and it is a binary
+        // operator so we need to check the second argument as well
+        Type* t2 = call->get(2)->getValType();
+        lookAtTypeFirstHelper(name, call, block, t2, visInfo, visited,
+                              visibleFns);
+
+        Type* canonT2 = canonicalClassType(t2);
+        if (t2 != canonT2) {
+          lookAtTypeFirstHelper(name, call, block, canonT2, visInfo, visited,
+                                visibleFns);
+        }
+
+      } else if (call->get(1)->typeInfo() == dtMethodToken &&
+                 call->numActuals() > 2) {
+        // It is a method call.  So we've only checked against the type we set
+        // the call up for, but there may be other operator methods defined
+        // directly on the arguments, so check them as well.
+        Type* t2 = call->get(3)->getValType();
+        lookAtTypeFirstHelper(name, call, block, t2, visInfo, visited,
+                              visibleFns);
+
+        Type* canonT2 = canonicalClassType(t2);
+        if (t2 != canonT2) {
+          lookAtTypeFirstHelper(name, call, block, canonT2, visInfo, visited,
+                                visibleFns);
+        }
+
+        if (call->numActuals() == 4) {
+          Type* t3 = call->get(2)->getValType();
+          lookAtTypeFirstHelper(name, call, block, t3, visInfo, visited,
+                                visibleFns);
+
+          Type* canonT3 = canonicalClassType(t3);
+          if (t3 != canonT3) {
+            lookAtTypeFirstHelper(name, call, block, canonT3, visInfo, visited,
+                                  visibleFns);
+          }
+        }
+        // If we ever allow trinary or greater operators, we'd do something
+        // about that here
+      }
     }
   }
 }
@@ -519,9 +555,21 @@ static void getVisibleMethodsFirstVisit(const char* name, CallExpr* call,
 
     if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(name)) {
       forv_Vec(FnSymbol, fn, *fns) {
-        // When private methods and fields are supported, we'll need to extend
-        // this
-        visibleFns.add(fn);
+        // Don't allow operators that aren't methods to be found unless they're
+        // publicly visible
+        if (fn->hasFlag(FLAG_METHOD) || !fn->hasFlag(FLAG_OPERATOR)) {
+          // When private methods and fields are supported, we'll need to extend
+          // this
+          visibleFns.add(fn);
+
+        } else if (fn->hasFlag(FLAG_OPERATOR)) {
+          // Respect operator function privacy.
+          if (fn->hasFlag(FLAG_PRIVATE) && fn->isVisible(call)) {
+            visibleFns.add(fn);
+          } else if (!fn->hasFlag(FLAG_PRIVATE)) {
+            visibleFns.add(fn);
+          }
+        }
       }
     }
   }
@@ -625,7 +673,8 @@ static void getVisibleMethodsFromUseListFiltered(const char* name,
     if (UseStmt* use = toUseStmt(expr)) {
       if (!needToTraverseUse(firstVisit, inUseChain, use->isPrivate))
         continue;
-      if (call->numActuals() >= 2) {
+      if (call->numActuals() >= 2 &&
+          call->get(1)->typeInfo() == dtMethodToken) {
         Expr* thisArg = call->get(2);
         Type* thisType = thisArg->getValType();
         namedTypes = use->typeWasNamed(thisType);
@@ -635,6 +684,26 @@ static void getVisibleMethodsFromUseListFiltered(const char* name,
           // this use statement.
           continue;
         }
+      } else if (!call->isPrimitive()) {
+        UnresolvedSymExpr* base = toUnresolvedSymExpr(call->baseExpr);
+        INT_ASSERT(base);
+        if (isAstrOpName(base->unresolved)) {
+          // It's an operator
+          Expr* arg1 = call->get(1);
+          Type* arg1Type = arg1->getValType();
+          namedTypes = use->typeWasNamed(arg1Type);
+          if (call->numActuals() == 2) {
+            Expr* arg2 = call->get(2);
+            Type* arg2Type = arg2->getValType();
+            use->typeWasNamed(arg2Type, &namedTypes);
+          }
+          if (use->hasExceptList() && namedTypes.size() == 0) {
+            // The intersection of symbols allowed by the except list and this
+            // type's name or inherited names was empty.  We should not traverse
+            // this use statement.
+            continue;
+          }
+        }
       }
       if (use->skipSymbolSearch(name) && namedTypes.size() == 0)
         continue;
@@ -642,10 +711,25 @@ static void getVisibleMethodsFromUseListFiltered(const char* name,
     } else if (ImportStmt* import = toImportStmt(expr)) {
       if (!needToTraverseUse(firstVisit, inUseChain, import->isPrivate))
         continue;
-      if (call->numActuals() >= 2) {
+      if (call->numActuals() >= 2 &&
+          call->get(1)->typeInfo() == dtMethodToken) {
         Expr* thisArg = call->get(2);
         Type* thisType = thisArg->getValType();
         namedTypes = import->typeWasNamed(thisType);
+      } else if (!call->isPrimitive()) {
+        UnresolvedSymExpr* base = toUnresolvedSymExpr(call->baseExpr);
+        INT_ASSERT(base);
+        if (isAstrOpName(base->unresolved)) {
+          // It's an operator
+          Expr* arg1 = call->get(1);
+          Type* arg1Type = arg1->getValType();
+          namedTypes = import->typeWasNamed(arg1Type);
+          if (call->numActuals() == 2) {
+            Expr* arg2 = call->get(2);
+            Type* arg2Type = arg2->getValType();
+            import->typeWasNamed(arg2Type, &namedTypes);
+          }
+        }
       }
       if (import->skipSymbolSearch(name) && namedTypes.size() == 0)
         continue;

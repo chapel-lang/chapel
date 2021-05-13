@@ -235,12 +235,6 @@ ModuleSymbol::ModuleSymbol(const char* iName,
   gModuleSymbols.add(this);
 }
 
-
-ModuleSymbol::~ModuleSymbol() {
-
-}
-
-
 void ModuleSymbol::verify() {
   Symbol::verify();
 

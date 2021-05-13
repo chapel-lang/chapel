@@ -614,9 +614,9 @@ proc _CurrentLocaleToLocIDs(targetLocales): (targetLocales.rank*locIdT, bool)
     if loc == here {
       // if we get multiple matches, we do not specify which is returned
       // could add a pre-test if it were cheap: if !gotresult$.readXX()
-      gotresult$;
+      gotresult$.readFE();
       result = lls;
-      gotresult$ = true;
+      gotresult$.writeEF(true);
     }
   // instead of crashing right away, return a flag
   //if !gotresult$.readXX() then halt("DimensionalDist2D: the current locale ", here, " is not among the target locales ", targetLocales);
@@ -1077,8 +1077,8 @@ proc DimensionalArr.dsiLocalSlice((sliceDim1, sliceDim2)) {
   // todo: cache (l1, l2) in privatized copies when possible
   // (i.e. if privatization is supported and there is no oversubscription)
   // Assuming dsiLocalSlice is guaranteed to be local to 'here'.
-  const l1 = dist.di1.dsiIndexToLocale1d(sliceDim1.low),
-        l2 = dist.di2.dsiIndexToLocale1d(sliceDim2.low),
+  const l1 = dist.di1.dsiIndexToLocale1d(if sliceDim1.hasLowBound() then sliceDim1.low else chpl__intToIdx(sliceDim1.idxType, 1)),
+        l2 = dist.di2.dsiIndexToLocale1d(if sliceDim2.hasLowBound() then sliceDim2.low else chpl__intToIdx(sliceDim2.idxType, 1)),
         locAdesc = this.localAdescs[l1, l2],
         r1 = if dom.dom1.dsiStorageUsesUserIndices()
              then dom.whole.dim(0)(sliceDim1)

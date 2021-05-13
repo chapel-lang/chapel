@@ -113,6 +113,9 @@ static void removeUnusedFunctions() {
               fatalErrorsEncountered() == false) {
             removeUnusedFunction(fn);
           }
+        } else if (fn->isConstrainedGeneric()) {
+          INT_ASSERT(fn->firstSymExpr() == nullptr);  // these better be unused
+          removeUnusedFunction(fn);
         }
       }
     }
@@ -235,7 +238,21 @@ static void removeRandomPrimitives() {
 }
 
 
-static void removeInterfaceCode() {
+// remove ASTs that supported CG (constrained generics / interfaces)
+// see also finishInterfaceChecking()
+static void cleanupConstrainedGenerics() {
+  // This should be done before removing InterfaceSymbols
+  // so we can get at and remove refTypes.
+  for_alive_in_Vec(ConstrainedType, ct, gConstrainedTypes) {
+    ct->symbol->defPoint->remove();
+    if (Type* ctRef = ct->refType)
+    {
+      //INT_FATAL("CG case"); // used for testing
+      if (ctRef->symbol->defPoint->inTree())
+        ctRef->symbol->defPoint->remove();
+    }
+  }
+
   for_alive_in_Vec(InterfaceSymbol, isym, gInterfaceSymbols)
     isym->defPoint->remove();
 
@@ -247,12 +264,6 @@ static void removeInterfaceCode() {
     for_alist(impl, istm->implBody->body)
       wrapFnDef->insertBefore(impl->remove());
     wrapFnDef->remove();
-  }
-
-  for_alive_in_Vec(ConstrainedType, ct, gConstrainedTypes) {
-    ct->symbol->defPoint->remove();
-    if (Type* ctRef = ct->refType)
-      ctRef->symbol->defPoint->remove();
   }
 }
 
@@ -914,10 +925,11 @@ void saveGenericSubstitutions() {
         // This case is a workaround for patterns that
         // come up with compiler-generated tuple functions
         INT_ASSERT(fn->hasFlag(FLAG_INIT_TUPLE));
-        form_Map(SymbolMapElem, e, fn->substitutions) {
+
+        for (auto elem: sortedSymbolMapElts(fn->substitutions)) {
           NameAndSymbol ns;
-          ns.name = e->key->name;
-          ns.value = e->value;
+          ns.name = elem.key->name;
+          ns.value = elem.value;
           ns.isParam = false;
           ns.isType = false;
           fn->substitutionsPostResolve.push_back(ns);
@@ -969,7 +981,7 @@ void saveGenericSubstitutions() {
 }
 
 void pruneResolvedTree() {
-  removeInterfaceCode();
+  cleanupConstrainedGenerics();
 
   removeTiMarks();
 

@@ -411,8 +411,13 @@ static void printCallstack(FnSymbol* errFn, FnSymbol* prevFn,
       if (hideErrFn == false) {
         std::string nameAndArgs = errFn->nameAndArgsToString(", ", true,
                                                              printedUnderline);
+        if (errFn->hasFlag(FLAG_IMPLEMENTS_WRAPPER)) {
+          print_error("  %s:%d: resolving 'implements %s' statement",
+                      cleanFilename(bestPoint),
+                      bestPoint->linenum(),
+                      interfaceNameForWrapperFn(errFn));
 
-        if (nameAndArgs.empty()) {
+        } else if (nameAndArgs.empty()) {
           print_error("  %s:%d: %s called",
                       cleanFilename(bestPoint),
                       bestPoint->linenum(),
@@ -480,6 +485,30 @@ static void printCallstackForLastError() {
   }
 }
 
+//
+// Given a function whose name starts with chpl_, it may be of interest
+// to a non-developer if it is module init function. As a heuristic, if the
+// module name matches the name of its file, we consider it not "interesting".
+//
+static bool interestingModuleInit(FnSymbol* fn) {
+  if (! fn->hasFlag(FLAG_MODULE_INIT))
+    return false;
+
+  const char* basename = fn->fname();
+  if (basename == nullptr)
+    return false;
+
+  if (const char* slash = (const char*) strrchr(basename, '/'))
+    basename = slash+1;
+
+  if (! startsWith(fn->name, "chpl__init_"))
+    return false; // unexpected, so let's stay away from it
+
+  const char* modulename = astr(fn->name + 11, ".chpl");
+
+  return strcmp(modulename, basename) != 0;
+}
+
 static bool printErrorHeader(BaseAST* ast, astlocT astloc) {
 
   if (Expr* expr = toExpr(ast)) {
@@ -517,14 +546,12 @@ static bool printErrorHeader(BaseAST* ast, astlocT astloc) {
         // the error function and line number, nothing is printed.
         if (!err_fn->hasFlag(FLAG_COMPILER_GENERATED) &&
             err_fn->linenum()) {
-          bool suppress = false;
-
-          // Suppress internal function names
-          if (!developer && strncmp(err_fn->name, "chpl_", 5) == 0) {
-            suppress = true;
-          }
-
-          if (suppress == false) {
+          // In non-developer mode, do not print functions named chpl_....
+          // DO print "In module MMM" unless it is obvious.
+          if (developer                              ||
+              strncmp(err_fn->name, "chpl_", 5) != 0 ||
+              interestingModuleInit(err_fn)           )
+          {
             print_error("%s:%d: In %s:\n",
                         cleanFilename(err_fn), err_fn->linenum(),
                         fnKindAndName(err_fn));

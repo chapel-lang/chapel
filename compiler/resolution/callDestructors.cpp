@@ -36,6 +36,7 @@
 #include "resolveIntents.h"
 #include "stlUtil.h"
 #include "stringutil.h"
+#include "symbol.h"
 #include "virtualDispatch.h"
 
 #include <vector>
@@ -567,6 +568,28 @@ void ReturnByRef::transform()
   transformFunction(mFunction);
 }
 
+// Check for a =, PRIM_MOVE, or PRIM_ASSIGN
+// with a RHS that is marked with FLAG_FORMAL_TEMP_OUT_CALLSITE.
+// This reflects the writeback pattern added at the callsite
+// for out/inout formals (see wrappers.cpp).
+static bool isFormalTmpWriteback(Expr* e) {
+  if (CallExpr* call = toCallExpr(e)) {
+    if (call->isNamedAstr(astrSassign) ||
+        call->isPrimitive(PRIM_MOVE) ||
+        call->isPrimitive(PRIM_ASSIGN)) {
+      int nActuals = call->numActuals();
+      if (nActuals >= 2) {
+        // check if the last argument has the appropriate flag.
+        if (SymExpr* se = toSymExpr(call->get(nActuals))) {
+          if (se->symbol()->hasFlag(FLAG_FORMAL_TEMP_OUT_CALLSITE))
+            return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
 //
 // Transform a call to a function that returns a record to be a call
 // to a revised function that does not return a value and that accepts
@@ -626,7 +649,9 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
   //
   // Also ignore a DefExpr which might e.g. define a user variable
   // which is = initCopy(call_tmp).
-  while (nextExpr && (isCheckErrorStmt(nextExpr) || isDefExpr(nextExpr)))
+  while (nextExpr &&
+         (isCheckErrorStmt(nextExpr) || isDefExpr(nextExpr) ||
+          isFormalTmpWriteback(nextExpr)))
     nextExpr = nextExpr->next;
 
   CallExpr* copyExpr  = NULL;
@@ -1700,6 +1725,39 @@ static void checkForInvalidGlobalUses() {
 *                                                                             *
 ************************************** | *************************************/
 
+// This function checks to see if the actual argument for a given formal is
+// a temporary that has been copy-initialized. If so, the function tries
+// to return the original actual. Look for a pattern like:
+//    move temp (call chpl__copyInit actual)
+// And return 'actual'.
+static SymExpr* getActualBeforeCopyInit(CallExpr* call, ArgSymbol* formal) {
+  Expr* actual = formal_to_actual(call, formal);
+  SymExpr* se = toSymExpr(actual);
+
+  if (se && se->symbol()->hasFlag(FLAG_TEMP)) {
+    for_SymbolSymExprs(use, se->symbol()) {
+      CallExpr* def = toCallExpr(use->parentExpr);
+
+      if (def && (def->isPrimitive(PRIM_ASSIGN) ||
+                  def->isPrimitive(PRIM_MOVE))) {
+        SymExpr* lhs = toSymExpr(def->get(1));
+        CallExpr* rhs = toCallExpr(def->get(2));
+
+        if (lhs && rhs && (lhs->symbol() == se->symbol())) {
+          FnSymbol* rhsFn = rhs->resolvedFunction();
+
+          if (rhsFn && rhsFn->hasFlag(FLAG_INIT_COPY_FN)) {
+            if (SymExpr* result = toSymExpr(rhs->get(1))) {
+              return result;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return NULL;
+}
 
 // Function resolution adds "dummy" initCopy functions for types
 // that cannot be copied. These "dummy" initCopy functions are marked
@@ -1710,16 +1768,85 @@ static void checkForInvalidGlobalUses() {
 //
 // This function simply checks that no function marked with that
 // flag is ever called and raises an error if so.
+//
+// Additionally, also collect in formals that are marked with
+// "error on copy", and check their actuals to see if they are
+// initialized with calls to initCopy().
 static void checkForErroneousInitCopies() {
 
   std::map<FnSymbol*, const char*> errors;
+  std::set<ArgSymbol*> errorOnCopyFormals;
 
-  // Store errors in local map
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_ERRONEOUS_COPY)) {
       // Store the error in the local map
       if (const char* err = getErroneousCopyError(fn))
         errors[fn] = err;
+    }
+
+    // Collect in intent formals that are marked "error on copy".
+    for_formals(formal, fn) {
+      if (formal->hasFlag(FLAG_ERROR_ON_COPY)) {
+        if (formal->intent & INTENT_IN ||
+            formal->originalIntent & INTENT_IN) {
+          errorOnCopyFormals.insert(formal);
+        } else {
+          INT_FATAL(formal, "is marked with %s but is not %s",
+                            "error on copy",
+                            intentDescrString(INTENT_IN));
+        }
+      }
+    }
+  }
+
+  // Iterate through "error on copy" formals and check their callsites.
+  // Emit an error if an actual is a copy.
+  for_set(ArgSymbol, formal, errorOnCopyFormals) {
+    FnSymbol* fn = formal->getFunction();
+    INT_ASSERT(fn != NULL);
+
+    if (!fn->inTree())
+      continue;
+
+    computeAllCallSites(fn);
+
+    forv_Vec(CallExpr, call, *fn->calledBy) {
+      if (SymExpr* actual = getActualBeforeCopyInit(call, formal)) {
+        SymExpr* nextUse = nullptr;
+
+        // Conservatively look for the nearest following use.
+        for (Expr* look = call->next; look && !nextUse;
+             look = look->next) {
+          std::vector<SymExpr*> uses;
+
+          collectSymExprsFor(look, actual->symbol(), uses);
+          for (auto se : uses) {
+            if (CallExpr* useCall = toCallExpr(se->parentExpr)) {
+              // TODO: May have to expand this to cover more cases...
+              if (!useCall->isPrimitive(PRIM_END_OF_STATEMENT) &&
+                  !useCall->isNamedAstr("chpl__autoDestroy")) {
+                nextUse = se;
+                break;
+              }
+            }
+          }
+        }
+
+        const char* actualStr = toString(actual->symbol(), false);
+
+        if (nextUse) {
+          USR_FATAL_CONT(call, "cannot call '%s' because this is not the "
+                               "last use of '%s'",
+                               fn->name,
+                               actualStr);
+          USR_PRINT(nextUse, "next use of '%s' is here", actualStr);
+        } else {
+          USR_FATAL_CONT(call, "cannot call '%s' because '%s' might be "
+                               "used elsewhere",
+                               fn->name,
+                               actualStr);
+        }
+      }
     }
   }
 
@@ -1900,12 +2027,18 @@ static void destroyFormalInTaskFn(ArgSymbol* formal, FnSymbol* taskFn) {
 ************************************** | *************************************/
 
 
-static void removeEndOfStatementMarkersElidedCopyPrims() {
+static void removeEndOfStatementMarkersElidedCopyPrimsZips() {
   for_alive_in_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_END_OF_STATEMENT))
       call->remove();
     if (call->isPrimitive(PRIM_ASSIGN_ELIDED_COPY))
       call->primitive = primitives[PRIM_ASSIGN];
+
+    // we keep PRIM_ZIPs after resolution as markers to avoid copy elision for
+    // symbols that are used in zip clauses. At this point, we no longer need
+    // those
+    if (call->isPrimitive(PRIM_ZIP))
+      call->remove();
   }
 }
 
@@ -2001,6 +2134,6 @@ void callDestructors() {
 
   convertClassTypesToCanonical();
 
-  removeEndOfStatementMarkersElidedCopyPrims();
+  removeEndOfStatementMarkersElidedCopyPrimsZips();
   removeElidedOnBlocks();
 }

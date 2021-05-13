@@ -21,6 +21,7 @@ Base Language Features
    Including Sub-Modules from Separate Files <module_include>
    main() Functions <main>
    Module Search Paths <module_search>
+   Operator Methods <operatorMethods>
 
 
 Initializers and Generic Programming

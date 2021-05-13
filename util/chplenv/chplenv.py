@@ -20,7 +20,7 @@ import chpl_locale_model
 import chpl_arch
 import chpl_mem
 import chpl_qthreads
-import chpl_regexp
+import chpl_re2
 import chpl_tasks
 import chpl_timers
 import chpl_unwind

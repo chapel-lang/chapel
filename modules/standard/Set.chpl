@@ -93,6 +93,15 @@ module Set {
     }
   }
 
+  // If we have "chpl__serialize", assume we have "chpl__deserialize".
+  pragma "no doc"
+  proc _isSerializable(type T) param {
+    use Reflection;
+    pragma "no init"
+    var x: T;
+    return canResolveMethod(x, "chpl__serialize");
+  }
+
   /*
     A set is a collection of unique elements. Attempting to add a duplicate
     element to a set has no effect.
@@ -141,14 +150,51 @@ module Set {
       this.parSafe = parSafe;
     }
 
-    // Returns true if the key was added to the hashtable.
+    // Do things the slow/copy way if the element is serializable.
+    // See issue: #17477
     pragma "no doc"
-    proc _addElem(in elem: eltType): bool {
-      var (isFullSlot, idx) = _htb.findAvailableSlot(elem);
+    proc _addElem(in elem: eltType): bool
+    where _isSerializable(eltType) {
+        var result = true;
 
-      if isFullSlot then return false;
-      _htb.fillSlot(idx, elem, none);
-      return true;
+        on this {
+          var (isFullSlot, idx) = _htb.findAvailableSlot(elem);
+
+          if !isFullSlot {
+            _htb.fillSlot(idx, elem, none);
+            result = true;
+          }
+        }
+
+      return result;
+    }
+
+    // For types that aren't serializable, avoid an extra copy by moving
+    // the value across locales.
+    pragma "no doc"
+    proc _addElem(pragma "no auto destroy" in elem: eltType): bool {
+      use Memory.Initialization;
+
+      var result = false;
+
+      on this {
+
+        // TODO: The following variation gets lifetime errors in
+        // '.../Set/types/testNilableTuple.chpl':
+        //
+        // var moved = moveToValue(elem);
+        // var (isFullSlot, idx) = _htb.findAvailableSlot(moved);
+        //
+        var (isFullSlot, idx) = _htb.findAvailableSlot(elem);
+
+        if !isFullSlot {
+          var moved = moveToValue(elem);
+          _htb.fillSlot(idx, moved, none);
+          result = true;
+        }
+      }
+
+      return result;
     }
 
     /*
@@ -178,17 +224,26 @@ module Set {
 
       :arg other: A set to initialize this set with.
     */
-    proc init=(const ref other: set(?t, ?)) lifetime this < other {
-      this.eltType = t;
-      this.parSafe = other.parSafe;
+    proc init=(const ref other: set(?t, ?p)) lifetime this < other {
+      this.eltType = if this.type.eltType != ? then
+                        this.type.eltType else t;
+      this.parSafe = if this.type.parSafe != ? then
+                        this.type.parSafe else p;
       this.complete();
 
-      if !isCopyableType(eltType) then
-        compilerError('cannot initialize ' + this.type:string + ' from ' +
-                      other.type:string + ' because element type ' +
-                      eltType:string + ' is not copyable');
-
-      for elem in other do _addElem(elem);
+      // TODO: Relax this to allow if 'isCoercible(t, this.eltType)'?
+      if eltType != t {
+        compilerError('cannot initialize ', this.type:string, ' from ',
+                      other.type:string, ' due to element type ',
+                      'mismatch');
+      } else if !isCopyableType(eltType) {
+        compilerError('cannot initialize ', this.type:string, ' from ',
+                      other.type:string, ' because element type ',
+                      eltType:string, ' is not copyable');
+      } else {
+        // TODO: Use a forall when this.parSafe?
+        for elem in other do _addElem(elem);
+      }
     }
 
     pragma "no doc"
@@ -365,14 +420,14 @@ module Set {
       :yields: A constant reference to an element in this set.
     */
     pragma "order independent yielding loops"
-    iter const these() {
+    iter const these() const ref {
       for idx in 0..#_htb.tableSize do
         if _htb.isSlotFull(idx) then yield _htb.table[idx].key;
     }
 
     pragma "no doc"
     pragma "order independent yielding loops"
-    iter const these(param tag) where tag == iterKind.standalone {
+    iter const these(param tag) const ref where tag == iterKind.standalone {
       var space = 0..#_htb.tableSize;
       for idx in space.these(tag) do
         if _htb.isSlotFull(idx) then yield _htb.table[idx].key;
@@ -388,7 +443,7 @@ module Set {
 
     pragma "no doc"
     pragma "order independent yielding loops"
-    iter const these(param tag, followThis)
+    iter const these(param tag, followThis) const ref
     where tag == iterKind.follower {
       for idx in followThis(0) do
         if _htb.isSlotFull(idx) then yield _htb.table[idx].key;
@@ -508,7 +563,7 @@ module Set {
     :arg lhs: The set to assign to.
     :arg rhs: The set to assign from.
   */
-  proc =(ref lhs: set(?t, ?), const ref rhs: set(t, ?)) {
+  operator set.=(ref lhs: set(?t, ?), const ref rhs: set(t, ?)) {
     lhs.clear();
 
     for x in rhs do
@@ -522,10 +577,13 @@ module Set {
     :arg b: A set to take the union of.
 
     :return: A new set containing the union between `a` and `b`.
-    :rtype: `set(?t, ?)`
   */
-  proc |(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t) {
+  operator set.|(const ref a: set(?t, ?), const ref b: set(t, ?)) {
     var result: set(t, (a.parSafe || b.parSafe));
+
+    // TODO: Split-init causes weird errors, remove this line and then run
+    // setCompositionParSafe.chpl to see.
+    result;
 
     result = a;
     result |= b;
@@ -539,7 +597,7 @@ module Set {
     :arg lhs: A set to take the union of and then assign to.
     :arg rhs: A set to take the union of.
   */
-  proc |=(ref lhs: set(?t, ?), const ref rhs: set(t, ?)) {
+  operator set.|=(ref lhs: set(?t, ?), const ref rhs: set(t, ?)) {
     for x in rhs do
       lhs.add(x);
   }
@@ -552,9 +610,8 @@ module Set {
     :arg b: A set to take the union of.
 
     :return: A new set containing the union between `a` and `b`.
-    :rtype: `set(?t, ?)`
   */
-  proc +(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t, ?) {
+  operator set.+(const ref a: set(?t, ?), const ref b: set(t, ?)) {
     return a | b;
   }
 
@@ -564,7 +621,7 @@ module Set {
     :arg lhs: A set to take the union of and then assign to.
     :arg rhs: A set to take the union of.
   */
-  proc +=(ref lhs: set(?t, ?), const ref rhs: set(t, ?)) {
+  operator set.+=(ref lhs: set(?t, ?), const ref rhs: set(t, ?)) {
     lhs |= rhs;
   }
 
@@ -575,13 +632,12 @@ module Set {
     :arg b: A set to take the difference of.
 
     :return: A new set containing the difference between `a` and `b`.
-    :rtype: `set(t)`
   */
-  proc -(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t) {
+  operator set.-(const ref a: set(?t, ?), const ref b: set(t, ?)) {
     var result = new set(t, (a.parSafe || b.parSafe));
 
     if a.parSafe && b.parSafe {
-      forall x in a do
+      forall x in a with (ref result) do
         if !b.contains(x) then
           result.add(x);
     } else {
@@ -604,9 +660,9 @@ module Set {
     :arg lhs: A set to take the difference of and then assign to.
     :arg rhs: A set to take the difference of.
   */
-  proc -=(ref lhs: set(?t, ?), const ref rhs: set(t, ?)) {
+  operator set.-=(ref lhs: set(?t, ?), const ref rhs: set(t, ?)) {
     if lhs.parSafe && rhs.parSafe {
-      forall x in rhs do
+      forall x in rhs with (ref lhs) do
         lhs.remove(x);
     } else {
       for x in rhs do
@@ -621,15 +677,14 @@ module Set {
     :arg b: A set to take the intersection of.
 
     :return: A new set containing the intersection of `a` and `b`.
-    :rtype: `set(t)`
   */
-  proc &(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t) {
+  operator set.&(const ref a: set(?t, ?), const ref b: set(t, ?)) {
     var result: set(t, (a.parSafe || b.parSafe));
 
     /* Iterate over the smaller set */
     if a.size <= b.size {
       if a.parSafe && b.parSafe {
-        forall x in a do
+        forall x in a with (ref result) do
           if b.contains(x) then
             result.add(x);
       } else {
@@ -639,7 +694,7 @@ module Set {
       }
     } else {
       if a.parSafe && b.parSafe {
-        forall x in b do
+        forall x in b with (ref result) do
           if a.contains(x) then
             result.add(x);
       } else {
@@ -664,13 +719,13 @@ module Set {
     :arg lhs: A set to take the intersection of and then assign to.
     :arg rhs: A set to take the intersection of.
   */
-  proc &=(ref lhs: set(?t, ?), const ref rhs: set(t, ?)) {
+  operator set.&=(ref lhs: set(?t, ?), const ref rhs: set(t, ?)) {
     /* We can't remove things from lhs while iterating over it, so
      * use a temporary. */
     var result: set(t, (lhs.parSafe || rhs.parSafe));
 
     if lhs.parSafe && rhs.parSafe {
-      forall x in lhs do
+      forall x in lhs with (ref result) do
         if rhs.contains(x) then
           result.add(x);
     } else {
@@ -678,6 +733,7 @@ module Set {
         if rhs.contains(x) then
           result.add(x);
     }
+
     lhs = result;
   }
 
@@ -688,10 +744,13 @@ module Set {
     :arg b: A set to take the symmetric difference of.
 
     :return: A new set containing the symmetric difference of `a` and `b`.
-    :rtype: `set(?t, ?)`
   */
-  proc ^(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t) {
+  operator set.^(const ref a: set(?t, ?), const ref b: set(t, ?)) {
     var result: set(t, (a.parSafe || b.parSafe));
+
+    // TODO: Split-init causes weird errors, remove this line and then run
+    // setCompositionParSafe.chpl to see.
+    result;
 
     /* Expect the loop in ^= to be more expensive than the loop in =,
        so arrange for the rhs of the ^= to be the smaller set. */
@@ -718,9 +777,9 @@ module Set {
     :arg lhs: A set to take the symmetric difference of and then assign to.
     :arg rhs: A set to take the symmetric difference of.
   */
-  proc ^=(ref lhs: set(?t, ?), const ref rhs: set(t, ?)) {
+  operator set.^=(ref lhs: set(?t, ?), const ref rhs: set(t, ?)) {
     if lhs.parSafe && rhs.parSafe {
-      forall x in rhs {
+      forall x in rhs with (ref lhs) {
         if lhs.contains(x) {
           lhs.remove(x);
         } else {
@@ -748,7 +807,7 @@ module Set {
     :return: `true` if two sets are equal.
     :rtype: `bool`
   */
-  proc ==(const ref a: set(?t, ?), const ref b: set(t, ?)): bool {
+  operator set.==(const ref a: set(?t, ?), const ref b: set(t, ?)): bool {
     if a.size != b.size then
       return false;
 
@@ -767,6 +826,17 @@ module Set {
     return result;
   }
 
+  pragma "no doc"
+  operator set.:(x: set(?et1, ?p1), type t: set(?et2, ?p2)) {
+    // TODO: Allow coercion between element types? If we do then init=
+    // should also be changed accordingly.
+    if et1 != et2 then
+      compilerError('Cannot cast to set with different ',
+                    'element type: ', t:string);
+    var result: set(et1, p2) = x;
+    return result;
+  }
+
   /*
     Return `true` if the sets `a` and `b` are not equal.
 
@@ -776,7 +846,7 @@ module Set {
     :return: `true` if two sets are not equal.
     :rtype: `bool`
   */
-  proc !=(const ref a: set(?t, ?), const ref b: set(t, ?)): bool {
+  operator set.!=(const ref a: set(?t, ?), const ref b: set(t, ?)): bool {
     return !(a == b);
   }
 
@@ -789,7 +859,7 @@ module Set {
     :return: `true` if `a` is a proper subset of `b`.
     :rtype: `bool`
   */
-  proc <(const ref a: set(?t, ?), const ref b: set(t, ?)): bool {
+  operator set.<(const ref a: set(?t, ?), const ref b: set(t, ?)): bool {
     if a.size >= b.size then
       return false;
     return a <= b;
@@ -804,7 +874,7 @@ module Set {
     :return: `true` if `a` is a subset of `b`.
     :rtype: `bool`
   */
-  proc <=(const ref a: set(?t, ?), const ref b: set(t, ?)): bool {
+  operator set.<=(const ref a: set(?t, ?), const ref b: set(t, ?)): bool {
     if a.size > b.size then
       return false;
 
@@ -833,7 +903,7 @@ module Set {
     :return: `true` if `a` is a proper superset of `b`.
     :rtype: `bool`
   */
-  proc >(const ref a: set(?t, ?), const ref b: set(t, ?)): bool {
+  operator set.>(const ref a: set(?t, ?), const ref b: set(t, ?)): bool {
     if a.size <= b.size then
       return false;
     return a >= b;
@@ -848,7 +918,7 @@ module Set {
     :return: `true` if `a` is a superset of `b`.
     :rtype: `bool`
   */
-  proc >=(const ref a: set(?t, ?), const ref b: set(t, ?)): bool {
+  operator set.>=(const ref a: set(?t, ?), const ref b: set(t, ?)): bool {
     if a.size < b.size then
       return false;
 

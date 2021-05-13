@@ -89,7 +89,7 @@ static void initialize_team_fields(
     // Detect and optimize for storage in symmetric offset case
     uintptr_t symmetric_offset = 0;
     int is_symmetric = 0;
-    if (team->total_ranks > 1) {
+    if (scratch_size && (team->total_ranks > 1)) {
       const gasnet_seginfo_t *si = gasneti_seginfo + team->rel2act_map[0];
       symmetric_offset = (uintptr_t)scratch_addrs[0] - (uintptr_t)(si->addr);
       if (symmetric_offset < si->size) {
@@ -130,7 +130,7 @@ static void initialize_team_fields(
     GASNETI_TRACE_PRINTF(W,("Team TM0:%i scratch: size=%"PRIuSZ" symmetric_offset=%"PRIuPTR" (auxseg)",
                             gasneti_mynode, scratch_size, gasnete_coll_auxseg_offset));
   }
-  team->myscratch = (void *)gasnete_coll_scratch_base(team, team->myrank);
+  team->myscratch = team->scratch_size ? (void *)gasnete_coll_scratch_base(team, team->myrank) : NULL;
 
 #if GASNET_PAR && GASNET_DEBUG
   gasneti_mutex_init(&team->threads_mutex);
@@ -151,6 +151,7 @@ static void initialize_team_fields(
   gasnete_coll_alloc_new_scratch_status(team);
   team->scratch_free_list = NULL;
   gex_HSL_Init(&team->child.lock);
+  gex_HSL_Init(&team->rexchgv.lock);
   
 #ifndef GASNETE_COLL_P2P_OVERRIDE
   gex_HSL_Init(&team->p2p_lock);
@@ -502,12 +503,6 @@ gasnet_team_handle_t gasnete_coll_team_split(gasnet_team_handle_t parent,
   /* It would be better to add some sanity check for team correctness here. */
   
   /* create a team */
-
-  // scratch address info is "local" by construction
-  gasneti_assert(! (flags & (GEX_FLAG_TM_GLOBAL_SCRATCH    | GEX_FLAG_TM_LOCAL_SCRATCH |
-                             GEX_FLAG_TM_SYMMETRIC_SCRATCH | GEX_FLAG_TM_NO_SCRATCH)));
-  flags |= GEX_FLAG_TM_LOCAL_SCRATCH;
-
   newteam = gasnete_coll_team_create(parent, new_total_ranks, new_myrank, rank_map,
                                      scratch_size, &scratch_addr, flags GASNETI_THREAD_PASS);
   
@@ -866,4 +861,217 @@ void gasnete_subteam_ID(
   child->team_id = new_team_id;
 }
 
+/* ------------------------------------------------------------------------------------ */
+
+// Blocking Rotated, ExchangeV utility function
+//
+// Takes only local data and length, and computes (and returns) the total length.
+// Returns data address via *dst_p
+// Returns optional lengths array via *len_p, if non-NULL.
+// Both arrays are dynamically allocated and the caller is responsible for freeing them.
+// In the event of an "empty" result (returning 0) both pointers returns are NULL;
+//
+// In order to avoid the cost (time and space) of an in-memory rotation, this
+// implementation does not return its result in the normal [0...nranks) order.
+// Instead the data starts with the local contribution, followed by the remaining
+// ranks in order with wrap-around:
+//     myrank, (myrank+1)%nranks, (myrank+2)%nranks, ...
+// A caller can index the data in "normal" order with some modular arithmetic.
+//
+// Boundaries between the variable contributions can be determined by examining
+// the (optional) array of lengths available via len_p.  Note that this array
+// is in the same rotated order as the data buffer.
+//
+// TODO-EX: use relevant gex_Coll_*() facilities, if any, when available
+// TODO-EX: support for total_len > 2^32
+
+static void *
+gasnete_rexchgv_data(gasnete_coll_team_t team, int phase, size_t size) {
+  uint8_t *data = team->rexchgv.data[phase];
+  if_pf (! data) {
+    gex_HSL_Lock(&team->rexchgv.lock);
+    data = team->rexchgv.data[phase];
+    if (! data) {
+      data = gasneti_malloc(size);
+      team->rexchgv.data[phase] = data;
+    }
+    gex_HSL_Unlock(&team->rexchgv.lock);
+  }
+  return data;
+}
+
+// It is not permissible to omit zero-length transfers from the second
+// ExchangeV, because their synchronization side-effect is required.  However,
+// adding nbytes==0 to rexchgv.rcvd[phase][step] does not provide any signal of
+// the arrival.  So, we replace zero by an arbitrary non-zero value in the rcvd
+// accounting.
+#define gasnete_rexchgv_zero_recvd 42
+
+void gasnete_rexchgv_reqh(
+                        gex_Token_t token, void *buf, size_t nbytes,
+                        gex_AM_Arg_t team_id, gex_AM_Arg_t arg1,
+                        gex_AM_Arg_t total_len, gex_AM_Arg_t offset)
+{
+  gasnete_coll_team_t team = gasnete_coll_team_lookup(team_id);
+  int phase = arg1 & 1;
+  int step = arg1 >> 1;
+  uint8_t *data = gasnete_rexchgv_data(team, phase, total_len);
+  GASNETI_MEMCPY(data + (uint32_t)offset, buf, nbytes);
+  size_t increment = nbytes ? nbytes : gasnete_rexchgv_zero_recvd;
+  gasneti_weakatomic32_add(&team->rexchgv.rcvd[phase][step], increment, GASNETI_ATOMIC_REL);
+}
+
+size_t gasneti_blockingRotatedExchangeV(
+                gex_TM_t    tm,
+                const void *src,
+                size_t      len,
+                void      **dst_p,
+                size_t    **len_p)
+{
+  GASNET_BEGIN_FUNCTION(); // TODO: remove this lookup
+
+  gasnete_coll_team_t team = gasneti_import_tm_nonpair(tm)->_coll_team;
+  uint32_t team_id = team->team_id;
+  gex_Rank_t self = gex_TM_QueryRank(tm);
+  gex_Rank_t team_sz = gex_TM_QuerySize(tm);
+  int steps = 0; // ceil(log_2(team_sz));
+  for (gex_Rank_t tmp = team_sz-1; tmp; tmp >>= 1) ++steps;
+  // Without the following hint, some gcc versions warn about massive malloc sizes below
+  gasneti_assume(steps <= 8*sizeof(gex_Rank_t));
+
+  int phase = team->rexchgv.phase;
+  gasneti_assert(phase == 0 || phase == 1);
+
+  gex_Event_t event0 = GEX_EVENT_INVALID;
+  gex_Event_t event1 = GEX_EVENT_INVALID;
+
+  //
+  // Step 1.  Exchange the lengths using Bruck's concatenation algorithm
+  // The final rotation is omitted, saving time and space, as well as greatly
+  // simplifying the index arithmetic in the next step.
+  //
+  size_t len_array_sz = team_sz * sizeof(len);
+  uint8_t *data0 = gasnete_rexchgv_data(team, phase, len_array_sz);
+  GASNETI_MEMCPY(data0, &len, sizeof(len));
+  gex_NBI_BeginAccessRegion(0);
+  for (unsigned int step = 0, distance = 1; step < steps; ++step, distance *= 2) {
+    // Send data using stream of AMMediums
+    gex_Rank_t dest_rank = (self + team_sz - distance) % team_sz;
+    uint32_t offset = distance * sizeof(len);
+    uint32_t nbytes = MIN(offset, len_array_sz - offset);
+    uint32_t sent = 0;
+    uint32_t arg1 = phase | (step << 1);
+    size_t limit = gex_AM_MaxRequestMedium(tm,dest_rank,GEX_EVENT_GROUP,0,4);
+    do {
+      const uint32_t to_xfer = MIN(nbytes - sent, limit);
+      gex_AM_RequestMedium4(tm, dest_rank, _hidx_gasnete_rexchgv_reqh,
+                            data0 + sent, to_xfer, GEX_EVENT_GROUP, 0,
+                            team_id, arg1, len_array_sz, offset + sent);
+      sent += to_xfer;
+    } while (sent < nbytes);
+
+    // Wait to receive this step's data
+    GASNET_BLOCKUNTIL(gasneti_weakatomic32_read(&team->rexchgv.rcvd[phase][step], 0) >= nbytes);
+    gasneti_assert_uint(gasneti_weakatomic32_read(&team->rexchgv.rcvd[phase][step], 0) ,==, nbytes);
+    gasneti_weakatomic32_set(&team->rexchgv.rcvd[phase][step], 0, 0); // reset
+  }
+  event0 = gex_NBI_EndAccessRegion(0);
+  // reset/advance
+  team->rexchgv.data[phase] = NULL;
+  phase ^= 1;
+
+  //
+  // Step 2.  Compute sum and 2*log(P) partial sums
+  // Indexing is nearly trivial due to omitting the rotation of the lengths array
+  //
+  size_t *len_array = (size_t *)data0; // NOTE: final rotation omitted
+  // Total size:
+  size_t total_len = 0;
+  // Local received size and per-step partials:
+  size_t l_sum = 0;
+  size_t *l_sums = gasneti_malloc(sizeof(size_t) * (steps+1));
+  // Remote received size and per-step partials:
+  size_t r_sum = 0;
+  size_t *r_sums = gasneti_malloc(sizeof(size_t) * steps);
+  // Indexing from both ends:
+  int fwd_idx = 0, bwd_idx = team_sz - 1;
+  for (int i = 0; i < steps; ++i) {
+    int step_sz = 1 << MAX(0,i-1); // 1,1,2,4,8,...
+    for (int j = 0; j < step_sz && bwd_idx; ++j) {
+      total_len += len_array[fwd_idx];
+      r_sum += len_array[bwd_idx--];
+      l_sum += len_array[fwd_idx++];
+    }
+    l_sums[i] = l_sum;
+    r_sums[i] = r_sum;
+  }
+  while (fwd_idx < team_sz) {
+    total_len += len_array[fwd_idx++];
+  }
+  l_sums[steps] = total_len;
+
+  // This code is for slinging metadata, not user data.
+  // As such, we've assumed 32-bit (single handler argument) sizes and offsets
+  // are sufficient to this purpose.
+  if_pf ((uint64_t)total_len > UINT32_MAX) {
+    gasneti_fatalerror("blockingRotatedExchangeV size limit of 4GB exceeded: total_len=%"PRIuSZ, total_len);
+  }
+
+  if (! total_len) { // Empty!
+    *dst_p = NULL;
+    goto out_zero_len;
+  }
+
+  //
+  // Step 3.  Bruck's concatenation algorithm generalized for variable lengths
+  //
+  uint8_t *data1 = gasnete_rexchgv_data(team, phase, total_len);
+  GASNETI_MEMCPY_SAFE_EMPTY(data1, src, len);
+  gex_NBI_BeginAccessRegion(0);
+  for (unsigned int step = 0, distance = 1; step < steps; ++step, distance *= 2) {
+    // Send data using stream of AMMediums
+    gex_Rank_t dest_rank = (self + team_sz - distance) % team_sz;
+    uint32_t offset = r_sums[step];
+    uint32_t nbytes = MIN(l_sums[step], total_len - offset);
+    uint32_t sent = 0;
+    uint32_t arg1 = phase | (step << 1);
+    size_t limit = gex_AM_MaxRequestMedium(tm,dest_rank,GEX_EVENT_GROUP,0,4);
+    do { // Note: must not skip nbytes==0 case, since message is needed for synchronization
+      const uint32_t to_xfer = MIN(nbytes - sent, limit);
+      gex_AM_RequestMedium4(tm, dest_rank, _hidx_gasnete_rexchgv_reqh,
+                            data1 + sent, to_xfer, GEX_EVENT_GROUP, 0,
+                            team_id, arg1, total_len, offset + sent);
+      sent += to_xfer;
+    } while (sent < nbytes);
+
+    // Wait to receive this step's data (if any)
+    uint32_t to_recv = l_sums[step+1] - l_sums[step];
+    if (!to_recv) to_recv = gasnete_rexchgv_zero_recvd; // a non-zero value used for zero-length recv
+    GASNET_BLOCKUNTIL(gasneti_weakatomic32_read(&team->rexchgv.rcvd[phase][step], 0) >= to_recv);
+    gasneti_assert_uint(gasneti_weakatomic32_read(&team->rexchgv.rcvd[phase][step], 0) ,==, to_recv);
+    gasneti_weakatomic32_set(&team->rexchgv.rcvd[phase][step], 0, 0); // reset
+  }
+  event1 = gex_NBI_EndAccessRegion(0);
+  // reset/advance
+  team->rexchgv.data[phase] = NULL;
+  phase ^= 1;
+
+  *dst_p = data1;
+
+out_zero_len:
+  team->rexchgv.phase = phase;
+  gasneti_free(r_sums);
+  gasneti_free(l_sums);
+  gex_Event_Wait(event0); // Source data in len_array
+  if (total_len && len_p) {
+    *len_p = len_array;
+  } else {
+    // Either len_array is empty, or caller didn't request it
+    if (len_p) *len_p = NULL;
+    gasneti_free(len_array);
+  }
+  gex_Event_Wait(event1); // Source data in data1
+
+  return total_len;
+}
 /* ------------------------------------------------------------------------------------ */

@@ -9,11 +9,11 @@ record R {
   var x: int;
 }
 
-proc =(a:R, b:R) {
+operator R.=(a:R, b:R) {
   a.x = b.x;
 }
 
-proc *=(a:R, b:R) {
+operator R.*=(a:R, b:R) {
   a.x += b.x;
 }
 

@@ -5,9 +5,9 @@
 
 // support methods, for --minimal-modules
 
-inline proc _cast(type t, x: int(?w))
+inline operator :(x: int(?w), type t)
     return __primitive(c"cast", t, x);
-inline proc _cast(type t, x: uint(?w))
+inline operator :(x: uint(?w), type t)
     return __primitive(c"cast", t, x);
 
 proc chpl__autoCopy(x:uint(?w)) return x;

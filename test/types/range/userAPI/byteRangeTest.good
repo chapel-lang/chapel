@@ -1,6 +1,6 @@
 ./rangeAPItest.chpl:3: In function 'testRangeAPI':
-./rangeAPItest.chpl:43: warning: invoking 'offset' on an unstrided range has no effect.
-  byteRangeTest.chpl:3: called as testRangeAPI(lbl: string, r: range(byteIndex,bounded,false), idx: byteIndex, subr: range(byteIndex,bounded,false))
+./rangeAPItest.chpl:45: warning: invoking 'offset' on an unstrided range has no effect.
+  byteRangeTest.chpl:3: called as testRangeAPI(lbl: string, r: range(byteIndex,bounded,false), idx: byteIndex, subr: range(byteIndex,bounded,false), offset: int(64), count: int(64))
 byte index range
 ------------
 1..10
@@ -120,11 +120,11 @@ stride           = 1
 alignment        = 1
 aligned          = true
 first            = 1
-last             = 0
+last             = undefined
 low              = 1
-high             = 0
+high             = undefined
 alignedLow       = 1
-alignedHigh      = 0
+alignedHigh      = undefined
 isEmpty()        = false
 hasFirst()       = true
 hasLast()        = false
@@ -167,11 +167,11 @@ hasHighBound()   = true
 stride           = 1
 alignment        = 0
 aligned          = false
-first            = 1
+first            = undefined
 last             = 10
-low              = 1
+low              = undefined
 high             = 10
-alignedLow       = 1
+alignedLow       = undefined
 alignedHigh      = 10
 isEmpty()        = false
 hasFirst()       = false

@@ -5,10 +5,10 @@ proc main {
     t.readFE();
     x = 2;
     y = 2;
-    s = 1;
+    s.writeEF(1);
   }
   writeln(here.id, " x=", x, " y=", y);
-  t = 1;
+  t.writeEF(1);
   s.readFE();
   writeln(here.id, " x=", x, " y=", y);
   on Locales(1) {

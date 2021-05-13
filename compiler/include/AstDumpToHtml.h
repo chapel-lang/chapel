@@ -107,7 +107,7 @@ public:
 
 private:
                    AstDumpToHtml();
-                  ~AstDumpToHtml();
+                  ~AstDumpToHtml() override;
 
   bool             open(ModuleSymbol* module, const char* passName);
   bool             close();

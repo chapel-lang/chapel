@@ -5,7 +5,7 @@ record R {
 proc R.init=(other: R) {
   compilerError("You can't copy an R");
 }
-proc =(ref lhs: R, const ref rhs: R) {
+operator R.=(ref lhs: R, const ref rhs: R) {
   lhs.x = rhs.x;
 }
 

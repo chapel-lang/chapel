@@ -1,0 +1,57 @@
+.TH qt_team_eureka 3 "NOVEMBER 2012" libqthread "libqthread"
+.SH NAME
+.B qt_team_eureka
+\- signals a eureka moment
+.SH SYNOPSIS
+.B #include <qthread.h>
+
+.I void
+.br
+.B qt_team_eureka
+(void);
+.SH DESCRIPTION
+This function signals that the task has reached a eureka moment. As a
+consequence, all other tasks within the calling task's team and all tasks
+within subteams whose ancestor tree includes the calling task's team will be
+preemptively destroyed. The calling task will remain alive as the only task
+within the team. Its return value location will change to the return value
+location of the original task of the team (i.e. this task is now treated as the
+founding task of the team).
+.PP
+An example of how this could be used to search a large binomial tree is as follows:
+.PP
+.RS
+int target;
+.br
+node_t *search_inner(node_t *root) {
+.RS
+if (root->value == target) {
+.RS
+qt_team_eureka();
+.br
+return n;
+.RE
+} else {
+.RS
+qthread_fork(search_inner, root->leftchild, NULL);
+.br
+qthread_fork(search_inner, root->rightchild, NULL);
+.RE
+}
+.RE
+}
+.PP
+node_t *search(node_t *root) {
+.RS
+node_t *found;
+.br
+qthread_fork_new_subteam(search_inner, root, &found);
+.br
+qthread_readFF(NULL, &found);
+.br
+return found;
+.RE
+}
+.RE
+.SH SEE ALSO
+.BR qt_team_critical_section (3)

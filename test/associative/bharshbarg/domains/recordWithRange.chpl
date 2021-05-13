@@ -6,7 +6,7 @@ record R {
   var x : range;
 }
 
-proc <(x:R, y:R) {
+operator R.<(x:R, y:R) {
   ref a = x.x;
   ref b = y.x;
 

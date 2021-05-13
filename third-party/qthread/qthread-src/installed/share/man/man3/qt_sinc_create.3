@@ -1,0 +1,91 @@
+.TH qt_sinc_create 3 "AUGUST 2012" libqthread "libqthread"
+.SH NAME
+.B qt_sinc_create
+\- allocate and/or initialize a sinc
+.SH SYNOPSIS
+.B #include <qthread/sinc.h>
+
+.I qt_sinc_t *
+.br
+.B qt_sinc_create
+.RI "(size_t " sizeof_value ,
+.br
+.ti +16
+.RI "const void *" initial_value ,
+.br
+.ti +16
+.RI "qt_sinc_op_f " op ,
+.br
+.ti +16
+.RI "size_t " expect ");"
+
+.PP
+.I void
+.br
+.B qt_sinc_init
+.RI "(qt_sinc_t *restrict " sinc,
+.br
+.ti +14
+.RI "size_t " sizeof_value,
+.br
+.ti +14
+.RI "const void *" initial_value,
+.br
+.ti +14
+.RI "qt_sinc_op_f " op,
+.br
+.ti +14
+.RI "size_t " expect ");"
+.SH DESCRIPTION
+These functions allocate and/or initialize a qt_sinc_t object and prepares it for performing reduction operations. The sinc is initialized to recieve
+.I expect
+submissions. These submissions may be from different tasks or from the same task. Each submission may also include a value of size
+.I sizeof_value 
+(see the
+.BR qt_sinc_submit ()
+man page). The values submitted will be reduced to a single value using the function
+.IR op ,
+and the initial value to be reduced into will be the
+.I sizeof_value
+bytes at the address indicated by
+.IR initial_value .
+The
+.BR qt_sinc_init ()
+function will initialize an existing qt_sinc_t variable, specified as the
+.I sinc
+argument, while the
+.BR qt_sinc_create ()
+function will allocate a new qt_sinc_t.
+.PP
+The
+.I op
+argument must be a function pointer with a
+.I qt_sinc_op_f
+prototype, such as:
+.RS
+.PP
+void
+.I op
+(void *target, void *src);
+.RE
+.PP
+The function must read
+.I sizeof_value
+bytes out of the
+.I src
+and
+.I target
+arguments, perform whatever reduction operation is necessary, and store the result into, at most,
+.I sizeof_value
+bytes at the
+.I target
+address.
+.SH RETURN VALUES
+Returns an initialized qt_sinc_t object.
+.SH SEE ALSO
+.BR qt_sinc_destroy (3),
+.BR qt_sinc_expect (3),
+.BR qt_sinc_fini (3),
+.BR qt_sinc_reset (3),
+.BR qt_sinc_submit (3),
+.BR qt_sinc_wait (3)

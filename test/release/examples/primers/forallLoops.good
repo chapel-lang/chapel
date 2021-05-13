@@ -1,0 +1,44 @@
+After setting up, A is:
+1.0 2.0 3.0 4.0 5.0
+
+After initialization, B is:
+3.0 6.0 9.0 12.0 15.0
+
+After a zippered loop, C is:
+10.301 20.602 30.903 41.204 51.505
+
+in onlySerial iteration #1
+in onlySerial iteration #2
+in onlySerial iteration #3
+in onlySerial iteration #4
+in onlySerial iteration #5
+
+The result of may-parallel expression, D is:
+8.301 16.602 24.903 33.204 41.505
+
+shadow outerIntVariable is: 0
+shadow outerIntVariable is: 0
+shadow outerIntVariable is: 0
+shadow outerIntVariable is: 0
+shadow outerIntVariable is: 0
+
+After a loop with default intents, D is:
+8.801 17.102 25.403 33.704 42.005
+outerIntVariable is: 1
+outerAtomicVariable is: 5
+
+After a loop with explicit intents:
+outerIntVariable is: 1
+outerRealVariable is: 2.0
+
+outerIntVariable before the loop is: 1
+After a loop with reduce intents:
+outerIntVariable = 16
+outerMaxVariable = 4
+
+After a loop with task-private variables:
+outerIntVariable is: 48
+
+After MyRecord.myMethod, myR is:
+(arrField = 2 4 6 8 10, intField = 0)
+

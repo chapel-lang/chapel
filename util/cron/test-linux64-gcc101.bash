@@ -7,6 +7,13 @@ source $CWD/common.bash
 
 source /data/cf/chapel/setup_gcc101.bash     # host-specific setup for target compiler
 
+gcc_version=$(gcc -dumpversion)
+if [ "$gcc_version" != "10.1.0" ]; then
+  echo "Wrong gcc version"
+  echo "Expected Version: 10.1.0 Actual Version: $gcc_version"
+  exit 2
+fi
+
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="linux64-gcc101"
 
 $CWD/nightly -cron -examples ${nightly_args}

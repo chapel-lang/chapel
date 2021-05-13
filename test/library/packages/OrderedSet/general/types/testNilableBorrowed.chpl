@@ -5,7 +5,7 @@ use OsetTest;
 
 type T = testClass;
 
-proc <(lhs: borrowed T?, rhs: borrowed T?) {
+operator T.<(lhs: borrowed T?, rhs: borrowed T?) {
   if lhs == nil && rhs == nil then return false;
   if lhs == nil then return true;
   if rhs == nil then return false;

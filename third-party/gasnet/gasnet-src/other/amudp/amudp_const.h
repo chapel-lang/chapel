@@ -29,7 +29,7 @@
 #endif
 
 #define AMUDP_LIBRARY_VERSION_MAJOR   3
-#define AMUDP_LIBRARY_VERSION_MINOR   17
+#define AMUDP_LIBRARY_VERSION_MINOR   18
 #define AMUDP_LIBRARY_VERSION      AMUDP_LIBRARY_VERSION_MAJOR.AMUDP_LIBRARY_VERSION_MINOR
 #define AMUDP_LIBRARY_VERSION_STR  AMX_STRINGIFY(AMUDP_LIBRARY_VERSION)
 
@@ -76,8 +76,14 @@
 /* Internal constants */
 #define AMUDP_MAX_SHORT    16    /* max number of handler arguments, >=8 */
 #define AMUDP_MAX_MEDIUM   AMUDP_MAX_LONG  /* max. data transmission unit for medium messages, >= 512 */
-
-#if PLATFORM_OS_IRIX
+#ifdef AMUDP_MAX_LONG 
+  /* compile-time override for debugging MTU problems
+   * users should never turn this knob unless directed by the maintainers
+   */
+  #if AMUDP_MAX_LONG > 65000 || AMUDP_MAX_LONG < 512
+  #error invalid AMUDP_MAX_LONG
+  #endif
+#elif PLATFORM_OS_IRIX
   #define AMUDP_MAX_LONG     61000  /* max. UDP datagram on IRIX is apparently 61412 */
 #elif PLATFORM_OS_TRU64 || PLATFORM_OS_FREEBSD || PLATFORM_OS_NETBSD || \
       PLATFORM_OS_DARWIN || PLATFORM_OS_AIX

@@ -14,3 +14,7 @@ CHPL_COMMS = none
 # Duplicate entries:
 CHPL_COMM = none
 CHPL_COMM = gasnet
+
+# Test for CHPL_REGEXP deprecation warning, replacing it with CHPL_RE2
+CHPL_REGEXP = re2
+CHPL_RE2 = bundled

@@ -1,0 +1,12 @@
+----Foo----
+FOO.hello(...)=> greeting:`foo default greeting`, prefix:`FOO_default_prefix`,  suffix:`FOO_default_suffix`
+FOO.hello(...)=> greeting:`hello`, prefix:`FOO_default_prefix`,  suffix:`FOO_default_suffix`
+FOO.hello(...)=> greeting:`hello`, prefix:`<<<`,  suffix:`FOO_default_suffix`
+----Bar----
+I'm in BAR.hello(...)=> greeting:`bar default greeting`, prefix:`default_bar[`,  suffix:`]bar_default`
+I'm in BAR.hello(...)=> greeting:`I'm Bar`, prefix:`default_bar[`,  suffix:`]bar_default`
+I'm in BAR.hello(...)=> greeting:`I'm Bar`, prefix:`<<<`,  suffix:`]bar_default`
+----Foo with Bar as impl----
+I'm in BAR.hello(...)=> greeting:`bar default greeting`, prefix:`default_bar[`,  suffix:`]bar_default`
+I'm in BAR.hello(...)=> greeting:`expect Bar defaults`, prefix:`default_bar[`,  suffix:`]bar_default`
+I'm in BAR.hello(...)=> greeting:`expect Bar defaults minus passed in prefix`, prefix:`<<<`,  suffix:`]bar_default`

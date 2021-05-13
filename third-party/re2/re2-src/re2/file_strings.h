@@ -359,6 +359,10 @@ struct FilePiece {
     end_ = 0;
   }
 
+  FileSearchPtr data() const {
+    return begin();
+  }
+
   FileSearchPtr begin() const {
     FileSearchPtr ret;
     ret.offset = start;
@@ -384,9 +388,9 @@ struct FilePiece {
     //len -= n;
   }
 
-  // Find the position where c occurs (ie memchr)
-  // uses begin, end pointers
-  FileSearchPtr find_c(ReadingFileSearchPtr s, FileSearchPtr end, int c) const;
+  // Accelerates to the first likely occurrence of the prefix.
+  // Returns a pointer to the first byte or NULL if not found.
+  FileSearchPtr prefix_accel(Prog* prog, ReadingFileSearchPtr s, ssize_t len) const;
 
   // For debugging.
   template <typename A>

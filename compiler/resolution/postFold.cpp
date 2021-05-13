@@ -371,7 +371,13 @@ static Expr* postFoldPrimop(CallExpr* call) {
       INT_FATAL(call, "Unable to resolve type");
     }
 
-    call->get(1)->replace(new SymExpr(t->symbol));
+    SymExpr* se = toSymExpr(call->get(1));
+    if (se && se->symbol() == t->symbol) {
+      // Already OK, nothing to do
+    } else {
+      // Replace the argument with the type
+      call->get(1)->replace(new SymExpr(t->symbol));
+    }
 
   } else if (call->isPrimitive("string_compare") == true) {
     SymExpr* lhs = toSymExpr(call->get(1));
@@ -824,7 +830,7 @@ bool requiresImplicitDestroy(CallExpr* call) {
 
   if (FnSymbol* fn = call->resolvedFunction()) {
 
-    if (isRecord(fn->retType)                                 == true  &&
+    if ((isRecord(fn->retType) || isConstrainedType(fn->retType))      &&
         fn->hasFlag(FLAG_NO_IMPLICIT_COPY)                    == false &&
         fn->isIterator()                                      == false &&
         fn->retType->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE) == false &&

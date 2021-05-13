@@ -419,7 +419,7 @@ module Barriers {
   }
 
   pragma "no doc"
-  proc =(ref lhs: Barrier, rhs: Barrier) {
+  operator Barrier.=(ref lhs: Barrier, rhs: Barrier) {
     if lhs.isowned {
       delete lhs.bar;
     }

@@ -1,2 +1,3 @@
+sync-copy-init-cannot-coerce.chpl:3: warning: Initializing a type-inferred variable from a 'sync' is deprecated; apply a 'read??()' method to the right-hand side
 sync-copy-init-cannot-coerce.chpl:3: error: cannot initialize 'sync string' from 'sync int(64)' because 'int(64)' is not coercible to 'string'
 note: An additional error is hidden. Use --print-additional-errors to see it.

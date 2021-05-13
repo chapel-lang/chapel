@@ -1,0 +1,182 @@
+trivial enum range
+------------
+red..red
+idxType          = color
+stridable        = false
+boundedType      = bounded
+isRangeType()    = true
+isBoundedRange() = true
+isBounded()      = true
+hasLowBound()    = true
+hasHighBound()   = true
+stride           = 1
+alignment        = red
+aligned          = true
+first            = red
+last             = red
+low              = red
+high             = red
+alignedLow       = red
+alignedHigh      = red
+isEmpty()        = false
+size             = 1
+hasFirst()       = true
+hasLast()        = true
+isNat.Algned()   = true
+isAmbiguous      = false
+contains(red) = true
+contains(red..red) = true
+ident(self)      = true
+ident(other)     = true
+boundsCheck(red) = true
+boundsCheck(red..red) = true
+indexOrder(red) = 0
+orderToIndex(0)  = red
+interior(1)      = red..red
+interior(-1)     = red..red
+serial iteration = 
+red 
+r#1               = red..red
+r#-1              = red..red
+r == subr         = true
+r != subr         = false
+r[subr]           = red..red
+r[subr] == subr[r]= true
+Copying...        = red..red
+
+default trivial enum range
+------------
+red..<red
+idxType          = color
+stridable        = false
+boundedType      = bounded
+isRangeType()    = true
+isBoundedRange() = true
+isBounded()      = true
+hasLowBound()    = true
+hasHighBound()   = true
+stride           = 1
+alignment        = red
+aligned          = true
+first            = undefined
+last             = undefined
+low              = red
+high             = red
+alignedLow       = red
+alignedHigh      = red
+isEmpty()        = true
+size             = 0
+hasFirst()       = false
+hasLast()        = false
+isNat.Algned()   = true
+isAmbiguous      = false
+contains(red) = false
+contains(red..<red) = true
+ident(self)      = true
+ident(other)     = true
+boundsCheck(red) = false
+boundsCheck(red..<red) = true
+indexOrder(red) = -1
+interior(0)      = red..<red
+interior(0)     = red..<red
+serial iteration = 
+
+r == subr         = true
+r != subr         = false
+r[subr]           = red..<red
+r[subr] == subr[r]= true
+Copying...        = red..<red
+
+trivial strided enum range
+------------
+red..red
+idxType          = color
+stridable        = true
+boundedType      = bounded
+isRangeType()    = true
+isBoundedRange() = true
+isBounded()      = true
+hasLowBound()    = true
+hasHighBound()   = true
+stride           = 1
+alignment        = red
+aligned          = true
+first            = red
+last             = red
+low              = red
+high             = red
+alignedLow       = red
+alignedHigh      = red
+isEmpty()        = false
+size             = 1
+hasFirst()       = true
+hasLast()        = true
+isNat.Algned()   = true
+isAmbiguous      = false
+contains(red) = true
+contains(red..red) = true
+ident(self)      = true
+ident(other)     = false
+boundsCheck(red) = true
+boundsCheck(red..red) = true
+indexOrder(red) = 0
+orderToIndex(0)  = red
+interior(1)      = red..red
+interior(-1)     = red..red
+serial iteration = 
+red 
+r#1               = red..red
+r#-1              = red..red
+r == subr         = true
+r != subr         = false
+r[subr]           = red..red
+r[subr] == subr[r]= true
+Copying...        = red..red
+
+default trivial strided enum range
+------------
+red..<red
+idxType          = color
+stridable        = true
+boundedType      = bounded
+isRangeType()    = true
+isBoundedRange() = true
+isBounded()      = true
+hasLowBound()    = true
+hasHighBound()   = true
+stride           = 1
+alignment        = red
+aligned          = true
+first            = undefined
+last             = undefined
+low              = red
+high             = red
+alignedLow       = red
+alignedHigh      = red
+isEmpty()        = true
+size             = 0
+hasFirst()       = false
+hasLast()        = false
+isNat.Algned()   = true
+isAmbiguous      = false
+contains(red) = false
+contains(red..<red) = true
+ident(self)      = true
+ident(other)     = false
+boundsCheck(red) = false
+boundsCheck(red..<red) = true
+indexOrder(red) = -1
+interior(0)      = red..<red
+interior(0)     = red..<red
+serial iteration = 
+
+r == subr         = true
+r != subr         = false
+r[subr]           = red..<red
+r[subr] == subr[r]= true
+Copying...        = red..<red
+
+./rangeAPItest.chpl:21: warning: This range is empty and has a single-value idxType, so its high bound isn't trustworthy
+./rangeAPItest.chpl:23: warning: This range is empty and has a single-value idxType, so its high bound isn't trustworthy
+./rangeAPItest.chpl:21: warning: This range is empty and has a single-value idxType, so its high bound isn't trustworthy
+./rangeAPItest.chpl:23: warning: This range is empty and has a single-value idxType, so its high bound isn't trustworthy

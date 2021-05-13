@@ -122,11 +122,6 @@ CForLoop::CForLoop(BlockStmt* initBody) : LoopStmt(initBody)
   mIncrClause = 0;
 }
 
-CForLoop::~CForLoop()
-{
-
-}
-
 CForLoop* CForLoop::copyInner(SymbolMap* map)
 {
   CForLoop*  retval    = new CForLoop();

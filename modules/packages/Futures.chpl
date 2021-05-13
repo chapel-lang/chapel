@@ -264,7 +264,7 @@ module Futures {
   }
 
   pragma "no doc"
-  proc =(ref lhs: Future, rhs: Future) {
+  operator Future.=(ref lhs: Future, rhs: Future) {
     if lhs.classRef == rhs.classRef then return;
     if lhs.classRef != nil then
       lhs.release();

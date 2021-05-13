@@ -10,7 +10,7 @@ for additional licensing terms governing those contributed components.
 
 *** Copyright Notice ***
 
-Global-Address Space Networking for Exascale (GASNet-EX) Copyright (c) 2000-2020,
+Global-Address Space Networking for Exascale (GASNet-EX) Copyright (c) 2000-2021,
 The Regents of the University of California, through Lawrence Berkeley National
 Laboratory (subject to receipt of any required approvals from the U.S. Dept. of
 Energy). All rights reserved.
@@ -27,7 +27,7 @@ perform publicly and display publicly, and to permit other to do so.
 
 *** License Agreement ***
 
-Global-Address Space Networking for Exascale (GASNet-EX) Copyright (c) 2000-2020,
+Global-Address Space Networking for Exascale (GASNet-EX) Copyright (c) 2000-2021,
 The Regents of the University of California, through Lawrence Berkeley National
 Laboratory (subject to receipt of any required approvals from the U.S. Dept. of
 Energy).  All rights reserved.

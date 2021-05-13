@@ -12,12 +12,12 @@ record R {
     this.field = other.field;
   }
 }
-proc =(ref lhs: R, rhs: R) {
+operator =(ref lhs: R, rhs: R) {
   writeln(lhs, " = ", rhs);
   lhs.field = rhs.field;
 }
 
-proc acceptsOut(out arg) { }
+proc acceptsOut(type t, out arg: t) { }
 
 config const option = true;
 
@@ -56,7 +56,7 @@ proc inner3() {
 // test 4
 var x4:R;
 inner4();
-acceptsOut(x4);
+acceptsOut(R, x4);
 
 proc inner4() {
   writeln(x4);
@@ -65,7 +65,7 @@ proc inner4() {
 // test 5
 var x5:int;
 inner5();
-acceptsOut(x5);
+acceptsOut(int, x5);
 
 proc inner5() {
   writeln(x5);

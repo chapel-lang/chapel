@@ -52,8 +52,9 @@ amudprun             GASNet launcher for programs running over UDP
 aprun                Cray application launcher using aprun                
 gasnetrun_ibv        GASNet launcher for programs running over Infiniband 
 gasnetrun_mpi        GASNet launcher for programs using the MPI conduit   
-mpirun4ofi           provisional launcher for ``CHPL_COMM=ofi`` on non-Cray X* systems
+mpirun4ofi           provisional launcher for ``CHPL_COMM=ofi`` on non-Cray systems
 lsf-gasnetrun_ibv    GASNet launcher using LSF (bsub) over Infiniband
+pals                 Cray application launcher using PALS on HPE Cray EX systems
 pbs-aprun            Cray application launcher using PBS (qsub) + aprun   
 pbs-gasnetrun_ibv    GASNet launcher using PBS (qsub) over Infiniband     
 slurm-gasnetrun_ibv  GASNet launcher using SLURM over Infiniband          
@@ -70,7 +71,10 @@ A specific launcher can be explicitly requested by setting the
 If ``CHPL_LAUNCHER`` is left unset, a default is picked as follows:
 
 
-* if ``CHPL_PLATFORM`` is cray-xc:
+* if ``CHPL_COMM`` is gasnet and ``CHPL_COMM_SUBSTRATE`` is udp
+  ``CHPL_LAUNCHER`` is set to amudprun
+
+* otherwise, if ``CHPL_TARGET_PLATFORM`` is cray-xc or hpe-cray-ex:
 
   ==================================  ===================================
   If                                  CHPL_LAUNCHER
@@ -81,6 +85,19 @@ If ``CHPL_LAUNCHER`` is left unset, a default is picked as follows:
   otherwise                           none
   ==================================  ===================================
 
+* otherwise, if ``CHPL_TARGET_PLATFORM`` is cray-cs and ``CHPL_COMM`` is gasnet and
+  salloc is in the user's path:
+
+  =======================  ==============================================
+  If                       CHPL_LAUNCHER
+  =======================  ==============================================
+  CHPL_COMM_SUBSTRATE=ibv  slurm-gasnetrun_ibv
+  CHPL_COMM_SUBSTRATE=mpi  slurm-gasnetrun_mpi
+  =======================  ==============================================
+
+* otherwise, if ``CHPL_TARGET_PLATFORM`` is cray-cs and srun is in the users path
+  ``CHPL_LAUNCHER`` is set to slurm-srun
+
 * otherwise, if ``CHPL_COMM`` is gasnet:
 
   =======================  ==============================================
@@ -88,9 +105,7 @@ If ``CHPL_LAUNCHER`` is left unset, a default is picked as follows:
   =======================  ==============================================
   CHPL_COMM_SUBSTRATE=ibv  gasnetrun_ibv
   CHPL_COMM_SUBSTRATE=mpi  gasnetrun_mpi
-  CHPL_COMM_SUBSTRATE=mxm  gasnetrun_ibv
   CHPL_COMM_SUBSTRATE=smp  smp
-  CHPL_COMM_SUBSTRATE=udp  amudprun
   otherwise                none
   =======================  ==============================================
 

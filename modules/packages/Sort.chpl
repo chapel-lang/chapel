@@ -424,8 +424,8 @@ proc radixSortOk(Data: [?Dom] ?eltType, comparator) param {
 
 /*
 
-Sort the elements in an array. It is up to the implementation to choose
-the sorting algorithm.
+Sort the elements in a 1D rectangular array.  The choice of sorting
+algorithm used is made by the implementation.
 
 .. note::
   This function currently either uses a parallel radix sort or a serial
@@ -832,7 +832,7 @@ module TimSort {
   private proc _TimSort(Data: [?Dom], lo:int, hi:int, blockSize=16, comparator:?rec=defaultComparator) {
     import Sort.InsertionSort;
 
-    /*Parallely apply insertionSort on each block of size `blockSize`
+    /*Parallelly apply insertionSort on each block of size `blockSize`
      using forall loop*/
 
     const stride = if Dom.stridable then abs(Dom.stride) else 1;
@@ -845,7 +845,7 @@ module TimSort {
 
     /* apply merge operations on each block
     *as the merges at a level are independent of each other
-    *they can be applied parallely 
+    *they can be applied parallelly
     */
 
     var numSize = blockSize;
@@ -1335,14 +1335,17 @@ module ShellSort {
     // Analysis of Shellsort and Related Algorithms 1996
     // and see Marcin Ciura - Best Increments for the Average Case of Shellsort
     // for the choice of these increments.
-    var n = 1 + end - start;
     var js,hs:idxType;
     var v,tmp:Data.eltType;
-    const incs = (701, 301, 132, 57, 23, 10, 4, 1):(8*idxType);
-    for h in incs {
-      // skip past cases in which the 'incs' value is too big for idxType
-      if h < 0 || h:uint > max(idxType):uint then
+    const incs = (701, 301, 132, 57, 23, 10, 4, 1);
+    for hh in incs {
+      // skip past cases in which the 'incs' value was too big for
+      // idxType, or in which h+start will overflow idxType.
+      // start may be negative, so the first test isn't redundant.
+      if hh > max(idxType) || hh >= max(idxType):uint - start:uint then
         continue;
+
+      const h = hh:idxType;
       hs = h + start;
       for is in hs..end {
         v = Data[is];

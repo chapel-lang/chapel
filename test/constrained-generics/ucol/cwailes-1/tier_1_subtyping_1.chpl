@@ -20,5 +20,7 @@ proc f(x:?T):int where implements I(T) {
   return g(x);
 }
 
+implements I(owned D); // this could also be inferred automatically
+
 // Prints 42
 writeln(f(new D(41)));

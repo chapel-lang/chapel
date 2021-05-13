@@ -451,7 +451,7 @@ void MemOpRanges::addRange(int64_t Start, int64_t Size, int64_t Slack, Value *Pt
     }
 
 
-    bool runOnFunction(Function &F);
+    bool runOnFunction(Function &F) override;
 
   private:
     void getAnalysisUsage(AnalysisUsage &AU) const override {

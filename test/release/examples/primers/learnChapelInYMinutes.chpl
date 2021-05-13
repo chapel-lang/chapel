@@ -167,7 +167,7 @@ a = thisInt ^ thatInt; // Bitwise exclusive-or
 a += thisInt;          // Addition-equals (a = a + thisInt;)
 a *= thatInt;          // Times-equals (a = a * thatInt;)
 b &&= thatBool;        // Logical-and-equals (b = b && thatBool;)
-a <<= 3;               // Left-bit-shift-equals (a = a << 10;)
+a <<= 3;               // Left-bit-shift-equals (a = a << 3;)
 
 // Unlike other C family languages, there are no
 // pre/post-increment/decrement operators, such as:
@@ -611,7 +611,7 @@ Intents
      * inout: copy arg in, copy arg out
      * ref: pass arg by reference
 */
-proc intentsProc(in inarg, out outarg, inout inoutarg, ref refarg) {
+proc intentsProc(in inarg, out outarg:int, inout inoutarg, ref refarg) {
   writeln("Inside Before: ", (inarg, outarg, inoutarg, refarg));
   inarg = inarg + 100;
   outarg = outarg + 100;
@@ -659,7 +659,7 @@ Operator Definitions
 // ``+= -= *= /= %= **= &= |= ˆ= <<= >>= <=>``
 
 // Boolean exclusive or operator.
-proc ^(left : bool, right : bool): bool {
+operator ^(left : bool, right : bool): bool {
   return (left || right) && !(left && right);
 }
 
@@ -668,13 +668,19 @@ writeln(false ^ true);
 writeln(true  ^ false);
 writeln(false ^ false);
 
-// Define a ``*`` operator on any two types that returns a tuple of those types.
-proc *(left : ?ltype, right : ?rtype): (ltype, rtype) {
-  writeln("\tIn our '*' overload!");
-  return (left, right);
+record MyRecord {
+  var value: int;
 }
 
-writeln(1 * "a"); // Uses our ``*`` operator.
+// Define a ``*`` operator on any two types that returns a tuple of those types.
+operator *(left : MyRecord, right : int): int {
+  writeln("\tIn our '*' overload!");
+  return left.value*right;
+}
+
+var r = new MyRecord(2);
+
+writeln(r * 1);   // Uses our ``*`` operator.
 writeln(1 * 2);   // Uses the default ``*`` operator.
 
 //  Note: You could break everything if you get careless with your overloads.
@@ -682,7 +688,7 @@ writeln(1 * 2);   // Uses the default ``*`` operator.
 
 /* .. code-block:: chapel
 
-      proc +(left: int, right: int): int {
+      operator +(left: int, right: int): int {
         return left - right;
       }
 */
@@ -843,7 +849,7 @@ class MyClass {
 
   // We can define an operator on our class as well, but
   // the definition has to be outside the class definition.
-  proc +(A : MyClass, B : MyClass) : owned MyClass {
+  operator MyClass.+(A : MyClass, B : MyClass) : owned MyClass {
     return
       new MyClass(memberInt = A.getMemberInt() + B.getMemberInt(),
                   memberBool = A.getMemberBool() || B.getMemberBool());
@@ -1135,14 +1141,14 @@ proc main() {
   sync {
     begin { // Reader task
       writeln("Reader: waiting to read.");
-      var read_sync = someSyncVar$;
+      var read_sync = someSyncVar$.readFE();
       writeln("Reader: value is ", read_sync);
     }
 
     begin { // Writer task
       writeln("Writer: will write in...");
       countdown(3);
-      someSyncVar$ = 123;
+      someSyncVar$.writeEF(123);
     }
   }
 
@@ -1153,7 +1159,7 @@ proc main() {
     begin { // Reader task
       writeln("Reader: waiting to read.");
       for i in 1..5 {
-        var read_single = someSingleVar$;
+        var read_single = someSingleVar$.readFF();
         writeln("Reader: iteration ", i,", and the value is ", read_single);
       }
     }
@@ -1161,7 +1167,7 @@ proc main() {
     begin { // Writer task
       writeln("Writer: will write in...");
       countdown(3);
-      someSingleVar$ = 5; // first and only write ever.
+      someSingleVar$.writeEF(5); // first and only write ever.
     }
   }
 
@@ -1179,7 +1185,7 @@ proc main() {
   coforall task in 1..5 { // Generate tasks
     // Create a barrier
     do {
-      lock$;                 // Read lock$ (wait)
+      lock$.readFE();           // Read lock$ (wait)
     } while (count.read() < 1); // Keep waiting until a spot opens up
 
     count.sub(1);          // decrement the counter

@@ -350,7 +350,7 @@ local {
 proc gatherAtoms(const ref MyDom:unmanaged Domain, const in face : int) : int(32) {
   // haloExchange finished sending its data over, wait until another
   // locale fills our recvBuf.
-  if face % 2 then MyDom.nM$; else MyDom.nP$;
+  if face % 2 then MyDom.nM$.readFE(); else MyDom.nP$.readFE();
   var numLocalAtoms : int(32) = 0;
   local {
     ref recv = MyDom.recvBuf[face][1..MyDom.recvSize[face]];

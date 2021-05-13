@@ -1,0 +1,3 @@
+strptime.chpl:3: In function 'test_microsecond':
+strptime.chpl:4: warning: proc type datetype.strptime() is deprecated.
+Please use proc datetime.strptime() instead.

@@ -36,7 +36,7 @@ public:
 
                       DeferStmt(BlockStmt* body);
                       DeferStmt(CallExpr* call);
-                     ~DeferStmt();
+                     ~DeferStmt() override = default;
 
   void                accept(AstVisitor* visitor) override;
   void                replaceChild(Expr* old_ast, Expr* new_ast) override;

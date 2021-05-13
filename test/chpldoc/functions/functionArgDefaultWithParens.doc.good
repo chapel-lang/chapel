@@ -17,5 +17,5 @@ or
 
    import functionArgDefaultWithParens.doc;
 
-.. function:: proc foo(arg = 1+2*(3+4))
+.. function:: proc foo(arg = 1 + 2 * (3 + 4))
 

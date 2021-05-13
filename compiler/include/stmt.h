@@ -45,11 +45,11 @@
 
 class Stmt : public Expr {
 public:
-                 Stmt(AstTag astTag);
-  virtual       ~Stmt();
+  Stmt(AstTag astTag) : Expr(astTag) {}
+ ~Stmt() override = default;
 
   // Interface to Expr
-  bool isStmt()  const override;
+  bool isStmt() const override { return true; }
 };
 
 /************************************* | **************************************
@@ -61,8 +61,8 @@ class ResolveScope;
 // parent base class for UseStmt and ImportStmt
 class VisibilityStmt : public Stmt {
  public:
-           VisibilityStmt(AstTag astTag);
-  virtual ~VisibilityStmt();
+  VisibilityStmt(AstTag astTag);
+ ~VisibilityStmt() override = default;
 
   bool isARename() const;
   bool isARenamedSym(const char* name) const;
@@ -284,6 +284,20 @@ class GotoStmt final : public Stmt {
 *                                                                             *
 ************************************** | *************************************/
 
+// This helper class shows how the interface requirements are satisfied.
+struct Witnesses {
+  // for each associated type or required function in the interface,
+  // this map points to its implementation for this ImplementsStmt
+  SymbolMap symWits;
+
+  // for each associated constraint in the interface,
+  // this vector contains the istm that satisfies it
+  std::vector<ImplementsStmt*> conWits;
+
+  int  numAssocCons() const { return conWits.size(); }
+  bool empty()        const { return symWits.n == 0 && conWits.empty(); }
+};
+
 class ImplementsStmt final : public Stmt {
 public:
   static ImplementsStmt* build(const char* name,
@@ -301,7 +315,8 @@ public:
   Expr*  getFirstExpr()                             override;
   Expr*  getNextExpr(Expr* expr)                    override;
 
-  int    numActuals() const { return iConstraint->numActuals(); }
+  InterfaceSymbol* ifcSymbol()  const { return iConstraint->ifcSymbol(); }
+  int              numActuals() const { return iConstraint->numActuals(); }
 
   // the constraint being implemented, always non-null
   IfcConstraint* iConstraint;
@@ -309,14 +324,15 @@ public:
   // (possibly empty) body of this statement, always non-null
   BlockStmt*     implBody;
 
-  // mapping: required interface function -> its implementation
-  SymbolMap      witnesses;
+  // info on how the interface requirements are satisfied by this istm
+  Witnesses      witnesses;
 };
 
 // support for implements wrapper functions
-const char*     implementsStmtWrapperName(InterfaceSymbol* isym);
+class IstmAndSuccess { public: ImplementsStmt* istm; bool isSuccess; };
+const char*     implementsWrapperName(InterfaceSymbol* isym);
 const char*     interfaceNameForWrapperFn(FnSymbol* fn);
-ImplementsStmt* implementsStmtForWrapperFn(FnSymbol* wrapFn, bool& isSuccess);
+IstmAndSuccess  implementsStmtForWrapperFn(FnSymbol* wrapFn);
 FnSymbol*       wrapperFnForImplementsStmt(ImplementsStmt* istm);
 
 /************************************* | **************************************

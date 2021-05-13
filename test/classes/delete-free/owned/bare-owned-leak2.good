@@ -1,0 +1,17 @@
+entering foo
+init(1)
+deinit(1)
+exiting foo
+returned from foo()
+
+entering bar
+init(2)
+deinit(2)
+exiting bar
+returned from bar()
+
+entering baz
+init(3)
+deinit(3)
+exiting baz
+returned from baz()

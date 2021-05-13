@@ -52,7 +52,7 @@ class DecoratedClassType final : public Type {
 public:
                           DecoratedClassType(AggregateType* cls,
                                              ClassTypeDecorator d);
-                         ~DecoratedClassType();
+                         ~DecoratedClassType() override = default;
 
   void                    accept(AstVisitor* visitor) override;
   void              replaceChild(BaseAST* oldAst, BaseAST* newAst) override;

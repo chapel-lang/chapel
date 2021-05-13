@@ -51,7 +51,7 @@ extern void gasneti_legacy_alloc_tm_hook(gasneti_TM_t _tm) {
       int len = 0;
       int numreg = 0;
       while (gasneti_legacy_handlers[len].gex_fnptr) len++; /* calc len */
-      if (gasneti_amregister(gasneti_import_ep(gasneti_thunk_endpoint)->_amtbl, gasneti_legacy_handlers, len, 
+      if (gasneti_amregister(gasneti_import_ep(gasneti_thunk_endpoint), gasneti_legacy_handlers, len, 
                               GASNETI_LEGACY_HANDLER_BASE, GASNETI_CLIENT_HANDLER_BASE, 0, &numreg) != GASNET_OK)
          gasneti_fatalerror("Error registering g2ex legacy AM handlers");
       gasneti_assert(numreg == len);

@@ -29,4 +29,3 @@ if [ $? -eq 0 ]; then
 fi
 
 #otherwise, no clang in path. do nothing.
-
