@@ -168,9 +168,9 @@ struct ParserContext {
                                   bool isOverride);
   CommentsAndStmt buildFunctionDecl(YYLTYPE location, FunctionParts& fp);
 
-  // Build a series of index variables from a given expression. The
-  // expression is owned because it will be consumed.
-  ASTList buildIndexVariableDecls(YYLTYPE location, owned<Expression> e);
+  // Build an index variable from a given expression. The expression is owned
+  // because it will be consumed. 
+  owned<Decl> buildIndexVariableDecl(YYLTYPE location, owned<Expression> e);
 
   // Do we really need these?
   /*

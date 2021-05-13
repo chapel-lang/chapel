@@ -43,16 +43,15 @@ namespace uast {
  */
 class For final : public IndexableLoop {
  private:
-  For(ASTList children, int8_t iterandChildNum,
-         int8_t indexVariableDeclStartChildNum,
-         int numIndexVariables,
-         bool usesDo,
-         bool isExpressionLevel,
-         bool isParam)
-    : IndexableLoop(asttags::For, std::move(children), iterandChildNum,
-                    indexVariableDeclStartChildNum,
-                    numIndexVariables,
-                    usesDo),
+  For(ASTList children,  int8_t indexVariableDeclChildNum,
+      int8_t iterandChildNum,
+      bool usesDo,
+      bool isExpressionLevel,
+      bool isParam)
+        : IndexableLoop(asttags::For, std::move(children),
+                        indexVariableDeclChildNum,
+                        iterandChildNum,
+                        usesDo),
       isExpressionLevel_(isExpressionLevel),
       isParam_(isParam) {
 
@@ -71,7 +70,7 @@ class For final : public IndexableLoop {
     Create and return a for loop. 
   */
   static owned<For> build(Builder* builder, Location loc,
-                          ASTList indexVariables,
+                          owned<Decl> indexVariableDecl,
                           owned<Expression> iterand,
                           ASTList stmts,
                           bool usesDo,

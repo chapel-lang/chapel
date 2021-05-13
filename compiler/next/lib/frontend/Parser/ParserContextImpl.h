@@ -370,22 +370,20 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
   return cs;
 }
 
-ASTList ParserContext::buildIndexVariableDecls(YYLTYPE location,
-                                               owned<Expression> e) {
-  ASTList ret;
-  if (e->isIdentifier()) {
-    const Identifier* ident = e->toIdentifier();
-    auto varDecl = VariableDecl::build(builder, convertLocation(location),
-                                       ident->name(),
-                                       Sym::DEFAULT_VISIBILITY,
-                                       Variable::INDEX,
-                                       /*typeExpression*/ nullptr,
-                                       /*initExpression*/ nullptr);
-    ret.push_back(std::move(varDecl));
+// TODO: Need way to clear location of 'e' in the builder.
+owned<Decl> ParserContext::buildIndexVariableDecl(YYLTYPE location,
+                                                  owned<Expression> e) {
+  if (const Identifier* ident = e->toIdentifier()) {
+    return VariableDecl::build(builder, convertLocation(location),
+                               ident->name(),
+                               Sym::DEFAULT_VISIBILITY,
+                               Variable::INDEX,
+                               /*typeExpression*/ nullptr,
+                               /*initExpression*/ nullptr);
   } else {
     noteError(location, this, "Cannot handle this kind of index var");
   }
 
-  return ret;
+  return nullptr;
 }
 

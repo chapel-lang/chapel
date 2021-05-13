@@ -33,19 +33,19 @@ namespace uast {
  */
 class IndexableLoop : public Loop {
  protected:
-  IndexableLoop(ASTTag tag, ASTList children, int8_t iterandChildNum,
-                int8_t indexVariableDeclStartChildNum,
-                int numIndexVariables,
+  IndexableLoop(ASTTag tag, ASTList children,
+                int8_t indexVariableDeclChildNum,
+                int8_t iterandChildNum,
                 bool usesDo)
     : Loop(tag, std::move(children),
            // Compute the start of the loop body.
-           ((iterandChildNum >= 0) + numIndexVariables),
+           ((iterandChildNum >= 0) + (indexVariableDeclChildNum >= 0)),
            usesDo),
-      iterandChildNum_(iterandChildNum),
-      indexVariableDeclStartChildNum_(indexVariableDeclStartChildNum),
-      numIndexVariables_(numIndexVariables) {
+      indexVariableDeclChildNum_(indexVariableDeclChildNum),
+      iterandChildNum_(iterandChildNum) {
 
     assert(isExpressionASTList(children_));
+    assert(iterandChildNum >= 0);
   }
 
   bool indexableLoopContentsMatchInner(const IndexableLoop* other) const {
@@ -56,54 +56,19 @@ class IndexableLoop : public Loop {
     this->loopMarkUniqueStringsInner(context);
   }
 
+  int8_t indexVariableDeclChildNum_;
   int8_t iterandChildNum_;
-  int8_t indexVariableDeclStartChildNum_;
-  int numIndexVariables_;
 
  public:
   virtual ~IndexableLoop() override = 0; // this is an abstract base class
 
   /**
-    Return the number of index variables introduced by this indexable loop.
+    Returns the index variable declaration of this indexable loop. If there
+    is no index variable this method returns nullptr.
   */
-  int numIndexVariables() const {
-    return numIndexVariables_;
-  }
-
-  /**
-    Returns the i'th index variable declaration of this indexable loop.
-  */
-  const VariableDecl* indexVariableDecl(int i) const {
-    if (!numIndexVariables_) return nullptr;
-    assert(0 <= i && i < numIndexVariables_);
-    return (const VariableDecl*)child(indexVariableDeclStartChildNum_+i);
-  }
-
-  /**
-    Returns the first index variable declaration of this indexable loop.
-  */
-  const VariableDecl* indexVariableDecl() const {
-    if (!numIndexVariables_) return nullptr;
-    assert(numIndexVariables_);
-    return indexVariableDecl(0);
-  }
-
-  /**
-    Returns the i'th index variable of this indexable loop.
-  */
-  const Variable* indexVariable(int i) const {
-    if (!numIndexVariables_) return nullptr;
-    assert(0 <= i && i < numIndexVariables_);
-    return this->indexVariableDecl(i)->variable();
-  }
-
-  /**
-    Returns the first index variable of this indexable loop.
-  */
-  const Variable* indexVariable() const {
-    if (!numIndexVariables_) return nullptr;
-    assert(numIndexVariables_);
-    return indexVariable(0);
+  const Decl* indexVariableDecl() const {
+    if (indexVariableDeclChildNum_ < 0) return nullptr;
+    return (const Decl*)child(indexVariableDeclChildNum_);
   }
 
   /**

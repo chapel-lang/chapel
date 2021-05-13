@@ -47,7 +47,7 @@ void For::markUniqueStringsInner(Context* context) const {
 
 owned<For> For::build(Builder* builder,
                       Location loc,
-                      ASTList indexVariables,
+                      owned<Decl> indexVariableDecl,
                       owned<Expression> iterand,
                       ASTList stmts,
                       bool usesDo,
@@ -57,30 +57,25 @@ owned<For> For::build(Builder* builder,
   if (isParam) assert(!isExpressionLevel);
 
   ASTList lst;
-  const int numIndexVariables = indexVariables.size();
-  int8_t indexVariableDeclStartChildNum = -1;
+  int8_t indexVariableDeclChildNum = -1;
   int8_t iterandChildNum = -1;
+
+  if (indexVariableDecl.get() != nullptr) {
+    indexVariableDeclChildNum = lst.size();
+    lst.push_back(std::move(indexVariableDecl));
+  }
 
   if (iterand.get() != nullptr) {
     iterandChildNum = lst.size();
     lst.push_back(std::move(iterand));
   }
 
-  if (numIndexVariables) {
-    indexVariableDeclStartChildNum = lst.size();
-    for (auto& ivar : indexVariables) {
-      assert(ivar->isVariableDecl());
-      lst.push_back(std::move(ivar));
-    }
-  }
-
   for (auto& stmt : stmts) {
     lst.push_back(std::move(stmt));
   }
 
-  For* ret = new For(std::move(lst), iterandChildNum,
-                     indexVariableDeclStartChildNum,
-                     numIndexVariables,
+  For* ret = new For(std::move(lst), indexVariableDeclChildNum,
+                     iterandChildNum,
                      usesDo,
                      isExpressionLevel,
                      isParam);
@@ -93,7 +88,7 @@ owned<For> For::build(Builder* builder,
                       owned<Expression> iterand,
                       ASTList stmts,
                       bool usesDo) {
-  return For::build(builder, loc, std::move(ASTList()), std::move(iterand),
+  return For::build(builder, loc, nullptr, std::move(iterand),
                     std::move(stmts),
                     usesDo,
                     /*isExpressionLevel*/ false,
