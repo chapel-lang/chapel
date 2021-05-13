@@ -39,7 +39,8 @@ def is_included_llvm_built():
 
 def compatible_platform_for_llvm_default():
   target_arch = chpl_arch.get('target')
-  return (target_arch != "i368")
+  target_platform = chpl_platform.get('target')
+  return (target_arch != "i368" and target_platform != "linux32")
 
 def has_compatible_installed_llvm():
     preferred_vers_file = os.path.join(get_chpl_third_party(),
