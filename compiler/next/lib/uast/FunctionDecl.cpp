@@ -29,10 +29,10 @@ namespace uast {
 bool FunctionDecl::contentsMatchInner(const ASTNode* other) const {
   const FunctionDecl* lhs = this;
   const FunctionDecl* rhs = (const FunctionDecl*) other;
-  return lhs->declContentsMatchInner(rhs);
+  return lhs->symDeclContentsMatchInner(rhs);
 }
 void FunctionDecl::markUniqueStringsInner(Context* context) const {
-  return declMarkUniqueStringsInner(context);
+  return symDeclMarkUniqueStringsInner(context);
 }
 
 owned<FunctionDecl>

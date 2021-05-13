@@ -204,12 +204,12 @@ class Function final : public Sym {
    Return a way to iterate over the formals Syms, including the method
    receiver, if present, as the first formal.
    */
-  DeclListSymIteratorPair<Formal> formals() const {
+  SymDeclListSymIteratorPair<Formal> formals() const {
     if (numFormals() == 0) {
-      return DeclListSymIteratorPair<Formal>(children_.end(), children_.end());
+      return SymDeclListSymIteratorPair<Formal>(children_.end(), children_.end());
     } else {
       auto start = children_.begin() + formalsChildNum_;
-      return DeclListSymIteratorPair<Formal>(start, start + numFormals_);
+      return SymDeclListSymIteratorPair<Formal>(start, start + numFormals_);
     }
   }
 
