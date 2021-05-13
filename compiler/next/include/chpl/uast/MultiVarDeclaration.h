@@ -70,20 +70,20 @@ class MultiVarDeclaration final : public Expression {
   /**
     Return a way to iterate over the contained VariableDecls and Comments.
    */
-  ASTListIteratorPair<Expression> stmts() const {
+  ASTListIteratorPair<Expression> declOrComments() const {
     return ASTListIteratorPair<Expression>(children_.begin(), children_.end());
   }
 
   /**
    Return the number of VariableDecls and Comments contained.
    */
-  int numStmts() const {
+  int numDeclOrComments() const {
     return this->numChildren();
   }
   /**
    Return the i'th contained VariableDecl or Comment.
    */
-  const Expression* stmt(int i) const {
+  const Expression* declOrComment(int i) const {
     const ASTNode* ast = this->child(i);
     assert(ast->isVariableDecl() || ast->isComment());
     return (const Expression*)ast;
