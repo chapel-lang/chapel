@@ -46,6 +46,7 @@ namespace clang {
   class FunctionDecl;
   class QualType;
   class RecordType;
+  class Type;
   class TypeDecl;
   class ValueDecl;
 
@@ -115,6 +116,7 @@ void checkAdjustedDataLayout();
 extern fileinfo gAllExternCode;
 extern std::string ggpuFatbinPath;
 
+void print_clang(clang::Type* d);
 void print_clang(clang::Decl* d);
 void print_clang(clang::TypeDecl* td);
 void print_clang(clang::ValueDecl* vd);

@@ -4194,6 +4194,15 @@ static void moveGeneratedLibraryFile(const char* tmpbinname) {
   moveResultFromTmp(outputPath.c_str(), tmpbinname);
 }
 
+void print_clang(clang::Type* t) {
+  if (t == NULL)
+    fprintf(stderr, "NULL");
+  else
+    t->dump();
+
+  fprintf(stderr, "\n");
+}
+
 void print_clang(clang::Decl* d) {
   if (d == NULL)
     fprintf(stderr, "NULL");
