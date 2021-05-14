@@ -19,13 +19,13 @@ proc testsize(param s) {
 
   var B : [1:uint(s)..254:uint(s)] int;
   forall i in B.domain do
-    B[i] = (B.domain.dim(0).sizeAs(i.type)-i):int;  // TODO: array.sizeAs()
+    B[i] = (B.sizeAs(i.type)-i):int;
 
   test(B);
 
   var C : [-63:int(s)..63:int(s)] int;
   forall i in C.domain do
-    C[i] = C.domain.dim(0).sizeAs(i.type)-i;
+    C[i] = C.sizeAs(i.type)-i;
 
   test(C);
 }

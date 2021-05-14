@@ -749,7 +749,7 @@ module ChapelRange {
   proc chpl_idxTypeSizeChange(type t) param {
     return (isIntegralType(t) && t != int);
   }
-  
+
   /* Returns the number of elements in this range as an integer.
      Historically, and by default for now, the return type is
      represented as an ``intIdxType`` value.  However, Chapel is in
