@@ -63,7 +63,9 @@ class EnumDecl final : public SymDecl {
   const Expression* declOrComment(int i) const {
     return enumSym()->declOrComment(i);
   }
-
+  ASTListNoCommentsIteratorPair<EnumElementDecl> enumElementDecls() const {
+    return enumSym()->enumElementDecls();
+  }
 };
 
 

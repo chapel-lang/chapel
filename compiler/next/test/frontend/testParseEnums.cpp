@@ -95,6 +95,9 @@ static void test3(Parser* parser) {
   assert(0 == bInit->name().compare("jj"));
 }
 
+static void checkTest4(const EnumDecl* enumDecl,
+                       const EnumElementDecl* a,
+                       const EnumElementDecl* b);
 static void test4(Parser* parser) {
   auto parseResult = parser->parseString("test4.chpl",
                                          "enum myEnum { a=ii, b }\n");
@@ -108,6 +111,12 @@ static void test4(Parser* parser) {
   assert(enumDecl->numDeclOrComments() == 2);
   auto a = enumDecl->declOrComment(0)->toEnumElementDecl();
   auto b = enumDecl->declOrComment(1)->toEnumElementDecl();
+  checkTest4(enumDecl, a, b);
+}
+
+static void checkTest4(const EnumDecl* enumDecl,
+                       const EnumElementDecl* a,
+                       const EnumElementDecl* b) {
   assert(a);
   assert(b);
   assert(0 == a->name().compare("a"));
@@ -115,6 +124,16 @@ static void test4(Parser* parser) {
   assert(aInit);
   assert(0 == aInit->name().compare("ii"));
   assert(b->initExpression() == nullptr);
+
+  // also check the enumElementDecls iterator
+  int i = 0;
+  for (auto elt : enumDecl->enumElementDecls()) {
+    if (0 == i) assert(elt == a);
+    if (1 == i) assert(elt == b);
+    if (2 <= i) assert(false);
+    i++;
+  }
+  assert(2 == i);
 }
 
 static void test4a(Parser* parser) {
@@ -131,13 +150,7 @@ static void test4a(Parser* parser) {
   assert(enumDecl->numDeclOrComments() == 2);
   auto a = enumDecl->declOrComment(0)->toEnumElementDecl();
   auto b = enumDecl->declOrComment(1)->toEnumElementDecl();
-  assert(a);
-  assert(b);
-  assert(0 == a->name().compare("a"));
-  auto aInit = a->initExpression()->toIdentifier();
-  assert(aInit);
-  assert(0 == aInit->name().compare("ii"));
-  assert(b->initExpression() == nullptr);
+  checkTest4(enumDecl, a, b);
 }
 
 static void test4b(Parser* parser) {
@@ -153,13 +166,7 @@ static void test4b(Parser* parser) {
   assert(enumDecl->numDeclOrComments() == 2);
   auto a = enumDecl->declOrComment(0)->toEnumElementDecl();
   auto b = enumDecl->declOrComment(1)->toEnumElementDecl();
-  assert(a);
-  assert(b);
-  assert(0 == a->name().compare("a"));
-  auto aInit = a->initExpression()->toIdentifier();
-  assert(aInit);
-  assert(0 == aInit->name().compare("ii"));
-  assert(b->initExpression() == nullptr);
+  checkTest4(enumDecl, a, b);
 }
 
 static void test4c(Parser* parser) {
@@ -175,13 +182,7 @@ static void test4c(Parser* parser) {
   assert(enumDecl->numDeclOrComments() == 2);
   auto a = enumDecl->declOrComment(0)->toEnumElementDecl();
   auto b = enumDecl->declOrComment(1)->toEnumElementDecl();
-  assert(a);
-  assert(b);
-  assert(0 == a->name().compare("a"));
-  auto aInit = a->initExpression()->toIdentifier();
-  assert(aInit);
-  assert(0 == aInit->name().compare("ii"));
-  assert(b->initExpression() == nullptr);
+  checkTest4(enumDecl, a, b);
 }
 
 static void test4d(Parser* parser) {
@@ -198,13 +199,7 @@ static void test4d(Parser* parser) {
   assert(enumDecl->declOrComment(0)->isComment());
   auto a = enumDecl->declOrComment(1)->toEnumElementDecl();
   auto b = enumDecl->declOrComment(2)->toEnumElementDecl();
-  assert(a);
-  assert(b);
-  assert(0 == a->name().compare("a"));
-  auto aInit = a->initExpression()->toIdentifier();
-  assert(aInit);
-  assert(0 == aInit->name().compare("ii"));
-  assert(b->initExpression() == nullptr);
+  checkTest4(enumDecl, a, b);
 }
 
 static void test4e(Parser* parser) {
@@ -220,13 +215,7 @@ static void test4e(Parser* parser) {
   assert(enumDecl->numDeclOrComments() == 2);
   auto a = enumDecl->declOrComment(0)->toEnumElementDecl();
   auto b = enumDecl->declOrComment(1)->toEnumElementDecl();
-  assert(a);
-  assert(b);
-  assert(0 == a->name().compare("a"));
-  auto aInit = a->initExpression()->toIdentifier();
-  assert(aInit);
-  assert(0 == aInit->name().compare("ii"));
-  assert(b->initExpression() == nullptr);
+  checkTest4(enumDecl, a, b);
 }
 
 static void test4f(Parser* parser) {
@@ -242,13 +231,7 @@ static void test4f(Parser* parser) {
   assert(enumDecl->numDeclOrComments() == 2);
   auto a = enumDecl->declOrComment(0)->toEnumElementDecl();
   auto b = enumDecl->declOrComment(1)->toEnumElementDecl();
-  assert(a);
-  assert(b);
-  assert(0 == a->name().compare("a"));
-  auto aInit = a->initExpression()->toIdentifier();
-  assert(aInit);
-  assert(0 == aInit->name().compare("ii"));
-  assert(b->initExpression() == nullptr);
+  checkTest4(enumDecl, a, b);
 }
 
 static void test4g(Parser* parser) {
@@ -264,13 +247,7 @@ static void test4g(Parser* parser) {
   assert(enumDecl->numDeclOrComments() == 2);
   auto a = enumDecl->declOrComment(0)->toEnumElementDecl();
   auto b = enumDecl->declOrComment(1)->toEnumElementDecl();
-  assert(a);
-  assert(b);
-  assert(0 == a->name().compare("a"));
-  auto aInit = a->initExpression()->toIdentifier();
-  assert(aInit);
-  assert(0 == aInit->name().compare("ii"));
-  assert(b->initExpression() == nullptr);
+  checkTest4(enumDecl, a, b);
 }
 
 static void test4h(Parser* parser) {
@@ -287,13 +264,7 @@ static void test4h(Parser* parser) {
   auto a = enumDecl->declOrComment(0)->toEnumElementDecl();
   assert(enumDecl->declOrComment(1)->isComment());
   auto b = enumDecl->declOrComment(2)->toEnumElementDecl();
-  assert(a);
-  assert(b);
-  assert(0 == a->name().compare("a"));
-  auto aInit = a->initExpression()->toIdentifier();
-  assert(aInit);
-  assert(0 == aInit->name().compare("ii"));
-  assert(b->initExpression() == nullptr);
+  checkTest4(enumDecl, a, b);
 }
 
 static void test4i(Parser* parser) {
@@ -310,13 +281,7 @@ static void test4i(Parser* parser) {
   auto a = enumDecl->declOrComment(0)->toEnumElementDecl();
   auto b = enumDecl->declOrComment(1)->toEnumElementDecl();
   assert(enumDecl->declOrComment(2)->isComment());
-  assert(a);
-  assert(b);
-  assert(0 == a->name().compare("a"));
-  auto aInit = a->initExpression()->toIdentifier();
-  assert(aInit);
-  assert(0 == aInit->name().compare("ii"));
-  assert(b->initExpression() == nullptr);
+  checkTest4(enumDecl, a, b);
 }
 
 static void test4j(Parser* parser) {
@@ -333,13 +298,7 @@ static void test4j(Parser* parser) {
   auto a = enumDecl->declOrComment(0)->toEnumElementDecl();
   auto b = enumDecl->declOrComment(1)->toEnumElementDecl();
   assert(enumDecl->declOrComment(2)->isComment());
-  assert(a);
-  assert(b);
-  assert(0 == a->name().compare("a"));
-  auto aInit = a->initExpression()->toIdentifier();
-  assert(aInit);
-  assert(0 == aInit->name().compare("ii"));
-  assert(b->initExpression() == nullptr);
+  checkTest4(enumDecl, a, b);
 }
 
 

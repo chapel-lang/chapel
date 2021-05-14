@@ -21,6 +21,7 @@
 #define CHPL_UAST_ENUM_H
 
 #include "chpl/queries/Location.h"
+#include "chpl/uast/Comment.h"
 #include "chpl/uast/TypeSym.h"
 
 namespace chpl {
@@ -77,6 +78,14 @@ class Enum final : public TypeSym {
     const ASTNode* ast = this->child(i);
     assert(ast->isExpression());
     return (const Expression*)ast;
+  }
+
+  /**
+   Return a way to iterate over the EnumElementDecls (ignoring Comments)
+   */
+  ASTListNoCommentsIteratorPair<EnumElementDecl> enumElementDecls() const {
+    return ASTListNoCommentsIteratorPair<EnumElementDecl>(children_.begin(),
+                                                          children_.end());
   }
 };
 
