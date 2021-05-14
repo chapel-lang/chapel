@@ -154,6 +154,8 @@ while (@ARGV) {
         $svnrevopt = "-r " . shift @ARGV;
     } elsif ($flag eq "-cron-recipient") {
         $cronrecipient = shift @ARGV;
+    } elsif ($flag eq "-llvm") {
+        $llvm = 1;
     } elsif ($flag eq "-no-llvm") {
         $llvm = 0;
     } elsif ($flag eq "-junit-xml") {
