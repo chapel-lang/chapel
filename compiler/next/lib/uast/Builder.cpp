@@ -147,26 +147,29 @@ void Builder::doAssignIDs(ASTNode* ast, UniqueString symbolPath, int& i,
   int firstChildID = i;
 
   SymDecl* decl = ast->toSymDecl();
+  Sym* declaredSym = nullptr;
+  if (decl != nullptr) {
+    declaredSym = (Sym*) decl->sym();
+  }
 
-  if (decl == nullptr) {
-    // visit the children now to get integer part of ids in postorder
-    for (auto & child : ast->children_) {
-      ASTNode* ptr = child.get();
+  // visit the children now to get integer part of ids in postorder
+  // (but don't visit the declared Sym yet)
+  for (auto & child : ast->children_) {
+    ASTNode* ptr = child.get();
+    if (ptr != declaredSym) {
       this->doAssignIDs(ptr, symbolPath, i, pathVec, duplicates);
     }
   }
+
   int afterChildID = i;
   int myID = afterChildID;
   i++; // count the ID for the node we are currently visiting
   int numContainedIDs = afterChildID - firstChildID;
   ast->setID(ID(symbolPath, myID, numContainedIDs));
 
-  // for decls, adjust the symbolPath and then visit the defined symbol
-  if (decl != nullptr) {
-    assert(decl->numChildren() == 1);
-    assert(decl->child(0)->isSym());
-    Sym* sym = (Sym*) decl->child(0);
-    UniqueString name = sym->name();
+  // for SymDecls, adjust the symbolPath and then visit the defined symbol
+  if (declaredSym != nullptr) {
+    UniqueString name = declaredSym->name();
     int repeat = 0;
 
     auto search = duplicates.find(name);
@@ -200,7 +203,7 @@ void Builder::doAssignIDs(ASTNode* ast, UniqueString symbolPath, int& i,
     // get a fresh postorder traversal counter and duplicates map
     int freshId = 0;
     declaredHereT freshMap;
-    doAssignIDs(sym, symbolPath, freshId, pathVec, freshMap);
+    doAssignIDs(declaredSym, symbolPath, freshId, pathVec, freshMap);
     // pop the path component we just added
     pathVec.pop_back();
   }

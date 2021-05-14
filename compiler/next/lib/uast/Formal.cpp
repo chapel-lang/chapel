@@ -29,9 +29,7 @@ bool Formal::contentsMatchInner(const ASTNode* other) const {
   const Formal* lhs = this;
   const Formal* rhs = (const Formal*) other;
   return lhs->symContentsMatchInner(rhs) &&
-         lhs->intent_ == rhs->intent_ &&
-         lhs->typeExpressionChildNum == rhs->typeExpressionChildNum &&
-         lhs->initExpressionChildNum == rhs->initExpressionChildNum;
+         lhs->intent_ == rhs->intent_;
 }
 void Formal::markUniqueStringsInner(Context* context) const {
   symMarkUniqueStringsInner(context);

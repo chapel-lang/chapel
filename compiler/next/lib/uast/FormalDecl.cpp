@@ -28,7 +28,9 @@ namespace uast {
 bool FormalDecl::contentsMatchInner(const ASTNode* other) const {
   const FormalDecl* lhs = this;
   const FormalDecl* rhs = (const FormalDecl*) other;
-  return lhs->symDeclContentsMatchInner(rhs);
+  return lhs->symDeclContentsMatchInner(rhs) &&
+         lhs->typeExpressionChildNum_ == rhs->typeExpressionChildNum_ &&
+         lhs->initExpressionChildNum_ == rhs->initExpressionChildNum_;
 }
 void FormalDecl::markUniqueStringsInner(Context* context) const {
   return symDeclMarkUniqueStringsInner(context);
@@ -43,6 +45,7 @@ FormalDecl::build(Builder* builder, Location loc,
   ASTList lst;
   int8_t typeExpressionChildNum = -1;
   int8_t initExpressionChildNum = -1;
+  int8_t symChildNum = -1;
   if (typeExpression.get() != nullptr) {
     typeExpressionChildNum = lst.size();
     lst.push_back(std::move(typeExpression));
@@ -51,10 +54,14 @@ FormalDecl::build(Builder* builder, Location loc,
     initExpressionChildNum = lst.size();
     lst.push_back(std::move(initExpression));
   }
-  Formal* sym = new Formal(std::move(lst), name, intent,
-                           typeExpressionChildNum, initExpressionChildNum);
+  Formal* sym = new Formal(name, intent);
   builder->noteLocation(sym, loc);
-  FormalDecl* ret = new FormalDecl(toOwned(sym));
+  symChildNum = lst.size();
+  lst.push_back(toOwned(sym));
+
+  FormalDecl* ret = new FormalDecl(std::move(lst), symChildNum,
+                                   typeExpressionChildNum,
+                                   initExpressionChildNum);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

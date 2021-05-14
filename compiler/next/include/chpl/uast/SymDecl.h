@@ -34,11 +34,16 @@ namespace uast {
  */
 class SymDecl : public Decl {
  protected:
+  int8_t symChildNum_;
   SymDecl(ASTTag tag, owned<Sym> sym)
-    : Decl(tag, makeASTList(std::move(sym))) {
+    : Decl(tag, makeASTList(std::move(sym))), symChildNum_(0) {
+  }
+  SymDecl(ASTTag tag, ASTList children, int8_t symChildNum)
+    : Decl(tag, std::move(children)), symChildNum_(symChildNum) {
   }
   bool symDeclContentsMatchInner(const SymDecl* other) const {
-    return declContentsMatchInner(other);
+    return this->symChildNum_ == other->symChildNum_ &&
+           declContentsMatchInner(other);
   }
   void symDeclMarkUniqueStringsInner(Context* context) const {
     declMarkUniqueStringsInner(context);
@@ -49,7 +54,7 @@ class SymDecl : public Decl {
 
   /** Returns the symbol declared by the declaration. */
   const Sym* sym() const {
-    const ASTNode* ast = child(0);
+    const ASTNode* ast = child(symChildNum_);
     assert(ast->isSym());
     return (const Sym*) ast;
   }

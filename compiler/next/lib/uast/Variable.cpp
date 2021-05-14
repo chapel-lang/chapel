@@ -29,9 +29,7 @@ bool Variable::contentsMatchInner(const ASTNode* other) const {
   const Variable* lhs = this;
   const Variable* rhs = (const Variable*) other;
   return lhs->symContentsMatchInner(rhs) &&
-         lhs->kind_ == rhs->kind_ &&
-         lhs->typeExpressionChildNum == rhs->typeExpressionChildNum &&
-         lhs->initExpressionChildNum == rhs->initExpressionChildNum;
+         lhs->kind_ == rhs->kind_;
 }
 void Variable::markUniqueStringsInner(Context* context) const {
   symMarkUniqueStringsInner(context);
