@@ -1554,8 +1554,13 @@ module ChapelArray {
       for i in _value.dimIter(d, ind) do yield i;
     }
 
-   /* Return a tuple of :proc:`intIdxType` describing the size of each dimension.
-      For a sparse domain, return the shape of the parent domain.*/
+   /* Return a tuple of :proc:`intIdxType` describing the size of each
+      dimension.  Note that this routine is in the process of changing
+      to return a tuple of ``int``, similar to the ``.size`` query on
+      ranges, domains, and arrays.  See :proc:`ChapelRange.range.size` for details.
+
+      For a sparse domain, this returns the shape of the parent domain.
+    */
     proc shape where isRectangularDom(this) || isSparseDom(this) {
       use ChapelRange;
       if (chpl_idxTypeSizeChange(idxType) && sizeReturnsInt == false) {
@@ -1803,7 +1808,10 @@ module ChapelArray {
       _value.dsiRequestCapacity(i);
     }
 
-    /* Return the number of indices in this domain */
+    /* Return the number of indices in this domain.  For domains whose
+       ``intIdxType != int``, please refer to the note in
+       :proc:`ChapelRange.range.size` about changes to this routine's return type.
+    */
     proc size {
       use ChapelRange;
       if (chpl_idxTypeSizeChange(idxType) && sizeReturnsInt == false) {

@@ -166,10 +166,14 @@ module ChapelRange {
   pragma "no doc"
   config param useOptimizedRangeIterators = true;
 
-  // Chapel is in the process of changing '.size' routines to return
-  // 'int' by default.  This config permits codes to opt into this
-  // change now rather than waiting for a future release.
-  //
+  /* Chapel is in the process of changing ``range(idxType).size`` away
+     from returning the range's size as an ``idxType`` value in favor
+     of returning an ``int`` value.  Setting ``sizeReturnsInt`` to
+     ``true`` permits a user to opt into this new behavior now rather
+     than having it change out from under them in a future release.
+     The old behavior can be retained by using the new
+     :proc:`range.sizeAs` method.  */
+
   config param sizeReturnsInt = false;
 
 
@@ -747,9 +751,16 @@ module ChapelRange {
   }
   
   /* Returns the number of elements in this range as an integer.
+     Historically, and by default for now, the return type is
+     represented as an ``intIdxType`` value.  However, Chapel is in
+     the process of changing to always return an ``int`` value, and so
+     will generate a warning if ``intIdxType != int`` to alert users
+     to the change.  :param:`sizeReturnsInt` can be used to opt into
+     the new behavior now.  Or :proc:`range.sizeAs` can be used to
+     request a different return type.
 
-     If the size exceeds `max(int)`, this procedure will halt when
-     bounds checks are on.
+     If the size exceeds ``max(intIdxType)``/``max(int)``, this
+     procedure will halt when bounds checks are on.
    */
   proc range.size {
     if (chpl_idxTypeSizeChange(idxType) && sizeReturnsInt == false) {
