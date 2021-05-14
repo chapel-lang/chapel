@@ -133,11 +133,11 @@ AST_END_SUBCLASSES(Expression)
 
 AST_BEGIN_SUBCLASSES(Sym)              // old AST: Symbol
   AST_NODE(EnumElement)                // old AST: EnumSymbol
-  AST_NODE(Formal)                     // old AST: ArgSymbol
+  AST_LEAF(Formal)                     // old AST: ArgSymbol
   AST_NODE(Function)                   // old AST: FnSymbol
   AST_NODE(Interface)                  // old AST: InterfaceSymbol
   AST_NODE(Module)                     // old AST: ModuleSymbol
-  AST_NODE(Variable)                   // old AST: VarSymbol
+  AST_LEAF(Variable)                   // old AST: VarSymbol
                                        // old AST: ShadowVarSymbol
 
   AST_BEGIN_SUBCLASSES(TypeSym)        // old AST: TypeSymbol/Type
