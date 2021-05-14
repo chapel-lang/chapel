@@ -114,7 +114,7 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
   AST_END_SUBCLASSES(Call)
 
 
-//  AST_BEGIN_SUBCLASSES(Decl)
+  AST_BEGIN_SUBCLASSES(Decl)
     AST_NODE(MultiDecl)
     AST_NODE(TupleDecl)
 
@@ -127,7 +127,7 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
       //AST_NODE(TypeDecl)
       AST_NODE(VariableDecl)
     AST_END_SUBCLASSES(SymDecl)
-//  AST_END_SUBCLASSES(Decl)
+  AST_END_SUBCLASSES(Decl)
 
 AST_END_SUBCLASSES(Expression)
 
