@@ -372,3 +372,21 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
   this->clearComments();
   return cs;
 }
+
+// TODO: Need way to clear location of 'e' in the builder.
+owned<Decl> ParserContext::buildIndexVariableDecl(YYLTYPE location,
+                                                  owned<Expression> e) {
+  if (const Identifier* ident = e->toIdentifier()) {
+    return VariableDecl::build(builder, convertLocation(location),
+                               ident->name(),
+                               Sym::DEFAULT_VISIBILITY,
+                               Variable::INDEX,
+                               /*typeExpression*/ nullptr,
+                               /*initExpression*/ nullptr);
+  } else {
+    noteError(location, this, "Cannot handle this kind of index var");
+  }
+
+  return nullptr;
+}
+

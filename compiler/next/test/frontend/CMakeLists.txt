@@ -35,6 +35,7 @@
 comp_unit_test(testFrontendQueries)
 comp_unit_test(testInteractive)
 comp_unit_test(testParse)
+comp_unit_test(testParseFor)
 comp_unit_test(testParseFunctions)
 comp_unit_test(testParseLocal)
 comp_unit_test(testParseModules)
