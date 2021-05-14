@@ -3357,7 +3357,9 @@ void setupForGlobalToWide(void) {
   }
   ginfo->irBuilder->CreateRet(ret);
 
-  llvm::verifyFunction(*fn, &errs());
+  if (developer || fVerify) {
+    llvm::verifyFunction(*fn, &errs());
+  }
 
   info->hasPreservingFn = true;
   info->preservingFn = fn;
