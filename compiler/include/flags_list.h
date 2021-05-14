@@ -144,6 +144,7 @@ symbolFlag( FLAG_EXPORT_INIT, ypr, "export init", "indicate that the module's in
 symbolFlag( FLAG_EXPORT_WRAPPER, ypr, "export wrapper", ncm )
 symbolFlag( FLAG_EXPR_TEMP , npr, "expr temp" , "temporary that stores the result of an expression" )
 symbolFlag( FLAG_EXTERN , npr, "extern" , "extern variables, types, and functions" )
+symbolFlag( FLAG_EXTERN_UNION , npr, "extern union" , "extern union" )
 symbolFlag( FLAG_EXTERN_FN_WITH_ARRAY_ARG, "npr", "extern fn with array arg", "extern functions with array arguments" )
 symbolFlag( FLAG_FAST_ON , npr, "fast on" , "with FLAG_ON/FLAG_ON_BLOCK, \"on block\" , use fast spawning option (if available)" )
 symbolFlag( FLAG_FAST_ON_SAFE_EXTERN, ypr, "fast-on safe extern function", "extern function is safe for fast-on optimization")

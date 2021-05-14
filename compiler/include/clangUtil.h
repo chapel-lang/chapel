@@ -78,6 +78,8 @@ clang::FunctionDecl* getFunctionDeclClang(const char* name);
 llvm::Type* getTypeLLVM(const char* name);
 int getCRecordMemberGEP(const char* typeName, const char* fieldName, bool& isCArrayField);
 
+bool isCTypeUnion(const char* name);
+
 #if HAVE_LLVM_VER >= 100
 llvm::MaybeAlign getPointerAlign(int addrSpace);
 llvm::MaybeAlign getCTypeAlignment(const clang::TypeDecl* td);

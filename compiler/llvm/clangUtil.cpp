@@ -3146,6 +3146,28 @@ static unsigned helpGetAlignment(::Type* type) {
   return maxAlign;
 }
 
+bool isCTypeUnion(const char* name) {
+  GenInfo* info = gGenInfo;
+  INT_ASSERT(info);
+  TypeDecl* d = nullptr;
+
+  info->lvt->getCDecl(name, &d, nullptr);
+
+  if (d == nullptr)
+    return false;
+
+  if (isa<TypedefDecl>(d)) {
+    TypedefDecl* td = cast<TypedefDecl>(d);
+    const clang::Type* t = td->getUnderlyingType().getTypePtr();
+    return t->isUnionType();
+  }
+  if (isa<RecordDecl>(d)) {
+    RecordDecl* rec = cast<RecordDecl>(d);
+    return rec->isUnion();
+  }
+  return false;
+}
+
 #if HAVE_LLVM_VER >= 100
 llvm::MaybeAlign getPointerAlign(int addrSpace) {
   GenInfo* info = gGenInfo;

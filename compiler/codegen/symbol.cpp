@@ -1354,6 +1354,14 @@ void TypeSymbol::codegenDef() {
     // no action required.
   } else {
 #ifdef HAVE_LLVM
+
+    // Check for C types that are actually unions and mark
+    // them with FLAG_EXTERN_UNION. This can apply even if
+    // they are declared in Chapel as 'record'.
+    if (isCTypeUnion(cname)) {
+      this->addFlag(FLAG_EXTERN_UNION);
+    }
+
     llvm::Type *type = info->lvt->getType(cname);
 
     if(type == NULL) {
@@ -1426,12 +1434,14 @@ void TypeSymbol::codegenMetadata() {
     return;
   }
 
+  bool treatAsUnion = isUnion(type) || this->hasFlag(FLAG_EXTERN_UNION);
+
   // Only things that aren't 'struct'-like should have simple TBAA
   // metadata. If they can alias with their fields, we don't do simple TBAA.
   // Integers, reals, bools, enums, references, wide pointers
   // count as one thing. Records, strings, complexes should not
   // get simple TBAA (they can get struct tbaa).
-  if (isUnion(type) || (isRecord(type) && ct->numFields() == 0)) {
+  if (treatAsUnion ||  (isRecord(type) && ct->numFields() == 0)) {
     // This is necessary due to the design of LLVM TBAA metadata.
     // The preferred situation would be to allow each union to have
     // multiple parents, corresponding to its members.  The way TBAA
