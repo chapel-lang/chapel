@@ -2373,8 +2373,8 @@ module ChapelBase {
     return x;
   }
 
-  /* The following two overloads support compiler-generated == and !=
-     operators for records with array fields */
+  /* The following chpl_field_*() overloads support compiler-generated
+     comparison operators for records with array fields */
 
   proc chpl_field_neq(a: [] ?t, b: [] t) {
     return || reduce (a != b);
