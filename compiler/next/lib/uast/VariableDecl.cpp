@@ -28,7 +28,9 @@ namespace uast {
 bool VariableDecl::contentsMatchInner(const ASTNode* other) const {
   const VariableDecl* lhs = this;
   const VariableDecl* rhs = (const VariableDecl*) other;
-  return lhs->symDeclContentsMatchInner(rhs);
+  return lhs->symDeclContentsMatchInner(rhs) &&
+         lhs->typeExpressionChildNum_ == rhs->typeExpressionChildNum_ &&
+         lhs->initExpressionChildNum_ == rhs->initExpressionChildNum_;
 }
 void VariableDecl::markUniqueStringsInner(Context* context) const {
   return symDeclMarkUniqueStringsInner(context);
@@ -43,6 +45,7 @@ VariableDecl::build(Builder* builder, Location loc,
   ASTList lst;
   int8_t typeExpressionChildNum = -1;
   int8_t initExpressionChildNum = -1;
+  int8_t symChildNum = -1;
   if (typeExpression.get() != nullptr) {
     typeExpressionChildNum = lst.size();
     lst.push_back(std::move(typeExpression));
@@ -51,10 +54,14 @@ VariableDecl::build(Builder* builder, Location loc,
     initExpressionChildNum = lst.size();
     lst.push_back(std::move(initExpression));
   }
-  Variable* sym = new Variable(std::move(lst), name, vis, kind,
-                               typeExpressionChildNum, initExpressionChildNum);
+  Variable* sym = new Variable(name, vis, kind);
   builder->noteLocation(sym, loc);
-  VariableDecl* ret = new VariableDecl(toOwned(sym));
+  symChildNum = lst.size();
+  lst.push_back(toOwned(sym));
+
+  VariableDecl* ret = new VariableDecl(std::move(lst), symChildNum,
+                                       typeExpressionChildNum,
+                                       initExpressionChildNum);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

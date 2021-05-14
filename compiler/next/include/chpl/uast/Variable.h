@@ -58,24 +58,11 @@ class Variable final : public Sym {
 
  private:
   Kind kind_;
-  int8_t typeExpressionChildNum;
-  int8_t initExpressionChildNum;
 
-  Variable(ASTList children,
-           UniqueString name, Sym::Visibility vis,
-           Variable::Kind kind,
-           int8_t typeExpressionChildNum,
-           int8_t initExpressionChildNum)
-    : Sym(asttags::Variable, std::move(children), name, vis),
-      kind_(kind),
-      typeExpressionChildNum(typeExpressionChildNum),
-      initExpressionChildNum(initExpressionChildNum) {
-
-    assert(-1 <= typeExpressionChildNum && typeExpressionChildNum <= 1);
-    assert(-1 <= initExpressionChildNum && initExpressionChildNum <= 1);
-    assert(numChildren() <= 2);
-    assert(isExpressionASTList(children_));
+  Variable(UniqueString name, Sym::Visibility vis, Variable::Kind kind)
+    : Sym(asttags::Variable, name, vis), kind_(kind) {
   }
+
   bool contentsMatchInner(const ASTNode* other) const override;
   void markUniqueStringsInner(Context* context) const override;
 
@@ -85,32 +72,6 @@ class Variable final : public Sym {
     Returns the kind of the variable (`var` / `const` / `param` etc).
    */
   const Kind kind() const { return this->kind_; }
-  /**
-    Returns the type expression used in the variable's declaration, or nullptr
-    if there wasn't one.
-    */
-  const Expression* typeExpression() const {
-    if (typeExpressionChildNum >= 0) {
-      const ASTNode* ast = this->child(typeExpressionChildNum);
-      assert(ast->isExpression());
-      return (const Expression*)ast;
-    } else {
-      return nullptr;
-    }
-  }
-  /**
-    Returns the init expression used in the variable's declaration, or nullptr
-    if there wasn't one.
-    */
-  const Expression* initExpression() const {
-    if (initExpressionChildNum >= 0) {
-      const ASTNode* ast = this->child(initExpressionChildNum);
-      assert(ast->isExpression());
-      return (const Expression*)ast;
-    } else {
-      return nullptr;
-    }
-  }
 };
 
 

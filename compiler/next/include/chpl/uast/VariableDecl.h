@@ -46,9 +46,30 @@ namespace uast {
  */
 class VariableDecl final : public SymDecl {
  private:
-  VariableDecl(owned<Variable> variable)
-    : SymDecl(asttags::VariableDecl, std::move(variable)) {
+  int8_t typeExpressionChildNum_;
+  int8_t initExpressionChildNum_;
+
+  VariableDecl(ASTList children,
+               int8_t symChildNum,
+               int8_t typeExpressionChildNum,
+               int8_t initExpressionChildNum)
+    : SymDecl(asttags::VariableDecl, std::move(children), symChildNum),
+      typeExpressionChildNum_(typeExpressionChildNum),
+      initExpressionChildNum_(initExpressionChildNum) {
+
+    assert(0 <= symChildNum && symChildNum <= 2);
+    assert(numChildren() <= 3);
+    assert(child(symChildNum)->isVariable());
+    if (typeExpressionChildNum >= 0) {
+      assert(typeExpressionChildNum <= 2);
+      assert(child(typeExpressionChildNum)->isExpression());
+    }
+    if (initExpressionChildNum >= 0) {
+      assert(initExpressionChildNum <= 2);
+      assert(child(initExpressionChildNum)->isExpression());
+    }
   }
+
   bool contentsMatchInner(const ASTNode* other) const override;
   void markUniqueStringsInner(Context* context) const override;
 
@@ -59,19 +80,49 @@ class VariableDecl final : public SymDecl {
                                    Variable::Kind kind,
                                    owned<Expression> typeExpression,
                                    owned<Expression> initExpression);
+
+  /**
+   Returns the Variable declared by this VariableDecl
+   */
   const Variable* variable() const {
     const Sym* sym = this->sym();
     assert(sym->isVariable());
     return (Variable*)sym;
   }
+
+  /**
+    Returns the kind of the variable (`var` / `const` / `param` etc).
+   */
   const Variable::Kind kind() const {
     return this->variable()->kind();
   }
+
+  /**
+    Returns the type expression used in the variable's declaration, or nullptr
+    if there wasn't one.
+    */
   const Expression* typeExpression() const {
-    return this->variable()->typeExpression();
+    if (typeExpressionChildNum_ >= 0) {
+      const ASTNode* ast = this->child(typeExpressionChildNum_);
+      assert(ast->isExpression());
+      return (const Expression*)ast;
+    } else {
+      return nullptr;
+    }
   }
+
+  /**
+    Returns the init expression used in the variable's declaration, or nullptr
+    if there wasn't one.
+    */
   const Expression* initExpression() const {
-    return this->variable()->initExpression();
+    if (initExpressionChildNum_ >= 0) {
+      const ASTNode* ast = this->child(initExpressionChildNum_);
+      assert(ast->isExpression());
+      return (const Expression*)ast;
+    } else {
+      return nullptr;
+    }
   }
 };
 
