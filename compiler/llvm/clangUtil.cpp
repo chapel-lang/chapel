@@ -2878,9 +2878,11 @@ int getCRecordMemberGEP(const char* typeName, const char* fieldName,
       t = t->getPointeeType().getTypePtr();
     }
     const RecordType* rt = t->getAsStructureType();
+    if (rt == nullptr)
+      rt = t->getAsUnionType();
+
     INT_ASSERT(rt);
     d = rt->getDecl();
-    // getAsUnionType also available, but we don't support extern unions
   }
   INT_ASSERT(isa<RecordDecl>(d));
   RecordDecl* rec = cast<RecordDecl>(d);
