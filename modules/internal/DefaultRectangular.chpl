@@ -1550,21 +1550,22 @@ module DefaultRectangular {
         // overflow.
 
         const first  = info.getDataIndex(viewDom.dsiLow);
-        const second = info.getDataIndex(viewDom.chpl_intToIdx(chpl__idxToInt(viewDom.dsiLow)+1));
+        const second = info.getDataIndex(chpl__intToIdx(viewDom.idxType, chpl__idxToInt(viewDom.dsiLow)+1));
         const step   = (second-first);
         const last   = first + (viewDom.dsiNumIndices-1) * step;
         for i in chpl_direct_pos_stride_range_iter(first, last, step) {
           yield info.theData(i);
         }
       } else {
+        type vdIntIdxType = chpl__idxTypeToIntIdxType(viewDom.idxType);
         const viewDomDim = viewDom.dsiDim(0),
-              stride = viewDomDim.stride: viewDom.intIdxType,
+              stride = viewDomDim.stride: vdIntIdxType,
               start  = viewDomDim.first,
-              second = info.getDataIndex(viewDom.chpl_intToIdx(viewDomDim.firstAsInt + stride));
+              second = info.getDataIndex(chpl__intToIdx(viewDom.idxType, viewDomDim.firstAsInt + stride));
 
         var   first  = info.getDataIndex(start);
-        const step   = (second-first):chpl__signedType(viewDom.intIdxType);
-        var   last   = first + (viewDomDim.size-1) * step:viewDom.intIdxType;
+        const step   = (second-first):chpl__signedType(vdIntIdxType);
+        var   last   = first + (viewDomDim.size-1) * step:vdIntIdxType;
 
         if step < 0 then
           last <=> first;
