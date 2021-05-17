@@ -1,1 +1,6 @@
 bug: Default arguments in dynamic dispatch don't always fire correctly
+
+#17753
+
+The behavior here seems to be dependent on whether or not we have a
+statically dispatched call to the method in question.
