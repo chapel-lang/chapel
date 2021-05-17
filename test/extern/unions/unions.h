@@ -18,3 +18,12 @@ void printSomeUnion(_someUnion _union);
 
 union _noTypedefUnion getNoTypedefUnion(void);
 void printNoTypedefUnion(union _noTypedefUnion _union);
+
+typedef struct containingAnonUnnamedUnion {
+  // Anonymous unnamed union
+  union {
+    float x;
+    double y;
+    int64_t z;
+  };
+} containingAnonUnnamedUnion;
