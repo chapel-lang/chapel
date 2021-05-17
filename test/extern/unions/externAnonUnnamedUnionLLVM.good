@@ -1,0 +1,12 @@
+myUnion.x = 1.5
+myUnion.y = -2.6
+myA[1].x = 1.0
+myA[1].y = -0.2
+myA[2].x = 2.0
+myA[2].y = -0.4
+myA[3].x = 3.0
+myA[3].y = -0.6
+myA[4].x = 4.0
+myA[4].y = -0.8
+myA[5].x = 5.0
+myA[5].y = -1.0

@@ -2239,6 +2239,7 @@ module ChapelBase {
   }
 
   proc isUnionType(type t) param return __primitive("is union type", t);
+  proc isExternUnionType(type t) param return __primitive("is extern union type", t);
 
   proc isAtomicType(type t) param return __primitive("is atomic type", t);
 

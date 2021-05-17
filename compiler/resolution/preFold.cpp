@@ -1238,6 +1238,21 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     break;
   }
 
+  case PRIM_IS_EXTERN_UNION_TYPE: {
+    AggregateType* classType = toAggregateType(call->get(1)->typeInfo());
+
+    if (isUnion(classType) && classType->symbol->hasFlag(FLAG_EXTERN)) {
+      retval = new SymExpr(gTrue);
+    } else {
+      retval = new SymExpr(gFalse);
+    }
+
+    call->replace(retval);
+
+    break;
+  }
+
+
   case PRIM_LOGICAL_FOLDER: {
     SymExpr*   sym1 = toSymExpr(call->get(1));
     VarSymbol* lhs  = NULL;

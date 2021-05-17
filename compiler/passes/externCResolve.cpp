@@ -143,13 +143,22 @@ Expr* convertStructToChplType(ModuleSymbol* module,
   const char* cname = chpl_name;
 
   if (!fLlvmCodegen) {
-    cname = astr("struct ", cname);
+    if (structType->isUnionType())
+      cname = astr("union ", cname);
+    else
+      cname = astr("struct ", cname);
   }
 
-  // For handling typedef struct { } bar
-  //   ie an anonymous struct, use the name in the typedef.
-  if (chpl_name[0] == '\0' && typedefName) {
-    cname = chpl_name = typedefName;
+  if (chpl_name[0] == '\0') {
+    if (typedefName) {
+      // For handling typedef struct { } bar
+      //   ie an anonymous struct, use the name in the typedef.
+      chpl_name = typedefName;
+    } else {
+      // and for other ones, create a name
+      chpl_name = getGeneratedAnonTypeName(structType);
+    }
+    cname = chpl_name;
   }
 
   // Don't convert it if it's already converted
@@ -159,7 +168,11 @@ Expr* convertStructToChplType(ModuleSymbol* module,
   // Create an empty struct and add it to the AST
   // This allows fields of struct* type or other recursion.
 
-  AggregateType* ct = new AggregateType(AGGREGATE_RECORD);
+  AggregateTag tag = AGGREGATE_RECORD;
+  if (structType->isUnionType())
+    tag = AGGREGATE_UNION;
+
+  AggregateType* ct = new AggregateType(tag);
   ct->defaultValue = NULL;
   TypeSymbol* ts = new TypeSymbol(chpl_name, ct);
   ts->cname = cname;
@@ -178,9 +191,17 @@ Expr* convertStructToChplType(ModuleSymbol* module,
        it != rd->field_end();
        ++it) {
     clang::FieldDecl* field      = (*it);
+    const clang::Type* type = field->getType().getTypePtr();
+
     const char* field_name = astr(field->getNameAsString().c_str());
-    Expr* field_type = convertToChplType(module, field->getType().getTypePtr());
-    DefExpr* varDefn = new DefExpr(new VarSymbol(field_name), NULL, field_type);
+    Expr* field_type = convertToChplType(module, type);
+    VarSymbol* varSym = new VarSymbol(field_name);
+    DefExpr* varDefn = new DefExpr(varSym, NULL, field_type);
+
+    if (type->isArrayType() && !type->isConstantArrayType()) {
+      varSym->addFlag(FLAG_C_FLEXIBLE_ARRAY_FIELD);
+    }
+
     BlockStmt* stmt = buildChapelStmt(varDefn);
 
     fields->insertAtTail(buildVarDecls(stmt));
@@ -227,12 +248,16 @@ static Expr* convertToChplType(ModuleSymbol* module,
       return convertArrayToChplType(module, at, typedefName);
     }
 
-    USR_FATAL("variable sized C array types not yet supported");
-
   //structs
   } else if (type->isStructureType()) {
 
     return convertStructToChplType(module, type->getAsStructureType(),
+                                   typedefName);
+
+  // unions
+  } else if (type->isUnionType()) {
+
+    return convertStructToChplType(module, type->getAsUnionType(),
                                    typedefName);
 
   } else if (type->isFunctionType()) {

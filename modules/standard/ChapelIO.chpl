@@ -246,7 +246,10 @@ module ChapelIO {
         }
       }
 
-      if !isUnionType(t) {
+      if isExternUnionType(t) {
+        compilerError("Cannot write extern union");
+
+      } else if !isUnionType(t) {
         // print out all fields for classes and records
         for param i in 1..num_fields {
           if isIoField(x, i) {
@@ -501,7 +504,7 @@ module ChapelIO {
     pragma "no doc"
     proc readThisFieldsDefaultImpl(reader, type t, ref x,
                                    inout needsComma: bool) throws
-        where isUnionType(t) {
+        where isUnionType(t) && !isExternUnionType(t) {
 
       param numFields = __primitive("num fields", t);
       var isBinary = reader.binary();
