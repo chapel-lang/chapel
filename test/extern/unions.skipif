@@ -1,3 +1,0 @@
-# either extern unions don't work with llvm or these tests don't...
-# need more time to investigate
-COMPOPTS <= --llvm
