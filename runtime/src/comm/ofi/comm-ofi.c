@@ -137,8 +137,10 @@ static fi_addr_t* ofi_rxAddrs;          // table of remote endpoint addresses
 //
 // Transmit support.
 //
-static chpl_bool envPreferScalableTxEp;  // env: prefer scalable tx endpoint?
+static chpl_bool envPreferScalableTxEp; // env: prefer scalable tx endpoint?
 static int envCommConcurrency;          // env: communication concurrency
+static ssize_t envMaxHeapSize;          // env: max heap size
+static chpl_bool envOversubscribed;     // env over-subscribed?
 
 static int numTxCtxs;
 static int numRxCtxs;
@@ -263,8 +265,6 @@ static const char* mcmModeNames[] = { "undefined",
 //
 // Forward decls
 //
-
-static void emit_delayedFixedHeapMsgs(void);
 
 static struct perTxCtxInfo_t* tciAlloc(void);
 static struct perTxCtxInfo_t* tciAllocForAmHandler(void);
@@ -933,6 +933,22 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   time_init();
   chpl_comm_ofi_oob_init();
   DBG_INIT();
+
+  //
+  // Gather run-invariant environment info as early as possible.
+  //
+  envPreferScalableTxEp = chpl_env_rt_get_bool("COMM_OFI_PREFER_SCALABLE_EP",
+                                               true);
+
+  envCommConcurrency = chpl_env_rt_get_int("COMM_CONCURRENCY", 0);
+  if (envCommConcurrency < 0) {
+    chpl_warning("CHPL_RT_COMM_CONCURRENCY < 0, ignored", 0, 0);
+    envCommConcurrency = 0;
+  }
+
+  envMaxHeapSize = chpl_comm_getenvMaxHeapSize();
+
+  envOversubscribed = chpl_env_rt_get_bool("OVERSUBSCRIBED", false);
 
   //
   // The user can specify the provider by setting either the Chapel
@@ -1608,61 +1624,16 @@ enum mcmMode_t isDlvrCmpltProv(struct fi_info* info) {
 
 
 static
+struct fi_info* getBaseProviderHints(chpl_bool* pTxAttrsForced);
+
+static
 void init_ofiFabricDomain(void) {
   //
-  // Build hints describing our fundamental requirements and get a list
-  // of the providers that can satisfy those:
-  // - capabilities:
-  //   - messaging (send/receive), including multi-receive
-  //   - RMA
-  //   - transactions directed at both self and remote nodes
-  //   - on Cray XC, atomics (gni provider doesn't volunteer this)
-  // - tx endpoints:
-  //   - default completion level
-  //   - send-after-send ordering
-  // - rx endpoints same as tx
-  // - RDM endpoints
-  // - domain threading model, since we manage thread contention ourselves
-  // - resource management, to improve the odds we hear about exhaustion
-  // - table-style address vectors
-  // - in addition, include the memory registration modes we can support
+  // Get hints describing our base requirements, the ones that are
+  // independent of which MCM conformance mode we'll eventually use.
   //
-  const char* prov_name = getProviderName();
-  struct fi_info* hints;
-  CHK_TRUE((hints = fi_allocinfo()) != NULL);
-
-  hints->caps = (FI_MSG | FI_MULTI_RECV
-                 | FI_RMA | FI_LOCAL_COMM | FI_REMOTE_COMM);
-  if ((strcmp(CHPL_TARGET_PLATFORM, "cray-xc") == 0
-       && (prov_name == NULL || isInProvName("gni", prov_name)))
-      || chpl_env_rt_get_bool("COMM_OFI_HINTS_CAPS_ATOMIC", false)) {
-    hints->caps |= FI_ATOMIC;
-  }
-  hints->tx_attr->op_flags = FI_COMPLETION;
-  hints->tx_attr->msg_order = FI_ORDER_SAS;
-  hints->rx_attr->msg_order = hints->tx_attr->msg_order;
-  hints->ep_attr->type = FI_EP_RDM;
-  hints->domain_attr->threading = FI_THREAD_DOMAIN;
-  hints->domain_attr->resource_mgmt = FI_RM_ENABLED;
-  hints->domain_attr->av_type = FI_AV_TABLE;
-
-  hints->domain_attr->mr_mode = (  FI_MR_LOCAL
-                                 | FI_MR_VIRT_ADDR
-                                 | FI_MR_PROV_KEY // TODO: avoid pkey bcast?
-                                 | FI_MR_ENDPOINT);
-  if (chpl_numNodes > 1 && chpl_comm_getenvMaxHeapSize() > 0) {
-    hints->domain_attr->mr_mode |= FI_MR_ALLOCATED;
-  }
-
-  chpl_bool ord_cmplt_forced = false;
-#ifdef CHPL_COMM_DEBUG
-  struct fi_info* hintsOrig = fi_dupinfo(hints);
-  debugOverrideHints(hints);
-  ord_cmplt_forced =
-    hints->tx_attr->op_flags != hintsOrig->tx_attr->op_flags
-    || hints->tx_attr->msg_order != hintsOrig->tx_attr->msg_order;
-  fi_freeinfo(hintsOrig);
-#endif
+  chpl_bool txAttrsForced;
+  struct fi_info* hints = getBaseProviderHints(&txAttrsForced);
 
   DBG_PRINTF_NODE0(DBG_PROV_HINTS,
                    "====================\n"
@@ -1708,11 +1679,12 @@ void init_ofiFabricDomain(void) {
   // Otherwise, just flow those overrides into the selection process
   // below.
   //
-  if (ord_cmplt_forced) {
+  if (txAttrsForced) {
     int ret;
     OFI_CHK_2(fi_getinfo(COMM_OFI_FI_VERSION, NULL, NULL, 0, hints, &ofi_info),
               ret, -FI_ENODATA);
     if (ret != FI_SUCCESS) {
+      const char* prov_name = getProviderName();
       INTERNAL_ERROR_V_NODE0("No (forced) provider for prov_name \"%s\"",
                              (prov_name == NULL) ? "<any>" : prov_name);
     }
@@ -1728,7 +1700,6 @@ void init_ofiFabricDomain(void) {
   size_t capTryLen = sizeof(capTry) / sizeof(capTry[0]);
 
   if (ofi_info == NULL) {
-
     // Search for a good provider.
     for (int i = 0; ofi_info == NULL && i < capTryLen; i++) {
       struct fi_info* info;
@@ -1770,6 +1741,7 @@ void init_ofiFabricDomain(void) {
     // We didn't find any provider at all.
     // NOTE: execution ends here.
     //
+    const char* prov_name = getProviderName();
     INTERNAL_ERROR_V_NODE0("No libfabric provider for prov_name \"%s\"",
                            (prov_name == NULL) ? "<any>" : prov_name);
   }
@@ -1815,18 +1787,119 @@ void init_ofiFabricDomain(void) {
 
 
 static
+struct fi_info* getBaseProviderHints(chpl_bool* pTxAttrsForced) {
+  //
+  // Build hints describing our base requirements, the ones that are
+  // independent of which MCM conformance mode we'll eventually use:
+  // - capabilities:
+  //   - messaging (send/receive), including multi-receive
+  //   - RMA
+  //   - transactions directed at both self and remote nodes
+  //   - on Cray XC, atomics (gni provider doesn't volunteer this)
+  // - tx endpoints:
+  //   - completion events
+  //   - send-after-send ordering
+  // - rx endpoint ordering same as tx
+  // - RDM endpoints
+  // - "domain" threading model, since we manage thread contention ourselves
+  // - resource management, to improve the odds we hear about exhaustion
+  // - table-style address vectors
+  // - the memory registration modes we can support
+  //
+  const char* prov_name = getProviderName();
+  struct fi_info* hints;
+  CHK_TRUE((hints = fi_allocinfo()) != NULL);
+
+  hints->caps = (FI_MSG | FI_MULTI_RECV
+                 | FI_RMA | FI_LOCAL_COMM | FI_REMOTE_COMM);
+  if ((strcmp(CHPL_TARGET_PLATFORM, "cray-xc") == 0
+       && (prov_name == NULL || isInProvName("gni", prov_name)))
+      || chpl_env_rt_get_bool("COMM_OFI_HINTS_CAPS_ATOMIC", false)) {
+    hints->caps |= FI_ATOMIC;
+  }
+
+  hints->tx_attr->op_flags = FI_COMPLETION;
+  hints->tx_attr->msg_order = FI_ORDER_SAS;
+
+  hints->rx_attr->msg_order = hints->tx_attr->msg_order;
+
+  hints->ep_attr->type = FI_EP_RDM;
+
+  hints->domain_attr->threading = FI_THREAD_DOMAIN;
+  hints->domain_attr->resource_mgmt = FI_RM_ENABLED;
+  hints->domain_attr->av_type = FI_AV_TABLE;
+  hints->domain_attr->mr_mode = (  FI_MR_LOCAL
+                                 | FI_MR_VIRT_ADDR
+                                 | FI_MR_PROV_KEY // TODO: avoid pkey bcast?
+                                 | FI_MR_ENDPOINT);
+  if (chpl_numNodes > 1 && envMaxHeapSize != 0 && !envOversubscribed) {
+    hints->domain_attr->mr_mode |= FI_MR_ALLOCATED;
+  }
+
+  *pTxAttrsForced = false;
+
+#ifdef CHPL_COMM_DEBUG
+  struct fi_info* hintsOrig = fi_dupinfo(hints);
+  debugOverrideHints(hints);
+  *pTxAttrsForced =
+    (hints->tx_attr->op_flags == hintsOrig->tx_attr->op_flags
+     && hints->tx_attr->msg_order == hintsOrig->tx_attr->msg_order)
+    ? false
+    : true;
+  fi_freeinfo(hintsOrig);
+#endif
+
+  return hints;
+}
+
+
+static
+size_t get_hugepageSize(void);
+
+static
 void init_ofiDoProviderChecks(void) {
   //
   // Set/compute various provider-specific things.
   //
   if (providerInUse(provType_gni)) {
     //
-    // gni
+    // gni (Cray XC)
     //
-    // If there were questionable settings associated with the fixed
-    // heap on a Cray XC system, say something about that now.
+    // - Warn if they don't use hugepages.
+    // - Warn if the fixed heap size is larger than what will fit in the
+    //   TLB cache.  While that may reduce performance it won't affect
+    //   function, though, so don't do anything dramatic like reducing
+    //   the size to fit.
     //
-    emit_delayedFixedHeapMsgs();
+    size_t page_size = get_hugepageSize();
+    if (page_size == 0) {
+      if (chpl_nodeID == 0) {
+        chpl_warning_explicit("not using hugepages may reduce performance",
+                              __LINE__, __FILE__);
+      }
+      page_size = chpl_getSysPageSize();
+    }
+
+    const size_t nic_TLB_cache_pages = 512; // not publicly defined
+    const size_t nic_mem_map_limit = nic_TLB_cache_pages * page_size;
+    void* start;
+    size_t size;
+    chpl_comm_impl_regMemHeapInfo(&start, &size);
+    if (size > nic_mem_map_limit) {
+      if (chpl_nodeID == 0) {
+        size_t page_size = chpl_comm_impl_regMemHeapPageSize();
+        char buf1[20], buf2[20], buf3[20], msg[200];
+        chpl_snprintf_KMG_z(buf1, sizeof(buf1), nic_mem_map_limit);
+        chpl_snprintf_KMG_z(buf2, sizeof(buf2), page_size);
+        chpl_snprintf_KMG_f(buf3, sizeof(buf3), size);
+        (void) snprintf(msg, sizeof(msg),
+                        "Aries TLB cache can cover %s with %s pages; "
+                        "with %s heap,\n"
+                        "         cache refills may reduce performance",
+                        buf1, buf2, buf3);
+        chpl_warning(msg, 0, 0);
+      }
+    }
   }
 
   if (providerInUse(provType_rxd)) {
@@ -2589,8 +2662,6 @@ static void*  fixedHeapStart;
 static pthread_once_t hugepageOnce = PTHREAD_ONCE_INIT;
 static size_t hugepageSize;
 
-static size_t nic_mem_map_limit;
-
 static void init_fixedHeap(void);
 
 static size_t get_hugepageSize(void);
@@ -2609,23 +2680,106 @@ void chpl_comm_impl_regMemHeapInfo(void** start_p, size_t* size_p) {
 static
 void init_fixedHeap(void) {
   //
-  // We only need a fixed heap if we're multinode, and either we're
-  // on a Cray XC system or the user has explicitly specified a heap
-  // size.
+  // Determine whether or not we'll use a fixed heap, and if so what its
+  // address and size are.  Note that this has to be able to run early,
+  // before we've actually selected a provider and set up libfabric,
+  // because it can indirectly be called from memory layer init which
+  // may need to configure itself differently with or without a fixed
+  // heap.
   //
-  ssize_t size = chpl_comm_getenvMaxHeapSize();
-  if ( ! (chpl_numNodes > 1
-          && (strcmp(CHPL_TARGET_PLATFORM, "cray-xc") == 0 || size > 0))) {
+
+  //
+  // Get hints describing our base requirements, the ones that are
+  // independent of which MCM conformance mode we'll eventually use.
+  //
+  chpl_bool txAttrsForced;
+  struct fi_info* hints = getBaseProviderHints(&txAttrsForced);
+
+  //
+  // If hint construction didn't at least tentatively say we'll use a
+  // fixed heap, we definitely won't.  The checks it does are based on
+  // run-invariant info such as environment settings, whether this is
+  // a multi-node program, etc.
+  //
+  if ((hints->domain_attr->mr_mode & FI_MR_ALLOCATED) == 0) {
+    DBG_PRINTF_NODE0(DBG_HEAP, "fixedHeap: base hints say no");
     return;
   }
 
   //
-  // On XC systems you really ought to use hugepages.  If called for,
-  // a message will be emitted later.
+  // Now do further checks.  We default to using a fixed heap on Cray XC
+  // and (for now) HPE Cray EX systems unless the user explicitly says
+  // not to.  That was checked in base hint construction.  On other
+  // platforms, we'll use a fixed heap if the best-performing "good"
+  // provider (not sockets, not tcp, not verbs;ofi_rxd) out of those
+  // that can meet our base requirements has FI_MR_ALLOCATED set to
+  // indicate it wants one.
+  //
+  if (strcmp(CHPL_TARGET_PLATFORM, "cray-xc") != 0
+      && strcmp(CHPL_TARGET_PLATFORM, "hpe-cray-ex") != 0) {
+    struct fi_info* infoList;
+    int ret;
+    OFI_CHK_2(fi_getinfo(COMM_OFI_FI_VERSION, NULL, NULL, 0, hints, &infoList),
+              ret, -FI_ENODATA);
+    if (infoList == NULL) {
+      //
+      // We found no providers at all, thus none requiring a fixed heap.
+      //
+      DBG_PRINTF_NODE0(DBG_HEAP,
+                       "fixedHeap: no, because no providers (?)");
+      return;
+    }
+
+    struct fi_info* info;
+    for (info = infoList; info != NULL; info = info->next) {
+      if (isGoodCoreProvider(info)
+          && (!isInProvider("verbs", info)
+              || !isInProvider("ofi_rxd", info))) {
+        break;
+      }
+    }
+
+    chpl_bool useHeap;
+    if (info == NULL) {
+      DBG_PRINTF_NODE0(DBG_HEAP,
+                       "fixedHeap: no, no provider needs it");
+      useHeap = false;
+    } else if ((info->domain_attr->mr_mode & FI_MR_ALLOCATED) == 0) {
+      DBG_PRINTF_NODE0(DBG_HEAP,
+                       "fixedHeap: no, best provider '%s' doesn't need it",
+                       info->fabric_attr->prov_name);
+      useHeap = false;
+    } else {
+      DBG_PRINTF_NODE0(DBG_HEAP,
+                       "fixedHeap: yes, best provider '%s' needs it",
+                       info->fabric_attr->prov_name);
+      useHeap = true;
+    }
+
+    fi_freeinfo(infoList);
+
+    if (!useHeap) {
+      return;
+    }
+  }
+
+  //
+  // We'll use a fixed heap.  If its size is not specified, default
+  // to 85% of physical memory.
+  //
+  ssize_t size = envMaxHeapSize;
+  CHK_TRUE(size != 0);
+  if (size < 0) {
+    size = (size_t) (0.85 * chpl_sys_physicalMemoryBytes());
+  }
+
+  //
+  // Check for hugepages.  On certain systems you really ought to use
+  // them.  But if you're on such a system and don't, we'll emit the
+  // message later.
   //
   size_t page_size;
   chpl_bool have_hugepages;
-  void* start;
 
   if ((page_size = get_hugepageSize()) == 0) {
     page_size = chpl_getSysPageSize();
@@ -2634,24 +2788,10 @@ void init_fixedHeap(void) {
     have_hugepages = true;
   }
 
-  if (size == 0) {
-    size = (size_t) 16 << 30;
-  }
-
+  //
+  // We'll make a fixed heap, on whole (huge)pages.
+  //
   size = ALIGN_UP(size, page_size);
-
-  //
-  // The heap is supposed to be of fixed size and on hugepages.  Set
-  // it up.
-  //
-
-  //
-  // Considering the data size we'll register, compute the maximum
-  // heap size that will allow all registrations to fit in the NIC
-  // TLB.
-  //
-  const size_t nic_TLB_cache_pages = 512; // not publicly defined
-  nic_mem_map_limit = nic_TLB_cache_pages * page_size;
 
   //
   // As a hedge against silliness, first reduce any request so that it's
@@ -2669,15 +2809,20 @@ void init_fixedHeap(void) {
   // until we can actually get that much from the system.
   //
   size_t decrement;
-
   if ((decrement = ALIGN_DN((size_t) (0.05 * size), page_size)) < page_size) {
     decrement = page_size;
   }
 
+  void* start;
   size += decrement;
   do {
     size -= decrement;
-    DBG_PRINTF(DBG_HUGEPAGES, "try allocating fixed heap, size %#zx", size);
+    if (DBG_TEST_MASK(DBG_HEAP)) {
+      char buf[10];
+      chpl_snprintf_KMG_z(buf, sizeof(buf), size);
+      DBG_PRINTF(DBG_HEAP, "try allocating fixed heap, size %s (%#zx)",
+                 buf, size);
+    }
     if (have_hugepages) {
       start = chpl_comm_ofi_hp_get_huge_pages(size);
     } else {
@@ -2686,59 +2831,19 @@ void init_fixedHeap(void) {
   } while (start == NULL && size > decrement);
 
   if (start == NULL)
-    chpl_error("cannot initialize heap: cannot get memory", 0, 0);
+    chpl_error("cannot create fixed heap: cannot get memory", 0, 0);
 
   chpl_comm_regMemHeapTouch(start, size);
 
-  DBG_PRINTF(DBG_MR, "fixed heap on %spages, start=%p size=%#zx\n",
-             have_hugepages ? "huge" : "regular ", start, size);
+  if (DBG_TEST_MASK(DBG_HEAP)) {
+    char buf[10];
+    chpl_snprintf_KMG_z(buf, sizeof(buf), size);
+    DBG_PRINTF(DBG_HEAP, "fixed heap on %spages, start=%p size=%s (%#zx)\n",
+               have_hugepages ? "huge" : "regular ", start, buf, size);
+  }
 
   fixedHeapSize  = size;
   fixedHeapStart = start;
-}
-
-
-static
-void emit_delayedFixedHeapMsgs(void) {
-  //
-  // We only need a fixed heap if we're multinode on a Cray XC system
-  // and using the gni provider.
-  //
-  if (chpl_numNodes <= 1 || !providerInUse(provType_gni)) {
-    return;
-  }
-
-  //
-  // On XC systems you really ought to use hugepages.
-  //
-  void* start;
-  size_t size;
-  chpl_comm_impl_regMemHeapInfo(&start, &size);
-  if (hugepageSize == 0) {
-    chpl_warning_explicit("not using hugepages may reduce performance",
-                          __LINE__, __FILE__);
-  }
-
-  //
-  // Warn if the size is larger than what will fit in the TLB cache.
-  // While that may reduce performance it won't affect function, though,
-  // so don't do anything dramatic like reducing the size to fit.
-  //
-  if (size > nic_mem_map_limit) {
-    if (chpl_nodeID == 0) {
-      size_t page_size = chpl_comm_impl_regMemHeapPageSize();
-      char buf1[20], buf2[20], buf3[20], msg[200];
-      chpl_snprintf_KMG_z(buf1, sizeof(buf1), nic_mem_map_limit);
-      chpl_snprintf_KMG_z(buf2, sizeof(buf2), page_size);
-      chpl_snprintf_KMG_f(buf3, sizeof(buf3), size);
-      (void) snprintf(msg, sizeof(msg),
-                      "Aries TLB cache can cover %s with %s pages; "
-                      "with %s heap,\n"
-                      "         cache refills may reduce performance",
-                      buf1, buf2, buf3);
-      chpl_warning(msg, 0, 0);
-    }
-  }
 }
 
 
