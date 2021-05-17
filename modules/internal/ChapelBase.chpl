@@ -1952,8 +1952,10 @@ module ChapelBase {
   // permitting the user to define their own overloads (or 'use'
   // a module which does).
   //
-  inline operator +(a: uint(64), b: int(64)) { _throwOpError("+"); }
-  inline operator +(a: int(64), b: uint(64)) { _throwOpError("+"); }
+  pragma "last resort"
+  operator +(a: uint(64), b: int(64)) { _throwOpError("+"); }
+  pragma "last resort"
+  operator +(a: int(64), b: uint(64)) { _throwOpError("+"); }
 
   //
   // non-param/param and param/non-param cases -- these cases
@@ -1979,8 +1981,10 @@ module ChapelBase {
 
 
   // non-param/non-param
-  inline operator -(a: uint(64), b: int(64)) { _throwOpError("-"); }
-  inline operator -(a: int(64), b: uint(64)) { _throwOpError("-"); }
+  pragma "last resort"
+  operator -(a: uint(64), b: int(64)) { _throwOpError("-"); }
+  pragma "last resort"
+  operator -(a: int(64), b: uint(64)) { _throwOpError("-"); }
 
   // non-param/param and param/non-param
   inline operator -(a: uint(64), param b: uint(64)) {
@@ -1998,8 +2002,10 @@ module ChapelBase {
 
 
   // non-param/non-param
-  inline operator *(a: uint(64), b: int(64)) { _throwOpError("*"); }
-  inline operator *(a: int(64), b: uint(64)) { _throwOpError("*"); }
+  pragma "last resort"
+  operator *(a: uint(64), b: int(64)) { _throwOpError("*"); }
+  pragma "last resort"
+  operator *(a: int(64), b: uint(64)) { _throwOpError("*"); }
 
   // non-param/param and param/non-param
   inline operator *(a: uint(64), param b: uint(64)) {
@@ -2017,8 +2023,10 @@ module ChapelBase {
 
 
   // non-param/non-param
-  inline operator /(a: uint(64), b: int(64)) { _throwOpError("/"); }
-  inline operator /(a: int(64), b: uint(64)) { _throwOpError("/"); }
+  pragma "last resort"
+  operator /(a: uint(64), b: int(64)) { _throwOpError("/"); }
+  pragma "last resort"
+  operator /(a: int(64), b: uint(64)) { _throwOpError("/"); }
 
   // non-param/param and param/non-param
   // The int version is only defined so we can catch the divide by zero error
@@ -2046,8 +2054,10 @@ module ChapelBase {
 
 
   // non-param/non-param
-  inline operator **(a: uint(64), b: int(64)) { _throwOpError("**"); }
-  inline operator **(a: int(64), b: uint(64)) { _throwOpError("**"); }
+  pragma "last resort"
+  operator **(a: uint(64), b: int(64)) { _throwOpError("**"); }
+  pragma "last resort"
+  operator **(a: int(64), b: uint(64)) { _throwOpError("**"); }
 
   // non-param/param and param/non-param
   inline operator **(a: uint(64), param b: uint(64)) {
@@ -2065,8 +2075,10 @@ module ChapelBase {
 
 
   // non-param/non-param
-  inline operator %(a: uint(64), b: int(64)) { _throwOpError("%"); }
-  inline operator %(a: int(64), b: uint(64)) { _throwOpError("%"); }
+  pragma "last resort"
+  operator %(a: uint(64), b: int(64)) { _throwOpError("%"); }
+  pragma "last resort"
+  operator %(a: int(64), b: uint(64)) { _throwOpError("%"); }
 
   // non-param/param and param/non-param
   inline operator %(a: uint(64), param b: uint(64)) {
