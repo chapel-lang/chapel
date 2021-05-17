@@ -434,7 +434,8 @@ FnSymbol* build_accessor(AggregateType* ct, Symbol* field,
     // This would be different if we added something like C++ static fields
     INT_ASSERT(!typeMethod);
 
-    if (field->hasFlag(FLAG_SUPER_CLASS)) {
+    if (field->hasFlag(FLAG_SUPER_CLASS) ||
+        field->hasFlag(FLAG_C_FLEXIBLE_ARRAY_FIELD)) {
       fn->retTag = RET_VALUE;
     } else {
       if (fieldIsConst || !setter)
@@ -499,7 +500,9 @@ FnSymbol* build_accessor(AggregateType* ct, Symbol* field,
     fn->insertAtTail(new CallExpr(PRIM_RETURN, field));
     // better flatten enumerated types now
     ct->symbol->defPoint->insertBefore(field->defPoint->remove());
-  } else if (field->hasFlag(FLAG_TYPE_VARIABLE) || field->hasFlag(FLAG_SUPER_CLASS)) {
+  } else if (field->hasFlag(FLAG_TYPE_VARIABLE) ||
+             field->hasFlag(FLAG_SUPER_CLASS) ||
+             field->hasFlag(FLAG_C_FLEXIBLE_ARRAY_FIELD)) {
     toReturn = new CallExpr(PRIM_GET_MEMBER_VALUE,
                             new SymExpr(baseSym),
                             new SymExpr(fieldNameSym));

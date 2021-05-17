@@ -191,9 +191,17 @@ Expr* convertStructToChplType(ModuleSymbol* module,
        it != rd->field_end();
        ++it) {
     clang::FieldDecl* field      = (*it);
+    const clang::Type* type = field->getType().getTypePtr();
+
     const char* field_name = astr(field->getNameAsString().c_str());
-    Expr* field_type = convertToChplType(module, field->getType().getTypePtr());
-    DefExpr* varDefn = new DefExpr(new VarSymbol(field_name), NULL, field_type);
+    Expr* field_type = convertToChplType(module, type);
+    VarSymbol* varSym = new VarSymbol(field_name);
+    DefExpr* varDefn = new DefExpr(varSym, NULL, field_type);
+
+    if (type->isArrayType() && !type->isConstantArrayType()) {
+      varSym->addFlag(FLAG_C_FLEXIBLE_ARRAY_FIELD);
+    }
+
     BlockStmt* stmt = buildChapelStmt(varDefn);
 
     fields->insertAtTail(buildVarDecls(stmt));
@@ -239,8 +247,6 @@ static Expr* convertToChplType(ModuleSymbol* module,
 
       return convertArrayToChplType(module, at, typedefName);
     }
-
-    USR_FATAL("variable sized C array types not yet supported");
 
   //structs
   } else if (type->isStructureType()) {

@@ -74,6 +74,8 @@ symbolFlag( FLAG_BROADCAST_FN, npr, "serialized broadcast function", ncm)
 symbolFlag( FLAG_BUILD_TUPLE , ypr, "build tuple" , "used to mark the build_tuple functions")
 symbolFlag( FLAG_BUILD_TUPLE_TYPE , ypr, "build tuple type" , "used to mark the build_tuple type functions")
 
+symbolFlag( FLAG_C_FLEXIBLE_ARRAY_FIELD, npr, "c flexible array member" , "marks fields generated for C flexible array members")
+
 symbolFlag( FLAG_CHAPEL_STRING_LITERAL, npr, "chapel string literal id" , "mark Chapel strings created from literals")
 symbolFlag( FLAG_CHAPEL_BYTES_LITERAL, npr, "chapel bytes literal id" , "mark Chapel bytes created from literals")
 // When resolution encounters the def of the variable 'chpl__iter',
