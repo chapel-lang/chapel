@@ -2571,7 +2571,7 @@ new_maybe_decorated:
 ;
 
 new_expr:
-  /* Handles the typical new cases, e.g. new (); new owned C() */
+  /* Handles the typical new cases, e.g. new C(); new owned C() */
   new_maybe_decorated expr %prec TNEW
   {
     if (FnCall* fnCall = $2->toFnCall()) {
@@ -2587,7 +2587,7 @@ new_expr:
     }
   }
   /* TODO: handles e.g. new (typefn())(initargs) */
-  /* TODO TODO: Flag these with asserts in the production compiler and
+  /* TODO TODO: Flag these with asserts in the old compiler parser and
                 see if we can remove them. */
 | TNEW TOWNED TLP expr TRP TLP opt_actual_ls TRP %prec TNOELSE
   {
