@@ -45,9 +45,29 @@ namespace uast {
  */
 class FormalDecl final : public SymDecl {
  private:
-  FormalDecl(owned<Formal> formal)
-    : SymDecl(asttags::FormalDecl, std::move(formal)) {
+  int8_t typeExpressionChildNum_;
+  int8_t initExpressionChildNum_;
+  FormalDecl(ASTList children,
+             int8_t symChildNum,
+             int8_t typeExpressionChildNum,
+             int8_t initExpressionChildNum)
+    : SymDecl(asttags::FormalDecl, std::move(children), symChildNum),
+      typeExpressionChildNum_(typeExpressionChildNum),
+      initExpressionChildNum_(initExpressionChildNum) {
+
+    assert(0 <= symChildNum && symChildNum <= 2);
+    assert(numChildren() <= 3);
+    assert(child(symChildNum)->isFormal());
+    if (typeExpressionChildNum >= 0) {
+      assert(typeExpressionChildNum <= 2);
+      assert(child(typeExpressionChildNum)->isExpression());
+    }
+    if (initExpressionChildNum >= 0) {
+      assert(initExpressionChildNum <= 2);
+      assert(child(initExpressionChildNum)->isExpression());
+    }
   }
+
   bool contentsMatchInner(const ASTNode* other) const override;
   void markUniqueStringsInner(Context* context) const override;
 
@@ -59,19 +79,53 @@ class FormalDecl final : public SymDecl {
                                  owned<Expression> typeExpression,
                                  owned<Expression> initExpression);
 
+  /**
+   Returns the formal declared by this FormalDecl.
+   */
   const Formal* formal() const {
     const Sym* sym = this->sym();
     assert(sym->isFormal());
     return (Formal*)sym;
   }
+
+  /**
+   Returns the intent of the formal, e.g. in `proc f(const ref y: int)`,
+   the formal `y` has intent `const ref`.
+   */
   const Formal::Intent intent() const {
     return this->formal()->intent();
   }
+
+  /**
+   Returns the type expression used in the formal's declaration, or nullptr
+   if there wasn't one.
+
+   For example, in `proc f(y: int)`, the formal `y` has type expression `int`.
+   */
   const Expression* typeExpression() const {
-    return this->formal()->typeExpression();
+    if (typeExpressionChildNum_ >= 0) {
+      const ASTNode* ast = this->child(typeExpressionChildNum_);
+      assert(ast->isExpression());
+      return (const Expression*)ast;
+    } else {
+      return nullptr;
+    }
   }
+
+  /**
+   Returns the init expression used in the formal's declaration, or nullptr
+   if there wasn't one.
+
+   For example, in `proc f(z = 3)`, the formal `z` has init expression `3`.
+   */
   const Expression* initExpression() const {
-    return this->formal()->initExpression();
+    if (initExpressionChildNum_ >= 0) {
+      const ASTNode* ast = this->child(initExpressionChildNum_);
+      assert(ast->isExpression());
+      return (const Expression*)ast;
+    } else {
+      return nullptr;
+    }
   }
 };
 

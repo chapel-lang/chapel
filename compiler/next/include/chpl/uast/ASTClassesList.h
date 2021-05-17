@@ -80,12 +80,18 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
     AST_NODE(TryCatch)                 // old AST: TryStmt/CatchStmt
 
     AST_BEGIN_SUBCLASSES(Loop)         // old AST: LoopExpr / LoopStmt
-      AST_NODE(Coforall)
+
       AST_NODE(DoWhile)                // old AST: DoWhileStmt
-      AST_NODE(For)                    // old AST: ForLoop / LoopExpr
-      AST_NODE(Forall)                 // old AST: ForallStmt / LoopExpr
-      AST_NODE(Foreach)                //
+
+      AST_BEGIN_SUBCLASSES(IndexableLoop)
+        AST_NODE(Coforall)
+        AST_NODE(For)                    // old AST: ForLoop / LoopExpr
+        AST_NODE(Forall)                 // old AST: ForallStmt / LoopExpr
+        AST_NODE(Foreach)                //
+      AST_END_SUBCLASSES(IndexableLoop)
+
       AST_NODE(While)                  // old AST: WhileStmt
+
     AST_END_SUBCLASSES(Loop)
 
   AST_END_SUBCLASSES(ControlFlow)
@@ -108,7 +114,7 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
   AST_END_SUBCLASSES(Call)
 
 
-//  AST_BEGIN_SUBCLASSES(Decl)
+  AST_BEGIN_SUBCLASSES(Decl)
     AST_NODE(MultiDecl)
     AST_NODE(TupleDecl)
 
@@ -121,17 +127,17 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
       //AST_NODE(TypeDecl)
       AST_NODE(VariableDecl)
     AST_END_SUBCLASSES(SymDecl)
-//  AST_END_SUBCLASSES(Decl)
+  AST_END_SUBCLASSES(Decl)
 
 AST_END_SUBCLASSES(Expression)
 
 AST_BEGIN_SUBCLASSES(Sym)              // old AST: Symbol
   AST_NODE(EnumElement)                // old AST: EnumSymbol
-  AST_NODE(Formal)                     // old AST: ArgSymbol
+  AST_LEAF(Formal)                     // old AST: ArgSymbol
   AST_NODE(Function)                   // old AST: FnSymbol
   AST_NODE(Interface)                  // old AST: InterfaceSymbol
   AST_NODE(Module)                     // old AST: ModuleSymbol
-  AST_NODE(Variable)                   // old AST: VarSymbol
+  AST_LEAF(Variable)                   // old AST: VarSymbol
                                        // old AST: ShadowVarSymbol
 
   AST_BEGIN_SUBCLASSES(TypeSym)        // old AST: TypeSymbol/Type

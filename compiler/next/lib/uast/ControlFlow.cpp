@@ -17,22 +17,13 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/Variable.h"
-
-#include "chpl/uast/Builder.h"
+#include "chpl/uast/ControlFlow.h"
 
 namespace chpl {
 namespace uast {
 
 
-bool Variable::contentsMatchInner(const ASTNode* other) const {
-  const Variable* lhs = this;
-  const Variable* rhs = (const Variable*) other;
-  return lhs->symContentsMatchInner(rhs) &&
-         lhs->kind_ == rhs->kind_;
-}
-void Variable::markUniqueStringsInner(Context* context) const {
-  symMarkUniqueStringsInner(context);
+ControlFlow::~ControlFlow() {
 }
 
 

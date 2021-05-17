@@ -314,14 +314,17 @@ static void test2(Parser* parser) {
   assert(function->linkageNameExpression() == nullptr);
   assert(function->numFormals() == 1);
   auto formal = function->formal(0);
+  auto formalDecl = function->formalDecl(0);
   assert(formal);
+  assert(formalDecl);
+  assert(formalDecl->formal() == formal);
   assert(formal->intent() == Formal::DEFAULT_INTENT);
   assert(formal->name().compare("a") == 0);
-  auto typeExpr = formal->typeExpression();
+  auto typeExpr = formalDecl->typeExpression();
   assert(typeExpr);
   assert(typeExpr->isIdentifier());
   assert(typeExpr->toIdentifier()->name().compare("int") == 0);
-  assert(formal->initExpression() == nullptr);
+  assert(formalDecl->initExpression() == nullptr);
   assert(function->thisFormal() == nullptr);
   assert(function->returnType() == nullptr);
   assert(function->numLifetimeClauses() == 0);
@@ -350,24 +353,30 @@ static void test3(Parser* parser) {
   assert(function->numFormals() == 2); // 'this' and 'a'
 
   auto thisFormal = function->formal(0);
+  auto thisFormalDecl = function->formalDecl(0);
   assert(thisFormal);
+  assert(thisFormalDecl);
+  assert(thisFormalDecl->formal() == thisFormal);
   assert(thisFormal->intent() == Formal::CONST);
   assert(thisFormal->name().compare("this") == 0);
-  auto thisTypeExpr = thisFormal->typeExpression();
+  auto thisTypeExpr = thisFormalDecl->typeExpression();
   assert(thisTypeExpr);
   assert(thisTypeExpr->isIdentifier());
   assert(thisTypeExpr->toIdentifier()->name().compare("R") == 0);
-  assert(thisFormal->initExpression() == nullptr);
+  assert(thisFormalDecl->initExpression() == nullptr);
 
   auto formal = function->formal(1);
+  auto formalDecl = function->formalDecl(1);
   assert(formal);
+  assert(formalDecl);
+  assert(formalDecl->formal() == formal);
   assert(formal->intent() == Formal::REF);
   assert(formal->name().compare("a") == 0);
-  auto typeExpr = formal->typeExpression();
+  auto typeExpr = formalDecl->typeExpression();
   assert(typeExpr);
   assert(typeExpr->isIdentifier());
   assert(typeExpr->toIdentifier()->name().compare("int") == 0);
-  auto initExpr = formal->initExpression();
+  auto initExpr = formalDecl->initExpression();
   assert(initExpr);
   assert(initExpr->isIdentifier());
   assert(initExpr->toIdentifier()->name().compare("b") == 0);

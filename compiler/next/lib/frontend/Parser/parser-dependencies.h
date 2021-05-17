@@ -33,6 +33,7 @@
 #include "chpl/uast/ErroneousExpression.h"
 #include "chpl/uast/Expression.h"
 #include "chpl/uast/FnCall.h"
+#include "chpl/uast/For.h"
 #include "chpl/uast/Formal.h"
 #include "chpl/uast/FormalDecl.h"
 #include "chpl/uast/Function.h"

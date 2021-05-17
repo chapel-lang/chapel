@@ -59,25 +59,11 @@ class Formal final : public Sym {
 
  private:
   Intent intent_;
-  int8_t typeExpressionChildNum;
-  int8_t initExpressionChildNum;
 
-  Formal(ASTList children,
-         UniqueString name,
-         Formal::Intent intent,
-         int8_t typeExpressionChildNum,
-         int8_t initExpressionChildNum)
-    : Sym(asttags::Formal, std::move(children),
-          name, Sym::DEFAULT_VISIBILITY),
-      intent_(intent),
-      typeExpressionChildNum(typeExpressionChildNum),
-      initExpressionChildNum(initExpressionChildNum) {
-
-    assert(-1 <= typeExpressionChildNum && typeExpressionChildNum <= 1);
-    assert(-1 <= initExpressionChildNum && initExpressionChildNum <= 1);
-    assert(numChildren() <= 2);
-    assert(isExpressionASTList(children_));
+  Formal(UniqueString name, Formal::Intent intent)
+    : Sym(asttags::Formal, name, Sym::DEFAULT_VISIBILITY), intent_(intent) {
   }
+
   bool contentsMatchInner(const ASTNode* other) const override;
   void markUniqueStringsInner(Context* context) const override;
 
@@ -89,38 +75,6 @@ class Formal final : public Sym {
    the formal `y` has intent `const ref`.
    */
   const Intent intent() const { return this->intent_; }
-
-  /**
-   Returns the type expression used in the formal's declaration, or nullptr
-   if there wasn't one.
-
-   For example, in `proc f(y: int)`, the formal `y` has type expression `int`.
-   */
-  const Expression* typeExpression() const {
-    if (typeExpressionChildNum >= 0) {
-      const ASTNode* ast = this->child(typeExpressionChildNum);
-      assert(ast->isExpression());
-      return (const Expression*)ast;
-    } else {
-      return nullptr;
-    }
-  }
-
-  /**
-    Returns the init expression used in the formal's declaration, or nullptr
-    if there wasn't one.
-
-    For example, in `proc f(z = 3)`, the formal `z` has init expression `3`.
-    */
-  const Expression* initExpression() const {
-    if (initExpressionChildNum >= 0) {
-      const ASTNode* ast = this->child(initExpressionChildNum);
-      assert(ast->isExpression());
-      return (const Expression*)ast;
-    } else {
-      return nullptr;
-    }
-  }
 };
 
 

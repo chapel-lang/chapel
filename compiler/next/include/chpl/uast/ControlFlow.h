@@ -17,24 +17,36 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/Variable.h"
+#ifndef CHPL_UAST_CONTROLFLOW_H
+#define CHPL_UAST_CONTROLFLOW_H
 
-#include "chpl/uast/Builder.h"
+#include "chpl/uast/Expression.h"
 
 namespace chpl {
 namespace uast {
 
 
-bool Variable::contentsMatchInner(const ASTNode* other) const {
-  const Variable* lhs = this;
-  const Variable* rhs = (const Variable*) other;
-  return lhs->symContentsMatchInner(rhs) &&
-         lhs->kind_ == rhs->kind_;
-}
-void Variable::markUniqueStringsInner(Context* context) const {
-  symMarkUniqueStringsInner(context);
-}
+/**
+  This abstract class represents some sort of control flow.
+ */
+class ControlFlow : public Expression {
+ protected:
+  ControlFlow(ASTTag tag) : Expression(tag) {}
+  ControlFlow(ASTTag tag, ASTList children)
+    : Expression(tag, std::move(children)) {};
+  bool controlFlowContentsMatchInner(const ControlFlow* other) const {
+    return this->expressionContentsMatchInner(other);
+  }
+  void controlFlowMarkUniqueStringsInner(Context* context) const {
+    this->expressionMarkUniqueStringsInner(context);
+  }
+
+ public:
+  virtual ~ControlFlow() override = 0; // this is an abstract base class
+};
 
 
-} // namespace uast
-} // namespace chpl
+} // end namespace uast
+} // end namespace chpl
+
+#endif
