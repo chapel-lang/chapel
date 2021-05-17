@@ -1,9 +1,4 @@
-/**********************************************************/
-/* This union example is also provided in                 */
-/* $CHPL_HOME/doc/rst/language/spec/interoperability.rst  */
-/**********************************************************/
-
-extern union _someUnion {
+extern record _someUnion {
     var x: real(32);
     var y: real(64);
 }

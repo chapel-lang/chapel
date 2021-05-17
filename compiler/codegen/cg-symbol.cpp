@@ -1436,6 +1436,11 @@ void TypeSymbol::codegenMetadata() {
 
   bool treatAsUnion = isUnion(type) || this->hasFlag(FLAG_EXTERN_UNION);
 
+  if (treatAsUnion && !isUnion(type))
+    USR_FATAL(type->symbol,
+              "C union type '%s' should be declared as "
+              "'extern union' and not as 'extern record'", type->symbol->cname);
+
   // Only things that aren't 'struct'-like should have simple TBAA
   // metadata. If they can alias with their fields, we don't do simple TBAA.
   // Integers, reals, bools, enums, references, wide pointers
