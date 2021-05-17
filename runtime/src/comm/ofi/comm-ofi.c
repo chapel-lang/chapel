@@ -1773,8 +1773,15 @@ void init_ofiFabricDomain(void) {
 
   if (verbosity >= 2) {
     if (chpl_nodeID == 0) {
-      printf("COMM=ofi: in %s MCM mode, using the \"%s\" provider\n",
-             mcmModeNames[mcmMode], ofi_info->fabric_attr->prov_name);
+      void* start;
+      size_t size;
+      chpl_comm_regMemHeapInfo(&start, &size);
+      char buf[10];
+      printf("COMM=ofi: %s MCM mode, \"%s\" provider, %s fixed heap\n",
+             mcmModeNames[mcmMode], ofi_info->fabric_attr->prov_name,
+             ((size == 0)
+              ? "no"
+              : chpl_snprintf_KMG_z(buf, sizeof(buf), size)));
     }
   }
 
@@ -1889,14 +1896,14 @@ void init_ofiDoProviderChecks(void) {
       if (chpl_nodeID == 0) {
         size_t page_size = chpl_comm_impl_regMemHeapPageSize();
         char buf1[20], buf2[20], buf3[20], msg[200];
-        chpl_snprintf_KMG_z(buf1, sizeof(buf1), nic_mem_map_limit);
-        chpl_snprintf_KMG_z(buf2, sizeof(buf2), page_size);
-        chpl_snprintf_KMG_f(buf3, sizeof(buf3), size);
         (void) snprintf(msg, sizeof(msg),
                         "Aries TLB cache can cover %s with %s pages; "
                         "with %s heap,\n"
                         "         cache refills may reduce performance",
-                        buf1, buf2, buf3);
+                        chpl_snprintf_KMG_z(buf1, sizeof(buf1),
+                                            nic_mem_map_limit),
+                        chpl_snprintf_KMG_z(buf2, sizeof(buf2), page_size),
+                        chpl_snprintf_KMG_f(buf3, sizeof(buf3), size));
         chpl_warning(msg, 0, 0);
       }
     }
@@ -2819,9 +2826,8 @@ void init_fixedHeap(void) {
     size -= decrement;
     if (DBG_TEST_MASK(DBG_HEAP)) {
       char buf[10];
-      chpl_snprintf_KMG_z(buf, sizeof(buf), size);
       DBG_PRINTF(DBG_HEAP, "try allocating fixed heap, size %s (%#zx)",
-                 buf, size);
+                 chpl_snprintf_KMG_z(buf, sizeof(buf), size), size);
     }
     if (have_hugepages) {
       start = chpl_comm_ofi_hp_get_huge_pages(size);
@@ -2837,9 +2843,9 @@ void init_fixedHeap(void) {
 
   if (DBG_TEST_MASK(DBG_HEAP)) {
     char buf[10];
-    chpl_snprintf_KMG_z(buf, sizeof(buf), size);
     DBG_PRINTF(DBG_HEAP, "fixed heap on %spages, start=%p size=%s (%#zx)\n",
-               have_hugepages ? "huge" : "regular ", start, buf, size);
+               have_hugepages ? "huge" : "regular ", start,
+               chpl_snprintf_KMG_z(buf, sizeof(buf), size), size);
   }
 
   fixedHeapSize  = size;

@@ -3077,14 +3077,13 @@ void make_registered_heap(void)
   if (size > max_heap_size) {
     if (chpl_nodeID == 0) {
       char buf1[20], buf2[20], buf3[20], msg[200];
-      chpl_snprintf_KMG_z(buf1, sizeof(buf1), nic_max_mem);
-      chpl_snprintf_KMG_z(buf2, sizeof(buf2), page_size);
-      chpl_snprintf_KMG_f(buf3, sizeof(buf3), size);
       (void) snprintf(msg, sizeof(msg),
                       "Aries TLB cache can cover %s with %s pages; "
                       "with %s heap,\n"
                       "         cache refills may reduce performance",
-                      buf1, buf2, buf3);
+                      chpl_snprintf_KMG_z(buf1, sizeof(buf1), nic_max_mem),
+                      chpl_snprintf_KMG_z(buf2, sizeof(buf2), page_size),
+                      chpl_snprintf_KMG_f(buf3, sizeof(buf3), size));
       chpl_warning(msg, 0, 0);
     }
   }
