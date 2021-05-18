@@ -43,6 +43,7 @@ target_sources(libchplcomp-obj
                Module.cpp
                ModuleDecl.cpp
                MultiDecl.cpp
+               New.cpp
                OpCall.cpp
                Serial.cpp
                Sym.cpp

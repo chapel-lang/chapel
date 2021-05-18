@@ -172,6 +172,10 @@ struct ParserContext {
   // because it will be consumed. 
   owned<Decl> buildIndexVariableDecl(YYLTYPE location, owned<Expression> e);
 
+  FnCall* wrapCalledExpressionInNew(YYLTYPE location,
+                                    New::Management management,
+                                    FnCall* fnCall);
+
   // Do we really need these?
   /*
   int         captureTokens; // no, new AST meant to be more faithful to src;

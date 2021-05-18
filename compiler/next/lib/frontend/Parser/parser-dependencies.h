@@ -43,6 +43,7 @@
 #include "chpl/uast/Module.h"
 #include "chpl/uast/ModuleDecl.h"
 #include "chpl/uast/MultiDecl.h"
+#include "chpl/uast/New.h"
 #include "chpl/uast/OpCall.h"
 #include "chpl/uast/Serial.h"
 #include "chpl/uast/Sym.h"

@@ -390,3 +390,28 @@ owned<Decl> ParserContext::buildIndexVariableDecl(YYLTYPE location,
   return nullptr;
 }
 
+FnCall* ParserContext::wrapCalledExpressionInNew(YYLTYPE location,
+                                                 New::Management management,
+                                                 FnCall* fnCall) {
+  assert(fnCall->calledExpression());
+  bool wrappedBaseExpression = false;
+
+  // Find the child slot containing the called expression. Then remove it,
+  // wrap it in a new expression, and swap in the new expression.
+  for (auto& child : builder->mutableRefToChildren(fnCall)) {
+    if (child.get() == fnCall->calledExpression()) {
+      auto calledExpr = std::move(child).release()->toExpression();
+      assert(calledExpr);
+      auto newExpr = New::build(builder, convertLocation(location),
+                                std::move(toOwned(calledExpr)),
+                                management);
+      child = std::move(newExpr);
+      wrappedBaseExpression = true;
+      break;
+    }
+  }
+
+  assert(wrappedBaseExpression);
+
+  return fnCall;
+}

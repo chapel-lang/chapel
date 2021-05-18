@@ -99,14 +99,6 @@
     ThrowsTag_THROWS,
   };
 
-  enum NewTag { // TODO: mabye should be named ClassManageTag?
-    NewTag_BLANK,
-    NewTag_OWNED,
-    NewTag_SHARED,
-    NewTag_UNMANAGED,
-    NewTag_BORROWED,
-  };
-
   enum ShadowTag {
     ShadowTag_CONST,
     ShadowTag_IN,
@@ -302,7 +294,7 @@
     Function::ReturnIntent returnTag;
     LinkageTag linkageTag;
     Module::Kind moduleKind;
-    NewTag newTag;
+    New::Management newManagement;
     ShadowTag shadowTag;
     Sym::Visibility visibilityTag;
     ThrowsTag throwsTag;
@@ -634,7 +626,7 @@
 %type <commentsAndStmt> enum_item
 %type <expr> query_expr ifc_constraint
 
-%type <newTag> new_maybe_decorated
+%type <newManagement> new_maybe_decorated
 %type <exprList> opt_inherit simple_expr_ls expr_ls assoc_expr_ls tuple_expr_ls
 %type <maybeNamedActualList> opt_actual_ls actual_ls
 %type <exprList> opt_task_intent_ls task_intent_ls task_intent_clause
@@ -2567,30 +2559,52 @@ io_expr:
 
 new_maybe_decorated:
   TNEW         %prec TNOELSE
-    { $$ = NewTag_BLANK; }
+    { $$ = New::DEFAULT_MANAGEMENT; }
 | TNEW TOWNED
-    { $$ = NewTag_OWNED; }
+    { $$ = New::OWNED; }
 | TNEW TSHARED
-    { $$ = NewTag_SHARED; }
+    { $$ = New::SHARED; }
 | TNEW TUNMANAGED
-    { $$ = NewTag_UNMANAGED; }
+    { $$ = New::UNMANAGED; }
 | TNEW TBORROWED
-    { $$ = NewTag_BORROWED; }
+    { $$ = New::BORROWED; }
 ;
 
 new_expr:
-  /* handles the typical new cases, e.g. new C(); new owned C() */
+  /* Handles the typical new cases, e.g. new C(); new owned C() */
   new_maybe_decorated expr %prec TNEW
-    { TODOEXPR(@$); }
-  /* handles e.g. new (typefn())(initargs) */
+  {
+    if (FnCall* fnCall = $2->toFnCall()) {
+      $$ = context->wrapCalledExpressionInNew(@$, $1, fnCall);
+    } else {
+
+      // It's an error for one reason or another. TODO: Specialize these
+      // errors later (e.g. 'new a.field' would require parens around
+      // the expression 'a.field'; 'new foo' would require an argument
+      // list for 'foo'; and something like 'new __primitive()' just
+      // doesn't make any sense...
+      $$ = raiseError(@$, context, "Invalid form for new expression");
+    }
+  }
+  /* TODO: handles e.g. new (typefn())(initargs) */
+  /* TODO TODO: Flag these with asserts in the old compiler parser and
+                see if we can remove them. */
 | TNEW TOWNED TLP expr TRP TLP opt_actual_ls TRP %prec TNOELSE
-    { $$ = TODOEXPR(@$); }
+  {
+    $$ = TODOEXPR(@$);
+  }
 | TNEW TSHARED TLP expr TRP TLP opt_actual_ls TRP %prec TNOELSE
-    { $$ = TODOEXPR(@$); }
+  {
+    $$ = TODOEXPR(@$);
+  }
 | TNEW TOWNED TLP expr TRP TLP opt_actual_ls TRP TQUESTION
-    { $$ = TODOEXPR(@$); }
+  {
+    $$ = TODOEXPR(@$);
+  }
 | TNEW TSHARED TLP expr TRP TLP opt_actual_ls TRP TQUESTION
-    { $$ = TODOEXPR(@$); }
+  {
+    $$ = TODOEXPR(@$);
+  }
 ;
 
 let_expr:

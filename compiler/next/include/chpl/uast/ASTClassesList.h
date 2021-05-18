@@ -60,6 +60,7 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
   AST_NODE(Implements)                 // old AST: ImplementsStmt
   AST_NODE(Import)                     // old AST: ImportStmt
   AST_NODE(Local)                      //
+  AST_NODE(New)
   AST_NODE(Require)                    //
   AST_NODE(Serial)                     //
   AST_NODE(Use)                        // old AST: UseStmt
@@ -107,7 +108,6 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
   AST_BEGIN_SUBCLASSES(Call)           // old AST:  CallExpr
     AST_NODE(Dot)                      //
     AST_NODE(FnCall)
-    AST_NODE(New)
     AST_NODE(OpCall)
     AST_NODE(PrimCall)                 // old AST: CallExpr/PrimitiveOp
     AST_NODE(Try)                      //
