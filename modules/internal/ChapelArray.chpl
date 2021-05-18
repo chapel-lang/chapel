@@ -741,16 +741,9 @@ module ChapelArray {
     }
   }
 
-  proc chpl__distributed(d: _distribution, ranges..., definedConst: bool)
-  where chpl__isTupleOfRanges(ranges) {
-    return chpl__distributed(d, chpl__buildDomainExpr((...ranges),
-                                                      definedConst=definedConst),
-                             definedConst=definedConst);
-  }
-
   pragma "last resort"
   proc chpl__distributed(d: _distribution, expr, definedConst: bool) {
-    compilerError("'dmapped' can currently only be applied to domains or to tuples of ranges.");
+    compilerError("'dmapped' can currently only be applied to domains.");
   }
   
   //

@@ -1,1 +1,1 @@
-dmapRange.chpl:3: error: 'dmapped' can currently only be applied to domains or to tuples of ranges.
+dmapRange.chpl:3: error: 'dmapped' can currently only be applied to domains.
