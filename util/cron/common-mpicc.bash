@@ -8,6 +8,7 @@ source $CWD/common.bash
 # Currently, only fifo supported for MPI module
 export CHPL_TASKS=fifo
 export CHPL_TARGET_COMPILER=mpi-gnu
+export CHPL_LLVM=none
 
 # setup mpich 3.3.1
 source /data/cf/chapel/setup_mpich331.bash
