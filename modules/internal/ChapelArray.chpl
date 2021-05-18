@@ -745,7 +745,7 @@ module ChapelArray {
   proc chpl__distributed(d: _distribution, expr, definedConst: bool) {
     compilerError("'dmapped' can currently only be applied to domains.");
   }
-  
+
   //
   // Array-view utility functions
   //
