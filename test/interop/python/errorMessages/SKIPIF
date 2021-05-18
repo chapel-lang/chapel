@@ -1,0 +1,9 @@
+#!/bin/bash
+
+# Remove me when multi-locale libraries support LLVM.
+if [[ $CHPL_LLVM != none ]] ; then
+  echo True
+else
+  echo False
+fi
+
