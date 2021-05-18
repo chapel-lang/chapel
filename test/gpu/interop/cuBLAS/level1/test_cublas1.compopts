@@ -2,5 +2,6 @@
 
 nvccDir=$(which nvcc)
 nvccLib=${nvccDir%/bin/nvcc}/lib64
+nvccInc=${nvccDir%/bin/nvcc}/include
 
-echo "-M../ -L$nvccLib -lcudart -lcublas"
+echo "-M../ -L$nvccLib -I$nvccInc -lcudart -lcublas"
