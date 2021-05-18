@@ -56,7 +56,7 @@ for i in 0..#n {
 
 var rs2 = createRandomStream(seed=seed, parSafe=false, eltType=uint(64), algorithm=RNG.PCG);
 
-var max2:uint = (2**32 + max):uint;
+var max2:uint = 2**32 + max:uint;
 
 var got2:[0..2*n] uint;
 

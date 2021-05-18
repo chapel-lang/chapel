@@ -264,7 +264,14 @@ module ChapelBase {
   // binary + and - on primitive types for runtime values
   //
   inline operator +(a: int(?w), b: int(w)) return __primitive("+", a, b);
-  inline operator +(a: uint(?w), b: uint(w)) return __primitive("+", a, b);
+  inline operator +(a: uint(?w), b: uint(?w2)) {
+    if (w < w2) then
+      return __primitive("+", a:uint(w2), b);
+    else if (w > w2) then
+      return __primitive("+", a, b:uint(w));
+    else
+      return __primitive("+", a, b);
+  }
   inline operator +(a: real(?w), b: real(w)) return __primitive("+", a, b);
   inline operator +(a: imag(?w), b: imag(w)) return __primitive("+", a, b);
   inline operator +(a: complex(?w), b: complex(w)) return __primitive("+", a, b);
@@ -277,7 +284,14 @@ module ChapelBase {
   inline operator +(a: complex(?w), b: imag(w/2)) return (a.re, a.im+_i2r(b)):complex(w);
 
   inline operator -(a: int(?w), b: int(w)) return __primitive("-", a, b);
-  inline operator -(a: uint(?w), b: uint(w)) return __primitive("-", a, b);
+  inline operator -(a: uint(?w), b: uint(?w2)) {
+    if (w < w2) then
+      return __primitive("-", a:uint(w2), b);
+    else if (w > w2) then
+      return __primitive("-", a, b:uint(w));
+    else
+      return __primitive("-", a, b);
+  }
   inline operator -(a: real(?w), b: real(w)) return __primitive("-", a, b);
   inline operator -(a: imag(?w), b: imag(w)) return __primitive("-", a, b);
   inline operator -(a: complex(?w), b: complex(w)) return __primitive("-", a, b);
@@ -316,7 +330,14 @@ module ChapelBase {
   // * and / on primitive types
   //
   inline operator *(a: int(?w), b: int(w)) return __primitive("*", a, b);
-  inline operator *(a: uint(?w), b: uint(w)) return __primitive("*", a, b);
+  inline operator *(a: uint(?w), b: uint(?w2)) {
+    if (w < w2) then
+      return __primitive("*", a:uint(w2), b);
+    else if (w > w2) then
+      return __primitive("*", a, b:uint(w));
+    else
+      return __primitive("*", a, b);
+  }
   inline operator *(a: real(?w), b: real(w)) return __primitive("*", a, b);
   inline operator *(a: imag(?w), b: imag(w)) return _i2r(__primitive("*", -a, b));
   inline operator *(a: complex(?w), b: complex(w)) return __primitive("*", a, b);
@@ -334,11 +355,16 @@ module ChapelBase {
         halt("Attempt to divide by zero");
     return __primitive("/", a, b);
   }
-  inline operator /(a: uint(?w), b: uint(w)) {
+  inline operator /(a: uint(?w), b: uint(?w2)) {
     if (chpl_checkDivByZero) then
       if b == 0 then
         halt("Attempt to divide by zero");
-    return __primitive("/", a, b);
+    if (w < w2) then
+      return __primitive("/", a:uint(w2), b);
+    else if (w > w2) then
+      return __primitive("/", a, b:uint(w));
+    else
+      return __primitive("/", a, b);
   }
   inline operator /(a: real(?w), b: real(w)) return __primitive("/", a, b);
   inline operator /(a: imag(?w), b: imag(w)) return _i2r(__primitive("/", a, b));
@@ -403,11 +429,16 @@ module ChapelBase {
         halt("Attempt to compute a modulus by zero");
     return __primitive("%", a, b);
   }
-  inline operator %(a: uint(?w), b: uint(w)) {
+  inline operator %(a: uint(?w), b: uint(?w2)) {
     if (chpl_checkDivByZero) then
       if b == 0 then
         halt("Attempt to compute a modulus by zero");
-    return __primitive("%", a, b);
+    if (w < w2) then
+      return __primitive("%", a:uint(w2), b);
+    else if (w > w2) then
+      return __primitive("%", a, b:uint(w));
+    else
+      return __primitive("%", a, b);
   }
 
   inline operator %(param a: int(?w), param b: int(w)) param {
@@ -430,11 +461,11 @@ module ChapelBase {
       if a == 0 then
         halt("cannot compute ", a, " ** ", b);
       else if a == 1 then
-        return 1;
+        return 1:a.type;
       else if a == -1 then
-        return if b % 2 == 0 then 1 else -1;
+        return if b % 2 == 0 then 1:a.type else (-1):a.type;
       else
-        return 0;
+        return 0:a.type;
     var i = b, y:a.type = 1, z = a;
     while i != 0 {
       if i % 2 == 1 then
@@ -446,7 +477,12 @@ module ChapelBase {
   }
 
   inline operator **(a: int(?w), b: int(w)) return _intExpHelp(a, b);
+
   inline operator **(a: uint(?w), b: uint(w)) return _intExpHelp(a, b);
+  inline operator **(a: uint(?w), b: uint(?w2)) where w != w2 {
+    if w < w2 then return (a:uint(w2))**b;
+    return a**(b:uint(w));
+  }
   inline operator **(a: real(?w), b: real(w)) return __primitive("**", a, b);
   inline operator **(a: complex(?w), b: complex(w)) {
     if a.type == complex(128) {

@@ -6,4 +6,4 @@ $CHPL_HOME/modules/internal/String.chpl:nnnn: note: is passed to formal 'x: c_pt
 privateOperatorError2.chpl:22: note: other candidates are:
 $CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:   +(a: uint(64), b: int(64))
 $CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:   +(a: int(64), b: uint(64))
-note: and 95 other candidates, use --print-all-candidates to see them
+note: and 107 other candidates, use --print-all-candidates to see them
