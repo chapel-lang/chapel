@@ -28,17 +28,31 @@ namespace uast {
 
 /**
   This is an abstract base class for declarations.
-  Note that all individual Syms are declared by a class inheriting from SymDecl;
-  however these declarations might be contained in something else
-  (e.g. a TupleDecl or MultiDecl).
+  Note that most Decls inherit from NamedDecl,
+  however these declarations might be contained in MultiDecl or TupleDecl.
  */
 class Decl : public Expression {
+ public:
+  enum Visibility {
+    DEFAULT_VISIBILITY,
+    PUBLIC,
+    PRIVATE,
+  };
+
+ private:
+  Visibility visibility_;
+
  protected:
-  Decl(ASTTag tag, ASTList children)
-    : Expression(tag, std::move(children)) {
+  Decl(ASTTag tag, Visibility visibility)
+    : Expression(tag), visibility_(visibility) {
   }
+  Decl(ASTTag tag, ASTList children, Visibility visibility)
+    : Expression(tag, std::move(children)), visibility_(visibility) {
+  }
+
   bool declContentsMatchInner(const Decl* other) const {
-    return expressionContentsMatchInner(other);
+    return this->visibility_ == other->visibility_ &&
+           expressionContentsMatchInner(other);
   }
   void declMarkUniqueStringsInner(Context* context) const {
     expressionMarkUniqueStringsInner(context);
@@ -46,6 +60,10 @@ class Decl : public Expression {
 
  public:
   virtual ~Decl() = 0; // this is an abstract base class
+
+  Visibility visibility() const {
+    return visibility_;
+  }
 };
 
 

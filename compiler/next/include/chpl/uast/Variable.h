@@ -21,7 +21,7 @@
 #define CHPL_UAST_VARIABLE_H
 
 #include "chpl/queries/Location.h"
-#include "chpl/uast/Sym.h"
+#include "chpl/uast/NamedDecl.h"
 
 namespace chpl {
 namespace uast {
@@ -42,9 +42,7 @@ namespace uast {
 
   each of these is a VariableDecl that refers to a Variable Sym.
  */
-class Variable final : public Sym {
- friend class VariableDecl;
-
+class Variable final : public NamedDecl {
  public:
   enum Kind {
     VAR,
@@ -58,9 +56,26 @@ class Variable final : public Sym {
 
  private:
   Kind kind_;
+  int8_t typeExpressionChildNum_;
+  int8_t initExpressionChildNum_;
 
-  Variable(UniqueString name, Sym::Visibility vis, Variable::Kind kind)
-    : Sym(asttags::Variable, name, vis), kind_(kind) {
+  Variable(ASTList children, Decl::Visibility vis, UniqueString name,
+           Variable::Kind kind,
+           int8_t typeExpressionChildNum, int8_t initExpressionChildNum)
+    : NamedDecl(asttags::Variable, std::move(children), vis, name),
+      kind_(kind),
+      typeExpressionChildNum_(typeExpressionChildNum),
+      initExpressionChildNum_(initExpressionChildNum) {
+
+    assert(numChildren() <= 2);
+    if (typeExpressionChildNum >= 0) {
+      assert(typeExpressionChildNum <= 2);
+      assert(child(typeExpressionChildNum)->isExpression());
+    }
+    if (initExpressionChildNum >= 0) {
+      assert(initExpressionChildNum <= 2);
+      assert(child(initExpressionChildNum)->isExpression());
+    }
   }
 
   bool contentsMatchInner(const ASTNode* other) const override;
@@ -68,10 +83,45 @@ class Variable final : public Sym {
 
  public:
   ~Variable() override = default;
+
+  static owned<Variable> build(Builder* builder, Location loc,
+                               UniqueString name, Decl::Visibility vis,
+                               Variable::Kind kind,
+                               owned<Expression> typeExpression,
+                               owned<Expression> initExpression);
+
   /**
     Returns the kind of the variable (`var` / `const` / `param` etc).
    */
   const Kind kind() const { return this->kind_; }
+
+  /**
+    Returns the type expression used in the variable's declaration, or nullptr
+    if there wasn't one.
+    */
+  const Expression* typeExpression() const {
+    if (typeExpressionChildNum_ >= 0) {
+      const ASTNode* ast = this->child(typeExpressionChildNum_);
+      assert(ast->isExpression());
+      return (const Expression*)ast;
+    } else {
+      return nullptr;
+    }
+  }
+
+  /**
+    Returns the init expression used in the variable's declaration, or nullptr
+    if there wasn't one.
+    */
+  const Expression* initExpression() const {
+    if (initExpressionChildNum_ >= 0) {
+      const ASTNode* ast = this->child(initExpressionChildNum_);
+      assert(ast->isExpression());
+      return (const Expression*)ast;
+    } else {
+      return nullptr;
+    }
+  }
 };
 
 

@@ -22,7 +22,7 @@
 
 #include "chpl/queries/Location.h"
 #include "chpl/uast/Loop.h"
-#include "chpl/uast/VariableDecl.h"
+#include "chpl/uast/Variable.h"
 
 namespace chpl {
 namespace uast {
@@ -68,7 +68,9 @@ class IndexableLoop : public Loop {
   */
   const Decl* indexVariableDecl() const {
     if (indexVariableDeclChildNum_ < 0) return nullptr;
-    return (const Decl*)child(indexVariableDeclChildNum_);
+    const ASTNode* ast = child(indexVariableDeclChildNum_);
+    assert(ast->isDecl());
+    return (const Decl*) ast;
   }
 
   /**
@@ -76,7 +78,9 @@ class IndexableLoop : public Loop {
   */
   const Expression* iterand() const {
     if (iterandChildNum_ < 0) return nullptr;
-    return (const Expression*)child(iterandChildNum_);
+    const ASTNode* ast = child(iterandChildNum_); 
+    assert(ast->isExpression());
+    return (const Expression*) ast;
   }
 
 };

@@ -22,7 +22,7 @@
 
 #include "chpl/queries/Location.h"
 #include "chpl/uast/Comment.h"
-#include "chpl/uast/TypeSym.h"
+#include "chpl/uast/TypeDecl.h"
 
 namespace chpl {
 namespace uast {
@@ -42,21 +42,25 @@ namespace uast {
   AST node contains EnumElementDecls which contain the EnumElements
   (for a, b, c in the example).
  */
-class Enum final : public TypeSym {
+class Enum final : public TypeDecl {
  friend class EnumDecl;
 
  private:
-  Enum(ASTList children, UniqueString name, Visibility vis)
-    : TypeSym(asttags::Enum, std::move(children), name, vis) {
+  Enum(ASTList children, Visibility vis, UniqueString name)
+    : TypeDecl(asttags::Enum, std::move(children), vis, name) {
 
-    assert(isEnumElementDeclAndCommentList(children_));
+    assert(isEnumElementAndCommentList(children_));
   }
-  static bool isEnumElementDeclAndCommentList(const ASTList& list);
+  static bool isEnumElementAndCommentList(const ASTList& list);
   bool contentsMatchInner(const ASTNode* other) const override;
   void markUniqueStringsInner(Context* context) const override;
 
  public:
   ~Enum() override = default;
+
+  static owned<Enum> build(Builder* builder, Location loc,
+                           UniqueString name, Decl::Visibility vis,
+                           ASTList stmts);
 
   /**
     Return a way to iterate over the EnumElements and Comments.
@@ -81,11 +85,11 @@ class Enum final : public TypeSym {
   }
 
   /**
-   Return a way to iterate over the EnumElementDecls (ignoring Comments)
+   Return a way to iterate over the EnumElements (ignoring Comments)
    */
-  ASTListNoCommentsIteratorPair<EnumElementDecl> enumElementDecls() const {
-    return ASTListNoCommentsIteratorPair<EnumElementDecl>(children_.begin(),
-                                                          children_.end());
+  ASTListNoCommentsIteratorPair<EnumElement> enumElements() const {
+    return ASTListNoCommentsIteratorPair<EnumElement>(children_.begin(),
+                                                      children_.end());
   }
 };
 

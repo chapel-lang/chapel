@@ -24,9 +24,9 @@
 namespace chpl {
 namespace uast {
 
-bool MultiDecl::isVariableDeclAndCommentList(const ASTList& list) {
+bool MultiDecl::isVariableAndCommentList(const ASTList& list) {
   for (const auto& elt: list) {
-    if (elt->isVariableDecl() || elt->isComment()) {
+    if (elt->isVariable() || elt->isComment()) {
       // OK
     } else {
       return false;
@@ -46,8 +46,9 @@ void MultiDecl::markUniqueStringsInner(Context* context) const {
 
 owned<MultiDecl> MultiDecl::build(Builder* builder,
                                   Location loc,
+                                  Decl::Visibility vis,
                                   ASTList varDecls) {
-  MultiDecl* ret = new MultiDecl(std::move(varDecls));
+  MultiDecl* ret = new MultiDecl(std::move(varDecls), vis);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

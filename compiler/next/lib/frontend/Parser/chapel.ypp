@@ -213,13 +213,13 @@
   struct FunctionParts {
     std::vector<ParserComment>* comments;
     ErroneousExpression* errorExpr; // only used for parser error
-    Sym::Visibility visibility;
+    Decl::Visibility visibility;
     Function::Linkage linkage;
     Expression* linkageNameExpr;
     bool isInline;
     bool isOverride;
     Function::Kind kind;
-    FormalDecl* receiver;
+    Formal* receiver;
     PODUniqueString name;
     Function::ReturnIntent returnIntent;
     bool throws;
@@ -233,7 +233,7 @@
   // a struct to store the values in module_decl_start
   struct ModuleParts {
     std::vector<ParserComment>* comments;
-    Sym::Visibility visibility;
+    Decl::Visibility visibility;
     Module::Kind kind;
     PODUniqueString name;
   };
@@ -241,7 +241,7 @@
   // a struct to store the values in enum_header_lcbr
   struct EnumParts {
     std::vector<ParserComment>* comments;
-    Sym::Visibility visibility;
+    Decl::Visibility visibility;
     PODUniqueString name;
   };
 
@@ -303,14 +303,13 @@
     Module::Kind moduleKind;
     New::Management newManagement;
     ShadowTag shadowTag;
-    Sym::Visibility visibilityTag;
+    Decl::Visibility visibilityTag;
     ThrowsTag throwsTag;
     Variable::Kind variableKind;
 
     // simple pointer values
     Block* block;
     Call* call;
-    SymDecl* symDecl;
     Expression* expr;
     Function* function;
     Module* module;
@@ -783,9 +782,9 @@ module_decl_stmt:
       ModuleParts parts = $1;
       ParserExprList* body = context->makeList();
       context->appendList(body, context->gatherComments(@3));
-      auto mod = ModuleDecl::build(BUILDER, LOC(@1),
-                                   parts.name, parts.visibility, parts.kind,
-                                   context->consumeList(body));
+      auto mod = Module::build(BUILDER, LOC(@1),
+                               parts.name, parts.visibility, parts.kind,
+                               context->consumeList(body));
       CommentsAndStmt cs = {parts.comments, mod.release()};
       $$ = cs;
     }
@@ -796,9 +795,9 @@ module_decl_stmt:
       ModuleParts parts = $1;
       ParserExprList* body = $3;
       context->appendList(body, context->gatherComments(@4));
-      auto mod = ModuleDecl::build(BUILDER, LOC(@1),
-                                   parts.name, parts.visibility, parts.kind,
-                                   context->consumeList(body));
+      auto mod = Module::build(BUILDER, LOC(@1),
+                               parts.name, parts.visibility, parts.kind,
+                               context->consumeList(body));
       CommentsAndStmt cs = {parts.comments, mod.release()};
       $$ = cs;
     }
@@ -807,20 +806,20 @@ module_decl_stmt:
       ModuleParts parts = $1;
       ParserExprList* body =
               context->makeList(ErroneousExpression::build(BUILDER, LOC(@3)));
-      auto mod = ModuleDecl::build(BUILDER, LOC(@1),
-                                   parts.name, parts.visibility, parts.kind,
-                                   context->consumeList(body));
+      auto mod = Module::build(BUILDER, LOC(@1),
+                               parts.name, parts.visibility, parts.kind,
+                               context->consumeList(body));
       CommentsAndStmt cs = {parts.comments, mod.release()};
       $$ = cs;
     }
 ;
 
 access_control:
-           { $$ = context->noteVisibility(Sym::DEFAULT_VISIBILITY); }
+           { $$ = context->noteVisibility(Decl::DEFAULT_VISIBILITY); }
 | TPUBLIC  { context->noteDeclStartLoc(@1);
-             $$ = context->noteVisibility(Sym::PUBLIC); }
+             $$ = context->noteVisibility(Decl::PUBLIC); }
 | TPRIVATE { context->noteDeclStartLoc(@1);
-             $$ = context->noteVisibility(Sym::PRIVATE); }
+             $$ = context->noteVisibility(Decl::PRIVATE); }
 ;
 
 opt_prototype:
@@ -833,7 +832,7 @@ include_module_stmt:
  TINCLUDE access_control opt_prototype TMODULE ident_def TSEMI
    {
      $$ = TODOSTMT(@$);
-     context->visibility = Sym::DEFAULT_VISIBILITY;
+     context->visibility = Decl::DEFAULT_VISIBILITY;
    }
 ;
 
@@ -976,37 +975,37 @@ use_stmt:
   access_control TUSE use_renames_ls TSEMI
     {
       $$ = TODOSTMT(@$);
-      context->visibility = Sym::DEFAULT_VISIBILITY;
+      context->visibility = Decl::DEFAULT_VISIBILITY;
     }
 | access_control TUSE expr TEXCEPT except_ls TSEMI
     {
       $$ = TODOSTMT(@$);
-      context->visibility = Sym::DEFAULT_VISIBILITY;
+      context->visibility = Decl::DEFAULT_VISIBILITY;
     }
 | access_control TUSE expr TAS expr TEXCEPT except_ls TSEMI
     {
       $$ = TODOSTMT(@$);
-      context->visibility = Sym::DEFAULT_VISIBILITY;
+      context->visibility = Decl::DEFAULT_VISIBILITY;
     }
 | access_control TUSE expr TAS TUNDERSCORE TEXCEPT except_ls TSEMI
     {
       $$ = TODOSTMT(@$);
-      context->visibility = Sym::DEFAULT_VISIBILITY;
+      context->visibility = Decl::DEFAULT_VISIBILITY;
     }
 | access_control TUSE expr TONLY opt_only_ls TSEMI
     {
       $$ = TODOSTMT(@$);
-      context->visibility = Sym::DEFAULT_VISIBILITY;
+      context->visibility = Decl::DEFAULT_VISIBILITY;
     }
 | access_control TUSE expr TAS expr TONLY opt_only_ls TSEMI
     {
       $$ = TODOSTMT(@$);
-      context->visibility = Sym::DEFAULT_VISIBILITY;
+      context->visibility = Decl::DEFAULT_VISIBILITY;
     }
 | access_control TUSE expr TAS TUNDERSCORE TONLY opt_only_ls TSEMI
     {
       $$ = TODOSTMT(@$);
-      context->visibility = Sym::DEFAULT_VISIBILITY;
+      context->visibility = Decl::DEFAULT_VISIBILITY;
     }
 ;
 
@@ -1014,7 +1013,7 @@ import_stmt:
   access_control TIMPORT import_ls TSEMI
     {
       $$ = TODOSTMT(@$);
-      context->visibility = Sym::DEFAULT_VISIBILITY;
+      context->visibility = Decl::DEFAULT_VISIBILITY;
     }
 ;
 
@@ -1184,19 +1183,19 @@ class_level_stmt:
     {
       // visibility should be default when inner_class_level_stmt is parsed
       $$ = context->finishStmt($1);
-      context->visibility = Sym::DEFAULT_VISIBILITY;
+      context->visibility = Decl::DEFAULT_VISIBILITY;
     }
 | TPUBLIC {context->noteDeclStartLoc(@1);
-           context->noteVisibility(Sym::PUBLIC);} inner_class_level_stmt
+           context->noteVisibility(Decl::PUBLIC);} inner_class_level_stmt
     {
       $$ = context->finishStmt($3);
-      context->visibility = Sym::DEFAULT_VISIBILITY;
+      context->visibility = Decl::DEFAULT_VISIBILITY;
     }
 | TPRIVATE {context->noteDeclStartLoc(@1);
-            context->noteVisibility(Sym::PRIVATE);} inner_class_level_stmt
+            context->noteVisibility(Decl::PRIVATE);} inner_class_level_stmt
     {
       $$ = context->finishStmt($3);
-      context->visibility = Sym::DEFAULT_VISIBILITY;
+      context->visibility = Decl::DEFAULT_VISIBILITY;
     }
 ;
 
@@ -1718,9 +1717,9 @@ enum_decl_stmt:
       // get any comments after the last element but before the closing brace
       context->appendList(list, context->gatherComments(@3));
 
-      auto decl = EnumDecl::build(BUILDER, LOC(@$),
-                                  parts.name, parts.visibility,
-                                  context->consumeList(list));
+      auto decl = Enum::build(BUILDER, LOC(@$),
+                              parts.name, parts.visibility,
+                              context->consumeList(list));
       CommentsAndStmt cs = {parts.comments, decl.release()};
       $$ = cs;
       context->resetDeclState();
@@ -1769,13 +1768,12 @@ enum_ls:
 enum_item:
   ident_def
     {
-      auto decl = EnumElementDecl::build(BUILDER, LOC(@$), $1);
+      auto decl = EnumElement::build(BUILDER, LOC(@$), $1);
       $$ = STMT(@$, decl.release());
     }
 | ident_def TASSIGN expr
     {
-      auto decl = EnumElementDecl::build(BUILDER, LOC(@$), $1,
-                                         toOwned($3));
+      auto decl = EnumElement::build(BUILDER, LOC(@$), $1, toOwned($3));
       $$ = STMT(@$, decl.release());
       context->clearCommentsBefore(@3);
     }
@@ -1849,9 +1847,9 @@ fn_decl_stmt_inner:
 | fn_decl_stmt_start opt_this_intent_tag fn_decl_receiver_expr TDOT fn_ident opt_formal_ls
     {
       FunctionParts fp = $1;
-      fp.receiver = FormalDecl::build(BUILDER, LOC(@3),
-                                      STR("this"), $2, toOwned($3),
-                                      nullptr).release();
+      fp.receiver = Formal::build(BUILDER, LOC(@3),
+                                  STR("this"), $2, toOwned($3),
+                                  nullptr).release();
       fp.name = $5;
       fp.formals = $6;
       $$ = fp;
@@ -1859,9 +1857,9 @@ fn_decl_stmt_inner:
 | fn_decl_stmt_start opt_this_intent_tag fn_decl_receiver_expr TDOT assignop_ident opt_formal_ls
     {
       FunctionParts fp = $1;
-      fp.receiver = FormalDecl::build(BUILDER, LOC(@3),
-                                      STR("this"), $2, toOwned($3),
-                                      nullptr).release();
+      fp.receiver = Formal::build(BUILDER, LOC(@3),
+                                  STR("this"), $2, toOwned($3),
+                                  nullptr).release();
       fp.name = $5;
       fp.formals = $6;
       $$ = fp;
@@ -1962,8 +1960,8 @@ formal_ls:
 
 formal:
   opt_intent_tag ident_def opt_formal_type opt_init_expr
-    { $$ = FormalDecl::build(BUILDER, LOC(@$), $2, $1,
-                             toOwned($3), toOwned($4)).release(); }
+    { $$ = Formal::build(BUILDER, LOC(@$), $2, $1,
+                         toOwned($3), toOwned($4)).release(); }
 | pragma_ls opt_intent_tag ident_def opt_formal_type opt_init_expr
     { $$ = TODOEXPR(@$); }
 | opt_intent_tag ident_def opt_formal_type var_arg_expr
@@ -2148,9 +2146,9 @@ var_decl_stmt:
     {
       ParserExprList* lst = $2;
       int nVarDecls = 0;
-      VariableDecl* lastVariableDecl = nullptr;
+      Variable* lastVariableDecl = nullptr;
       for (auto elt : *lst) {
-        if (VariableDecl* d = elt->toVariableDecl()) {
+        if (Variable* d = elt->toVariable()) {
           lastVariableDecl = d;
           nVarDecls++;
         }
@@ -2175,7 +2173,7 @@ var_decl_stmt:
         // gather any comments from before the 'var'
         CommentsAndStmt cs = {context->gatherCommentsFromList(lst, @1),
                               nullptr};
-        auto multi = MultiDecl::build(BUILDER, LOC(@$),
+        auto multi = MultiDecl::build(BUILDER, LOC(@$), context->visibility,
                                       context->consumeList(lst));
         cs.stmt = multi.release();
         $$ = cs;
@@ -2198,10 +2196,10 @@ var_decl_stmt_inner_ls:
 var_decl_stmt_inner:
   ident_def opt_type opt_init_expr
     {
-      auto varDecl = VariableDecl::build(BUILDER, LOC(@$),
-                                         $1, context->visibility,
-                                         context->varDeclKind,
-                                         toOwned($2), toOwned($3));
+      auto varDecl = Variable::build(BUILDER, LOC(@$),
+                                     $1, context->visibility,
+                                     context->varDeclKind,
+                                     toOwned($2), toOwned($3));
       // gather the comments like a statement does
       $$ = STMT(@1, varDecl.release());
       context->clearComments();

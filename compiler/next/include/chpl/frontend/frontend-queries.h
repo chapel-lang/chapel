@@ -26,7 +26,7 @@
 #include "chpl/uast/ASTNode.h"
 #include "chpl/uast/Builder.h"
 #include "chpl/uast/Expression.h"
-#include "chpl/uast/ModuleDecl.h"
+#include "chpl/uast/Module.h"
 
 #include <vector>
 
@@ -42,14 +42,14 @@ namespace frontend {
   const LocationsMap& fileLocations(Context* context, UniqueString path);
   const Location& locate(Context* context, const uast::ASTNode* ast);
 
-  using ModuleDeclVec = std::vector<const uast::ModuleDecl*>;
-  const ModuleDeclVec& parse(Context* context, UniqueString path);
+  using ModuleVec = std::vector<const uast::Module*>;
+  const ModuleVec& parse(Context* context, UniqueString path);
 
   struct ResolutionResult {
     // the expr that is resolved
     const uast::Expression* exp;
     // in simple cases, this is set
-    const uast::SymDecl* decl;
+    const uast::NamedDecl* decl;
     // TODO:
     //  return-intent overloading
     //  generic instantiation

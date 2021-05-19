@@ -23,11 +23,9 @@
 #include "chpl/uast/Expression.h"
 #include "chpl/uast/FnCall.h"
 #include "chpl/uast/Formal.h"
-#include "chpl/uast/FormalDecl.h"
 #include "chpl/uast/Function.h"
-#include "chpl/uast/FunctionDecl.h"
 #include "chpl/uast/Identifier.h"
-#include "chpl/uast/ModuleDecl.h"
+#include "chpl/uast/Module.h"
 #include "chpl/uast/OpCall.h"
 
 // always check assertions in this test
@@ -46,11 +44,11 @@ static void test1(Parser* parser) {
                                          "proc f() { }");
   assert(parseResult.errors.size() == 0);
   assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
-  auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(parseResult.topLevelExpressions[0]->isModule());
+  auto module = parseResult.topLevelExpressions[0]->toModule();
   assert(module->name().compare("test1") == 0);
   assert(module->numStmts() == 1);
-  auto functionDecl = module->stmt(0)->toFunctionDecl();
+  auto functionDecl = module->stmt(0)->toFunction();
   assert(functionDecl);
   assert(functionDecl->name().compare("f") == 0);
   assert(functionDecl->linkage() == Function::DEFAULT_LINKAGE);
@@ -75,14 +73,14 @@ static void test1a(Parser* parser) {
                                          "/* comment 3 */\n");
   assert(parseResult.errors.size() == 0);
   assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
-  auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(parseResult.topLevelExpressions[0]->isModule());
+  auto module = parseResult.topLevelExpressions[0]->toModule();
   assert(module->name().compare("test1a") == 0);
   assert(module->numStmts() == 3);
   assert(module->stmt(0)->isComment());
-  assert(module->stmt(1)->isFunctionDecl());
+  assert(module->stmt(1)->isFunction());
   assert(module->stmt(2)->isComment());
-  auto functionDecl = module->stmt(1)->toFunctionDecl();
+  auto functionDecl = module->stmt(1)->toFunction();
   assert(functionDecl);
   assert(functionDecl->numStmts() == 1);
   assert(functionDecl->stmt(0)->isComment());
@@ -98,14 +96,14 @@ static void test1b(Parser* parser) {
                                          "/* comment 4 */\n");
   assert(parseResult.errors.size() == 0);
   assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
-  auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(parseResult.topLevelExpressions[0]->isModule());
+  auto module = parseResult.topLevelExpressions[0]->toModule();
   assert(module->name().compare("test1a") == 0);
   assert(module->numStmts() == 3);
   assert(module->stmt(0)->isComment());
-  assert(module->stmt(1)->isFunctionDecl());
+  assert(module->stmt(1)->isFunction());
   assert(module->stmt(2)->isComment());
-  auto functionDecl = module->stmt(1)->toFunctionDecl();
+  auto functionDecl = module->stmt(1)->toFunction();
   assert(functionDecl);
   assert(functionDecl->numStmts() == 3);
   assert(functionDecl->stmt(0)->isComment());
@@ -122,13 +120,13 @@ static void test1c(Parser* parser) {
                                          "}\n");
   assert(parseResult.errors.size() == 0);
   assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
-  auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(parseResult.topLevelExpressions[0]->isModule());
+  auto module = parseResult.topLevelExpressions[0]->toModule();
   assert(module->name().compare("test1c") == 0);
   assert(module->numStmts() == 2);
   assert(module->stmt(0)->isComment());
-  assert(module->stmt(1)->isFunctionDecl());
-  auto functionDecl = module->stmt(1)->toFunctionDecl();
+  assert(module->stmt(1)->isFunction());
+  auto functionDecl = module->stmt(1)->toFunction();
   assert(functionDecl);
   assert(functionDecl->numStmts() == 1);
   assert(functionDecl->stmt(0)->isIdentifier());
@@ -144,12 +142,12 @@ static void test1d(Parser* parser) {
                                          "}\n");
   assert(parseResult.errors.size() == 0);
   assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
-  auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(parseResult.topLevelExpressions[0]->isModule());
+  auto module = parseResult.topLevelExpressions[0]->toModule();
   assert(module->name().compare("test1d") == 0);
   assert(module->numStmts() == 1);
-  assert(module->stmt(0)->isFunctionDecl());
-  auto functionDecl = module->stmt(0)->toFunctionDecl();
+  assert(module->stmt(0)->isFunction());
+  auto functionDecl = module->stmt(0)->toFunction();
   assert(functionDecl);
   assert(functionDecl->numStmts() == 1);
   assert(functionDecl->stmt(0)->isIdentifier());
@@ -165,12 +163,12 @@ static void test1e(Parser* parser) {
                                          "}\n");
   assert(parseResult.errors.size() == 0);
   assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
-  auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(parseResult.topLevelExpressions[0]->isModule());
+  auto module = parseResult.topLevelExpressions[0]->toModule();
   assert(module->name().compare("test1e") == 0);
   assert(module->numStmts() == 1);
-  assert(module->stmt(0)->isFunctionDecl());
-  auto functionDecl = module->stmt(0)->toFunctionDecl();
+  assert(module->stmt(0)->isFunction());
+  auto functionDecl = module->stmt(0)->toFunction();
   assert(functionDecl);
   assert(functionDecl->numStmts() == 1);
   assert(functionDecl->stmt(0)->isIdentifier());
@@ -183,12 +181,12 @@ static void test1f(Parser* parser) {
                                          "}\n");
   assert(parseResult.errors.size() == 0);
   assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
-  auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(parseResult.topLevelExpressions[0]->isModule());
+  auto module = parseResult.topLevelExpressions[0]->toModule();
   assert(module->name().compare("test1f") == 0);
   assert(module->numStmts() == 1);
-  assert(module->stmt(0)->isFunctionDecl());
-  auto functionDecl = module->stmt(0)->toFunctionDecl();
+  assert(module->stmt(0)->isFunction());
+  auto functionDecl = module->stmt(0)->toFunction();
   assert(functionDecl);
   assert(functionDecl->numStmts() == 1);
   assert(functionDecl->stmt(0)->isIdentifier());
@@ -203,12 +201,12 @@ static void test1g(Parser* parser) {
                                          "}\n");
   assert(parseResult.errors.size() == 0);
   assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
-  auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(parseResult.topLevelExpressions[0]->isModule());
+  auto module = parseResult.topLevelExpressions[0]->toModule();
   assert(module->name().compare("test1g") == 0);
   assert(module->numStmts() == 1);
-  assert(module->stmt(0)->isFunctionDecl());
-  auto functionDecl = module->stmt(0)->toFunctionDecl();
+  assert(module->stmt(0)->isFunction());
+  auto functionDecl = module->stmt(0)->toFunction();
   assert(functionDecl);
   assert(functionDecl->numStmts() == 1);
   assert(functionDecl->stmt(0)->isIdentifier());
@@ -223,12 +221,12 @@ static void test1h(Parser* parser) {
                                          "}\n");
   assert(parseResult.errors.size() == 0);
   assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
-  auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(parseResult.topLevelExpressions[0]->isModule());
+  auto module = parseResult.topLevelExpressions[0]->toModule();
   assert(module->name().compare("test1h") == 0);
   assert(module->numStmts() == 1);
-  assert(module->stmt(0)->isFunctionDecl());
-  auto functionDecl = module->stmt(0)->toFunctionDecl();
+  assert(module->stmt(0)->isFunction());
+  auto functionDecl = module->stmt(0)->toFunction();
   assert(functionDecl);
   assert(functionDecl->numStmts() == 1);
   assert(functionDecl->stmt(0)->isIdentifier());
@@ -243,12 +241,12 @@ static void test1i(Parser* parser) {
                                          "}\n");
   assert(parseResult.errors.size() == 0);
   assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
-  auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(parseResult.topLevelExpressions[0]->isModule());
+  auto module = parseResult.topLevelExpressions[0]->toModule();
   assert(module->name().compare("test1i") == 0);
   assert(module->numStmts() == 1);
-  assert(module->stmt(0)->isFunctionDecl());
-  auto functionDecl = module->stmt(0)->toFunctionDecl();
+  assert(module->stmt(0)->isFunction());
+  auto functionDecl = module->stmt(0)->toFunction();
   assert(functionDecl);
   assert(functionDecl->numStmts() == 1);
   assert(functionDecl->stmt(0)->isIdentifier());
@@ -263,12 +261,12 @@ static void test1j(Parser* parser) {
                                          "}\n");
   assert(parseResult.errors.size() == 0);
   assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
-  auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(parseResult.topLevelExpressions[0]->isModule());
+  auto module = parseResult.topLevelExpressions[0]->toModule();
   assert(module->name().compare("test1j") == 0);
   assert(module->numStmts() == 1);
-  assert(module->stmt(0)->isFunctionDecl());
-  auto functionDecl = module->stmt(0)->toFunctionDecl();
+  assert(module->stmt(0)->isFunction());
+  auto functionDecl = module->stmt(0)->toFunction();
   assert(functionDecl);
   assert(functionDecl->numStmts() == 1);
   assert(functionDecl->stmt(0)->isIdentifier());
@@ -286,13 +284,12 @@ static Builder::Result parseFunction(Parser* parser,
   auto parseResult = parser->parseString(filename, contents);
   assert(parseResult.errors.size() == 0);
   assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
-  auto module = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(parseResult.topLevelExpressions[0]->isModule());
+  auto module = parseResult.topLevelExpressions[0]->toModule();
   assert(module->numStmts() == 1);
-  auto functionDecl = module->stmt(0)->toFunctionDecl();
+  auto functionDecl = module->stmt(0)->toFunction();
   assert(functionDecl);
-  assert(functionDecl->function());
-  f = functionDecl->function();
+  f = functionDecl;
   return std::move(parseResult);
 }
 
@@ -314,17 +311,14 @@ static void test2(Parser* parser) {
   assert(function->linkageNameExpression() == nullptr);
   assert(function->numFormals() == 1);
   auto formal = function->formal(0);
-  auto formalDecl = function->formalDecl(0);
   assert(formal);
-  assert(formalDecl);
-  assert(formalDecl->formal() == formal);
   assert(formal->intent() == Formal::DEFAULT_INTENT);
   assert(formal->name().compare("a") == 0);
-  auto typeExpr = formalDecl->typeExpression();
+  auto typeExpr = formal->typeExpression();
   assert(typeExpr);
   assert(typeExpr->isIdentifier());
   assert(typeExpr->toIdentifier()->name().compare("int") == 0);
-  assert(formalDecl->initExpression() == nullptr);
+  assert(formal->initExpression() == nullptr);
   assert(function->thisFormal() == nullptr);
   assert(function->returnType() == nullptr);
   assert(function->numLifetimeClauses() == 0);
@@ -353,30 +347,24 @@ static void test3(Parser* parser) {
   assert(function->numFormals() == 2); // 'this' and 'a'
 
   auto thisFormal = function->formal(0);
-  auto thisFormalDecl = function->formalDecl(0);
   assert(thisFormal);
-  assert(thisFormalDecl);
-  assert(thisFormalDecl->formal() == thisFormal);
   assert(thisFormal->intent() == Formal::CONST);
   assert(thisFormal->name().compare("this") == 0);
-  auto thisTypeExpr = thisFormalDecl->typeExpression();
+  auto thisTypeExpr = thisFormal->typeExpression();
   assert(thisTypeExpr);
   assert(thisTypeExpr->isIdentifier());
   assert(thisTypeExpr->toIdentifier()->name().compare("R") == 0);
-  assert(thisFormalDecl->initExpression() == nullptr);
+  assert(thisFormal->initExpression() == nullptr);
 
   auto formal = function->formal(1);
-  auto formalDecl = function->formalDecl(1);
   assert(formal);
-  assert(formalDecl);
-  assert(formalDecl->formal() == formal);
   assert(formal->intent() == Formal::REF);
   assert(formal->name().compare("a") == 0);
-  auto typeExpr = formalDecl->typeExpression();
+  auto typeExpr = formal->typeExpression();
   assert(typeExpr);
   assert(typeExpr->isIdentifier());
   assert(typeExpr->toIdentifier()->name().compare("int") == 0);
-  auto initExpr = formalDecl->initExpression();
+  auto initExpr = formal->initExpression();
   assert(initExpr);
   assert(initExpr->isIdentifier());
   assert(initExpr->toIdentifier()->name().compare("b") == 0);
@@ -409,17 +397,10 @@ static void test4(Parser* parser) {
   assert(bodyZ);
 
   // Now check the various alternative access methods.
-  assert(function->formalDecl(0)->formal() == formalA);
-  assert(function->formalDecl(1)->formal() == formalB);
+  assert(function->formal(0) == formalA);
+  assert(function->formal(1) == formalB);
 
   int i;
-
-  i = 0;
-  for (auto decl : function->formalDecls()) {
-    if (i == 0) assert(decl->formal() == formalA);
-    if (i == 1) assert(decl->formal() == formalB);
-    i++;
-  }
 
   i = 0;
   for (auto formal : function->formals()) {

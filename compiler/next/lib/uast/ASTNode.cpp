@@ -19,10 +19,9 @@
 
 #include "chpl/uast/ASTNode.h"
 
-#include "chpl/uast/SymDecl.h"
+#include "chpl/uast/NamedDecl.h"
 #include "chpl/uast/Expression.h"
 #include "chpl/uast/Identifier.h"
-#include "chpl/uast/Sym.h"
 
 namespace chpl {
 namespace uast {
@@ -39,12 +38,6 @@ bool ASTNode::shallowMatch(const ASTNode* other) const {
   if (lhs->id().symbolPath() != rhs->id().symbolPath())
     return false;
   if (!lhs->contentsMatchInner(rhs))
-    return false;
-  // Also check declaration names
-  const SymDecl* lhsDecl = lhs->toSymDecl();
-  const SymDecl* rhsDecl = rhs->toSymDecl();
-  if (lhsDecl && rhsDecl &&
-      lhsDecl->sym()->name() != rhsDecl->sym()->name())
     return false;
 
   return true;
@@ -136,12 +129,12 @@ static void dumpHelper(const ASTNode* ast, int depth) {
   }
   ID emptyId;
   if (ast->id() != emptyId) {
-    if (const Sym* sym = ast->toSym()) {
+    if (const NamedDecl* named = ast->toNamedDecl()) {
       printf("%s %s %p %s\n",
              asttags::tagToString(ast->tag()),
              ast->id().symbolPath().c_str(),
              ast,
-             sym->name().c_str());
+             named->name().c_str());
     } else if (const Identifier* ident = ast->toIdentifier()) {
       printf("%s %s@%i %p %s\n",
              asttags::tagToString(ast->tag()),

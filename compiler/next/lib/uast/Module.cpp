@@ -28,11 +28,21 @@ namespace uast {
 bool Module::contentsMatchInner(const ASTNode* other) const {
   const Module* lhs = this;
   const Module* rhs = (const Module*) other;
-  return lhs->symContentsMatchInner(rhs) &&
+  return lhs->namedDeclContentsMatchInner(rhs) &&
          lhs->kind_ == rhs->kind_;
 }
 void Module::markUniqueStringsInner(Context* context) const {
-  symMarkUniqueStringsInner(context);
+  namedDeclMarkUniqueStringsInner(context);
+}
+
+owned<Module>
+Module::build(Builder* builder, Location loc,
+              UniqueString name, Decl::Visibility vis,
+              Module::Kind kind, ASTList stmts) {
+
+  Module* ret = new Module(std::move(stmts), vis, name, kind);
+  builder->noteLocation(ret, loc);
+  return toOwned(ret);
 }
 
 

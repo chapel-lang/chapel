@@ -21,7 +21,7 @@
 #define CHPL_UAST_ENUMELEMENT_H
 
 #include "chpl/queries/Location.h"
-#include "chpl/uast/Sym.h"
+#include "chpl/uast/NamedDecl.h"
 
 namespace chpl {
 namespace uast {
@@ -39,13 +39,11 @@ namespace uast {
   \endrst
 
  */
-class EnumElement final : public Sym {
- friend class EnumElementDecl;
-
+class EnumElement final : public NamedDecl {
  private:
   EnumElement(ASTList children, UniqueString name)
-    : Sym(asttags::EnumElement, std::move(children), name,
-          Sym::DEFAULT_VISIBILITY) {
+    : NamedDecl(asttags::EnumElement, std::move(children),
+                Decl::DEFAULT_VISIBILITY, name) {
 
     assert(children_.size() == 0 || children_.size() == 1);
     assert(isExpressionASTList(children_));
@@ -55,6 +53,11 @@ class EnumElement final : public Sym {
 
  public:
   ~EnumElement() override = default;
+  static owned<EnumElement> build(Builder* builder, Location loc,
+                                  UniqueString name,
+                                  owned<Expression> initExpression);
+  static owned<EnumElement> build(Builder* builder, Location loc,
+                                  UniqueString name);
 
   /**
     Returns the init expression for this EnumElement or nullptr if there was

@@ -20,7 +20,7 @@
 #ifndef CHPL_UAST_MODULE_H
 #define CHPL_UAST_MODULE_H
 
-#include "chpl/uast/Sym.h"
+#include "chpl/uast/NamedDecl.h"
 #include "chpl/queries/Location.h"
 
 namespace chpl {
@@ -28,7 +28,7 @@ namespace uast {
 
 
 /**
-  This class represents a module. For example:
+  This class represents a module declaration. For example:
 
   \rst
   .. code-block:: chapel
@@ -36,11 +36,9 @@ namespace uast {
       module M { }
   \endrst
 
-  contains a ModuleDecl that refers to a Module Sym.
+  is a declaration for a module named M.
  */
-class Module final : public Sym {
- friend class ModuleDecl;
-
+class Module final : public NamedDecl {
  public:
   enum Kind {
     DEFAULT_MODULE_KIND,
@@ -51,9 +49,8 @@ class Module final : public Sym {
  private:
   Kind kind_;
 
-  Module(ASTList children, UniqueString name,
-         Sym::Visibility vis, Kind kind)
-    : Sym(asttags::Module, std::move(children), name, vis), kind_(kind) {
+  Module(ASTList children, Decl::Visibility vis, UniqueString name, Kind kind)
+    : NamedDecl(asttags::Module, std::move(children), vis, name), kind_(kind) {
 
     assert(isExpressionASTList(children_));
   }
@@ -62,6 +59,12 @@ class Module final : public Sym {
 
  public:
   ~Module() override = default;
+
+
+  static owned<Module> build(Builder* builder, Location loc,
+                             UniqueString name, Decl::Visibility vis,
+                             Module::Kind kind, ASTList stmts);
+
   const Kind kind() const { return this->kind_; }
 
   ASTListIteratorPair<Expression> stmts() const {

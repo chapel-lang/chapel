@@ -20,8 +20,9 @@
 #include "chpl/frontend/frontend-queries.h"
 
 #include "chpl/uast/Comment.h"
-#include "chpl/uast/ModuleDecl.h"
-#include "chpl/uast/VariableDecl.h"
+#include "chpl/uast/Function.h"
+#include "chpl/uast/Module.h"
+#include "chpl/uast/Variable.h"
 
 // always check assertions in this test
 #ifdef NDEBUG
@@ -60,9 +61,9 @@ static void test1() {
 }
 
 static const Module* parseOneModule(Context* ctx, UniqueString filepath) {
-  const ModuleDeclVec& v = parse(ctx, filepath);
+  const ModuleVec& v = parse(ctx, filepath);
   assert(v.size() == 1);
-  return v[0]->module();
+  return v[0];
 }
 
 static void test2() {
@@ -274,17 +275,15 @@ static void test4() {
   auto modulePath = UniqueString::build(ctx, "MyModule.chpl");
   const Module* module = nullptr;
   const Comment* comment = nullptr;
-  const VariableDecl* declA = nullptr;
-  const VariableDecl* declB = nullptr;
-  const Variable* A = nullptr;
-  const Variable* B = nullptr;
+  const Function* A = nullptr;
+  const Function* B = nullptr;
   const Block* block = nullptr;
 
   std::string moduleContents;
 
   moduleContents = "/* this is a test */\n"
-                   "var a;\n"
-                   "var b;\n";
+                   "proc a() { }\n"
+                   "proc b() { }\n";
   ctx->advanceToNextRevision(true);
   setFileText(ctx, modulePath, moduleContents);
   module = parseOneModule(ctx, modulePath);
@@ -293,28 +292,22 @@ static void test4() {
   ASTNode::dump(module);
   assert(module->numStmts() == 3);
   comment = module->stmt(0)->toComment();
-  declA = module->stmt(1)->toVariableDecl();
-  declB = module->stmt(2)->toVariableDecl();
+  A = module->stmt(1)->toFunction();
+  B = module->stmt(2)->toFunction();
   assert(comment);
-  assert(declA);
-  assert(declB);
-  A = declA->variable();
-  B = declB->variable();
   assert(A);
   assert(B);
   const Module* oldModule = module;
   const Comment* oldComment = comment;
-  const VariableDecl* oldDeclA = declA;
-  const VariableDecl* oldDeclB = declB;
-  const Variable* oldA = A;
-  const Variable* oldB = B;
+  const Function* oldA = A;
+  const Function* oldB = B;
 
   printf("test4 adding Blocks\n");
   moduleContents = "/* this is a test */\n"
                    "{ var x; }\n"
-                   "var a;\n"
+                   "proc a() { }\n"
                    "{ var y; }\n"
-                   "var b;\n";
+                   "proc b() { }\n";
   ctx->advanceToNextRevision(true);
   setFileText(ctx, modulePath, moduleContents);
   module = parseOneModule(ctx, modulePath);
@@ -327,13 +320,9 @@ static void test4() {
   assert(module->numStmts() == 5);
   comment = module->stmt(0)->toComment();
   block = module->stmt(1)->toBlock();
-  declA = module->stmt(2)->toVariableDecl();
-  declB = module->stmt(4)->toVariableDecl();
+  A = module->stmt(2)->toFunction();
+  B = module->stmt(4)->toFunction();
   assert(comment);
-  assert(declA);
-  assert(declB);
-  A = declA->variable();
-  B = declB->variable();
   assert(A);
   assert(B);
 
@@ -342,11 +331,6 @@ static void test4() {
   oldModule = module;
 
   assert(comment == oldComment);
-  // these should not match because they have different IDs
-  assert(declA != oldDeclA);
-  oldDeclA = declA;
-  assert(declB != oldDeclB);
-  oldDeclB = declB;
   // these should match though
   assert(A == oldA);
   assert(B == oldB);
@@ -355,9 +339,9 @@ static void test4() {
   printf("test4 changing Identifier in Blocks\n");
   moduleContents = "/* this is a test */\n"
                    "{ var xx; }\n"
-                   "var a;\n"
+                   "proc a() { }\n"
                    "{ var yy; }\n"
-                   "var b;\n";
+                   "proc b() { }\n";
   ctx->advanceToNextRevision(true);
   setFileText(ctx, modulePath, moduleContents);
   module = parseOneModule(ctx, modulePath);
@@ -369,13 +353,9 @@ static void test4() {
   assert(module->numStmts() == 5);
   comment = module->stmt(0)->toComment();
   block = module->stmt(1)->toBlock();
-  declA = module->stmt(2)->toVariableDecl();
-  declB = module->stmt(4)->toVariableDecl();
+  A = module->stmt(2)->toFunction();
+  B = module->stmt(4)->toFunction();
   assert(comment);
-  assert(declA);
-  assert(declB);
-  A = declA->variable();
-  B = declB->variable();
   assert(A);
   assert(B);
 
@@ -385,16 +365,13 @@ static void test4() {
 
   assert(comment == oldComment);
   assert(block != oldBlock); // should not match because contents changed
-  // these have the same Id and should match
-  assert(declA == oldDeclA);
-  assert(declB == oldDeclB);
   assert(A == oldA);
   assert(B == oldB);
 
   printf("test4 removing the Blocks\n");
   moduleContents = "/* this is a test */\n"
-                   "var a;\n"
-                   "var b;\n";
+                   "proc a() { }\n"
+                   "proc b() { }\n";
   ctx->advanceToNextRevision(true);
   setFileText(ctx, modulePath, moduleContents);
   module = parseOneModule(ctx, modulePath);
@@ -405,13 +382,9 @@ static void test4() {
   // Check that the comment and identifiers match
   assert(module->numStmts() == 3);
   comment = module->stmt(0)->toComment();
-  declA = module->stmt(1)->toVariableDecl();
-  declB = module->stmt(2)->toVariableDecl();
+  A = module->stmt(1)->toFunction();
+  B = module->stmt(2)->toFunction();
   assert(comment);
-  assert(declA);
-  assert(declB);
-  A = declA->variable();
-  B = declB->variable();
   assert(A);
   assert(B);
 
@@ -420,19 +393,14 @@ static void test4() {
   oldModule = module;
 
   assert(comment == oldComment);
-  // should not match because they have different IDs
-  assert(declA != oldDeclA);
-  oldDeclA = declA;
-  assert(declB != oldDeclB);
-  oldDeclB = declB;
   // these should match though.
   assert(A == oldA);
   assert(B == oldB);
 
   printf("test4 replacing first Decl\n");
   moduleContents = "/* this is a test */\n"
-                   "var aa;\n"
-                   "var b;\n";
+                   "proc aa() { }\n"
+                   "proc b() { }\n";
   ctx->advanceToNextRevision(true);
   setFileText(ctx, modulePath, moduleContents);
   module = parseOneModule(ctx, modulePath);
@@ -443,13 +411,9 @@ static void test4() {
   // Check that the comment and identifiers match
   assert(module->numStmts() == 3);
   comment = module->stmt(0)->toComment();
-  declA = module->stmt(1)->toVariableDecl();
-  declB = module->stmt(2)->toVariableDecl();
+  A = module->stmt(1)->toFunction();
+  B = module->stmt(2)->toFunction();
   assert(comment);
-  assert(declA);
-  assert(declB);
-  A = declA->variable();
-  B = declB->variable();
   assert(A);
   assert(B);
 
@@ -459,10 +423,7 @@ static void test4() {
 
   assert(comment == oldComment);
 
-  assert(declA != oldDeclA); // contents changed
   assert(A != oldA); // name changed
-
-  assert(declB == oldDeclB);
   assert(B == oldB);
 }
 
@@ -474,8 +435,8 @@ static void test5() {
   auto modulePath = UniqueString::build(ctx, "MyModule.chpl");
   const Module* module = nullptr;
   const Comment* comment = nullptr;
-  const VariableDecl* declA = nullptr;
-  const VariableDecl* declB = nullptr;
+  const Variable* A = nullptr;
+  const Variable* B = nullptr;
   const Block* block = nullptr;
 
   std::string moduleContents;
@@ -494,27 +455,21 @@ static void test5() {
     ASTNode::dump(module);
     assert(module->numStmts() == 3);
     comment = module->stmt(0)->toComment();
-    declA = module->stmt(1)->toVariableDecl();
-    declB = module->stmt(2)->toVariableDecl();
+    A = module->stmt(1)->toVariable();
+    B = module->stmt(2)->toVariable();
     assert(comment);
-    assert(declA);
-    assert(declB);
+    assert(A);
+    assert(B);
 
     // Now check their locations
     Location commentLoc = locate(ctx, comment);
-    Location declALoc = locate(ctx, declA);
-    Location aLoc = locate(ctx, declA->variable());
-    Location declBLoc = locate(ctx, declB);
-    Location bLoc = locate(ctx, declB->variable());
+    Location aLoc = locate(ctx, A);
+    Location bLoc = locate(ctx, B);
     assert(commentLoc.path() == modulePath);
-    assert(declALoc.path() == modulePath);
     assert(aLoc.path() == modulePath);
-    assert(declBLoc.path() == modulePath);
     assert(bLoc.path() == modulePath);
     assert(commentLoc.line() == 1);
-    assert(declALoc.line() == 2);
     assert(aLoc.line() == 2);
-    assert(declBLoc.line() == 3);
     assert(bLoc.line() == 3);
 
     ctx->collectGarbage();
@@ -522,6 +477,8 @@ static void test5() {
 }
 
 int main() {
+  test4();
+
   test0();
   test1();
   test2();

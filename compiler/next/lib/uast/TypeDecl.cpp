@@ -17,33 +17,13 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/ModuleDecl.h"
-
-#include "chpl/uast/Builder.h"
+#include "chpl/uast/TypeDecl.h"
 
 namespace chpl {
 namespace uast {
 
 
-bool ModuleDecl::contentsMatchInner(const ASTNode* other) const {
-  const ModuleDecl* lhs = this;
-  const ModuleDecl* rhs = (const ModuleDecl*) other;
-  return lhs->symDeclContentsMatchInner(rhs);
-}
-void ModuleDecl::markUniqueStringsInner(Context* context) const {
-  return symDeclMarkUniqueStringsInner(context);
-}
-
-owned<ModuleDecl>
-ModuleDecl::build(Builder* builder, Location loc,
-                  UniqueString name, Sym::Visibility vis,
-                  Module::Kind kind, ASTList stmts) {
-
-  Module* sym = new Module(std::move(stmts), name, vis, kind);
-  ModuleDecl* ret = new ModuleDecl(toOwned(sym));
-  builder->noteLocation(sym, loc);
-  builder->noteLocation(ret, loc);
-  return toOwned(ret);
+TypeDecl::~TypeDecl() {
 }
 
 

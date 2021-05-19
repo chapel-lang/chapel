@@ -25,9 +25,9 @@ namespace chpl {
 namespace uast {
 
 
-bool Enum::isEnumElementDeclAndCommentList(const ASTList& list) {
+bool Enum::isEnumElementAndCommentList(const ASTList& list) {
   for (const auto& elt: list) {
-    if (elt->isEnumElementDecl() || elt->isComment()) {
+    if (elt->isEnumElement() || elt->isComment()) {
       // OK
     } else {
       return false;
@@ -38,12 +38,20 @@ bool Enum::isEnumElementDeclAndCommentList(const ASTList& list) {
 bool Enum::contentsMatchInner(const ASTNode* other) const {
   const Enum* lhs = this;
   const Enum* rhs = (const Enum*) other;
-  return lhs->typeSymContentsMatchInner(rhs);
+  return lhs->typeDeclContentsMatchInner(rhs);
 }
 void Enum::markUniqueStringsInner(Context* context) const {
-  typeSymMarkUniqueStringsInner(context);
+  typeDeclMarkUniqueStringsInner(context);
 }
 
+owned<Enum> Enum::build(Builder* builder, Location loc,
+                        UniqueString name, Decl::Visibility vis,
+                        ASTList stmts) {
+  Enum* ret = new Enum(std::move(stmts), vis, name);
+  builder->noteLocation(ret, loc);
+  return toOwned(ret);
+}
+ 
 
 } // namespace uast
 } // namespace chpl
