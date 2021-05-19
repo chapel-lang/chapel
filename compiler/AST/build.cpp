@@ -1035,6 +1035,9 @@ buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, b
 //
 Expr* buildForallLoopExprFromArrayType(CallExpr* buildArrTypeCall,
                                            bool recursiveCall) {
+  if (buildArrTypeCall->isPrimitive(PRIM_ERROR))  // ex. 'type T = [];'
+    return buildArrTypeCall;
+
   // Is this a call to chpl__buildArrayRuntimeType?
   UnresolvedSymExpr* ursym = toUnresolvedSymExpr(buildArrTypeCall->baseExpr);
   if (ursym && strcmp(ursym->unresolved, "chpl__buildArrayRuntimeType") == 0) {

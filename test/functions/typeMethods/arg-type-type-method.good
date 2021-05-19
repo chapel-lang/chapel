@@ -1,1 +1,3 @@
-arg-type-type-method.chpl:10: error: success
+arg-type-type-method.chpl:16: warning: test RR.typemeth
+arg-type-type-method.chpl:17: warning: test CC.typemeth
+arg-type-type-method.chpl:18: error: success

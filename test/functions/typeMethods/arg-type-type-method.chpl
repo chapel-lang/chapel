@@ -1,10 +1,18 @@
 
+record RR { }
+proc type RR.typemeth type return string;
 
-class CC { }
-proc type CC.typemethod type return int;
-
-proc test(arg: CC.typemethod) {
-  compilerError("success");
+proc test(a: RR.typemeth) {
+  compilerWarning("test RR.typemeth");
 }
 
-test(5);
+class CC { }
+proc type CC.typemeth type return real;
+
+proc test(a: CC.typemeth) {
+  compilerWarning("test CC.typemeth");
+}
+
+test("hi");
+test(5.6);
+compilerError("success");

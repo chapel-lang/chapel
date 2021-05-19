@@ -1,2 +1,2 @@
-arg-type-type-method.chpl:6: In function 'test':
-arg-type-type-method.chpl:6: error: '.' undeclared (first use this function)
+arg-type-type-method.chpl:12: In function 'test':
+arg-type-type-method.chpl:12: error: '.' undeclared (first use this function)
