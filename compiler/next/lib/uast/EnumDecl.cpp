@@ -17,38 +17,34 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_UAST_EXPRESSION_H
-#define CHPL_UAST_EXPRESSION_H
+#include "chpl/uast/EnumDecl.h"
 
-#include "chpl/uast/ASTNode.h"
+#include "chpl/uast/Builder.h"
 
 namespace chpl {
 namespace uast {
 
 
-/**
-  This is an abstract base class for expressions
- */
-class Expression : public ASTNode {
- protected:
-  Expression(asttags::ASTTag tag)
-    : ASTNode(tag) {
-  }
-  Expression(asttags::ASTTag tag, ASTList children)
-    : ASTNode(tag, std::move(children)) {
-  }
-  bool expressionContentsMatchInner(const Expression* other) const {
-    return true;
-  }
-  void expressionMarkUniqueStringsInner(Context* context) const {
-  }
+bool EnumDecl::contentsMatchInner(const ASTNode* other) const {
+  const EnumDecl* lhs = this;
+  const EnumDecl* rhs = (const EnumDecl*) other;
+  return lhs->symDeclContentsMatchInner(rhs);
+}
+void EnumDecl::markUniqueStringsInner(Context* context) const {
+  return symDeclMarkUniqueStringsInner(context);
+}
 
- public:
-  virtual ~Expression() = 0; // this is an abstract base class
-};
+owned<EnumDecl>
+EnumDecl::build(Builder* builder, Location loc,
+                UniqueString name, Sym::Visibility vis,
+                ASTList stmts) {
+  Enum* sym = new Enum(std::move(stmts), name, vis);
+  builder->noteLocation(sym, loc);
+  EnumDecl* ret = new EnumDecl(toOwned(sym));
+  builder->noteLocation(ret, loc);
+  return toOwned(ret);
+}
+ 
 
-
-} // end namespace uast
-} // end namespace chpl
-
-#endif
+} // namespace uast
+} // namespace chpl

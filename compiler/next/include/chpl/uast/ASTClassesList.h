@@ -41,11 +41,6 @@
 //  try to make AST nodes and use inheritance
 //  to allow coarse-grain view
 
-// Should there be a generic way to enumerate the
-// children of a particular AST node besides the visitor?
-//  yes, and allow getting "next" somehow
-//  let's try making a vector of children
-
 // the following comment disables doxygen for these
 /// \cond DO_NOT_DOCUMENT
 
@@ -113,12 +108,13 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
     AST_NODE(Try)                      //
   AST_END_SUBCLASSES(Call)
 
-
   AST_BEGIN_SUBCLASSES(Decl)
     AST_NODE(MultiDecl)
     AST_NODE(TupleDecl)
 
     AST_BEGIN_SUBCLASSES(SymDecl)
+      AST_NODE(EnumDecl)
+      AST_NODE(EnumElementDecl)
       //AST_NODE(FieldDecl)
       AST_NODE(FormalDecl)
       //AST_NODE(ForwardingDecl)

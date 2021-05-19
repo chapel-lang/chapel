@@ -53,6 +53,16 @@ static void test1(Parser* parser) {
   assert(y->typeExpression() == nullptr);
   assert(y->initExpression() == nullptr);
   assert(y->kind() == Variable::VAR);
+
+  // check the no-comments iterator
+  int i = 0;
+  for (auto decl : multi->decls()) {
+    if (0 == i) assert(decl == x);
+    if (1 == i) assert(decl == y);
+    if (2 <= i) assert(false);
+    i++;
+  }
+  assert(i == 2);
 }
 static void test1a(Parser* parser) {
   auto parseResult = parser->parseString("test1a.chpl", "const x, y;");
@@ -92,6 +102,16 @@ static void test2(Parser* parser) {
   assert(0 == y->name().compare("y"));
   assert(y->typeExpression() == nullptr);
   assert(y->initExpression()->isIdentifier());
+
+  // check the no-comments iterator
+  int i = 0;
+  for (auto decl : multi->decls()) {
+    if (0 == i) assert(decl == x);
+    if (1 == i) assert(decl == y);
+    if (2 <= i) assert(false);
+    i++;
+  }
+  assert(i == 2);
 }
 
 static void test3(Parser* parser) {
@@ -111,7 +131,21 @@ static void test3(Parser* parser) {
   assert(0 == y->name().compare("y"));
   assert(y->typeExpression()->isIdentifier());
   assert(y->initExpression() == nullptr);
+
+  // check the no-comments iterator
+  int i = 0;
+  for (auto decl : multi->decls()) {
+    if (0 == i) assert(decl == x);
+    if (1 == i) assert(decl == y);
+    if (2 <= i) assert(false);
+    i++;
+  }
+  assert(i == 2);
 }
+
+static void checkTest4Decls(const MultiDecl* multi,
+                            const VariableDecl* a, const VariableDecl* b,
+                            const VariableDecl* c, const VariableDecl* d);
 
 static void test4(Parser* parser) {
   auto parseResult = parser->parseString("test4.chpl",
@@ -130,6 +164,18 @@ static void test4(Parser* parser) {
   auto b = multi->declOrComment(1)->toVariableDecl();
   auto c = multi->declOrComment(2)->toVariableDecl();
   auto d = multi->declOrComment(3)->toVariableDecl();
+  checkTest4Decls(multi, a, b, c, d);
+}
+
+static void checkTest4Decls(const MultiDecl* multi,
+                            const VariableDecl* a, const VariableDecl* b,
+                            const VariableDecl* c, const VariableDecl* d)
+{
+  assert(multi);
+  assert(a);
+  assert(b);
+  assert(c);
+  assert(d);
   assert(0 == a->name().compare("a"));
   assert(a->typeExpression() == nullptr);
   assert(a->initExpression() == nullptr);
@@ -142,6 +188,18 @@ static void test4(Parser* parser) {
   assert(0 == d->name().compare("d"));
   assert(d->typeExpression() == nullptr);
   assert(d->initExpression()->isIdentifier());
+
+  // check the no-comments iterator
+  int i = 0;
+  for (auto decl : multi->decls()) {
+    if (0 == i) assert(decl == a);
+    if (1 == i) assert(decl == b);
+    if (2 == i) assert(decl == c);
+    if (3 == i) assert(decl == d);
+    if (4 <= i) assert(false);
+    i++;
+  }
+  assert(i == 4);
 }
 
 static void test4a(Parser* parser) {
@@ -163,10 +221,7 @@ static void test4a(Parser* parser) {
   auto b = multi->declOrComment(1)->toVariableDecl();
   auto c = multi->declOrComment(2)->toVariableDecl();
   auto d = multi->declOrComment(3)->toVariableDecl();
-  assert(0 == a->name().compare("a"));
-  assert(0 == b->name().compare("b"));
-  assert(0 == c->name().compare("c"));
-  assert(0 == d->name().compare("d"));
+  checkTest4Decls(multi, a, b, c, d);
 }
 
 static void test4b(Parser* parser) {
@@ -187,10 +242,7 @@ static void test4b(Parser* parser) {
   auto b = multi->declOrComment(2)->toVariableDecl();
   auto c = multi->declOrComment(3)->toVariableDecl();
   auto d = multi->declOrComment(4)->toVariableDecl();
-  assert(0 == a->name().compare("a"));
-  assert(0 == b->name().compare("b"));
-  assert(0 == c->name().compare("c"));
-  assert(0 == d->name().compare("d"));
+  checkTest4Decls(multi, a, b, c, d);
 }
 
 static void test4c(Parser* parser) {
@@ -211,10 +263,7 @@ static void test4c(Parser* parser) {
   auto b = multi->declOrComment(2)->toVariableDecl();
   auto c = multi->declOrComment(3)->toVariableDecl();
   auto d = multi->declOrComment(4)->toVariableDecl();
-  assert(0 == a->name().compare("a"));
-  assert(0 == b->name().compare("b"));
-  assert(0 == c->name().compare("c"));
-  assert(0 == d->name().compare("d"));
+  checkTest4Decls(multi, a, b, c, d);
 }
 
 static void test4d(Parser* parser) {
@@ -234,10 +283,7 @@ static void test4d(Parser* parser) {
   auto b = multi->declOrComment(1)->toVariableDecl();
   auto c = multi->declOrComment(2)->toVariableDecl();
   auto d = multi->declOrComment(3)->toVariableDecl();
-  assert(0 == a->name().compare("a"));
-  assert(0 == b->name().compare("b"));
-  assert(0 == c->name().compare("c"));
-  assert(0 == d->name().compare("d"));
+  checkTest4Decls(multi, a, b, c, d);
 }
 
 static void test4e(Parser* parser) {
@@ -257,10 +303,7 @@ static void test4e(Parser* parser) {
   auto b = multi->declOrComment(1)->toVariableDecl();
   auto c = multi->declOrComment(2)->toVariableDecl();
   auto d = multi->declOrComment(3)->toVariableDecl();
-  assert(0 == a->name().compare("a"));
-  assert(0 == b->name().compare("b"));
-  assert(0 == c->name().compare("c"));
-  assert(0 == d->name().compare("d"));
+  checkTest4Decls(multi, a, b, c, d);
 }
 
 static void test4f(Parser* parser) {
@@ -281,10 +324,7 @@ static void test4f(Parser* parser) {
   assert(multi->declOrComment(2)->isComment());
   auto c = multi->declOrComment(3)->toVariableDecl();
   auto d = multi->declOrComment(4)->toVariableDecl();
-  assert(0 == a->name().compare("a"));
-  assert(0 == b->name().compare("b"));
-  assert(0 == c->name().compare("c"));
-  assert(0 == d->name().compare("d"));
+  checkTest4Decls(multi, a, b, c, d);
 }
 
 static void test4g(Parser* parser) {
@@ -305,10 +345,7 @@ static void test4g(Parser* parser) {
   auto c = multi->declOrComment(2)->toVariableDecl();
   assert(multi->declOrComment(3)->isComment());
   auto d = multi->declOrComment(4)->toVariableDecl();
-  assert(0 == a->name().compare("a"));
-  assert(0 == b->name().compare("b"));
-  assert(0 == c->name().compare("c"));
-  assert(0 == d->name().compare("d"));
+  checkTest4Decls(multi, a, b, c, d);
 }
 
 static void test4h(Parser* parser) {
@@ -328,10 +365,7 @@ static void test4h(Parser* parser) {
   auto b = multi->declOrComment(1)->toVariableDecl();
   auto c = multi->declOrComment(2)->toVariableDecl();
   auto d = multi->declOrComment(3)->toVariableDecl();
-  assert(0 == a->name().compare("a"));
-  assert(0 == b->name().compare("b"));
-  assert(0 == c->name().compare("c"));
-  assert(0 == d->name().compare("d"));
+  checkTest4Decls(multi, a, b, c, d);
 }
 
 static void test4i(Parser* parser) {
@@ -351,10 +385,7 @@ static void test4i(Parser* parser) {
   auto b = multi->declOrComment(1)->toVariableDecl();
   auto c = multi->declOrComment(2)->toVariableDecl();
   auto d = multi->declOrComment(3)->toVariableDecl();
-  assert(0 == a->name().compare("a"));
-  assert(0 == b->name().compare("b"));
-  assert(0 == c->name().compare("c"));
-  assert(0 == d->name().compare("d"));
+  checkTest4Decls(multi, a, b, c, d);
 }
 
 static void test4j(Parser* parser) {
@@ -374,10 +405,7 @@ static void test4j(Parser* parser) {
   auto b = multi->declOrComment(1)->toVariableDecl();
   auto c = multi->declOrComment(2)->toVariableDecl();
   auto d = multi->declOrComment(3)->toVariableDecl();
-  assert(0 == a->name().compare("a"));
-  assert(0 == b->name().compare("b"));
-  assert(0 == c->name().compare("c"));
-  assert(0 == d->name().compare("d"));
+  checkTest4Decls(multi, a, b, c, d);
 }
 
 int main() {

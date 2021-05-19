@@ -17,38 +17,33 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_UAST_EXPRESSION_H
-#define CHPL_UAST_EXPRESSION_H
+#include "chpl/uast/Enum.h"
 
-#include "chpl/uast/ASTNode.h"
+#include "chpl/uast/Builder.h"
 
 namespace chpl {
 namespace uast {
 
 
-/**
-  This is an abstract base class for expressions
- */
-class Expression : public ASTNode {
- protected:
-  Expression(asttags::ASTTag tag)
-    : ASTNode(tag) {
+bool Enum::isEnumElementDeclAndCommentList(const ASTList& list) {
+  for (const auto& elt: list) {
+    if (elt->isEnumElementDecl() || elt->isComment()) {
+      // OK
+    } else {
+      return false;
+    }
   }
-  Expression(asttags::ASTTag tag, ASTList children)
-    : ASTNode(tag, std::move(children)) {
-  }
-  bool expressionContentsMatchInner(const Expression* other) const {
-    return true;
-  }
-  void expressionMarkUniqueStringsInner(Context* context) const {
-  }
-
- public:
-  virtual ~Expression() = 0; // this is an abstract base class
-};
+  return true;
+}
+bool Enum::contentsMatchInner(const ASTNode* other) const {
+  const Enum* lhs = this;
+  const Enum* rhs = (const Enum*) other;
+  return lhs->typeSymContentsMatchInner(rhs);
+}
+void Enum::markUniqueStringsInner(Context* context) const {
+  typeSymMarkUniqueStringsInner(context);
+}
 
 
-} // end namespace uast
-} // end namespace chpl
-
-#endif
+} // namespace uast
+} // namespace chpl

@@ -17,34 +17,36 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_UAST_EXPRESSION_H
-#define CHPL_UAST_EXPRESSION_H
+#ifndef CHPL_UAST_TYPESYM_H
+#define CHPL_UAST_TYPESYM_H
 
-#include "chpl/uast/ASTNode.h"
+#include "chpl/uast/Sym.h"
 
 namespace chpl {
 namespace uast {
 
 
 /**
-  This is an abstract base class for expressions
+  This is an abstract base class for Symbols defining a type
+  (e.g. classes, records, enums).
  */
-class Expression : public ASTNode {
+class TypeSym : public Sym {
  protected:
-  Expression(asttags::ASTTag tag)
-    : ASTNode(tag) {
+  TypeSym(asttags::ASTTag tag, ASTList children,
+          UniqueString name, Visibility vis)
+    : Sym(tag, std::move(children), name, vis) {
+
+    assert(isExpressionASTList(children_));
   }
-  Expression(asttags::ASTTag tag, ASTList children)
-    : ASTNode(tag, std::move(children)) {
+  bool typeSymContentsMatchInner(const TypeSym* other) const {
+    return symContentsMatchInner((const Sym*) other);
   }
-  bool expressionContentsMatchInner(const Expression* other) const {
-    return true;
-  }
-  void expressionMarkUniqueStringsInner(Context* context) const {
+  void typeSymMarkUniqueStringsInner(Context* context) const {
+    symMarkUniqueStringsInner(context); 
   }
 
  public:
-  virtual ~Expression() = 0; // this is an abstract base class
+  virtual ~TypeSym() = 0; // this is an abstract base class
 };
 
 

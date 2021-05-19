@@ -28,6 +28,10 @@ target_sources(libchplcomp-obj
                ControlFlow.cpp
                Decl.cpp
                Dot.cpp
+               Enum.cpp
+               EnumDecl.cpp
+               EnumElement.cpp
+               EnumElementDecl.cpp
                ErroneousExpression.cpp
                Expression.cpp
                FnCall.cpp
@@ -48,6 +52,7 @@ target_sources(libchplcomp-obj
                Serial.cpp
                Sym.cpp
                SymDecl.cpp
+               TypeSym.cpp
                Variable.cpp
                VariableDecl.cpp
                Visitor.cpp

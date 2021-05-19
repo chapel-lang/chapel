@@ -21,6 +21,7 @@
 #define CHPL_UAST_MULTIDECL_H
 
 #include "chpl/uast/Decl.h"
+#include "chpl/uast/Comment.h"
 #include "chpl/queries/Location.h"
 
 #include <cassert>
@@ -56,6 +57,7 @@ class MultiDecl final : public Decl {
   MultiDecl(ASTList children)
     : Decl(asttags::MultiDecl, std::move(children)) {
 
+    // TODO: could be TupleDecl
     assert(isVariableDeclAndCommentList(children_));
   }
   static bool isVariableDeclAndCommentList(const ASTList& list);
@@ -85,9 +87,19 @@ class MultiDecl final : public Decl {
    */
   const Expression* declOrComment(int i) const {
     const ASTNode* ast = this->child(i);
+    // TODO: or could be TupleDecl
     assert(ast->isVariableDecl() || ast->isComment());
     return (const Expression*)ast;
   }
+
+  /**
+   Return a way to iterate over the contained Decls (ignoring Comments)
+   */
+  ASTListNoCommentsIteratorPair<Decl> decls() const {
+    return ASTListNoCommentsIteratorPair<Decl>(children_.begin(),
+                                               children_.end());
+  }
+
 };
 
 
