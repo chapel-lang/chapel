@@ -204,7 +204,8 @@ system: $(LLVM_CLANG_CONFIG_FILE)
 system-minimal:
 
 none:
-ifndef CHPL_LLVM
+
+unset:
 	@echo "Error: Please set the environment variable CHPL_LLVM to a supported value."
 	@echo "Supported values are:"
 	@echo "  1) 'none' to build without LLVM support"
@@ -212,7 +213,6 @@ ifndef CHPL_LLVM
 	@echo "  3) 'system' to use a pre-installed system-wide LLVM"
 	@echo "See: https://chapel-lang.org/docs/latest/usingchapel/chplenv.html#chpl-llvm"
 	@exit 1
-endif
 
 FORCE:
 
