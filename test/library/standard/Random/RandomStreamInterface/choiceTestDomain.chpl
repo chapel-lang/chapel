@@ -8,6 +8,46 @@ proc main() {
 }
 
 proc runTests(stream) {
+  const vec = 1..7 by 2;
+  const vec1 = 2..8 by 3;
+  const vec2 = 1..3;
+  const vec3 = 1..30;
+  var D1 = {vec,vec1,vec2};
+  var D3 = {vec3};
+  var testDom = {vec2,vec2};
+  var Prob:[D1] real;
+  var sum = 0: real;
+
+  for (i,j,k) in D1 {
+    Prob(i,j,k) = (i + j + k + 1): real;
+    sum += Prob(i,j,k);
+  }
+
+  for (i,j,k) in D1 do
+    Prob(i,j,k)/=sum;
+
+  //Multi Dimensional Domain
+  test(stream, D1, size=testDom, false, prob=Prob);
+  test(stream, D1, size=testDom, true, prob=Prob);
+
+  test(stream, D1, size=2, false, prob=Prob);
+  test(stream, D1, size=5, true, prob=Prob);
+
+  test(stream, D1, size=testDom, false);
+  test(stream, D1, size=testDom);
+
+  test(stream, D1, size=3);
+  test(stream, D1, size=2, false);
+  test(stream, D1, size=8, false);
+
+  //Single Dimensional Domain
+  test(stream, D3, size=testDom, false);
+  test(stream, D3, size=testDom);
+
+  test(stream, D3, size=3);
+  test(stream, D3, size=2, false);
+  test(stream, D3, size=8, false);
+
   test(stream, {1..1}, trials=10);
   test(stream, {1..3});
 
@@ -31,7 +71,7 @@ proc runTests(stream) {
   test(stream, A, prob=p, size={1..4});
   test(stream, A, prob=p, size={1..4, 1..3});
   test(stream, A, prob=p, size={1..4, 1..3, 1..2});
-  
+
   // Numeric types
   var preal32: [0..1] real(32) = 1;
   test(stream, {1..2}, prob=preal32, size=1000, trials=1);
