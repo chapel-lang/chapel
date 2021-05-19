@@ -1,0 +1,24 @@
+handleModule.chpl:16: warning: This module is deprecated, use Foob instead
+3
+In Foob.bar()
+handleModule.chpl:19: warning: This module is deprecated, use Foob instead
+3
+handleModule.chpl:20: warning: This module is deprecated, use Foob instead
+In Foob.bar()
+handleModule.chpl:24: warning: This module is deprecated, use Foob instead
+3
+handleModule.chpl:26: warning: This module is deprecated, use Foob instead
+3
+handleModule.chpl:30: warning: This module is deprecated, use Foob instead
+handleModule.chpl:31: warning: This module is deprecated, use Foob instead
+In Foob.bar()
+In Foob.bar()
+handleModule.chpl:36: warning: This module is deprecated, use Foob instead
+handleModule.chpl:37: warning: This module is deprecated, use Foob instead
+3
+handleModule.chpl:38: warning: This module is deprecated, use Foob instead
+In Foob.bar()
+handleModule.chpl:42: warning: This module is deprecated, use Foob instead
+3
+handleModule.chpl:47: warning: This module is deprecated, use Foob instead
+In Foob.bar()

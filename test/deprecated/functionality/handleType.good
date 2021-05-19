@@ -1,0 +1,3 @@
+handleType.chpl:5: warning: intA is deprecated
+int(8)
+int(8)

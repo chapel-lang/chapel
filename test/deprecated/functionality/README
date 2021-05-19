@@ -1,0 +1,3 @@
+This directory is for tests of how to deprecate a symbol.  Its contents are
+intended to be longer lived than that of other tests in the test/deprecated/
+directory.
