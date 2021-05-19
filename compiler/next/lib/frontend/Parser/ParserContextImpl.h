@@ -84,7 +84,7 @@ void ParserContext::noteDeclStartLoc(YYLTYPE loc) {
     this->declStartLocation = loc;
   }
 }
-Sym::Visibility ParserContext::noteVisibility(Sym::Visibility visibility) {
+Decl::Visibility ParserContext::noteVisibility(Decl::Visibility visibility) {
   this->visibility = visibility;
   return this->visibility;
 }
@@ -100,7 +100,7 @@ YYLTYPE ParserContext::declStartLoc(YYLTYPE curLoc) {
 }
 void ParserContext::resetDeclState() {
   this->varDeclKind = Variable::VAR;
-  this->visibility = Sym::DEFAULT_VISIBILITY;
+  this->visibility = Decl::DEFAULT_VISIBILITY;
   YYLTYPE emptyLoc = {0};
   this->declStartLocation = emptyLoc;
 }
@@ -351,20 +351,20 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
                                                  FunctionParts& fp) {
   CommentsAndStmt cs = {fp.comments, nullptr};
   if (fp.errorExpr == nullptr) {
-    auto f = FunctionDecl::build(builder, this->convertLocation(location),
-                                 fp.name, this->visibility,
-                                 fp.linkage, toOwned(fp.linkageNameExpr),
-                                 fp.isInline,
-                                 fp.isOverride,
-                                 fp.kind,
-                                 toOwned(fp.receiver),
-                                 fp.returnIntent,
-                                 fp.throws,
-                                 this->consumeList(fp.formals),
-                                 toOwned(fp.returnType),
-                                 toOwned(fp.where),
-                                 this->consumeList(fp.lifetime),
-                                 this->consumeList(fp.body));
+    auto f = Function::build(builder, this->convertLocation(location),
+                             fp.name, this->visibility,
+                             fp.linkage, toOwned(fp.linkageNameExpr),
+                             fp.isInline,
+                             fp.isOverride,
+                             fp.kind,
+                             toOwned(fp.receiver),
+                             fp.returnIntent,
+                             fp.throws,
+                             this->consumeList(fp.formals),
+                             toOwned(fp.returnType),
+                             toOwned(fp.where),
+                             this->consumeList(fp.lifetime),
+                             this->consumeList(fp.body));
     cs.stmt = f.release();
   } else {
     cs.stmt = fp.errorExpr;
@@ -377,12 +377,12 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
 owned<Decl> ParserContext::buildIndexVariableDecl(YYLTYPE location,
                                                   owned<Expression> e) {
   if (const Identifier* ident = e->toIdentifier()) {
-    return VariableDecl::build(builder, convertLocation(location),
-                               ident->name(),
-                               Sym::DEFAULT_VISIBILITY,
-                               Variable::INDEX,
-                               /*typeExpression*/ nullptr,
-                               /*initExpression*/ nullptr);
+    return Variable::build(builder, convertLocation(location),
+                           ident->name(),
+                           Decl::DEFAULT_VISIBILITY,
+                           Variable::INDEX,
+                           /*typeExpression*/ nullptr,
+                           /*initExpression*/ nullptr);
   } else {
     noteError(location, this, "Cannot handle this kind of index var");
   }

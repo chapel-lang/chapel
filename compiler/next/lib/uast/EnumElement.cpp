@@ -28,12 +28,29 @@ namespace uast {
 bool EnumElement::contentsMatchInner(const ASTNode* other) const {
   const EnumElement* lhs = this;
   const EnumElement* rhs = (const EnumElement*) other;
-  return lhs->symContentsMatchInner(rhs);
+  return lhs->namedDeclContentsMatchInner(rhs);
 }
 void EnumElement::markUniqueStringsInner(Context* context) const {
-  symMarkUniqueStringsInner(context);
+  namedDeclMarkUniqueStringsInner(context);
 }
 
+owned<EnumElement> EnumElement::build(Builder* builder, Location loc,
+                                      UniqueString name,
+                                      owned<Expression> initExpression) {
+  ASTList lst;
+  if (initExpression.get() != nullptr) {
+    lst.push_back(std::move(initExpression));
+  }
+  EnumElement* ret = new EnumElement(std::move(lst), name);
+  builder->noteLocation(ret, loc);
+  return toOwned(ret);
+}
+owned<EnumElement>
+EnumElement::build(Builder* builder, Location loc, UniqueString name) {
+  owned<Expression> empty;
+  return EnumElement::build(builder, loc, name, std::move(empty));
+}
+ 
 
 } // namespace uast
 } // namespace chpl

@@ -22,7 +22,7 @@
 #include "chpl/queries/Context.h"
 #include "chpl/queries/ErrorMessage.h"
 #include "chpl/uast/Expression.h"
-#include "chpl/uast/ModuleDecl.h"
+#include "chpl/uast/Module.h"
 
 #include <cstring>
 #include <string>
@@ -94,7 +94,7 @@ UniqueString Builder::createImplicitModuleIfNeeded() {
   for (auto const& ownedExpression: topLevelExpressions_) {
     if (ownedExpression->isComment()) {
       // ignore comments for this analysis
-    } else if (ownedExpression->isModuleDecl()) {
+    } else if (ownedExpression->isModule()) {
       containsAnyModules = true;
     } else {
       containsOnlyModules = false;
@@ -107,11 +107,11 @@ UniqueString Builder::createImplicitModuleIfNeeded() {
     // create a new module containing all of the statements
     ASTList stmts;
     stmts.swap(topLevelExpressions_);
-    auto implicitModule = ModuleDecl::build(this, Location(filepath_),
-                                            inferredModuleName_,
-                                            Sym::DEFAULT_VISIBILITY,
-                                            Module::IMPLICIT,
-                                            std::move(stmts));
+    auto implicitModule = Module::build(this, Location(filepath_),
+                                        inferredModuleName_,
+                                        Decl::DEFAULT_VISIBILITY,
+                                        Module::IMPLICIT,
+                                        std::move(stmts));
     topLevelExpressions_.push_back(std::move(implicitModule));
     // return the name of the module
     return inferredModuleName_;
@@ -124,9 +124,9 @@ void Builder::assignIDs(UniqueString inferredModule) {
   int i = 0;
 
   for (auto const& ownedExpression: topLevelExpressions_) {
-    if (ModuleDecl* moduleDecl = ownedExpression->toModuleDecl()) {
+    if (Module* module = ownedExpression->toModule()) {
       UniqueString emptyString;
-      doAssignIDs(moduleDecl, emptyString, i, pathVec, duplicates);
+      doAssignIDs(module, emptyString, i, pathVec, duplicates);
     } else if (ownedExpression->isComment()) {
       // ignore comments
     } else {
@@ -146,30 +146,13 @@ void Builder::doAssignIDs(ASTNode* ast, UniqueString symbolPath, int& i,
 
   int firstChildID = i;
 
-  SymDecl* decl = ast->toSymDecl();
-  Sym* declaredSym = nullptr;
-  if (decl != nullptr) {
-    declaredSym = (Sym*) decl->sym();
-  }
+  bool newScope = ast->isNamedDecl() &&
+                  (ast->isFunction() || ast->isModule() || ast->isTypeDecl());
 
-  // visit the children now to get integer part of ids in postorder
-  // (but don't visit the declared Sym yet)
-  for (auto & child : ast->children_) {
-    ASTNode* ptr = child.get();
-    if (ptr != declaredSym) {
-      this->doAssignIDs(ptr, symbolPath, i, pathVec, duplicates);
-    }
-  }
-
-  int afterChildID = i;
-  int myID = afterChildID;
-  i++; // count the ID for the node we are currently visiting
-  int numContainedIDs = afterChildID - firstChildID;
-  ast->setID(ID(symbolPath, myID, numContainedIDs));
-
-  // for SymDecls, adjust the symbolPath and then visit the defined symbol
-  if (declaredSym != nullptr) {
-    UniqueString name = declaredSym->name();
+  if (newScope) {
+    // for scoping constructs, adjust the symbolPath and
+    // then visit the defined symbol
+    UniqueString name = ast->toNamedDecl()->name();
     int repeat = 0;
 
     auto search = duplicates.find(name);
@@ -185,6 +168,7 @@ void Builder::doAssignIDs(ASTNode* ast, UniqueString symbolPath, int& i,
     // push the path component
     pathVec.push_back(std::make_pair(name, repeat));
 
+    // compute the string representing the path
     std::string pathStr;
     bool first = true;
     for (const auto& p : pathVec) {
@@ -199,14 +183,38 @@ void Builder::doAssignIDs(ASTNode* ast, UniqueString symbolPath, int& i,
         pathStr += std::to_string(repeat);
       }
     }
-    auto symbolPath = UniqueString::build(this->context(), pathStr);
+    auto newSymbolPath = UniqueString::build(this->context(), pathStr);
+
     // get a fresh postorder traversal counter and duplicates map
     int freshId = 0;
     declaredHereT freshMap;
-    doAssignIDs(declaredSym, symbolPath, freshId, pathVec, freshMap);
+    for (auto & child : ast->children_) {
+      ASTNode* ptr = child.get();
+      this->doAssignIDs(ptr, newSymbolPath, freshId, pathVec, freshMap);
+    }
+
+    int numContainedIds = freshId;
+    ast->setID(ID(symbolPath, numContainedIds, numContainedIds));
+
     // pop the path component we just added
     pathVec.pop_back();
+
+  } else {
+    // not a new scope
+
+    // visit the children now to get integer part of ids in postorder
+    for (auto & child : ast->children_) {
+      ASTNode* ptr = child.get();
+      this->doAssignIDs(ptr, symbolPath, i, pathVec, duplicates);
+    }
+
+    int afterChildID = i;
+    int myID = afterChildID;
+    i++; // count the ID for the node we are currently visiting
+    int numContainedIDs = afterChildID - firstChildID;
+    ast->setID(ID(symbolPath, myID, numContainedIDs));
   }
+
 }
 
 Builder::Result::Result()
@@ -251,8 +259,8 @@ void Builder::Result::updateFilePaths(Context* context, const Result& keep) {
   UniqueString path = keep.filePath;
   // Update the filePathForModuleName query
   for (auto & topLevelExpression : keep.topLevelExpressions) {
-    if (ModuleDecl* moduleDecl = topLevelExpression->toModuleDecl()) {
-      UniqueString moduleName = moduleDecl->name();
+    if (Module* module = topLevelExpression->toModule()) {
+      UniqueString moduleName = module->name();
       context->setFilePathForModuleName(moduleName, path);
     } else if (topLevelExpression->isComment()) {
       // ignore comments

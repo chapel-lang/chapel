@@ -54,19 +54,20 @@ namespace uast {
  */
 class MultiDecl final : public Decl {
  private:
-  MultiDecl(ASTList children)
-    : Decl(asttags::MultiDecl, std::move(children)) {
+  MultiDecl(ASTList children, Decl::Visibility vis)
+    : Decl(asttags::MultiDecl, std::move(children), vis) {
 
     // TODO: could be TupleDecl
-    assert(isVariableDeclAndCommentList(children_));
+    assert(isVariableAndCommentList(children_));
   }
-  static bool isVariableDeclAndCommentList(const ASTList& list);
+  static bool isVariableAndCommentList(const ASTList& list);
   bool contentsMatchInner(const ASTNode* other) const override;
   void markUniqueStringsInner(Context* context) const override;
 
  public:
   ~MultiDecl() override = default;
   static owned<MultiDecl> build(Builder* builder, Location loc,
+                                Decl::Visibility vis, 
                                 ASTList varDecls);
 
   /**
@@ -88,7 +89,7 @@ class MultiDecl final : public Decl {
   const Expression* declOrComment(int i) const {
     const ASTNode* ast = this->child(i);
     // TODO: or could be TupleDecl
-    assert(ast->isVariableDecl() || ast->isComment());
+    assert(ast->isVariable() || ast->isComment());
     return (const Expression*)ast;
   }
 

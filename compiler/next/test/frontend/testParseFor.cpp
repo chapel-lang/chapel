@@ -21,7 +21,7 @@
 #include "chpl/uast/Expression.h"
 #include "chpl/uast/For.h"
 #include "chpl/uast/Identifier.h"
-#include "chpl/uast/ModuleDecl.h"
+#include "chpl/uast/Module.h"
 #include "chpl/frontend/Parser.h"
 #include "chpl/queries/Context.h"
 
@@ -45,8 +45,8 @@ static void test0(Parser* parser) {
       "  var a;\n");
   assert(parseResult.errors.size() == 0);
   assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
-  auto mod = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(parseResult.topLevelExpressions[0]->isModule());
+  auto mod = parseResult.topLevelExpressions[0]->toModule();
   assert(mod->numStmts() == 2);
   assert(mod->stmt(0)->isComment());
   assert(mod->stmt(1)->isFor());
@@ -60,7 +60,7 @@ static void test0(Parser* parser) {
   assert(!forLoop->isExpressionLevel());
   assert(!forLoop->isParam());
   assert(forLoop->stmt(0)->isComment());
-  assert(forLoop->stmt(1)->isVariableDecl());
+  assert(forLoop->stmt(1)->isVariable());
 }
 
 static void test1(Parser* parser) {
@@ -71,15 +71,15 @@ static void test1(Parser* parser) {
       "  var a;\n");
   assert(parseResult.errors.size() == 0);
   assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
-  auto mod = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(parseResult.topLevelExpressions[0]->isModule());
+  auto mod = parseResult.topLevelExpressions[0]->toModule();
   assert(mod->numStmts() == 2);
   assert(mod->stmt(0)->isComment());
   assert(mod->stmt(1)->isFor());
   const For* forLoop = mod->stmt(1)->toFor();
   assert(forLoop != nullptr);
   assert(forLoop->indexVariableDecl() != nullptr);
-  assert(forLoop->indexVariableDecl()->isVariableDecl());
+  assert(forLoop->indexVariableDecl()->isVariable());
   assert(forLoop->iterand() != nullptr);
   assert(forLoop->iterand()->isIdentifier());
   assert(forLoop->numStmts() == 2);
@@ -87,7 +87,7 @@ static void test1(Parser* parser) {
   assert(!forLoop->isExpressionLevel());
   assert(!forLoop->isParam());
   assert(forLoop->stmt(0)->isComment());
-  assert(forLoop->stmt(1)->isVariableDecl());
+  assert(forLoop->stmt(1)->isVariable());
 }
 
 static void test2(Parser* parser) {
@@ -98,15 +98,15 @@ static void test2(Parser* parser) {
       "  var a;\n");
   assert(parseResult.errors.size() == 0);
   assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
-  auto mod = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(parseResult.topLevelExpressions[0]->isModule());
+  auto mod = parseResult.topLevelExpressions[0]->toModule();
   assert(mod->numStmts() == 2);
   assert(mod->stmt(0)->isComment());
   assert(mod->stmt(1)->isFor());
   const For* forLoop = mod->stmt(1)->toFor();
   assert(forLoop != nullptr);
   assert(forLoop->indexVariableDecl() != nullptr);
-  assert(forLoop->indexVariableDecl()->isVariableDecl());
+  assert(forLoop->indexVariableDecl()->isVariable());
   assert(forLoop->iterand() != nullptr);
   assert(forLoop->iterand()->isIdentifier());
   assert(forLoop->numStmts() == 2);
@@ -114,7 +114,7 @@ static void test2(Parser* parser) {
   assert(!forLoop->isExpressionLevel());
   assert(forLoop->isParam());
   assert(forLoop->stmt(0)->isComment());
-  assert(forLoop->stmt(1)->isVariableDecl());
+  assert(forLoop->stmt(1)->isVariable());
 }
 
 static void test3(Parser* parser) {
@@ -127,15 +127,15 @@ static void test3(Parser* parser) {
       "}\n");
   assert(parseResult.errors.size() == 0);
   assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
-  auto mod = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(parseResult.topLevelExpressions[0]->isModule());
+  auto mod = parseResult.topLevelExpressions[0]->toModule();
   assert(mod->numStmts() == 2);
   assert(mod->stmt(0)->isComment());
   assert(mod->stmt(1)->isFor());
   const For* forLoop = mod->stmt(1)->toFor();
   assert(forLoop != nullptr);
   assert(forLoop->indexVariableDecl() != nullptr);
-  assert(forLoop->indexVariableDecl()->isVariableDecl());
+  assert(forLoop->indexVariableDecl()->isVariable());
   assert(forLoop->iterand() != nullptr);
   assert(forLoop->iterand()->isIdentifier());
   assert(forLoop->numStmts() == 3);
@@ -143,7 +143,7 @@ static void test3(Parser* parser) {
   assert(!forLoop->isExpressionLevel());
   assert(!forLoop->isParam());
   assert(forLoop->stmt(0)->isComment());
-  assert(forLoop->stmt(1)->isVariableDecl());
+  assert(forLoop->stmt(1)->isVariable());
   assert(forLoop->stmt(2)->isComment());
 }
 
@@ -159,15 +159,15 @@ static void test4(Parser* parser) {
       "}\n");
   assert(parseResult.errors.size() == 0);
   assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModuleDecl());
-  auto mod = parseResult.topLevelExpressions[0]->toModuleDecl()->module();
+  assert(parseResult.topLevelExpressions[0]->isModule());
+  auto mod = parseResult.topLevelExpressions[0]->toModule();
   assert(mod->numStmts() == 2);
   assert(mod->stmt(0)->isComment());
   assert(mod->stmt(1)->isFor());
   const For* forLoop = mod->stmt(1)->toFor();
   assert(forLoop != nullptr);
   assert(forLoop->indexVariableDecl() != nullptr);
-  assert(forLoop->indexVariableDecl()->isVariableDecl());
+  assert(forLoop->indexVariableDecl()->isVariable());
   assert(forLoop->iterand() != nullptr);
   assert(forLoop->iterand()->isIdentifier());
   assert(forLoop->numStmts() == 2);
@@ -179,7 +179,7 @@ static void test4(Parser* parser) {
   const Block* block = forLoop->stmt(1)->toBlock();
   assert(block != nullptr);
   assert(block->stmt(0)->isComment());
-  assert(block->stmt(1)->isVariableDecl());
+  assert(block->stmt(1)->isVariable());
   assert(block->stmt(2)->isComment());
 }
 

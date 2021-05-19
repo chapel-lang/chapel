@@ -17,10 +17,10 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_UAST_TYPESYM_H
-#define CHPL_UAST_TYPESYM_H
+#ifndef CHPL_UAST_TYPEDECL_H
+#define CHPL_UAST_TYPEDECL_H
 
-#include "chpl/uast/Sym.h"
+#include "chpl/uast/NamedDecl.h"
 
 namespace chpl {
 namespace uast {
@@ -30,23 +30,23 @@ namespace uast {
   This is an abstract base class for Symbols defining a type
   (e.g. classes, records, enums).
  */
-class TypeSym : public Sym {
+class TypeDecl : public NamedDecl {
  protected:
-  TypeSym(asttags::ASTTag tag, ASTList children,
-          UniqueString name, Visibility vis)
-    : Sym(tag, std::move(children), name, vis) {
+  TypeDecl(asttags::ASTTag tag, ASTList children,
+           Decl::Visibility vis, UniqueString name)
+    : NamedDecl(tag, std::move(children), vis, name) {
 
     assert(isExpressionASTList(children_));
   }
-  bool typeSymContentsMatchInner(const TypeSym* other) const {
-    return symContentsMatchInner((const Sym*) other);
+  bool typeDeclContentsMatchInner(const TypeDecl* other) const {
+    return namedDeclContentsMatchInner(other);
   }
-  void typeSymMarkUniqueStringsInner(Context* context) const {
-    symMarkUniqueStringsInner(context); 
+  void typeDeclMarkUniqueStringsInner(Context* context) const {
+    namedDeclMarkUniqueStringsInner(context); 
   }
 
  public:
-  virtual ~TypeSym() = 0; // this is an abstract base class
+  virtual ~TypeDecl() = 0; // this is an abstract base class
 };
 
 

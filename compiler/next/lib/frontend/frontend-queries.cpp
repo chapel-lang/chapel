@@ -170,16 +170,16 @@ const Location& locate(Context* context, const ASTNode* ast) {
   return QUERY_END(result);
 }
 
-const ModuleDeclVec& parse(Context* context, UniqueString path) {
+const ModuleVec& parse(Context* context, UniqueString path) {
   QUERY_BEGIN(parse, context, path);
 
   // Get the result of parsing
   const uast::Builder::Result& p = parseFile(context, path);
-  // Compute a vector of ModuleDecls
-  ModuleDeclVec result;
+  // Compute a vector of Modules
+  ModuleVec result;
   for (auto & topLevelExpression : p.topLevelExpressions) {
-    if (const uast::ModuleDecl* modDecl = topLevelExpression->toModuleDecl()) {
-      result.push_back(modDecl);
+    if (const uast::Module* mod = topLevelExpression->toModule()) {
+      result.push_back(mod);
     }
   }
 
@@ -191,9 +191,8 @@ static std::vector<UniqueString> getTopLevelNames(const uast::Module* module) {
   int nStmts = module->numStmts();
   for (int i = 0; i < nStmts; i++) {
     const uast::Expression* expr = module->stmt(i);
-    if (const uast::SymDecl* decl = expr->toSymDecl()) {
-      const uast::Sym* sym = decl->sym();
-      result.push_back(sym->name());
+    if (const uast::NamedDecl* decl = expr->toNamedDecl()) {
+      result.push_back(decl->name());
     }
   }
   return result;
@@ -206,9 +205,8 @@ const DefinedTopLevelNamesVec& moduleLevelDeclNames(Context* context,
   DefinedTopLevelNamesVec result;
 
   // Get the result of parsing modules
-  const ModuleDeclVec& p = parse(context, path);
-  for (const uast::ModuleDecl* modDecl : p) {
-    const uast::Module* module = modDecl->module();
+  const ModuleVec& p = parse(context, path);
+  for (const uast::Module* module : p) {
     result.push_back(DefinedTopLevelNames(module, getTopLevelNames(module)));
   }
 
@@ -220,7 +218,7 @@ const DefinedTopLevelNamesVec& moduleLevelDeclNames(Context* context,
   return nullptr;
 }*/
 
-using DeclsByName = std::unordered_map<UniqueString, const SymDecl*>;
+using DeclsByName = std::unordered_map<UniqueString, const NamedDecl*>;
 
 struct ResolvingScope {
   DeclsByName declsDefinedHere;
@@ -230,7 +228,7 @@ struct ResolvingScope {
     : declsDefinedHere(), parentScope(parentScope) {
   }
 
-  const SymDecl* findDeclForName(UniqueString name) const {
+  const NamedDecl* findDeclForName(UniqueString name) const {
     const ResolvingScope* cur = this;
     while (cur != nullptr) {
       auto search = cur->declsDefinedHere.find(name);
@@ -255,7 +253,7 @@ static void resolveAST(Context* context,
   // since an Identifier can't create a new scope.
   if (const Identifier* ident = ast->toIdentifier()) {
     UniqueString name = ident->name();
-    const SymDecl* decl = parentScope->findDeclForName(name);
+    const NamedDecl* decl = parentScope->findDeclForName(name);
     if (decl != nullptr) {
       // found an existing entry in the map, so we can add a resolution result.
       int postorderId = ident->id().postOrderId();
@@ -283,11 +281,11 @@ static void resolveAST(Context* context,
   ResolvingScope newScope(parentScope);
 
   for (const ASTNode* child : ast->children()) {
-    if (const SymDecl* decl = child->toSymDecl()) {
+    if (const NamedDecl* decl = child->toNamedDecl()) {
       UniqueString name = decl->name();
       auto search = newScope.declsDefinedHere.find(name);
       if (search != newScope.declsDefinedHere.end()) {
-        const SymDecl* prevDecl = search->second;
+        const NamedDecl* prevDecl = search->second;
         // found an existing entry in the map, so give an error.
         Location prevLoc = locate(context, prevDecl);
         Location curLoc = locate(context, decl);
@@ -338,9 +336,8 @@ const ResolvedModuleVec& resolveFile(Context* context, UniqueString path) {
   ResolvedModuleVec result;
 
   // parse the file and handle each module
-  const ModuleDeclVec& p = parse(context, path);
-  for (const uast::ModuleDecl* modDecl : p) {
-    const uast::Module* module = modDecl->module();
+  const ModuleVec& p = parse(context, path);
+  for (const uast::Module* module : p) {
     const ResolutionResultByPostorderID& resolution =
       resolveModule(context, module);
     result.push_back(ResolvedModule(module, &resolution));

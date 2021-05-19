@@ -21,8 +21,8 @@
 
 #include "chpl/uast/Comment.h"
 #include "chpl/uast/Identifier.h"
-#include "chpl/uast/ModuleDecl.h"
-#include "chpl/uast/VariableDecl.h"
+#include "chpl/uast/Module.h"
+#include "chpl/uast/Variable.h"
 
 // always check assertions in this test
 #ifdef NDEBUG
@@ -51,7 +51,7 @@ static void test1() {
     assert(vec.size() == 1);
     const Module* module = vec[0].module;
     const auto* byId = vec[0].resolution; 
-    const VariableDecl* varDecl = module->child(0)->toVariableDecl();
+    const Variable* varDecl = module->child(0)->toVariable();
     const Identifier* identifier = module->child(1)->toIdentifier();
     assert(varDecl);
     assert(identifier);
@@ -97,7 +97,7 @@ static void test2() {
     assert(vec.size() == 1);
     const Module* module = vec[0].module;
     ASTNode::dump(module, 2);
-    const VariableDecl* varDecl = module->child(0)->toVariableDecl();
+    const Variable* varDecl = module->child(0)->toVariable();
     assert(varDecl);
     assert(0 == varDecl->name().compare("x"));
     context->collectGarbage();
@@ -116,7 +116,7 @@ static void test2() {
     const Module* module = vec[0].module;
     ASTNode::dump(module, 2);
     const auto* byId = vec[0].resolution; 
-    const VariableDecl* varDecl = module->child(0)->toVariableDecl();
+    const Variable* varDecl = module->child(0)->toVariable();
     const Identifier* identifier = module->child(1)->toIdentifier();
     assert(varDecl);
     assert(identifier);

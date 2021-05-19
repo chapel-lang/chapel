@@ -25,7 +25,7 @@
 #include "chpl/uast/Builder.h"
 #include "chpl/uast/Expression.h"
 #include "chpl/uast/Identifier.h"
-#include "chpl/uast/ModuleDecl.h"
+#include "chpl/uast/Module.h"
 
 // always check assertions in this test
 #ifdef NDEBUG
@@ -168,9 +168,9 @@ void test2() {
   Builder::Result r = b->result();
   assert(r.errors.size() == 0);
   assert(r.topLevelExpressions.size() == 1);
-  assert(r.topLevelExpressions[0]->isModuleDecl());
-  auto module = r.topLevelExpressions[0]->toModuleDecl()->module();
-  assert(r.locations.size() == 6); // +1 module decl +1 module sym
+  assert(r.topLevelExpressions[0]->isModule());
+  auto module = r.topLevelExpressions[0]->toModule();
+  assert(r.locations.size() == 5); // +1 module
   assert(module->stmt(0)->isBlock());
   const Block* block = module->stmt(0)->toBlock();
   assert(block);
@@ -265,9 +265,9 @@ void test3() {
   Builder::Result r = b->result();
   assert(r.errors.size() == 0);
   assert(r.topLevelExpressions.size() == 1);
-  assert(r.topLevelExpressions[0]->isModuleDecl());
-  auto module = r.topLevelExpressions[0]->toModuleDecl()->module();
-  assert(r.locations.size() == 8); // +1 module decl +1 module sym
+  assert(r.topLevelExpressions[0]->isModule());
+  auto module = r.topLevelExpressions[0]->toModule();
+  assert(r.locations.size() == 7); // +1 module
   assert(module->stmt(0)->isBlock());
   const Block* outer = module->stmt(0)->toBlock();
   assert(outer);

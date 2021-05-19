@@ -17,34 +17,15 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/EnumDecl.h"
-
-#include "chpl/uast/Builder.h"
+#include "chpl/uast/NamedDecl.h"
 
 namespace chpl {
 namespace uast {
 
 
-bool EnumDecl::contentsMatchInner(const ASTNode* other) const {
-  const EnumDecl* lhs = this;
-  const EnumDecl* rhs = (const EnumDecl*) other;
-  return lhs->symDeclContentsMatchInner(rhs);
-}
-void EnumDecl::markUniqueStringsInner(Context* context) const {
-  return symDeclMarkUniqueStringsInner(context);
+NamedDecl::~NamedDecl() {
 }
 
-owned<EnumDecl>
-EnumDecl::build(Builder* builder, Location loc,
-                UniqueString name, Sym::Visibility vis,
-                ASTList stmts) {
-  Enum* sym = new Enum(std::move(stmts), name, vis);
-  builder->noteLocation(sym, loc);
-  EnumDecl* ret = new EnumDecl(toOwned(sym));
-  builder->noteLocation(ret, loc);
-  return toOwned(ret);
-}
- 
 
 } // namespace uast
 } // namespace chpl

@@ -17,10 +17,10 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_UAST_SYM_H
-#define CHPL_UAST_SYM_H
+#ifndef CHPL_UAST_NAMEDDECL_H
+#define CHPL_UAST_NAMEDDECL_H
 
-#include "chpl/uast/ASTNode.h"
+#include "chpl/uast/Decl.h"
 #include "chpl/queries/UniqueString.h"
 
 namespace chpl {
@@ -28,46 +28,35 @@ namespace uast {
 
 
 /**
-  This is an abstract base class for Symbols
+  This is an abstract base class for declarations that carry a name.
  */
-class Sym : public ASTNode {
-
- public:
-  enum Visibility {
-    DEFAULT_VISIBILITY,
-    PUBLIC,
-    PRIVATE,
-  };
+class NamedDecl : public Decl {
 
  private:
   UniqueString name_;
-  Visibility visibility_;
 
  protected:
- Sym(ASTTag tag,
-     UniqueString name, Sym::Visibility visibility)
-   : ASTNode(tag), name_(name), visibility_(visibility) {
+  NamedDecl(ASTTag tag, Decl::Visibility visibility, UniqueString name)
+    : Decl(tag, visibility), name_(name) {
   }
 
- Sym(ASTTag tag, ASTList children,
-     UniqueString name, Sym::Visibility visibility)
-   : ASTNode(tag, std::move(children)),
-    name_(name), visibility_(visibility) {
+  NamedDecl(ASTTag tag, ASTList children, Decl::Visibility visibility,
+            UniqueString name)
+    : Decl(tag, std::move(children), visibility), name_(name) {
   }
 
-  bool symContentsMatchInner(const Sym* other) const {
+  bool namedDeclContentsMatchInner(const NamedDecl* other) const {
     return this->name_ == other->name_ &&
-           this->visibility_ == other->visibility_;
+           declContentsMatchInner(other);
   }
-  void symMarkUniqueStringsInner(Context* context) const {
+  void namedDeclMarkUniqueStringsInner(Context* context) const {
     name_.mark(context);
   }
 
  public:
-  virtual ~Sym() = 0; // this is an abstract base class
+  virtual ~NamedDecl() = 0; // this is an abstract base class
 
   UniqueString name() const { return name_; }
-  Visibility visibility() const { return visibility_; }
 };
 
 
