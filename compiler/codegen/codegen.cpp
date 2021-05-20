@@ -2407,6 +2407,29 @@ static void codegenPartTwo() {
 
   INT_ASSERT(info);
 
+  // Populate functionCNameAstrToSymbol map
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->hasFlag(FLAG_NO_CODEGEN)) {
+      // ignore it
+    } else {
+      const char* cname = astr(fn->cname);
+      bool skip = false;
+      if (fLlvmCodegen) {
+#ifdef HAVE_LLVM
+        // Check for a decl from clang; in that case don't add it
+        // to the map. (This avoids problems with 'printf' having
+        // multiple versions with different numbers of arguments).
+        if (getFunctionDeclClang(cname) != nullptr) {
+          skip = true;
+        }
+#endif
+      }
+      if (skip == false) {
+        info->functionCNameAstrToSymbol.insert(std::make_pair(cname, fn));
+      }
+    }
+  }
+
   if( fLlvmCodegen ) {
 #ifdef HAVE_LLVM
 
@@ -2605,7 +2628,8 @@ void makeBinary(void) {
 
 GenInfo::GenInfo()
          :   cfile(NULL), cLocalDecls(), cStatements(),
-             lineno(-1), filename(NULL)
+             lineno(-1), filename(NULL),
+             functionCNameAstrToSymbol()
 #ifdef HAVE_LLVM
              ,
              lvt(NULL), module(NULL), irBuilder(NULL), mdBuilder(NULL),
