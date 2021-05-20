@@ -50,7 +50,7 @@ def parseArguments():
                       help="specify that the rest of the arguments are for a "
                            "compilation working with the LLVM backend. This "
                            "argument causes this script to set "
-                           "CHPL_TARGET_COMPILER=clang-included")
+                           "CHPL_TARGET_COMPILER=llvm")
     parser.add_option("--compile", "--compile-cc", const="compilecc",
                       dest="actions", action='append_const',
                       help="print a C compiler invocation that can use "

@@ -5,7 +5,7 @@ import sys
 
 from distutils.spawn import find_executable
 
-import chpl_platform, overrides
+import chpl_platform, chpl_llvm, overrides
 from utils import error, memoize
 
 
@@ -17,11 +17,12 @@ from utils import error, memoize
 #
 @memoize
 def validate(compiler_val):
-    import chpl_home_utils
-    chpl_home = chpl_home_utils.get_chpl_home()
-    comp_makefile = os.path.join(chpl_home, 'make', 'compiler', 'Makefile.{0}'.format(compiler_val))
-    if not os.path.isfile(comp_makefile):
-        sys.stderr.write('Warning: Unknown compiler: "{0}"\n'.format(compiler_val))
+    if compiler_val != 'llvm':
+        import chpl_home_utils
+        chpl_home = chpl_home_utils.get_chpl_home()
+        comp_makefile = os.path.join(chpl_home, 'make', 'compiler', 'Makefile.{0}'.format(compiler_val))
+        if not os.path.isfile(comp_makefile):
+            sys.stderr.write('Warning: Unknown compiler: "{0}"\n'.format(compiler_val))
 
 
 
@@ -31,25 +32,34 @@ def get(flag='host', llvm_mode='default'):
     if flag == 'host':
         compiler_val = overrides.get('CHPL_HOST_COMPILER', '')
 
-        if llvm_mode != 'default':
+        if llvm_mode == 'llvm':
             error("bad call to chpl_compiler.get('host', llvm_mode!=default)")
 
     elif flag == 'target':
         compiler_val = overrides.get('CHPL_TARGET_COMPILER', '')
 
-        if llvm_mode == 'llvm':
-            compiler_val = 'clang-included'
-        elif llvm_mode == 'default':
-            if ("CHPL_LLVM_CODEGEN" in os.environ and
-                os.environ["CHPL_LLVM_CODEGEN"] != "0"):
-                compiler_val = 'clang-included'
-        elif llvm_mode == 'orig':
+        if llvm_mode == 'orig':
             # If we're in the middle of a chpl --llvm call,
-            # CHPL_TARGET_COMPILER is already clang-included, but
+            # CHPL_TARGET_COMPILER is already llvm, but
             # the original target compiler is saved in an environment variable.
             # (otherwise, use compiler_val set above with CHPL_TARGET_COMPILER)
             if "CHPL_ORIG_TARGET_COMPILER" in os.environ:
                 compiler_val = os.environ["CHPL_ORIG_TARGET_COMPILER"]
+        else:
+            if ("CHPL_LLVM_CODEGEN" in os.environ and
+                os.environ["CHPL_LLVM_CODEGEN"] == "0"):
+                # the C backend is selected, so don't do anything else
+                pass
+            else:
+                has_llvm = chpl_llvm.get()
+
+                if (has_llvm == 'bundled' or has_llvm  == 'system' or
+                    llvm_mode == 'llvm'):
+
+                    if compiler_val:
+                        sys.stderr.write("Warning: CHPL_TARGET_COMPILER ignored when compiling with LLVM")
+
+                compiler_val = 'llvm'
 
     else:
         error("Invalid flag: '{0}'".format(flag), ValueError)
@@ -89,6 +99,18 @@ def get(flag='host', llvm_mode='default'):
 
     validate(compiler_val)
     return compiler_val
+
+@memoize
+def get_cc(flag='host', llvm_mode='default'):
+    compiler = get(flag=flag, llvm_mode=llvm_mode)
+    if compiler == 'llvm':
+        return chpl_llvm.get_clang_cc()
+
+@memoize
+def get_cpp(flag='host', llvm_mode='default'):
+    compiler = get(flag=flag, llvm_mode=llvm_mode)
+    if compiler == 'llvm':
+        return chpl_llvm.get_clang_cpp()
 
 
 def _main():

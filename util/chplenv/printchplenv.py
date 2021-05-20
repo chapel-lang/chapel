@@ -122,7 +122,7 @@ ENV_VALS = {}
 def compute_all_values():
     global ENV_VALS
 
-    # If we're doing an LLVM build, set CHPL_TARGET_COMPILER to clang-included
+    # If we're doing an LLVM build, set CHPL_TARGET_COMPILER to llvm-included
     # and set CHPL_ORIG_TARGET_COMPILER to whatever we would have used
     # otherwise.
     # This happens early because it modifies the environment and other
@@ -131,7 +131,7 @@ def compute_all_values():
                     os.environ["CHPL_LLVM_CODEGEN"] != "0")
     if llvm_codegen:
         new_target_compiler = chpl_compiler.get('target')
-        if new_target_compiler != 'clang-included':
+        if new_target_compiler != 'llvm':
             # This error indicates something about chplenv (probably
             # chpl_compiler.py) is not working correctly with LLVM mode.
             raise ValueError('LLVM mode but target compiler is set incorrectly')

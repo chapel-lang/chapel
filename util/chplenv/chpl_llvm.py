@@ -68,7 +68,7 @@ def get():
 
         if is_included_llvm_built():
             llvm_val = 'bundled'
-        elif (compatible_platform_for_llvm_default()):
+        elif compatible_platform_for_llvm_default():
             if has_compatible_installed_llvm():
                 llvm_val = 'system'
         else:
@@ -81,6 +81,33 @@ def get():
 
     return llvm_val
 
+def get_clang_bin_dir():
+    llvm_val = get()
+    if llvm_val == 'bundled':
+        chpl_third_party = get_chpl_third_party()
+        llvm_target_dir = get_uniq_cfg_path_for('bundled')
+        llvm_subdir = os.path.join(chpl_third_party, 'llvm', 'install',
+                                   llvm_target_dir)
+        clang = os.path.join(llvm_subdir, 'bin', 'clang')
+        return clang
+    else:
+        return None
+
+@memoize
+def get_clang_cc():
+    bin_dir = get_clang_bin_dir()
+    if bin_dir:
+        return os.path.join(bin_dir, 'clang');
+    else:
+        return 'clang'
+
+@memoize
+def get_clang_cpp():
+    bin_dir = get_clang_bin_dir()
+    if bin_dir:
+        return os.path.join(bin_dir, 'clang++');
+    else:
+        return 'clang++'
 
 def _main():
     llvm_val = get()

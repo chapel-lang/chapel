@@ -61,7 +61,7 @@ def get(flag='target'):
                     atomics_val = 'cstdlib'
                 else:
                     atomics_val = 'intrinsics'
-            elif compiler_val == 'clang-included':
+            elif compiler_val == 'llvm':
                 atomics_val = 'cstdlib'
 
             # we can't use intrinsics, fall back to locks

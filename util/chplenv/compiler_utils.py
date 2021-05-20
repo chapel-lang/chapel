@@ -8,6 +8,7 @@ from collections import namedtuple
 
 from utils import error, memoize, run_command
 
+import chpl_llvm
 
 @memoize
 def get_compiler_name(compiler):
@@ -15,15 +16,14 @@ def get_compiler_name(compiler):
         return 'cc'
     elif 'gnu' in compiler:
         return 'gcc'
-    elif compiler in ['clang', 'allinea']:
+    elif compiler in ['clang', 'llvm', 'allinea']:
         return 'clang'
     elif compiler == 'intel':
         return 'icc'
     elif compiler == 'pgi':
         return 'pgcc'
-    # Note this would return 'other' for 'clang-included' in --llvm compiles
-    return 'other'
 
+    return 'other'
 
 @memoize
 def get_compiler_version(compiler):
@@ -69,7 +69,7 @@ def target_compiler_is_prgenv(bypass_llvm=True):
 
     # But for --llvm, look at the original target compiler
     if bypass_llvm:
-        if compiler_val == 'clang-included':
+        if compiler_val == 'llvm':
             compiler_val = chpl_compiler.get('target', llvm_mode="orig")
 
     isprgenv = compiler_is_prgenv(compiler_val)
