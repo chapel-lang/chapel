@@ -723,7 +723,7 @@ int chpl_launch_prep(int* c_argc, char* argv[], int32_t* c_execNumLocales) {
   // Let the comm layer do any last-minute pre-launch activities it
   // needs to.
   //
-  CHPL_COMM_PRELAUNCH();
+  CHPL_COMM_PRELAUNCH(execNumLocales);
 
   *c_execNumLocales = execNumLocales;
   *c_argc = argc;

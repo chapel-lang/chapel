@@ -41,6 +41,12 @@ else
   COMM_SRCS += comm-ofi-oob-sockets.c
 endif
 
+ifneq (, $(findstring pmi2, $(COMM_SRCS)))
+  ifeq ($(MAKE_LAUNCHER),1)
+    RUNTIME_DEFS += -DCOMM_OFI_OOB_PMI2
+  endif
+endif
+
 #
 # Use hugepages only on Cray XC systems.
 #
