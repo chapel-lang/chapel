@@ -65,7 +65,7 @@ def has_compatible_installed_llvm():
 def get():
     llvm_val = overrides.get('CHPL_LLVM')
     if not llvm_val:
-        llvm_val = 'none'
+        llvm_val = 'unset'
 
         if is_included_llvm_built():
             llvm_val = 'bundled'
