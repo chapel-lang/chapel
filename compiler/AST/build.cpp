@@ -373,6 +373,23 @@ BlockStmt* buildErrorStandin() {
   return new BlockStmt(new CallExpr(PRIM_ERROR), BLOCK_SCOPELESS);
 }
 
+BlockStmt* buildDeprecated(BlockStmt* block) {
+  // TODO: determine the name
+  const char* msg = astr("This symbol is deprecated");
+  return buildDeprecated(block, msg);
+}
+
+BlockStmt* buildDeprecated(BlockStmt* block, const char* msg) {
+  if (DefExpr* def = toDefExpr(block->body.head)) {
+    Symbol* sym = def->sym;
+    sym->addFlag(FLAG_DEPRECATED);
+    sym->deprecationMsg = msg;
+  } else {
+    INT_FATAL("Uh oh");
+  }
+  return block;
+}
+
 static void addModuleToSearchList(VisibilityStmt* newStmt, BaseAST* module) {
   UnresolvedSymExpr* modNameExpr = toUnresolvedSymExpr(module);
   if (modNameExpr) {

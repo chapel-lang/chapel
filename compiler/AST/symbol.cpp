@@ -98,6 +98,7 @@ Symbol::Symbol(AstTag astTag, const char* init_name, Type* init_type) :
   flags(),
   fieldQualifiers(NULL),
   defPoint(NULL),
+  deprecationMsg(""),
   symExprsHead(NULL),
   symExprsTail(NULL)
 {

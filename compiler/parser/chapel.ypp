@@ -316,7 +316,7 @@
 %token TALIGN TAS TATOMIC
 %token TBEGIN TBREAK TBOOL TBORROWED TBY TBYTES
 %token TCATCH TCLASS TCOBEGIN TCOFORALL TCOMPLEX TCONFIG TCONST TCONTINUE
-%token TDEFER TDELETE TDMAPPED TDO TDOMAIN
+%token TDEFER TDELETE TDEPRECATED TDMAPPED TDO TDOMAIN
 %token TELSE TENUM TEXCEPT TEXPORT TEXTERN
 %token TFALSE TFOR TFORALL TFOREACH TFORWARDING
 %token TIF TIMAG TIMPORT TIN TINCLUDE
@@ -416,6 +416,9 @@
 %type <pblockstmt> toplevel_stmt_ls
 %type <pblockstmt> toplevel_stmt
 %type <vpch>       pragma_ls
+
+%type <pblockstmt> deprecation_decl_stmt
+%type <pblockstmt> deprecation_decl_base
 
 %type <pmodsymbol> module_decl_start
 %type <pblockstmt> module_decl_stmt
@@ -533,13 +536,12 @@ pragma_ls:
 
 // %type <pblockstmt> stmt
 stmt:
-  module_decl_stmt
+  deprecation_decl_stmt
 | include_module_stmt
 | block_stmt
 | use_stmt
 | import_stmt
 | require_stmt
-| class_level_stmt
 | assignment_stmt
 | extern_block_stmt
 | if_stmt
@@ -567,6 +569,19 @@ stmt:
 | TSYNC stmt                           { $$ = buildSyncStmt($2); }
 | TYIELD expr TSEMI                    { $$ = buildPrimitiveStmt(PRIM_YIELD, $2); }
 | error TSEMI                          { $$ = buildErrorStandin(); }
+;
+
+deprecation_decl_stmt:
+  deprecation_decl_base
+| TDEPRECATED STRINGLITERAL deprecation_decl_base
+{ $$ = buildDeprecated($3, $2); }
+| TDEPRECATED deprecation_decl_base
+{ $$ = buildDeprecated($2); }
+;
+
+deprecation_decl_base:
+  module_decl_stmt
+| class_level_stmt
 ;
 
 module_decl_start:
