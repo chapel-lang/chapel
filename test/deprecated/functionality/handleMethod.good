@@ -1,0 +1,2 @@
+handleMethod.chpl:16: warning: bar is deprecated, use baz instead
+In Foo.baz()
