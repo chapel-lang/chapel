@@ -1,0 +1,12 @@
+handleEnum.chpl:6: warning: Enum e is deprecated, use enum f
+handleEnum.chpl:7: warning: Enum e is deprecated, use enum f
+b
+handleEnum.chpl:8: warning: Enum e is deprecated, use enum f
+c
+handleEnum.chpl:12: warning: Enum e is deprecated, use enum f
+a
+b
+c
+a
+b
+c
