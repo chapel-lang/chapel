@@ -1,0 +1,5 @@
+symbolInUseClauseRenamed.chpl:7: In function 'main':
+symbolInUseClauseRenamed.chpl:8: warning: x is deprecated
+symbolInUseClauseRenamed.chpl:7: In function 'main':
+symbolInUseClauseRenamed.chpl:10: warning: x is deprecated
+0

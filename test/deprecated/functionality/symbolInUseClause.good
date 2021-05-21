@@ -1,4 +1,5 @@
 symbolInUseClause.chpl:7: In function 'main':
 symbolInUseClause.chpl:8: warning: x is deprecated
+symbolInUseClause.chpl:7: In function 'main':
 symbolInUseClause.chpl:10: warning: x is deprecated
 0

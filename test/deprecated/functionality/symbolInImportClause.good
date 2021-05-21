@@ -1,3 +1,5 @@
-symbolInImportClause.chpl:7: warning: x is deprecated
-symbolInImportClause.chpl:9: warning: x is deprecated
+symbolInImportClause.chpl:7: In function 'main':
+symbolInImportClause.chpl:8: warning: x is deprecated
+symbolInImportClause.chpl:7: In function 'main':
+symbolInImportClause.chpl:10: warning: x is deprecated
 0
