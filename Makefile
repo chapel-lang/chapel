@@ -50,9 +50,6 @@ MAKEFLAGS = --no-print-directory
 export CHPL_MAKE_HOME=$(shell pwd)
 export CHPL_MAKE_PYTHON := $(shell $(CHPL_MAKE_HOME)/util/config/find-python.sh)
 
-NEEDS_LLVM_RUNTIME=$(CHPL_MAKE_PYTHON) ${CHPL_MAKE_HOME}/util/chplenv/chpl_llvm.py \
-                    --needs-llvm-runtime
-
 default: all
 
 all: comprt
