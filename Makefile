@@ -88,19 +88,11 @@ parser: FORCE
 
 modules: FORCE
 	@echo "Making the modules..."
-	@cd modules && CHPL_LLVM_CODEGEN=0 $(MAKE)
-	@if [ ! -z `${NEEDS_LLVM_RUNTIME}` ]; then \
-	echo "Making the modules for LLVM..."; \
-	cd modules && CHPL_LLVM_CODEGEN=1 $(MAKE) ; \
-	fi
+	@cd modules && $(MAKE)
 
 runtime: FORCE
 	@echo "Making the runtime..."
-	@cd runtime && CHPL_LLVM_CODEGEN=0 $(MAKE)
-	@if [ ! -z `${NEEDS_LLVM_RUNTIME}` ]; then \
-	echo "Making the runtime for LLVM..."; \
-	cd runtime && CHPL_LLVM_CODEGEN=1 $(MAKE) ; \
-	fi
+	@cd runtime && $(MAKE)
 
 third-party: FORCE
 	@echo "Making the third-party libraries..."
@@ -110,18 +102,12 @@ third-party-try-opt: third-party-try-re2 third-party-try-gmp
 
 third-party-try-re2: FORCE
 	-@if [ "$$CHPL_RE2" != none ]; then \
-	cd third-party && CHPL_LLVM_CODEGEN=0 $(MAKE) try-re2; \
-	if [ ! -z `${NEEDS_LLVM_RUNTIME}` ]; then \
-	CHPL_LLVM_CODEGEN=1 $(MAKE) try-re2; \
-	fi \
+	cd third-party && $(MAKE) try-re2; \
 	fi
 
 third-party-try-gmp: FORCE
 	-@if [ -z "$$CHPL_GMP" ]; then \
-	cd third-party && CHPL_LLVM_CODEGEN=0 $(MAKE) try-gmp; \
-	if [ ! -z `${NEEDS_LLVM_RUNTIME}` ]; then \
-	CHPL_LLVM_CODEGEN=1 $(MAKE) try-gmp; \
-	fi \
+	cd third-party && $(MAKE) try-gmp; \
 	fi
 
 third-party-test-venv: FORCE
