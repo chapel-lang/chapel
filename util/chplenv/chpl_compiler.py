@@ -55,9 +55,12 @@ def get(flag='host'):
         validate(compiler_val)
         return compiler_val
 
-    import chpl_llvm
-    has_llvm = chpl_llvm.get()
     prgenv_compiler = get_prgenv_compiler()
+    has_llvm = 'unset'
+
+    if flag == 'target':
+        import chpl_llvm
+        has_llvm = chpl_llvm.get()
 
     if flag == 'target' and (has_llvm == 'bundled' or has_llvm  == 'system'):
         # Default to CHPL_TARGET_COMPILER=llvm when CHPL_LLVM!=none
