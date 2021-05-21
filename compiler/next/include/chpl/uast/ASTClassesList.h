@@ -119,7 +119,6 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
       //AST_NODE(TypeDecl)
 
       AST_NODE(EnumElement)                // old AST: EnumSymbol
-
       AST_NODE(Function)                   // old AST: FnSymbol
       AST_NODE(Interface)                  // old AST: InterfaceSymbol
       AST_NODE(Module)                     // old AST: ModuleSymbol
