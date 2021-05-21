@@ -1631,7 +1631,7 @@ change if other channels, tasks or programs are writing to the file.
 
 :throws SystemError: Thrown if the size could not be retrieved.
 */
-proc file.size:int(64) throws {
+proc file.size: int throws {
   var err:syserr = ENOERR;
   var len:int(64) = 0;
   on this.home {
