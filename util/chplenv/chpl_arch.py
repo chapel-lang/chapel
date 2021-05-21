@@ -25,18 +25,18 @@ def get(flag='host'):
         return arch_val
 
     # compute the default
-    #cpu_val = chpl_cpu.get(flag).cpu
-    #cpuarch = chpl_cpu.arch_for_cpu(cpu_val, flag)
-    #machine = chpl_cpu.get_default_machine(flag)
-    #if cpuarch:
-    #    if cpuarch != machine:
-    #        sys.stderr.write('Warning: Cross compilation not yet supported. '
-    #                         'Inferred {0}={1} based upon {2}={3} '
-    #                         'but running on {4}.\n'.format(arch_flag,
-    #                                                        cpuarch,
-    #                                                        cpu_flag,
-    #                                                        cpu_val,
-    #                                                        machine))
+    cpu_val = chpl_cpu.get(flag).cpu
+    cpuarch = chpl_cpu.arch_for_cpu(cpu_val, flag)
+    machine = chpl_cpu.get_default_machine(flag)
+    if cpuarch:
+        if cpuarch != machine:
+            sys.stderr.write('Warning: Cross compilation not yet supported. '
+                             'Inferred {0}={1} based upon {2}={3} '
+                             'but running on {4}.\n'.format(arch_flag,
+                                                            cpuarch,
+                                                            cpu_flag,
+                                                            cpu_val,
+                                                            machine))
 
     return chpl_cpu.get_default_machine(flag)
 
