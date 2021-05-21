@@ -181,6 +181,10 @@ def compute_all_values():
     ENV_VALS['CHPL_SANITIZE'] = chpl_sanitizers.get()
     ENV_VALS['CHPL_SANITIZE_EXE'] = chpl_sanitizers.get('exe')
 
+    # error checking that would be hard to do in the .get functions
+    # due to circular dependencies
+    chpl_arch.validate('host')
+    chpl_arch.validate('target')
 
 """Compute '--internal' env var values and populate global dict, ENV_VALS"""
 def compute_internal_values():
