@@ -7,7 +7,7 @@
 generateGood() {
     # Generate Good file from printchplenv variables
 
-    printchplenv=$(../../../../util/printchplenv --simple --no-tidy --anonymize | grep -v CHPL_ORIG_TARGET_COMPILER | grep -v SUBDIR)
+    printchplenv=$(../../../../util/printchplenv --simple --no-tidy --anonymize | grep -v CHPL_TARGET_HAS_PRGENV | grep -v SUBDIR)
 
     good=""
     for var in ${printchplenv}; do

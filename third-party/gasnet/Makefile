@@ -59,8 +59,8 @@ endif
 # compiler option compatible with clang-included.
 ifeq ($(CRAY_CROSS_CONFIGURE), y)
 ifeq ($(CHPL_MAKE_COMPILER), clang-included)
-ifneq (, $(filter cray-prgenv-%,$(CHPL_MAKE_ORIG_TARGET_COMPILER)))
-ORIG_PRGENV = $(subst cray-prgenv-,,$(CHPL_MAKE_ORIG_TARGET_COMPILER))
+ifneq (, $(filter cray-prgenv-%,$(CHPL_MAKE_TARGET_COMPILER_PRGENV)))
+ORIG_PRGENV = $(subst cray-prgenv-,,$(CHPL_MAKE_TARGET_COMPILER_PRGENV))
 ifneq ($(ORIG_PRGENV), gnu)
 ENSURE_GASNET_COMPATIBLE_COMPILER=. $$MODULESHOME/init/sh; module unload PrgEnv-$(ORIG_PRGENV); module load PrgEnv-gnu;
 endif

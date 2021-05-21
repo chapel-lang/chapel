@@ -27,40 +27,35 @@ def validate(compiler_val):
 
 
 @memoize
-def get(flag='host', llvm_mode='default'):
+def get_prgenv_compiler():
+    platform_val = chpl_platform.get('target')
+    if platform_val.startswith('cray-x') or platform_val == 'hpe-cray-ex':
+        subcompiler = os.environ.get('PE_ENV', 'none')
+        if subcompiler != 'none':
+            return "cray-prgenv-{0}".format(subcompiler.lower())
+
+        else:
+            sys.stderr.write("Warning: Compiling on {0} without a PrgEnv loaded\n".format(platform_val))
+
+    return 'none'
+
+@memoize
+def get(flag='host'):
 
     if flag == 'host':
         compiler_val = overrides.get('CHPL_HOST_COMPILER', '')
 
-        if llvm_mode == 'llvm':
-            error("bad call to chpl_compiler.get('host', llvm_mode!=default)")
-
     elif flag == 'target':
         compiler_val = overrides.get('CHPL_TARGET_COMPILER', '')
 
-        if llvm_mode == 'orig':
-            # If we're in the middle of a chpl --llvm call,
-            # CHPL_TARGET_COMPILER is already llvm, but
-            # the original target compiler is saved in an environment variable.
-            # (otherwise, use compiler_val set above with CHPL_TARGET_COMPILER)
-            if "CHPL_ORIG_TARGET_COMPILER" in os.environ:
-                compiler_val = os.environ["CHPL_ORIG_TARGET_COMPILER"]
-        else:
-            if ("CHPL_LLVM_CODEGEN" in os.environ and
-                os.environ["CHPL_LLVM_CODEGEN"] == "0"):
-                # the C backend is selected, so don't do anything else
-                pass
-            else:
-                import chpl_llvm
-                has_llvm = chpl_llvm.get()
+        import chpl_llvm
+        has_llvm = chpl_llvm.get()
 
-                if (has_llvm == 'bundled' or has_llvm  == 'system' or
-                    llvm_mode == 'llvm'):
-
-                    if compiler_val:
-                        sys.stderr.write("Warning: CHPL_TARGET_COMPILER ignored when compiling with LLVM")
-
-                compiler_val = 'llvm'
+        if has_llvm == 'bundled' or has_llvm  == 'system':
+            if compiler_val:
+                sys.stderr.write("Warning: CHPL_TARGET_COMPILER ignored when compiling with LLVM")
+            # Default to LLVM backend if available
+            compiler_val = 'llvm'
 
     else:
         error("Invalid flag: '{0}'".format(flag), ValueError)
@@ -69,19 +64,14 @@ def get(flag='host', llvm_mode='default'):
         validate(compiler_val)
         return compiler_val
 
-    platform_val = chpl_platform.get(flag)
     # The cray platforms are a special case in that we want to "cross-compile"
     # by default. (the compiler is different between host and target, but the
-    # platform is the same)
-    if platform_val.startswith('cray-x') or platform_val == 'hpe-cray-ex':
-        if flag == 'host':
-            compiler_val = 'gnu'
-        else:
-            subcompiler = os.environ.get('PE_ENV', 'none')
-            if subcompiler == 'none':
-                sys.stderr.write("Warning: Compiling on {0} without a PrgEnv loaded\n".format(platform_val))
-            compiler_val = "cray-prgenv-{0}".format(subcompiler.lower())
+    # platform is the same).
+    prgenv_compiler = get_prgenv_compiler()
+    if prgenv_compiler != 'none':
+        compiler_val = prgenv_compiler
     else:
+        platform_val = chpl_platform.get(flag)
         # Normal compilation (not "cross-compiling")
         # inherit the host compiler if the target compiler is not set and
         # the host and target platforms are the same
@@ -102,15 +92,15 @@ def get(flag='host', llvm_mode='default'):
     return compiler_val
 
 @memoize
-def get_cc(flag='host', llvm_mode='default'):
-    compiler = get(flag=flag, llvm_mode=llvm_mode)
+def get_cc(flag='host'):
+    compiler = get(flag=flag)
     if compiler == 'llvm':
         import chpl_llvm
         return chpl_llvm.get_clang_cc()
 
 @memoize
-def get_cpp(flag='host', llvm_mode='default'):
-    compiler = get(flag=flag, llvm_mode=llvm_mode)
+def get_cpp(flag='host'):
+    compiler = get(flag=flag)
     if compiler == 'llvm':
         import chpl_llvm
         return chpl_llvm.get_clang_cpp()

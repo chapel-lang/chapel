@@ -68,7 +68,7 @@ def target_compiler_is_prgenv(bypass_llvm=True):
     # But for --llvm, look at the original target compiler
     if bypass_llvm:
         if compiler_val == 'llvm':
-            compiler_val = chpl_compiler.get('target', llvm_mode="orig")
+            compiler_val = chpl_compiler.get_prgenv_compiler()
 
     isprgenv = compiler_is_prgenv(compiler_val)
     return isprgenv

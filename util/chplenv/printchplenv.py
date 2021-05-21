@@ -68,7 +68,7 @@ CHPL_ENVS = [
     ChapelEnv('CHPL_TARGET_PLATFORM', RUNTIME | DEFAULT),
     ChapelEnv('CHPL_TARGET_COMPILER', RUNTIME | DEFAULT),
     ChapelEnv('CHPL_TARGET_ARCH', RUNTIME | DEFAULT),
-    ChapelEnv('CHPL_ORIG_TARGET_COMPILER', INTERNAL),
+    ChapelEnv('CHPL_TARGET_COMPILER_PRGENV', INTERNAL),
     ChapelEnv('CHPL_TARGET_CPU', RUNTIME | DEFAULT, 'arch'),
     ChapelEnv('CHPL_RUNTIME_CPU', INTERNAL),
     ChapelEnv('CHPL_TARGET_CPU_FLAG', INTERNAL),
@@ -122,22 +122,8 @@ ENV_VALS = {}
 def compute_all_values():
     global ENV_VALS
 
-    # If we're doing an LLVM build, set CHPL_TARGET_COMPILER to llvm-included
-    # and set CHPL_ORIG_TARGET_COMPILER to whatever we would have used
-    # otherwise.
-    # This happens early because it modifies the environment and other
-    # defaults might depend on this setting.
-    llvm_codegen = ("CHPL_LLVM_CODEGEN" in os.environ and
-                    os.environ["CHPL_LLVM_CODEGEN"] != "0")
-    if llvm_codegen:
-        new_target_compiler = chpl_compiler.get('target')
-        if new_target_compiler != 'llvm':
-            # This error indicates something about chplenv (probably
-            # chpl_compiler.py) is not working correctly with LLVM mode.
-            raise ValueError('LLVM mode but target compiler is set incorrectly')
-
     ENV_VALS['CHPL_HOME'] = chpl_home_utils.get_chpl_home()
-    ENV_VALS["CHPL_ORIG_TARGET_COMPILER"] = chpl_compiler.get('target', llvm_mode='orig')
+    ENV_VALS["CHPL_TARGET_COMPILER_PRGENV"] = chpl_compiler.get_prgenv_compiler()
     ENV_VALS['CHPL_HOST_PLATFORM'] = chpl_platform.get('host')
     ENV_VALS['CHPL_HOST_COMPILER'] = chpl_compiler.get('host')
     ENV_VALS['CHPL_HOST_ARCH'] = chpl_arch.get('host')
