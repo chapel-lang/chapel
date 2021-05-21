@@ -361,6 +361,11 @@ void UseStmt::validateNamed() {
                            (except == true) ? "except" : "only",
                            name);
           }
+          if (sym->hasFlag(FLAG_DEPRECATED)) {
+            // Generate deprecation warning when a deprecated symbol is listed
+            // in an except or only list
+            USR_WARN(this, "%s", sym->deprecationMsg.c_str());
+          }
         }
       }
     }

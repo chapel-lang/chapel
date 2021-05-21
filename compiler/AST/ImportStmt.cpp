@@ -203,6 +203,11 @@ void ImportStmt::scopeResolve(ResolveScope* scope) {
 
         validateList();
 
+        if (modSym->hasFlag(FLAG_DEPRECATED)) {
+          // Generate deprecation warning upon import of deprecated module
+          USR_WARN(this, "%s", modSym->deprecationMsg.c_str());
+        }
+
       } else {
         if (symAndName.second[0] != '\0') {
           if (isCallExpr(src) == false) {
