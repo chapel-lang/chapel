@@ -196,12 +196,18 @@ llvm: $(LLVM_CONFIGURED_HEADER_FILE) $(LLVM_HEADER_FILE) $(LLVM_SUPPORT_FILE) $(
 llvm-minimal: $(LLVM_CONFIGURED_HEADER_FILE) $(LLVM_HEADER_FILE) $(LLVM_SUPPORT_FILE) $(LLVM_CONFIG_FILE)
 
 # Just adding this error since this is the only configuration we test.
-check-prgenv-gnu:
-	@if [ "none" != "$(CHPL_MAKE_TARGET_COMPILER_PRGENV)" ]; then \
-	  echo "Error: make with CHPL_LLVM!=none requires PrgEnv-gnu" ; \
-	  echo "e.g. module swap PrgEnv-cray PrgEnv-gnu" ; \
-	  exit 1 ; \
-	fi
+check-prgenv-gnu: FORCE
+	@case "$(CHPL_MAKE_TARGET_COMPILER_PRGENV)" in \
+	  none) \
+	    ;; \
+	  cray-prgenv-gnu) \
+	    ;; \
+	  *) \
+	    echo "Error: make with CHPL_LLVM!=none requires PrgEnv-gnu" ; \
+	    echo "  e.g. module swap PrgEnv-cray PrgEnv-gnu" ; \
+	    echo "  or to just build the runtime, use 'make runtime'" ;\
+	    exit 1 ; \
+	esac
 
 llvm-clang: check-prgenv-gnu llvm
 
