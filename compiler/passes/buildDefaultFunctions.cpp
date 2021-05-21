@@ -947,7 +947,7 @@ static void buildRecordEqualsBody(AggregateType *ct, FnSymbol *fn,
         !tmp->hasFlag(FLAG_TYPE_VARIABLE)) {  // types fields must be equal
       Expr* left = new CallExpr(tmp->name, gMethodToken, arg1);
       Expr* right = new CallExpr(tmp->name, gMethodToken, arg2);
-      CallExpr *elemComp = new CallExpr("!=", left, right);
+      CallExpr *elemComp = new CallExpr("chpl_field_neq", left, right);
       fn->insertAtTail(new CondStmt(elemComp,
                                     new CallExpr(PRIM_RETURN, gFalse)));
     }
@@ -967,7 +967,7 @@ static void buildRecordNotEqualsBody(AggregateType *ct, FnSymbol *fn,
         !tmp->hasFlag(FLAG_TYPE_VARIABLE)) {  // types fields must be equal
       Expr* left = new CallExpr(tmp->name, gMethodToken, arg1);
       Expr* right = new CallExpr(tmp->name, gMethodToken, arg2);
-      CallExpr *elemComp = new CallExpr("!=", left, right);
+      CallExpr *elemComp = new CallExpr("chpl_field_neq", left, right);
       fn->insertAtTail(new CondStmt(elemComp,
                                     new CallExpr(PRIM_RETURN, gTrue)));
     }
@@ -987,13 +987,13 @@ static void buildRecordLessThanBody(AggregateType *ct, FnSymbol *fn,
     if (!tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD) &&
         !tmp->hasFlag(FLAG_TYPE_VARIABLE)) {  // types fields must be equal
 
-        CallExpr *elemCompTrue = new CallExpr("<",
+        CallExpr *elemCompTrue = new CallExpr("chpl_field_lt",
                                    new CallExpr(tmp->name, gMethodToken, arg1),
                                    new CallExpr(tmp->name, gMethodToken, arg2));
         fn->insertAtTail(new CondStmt(elemCompTrue,
                                       new CallExpr(PRIM_RETURN, gTrue)));
 
-        CallExpr *elemCompFalse = new CallExpr(">",
+        CallExpr *elemCompFalse = new CallExpr("chpl_field_gt",
                                    new CallExpr(tmp->name, gMethodToken, arg1),
                                    new CallExpr(tmp->name, gMethodToken, arg2));
 
@@ -1020,13 +1020,13 @@ static void buildRecordGreaterThanBody(AggregateType *ct, FnSymbol *fn,
     if (!tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD) &&
         !tmp->hasFlag(FLAG_TYPE_VARIABLE)) {  // types fields must be equal
 
-        CallExpr *elemCompTrue = new CallExpr(">",
+        CallExpr *elemCompTrue = new CallExpr("chpl_field_gt",
                                    new CallExpr(tmp->name, gMethodToken, arg1),
                                    new CallExpr(tmp->name, gMethodToken, arg2));
         fn->insertAtTail(new CondStmt(elemCompTrue,
                                       new CallExpr(PRIM_RETURN, gTrue)));
 
-        CallExpr *elemCompFalse = new CallExpr("<",
+        CallExpr *elemCompFalse = new CallExpr("chpl_field_lt",
                                    new CallExpr(tmp->name, gMethodToken, arg1),
                                    new CallExpr(tmp->name, gMethodToken, arg2));
 

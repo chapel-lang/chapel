@@ -49,6 +49,10 @@ module DefaultSparse {
       this.dist = dist;
     }
 
+    proc stridable param {
+      return parentDom.stridable;
+    }
+
     override proc getNNZ(): int{
       return _nnz;
     }
