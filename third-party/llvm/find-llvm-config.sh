@@ -69,6 +69,35 @@ done
 
 if [ "$FOUND" != "" ]
 then
+  # check also that the header directory exists
+  INCLUDEDIR=`$FOUND --includedir`
+  if [ ! -d "$INCLUDEDIR" ]
+  then
+    echo "Could not find the include directory $INCLUDEDIR" 1>&2
+    FOUND=""
+  else
+    LLVMHEADER="$INCLUDEDIR/llvm/Config/llvm-config.h"
+    CLANGHEADER="$INCLUDEDIR/clang/Basic/Version.h"
+    if [ ! -f "$LLVMHEADER" ]
+    then
+      echo "Could not find the LLVM header $LLVMHEADER" 1>&2
+      FOUND=""
+    fi
+    if [ ! -f "$CLANGHEADER" ]
+    then
+      echo "Could not find the clang header $CLANGHEADER" 1>&2
+      FOUND=""
+    fi
+  fi
+
+  if [ "$FOUND" == "" ]
+  then
+    echo "Perhaps you need to install clang and llvm dev packages" 1>&2
+  fi
+fi
+
+if [ "$FOUND" != "" ]
+then
   echo "$FOUND"
 else
   echo "Could not find an installed LLVM with version $ALLOW_VERS" 1>&2
