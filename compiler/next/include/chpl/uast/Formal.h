@@ -21,7 +21,7 @@
 #define CHPL_UAST_FORMAL_H
 
 #include "chpl/queries/Location.h"
-#include "chpl/uast/NamedDecl.h"
+#include "chpl/uast/VarDecl.h"
 
 namespace chpl {
 namespace uast {
@@ -39,7 +39,7 @@ namespace uast {
 
   The Formals are stored inside of a Function.
  */
-class Formal final : public NamedDecl {
+class Formal final : public VarDecl {
  public:
   enum Intent {
     DEFAULT_INTENT,
@@ -56,30 +56,15 @@ class Formal final : public NamedDecl {
 
  private:
   Intent intent_;
-  int8_t typeExpressionChildNum_;
-  int8_t initExpressionChildNum_;
 
-  Formal(ASTList children,
-         UniqueString name,
-         Formal::Intent intent,
+  Formal(ASTList children, UniqueString name, Formal::Intent intent,
          int8_t typeExpressionChildNum,
          int8_t initExpressionChildNum)
-    : NamedDecl(asttags::Formal, std::move(children),
-                Decl::DEFAULT_VISIBILITY, name),
-      intent_(intent),
-      typeExpressionChildNum_(typeExpressionChildNum),
-      initExpressionChildNum_(initExpressionChildNum) {
-
-    assert(numChildren() <= 2);
-    if (typeExpressionChildNum >= 0) {
-      assert(typeExpressionChildNum <= 2);
-      assert(child(typeExpressionChildNum)->isExpression());
-    }
-    if (initExpressionChildNum >= 0) {
-      assert(initExpressionChildNum <= 2);
-      assert(child(initExpressionChildNum)->isExpression());
-    }
-  }
+    : VarDecl(asttags::Formal, std::move(children), Decl::DEFAULT_VISIBILITY,
+              name,
+              typeExpressionChildNum,
+              initExpressionChildNum),
+      intent_(intent) {}
 
   bool contentsMatchInner(const ASTNode* other) const override;
   void markUniqueStringsInner(Context* context) const override;
@@ -99,37 +84,6 @@ class Formal final : public NamedDecl {
    */
   const Intent intent() const { return this->intent_; }
 
-  /**
-   Returns the type expression used in the formal's declaration, or nullptr
-   if there wasn't one.
-
-   For example, in `proc f(y: int)`, the formal `y` has type expression `int`.
-   */
-  const Expression* typeExpression() const {
-    if (typeExpressionChildNum_ >= 0) {
-      const ASTNode* ast = this->child(typeExpressionChildNum_);
-      assert(ast->isExpression());
-      return (const Expression*)ast;
-    } else {
-      return nullptr;
-    }
-  }
-
-  /**
-   Returns the init expression used in the formal's declaration, or nullptr
-   if there wasn't one.
-
-   For example, in `proc f(z = 3)`, the formal `z` has init expression `3`.
-   */
-  const Expression* initExpression() const {
-    if (initExpressionChildNum_ >= 0) {
-      const ASTNode* ast = this->child(initExpressionChildNum_);
-      assert(ast->isExpression());
-      return (const Expression*)ast;
-    } else {
-      return nullptr;
-    }
-  }
 };
 
 

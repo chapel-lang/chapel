@@ -115,17 +115,21 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
     AST_NODE(TupleDecl)
 
     AST_BEGIN_SUBCLASSES(NamedDecl)
-      //AST_NODE(FieldDecl)
       //AST_NODE(ForwardingDecl)
       //AST_NODE(TypeDecl)
 
       AST_NODE(EnumElement)                // old AST: EnumSymbol
-      AST_LEAF(Formal)                     // old AST: ArgSymbol
+
       AST_NODE(Function)                   // old AST: FnSymbol
       AST_NODE(Interface)                  // old AST: InterfaceSymbol
       AST_NODE(Module)                     // old AST: ModuleSymbol
-      AST_LEAF(Variable)                   // old AST: VarSymbol
-                                           // old AST: ShadowVarSymbol
+
+      AST_BEGIN_SUBCLASSES(VarDecl)
+        //AST_LEAF(Field)
+        AST_LEAF(Formal)                   // old AST: ArgSymbol
+        AST_LEAF(Variable)                 // old AST: VarSymbol
+        //AST_LEAF(ShadowVariable)         // old AST: ShadowVarSymbol
+      AST_END_SUBCLASSES(VarDecl)
 
       AST_BEGIN_SUBCLASSES(TypeDecl)       // old AST: TypeSymbol/Type
         AST_NODE(Enum)                     // old AST: EnumType
