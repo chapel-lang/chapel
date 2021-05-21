@@ -5,7 +5,7 @@ import sys
 
 from distutils.spawn import find_executable
 
-import chpl_platform, chpl_llvm, overrides
+import chpl_platform, overrides
 from utils import error, memoize
 
 
@@ -51,6 +51,7 @@ def get(flag='host', llvm_mode='default'):
                 # the C backend is selected, so don't do anything else
                 pass
             else:
+                import chpl_llvm
                 has_llvm = chpl_llvm.get()
 
                 if (has_llvm == 'bundled' or has_llvm  == 'system' or
@@ -104,12 +105,14 @@ def get(flag='host', llvm_mode='default'):
 def get_cc(flag='host', llvm_mode='default'):
     compiler = get(flag=flag, llvm_mode=llvm_mode)
     if compiler == 'llvm':
+        import chpl_llvm
         return chpl_llvm.get_clang_cc()
 
 @memoize
 def get_cpp(flag='host', llvm_mode='default'):
     compiler = get(flag=flag, llvm_mode=llvm_mode)
     if compiler == 'llvm':
+        import chpl_llvm
         return chpl_llvm.get_clang_cpp()
 
 

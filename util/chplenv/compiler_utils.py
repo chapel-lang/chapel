@@ -8,8 +8,6 @@ from collections import namedtuple
 
 from utils import error, memoize, run_command
 
-import chpl_llvm
-
 @memoize
 def get_compiler_name(compiler):
     if compiler_is_prgenv(compiler):
