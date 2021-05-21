@@ -200,6 +200,11 @@ void UseStmt::scopeResolve(ResolveScope* scope) {
         USR_FATAL(this, "'use' of non-module/enum symbol");
       }
 
+      if (symAndName.first->hasFlag(FLAG_DEPRECATED)) {
+        // Generate deprecation warning upon use of deprecated symbol
+        USR_WARN(this, "%s", symAndName.first->deprecationMsg.c_str());
+      }
+
     }
 
   } else {
