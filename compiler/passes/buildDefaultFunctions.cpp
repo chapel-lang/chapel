@@ -400,6 +400,11 @@ FnSymbol* build_accessor(AggregateType* ct, Symbol* field,
 
   fn->addFlag(FLAG_FIELD_ACCESSOR);
 
+  if (field->hasFlag(FLAG_DEPRECATED)) {
+    fn->addFlag(FLAG_DEPRECATED);
+    fn->deprecationMsg = field->deprecationMsg;
+  }
+
   if (!typeMethod) {
     if (fieldIsConst)
       fn->addFlag(FLAG_REF_TO_CONST);

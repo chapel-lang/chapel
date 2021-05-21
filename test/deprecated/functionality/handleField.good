@@ -1,3 +1,4 @@
+handleField.chpl:11: In function 'main':
 handleField.chpl:13: warning: Field p1 is deprecated, use p2 instead
 3
 5
