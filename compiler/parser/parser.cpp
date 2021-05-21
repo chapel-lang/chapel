@@ -331,9 +331,11 @@ static void parseCommandLineFiles() {
     if (isChplSource(inputFileName))
     {
       /*
-      Selection of 16 is did so as to provide
-      enough space for generating files like .tmp.obj
-      whose length is 8 so selection of double the required
+      The selection of 16 here was chosen to provide enough space for
+      generating files like .tmp.obj (whose length is 8) from the
+      input filename; we doubled the value to ensure some breathing
+      room, and under an assumption that most files won't be this long
+      anyway.
       */
       const size_t reductionMaxLength = 16;
       /*
@@ -342,12 +344,13 @@ static void parseCommandLineFiles() {
       unix and linux system.
       */
       const size_t maxFileName = NAME_MAX - reductionMaxLength;
-      if (strlen(inputFileName) > maxFileName)
+      const char* baseName = stripdirectories(inputFileName);
+      if (strlen(baseName) > maxFileName)
       {
         // error message to print placeholders for fileName and maxLength
         const char *errorMessage = "%s, filename is longer than maximum allowed length of %d\n";
         // throwr error will concatenated messages
-        USR_FATAL(errorMessage, inputFileName, maxFileName);
+        USR_FATAL(errorMessage, baseName, maxFileName);
       }
       parseFile(inputFileName, MOD_USER, true, false);
     }

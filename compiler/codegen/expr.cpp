@@ -1085,7 +1085,7 @@ GenRet doCodegenFieldPtr(
     if( castType ) ret.c += codegenCast(castType,base).c;
     else ret.c += "(" + base.c + ")";
     ret.c += "->";
-    if (isUnion(ct) && !special)
+    if (isUnion(ct) && !ct->symbol->hasFlag(FLAG_EXTERN) && !special)
       ret.c += "_u.";
     ret.c += c_field_name;
     ret.c += ")";
@@ -1114,7 +1114,7 @@ GenRet doCodegenFieldPtr(
     INT_ASSERT(ret.chplType);
     GenRet retType = ret.chplType;
 
-    if( isUnion(ct) && !special ) {
+    if( isUnion(ct) && !ct->symbol->hasFlag(FLAG_EXTERN) && !special ) {
       // Get a pointer to the union data then cast it to the right type
       bool unused;
       ret.val = info->irBuilder->CreateStructGEP(

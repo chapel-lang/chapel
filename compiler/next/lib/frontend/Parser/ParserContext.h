@@ -65,7 +65,7 @@ struct ParserContext {
 
   // Tracking a current state for these makes it easier to write
   // the parser rules.
-  Sym::Visibility visibility;
+  Decl::Visibility visibility;
   Variable::Kind varDeclKind;
   YYLTYPE declStartLocation;
 
@@ -78,7 +78,7 @@ struct ParserContext {
     this->builder            = builder;
     this->topLevelStatements = nullptr;
     this->comments           = nullptr;
-    this->visibility         = Sym::DEFAULT_VISIBILITY;
+    this->visibility         = Decl::DEFAULT_VISIBILITY;
     this->varDeclKind        = Variable::VAR;
     YYLTYPE emptyLoc = {0};
     this->declStartLocation = emptyLoc;
@@ -87,7 +87,7 @@ struct ParserContext {
   Context* context() { return builder->context(); }
 
   void noteDeclStartLoc(YYLTYPE loc);
-  Sym::Visibility noteVisibility(Sym::Visibility visibility);
+  Decl::Visibility noteVisibility(Decl::Visibility visibility);
   Variable::Kind noteVarDeclKind(Variable::Kind varDeclKind);
   YYLTYPE declStartLoc(YYLTYPE curLoc);
   void resetDeclState();
@@ -167,6 +167,14 @@ struct ParserContext {
   FunctionParts makeFunctionParts(bool isInline,
                                   bool isOverride);
   CommentsAndStmt buildFunctionDecl(YYLTYPE location, FunctionParts& fp);
+
+  // Build an index variable from a given expression. The expression is owned
+  // because it will be consumed. 
+  owned<Decl> buildIndexVariableDecl(YYLTYPE location, owned<Expression> e);
+
+  FnCall* wrapCalledExpressionInNew(YYLTYPE location,
+                                    New::Management management,
+                                    FnCall* fnCall);
 
   // Do we really need these?
   /*

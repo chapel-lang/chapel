@@ -21,8 +21,8 @@
 #define CHPL_UAST_FUNCTION_H
 
 #include "chpl/queries/Location.h"
-#include "chpl/uast/FormalDecl.h"
-#include "chpl/uast/Sym.h"
+#include "chpl/uast/Formal.h"
+#include "chpl/uast/NamedDecl.h"
 
 namespace chpl {
 namespace uast {
@@ -43,11 +43,9 @@ namespace uast {
       operator =(ref lhs, rhs) { }
   \endrst
 
-  each of these is a FunctionDecl that refers to a Function Sym.
+  each of these is a Function.
  */
-class Function final : public Sym {
- friend class FunctionDecl;
-
+class Function final : public NamedDecl {
  public:
   enum Linkage {
     DEFAULT_LINKAGE,
@@ -95,7 +93,7 @@ class Function final : public Sym {
   int numBodyStmts_;
 
   Function(ASTList children,
-           UniqueString name, Sym::Visibility vis,
+           UniqueString name, Decl::Visibility vis,
            Linkage linkage,
            bool inline_,
            bool override_,
@@ -112,7 +110,7 @@ class Function final : public Sym {
            int numLifetimeParts,
            int bodyChildNum,
            int numBodyStmts)
-    : Sym(asttags::Function, std::move(children), name, vis),
+    : NamedDecl(asttags::Function, std::move(children), vis, name),
       linkage_(linkage),
       inline_(inline_),
       override_(override_),
@@ -160,6 +158,22 @@ class Function final : public Sym {
  public:
   ~Function() override = default;
 
+  static owned<Function> build(Builder* builder, Location loc,
+                               UniqueString name, Decl::Visibility vis,
+                               Function::Linkage linkage,
+                               owned<Expression> linkageNameExpr,
+                               bool inline_,
+                               bool override_,
+                               Function::Kind kind,
+                               owned<Formal> receiver,
+                               Function::ReturnIntent returnIntent,
+                               bool throws,
+                               ASTList formals,
+                               owned<Expression> returnType,
+                               owned<Expression> where,
+                               ASTList lifetime,
+                               ASTList body);
+
   Linkage linkage() const { return this->linkage_; }
   Kind kind() const { return this->kind_; }
   ReturnIntent returnIntent() const { return this->returnIntent_; }
@@ -188,28 +202,15 @@ class Function final : public Sym {
   }
 
   /**
-   Return a way to iterate over the formals Decls, including the method
+   Return a way to iterate over the formals, including the method
    receiver, if present, as the first formal.
    */
-  ASTListIteratorPair<FormalDecl> formalDecls() const {
+  ASTListIteratorPair<Formal> formals() const {
     if (numFormals() == 0) {
-      return ASTListIteratorPair<FormalDecl>(children_.end(), children_.end());
+      return ASTListIteratorPair<Formal>(children_.end(), children_.end());
     } else {
       auto start = children_.begin() + formalsChildNum_;
-      return ASTListIteratorPair<FormalDecl>(start, start + numFormals_);
-    }
-  }
-
-  /**
-   Return a way to iterate over the formals Syms, including the method
-   receiver, if present, as the first formal.
-   */
-  DeclListSymIteratorPair<Formal> formals() const {
-    if (numFormals() == 0) {
-      return DeclListSymIteratorPair<Formal>(children_.end(), children_.end());
-    } else {
-      auto start = children_.begin() + formalsChildNum_;
-      return DeclListSymIteratorPair<Formal>(start, start + numFormals_);
+      return ASTListIteratorPair<Formal>(start, start + numFormals_);
     }
   }
 
@@ -223,51 +224,30 @@ class Function final : public Sym {
   }
 
   /**
-   Return the i'th formal Decl
+   Return the i'th formal
    */
-  const FormalDecl* formalDecl(int i) const {
+  const Formal* formal(int i) const {
     assert(numFormals_ > 0 && formalsChildNum_ >= 0);
     assert(0 <= i && i < numFormals_);
     const ASTNode* ast = this->child(formalsChildNum_ + i);
-    assert(ast->isFormalDecl());
-    const FormalDecl* d = (const FormalDecl*) ast;
-    return d;
-  }
-
-
-  /**
-   Return the i'th formal Sym
-   */
-  const Formal* formal(int i) const {
-    return this->formalDecl(i)->formal();
+    assert(ast->isFormal());
+    const Formal* f = (const Formal*) ast;
+    return f;
   }
 
   /**
-   Returns the FormalDecl for the 'this' formal argument,
-   or 'nullptr' if there is none.
-   */
-  const FormalDecl* thisFormalDecl() const {
-    if (thisFormalChildNum_ >= 0) {
-      const ASTNode* ast = this->child(thisFormalChildNum_);
-      assert(ast->isFormalDecl());
-      const FormalDecl* d = (const FormalDecl*) ast;
-      return d;
-    } else {
-      return nullptr;
-    }
-  }
-
- /**
    Returns the Formal for the 'this' formal argument,
    or 'nullptr' if there is none.
    */
   const Formal* thisFormal() const {
-    const FormalDecl* d = this->thisFormalDecl();
-    if (d == nullptr) {
+    if (thisFormalChildNum_ >= 0) {
+      const ASTNode* ast = this->child(thisFormalChildNum_);
+      assert(ast->isFormal());
+      const Formal* f = (const Formal*) ast;
+      return f;
+    } else {
       return nullptr;
     }
-
-    return d->formal();
   }
 
   /**

@@ -2,11 +2,14 @@
 
 # Developers: To test changes with nightly against a clean repo, use this command:
 #
-# cd /tmp && \
+# export OLD_CHPL_HOME=$CHPL_HOME && \
+#   cd /tmp && \
 #   git clone $CHPL_HOME/.git test-chapel-nightly-debug && \
 #   cd test-chapel-nightly-debug && \
 #   source util/setchplenv.bash && \
-#   ./util/cron/nightly -debug -hellos
+#   CHPL_NIGHTLY_CRON_LOGDIR=/tmp/test-chapel-nightly-debug/cronlog \
+#   CHPL_NIGHTLY_DEBUG_EMAIL=<your email> \
+#     $OLD_CHPL_HOME/util/cron/nightly -debug -hellos
 
 use File::Basename;
 use File::Path qw(mkpath);
@@ -53,7 +56,7 @@ $nolocal = 0;
 $verify = 0;
 $retaintree = 0;
 $dist = "";
-$llvm = 0;
+$llvm = 1;
 $memleaks = 0;
 $memleakslog = "";
 $multilocale = 0;
@@ -153,6 +156,8 @@ while (@ARGV) {
         $cronrecipient = shift @ARGV;
     } elsif ($flag eq "-llvm") {
         $llvm = 1;
+    } elsif ($flag eq "-no-llvm") {
+        $llvm = 0;
     } elsif ($flag eq "-junit-xml") {
         $junit_xml = 1;
     } elsif ($flag eq "-asserts") {
@@ -211,13 +216,14 @@ if ($printusage == 1) {
     print "\t-hello                         : run the release/examples/hello.chpl test only\n";
     print "\t-hellos                        : run the release/examples/hello*.chpl tests only\n";
     print "\t-junit-xml                     : create jUnit XML style report (default is \"on\" in Jenkins environment)\n";
-    print "\t-llvm                          : run tests using --llvm\n";
+    print "\t-llvm                          : run tests using llvm backend\n";
     print "\t-mason                         : build mason before running tests\n";
     print "\t-memleaks <log>                : run tests with --memLeaks\n";
     print "\t-memleakslog <log>             : run tests with --memLeaksLog\n";
     print "\t-multilocale                   : run multilocale tests only\n";
     print "\t-no-buildcheck                 : do not run `make check` before running tests\n";
     print "\t-no-futures                    : do not run future tests\n";
+    print "\t-no-llvm                       : run tests with --no-llvm\n";
     print "\t-no-local                      : run tests using --no-local\n";
     print "\t-noruntime                     : don't build the runtime or run the tests\n";
     print "\t-notest                        : don't run the tests (check the build only)\n";
@@ -242,8 +248,7 @@ if ($printusage == 1) {
 
 print "\n";
 system("printenv");
-$modulecmd = "/sw/modules/bin/linux/modulecmd"; # heuristic
-if (-x $modulecmd) { system("$modulecmd bash list"); }
+system("module list");
 print "\n";
 
 # When JENKINS_URL is set in environment, assume running in jenkins job and
@@ -697,8 +702,8 @@ if ($nolocal == 1) {
 if ($verify == 1) {
     $testflags = "$testflags -compopts --verify";
 }
-if ($llvm == 1) {
-    $testflags = "$testflags -compopts --llvm";
+if ($llvm == 0) {
+    $testflags = "$testflags -compopts --no-llvm";
 }
 if ($launchcmd) {
     $testflags = "-launchcmd \"$launchcmd\" $testflags";

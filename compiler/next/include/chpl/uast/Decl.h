@@ -21,173 +21,48 @@
 #define CHPL_UAST_DECL_H
 
 #include "chpl/uast/Expression.h"
-#include "chpl/uast/Sym.h"
-#include "chpl/queries/UniqueString.h"
 
 namespace chpl {
 namespace uast {
 
 
 /**
-  This is an abstract base class for declarations
+  This is an abstract base class for declarations.
+  Note that most Decls inherit from NamedDecl,
+  however these declarations might be contained in MultiDecl or TupleDecl.
  */
 class Decl : public Expression {
+ public:
+  enum Visibility {
+    DEFAULT_VISIBILITY,
+    PUBLIC,
+    PRIVATE,
+  };
+
+ private:
+  Visibility visibility_;
+
  protected:
-  Decl(ASTTag tag, owned<Sym> sym)
-    : Expression(tag, makeASTList(std::move(sym))) {
+  Decl(ASTTag tag, Visibility visibility)
+    : Expression(tag), visibility_(visibility) {
   }
+  Decl(ASTTag tag, ASTList children, Visibility visibility)
+    : Expression(tag, std::move(children)), visibility_(visibility) {
+  }
+
   bool declContentsMatchInner(const Decl* other) const {
-    return true;
+    return this->visibility_ == other->visibility_ &&
+           expressionContentsMatchInner(other);
   }
   void declMarkUniqueStringsInner(Context* context) const {
+    expressionMarkUniqueStringsInner(context);
   }
 
  public:
   virtual ~Decl() = 0; // this is an abstract base class
 
-  /** Returns the symbol declared by the declaration. */
-  const Sym* sym() const {
-    const ASTNode* ast = child(0);
-    assert(ast->isSym());
-    return (const Sym*) ast;
-  }
-  UniqueString name() const {
-    return sym()->name();
-  }
-  Sym::Visibility visibility() const {
-    return sym()->visibility();
-  }
-};
-
-/**
- Defines an iterator over the AST list elements when those
- elements are all Decls. The iterator returns the declared Syms
- casted to a particular type.
- */
-template<typename CastToType>
-class DeclListSymIterator {
- public:
-  using iterator_category = std::random_access_iterator_tag;
-  using value_type = const CastToType*;
-  using difference_type = ASTList::const_iterator::difference_type;
-  using pointer = const CastToType**;
-  using reference = const CastToType*&;
-
- private:
-  ASTList::const_iterator it;
-
- public:
-  // needs to be default-constructible, copy-constructible,
-  // copy-assignable and destructible
-  DeclListSymIterator() = default;
-  explicit DeclListSymIterator(ASTList::const_iterator it) : it(it) { }
-  ~DeclListSymIterator() = default;
-
-  DeclListSymIterator<CastToType>& operator=(const DeclListSymIterator<CastToType>& it) = default;
-
-  // needs to be support == and !=
-  bool operator==(const DeclListSymIterator<CastToType> rhs) const {
-    return this->it == rhs.it;
-  }
-  bool operator!=(const DeclListSymIterator<CastToType> rhs) const {
-    return this->it != rhs.it;
-  }
-
-  // needs to support * and ->
-  const CastToType* operator*() const {
-    const ASTNode* ast = this->it->get();
-    assert(ast->isDecl());
-    const Decl* d = (const Decl*) ast;
-    return (const CastToType*) d->sym();
-  }
-  const CastToType* operator->() const {
-    const ASTNode* ast = this->it->get();
-    assert(ast->isDecl());
-    const Decl* d = (const Decl*) ast;
-    return (const CastToType*) d->sym();
-  }
-
-  // needs to support preincrement and postincrement
-  DeclListSymIterator<CastToType>& operator++() {
-    ++this->it;
-    return *this;
-  }
-  DeclListSymIterator<CastToType> operator++(int) {
-    DeclListSymIterator<CastToType> tmp = *this;
-    ++this->it;
-    return tmp;
-  }
-
-  // needs to support predecrement and postdecrement
-  DeclListSymIterator<CastToType>& operator--() {
-    --this->it;
-    return *this;
-  }
-  DeclListSymIterator<CastToType> operator--(int) {
-    DeclListSymIterator<CastToType> tmp = *this;
-    --this->it;
-    return tmp;
-  }
-
-  // needs to support + and -
-  DeclListSymIterator<CastToType> operator+(const difference_type rhs) const {
-    return DeclListSymIterator<CastToType>(this->it + rhs);
-  }
-  DeclListSymIterator<CastToType> operator-(const difference_type rhs) const {
-    return DeclListSymIterator<CastToType>(this->it - rhs);
-  }
-  difference_type operator-(const DeclListSymIterator<CastToType> rhs) const {
-    return DeclListSymIterator<CastToType>(this->it - rhs.it);
-  }
-
-  // needs to support < > <= >=
-  bool operator<(const DeclListSymIterator<CastToType> rhs) const {
-    return this->it < rhs.it;
-  }
-  bool operator>(const DeclListSymIterator<CastToType> rhs) const {
-    return this->it > rhs.it;
-  }
-  bool operator<=(const DeclListSymIterator<CastToType> rhs) const {
-    return this->it <= rhs.it;
-  }
-  bool operator>=(const DeclListSymIterator<CastToType> rhs) const {
-    return this->it >= rhs.it;
-  }
-
-  // needs to support += and -=
-  const DeclListSymIterator<CastToType>& operator+=(const difference_type& rhs) {
-    this->it += rhs;
-    return *this;
-  }
-  const DeclListSymIterator<CastToType>& operator-=(const difference_type& rhs) {
-    this->it -= rhs;
-    return *this;
-  }
-
-  // support the [] operator
-  const CastToType* operator[](const int rhs) {
-    return this->it[rhs];
-  }
-
-  // must be swappable but that should work with the default impl
-};
-
-template<typename CastToType>
-struct DeclListSymIteratorPair {
-  DeclListSymIterator<CastToType> begin_;
-  DeclListSymIterator<CastToType> end_;
-
-  DeclListSymIteratorPair(ASTList::const_iterator begin,
-                          ASTList::const_iterator end)
-    : begin_(begin), end_(end) {
-  }
-  ~DeclListSymIteratorPair() = default;
-
-  DeclListSymIterator<CastToType> begin() const {
-    return begin_;
-  }
-  DeclListSymIterator<CastToType> end() const {
-    return end_;
+  Visibility visibility() const {
+    return visibility_;
   }
 };
 

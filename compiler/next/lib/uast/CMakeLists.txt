@@ -25,24 +25,29 @@ target_sources(libchplcomp-obj
                Builder.cpp
                Call.cpp
                Comment.cpp
+               ControlFlow.cpp
                Decl.cpp
                Dot.cpp
+               Enum.cpp
+               EnumElement.cpp
                ErroneousExpression.cpp
                Expression.cpp
                FnCall.cpp
+               For.cpp
                Formal.cpp
-               FormalDecl.cpp
                Function.cpp
-               FunctionDecl.cpp
                Identifier.cpp
+               IndexableLoop.cpp
                Local.cpp
+               Loop.cpp
                Module.cpp
-               ModuleDecl.cpp
+               MultiDecl.cpp
+               NamedDecl.cpp
+               New.cpp
                OpCall.cpp
                Serial.cpp
-               Sym.cpp
+               TypeDecl.cpp
                Variable.cpp
-               VariableDecl.cpp
                Visitor.cpp
 
               )

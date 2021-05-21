@@ -99,14 +99,6 @@
     ThrowsTag_THROWS,
   };
 
-  enum NewTag { // TODO: mabye should be named ClassManageTag?
-    NewTag_BLANK,
-    NewTag_OWNED,
-    NewTag_SHARED,
-    NewTag_UNMANAGED,
-    NewTag_BORROWED,
-  };
-
   enum ShadowTag {
     ShadowTag_CONST,
     ShadowTag_IN,
@@ -221,13 +213,13 @@
   struct FunctionParts {
     std::vector<ParserComment>* comments;
     ErroneousExpression* errorExpr; // only used for parser error
-    Sym::Visibility visibility;
+    Decl::Visibility visibility;
     Function::Linkage linkage;
     Expression* linkageNameExpr;
     bool isInline;
     bool isOverride;
     Function::Kind kind;
-    FormalDecl* receiver;
+    Formal* receiver;
     PODUniqueString name;
     Function::ReturnIntent returnIntent;
     bool throws;
@@ -241,8 +233,15 @@
   // a struct to store the values in module_decl_start
   struct ModuleParts {
     std::vector<ParserComment>* comments;
-    Sym::Visibility visibility;
+    Decl::Visibility visibility;
     Module::Kind kind;
+    PODUniqueString name;
+  };
+
+  // a struct to store the values in enum_header_lcbr
+  struct EnumParts {
+    std::vector<ParserComment>* comments;
+    Decl::Visibility visibility;
     PODUniqueString name;
   };
 
@@ -302,16 +301,15 @@
     Function::ReturnIntent returnTag;
     LinkageTag linkageTag;
     Module::Kind moduleKind;
-    NewTag newTag;
+    New::Management newManagement;
     ShadowTag shadowTag;
-    Sym::Visibility visibilityTag;
+    Decl::Visibility visibilityTag;
     ThrowsTag throwsTag;
     Variable::Kind variableKind;
 
     // simple pointer values
     Block* block;
     Call* call;
-    Decl* decl;
     Expression* expr;
     Function* function;
     Module* module;
@@ -320,14 +318,15 @@
     BlockOrDo blockOrDo;
     CommentsAndLinkage commentsAndLinkage;
     CommentsAndStmt commentsAndStmt;
-    ParserExprList* exprList;
+    EnumParts enumParts;
     FunctionParts functionParts;
+    MaybeNamedActual maybeNamedActual;
+    MaybeNamedActualList* maybeNamedActualList;
     ModuleParts moduleParts;
+    ParserExprList* exprList;
     RenameList* renameList;
     UniqueStrList* uniqueStrList;
     WhereAndLifetime lifetimeAndWhere;
-    MaybeNamedActual maybeNamedActual;
-    MaybeNamedActualList* maybeNamedActualList;
 
     // TODO
     //Type*                     ptype;
@@ -599,7 +598,7 @@
 
 %type <commentsAndStmt> var_decl_stmt
 %type <exprList> var_decl_stmt_inner_ls tuple_var_decl_stmt_inner_ls
-%type <expr> var_decl_stmt_inner
+%type <commentsAndStmt> var_decl_stmt_inner
 
 
 %type <exprList> function_body_stmt opt_function_body_stmt
@@ -610,7 +609,7 @@
 %type <expr> array_type
 %type <expr> opt_type opt_ret_type ret_array_type
 %type <expr> opt_formal_type formal_array_type opt_formal_array_elt_type lambda_decl_expr
-%type <commentsAndStmt> enum_header
+%type <enumParts> enum_header_lcbr
 %type <exprList> enum_ls
 
 %type <expr> zippered_iterator
@@ -634,7 +633,7 @@
 %type <commentsAndStmt> enum_item
 %type <expr> query_expr ifc_constraint
 
-%type <newTag> new_maybe_decorated
+%type <newManagement> new_maybe_decorated
 %type <exprList> opt_inherit simple_expr_ls expr_ls assoc_expr_ls tuple_expr_ls
 %type <maybeNamedActualList> opt_actual_ls actual_ls
 %type <exprList> opt_task_intent_ls task_intent_ls task_intent_clause
@@ -783,9 +782,9 @@ module_decl_stmt:
       ModuleParts parts = $1;
       ParserExprList* body = context->makeList();
       context->appendList(body, context->gatherComments(@3));
-      auto mod = ModuleDecl::build(BUILDER, LOC(@1),
-                                   parts.name, parts.visibility, parts.kind,
-                                   context->consumeList(body));
+      auto mod = Module::build(BUILDER, LOC(@1),
+                               parts.name, parts.visibility, parts.kind,
+                               context->consumeList(body));
       CommentsAndStmt cs = {parts.comments, mod.release()};
       $$ = cs;
     }
@@ -796,9 +795,9 @@ module_decl_stmt:
       ModuleParts parts = $1;
       ParserExprList* body = $3;
       context->appendList(body, context->gatherComments(@4));
-      auto mod = ModuleDecl::build(BUILDER, LOC(@1),
-                                   parts.name, parts.visibility, parts.kind,
-                                   context->consumeList(body));
+      auto mod = Module::build(BUILDER, LOC(@1),
+                               parts.name, parts.visibility, parts.kind,
+                               context->consumeList(body));
       CommentsAndStmt cs = {parts.comments, mod.release()};
       $$ = cs;
     }
@@ -807,20 +806,20 @@ module_decl_stmt:
       ModuleParts parts = $1;
       ParserExprList* body =
               context->makeList(ErroneousExpression::build(BUILDER, LOC(@3)));
-      auto mod = ModuleDecl::build(BUILDER, LOC(@1),
-                                   parts.name, parts.visibility, parts.kind,
-                                   context->consumeList(body));
+      auto mod = Module::build(BUILDER, LOC(@1),
+                               parts.name, parts.visibility, parts.kind,
+                               context->consumeList(body));
       CommentsAndStmt cs = {parts.comments, mod.release()};
       $$ = cs;
     }
 ;
 
 access_control:
-           { $$ = context->noteVisibility(Sym::DEFAULT_VISIBILITY); }
+           { $$ = context->noteVisibility(Decl::DEFAULT_VISIBILITY); }
 | TPUBLIC  { context->noteDeclStartLoc(@1);
-             $$ = context->noteVisibility(Sym::PUBLIC); }
+             $$ = context->noteVisibility(Decl::PUBLIC); }
 | TPRIVATE { context->noteDeclStartLoc(@1);
-             $$ = context->noteVisibility(Sym::PRIVATE); }
+             $$ = context->noteVisibility(Decl::PRIVATE); }
 ;
 
 opt_prototype:
@@ -833,7 +832,7 @@ include_module_stmt:
  TINCLUDE access_control opt_prototype TMODULE ident_def TSEMI
    {
      $$ = TODOSTMT(@$);
-     context->visibility = Sym::DEFAULT_VISIBILITY;
+     context->visibility = Decl::DEFAULT_VISIBILITY;
    }
 ;
 
@@ -976,37 +975,37 @@ use_stmt:
   access_control TUSE use_renames_ls TSEMI
     {
       $$ = TODOSTMT(@$);
-      context->visibility = Sym::DEFAULT_VISIBILITY;
+      context->visibility = Decl::DEFAULT_VISIBILITY;
     }
 | access_control TUSE expr TEXCEPT except_ls TSEMI
     {
       $$ = TODOSTMT(@$);
-      context->visibility = Sym::DEFAULT_VISIBILITY;
+      context->visibility = Decl::DEFAULT_VISIBILITY;
     }
 | access_control TUSE expr TAS expr TEXCEPT except_ls TSEMI
     {
       $$ = TODOSTMT(@$);
-      context->visibility = Sym::DEFAULT_VISIBILITY;
+      context->visibility = Decl::DEFAULT_VISIBILITY;
     }
 | access_control TUSE expr TAS TUNDERSCORE TEXCEPT except_ls TSEMI
     {
       $$ = TODOSTMT(@$);
-      context->visibility = Sym::DEFAULT_VISIBILITY;
+      context->visibility = Decl::DEFAULT_VISIBILITY;
     }
 | access_control TUSE expr TONLY opt_only_ls TSEMI
     {
       $$ = TODOSTMT(@$);
-      context->visibility = Sym::DEFAULT_VISIBILITY;
+      context->visibility = Decl::DEFAULT_VISIBILITY;
     }
 | access_control TUSE expr TAS expr TONLY opt_only_ls TSEMI
     {
       $$ = TODOSTMT(@$);
-      context->visibility = Sym::DEFAULT_VISIBILITY;
+      context->visibility = Decl::DEFAULT_VISIBILITY;
     }
 | access_control TUSE expr TAS TUNDERSCORE TONLY opt_only_ls TSEMI
     {
       $$ = TODOSTMT(@$);
-      context->visibility = Sym::DEFAULT_VISIBILITY;
+      context->visibility = Decl::DEFAULT_VISIBILITY;
     }
 ;
 
@@ -1014,7 +1013,7 @@ import_stmt:
   access_control TIMPORT import_ls TSEMI
     {
       $$ = TODOSTMT(@$);
-      context->visibility = Sym::DEFAULT_VISIBILITY;
+      context->visibility = Decl::DEFAULT_VISIBILITY;
     }
 ;
 
@@ -1184,19 +1183,19 @@ class_level_stmt:
     {
       // visibility should be default when inner_class_level_stmt is parsed
       $$ = context->finishStmt($1);
-      context->visibility = Sym::DEFAULT_VISIBILITY;
+      context->visibility = Decl::DEFAULT_VISIBILITY;
     }
 | TPUBLIC {context->noteDeclStartLoc(@1);
-           context->noteVisibility(Sym::PUBLIC);} inner_class_level_stmt
+           context->noteVisibility(Decl::PUBLIC);} inner_class_level_stmt
     {
       $$ = context->finishStmt($3);
-      context->visibility = Sym::DEFAULT_VISIBILITY;
+      context->visibility = Decl::DEFAULT_VISIBILITY;
     }
 | TPRIVATE {context->noteDeclStartLoc(@1);
-            context->noteVisibility(Sym::PRIVATE);} inner_class_level_stmt
+            context->noteVisibility(Decl::PRIVATE);} inner_class_level_stmt
     {
       $$ = context->finishStmt($3);
-      context->visibility = Sym::DEFAULT_VISIBILITY;
+      context->visibility = Decl::DEFAULT_VISIBILITY;
     }
 ;
 
@@ -1340,25 +1339,58 @@ loop_stmt:
       $$ = TODOSTMT(@$);
     }
 | TFOR expr TIN expr do_stmt
-    {
-      $$ = TODOSTMT(@$);
-    }
+  {
+    auto indexVar = context->buildIndexVariableDecl(@2, toOwned($2));
+    auto comments = context->gatherCommentsFromList($5.exprList, @1);
+    auto node = For::build(BUILDER, LOC(@1), std::move(indexVar),
+                           std::move(toOwned($4)),
+                           std::move(context->consumeList($5.exprList)),
+                           $5.usesDo,
+                           /*isExpressionLevel*/ false,
+                           /*isParam*/ false);
+    $$ = { .comments=comments, .stmt=node.release() };
+  }
 | TFOR expr TIN zippered_iterator do_stmt
-    {
-      $$ = TODOSTMT(@$);
-    }
+  {
+    auto indexVar = context->buildIndexVariableDecl(@2, toOwned($2));
+    auto comments = context->gatherCommentsFromList($5.exprList, @1);
+    auto node = For::build(BUILDER, LOC(@1), std::move(indexVar),
+                           std::move(toOwned($4)),
+                           std::move(context->consumeList($5.exprList)),
+                           $5.usesDo,
+                           /*isExpressionLevel*/ false,
+                           /*isParam*/ false);
+    $$ = { .comments=comments, .stmt=node.release() };
+  }
 | TFOR expr do_stmt
-    {
-      $$ = TODOSTMT(@$);
-    }
+  {
+    auto comments = context->gatherCommentsFromList($3.exprList, @1);
+    auto node = For::build(BUILDER, LOC(@1), std::move(toOwned($2)),
+                           std::move(context->consumeList($3.exprList)),
+                           $3.usesDo);
+    $$ = { .comments=comments, .stmt=node.release() };
+  }
 | TFOR zippered_iterator do_stmt
-    {
-      $$ = TODOSTMT(@$);
-    }
+  {
+    auto comments = context->gatherCommentsFromList($3.exprList, @1);
+    auto node = For::build(BUILDER, LOC(@1), std::move(toOwned($2)),
+                           std::move(context->consumeList($3.exprList)),
+                           $3.usesDo);
+    $$ = { .comments=comments, .stmt=node.release() };
+  }
 | TFOR TPARAM ident_def TIN expr do_stmt
-    {
-      $$ = TODOSTMT(@$);
-    }
+  {
+    Expression* ident = context->buildIdent(@3, $3);
+    auto indexVar = context->buildIndexVariableDecl(@3, toOwned(ident));
+    auto comments = context->gatherCommentsFromList($6.exprList, @1);
+    auto node = For::build(BUILDER, LOC(@1), std::move(indexVar),
+                           std::move(toOwned($5)),
+                           std::move(context->consumeList($6.exprList)),
+                           $6.usesDo,
+                           /*isExpressionLevel*/ false,
+                           /*isParam*/ true);
+    $$ = { .comments=comments, .stmt=node.release() };
+  }
 | TFORALL expr TIN expr                                   do_stmt
     {
       $$ = TODOSTMT(@$);
@@ -1678,25 +1710,42 @@ class_level_stmt_ls:
 ;
 
 enum_decl_stmt:
-  enum_header TLCBR enum_ls TRCBR
+  enum_header_lcbr enum_ls TRCBR
     {
-      /* TODO: attach enum values to the decl */
-      CommentsAndStmt cs = $1;
+      EnumParts parts = $1;
+      ParserExprList* list = $2;
+      // get any comments after the last element but before the closing brace
+      context->appendList(list, context->gatherComments(@3));
+
+      auto decl = Enum::build(BUILDER, LOC(@$),
+                              parts.name, parts.visibility,
+                              context->consumeList(list));
+      CommentsAndStmt cs = {parts.comments, decl.release()};
       $$ = cs;
+      context->resetDeclState();
+      context->clearComments();
     }
-| enum_header TLCBR error TRCBR
+| enum_header_lcbr error TRCBR
     {
-      CommentsAndStmt cs = $1;
-      if (cs.stmt) delete cs.stmt;
-      cs.stmt = ErroneousExpression::build(BUILDER, LOC(@3)).release();
+      EnumParts parts = $1;
+      auto err = ErroneousExpression::build(BUILDER, LOC(@2));
+      CommentsAndStmt cs = {parts.comments, err.release()};
       $$ = cs;
+      context->resetDeclState();
+      context->clearComments();
     }
 ;
 
-enum_header:
-  TENUM ident_def
+enum_header_lcbr:
+  TENUM ident_def TLCBR
     {
-      $$ = TODOSTMT(@$);
+      // take into account location of public/private, if any
+      auto loc = context->declStartLoc(@1);
+
+      EnumParts parts = {context->gatherComments(loc), context->visibility, $2};
+      $$ = parts;
+
+      context->clearComments();
     }
 ;
 
@@ -1708,18 +1757,26 @@ enum_ls:
 | enum_ls TCOMMA
     {
       $$ = $1;
+      context->clearCommentsBefore(@2);
     }
-| enum_ls TCOMMA enum_item
+| enum_ls TCOMMA {context->clearCommentsBefore(@2);} enum_item
     {
-      context->appendList($1, $3);
+      context->appendList($1, $4);
     }
 ;
 
 enum_item:
   ident_def
-    { $$ = TODOSTMT(@$); }
+    {
+      auto decl = EnumElement::build(BUILDER, LOC(@$), $1);
+      $$ = STMT(@$, decl.release());
+    }
 | ident_def TASSIGN expr
-    { $$ = TODOSTMT(@$); }
+    {
+      auto decl = EnumElement::build(BUILDER, LOC(@$), $1, toOwned($3));
+      $$ = STMT(@$, decl.release());
+      context->clearCommentsBefore(@3);
+    }
 ;
 
 lambda_decl_expr:
@@ -1790,9 +1847,9 @@ fn_decl_stmt_inner:
 | fn_decl_stmt_start opt_this_intent_tag fn_decl_receiver_expr TDOT fn_ident opt_formal_ls
     {
       FunctionParts fp = $1;
-      fp.receiver = FormalDecl::build(BUILDER, LOC(@3),
-                                      STR("this"), $2, toOwned($3),
-                                      nullptr).release();
+      fp.receiver = Formal::build(BUILDER, LOC(@3),
+                                  STR("this"), $2, toOwned($3),
+                                  nullptr).release();
       fp.name = $5;
       fp.formals = $6;
       $$ = fp;
@@ -1800,9 +1857,9 @@ fn_decl_stmt_inner:
 | fn_decl_stmt_start opt_this_intent_tag fn_decl_receiver_expr TDOT assignop_ident opt_formal_ls
     {
       FunctionParts fp = $1;
-      fp.receiver = FormalDecl::build(BUILDER, LOC(@3),
-                                      STR("this"), $2, toOwned($3),
-                                      nullptr).release();
+      fp.receiver = Formal::build(BUILDER, LOC(@3),
+                                  STR("this"), $2, toOwned($3),
+                                  nullptr).release();
       fp.name = $5;
       fp.formals = $6;
       $$ = fp;
@@ -1903,8 +1960,8 @@ formal_ls:
 
 formal:
   opt_intent_tag ident_def opt_formal_type opt_init_expr
-    { $$ = FormalDecl::build(BUILDER, LOC(@$), $2, $1,
-                             toOwned($3), toOwned($4)).release(); }
+    { $$ = Formal::build(BUILDER, LOC(@$), $2, $1,
+                         toOwned($3), toOwned($4)).release(); }
 | pragma_ls opt_intent_tag ident_def opt_formal_type opt_init_expr
     { $$ = TODOEXPR(@$); }
 | opt_intent_tag ident_def opt_formal_type var_arg_expr
@@ -2088,12 +2145,39 @@ var_decl_stmt:
 | var_decl_type var_decl_stmt_inner_ls TSEMI
     {
       ParserExprList* lst = $2;
-      if (lst->size() == 1) {
-        $$ = STMT(@1, (*lst)[0]);
-      } else {
-        $$ = TODOSTMT(@$);
+      int nVarDecls = 0;
+      Variable* lastVariableDecl = nullptr;
+      for (auto elt : *lst) {
+        if (Variable* d = elt->toVariable()) {
+          lastVariableDecl = d;
+          nVarDecls++;
+        }
       }
-      delete lst;
+      assert(nVarDecls > 0);
+      assert(lastVariableDecl);
+      if (nVarDecls == 1) {
+        // gather any comments from before the 'var'
+        // intentionally ignores comments after 'var'
+        CommentsAndStmt cs = {context->gatherCommentsFromList(lst, @1),
+                              lastVariableDecl};
+        $$ = cs;
+        // delete any comments left in lst
+        for (auto elt : *lst) {
+          if (elt->isComment()) {
+            delete elt;
+          }
+        }
+        // delete the list
+        delete lst;
+      } else {
+        // gather any comments from before the 'var'
+        CommentsAndStmt cs = {context->gatherCommentsFromList(lst, @1),
+                              nullptr};
+        auto multi = MultiDecl::build(BUILDER, LOC(@$), context->visibility,
+                                      context->consumeList(lst));
+        cs.stmt = multi.release();
+        $$ = cs;
+      }
       context->resetDeclState();
     }
 ;
@@ -2105,18 +2189,26 @@ var_decl_stmt_inner_ls:
     }
 | var_decl_stmt_inner_ls TCOMMA var_decl_stmt_inner
     {
-      $$ = TODOLIST(@$);
+      $$ = context->appendList($1, $3);
     }
 ;
 
 var_decl_stmt_inner:
   ident_def opt_type opt_init_expr
-    { $$ = VariableDecl::build(BUILDER, LOC(@$),
-                               $1, context->visibility,
-                               context->varDeclKind,
-                               toOwned($2), toOwned($3)).release(); }
+    {
+      auto varDecl = Variable::build(BUILDER, LOC(@$),
+                                     $1, context->visibility,
+                                     context->varDeclKind,
+                                     toOwned($2), toOwned($3));
+      // gather the comments like a statement does
+      $$ = STMT(@1, varDecl.release());
+      context->clearComments();
+    }
 | TLP tuple_var_decl_stmt_inner_ls TRP opt_type opt_init_expr
-    { $$ = TODOEXPR(@$); }
+    {
+      $$ = TODOSTMT(@$);
+      context->clearComments();
+    }
 ;
 
 tuple_var_decl_component:
@@ -2499,30 +2591,52 @@ io_expr:
 
 new_maybe_decorated:
   TNEW         %prec TNOELSE
-    { $$ = NewTag_BLANK; }
+    { $$ = New::DEFAULT_MANAGEMENT; }
 | TNEW TOWNED
-    { $$ = NewTag_OWNED; }
+    { $$ = New::OWNED; }
 | TNEW TSHARED
-    { $$ = NewTag_SHARED; }
+    { $$ = New::SHARED; }
 | TNEW TUNMANAGED
-    { $$ = NewTag_UNMANAGED; }
+    { $$ = New::UNMANAGED; }
 | TNEW TBORROWED
-    { $$ = NewTag_BORROWED; }
+    { $$ = New::BORROWED; }
 ;
 
 new_expr:
-  /* handles the typical new cases, e.g. new C(); new owned C() */
+  /* Handles the typical new cases, e.g. new C(); new owned C() */
   new_maybe_decorated expr %prec TNEW
-    { TODOEXPR(@$); }
-  /* handles e.g. new (typefn())(initargs) */
+  {
+    if (FnCall* fnCall = $2->toFnCall()) {
+      $$ = context->wrapCalledExpressionInNew(@$, $1, fnCall);
+    } else {
+
+      // It's an error for one reason or another. TODO: Specialize these
+      // errors later (e.g. 'new a.field' would require parens around
+      // the expression 'a.field'; 'new foo' would require an argument
+      // list for 'foo'; and something like 'new __primitive()' just
+      // doesn't make any sense...
+      $$ = raiseError(@$, context, "Invalid form for new expression");
+    }
+  }
+  /* TODO: handles e.g. new (typefn())(initargs) */
+  /* TODO TODO: Flag these with asserts in the old compiler parser and
+                see if we can remove them. */
 | TNEW TOWNED TLP expr TRP TLP opt_actual_ls TRP %prec TNOELSE
-    { $$ = TODOEXPR(@$); }
+  {
+    $$ = TODOEXPR(@$);
+  }
 | TNEW TSHARED TLP expr TRP TLP opt_actual_ls TRP %prec TNOELSE
-    { $$ = TODOEXPR(@$); }
+  {
+    $$ = TODOEXPR(@$);
+  }
 | TNEW TOWNED TLP expr TRP TLP opt_actual_ls TRP TQUESTION
-    { $$ = TODOEXPR(@$); }
+  {
+    $$ = TODOEXPR(@$);
+  }
 | TNEW TSHARED TLP expr TRP TLP opt_actual_ls TRP TQUESTION
-    { $$ = TODOEXPR(@$); }
+  {
+    $$ = TODOEXPR(@$);
+  }
 ;
 
 let_expr:

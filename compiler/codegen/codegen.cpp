@@ -98,74 +98,56 @@ const char* idCommentTemp(BaseAST* ast) {
 }
 
 
-static const char*
-subChar(Symbol* sym, const char* ch, const char* x) {
-  char* tmp = (char*)malloc(ch-sym->cname+1);
-  strncpy(tmp, sym->cname, ch-sym->cname);
-  tmp[ch-sym->cname] = '\0';
-  sym->cname = astr(tmp, x, ch+1);
-  free(tmp);
-  return sym->cname;
-}
+const char* legalizeName(const char* name) {
+  std::string ret = "";
 
-static void legalizeName(Symbol* sym) {
-  if (!sym->isRenameable())
-    return;
-  for (const char* ch = sym->cname; *ch != '\0'; ch++) {
+  for (const char* ch = name; *ch != '\0'; ch++) {
     switch (*ch) {
-    case '>': ch = subChar(sym, ch, "_GREATER_"); break;
-    case '<': ch = subChar(sym, ch, "_LESS_"); break;
-    case '=':
-      {
-
-        /* To help generated code readability, we'd like to convert =
-           into "ASSIGN" and == into "EQUALS".  Unfortunately, because
-           of the character-at-a-time approach taken here combined
-           with the fact that subChar() returns a completely new
-           string on every call, the way I implemented this is a bit
-           ugly (in part because I didn't want to spend the time to
-           reimplement this whole function -BLC */
-
-        static const char* equalsStr = "_EQUALS_";
-        static int equalsLen = strlen(equalsStr);
-
-        if (*(ch+1) == '=') {
-          // If we're in the == case, replace the first = with EQUALS
-          ch = subChar(sym, ch, equalsStr);
+      case '=':
+        if (*(ch+1) == '=') { // matched ==
+          ret += "_EQUALS_";
+          ch++;
         } else {
-          if ((ch-equalsLen >= sym->cname) &&
-              strncmp(ch-equalsLen, equalsStr, equalsLen) == 0) {
-            // Otherwise, if the thing preceding this '=' is the
-            // string _EQUALS_, we must have been the second '=' and
-            // we should just replace ourselves with an underscore to
-            // make things legal.
-            ch = subChar(sym, ch, "_");
-          } else {
-            // Otherwise, this must have simply been a standalone '='
-            ch = subChar(sym, ch, "_ASSIGN_");
-          }
+          ret += "_ASSIGN_";
         }
         break;
-    }
-    case '*': ch = subChar(sym, ch, "_ASTERISK_"); break;
-    case '/': ch = subChar(sym, ch, "_SLASH_"); break;
-    case '%': ch = subChar(sym, ch, "_PERCENT_"); break;
-    case '+': ch = subChar(sym, ch, "_PLUS_"); break;
-    case '-': ch = subChar(sym, ch, "_HYPHEN_"); break;
-    case '^': ch = subChar(sym, ch, "_CARET_"); break;
-    case '&': ch = subChar(sym, ch, "_AMPERSAND_"); break;
-    case '|': ch = subChar(sym, ch, "_BAR_"); break;
-    case '!': ch = subChar(sym, ch, "_EXCLAMATION_"); break;
-    case '#': ch = subChar(sym, ch, "_POUND_"); break;
-    case '?': ch = subChar(sym, ch, "_QUESTION_"); break;
-    case '$': ch = subChar(sym, ch, "_DOLLAR_"); break;
-    case '~': ch = subChar(sym, ch, "_TILDE_"); break;
-    case ':': ch = subChar(sym, ch, "_COLON_"); break;
-    case '.': ch = subChar(sym, ch, "_DOT_"); break;
-    case ' ': ch = subChar(sym, ch, "_SPACE_"); break;
-    default: break;
+
+      case '>': ret += "_GREATER_";     break;
+      case '<': ret += "_LESS_";        break;
+      case '*': ret += "_ASTERISK_";    break;
+      case '/': ret += "_SLASH_";       break;
+      case '%': ret += "_PERCENT_";     break;
+      case '+': ret += "_PLUS_";        break;
+      case '-': ret += "_HYPHEN_";      break;
+      case '^': ret += "_CARET_";       break;
+      case '&': ret += "_AMPERSAND_";   break;
+      case '|': ret += "_BAR_";         break;
+      case '!': ret += "_EXCLAMATION_"; break;
+      case '#': ret += "_POUND_";       break;
+      case '?': ret += "_QUESTION_";    break;
+      case '$': ret += "_DOLLAR_";      break;
+      case '~': ret += "_TILDE_";       break;
+      case ':': ret += "_COLON_";       break;
+      case '.': ret += "_DOT_";         break;
+      case ' ': ret +=  "_SPACE_";      break;
+      default:
+      {
+        char c = *ch;
+        ret += c;
+        break;
+      }
     }
   }
+
+  return astr(ret.c_str());
+}
+
+static void legalizeSymbolName(Symbol* sym) {
+  if (!sym->isRenameable())
+    return;
+
+  const char* newName = legalizeName(sym->cname);
+  sym->cname = newName;
 
   // Add chpl_ to operator names.
   if ((sym->cname[0] == '_' &&
@@ -180,7 +162,6 @@ static void legalizeName(Symbol* sym) {
     int numDims = (toFnSymbol(sym)->numFormals() - 1) / 2;
     sym->cname = astr("polly_array_index_",istr(numDims));
   }
-
 }
 
 static void
@@ -1479,7 +1460,7 @@ static void uniquify_names(std::set<const char*> & cnames,
   //
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (ts->defPoint->parentExpr != rootModule->block) {
-      legalizeName(ts);
+      legalizeSymbolName(ts);
       types.push_back(ts);
     }
   }
@@ -1491,7 +1472,7 @@ static void uniquify_names(std::set<const char*> & cnames,
   forv_Vec(VarSymbol, var, gVarSymbols) {
     if (var->defPoint->parentExpr != rootModule->block &&
         toModuleSymbol(var->defPoint->parentSymbol)) {
-      legalizeName(var);
+      legalizeSymbolName(var);
       globals.push_back(var);
     }
   }
@@ -1500,7 +1481,7 @@ static void uniquify_names(std::set<const char*> & cnames,
   // collect functions and apply canonical sort
   //
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    legalizeName(fn);
+    legalizeSymbolName(fn);
     functions.push_back(fn);
   }
   std::sort(functions.begin(), functions.end(), compareSymbol);
@@ -1554,7 +1535,7 @@ static void uniquify_names(std::set<const char*> & cnames,
     if (EnumType* enumType = toEnumType(ts->type)) {
       for_enums(constant, enumType) {
         Symbol* sym = constant->sym;
-        legalizeName(sym);
+        legalizeSymbolName(sym);
         sym->cname = astr(enumType->symbol->cname, "_", sym->cname);
         uniquifyName(sym, &cnames);
       }
@@ -1571,7 +1552,7 @@ static void uniquify_names(std::set<const char*> & cnames,
       if (AggregateType* ct = toAggregateType(ts->type)) {
         std::set<const char*> fieldNameSet;
         for_fields(field, ct) {
-          legalizeName(field);
+          legalizeSymbolName(field);
           uniquifyName(field, &fieldNameSet);
         }
         uniquifyNameCounts.clear();
@@ -1605,7 +1586,7 @@ static void uniquify_names(std::set<const char*> & cnames,
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     std::set<const char*> formalNameSet;
     for_formals(formal, fn) {
-      legalizeName(formal);
+      legalizeSymbolName(formal);
       uniquifyName(formal, &formalNameSet, &cnames);
     }
     uniquifyNameCounts.clear();
@@ -1626,7 +1607,7 @@ static void uniquify_names(std::set<const char*> & cnames,
     std::vector<DefExpr*> defs;
     collectDefExprs(fn->body, defs);
     for_vector(DefExpr, def, defs) {
-      legalizeName(def->sym);
+      legalizeSymbolName(def->sym);
       // give temps cnames
       if (def->sym->hasFlag(FLAG_TEMP)) {
         if (localTempNames) {
@@ -1656,7 +1637,7 @@ static void codegen_header(std::set<const char*> & cnames,
   //
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (ts->defPoint->parentExpr != rootModule->block) {
-      legalizeName(ts);
+      legalizeSymbolName(ts);
       types.push_back(ts);
     }
   }
@@ -1668,7 +1649,7 @@ static void codegen_header(std::set<const char*> & cnames,
   forv_Vec(VarSymbol, var, gVarSymbols) {
     if (var->defPoint->parentExpr != rootModule->block &&
         toModuleSymbol(var->defPoint->parentSymbol)) {
-      legalizeName(var);
+      legalizeSymbolName(var);
       if ( var->hasFlag(FLAG_GPU_CODEGEN) == gCodegenGPU ){
         globals.push_back(var);
       }
@@ -1680,7 +1661,7 @@ static void codegen_header(std::set<const char*> & cnames,
   // collect functions and apply canonical sort
   //
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    legalizeName(fn);
+    legalizeSymbolName(fn);
     if (fn->hasFlag(FLAG_GPU_CODEGEN) == gCodegenGPU){
       functions.push_back(fn);
     }

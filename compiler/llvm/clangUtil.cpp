@@ -1234,10 +1234,7 @@ class CCodeGenConsumer final : public ASTConsumer {
       } else if (VarDecl *vd = dyn_cast<VarDecl>(d)) {
         info->lvt->addGlobalCDecl(vd);
       } else if (RecordDecl *rd = dyn_cast<RecordDecl>(d)) {
-        if( rd->getName().size() > 0 ) {
-          // Handle forward declaration for structs
-          info->lvt->addGlobalCDecl(rd);
-        }
+        info->lvt->addGlobalCDecl(rd);
       } else if (UsingDecl* ud = dyn_cast<UsingDecl>(d)) {
         for (auto shadow : ud->shadows()) {
           NamedDecl* nd = shadow->getTargetDecl();
@@ -2536,6 +2533,29 @@ GenRet codegenCValue(const ValueDecl *vd)
   return ret;
 }
 
+static std::map<const clang::Decl*, const char*> savedAnonDeclNames;
+
+static
+const char* makeNameForAnonDecl(const clang::Decl* decl)
+{
+  // This has to return the same value when applied to the same union
+  SourceManager& srcm = gGenInfo->clangInfo->Ctx->getSourceManager();
+  clang::SourceLocation loc = decl->getLocation();
+  std::string filename = srcm.getFilename(loc).str();
+  unsigned offset = srcm.getFileOffset(loc);
+  std::string str = "chpl_anon_struct_" + filename + std::to_string(offset);
+
+  const char* ret = astr(legalizeName(str.c_str()));
+  savedAnonDeclNames[decl] = ret;
+  return ret;
+}
+const char* getGeneratedAnonTypeName(const clang::RecordType* structType) {
+  const clang::Decl* decl = structType->getDecl();
+  const char* ret = savedAnonDeclNames[decl];
+  INT_ASSERT(ret);
+  return ret;
+}
+
 LayeredValueTable::LayeredValueTable(){
   layers.push_front(map_type());
 }
@@ -2585,20 +2605,33 @@ void LayeredValueTable::addGlobalType(StringRef name, llvm::Type *type, bool isU
 }
 
 void LayeredValueTable::addGlobalCDecl(NamedDecl* cdecl) {
-  if (cdecl->getIdentifier() == nullptr) {
-    // Certain C++ things such as constructors can have
-    // special compound names. In this case getName() will
-    // fail.
-    return;
+  llvm::StringRef name = "";
+
+  // Certain C++ things such as constructors can have
+  // special compound names. In this case getName() will
+  // fail.
+  if (cdecl->getIdentifier() != nullptr) {
+    name = cdecl->getName();
   }
 
-  addGlobalCDecl(cdecl->getName(), cdecl);
+  if (name.empty()) {
+    const char* name_astr = makeNameForAnonDecl(cdecl);
+    name = name_astr;
+  }
+
+  addGlobalCDecl(name, cdecl);
 
   // Also file structs under 'struct struct_name'
-  if(isa<RecordDecl>(cdecl)) {
-    std::string sname = "struct ";
-    sname += cdecl->getName();
-    addGlobalCDecl(sname, cdecl);
+  if(RecordDecl* rd = dyn_cast<RecordDecl>(cdecl)) {
+    if(rd->isUnion()) {
+      std::string sname = "union ";
+      sname += name;
+      addGlobalCDecl(sname, cdecl);
+    } else if (rd->isStruct()) {
+      std::string sname = "struct ";
+      sname += name;
+      addGlobalCDecl(sname, cdecl);
+    }
   }
 }
 
@@ -2845,9 +2878,11 @@ int getCRecordMemberGEP(const char* typeName, const char* fieldName,
       t = t->getPointeeType().getTypePtr();
     }
     const RecordType* rt = t->getAsStructureType();
+    if (rt == nullptr)
+      rt = t->getAsUnionType();
+
     INT_ASSERT(rt);
     d = rt->getDecl();
-    // getAsUnionType also available, but we don't support extern unions
   }
   INT_ASSERT(isa<RecordDecl>(d));
   RecordDecl* rec = cast<RecordDecl>(d);
@@ -3111,6 +3146,28 @@ static unsigned helpGetAlignment(::Type* type) {
   return maxAlign;
 }
 
+bool isCTypeUnion(const char* name) {
+  GenInfo* info = gGenInfo;
+  INT_ASSERT(info);
+  TypeDecl* d = nullptr;
+
+  info->lvt->getCDecl(name, &d, nullptr);
+
+  if (d == nullptr)
+    return false;
+
+  if (isa<TypedefDecl>(d)) {
+    TypedefDecl* td = cast<TypedefDecl>(d);
+    const clang::Type* t = td->getUnderlyingType().getTypePtr();
+    return t->isUnionType();
+  }
+  if (isa<RecordDecl>(d)) {
+    RecordDecl* rec = cast<RecordDecl>(d);
+    return rec->isUnion();
+  }
+  return false;
+}
+
 #if HAVE_LLVM_VER >= 100
 llvm::MaybeAlign getPointerAlign(int addrSpace) {
   GenInfo* info = gGenInfo;
@@ -3322,7 +3379,9 @@ void setupForGlobalToWide(void) {
   }
   ginfo->irBuilder->CreateRet(ret);
 
-  llvm::verifyFunction(*fn, &errs());
+  if (developer || fVerify) {
+    llvm::verifyFunction(*fn, &errs());
+  }
 
   info->hasPreservingFn = true;
   info->preservingFn = fn;
@@ -4159,6 +4218,15 @@ static std::string getLibraryOutputPath() {
 static void moveGeneratedLibraryFile(const char* tmpbinname) {
   std::string outputPath = getLibraryOutputPath();
   moveResultFromTmp(outputPath.c_str(), tmpbinname);
+}
+
+void print_clang(clang::Type* t) {
+  if (t == NULL)
+    fprintf(stderr, "NULL");
+  else
+    t->dump();
+
+  fprintf(stderr, "\n");
 }
 
 void print_clang(clang::Decl* d) {

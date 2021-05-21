@@ -1,0 +1,4 @@
+shortMethodError.chpl:10: error: unresolved call 'owned D.shortMethod'
+shortMethodError.chpl:2: note: this candidate did not match: C.shortMethodreturn
+shortMethodError.chpl:10: note: because method call receiver with type 'owned D'
+shortMethodError.chpl:1: note: is passed to formal 'this: borrowed C'

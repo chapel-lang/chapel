@@ -1,1 +1,2 @@
 CHPL_LLVM==none
+COMPOPTS <= --baseline

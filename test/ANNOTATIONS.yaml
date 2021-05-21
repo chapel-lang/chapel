@@ -467,6 +467,8 @@ all:
   04/01/21:
     - text: Upgrade to GASNet-EX 2021.3.0 (#17505)
       config: 16-node-cs, 16-node-cs-hdr
+  05/14/21:
+    - Use LLVM by default if LLVM is available either as system or bundled (#17079)
 
 # End all
 
@@ -515,6 +517,8 @@ AllCompTime: &timecomp-base
   02/25/21:
     - Restore timing for makeBinary (#17253)
     - Stop converting PRIM_ZIP to tuples for forall statements (#17212)
+  05/14/21:
+    - Resolve some issues with finding primary and secondary operator methods (#17684)
 
 allocate:
   06/11/20:

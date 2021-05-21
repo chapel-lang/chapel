@@ -28,13 +28,37 @@ namespace uast {
 bool Formal::contentsMatchInner(const ASTNode* other) const {
   const Formal* lhs = this;
   const Formal* rhs = (const Formal*) other;
-  return lhs->symContentsMatchInner(rhs) &&
+  return lhs->namedDeclContentsMatchInner(rhs) &&
          lhs->intent_ == rhs->intent_ &&
-         lhs->typeExpressionChildNum == rhs->typeExpressionChildNum &&
-         lhs->initExpressionChildNum == rhs->initExpressionChildNum;
+         lhs->typeExpressionChildNum_ == rhs->typeExpressionChildNum_ &&
+         lhs->initExpressionChildNum_ == rhs->initExpressionChildNum_;
 }
 void Formal::markUniqueStringsInner(Context* context) const {
-  symMarkUniqueStringsInner(context);
+  namedDeclMarkUniqueStringsInner(context);
+}
+
+owned<Formal>
+Formal::build(Builder* builder, Location loc,
+              UniqueString name,
+              Formal::Intent intent,
+              owned<Expression> typeExpression,
+              owned<Expression> initExpression) {
+  ASTList lst;
+  int8_t typeExpressionChildNum = -1;
+  int8_t initExpressionChildNum = -1;
+  if (typeExpression.get() != nullptr) {
+    typeExpressionChildNum = lst.size();
+    lst.push_back(std::move(typeExpression));
+  }
+  if (initExpression.get() != nullptr) {
+    initExpressionChildNum = lst.size();
+    lst.push_back(std::move(initExpression));
+  }
+
+  Formal* ret = new Formal(std::move(lst), name, intent,
+                           typeExpressionChildNum, initExpressionChildNum);
+  builder->noteLocation(ret, loc);
+  return toOwned(ret);
 }
 
 

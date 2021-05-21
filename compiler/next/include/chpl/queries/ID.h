@@ -21,6 +21,7 @@
 #define CHPL_QUERIES_ID_H
 
 #include "chpl/queries/UniqueString.h"
+#include "chpl/util/hash.h"
 
 namespace chpl {
 
@@ -35,22 +36,31 @@ class ID final {
  private:
   // A path to the symbol, e.g. MyModule#0.MyFunction#1
   UniqueString symbolPath_;
+
   // Within that symbol, what is the number of this node in
   // a postorder traversal?
   // The symbol itself would be the last node traversed.
-  int postOrderId_;
+  int postOrderId_ = -1;
+
   // How many of the previous ids would be considered within
   // this node?
-  int numChildIds_;
+  int numChildIds_ = 0;
+
  public:
   /**
     Construct an empty ID
    */
-  ID();
+  ID() = default;
+
   /**
     Construct an ID with a symbol path and postorder traversal number
    */
-  ID(UniqueString symbolPath, int postOrderId, int numChildIds);
+  ID(UniqueString symbolPath, int postOrderId, int numChildIds)
+      : symbolPath_(symbolPath),
+        postOrderId_(postOrderId),
+        numChildIds_(numChildIds) {
+  }
+
   /**
     Return a path to the symbol (or, for an expression, the parent symbol)
    */
@@ -80,9 +90,9 @@ class ID final {
 
   /**
     returns 'true' if the AST node with this ID contains the AST
-    node with the other ID, including if they refer to the same AST node. 
+    node with the other ID, including if they refer to the same AST node.
    */
-  bool contains(const ID other) const;
+  bool contains(const ID& other) const;
 
   /**
     compare this ID with another ID
@@ -90,15 +100,15 @@ class ID final {
       result == 0 if this == other
       result  > 0 if this > other
    */
-  int compare(const ID other) const;
+  int compare(const ID& other) const;
 
-  inline bool operator==(const ID other) const {
-    return this->symbolPath_ == other.symbolPath_ &&
-           this->postOrderId_ == other.postOrderId_;
+  bool operator==(const ID& other) const {
+    return symbolPath_ == other.symbolPath_ &&
+          postOrderId_ == other.postOrderId_;
   }
-  inline bool operator!=(const ID other) const {
-    return this->symbolPath_ != other.symbolPath_ ||
-           this->postOrderId_ != other.postOrderId_;
+
+  bool operator!=(const ID& other) const {
+    return !(*this == other);
   }
 
   bool isEmpty() const {
@@ -136,23 +146,22 @@ template<> struct mark<chpl::ID> {
 };
 /// \endcond
 
-
 } // end namespace chpl
 
 namespace std {
   template<> struct less<chpl::ID> {
-    bool operator()(const chpl::ID lhs, const chpl::ID rhs) const {
+    inline bool operator()(const chpl::ID& lhs, const chpl::ID& rhs) const {
       return lhs.compare(rhs) < 0;
     }
   };
   template<> struct hash<chpl::ID> {
-    size_t operator()(const chpl::ID key) const {
-      return (size_t) key.hash();
+    inline size_t operator()(const chpl::ID& key) const {
+      return key.hash();
     }
   };
   template<> struct equal_to<chpl::ID> {
-    bool operator()(const chpl::ID lhs,
-                    const chpl::ID rhs) const {
+    inline bool operator()(const chpl::ID& lhs,
+                    const chpl::ID& rhs) const {
       return lhs == rhs;
     }
   };

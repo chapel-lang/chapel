@@ -121,6 +121,15 @@ void buildDefaultFunctions() {
       } else if (AggregateType* ct = toAggregateType(type->type)) {
         buildDefaultReadWriteFunctions(ct);
 
+        // build the assignment
+        if (type->hasFlag(FLAG_EXTERN)) {
+          buildExternAssignmentFunction(type->type);
+        } else if (isRecord(ct)) {
+          buildRecordAssignmentFunction(ct);
+        } else if (isUnion(ct)) {
+          buildUnionAssignmentFunction(ct);
+        }
+
         if (isRecord(ct)) {
           if (!isRecordWrappedType(ct)) {
             buildRecordComparisonFunc(ct, "==");
@@ -131,26 +140,17 @@ void buildDefaultFunctions() {
             buildRecordComparisonFunc(ct, ">=");
           }
 
-          buildRecordAssignmentFunction(ct);
           buildRecordHashFunction(ct);
 
           checkNotPod(ct);
-        }
-
-        if (isUnion(ct)) {
-          buildUnionAssignmentFunction(ct);
         }
 
       } else if (EnumType* et = toEnumType(type->type)) {
         buildEnumFunctions(et);
 
       } else {
-        // The type is a simple type.
-
-        // Other simple types are handled explicitly in the module code.
-        // But to avoid putting a catch-all case there to implement assignment
-        // for extern types that are simple (as far as we can tell), we build
-        // definitions for those assignments here.
+        // The type is a simple type
+        // so assignment should be defined in the modules if it is not extern
         if (type->hasFlag(FLAG_EXTERN)) {
           buildExternAssignmentFunction(type->type);
         }
@@ -434,7 +434,8 @@ FnSymbol* build_accessor(AggregateType* ct, Symbol* field,
     // This would be different if we added something like C++ static fields
     INT_ASSERT(!typeMethod);
 
-    if (field->hasFlag(FLAG_SUPER_CLASS)) {
+    if (field->hasFlag(FLAG_SUPER_CLASS) ||
+        field->hasFlag(FLAG_C_FLEXIBLE_ARRAY_FIELD)) {
       fn->retTag = RET_VALUE;
     } else {
       if (fieldIsConst || !setter)
@@ -466,7 +467,7 @@ FnSymbol* build_accessor(AggregateType* ct, Symbol* field,
 
   Symbol* fieldNameSym = new_CStringSymbol(field->name);
 
-  if (isUnion(ct)) {
+  if (isUnion(ct) && !ct->symbol->hasFlag(FLAG_EXTERN)) {
     if (setter) {
       // Set the union ID in the setter.
       // If the ID is different from the target, deinit whatever was
@@ -499,7 +500,9 @@ FnSymbol* build_accessor(AggregateType* ct, Symbol* field,
     fn->insertAtTail(new CallExpr(PRIM_RETURN, field));
     // better flatten enumerated types now
     ct->symbol->defPoint->insertBefore(field->defPoint->remove());
-  } else if (field->hasFlag(FLAG_TYPE_VARIABLE) || field->hasFlag(FLAG_SUPER_CLASS)) {
+  } else if (field->hasFlag(FLAG_TYPE_VARIABLE) ||
+             field->hasFlag(FLAG_SUPER_CLASS) ||
+             field->hasFlag(FLAG_C_FLEXIBLE_ARRAY_FIELD)) {
     toReturn = new CallExpr(PRIM_GET_MEMBER_VALUE,
                             new SymExpr(baseSym),
                             new SymExpr(fieldNameSym));
@@ -576,7 +579,7 @@ static void buildAccessors(AggregateType* ct, Symbol *field) {
 
   // Otherwise, build compiler-default getter and setter.
 
-  if (isUnion(ct)) {
+  if (isUnion(ct) && !ct->symbol->hasFlag(FLAG_EXTERN)) {
     // Unions need a special getter and setter.
     build_accessor(ct, field, /* setter? */ false, /* type method? */ false);
     build_accessor(ct, field, /* setter? */ true,  /* type method? */ false);
@@ -944,7 +947,7 @@ static void buildRecordEqualsBody(AggregateType *ct, FnSymbol *fn,
         !tmp->hasFlag(FLAG_TYPE_VARIABLE)) {  // types fields must be equal
       Expr* left = new CallExpr(tmp->name, gMethodToken, arg1);
       Expr* right = new CallExpr(tmp->name, gMethodToken, arg2);
-      CallExpr *elemComp = new CallExpr("!=", left, right);
+      CallExpr *elemComp = new CallExpr("chpl_field_neq", left, right);
       fn->insertAtTail(new CondStmt(elemComp,
                                     new CallExpr(PRIM_RETURN, gFalse)));
     }
@@ -964,7 +967,7 @@ static void buildRecordNotEqualsBody(AggregateType *ct, FnSymbol *fn,
         !tmp->hasFlag(FLAG_TYPE_VARIABLE)) {  // types fields must be equal
       Expr* left = new CallExpr(tmp->name, gMethodToken, arg1);
       Expr* right = new CallExpr(tmp->name, gMethodToken, arg2);
-      CallExpr *elemComp = new CallExpr("!=", left, right);
+      CallExpr *elemComp = new CallExpr("chpl_field_neq", left, right);
       fn->insertAtTail(new CondStmt(elemComp,
                                     new CallExpr(PRIM_RETURN, gTrue)));
     }
@@ -984,13 +987,13 @@ static void buildRecordLessThanBody(AggregateType *ct, FnSymbol *fn,
     if (!tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD) &&
         !tmp->hasFlag(FLAG_TYPE_VARIABLE)) {  // types fields must be equal
 
-        CallExpr *elemCompTrue = new CallExpr("<",
+        CallExpr *elemCompTrue = new CallExpr("chpl_field_lt",
                                    new CallExpr(tmp->name, gMethodToken, arg1),
                                    new CallExpr(tmp->name, gMethodToken, arg2));
         fn->insertAtTail(new CondStmt(elemCompTrue,
                                       new CallExpr(PRIM_RETURN, gTrue)));
 
-        CallExpr *elemCompFalse = new CallExpr(">",
+        CallExpr *elemCompFalse = new CallExpr("chpl_field_gt",
                                    new CallExpr(tmp->name, gMethodToken, arg1),
                                    new CallExpr(tmp->name, gMethodToken, arg2));
 
@@ -1017,13 +1020,13 @@ static void buildRecordGreaterThanBody(AggregateType *ct, FnSymbol *fn,
     if (!tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD) &&
         !tmp->hasFlag(FLAG_TYPE_VARIABLE)) {  // types fields must be equal
 
-        CallExpr *elemCompTrue = new CallExpr(">",
+        CallExpr *elemCompTrue = new CallExpr("chpl_field_gt",
                                    new CallExpr(tmp->name, gMethodToken, arg1),
                                    new CallExpr(tmp->name, gMethodToken, arg2));
         fn->insertAtTail(new CondStmt(elemCompTrue,
                                       new CallExpr(PRIM_RETURN, gTrue)));
 
-        CallExpr *elemCompFalse = new CallExpr("<",
+        CallExpr *elemCompFalse = new CallExpr("chpl_field_lt",
                                    new CallExpr(tmp->name, gMethodToken, arg1),
                                    new CallExpr(tmp->name, gMethodToken, arg2));
 
@@ -1969,7 +1972,7 @@ void buildDefaultDestructor(AggregateType* ct) {
 
     fn->retType = dtVoid;
 
-    if (ct->isUnion()) {
+    if (ct->isUnion() && !ct->symbol->hasFlag(FLAG_EXTERN)) {
       fn->insertAtTail(buildResetUnionField(fn->_this, ct, NULL));
     }
 

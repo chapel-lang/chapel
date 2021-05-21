@@ -1,0 +1,2 @@
+bug: extern anonymous unnamed unions don't work with --llvm
+#17748

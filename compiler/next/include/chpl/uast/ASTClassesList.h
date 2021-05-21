@@ -41,14 +41,11 @@
 //  try to make AST nodes and use inheritance
 //  to allow coarse-grain view
 
-// Should there be a generic way to enumerate the
-// children of a particular AST node besides the visitor?
-//  yes, and allow getting "next" somehow
-//  let's try making a vector of children
-
 // the following comment disables doxygen for these
 /// \cond DO_NOT_DOCUMENT
 
+// TODO: since everything inherits from Expression
+// should we just remove it? Or rename ASTNode to Expression?
 AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
 
   AST_LEAF(Comment)                    //
@@ -60,6 +57,7 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
   AST_NODE(Implements)                 // old AST: ImplementsStmt
   AST_NODE(Import)                     // old AST: ImportStmt
   AST_NODE(Local)                      //
+  AST_NODE(New)
   AST_NODE(Require)                    //
   AST_NODE(Serial)                     //
   AST_NODE(Use)                        // old AST: UseStmt
@@ -79,12 +77,18 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
     AST_NODE(TryCatch)                 // old AST: TryStmt/CatchStmt
 
     AST_BEGIN_SUBCLASSES(Loop)         // old AST: LoopExpr / LoopStmt
-      AST_NODE(Coforall)
+
       AST_NODE(DoWhile)                // old AST: DoWhileStmt
-      AST_NODE(For)                    // old AST: ForLoop / LoopExpr
-      AST_NODE(Forall)                 // old AST: ForallStmt / LoopExpr
-      AST_NODE(Foreach)                //
+
+      AST_BEGIN_SUBCLASSES(IndexableLoop)
+        AST_NODE(Coforall)
+        AST_NODE(For)                    // old AST: ForLoop / LoopExpr
+        AST_NODE(Forall)                 // old AST: ForallStmt / LoopExpr
+        AST_NODE(Foreach)                //
+      AST_END_SUBCLASSES(IndexableLoop)
+
       AST_NODE(While)                  // old AST: WhileStmt
+
     AST_END_SUBCLASSES(Loop)
 
   AST_END_SUBCLASSES(ControlFlow)
@@ -101,45 +105,44 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
   AST_BEGIN_SUBCLASSES(Call)           // old AST:  CallExpr
     AST_NODE(Dot)                      //
     AST_NODE(FnCall)
-    AST_NODE(New)
     AST_NODE(OpCall)
     AST_NODE(PrimCall)                 // old AST: CallExpr/PrimitiveOp
     AST_NODE(Try)                      //
   AST_END_SUBCLASSES(Call)
 
-  AST_BEGIN_SUBCLASSES(Decl)
-    AST_NODE(FieldDecl)
-    AST_NODE(FormalDecl)
-    AST_NODE(ForwardingDecl)
-    AST_NODE(FunctionDecl)
-    AST_NODE(ModuleDecl)
-    AST_NODE(TypeDecl)
-    AST_NODE(VariableDecl)
+  AST_BEGIN_SUBCLASSES(Decl)           // old AST: Symbol or DefExpr
+    AST_NODE(MultiDecl)
+    AST_NODE(TupleDecl)
+
+    AST_BEGIN_SUBCLASSES(NamedDecl)
+      //AST_NODE(FieldDecl)
+      //AST_NODE(ForwardingDecl)
+      //AST_NODE(TypeDecl)
+
+      AST_NODE(EnumElement)                // old AST: EnumSymbol
+      AST_LEAF(Formal)                     // old AST: ArgSymbol
+      AST_NODE(Function)                   // old AST: FnSymbol
+      AST_NODE(Interface)                  // old AST: InterfaceSymbol
+      AST_NODE(Module)                     // old AST: ModuleSymbol
+      AST_LEAF(Variable)                   // old AST: VarSymbol
+                                           // old AST: ShadowVarSymbol
+
+      AST_BEGIN_SUBCLASSES(TypeDecl)       // old AST: TypeSymbol/Type
+        AST_NODE(Enum)                     // old AST: EnumType
+
+        AST_BEGIN_SUBCLASSES(AggregateDecl)// old AST: AggregateType
+          AST_NODE(Class)                  //
+          AST_NODE(Record)                 //
+          AST_NODE(Union)                  //
+        AST_END_SUBCLASSES(AggregateDecl)
+
+      AST_END_SUBCLASSES(TypeDecl)
+
+    AST_END_SUBCLASSES(NamedDecl)
+
   AST_END_SUBCLASSES(Decl)
 
 AST_END_SUBCLASSES(Expression)
 
-AST_BEGIN_SUBCLASSES(Sym)              // old AST: Symbol
-  AST_NODE(EnumElement)                // old AST: EnumSymbol
-  AST_NODE(Formal)                     // old AST: ArgSymbol
-  AST_NODE(Function)                   // old AST: FnSymbol
-  AST_NODE(Interface)                  // old AST: InterfaceSymbol
-  AST_NODE(Module)                     // old AST: ModuleSymbol
-  AST_NODE(Variable)                   // old AST: VarSymbol
-                                       // old AST: ShadowVarSymbol
-
-  AST_BEGIN_SUBCLASSES(TypeSym)        // old AST: TypeSymbol/Type
-    AST_NODE(Enum)                     // old AST: EnumType
-    AST_NODE(SimpleType)               //
-
-    AST_BEGIN_SUBCLASSES(AggregateTypeSym) // old AST: AggregateType
-      AST_NODE(Class)                  //
-      AST_NODE(Record)                 //
-      AST_NODE(Union)                  //
-    AST_END_SUBCLASSES(AggregateTypeSym)
-
-  AST_END_SUBCLASSES(TypeSym)
-
-AST_END_SUBCLASSES(Sym)
 
 /// \endcond

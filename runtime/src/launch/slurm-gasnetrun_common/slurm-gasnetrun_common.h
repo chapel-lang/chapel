@@ -211,6 +211,11 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     walltime = getenv("CHPL_LAUNCHER_WALLTIME");
   }
 
+  // command line nodelist takes precedence over env var
+  if (!nodelist) {
+    nodelist = getenv("CHPL_LAUNCHER_NODELIST");
+  }
+
   // command line partition takes precedence over env var
   if (!partition) {
     partition = getenv("CHPL_LAUNCHER_PARTITION");

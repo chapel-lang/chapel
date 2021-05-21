@@ -18,6 +18,9 @@
  * limitations under the License.
  */
 
+#include <string>
+#include <vector>
+
 static bool locationLessEq(YYLTYPE lhs, YYLTYPE rhs) {
   return (lhs.first_line < rhs.first_line) ||
          (lhs.first_line == rhs.first_line &&
@@ -81,7 +84,7 @@ void ParserContext::noteDeclStartLoc(YYLTYPE loc) {
     this->declStartLocation = loc;
   }
 }
-Sym::Visibility ParserContext::noteVisibility(Sym::Visibility visibility) {
+Decl::Visibility ParserContext::noteVisibility(Decl::Visibility visibility) {
   this->visibility = visibility;
   return this->visibility;
 }
@@ -97,7 +100,7 @@ YYLTYPE ParserContext::declStartLoc(YYLTYPE curLoc) {
 }
 void ParserContext::resetDeclState() {
   this->varDeclKind = Variable::VAR;
-  this->visibility = Sym::DEFAULT_VISIBILITY;
+  this->visibility = Decl::DEFAULT_VISIBILITY;
   YYLTYPE emptyLoc = {0};
   this->declStartLocation = emptyLoc;
 }
@@ -118,7 +121,7 @@ void ParserContext::noteComment(YYLTYPE loc, const char* data, long size) {
 void ParserContext::clearCommentsBefore(YYLTYPE loc) {
   auto comments = this->gatherComments(loc);
   if (comments != nullptr) {
-    for (ParserComment parserComment : *this->comments) {
+    for (ParserComment parserComment : *comments) {
       delete parserComment.comment;
     }
     delete comments;
@@ -348,24 +351,67 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
                                                  FunctionParts& fp) {
   CommentsAndStmt cs = {fp.comments, nullptr};
   if (fp.errorExpr == nullptr) {
-    auto f = FunctionDecl::build(builder, this->convertLocation(location),
-                                 fp.name, this->visibility,
-                                 fp.linkage, toOwned(fp.linkageNameExpr),
-                                 fp.isInline,
-                                 fp.isOverride,
-                                 fp.kind,
-                                 toOwned(fp.receiver),
-                                 fp.returnIntent,
-                                 fp.throws,
-                                 this->consumeList(fp.formals),
-                                 toOwned(fp.returnType),
-                                 toOwned(fp.where),
-                                 this->consumeList(fp.lifetime),
-                                 this->consumeList(fp.body));
+    auto f = Function::build(builder, this->convertLocation(location),
+                             fp.name, this->visibility,
+                             fp.linkage, toOwned(fp.linkageNameExpr),
+                             fp.isInline,
+                             fp.isOverride,
+                             fp.kind,
+                             toOwned(fp.receiver),
+                             fp.returnIntent,
+                             fp.throws,
+                             this->consumeList(fp.formals),
+                             toOwned(fp.returnType),
+                             toOwned(fp.where),
+                             this->consumeList(fp.lifetime),
+                             this->consumeList(fp.body));
     cs.stmt = f.release();
   } else {
     cs.stmt = fp.errorExpr;
   }
   this->clearComments();
   return cs;
+}
+
+// TODO: Need way to clear location of 'e' in the builder.
+owned<Decl> ParserContext::buildIndexVariableDecl(YYLTYPE location,
+                                                  owned<Expression> e) {
+  if (const Identifier* ident = e->toIdentifier()) {
+    return Variable::build(builder, convertLocation(location),
+                           ident->name(),
+                           Decl::DEFAULT_VISIBILITY,
+                           Variable::INDEX,
+                           /*typeExpression*/ nullptr,
+                           /*initExpression*/ nullptr);
+  } else {
+    noteError(location, this, "Cannot handle this kind of index var");
+  }
+
+  return nullptr;
+}
+
+FnCall* ParserContext::wrapCalledExpressionInNew(YYLTYPE location,
+                                                 New::Management management,
+                                                 FnCall* fnCall) {
+  assert(fnCall->calledExpression());
+  bool wrappedBaseExpression = false;
+
+  // Find the child slot containing the called expression. Then remove it,
+  // wrap it in a new expression, and swap in the new expression.
+  for (auto& child : builder->mutableRefToChildren(fnCall)) {
+    if (child.get() == fnCall->calledExpression()) {
+      auto calledExpr = std::move(child).release()->toExpression();
+      assert(calledExpr);
+      auto newExpr = New::build(builder, convertLocation(location),
+                                std::move(toOwned(calledExpr)),
+                                management);
+      child = std::move(newExpr);
+      wrappedBaseExpression = true;
+      break;
+    }
+  }
+
+  assert(wrappedBaseExpression);
+
+  return fnCall;
 }

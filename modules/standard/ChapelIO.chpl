@@ -26,7 +26,7 @@ Most of Chapel's I/O support is within the :mod:`IO` module.  This section
 describes automatically included basic types and routines that support the
 :mod:`IO` module.
 
-Writing and Reading
+Writing
 ~~~~~~~~~~~~~~~~~~~
 
 The :proc:`writeln` function allows for a simple implementation
@@ -37,26 +37,6 @@ of a Hello World program:
  writeln("Hello, World!");
  // outputs
  // Hello, World!
-
-The :proc:`~IO.read` functions allow one to read values into variables as
-the following example demonstrates. It shows three ways to read values into
-a pair of variables ``x`` and ``y``.
-
-.. code-block:: chapel
-
-  var x: int;
-  var y: real;
-
-  /* reading into variable expressions, returning
-     true if the values were read, false on EOF */
-  var ok:bool = read(x, y);
-
-  /* reading via a single type argument */
-  x = read(int);
-  y = read(real);
-
-  /* reading via multiple type arguments */
-  (x, y) = read(int, real);
 
 .. _readThis-writeThis-readWriteThis:
 
@@ -240,6 +220,7 @@ module ChapelIO {
         return new ioLiteral(__primitive("field num to name", t, i) + " = ");
       }
     }
+
     private
     proc ioFieldNameLiteral(ch, type t, param i) {
       var st = ch.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
@@ -251,9 +232,6 @@ module ChapelIO {
         return new ioLiteral(__primitive("field num to name", t, i));
       }
     }
-
-
-
 
     pragma "no doc"
     proc writeThisFieldsDefaultImpl(writer, x:?t, inout first:bool) throws {
@@ -268,7 +246,10 @@ module ChapelIO {
         }
       }
 
-      if !isUnionType(t) {
+      if isExternUnionType(t) {
+        compilerError("Cannot write extern union");
+
+      } else if !isUnionType(t) {
         // print out all fields for classes and records
         for param i in 1..num_fields {
           if isIoField(x, i) {
@@ -523,7 +504,7 @@ module ChapelIO {
     pragma "no doc"
     proc readThisFieldsDefaultImpl(reader, type t, ref x,
                                    inout needsComma: bool) throws
-        where isUnionType(t) {
+        where isUnionType(t) && !isExternUnionType(t) {
 
       param numFields = __primitive("num fields", t);
       var isBinary = reader.binary();

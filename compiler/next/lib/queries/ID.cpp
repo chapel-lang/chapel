@@ -24,18 +24,8 @@
 namespace chpl {
 
 
-ID::ID()
-  : symbolPath_(), postOrderId_(-1), numChildIds_(0) {
-}
-
-ID::ID(UniqueString symbolPath, int postOrderId, int numChildIds)
-  : symbolPath_(symbolPath),
-    postOrderId_(postOrderId),
-    numChildIds_(numChildIds) {
-}
-
 // Returns 'true' if this symbol contains another AST node.
-bool ID::contains(const ID other) const {
+bool ID::contains(const ID& other) const {
   UniqueString thisPath = this->symbolPath();
   UniqueString otherPath = other.symbolPath();
 
@@ -55,7 +45,7 @@ bool ID::contains(const ID other) const {
   }
 }
 
-int ID::compare(const ID other) const {
+int ID::compare(const ID& other) const {
   // first, compare with the path portion
   UniqueString lhsPath = this->symbolPath();
   UniqueString rhsPath = other.symbolPath();

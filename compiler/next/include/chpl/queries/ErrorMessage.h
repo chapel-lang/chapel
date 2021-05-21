@@ -23,6 +23,7 @@
 #include "chpl/queries/Location.h"
 
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace chpl {
