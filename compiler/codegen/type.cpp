@@ -362,7 +362,14 @@ void AggregateType::codegenDef() {
         params.push_back(st);
         GEPMap.insert(std::pair<std::string, int>("_u", paramID++));
       } else {
-        if (this->fields.length == 0) {
+        int nonVoidFields = 0;
+        for_fields(field, this) {
+          if (field->type != dtNothing && field->type != dtVoid) {
+            nonVoidFields++;
+          }
+        }
+
+        if (nonVoidFields == 0) {
           // add dummyFieldToAvoidWarning which also
           // stops us from doing 0-byte memory allocation
           // (comes up with ioNewline and --no-local RA)
@@ -370,14 +377,16 @@ void AggregateType::codegenDef() {
           params.push_back(llvm::Type::getInt32Ty(info->llvmContext));
         }
         for_fields(field, this) {
-          llvm::Type* fieldType = field->type->symbol->codegen().type;
-          AggregateType* ct = toAggregateType(field->type);
-          if(ct && field->hasFlag(FLAG_SUPER_CLASS))
-            fieldType = info->lvt->getType(ct->classStructName(true));
-          INT_ASSERT(fieldType);
-          params.push_back(fieldType);
-          aligns.push_back(getAlignment(field->type));
-          GEPMap.insert(std::pair<std::string, int>(field->cname, paramID++));
+          if (field->type != dtNothing && field->type != dtVoid) {
+            llvm::Type* fieldType = field->type->symbol->codegen().type;
+            AggregateType* ct = toAggregateType(field->type);
+            if(ct && field->hasFlag(FLAG_SUPER_CLASS))
+              fieldType = info->lvt->getType(ct->classStructName(true));
+            INT_ASSERT(fieldType);
+            params.push_back(fieldType);
+            aligns.push_back(getAlignment(field->type));
+            GEPMap.insert(std::pair<std::string, int>(field->cname, paramID++));
+          }
         }
       }
 
