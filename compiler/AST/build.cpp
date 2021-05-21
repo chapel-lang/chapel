@@ -373,6 +373,19 @@ BlockStmt* buildErrorStandin() {
   return new BlockStmt(new CallExpr(PRIM_ERROR), BLOCK_SCOPELESS);
 }
 
+DefExpr* buildDeprecated(DefExpr* def) {
+  // TODO: determine the name
+  const char* msg = astr("This symbol is deprecated");
+  return buildDeprecated(def, msg);
+}
+
+DefExpr* buildDeprecated(DefExpr* def, const char* msg) {
+  Symbol* sym = def->sym;
+  sym->addFlag(FLAG_DEPRECATED);
+  sym->deprecationMsg = msg;
+  return def;
+}
+
 BlockStmt* buildDeprecated(BlockStmt* block) {
   // TODO: determine the name
   const char* msg = astr("This symbol is deprecated");
@@ -381,9 +394,7 @@ BlockStmt* buildDeprecated(BlockStmt* block) {
 
 BlockStmt* buildDeprecated(BlockStmt* block, const char* msg) {
   if (DefExpr* def = toDefExpr(block->body.head)) {
-    Symbol* sym = def->sym;
-    sym->addFlag(FLAG_DEPRECATED);
-    sym->deprecationMsg = msg;
+    buildDeprecated(def, msg);
   } else {
     INT_FATAL("Uh oh");
   }

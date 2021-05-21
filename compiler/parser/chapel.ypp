@@ -419,6 +419,7 @@
 
 %type <pblockstmt> deprecation_decl_stmt
 %type <pblockstmt> deprecation_decl_base
+%type <pdefexpr> deprecated_enum_item
 
 %type <pmodsymbol> module_decl_start
 %type <pblockstmt> module_decl_stmt
@@ -1349,7 +1350,7 @@ enum_header:
 ;
 
 enum_ls:
-  enum_item
+  deprecated_enum_item
     {
       $$ = new std::vector<DefExpr*>();
       $$->push_back($1);
@@ -1361,10 +1362,18 @@ enum_ls:
     {
       $$ = $1;
     }
-| enum_ls TCOMMA enum_item
+| enum_ls TCOMMA deprecated_enum_item
     {
       $1->push_back($3);
     }
+;
+
+deprecated_enum_item:
+  enum_item
+| TDEPRECATED STRINGLITERAL enum_item
+{ $$ = buildDeprecated($3, $2); }
+| TDEPRECATED enum_item
+{ $$ = buildDeprecated($2); }
 ;
 
 enum_item:
