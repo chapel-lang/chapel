@@ -148,6 +148,8 @@ def gen_rst(handle):
     commentdepth = 0
     state = ''
     indentation = -1
+    islearnChapelInYMinutes = (os.path.basename(handle.name)=='learnChapelInYMinutes.chpl')
+    foundCommentExample = False
 
     # Each line is rst or code-block
     for (i, line) in enumerate([l.strip('\n') for l in handle.readlines()]):
@@ -215,8 +217,14 @@ def gen_rst(handle):
                     rstline = rstline[indentation:]
                 else:
                     rstline = rstline.lstrip(' ')
-
-            output.append(rstline)
+            # Special case for multi line comment in learnChapelInYMinutes
+            if(islearnChapelInYMinutes and ('multi-line comment' in rstline)):
+                output.append(' '*indentation + '/*')
+                output.append(rstline)
+                output.append(' '*indentation + '*/')
+                foundCommentExample = True
+            else:
+               output.append(rstline)
         else:
             # Reset indentation as we enter codeblock state
             indentation = -1
@@ -229,6 +237,8 @@ def gen_rst(handle):
             codeline = ''.join(['    ', line])
             output.append(codeline)
 
+    if(islearnChapelInYMinutes and (not foundCommentExample)):
+        print('Warning: Failed to find special case of comment example in learnChapelInYMinutes.chpl')
     return '\n'.join(output)
 
 
