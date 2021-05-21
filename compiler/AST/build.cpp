@@ -395,8 +395,10 @@ BlockStmt* buildDeprecated(BlockStmt* block) {
 BlockStmt* buildDeprecated(BlockStmt* block, const char* msg) {
   if (DefExpr* def = toDefExpr(block->body.head)) {
     buildDeprecated(def, msg);
+  } else if (ForwardingStmt* forward = toForwardingStmt(block->body.head)) {
+    USR_FATAL_CONT(forward, "Can't deprecate a forwarding statement");
   } else {
-    INT_FATAL("Uh oh");
+    INT_FATAL("Unexpected deprecation case");
   }
   return block;
 }
