@@ -417,8 +417,8 @@
 %type <pblockstmt> toplevel_stmt
 %type <vpch>       pragma_ls
 
-%type <pblockstmt> deprecation_decl_stmt
-%type <pblockstmt> deprecation_decl_base
+%type <pblockstmt> deprecated_decl_stmt
+%type <pblockstmt> deprecated_decl_base
 %type <pdefexpr> deprecated_enum_item
 %type <pblockstmt> deprecated_class_level_stmt
 
@@ -538,7 +538,7 @@ pragma_ls:
 
 // %type <pblockstmt> stmt
 stmt:
-  deprecation_decl_stmt
+  deprecated_decl_stmt
 | include_module_stmt
 | block_stmt
 | use_stmt
@@ -573,15 +573,15 @@ stmt:
 | error TSEMI                          { $$ = buildErrorStandin(); }
 ;
 
-deprecation_decl_stmt:
-  deprecation_decl_base
-| TDEPRECATED STRINGLITERAL deprecation_decl_base
+deprecated_decl_stmt:
+  deprecated_decl_base
+| TDEPRECATED STRINGLITERAL deprecated_decl_base
 { $$ = buildDeprecated($3, $2); }
-| TDEPRECATED deprecation_decl_base
+| TDEPRECATED deprecated_decl_base
 { $$ = buildDeprecated($2); }
 ;
 
-deprecation_decl_base:
+deprecated_decl_base:
   module_decl_stmt
 | class_level_stmt
 ;
