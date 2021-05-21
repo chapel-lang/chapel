@@ -158,6 +158,12 @@ void VisibilityStmt::validateRenamed() {
                        it->second);
       }
 
+      if (sym->hasFlag(FLAG_DEPRECATED)) {
+        // Generate deprecation warning when a deprecated symbol is renamed
+        // in a use or import limitation clause
+        USR_WARN(this, "%s", sym->deprecationMsg.c_str());
+      }
+
     } else {
       INT_ASSERT(false);
     }

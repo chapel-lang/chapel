@@ -386,6 +386,12 @@ void ImportStmt::validateUnqualified() {
                            "Bad identifier, '%s' is private",
                            name);
           }
+
+          if (sym->hasFlag(FLAG_DEPRECATED)) {
+            // Generate deprecation warning when a deprecated symbol is listed
+            // in an import statement's limitation clause
+            USR_WARN(this, "%s", sym->deprecationMsg.c_str());
+          }
         }
       }
     }
