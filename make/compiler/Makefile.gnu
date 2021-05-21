@@ -168,7 +168,9 @@ WARN_GEN_CFLAGS = $(WARN_CFLAGS)
 SQUASH_WARN_GEN_CFLAGS = -Wno-unused -Wno-uninitialized
 
 ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -gt 5; echo "$$?"),0)
-WARN_CXXFLAGS += -Wsuggest-override
+# We'd like to know about missing overrides but don't let it
+# abort the build since there might be some in LLVM headers.
+WARN_CXXFLAGS += -Wsuggest-override -Wno-error=suggest-override
 endif
 
 #

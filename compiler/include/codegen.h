@@ -99,6 +99,8 @@ struct GenInfo {
   int lineno;
   const char* filename;
 
+  std::map<const char*, FnSymbol*> functionCNameAstrToSymbol;
+
 #ifdef HAVE_LLVM
   // stores parsed C stuff for extern blocks
   LayeredValueTable *lvt;
@@ -114,6 +116,8 @@ struct GenInfo {
   const clang::CodeGen::CGFunctionInfo* currentFunctionABI;
 
   llvm::LLVMContext llvmContext;
+
+  // tbaa information
   llvm::MDNode* tbaaRootNode;
   llvm::MDNode* tbaaUnionsNode;
 
