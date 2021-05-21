@@ -204,7 +204,6 @@ FnSymbol* instantiateSignature(FnSymbol* fn, SymbolMap& subs,
 void      instantiateBody(FnSymbol* fn);
 
 // generics support
-TypeSymbol* getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* actualTS);
 void checkInfiniteWhereInstantiation(FnSymbol* fn);
 void popInstantiationLimit(FnSymbol* fn);
 void renameInstantiatedTypeString(TypeSymbol* sym, VarSymbol* var);

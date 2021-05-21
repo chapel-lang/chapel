@@ -27,6 +27,7 @@
 #include "passes.h"
 #include "ResolutionCandidate.h"
 #include "resolveFunction.h"
+#include "resolveIntents.h"
 #include "stmt.h"
 #include "visibleFunctions.h"
 #include "view.h" // for debugging
@@ -77,6 +78,10 @@ static void cgprintAssocConstraint(IfcConstraint* icon) {
 #define cgprint(...)
 #define cgprintAssocConstraint(...)
 #endif
+
+static void cleanupHolder(BlockStmt* holder) {
+  do { holder->body.tail->remove(); } while (holder->body.tail != NULL);
+}
 
 
 /*********** stand-in types ***********/
@@ -339,63 +344,93 @@ void resolveInterfaceSymbol(InterfaceSymbol* isym) {
 
 /*********** resolveConstrainedGenericFun ***********/
 
+static SymExpr* resolveConsActualExpr(Expr* act, BlockStmt* holder) {
+  // Normalize and resolve whatever 'act' is, putting the result into a temp.
+  // Use 'holder' temporarily.
+  // OK if the temp is not inTree()?
+  SET_LINENO(act);
+  VarSymbol* temp = newTemp("constemp");
+  SymExpr* result = new SymExpr(temp);
+  act->replace(result);
+
+  bool createdHolder = false;
+  if (holder == nullptr) {
+    createdHolder = true;
+    holder = new BlockStmt();
+    result->insertAfter(holder); // holder needs to be inTree()
+  } else {
+    INT_ASSERT(holder->body.empty());
+  }
+
+  temp->addFlag(FLAG_MAYBE_TYPE);
+  holder->insertAtTail("'move'(%S,%E)", temp, act);
+
+  normalize(holder);         // interface constraints did not get normalized
+  resolveBlockStmt(holder);   // this gives a type to our temp
+
+  if (createdHolder) holder->remove();
+  else cleanupHolder(holder);
+
+  return result;
+}
+
 // Returns the symbol for the type of 'curAct'.
-static Symbol* resolveConstraintActual(Expr* &curAct, int idxAct) {
-  if (SymExpr* curActSE = toSymExpr(curAct)) {
-    Symbol* curActSym = curActSE->symbol();
-    // Simplify (x implements I) to (x.type implements I).
-    // This also allows values as arguments to ifc constraints.
-    Symbol* typeSym = curActSym->type->symbol;
-    if (typeSym != curActSym)
-      curActSE->setSymbol(typeSym);
-    return curActSym->type->symbol; 
-  }
-  if (CallExpr* call = toCallExpr(curAct)) {
-    // allow "arg.type" queries
-    if (call->isPrimitive(PRIM_TYPEOF))
-     if (SymExpr* argSE =toSymExpr(call->get(1)))
-      if (Type* argType = argSE->symbol()->type)
-       if (argType != dtUnknown && argType != dtAny) // need this check?
-        {
-         SET_LINENO(call);
-         curAct = new SymExpr(argType->symbol);
-         call->replace(curAct);
-         return argType->symbol;
-        }
-  }
-  USR_FATAL(curAct, "argument #%d in this implements constraint"
-            " is an expression that is currently not supported", idxAct);
-  return nullptr; //dummy
+static Symbol* resolveConstraintActual(Expr* act, int idx, BlockStmt* holder) {
+  // retain the original 'act' for error checking below
+  SymExpr* actSE = toSymExpr(act);
+  if (actSE == nullptr)
+    actSE = resolveConsActualExpr(act, holder);
+
+  // Allow 'someVal implements I' - as if 'someVal.type implements I'.
+  // We want actSE to point to a TypeSymbol. Otherwise mapping won't work.
+  Symbol* actSym = actSE->symbol();
+  Type*  actType = actSym->getValType();
+  if (actSym != actType->symbol)
+    actSE->setSymbol(actType->symbol);
+
+  if (!isSymExpr(act) && actType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE))
+    // There was a computation in 'holder' leading to this type, which we
+    // discarded. Without a (runtime) computation, this type is unusable.
+    USR_FATAL(act, "argument #%d in this implements constraint"
+              " is an expression with a runtime type,"
+              " which is currently not supported", idx);
+
+  return actType->symbol;
 }
 
 // Compute 'fml2act' to map interface formals to constraint actuals.
 static void buildAndCheckFormals2Actuals(InterfaceSymbol* isym,
-                                         IfcConstraint* icon,
-                                         const char* context,
-                                         SymbolMap& fml2act) {
+                                  IfcConstraint* icon, const char* context,
+                                  BlockStmt*   holder,  SymbolMap& fml2act) {
   if (isym->numFormals() != icon->numActuals()) {
     USR_FATAL(icon, "the number of actuals in the %s (%d)"
       " does not match the number of the interface formals (%d)",
       context, icon->numActuals(), isym->numFormals());
   }
 
-  int i = 0;
+  int idxAct = 0;
   for (Expr *curFml = isym->ifcFormals.head, *curAct = icon->consActuals.head;
        curFml != NULL;
        curFml = curFml->next, curAct = curAct->next)
-   fml2act.put(toDefExpr(curFml)->sym, resolveConstraintActual(curAct, ++i));
+   fml2act.put(toDefExpr(curFml)->sym,
+               resolveConstraintActual(curAct, ++idxAct, holder));
 }
 
 // Checks whether we got any generic types mapped to.
-// If so, return the first generic type we encounter.
-// This is purely for debugging output, it could simply return true/false.
-static AggregateType* hasEntriesMappedToGenerics(SymbolMap& fml2act) {
-  form_Map(SymbolMapElem, elem, fml2act)
-    if (AggregateType* at = toAggregateType(elem->value->getValType()))
+// If so, return the first generic symbol we encounter.
+// This latter is purely for debugging output, we could simply return yes/no.
+static Symbol* hasEntriesMappedToGenerics(SymbolMap& fml2act) {
+  form_Map(SymbolMapElem, elem, fml2act) {
+    Type* elemT = elem->value->getValType();
+    if (elemT->symbol->hasFlag(FLAG_GENERIC))
+      return elem->value;
+    // Remove the AggregateType case if it is covered by the above.
+    if (AggregateType* at = toAggregateType(elemT))
       if (at->isGeneric())
-        return at;
+        return elem->value;
+  }
 
-  return NULL;
+  return NULL; // no generic entries
 }
 
 //
@@ -423,8 +458,6 @@ static Type* instantiateOneAggregateType(SymbolMap &fml2act,
                                          Expr*       anchor,
                                          Type*        origT,
                                          bool        markRm) {
-  //INT_FATAL("CG case"); // used for testing
-
   if (isPrimitiveType(origT))
     return nullptr; // a common case
 
@@ -434,6 +467,20 @@ static Type* instantiateOneAggregateType(SymbolMap &fml2act,
   AggregateType* at = toAggregateType(origT);
   // CG TODO: also handle DecoratedClassType
   if (at == nullptr) return nullptr; // there will be nothing interesting
+
+  if (at->symbol->hasFlag(FLAG_REF)) {
+    Type* valType = at->getValType();
+    Type* valInst = instantiateOneAggregateType(fml2act,anchor,valType,markRm);
+    if (valInst == nullptr) return nullptr; // there is nothing interesting
+    makeRefType(valInst);
+    Type* refInst = valInst->refType;
+    if (refInst == nullptr) refInst = valInst;
+    // Do not record refInst in cgInstantiations, as it could be _ref(int).
+    // finishInterfaceChecking() caters to ref types explicitly.
+    // DO record it in fml2act, for future reference.
+    fml2act.put(origT->symbol, refInst->symbol);
+    return refInst;
+  }
 
   AggregateType* atgen = at->instantiatedFrom; // CG TODO: getRootInstantiation
   if (atgen == nullptr) return nullptr; // 'at' is not a generic type
@@ -471,15 +518,16 @@ static Type* instantiateOneAggregateType(SymbolMap &fml2act,
   if (markRm) cgInstantiations.insert(instT);
   fml2act.put(at->symbol, instT->symbol);
 
-  Type* result = instT;
-  if (at != origT) {
-    // We started with a ref type, make one here, too.
-    makeRefType(instT);
-    result = instT->refType;
-    fml2act.put(origT->symbol, result->symbol);
-  }
+  return instT;
+}
 
-  return result;
+// In order for ResolutionCandidate::computeSubstitutions() to treat
+// ref CG formals as generic, they should not have ref types.
+static void undoRefTypesForRefFormals(FnSymbol* fn) {
+  for_formals(formal, fn)
+    if (formal->intent & INTENT_FLAG_REF)
+      if (ConstrainedType* ct = toConstrainedType(formal->getValType()))
+        formal->type = ct;
 }
 
 static FnSymbol* makeRepForRequiredFn(FnSymbol* cgFun, SymbolMap &fml2act,
@@ -522,7 +570,8 @@ static void createRepsForConstraint(FnSymbol*     fn, InterfaceInfo* ifcInfo,
   INT_ASSERT(repData.empty());   // we have not filled it yet
 
   SymbolMap fml2act;
-  buildAndCheckFormals2Actuals(isym, icon, "interface constraint", fml2act);
+  buildAndCheckFormals2Actuals(isym, icon, "interface constraint",
+                               nullptr, fml2act);
 
   // Create reps for isym's associated types.
   // Do this before instantiating the required functions
@@ -615,6 +664,7 @@ void resolveConstrainedGenericFun(FnSymbol* fn) {
   // NB we want 'fn' to be generic later, when checking isApplicable()
   resolveSignature(fn);
   resolveFunction(fn);
+  undoRefTypesForRefFormals(fn);
 
   // Now, set things up for resolving calls to this fn.
 
@@ -675,8 +725,24 @@ static void resolveIStmActuals(FnSymbol* wrapFn, ImplementsStmt* istm) {
   anchor->insertBefore(istm);
 }
 
-static void cleanupHolder(BlockStmt* holder) {
-  do { holder->body.tail->remove(); } while (holder->body.tail != NULL);
+static BlockStmt* createHolderBlock(FnSymbol* wrapFn, ImplementsStmt* istm) {
+  BlockStmt* holder = new BlockStmt();
+  istm->implBody->insertAtTail(holder);
+
+  // If the implements statement is declared in a module, the holder block
+  // ends up at the top level in the module (see cleanupConstrainedGenerics())
+  // which is unexpected by the compiler. Instead, if this is the case,
+  // move the holder into the module's init function.
+  //
+  // While ideally we want to remove the holder altogether, we cannot do it
+  // because some types' instantiationPoint may point to it. Those are
+  // probably the types created with generateType(). TODO: how to make it
+  // put the instantiationPoints outside the holder?
+  if (ModuleSymbol* mod = toModuleSymbol(wrapFn->defPoint->parentSymbol))
+    if (wrapFn->defPoint->parentExpr == mod->block)
+      mod->initFn->body->insertAtHead(holder->remove());
+
+  return holder;
 }
 
 // resolveAssociatedTypes() and helpers
@@ -861,10 +927,31 @@ static bool addReqFnConstraints(BlockStmt* holder, FnSymbol* reqFn,
     IfcConstraint* inst = icon->copy(&fml2act);
     ImplementsStmt* istm = new ImplementsStmt(inst, new BlockStmt());
     holder->insertAtTail(istm);
-    wrapOneImplementsStatement(istm);
+    FnSymbol* wrapFn = wrapOneImplementsStatement(istm);
+    // We postulate that this constraint holds. Resolving it is meaningless.
+    // This means however that istm will not have its tables filled in.
+    if (wrapFn->id == breakOnResolveID) gdbShouldBreakHere();
+    wrapFn->addFlag(FLAG_RESOLVED);
   }
 
   return true;
+}
+
+static void handleContextCallExpr(CallExpr* call, FnSymbol* reqFn,
+                                  FnSymbol* &target) {
+  ContextCallExpr* cc = toContextCallExpr(call->parentExpr);
+  if (cc == nullptr) return; // nothing to do
+
+  CallExpr* preferred =
+    reqFn->retTag == RET_REF ? cc->getRefCall() :
+    reqFn->retTag == RET_VALUE ? cc->getValueCall() :
+    reqFn->retTag == RET_CONST_REF ? cc->getConstRefCall() : nullptr;
+
+  if (preferred != nullptr)
+    target = preferred->resolvedFunction();
+
+  cc->insertBefore(call->remove());
+  cc->remove();
 }
 
 // 'target' is the implementation of a required function that is IC.
@@ -877,7 +964,12 @@ static FnSymbol* getICcopySource(FnSymbol* target) {
   return src;
 }
 
-static void removeCallAndICons(BlockStmt* holder, CallExpr* call) {
+static void removeCallEtc(BlockStmt* holder, CallExpr* call,
+                          std::vector<Symbol*> formalDups) {
+  for (Symbol* dup: formalDups)
+    dup->defPoint->remove();
+
+  // remove the constraints added in addReqFnConstraints()
   while (true) {
     if (DefExpr* def = toDefExpr(holder->body.head)) {
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
@@ -895,7 +987,7 @@ static void removeCallAndICons(BlockStmt* holder, CallExpr* call) {
 static bool checkNonemptyHolder(InterfaceSymbol* isym,  ImplementsStmt* istm,
                                 BlockStmt*     holder,  FnSymbol*     target,
                                 FnSymbol*       reqFn,  bool  reportErrors) {
-  if (holder->body.tail != NULL) {
+  if (!holder->body.empty()) {
     if (reportErrors) {
       USR_FATAL_CONT(istm, "when checking this implements statement");
       USR_PRINT(target, "this implementation of the required function %s"
@@ -990,6 +1082,69 @@ static bool checkReturnIntent(InterfaceSymbol* isym,  ImplementsStmt* istm,
   return false;
 }
 
+static bool checkOnePairOfFormals(ArgSymbol* tgtFml, ArgSymbol* reqFml) {
+  if (reqFml->type == dtMethodToken)
+    return true;
+
+  IntentTag tgtTag = concreteIntentForArg(tgtFml);
+  IntentTag reqTag = concreteIntentForArg(reqFml);
+
+  if (// exact match
+      tgtTag == reqTag                                     ||
+      // both are in-intents
+      ((tgtTag & INTENT_FLAG_IN) & reqTag)                 )
+    return true;
+
+  // accept variations on ref-ness except the obviously wrong one
+  if (tgtTag == INTENT_REF && reqTag == INTENT_CONST_REF)
+    return false;
+  if ((tgtTag & INTENT_FLAG_REF) & reqTag)
+    return true;
+
+  // Support the case where both reqFml and tgtFml have the default or const
+  // intent, so reqTag is 'const ref'. If tgtFml is a non-record, tgtTag
+  // will be 'const in'. Allow that.
+  if ((reqTag & INTENT_FLAG_REF) && (tgtTag & INTENT_FLAG_IN))
+    if (! isAggregateType(tgtFml->type) || isClass(tgtFml->type))
+      return true;
+
+  return false;
+}
+
+static bool checkFormals(InterfaceSymbol* isym,  ImplementsStmt* istm,
+                         FnSymbol*      target,  FnSymbol*      reqFn,
+                         bool   reportErrors) {
+  Expr* tgtExpr = target->formals.head;
+  Expr* reqExpr = reqFn->formals.head;
+
+  if (target->numFormals() != reqFn->numFormals()) {
+    INT_ASSERT(target->hasFlag(FLAG_OPERATOR) &&
+               target->numFormals() == 2 + reqFn->numFormals());
+    tgtExpr = tgtExpr->next->next;
+  }
+    
+  // Check that argument intents are compatible i.e. the "calling convention"
+  // for reqFn's formal will work for target's formal.
+  for (; tgtExpr != NULL; tgtExpr = tgtExpr->next, reqExpr = reqExpr->next) {
+    ArgSymbol* tgtFml = toArgSymbol(toDefExpr(tgtExpr)->sym);
+    ArgSymbol* reqFml = toArgSymbol(toDefExpr(reqExpr)->sym);
+
+    if (checkOnePairOfFormals(tgtFml, reqFml))
+      continue; // OK
+    if (reportErrors) {
+      USR_FATAL_CONT(istm, "the argument intent is not suitable"
+                     " for an implementation of a required function");
+      USR_PRINT(reqFml, "the required function '%s' in the interface '%s'"
+                " has a formal '%s' with %s", reqFn->name, isym->name,
+                reqFml->name, intentDescrString(reqFml->intent));
+      USR_PRINT(tgtFml, "whereas its implementation has a formal '%s'"
+                " with %s", tgtFml->name, intentDescrString(tgtFml->intent));
+    }
+    return false;
+  }
+  return true;
+}
+
 // Returns whether an implementation of 'reqFn has been established
 // successfully. If so, store it in 'implRef'.
 static bool resolveOneRequiredFn(InterfaceSymbol* isym,  ImplementsStmt*  istm,
@@ -1002,9 +1157,15 @@ static bool resolveOneRequiredFn(InterfaceSymbol* isym,  ImplementsStmt*  istm,
   cgprint("%s  required fn %s\n", indent, symstring(reqFn));
 
   // Create a call to the required function inside 'holder'.
+  std::vector<Symbol*> formalDups;
   CallExpr* call = new CallExpr(reqFn->name);
-  for_formals(formal, reqFn)
-    call->insertAtTail(formal->copy(&fml2act));
+  for_formals(formal, reqFn) {
+    ArgSymbol* dup = formal->copy(&fml2act);
+    call->insertAtTail(dup);
+    // needed by handleInIntent->checkAnotherFunctionsFormal()
+    holder->insertAtHead(new DefExpr(dup));
+    formalDups.push_back(dup);
+  }
 
   bool reqFnIsIC = addReqFnConstraints(holder, reqFn, fml2act);
 
@@ -1021,19 +1182,22 @@ static bool resolveOneRequiredFn(InterfaceSymbol* isym,  ImplementsStmt*  istm,
     INT_ASSERT(target->hasFlag(FLAG_PROMOTION_WRAPPER) ||
                ! target->isGeneric());
 
+    handleContextCallExpr(call, reqFn, target);
+
     resolveFunction(target); // aborts if there are errors
 
     // 'call' needs to be inTree if resolveFunction() above has errors
-    removeCallAndICons(holder, call);
+    removeCallEtc(holder, call, formalDups);
 
     if (!( checkNonemptyHolder(isym, istm, holder, target, reqFn, reportErrors)
            & checkReturnType(isym, istm, target, fml2act, reqFn, reportErrors)
-           & checkReturnIntent(isym, istm, target, reqFn, reportErrors) ))
+           & checkReturnIntent(isym, istm, target, reqFn, reportErrors)
+           & checkFormals(isym, istm, target, reqFn, reportErrors) ))
       target = NULL;  // if one or more of the above checks fail
 
   } else {
     // the call did not resolve
-    removeCallAndICons(holder, call);
+    cleanupHolder(holder);
 
     if (implFn == gDummyWitness) {
       if (reportErrors) {
@@ -1049,6 +1213,7 @@ static bool resolveOneRequiredFn(InterfaceSymbol* isym,  ImplementsStmt*  istm,
       target = toFnSymbol(implFn->copy(&fml2actDup));
       holder->insertBefore(new DefExpr(target));
       instantiatedDefaults.push_back(target);
+      target->addFlag(FLAG_INVISIBLE_FN);
       INT_ASSERT(target->isResolved()); // the dflt impl was resolved with isym
       cgprint("%s      dflt -> %s  %s\n", indent,
               symstring(target), debugLoc(target));
@@ -1137,19 +1302,19 @@ static bool resolveImplementsStmt(FnSymbol* wrapFn, ImplementsStmt* istm,
   resolveIStmActuals(wrapFn, istm);  // marks wrapFn with FLAG_RESOLVED
 
   SET_LINENO(istm->implBody);
-  BlockStmt* holder = new BlockStmt();
-  istm->implBody->insertAtTail(holder);
+  BlockStmt* holder = createHolderBlock(wrapFn, istm);
 
   INT_ASSERT(istm->witnesses.symWits.n == 0);     // we have not filled it yet
   istm->witnesses.symWits.copy(isym->requiredFns);  // start with the defaults
 
   SymbolMap fml2act; // isym formal -> istm actual
-  buildAndCheckFormals2Actuals(isym, icon, "implements statement", fml2act);
+  buildAndCheckFormals2Actuals(isym, icon, "implements statement",
+                               holder, fml2act);
 
   bool success = true;
-  AggregateType* genT = hasEntriesMappedToGenerics(fml2act);
+  Symbol* genSym = hasEntriesMappedToGenerics(fml2act);
 
-  if (genT == NULL) {
+  if (genSym == nullptr) {
     // istm is concrete
     // check each category of istm contents
     success =
@@ -1164,7 +1329,7 @@ static bool resolveImplementsStmt(FnSymbol* wrapFn, ImplementsStmt* istm,
   } else {
     // no early checking of generic implements statements
     cgprint("%s  not checking due to generic type %s\n",
-            indent, symstring(genT->symbol));
+            indent, symstring(genSym));
 
     // we expect generic implements statements to come about
     // only in the source code
@@ -1172,8 +1337,7 @@ static bool resolveImplementsStmt(FnSymbol* wrapFn, ImplementsStmt* istm,
   }
 
   cgprint("}%s\n", nested ? "    ...done" : "");
-  //INT_FATAL("CG case"); // used for testing
-  // CG TODO: holder->remove() ? some types' instantiationPoint may point to it
+  // CG TODO: holder->remove() ? see comment in createHolderBlock()
   INT_ASSERT(wrapFn->hasFlag(FLAG_RESOLVED));
   CallExpr* popped = callStack.pop();
   INT_ASSERT(popped == callsite);
@@ -1267,16 +1431,7 @@ static ImplementsStmt* buildInferredImplStmt(InterfaceSymbol* isym,
 }
 
 static bool isGenericMatch(Type* consT, Type* implT) {
-  if (AggregateType* consAT = toAggregateType(consT))
-    if (AggregateType* implAT = toAggregateType(implT))
-      do {
-        consAT = consAT->instantiatedFrom;
-        if (consAT == implAT)
-          return true;
-      }
-      while (consAT != NULL);
-
-  return false;
+  return canInstantiate(consT, implT);
 }
 
 class MatchResult { public:
@@ -1657,7 +1812,6 @@ void cgConvertAggregateTypes(FnSymbol* fn, Expr* anchor,
 
   // fn->retType and standalone SymExpr in typeExpr blocks do not have DefExpr
   instantiateOneAggregateType(substitutions, anchor, fn->retType, false);
-  //INT_FATAL("CG case"); // used for testing
   for_formals(formal, fn)
    if (formal->type == dtUnknown) {
     if (BlockStmt* typeExpr = formal->typeExpr)
@@ -1690,7 +1844,6 @@ bool cgActualCanMatch(FnSymbol* fn, Type* formalT, ConstrainedType* actualCT) {
 bool cgFormalCanMatch(FnSymbol* fn, Type* formalT) {
   ConstrainedType* ct = toConstrainedType(formalT->getValType());
   if (ct == nullptr) return false;
-  //INT_FATAL("CG case"); // used for testing
 
   INT_ASSERT(fn->isConstrainedGeneric());
   INT_ASSERT(ct->ctUse == CT_CGFUN_FORMAL ||
@@ -1710,7 +1863,6 @@ bool cgFormalCanMatch(FnSymbol* fn, Type* formalT) {
 }
 
 static void adjustCGtype(SymbolMap &substitutions, Type* &type) {
-  //INT_FATAL("CG case"); // used for testing
   if (isPrimitiveType(type))
     return;
   if (Symbol* sub = substitutions.get(type->symbol))
@@ -1754,11 +1906,17 @@ void adjustForCGinstantiation(FnSymbol* fn, SymbolMap& substitutions,
   SymbolMap& pciMap = pci->partialCopyMap;
 
   form_Map(SymbolMapElem, elem, substitutions) {
-    if (isArgSymbol(elem->key)) {
+    if (ArgSymbol* formal = toArgSymbol(elem->key)) {
       // The formals are already mapped.
-      // NB 'substitutions' map formals to their types.
+      // NB 'substitutions' maps original formals to their new types.
+      // For a 'ref' formal, the original's type is non-ref,
+      // see undoRefTypesForRefFormals(), and is mapped to a non-ref type.
+      // Whereas the new formal's type is ref, due to
+      // instantiateSignature() invoking updateIfRefFormal().
       Symbol* alreadyMapped = pciMap.get(elem->key);
-      INT_ASSERT(alreadyMapped->type->symbol == elem->value);
+      INT_ASSERT(alreadyMapped->type->symbol == elem->value ||
+                 ((formal->intent & INTENT_FLAG_REF) &&
+                  alreadyMapped->type == elem->value->type->refType));
     } else {
       pciMap.put(elem->key, elem->value);
     }
@@ -1820,8 +1978,9 @@ Expr* resolveCallToAssociatedType(CallExpr* call, ConstrainedType* recv) {
     indx++;
     bool found = false;
     for_alist(arg, icon->consActuals)
-      if (arg->typeInfo() == recv)
-        { found = true; break; }  // yes, it is an implementer
+      if (! isBlockStmt(arg)) // a "holder" added by resolveConsActualExpr()
+        if (arg->typeInfo() == recv)
+          { found = true; break; }  // yes, it is an implementer
     if (!found)
       continue;
 

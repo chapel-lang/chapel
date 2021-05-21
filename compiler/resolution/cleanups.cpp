@@ -247,7 +247,6 @@ static void cleanupConstrainedGenerics() {
     ct->symbol->defPoint->remove();
     if (Type* ctRef = ct->refType)
     {
-      //INT_FATAL("CG case"); // used for testing
       if (ctRef->symbol->defPoint->inTree())
         ctRef->symbol->defPoint->remove();
     }
