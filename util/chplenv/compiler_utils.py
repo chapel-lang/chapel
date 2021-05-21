@@ -9,7 +9,7 @@ from collections import namedtuple
 from utils import error, memoize, run_command
 
 @memoize
-def get_compiler_name(compiler):
+def get_compiler_name_c(compiler):
     if compiler_is_prgenv(compiler):
         return 'cc'
     elif 'gnu' in compiler:
@@ -21,7 +21,22 @@ def get_compiler_name(compiler):
     elif compiler == 'pgi':
         return 'pgcc'
 
-    return 'other'
+    return 'unknown-c-compiler'
+
+@memoize
+def get_compiler_name_cpp(compiler):
+    if compiler_is_prgenv(compiler):
+        return 'CC'
+    elif 'gnu' in compiler:
+        return 'g++'
+    elif compiler in ['clang', 'llvm', 'allinea']:
+        return 'clang++'
+    elif compiler == 'intel':
+        return 'icpc'
+    elif compiler == 'pgi':
+        return 'pgc++'
+
+    return 'unknown-c++-compiler'
 
 @memoize
 def get_compiler_version(compiler):
@@ -29,7 +44,7 @@ def get_compiler_version(compiler):
     if 'gnu' in compiler:
         # Asssuming the 'compiler' version matches the gcc version
         # e.g., `mpicc -dumpversion == gcc -dumpversion`
-        version_string = run_command([get_compiler_name(compiler), '-dumpversion'])
+        version_string = run_command([get_compiler_name_c(compiler), '-dumpversion'])
     elif 'cray-prgenv-cray' == compiler:
         version_string = os.environ.get('CRAY_CC_VERSION', '0')
     return CompVersion(version_string)
@@ -94,8 +109,8 @@ def strip_preprocessor_lines(lines):
 @memoize
 def has_std_atomics(compiler_val):
     try:
-        compiler_name = get_compiler_name(compiler_val)
-        if compiler_name == 'other':
+        compiler_name = get_compiler_name_c(compiler_val)
+        if compiler_name == 'unknown-c-compiler':
             return False
 
         version_key='version'
