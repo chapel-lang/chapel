@@ -847,6 +847,12 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
       }
     }
 
+    if (sym->hasFlag(FLAG_DEPRECATED)) {
+      // Generate a deprecation warning when matching against a deprecated
+      // symbol
+      USR_WARN(usymExpr, "%s", sym->deprecationMsg.c_str());
+    }
+
     symExpr = new SymExpr(sym);
     usymExpr->replace(symExpr);
 
