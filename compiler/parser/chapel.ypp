@@ -420,6 +420,7 @@
 %type <pblockstmt> deprecation_decl_stmt
 %type <pblockstmt> deprecation_decl_base
 %type <pdefexpr> deprecated_enum_item
+%type <pblockstmt> deprecated_class_level_stmt
 
 %type <pmodsymbol> module_decl_start
 %type <pblockstmt> module_decl_stmt
@@ -891,6 +892,14 @@ return_stmt:
 | TRETURN opt_try_expr TSEMI  { $$ = buildPrimitiveStmt(PRIM_RETURN, $2); }
 ;
 
+deprecated_class_level_stmt:
+  class_level_stmt
+| TDEPRECATED STRINGLITERAL class_level_stmt
+{ $$ = buildDeprecated($3, $2); }
+| TDEPRECATED class_level_stmt
+{ $$ = buildDeprecated($2); }
+;
+
 class_level_stmt:
   TSEMI                 { $$ = buildChapelStmt(new BlockStmt()); }
 | private_decl
@@ -1311,9 +1320,9 @@ opt_inherit:
 class_level_stmt_ls:
   /* nothing */
     { $$ = new BlockStmt(); }
-| class_level_stmt_ls class_level_stmt
+| class_level_stmt_ls deprecated_class_level_stmt
     { $1->insertAtTail($2); }
-| class_level_stmt_ls pragma_ls class_level_stmt
+| class_level_stmt_ls pragma_ls deprecated_class_level_stmt
     { $1->insertAtTail(buildPragmaStmt($2, $3)); }
 ;
 
