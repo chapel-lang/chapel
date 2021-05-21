@@ -1,3 +1,4 @@
+handleProc.chpl:14: In function 'main':
 handleProc.chpl:17: warning: This function is deprecated, use blah(x: uint) instead
 3
 5

@@ -1,3 +1,4 @@
+handleOperator.chpl:15: In function 'main':
 handleOperator.chpl:18: warning: Addition of Foos is deprecated
 handleOperator.chpl:19: warning: Subtraction of Foos is deprecated
 (x = 5)
