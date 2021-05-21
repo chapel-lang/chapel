@@ -1,8 +1,8 @@
 handleEnumConstants.chpl:4: warning: a is deprecated
+handleEnumConstants.chpl:13: warning: a is deprecated
 a
 b
 c
-handleEnumConstants.chpl:13: warning: a is deprecated
 a
 b
 c
