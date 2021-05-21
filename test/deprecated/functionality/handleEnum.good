@@ -7,6 +7,5 @@ handleEnum.chpl:12: warning: Enum e is deprecated, use enum f
 a
 b
 c
-a
 b
 c
