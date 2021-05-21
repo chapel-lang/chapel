@@ -2964,6 +2964,7 @@ Type* AggregateType::getDecoratedClass(ClassTypeDecorator d) {
     TypeSymbol* tsDec = new TypeSymbol(astrName, dec);
     // The dec type isn't really an object, shouldn't have its own fields
     tsDec->copyFlags(at->symbol);
+    tsDec->deprecationMsg = at->symbol->deprecationMsg;
     tsDec->addFlag(FLAG_NO_OBJECT);
     // Propagate generic-ness to the decorated type
     if (at->isGeneric() || at->symbol->hasFlag(FLAG_GENERIC))
