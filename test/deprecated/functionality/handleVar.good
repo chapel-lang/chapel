@@ -1,3 +1,4 @@
+handleVar.chpl:4: In function 'main':
 handleVar.chpl:5: warning: don't use x, use y
 3
 3

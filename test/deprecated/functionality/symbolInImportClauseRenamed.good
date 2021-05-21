@@ -1,5 +1,4 @@
 symbolInImportClauseRenamed.chpl:7: In function 'main':
 symbolInImportClauseRenamed.chpl:8: warning: x is deprecated
-symbolInImportClauseRenamed.chpl:7: In function 'main':
 symbolInImportClauseRenamed.chpl:10: warning: x is deprecated
 0
