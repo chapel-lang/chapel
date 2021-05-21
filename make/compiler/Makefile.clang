@@ -24,7 +24,7 @@
 # Tools
 #
 
-ifeq ($(CHPL_MAKE_COMPILER), clang-included)
+ifeq ($(CHPL_MAKE_COMPILER), llvm)
 # handle using the included clang compiler
 ifndef CLANG_SYSROOT_ARGS
   export CLANG_SYSROOT_ARGS=$(shell cat $(LLVM_CLANG_ARGUMENTS_FILE))

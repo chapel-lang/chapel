@@ -43,7 +43,7 @@ COMM_LAUNCHER_OBJS = \
 
 ifeq ($(CHPL_MAKE_COMPILER), llvm)
   ifneq (, $(filter cray-prgenv-%,$(CHPL_MAKE_TARGET_COMPILER_PRGENV)))
-    # if we're clang-included for a cray-prgenv-* build,
+    # if we're compiling with llvm for a cray-prgenv-* build,
     # gather some extra include paths
 
     # only run gather-cray-prgenv-argumenst.bash once, as an optimization

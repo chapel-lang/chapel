@@ -56,9 +56,9 @@ endif
 
 # The cross-configure scripts used on Crays ignore our CC and always use CC=cc
 # (the PrgEnv wrappers.) Use PrgEnv-gnu to produce something that is ABI and
-# compiler option compatible with clang-included.
+# compiler option compatible with llvm-clang.
 ifeq ($(CRAY_CROSS_CONFIGURE), y)
-ifeq ($(CHPL_MAKE_COMPILER), clang-included)
+ifeq ($(CHPL_MAKE_COMPILER), llvm)
 ifneq (, $(filter cray-prgenv-%,$(CHPL_MAKE_TARGET_COMPILER_PRGENV)))
 ORIG_PRGENV = $(subst cray-prgenv-,,$(CHPL_MAKE_TARGET_COMPILER_PRGENV))
 ifneq ($(ORIG_PRGENV), gnu)
