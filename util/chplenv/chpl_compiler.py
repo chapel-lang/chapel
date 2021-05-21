@@ -48,15 +48,6 @@ def get(flag='host'):
     elif flag == 'target':
         compiler_val = overrides.get('CHPL_TARGET_COMPILER', '')
 
-        import chpl_llvm
-        has_llvm = chpl_llvm.get()
-
-        if has_llvm == 'bundled' or has_llvm  == 'system':
-            if compiler_val:
-                sys.stderr.write("Warning: CHPL_TARGET_COMPILER ignored when compiling with LLVM")
-            # Default to LLVM backend if available
-            compiler_val = 'llvm'
-
     else:
         error("Invalid flag: '{0}'".format(flag), ValueError)
 
@@ -64,15 +55,23 @@ def get(flag='host'):
         validate(compiler_val)
         return compiler_val
 
-    # The cray platforms are a special case in that we want to "cross-compile"
-    # by default. (the compiler is different between host and target, but the
-    # platform is the same).
+    import chpl_llvm
+    has_llvm = chpl_llvm.get()
     prgenv_compiler = get_prgenv_compiler()
-    if prgenv_compiler != 'none':
+
+    if flag == 'target' and (has_llvm == 'bundled' or has_llvm  == 'system'):
+        # Default to CHPL_TARGET_COMPILER=llvm when CHPL_LLVM!=none
+        compiler_val = 'llvm'
+
+    elif prgenv_compiler != 'none':
+        # The cray platforms are a special case in that we want to
+        # "cross-compile" by default. (the compiler is different between host
+        # and target, but the platform is the same).
         if flag == 'host':
             compiler_val = 'gnu'
         else:
             compiler_val = prgenv_compiler
+
     else:
         platform_val = chpl_platform.get(flag)
         # Normal compilation (not "cross-compiling")
