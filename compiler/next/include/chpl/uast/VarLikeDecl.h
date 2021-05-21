@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_UAST_VARDECL_H
-#define CHPL_UAST_VARDECL_H
+#ifndef CHPL_UAST_VARLIKEDECL_H
+#define CHPL_UAST_VARLIKEDECL_H
 
 #include "chpl/queries/Location.h"
 #include "chpl/uast/NamedDecl.h"
@@ -31,15 +31,15 @@ namespace uast {
   This abstract class represents any sort of variable-like declaration.
   This includes things like fields, formals, or variables.
  */
-class VarDecl : public NamedDecl {
+class VarLikeDecl : public NamedDecl {
  protected:
   int8_t typeExpressionChildNum_;
   int8_t initExpressionChildNum_;
 
-  VarDecl(ASTTag tag, ASTList children, Decl::Visibility vis,
-          UniqueString name,
-          int8_t typeExpressionChildNum,
-          int8_t initExpressionChildNum)
+  VarLikeDecl(ASTTag tag, ASTList children, Decl::Visibility vis,
+              UniqueString name,
+              int8_t typeExpressionChildNum,
+              int8_t initExpressionChildNum)
     : NamedDecl(tag, std::move(children), vis, name),
       typeExpressionChildNum_(typeExpressionChildNum),
       initExpressionChildNum_(initExpressionChildNum) {
@@ -55,23 +55,23 @@ class VarDecl : public NamedDecl {
     }
   }
 
-  bool varDeclContentsMatchInner(const ASTNode* other) const {
-    const VarDecl* lhs = this;
-    const VarDecl* rhs = (const VarDecl*) other;
+  bool varLikeDeclContentsMatchInner(const ASTNode* other) const {
+    const VarLikeDecl* lhs = this;
+    const VarLikeDecl* rhs = (const VarLikeDecl*) other;
     return lhs->namedDeclContentsMatchInner(rhs) &&
            lhs->typeExpressionChildNum_ == rhs->typeExpressionChildNum_ &&
            lhs->initExpressionChildNum_ == rhs->initExpressionChildNum_;
   }
 
-  void varDeclMarkUniqueStringsInner(Context* context) const {
+  void varLikeDeclMarkUniqueStringsInner(Context* context) const {
     namedDeclMarkUniqueStringsInner(context);
   }
 
  public:
-  ~VarDecl() = 0; // this is an abstract base class
+  ~VarLikeDecl() = 0; // this is an abstract base class
 
   /**
-    Returns the type expression used in this VarDecl's declaration, or
+    Returns the type expression used in this VarLikeDecl's declaration, or
     nullptr if there wasn't one.
   */
   const Expression* typeExpression() const {
@@ -85,7 +85,7 @@ class VarDecl : public NamedDecl {
   }
 
   /**
-    Returns the init expression used in this VarDecl's declaration, or
+    Returns the init expression used in this VarLikeDecl's declaration, or
     nullptr if there wasn't one.
   */
   const Expression* initExpression() const {

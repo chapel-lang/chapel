@@ -21,7 +21,7 @@
 #define CHPL_UAST_FORMAL_H
 
 #include "chpl/queries/Location.h"
-#include "chpl/uast/VarDecl.h"
+#include "chpl/uast/VarLikeDecl.h"
 
 namespace chpl {
 namespace uast {
@@ -39,7 +39,7 @@ namespace uast {
 
   The Formals are stored inside of a Function.
  */
-class Formal final : public VarDecl {
+class Formal final : public VarLikeDecl {
  public:
   enum Intent {
     DEFAULT_INTENT,
@@ -60,10 +60,11 @@ class Formal final : public VarDecl {
   Formal(ASTList children, UniqueString name, Formal::Intent intent,
          int8_t typeExpressionChildNum,
          int8_t initExpressionChildNum)
-    : VarDecl(asttags::Formal, std::move(children), Decl::DEFAULT_VISIBILITY,
-              name,
-              typeExpressionChildNum,
-              initExpressionChildNum),
+    : VarLikeDecl(asttags::Formal, std::move(children),
+                  Decl::DEFAULT_VISIBILITY,
+                  name,
+                  typeExpressionChildNum,
+                  initExpressionChildNum),
       intent_(intent) {}
 
   bool contentsMatchInner(const ASTNode* other) const override;

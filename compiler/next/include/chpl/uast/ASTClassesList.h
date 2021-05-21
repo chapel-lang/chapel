@@ -123,12 +123,12 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
       AST_NODE(Interface)                  // old AST: InterfaceSymbol
       AST_NODE(Module)                     // old AST: ModuleSymbol
 
-      AST_BEGIN_SUBCLASSES(VarDecl)
+      AST_BEGIN_SUBCLASSES(VarLikeDecl)
         //AST_LEAF(Field)
         AST_LEAF(Formal)                   // old AST: ArgSymbol
         AST_LEAF(Variable)                 // old AST: VarSymbol
         //AST_LEAF(ShadowVariable)         // old AST: ShadowVarSymbol
-      AST_END_SUBCLASSES(VarDecl)
+      AST_END_SUBCLASSES(VarLikeDecl)
 
       AST_BEGIN_SUBCLASSES(TypeDecl)       // old AST: TypeSymbol/Type
         AST_NODE(Enum)                     // old AST: EnumType

@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/VarDecl.h"
+#include "chpl/uast/VarLikeDecl.h"
 
 #include "chpl/uast/Builder.h"
 
@@ -25,7 +25,7 @@ namespace chpl {
 namespace uast {
 
 
-VarDecl::~VarDecl() {
+VarLikeDecl::~VarLikeDecl() {
 }
 
 

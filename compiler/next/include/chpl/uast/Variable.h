@@ -21,7 +21,7 @@
 #define CHPL_UAST_VARIABLE_H
 
 #include "chpl/queries/Location.h"
-#include "chpl/uast/VarDecl.h"
+#include "chpl/uast/VarLikeDecl.h"
 
 namespace chpl {
 namespace uast {
@@ -42,7 +42,7 @@ namespace uast {
 
   each of these is a VariableDecl that refers to a Variable Sym.
  */
-class Variable final : public VarDecl {
+class Variable final : public VarLikeDecl {
  public:
   enum Kind {
     VAR,
@@ -60,9 +60,9 @@ class Variable final : public VarDecl {
   Variable(ASTList children, Decl::Visibility vis, UniqueString name,
            Variable::Kind kind,
            int8_t typeExpressionChildNum, int8_t initExpressionChildNum)
-      : VarDecl(asttags::Variable, std::move(children), vis, name,
-                typeExpressionChildNum,
-                initExpressionChildNum),
+      : VarLikeDecl(asttags::Variable, std::move(children), vis, name,
+                    typeExpressionChildNum,
+                    initExpressionChildNum),
         kind_(kind) {}
 
   bool contentsMatchInner(const ASTNode* other) const override;
