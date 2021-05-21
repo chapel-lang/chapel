@@ -42,7 +42,8 @@ def compatible_platform_for_llvm():
   target_platform = chpl_platform.get('target')
   return (target_arch != "i368" and target_platform != "linux32")
 
-def has_compatible_installed_llvm():
+@memoize
+def find_llvm_config():
     preferred_vers_file = os.path.join(get_chpl_third_party(),
                                        'llvm', 'LLVM_VERSION')
     preferred_vers = ""
@@ -54,6 +55,10 @@ def has_compatible_installed_llvm():
 
     got = run_command([find_llvm_config, preferred_vers])
     got = got.strip()
+    return got
+
+def has_compatible_installed_llvm():
+    got = find_llvm_config()
     platform = chpl_platform.get('target')
     if got and got != "missing-llvm-config":
         return True
@@ -89,33 +94,50 @@ def get():
 
     return llvm_val
 
-def get_clang_bin_dir():
+def llvm_enabled():
+    llvm_val = get()
+    if llvm_val == 'bundled' or llvm_val == 'system':
+        return True
+
+    return False
+
+def get_clang_prefix():
     llvm_val = get()
     if llvm_val == 'bundled':
         chpl_third_party = get_chpl_third_party()
         llvm_target_dir = get_uniq_cfg_path_for('bundled')
         llvm_subdir = os.path.join(chpl_third_party, 'llvm', 'install',
                                    llvm_target_dir)
-        clang = os.path.join(llvm_subdir, 'bin', 'clang')
-        return clang
+        return llvm_subdir
+
+    elif llvm_val == 'system':
+        # respect CHPL_LLVM_PREFIX for CHPL_LLVM=system
+        prefix = overrides.get('CHPL_LLVM_PREFIX', '')
+        if prefix:
+            return prefix
+
+    return None
+
+def get_clang_bin_dir():
+    prefix = get_clang_prefix()
+    if prefix:
+        return os.path.join(prefix, 'bin')
     else:
         return None
 
 @memoize
-def get_clang_cc():
-    bin_dir = get_clang_bin_dir()
-    if bin_dir:
-        return os.path.join(bin_dir, 'clang');
-    else:
-        return 'clang'
+def get_clang_suffix():
+    llvm_val = get()
 
-@memoize
-def get_clang_cpp():
-    bin_dir = get_clang_bin_dir()
-    if bin_dir:
-        return os.path.join(bin_dir, 'clang++');
-    else:
-        return 'clang++'
+    if llvm_val == 'system':
+        # use whatever suffix is on llvm-config from find_llvm_config
+        # e.g. llvm-config-11 -> clang-11 / clang++-11
+        llvm_config = find_llvm_config()
+        before, match, after = llvm_config.rpartition('llvm-config')
+        if match == 'llvm-config':
+            return after
+
+    return ''
 
 def _main():
     llvm_val = get()

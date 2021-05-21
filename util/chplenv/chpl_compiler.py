@@ -69,7 +69,10 @@ def get(flag='host'):
     # platform is the same).
     prgenv_compiler = get_prgenv_compiler()
     if prgenv_compiler != 'none':
-        compiler_val = prgenv_compiler
+        if flag == 'host':
+            compiler_val = 'gnu'
+        else:
+            compiler_val = prgenv_compiler
     else:
         platform_val = chpl_platform.get(flag)
         # Normal compilation (not "cross-compiling")
@@ -91,20 +94,119 @@ def get(flag='host'):
     validate(compiler_val)
     return compiler_val
 
-@memoize
-def get_cc(flag='host'):
-    compiler = get(flag=flag)
-    if compiler == 'llvm':
-        import chpl_llvm
-        return chpl_llvm.get_clang_cc()
+def get_compiler_name_c(compiler):
+    if compiler_is_prgenv(compiler):
+        return 'cc'
+    elif 'gnu' in compiler:
+        return 'gcc'
+    elif compiler in ['clang', 'llvm', 'allinea']:
+        return 'clang'
+    elif compiler == 'intel':
+        return 'icc'
+    elif compiler == 'pgi':
+        return 'pgcc'
+
+    return 'unknown-c-compiler'
+
+def get_compiler_name_cpp(compiler):
+    if compiler_is_prgenv(compiler):
+        return 'CC'
+    elif 'gnu' in compiler:
+        return 'g++'
+    elif compiler in ['clang', 'llvm', 'allinea']:
+        return 'clang++'
+    elif compiler == 'intel':
+        return 'icpc'
+    elif compiler == 'pgi':
+        return 'pgc++'
+
+    return 'unknown-c++-compiler'
+
+def compiler_is_prgenv(compiler_val):
+  return compiler_val.startswith('cray-prgenv')
+
+def get_compiler_prefix(flag='host'):
+    compiler_val = get(flag=flag)
+    prefix = ''
+
+    import chpl_llvm
+    if (chpl_llvm.llvm_enabled() and
+        (compiler_val == 'clang' or compiler_val == 'llvm')):
+
+        if (flag == 'host' and
+            chpl_llvm.get() == 'bundled' and
+            compiler_val == 'clang'):
+            # don't change the prefix in this setting
+            # (bundled LLVM might not be built yet)
+            pass
+
+        else:
+            prefix = chpl_llvm.get_clang_prefix()
+
+    elif compiler_val == 'clang':
+        return overrides.get('CHPL_CLANG_PREFIX', '')
+
+    elif compiler_val == 'gnu':
+        prefix = overrides.get('CHPL_GCC_PREFIX', '')
+        if prefix:
+            return prefix
+
+    return prefix
+
+def get_compiler_suffix(flag='host'):
+    compiler_val = get(flag=flag)
+    suffix = ''
+
+    import chpl_llvm
+    if (chpl_llvm.llvm_enabled() and
+        (compiler_val == 'clang' or compiler_val == 'llvm')):
+        return chpl_llvm.get_clang_suffix()
+
+    elif compiler_val == 'clang':
+        return overrides.get('CHPL_CLANG_SUFFIX', '')
+
+    elif compiler_val == 'gnu':
+        return overrides.get('CHPL_GCC_SUFFIX', '')
+
+    return ''
 
 @memoize
-def get_cpp(flag='host'):
-    compiler = get(flag=flag)
-    if compiler == 'llvm':
-        import chpl_llvm
-        return chpl_llvm.get_clang_cpp()
+def get_command_c(flag='host'):
+    compiler_val = get(flag=flag)
 
+    if flag == 'host':
+        command = overrides.get('CHPL_HOST_COMPILER_COMMAND_C', '')
+    elif flag == 'target':
+        command = overrides.get('CHPL_TARGET_COMPILER_COMMAND_C', '')
+
+    command = get_compiler_name_c(compiler_val)
+
+    prefix = get_compiler_prefix(flag=flag);
+    if prefix:
+        command = os.path.join(prefix, 'bin', command)
+
+    suffix = get_compiler_suffix(flag=flag);
+    command = command + suffix
+    return command
+
+@memoize
+def get_command_cpp(flag='host'):
+    compiler_val = get(flag=flag)
+
+    if flag == 'host':
+        command = overrides.get('CHPL_HOST_COMPILER_COMMAND_CPP', '')
+    elif flag == 'target':
+        command = overrides.get('CHPL_TARGET_COMPILER_COMMAND_CPP', '')
+
+    command = get_compiler_name_cpp(compiler_val)
+
+    prefix = get_compiler_prefix(flag=flag);
+    if prefix:
+        command = os.path.join(prefix, 'bin', command)
+
+    suffix = get_compiler_suffix(flag=flag);
+    command = command + suffix
+    return command
 
 def _main():
     parser = optparse.OptionParser(usage='usage: %prog [--host|target])')

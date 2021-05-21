@@ -23,8 +23,19 @@
 #
 # Tools
 #
-CXX = $(CROSS_COMPILER_PREFIX)g++
-CC = $(CROSS_COMPILER_PREFIX)gcc
+CXX = $(CHPL_MAKE_COMPILER_COMMAND_CPP) # normally g++
+CC = $(CHPL_MAKE_COMPILER_COMMAND_C)    # normally gcc
+
+# just in case
+ifeq ($(CXX),)
+  $(warning CXX is not set so setting it to g++)
+  CXX = g++
+endif
+ifeq ($(CC),)
+  $(warning CC is not set so setting it to gcc)
+  CC = gcc
+endif
+
 
 RANLIB = ranlib
 

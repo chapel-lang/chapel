@@ -9,42 +9,13 @@ from collections import namedtuple
 from utils import error, memoize, run_command
 
 @memoize
-def get_compiler_name_c(compiler):
-    if compiler_is_prgenv(compiler):
-        return 'cc'
-    elif 'gnu' in compiler:
-        return 'gcc'
-    elif compiler in ['clang', 'llvm', 'allinea']:
-        return 'clang'
-    elif compiler == 'intel':
-        return 'icc'
-    elif compiler == 'pgi':
-        return 'pgcc'
-
-    return 'unknown-c-compiler'
-
-@memoize
-def get_compiler_name_cpp(compiler):
-    if compiler_is_prgenv(compiler):
-        return 'CC'
-    elif 'gnu' in compiler:
-        return 'g++'
-    elif compiler in ['clang', 'llvm', 'allinea']:
-        return 'clang++'
-    elif compiler == 'intel':
-        return 'icpc'
-    elif compiler == 'pgi':
-        return 'pgc++'
-
-    return 'unknown-c++-compiler'
-
-@memoize
 def get_compiler_version(compiler):
     version_string = '0'
     if 'gnu' in compiler:
         # Asssuming the 'compiler' version matches the gcc version
         # e.g., `mpicc -dumpversion == gcc -dumpversion`
-        version_string = run_command([get_compiler_name_c(compiler), '-dumpversion'])
+        gcc = chpl_compiler.get_compiler_name_c(compiler)
+        version_string = run_command([gcc, '-dumpversion'])
     elif 'cray-prgenv-cray' == compiler:
         version_string = os.environ.get('CRAY_CC_VERSION', '0')
     return CompVersion(version_string)
@@ -72,11 +43,6 @@ def CompVersion(version_string):
 
 
 @memoize
-def compiler_is_prgenv(compiler_val):
-  return compiler_val.startswith('cray-prgenv')
-
-
-@memoize
 def target_compiler_is_prgenv(bypass_llvm=True):
     compiler_val = chpl_compiler.get('target')
 
@@ -85,7 +51,7 @@ def target_compiler_is_prgenv(bypass_llvm=True):
         if compiler_val == 'llvm':
             compiler_val = chpl_compiler.get_prgenv_compiler()
 
-    isprgenv = compiler_is_prgenv(compiler_val)
+    isprgenv = chpl_compiler.compiler_is_prgenv(compiler_val)
     return isprgenv
 
 
@@ -109,7 +75,7 @@ def strip_preprocessor_lines(lines):
 @memoize
 def has_std_atomics(compiler_val):
     try:
-        compiler_name = get_compiler_name_c(compiler_val)
+        compiler_name = chpl_compiler.get_compiler_name_c(compiler_val)
         if compiler_name == 'unknown-c-compiler':
             return False
 

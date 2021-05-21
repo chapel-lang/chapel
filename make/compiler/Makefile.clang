@@ -24,8 +24,18 @@
 # Tools
 #
 
-CXX = clang++
-CC = clang
+CXX = $(CHPL_MAKE_COMPILER_COMMAND_CPP) # normally clang++
+CC = $(CHPL_MAKE_COMPILER_COMMAND_C)    # normally clang
+
+# just in case
+ifeq ($(CXX),)
+  $(warning CXX is not set so setting it to clang++)
+  CXX = clang++
+endif
+ifeq ($(CC),)
+  $(warning CC is not set so setting it to clang)
+  CC = clang
+endif
 
 ifeq ($(CHPL_MAKE_COMPILER), llvm)
   ifeq ($(CHPL_MAKE_LLVM), bundled)
@@ -33,11 +43,10 @@ ifeq ($(CHPL_MAKE_COMPILER), llvm)
     ifndef CLANG_SYSROOT_ARGS
       export CLANG_SYSROOT_ARGS=$(shell cat $(LLVM_CLANG_ARGUMENTS_FILE))
     endif
-    CXX = $(CLANG_CXX) $(CLANG_SYSROOT_ARGS)
-    CC = $(CLANG_CC) $(CLANG_SYSROOT_ARGS)
+    CXX = $(CHPL_MAKE_COMPILER_COMMAND_CPP) $(CLANG_SYSROOT_ARGS)
+    CC = $(CHPL_MAKE_COMPILER_COMMAND_C) $(CLANG_SYSROOT_ARGS)
   endif
 endif
-
 
 
 RANLIB = ranlib
