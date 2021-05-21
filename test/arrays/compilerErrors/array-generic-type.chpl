@@ -4,4 +4,5 @@
 type T = [];
 
 proc test(type arg) { }
+test(T);
 test([]);
