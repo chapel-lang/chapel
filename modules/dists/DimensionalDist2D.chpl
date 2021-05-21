@@ -260,8 +260,8 @@ class DimensionalDist2D : BaseDist {
   // implementation note: 'rank' is not a real param; it's just that having
   // 'proc rank param return targetLocales.rank' did not work
   param rank: int = targetLocales.rank;
-  proc numLocs1: locCntT  return targetIds.dim(0).size: locCntT;
-  proc numLocs2: locCntT  return targetIds.dim(1).size: locCntT;
+  proc numLocs1: locCntT  return targetIds.dim(0).sizeAs(locCntT);
+  proc numLocs2: locCntT  return targetIds.dim(1).sizeAs(locCntT);
 
   // parallelization knobs
   var dataParTasksPerLocale: int      = getDataParTasksPerLocale();
@@ -757,7 +757,7 @@ proc DimensionalDom.dsiDim(param d)       return whole.dim(d);
 proc DimensionalDom.dsiLow                return whole.low;
 proc DimensionalDom.dsiHigh               return whole.high;
 proc DimensionalDom.dsiStride             return whole.stride;
-proc DimensionalDom.dsiNumIndices         return whole.size;
+proc DimensionalDom.dsiNumIndices         return whole.sizeAs(uint);
 proc DimensionalDom.dsiMember(indexx)     return whole.contains(indexx);
 proc DimensionalDom.dsiIndexOrder(indexx) return whole.indexOrder(indexx);
 
@@ -1185,10 +1185,10 @@ iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
 
       // when we know which dimension should be the parallel one
       proc compute1dNTPD(param parDim): (int,int) {
-        const myNumIndices = myDims(0).size * myDims(1).size;
+        const myNumIndices = myDims(0).sizeAs(int) * myDims(1).sizeAs(int);
         const cnc:int =
           _computeNumChunks(maxTasks, ignoreRunning, minSize, myNumIndices);
-        return ( min(cnc, myDims(parDim).size:int), parDim );
+        return ( min(cnc, myDims(parDim).sizeAs(int)), parDim );
       }
 
       const (numTasks, parDim) =
@@ -1279,7 +1279,7 @@ iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
               //   if myPiece.size == 0 then do not yield anything
 // TODO: can it be enabled for test_strided_slice1.chpl with 1d block-cyclic?
 //              assert(myPiece.size > 0);
-              if myPiece.size > 0 then
+              if myPiece.sizeAs(uint) > 0 then
                 yield myPiece;
             }
           }

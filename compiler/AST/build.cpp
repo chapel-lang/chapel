@@ -1173,7 +1173,7 @@ static BlockStmt* buildLoweredCoforall(Expr* indices,
   if (bounded) {
     if (!onBlock) { block->insertAtHead(new CallExpr("chpl_resetTaskSpawn", numTasks)); }
     block->insertAtHead(new CallExpr("_upEndCount", coforallCount, countRunningTasks, numTasks));
-    block->insertAtHead(new CallExpr(PRIM_MOVE, numTasks, new CallExpr(".", iterator,  new_CStringSymbol("size"))));
+    block->insertAtHead(new CallExpr(PRIM_MOVE, numTasks, new CallExpr("chpl_coforallSize", iterator)));
     block->insertAtHead(new DefExpr(numTasks));
     block->insertAtTail(new DeferStmt(new CallExpr("_endCountFree", coforallCount)));
     block->insertAtTail(new CallExpr("_waitEndCount", coforallCount, countRunningTasks, numTasks));

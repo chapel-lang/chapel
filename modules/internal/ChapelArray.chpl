@@ -1554,12 +1554,32 @@ module ChapelArray {
       for i in _value.dimIter(d, ind) do yield i;
     }
 
-   /* Return a tuple of :proc:`intIdxType` describing the size of each dimension.
-      For a sparse domain, return the shape of the parent domain.*/
+   /* Return a tuple of :proc:`intIdxType` describing the size of each
+      dimension.  Note that this routine is in the process of changing
+      to return a tuple of ``int``, similar to the ``.size`` query on
+      ranges, domains, and arrays.  See :proc:`ChapelRange.range.size` for details.
+
+      For a sparse domain, this returns the shape of the parent domain.
+    */
     proc shape where isRectangularDom(this) || isSparseDom(this) {
-      var s: rank*(dim(0).intIdxType);
+      use ChapelRange;
+      if (chpl_idxTypeSizeChange(idxType) && sizeReturnsInt == false) {
+        compilerWarning("'.shape' queries for domains and arrays with 'idxType = " +
+                        idxType:string +
+                        "' are changing to return '" + rank:string +
+                        "int' values rather than '" + rank:string + "*" +
+                        idxType:string+"'\n"+
+                        "  (to opt into the change now, re-compile with '-ssizeReturnsInt=true'\n");
+        return chpl_shapeAs(idxType);
+      } else {
+        return chpl_shapeAs(int);
+      }
+    }
+
+    proc chpl_shapeAs(type t: integral) {
+      var s: rank*t;
       for (i, r) in zip(0..#s.size, dims()) do
-        s(i) = r.size;
+        s(i) = r.sizeAs(t);
       return s;
     }
 
@@ -1672,7 +1692,7 @@ module ChapelArray {
         isUnique=false, preserveInds=true, addOn=nilLocale)
         where isSparseDom(this) && _value.rank==1 {
 
-      if inds.size == 0 then return 0;
+        if inds.sizeAs(uint) == 0 then return 0;
 
       return _value.dsiBulkAdd(inds, dataSorted, isUnique, preserveInds, addOn);
     }
@@ -1761,7 +1781,7 @@ module ChapelArray {
         dataSorted=false, isUnique=false, preserveInds=true, addOn=nilLocale)
         where isSparseDom(this) && _value.rank>1 {
 
-      if inds.size == 0 then return 0;
+        if inds.sizeAs(uint) == 0 then return 0;
 
       return _value.dsiBulkAdd(inds, dataSorted, isUnique, preserveInds, addOn);
     }
@@ -1788,9 +1808,41 @@ module ChapelArray {
       _value.dsiRequestCapacity(i);
     }
 
-    /* Return the number of indices in this domain */
-    proc size return _value.dsiNumIndices;
-    /* Return the lowest index in this domain */
+    /* Return the number of indices in this domain.  For domains whose
+       ``intIdxType != int``, please refer to the note in
+       :proc:`ChapelRange.range.size` about changes to this routine's return type.
+    */
+    proc size {
+      use ChapelRange;
+      if (chpl_idxTypeSizeChange(idxType) && sizeReturnsInt == false) {
+        compilerWarning("'.size' queries for domains and arrays with 'idxType == " +
+                        idxType:string +
+                        "' are changing to return 'int' values rather than '"+
+                        idxType:string+"'\n"+
+                        "  (to opt into the change now, re-compile with '-ssizeReturnsInt=true'\n" +
+                        "  or switch to the new '.sizeAs(type t: integral)' method)");
+        return this.sizeAs(this.intIdxType);
+      } else {
+        return this.sizeAs(int);
+      }
+    }
+
+    /* Return the number of indices in this domain as the specified type */
+    proc sizeAs(type t: integral): t {
+      use HaltWrappers;
+      const size = _value.dsiNumIndices;
+      if boundsChecking && size > max(t) {
+        var error = ".size query exceeds max(" + t:string + ")";
+        if isRectangularDom(this) {
+          error += " for: '" + this:string + "'";
+        }
+        HaltWrappers.boundsCheckHalt(error);
+      }
+      return size: t;
+    }
+
+
+    /* return the lowest index in this domain */
     proc low return _value.dsiLow;
     /* Return the highest index in this domain */
     proc high return _value.dsiHigh;
@@ -1919,11 +1971,11 @@ module ChapelArray {
 
       var rankOrder = order;
       var idx: (rank*_value.idxType);
-      var div = this.size;
+      var div = this.sizeAs(int);
 
       for param i in 0..<rank {
           var currDim = this.dim(i);
-          div /= currDim.size;
+          div /= currDim.sizeAs(int);
           const lo = currDim.alignedLow;
           const hi = currDim.alignedHigh;
           const stride = currDim.stride;
@@ -1944,8 +1996,8 @@ module ChapelArray {
 
     pragma "no doc"
     proc checkOrderBounds(order: int){
-      if order >= this.size || order < 0 then
-        halt("Order out of bounds. Order must lie in 0..",this.size-1);
+      if order >= this.sizeAs(uint) || order < 0 then
+        halt("Order out of bounds. Order must lie in 0..",this.sizeAs(uint)-1);
     }
 
     pragma "no doc"
@@ -2116,7 +2168,7 @@ module ChapelArray {
 
      /* Return true if the domain has no indices */
      proc isEmpty(): bool {
-       return this.size == 0;
+       return this.sizeAs(uint) == 0;
      }
 
     //
@@ -2457,7 +2509,7 @@ module ChapelArray {
   inline operator ==(d1: domain, d2: domain) where isAssociativeDom(d1) &&
                                                    isAssociativeDom(d2) {
     if d1._value == d2._value then return true;
-    if d1.size != d2.size then return false;
+    if d1.sizeAs(uint) != d2.sizeAs(uint) then return false;
     // Should eventually be a forall+reduction
     for idx in d1 do
       if !d2.contains(idx) then return false;
@@ -2472,7 +2524,7 @@ module ChapelArray {
   inline operator ==(d1: domain, d2: domain) where isSparseDom(d1) &&
                                                    isSparseDom(d2) {
     if d1._value == d2._value then return true;
-    if d1.size != d2.size then return false;
+    if d1.sizeAs(uint) != d2.sizeAs(uint) then return false;
     if d1._value.parentDom != d2._value.parentDom then return false;
     // Should eventually be a forall+reduction
     for idx in d1 do
@@ -2561,6 +2613,7 @@ module ChapelArray {
 
     /* The type of indices used in the array's domain */
     proc idxType type return _value.idxType;
+    proc intIdxType type return chpl__idxTypeToIntIdxType(_value.idxType);
 
     pragma "no copy return"
     pragma "return not owned"
@@ -3022,7 +3075,10 @@ module ChapelArray {
     }
 
     /* Return the number of elements in the array */
-    proc size return _value.dom.dsiNumIndices;
+    proc size return _dom.size;
+
+    /* Return the number of elements in the array as the specified type. */
+    proc sizeAs(type t: integral) return _dom.sizeAs(t);
 
     //
     // This routine determines whether an actual array argument
@@ -3132,7 +3188,7 @@ module ChapelArray {
                       " dimension(s) to " + newDims.size:string);
 
       for param i in 0..rank-1 do
-        if newDims(i).size != _value.dom.dsiDim(i).size then
+        if newDims(i).sizeAs(uint) != _value.dom.dsiDim(i).sizeAs(uint) then
           halt("extent in dimension ", i, " does not match actual");
 
       const thisDomClass = this._value.dom;
@@ -3288,7 +3344,7 @@ module ChapelArray {
 
     /* Return true if the array has no elements */
     proc isEmpty(): bool {
-      return this.size == 0;
+      return this.sizeAs(uint) == 0;
     }
 
     /* Return the first value in the array */
@@ -3338,7 +3394,7 @@ module ChapelArray {
       if (!chpl__isDense1DArray()) then
         compilerError("reverse() is only supported on dense 1D arrays");
       const lo = this.domain.low,
-            mid = this.domain.size / 2,
+            mid = this.domain.sizeAs(this.idxType) / 2,
             hi = this.domain.high;
       for i in 0..#mid {
         this[lo + i] <=> this[hi - i];
@@ -3474,7 +3530,7 @@ module ChapelArray {
     if this.rank != that.rank then
       return false;
 
-    if this.size != that.size then
+    if this.sizeAs(uint) != that.sizeAs(uint) then
       return false;
 
     //
@@ -3482,7 +3538,7 @@ module ChapelArray {
     //
     if isRectangularDom(this.domain) && isRectangularDom(that.domain) {
       for d in 0..#this.rank do
-        if this.domain.dim(d).size != that.domain.dim(d).size then
+        if this.domain.dim(d).sizeAs(uint) != that.domain.dim(d).sizeAs(uint) then
           return false;
     }
 
@@ -3646,7 +3702,7 @@ module ChapelArray {
   // BaseSparseDom operator overloads
   //
   operator +=(ref sd: domain, inds: [] index(sd)) where isSparseDom(sd) {
-    if inds.size == 0 then return;
+    if inds.sizeAs(int) == 0 then return;
 
     sd._value.dsiBulkAdd(inds);
   }
@@ -3655,9 +3711,9 @@ module ChapelArray {
   // TODO: Currently not optimized
   operator +=(ref sd: domain, d: domain)
   where isSparseDom(sd) && d.rank==sd.rank && sd.idxType==d.idxType {
-    if d.size == 0 then return;
+    if d.sizeAs(int) == 0 then return;
 
-    const indCount = d.size;
+    const indCount = d.sizeAs(int);
     var arr: [{0..#indCount}] index(sd);
 
     for (i,j) in zip(d, 0..) do arr[j] = i;
@@ -3930,10 +3986,10 @@ module ChapelArray {
             bDims = b._value.dom.dsiDims();
       compilerAssert(aDims.size == bDims.size);
       for param i in 0..aDims.size-1 {
-        if aDims(i).size != bDims(i).size then
+        if aDims(i).sizeAs(uint) != bDims(i).sizeAs(uint) then
           halt(if forSwap then "swapping" else "assigning",
                " between arrays of different shapes in dimension ",
-               i, ": ", aDims(i).size, " vs. ", bDims(i).size);
+               i, ": ", aDims(i).sizeAs(uint), " vs. ", bDims(i).sizeAs(uint));
       }
     } else {
       // may not have dsiDims(), so can't check them as above
@@ -3958,7 +4014,7 @@ module ChapelArray {
       return;
     }
 
-    if a.size == 0 && b.size == 0 then
+    if a.sizeAs(uint) == 0 && b.sizeAs(uint) == 0 then
       // Do nothing for zero-length assignments
       return;
 
@@ -4563,9 +4619,9 @@ module ChapelArray {
   proc reshape(A: [], D: domain) {
     if !isRectangularDom(D) then
       compilerError("reshape(A,D) is meaningful only when D is a rectangular domain; got D: ", D.type:string);
-    if A.size != D.size then
-      halt("reshape(A,D) is invoked when A has ", A.size,
-           " elements, but D has ", D.size, " indices");
+    if A.sizeAs(int) != D.sizeAs(int) then
+      halt("reshape(A,D) is invoked when A has ", A.sizeAs(int),
+           " elements, but D has ", D.sizeAs(int), " indices");
     var B: [D] A.eltType = for (i,a) in zip(D, A) do a;
     return B;
   }
@@ -4825,7 +4881,7 @@ module ChapelArray {
       // default initializer is a forall expr. E.g. arrayInClassRecord.chpl.
     } else if lhs._value == rhs._value {
       // do nothing (assert?)
-    } else if lhs.size == 0 && rhs.size == 0 {
+    } else if lhs.sizeAs(int) == 0 && rhs.sizeAs(int) == 0 {
       // Do nothing for zero-length assignments
     } else {
       if boundsChecking then
@@ -4873,7 +4929,7 @@ module ChapelArray {
       // default initializer is a forall expr. E.g. arrayInClassRecord.chpl.
     } else if lhs._value == rhs._value {
       // do nothing (assert?)
-    } else if lhs.size == 0 && rhs.size == 0 {
+    } else if lhs.sizeAs(int) == 0 && rhs.sizeAs(int) == 0 {
       // Do nothing for zero-length assignments
     } else {
       if boundsChecking then
@@ -5283,7 +5339,7 @@ module ChapelArray {
     var r = if shapeful then ir._shape_ else 1..0;
 
     var i  = 0;
-    var size = r.size : size_t;
+    var size = r.sizeAs(size_t);
     type elemType = iteratorToArrayElementType(ir.type);
     var data:_ddata(elemType) = nil;
 
@@ -5350,7 +5406,7 @@ module ChapelArray {
     // there is an exception in the above 'for elt' loop.
     // If not for that, we could probably assert(r.size == i).
     // Todo: what if _shape_ is unbounded? Can we reach this point somehow?
-    if shapeful && i < r.size then
+    if shapeful && i < r.sizeAs(uint) then
       r = r #i;
 
     if !shapeful then

@@ -1,0 +1,8 @@
+-snumbits=8   # rangeLengthOverflow2-int8.good
+-snumbits=16  # rangeLengthOverflow2-int16.good
+-snumbits=32  # rangeLengthOverflow2-int32.good
+-snumbits=64  # rangeLengthOverflow2-int64.good
+-snumbits=8  -ssigned=false  # rangeLengthOverflow2-uint8.good
+-snumbits=16 -ssigned=false  # rangeLengthOverflow2-uint16.good
+-snumbits=32 -ssigned=false  # rangeLengthOverflow2-uint32.good
+-snumbits=64 -ssigned=false  # rangeLengthOverflow2-uint64.good
