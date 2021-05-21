@@ -1831,7 +1831,7 @@ module ChapelArray {
     proc sizeAs(type t: integral): t {
       use HaltWrappers;
       const size = _value.dsiNumIndices;
-      if (size > max(t)) {
+      if boundsChecking && size > max(t) {
         var error = ".size query exceeds max(" + t:string + ")";
         if isRectangularDom(this) {
           error += " for: '" + this:string + "'";
