@@ -28,13 +28,12 @@ namespace uast {
 bool Variable::contentsMatchInner(const ASTNode* other) const {
   const Variable* lhs = this;
   const Variable* rhs = (const Variable*) other;
-  return lhs->namedDeclContentsMatchInner(rhs) &&
-         lhs->kind_ == rhs->kind_ &&
-         lhs->typeExpressionChildNum_ == rhs->typeExpressionChildNum_ &&
-         lhs->initExpressionChildNum_ == rhs->initExpressionChildNum_;
+  return lhs->varLikeDeclContentsMatchInner(rhs) &&
+         lhs->kind_ == rhs->kind_;
 }
+
 void Variable::markUniqueStringsInner(Context* context) const {
-  namedDeclMarkUniqueStringsInner(context);
+  varLikeDeclMarkUniqueStringsInner(context);
 }
 
 owned<Variable>

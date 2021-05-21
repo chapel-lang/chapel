@@ -28,13 +28,12 @@ namespace uast {
 bool Formal::contentsMatchInner(const ASTNode* other) const {
   const Formal* lhs = this;
   const Formal* rhs = (const Formal*) other;
-  return lhs->namedDeclContentsMatchInner(rhs) &&
-         lhs->intent_ == rhs->intent_ &&
-         lhs->typeExpressionChildNum_ == rhs->typeExpressionChildNum_ &&
-         lhs->initExpressionChildNum_ == rhs->initExpressionChildNum_;
+  return lhs->varLikeDeclContentsMatchInner(rhs) &&
+         lhs->intent_ == rhs->intent_;
 }
+
 void Formal::markUniqueStringsInner(Context* context) const {
-  namedDeclMarkUniqueStringsInner(context);
+  varLikeDeclMarkUniqueStringsInner(context);
 }
 
 owned<Formal>
