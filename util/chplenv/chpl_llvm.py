@@ -37,7 +37,7 @@ def is_included_llvm_built():
     else:
         return False
 
-def compatible_platform_for_llvm_default():
+def compatible_platform_for_llvm():
   target_arch = chpl_arch.get('target')
   target_platform = chpl_platform.get('target')
   return (target_arch != "i368" and target_platform != "linux32")
@@ -66,18 +66,26 @@ def get():
     if not llvm_val:
         llvm_val = 'unset'
 
-        if is_included_llvm_built():
-            llvm_val = 'bundled'
-        elif compatible_platform_for_llvm_default():
-            if has_compatible_installed_llvm():
+        if compatible_platform_for_llvm():
+            if is_included_llvm_built():
+                llvm_val = 'bundled'
+            elif has_compatible_installed_llvm():
                 llvm_val = 'system'
+
         else:
+            # This platform doesn't work with the LLVM backend
+            # for one reason or another. So default to CHPL_LLVM=none.
             llvm_val = 'none'
 
     if llvm_val == 'llvm':
         sys.stderr.write("Warning: CHPL_LLVM=llvm is deprecated. "
                          "Use CHPL_LLVM=bundled instead\n")
         llvm_val = 'bundled'
+
+    if not compatible_platform_for_llvm():
+        if llvm_val != 'none' and llvm_val != 'unset':
+            sys.stderr.write("Warning: CHPL_LLVM={0} is not compatible "
+                             "with this platform".format(llvm_val))
 
     return llvm_val
 
