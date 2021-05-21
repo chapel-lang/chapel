@@ -372,7 +372,7 @@ module Bytes {
   /*
     :returns: The number of bytes in the :mod:`bytes <Bytes>`.
     */
-  inline proc bytes.size return buffLen;
+  inline proc bytes.size: int return buffLen;
 
   /*
     :returns: The indices that can be used to index into the bytes
