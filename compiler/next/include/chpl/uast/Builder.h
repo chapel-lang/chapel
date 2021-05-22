@@ -24,7 +24,6 @@
 #include "chpl/queries/ErrorMessage.h"
 #include "chpl/queries/UniqueString.h"
 
-#include <algorithm>
 #include <vector>
 #include <unordered_map>
 #include <utility>
@@ -141,25 +140,7 @@ class Builder final {
   }
 
   // Use this to flatten top level blocks within an ASTList.
-  ASTList flattenTopLevelBlocks(ASTList lst) {
-    ASTList ret;
-
-    std::reverse(lst.begin(), lst.end());
-
-    while (lst.size() > 0) {
-      auto ast = std::move(lst.back());
-      lst.pop_back();
-      if (ast->isBlock()) {
-        for (auto& child : takeChildren(std::move(ast))) {
-          ret.push_back(std::move(child));
-        }
-      } else {
-        ret.push_back(std::move(ast));
-      }
-    }
-
-    return ret;
-  }
+  ASTList flattenTopLevelBlocks(ASTList lst);
 
   /// \endcond
 };

@@ -24,6 +24,7 @@
 #include "chpl/uast/Expression.h"
 #include "chpl/uast/Module.h"
 
+#include <algorithm>
 #include <cstring>
 #include <string>
 
@@ -268,6 +269,26 @@ void Builder::Result::updateFilePaths(Context* context, const Result& keep) {
       assert(false && "topLevelExpressions should only be module decls");
     }
   }
+}
+
+ASTList Builder::flattenTopLevelBlocks(ASTList lst) {
+  ASTList ret;
+
+  std::reverse(lst.begin(), lst.end());
+
+  while (lst.size() > 0) {
+    auto ast = std::move(lst.back());
+    lst.pop_back();
+    if (ast->isBlock()) {
+      for (auto& child : takeChildren(std::move(ast))) {
+        ret.push_back(std::move(child));
+      }
+    } else {
+      ret.push_back(std::move(ast));
+    }
+  }
+
+  return ret;
 }
 
 
