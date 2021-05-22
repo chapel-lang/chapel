@@ -92,14 +92,6 @@ struct ParserContext {
   YYLTYPE declStartLoc(YYLTYPE curLoc);
   void resetDeclState();
 
-  // Use this to set a breakpoint.
-  void breakpointHere() {}
-
-  // Use this to dump an AST node.
-  void dumpNode(ASTNode* ast) {
-    ASTNode::dump(ast);
-  }
-
   void noteComment(YYLTYPE loc, const char* data, long size);
   std::vector<ParserComment>* gatherComments(YYLTYPE location);
   void clearCommentsBefore(YYLTYPE loc);
