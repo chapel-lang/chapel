@@ -42,6 +42,7 @@ using namespace chpl::uast;
 
 Parser::Parser(Context* context)
   : context_(context) {
+  yydebug = 1;
 }
 
 owned<Parser> Parser::build(Context* context) {

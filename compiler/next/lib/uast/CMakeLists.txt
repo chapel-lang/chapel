@@ -28,6 +28,7 @@ target_sources(libchplcomp-obj
                ControlFlow.cpp
                Decl.cpp
                Dot.cpp
+               DoWhile.cpp
                Enum.cpp
                EnumElement.cpp
                ErroneousExpression.cpp
@@ -49,5 +50,6 @@ target_sources(libchplcomp-obj
                TypeDecl.cpp
                Variable.cpp
                Visitor.cpp
+               While.cpp
 
               )

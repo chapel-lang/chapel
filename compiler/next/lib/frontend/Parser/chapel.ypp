@@ -1315,17 +1315,35 @@ extern_block_stmt:
 
 loop_stmt:
   TDO stmt TWHILE expr TSEMI
-    {
-      $$ = TODOSTMT(@$);
-    }
+  {
+    auto exprLst = context->makeList($2);
+    auto comments = context->gatherCommentsFromList(exprLst, @1);
+
+    // Append any comment appearing before 'while' into the exprs of $2.
+    exprLst = context->appendList(exprLst, context->gatherComments(@3));
+
+    auto astLst = context->consumeList(exprLst);
+    auto statements = BUILDER->flattenTopLevelBlocks(std::move(astLst));
+    auto node = DoWhile::build(BUILDER, LOC(@1), std::move(toOwned($4)),
+                               std::move(statements));
+    $$ = { .comments=comments, .stmt=node.release() };
+  }
 | TWHILE expr do_stmt
-    {
-      $$ = TODOSTMT(@$);
-    }
+  {
+    auto comments = context->gatherCommentsFromList($3.exprList, @1);
+    auto node = While::build(BUILDER, LOC(@1), std::move(toOwned($2)),
+                             std::move(context->consumeList($3.exprList)),
+                             $3.usesDo);
+    $$ = { .comments=comments, .stmt=node.release() };
+  }
 | TWHILE ifvar do_stmt
-    {
-      $$ = TODOSTMT(@$);
-    }
+  {
+    auto comments = context->gatherCommentsFromList($3.exprList, @1);
+    auto node = While::build(BUILDER, LOC(@1), std::move(toOwned($2)),
+                             std::move(context->consumeList($3.exprList)),
+                             $3.usesDo);
+    $$ = { .comments=comments, .stmt=node.release() };
+  }
 | TCOFORALL expr TIN expr opt_task_intent_ls do_stmt
     {
       $$ = TODOSTMT(@$);

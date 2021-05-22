@@ -267,6 +267,8 @@ ParserContext::gatherCommentsFromList(ParserExprList* lst,
 
 void ParserContext::appendComments(CommentsAndStmt*cs,
                                    std::vector<ParserComment>* comments) {
+  if (comments == nullptr) return;
+
   if (cs->comments == nullptr) {
     cs->comments = comments;
     return;
