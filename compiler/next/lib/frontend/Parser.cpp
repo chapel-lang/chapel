@@ -32,7 +32,7 @@
 #include <cstdlib>
 #include <cstring>
 
-#define DEBUG_PARSER 1
+#define DEBUG_PARSER 0
 
 namespace chpl {
 namespace frontend {

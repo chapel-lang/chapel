@@ -89,7 +89,6 @@ static void test1(Parser* parser) {
   assert(!doWhile->usesDo());
   assert(doWhile->condition());
   assert(doWhile->condition()->isIdentifier());
-  // TODO: Comment after for loop is discarded.
   // Comment between 'while' and condition is discarded.
   assert(doWhile->numStmts() == 3);
   assert(doWhile->stmt(0)->isComment());
@@ -117,7 +116,7 @@ static void test2(Parser* parser) {
       "  } /* comment 6 */ while condition1;\n"
       "  /* comment 7 */\n"
       "while condition2;\n"
-      "/* comment 8 /\n");
+      "/* comment 8 */\n");
 
   assert(parseResult.errors.size() == 0);
   assert(parseResult.topLevelExpressions.size() == 1);
