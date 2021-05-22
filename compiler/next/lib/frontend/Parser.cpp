@@ -32,7 +32,7 @@
 #include <cstdlib>
 #include <cstring>
 
-#define DEBUG_PARSER 0
+#define DEBUG_PARSER 1
 
 namespace chpl {
 namespace frontend {
@@ -42,7 +42,6 @@ using namespace chpl::uast;
 
 Parser::Parser(Context* context)
   : context_(context) {
-  yydebug = 1;
 }
 
 owned<Parser> Parser::build(Context* context) {
