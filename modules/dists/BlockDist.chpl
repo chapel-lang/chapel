@@ -1190,9 +1190,33 @@ iter BlockArr.these() ref {
 // logic?  (e.g., can we forward the forall to the global domain
 // somehow?
 //
-iter BlockArr.these(param tag: iterKind) where tag == iterKind.standalone {
-  for i in dom.these(tag) do
-    yield this.dsiLocalAccess(chpl__tuplify(i));
+iter BlockArr.these(param tag: iterKind) ref where tag == iterKind.standalone {
+  const maxTasks = dom.dist.dataParTasksPerLocale;
+  const ignoreRunning = dom.dist.dataParIgnoreRunningTasks;
+  const minSize = dom.dist.dataParMinGranularity;
+
+  // If this is the only task running on this locale, we don't want to
+  // count it when we try to determine how many tasks to use.  Here we
+  // check if we are the only one running, and if so, use
+  // ignoreRunning=true for this locale only.  Obviously there's a bit
+  // of a race condition if some other task starts after we check, but
+  // in that case there is no correct answer anyways.
+  //
+  // Note that this code assumes that any locale will only be in the
+  // targetLocales array once.  If this is not the case, then the
+  // tasks on this locale will *all* ignoreRunning, which may have
+  // performance implications.
+  const hereId = here.id;
+  const hereIgnoreRunning = if here.runningTasks() == 1 then true else ignoreRunning;
+  coforall locArr in this.locArr do on locArr {
+    const myIgnoreRunning = if here.id == hereId then hereIgnoreRunning
+      else ignoreRunning;
+    // Use the internal function for untranslate to avoid having to do
+    // extra work to negate the offset
+    for i in locArr.locDom.myBlock._value.these(tag, tasksPerLocale=maxTasks, myIgnoreRunning, minSize) {
+      yield locArr!.myElems._value.dsiAccess(i);
+    }
+  }
 }
 
 //
