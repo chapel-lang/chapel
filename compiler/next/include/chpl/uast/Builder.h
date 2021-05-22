@@ -24,6 +24,7 @@
 #include "chpl/queries/ErrorMessage.h"
 #include "chpl/queries/UniqueString.h"
 
+#include <algorithm>
 #include <vector>
 #include <unordered_map>
 #include <utility>
