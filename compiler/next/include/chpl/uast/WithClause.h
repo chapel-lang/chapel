@@ -43,7 +43,7 @@ class WithClause final : public Expression {
  public:
 
   /**
-    Create and return a WithClause containing the passed expressions.
+    Create and return a with clause.
   */
   static owned<WithClause> build(Builder* builder, Location loc,
                                  ASTList exprs);
@@ -57,8 +57,8 @@ class WithClause final : public Expression {
   }
 
   /**
-   Return the number of expressions in this with clause.
-   */
+    Return the number of expressions in this with clause.
+  */
   int numExprs() const {
     return this->numChildren();
   }

@@ -29,7 +29,7 @@ namespace uast {
 
 
 /**
-  This class represents a foreach loop. Foreach example:
+  This class represents a foreach loop. For example:
 
   \rst
   .. code-block:: chapel

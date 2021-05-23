@@ -29,7 +29,7 @@ namespace uast {
 
 /**
   This class represents a zip expression.
- */
+*/
 class Zip final : public Call {
  private:
   Zip(ASTList children)
