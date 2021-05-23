@@ -43,14 +43,22 @@ namespace uast {
  */
 class For final : public IndexableLoop {
  private:
-  For(ASTList children,  int8_t indexVariableDeclChildNum,
+  // Compute the start of the loop body.
+  int8_t computeLoopBodyChildNum(int8_t indexVariableChildNum,
+                                 int8_t iterandChildNum) {
+    return (indexVariableChildNum >= 0) + (iterandChildNum >= 0);
+  }
+
+  For(ASTList children,  int8_t indexVariableChildNum,
       int8_t iterandChildNum,
       bool usesDo,
       bool isExpressionLevel,
       bool isParam)
         : IndexableLoop(asttags::For, std::move(children),
-                        indexVariableDeclChildNum,
+                        indexVariableChildNum,
                         iterandChildNum,
+                        computeLoopBodyChildNum(indexVariableChildNum,
+                                                iterandChildNum),
                         usesDo),
       isExpressionLevel_(isExpressionLevel),
       isParam_(isParam) {
@@ -58,19 +66,20 @@ class For final : public IndexableLoop {
     assert(isExpressionASTList(children_));
   }
 
-  bool contentsMatchInner(const ASTNode* other) const;
-  void markUniqueStringsInner(Context* context) const;
+  bool contentsMatchInner(const ASTNode* other) const override;
+  void markUniqueStringsInner(Context* context) const override;
 
   bool isExpressionLevel_;
   bool isParam_;
 
  public:
+  ~For() override = default;
 
   /**
     Create and return a for loop. 
   */
   static owned<For> build(Builder* builder, Location loc,
-                          owned<Decl> indexVariableDecl,
+                          owned<Decl> indexVariable,
                           owned<Expression> iterand,
                           ASTList stmts,
                           bool usesDo,

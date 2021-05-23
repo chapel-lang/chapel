@@ -34,14 +34,12 @@ namespace uast {
 class IndexableLoop : public Loop {
  protected:
   IndexableLoop(ASTTag tag, ASTList children,
-                int8_t indexVariableDeclChildNum,
+                int8_t indexVariableChildNum,
                 int8_t iterandChildNum,
+                int8_t loopBodyChildNum,
                 bool usesDo)
-    : Loop(tag, std::move(children),
-           // Compute the start of the loop body.
-           ((iterandChildNum >= 0) + (indexVariableDeclChildNum >= 0)),
-           usesDo),
-      indexVariableDeclChildNum_(indexVariableDeclChildNum),
+    : Loop(tag, std::move(children), loopBodyChildNum, usesDo),
+      indexVariableChildNum_(indexVariableChildNum),
       iterandChildNum_(iterandChildNum) {
 
     assert(isExpressionASTList(children_));
@@ -56,7 +54,7 @@ class IndexableLoop : public Loop {
     this->loopMarkUniqueStringsInner(context);
   }
 
-  int8_t indexVariableDeclChildNum_;
+  int8_t indexVariableChildNum_;
   int8_t iterandChildNum_;
 
  public:
@@ -66,9 +64,9 @@ class IndexableLoop : public Loop {
     Returns the index variable declaration of this indexable loop. If there
     is no index variable this method returns nullptr.
   */
-  const Decl* indexVariableDecl() const {
-    if (indexVariableDeclChildNum_ < 0) return nullptr;
-    const ASTNode* ast = child(indexVariableDeclChildNum_);
+  const Decl* indexVariable() const {
+    if (indexVariableChildNum_ < 0) return nullptr;
+    const ASTNode* ast = child(indexVariableChildNum_);
     assert(ast->isDecl());
     return (const Decl*) ast;
   }

@@ -42,12 +42,12 @@ bool For::contentsMatchInner(const ASTNode* other) const {
 }
 
 void For::markUniqueStringsInner(Context* context) const {
-  loopMarkUniqueStringsInner(context);
+  indexableLoopMarkUniqueStringsInner(context);
 }
 
 owned<For> For::build(Builder* builder,
                       Location loc,
-                      owned<Decl> indexVariableDecl,
+                      owned<Decl> indexVariable,
                       owned<Expression> iterand,
                       ASTList stmts,
                       bool usesDo,
@@ -57,12 +57,12 @@ owned<For> For::build(Builder* builder,
   if (isParam) assert(!isExpressionLevel);
 
   ASTList lst;
-  int8_t indexVariableDeclChildNum = -1;
+  int8_t indexVariableChildNum = -1;
   int8_t iterandChildNum = -1;
 
-  if (indexVariableDecl.get() != nullptr) {
-    indexVariableDeclChildNum = lst.size();
-    lst.push_back(std::move(indexVariableDecl));
+  if (indexVariable.get() != nullptr) {
+    indexVariableChildNum = lst.size();
+    lst.push_back(std::move(indexVariable));
   }
 
   if (iterand.get() != nullptr) {
@@ -74,7 +74,7 @@ owned<For> For::build(Builder* builder,
     lst.push_back(std::move(stmt));
   }
 
-  For* ret = new For(std::move(lst), indexVariableDeclChildNum,
+  For* ret = new For(std::move(lst), indexVariableChildNum,
                      iterandChildNum,
                      usesDo,
                      isExpressionLevel,

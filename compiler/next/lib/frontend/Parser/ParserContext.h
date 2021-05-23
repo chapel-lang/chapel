@@ -170,7 +170,7 @@ struct ParserContext {
 
   // Build an index variable from a given expression. The expression is owned
   // because it will be consumed. 
-  owned<Decl> buildIndexVariableDecl(YYLTYPE location, owned<Expression> e);
+  owned<Decl> buildIndexVariable(YYLTYPE location, owned<Expression> e);
 
   FnCall* wrapCalledExpressionInNew(YYLTYPE location,
                                     New::Management management,
