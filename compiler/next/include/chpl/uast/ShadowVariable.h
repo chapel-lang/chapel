@@ -22,6 +22,7 @@
 
 #include "chpl/queries/Location.h"
 #include "chpl/uast/Decl.h"
+#include "chpl/uast/Formal.h"
 #include "chpl/uast/VarLikeDecl.h"
 
 namespace chpl {
@@ -46,12 +47,12 @@ namespace uast {
 class ShadowVariable final : public VarLikeDecl {
  public:
   enum Intent {
+    VAR,
     CONST,
-    IN,
-    CONST_IN,
-    REF,
     CONST_REF,
-    VAR
+    REF,
+    IN = Formal::IN,
+    CONST_IN = Formal::CONST_IN,
   };
 
  private:

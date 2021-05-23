@@ -21,6 +21,7 @@
 #define CHPL_UAST_VARIABLE_H
 
 #include "chpl/queries/Location.h"
+#include "chpl/uast/Formal.h"
 #include "chpl/uast/VarLikeDecl.h"
 
 namespace chpl {
@@ -49,8 +50,8 @@ class Variable final : public VarLikeDecl {
     CONST,
     CONST_REF,
     REF,
-    PARAM,
-    TYPE,
+    PARAM = Formal::PARAM,
+    TYPE = Formal::TYPE,
     INDEX
   };
 

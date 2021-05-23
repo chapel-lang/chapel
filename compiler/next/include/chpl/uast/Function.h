@@ -62,8 +62,8 @@ class Function final : public NamedDecl {
     CONST,
     CONST_REF,
     REF,
-    PARAM,
-    TYPE
+    PARAM = Formal::PARAM,
+    TYPE = Formal::TYPE
   };
 
  private:

@@ -46,10 +46,10 @@ class Formal final : public VarLikeDecl {
     CONST,
     CONST_REF,
     REF,
-    PARAM,
-    TYPE,
     IN,
     CONST_IN,
+    PARAM,
+    TYPE,
     OUT,
     INOUT,
   };
