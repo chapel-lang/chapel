@@ -1513,6 +1513,12 @@ static void resolveEnumeratedTypes() {
 
             for_enums(constant, type) {
               if (!strcmp(constant->sym->name, name)) {
+                if (constant->sym->hasFlag(FLAG_DEPRECATED)) {
+                  // Generate deprecation warning when enum constants are
+                  // referenced through qualified access
+                  USR_WARN(call, "%s", constant->sym->deprecationMsg.c_str());
+                }
+
                 call->replace(new SymExpr(constant->sym));
               }
             }
