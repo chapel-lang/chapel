@@ -403,7 +403,7 @@ FnCall* ParserContext::wrapCalledExpressionInNew(YYLTYPE location,
       auto calledExpr = std::move(child).release()->toExpression();
       assert(calledExpr);
       auto newExpr = New::build(builder, convertLocation(location),
-                                std::move(toOwned(calledExpr)),
+                                toOwned(calledExpr),
                                 management);
       child = std::move(newExpr);
       wrappedBaseExpression = true;
