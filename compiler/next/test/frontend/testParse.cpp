@@ -21,6 +21,7 @@
 #include "chpl/queries/Context.h"
 #include "chpl/uast/Block.h"
 #include "chpl/uast/Call.h"
+#include "chpl/uast/Comment.h"
 #include "chpl/uast/Dot.h"
 #include "chpl/uast/Expression.h"
 #include "chpl/uast/FnCall.h"
@@ -780,8 +781,89 @@ static void testDot3(Parser* parser) {
   assert(0 == actualIdent->name().compare("c"));
 }
 
+static void testComment1(Parser* parser) {
+  auto parseResult = parser->parseString("testComment1.chpl",
+                                         "// bla\n");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModule());
+  auto module = parseResult.topLevelExpressions[0]->toModule();
+  assert(module->numStmts() == 1);
 
+  auto comment = module->stmt(0)->toComment();
+  assert(comment);
+  assert(0 == strcmp(comment->c_str(), "// bla"));
+}
 
+static void testComment2(Parser* parser) {
+  auto parseResult = parser->parseString("testComment2.chpl",
+                                         "// bla");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModule());
+  auto module = parseResult.topLevelExpressions[0]->toModule();
+  assert(module->numStmts() == 1);
+
+  auto comment = module->stmt(0)->toComment();
+  assert(comment);
+  assert(0 == strcmp(comment->c_str(), "// bla"));
+}
+
+static void testComment3(Parser* parser) {
+  auto parseResult = parser->parseString("testComment3.chpl",
+                                         "/* bla */");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModule());
+  auto module = parseResult.topLevelExpressions[0]->toModule();
+  assert(module->numStmts() == 1);
+
+  auto comment = module->stmt(0)->toComment();
+  assert(comment);
+  assert(0 == strcmp(comment->c_str(), "/* bla */"));
+}
+
+static void testComment4(Parser* parser) {
+  auto parseResult = parser->parseString("testComment4.chpl",
+                                         "/* bla");
+  assert(parseResult.errors.size() >= 1);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModule());
+  auto module = parseResult.topLevelExpressions[0]->toModule();
+  assert(module->numStmts() == 1);
+
+  auto comment = module->stmt(0)->toComment();
+  assert(comment);
+  assert(0 == strcmp(comment->c_str(), "/* bla"));
+}
+
+static void testComment5(Parser* parser) {
+  auto parseResult = parser->parseString("testComment5.chpl",
+                                         "/* /* bla */ */");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModule());
+  auto module = parseResult.topLevelExpressions[0]->toModule();
+  assert(module->numStmts() == 1);
+
+  auto comment = module->stmt(0)->toComment();
+  assert(comment);
+  assert(0 == strcmp(comment->c_str(), "/* /* bla */ */"));
+}
+
+static void testComment6(Parser* parser) {
+  auto parseResult = parser->parseString("testComment6.chpl",
+                                         "/* /* bla */");
+  assert(parseResult.errors.size() >= 1);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModule());
+  auto module = parseResult.topLevelExpressions[0]->toModule();
+  assert(module->numStmts() == 1);
+
+  auto comment = module->stmt(0)->toComment();
+  assert(comment);
+  assert(0 == strcmp(comment->c_str(), "/* /* bla */"));
+}
 
 int main() {
   Context context;
@@ -832,6 +914,13 @@ int main() {
   testDot1(p);
   testDot2(p);
   testDot3(p);
+
+  testComment1(p);
+  testComment2(p);
+  testComment3(p);
+  testComment4(p);
+  testComment5(p);
+  testComment6(p);
 
   return 0;
 }
