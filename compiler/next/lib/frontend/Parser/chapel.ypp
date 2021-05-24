@@ -440,7 +440,7 @@
 %token <uniqueStr> TBEGIN TBREAK TBOOL TBORROWED TBY TBYTES
 %token <uniqueStr> TCATCH TCLASS TCOBEGIN TCOFORALL TCOMPLEX
 %token <uniqueStr> TCONFIG TCONST TCONTINUE
-%token <uniqueStr> TDEFER TDELETE TDMAPPED TDO TDOMAIN
+%token <uniqueStr> TDEFER TDELETE TDEPRECATED TDMAPPED TDO TDOMAIN
 %token <uniqueStr> TELSE TENUM TEXCEPT TEXPORT TEXTERN
 %token <uniqueStr> TFALSE TFOR TFORALL TFOREACH TFORWARDING
 %token <uniqueStr> TIF TIMAG TIMPORT TIN TINCLUDE
@@ -542,6 +542,11 @@
 %type <uniqueStr> implements_type_ident implements_type_error_ident
 
 %type <uniqueStrList>       pragma_ls
+
+%type <commentsAndStmt> deprecated_decl_stmt
+%type <commentsAndStmt> deprecated_decl_base
+%type <commentsAndStmt> deprecated_enum_item
+%type <commentsAndStmt> deprecated_class_level_stmt
 
 // statement lists
 %type <exprList> program
@@ -687,13 +692,12 @@ pragma_ls:
 ;
 
 stmt:
-  module_decl_stmt          { $$ = context->finishStmt($1); }
+  deprecated_decl_base      { $$ = context->finishStmt($1); }
 | include_module_stmt       { $$ = context->finishStmt($1); }
 | block_stmt                { $$ = context->finishStmt($1); }
 | use_stmt                  { $$ = context->finishStmt($1); }
 | import_stmt               { $$ = context->finishStmt($1); }
 | require_stmt              { $$ = context->finishStmt($1); }
-| class_level_stmt          { $$ = context->finishStmt($1); }
 | assignment_stmt           { $$ = context->finishStmt($1); }
 | extern_block_stmt         { $$ = context->finishStmt($1); }
 | if_stmt                   { $$ = context->finishStmt($1); }
@@ -760,6 +764,19 @@ stmt:
   {
     $$ = STMT(@$, ErroneousExpression::build(BUILDER, LOC(@1)));
   }
+;
+
+deprecated_decl_stmt:
+  deprecated_decl_base
+| TDEPRECATED STRINGLITERAL deprecated_decl_base
+{ $$ = TODOSTMT(@$); }
+| TDEPRECATED deprecated_decl_base
+{ $$ = TODOSTMT(@$); }
+;
+
+deprecated_decl_base:
+  module_decl_stmt
+| class_level_stmt
 ;
 
 module_decl_start:
@@ -1173,6 +1190,14 @@ return_stmt:
     {
       $$ = TODOSTMT(@$);
     }
+;
+
+deprecated_class_level_stmt:
+  class_level_stmt
+| TDEPRECATED STRINGLITERAL class_level_stmt
+{ $$ = TODOSTMT(@$); }
+| TDEPRECATED class_level_stmt
+{ $$ = TODOSTMT(@$); }
 ;
 
 class_level_stmt:
@@ -1704,9 +1729,9 @@ opt_inherit:
 class_level_stmt_ls:
   /* nothing */
     { $$ = context->makeList(); }
-| class_level_stmt_ls class_level_stmt
+| class_level_stmt_ls deprecated_class_level_stmt
     { context->appendList($1, $2); }
-| class_level_stmt_ls pragma_ls class_level_stmt
+| class_level_stmt_ls pragma_ls deprecated_class_level_stmt
     { context->appendList($1, TODOEXPR(@$)); }
 ;
 
@@ -1751,7 +1776,7 @@ enum_header_lcbr:
 ;
 
 enum_ls:
-  enum_item
+  deprecated_enum_item
     {
       $$ = context->makeList($1);
     }
@@ -1760,10 +1785,18 @@ enum_ls:
       $$ = $1;
       context->clearCommentsBefore(@2);
     }
-| enum_ls TCOMMA {context->clearCommentsBefore(@2);} enum_item
+| enum_ls TCOMMA {context->clearCommentsBefore(@2);} deprecated_enum_item
     {
       context->appendList($1, $4);
     }
+;
+
+deprecated_enum_item:
+  enum_item
+| TDEPRECATED STRINGLITERAL enum_item
+{ $$ = TODOSTMT(@$); }
+| TDEPRECATED enum_item
+{ $$ = TODOSTMT(@$); }
 ;
 
 enum_item:
