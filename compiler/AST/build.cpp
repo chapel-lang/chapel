@@ -374,8 +374,7 @@ BlockStmt* buildErrorStandin() {
 }
 
 DefExpr* buildDeprecated(DefExpr* def) {
-  // TODO: determine the name
-  const char* msg = astr("This symbol is deprecated");
+  const char* msg = "";
   return buildDeprecated(def, msg);
 }
 
@@ -387,8 +386,7 @@ DefExpr* buildDeprecated(DefExpr* def, const char* msg) {
 }
 
 BlockStmt* buildDeprecated(BlockStmt* block) {
-  // TODO: determine the name
-  const char* msg = astr("This symbol is deprecated");
+  const char* msg = "";
   return buildDeprecated(block, msg);
 }
 

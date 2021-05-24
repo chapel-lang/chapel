@@ -205,7 +205,7 @@ void ImportStmt::scopeResolve(ResolveScope* scope) {
 
         if (modSym->hasFlag(FLAG_DEPRECATED)) {
           // Generate deprecation warning upon import of deprecated module
-          USR_WARN(this, "%s", modSym->deprecationMsg.c_str());
+          USR_WARN(this, "%s", modSym->getDeprecationMsg());
         }
 
       } else {
@@ -390,7 +390,7 @@ void ImportStmt::validateUnqualified() {
           if (sym->hasFlag(FLAG_DEPRECATED)) {
             // Generate deprecation warning when a deprecated symbol is listed
             // in an import statement's limitation clause
-            USR_WARN(this, "%s", sym->deprecationMsg.c_str());
+            USR_WARN(this, "%s", sym->getDeprecationMsg());
           }
         }
       }

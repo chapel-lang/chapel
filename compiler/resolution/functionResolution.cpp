@@ -3618,7 +3618,7 @@ static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState) {
 
   if (retval && retval->hasFlag(FLAG_DEPRECATED)) {
     // If the called function is deprecated, generate a deprecation message now
-    USR_WARN(info.call, "%s", retval->deprecationMsg.c_str());
+    USR_WARN(info.call, "%s", retval->getDeprecationMsg());
   }
 
   return retval;

@@ -236,6 +236,8 @@ public:
 
   std::string deprecationMsg;
 
+  const char* getDeprecationMsg() const;
+
 protected:
                      Symbol(AstTag      astTag,
                             const char* init_name,

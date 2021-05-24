@@ -1,6 +1,6 @@
-noMsgEnumConstants.chpl:3: In function 'main':
-noMsgEnumConstants.chpl:13: warning: a is deprecated
-noMsgEnumConstants.chpl:4: warning: a is deprecated
+noMsgEnumConstant.chpl:3: In function 'main':
+noMsgEnumConstant.chpl:13: warning: a is deprecated
+noMsgEnumConstant.chpl:4: warning: a is deprecated
 a
 b
 c
