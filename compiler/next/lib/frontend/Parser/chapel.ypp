@@ -1324,23 +1324,23 @@ loop_stmt:
 
     auto astLst = context->consumeList(exprLst);
     auto statements = BUILDER->flattenTopLevelBlocks(std::move(astLst));
-    auto node = DoWhile::build(BUILDER, LOC(@1), std::move(toOwned($4)),
+    auto node = DoWhile::build(BUILDER, LOC(@1), toOwned($4),
                                std::move(statements));
     $$ = { .comments=comments, .stmt=node.release() };
   }
 | TWHILE expr do_stmt
   {
     auto comments = context->gatherCommentsFromList($3.exprList, @1);
-    auto node = While::build(BUILDER, LOC(@1), std::move(toOwned($2)),
-                             std::move(context->consumeList($3.exprList)),
+    auto node = While::build(BUILDER, LOC(@1), toOwned($2),
+                             context->consumeList($3.exprList),
                              $3.usesDo);
     $$ = { .comments=comments, .stmt=node.release() };
   }
 | TWHILE ifvar do_stmt
   {
     auto comments = context->gatherCommentsFromList($3.exprList, @1);
-    auto node = While::build(BUILDER, LOC(@1), std::move(toOwned($2)),
-                             std::move(context->consumeList($3.exprList)),
+    auto node = While::build(BUILDER, LOC(@1), toOwned($2),
+                             context->consumeList($3.exprList),
                              $3.usesDo);
     $$ = { .comments=comments, .stmt=node.release() };
   }
