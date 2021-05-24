@@ -3,14 +3,14 @@ handleModule.chpl:17: warning: This module is deprecated, use Foob instead
 handleModule.chpl:25: warning: This module is deprecated, use Foob instead
 handleModule.chpl:31: warning: This module is deprecated, use Foob instead
 handleModule.chpl:37: warning: This module is deprecated, use Foob instead
+handleModule.chpl:43: warning: This module is deprecated, use Foob instead
+handleModule.chpl:48: warning: This module is deprecated, use Foob instead
 handleModule.chpl:20: warning: This module is deprecated, use Foob instead
 handleModule.chpl:21: warning: This module is deprecated, use Foob instead
 handleModule.chpl:27: warning: This module is deprecated, use Foob instead
 handleModule.chpl:32: warning: This module is deprecated, use Foob instead
 handleModule.chpl:38: warning: This module is deprecated, use Foob instead
 handleModule.chpl:39: warning: This module is deprecated, use Foob instead
-handleModule.chpl:43: warning: This module is deprecated, use Foob instead
-handleModule.chpl:48: warning: This module is deprecated, use Foob instead
 3
 In Foob.bar()
 3
