@@ -2,6 +2,3 @@ This directory is designed for tests that verify that deprecated features
 are generating warnings/errors as expected.  Tests should ideally not live
 in this directory for more than six months and can serve as reminders for
 things that can be retired after a release is made.
-
-The exception is the functionality/ subdirectory, which is for testing the
-deprecation syntax itself.
