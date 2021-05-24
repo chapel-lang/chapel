@@ -62,7 +62,7 @@ std::vector<ParserComment>* ParserContext::gatherComments(YYLTYPE location) {
     return nullptr;
   }
 
-  if (lastCommentToGather == this->comments->size()-1) {
+  if (lastCommentToGather == (int)this->comments->size()-1) {
     // need to return all comments
     std::vector<ParserComment>* ret = this->comments;
     this->comments = nullptr;
@@ -71,7 +71,7 @@ std::vector<ParserComment>* ParserContext::gatherComments(YYLTYPE location) {
 
   // general case: return only the comments up to lastCommentToGather
   std::vector<ParserComment>* ret = new std::vector<ParserComment>();
-  for (size_t i = 0; i <= lastCommentToGather; i++) {
+  for (int i = 0; i <= lastCommentToGather; i++) {
     ret->push_back((*this->comments)[i]);
   }
   this->comments->erase(this->comments->begin(),
@@ -405,7 +405,7 @@ FnCall* ParserContext::wrapCalledExpressionInNew(YYLTYPE location,
       auto calledExpr = std::move(child).release()->toExpression();
       assert(calledExpr);
       auto newExpr = New::build(builder, convertLocation(location),
-                                std::move(toOwned(calledExpr)),
+                                toOwned(calledExpr),
                                 management);
       child = std::move(newExpr);
       wrappedBaseExpression = true;

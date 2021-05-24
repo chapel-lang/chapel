@@ -290,7 +290,7 @@ static Builder::Result parseFunction(Parser* parser,
   auto functionDecl = module->stmt(0)->toFunction();
   assert(functionDecl);
   f = functionDecl;
-  return std::move(parseResult);
+  return parseResult;
 }
 
 static void test2(Parser* parser) {
@@ -429,6 +429,7 @@ int main() {
   test1g(p);
   test1h(p);
   test1i(p);
+  test1j(p);
   test2(p);
   test3(p);
   test4(p);

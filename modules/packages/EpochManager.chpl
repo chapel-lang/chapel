@@ -479,7 +479,7 @@ module EpochManager {
         forall a in this.arr[0..#sz] do yield a;
       }
 
-      proc size return sz;
+      proc size: int return sz;
 
       proc clear() {
         this.sz = 0;

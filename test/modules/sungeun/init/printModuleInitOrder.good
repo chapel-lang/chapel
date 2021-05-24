@@ -50,6 +50,7 @@ Initializing Modules:
      CopyAggregation
       AggregationPrimitives
     Builtins
+    Types
     AlignedTSupport
    printModuleInitOrder
     moduleInitTest

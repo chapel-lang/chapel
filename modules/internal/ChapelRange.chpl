@@ -166,6 +166,17 @@ module ChapelRange {
   pragma "no doc"
   config param useOptimizedRangeIterators = true;
 
+  /* Chapel is in the process of changing ``range(idxType).size`` away
+     from returning the range's size as an ``idxType`` value in favor
+     of returning an ``int`` value.  Setting ``sizeReturnsInt`` to
+     ``true`` permits a user to opt into this new behavior now rather
+     than having it change out from under them in a future release.
+     The old behavior can be retained by using the new
+     :proc:`range.sizeAs` method.  */
+
+  config param sizeReturnsInt = false;
+
+
   /*
     The ``BoundedRangeType`` enum is used to specify the types of bounds a
     range is required to have.
@@ -668,7 +679,7 @@ module ChapelRange {
       compilerError("can't query the high bound of a range without one");
     }
     if chpl__singleValIdxType(idxType) {
-      if size == 0 {
+      if _low > _high { // avoid circularity of calling .size which calls .high
         warning("This range is empty and has a single-value idxType, so its high bound isn't trustworthy");
         return chpl_intToIdx(_low);
       }
@@ -732,22 +743,55 @@ module ChapelRange {
       return isBoundedRange(this) && this.alignedLowAsInt > this.alignedHighAsInt;
   }
 
+  // is this type one for which a range of this type will have a change in
+  // '.size' behavior?
+  //
+  proc chpl_idxTypeSizeChange(type t) param {
+    return (isIntegralType(t) && t != int);
+  }
 
-  /* Returns the number of elements in this range, cast to the index type.
+  /* Returns the number of elements in this range as an integer.
+     Historically, and by default for now, the return type is
+     represented as an ``intIdxType`` value.  However, Chapel is in
+     the process of changing to always return an ``int`` value, and so
+     will generate a warning if ``intIdxType != int`` to alert users
+     to the change.  :param:`sizeReturnsInt` can be used to opt into
+     the new behavior now.  Or :proc:`range.sizeAs` can be used to
+     request a different return type.
 
-     Note: The result is undefined if the index is signed
-     and the low and high bounds differ by more than ``max(``:proc:`range.intIdxType` ``)``.
+     If the size exceeds ``max(intIdxType)``/``max(int)``, this
+     procedure will halt when bounds checks are on.
    */
-  proc range.size: intIdxType {
+  proc range.size {
+    if (chpl_idxTypeSizeChange(idxType) && sizeReturnsInt == false) {
+      compilerWarning("'range("+idxType:string+").size' is changing to return 'int' values rather than '"+idxType:string+"'\n" +
+                      "  (to get the value as a different type, call the new method '.sizeAs(type t)')\n" +
+                      "  (to opt into the change now, re-compile with '-ssizeReturnsInt=true')");
+      return this.sizeAs(this.intIdxType);
+    } else {
+      return this.sizeAs(int);
+    }
+  }
+
+  /* Returns the number of elements in this range as the specified
+     integer type.
+
+     If the size exceeds the maximal value of that type, this
+     procedure will halt when bounds checks are on.
+   */
+  proc range.sizeAs(type t: integral): t {
     if ! isBoundedRange(this) then
       compilerError("'size' is not defined on unbounded ranges");
 
     // assumes alignedHigh/alignedLow always work, even for an empty range
     const ah = this.alignedHighAsInt,
           al = this.alignedLowAsInt;
-    if al > ah then return 0: intIdxType;
-    const s = abs(this.stride): intIdxType;
-    return (ah - al) / s + 1:intIdxType;
+    if al > ah then return 0;
+    const s = abs(this.stride): uint;
+    const lenAsUint = ((ah - al):uint / s + 1);
+    if boundsChecking && (lenAsUint == 0 || lenAsUint > max(t)) then
+      HaltWrappers.boundsCheckHalt("range.size exceeds max("+t:string+") for: '" + this:string + "'");
+    return lenAsUint: t;
   }
 
   /* Return true if the range has a first index, false otherwise */
@@ -855,8 +899,8 @@ module ChapelRange {
   {
     if this.isAmbiguous() || other.isAmbiguous() then return false;
 
-    if this.isBounded() && this.size == 0 then
-      return other.isBounded() && other.size == 0;
+    if this.isBounded() && this.sizeAs(uint) == 0 then
+      return other.isBounded() && other.sizeAs(uint) == 0;
 
     // Since slicing preserves the direction of the first arg, may need
     // to negate one of the strides (shouldn't matter which).
@@ -897,7 +941,7 @@ module ChapelRange {
     if isBoundedRange(r1) {
 
       // gotta have a special case for length 0 or 1
-      const len = r1.size, l2 = r2.size;
+      const len = r1.sizeAs(uint), l2 = r2.sizeAs(uint);
       if len != l2 then return false;
       if len == 0 then return true;
       if r1.first != r2.first then return false;
@@ -1033,7 +1077,7 @@ operator :(r: range(?), type t: range(?)) {
                           chpl__idxToInt(other.alignment),
                           true);
 
-    return (boundedOther.size == 0) || contains(boundedOther);
+    return (boundedOther.sizeAs(uint) == 0) || contains(boundedOther);
   }
   /* Return true if ``other`` is contained in this range and false otherwise */
   inline proc range.boundsCheck(other: idxType)
@@ -1126,9 +1170,9 @@ operator :(r: range(?), type t: range(?)) {
       if ord < 0 then
         HaltWrappers.boundsCheckHalt("invoking orderToIndex on a negative integer: " + ord:string);
 
-      if isBoundedRange(this) && ord >= this.size then
+      if isBoundedRange(this) && ord >= this.sizeAs(uint) then
         HaltWrappers.boundsCheckHalt("invoking orderToIndex on an integer " +
-            ord:string + " that is larger than the range's number of indices " + this.size:string);
+            ord:string + " that is larger than the range's number of indices " + this.sizeAs(uint):string);
     }
 
     return chpl_intToIdx(chpl__addRangeStrides(this.firstAsInt, this.stride,
@@ -1207,8 +1251,8 @@ operator :(r: range(?), type t: range(?)) {
   proc range.interior(offset: integral)
   {
     if boundsChecking then
-      if offset > this.size then
-        HaltWrappers.boundsCheckHalt("can't compute the interior " + offset:string + " elements of a range with size " + this.size:string);
+      if offset > this.sizeAs(uint) then
+        HaltWrappers.boundsCheckHalt("can't compute the interior " + offset:string + " elements of a range with size " + this.sizeAs(uint):string);
 
     const i = offset.safeCast(intIdxType);
     if i < 0 then
@@ -1769,7 +1813,7 @@ operator :(r: range(?), type t: range(?)) {
     if boundsChecking && !r.hasLast()  && count < 0 then
       boundsCheckHalt("With a negative count, the range must have a last index.");
     if boundsChecking && r.boundedType == BoundedRangeType.bounded &&
-      abs(count:chpl__maxIntTypeSameSign(count.type)):uint(64) > r.size:uint(64) then {
+      abs(count:chpl__maxIntTypeSameSign(count.type)):uint > r.sizeAs(uint) then {
       boundsCheckHalt("bounded range is too small to access " + abs(count):string + " elements");
     }
 
@@ -2271,7 +2315,7 @@ operator :(r: range(?), type t: range(?)) {
       chpl_debug_writeln("*** In range standalone iterator:");
     }
 
-    const len = this.size;
+    const len = this.sizeAs(intIdxType);
     const numChunks = if __primitive("task_get_serial") then
                       1 else _computeNumChunks(len);
 
@@ -2315,7 +2359,7 @@ operator :(r: range(?), type t: range(?)) {
     const numSublocs = here.getChildCount();
 
     if localeModelHasSublocales && numSublocs != 0 {
-      const len = this.size;
+      const len = this.sizeAs(intIdxType);
       const tasksPerLocale = dataParTasksPerLocale;
       const ignoreRunning = dataParIgnoreRunningTasks;
       const minIndicesPerTask = dataParMinGranularity;
@@ -2352,7 +2396,7 @@ operator :(r: range(?), type t: range(?)) {
           }
           const (lo,hi) = _computeBlock(len, numChunks, chunk, len-1);
           const locRange = lo..hi;
-          const locLen = locRange.size;
+          const locLen = locRange.sizeAs(intIdxType);
           // Divide the locale's tasks approximately evenly
           // among the sublocales
           const numSublocTasks = (if chunk < dptpl % numChunks
@@ -2374,7 +2418,7 @@ operator :(r: range(?), type t: range(?)) {
       }
 
     } else {
-      var v = this.size;
+      var v = this.sizeAs(intIdxType);
       const numChunks = if __primitive("task_get_serial") then
                         1 else _computeNumChunks(v);
 
@@ -2432,11 +2476,11 @@ operator :(r: range(?), type t: range(?)) {
     if (isBoundedRange(myFollowThis) && !myFollowThis.stridable) ||
        myFollowThis.hasLast()
     {
-      const flwlen = myFollowThis.size;
+      const flwlen = myFollowThis.sizeAs(myFollowThis.intIdxType);
       if boundsChecking && this.hasLast() {
         // this check is for typechecking only
         if isBoundedRange(this) {
-          if this.size < flwlen then
+          if this.sizeAs(intIdxType) < flwlen then
             HaltWrappers.boundsCheckHalt("zippered iteration over a range with too few indices");
         } else
           assert(false, "hasFirst && hasLast do not imply isBoundedRange");
@@ -2716,16 +2760,12 @@ operator :(r: range(?), type t: range(?)) {
 
   pragma "no doc"
   proc chpl__idxTypeToIntIdxType(type idxType) type {
-    if isBoolType(idxType) {
-      return int;
-    } else if isEnumType(idxType) {
-      // Most range/array code currently relies on being able to store
-      // empty ranges like 1..0.  If an enum only defines a single
-      // symbol, we can't create such a range, so print the following
-      // error message to avoid going off the rails.
-      return int;
-    } else {
+    if isIntegralType(idxType) {
+      // integer idxTypes are their own integer idxType
       return idxType;
+    } else {
+      // other types (bool, enum, ...) use 'int'
+      return int;
     }
   }
 

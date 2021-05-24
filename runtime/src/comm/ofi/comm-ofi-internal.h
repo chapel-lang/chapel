@@ -69,6 +69,7 @@ extern "C" {
   m(AMO_UNORD,              "AMOs: unordered operations")               \
   m(ACK,                    "tx acknowledgements")                      \
   m(ORDER,                  "ops done only for ordering")               \
+  m(HEAP,                   "layer-provided fixed heap")                \
   m(MR,                     "mem reg: regions")                         \
   m(MR_DESC,                "mem reg: local region descs")              \
   m(MR_KEY,                 "mem reg: remote region keys")              \

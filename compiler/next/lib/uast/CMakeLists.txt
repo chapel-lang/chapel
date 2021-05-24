@@ -49,6 +49,7 @@ target_sources(libchplcomp-obj
                Serial.cpp
                TypeDecl.cpp
                Variable.cpp
+               VarLikeDecl.cpp
                Visitor.cpp
                While.cpp
 

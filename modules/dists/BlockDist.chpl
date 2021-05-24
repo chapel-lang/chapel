@@ -394,7 +394,7 @@ class BlockArr: BaseRectangularArr {
   var locArr: [dom.dist.targetLocDom] unmanaged LocBlockArr(eltType, rank, idxType, stridable);
   pragma "local field"
   var myLocArr: unmanaged LocBlockArr(eltType, rank, idxType, stridable)?;
-  const SENTINEL = max(rank*idxType);
+  const SENTINEL = max(rank*int);
 }
 
 //
@@ -471,7 +471,7 @@ proc Block.init(boundingBox: domain,
   if rank != 2 && isCSType(sparseLayoutType) then
     compilerError("CS layout is only supported for 2 dimensional domains");
 
-  if boundingBox.size == 0 then
+  if boundingBox.sizeAs(uint) == 0 then
     halt("Block() requires a non-empty boundingBox");
 
   this.boundingBox = boundingBox : domain(rank, idxType, stridable = false);
@@ -665,7 +665,7 @@ proc Block.getChunk(inds, locid) {
   //
   const chunk = locDist(locid).myChunk((...inds.getIndices()));
   if sanityCheckDistribution then
-    if chunk.size > 0 {
+    if chunk.sizeAs(int) > 0 {
       if targetLocsIdx(chunk.low) != locid then
         writeln("[", here.id, "] ", chunk.low, " is in my chunk but maps to ",
                 targetLocsIdx(chunk.low));
@@ -686,10 +686,10 @@ proc Block.targetLocsIdx(ind: idxType) where rank == 1 {
 proc Block.targetLocsIdx(ind: rank*idxType) {
   var result: rank*int;
   for param i in 0..rank-1 do
-    result(i) = max(0, min((targetLocDom.dim(i).size-1):int,
-                           (((ind(i) - boundingBox.dim(i).low) *
-                             targetLocDom.dim(i).size:idxType) /
-                            boundingBox.dim(i).size):int));
+    result(i) = max(0, min(targetLocDom.dim(i).sizeAs(int)-1,
+                           (((ind(i) - boundingBox.dim(i).low).safeCast(int) *
+                             targetLocDom.dim(i).sizeAs(int)) /
+                            boundingBox.dim(i).sizeAs(int))));
   return if rank == 1 then result(0) else result;
 }
 
@@ -719,7 +719,7 @@ iter Block.activeTargetLocales(const space : domain = boundingBox) {
   for i in {(...dims)} {
     const chunk = chpl__computeBlock(i, targetLocDom, boundingBox, boundingBox.dims());
     // TODO: Want 'contains' for a domain. Slicing is a workaround.
-    if locSpace[(...chunk)].size > 0 then
+    if locSpace[(...chunk)].sizeAs(int) > 0 then
       yield i;
   }
 }
@@ -733,7 +733,7 @@ proc chpl__computeBlock(locid, targetLocBox:domain, boundingBox:domain,
     const lo = boundingBoxDims(i).low;
     const hi = boundingBoxDims(i).high;
     const numelems = hi - lo + 1;
-    const numlocs = targetLocBox.dim(i).size;
+    const numlocs = targetLocBox.dim(i).sizeAs(int);
     const (blo, bhi) = _computeBlock(numelems, numlocs, chpl__tuplify(locid)(i),
                                      max(idxType), min(idxType), lo);
     inds(i) = blo..bhi;
@@ -928,7 +928,7 @@ proc BlockDom.dsiBuildArray(type eltType, param initElts:bool) {
   return arr;
 }
 
-proc BlockDom.dsiNumIndices return whole.size;
+proc BlockDom.dsiNumIndices return whole.sizeAs(uint);
 proc BlockDom.dsiLow return whole.low;
 proc BlockDom.dsiHigh return whole.high;
 proc BlockDom.dsiStride return whole.stride;
@@ -1527,12 +1527,12 @@ proc BlockDom.numRemoteElems(viewDom, rlo, rid) {
   // NOTE: Not bothering to check to see if rid+1, length, or rlo-1 used
   //  below can fit into idxType
   var blo, bhi:dist.idxType;
-  if rid==(dist.targetLocDom.dim(rank-1).size - 1) then
+  if rid==(dist.targetLocDom.dim(rank-1).sizeAs(int) - 1) then
     bhi=viewDom.dim(rank-1).high;
   else {
       bhi = dist.boundingBox.dim(rank-1).low +
         intCeilXDivByY((dist.boundingBox.dim(rank-1).high - dist.boundingBox.dim(rank-1).low +1)*(rid+1):idxType,
-                       dist.targetLocDom.dim(rank-1).size:idxType) - 1:idxType;
+                       dist.targetLocDom.dim(rank-1).sizeAs(idxType)) - 1:idxType;
   }
 
   return (bhi - (rlo - 1):idxType);
@@ -1652,7 +1652,7 @@ private proc _doSimpleBlockTransfer(Dest, destDom, Src, srcDom) {
       // Compute the local portion of the destination domain, and find the
       // corresponding indices in the source's domain.
       const localDestBlock = dst.dom.locDoms[i].myBlock[destDom];
-      assert(localDestBlock.size > 0);
+      assert(localDestBlock.sizeAs(int) > 0);
       const corSrcBlock    = bulkCommTranslateDomain(localDestBlock, destDom, srcDom);
       if debugBlockDistBulkTransfer then
         writeln("  Dest[",localDestBlock,"] = Src[", corSrcBlock,"]");
@@ -1732,7 +1732,7 @@ where !disableBlockDistBulkTransfer {
       // Grab privatized copy of 'this' to avoid extra GETs
       const Dest = if _privatization then chpl_getPrivatizedCopy(this.type, pid) else this;
       const inters = Dest.dom.locDoms(j).myBlock[destDom];
-      assert(inters.size > 0);
+      assert(inters.sizeAs(int) > 0);
 
       const srcChunk = bulkCommTranslateDomain(inters, destDom, srcDom);
 

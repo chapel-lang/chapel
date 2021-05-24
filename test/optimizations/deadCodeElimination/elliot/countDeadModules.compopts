@@ -1,1 +1,1 @@
---report-dead-modules
+--report-dead-modules --cast-checks

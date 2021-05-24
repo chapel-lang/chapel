@@ -68,10 +68,10 @@ class Function final : public NamedDecl {
 
  private:
   Linkage linkage_;
-  Kind kind_;
-  ReturnIntent returnIntent_;
   bool inline_;
   bool override_;
+  Kind kind_;
+  ReturnIntent returnIntent_;
   bool throws_;
 
   // children store

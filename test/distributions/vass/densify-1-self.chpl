@@ -16,7 +16,13 @@ proc testUndensify(whole, r, dense) {
 
 proc t2(arg) {
   const result = densifySelf(arg);
-  proc shouldbe(r) return 0:r.size.type..#r.size;
+  proc shouldbe(r) {
+    const size = r.sizeAs(r.idxType);
+    if size == 0 then
+      return 1:r.idxType..0:r.idxType;
+    else
+      return 0:r.idxType..#size;
+  }
   writeln("densifySelf ", arg, " -> ", result,
           " : ", result.type:string);
 
@@ -30,7 +36,7 @@ proc t2(arg) {
         writeln("  ERROR on tuple/", i);
   } else if isRange(arg) {
     if result != shouldbe(arg) then
-      writeln("  ERROR on range");
+      writeln("  ERROR on range: ", result, " != ", shouldbe(arg));
   } else {
     writeln("  result NOT CHECKED");
   }    

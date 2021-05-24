@@ -29,7 +29,7 @@
 using namespace chpl;
 using namespace uast;
 
-void checkConsistentEnums() {
+static void checkConsistentEnums() {
   assert((int) Variable::VAR == (int) Formal::DEFAULT_INTENT);
   assert((int) Formal::DEFAULT_INTENT == (int) Function::DEFAULT_RETURN_INTENT);
   

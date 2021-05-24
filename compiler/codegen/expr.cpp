@@ -99,12 +99,28 @@ typedef void* ClangFunctionDeclPtr;
  * be added to the list of statements.
  */
 
-static GenRet codegenCallExpr(GenRet function, std::vector<GenRet> & args, FnSymbol* fn, ClangFunctionDeclPtr FD, bool defaultToValues);
+static GenRet codegenCallExprInner(GenRet function, std::vector<GenRet> & args,
+                                   FnSymbol* fn, ClangFunctionDeclPtr FD,
+                                   bool defaultToValues);
+static GenRet codegenCallExprWithArgs(GenRet function,
+                                      std::vector<GenRet> & args,
+                                      const char* fnName,
+                                      FnSymbol* fnSym,
+                                      ClangFunctionDeclPtr FD,
+                                      bool defaultToValues);
+static GenRet codegenCallExprWithArgs(const char* fnName,
+                                      std::vector<GenRet> & args,
+                                      FnSymbol* fnSym = nullptr,
+                                      ClangFunctionDeclPtr FD = nullptr,
+                                      bool defaultToValues = true);
+static void codegenCallWithArgs(const char* fnName,
+                                std::vector<GenRet> & args,
+                                FnSymbol* fnSym = nullptr,
+                                ClangFunctionDeclPtr FD = nullptr,
+                                bool defaultToValues = true);
 
-static GenRet codegenCallExpr(const char* fnName, std::vector<GenRet> & args, bool defaultToValues = true);
 // some codegenCallExpr are declared in codegen.h
 static GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2, GenRet a3);
-static void codegenCall(const char* fnName, std::vector<GenRet> & args, bool defaultToValues = true);
 static void codegenCall(const char* fnName, GenRet a1);
 static void codegenCall(const char* fnName, GenRet a1, GenRet a2);
 static void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3);
@@ -663,8 +679,9 @@ GenRet codegenLocaleForNode(GenRet node)
   args.push_back(codegenZero());
   args.push_back(codegenZero32());
 
-  GenRet ret = codegenCallExpr(gChplBuildLocaleId->codegen(),
-                               args, gChplBuildLocaleId, NULL, true);
+  GenRet ret = codegenCallExprWithArgs(gChplBuildLocaleId->codegen(), args,
+                                       gChplBuildLocaleId->cname,
+                                       gChplBuildLocaleId, nullptr, true);
   ret.chplType = LOCALE_ID_TYPE;
   return ret;
 }
@@ -2308,11 +2325,11 @@ GenRet codegenArgForFormal(GenRet arg,
 //            and if it is false, they will pass by reference if they
 //            are references.
 static
-GenRet codegenCallExpr(GenRet function,
-                       std::vector<GenRet> & args,
-                       FnSymbol* fn,
-                       ClangFunctionDeclPtr FD,
-                       bool defaultToValues)
+GenRet codegenCallExprInner(GenRet function,
+                            std::vector<GenRet> & args,
+                            FnSymbol* fn,
+                            ClangFunctionDeclPtr FD,
+                            bool defaultToValues)
 {
   GenInfo* info = gGenInfo;
   GenRet ret;
@@ -2628,22 +2645,60 @@ GenRet codegenCallExpr(GenRet function,
   return ret;
 }
 
+static GenRet codegenCallExprWithArgs(GenRet function,
+                                      std::vector<GenRet> & args,
+                                      const char* fnName,
+                                      FnSymbol* fnSym, ClangFunctionDeclPtr FD,
+                                      bool defaultToValues)
+{
+  GenInfo* info = gGenInfo;
+
+  INT_ASSERT(fnName && fnName[0] != '\0');
+
+  // make sure fnSym and FD are set if they can be
+  if (fnSym == nullptr) {
+    auto search = info->functionCNameAstrToSymbol.find(astr(fnName));
+    if (search != info->functionCNameAstrToSymbol.end()) {
+      fnSym = search->second;
+    }
+  }
+
+  if (info->cfile == nullptr) {
+#ifdef HAVE_LLVM
+    if (!FD) {
+      FD = getFunctionDeclClang(fnName);
+    }
+#endif
+  }
+
+  // FD or fn should be set for LLVM code generation
+  if (info->cfile == nullptr)
+    if (fnSym == nullptr)
+      if (!FD)
+        INT_FATAL("Could not find FD or fn in codegenCallExprWithArgs");
+
+  return codegenCallExprInner(function, args, fnSym, FD, defaultToValues);
+}
+
 static
-GenRet codegenCallExpr(const char* fnName,
-                       std::vector<GenRet> & args,
-                       bool defaultToValues)
+GenRet codegenCallExprWithArgs(const char* fnName,
+                               std::vector<GenRet> & args,
+                               FnSymbol* fnSym,
+                               ClangFunctionDeclPtr FD,
+                               bool defaultToValues)
 {
   GenInfo* info = gGenInfo;
   GenRet fn;
   if( info->cfile ) {
     fn.c = fnName;
-    return codegenCallExpr(fn, args, NULL, NULL, defaultToValues);
+    return codegenCallExprWithArgs(fn, args, fnName,
+                                   fnSym, FD, defaultToValues);
   } else {
 #ifdef HAVE_LLVM
-    clang::FunctionDecl* FD = getFunctionDeclClang(fnName);
     fn.val = getFunctionLLVM(fnName);
     INT_ASSERT(fn.val);
-    return codegenCallExpr(fn, args, NULL, FD, defaultToValues);
+    return codegenCallExprWithArgs(fn, args, fnName,
+                                   fnSym, FD, defaultToValues);
 #endif
   }
 
@@ -2652,12 +2707,16 @@ GenRet codegenCallExpr(const char* fnName,
 }
 
 static
-void codegenCall(const char* fnName, std::vector<GenRet> & args, bool defaultToValues)
+void codegenCallWithArgs(const char* fnName,
+                         std::vector<GenRet> & args,
+                         FnSymbol* fnSym,
+                         ClangFunctionDeclPtr FD,
+                         bool defaultToValues)
 {
   GenInfo* info = gGenInfo;
-  GenRet ret = codegenCallExpr(fnName, args, defaultToValues);
+  GenRet r = codegenCallExprWithArgs(fnName, args, fnSym, FD, defaultToValues);
   if( info->cfile ) {
-    info->cStatements.push_back(ret.c + ";\n");
+    info->cStatements.push_back(r.c + ";\n");
   }
 }
 
@@ -2668,20 +2727,20 @@ void codegenCall(const char* fnName, std::vector<GenRet> & args, bool defaultToV
 GenRet codegenCallExpr(const char* fnName)
 {
   std::vector<GenRet> args;
-  return codegenCallExpr(fnName, args);
+  return codegenCallExprWithArgs(fnName, args);
 }
 GenRet codegenCallExpr(const char* fnName, GenRet a1)
 {
   std::vector<GenRet> args;
   args.push_back(a1);
-  return codegenCallExpr(fnName, args);
+  return codegenCallExprWithArgs(fnName, args);
 }
 GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2)
 {
   std::vector<GenRet> args;
   args.push_back(a1);
   args.push_back(a2);
-  return codegenCallExpr(fnName, args);
+  return codegenCallExprWithArgs(fnName, args);
 }
 static
 GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2, GenRet a3)
@@ -2690,21 +2749,21 @@ GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2, GenRet a3)
   args.push_back(a1);
   args.push_back(a2);
   args.push_back(a3);
-  return codegenCallExpr(fnName, args);
+  return codegenCallExprWithArgs(fnName, args);
 }
 
 /* static
 void codegenCall(const char* fnName)
 {
   std::vector<GenRet> args;
-  codegenCall(fnName, args);
+  codegenCallWithArgs(fnName, args);
 }*/
 static
 void codegenCall(const char* fnName, GenRet a1)
 {
   std::vector<GenRet> args;
   args.push_back(a1);
-  codegenCall(fnName, args);
+  codegenCallWithArgs(fnName, args);
 }
 static
 void codegenCall(const char* fnName, GenRet a1, GenRet a2)
@@ -2712,7 +2771,7 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2)
   std::vector<GenRet> args;
   args.push_back(a1);
   args.push_back(a2);
-  codegenCall(fnName, args);
+  codegenCallWithArgs(fnName, args);
 }
 static
 void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3)
@@ -2721,7 +2780,7 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3)
   args.push_back(a1);
   args.push_back(a2);
   args.push_back(a3);
-  codegenCall(fnName, args);
+  codegenCallWithArgs(fnName, args);
 }
 static
 void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3, GenRet a4)
@@ -2731,7 +2790,7 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3, GenRet a4)
   args.push_back(a2);
   args.push_back(a3);
   args.push_back(a4);
-  codegenCall(fnName, args);
+  codegenCallWithArgs(fnName, args);
 }
 /*
 static
@@ -2744,7 +2803,7 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
   args.push_back(a3);
   args.push_back(a4);
   args.push_back(a5);
-  codegenCall(fnName, args);
+  codegenCallWithArgs(fnName, args);
 }
 */
 static
@@ -2758,7 +2817,7 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
   args.push_back(a4);
   args.push_back(a5);
   args.push_back(a6);
-  codegenCall(fnName, args);
+  codegenCallWithArgs(fnName, args);
 }
 
 static
@@ -2773,7 +2832,7 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
   args.push_back(a5);
   args.push_back(a6);
   args.push_back(a7);
-  codegenCall(fnName, args);
+  codegenCallWithArgs(fnName, args);
 }
 
 static
@@ -2789,7 +2848,7 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
   args.push_back(a6);
   args.push_back(a7);
   args.push_back(a8);
-  codegenCall(fnName, args);
+  codegenCallWithArgs(fnName, args);
 }
 
 /*
@@ -2808,7 +2867,7 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
   args.push_back(a7);
   args.push_back(a8);
   args.push_back(a9);
-  codegenCall(fnName, args);
+  codegenCallWithArgs(fnName, args);
 }
 */
 
@@ -2828,7 +2887,7 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
   args.push_back(a8);
   args.push_back(a9);
   args.push_back(a10);
-  codegenCall(fnName, args);
+  codegenCallWithArgs(fnName, args);
 }*/
 
 static
@@ -2848,7 +2907,7 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
   args.push_back(a9);
   args.push_back(a10);
   args.push_back(a11);
-  codegenCall(fnName, args);
+  codegenCallWithArgs(fnName, args);
 }
 
 /*
@@ -2870,7 +2929,7 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
   args.push_back(a10);
   args.push_back(a11);
   args.push_back(a12);
-  codegenCall(fnName, args);
+  codegenCallWithArgs(fnName, args);
 }
 */
 
@@ -3615,7 +3674,7 @@ GenRet CallExpr::codegen() {
     }
 
     if (gGenInfo->cfile != NULL) {
-      ret = codegenCallExpr(base, args, fn, NULL, true);
+      ret = codegenCallExprInner(base, args, fn, nullptr, true);
 
       if (getStmtExpr() && getStmtExpr() == this)
         gGenInfo->cStatements.push_back(ret.c + ";\n");
@@ -3635,7 +3694,7 @@ GenRet CallExpr::codegen() {
 #endif
       }
 
-      ret = codegenCallExpr(base, args, fn, NULL, true);
+      ret = codegenCallExprWithArgs(base, args, fn->cname, fn, nullptr, true);
 
 #ifdef HAVE_LLVM
       // Handle setting LLVM invariant on const records after
@@ -4645,7 +4704,7 @@ DEFINE_PRIM(PRIM_GPU_KERNEL_LAUNCH) {
 
   //arguments for PRIM_GPU_KERNEL_LAUNCH go directly
   //to cuLaunchKernel
-  ret = codegenCallExpr("cuLaunchKernel", args);
+  ret = codegenCallExprWithArgs("cuLaunchKernel", args);
 }
 
 static void codegenPutGet(CallExpr* call, GenRet &ret) {
@@ -5249,7 +5308,7 @@ DEFINE_PRIM(PRIM_FTABLE_CALL) {
 
     args.push_back(arg);
 
-    ret = codegenCallExpr(fngen, args, NULL, NULL, true);
+    ret = codegenCallExprInner(fngen, args, nullptr, nullptr, true);
 }
 DEFINE_PRIM(PRIM_VIRTUAL_METHOD_CALL) {
     GenRet    fnPtr;
@@ -5299,7 +5358,7 @@ DEFINE_PRIM(PRIM_VIRTUAL_METHOD_CALL) {
       args.push_back(call->get(i++));
     }
 
-    ret = codegenCallExpr(fngen, args, fn, NULL, true);
+    ret = codegenCallExprInner(fngen, args, fn, nullptr, true);
 }
 
 DEFINE_PRIM(PRIM_LOOKUP_FILENAME) {
@@ -5978,7 +6037,7 @@ void CallExpr::codegenInvokeOnFun() {
 
   genComment(fn->cname, true);
 
-  codegenCall(fname, args);
+  codegenCallWithArgs(fname, args);
 }
 
 void CallExpr::codegenInvokeTaskFun(const char* name) {
@@ -6014,7 +6073,7 @@ void CallExpr::codegenInvokeTaskFun(const char* name) {
 
   genComment(fn->cname, true);
 
-  codegenCall(name, args);
+  codegenCallWithArgs(name, args);
 }
 
 GenRet CallExpr::codegenBasicPrimitiveExpr() const {
@@ -6037,7 +6096,7 @@ GenRet CallExpr::codegenBasicPrimitiveExpr() const {
     args.push_back(gen);
   }
 
-  return codegenCallExpr(primitive->name, args);
+  return codegenCallExprWithArgs(primitive->name, args);
 }
 
 /************************************* | **************************************

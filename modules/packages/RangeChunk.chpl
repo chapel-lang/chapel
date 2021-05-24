@@ -142,9 +142,9 @@ module RangeChunk {
   pragma "order independent yielding loops"
   iter chunksOrder(r: range(?RT, bounded, ?), numChunks: integral,
                    remPol: RemElems = Thru): 2*RT {
-    if r.size == 0 || numChunks <= 0 then
+    if r.sizeAs(RT) == 0 || numChunks <= 0 then
       return;
-    const nElems = r.size;
+    const nElems = r.sizeAs(RT);
     var nChunks = min(numChunks, nElems): RT;
 
     var chunkSize, rem: RT;
@@ -180,10 +180,10 @@ module RangeChunk {
   */
   proc chunkOrder(r: range(?RT, bounded, ?), numChunks: integral, idx: integral,
                   remPol: RemElems = Thru): 2*RT {
-    if r.size == 0 || numChunks <= 0 || idx < 0 || idx >= numChunks then
+    if r.sizeAs(RT) == 0 || numChunks <= 0 || idx < 0 || idx >= numChunks then
       return (1: RT, 0: RT);
 
-    const nElems = r.size;
+    const nElems = r.sizeAs(RT);
     const nChunks = min(numChunks, nElems): RT;
     const i = idx: RT;
 

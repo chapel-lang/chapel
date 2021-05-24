@@ -211,10 +211,12 @@ void Context::collectGarbage() {
 
 void Context::setFilePathForModuleName(UniqueString modName, UniqueString path) {
   auto tupleOfArgs = std::make_tuple(modName);
-  auto queryMapResult = updateResultForQuery(filePathForModuleNameQuery,
-                                             tupleOfArgs, path,
-                                             "filePathForModuleNameQuery",
-                                             false);
+
+  updateResultForQuery(filePathForModuleNameQuery,
+                       tupleOfArgs, path,
+                       "filePathForModuleNameQuery",
+                       false);
+
   printf("SETTING FILE PATH FOR MODULE %s -> %s\n",
          modName.c_str(), path.c_str());
 }

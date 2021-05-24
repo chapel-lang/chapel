@@ -86,6 +86,7 @@ static inline bool queryArgsEqualsImpl(const TUP& lhs, const TUP& rhs, std::inde
   // The dummy variable is optimized away, as it is unused.
   bool ret = true;
   auto dummy = {(ret = ret && eq(std::get<I>(lhs), std::get<I>(rhs)))...};
+  (void) dummy; // avoid unused variable warning
   return ret;
 }
 
@@ -139,6 +140,7 @@ static inline void queryArgsPrintImpl(const TUP& tuple, std::index_sequence<I...
   // The comma (, 0) is used to initialize a dummy initializer_list.
   // The compiler optimizes away the dummy variable and list of 0s.
   auto dummy = { (print(I != 0, std::get<I>(tuple)), 0) ... };
+  (void) dummy; // avoid unused variable warning
 }
 
 template<typename... Ts>
@@ -206,8 +208,8 @@ class QueryMapResult final : public QueryMapResultBase {
       tupleOfArgs(std::move(tupleOfArgs)),
       result(std::move(result)) {
   }
-  void recompute(Context* context) const;
-  void markUniqueStringsInResult(Context* context) const;
+  void recompute(Context* context) const override;
+  void markUniqueStringsInResult(Context* context) const override;
 };
 
 class QueryMapBase {

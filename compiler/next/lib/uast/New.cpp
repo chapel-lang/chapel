@@ -36,6 +36,10 @@ bool New::contentsMatchInner(const ASTNode* other) const {
   return true;
 }
 
+void New::markUniqueStringsInner(Context* context) const {
+  return expressionMarkUniqueStringsInner(context);
+}
+
 owned<New> New::build(Builder* builder,
                       Location loc,
                       owned<Expression> typeExpression,
