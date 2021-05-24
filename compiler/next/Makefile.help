@@ -40,6 +40,9 @@ endif
 COMPILER_ROOT = ..
 COMPILER_SUBDIR = next
 
+# disable -MMD etc because cmake already specifies it
+NO_DEPEND = 1
+
 #
 # standard header
 #
@@ -63,7 +66,9 @@ $(LIBCOMPILER_BUILD_DIR):
 	  $(CMAKE) $(CHPL_MAKE_HOME)/compiler/next \
 	    $(LIB_CMAKE_ARG) \
 	    -DCMAKE_C_COMPILER='$(CC)' \
+	    -DCMAKE_C_FLAGS='$(WARN_CFLAGS)' \
 	    -DCMAKE_CXX_COMPILER='$(CXX)' \
+	    -DCMAKE_CXX_FLAGS='$(COMP_CXXFLAGS)' \
 	    -DCMAKE_EXE_LINKER_FLAGS='$(LDFLAGS)' \
 	    -DCMAKE_MODULE_LINKER_FLAGS='$(LDFLAGS)'
 

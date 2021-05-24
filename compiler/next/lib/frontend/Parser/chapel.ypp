@@ -359,7 +359,7 @@
 
 %code requires {
   // forward declare ParserContext
-  class ParserContext;
+  struct ParserContext;
 }
 
 //
@@ -717,8 +717,8 @@ stmt:
     // Pull up any comments that appear before the TLOCAL keyword.
     auto comments = context->gatherCommentsFromList($3.exprList, @1);
     // Create the Local stmt.
-    auto node = Local::build(BUILDER, LOC(@1), std::move(toOwned($2)),
-                             std::move(context->consumeList($3.exprList)),
+    auto node = Local::build(BUILDER, LOC(@1), toOwned($2),
+                             context->consumeList($3.exprList),
                              $3.usesDo);
     $$ = { .comments=comments, .stmt=node.release() };
   }
@@ -728,7 +728,7 @@ stmt:
     auto comments = context->gatherCommentsFromList($2.exprList, @1);
     // Create the Local stmt.
     auto node = Local::build(BUILDER, LOC(@1),
-                             std::move(context->consumeList($2.exprList)),
+                             context->consumeList($2.exprList),
                              $2.usesDo);
     $$ = { .comments=comments, .stmt=node.release() };
   }
@@ -738,8 +738,8 @@ stmt:
     // Pull up any comments that appear before the TSERIAL keyword.
     auto comments = context->gatherCommentsFromList($3.exprList, @1);
     // Create the Serial stmt.
-    auto node = Serial::build(BUILDER, LOC(@1), std::move(toOwned($2)),
-                              std::move(context->consumeList($3.exprList)),
+    auto node = Serial::build(BUILDER, LOC(@1), toOwned($2),
+                              context->consumeList($3.exprList),
                               $3.usesDo);
     $$ = { .comments=comments, .stmt=node.release() };
   }
@@ -749,7 +749,7 @@ stmt:
     auto comments = context->gatherCommentsFromList($2.exprList, @1);
     // Create the Serial stmt.
     auto node = Serial::build(BUILDER, LOC(@1),
-                              std::move(context->consumeList($2.exprList)),
+                              context->consumeList($2.exprList),
                               $2.usesDo);
     $$ = { .comments=comments, .stmt=node.release() };
   }
@@ -1264,7 +1264,7 @@ extern_export_decl_stmt:
   extern_export_decl_stmt_start TRECORD ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
     {
       CommentsAndLinkage cl = $1;
-      auto comments = context->gatherComments(@7);
+      //auto comments = context->gatherComments(@7);
       // TODO: store comments into the generated list
       CommentsAndStmt cs = {cl.comments, TODOEXPR(@$)};
       $$ = cs;
@@ -1272,7 +1272,7 @@ extern_export_decl_stmt:
 | extern_export_decl_stmt_start STRINGLITERAL TRECORD ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
     {
       CommentsAndLinkage cl = $1;
-      auto comments = context->gatherComments(@8);
+      //auto comments = context->gatherComments(@8);
       // TODO: store comments into the generated list
       CommentsAndStmt cs = {cl.comments, TODOEXPR(@$)};
       $$ = cs;
@@ -1343,8 +1343,8 @@ loop_stmt:
     auto indexVar = context->buildIndexVariableDecl(@2, toOwned($2));
     auto comments = context->gatherCommentsFromList($5.exprList, @1);
     auto node = For::build(BUILDER, LOC(@1), std::move(indexVar),
-                           std::move(toOwned($4)),
-                           std::move(context->consumeList($5.exprList)),
+                           toOwned($4),
+                           context->consumeList($5.exprList),
                            $5.usesDo,
                            /*isExpressionLevel*/ false,
                            /*isParam*/ false);
@@ -1355,8 +1355,8 @@ loop_stmt:
     auto indexVar = context->buildIndexVariableDecl(@2, toOwned($2));
     auto comments = context->gatherCommentsFromList($5.exprList, @1);
     auto node = For::build(BUILDER, LOC(@1), std::move(indexVar),
-                           std::move(toOwned($4)),
-                           std::move(context->consumeList($5.exprList)),
+                           toOwned($4),
+                           context->consumeList($5.exprList),
                            $5.usesDo,
                            /*isExpressionLevel*/ false,
                            /*isParam*/ false);
@@ -1365,16 +1365,16 @@ loop_stmt:
 | TFOR expr do_stmt
   {
     auto comments = context->gatherCommentsFromList($3.exprList, @1);
-    auto node = For::build(BUILDER, LOC(@1), std::move(toOwned($2)),
-                           std::move(context->consumeList($3.exprList)),
+    auto node = For::build(BUILDER, LOC(@1), toOwned($2),
+                           context->consumeList($3.exprList),
                            $3.usesDo);
     $$ = { .comments=comments, .stmt=node.release() };
   }
 | TFOR zippered_iterator do_stmt
   {
     auto comments = context->gatherCommentsFromList($3.exprList, @1);
-    auto node = For::build(BUILDER, LOC(@1), std::move(toOwned($2)),
-                           std::move(context->consumeList($3.exprList)),
+    auto node = For::build(BUILDER, LOC(@1), toOwned($2),
+                           context->consumeList($3.exprList),
                            $3.usesDo);
     $$ = { .comments=comments, .stmt=node.release() };
   }
@@ -1384,8 +1384,8 @@ loop_stmt:
     auto indexVar = context->buildIndexVariableDecl(@3, toOwned(ident));
     auto comments = context->gatherCommentsFromList($6.exprList, @1);
     auto node = For::build(BUILDER, LOC(@1), std::move(indexVar),
-                           std::move(toOwned($5)),
-                           std::move(context->consumeList($6.exprList)),
+                           toOwned($5),
+                           context->consumeList($6.exprList),
                            $6.usesDo,
                            /*isExpressionLevel*/ false,
                            /*isParam*/ true);

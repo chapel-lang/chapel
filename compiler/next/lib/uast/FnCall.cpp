@@ -35,7 +35,7 @@ bool FnCall::contentsMatchInner(const ASTNode* other) const {
       lhs->actualNames_.size() != rhs->actualNames_.size())
     return false;
 
-  size_t nActualNames = lhs->actualNames_.size();
+  int nActualNames = (int) lhs->actualNames_.size();
   for (int i = 0; i < nActualNames; i++) {
     if (lhs->actualNames_[i] != rhs->actualNames_[i])
       return false;

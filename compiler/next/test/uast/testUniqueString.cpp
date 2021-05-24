@@ -34,7 +34,9 @@
 
 using namespace chpl;
 
-void testPerformance(Context* ctx, const char* inputFile, bool printTiming) {
+static void testPerformance(Context* ctx,
+                            const char* inputFile,
+                            bool printTiming) {
   int outerRepeat = 10;
   int innerRepeat = 1;
 
@@ -94,7 +96,7 @@ void testPerformance(Context* ctx, const char* inputFile, bool printTiming) {
   }
 }
 
-void test0() {
+static void test0() {
   Context context;
   Context* ctx = &context;
 
@@ -123,10 +125,11 @@ void test0() {
   assert(ctx->uniqueCString(nullptr) != nullptr);
 
   const char* x = ctx->uniqueCString("aVeryLongIdentifierName");
+  assert(x != h1 && x != nullptr);
 }
 
 
-void test1() {
+static void test1() {
   Context context;
   Context* ctx = &context;
 
@@ -187,7 +190,6 @@ void test1() {
 
 int main(int argc, char** argv) {
   const char* inputFile = "moby.txt";
-  int repeat = 10;
   std::string timingArg = "--timing";
   bool printTiming = false;
   for (int i = 1; i < argc; i++) {

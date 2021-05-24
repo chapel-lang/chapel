@@ -58,8 +58,8 @@ class For final : public IndexableLoop {
     assert(isExpressionASTList(children_));
   }
 
-  bool contentsMatchInner(const ASTNode* other) const;
-  void markUniqueStringsInner(Context* context) const;
+  bool contentsMatchInner(const ASTNode* other) const override;
+  void markUniqueStringsInner(Context* context) const override;
 
   bool isExpressionLevel_;
   bool isParam_;
