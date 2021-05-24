@@ -69,6 +69,9 @@ struct ParserContext {
   Variable::Kind varDeclKind;
   YYLTYPE declStartLocation;
 
+  // note when EOF is reached
+  bool atEOF;
+
   ParserContext(const char* filename, Builder* builder)
   {
     auto uniqueFilename = UniqueString::build(builder->context(), filename);
@@ -81,7 +84,8 @@ struct ParserContext {
     this->visibility         = Decl::DEFAULT_VISIBILITY;
     this->varDeclKind        = Variable::VAR;
     YYLTYPE emptyLoc = {0};
-    this->declStartLocation = emptyLoc;
+    this->declStartLocation  = emptyLoc;
+    this->atEOF              = false;
   }
 
   Context* context() { return builder->context(); }

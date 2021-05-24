@@ -35,7 +35,7 @@
 using namespace chpl;
 using namespace uast;
 
-void test0() {
+static void test0() {
   Context context;
   Context* ctx = &context;
 
@@ -94,7 +94,7 @@ void test0() {
   assert(locOne.hash() != locTwo.hash());
 }
 
-void test1() {
+static void test1() {
   Context context;
   Context* ctx = &context;
 
@@ -143,7 +143,7 @@ void test1() {
   assert(idA.hash() != idB.hash());
 }
 
-void test2() {
+static  void test2() {
   Context context;
   Context* ctx = &context;
 
@@ -232,7 +232,7 @@ void test2() {
   assert(block->stmt(1)->id().compare(block->stmt(2)->id()) < 0);
 }
 
-void test3() {
+static void test3() {
   Context context;
   Context* ctx = &context;
 

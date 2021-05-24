@@ -130,7 +130,7 @@ void chpl_comm_init_prv_bcast_tab(void) {
 
 
 static pthread_once_t maxHeapSize_once = PTHREAD_ONCE_INIT;
-static size_t maxHeapSize;
+static ssize_t maxHeapSize;
 
 static
 void set_maxHeapSize(void)
@@ -138,16 +138,21 @@ void set_maxHeapSize(void)
   const char* ev = "MAX_HEAP_SIZE";
 
   int pct;
-  if ((pct = chpl_env_rt_get_int_pct(ev, -1, false /*doWarn*/)) > 0) {
+  if ((pct = chpl_env_rt_get_int_pct(ev, -1, false /*doWarn*/)) >= 0) {
     const size_t sysMem = chpl_sys_physicalMemoryBytes();
-    maxHeapSize = (pct * sysMem + 50) / 100; // rounded percentage
+    maxHeapSize = (ssize_t) ((pct * sysMem + 50) / 100); // rounded percentage
     return;
   }
 
-  maxHeapSize = chpl_env_rt_get_size(ev, 0);
+  const char* evVal;
+  if ((evVal = chpl_env_rt_get(ev, NULL)) == NULL) {
+    maxHeapSize = -1;
+  } else {
+    maxHeapSize = chpl_env_str_to_size(ev, evVal, 0);
+  }
 }
 
-size_t chpl_comm_getenvMaxHeapSize(void)
+ssize_t chpl_comm_getenvMaxHeapSize()
 {
   if (pthread_once(&maxHeapSize_once, set_maxHeapSize) != 0) {
     chpl_internal_error("pthread_once(&maxHeapSize_once) failed");

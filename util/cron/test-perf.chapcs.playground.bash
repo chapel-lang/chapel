@@ -14,10 +14,6 @@ CWD=$(cd $(dirname $0) ; pwd)
 export CHPL_TEST_PERF_CONFIG_NAME='chapcs'
 
 source $CWD/common-perf.bash
-source $CWD/common-llvm.bash
-
-# common-llvm restricts us to extern/fergeson, we want all the perf tests
-unset CHPL_NIGHTLY_TEST_DIRS
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 
@@ -29,16 +25,16 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # 4) Update START_DATE to be today, using the format mm/dd/yy
 #
 
-# Test performance of llvm-11
+# Test performance of cacheline aligning allocations
 GITHUB_USER=ronawho
-GITHUB_BRANCH=upgrade-llvm-11
-SHORT_NAME=llvm11
-START_DATE=01/28/21
+GITHUB_BRANCH=cacheline-align-allocs
+SHORT_NAME=align-allocs
+START_DATE=05/22/21
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH
 git pull https://github.com/$GITHUB_USER/chapel.git $GITHUB_BRANCH
 
-perf_args="-performance-description $SHORT_NAME -performance-configs llvm:v,$SHORT_NAME:v -sync-dir-suffix $SHORT_NAME"
+perf_args="-performance-description $SHORT_NAME -performance-configs default:v,$SHORT_NAME:v -sync-dir-suffix $SHORT_NAME"
 perf_args="${perf_args} -numtrials 1 -startdate $START_DATE"
 $CWD/nightly -cron ${perf_args} ${nightly_args} -compopts -senablePostfixBangChecks

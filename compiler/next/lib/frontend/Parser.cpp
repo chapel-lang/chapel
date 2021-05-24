@@ -67,7 +67,6 @@ static void updateParseResult(ParserContext* parserContext) {
     delete parserContext->comments;
   }
 
-  Context* aCtx = parserContext->context();
   // Save the parse errors
   for (ParserError & parserError : parserContext->errors) {
     // Need to convert the error to a regular ErrorMessage
@@ -111,7 +110,7 @@ Builder::Result Parser::parseFile(const char* path) {
 
   yyset_in(fp, parserContext.scanner);
 
-  while (lexerStatus != 0 && parserStatus == YYPUSH_MORE) {
+  while (parserStatus == YYPUSH_MORE) {
     YYSTYPE yylval;
 
     lexerStatus = yylex(&yylval, &yylloc, parserContext.scanner);
@@ -128,6 +127,9 @@ Builder::Result Parser::parseFile(const char* path) {
     } else if (lexerStatus == YYLEX_SINGLE_LINE_COMMENT) {
       // comment should already be noted in processSingleLineComment
     }
+
+    if (lexerStatus == 0 || parserContext.atEOF)
+      break;
   }
 
   // Cleanup after the parser
@@ -173,7 +175,7 @@ Builder::Result Parser::parseString(const char* path, const char* str) {
   yylloc.last_line    = 1;
   yylloc.last_column  = 1;
 
-  while (lexerStatus != 0 && parserStatus == YYPUSH_MORE) {
+  while (parserStatus == YYPUSH_MORE) {
     YYSTYPE yylval;
 
     lexerStatus  = yylex(&yylval, &yylloc, parserContext.scanner);
@@ -190,6 +192,9 @@ Builder::Result Parser::parseString(const char* path, const char* str) {
     } else if (lexerStatus == YYLEX_SINGLE_LINE_COMMENT) {
       // comment should already be noted in processSingleLineComment
     }
+
+    if (lexerStatus == 0 || parserContext.atEOF)
+      break;
   }
 
   // Cleanup after the parser

@@ -111,7 +111,7 @@ static void test1a(Parser* parser) {
   assert(parseResult.topLevelExpressions[0]->isComment());
   assert(parseResult.topLevelExpressions[1]->isModule());
   assert(parseResult.topLevelExpressions[2]->isComment());
-  auto module = parseResult.topLevelExpressions[0]->toModule();
+  auto module = parseResult.topLevelExpressions[1]->toModule();
   assert(module->kind() == Module::DEFAULT_MODULE_KIND);
   assert(module->name().compare("M") == 0);
   assert(module->numStmts() == 3);
@@ -321,6 +321,7 @@ int main() {
   test0a(p);
   test0b(p);
   test1(p);
+  test1a(p);
   test1b(p);
   test1c(p);
   test1d(p);

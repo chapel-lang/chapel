@@ -437,7 +437,6 @@ static void test5() {
   const Comment* comment = nullptr;
   const Variable* A = nullptr;
   const Variable* B = nullptr;
-  const Block* block = nullptr;
 
   std::string moduleContents;
 

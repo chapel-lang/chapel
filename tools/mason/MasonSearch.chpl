@@ -148,6 +148,15 @@ proc splitNameVersion(ref package: string, original: bool) {
   }
 }
 
+record RankResultsComparator {
+  var query: string;
+  proc compare(a, b) {
+    if a.toLower().startsWith(query) && !b.toLower().startsWith(query) then return -1;
+    else if !a.toLower().startsWith(query) && b.toLower().startsWith(query) then return 1;
+    else return 1;
+  }
+}
+
 /* Sort the results in a order such that results that startWith needle
    are displayed first */
 proc rankResults(results: list(string), query: string): [] string {
@@ -155,13 +164,7 @@ proc rankResults(results: list(string), query: string): [] string {
   var r = results.toArray();
   sort(r);
   var res = rankOnScores(r);
-  record Comparator { }
-  proc Comparator.compare(a, b) {
-    if a.toLower().startsWith(query) && !b.toLower().startsWith(query) then return -1;
-    else if !a.toLower().startsWith(query) && b.toLower().startsWith(query) then return 1;
-    else return 1;
-  }
-  var cmp : Comparator;
+  var cmp = new RankResultsComparator(query);
   if query != ".*" then sort(res, comparator=cmp);
   return res;
 }
@@ -198,16 +201,18 @@ proc getPackageScores(res: [] string) {
   return packageScores;
 }
 
-/* Sort based on scores from cache file */
-proc rankOnScores(results: [] string) {
-  use Sort;
-  var packageScores = getPackageScores(results);
-  record Comparator { }
-  proc Comparator.compare(a, b) {
+record RankScoresComparator {
+  var packageScores;
+  proc compare(a, b) {
     if packageScores[a] > packageScores[b] then return -1;
     else return 1;
   }
-  var rankCmp : Comparator;
+}
+
+/* Sort based on scores from cache file */
+proc rankOnScores(results: [] string) {
+  use Sort;
+  var rankCmp = new RankScoresComparator(getPackageScores(results));
   var res = results;
   sort(res, comparator=rankCmp);
   return res;

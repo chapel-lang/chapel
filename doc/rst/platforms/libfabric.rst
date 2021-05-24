@@ -185,33 +185,45 @@ should concern themselves with providers.  Providers are simply the
 mechanism of portability when using libfabric.
 
 
-The gni Provider, Memory Registration, and the Heap
-___________________________________________________
-
-(Before you get any further into this section, you should probably
-re-read the note above about performance being better with the native
-ugni communication layer than with the ofi communication layer and gni
-provider.)
+Memory Registration and the Heap
+________________________________
 
 Network technologies sometimes require *memory registration*, meaning
 that ranges of memory which will be the source or target of
 communication operations must be made known to the network before any
 such operations can occur.  When the ofi communication layer is used
-with the gni provider, memory has to be registered.  This has certain
-implications for users, the most notable being that the heap must have a
-fixed size.
+with either the verbs provider on InfiniBand-based platforms including
+HPE Cray EX systems, or with the gni provider on Cray XC systems, memory
+has to be registered.  This has certain implications for users, the most
+notable being that the heap must have a fixed size.
 
 The *heap* is an area of memory used for dynamic allocation of
 everything from user data to task stacks to internal management data
-structures.  When memory must be registered, the ofi communication layer
+structures.  When memory must be registered, the communication layer
 needs to know the maximum size the heap will grow to during execution.
-The default heap size is 16 GiB, but you can change this by setting the
+By default, the ofi communication layer creates a fixed heap whose size
+is 85% of compute node physical memory when it predicts that doing so
+will result in better network performance.
+
+You can adjust this by setting the
 ``CHPL_RT_MAX_HEAP_SIZE`` environment variable.  Set it to a positive
 number for the desired heap size in bytes optionally followed by ``k``
 or ``K`` for KiB, ``m`` or ``M`` for MiB, ``g`` or ``G`` for GiB, or to
 a positive integer followed by ``%`` to indicate a percentage of the
 node real memory.  Either ``CHPL_RT_MAX_HEAP_SIZE=12g`` or ``=20%``
 specifies roughly a 12 GiB heap on a 64 GiB compute node, for example.
+
+Alternatively, you can prevent creation of a fixed heap entirely by
+setting ``CHPL_RT_MAX_HEAP_SIZE=0``.  This may cause the selection of a
+different provider than the highest-performing one, however.
+
+.. note::
+  In the future we hope to be able to reduce the user impact of memory
+  registration and fixed heaps when using the ofi communication layer.
+
+
+Hugepages on Cray XC Systems
+____________________________
 
 We have not yet quantified the effects, but performance with the gni
 provider may be improved if you have a ``craype-hugepages`` module
@@ -225,9 +237,6 @@ hugepage modules, and the heap size.  Note, however, that anything there
 about a dynamically sized heap does not apply to the ofi communication
 layer and the libfabric gni provider.
 
-.. note::
-  In the future we hope to be able to reduce the user impact of memory
-  registration when using the ofi communication layer.
 
 .. _mpirun4ofi-launcher:
 
