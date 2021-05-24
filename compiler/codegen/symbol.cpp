@@ -1779,9 +1779,11 @@ static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
 
     if (fn->hasFlag(FLAG_LLVM_RETURN_NOALIAS)) {
       // Add NoAlias on return for allocator-like functions
-      llvm::AttrBuilder b;
-      b.addAttribute(llvm::Attribute::NoAlias);
-      attrs = attrs.addAttributes(ctx, llvm::AttributeList::ReturnIndex, b);
+      if (returnTy->isPointerTy()) {
+        llvm::AttrBuilder b;
+        b.addAttribute(llvm::Attribute::NoAlias);
+        attrs = attrs.addAttributes(ctx, llvm::AttributeList::ReturnIndex, b);
+      }
     }
   }
 
