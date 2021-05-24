@@ -40,6 +40,9 @@ endif
 COMPILER_ROOT = ..
 COMPILER_SUBDIR = next
 
+# disable -MMD etc because cmake already specifies it
+NO_DEPEND = 1
+
 #
 # standard header
 #

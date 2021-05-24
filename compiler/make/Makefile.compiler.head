@@ -19,7 +19,11 @@
 #
 # settings for the build
 #
+
+ifneq ($(NO_DEPEND), 1)
 DEPEND=1
+endif
+
 ifdef CHPL_DEVELOPER
 DEBUG=1
 WARNINGS=1
