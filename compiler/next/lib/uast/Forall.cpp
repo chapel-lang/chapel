@@ -28,17 +28,7 @@ namespace uast {
 bool Forall::contentsMatchInner(const ASTNode* other) const {
   const Forall* lhs = this;
   const Forall* rhs = (const Forall*) other;
-
-  if (!lhs->indexableLoopContentsMatchInner(rhs))
-    return false;
-
-  if (lhs->withClauseChildNum_ != rhs->withClauseChildNum_)
-    return false;
-
-  if (lhs->isExpressionLevel_ != rhs->isExpressionLevel_)
-    return false;
-
-  return true;
+  return lhs->indexableLoopContentsMatchInner(rhs);
 }
 
 void Forall::markUniqueStringsInner(Context* context) const {

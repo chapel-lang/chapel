@@ -29,13 +29,10 @@ bool For::contentsMatchInner(const ASTNode* other) const {
   const For* lhs = this;
   const For* rhs = (const For*) other;
 
-  if (!lhs->indexableLoopContentsMatchInner(rhs))
-    return false;
-
-  if (lhs->isExpressionLevel_ != rhs->isExpressionLevel_)
-    return false;
-
   if (lhs->isParam_ != rhs->isParam_)
+    return false;
+
+  if (!lhs->indexableLoopContentsMatchInner(rhs))
     return false;
 
   return true;

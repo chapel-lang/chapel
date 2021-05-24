@@ -28,14 +28,7 @@ namespace uast {
 bool Foreach::contentsMatchInner(const ASTNode* other) const {
   const Foreach* lhs = this;
   const Foreach* rhs = (const Foreach*) other;
-
-  if (!lhs->indexableLoopContentsMatchInner(rhs))
-    return false;
-
-  if (lhs->withClauseChildNum_ != rhs->withClauseChildNum_)
-    return false;
-
-  return true;
+  return lhs->indexableLoopContentsMatchInner(rhs);
 }
 
 void Foreach::markUniqueStringsInner(Context* context) const {
