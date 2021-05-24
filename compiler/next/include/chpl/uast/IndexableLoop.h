@@ -33,22 +33,32 @@ namespace uast {
  */
 class IndexableLoop : public Loop {
  protected:
+  // Compute the start of the loop body.
+  int8_t computeLoopBodyChildNum(int8_t indexVariableChildNum,
+                                 int8_t iterandChildNum,
+                                 int8_t withClauseChildNum) {
+    return (indexVariableChildNum >= 0) + (iterandChildNum >= 0) +
+           (withClauseChildNum >= 0);
+  }
+
   IndexableLoop(ASTTag tag, ASTList children,
                 int8_t indexVariableChildNum,
                 int8_t iterandChildNum,
+                int8_t withClauseChildNum,
                 int8_t loopBodyChildNum,
-                bool usesDo)
+                bool usesDo,
+                bool isExpressionLevel)
     : Loop(tag, std::move(children), loopBodyChildNum, usesDo),
       indexVariableChildNum_(indexVariableChildNum),
-      iterandChildNum_(iterandChildNum) {
+      iterandChildNum_(iterandChildNum),
+      withClauseChildNum_(withClauseChildNum),
+      isExpressionLevel_(isExpressionLevel) {
 
     assert(isExpressionASTList(children_));
     assert(iterandChildNum >= 0);
   }
 
-  bool indexableLoopContentsMatchInner(const IndexableLoop* other) const {
-    return this->loopContentsMatchInner((const Loop*)other);
-  }
+  bool indexableLoopContentsMatchInner(const IndexableLoop* other) const;
 
   void indexableLoopMarkUniqueStringsInner(Context* context) const {
     this->loopMarkUniqueStringsInner(context);
@@ -56,13 +66,15 @@ class IndexableLoop : public Loop {
 
   int8_t indexVariableChildNum_;
   int8_t iterandChildNum_;
+  int8_t withClauseChildNum_;
+  bool isExpressionLevel_;
 
  public:
   virtual ~IndexableLoop() override = 0; // this is an abstract base class
 
   /**
-    Returns the index variable declaration of this indexable loop. If there
-    is no index variable this method returns nullptr.
+    Returns the index variable declaration of this indexable loop, or
+    nullptr if it does not exist.
   */
   const Decl* indexVariable() const {
     if (indexVariableChildNum_ < 0) return nullptr;
@@ -79,6 +91,24 @@ class IndexableLoop : public Loop {
     const ASTNode* ast = child(iterandChildNum_); 
     assert(ast->isExpression());
     return (const Expression*) ast;
+  }
+
+  /**
+    Returns the with clause of this indexable loop, or nullptr if it does
+    not exist.
+  */
+  const WithClause* withClause() const {
+    if (withClauseChildNum_ < 0) return nullptr;
+    auto ret = child(withClauseChildNum_);
+    assert(ret->isWithClause());
+    return (const WithClause*)ret;
+  }
+
+  /**
+    Returns true if this indexable loop appears at the expression level.
+  */
+  bool isExpressionLevel() const {
+    return isExpressionLevel_;
   }
 
 };

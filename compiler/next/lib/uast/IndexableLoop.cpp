@@ -24,6 +24,25 @@
 namespace chpl {
 namespace uast {
 
+bool IndexableLoop::
+indexableLoopContentsMatchInner(const IndexableLoop* other) const {
+  const IndexableLoop* lhs = this;
+  const IndexableLoop* rhs = other;
+
+  if (lhs->indexVariableChildNum_ != rhs->indexVariableChildNum_)
+    return false;
+
+  if (lhs->iterandChildNum_ != rhs->iterandChildNum_)
+    return false;
+
+  if (lhs->withClauseChildNum_ != rhs->withClauseChildNum_)
+    return false;
+
+  if (!lhs->loopContentsMatchInner(other))
+    return false;
+
+  return true;
+}
 
 IndexableLoop::~IndexableLoop(){
 }

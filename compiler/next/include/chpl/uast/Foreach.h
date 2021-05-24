@@ -60,19 +60,18 @@ class Foreach final : public IndexableLoop {
     : IndexableLoop(asttags::Foreach, std::move(children),
                     indexVariableChildNum,
                     iterandChildNum,
+                    withClauseChildNum,
                     computeLoopBodyChildNum(indexVariableChildNum,
                                             iterandChildNum,
                                             withClauseChildNum),
-                    usesDo),
-      withClauseChildNum_(withClauseChildNum) {
+                    usesDo,
+                    /*isExpressionLevel*/ false) {
 
     assert(isExpressionASTList(children_));
   }
 
   bool contentsMatchInner(const ASTNode* other) const override;
   void markUniqueStringsInner(Context* context) const override;
-
-  int8_t withClauseChildNum_;
 
  public:
   ~Foreach() override = default;
@@ -112,17 +111,6 @@ class Foreach final : public IndexableLoop {
                               owned<Expression> iterand,
                               ASTList stmts,
                               bool usesDo);
-
-  /**
-    Returns the with clause of this foreach loop, or nullptr if it does
-    not exist.
-  */
-  const WithClause* withClause() const {
-    if (withClauseChildNum_ < 0) return nullptr;
-    auto ret = child(withClauseChildNum_);
-    assert(ret->isWithClause());
-    return (const WithClause*)ret;
-  }
 
 };
 

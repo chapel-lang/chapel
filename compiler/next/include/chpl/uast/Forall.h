@@ -61,20 +61,17 @@ class Forall final : public IndexableLoop {
     : IndexableLoop(asttags::Forall, std::move(children),
                     indexVariableChildNum,
                     iterandChildNum,
+                    withClauseChildNum,
                     computeLoopBodyChildNum(indexVariableChildNum,
                                             iterandChildNum,
                                             withClauseChildNum),
-                    usesDo),
-      withClauseChildNum_(withClauseChildNum),
-      isExpressionLevel_(isExpressionLevel) {
+                    usesDo,
+                    isExpressionLevel) {
     assert(isExpressionASTList(children_));
   }
 
   bool contentsMatchInner(const ASTNode* other) const override;
   void markUniqueStringsInner(Context* context) const override;
-
-  int8_t withClauseChildNum_;
-  bool isExpressionLevel_;
 
  public:
   ~Forall() override = default;
@@ -116,24 +113,6 @@ class Forall final : public IndexableLoop {
                              owned<Expression> iterand,
                              ASTList stmts,
                              bool usesDo);
-
-  /**
-    Returns true if this forall loop appears at the expression level. 
-  */
-  bool isExpressionLevel() const {
-    return isExpressionLevel_;
-  }
-
-  /**
-    Returns the with clause of this forall loop, or nullptr if it does
-    not exist.
-  */
-  const WithClause* withClause() const {
-    if (withClauseChildNum_ < 0) return nullptr;
-    auto ret = child(withClauseChildNum_);
-    assert(ret->isWithClause());
-    return (const WithClause*)ret;
-  }
 
 };
 

@@ -54,22 +54,23 @@ class For final : public IndexableLoop {
       bool usesDo,
       bool isExpressionLevel,
       bool isParam)
-        : IndexableLoop(asttags::For, std::move(children),
-                        indexVariableChildNum,
-                        iterandChildNum,
-                        computeLoopBodyChildNum(indexVariableChildNum,
-                                                iterandChildNum),
-                        usesDo),
-      isExpressionLevel_(isExpressionLevel),
+    : IndexableLoop(asttags::For, std::move(children),
+                    indexVariableChildNum,
+                    iterandChildNum,
+                    /*withClauseChildNum*/ -1,
+                    computeLoopBodyChildNum(indexVariableChildNum,
+                                            iterandChildNum),
+                    usesDo,
+                    isExpressionLevel),
       isParam_(isParam) {
 
     assert(isExpressionASTList(children_));
+    assert(withClause() == nullptr);
   }
 
   bool contentsMatchInner(const ASTNode* other) const override;
   void markUniqueStringsInner(Context* context) const override;
 
-  bool isExpressionLevel_;
   bool isParam_;
 
  public:
@@ -95,19 +96,11 @@ class For final : public IndexableLoop {
                           bool usesDo);
 
   /**
-    Returns true if this for loop appears at the expression level. 
-  */
-  bool isExpressionLevel() const {
-    return isExpressionLevel_;
-  }
-
-  /**
     Returns true if this for loop is param.
   */
   bool isParam() const {
     return isParam_;
   }
-
 
 };
 
