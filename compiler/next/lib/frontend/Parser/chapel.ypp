@@ -248,11 +248,6 @@
     const char* allocatedData; // *not* a uniqued string!
     long size;
   };
-  static inline
-  SizedStr makeSizedStr(const char* allocatedData, long size) {
-    SizedStr ret = {allocatedData, size};
-    return ret;
-  }
 
   struct MaybeNamedActual {
     Expression* expr;
@@ -1389,8 +1384,8 @@ loop_stmt:
     auto indexVar = context->buildIndexVariable(@2, toOwned($2));
     auto comments = context->gatherCommentsFromList($5.exprList, @1);
     auto node = Forall::build(BUILDER, LOC(@1), std::move(indexVar),
-                              std::move(toOwned($4)),
-                              std::move(context->consumeList($5.exprList)),
+                              toOwned($4),
+                              context->consumeList($5.exprList),
                               $5.usesDo,
                               /*isExpressionLevel*/ false);
     $$ = { .comments=comments, .stmt=node.release() };
@@ -1400,9 +1395,9 @@ loop_stmt:
     auto indexVar = context->buildIndexVariable(@2, toOwned($2));
     auto comments = context->gatherCommentsFromList($6.exprList, @1);
     auto node = Forall::build(BUILDER, LOC(@1), std::move(indexVar),
-                              std::move(toOwned($4)),
-                              std::move(toOwned($5)),
-                              std::move(context->consumeList($6.exprList)),
+                              toOwned($4),
+                              toOwned($5),
+                              context->consumeList($6.exprList),
                               $6.usesDo,
                               /*isExpressionLevel*/ false);
     $$ = { .comments=comments, .stmt=node.release() };
@@ -1412,8 +1407,8 @@ loop_stmt:
     auto indexVar = context->buildIndexVariable(@2, toOwned($2));
     auto comments = context->gatherCommentsFromList($5.exprList, @1);
     auto node = Forall::build(BUILDER, LOC(@1), std::move(indexVar),
-                              std::move(toOwned($4)),
-                              std::move(context->consumeList($5.exprList)),
+                              toOwned($4),
+                              context->consumeList($5.exprList),
                               $5.usesDo,
                               /*isExpressionLevel*/ false);
     $$ = { .comments=comments, .stmt=node.release() };
@@ -1423,9 +1418,9 @@ loop_stmt:
     auto indexVar = context->buildIndexVariable(@2, toOwned($2));
     auto comments = context->gatherCommentsFromList($6.exprList, @1);
     auto node = Forall::build(BUILDER, LOC(@1), std::move(indexVar),
-                              std::move(toOwned($4)),
-                              std::move(toOwned($5)),
-                              std::move(context->consumeList($6.exprList)),
+                              toOwned($4),
+                              toOwned($5),
+                              context->consumeList($6.exprList),
                               $6.usesDo,
                               /*isExpressionLevel*/ false);
     $$ = { .comments=comments, .stmt=node.release() };
@@ -1433,34 +1428,34 @@ loop_stmt:
 | TFORALL          expr                                   do_stmt
   {
     auto comments = context->gatherCommentsFromList($3.exprList, @1);
-    auto node = Forall::build(BUILDER, LOC(@1), std::move(toOwned($2)),
-                              std::move(context->consumeList($3.exprList)),
+    auto node = Forall::build(BUILDER, LOC(@1), toOwned($2),
+                              context->consumeList($3.exprList),
                               $3.usesDo);
     $$ = { .comments=comments, .stmt=node.release() };
   }
 | TFORALL          expr              forall_intent_clause do_stmt
   {
     auto comments = context->gatherCommentsFromList($4.exprList, @1);
-    auto node = Forall::build(BUILDER, LOC(@1), std::move(toOwned($2)),
-                              std::move(toOwned($3)),
-                              std::move(context->consumeList($4.exprList)),
+    auto node = Forall::build(BUILDER, LOC(@1), toOwned($2),
+                              toOwned($3),
+                              context->consumeList($4.exprList),
                               $4.usesDo);
     $$ = { .comments=comments, .stmt=node.release() };
   }
 | TFORALL          zippered_iterator                      do_stmt
   {
     auto comments = context->gatherCommentsFromList($3.exprList, @1);
-    auto node = Forall::build(BUILDER, LOC(@1), std::move(toOwned($2)),
-                              std::move(context->consumeList($3.exprList)),
+    auto node = Forall::build(BUILDER, LOC(@1), toOwned($2),
+                              context->consumeList($3.exprList),
                               $3.usesDo);
     $$ = { .comments=comments, .stmt=node.release() };
   }
 | TFORALL          zippered_iterator forall_intent_clause do_stmt
   {
     auto comments = context->gatherCommentsFromList($4.exprList, @1);
-    auto node = Forall::build(BUILDER, LOC(@1), std::move(toOwned($2)),
-                              std::move(toOwned($3)),
-                              std::move(context->consumeList($4.exprList)),
+    auto node = Forall::build(BUILDER, LOC(@1), toOwned($2),
+                              toOwned($3),
+                              context->consumeList($4.exprList),
                               $4.usesDo);
     $$ = { .comments=comments, .stmt=node.release() };
   }
@@ -1469,8 +1464,8 @@ loop_stmt:
     auto indexVar = context->buildIndexVariable(@2, toOwned($2));
     auto comments = context->gatherCommentsFromList($5.exprList, @1);
     auto node = Foreach::build(BUILDER, LOC(@1), std::move(indexVar),
-                               std::move(toOwned($4)),
-                               std::move(context->consumeList($5.exprList)),
+                               toOwned($4),
+                               context->consumeList($5.exprList),
                                $5.usesDo);
     $$ = { .comments=comments, .stmt=node.release() };
   }
@@ -1479,9 +1474,9 @@ loop_stmt:
     auto indexVar = context->buildIndexVariable(@2, toOwned($2));
     auto comments = context->gatherCommentsFromList($6.exprList, @1);
     auto node = Foreach::build(BUILDER, LOC(@1), std::move(indexVar),
-                               std::move(toOwned($4)),
-                               std::move(toOwned($5)),
-                               std::move(context->consumeList($6.exprList)),
+                               toOwned($4),
+                               toOwned($5),
+                               context->consumeList($6.exprList),
                                $6.usesDo);
     $$ = { .comments=comments, .stmt=node.release() };
   }
@@ -1490,8 +1485,8 @@ loop_stmt:
     auto indexVar = context->buildIndexVariable(@2, toOwned($2));
     auto comments = context->gatherCommentsFromList($5.exprList, @1);
     auto node = Foreach::build(BUILDER, LOC(@1), std::move(indexVar),
-                               std::move(toOwned($4)),
-                               std::move(context->consumeList($5.exprList)),
+                               toOwned($4),
+                               context->consumeList($5.exprList),
                                $5.usesDo);
     $$ = { .comments=comments, .stmt=node.release() };
   }
@@ -1500,43 +1495,43 @@ loop_stmt:
     auto indexVar = context->buildIndexVariable(@2, toOwned($2));
     auto comments = context->gatherCommentsFromList($6.exprList, @1);
     auto node = Foreach::build(BUILDER, LOC(@1), std::move(indexVar),
-                               std::move(toOwned($4)),
-                               std::move(toOwned($5)),
-                               std::move(context->consumeList($6.exprList)),
+                               toOwned($4),
+                               toOwned($5),
+                               context->consumeList($6.exprList),
                                $6.usesDo);
     $$ = { .comments=comments, .stmt=node.release() };
   }
 | TFOREACH          expr                                   do_stmt
   {
     auto comments = context->gatherCommentsFromList($3.exprList, @1);
-    auto node = Foreach::build(BUILDER, LOC(@1), std::move(toOwned($2)),
-                               std::move(context->consumeList($3.exprList)),
+    auto node = Foreach::build(BUILDER, LOC(@1), toOwned($2),
+                               context->consumeList($3.exprList),
                                $3.usesDo);
     $$ = { .comments=comments, .stmt=node.release() };
   }
 | TFOREACH          expr              forall_intent_clause do_stmt
   {
     auto comments = context->gatherCommentsFromList($4.exprList, @1);
-    auto node = Foreach::build(BUILDER, LOC(@1), std::move(toOwned($2)),
-                               std::move(toOwned($3)),
-                               std::move(context->consumeList($4.exprList)),
+    auto node = Foreach::build(BUILDER, LOC(@1), toOwned($2),
+                               toOwned($3),
+                               context->consumeList($4.exprList),
                                $4.usesDo);
     $$ = { .comments=comments, .stmt=node.release() };
   }
 | TFOREACH          zippered_iterator                      do_stmt
   {
     auto comments = context->gatherCommentsFromList($3.exprList, @1);
-    auto node = Foreach::build(BUILDER, LOC(@1), std::move(toOwned($2)),
-                               std::move(context->consumeList($3.exprList)),
+    auto node = Foreach::build(BUILDER, LOC(@1), toOwned($2),
+                               context->consumeList($3.exprList),
                                $3.usesDo);
     $$ = { .comments=comments, .stmt=node.release() };
   }
 | TFOREACH          zippered_iterator forall_intent_clause do_stmt
   {
     auto comments = context->gatherCommentsFromList($4.exprList, @1);
-    auto node = Foreach::build(BUILDER, LOC(@1), std::move(toOwned($2)),
-                               std::move(toOwned($3)),
-                               std::move(context->consumeList($4.exprList)),
+    auto node = Foreach::build(BUILDER, LOC(@1), toOwned($2),
+                               toOwned($3),
+                               context->consumeList($4.exprList),
                                $4.usesDo);
     $$ = { .comments=comments, .stmt=node.release() };
   }
