@@ -24,10 +24,12 @@
 *                                                                           *
 ************************************* | ************************************/
 
-#include <cstring>
-#include <cctype>
-#include <string>
 #include <algorithm>
+#include <cctype>
+#include <climits>
+#include <cstdlib>
+#include <cstring>
+#include <string>
 
 static int   getNextYYChar(yyscan_t scanner);
 
@@ -158,7 +160,6 @@ char simpleEscape(int c) {
 }
 
 static SizedStr eatStringLiteral(yyscan_t scanner, const char* startChar) {
-  ParserContext* context = yyget_extra(scanner);
   YYLTYPE* loc = yyget_lloc(scanner);
   const char startCh = *startChar;
   int        c       = 0;
@@ -201,7 +202,7 @@ static SizedStr eatStringLiteral(yyscan_t scanner, const char* startChar) {
         char buf[3] = {'\0', '\0', '\0'};
         bool foundNonHex = false;
         bool overflow = false;
-        for (int i = 0; true; i++) {
+        for (int i = 0; c != 0; i++) {
           c = getNextYYChar(scanner);
           nCols++;
           // TODO the exact behavior here is not documented in the spec
@@ -217,9 +218,23 @@ static SizedStr eatStringLiteral(yyscan_t scanner, const char* startChar) {
             break;
           }
         }
-        if (overflow)
+
+        long hexChar = strtol(buf, NULL, 17);
+
+        if (hexChar == LONG_MIN) {
+          noteErrInString(scanner, nLines, nCols,
+                          "underflow when reading \\x escape");
+        } else if (overflow || hexChar == LONG_MAX) {
           noteErrInString(scanner, nLines, nCols,
                           "overflow when reading \\x escape");
+        }
+
+        if (0 <= hexChar && hexChar <= 255) {
+          // append the character
+          char cc = (char) hexChar;
+          s += cc;
+        }
+
         if (foundNonHex)
           continue; // need to process c as the next character
 
@@ -260,7 +275,6 @@ static SizedStr eatStringLiteral(yyscan_t scanner, const char* startChar) {
 
 static SizedStr eatTripleStringLiteral(yyscan_t scanner,
                                        const char* startChar) {
-  ParserContext* context = yyget_extra(scanner);
   YYLTYPE* loc       = yyget_lloc(scanner);
   const char startCh = *startChar;
   int startChCount   = 0;
@@ -392,8 +406,6 @@ static SizedStr eatExternCode(yyscan_t scanner) {
     c     = getNextYYChar(scanner);
 
     if (c == 0) {
-      ParserContext* context = yyget_extra(scanner);
-
       switch (state) {
         case in_code:
           // there was no match to the {
@@ -536,7 +548,6 @@ static void processWhitespace(yyscan_t scanner) {
 ************************************* | ************************************/
 
 static int processSingleLineComment(yyscan_t scanner) {
-  YYSTYPE* val = yyget_lval(scanner);
   int      c   = 0;
 
   // start with the comment introduction
@@ -575,7 +586,6 @@ static int processSingleLineComment(yyscan_t scanner) {
 ************************************* | ************************************/
 
 static int processBlockComment(yyscan_t scanner) {
-  YYSTYPE*    val       = yyget_lval(scanner);
   YYLTYPE*    loc       = yyget_lloc(scanner);
 
   int nestedStartLine = -1;
@@ -617,7 +627,7 @@ static int processBlockComment(yyscan_t scanner) {
       nestedStartCol = nCols;
     } else if (c == 0) {
       noteErrInString(scanner, nLines, nCols, "EOF in comment");
-      noteErrInString(scanner, 0, 0, "unterminated comment started here");
+      noteErrInString(scanner, startLine, startCol, "unterminated comment started here");
       if( nestedStartLine >= 0 ) {
         noteErrInString(scanner, nestedStartLine, nestedStartCol,
                         "nested comment started here");

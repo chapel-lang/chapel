@@ -55,8 +55,8 @@ class New : public Expression {
   New(ASTList children, New::Management management)
     : Expression(asttags::New, std::move(children)),
       management_(management) {}
-  bool contentsMatchInner(const ASTNode* other) const;
-  void markUniqueStringsInner(Context* context) const {}
+  bool contentsMatchInner(const ASTNode* other) const override;
+  void markUniqueStringsInner(Context* context) const override;
   Management management_;
 
  public:

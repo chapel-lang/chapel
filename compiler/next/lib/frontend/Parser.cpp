@@ -67,7 +67,6 @@ static void updateParseResult(ParserContext* parserContext) {
     delete parserContext->comments;
   }
 
-  Context* aCtx = parserContext->context();
   // Save the parse errors
   for (ParserError & parserError : parserContext->errors) {
     // Need to convert the error to a regular ErrorMessage

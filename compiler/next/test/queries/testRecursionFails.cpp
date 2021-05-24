@@ -30,7 +30,7 @@
 
 using namespace chpl;
 
-const UniqueString& recursiveQuery(Context* context, UniqueString arg) {
+static const UniqueString& recursiveQuery(Context* context, UniqueString arg) {
   QUERY_BEGIN(recursiveQuery, context, arg);
 
   UniqueString result = recursiveQuery(context, arg);

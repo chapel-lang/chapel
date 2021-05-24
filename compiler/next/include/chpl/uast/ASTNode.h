@@ -124,7 +124,7 @@ class ASTNode {
     by this object.
    */
   const ASTNode* child(int i) const {
-    assert(0 <= i && i < children_.size());
+    assert(0 <= i && i < (int) children_.size());
     return children_[i].get();
   }
 

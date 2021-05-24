@@ -42,7 +42,7 @@ int nQueryFourRuns = 0;
 int nQueryFiveRuns = 0;
 int nQuerySixRuns = 0;
 
-const std::string& inputQuery(Context* context, int unused) {
+static const std::string& inputQuery(Context* context, int unused) {
   QUERY_BEGIN_INPUT(inputQuery, context, unused);
 
   std::string result = inputString;
@@ -51,7 +51,7 @@ const std::string& inputQuery(Context* context, int unused) {
 
   return QUERY_END(result);
 }
-const std::string& queryOne(Context* context, int unused) {
+static const std::string& queryOne(Context* context, int unused) {
   QUERY_BEGIN(queryOne, context, unused);
 
   const std::string& input = inputQuery(context, 0);
@@ -61,7 +61,7 @@ const std::string& queryOne(Context* context, int unused) {
 
   return QUERY_END(result);
 }
-const std::string& queryTwo(Context* context, int unused) {
+static const std::string& queryTwo(Context* context, int unused) {
   QUERY_BEGIN(queryTwo, context, unused);
 
   const std::string& one = queryOne(context, 0);
@@ -74,7 +74,7 @@ const std::string& queryTwo(Context* context, int unused) {
   return QUERY_END(result);
 }
 
-const int& queryThree(Context* context, int unused) {
+static const int& queryThree(Context* context, int unused) {
   QUERY_BEGIN(queryThree, context, unused);
 
   const std::string& one = queryOne(context, 0);
@@ -85,7 +85,7 @@ const int& queryThree(Context* context, int unused) {
   return QUERY_END(result);
 }
 
-const std::string& queryFour(Context* context, int unused) {
+static const std::string& queryFour(Context* context, int unused) {
   QUERY_BEGIN(queryFour, context, unused);
 
   const std::string& one = queryOne(context, 0);
@@ -96,7 +96,7 @@ const std::string& queryFour(Context* context, int unused) {
   return QUERY_END(result);
 }
 
-const std::string& queryFive(Context* context, int unused) {
+static const std::string& queryFive(Context* context, int unused) {
   QUERY_BEGIN(queryFive, context, unused);
 
   const std::string& one = queryOne(context, 0);
@@ -107,7 +107,7 @@ const std::string& queryFive(Context* context, int unused) {
   return QUERY_END(result);
 }
 
-const std::string& querySix(Context* context, int unused) {
+static const std::string& querySix(Context* context, int unused) {
   QUERY_BEGIN(querySix, context, unused);
 
   int isQueryOneOddLength = queryThree(context, 0);
@@ -126,7 +126,7 @@ const std::string& querySix(Context* context, int unused) {
 
 
 
-void test0() {
+static void test0() {
   printf("test0\n");
 
   Context ctx;
@@ -150,7 +150,7 @@ void test0() {
   assert(ii == inputString);
 }
 
-void test1() {
+static void test1() {
   printf("test1\n");
 
   Context ctx;
@@ -189,7 +189,7 @@ void test1() {
   assert(q1 == "hello again there");
 }
 
-void test2() {
+static void test2() {
   printf("test2\n");
 
   Context ctx;
@@ -216,7 +216,7 @@ void test2() {
   assert(q2 == "hello there");
 }
 
-void test3() {
+static void test3() {
   printf("test3\n");
 
   Context ctx;
@@ -256,7 +256,7 @@ void test3() {
   assert(q2 == " ello there");
 }
 
-void test4() {
+static void test4() {
   printf("test4\n");
 
   Context ctx;
@@ -328,7 +328,7 @@ void test4() {
   assert(q6 == "helloworld..");
 }
 
-void test5() {
+static void test5() {
   printf("test5\n");
 
   Context ctx;

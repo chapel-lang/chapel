@@ -55,7 +55,6 @@ static bool stringContainsZeroBytes(const char* s, size_t len) {
 
 UniqueString UniqueString::build(Context* context,
                                  const char* s, size_t len) {
-  const char* u;
   assert(!stringContainsZeroBytes(s, len));
   if (s[len] == '\0') {
     // string is already appropriately null terminated

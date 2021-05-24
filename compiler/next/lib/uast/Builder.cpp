@@ -83,7 +83,7 @@ Builder::Result Builder::result() {
   ret.topLevelExpressions.swap(topLevelExpressions_);
   ret.errors.swap(errors_);
   ret.locations.swap(locations_);
-  return std::move(ret);
+  return ret;
 }
 
 // Returns the name of the implicit module, or "" if there is none

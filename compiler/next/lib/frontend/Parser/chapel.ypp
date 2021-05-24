@@ -1264,7 +1264,7 @@ extern_export_decl_stmt:
   extern_export_decl_stmt_start TRECORD ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
     {
       CommentsAndLinkage cl = $1;
-      auto comments = context->gatherComments(@7);
+      //auto comments = context->gatherComments(@7);
       // TODO: store comments into the generated list
       CommentsAndStmt cs = {cl.comments, TODOEXPR(@$)};
       $$ = cs;
@@ -1272,7 +1272,7 @@ extern_export_decl_stmt:
 | extern_export_decl_stmt_start STRINGLITERAL TRECORD ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
     {
       CommentsAndLinkage cl = $1;
-      auto comments = context->gatherComments(@8);
+      //auto comments = context->gatherComments(@8);
       // TODO: store comments into the generated list
       CommentsAndStmt cs = {cl.comments, TODOEXPR(@$)};
       $$ = cs;
