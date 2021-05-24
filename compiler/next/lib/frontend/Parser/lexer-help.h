@@ -584,7 +584,6 @@ static int processBlockComment(yyscan_t scanner) {
   int startCol = loc->first_column;
 
   int         c            = 0;
-  bool        badComment = false;
   int         lastc        = 0;
   int         depth        = 1;
 
@@ -659,6 +658,11 @@ static int getNextYYChar(yyscan_t scanner) {
 
   if (retval == EOF) {
     retval = 0;
+  }
+
+  if (retval == 0) {
+    ParserContext* context = yyget_extra(scanner);
+    context->atEOF = true;
   }
 
   return retval;
