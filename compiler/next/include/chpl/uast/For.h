@@ -88,14 +88,6 @@ class For final : public IndexableLoop {
                           bool isParam);
 
   /**
-    Create and return a for loop without an index variable.
-  */
-  static owned<For> build(Builder* builder, Location loc,
-                          owned<Expression> iterand,
-                          ASTList stmts,
-                          bool usesDo);
-
-  /**
     Returns true if this for loop is param.
   */
   bool isParam() const {

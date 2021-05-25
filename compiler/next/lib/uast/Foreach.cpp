@@ -76,41 +76,6 @@ owned<Foreach> Foreach::build(Builder* builder,
   return toOwned(ret);
 }
 
-owned<Foreach> Foreach::build(Builder* builder, Location loc,
-                              owned<Decl> indexVariable,
-                              owned<Expression> iterand,
-                              ASTList stmts,
-                              bool usesDo) {
-  return Foreach::build(builder, loc, std::move(indexVariable),
-                        std::move(iterand),
-                        /*withClause*/ nullptr,
-                        std::move(stmts),
-                        usesDo);
-}
-
-owned<Foreach> Foreach::build(Builder* builder, Location loc,
-                              owned<Expression> iterand,
-                              owned<WithClause> withClause,
-                              ASTList stmts,
-                              bool usesDo) {
-  return Foreach::build(builder, loc, /*indexVariable*/ nullptr,
-                        std::move(iterand),
-                        std::move(withClause),
-                        std::move(stmts),
-                        usesDo);
-}
-
-owned<Foreach> Foreach::build(Builder* builder, Location loc,
-                              owned<Expression> iterand,
-                              ASTList stmts,
-                              bool usesDo) {
-  return Foreach::build(builder, loc, /*indexVariable*/ nullptr,
-                        std::move(iterand),
-                        /*withClause*/ nullptr,
-                        std::move(stmts),
-                        usesDo);
-}
-
 
 } // namespace uast
 } // namespace chpl

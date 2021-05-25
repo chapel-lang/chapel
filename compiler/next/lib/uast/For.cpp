@@ -80,18 +80,6 @@ owned<For> For::build(Builder* builder,
   return toOwned(ret);
 }
 
-owned<For> For::build(Builder* builder,
-                      Location loc,
-                      owned<Expression> iterand,
-                      ASTList stmts,
-                      bool usesDo) {
-  return For::build(builder, loc, nullptr, std::move(iterand),
-                    std::move(stmts),
-                    usesDo,
-                    /*isExpressionLevel*/ false,
-                    /*isParam*/ false);
-}
-
 
 } // namespace uast
 } // namespace chpl

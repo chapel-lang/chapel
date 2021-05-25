@@ -77,45 +77,6 @@ owned<Forall> Forall::build(Builder* builder, Location loc,
   return toOwned(ret);
 }
 
-owned<Forall> Forall::build(Builder* builder, Location loc,
-                            owned<Decl> indexVariable,
-                            owned<Expression> iterand,
-                            ASTList stmts,
-                            bool usesDo,
-                            bool isExpressionLevel) {
-  return Forall::build(builder, loc, std::move(indexVariable),
-                       std::move(iterand),
-                       /*withClause*/ nullptr,
-                       std::move(stmts),
-                       usesDo,
-                       isExpressionLevel);
-}
-
-owned<Forall> Forall::build(Builder* builder, Location loc,
-                            owned<Expression> iterand,
-                            owned<WithClause> withClause,
-                            ASTList stmts,
-                            bool usesDo) {
-  return Forall::build(builder, loc, /*indexVariable*/ nullptr,
-                       std::move(iterand),
-                       std::move(withClause),
-                       std::move(stmts),
-                       usesDo,
-                       /*isExpressionLevel*/ false);
-}
-
-owned<Forall> Forall::build(Builder* builder, Location loc,
-                            owned<Expression> iterand,
-                            ASTList stmts,
-                            bool usesDo) {
-  return Forall::build(builder, loc, /*indexVariable*/ nullptr,
-                       std::move(iterand),
-                       /*withClause*/ nullptr,
-                       std::move(stmts),
-                       usesDo,
-                       /*isExpressionLevel*/ false);
-}
-
 
 } // namespace uast
 } // namespace chpl

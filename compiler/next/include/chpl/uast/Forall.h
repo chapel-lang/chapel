@@ -87,33 +87,6 @@ class Forall final : public IndexableLoop {
                              bool usesDo,
                              bool isExpressionLevel);
 
-  /**
-    Create and return a forall loop. 
-  */
-  static owned<Forall> build(Builder* builder, Location loc,
-                             owned<Decl> indexVariable,
-                             owned<Expression> iterand,
-                             ASTList stmts,
-                             bool usesDo,
-                             bool isExpressionLevel);
-
-  /**
-    Create and return a forall loop. 
-  */
-  static owned<Forall> build(Builder* builder, Location loc,
-                             owned<Expression> iterand,
-                             owned<WithClause> withClause,
-                             ASTList stmts,
-                             bool usesDo);
-
-  /**
-    Create and return a forall loop.
-  */
-  static owned<Forall> build(Builder* builder, Location loc,
-                             owned<Expression> iterand,
-                             ASTList stmts,
-                             bool usesDo);
-
 };
 
 

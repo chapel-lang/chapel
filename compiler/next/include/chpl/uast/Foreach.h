@@ -86,32 +86,6 @@ class Foreach final : public IndexableLoop {
                               ASTList stmts,
                               bool usesDo);
 
-  /**
-    Create and return a foreach loop. 
-  */
-  static owned<Foreach> build(Builder* builder, Location loc,
-                              owned<Decl> indexVariable,
-                              owned<Expression> iterand,
-                              ASTList stmts,
-                              bool usesDo);
-
-  /**
-    Create and return a foreach loop. 
-  */
-  static owned<Foreach> build(Builder* builder, Location loc,
-                              owned<Expression> iterand,
-                              owned<WithClause> withClause,
-                              ASTList stmts,
-                              bool usesDo);
-
-  /**
-    Create and return a foreach loop.
-  */
-  static owned<Foreach> build(Builder* builder, Location loc,
-                              owned<Expression> iterand,
-                              ASTList stmts,
-                              bool usesDo);
-
 };
 
 
