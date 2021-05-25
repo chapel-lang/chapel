@@ -48,6 +48,9 @@
 #include "version.h"
 #include "visibleFunctions.h"
 
+#include "chpl/config/config.h"
+#include "chpl/queries/Context.h"
+
 #include <inttypes.h>
 #include <string>
 #include <sstream>
@@ -287,6 +290,13 @@ bool fPrintAdditionalErrors;
 
 static
 bool fPrintChplSettings = false;
+
+static
+bool fPrintCompilerLibraryVersion = false;
+
+bool fCompilerLibraryParser = false;
+
+chpl::Context* gContext = nullptr;
 
 /* Note -- LLVM provides a way to get the path to the executable...
 // This function isn't referenced outside its translation unit, but it
@@ -1148,6 +1158,9 @@ static ArgumentDescription arg_desc[] = {
  {"warn-tuple-iteration", ' ', NULL, "Enable [disable] warnings for tuple iteration", "n", &fNoWarnTupleIteration, "CHPL_WARN_TUPLE_ITERATION", setWarnTupleIteration},
  {"warn-special", ' ', NULL, "Enable [disable] special warnings", "n", &fNoWarnSpecial, "CHPL_WARN_SPECIAL", setWarnSpecial},
 
+ {"compiler-library-version", ' ', NULL, "Show compiler library version", "F", &fPrintCompilerLibraryVersion, NULL, NULL},
+ {"compiler-library-parser", ' ', NULL, "Enable [disable] using compiler library parser", "N", &fCompilerLibraryParser, "CHPL_COMPILER_LIBRARY_PARSER", NULL},
+
  DRIVER_ARG_PRINT_CHPL_HOME,
  DRIVER_ARG_LAST
 };
@@ -1173,6 +1186,14 @@ static void printStuff(const char* argv0) {
 #endif
 
     fPrintCopyright  = true;
+    printedSomething = true;
+    shouldExit       = true;
+  }
+
+  if (fPrintCompilerLibraryVersion) {
+    fprintf(stdout, "  chpl compiler library version %i.%i\n",
+                    CHPL_COMPILER_LIB_VERSION_MAJOR,
+                    CHPL_COMPILER_LIB_VERSION_MINOR);
     printedSomething = true;
     shouldExit       = true;
   }
@@ -1592,6 +1613,10 @@ int main(int argc, char* argv[]) {
   PhaseTracker tracker;
 
   startCatchingSignals();
+
+  // create the compiler context
+  chpl::Context ctx;
+  gContext = &ctx;
 
   {
     astlocMarker markAstLoc(0, "<internal>");
