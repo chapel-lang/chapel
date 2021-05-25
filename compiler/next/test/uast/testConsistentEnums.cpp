@@ -31,7 +31,6 @@ using namespace chpl;
 using namespace uast;
 
 static void checkConsistentEnums() {
-  assert((int) Variable::VAR == (int) Formal::DEFAULT_INTENT);
   assert((int) Formal::DEFAULT_INTENT == (int) Function::DEFAULT_RETURN_INTENT);
   assert((int) ShadowVariable::VAR == (int) Variable::VAR);
 

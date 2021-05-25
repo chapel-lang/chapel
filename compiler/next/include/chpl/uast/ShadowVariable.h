@@ -23,6 +23,7 @@
 #include "chpl/queries/Location.h"
 #include "chpl/uast/Decl.h"
 #include "chpl/uast/Formal.h"
+#include "chpl/uast/IntentList.h"
 #include "chpl/uast/VarLikeDecl.h"
 
 namespace chpl {
@@ -47,12 +48,13 @@ namespace uast {
 class ShadowVariable final : public VarLikeDecl {
  public:
   enum Intent {
-    VAR,
-    CONST,
-    CONST_REF,
-    REF,
-    IN = Formal::IN,
-    CONST_IN = Formal::CONST_IN,
+    // Use IntentList here for consistent enum values.
+    VAR           = (int) IntentList::VAR,
+    CONST         = (int) IntentList::CONST,
+    CONST_REF     = (int) IntentList::CONST_REF,
+    REF           = (int) IntentList::REF,
+    IN            = (int) IntentList::IN,
+    CONST_IN      = (int) IntentList::CONST_IN,
   };
 
  private:

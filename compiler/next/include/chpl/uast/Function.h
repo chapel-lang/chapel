@@ -22,6 +22,7 @@
 
 #include "chpl/queries/Location.h"
 #include "chpl/uast/Formal.h"
+#include "chpl/uast/IntentList.h"
 #include "chpl/uast/NamedDecl.h"
 
 namespace chpl {
@@ -58,12 +59,13 @@ class Function final : public NamedDecl {
     OPERATOR,
   };
   enum ReturnIntent {
-    DEFAULT_RETURN_INTENT, // aka value
-    CONST,
-    CONST_REF,
-    REF,
-    PARAM = Formal::PARAM,
-    TYPE = Formal::TYPE
+    // Use IntentList here for consistent enum values.
+    DEFAULT_RETURN_INTENT   = (int) IntentList::DEFAULT,
+    CONST                   = (int) IntentList::CONST,
+    CONST_REF               = (int) IntentList::CONST_REF,
+    REF                     = (int) IntentList::REF,
+    PARAM                   = (int) IntentList::PARAM,
+    TYPE                    = (int) IntentList::TYPE
   };
 
  private:
