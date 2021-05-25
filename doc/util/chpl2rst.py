@@ -222,6 +222,10 @@ def gen_rst(handle):
                 output.append(' '*indentation + '/*')
                 output.append(rstline)
                 output.append(' '*indentation + '*/')
+                if(foundCommentExample):
+                    print("Error: Found more than one line containing \"multi-line comment\" in \
+                        learnChapelInYMinutes.chpl")
+                    sys.exit(1)
                 foundCommentExample = True
             else:
                output.append(rstline)
@@ -238,7 +242,8 @@ def gen_rst(handle):
             output.append(codeline)
 
     if(islearnChapelInYMinutes and (not foundCommentExample)):
-        print('Warning: Failed to find special case of comment example in learnChapelInYMinutes.chpl')
+        print('Error: Failed to find special case of comment example in learnChapelInYMinutes.chpl')
+        sys.exit(1)
     return '\n'.join(output)
 
 
