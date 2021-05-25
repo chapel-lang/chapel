@@ -360,7 +360,11 @@
 
 }
 
-%require "2.5"
+// Bison 3.7 is not strictly required long-term but requiring it here
+// should minimize the size of the diffs as we update the generated parser.
+// Requiring 3.7 does not seem onerous since the generated parser is
+// checked in.
+%require "3.7"
 
 // The names for the output files
 %defines "bison-chapel.h"
