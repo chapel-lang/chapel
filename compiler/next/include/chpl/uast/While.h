@@ -45,13 +45,16 @@ namespace uast {
  */
 class While final : public Loop {
  private:
-  While(ASTList children,  int8_t conditionChildNum, bool usesDo)
-    : Loop(asttags::While, std::move(children),
-           (conditionChildNum + 1),
+  While(ASTList children,  int8_t conditionChildNum,
+        int loopBodyChildNum,
+        int numLoopBodyStmts,
+        bool usesDo)
+    : Loop(asttags::While, std::move(children), loopBodyChildNum,
+           numLoopBodyStmts,
            usesDo),
       conditionChildNum_(conditionChildNum) {
     assert(isExpressionASTList(children_));
-    assert(conditionChildNum == 0);
+    assert(condition());
   }
 
   bool contentsMatchInner(const ASTNode* other) const override;

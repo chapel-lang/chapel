@@ -46,11 +46,16 @@ owned<DoWhile> DoWhile::build(Builder* builder, Location loc,
 
   lst.push_back(std::move(condition));
 
+  const int loopBodyChildNum = lst.size();
+  const int numLoopBodyStmts = stmts.size();
+
   for (auto& stmt: stmts) {
     lst.push_back(std::move(stmt));
   }
 
-  DoWhile* ret = new DoWhile(std::move(lst), conditionChildNum);
+  DoWhile* ret = new DoWhile(std::move(lst), conditionChildNum,
+                             loopBodyChildNum,
+                             numLoopBodyStmts);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

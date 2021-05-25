@@ -24,7 +24,6 @@
 #include "chpl/uast/Expression.h"
 #include "chpl/uast/Module.h"
 
-#include <algorithm>
 #include <cstring>
 #include <string>
 
@@ -274,11 +273,7 @@ void Builder::Result::updateFilePaths(Context* context, const Result& keep) {
 ASTList Builder::flattenTopLevelBlocks(ASTList lst) {
   ASTList ret;
 
-  std::reverse(lst.begin(), lst.end());
-
-  while (lst.size() > 0) {
-    auto ast = std::move(lst.back());
-    lst.pop_back();
+  for (auto& ast : lst) {
     if (ast->isBlock()) {
       for (auto& child : takeChildren(std::move(ast))) {
         ret.push_back(std::move(child));
@@ -287,6 +282,8 @@ ASTList Builder::flattenTopLevelBlocks(ASTList lst) {
       ret.push_back(std::move(ast));
     }
   }
+
+  lst.clear();
 
   return ret;
 }

@@ -28,8 +28,14 @@ namespace uast {
 bool While::contentsMatchInner(const ASTNode* other) const {
   const While* lhs = this;
   const While* rhs = (const While*) other;
-  return lhs->loopContentsMatchInner(rhs) &&
-         lhs->conditionChildNum_ == rhs->conditionChildNum_;
+
+  if (lhs->conditionChildNum_ != rhs->conditionChildNum_)
+    return false;
+
+  if (!lhs->loopContentsMatchInner(rhs))
+    return false;
+
+  return true;
 }
 
 void While::markUniqueStringsInner(Context* context) const {
@@ -47,11 +53,17 @@ owned<While> While::build(Builder* builder, Location loc,
 
   lst.push_back(std::move(condition));
 
+  const int loopBodyChildNum = lst.size();
+  const int numLoopBodyStmts = stmts.size();
+
   for (auto& stmt: stmts) {
     lst.push_back(std::move(stmt));
   }
 
-  While* ret = new While(std::move(lst), conditionChildNum, usesDo);
+  While* ret = new While(std::move(lst), conditionChildNum,
+                         loopBodyChildNum,
+                         numLoopBodyStmts,
+                         usesDo);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

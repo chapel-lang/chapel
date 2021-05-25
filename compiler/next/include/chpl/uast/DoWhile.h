@@ -45,13 +45,16 @@ namespace uast {
  */
 class DoWhile final : public Loop {
  private:
-  DoWhile(ASTList children, int8_t conditionChildNum)
+  DoWhile(ASTList children, int8_t conditionChildNum,
+          int loopBodyChildNum,
+          int numLoopBodyStmts)
     : Loop(asttags::DoWhile, std::move(children),
-           (conditionChildNum + 1),
-           /*usesDo*/ false),
+           loopBodyChildNum,
+           numLoopBodyStmts,
+           /*usesDo*/ true),
       conditionChildNum_(conditionChildNum) {
     assert(isExpressionASTList(children_));
-    assert(conditionChildNum == 0);
+    assert(condition());
   }
 
   bool contentsMatchInner(const ASTNode* other) const override;
