@@ -38,10 +38,6 @@ bool While::contentsMatchInner(const ASTNode* other) const {
   return true;
 }
 
-void While::markUniqueStringsInner(Context* context) const {
-  loopMarkUniqueStringsInner(context);
-}
-
 owned<While> While::build(Builder* builder, Location loc,
                       owned<Expression> condition,
                       ASTList stmts,

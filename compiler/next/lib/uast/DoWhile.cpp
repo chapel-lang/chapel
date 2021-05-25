@@ -41,10 +41,6 @@ bool DoWhile::contentsMatchInner(const ASTNode* other) const {
   return true;
 }
 
-void DoWhile::markUniqueStringsInner(Context* context) const {
-  loopMarkUniqueStringsInner(context);
-}
-
 owned<DoWhile> DoWhile::build(Builder* builder, Location loc,
                               ASTList stmts,
                               owned<Expression> condition,

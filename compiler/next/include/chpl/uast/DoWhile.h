@@ -59,7 +59,10 @@ class DoWhile final : public Loop {
   }
 
   bool contentsMatchInner(const ASTNode* other) const override;
-  void markUniqueStringsInner(Context* context) const override;
+
+  void markUniqueStringsInner(Context* context) const override {
+    loopMarkUniqueStringsInner(context);
+  }
 
   int8_t conditionChildNum_;
   bool isBodyBlock_;
