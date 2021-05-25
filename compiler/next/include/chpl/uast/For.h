@@ -51,6 +51,8 @@ class For final : public IndexableLoop {
 
   For(ASTList children,  int8_t indexVarChildNum,
       int8_t iterandChildNum,
+      int loopBodyChildNum,
+      int numLoopBodyStmts,
       bool usesDo,
       bool isExpressionLevel,
       bool isParam)
@@ -58,8 +60,8 @@ class For final : public IndexableLoop {
                     indexVarChildNum,
                     iterandChildNum,
                     /*withClauseChildNum*/ -1,
-                    computeLoopBodyChildNum(indexVarChildNum,
-                                            iterandChildNum),
+                    loopBodyChildNum,
+                    numLoopBodyStmts,
                     usesDo,
                     isExpressionLevel),
       isParam_(isParam) {

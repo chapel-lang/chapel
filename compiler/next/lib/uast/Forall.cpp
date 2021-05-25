@@ -64,6 +64,9 @@ owned<Forall> Forall::build(Builder* builder, Location loc,
     lst.push_back(std::move(withClause));
   }
 
+  const int loopBodyChildNum = lst.size();
+  const int numLoopBodyStmts = stmts.size();
+
   for (auto& stmt : stmts) {
     lst.push_back(std::move(stmt));
   }
@@ -71,6 +74,8 @@ owned<Forall> Forall::build(Builder* builder, Location loc,
   Forall* ret = new Forall(std::move(lst), indexVarChildNum,
                            iterandChildNum,
                            withClauseChildNum,
+                           loopBodyChildNum,
+                           numLoopBodyStmts,
                            usesDo,
                            isExpressionLevel);
   builder->noteLocation(ret, loc);

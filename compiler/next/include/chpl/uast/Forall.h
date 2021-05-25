@@ -56,15 +56,16 @@ class Forall final : public IndexableLoop {
   Forall(ASTList children, int8_t indexVarChildNum,
          int8_t iterandChildNum,
          int8_t withClauseChildNum,
+         int loopBodyChildNum,
+         int numLoopBodyStmts,
          bool usesDo,
          bool isExpressionLevel)
     : IndexableLoop(asttags::Forall, std::move(children),
                     indexVarChildNum,
                     iterandChildNum,
                     withClauseChildNum,
-                    computeLoopBodyChildNum(indexVarChildNum,
-                                            iterandChildNum,
-                                            withClauseChildNum),
+                    loopBodyChildNum,
+                    numLoopBodyStmts,
                     usesDo,
                     isExpressionLevel) {
     assert(isExpressionASTList(children_));

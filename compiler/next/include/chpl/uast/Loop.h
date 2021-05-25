@@ -32,13 +32,15 @@ namespace uast {
  */
 class Loop: public ControlFlow {
  protected:
-  Loop(asttags::ASTTag tag, ASTList children, int32_t loopBodyChildNum,
+  Loop(asttags::ASTTag tag, ASTList children, int loopBodyChildNum,
+       int numLoopBodyStmts,
        bool usesDo)
     : ControlFlow(tag, std::move(children)),
       loopBodyChildNum_(loopBodyChildNum),
+      numLoopBodyStmts_(numLoopBodyStmts),
       usesDo_(usesDo) {
-    assert(loopBodyChildNum_ >= 0);
-    assert(loopBodyChildNum < this->numChildren());
+    assert(loopBodyChildNum_ >= 0 && numLoopBodyStmts_ >= 0);
+    assert((loopBodyChildNum_ + numLoopBodyStmts_) <= this->numChildren());
   }
 
   bool loopContentsMatchInner(const Loop* other) const {
@@ -49,7 +51,8 @@ class Loop: public ControlFlow {
     this->controlFlowMarkUniqueStringsInner(context);
   }
 
-  int32_t loopBodyChildNum_;
+  int loopBodyChildNum_;
+  int numLoopBodyStmts_;
   bool usesDo_;
 
  public:
@@ -68,13 +71,14 @@ class Loop: public ControlFlow {
    Return the number of statements in the loop.
    */
   int numStmts() const {
-    return this->numChildren() - loopBodyChildNum_;
+    return numLoopBodyStmts_;
   }
 
   /**
    Return the i'th statement in the loop.
    */
   const Expression* stmt(int i) const {
+    assert(i >= 0 && i < numLoopBodyStmts_);
     const ASTNode* ast = this->child(i+loopBodyChildNum_);
     assert(ast->isExpression());
     return (const Expression*)ast;

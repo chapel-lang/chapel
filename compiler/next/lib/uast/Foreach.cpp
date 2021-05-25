@@ -64,6 +64,9 @@ owned<Foreach> Foreach::build(Builder* builder,
     lst.push_back(std::move(withClause));
   }
 
+  const int loopBodyChildNum = lst.size();
+  const int numLoopBodyStmts = stmts.size();
+
   for (auto& stmt : stmts) {
     lst.push_back(std::move(stmt));
   }
@@ -71,6 +74,8 @@ owned<Foreach> Foreach::build(Builder* builder,
   Foreach* ret = new Foreach(std::move(lst), indexVarChildNum,
                            iterandChildNum,
                            withClauseChildNum,
+                           loopBodyChildNum,
+                           numLoopBodyStmts,
                            usesDo);
   builder->noteLocation(ret, loc);
   return toOwned(ret);

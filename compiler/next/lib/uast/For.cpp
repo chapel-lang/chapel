@@ -67,12 +67,17 @@ owned<For> For::build(Builder* builder,
     lst.push_back(std::move(iterand));
   }
 
+  const int loopBodyChildNum = lst.size();
+  const int numLoopBodyStmts = stmts.size();
+
   for (auto& stmt : stmts) {
     lst.push_back(std::move(stmt));
   }
 
   For* ret = new For(std::move(lst), indexVarChildNum,
                      iterandChildNum,
+                     loopBodyChildNum,
+                     numLoopBodyStmts,
                      usesDo,
                      isExpressionLevel,
                      isParam);
