@@ -61,7 +61,7 @@ iter genDigits(numDigits) {
 
       // tmp1 = tmp1 / denom; tmp2 = tmp1 % denom
       // tmp1 gets quotient, tmp2 gets remainder
-      tmp1.div_qr(tmp2, tmp1, denom, Round.DOWN);
+      tmp1.div_qr(tmp2, tmp1, denom, round.down);
 
       // Now, if:
       //   (numer * 3 + accum) % denom + numer == (numer * 4 + accum) + numer
