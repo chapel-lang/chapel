@@ -63,8 +63,13 @@ class Foreach final : public IndexableLoop {
     assert(isExpressionASTList(children_));
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override;
-  void markUniqueStringsInner(Context* context) const override;
+  bool contentsMatchInner(const ASTNode* other) const override {
+    return indexableLoopContentsMatchInner(other->toIndexableLoop());
+  }
+
+  void markUniqueStringsInner(Context* context) const override {
+    indexableLoopMarkUniqueStringsInner(context);
+  }
 
  public:
   ~Foreach() override = default;

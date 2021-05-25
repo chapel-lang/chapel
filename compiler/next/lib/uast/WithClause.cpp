@@ -25,16 +25,6 @@ namespace chpl {
 namespace uast {
 
 
-bool WithClause::contentsMatchInner(const ASTNode* other) const {
-  const WithClause* lhs = this;
-  const WithClause* rhs = (const WithClause*) other;
-  return lhs->expressionContentsMatchInner(rhs);
-}
-
-void WithClause::markUniqueStringsInner(Context* context) const {
-  expressionMarkUniqueStringsInner(context);
-}
-
 owned<WithClause> WithClause::build(Builder* builder,
                                     Location loc,
                                     ASTList exprs) {

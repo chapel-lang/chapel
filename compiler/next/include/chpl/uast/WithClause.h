@@ -50,8 +50,13 @@ class WithClause final : public Expression {
     assert(isExpressionASTList(children_));
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override;
-  void markUniqueStringsInner(Context* context) const override;
+  bool contentsMatchInner(const ASTNode* other) const override {
+    return expressionContentsMatchInner(other->toExpression());
+  }
+
+  void markUniqueStringsInner(Context* context) const override {
+    expressionMarkUniqueStringsInner(context);
+  }
 
  public:
 

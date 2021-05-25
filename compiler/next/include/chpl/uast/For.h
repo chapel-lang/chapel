@@ -65,7 +65,10 @@ class For final : public IndexableLoop {
   }
 
   bool contentsMatchInner(const ASTNode* other) const override;
-  void markUniqueStringsInner(Context* context) const override;
+
+  void markUniqueStringsInner(Context* context) const override {
+    indexableLoopMarkUniqueStringsInner(context);
+  }
 
   bool isParam_;
 

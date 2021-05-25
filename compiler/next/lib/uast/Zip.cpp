@@ -25,16 +25,6 @@ namespace chpl {
 namespace uast {
 
 
-bool Zip::contentsMatchInner(const ASTNode* other) const {
-  const Zip* lhs = this;
-  const Zip* rhs = (const Zip*)other;
-  return lhs->callContentsMatchInner(rhs);
-}
-
-void Zip::markUniqueStringsInner(Context* context) const {
-  callMarkUniqueStringsInner(context);
-}
-
 owned<Zip> Zip::build(Builder* builder, Location loc, ASTList actuals) {
   Zip* ret = new Zip(std::move(actuals));
   builder->noteLocation(ret, loc);

@@ -72,7 +72,10 @@ class TaskVar final : public VarLikeDecl {
         intent_(intent) {}
 
   bool contentsMatchInner(const ASTNode* other) const override;
-  void markUniqueStringsInner(Context* context) const override;
+
+  void markUniqueStringsInner(Context* context) const override {
+    varLikeDeclMarkUniqueStringsInner(context);
+  }
 
  public:
   ~TaskVar() override = default;

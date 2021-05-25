@@ -46,7 +46,7 @@ class Loop: public ControlFlow {
   bool loopContentsMatchInner(const Loop* other) const;
 
   void loopMarkUniqueStringsInner(Context* context) const {
-    this->controlFlowMarkUniqueStringsInner(context);
+    controlFlowMarkUniqueStringsInner(context);
   }
 
   int loopBodyChildNum_;

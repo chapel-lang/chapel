@@ -38,10 +38,6 @@ bool For::contentsMatchInner(const ASTNode* other) const {
   return true;
 }
 
-void For::markUniqueStringsInner(Context* context) const {
-  indexableLoopMarkUniqueStringsInner(context);
-}
-
 owned<For> For::build(Builder* builder,
                       Location loc,
                       owned<Decl> index,

@@ -28,12 +28,14 @@ namespace uast {
 bool TaskVar::contentsMatchInner(const ASTNode* other) const {
   const TaskVar* lhs = this;
   const TaskVar* rhs = (const TaskVar*) other;
-  return lhs->varLikeDeclContentsMatchInner(rhs) &&
-         lhs->intent_ == rhs->intent_;
-}
 
-void TaskVar::markUniqueStringsInner(Context* context) const {
-  varLikeDeclMarkUniqueStringsInner(context);
+  if (lhs->intent_ != rhs->intent_)
+    return false;
+
+  if (!lhs->varLikeDeclContentsMatchInner(rhs))
+    return false;
+
+  return true;
 }
 
 owned<TaskVar> TaskVar::build(Builder* builder, Location loc,

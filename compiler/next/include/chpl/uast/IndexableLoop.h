@@ -56,7 +56,7 @@ class IndexableLoop : public Loop {
   bool indexableLoopContentsMatchInner(const IndexableLoop* other) const;
 
   void indexableLoopMarkUniqueStringsInner(Context* context) const {
-    this->loopMarkUniqueStringsInner(context);
+    loopMarkUniqueStringsInner(context);
   }
 
   int8_t indexChildNum_;

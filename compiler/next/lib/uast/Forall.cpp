@@ -25,16 +25,6 @@ namespace chpl {
 namespace uast {
 
 
-bool Forall::contentsMatchInner(const ASTNode* other) const {
-  const Forall* lhs = this;
-  const Forall* rhs = (const Forall*) other;
-  return lhs->indexableLoopContentsMatchInner(rhs);
-}
-
-void Forall::markUniqueStringsInner(Context* context) const {
-  indexableLoopMarkUniqueStringsInner(context);
-}
-
 owned<Forall> Forall::build(Builder* builder, Location loc,
                             owned<Decl> index,
                             owned<Expression> iterand,

@@ -37,8 +37,13 @@ class Zip final : public Call {
            /*hasCalledExpression*/ false) {
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override;
-  void markUniqueStringsInner(Context* context) const override;
+  bool contentsMatchInner(const ASTNode* other) const override {
+    return callContentsMatchInner(other->toCall());
+  }
+
+  void markUniqueStringsInner(Context* context) const override {
+    callMarkUniqueStringsInner(context);
+  }
 
  public:
   ~Zip() override = default;
