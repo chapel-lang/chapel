@@ -38,6 +38,9 @@ indexableLoopContentsMatchInner(const IndexableLoop* other) const {
   if (lhs->withClauseChildNum_ != rhs->withClauseChildNum_)
     return false;
 
+  if (lhs->isExpressionLevel_ != rhs->isExpressionLevel_)
+    return false;
+
   if (!lhs->loopContentsMatchInner(other))
     return false;
 

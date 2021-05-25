@@ -43,9 +43,7 @@ class Loop: public ControlFlow {
     assert((loopBodyChildNum_ + numLoopBodyStmts_) <= this->numChildren());
   }
 
-  bool loopContentsMatchInner(const Loop* other) const {
-    return this->controlFlowContentsMatchInner((const ControlFlow*)other);
-  }
+  bool loopContentsMatchInner(const Loop* other) const;
 
   void loopMarkUniqueStringsInner(Context* context) const {
     this->controlFlowMarkUniqueStringsInner(context);

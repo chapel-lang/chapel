@@ -82,12 +82,6 @@
   #ifndef _BISON_CHAPEL_DEFINES_1_
   #define _BISON_CHAPEL_DEFINES_1_
 
-  enum FunctionTag {
-    FunctionTag_PROC,
-    FunctionTag_ITER,
-    FunctionTag_OPERATOR,
-  };
-
   enum AggregateTag {
     AggregateTag_CLASS,
     AggregateTag_RECORD,
@@ -97,28 +91,6 @@
   enum ThrowsTag {
     ThrowsTag_DEFAULT,
     ThrowsTag_THROWS,
-  };
-
-  enum ReturnTag {
-    ReturnTag_DEFAULT,
-    ReturnTag_CONST,
-    ReturnTag_CONST_REF,
-    ReturnTag_REF,
-    ReturnTag_PARAM,
-    ReturnTag_TYPE,
-  };
-
-  enum IntentTag {
-    IntentTag_DEFAULT,
-    IntentTag_CONST,
-    IntentTag_CONST_REF,
-    IntentTag_REF,
-    IntentTag_IN,
-    IntentTag_CONST_IN,
-    IntentTag_OUT,
-    IntentTag_INOUT,
-    IntentTag_PARAM,
-    IntentTag_TYPE,
   };
 
   enum LinkageTag { // TODO: what about combinations of these?
