@@ -17,37 +17,18 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/IndexableLoop.h"
+#include "chpl/uast/Zip.h"
 
 #include "chpl/uast/Builder.h"
 
 namespace chpl {
 namespace uast {
 
-bool IndexableLoop::
-indexableLoopContentsMatchInner(const IndexableLoop* other) const {
-  const IndexableLoop* lhs = this;
-  const IndexableLoop* rhs = other;
 
-  if (lhs->indexChildNum_ != rhs->indexChildNum_)
-    return false;
-
-  if (lhs->iterandChildNum_ != rhs->iterandChildNum_)
-    return false;
-
-  if (lhs->withClauseChildNum_ != rhs->withClauseChildNum_)
-    return false;
-
-  if (lhs->isExpressionLevel_ != rhs->isExpressionLevel_)
-    return false;
-
-  if (!lhs->loopContentsMatchInner(other))
-    return false;
-
-  return true;
-}
-
-IndexableLoop::~IndexableLoop(){
+owned<Zip> Zip::build(Builder* builder, Location loc, ASTList actuals) {
+  Zip* ret = new Zip(std::move(actuals));
+  builder->noteLocation(ret, loc);
+  return toOwned(ret);
 }
 
 

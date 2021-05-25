@@ -17,81 +17,72 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_UAST_FOR_H
-#define CHPL_UAST_FOR_H
+#ifndef CHPL_UAST_FOREACH_H
+#define CHPL_UAST_FOREACH_H
 
 #include "chpl/queries/Location.h"
 #include "chpl/uast/IndexableLoop.h"
+#include "chpl/uast/WithClause.h"
 
 namespace chpl {
 namespace uast {
 
 
 /**
-  This class represents a for loop. For example:
+  This class represents a foreach loop. For example:
 
   \rst
   .. code-block:: chapel
 
       // Example 1:
-      for i in myRange {
-        var x;
+      var x: atomic int;
+      foreach i in myRange with (ref x) {
+        x.fetchAdd(i);
       }
 
   \endrst
 
  */
-class For final : public IndexableLoop {
+class Foreach final : public IndexableLoop {
  private:
-  For(ASTList children,  int8_t indexChildNum,
-      int8_t iterandChildNum,
-      int loopBodyChildNum,
-      int numLoopBodyStmts,
-      bool usesDo,
-      bool isExpressionLevel,
-      bool isParam)
-    : IndexableLoop(asttags::For, std::move(children),
+  Foreach(ASTList children, int8_t indexChildNum,
+          int8_t iterandChildNum,
+          int8_t withClauseChildNum,
+          int loopBodyChildNum,
+          int numLoopBodyStmts,
+          bool usesDo)
+    : IndexableLoop(asttags::Foreach, std::move(children),
                     indexChildNum,
                     iterandChildNum,
-                    /*withClauseChildNum*/ -1,
+                    withClauseChildNum,
                     loopBodyChildNum,
                     numLoopBodyStmts,
                     usesDo,
-                    isExpressionLevel),
-      isParam_(isParam) {
+                    /*isExpressionLevel*/ false) {
 
     assert(isExpressionASTList(children_));
-    assert(withClause() == nullptr);
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override;
+  bool contentsMatchInner(const ASTNode* other) const override {
+    return indexableLoopContentsMatchInner(other->toIndexableLoop());
+  }
 
   void markUniqueStringsInner(Context* context) const override {
     indexableLoopMarkUniqueStringsInner(context);
   }
 
-  bool isParam_;
-
  public:
-  ~For() override = default;
+  ~Foreach() override = default;
 
   /**
-    Create and return a for loop. 
+    Create and return a foreach loop. 
   */
-  static owned<For> build(Builder* builder, Location loc,
-                          owned<Decl> index,
-                          owned<Expression> iterand,
-                          ASTList stmts,
-                          bool usesDo,
-                          bool isExpressionLevel,
-                          bool isParam);
-
-  /**
-    Returns true if this for loop is param.
-  */
-  bool isParam() const {
-    return isParam_;
-  }
+  static owned<Foreach> build(Builder* builder, Location loc,
+                              owned<Decl> index,
+                              owned<Expression> iterand,
+                              owned<WithClause> withClause,
+                              ASTList stmts,
+                              bool usesDo);
 
 };
 

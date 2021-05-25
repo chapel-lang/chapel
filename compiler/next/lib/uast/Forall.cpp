@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/For.h"
+#include "chpl/uast/Forall.h"
 
 #include "chpl/uast/Builder.h"
 
@@ -25,33 +25,19 @@ namespace chpl {
 namespace uast {
 
 
-bool For::contentsMatchInner(const ASTNode* other) const {
-  const For* lhs = this;
-  const For* rhs = (const For*) other;
-
-  if (lhs->isParam_ != rhs->isParam_)
-    return false;
-
-  if (!lhs->indexableLoopContentsMatchInner(rhs))
-    return false;
-
-  return true;
-}
-
-owned<For> For::build(Builder* builder,
-                      Location loc,
-                      owned<Decl> index,
-                      owned<Expression> iterand,
-                      ASTList stmts,
-                      bool usesDo,
-                      bool isExpressionLevel,
-                      bool isParam) {
+owned<Forall> Forall::build(Builder* builder, Location loc,
+                            owned<Decl> index,
+                            owned<Expression> iterand,
+                            owned<WithClause> withClause,
+                            ASTList stmts,
+                            bool usesDo,
+                            bool isExpressionLevel) {
   assert(iterand.get() != nullptr);
-  if (isParam) assert(!isExpressionLevel);
 
   ASTList lst;
   int8_t indexChildNum = -1;
   int8_t iterandChildNum = -1;
+  int8_t withClauseChildNum = -1;
 
   if (index.get() != nullptr) {
     indexChildNum = lst.size();
@@ -63,6 +49,11 @@ owned<For> For::build(Builder* builder,
     lst.push_back(std::move(iterand));
   }
 
+  if (withClause.get() != nullptr) {
+    withClauseChildNum = lst.size();
+    lst.push_back(std::move(withClause));
+  }
+
   const int loopBodyChildNum = lst.size();
   const int numLoopBodyStmts = stmts.size();
 
@@ -70,13 +61,13 @@ owned<For> For::build(Builder* builder,
     lst.push_back(std::move(stmt));
   }
 
-  For* ret = new For(std::move(lst), indexChildNum,
-                     iterandChildNum,
-                     loopBodyChildNum,
-                     numLoopBodyStmts,
-                     usesDo,
-                     isExpressionLevel,
-                     isParam);
+  Forall* ret = new Forall(std::move(lst), indexChildNum,
+                           iterandChildNum,
+                           withClauseChildNum,
+                           loopBodyChildNum,
+                           numLoopBodyStmts,
+                           usesDo,
+                           isExpressionLevel);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

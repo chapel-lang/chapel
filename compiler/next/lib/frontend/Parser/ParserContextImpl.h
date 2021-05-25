@@ -374,8 +374,8 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
 }
 
 // TODO: Need way to clear location of 'e' in the builder.
-owned<Decl> ParserContext::buildIndexVariableDecl(YYLTYPE location,
-                                                  owned<Expression> e) {
+owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
+                                              owned<Expression> e) {
   if (const Identifier* ident = e->toIdentifier()) {
     return Variable::build(builder, convertLocation(location),
                            ident->name(),

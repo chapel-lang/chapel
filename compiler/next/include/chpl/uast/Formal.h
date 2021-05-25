@@ -21,6 +21,7 @@
 #define CHPL_UAST_FORMAL_H
 
 #include "chpl/queries/Location.h"
+#include "chpl/uast/IntentList.h"
 #include "chpl/uast/VarLikeDecl.h"
 
 namespace chpl {
@@ -42,16 +43,17 @@ namespace uast {
 class Formal final : public VarLikeDecl {
  public:
   enum Intent {
-    DEFAULT_INTENT,
-    CONST,
-    CONST_REF,
-    REF,
-    PARAM,
-    TYPE,
-    IN,
-    CONST_IN,
-    OUT,
-    INOUT,
+    // Use IntentList here for consistent enum values.
+    DEFAULT_INTENT    = (int) IntentList::DEFAULT,
+    CONST             = (int) IntentList::CONST,
+    CONST_REF         = (int) IntentList::CONST_REF,
+    REF               = (int) IntentList::REF,
+    IN                = (int) IntentList::IN,
+    CONST_IN          = (int) IntentList::CONST_IN,
+    OUT               = (int) IntentList::OUT,
+    INOUT             = (int) IntentList::INOUT,
+    PARAM             = (int) IntentList::PARAM,
+    TYPE              = (int) IntentList::TYPE
   };
 
  private:

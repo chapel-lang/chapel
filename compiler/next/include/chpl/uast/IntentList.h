@@ -17,39 +17,31 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/IndexableLoop.h"
-
-#include "chpl/uast/Builder.h"
+#ifndef CHPL_UAST_INTENTLIST_H
+#define CHPL_UAST_INTENTLIST_H
 
 namespace chpl {
 namespace uast {
 
-bool IndexableLoop::
-indexableLoopContentsMatchInner(const IndexableLoop* other) const {
-  const IndexableLoop* lhs = this;
-  const IndexableLoop* rhs = other;
+/**
+  A centralized list containing all intent and storage specifiers.
+*/
+enum struct IntentList {
+  DEFAULT,
+  VAR,
+  CONST,
+  CONST_REF,
+  REF,
+  IN,
+  CONST_IN,
+  OUT,
+  INOUT,
+  INDEX,
+  PARAM,
+  TYPE
+};
 
-  if (lhs->indexChildNum_ != rhs->indexChildNum_)
-    return false;
+} // end namespace uast
+} // end namespace chpl
 
-  if (lhs->iterandChildNum_ != rhs->iterandChildNum_)
-    return false;
-
-  if (lhs->withClauseChildNum_ != rhs->withClauseChildNum_)
-    return false;
-
-  if (lhs->isExpressionLevel_ != rhs->isExpressionLevel_)
-    return false;
-
-  if (!lhs->loopContentsMatchInner(other))
-    return false;
-
-  return true;
-}
-
-IndexableLoop::~IndexableLoop(){
-}
-
-
-} // namespace uast
-} // namespace chpl
+#endif
