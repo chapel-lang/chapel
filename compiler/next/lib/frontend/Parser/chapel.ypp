@@ -658,7 +658,7 @@ pragma_ls:
 ;
 
 stmt:
-  deprecated_decl_base      { $$ = context->finishStmt($1); }
+  deprecated_decl_stmt      { $$ = context->finishStmt($1); }
 | include_module_stmt       { $$ = context->finishStmt($1); }
 | block_stmt                { $$ = context->finishStmt($1); }
 | use_stmt                  { $$ = context->finishStmt($1); }
