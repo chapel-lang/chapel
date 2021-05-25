@@ -46,22 +46,22 @@ namespace uast {
 class Foreach final : public IndexableLoop {
  private:
   // Compute the start of the loop body.
-  int8_t computeLoopBodyChildNum(int8_t indexVariableChildNum,
+  int8_t computeLoopBodyChildNum(int8_t indexVarChildNum,
                                  int8_t iterandChildNum,
                                  int8_t withClauseChildNum) {
-    return (indexVariableChildNum >= 0) + (iterandChildNum >= 0) +
+    return (indexVarChildNum >= 0) + (iterandChildNum >= 0) +
            (withClauseChildNum >= 0);
   }
 
-  Foreach(ASTList children, int8_t indexVariableChildNum,
+  Foreach(ASTList children, int8_t indexVarChildNum,
           int8_t iterandChildNum,
           int8_t withClauseChildNum,
           bool usesDo)
     : IndexableLoop(asttags::Foreach, std::move(children),
-                    indexVariableChildNum,
+                    indexVarChildNum,
                     iterandChildNum,
                     withClauseChildNum,
-                    computeLoopBodyChildNum(indexVariableChildNum,
+                    computeLoopBodyChildNum(indexVarChildNum,
                                             iterandChildNum,
                                             withClauseChildNum),
                     usesDo,
@@ -80,7 +80,7 @@ class Foreach final : public IndexableLoop {
     Create and return a foreach loop. 
   */
   static owned<Foreach> build(Builder* builder, Location loc,
-                              owned<Decl> indexVariable,
+                              owned<Decl> indexVar,
                               owned<Expression> iterand,
                               owned<WithClause> withClause,
                               ASTList stmts,

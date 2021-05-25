@@ -57,8 +57,8 @@ static void test0(Parser* parser) {
   assert(mod->stmt(2)->isComment());
   const Forall* forall = mod->stmt(1)->toForall();
   assert(forall != nullptr);
-  assert(forall->indexVariable() != nullptr);
-  assert(forall->indexVariable()->isVariable());
+  assert(forall->indexVar() != nullptr);
+  assert(forall->indexVar()->isVariable());
   assert(forall->iterand() != nullptr);
   assert(forall->iterand()->isIdentifier());
   assert(forall->withClause() == nullptr);
@@ -88,8 +88,8 @@ static void test1(Parser* parser) {
   assert(mod->stmt(2)->isComment());
   const Forall* forall = mod->stmt(1)->toForall();
   assert(forall != nullptr);
-  assert(forall->indexVariable() != nullptr);
-  assert(forall->indexVariable()->isVariable());
+  assert(forall->indexVar() != nullptr);
+  assert(forall->indexVar()->isVariable());
   assert(forall->iterand() != nullptr);
   assert(forall->iterand()->isIdentifier());
   const WithClause* withClause = forall->withClause();
@@ -125,8 +125,8 @@ static void test2(Parser* parser) {
   assert(mod->stmt(2)->isComment());
   const Forall* forall = mod->stmt(1)->toForall();
   assert(forall != nullptr);
-  assert(forall->indexVariable() != nullptr);
-  assert(forall->indexVariable()->isVariable());
+  assert(forall->indexVar() != nullptr);
+  assert(forall->indexVar()->isVariable());
   assert(forall->iterand() != nullptr);
   const Zip* zip = forall->iterand()->toZip();
   assert(zip);
@@ -157,8 +157,8 @@ static void test3(Parser* parser) {
   assert(mod->stmt(2)->isComment());
   const Forall* forall = mod->stmt(1)->toForall();
   assert(forall != nullptr);
-  assert(forall->indexVariable() != nullptr);
-  assert(forall->indexVariable()->isVariable());
+  assert(forall->indexVar() != nullptr);
+  assert(forall->indexVar()->isVariable());
   assert(forall->iterand() != nullptr);
   const Zip* zip = forall->iterand()->toZip();
   assert(zip);
@@ -204,7 +204,7 @@ static void test4(Parser* parser) {
   assert(mod->stmt(2)->isComment());
   const Forall* forall = mod->stmt(1)->toForall();
   assert(forall != nullptr);
-  assert(forall->indexVariable() == nullptr);
+  assert(forall->indexVar() == nullptr);
   assert(forall->iterand() != nullptr);
   assert(forall->iterand()->isFnCall());
   assert(forall->withClause() == nullptr);
@@ -232,7 +232,7 @@ static void test5(Parser* parser) {
   assert(mod->stmt(2)->isComment());
   const Forall* forall = mod->stmt(1)->toForall();
   assert(forall != nullptr);
-  assert(forall->indexVariable() == nullptr);
+  assert(forall->indexVar() == nullptr);
   assert(forall->iterand() != nullptr);
   const Zip* zip = forall->iterand()->toZip();
   assert(zip);

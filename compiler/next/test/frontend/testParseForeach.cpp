@@ -57,8 +57,8 @@ static void test0(Parser* parser) {
   assert(mod->stmt(2)->isComment());
   const Foreach* foreach = mod->stmt(1)->toForeach();
   assert(foreach != nullptr);
-  assert(foreach->indexVariable() != nullptr);
-  assert(foreach->indexVariable()->isVariable());
+  assert(foreach->indexVar() != nullptr);
+  assert(foreach->indexVar()->isVariable());
   assert(foreach->iterand() != nullptr);
   assert(foreach->iterand()->isIdentifier());
   assert(foreach->withClause() == nullptr);
@@ -87,8 +87,8 @@ static void test1(Parser* parser) {
   assert(mod->stmt(2)->isComment());
   const Foreach* foreach = mod->stmt(1)->toForeach();
   assert(foreach != nullptr);
-  assert(foreach->indexVariable() != nullptr);
-  assert(foreach->indexVariable()->isVariable());
+  assert(foreach->indexVar() != nullptr);
+  assert(foreach->indexVar()->isVariable());
   assert(foreach->iterand() != nullptr);
   assert(foreach->iterand()->isIdentifier());
   const WithClause* withClause = foreach->withClause();
@@ -123,8 +123,8 @@ static void test2(Parser* parser) {
   assert(mod->stmt(2)->isComment());
   const Foreach* foreach = mod->stmt(1)->toForeach();
   assert(foreach != nullptr);
-  assert(foreach->indexVariable() != nullptr);
-  assert(foreach->indexVariable()->isVariable());
+  assert(foreach->indexVar() != nullptr);
+  assert(foreach->indexVar()->isVariable());
   assert(foreach->iterand() != nullptr);
   const Zip* zip = foreach->iterand()->toZip();
   assert(zip);
@@ -154,8 +154,8 @@ static void test3(Parser* parser) {
   assert(mod->stmt(2)->isComment());
   const Foreach* foreach = mod->stmt(1)->toForeach();
   assert(foreach != nullptr);
-  assert(foreach->indexVariable() != nullptr);
-  assert(foreach->indexVariable()->isVariable());
+  assert(foreach->indexVar() != nullptr);
+  assert(foreach->indexVar()->isVariable());
   assert(foreach->iterand() != nullptr);
   const Zip* zip = foreach->iterand()->toZip();
   assert(zip);
@@ -200,7 +200,7 @@ static void test4(Parser* parser) {
   assert(mod->stmt(2)->isComment());
   const Foreach* foreach = mod->stmt(1)->toForeach();
   assert(foreach != nullptr);
-  assert(foreach->indexVariable() == nullptr);
+  assert(foreach->indexVar() == nullptr);
   assert(foreach->iterand() != nullptr);
   assert(foreach->iterand()->isFnCall());
   assert(foreach->withClause() == nullptr);
@@ -227,7 +227,7 @@ static void test5(Parser* parser) {
   assert(mod->stmt(2)->isComment());
   const Foreach* foreach = mod->stmt(1)->toForeach();
   assert(foreach != nullptr);
-  assert(foreach->indexVariable() == nullptr);
+  assert(foreach->indexVar() == nullptr);
   assert(foreach->iterand() != nullptr);
   const Zip* zip = foreach->iterand()->toZip();
   assert(zip);

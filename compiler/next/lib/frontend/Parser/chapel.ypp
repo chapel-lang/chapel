@@ -1353,7 +1353,7 @@ loop_stmt:
 | TFOR expr do_stmt
   {
     auto comments = context->gatherCommentsFromList($3.exprList, @1);
-    auto node = For::build(BUILDER, LOC(@1), /*indexVariable*/ nullptr,
+    auto node = For::build(BUILDER, LOC(@1), /*indexVar*/ nullptr,
                            toOwned($2),
                            context->consumeList($3.exprList),
                            $3.usesDo,
@@ -1364,7 +1364,7 @@ loop_stmt:
 | TFOR zippered_iterator do_stmt
   {
     auto comments = context->gatherCommentsFromList($3.exprList, @1);
-    auto node = For::build(BUILDER, LOC(@1), /*indexVariable*/ nullptr,
+    auto node = For::build(BUILDER, LOC(@1), /*indexVar*/ nullptr,
                            toOwned($2),
                            context->consumeList($3.exprList),
                            $3.usesDo,
@@ -1436,7 +1436,7 @@ loop_stmt:
 | TFORALL          expr                                   do_stmt
   {
     auto comments = context->gatherCommentsFromList($3.exprList, @1);
-    auto node = Forall::build(BUILDER, LOC(@1), /*indexVariable*/ nullptr,
+    auto node = Forall::build(BUILDER, LOC(@1), /*indexVar*/ nullptr,
                               toOwned($2),
                               /*withClause*/ nullptr,
                               context->consumeList($3.exprList),
@@ -1447,7 +1447,7 @@ loop_stmt:
 | TFORALL          expr              forall_intent_clause do_stmt
   {
     auto comments = context->gatherCommentsFromList($4.exprList, @1);
-    auto node = Forall::build(BUILDER, LOC(@1), /*indexVariable*/ nullptr,
+    auto node = Forall::build(BUILDER, LOC(@1), /*indexVar*/ nullptr,
                               toOwned($2),
                               toOwned($3),
                               context->consumeList($4.exprList),
@@ -1458,7 +1458,7 @@ loop_stmt:
 | TFORALL          zippered_iterator                      do_stmt
   {
     auto comments = context->gatherCommentsFromList($3.exprList, @1);
-    auto node = Forall::build(BUILDER, LOC(@1), /*indexVariable*/ nullptr,
+    auto node = Forall::build(BUILDER, LOC(@1), /*indexVar*/ nullptr,
                               toOwned($2),
                               /*withClause*/ nullptr,
                               context->consumeList($3.exprList),
@@ -1469,7 +1469,7 @@ loop_stmt:
 | TFORALL          zippered_iterator forall_intent_clause do_stmt
   {
     auto comments = context->gatherCommentsFromList($4.exprList, @1);
-    auto node = Forall::build(BUILDER, LOC(@1), /*indexVariable*/ nullptr,
+    auto node = Forall::build(BUILDER, LOC(@1), /*indexVar*/ nullptr,
                               toOwned($2),
                               toOwned($3),
                               context->consumeList($4.exprList),
@@ -1524,7 +1524,7 @@ loop_stmt:
 | TFOREACH          expr                                   do_stmt
   {
     auto comments = context->gatherCommentsFromList($3.exprList, @1);
-    auto node = Foreach::build(BUILDER, LOC(@1), /*indexVariable*/ nullptr,
+    auto node = Foreach::build(BUILDER, LOC(@1), /*indexVar*/ nullptr,
                                toOwned($2),
                                /*withClause*/ nullptr,
                                context->consumeList($3.exprList),
@@ -1534,7 +1534,7 @@ loop_stmt:
 | TFOREACH          expr              forall_intent_clause do_stmt
   {
     auto comments = context->gatherCommentsFromList($4.exprList, @1);
-    auto node = Foreach::build(BUILDER, LOC(@1), /*indexVariable*/ nullptr,
+    auto node = Foreach::build(BUILDER, LOC(@1), /*indexVar*/ nullptr,
                                toOwned($2),
                                toOwned($3),
                                context->consumeList($4.exprList),
@@ -1544,7 +1544,7 @@ loop_stmt:
 | TFOREACH          zippered_iterator                      do_stmt
   {
     auto comments = context->gatherCommentsFromList($3.exprList, @1);
-    auto node = Foreach::build(BUILDER, LOC(@1), /*indexVariable*/ nullptr,
+    auto node = Foreach::build(BUILDER, LOC(@1), /*indexVar*/ nullptr,
                                toOwned($2),
                                /*withClause*/ nullptr,
                                context->consumeList($3.exprList),
@@ -1554,7 +1554,7 @@ loop_stmt:
 | TFOREACH          zippered_iterator forall_intent_clause do_stmt
   {
     auto comments = context->gatherCommentsFromList($4.exprList, @1);
-    auto node = Foreach::build(BUILDER, LOC(@1), /*indexVariable*/ nullptr,
+    auto node = Foreach::build(BUILDER, LOC(@1), /*indexVar*/ nullptr,
                                toOwned($2),
                                toOwned($3),
                                context->consumeList($4.exprList),

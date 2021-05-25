@@ -46,23 +46,23 @@ namespace uast {
 class Forall final : public IndexableLoop {
  private:
   // Compute the start of the loop body.
-  int8_t computeLoopBodyChildNum(int8_t indexVariableChildNum,
+  int8_t computeLoopBodyChildNum(int8_t indexVarChildNum,
                                  int8_t iterandChildNum,
                                  int8_t withClauseChildNum) {
-    return (indexVariableChildNum >= 0) + (iterandChildNum >= 0) +
+    return (indexVarChildNum >= 0) + (iterandChildNum >= 0) +
            (withClauseChildNum >= 0);
   }
 
-  Forall(ASTList children, int8_t indexVariableChildNum,
+  Forall(ASTList children, int8_t indexVarChildNum,
          int8_t iterandChildNum,
          int8_t withClauseChildNum,
          bool usesDo,
          bool isExpressionLevel)
     : IndexableLoop(asttags::Forall, std::move(children),
-                    indexVariableChildNum,
+                    indexVarChildNum,
                     iterandChildNum,
                     withClauseChildNum,
-                    computeLoopBodyChildNum(indexVariableChildNum,
+                    computeLoopBodyChildNum(indexVarChildNum,
                                             iterandChildNum,
                                             withClauseChildNum),
                     usesDo,
@@ -80,7 +80,7 @@ class Forall final : public IndexableLoop {
     Create and return a forall loop. 
   */
   static owned<Forall> build(Builder* builder, Location loc,
-                             owned<Decl> indexVariable,
+                             owned<Decl> indexVar,
                              owned<Expression> iterand,
                              owned<WithClause> withClause,
                              ASTList stmts,

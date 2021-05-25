@@ -44,7 +44,7 @@ void For::markUniqueStringsInner(Context* context) const {
 
 owned<For> For::build(Builder* builder,
                       Location loc,
-                      owned<Decl> indexVariable,
+                      owned<Decl> indexVar,
                       owned<Expression> iterand,
                       ASTList stmts,
                       bool usesDo,
@@ -54,12 +54,12 @@ owned<For> For::build(Builder* builder,
   if (isParam) assert(!isExpressionLevel);
 
   ASTList lst;
-  int8_t indexVariableChildNum = -1;
+  int8_t indexVarChildNum = -1;
   int8_t iterandChildNum = -1;
 
-  if (indexVariable.get() != nullptr) {
-    indexVariableChildNum = lst.size();
-    lst.push_back(std::move(indexVariable));
+  if (indexVar.get() != nullptr) {
+    indexVarChildNum = lst.size();
+    lst.push_back(std::move(indexVar));
   }
 
   if (iterand.get() != nullptr) {
@@ -71,7 +71,7 @@ owned<For> For::build(Builder* builder,
     lst.push_back(std::move(stmt));
   }
 
-  For* ret = new For(std::move(lst), indexVariableChildNum,
+  For* ret = new For(std::move(lst), indexVarChildNum,
                      iterandChildNum,
                      usesDo,
                      isExpressionLevel,

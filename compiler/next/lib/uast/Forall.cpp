@@ -36,7 +36,7 @@ void Forall::markUniqueStringsInner(Context* context) const {
 }
 
 owned<Forall> Forall::build(Builder* builder, Location loc,
-                            owned<Decl> indexVariable,
+                            owned<Decl> indexVar,
                             owned<Expression> iterand,
                             owned<WithClause> withClause,
                             ASTList stmts,
@@ -45,13 +45,13 @@ owned<Forall> Forall::build(Builder* builder, Location loc,
   assert(iterand.get() != nullptr);
 
   ASTList lst;
-  int8_t indexVariableChildNum = -1;
+  int8_t indexVarChildNum = -1;
   int8_t iterandChildNum = -1;
   int8_t withClauseChildNum = -1;
 
-  if (indexVariable.get() != nullptr) {
-    indexVariableChildNum = lst.size();
-    lst.push_back(std::move(indexVariable));
+  if (indexVar.get() != nullptr) {
+    indexVarChildNum = lst.size();
+    lst.push_back(std::move(indexVar));
   }
 
   if (iterand.get() != nullptr) {
@@ -68,7 +68,7 @@ owned<Forall> Forall::build(Builder* builder, Location loc,
     lst.push_back(std::move(stmt));
   }
 
-  Forall* ret = new Forall(std::move(lst), indexVariableChildNum,
+  Forall* ret = new Forall(std::move(lst), indexVarChildNum,
                            iterandChildNum,
                            withClauseChildNum,
                            usesDo,
