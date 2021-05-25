@@ -3,7 +3,7 @@ use Set;
 class C { var x = 0; }
 
 record r {
-  var c = new shared C(-1);;
+  var c = new shared C(-1);
 
   proc init(id: int) {
     this.c = new shared C(id);
