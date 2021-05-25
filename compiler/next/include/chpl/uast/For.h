@@ -43,12 +43,6 @@ namespace uast {
  */
 class For final : public IndexableLoop {
  private:
-  // Compute the start of the loop body.
-  int8_t computeLoopBodyChildNum(int8_t indexChildNum,
-                                 int8_t iterandChildNum) {
-    return (indexChildNum >= 0) + (iterandChildNum >= 0);
-  }
-
   For(ASTList children,  int8_t indexChildNum,
       int8_t iterandChildNum,
       int loopBodyChildNum,
