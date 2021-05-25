@@ -64,7 +64,7 @@ class DoWhile final : public Loop {
     loopMarkUniqueStringsInner(context);
   }
 
-  int8_t conditionChildNum_;
+  int conditionChildNum_;
   bool isBodyBlock_;
 
  public:
