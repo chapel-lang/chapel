@@ -29,12 +29,14 @@ extern "C" {
 // Launch assistance for the uGNI communication interface.
 //
 
+#include <stdint.h>
+
 //
 // This is an optional comm layer function for the launcher to call
 // right before launching the user program.
 //
-#define CHPL_COMM_PRELAUNCH() chpl_comm_preLaunch()
-void chpl_comm_preLaunch(void);
+#define CHPL_COMM_PRELAUNCH(numLocales) chpl_comm_preLaunch(numLocales)
+void chpl_comm_preLaunch(int32_t numLocales);
 
 #ifdef __cplusplus
 }
