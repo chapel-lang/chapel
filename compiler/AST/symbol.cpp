@@ -98,6 +98,7 @@ Symbol::Symbol(AstTag astTag, const char* init_name, Type* init_type) :
   flags(),
   fieldQualifiers(NULL),
   defPoint(NULL),
+  deprecationMsg(""),
   symExprsHead(NULL),
   symExprsTail(NULL)
 {
@@ -483,6 +484,14 @@ Expr* Symbol::getInitialization() const {
   return NULL;
 }
 
+const char* Symbol::getDeprecationMsg() const {
+  if (deprecationMsg[0] == '\0') {
+    const char* msg = astr(name, " is deprecated");
+    return msg;
+  } else {
+    return deprecationMsg.c_str();
+  }
+}
 
 bool Symbol::isImmediate() const {
   return false;

@@ -238,6 +238,7 @@ FnSymbol* FnSymbol::copyInnerCore(SymbolMap* map) {
    * method.
    */
   newFn->copyFlags(this);
+  newFn->deprecationMsg = this->deprecationMsg;
 
   if (this->throwsError() == true) {
     newFn->throwsErrorInit();

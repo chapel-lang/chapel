@@ -373,6 +373,34 @@ BlockStmt* buildErrorStandin() {
   return new BlockStmt(new CallExpr(PRIM_ERROR), BLOCK_SCOPELESS);
 }
 
+DefExpr* buildDeprecated(DefExpr* def) {
+  const char* msg = "";
+  return buildDeprecated(def, msg);
+}
+
+DefExpr* buildDeprecated(DefExpr* def, const char* msg) {
+  Symbol* sym = def->sym;
+  sym->addFlag(FLAG_DEPRECATED);
+  sym->deprecationMsg = msg;
+  return def;
+}
+
+BlockStmt* buildDeprecated(BlockStmt* block) {
+  const char* msg = "";
+  return buildDeprecated(block, msg);
+}
+
+BlockStmt* buildDeprecated(BlockStmt* block, const char* msg) {
+  if (DefExpr* def = toDefExpr(block->body.head)) {
+    buildDeprecated(def, msg);
+  } else if (ForwardingStmt* forward = toForwardingStmt(block->body.head)) {
+    USR_FATAL_CONT(forward, "Can't deprecate a forwarding statement");
+  } else {
+    INT_FATAL("Unexpected deprecation case");
+  }
+  return block;
+}
+
 static void addModuleToSearchList(VisibilityStmt* newStmt, BaseAST* module) {
   UnresolvedSymExpr* modNameExpr = toUnresolvedSymExpr(module);
   if (modNameExpr) {

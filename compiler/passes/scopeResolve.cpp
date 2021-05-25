@@ -847,6 +847,12 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
       }
     }
 
+    if (sym->hasFlag(FLAG_DEPRECATED)) {
+      // Generate a deprecation warning when matching against a deprecated
+      // symbol
+      USR_WARN(usymExpr, "%s", sym->getDeprecationMsg());
+    }
+
     symExpr = new SymExpr(sym);
     usymExpr->replace(symExpr);
 
@@ -1507,6 +1513,12 @@ static void resolveEnumeratedTypes() {
 
             for_enums(constant, type) {
               if (!strcmp(constant->sym->name, name)) {
+                if (constant->sym->hasFlag(FLAG_DEPRECATED)) {
+                  // Generate deprecation warning when enum constants are
+                  // referenced through qualified access
+                  USR_WARN(call, "%s", constant->sym->getDeprecationMsg());
+                }
+
                 call->replace(new SymExpr(constant->sym));
               }
             }

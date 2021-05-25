@@ -200,6 +200,11 @@ void UseStmt::scopeResolve(ResolveScope* scope) {
         USR_FATAL(this, "'use' of non-module/enum symbol");
       }
 
+      if (symAndName.first->hasFlag(FLAG_DEPRECATED)) {
+        // Generate deprecation warning upon use of deprecated symbol
+        USR_WARN(this, "%s", symAndName.first->getDeprecationMsg());
+      }
+
     }
 
   } else {
@@ -355,6 +360,11 @@ void UseStmt::validateNamed() {
                            "Bad identifier in '%s' clause, '%s' is private",
                            (except == true) ? "except" : "only",
                            name);
+          }
+          if (sym->hasFlag(FLAG_DEPRECATED)) {
+            // Generate deprecation warning when a deprecated symbol is listed
+            // in an except or only list
+            USR_WARN(this, "%s", sym->getDeprecationMsg());
           }
         }
       }

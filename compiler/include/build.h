@@ -64,6 +64,11 @@ Expr* buildDotExpr(const char* base, const char* member);
 BlockStmt* buildChapelStmt(Expr* expr = NULL);
 BlockStmt* buildErrorStandin();
 
+DefExpr* buildDeprecated(DefExpr* def);
+DefExpr* buildDeprecated(DefExpr* def, const char* msg);
+BlockStmt* buildDeprecated(BlockStmt* block);
+BlockStmt* buildDeprecated(BlockStmt* block, const char* msg);
+
 BlockStmt* buildUseStmt(std::vector<PotentialRename*>* args, bool privateUse);
 BlockStmt* buildUseStmt(Expr* mod, const char* rename,
                         std::vector<PotentialRename*>* names, bool except,

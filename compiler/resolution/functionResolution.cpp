@@ -3616,6 +3616,15 @@ static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState) {
     delete candidate;
   }
 
+  if (retval && retval->hasFlag(FLAG_DEPRECATED)) {
+    if (!info.call->parentSymbol->hasFlag(FLAG_COMPILER_GENERATED)) {
+      // If the called function is deprecated, generate a deprecation message
+      // now.  But only if the code was written by the user, we don't want to
+      // warn about things the user can't control
+      USR_WARN(info.call, "%s", retval->getDeprecationMsg());
+    }
+  }
+
   return retval;
 }
 
