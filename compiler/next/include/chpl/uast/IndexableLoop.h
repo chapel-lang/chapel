@@ -33,14 +33,6 @@ namespace uast {
  */
 class IndexableLoop : public Loop {
  protected:
-  // Compute the start of the loop body.
-  int8_t computeLoopBodyChildNum(int8_t indexVarChildNum,
-                                 int8_t iterandChildNum,
-                                 int8_t withClauseChildNum) {
-    return (indexVarChildNum >= 0) + (iterandChildNum >= 0) +
-           (withClauseChildNum >= 0);
-  }
-
   IndexableLoop(ASTTag tag, ASTList children,
                 int8_t indexVarChildNum,
                 int8_t iterandChildNum,
