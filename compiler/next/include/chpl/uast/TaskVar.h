@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_UAST_SHADOWVARIABLE_H
-#define CHPL_UAST_SHADOWVARIABLE_H
+#ifndef CHPL_UAST_TASKVAR_H
+#define CHPL_UAST_TASKVAR_H
 
 #include "chpl/queries/Location.h"
 #include "chpl/uast/Decl.h"
@@ -31,7 +31,7 @@ namespace uast {
 
 
 /**
-  This class represents a shadow variable. Shadow variables are declared
+  This class represents a task variable. Task variables are declared
   in with clauses. For example:
 
   \rst
@@ -42,10 +42,10 @@ namespace uast {
         a.fetchAdd(x);
   \endrst
 
-  Creates a shadow variable 'a' which refers to the outer variable 'a' by
+  Creates a task variable 'a' which refers to the outer variable 'a' by
   ref intent.
  */
-class ShadowVariable final : public VarLikeDecl {
+class TaskVar final : public VarLikeDecl {
  public:
   enum Intent {
     // Use IntentList here for consistent enum values.
@@ -60,11 +60,11 @@ class ShadowVariable final : public VarLikeDecl {
  private:
   Intent intent_;
 
-  ShadowVariable(ASTList children, UniqueString name,
-                 ShadowVariable::Intent intent,
-                 int8_t typeExpressionChildNum,
-                 int8_t initExpressionChildNum)
-      : VarLikeDecl(asttags::ShadowVariable, std::move(children),
+  TaskVar(ASTList children, UniqueString name,
+          TaskVar::Intent intent,
+          int8_t typeExpressionChildNum,
+          int8_t initExpressionChildNum)
+      : VarLikeDecl(asttags::TaskVar, std::move(children),
                     Decl::DEFAULT_VISIBILITY,
                     name,
                     typeExpressionChildNum,
@@ -75,16 +75,16 @@ class ShadowVariable final : public VarLikeDecl {
   void markUniqueStringsInner(Context* context) const override;
 
  public:
-  ~ShadowVariable() override = default;
+  ~TaskVar() override = default;
 
-  static owned<ShadowVariable> build(Builder* builder, Location loc,
-                                     UniqueString name,
-                                     ShadowVariable::Intent intent,
-                                     owned<Expression> typeExpression,
-                                     owned<Expression> initExpression);
+  static owned<TaskVar> build(Builder* builder, Location loc,
+                              UniqueString name,
+                              TaskVar::Intent intent,
+                              owned<Expression> typeExpression,
+                              owned<Expression> initExpression);
 
   /**
-    Returns the intent of this shadow variable.
+    Returns the intent of this task variable.
   */
   const Intent intent() const { return this->intent_; }
 

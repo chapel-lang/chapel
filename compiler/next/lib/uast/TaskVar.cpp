@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/ShadowVariable.h"
+#include "chpl/uast/TaskVar.h"
 
 #include "chpl/uast/Builder.h"
 
@@ -25,23 +25,22 @@ namespace chpl {
 namespace uast {
 
 
-bool ShadowVariable::contentsMatchInner(const ASTNode* other) const {
-  const ShadowVariable* lhs = this;
-  const ShadowVariable* rhs = (const ShadowVariable*) other;
+bool TaskVar::contentsMatchInner(const ASTNode* other) const {
+  const TaskVar* lhs = this;
+  const TaskVar* rhs = (const TaskVar*) other;
   return lhs->varLikeDeclContentsMatchInner(rhs) &&
          lhs->intent_ == rhs->intent_;
 }
 
-void ShadowVariable::markUniqueStringsInner(Context* context) const {
+void TaskVar::markUniqueStringsInner(Context* context) const {
   varLikeDeclMarkUniqueStringsInner(context);
 }
 
-owned<ShadowVariable>
-ShadowVariable::build(Builder* builder, Location loc,
-                      UniqueString name, 
-                      ShadowVariable::Intent intent,
-                      owned<Expression> typeExpression,
-                      owned<Expression> initExpression) {
+owned<TaskVar> TaskVar::build(Builder* builder, Location loc,
+                              UniqueString name, 
+                              TaskVar::Intent intent,
+                              owned<Expression> typeExpression,
+                              owned<Expression> initExpression) {
   ASTList lst;
   int8_t typeExpressionChildNum = -1;
   int8_t initExpressionChildNum = -1;
@@ -56,9 +55,9 @@ ShadowVariable::build(Builder* builder, Location loc,
     lst.push_back(std::move(initExpression));
   }
 
-  ShadowVariable* ret = new ShadowVariable(std::move(lst), name, intent,
-                                           typeExpressionChildNum,
-                                           initExpressionChildNum);
+  TaskVar* ret = new TaskVar(std::move(lst), name, intent,
+                             typeExpressionChildNum,
+                             initExpressionChildNum);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

@@ -288,7 +288,7 @@
     LinkageTag linkageTag;
     Module::Kind moduleKind;
     New::Management newManagement;
-    ShadowVariable::Intent shadowIntent;
+    TaskVar::Intent taskIntent;
     Decl::Visibility visibilityTag;
     ThrowsTag throwsTag;
     Variable::Kind variableKind;
@@ -634,7 +634,7 @@
 %type <functionParts> linkage_spec
 %type <linkageTag> extern_or_export
 %type <expr> intent_expr
-%type <shadowIntent> shadow_var_prefix
+%type <taskIntent> task_var_prefix
 
 %%
 
@@ -2676,16 +2676,16 @@ forall_intent_ls:
 ;
 
 intent_expr:
-  shadow_var_prefix ident_expr opt_type opt_init_expr
+  task_var_prefix ident_expr opt_type opt_init_expr
   {
     if (auto ident = $2->toIdentifier()) {
       auto name = ident->name();
-      auto node = ShadowVariable::build(BUILDER, LOC(@$), name, $1,
+      auto node = TaskVar::build(BUILDER, LOC(@$), name, $1,
                                         toOwned($3),
                                         toOwned($4));
       $$ = node.release();
     } else {
-      const char* msg = "Expected identifier for shadow variable name";
+      const char* msg = "Expected identifier for task variable name";
       $$ = raiseError(@$, context, msg);
     }
   }
@@ -2699,13 +2699,13 @@ intent_expr:
     }
 ;
 
-shadow_var_prefix:
-  TCONST       { $$ = ShadowVariable::CONST;     }
-| TIN          { $$ = ShadowVariable::IN;        }
-| TCONST TIN   { $$ = ShadowVariable::CONST_IN;  }
-| TREF         { $$ = ShadowVariable::REF;       }
-| TCONST TREF  { $$ = ShadowVariable::CONST_REF; }
-| TVAR         { $$ = ShadowVariable::VAR;       }
+task_var_prefix:
+  TCONST       { $$ = TaskVar::CONST;     }
+| TIN          { $$ = TaskVar::IN;        }
+| TCONST TIN   { $$ = TaskVar::CONST_IN;  }
+| TREF         { $$ = TaskVar::REF;       }
+| TCONST TREF  { $$ = TaskVar::CONST_REF; }
+| TVAR         { $$ = TaskVar::VAR;       }
 ;
 
 io_expr:

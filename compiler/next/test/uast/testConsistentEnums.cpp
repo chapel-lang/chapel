@@ -20,7 +20,7 @@
 #include "chpl/uast/Variable.h"
 #include "chpl/uast/Formal.h"
 #include "chpl/uast/Function.h"
-#include "chpl/uast/ShadowVariable.h"
+#include "chpl/uast/TaskVar.h"
 
 // always check assertions in this test
 #ifdef NDEBUG
@@ -32,23 +32,23 @@ using namespace uast;
 
 static void checkConsistentEnums() {
   assert((int) Formal::DEFAULT_INTENT == (int) Function::DEFAULT_RETURN_INTENT);
-  assert((int) ShadowVariable::VAR == (int) Variable::VAR);
+  assert((int) TaskVar::VAR == (int) Variable::VAR);
 
   assert((int) Variable::CONST == (int) Formal::CONST);
   assert((int) Formal::CONST == (int) Function::CONST);
-  assert((int) ShadowVariable::CONST == (int) Formal::CONST);
+  assert((int) TaskVar::CONST == (int) Formal::CONST);
 
-  assert((int) ShadowVariable::CONST_IN == (int) Formal::CONST_IN);
+  assert((int) TaskVar::CONST_IN == (int) Formal::CONST_IN);
 
-  assert((int) ShadowVariable::IN == (int) Formal::IN);
+  assert((int) TaskVar::IN == (int) Formal::IN);
 
   assert((int) Variable::CONST_REF == (int) Formal::CONST_REF);
   assert((int) Formal::CONST_REF == (int) Function::CONST_REF);
-  assert((int) ShadowVariable::CONST_REF == (int) Formal::CONST_REF);
+  assert((int) TaskVar::CONST_REF == (int) Formal::CONST_REF);
 
   assert((int) Variable::REF == (int) Formal::REF);
   assert((int) Formal::REF == (int) Function::REF);
-  assert((int) ShadowVariable::REF == (int) Formal::REF);
+  assert((int) TaskVar::REF == (int) Formal::REF);
 
   assert((int) Variable::PARAM == (int) Formal::PARAM);
   assert((int) Formal::PARAM == (int) Function::PARAM);

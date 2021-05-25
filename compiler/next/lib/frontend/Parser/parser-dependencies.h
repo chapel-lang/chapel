@@ -47,7 +47,7 @@
 #include "chpl/uast/New.h"
 #include "chpl/uast/OpCall.h"
 #include "chpl/uast/Serial.h"
-#include "chpl/uast/ShadowVariable.h"
+#include "chpl/uast/TaskVar.h"
 #include "chpl/uast/Variable.h"
 #include "chpl/uast/Zip.h"
 

@@ -22,7 +22,7 @@
 #include "chpl/uast/Forall.h"
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
-#include "chpl/uast/ShadowVariable.h"
+#include "chpl/uast/TaskVar.h"
 #include "chpl/uast/WithClause.h"
 #include "chpl/uast/Zip.h"
 #include "chpl/frontend/Parser.h"
@@ -95,11 +95,11 @@ static void test1(Parser* parser) {
   const WithClause* withClause = forall->withClause();
   assert(withClause);
   assert(withClause->numExprs() == 1);
-  const ShadowVariable* shadowVar = withClause->expr(0)->toShadowVariable();
-  assert(shadowVar);
-  assert(!shadowVar->typeExpression());
-  assert(!shadowVar->initExpression());
-  assert(shadowVar->intent() == ShadowVariable::REF);
+  const TaskVar* taskVar = withClause->expr(0)->toTaskVar();
+  assert(taskVar);
+  assert(!taskVar->typeExpression());
+  assert(!taskVar->initExpression());
+  assert(taskVar->intent() == TaskVar::REF);
   assert(!forall->usesDo());
   assert(!forall->isExpressionLevel());
   assert(forall->numStmts() == 3);
@@ -169,17 +169,17 @@ static void test3(Parser* parser) {
   const WithClause* withClause = forall->withClause();
   assert(withClause);
   assert(withClause->numExprs() == 2);
-  const ShadowVariable* shadowVar0 = withClause->expr(0)->toShadowVariable();
-  assert(shadowVar0);
-  assert(!shadowVar0->typeExpression());
-  assert(!shadowVar0->initExpression());
-  assert(shadowVar0->intent() == ShadowVariable::CONST_REF);
-  const ShadowVariable* shadowVar1 = withClause->expr(1)->toShadowVariable();
-  assert(shadowVar1);
-  assert(!shadowVar1->typeExpression());
-  assert(shadowVar1->initExpression());
-  assert(shadowVar1->initExpression()->isIdentifier());
-  assert(shadowVar1->intent() == ShadowVariable::IN);
+  const TaskVar* taskVar0 = withClause->expr(0)->toTaskVar();
+  assert(taskVar0);
+  assert(!taskVar0->typeExpression());
+  assert(!taskVar0->initExpression());
+  assert(taskVar0->intent() == TaskVar::CONST_REF);
+  const TaskVar* taskVar1 = withClause->expr(1)->toTaskVar();
+  assert(taskVar1);
+  assert(!taskVar1->typeExpression());
+  assert(taskVar1->initExpression());
+  assert(taskVar1->initExpression()->isIdentifier());
+  assert(taskVar1->intent() == TaskVar::IN);
   assert(!forall->usesDo());
   assert(!forall->isExpressionLevel());
   assert(forall->numStmts() == 2);
@@ -242,11 +242,11 @@ static void test5(Parser* parser) {
   const WithClause* withClause = forall->withClause();
   assert(withClause);
   assert(withClause->numExprs() == 1);
-  const ShadowVariable* shadowVar0 = withClause->expr(0)->toShadowVariable();
-  assert(shadowVar0);
-  assert(!shadowVar0->typeExpression());
-  assert(shadowVar0->initExpression());
-  assert(shadowVar0->intent() == ShadowVariable::VAR);
+  const TaskVar* taskVar0 = withClause->expr(0)->toTaskVar();
+  assert(taskVar0);
+  assert(!taskVar0->typeExpression());
+  assert(taskVar0->initExpression());
+  assert(taskVar0->intent() == TaskVar::VAR);
   assert(!forall->usesDo());
   assert(!forall->isExpressionLevel());
   assert(forall->numStmts() == 1);

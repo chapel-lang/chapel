@@ -48,7 +48,7 @@ target_sources(libchplcomp-obj
                New.cpp
                OpCall.cpp
                Serial.cpp
-               ShadowVariable.cpp
+               TaskVar.cpp
                TypeDecl.cpp
                Variable.cpp
                VarLikeDecl.cpp
