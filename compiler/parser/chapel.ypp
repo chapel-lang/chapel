@@ -316,7 +316,7 @@
 %token TALIGN TAS TATOMIC
 %token TBEGIN TBREAK TBOOL TBORROWED TBY TBYTES
 %token TCATCH TCLASS TCOBEGIN TCOFORALL TCOMPLEX TCONFIG TCONST TCONTINUE
-%token TDEFER TDELETE TDMAPPED TDO TDOMAIN
+%token TDEFER TDELETE TDEPRECATED TDMAPPED TDO TDOMAIN
 %token TELSE TENUM TEXCEPT TEXPORT TEXTERN
 %token TFALSE TFOR TFORALL TFOREACH TFORWARDING
 %token TIF TIMAG TIMPORT TIN TINCLUDE
@@ -416,6 +416,11 @@
 %type <pblockstmt> toplevel_stmt_ls
 %type <pblockstmt> toplevel_stmt
 %type <vpch>       pragma_ls
+
+%type <pblockstmt> deprecated_decl_stmt
+%type <pblockstmt> deprecated_decl_base
+%type <pdefexpr> deprecated_enum_item
+%type <pblockstmt> deprecated_class_level_stmt
 
 %type <pmodsymbol> module_decl_start
 %type <pblockstmt> module_decl_stmt
@@ -533,13 +538,12 @@ pragma_ls:
 
 // %type <pblockstmt> stmt
 stmt:
-  module_decl_stmt
+  deprecated_decl_stmt
 | include_module_stmt
 | block_stmt
 | use_stmt
 | import_stmt
 | require_stmt
-| class_level_stmt
 | assignment_stmt
 | extern_block_stmt
 | if_stmt
@@ -567,6 +571,19 @@ stmt:
 | TSYNC stmt                           { $$ = buildSyncStmt($2); }
 | TYIELD expr TSEMI                    { $$ = buildPrimitiveStmt(PRIM_YIELD, $2); }
 | error TSEMI                          { $$ = buildErrorStandin(); }
+;
+
+deprecated_decl_stmt:
+  deprecated_decl_base
+| TDEPRECATED STRINGLITERAL deprecated_decl_base
+{ $$ = buildDeprecated($3, $2); }
+| TDEPRECATED deprecated_decl_base
+{ $$ = buildDeprecated($2); }
+;
+
+deprecated_decl_base:
+  module_decl_stmt
+| class_level_stmt
 ;
 
 module_decl_start:
@@ -873,6 +890,14 @@ do_stmt:
 return_stmt:
   TRETURN TSEMI               { $$ = buildPrimitiveStmt(PRIM_RETURN); }
 | TRETURN opt_try_expr TSEMI  { $$ = buildPrimitiveStmt(PRIM_RETURN, $2); }
+;
+
+deprecated_class_level_stmt:
+  class_level_stmt
+| TDEPRECATED STRINGLITERAL class_level_stmt
+{ $$ = buildDeprecated($3, $2); }
+| TDEPRECATED class_level_stmt
+{ $$ = buildDeprecated($2); }
 ;
 
 class_level_stmt:
@@ -1295,9 +1320,9 @@ opt_inherit:
 class_level_stmt_ls:
   /* nothing */
     { $$ = new BlockStmt(); }
-| class_level_stmt_ls class_level_stmt
+| class_level_stmt_ls deprecated_class_level_stmt
     { $1->insertAtTail($2); }
-| class_level_stmt_ls pragma_ls class_level_stmt
+| class_level_stmt_ls pragma_ls deprecated_class_level_stmt
     { $1->insertAtTail(buildPragmaStmt($2, $3)); }
 ;
 
@@ -1334,7 +1359,7 @@ enum_header:
 ;
 
 enum_ls:
-  enum_item
+  deprecated_enum_item
     {
       $$ = new std::vector<DefExpr*>();
       $$->push_back($1);
@@ -1346,10 +1371,18 @@ enum_ls:
     {
       $$ = $1;
     }
-| enum_ls TCOMMA enum_item
+| enum_ls TCOMMA deprecated_enum_item
     {
       $1->push_back($3);
     }
+;
+
+deprecated_enum_item:
+  enum_item
+| TDEPRECATED STRINGLITERAL enum_item
+{ $$ = buildDeprecated($3, $2); }
+| TDEPRECATED enum_item
+{ $$ = buildDeprecated($2); }
 ;
 
 enum_item:

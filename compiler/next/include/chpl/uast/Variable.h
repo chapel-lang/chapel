@@ -21,6 +21,8 @@
 #define CHPL_UAST_VARIABLE_H
 
 #include "chpl/queries/Location.h"
+#include "chpl/uast/Formal.h"
+#include "chpl/uast/IntentList.h"
 #include "chpl/uast/VarLikeDecl.h"
 
 namespace chpl {
@@ -45,13 +47,14 @@ namespace uast {
 class Variable final : public VarLikeDecl {
  public:
   enum Kind {
-    VAR,
-    CONST,
-    CONST_REF,
-    REF,
-    PARAM,
-    TYPE,
-    INDEX
+    // Use IntentList here for consistent enum values.
+    VAR         = (int) IntentList::VAR,
+    CONST       = (int) IntentList::CONST,
+    CONST_REF   = (int) IntentList::CONST_REF,
+    REF         = (int) IntentList::REF,
+    PARAM       = (int) IntentList::PARAM,
+    TYPE        = (int) IntentList::TYPE,
+    INDEX       = (int) IntentList::INDEX
   };
 
  private:

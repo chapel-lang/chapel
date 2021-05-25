@@ -1,0 +1,4 @@
+handleParam.chpl:4: In function 'main':
+handleParam.chpl:5: warning: don't use x, use y
+3
+3

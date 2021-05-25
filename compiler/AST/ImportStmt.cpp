@@ -203,6 +203,11 @@ void ImportStmt::scopeResolve(ResolveScope* scope) {
 
         validateList();
 
+        if (modSym->hasFlag(FLAG_DEPRECATED)) {
+          // Generate deprecation warning upon import of deprecated module
+          USR_WARN(this, "%s", modSym->getDeprecationMsg());
+        }
+
       } else {
         if (symAndName.second[0] != '\0') {
           if (isCallExpr(src) == false) {
@@ -380,6 +385,12 @@ void ImportStmt::validateUnqualified() {
             USR_FATAL_CONT(this,
                            "Bad identifier, '%s' is private",
                            name);
+          }
+
+          if (sym->hasFlag(FLAG_DEPRECATED)) {
+            // Generate deprecation warning when a deprecated symbol is listed
+            // in an import statement's limitation clause
+            USR_WARN(this, "%s", sym->getDeprecationMsg());
           }
         }
       }

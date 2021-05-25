@@ -35,6 +35,8 @@ target_sources(libchplcomp-obj
                Expression.cpp
                FnCall.cpp
                For.cpp
+               Forall.cpp
+               Foreach.cpp
                Formal.cpp
                Function.cpp
                Identifier.cpp
@@ -47,10 +49,13 @@ target_sources(libchplcomp-obj
                New.cpp
                OpCall.cpp
                Serial.cpp
+               TaskVar.cpp
                TypeDecl.cpp
                Variable.cpp
                VarLikeDecl.cpp
                Visitor.cpp
                While.cpp
+               WithClause.cpp
+               Zip.cpp
 
               )

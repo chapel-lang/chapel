@@ -1,0 +1,4 @@
+handleInitializer.chpl:15: In function 'main':
+handleInitializer.chpl:18: warning: this initializer is deprecated, use init(x: int) instead
+(v1 = 5)
+(v1 = 7)

@@ -172,9 +172,9 @@ struct ParserContext {
                                   bool isOverride);
   CommentsAndStmt buildFunctionDecl(YYLTYPE location, FunctionParts& fp);
 
-  // Build an index variable from a given expression. The expression is owned
+  // Build a loop index decl from a given expression. The expression is owned
   // because it will be consumed. 
-  owned<Decl> buildIndexVariableDecl(YYLTYPE location, owned<Expression> e);
+  owned<Decl> buildLoopIndexDecl(YYLTYPE location, owned<Expression> e);
 
   FnCall* wrapCalledExpressionInNew(YYLTYPE location,
                                     New::Management management,

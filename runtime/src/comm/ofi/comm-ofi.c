@@ -2824,11 +2824,13 @@ void init_fixedHeap(void) {
   size += decrement;
   do {
     size -= decrement;
+#ifdef CHPL_COMM_DEBUG
     if (DBG_TEST_MASK(DBG_HEAP)) {
       char buf[10];
       DBG_PRINTF(DBG_HEAP, "try allocating fixed heap, size %s (%#zx)",
                  chpl_snprintf_KMG_z(buf, sizeof(buf), size), size);
     }
+#endif
     if (have_hugepages) {
       start = chpl_comm_ofi_hp_get_huge_pages(size);
     } else {
@@ -2841,12 +2843,14 @@ void init_fixedHeap(void) {
 
   chpl_comm_regMemHeapTouch(start, size);
 
+#ifdef CHPL_COMM_DEBUG
   if (DBG_TEST_MASK(DBG_HEAP)) {
     char buf[10];
     DBG_PRINTF(DBG_HEAP, "fixed heap on %spages, start=%p size=%s (%#zx)\n",
                have_hugepages ? "huge" : "regular ", start,
                chpl_snprintf_KMG_z(buf, sizeof(buf), size), size);
   }
+#endif
 
   fixedHeapSize  = size;
   fixedHeapStart = start;

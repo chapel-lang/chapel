@@ -159,6 +159,11 @@ char simpleEscape(int c) {
   return '\0';
 }
 
+static inline SizedStr makeSizedStr(const char* allocatedData, long size) {
+  SizedStr ret = {allocatedData, size};
+  return ret;
+}
+
 static SizedStr eatStringLiteral(yyscan_t scanner, const char* startChar) {
   YYLTYPE* loc = yyget_lloc(scanner);
   const char startCh = *startChar;

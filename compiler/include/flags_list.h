@@ -126,6 +126,7 @@ symbolFlag( FLAG_DEFAULT_INTENT_IS_REF_MAYBE_CONST, ypr, "default intent is ref 
 
 symbolFlag( FLAG_COPY_INIT, npr, "copy initializer", ncm )
 symbolFlag( FLAG_DESTRUCTOR , npr, "destructor" , "applied to functions that are destructors" )
+symbolFlag( FLAG_DEPRECATED , npr, "deprecated" , "applied to symbols that are deprecated" )
 symbolFlag( FLAG_DISTRIBUTION , ypr, "distribution" , ncm )
 symbolFlag( FLAG_DOCS_ONLY, ypr, "docs only", "this symbol is for documentation purposes only - ignore this symbol when compiling" )
 symbolFlag( FLAG_DOMAIN , ypr, "domain" , ncm )

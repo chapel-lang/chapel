@@ -20,7 +20,7 @@ source $CWD/common-ofi.bash
 export CHPL_TEST_TIMEOUT=1800
 
 if [[ $($CHPL_HOME/util/chplenv/chpl_platform.py --target) != cray-cs ]] || \
-   [[ "$CHPL_COMM_OFI_OOB" != slurm-pmi2 ]] || \
+   [[ "$CHPL_COMM_OFI_OOB" != pmi2 ]] || \
    [[ "$SLURM_MPI_TYPE" != pmi2 ]] ; then
   log_error "Unexpected environment for Cray CS comm=ofi testing.  Exiting."
   exit 1

@@ -37,6 +37,8 @@
 #include "chpl/uast/Expression.h"
 #include "chpl/uast/FnCall.h"
 #include "chpl/uast/For.h"
+#include "chpl/uast/Forall.h"
+#include "chpl/uast/Foreach.h"
 #include "chpl/uast/Formal.h"
 #include "chpl/uast/Function.h"
 #include "chpl/uast/Identifier.h"
@@ -46,8 +48,10 @@
 #include "chpl/uast/New.h"
 #include "chpl/uast/OpCall.h"
 #include "chpl/uast/Serial.h"
+#include "chpl/uast/TaskVar.h"
 #include "chpl/uast/Variable.h"
 #include "chpl/uast/While.h"
+#include "chpl/uast/Zip.h"
 
 #include <cstdint>
 #include <cstdio>

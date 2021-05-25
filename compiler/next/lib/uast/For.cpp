@@ -29,25 +29,18 @@ bool For::contentsMatchInner(const ASTNode* other) const {
   const For* lhs = this;
   const For* rhs = (const For*) other;
 
-  if (!lhs->indexableLoopContentsMatchInner(rhs))
-    return false;
-
-  if (lhs->isExpressionLevel_ != rhs->isExpressionLevel_)
-    return false;
-
   if (lhs->isParam_ != rhs->isParam_)
+    return false;
+
+  if (!lhs->indexableLoopContentsMatchInner(rhs))
     return false;
 
   return true;
 }
 
-void For::markUniqueStringsInner(Context* context) const {
-  loopMarkUniqueStringsInner(context);
-}
-
 owned<For> For::build(Builder* builder,
                       Location loc,
-                      owned<Decl> indexVariableDecl,
+                      owned<Decl> index,
                       owned<Expression> iterand,
                       ASTList stmts,
                       bool usesDo,
@@ -57,12 +50,12 @@ owned<For> For::build(Builder* builder,
   if (isParam) assert(!isExpressionLevel);
 
   ASTList lst;
-  int8_t indexVariableDeclChildNum = -1;
+  int8_t indexChildNum = -1;
   int8_t iterandChildNum = -1;
 
-  if (indexVariableDecl.get() != nullptr) {
-    indexVariableDeclChildNum = lst.size();
-    lst.push_back(std::move(indexVariableDecl));
+  if (index.get() != nullptr) {
+    indexChildNum = lst.size();
+    lst.push_back(std::move(index));
   }
 
   if (iterand.get() != nullptr) {
@@ -70,29 +63,22 @@ owned<For> For::build(Builder* builder,
     lst.push_back(std::move(iterand));
   }
 
+  const int loopBodyChildNum = lst.size();
+  const int numLoopBodyStmts = stmts.size();
+
   for (auto& stmt : stmts) {
     lst.push_back(std::move(stmt));
   }
 
-  For* ret = new For(std::move(lst), indexVariableDeclChildNum,
+  For* ret = new For(std::move(lst), indexChildNum,
                      iterandChildNum,
+                     loopBodyChildNum,
+                     numLoopBodyStmts,
                      usesDo,
                      isExpressionLevel,
                      isParam);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
-}
-
-owned<For> For::build(Builder* builder,
-                      Location loc,
-                      owned<Expression> iterand,
-                      ASTList stmts,
-                      bool usesDo) {
-  return For::build(builder, loc, nullptr, std::move(iterand),
-                    std::move(stmts),
-                    usesDo,
-                    /*isExpressionLevel*/ false,
-                    /*isParam*/ false);
 }
 
 

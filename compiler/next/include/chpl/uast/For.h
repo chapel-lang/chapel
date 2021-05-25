@@ -43,34 +43,43 @@ namespace uast {
  */
 class For final : public IndexableLoop {
  private:
-  For(ASTList children,  int8_t indexVariableDeclChildNum,
+  For(ASTList children,  int8_t indexChildNum,
       int8_t iterandChildNum,
+      int loopBodyChildNum,
+      int numLoopBodyStmts,
       bool usesDo,
       bool isExpressionLevel,
       bool isParam)
-        : IndexableLoop(asttags::For, std::move(children),
-                        indexVariableDeclChildNum,
-                        iterandChildNum,
-                        usesDo),
-      isExpressionLevel_(isExpressionLevel),
+    : IndexableLoop(asttags::For, std::move(children),
+                    indexChildNum,
+                    iterandChildNum,
+                    /*withClauseChildNum*/ -1,
+                    loopBodyChildNum,
+                    numLoopBodyStmts,
+                    usesDo,
+                    isExpressionLevel),
       isParam_(isParam) {
 
     assert(isExpressionASTList(children_));
+    assert(withClause() == nullptr);
   }
 
   bool contentsMatchInner(const ASTNode* other) const override;
-  void markUniqueStringsInner(Context* context) const override;
 
-  bool isExpressionLevel_;
+  void markUniqueStringsInner(Context* context) const override {
+    indexableLoopMarkUniqueStringsInner(context);
+  }
+
   bool isParam_;
 
  public:
+  ~For() override = default;
 
   /**
     Create and return a for loop. 
   */
   static owned<For> build(Builder* builder, Location loc,
-                          owned<Decl> indexVariableDecl,
+                          owned<Decl> index,
                           owned<Expression> iterand,
                           ASTList stmts,
                           bool usesDo,
@@ -78,27 +87,11 @@ class For final : public IndexableLoop {
                           bool isParam);
 
   /**
-    Create and return a for loop without an index variable.
-  */
-  static owned<For> build(Builder* builder, Location loc,
-                          owned<Expression> iterand,
-                          ASTList stmts,
-                          bool usesDo);
-
-  /**
-    Returns true if this for loop appears at the expression level. 
-  */
-  bool isExpressionLevel() const {
-    return isExpressionLevel_;
-  }
-
-  /**
     Returns true if this for loop is param.
   */
   bool isParam() const {
     return isParam_;
   }
-
 
 };
 

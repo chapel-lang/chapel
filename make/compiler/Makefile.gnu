@@ -196,11 +196,25 @@ SQUASH_WARN_GEN_CFLAGS += -Wno-tautological-compare
 endif
 
 #
-# Avoid false positive warnings about string overflows
+# Avoid false positive warnings about string overflows and memcpys
+# using strings.  Over time, we've seen this error with a variety of
+# gcc compiler versions (7, 9, 10) in a variety of settings, seemingly
+# related to our conversions from int64 to uint64, where gcc is
+# nervous that we're using a negative or too-large value.  We have
+# pretty tight bounds checking for these cases when checks are on, and
+# haven't caught real issues as a result of these flags that I'm aware
+# of, so let's squash the warnings to avoid false positives.
 #
-ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 7; echo "$$?"),0)
+ifeq ($(shell test $(GNU_GCC_MAJOR_VERSION) -gt 7; echo "$$?"),0)
+SQUASH_WARN_GEN_CFLAGS += -Wno-stringop-overflow -Wno-array-bounds
+endif
+
+#
+# Disable ipa-clone for gcc 7.  This optimization seemed to cause
+# a multi-locale lulesh regression that was fixed in gcc 8
+#
+ifeq ($(shell test $(GNU_GCC_MAJOR_VERSION) -eq 7; echo "$$?"),0)
 OPT_CFLAGS += -fno-ipa-cp-clone
-SQUASH_WARN_GEN_CFLAGS += -Wno-stringop-overflow
 endif
 
 #
@@ -233,16 +247,6 @@ endif
 #
 ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 9; echo "$$?"),0)
 WARN_CXXFLAGS += -Wno-error=init-list-lifetime
-endif
-
-#
-# Avoid false positives for memcmp size. This flag we are adding here is
-# available at least all the way back to gcc 7.3. However, we started seeing
-# errors when we switched to gcc 9.3. Moreover, we don't see it in version 10.
-# So, only throw this flag for major version 9
-#
-ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 9; echo "$$?"),0)
-SQUASH_WARN_GEN_CFLAGS += -Wno-stringop-overflow
 endif
 
 
