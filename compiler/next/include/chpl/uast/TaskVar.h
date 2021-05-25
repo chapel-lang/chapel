@@ -54,7 +54,7 @@ class TaskVar final : public VarLikeDecl {
     CONST_REF     = (int) IntentList::CONST_REF,
     REF           = (int) IntentList::REF,
     IN            = (int) IntentList::IN,
-    CONST_IN      = (int) IntentList::CONST_IN,
+    CONST_IN      = (int) IntentList::CONST_IN
   };
 
  private:

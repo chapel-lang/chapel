@@ -50,10 +50,10 @@ class Formal final : public VarLikeDecl {
     REF               = (int) IntentList::REF,
     IN                = (int) IntentList::IN,
     CONST_IN          = (int) IntentList::CONST_IN,
-    PARAM             = (int) IntentList::PARAM,
-    TYPE              = (int) IntentList::TYPE,
     OUT               = (int) IntentList::OUT,
     INOUT             = (int) IntentList::INOUT,
+    PARAM             = (int) IntentList::PARAM,
+    TYPE              = (int) IntentList::TYPE
   };
 
  private:
