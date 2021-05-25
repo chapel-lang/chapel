@@ -58,6 +58,7 @@ static void test0(Parser* parser) {
   const DoWhile* doWhile = mod->stmt(1)->toDoWhile();
   assert(doWhile);
   assert(doWhile->usesDo());
+  assert(doWhile->isBodyBlock());
   assert(doWhile->condition());
   assert(doWhile->condition()->isFnCall());
   assert(doWhile->numStmts() == 3);
@@ -87,6 +88,7 @@ static void test1(Parser* parser) {
   const DoWhile* doWhile = mod->stmt(1)->toDoWhile();
   assert(doWhile);
   assert(doWhile->usesDo());
+  assert(!doWhile->isBodyBlock());
   assert(doWhile->condition());
   assert(doWhile->condition()->isIdentifier());
   // Comment between 'while' and condition is discarded.
@@ -129,6 +131,7 @@ static void test2(Parser* parser) {
   const DoWhile* doWhile = mod->stmt(1)->toDoWhile();
   assert(doWhile);
   assert(doWhile->usesDo());
+  assert(!doWhile->isBodyBlock());
   assert(doWhile->condition());
   assert(doWhile->condition()->isIdentifier());
   // Comment between 'while' and condition is discarded.
@@ -138,6 +141,8 @@ static void test2(Parser* parser) {
   assert(doWhile->stmt(2)->isComment());
   const DoWhile* doWhileInner = doWhile->stmt(1)->toDoWhile();
   assert(doWhileInner);
+  assert(doWhileInner->usesDo());
+  assert(doWhileInner->isBodyBlock());
   assert(doWhileInner->condition()->isIdentifier());
   assert(doWhileInner->numStmts() == 5);
   assert(doWhileInner->stmt(0)->isComment());

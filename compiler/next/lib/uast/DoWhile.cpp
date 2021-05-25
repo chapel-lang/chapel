@@ -28,8 +28,17 @@ namespace uast {
 bool DoWhile::contentsMatchInner(const ASTNode* other) const {
   const DoWhile* lhs = this;
   const DoWhile* rhs = (const DoWhile*) other;
-  return lhs->loopContentsMatchInner(rhs) &&
-         lhs->conditionChildNum_ == rhs->conditionChildNum_;
+
+  if (lhs->conditionChildNum_ != rhs->conditionChildNum_)
+    return false;
+
+  if (lhs->isBodyBlock_ != rhs->isBodyBlock_)
+    return false;
+
+  if (!lhs->loopContentsMatchInner(rhs))
+    return false;
+
+  return true;
 }
 
 void DoWhile::markUniqueStringsInner(Context* context) const {
@@ -37,15 +46,12 @@ void DoWhile::markUniqueStringsInner(Context* context) const {
 }
 
 owned<DoWhile> DoWhile::build(Builder* builder, Location loc,
+                              ASTList stmts,
                               owned<Expression> condition,
-                              ASTList stmts) {
+                              bool isBodyBlock) {
   assert(condition.get() != nullptr);
 
   ASTList lst;
-  int8_t conditionChildNum = lst.size();
-
-  lst.push_back(std::move(condition));
-
   const int loopBodyChildNum = lst.size();
   const int numLoopBodyStmts = stmts.size();
 
@@ -53,9 +59,13 @@ owned<DoWhile> DoWhile::build(Builder* builder, Location loc,
     lst.push_back(std::move(stmt));
   }
 
-  DoWhile* ret = new DoWhile(std::move(lst), conditionChildNum,
-                             loopBodyChildNum,
-                             numLoopBodyStmts);
+  int conditionChildNum = lst.size();
+  lst.push_back(std::move(condition));
+
+  DoWhile* ret = new DoWhile(std::move(lst), loopBodyChildNum,
+                             numLoopBodyStmts,
+                             conditionChildNum,
+                             isBodyBlock);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

@@ -1301,6 +1301,7 @@ extern_block_stmt:
 loop_stmt:
   TDO stmt TWHILE expr TSEMI
   {
+    const bool isBodyBlock = $2.stmt->isBlock();
     auto exprLst = context->makeList($2);
     auto comments = context->gatherCommentsFromList(exprLst, @1);
 
@@ -1309,8 +1310,9 @@ loop_stmt:
 
     auto astLst = context->consumeList(exprLst);
     auto statements = BUILDER->flattenTopLevelBlocks(std::move(astLst));
-    auto node = DoWhile::build(BUILDER, LOC(@1), toOwned($4),
-                               std::move(statements));
+    auto node = DoWhile::build(BUILDER, LOC(@1), std::move(statements),
+                               toOwned($4),
+                               isBodyBlock);
     $$ = { .comments=comments, .stmt=node.release() };
   }
 | TWHILE expr do_stmt
