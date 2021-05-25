@@ -20,8 +20,10 @@ proc minFn(x:?T, y:T):T where implements LessThan(T) {
   }
 }
 
-var a = new TestMe(3);
-var b = new TestMe(4); 
+var a = new shared TestMe(3);
+var b = new shared TestMe(4); 
 
 // Writes 3
 writeln(minFn(a, b));
+
+writeln(minFn(a.borrow(), b.borrow()));

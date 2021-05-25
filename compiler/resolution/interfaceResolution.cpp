@@ -964,8 +964,10 @@ static FnSymbol* getICcopySource(FnSymbol* target) {
   return src;
 }
 
-static void removeCallEtc(BlockStmt* holder, CallExpr* call,
-                          std::vector<Symbol*> formalDups) {
+typedef std::vector<ArgSymbol*> FormalList;
+
+static void removeCallEtc(BlockStmt*      holder, CallExpr* call,
+                          FormalList& formalDups) {
   for (Symbol* dup: formalDups)
     dup->defPoint->remove();
 
@@ -984,14 +986,165 @@ static void removeCallEtc(BlockStmt* holder, CallExpr* call,
   call->remove();
 }
 
-static bool checkNonemptyHolder(InterfaceSymbol* isym,  ImplementsStmt* istm,
-                                BlockStmt*     holder,  FnSymbol*     target,
-                                FnSymbol*       reqFn,  bool  reportErrors) {
+//
+// This looks at in-intent formals for checkAdjustCall().
+// For an in-intent formal, a chpl__initCopy() may get introduced
+// to copy the original actual of 'call':
+//
+//   def _formal_tmp_
+//   move _formal_tmp_, chpl__initCopy(origActual)
+//   // 'call' now contains _formal_tmp_ in lieu of origActual
+//
+// This copy is not needed and will be elided later in elideCopies().
+// It should not necessitate a wrapper.
+// We still remove this copy here to leave 'holder' empty - consistently
+// with our determination that the wrapper is not needed.
+// This copy will be reintroduced upon 'resolveFunction(wrapper)' - if we
+// end up creating the wrapper because of other arguments - and elided later.
+//
+// Returns true if this is the only conversion for the given argument
+// i.e. the wrapper is not required because of this argument.
+//
+static bool removedInitCopyForInArg(SymExpr* actualSE, Symbol* actualSym,
+                                    ArgSymbol* origActual) {
+  if (! (origActual->intent & INTENT_FLAG_IN))
+    return false;  // not 'in' intent
+  
+  if (actualSym->type != origActual->type)
+    return false;  // if the types differ, we probably must keep the copy
+
+  // Find the copying pattern in the AST
+  if (SymExpr* actualDef = actualSym->getSingleDef())
+   if (CallExpr* move = toCallExpr(actualDef->parentExpr))
+    if (CallExpr* src = toCallExpr(move->get(2)))
+     if (src->isNamed("chpl__initCopy"))
+      if (SymExpr* icSrc = toSymExpr(src->get(1)))
+       // Report success only if initCopy is the only call here.
+       // Otherwise preserve everything in the wrapper.
+       if (icSrc->symbol() == origActual) {
+         // Switch 'call' to use 'icSrc' instead of 'actualSym'.
+         // Remove 'actualSym' altogether.
+         actualSE->replace(icSrc->remove());
+         move->remove();
+         actualSym->defPoint->remove();
+         // 'actualSym' is expected to be a temp and have no other refs.
+         INT_ASSERT(actualSym->firstSymExpr() == nullptr);
+         return true;
+       }
+
+  return false;  // no changes were made; need a wrapper
+}
+
+//
+// We use this test to decide whether the target function needs any
+// conversions from the actuals (in 'formalDups') - whose types come
+// from the req.fn / implements statement we are resolving - to the formals
+// of the target function. If we do, we will wrap these conversions, see
+// finalizeHolder(). tryResolveCall(call) inserts such conversions into
+// the holder block if necessary. Given that the holder may contain
+// other stuff in it (see removeCallEtc()). So we detect the presence
+// of conversions by checking if the actuals of 'call' are the same
+// as they were when we created it. If there is a conversion, the actual
+// of 'call' is now a temp.
+//
+// Return true if no wrapper is needed.
+//
+static bool checkAdjustCall(CallExpr* call, FormalList& formalDups) {
+  int idx = 0;
+  for_actuals(actual, call) {
+    if (idx >= (int)formalDups.size())
+      return false;
+    if (SymExpr* se = toSymExpr(actual)) {
+      Symbol*    currActual = se->symbol();
+      ArgSymbol* origActual = formalDups[idx++];
+      if (currActual == origActual)
+        continue;
+      if (removedInitCopyForInArg(se, currActual, origActual))
+        continue;
+    }
+    return false;
+  }
+  return true;
+}
+
+// CG TODO: handle the case where conversions are required AND
+// reqFn is interface-constrained. Need to setup wrapper->interfaceInfo
+// esp. its constrainedTypes and interfaceConstraints. Or do smth different?
+// NB we report errors even if !reportErrors, otherwise the user may be puzzled
+// why their constraint is not satisfied.
+// CG TODO: switch to a warning if !reportErrors. Do the same in other cases.
+static void checkHolderConstraints(ImplementsStmt* istm, FnSymbol* reqFn,
+                                   FnSymbol*     target, Expr*      stmt) {
+  if (DefExpr* def = toDefExpr(stmt))
+   if (FnSymbol* fn = toFnSymbol(def->sym))
+    if (fn->hasFlag(FLAG_IMPLEMENTS_WRAPPER)) {
+      USR_FATAL_CONT(istm, "when checking this implements statement");
+      USR_PRINT(target, "this implementation of the required function %s"
+                " requires implicit conversion(s)", reqFn->name);
+      USR_PRINT(target, "which is currently not supported when the required"
+                " function is interface-constrained");
+      USR_PRINT(reqFn, "the required function %s in the interface %s"
+                " is declared here", reqFn->name, istm->ifcSymbol()->name);
+    }
+}
+
+// Create and return a wrapper around 'target' if we need some conversions.
+// Otherwise simply return 'target'.
+// CG TODO: also allow conversion from target's to reqFn's return type.
+static FnSymbol* finalizeHolder(ImplementsStmt* istm, FnSymbol*   reqFn,
+                                BlockStmt*    holder, CallExpr*   call,
+                                FnSymbol*     target, FormalList& formalDups) {
+  if (target->retTag != RET_PARAM     &&
+      checkAdjustCall(call, formalDups)) {
+    removeCallEtc(holder, call, formalDups);
+    return target;
+  }
+
+  FnSymbol* wrapper = new FnSymbol(target->name);
+  wrapper->addFlag(FLAG_INLINE);
+  wrapperFnForImplementsStmt(istm)->defPoint->insertAfter(new DefExpr(wrapper));
+
+  // Something changed in the call, so we need to create a wrapper.
+  for (Symbol* dup: formalDups)
+    wrapper->insertFormalAtTail(dup->defPoint->remove());
+
+  while (Expr* stmt = holder->body.head) {
+    checkHolderConstraints(istm, reqFn, target, stmt);
+    wrapper->body->insertAtTail(stmt->remove());
+  }
+
+  wrapper->retType = target->retType;
+  wrapper->retTag = target->retTag;
+  if (wrapper->retTag == RET_PARAM) wrapper->retTag = RET_VALUE;
+
+  if (target->retType == dtVoid) {
+    wrapper->insertAtTail("'return'(%S)", gVoid);
+  } else {
+    VarSymbol* retTemp = newTemp("ret", wrapper->retType);
+    // If this is violated, need to handle that case.
+    INT_ASSERT(call->parentExpr == wrapper->body);
+    call->insertBefore(new DefExpr(retTemp));
+    retTemp->defPoint->insertAfter("'move'(%S,%E)", retTemp, call->remove());
+    wrapper->insertAtTail("'return'(%S)", retTemp);
+  }
+
+  // There is really nothing to resolve here. Perhaps just set FLAG_RESOLVED,
+  // and "inline" target if it is a param function.
+  resolveFunction(wrapper);
+  return wrapper;
+}
+
+static bool adjustAndCheckHolder(InterfaceSymbol* isym, ImplementsStmt* istm,
+                                 BlockStmt*   holder, FormalList& formalDups,
+                                 CallExpr*       call, FnSymbol*&     target,
+                                 FnSymbol*      reqFn, bool     reportErrors) {
+  target = finalizeHolder(istm, reqFn, holder, call, target, formalDups);
+  
   if (!holder->body.empty()) {
     if (reportErrors) {
       USR_FATAL_CONT(istm, "when checking this implements statement");
       USR_PRINT(target, "this implementation of the required function %s"
-        " requires implicit conversion(s), which is currently disallowed",
+        " requires implicit conversion(s) in an unsupported manner",
         reqFn->name);
       USR_PRINT(reqFn, "the required function %s in the interface %s"
                        " is declared here", reqFn->name, isym->name);
@@ -1061,7 +1214,8 @@ static bool checkReturnIntent(InterfaceSymbol* isym,  ImplementsStmt* istm,
     return true;
 
   if (reqFn->retTag == RET_VALUE &&
-      (target->retTag == RET_REF  || target->retTag == RET_CONST_REF))
+      (target->retTag == RET_REF  || target->retTag == RET_CONST_REF ||
+       target->retTag == RET_PARAM )) // a wrapper will be created for param
     return true;  // ok to use a [const] ref as a value
 
   if (reqFn->retTag == RET_CONST_REF && target->retTag == RET_REF)
@@ -1117,20 +1271,21 @@ static bool checkFormals(InterfaceSymbol* isym,  ImplementsStmt* istm,
   Expr* tgtExpr = target->formals.head;
   Expr* reqExpr = reqFn->formals.head;
 
-  if (target->numFormals() != reqFn->numFormals()) {
-    INT_ASSERT(target->hasFlag(FLAG_OPERATOR) &&
-               target->numFormals() == 2 + reqFn->numFormals());
+  if (target->hasFlag(FLAG_OPERATOR) &&
+      target->numFormals() == 2 + reqFn->numFormals())
+    // the target is an operator written as a type method
     tgtExpr = tgtExpr->next->next;
-  }
     
   // Check that argument intents are compatible i.e. the "calling convention"
   // for reqFn's formal will work for target's formal.
-  for (; tgtExpr != NULL; tgtExpr = tgtExpr->next, reqExpr = reqExpr->next) {
+  // 'target' may have extra arguments, which should have default values.
+  for (; reqExpr != NULL; tgtExpr = tgtExpr->next, reqExpr = reqExpr->next) {
     ArgSymbol* tgtFml = toArgSymbol(toDefExpr(tgtExpr)->sym);
     ArgSymbol* reqFml = toArgSymbol(toDefExpr(reqExpr)->sym);
 
     if (checkOnePairOfFormals(tgtFml, reqFml))
       continue; // OK
+
     if (reportErrors) {
       USR_FATAL_CONT(istm, "the argument intent is not suitable"
                      " for an implementation of a required function");
@@ -1157,7 +1312,7 @@ static bool resolveOneRequiredFn(InterfaceSymbol* isym,  ImplementsStmt*  istm,
   cgprint("%s  required fn %s\n", indent, symstring(reqFn));
 
   // Create a call to the required function inside 'holder'.
-  std::vector<Symbol*> formalDups;
+  FormalList formalDups;
   CallExpr* call = new CallExpr(reqFn->name);
   for_formals(formal, reqFn) {
     ArgSymbol* dup = formal->copy(&fml2act);
@@ -1176,24 +1331,25 @@ static bool resolveOneRequiredFn(InterfaceSymbol* isym,  ImplementsStmt*  istm,
 
   // do not allow representatives to help satisfy a constraint
   if (target != NULL && !target->hasFlag(FLAG_CG_REPRESENTATIVE)) {
-    cgprint("%s           -> %s  %s\n", indent,
-            symstring(target), debugLoc(target));
-
     INT_ASSERT(target->hasFlag(FLAG_PROMOTION_WRAPPER) ||
                ! target->isGeneric());
 
     handleContextCallExpr(call, reqFn, target);
 
     resolveFunction(target); // aborts if there are errors
+                             // 'call' needs to be inTree() in such case
 
-    // 'call' needs to be inTree if resolveFunction() above has errors
-    removeCallEtc(holder, call, formalDups);
-
-    if (!( checkNonemptyHolder(isym, istm, holder, target, reqFn, reportErrors)
-           & checkReturnType(isym, istm, target, fml2act, reqFn, reportErrors)
-           & checkReturnIntent(isym, istm, target, reqFn, reportErrors)
-           & checkFormals(isym, istm, target, reqFn, reportErrors) ))
-      target = NULL;  // if one or more of the above checks fail
+    if (  checkReturnType(isym, istm, target, fml2act, reqFn, reportErrors)
+        & checkReturnIntent(isym, istm, target, reqFn, reportErrors)
+        & checkFormals(isym, istm, target, reqFn, reportErrors)
+        & adjustAndCheckHolder(isym, istm, holder, formalDups,
+                              call, target, reqFn, reportErrors) )
+      // good, all checks passed
+      cgprint("%s           -> %s  %s\n", indent,
+              symstring(target), debugLoc(target));
+    else
+      // some checks failed
+      target = NULL;
 
   } else {
     // the call did not resolve
@@ -1469,8 +1625,8 @@ static MatchResult matchingImplStm(InterfaceSymbol* isym,
        consArg != NULL;
        consArg = consArg->next, implArg = implArg->next)
   {
-    Type* consT = toSymExpr(consArg)->symbol()->type;
-    Type* implT = toSymExpr(implArg)->symbol()->type;
+    Type* consT = consArg->getValType();
+    Type* implT = implArg->getValType();
 
     if (consT == implT)
       continue; // so far it is a match
@@ -1547,7 +1703,7 @@ static ImplementsStmt* useGenericImplementsStmt(CallExpr*        callsite,
   // follow parts of checkInferredImplStmt()
   SET_LINENO(genIstm);
   ImplementsStmt* conIstm = buildInferredImplStmt(isym, call2wf);
-  genIstm->insertAfter(conIstm);
+  wrapperFnForImplementsStmt(genIstm)->defPoint->insertAfter(conIstm);
   cgprint("instantiated generic implements statement%s",
     idstring("", genIstm)); cgprint("%s\n", idstring("  ->", conIstm));
 

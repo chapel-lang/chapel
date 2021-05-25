@@ -1,11 +1,19 @@
-unimplemented feature: 'implements' on class types
+design: how to write an IC version of 'min' that can handle owned classes
 #17262
 
-Technically speaking, the code as written is incorrect:
-'LessThan' is implemented only for 'borrowed C'
-while minFn() is being invoked on 'owned C'.
+This test's version:
 
-However, this future asks the question: what should this code look like?
+    proc minFn(x:?T, y:T):T where implements LessThan(T) {
+      if y.less_than(x)
+      then return y;
+      else return x;
+    }
 
-Somewhat related: it is unreasonable to pass 'owned' things directly into
-minFn(), as one of the two arguments will inevitably get destroyed.
+tries to take over the ownership of the argument to return it.
+Since the argument is const, it hits a const-checking error.
+Perhaps instead it should borrow?
+
+Cf. essentially the same code compiles and runs with shared and borrowed:
+
+  ucol/cwailes-1/tier_1_class_type.chpl
+  ucol/cwailes-1/tier_1_interface_method.chpl
