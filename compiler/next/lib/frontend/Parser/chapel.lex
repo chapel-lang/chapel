@@ -38,6 +38,8 @@
 
 %option extra-type="ParserContext*"
 
+%option prefix="yychpl_"
+
 /*
    Provide a condition stack
    This is used to alter the handling of "{" when it appears immediately after "extern"
@@ -51,6 +53,7 @@
 
 #include <cstdio>
 
+namespace chpl {
 static int  processIdentifier(yyscan_t scanner, bool queried);
 static int  processToken(yyscan_t scanner, int t);
 static int  processStringLiteral(yyscan_t scanner, const char* q, int type);
@@ -67,6 +70,7 @@ static int  processBlockComment(yyscan_t scanner);
 static void processInvalidToken(yyscan_t scanner);
 
 static bool yy_has_state(yyscan_t scanner);
+}
 
 %}
 

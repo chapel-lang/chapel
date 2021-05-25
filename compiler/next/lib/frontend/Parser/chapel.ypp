@@ -64,7 +64,9 @@
 
   typedef void* yyscan_t;
 
-  int processNewline(yyscan_t scanner);
+  namespace chpl {
+    int processNewline(yyscan_t scanner);
+  }
 
   #endif
 }
@@ -244,7 +246,7 @@
   // rather than say std::vector to keep bison working with the current
   // strategy. In the future we could probably switch to a more
   // C++ mode of using bison.
-  union YYSTYPE {
+  union YYCHPL_STYPE {
     // The lexer only uses these two
     PODUniqueString uniqueStr;
     SizedStr sizedStr;
@@ -299,6 +301,9 @@
     //std::set<Flag>*           pflagset;
   };
 
+  #define YYSTYPE YYCHPL_STYPE
+  #define YYLTYPE YYCHPL_LTYPE
+
   #endif
 }
 
@@ -325,11 +330,11 @@
 // Provide declaration for debugging and yyerror
 //
 %code provides {
-  extern int yydebug;
+  extern int yychpl_debug;
 
-  void yyerror(YYLTYPE*       loc,
-               ParserContext* context,
-               const char*    errorMessage);
+  void yychpl_error(YYLTYPE*       loc,
+                    ParserContext* context,
+                    const char*    errorMessage);
 
   void noteError(YYLTYPE location,
                  ParserContext* context,
@@ -342,7 +347,7 @@
 
 %code provides {
   // include ParserContext.h here because it depends
-  // uppon YYLTYPE and other types defined by the generated parser
+  // upon YYLTYPE and other types defined by the generated parser
   // headers.
   #include "ParserContext.h"
 }
@@ -372,6 +377,8 @@
 %locations
 %define api.pure full
 %define api.push-pull push
+
+%define api.prefix {yychpl_}
 
 %lex-param { ParserContext* context }
 %parse-param { ParserContext* context }
