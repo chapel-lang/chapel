@@ -178,8 +178,9 @@ module ArrayViewSlice {
     iter these(param tag: iterKind) ref
       where tag == iterKind.standalone && !localeModelHasSublocales &&
       __primitive("method call resolves", privDom, "these", tag) {
-//        writeln("IN slice standalone iterator");
-        forall i in privDom do yield arr.dsiAccess(i);
+        //        writeln("IN slice standalone iterator");
+        const arrpid = _ArrPid;
+        forall i in privDom with (const myArr = arrByPid(arrpid)) do yield myArr.dsiAccess(i);
     }
 
     iter these(param tag: iterKind) where tag == iterKind.leader {
@@ -360,6 +361,14 @@ module ArrayViewSlice {
     inline proc arr {
       if _isPrivatized(_ArrInstance) {
         return chpl_getPrivatizedCopy(_ArrInstance.type, _ArrPid);
+      } else {
+        return _ArrInstance;
+      }
+    }
+
+    inline proc arrByPid(pid) {
+      if _isPrivatized(_ArrInstance) {
+        return chpl_getPrivatizedCopy(_ArrInstance.type, pid);
       } else {
         return _ArrInstance;
       }

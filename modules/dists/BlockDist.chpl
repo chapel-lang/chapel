@@ -1132,8 +1132,7 @@ inline proc BlockArr.dsiLocalAccess(i: rank*idxType) ref {
 // By splitting the non-local case into its own function, we can inline the
 // fast/local path and get better performance.
 //
-//inline
-proc BlockArr.dsiAccess(const in idx: rank*idxType) ref {
+inline proc BlockArr.dsiAccess(const in idx: rank*idxType) ref {
 //  writeln(here.id, ": in dsiAccess(", idx, ")");
 //  const print = here.id == 1;
   local {
