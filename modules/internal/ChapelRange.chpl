@@ -788,9 +788,14 @@ module ChapelRange {
           al = this.alignedLowAsInt;
     if al > ah then return 0;
     const s = abs(this.stride): uint;
-    const lenAsUint = ((ah - al):uint / s + 1);
-    if boundsChecking && (lenAsUint == 0 || lenAsUint > max(t)) then
+    param width = numBits(al.type);
+    // Perform subtraction to compute the range's length using
+    // `uint(width)` in order to get guaranteed wraparound semantics
+    // in C (and arguably Chapel) before upcasting to a full uint.
+    const lenAsUint = ((ah:uint(width) - al:uint(width)):uint / s + 1);
+    if boundsChecking && (lenAsUint == 0 || lenAsUint > max(t)) then {
       HaltWrappers.boundsCheckHalt("range.size exceeds max("+t:string+") for: '" + this:string + "'");
+    }
     return lenAsUint: t;
   }
 
