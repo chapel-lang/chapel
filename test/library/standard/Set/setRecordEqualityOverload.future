@@ -1,2 +1,0 @@
-Set should use the user defined operator==, but uses the compiler
-generated one instead.

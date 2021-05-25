@@ -8,11 +8,18 @@ record r {
   proc init(id: int) {
     this.c = new shared C(id);
   }
+}
 
-  operator ==(lhs: r, rhs: r) {
-    writeln('r==');
-    return lhs.c.x == rhs.c.x;
-  }
+// There isn't a public interface for this yet, but we need to override the
+// hash function for 'r' in order to avoid hashing on the address contained
+// in 'c', which will vary from instance to instance.
+proc chpl__defaultHash(x: r) {
+  return chpl__defaultHash(x.c.x);
+}
+
+operator r.==(lhs: r, rhs: r) {
+  writeln('r==');
+  return lhs.c.x == rhs.c.x;
 }
 
 proc test() {
