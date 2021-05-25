@@ -28,7 +28,20 @@ namespace uast {
 
 
 /**
-  This class represents a with clause.
+  This class represents a with clause. For example:
+
+  \rst
+  .. code-block:: chapel
+
+      // Example 1:
+      forall myRange with (var x = 0) {
+        writeln(x);
+      }
+
+  \endrst
+
+  Creates a forall loop that has a with clause which declares a single
+  task variable named 'x'.
 */
 class WithClause final : public Expression {
  private:
