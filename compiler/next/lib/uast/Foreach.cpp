@@ -37,7 +37,7 @@ void Foreach::markUniqueStringsInner(Context* context) const {
 
 owned<Foreach> Foreach::build(Builder* builder,
                               Location loc,
-                              owned<Decl> indexVar,
+                              owned<Decl> index,
                               owned<Expression> iterand,
                               owned<WithClause> withClause,
                               ASTList stmts,
@@ -45,13 +45,13 @@ owned<Foreach> Foreach::build(Builder* builder,
   assert(iterand.get() != nullptr);
 
   ASTList lst;
-  int8_t indexVarChildNum = -1;
+  int8_t indexChildNum = -1;
   int8_t iterandChildNum = -1;
   int8_t withClauseChildNum = -1;
 
-  if (indexVar.get() != nullptr) {
-    indexVarChildNum = lst.size();
-    lst.push_back(std::move(indexVar));
+  if (index.get() != nullptr) {
+    indexChildNum = lst.size();
+    lst.push_back(std::move(index));
   }
 
   if (iterand.get() != nullptr) {
@@ -71,7 +71,7 @@ owned<Foreach> Foreach::build(Builder* builder,
     lst.push_back(std::move(stmt));
   }
 
-  Foreach* ret = new Foreach(std::move(lst), indexVarChildNum,
+  Foreach* ret = new Foreach(std::move(lst), indexChildNum,
                            iterandChildNum,
                            withClauseChildNum,
                            loopBodyChildNum,

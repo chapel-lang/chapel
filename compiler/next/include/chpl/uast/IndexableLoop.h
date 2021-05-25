@@ -34,7 +34,7 @@ namespace uast {
 class IndexableLoop : public Loop {
  protected:
   IndexableLoop(ASTTag tag, ASTList children,
-                int8_t indexVarChildNum,
+                int8_t indexChildNum,
                 int8_t iterandChildNum,
                 int8_t withClauseChildNum,
                 int loopBodyChildNum,
@@ -44,7 +44,7 @@ class IndexableLoop : public Loop {
     : Loop(tag, std::move(children), loopBodyChildNum,
            numLoopBodyStmts,
            usesDo),
-      indexVarChildNum_(indexVarChildNum),
+      indexChildNum_(indexChildNum),
       iterandChildNum_(iterandChildNum),
       withClauseChildNum_(withClauseChildNum),
       isExpressionLevel_(isExpressionLevel) {
@@ -59,7 +59,7 @@ class IndexableLoop : public Loop {
     this->loopMarkUniqueStringsInner(context);
   }
 
-  int8_t indexVarChildNum_;
+  int8_t indexChildNum_;
   int8_t iterandChildNum_;
   int8_t withClauseChildNum_;
   bool isExpressionLevel_;
@@ -68,12 +68,12 @@ class IndexableLoop : public Loop {
   virtual ~IndexableLoop() override = 0; // this is an abstract base class
 
   /**
-    Returns the index variable declaration of this indexable loop, or
-    nullptr if it does not exist.
+    Returns the index declaration of this indexable loop, or nullptr if it
+    does not exist.
   */
-  const Decl* indexVar() const {
-    if (indexVarChildNum_ < 0) return nullptr;
-    const ASTNode* ast = child(indexVarChildNum_);
+  const Decl* index() const {
+    if (indexChildNum_ < 0) return nullptr;
+    const ASTNode* ast = child(indexChildNum_);
     assert(ast->isDecl());
     return (const Decl*) ast;
   }

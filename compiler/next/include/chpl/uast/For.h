@@ -44,12 +44,12 @@ namespace uast {
 class For final : public IndexableLoop {
  private:
   // Compute the start of the loop body.
-  int8_t computeLoopBodyChildNum(int8_t indexVarChildNum,
+  int8_t computeLoopBodyChildNum(int8_t indexChildNum,
                                  int8_t iterandChildNum) {
-    return (indexVarChildNum >= 0) + (iterandChildNum >= 0);
+    return (indexChildNum >= 0) + (iterandChildNum >= 0);
   }
 
-  For(ASTList children,  int8_t indexVarChildNum,
+  For(ASTList children,  int8_t indexChildNum,
       int8_t iterandChildNum,
       int loopBodyChildNum,
       int numLoopBodyStmts,
@@ -57,7 +57,7 @@ class For final : public IndexableLoop {
       bool isExpressionLevel,
       bool isParam)
     : IndexableLoop(asttags::For, std::move(children),
-                    indexVarChildNum,
+                    indexChildNum,
                     iterandChildNum,
                     /*withClauseChildNum*/ -1,
                     loopBodyChildNum,
@@ -82,7 +82,7 @@ class For final : public IndexableLoop {
     Create and return a for loop. 
   */
   static owned<For> build(Builder* builder, Location loc,
-                          owned<Decl> indexVar,
+                          owned<Decl> index,
                           owned<Expression> iterand,
                           ASTList stmts,
                           bool usesDo,

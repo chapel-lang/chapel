@@ -29,7 +29,7 @@ indexableLoopContentsMatchInner(const IndexableLoop* other) const {
   const IndexableLoop* lhs = this;
   const IndexableLoop* rhs = other;
 
-  if (lhs->indexVarChildNum_ != rhs->indexVarChildNum_)
+  if (lhs->indexChildNum_ != rhs->indexChildNum_)
     return false;
 
   if (lhs->iterandChildNum_ != rhs->iterandChildNum_)
