@@ -32,9 +32,6 @@ bool DoWhile::contentsMatchInner(const ASTNode* other) const {
   if (lhs->conditionChildNum_ != rhs->conditionChildNum_)
     return false;
 
-  if (lhs->usesImplicitBlock_ != rhs->usesImplicitBlock_)
-    return false;
-
   if (!lhs->loopContentsMatchInner(rhs))
     return false;
 
