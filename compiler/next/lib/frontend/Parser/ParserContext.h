@@ -207,6 +207,13 @@ struct ParserContext {
                                    Expression* iterandExpr,
                                    BlockOrDo blockOrDo);
 
+  CommentsAndStmt buildCoforallLoopStmt(YYLTYPE locForeach,
+                                        YYLTYPE locIndex,
+                                        Expression* indexExpr,
+                                        Expression* iterandExpr,
+                                        WithClause* withClause,
+                                        BlockOrDo blockOrDo);
+
   // Do we really need these?
   /*
   int         captureTokens; // no, new AST meant to be more faithful to src;

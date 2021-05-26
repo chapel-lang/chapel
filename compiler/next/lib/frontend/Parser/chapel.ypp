@@ -1333,35 +1333,15 @@ loop_stmt:
   }
 | TCOFORALL expr TIN expr opt_task_intent_ls do_stmt
   {
-    auto index = context->buildLoopIndexDecl(@2, toOwned($2));
-    auto comments = context->gatherCommentsFromList($6.exprList, @1);
-    auto node = Coforall::build(BUILDER, LOC(@1), std::move(index),
-                                toOwned($4),
-                                toOwned($5),
-                                context->consumeList($6.exprList),
-                                $6.usesDo);
-    $$ = { .comments=comments, .stmt=node.release() };
+    $$ = context->buildCoforallLoopStmt(@1, @2, $2, $4, $5, $6);
   }
 | TCOFORALL expr TIN zippered_iterator opt_task_intent_ls do_stmt
   {
-    auto index = context->buildLoopIndexDecl(@2, toOwned($2));
-    auto comments = context->gatherCommentsFromList($6.exprList, @1);
-    auto node = Coforall::build(BUILDER, LOC(@1), std::move(index),
-                                toOwned($4),
-                                toOwned($5),
-                                context->consumeList($6.exprList),
-                                $6.usesDo);
-    $$ = { .comments=comments, .stmt=node.release() };
+    $$ = context->buildCoforallLoopStmt(@1, @2, $2, $4, $5, $6);
   }
 | TCOFORALL expr opt_task_intent_ls do_stmt
   {
-    auto comments = context->gatherCommentsFromList($4.exprList, @1);
-    auto node = Coforall::build(BUILDER, LOC(@1), /*index*/ nullptr,
-                                toOwned($2),
-                                /*TODO: withClause*/ nullptr,
-                                context->consumeList($4.exprList),
-                                $4.usesDo);
-    $$ = { .comments=comments, .stmt=node.release() };
+    $$ = context->buildCoforallLoopStmt(@1, @1, nullptr, $2, $3, $4);
   }
 | TFOR expr TIN expr do_stmt
   {
