@@ -80,7 +80,6 @@ libchplcomp: FORCE
 compiler: FORCE
 	@echo "Making the compiler..."
 	@cd third-party && $(MAKE) llvm
-	@$(MAKE) libchplcomp
 	@cd compiler && $(MAKE)
 
 parser: FORCE

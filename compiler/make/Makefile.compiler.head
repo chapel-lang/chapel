@@ -40,9 +40,6 @@ endif
 
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
-# and get LIBCOMPILER_BUILD_DIR
-include $(COMPILER_ROOT)/next/Makefile.include
-
 RUNTIME_ROOT = $(COMPILER_ROOT)/../runtime
 
 INCL_CFLAGS = -I. \
@@ -52,7 +49,7 @@ INCL_CFLAGS = -I. \
               -I$(RUNTIME_ROOT)/include/encoding \
               -I$(THIRD_PARTY_DIR)/utf8-decoder \
               -I$(COMPILER_ROOT)/next/include \
-              -I$(LIBCOMPILER_BUILD_DIR)/include
+
 
 COMP_CXXFLAGS += $(INCL_CFLAGS)
 

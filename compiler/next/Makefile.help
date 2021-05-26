@@ -33,7 +33,6 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.head
 
 # get LIB_CMAKE_ARG, LIBCOMPILER_BUILD_DIR
 include Makefile.include
-$(info $(LIBCOMPILER_BUILD_DIR))
 
 CMAKE ?= cmake
 
