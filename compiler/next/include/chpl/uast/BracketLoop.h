@@ -17,81 +17,71 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_UAST_FOR_H
-#define CHPL_UAST_FOR_H
+#ifndef CHPL_UAST_BRACKETLOOP_H
+#define CHPL_UAST_BRACKETLOOP_H
 
 #include "chpl/queries/Location.h"
 #include "chpl/uast/IndexableLoop.h"
+#include "chpl/uast/WithClause.h"
 
 namespace chpl {
 namespace uast {
 
 
 /**
-  This class represents a for loop. For example:
+  This class represents a bracket loop. For example:
 
   \rst
   .. code-block:: chapel
 
       // Example 1:
-      for i in myRange {
-        var x;
-      }
+      [i in 0..15] writeln(i);
 
   \endrst
 
  */
-class For final : public IndexableLoop {
+class BracketLoop final : public IndexableLoop {
  private:
-  For(ASTList children,  int8_t indexChildNum,
-      int8_t iterandChildNum,
-      int loopBodyChildNum,
-      int numLoopBodyStmts,
-      bool usesImplicitBlock,
-      bool isExpressionLevel,
-      bool isParam)
-    : IndexableLoop(asttags::For, std::move(children),
+  BracketLoop(ASTList children, int8_t indexChildNum,
+              int8_t iterandChildNum,
+              int8_t withClauseChildNum,
+              int loopBodyChildNum,
+              int numLoopBodyStmts,
+              bool usesImplicitBlock,
+              bool isExpressionLevel)
+    : IndexableLoop(asttags::BracketLoop, std::move(children),
                     indexChildNum,
                     iterandChildNum,
-                    /*withClauseChildNum*/ -1,
+                    withClauseChildNum,
                     loopBodyChildNum,
                     numLoopBodyStmts,
                     usesImplicitBlock,
-                    isExpressionLevel),
-      isParam_(isParam) {
-
+                    isExpressionLevel) {
     assert(isExpressionASTList(children_));
-    assert(withClause() == nullptr);
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override;
+  bool contentsMatchInner(const ASTNode* other) const override {
+    return indexableLoopContentsMatchInner(other->toIndexableLoop());
+  }
 
   void markUniqueStringsInner(Context* context) const override {
     indexableLoopMarkUniqueStringsInner(context);
   }
 
-  bool isParam_;
-
  public:
-  ~For() override = default;
+  ~BracketLoop() override = default;
 
   /**
-    Create and return a for loop. 
+    Create and return a bracket loop. 
   */
-  static owned<For> build(Builder* builder, Location loc,
-                          owned<Decl> index,
-                          owned<Expression> iterand,
-                          ASTList stmts,
-                          bool usesImplicitBlock,
-                          bool isExpressionLevel,
-                          bool isParam);
+  static owned<BracketLoop> build(Builder* builder, Location loc,
+                                  owned<Decl> index,
+                                  owned<Expression> iterand,
+                                  owned<WithClause> withClause,
+                                  ASTList stmts,
+                                  bool usesImplicitBlock,
+                                  bool isExpressionLevel);
 
-  /**
-    Returns true if this for loop is param.
-  */
-  bool isParam() const {
-    return isParam_;
-  }
 
 };
 

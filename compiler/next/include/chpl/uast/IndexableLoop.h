@@ -39,11 +39,11 @@ class IndexableLoop : public Loop {
                 int8_t withClauseChildNum,
                 int loopBodyChildNum,
                 int numLoopBodyStmts,
-                bool usesDo,
+                bool usesImplicitBlock,
                 bool isExpressionLevel)
     : Loop(tag, std::move(children), loopBodyChildNum,
            numLoopBodyStmts,
-           usesDo),
+           usesImplicitBlock),
       indexChildNum_(indexChildNum),
       iterandChildNum_(iterandChildNum),
       withClauseChildNum_(withClauseChildNum),

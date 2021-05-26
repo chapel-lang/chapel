@@ -56,7 +56,7 @@ static void test0(Parser* parser) {
   assert(forLoop->iterand() != nullptr);
   assert(forLoop->iterand()->isIdentifier());
   assert(forLoop->numStmts() == 2);
-  assert(forLoop->usesDo());
+  assert(forLoop->usesImplicitBlock());
   assert(!forLoop->isExpressionLevel());
   assert(!forLoop->isParam());
   assert(forLoop->stmt(0)->isComment());
@@ -83,7 +83,7 @@ static void test1(Parser* parser) {
   assert(forLoop->iterand() != nullptr);
   assert(forLoop->iterand()->isIdentifier());
   assert(forLoop->numStmts() == 2);
-  assert(forLoop->usesDo());
+  assert(forLoop->usesImplicitBlock());
   assert(!forLoop->isExpressionLevel());
   assert(!forLoop->isParam());
   assert(forLoop->stmt(0)->isComment());
@@ -110,7 +110,7 @@ static void test2(Parser* parser) {
   assert(forLoop->iterand() != nullptr);
   assert(forLoop->iterand()->isIdentifier());
   assert(forLoop->numStmts() == 2);
-  assert(forLoop->usesDo());
+  assert(forLoop->usesImplicitBlock());
   assert(!forLoop->isExpressionLevel());
   assert(forLoop->isParam());
   assert(forLoop->stmt(0)->isComment());
@@ -139,7 +139,7 @@ static void test3(Parser* parser) {
   assert(forLoop->iterand() != nullptr);
   assert(forLoop->iterand()->isIdentifier());
   assert(forLoop->numStmts() == 3);
-  assert(!forLoop->usesDo());
+  assert(!forLoop->usesImplicitBlock());
   assert(!forLoop->isExpressionLevel());
   assert(!forLoop->isParam());
   assert(forLoop->stmt(0)->isComment());
@@ -171,7 +171,7 @@ static void test4(Parser* parser) {
   assert(forLoop->iterand() != nullptr);
   assert(forLoop->iterand()->isIdentifier());
   assert(forLoop->numStmts() == 2);
-  assert(forLoop->usesDo());
+  assert(forLoop->usesImplicitBlock());
   assert(!forLoop->isExpressionLevel());
   assert(!forLoop->isParam());
   assert(forLoop->stmt(0)->isComment());

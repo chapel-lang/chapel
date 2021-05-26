@@ -47,13 +47,12 @@ class DoWhile final : public Loop {
  private:
   DoWhile(ASTList children, int loopBodyChildNum, int numLoopBodyStmts,
           int conditionChildNum,
-          bool isBodyBlock)
+          bool usesImplicitBlock)
     : Loop(asttags::DoWhile, std::move(children),
            loopBodyChildNum,
            numLoopBodyStmts,
-           /*usesDo*/ true),
-      conditionChildNum_(conditionChildNum),
-      isBodyBlock_(isBodyBlock) {
+           usesImplicitBlock),
+      conditionChildNum_(conditionChildNum) {
     assert(isExpressionASTList(children_));
     assert(condition());
   }
@@ -65,7 +64,6 @@ class DoWhile final : public Loop {
   }
 
   int conditionChildNum_;
-  bool isBodyBlock_;
 
  public:
   ~DoWhile() override = default;
@@ -85,13 +83,6 @@ class DoWhile final : public Loop {
     auto ret = child(conditionChildNum_);
     assert(ret->isExpression());
     return (const Expression*)ret;
-  }
-
-  /**
-    Returns true if this do-while loop body is a block.
-  */
-  bool isBodyBlock() const {
-    return isBodyBlock_;
   }
 
 };

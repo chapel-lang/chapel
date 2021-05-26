@@ -34,11 +34,11 @@ class Loop: public ControlFlow {
  protected:
   Loop(asttags::ASTTag tag, ASTList children, int loopBodyChildNum,
        int numLoopBodyStmts,
-       bool usesDo)
+       bool usesImplicitBlock)
     : ControlFlow(tag, std::move(children)),
       loopBodyChildNum_(loopBodyChildNum),
       numLoopBodyStmts_(numLoopBodyStmts),
-      usesDo_(usesDo) {
+      usesImplicitBlock_(usesImplicitBlock) {
     assert(loopBodyChildNum_ >= 0 && numLoopBodyStmts_ >= 0);
     assert((loopBodyChildNum_ + numLoopBodyStmts_) <= this->numChildren());
   }
@@ -51,7 +51,7 @@ class Loop: public ControlFlow {
 
   int loopBodyChildNum_;
   int numLoopBodyStmts_;
-  bool usesDo_;
+  bool usesImplicitBlock_;
 
  public:
   virtual ~Loop() override = 0; // this is an abstract base class
@@ -83,10 +83,24 @@ class Loop: public ControlFlow {
   }
 
   /**
-    Returns true if the body of this loop is introduced by a 'do' keyword.
+    Returns true if the body of this loop introduces an implicit block.
+    For example:
+
+    \rst
+    .. code-block:: chapel
+
+        // Example 1:
+        [i in 0..15] writeln(i);
+
+        // Example 2:
+        for i in 0..15 do writeln(i);
+
+    \endrst
+
+    Both introduce an implicit block. 
   */
-  bool usesDo() const {
-    return usesDo_;
+  bool usesImplicitBlock() const {
+    return usesImplicitBlock_;
   }
 };
 

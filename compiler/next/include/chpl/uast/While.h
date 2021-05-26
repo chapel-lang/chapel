@@ -48,10 +48,10 @@ class While final : public Loop {
   While(ASTList children,  int8_t conditionChildNum,
         int loopBodyChildNum,
         int numLoopBodyStmts,
-        bool usesDo)
+        bool usesImplicitBlock)
     : Loop(asttags::While, std::move(children), loopBodyChildNum,
            numLoopBodyStmts,
-           usesDo),
+           usesImplicitBlock),
       conditionChildNum_(conditionChildNum) {
     assert(isExpressionASTList(children_));
     assert(condition());
@@ -74,7 +74,7 @@ class While final : public Loop {
   static owned<While> build(Builder* builder, Location loc,
                             owned<Expression> condition,
                             ASTList stmts,
-                            bool usesDo);
+                            bool usesImplicitBlock);
 
   /**
     Return the condition of this while loop.

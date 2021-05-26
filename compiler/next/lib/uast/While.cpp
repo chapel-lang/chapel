@@ -41,7 +41,7 @@ bool While::contentsMatchInner(const ASTNode* other) const {
 owned<While> While::build(Builder* builder, Location loc,
                       owned<Expression> condition,
                       ASTList stmts,
-                      bool usesDo) {
+                      bool usesImplicitBlock) {
   assert(condition.get() != nullptr);
 
   ASTList lst;
@@ -59,7 +59,7 @@ owned<While> While::build(Builder* builder, Location loc,
   While* ret = new While(std::move(lst), conditionChildNum,
                          loopBodyChildNum,
                          numLoopBodyStmts,
-                         usesDo);
+                         usesImplicitBlock);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

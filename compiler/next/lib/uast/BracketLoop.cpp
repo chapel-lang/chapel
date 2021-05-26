@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/Forall.h"
+#include "chpl/uast/BracketLoop.h"
 
 #include "chpl/uast/Builder.h"
 
@@ -25,13 +25,14 @@ namespace chpl {
 namespace uast {
 
 
-owned<Forall> Forall::build(Builder* builder, Location loc,
-                            owned<Decl> index,
-                            owned<Expression> iterand,
-                            owned<WithClause> withClause,
-                            ASTList stmts,
-                            bool usesImplicitBlock,
-                            bool isExpressionLevel) {
+owned<BracketLoop> BracketLoop::build(Builder* builder, Location loc,
+                                      owned<Decl> index,
+                                      owned<Expression> iterand,
+                                      owned<WithClause> withClause,
+                                      ASTList stmts,
+                                      bool usesImplicitBlock,
+                                      bool isExpressionLevel) {
+
   assert(iterand.get() != nullptr);
 
   ASTList lst;
@@ -61,13 +62,14 @@ owned<Forall> Forall::build(Builder* builder, Location loc,
     lst.push_back(std::move(stmt));
   }
 
-  Forall* ret = new Forall(std::move(lst), indexChildNum,
-                           iterandChildNum,
-                           withClauseChildNum,
-                           loopBodyChildNum,
-                           numLoopBodyStmts,
-                           usesImplicitBlock,
-                           isExpressionLevel);
+  BracketLoop* ret = new BracketLoop(std::move(lst), indexChildNum,
+                                     iterandChildNum,
+                                     withClauseChildNum,
+                                     loopBodyChildNum,
+                                     numLoopBodyStmts,
+                                     usesImplicitBlock,
+                                     isExpressionLevel);
+
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

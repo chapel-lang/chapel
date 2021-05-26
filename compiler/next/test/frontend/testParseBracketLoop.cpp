@@ -18,8 +18,8 @@
  */
 
 #include "chpl/uast/Block.h"
+#include "chpl/uast/BracketLoop.h"
 #include "chpl/uast/Expression.h"
-#include "chpl/uast/Forall.h"
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
 #include "chpl/uast/TaskVar.h"
@@ -43,7 +43,7 @@ using namespace frontend;
 static void test0(Parser* parser) {
   auto parseResult = parser->parseString("test0.chpl",
       "/* comment 1 */\n"
-      "forall x in foo do\n"
+      "[x in foo]\n"
       "  /* comment 2 */\n"
       "  foo();\n"
       "/* comment 3 */\n");
@@ -53,26 +53,26 @@ static void test0(Parser* parser) {
   auto mod = parseResult.topLevelExpressions[0]->toModule();
   assert(mod->numStmts() == 3);
   assert(mod->stmt(0)->isComment());
-  assert(mod->stmt(1)->isForall());
+  assert(mod->stmt(1)->isBracketLoop());
   assert(mod->stmt(2)->isComment());
-  const Forall* forall = mod->stmt(1)->toForall();
-  assert(forall != nullptr);
-  assert(forall->index() != nullptr);
-  assert(forall->index()->isVariable());
-  assert(forall->iterand() != nullptr);
-  assert(forall->iterand()->isIdentifier());
-  assert(forall->withClause() == nullptr);
-  assert(forall->numStmts() == 2);
-  assert(forall->usesImplicitBlock());
-  assert(!forall->isExpressionLevel());
-  assert(forall->stmt(0)->isComment());
-  assert(forall->stmt(1)->isFnCall());
+  const BracketLoop* bracketLoop = mod->stmt(1)->toBracketLoop();
+  assert(bracketLoop != nullptr);
+  assert(bracketLoop->index() != nullptr);
+  assert(bracketLoop->index()->isVariable());
+  assert(bracketLoop->iterand() != nullptr);
+  assert(bracketLoop->iterand()->isIdentifier());
+  assert(bracketLoop->withClause() == nullptr);
+  assert(bracketLoop->usesImplicitBlock());
+  assert(!bracketLoop->isExpressionLevel());
+  assert(bracketLoop->numStmts() == 2);
+  assert(bracketLoop->stmt(0)->isComment());
+  assert(bracketLoop->stmt(1)->isFnCall());
 }
 
 static void test1(Parser* parser) {
   auto parseResult = parser->parseString("test1.chpl",
       "/* comment 1 */\n"
-      "forall x in foo with (ref thing) {\n"
+      "[x in foo with (ref thing)] {\n"
       "  /* comment 2 */\n"
       "  foo();\n"
       "  /* comment 3 */\n"
@@ -84,15 +84,15 @@ static void test1(Parser* parser) {
   auto mod = parseResult.topLevelExpressions[0]->toModule();
   assert(mod->numStmts() == 3);
   assert(mod->stmt(0)->isComment());
-  assert(mod->stmt(1)->isForall());
+  assert(mod->stmt(1)->isBracketLoop());
   assert(mod->stmt(2)->isComment());
-  const Forall* forall = mod->stmt(1)->toForall();
-  assert(forall != nullptr);
-  assert(forall->index() != nullptr);
-  assert(forall->index()->isVariable());
-  assert(forall->iterand() != nullptr);
-  assert(forall->iterand()->isIdentifier());
-  const WithClause* withClause = forall->withClause();
+  const BracketLoop* bracketLoop = mod->stmt(1)->toBracketLoop();
+  assert(bracketLoop != nullptr);
+  assert(bracketLoop->index() != nullptr);
+  assert(bracketLoop->index()->isVariable());
+  assert(bracketLoop->iterand() != nullptr);
+  assert(bracketLoop->iterand()->isIdentifier());
+  const WithClause* withClause = bracketLoop->withClause();
   assert(withClause);
   assert(withClause->numExprs() == 1);
   const TaskVar* taskVar = withClause->expr(0)->toTaskVar();
@@ -100,18 +100,18 @@ static void test1(Parser* parser) {
   assert(!taskVar->typeExpression());
   assert(!taskVar->initExpression());
   assert(taskVar->intent() == TaskVar::REF);
-  assert(!forall->usesImplicitBlock());
-  assert(!forall->isExpressionLevel());
-  assert(forall->numStmts() == 3);
-  assert(forall->stmt(0)->isComment());
-  assert(forall->stmt(1)->isFnCall());
-  assert(forall->stmt(2)->isComment());
+  assert(!bracketLoop->usesImplicitBlock());
+  assert(!bracketLoop->isExpressionLevel());
+  assert(bracketLoop->numStmts() == 3);
+  assert(bracketLoop->stmt(0)->isComment());
+  assert(bracketLoop->stmt(1)->isFnCall());
+  assert(bracketLoop->stmt(2)->isComment());
 }
 
 static void test2(Parser* parser) {
   auto parseResult = parser->parseString("test2.chpl",
       "/* comment 1 */\n"
-      "forall x in zip(a, b) {\n"
+      "[x in zip(a, b)] {\n"
       "  foo();\n"
       "}\n"
       "/* comment 4 */\n");
@@ -121,28 +121,28 @@ static void test2(Parser* parser) {
   auto mod = parseResult.topLevelExpressions[0]->toModule();
   assert(mod->numStmts() == 3);
   assert(mod->stmt(0)->isComment());
-  assert(mod->stmt(1)->isForall());
+  assert(mod->stmt(1)->isBracketLoop());
   assert(mod->stmt(2)->isComment());
-  const Forall* forall = mod->stmt(1)->toForall();
-  assert(forall != nullptr);
-  assert(forall->index() != nullptr);
-  assert(forall->index()->isVariable());
-  assert(forall->iterand() != nullptr);
-  const Zip* zip = forall->iterand()->toZip();
+  const BracketLoop* bracketLoop = mod->stmt(1)->toBracketLoop();
+  assert(bracketLoop != nullptr);
+  assert(bracketLoop->index() != nullptr);
+  assert(bracketLoop->index()->isVariable());
+  assert(bracketLoop->iterand() != nullptr);
+  const Zip* zip = bracketLoop->iterand()->toZip();
   assert(zip);
   assert(zip->numActuals() == 2);
   assert(zip->actual(0)->isIdentifier());
   assert(zip->actual(1)->isIdentifier());
-  assert(!forall->usesImplicitBlock());
-  assert(!forall->isExpressionLevel());
-  assert(forall->numStmts() == 1);
-  assert(forall->stmt(0)->isFnCall());
+  assert(!bracketLoop->usesImplicitBlock());
+  assert(!bracketLoop->isExpressionLevel());
+  assert(bracketLoop->numStmts() == 1);
+  assert(bracketLoop->stmt(0)->isFnCall());
 }
 
 static void test3(Parser* parser) {
   auto parseResult = parser->parseString("test3.chpl",
       "/* comment 1 */\n"
-      "forall x in zip(a, b, foo()) with (const ref thing1, in thing2=d) {\n"
+      "[x in zip(a, b, foo()) with (const ref thing1, in thing2=d)] {\n"
       "  writeln(thing1);\n"
       "  thing2 = thing3;\n"
       "}\n"
@@ -153,20 +153,20 @@ static void test3(Parser* parser) {
   auto mod = parseResult.topLevelExpressions[0]->toModule();
   assert(mod->numStmts() == 3);
   assert(mod->stmt(0)->isComment());
-  assert(mod->stmt(1)->isForall());
+  assert(mod->stmt(1)->isBracketLoop());
   assert(mod->stmt(2)->isComment());
-  const Forall* forall = mod->stmt(1)->toForall();
-  assert(forall != nullptr);
-  assert(forall->index() != nullptr);
-  assert(forall->index()->isVariable());
-  assert(forall->iterand() != nullptr);
-  const Zip* zip = forall->iterand()->toZip();
+  const BracketLoop* bracketLoop = mod->stmt(1)->toBracketLoop();
+  assert(bracketLoop != nullptr);
+  assert(bracketLoop->index() != nullptr);
+  assert(bracketLoop->index()->isVariable());
+  assert(bracketLoop->iterand() != nullptr);
+  const Zip* zip = bracketLoop->iterand()->toZip();
   assert(zip);
   assert(zip->numActuals() == 3);
   assert(zip->actual(0)->isIdentifier());
   assert(zip->actual(1)->isIdentifier());
   assert(zip->actual(2)->isFnCall());
-  const WithClause* withClause = forall->withClause();
+  const WithClause* withClause = bracketLoop->withClause();
   assert(withClause);
   assert(withClause->numExprs() == 2);
   const TaskVar* taskVar0 = withClause->expr(0)->toTaskVar();
@@ -180,17 +180,17 @@ static void test3(Parser* parser) {
   assert(taskVar1->initExpression());
   assert(taskVar1->initExpression()->isIdentifier());
   assert(taskVar1->intent() == TaskVar::IN);
-  assert(!forall->usesImplicitBlock());
-  assert(!forall->isExpressionLevel());
-  assert(forall->numStmts() == 2);
-  assert(forall->stmt(0)->isFnCall());
-  assert(forall->stmt(1)->isOpCall());
+  assert(!bracketLoop->usesImplicitBlock());
+  assert(!bracketLoop->isExpressionLevel());
+  assert(bracketLoop->numStmts() == 2);
+  assert(bracketLoop->stmt(0)->isFnCall());
+  assert(bracketLoop->stmt(1)->isOpCall());
 }
 
 static void test4(Parser* parser) {
   auto parseResult = parser->parseString("test4.chpl",
       "/* comment 1 */\n"
-      "forall foo() do\n"
+      "[foo()]\n"
       "  /* comment 2 */\n"
       "  bar();\n"
       "/* comment 3 */\n");
@@ -200,25 +200,25 @@ static void test4(Parser* parser) {
   auto mod = parseResult.topLevelExpressions[0]->toModule();
   assert(mod->numStmts() == 3);
   assert(mod->stmt(0)->isComment());
-  assert(mod->stmt(1)->isForall());
+  assert(mod->stmt(1)->isBracketLoop());
   assert(mod->stmt(2)->isComment());
-  const Forall* forall = mod->stmt(1)->toForall();
-  assert(forall != nullptr);
-  assert(forall->index() == nullptr);
-  assert(forall->iterand() != nullptr);
-  assert(forall->iterand()->isFnCall());
-  assert(forall->withClause() == nullptr);
-  assert(forall->numStmts() == 2);
-  assert(forall->usesImplicitBlock());
-  assert(!forall->isExpressionLevel());
-  assert(forall->stmt(0)->isComment());
-  assert(forall->stmt(1)->isFnCall());
+  const BracketLoop* bracketLoop = mod->stmt(1)->toBracketLoop();
+  assert(bracketLoop != nullptr);
+  assert(bracketLoop->index() == nullptr);
+  assert(bracketLoop->iterand() != nullptr);
+  assert(bracketLoop->iterand()->isFnCall());
+  assert(bracketLoop->withClause() == nullptr);
+  assert(bracketLoop->numStmts() == 2);
+  assert(bracketLoop->usesImplicitBlock());
+  assert(!bracketLoop->isExpressionLevel());
+  assert(bracketLoop->stmt(0)->isComment());
+  assert(bracketLoop->stmt(1)->isFnCall());
 }
 
 static void test5(Parser* parser) {
   auto parseResult = parser->parseString("test5.chpl",
       "/* comment 1 */\n"
-      "forall zip(a, b) with (var r=thing1) {\n"
+      "[zip(a, b) with (var r=thing1)] {\n"
       "  writeln(r);\n"
       "}\n"
       "/* comment 4 */\n");
@@ -228,18 +228,18 @@ static void test5(Parser* parser) {
   auto mod = parseResult.topLevelExpressions[0]->toModule();
   assert(mod->numStmts() == 3);
   assert(mod->stmt(0)->isComment());
-  assert(mod->stmt(1)->isForall());
+  assert(mod->stmt(1)->isBracketLoop());
   assert(mod->stmt(2)->isComment());
-  const Forall* forall = mod->stmt(1)->toForall();
-  assert(forall != nullptr);
-  assert(forall->index() == nullptr);
-  assert(forall->iterand() != nullptr);
-  const Zip* zip = forall->iterand()->toZip();
+  const BracketLoop* bracketLoop = mod->stmt(1)->toBracketLoop();
+  assert(bracketLoop != nullptr);
+  assert(bracketLoop->index() == nullptr);
+  assert(bracketLoop->iterand() != nullptr);
+  const Zip* zip = bracketLoop->iterand()->toZip();
   assert(zip);
   assert(zip->numActuals() == 2);
   assert(zip->actual(0)->isIdentifier());
   assert(zip->actual(1)->isIdentifier());
-  const WithClause* withClause = forall->withClause();
+  const WithClause* withClause = bracketLoop->withClause();
   assert(withClause);
   assert(withClause->numExprs() == 1);
   const TaskVar* taskVar0 = withClause->expr(0)->toTaskVar();
@@ -247,10 +247,10 @@ static void test5(Parser* parser) {
   assert(!taskVar0->typeExpression());
   assert(taskVar0->initExpression());
   assert(taskVar0->intent() == TaskVar::VAR);
-  assert(!forall->usesImplicitBlock());
-  assert(!forall->isExpressionLevel());
-  assert(forall->numStmts() == 1);
-  assert(forall->stmt(0)->isFnCall());
+  assert(!bracketLoop->usesImplicitBlock());
+  assert(!bracketLoop->isExpressionLevel());
+  assert(bracketLoop->numStmts() == 1);
+  assert(bracketLoop->stmt(0)->isFnCall());
 }
 
 int main() {
