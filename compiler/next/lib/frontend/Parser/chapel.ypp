@@ -600,9 +600,9 @@
 %type <newManagement> new_maybe_decorated
 %type <exprList> opt_inherit simple_expr_ls expr_ls assoc_expr_ls tuple_expr_ls
 %type <maybeNamedActualList> opt_actual_ls actual_ls
-%type <exprList> opt_task_intent_ls task_intent_ls task_intent_clause
+%type <exprList> task_intent_ls
 %type <exprList> forall_intent_ls
-%type <withClause> forall_intent_clause
+%type <withClause> opt_task_intent_ls task_intent_clause forall_intent_clause
 
 %type <functionParts> fn_decl_stmt_start fn_decl_stmt_inner
 %type <exprList> opt_formal_ls req_formal_ls formal_ls formal_ls_inner
@@ -1332,17 +1332,37 @@ loop_stmt:
     $$ = { .comments=comments, .stmt=node.release() };
   }
 | TCOFORALL expr TIN expr opt_task_intent_ls do_stmt
-    {
-      $$ = TODOSTMT(@$);
-    }
+  {
+    auto index = context->buildLoopIndexDecl(@2, toOwned($2));
+    auto comments = context->gatherCommentsFromList($6.exprList, @1);
+    auto node = Coforall::build(BUILDER, LOC(@1), std::move(index),
+                                toOwned($4),
+                                toOwned($5),
+                                context->consumeList($6.exprList),
+                                $6.usesDo);
+    $$ = { .comments=comments, .stmt=node.release() };
+  }
 | TCOFORALL expr TIN zippered_iterator opt_task_intent_ls do_stmt
-    {
-      $$ = TODOSTMT(@$);
-    }
+  {
+    auto index = context->buildLoopIndexDecl(@2, toOwned($2));
+    auto comments = context->gatherCommentsFromList($6.exprList, @1);
+    auto node = Coforall::build(BUILDER, LOC(@1), std::move(index),
+                                toOwned($4),
+                                toOwned($5),
+                                context->consumeList($6.exprList),
+                                $6.usesDo);
+    $$ = { .comments=comments, .stmt=node.release() };
+  }
 | TCOFORALL expr opt_task_intent_ls do_stmt
-    {
-      $$ = TODOSTMT(@$);
-    }
+  {
+    auto comments = context->gatherCommentsFromList($4.exprList, @1);
+    auto node = Coforall::build(BUILDER, LOC(@1), /*index*/ nullptr,
+                                toOwned($2),
+                                /*TODO: withClause*/ nullptr,
+                                context->consumeList($4.exprList),
+                                $4.usesDo);
+    $$ = { .comments=comments, .stmt=node.release() };
+  }
 | TFOR expr TIN expr do_stmt
   {
     auto index = context->buildLoopIndexDecl(@2, toOwned($2));
@@ -2674,16 +2694,21 @@ stmt_level_expr:
 
 opt_task_intent_ls:
                                 { $$ = nullptr; }
-| task_intent_clause
+| task_intent_clause            { $$ = $1; }
 ;
 
 task_intent_clause:
-  TWITH TLP task_intent_ls TRP  { $$ = $3; }
+  TWITH TLP task_intent_ls TRP
+  {
+    auto exprs = context->consumeList($3);
+    auto node = WithClause::build(BUILDER, LOC(@$), std::move(exprs));
+    $$ = node.release();
+  }
 ;
 
 task_intent_ls:
-  intent_expr                                       { $$ = TODOLIST(@$); }
-| task_intent_ls TCOMMA intent_expr                 { $$ = TODOLIST(@$); }
+  intent_expr                         { $$ = context->makeList($1); }
+| task_intent_ls TCOMMA intent_expr   { $$ = context->appendList($1, $3); }
 ;
 
 forall_intent_clause:
