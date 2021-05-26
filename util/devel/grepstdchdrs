@@ -22,6 +22,10 @@ find compiler \( \( -name '*.cpp' -o -name '*.h' \) -a \
   ! -name 'bison-chapel.cpp' -a \
   ! -name 'flex-chapel.cpp' -a \
   ! -name 'flex-chapel.h' -a \
+  ! -name 'bison-chpl-lib.h' -a \
+  ! -name 'bison-chpl-lib.cpp' -a \
+  ! -name 'flex-chpl-lib.h' -a \
+  ! -name 'flex-chpl-lib.cpp' -a \
   ! -name 'sys_basic.h' \) \
   -exec egrep ${1:--s} '^[ ]*#[    ]*include[      ][      ]*<[ ]*(assert|ctype|errno|float|iso646|limits|locale|math|setjmp|signal|stdarg|stddef|stdio|stdlib|string|time|wchar|wctype)[.]h[ ]*>' {} \; -print | \
   `echo "${filter:-grep -v include[^/]}"`a
