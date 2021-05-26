@@ -30,6 +30,7 @@
 #include "chpl/uast/Call.h"
 #include "chpl/uast/Comment.h"
 #include "chpl/uast/Dot.h"
+#include "chpl/uast/DoWhile.h"
 #include "chpl/uast/Enum.h"
 #include "chpl/uast/EnumElement.h"
 #include "chpl/uast/ErroneousExpression.h"
@@ -49,6 +50,7 @@
 #include "chpl/uast/Serial.h"
 #include "chpl/uast/TaskVar.h"
 #include "chpl/uast/Variable.h"
+#include "chpl/uast/While.h"
 #include "chpl/uast/Zip.h"
 
 #include <cstdint>

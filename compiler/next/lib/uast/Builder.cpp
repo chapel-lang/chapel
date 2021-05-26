@@ -270,6 +270,24 @@ void Builder::Result::updateFilePaths(Context* context, const Result& keep) {
   }
 }
 
+ASTList Builder::flattenTopLevelBlocks(ASTList lst) {
+  ASTList ret;
+
+  for (auto& ast : lst) {
+    if (ast->isBlock()) {
+      for (auto& child : takeChildren(std::move(ast))) {
+        ret.push_back(std::move(child));
+      }
+    } else {
+      ret.push_back(std::move(ast));
+    }
+  }
+
+  lst.clear();
+
+  return ret;
+}
+
 
 } // namespace uast
 } // namespace chpl
