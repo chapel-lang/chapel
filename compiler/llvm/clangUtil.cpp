@@ -3923,9 +3923,13 @@ void makeBinaryLLVM(void) {
     if (s == "-isysroot")
       sawSysroot = true;
   }
-  // add arguments that we captured at compile time
-  options += " ";
-  options += get_clang_sysroot_args();
+
+  // only use clang sysroot args if we haven't overridden the linker
+  if (clangCXX != useLinkCXX) {
+    // add arguments that we captured at compile time
+    options += " ";
+    options += get_clang_sysroot_args();
+  }
 
   if(debugCCode) {
     options += " -g";
