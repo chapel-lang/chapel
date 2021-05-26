@@ -39,11 +39,11 @@ SUBDIRS = \
 	ifa \
 	llvm \
 	main \
-        next/lib/frontend \
-        next/lib/frontend/Parser \
-        next/lib/queries \
-        next/lib/uast \
-        next/lib/util \
+	next/lib/frontend \
+	next/lib/frontend/Parser \
+	next/lib/queries \
+	next/lib/uast \
+	next/lib/util \
 	optimizations \
 	parser \
 	passes \
