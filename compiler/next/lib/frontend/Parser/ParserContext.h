@@ -180,6 +180,33 @@ struct ParserContext {
                                     New::Management management,
                                     FnCall* fnCall);
 
+  CommentsAndStmt buildBracketLoopStmt(YYLTYPE locLeftBracket,
+                                       YYLTYPE locIndex,
+                                       Expression* indexExpr,
+                                       Expression* iterandExpr,
+                                       WithClause* withClause,
+                                       CommentsAndStmt stmt);
+
+  CommentsAndStmt buildForallLoopStmt(YYLTYPE locForall,
+                                      YYLTYPE locIndex,
+                                      Expression* indexExpr,
+                                      Expression* iterandExpr,
+                                      WithClause* withClause,
+                                      BlockOrDo blockOrDo);
+
+  CommentsAndStmt buildForeachLoopStmt(YYLTYPE locForall,
+                                       YYLTYPE locIndex,
+                                       Expression* indexExpr,
+                                       Expression* iterandExpr,
+                                       WithClause* withClause,
+                                       BlockOrDo blockOrDo);
+
+  CommentsAndStmt buildForLoopStmt(YYLTYPE locForall,
+                                   YYLTYPE locIndex,
+                                   Expression* indexExpr,
+                                   Expression* iterandExpr,
+                                   BlockOrDo blockOrDo);
+
   // Do we really need these?
   /*
   int         captureTokens; // no, new AST meant to be more faithful to src;
