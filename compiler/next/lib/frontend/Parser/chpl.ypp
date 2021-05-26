@@ -367,8 +367,8 @@
 %require "3.7"
 
 // The names for the output files
-%defines "bison-chapel.h"
-%output  "bison-chapel.cpp"
+%defines "bison-chpl-lib.h"
+%output  "bison-chpl-lib.cpp"
 
 %debug
 %verbose

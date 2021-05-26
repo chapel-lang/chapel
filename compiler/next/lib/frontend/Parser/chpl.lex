@@ -18,8 +18,8 @@
  * limitations under the License.
  */
 
-%option outfile="flex-chapel.cpp"
-%option header-file="flex-chapel.h"
+%option outfile="flex-chpl-lib.cpp"
+%option header-file="flex-chpl-lib.h"
 
 %option noyywrap
 %option nounput
@@ -49,7 +49,7 @@
 
 %{
 
-#include "bison-chapel.h"
+#include "bison-chpl-lib.h"
 
 #include <cstdio>
 

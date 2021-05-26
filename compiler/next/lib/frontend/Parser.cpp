@@ -26,8 +26,8 @@
 #include "chpl/uast/Comment.h"
 #include "chpl/uast/Expression.h"
 
-#include "Parser/bison-chapel.h"
-#include "Parser/flex-chapel.h"
+#include "Parser/bison-chpl-lib.h"
+#include "Parser/flex-chpl-lib.h"
 
 #include <cstdlib>
 #include <cstring>

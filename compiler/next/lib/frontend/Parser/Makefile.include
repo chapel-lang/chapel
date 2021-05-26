@@ -21,8 +21,8 @@ NEXT_FRONTEND_PARSER_OBJDIR = $(COMPILER_BUILD)/next/lib/frontend/Parser
 ALL_SRCS += next/lib/frontend/Parser/*.cpp
 
 NEXT_FRONTEND_PARSER_SRCS =                         \
-           bison-chapel.cpp                         \
-           flex-chapel.cpp                          \
+           bison-chpl-lib.cpp                       \
+           flex-chpl-lib.cpp                        \
 
 SRCS = $(NEXT_FRONTEND_PARSER_SRCS)
 
