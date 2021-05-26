@@ -88,7 +88,7 @@ class DoWhile final : public Loop {
   }
 
   /**
-    Returns true if this do-while loop body is a block.
+    Returns true if this do-while loop's body is a block.
   */
   bool isBodyBlock() const {
     return isBodyBlock_;

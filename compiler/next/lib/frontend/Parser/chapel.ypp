@@ -1578,38 +1578,130 @@ loop_stmt:
                                $4.usesDo);
     $$ = { .comments=comments, .stmt=node.release() };
   }
-| TLSBR expr_ls TIN expr TRSBR stmt
-    {
-      $$ = TODOSTMT(@$);
-    }
-| TLSBR expr_ls TIN expr forall_intent_clause TRSBR stmt
-    {
-      $$ = TODOSTMT(@$);
-    }
-| TLSBR expr_ls TIN zippered_iterator TRSBR stmt
-    {
-      $$ = TODOSTMT(@$);
-    }
-| TLSBR expr_ls TIN zippered_iterator forall_intent_clause TRSBR stmt
-    {
-      $$ = TODOSTMT(@$);
-    }
-| TLSBR expr_ls TRSBR stmt
-    {
-      $$ = TODOSTMT(@$);
-    }
-| TLSBR expr_ls forall_intent_clause TRSBR stmt
-    {
-      $$ = TODOSTMT(@$);
+| TLSBR expr TIN expr TRSBR stmt
+  {
+    const bool isBodyBlock = $6.stmt->isBlock();
+    auto index = context->buildLoopIndexDecl(@2, toOwned($2));
+    auto exprLst = context->makeList($6);
+    auto comments = context->gatherCommentsFromList(exprLst, @1);
+    auto astLst = context->consumeList(exprLst);
+    auto statements = BUILDER->flattenTopLevelBlocks(std::move(astLst));
+    auto node = BracketLoop::build(BUILDER, LOC(@1), std::move(index),
+                                   toOwned($4),
+                                   /*withClause*/ nullptr,
+                                   std::move(statements),
+                                   /*isExpressionLevel*/ false,
+                                   isBodyBlock);
+    $$ = { .comments=comments, .stmt=node.release() };
+  }
+| TLSBR expr TIN expr forall_intent_clause TRSBR stmt
+  {
+    const bool isBodyBlock = $7.stmt->isBlock();
+    auto index = context->buildLoopIndexDecl(@2, toOwned($2));
+    auto exprLst = context->makeList($7);
+    auto comments = context->gatherCommentsFromList(exprLst, @1);
+    auto astLst = context->consumeList(exprLst);
+    auto statements = BUILDER->flattenTopLevelBlocks(std::move(astLst));
+    auto node = BracketLoop::build(BUILDER, LOC(@1), std::move(index),
+                                   toOwned($4),
+                                   toOwned($5),
+                                   std::move(statements),
+                                   /*isExpressionLevel*/ false,
+                                   isBodyBlock);
+    $$ = { .comments=comments, .stmt=node.release() };
+  }
+| TLSBR expr TIN zippered_iterator TRSBR stmt
+  {
+    const bool isBodyBlock = $6.stmt->isBlock();
+    auto index = context->buildLoopIndexDecl(@2, toOwned($2));
+    auto exprLst = context->makeList($6);
+    auto comments = context->gatherCommentsFromList(exprLst, @1);
+    auto astLst = context->consumeList(exprLst);
+    auto statements = BUILDER->flattenTopLevelBlocks(std::move(astLst));
+    auto node = BracketLoop::build(BUILDER, LOC(@1), std::move(index),
+                                   toOwned($4),
+                                   /*withClause*/ nullptr,
+                                   std::move(statements),
+                                   /*isExpressionLevel*/ false,
+                                   isBodyBlock);
+    $$ = { .comments=comments, .stmt=node.release() };
+  }
+| TLSBR expr TIN zippered_iterator forall_intent_clause TRSBR stmt
+  {
+    const bool isBodyBlock = $7.stmt->isBlock();
+    auto index = context->buildLoopIndexDecl(@2, toOwned($2));
+    auto exprLst = context->makeList($7);
+    auto comments = context->gatherCommentsFromList(exprLst, @1);
+    auto astLst = context->consumeList(exprLst);
+    auto statements = BUILDER->flattenTopLevelBlocks(std::move(astLst));
+    auto node = BracketLoop::build(BUILDER, LOC(@1), std::move(index),
+                                   toOwned($4),
+                                   toOwned($5),
+                                   std::move(statements),
+                                   /*isExpressionLevel*/ false,
+                                   isBodyBlock);
+    $$ = { .comments=comments, .stmt=node.release() };
+  }
+| TLSBR expr TRSBR stmt
+  {
+    const bool isBodyBlock = $4.stmt->isBlock();
+    auto exprLst = context->makeList($4);
+    auto comments = context->gatherCommentsFromList(exprLst, @1);
+    auto astLst = context->consumeList(exprLst);
+    auto statements = BUILDER->flattenTopLevelBlocks(std::move(astLst));
+    auto node = BracketLoop::build(BUILDER, LOC(@1), /*index*/ nullptr,
+                                   toOwned($2),
+                                   /*withClause*/ nullptr,
+                                   std::move(statements),
+                                   /*isExpressionLevel*/ false,
+                                   isBodyBlock);
+    $$ = { .comments=comments, .stmt=node.release() };
+  }
+| TLSBR expr forall_intent_clause TRSBR stmt
+  {
+    const bool isBodyBlock = $5.stmt->isBlock();
+    auto exprLst = context->makeList($5);
+    auto comments = context->gatherCommentsFromList(exprLst, @1);
+    auto astLst = context->consumeList(exprLst);
+    auto statements = BUILDER->flattenTopLevelBlocks(std::move(astLst));
+    auto node = BracketLoop::build(BUILDER, LOC(@1), /*index*/ nullptr,
+                                   toOwned($2),
+                                   toOwned($3),
+                                   std::move(statements),
+                                   /*isExpressionLevel*/ false,
+                                   isBodyBlock);
+    $$ = { .comments=comments, .stmt=node.release() };
     }
 | TLSBR zippered_iterator TRSBR stmt
-    {
-      $$ = TODOSTMT(@$);
-    }
+  {
+    const bool isBodyBlock = $4.stmt->isBlock();
+    auto exprLst = context->makeList($4);
+    auto comments = context->gatherCommentsFromList(exprLst, @1);
+    auto astLst = context->consumeList(exprLst);
+    auto statements = BUILDER->flattenTopLevelBlocks(std::move(astLst));
+    auto node = BracketLoop::build(BUILDER, LOC(@1), /*index*/ nullptr,
+                                   toOwned($2),
+                                   /*withClause*/ nullptr,
+                                   std::move(statements),
+                                   /*isExpressionLevel*/ false,
+                                   isBodyBlock);
+    $$ = { .comments=comments, .stmt=node.release() };
+  }
 | TLSBR zippered_iterator forall_intent_clause TRSBR stmt
-    {
-      $$ = TODOSTMT(@$);
-    }
+  {
+    const bool isBodyBlock = $5.stmt->isBlock();
+    auto exprLst = context->makeList($5);
+    auto comments = context->gatherCommentsFromList(exprLst, @1);
+    auto astLst = context->consumeList(exprLst);
+    auto statements = BUILDER->flattenTopLevelBlocks(std::move(astLst));
+    auto node = BracketLoop::build(BUILDER, LOC(@1), /*index*/ nullptr,
+                                   toOwned($2),
+                                   toOwned($3),
+                                   std::move(statements),
+                                   /*isExpressionLevel*/ false,
+                                   isBodyBlock);
+    $$ = { .comments=comments, .stmt=node.release() };
+  }
 ;
 
 zippered_iterator:

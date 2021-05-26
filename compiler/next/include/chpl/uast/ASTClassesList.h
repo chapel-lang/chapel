@@ -82,6 +82,7 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
       AST_NODE(DoWhile)                // old AST: DoWhileStmt
 
       AST_BEGIN_SUBCLASSES(IndexableLoop)
+        AST_NODE(BracketLoop)
         AST_NODE(Coforall)
         AST_NODE(For)                    // old AST: ForLoop / LoopExpr
         AST_NODE(Forall)                 // old AST: ForallStmt / LoopExpr

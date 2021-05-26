@@ -22,6 +22,7 @@ target_sources(libchplcomp-obj
                ASTNode.cpp
                ASTTag.cpp
                Block.cpp
+               BracketLoop.cpp
                Builder.cpp
                Call.cpp
                Comment.cpp
