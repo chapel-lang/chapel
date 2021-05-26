@@ -47,7 +47,7 @@ class For final : public IndexableLoop {
       int8_t iterandChildNum,
       int loopBodyChildNum,
       int numLoopBodyStmts,
-      bool usesDo,
+      bool usesImplicitBlock,
       bool isExpressionLevel,
       bool isParam)
     : IndexableLoop(asttags::For, std::move(children),
@@ -56,7 +56,7 @@ class For final : public IndexableLoop {
                     /*withClauseChildNum*/ -1,
                     loopBodyChildNum,
                     numLoopBodyStmts,
-                    usesDo,
+                    usesImplicitBlock,
                     isExpressionLevel),
       isParam_(isParam) {
 
@@ -82,7 +82,7 @@ class For final : public IndexableLoop {
                           owned<Decl> index,
                           owned<Expression> iterand,
                           ASTList stmts,
-                          bool usesDo,
+                          bool usesImplicitBlock,
                           bool isExpressionLevel,
                           bool isParam);
 

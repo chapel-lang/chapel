@@ -52,7 +52,7 @@ static void test0(Parser* parser) {
   assert(mod->stmt(1)->isWhile());
   const While* whileLoop = mod->stmt(1)->toWhile();
   assert(whileLoop != nullptr);
-  assert(whileLoop->usesDo());
+  assert(whileLoop->usesImplicitBlock());
   assert(whileLoop->condition() != nullptr);
   assert(whileLoop->condition()->isFnCall());
   assert(whileLoop->numStmts() == 2);
@@ -76,7 +76,7 @@ static void test1(Parser* parser) {
   assert(mod->stmt(1)->isWhile());
   const While* whileLoop = mod->stmt(1)->toWhile();
   assert(whileLoop != nullptr);
-  assert(!whileLoop->usesDo());
+  assert(!whileLoop->usesImplicitBlock());
   assert(whileLoop->condition() != nullptr);
   assert(whileLoop->condition()->isFnCall());
   assert(whileLoop->numStmts() == 2);
@@ -100,7 +100,7 @@ static void test2(Parser* parser) {
   assert(mod->stmt(1)->isWhile());
   const While* whileLoop = mod->stmt(1)->toWhile();
   assert(whileLoop != nullptr);
-  assert(whileLoop->usesDo());
+  assert(whileLoop->usesImplicitBlock());
   assert(whileLoop->condition() != nullptr);
   assert(whileLoop->condition()->isFnCall());
   assert(whileLoop->numStmts() == 1);
@@ -126,7 +126,7 @@ static void test3(Parser* parser) {
   assert(mod->stmt(1)->isWhile());
   const While* whileLoop = mod->stmt(1)->toWhile();
   assert(whileLoop != nullptr);
-  assert(!whileLoop->usesDo());
+  assert(!whileLoop->usesImplicitBlock());
   assert(whileLoop->condition() != nullptr);
   assert(whileLoop->condition()->isIdentifier());
   assert(whileLoop->numStmts() == 3);
@@ -135,7 +135,7 @@ static void test3(Parser* parser) {
   assert(whileLoop->stmt(2)->isComment());
   const While* whileLoopInner = whileLoop->stmt(1)->toWhile();
   assert(whileLoopInner);
-  assert(whileLoopInner->usesDo());
+  assert(whileLoopInner->usesImplicitBlock());
   assert(whileLoopInner->numStmts() == 2);
   assert(whileLoopInner->stmt(0)->isComment());
   assert(whileLoopInner->stmt(1)->isFnCall());

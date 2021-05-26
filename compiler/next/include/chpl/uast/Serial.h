@@ -48,17 +48,17 @@ namespace uast {
  */
 class Serial final : public Expression {
  private:
-  Serial(ASTList stmts, int8_t condChildNum, bool usesDo)
+  Serial(ASTList stmts, int8_t condChildNum, bool usesImplicitBlock)
     : Expression(asttags::Serial, std::move(stmts)),
       condChildNum_(condChildNum),
-      usesDo_(usesDo) {
+      usesImplicitBlock_(usesImplicitBlock) {
     assert(isExpressionASTList(children_));
   }
 
   bool contentsMatchInner(const ASTNode* other) const override;
   void markUniqueStringsInner(Context* context) const override;
   int8_t condChildNum_;
-  bool usesDo_;
+  bool usesImplicitBlock_;
 
  public:
 
@@ -67,7 +67,7 @@ class Serial final : public Expression {
   */
   static owned<Serial> build(Builder* builder, Location loc,
                             ASTList stmts,
-                            bool usesDo);
+                            bool usesImplicitBlock);
 
   /**
     Create and return a serial statement with the given condition and
@@ -76,7 +76,7 @@ class Serial final : public Expression {
   static owned<Serial> build(Builder* builder, Location loc,
                             owned<Expression> condition,
                             ASTList stmts,
-                            bool usesDo);
+                            bool usesImplicitBlock);
 
   /**
     Return a way to iterate over the statements.
@@ -117,8 +117,8 @@ class Serial final : public Expression {
     Returns true if the first child statement of this serial statement is
     preceded by a 'do'.
   */
-  bool usesDo() const {
-    return usesDo_;
+  bool usesImplicitBlock() const {
+    return usesImplicitBlock_;
   }
 
 };

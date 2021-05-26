@@ -32,7 +32,7 @@ bool DoWhile::contentsMatchInner(const ASTNode* other) const {
   if (lhs->conditionChildNum_ != rhs->conditionChildNum_)
     return false;
 
-  if (lhs->isBodyBlock_ != rhs->isBodyBlock_)
+  if (lhs->usesImplicitBlock_ != rhs->usesImplicitBlock_)
     return false;
 
   if (!lhs->loopContentsMatchInner(rhs))
@@ -44,7 +44,7 @@ bool DoWhile::contentsMatchInner(const ASTNode* other) const {
 owned<DoWhile> DoWhile::build(Builder* builder, Location loc,
                               ASTList stmts,
                               owned<Expression> condition,
-                              bool isBodyBlock) {
+                              bool usesImplicitBlock) {
   assert(condition.get() != nullptr);
 
   ASTList lst;
@@ -61,7 +61,7 @@ owned<DoWhile> DoWhile::build(Builder* builder, Location loc,
   DoWhile* ret = new DoWhile(std::move(lst), loopBodyChildNum,
                              numLoopBodyStmts,
                              conditionChildNum,
-                             isBodyBlock);
+                             usesImplicitBlock);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

@@ -25,26 +25,14 @@ namespace chpl {
 namespace uast {
 
 
-bool BracketLoop::contentsMatchInner(const ASTNode* other) const {
-  const BracketLoop* lhs = this;
-  const BracketLoop* rhs = other->toBracketLoop();
-
-  if (lhs->isBodyBlock_ != rhs->isBodyBlock_)
-    return false;
-
-  if (!lhs->indexableLoopContentsMatchInner(rhs))
-    return false;
-
-  return true;
-}
-
 owned<BracketLoop> BracketLoop::build(Builder* builder, Location loc,
                                       owned<Decl> index,
                                       owned<Expression> iterand,
                                       owned<WithClause> withClause,
                                       ASTList stmts,
-                                      bool isExpressionLevel,
-                                      bool isBodyBlock) {
+                                      bool usesImplicitBlock,
+                                      bool isExpressionLevel) {
+
   assert(iterand.get() != nullptr);
 
   ASTList lst;
@@ -79,8 +67,9 @@ owned<BracketLoop> BracketLoop::build(Builder* builder, Location loc,
                                      withClauseChildNum,
                                      loopBodyChildNum,
                                      numLoopBodyStmts,
-                                     isExpressionLevel,
-                                     isBodyBlock);
+                                     usesImplicitBlock,
+                                     isExpressionLevel);
+
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

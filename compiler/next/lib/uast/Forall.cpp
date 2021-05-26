@@ -30,7 +30,7 @@ owned<Forall> Forall::build(Builder* builder, Location loc,
                             owned<Expression> iterand,
                             owned<WithClause> withClause,
                             ASTList stmts,
-                            bool usesDo,
+                            bool usesImplicitBlock,
                             bool isExpressionLevel) {
   assert(iterand.get() != nullptr);
 
@@ -66,7 +66,7 @@ owned<Forall> Forall::build(Builder* builder, Location loc,
                            withClauseChildNum,
                            loopBodyChildNum,
                            numLoopBodyStmts,
-                           usesDo,
+                           usesImplicitBlock,
                            isExpressionLevel);
   builder->noteLocation(ret, loc);
   return toOwned(ret);

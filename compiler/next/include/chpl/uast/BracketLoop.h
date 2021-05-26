@@ -47,27 +47,26 @@ class BracketLoop final : public IndexableLoop {
          int8_t withClauseChildNum,
          int loopBodyChildNum,
          int numLoopBodyStmts,
-         bool isExpressionLevel,
-         bool isBodyBlock)
+         bool usesImplicitBlock,
+         bool isExpressionLevel)
     : IndexableLoop(asttags::BracketLoop, std::move(children),
                     indexChildNum,
                     iterandChildNum,
                     withClauseChildNum,
                     loopBodyChildNum,
                     numLoopBodyStmts,
-                    /*usesDo*/ false,
-                    isExpressionLevel),
-      isBodyBlock_(isBodyBlock) {
+                    usesImplicitBlock,
+                    isExpressionLevel) {
     assert(isExpressionASTList(children_));
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override;
+  bool contentsMatchInner(const ASTNode* other) const override {
+    return indexableLoopContentsMatchInner(other->toIndexableLoop());
+  }
 
   void markUniqueStringsInner(Context* context) const override {
     indexableLoopMarkUniqueStringsInner(context);
   }
-
-  bool isBodyBlock_;
 
  public:
   ~BracketLoop() override = default;
@@ -80,15 +79,9 @@ class BracketLoop final : public IndexableLoop {
                                   owned<Expression> iterand,
                                   owned<WithClause> withClause,
                                   ASTList stmts,
-                                  bool isExpressionLevel,
-                                  bool isBodyBlock);
+                                  bool usesImplicitBlock,
+                                  bool isExpressionLevel);
 
-  /**
-    Returns true if this bracket loop's body is a block.
-  */
-  bool isBodyBlock() const {
-    return isBodyBlock_;
-  }
 
 };
 
