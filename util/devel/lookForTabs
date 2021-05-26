@@ -9,6 +9,8 @@ cd $CHPL_HOME >& /dev/null
 
 git grep -n $'\t' -- ':!*bison-chapel.cpp' ':!*bison-chapel.h' \
                      ':!*flex-chapel.cpp'  ':!*flex-chapel.h'  \
+                     ':!*bison-chpl-lib.cpp'  ':!*bison-chpl-lib.h'  \
+                     ':!*flex-chpl-lib.cpp'  ':!*flex-chpl-lib.h'  \
                      'compiler/*.lex'      'compiler/*.y'      \
                      'compiler/*.ypp'      'compiler/*.h'      \
                      'compiler/*.c'        'compiler/*.cpp'
