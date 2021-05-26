@@ -418,18 +418,32 @@ FnCall* ParserContext::wrapCalledExpressionInNew(YYLTYPE location,
   return fnCall;
 }
 
-CommentsAndStmt ParserContext::buildBracketLoopStmt(YYLTYPE locLeftBracket,
-                                                    YYLTYPE locIndex,
-                                                    Expression* indexExpr,
-                                                    Expression* iterandExpr,
-                                                    WithClause* withClause,
-                                                    CommentsAndStmt stmt) {
+CommentsAndStmt
+ParserContext::buildBracketLoopStmt(YYLTYPE locLeftBracket,
+                                    YYLTYPE locIndex,
+                                    ParserExprList* indexExprs,
+                                    Expression* iterandExpr,
+                                    WithClause* withClause,
+                                    CommentsAndStmt stmt) {
+  // Should not be nullptr, use other overload instead.
+  assert(indexExprs);
 
   const bool usesImplicitBlock = !(stmt.stmt->isBlock());
-  auto index = indexExpr ? buildLoopIndexDecl(locIndex, toOwned(indexExpr))
-                         : nullptr;
   auto exprLst = makeList(stmt);
   auto comments = gatherCommentsFromList(exprLst, locLeftBracket);
+  Expression* indexExpr = nullptr;
+
+  if (indexExprs->size() > 1) {
+    const char* msg = "Invalid index expression";
+    return { .comments=comments, .stmt=raiseError(locIndex, msg) };
+  } else {
+    auto uncastedIndexExpr = consumeList(indexExprs)[0].release();
+    indexExpr = uncastedIndexExpr->toExpression();
+  }
+
+  assert(indexExpr);
+  auto index = buildLoopIndexDecl(locIndex, toOwned(indexExpr));
+
   auto astLst = consumeList(exprLst);
   auto statements = builder->flattenTopLevelBlocks(std::move(astLst));
   auto node = BracketLoop::build(builder, convertLocation(locLeftBracket),
@@ -439,6 +453,40 @@ CommentsAndStmt ParserContext::buildBracketLoopStmt(YYLTYPE locLeftBracket,
                                  std::move(statements),
                                  usesImplicitBlock,
                                  /*isExpressionLevel*/ false);
+
+  return { .comments=comments, .stmt=node.release() };
+}
+
+CommentsAndStmt ParserContext::buildBracketLoopStmt(YYLTYPE locLeftBracket,
+                                                    YYLTYPE locIterExprs,
+                                                    ParserExprList* iterExprs,
+                                                    WithClause* withClause,
+                                                    CommentsAndStmt stmt) {
+  const bool usesImplicitBlock = !(stmt.stmt->isBlock());
+  auto exprLst = makeList(stmt);
+  auto comments = gatherCommentsFromList(exprLst, locLeftBracket);
+  Expression* iterandExpr = nullptr;
+
+  if (iterExprs->size() > 1) {
+    const char* msg = "Invalid iterand expression";
+    return { .comments=comments, .stmt=raiseError(locIterExprs, msg) };
+  } else {
+    auto uncastedIterandExpr = consumeList(iterExprs)[0].release();
+    iterandExpr = uncastedIterandExpr->toExpression();
+  }
+
+  assert(iterandExpr);
+
+  auto astLst = consumeList(exprLst);
+  auto statements = builder->flattenTopLevelBlocks(std::move(astLst));
+  auto node = BracketLoop::build(builder, convertLocation(locLeftBracket),
+                                 /*index*/ nullptr,
+                                 toOwned(iterandExpr),
+                                 toOwned(withClause),
+                                 std::move(statements),
+                                 usesImplicitBlock,
+                                 /*isExpressionLevel*/ false);
+
   return { .comments=comments, .stmt=node.release() };
 }
 

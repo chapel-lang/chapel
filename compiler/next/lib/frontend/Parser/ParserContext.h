@@ -96,6 +96,14 @@ struct ParserContext {
   YYLTYPE declStartLoc(YYLTYPE curLoc);
   void resetDeclState();
 
+  ErroneousExpression* raiseError(YYLTYPE location, const char* msg) {
+    // note the error for printing
+    yyerror(&location, this, msg);
+    Location ll = convertLocation(location);
+    // return an error sentinel
+    return ErroneousExpression::build(builder, ll).release();
+  }
+
   void noteComment(YYLTYPE loc, const char* data, long size);
   std::vector<ParserComment>* gatherComments(YYLTYPE location);
   void clearCommentsBefore(YYLTYPE loc);
@@ -182,8 +190,14 @@ struct ParserContext {
 
   CommentsAndStmt buildBracketLoopStmt(YYLTYPE locLeftBracket,
                                        YYLTYPE locIndex,
-                                       Expression* indexExpr,
+                                       ParserExprList* indexExprs,
                                        Expression* iterandExpr,
+                                       WithClause* withClause,
+                                       CommentsAndStmt stmt);
+
+  CommentsAndStmt buildBracketLoopStmt(YYLTYPE locLeftBracket,
+                                       YYLTYPE locIterExprs,
+                                       ParserExprList* iterExprs,
                                        WithClause* withClause,
                                        CommentsAndStmt stmt);
 
