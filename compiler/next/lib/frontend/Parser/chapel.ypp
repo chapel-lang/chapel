@@ -1301,7 +1301,7 @@ extern_block_stmt:
 loop_stmt:
   TDO stmt TWHILE expr TSEMI
   {
-    const bool isBodyBlock = $2.stmt->isBlock();
+    const bool usesImplicitBlock = !($2.stmt->isBlock());
     auto exprLst = context->makeList($2);
     auto comments = context->gatherCommentsFromList(exprLst, @1);
 
@@ -1312,7 +1312,7 @@ loop_stmt:
     auto statements = BUILDER->flattenTopLevelBlocks(std::move(astLst));
     auto node = DoWhile::build(BUILDER, LOC(@1), std::move(statements),
                                toOwned($4),
-                               isBodyBlock);
+                               usesImplicitBlock);
     $$ = { .comments=comments, .stmt=node.release() };
   }
 | TWHILE expr do_stmt
@@ -1365,49 +1365,19 @@ loop_stmt:
   }
 | TFOR expr TIN expr do_stmt
   {
-    auto index = context->buildLoopIndexDecl(@2, toOwned($2));
-    auto comments = context->gatherCommentsFromList($5.exprList, @1);
-    auto node = For::build(BUILDER, LOC(@1), std::move(index),
-                           toOwned($4),
-                           context->consumeList($5.exprList),
-                           $5.usesDo,
-                           /*isExpressionLevel*/ false,
-                           /*isParam*/ false);
-    $$ = { .comments=comments, .stmt=node.release() };
+    $$ = context->buildForLoopStmt(@1, @2, $2, $4, $5);
   }
 | TFOR expr TIN zippered_iterator do_stmt
   {
-    auto index = context->buildLoopIndexDecl(@2, toOwned($2));
-    auto comments = context->gatherCommentsFromList($5.exprList, @1);
-    auto node = For::build(BUILDER, LOC(@1), std::move(index),
-                           toOwned($4),
-                           context->consumeList($5.exprList),
-                           $5.usesDo,
-                           /*isExpressionLevel*/ false,
-                           /*isParam*/ false);
-    $$ = { .comments=comments, .stmt=node.release() };
+    $$ = context->buildForLoopStmt(@1, @2, $2, $4, $5);
   }
 | TFOR expr do_stmt
   {
-    auto comments = context->gatherCommentsFromList($3.exprList, @1);
-    auto node = For::build(BUILDER, LOC(@1), /*index*/ nullptr,
-                           toOwned($2),
-                           context->consumeList($3.exprList),
-                           $3.usesDo,
-                           /*isExpressionLevel*/ false,
-                           /*isParam*/ false);
-    $$ = { .comments=comments, .stmt=node.release() };
+    $$ = context->buildForLoopStmt(@1, @1, nullptr, $2, $3);
   }
 | TFOR zippered_iterator do_stmt
   {
-    auto comments = context->gatherCommentsFromList($3.exprList, @1);
-    auto node = For::build(BUILDER, LOC(@1), /*index*/ nullptr,
-                           toOwned($2),
-                           context->consumeList($3.exprList),
-                           $3.usesDo,
-                           /*isExpressionLevel*/ false,
-                           /*isParam*/ false);
-    $$ = { .comments=comments, .stmt=node.release() };
+    $$ = context->buildForLoopStmt(@1, @1, nullptr, $2, $3);
   }
 | TFOR TPARAM ident_def TIN expr do_stmt
   {
@@ -1424,212 +1394,100 @@ loop_stmt:
   }
 | TFORALL expr TIN expr                                   do_stmt
   {
-    auto index = context->buildLoopIndexDecl(@2, toOwned($2));
-    auto comments = context->gatherCommentsFromList($5.exprList, @1);
-    auto node = Forall::build(BUILDER, LOC(@1), std::move(index),
-                              toOwned($4),
-                              /*withClause*/ nullptr,
-                              context->consumeList($5.exprList),
-                              $5.usesDo,
-                              /*isExpressionLevel*/ false);
-    $$ = { .comments=comments, .stmt=node.release() };
+    $$ = context->buildForallLoopStmt(@1, @2, $2, $4, nullptr, $5);
   }
 | TFORALL expr TIN expr              forall_intent_clause do_stmt
   {
-    auto index = context->buildLoopIndexDecl(@2, toOwned($2));
-    auto comments = context->gatherCommentsFromList($6.exprList, @1);
-    auto node = Forall::build(BUILDER, LOC(@1), std::move(index),
-                              toOwned($4),
-                              toOwned($5),
-                              context->consumeList($6.exprList),
-                              $6.usesDo,
-                              /*isExpressionLevel*/ false);
-    $$ = { .comments=comments, .stmt=node.release() };
+    $$ = context->buildForallLoopStmt(@1, @2, $2, $4, $5, $6);
   }
 | TFORALL expr TIN zippered_iterator                      do_stmt
   {
-    auto index = context->buildLoopIndexDecl(@2, toOwned($2));
-    auto comments = context->gatherCommentsFromList($5.exprList, @1);
-    auto node = Forall::build(BUILDER, LOC(@1), std::move(index),
-                              toOwned($4),
-                              /*withClause*/ nullptr,
-                              context->consumeList($5.exprList),
-                              $5.usesDo,
-                              /*isExpressionLevel*/ false);
-    $$ = { .comments=comments, .stmt=node.release() };
+    $$ = context->buildForallLoopStmt(@1, @2, $2, $4, nullptr, $5);
   }
 | TFORALL expr TIN zippered_iterator forall_intent_clause do_stmt
   {
-    auto index = context->buildLoopIndexDecl(@2, toOwned($2));
-    auto comments = context->gatherCommentsFromList($6.exprList, @1);
-    auto node = Forall::build(BUILDER, LOC(@1), std::move(index),
-                              toOwned($4),
-                              toOwned($5),
-                              context->consumeList($6.exprList),
-                              $6.usesDo,
-                              /*isExpressionLevel*/ false);
-    $$ = { .comments=comments, .stmt=node.release() };
+    $$ = context->buildForallLoopStmt(@1, @2, $2, $4, $5, $6);
   }
 | TFORALL          expr                                   do_stmt
   {
-    auto comments = context->gatherCommentsFromList($3.exprList, @1);
-    auto node = Forall::build(BUILDER, LOC(@1), /*index*/ nullptr,
-                              toOwned($2),
-                              /*withClause*/ nullptr,
-                              context->consumeList($3.exprList),
-                              $3.usesDo,
-                              /*isExpressionLevel*/ false);
-    $$ = { .comments=comments, .stmt=node.release() };
+    $$ = context->buildForallLoopStmt(@1, @1, nullptr, $2, nullptr, $3);
   }
 | TFORALL          expr              forall_intent_clause do_stmt
   {
-    auto comments = context->gatherCommentsFromList($4.exprList, @1);
-    auto node = Forall::build(BUILDER, LOC(@1), /*index*/ nullptr,
-                              toOwned($2),
-                              toOwned($3),
-                              context->consumeList($4.exprList),
-                              $4.usesDo,
-                              /*isExpressionLevel*/ false);
-    $$ = { .comments=comments, .stmt=node.release() };
+    $$ = context->buildForallLoopStmt(@1, @1, nullptr, $2, $3, $4);
   }
 | TFORALL          zippered_iterator                      do_stmt
   {
-    auto comments = context->gatherCommentsFromList($3.exprList, @1);
-    auto node = Forall::build(BUILDER, LOC(@1), /*index*/ nullptr,
-                              toOwned($2),
-                              /*withClause*/ nullptr,
-                              context->consumeList($3.exprList),
-                              $3.usesDo,
-                              /*isExpressionLevel*/ false);
-    $$ = { .comments=comments, .stmt=node.release() };
+    $$ = context->buildForallLoopStmt(@1, @1, nullptr, $2, nullptr, $3);
   }
 | TFORALL          zippered_iterator forall_intent_clause do_stmt
   {
-    auto comments = context->gatherCommentsFromList($4.exprList, @1);
-    auto node = Forall::build(BUILDER, LOC(@1), /*index*/ nullptr,
-                              toOwned($2),
-                              toOwned($3),
-                              context->consumeList($4.exprList),
-                              $4.usesDo,
-                              /*isExpressionLevel*/ false);
-    $$ = { .comments=comments, .stmt=node.release() };
+    $$ = context->buildForallLoopStmt(@1, @1, nullptr, $2, $3, $4);
   }
 | TFOREACH expr TIN expr                                   do_stmt
   {
-    auto index = context->buildLoopIndexDecl(@2, toOwned($2));
-    auto comments = context->gatherCommentsFromList($5.exprList, @1);
-    auto node = Foreach::build(BUILDER, LOC(@1), std::move(index),
-                               toOwned($4),
-                               /*withClause*/ nullptr,
-                               context->consumeList($5.exprList),
-                               $5.usesDo);
-    $$ = { .comments=comments, .stmt=node.release() };
+    $$ = context->buildForeachLoopStmt(@1, @2, $2, $4, nullptr, $5);
   }
 | TFOREACH expr TIN expr              forall_intent_clause do_stmt
   {
-    auto index = context->buildLoopIndexDecl(@2, toOwned($2));
-    auto comments = context->gatherCommentsFromList($6.exprList, @1);
-    auto node = Foreach::build(BUILDER, LOC(@1), std::move(index),
-                               toOwned($4),
-                               toOwned($5),
-                               context->consumeList($6.exprList),
-                               $6.usesDo);
-    $$ = { .comments=comments, .stmt=node.release() };
+    $$ = context->buildForeachLoopStmt(@1, @2, $2, $4, $5, $6);
   }
 | TFOREACH expr TIN zippered_iterator                      do_stmt
   {
-    auto index = context->buildLoopIndexDecl(@2, toOwned($2));
-    auto comments = context->gatherCommentsFromList($5.exprList, @1);
-    auto node = Foreach::build(BUILDER, LOC(@1), std::move(index),
-                               toOwned($4),
-                               /*withClause*/ nullptr,
-                               context->consumeList($5.exprList),
-                               $5.usesDo);
-    $$ = { .comments=comments, .stmt=node.release() };
+    $$ = context->buildForeachLoopStmt(@1, @2, $2, $4, nullptr, $5);
   }
 | TFOREACH expr TIN zippered_iterator forall_intent_clause do_stmt
   {
-    auto index = context->buildLoopIndexDecl(@2, toOwned($2));
-    auto comments = context->gatherCommentsFromList($6.exprList, @1);
-    auto node = Foreach::build(BUILDER, LOC(@1), std::move(index),
-                               toOwned($4),
-                               toOwned($5),
-                               context->consumeList($6.exprList),
-                               $6.usesDo);
-    $$ = { .comments=comments, .stmt=node.release() };
+    $$ = context->buildForeachLoopStmt(@1, @2, $2, $4, $5, $6);
   }
 | TFOREACH          expr                                   do_stmt
   {
-    auto comments = context->gatherCommentsFromList($3.exprList, @1);
-    auto node = Foreach::build(BUILDER, LOC(@1), /*index*/ nullptr,
-                               toOwned($2),
-                               /*withClause*/ nullptr,
-                               context->consumeList($3.exprList),
-                               $3.usesDo);
-    $$ = { .comments=comments, .stmt=node.release() };
+    $$ = context->buildForeachLoopStmt(@1, @1, nullptr, $2, nullptr, $3);
   }
 | TFOREACH          expr              forall_intent_clause do_stmt
   {
-    auto comments = context->gatherCommentsFromList($4.exprList, @1);
-    auto node = Foreach::build(BUILDER, LOC(@1), /*index*/ nullptr,
-                               toOwned($2),
-                               toOwned($3),
-                               context->consumeList($4.exprList),
-                               $4.usesDo);
-    $$ = { .comments=comments, .stmt=node.release() };
+    $$ = context->buildForeachLoopStmt(@1, @1, nullptr, $2, $3, $4);
   }
 | TFOREACH          zippered_iterator                      do_stmt
   {
-    auto comments = context->gatherCommentsFromList($3.exprList, @1);
-    auto node = Foreach::build(BUILDER, LOC(@1), /*index*/ nullptr,
-                               toOwned($2),
-                               /*withClause*/ nullptr,
-                               context->consumeList($3.exprList),
-                               $3.usesDo);
-    $$ = { .comments=comments, .stmt=node.release() };
+    $$ = context->buildForeachLoopStmt(@1, @1, nullptr, $2, nullptr, $3);
   }
 | TFOREACH          zippered_iterator forall_intent_clause do_stmt
   {
-    auto comments = context->gatherCommentsFromList($4.exprList, @1);
-    auto node = Foreach::build(BUILDER, LOC(@1), /*index*/ nullptr,
-                               toOwned($2),
-                               toOwned($3),
-                               context->consumeList($4.exprList),
-                               $4.usesDo);
-    $$ = { .comments=comments, .stmt=node.release() };
+    $$ = context->buildForeachLoopStmt(@1, @1, nullptr, $2, $3, $4);
   }
-| TLSBR expr_ls TIN expr TRSBR stmt
-    {
-      $$ = TODOSTMT(@$);
-    }
-| TLSBR expr_ls TIN expr forall_intent_clause TRSBR stmt
-    {
-      $$ = TODOSTMT(@$);
-    }
-| TLSBR expr_ls TIN zippered_iterator TRSBR stmt
-    {
-      $$ = TODOSTMT(@$);
-    }
-| TLSBR expr_ls TIN zippered_iterator forall_intent_clause TRSBR stmt
-    {
-      $$ = TODOSTMT(@$);
-    }
-| TLSBR expr_ls TRSBR stmt
-    {
-      $$ = TODOSTMT(@$);
-    }
-| TLSBR expr_ls forall_intent_clause TRSBR stmt
-    {
-      $$ = TODOSTMT(@$);
-    }
+| TLSBR expr TIN expr TRSBR stmt
+  {
+    $$ = context->buildBracketLoopStmt(@1, @2, $2, $4, nullptr, $6);
+  }
+| TLSBR expr TIN expr forall_intent_clause TRSBR stmt
+  {
+    $$ = context->buildBracketLoopStmt(@1, @2, $2, $4, $5, $7);
+  }
+| TLSBR expr TIN zippered_iterator TRSBR stmt
+  {
+    $$ = context->buildBracketLoopStmt(@1, @2, $2, $4, nullptr, $6);
+  }
+| TLSBR expr TIN zippered_iterator forall_intent_clause TRSBR stmt
+  {
+    $$ = context->buildBracketLoopStmt(@1, @2, $2, $4, $5, $7);
+  }
+| TLSBR expr TRSBR stmt
+  {
+    $$ = context->buildBracketLoopStmt(@1, @1, nullptr, $2, nullptr, $4);
+  }
+| TLSBR expr forall_intent_clause TRSBR stmt
+  {
+    $$ = context->buildBracketLoopStmt(@1, @1, nullptr, $2, $3, $5);
+  }
 | TLSBR zippered_iterator TRSBR stmt
-    {
-      $$ = TODOSTMT(@$);
-    }
+  {
+    $$ = context->buildBracketLoopStmt(@1, @1, nullptr, $2, nullptr, $4);
+  }
 | TLSBR zippered_iterator forall_intent_clause TRSBR stmt
-    {
-      $$ = TODOSTMT(@$);
-    }
+  {
+    $$ = context->buildBracketLoopStmt(@1, @1, nullptr, $2, $3, $5);
+  }
 ;
 
 zippered_iterator:

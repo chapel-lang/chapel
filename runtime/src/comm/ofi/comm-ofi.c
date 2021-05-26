@@ -4360,14 +4360,21 @@ void amPutDone(c_nodeid_t node, amDone_t* pAmDone) {
   }
 
   //
-  // Send the 'done' indicator.  If needed for the MCM mode we're in,
-  // first make sure the memory effects of all communication ops done
-  // before this are visible.  We and our initiator are the same Chapel
-  // task, for purposes of MCM conformance, and our stores during the AM
-  // must be visible to our initiator's loads after the AM is done.
+  // Send the 'done' indicator.  If necessary, first make sure the
+  // memory effects of all communication ops done by this AM are
+  // visible.  We and the AM's initiator are the same Chapel task,
+  // for purposes of MCM conformance, and the memory effects of the
+  // AM must be visible to that initiator by the time it sees the
+  // 'done' indicator.  In the delivery-complete mode everything is
+  // already visible.  In the message-order mode we don't have to
+  // force PUT visibility because this 'done' is also a PUT and we
+  // use write-after-write message ordering, but we do have to force
+  // AMO visibility.  In message-order-fence mode we have to force
+  // both PUT and AMO visibility.
   //
   if (mcmMode != mcmm_dlvrCmplt) {
-    forceMemFxVisAllNodes(true /*checkPuts*/, true /*checkAmos*/,
+    forceMemFxVisAllNodes(mcmMode == mcmm_msgOrdFence /*checkPuts*/,
+                          true /*checkAmos*/,
                           -1 /*skipNode*/, tcip);
   }
 

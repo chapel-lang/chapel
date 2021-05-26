@@ -32,7 +32,7 @@ bool Loop::loopContentsMatchInner(const Loop* other) const {
   if (lhs->numLoopBodyStmts_ != rhs->numLoopBodyStmts_)
     return false;
 
-  if (lhs->usesDo_ != rhs->usesDo_)
+  if (lhs->usesImplicitBlock_ != rhs->usesImplicitBlock_)
     return false;
 
   return true;

@@ -51,7 +51,7 @@ static void test0(Parser* parser) {
   assert(local != nullptr);
   assert(local->condition() == nullptr);
   assert(local->numStmts() == 1);
-  assert(local->usesDo());
+  assert(local->usesImplicitBlock());
   assert(local->stmt(0)->isVariable());
 }
 
@@ -71,7 +71,7 @@ static void test1(Parser* parser) {
   assert(local->condition() != nullptr);
   assert(local->condition()->isIdentifier());
   assert(local->numStmts() == 1);
-  assert(local->usesDo());
+  assert(local->usesImplicitBlock());
   assert(local->stmt(0)->isVariable());
 }
 
@@ -90,7 +90,7 @@ static void test2(Parser* parser) {
   assert(local != nullptr);
   assert(local->condition() == nullptr);
   assert(local->numStmts() == 1);
-  assert(!local->usesDo());
+  assert(!local->usesImplicitBlock());
   assert(local->stmt(0)->isVariable());
 }
 
@@ -110,7 +110,7 @@ static void test3(Parser* parser) {
   assert(local->condition() != nullptr);
   assert(local->condition()->isIdentifier());
   assert(local->numStmts() == 1);
-  assert(!local->usesDo());
+  assert(!local->usesImplicitBlock());
   assert(local->stmt(0)->isVariable());
 }
 
@@ -129,7 +129,7 @@ static void test4(Parser* parser) {
   assert(local != nullptr);
   assert(local->condition() == nullptr);
   assert(local->numStmts() == 1);
-  assert(local->usesDo());
+  assert(local->usesImplicitBlock());
   assert(local->stmt(0)->isBlock());
   const Block* block = local->stmt(0)->toBlock();
   assert(block != nullptr);
@@ -153,7 +153,7 @@ static void test5(Parser* parser) {
   assert(local->condition() != nullptr);
   assert(local->condition()->isIdentifier());
   assert(local->numStmts() == 1);
-  assert(local->usesDo());
+  assert(local->usesImplicitBlock());
   assert(local->stmt(0)->isBlock());
   const Block* block = local->stmt(0)->toBlock();
   assert(block != nullptr);
@@ -179,7 +179,7 @@ static void test6(Parser* parser) {
   assert(mod->stmt(1)->isLocal());
   const Local* local = mod->stmt(1)->toLocal();
   assert(local != nullptr);
-  assert(!local->usesDo());
+  assert(!local->usesImplicitBlock());
   assert(local->condition() != nullptr);
   assert(local->condition()->isIdentifier());
   assert(local->numStmts() == 3);
@@ -201,7 +201,7 @@ static void test7(Parser* parser) {
   auto mod = parseResult.topLevelExpressions[0]->toModule();
   const Local* local = mod->stmt(1)->toLocal();
   assert(local != nullptr);
-  assert(local->usesDo());
+  assert(local->usesImplicitBlock());
   assert(local->condition() == nullptr);
   assert(local->numStmts() == 2);
   assert(local->stmt(0)->isComment());
