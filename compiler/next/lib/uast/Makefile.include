@@ -31,12 +31,15 @@ NEXT_UAST_SRCS =                                 \
   ControlFlow.cpp \
   Decl.cpp \
   Dot.cpp \
+  DoWhile.cpp \
   Enum.cpp \
   EnumElement.cpp \
   ErroneousExpression.cpp \
   Expression.cpp \
   FnCall.cpp \
   For.cpp \
+  Forall.cpp \
+  Foreach.cpp \
   Formal.cpp \
   Function.cpp \
   Identifier.cpp \
@@ -49,10 +52,14 @@ NEXT_UAST_SRCS =                                 \
   New.cpp \
   OpCall.cpp \
   Serial.cpp \
+  TaskVar.cpp \
   TypeDecl.cpp \
   Variable.cpp \
   VarLikeDecl.cpp \
   Visitor.cpp \
+  While.cpp \
+  WithClause.cpp \
+  Zip.cpp \
 
 
 SRCS = $(NEXT_UAST_SRCS)

@@ -778,14 +778,13 @@ static ModuleSymbol* uASTParseFile(const char* fileName,
   INT_ASSERT(namedOnCommandLine);
   INT_ASSERT(!include);
 
-  /*
   auto path = chpl::UniqueString::build(gContext, fileName);
   auto & modules = chpl::frontend::parse(gContext, path);
   for (auto mod : modules) {
     INT_ASSERT(mod != nullptr);
     chpl::uast::ASTNode::dump(mod);
     // TODO: convert
-  }*/
+  }
 
   USR_FATAL("ending compilation since the rest is not implemented");
 

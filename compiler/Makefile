@@ -84,6 +84,7 @@ include main/Makefile.include
 include next/lib/frontend/Makefile.include
 include next/lib/frontend/Parser/Makefile.include
 include next/lib/queries/Makefile.include
+include next/lib/uast/Makefile.include
 include next/lib/util/Makefile.include
 include optimizations/Makefile.include
 include parser/Makefile.include
@@ -110,8 +111,8 @@ CHPL_OBJS = \
 	$(NEXT_UTIL_OBJS) \
 	$(NEXT_QUERIES_OBJS) \
 	$(NEXT_UAST_OBJS) \
-#       $(NEXT_FRONTEND_OBJS) \
-#	$(NEXT_FRONTEND_PARSER_OBJS) \
+	$(NEXT_FRONTEND_OBJS) \
+	$(NEXT_FRONTEND_PARSER_OBJS) \
 
 
 EXECS = $(CHPL) $(CHPLDOC)
