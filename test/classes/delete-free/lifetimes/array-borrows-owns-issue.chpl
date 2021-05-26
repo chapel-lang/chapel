@@ -1,4 +1,4 @@
-// This example doesn't compile on master now even though
+// This example doesn't compile on main now even though
 // it won't have any memory errors
 class C { var x: int; }
 
