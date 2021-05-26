@@ -1436,37 +1436,39 @@ loop_stmt:
   {
     $$ = context->buildForeachLoopStmt(@1, @1, nullptr, $2, $3, $4);
   }
-| TLSBR expr TIN expr TRSBR stmt
+| TLSBR expr_ls TIN expr TRSBR stmt
   {
     $$ = context->buildBracketLoopStmt(@1, @2, $2, $4, nullptr, $6);
   }
-| TLSBR expr TIN expr forall_intent_clause TRSBR stmt
+| TLSBR expr_ls TIN expr forall_intent_clause TRSBR stmt
   {
     $$ = context->buildBracketLoopStmt(@1, @2, $2, $4, $5, $7);
   }
-| TLSBR expr TIN zippered_iterator TRSBR stmt
+| TLSBR expr_ls TIN zippered_iterator TRSBR stmt
   {
     $$ = context->buildBracketLoopStmt(@1, @2, $2, $4, nullptr, $6);
   }
-| TLSBR expr TIN zippered_iterator forall_intent_clause TRSBR stmt
+| TLSBR expr_ls TIN zippered_iterator forall_intent_clause TRSBR stmt
   {
     $$ = context->buildBracketLoopStmt(@1, @2, $2, $4, $5, $7);
   }
-| TLSBR expr TRSBR stmt
+| TLSBR expr_ls TRSBR stmt
   {
-    $$ = context->buildBracketLoopStmt(@1, @1, nullptr, $2, nullptr, $4);
+    $$ = context->buildBracketLoopStmt(@1, @2, $2, nullptr, $4);
   }
-| TLSBR expr forall_intent_clause TRSBR stmt
+| TLSBR expr_ls forall_intent_clause TRSBR stmt
   {
-    $$ = context->buildBracketLoopStmt(@1, @1, nullptr, $2, $3, $5);
+    $$ = context->buildBracketLoopStmt(@1, @2, $2, $3, $5);
   }
 | TLSBR zippered_iterator TRSBR stmt
   {
-    $$ = context->buildBracketLoopStmt(@1, @1, nullptr, $2, nullptr, $4);
+    auto iterExprs = context->makeList($2);
+    $$ = context->buildBracketLoopStmt(@1, @2, iterExprs, nullptr, $4);
   }
 | TLSBR zippered_iterator forall_intent_clause TRSBR stmt
   {
-    $$ = context->buildBracketLoopStmt(@1, @1, nullptr, $2, $3, $5);
+    auto iterExprs = context->makeList($2);
+    $$ = context->buildBracketLoopStmt(@1, @2, iterExprs, $3, $5);
   }
 ;
 
