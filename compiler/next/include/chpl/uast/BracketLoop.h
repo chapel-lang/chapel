@@ -43,12 +43,12 @@ namespace uast {
 class BracketLoop final : public IndexableLoop {
  private:
   BracketLoop(ASTList children, int8_t indexChildNum,
-         int8_t iterandChildNum,
-         int8_t withClauseChildNum,
-         int loopBodyChildNum,
-         int numLoopBodyStmts,
-         bool usesImplicitBlock,
-         bool isExpressionLevel)
+              int8_t iterandChildNum,
+              int8_t withClauseChildNum,
+              int loopBodyChildNum,
+              int numLoopBodyStmts,
+              bool usesImplicitBlock,
+              bool isExpressionLevel)
     : IndexableLoop(asttags::BracketLoop, std::move(children),
                     indexChildNum,
                     iterandChildNum,
