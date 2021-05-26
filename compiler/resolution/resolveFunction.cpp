@@ -1237,7 +1237,11 @@ bool SplitInitVisitor::enterCallExpr(CallExpr* call) {
       // Change the '=' calls found into PRIM_INIT_VAR_SPLIT_INIT
       for_vector(CallExpr, assign, initAssigns) {
         SET_LINENO(assign);
-        Expr* rhs = assign->get(2)->remove();
+        int rhsNum = 2;
+        if (assign->get(1)->typeInfo() == dtMethodToken) {
+          rhsNum += 2;
+        }
+        Expr* rhs = assign->get(rhsNum)->remove();
         CallExpr* init = NULL;
         if (type)
           init = new CallExpr(PRIM_INIT_VAR_SPLIT_INIT, sym, rhs, type);
