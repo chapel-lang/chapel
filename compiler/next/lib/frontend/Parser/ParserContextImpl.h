@@ -426,7 +426,7 @@ ParserContext::buildBracketLoopStmt(YYLTYPE locLeftBracket,
                                     WithClause* withClause,
                                     CommentsAndStmt stmt) {
   // Should not be nullptr, use other overload instead.
-  assert(indexExprs);
+  assert(indexExprs && indexExprs->size() >= 1);
 
   const bool usesImplicitBlock = !(stmt.stmt->isBlock());
   auto exprLst = makeList(stmt);
@@ -462,6 +462,8 @@ CommentsAndStmt ParserContext::buildBracketLoopStmt(YYLTYPE locLeftBracket,
                                                     ParserExprList* iterExprs,
                                                     WithClause* withClause,
                                                     CommentsAndStmt stmt) {
+  assert(iterExprs && iterExprs->size() >= 1);
+
   const bool usesImplicitBlock = !(stmt.stmt->isBlock());
   auto exprLst = makeList(stmt);
   auto comments = gatherCommentsFromList(exprLst, locLeftBracket);
