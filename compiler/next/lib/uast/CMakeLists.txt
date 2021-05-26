@@ -25,6 +25,7 @@ target_sources(libchplcomp-obj
                BracketLoop.cpp
                Builder.cpp
                Call.cpp
+               Coforall.cpp
                Comment.cpp
                ControlFlow.cpp
                Decl.cpp

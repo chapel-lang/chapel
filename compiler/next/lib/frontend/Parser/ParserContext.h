@@ -194,18 +194,25 @@ struct ParserContext {
                                       WithClause* withClause,
                                       BlockOrDo blockOrDo);
 
-  CommentsAndStmt buildForeachLoopStmt(YYLTYPE locForall,
+  CommentsAndStmt buildForeachLoopStmt(YYLTYPE locForeach,
                                        YYLTYPE locIndex,
                                        Expression* indexExpr,
                                        Expression* iterandExpr,
                                        WithClause* withClause,
                                        BlockOrDo blockOrDo);
 
-  CommentsAndStmt buildForLoopStmt(YYLTYPE locForall,
+  CommentsAndStmt buildForLoopStmt(YYLTYPE locFor,
                                    YYLTYPE locIndex,
                                    Expression* indexExpr,
                                    Expression* iterandExpr,
                                    BlockOrDo blockOrDo);
+
+  CommentsAndStmt buildCoforallLoopStmt(YYLTYPE locCoforall,
+                                        YYLTYPE locIndex,
+                                        Expression* indexExpr,
+                                        Expression* iterandExpr,
+                                        WithClause* withClause,
+                                        BlockOrDo blockOrDo);
 
   // Do we really need these?
   /*

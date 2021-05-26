@@ -29,6 +29,7 @@
 #include "chpl/uast/BracketLoop.h"
 #include "chpl/uast/Builder.h"
 #include "chpl/uast/Call.h"
+#include "chpl/uast/Coforall.h"
 #include "chpl/uast/Comment.h"
 #include "chpl/uast/Dot.h"
 #include "chpl/uast/DoWhile.h"

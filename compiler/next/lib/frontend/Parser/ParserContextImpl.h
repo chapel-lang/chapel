@@ -496,3 +496,21 @@ CommentsAndStmt ParserContext::buildForLoopStmt(YYLTYPE locFor,
                          /*isParam*/ false);
   return { .comments=comments, .stmt=node.release() };
 }
+
+CommentsAndStmt ParserContext::buildCoforallLoopStmt(YYLTYPE locCoforall,
+                                                     YYLTYPE locIndex,
+                                                     Expression* indexExpr,
+                                                     Expression* iterandExpr,
+                                                     WithClause* withClause,
+                                                     BlockOrDo blockOrDo) {
+  auto index = indexExpr ? buildLoopIndexDecl(locIndex, toOwned(indexExpr))
+                         : nullptr;
+  auto comments = gatherCommentsFromList(blockOrDo.exprList, locCoforall);
+  auto node = Coforall::build(builder, convertLocation(locCoforall),
+                              std::move(index),
+                              toOwned(iterandExpr),
+                              toOwned(withClause),
+                              consumeList(blockOrDo.exprList),
+                              blockOrDo.usesDo);
+  return { .comments=comments, .stmt=node.release() };
+}
