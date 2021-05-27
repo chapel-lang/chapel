@@ -493,6 +493,16 @@ const char* Symbol::getDeprecationMsg() const {
   }
 }
 
+void Symbol::generateDeprecationWarning(Expr* context) {
+  Symbol* contextParent = context->parentSymbol;
+  // Only generate the warning if the location with the reference is not
+  // created by the compiler or also deprecated.
+  if (!contextParent->hasFlag(FLAG_COMPILER_GENERATED) &&
+      !contextParent->hasFlag(FLAG_DEPRECATED)) {
+    USR_WARN(context, "%s", getDeprecationMsg());
+  }
+}
+
 bool Symbol::isImmediate() const {
   return false;
 }
