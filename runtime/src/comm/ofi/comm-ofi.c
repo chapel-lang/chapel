@@ -2307,7 +2307,7 @@ void init_ofiForMem(void) {
                i, memTab[i].addr, memTab[i].size, bufAcc);
     OFI_CHK(fi_mr_reg(ofi_domain,
                       memTab[i].addr, memTab[i].size,
-                      bufAcc, (prov_key ? 0 : i), 0, 0, &ofiMrTab[i], NULL));
+                      bufAcc, 0, (prov_key ? 0 : i), 0, &ofiMrTab[i], NULL));
     memTab[i].desc = fi_mr_desc(ofiMrTab[i]);
     memTab[i].key  = fi_mr_key(ofiMrTab[i]);
     CHK_TRUE(prov_key || memTab[i].key == i);
