@@ -205,9 +205,15 @@ static found_init_t doFindInitPoints(Symbol* sym,
     // x = ...
     if (CallExpr* call = toCallExpr(cur)) {
       if (call->isNamedAstr(astrSassign)) {
-        if (SymExpr* se = toSymExpr(call->get(1))) {
+        int lhsNum = 1;
+        int rhsNum = 2;
+        if (call->get(1)->typeInfo() == dtMethodToken) {
+          lhsNum += 2;
+          rhsNum += 2;
+        }
+        if (SymExpr* se = toSymExpr(call->get(lhsNum))) {
           if (se->symbol() == sym) {
-            if (findSymExprFor(call->get(2), sym) == NULL) {
+            if (findSymExprFor(call->get(rhsNum), sym) == NULL) {
               // careful with e.g.
               //  x = x + 1;  or y = 1:y.type;
               initAssigns.push_back(call);

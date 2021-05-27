@@ -3645,26 +3645,36 @@ static FnSymbol* resolveNormalCall(CallInfo&            info,
     retval = wrapAndCleanUpActuals(best, info, true);
 
     if (checkState == CHECK_NORMAL_CALL &&
-        retval->name                         == astrSassign &&
-        isRecord(retval->getFormal(1)->type) == true        &&
-        retval->getFormal(2)->type           == dtNil) {
-      USR_FATAL(userCall(call),
-                "type mismatch in assignment from nil to %s",
-                toString(retval->getFormal(1)->type));
-    } else {
-      SET_LINENO(call);
+        retval->name == astrSassign) {
+      int lhsNum = 1;
+      int rhsNum = 2;
 
-      if (call->partialTag == true) {
-        call->partialTag = false;
+      if (retval->hasFlag(FLAG_METHOD)) {
+        // Adjust check for operator methods, when necessary
+        lhsNum += 2;
+        rhsNum += 2;
       }
 
-      call->baseExpr->replace(new SymExpr(retval));
-
-      resolveNormalCallConstRef(call);
-
-      if (checkState == CHECK_NORMAL_CALL) {
-        resolveNormalCallFinalChecks(call);
+      if (isRecord(retval->getFormal(lhsNum)->type) == true &&
+          retval->getFormal(rhsNum)->type == dtNil) {
+        USR_FATAL(userCall(call),
+                  "type mismatch in assignment from nil to %s",
+                  toString(retval->getFormal(lhsNum)->type));
       }
+    }
+
+    SET_LINENO(call);
+
+    if (call->partialTag == true) {
+      call->partialTag = false;
+    }
+
+    call->baseExpr->replace(new SymExpr(retval));
+
+    resolveNormalCallConstRef(call);
+
+    if (checkState == CHECK_NORMAL_CALL) {
+      resolveNormalCallFinalChecks(call);
     }
   }
 
