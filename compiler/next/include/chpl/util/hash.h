@@ -33,25 +33,25 @@ inline size_t hash_combine(size_t hash, size_t other) {
   return hash ^ (other + 0x9e3779b9 + (hash << 6) + (hash >> 2));
 }
 
-constexpr size_t FNV_offset_basis = 0xcbf29ce484222325;
-constexpr size_t FNV_prime        = 0x100000001b3;
+constexpr uint64_t FNV_offset_basis = 0xcbf29ce484222325;
+constexpr uint64_t FNV_prime        = 0x100000001b3;
 
 // FNV-1a hash function for null-terminated C strings
 inline size_t hash(const char* s)
 {
-  size_t seed = FNV_offset_basis;
+  uint64_t seed = FNV_offset_basis;
   for(char c; (c = *s) != '\0'; ++s)
     seed = (seed ^ static_cast<unsigned char>(c)) * FNV_prime;
-  return seed;
+  return (size_t) seed;
 }
 
 // FNV-1a hash function for C++ std::string
 inline size_t hash(const std::string& s)
 {
-  size_t seed = FNV_offset_basis;
+  uint64_t seed = FNV_offset_basis;
   for(char c : s)
     seed = (seed ^ static_cast<unsigned char>(c)) * FNV_prime;
-  return seed;
+  return (size_t) seed;
 }
 
 // Default hash function for one argument
