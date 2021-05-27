@@ -98,7 +98,7 @@ struct ParserContext {
 
   ErroneousExpression* raiseError(YYLTYPE location, const char* msg) {
     // note the error for printing
-    yyerror(&location, this, msg);
+    yychpl_error(&location, this, msg);
     Location ll = convertLocation(location);
     // return an error sentinel
     return ErroneousExpression::build(builder, ll).release();
