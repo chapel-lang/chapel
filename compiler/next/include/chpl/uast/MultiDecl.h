@@ -31,8 +31,7 @@ namespace uast {
 
 
 /**
-  This class represents a declaration for
-  multiple variables.
+  This class represents a declaration for multiple variables.
  
   E.g.
 
@@ -57,10 +56,9 @@ class MultiDecl final : public Decl {
   MultiDecl(ASTList children, Decl::Visibility vis)
     : Decl(asttags::MultiDecl, std::move(children), vis) {
 
-    // TODO: could be TupleDecl
-    assert(isVariableAndCommentList(children_));
+    assert(isAcceptableMultiDecl());
   }
-  static bool isVariableAndCommentList(const ASTList& list);
+  bool isAcceptableMultiDecl();
   bool contentsMatchInner(const ASTNode* other) const override;
   void markUniqueStringsInner(Context* context) const override;
 
@@ -88,8 +86,7 @@ class MultiDecl final : public Decl {
    */
   const Expression* declOrComment(int i) const {
     const ASTNode* ast = this->child(i);
-    // TODO: or could be TupleDecl
-    assert(ast->isVariable() || ast->isComment());
+    assert(ast->isVariable() || ast->isTupleDecl() || ast->isComment());
     return (const Expression*)ast;
   }
 

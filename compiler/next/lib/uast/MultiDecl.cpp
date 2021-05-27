@@ -24,9 +24,9 @@
 namespace chpl {
 namespace uast {
 
-bool MultiDecl::isVariableAndCommentList(const ASTList& list) {
-  for (const auto& elt: list) {
-    if (elt->isVariable() || elt->isComment()) {
+bool MultiDecl::isAcceptableMultiDecl() {
+  for (const auto& elt: children_) {
+    if (elt->isVariable() || elt->isComment() || elt->isTupleDecl()) {
       // OK
     } else {
       return false;
