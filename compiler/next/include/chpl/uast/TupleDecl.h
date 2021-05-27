@@ -48,8 +48,8 @@ namespace uast {
   list of VariableDecls.  Note that the initial value and/or type is inferred
   from later declarations.
 
-  Since the MultiDecl does not declare a Sym itself, it is not a
-  subclass of Decl. Rather, it contains several VariableDecls.
+  Since the Tuple does not itself have a name, it is not
+  a NamedDecl. Rather, it can contain NamedDecls.
 
  */
 class TupleDecl final : public Decl {
