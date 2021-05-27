@@ -16,10 +16,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-LAUNCH_SUBDIR = src/launch/gasnetrun_psm
+LAUNCHER_SRCS = \
+        launch-slurm-gasnetrun_ofi.c \
 
-LAUNCH_OBJDIR = $(LAUNCHER_BUILD)/$(LAUNCH_SUBDIR)
+RUNTIME_CFLAGS += -DLAUNCH_PATH="gasnet/$(GASNET_INSTALL_SUBDIR)/bin/"
 
-ALL_SRCS += $(CURDIR)/$(LAUNCH_SUBDIR)/*.c
+SRCS = $(LAUNCHER_SRCS)
 
-include $(RUNTIME_ROOT)/$(LAUNCH_SUBDIR)/Makefile.share
+LAUNCHER_OBJS = \
+	$(LAUNCHER_SRCS:%.c=$(LAUNCH_OBJDIR)/%.o)

@@ -16,16 +16,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-LAUNCHER_SRCS = \
-        launch-gasnetrun_psm.c \
+LAUNCH_SUBDIR = src/launch/slurm-gasnetrun_ofi
 
-#
-# is this the right time to set this variable?  Or is user code
-# compile time
-#
-RUNTIME_CFLAGS += -DLAUNCH_PATH="gasnet/$(GASNET_INSTALL_SUBDIR)/bin/"
+LAUNCH_OBJDIR = $(LAUNCHER_BUILD)/$(LAUNCH_SUBDIR)
 
-SRCS = $(LAUNCHER_SRCS)
+ALL_SRCS += $(CURDIR)/$(LAUNCH_SUBDIR)/*.c
 
-LAUNCHER_OBJS = \
-	$(LAUNCHER_SRCS:%.c=$(LAUNCH_OBJDIR)/%.o)
+include $(RUNTIME_ROOT)/$(LAUNCH_SUBDIR)/Makefile.share

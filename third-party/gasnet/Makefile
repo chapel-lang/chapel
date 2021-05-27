@@ -10,14 +10,6 @@ ifneq ($(CHPL_MAKE_COMM_SEGMENT),none)
 CHPL_GASNET_CFG_OPTIONS += --enable-segment-$(CHPL_MAKE_COMM_SEGMENT)
 endif
 
-ifneq (, $(filter $(CHPL_MAKE_COMM_SUBSTRATE),psm ofi))
-ifeq (, $(call isTrue, $(CHPL_GASNET_ALLOW_BAD_SUBSTRATE)))
-$(error The $(CHPL_MAKE_COMM_SUBSTRATE) substrate is not currently supported \
-by GASNet-EX. Please contact the Chapel team if this configuration is \
-important to you)
-endif
-endif
-
 ifneq ($(CHPL_MAKE_COMM_SUBSTRATE),none)
 CHPL_GASNET_CFG_OPTIONS += --disable-auto-conduit-detect
 CHPL_GASNET_CFG_OPTIONS += --enable-$(CHPL_MAKE_COMM_SUBSTRATE)

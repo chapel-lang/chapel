@@ -17,7 +17,7 @@
 # limitations under the License.
 
 RUNTIME_ROOT = ../../..
-RUNTIME_SUBDIR = src/launch/gasnetrun_psm
+RUNTIME_SUBDIR = src/launch/slurm-gasnetrun_ofi
 
 ifndef CHPL_MAKE_HOME
 export CHPL_MAKE_HOME=$(shell pwd)/$(RUNTIME_ROOT)/..

@@ -59,9 +59,7 @@ def get():
             elif substrate_val == 'ucx':
                 launcher_val = slurm_prefix('gasnetrun_ucx', platform_val)
             elif substrate_val == 'ofi':
-                launcher_val = 'gasnetrun_ofi'
-            elif substrate_val == 'psm':
-                launcher_val = 'gasnetrun_psm'
+                launcher_val = slurm_prefix('gasnetrun_ofi', platform_val)
         else:
             if platform_val == 'cray-cs' and find_executable('srun'):
                 launcher_val = 'slurm-srun'
