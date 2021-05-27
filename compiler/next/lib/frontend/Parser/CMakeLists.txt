@@ -21,9 +21,9 @@
 #FIND_PACKAGE(BISON)
 #FIND_PACKAGE(FLEX)
 #IF(BISON_FOUND AND FLEX_FOUND)
-#  BISON_TARGET(MyParser chapel.ypp ${CMAKE_CURRENT_SOURCE_DIR}/bison-chapel.cpp
-#               DEFINES_FILE ${CMAKE_CURRENT_SOURCE_DIR}/bison-chapel.h)
-#  FLEX_TARGET(MyScanner chapel.lex ${CMAKE_CURRENT_SOURCE_DIR}/flex-chapel.cpp)
+#  BISON_TARGET(MyParser chpl.ypp ${CMAKE_CURRENT_SOURCE_DIR}/bison-chpl-lib.cpp
+#               DEFINES_FILE ${CMAKE_CURRENT_SOURCE_DIR}/bison-chpl-lib.h)
+#  FLEX_TARGET(MyScanner chapel.lex ${CMAKE_CURRENT_SOURCE_DIR}/flex-chpl-lib.cpp)
 #  ADD_FLEX_BISON_DEPENDENCY(MyScanner MyParser)
 #ENDIF(BISON_FOUND AND FLEX_FOUND)
 
@@ -31,10 +31,10 @@ target_sources(libchplcomp-obj
                PRIVATE
 
                # these are generated
-               bison-chapel.cpp
-               bison-chapel.h
-               flex-chapel.cpp
-               flex-chapel.h
+               bison-chpl-lib.cpp
+               bison-chpl-lib.h
+               flex-chpl-lib.cpp
+               flex-chpl-lib.h
 
                # these are included from the generated files
                lexer-help.h
@@ -46,7 +46,7 @@ target_sources(libchplcomp-obj
 
 add_custom_target(parser
                   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-                  COMMAND bison chapel.ypp
-                  COMMAND flex chapel.lex
-                  COMMAND rm -f bison-chapel.output
+                  COMMAND bison chpl.ypp
+                  COMMAND flex chpl.lex
+                  COMMAND rm -f bison-chpl-lib.output
                   COMMENT "generating flex/bison parser")

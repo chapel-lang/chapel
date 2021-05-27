@@ -39,6 +39,11 @@ SUBDIRS = \
 	ifa \
 	llvm \
 	main \
+	next/lib/frontend \
+	next/lib/frontend/Parser \
+	next/lib/queries \
+	next/lib/uast \
+	next/lib/util \
 	optimizations \
 	parser \
 	passes \
@@ -76,6 +81,11 @@ include codegen/Makefile.include
 include ifa/Makefile.include
 include llvm/Makefile.include
 include main/Makefile.include
+include next/lib/frontend/Makefile.include
+include next/lib/frontend/Parser/Makefile.include
+include next/lib/queries/Makefile.include
+include next/lib/uast/Makefile.include
+include next/lib/util/Makefile.include
 include optimizations/Makefile.include
 include parser/Makefile.include
 include passes/Makefile.include
@@ -98,6 +108,12 @@ CHPL_OBJS = \
 	$(RESOLUTION_OBJS) \
 	$(SYMTAB_OBJS) \
 	$(UTIL_OBJS) \
+	$(NEXT_UTIL_OBJS) \
+	$(NEXT_QUERIES_OBJS) \
+	$(NEXT_UAST_OBJS) \
+	$(NEXT_FRONTEND_OBJS) \
+	$(NEXT_FRONTEND_PARSER_OBJS) \
+
 
 EXECS = $(CHPL) $(CHPLDOC)
 
@@ -157,7 +173,6 @@ $(CHPL_CONFIG_CHECK): | $(CHPL_BIN_DIR)
 	rm -rf $(CHPL_CONFIG_CHECK_PREFIX)
 	mkdir -p $(CHPL_CONFIG_CHECK_DIR)
 	echo $(CHPL_MAKE_COMPILER_SUBDIR) > $(CHPL_CONFIG_CHECK)
-
 
 $(CHPL): $(CHPL_OBJS) $(CHPL_CONFIG_CHECK) | $(CHPL_BIN_DIR)
 	$(CXX) $(LDFLAGS) -o $@ $(CHPL_OBJS) $(LIBS) $(LLVM_LIBS)

@@ -61,9 +61,10 @@ OPT_CFLAGS += $(SANITIZER_OPT_CFLAGS)
 #   LDFLAGS  - ld (linker) flags
 #
 # We set
-#  COMP_CXXFLAGS,                    (compiling C++ code in compiler/)
+#  COMP_CFLAGS, COMP_CXXFLAGS,       (compiling C/C++ code in compiler/)
 #  RUNTIME_CFLAGS, RUNTIME_CXXFLAGS  (compiling C/C++ code in runtime/)
 # in a way that respects the above user-provide-able variables.
+COMP_CFLAGS = $(CPPFLAGS) $(CFLAGS)
 COMP_CXXFLAGS = $(CPPFLAGS) $(CXXFLAGS)
 # Appended after COMP_CXXFLAGS when compiling parser/lexer
 COMP_CXXFLAGS_NONCHPL = -Wno-error
@@ -144,13 +145,15 @@ CXX_STD := $(shell test $(DEF_C_VER) -ge 201112 -a $(DEF_CXX_VER) -lt 201103 && 
 # we don't know how to do that with yet.
 # If a compiler uses C++11 or newer by default, CXX11_STD will be blank.
 CXX11_STD := $(shell test $(DEF_CXX_VER) -lt 201103 && echo -std=gnu++11)
+CXX14_STD := $(shell test $(DEF_CXX_VER) -lt 201402 && echo -std=gnu++14)
 
 ifeq ($(GNU_GPP_MAJOR_VERSION),4)
   CXX_STD   := -std=gnu++11
   CXX11_STD := -std=gnu++11
 endif
 
-COMP_CXXFLAGS += $(CXX_STD)
+COMP_CFLAGS += $(C_STD)
+COMP_CXXFLAGS += $(CXX14_STD)
 RUNTIME_CFLAGS += $(C_STD)
 RUNTIME_CXXFLAGS += $(CXX_STD)
 GEN_CFLAGS += $(C_STD)
@@ -263,6 +266,7 @@ endif
 ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 5; echo "$$?"),0)
 
 ifeq ($(OPTIMIZE),1)
+COMP_CFLAGS += -fno-tree-vrp
 COMP_CXXFLAGS += -fno-tree-vrp
 endif
 
@@ -288,6 +292,7 @@ endif
 # compiler warnings settings
 #
 ifeq ($(WARNINGS), 1)
+COMP_CFLAGS += $(WARN_CFLAGS)
 COMP_CXXFLAGS += $(WARN_CXXFLAGS)
 RUNTIME_CFLAGS += $(WARN_CFLAGS) -Wno-char-subscripts
 RUNTIME_CXXFLAGS += $(WARN_CXXFLAGS)

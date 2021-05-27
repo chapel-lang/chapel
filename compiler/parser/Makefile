@@ -82,4 +82,4 @@ $(OBJ_SUBDIR)/flex-chapel.o: ../include/bison-chapel.h ../include/flex-chapel.h 
 	$(CXX) -c $(COMP_CXXFLAGS) $(COMP_CXXFLAGS_NONCHPL) -o $@ flex-chapel.cpp
 
 $(OBJ_SUBDIR)/parser.o:  ../include/bison-chapel.h ../include/flex-chapel.h parser.cpp $(OBJ_SUBDIR_MADE)
-	$(CXX) -c $(COMP_CXXFLAGS) -o $@ parser.cpp
+	$(CXX) -c $(COMP_CXXFLAGS) -DCOMPILER_SUBDIR=$(COMPILER_SUBDIR) -o $@ parser.cpp
