@@ -174,23 +174,24 @@ static size_t txCQLen;
 //
 static chpl_bool scalableMemReg;
 
-#define MAX_MEM_REGIONS 10
-static int numMemRegions = 0;
-
-static struct fid_mr* ofiMrTab[MAX_MEM_REGIONS];
-
 struct memEntry {
   void* addr;
-  size_t base;
+  uint64_t base;
   size_t size;
   void* desc;
   uint64_t key;
 };
 
+#define MAX_MEM_REGIONS 10
 typedef struct memEntry (memTab_t)[MAX_MEM_REGIONS];
 
 static memTab_t memTab;
+static int memTabSize = sizeof(memTab) / sizeof(struct memEntry);
+static int memTabCount = 0;
+
 static memTab_t* memTabMap;
+
+static struct fid_mr* ofiMrTab[MAX_MEM_REGIONS];
 
 //
 // Messaging (AM) support.
@@ -301,6 +302,10 @@ static void freeBounceBuf(void*);
 static void local_yield(void);
 
 static void time_init(void);
+
+#ifdef CHPL_COMM_DEBUG
+static void dbg_catfile(const char*, const char*);
+#endif
 
 
 ////////////////////////////////////////
@@ -2245,6 +2250,8 @@ void init_ofiExchangeAvInfo(void) {
 }
 
 
+static void findMoreMemoryRegions(void);
+
 static
 void init_ofiForMem(void) {
   void* fixedHeapStart;
@@ -2276,22 +2283,28 @@ void init_ofiForMem(void) {
   // in the future, though.
   //
   if (scalableMemReg) {
-    numMemRegions = 1;
     memTab[0].addr = (void*) 0;
     memTab[0].base = 0;
     memTab[0].size = SIZE_MAX;
+    memTabCount = 1;
   } else {
     if (fixedHeapSize == 0) {
       INTERNAL_ERROR_V("must specify fixed heap with %s provider",
                        ofi_info->fabric_attr->prov_name);
     }
 
-    numMemRegions = 1;
     memTab[0].addr = fixedHeapStart;
-    memTab[0].base = ((ofi_info->domain_attr->mr_mode & FI_MR_VIRT_ADDR) == 0)
-                     ? (size_t) fixedHeapStart
-                     : (size_t) 0;
+    memTab[0].base = 0;
     memTab[0].size = fixedHeapSize;
+    memTabCount = 1;
+
+    findMoreMemoryRegions();
+
+    if ((ofi_info->domain_attr->mr_mode & FI_MR_VIRT_ADDR) == 0) {
+      for (int i = 0; i < memTabCount; i++) {
+        memTab[i].base = (uint64_t) memTab[i].addr;
+      }
+    }
   }
 
   const chpl_bool prov_key =
@@ -2302,7 +2315,7 @@ void init_ofiForMem(void) {
     bufAcc |= FI_SEND | FI_READ | FI_WRITE;
   }
 
-  for (int i = 0; i < numMemRegions; i++) {
+  for (int i = 0; i < memTabCount; i++) {
     DBG_PRINTF(DBG_MR, "[%d] fi_mr_reg(%p, %#zx, %#" PRIx64 ")",
                i, memTab[i].addr, memTab[i].size, bufAcc);
     OFI_CHK(fi_mr_reg(ofi_domain,
@@ -2326,6 +2339,129 @@ void init_ofiForMem(void) {
     CHPL_CALLOC(memTabMap, chpl_numNodes);
     chpl_comm_ofi_oob_allgather(&memTab, memTabMap, sizeof(memTabMap[0]));
   }
+}
+
+
+static
+chpl_bool nextMemMapEntry(void** pAddr, size_t* pSize,
+                          char* retPath, size_t retPathSize);
+
+static
+void findMoreMemoryRegions(void) {
+  DBG_CATFILE(DBG_MEMMAP, "/proc/self/maps", NULL);
+
+  //
+  // Look through /proc/self/maps for memory regions we'd like to
+  // register.  So far we just try to register the program's data
+  // segment, heap, and stack.  To identify the first of those we
+  // need our program's name, so get that first.
+  //
+  char progName[1000];
+  ssize_t pnLen = readlink("/proc/self/exe", progName, sizeof(progName));
+  if (pnLen > 0) {
+    if (pnLen >= sizeof(progName)) {
+      pnLen--;
+    }
+    progName[pnLen] = '\0';
+  }
+
+  void* addr;
+  size_t size;
+  char path[1000];
+  while (memTabCount < memTabSize - 1
+         && nextMemMapEntry(&addr, &size, path, sizeof(path))) {
+    //
+    // Record this memory region if we want it.  Don't record a region
+    // more than once.
+    //
+    chpl_bool seen = false;
+    for (int i = 0; i < memTabCount; i++) {
+      if (addr == memTab[i].addr && size == memTab[i].size) {
+        seen = true;
+        break;
+      }
+    }
+
+    if (!seen
+        && ((pnLen > 0 && strcmp(path, progName) == 0)
+            || strcmp(path, "[heap]") == 0
+            || strcmp(path, "[stack]") == 0)) {
+      DBG_PRINTF(DBG_MR, "record mem map region: %p %#" PRIx64 " \"%s\"",
+                 addr, size, path);
+      memTab[memTabCount].addr = addr;
+      memTab[memTabCount].size = size;
+      memTabCount++;
+    }
+  }
+}
+
+
+static
+chpl_bool nextMemMapEntry(void** pAddr, size_t* pSize,
+                          char* retPath, size_t retPathSize) {
+  static FILE* f = NULL;
+
+  if (f == NULL) {
+    if ((f = fopen("/proc/self/maps", "r")) == NULL) {
+      INTERNAL_ERROR_V("cannot fopen(\"/proc/self/maps\")");
+    }
+  }
+
+  while (true) {
+    uint64_t lo_addr;
+    uint64_t hi_addr;
+    char perms[5];
+    int ch;
+
+    int scn_cnt;
+    scn_cnt = fscanf(f, "%lx-%lx%4s%*x%*x:%*x%*x", &lo_addr, &hi_addr, perms);
+    if (scn_cnt == EOF) {
+      break;
+    } else if (scn_cnt != 3) {
+      INTERNAL_ERROR_V("unrecognized /proc/self/maps line format");
+    }
+
+    //
+    // Skip regions that are not read/write.
+    //
+    if (perms[0] != 'r' || perms[1] != 'w') {
+      while ((ch = fgetc(f)) != EOF && ch != '\n')
+        ;
+      continue;
+    }
+
+    if (retPath == NULL) {
+      //
+      // Pathname not wanted -- skip the rest of this line.
+      //
+      while ((ch = fgetc(f)) != EOF && ch != '\n')
+        ;
+    }
+    else {
+      //
+      // Pathname wanted -- skip leading white space, then pick up as
+      // many characters as will fit in supplied buffer.
+      //
+      while ((ch = fgetc(f)) == ' ' || ch == '\t')
+        ;
+
+      int p_idx;
+      for (p_idx = 0; ch != EOF && ch != '\n'; ch = fgetc(f)) {
+        if (p_idx < retPathSize - 1) {
+          retPath[p_idx++] = ch;
+        }
+      }
+      retPath[p_idx] = '\0';
+    }
+
+    *pAddr = (void*) (intptr_t) lo_addr;
+    *pSize  = hi_addr - lo_addr;
+    return true;
+  }
+
+  (void) fclose(f);
+  f = NULL;
+  return false;
 }
 
 
@@ -2610,7 +2746,7 @@ void fini_ofi(void) {
   if (chpl_numNodes <= 1)
     return;
 
-  for (int i = 0; i < numMemRegions; i++) {
+  for (int i = 0; i < memTabCount; i++) {
     OFI_CHK(fi_close(&ofiMrTab[i]->fid));
   }
 
@@ -2891,7 +3027,7 @@ static inline
 struct memEntry* getMemEntry(memTab_t* tab, void* addr, size_t size) {
   char* myAddr = (char*) addr;
 
-  for (int i = 0; i < numMemRegions; i++) {
+  for (int i = 0; i < memTabCount; i++) {
     char* tabAddr = (char*) (*tab)[i].addr;
     char* tabAddrEnd = tabAddr + (*tab)[i].size;
     if (myAddr >= tabAddr && myAddr + size <= tabAddrEnd)
@@ -7639,6 +7775,29 @@ void am_debugPrep(amRequest_t* req) {
       req->b.seq = seq;
     }
   }
+}
+
+
+static
+void dbg_catfile(const char* fname, const char* match) {
+  FILE* f;
+  char buf[1000];
+
+  if ((f = fopen(fname, "r")) == NULL) {
+    INTERNAL_ERROR_V("%s(): fopen(\"%s\") failed", __func__, fname);
+  }
+
+  (void) fprintf(chpl_comm_ofi_dbg_file,
+                 "==============================\nfile: %s\n\n",
+                 fname);
+
+  while (fgets(buf, sizeof(buf), f) != NULL) {
+    if (match == NULL || strstr(buf, match) != NULL) {
+      (void) fputs(buf, chpl_comm_ofi_dbg_file);
+    }
+  }
+
+  (void) fclose(f);
 }
 
 #endif
