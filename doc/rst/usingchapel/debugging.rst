@@ -32,7 +32,6 @@ launchers::
   gasnetrun_ibv
   gasnetrun_mpi
   gasnetrun_ofi
-  gasnetrun_psm
   mpirun4ofi
   pbs-aprun
   smp
