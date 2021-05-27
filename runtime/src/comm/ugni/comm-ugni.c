@@ -2665,10 +2665,10 @@ chpl_bool get_next_rw_memory_range(uint64_t* addr, uint64_t* len,
         ;
 
       for (p_idx = 0; ch != EOF && ch != '\n'; ch = fgetc(f)) {
-        if (p_idx < pathname_size)
+        if (p_idx < pathname_size - 1)
           pathname[p_idx++] = ch;
       }
-      pathname[p_idx++] = '\0';
+      pathname[p_idx] = '\0';
     }
 
     *addr = lo_addr;
