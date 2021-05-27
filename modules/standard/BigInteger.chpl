@@ -4030,11 +4030,11 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
                     param     rounding: Round) {
     use Round;
     if (rounding == UP) {
-      bigint.div_q(n, d, round.up);
+      this.div_q(n, d, round.up);
     } else if (rounding == ZERO) {
-      bigint.div_q(n, d, round.zero);
+      this.div_q(n, d, round.zero);
     } else {
-      bigint.div_q(n, d, round.down);
+      this.div_q(n, d, round.down);
     }
   }
 
@@ -4081,11 +4081,11 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
                     param     rounding: Round) {
     use Round;
     if (rounding == UP) {
-      bigint.div_q(n, d, round.up);
+      this.div_q(n, d, round.up);
     } else if (rounding == ZERO) {
-      bigint.div_q(n, d, round.zero);
+      this.div_q(n, d, round.zero);
     } else {
-      bigint.div_q(n, d, round.down);
+      this.div_q(n, d, round.down);
     }
   }
 
@@ -4103,11 +4103,11 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
                     param     rounding: Round) {
     use Round;
     if (rounding == UP) {
-      bigint.div_r(n, d, round.up);
+      this.div_r(n, d, round.up);
     } else if (rounding == ZERO) {
-      bigint.div_r(n, d, round.zero);
+      this.div_r(n, d, round.zero);
     } else {
-      bigint.div_r(n, d, round.down);
+      this.div_r(n, d, round.down);
     }
 
   }
@@ -4154,11 +4154,11 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
                     param     rounding: Round) {
     use Round;
     if (rounding == UP) {
-      bigint.div_r(n, d, round.up);
+      this.div_r(n, d, round.up);
     } else if (rounding == ZERO) {
-      bigint.div_r(n, d, round.zero);
+      this.div_r(n, d, round.zero);
     } else {
-      bigint.div_r(n, d, round.down);
+      this.div_r(n, d, round.down);
     }
   }
 
@@ -4176,11 +4176,11 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
                      param     rounding: Round) {
     use Round;
     if (rounding == UP) {
-      bigint.div_qr(r, n, d, round.up);
+      this.div_qr(r, n, d, round.up);
     } else if (rounding == ZERO) {
-      bigint.div_qr(r, n, d, round.zero);
+      this.div_qr(r, n, d, round.zero);
     } else {
-      bigint.div_qr(r, n, d, round.down);
+      this.div_qr(r, n, d, round.down);
     }
   }
 
@@ -4233,11 +4233,11 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
                      param     rounding: Round) {
     use Round;
     if (rounding == UP) {
-      bigint.div_qr(r, n, d, round.up);
+      this.div_qr(r, n, d, round.up);
     } else if (rounding == ZERO) {
-      bigint.div_qr(r, n, d, round.zero);
+      this.div_qr(r, n, d, round.zero);
     } else {
-      bigint.div_qr(r, n, d, round.down);
+      this.div_qr(r, n, d, round.down);
     }
   }
 
@@ -4255,11 +4255,11 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
                          param     rounding: Round) {
     use Round;
     if (rounding == UP) {
-      bigint.div_q_2exp(n, b, round.up);
+      this.div_q_2exp(n, b, round.up);
     } else if (rounding == ZERO) {
-      bigint.div_q_2exp(n, b, round.zero);
+      this.div_q_2exp(n, b, round.zero);
     } else {
-      bigint.div_q_2exp(n, b, round.down);
+      this.div_q_2exp(n, b, round.down);
     }
   }
 
@@ -4305,11 +4305,11 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
                          param     rounding: Round) {
     use Round;
     if (rounding == UP) {
-      bigint.div_r_2exp(n, b, round.up);
+      this.div_r_2exp(n, b, round.up);
     } else if (rounding == ZERO) {
-      bigint.div_r_2exp(n, b, round.zero);
+      this.div_r_2exp(n, b, round.zero);
     } else {
-      bigint.div_r_2exp(n, b, round.down);
+      this.div_r_2exp(n, b, round.down);
     }
   }
 
