@@ -4,7 +4,7 @@ Examining/Debugging Compiler IR
 
 See also: ``CompilerDebugging.txt``.
 
-See also: compiler overview in ``$CHPL_HOME/doc/rst/developer/compilerOverview``.
+See also: compiler overview in ``$CHPL_HOME/doc/rst/developer/implementation/compilerOverview``.
 
 An easy way to examine the evolution of the source code is to compile with
 ``--html``. For example, when you compile ``hello.chpl`` with this flag in conjunction
