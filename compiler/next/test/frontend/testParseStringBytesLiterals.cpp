@@ -19,9 +19,10 @@
 
 #include "chpl/frontend/Parser.h"
 #include "chpl/queries/Context.h"
+#include "chpl/uast/BytesLiteral.h"
+#include "chpl/uast/CStringLiteral.h"
 #include "chpl/uast/Module.h"
 #include "chpl/uast/StringLiteral.h"
-#include "chpl/uast/BytesLiteral.h"
 #include "chpl/uast/Variable.h"
 
 // always check assertions in this test
@@ -77,6 +78,27 @@ static void testBytesLiteral(Parser* parser,
   assert(bytesLit->quoteStyle() == expectQuoteStyle);
   assert(bytesLit->str() == expectValue);
 }
+static void testCStringLiteral(Parser* parser,
+                               const char* testname,
+                               const char* str,
+                               StringLiteral::QuoteStyle expectQuoteStyle,
+                               const std::string& expectValue) {
+  std::string toparse = "var x = c";
+  toparse += str;
+  toparse += ";\n";
+  auto parseResult = parser->parseString(testname, toparse.c_str());
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModule());
+  auto module = parseResult.topLevelExpressions[0]->toModule();
+  assert(module->numStmts() == 1);
+  auto variable = module->stmt(0)->toVariable();
+  assert(variable);
+  auto strLit = variable->initExpression()->toCStringLiteral();
+  assert(strLit);
+  assert(strLit->quoteStyle() == expectQuoteStyle);
+  assert(strLit->str() == expectValue);
+}
 
 static void testLiteral(Parser* parser,
                         const char* testname,
@@ -129,6 +151,11 @@ int main() {
               StringLiteral::TRIPLE_SINGLE, std::string("\\x00\\x01"));
   testLiteral(p, "test13.chpl", "\"\"\"\\x00\\x01\"\"\"",
               StringLiteral::TRIPLE_DOUBLE, std::string("\\x00\\x01"));
+
+  testCStringLiteral(p, "test20.chpl", "'hi'",
+                     StringLiteral::SINGLE, std::string("hi"));
+  testCStringLiteral(p, "test21.chpl", "\"hi\"",
+                     StringLiteral::DOUBLE, std::string("hi"));
 
   return 0;
 }

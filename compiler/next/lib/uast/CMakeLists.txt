@@ -30,6 +30,7 @@ target_sources(libchplcomp-obj
                Comment.cpp
                Conditional.cpp
                ControlFlow.cpp
+               CStringLiteral.cpp
                Decl.cpp
                Dot.cpp
                DoWhile.cpp

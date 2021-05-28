@@ -101,11 +101,12 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
 
 
   AST_BEGIN_SUBCLASSES(Literal)        // old AST: Immediate
-    AST_LEAF(UintLiteral)
+    AST_LEAF(BytesLiteral)
+    AST_LEAF(CStringLiteral)
     AST_LEAF(IntLiteral)
     AST_LEAF(RealLiteral)
     AST_LEAF(StringLiteral)
-    AST_LEAF(BytesLiteral)
+    AST_LEAF(UintLiteral)
   AST_END_SUBCLASSES(Literal)
 
   AST_BEGIN_SUBCLASSES(Call)           // old AST:  CallExpr

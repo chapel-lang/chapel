@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/StringLiteral.h"
+#include "chpl/uast/CStringLiteral.h"
 
 #include "chpl/uast/Builder.h"
 
@@ -27,21 +27,21 @@ namespace chpl {
 namespace uast {
 
 
-bool StringLiteral::contentsMatchInner(const ASTNode* other) const {
-  const StringLiteral* lhs = this;
-  const StringLiteral* rhs = (const StringLiteral*) other;
+bool CStringLiteral::contentsMatchInner(const ASTNode* other) const {
+  const CStringLiteral* lhs = this;
+  const CStringLiteral* rhs = (const CStringLiteral*) other;
   return lhs->literalContentsMatchInner(rhs) &&
          lhs->quotes_ == rhs->quotes_ &&
          lhs->value_ == rhs->value_;
 }
-void StringLiteral::markUniqueStringsInner(Context* context) const {
+void CStringLiteral::markUniqueStringsInner(Context* context) const {
   literalMarkUniqueStringsInner(context);
 }
 
-owned<StringLiteral> StringLiteral::build(Builder* builder, Location loc,
+owned<CStringLiteral> CStringLiteral::build(Builder* builder, Location loc,
                                           StringLiteral::QuoteStyle quotes,
                                           std::string value) {
-  StringLiteral* ret = new StringLiteral(quotes, std::move(value));
+  CStringLiteral* ret = new CStringLiteral(quotes, std::move(value));
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

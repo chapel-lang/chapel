@@ -31,6 +31,7 @@ bool BytesLiteral::contentsMatchInner(const ASTNode* other) const {
   const BytesLiteral* lhs = this;
   const BytesLiteral* rhs = (const BytesLiteral*) other;
   return lhs->literalContentsMatchInner(rhs) &&
+         lhs->quotes_ == rhs->quotes_ &&
          lhs->value_ == rhs->value_;
 }
 void BytesLiteral::markUniqueStringsInner(Context* context) const {
