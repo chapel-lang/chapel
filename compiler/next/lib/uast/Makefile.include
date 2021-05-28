@@ -27,11 +27,13 @@ NEXT_UAST_SRCS =                                 \
   Block.cpp \
   BracketLoop.cpp \
   Builder.cpp \
+  BytesLiteral.cpp \
   Call.cpp \
   Coforall.cpp \
   Comment.cpp \
   Conditional.cpp \
   ControlFlow.cpp \
+  CStringLiteral.cpp \
   Decl.cpp \
   Dot.cpp \
   DoWhile.cpp \
@@ -47,6 +49,7 @@ NEXT_UAST_SRCS =                                 \
   Function.cpp \
   Identifier.cpp \
   IndexableLoop.cpp \
+  Literal.cpp \
   Local.cpp \
   Loop.cpp \
   Module.cpp \
@@ -55,6 +58,7 @@ NEXT_UAST_SRCS =                                 \
   New.cpp \
   OpCall.cpp \
   Serial.cpp \
+  StringLiteral.cpp \
   TaskVar.cpp \
   TupleDecl.cpp \
   TypeDecl.cpp \
