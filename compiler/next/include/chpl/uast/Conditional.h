@@ -64,8 +64,10 @@ class Conditional final : public ControlFlow {
     assert(elseBlockStyle_ != BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK);
     assert(isExpressionASTList(children_));
     assert(condition());
-    assert(numThenBodyStmts <= children_.size());
-    assert(numElseBodyStmts <= children_.size());
+    assert(numThenBodyStmts >= 0);
+    assert(numElseBodyStmts >= 0);
+    assert(((size_t)numThenBodyStmts) <= children_.size());
+    assert(((size_t)numElseBodyStmts) <= children_.size());
   }
 
   bool contentsMatchInner(const ASTNode* other) const override;
