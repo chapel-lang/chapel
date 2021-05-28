@@ -31,17 +31,17 @@ bool CStringLiteral::contentsMatchInner(const ASTNode* other) const {
   const CStringLiteral* lhs = this;
   const CStringLiteral* rhs = (const CStringLiteral*) other;
   return lhs->literalContentsMatchInner(rhs) &&
-         lhs->quotes_ == rhs->quotes_ &&
-         lhs->value_ == rhs->value_;
+         lhs->value_ == rhs->value_ &&
+         lhs->quotes_ == rhs->quotes_;
 }
 void CStringLiteral::markUniqueStringsInner(Context* context) const {
   literalMarkUniqueStringsInner(context);
 }
 
 owned<CStringLiteral> CStringLiteral::build(Builder* builder, Location loc,
-                                          StringLiteral::QuoteStyle quotes,
-                                          std::string value) {
-  CStringLiteral* ret = new CStringLiteral(quotes, std::move(value));
+                                          std::string value,
+                                          StringLiteral::QuoteStyle quotes) {
+  CStringLiteral* ret = new CStringLiteral(std::move(value), quotes);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

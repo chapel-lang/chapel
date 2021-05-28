@@ -34,13 +34,13 @@ namespace uast {
  */
 class BytesLiteral final : public Literal {
  private:
-  StringLiteral::QuoteStyle quotes_;
   std::string value_;
+  StringLiteral::QuoteStyle quotes_;
 
-  BytesLiteral(StringLiteral::QuoteStyle quotes, std::string value)
+  BytesLiteral(std::string value, StringLiteral::QuoteStyle quotes)
     : Literal(asttags::BytesLiteral),
-      quotes_(quotes),
-      value_(std::move(value))
+      value_(std::move(value)),
+      quotes_(quotes)
   { }
   bool contentsMatchInner(const ASTNode* other) const override;
   void markUniqueStringsInner(Context* context) const override;
@@ -49,13 +49,8 @@ class BytesLiteral final : public Literal {
   ~BytesLiteral() override = default;
 
   static owned<BytesLiteral> build(Builder* builder, Location loc,
-                                   StringLiteral::QuoteStyle quotes,
-                                   std::string value);
-
-  /**
-   Returns the type of quotes used for this string literal.
-   */
-  StringLiteral::QuoteStyle quoteStyle() const { return this->quotes_; }
+                                   std::string value,
+                                   StringLiteral::QuoteStyle quotes);
 
   /**
    Returns the value of this string literal as a C string,
@@ -67,6 +62,11 @@ class BytesLiteral final : public Literal {
    not including the quotes.
    */
   const std::string& str() const { return value_; }
+
+  /**
+   Returns the type of quotes used for this string literal.
+   */
+  StringLiteral::QuoteStyle quoteStyle() const { return this->quotes_; }
 };
 
 

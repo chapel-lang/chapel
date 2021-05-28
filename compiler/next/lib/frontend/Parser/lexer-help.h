@@ -123,18 +123,18 @@ static int processStringLiteral(yyscan_t scanner,
   } else if (type == STRINGLITERAL) {
     lit = StringLiteral::build(context->builder,
                                context->convertLocation(*loc),
-                               quotes,
-                               std::move(value)).release();
+                               std::move(value),
+                               quotes).release();
   } else if (type == BYTESLITERAL) {
     lit = BytesLiteral::build(context->builder,
                               context->convertLocation(*loc),
-                              quotes,
-                              std::move(value)).release();
+                              std::move(value),
+                              quotes).release();
   } else if (type == CSTRINGLITERAL) {
     lit = CStringLiteral::build(context->builder,
                                 context->convertLocation(*loc),
-                                quotes,
-                                std::move(value)).release();
+                                std::move(value),
+                                quotes).release();
   } else {
     assert(false && "unknown type in processStringLiteral");
   }
@@ -170,18 +170,18 @@ static int processTripleStringLiteral(yyscan_t scanner,
   } else if (type == STRINGLITERAL) {
     lit = StringLiteral::build(context->builder,
                                context->convertLocation(*loc),
-                               quotes,
-                               std::move(value)).release();
+                               std::move(value),
+                               quotes).release();
   } else if (type == BYTESLITERAL) {
     lit = BytesLiteral::build(context->builder,
                               context->convertLocation(*loc),
-                              quotes,
-                              std::move(value)).release();
+                              std::move(value),
+                              quotes).release();
   } else if (type == CSTRINGLITERAL) {
     lit = CStringLiteral::build(context->builder,
                                 context->convertLocation(*loc),
-                                quotes,
-                                std::move(value)).release();
+                                std::move(value),
+                                quotes).release();
   } else {
     assert(false && "unknown type in processStringLiteral");
   }

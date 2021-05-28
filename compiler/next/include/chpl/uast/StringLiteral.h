@@ -41,13 +41,13 @@ class StringLiteral final : public Literal {
   };
 
  private:
-  QuoteStyle quotes_;
   std::string value_;
+  QuoteStyle quotes_;
 
-  StringLiteral(QuoteStyle quotes, std::string value)
+  StringLiteral(std::string value, QuoteStyle quotes)
     : Literal(asttags::StringLiteral),
-      quotes_(quotes),
-      value_(std::move(value))
+      value_(std::move(value)),
+      quotes_(quotes)
   { }
   bool contentsMatchInner(const ASTNode* other) const override;
   void markUniqueStringsInner(Context* context) const override;
@@ -56,13 +56,8 @@ class StringLiteral final : public Literal {
   ~StringLiteral() override = default;
 
   static owned<StringLiteral> build(Builder* builder, Location loc,
-                                    QuoteStyle quotes,
-                                    std::string value);
-
-  /**
-   Returns the type of quotes used for this string literal.
-   */
-  QuoteStyle quoteStyle() const { return this->quotes_; }
+                                    std::string value,
+                                    QuoteStyle quotes);
 
   /**
    Returns the value of this string literal as a C string,
@@ -74,6 +69,11 @@ class StringLiteral final : public Literal {
    not including the quotes.
    */
   const std::string& str() const { return value_; }
+
+  /**
+   Returns the type of quotes used for this string literal.
+   */
+  QuoteStyle quoteStyle() const { return this->quotes_; }
 };
 
 
