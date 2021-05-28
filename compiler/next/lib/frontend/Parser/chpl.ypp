@@ -2904,11 +2904,11 @@ str_bytes_literal:
 literal_expr:
   bool_literal
 | str_bytes_literal
-| INTLITERAL            { $$ = TODOEXPR(@$); }
-| REALLITERAL           { $$ = TODOEXPR(@$); }
-| IMAGLITERAL           { $$ = TODOEXPR(@$); }
-| CSTRINGLITERAL        { $$ = $1; }
-| TNONE                 { $$ = context->buildIdent(@$, $1); }
+| INTLITERAL          { $$ = context->buildNumericLiteral(@$, $1, INTLITERAL); }
+| REALLITERAL         { $$ = TODOEXPR(@$); }
+| IMAGLITERAL         { $$ = TODOEXPR(@$); }
+| CSTRINGLITERAL      { $$ = $1; }
+| TNONE               { $$ = context->buildIdent(@$, $1); }
 | TLCBR expr_ls TRCBR          { $$ = TODOEXPR(@$); }
 | TLCBR expr_ls TCOMMA TRCBR   { $$ = TODOEXPR(@$); }
 | TLSBR expr_ls TRSBR          { $$ = TODOEXPR(@$); }

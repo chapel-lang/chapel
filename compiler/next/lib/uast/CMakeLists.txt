@@ -46,6 +46,7 @@ target_sources(libchplcomp-obj
                Function.cpp
                Identifier.cpp
                IndexableLoop.cpp
+               IntLiteral.cpp
                Literal.cpp
                Local.cpp
                Loop.cpp
@@ -59,6 +60,7 @@ target_sources(libchplcomp-obj
                TaskVar.cpp
                TupleDecl.cpp
                TypeDecl.cpp
+               UintLiteral.cpp
                Variable.cpp
                VarLikeDecl.cpp
                Visitor.cpp

@@ -262,13 +262,14 @@ CommentsAndStmt buildConditionalStmt(bool usesThenKeyword, YYLTYPE locIf,
                                      Expression* condition,
                                      CommentsAndStmt thenStmt,
                                      CommentsAndStmt elseStmt);
-  // Do we really need these?
-  /*
-  int         captureTokens; // no, new AST meant to be more faithful to src;
-                             // if we want source code we can read input again.
-  std::string captureString;
-  bool        parsingPrivate; // no, create config var and
-                              // replace its initialization with something
-                              // provided and separately parsed.
-   */
+
+  uint64_t binStr2uint64(YYLTYPE location, const char* str, bool& erroroneous);
+  uint64_t octStr2uint64(YYLTYPE location, const char* str, bool& erroroneous);
+  uint64_t decStr2uint64(YYLTYPE location, const char* str, bool& erroroneous);
+  uint64_t hexStr2uint64(YYLTYPE location, const char* str, bool& erroroneous);
+
+  Expression* buildNumericLiteral(YYLTYPE location,
+                                  PODUniqueString str,
+                                  int type);
+
 };
