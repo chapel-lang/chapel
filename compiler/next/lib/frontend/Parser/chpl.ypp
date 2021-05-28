@@ -247,9 +247,10 @@
   // strategy. In the future we could probably switch to a more
   // C++ mode of using bison.
   union YYCHPL_STYPE {
-    // The lexer only uses these two
+    // The lexer only uses these three
     PODUniqueString uniqueStr;
     SizedStr sizedStr;
+    Literal* literal;
 
     // The remaining types are for parser productions
 
@@ -397,9 +398,9 @@
 %token <uniqueStr> INTLITERAL
 %token <uniqueStr> REALLITERAL
 %token <uniqueStr> IMAGLITERAL
-%token <sizedStr> STRINGLITERAL
-%token <sizedStr> BYTESLITERAL
-%token <sizedStr> CSTRINGLITERAL
+%token <literal> STRINGLITERAL
+%token <literal> BYTESLITERAL
+%token <literal> CSTRINGLITERAL
 %token <sizedStr> EXTERNCODE
 
 //
@@ -646,17 +647,21 @@ toplevel_stmt:
 pragma_ls:
   TPRAGMA STRINGLITERAL
     {
-      SizedStr ss = $2;
+      Literal* lit = $2;
+      assert(lit->isStringLiteral());
+      StringLiteral* strLit = lit->toStringLiteral();
       $$ = new UniqueStrList();
-      PODUniqueString u = STR(ss.allocatedData);
-      delete ss.allocatedData;
+      PODUniqueString u = STR(strLit->c_str());
+      delete strLit;
       $$->push_back(u);
     }
 | pragma_ls TPRAGMA STRINGLITERAL
     {
-      SizedStr ss = $3;
-      PODUniqueString u = STR(ss.allocatedData);
-      delete ss.allocatedData;
+      Literal* lit = $3;
+      assert(lit->isStringLiteral());
+      StringLiteral* strLit = lit->toStringLiteral();
+      PODUniqueString u = STR(strLit->c_str());
+      delete strLit;
       $1->push_back(u);
     }
 ;
@@ -2893,8 +2898,8 @@ bool_literal:
 ;
 
 str_bytes_literal:
-  STRINGLITERAL   { $$ = TODOEXPR(@$); }
-| BYTESLITERAL    { $$ = TODOEXPR(@$); }
+  STRINGLITERAL   { $$ = $1; }
+| BYTESLITERAL    { $$ = $1; }
 ;
 
 literal_expr:

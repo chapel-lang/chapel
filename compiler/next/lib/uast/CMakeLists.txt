@@ -24,6 +24,7 @@ target_sources(libchplcomp-obj
                Block.cpp
                BracketLoop.cpp
                Builder.cpp
+               BytesLiteral.cpp
                Call.cpp
                Coforall.cpp
                Comment.cpp
@@ -44,6 +45,7 @@ target_sources(libchplcomp-obj
                Function.cpp
                Identifier.cpp
                IndexableLoop.cpp
+               Literal.cpp
                Local.cpp
                Loop.cpp
                Module.cpp
@@ -52,6 +54,7 @@ target_sources(libchplcomp-obj
                New.cpp
                OpCall.cpp
                Serial.cpp
+               StringLiteral.cpp
                TaskVar.cpp
                TupleDecl.cpp
                TypeDecl.cpp

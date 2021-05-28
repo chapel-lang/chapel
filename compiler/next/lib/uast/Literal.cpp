@@ -17,38 +17,15 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_UAST_LITERAL_H
-#define CHPL_UAST_LITERAL_H
-
-#include "chpl/uast/Expression.h"
+#include "chpl/uast/Literal.h"
 
 namespace chpl {
 namespace uast {
 
 
-/**
-  This is an abstract base class for literals.
-  Literals are fixed values in the source code, like 1, 30.24, and "x".
- */
-class Literal : public Expression {
- protected:
-  Literal(ASTTag tag)
-    : Expression(tag) {
-  }
-
-  bool literalContentsMatchInner(const Literal* other) const {
-    return expressionContentsMatchInner(other);
-  }
-  void literalMarkUniqueStringsInner(Context* context) const {
-    expressionMarkUniqueStringsInner(context);
-  }
-
- public:
-  virtual ~Literal() = 0; // this is an abstract base class
-};
+Literal::~Literal() {
+}
 
 
-} // end namespace uast
-} // end namespace chpl
-
-#endif
+} // namespace uast
+} // namespace chpl

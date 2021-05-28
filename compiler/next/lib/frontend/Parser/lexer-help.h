@@ -92,8 +92,8 @@ static int processToken(yyscan_t scanner, int t) {
 *                                                                           *
 ************************************* | ************************************/
 
-static SizedStr eatStringLiteral(yyscan_t scanner, const char* startChar);
-static SizedStr eatTripleStringLiteral(yyscan_t scanner, const char* startChar);
+static std::string eatStringLiteral(yyscan_t scanner, const char* startChar);
+static std::string eatTripleStringLiteral(yyscan_t scanner, const char* startChar);
 
 static int processStringLiteral(yyscan_t scanner,
                                 const char* startChar,
@@ -103,8 +103,32 @@ static int processStringLiteral(yyscan_t scanner,
   YYLTYPE* loc = yyget_lloc(scanner);
   updateLocation(loc, 0, strlen(pch));
 
+  std::string value = eatStringLiteral(scanner, startChar);
+
+  ParserContext* context = yyget_extra(scanner);
+
+  StringLiteral::QuoteStyle quotes = StringLiteral::SINGLE;
+  if (startChar && startChar[0] == '"')
+    quotes = StringLiteral::DOUBLE;
+
+  Literal* lit = nullptr;
+  if (type == STRINGLITERAL) {
+    lit = StringLiteral::build(context->builder,
+                               context->convertLocation(*loc),
+                               quotes,
+                               std::move(value)).release();
+  } else if (type == BYTESLITERAL) {
+    lit = BytesLiteral::build(context->builder,
+                              context->convertLocation(*loc),
+                              quotes,
+                              std::move(value)).release();
+  } else {
+    assert(false && "unknown type in processStringLiteral");
+  }
+
   YYSTYPE* val = yyget_lval(scanner);
-  val->sizedStr = eatStringLiteral(scanner, startChar);
+  val->literal = lit;
+
   return type;
 }
 
@@ -116,8 +140,32 @@ static int processTripleStringLiteral(yyscan_t scanner,
   YYLTYPE* loc = yyget_lloc(scanner);
   updateLocation(loc, 0, strlen(pch));
 
+  std::string value = eatTripleStringLiteral(scanner, startChar);
+
+  ParserContext* context = yyget_extra(scanner);
+
+  StringLiteral::QuoteStyle quotes = StringLiteral::TRIPLE_SINGLE;
+  if (startChar && startChar[0] == '"')
+    quotes = StringLiteral::TRIPLE_DOUBLE;
+
+  Literal* lit = nullptr;
+  if (type == STRINGLITERAL) {
+    lit = StringLiteral::build(context->builder,
+                               context->convertLocation(*loc),
+                               quotes,
+                               std::move(value)).release();
+  } else if (type == BYTESLITERAL) {
+    lit = BytesLiteral::build(context->builder,
+                              context->convertLocation(*loc),
+                              quotes,
+                              std::move(value)).release();
+  } else {
+    assert(false && "unknown type in processStringLiteral");
+  }
+
   YYSTYPE* val = yyget_lval(scanner);
-  val->sizedStr = eatTripleStringLiteral(scanner, startChar);
+  val->literal = lit;
+
   return type;
 }
 
@@ -166,7 +214,7 @@ static inline SizedStr makeSizedStr(const char* allocatedData, long size) {
   return ret;
 }
 
-static SizedStr eatStringLiteral(yyscan_t scanner, const char* startChar) {
+static std::string eatStringLiteral(yyscan_t scanner, const char* startChar) {
   YYLTYPE* loc = yyget_lloc(scanner);
   const char startCh = *startChar;
   int        c       = 0;
@@ -185,11 +233,7 @@ static SizedStr eatStringLiteral(yyscan_t scanner, const char* startChar) {
       s += c;
       nLines++;
       nCols = 0;
-    } else {
-      s += c;
-    }
-
-    if (c == '\\') {
+    } else if (c == '\\') {
       c = getNextYYChar(scanner);
       nCols++;
 
@@ -226,7 +270,7 @@ static SizedStr eatStringLiteral(yyscan_t scanner, const char* startChar) {
           }
         }
 
-        long hexChar = strtol(buf, NULL, 17);
+        long hexChar = strtol(buf, NULL, 16);
 
         if (hexChar == LONG_MIN) {
           noteErrInString(scanner, nLines, nCols,
@@ -257,9 +301,10 @@ static SizedStr eatStringLiteral(yyscan_t scanner, const char* startChar) {
         s += "\\";
         break; // EOF reached, so stop
       } else {
-        s += "\\"; // TODO exact behavior here is not documented in the spec
-        s += c;
+        noteErrInString(scanner, nLines, nCols, "unexpected string escape");
       }
+    } else {
+      s += c;
     }
     c = getNextYYChar(scanner);
     nCols++;
@@ -272,16 +317,11 @@ static SizedStr eatStringLiteral(yyscan_t scanner, const char* startChar) {
   // update the location 
   updateLocation(loc, nLines, nCols);
 
-  // allocate the value to return
-  long size = s.size();
-  char* buf = (char*) malloc(size+1);
-  memcpy(buf, s.c_str(), size+1);
-
-  return makeSizedStr(buf, size);
+  return s;
 }
 
-static SizedStr eatTripleStringLiteral(yyscan_t scanner,
-                                       const char* startChar) {
+static std::string eatTripleStringLiteral(yyscan_t scanner,
+                                          const char* startChar) {
   YYLTYPE* loc       = yyget_lloc(scanner);
   const char startCh = *startChar;
   int startChCount   = 0;
@@ -322,17 +362,15 @@ static SizedStr eatTripleStringLiteral(yyscan_t scanner,
   // update the location 
   updateLocation(loc, nLines, nCols);
 
-  long size = s.size();
+  size_t size = s.size();
   // Remove two quotes from the end of the string that are
   // actually part of the string closing token.
   for (int i = 0; i < 2; i++) {
     if (s[size-1] == startCh) size--;
   }
-  char* buf = (char*) malloc(size+1);
-  memcpy(buf, s.c_str(), size);
-  buf[size] = '\0';
+  s.resize(size);
 
-  return makeSizedStr(buf, size);
+  return s;
 }
 
 
