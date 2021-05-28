@@ -31,6 +31,8 @@
 #include <cstring>
 #include <string>
 
+namespace chpl {
+
 static int   getNextYYChar(yyscan_t scanner);
 
 static void updateLocation(YYLTYPE* loc, int nLines, int nCols) {
@@ -665,7 +667,7 @@ static void processInvalidToken(yyscan_t scanner) {
   YYLTYPE* loc = yyget_lloc(scanner);
   updateLocation(loc, 0, strlen(pch));
   ParserContext* context = yyget_extra(scanner);
-  yyerror(loc, context, "Invalid token");
+  yychpl_error(loc, context, "Invalid token");
 }
 
 static int getNextYYChar(yyscan_t scanner) {
@@ -698,3 +700,5 @@ static bool yy_has_state(yyscan_t yyscanner)
 
   return yyg->yy_start_stack_ptr > 0;
 }
+
+} // end namespace chpl

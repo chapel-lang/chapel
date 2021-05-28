@@ -35,6 +35,8 @@
 #include "symbol.h"
 #include "wellknown.h"
 
+#include "chpl/frontend/frontend-queries.h"
+
 #include <cstdlib>
 
 BlockStmt*           yyblock                       = NULL;
@@ -72,6 +74,12 @@ static ModuleSymbol* parseFile(const char* fileName,
                                ModTag      modTag,
                                bool        namedOnCommandLine,
                                bool        include);
+
+static ModuleSymbol* uASTParseFile(const char* fileName,
+                                   ModTag      modTag,
+                                   bool        namedOnCommandLine,
+                                   bool        include);
+
 
 static const char*   stdModNameToPath(const char* modName,
                                       bool*       isStandard);
@@ -352,7 +360,12 @@ static void parseCommandLineFiles() {
         // throwr error will concatenated messages
         USR_FATAL(errorMessage, baseName, maxFileName);
       }
-      parseFile(inputFileName, MOD_USER, true, false);
+
+      if (fCompilerLibraryParser == false) {
+        parseFile(inputFileName, MOD_USER, true, false);
+      } else {
+        uASTParseFile(inputFileName, MOD_USER, true, false);
+      }
     }
   }
 
@@ -749,6 +762,33 @@ static ModuleSymbol* parseFile(const char* path,
   }
 
   return retval;
+}
+
+
+static ModuleSymbol* uASTParseFile(const char* fileName,
+                                   ModTag      modTag,
+                                   bool        namedOnCommandLine,
+                                   bool        include) {
+
+  if (gContext == nullptr)
+    INT_FATAL("compiler library context not initialized");
+
+  // Check for the expected configuration only, for now
+  INT_ASSERT(modTag == MOD_USER);
+  INT_ASSERT(namedOnCommandLine);
+  INT_ASSERT(!include);
+
+  auto path = chpl::UniqueString::build(gContext, fileName);
+  auto & modules = chpl::frontend::parse(gContext, path);
+  for (auto mod : modules) {
+    INT_ASSERT(mod != nullptr);
+    chpl::uast::ASTNode::dump(mod);
+    // TODO: convert
+  }
+
+  USR_FATAL("ending compilation since the rest is not implemented");
+
+  return nullptr;
 }
 
 static bool containsOnlyModules(BlockStmt* block, const char* path) {

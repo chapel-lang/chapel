@@ -16,16 +16,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-LAUNCHER_SRCS = \
-        launch-gasnetrun_psm.c \
+ifndef CHPL_MAKE_HOME
+export CHPL_MAKE_HOME=$(shell pwd)/../../../..
+endif
+
+COMPILER_ROOT = ../../..
+COMPILER_SUBDIR = next/lib/uast
 
 #
-# is this the right time to set this variable?  Or is user code
-# compile time
+# standard header
 #
-RUNTIME_CFLAGS += -DLAUNCH_PATH="gasnet/$(GASNET_INSTALL_SUBDIR)/bin/"
+include $(COMPILER_ROOT)/make/Makefile.compiler.head
 
-SRCS = $(LAUNCHER_SRCS)
+include Makefile.include
 
-LAUNCHER_OBJS = \
-	$(LAUNCHER_SRCS:%.c=$(LAUNCH_OBJDIR)/%.o)
+TARGETS = $(NEXT_UAST_OBJS)
+
+include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
+
+FORCE:
+
+#
+# standard footer
+#
+include $(COMPILER_ROOT)/make/Makefile.compiler.foot

@@ -16,27 +16,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-RUNTIME_ROOT = ../../..
-RUNTIME_SUBDIR = src/launch/gasnetrun_psm
+NEXT_UTIL_OBJDIR = $(COMPILER_BUILD)/next/lib/util
 
-ifndef CHPL_MAKE_HOME
-export CHPL_MAKE_HOME=$(shell pwd)/$(RUNTIME_ROOT)/..
-endif
+ALL_SRCS += next/lib/util/*.cpp
 
-#
-# standard header
-#
-include $(RUNTIME_ROOT)/make/Makefile.runtime.head
+NEXT_UTIL_SRCS =                                 \
+  files.cpp \
+  mystrerror.cpp \
 
-LAUNCH_OBJDIR = $(LAUNCHER_OBJDIR)
-include Makefile.share
 
-TARGETS = \
-	$(LAUNCHER_OBJS) \
+SRCS = $(NEXT_UTIL_SRCS)
 
-include $(RUNTIME_ROOT)/make/Makefile.runtime.subdirrules
-
-#
-# standard footer
-#
-include $(RUNTIME_ROOT)/make/Makefile.runtime.foot
+NEXT_UTIL_OBJS = \
+	$(NEXT_UTIL_SRCS:%.cpp=$(NEXT_UTIL_OBJDIR)/%.$(OBJ_SUFFIX))

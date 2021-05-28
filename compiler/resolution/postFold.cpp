@@ -180,7 +180,12 @@ static Expr* postFoldNormal(CallExpr* call) {
   }
 
   if (call->isNamedAstr(astrSassign) == true) {
-    if (SymExpr* lhs = toSymExpr(call->get(1))) {
+    int lhsNum = 1;
+    if (fn->hasFlag(FLAG_METHOD)) {
+      // Handle operator methods
+      lhsNum += 2;
+    }
+    if (SymExpr* lhs = toSymExpr(call->get(lhsNum))) {
       if (lhs->symbol()->hasFlag(FLAG_MAYBE_PARAM) == true ||
           lhs->symbol()->isParameter()             == true) {
         if (paramMap.get(lhs->symbol())) {

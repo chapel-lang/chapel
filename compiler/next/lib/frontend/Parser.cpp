@@ -26,8 +26,8 @@
 #include "chpl/uast/Comment.h"
 #include "chpl/uast/Expression.h"
 
-#include "Parser/bison-chapel.h"
-#include "Parser/flex-chapel.h"
+#include "Parser/bison-chpl-lib.h"
+#include "Parser/flex-chpl-lib.h"
 
 #include <cstdlib>
 #include <cstring>
@@ -90,13 +90,13 @@ Builder::Result Parser::parseFile(const char* path) {
 
   // Set the (global) parser debug state
   if (DEBUG_PARSER)
-    yydebug = DEBUG_PARSER;
+    yychpl_debug = DEBUG_PARSER;
 
   // State for the lexer
   int           lexerStatus  = 100;
 
   // State for the parser
-  yypstate*     parser       = yypstate_new();
+  yychpl_pstate* parser = yychpl_pstate_new();
   int           parserStatus = YYPUSH_MORE;
   YYLTYPE       yylloc;
   ParserContext parserContext(path, builder.get());
@@ -106,21 +106,21 @@ Builder::Result Parser::parseFile(const char* path) {
   yylloc.last_line              = 1;
   yylloc.last_column            = 1;
 
-  yylex_init_extra(&parserContext, &parserContext.scanner);
+  yychpl_lex_init_extra(&parserContext, &parserContext.scanner);
 
-  yyset_in(fp, parserContext.scanner);
+  yychpl_set_in(fp, parserContext.scanner);
 
   while (parserStatus == YYPUSH_MORE) {
     YYSTYPE yylval;
 
-    lexerStatus = yylex(&yylval, &yylloc, parserContext.scanner);
+    lexerStatus = yychpl_lex(&yylval, &yylloc, parserContext.scanner);
 
     if        (lexerStatus >= 0) {
-      parserStatus          = yypush_parse(parser,
-                                           lexerStatus,
-                                           &yylval,
-                                           &yylloc,
-                                           &parserContext);
+      parserStatus          = yychpl_push_parse(parser,
+                                                lexerStatus,
+                                                &yylval,
+                                                &yylloc,
+                                                &parserContext);
 
     } else if (lexerStatus == YYLEX_BLOCK_COMMENT) {
       // comment should already be noted in processBlockComment
@@ -133,10 +133,10 @@ Builder::Result Parser::parseFile(const char* path) {
   }
 
   // Cleanup after the parser
-  yypstate_delete(parser);
+  yychpl_pstate_delete(parser);
 
   // Cleanup after the lexer
-  yylex_destroy(parserContext.scanner);
+  yychpl_lex_destroy(parserContext.scanner);
 
   if (closefile(fp, path, fileError)) {
     builder->addError(fileError);
@@ -154,7 +154,7 @@ Builder::Result Parser::parseString(const char* path, const char* str) {
 
   // Set the (global) parser debug state
   if (DEBUG_PARSER)
-    yydebug = DEBUG_PARSER;
+    yychpl_debug = DEBUG_PARSER;
 
   // State for the lexer
   YY_BUFFER_STATE handle       =   0;
@@ -162,13 +162,13 @@ Builder::Result Parser::parseString(const char* path, const char* str) {
   YYLTYPE         yylloc;
 
   // State for the parser
-  yypstate*     parser       = yypstate_new();
+  yychpl_pstate* parser = yychpl_pstate_new();
   int           parserStatus = YYPUSH_MORE;
   ParserContext parserContext(path, builder.get());
 
-  yylex_init_extra(&parserContext, &parserContext.scanner);
+  yychpl_lex_init_extra(&parserContext, &parserContext.scanner);
 
-  handle              = yy_scan_string(str, parserContext.scanner);
+  handle = yychpl__scan_string(str, parserContext.scanner);
 
   yylloc.first_line   = 1;
   yylloc.first_column = 1;
@@ -178,14 +178,14 @@ Builder::Result Parser::parseString(const char* path, const char* str) {
   while (parserStatus == YYPUSH_MORE) {
     YYSTYPE yylval;
 
-    lexerStatus  = yylex(&yylval, &yylloc, parserContext.scanner);
+    lexerStatus  = yychpl_lex(&yylval, &yylloc, parserContext.scanner);
 
     if (lexerStatus >= 0) {
-      parserStatus          = yypush_parse(parser,
-                                           lexerStatus,
-                                           &yylval,
-                                           &yylloc,
-                                           &parserContext);
+      parserStatus          = yychpl_push_parse(parser,
+                                                lexerStatus,
+                                                &yylval,
+                                                &yylloc,
+                                                &parserContext);
 
     } else if (lexerStatus == YYLEX_BLOCK_COMMENT) {
       // comment should already be noted in processBlockComment
@@ -198,11 +198,11 @@ Builder::Result Parser::parseString(const char* path, const char* str) {
   }
 
   // Cleanup after the parser
-  yypstate_delete(parser);
+  yychpl_pstate_delete(parser);
 
   // Cleanup after the lexer
-  yy_delete_buffer(handle, parserContext.scanner);
-  yylex_destroy(parserContext.scanner);
+  yychpl__delete_buffer(handle, parserContext.scanner);
+  yychpl_lex_destroy(parserContext.scanner);
 
   updateParseResult(&parserContext);
 

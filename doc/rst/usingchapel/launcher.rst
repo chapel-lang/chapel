@@ -170,8 +170,6 @@ UDP or InfiniBand conduits. So, for these configurations please see:
 
   * :ref:`readme-infiniband` for information about using Slurm with
     InfiniBand.
-  * :ref:`readme-omnipath` for information about using Slurm with
-    OmniPath.
   * :ref:`using-udp-slurm` for information about using Slurm with the UDP
     conduit
 

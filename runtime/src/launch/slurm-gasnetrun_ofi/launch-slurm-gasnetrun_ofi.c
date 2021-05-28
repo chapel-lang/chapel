@@ -18,5 +18,5 @@
  * limitations under the License.
  */
 
-#define GASNETRUN_LAUNCHER "gasnetrun_psm"
-#include "../gasnetrun_common/gasnetrun_common.h"
+#define GASNETRUN_LAUNCHER "gasnetrun_ofi"
+#include "../slurm-gasnetrun_common/slurm-gasnetrun_common.h"

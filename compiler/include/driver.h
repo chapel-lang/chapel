@@ -257,4 +257,12 @@ extern std::string llvmFlags;
 
 extern bool fPrintAdditionalErrors;
 
+extern bool fCompilerLibraryParser;
+
+namespace chpl {
+  class Context;
+}
+
+extern chpl::Context* gContext;
+
 #endif

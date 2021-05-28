@@ -16,10 +16,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-LAUNCH_SUBDIR = src/launch/gasnetrun_psm
+ifndef CHPL_MAKE_HOME
+export CHPL_MAKE_HOME=$(shell pwd)/../../../..
+endif
 
-LAUNCH_OBJDIR = $(LAUNCHER_BUILD)/$(LAUNCH_SUBDIR)
+COMPILER_ROOT = ../../..
+COMPILER_SUBDIR = next/lib/util
 
-ALL_SRCS += $(CURDIR)/$(LAUNCH_SUBDIR)/*.c
+#
+# standard header
+#
+include $(COMPILER_ROOT)/make/Makefile.compiler.head
 
-include $(RUNTIME_ROOT)/$(LAUNCH_SUBDIR)/Makefile.share
+include Makefile.include
+
+TARGETS = $(NEXT_UTIL_OBJS)
+
+include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
+
+FORCE:
+
+#
+# standard footer
+#
+include $(COMPILER_ROOT)/make/Makefile.compiler.foot
