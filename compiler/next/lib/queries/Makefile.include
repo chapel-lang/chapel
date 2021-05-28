@@ -27,8 +27,7 @@ NEXT_QUERIES_SRCS =                                 \
            UniqueString.cpp                         \
 
 
-SRCS = $(NEXT_QUERIES_SRCS) my_aligned_alloc.c
+SRCS = $(NEXT_QUERIES_SRCS)
 
 NEXT_QUERIES_OBJS = \
-	$(NEXT_QUERIES_SRCS:%.cpp=$(NEXT_QUERIES_OBJDIR)/%.$(OBJ_SUFFIX)) \
-        $(NEXT_QUERIES_OBJDIR)/my_aligned_alloc.o
+	$(NEXT_QUERIES_SRCS:%.cpp=$(NEXT_QUERIES_OBJDIR)/%.$(OBJ_SUFFIX))

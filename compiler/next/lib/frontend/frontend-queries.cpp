@@ -27,7 +27,7 @@
 #include "chpl/uast/Module.h"
 #include "chpl/uast/Visitor.h"
 
-#include "../util/files.h"
+#include "../util/filesystem.h"
 
 #include <cstdio>
 #include <set>
