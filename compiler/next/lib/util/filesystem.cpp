@@ -17,9 +17,9 @@
  * limitations under the License.
  */
 
-#include "files.h"
+#include "filesystem.h"
 
-#include "./mystrerror.h"
+#include "./my_strerror_r.h"
 
 #include "chpl/queries/ErrorMessage.h"
 #include "chpl/queries/Location.h"
@@ -27,6 +27,16 @@
 #include <cerrno>
 
 namespace chpl {
+
+static std::string my_strerror(int errno_) {
+  char errbuf[256];
+  int rc;
+  errbuf[0] = '\0';
+  rc = my_strerror_r(errno_, errbuf, sizeof(errbuf));
+  if (rc != 0)
+    strncpy(errbuf, "<unknown error>", sizeof(errbuf));
+  return std::string(errbuf);
+}
 
 FILE* openfile(const char* path, const char* mode, ErrorMessage& errorOut) {
   FILE* fp = fopen(path, mode);

@@ -26,7 +26,7 @@
 #include <cstdlib>
 #include <cassert>
 
-#include "my_aligned_alloc.h" // assumes size_t defined
+#include "../util/my_aligned_alloc.h" // assumes size_t defined
 
 namespace chpl {
 

@@ -23,5 +23,4 @@ target_sources(libchplcomp-obj
                ID.cpp
                UniqueString.cpp
 
-               my_aligned_alloc.c
               )

@@ -20,7 +20,7 @@
 
 #include "chpl/frontend/Parser.h"
 
-#include "../util/files.h"
+#include "../util/filesystem.h"
 
 #include "chpl/queries/ErrorMessage.h"
 #include "chpl/uast/Comment.h"

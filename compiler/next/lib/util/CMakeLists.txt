@@ -18,12 +18,12 @@
 target_sources(libchplcomp-obj
                PRIVATE
 
-               bswap.h
-               files.h
-               mystrerror.h
-               sys_basic.h
+               filesystem.h
+               filesystem.cpp
 
-               files.cpp
-               mystrerror.cpp
+               my_aligned_alloc.h
+               my_aligned_alloc.c
+               my_strerror_r.h
+               my_strerror_r.c
 
               )
