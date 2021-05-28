@@ -28,9 +28,9 @@ namespace uast {
   a block, or both.
 */
 enum struct BlockStyle {
-  IMPLICIT = 0x01,
-  EXPLICIT = 0x02,
-  UNNECESSARY_KEYWORD_AND_BLOCK = 0x04
+  IMPLICIT,
+  EXPLICIT,
+  UNNECESSARY_KEYWORD_AND_BLOCK
 };
 
 } // end namespace uast
