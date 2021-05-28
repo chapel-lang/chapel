@@ -1,4 +1,10 @@
-test_method_in_interface.chpl:21: In 'implements LessThan' statement:
-test_method_in_interface.chpl:21: error: when checking this implements statement
-test_method_in_interface.chpl:16: note: this implementation of the required function less_than requires implicit conversion(s), which is currently disallowed
-test_method_in_interface.chpl:2: note: the required function less_than in the interface LessThan is declared here
+test_method_in_interface.chpl:5: In function 'minFn':
+test_method_in_interface.chpl:7: error: const actual is passed to 'ref' formal 'src' of implicit copy initializer
+note: to formal of type owned C
+test_method_in_interface.chpl:10: error: const actual is passed to 'ref' formal 'src' of implicit copy initializer
+note: to formal of type owned C
+test_method_in_interface.chpl:7: error: Cannot transfer ownership from non-nilable class argument
+test_method_in_interface.chpl:5: note: 'y' is set to nil here
+test_method_in_interface.chpl:10: error: Cannot transfer ownership from non-nilable class argument
+test_method_in_interface.chpl:5: note: 'x' is set to nil here
+  test_method_in_interface.chpl:23: called as minFn(x: owned C, y: owned C)

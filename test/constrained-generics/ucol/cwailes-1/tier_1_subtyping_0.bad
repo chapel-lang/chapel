@@ -1,7 +1,0 @@
-tier_1_subtyping_0.chpl:20: error: const actual is passed to a 'ref' formal of chpl__initCopy()
-tier_1_subtyping_0.chpl:20: error: in call to 'g', cannot pass result of coercion by reference
-tier_1_subtyping_0.chpl:20: note: implicit coercion from 'owned D' to 'owned C'
-tier_1_subtyping_0.chpl:11: note: when passing to 'const ref' intent formal 'x'
-tier_1_subtyping_0.chpl:20: error: unresolved call 'f(owned D)'
-tier_1_subtyping_0.chpl:15: note: this candidate did not match: f(x: ?T)
-tier_1_subtyping_0.chpl:15: note: because interface constraint(s) were not satisfied

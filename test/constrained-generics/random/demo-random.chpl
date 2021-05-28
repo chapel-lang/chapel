@@ -84,10 +84,6 @@ if && reduce (A1 == A2) then writeln("fillRandom() check passed");
 
 /////////////////////////////////
 
-proc PCGRandomStream.getNext(): eltType {
-  return getNext(eltType);
-}
-
 proc PCGRandomStream.startCursor(D: domain) {
   type resultType = eltType;
   _lock();
