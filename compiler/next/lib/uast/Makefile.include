@@ -49,6 +49,7 @@ NEXT_UAST_SRCS =                                 \
   Function.cpp \
   Identifier.cpp \
   IndexableLoop.cpp \
+  IntLiteral.cpp \
   Literal.cpp \
   Local.cpp \
   Loop.cpp \
@@ -62,6 +63,7 @@ NEXT_UAST_SRCS =                                 \
   TaskVar.cpp \
   TupleDecl.cpp \
   TypeDecl.cpp \
+  UintLiteral.cpp \
   Variable.cpp \
   VarLikeDecl.cpp \
   Visitor.cpp \
