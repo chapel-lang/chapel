@@ -109,6 +109,23 @@ static void testLiteral(Parser* parser,
   testBytesLiteral(parser, testname, str, expectQuoteStyle, expectValue);
 }
 
+static void testBadLiteral(Parser* parser,
+                           const char* testname,
+                           const char* str) {
+  std::string toparse = "var x = ";
+  toparse += str;
+  toparse += ";\n";
+  auto parseResult = parser->parseString(testname, toparse.c_str());
+  assert(parseResult.errors.size() > 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModule());
+  auto module = parseResult.topLevelExpressions[0]->toModule();
+  assert(module->numStmts() == 1);
+  auto variable = module->stmt(0)->toVariable();
+  assert(variable);
+  assert(variable->initExpression()->isErroneousExpression());
+}
+
 int main() {
   Context context;
   Context* ctx = &context;
@@ -143,9 +160,10 @@ int main() {
   std::string zeroOne;
   zeroOne.push_back('\x00');
   zeroOne.push_back('\x01');
-  testLiteral(p, "test10.chpl", "'\\x00\\x01'",
+  zeroOne.push_back('\x11');
+  testLiteral(p, "test10.chpl", "'\\x00\\x01\\x11'",
               StringLiteral::SINGLE, zeroOne);
-  testLiteral(p, "test11.chpl", "\"\\x00\\x01\"",
+  testLiteral(p, "test11.chpl", "\"\\x00\\x01\\x11\"",
               StringLiteral::DOUBLE, zeroOne);
   testLiteral(p, "test12.chpl", "'''\\x00\\x01'''",
               StringLiteral::TRIPLE_SINGLE, std::string("\\x00\\x01"));
@@ -156,6 +174,9 @@ int main() {
                      StringLiteral::SINGLE, std::string("hi"));
   testCStringLiteral(p, "test21.chpl", "\"hi\"",
                      StringLiteral::DOUBLE, std::string("hi"));
+
+  testBadLiteral(p, "test30.chpl", "\"\\q\"");
+  testBadLiteral(p, "test31.chpl", "\"\\xFFFFFFFFFFFFFFFFFFFFFFFFFF\"");
 
   return 0;
 }
