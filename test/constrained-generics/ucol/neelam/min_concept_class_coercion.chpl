@@ -6,7 +6,7 @@ class C {
 }
 
 class D : C {
-	proc display() {
+	override proc display() {
 		writeln("D:" + data:string);
 	}
 }

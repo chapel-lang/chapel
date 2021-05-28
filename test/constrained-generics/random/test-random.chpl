@@ -127,14 +127,6 @@ module RandomInterface {
   implements RandomStream(borrowed PCGRandomStream(?));
   // how about other management strategies?
 
-  /// We need the following adjustments to existing code.
-
-  // Random module's PCGRandomStream.getNext takes a default argument,
-  // which is currently not implemented. So instead provide this adaptor:
-  proc PCGRandomStream.getNext(): eltType {
-    return getNext(eltType);
-  }
-
   /////////// fillRandom -> icFillRandom ///////////
 
   // simulates an IC-generic PCGRandomStream class

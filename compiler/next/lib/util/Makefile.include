@@ -21,11 +21,13 @@ NEXT_UTIL_OBJDIR = $(COMPILER_BUILD)/next/lib/util
 ALL_SRCS += next/lib/util/*.cpp
 
 NEXT_UTIL_SRCS =                                 \
-  files.cpp \
-  mystrerror.cpp \
+  filesystem.cpp \
 
 
-SRCS = $(NEXT_UTIL_SRCS)
+SRCS = $(NEXT_UTIL_SRCS) my_aligned_alloc.c my_strerror_r.c
 
 NEXT_UTIL_OBJS = \
-	$(NEXT_UTIL_SRCS:%.cpp=$(NEXT_UTIL_OBJDIR)/%.$(OBJ_SUFFIX))
+	$(NEXT_UTIL_SRCS:%.cpp=$(NEXT_UTIL_OBJDIR)/%.$(OBJ_SUFFIX)) \
+        $(NEXT_UTIL_OBJDIR)/my_aligned_alloc.o \
+        $(NEXT_UTIL_OBJDIR)/my_strerror_r.o \
+

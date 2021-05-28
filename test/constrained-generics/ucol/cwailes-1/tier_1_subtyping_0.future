@@ -1,4 +1,0 @@
-bug: compiler crash with subtyping
-
-When this crash is fixed, we should remove .compopts
-because it may be here solely to expose the crash.

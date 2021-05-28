@@ -17,29 +17,20 @@
  * limitations under the License.
  */
 
-// make sure to get the XSI/POSIX.1-2001 strerror_r
-#define _POSIX_C_SOURCE 200112L
-#undef _GNU_SOURCE
-#include "./sys_basic.h"
+#ifndef MY_STRERROR_R_H
+#define MY_STRERROR_R_H
 
-#include "mystrerror.h"
+// note that size_t has to be defined already by whatever includes this.
+// that is intentional to simplify including this from both C and C++
 
-#include <string>
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-#include <cstdlib>
-#include <cstdio>
-#include <cstring>
+int my_strerror_r(int errnum, char* strerrbuf, size_t buflen);
 
-namespace chpl {
-
-std::string my_strerror(int errno_) {
-  char errbuf[256];
-  int rc;
-  errbuf[0] = '\0';
-  rc = strerror_r(errno_, errbuf, sizeof(errbuf));
-  if (rc != 0)
-    strncpy(errbuf, "<unknown error>", sizeof(errbuf));
-  return std::string(errbuf);
+#ifdef __cplusplus
 }
+#endif
 
-} // end namespace chpl
+#endif

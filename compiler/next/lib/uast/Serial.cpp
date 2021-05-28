@@ -67,10 +67,7 @@ owned<Serial> Serial::build(Builder* builder,
                           owned<Expression> condition,
                           BlockStyle blockStyle,
                           ASTList stmts) {
-
-#ifndef NDEBUG
   assert(condition.get() != nullptr);
-#endif
 
   ASTList lst;
   int8_t condChildNum = -1;

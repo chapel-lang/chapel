@@ -2205,21 +2205,21 @@ var_decl_stmt:
 | var_decl_type var_decl_stmt_inner_ls TSEMI
     {
       ParserExprList* lst = $2;
-      int nVarDecls = 0;
-      Variable* lastVariableDecl = nullptr;
+      int nDecls = 0;
+      Decl* lastDecl = nullptr;
       for (auto elt : *lst) {
-        if (Variable* d = elt->toVariable()) {
-          lastVariableDecl = d;
-          nVarDecls++;
+        if (Decl* d = elt->toDecl()) {
+          lastDecl = d;
+          nDecls++;
         }
       }
-      assert(nVarDecls > 0);
-      assert(lastVariableDecl);
-      if (nVarDecls == 1) {
+      assert(nDecls > 0);
+      assert(lastDecl);
+      if (nDecls == 1) {
         // gather any comments from before the 'var'
         // intentionally ignores comments after 'var'
         CommentsAndStmt cs = {context->gatherCommentsFromList(lst, @1),
-                              lastVariableDecl};
+                              lastDecl};
         $$ = cs;
         // delete any comments left in lst
         for (auto elt : *lst) {
@@ -2266,27 +2266,53 @@ var_decl_stmt_inner:
     }
 | TLP tuple_var_decl_stmt_inner_ls TRP opt_type opt_init_expr
     {
-      $$ = TODOSTMT(@$);
+      auto tupleDecl = TupleDecl::build(BUILDER, LOC(@$),
+                                        context->visibility,
+                                        context->varDeclKind,
+                                        context->consumeList($2),
+                                        toOwned($4), toOwned($5));
+      $$ = STMT(@1, tupleDecl.release());
       context->clearComments();
     }
 ;
 
 tuple_var_decl_component:
   TUNDERSCORE
-    { $$ = TODOEXPR(@$); }
+    {
+      auto varDecl = Variable::build(BUILDER, LOC(@$),
+                                     $1, context->visibility,
+                                     context->varDeclKind,
+                                     nullptr, nullptr);
+      $$ = varDecl.release();
+    }
+
 | ident_def
-    { $$ = TODOEXPR(@$); }
+    {
+      auto varDecl = Variable::build(BUILDER, LOC(@$),
+                                     $1, context->visibility,
+                                     context->varDeclKind,
+                                     nullptr, nullptr);
+      $$ = varDecl.release();
+    }
+
 | TLP tuple_var_decl_stmt_inner_ls TRP
-    { $$ = TODOEXPR(@$); }
+    {
+      auto tupleDecl = TupleDecl::build(BUILDER, LOC(@$),
+                                        context->visibility,
+                                        context->varDeclKind,
+                                        context->consumeList($2),
+                                        nullptr, nullptr);
+      $$ = tupleDecl.release();
+    }
 ;
 
 tuple_var_decl_stmt_inner_ls:
   tuple_var_decl_component
-    { $$ = TODOLIST(@$); }
-| tuple_var_decl_component TCOMMA
-    { $$ = TODOLIST(@$); }
-| tuple_var_decl_component TCOMMA tuple_var_decl_stmt_inner_ls
-    { $$ = TODOLIST(@$); }
+    { $$ = context->makeList($1); }
+| tuple_var_decl_stmt_inner_ls TCOMMA
+    { $$ = $1; }
+| tuple_var_decl_stmt_inner_ls TCOMMA tuple_var_decl_component
+    { $$ = context->appendList($1, $3); }
 ;
 
 /** TYPES ********************************************************************/

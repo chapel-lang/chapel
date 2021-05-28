@@ -53,6 +53,7 @@ target_sources(libchplcomp-obj
                OpCall.cpp
                Serial.cpp
                TaskVar.cpp
+               TupleDecl.cpp
                TypeDecl.cpp
                Variable.cpp
                VarLikeDecl.cpp
