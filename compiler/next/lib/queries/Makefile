@@ -34,9 +34,6 @@ TARGETS = $(NEXT_QUERIES_OBJS)
 
 include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
 
-$(NEXT_QUERIES_OBJDIR)/my_aligned_alloc.o: my_aligned_alloc.c
-	$(CC) -c $(COMP_CFLAGS) -DCOMPILER_SUBDIR=$(COMPILER_SUBDIR) -o $@ $<
-
 FORCE:
 
 #

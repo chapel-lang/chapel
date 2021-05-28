@@ -55,9 +55,7 @@ owned<Serial> Serial::build(Builder* builder,
                           owned<Expression> condition,
                           ASTList stmts,
                           bool usesImplicitBlock) {
-#ifndef NDEBUG
   assert(condition.get() != nullptr);
-#endif
 
   ASTList lst;
   int8_t condChildNum = -1;

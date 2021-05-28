@@ -17,11 +17,6 @@
  * limitations under the License.
  */
 
-// include these first since they set some things that
-// are used by system headers.
-#include "../util/sys_basic.h"
-#include "../util/bswap.h"
-
 #include "chpl/queries/UniqueString.h"
 
 #include "chpl/queries/Context.h"

@@ -34,6 +34,12 @@ TARGETS = $(NEXT_UTIL_OBJS)
 
 include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
 
+$(NEXT_UTIL_OBJDIR)/my_aligned_alloc.o: my_aligned_alloc.c
+	$(CC) -c $(COMP_CFLAGS) -DCOMPILER_SUBDIR=$(COMPILER_SUBDIR) -o $@ $<
+
+$(NEXT_UTIL_OBJDIR)/my_strerror_r.o: my_strerror_r.c
+	$(CC) -c $(COMP_CFLAGS) -DCOMPILER_SUBDIR=$(COMPILER_SUBDIR) -o $@ $<
+
 FORCE:
 
 #
