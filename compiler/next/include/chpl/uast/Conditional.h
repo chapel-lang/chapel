@@ -141,8 +141,7 @@ class Conditional final : public ControlFlow {
   }
 
   /**
-    Returns whether or not the then block of this conditional is preceded
-    by a block, the 'then' keyword, or both.
+    Returns the block style of the then block of this conditional.
   */
   BlockStyle thenBlockStyle() const {
     return thenBlockStyle_;
@@ -183,8 +182,7 @@ class Conditional final : public ControlFlow {
   }
 
   /**
-    Returns whether or not the else block of this conditional is preceded
-    by only the 'else' keyword, or the 'else' keyword and a block.
+    Returns the block style of the else block of this conditional.
   */
   BlockStyle elseBlockStyle() const {
     return elseBlockStyle_;
