@@ -1017,7 +1017,7 @@ static bool removedInitCopyForInArg(SymExpr* actualSE, Symbol* actualSym,
   if (SymExpr* actualDef = actualSym->getSingleDef())
    if (CallExpr* move = toCallExpr(actualDef->parentExpr))
     if (CallExpr* src = toCallExpr(move->get(2)))
-     if (src->isNamed("chpl__initCopy"))
+     if (src->isNamedAstr(astr_initCopy))
       if (SymExpr* icSrc = toSymExpr(src->get(1)))
        // Report success only if initCopy is the only call here.
        // Otherwise preserve everything in the wrapper.
@@ -1042,10 +1042,11 @@ static bool removedInitCopyForInArg(SymExpr* actualSE, Symbol* actualSym,
 // of the target function. If we do, we will wrap these conversions, see
 // finalizeHolder(). tryResolveCall(call) inserts such conversions into
 // the holder block if necessary. Given that the holder may contain
-// other stuff in it (see removeCallEtc()). So we detect the presence
+// other stuff in it (see removeCallEtc()), we detect the presence
 // of conversions by checking if the actuals of 'call' are the same
-// as they were when we created it. If there is a conversion, the actual
-// of 'call' is now a temp.
+// as they were when we created it. They are the same if no conversions
+// have been added. Otherwise, handleCoercion() etc. replaced the actual
+// of 'call' with a newly-created temp.
 //
 // Return true if no wrapper is needed.
 //
@@ -1100,11 +1101,12 @@ static FnSymbol* finalizeHolder(ImplementsStmt* istm, FnSymbol*   reqFn,
     return target;
   }
 
+  // Something changed in the call, so we need to create a wrapper.
+
   FnSymbol* wrapper = new FnSymbol(target->name);
   wrapper->addFlag(FLAG_INLINE);
   wrapperFnForImplementsStmt(istm)->defPoint->insertAfter(new DefExpr(wrapper));
 
-  // Something changed in the call, so we need to create a wrapper.
   for (Symbol* dup: formalDups)
     wrapper->insertFormalAtTail(dup->defPoint->remove());
 
