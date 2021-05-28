@@ -418,6 +418,34 @@ FnCall* ParserContext::wrapCalledExpressionInNew(YYLTYPE location,
   return fnCall;
 }
 
+BlockStyle ParserContext::determineBlockStyle(BlockOrDo blockOrDo) {
+  BlockStyle ret = blockOrDo.usesDo ? BlockStyle::IMPLICIT
+                                    : BlockStyle::EXPLICIT;
+  auto exprLst = blockOrDo.exprList;
+
+  int numNonCommentExprs = 0;
+  bool foundBlock = false;
+
+  // Look for one non-comment expression that is a block.
+  for (auto expr : *exprLst) {
+    numNonCommentExprs += !expr->isComment() ? 1 : 0;
+    foundBlock = expr->isBlock();
+    if (numNonCommentExprs > 1) break;
+  }
+
+  if (numNonCommentExprs == 1 && foundBlock &&
+      ret == BlockStyle::IMPLICIT) {
+    ret = BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK;
+  }
+
+  return ret;
+}
+
+ASTList
+ParserContext::consumeAndFlattenTopLevelBlocks(BlockOrDo blockOrDo) {
+  return builder->flattenTopLevelBlocks(consumeList(blockOrDo.exprList));
+}
+
 CommentsAndStmt
 ParserContext::buildBracketLoopStmt(YYLTYPE locLeftBracket,
                                     YYLTYPE locIndex,
@@ -428,7 +456,9 @@ ParserContext::buildBracketLoopStmt(YYLTYPE locLeftBracket,
   // Should not be nullptr, use other overload instead.
   assert(indexExprs && indexExprs->size() >= 1);
 
-  const bool usesImplicitBlock = !(stmt.stmt->isBlock());
+  auto blockStyle = stmt.stmt->isBlock() ? BlockStyle::EXPLICIT
+                                         : BlockStyle::IMPLICIT;
+
   auto exprLst = makeList(stmt);
   auto comments = gatherCommentsFromList(exprLst, locLeftBracket);
   Expression* indexExpr = nullptr;
@@ -451,7 +481,7 @@ ParserContext::buildBracketLoopStmt(YYLTYPE locLeftBracket,
                                  toOwned(iterandExpr),
                                  toOwned(withClause),
                                  std::move(statements),
-                                 usesImplicitBlock,
+                                 blockStyle,
                                  /*isExpressionLevel*/ false);
 
   return { .comments=comments, .stmt=node.release() };
@@ -464,7 +494,9 @@ CommentsAndStmt ParserContext::buildBracketLoopStmt(YYLTYPE locLeftBracket,
                                                     CommentsAndStmt stmt) {
   assert(iterExprs && iterExprs->size() >= 1);
 
-  const bool usesImplicitBlock = !(stmt.stmt->isBlock());
+  auto blockStyle = stmt.stmt->isBlock() ? BlockStyle::EXPLICIT
+                                         : BlockStyle::IMPLICIT;
+
   auto exprLst = makeList(stmt);
   auto comments = gatherCommentsFromList(exprLst, locLeftBracket);
   Expression* iterandExpr = nullptr;
@@ -486,7 +518,7 @@ CommentsAndStmt ParserContext::buildBracketLoopStmt(YYLTYPE locLeftBracket,
                                  toOwned(iterandExpr),
                                  toOwned(withClause),
                                  std::move(statements),
-                                 usesImplicitBlock,
+                                 blockStyle,
                                  /*isExpressionLevel*/ false);
 
   return { .comments=comments, .stmt=node.release() };
@@ -501,12 +533,14 @@ CommentsAndStmt ParserContext::buildForallLoopStmt(YYLTYPE locForall,
   auto index = indexExpr ? buildLoopIndexDecl(locIndex, toOwned(indexExpr))
                          : nullptr;
   auto comments = gatherCommentsFromList(blockOrDo.exprList, locForall);
+  auto blockStyle = determineBlockStyle(blockOrDo);
+  auto statements = consumeAndFlattenTopLevelBlocks(blockOrDo);
   auto node = Forall::build(builder, convertLocation(locForall),
                             std::move(index),
                             toOwned(iterandExpr),
                             toOwned(withClause),
-                            consumeList(blockOrDo.exprList),
-                            blockOrDo.usesDo,
+                            std::move(statements),
+                            blockStyle,
                             /*isExpressionLevel*/ false);
   return { .comments=comments, .stmt=node.release() };
 }
@@ -520,12 +554,14 @@ CommentsAndStmt ParserContext::buildForeachLoopStmt(YYLTYPE locForeach,
   auto index = indexExpr ? buildLoopIndexDecl(locIndex, toOwned(indexExpr))
                          : nullptr;
   auto comments = gatherCommentsFromList(blockOrDo.exprList, locForeach);
+  auto blockStyle = determineBlockStyle(blockOrDo);
+  auto statements = consumeAndFlattenTopLevelBlocks(blockOrDo);
   auto node = Foreach::build(builder, convertLocation(locForeach),
                              std::move(index),
                              toOwned(iterandExpr),
                              toOwned(withClause),
-                             consumeList(blockOrDo.exprList),
-                             blockOrDo.usesDo);
+                             std::move(statements),
+                             blockStyle);
   return { .comments=comments, .stmt=node.release() };
 }
 
@@ -537,11 +573,13 @@ CommentsAndStmt ParserContext::buildForLoopStmt(YYLTYPE locFor,
   auto index = indexExpr ? buildLoopIndexDecl(locIndex, toOwned(indexExpr))
                          : nullptr;
   auto comments = gatherCommentsFromList(blockOrDo.exprList, locFor);
+  auto blockStyle = determineBlockStyle(blockOrDo);
+  auto statements = consumeAndFlattenTopLevelBlocks(blockOrDo);
   auto node = For::build(builder, convertLocation(locFor),
                          std::move(index),
                          toOwned(iterandExpr),
-                         consumeList(blockOrDo.exprList),
-                         blockOrDo.usesDo,
+                         std::move(statements),
+                         blockStyle,
                          /*isExpressionLevel*/ false,
                          /*isParam*/ false);
   return { .comments=comments, .stmt=node.release() };
@@ -556,12 +594,14 @@ CommentsAndStmt ParserContext::buildCoforallLoopStmt(YYLTYPE locCoforall,
   auto index = indexExpr ? buildLoopIndexDecl(locIndex, toOwned(indexExpr))
                          : nullptr;
   auto comments = gatherCommentsFromList(blockOrDo.exprList, locCoforall);
+  auto blockStyle = determineBlockStyle(blockOrDo);
+  auto statements = consumeAndFlattenTopLevelBlocks(blockOrDo);
   auto node = Coforall::build(builder, convertLocation(locCoforall),
                               std::move(index),
                               toOwned(iterandExpr),
                               toOwned(withClause),
-                              consumeList(blockOrDo.exprList),
-                              blockOrDo.usesDo);
+                              std::move(statements),
+                              blockStyle);
   return { .comments=comments, .stmt=node.release() };
 }
 

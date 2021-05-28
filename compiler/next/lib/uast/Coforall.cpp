@@ -30,7 +30,7 @@ owned<Coforall> Coforall::build(Builder* builder, Location loc,
                                 owned<Expression> iterand,
                                 owned<WithClause> withClause,
                                 ASTList stmts,
-                                bool usesImplicitBlock) {
+                                BlockStyle blockStyle) {
   assert(iterand.get() != nullptr);
 
   ASTList lst;
@@ -65,7 +65,7 @@ owned<Coforall> Coforall::build(Builder* builder, Location loc,
                                withClauseChildNum,
                                loopBodyChildNum,
                                numLoopBodyStmts,
-                               usesImplicitBlock);
+                               blockStyle);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

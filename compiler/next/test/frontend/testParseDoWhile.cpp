@@ -57,7 +57,7 @@ static void test0(Parser* parser) {
   assert(mod->stmt(2)->isComment());
   const DoWhile* doWhile = mod->stmt(1)->toDoWhile();
   assert(doWhile);
-  assert(!doWhile->usesImplicitBlock());
+  assert(doWhile->blockStyle() == BlockStyle::EXPLICIT);
   assert(doWhile->condition());
   assert(doWhile->condition()->isFnCall());
   assert(doWhile->numStmts() == 3);
@@ -86,7 +86,7 @@ static void test1(Parser* parser) {
   assert(mod->stmt(2)->isComment());
   const DoWhile* doWhile = mod->stmt(1)->toDoWhile();
   assert(doWhile);
-  assert(doWhile->usesImplicitBlock());
+  assert(doWhile->blockStyle() == BlockStyle::IMPLICIT);
   assert(doWhile->condition());
   assert(doWhile->condition()->isIdentifier());
   // Comment between 'while' and condition is discarded.
@@ -96,7 +96,7 @@ static void test1(Parser* parser) {
   assert(doWhile->stmt(2)->isComment());
   const For* forLoop = doWhile->stmt(1)->toFor();
   assert(forLoop);
-  assert(forLoop->usesImplicitBlock());
+  assert(forLoop->blockStyle() == BlockStyle::IMPLICIT);
   assert(forLoop->index());
   assert(forLoop->index()->isVariable());
   assert(forLoop->iterand() && forLoop->iterand()->isIdentifier());
@@ -129,7 +129,7 @@ static void test2(Parser* parser) {
   assert(mod->stmt(2)->isComment());
   const DoWhile* doWhile = mod->stmt(1)->toDoWhile();
   assert(doWhile);
-  assert(doWhile->usesImplicitBlock());
+  assert(doWhile->blockStyle() == BlockStyle::IMPLICIT);
   assert(doWhile->condition());
   assert(doWhile->condition()->isIdentifier());
   // Comment between 'while' and condition is discarded.
@@ -139,7 +139,7 @@ static void test2(Parser* parser) {
   assert(doWhile->stmt(2)->isComment());
   const DoWhile* doWhileInner = doWhile->stmt(1)->toDoWhile();
   assert(doWhileInner);
-  assert(!doWhileInner->usesImplicitBlock());
+  assert(doWhileInner->blockStyle() == BlockStyle::EXPLICIT);
   assert(doWhileInner->condition()->isIdentifier());
   assert(doWhileInner->numStmts() == 5);
   assert(doWhileInner->stmt(0)->isComment());

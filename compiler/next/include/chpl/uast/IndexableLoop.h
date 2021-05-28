@@ -21,6 +21,7 @@
 #define CHPL_UAST_INDEXABLELOOP_H
 
 #include "chpl/queries/Location.h"
+#include "chpl/uast/BlockStyle.h"
 #include "chpl/uast/Loop.h"
 #include "chpl/uast/Variable.h"
 
@@ -39,11 +40,11 @@ class IndexableLoop : public Loop {
                 int8_t withClauseChildNum,
                 int loopBodyChildNum,
                 int numLoopBodyStmts,
-                bool usesImplicitBlock,
+                BlockStyle blockStyle,
                 bool isExpressionLevel)
     : Loop(tag, std::move(children), loopBodyChildNum,
            numLoopBodyStmts,
-           usesImplicitBlock),
+           blockStyle),
       indexChildNum_(indexChildNum),
       iterandChildNum_(iterandChildNum),
       withClauseChildNum_(withClauseChildNum),

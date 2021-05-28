@@ -680,20 +680,21 @@ stmt:
   {
     // Pull up any comments that appear before the TLOCAL keyword.
     auto comments = context->gatherCommentsFromList($3.exprList, @1);
-    // Create the Local stmt.
+    auto blockStyle = context->determineBlockStyle($3);
+    auto statements = context->consumeAndFlattenTopLevelBlocks($3);
     auto node = Local::build(BUILDER, LOC(@1), toOwned($2),
-                             context->consumeList($3.exprList),
-                             $3.usesDo);
+                             std::move(statements),
+                             blockStyle);
     $$ = { .comments=comments, .stmt=node.release() };
   }
 | TLOCAL do_stmt
   {
     // Pull up any comments that appear before the TLOCAL keyword.
     auto comments = context->gatherCommentsFromList($2.exprList, @1);
-    // Create the Local stmt.
-    auto node = Local::build(BUILDER, LOC(@1),
-                             context->consumeList($2.exprList),
-                             $2.usesDo);
+    auto blockStyle = context->determineBlockStyle($2);
+    auto statements = context->consumeAndFlattenTopLevelBlocks($2);
+    auto node = Local::build(BUILDER, LOC(@1), std::move(statements),
+                             blockStyle);
     $$ = { .comments=comments, .stmt=node.release() };
   }
 | TON expr do_stmt          { $$ = context->finishStmt(TODOSTMT(@$)); }
@@ -701,20 +702,21 @@ stmt:
   {
     // Pull up any comments that appear before the TSERIAL keyword.
     auto comments = context->gatherCommentsFromList($3.exprList, @1);
-    // Create the Serial stmt.
+    auto blockStyle = context->determineBlockStyle($3);
+    auto statements = context->consumeAndFlattenTopLevelBlocks($3);
     auto node = Serial::build(BUILDER, LOC(@1), toOwned($2),
-                              context->consumeList($3.exprList),
-                              $3.usesDo);
+                              std::move(statements),
+                              blockStyle);
     $$ = { .comments=comments, .stmt=node.release() };
   }
 | TSERIAL do_stmt
   {
     // Pull up any comments that appear before the TSERIAL keyword.
     auto comments = context->gatherCommentsFromList($2.exprList, @1);
-    // Create the Serial stmt.
-    auto node = Serial::build(BUILDER, LOC(@1),
-                              context->consumeList($2.exprList),
-                              $2.usesDo);
+    auto blockStyle = context->determineBlockStyle($2);
+    auto statements = context->consumeAndFlattenTopLevelBlocks($2);
+    auto node = Serial::build(BUILDER, LOC(@1), std::move(statements),
+                              blockStyle);
     $$ = { .comments=comments, .stmt=node.release() };
   }
 | TSYNC stmt                { $$ = context->finishStmt(TODOSTMT(@$)); }
@@ -1302,7 +1304,8 @@ extern_block_stmt:
 loop_stmt:
   TDO stmt TWHILE expr TSEMI
   {
-    const bool usesImplicitBlock = !($2.stmt->isBlock());
+    auto blockStyle = $2.stmt->isBlock() ? BlockStyle::EXPLICIT
+                                         : BlockStyle::IMPLICIT;
     auto exprLst = context->makeList($2);
     auto comments = context->gatherCommentsFromList(exprLst, @1);
 
@@ -1313,23 +1316,27 @@ loop_stmt:
     auto statements = BUILDER->flattenTopLevelBlocks(std::move(astLst));
     auto node = DoWhile::build(BUILDER, LOC(@1), std::move(statements),
                                toOwned($4),
-                               usesImplicitBlock);
+                               blockStyle);
     $$ = { .comments=comments, .stmt=node.release() };
   }
 | TWHILE expr do_stmt
   {
     auto comments = context->gatherCommentsFromList($3.exprList, @1);
+    auto blockStyle = context->determineBlockStyle($3);
+    auto statements = context->consumeAndFlattenTopLevelBlocks($3);
     auto node = While::build(BUILDER, LOC(@1), toOwned($2),
-                             context->consumeList($3.exprList),
-                             $3.usesDo);
+                             std::move(statements),
+                             blockStyle);
     $$ = { .comments=comments, .stmt=node.release() };
   }
 | TWHILE ifvar do_stmt
   {
     auto comments = context->gatherCommentsFromList($3.exprList, @1);
+    auto blockStyle = context->determineBlockStyle($3);
+    auto statements = context->consumeAndFlattenTopLevelBlocks($3);
     auto node = While::build(BUILDER, LOC(@1), toOwned($2),
-                             context->consumeList($3.exprList),
-                             $3.usesDo);
+                             std::move(statements),
+                             blockStyle);
     $$ = { .comments=comments, .stmt=node.release() };
   }
 | TCOFORALL expr TIN expr opt_task_intent_ls do_stmt
@@ -1365,10 +1372,12 @@ loop_stmt:
     Expression* ident = context->buildIdent(@3, $3);
     auto index = context->buildLoopIndexDecl(@3, toOwned(ident));
     auto comments = context->gatherCommentsFromList($6.exprList, @1);
+    auto blockStyle = context->determineBlockStyle($6);
+    auto statements = context->consumeAndFlattenTopLevelBlocks($6);
     auto node = For::build(BUILDER, LOC(@1), std::move(index),
                            toOwned($5),
-                           context->consumeList($6.exprList),
-                           $6.usesDo,
+                           std::move(statements),
+                           blockStyle,
                            /*isExpressionLevel*/ false,
                            /*isParam*/ true);
     $$ = { .comments=comments, .stmt=node.release() };

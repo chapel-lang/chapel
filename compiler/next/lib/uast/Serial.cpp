@@ -28,8 +28,19 @@ namespace uast {
 bool Serial::contentsMatchInner(const ASTNode* other) const {
   const Serial* lhs = this;
   const Serial* rhs = (const Serial*) other;
-  return lhs->expressionContentsMatchInner(rhs);
+
+  if (lhs->condChildNum_ != rhs->condChildNum_)
+    return false;
+
+  if (lhs->blockStyle_ != rhs->blockStyle_)
+    return false;
+
+  if (!lhs->expressionContentsMatchInner(rhs))
+    return false;
+
+  return true;
 }
+
 void Serial::markUniqueStringsInner(Context* context) const {
   expressionMarkUniqueStringsInner(context);
 }
@@ -37,7 +48,7 @@ void Serial::markUniqueStringsInner(Context* context) const {
 owned<Serial> Serial::build(Builder* builder,
                           Location loc,
                           ASTList stmts,
-                          bool usesImplicitBlock) {
+                          BlockStyle blockStyle) {
   ASTList lst;
   int8_t condChildNum = -1;
 
@@ -45,7 +56,7 @@ owned<Serial> Serial::build(Builder* builder,
     lst.push_back(std::move(stmt));
   }
 
-  Serial* ret = new Serial(std::move(lst), condChildNum, usesImplicitBlock);
+  Serial* ret = new Serial(std::move(lst), condChildNum, blockStyle);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
@@ -54,7 +65,7 @@ owned<Serial> Serial::build(Builder* builder,
                           Location loc,
                           owned<Expression> condition,
                           ASTList stmts,
-                          bool usesImplicitBlock) {
+                          BlockStyle blockStyle) {
 #ifndef NDEBUG
   assert(condition.get() != nullptr);
 #endif
@@ -71,7 +82,7 @@ owned<Serial> Serial::build(Builder* builder,
     lst.push_back(std::move(stmt));
   }
 
-  Serial* ret = new Serial(std::move(lst), condChildNum, usesImplicitBlock);
+  Serial* ret = new Serial(std::move(lst), condChildNum, blockStyle);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

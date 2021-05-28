@@ -30,7 +30,7 @@ owned<BracketLoop> BracketLoop::build(Builder* builder, Location loc,
                                       owned<Expression> iterand,
                                       owned<WithClause> withClause,
                                       ASTList stmts,
-                                      bool usesImplicitBlock,
+                                      BlockStyle blockStyle,
                                       bool isExpressionLevel) {
 
   assert(iterand.get() != nullptr);
@@ -67,7 +67,7 @@ owned<BracketLoop> BracketLoop::build(Builder* builder, Location loc,
                                      withClauseChildNum,
                                      loopBodyChildNum,
                                      numLoopBodyStmts,
-                                     usesImplicitBlock,
+                                     blockStyle,
                                      isExpressionLevel);
 
   builder->noteLocation(ret, loc);

@@ -43,7 +43,7 @@ owned<For> For::build(Builder* builder,
                       owned<Decl> index,
                       owned<Expression> iterand,
                       ASTList stmts,
-                      bool usesImplicitBlock,
+                      BlockStyle blockStyle,
                       bool isExpressionLevel,
                       bool isParam) {
   assert(iterand.get() != nullptr);
@@ -74,7 +74,7 @@ owned<For> For::build(Builder* builder,
                      iterandChildNum,
                      loopBodyChildNum,
                      numLoopBodyStmts,
-                     usesImplicitBlock,
+                     blockStyle,
                      isExpressionLevel,
                      isParam);
   builder->noteLocation(ret, loc);

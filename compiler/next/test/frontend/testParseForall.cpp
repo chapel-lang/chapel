@@ -63,7 +63,7 @@ static void test0(Parser* parser) {
   assert(forall->iterand()->isIdentifier());
   assert(forall->withClause() == nullptr);
   assert(forall->numStmts() == 2);
-  assert(forall->usesImplicitBlock());
+  assert(forall->blockStyle() == BlockStyle::IMPLICIT);
   assert(!forall->isExpressionLevel());
   assert(forall->stmt(0)->isComment());
   assert(forall->stmt(1)->isFnCall());
@@ -100,7 +100,7 @@ static void test1(Parser* parser) {
   assert(!taskVar->typeExpression());
   assert(!taskVar->initExpression());
   assert(taskVar->intent() == TaskVar::REF);
-  assert(!forall->usesImplicitBlock());
+  assert(forall->blockStyle() == BlockStyle::EXPLICIT);
   assert(!forall->isExpressionLevel());
   assert(forall->numStmts() == 3);
   assert(forall->stmt(0)->isComment());
@@ -133,7 +133,7 @@ static void test2(Parser* parser) {
   assert(zip->numActuals() == 2);
   assert(zip->actual(0)->isIdentifier());
   assert(zip->actual(1)->isIdentifier());
-  assert(!forall->usesImplicitBlock());
+  assert(forall->blockStyle() == BlockStyle::EXPLICIT);
   assert(!forall->isExpressionLevel());
   assert(forall->numStmts() == 1);
   assert(forall->stmt(0)->isFnCall());
@@ -180,7 +180,7 @@ static void test3(Parser* parser) {
   assert(taskVar1->initExpression());
   assert(taskVar1->initExpression()->isIdentifier());
   assert(taskVar1->intent() == TaskVar::IN);
-  assert(!forall->usesImplicitBlock());
+  assert(forall->blockStyle() == BlockStyle::EXPLICIT);
   assert(!forall->isExpressionLevel());
   assert(forall->numStmts() == 2);
   assert(forall->stmt(0)->isFnCall());
@@ -209,7 +209,7 @@ static void test4(Parser* parser) {
   assert(forall->iterand()->isFnCall());
   assert(forall->withClause() == nullptr);
   assert(forall->numStmts() == 2);
-  assert(forall->usesImplicitBlock());
+  assert(forall->blockStyle() == BlockStyle::IMPLICIT);
   assert(!forall->isExpressionLevel());
   assert(forall->stmt(0)->isComment());
   assert(forall->stmt(1)->isFnCall());
@@ -218,7 +218,7 @@ static void test4(Parser* parser) {
 static void test5(Parser* parser) {
   auto parseResult = parser->parseString("test5.chpl",
       "/* comment 1 */\n"
-      "forall zip(a, b) with (var r=thing1) {\n"
+      "forall zip(a, b) with (var r=thing1) do {\n"
       "  writeln(r);\n"
       "}\n"
       "/* comment 4 */\n");
@@ -247,7 +247,7 @@ static void test5(Parser* parser) {
   assert(!taskVar0->typeExpression());
   assert(taskVar0->initExpression());
   assert(taskVar0->intent() == TaskVar::VAR);
-  assert(!forall->usesImplicitBlock());
+  assert(forall->blockStyle() == BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK);
   assert(!forall->isExpressionLevel());
   assert(forall->numStmts() == 1);
   assert(forall->stmt(0)->isFnCall());

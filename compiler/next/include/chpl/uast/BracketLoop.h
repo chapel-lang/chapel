@@ -21,6 +21,7 @@
 #define CHPL_UAST_BRACKETLOOP_H
 
 #include "chpl/queries/Location.h"
+#include "chpl/uast/BlockStyle.h"
 #include "chpl/uast/IndexableLoop.h"
 #include "chpl/uast/WithClause.h"
 
@@ -47,7 +48,7 @@ class BracketLoop final : public IndexableLoop {
               int8_t withClauseChildNum,
               int loopBodyChildNum,
               int numLoopBodyStmts,
-              bool usesImplicitBlock,
+              BlockStyle blockStyle,
               bool isExpressionLevel)
     : IndexableLoop(asttags::BracketLoop, std::move(children),
                     indexChildNum,
@@ -55,7 +56,7 @@ class BracketLoop final : public IndexableLoop {
                     withClauseChildNum,
                     loopBodyChildNum,
                     numLoopBodyStmts,
-                    usesImplicitBlock,
+                    blockStyle,
                     isExpressionLevel) {
     assert(isExpressionASTList(children_));
   }
@@ -79,7 +80,7 @@ class BracketLoop final : public IndexableLoop {
                                   owned<Expression> iterand,
                                   owned<WithClause> withClause,
                                   ASTList stmts,
-                                  bool usesImplicitBlock,
+                                  BlockStyle blockStyle,
                                   bool isExpressionLevel);
 
 

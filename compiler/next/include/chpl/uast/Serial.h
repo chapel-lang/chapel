@@ -21,6 +21,7 @@
 #define CHPL_UAST_SERIAL_H
 
 #include "chpl/queries/Location.h"
+#include "chpl/uast/BlockStyle.h"
 #include "chpl/uast/Expression.h"
 
 namespace chpl {
@@ -48,17 +49,17 @@ namespace uast {
  */
 class Serial final : public Expression {
  private:
-  Serial(ASTList stmts, int8_t condChildNum, bool usesImplicitBlock)
+  Serial(ASTList stmts, int8_t condChildNum, BlockStyle blockStyle)
     : Expression(asttags::Serial, std::move(stmts)),
       condChildNum_(condChildNum),
-      usesImplicitBlock_(usesImplicitBlock) {
+      blockStyle_(blockStyle) {
     assert(isExpressionASTList(children_));
   }
 
   bool contentsMatchInner(const ASTNode* other) const override;
   void markUniqueStringsInner(Context* context) const override;
   int8_t condChildNum_;
-  bool usesImplicitBlock_;
+  BlockStyle blockStyle_;
 
  public:
 
@@ -67,7 +68,7 @@ class Serial final : public Expression {
   */
   static owned<Serial> build(Builder* builder, Location loc,
                             ASTList stmts,
-                            bool usesImplicitBlock);
+                            BlockStyle blockStyle);
 
   /**
     Create and return a serial statement with the given condition and
@@ -76,7 +77,7 @@ class Serial final : public Expression {
   static owned<Serial> build(Builder* builder, Location loc,
                             owned<Expression> condition,
                             ASTList stmts,
-                            bool usesImplicitBlock);
+                            BlockStyle blockStyle);
 
   /**
     Return a way to iterate over the statements.
@@ -114,11 +115,10 @@ class Serial final : public Expression {
   }
 
   /**
-    Returns true if the first child statement of this serial statement is
-    preceded by a 'do'.
+    Returns the block style of this serial statement.
   */
-  bool usesImplicitBlock() const {
-    return usesImplicitBlock_;
+  BlockStyle blockStyle() const {
+    return blockStyle_;
   }
 
 };

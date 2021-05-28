@@ -188,6 +188,10 @@ struct ParserContext {
                                     New::Management management,
                                     FnCall* fnCall);
 
+  BlockStyle determineBlockStyle(BlockOrDo blockOrDo);
+
+  ASTList consumeAndFlattenTopLevelBlocks(BlockOrDo blockOrDo);
+
   CommentsAndStmt buildBracketLoopStmt(YYLTYPE locLeftBracket,
                                        YYLTYPE locIndex,
                                        ParserExprList* indexExprs,

@@ -31,7 +31,7 @@ owned<Foreach> Foreach::build(Builder* builder,
                               owned<Expression> iterand,
                               owned<WithClause> withClause,
                               ASTList stmts,
-                              bool usesImplicitBlock) {
+                              BlockStyle blockStyle) {
   assert(iterand.get() != nullptr);
 
   ASTList lst;
@@ -66,7 +66,7 @@ owned<Foreach> Foreach::build(Builder* builder,
                            withClauseChildNum,
                            loopBodyChildNum,
                            numLoopBodyStmts,
-                           usesImplicitBlock);
+                           blockStyle);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
