@@ -47,8 +47,9 @@ void Local::markUniqueStringsInner(Context* context) const {
 
 owned<Local> Local::build(Builder* builder,
                           Location loc,
-                          ASTList stmts,
-                          BlockStyle blockStyle) {
+                          BlockStyle blockStyle,
+                          ASTList stmts) {
+
   ASTList lst;
   int8_t condChildNum = -1;
 
@@ -64,8 +65,9 @@ owned<Local> Local::build(Builder* builder,
 owned<Local> Local::build(Builder* builder,
                           Location loc,
                           owned<Expression> condition,
-                          ASTList stmts,
-                          BlockStyle blockStyle) {
+                          BlockStyle blockStyle,
+                          ASTList stmts) {
+
 #ifndef NDEBUG
   assert(condition.get() != nullptr);
 #endif

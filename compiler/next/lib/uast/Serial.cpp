@@ -47,8 +47,9 @@ void Serial::markUniqueStringsInner(Context* context) const {
 
 owned<Serial> Serial::build(Builder* builder,
                           Location loc,
-                          ASTList stmts,
-                          BlockStyle blockStyle) {
+                          BlockStyle blockStyle,
+                          ASTList stmts) {
+
   ASTList lst;
   int8_t condChildNum = -1;
 
@@ -64,8 +65,9 @@ owned<Serial> Serial::build(Builder* builder,
 owned<Serial> Serial::build(Builder* builder,
                           Location loc,
                           owned<Expression> condition,
-                          ASTList stmts,
-                          BlockStyle blockStyle) {
+                          BlockStyle blockStyle,
+                          ASTList stmts) {
+
 #ifndef NDEBUG
   assert(condition.get() != nullptr);
 #endif

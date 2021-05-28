@@ -46,18 +46,18 @@ class For final : public IndexableLoop {
  private:
   For(ASTList children,  int8_t indexChildNum,
       int8_t iterandChildNum,
+      BlockStyle blockStyle,
       int loopBodyChildNum,
       int numLoopBodyStmts,
-      BlockStyle blockStyle,
       bool isExpressionLevel,
       bool isParam)
     : IndexableLoop(asttags::For, std::move(children),
                     indexChildNum,
                     iterandChildNum,
                     /*withClauseChildNum*/ -1,
+                    blockStyle,
                     loopBodyChildNum,
                     numLoopBodyStmts,
-                    blockStyle,
                     isExpressionLevel),
       isParam_(isParam) {
 
@@ -82,8 +82,8 @@ class For final : public IndexableLoop {
   static owned<For> build(Builder* builder, Location loc,
                           owned<Decl> index,
                           owned<Expression> iterand,
-                          ASTList stmts,
                           BlockStyle blockStyle,
+                          ASTList stmts,
                           bool isExpressionLevel,
                           bool isParam);
 

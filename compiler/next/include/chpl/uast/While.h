@@ -46,13 +46,13 @@ namespace uast {
  */
 class While final : public Loop {
  private:
-  While(ASTList children,  int8_t conditionChildNum,
+  While(ASTList children, int8_t conditionChildNum,
+        BlockStyle blockStyle,
         int loopBodyChildNum,
-        int numLoopBodyStmts,
-        BlockStyle blockStyle)
-    : Loop(asttags::While, std::move(children), loopBodyChildNum,
-           numLoopBodyStmts,
-           blockStyle),
+        int numLoopBodyStmts)
+    : Loop(asttags::While, std::move(children), blockStyle,
+           loopBodyChildNum,
+           numLoopBodyStmts),
       conditionChildNum_(conditionChildNum) {
     assert(isExpressionASTList(children_));
     assert(condition());
@@ -74,8 +74,9 @@ class While final : public Loop {
   */
   static owned<While> build(Builder* builder, Location loc,
                             owned<Expression> condition,
-                            ASTList stmts,
-                            BlockStyle blockStyle);
+                            BlockStyle blockStyle,
+                            ASTList stmts);
+
 
   /**
     Return the condition of this while loop.

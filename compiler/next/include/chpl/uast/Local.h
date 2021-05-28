@@ -49,8 +49,8 @@ namespace uast {
  */
 class Local final : public Expression {
  private:
-  Local(ASTList stmts, int8_t condChildNum, BlockStyle blockStyle)
-    : Expression(asttags::Local, std::move(stmts)),
+  Local(ASTList children, int8_t condChildNum, BlockStyle blockStyle)
+    : Expression(asttags::Local, std::move(children)),
       condChildNum_(condChildNum),
       blockStyle_(blockStyle) {
     assert(isExpressionASTList(children_));
@@ -68,8 +68,9 @@ class Local final : public Expression {
     Create and return a local statement containing the passed statements.
   */
   static owned<Local> build(Builder* builder, Location loc,
-                            ASTList stmts,
-                            BlockStyle blockStyle);
+                            BlockStyle blockStyle,
+                            ASTList stmts);
+
 
   /**
     Create and return a local statement with the given condition and
@@ -77,8 +78,9 @@ class Local final : public Expression {
   */
   static owned<Local> build(Builder* builder, Location loc,
                             owned<Expression> condition,
-                            ASTList stmts,
-                            BlockStyle blockStyle);
+                            BlockStyle blockStyle,
+                            ASTList stmts);
+
 
   /**
     Return a way to iterate over the statements.

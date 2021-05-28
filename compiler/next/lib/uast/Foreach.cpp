@@ -30,8 +30,9 @@ owned<Foreach> Foreach::build(Builder* builder,
                               owned<Decl> index,
                               owned<Expression> iterand,
                               owned<WithClause> withClause,
-                              ASTList stmts,
-                              BlockStyle blockStyle) {
+                              BlockStyle blockStyle,
+                              ASTList stmts) {
+
   assert(iterand.get() != nullptr);
 
   ASTList lst;
@@ -64,9 +65,10 @@ owned<Foreach> Foreach::build(Builder* builder,
   Foreach* ret = new Foreach(std::move(lst), indexChildNum,
                            iterandChildNum,
                            withClauseChildNum,
+                           blockStyle,
                            loopBodyChildNum,
-                           numLoopBodyStmts,
-                           blockStyle);
+                           numLoopBodyStmts);
+
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

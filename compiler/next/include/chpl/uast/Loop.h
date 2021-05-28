@@ -33,13 +33,14 @@ namespace uast {
  */
 class Loop: public ControlFlow {
  protected:
-  Loop(asttags::ASTTag tag, ASTList children, int loopBodyChildNum,
-       int numLoopBodyStmts,
-       BlockStyle blockStyle)
+  Loop(asttags::ASTTag tag, ASTList children, BlockStyle blockStyle,
+       int loopBodyChildNum,
+       int numLoopBodyStmts)
     : ControlFlow(tag, std::move(children)),
+      blockStyle_(blockStyle),
       loopBodyChildNum_(loopBodyChildNum),
-      numLoopBodyStmts_(numLoopBodyStmts),
-      blockStyle_(blockStyle) {
+      numLoopBodyStmts_(numLoopBodyStmts) {
+
     assert(loopBodyChildNum_ >= 0 && numLoopBodyStmts_ >= 0);
     assert((loopBodyChildNum_ + numLoopBodyStmts_) <= this->numChildren());
   }
@@ -50,9 +51,9 @@ class Loop: public ControlFlow {
     controlFlowMarkUniqueStringsInner(context);
   }
 
+  BlockStyle blockStyle_;
   int loopBodyChildNum_;
   int numLoopBodyStmts_;
-  BlockStyle blockStyle_;
 
  public:
   virtual ~Loop() override = 0; // this is an abstract base class

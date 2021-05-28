@@ -49,8 +49,8 @@ namespace uast {
  */
 class Serial final : public Expression {
  private:
-  Serial(ASTList stmts, int8_t condChildNum, BlockStyle blockStyle)
-    : Expression(asttags::Serial, std::move(stmts)),
+  Serial(ASTList children, int8_t condChildNum, BlockStyle blockStyle)
+    : Expression(asttags::Serial, std::move(children)),
       condChildNum_(condChildNum),
       blockStyle_(blockStyle) {
     assert(isExpressionASTList(children_));
@@ -67,17 +67,19 @@ class Serial final : public Expression {
     Create and return a serial statement containing the passed statements.
   */
   static owned<Serial> build(Builder* builder, Location loc,
-                            ASTList stmts,
-                            BlockStyle blockStyle);
+                             BlockStyle blockStyle,
+                             ASTList stmts);
+
 
   /**
     Create and return a serial statement with the given condition and
     containing the passed statements.
   */
   static owned<Serial> build(Builder* builder, Location loc,
-                            owned<Expression> condition,
-                            ASTList stmts,
-                            BlockStyle blockStyle);
+                             owned<Expression> condition,
+                             BlockStyle blockStyle,
+                             ASTList stmts);
+
 
   /**
     Return a way to iterate over the statements.

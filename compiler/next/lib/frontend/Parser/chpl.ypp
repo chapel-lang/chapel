@@ -694,8 +694,8 @@ stmt:
     auto blockStyle = context->determineBlockStyle($3);
     auto statements = context->consumeAndFlattenTopLevelBlocks($3);
     auto node = Local::build(BUILDER, LOC(@1), toOwned($2),
-                             std::move(statements),
-                             blockStyle);
+                             blockStyle,
+                             std::move(statements));
     $$ = { .comments=comments, .stmt=node.release() };
   }
 | TLOCAL do_stmt
@@ -704,8 +704,8 @@ stmt:
     auto comments = context->gatherCommentsFromList($2.exprList, @1);
     auto blockStyle = context->determineBlockStyle($2);
     auto statements = context->consumeAndFlattenTopLevelBlocks($2);
-    auto node = Local::build(BUILDER, LOC(@1), std::move(statements),
-                             blockStyle);
+    auto node = Local::build(BUILDER, LOC(@1), blockStyle,
+                             std::move(statements));
     $$ = { .comments=comments, .stmt=node.release() };
   }
 | TON expr do_stmt          { $$ = context->finishStmt(TODOSTMT(@$)); }
@@ -716,8 +716,8 @@ stmt:
     auto blockStyle = context->determineBlockStyle($3);
     auto statements = context->consumeAndFlattenTopLevelBlocks($3);
     auto node = Serial::build(BUILDER, LOC(@1), toOwned($2),
-                              std::move(statements),
-                              blockStyle);
+                              blockStyle,
+                              std::move(statements));
     $$ = { .comments=comments, .stmt=node.release() };
   }
 | TSERIAL do_stmt
@@ -726,8 +726,8 @@ stmt:
     auto comments = context->gatherCommentsFromList($2.exprList, @1);
     auto blockStyle = context->determineBlockStyle($2);
     auto statements = context->consumeAndFlattenTopLevelBlocks($2);
-    auto node = Serial::build(BUILDER, LOC(@1), std::move(statements),
-                              blockStyle);
+    auto node = Serial::build(BUILDER, LOC(@1), blockStyle,
+                              std::move(statements));
     $$ = { .comments=comments, .stmt=node.release() };
   }
 | TSYNC stmt                { $$ = context->finishStmt(TODOSTMT(@$)); }
@@ -1325,9 +1325,9 @@ loop_stmt:
 
     auto astLst = context->consumeList(exprLst);
     auto statements = BUILDER->flattenTopLevelBlocks(std::move(astLst));
-    auto node = DoWhile::build(BUILDER, LOC(@1), std::move(statements),
-                               toOwned($4),
-                               blockStyle);
+    auto node = DoWhile::build(BUILDER, LOC(@1), blockStyle,
+                               std::move(statements),
+                               toOwned($4));
     $$ = { .comments=comments, .stmt=node.release() };
   }
 | TWHILE expr do_stmt
@@ -1336,8 +1336,8 @@ loop_stmt:
     auto blockStyle = context->determineBlockStyle($3);
     auto statements = context->consumeAndFlattenTopLevelBlocks($3);
     auto node = While::build(BUILDER, LOC(@1), toOwned($2),
-                             std::move(statements),
-                             blockStyle);
+                             blockStyle,
+                             std::move(statements));
     $$ = { .comments=comments, .stmt=node.release() };
   }
 | TWHILE ifvar do_stmt
@@ -1346,8 +1346,8 @@ loop_stmt:
     auto blockStyle = context->determineBlockStyle($3);
     auto statements = context->consumeAndFlattenTopLevelBlocks($3);
     auto node = While::build(BUILDER, LOC(@1), toOwned($2),
-                             std::move(statements),
-                             blockStyle);
+                             blockStyle,
+                             std::move(statements));
     $$ = { .comments=comments, .stmt=node.release() };
   }
 | TCOFORALL expr TIN expr opt_task_intent_ls do_stmt
@@ -1387,8 +1387,8 @@ loop_stmt:
     auto statements = context->consumeAndFlattenTopLevelBlocks($6);
     auto node = For::build(BUILDER, LOC(@1), std::move(index),
                            toOwned($5),
-                           std::move(statements),
                            blockStyle,
+                           std::move(statements),
                            /*isExpressionLevel*/ false,
                            /*isParam*/ true);
     $$ = { .comments=comments, .stmt=node.release() };

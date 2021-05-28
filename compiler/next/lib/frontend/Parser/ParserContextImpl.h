@@ -480,8 +480,8 @@ ParserContext::buildBracketLoopStmt(YYLTYPE locLeftBracket,
                                  std::move(index),
                                  toOwned(iterandExpr),
                                  toOwned(withClause),
-                                 std::move(statements),
                                  blockStyle,
+                                 std::move(statements),
                                  /*isExpressionLevel*/ false);
 
   return { .comments=comments, .stmt=node.release() };
@@ -517,8 +517,8 @@ CommentsAndStmt ParserContext::buildBracketLoopStmt(YYLTYPE locLeftBracket,
                                  /*index*/ nullptr,
                                  toOwned(iterandExpr),
                                  toOwned(withClause),
-                                 std::move(statements),
                                  blockStyle,
+                                 std::move(statements),
                                  /*isExpressionLevel*/ false);
 
   return { .comments=comments, .stmt=node.release() };
@@ -539,8 +539,8 @@ CommentsAndStmt ParserContext::buildForallLoopStmt(YYLTYPE locForall,
                             std::move(index),
                             toOwned(iterandExpr),
                             toOwned(withClause),
-                            std::move(statements),
                             blockStyle,
+                            std::move(statements),
                             /*isExpressionLevel*/ false);
   return { .comments=comments, .stmt=node.release() };
 }
@@ -560,8 +560,9 @@ CommentsAndStmt ParserContext::buildForeachLoopStmt(YYLTYPE locForeach,
                              std::move(index),
                              toOwned(iterandExpr),
                              toOwned(withClause),
-                             std::move(statements),
-                             blockStyle);
+                             blockStyle,
+                             std::move(statements));
+
   return { .comments=comments, .stmt=node.release() };
 }
 
@@ -578,8 +579,8 @@ CommentsAndStmt ParserContext::buildForLoopStmt(YYLTYPE locFor,
   auto node = For::build(builder, convertLocation(locFor),
                          std::move(index),
                          toOwned(iterandExpr),
-                         std::move(statements),
                          blockStyle,
+                         std::move(statements),
                          /*isExpressionLevel*/ false,
                          /*isParam*/ false);
   return { .comments=comments, .stmt=node.release() };
@@ -600,8 +601,9 @@ CommentsAndStmt ParserContext::buildCoforallLoopStmt(YYLTYPE locCoforall,
                               std::move(index),
                               toOwned(iterandExpr),
                               toOwned(withClause),
-                              std::move(statements),
-                              blockStyle);
+                              blockStyle,
+                              std::move(statements));
+
   return { .comments=comments, .stmt=node.release() };
 }
 
@@ -611,8 +613,6 @@ ParserContext::buildConditionalStmt(bool usesThenKeyword, YYLTYPE locIf,
                                     YYLTYPE locThen,
                                     Expression* condition,
                                     CommentsAndStmt thenStmt) {
-  // May need these anchors later, not sure yet.
-  (void) locThen;
 
   auto thenBlockStyle = usesThenKeyword ? BlockStyle::IMPLICIT
                                         : BlockStyle::EXPLICIT;
@@ -652,9 +652,6 @@ ParserContext::buildConditionalStmt(bool usesThenKeyword, YYLTYPE locIf,
                                     Expression* condition,
                                     CommentsAndStmt thenStmt,
                                     CommentsAndStmt elseStmt) {
-  // May need these anchors later, not sure yet.
-  (void) locThen;
-  (void) locElse;
 
   auto thenBlockStyle = usesThenKeyword ? BlockStyle::IMPLICIT
                                         : BlockStyle::EXPLICIT;

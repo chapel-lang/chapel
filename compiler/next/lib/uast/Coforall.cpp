@@ -29,8 +29,9 @@ owned<Coforall> Coforall::build(Builder* builder, Location loc,
                                 owned<Decl> index,
                                 owned<Expression> iterand,
                                 owned<WithClause> withClause,
-                                ASTList stmts,
-                                BlockStyle blockStyle) {
+                                BlockStyle blockStyle,
+                                ASTList stmts) {
+
   assert(iterand.get() != nullptr);
 
   ASTList lst;
@@ -63,9 +64,10 @@ owned<Coforall> Coforall::build(Builder* builder, Location loc,
   Coforall* ret = new Coforall(std::move(lst), indexChildNum,
                                iterandChildNum,
                                withClauseChildNum,
+                               blockStyle,
                                loopBodyChildNum,
-                               numLoopBodyStmts,
-                               blockStyle);
+                               numLoopBodyStmts);
+
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

@@ -39,9 +39,10 @@ bool DoWhile::contentsMatchInner(const ASTNode* other) const {
 }
 
 owned<DoWhile> DoWhile::build(Builder* builder, Location loc,
+                              BlockStyle blockStyle,
                               ASTList stmts,
-                              owned<Expression> condition,
-                              BlockStyle blockStyle) {
+                              owned<Expression> condition) {
+
   assert(condition.get() != nullptr);
 
   ASTList lst;
@@ -55,10 +56,11 @@ owned<DoWhile> DoWhile::build(Builder* builder, Location loc,
   int conditionChildNum = lst.size();
   lst.push_back(std::move(condition));
 
-  DoWhile* ret = new DoWhile(std::move(lst), loopBodyChildNum,
+  DoWhile* ret = new DoWhile(std::move(lst), blockStyle,
+                             loopBodyChildNum,
                              numLoopBodyStmts,
-                             conditionChildNum,
-                             blockStyle);
+                             conditionChildNum);
+
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
