@@ -228,6 +228,19 @@ struct ParserContext {
                                         WithClause* withClause,
                                         BlockOrDo blockOrDo);
 
+CommentsAndStmt buildConditionalStmt(bool usesThenKeyword, YYLTYPE locIf,
+                                     YYLTYPE locCondition,
+                                     YYLTYPE locThen,
+                                     Expression* condition,
+                                     CommentsAndStmt thenStmt);
+
+CommentsAndStmt buildConditionalStmt(bool usesThenKeyword, YYLTYPE locIf,
+                                     YYLTYPE locCondition,
+                                     YYLTYPE locThen,
+                                     YYLTYPE locElse,
+                                     Expression* condition,
+                                     CommentsAndStmt thenStmt,
+                                     CommentsAndStmt elseStmt);
   // Do we really need these?
   /*
   int         captureTokens; // no, new AST meant to be more faithful to src;

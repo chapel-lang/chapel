@@ -564,3 +564,102 @@ CommentsAndStmt ParserContext::buildCoforallLoopStmt(YYLTYPE locCoforall,
                               blockOrDo.usesDo);
   return { .comments=comments, .stmt=node.release() };
 }
+
+CommentsAndStmt
+ParserContext::buildConditionalStmt(bool usesThenKeyword, YYLTYPE locIf,
+                                    YYLTYPE locCondition,
+                                    YYLTYPE locThen,
+                                    Expression* condition,
+                                    CommentsAndStmt thenStmt) {
+  // May need these anchors later, not sure yet.
+  (void) locThen;
+
+  auto thenBlockStyle = usesThenKeyword ? BlockStyle::IMPLICIT
+                                        : BlockStyle::EXPLICIT;
+
+  // E.g. 'if true then { ... }'
+  if (thenBlockStyle == BlockStyle::IMPLICIT &&
+      thenStmt.stmt->isBlock()) {
+    thenBlockStyle = BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK;
+  }
+
+  auto thenExprLst = makeList(thenStmt);
+  auto comments = gatherCommentsFromList(thenExprLst, locIf);
+
+  // If there's a 'then' keyword, discard any comments before the 'then'.
+  // Else, discard any comments before the condition.
+  auto commentsToDiscard = usesThenKeyword
+      ? gatherCommentsFromList(thenExprLst, locThen)
+      : gatherCommentsFromList(thenExprLst, locCondition);
+  delete commentsToDiscard;
+
+  auto thenAstLst = consumeList(thenExprLst);
+  auto thenStmts = builder->flattenTopLevelBlocks(std::move(thenAstLst));
+
+  auto node = Conditional::build(builder, convertLocation(locIf),
+                                 toOwned(condition),
+                                 thenBlockStyle,
+                                 std::move(thenStmts));
+
+  return { .comments=comments, .stmt=node.release() };
+}
+
+CommentsAndStmt
+ParserContext::buildConditionalStmt(bool usesThenKeyword, YYLTYPE locIf,
+                                    YYLTYPE locCondition,
+                                    YYLTYPE locThen,
+                                    YYLTYPE locElse,
+                                    Expression* condition,
+                                    CommentsAndStmt thenStmt,
+                                    CommentsAndStmt elseStmt) {
+  // May need these anchors later, not sure yet.
+  (void) locThen;
+  (void) locElse;
+
+  auto thenBlockStyle = usesThenKeyword ? BlockStyle::IMPLICIT
+                                        : BlockStyle::EXPLICIT;
+
+  // E.g. 'if true then { ... }'
+  if (thenBlockStyle == BlockStyle::IMPLICIT &&
+      thenStmt.stmt->isBlock()) {
+    thenBlockStyle = BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK;
+  }
+
+  // Else block can only be IMPLICIT or EXPLICIT.
+  auto elseBlockStyle = elseStmt.stmt->isBlock() ? BlockStyle::EXPLICIT
+                                                 : BlockStyle::IMPLICIT;
+
+  auto thenExprLst = makeList(thenStmt);
+  auto comments = gatherCommentsFromList(thenExprLst, locIf);
+
+  // If there's a 'then' keyword, discard any comments before the 'then'.
+  // Else, discard any comments before the condition.
+  auto commentsToDiscard = usesThenKeyword
+      ? gatherCommentsFromList(thenExprLst, locThen)
+      : gatherCommentsFromList(thenExprLst, locCondition);
+  delete commentsToDiscard;
+
+  auto elseExprLst = makeList(elseStmt);
+
+  // Move any comments before the 'else' into the 'thenExprLst'.
+  auto commentsBeforeElse = gatherCommentsFromList(elseExprLst, locElse);
+  thenExprLst = appendList(thenExprLst, commentsBeforeElse);
+
+  // Create the 'then' statement list.
+  auto thenAstLst = consumeList(thenExprLst);
+  auto thenStmts = builder->flattenTopLevelBlocks(std::move(thenAstLst));
+
+  // Create the 'else' statement list.
+  auto elseAstLst = consumeList(elseExprLst);
+  auto elseStmts = builder->flattenTopLevelBlocks(std::move(elseAstLst));
+
+  auto node = Conditional::build(builder, convertLocation(locIf),
+                                 toOwned(condition),
+                                 thenBlockStyle,
+                                 std::move(thenStmts),
+                                 elseBlockStyle,
+                                 std::move(elseStmts),
+                                 /*isExpressionLevel*/ false);
+
+  return { .comments=comments, .stmt=node.release() };
+}

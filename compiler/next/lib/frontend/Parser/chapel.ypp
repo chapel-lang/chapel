@@ -659,7 +659,7 @@ stmt:
 | require_stmt              { $$ = context->finishStmt($1); }
 | assignment_stmt           { $$ = context->finishStmt($1); }
 | extern_block_stmt         { $$ = context->finishStmt($1); }
-| if_stmt                   { $$ = context->finishStmt($1); }
+| if_stmt                   { $$ = $1; } // Don't clear stored comments.
 | implements_stmt           { $$ = context->finishStmt($1); }
 | interface_stmt            { $$ = context->finishStmt($1); }
 | loop_stmt                 { $$ = context->finishStmt($1); }
@@ -834,8 +834,9 @@ block_stmt_body:
 | TLCBR error TRCBR
   {
     context->clearComments();
-    // create a list of stmts that just has an ErroneousExp
-    ParserExprList* lst = context->makeList(ErroneousExpression::build(BUILDER, LOC(@2)));
+    // create a list of stmts that just has an ErroneousExpr
+    auto errorExpr = ErroneousExpression::build(BUILDER, LOC(@2));
+    ParserExprList* lst = context->makeList(errorExpr.release());
     $$ = lst;
   }
 ;
@@ -1483,35 +1484,78 @@ zippered_iterator:
 
 if_stmt:
   TIF expr TTHEN stmt %prec TNOELSE
-    { $$ = TODOSTMT(@$); }
+  {
+    $$ = context->buildConditionalStmt(true, @1, @2, @3, $2, $4);
+  }
 | TIF expr block_stmt %prec TNOELSE
-    { $$ = TODOSTMT(@$); }
+  {
+    $$ = context->buildConditionalStmt(false, @1, @2, @$, $2, $3);
+  }
 | TIF expr TTHEN stmt TELSE stmt
-    { $$ = TODOSTMT(@$); }
+  {
+    $$ = context->buildConditionalStmt(true, @1, @2, @3, @5, $2, $4, $6);
+  }
 | TIF expr block_stmt TELSE stmt
-    { $$ = TODOSTMT(@$); }
+  {
+    $$ = context->buildConditionalStmt(false, @1, @2, @$, @4, $2, $3, $5);
+  }
 | TIF ifvar TTHEN stmt %prec TNOELSE
-    { $$ = TODOSTMT(@$); }
+  {
+    $$ = context->buildConditionalStmt(true, @1, @2, @3, $2, $4);
+  }
 | TIF ifvar block_stmt %prec TNOELSE
-    { $$ = TODOSTMT(@$); }
+  {
+    $$ = context->buildConditionalStmt(false, @1, @2, @$, $2, $3);
+  }
 | TIF ifvar TTHEN stmt TELSE stmt
-    { $$ = TODOSTMT(@$); }
+  {
+    $$ = context->buildConditionalStmt(true, @1, @2, @3, @5, $2, $4, $6);
+  }
 | TIF ifvar block_stmt TELSE stmt
-    { $$ = TODOSTMT(@$); }
-
+  {
+    $$ = context->buildConditionalStmt(false, @1, @2, @$, @4, $2, $3, $5);
+  }
 | TIF expr assignop_ident expr TTHEN stmt %prec TNOELSE
-    { $$ = TODOSTMT(@$); }
+  {
+    auto op = context->buildBinOp(@3, $2, $3, $4);
+    $$ = context->buildConditionalStmt(true, @1, @4, @5, op, $6);
+  }
 | TIF expr assignop_ident expr block_stmt %prec TNOELSE
-    { $$ = TODOSTMT(@$); }
+  {
+    auto op = context->buildBinOp(@3, $2, $3, $4);
+    $$ = context->buildConditionalStmt(false, @1, @4, @$, op, $5);
+  }
 | TIF expr assignop_ident expr TTHEN stmt TELSE stmt
-    { $$ = TODOSTMT(@$); }
+  {
+    auto op = context->buildBinOp(@3, $2, $3, $4);
+    $$ = context->buildConditionalStmt(true, @1, @4, @5, @7, op, $6, $8);
+  }
 | TIF expr assignop_ident expr block_stmt TELSE stmt
-    { $$ = TODOSTMT(@$); }
+  {
+    auto op = context->buildBinOp(@3, $2, $3, $4);
+    $$ = context->buildConditionalStmt(false, @1, @4, @$, @6, op, $5, $7);
+  }
 ;
 
 ifvar:
-  TVAR   ident_def TASSIGN expr { $$ = TODOEXPR(@$); }
-| TCONST ident_def TASSIGN expr { $$ = TODOEXPR(@$); }
+  TVAR   ident_def TASSIGN expr
+  {
+    auto varDecl = Variable::build(BUILDER, LOC(@$), $2,
+                                   Decl::DEFAULT_VISIBILITY,
+                                   Variable::VAR,
+                                   /*typeExpression*/ nullptr,
+                                   toOwned($4));
+    $$ = varDecl.release();
+  }
+| TCONST ident_def TASSIGN expr
+  {
+    auto varDecl = Variable::build(BUILDER, LOC(@$), $2,
+                                   Decl::DEFAULT_VISIBILITY,
+                                   Variable::CONST,
+                                   /*typeExpression*/ nullptr,
+                                   toOwned($4));
+    $$ = varDecl.release();
+  }
 ;
 
 interface_stmt:
