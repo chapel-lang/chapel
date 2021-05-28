@@ -1983,7 +1983,10 @@ codegen_config() {
         } else {
           fprintf(outfile, "\", \"%s\"", var->getModule()->name);
         }
-        fprintf(outfile,", /* private = */ %d);\n", var->hasFlag(FLAG_PRIVATE));
+        fprintf(outfile,", /* private = */ %d", var->hasFlag(FLAG_PRIVATE));
+        fprintf(outfile,", /* deprecated = */ %d",
+                var->hasFlag(FLAG_DEPRECATED));
+        fprintf(outfile,", \"%s\");\n", var->getDeprecationMsg());
 
       }
     }

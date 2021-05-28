@@ -34,7 +34,8 @@ void initSetValue(const char* varName, const char* value,
                   const char* moduleName, int32_t lineno, int32_t filename);
 const char* lookupSetValue(const char* varName, const char* moduleName);
 void installConfigVar(const char* varName, const char* value, 
-                      const char* moduleName, int isprivate);
+                      const char* moduleName, int private, int deprecated,
+                      const char* deprecationMsg);
 
 int handlePossibleConfigVar(int* argc, char* argv[], int argnum, 
                             int32_t lineno, int32_t filename);
