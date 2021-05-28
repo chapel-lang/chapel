@@ -399,7 +399,7 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
                            /*typeExpression*/ nullptr,
                            /*initExpression*/ nullptr);
   } else {
-    noteError(location, this, "Cannot handle this kind of index var");
+    noteError(location, "Cannot handle this kind of index var");
   }
 
   return nullptr;

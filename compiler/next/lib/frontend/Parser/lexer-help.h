@@ -198,7 +198,7 @@ void noteErrInString(yyscan_t scanner, int nLines, int nCols, const char* msg) {
   YYLTYPE* loc = yyget_lloc(scanner);
   YYLTYPE myloc = *loc;
   updateLocation(&myloc, nLines, nCols);
-  noteError(myloc, context, msg);
+  context->noteError(myloc, msg);
 }
 
 static

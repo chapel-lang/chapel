@@ -96,12 +96,27 @@ struct ParserContext {
   YYLTYPE declStartLoc(YYLTYPE curLoc);
   void resetDeclState();
 
-  ErroneousExpression* raiseError(YYLTYPE location, const char* msg) {
+  void noteError(ParserError error) {
+    errors.push_back(std::move(error));
+  }
+  void noteError(YYLTYPE location, const char* msg) {
+    noteError(ParserError(location, msg));
+  }
+  void noteError(YYLTYPE location, std::string msg) {
+    noteError(ParserError(location, std::move(msg)));
+  }
+  ErroneousExpression* raiseError(ParserError error) {
+    Location ll = convertLocation(error.location);
     // note the error for printing
-    yychpl_error(&location, this, msg);
-    Location ll = convertLocation(location);
+    noteError(std::move(error));
     // return an error sentinel
     return ErroneousExpression::build(builder, ll).release();
+  }
+  ErroneousExpression* raiseError(YYLTYPE location, const char* msg) {
+    return raiseError(ParserError(location, msg));
+  }
+  ErroneousExpression* raiseError(YYLTYPE location, std::string msg) {
+    return raiseError(ParserError(location, msg));
   }
 
   void noteComment(YYLTYPE loc, const char* data, long size);
