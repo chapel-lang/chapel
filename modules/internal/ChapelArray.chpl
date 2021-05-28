@@ -2346,6 +2346,15 @@ module ChapelArray {
       return _value.dsiIteratorYieldsLocalElements();
     }
 
+    operator :(val: _domain, type t: string) {
+      use Reflection;
+      if canResolveMethod(val._value, "dsiToString") {
+        return val._value.dsiToString();
+      } else {
+        use IO;
+        return stringify(val);
+      }
+    }
   }  // record _domain
 
   /* Cast a rectangular domain to a new rectangular domain type.  If the old
@@ -2380,11 +2389,6 @@ module ChapelArray {
       tmpD = d;
       return tmpD;
     }
-  }
-
-  operator :(x: _domain, type t:string) {
-    use IO;
-    return stringify(x);
   }
 
   proc chpl_countDomHelp(dom, counts) {

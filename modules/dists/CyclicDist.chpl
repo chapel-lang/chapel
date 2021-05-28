@@ -608,6 +608,10 @@ proc CyclicDom.dsiSerialWrite(x) {
   }
 }
 
+proc CyclicDom.dsiToString() {
+  return whole:string;
+}
+
 proc CyclicDom.dsiNumIndices return whole.sizeAs(uint);
 
 iter CyclicDom.these() {

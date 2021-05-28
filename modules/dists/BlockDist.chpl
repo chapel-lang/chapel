@@ -892,6 +892,10 @@ proc BlockDom.dsiSerialWrite(x) {
   x <~> whole;
 }
 
+proc BlockDom.dsiToString() {
+  return whole:string;
+}
+
 //
 // how to allocate a new array over this domain
 //
