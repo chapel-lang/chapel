@@ -232,7 +232,7 @@ related issues (mentioned later on).
 
 Another reason why we decided not to move with our approach based on
 disabling dead code elimination was to avoid having a large
-departure from how the same file would appear on main. Which would
+departure from how the same file would appear on the main branch. Which would
 cause confusion for the users and the developers. Moreover, this
 would require major changes in terms of how functions are resolved
 and which paths are taken care of. This would mean checking each and

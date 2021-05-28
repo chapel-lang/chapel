@@ -107,7 +107,7 @@ Semantic Changes / Changes to Chapel Language
 * changed type inference for `out` intent to be more similar to `return`  
   (see https://chapel-lang.org/docs/1.24/language/spec/procedures.html#the-out-intent)
 * made `out` argument types no longer impact function resolution  
-  (see https://chapel-lang.org/docs/master/language/spec/procedures.html#function-resolution)
+  (see https://chapel-lang.org/docs/main/language/spec/procedures.html#function-resolution)
 * updated copy elision and split initialization to apply within `local` blocks  
   (e.g., `var x; local { x = 1; }` now works for `--no-local` compilations)  
   (see https://chapel-lang.org/docs/1.24/language/spec/variables.html#split-initialization  
@@ -134,7 +134,7 @@ New Features
   (see https://chapel-lang.org/docs/1.24/language/spec/statements.html#the-conditional-statement  
    and https://chapel-lang.org/docs/1.24/language/spec/statements.html#the-while-do-and-do-while-loops)
 * added initial support for constrained generic interfaces  
-  (see https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/chips/2.rst)
+  (see https://github.com/chapel-lang/chapel/blob/main/doc/rst/developer/chips/2.rst)
 * added support for directly indexing `string` and `bytes` literals  
   (e.g., `var s = "Chapel"[0];` and `var b = b"is great!"[0];` now work)
 * added `domain.orderToIndex(i)` to get the `i`th index in a rectangular domain  
@@ -384,17 +384,17 @@ Third-Party Software Changes
 Developer-oriented changes: Process
 -----------------------------------
 * switched from having developers sign CLAs to using DCO-based commits  
-  (see https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/bestPractices/DCO.rst)
+  (see https://github.com/chapel-lang/chapel/blob/main/doc/rst/developer/bestPractices/DCO.rst)
 
 Developer-oriented changes: Documentation
 -----------------------------------------
 * updated the docs to reflect our use of Discourse rather than mailing lists
 * refreshed the information in our 'GettingStarted' documentation  
-  (see https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/bestPractices/GettingStarted.rst)
+  (see https://github.com/chapel-lang/chapel/blob/main/doc/rst/developer/bestPractices/GettingStarted.rst)
 * refactored our 'ContributorInfo' documentation w.r.t. DCOs, git tips, etc.  
-  (see https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/bestPractices/ContributorInfo.rst,
-   https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/bestPractices/DCO.rst,  
-   and https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/bestPractices/git.rst)
+  (see https://github.com/chapel-lang/chapel/blob/main/doc/rst/developer/bestPractices/ContributorInfo.rst,
+   https://github.com/chapel-lang/chapel/blob/main/doc/rst/developer/bestPractices/DCO.rst,  
+   and https://github.com/chapel-lang/chapel/blob/main/doc/rst/developer/bestPractices/git.rst)
 * switched to a non-Cray version of the Chapel logo in the project's README
 * created an improved and independently-maintained pygments highlighter  
   (see https://github.com/chapel-lang/sphinxcontrib-chapeldomain)
@@ -1933,7 +1933,7 @@ Launchers
 Testing System
 --------------
 * added support for running multilocale C tests via `start_test`  
-  (see https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/bestPractices/TestSystem.rst#comparing-to-a-c-version)
+  (see https://github.com/chapel-lang/chapel/blob/main/doc/rst/developer/bestPractices/TestSystem.rst#comparing-to-a-c-version)
 
 Developer-oriented changes: Module changes
 ------------------------------------------
@@ -2576,7 +2576,7 @@ Feature Improvements
   (see 'Function Visibility in Generic Functions' in the 'Generics' chapter)
 * made `in` arguments more consistent with variable initialization
   (see 'Argument Intents' in the language specification's 'Procedures' chapter)
-  (see https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/chips/13.rst)
+  (see https://github.com/chapel-lang/chapel/blob/main/doc/rst/developer/chips/13.rst)
 * added support for casts from `c_void_ptr` to `c_ptr`
 
 Removed Features
@@ -2910,10 +2910,10 @@ Developer-oriented changes: Compiler improvements/changes
 Developer-oriented changes: Documentation improvements
 ------------------------------------------------------
 * revamped the test system documentation to better serve new developers
-  (see https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/bestPractices/TestSystem.rst)
+  (see https://github.com/chapel-lang/chapel/blob/main/doc/rst/developer/bestPractices/TestSystem.rst)
 * added a `check_path` script to find bad filepath references in repository
 * documented the launcher interface
-  (see https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/adding-a-launcher.rst)
+  (see https://github.com/chapel-lang/chapel/blob/main/doc/rst/developer/adding-a-launcher.rst)
 * removed `404 error` output after successful documentation build
 * removed `git clean` suggestion after failed documentation build
 
@@ -3050,7 +3050,7 @@ New Tools / Tool Changes
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
 * `in` intents now behave more like variable initialization
-  (see https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/chips/13.rst)
+  (see https://github.com/chapel-lang/chapel/blob/main/doc/rst/developer/chips/13.rst)
 * ranges are now passed by `const in` intent by default
   (see 'The Default Intent' in the 'Procedures' chapter of the specification)
 * disallowed implicit coercions for type arguments with a formal type specifier
@@ -3427,12 +3427,12 @@ Developer-oriented changes: Compiler improvements/changes
 Developer-oriented changes: Documentation improvements
 ------------------------------------------------------
 * updated CONTRIBUTING.md content, to reduce redundancy with other docs
-  (see https://github.com/chapel-lang/chapel/blob/master/.github/CONTRIBUTING.md)
+  (see https://github.com/chapel-lang/chapel/blob/main/.github/CONTRIBUTING.md)
 * updated GitHub issue template to request users to note blocking issues
-  (see https://github.com/chapel-lang/chapel/blob/master/.github/ISSUE_TEMPLATE.md)
+  (see https://github.com/chapel-lang/chapel/blob/main/.github/ISSUE_TEMPLATE.md)
 * modified ContributorInfo.rst and TestSystem.rst for clarity
 * document new future file format option
-  (see https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/bestPractices/TestSystem.rst#futures-a-mechanism-for-tracking-bugs-feature-requests-etc)
+  (see https://github.com/chapel-lang/chapel/blob/main/doc/rst/developer/bestPractices/TestSystem.rst#futures-a-mechanism-for-tracking-bugs-feature-requests-etc)
 
 Developer-oriented changes: Module improvements
 -----------------------------------------------
@@ -3931,13 +3931,13 @@ New Features
 ------------
 * dramatically improved support for initializers
   (see https://chapel-lang.org/docs/1.15/technotes/initializers.html
-   and https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/chips/10.rst)
+   and https://github.com/chapel-lang/chapel/blob/main/doc/rst/developer/chips/10.rst)
 * added prototype support for error-handling in Chapel
   (see https://chapel-lang.org/docs/1.15/technotes/errorHandling.html
-   and https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/chips/8.rst)
+   and https://github.com/chapel-lang/chapel/blob/main/doc/rst/developer/chips/8.rst)
 * added support for deinit() as a replacement for class/record destructors
   (see "Class Deinitializer" and "Record Deinitializer" sections in the spec
-   and https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/chips/10.rst)
+   and https://github.com/chapel-lang/chapel/blob/main/doc/rst/developer/chips/10.rst)
 * added support for 'forwarding' methods to fields of classes and records
   (see https://chapel-lang.org/docs/1.15/technotes/forwarding.html)
 * made 'void' a first-class type in the language and a way to fold variables
@@ -4097,7 +4097,7 @@ Documentation
   (https://chapel-lang.org/docs/1.15/usingchapel/QUICKSTART.html)
 * reorganized the doc/ directory in the release tarball
   (see $CHPL_HOME/doc/README.md
-   or https://github.com/chapel-lang/chapel/blob/master/doc/README.rst)
+   or https://github.com/chapel-lang/chapel/blob/main/doc/README.rst)
 * removed $CHPL_HOME/STATUS in favor of GitHub issues
 * updated bugs.rst to refer users to GitHub issues
   (see https://chapel-lang.org/docs/1.15/usingchapel/bugs.html)
@@ -4459,7 +4459,7 @@ New Features
 * added the ability to create serial iterators for types
   (see 'The Method Receiver and the 'this' Argument' in the language spec)
 * added early prototype support for class/record initializers (constructors)
-  (see https://github.com/chapel-lang/chapel/blob/master/doc/chips/10.rst)
+  (see https://github.com/chapel-lang/chapel/blob/main/doc/chips/10.rst)
 
 Feature Improvements
 --------------------
@@ -5318,7 +5318,7 @@ Highlights
 * significantly revamped and improved correctness and performance testing system
 * improved how internal error messages are displayed to users
 * added Chapel Improvement Proposals (CHIPs) framework for proposing changes
-  (see https://github.com/chapel-lang/chapel/blob/master/doc/chips/1.rst)
+  (see https://github.com/chapel-lang/chapel/blob/main/doc/chips/1.rst)
 * made more bug fixes than any release since version 1.1
   (see "Bug Fixes" section below)
 * addressed portability issues for a number of platforms and compilers
@@ -5326,7 +5326,7 @@ Highlights
 Process Improvements
 --------------------
 * added Chapel Improvement Proposals (CHIPs) framework for proposed changes
-  (see https://github.com/chapel-lang/chapel/blob/master/doc/chips/1.rst)
+  (see https://github.com/chapel-lang/chapel/blob/main/doc/chips/1.rst)
 
 Environment/Configuration Changes
 ---------------------------------
