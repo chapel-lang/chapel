@@ -166,8 +166,12 @@ myinstalldir () {
     exit -1
   fi
 
-  ( cd "$FROM" ; tar --exclude='__pycache__' -cf - . ) | \
-    ( cd "$TO" ; tar xf - )
+  # If we wanted to exclude the built Python files, we would use e.g.
+  #   tar --exclude='__pycache__' -cf -
+  # However in this install script we probably want to make sure that
+  # these are compiled ahead-of-time (and not with elevated
+  # privileges so not in this script).
+  ( cd "$FROM" ; tar cf - . ) | ( cd "$TO" ; tar xf - )
 
   if [ $? -ne 0 ]
   then
