@@ -166,7 +166,8 @@ myinstalldir () {
     exit -1
   fi
 
-  ( cd "$FROM" ; tar cf - . ) | ( cd "$TO" ; tar xf - )
+  ( cd "$FROM" ; tar --exclude='__pycache__' -cf - . ) | \
+    ( cd "$TO" ; tar xf - )
 
   if [ $? -ne 0 ]
   then
@@ -263,30 +264,8 @@ myinstallfile util/printchplenv       "$DEST_CHPL_HOME"/util/
 # copy util/chplenv
 myinstalldir  util/chplenv            "$DEST_CHPL_HOME"/util/chplenv/
 
-# copy util/config/compileline
-# (needed for LLVM builds)
-myinstallfile util/config/compileline "$DEST_CHPL_HOME"/util/config/
-
-# copy util/config/compileline.py
-# (needed for LLVM builds)
-myinstallfile util/config/compileline.py "$DEST_CHPL_HOME"/util/config/
-
-# copy util/config/find-python.py
-# (needed by setchplenv*, Makefiles, compileline, printchplenv wrappers)
-myinstallfile util/config/find-python.sh "$DEST_CHPL_HOME"/util/config/
-
-# copy util/config/run-in-venv.bash
-# (needed primarily by start_test)
-myinstallfile util/config/run-in-venv.bash "$DEST_CHPL_HOME"/util/config
-
-# copy util/config/fixpath.py
-# (needed by setchplenv*)
-myinstallfile util/config/fixpath.py  "$DEST_CHPL_HOME"/util/config/
-
-# copy util/config/replace-paths.py
-# (needed by --library --library-makefile compilations)
-myinstallfile util/config/replace-paths.py  "$DEST_CHPL_HOME"/util/config/
-
+# copy util/config/
+myinstalldir  util/config            "$DEST_CHPL_HOME"/util/config/
 
 if [ ! -z "$DEST_DIR" ]
 then
