@@ -2348,8 +2348,8 @@ module ChapelArray {
 
     operator :(val: _domain, type t: string) {
       use Reflection;
-      if canResolveMethod(val._value, "dsiToString") {
-        return val._value.dsiToString();
+      if canResolveMethod(val._value, "doiToString") {
+        return val._value.doiToString();
       } else {
         use IO;
         return stringify(val);

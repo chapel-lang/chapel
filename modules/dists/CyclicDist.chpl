@@ -608,7 +608,7 @@ proc CyclicDom.dsiSerialWrite(x) {
   }
 }
 
-proc CyclicDom.dsiToString() {
+proc CyclicDom.doiToString() {
   return whole:string;
 }
 

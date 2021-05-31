@@ -1607,7 +1607,7 @@ module DefaultRectangular {
     f <~> new ioLiteral("}");
   }
 
-  proc DefaultRectangularDom.dsiToString() {
+  proc DefaultRectangularDom.doiToString() {
     var str = "{" + ranges(0):string;
     for i in 1..<rank do
       str += ", " + ranges(i):string;

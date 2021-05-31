@@ -892,7 +892,7 @@ proc BlockDom.dsiSerialWrite(x) {
   x <~> whole;
 }
 
-proc BlockDom.dsiToString() {
+proc BlockDom.doiToString() {
   return whole:string;
 }
 
