@@ -45,6 +45,7 @@ target_sources(libchplcomp-obj
                Formal.cpp
                Function.cpp
                Identifier.cpp
+               ImagLiteral.cpp
                IndexableLoop.cpp
                IntLiteral.cpp
                Literal.cpp
@@ -55,6 +56,7 @@ target_sources(libchplcomp-obj
                NamedDecl.cpp
                New.cpp
                OpCall.cpp
+               RealLiteral.cpp
                Serial.cpp
                StringLiteral.cpp
                TaskVar.cpp

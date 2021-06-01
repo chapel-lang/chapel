@@ -103,6 +103,7 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
   AST_BEGIN_SUBCLASSES(Literal)        // old AST: Immediate
     AST_LEAF(BytesLiteral)
     AST_LEAF(CStringLiteral)
+    AST_LEAF(ImagLiteral)
     AST_LEAF(IntLiteral)
     AST_LEAF(RealLiteral)
     AST_LEAF(StringLiteral)

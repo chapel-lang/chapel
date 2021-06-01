@@ -19,8 +19,10 @@
 
 #include "chpl/frontend/Parser.h"
 #include "chpl/queries/Context.h"
+#include "chpl/uast/ImagLiteral.h"
 #include "chpl/uast/IntLiteral.h"
 #include "chpl/uast/Module.h"
+#include "chpl/uast/RealLiteral.h"
 #include "chpl/uast/UintLiteral.h"
 #include "chpl/uast/Variable.h"
 
@@ -77,6 +79,49 @@ static void testUintLiteral(Parser* parser,
   assert(uintLit->value() == expectValue);
   assert(uintLit->base() == expectBase);
 }
+static void testRealLiteral(Parser* parser,
+                            const char* testname,
+                            const char* lit,
+                            double expectValue,
+                            int expectBase) {
+  std::string toparse = "var x = ";
+  toparse += lit;
+  toparse += ";\n";
+  auto parseResult = parser->parseString(testname, toparse.c_str());
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModule());
+  auto module = parseResult.topLevelExpressions[0]->toModule();
+  assert(module->numStmts() == 1);
+  auto variable = module->stmt(0)->toVariable();
+  assert(variable);
+  auto realLit = variable->initExpression()->toRealLiteral();
+  assert(realLit);
+  assert(realLit->value() == expectValue);
+  assert(realLit->base() == expectBase);
+}
+static void testImagLiteral(Parser* parser,
+                            const char* testname,
+                            const char* lit,
+                            double expectValue,
+                            int expectBase) {
+  std::string toparse = "var x = ";
+  toparse += lit;
+  toparse += ";\n";
+  auto parseResult = parser->parseString(testname, toparse.c_str());
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModule());
+  auto module = parseResult.topLevelExpressions[0]->toModule();
+  assert(module->numStmts() == 1);
+  auto variable = module->stmt(0)->toVariable();
+  assert(variable);
+  auto imagLit = variable->initExpression()->toImagLiteral();
+  assert(imagLit);
+  assert(imagLit->value() == expectValue);
+  assert(imagLit->base() == expectBase);
+}
+
 
 static void testBadLiteral(Parser* parser,
                            const char* testname,
@@ -165,6 +210,29 @@ int main() {
                  "0X7FFFFFFFFFFFFFFF", 9223372036854775807ull, 16);
   testIntLiteral(p, "testGH2.chpl",
                  "0X7fffffffffffffff", 9223372036854775807ull, 16);
+
+  testRealLiteral(p, "testR0.chpl", "0.0", 0.0, 10);
+  testRealLiteral(p, "testR1.chpl", "1.0", 1.0, 10);
+  testRealLiteral(p, "testR15.chpl", "1.5", 1.5, 10);
+  testRealLiteral(p, "testR15e2.chpl", "1.5e2", 150, 10);
+  testRealLiteral(p, "testR15em2.chpl", "1.5e-2", 0.015, 10);
+  testRealLiteral(p, "testR2e2.chpl", "2e2", 200.0, 10);
+  testRealLiteral(p, "testRx2e2.chpl", "0x2p2", 8.0, 16);
+  testRealLiteral(p, "testRx11.chpl", "0x011.1", 17.0625, 16);
+  testRealLiteral(p, "testRx11p2.chpl", "0x011.1p2", 68.25, 16);
+  testRealLiteral(p, "testRx11pm2.chpl", "0x01.1p-2", 0.265625, 16);
+
+  testImagLiteral(p, "testI0.chpl", "0.0i", 0.0, 10);
+  testImagLiteral(p, "testI1.chpl", "1.0i", 1.0, 10);
+  testImagLiteral(p, "testI15.chpl", "1.5i", 1.5, 10);
+  testImagLiteral(p, "testI15e2.chpl", "1.5e2i", 150, 10);
+  testImagLiteral(p, "testI15em2.chpl", "1.5e-2i", 0.015, 10);
+  testImagLiteral(p, "testI2e2.chpl", "2e2i", 200.0, 10);
+  testImagLiteral(p, "testIx2e2.chpl", "0x2p2i", 8.0, 16);
+  testImagLiteral(p, "testIx11.chpl", "0x011.1i", 17.0625, 16);
+  testImagLiteral(p, "testIx11p2.chpl", "0x011.1p2i", 68.25, 16);
+  testImagLiteral(p, "testIx11pm2.chpl", "0x01.1p-2i", 0.265625, 16);
+
 
   testBadLiteral(p, "testHb.chpl",
       "0b10000000000000000000000000000000000000000000000000000000000000000");

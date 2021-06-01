@@ -2904,9 +2904,9 @@ str_bytes_literal:
 literal_expr:
   bool_literal
 | str_bytes_literal
-| INTLITERAL          { $$ = context->buildNumericLiteral(@$, $1, INTLITERAL); }
-| REALLITERAL         { $$ = TODOEXPR(@$); }
-| IMAGLITERAL         { $$ = TODOEXPR(@$); }
+| INTLITERAL     { $$ = context->buildNumericLiteral(@$, $1, INTLITERAL); }
+| REALLITERAL    { $$ = context->buildNumericLiteral(@$, $1, REALLITERAL); }
+| IMAGLITERAL    { $$ = context->buildNumericLiteral(@$, $1, IMAGLITERAL); }
 | CSTRINGLITERAL      { $$ = $1; }
 | TNONE               { $$ = context->buildIdent(@$, $1); }
 | TLCBR expr_ls TRCBR          { $$ = TODOEXPR(@$); }

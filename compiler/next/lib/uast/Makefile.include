@@ -48,6 +48,7 @@ NEXT_UAST_SRCS =                                 \
   Formal.cpp \
   Function.cpp \
   Identifier.cpp \
+  ImagLiteral.cpp \
   IndexableLoop.cpp \
   IntLiteral.cpp \
   Literal.cpp \
@@ -58,6 +59,7 @@ NEXT_UAST_SRCS =                                 \
   NamedDecl.cpp \
   New.cpp \
   OpCall.cpp \
+  RealLiteral.cpp \
   Serial.cpp \
   StringLiteral.cpp \
   TaskVar.cpp \

@@ -18,7 +18,10 @@
  * limitations under the License.
  */
 
+#include <cfloat>
 #include <cinttypes>
+#include <cmath>
+#include <cstdlib>
 #include <cstdio>
 #include <string>
 #include <vector>
@@ -903,6 +906,27 @@ uint64_t ParserContext::hexStr2uint64(YYLTYPE location,
   return val;
 }
 
+double ParserContext::str2double(YYLTYPE location,
+                                 const char* str,
+                                 bool& erroneous) {
+  char* endptr = nullptr;
+  double num = strtod(str, &endptr);
+  if (std::isnan(num) || std::isinf(num)) { 
+    // don't worry about checking magnitude of these
+  } else {
+    double mag = fabs(num);
+    // check strtod result
+    if ((mag == HUGE_VAL || mag == DBL_MIN) && errno == ERANGE) {
+      erroneous = true;
+      noteError(location, "overflow or underflow in floating point literal");
+    } else if (num == 0.0 && endptr == str) {
+      erroneous = true;
+      noteError(location, "error in floating point literal");
+    }
+  }
+
+  return num;
+}
 
 Expression* ParserContext::buildNumericLiteral(YYLTYPE location,
                                                PODUniqueString str,
@@ -913,13 +937,13 @@ Expression* ParserContext::buildNumericLiteral(YYLTYPE location,
   char* noUnderscores = (char*)malloc(len+1);
 
   // remove all underscores from the number
-  int j = 0;
+  int noUnderscoresLen = 0;
   for (int i=0; i<len; i++) {
     if (pch[i] != '_') {
-      noUnderscores[j++] = pch[i];
+      noUnderscores[noUnderscoresLen++] = pch[i];
     }
   }
-  noUnderscores[j] = '\0';
+  noUnderscores[noUnderscoresLen] = '\0';
 
   bool erroneous = false;
   int base = 0;
@@ -949,9 +973,31 @@ Expression* ParserContext::buildNumericLiteral(YYLTYPE location,
       ret = IntLiteral::build(builder, loc, ull, base).release();
     else
       ret =  UintLiteral::build(builder, loc, ull, base).release();
-  } else {
+  } else if (type == REALLITERAL || type == IMAGLITERAL) {
 
-    assert(false && "TODO");
+    if (type == IMAGLITERAL) {
+      // Remove the trailing `i` from the noUnderscores number
+      assert(noUnderscores[noUnderscoresLen-1] == 'i');
+      noUnderscores[noUnderscoresLen-1] = '\0';
+    }
+
+    if (!strncmp("0x", pch, 2) || !strncmp("0X", pch, 2)) {
+      base = 16;
+    } else {
+      base = 10;
+    }
+
+    double num = str2double(location, noUnderscores, erroneous);
+
+    if (erroneous)
+      ret = ErroneousExpression::build(builder, loc).release();
+    else if (type == IMAGLITERAL)
+      ret = ImagLiteral::build(builder, loc, num, base).release();
+    else
+      ret = RealLiteral::build(builder, loc, num, base).release();
+
+  } else {
+    assert(false && "Case note handled in buildNumericLiteral");
   }
 
   free(noUnderscores);
