@@ -1607,6 +1607,14 @@ module DefaultRectangular {
     f <~> new ioLiteral("}");
   }
 
+  proc DefaultRectangularDom.doiToString() {
+    var str = "{" + ranges(0):string;
+    for i in 1..<rank do
+      str += ", " + ranges(i):string;
+    str += "}";
+    return str;
+  }
+
   proc DefaultRectangularDom.dsiSerialWrite(f) throws { this.dsiSerialReadWrite(f); }
   proc DefaultRectangularDom.dsiSerialRead(f) throws { this.dsiSerialReadWrite(f); }
 

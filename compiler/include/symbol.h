@@ -237,6 +237,7 @@ public:
   std::string deprecationMsg;
 
   const char* getDeprecationMsg() const;
+  void generateDeprecationWarning(Expr* context);
 
 protected:
                      Symbol(AstTag      astTag,

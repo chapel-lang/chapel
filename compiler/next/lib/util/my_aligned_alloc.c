@@ -24,5 +24,17 @@
 #include "my_aligned_alloc.h" // requires size_t already defined
 
 void *my_aligned_alloc(size_t alignment, size_t size) {
+  // This is a workaround for aligned_alloc() seemingly not being
+  // available on Mac OS X < 10.15, despite it claiming to support
+  // C11.
+#if defined(__MAC_OS_X_VERSION_MAX_ALLOWED) && __MAC_OS_X_VERSION_MAX_ALLOWED < 101500
+  void* retval = NULL;
+  int status = posix_memalign(&retval, alignment, size);
+  if (status != 0) {
+    retval = NULL;
+  }
+  return retval;
+#else
   return aligned_alloc(alignment, size);
+#endif
 }

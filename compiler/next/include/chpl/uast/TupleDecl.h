@@ -87,7 +87,7 @@ class TupleDecl final : public Decl {
   /**
     Returns the kind of the tuple (`var` / `const` / `param` etc).
    */
-  const Variable::Kind kind() const { return this->kind_; }
+  Variable::Kind kind() const { return this->kind_; }
 
   /**
     Return a way to iterate over the contained Decls

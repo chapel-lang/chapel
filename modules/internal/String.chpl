@@ -274,6 +274,10 @@ module String {
     proc writeThis(f) throws {
       f <~> _bindex;
     }
+
+    operator :(val: byteIndex, type t:string) {
+      return val._bindex: string;
+    }
   }
 
   pragma "plain old data"
@@ -293,7 +297,11 @@ module String {
     proc writeThis(f) throws {
       f <~> _cpindex;
     }
-  }
+
+    operator :(val: codepointIndex, type t:string) {
+      return val._cpindex: string;
+    }
+}
 
   // Helper routines in support of being able to use ranges of indices
   pragma "no doc"
