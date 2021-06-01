@@ -60,6 +60,7 @@ proc testDomainAPI2D(lbl, D: domain, idx, OOBidx1, OOBidx2, intDom) {
   writeln("D(intDom) == intDom(D) = ", D(intDom) == intDom(D));
   writeln("D != intDom = ", D != intDom);
   writeln("D(intDom) != intDom(D) = ", D(intDom) != intDom(D));
+  writeln("D:string = ", D:string);
   
   writeln("Copying...");
   var D2 = D;

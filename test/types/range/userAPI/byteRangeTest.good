@@ -52,6 +52,7 @@ r == subr         = false
 r != subr         = true
 r[subr]           = 3..6
 r[subr] == subr[r]= true
+r:string          = 1..10
 Copying...        = 1..10
 
 strided byte index range
@@ -105,6 +106,7 @@ r == subr         = false
 r != subr         = true
 r[subr]           = 5..13 by 2
 r[subr] == subr[r]= true
+r:string          = 1..20 by 2
 Copying...        = 1..20 by 2
 
 low bounded byte index range
@@ -153,6 +155,7 @@ r == subr         = false
 r != subr         = true
 r[subr]           = 3..6
 r[subr] == subr[r]= true
+r:string          = 1..
 Copying...        = 1..
 
 high bounded byte index range
@@ -197,5 +200,6 @@ r == subr         = false
 r != subr         = true
 r[subr]           = 3..6
 r[subr] == subr[r]= true
+r:string          = ..10
 Copying...        = ..10
 
