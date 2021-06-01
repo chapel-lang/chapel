@@ -201,8 +201,7 @@ void UseStmt::scopeResolve(ResolveScope* scope) {
       }
 
       if (symAndName.first->hasFlag(FLAG_DEPRECATED)) {
-        // Generate deprecation warning upon use of deprecated symbol
-        USR_WARN(this, "%s", symAndName.first->getDeprecationMsg());
+        symAndName.first->generateDeprecationWarning(this);
       }
 
     }
@@ -362,9 +361,7 @@ void UseStmt::validateNamed() {
                            name);
           }
           if (sym->hasFlag(FLAG_DEPRECATED)) {
-            // Generate deprecation warning when a deprecated symbol is listed
-            // in an except or only list
-            USR_WARN(this, "%s", sym->getDeprecationMsg());
+            sym->generateDeprecationWarning(this);
           }
         }
       }
