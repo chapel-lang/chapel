@@ -272,7 +272,7 @@ class ExpmPadeHelper {
 
   proc comp_A2(){
     if !isAComputed[1] then {
-      this.A2 = matrix_prod(this.A, this.A);
+      this.A2 = dot(this.A, this.A);
       isAComputed[1] = true;
     }
     return this.A2;
@@ -280,7 +280,7 @@ class ExpmPadeHelper {
 
   proc comp_A4(){
     if !isAComputed[2] then {
-      this.A4 = matrix_prod(comp_A2(), comp_A2());
+      this.A4 = dot(comp_A2(), comp_A2());
       isAComputed[2] = true;
     }
     return this.A4;
@@ -288,7 +288,7 @@ class ExpmPadeHelper {
 
   proc comp_A6(){
     if !isAComputed[3] then {
-      this.A6 = matrix_prod(comp_A4(), comp_A2());
+      this.A6 = dot(comp_A4(), comp_A2());
       isAComputed[3] = true;
     }
     return this.A6;
@@ -296,7 +296,7 @@ class ExpmPadeHelper {
 
   proc comp_A8(){
     if !isAComputed[4] then {
-      this.A8 = matrix_prod(comp_A6(), comp_A2());
+      this.A8 = dot(comp_A6(), comp_A2());
       isAComputed[4] = true;
     }
     return this.A8;
@@ -304,15 +304,15 @@ class ExpmPadeHelper {
 
   proc comp_A10(){
     if !isAComputed[5] then {
-      this.A10 = matrix_prod(comp_A8(), comp_A2());
+      this.A10 = dot(comp_A8(), comp_A2());
       isAComputed[5] = true;
     }
     return this.A10;
   }
 
-  proc matrix_prod(A: [], B: []){
-    return dot(A,B);
-  }
+  // proc matrix_prod(A: [], B: []){
+  //   return dot(A,B);
+  // }
 
   proc comp_Exactd4(){
     if !isExactdComputed[1] then {
@@ -411,49 +411,56 @@ class ExpmPadeHelper {
   }
 
   proc pade3(){
-    var b = [120.0, 60.0, 12.0, 1.0];
-    var U = matrix_prod(this.A, reshape(b[3]*comp_A2() + b[1]*this.ident, this.A.indices));
-    var V = reshape(b[2]*comp_A2() + b[0]*this.ident, this.A.indices);
+    const b = [120.0, 60.0, 12.0, 1.0];
+    var temp = b[3]*comp_A2() + b[1]*this.ident;
+    var U = dot(this.A, temp);
+    var V = b[2]*comp_A2() + b[0]*this.ident;
     return (U,V);
   }
 
   proc pade5(){
-    var b = [30240.0, 15120.0, 3360.0, 420.0, 30.0, 1.0];
-    var U = matrix_prod(this.A, reshape(b[5]*this.A4 + b[3]*this.A2 + b[1]*this.ident, this.A.indices));
-    var V = reshape(b[4]*this.A4 + b[2]*this.A2 + b[0]*this.ident, this.A.indices);
+    const b = [30240.0, 15120.0, 3360.0, 420.0, 30.0, 1.0];
+    var temp = b[5]*comp_A4() + b[3]*comp_A2() + b[1]*this.ident;
+    var U = dot(this.A, temp);
+    var V = b[4]*comp_A4() + b[2]*comp_A2() + b[0]*this.ident;
     return (U,V);
   }
 
   proc pade7(){
-    var b = [17297280.0, 8648640.0, 1995840.0, 277200.0, 25200.0, 1512.0, 56.0, 1.0];
-    var U = matrix_prod(this.A, reshape(b[7]*this.A6 + b[5]*this.A4 + b[3]*this.A2 + b[1]*this.ident, this.A.indices));
-    var V = reshape(b[6]*this.A6 + b[4]*this.A4 + b[2]*this.A2 + b[0]*this.ident, this.A.indices);
+    const b = [17297280.0, 8648640.0, 1995840.0, 277200.0, 25200.0, 1512.0, 56.0, 1.0];
+    var temp = b[7]*comp_A6() + b[5]*comp_A4() + b[3]*comp_A2() + b[1]*this.ident;
+    var U = dot(this.A, temp);
+    var V = b[6]*comp_A6() + b[4]*comp_A4() + b[2]*comp_A2() + b[0]*this.ident;
     return (U,V);
   }
 
   proc pade9(){
-    var b = [17643225600.0, 8821612800.0, 2075673600.0, 302702400.0, 30270240.0,
+    const b = [17643225600.0, 8821612800.0, 2075673600.0, 302702400.0, 30270240.0,
                 2162160.0, 110880.0, 3960.0, 90.0, 1.0];
-    var U = matrix_prod(this.A, reshape(b[9]*this.A8 + b[7]*this.A6 + b[5]*this.A4 + b[3]*this.A2 + b[1]*this.ident, this.A.indices));
-    var V = reshape(b[8]*this.A8 + b[6]*this.A6 + b[4]*this.A4 + b[2]*this.A2 + b[0]*this.ident, this.A.indices);
+    var temp = b[9]*comp_A8() + b[7]*comp_A6() + b[5]*comp_A4() + b[3]*comp_A2() + b[1]*this.ident;
+    var U = dot(this.A, temp);
+    var V = b[8]*comp_A8() + b[6]*comp_A6() + b[4]*comp_A4() + b[2]*comp_A2() + b[0]*this.ident;
     return (U,V);
   }
 
   proc pade13_scaled(s: real){
-    var b = [64764752532480000.0, 32382376266240000.0, 7771770303897600.0,
+    const b = [64764752532480000.0, 32382376266240000.0, 7771770303897600.0,
                 1187353796428800.0, 129060195264000.0, 10559470521600.0,
                 670442572800.0, 33522128640.0, 1323241920.0, 40840800.0, 960960.0,
                 16380.0, 182.0, 1.0];
 
     var B = this.A * 2**-s;
-    var B2 = this.A2 * 2**(-2*s);
-    var B4 = this.A4 * 2**(-4*s);
-    var B6 = this.A6 * 2**(-6*s);
+    var B2 = comp_A2() * 2**(-2*s);
+    var B4 = comp_A4() * 2**(-4*s);
+    var B6 = comp_A6() * 2**(-6*s);
 
-    var U2 = matrix_prod(B6, reshape(b[13]*B6 + b[11]*B4 + b[9]*B2, this.A.indices));
-    var U = matrix_prod(B, reshape((U2 + reshape(b[7]*B6 + b[5]*B4 + b[3]*B2 + b[1]*this.ident, this.A.indices)), this.A.indices));
-    var V2 = matrix_prod(B6, reshape(b[12]*B6 + b[10]*B4 + b[8]*B2, this.A.indices));
-    var V = reshape(V2 + reshape(b[6]*B6 + b[4]*B4 + b[2]*B2 + b[0]*this.ident, this.A.indices), this.A.indices);
+    var temp2 = b[13]*B6 + b[11]*B4 + b[9]*B2;
+    var U2 = dot(B6, temp2);
+    var temp = U2 + b[7]*B6 + b[5]*B4 + b[3]*B2 + b[1]*this.ident;
+    var U = dot(B, temp);
+    var temp3 = b[12]*B6 + b[10]*B4 + b[8]*B2;
+    var V2 = dot(B6, temp3);
+    var V = V2 + b[6]*B6 + b[4]*B4 + b[2]*B2 + b[0]*this.ident;
     return (U,V);
   }
 
@@ -2352,34 +2359,26 @@ proc expm(A: [], param use_exact_onenorm=true){
   // Try Pade order 3
   var eta_1 = max(h.comp_Loosed4(), h.comp_Loosed6());
   if eta_1 < 1.495585217958292e-002 then {
-    var mat = h.pade3();
-    var U = mat[0];
-    var V = mat[1];
+    var (U,V) = h.pade3();
     return solvePQ(U, V);
   }
 
   // Try Pade order 5
   var eta_2 = max(h.comp_Exactd4(), h.comp_Loosed6());
   if eta_2 < 2.539398330063230e-001 then {
-    var mat = h.pade5();
-    var U = mat[0];
-    var V = mat[1];
+    var (U,V) = h.pade5();
     return solvePQ(U, V);
   }
 
   // Try Pade order 7 and 9
   var eta_3 = max(h.comp_Exactd6(), h.comp_Loosed8());
   if eta_3 < 9.504178996162932e-001 then {
-    var mat = h.pade7();
-    var U = mat[0];
-    var V = mat[1];
+    var (U,V) = h.pade7();
     return solvePQ(U, V);
   }
 
   if eta_3 < 2.097847961257068e+000 then {
-    var mat = h.pade9();
-    var U = mat[0];
-    var V = mat[1];
+    var (U,V) = h.pade9();
     return solvePQ(U, V);
   }
 
@@ -2414,10 +2413,9 @@ P = U + V
 Q = -U + V
 it then returns X where Q*X = P
 */
-private proc solvePQ(U: [], V: []){
-  var D = U.indices;
-  var P = reshape(U + V, D);
-  var Q = reshape(-U + V, D);
+private proc solvePQ(U: [?D], V: [D]){
+  var P = U + V;
+  var Q = -U + V;
   var res : [D] real;
   var b : [D.dim(0)] real;
 
