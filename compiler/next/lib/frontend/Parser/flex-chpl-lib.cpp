@@ -1,6 +1,6 @@
-#line 1 "flex-chpl-lib.cpp"
+#line 2 "flex-chpl-lib.cpp"
 
-#line 3 "flex-chpl-lib.cpp"
+#line 4 "flex-chpl-lib.cpp"
 
 #define  YY_INT_ALIGNED short int
 
@@ -1077,10 +1077,10 @@ static void processInvalidToken(yyscan_t scanner);
 static bool yy_has_state(yyscan_t scanner);
 }
 
-#line 1080 "flex-chpl-lib.cpp"
+#line 1081 "flex-chpl-lib.cpp"
 /* hex float literals, have decimal exponents indicating the power of 2 */
 
-#line 1083 "flex-chpl-lib.cpp"
+#line 1084 "flex-chpl-lib.cpp"
 
 #define INITIAL 0
 #define externmode 1
@@ -1370,7 +1370,7 @@ YY_DECL
 #line 113 "chpl.lex"
 
 
-#line 1373 "flex-chpl-lib.cpp"
+#line 1374 "flex-chpl-lib.cpp"
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -2365,7 +2365,7 @@ YY_RULE_SETUP
 #line 327 "chpl.lex"
 ECHO;
 	YY_BREAK
-#line 2368 "flex-chpl-lib.cpp"
+#line 2369 "flex-chpl-lib.cpp"
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(externmode):
 	yyterminate();

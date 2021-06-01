@@ -642,7 +642,7 @@ pragma_ls:
       if (lit->isStringLiteral()) {
         StringLiteral* strLit = lit->toStringLiteral();
         $$ = new UniqueStrList();
-        PODUniqueString u = STR(strLit->c_str());
+        PODUniqueString u = STR(strLit->str().c_str());
         delete strLit;
         $$->push_back(u);
       } else {
@@ -655,7 +655,7 @@ pragma_ls:
       Expression* lit = $3;
       if (lit->isStringLiteral()) {
         StringLiteral* strLit = lit->toStringLiteral();
-        PODUniqueString u = STR(strLit->c_str());
+        PODUniqueString u = STR(strLit->str().c_str());
         delete strLit;
         $1->push_back(u);
       } else {

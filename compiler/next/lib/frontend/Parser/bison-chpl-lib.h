@@ -1,4 +1,4 @@
-/* A Bison parser, made by GNU Bison 3.7.6.  */
+/* A Bison parser, made by GNU Bison 3.7.5.  */
 
 /* Bison interface for Yacc-like parsers in C
 
@@ -16,7 +16,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <https://www.gnu.org/licenses/>.  */
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
 
 /* As a special exception, you may create a larger work that contains
    part or all of the Bison parser skeleton and distribute that work
@@ -240,11 +240,12 @@ extern int yychpl_debug;
   // strategy. In the future we could probably switch to a more
   // C++ mode of using bison.
   union YYCHPL_STYPE {
-    // The lexer only uses these two
+    // The lexer only uses these three
     PODUniqueString uniqueStr;
     SizedStr sizedStr;
+    Expression* expr;
 
-    // The remaining types are for parser productions
+    // The remaining types are used only in parser productions
 
     // integer/enum values
 
@@ -263,7 +264,6 @@ extern int yychpl_debug;
     // simple pointer values
     Block* block;
     Call* call;
-    Expression* expr;
     Function* function;
     Module* module;
     WithClause* withClause;
@@ -535,21 +535,13 @@ void yychpl_pstate_delete (yychpl_pstate *ps);
   void yychpl_error(YYLTYPE*       loc,
                     ParserContext* context,
                     const char*    errorMessage);
-
-  void noteError(YYLTYPE location,
-                 ParserContext* context,
-                 const char* errorMessage);
-
-  void noteError(YYLTYPE location,
-                 ParserContext* context,
-                 const std::string s);
-#line 348 "chpl.ypp"
+#line 340 "chpl.ypp"
 
   // include ParserContext.h here because it depends
   // upon YYLTYPE and other types defined by the generated parser
   // headers.
   #include "ParserContext.h"
 
-#line 554 "bison-chpl-lib.h"
+#line 546 "bison-chpl-lib.h"
 
 #endif /* !YY_YYCHPL_BISON_CHPL_LIB_H_INCLUDED  */

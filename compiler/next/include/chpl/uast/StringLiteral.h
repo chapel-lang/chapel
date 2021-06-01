@@ -60,11 +60,6 @@ class StringLiteral final : public Literal {
                                     QuoteStyle quotes);
 
   /**
-   Returns the value of this string literal as a C string,
-   not including the quotes.
-   */
-  const char* c_str() const { return value_.c_str(); }
-  /**
    Returns the value of this string literal as a C++ string,
    not including the quotes.
    */
