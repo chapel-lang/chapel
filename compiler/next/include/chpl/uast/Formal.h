@@ -85,7 +85,7 @@ class Formal final : public VarLikeDecl {
    Returns the intent of the formal, e.g. in `proc f(const ref y: int)`,
    the formal `y` has intent `const ref`.
    */
-  const Intent intent() const { return this->intent_; }
+  Intent intent() const { return this->intent_; }
 
 };
 

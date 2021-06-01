@@ -83,7 +83,7 @@ class Variable final : public VarLikeDecl {
   /**
     Returns the kind of the variable (`var` / `const` / `param` etc).
    */
-  const Kind kind() const { return this->kind_; }
+  Kind kind() const { return this->kind_; }
 
 };
 
