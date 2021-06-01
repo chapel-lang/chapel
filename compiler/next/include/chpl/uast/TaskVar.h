@@ -89,7 +89,7 @@ class TaskVar final : public VarLikeDecl {
   /**
     Returns the intent of this task variable.
   */
-  const Intent intent() const { return this->intent_; }
+  Intent intent() const { return this->intent_; }
 
 };
 
