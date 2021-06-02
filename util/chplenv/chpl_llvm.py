@@ -55,8 +55,7 @@ def has_compatible_installed_llvm():
     got = run_command([find_llvm_config, preferred_vers])
     got = got.strip()
     platform = chpl_platform.get('target')
-    # We have a problem with homebrew installed system llvm
-    if platform != "darwin" and got and got != "missing-llvm-config":
+    if got and got != "missing-llvm-config":
         return True
     else:
         return False
