@@ -2414,7 +2414,7 @@ chpl_bool nextMemMapEntry(void** pAddr, size_t* pSize,
     int ch;
 
     int scn_cnt;
-    scn_cnt = fscanf(f, "%lx-%lx%4s%*x%*x:%*x%*x", &lo_addr, &hi_addr, perms);
+    scn_cnt = fscanf(f, "%"PRIu64"-%"PRIu64"%4s%*x%*x:%*x%*x", &lo_addr, &hi_addr, perms);
     if (scn_cnt == EOF) {
       break;
     } else if (scn_cnt != 3) {
