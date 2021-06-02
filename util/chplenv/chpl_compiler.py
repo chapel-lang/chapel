@@ -163,13 +163,13 @@ def get_compiler_prefix(flag='host'):
         else:
             prefix = chpl_llvm.get_clang_prefix()
 
-    elif compiler_val == 'clang':
-        return overrides.get('CHPL_CLANG_PREFIX', '')
+    #elif compiler_val == 'clang':
+    #    return overrides.get('CHPL_CLANG_PREFIX', '')
 
-    elif compiler_val == 'gnu':
-        prefix = overrides.get('CHPL_GCC_PREFIX', '')
-        if prefix:
-            return prefix
+    #elif compiler_val == 'gnu':
+    #    prefix = overrides.get('CHPL_GCC_PREFIX', '')
+    #    if prefix:
+    #        return prefix
 
     return prefix
 
@@ -182,11 +182,11 @@ def get_compiler_suffix(flag='host'):
         (compiler_val == 'clang' or compiler_val == 'llvm')):
         return chpl_llvm.get_clang_suffix()
 
-    elif compiler_val == 'clang':
-        return overrides.get('CHPL_CLANG_SUFFIX', '')
+    #elif compiler_val == 'clang':
+    #    return overrides.get('CHPL_CLANG_SUFFIX', '')
 
-    elif compiler_val == 'gnu':
-        return overrides.get('CHPL_GCC_SUFFIX', '')
+    #elif compiler_val == 'gnu':
+    #    return overrides.get('CHPL_GCC_SUFFIX', '')
 
     return ''
 
