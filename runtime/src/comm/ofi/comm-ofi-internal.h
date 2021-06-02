@@ -70,6 +70,7 @@ extern "C" {
   m(ACK,                    "tx acknowledgements")                      \
   m(ORDER,                  "ops done only for ordering")               \
   m(HEAP,                   "layer-provided fixed heap")                \
+  m(MEMMAP,                 "process memory map")                       \
   m(MR,                     "mem reg: regions")                         \
   m(MR_DESC,                "mem reg: local region descs")              \
   m(MR_KEY,                 "mem reg: remote region keys")              \
@@ -129,6 +130,13 @@ char* chpl_comm_ofi_dbg_val(const void*, enum fi_datatype);
 
 #define DBG_VAL(pV, typ) chpl_comm_ofi_dbg_val(pV, typ)
 
+#define DBG_CATFILE(mask, fname, match)                                 \
+  do {                                                                  \
+    if (DBG_TEST_MASK(mask)) {                                          \
+      dbg_catfile(fname, match);                                        \
+    }                                                                   \
+  } while (0)
+
 #else // CHPL_COMM_DEBUG
 
 #define DBG_INIT()
@@ -136,6 +144,7 @@ char* chpl_comm_ofi_dbg_val(const void*, enum fi_datatype);
 #define DBG_TEST_MASK(mask) 0
 #define DBG_PRINTF(mask, fmt, ...) do { } while (0)
 #define DBG_PRINTF_NODE0(mask, fmt, ...) do { } while (0)
+#define DBG_CATFILE(mask, fname, match) do { } while (0)
 
 #endif // CHPL_COMM_DEBUG
 
