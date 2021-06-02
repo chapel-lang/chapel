@@ -72,7 +72,7 @@ def get():
         elif (compatible_platform_for_llvm_default()):
             if has_compatible_installed_llvm():
                 llvm_val = 'system'
-        elif (chpl_platform.get('target' == 'linux32')):
+        else:
             llvm_val = 'none'
 
     if llvm_val == 'llvm':
