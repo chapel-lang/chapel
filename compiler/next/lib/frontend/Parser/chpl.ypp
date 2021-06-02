@@ -247,7 +247,7 @@
   // strategy. In the future we could probably switch to a more
   // C++ mode of using bison.
   union YYCHPL_STYPE {
-    // The lexer only uses these three
+    // The lexer only uses these
     PODUniqueString uniqueStr;
     SizedStr sizedStr;
     Expression* expr;
@@ -646,6 +646,10 @@ pragma_ls:
         delete strLit;
         $$->push_back(u);
       } else {
+        // in this case we expect that there was an error
+        // reading the string literal so it is ErroneousExpression
+        // and an error message has already been recorded.
+        // Use "" as the string to indicate an error in the pragma.
         PODUniqueString u = STR("");
         $$->push_back(u);
       }
@@ -659,6 +663,10 @@ pragma_ls:
         delete strLit;
         $1->push_back(u);
       } else {
+        // in this case we expect that there was an error
+        // reading the string literal so it is ErroneousExpression
+        // and an error message has already been recorded.
+        // Use "" as the string to indicate an error in the pragma.
         PODUniqueString u = STR("");
         $$->push_back(u);
       }
