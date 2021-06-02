@@ -52,7 +52,10 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
   AST_LEAF(ErroneousExpression)        //
   AST_LEAF(Identifier)                 // old AST: UnresolvedSymExpr
 
-  AST_NODE(Block)                      // old AST: BlockStmt
+  AST_BEGIN_SUBCLASSES(SimpleBlockLike)
+    AST_NODE(Block)                    // old AST: BlockStmt
+  AST_END_SUBCLASSES(SimpleBlockLike)
+
   AST_NODE(ExternBlock)                // old AST: ExternBlockStmt
   AST_NODE(Implements)                 // old AST: ImplementsStmt
   AST_NODE(Import)                     // old AST: ImportStmt

@@ -52,6 +52,7 @@ target_sources(libchplcomp-obj
                New.cpp
                OpCall.cpp
                Serial.cpp
+               SimpleBlockLike.cpp
                TaskVar.cpp
                TupleDecl.cpp
                TypeDecl.cpp

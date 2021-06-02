@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/Block.h"
+#include "chpl/uast/SimpleBlockLike.h"
 
 #include "chpl/uast/Builder.h"
 
@@ -25,15 +25,28 @@ namespace chpl {
 namespace uast {
 
 
-owned<Block> Block::build(Builder* builder, Location loc, ASTList stmts) {
-  const int bodyChildNum = 0;
-  const int numBodyStmts = stmts.size();
+bool SimpleBlockLike::
+simpleBlockLikeContentsMatchInner(const ASTNode* other) const {
+  const SimpleBlockLike* lhs = this;
+  const SimpleBlockLike* rhs = other->toSimpleBlockLike();
 
-  Block* ret = new Block(std::move(stmts), bodyChildNum, numBodyStmts);
-  builder->noteLocation(ret, loc);
-  return toOwned(ret);
+  if (lhs->blockStyle_ != rhs->blockStyle_)
+    return false;
+
+  if (lhs->bodyChildNum_ != rhs->bodyChildNum_)
+    return false;
+
+  if (lhs->numBodyStmts_ != rhs->numBodyStmts_)
+    return false;
+
+  if (!lhs->expressionContentsMatchInner(rhs))
+    return false;
+
+  return true;
 }
 
+SimpleBlockLike::~SimpleBlockLike() {
+}
 
 } // namespace uast
 } // namespace chpl
