@@ -294,6 +294,16 @@ ECHO = echo
 #
 EXE_SUFFIX =
 
+# in case something goes wrong and we don't have a compiler, try
+# falling back on gcc.
+ifeq ($(CHPL_MAKE_COMPILER_COMMAND_CPP),)
+  $(warning CHPL_MAKE_COMPILER_COMMAND_CPP is not set so setting it to g++)
+  CHPL_MAKE_COMPILER_COMMAND_CPP = g++
+endif
+ifeq ($(CHPL_MAKE_COMPILER_COMMAND_C),)
+  $(warning CHPL_MAKE_COMPILER_COMMAND_C is not set so setting it to gcc)
+  CHPL_MAKE_COMPILER_COMMAND_C = gcc
+endif
 
 #
 # include compiler- and platform-specific settings

@@ -121,10 +121,14 @@ def get_compiler_name_c(compiler):
         return 'gcc'
     elif compiler in ['clang', 'llvm', 'allinea']:
         return 'clang'
+    elif compiler == 'ibm':
+        return 'xlc'
     elif compiler == 'intel':
         return 'icc'
     elif compiler == 'pgi':
         return 'pgcc'
+    elif compiler == 'mpi-gnu':
+        return 'mpicc'
 
     return 'unknown-c-compiler'
 
@@ -135,10 +139,14 @@ def get_compiler_name_cpp(compiler):
         return 'g++'
     elif compiler in ['clang', 'llvm', 'allinea']:
         return 'clang++'
+    elif compiler == 'ibm':
+        return 'xlC'
     elif compiler == 'intel':
         return 'icpc'
     elif compiler == 'pgi':
         return 'pgc++'
+    elif compiler == 'mpi-gnu':
+        return 'mpicxx'
 
     return 'unknown-c++-compiler'
 

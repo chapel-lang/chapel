@@ -27,16 +27,6 @@
 CXX = $(CHPL_MAKE_COMPILER_COMMAND_CPP) # normally clang++
 CC = $(CHPL_MAKE_COMPILER_COMMAND_C)    # normally clang
 
-# just in case
-ifeq ($(CXX),)
-  $(warning CXX is not set so setting it to clang++)
-  CXX = clang++
-endif
-ifeq ($(CC),)
-  $(warning CC is not set so setting it to clang)
-  CC = clang
-endif
-
 ifeq ($(CHPL_MAKE_COMPILER), llvm)
   ifeq ($(CHPL_MAKE_LLVM), bundled)
     # handle using the included clang compiler
