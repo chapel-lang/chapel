@@ -709,10 +709,18 @@ static void verifySaveLibDir(const ArgumentDescription* desc, const char* unused
 
 static void setLlvmCodegen(const ArgumentDescription* desc, const char* unused)
 {
-  if (fYesLlvmCodegen)
+  if (fYesLlvmCodegen) {
     fNoLlvmCodegen = false;
-  else
+    USR_WARN("--llvm is deprecated -- please use --target-compiler=llvm");
+    envMap["CHPL_TARGET_COMPILER"] = "llvm";
+    // set the environment variable for follow-on processes including
+    // any printchplenv invocation
+    int rc = setenv("CHPL_TARGET_COMPILER", "llvm", 1);
+    if( rc ) USR_FATAL("Could not setenv CHPL_TARGET_COMPILER");
+  } else {
     fNoLlvmCodegen = true;
+    USR_WARN("--no-llvm is deprecated -- please use e.g. --target-compiler=gnu");
+  }
 }
 
 static void setVectorize(const ArgumentDescription* desc, const char* unused)
@@ -1252,31 +1260,15 @@ static void printStuff(const char* argv0) {
 }
 
 static void setupLLVMCodeGen() {
-  if (fYesLlvmCodegen) {
+  // Use LLVM code generation if CHPL_TARGET_COMPILER=llvm.
+  fLlvmCodegen = (0 == strcmp(CHPL_TARGET_COMPILER, "llvm"));
+
+  // These are deprecated and shouldn't be set, but try to
+  // use them.
+  if (fYesLlvmCodegen)
     fLlvmCodegen = true;
-  } else if (fNoLlvmCodegen) {
+  else if (fNoLlvmCodegen)
     fLlvmCodegen = false;
-  } else {
-    const char* chpl_llvm = getenv("CHPL_LLVM");
-    if (chpl_llvm != NULL && 0 == strcmp(chpl_llvm, "none")) {
-      fLlvmCodegen = false;
-    } else {
-#ifdef HAVE_LLVM
-      const char* chpl_llvm_by_default = getenv("CHPL_LLVM_BY_DEFAULT");
-      if (chpl_llvm_by_default == NULL ||
-          0 != strcmp(chpl_llvm_by_default, "0")) {
-        // LLVM-by-default
-        fLlvmCodegen = true;
-      } else {
-        // No-LLVM-by-default was requested via environment variable
-        fLlvmCodegen = false;
-      }
-#else
-      // Not built with LLVM
-      fLlvmCodegen = false;
-#endif
-    }
-  }
 }
 
 bool useDefaultEnv(std::string key) {
@@ -1402,17 +1394,13 @@ static void setupChplGlobals(const char* argv0) {
     envMap["CHPL_HOME"] = CHPL_HOME;
   }
 
-  // tell printchplenv that we're doing an LLVM build
-  setupLLVMCodeGen();
-  if (fLlvmCodegen) {
-    envMap["CHPL_LLVM_CODEGEN"] = "llvm";
-  }
-
   // Populate envMap from printchplenv, never overwriting existing elements
   populateEnvMap();
 
   // Set global CHPL_vars with updated envMap values
   setChapelEnvs();
+
+  setupLLVMCodeGen();
 }
 
 static void postTaskTracking() {
