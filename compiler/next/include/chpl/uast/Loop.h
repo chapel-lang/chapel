@@ -22,7 +22,7 @@
 
 #include "chpl/uast/ASTNode.h"
 #include "chpl/uast/BlockStyle.h"
-#include "chpl/uast/ControlFlow.h"
+#include "chpl/uast/Expression.h"
 
 namespace chpl {
 namespace uast {
@@ -31,12 +31,12 @@ namespace uast {
 /**
   This abstract class represents some sort of loop.
  */
-class Loop: public ControlFlow {
+class Loop: public Expression {
  protected:
   Loop(asttags::ASTTag tag, ASTList children, BlockStyle blockStyle,
        int loopBodyChildNum,
        int numLoopBodyStmts)
-    : ControlFlow(tag, std::move(children)),
+    : Expression(tag, std::move(children)),
       blockStyle_(blockStyle),
       loopBodyChildNum_(loopBodyChildNum),
       numLoopBodyStmts_(numLoopBodyStmts) {
@@ -48,7 +48,7 @@ class Loop: public ControlFlow {
   bool loopContentsMatchInner(const Loop* other) const;
 
   void loopMarkUniqueStringsInner(Context* context) const {
-    controlFlowMarkUniqueStringsInner(context);
+    expressionMarkUniqueStringsInner(context);
   }
 
   BlockStyle blockStyle_;

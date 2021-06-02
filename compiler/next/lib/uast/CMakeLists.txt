@@ -28,7 +28,6 @@ target_sources(libchplcomp-obj
                Coforall.cpp
                Comment.cpp
                Conditional.cpp
-               ControlFlow.cpp
                Decl.cpp
                Dot.cpp
                DoWhile.cpp

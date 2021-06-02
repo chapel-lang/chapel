@@ -53,7 +53,7 @@ bool Conditional::contentsMatchInner(const ASTNode* other) const {
   if (lhs->isExpressionLevel_ != rhs->isExpressionLevel_)
     return false;
 
-  if (!lhs->controlFlowContentsMatchInner(rhs))
+  if (!lhs->expressionContentsMatchInner(rhs))
     return false;
 
   return true;

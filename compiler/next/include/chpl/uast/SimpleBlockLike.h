@@ -82,6 +82,14 @@ class SimpleBlockLike : public Expression {
     assert(ast->isExpression());
     return (const Expression*)ast;
   }
+
+  /**
+    Get the block style of this.
+  */
+  BlockStyle blockStyle() const {
+    return blockStyle_;
+  }
+
 };
 
 

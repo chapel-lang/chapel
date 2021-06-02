@@ -23,6 +23,7 @@
 #include "chpl/queries/Location.h"
 #include "chpl/uast/BlockStyle.h"
 #include "chpl/uast/Expression.h"
+#include "chpl/uast/SimpleBlockLike.h"
 
 namespace chpl {
 namespace uast {
@@ -47,20 +48,25 @@ namespace uast {
   \endrst
 
  */
-class Local final : public Expression {
+class Local final : public SimpleBlockLike {
  private:
-  Local(ASTList children, int8_t condChildNum, BlockStyle blockStyle)
-    : Expression(asttags::Local, std::move(children)),
-      condChildNum_(condChildNum),
-      blockStyle_(blockStyle) {
+  Local(ASTList children, int8_t condChildNum, BlockStyle blockStyle,
+        int bodyChildNum,
+        int numBodyStmts)
+    : SimpleBlockLike(asttags::Local, std::move(children), blockStyle,
+                      bodyChildNum,
+                      numBodyStmts),
+      condChildNum_(condChildNum) {
     assert(isExpressionASTList(children_));
   }
 
   bool contentsMatchInner(const ASTNode* other) const override;
-  void markUniqueStringsInner(Context* context) const override;
+
+  void markUniqueStringsInner(Context* context) const override {
+    simpleBlockLikeMarkUniqueStringsInner(context);
+  }
 
   int8_t condChildNum_;
-  BlockStyle blockStyle_;
 
  public:
 
@@ -81,16 +87,6 @@ class Local final : public Expression {
                             BlockStyle blockStyle,
                             ASTList stmts);
 
-
-  /**
-    Return a way to iterate over the statements.
-  */
-  ASTListIteratorPair<Expression> stmts() const {
-    auto begin = condition() ? children_.begin()++ : children_.begin();
-    auto end = children_.end();
-    return ASTListIteratorPair<Expression>(begin, end);
-  }
-
   /**
     Returns the condition of this local statement, or nullptr if it does
     not exist.
@@ -98,30 +94,6 @@ class Local final : public Expression {
   const Expression* condition() const {
     return condChildNum_ < 0 ? nullptr
       : (const Expression*)child(condChildNum_);
-  }
-
-  /**
-    Return the number of statements in the local statement.
-  */
-  int numStmts() const {
-    return condition() ? (numChildren()-1) : numChildren();
-  }
-
-  /**
-    Return the i'th statement in the local statement.
-  */
-  const Expression* stmt(int i) const {
-    int idx = condition() ? (i+1) : i;
-    const ASTNode* ast = child(idx);
-    assert(ast->isExpression());
-    return (const Expression*)ast;
-  }
-
-  /**
-    Returns the block style of this local statement.
-  */
-  BlockStyle blockStyle() const {
-    return blockStyle_;
   }
 
 };
