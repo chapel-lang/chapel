@@ -163,16 +163,12 @@ chpl_py="$($CHPL_HOME/util/config/find-python.sh)"
 # Collect comm protocol environment variables (lowercase to avoid conflicts)
 chpl_comm="$($chpl_py $CHPL_HOME/util/chplenv/chpl_comm.py)"
 chpl_launcher="$($chpl_py $CHPL_HOME/util/chplenv/chpl_launcher.py)"
-
-backend="C"
-if [ ${CHPL_LLVM_CODEGEN:-0} -ne 0 ]; then
-  backend="LLVM"
-fi
+chpl_compiler="$($chpl_py $CHPL_HOME/util/chplenv/chpl_compiler.py --target)"
 
 # Compile test job into temporary directory
 log_info "Compiling \$CHPL_HOME/${REL_TEST_DIR}/${TEST_JOB}.chpl"
 
-log_info "Compiling with $backend backend"
+log_info "Compiling with CHPL_TARGET_COMPILER=$chpl_compiler"
 
 TEST_COMP_OUT=$( ${CHPL_BIN} ${TEST_DIR}/${TEST_JOB}.chpl ${COMP_FLAGS} -o ${TMP_TEST_DIR}/${TEST_JOB} 2>&1 )
 COMPILE_STATUS=$?
