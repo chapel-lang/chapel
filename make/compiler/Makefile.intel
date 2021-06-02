@@ -23,7 +23,7 @@
 #
 # Tools
 #
-CXX = $(CHPL_MAKE_COMPILER_COMMAND_CPP) # normally icpc
+CXX = $(CHPL_MAKE_COMPILER_COMMAND_CXX) # normally icpc
 CC = $(CHPL_MAKE_COMPILER_COMMAND_C)    # normally icc
 
 ifeq (, $(MPI_CC))

@@ -132,7 +132,7 @@ def get_compiler_name_c(compiler):
 
     return 'unknown-c-compiler'
 
-def get_compiler_name_cpp(compiler):
+def get_compiler_name_cxx(compiler):
     if compiler_is_prgenv(compiler):
         return 'CC'
     elif 'gnu' in compiler:
@@ -218,15 +218,15 @@ def get_command_c(flag='host'):
     return command
 
 @memoize
-def get_command_cpp(flag='host'):
+def get_command_cxx(flag='host'):
     compiler_val = get(flag=flag)
 
     if flag == 'host':
-        command = overrides.get('CHPL_HOST_COMPILER_COMMAND_CPP', '')
+        command = overrides.get('CHPL_HOST_COMPILER_COMMAND_CXX', '')
     elif flag == 'target':
-        command = overrides.get('CHPL_TARGET_COMPILER_COMMAND_CPP', '')
+        command = overrides.get('CHPL_TARGET_COMPILER_COMMAND_CXX', '')
 
-    command = get_compiler_name_cpp(compiler_val)
+    command = get_compiler_name_cxx(compiler_val)
 
     prefix = get_compiler_prefix(flag=flag);
     if prefix:

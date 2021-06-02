@@ -25,7 +25,7 @@
 #
 
 CC = $(CHPL_MAKE_COMPILER_COMMAND_C)     # normally cc
-CXX = $(CHPL_MAKE_COMPILER_COMMAND_CPP)  # normally CC
+CXX = $(CHPL_MAKE_COMPILER_COMMAND_CXX)  # normally CC
 
 RANLIB = ranlib
 

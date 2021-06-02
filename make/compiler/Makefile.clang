@@ -24,7 +24,7 @@
 # Tools
 #
 
-CXX = $(CHPL_MAKE_COMPILER_COMMAND_CPP) # normally clang++
+CXX = $(CHPL_MAKE_COMPILER_COMMAND_CXX) # normally clang++
 CC = $(CHPL_MAKE_COMPILER_COMMAND_C)    # normally clang
 
 ifeq ($(CHPL_MAKE_COMPILER), llvm)
@@ -33,7 +33,7 @@ ifeq ($(CHPL_MAKE_COMPILER), llvm)
     ifndef CLANG_SYSROOT_ARGS
       export CLANG_SYSROOT_ARGS=$(shell cat $(LLVM_CLANG_ARGUMENTS_FILE))
     endif
-    CXX = $(CHPL_MAKE_COMPILER_COMMAND_CPP) $(CLANG_SYSROOT_ARGS)
+    CXX = $(CHPL_MAKE_COMPILER_COMMAND_CXX) $(CLANG_SYSROOT_ARGS)
     CC = $(CHPL_MAKE_COMPILER_COMMAND_C) $(CLANG_SYSROOT_ARGS)
   endif
 endif
