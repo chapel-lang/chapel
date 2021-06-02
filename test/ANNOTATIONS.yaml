@@ -2077,6 +2077,10 @@ compilerAndTestingStats: &compiler-perf-base
   02/25/21:
     - Restore timing for makeBinary (#17253)
     - Stop converting PRIM_ZIP to tuples for forall statements (#17212)
+  05/22/21:
+    - Change range.size to return int; add range.sizeAs (#17628)
+  06/01/21:
+    - Add explicit string casts for common/easy cases (#17855)
 
 allTotalTime:
   <<: *compiler-perf-base
@@ -2138,6 +2142,10 @@ arkouda: &arkouda-base
   04/07/21:
     - Increase the aggregation buffer sizes for non-ugni configurations (mhmerrill/arkouda#732)
     - Revert a recent change in block array creation that caused performance regression (#17531)
+  05/19/21:
+    - Upgrade Arkouda release testing from 1.23.0 to 1.24.1 (#17773)
+  06/02/21:
+    - Make the array values in groupby and aggregate benchmarks consistent (mhmerrill/arkouda#832)
 
 arkouda-string:
   <<: *arkouda-base
