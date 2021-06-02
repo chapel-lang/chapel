@@ -106,6 +106,7 @@ CHPL_ENVS = [
     ChapelEnv('CHPL_COMPILER_SUBDIR', INTERNAL),
     ChapelEnv('CHPL_HOST_BIN_SUBDIR', INTERNAL),
     ChapelEnv('CHPL_TARGET_BIN_SUBDIR', INTERNAL),
+    ChapelEnv('CHPL_SYS_MODULES_SUBDIR', INTERNAL),
     ChapelEnv('  CHPL_LLVM_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_GASNET_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_GMP_UNIQ_CFG_PATH', INTERNAL),
@@ -203,6 +204,12 @@ def compute_internal_values():
     ENV_VALS['CHPL_COMPILER_SUBDIR'] = printchplenv(set(['compiler']), print_format='path').rstrip('\n')
     ENV_VALS['CHPL_HOST_BIN_SUBDIR'] = chpl_bin_subdir.get('host')
     ENV_VALS['CHPL_TARGET_BIN_SUBDIR'] = chpl_bin_subdir.get('target')
+
+    sys_modules_subdir = (chpl_platform.get('target') + "-" +
+                          chpl_arch.get('target') + "-" +
+                          chpl_compiler.get_path_component('target'));
+    ENV_VALS['CHPL_SYS_MODULES_SUBDIR'] = sys_modules_subdir
+
     ENV_VALS['  CHPL_LLVM_UNIQ_CFG_PATH'] = chpl_llvm.get_uniq_cfg_path()
 
     compile_args_3p = []

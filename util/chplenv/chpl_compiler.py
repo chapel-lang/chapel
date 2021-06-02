@@ -96,6 +96,24 @@ def get(flag='host'):
     validate(compiler_val)
     return compiler_val
 
+@memoize
+def get_path_component(flag='host'):
+
+    val = get(flag=flag)
+
+    if val == 'clang' and flag == 'target':
+
+        import chpl_llvm
+        has_llvm = chpl_llvm.get()
+
+        if has_llvm == 'bundled':
+            # selecting the included clang - distinguish that
+            # with 'llvm' in the path component.
+            val = 'llvm'
+
+    return get(flag)
+
+
 def get_compiler_name_c(compiler):
     if compiler_is_prgenv(compiler):
         return 'cc'
