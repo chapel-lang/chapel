@@ -116,7 +116,7 @@ struct InlinedString {
   static inline InlinedString buildFromAligned(const char* s, size_t len) {
     // Store empty strings as nullptr
     if (s == nullptr || len == 0)
-      return { nullptr };
+      return {{ nullptr }};
 
     // Would the tag, null terminator, and data fit?
     if (len <= MAX_SIZE_INLINED) {
@@ -126,11 +126,11 @@ struct InlinedString {
       // (since null byte will come from the zeros in val)
       memcpy(dst, s, len);
       // create a struct with the value we created and return it
-      return { (const char*) val };
+      return {{ (const char*) val }};
     }
 
     assert(!alignmentIndicatesTag(s));
-    return { s };
+    return {{ s }};
   }
 
   static InlinedString buildUsingContextTable(Context* context,
