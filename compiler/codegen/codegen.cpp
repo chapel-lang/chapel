@@ -2027,7 +2027,7 @@ codegen_config() {
 
     forv_Vec(VarSymbol, var, gVarSymbols) {
       if (var->hasFlag(FLAG_CONFIG) && !var->isType()) {
-        std::vector<llvm::Value *> args (4);
+        std::vector<llvm::Value *> args (6);
         args[0] = info->irBuilder->CreateLoad(
             new_CStringSymbol(var->name)->codegen().val);
 
@@ -2054,6 +2054,9 @@ codegen_config() {
         }
 
         args[3] = info->irBuilder->getInt32(var->hasFlag(FLAG_PRIVATE));
+
+        args[4] = info->irBuilder->getInt32(var->hasFlag(FLAG_DEPRECATED));
+        args[5] = info->irBuilder->CreateLoad(new_CStringSymbol(var->getDeprecationMsg())->codegen().val);
 
         info->irBuilder->CreateCall(installConfigFunc, args);
       }
