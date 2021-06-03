@@ -1,2 +1,2 @@
 # C backend shows compilation error from not handling const-ness
---no-llvm
+CHPL_TARGET_COMPILER == llvm
