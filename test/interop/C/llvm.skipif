@@ -1,2 +1,2 @@
 # Tests llvm specifically, should not run when not present
-CHPL_LLVM==none
+CHPL_TARGET_COMPILER != llvm

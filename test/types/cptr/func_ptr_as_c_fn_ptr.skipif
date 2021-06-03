@@ -1,7 +1,2 @@
-#!/usr/bin/env python3
-
-from os import environ
-if '--baseline' in environ['COMPOPTS']:
-  print (False)
-else:
-  print (True)
+COMPOPTS <= --baseline
+CHPL_TARGET_COMPILER == llvm

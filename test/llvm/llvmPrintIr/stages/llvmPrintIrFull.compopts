@@ -1,1 +1,1 @@
---llvm --llvm-print-ir-stage=full --llvm-print-ir mainTest
+--llvm-print-ir-stage=full --llvm-print-ir mainTest

@@ -1,1 +1,1 @@
---llvm --library --static
+--library --static

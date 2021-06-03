@@ -1,1 +1,2 @@
+# test uses an extern block
 CHPL_LLVM==none

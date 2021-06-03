@@ -6,4 +6,4 @@
 FNS=`cat export-vs-c.chpl | grep --only-matching -e '[a-zA-Z0-9_]*_\(c_____\|chapel\)(' | sed 's/(//g' | sort -u`
 FNS=`echo $FNS | sed 's/ /,/g'`
 
-echo --ccflags -fdiscard-value-names --llvm --llvm-print-ir-stage basic --llvm-print-ir $FNS
+echo --ccflags -fdiscard-value-names --llvm-print-ir-stage basic --llvm-print-ir $FNS

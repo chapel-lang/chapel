@@ -1,6 +1,3 @@
-# There's no point in testing this if we don't have LLVM...
-CHPL_LLVM == none
-
 # Not sure why, because interop/C/llvm/makefiles has it.
 CHPL_COMM != none
 

@@ -12,14 +12,11 @@ testname = sys.argv[1]
 outfile = sys.argv[2]
 compflags = sys.argv[4].split(' ')
 genLLVM = False
-for flag in compflags:
-    if flag == '--llvm':
-        genLLVM = True
-    elif flag == '--no-llvm':
-        genLLVM = False
 
-if genLLVM:
-    os.environ['CHPL_LLVM_CODEGEN'] = 'llvm'
+if os.environ['CHPL_TARGET_COMPILER'] == 'llvm':
+    genLLVM = True
+else:
+    genLLVM = False
 
 goodfile = testname+'.good'
 compver = 'Chapel compiler version:'

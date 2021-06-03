@@ -28,9 +28,6 @@ generateCompopts() {
 
     compopts="--home=${CHPL_HOME}"
 
-    # llvm codegen changes some of the environment variables
-    compopts="$compopts --no-llvm"
-
     for var in ${printchplenv}; do
 
         # Princhplenv format: "env=value"

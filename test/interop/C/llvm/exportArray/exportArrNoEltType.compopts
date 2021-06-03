@@ -1,2 +1,2 @@
---llvm --library
---llvm # exportArrNoEltType.good
+--library
+# exportArrNoEltType.good
