@@ -46,7 +46,7 @@ def CompVersion(version_string):
 def target_compiler_is_prgenv(bypass_llvm=True):
     compiler_val = chpl_compiler.get('target')
 
-    # But for --llvm, look at the original target compiler
+    # But for CHPL_TARGET_COMPILER=llvm, look at the original target compiler
     if bypass_llvm:
         if compiler_val == 'llvm':
             compiler_val = chpl_compiler.get_prgenv_compiler()
