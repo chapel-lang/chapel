@@ -1,0 +1,7 @@
+#!/bin/bash
+
+#git fetch chapel-lang master
+git log master --first-parent -m --name-status --pretty=format:"-----------------------------------------------------------------------------%n%ncommit %h%nMerge: %p%nDate:   %ad%nAuthor: %an <%ae>%n%n%s%n%n%b%n" --reverse . | dos2unix > GITLOG
+
+# TODO: Can I use tformat to put the %b after the list of files?  And a label
+# to search on to find it?

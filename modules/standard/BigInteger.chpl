@@ -171,10 +171,17 @@ module BigInteger {
   use SysError;
   use SysBasic;
 
+  deprecated "The enum Round is deprecated, please use the enum round instead"
   enum Round {
     DOWN = -1,
     ZERO =  0,
     UP   =  1
+  }
+
+  enum round {
+    down = -1,
+    zero = 0,
+    up = 1
   }
 
   pragma "ignore noinit"
@@ -4016,24 +4023,39 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
     }
   }
 
+  deprecated
+  "bigint.div_q using Round is deprecated, use bigint.div_q with round instead"
+  proc bigint.div_q(const ref n: bigint,
+                    const ref d: bigint,
+                    param     rounding: Round) {
+    use Round;
+    if (rounding == UP) {
+      this.div_q(n, d, round.up);
+    } else if (rounding == ZERO) {
+      this.div_q(n, d, round.zero);
+    } else {
+      this.div_q(n, d, round.down);
+    }
+  }
+
   // 5.6 Division Functions
   proc bigint.div_q(const ref n: bigint,
                     const ref d: bigint,
-                    param     rounding = Round.ZERO) {
+                    param rounding = round.zero) {
     if _local {
       select rounding {
-        when Round.UP   do mpz_cdiv_q(this.mpz, n.mpz,  d.mpz);
-        when Round.DOWN do mpz_fdiv_q(this.mpz, n.mpz,  d.mpz);
-        when Round.ZERO do mpz_tdiv_q(this.mpz, n.mpz,  d.mpz);
+        when round.up   do mpz_cdiv_q(this.mpz, n.mpz,  d.mpz);
+        when round.down do mpz_fdiv_q(this.mpz, n.mpz,  d.mpz);
+        when round.zero do mpz_tdiv_q(this.mpz, n.mpz,  d.mpz);
       }
 
     } else if this.localeId == chpl_nodeID &&
               n.localeId    == chpl_nodeID &&
               d.localeId    == chpl_nodeID {
       select rounding {
-        when Round.UP   do mpz_cdiv_q(this.mpz, n.mpz,  d.mpz);
-        when Round.DOWN do mpz_fdiv_q(this.mpz, n.mpz,  d.mpz);
-        when Round.ZERO do mpz_tdiv_q(this.mpz, n.mpz,  d.mpz);
+        when round.up   do mpz_cdiv_q(this.mpz, n.mpz,  d.mpz);
+        when round.down do mpz_fdiv_q(this.mpz, n.mpz,  d.mpz);
+        when round.zero do mpz_tdiv_q(this.mpz, n.mpz,  d.mpz);
       }
 
     } else {
@@ -4044,38 +4066,69 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
         const d_ = d;
 
         select rounding {
-          when Round.UP   do mpz_cdiv_q(this.mpz, n_.mpz, d_.mpz);
-          when Round.DOWN do mpz_fdiv_q(this.mpz, n_.mpz, d_.mpz);
-          when Round.ZERO do mpz_tdiv_q(this.mpz, n_.mpz, d_.mpz);
+          when round.up   do mpz_cdiv_q(this.mpz, n_.mpz, d_.mpz);
+          when round.down do mpz_fdiv_q(this.mpz, n_.mpz, d_.mpz);
+          when round.zero do mpz_tdiv_q(this.mpz, n_.mpz, d_.mpz);
           }
       }
     }
   }
 
+  deprecated
+  "bigint.div_q using Round is deprecated, use bigint.div_q with round instead"
   proc bigint.div_q(const ref n: bigint,
                               d: integral,
-                    param     rounding = Round.ZERO) {
+                    param     rounding: Round) {
+    use Round;
+    if (rounding == UP) {
+      this.div_q(n, d, round.up);
+    } else if (rounding == ZERO) {
+      this.div_q(n, d, round.zero);
+    } else {
+      this.div_q(n, d, round.down);
+    }
+  }
+
+  proc bigint.div_q(const ref n: bigint,
+                              d: integral,
+                    param     rounding = round.zero) {
 
     this.div_q(n, new bigint(d), rounding);
   }
 
+  deprecated
+  "bigint.div_r using Round is deprecated, use bigint.div_r with round instead"
   proc bigint.div_r(const ref n: bigint,
                     const ref d: bigint,
-                    param     rounding = Round.ZERO) {
+                    param     rounding: Round) {
+    use Round;
+    if (rounding == UP) {
+      this.div_r(n, d, round.up);
+    } else if (rounding == ZERO) {
+      this.div_r(n, d, round.zero);
+    } else {
+      this.div_r(n, d, round.down);
+    }
+
+  }
+
+  proc bigint.div_r(const ref n: bigint,
+                    const ref d: bigint,
+                    param     rounding = round.zero) {
     if _local {
       select rounding {
-        when Round.UP   do mpz_cdiv_r(this.mpz, n.mpz,  d.mpz);
-        when Round.DOWN do mpz_fdiv_r(this.mpz, n.mpz,  d.mpz);
-        when Round.ZERO do mpz_tdiv_r(this.mpz, n.mpz,  d.mpz);
+        when round.up   do mpz_cdiv_r(this.mpz, n.mpz,  d.mpz);
+        when round.down do mpz_fdiv_r(this.mpz, n.mpz,  d.mpz);
+        when round.zero do mpz_tdiv_r(this.mpz, n.mpz,  d.mpz);
       }
 
     } else if this.localeId == chpl_nodeID &&
               n.localeId    == chpl_nodeID &&
               d.localeId    == chpl_nodeID {
       select rounding {
-        when Round.UP   do mpz_cdiv_r(this.mpz, n.mpz,  d.mpz);
-        when Round.DOWN do mpz_fdiv_r(this.mpz, n.mpz,  d.mpz);
-        when Round.ZERO do mpz_tdiv_r(this.mpz, n.mpz,  d.mpz);
+        when round.up   do mpz_cdiv_r(this.mpz, n.mpz,  d.mpz);
+        when round.down do mpz_fdiv_r(this.mpz, n.mpz,  d.mpz);
+        when round.zero do mpz_tdiv_r(this.mpz, n.mpz,  d.mpz);
       }
 
     } else {
@@ -4086,30 +4139,61 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
         const d_ = d;
 
         select rounding {
-          when Round.UP   do mpz_cdiv_r(this.mpz, n_.mpz, d_.mpz);
-          when Round.DOWN do mpz_fdiv_r(this.mpz, n_.mpz, d_.mpz);
-          when Round.ZERO do mpz_tdiv_r(this.mpz, n_.mpz, d_.mpz);
+          when round.up   do mpz_cdiv_r(this.mpz, n_.mpz, d_.mpz);
+          when round.down do mpz_fdiv_r(this.mpz, n_.mpz, d_.mpz);
+          when round.zero do mpz_tdiv_r(this.mpz, n_.mpz, d_.mpz);
         }
       }
     }
   }
 
+  deprecated
+  "bigint.div_r using Round is deprecated, use bigint.div_r with round instead"
   proc bigint.div_r(const ref n: bigint,
                               d: integral,
-                    param     rounding = Round.ZERO) {
+                    param     rounding: Round) {
+    use Round;
+    if (rounding == UP) {
+      this.div_r(n, d, round.up);
+    } else if (rounding == ZERO) {
+      this.div_r(n, d, round.zero);
+    } else {
+      this.div_r(n, d, round.down);
+    }
+  }
+
+  proc bigint.div_r(const ref n: bigint,
+                              d: integral,
+                    param     rounding = round.zero) {
     this.div_r(n, new bigint(d), rounding);
+  }
+
+  deprecated
+  "bigint.div_qr using Round is deprecated, use bigint.div_qr with round instead"
+  proc bigint.div_qr(ref       r:        bigint,
+                     const ref n:        bigint,
+                     const ref d:        bigint,
+                     param     rounding: Round) {
+    use Round;
+    if (rounding == UP) {
+      this.div_qr(r, n, d, round.up);
+    } else if (rounding == ZERO) {
+      this.div_qr(r, n, d, round.zero);
+    } else {
+      this.div_qr(r, n, d, round.down);
+    }
   }
 
   // this gets quotient, r gets remainder
   proc bigint.div_qr(ref       r:        bigint,
                      const ref n:        bigint,
                      const ref d:        bigint,
-                     param     rounding = Round.ZERO) {
+                     param     rounding = round.zero) {
     if _local {
       select rounding {
-        when Round.UP   do mpz_cdiv_qr(this.mpz, r.mpz, n.mpz, d.mpz);
-        when Round.DOWN do mpz_fdiv_qr(this.mpz, r.mpz, n.mpz, d.mpz);
-        when Round.ZERO do mpz_tdiv_qr(this.mpz, r.mpz, n.mpz, d.mpz);
+        when round.up   do mpz_cdiv_qr(this.mpz, r.mpz, n.mpz, d.mpz);
+        when round.down do mpz_fdiv_qr(this.mpz, r.mpz, n.mpz, d.mpz);
+        when round.zero do mpz_tdiv_qr(this.mpz, r.mpz, n.mpz, d.mpz);
       }
 
     } else if this.localeId == chpl_nodeID &&
@@ -4117,9 +4201,9 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
               n.localeId    == chpl_nodeID &&
               d.localeId    == chpl_nodeID {
       select rounding {
-        when Round.UP   do mpz_cdiv_qr(this.mpz, r.mpz, n.mpz, d.mpz);
-        when Round.DOWN do mpz_fdiv_qr(this.mpz, r.mpz, n.mpz, d.mpz);
-        when Round.ZERO do mpz_tdiv_qr(this.mpz, r.mpz, n.mpz, d.mpz);
+        when round.up   do mpz_cdiv_qr(this.mpz, r.mpz, n.mpz, d.mpz);
+        when round.down do mpz_fdiv_qr(this.mpz, r.mpz, n.mpz, d.mpz);
+        when round.zero do mpz_tdiv_qr(this.mpz, r.mpz, n.mpz, d.mpz);
       }
 
     } else {
@@ -4131,9 +4215,9 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
         const d_ = d;
 
         select rounding {
-          when Round.UP   do mpz_cdiv_qr(this.mpz, r_.mpz, n_.mpz, d_.mpz);
-          when Round.DOWN do mpz_fdiv_qr(this.mpz, r_.mpz, n_.mpz, d_.mpz);
-          when Round.ZERO do mpz_tdiv_qr(this.mpz, r_.mpz, n_.mpz, d_.mpz);
+          when round.up   do mpz_cdiv_qr(this.mpz, r_.mpz, n_.mpz, d_.mpz);
+          when round.down do mpz_fdiv_qr(this.mpz, r_.mpz, n_.mpz, d_.mpz);
+          when round.zero do mpz_tdiv_qr(this.mpz, r_.mpz, n_.mpz, d_.mpz);
         }
 
         r = r_;
@@ -4141,31 +4225,62 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
     }
   }
 
+  deprecated
+  "bigint.div_qr using Round is deprecated, use bigint.div_qr with round instead"
   proc bigint.div_qr(ref       r: bigint,
                      const ref n: bigint,
                                d: integral,
-                     param     rounding = Round.ZERO) {
+                     param     rounding: Round) {
+    use Round;
+    if (rounding == UP) {
+      this.div_qr(r, n, d, round.up);
+    } else if (rounding == ZERO) {
+      this.div_qr(r, n, d, round.zero);
+    } else {
+      this.div_qr(r, n, d, round.down);
+    }
+  }
+
+  proc bigint.div_qr(ref       r: bigint,
+                     const ref n: bigint,
+                               d: integral,
+                     param     rounding = round.zero) {
     this.div_qr(r, n, new bigint(d), rounding);
+  }
+
+  deprecated
+  "bigint.div_q_2exp using Round is deprecated, use bigint.div_q_2xp with round instead"
+  proc bigint.div_q_2exp(const ref n: bigint,
+                                   b: integral,
+                         param     rounding: Round) {
+    use Round;
+    if (rounding == UP) {
+      this.div_q_2exp(n, b, round.up);
+    } else if (rounding == ZERO) {
+      this.div_q_2exp(n, b, round.zero);
+    } else {
+      this.div_q_2exp(n, b, round.down);
+    }
   }
 
   proc bigint.div_q_2exp(const ref n: bigint,
                                    b: integral,
-                         param     rounding = Round.ZERO) {
+                         param     rounding = round.zero) {
     const b_ = b.safeCast(mp_bitcnt_t);
 
     if _local {
       select rounding {
-        when Round.UP   do mpz_cdiv_q_2exp(this.mpz, n.mpz, b_);
-        when Round.DOWN do mpz_fdiv_q_2exp(this.mpz, n.mpz, b_);
-        when Round.ZERO do mpz_tdiv_q_2exp(this.mpz, n.mpz, b_);
+        when round.up   do mpz_cdiv_q_2exp(this.mpz, n.mpz, b_);
+        when round.down do mpz_fdiv_q_2exp(this.mpz, n.mpz, b_);
+        when round.zero do mpz_tdiv_q_2exp(this.mpz, n.mpz, b_);
       }
 
     } else if this.localeId == chpl_nodeID &&
               n.localeId    == chpl_nodeID {
       select rounding {
-        when Round.UP   do mpz_cdiv_q_2exp(this.mpz, n.mpz, b_);
-        when Round.DOWN do mpz_fdiv_q_2exp(this.mpz, n.mpz, b_);
-        when Round.ZERO do mpz_tdiv_q_2exp(this.mpz, n.mpz, b_);
+        when round.up   do mpz_cdiv_q_2exp(this.mpz, n.mpz, b_);
+        when round.down do mpz_fdiv_q_2exp(this.mpz, n.mpz, b_);
+        when round.zero do mpz_tdiv_q_2exp(this.mpz, n.mpz, b_);
       }
 
     } else {
@@ -4175,31 +4290,46 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
         const n_ = n;
 
         select rounding {
-          when Round.UP   do mpz_cdiv_q_2exp(this.mpz, n_.mpz, b_);
-          when Round.DOWN do mpz_fdiv_q_2exp(this.mpz, n_.mpz, b_);
-          when Round.ZERO do mpz_tdiv_q_2exp(this.mpz, n_.mpz, b_);
+          when round.up   do mpz_cdiv_q_2exp(this.mpz, n_.mpz, b_);
+          when round.down do mpz_fdiv_q_2exp(this.mpz, n_.mpz, b_);
+          when round.zero do mpz_tdiv_q_2exp(this.mpz, n_.mpz, b_);
         }
       }
     }
   }
 
+  deprecated
+  "bigint.div_r_2exp using Round is deprecated, use bigint.div_r_2xp with round instead"
   proc bigint.div_r_2exp(const ref n: bigint,
                                    b: integral,
-                         param     rounding = Round.ZERO) {
+                         param     rounding: Round) {
+    use Round;
+    if (rounding == UP) {
+      this.div_r_2exp(n, b, round.up);
+    } else if (rounding == ZERO) {
+      this.div_r_2exp(n, b, round.zero);
+    } else {
+      this.div_r_2exp(n, b, round.down);
+    }
+  }
+
+  proc bigint.div_r_2exp(const ref n: bigint,
+                                   b: integral,
+                         param     rounding = round.zero) {
     const b_ = b.safeCast(mp_bitcnt_t);
 
     if _local {
       select rounding {
-        when Round.UP   do mpz_cdiv_r_2exp(this.mpz, n.mpz, b_);
-        when Round.DOWN do mpz_fdiv_r_2exp(this.mpz, n.mpz, b_);
-        when Round.ZERO do mpz_tdiv_r_2exp(this.mpz, n.mpz, b_);
+        when round.up   do mpz_cdiv_r_2exp(this.mpz, n.mpz, b_);
+        when round.down do mpz_fdiv_r_2exp(this.mpz, n.mpz, b_);
+        when round.zero do mpz_tdiv_r_2exp(this.mpz, n.mpz, b_);
       }
 
     } else if this.localeId == chpl_nodeID && n.localeId == chpl_nodeID {
       select rounding {
-        when Round.UP   do mpz_cdiv_r_2exp(this.mpz, n.mpz, b_);
-        when Round.DOWN do mpz_fdiv_r_2exp(this.mpz, n.mpz, b_);
-        when Round.ZERO do mpz_tdiv_r_2exp(this.mpz, n.mpz, b_);
+        when round.up   do mpz_cdiv_r_2exp(this.mpz, n.mpz, b_);
+        when round.down do mpz_fdiv_r_2exp(this.mpz, n.mpz, b_);
+        when round.zero do mpz_tdiv_r_2exp(this.mpz, n.mpz, b_);
       }
 
     } else {
@@ -4209,9 +4339,9 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
         const n_ = n;
 
         select rounding {
-          when Round.UP   do mpz_cdiv_r_2exp(this.mpz, n_.mpz, b_);
-          when Round.DOWN do mpz_fdiv_r_2exp(this.mpz, n_.mpz, b_);
-          when Round.ZERO do mpz_tdiv_r_2exp(this.mpz, n_.mpz, b_);
+          when round.up   do mpz_cdiv_r_2exp(this.mpz, n_.mpz, b_);
+          when round.down do mpz_fdiv_r_2exp(this.mpz, n_.mpz, b_);
+          when round.zero do mpz_tdiv_r_2exp(this.mpz, n_.mpz, b_);
         }
       }
     }

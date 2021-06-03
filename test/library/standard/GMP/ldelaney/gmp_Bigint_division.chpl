@@ -6,51 +6,51 @@ var b = new bigint( 10);
 var c = new bigint(-27);
 var d = new bigint();
 
-d.div_q(c, a, Round.UP);
-b.div_r(c, a, Round.UP);
+d.div_q(c, a, round.up);
+b.div_r(c, a, round.up);
 writeln(d, " ", b);
 
-d.div_q(c, a, Round.DOWN);
-b.div_r(c, a, Round.DOWN);
+d.div_q(c, a, round.down);
+b.div_r(c, a, round.down);
 writeln(d, " ", b);
 
-d.div_q(c, a, Round.ZERO); // same as UP   for negative integers
-b.div_r(c, a, Round.ZERO); // same as DOWN for positive integers
+d.div_q(c, a, round.zero); // same as up   for negative integers
+b.div_r(c, a, round.zero); // same as down for positive integers
 writeln(d, " ", b);
 
 c.neg(c);
-d.div_qr(b, c, a, Round.UP);
+d.div_qr(b, c, a, round.up);
 writeln(d, " ", b);
 
-d.div_qr(b, c, a, Round.DOWN);
+d.div_qr(b, c, a, round.down);
 writeln(d, " ", b);
 
-d.div_qr(b, c, a, Round.ZERO); // same as DOWN for positive integers
+d.div_qr(b, c, a, round.zero); // same as down for positive integers
 writeln(d, " ", b);
 
 writeln();
 
 c.neg(c);
-d.div_q(c, 8, Round.UP);
-b.div_r(c, 8, Round.UP);
+d.div_q(c, 8, round.up);
+b.div_r(c, 8, round.up);
 writeln(d, " ", b);
 
-d.div_q(c, 8, Round.DOWN);
-b.div_r(c, 8, Round.DOWN);
+d.div_q(c, 8, round.down);
+b.div_r(c, 8, round.down);
 writeln(d, " ", b);
 
-d.div_q(c, 8, Round.ZERO); // same as DOWN for positive integers
-b.div_r(c, 8, Round.ZERO); // same as DOWN for positive integers
+d.div_q(c, 8, round.zero); // same as down for positive integers
+b.div_r(c, 8, round.zero); // same as down for positive integers
 writeln(d, " ", b);
 
 c.neg(c);
-d.div_qr(b, c, 8, Round.UP);
+d.div_qr(b, c, 8, round.up);
 writeln(d, " ", b);
 
-d.div_qr(b, c, 8, Round.DOWN);
+d.div_qr(b, c, 8, round.down);
 writeln(d, " ", b);
 
-d.div_qr(b, c, 8, Round.ZERO); // same as DOWN for positive integers
+d.div_qr(b, c, 8, round.zero); // same as down for positive integers
 writeln(d, " ", b);
 
 c.neg(c);
@@ -58,16 +58,16 @@ writeln();
 
 
 // q = (n / 2^d)
-d.div_q_2exp(c, 3, Round.UP);
-b.div_r_2exp(c, 3, Round.UP);
+d.div_q_2exp(c, 3, round.up);
+b.div_r_2exp(c, 3, round.up);
 writeln(d, " ", b);
 
-d.div_q_2exp(c, 3, Round.DOWN);
-b.div_r_2exp(c, 3, Round.DOWN);
+d.div_q_2exp(c, 3, round.down);
+b.div_r_2exp(c, 3, round.down);
 writeln(d, " ", b);
 
-d.div_q_2exp(c, 3, Round.ZERO);
-b.div_r_2exp(c, 3, Round.ZERO);
+d.div_q_2exp(c, 3, round.zero);
+b.div_r_2exp(c, 3, round.zero);
 writeln(d, " ", b);
 
 writeln();
