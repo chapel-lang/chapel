@@ -3171,7 +3171,7 @@ GenRet codegenCast(Type* t, GenRet value, bool Cparens)
   // If we are casting to bool, set it to != 0.
   if( is_bool_type(t) ) {
     // NOTE: We have to limit this special treatment for bool cast to
-    // --no-llvm compilations. LLVM bool operations return single bit
+    // C backend compilations. LLVM bool operations return single bit
     // integers whereas bool type is 8-bits. So we still need explicit
     // cast. Engin
     if(info->cfile) {

@@ -1439,7 +1439,7 @@ static void postLocal() {
 
 static void postVectorize() {
   // Make sure fYesVectorize and fNoVectorize are respected
-  // but if neither is set, compute the default (based on --llvm or not)
+  // but if neither is set, compute the default (based on LLVM backend or not)
   if (fForceVectorize)
     fYesVectorize = true;
 
@@ -1465,7 +1465,7 @@ static void setMultiLocaleInterop() {
   }
 
   if (fLlvmCodegen) {
-    USR_FATAL("Multi-locale libraries do not support --llvm");
+    USR_FATAL("Multi-locale libraries do not support CHPL_TARGET_COMPILER=llvm");
   }
 
   if (fLibraryFortran) {
@@ -1491,11 +1491,11 @@ static void checkLLVMCodeGen() {
   // LLVM does not currently work on 32-bit x86
   bool unsupportedLlvmConfiguration = (0 == strcmp(CHPL_TARGET_ARCH, "i686"));
   if (fLlvmCodegen && unsupportedLlvmConfiguration)
-    USR_FATAL("--llvm not yet supported for this architecture");
+    USR_FATAL("CHPL_TARGET_COMPLIER=llvm not yet supported for this architecture");
 
   if (0 == strcmp(CHPL_LLVM, "none")) {
-    if (fYesLlvmCodegen)
-      USR_FATAL("--llvm not supported when CHPL_LLVM=none");
+    if (fLlvmCodegen)
+      USR_FATAL("CHPL_TARGET_COMPILER=llvm not supported when CHPL_LLVM=none");
   }
 #else
   // compiler wasn't built with LLVM, so if LLVM is enabled, error
