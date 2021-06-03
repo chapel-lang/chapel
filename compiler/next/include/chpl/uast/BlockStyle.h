@@ -25,9 +25,28 @@ namespace uast {
 
 /**
   An enum representing whether a construct's body is preceded by a keyword,
-  a block, or both.
+  a block, or both. For example:
+
+  \rst
+  .. code-block:: chapel
+
+      // This would be BlockStyle::IMPLICIT:
+      for i in 0..15 do writeln(i);
+
+      // This would be BlockStyle::EXPLICIT:
+      for i in 0..15 {
+        writeln(i);
+      }
+
+      // This would be BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK:
+      for i in 0..15 do {
+        writeln(i);
+      }
+
+  \endrst
 */
 enum struct BlockStyle {
+  // TODO: Revisit these names or even this strategy altogether.
   IMPLICIT,
   EXPLICIT,
   UNNECESSARY_KEYWORD_AND_BLOCK

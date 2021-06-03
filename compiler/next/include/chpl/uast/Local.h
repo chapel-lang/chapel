@@ -104,6 +104,9 @@ class Local final : public Expression {
     Return the number of statements in the local statement.
   */
   int numStmts() const {
+
+    // TODO: Should we offer a 'hasCondition()' instead of allowing
+    // 'condition()' to be nullptr?
     return condition() ? (numChildren()-1) : numChildren();
   }
 
