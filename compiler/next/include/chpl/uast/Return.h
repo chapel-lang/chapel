@@ -28,7 +28,7 @@ namespace uast {
 
 
 /**
-  This class represents a return statement. Return example:
+  This class represents a return statement. For example:
 
   \rst
   .. code-block:: chapel
