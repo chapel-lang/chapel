@@ -190,6 +190,7 @@ class Context {
 
 
   querydetail::RevisionNumber currentRevisionNumber = 1;
+  bool enableDebugTracing = false;
 
   static void defaultReportError(const ErrorMessage& err);
   void (*reportError)(const ErrorMessage& err) = defaultReportError;
