@@ -29,6 +29,7 @@ target_sources(libchplcomp-obj
                Comment.cpp
                Conditional.cpp
                Decl.cpp
+               Defer.cpp
                Dot.cpp
                DoWhile.cpp
                Enum.cpp

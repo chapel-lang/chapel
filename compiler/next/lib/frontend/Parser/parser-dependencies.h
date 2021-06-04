@@ -32,6 +32,7 @@
 #include "chpl/uast/Coforall.h"
 #include "chpl/uast/Comment.h"
 #include "chpl/uast/Conditional.h"
+#include "chpl/uast/Defer.h"
 #include "chpl/uast/Dot.h"
 #include "chpl/uast/DoWhile.h"
 #include "chpl/uast/Enum.h"

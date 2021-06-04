@@ -555,7 +555,6 @@
 %type <commentsAndLinkage> extern_export_decl_stmt_start
 %type <commentsAndStmt> extern_block_stmt
 %type <commentsAndStmt> return_stmt
-%type <commentsAndStmt> defer_stmt
 %type <commentsAndStmt> try_stmt
 %type <commentsAndStmt> throw_stmt
 %type <exprList> catch_expr_ls
@@ -675,7 +674,18 @@ stmt:
 | interface_stmt            { $$ = context->finishStmt($1); }
 | loop_stmt                 { $$ = context->finishStmt($1); }
 | select_stmt               { $$ = context->finishStmt($1); }
-| defer_stmt                { $$ = context->finishStmt($1); }
+| TDEFER stmt
+  {
+    BlockStyle blockStyle = $2.stmt->isBlock() ? BlockStyle::EXPLICIT
+                                               : BlockStyle::IMPLICIT;
+    auto exprLst = context->makeList($2);
+    auto comments = context->gatherCommentsFromList(exprLst, @1);
+    auto astLst = context->consumeList(exprLst);
+    auto statements = BUILDER->flattenTopLevelBlocks(std::move(astLst));
+    auto node = Defer::build(BUILDER, LOC(@$), blockStyle,
+                             std::move(statements));
+    $$ = { .comments=comments, .stmt=node.release() };
+  }
 | try_stmt                  { $$ = context->finishStmt($1); }
 | throw_stmt                { $$ = context->finishStmt($1); }
 | return_stmt               { $$ = context->finishStmt($1); }
@@ -1654,10 +1664,6 @@ ifc_constraint:
 | implements_type_ident TIMPLEMENTS ident_def TLP actual_ls TRP
     { $$ = TODOEXPR(@$); }
 ;
-
-defer_stmt:
-  TDEFER stmt
-    { $$ = TODOSTMT(@$); }
 
 try_stmt:
   TTRY     expr            TSEMI
