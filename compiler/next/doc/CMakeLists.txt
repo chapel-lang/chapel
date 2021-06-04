@@ -29,6 +29,11 @@ if(DOXYGEN_FOUND)
      "rst=\\verbatim embed:rst"
      "endrst=\\endverbatim")
   set(DOXYGEN_EXTRACT_PRIVATE NO)
+
+  # Enable the below line to request inherited members appear
+  # as if they are not inherited.
+  # set(DOXYGEN_INLINE_INHERITED_MEMB YES)
+
   # when Doxygen runs, define DOXYGEN in the preprocessor
   set(DOXYGEN_PREDEFINED "DOXYGEN")
   # exclude combine functions that the docs system has trouble with
