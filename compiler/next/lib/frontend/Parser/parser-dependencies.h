@@ -57,6 +57,7 @@
 #include "chpl/uast/TupleDecl.h"
 #include "chpl/uast/Variable.h"
 #include "chpl/uast/While.h"
+#include "chpl/uast/Yield.h"
 #include "chpl/uast/Zip.h"
 
 #include <cstdint>

@@ -62,6 +62,7 @@ target_sources(libchplcomp-obj
                Visitor.cpp
                While.cpp
                WithClause.cpp
+               Yield.cpp
                Zip.cpp
 
               )

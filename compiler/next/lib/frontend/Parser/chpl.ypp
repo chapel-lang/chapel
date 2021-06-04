@@ -741,7 +741,12 @@ stmt:
     $$ = { .comments=comments, .stmt=node.release() };
   }
 | TSYNC stmt                { $$ = context->finishStmt(TODOSTMT(@$)); }
-| TYIELD expr TSEMI         { $$ = context->finishStmt(TODOSTMT(@$)); }
+| TYIELD expr TSEMI
+  {
+    auto comments = context->gatherComments(@1);
+    auto node = Yield::build(BUILDER, LOC(@$), toOwned($2));
+    $$ = { .comments=comments, .stmt=node.release() };
+  }
 | error TSEMI
   {
     $$ = STMT(@$, ErroneousExpression::build(BUILDER, LOC(@1)));
