@@ -3,13 +3,14 @@
 // support functions would map Chapel formals to the wrong LLVM formal (off
 // by one error).
 extern {
+  // Struct must be large enough to be considered for indirect return.
   typedef struct foo {
     char flag;
     void* pointer;
     long long int size;
   } foo;
 
-  // The LVT for 'printFoo' will be pre-populated by this decl.
+  // The LVT entry for this function will be pre-populated by this decl.
   foo takeAndReturnFoo(foo someFoo);
 }
 

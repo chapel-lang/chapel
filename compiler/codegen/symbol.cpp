@@ -2441,9 +2441,14 @@ void FnSymbol::codegenDef() {
       // Note that we only consume the first _LLVM_ formal. The Clang
       // formal number remains 0.
       if (func->hasStructRetAttr()) {
-        INT_ASSERT(func->arg_size() > numFormals());
-        INT_ASSERT(returnInfo.isIndirect());
-        ai++;
+        if (returnInfo.isSRetAfterThis()) {
+          INT_FATAL("Not handled!");
+        } else {
+          size_t numChapelArgs = numFormals();
+          INT_ASSERT(func->arg_size() > numChapelArgs);
+          INT_ASSERT(returnInfo.isIndirect());
+          ai++;
+        }
       }
 
       if (returnInfo.isInAlloca())

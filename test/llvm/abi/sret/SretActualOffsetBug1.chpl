@@ -6,7 +6,7 @@ extern {
   // For the 'chpl_byte_buffer' extern struct def.
   #include "chpl-export-wrappers.h"
 
-  // The LVT for 'printFoo' will be pre-populated by this decl.
+  // The LVT entry for this function will be pre-populated by this decl.
   chpl_byte_buffer takeAndReturnByteBuffer(chpl_byte_buffer someBuf);
 }
 
