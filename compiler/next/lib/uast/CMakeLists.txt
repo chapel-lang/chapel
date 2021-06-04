@@ -51,6 +51,7 @@ target_sources(libchplcomp-obj
                NamedDecl.cpp
                New.cpp
                OpCall.cpp
+               Return.cpp
                Serial.cpp
                SimpleBlockLike.cpp
                TaskVar.cpp

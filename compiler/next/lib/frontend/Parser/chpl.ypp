@@ -1166,13 +1166,17 @@ do_stmt:
 
 return_stmt:
   TRETURN TSEMI
-    {
-      $$ = TODOSTMT(@$);
-    }
+  {
+    auto comments = context->gatherComments(@1);
+    auto node = Return::build(BUILDER, LOC(@$), /*value*/ nullptr);
+    $$ = { .comments=comments, .stmt=node.release() };
+  }
 | TRETURN opt_try_expr TSEMI
-    {
-      $$ = TODOSTMT(@$);
-    }
+  {
+    auto comments = context->gatherComments(@1);
+    auto node = Return::build(BUILDER, LOC(@$), toOwned($2));
+    $$ = { .comments=comments, .stmt=node.release() };
+  }
 ;
 
 deprecated_class_level_stmt:
@@ -2808,7 +2812,7 @@ opt_expr:
 opt_try_expr:
   TTRY expr       { $$ = TODOEXPR(@$); }
 | TTRYBANG expr   { $$ = TODOEXPR(@$); }
-| expr
+| expr            { $$ = $1; }
 ;
 
 lhs_expr:

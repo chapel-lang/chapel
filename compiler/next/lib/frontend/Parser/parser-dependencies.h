@@ -51,6 +51,7 @@
 #include "chpl/uast/MultiDecl.h"
 #include "chpl/uast/New.h"
 #include "chpl/uast/OpCall.h"
+#include "chpl/uast/Return.h"
 #include "chpl/uast/Serial.h"
 #include "chpl/uast/TaskVar.h"
 #include "chpl/uast/TupleDecl.h"
