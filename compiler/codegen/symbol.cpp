@@ -2425,7 +2425,7 @@ void FnSymbol::codegenDef() {
       info->currentFunctionABI = CGI;
     }
 
-    // These will be used to match formals against Clang formals.
+    // Used to modify LLVM formals based on Chapel and Clang formals.
     llvm::Function::arg_iterator ai = func->arg_begin();
     int clangArgNum = 0;
 
