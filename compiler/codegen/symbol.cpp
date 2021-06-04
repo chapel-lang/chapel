@@ -2461,6 +2461,10 @@ void FnSymbol::codegenDef() {
         argInfo = getCGArgInfo(CGI, clangArgNum);
       }
 
+      // We should have already skipped past the sret above.
+      llvm::Argument& llvmArg = *ai;
+      INT_ASSERT(!llvmArg.hasAttribute(llvm::Attribute::StructRet));
+
       if (arg->hasFlag(FLAG_NO_CODEGEN))
         continue; // do not print locale argument, end count, dummy class
 
