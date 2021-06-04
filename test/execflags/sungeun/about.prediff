@@ -11,12 +11,6 @@ import sys, os, subprocess
 testname = sys.argv[1]
 outfile = sys.argv[2]
 compflags = sys.argv[4].split(' ')
-genLLVM = False
-
-if os.environ['CHPL_TARGET_COMPILER'] == 'llvm':
-    genLLVM = True
-else:
-    genLLVM = False
 
 goodfile = testname+'.good'
 compver = 'Chapel compiler version:'
@@ -60,5 +54,3 @@ with open(goodfile, 'w') as gfh:
     chplenv += "CHPL_THIRD_PARTY="+chpl_home+"/third-party\n"
     for (env, val) in (e.split('=', 1) for e in sorted(chplenv.split('\n')) if e):
         gfh.write('  %s: %s\n'%(env, val))
-        if env == 'CHPL_LLVM' and genLLVM:
-            gfh.write('  CHPL_LLVM_CODEGEN: llvm\n')

@@ -8,4 +8,3 @@ COMPOPTS <= --denormalize
 COMPOPTS <= --warn-unstable
 COMPOPTS <= --lifetime-checking
 COMPOPTS <= ArrayStorageOrder.CMO
-CHPL_TARGET_COMPILER == llvm
