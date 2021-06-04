@@ -367,6 +367,10 @@ proc ReplicatedDom.dsiSerialWrite(f): void {
   redirectee()._value.dsiSerialWrite(f);
 }
 
+proc ReplicatedDom.doiToString() {
+  return redirectee()._value.doiToString();
+}
+
 proc ReplicatedDom.dsiDims(): rank * range(idxType,
                                            BoundedRangeType.bounded,
                                            stridable)

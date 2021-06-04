@@ -52,6 +52,7 @@ r == subr         = false
 r != subr         = true
 r[subr]           = 3..6
 r[subr] == subr[r]= true
+r:string          = 1..10
 Copying...        = 1..10
 
 strided range
@@ -105,6 +106,7 @@ r == subr         = false
 r != subr         = true
 r[subr]           = 5..13 by 2
 r[subr] == subr[r]= true
+r:string          = 1..20 by 2
 Copying...        = 1..20 by 2
 
 neg. str. range
@@ -158,6 +160,7 @@ r == subr         = false
 r != subr         = true
 r[subr]           = 16..8 by -2
 r[subr] == subr[r]= true
+r:string          = 1..20 by -2
 Copying...        = 1..20 by -2
 
 unbounded range
@@ -206,6 +209,7 @@ r == subr         = false
 r != subr         = true
 r[subr]           = 3..6
 r[subr] == subr[r]= true
+r:string          = 1..
 Copying...        = 1..
 
 upper unbnd range
@@ -250,6 +254,7 @@ r == subr         = false
 r != subr         = true
 r[subr]           = 3..6
 r[subr] == subr[r]= true
+r:string          = ..10
 Copying...        = ..10
 
 neg upper unbnd range
@@ -298,6 +303,7 @@ r == subr         = false
 r != subr         = true
 r[subr]           = 3..6 by -1
 r[subr] == subr[r]= true
+r:string          = ..10 by -1
 Copying...        = ..10 by -1
 
 unbounded range
@@ -341,5 +347,6 @@ r == subr         = false
 r != subr         = true
 r[subr]           = 3..6
 r[subr] == subr[r]= true
+r:string          = ..
 Copying...        = ..
 

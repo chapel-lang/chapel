@@ -85,29 +85,7 @@ class Loop: public Expression {
   }
 
   /**
-    Returns the block style of the current loop. For example:
-
-    \rst
-    .. code-block:: chapel
-
-        // Example 1:
-        for i in 0..15 do writeln(i);
-
-    \endrst
-
-    Introduces an implicit block, while:
-
-    \rst
-    .. code-block:: chapel
-
-        // Example 1:
-        for i in 0..15 {
-          writeln(i);
-        }
-
-    \endrst
-
-    Introduces an explicit block.
+    Returns the block style of the current loop.
   */
   BlockStyle blockStyle() const {
     return blockStyle_;

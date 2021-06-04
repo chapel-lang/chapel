@@ -818,8 +818,7 @@ SymAndReferencedName ResolveScope::lookupForImport(Expr* expr,
     outerMod = toModuleSymbol(retval);
 
     if (outerMod->hasFlag(FLAG_DEPRECATED)) {
-      // warn if we encounter deprecated modules along the path
-      USR_WARN(call, "%s", outerMod->getDeprecationMsg());
+      outerMod->generateDeprecationWarning(call);
     }
 
     const char* rhsName = getNameFrom(call->get(2));

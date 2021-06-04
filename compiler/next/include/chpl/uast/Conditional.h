@@ -43,8 +43,7 @@ namespace uast {
  */
 class Conditional final : public Expression {
  private:
-  Conditional(ASTList children, int8_t conditionChildNum,
-              BlockStyle thenBlockStyle,
+  Conditional(ASTList children, BlockStyle thenBlockStyle,
               int8_t thenBodyChildNum,
               int numThenBodyStmts,
               BlockStyle elseBlockStyle,
@@ -52,7 +51,6 @@ class Conditional final : public Expression {
               int numElseBodyStmts,
               bool isExpressionLevel)
       : Expression(asttags::Conditional, std::move(children)),
-        conditionChildNum_(conditionChildNum),
         thenBlockStyle_(thenBlockStyle),
         thenBodyChildNum_(thenBodyChildNum),
         numThenBodyStmts_(numThenBodyStmts),
@@ -60,14 +58,29 @@ class Conditional final : public Expression {
         elseBodyChildNum_(elseBodyChildNum),
         numElseBodyStmts_(numElseBodyStmts),
         isExpressionLevel_(isExpressionLevel) {
-    if (!hasElseBlock()) assert(numElseStmts() == 0);
-    assert(elseBlockStyle_ != BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK);
     assert(isExpressionASTList(children_));
-    assert(condition());
-    assert(numThenBodyStmts >= 0);
-    assert(numElseBodyStmts >= 0);
-    assert(((size_t)numThenBodyStmts) <= children_.size());
-    assert(((size_t)numElseBodyStmts) <= children_.size());
+
+    if (!hasElseBlock()) {
+      assert(numElseBodyStmts_ == 0);
+      assert(elseBodyChildNum_ < 0);
+      assert(elseBlockStyle_ == BlockStyle::IMPLICIT);
+    }
+
+    assert(elseBlockStyle_ != BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK);
+
+    if (isExpressionLevel_) {
+      assert(hasElseBlock());
+      assert(thenBlockStyle_ == BlockStyle::IMPLICIT);
+      assert(elseBlockStyle_ == BlockStyle::IMPLICIT);
+      assert(numThenBodyStmts == 1);
+      assert(numElseBodyStmts == 1);
+    } else {
+      assert(numThenBodyStmts_ >= 1);
+      assert(numElseBodyStmts_ >= 0);
+    }
+
+    auto numKnownChildren = 1 + numThenBodyStmts + numElseBodyStmts;
+    assert(((size_t)numKnownChildren) <= children_.size());
   }
 
   bool contentsMatchInner(const ASTNode* other) const override;
@@ -76,7 +89,9 @@ class Conditional final : public Expression {
     expressionMarkUniqueStringsInner(context);
   }
 
-  int8_t conditionChildNum_;
+  // Condition always exists, and its position is always the same.
+  static const int8_t conditionChildNum_ = 0;
+
   BlockStyle thenBlockStyle_;
   int8_t thenBodyChildNum_;
   int numThenBodyStmts_;
@@ -111,7 +126,6 @@ class Conditional final : public Expression {
     Get the condition of this conditional.
   */
   const Expression* condition() const {
-    assert(conditionChildNum_ >= 0);
     auto ret = child(conditionChildNum_);
     return (const Expression*)ret;
   }

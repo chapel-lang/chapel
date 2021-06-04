@@ -2569,22 +2569,23 @@ operator :(r: range(?), type t: range(?)) {
     ret += "..";
     if x.hasHighBound() {
       // handle the special case of an empty range with a singleton idxType
-      if (chpl__singleValIdxType(x.idxType) && x.high != x.low) {
+      if (chpl__singleValIdxType(x.idxType) && x._high != x._low) {
         ret += "<" + x.low:string;
       } else {
         ret += x.high:string;
       }
     }
-    if x.stride != 1 then
+    if x.stride != 1 {
       ret += " by " + x.stride:string;
 
-    var alignCheckRange = x;
-    alignCheckRange.normalizeAlignment();
+      var alignCheckRange = x;
+      alignCheckRange.normalizeAlignment();
 
-    // Write out the alignment only if it differs from natural alignment.
-    // We take alignment modulo the stride for consistency.
-    if !(alignCheckRange.isNaturallyAligned()) then
-      ret += " align " + chpl__mod(chpl__idxToInt(x.alignment), x.stride):string;
+      // Write out the alignment only if it differs from natural alignment.
+      // We take alignment modulo the stride for consistency.
+      if !(alignCheckRange.isNaturallyAligned()) then
+        ret += " align " + chpl__mod(chpl__idxToInt(x.alignment), x.stride):string;
+    }
     return ret;
   }
 

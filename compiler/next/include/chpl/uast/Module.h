@@ -65,7 +65,7 @@ class Module final : public NamedDecl {
                              UniqueString name, Decl::Visibility vis,
                              Module::Kind kind, ASTList stmts);
 
-  const Kind kind() const { return this->kind_; }
+  Kind kind() const { return this->kind_; }
 
   ASTListIteratorPair<Expression> stmts() const {
     return ASTListIteratorPair<Expression>(children_.begin(), children_.end());

@@ -29,9 +29,6 @@ bool Conditional::contentsMatchInner(const ASTNode* other) const {
   const Conditional* lhs = this;
   const Conditional* rhs = other->toConditional();
 
-  if (lhs->conditionChildNum_ != rhs->conditionChildNum_)
-    return false;
-
   if (lhs->thenBlockStyle_ != rhs->thenBlockStyle_)
     return false;
 
@@ -66,13 +63,11 @@ owned<Conditional> Conditional::build(Builder* builder, Location loc,
                                       BlockStyle elseBlockStyle,
                                       ASTList elseStmts,
                                       bool isExpressionLevel) {
-  ASTList lst;
-  int8_t conditionChildNum = -1;
+  assert(condition.get() != nullptr);
 
-  if (condition.get() != nullptr) {
-    conditionChildNum = lst.size();
-    lst.push_back(std::move(condition));
-  }
+  ASTList lst;
+
+  lst.push_back(std::move(condition));
 
   const int8_t thenBodyChildNum = lst.size();
   const int numThenBodyStmts = thenStmts.size();
@@ -88,8 +83,7 @@ owned<Conditional> Conditional::build(Builder* builder, Location loc,
     lst.push_back(std::move(stmt));
   }
 
-  Conditional* ret = new Conditional(std::move(lst), conditionChildNum,
-                                     thenBlockStyle,
+  Conditional* ret = new Conditional(std::move(lst), thenBlockStyle,
                                      thenBodyChildNum,
                                      numThenBodyStmts,
                                      elseBlockStyle,
@@ -104,13 +98,10 @@ owned<Conditional> Conditional::build(Builder* builder, Location loc,
                                       owned<Expression> condition,
                                       BlockStyle thenBlockStyle,
                                       ASTList thenStmts) {
+  assert(condition.get() != nullptr);
   ASTList lst;
-  int8_t conditionChildNum = -1;
 
-  if (condition.get() != nullptr) {
-    conditionChildNum = lst.size();
-    lst.push_back(std::move(condition));
-  }
+  lst.push_back(std::move(condition));
 
   const int8_t thenBodyChildNum = lst.size();
   const int numThenBodyStmts = thenStmts.size();
@@ -123,8 +114,7 @@ owned<Conditional> Conditional::build(Builder* builder, Location loc,
   const int elseBodyChildNum = -1;
   const int numElseBodyStmts = 0; 
 
-  Conditional* ret = new Conditional(std::move(lst), conditionChildNum,
-                                     thenBlockStyle,
+  Conditional* ret = new Conditional(std::move(lst), thenBlockStyle,
                                      thenBodyChildNum,
                                      numThenBodyStmts,
                                      elseBlockStyle,
