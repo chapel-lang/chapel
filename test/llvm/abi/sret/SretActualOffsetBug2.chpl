@@ -1,8 +1,7 @@
-// BUG: When generating calls to exported functions, under LLVM, if the
-// function has an indirect return (e.g. it returns a struct), the
-// call emits garbage. This is because the loop that emits code for
-// arguments does not adjust the LLVM arg offsets to account for the
-// indirect return (which is the 0th formal).
+// BUG: When generating the body of an exported function, under LLVM, if the
+// function has an indirect return (e.g. it returns a struct), Clang ABI
+// support functions would map Chapel formals to the wrong LLVM formal (off
+// by one error).
 extern {
   typedef struct foo {
     char flag;
