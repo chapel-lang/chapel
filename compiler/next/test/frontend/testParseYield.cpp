@@ -44,10 +44,10 @@ static void test0(Parser* parser) {
       "iter foo(): int {\n"
       "  /* comment 2 */\n"
       "  /* comment 3 */\n"
-      "  yield bar();\n"
-      "  /* comment 4 */\n"
+      "  yield /* comment 4 */ bar() /* comment 5 */;\n"
+      "  /* comment 6 */\n"
       "}\n"
-      "/* comment 5 */\n");
+      "/* comment 7 */\n");
   assert(parseResult.errors.size() == 0);
   assert(parseResult.topLevelExpressions.size() == 1);
   assert(parseResult.topLevelExpressions[0]->isModule());

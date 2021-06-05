@@ -752,7 +752,8 @@ stmt:
   {
     auto comments = context->gatherComments(@1);
     auto node = Yield::build(BUILDER, LOC(@$), toOwned($2));
-    $$ = { .comments=comments, .stmt=node.release() };
+    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+    $$ = context->finishStmt(cs);
   }
 | error TSEMI
   {
@@ -1181,13 +1182,15 @@ return_stmt:
   {
     auto comments = context->gatherComments(@1);
     auto node = Return::build(BUILDER, LOC(@$), /*value*/ nullptr);
-    $$ = { .comments=comments, .stmt=node.release() };
+    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+    $$ = context->finishStmt(cs);
   }
 | TRETURN opt_try_expr TSEMI
   {
     auto comments = context->gatherComments(@1);
     auto node = Return::build(BUILDER, LOC(@$), toOwned($2));
-    $$ = { .comments=comments, .stmt=node.release() };
+    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+    $$ = context->finishStmt(cs);
   }
 ;
 

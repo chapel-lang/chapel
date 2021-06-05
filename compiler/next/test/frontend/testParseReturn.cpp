@@ -44,10 +44,10 @@ static void test0(Parser* parser) {
       "proc foo() {\n"
       "  /* comment 2 */\n"
       "  /* comment 3 */\n"
-      "  return bar();\n"
-      "  /* comment 4 */\n"
+      "  return /* comment 4 */ bar() /* comment 5 */;\n"
+      "  /* comment 6 */\n"
       "}\n"
-      "/* comment 5 */\n");
+      "/* comment 7 */\n");
   assert(parseResult.errors.size() == 0);
   assert(parseResult.topLevelExpressions.size() == 1);
   assert(parseResult.topLevelExpressions[0]->isModule());
@@ -75,10 +75,10 @@ static void test1(Parser* parser) {
       "proc foo() {\n"
       "  /* comment 2 */\n"
       "  /* comment 3 */\n"
-      "  return;\n"
-      "  /* comment 4 */\n"
+      "  return /* comment 4 */;\n"
+      "  /* comment 5 */\n"
       "}\n"
-      "/* comment 5 */\n");
+      "/* comment 6 */\n");
   assert(parseResult.errors.size() == 0);
   assert(parseResult.topLevelExpressions.size() == 1);
   assert(parseResult.topLevelExpressions[0]->isModule());
