@@ -54,10 +54,12 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
 
   AST_BEGIN_SUBCLASSES(SimpleBlockLike)
     AST_NODE(Block)                    // old AST: BlockStmt
+    AST_NODE(Defer)                    // old AST: DeferStmt
     AST_NODE(Local)
     AST_NODE(Serial)
   AST_END_SUBCLASSES(SimpleBlockLike)
 
+  AST_NODE(Delete)                     //
   AST_NODE(ExternBlock)                // old AST: ExternBlockStmt
   AST_NODE(Implements)                 // old AST: ImplementsStmt
   AST_NODE(Import)                     // old AST: ImportStmt
@@ -71,7 +73,6 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
   AST_NODE(Break)                    // old AST: GotoStmt
   AST_NODE(Conditional)              // old AST: IfExpr/CondStmt
   AST_NODE(Continue)                 // old AST: GotoStmt
-  AST_NODE(Defer)                    // old AST: DeferStmt
   AST_NODE(On)                       //
   AST_NODE(Return)                   //
   AST_NODE(Select)                   //

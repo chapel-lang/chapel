@@ -695,7 +695,14 @@ stmt:
 | TBREAK opt_label_ident TSEMI           { $$ = context->finishStmt(TODOSTMT(@$)); }
 | TCOBEGIN opt_task_intent_ls block_stmt { $$ = context->finishStmt(TODOSTMT(@$)); }
 | TCONTINUE opt_label_ident TSEMI        { $$ = context->finishStmt(TODOSTMT(@$)); }
-| TDELETE simple_expr_ls TSEMI           { $$ = context->finishStmt(TODOSTMT(@$)); }
+| TDELETE simple_expr_ls TSEMI
+  {
+    auto comments = context->gatherComments(@1);
+    auto exprs = context->consumeList($2);
+    auto node = Delete::build(BUILDER, LOC(@$), std::move(exprs));
+    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+    $$ = context->finishStmt(cs);
+  }
 | TLABEL ident_def stmt     { $$ = context->finishStmt(TODOSTMT(@$)); }
 | TLOCAL expr do_stmt
   {
@@ -2463,8 +2470,8 @@ expr_ls:
 ;
 
 simple_expr_ls:
-  expr                             { $$ = TODOLIST(@$); }
-| simple_expr_ls TCOMMA expr       { $1->push_back($3); }
+  expr                             { $$ = context->makeList($1); }
+| simple_expr_ls TCOMMA expr       { $$ = context->appendList($1, $3); }
 ;
 
 tuple_component:
