@@ -2625,9 +2625,8 @@ module ChapelArray {
     proc rank param return this.domain.rank;
 
     /* return the array's indices as its domain */
-    pragma "return not owned"
     proc indices
-      return _dom;
+      return {(..._dom.getIndices())};
 
     // bounds checking helpers
     pragma "insert line file info"
