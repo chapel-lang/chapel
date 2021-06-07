@@ -18,6 +18,7 @@
  */
 
 #include "chpl/uast/Block.h"
+#include "chpl/uast/Comment.h"
 #include "chpl/uast/Expression.h"
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Local.h"
@@ -39,20 +40,26 @@ using namespace frontend;
 static void test0(Parser* parser) {
   auto parseResult = parser->parseString("test0.chpl",
       "/* comment 1 */\n"
-      "local do var a;\n");
+      "local /* comment 2 */ do\n"
+      "  /* comment 3 */\n"
+      "  var a;\n"
+      "/* comment 4 */\n");
   assert(parseResult.errors.size() == 0);
   assert(parseResult.topLevelExpressions.size() == 1);
   assert(parseResult.topLevelExpressions[0]->isModule());
   auto mod = parseResult.topLevelExpressions[0]->toModule();
-  assert(mod->numStmts() == 2);
+  assert(mod->numStmts() == 3);
   assert(mod->stmt(0)->isComment());
   assert(mod->stmt(1)->isLocal());
+  assert(mod->stmt(2)->isComment());
   const Local* local = mod->stmt(1)->toLocal();
   assert(local != nullptr);
   assert(local->condition() == nullptr);
-  assert(local->numStmts() == 1);
+  assert(local->numStmts() == 2);
   assert(local->blockStyle() == BlockStyle::IMPLICIT);
-  assert(local->stmt(0)->isVariable());
+  assert(local->stmt(0)->isComment());
+  assert(local->stmt(0)->toComment()->str() == "/* comment 3 */");
+  assert(local->stmt(1)->isVariable());
 }
 
 static void test1(Parser* parser) {
