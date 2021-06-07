@@ -33,14 +33,26 @@ do
   PREFERRED_VERSION=$arg
   PREFERRED_VERSION_MAJOR=`echo $arg | cut -d. -f1`
 
-  # Check a bunch of paths and names for llvm-config
-  # The /usr/local/opt ones are indended to support Homebrew
-  for t in "llvm-config-$PREFERRED_VERSION" \
-           "llvm-config-$PREFERRED_VERSION_MAJOR" \
-           "llvm-config" \
-           "/usr/local/opt/llvm@$PREFERRED_VERSION/bin/llvm-config" \
-           "/usr/local/opt/llvm@$PREFERRED_VERSION_MAJOR/bin/llvm-config" \
-           "/usr/local/opt/llvm/bin/llvm-config"
+  # Use a bash array variable to store the paths to check
+  paths=()
+
+  if [ "$CHPL_LLVM_PREFIX" != "" ]
+  then
+    paths+=("$CHPL_LLVM_PREFIX/bin/llvm-config-$PREFERRED_VERSION")
+    paths+=("$CHPL_LLVM_PREFIX/bin/llvm-config-$PREFERRED_VERSION_MAJOR")
+    paths+=("$CHPL_LLVM_PREFIX/bin/llvm-config")
+  fi
+
+  paths+=("llvm-config-$PREFERRED_VERSION")
+  paths+=("llvm-config-$PREFERRED_VERSION_MAJOR")
+  paths+=("llvm-config")
+
+  # these paths support Homebrew
+  paths+=("/usr/local/opt/llvm@$PREFERRED_VERSION/bin/llvm-config")
+  paths+=("/usr/local/opt/llvm@$PREFERRED_VERSION_MAJOR/bin/llvm-config")
+  paths+=("/usr/local/opt/llvm/bin/llvm-config")
+
+  for t in "${paths[@]}"
   do
     if command_exists "$t"
     then

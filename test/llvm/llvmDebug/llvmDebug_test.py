@@ -27,7 +27,7 @@ for line in chplenv.splitlines():
   if key == 'CHPL_LLVM':
     CHPL_LLVM= val
 
-build_options = '--baseline --llvm -g'
+build_options = '--baseline -g'
 source_path = os.getcwd() #same as target path
 source = source_path + os.sep + 'llvmDebug_test.chpl'
 target = source_path + os.sep + 'llvmDebug_test'

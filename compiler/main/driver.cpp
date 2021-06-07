@@ -80,7 +80,7 @@ const char* CHPL_RUNTIME_CPU = NULL;
 const char* CHPL_TARGET_BACKEND_CPU = NULL;
 const char* CHPL_TARGET_CPU_FLAG = NULL;
 const char* CHPL_TARGET_COMPILER = NULL;
-const char* CHPL_ORIG_TARGET_COMPILER = NULL;
+const char* CHPL_TARGET_COMPILER_PRGENV = NULL;
 const char* CHPL_LOCALE_MODEL = NULL;
 const char* CHPL_COMM = NULL;
 const char* CHPL_COMM_SUBSTRATE = NULL;
@@ -103,6 +103,7 @@ const char* CHPL_LIB_PIC = NULL;
 
 const char* CHPL_RUNTIME_SUBDIR = NULL;
 const char* CHPL_LAUNCHER_SUBDIR = NULL;
+const char* CHPL_SYS_MODULES_SUBDIR = NULL;
 const char* CHPL_LLVM_UNIQ_CFG_PATH = NULL;
 
 static char libraryFilename[FILENAME_MAX] = "";
@@ -709,10 +710,18 @@ static void verifySaveLibDir(const ArgumentDescription* desc, const char* unused
 
 static void setLlvmCodegen(const ArgumentDescription* desc, const char* unused)
 {
-  if (fYesLlvmCodegen)
+  if (fYesLlvmCodegen) {
     fNoLlvmCodegen = false;
-  else
+    USR_WARN("--llvm is deprecated -- please use --target-compiler=llvm");
+    envMap["CHPL_TARGET_COMPILER"] = "llvm";
+    // set the environment variable for follow-on processes including
+    // any printchplenv invocation
+    int rc = setenv("CHPL_TARGET_COMPILER", "llvm", 1);
+    if( rc ) USR_FATAL("Could not setenv CHPL_TARGET_COMPILER");
+  } else {
     fNoLlvmCodegen = true;
+    USR_WARN("--no-llvm is deprecated -- please use e.g. --target-compiler=gnu");
+  }
 }
 
 static void setVectorize(const ArgumentDescription* desc, const char* unused)
@@ -1252,31 +1261,15 @@ static void printStuff(const char* argv0) {
 }
 
 static void setupLLVMCodeGen() {
-  if (fYesLlvmCodegen) {
+  // Use LLVM code generation if CHPL_TARGET_COMPILER=llvm.
+  fLlvmCodegen = (0 == strcmp(CHPL_TARGET_COMPILER, "llvm"));
+
+  // These are deprecated and shouldn't be set, but try to
+  // use them.
+  if (fYesLlvmCodegen)
     fLlvmCodegen = true;
-  } else if (fNoLlvmCodegen) {
+  else if (fNoLlvmCodegen)
     fLlvmCodegen = false;
-  } else {
-    const char* chpl_llvm = getenv("CHPL_LLVM");
-    if (chpl_llvm != NULL && 0 == strcmp(chpl_llvm, "none")) {
-      fLlvmCodegen = false;
-    } else {
-#ifdef HAVE_LLVM
-      const char* chpl_llvm_by_default = getenv("CHPL_LLVM_BY_DEFAULT");
-      if (chpl_llvm_by_default == NULL ||
-          0 != strcmp(chpl_llvm_by_default, "0")) {
-        // LLVM-by-default
-        fLlvmCodegen = true;
-      } else {
-        // No-LLVM-by-default was requested via environment variable
-        fLlvmCodegen = false;
-      }
-#else
-      // Not built with LLVM
-      fLlvmCodegen = false;
-#endif
-    }
-  }
 }
 
 bool useDefaultEnv(std::string key) {
@@ -1358,7 +1351,7 @@ static void setChapelEnvs() {
   CHPL_TARGET_BACKEND_CPU = envMap["CHPL_TARGET_BACKEND_CPU"];
   CHPL_TARGET_CPU_FLAG = envMap["CHPL_TARGET_CPU_FLAG"];
   CHPL_TARGET_COMPILER = envMap["CHPL_TARGET_COMPILER"];
-  CHPL_ORIG_TARGET_COMPILER = envMap["CHPL_ORIG_TARGET_COMPILER"];
+  CHPL_TARGET_COMPILER_PRGENV = envMap["CHPL_TARGET_COMPILER_PRGENV"];
   CHPL_LOCALE_MODEL    = envMap["CHPL_LOCALE_MODEL"];
   CHPL_COMM            = envMap["CHPL_COMM"];
   CHPL_COMM_SUBSTRATE  = envMap["CHPL_COMM_SUBSTRATE"];
@@ -1381,6 +1374,7 @@ static void setChapelEnvs() {
 
   CHPL_RUNTIME_SUBDIR  = envMap["CHPL_RUNTIME_SUBDIR"];
   CHPL_LAUNCHER_SUBDIR = envMap["CHPL_LAUNCHER_SUBDIR"];
+  CHPL_SYS_MODULES_SUBDIR = envMap["CHPL_SYS_MODULES_SUBDIR"];
   CHPL_LLVM_UNIQ_CFG_PATH = envMap["CHPL_LLVM_UNIQ_CFG_PATH"];
 
   // Make sure there are no NULLs in envMap
@@ -1402,17 +1396,13 @@ static void setupChplGlobals(const char* argv0) {
     envMap["CHPL_HOME"] = CHPL_HOME;
   }
 
-  // tell printchplenv that we're doing an LLVM build
-  setupLLVMCodeGen();
-  if (fLlvmCodegen) {
-    envMap["CHPL_LLVM_CODEGEN"] = "llvm";
-  }
-
   // Populate envMap from printchplenv, never overwriting existing elements
   populateEnvMap();
 
   // Set global CHPL_vars with updated envMap values
   setChapelEnvs();
+
+  setupLLVMCodeGen();
 }
 
 static void postTaskTracking() {
@@ -1449,7 +1439,7 @@ static void postLocal() {
 
 static void postVectorize() {
   // Make sure fYesVectorize and fNoVectorize are respected
-  // but if neither is set, compute the default (based on --llvm or not)
+  // but if neither is set, compute the default (based on LLVM backend or not)
   if (fForceVectorize)
     fYesVectorize = true;
 
@@ -1475,7 +1465,7 @@ static void setMultiLocaleInterop() {
   }
 
   if (fLlvmCodegen) {
-    USR_FATAL("Multi-locale libraries do not support --llvm");
+    USR_FATAL("Multi-locale libraries do not support CHPL_TARGET_COMPILER=llvm");
   }
 
   if (fLibraryFortran) {
@@ -1501,11 +1491,11 @@ static void checkLLVMCodeGen() {
   // LLVM does not currently work on 32-bit x86
   bool unsupportedLlvmConfiguration = (0 == strcmp(CHPL_TARGET_ARCH, "i686"));
   if (fLlvmCodegen && unsupportedLlvmConfiguration)
-    USR_FATAL("--llvm not yet supported for this architecture");
+    USR_FATAL("CHPL_TARGET_COMPLIER=llvm not yet supported for this architecture");
 
   if (0 == strcmp(CHPL_LLVM, "none")) {
-    if (fYesLlvmCodegen)
-      USR_FATAL("--llvm not supported when CHPL_LLVM=none");
+    if (fLlvmCodegen)
+      USR_FATAL("CHPL_TARGET_COMPILER=llvm not supported when CHPL_LLVM=none");
   }
 #else
   // compiler wasn't built with LLVM, so if LLVM is enabled, error

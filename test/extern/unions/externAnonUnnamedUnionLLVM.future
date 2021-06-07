@@ -1,2 +1,2 @@
-bug: extern anonymous unnamed unions don't work with --llvm
+bug: extern anonymous unnamed unions don't work with LLVM backend
 #17748

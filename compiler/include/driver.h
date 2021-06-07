@@ -109,7 +109,7 @@ extern const char* CHPL_RUNTIME_CPU;
 extern const char* CHPL_TARGET_BACKEND_CPU;
 extern const char* CHPL_TARGET_CPU_FLAG;
 extern const char* CHPL_TARGET_COMPILER;
-extern const char* CHPL_ORIG_TARGET_COMPILER;
+extern const char* CHPL_TARGET_COMPILER_PRGENV;
 extern const char* CHPL_LOCALE_MODEL;
 extern const char* CHPL_COMM;
 extern const char* CHPL_COMM_SUBSTRATE;
@@ -131,6 +131,7 @@ extern const char* CHPL_UNWIND;
 extern const char* CHPL_LIB_PIC;
 extern const char* CHPL_RUNTIME_SUBDIR;
 extern const char* CHPL_LAUNCHER_SUBDIR;
+extern const char* CHPL_SYS_MODULES_SUBDIR;
 extern const char* CHPL_LLVM_UNIQ_CFG_PATH;
 
 extern bool  printPasses;

@@ -37,12 +37,13 @@ def is_included_llvm_built():
     else:
         return False
 
-def compatible_platform_for_llvm_default():
+def compatible_platform_for_llvm():
   target_arch = chpl_arch.get('target')
   target_platform = chpl_platform.get('target')
   return (target_arch != "i368" and target_platform != "linux32")
 
-def has_compatible_installed_llvm():
+@memoize
+def find_llvm_config():
     preferred_vers_file = os.path.join(get_chpl_third_party(),
                                        'llvm', 'LLVM_VERSION')
     preferred_vers = ""
@@ -54,6 +55,10 @@ def has_compatible_installed_llvm():
 
     got = run_command([find_llvm_config, preferred_vers])
     got = got.strip()
+    return got
+
+def has_compatible_installed_llvm():
+    got = find_llvm_config()
     platform = chpl_platform.get('target')
     if got and got != "missing-llvm-config":
         return True
@@ -66,12 +71,15 @@ def get():
     if not llvm_val:
         llvm_val = 'unset'
 
-        if is_included_llvm_built():
-            llvm_val = 'bundled'
-        elif (compatible_platform_for_llvm_default()):
-            if has_compatible_installed_llvm():
+        if compatible_platform_for_llvm():
+            if is_included_llvm_built():
+                llvm_val = 'bundled'
+            elif has_compatible_installed_llvm():
                 llvm_val = 'system'
+
         else:
+            # This platform doesn't work with the LLVM backend
+            # for one reason or another. So default to CHPL_LLVM=none.
             llvm_val = 'none'
 
     if llvm_val == 'llvm':
@@ -79,8 +87,57 @@ def get():
                          "Use CHPL_LLVM=bundled instead\n")
         llvm_val = 'bundled'
 
+    if not compatible_platform_for_llvm():
+        if llvm_val != 'none' and llvm_val != 'unset':
+            sys.stderr.write("Warning: CHPL_LLVM={0} is not compatible "
+                             "with this platform".format(llvm_val))
+
     return llvm_val
 
+def llvm_enabled():
+    llvm_val = get()
+    if llvm_val == 'bundled' or llvm_val == 'system':
+        return True
+
+    return False
+
+def get_clang_prefix():
+    llvm_val = get()
+    if llvm_val == 'bundled':
+        chpl_third_party = get_chpl_third_party()
+        llvm_target_dir = get_uniq_cfg_path_for('bundled')
+        llvm_subdir = os.path.join(chpl_third_party, 'llvm', 'install',
+                                   llvm_target_dir)
+        return llvm_subdir
+
+    elif llvm_val == 'system':
+        # respect CHPL_LLVM_PREFIX for CHPL_LLVM=system
+        prefix = overrides.get('CHPL_LLVM_PREFIX', '')
+        if prefix:
+            return prefix
+
+    return None
+
+def get_clang_bin_dir():
+    prefix = get_clang_prefix()
+    if prefix:
+        return os.path.join(prefix, 'bin')
+    else:
+        return None
+
+@memoize
+def get_clang_suffix():
+    llvm_val = get()
+
+    if llvm_val == 'system':
+        # use whatever suffix is on llvm-config from find_llvm_config
+        # e.g. llvm-config-11 -> clang-11 / clang++-11
+        llvm_config = find_llvm_config()
+        before, match, after = llvm_config.rpartition('llvm-config')
+        if match == 'llvm-config':
+            return after
+
+    return ''
 
 def _main():
     llvm_val = get()

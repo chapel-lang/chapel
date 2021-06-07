@@ -50,7 +50,7 @@ def parseArguments():
                       help="specify that the rest of the arguments are for a "
                            "compilation working with the LLVM backend. This "
                            "argument causes this script to set "
-                           "CHPL_TARGET_COMPILER=clang-included")
+                           "CHPL_TARGET_COMPILER=llvm")
     parser.add_option("--compile", "--compile-cc", const="compilecc",
                       dest="actions", action='append_const',
                       help="print a C compiler invocation that can use "
@@ -174,11 +174,8 @@ def main():
         elif a == "make":
             sys.stdout.write("{0}\n".format(orig_make))
         elif a == "llvm":
-            os.environ["CHPL_LLVM_CODEGEN"] = "llvm"
-            orig_target_compiler = chpl_compiler.get('target', llvm_mode='orig')
-            target_compiler = chpl_compiler.get('target', llvm_mode='llvm')
-            os.environ["CHPL_ORIG_TARGET_COMPILER"] = orig_target_compiler
-            os.environ["CHPL_TARGET_COMPILER"] = target_compiler
+            os.environ["CHPL_TARGET_COMPILER_PRGENV"] = chpl_compiler.get_prgenv_compiler()
+            os.environ["CHPL_TARGET_COMPILER"] = "llvm"
 
             llvm = ""
             if "CHPL_LLVM" in os.environ:

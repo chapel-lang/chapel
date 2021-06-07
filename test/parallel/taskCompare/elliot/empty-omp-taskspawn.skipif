@@ -2,5 +2,5 @@
 # build are having trouble finding omp.h.
 #
 # Skip this test under LLVM configurations as a workaround.
-CHPL_LLVM!=none
+CHPL_TARGET_COMPILER==llvm
 CHPL_TARGET_COMPILER==clang

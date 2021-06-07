@@ -23,9 +23,8 @@
 #
 # Tools
 #
-CXX = xlC
-CC = xlc
-
+CXX = $(CHPL_MAKE_COMPILER_COMMAND_CXX) # normally xlC
+CC = $(CHPL_MAKE_COMPILER_COMMAND_C)    # normally xlc
 
 RANLIB = ranlib
 

@@ -1,3 +1,2 @@
 CHPL_TARGET_PLATFORM == darwin
-CHPL_LLVM == none
 CHPL_COMM != none

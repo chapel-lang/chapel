@@ -573,7 +573,7 @@ std::string getChplDepsApp() {
 }
 
 bool compilingWithPrgEnv() {
-  return (strstr(CHPL_ORIG_TARGET_COMPILER, "cray-prgenv") != NULL);
+  return 0 != strcmp(CHPL_TARGET_COMPILER_PRGENV, "none");
 }
 
 std::string runCommand(std::string& command) {

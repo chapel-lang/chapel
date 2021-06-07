@@ -23,11 +23,10 @@
 #
 # Tools
 #
-CXX = $(CROSS_COMPILER_PREFIX)g++
-CC = $(CROSS_COMPILER_PREFIX)gcc
+CXX = $(CHPL_MAKE_COMPILER_COMMAND_CXX) # normally g++
+CC = $(CHPL_MAKE_COMPILER_COMMAND_C)    # normally gcc
 
 RANLIB = ranlib
-
 
 #
 # General Flags

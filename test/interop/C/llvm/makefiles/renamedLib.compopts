@@ -1,1 +1,1 @@
---llvm --library --library-makefile -o myLib --library-header headerName
+--library --library-makefile -o myLib --library-header headerName

@@ -1,2 +1,1 @@
-CHPL_LLVM == none
 CHPL_COMM != none

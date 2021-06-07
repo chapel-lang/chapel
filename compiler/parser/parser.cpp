@@ -203,11 +203,7 @@ void setupModulePaths() {
                            "/",
                            modulesRoot,
                            "/standard/gen/",
-                           CHPL_TARGET_PLATFORM,
-                           "-",
-                           CHPL_TARGET_ARCH,
-                           "-",
-                           CHPL_TARGET_COMPILER);
+                           CHPL_SYS_MODULES_SUBDIR);
   sStdModPath.add(stdGenModulesPath);
 
   sStdModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/standard"));

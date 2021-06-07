@@ -21,7 +21,7 @@
 #ifndef _clang_names_H_
 #define _clang_names_H_
 
-// What is the name of clang / clang++ to be used with --llvm ?
+// What is the name of clang / clang++ to be used with LLVM backend ?
 // This is particularly important for CHPL_LLVM=system
 
 // What sysroot arguments does clang need to run?

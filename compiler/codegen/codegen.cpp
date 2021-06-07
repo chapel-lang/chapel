@@ -2345,7 +2345,8 @@ static void codegenPartOne() {
   if( fLLVMWideOpt ) {
     // --llvm-wide-opt is picky about other settings.
     // Check them here.
-    if (!fLlvmCodegen ) USR_FATAL("--llvm-wide-opt requires --llvm");
+    if (!fLlvmCodegen )
+      USR_FATAL("--llvm-wide-opt requires CHPL_TARGET_COMPILER=llvm");
   }
 
   // Prepare primitives for codegen

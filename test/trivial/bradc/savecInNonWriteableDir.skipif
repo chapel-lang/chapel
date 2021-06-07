@@ -1,3 +1,4 @@
 # this test doesn't work on cygwin, probably due to the precomp file...
 CHPL_TARGET_PLATFORM==cygwin64
 CHPL_TARGET_PLATFORM==cygwin32
+CHPL_TARGET_COMPILER==llvm

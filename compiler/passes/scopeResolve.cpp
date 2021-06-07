@@ -547,7 +547,7 @@ static void scopeResolve(const AList& alist, ResolveScope* scope) {
                isSymExpr(stmt)           == true ||
                isGotoStmt(stmt)          == true) {
 
-    // May occur in --llvm runs
+    // May occur with LLVM backend
     } else if (isExternBlockStmt(stmt)   == true) {
 
     } else {
