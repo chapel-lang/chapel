@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # Full test suite with CHPL_LLVM=bundled and CHPL_TARGET_COMPILER=llvm
-# linux64. Now uses paratest.server.
+# on linux64. Now uses paratest.server.
 
 # Needs /data/cf/chapel/setup_python27.bash (common-llvm)
 
