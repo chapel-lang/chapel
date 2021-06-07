@@ -1789,7 +1789,7 @@ static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
 
   chapelReturnTy = returnTy;
 
-  int curCArg = 0;
+  int clangArgNum = 0;
 
   if (CGI) {
 
@@ -1855,7 +1855,7 @@ static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
     if (returnInfo.isIndirect()) {
       if (returnInfo.isSRetAfterThis()) {
         INT_FATAL("not handled"); // replace existing sret argument?
-        curCArg++; // a guess
+        clangArgNum++; // a guess
       }
 
       // returnTy is void, so use chapelReturnTy
@@ -1887,7 +1887,7 @@ static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
   for_formals(formal, fn) {
     const clang::CodeGen::ABIArgInfo* argInfo = NULL;
     if (CGI) {
-      argInfo = getCGArgInfo(CGI, curCArg);
+      argInfo = getCGArgInfo(CGI, clangArgNum);
     }
 
     if (formal->hasFlag(FLAG_NO_CODEGEN))
@@ -2029,7 +2029,7 @@ static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
       }
     }
 
-    curCArg++;
+    clangArgNum++;
   }
 
   llvm::FunctionType* fnType =
@@ -2425,6 +2425,10 @@ void FnSymbol::codegenDef() {
       info->currentFunctionABI = CGI;
     }
 
+    // Used to modify LLVM formals based on Chapel and Clang formals.
+    llvm::Function::arg_iterator ai = func->arg_begin();
+    int clangArgNum = 0;
+
     if (CGI) {
       const clang::CodeGen::ABIArgInfo &returnInfo = CGI->getReturnInfo();
       // Adjust attributes based on return ABI info
@@ -2433,18 +2437,33 @@ void FnSymbol::codegenDef() {
         func->removeFnAttr(llvm::Attribute::ReadNone);
       }
 
+      // Skip the first LLVM formal if it is used for a struct return.
+      // Note that we only consume the first _LLVM_ formal. The Clang
+      // formal number remains 0.
+      if (func->hasStructRetAttr()) {
+        if (returnInfo.isSRetAfterThis()) {
+          INT_FATAL("Not handled!");
+        } else {
+          size_t numChapelArgs = numFormals();
+          INT_ASSERT(func->arg_size() > numChapelArgs);
+          INT_ASSERT(returnInfo.isIndirect());
+          ai++;
+        }
+      }
+
       if (returnInfo.isInAlloca())
         INT_FATAL("TODO");
-
     }
 
-    llvm::Function::arg_iterator ai = func->arg_begin();
-    int curCArg = 0;
     for_formals(arg, this) {
       const clang::CodeGen::ABIArgInfo* argInfo = NULL;
       if (CGI) {
-        argInfo = getCGArgInfo(CGI, curCArg);
+        argInfo = getCGArgInfo(CGI, clangArgNum);
       }
+
+      // We should have already skipped past the sret above.
+      llvm::Argument& llvmArg = *ai;
+      INT_ASSERT(!llvmArg.hasAttribute(llvm::Attribute::StructRet));
 
       if (arg->hasFlag(FLAG_NO_CODEGEN))
         continue; // do not print locale argument, end count, dummy class
@@ -2598,10 +2617,10 @@ void FnSymbol::codegenDef() {
                             tempVar.isLVPtr, tempVar.isUnsigned);
         // debug info for formal arguments
         if(debug_info){
-          debug_info->get_formal_arg(arg, curCArg+1);
+          debug_info->get_formal_arg(arg, clangArgNum+1);
         }
       }
-      curCArg++;
+      clangArgNum++;
     }
 
     // if --gen-ids is enabled, add metadata mapping the
