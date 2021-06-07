@@ -36,15 +36,14 @@ using namespace chpl;
 using namespace uast;
 using namespace frontend;
 
-static void testStringLiteral(Parser* parser,
-                              const char* testname,
-                              const char* str,
-                              StringLiteral::QuoteStyle expectQuoteStyle,
-                              const std::string& expectValue) {
+static uast::Builder::Result parseExprAsVarInit(Parser* parser,
+                                                const std::string& testname,
+                                                const std::string& init,
+                                                const Expression*& exprOut) {
   std::string toparse = "var x = ";
-  toparse += str;
+  toparse += init;
   toparse += ";\n";
-  auto parseResult = parser->parseString(testname, toparse.c_str());
+  auto parseResult = parser->parseString(testname.c_str(), toparse.c_str());
   assert(parseResult.errors.size() == 0);
   assert(parseResult.topLevelExpressions.size() == 1);
   assert(parseResult.topLevelExpressions[0]->isModule());
@@ -52,62 +51,102 @@ static void testStringLiteral(Parser* parser,
   assert(module->numStmts() == 1);
   auto variable = module->stmt(0)->toVariable();
   assert(variable);
-  auto strLit = variable->initExpression()->toStringLiteral();
+  exprOut = variable->initExpression();
+  return parseResult;
+}
+
+static void testStringLiteral(Parser* parser,
+                              const std::string& testname,
+                              const std::string& str,
+                              StringLikeLiteral::QuoteStyle expectQuoteStyle,
+                              const std::string& expectValue) {
+  const Expression* initExpr = nullptr;
+  auto parseResult = parseExprAsVarInit(parser, testname, str, initExpr);
+  auto strLit = initExpr->toStringLiteral();
   assert(strLit);
   assert(strLit->quoteStyle() == expectQuoteStyle);
   assert(strLit->str() == expectValue);
 }
 static void testBytesLiteral(Parser* parser,
-                             const char* testname,
-                             const char* str,
-                             StringLiteral::QuoteStyle expectQuoteStyle,
+                             const std::string& testname,
+                             std::string str,
+                             StringLikeLiteral::QuoteStyle expectQuoteStyle,
                              const std::string& expectValue) {
-  std::string toparse = "var x = b";
-  toparse += str;
-  toparse += ";\n";
-  auto parseResult = parser->parseString(testname, toparse.c_str());
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto module = parseResult.topLevelExpressions[0]->toModule();
-  assert(module->numStmts() == 1);
-  auto variable = module->stmt(0)->toVariable();
-  assert(variable);
-  auto bytesLit = variable->initExpression()->toBytesLiteral();
+  const Expression* initExpr = nullptr;
+  auto parseResult = parseExprAsVarInit(parser, testname, str, initExpr);
+  auto bytesLit = initExpr->toBytesLiteral();
   assert(bytesLit);
   assert(bytesLit->quoteStyle() == expectQuoteStyle);
   assert(bytesLit->str() == expectValue);
 }
 static void testCStringLiteral(Parser* parser,
-                               const char* testname,
-                               const char* str,
+                               const std::string& testname,
+                               std::string str,
                                StringLiteral::QuoteStyle expectQuoteStyle,
                                const std::string& expectValue) {
-  std::string toparse = "var x = c";
-  toparse += str;
-  toparse += ";\n";
-  auto parseResult = parser->parseString(testname, toparse.c_str());
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto module = parseResult.topLevelExpressions[0]->toModule();
-  assert(module->numStmts() == 1);
-  auto variable = module->stmt(0)->toVariable();
-  assert(variable);
-  auto strLit = variable->initExpression()->toCStringLiteral();
+  const Expression* initExpr = nullptr;
+  auto parseResult = parseExprAsVarInit(parser, testname, str, initExpr);
+  auto strLit = initExpr->toCStringLiteral();
   assert(strLit);
   assert(strLit->quoteStyle() == expectQuoteStyle);
   assert(strLit->str() == expectValue);
 }
 
-static void testLiteral(Parser* parser,
-                        const char* testname,
-                        const char* str,
-                        StringLiteral::QuoteStyle expectQuoteStyle,
-                        const std::string& expectValue) {
-  testStringLiteral(parser, testname, str, expectQuoteStyle, expectValue);
-  testBytesLiteral(parser, testname, str, expectQuoteStyle, expectValue);
+static void testTripleLiteral(Parser* parser,
+                              const char* testname,
+                              const char* s,
+                              const std::string& expectValue) {
+
+  std::string threeSingle = "'''";
+  std::string threeDouble = "\"\"\"";
+
+  std::string tSingleS = threeSingle + s + threeSingle;
+  std::string tDoubleS = threeDouble + s + threeDouble;
+
+  std::string tn = testname;
+
+  testStringLiteral(parser, "triple-single-s-" + tn,
+                    tSingleS, StringLikeLiteral::TRIPLE_SINGLE, expectValue);
+  testStringLiteral(parser, "triple-double-s-" + tn,
+                    tDoubleS, StringLikeLiteral::TRIPLE_DOUBLE, expectValue);
+
+  testBytesLiteral(parser, "triple-single-b-" + tn,
+                   "b" + tSingleS,
+                   StringLikeLiteral::TRIPLE_SINGLE, expectValue);
+  testBytesLiteral(parser, "triple-double-b-" + tn,
+                   "b" + tDoubleS,
+                   StringLikeLiteral::TRIPLE_DOUBLE, expectValue);
 }
+
+static void testSingleLiteral(Parser* parser,
+                              const char* testname,
+                              const char* s,
+                              const std::string& expectValue) {
+
+  std::string oneSingle = "'";
+  std::string oneDouble = "\"";
+
+  std::string oSingleS = oneSingle + s + oneSingle;
+  std::string oDoubleS = oneDouble + s + oneDouble;
+
+  std::string tn = testname;
+
+  testStringLiteral(parser, "single-s-" + tn,
+                    oSingleS, StringLikeLiteral::SINGLE, expectValue);
+  testStringLiteral(parser, "double-s-" + tn,
+                    oDoubleS, StringLikeLiteral::DOUBLE, expectValue);
+
+  testBytesLiteral(parser, "single-b-" + tn,
+                   "b" + oSingleS, StringLikeLiteral::SINGLE, expectValue);
+  testBytesLiteral(parser, "double-b-" + tn,
+                   "b" + oDoubleS, StringLikeLiteral::DOUBLE, expectValue);
+
+  testCStringLiteral(parser, "single-c-" + tn,
+                     "c" + oSingleS, StringLikeLiteral::SINGLE, expectValue);
+  testCStringLiteral(parser, "double-c-" + tn,
+                     "c" + oDoubleS, StringLikeLiteral::DOUBLE, expectValue);
+}
+
 
 static void testBadLiteral(Parser* parser,
                            const char* testname,
@@ -133,47 +172,24 @@ int main() {
   auto parser = Parser::build(ctx);
   Parser* p = parser.get();
 
-  testLiteral(p, "test0.chpl", "\"hi\"",
-              StringLiteral::DOUBLE, std::string("hi"));
-  testLiteral(p, "test1.chpl", "'hi'",
-              StringLiteral::SINGLE, std::string("hi"));
-  testLiteral(p, "test2.chpl", "\"\"\"hi\"\"\"",
-              StringLiteral::TRIPLE_DOUBLE, std::string("hi"));
-  testLiteral(p, "test3.chpl", "'''hi'''",
-              StringLiteral::TRIPLE_SINGLE, std::string("hi"));
-  testLiteral(p, "test4.chpl", "\"'hi'\"",
-              StringLiteral::DOUBLE, std::string("'hi'"));
-  testLiteral(p, "test5.chpl", "'\"hi\"'",
-              StringLiteral::SINGLE, std::string("\"hi\""));
-  testLiteral(p, "test6.chpl", "'\\'\\\"\\?\\\\\\a\\b\\f\\n\\r\\t\\v'",
-              StringLiteral::SINGLE, std::string("'\"\?\\\a\b\f\n\r\t\v"));
-  testLiteral(p, "test7.chpl", "'''\\'\\\"\\?\\\\\\a\\b\\f\\n\\r\\t\\v'''",
-              StringLiteral::TRIPLE_SINGLE,
-              std::string("\\'\\\"\\\?\\\\\\a\\b\\f\\n\\r\\t\\v"));
-  testLiteral(p, "test8.chpl", "\"\\'\\\"\\?\\\\\\a\\b\\f\\n\\r\\t\\v\"",
-              StringLiteral::DOUBLE, std::string("'\"\?\\\a\b\f\n\r\t\v"));
-  testLiteral(p, "test9.chpl",
-              "\"\"\"\\'\\\"\\?\\\\\\a\\b\\f\\n\\r\\t\\v\"\"\"",
-              StringLiteral::TRIPLE_DOUBLE,
-              std::string("\\'\\\"\\\?\\\\\\a\\b\\f\\n\\r\\t\\v"));
+  testSingleLiteral(p, "test0.chpl", "hi", std::string("hi"));
+  testTripleLiteral(p, "test2.chpl", "hi", std::string("hi"));
+  testStringLiteral(p, "test4.chpl", std::string("\"'hi'\""),
+                    StringLiteral::DOUBLE, std::string("'hi'"));
+  testStringLiteral(p, "test5.chpl", std::string("'\"hi\"'"),
+                    StringLiteral::SINGLE, std::string("\"hi\""));
+  testSingleLiteral(p, "test6.chpl", "\\'\\\"\\?\\\\\\a\\b\\f\\n\\r\\t\\v",
+                    std::string("'\"\?\\\a\b\f\n\r\t\v"));
+  testTripleLiteral(p, "test7.chpl", "\\'\\\"\\?\\\\\\a\\b\\f\\n\\r\\t\\v",
+                    std::string("\\'\\\"\\\?\\\\\\a\\b\\f\\n\\r\\t\\v"));
 
   std::string zeroOne;
   zeroOne.push_back('\x00');
   zeroOne.push_back('\x01');
   zeroOne.push_back('\x11');
-  testLiteral(p, "test10.chpl", "'\\x00\\x01\\x11'",
-              StringLiteral::SINGLE, zeroOne);
-  testLiteral(p, "test11.chpl", "\"\\x00\\x01\\x11\"",
-              StringLiteral::DOUBLE, zeroOne);
-  testLiteral(p, "test12.chpl", "'''\\x00\\x01'''",
-              StringLiteral::TRIPLE_SINGLE, std::string("\\x00\\x01"));
-  testLiteral(p, "test13.chpl", "\"\"\"\\x00\\x01\"\"\"",
-              StringLiteral::TRIPLE_DOUBLE, std::string("\\x00\\x01"));
+  testSingleLiteral(p, "test10.chpl", "\\x00\\x01\\x11", zeroOne);
 
-  testCStringLiteral(p, "test20.chpl", "'hi'",
-                     StringLiteral::SINGLE, std::string("hi"));
-  testCStringLiteral(p, "test21.chpl", "\"hi\"",
-                     StringLiteral::DOUBLE, std::string("hi"));
+  testTripleLiteral(p, "test12.chpl", "\\x00\\x01", std::string("\\x00\\x01"));
 
   testBadLiteral(p, "test30.chpl", "\"\\q\"");
   testBadLiteral(p, "test31.chpl", "\"\\xFFFFFFFFFFFFFFFFFFFFFFFFFF\"");
