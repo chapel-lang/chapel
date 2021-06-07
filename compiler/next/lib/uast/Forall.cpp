@@ -29,8 +29,8 @@ owned<Forall> Forall::build(Builder* builder, Location loc,
                             owned<Decl> index,
                             owned<Expression> iterand,
                             owned<WithClause> withClause,
+                            BlockStyle blockStyle,
                             ASTList stmts,
-                            bool usesImplicitBlock,
                             bool isExpressionLevel) {
   assert(iterand.get() != nullptr);
 
@@ -64,9 +64,9 @@ owned<Forall> Forall::build(Builder* builder, Location loc,
   Forall* ret = new Forall(std::move(lst), indexChildNum,
                            iterandChildNum,
                            withClauseChildNum,
+                           blockStyle,
                            loopBodyChildNum,
                            numLoopBodyStmts,
-                           usesImplicitBlock,
                            isExpressionLevel);
   builder->noteLocation(ret, loc);
   return toOwned(ret);

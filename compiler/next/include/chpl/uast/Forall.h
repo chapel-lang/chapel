@@ -21,6 +21,7 @@
 #define CHPL_UAST_FORALL_H
 
 #include "chpl/queries/Location.h"
+#include "chpl/uast/BlockStyle.h"
 #include "chpl/uast/IndexableLoop.h"
 #include "chpl/uast/WithClause.h"
 
@@ -48,17 +49,17 @@ class Forall final : public IndexableLoop {
   Forall(ASTList children, int8_t indexChildNum,
          int8_t iterandChildNum,
          int8_t withClauseChildNum,
+         BlockStyle blockStyle,
          int loopBodyChildNum,
          int numLoopBodyStmts,
-         bool usesImplicitBlock,
          bool isExpressionLevel)
     : IndexableLoop(asttags::Forall, std::move(children),
                     indexChildNum,
                     iterandChildNum,
                     withClauseChildNum,
+                    blockStyle,
                     loopBodyChildNum,
                     numLoopBodyStmts,
-                    usesImplicitBlock,
                     isExpressionLevel) {
     assert(isExpressionASTList(children_));
   }
@@ -81,8 +82,8 @@ class Forall final : public IndexableLoop {
                              owned<Decl> index,
                              owned<Expression> iterand,
                              owned<WithClause> withClause,
+                             BlockStyle blockStyle,
                              ASTList stmts,
-                             bool usesImplicitBlock,
                              bool isExpressionLevel);
 
 };

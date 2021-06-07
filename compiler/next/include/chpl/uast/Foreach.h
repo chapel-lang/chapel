@@ -21,6 +21,7 @@
 #define CHPL_UAST_FOREACH_H
 
 #include "chpl/queries/Location.h"
+#include "chpl/uast/BlockStyle.h"
 #include "chpl/uast/IndexableLoop.h"
 #include "chpl/uast/WithClause.h"
 
@@ -48,16 +49,16 @@ class Foreach final : public IndexableLoop {
   Foreach(ASTList children, int8_t indexChildNum,
           int8_t iterandChildNum,
           int8_t withClauseChildNum,
+          BlockStyle blockStyle,
           int loopBodyChildNum,
-          int numLoopBodyStmts,
-          bool usesImplicitBlock)
+          int numLoopBodyStmts)
     : IndexableLoop(asttags::Foreach, std::move(children),
                     indexChildNum,
                     iterandChildNum,
                     withClauseChildNum,
+                    blockStyle,
                     loopBodyChildNum,
                     numLoopBodyStmts,
-                    usesImplicitBlock,
                     /*isExpressionLevel*/ false) {
 
     assert(isExpressionASTList(children_));
@@ -81,8 +82,9 @@ class Foreach final : public IndexableLoop {
                               owned<Decl> index,
                               owned<Expression> iterand,
                               owned<WithClause> withClause,
-                              ASTList stmts,
-                              bool usesImplicitBlock);
+                              BlockStyle blockStyle,
+                              ASTList stmts);
+
 
 };
 

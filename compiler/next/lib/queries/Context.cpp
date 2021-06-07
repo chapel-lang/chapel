@@ -160,16 +160,21 @@ void Context::advanceToNextRevision(bool prepareToGC) {
     this->lastPrepareToGCRevisionNumber = this->currentRevisionNumber;
     gcCounter++;
   }
-  printf("CURRENT REVISION NUMBER IS NOW %i %s\n",
-         (int) this->currentRevisionNumber,
-         prepareToGC?"PREPARING GC":"");
+  if (enableDebugTracing) {
+    printf("CURRENT REVISION NUMBER IS NOW %i %s\n",
+           (int) this->currentRevisionNumber,
+           prepareToGC?"PREPARING GC":"");
+  }
 }
 
 void Context::collectGarbage() {
   // if there are no parent queries, collect some garbage
   assert(queryStack.size() == 0);
 
-  printf("COLLECTING GARBAGE\n");
+  if (enableDebugTracing) {
+    printf("COLLECTING GARBAGE\n");
+  }
+
   // clear out the saved old results
   // warning: this loop proceeds in a nondeterministic order
   for (auto& dbEntry: queryDB) {
@@ -192,11 +197,15 @@ void Context::collectGarbage() {
       const char* key = e.first;
       char* buf = e.second;
       if (buf[0] == gcMark) {
-        printf("COPYING OVER UNIQUESTRING %s\n", key);
         newTable.insert(std::make_pair(key, buf));
+        if (enableDebugTracing) {
+          printf("COPYING OVER UNIQUESTRING %s\n", key);
+        }
       } else {
-        printf("WILL FREE UNIQUESTRING %s\n", key);
         toFree.push_back(buf);
+        if (enableDebugTracing) {
+          printf("WILL FREE UNIQUESTRING %s\n", key);
+        }
       }
     }
     for (char* buf: toFree) {
@@ -204,9 +213,11 @@ void Context::collectGarbage() {
     }
     uniqueStringsTable.swap(newTable);
 
-    size_t nUniqueStringsAfter = uniqueStringsTable.size();
-    printf("COLLECTED %i UniqueStrings\n",
-           (int)(nUniqueStringsBefore-nUniqueStringsAfter));
+    if (enableDebugTracing) {
+      size_t nUniqueStringsAfter = uniqueStringsTable.size();
+      printf("COLLECTED %i UniqueStrings\n",
+             (int)(nUniqueStringsBefore-nUniqueStringsAfter));
+    }
   }
 }
 
@@ -218,14 +229,18 @@ void Context::setFilePathForModuleName(UniqueString modName, UniqueString path) 
                        "filePathForModuleNameQuery",
                        false);
 
-  printf("SETTING FILE PATH FOR MODULE %s -> %s\n",
-         modName.c_str(), path.c_str());
+  if (enableDebugTracing) {
+    printf("SETTING FILE PATH FOR MODULE %s -> %s\n",
+           modName.c_str(), path.c_str());
+  }
 }
 
 void Context::recomputeIfNeeded(const QueryMapResultBase* resultEntry) {
 
-  printf("RECOMPUTING IF NEEDED FOR %p %s\n", resultEntry,
-         resultEntry->parentQueryMap->queryName);
+  if (enableDebugTracing) {
+    printf("RECOMPUTING IF NEEDED FOR %p %s\n", resultEntry,
+           resultEntry->parentQueryMap->queryName);
+  }
 
   if (this->currentRevisionNumber == resultEntry->lastChecked) {
     // No need to check the dependencies again.
@@ -265,13 +280,17 @@ void Context::recomputeIfNeeded(const QueryMapResultBase* resultEntry) {
   if (useSaved == false) {
     resultEntry->recompute(this);
     assert(resultEntry->lastChecked == this->currentRevisionNumber);
-    printf("DONE RECOMPUTING IF NEEDED -- RECOMPUTED FOR %s\n",
-           resultEntry->parentQueryMap->queryName);
+    if (enableDebugTracing) {
+      printf("DONE RECOMPUTING IF NEEDED -- RECOMPUTED FOR %s\n",
+             resultEntry->parentQueryMap->queryName);
+    }
     return;
   } else {
-    printf("DONE RECOMPUTING IF NEEDED -- REUSED FOR %s\n",
-           resultEntry->parentQueryMap->queryName);
     updateForReuse(resultEntry);
+    if (enableDebugTracing) {
+      printf("DONE RECOMPUTING IF NEEDED -- REUSED FOR %s\n",
+             resultEntry->parentQueryMap->queryName);
+    }
   }
 
 }

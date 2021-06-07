@@ -56,7 +56,7 @@ static void test0(Parser* parser) {
   assert(forLoop->iterand() != nullptr);
   assert(forLoop->iterand()->isIdentifier());
   assert(forLoop->numStmts() == 2);
-  assert(forLoop->usesImplicitBlock());
+  assert(forLoop->blockStyle() == BlockStyle::IMPLICIT);
   assert(!forLoop->isExpressionLevel());
   assert(!forLoop->isParam());
   assert(forLoop->stmt(0)->isComment());
@@ -83,7 +83,7 @@ static void test1(Parser* parser) {
   assert(forLoop->iterand() != nullptr);
   assert(forLoop->iterand()->isIdentifier());
   assert(forLoop->numStmts() == 2);
-  assert(forLoop->usesImplicitBlock());
+  assert(forLoop->blockStyle() == BlockStyle::IMPLICIT);
   assert(!forLoop->isExpressionLevel());
   assert(!forLoop->isParam());
   assert(forLoop->stmt(0)->isComment());
@@ -110,7 +110,7 @@ static void test2(Parser* parser) {
   assert(forLoop->iterand() != nullptr);
   assert(forLoop->iterand()->isIdentifier());
   assert(forLoop->numStmts() == 2);
-  assert(forLoop->usesImplicitBlock());
+  assert(forLoop->blockStyle() == BlockStyle::IMPLICIT);
   assert(!forLoop->isExpressionLevel());
   assert(forLoop->isParam());
   assert(forLoop->stmt(0)->isComment());
@@ -139,7 +139,7 @@ static void test3(Parser* parser) {
   assert(forLoop->iterand() != nullptr);
   assert(forLoop->iterand()->isIdentifier());
   assert(forLoop->numStmts() == 3);
-  assert(!forLoop->usesImplicitBlock());
+  assert(forLoop->blockStyle() == BlockStyle::EXPLICIT);
   assert(!forLoop->isExpressionLevel());
   assert(!forLoop->isParam());
   assert(forLoop->stmt(0)->isComment());
@@ -170,17 +170,14 @@ static void test4(Parser* parser) {
   assert(forLoop->index()->isVariable());
   assert(forLoop->iterand() != nullptr);
   assert(forLoop->iterand()->isIdentifier());
-  assert(forLoop->numStmts() == 2);
-  assert(forLoop->usesImplicitBlock());
+  assert(forLoop->numStmts() == 4);
+  assert(forLoop->blockStyle() == BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK);
   assert(!forLoop->isExpressionLevel());
   assert(!forLoop->isParam());
   assert(forLoop->stmt(0)->isComment());
-  assert(forLoop->stmt(1)->isBlock());
-  const Block* block = forLoop->stmt(1)->toBlock();
-  assert(block != nullptr);
-  assert(block->stmt(0)->isComment());
-  assert(block->stmt(1)->isVariable());
-  assert(block->stmt(2)->isComment());
+  assert(forLoop->stmt(1)->isComment());
+  assert(forLoop->stmt(2)->isVariable());
+  assert(forLoop->stmt(1)->isComment());
 }
 
 int main() {

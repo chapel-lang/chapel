@@ -21,6 +21,7 @@
 #define CHPL_UAST_DOWHILE_H
 
 #include "chpl/queries/Location.h"
+#include "chpl/uast/BlockStyle.h"
 #include "chpl/uast/Loop.h"
 
 namespace chpl {
@@ -45,13 +46,14 @@ namespace uast {
  */
 class DoWhile final : public Loop {
  private:
-  DoWhile(ASTList children, int loopBodyChildNum, int numLoopBodyStmts,
-          int conditionChildNum,
-          bool usesImplicitBlock)
+  DoWhile(ASTList children, BlockStyle blockStyle,
+          int loopBodyChildNum,
+          int numLoopBodyStmts,
+          int conditionChildNum)
     : Loop(asttags::DoWhile, std::move(children),
+           blockStyle,
            loopBodyChildNum,
-           numLoopBodyStmts,
-           usesImplicitBlock),
+           numLoopBodyStmts),
       conditionChildNum_(conditionChildNum) {
     assert(isExpressionASTList(children_));
     assert(condition());
@@ -72,9 +74,10 @@ class DoWhile final : public Loop {
     Create and return a do-while loop. 
   */
   static owned<DoWhile> build(Builder* builder, Location loc,
+                              BlockStyle blockStyle,
                               ASTList stmts,
-                              owned<Expression> condition,
-                              bool isBodyBlock);
+                              owned<Expression> condition);
+
 
   /**
     Return the condition of this do-while loop.

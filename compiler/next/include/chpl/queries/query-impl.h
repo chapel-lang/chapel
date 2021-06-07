@@ -116,9 +116,11 @@ QueryMapResult<ResultType,ArgTs...>::markUniqueStringsInResult(Context* context)
 template<typename... ArgTs>
 void Context::queryBeginTrace(const char* traceQueryName,
                               const std::tuple<ArgTs...>& tupleOfArg) {
-  printf("QUERY BEGIN     %s (", traceQueryName);
-  queryArgsPrint(tupleOfArg);
-  printf(")\n");
+  if (enableDebugTracing) {
+    printf("QUERY BEGIN     %s (", traceQueryName);
+    queryArgsPrint(tupleOfArg);
+    printf(")\n");
+  }
 }
 
 template<typename ResultType,
@@ -179,10 +181,12 @@ Context::getResult(QueryMap<ResultType, ArgTs...>* queryMap,
   auto savedElement = &(*pair.first); // pointer to element in map (added/not)
   bool newElementWasAdded = pair.second;
 
-  if (newElementWasAdded)
-    printf("Added new result %p %s\n", savedElement, queryMap->queryName);
-  else
-    printf("Found result %p %s\n", savedElement, queryMap->queryName);
+  if (enableDebugTracing) {
+    if (newElementWasAdded)
+      printf("Added new result %p %s\n", savedElement, queryMap->queryName);
+    else
+      printf("Found result %p %s\n", savedElement, queryMap->queryName);
+  }
 
   if (newElementWasAdded == false && savedElement->lastChecked == -1) {
     haltForRecursiveQuery(savedElement);
@@ -208,13 +212,17 @@ Context::queryUseSaved(
        const char* traceQueryName) {
   const void* queryFuncV = (const void*) queryFunction;
   bool useSaved = queryCanUseSavedResultAndPushIfNot(queryFuncV, r);
-  if (useSaved) {
-    printf("QUERY END       %s (...) REUSING BASED ON DEPS %p\n",
-           traceQueryName, r);
-    assert(r->lastChecked == this->currentRevisionNumber);
-  } else {
-    printf("QUERY COMPUTING %s (...) %p\n", traceQueryName, r);
+
+  if (enableDebugTracing) {
+    if (useSaved) {
+      printf("QUERY END       %s (...) REUSING BASED ON DEPS %p\n",
+             traceQueryName, r);
+      assert(r->lastChecked == this->currentRevisionNumber);
+    } else {
+      printf("QUERY COMPUTING %s (...) %p\n", traceQueryName, r);
+    }
   }
+
   return useSaved;
 }
 
@@ -242,7 +250,7 @@ Context::queryEnd(
   const QueryMapResult<ResultType, ArgTs...>* ret =
     this->updateResultForQueryMapR(queryMap, r, tupleOfArgs, std::move(result));
 
-  { // this is just tracing code
+  if (enableDebugTracing) {
     bool changed = ret->lastChanged == this->currentRevisionNumber;
     printf("QUERY END       %s (", traceQueryName);
     queryArgsPrint(tupleOfArgs);

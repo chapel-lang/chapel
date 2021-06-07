@@ -21,6 +21,7 @@
 #define CHPL_UAST_LOCAL_H
 
 #include "chpl/queries/Location.h"
+#include "chpl/uast/BlockStyle.h"
 #include "chpl/uast/Expression.h"
 
 namespace chpl {
@@ -48,17 +49,18 @@ namespace uast {
  */
 class Local final : public Expression {
  private:
-  Local(ASTList stmts, int8_t condChildNum, bool usesImplicitBlock)
-    : Expression(asttags::Local, std::move(stmts)),
+  Local(ASTList children, int8_t condChildNum, BlockStyle blockStyle)
+    : Expression(asttags::Local, std::move(children)),
       condChildNum_(condChildNum),
-      usesImplicitBlock_(usesImplicitBlock) {
+      blockStyle_(blockStyle) {
     assert(isExpressionASTList(children_));
   }
 
   bool contentsMatchInner(const ASTNode* other) const override;
   void markUniqueStringsInner(Context* context) const override;
+
   int8_t condChildNum_;
-  bool usesImplicitBlock_;
+  BlockStyle blockStyle_;
 
  public:
 
@@ -66,8 +68,9 @@ class Local final : public Expression {
     Create and return a local statement containing the passed statements.
   */
   static owned<Local> build(Builder* builder, Location loc,
-                            ASTList stmts,
-                            bool usesImplicitBlock);
+                            BlockStyle blockStyle,
+                            ASTList stmts);
+
 
   /**
     Create and return a local statement with the given condition and
@@ -75,8 +78,9 @@ class Local final : public Expression {
   */
   static owned<Local> build(Builder* builder, Location loc,
                             owned<Expression> condition,
-                            ASTList stmts,
-                            bool usesImplicitBlock);
+                            BlockStyle blockStyle,
+                            ASTList stmts);
+
 
   /**
     Return a way to iterate over the statements.
@@ -100,6 +104,9 @@ class Local final : public Expression {
     Return the number of statements in the local statement.
   */
   int numStmts() const {
+
+    // TODO: Should we offer a 'hasCondition()' instead of allowing
+    // 'condition()' to be nullptr?
     return condition() ? (numChildren()-1) : numChildren();
   }
 
@@ -114,11 +121,10 @@ class Local final : public Expression {
   }
 
   /**
-    Returns true if the first child statement of this local statement is
-    preceded by a 'do'.
+    Returns the block style of this local statement.
   */
-  bool usesImplicitBlock() const {
-    return usesImplicitBlock_;
+  BlockStyle blockStyle() const {
+    return blockStyle_;
   }
 
 };

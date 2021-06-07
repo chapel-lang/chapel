@@ -30,6 +30,7 @@ NEXT_UAST_SRCS =                                 \
   Call.cpp \
   Coforall.cpp \
   Comment.cpp \
+  Conditional.cpp \
   ControlFlow.cpp \
   Decl.cpp \
   Dot.cpp \

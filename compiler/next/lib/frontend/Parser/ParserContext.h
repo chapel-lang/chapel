@@ -133,6 +133,8 @@ struct ParserContext {
 
   std::vector<ParserComment>* gatherCommentsFromList(ParserExprList* lst,
                                                      YYLTYPE location);
+  void discardCommentsFromList(ParserExprList* lst, YYLTYPE location);
+
   void appendComments(CommentsAndStmt*cs, std::vector<ParserComment>* comments);
 
   // clears the inner comments that should have already been captured
@@ -188,6 +190,10 @@ struct ParserContext {
                                     New::Management management,
                                     FnCall* fnCall);
 
+  BlockStyle determineBlockStyle(BlockOrDo blockOrDo);
+
+  ASTList consumeAndFlattenTopLevelBlocks(BlockOrDo blockOrDo);
+
   CommentsAndStmt buildBracketLoopStmt(YYLTYPE locLeftBracket,
                                        YYLTYPE locIndex,
                                        ParserExprList* indexExprs,
@@ -228,6 +234,19 @@ struct ParserContext {
                                         WithClause* withClause,
                                         BlockOrDo blockOrDo);
 
+CommentsAndStmt buildConditionalStmt(bool usesThenKeyword, YYLTYPE locIf,
+                                     YYLTYPE locCondition,
+                                     YYLTYPE locThen,
+                                     Expression* condition,
+                                     CommentsAndStmt thenStmt);
+
+CommentsAndStmt buildConditionalStmt(bool usesThenKeyword, YYLTYPE locIf,
+                                     YYLTYPE locCondition,
+                                     YYLTYPE locThen,
+                                     YYLTYPE locElse,
+                                     Expression* condition,
+                                     CommentsAndStmt thenStmt,
+                                     CommentsAndStmt elseStmt);
   // Do we really need these?
   /*
   int         captureTokens; // no, new AST meant to be more faithful to src;

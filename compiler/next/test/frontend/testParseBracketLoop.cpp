@@ -62,7 +62,7 @@ static void test0(Parser* parser) {
   assert(bracketLoop->iterand() != nullptr);
   assert(bracketLoop->iterand()->isIdentifier());
   assert(bracketLoop->withClause() == nullptr);
-  assert(bracketLoop->usesImplicitBlock());
+  assert(bracketLoop->blockStyle() == BlockStyle::IMPLICIT);
   assert(!bracketLoop->isExpressionLevel());
   assert(bracketLoop->numStmts() == 2);
   assert(bracketLoop->stmt(0)->isComment());
@@ -100,7 +100,7 @@ static void test1(Parser* parser) {
   assert(!taskVar->typeExpression());
   assert(!taskVar->initExpression());
   assert(taskVar->intent() == TaskVar::REF);
-  assert(!bracketLoop->usesImplicitBlock());
+  assert(bracketLoop->blockStyle() == BlockStyle::EXPLICIT);
   assert(!bracketLoop->isExpressionLevel());
   assert(bracketLoop->numStmts() == 3);
   assert(bracketLoop->stmt(0)->isComment());
@@ -133,7 +133,7 @@ static void test2(Parser* parser) {
   assert(zip->numActuals() == 2);
   assert(zip->actual(0)->isIdentifier());
   assert(zip->actual(1)->isIdentifier());
-  assert(!bracketLoop->usesImplicitBlock());
+  assert(bracketLoop->blockStyle() == BlockStyle::EXPLICIT);
   assert(!bracketLoop->isExpressionLevel());
   assert(bracketLoop->numStmts() == 1);
   assert(bracketLoop->stmt(0)->isFnCall());
@@ -180,7 +180,7 @@ static void test3(Parser* parser) {
   assert(taskVar1->initExpression());
   assert(taskVar1->initExpression()->isIdentifier());
   assert(taskVar1->intent() == TaskVar::IN);
-  assert(!bracketLoop->usesImplicitBlock());
+  assert(bracketLoop->blockStyle() == BlockStyle::EXPLICIT);
   assert(!bracketLoop->isExpressionLevel());
   assert(bracketLoop->numStmts() == 2);
   assert(bracketLoop->stmt(0)->isFnCall());
@@ -209,7 +209,7 @@ static void test4(Parser* parser) {
   assert(bracketLoop->iterand()->isFnCall());
   assert(bracketLoop->withClause() == nullptr);
   assert(bracketLoop->numStmts() == 2);
-  assert(bracketLoop->usesImplicitBlock());
+  assert(bracketLoop->blockStyle() == BlockStyle::IMPLICIT);
   assert(!bracketLoop->isExpressionLevel());
   assert(bracketLoop->stmt(0)->isComment());
   assert(bracketLoop->stmt(1)->isFnCall());
@@ -247,7 +247,7 @@ static void test5(Parser* parser) {
   assert(!taskVar0->typeExpression());
   assert(taskVar0->initExpression());
   assert(taskVar0->intent() == TaskVar::VAR);
-  assert(!bracketLoop->usesImplicitBlock());
+  assert(bracketLoop->blockStyle() == BlockStyle::EXPLICIT);
   assert(!bracketLoop->isExpressionLevel());
   assert(bracketLoop->numStmts() == 1);
   assert(bracketLoop->stmt(0)->isFnCall());

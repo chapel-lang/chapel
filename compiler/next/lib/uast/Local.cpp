@@ -28,16 +28,28 @@ namespace uast {
 bool Local::contentsMatchInner(const ASTNode* other) const {
   const Local* lhs = this;
   const Local* rhs = (const Local*) other;
-  return lhs->expressionContentsMatchInner(rhs);
+
+  if (lhs->condChildNum_ != rhs->condChildNum_)
+    return false;
+
+  if (lhs->blockStyle_ != rhs->blockStyle_)
+    return false;
+
+  if (!lhs->expressionContentsMatchInner(rhs))
+    return false;
+
+  return true;
 }
+
 void Local::markUniqueStringsInner(Context* context) const {
   expressionMarkUniqueStringsInner(context);
 }
 
 owned<Local> Local::build(Builder* builder,
                           Location loc,
-                          ASTList stmts,
-                          bool usesImplicitBlock) {
+                          BlockStyle blockStyle,
+                          ASTList stmts) {
+
   ASTList lst;
   int8_t condChildNum = -1;
 
@@ -45,7 +57,7 @@ owned<Local> Local::build(Builder* builder,
     lst.push_back(std::move(stmt));
   }
 
-  Local* ret = new Local(std::move(lst), condChildNum, usesImplicitBlock);
+  Local* ret = new Local(std::move(lst), condChildNum, blockStyle);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
@@ -53,8 +65,8 @@ owned<Local> Local::build(Builder* builder,
 owned<Local> Local::build(Builder* builder,
                           Location loc,
                           owned<Expression> condition,
-                          ASTList stmts,
-                          bool usesImplicitBlock) {
+                          BlockStyle blockStyle,
+                          ASTList stmts) {
   assert(condition.get() != nullptr);
 
   ASTList lst;
@@ -69,7 +81,7 @@ owned<Local> Local::build(Builder* builder,
     lst.push_back(std::move(stmt));
   }
 
-  Local* ret = new Local(std::move(lst), condChildNum, usesImplicitBlock);
+  Local* ret = new Local(std::move(lst), condChildNum, blockStyle);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

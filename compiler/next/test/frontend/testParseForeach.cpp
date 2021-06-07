@@ -63,7 +63,7 @@ static void test0(Parser* parser) {
   assert(foreach->iterand()->isIdentifier());
   assert(foreach->withClause() == nullptr);
   assert(foreach->numStmts() == 2);
-  assert(foreach->usesImplicitBlock());
+  assert(foreach->blockStyle() == BlockStyle::IMPLICIT);
   assert(foreach->stmt(0)->isComment());
   assert(foreach->stmt(1)->isFnCall());
 }
@@ -99,7 +99,7 @@ static void test1(Parser* parser) {
   assert(!taskVar->typeExpression());
   assert(!taskVar->initExpression());
   assert(taskVar->intent() == TaskVar::REF);
-  assert(!foreach->usesImplicitBlock());
+  assert(foreach->blockStyle() == BlockStyle::EXPLICIT);
   assert(foreach->numStmts() == 3);
   assert(foreach->stmt(0)->isComment());
   assert(foreach->stmt(1)->isFnCall());
@@ -131,7 +131,7 @@ static void test2(Parser* parser) {
   assert(zip->numActuals() == 2);
   assert(zip->actual(0)->isIdentifier());
   assert(zip->actual(1)->isIdentifier());
-  assert(!foreach->usesImplicitBlock());
+  assert(foreach->blockStyle() == BlockStyle::EXPLICIT);
   assert(foreach->numStmts() == 1);
   assert(foreach->stmt(0)->isFnCall());
 }
@@ -177,7 +177,7 @@ static void test3(Parser* parser) {
   assert(taskVar1->initExpression());
   assert(taskVar1->initExpression()->isIdentifier());
   assert(taskVar1->intent() == TaskVar::IN);
-  assert(!foreach->usesImplicitBlock());
+  assert(foreach->blockStyle() == BlockStyle::EXPLICIT);
   assert(foreach->numStmts() == 2);
   assert(foreach->stmt(0)->isFnCall());
   assert(foreach->stmt(1)->isOpCall());
@@ -205,7 +205,7 @@ static void test4(Parser* parser) {
   assert(foreach->iterand()->isFnCall());
   assert(foreach->withClause() == nullptr);
   assert(foreach->numStmts() == 2);
-  assert(foreach->usesImplicitBlock());
+  assert(foreach->blockStyle() == BlockStyle::IMPLICIT);
   assert(foreach->stmt(0)->isComment());
   assert(foreach->stmt(1)->isFnCall());
 }
@@ -213,7 +213,7 @@ static void test4(Parser* parser) {
 static void test5(Parser* parser) {
   auto parseResult = parser->parseString("test5.chpl",
       "/* comment 1 */\n"
-      "foreach zip(a, b) with (var r=thing1) {\n"
+      "foreach zip(a, b) with (var r=thing1) do {\n"
       "  writeln(r);\n"
       "}\n"
       "/* comment 4 */\n");
@@ -242,7 +242,7 @@ static void test5(Parser* parser) {
   assert(!taskVar0->typeExpression());
   assert(taskVar0->initExpression());
   assert(taskVar0->intent() == TaskVar::VAR);
-  assert(!foreach->usesImplicitBlock());
+  assert(foreach->blockStyle() == BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK);
   assert(foreach->numStmts() == 1);
   assert(foreach->stmt(0)->isFnCall());
 }

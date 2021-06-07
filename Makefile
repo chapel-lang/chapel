@@ -169,6 +169,14 @@ c2chapel: third-party-c2chapel-venv FORCE
 	cd tools/c2chapel && $(MAKE)
 	cd tools/c2chapel && $(MAKE) install
 
+compile-util-python: FORCE
+	@if $(CHPL_MAKE_PYTHON) -m compileall -h > /dev/null 2>&1 ; then \
+	  echo "Compiling Python scripts in util/" ; \
+	  $(CHPL_MAKE_PYTHON) -m compileall util/config -q ; \
+	  $(CHPL_MAKE_PYTHON) -m compileall util/chplenv -q ; \
+	else \
+	  echo "Not compiling Python scripts - missing compileall" ; \
+	fi
 
 third-party-fltk: FORCE
 	cd third-party/fltk && $(MAKE)
