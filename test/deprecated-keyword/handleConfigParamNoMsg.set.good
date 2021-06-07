@@ -1,0 +1,5 @@
+warning: x is deprecated
+note: 'x' was set via a compilation flag
+handleConfigParamNoMsg.chpl:5: In function 'main':
+handleConfigParamNoMsg.chpl:6: warning: x is deprecated
+true
