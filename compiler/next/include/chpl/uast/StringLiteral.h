@@ -17,34 +17,35 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_UAST_LITERAL_H
-#define CHPL_UAST_LITERAL_H
+#ifndef CHPL_UAST_STRINGLITERAL_H
+#define CHPL_UAST_STRINGLITERAL_H
 
-#include "chpl/uast/Expression.h"
+#include "chpl/queries/Location.h"
+#include "chpl/uast/StringLikeLiteral.h"
 
 namespace chpl {
 namespace uast {
 
 
 /**
-  This is an abstract base class for literals.
-  Literals are fixed values in the source code, like 1, 30.24, and "x".
+  This class represents a string literal, for example `"hello"`
+  and `''' string contents here '''`.
  */
-class Literal : public Expression {
- protected:
-  Literal(ASTTag tag)
-    : Expression(tag) {
-  }
+class StringLiteral final : public StringLikeLiteral {
+ private:
+  StringLiteral(std::string value, StringLikeLiteral::QuoteStyle quotes)
+    : StringLikeLiteral(asttags::StringLiteral, std::move(value), quotes)
+  { }
 
-  bool literalContentsMatchInner(const Literal* other) const {
-    return expressionContentsMatchInner(other);
-  }
-  void literalMarkUniqueStringsInner(Context* context) const {
-    expressionMarkUniqueStringsInner(context);
-  }
+  // contentsMatchInner / markUniqueStringsInner are in StringLikeLiteral
+  // and would need to be defined here if any fields are added.
 
  public:
-  virtual ~Literal() = 0; // this is an abstract base class
+  ~StringLiteral() override = default;
+
+  static owned<StringLiteral> build(Builder* builder, Location loc,
+                                    std::string value,
+                                    StringLikeLiteral::QuoteStyle quotes);
 };
 
 

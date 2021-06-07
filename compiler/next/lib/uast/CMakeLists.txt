@@ -24,11 +24,13 @@ target_sources(libchplcomp-obj
                Block.cpp
                BracketLoop.cpp
                Builder.cpp
+               BytesLiteral.cpp
                Call.cpp
                Coforall.cpp
                Comment.cpp
                Conditional.cpp
                ControlFlow.cpp
+               CStringLiteral.cpp
                Decl.cpp
                Dot.cpp
                DoWhile.cpp
@@ -43,18 +45,26 @@ target_sources(libchplcomp-obj
                Formal.cpp
                Function.cpp
                Identifier.cpp
+               ImagLiteral.cpp
                IndexableLoop.cpp
+               IntLiteral.cpp
+               Literal.cpp
                Local.cpp
                Loop.cpp
                Module.cpp
                MultiDecl.cpp
                NamedDecl.cpp
                New.cpp
+               NumericLiteral.cpp
                OpCall.cpp
+               RealLiteral.cpp
                Serial.cpp
+               StringLikeLiteral.cpp
+               StringLiteral.cpp
                TaskVar.cpp
                TupleDecl.cpp
                TypeDecl.cpp
+               UintLiteral.cpp
                Variable.cpp
                VarLikeDecl.cpp
                Visitor.cpp
