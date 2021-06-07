@@ -240,7 +240,7 @@ extern int yychpl_debug;
   // strategy. In the future we could probably switch to a more
   // C++ mode of using bison.
   union YYCHPL_STYPE {
-    // The lexer only uses these three
+    // The lexer only uses these
     PODUniqueString uniqueStr;
     SizedStr sizedStr;
     Expression* expr;

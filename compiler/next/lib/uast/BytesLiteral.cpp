@@ -27,20 +27,9 @@ namespace chpl {
 namespace uast {
 
 
-bool BytesLiteral::contentsMatchInner(const ASTNode* other) const {
-  const BytesLiteral* lhs = this;
-  const BytesLiteral* rhs = (const BytesLiteral*) other;
-  return lhs->literalContentsMatchInner(rhs) &&
-         lhs->value_ == rhs->value_ &&
-         lhs->quotes_ == rhs->quotes_;
-}
-void BytesLiteral::markUniqueStringsInner(Context* context) const {
-  literalMarkUniqueStringsInner(context);
-}
-
 owned<BytesLiteral> BytesLiteral::build(Builder* builder, Location loc,
                                         std::string value,
-                                        StringLiteral::QuoteStyle quotes) {
+                                        StringLikeLiteral::QuoteStyle quotes) {
   BytesLiteral* ret = new BytesLiteral(std::move(value), quotes);
   builder->noteLocation(ret, loc);
   return toOwned(ret);

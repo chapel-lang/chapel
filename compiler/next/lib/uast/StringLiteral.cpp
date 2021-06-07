@@ -27,17 +27,6 @@ namespace chpl {
 namespace uast {
 
 
-bool StringLiteral::contentsMatchInner(const ASTNode* other) const {
-  const StringLiteral* lhs = this;
-  const StringLiteral* rhs = (const StringLiteral*) other;
-  return lhs->literalContentsMatchInner(rhs) &&
-         lhs->value_ == rhs->value_ &&
-         lhs->quotes_ == rhs->quotes_;
-}
-void StringLiteral::markUniqueStringsInner(Context* context) const {
-  literalMarkUniqueStringsInner(context);
-}
-
 owned<StringLiteral> StringLiteral::build(Builder* builder, Location loc,
                                           std::string value,
                                           StringLiteral::QuoteStyle quotes) {

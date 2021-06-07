@@ -22,7 +22,7 @@
 
 #include "chpl/queries/Location.h"
 #include "chpl/uast/Literal.h"
-#include "chpl/uast/StringLiteral.h"
+#include "chpl/uast/StringLikeLiteral.h"
 
 namespace chpl {
 namespace uast {
@@ -31,36 +31,24 @@ namespace uast {
 /**
   This class represents a C string literal, for example `c"hello"`.
  */
-class CStringLiteral final : public Literal {
+class CStringLiteral final : public StringLikeLiteral {
  private:
   std::string value_;
-  StringLiteral::QuoteStyle quotes_;
+  StringLikeLiteral::QuoteStyle quotes_;
 
-  CStringLiteral(std::string value, StringLiteral::QuoteStyle quotes)
-    : Literal(asttags::CStringLiteral),
-      value_(std::move(value)),
-      quotes_(quotes)
+  CStringLiteral(std::string value, StringLikeLiteral::QuoteStyle quotes)
+    : StringLikeLiteral(asttags::CStringLiteral, std::move(value), quotes)
   { }
-  bool contentsMatchInner(const ASTNode* other) const override;
-  void markUniqueStringsInner(Context* context) const override;
+
+  // contentsMatchInner / markUniqueStringsInner are in StringLikeLiteral
+  // and would need to be defined here if any fields are added.
 
  public:
   ~CStringLiteral() override = default;
 
   static owned<CStringLiteral> build(Builder* builder, Location loc,
                                      std::string value,
-                                     StringLiteral::QuoteStyle quotes);
-
-  /**
-   Returns the value of this string literal as a C++ string,
-   not including the quotes.
-   */
-  const std::string& str() const { return value_; }
-
-  /**
-   Returns the type of quotes used for this string literal.
-   */
-  StringLiteral::QuoteStyle quoteStyle() const { return this->quotes_; }
+                                     StringLikeLiteral::QuoteStyle quotes);
 };
 
 

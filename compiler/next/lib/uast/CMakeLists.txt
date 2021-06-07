@@ -58,6 +58,7 @@ target_sources(libchplcomp-obj
                OpCall.cpp
                RealLiteral.cpp
                Serial.cpp
+               StringLikeLiteral.cpp
                StringLiteral.cpp
                TaskVar.cpp
                TupleDecl.cpp

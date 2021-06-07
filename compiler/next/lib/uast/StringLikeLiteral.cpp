@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/CStringLiteral.h"
+#include "chpl/uast/StringLikeLiteral.h"
 
 #include "chpl/uast/Builder.h"
 
@@ -27,13 +27,18 @@ namespace chpl {
 namespace uast {
 
 
-owned<CStringLiteral>
-CStringLiteral::build(Builder* builder, Location loc,
-                      std::string value,
-                      StringLikeLiteral::QuoteStyle quotes) {
-  CStringLiteral* ret = new CStringLiteral(std::move(value), quotes);
-  builder->noteLocation(ret, loc);
-  return toOwned(ret);
+bool StringLikeLiteral::contentsMatchInner(const ASTNode* other) const {
+  const StringLikeLiteral* lhs = this;
+  const StringLikeLiteral* rhs = (const StringLikeLiteral*) other;
+  return lhs->literalContentsMatchInner(rhs) &&
+         lhs->value_ == rhs->value_ &&
+         lhs->quotes_ == rhs->quotes_;
+}
+void StringLikeLiteral::markUniqueStringsInner(Context* context) const {
+  literalMarkUniqueStringsInner(context);
+}
+
+StringLikeLiteral::~StringLikeLiteral() {
 }
 
 
