@@ -18,6 +18,7 @@
  * limitations under the License.
  */
 
+#include <cerrno>
 #include <cfloat>
 #include <cinttypes>
 #include <cmath>
