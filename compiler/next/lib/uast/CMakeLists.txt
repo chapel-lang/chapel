@@ -55,6 +55,7 @@ target_sources(libchplcomp-obj
                MultiDecl.cpp
                NamedDecl.cpp
                New.cpp
+               NumericLiteral.cpp
                OpCall.cpp
                RealLiteral.cpp
                Serial.cpp

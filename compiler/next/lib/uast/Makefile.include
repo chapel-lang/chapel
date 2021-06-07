@@ -58,6 +58,7 @@ NEXT_UAST_SRCS =                                 \
   MultiDecl.cpp \
   NamedDecl.cpp \
   New.cpp \
+  NumericLiteral.cpp \
   OpCall.cpp \
   RealLiteral.cpp \
   Serial.cpp \

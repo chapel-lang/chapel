@@ -33,9 +33,6 @@ namespace uast {
  */
 class CStringLiteral final : public StringLikeLiteral {
  private:
-  std::string value_;
-  StringLikeLiteral::QuoteStyle quotes_;
-
   CStringLiteral(std::string value, StringLikeLiteral::QuoteStyle quotes)
     : StringLikeLiteral(asttags::CStringLiteral, std::move(value), quotes)
   { }
