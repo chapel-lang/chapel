@@ -21,8 +21,6 @@
 
 #include "chpl/uast/Builder.h"
 
-#include <cstdlib>
-
 namespace chpl {
 namespace uast {
 
