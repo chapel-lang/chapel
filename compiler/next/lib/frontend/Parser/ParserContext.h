@@ -133,6 +133,8 @@ struct ParserContext {
 
   std::vector<ParserComment>* gatherCommentsFromList(ParserExprList* lst,
                                                      YYLTYPE location);
+  void discardCommentsFromList(ParserExprList* lst, YYLTYPE location);
+
   void appendComments(CommentsAndStmt*cs, std::vector<ParserComment>* comments);
 
   // clears the inner comments that should have already been captured

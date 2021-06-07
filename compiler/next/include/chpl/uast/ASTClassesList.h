@@ -152,3 +152,5 @@ AST_END_SUBCLASSES(Expression)
 
 
 /// \endcond
+
+// this comment seems to be necessary for doxygen xml output to be well-formed
