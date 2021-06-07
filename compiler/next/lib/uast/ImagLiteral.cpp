@@ -21,22 +21,9 @@
 
 #include "chpl/uast/Builder.h"
 
-#include <cstdlib>
-
 namespace chpl {
 namespace uast {
 
-
-bool ImagLiteral::contentsMatchInner(const ASTNode* other) const {
-  const ImagLiteral* lhs = this;
-  const ImagLiteral* rhs = (const ImagLiteral*) other;
-  return lhs->literalContentsMatchInner(rhs) &&
-         lhs->value_ == rhs->value_ &&
-         lhs->base_ == rhs->base_;
-}
-void ImagLiteral::markUniqueStringsInner(Context* context) const {
-  literalMarkUniqueStringsInner(context);
-}
 
 owned<ImagLiteral> ImagLiteral::build(Builder* builder, Location loc,
                                       double value, int base) {

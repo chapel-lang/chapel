@@ -21,7 +21,7 @@
 #define CHPL_UAST_REALLITERAL_H
 
 #include "chpl/queries/Location.h"
-#include "chpl/uast/Literal.h"
+#include "chpl/uast/NumericLiteral.h"
 
 namespace chpl {
 namespace uast {
@@ -31,34 +31,20 @@ namespace uast {
   This class represents a floating point literal that is not imaginary.
   That is, it is a "real" number. Examples include ``0.0``, and `3e24`.
  */
-class RealLiteral final : public Literal {
+class RealLiteral final : public NumericLiteral<double> {
  private:
-  double value_;
-  int base_;
-
   RealLiteral(double value, int base)
-    : Literal(asttags::RealLiteral),
-      value_(value),
-      base_(base)
+    : NumericLiteral(asttags::RealLiteral, value, base)
   { }
-  bool contentsMatchInner(const ASTNode* other) const override;
-  void markUniqueStringsInner(Context* context) const override;
+
+  // contentsMatchInner / markUniqueStringsInner are in NumericLiteral
+  // and would need to be defined here if any fields are added.
 
  public:
   ~RealLiteral() override = default;
 
   static owned<RealLiteral> build(Builder* builder, Location loc,
                                   double value, int base);
-
-  /**
-   Returns the value of this RealLiteral.
-   */
-  double value() const { return value_; }
- 
-  /**
-   Returns the base of the number when it was parsed.
-   */
-  int base() const { return base_; }
 };
 
 

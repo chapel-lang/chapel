@@ -21,7 +21,7 @@
 #define CHPL_UAST_INTLITERAL_H
 
 #include "chpl/queries/Location.h"
-#include "chpl/uast/Literal.h"
+#include "chpl/uast/NumericLiteral.h"
 
 namespace chpl {
 namespace uast {
@@ -34,34 +34,20 @@ namespace uast {
   However there are no negative literals. Negative numbers are created
   by applying the unary `-` operator.
  */
-class IntLiteral final : public Literal {
+class IntLiteral final : public NumericLiteral<int64_t> {
  private:
-  int64_t value_;
-  int base_;
-
-  IntLiteral(uint64_t value, int base)
-    : Literal(asttags::IntLiteral),
-      value_(value),
-      base_(base)
+  IntLiteral(int64_t value, int base)
+    : NumericLiteral(asttags::IntLiteral, value, base)
   { }
-  bool contentsMatchInner(const ASTNode* other) const override;
-  void markUniqueStringsInner(Context* context) const override;
+
+  // contentsMatchInner / markUniqueStringsInner are in NumericLiteral
+  // and would need to be defined here if any fields are added.
 
  public:
   ~IntLiteral() override = default;
 
   static owned<IntLiteral> build(Builder* builder, Location loc,
                                  int64_t value, int base);
-
-  /**
-   Returns the value of this IntLiteral.
-   */
-  int64_t value() const { return value_; }
- 
-  /**
-   Returns the base of the number when it was parsed.
-   */
-  int base() const { return base_; }
 };
 
 

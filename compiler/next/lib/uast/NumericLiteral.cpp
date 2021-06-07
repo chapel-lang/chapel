@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/UintLiteral.h"
+#include "chpl/uast/NumericLiteral.h"
 
 #include "chpl/uast/Builder.h"
 
@@ -25,12 +25,9 @@ namespace chpl {
 namespace uast {
 
 
-owned<UintLiteral> UintLiteral::build(Builder* builder, Location loc,
-                                      uint64_t value, int base) {
-  UintLiteral* ret = new UintLiteral(value, base);
-  builder->noteLocation(ret, loc);
-  return toOwned(ret);
-}
+template NumericLiteral<double>::~NumericLiteral();
+template NumericLiteral<int64_t>::~NumericLiteral();
+template NumericLiteral<uint64_t>::~NumericLiteral();
 
 
 } // namespace uast

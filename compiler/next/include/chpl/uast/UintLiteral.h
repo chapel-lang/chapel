@@ -21,7 +21,7 @@
 #define CHPL_UAST_UINTLITERAL_H
 
 #include "chpl/queries/Location.h"
-#include "chpl/uast/Literal.h"
+#include "chpl/uast/NumericLiteral.h"
 
 namespace chpl {
 namespace uast {
@@ -32,34 +32,20 @@ namespace uast {
   It is only used for integers too large to fit into `int64_t`.
   Such integer literals have type `uint`.
  */
-class UintLiteral final : public Literal {
+class UintLiteral final : public NumericLiteral<uint64_t> {
  private:
-  uint64_t value_;
-  int base_;
-
   UintLiteral(uint64_t value, int base)
-    : Literal(asttags::UintLiteral),
-      value_(value),
-      base_(base)
+    : NumericLiteral(asttags::UintLiteral, value, base)
   { }
-  bool contentsMatchInner(const ASTNode* other) const override;
-  void markUniqueStringsInner(Context* context) const override;
+
+  // contentsMatchInner / markUniqueStringsInner are in NumericLiteral
+  // and would need to be defined here if any fields are added.
 
  public:
   ~UintLiteral() override = default;
 
   static owned<UintLiteral> build(Builder* builder, Location loc,
                                   uint64_t value, int base);
-
-  /**
-   Returns the value of this UintLiteral.
-   */
-  uint64_t value() const { return value_; }
- 
-  /**
-   Returns the base of the number when it was parsed.
-   */
-  int base() const { return base_; }
 };
 
 

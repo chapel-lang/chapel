@@ -21,22 +21,9 @@
 
 #include "chpl/uast/Builder.h"
 
-#include <cstdlib>
-
 namespace chpl {
 namespace uast {
 
-
-bool IntLiteral::contentsMatchInner(const ASTNode* other) const {
-  const IntLiteral* lhs = this;
-  const IntLiteral* rhs = (const IntLiteral*) other;
-  return lhs->literalContentsMatchInner(rhs) &&
-         lhs->value_ == rhs->value_ &&
-         lhs->base_ == rhs->base_;
-}
-void IntLiteral::markUniqueStringsInner(Context* context) const {
-  literalMarkUniqueStringsInner(context);
-}
 
 owned<IntLiteral> IntLiteral::build(Builder* builder, Location loc,
                                     int64_t value, int base) {
