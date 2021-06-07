@@ -388,7 +388,7 @@ DefExpr* buildDeprecated(DefExpr* def, const char* msg) {
     // compilation line
     if (isUsedCmdLineConfig(sym->name)) {
       USR_WARN("%s", sym->getDeprecationMsg());
-      USR_PRINT("'%s' was set via a compilation flag", sym->name);
+      USR_PRINT("'%s' was set via a compiler flag", sym->name);
     }
   }
   return def;
