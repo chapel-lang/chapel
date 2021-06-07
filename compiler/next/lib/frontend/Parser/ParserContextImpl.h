@@ -265,6 +265,19 @@ ParserContext::gatherCommentsFromList(ParserExprList* lst,
   return ret;
 }
 
+void ParserContext::discardCommentsFromList(ParserExprList* lst,
+                                            YYLTYPE loc) {
+  if (lst == nullptr) return;
+
+  auto comments = gatherCommentsFromList(lst, loc);
+  if (comments != nullptr) {
+    for (ParserComment parserComment : *comments) {
+      delete parserComment.comment;
+    }
+    delete comments;
+  }
+}
+
 void ParserContext::appendComments(CommentsAndStmt*cs,
                                    std::vector<ParserComment>* comments) {
   if (comments == nullptr) return;
@@ -628,10 +641,8 @@ ParserContext::buildConditionalStmt(bool usesThenKeyword, YYLTYPE locIf,
 
   // If there's a 'then' keyword, discard any comments before the 'then'.
   // Else, discard any comments before the condition.
-  auto commentsToDiscard = usesThenKeyword
-      ? gatherCommentsFromList(thenExprLst, locThen)
-      : gatherCommentsFromList(thenExprLst, locCondition);
-  delete commentsToDiscard;
+  auto discardPoint = usesThenKeyword ? locThen : locCondition;
+  discardCommentsFromList(thenExprLst, discardPoint);
 
   auto thenAstLst = consumeList(thenExprLst);
   auto thenStmts = builder->flattenTopLevelBlocks(std::move(thenAstLst));
