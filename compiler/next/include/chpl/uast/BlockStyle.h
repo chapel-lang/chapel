@@ -17,30 +17,42 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/Loop.h"
+#ifndef CHPL_UAST_BLOCKSTYLE_H
+#define CHPL_UAST_BLOCKSTYLE_H
 
 namespace chpl {
 namespace uast {
 
-bool Loop::loopContentsMatchInner(const Loop* other) const {
-  const Loop* lhs = this;
-  const Loop* rhs = other;
+/**
+  An enum representing whether a construct's body is preceded by a keyword,
+  a block, or both. For example:
 
-  if (lhs->loopBodyChildNum_ != rhs->loopBodyChildNum_)
-    return false;
+  \rst
+  .. code-block:: chapel
 
-  if (lhs->numLoopBodyStmts_ != rhs->numLoopBodyStmts_)
-    return false;
+      // This would be BlockStyle::IMPLICIT:
+      for i in 0..15 do writeln(i);
 
-  if (lhs->blockStyle_ != rhs->blockStyle_)
-    return false;
+      // This would be BlockStyle::EXPLICIT:
+      for i in 0..15 {
+        writeln(i);
+      }
 
-  return true;
-}
+      // This would be BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK:
+      for i in 0..15 do {
+        writeln(i);
+      }
 
-Loop::~Loop() {
-}
+  \endrst
+*/
+enum struct BlockStyle {
+  // TODO: Revisit these names or even this strategy altogether.
+  IMPLICIT,
+  EXPLICIT,
+  UNNECESSARY_KEYWORD_AND_BLOCK
+};
 
+} // end namespace uast
+} // end namespace chpl
 
-} // namespace uast
-} // namespace chpl
+#endif

@@ -63,7 +63,7 @@ static void test0(Parser* parser) {
   assert(coforall->iterand()->isIdentifier());
   assert(coforall->withClause() == nullptr);
   assert(coforall->numStmts() == 2);
-  assert(coforall->usesImplicitBlock());
+  assert(coforall->blockStyle() == BlockStyle::IMPLICIT);
   assert(!coforall->isExpressionLevel());
   assert(coforall->stmt(0)->isComment());
   assert(coforall->stmt(1)->isFnCall());
@@ -72,7 +72,7 @@ static void test0(Parser* parser) {
 static void test1(Parser* parser) {
   auto parseResult = parser->parseString("test1.chpl",
       "/* comment 1 */\n"
-      "coforall x in foo with (ref thing) {\n"
+      "coforall x in foo with (ref thing) do {\n"
       "  /* comment 2 */\n"
       "  foo();\n"
       "  /* comment 3 */\n"
@@ -100,7 +100,7 @@ static void test1(Parser* parser) {
   assert(!taskVar->typeExpression());
   assert(!taskVar->initExpression());
   assert(taskVar->intent() == TaskVar::REF);
-  assert(!coforall->usesImplicitBlock());
+  assert(coforall->blockStyle() == BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK);
   assert(!coforall->isExpressionLevel());
   assert(coforall->numStmts() == 3);
   assert(coforall->stmt(0)->isComment());
@@ -133,7 +133,7 @@ static void test2(Parser* parser) {
   assert(zip->numActuals() == 2);
   assert(zip->actual(0)->isIdentifier());
   assert(zip->actual(1)->isIdentifier());
-  assert(!coforall->usesImplicitBlock());
+  assert(coforall->blockStyle() == BlockStyle::EXPLICIT);
   assert(!coforall->isExpressionLevel());
   assert(coforall->numStmts() == 1);
   assert(coforall->stmt(0)->isFnCall());
@@ -180,7 +180,7 @@ static void test3(Parser* parser) {
   assert(taskVar1->initExpression());
   assert(taskVar1->initExpression()->isIdentifier());
   assert(taskVar1->intent() == TaskVar::IN);
-  assert(!coforall->usesImplicitBlock());
+  assert(coforall->blockStyle() == BlockStyle::EXPLICIT);
   assert(!coforall->isExpressionLevel());
   assert(coforall->numStmts() == 2);
   assert(coforall->stmt(0)->isFnCall());
@@ -209,7 +209,7 @@ static void test4(Parser* parser) {
   assert(coforall->iterand()->isFnCall());
   assert(coforall->withClause() == nullptr);
   assert(coforall->numStmts() == 2);
-  assert(coforall->usesImplicitBlock());
+  assert(coforall->blockStyle() == BlockStyle::IMPLICIT);
   assert(!coforall->isExpressionLevel());
   assert(coforall->stmt(0)->isComment());
   assert(coforall->stmt(1)->isFnCall());

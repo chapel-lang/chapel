@@ -21,6 +21,7 @@
 #define CHPL_UAST_LOOP_H
 
 #include "chpl/uast/ASTNode.h"
+#include "chpl/uast/BlockStyle.h"
 #include "chpl/uast/ControlFlow.h"
 
 namespace chpl {
@@ -32,13 +33,14 @@ namespace uast {
  */
 class Loop: public ControlFlow {
  protected:
-  Loop(asttags::ASTTag tag, ASTList children, int loopBodyChildNum,
-       int numLoopBodyStmts,
-       bool usesImplicitBlock)
+  Loop(asttags::ASTTag tag, ASTList children, BlockStyle blockStyle,
+       int loopBodyChildNum,
+       int numLoopBodyStmts)
     : ControlFlow(tag, std::move(children)),
+      blockStyle_(blockStyle),
       loopBodyChildNum_(loopBodyChildNum),
-      numLoopBodyStmts_(numLoopBodyStmts),
-      usesImplicitBlock_(usesImplicitBlock) {
+      numLoopBodyStmts_(numLoopBodyStmts) {
+
     assert(loopBodyChildNum_ >= 0 && numLoopBodyStmts_ >= 0);
     assert((loopBodyChildNum_ + numLoopBodyStmts_) <= this->numChildren());
   }
@@ -49,9 +51,9 @@ class Loop: public ControlFlow {
     controlFlowMarkUniqueStringsInner(context);
   }
 
+  BlockStyle blockStyle_;
   int loopBodyChildNum_;
   int numLoopBodyStmts_;
-  bool usesImplicitBlock_;
 
  public:
   virtual ~Loop() override = 0; // this is an abstract base class
@@ -83,24 +85,10 @@ class Loop: public ControlFlow {
   }
 
   /**
-    Returns true if the body of this loop introduces an implicit block.
-    For example:
-
-    \rst
-    .. code-block:: chapel
-
-        // Example 1:
-        [i in 0..15] writeln(i);
-
-        // Example 2:
-        for i in 0..15 do writeln(i);
-
-    \endrst
-
-    Both introduce an implicit block. 
+    Returns the block style of the current loop.
   */
-  bool usesImplicitBlock() const {
-    return usesImplicitBlock_;
+  BlockStyle blockStyle() const {
+    return blockStyle_;
   }
 };
 

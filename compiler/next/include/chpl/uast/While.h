@@ -21,6 +21,7 @@
 #define CHPL_UAST_WHILE_H
 
 #include "chpl/queries/Location.h"
+#include "chpl/uast/BlockStyle.h"
 #include "chpl/uast/Loop.h"
 
 namespace chpl {
@@ -45,13 +46,13 @@ namespace uast {
  */
 class While final : public Loop {
  private:
-  While(ASTList children,  int8_t conditionChildNum,
+  While(ASTList children, int8_t conditionChildNum,
+        BlockStyle blockStyle,
         int loopBodyChildNum,
-        int numLoopBodyStmts,
-        bool usesImplicitBlock)
-    : Loop(asttags::While, std::move(children), loopBodyChildNum,
-           numLoopBodyStmts,
-           usesImplicitBlock),
+        int numLoopBodyStmts)
+    : Loop(asttags::While, std::move(children), blockStyle,
+           loopBodyChildNum,
+           numLoopBodyStmts),
       conditionChildNum_(conditionChildNum) {
     assert(isExpressionASTList(children_));
     assert(condition());
@@ -73,8 +74,9 @@ class While final : public Loop {
   */
   static owned<While> build(Builder* builder, Location loc,
                             owned<Expression> condition,
-                            ASTList stmts,
-                            bool usesImplicitBlock);
+                            BlockStyle blockStyle,
+                            ASTList stmts);
+
 
   /**
     Return the condition of this while loop.

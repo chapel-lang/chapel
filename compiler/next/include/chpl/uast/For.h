@@ -21,6 +21,7 @@
 #define CHPL_UAST_FOR_H
 
 #include "chpl/queries/Location.h"
+#include "chpl/uast/BlockStyle.h"
 #include "chpl/uast/IndexableLoop.h"
 
 namespace chpl {
@@ -45,18 +46,18 @@ class For final : public IndexableLoop {
  private:
   For(ASTList children,  int8_t indexChildNum,
       int8_t iterandChildNum,
+      BlockStyle blockStyle,
       int loopBodyChildNum,
       int numLoopBodyStmts,
-      bool usesImplicitBlock,
       bool isExpressionLevel,
       bool isParam)
     : IndexableLoop(asttags::For, std::move(children),
                     indexChildNum,
                     iterandChildNum,
                     /*withClauseChildNum*/ -1,
+                    blockStyle,
                     loopBodyChildNum,
                     numLoopBodyStmts,
-                    usesImplicitBlock,
                     isExpressionLevel),
       isParam_(isParam) {
 
@@ -81,8 +82,8 @@ class For final : public IndexableLoop {
   static owned<For> build(Builder* builder, Location loc,
                           owned<Decl> index,
                           owned<Expression> iterand,
+                          BlockStyle blockStyle,
                           ASTList stmts,
-                          bool usesImplicitBlock,
                           bool isExpressionLevel,
                           bool isParam);
 

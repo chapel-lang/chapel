@@ -51,7 +51,7 @@ static void test0(Parser* parser) {
   assert(serial != nullptr);
   assert(serial->condition() == nullptr);
   assert(serial->numStmts() == 1);
-  assert(serial->usesImplicitBlock());
+  assert(serial->blockStyle() == BlockStyle::IMPLICIT);
   assert(serial->stmt(0)->isVariable());
 }
 
@@ -71,7 +71,7 @@ static void test1(Parser* parser) {
   assert(serial->condition() != nullptr);
   assert(serial->condition()->isIdentifier());
   assert(serial->numStmts() == 1);
-  assert(serial->usesImplicitBlock());
+  assert(serial->blockStyle() == BlockStyle::IMPLICIT);
   assert(serial->stmt(0)->isVariable());
 }
 
@@ -90,7 +90,7 @@ static void test2(Parser* parser) {
   assert(serial != nullptr);
   assert(serial->condition() == nullptr);
   assert(serial->numStmts() == 1);
-  assert(!serial->usesImplicitBlock());
+  assert(serial->blockStyle() == BlockStyle::EXPLICIT);
   assert(serial->stmt(0)->isVariable());
 }
 
@@ -110,7 +110,7 @@ static void test3(Parser* parser) {
   assert(serial->condition() != nullptr);
   assert(serial->condition()->isIdentifier());
   assert(serial->numStmts() == 1);
-  assert(!serial->usesImplicitBlock());
+  assert(serial->blockStyle() == BlockStyle::EXPLICIT);
   assert(serial->stmt(0)->isVariable());
 }
 
@@ -129,12 +129,8 @@ static void test4(Parser* parser) {
   assert(serial != nullptr);
   assert(serial->condition() == nullptr);
   assert(serial->numStmts() == 1);
-  assert(serial->usesImplicitBlock());
-  assert(serial->stmt(0)->isBlock());
-  const Block* block = serial->stmt(0)->toBlock();
-  assert(block != nullptr);
-  assert(block->numStmts() == 1);
-  assert(block->stmt(0)->isVariable());
+  assert(serial->blockStyle() == BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK);
+  assert(serial->stmt(0)->isVariable());
 }
 
 static void test5(Parser* parser) {
@@ -153,12 +149,8 @@ static void test5(Parser* parser) {
   assert(serial->condition() != nullptr);
   assert(serial->condition()->isIdentifier());
   assert(serial->numStmts() == 1);
-  assert(serial->usesImplicitBlock());
-  assert(serial->stmt(0)->isBlock());
-  const Block* block = serial->stmt(0)->toBlock();
-  assert(block != nullptr);
-  assert(block->numStmts() == 1);
-  assert(block->stmt(0)->isVariable());
+  assert(serial->blockStyle() == BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK);
+  assert(serial->stmt(0)->isVariable());
 }
 
 // Test nested comments.
@@ -179,7 +171,7 @@ static void test6(Parser* parser) {
   assert(mod->stmt(1)->isSerial());
   const Serial* serial = mod->stmt(1)->toSerial();
   assert(serial != nullptr);
-  assert(!serial->usesImplicitBlock());
+  assert(serial->blockStyle() == BlockStyle::EXPLICIT);
   assert(serial->condition() != nullptr);
   assert(serial->condition()->isIdentifier());
   assert(serial->numStmts() == 3);
@@ -201,7 +193,7 @@ static void test7(Parser* parser) {
   auto mod = parseResult.topLevelExpressions[0]->toModule();
   const Serial* serial = mod->stmt(1)->toSerial();
   assert(serial != nullptr);
-  assert(serial->usesImplicitBlock());
+  assert(serial->blockStyle() == BlockStyle::IMPLICIT);
   assert(serial->condition() == nullptr);
   assert(serial->numStmts() == 2);
   assert(serial->stmt(0)->isComment());
