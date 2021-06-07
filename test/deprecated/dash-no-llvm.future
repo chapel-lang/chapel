@@ -1,0 +1,3 @@
+feature request: deprecate --[no-]llvm
+
+Our nightly testing isn't quite ready for this yet.
