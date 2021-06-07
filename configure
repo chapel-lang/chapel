@@ -147,6 +147,12 @@ fi
 ./util/printchplenv --all --simple --overrides --anonymize > configured-chplconfig
 mv configured-chplconfig chplconfig
 
+# Compile the Python scripts in util before installation.
+# We want to do this before installing, but not in the install script
+# because that might have elevated privileges. We don't need to do
+# it for typical use of a source release (since Python will handle it).
+make compile-util-python
+
 echo
 echo "  Currently selected Chapel configuration:"
 echo
