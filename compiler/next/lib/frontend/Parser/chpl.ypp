@@ -247,11 +247,12 @@
   // strategy. In the future we could probably switch to a more
   // C++ mode of using bison.
   union YYCHPL_STYPE {
-    // The lexer only uses these two
+    // The lexer only uses these
     PODUniqueString uniqueStr;
     SizedStr sizedStr;
+    Expression* expr;
 
-    // The remaining types are for parser productions
+    // The remaining types are used only in parser productions
 
     // integer/enum values
 
@@ -270,7 +271,6 @@
     // simple pointer values
     Block* block;
     Call* call;
-    Expression* expr;
     Function* function;
     Module* module;
     WithClause* withClause;
@@ -335,14 +335,6 @@
   void yychpl_error(YYLTYPE*       loc,
                     ParserContext* context,
                     const char*    errorMessage);
-
-  void noteError(YYLTYPE location,
-                 ParserContext* context,
-                 const char* errorMessage);
-
-  void noteError(YYLTYPE location,
-                 ParserContext* context,
-                 const std::string s);
 }
 
 %code provides {
@@ -397,9 +389,9 @@
 %token <uniqueStr> INTLITERAL
 %token <uniqueStr> REALLITERAL
 %token <uniqueStr> IMAGLITERAL
-%token <sizedStr> STRINGLITERAL
-%token <sizedStr> BYTESLITERAL
-%token <sizedStr> CSTRINGLITERAL
+%token <expr> STRINGLITERAL
+%token <expr> BYTESLITERAL
+%token <expr> CSTRINGLITERAL
 %token <sizedStr> EXTERNCODE
 
 //
@@ -646,18 +638,38 @@ toplevel_stmt:
 pragma_ls:
   TPRAGMA STRINGLITERAL
     {
-      SizedStr ss = $2;
-      $$ = new UniqueStrList();
-      PODUniqueString u = STR(ss.allocatedData);
-      delete ss.allocatedData;
-      $$->push_back(u);
+      Expression* lit = $2;
+      if (lit->isStringLiteral()) {
+        StringLiteral* strLit = lit->toStringLiteral();
+        $$ = new UniqueStrList();
+        PODUniqueString u = STR(strLit->str().c_str());
+        delete strLit;
+        $$->push_back(u);
+      } else {
+        // in this case we expect that there was an error
+        // reading the string literal so it is ErroneousExpression
+        // and an error message has already been recorded.
+        // Use "" as the string to indicate an error in the pragma.
+        PODUniqueString u = STR("");
+        $$->push_back(u);
+      }
     }
 | pragma_ls TPRAGMA STRINGLITERAL
     {
-      SizedStr ss = $3;
-      PODUniqueString u = STR(ss.allocatedData);
-      delete ss.allocatedData;
-      $1->push_back(u);
+      Expression* lit = $3;
+      if (lit->isStringLiteral()) {
+        StringLiteral* strLit = lit->toStringLiteral();
+        PODUniqueString u = STR(strLit->str().c_str());
+        delete strLit;
+        $1->push_back(u);
+      } else {
+        // in this case we expect that there was an error
+        // reading the string literal so it is ErroneousExpression
+        // and an error message has already been recorded.
+        // Use "" as the string to indicate an error in the pragma.
+        PODUniqueString u = STR("");
+        $$->push_back(u);
+      }
     }
 ;
 
@@ -1614,7 +1626,7 @@ implements_type_ident:
     std::string s = "type ";
     s += "'"; s += $1.c_str(); s += "'";
     s += " not allowed to implement an interface";
-    noteError(@$, context, s);
+    context->noteError(@$, s);
     $$ = $1;
   }
 ;
@@ -2666,7 +2678,7 @@ intent_expr:
       $$ = node.release();
     } else {
       const char* msg = "Expected identifier for task variable name";
-      $$ = raiseError(@$, context, msg);
+      $$ = context->raiseError(@$, msg);
     }
   }
 | reduce_scan_op_expr TREDUCE ident_expr
@@ -2720,7 +2732,7 @@ new_expr:
       // the expression 'a.field'; 'new foo' would require an argument
       // list for 'foo'; and something like 'new __primitive()' just
       // doesn't make any sense...
-      $$ = raiseError(@$, context, "Invalid form for new expression");
+      $$ = context->raiseError(@$, "Invalid form for new expression");
     }
   }
   /* TODO: handles e.g. new (typefn())(initargs) */
@@ -2893,18 +2905,18 @@ bool_literal:
 ;
 
 str_bytes_literal:
-  STRINGLITERAL   { $$ = TODOEXPR(@$); }
-| BYTESLITERAL    { $$ = TODOEXPR(@$); }
+  STRINGLITERAL   { $$ = $1; }
+| BYTESLITERAL    { $$ = $1; }
 ;
 
 literal_expr:
   bool_literal
 | str_bytes_literal
-| INTLITERAL            { $$ = TODOEXPR(@$); }
-| REALLITERAL           { $$ = TODOEXPR(@$); }
-| IMAGLITERAL           { $$ = TODOEXPR(@$); }
-| CSTRINGLITERAL        { $$ = TODOEXPR(@$); }
-| TNONE                 { $$ = TODOEXPR(@$); }
+| INTLITERAL     { $$ = context->buildNumericLiteral(@$, $1, INTLITERAL); }
+| REALLITERAL    { $$ = context->buildNumericLiteral(@$, $1, REALLITERAL); }
+| IMAGLITERAL    { $$ = context->buildNumericLiteral(@$, $1, IMAGLITERAL); }
+| CSTRINGLITERAL      { $$ = $1; }
+| TNONE               { $$ = context->buildIdent(@$, $1); }
 | TLCBR expr_ls TRCBR          { $$ = TODOEXPR(@$); }
 | TLCBR expr_ls TCOMMA TRCBR   { $$ = TODOEXPR(@$); }
 | TLSBR expr_ls TRSBR          { $$ = TODOEXPR(@$); }

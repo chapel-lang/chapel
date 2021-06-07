@@ -63,6 +63,10 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
   AST_NODE(Use)                        // old AST: UseStmt
   AST_NODE(WithClause)
 
+  AST_NODE(ArrayExpr) // TODO: figure out good names for these
+  AST_NODE(DomainExpr)
+  AST_NODE(TupleExpr)
+
   AST_BEGIN_SUBCLASSES(ControlFlow)
 
     AST_NODE(Begin)                    //
@@ -97,11 +101,20 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
 
 
   AST_BEGIN_SUBCLASSES(Literal)        // old AST: Immediate
-    AST_LEAF(NumericLiteral)
-    AST_LEAF(StringLiteral) // includes bytes
-    AST_NODE(ArrayLiteral)
-    AST_NODE(DomainLiteral)
-    AST_NODE(TupleLiteral)
+
+    //AST_BEGIN_SUBCLASSES(NumericLiteral)  notional - currently a template
+      AST_LEAF(ImagLiteral)
+      AST_LEAF(IntLiteral)
+      AST_LEAF(RealLiteral)
+      AST_LEAF(UintLiteral)
+    //AST_END_SUBCLASSES(NumericLiteral)
+
+    AST_BEGIN_SUBCLASSES(StringLikeLiteral) 
+      AST_LEAF(BytesLiteral)
+      AST_LEAF(CStringLiteral)
+      AST_LEAF(StringLiteral)
+    AST_END_SUBCLASSES(StringLikeLiteral)
+
   AST_END_SUBCLASSES(Literal)
 
   AST_BEGIN_SUBCLASSES(Call)           // old AST:  CallExpr

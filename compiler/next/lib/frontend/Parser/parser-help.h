@@ -20,27 +20,10 @@
 
 #include <string>
 
-void yyerror(YYLTYPE*       loc,
-             ParserContext* context,
-             const char*    errorMessage) {
-  context->errors.push_back(ParserError(*loc, errorMessage));
-}
-
-void noteError(YYLTYPE location, ParserContext* context, const char* s) {
-  context->errors.push_back(ParserError(location, s));
-}
-void noteError(YYLTYPE location, ParserContext* context, const std::string s) {
-  context->errors.push_back(ParserError(location, s));
-}
-
-static ErroneousExpression* raiseError(YYLTYPE location,
-                                       ParserContext* context,
-                                       const char* errorMessage) {
-  // note the error for printing
-  yyerror(&location, context, errorMessage);
-  Location ll = context->convertLocation(location);
-  // return an error sentinel
-  return ErroneousExpression::build(context->builder, ll).release();
+void yychpl_error(YYLTYPE*       loc,
+                  ParserContext* context,
+                  const char*    errorMessage) {
+  context->noteError(ParserError(*loc, errorMessage));
 }
 
 // these helpers can be used in the semantic actions
@@ -52,9 +35,9 @@ static ErroneousExpression* raiseError(YYLTYPE location,
 #define LOC(loc) context->convertLocation(loc)
 
 // ERROR creates an error and returns an error sentinel Expression
-#define ERROR(LOC,MSG) raiseError(LOC, context, MSG)
+#define ERROR(LOC,MSG) context->raiseError(LOC, MSG)
 
-#define TODOEXPR(LOC) raiseError(LOC, context, "not implemented yet")
-#define TODOSTMT(LOC) makeCommentsAndStmt(context->gatherComments(LOC), raiseError(LOC, context, "not implemented yet"))
-#define TODOLIST(LOC) context->makeList(raiseError(LOC, context, "not implemented yet"))
+#define TODOEXPR(LOC) context->raiseError(LOC, "not implemented yet")
+#define TODOSTMT(LOC) makeCommentsAndStmt(context->gatherComments(LOC), context->raiseError(LOC, "not implemented yet"))
+#define TODOLIST(LOC) context->makeList(context->raiseError(LOC, "not implemented yet"))
 
