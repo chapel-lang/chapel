@@ -18,6 +18,12 @@
  * limitations under the License.
  */
 
+#include <cerrno>
+#include <cfloat>
+#include <cinttypes>
+#include <cmath>
+#include <cstdlib>
+#include <cstdio>
 #include <string>
 #include <vector>
 
@@ -399,7 +405,7 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
                            /*typeExpression*/ nullptr,
                            /*initExpression*/ nullptr);
   } else {
-    noteError(location, this, "Cannot handle this kind of index var");
+    noteError(location, "Cannot handle this kind of index var");
   }
 
   return nullptr;
@@ -710,4 +716,291 @@ ParserContext::buildConditionalStmt(bool usesThenKeyword, YYLTYPE locIf,
                                  /*isExpressionLevel*/ false);
 
   return { .comments=comments, .stmt=node.release() };
+}
+
+uint64_t ParserContext::binStr2uint64(YYLTYPE location,
+                                      const char* str,
+                                      bool& erroneous) {
+  assert(str);
+  assert(str[0] == '0' && (str[1] == 'b' || str[1] == 'B'));
+
+  int len = strlen(str);
+  assert(len >= 3);
+
+  erroneous = false;
+
+  // Remove leading 0s
+  int startPos = 2;
+  while (str[startPos] == '0' && startPos < len-1) {
+    startPos++;
+  }
+  // Check length
+  if (len-startPos > 64) {
+    erroneous = true;
+    std::string msg = "Integer literal overflow: '";
+    msg += str;
+    msg += "' is too big for type uint64";
+    noteError(location, msg);
+  }
+  uint64_t val = 0;
+  for (int i=startPos; i<len; i++) {
+    val <<= 1;
+    switch (str[i]) {
+    case '0':
+      break;
+    case '1':
+      val += 1;
+      break;
+    default:
+      erroneous = true;
+      noteError(location, std::string("illegal character '") +
+                          str[i] + "' in binary literal");
+    }
+  }
+
+  if (erroneous)
+    return 0;
+
+  return val;
+}
+
+uint64_t ParserContext::octStr2uint64(YYLTYPE location,
+                                      const char* str,
+                                      bool& erroneous) {
+  assert(str);
+  assert(str[0] == '0' && (str[1] == 'o' || str[1] == 'O'));
+
+  int len = strlen(str);
+  assert(len >= 3);
+
+  /* Remove leading 0s */
+  int startPos = 2;
+  while (str[startPos] == '0' && startPos < len-1) {
+    startPos++;
+  }
+
+  if (len-startPos > 22 || (len-startPos == 22 && str[startPos] != '1')) {
+    erroneous = true;
+    std::string msg = "Integer literal overflow: '";
+    msg += str;
+    msg += "' is too big for type uint64";
+    noteError(location, msg);
+  }
+
+  for (int i = startPos; i < len; i++) {
+    if ('0' <= str[i] && str[i] <= '8') {
+      // OK
+    } else {
+      erroneous = true;
+      noteError(location, std::string("illegal character '") +
+                          str[i] + "' in octal literal");
+    }
+  }
+
+  if (erroneous == true)
+    return 0;
+
+  uint64_t val;
+  int numitems = sscanf(str+startPos, "%" SCNo64, &val);
+  if (numitems != 1) {
+    erroneous = true;
+    noteError(location, "error converting octal literal");
+  }
+
+  return val;
+}
+
+uint64_t ParserContext::decStr2uint64(YYLTYPE location,
+                                      const char* str,
+                                      bool& erroneous) {
+  assert(str);
+
+  int len = strlen(str);
+  assert(len >= 1);
+
+  /* Remove leading 0s */
+  int startPos = 0;
+  while (str[startPos] == '0' && startPos < len-1) {
+    startPos++;
+  }
+
+  for (int i = startPos; i < len; i++) {
+    if ('0' <= str[i] && str[i] <= '9') {
+      // OK
+    } else {
+      erroneous = true;
+      noteError(location, std::string("illegal character '") +
+                          str[i] + "' in decimal literal");
+    }
+  }
+
+  int64_t val;
+  int numitems = sscanf(str+startPos, "%" SCNu64, &val);
+  if (numitems != 1) {                                          \
+    erroneous = true;
+    noteError(location, "error converting decimal literal");
+  }                                                   
+
+  char* checkStr = (char*)malloc(len+1);
+  snprintf(checkStr, len+1, "%" SCNu64, val);
+  if (strcmp(str+startPos, checkStr) != 0) {
+    erroneous = true;
+    std::string msg = "Integer literal overflow: '";
+    msg += str;
+    msg += "' is too big for type uint64";
+    noteError(location, msg);
+  }
+  free(checkStr);
+
+  if (erroneous)
+    return 0;
+
+  return val;
+}
+
+
+
+uint64_t ParserContext::hexStr2uint64(YYLTYPE location,
+                                      const char* str,
+                                      bool& erroneous) {
+  assert(str);
+  assert(str[0] == '0' && (str[1] == 'x' || str[1] == 'X'));
+
+  int len = strlen(str);
+  assert(len >= 3);
+
+  /* Remove leading 0s */
+  int startPos = 2;
+  while (str[startPos] == '0' && startPos < len-1) {
+    startPos++;
+  }
+
+  if (len-startPos > 16) {
+    erroneous = true;
+    std::string msg = "Integer literal overflow: '";
+    msg += str;
+    msg += "' is too big for type uint64";
+    noteError(location, msg);
+  }
+
+  for (int i = startPos; i < len; i++) {
+    if (('0' <= str[i] && str[i] <= '9') ||
+        ('a' <= str[i] && str[i] <= 'f') ||
+        ('A' <= str[i] && str[i] <= 'F')) {
+      // OK
+    } else {
+      erroneous = true;
+      noteError(location, std::string("illegal character '") +
+                          str[i] + "' in hexadecimal literal");
+    }
+  }
+
+  if (erroneous)
+    return 0;
+
+  uint64_t val;
+  int numitems = sscanf(str+2, "%" SCNx64, &val);
+  if (numitems != 1) {
+    erroneous = true;
+    noteError(location, "error converting hexadecimal literal");
+  }
+  return val;
+}
+
+double ParserContext::str2double(YYLTYPE location,
+                                 const char* str,
+                                 bool& erroneous) {
+  char* endptr = nullptr;
+  double num = strtod(str, &endptr);
+  if (std::isnan(num) || std::isinf(num)) { 
+    // don't worry about checking magnitude of these
+  } else {
+    double mag = fabs(num);
+    // check strtod result
+    if ((mag == HUGE_VAL || mag == DBL_MIN) && errno == ERANGE) {
+      erroneous = true;
+      noteError(location, "overflow or underflow in floating point literal");
+    } else if (num == 0.0 && endptr == str) {
+      erroneous = true;
+      noteError(location, "error in floating point literal");
+    }
+  }
+
+  return num;
+}
+
+Expression* ParserContext::buildNumericLiteral(YYLTYPE location,
+                                               PODUniqueString str,
+                                               int type) {
+  const char* pch = str.c_str();
+  uint64_t ull;
+  int len = strlen(pch);
+  char* noUnderscores = (char*)malloc(len+1);
+
+  // remove all underscores from the number
+  int noUnderscoresLen = 0;
+  for (int i=0; i<len; i++) {
+    if (pch[i] != '_') {
+      noUnderscores[noUnderscoresLen++] = pch[i];
+    }
+  }
+  noUnderscores[noUnderscoresLen] = '\0';
+
+  bool erroneous = false;
+  int base = 0;
+  Expression* ret = nullptr;
+  auto loc = convertLocation(location);
+
+  if (type == INTLITERAL) {
+    if (!strncmp("0b", pch, 2) || !strncmp("0B", pch, 2)) {
+      ull = binStr2uint64(location, noUnderscores, erroneous);
+      base = 2;
+    } else if (!strncmp("0o", pch, 2) || !strncmp("0O", pch, 2)) {
+      // The second case is difficult to read, but is zero followed by a capital
+      // letter 'o'
+      ull = octStr2uint64(location, noUnderscores, erroneous);
+      base = 8;
+    } else if (!strncmp("0x", pch, 2) || !strncmp("0X", pch, 2)) {
+      ull = hexStr2uint64(location, noUnderscores, erroneous);
+      base = 16;
+    } else {
+      ull = decStr2uint64(location, noUnderscores, erroneous);
+      base = 10;
+    }
+
+    if (erroneous)
+      ret = ErroneousExpression::build(builder, loc).release();
+    else if (ull <= 9223372036854775807ull)
+      ret = IntLiteral::build(builder, loc, ull, base).release();
+    else
+      ret =  UintLiteral::build(builder, loc, ull, base).release();
+  } else if (type == REALLITERAL || type == IMAGLITERAL) {
+
+    if (type == IMAGLITERAL) {
+      // Remove the trailing `i` from the noUnderscores number
+      assert(noUnderscores[noUnderscoresLen-1] == 'i');
+      noUnderscores[noUnderscoresLen-1] = '\0';
+    }
+
+    if (!strncmp("0x", pch, 2) || !strncmp("0X", pch, 2)) {
+      base = 16;
+    } else {
+      base = 10;
+    }
+
+    double num = str2double(location, noUnderscores, erroneous);
+
+    if (erroneous)
+      ret = ErroneousExpression::build(builder, loc).release();
+    else if (type == IMAGLITERAL)
+      ret = ImagLiteral::build(builder, loc, num, base).release();
+    else
+      ret = RealLiteral::build(builder, loc, num, base).release();
+
+  } else {
+    assert(false && "Case note handled in buildNumericLiteral");
+  }
+
+  free(noUnderscores);
+  return ret;
 }

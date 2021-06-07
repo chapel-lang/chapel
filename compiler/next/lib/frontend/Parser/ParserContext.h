@@ -96,12 +96,27 @@ struct ParserContext {
   YYLTYPE declStartLoc(YYLTYPE curLoc);
   void resetDeclState();
 
-  ErroneousExpression* raiseError(YYLTYPE location, const char* msg) {
+  void noteError(ParserError error) {
+    errors.push_back(std::move(error));
+  }
+  void noteError(YYLTYPE location, const char* msg) {
+    noteError(ParserError(location, msg));
+  }
+  void noteError(YYLTYPE location, std::string msg) {
+    noteError(ParserError(location, std::move(msg)));
+  }
+  ErroneousExpression* raiseError(ParserError error) {
+    Location ll = convertLocation(error.location);
     // note the error for printing
-    yychpl_error(&location, this, msg);
-    Location ll = convertLocation(location);
+    noteError(std::move(error));
     // return an error sentinel
     return ErroneousExpression::build(builder, ll).release();
+  }
+  ErroneousExpression* raiseError(YYLTYPE location, const char* msg) {
+    return raiseError(ParserError(location, msg));
+  }
+  ErroneousExpression* raiseError(YYLTYPE location, std::string msg) {
+    return raiseError(ParserError(location, msg));
   }
 
   void noteComment(YYLTYPE loc, const char* data, long size);
@@ -247,13 +262,15 @@ CommentsAndStmt buildConditionalStmt(bool usesThenKeyword, YYLTYPE locIf,
                                      Expression* condition,
                                      CommentsAndStmt thenStmt,
                                      CommentsAndStmt elseStmt);
-  // Do we really need these?
-  /*
-  int         captureTokens; // no, new AST meant to be more faithful to src;
-                             // if we want source code we can read input again.
-  std::string captureString;
-  bool        parsingPrivate; // no, create config var and
-                              // replace its initialization with something
-                              // provided and separately parsed.
-   */
+
+  uint64_t binStr2uint64(YYLTYPE location, const char* str, bool& erroroneous);
+  uint64_t octStr2uint64(YYLTYPE location, const char* str, bool& erroroneous);
+  uint64_t decStr2uint64(YYLTYPE location, const char* str, bool& erroroneous);
+  uint64_t hexStr2uint64(YYLTYPE location, const char* str, bool& erroroneous);
+  double str2double(YYLTYPE location, const char* str, bool& erroroneous);
+
+  Expression* buildNumericLiteral(YYLTYPE location,
+                                  PODUniqueString str,
+                                  int type);
+
 };

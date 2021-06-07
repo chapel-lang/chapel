@@ -17,34 +17,34 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_UAST_LITERAL_H
-#define CHPL_UAST_LITERAL_H
+#ifndef CHPL_UAST_REALLITERAL_H
+#define CHPL_UAST_REALLITERAL_H
 
-#include "chpl/uast/Expression.h"
+#include "chpl/queries/Location.h"
+#include "chpl/uast/NumericLiteral.h"
 
 namespace chpl {
 namespace uast {
 
 
 /**
-  This is an abstract base class for literals.
-  Literals are fixed values in the source code, like 1, 30.24, and "x".
+  This class represents a floating point literal that is not imaginary.
+  That is, it is a "real" number. Examples include ``0.0``, and `3e24`.
  */
-class Literal : public Expression {
- protected:
-  Literal(ASTTag tag)
-    : Expression(tag) {
-  }
+class RealLiteral final : public NumericLiteral<double> {
+ private:
+  RealLiteral(double value, int base)
+    : NumericLiteral(asttags::RealLiteral, value, base)
+  { }
 
-  bool literalContentsMatchInner(const Literal* other) const {
-    return expressionContentsMatchInner(other);
-  }
-  void literalMarkUniqueStringsInner(Context* context) const {
-    expressionMarkUniqueStringsInner(context);
-  }
+  // contentsMatchInner / markUniqueStringsInner are in NumericLiteral
+  // and would need to be defined here if any fields are added.
 
  public:
-  virtual ~Literal() = 0; // this is an abstract base class
+  ~RealLiteral() override = default;
+
+  static owned<RealLiteral> build(Builder* builder, Location loc,
+                                  double value, int base);
 };
 
 

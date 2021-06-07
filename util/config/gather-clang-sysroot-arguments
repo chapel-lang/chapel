@@ -29,7 +29,7 @@ if [ $? -eq 0 ]; then
 fi
 
 TARGET_PLATFORM=`$CHPL_HOME/util/chplenv/chpl_platform.py --target`
-if [[ $TARGET_PLATFORM -eq "darwin" ]]; then
+if [[ $TARGET_PLATFORM == "darwin" ]]; then
     os_ver=`sw_vers -productVersion`
     if [[ "$os_ver" == 10.14.* ]]; then
         echo "-mlinker-version=450"

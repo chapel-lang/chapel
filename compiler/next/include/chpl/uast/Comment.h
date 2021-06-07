@@ -51,7 +51,16 @@ class Comment final : public Expression {
  public:
   ~Comment() override = default;
   static owned<Comment> build(Builder* builder, Location loc, std::string c);
+
+  /**
+   Returns the contents of this comment, including the comment
+   characters (e.g. `//`) as a C string.
+   */
   const char* c_str() const { return comment_.c_str(); }
+  /**
+   Returns the contents of this comment, including the comment
+   characters (e.g. `//`) as a C++ string.
+   */
   const std::string& str() const { return comment_; }
 };
 

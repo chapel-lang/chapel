@@ -17,34 +17,35 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_UAST_LITERAL_H
-#define CHPL_UAST_LITERAL_H
+#ifndef CHPL_UAST_UINTLITERAL_H
+#define CHPL_UAST_UINTLITERAL_H
 
-#include "chpl/uast/Expression.h"
+#include "chpl/queries/Location.h"
+#include "chpl/uast/NumericLiteral.h"
 
 namespace chpl {
 namespace uast {
 
 
 /**
-  This is an abstract base class for literals.
-  Literals are fixed values in the source code, like 1, 30.24, and "x".
+  This class represents an unsigned integer literal.
+  It is only used for integers too large to fit into `int64_t`.
+  Such integer literals have type `uint`.
  */
-class Literal : public Expression {
- protected:
-  Literal(ASTTag tag)
-    : Expression(tag) {
-  }
+class UintLiteral final : public NumericLiteral<uint64_t> {
+ private:
+  UintLiteral(uint64_t value, int base)
+    : NumericLiteral(asttags::UintLiteral, value, base)
+  { }
 
-  bool literalContentsMatchInner(const Literal* other) const {
-    return expressionContentsMatchInner(other);
-  }
-  void literalMarkUniqueStringsInner(Context* context) const {
-    expressionMarkUniqueStringsInner(context);
-  }
+  // contentsMatchInner / markUniqueStringsInner are in NumericLiteral
+  // and would need to be defined here if any fields are added.
 
  public:
-  virtual ~Literal() = 0; // this is an abstract base class
+  ~UintLiteral() override = default;
+
+  static owned<UintLiteral> build(Builder* builder, Location loc,
+                                  uint64_t value, int base);
 };
 
 
