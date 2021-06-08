@@ -703,7 +703,19 @@ stmt:
 | return_stmt               { $$ = context->finishStmt($1); }
 | stmt_level_expr TSEMI     { $$ = context->finishStmt(STMT(@$,$1)); }
 | TATOMIC stmt              { $$ = TODOSTMT(@$); }
-| TBEGIN opt_task_intent_ls stmt         { $$ = context->finishStmt(TODOSTMT(@$)); }
+| TBEGIN opt_task_intent_ls stmt
+  {
+    BlockStyle blockStyle = $3.stmt->isBlock() ? BlockStyle::EXPLICIT
+                                               : BlockStyle::IMPLICIT;
+    auto exprLst = context->makeList($3);
+    auto comments = context->gatherCommentsFromList(exprLst, @1);
+    context->discardCommentsFromList(exprLst, @3);
+    auto astLst = context->consumeList(exprLst);
+    auto statements = BUILDER->flattenTopLevelBlocks(std::move(astLst));
+    auto node = Begin::build(BUILDER, LOC(@$), toOwned($2), blockStyle,
+                             std::move(statements));
+    $$ = { .comments=comments, .stmt=node.release() };
+  }
 | TBREAK opt_label_ident TSEMI           { $$ = context->finishStmt(TODOSTMT(@$)); }
 | TCOBEGIN opt_task_intent_ls block_stmt { $$ = context->finishStmt(TODOSTMT(@$)); }
 | TCONTINUE opt_label_ident TSEMI        { $$ = context->finishStmt(TODOSTMT(@$)); }

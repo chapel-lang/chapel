@@ -25,6 +25,7 @@
 #include "chpl/queries/Location.h"
 #include "chpl/queries/UniqueString.h"
 #include "chpl/uast/ASTNode.h"
+#include "chpl/uast/Begin.h"
 #include "chpl/uast/Block.h"
 #include "chpl/uast/BracketLoop.h"
 #include "chpl/uast/Builder.h"
