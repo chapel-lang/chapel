@@ -41,6 +41,8 @@ typedef struct _configVarType { /* table entry */
   char* defaultValue;
   char* setValue;
   int private;
+  int deprecated;
+  const char* deprecationMsg;
 
   struct _configVarType* nextInBucket;
   struct _configVarType* nextInstalled;
@@ -296,6 +298,8 @@ void initSetValue(const char* varName, const char* value,
                                             "disambiguate using '<moduleName>.",
                                             varName, "'.");
     chpl_error(message, lineno, filename);
+  } else if (configVar->deprecated) {
+    chpl_warning(configVar->deprecationMsg, lineno, filename);
   }
   if (strcmp(varName, "numLocales") == 0) {
     parseNumLocales(value, lineno, filename);
@@ -323,7 +327,8 @@ const char* lookupSetValue(const char* varName, const char* moduleName) {
 
 
 void installConfigVar(const char* varName, const char* value,
-                      const char* moduleName, int private) {
+                      const char* moduleName, int private, int deprecated,
+                      const char* deprecationMsg) {
   unsigned hashValue;
   configVarType* configVar = (configVarType*)
     chpl_mem_allocMany(1, sizeof(configVarType), CHPL_RT_MD_CF_TABLE_DATA, 0, 0);
@@ -343,6 +348,8 @@ void installConfigVar(const char* varName, const char* value,
   configVar->defaultValue = chpl_glom_strings(1, value);
   configVar->setValue = NULL;
   configVar->private = private;
+  configVar->deprecated = deprecated;
+  configVar->deprecationMsg = deprecationMsg;
 }
 
 

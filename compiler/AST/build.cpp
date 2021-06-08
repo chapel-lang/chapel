@@ -382,6 +382,15 @@ DefExpr* buildDeprecated(DefExpr* def, const char* msg) {
   Symbol* sym = def->sym;
   sym->addFlag(FLAG_DEPRECATED);
   sym->deprecationMsg = msg;
+
+  if (sym->hasFlag(FLAG_CONFIG)) {
+    // Trigger a warning now if the deprecated config has been set via the
+    // compilation line
+    if (isUsedCmdLineConfig(sym->name)) {
+      USR_WARN("%s", sym->getDeprecationMsg());
+      USR_PRINT("'%s' was set via a compiler flag", sym->name);
+    }
+  }
   return def;
 }
 
