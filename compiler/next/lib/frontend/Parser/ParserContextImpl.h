@@ -465,6 +465,17 @@ ParserContext::consumeAndFlattenTopLevelBlocks(BlockOrDo blockOrDo) {
   return builder->flattenTopLevelBlocks(consumeList(blockOrDo.exprList));
 }
 
+void ParserContext::discardExprLevelComments(bool hasExpression,
+                                             YYLTYPE locExpr,
+                                             YYLTYPE locDoStmt,
+                                             BlockOrDo blockOrDo) {
+  if (blockOrDo.usesDo) {
+    discardCommentsFromList(blockOrDo.exprList, locDoStmt);
+  } else if (hasExpression) {
+    discardCommentsFromList(blockOrDo.exprList, locExpr);
+  }
+}
+
 CommentsAndStmt
 ParserContext::buildBracketLoopStmt(YYLTYPE locLeftBracket,
                                     YYLTYPE locIndex,

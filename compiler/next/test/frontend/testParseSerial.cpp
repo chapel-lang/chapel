@@ -39,79 +39,106 @@ using namespace frontend;
 static void test0(Parser* parser) {
   auto parseResult = parser->parseString("test0.chpl",
       "/* comment 1 */\n"
-      "serial do var a;\n");
+      "serial /* comment 2 */ do\n"
+      "  /* comment 3 */\n"
+      "  var a;\n"
+      "/*comment 4 */\n");
   assert(parseResult.errors.size() == 0);
   assert(parseResult.topLevelExpressions.size() == 1);
   assert(parseResult.topLevelExpressions[0]->isModule());
   auto mod = parseResult.topLevelExpressions[0]->toModule();
-  assert(mod->numStmts() == 2);
+  assert(mod->numStmts() == 3);
   assert(mod->stmt(0)->isComment());
   assert(mod->stmt(1)->isSerial());
+  assert(mod->stmt(2)->isComment());
   const Serial* serial = mod->stmt(1)->toSerial();
   assert(serial != nullptr);
   assert(serial->condition() == nullptr);
-  assert(serial->numStmts() == 1);
+  assert(serial->numStmts() == 2);
   assert(serial->blockStyle() == BlockStyle::IMPLICIT);
-  assert(serial->stmt(0)->isVariable());
+  assert(serial->stmt(0)->isComment());
+  assert(serial->stmt(1)->isVariable());
 }
 
 static void test1(Parser* parser) {
   auto parseResult = parser->parseString("test1.chpl",
       "/* comment 1 */\n"
-      "serial foo do var a;\n");
+      "serial /* comment 2 */ foo /* comment 3 */ do\n"
+      "  /* comment 4 */\n"
+      "  var a;\n"
+      "/* comment 5 */\n");
   assert(parseResult.errors.size() == 0);
   assert(parseResult.topLevelExpressions.size() == 1);
   assert(parseResult.topLevelExpressions[0]->isModule());
   auto mod = parseResult.topLevelExpressions[0]->toModule();
-  assert(mod->numStmts() == 2);
+  assert(mod->numStmts() == 3);
   assert(mod->stmt(0)->isComment());
   assert(mod->stmt(1)->isSerial());
+  assert(mod->stmt(2)->isComment());
   const Serial* serial = mod->stmt(1)->toSerial();
   assert(serial != nullptr);
   assert(serial->condition() != nullptr);
   assert(serial->condition()->isIdentifier());
-  assert(serial->numStmts() == 1);
+  assert(serial->numStmts() == 2);
   assert(serial->blockStyle() == BlockStyle::IMPLICIT);
-  assert(serial->stmt(0)->isVariable());
+  assert(serial->stmt(0)->isComment());
+  assert(serial->stmt(1)->isVariable());
 }
 
 static void test2(Parser* parser) {
   auto parseResult = parser->parseString("test2.chpl",
       "/* comment 1 */\n"
-      "serial { var a; }\n");
+      "serial /* comment 2 */ {\n"
+      "  /* comment 3 */\n"
+      "  var a;\n"
+      "  /* comment 4 */\n"
+      "}\n"
+      "/* comment 5 */\n");
   assert(parseResult.errors.size() == 0);
   assert(parseResult.topLevelExpressions.size() == 1);
   assert(parseResult.topLevelExpressions[0]->isModule());
   auto mod = parseResult.topLevelExpressions[0]->toModule();
-  assert(mod->numStmts() == 2);
+  assert(mod->numStmts() == 3);
   assert(mod->stmt(0)->isComment());
   assert(mod->stmt(1)->isSerial());
   const Serial* serial = mod->stmt(1)->toSerial();
   assert(serial != nullptr);
   assert(serial->condition() == nullptr);
-  assert(serial->numStmts() == 1);
+  assert(serial->numStmts() == 4);
   assert(serial->blockStyle() == BlockStyle::EXPLICIT);
-  assert(serial->stmt(0)->isVariable());
+  assert(serial->stmt(0)->isComment());
+  assert(serial->stmt(1)->isComment());
+  assert(serial->stmt(2)->isVariable());
+  assert(serial->stmt(3)->isComment());
 }
 
 static void test3(Parser* parser) {
   auto parseResult = parser->parseString("test3.chpl",
       "/* comment 1 */\n"
-      "serial foo { var a; }\n");
+      "serial /* comment 2 */ foo /* comment 3 */ {\n"
+      "  /* comment 4 */\n"
+      "  var a;\n"
+      "  /* comment 5 */\n"
+      "}\n"
+      "/* comment 6 */\n");
   assert(parseResult.errors.size() == 0);
   assert(parseResult.topLevelExpressions.size() == 1);
   assert(parseResult.topLevelExpressions[0]->isModule());
   auto mod = parseResult.topLevelExpressions[0]->toModule();
-  assert(mod->numStmts() == 2);
+  assert(mod->numStmts() == 3);
   assert(mod->stmt(0)->isComment());
   assert(mod->stmt(1)->isSerial());
+  assert(mod->stmt(2)->isComment());
   const Serial* serial = mod->stmt(1)->toSerial();
   assert(serial != nullptr);
   assert(serial->condition() != nullptr);
   assert(serial->condition()->isIdentifier());
-  assert(serial->numStmts() == 1);
+  assert(serial->numStmts() == 4);
   assert(serial->blockStyle() == BlockStyle::EXPLICIT);
-  assert(serial->stmt(0)->isVariable());
+  assert(serial->stmt(0)->isComment());
+  assert(serial->stmt(1)->isComment());
+  assert(serial->stmt(2)->isVariable());
+  assert(serial->stmt(3)->isComment());
 }
 
 static void test4(Parser* parser) {
@@ -153,53 +180,6 @@ static void test5(Parser* parser) {
   assert(serial->stmt(0)->isVariable());
 }
 
-// Test nested comments.
-static void test6(Parser* parser) {
-  auto parseResult = parser->parseString("test6.chpl",
-      "/* comment 1 */\n"
-      "serial foo {\n"
-      "  /* comment 2 */\n"
-      "  var a;\n"
-      "  /* comment 3 */\n"
-      "}\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto mod = parseResult.topLevelExpressions[0]->toModule();
-  assert(mod->numStmts() == 2);
-  assert(mod->stmt(0)->isComment());
-  assert(mod->stmt(1)->isSerial());
-  const Serial* serial = mod->stmt(1)->toSerial();
-  assert(serial != nullptr);
-  assert(serial->blockStyle() == BlockStyle::EXPLICIT);
-  assert(serial->condition() != nullptr);
-  assert(serial->condition()->isIdentifier());
-  assert(serial->numStmts() == 3);
-  assert(serial->stmt(0)->isComment());
-  assert(serial->stmt(1)->isVariable());
-  assert(serial->stmt(2)->isComment());
-}
-
-// Test nested comments on do.
-static void test7(Parser* parser) {
-  auto parseResult = parser->parseString("test7.chpl",
-      "/* comment 1 */\n"
-      "serial do\n"
-      "  /* comment 2 */\n"
-      "  var a;\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto mod = parseResult.topLevelExpressions[0]->toModule();
-  const Serial* serial = mod->stmt(1)->toSerial();
-  assert(serial != nullptr);
-  assert(serial->blockStyle() == BlockStyle::IMPLICIT);
-  assert(serial->condition() == nullptr);
-  assert(serial->numStmts() == 2);
-  assert(serial->stmt(0)->isComment());
-  assert(serial->stmt(1)->isVariable());
-}
-
 int main() {
   Context context;
   Context* ctx = &context;
@@ -213,8 +193,6 @@ int main() {
   test3(p);
   test4(p);
   test5(p);
-  test6(p);
-  test7(p);
 
   return 0;
 }

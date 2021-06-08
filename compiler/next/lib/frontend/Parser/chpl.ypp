@@ -720,6 +720,7 @@ stmt:
   {
     // Pull up any comments that appear before the TLOCAL keyword.
     auto comments = context->gatherCommentsFromList($3.exprList, @1);
+    context->discardExprLevelComments(true, @2, @3, $3);
     auto blockStyle = context->determineBlockStyle($3);
     auto statements = context->consumeAndFlattenTopLevelBlocks($3);
     auto node = Local::build(BUILDER, LOC(@1), toOwned($2),
@@ -731,6 +732,7 @@ stmt:
   {
     // Pull up any comments that appear before the TLOCAL keyword.
     auto comments = context->gatherCommentsFromList($2.exprList, @1);
+    context->discardExprLevelComments(false, @2, @2, $2);
     auto blockStyle = context->determineBlockStyle($2);
     auto statements = context->consumeAndFlattenTopLevelBlocks($2);
     auto node = Local::build(BUILDER, LOC(@1), blockStyle,
@@ -742,6 +744,7 @@ stmt:
   {
     // Pull up any comments that appear before the TSERIAL keyword.
     auto comments = context->gatherCommentsFromList($3.exprList, @1);
+    context->discardExprLevelComments(true, @2, @3, $3);
     auto blockStyle = context->determineBlockStyle($3);
     auto statements = context->consumeAndFlattenTopLevelBlocks($3);
     auto node = Serial::build(BUILDER, LOC(@1), toOwned($2),
@@ -753,6 +756,7 @@ stmt:
   {
     // Pull up any comments that appear before the TSERIAL keyword.
     auto comments = context->gatherCommentsFromList($2.exprList, @1);
+    context->discardExprLevelComments(false, @2, @2, $2);
     auto blockStyle = context->determineBlockStyle($2);
     auto statements = context->consumeAndFlattenTopLevelBlocks($2);
     auto node = Serial::build(BUILDER, LOC(@1), blockStyle,

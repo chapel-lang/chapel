@@ -209,6 +209,14 @@ struct ParserContext {
 
   ASTList consumeAndFlattenTopLevelBlocks(BlockOrDo blockOrDo);
 
+  // Given 'local <expr> do ...;' discard all comments before 'do'.
+  // Given 'local do ...;' discard all comments before 'do'.
+  // Given 'local <expr> { ... }' discard all comments before 'expr'.
+  // Given 'local { ... }' discard no comments .
+  void discardExprLevelComments(bool hasExpr, YYLTYPE locExpr,
+                                YYLTYPE locDoStmt,
+                                BlockOrDo blockOrDo);
+
   CommentsAndStmt buildBracketLoopStmt(YYLTYPE locLeftBracket,
                                        YYLTYPE locIndex,
                                        ParserExprList* indexExprs,
