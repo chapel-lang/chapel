@@ -242,6 +242,8 @@ struct ResolvingScope {
   }
 };
 
+// TODO: can we use an AST Visitor for the resolver?
+
 // resolve some ast, recursively
 static void resolveAST(Context* context,
                        const ASTNode* ast,
