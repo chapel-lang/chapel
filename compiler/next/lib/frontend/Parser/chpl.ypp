@@ -739,7 +739,16 @@ stmt:
                              std::move(statements));
     $$ = { .comments=comments, .stmt=node.release() };
   }
-| TON expr do_stmt          { $$ = context->finishStmt(TODOSTMT(@$)); }
+| TON expr do_stmt
+  {
+    auto comments = context->gatherCommentsFromList($3.exprList, @1);
+    context->discardExprLevelComments(true, @2, @3, $3);
+    auto blockStyle = context->determineBlockStyle($3);
+    auto statements = context->consumeAndFlattenTopLevelBlocks($3);
+    auto node = On::build(BUILDER, LOC(@1), toOwned($2), blockStyle,
+                          std::move(statements));
+    $$ = { .comments=comments, .stmt=node.release() };
+  }
 | TSERIAL expr do_stmt
   {
     // Pull up any comments that appear before the TSERIAL keyword.
