@@ -1,6 +1,6 @@
 # Many of these packages have newer versions that work on Python 3 only.
-Jinja2==2.11.2
-MarkupSafe==1.1.1
+Jinja2==3.0.1
+MarkupSafe==2.0.1
 Pygments==2.7.1
 Sphinx==3.2.1
 docutils==0.16
