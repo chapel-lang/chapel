@@ -496,18 +496,21 @@ const char* Symbol::getDeprecationMsg() const {
 void Symbol::generateDeprecationWarning(Expr* context) {
   Symbol* contextParent = context->parentSymbol;
   bool parentDeprecated = contextParent->hasFlag(FLAG_DEPRECATED);
-  if (isArgSymbol(contextParent)) {
-    // References to types for ArgSymbols have the ArgSymbol as the parent, but
-    // we care if the parent function is deprecated
-    if (contextParent->defPoint &&
-        contextParent->defPoint->parentSymbol->hasFlag(FLAG_DEPRECATED))
-      parentDeprecated = true;
+  bool compilerGenerated = contextParent->hasFlag(FLAG_COMPILER_GENERATED);
+
+  // Traverse until we find a deprecated parent symbol, a compiler generated
+  // parent symbol, or until we reach the highest outer scope
+  while (contextParent != NULL && contextParent->defPoint != NULL &&
+         contextParent->defPoint->parentSymbol != NULL &&
+         parentDeprecated != true && compilerGenerated != true) {
+    contextParent = contextParent->defPoint->parentSymbol;
+    parentDeprecated = contextParent->hasFlag(FLAG_DEPRECATED);
+    compilerGenerated = contextParent->hasFlag(FLAG_COMPILER_GENERATED);
   }
 
   // Only generate the warning if the location with the reference is not
   // created by the compiler or also deprecated.
-  if (!contextParent->hasFlag(FLAG_COMPILER_GENERATED) &&
-      !parentDeprecated) {
+  if (!compilerGenerated && !parentDeprecated) {
     USR_WARN(context, "%s", getDeprecationMsg());
   }
 }
