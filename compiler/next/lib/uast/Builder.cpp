@@ -261,6 +261,9 @@ void Builder::Result::updateFilePaths(Context* context, const Result& keep) {
   for (auto & topLevelExpression : keep.topLevelExpressions) {
     if (Module* module = topLevelExpression->toModule()) {
       UniqueString moduleName = module->name();
+      printf("Setting file path for module name %s %s\n",
+             moduleName.c_str(),
+             path.c_str());
       context->setFilePathForModuleName(moduleName, path);
     } else if (topLevelExpression->isComment()) {
       // ignore comments

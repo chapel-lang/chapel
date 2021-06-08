@@ -84,6 +84,7 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
     AST_BEGIN_SUBCLASSES(Loop)         // old AST: LoopExpr / LoopStmt
 
       AST_NODE(DoWhile)                // old AST: DoWhileStmt
+      AST_NODE(While)                  // old AST: WhileStmt
 
       AST_BEGIN_SUBCLASSES(IndexableLoop)
         AST_NODE(BracketLoop)
@@ -92,8 +93,6 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
         AST_NODE(Forall)                 // old AST: ForallStmt / LoopExpr
         AST_NODE(Foreach)                //
       AST_END_SUBCLASSES(IndexableLoop)
-
-      AST_NODE(While)                  // old AST: WhileStmt
 
     AST_END_SUBCLASSES(Loop)
 

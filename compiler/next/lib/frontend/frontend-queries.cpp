@@ -157,8 +157,17 @@ const LocationsMap& fileLocations(Context* context, UniqueString path) {
 const Location& locate(Context* context, const ASTNode* ast) {
   QUERY_BEGIN(locate, context, ast);
 
-  // Ask the context for the filename from the ID
-  UniqueString path = context->filePathForID(ast->id());
+  UniqueString path;
+
+  const Module* astMod = ast->toModule();
+  if (astMod && astMod->id().symbolPath().isEmpty()) {
+    // it is a top-level module
+    path = context->filePathForModuleName(astMod->name());
+  } else {
+    // Ask the context for the filename from the ID
+    path = context->filePathForID(ast->id());
+  }
+
   // Get the map of ID to Location
   Location result(path);
   const LocationsMap& map = fileLocations(context, path);

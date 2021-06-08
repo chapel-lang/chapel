@@ -1,5 +1,6 @@
 /*
- * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -17,21 +18,16 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/ImagLiteral.h"
+#ifndef _CONVERT_UAST_H_
+#define _CONVERT_UAST_H_
 
-#include "chpl/uast/Builder.h"
+#include "baseAST.h"
+#include "alist.h"
 
-namespace chpl {
-namespace uast {
+#include "chpl/frontend/frontend-queries.h"
+#include "chpl/uast/Module.h"
 
+ModuleSymbol* convertToplevelModule(chpl::Context* context,
+                                    const chpl::uast::Module* mod);
 
-owned<ImagLiteral> ImagLiteral::build(Builder* builder, Location loc,
-                                      double value, UniqueString text) {
-  ImagLiteral* ret = new ImagLiteral(value, text);
-  builder->noteLocation(ret, loc);
-  return toOwned(ret);
-}
-
-
-} // namespace uast
-} // namespace chpl
+#endif

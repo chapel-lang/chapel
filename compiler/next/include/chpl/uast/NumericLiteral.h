@@ -21,6 +21,7 @@
 #define CHPL_UAST_NUMERICLITERAL_H
 
 #include "chpl/queries/Location.h"
+#include "chpl/queries/UniqueString.h"
 #include "chpl/uast/Literal.h"
 
 namespace chpl {
@@ -34,12 +35,12 @@ template <typename ValueT>
 class NumericLiteral : public Literal {
  protected:
   ValueT value_;
-  int base_;
+  UniqueString text_;
 
-  NumericLiteral(ASTTag tag, ValueT value, int base)
+  NumericLiteral(ASTTag tag, ValueT value, UniqueString text)
     : Literal(tag),
       value_(value),
-      base_(base)
+      text_(text)
   { }
 
   bool contentsMatchInner(const ASTNode* other) const override {
@@ -47,10 +48,11 @@ class NumericLiteral : public Literal {
     const NumericLiteral<ValueT>* rhs = (const NumericLiteral<ValueT>*) other;
     return lhs->literalContentsMatchInner(rhs) &&
            lhs->value_ == rhs->value_ &&
-           lhs->base_ == rhs->base_;
+           lhs->text_ == rhs->text_;
   }
   void markUniqueStringsInner(Context* context) const override {
     literalMarkUniqueStringsInner(context);
+    text_.mark(context);
   }
 
  public:
@@ -62,9 +64,9 @@ class NumericLiteral : public Literal {
   ValueT value() const { return value_; }
  
   /**
-   Returns the base of the number when it was parsed.
+   Returns the number as it was written in the source code (as a string)
    */
-  int base() const { return base_; }
+  UniqueString text() const { return text_; }
 };
 
 template <typename ValueT>

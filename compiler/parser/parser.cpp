@@ -20,20 +20,23 @@
 
 #include "parser.h"
 
+#include "ImportStmt.h"
 #include "bison-chapel.h"
 #include "build.h"
 #include "config.h"
+#include "convert-uast.h"
 #include "countTokens.h"
 #include "docsDriver.h"
 #include "driver.h"
 #include "expr.h"
 #include "files.h"
 #include "flex-chapel.h"
-#include "ImportStmt.h"
 #include "insertLineNumbers.h"
 #include "stringutil.h"
 #include "symbol.h"
 #include "wellknown.h"
+
+#include "view.h" // TODO -- remove
 
 #include "chpl/frontend/frontend-queries.h"
 
@@ -75,10 +78,10 @@ static ModuleSymbol* parseFile(const char* fileName,
                                bool        namedOnCommandLine,
                                bool        include);
 
-static ModuleSymbol* uASTParseFile(const char* fileName,
-                                   ModTag      modTag,
-                                   bool        namedOnCommandLine,
-                                   bool        include);
+static void uASTParseFile(const char* fileName,
+                          ModTag      modTag,
+                          bool        namedOnCommandLine,
+                          bool        include);
 
 
 static const char*   stdModNameToPath(const char* modName,
@@ -761,10 +764,10 @@ static ModuleSymbol* parseFile(const char* path,
 }
 
 
-static ModuleSymbol* uASTParseFile(const char* fileName,
-                                   ModTag      modTag,
-                                   bool        namedOnCommandLine,
-                                   bool        include) {
+static void uASTParseFile(const char* fileName,
+                          ModTag      modTag,
+                          bool        namedOnCommandLine,
+                          bool        include) {
 
   if (gContext == nullptr)
     INT_FATAL("compiler library context not initialized");
@@ -779,12 +782,13 @@ static ModuleSymbol* uASTParseFile(const char* fileName,
   for (auto mod : modules) {
     INT_ASSERT(mod != nullptr);
     chpl::uast::ASTNode::dump(mod);
-    // TODO: convert
+
+    ModuleSymbol* got = convertToplevelModule(gContext, mod);
+
+    got->addFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE);
+
+    nprint_view(got);
   }
-
-  USR_FATAL("ending compilation since the rest is not implemented");
-
-  return nullptr;
 }
 
 static bool containsOnlyModules(BlockStmt* block, const char* path) {
