@@ -19,7 +19,7 @@ zmq_found = find_library('zmq') is not None
 is_not_local = os.getenv('CHPL_COMM', 'none') != 'none'
 
 # Multilocale stuff does not work with LLVM right now.
-is_llvm = os.getenv('CHPL_TARGET_COMPILER', 'none') != 'llvm'
+is_llvm = os.getenv('CHPL_TARGET_COMPILER', 'none') == 'llvm'
 
 # OK contains the conditions that must be met to run the test
 OK = is_not_local and zmq_found and not is_llvm
