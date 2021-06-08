@@ -1,0 +1,5 @@
+deepDepInDep.chpl:23: In function 'main':
+deepDepInDep.chpl:24: warning: Deep is deprecated
+deepDepInDep.chpl:25: warning: Deep is deprecated
+17
+17
