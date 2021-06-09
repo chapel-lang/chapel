@@ -1,5 +1,0 @@
-error message: too many deprecation warnings at execution for multiple locales
-#17894
-
-When this is resolved, we can remove the .numlocales files from the other config
-tests in this directory
