@@ -345,18 +345,17 @@ BaseAST::BaseAST(AstTag type) :
   astloc(yystartlineno, yyfilename)
 {
   checkid(id);
-  if (astloc.filename) {
+  if (!astloc.isEmpty()) {
     // OK, set from yyfilename
   } else {
-    if (currentAstLoc.filename) {
+    if (!currentAstLoc.isEmpty()) {
       astloc = currentAstLoc;
     } else {
       // neither yy* nor currentAstLoc are set
       if (developer || fVerify) {
         INT_FATAL("no line number available");
       } else {
-        astloc.filename = "[file unknown]";
-        astloc.lineno = 0;
+        astloc = astlocT(-1, astr("[file unknown]"));
       }
     }
   }
@@ -365,11 +364,11 @@ BaseAST::BaseAST(AstTag type) :
 const std::string BaseAST::tabText = "   ";
 
 int BaseAST::linenum() const {
-  return astloc.lineno;
+  return astloc.lineno();
 }
 
 const char* BaseAST::fname() const {
-  return astloc.filename;
+  return astloc.filename();
 }
 
 const char* BaseAST::stringLoc(void) const {

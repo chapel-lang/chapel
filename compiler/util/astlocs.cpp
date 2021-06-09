@@ -20,13 +20,63 @@
 
 #include "astlocs.h"
 
-#include "stringutil.h"
+#include "chpl/frontend/frontend-queries.h" // for locateID
 #include "expr.h"
 #include "stmt.h"
+#include "stringutil.h"
 
 #include <cstddef>
 
 astlocT currentAstLoc(0,NULL);
+
+/************************************* | **************************************
+*                                                                             *
+* Definitions for astlocT                                                     *
+*                                                                             *
+************************************** | *************************************/
+int astlocT::compare(const astlocT& other) const {
+  if (this->filename_ == nullptr && other.filename_ == nullptr) {
+    // compare IDs
+    return this->id_.compare(other.id_);
+  } else if (this->filename_ != nullptr && other.filename_ != nullptr) {
+    // compare filename and line
+    int strResult = strcmp(this->filename_, other.filename_);
+    if (strResult == 0)
+      return this->lineno_ < other.lineno_;
+    else
+      return strResult < 0;
+  } else {
+    // filename is nullptr in one but not the other
+    // (arbitrarily) consider no filename < filename
+    if (this->filename_ == nullptr)
+      return -1;
+    else
+      return 1;
+  }
+}
+
+void astlocT::convertIdToFileLine(const char*& filename, int& lineno) const {
+  if (!this->id_.isEmpty()) {
+    // figure out the location from the ID
+    chpl::Location loc = chpl::frontend::locateID(gContext, this->id_);
+    filename = astr(loc.path().c_str());
+    lineno = loc.line();
+  } else {
+    filename = astr("<unknown location>");
+    lineno = 0;
+  }
+
+  // cache the result in the fields for later use
+  this->filename_ = filename;
+  this->lineno_ = lineno;
+}
+
+const char* astlocT::stringLoc() const {
+  char linenoBuf[16];
+
+  snprintf(linenoBuf, sizeof(linenoBuf), "%d", this->lineno());
+  return astr(this->filename(), ":", linenoBuf);
+}
 
 /************************************* | **************************************
 *                                                                             *
@@ -46,8 +96,7 @@ astlocMarker::astlocMarker(astlocT newAstLoc)
 astlocMarker::astlocMarker(int lineno, const char* filename)
   : previousAstLoc(currentAstLoc)
 {
-  currentAstLoc.lineno   = lineno;
-  currentAstLoc.filename = astr(filename);
+  currentAstLoc = astlocT(lineno, astr(filename));
 }
 
 // destructor, invoked upon leaving SET_LINENO's scope

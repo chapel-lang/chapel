@@ -38,8 +38,9 @@ namespace frontend {
 
   const uast::Builder::Result& parseFile(Context* context, UniqueString path);
 
-  using LocationsMap = std::unordered_map<const uast::ASTNode*, Location>;
+  using LocationsMap = std::unordered_map<ID, Location>;
   const LocationsMap& fileLocations(Context* context, UniqueString path);
+  const Location& locateID(Context* context, ID id);
   const Location& locate(Context* context, const uast::ASTNode* ast);
 
   using ModuleVec = std::vector<const uast::Module*>;

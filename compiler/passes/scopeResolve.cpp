@@ -1135,8 +1135,8 @@ static void errorDotInsideWithClause(UnresolvedSymExpr* origUSE,
   // As of this writing, a with-clause can be duplicated in the AST.
   // This code avoids multiple error messages for the same symbol.
 
-  std::pair<const char*, int> markLoc(origUSE->astloc.filename,
-                                      origUSE->astloc.lineno);
+  std::pair<const char*, int> markLoc(origUSE->astloc.filename(),
+                                      origUSE->astloc.lineno());
 
   WFDIWmark                   mark(markLoc, origUSE->unresolved);
 
@@ -1432,8 +1432,8 @@ static void resolveModuleCall(CallExpr* call) {
                              mbrName,
                              uSE->unresolved);
               USR_PRINT("module '%s' was renamed from '%s' at %s:%d",
-                        uSE->unresolved, mod->name, renameLoc->filename,
-                        renameLoc->lineno);
+                        uSE->unresolved, mod->name, renameLoc->filename(),
+                        renameLoc->lineno());
 
             }
           }
@@ -1457,8 +1457,8 @@ static void resolveModuleCall(CallExpr* call) {
                              mbrName,
                              uSE->unresolved);
               USR_PRINT("module '%s' was renamed from '%s' at %s:%d",
-                        uSE->unresolved, mod->name, renameLoc->filename,
-                        renameLoc->lineno);
+                        uSE->unresolved, mod->name, renameLoc->filename(),
+                        renameLoc->lineno());
             }
           }
         }
@@ -1621,15 +1621,15 @@ printConflictingSymbols(std::vector<Symbol*>& symbols, Symbol* sym,
       if (VisibilityStmt* reexport = reexportPts[another]) {
         USR_PRINT(another,
                   "symbol '%s', defined here, was last reexported at %s:%d",
-                  another->name, reexport->astloc.filename,
-                  reexport->astloc.lineno);
+                  another->name, reexport->astloc.filename(),
+                  reexport->astloc.lineno());
       }
       astlocT* renameLoc = renameLocs[another];
       if (storeRenames && renameLoc != NULL) {
         USR_PRINT(another,
                   "symbol '%s', defined here, was renamed to '%s' at %s:%d",
-                  another->name, nameUsed, renameLoc->filename,
-                  renameLoc->lineno);
+                  another->name, nameUsed, renameLoc->filename(),
+                  renameLoc->lineno());
       } else {
         USR_PRINT(another, "also defined here");
       }
@@ -1661,12 +1661,12 @@ void checkConflictingSymbols(std::vector<Symbol *>& symbols,
 
         if (VisibilityStmt* reexport = reexportPts[sym]) {
           USR_PRINT("'%s' was last reexported at %s:%d", name,
-                    reexport->astloc.filename, reexport->astloc.lineno);
+                    reexport->astloc.filename(), reexport->astloc.lineno());
         }
         astlocT* symRenameLoc = renameLocs[sym];
         if (storeRenames && symRenameLoc != NULL) {
           USR_PRINT("'%s' was renamed to '%s' at %s:%d", sym->name,
-                    name, symRenameLoc->filename, symRenameLoc->lineno);
+                    name, symRenameLoc->filename(), symRenameLoc->lineno());
         }
         printConflictingSymbols(symbols, sym, name, storeRenames, renameLocs,
                                 reexportPts);

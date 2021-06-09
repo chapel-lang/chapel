@@ -268,8 +268,7 @@ void addMinMax(const char* prefix, int nbits, bool isSigned)
 
   astlocT prevloc = currentAstLoc;
 
-  currentAstLoc.lineno = 0;
-  currentAstLoc.filename = astr("<internal>");
+  currentAstLoc = astlocT(0, astr("<internal>"));
 
   const char* min_name = astr(prefix, "_MIN");
   const char* max_name = astr(prefix, "_MAX");

@@ -156,22 +156,27 @@ struct Converter {
 
   /// IndexableLoops ///
   BlockStmt* convertBracketLoop(const uast::BracketLoop* node) {
+    INT_FATAL("TODO");
     return nullptr;
   }
 
   BlockStmt* convertCoforall(const uast::Coforall* node) {
+    INT_FATAL("TODO");
     return nullptr;
   }
 
   BlockStmt* convertFor(const uast::For* node) {
+    INT_FATAL("TODO");
     return nullptr;
   }
 
   BlockStmt* convertForall(const uast::Forall* node) {
+    INT_FATAL("TODO");
     return nullptr;
   }
 
   BlockStmt* convertForeach(const uast::Foreach* node) {
+    INT_FATAL("TODO");
     return nullptr;
   }
 
@@ -245,6 +250,7 @@ struct Converter {
   /// Calls ///
 
   Expr* convertDot(const uast::Dot* node) {
+    INT_FATAL("TODO");
     return nullptr;
   }
 
@@ -270,34 +276,41 @@ struct Converter {
   }
 
   Expr* convertOpCall(const uast::OpCall* node) {
+    INT_FATAL("TODO");
     return nullptr;
   }
 
   Expr* convertPrimCall(const uast::PrimCall* node) {
+    INT_FATAL("TODO");
     return nullptr;
   }
 
   Expr* convertZip(const uast::Zip* node) {
+    INT_FATAL("TODO");
     return nullptr;
   }
 
   /// Decls ///
 
   Expr* convertMultiDecl(const uast::MultiDecl* node) {
+    INT_FATAL("TODO");
     return nullptr;
   }
 
   Expr* convertTupleDecl(const uast::TupleDecl* node) {
+    INT_FATAL("TODO");
     return nullptr;
   }
 
   /// NamedDecls ///
 
   Expr* convertEnumElement(const uast::EnumElement* node) {
+    INT_FATAL("TODO");
     return nullptr;
   }
 
   Expr* convertFunction(const uast::Function* node) {
+    INT_FATAL("TODO");
     return nullptr;
   }
 
@@ -325,18 +338,22 @@ struct Converter {
   /// VarLikeDecls ///
 
   Expr* convertFormal(const uast::Formal* node) {
+    INT_FATAL("TODO");
     return nullptr;
   }
   Expr* convertTaskVar(const uast::TaskVar* node) {
+    INT_FATAL("TODO");
     return nullptr;
   }
   Expr* convertVariable(const uast::Variable* node) {
+    INT_FATAL("TODO");
     return nullptr;
   }
 
   /// TypeDecls
 
   Expr* convertEnum(const uast::Enum* node) {
+    INT_FATAL("TODO");
     return nullptr;
   }
 };

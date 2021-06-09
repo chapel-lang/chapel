@@ -145,38 +145,38 @@ const LocationsMap& fileLocations(Context* context, UniqueString path) {
   // Get the result of parsing
   const uast::Builder::Result& p = parseFile(context, path);
   // Create a map of ast to Location
-  std::unordered_map<const ASTNode*, Location> result(p.locations.size());
+  std::unordered_map<ID, Location> result(p.locations.size());
   for (auto& pair : p.locations) {
-    if (pair.first != nullptr)
-      result.insert(pair); // Insert { ASTNode, Location } into result map
+    const ASTNode* ast = pair.first;
+    Location loc = pair.second;
+    if (ast != nullptr && !ast->id().isEmpty()) {
+      result.insert({ast->id(), loc});
+    }
   }
 
   return QUERY_END(result);
 }
 
-const Location& locate(Context* context, const ASTNode* ast) {
-  QUERY_BEGIN(locate, context, ast);
+const Location& locateID(Context* context, ID id) {
+  QUERY_BEGIN(locateID, context, id);
 
-  UniqueString path;
-
-  const Module* astMod = ast->toModule();
-  if (astMod && astMod->id().symbolPath().isEmpty()) {
-    // it is a top-level module
-    path = context->filePathForModuleName(astMod->name());
-  } else {
-    // Ask the context for the filename from the ID
-    path = context->filePathForID(ast->id());
-  }
+  // Ask the context for the filename from the ID
+  UniqueString path = context->filePathForID(id);
 
   // Get the map of ID to Location
   Location result(path);
   const LocationsMap& map = fileLocations(context, path);
-  auto search = map.find(ast);
+  auto search = map.find(id);
   if (search != map.end()) {
     result = search->second;
   }
 
   return QUERY_END(result);
+}
+
+// this is just a convenient wrapper around locating with the id
+const Location& locate(Context* context, const ASTNode* ast) {
+  return locateID(context, ast->id());
 }
 
 const ModuleVec& parse(Context* context, UniqueString path) {

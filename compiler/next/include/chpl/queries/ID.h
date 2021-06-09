@@ -111,6 +111,19 @@ class ID final {
     return !(*this == other);
   }
 
+  bool operator<(const ID& other) const {
+    return this->compare(other) < 0;
+  }
+  bool operator<=(const ID& other) const {
+    return this->compare(other) <= 0;
+  }
+  bool operator>(const ID& other) const {
+    return this->compare(other) > 0;
+  }
+  bool operator>=(const ID& other) const {
+    return this->compare(other) >= 0;
+  }
+
   bool isEmpty() const {
     return symbolPath_.isEmpty();
   }

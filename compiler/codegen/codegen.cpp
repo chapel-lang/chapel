@@ -623,8 +623,8 @@ genFinfo(std::vector<FnSymbol*> & fSymbols, bool isHeader) {
 
   forv_Vec(FnSymbol, fn, fSymbols) {
     const char* fn_name = fn->cname;
-    int fileno = getFilenameLookupPosition(fn->astloc.filename);
-    int lineno = fn->astloc.lineno;
+    int fileno = getFilenameLookupPosition(fn->astloc.filename());
+    int lineno = fn->astloc.lineno();
 
     GenRet gen;
 
@@ -2217,7 +2217,7 @@ static const char* getClangBuiltinWrappedName(const char* name)
 static void setupDefaultFilenames() {
   if (executableFilename[0] == '\0') {
     ModuleSymbol* mainMod = ModuleSymbol::mainModule();
-    const char* mainModFilename = mainMod->astloc.filename;
+    const char* mainModFilename = mainMod->astloc.filename();
     const char* filename = stripdirectories(mainModFilename);
 
     // "Executable" name should be given a "lib" prefix in library compilation,
@@ -2455,7 +2455,7 @@ static void codegenPartTwo() {
           // and no compile flags, since I can't figure out how to get that either.
           const char *current_dir = "./";
           const char *empty_string = "";
-          debug_info->create_compile_unit(currentModule->astloc.filename, current_dir, false, empty_string);
+          debug_info->create_compile_unit(currentModule->astloc.filename(), current_dir, false, empty_string);
           break;
         }
       }
