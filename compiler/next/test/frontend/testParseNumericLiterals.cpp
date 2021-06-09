@@ -40,8 +40,7 @@ using namespace frontend;
 static void testIntLiteral(Parser* parser,
                            const char* testname,
                            const char* lit,
-                           int64_t expectValue,
-                           int expectBase) {
+                           int64_t expectValue) {
   std::string toparse = "var x = ";
   toparse += lit;
   toparse += ";\n";
@@ -56,13 +55,12 @@ static void testIntLiteral(Parser* parser,
   auto intLit = variable->initExpression()->toIntLiteral();
   assert(intLit);
   assert(intLit->value() == expectValue);
-  assert(intLit->base() == expectBase);
+  assert(0 == intLit->text().compare(lit));
 }
 static void testUintLiteral(Parser* parser,
                             const char* testname,
                             const char* lit,
-                            uint64_t expectValue,
-                            int expectBase) {
+                            uint64_t expectValue) {
   std::string toparse = "var x = ";
   toparse += lit;
   toparse += ";\n";
@@ -77,13 +75,12 @@ static void testUintLiteral(Parser* parser,
   auto uintLit = variable->initExpression()->toUintLiteral();
   assert(uintLit);
   assert(uintLit->value() == expectValue);
-  assert(uintLit->base() == expectBase);
+  assert(0 == uintLit->text().compare(lit));
 }
 static void testRealLiteral(Parser* parser,
                             const char* testname,
                             const char* lit,
-                            double expectValue,
-                            int expectBase) {
+                            double expectValue) {
   std::string toparse = "var x = ";
   toparse += lit;
   toparse += ";\n";
@@ -98,13 +95,12 @@ static void testRealLiteral(Parser* parser,
   auto realLit = variable->initExpression()->toRealLiteral();
   assert(realLit);
   assert(realLit->value() == expectValue);
-  assert(realLit->base() == expectBase);
+  assert(0 == realLit->text().compare(lit));
 }
 static void testImagLiteral(Parser* parser,
                             const char* testname,
                             const char* lit,
-                            double expectValue,
-                            int expectBase) {
+                            double expectValue) {
   std::string toparse = "var x = ";
   toparse += lit;
   toparse += ";\n";
@@ -119,7 +115,7 @@ static void testImagLiteral(Parser* parser,
   auto imagLit = variable->initExpression()->toImagLiteral();
   assert(imagLit);
   assert(imagLit->value() == expectValue);
-  assert(imagLit->base() == expectBase);
+  assert(0 == imagLit->text().compare(lit));
 }
 
 
@@ -147,91 +143,91 @@ int main() {
   auto parser = Parser::build(ctx);
   Parser* p = parser.get();
 
-  testIntLiteral(p, "testAb.chpl", "0b0", 0, 2);
-  testIntLiteral(p, "testAB.chpl", "0b0", 0, 2);
-  testIntLiteral(p, "testAd.chpl", "0", 0, 10);
-  testIntLiteral(p, "testAo.chpl", "0o0", 0, 8);
-  testIntLiteral(p, "testAO.chpl", "0O0", 0, 8);
-  testIntLiteral(p, "testAh.chpl", "0x0", 0, 16);
-  testIntLiteral(p, "testAH.chpl", "0X0", 0, 16);
+  testIntLiteral(p, "testAb.chpl", "0b0", 0);
+  testIntLiteral(p, "testAB.chpl", "0b0", 0);
+  testIntLiteral(p, "testAd.chpl", "0", 0);
+  testIntLiteral(p, "testAo.chpl", "0o0", 0);
+  testIntLiteral(p, "testAO.chpl", "0O0", 0);
+  testIntLiteral(p, "testAh.chpl", "0x0", 0);
+  testIntLiteral(p, "testAH.chpl", "0X0", 0);
 
-  testIntLiteral(p, "testBd.chpl", "1", 1, 10);
+  testIntLiteral(p, "testBd.chpl", "1", 1);
 
-  testIntLiteral(p, "testCb.chpl", "0b10", 2, 2);
-  testIntLiteral(p, "testCB.chpl", "0B10", 2, 2);
-  testIntLiteral(p, "testCd.chpl", "10", 10, 10);
-  testIntLiteral(p, "testCo.chpl", "0o10", 8, 8);
-  testIntLiteral(p, "testCO.chpl", "0O10", 8, 8);
-  testIntLiteral(p, "testCh.chpl", "0x10", 16, 16);
-  testIntLiteral(p, "testCH.chpl", "0X10", 16, 16);
+  testIntLiteral(p, "testCb.chpl", "0b10", 2);
+  testIntLiteral(p, "testCB.chpl", "0B10", 2);
+  testIntLiteral(p, "testCd.chpl", "10", 10);
+  testIntLiteral(p, "testCo.chpl", "0o10", 8);
+  testIntLiteral(p, "testCO.chpl", "0O10", 8);
+  testIntLiteral(p, "testCh.chpl", "0x10", 16);
+  testIntLiteral(p, "testCH.chpl", "0X10", 16);
 
-  testIntLiteral(p, "testDd.chpl", "4294967296", 4294967296, 10);
+  testIntLiteral(p, "testDd.chpl", "4294967296", 4294967296);
   testIntLiteral(p, "testEe.chpl",
-                 "4611686018427387904", 4611686018427387904, 10);
+                 "4611686018427387904", 4611686018427387904);
 
   testUintLiteral(p, "testFb.chpl",
       "0b1111111111111111111111111111111111111111111111111111111111111111",
-      18446744073709551615ull, 2);
+      18446744073709551615ull);
   testUintLiteral(p, "testFB.chpl",
       "0B1111111111111111111111111111111111111111111111111111111111111111",
-      18446744073709551615ull, 2);
+      18446744073709551615ull);
   testUintLiteral(p, "testFd.chpl",
-                 "18446744073709551615", 18446744073709551615ull, 10);
+                 "18446744073709551615", 18446744073709551615ull);
   testUintLiteral(p, "testFo.chpl",
-                 "0o1777777777777777777777", 18446744073709551615ull, 8);
+                 "0o1777777777777777777777", 18446744073709551615ull);
   testUintLiteral(p, "testFO.chpl",
-                 "0O1777777777777777777777", 18446744073709551615ull, 8);
+                 "0O1777777777777777777777", 18446744073709551615ull);
   testUintLiteral(p, "testFh.chpl",
-                 "0xFFFFFFFFFFFFFFFF", 18446744073709551615ull, 16);
+                 "0xFFFFFFFFFFFFFFFF", 18446744073709551615ull);
   testUintLiteral(p, "testFh2.chpl",
-                 "0xffffffffffffffff", 18446744073709551615ull, 16);
+                 "0xffffffffffffffff", 18446744073709551615ull);
   testUintLiteral(p, "testFH.chpl",
-                 "0XFFFFFFFFFFFFFFFF", 18446744073709551615ull, 16);
+                 "0XFFFFFFFFFFFFFFFF", 18446744073709551615ull);
   testUintLiteral(p, "testFH2.chpl",
-                 "0Xffffffffffffffff", 18446744073709551615ull, 16);
+                 "0Xffffffffffffffff", 18446744073709551615ull);
 
   testIntLiteral(p, "testGb.chpl",
       "0b111111111111111111111111111111111111111111111111111111111111111",
-      9223372036854775807ull, 2);
+      9223372036854775807ull);
   testIntLiteral(p, "testGB.chpl",
       "0B111111111111111111111111111111111111111111111111111111111111111",
-      9223372036854775807ull, 2);
+      9223372036854775807ull);
   testIntLiteral(p, "testGd.chpl",
-                 "9223372036854775807", 9223372036854775807ull, 10);
+                 "9223372036854775807", 9223372036854775807ull);
   testIntLiteral(p, "testGo.chpl",
-                 "0o777777777777777777777", 9223372036854775807ull, 8);
+                 "0o777777777777777777777", 9223372036854775807ull);
   testIntLiteral(p, "testGO.chpl",
-                 "0O777777777777777777777", 9223372036854775807ull, 8);
+                 "0O777777777777777777777", 9223372036854775807ull);
   testIntLiteral(p, "testGh.chpl",
-                 "0x7FFFFFFFFFFFFFFF", 9223372036854775807ull, 16);
+                 "0x7FFFFFFFFFFFFFFF", 9223372036854775807ull);
   testIntLiteral(p, "testGh2.chpl",
-                 "0x7fffffffffffffff", 9223372036854775807ull, 16);
+                 "0x7fffffffffffffff", 9223372036854775807ull);
   testIntLiteral(p, "testGH.chpl",
-                 "0X7FFFFFFFFFFFFFFF", 9223372036854775807ull, 16);
+                 "0X7FFFFFFFFFFFFFFF", 9223372036854775807ull);
   testIntLiteral(p, "testGH2.chpl",
-                 "0X7fffffffffffffff", 9223372036854775807ull, 16);
+                 "0X7fffffffffffffff", 9223372036854775807ull);
 
-  testRealLiteral(p, "testR0.chpl", "0.0", 0.0, 10);
-  testRealLiteral(p, "testR1.chpl", "1.0", 1.0, 10);
-  testRealLiteral(p, "testR15.chpl", "1.5", 1.5, 10);
-  testRealLiteral(p, "testR15e2.chpl", "1.5e2", 150, 10);
-  testRealLiteral(p, "testR15em2.chpl", "1.5e-2", 0.015, 10);
-  testRealLiteral(p, "testR2e2.chpl", "2e2", 200.0, 10);
-  testRealLiteral(p, "testRx2e2.chpl", "0x2p2", 8.0, 16);
-  testRealLiteral(p, "testRx11.chpl", "0x011.1", 17.0625, 16);
-  testRealLiteral(p, "testRx11p2.chpl", "0x011.1p2", 68.25, 16);
-  testRealLiteral(p, "testRx11pm2.chpl", "0x01.1p-2", 0.265625, 16);
+  testRealLiteral(p, "testR0.chpl", "0.0", 0.0);
+  testRealLiteral(p, "testR1.chpl", "1.0", 1.0);
+  testRealLiteral(p, "testR15.chpl", "1.5", 1.5);
+  testRealLiteral(p, "testR15e2.chpl", "1.5e2", 150);
+  testRealLiteral(p, "testR15em2.chpl", "1.5e-2", 0.015);
+  testRealLiteral(p, "testR2e2.chpl", "2e2", 200.0);
+  testRealLiteral(p, "testRx2e2.chpl", "0x2p2", 8.0);
+  testRealLiteral(p, "testRx11.chpl", "0x011.1", 17.0625);
+  testRealLiteral(p, "testRx11p2.chpl", "0x011.1p2", 68.25);
+  testRealLiteral(p, "testRx11pm2.chpl", "0x01.1p-2", 0.265625);
 
-  testImagLiteral(p, "testI0.chpl", "0.0i", 0.0, 10);
-  testImagLiteral(p, "testI1.chpl", "1.0i", 1.0, 10);
-  testImagLiteral(p, "testI15.chpl", "1.5i", 1.5, 10);
-  testImagLiteral(p, "testI15e2.chpl", "1.5e2i", 150, 10);
-  testImagLiteral(p, "testI15em2.chpl", "1.5e-2i", 0.015, 10);
-  testImagLiteral(p, "testI2e2.chpl", "2e2i", 200.0, 10);
-  testImagLiteral(p, "testIx2e2.chpl", "0x2p2i", 8.0, 16);
-  testImagLiteral(p, "testIx11.chpl", "0x011.1i", 17.0625, 16);
-  testImagLiteral(p, "testIx11p2.chpl", "0x011.1p2i", 68.25, 16);
-  testImagLiteral(p, "testIx11pm2.chpl", "0x01.1p-2i", 0.265625, 16);
+  testImagLiteral(p, "testI0.chpl", "0.0i", 0.0);
+  testImagLiteral(p, "testI1.chpl", "1.0i", 1.0);
+  testImagLiteral(p, "testI15.chpl", "1.5i", 1.5);
+  testImagLiteral(p, "testI15e2.chpl", "1.5e2i", 150);
+  testImagLiteral(p, "testI15em2.chpl", "1.5e-2i", 0.015);
+  testImagLiteral(p, "testI2e2.chpl", "2e2i", 200.0);
+  testImagLiteral(p, "testIx2e2.chpl", "0x2p2i", 8.0);
+  testImagLiteral(p, "testIx11.chpl", "0x011.1i", 17.0625);
+  testImagLiteral(p, "testIx11p2.chpl", "0x011.1p2i", 68.25);
+  testImagLiteral(p, "testIx11pm2.chpl", "0x01.1p-2i", 0.265625);
 
 
   testBadLiteral(p, "testHb.chpl",
