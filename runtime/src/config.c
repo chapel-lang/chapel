@@ -22,6 +22,7 @@
 
 #include "arg.h"
 #include "chplcgfns.h"
+#include "chpl-comm.h"
 #include "chplexit.h"
 #include "chplio.h"
 #include "chpl-mem.h"
@@ -299,7 +300,11 @@ void initSetValue(const char* varName, const char* value,
                                             varName, "'.");
     chpl_error(message, lineno, filename);
   } else if (configVar->deprecated) {
-    chpl_warning(configVar->deprecationMsg, lineno, filename);
+    #ifndef LAUNCHER
+    if (chpl_nodeID == 0) {
+      chpl_warning(configVar->deprecationMsg, lineno, filename);
+    }
+    #endif
   }
   if (strcmp(varName, "numLocales") == 0) {
     parseNumLocales(value, lineno, filename);
