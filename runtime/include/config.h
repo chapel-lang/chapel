@@ -31,16 +31,18 @@ void printHelpMessage(void);
 void initConfigVarTable(void);
 void printConfigVarTable(void);
 void initSetValue(const char* varName, const char* value, 
-                  const char* moduleName, int32_t lineno, int32_t filename);
+                  const char* moduleName, int32_t lineno, int32_t filename,
+                  chpl_bool isLauncher);
 const char* lookupSetValue(const char* varName, const char* moduleName);
 void installConfigVar(const char* varName, const char* value, 
                       const char* moduleName, int private, int deprecated,
                       const char* deprecationMsg);
 
 int handlePossibleConfigVar(int* argc, char* argv[], int argnum, 
-                            int32_t lineno, int32_t filename);
+                            int32_t lineno, int32_t filename,
+                            chpl_bool isLauncher);
 void parseConfigFile(const char* configFilename, 
-                     int32_t lineno, int32_t filename);
+                     int32_t lineno, int32_t filename, chpl_bool isLauncher);
 
 chpl_bool chpl_config_has_value(c_string v, c_string m);
 c_string chpl_config_get_value(c_string v, c_string m);
