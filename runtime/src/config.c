@@ -80,8 +80,7 @@ static void parseModVarName(char* modVarName, const char** moduleName,
    the hash table.
 */
 static int aParsedString(FILE* argFile, char* setConfigBuffer,
-                         int32_t lineno, int32_t filename,
-                         chpl_bool isLauncher) {
+                         int32_t lineno, int32_t filename) {
   char* equalsSign = strchr(setConfigBuffer, '=');
   int stringLength = strlen(setConfigBuffer);
   char firstChar;
@@ -147,7 +146,7 @@ static int aParsedString(FILE* argFile, char* setConfigBuffer,
     stringLength--;
   }
   setConfigBuffer[stringLength] = '\0';
-  initSetValue(varName, value, moduleName, lineno, filename, isLauncher);
+  initSetValue(varName, value, moduleName, lineno, filename);
   return 1;
 }
 
@@ -276,7 +275,7 @@ static configVarType* lookupConfigVar(const char* moduleName,
 
 void initSetValue(const char* varName, const char* value,
                   const char* moduleName,
-                  int32_t lineno, int32_t filename, chpl_bool isLauncher) {
+                  int32_t lineno, int32_t filename) {
   configVarType* configVar;
   if  (*varName == '\0') {
     const char* message = "No variable name given";
@@ -301,13 +300,11 @@ void initSetValue(const char* varName, const char* value,
                                             varName, "'.");
     chpl_error(message, lineno, filename);
   } else if (configVar->deprecated) {
-    if (!isLauncher) {
-      #ifndef LAUNCHER
-      if (chpl_nodeID == 0) {
-        chpl_warning(configVar->deprecationMsg, lineno, filename);
-      }
-      #endif
+    #ifndef LAUNCHER
+    if (chpl_nodeID == 0) {
+      chpl_warning(configVar->deprecationMsg, lineno, filename);
     }
+    #endif
   }
   if (strcmp(varName, "numLocales") == 0) {
     parseNumLocales(value, lineno, filename);
@@ -406,8 +403,7 @@ static void handleUnexpectedConfigVar(const char* moduleName, char* varName,
 
 
 int handlePossibleConfigVar(int* argc, char* argv[], int argnum,
-                            int32_t lineno, int32_t filename,
-                            chpl_bool isLauncher) {
+                            int32_t lineno, int32_t filename) {
   int retval = 0;
   int arglen = strlen(argv[argnum]+2)+1;
   char* argCopy = chpl_mem_allocMany(arglen, sizeof(char),
@@ -430,17 +426,16 @@ int handlePossibleConfigVar(int* argc, char* argv[], int argnum,
   } else {
     char* value = equalsSign + 1;
     if (equalsSign && *value) {
-      initSetValue(varName, value, moduleName, lineno, filename, isLauncher);
+      initSetValue(varName, value, moduleName, lineno, filename);
     } else if (!strcmp(configVar->defaultValue, "bool")) {
-      initSetValue(varName, "true", moduleName, lineno, filename, isLauncher);
+      initSetValue(varName, "true", moduleName, lineno, filename);
     } else {
       if (argnum + 1 >= *argc) {
         char* message = chpl_glom_strings(3, "Configuration variable '", varName,
                                           "' is missing its initialization value");
         chpl_error(message, lineno, filename);
       } else {
-        initSetValue(varName, argv[argnum+1], moduleName, lineno, filename,
-                     isLauncher);
+        initSetValue(varName, argv[argnum+1], moduleName, lineno, filename);
         retval = 1;
       }
     }
@@ -452,7 +447,7 @@ int handlePossibleConfigVar(int* argc, char* argv[], int argnum,
 
 // TODO: Change all the 0 linenos below into real line numbers
 void parseConfigFile(const char* configFilename,
-                     int32_t lineno, int32_t filename, chpl_bool isLauncher) {
+                     int32_t lineno, int32_t filename) {
   FILE* argFile = fopen(configFilename, "r");
   if (!argFile) {
     char* message = chpl_glom_strings(2, "Unable to open ", configFilename);
@@ -474,7 +469,7 @@ void parseConfigFile(const char* configFilename,
           } while (!feof(argFile));
         }
       } else if (!aParsedString(argFile, setConfigBuffer, 0,
-                                CHPL_FILE_IDX_SAVED_FILENAME, isLauncher)) {
+                                CHPL_FILE_IDX_SAVED_FILENAME)) {
         char* equalsSign;
         const char* moduleName;
         char* varName;
@@ -488,7 +483,7 @@ void parseConfigFile(const char* configFilename,
           char* value = equalsSign + 1;
           if (equalsSign && *value) {
             initSetValue(varName, value, moduleName, 0,
-                         CHPL_FILE_IDX_SAVED_FILENAME, isLauncher);
+                         CHPL_FILE_IDX_SAVED_FILENAME);
           } else {
             char configValBuffer[_default_string_length];
             numScans =
@@ -500,7 +495,7 @@ void parseConfigFile(const char* configFilename,
               chpl_error(message, 0, CHPL_FILE_IDX_SAVED_FILENAME);
             } else {
               initSetValue(varName, configValBuffer, moduleName, 0,
-                           CHPL_FILE_IDX_SAVED_FILENAME, isLauncher);
+                           CHPL_FILE_IDX_SAVED_FILENAME);
             }
           }
         }

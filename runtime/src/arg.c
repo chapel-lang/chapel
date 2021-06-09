@@ -393,8 +393,7 @@ void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
                                               "\" is not a valid argument");
             chpl_error(message, lineno, filename);
           }
-          i += handlePossibleConfigVar(argc, argv, i, lineno, filename,
-                                       isLauncher);
+          i += handlePossibleConfigVar(argc, argv, i, lineno, filename);
           break;
         }
 
@@ -435,9 +434,9 @@ void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
                        lineno, filename);
           }
           currentArg = argv[i];
-          parseConfigFile(currentArg, lineno, filename, isLauncher);
+          parseConfigFile(currentArg, lineno, filename);
         } else {
-          parseConfigFile(currentArg + 2, lineno, filename, isLauncher);
+          parseConfigFile(currentArg + 2, lineno, filename);
         }
         break;
 
@@ -465,8 +464,7 @@ void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
           } else {
             numPtr = &(currentArg[3]);
           }
-          initSetValue("numLocales", numPtr, "Built-in", lineno, filename,
-                       isLauncher);
+          initSetValue("numLocales", numPtr, "Built-in", lineno, filename);
           break;
         }
         i += handleNonstandardArg(argc, argv, i, lineno, filename);
@@ -487,8 +485,7 @@ void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
                                               "\" is not a valid argument");
             chpl_error(message, lineno, filename);
           }
-          i += handlePossibleConfigVar(argc, argv, i, lineno, filename,
-                                       isLauncher);
+          i += handlePossibleConfigVar(argc, argv, i, lineno, filename);
           break;
         }
 
