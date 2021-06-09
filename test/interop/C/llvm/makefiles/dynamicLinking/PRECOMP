@@ -1,2 +1,0 @@
-#!/bin/bash
-$3 --library --dynamic FooLibrary.chpl
