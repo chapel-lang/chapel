@@ -327,7 +327,7 @@ const char* lookupSetValue(const char* varName, const char* moduleName) {
 
 
 void installConfigVar(const char* varName, const char* value,
-                      const char* moduleName, int private, int deprecated,
+                      const char* moduleName, int isprivate, int deprecated,
                       const char* deprecationMsg) {
   unsigned hashValue;
   configVarType* configVar = (configVarType*)
@@ -347,7 +347,7 @@ void installConfigVar(const char* varName, const char* value,
   configVar->moduleName = chpl_glom_strings(1, moduleName);
   configVar->defaultValue = chpl_glom_strings(1, value);
   configVar->setValue = NULL;
-  configVar->private = private;
+  configVar->private = isprivate;
   configVar->deprecated = deprecated;
   configVar->deprecationMsg = deprecationMsg;
 }
