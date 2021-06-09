@@ -21,6 +21,18 @@
 #ifndef CHPL_RUNTIME_ETC_SRC_MLI_COMMON_CODE_C_
 #define CHPL_RUNTIME_ETC_SRC_MLI_COMMON_CODE_C_
 
+// Include these for definitions of interop types.
+#include "chpl-export-wrappers.h"
+#include "chpl-external-array.h"
+
+// The server shims will make some runtime calls.
+#ifdef CHPL_MLI_IS_SERVER
+  #include "chplexit.h"
+  #include "chpl-mem.h"
+  #include "error.h"
+#endif
+
+#include <inttypes.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -31,99 +43,71 @@
 #include <zmq.h>
 
 //
-// Grab headers for shims used by the client and server.
+// Define a bunch of shims that are used by both the client and the server.
+// For the server, these refer to functions defined in the Chapel runtime,
+// but for the client, they refer to standard library functions.
 //
-// The Chapel runtime is sanitized during Travis testing, and any calls to
-// LIBC functions are reported as errors. Sadly, our code gets sanitized too,
-// even though it _technically_ isn't part of the runtime itself. That's the
-// reason why any of these shims exist in the first place.
-//
-// We really don't want to call "chpl_exit_any()" in the client - we'd prefer
-// the LIBC "exit()" function. Fortunately, the LAUNCHER already accounts for
-// this. So we "gain access" to "exit()" by pretending to be the launcher.
-// This defines "chpl_exit_any()" as a macro representing "exit()".
-//
-#ifdef CHPL_MLI_IS_SERVER
-#   include "chpl-mem.h"
-#   include "error.h"
-#elif defined(CHPL_MLI_IS_CLIENT)
-#   ifndef LAUNCHER
-#     define CHPL_MLI_LAUNCHER_IS_DEFINED
-#     define LAUNCHER
-# endif
-#   include "chpl-mem-sys.h"
-#   include "chplexit.h"
-#   ifdef CHPL_MLI_LAUNCHER_IS_DEFINED
-#     undef CHPL_MLI_LAUNCHER_IS_DEFINED
-#     undef LAUNCHER
-#   endif
+
+#if !defined(CHPL_MLI_IS_CLIENT) && !defined(CHPL_MLI_IS_SERVER)
+  #error Client/server identity macro is not defined!
 #endif
 
-//
-// If this code is being run on the server, mli_malloc() is a wrapper for
-// chpl_mem_alloc(). If this code is being run on the client, then it is a
-// wrapper for the system allocator.
-//
+#if defined(CHPL_MLI_IS_CLIENT) && defined(CHPL_MLI_IS_SERVER)
+  #error Client/server identity macro are both defined!
+#endif
+
+// Shims for memory allocation functions.
 #ifdef CHPL_MLI_IS_SERVER
-#   define mli_malloc(bytes) chpl_mem_alloc(bytes, CHPL_RT_MD_MLI_DATA, 0, 0)
-#   define mli_free(ptr) chpl_mem_free(ptr, 0, 0)
-#elif defined(CHPL_MLI_IS_CLIENT)
-#   define mli_malloc(bytes) sys_malloc(bytes)
-#   define mli_free(ptr) sys_free(ptr)
+#   define chpl_mli_malloc(bytes) \
+           chpl_mem_alloc(bytes, CHPL_RT_MD_MLI_DATA, 0, 0)
+#   define chpl_mli_free(ptr) chpl_mem_free(ptr, 0, 0)
 #else
-#   error The mli_malloc/free macros were defined outside of client/server.
+#   define chpl_mli_malloc(bytes) malloc(bytes)
+#   define chpl_mli_free(ptr) free(ptr)
 #endif
 
-//
-// Terminate all the locales properly if the server, else just "exit()".
-//
+// Shim for exit.
 #ifdef CHPL_MLI_IS_SERVER
-#   define mli_terminate() chpl_error("", 0, 0)
-#elif defined(CHPL_MLI_IS_CLIENT)
-#   define mli_terminate() chpl_exit_any(1)
-#else
-#   error The mli_terminate macro was defined outside of client/server.
+#   define chpl_mli_exit(status) chpl_exit_any(status)
+# else
+#   define chpl_mli_exit(status) exit(status)
 #endif
 
-//
-// Print prefix, used to indicate whether client or server is printing.
-//
+// Shim for terminate (exit with error).
+// TODO: Need to make sure this exits both the client and the server.
+#ifdef CHPL_MLI_IS_SERVER
+#   define chpl_mli_terminate() chpl_error("", 0, 0)
+# else
+#   define chpl_mli_terminate() exit(1)
+#endif
+
+// Print prefix, use for debugging.
 #ifdef CHPL_MLI_IS_SERVER
 #   define chpl_mli_pfx "[Server]"
-#elif defined(CHPL_MLI_IS_CLIENT)
-#   define chpl_mli_pfx "[Client]"
 #else
-#   error The chpl_mli_pfx macro was defined outside of client/server.
+#   define chpl_mli_pfx "[Client]"
 #endif
 
-//
 // Print a debug message, or do nothing if debug messages are turned off.
-//
 #ifdef CHPL_MLI_DEBUG_PRINT
-#   ifndef chpl_mli_pfx
-#     error The chpl_mli_pfx macro must be defined.
-#   endif
-#   define chpl_mli_debugf(fmt, ...)              \
-  do {                                            \
-      printf("%s ", chpl_mli_pfx);                \
-      printf(fmt, __VA_ARGS__);                   \
+#   define chpl_mli_debugf(fmt, ...)                  \
+  do {                                                \
+      printf("%s %s: ", chpl_mli_pfx, __FUNCTION__);  \
+      printf(fmt, __VA_ARGS__);                       \
   } while (0)
 #else
 #   define chpl_mli_debugf(fmt, ...)
 #endif
 
-//
-// Error codes must all be less than zero unless we change the protocol!
-//
+// Error codes must all be less than zero unless we change the protocol.
 enum chpl_mli_errors {
 
   CHPL_MLI_CODE_NONE      = +0,
   CHPL_MLI_CODE_SHUTDOWN  = -1,
-  CHPL_MLI_CODE_EUNKNOWN  = -2,
-  CHPL_MLI_CODE_ENOFUNC   = -3,
-  CHPL_MLI_CODE_ESOCKET   = -4,
-  CHPL_MLI_CODE_EEXCEPT   = -5,
-  CHPL_MLI_CODE_EMEMORY   = -6
+  CHPL_MLI_CODE_UNKNOWN   = -2,
+  CHPL_MLI_CODE_NOFUNC    = -3,
+  CHPL_MLI_CODE_SOCKET    = -4,
+  CHPL_MLI_CODE_MEMORY    = -6
 
 };
 
@@ -133,15 +117,14 @@ const char* chpl_mli_errstr(enum chpl_mli_errors e) {
   static const char* mli_errors_[] = {
     "NONE",
     "SHUTDOWN",
-    "EUNKNOWN",
-    "ENOFUNC",
-    "ESOCKET",
-    "EEXCEPT",
-    "EMEMORY"
+    "UNKNOWN",
+    "NOFUNC",
+    "SOCKET",
+    "MEMORY"
   };
 
-  if (e > CHPL_MLI_CODE_NONE || e < CHPL_MLI_CODE_EMEMORY) {
-    return "INVALID_ERROR_CODE";
+  if (e > CHPL_MLI_CODE_NONE || e < CHPL_MLI_CODE_MEMORY) {
+    return "<invalid>";
   }
 
   // Remember to negate the error code!
@@ -176,7 +159,7 @@ char* chpl_mli_concat(size_t count, ...) {
     length += strlen(chunk);
   }
 
-  result = mli_malloc(length + 1);
+  result = chpl_mli_malloc(length + 1);
   if (result == NULL) { return NULL; }
 
   va_start(argp, count);
@@ -228,13 +211,106 @@ void chpl_mli_close(void* socket) {
 }
 
 static
-int chpl_mli_push(void* socket, void* buffer, size_t bytes, int flags) {
-  return zmq_send(socket, buffer, bytes, flags);  
+int chpl_mli_zmq_wire(void* socket, void* buffer, size_t bytes, int push) {
+  return push ? zmq_send(socket, buffer, bytes, 0):
+                zmq_recv(socket, buffer, bytes, 0);
 }
 
 static
-int chpl_mli_pull(void* socket, void* buffer, size_t bytes, int flags) {
-  return zmq_recv(socket, buffer, bytes, flags);
+int chpl_mli_zmq_move(void* socket, void* buffer, size_t bytes, int push) {
+  int result = 0;
+  int retry = 0;
+
+  result = chpl_mli_zmq_wire(socket, buffer, bytes, push);
+
+  while (-1 == result && errno == EAGAIN) {
+    chpl_mli_debugf("Socket busy, retry: %d\n", retry);
+    result = chpl_mli_zmq_wire(socket, buffer, bytes, push);
+    if (retry++ > 5) {
+      chpl_mli_debugf("%s\n", "Too many retries!");
+      chpl_mli_terminate();
+    }
+  }
+
+  // TODO: We need to handle socket errors more robustly.
+  if (-1 == result) {
+    chpl_mli_debugf("Failed to push to socket: %p\n", socket);
+    chpl_mli_debugf("%s\n", zmq_strerror(errno));
+    chpl_mli_terminate();
+  }
+
+  return result;
+}
+
+static
+int chpl_mli_push(void* socket, void* buffer, size_t bytes) {
+  chpl_mli_debugf("%zu bytes at %p to %p\n",
+                  bytes,
+                  buffer,
+                  socket);
+
+  return chpl_mli_zmq_move(socket, buffer, bytes, 1);
+}
+
+static
+int chpl_mli_pull(void* socket, void* buffer, size_t bytes) {
+  chpl_mli_debugf("%zu bytes at %p to %p\n",
+                  bytes,
+                  buffer,
+                  socket);
+
+  return chpl_mli_zmq_move(socket, buffer, bytes, 0);
+}
+
+static
+int chpl_mli_push_ack(void* socket) {
+  return chpl_mli_push(socket, NULL, 0);
+}
+
+static
+int chpl_mli_pull_ack(void* socket) {
+  return chpl_mli_pull(socket, NULL, 0);
+}
+
+static
+int chpl_mli_push_byte_buffer(void* socket, chpl_byte_buffer* obj) {
+  chpl_mli_push(socket, &obj->size, sizeof(obj->size));
+  chpl_mli_pull_ack(socket);
+  chpl_mli_debugf("Byte buffer length: %" PRIu64 "\n", obj->size);
+
+  chpl_mli_push(socket, obj->data, obj->size);
+  chpl_mli_pull_ack(socket);
+
+  // TODO: User data may not be trustable? E.g. not null terminated...
+  // TODO: Truncate beyond a certain length.
+  chpl_mli_debugf("Byte buffer data: %s\n", obj->data);
+
+  return 0;
+}
+
+static
+int chpl_mli_pull_byte_buffer(void* socket, chpl_byte_buffer* obj) {
+  chpl_mli_pull(socket, &obj->size, sizeof(obj->size));
+  chpl_mli_push_ack(socket);
+  chpl_mli_debugf("Byte buffer length: %" PRIu64 "\n", obj->size);
+
+  obj->data = chpl_mli_malloc(obj->size + 1);
+  obj->isOwned = true;
+
+  // TODO: Need to handle synchronous termination.
+  if (NULL == obj->data) {
+    chpl_mli_debugf("%s\n", "Failed to allocate buffer!");
+    chpl_mli_terminate();
+  }
+
+  chpl_mli_pull(socket, obj->data, obj->size);
+  chpl_mli_push_ack(socket);
+
+  obj->data[obj->size] = 0;
+
+  chpl_mli_debugf("Byte buffer data: %s\n", obj->data);
+
+  return 0;
 }
 
 // Determine connection information for that socket.
@@ -242,9 +318,10 @@ static
 char * chpl_mli_connection_info(void* socket) {
   // Determine port used by ZMQ for socket.
   size_t lenPort = 256;
-  char* portRes = (char *)mli_malloc(lenPort);
+  char* portRes = (char *)chpl_mli_malloc(lenPort);
   int portErr = zmq_getsockopt(socket, ZMQ_LAST_ENDPOINT,
                                portRes, &lenPort);
+  (void) portErr;
 
   // Get to port portion of the last endpoint.
   char *traveler = strchr(portRes, ':');
@@ -259,7 +336,7 @@ char * chpl_mli_connection_info(void* socket) {
   if (chpl_rt_masterip != NULL) {
     int lenMasterip = strlen(chpl_rt_masterip);
     int lenFull = lenConnBoilerplate + lenMasterip + lenPort;
-    fullConnection = (char*)mli_malloc(lenFull + 1);
+    fullConnection = (char*)chpl_mli_malloc(lenFull + 1);
     strcpy(fullConnection, "tcp://");
     strcat(fullConnection, chpl_rt_masterip);
     chpl_mli_debugf("full connection before port was %s\n", fullConnection);
@@ -267,22 +344,23 @@ char * chpl_mli_connection_info(void* socket) {
   } else {
     // Determine hostname of where we are currently running
     size_t lenHostname = 256;
-    char* hostRes = (char *)mli_malloc(lenHostname);
+    char* hostRes = (char *)chpl_mli_malloc(lenHostname);
     int hostErr = gethostname(hostRes, lenHostname);
+    (void) hostErr;
     chpl_mli_debugf("hostname was %s\n", hostRes);
 
     // Recreate the connection using the hostname instead of 0.0.0.0
     int lenFull = lenHostname + lenPort + lenConnBoilerplate;
-    fullConnection = (char *)mli_malloc(lenFull + 1);
+    fullConnection = (char *)chpl_mli_malloc(lenFull + 1);
     strcpy(fullConnection, "tcp://");
     strcat(fullConnection, hostRes);
     chpl_mli_debugf("full connection before port was %s\n", fullConnection);
-    mli_free(hostRes);
+    chpl_mli_free(hostRes);
   }
   strcat(fullConnection, ":");
   strcat(fullConnection, traveler);
 
-  mli_free(portRes);
+  chpl_mli_free(portRes);
   return fullConnection;
 }
 

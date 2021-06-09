@@ -24,30 +24,23 @@
 #include "mli/common_code.c"
 
 #include "chpllaunch.h"
-#include "chpl-export-wrappers.h"
-#include "chpl-external-array.h"
+
 #include <sys/types.h>
-#include <unistd.h>
 
 struct chpl_mli_context chpl_client;
 
 void chpl_mli_client_init(struct chpl_mli_context* client);
 void chpl_mli_client_deinit(struct chpl_mli_context* client);
 char* chpl_mli_pull_connection(void);
-void chpl_mli_terminate(enum chpl_mli_errors e);
 int chpl_mli_client_launch(int argc, char** argv);
 void chpl_library_init(int argc, char** argv);
 void chpl_library_finalize(void);
 
-//
-// The `mli_free` routine should resolve to a call to `free` on the client
-// side.
-//
 void chpl_byte_buffer_free(chpl_byte_buffer cb) {
   if (!cb.isOwned) { return; }
 
   if (cb.data != NULL) {
-    mli_free(cb.data);
+    chpl_mli_free(cb.data);
   }
 
   return;
@@ -56,6 +49,8 @@ void chpl_byte_buffer_free(chpl_byte_buffer cb) {
 chpl_byte_buffer chpl_byte_buffer_make(const char* data) {
   // We can get away with this cast because we mark "isOwned" as false.
   chpl_byte_buffer result = { 0, (char*) data, strlen(data) };
+  chpl_mli_debugf("Made buffer with length: %" PRIu64 "\n", result.size);
+  chpl_mli_debugf("Contents: %s\n", result.data);
   return result;
 }
 
@@ -90,20 +85,14 @@ void chpl_mli_client_deinit(struct chpl_mli_context* client) {
 char* chpl_mli_pull_connection(void) {
   int len;
   chpl_mli_debugf("Getting %s\n", "expected size");
-  chpl_mli_pull(chpl_client.setup_sock, &len, sizeof(len), 0);
+  chpl_mli_pull(chpl_client.setup_sock, &len, sizeof(len));
   chpl_mli_debugf("Expected size is %d\n", len);
-  char* conn = mli_malloc(len+1);
+  char* conn = chpl_mli_malloc(len+1);
   chpl_mli_debugf("Getting %s\n", "string itself");
-  chpl_mli_pull(chpl_client.setup_sock, (void*)conn, len, 0);
+  chpl_mli_pull(chpl_client.setup_sock, (void*)conn, len);
   conn[len] = '\0';
   chpl_mli_debugf("String itself is %s\n", conn);
   return conn;
-}
-
-void chpl_mli_terminate(enum chpl_mli_errors e) {
-  const char* errstr = chpl_mli_errstr(e);
-  chpl_mli_debugf("Terminated abruptly with error: %s\n", errstr);
-  mli_terminate();
 }
 
 //
@@ -126,7 +115,7 @@ int chpl_mli_client_launch(int argc, char** argv) {
     if (pid == -1) { return - 1; }
   } else {
     chpl_launch(argc, argv, execNumLocales);
-    chpl_exit_any(0);
+    chpl_mli_exit(0);
   }
 
   return 0;
@@ -151,7 +140,7 @@ void chpl_library_init(int argc, char** argv) {
 
   // Send the setup socket as the last argument when launching the server.
   int argc_plus_sock = argc + 2;
-  char** argv_plus_sock = mli_malloc(argc_plus_sock * sizeof(char*));
+  char** argv_plus_sock = chpl_mli_malloc(argc_plus_sock * sizeof(char*));
   for (int i = 0; i < argc; i++) {
     chpl_mli_debugf("Passing along arg %d: %s\n", i, argv[i]);
     argv_plus_sock[i] = argv[i];
@@ -162,10 +151,10 @@ void chpl_library_init(int argc, char** argv) {
   chpl_mli_debugf("Spawning server with %d args\n", argc_plus_sock);
   chpl_mli_client_launch(argc_plus_sock, argv_plus_sock);
   chpl_mli_debugf("Clean up extended %s\n", "argv");
-  mli_free(argv_plus_sock);
+  chpl_mli_free(argv_plus_sock);
 
   chpl_mli_debugf("Cleaning up connection %s\n", "info");
-  mli_free(setup_sock_conn);
+  chpl_mli_free(setup_sock_conn);
 
   char* main_conn = chpl_mli_pull_connection();
   chpl_mli_debugf("Connection info for main %s\n", main_conn);
@@ -179,9 +168,9 @@ void chpl_library_init(int argc, char** argv) {
   chpl_mli_connect(chpl_client.res, res_conn);
 
   chpl_mli_debugf("Clean up %s\n", "client port strings");
-  mli_free(main_conn);
-  mli_free(arg_conn);
-  mli_free(res_conn);
+  chpl_mli_free(main_conn);
+  chpl_mli_free(arg_conn);
+  chpl_mli_free(res_conn);
 
   return;
 }
@@ -194,8 +183,8 @@ void chpl_library_finalize(void) {
 
   {
     int64_t shutdown = CHPL_MLI_CODE_SHUTDOWN;
-    chpl_mli_push(chpl_client.main, &shutdown, sizeof(shutdown), 0);
-    chpl_mli_pull(chpl_client.main, &shutdown, sizeof(shutdown), 0);
+    chpl_mli_push(chpl_client.main, &shutdown, sizeof(shutdown));
+    chpl_mli_pull(chpl_client.main, &shutdown, sizeof(shutdown));
 
     // Can server ever respond with a different error?
     if (shutdown != CHPL_MLI_CODE_SHUTDOWN) { ;;; }
@@ -218,7 +207,7 @@ void chpl_library_finalize(void) {
 void cleanupOpaqueArray(chpl_opaque_array * arr) {
   printf("Error: opaque arrays not supported for multilocale libraries");
   chpl_library_finalize(); // clean up after ourselves
-  mli_terminate();
+  chpl_mli_terminate();
 }
 
 #endif

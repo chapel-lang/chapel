@@ -20,13 +20,24 @@
 # Makefile.mli-common
 #
 
+# Only include Makefile.include when we are compiling the server. Otherwise,
+# we'll build pieces of the client with the target compiler. Note that if
+# we don't include Makefile.include, we have to define CHPL_RT_INC_DIR
+# ourselves - but the client only needs access to "chpllaunch.h".
+ifeq ($(CHPL_MAKE_HOST_TARGET),--host)
+include $(CHPL_MAKE_HOME)/make/Makefile.base
+CHPL_RT_INC_DIR=-I$(CHPL_MAKE_HOME)/runtime/include
+else
 include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.include
+endif
 
 # If CHPL_ZMQ_HOME is set, use it to configure search paths.
 ifdef CHPL_ZMQ_HOME
-CHPL_MLI_INCS = -I$(CHPL_ZMQ_HOME)/include
-CHPL_ZMQ_LIB_HOME = $(CHPL_ZMQ_HOME)/lib
-CHPL_ZMQ_LIB_SEARCH_PATH = -L$(CHPL_ZMQ_LIB_HOME)
+CHPL_MLI_INC_DIRS = -I$(CHPL_ZMQ_HOME)/include -I/usr/local/include
+CHPL_MLI_LIB_DIRS = -L$(CHPL_ZMQ_HOME)/lib -L/usr/local/lib
+else
+CHPL_MLI_INC_DIRS = -I/usr/local/include
+CHPL_MLI_LIB_DIRS = -L/usr/local/lib
 endif
 
 # Get the Chapel launcher library directory.
@@ -34,7 +45,7 @@ CHPL_LN_LIB_DIR = $(CHPL_MAKE_RUNTIME_LIB)/$(CHPL_MAKE_LAUNCHER_SUBDIR)
 
 # Variables passed to the sub-make session that builds the client.
 TO_PROPAGATE = \
-	CHPL_MAKE_HOST_TARGET="--host" \
+	CHPL_MAKE_HOST_TARGET=--host \
 	CHPL_MAKE_HOME="$(CHPL_MAKE_HOME)" \
 	COMP_GEN_MLI_EXTRA_INCLUDES="$(COMP_GEN_MLI_EXTRA_INCLUDES)" \
 	TMPBINNAME="$(TMPBINNAME)" \
@@ -45,7 +56,11 @@ TO_PROPAGATE = \
 	LIBS="$(LIBS)" \
 	CHPL_CL_OBJS="$(CHPL_CL_OBJS)" \
 	CHPL_MAKE_IS_MLI="$(CHPL_MAKE_IS_MLI)" \
-	TMPDIRNAME="$(TMPDIRNAME)"
+	TMPDIRNAME="$(TMPDIRNAME)" \
+	SKIP_COMPILE_LINK="$(SKIP_COMPILE_LINK)" \
+	CHPL_MLI_INC_DIRS="$(CHPL_MLI_INC_DIRS)" \
+	CHPL_MLI_LIB_DIRS="$(CHPL_MLI_LIB_DIRS)" \
+	CHPL_RT_INC_DIR="$(CHPL_RT_INC_DIR)"
 
 .PHONY: buildServer
 buildServer: $(TMPSERVERNAME)
@@ -85,7 +100,7 @@ ifneq ($(SKIP_COMPILE_LINK),skip)
 		-c -o $(TMPSERVERNAME).o \
 		$(CHPLSERVERSRC) \
 		$(CHPL_RT_INC_DIR) \
-		$(CHPL_MLI_INCS) \
+		$(CHPL_MLI_INC_DIRS) \
 		$(COMP_GEN_MLI_EXTRA_INCLUDES)
 # Link the server, the runtime, and ZMQ together.
 	$(LD) $(CHPL_MAKE_BASE_LFLAGS) \
@@ -95,7 +110,7 @@ ifneq ($(SKIP_COMPILE_LINK),skip)
 		$(CHPL_RT_LIB_DIR)/main.o $(CHPL_CL_OBJS) \
 		-L$(CHPL_RT_LIB_DIR) -lchpl $(LIBS) -lm \
 		$(CHPL_MAKE_THIRD_PARTY_LINK_ARGS) \
-		$(CHPL_ZMQ_LIB_SEARCH_PATH) \
+		$(CHPL_MLI_LIB_DIRS) \
 		-lzmq
 endif
 

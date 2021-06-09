@@ -1464,10 +1464,6 @@ static void setMultiLocaleInterop() {
     return;
   }
 
-  if (fLlvmCodegen) {
-    USR_FATAL("Multi-locale libraries do not support CHPL_TARGET_COMPILER=llvm");
-  }
-
   if (fLibraryFortran) {
     USR_FATAL("Multi-locale libraries do not support --library-fortran");
   }

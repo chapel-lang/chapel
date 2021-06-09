@@ -22,6 +22,9 @@
 
 include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.mli-common
 
+# Use the C++ compiler as our linker.
+LD=$(CXX)
+
 .PHONY: all
 all: checkRtLibDir buildServer buildClientAsHost runTagsCommand FORCE
 
@@ -39,6 +42,9 @@ buildClient: $(TMPBINNAME)
 # Do this by setting CHPL_MAKE_IS_MLI=1 when invoking the sub-make. We also
 # need to pass on the $(GEN_CFLAGS) variable, because we're building a shared
 # object and $(GEN_CFLAGS) contains the -fPIC flag.
+#
+# Always run this, even when compiling with `--llvm`. TODO: Verify that we
+# are building with CHPL_TARGET_COMPILER here.
 #
 $(TMPBINNAME): $(CHPL_CL_OBJS) FORCE
 	$(MAKE) -f $(CHPL_MAKE_HOME)/runtime/etc/Makefile.launcher all \
@@ -58,7 +64,7 @@ $(TMPBINNAME): $(CHPL_CL_OBJS) FORCE
 		$(CHPLSRC) \
 		$(COMP_GEN_MLI_EXTRA_INCLUDES) \
 		$(CHPL_RT_INC_DIR) \
-		$(CHPL_MLI_INCS)
+		$(CHPL_MLI_INC_DIRS)
 # Invoke the linker to produce a shared library.
 	$(LD) $(CHPL_MAKE_BASE_LFLAGS) \
 	        $(COMP_GEN_USER_LDFLAGS) $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) \
@@ -69,13 +75,15 @@ $(TMPBINNAME): $(CHPL_CL_OBJS) FORCE
 		-L$(CHPL_LN_LIB_DIR) \
 		-lm -lchpllaunch \
 		$(LAUNCH_LIBS) \
-		$(CHPL_ZMQ_LIB_SEARCH_PATH) \
-		-lzmq
+		-lzmq \
+		$(CHPL_MLI_LIB_DIRS)
+
 # Last minute munging in case of output file name collisions.
 ifneq ($(TMPBINNAME),$(BINNAME))
 	cp $(TMPBINNAME) $(BINNAME)
 	rm $(TMPBINNAME)
 endif
+
 #
 # On Darwin, we need to adjust the "install_name" of the final shared library
 # file so that it points to $(BINNAME) and not $(TMPBINNAME). If we don't,

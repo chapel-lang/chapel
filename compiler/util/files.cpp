@@ -35,6 +35,7 @@
 #include "llvmVer.h"
 #include "library.h"
 #include "misc.h"
+#include "mli.h"
 #include "mysystem.h"
 #include "stlUtil.h"
 #include "stringutil.h"
@@ -690,6 +691,7 @@ static std::string genMakefileEnvCache() {
 }
 
 void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
+                      const char** tmpservername,
                       bool skip_compile_link,
                       const std::vector<const char*>& splitFiles) {
   const char* tmpDirName = intDirName;
@@ -768,6 +770,9 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
 
   // Write out the temporary filename to the caller if necessary.
   if (tmpbinname) { *tmpbinname = tmpbin; }
+
+  // Ditto for the server.
+  if (tmpservername) { *tmpservername = tmpserver; }
 
   //
   // BLC: We generate a TMPBINNAME which is the name that will be used
@@ -855,16 +860,16 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
   // List source files needed to compile this deliverable.
   if (fMultiLocaleInterop) {
 
-    const char* mli_client = astr(intDirName, "/", "chpl_mli_client.c");
-    const char* mli_server = astr(intDirName, "/", "chpl_mli_server.c");
+    const char* client = astr(intDirName, "/", gMultiLocaleLibClientFile);
+    const char* server = astr(intDirName, "/", gMultiLocaleLibServerFile);
 
     // Only one source file for client (for now).
     fprintf(makefile.fptr, "CHPLSRC = \\\n");
-    fprintf(makefile.fptr, "\t%s \n", mli_client);
+    fprintf(makefile.fptr, "\t%s \n", client);
 
     // The server bundle includes "_main.c", bypassing the need to include it.
     fprintf(makefile.fptr, "CHPLSERVERSRC = \\\n");
-    fprintf(makefile.fptr, "\t%s \n", mli_server);
+    fprintf(makefile.fptr, "\t%s \n", server);
 
   } else {
     fprintf(makefile.fptr, "CHPLSRC = \\\n");

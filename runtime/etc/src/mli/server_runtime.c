@@ -26,7 +26,6 @@
 
 void chpl_mli_server_init(struct chpl_mli_context* server);
 void chpl_mli_server_deinit(struct chpl_mli_context* server);
-void chpl_mli_terminate(enum chpl_mli_errors e);
 void chpl_mli_smain(const char* setup_conn);
 
 //
@@ -65,15 +64,9 @@ static
 void chpl_mli_push_connection(char* connection) {
   int len = strlen(connection) + 1;
   chpl_mli_debugf("Pushing expected size: %d\n", len);
-  chpl_mli_push(chpl_server.setup_sock, &len, sizeof(len), 0);
+  chpl_mli_push(chpl_server.setup_sock, &len, sizeof(len));
   chpl_mli_debugf("Pushing string itself: %s\n", connection);
-  chpl_mli_push(chpl_server.setup_sock, (void*)connection, len, 0);
-}
-
-void chpl_mli_terminate(enum chpl_mli_errors e) {
-  const char* errstr = chpl_mli_errstr(e);
-  chpl_mli_debugf("Terminated abruptly with error: %s\n", errstr);
-  mli_terminate();
+  chpl_mli_push(chpl_server.setup_sock, (void*)connection, len);
 }
 
 void chpl_mli_smain(const char* setup_conn) {
@@ -83,8 +76,6 @@ void chpl_mli_smain(const char* setup_conn) {
   int err = 0;
   clock_t before = clock();
   double seconds = 0;
-
-  const char* ip = "localhost";
 
   chpl_mli_server_init(&chpl_server);
 
@@ -111,25 +102,21 @@ void chpl_mli_smain(const char* setup_conn) {
   chpl_mli_push_connection(res_conn);
 
   chpl_mli_debugf("%s\n", "Clean up obtained connection strings");
-  mli_free(main_conn);
-  mli_free(arg_conn);
-  mli_free(res_conn);
+  chpl_mli_free(main_conn);
+  chpl_mli_free(arg_conn);
+  chpl_mli_free(res_conn);
 
   while (execute) {
 
     chpl_mli_debugf("%s\n", "Listening...");
     
     // Every transaction starts by reading an int64 off the wire.
-    err = chpl_mli_pull(
-              chpl_server.main,
-              &id,
-              sizeof(id),
-              0);
+    err = chpl_mli_pull(chpl_server.main, &id, sizeof(id));
 
     // TODO: Handle socket errors on inbound read.
     if (err < 0) {
       chpl_mli_debugf("Socket error on read: %d\n", err);
-      ack = CHPL_MLI_CODE_ESOCKET;
+      ack = CHPL_MLI_CODE_SOCKET;
     }
 
     if (id < 0) {
@@ -142,7 +129,7 @@ void chpl_mli_smain(const char* setup_conn) {
     }
  
     chpl_mli_debugf("Responding with code: %s\n", chpl_mli_errstr(0));
-    err = chpl_mli_push(chpl_server.main, &ack, sizeof(ack), 0);
+    err = chpl_mli_push(chpl_server.main, &ack, sizeof(ack));
 
     if (err < 0) { chpl_mli_debugf("Socket error on write: %d\n", err); }
 
