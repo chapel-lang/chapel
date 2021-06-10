@@ -4,29 +4,32 @@
 Require BLAS and LAPACK modules
 
 Testing BLAS and LAPACK modules requires cray-libsci for compiling. The
-following flags are implicitly passed via the back-end 'cc' wrapper:
+following flags are passed either explicitly by the back-end 'cc' wrapper,
+or explicitly with the LLVM backend:
 
     -I $CRAY_LIBSCI_PREFIX_DIR/include
-    -L $CRAY_LIBSCI_PREFIX_DIR/lib
+    -L $CRAY_LD_LIBRARY_PATH
     -l sci_gnu
 
 Since this is a long-running test and Cray machines guarantee BLAS/LAPACK
-availability, we only test on XC, cray-prgenv-gnu target platform, non-whitebox,
-and non-llvm configurations.
+availability, we only test on XC target platform configurations.
 """
 
 from os import getenv, path
+from sys import argv
 
 # Make sure we're not on a whitebox
-isRealCray = path.exists('/etc/opt/cray/release/CLEinfo') or path.exists('/etc/opt/cray/release/cle-release')
+isRealCray = (path.exists('/etc/opt/cray/release/CLEinfo') or
+              path.exists('/etc/opt/cray/release/cle-release'))
 
 # Make sure we're on an XC
 isRealXC = isRealCray and getenv('CHPL_TARGET_PLATFORM') == 'cray-xc'
 
-# Only test on cray-prgenv-gnu
 isGNU = 'gnu' in str(getenv('CHPL_TARGET_COMPILER'))
 
-if isRealXC and isGNU:
+isLLVM = 'llvm' in str(getenv('CHPL_TARGET_COMPILER'))
+
+if isRealXC and (isGNU or (isLLVM and 'LAPACK' not in argv[0])):
   print(False) # Do not skip
 else:
   print(True) # Do skip
