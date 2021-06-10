@@ -48,12 +48,15 @@ int main(int argc, char** argv) {
     for (int i = 1; i < argc; i++) {
       auto filepath = UniqueString::build(ctx, argv[i]);
 
-      const ModuleVec& mods = parse(ctx, filepath);
-      for (const Module* mod : mods) {
-        printf("Module %s:\n", mod->name().c_str());
-        ASTNode::dump(mod);
+      /*
+      const frontend::ModuleDeclVec& mods = frontend::parse(ctx, filepath);
+      for (const auto elt : mods) {
+        const Module* module = elt->module();
+
+        printf("Module %s:\n", module->name().c_str());
+        ASTNode::dump(module);
         printf("\n");
-      }
+      }*/
 
       /*
       const frontend::DefinedTopLevelNamesVec& vec =
@@ -76,8 +79,7 @@ int main(int argc, char** argv) {
       for (const auto& elt : rmods) {
         const Module* module = elt.module;
 
-        //printf("Module %s:\n", module->name().c_str());
-        printf("\n");
+        printf("Module %s:\n", module->name().c_str());
         ASTNode::dump(module);
         printf("\n");
 

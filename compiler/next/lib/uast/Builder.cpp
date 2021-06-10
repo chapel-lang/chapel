@@ -165,7 +165,10 @@ void Builder::doAssignIDs(ASTNode* ast, UniqueString symbolPath, int& i,
       duplicates.insert(search, std::make_pair(name, 0));
     }
 
-    // compute the string representing the path without this module
+    // push the path component
+    pathVec.push_back(std::make_pair(name, repeat));
+
+    // compute the string representing the path
     std::string pathStr;
     bool first = true;
     for (const auto& p : pathVec) {
@@ -180,39 +183,21 @@ void Builder::doAssignIDs(ASTNode* ast, UniqueString symbolPath, int& i,
         pathStr += std::to_string(repeat);
       }
     }
-
-    std::string repeatStr;
-    if (repeat != 0) {
-      repeatStr += "#";
-      repeatStr += std::to_string(repeat);
-    }
-
-    const char* childrenSep = first ? "" : ".";
-    std::string thisDeclStr = pathStr + "/" + name.c_str() + repeatStr;
-    std::string childrenStr = pathStr + childrenSep + name.c_str() + repeatStr;
-
-    // push the path component for use in computing paths in child nodes
-    pathVec.push_back(std::make_pair(name, repeat));
-
-    auto thisDeclPath = UniqueString::build(this->context(), thisDeclStr);
-    auto childrenPath = UniqueString::build(this->context(), childrenStr);
+    auto newSymbolPath = UniqueString::build(this->context(), pathStr);
 
     // get a fresh postorder traversal counter and duplicates map
     int freshId = 0;
     declaredHereT freshMap;
     for (auto & child : ast->children_) {
       ASTNode* ptr = child.get();
-      this->doAssignIDs(ptr, childrenPath, freshId, pathVec, freshMap);
+      this->doAssignIDs(ptr, newSymbolPath, freshId, pathVec, freshMap);
     }
+
+    int numContainedIds = freshId;
+    ast->setID(ID(symbolPath, numContainedIds, numContainedIds));
 
     // pop the path component we just added
     pathVec.pop_back();
-
-    int thisDeclID = i;
-    i++; // count the ID for the node we are currently visiting
-    int numContainedIds = freshId;
-    ast->setID(ID(thisDeclPath, thisDeclID, numContainedIds));
-    //printf("set decl ID to %s\n", ast->id().toString().c_str());
 
   } else {
     // not a new scope
@@ -228,7 +213,6 @@ void Builder::doAssignIDs(ASTNode* ast, UniqueString symbolPath, int& i,
     i++; // count the ID for the node we are currently visiting
     int numContainedIDs = afterChildID - firstChildID;
     ast->setID(ID(symbolPath, myID, numContainedIDs));
-    //printf("set ID to %s path elts %i\n", ast->id().toString().c_str(), (int) pathVec.size());
   }
 
 }
@@ -277,6 +261,9 @@ void Builder::Result::updateFilePaths(Context* context, const Result& keep) {
   for (auto & topLevelExpression : keep.topLevelExpressions) {
     if (Module* module = topLevelExpression->toModule()) {
       UniqueString moduleName = module->name();
+      printf("Setting file path for module name %s %s\n",
+             moduleName.c_str(),
+             path.c_str());
       context->setFilePathForModuleName(moduleName, path);
     } else if (topLevelExpression->isComment()) {
       // ignore comments

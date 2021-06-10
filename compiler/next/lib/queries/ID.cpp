@@ -38,29 +38,10 @@ bool ID::contains(const ID& other) const {
 
     return thisFirstContained <= otherId && otherId <= thisId;
   } else {
-    // Is thisPath a prefix of otherPath, when considering
-    // the characters / and . to be the same?
-    const char* thisPtr = thisPath.c_str();
-    const char* othrPtr = otherPath.c_str();
-
-    // ignore leading . or /
-    while (*thisPtr == '.' || *thisPtr == '/') thisPtr++;
-    while (*othrPtr == '.' || *othrPtr == '/') othrPtr++;
-
-    while (*thisPtr != '\0') {
-      if ((*thisPtr == *othrPtr) ||
-          ((*thisPtr == '.' || *thisPtr == '/') &&
-           (*othrPtr == '.' || *othrPtr == '/'))) {
-        // ok, it matches
-      } else {
-        return false;
-      }
-
-      thisPtr++;
-      othrPtr++;
-    }
-
-    return true;
+    // No need to consider the IDs in the event that thisPath
+    // is a prefix of otherPath. In that event, they are different
+    // symbols, but one is nested inside the other.
+    return otherPath.startsWith(thisPath);
   }
 }
 

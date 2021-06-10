@@ -278,14 +278,12 @@ static void test4() {
   const Function* A = nullptr;
   const Function* B = nullptr;
   const Block* block = nullptr;
-  const Identifier* AA = nullptr;
-  const Identifier* BB = nullptr;
 
   std::string moduleContents;
 
   moduleContents = "/* this is a test */\n"
-                   "proc a() { aa; }\n"
-                   "proc b() { bb; }\n";
+                   "proc a() { }\n"
+                   "proc b() { }\n";
   ctx->advanceToNextRevision(true);
   setFileText(ctx, modulePath, moduleContents);
   module = parseOneModule(ctx, modulePath);
@@ -299,24 +297,17 @@ static void test4() {
   assert(comment);
   assert(A);
   assert(B);
-  AA = A->stmt(0)->toIdentifier();
-  BB = B->stmt(0)->toIdentifier();
-  assert(AA);
-  assert(BB);
-
   const Module* oldModule = module;
   const Comment* oldComment = comment;
   const Function* oldA = A;
   const Function* oldB = B;
-  const Function* oldAA = AA;
-  const Function* oldBB = BB;
 
   printf("test4 adding Blocks\n");
   moduleContents = "/* this is a test */\n"
                    "{ var x; }\n"
-                   "proc a() { aa; }\n"
+                   "proc a() { }\n"
                    "{ var y; }\n"
-                   "proc b() { bb; }\n";
+                   "proc b() { }\n";
   ctx->advanceToNextRevision(true);
   setFileText(ctx, modulePath, moduleContents);
   module = parseOneModule(ctx, modulePath);
@@ -334,11 +325,6 @@ static void test4() {
   assert(comment);
   assert(A);
   assert(B);
-  AA = A->stmt(0)->toIdentifier();
-  BB = B->stmt(0)->toIdentifier();
-  assert(AA);
-  assert(BB);
-
 
   // should not match because the contents changed
   assert(module != oldModule);
@@ -353,9 +339,9 @@ static void test4() {
   printf("test4 changing Identifier in Blocks\n");
   moduleContents = "/* this is a test */\n"
                    "{ var xx; }\n"
-                   "proc a() { aa; }\n"
+                   "proc a() { }\n"
                    "{ var yy; }\n"
-                   "proc b() { bb; }\n";
+                   "proc b() { }\n";
   ctx->advanceToNextRevision(true);
   setFileText(ctx, modulePath, moduleContents);
   module = parseOneModule(ctx, modulePath);
@@ -384,8 +370,8 @@ static void test4() {
 
   printf("test4 removing the Blocks\n");
   moduleContents = "/* this is a test */\n"
-                   "proc a() { aa; }\n"
-                   "proc b() { bb; }\n";
+                   "proc a() { }\n"
+                   "proc b() { }\n";
   ctx->advanceToNextRevision(true);
   setFileText(ctx, modulePath, moduleContents);
   module = parseOneModule(ctx, modulePath);
@@ -401,11 +387,6 @@ static void test4() {
   assert(comment);
   assert(A);
   assert(B);
-  AA = A->stmt(0)->toIdentifier();
-  BB = B->stmt(0)->toIdentifier();
-  assert(AA);
-  assert(BB);
-
 
   // should not match because the contents changed
   assert(module != oldModule);
@@ -418,8 +399,8 @@ static void test4() {
 
   printf("test4 replacing first Decl\n");
   moduleContents = "/* this is a test */\n"
-                   "proc aprime() { z; }\n"
-                   "proc b() { bb; }\n";
+                   "proc aa() { }\n"
+                   "proc b() { }\n";
   ctx->advanceToNextRevision(true);
   setFileText(ctx, modulePath, moduleContents);
   module = parseOneModule(ctx, modulePath);
@@ -435,11 +416,6 @@ static void test4() {
   assert(comment);
   assert(A);
   assert(B);
-  AA = A->stmt(0)->toIdentifier();
-  BB = B->stmt(0)->toIdentifier();
-  assert(AA);
-  assert(BB);
-
 
   // should not match because the contents changed
   assert(module != oldModule);
