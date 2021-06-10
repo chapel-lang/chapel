@@ -2338,14 +2338,17 @@ module ChapelArray {
       }
     }
 
+    pragma "no doc"
     proc supportsAutoLocalAccess() param {
       return _value.dsiSupportsAutoLocalAccess();
     }
 
+    pragma "no doc"
     proc iteratorYieldsLocalElements() param {
       return _value.dsiIteratorYieldsLocalElements();
     }
 
+    pragma "no doc"
     operator :(val: _domain, type t: string) {
       use Reflection;
       if canResolveMethod(val._value, "doiToString") {
