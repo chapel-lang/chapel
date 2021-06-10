@@ -222,6 +222,7 @@ class LinearAlgebraError : Error {
     }
 }
 
+pragma "no doc"
 /*
 This class promotes lazy computation of required
 Helper matrices to evaluate matrix exponential.
@@ -229,182 +230,179 @@ Helper matrices to evaluate matrix exponential.
 High precision of expm requires smaller computations,
 hence we do a lazy computation depending on the norm value
 of the matrix.
-
 */
 class ExpmPadeHelper {
-  type t;
-  var A : t;
-  var A2 : t;
-  var A4 : t;
-  var A6 : t;
-  var A8 : t;
-  var A10 : t;
-  var Exactd4 : real;
-  var Exactd6 : real;
-  var Exactd8 : real;
-  var Exactd10 : real;
-  var Approxd4 : real;
-  var Approxd6 : real;
-  var Approxd8 : real;
-  var Approxd10 : real;
-  var ident : t;
-  var use_exact_onenorm : bool;
+  type matType;
+  type eltType;
+  var A : matType;
+  var A2 : matType;
+  var A4 : matType;
+  var A6 : matType;
+  var A8 : matType;
+  var A10 : matType;
+  var Exactd4 : eltType;
+  var Exactd6 : eltType;
+  var Exactd8 : eltType;
+  var Exactd10 : eltType;
+  var Approxd4 : eltType;
+  var Approxd6 : eltType;
+  var Approxd8 : eltType;
+  var Approxd10 : eltType;
+  var Ident : matType;
+  var UseExactOneNorm : bool;
   // Boolean arrays to know if A, Exactd, Approxd
   // have been computed.
-  var isAComputed : [1..5] bool;
-  var isExactdComputed : [1..4] bool;
-  var isApproxdComputed : [1..4] bool;
+  var isAComputed : ["A2", "A4", "A6", "A8", "A10"] bool;
+  var isExactdComputed : ["A4", "A6", "A8", "A10"] bool;
+  var isApproxdComputed : ["A4", "A6", "A8", "A10"] bool;
 
   /*
-  Params:
-  A: Expects an N*N square matrix
-  use_exact_onenorm: boolean value specifying if the onenorm has to be exact.
+    Args:
+    A: Expects an N*N square matrix
+    UseExactOneNorm: boolean value specifying if the onenorm has to be exact.
 
-  TODO: Need to write a method to find approximate norm.
-  Currently only supports for use_exact_onenorm = true.
+    TODO: Need to write a method to find approximate norm.
+    Currently only supports for UseExactOneNorm = true.
   */
-  proc init(A, use_exact_onenorm: bool) {
-    this.t = A.type;
+  proc init(A, UseExactOneNorm: bool) {
+    this.matType = A.type;
+    this.eltType = A.eltType;
     this.A = A;
-    this.ident = eye(A.indices);
-    this.use_exact_onenorm = use_exact_onenorm;
+    this.Ident = eye(A.indices);
+    this.UseExactOneNorm = UseExactOneNorm;
   }
 
   proc comp_A2(){
-    if !isAComputed[1] then {
+    if !isAComputed["A2"] then {
       this.A2 = dot(this.A, this.A);
-      isAComputed[1] = true;
+      isAComputed["A2"] = true;
     }
     return this.A2;
   }
 
   proc comp_A4(){
-    if !isAComputed[2] then {
+    if !isAComputed["A4"] then {
       this.A4 = dot(comp_A2(), comp_A2());
-      isAComputed[2] = true;
+      isAComputed["A4"] = true;
     }
     return this.A4;
   }
 
   proc comp_A6(){
-    if !isAComputed[3] then {
+    if !isAComputed["A6"] then {
       this.A6 = dot(comp_A4(), comp_A2());
-      isAComputed[3] = true;
+      isAComputed["A6"] = true;
     }
     return this.A6;
   }
 
   proc comp_A8(){
-    if !isAComputed[4] then {
+    if !isAComputed["A8"] then {
       this.A8 = dot(comp_A6(), comp_A2());
-      isAComputed[4] = true;
+      isAComputed["A8"] = true;
     }
     return this.A8;
   }
 
   proc comp_A10(){
-    if !isAComputed[5] then {
+    if !isAComputed["A10"] then {
       this.A10 = dot(comp_A8(), comp_A2());
-      isAComputed[5] = true;
+      isAComputed["A10"] = true;
     }
     return this.A10;
   }
 
-  // proc matrix_prod(A: [], B: []){
-  //   return dot(A,B);
-  // }
-
   proc comp_Exactd4(){
-    if !isExactdComputed[1] then {
+    if !isExactdComputed["A4"] then {
       this.Exactd4 = norm(comp_A4(), normType.norm1)**(1/4.0);
-      isExactdComputed[1] = true;
+      isExactdComputed["A4"] = true;
     }
     return this.Exactd4;
   }
 
   proc comp_Exactd6(){
-    if !isExactdComputed[2] then {
+    if !isExactdComputed["A6"] then {
       this.Exactd6 = norm(comp_A6(), normType.norm1)**(1/6.0);
-      isExactdComputed[2] = true;
+      isExactdComputed["A6"] = true;
     }
     return this.Exactd6;
   }
 
   proc comp_Exactd8(){
-    if !isExactdComputed[3] then {
+    if !isExactdComputed["A8"] then {
       this.Exactd8 = norm(comp_A8(), normType.norm1)**(1/8.0);
-      isExactdComputed[3] = true;
+      isExactdComputed["A8"] = true;
     }
     return this.Exactd8;
   }
 
   proc comp_Exactd10(){
-    if !isExactdComputed[4] then {
+    if !isExactdComputed["A10"] then {
       this.Exactd10 = norm(comp_A10(), normType.norm1)**(1/10.0);
-      isExactdComputed[4] = true;
+      isExactdComputed["A10"] = true;
     }
     return this.Exactd10;
   }
 
   proc comp_Loosed4(){
-    if this.use_exact_onenorm then{
+    if this.UseExactOneNorm then{
       return comp_Exactd4();
     }
     else {
-      if !isApproxdComputed[1] then {
+      if !isApproxdComputed["A4"] then {
         //TODO: Need to write a function to compute the
         // estimated norm (change the below function)
         // Right now, just returns the exact norm
         this.Approxd4 = norm(comp_A4(), normType.norm1)**(1/4.0);
-        isApproxdComputed[1] = true;
+        isApproxdComputed["A4"] = true;
       }
       return this.Approxd4;
     }
   }
 
   proc comp_Loosed6(){
-    if this.use_exact_onenorm then{
+    if this.UseExactOneNorm then{
       return comp_Exactd6();
     }
     else {
-      if !isApproxdComputed[2] then {
+      if !isApproxdComputed["A6"] then {
         //TODO: Need to write a function to compute the
         // estimated norm (change the below function)
         // Right now, just returns the exact norm
         this.Approxd6 = norm(comp_A6(), normType.norm1)**(1/6.0);
-        isApproxdComputed[2] = true;
+        isApproxdComputed["A6"] = true;
       }
       return this.Approxd6;
     }
   }
 
   proc comp_Loosed8(){
-    if this.use_exact_onenorm then{
+    if this.UseExactOneNorm then{
       return comp_Exactd8();
     }
     else {
-      if !isApproxdComputed[3] then {
+      if !isApproxdComputed["A8"] then {
         //TODO: Need to write a function to compute the
         // estimated norm (change the below function)
         // Right now, just returns the exact norm
         this.Approxd8 = norm(comp_A8(), normType.norm1)**(1/8.0);
-        isApproxdComputed[3] = true;
+        isApproxdComputed["A8"] = true;
       }
       return this.Approxd8;
     }
   }
 
   proc comp_Loosed10(){
-    if this.use_exact_onenorm then{
+    if this.UseExactOneNorm then{
       return comp_Exactd10();
     }
     else {
-      if !isApproxdComputed[4] then {
+      if !isApproxdComputed["A10"] then {
         //TODO: Need to write a function to compute the
         // estimated norm (change the below function)
         // Right now, just returns the exact norm
         this.Approxd10 = norm(comp_A10(), normType.norm1)**(1/10.0);
-        isApproxdComputed[4] = true;
+        isApproxdComputed["A10"] = true;
       }
       return this.Approxd10;
     }
@@ -412,34 +410,34 @@ class ExpmPadeHelper {
 
   proc pade3(){
     const b = [120.0, 60.0, 12.0, 1.0];
-    var temp = b[3]*comp_A2() + b[1]*this.ident;
+    var temp = b[3]*comp_A2() + b[1]*this.Ident;
     var U = dot(this.A, temp);
-    var V = b[2]*comp_A2() + b[0]*this.ident;
+    var V = b[2]*comp_A2() + b[0]*this.Ident;
     return (U,V);
   }
 
   proc pade5(){
     const b = [30240.0, 15120.0, 3360.0, 420.0, 30.0, 1.0];
-    var temp = b[5]*comp_A4() + b[3]*comp_A2() + b[1]*this.ident;
+    var temp = b[5]*comp_A4() + b[3]*comp_A2() + b[1]*this.Ident;
     var U = dot(this.A, temp);
-    var V = b[4]*comp_A4() + b[2]*comp_A2() + b[0]*this.ident;
+    var V = b[4]*comp_A4() + b[2]*comp_A2() + b[0]*this.Ident;
     return (U,V);
   }
 
   proc pade7(){
     const b = [17297280.0, 8648640.0, 1995840.0, 277200.0, 25200.0, 1512.0, 56.0, 1.0];
-    var temp = b[7]*comp_A6() + b[5]*comp_A4() + b[3]*comp_A2() + b[1]*this.ident;
+    var temp = b[7]*comp_A6() + b[5]*comp_A4() + b[3]*comp_A2() + b[1]*this.Ident;
     var U = dot(this.A, temp);
-    var V = b[6]*comp_A6() + b[4]*comp_A4() + b[2]*comp_A2() + b[0]*this.ident;
+    var V = b[6]*comp_A6() + b[4]*comp_A4() + b[2]*comp_A2() + b[0]*this.Ident;
     return (U,V);
   }
 
   proc pade9(){
     const b = [17643225600.0, 8821612800.0, 2075673600.0, 302702400.0, 30270240.0,
                 2162160.0, 110880.0, 3960.0, 90.0, 1.0];
-    var temp = b[9]*comp_A8() + b[7]*comp_A6() + b[5]*comp_A4() + b[3]*comp_A2() + b[1]*this.ident;
+    var temp = b[9]*comp_A8() + b[7]*comp_A6() + b[5]*comp_A4() + b[3]*comp_A2() + b[1]*this.Ident;
     var U = dot(this.A, temp);
-    var V = b[8]*comp_A8() + b[6]*comp_A6() + b[4]*comp_A4() + b[2]*comp_A2() + b[0]*this.ident;
+    var V = b[8]*comp_A8() + b[6]*comp_A6() + b[4]*comp_A4() + b[2]*comp_A2() + b[0]*this.Ident;
     return (U,V);
   }
 
@@ -456,11 +454,11 @@ class ExpmPadeHelper {
 
     var temp2 = b[13]*B6 + b[11]*B4 + b[9]*B2;
     var U2 = dot(B6, temp2);
-    var temp = U2 + b[7]*B6 + b[5]*B4 + b[3]*B2 + b[1]*this.ident;
+    var temp = U2 + b[7]*B6 + b[5]*B4 + b[3]*B2 + b[1]*this.Ident;
     var U = dot(B, temp);
     var temp3 = b[12]*B6 + b[10]*B4 + b[8]*B2;
     var V2 = dot(B6, temp3);
-    var V = V2 + b[6]*B6 + b[4]*B4 + b[2]*B2 + b[0]*this.ident;
+    var V = V2 + b[6]*B6 + b[4]*B4 + b[2]*B2 + b[0]*this.Ident;
     return (U,V);
   }
 
@@ -2325,36 +2323,33 @@ proc kron(A: [?ADom] ?eltType, B: [?BDom] eltType) {
   return C;
 }
 
-
 /*
-  Matrix exponential using Pade approximation
+  Matrix exponential using Pade approximation. This method returns N*N matrix which
+  is Matrix exponential of `A`
 
-  Params:
+  Args:
   A: Expects an N*N square matrix
-  use_exact_onenorm: boolean value specifying if the onenorm has to be exact.
+  UseExactOneNorm: boolean value specifying if the onenorm has to be exact.
   Defaults to true.
 
   TODO: Need to write a method to find approximate norm.
-  Currently only supports for use_exact_onenorm = true.
+  Currently only supports for UseExactOneNorm = true.
 
-  Returns:
-  expA: N*N matrix which is Matrix exponential of `A`
-
-  References:
+  .. note::
   [1] Awad H. Al-Mohy and Nicholas J. Higham (2009)
   "A New Scaling and Squaring Algorithm for the Matrix Exponential."
   SIAM Journal on Matrix Analysis and Applications.
   31 (3). pp. 970-989. ISSN 1095-7162
-*/
 
-proc expm(A: [], param use_exact_onenorm=true){
+  :throws LinearAlgebraError: If Input Matrix is not Square Matrix.
+*/
+proc expm(A: [], param UseExactOneNorm=true) throws {
 
   if A.rank != 2 || A.domain.dim(0) != A.domain.dim(1) then {
-    writeln('Square Matrix Expected');
-    return A;
+    throw new LinearAlgebraError('Square Matrix Expected');
   }
 
-  var h = new ExpmPadeHelper(A, use_exact_onenorm);
+  var h = new ExpmPadeHelper(A, UseExactOneNorm);
 
   // Try Pade order 3
   var eta_1 = max(h.comp_Loosed4(), h.comp_Loosed6());
@@ -2408,10 +2403,8 @@ proc expm(A: [], param use_exact_onenorm=true){
 }
 
 /*
-This method finds P Q Matrices, where
-P = U + V
-Q = -U + V
-it then returns X where Q*X = P
+This method finds P Q Matrices, where P = U + V and Q = -U + V
+it then returns X where Q*X = P.
 */
 private proc solvePQ(U: [?D], V: [D]){
   var P = U + V;
