@@ -28,6 +28,7 @@
 #include "DoWhileStmt.h"
 #include "WhileDoStmt.h"
 #include "build.h"
+#include "docsDriver.h"
 
 #include "chpl/frontend/frontend-queries.h"
 #include "chpl/uast/all-uast.h"
@@ -276,8 +277,15 @@ struct Converter {
   }
 
   Expr* convertOpCall(const uast::OpCall* node) {
-    INT_FATAL("TODO");
-    return nullptr;
+    CallExpr* ret = new CallExpr(node->op().c_str());
+    int nActuals = node->numActuals();
+    for (int i = 0; i < nActuals; i++) {
+      Expr* actual = toExpr(convertAST(node->actual(i)));
+      INT_ASSERT(actual);
+      ret->insertAtTail(actual);
+    }
+
+    return ret;
   }
 
   Expr* convertPrimCall(const uast::PrimCall* node) {
@@ -346,8 +354,58 @@ struct Converter {
     return nullptr;
   }
   Expr* convertVariable(const uast::Variable* node) {
-    INT_FATAL("TODO");
-    return nullptr;
+    auto stmts = new BlockStmt(BLOCK_SCOPELESS);
+
+    auto varSym = new VarSymbol(node->name().c_str());
+    // Adjust the variable according to its kind
+    switch (node->kind()) {
+      case uast::Variable::VAR:
+        varSym->qual = QUAL_VAL;
+        break;
+      case uast::Variable::CONST:
+        varSym->addFlag(FLAG_CONST);
+        varSym->qual = QUAL_CONST;
+        break;
+      case uast::Variable::CONST_REF:
+        varSym->addFlag(FLAG_CONST);
+        varSym->addFlag(FLAG_REF_VAR);
+        varSym->qual = QUAL_CONST_REF;
+        break;
+      case uast::Variable::REF:
+        varSym->addFlag(FLAG_REF_VAR);
+        varSym->qual = QUAL_REF;
+        break;
+      case uast::Variable::PARAM:
+        varSym->addFlag(FLAG_PARAM);
+        varSym->qual = QUAL_PARAM;
+        break;
+      case uast::Variable::TYPE:
+        varSym->addFlag(FLAG_TYPE_VARIABLE);
+        break;
+      case uast::Variable::INDEX:
+        break;
+    }
+
+    Expr* typeExpr = nullptr;
+    Expr* initExpr = nullptr;
+    if (node->typeExpression()) {
+      typeExpr = convertAST(node->typeExpression());
+      INT_ASSERT(typeExpr);
+    }
+    if (node->initExpression()) {
+      initExpr = convertAST(node->initExpression());
+      INT_ASSERT(initExpr);
+    }
+    auto defExpr = new DefExpr(varSym, initExpr, typeExpr);
+    stmts->insertAtTail(defExpr);
+
+    // Add a PRIM_END_OF_STATEMENT.
+    if (fDocs == false) {
+      CallExpr* end = new CallExpr(PRIM_END_OF_STATEMENT);
+      stmts->insertAtTail(end);
+    }
+
+    return stmts;
   }
 
   /// TypeDecls
