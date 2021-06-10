@@ -35,8 +35,21 @@ using namespace chpl::querydetail;
 static void defaultReportErrorPrintDetail(const ErrorMessage& err,
                                           const char* prefix,
                                           const char* kind) {
-  printf("%s%s:%i: %s: %s\n",
-         prefix, err.path().c_str(), err.line(), kind, err.message().c_str());
+  const char* path = err.path().c_str();
+  int lineno = err.line();
+  bool validPath = (path != nullptr && path[0] != '\0');
+
+  if (validPath && lineno > 0) {
+    printf("%s%s:%i: %s: %s\n",
+           prefix, path, lineno, kind, err.message().c_str());
+  } else if (validPath) {
+    printf("%s%s: %s: %s\n",
+           prefix, path, kind, err.message().c_str());
+  } else {
+    printf("%s%s: %s\n",
+           prefix, kind, err.message().c_str());
+  }
+
   for (const auto& detail : err.details()) {
     defaultReportErrorPrintDetail(detail, "  ", "note");
   }
