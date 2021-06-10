@@ -51,7 +51,8 @@ class Builder final {
   UniqueString inferredModuleName_;
   ASTList topLevelExpressions_;
   std::vector<ErrorMessage> errors_;
-  std::vector<std::pair<const ASTNode*, Location>> locations_;
+  std::unordered_map<const ASTNode*, Location> locations_map_;
+  std::vector<std::pair<ID, Location>> locations_;
 
   Builder(Context* context,
           UniqueString filepath,
@@ -59,7 +60,7 @@ class Builder final {
   : context_(context),
     filepath_(filepath),
     inferredModuleName_(inferredModuleName),
-    topLevelExpressions_(), errors_(), locations_() {
+    topLevelExpressions_(), errors_(), locations_map_(), locations_() {
   }
 
   UniqueString createImplicitModuleIfNeeded();
@@ -95,7 +96,7 @@ class Builder final {
     UniqueString filePath;
     uast::ASTList topLevelExpressions;
     std::vector<ErrorMessage> errors;
-    std::vector<std::pair<const ASTNode*, Location>> locations;
+    std::vector<std::pair<ID, Location>> locations;
 
     Result();
     Result(Result&&) = default; // move-constructable

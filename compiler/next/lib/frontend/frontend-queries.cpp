@@ -145,12 +145,12 @@ const LocationsMap& fileLocations(Context* context, UniqueString path) {
   // Get the result of parsing
   const uast::Builder::Result& p = parseFile(context, path);
   // Create a map of ast to Location
-  std::unordered_map<ID, Location> result(p.locations.size());
+  LocationsMap result(p.locations.size());
   for (auto& pair : p.locations) {
-    const ASTNode* ast = pair.first;
+    const ID& id = pair.first;
     Location loc = pair.second;
-    if (ast != nullptr && !ast->id().isEmpty()) {
-      result.insert({ast->id(), loc});
+    if (!id.isEmpty()) {
+      result.insert({id, loc});
     }
   }
 

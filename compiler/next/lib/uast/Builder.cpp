@@ -65,7 +65,7 @@ void Builder::addError(ErrorMessage e) {
 }
 
 void Builder::noteLocation(ASTNode* ast, Location loc) {
-  this->locations_.push_back(std::make_pair(ast, loc));
+  locations_map_[ast] = loc;
 }
 
 Builder::Result Builder::result() {
@@ -83,6 +83,7 @@ Builder::Result Builder::result() {
   ret.topLevelExpressions.swap(topLevelExpressions_);
   ret.errors.swap(errors_);
   ret.locations.swap(locations_);
+  locations_map_.clear();
   return ret;
 }
 
@@ -248,6 +249,8 @@ void Builder::doAssignIDs(ASTNode* ast, UniqueString symbolPath, int& i,
     ast->setID(ID(symbolPath, myID, numContainedIDs));
   }
 
+  // store the location for the ast id
+  locations_.push_back(std::make_pair(ast->id(), locations_map_[ast]));
 }
 
 Builder::Result::Result()
