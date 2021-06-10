@@ -1544,21 +1544,26 @@ static void checkLibraryPythonAndLibmode(void) {
 
   if (!strcmp(CHPL_LIB_PIC, "pic")) {
     USR_FATAL("Python libraries require position independent code, "
-              "set CHPL_LIB_PIC=pic");
+              "recompile Chapel with CHPL_LIB_PIC=pic");
   }
 
-  if (fMultiLocaleInterop && fLinkStyle == LS_STATIC) {
-    USR_WARN("Multi-locale Python libraries cannot be compiled "
-             "with -static, ignoring flag");
+  if (fLinkStyle == LS_STATIC) {
+    const char* libKindMsg = fMultiLocaleInterop
+        ? "Multi-locale Python libraries"
+        : "Python libraries";
+    USR_WARN("%s cannot be compiled with -static, ignoring flag",
+             libKindMsg);
     fLinkStyle = LS_DEFAULT;
   }
 
-  // TODO (dlongnecke): Force set dynamic?
-  /*
-  if (fLinkStyle = LS_DEFAULT) {
+  INT_ASSERT(fLinkStyle == LS_DEFAULT || fLinkStyle == LS_DYNAMIC);
+
+  // For single-locale libraries LS_DEFAULT may work, but for multi-locale
+  // libraries we need to force dynamic linking in order to prevent
+  // relocations in the client library.
+  if (fMultiLocaleInterop) {
     fLinkStyle = LS_DYNAMIC;
   }
-  */
 }
 
 static void checkNotLibraryAndMinimalModules(void) {
