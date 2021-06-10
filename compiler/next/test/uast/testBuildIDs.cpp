@@ -188,7 +188,7 @@ static  void test2() {
   assert(block->stmt(2)->id().numContainedChildren() == 0);
   assert(block->id().postOrderId() == 3);
   assert(block->id().numContainedChildren() == 3);
-  assert(module->id().postOrderId() == 4);
+  assert(module->id().postOrderId() == 0);
   assert(module->id().numContainedChildren() == 4);
 
   // now check containment on the ids
@@ -292,12 +292,108 @@ static void test3() {
   assert(block->id().numContainedChildren() == 1);
   assert(outer->stmt(3)->id().postOrderId() == 4);
   assert(outer->stmt(3)->id().numContainedChildren() == 0);
+
+  assert(!outer->stmt(2)->id().contains(outer->stmt(3)->id()));
+  assert(!outer->stmt(3)->id().contains(outer->stmt(2)->id()));
+  assert(!outer->stmt(3)->id().contains(outer->id()));
 }
+
+static void test4() {
+  Context context;
+  Context* ctx = &context;
+
+  auto builder = Builder::build(ctx, "path/to/test.chpl");
+  Builder* b   = builder.get();
+  Location emptyLoc;
+
+  {
+    /* Create the AST for
+
+      module M {
+        module I {
+          a;
+          b;
+          c;
+        }
+        x;
+      }
+
+     */
+
+    auto strA = UniqueString::build(ctx, "a");
+    auto strB = UniqueString::build(ctx, "b");
+    auto strC = UniqueString::build(ctx, "c");
+    auto strX = UniqueString::build(ctx, "x");
+    auto strM = UniqueString::build(ctx, "M");
+    auto strI = UniqueString::build(ctx, "I");
+
+    ASTList inner;
+    {
+      ASTList ii;
+      ii.push_back(Identifier::build(b, emptyLoc, strA));
+      ii.push_back(Identifier::build(b, emptyLoc, strB));
+      ii.push_back(Identifier::build(b, emptyLoc, strC));
+      inner.push_back(Module::build(b, emptyLoc, strI,
+                                    Decl::DEFAULT_VISIBILITY,
+                                    Module::DEFAULT_MODULE_KIND,
+                                    std::move(ii)));
+    }
+    inner.push_back(Identifier::build(b, emptyLoc, strX));
+
+    auto mod = Module::build(b, emptyLoc, strM,
+                             Decl::DEFAULT_VISIBILITY,
+                             Module::DEFAULT_MODULE_KIND,
+                             std::move(inner));
+
+    b->addToplevelExpression(std::move(mod));
+  }
+
+  Builder::Result r = b->result();
+  assert(r.errors.size() == 0);
+  assert(r.topLevelExpressions.size() == 1);
+  assert(r.topLevelExpressions[0]->isModule());
+  auto modM = r.topLevelExpressions[0]->toModule();
+  assert(r.locations.size() == 6);
+  assert(modM->stmt(0)->isModule());
+  auto modI = modM->stmt(0)->toModule();
+  assert(modI->numStmts() == 3);
+  assert(modM->stmt(1)->isIdentifier());
+
+  // now check the IDs
+  assert(modM->stmt(0)->id().postOrderId() == 0);
+  assert(modM->stmt(0)->id().numContainedChildren() == 3);
+  assert(modM->stmt(1)->id().postOrderId() == 1);
+  assert(modM->stmt(1)->id().numContainedChildren() == 0);
+  assert(modI->stmt(0)->id().postOrderId() == 0);
+  assert(modI->stmt(0)->id().numContainedChildren() == 0);
+  assert(modI->stmt(1)->id().postOrderId() == 1);
+  assert(modI->stmt(1)->id().numContainedChildren() == 0);
+  assert(modI->stmt(2)->id().postOrderId() == 2);
+  assert(modI->stmt(2)->id().numContainedChildren() == 0);
+
+  // check ID containment
+  assert(modM->id().contains(modM->id()));
+  assert(modM->id().contains(modM->stmt(0)->id()));
+  assert(modM->id().contains(modM->stmt(1)->id()));
+  assert(modM->id().contains(modI->id()));
+  assert(modM->id().contains(modI->stmt(0)->id()));
+  assert(modM->id().contains(modI->stmt(1)->id()));
+  assert(modM->id().contains(modI->stmt(2)->id()));
+  assert(modI->id().contains(modI->id()));
+  assert(modI->id().contains(modI->stmt(0)->id()));
+  assert(modI->id().contains(modI->stmt(1)->id()));
+  assert(modI->id().contains(modI->stmt(2)->id()));
+
+  assert(!modI->id().contains(modM->id()));
+  assert(!modI->id().contains(modM->stmt(1)->id()));
+}
+
 
 int main(int argc, char** argv) {
   test0();
   test1();
   test2();
   test3();
+  test4();
   return 0;
 }
