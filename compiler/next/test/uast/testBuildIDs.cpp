@@ -188,7 +188,7 @@ static  void test2() {
   assert(block->stmt(2)->id().numContainedChildren() == 0);
   assert(block->id().postOrderId() == 3);
   assert(block->id().numContainedChildren() == 3);
-  assert(module->id().postOrderId() == 0);
+  assert(module->id().postOrderId() == 4);
   assert(module->id().numContainedChildren() == 4);
 
   // now check containment on the ids
@@ -360,10 +360,13 @@ static void test4() {
   assert(modM->stmt(1)->isIdentifier());
 
   // now check the IDs
-  assert(modM->stmt(0)->id().postOrderId() == 0);
-  assert(modM->stmt(0)->id().numContainedChildren() == 3);
-  assert(modM->stmt(1)->id().postOrderId() == 1);
+  assert(modI->id().postOrderId() == 3);
+  assert(modI->id().numContainedChildren() == 3);
+  assert(modM->stmt(1)->id().postOrderId() == 0);
   assert(modM->stmt(1)->id().numContainedChildren() == 0);
+  assert(modM->id().postOrderId() == 1);
+  assert(modM->id().numContainedChildren() == 1);
+
   assert(modI->stmt(0)->id().postOrderId() == 0);
   assert(modI->stmt(0)->id().numContainedChildren() == 0);
   assert(modI->stmt(1)->id().postOrderId() == 1);

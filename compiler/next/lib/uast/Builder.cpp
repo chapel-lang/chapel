@@ -135,6 +135,34 @@ void Builder::assignIDs(UniqueString inferredModule) {
   }
 }
 
+/* A note about ID assignment
+
+  This ID assigment tries to balance several competing goals:
+   * would like postorder Ids to be available to make it easy to store e.g.
+     resolution results for a function in a vector
+   * would like incremental recompilation to minimize recomputation if code is
+     added -- in particular this means that for say a function we don't want
+     that function's ID to include the postOrderId in the parent scope
+
+  The ID assignment uses the strategy of having functions, type decls, and
+  modules create a new ID scope (with a new postOrderId counter). These uAST
+  nodes have an ID based upon the path to that symbol and have a postOrderId
+  that is just after the last element contained within.
+
+  When printing IDs we use the notation of putting the symbolPath
+  part first and then '@' and then the postOrderId.
+
+  For example:
+
+  M@1       module M {
+  M.Inner@3   module Inner {
+  M.Inner@0     a;
+  M.Inner@1     b;
+  M.Inner@2     c;
+              }
+  M@0         x;
+            }
+ */
 void Builder::doAssignIDs(ASTNode* ast, UniqueString symbolPath, int& i,
                           pathVecT& pathVec, declaredHereT& duplicates) {
   // It is appealing not to consider comments when computing AST ids,
@@ -194,7 +222,12 @@ void Builder::doAssignIDs(ASTNode* ast, UniqueString symbolPath, int& i,
     }
 
     int numContainedIds = freshId;
-    ast->setID(ID(symbolPath, numContainedIds, numContainedIds));
+    ast->setID(ID(newSymbolPath, numContainedIds, numContainedIds));
+
+    // Note: when creating a new symbol (e.g. fn), we're not incrementing i.
+    // The new symbol ID has the updated path (e.g. function name)
+    // and other IDs in the parent scope don't consider the position
+    // of this function.
 
     // pop the path component we just added
     pathVec.pop_back();
