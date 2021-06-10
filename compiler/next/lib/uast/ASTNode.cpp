@@ -119,7 +119,7 @@ void ASTNode::markAST(Context* context, const ASTNode* keep) {
   markASTList(context, keep->children_);
 }
 
-static void dumpHelper(const ASTNode* ast, int depth) {
+static std::string getIdStr(const ASTNode* ast) {
   std::string idStr;
   if (ast == nullptr || ast->id().isEmpty()) {
     idStr = "<no id>";
@@ -127,7 +127,25 @@ static void dumpHelper(const ASTNode* ast, int depth) {
     idStr = ast->id().toString();
   }
 
-  printf("%-10s ", idStr.c_str());
+  return idStr;
+}
+
+static void dumpMaxIdLen(const ASTNode* ast, int& maxIdLen) {
+  std::string idStr = getIdStr(ast);
+  if (idStr.length() > maxIdLen)
+    maxIdLen = idStr.length();
+
+  if (ast != nullptr) {
+    for (const ASTNode* child : ast->children()) {
+      dumpMaxIdLen(child, maxIdLen);
+    }
+  }
+}
+
+static void dumpHelper(const ASTNode* ast, int maxIdLen, int depth) {
+  std::string idStr = getIdStr(ast);
+
+  printf("%-*s ", maxIdLen, idStr.c_str());
 
   for (int i = 0; i < depth; i++) {
     printf("  ");
@@ -151,12 +169,14 @@ static void dumpHelper(const ASTNode* ast, int depth) {
   printf("\n");
 
   for (const ASTNode* child : ast->children()) {
-    dumpHelper(child, depth+1);
+    dumpHelper(child, maxIdLen, depth+1);
   }
 }
 
 void ASTNode::dump(const ASTNode* ast, int leadingSpaces) {
-  dumpHelper(ast, leadingSpaces);
+  int maxIdLen = 0;
+  dumpMaxIdLen(ast, maxIdLen);
+  dumpHelper(ast, maxIdLen, leadingSpaces);
 }
 
 
