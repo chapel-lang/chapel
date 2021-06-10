@@ -120,40 +120,36 @@ void ASTNode::markAST(Context* context, const ASTNode* keep) {
 }
 
 static void dumpHelper(const ASTNode* ast, int depth) {
+  std::string idStr;
+  if (ast == nullptr || ast->id().isEmpty()) {
+    idStr = "<no id>";
+  } else {
+    idStr = ast->id().toString();
+  }
+
+  printf("%-10s ", idStr.c_str());
+
   for (int i = 0; i < depth; i++) {
     printf("  ");
   }
+
   if (ast == nullptr) {
     printf("nullptr\n");
     return;
   }
-  ID emptyId;
-  if (ast->id() != emptyId) {
-    if (const NamedDecl* named = ast->toNamedDecl()) {
-      printf("%s %s %p %s\n",
-             asttags::tagToString(ast->tag()),
-             ast->id().symbolPath().c_str(),
-             ast,
-             named->name().c_str());
-    } else if (const Identifier* ident = ast->toIdentifier()) {
-      printf("%s %s@%i %p %s\n",
-             asttags::tagToString(ast->tag()),
-             ast->id().symbolPath().c_str(),
-             ast->id().postOrderId(),
-             ast,
-             ident->name().c_str());
-    } else {
-      printf("%s %s@%i %p\n",
-             asttags::tagToString(ast->tag()),
-             ast->id().symbolPath().c_str(),
-             ast->id().postOrderId(),
-             ast);
-    }
-  } else {
-    printf("%s <no id> %p\n",
-           asttags::tagToString(ast->tag()),
-           ast);
+
+  printf("%s ", asttags::tagToString(ast->tag()));
+  if (const NamedDecl* named = ast->toNamedDecl()) {
+    printf("%s ", named->name().c_str());
+  } else if (const Identifier* ident = ast->toIdentifier()) {
+    printf("%s ", ident->name().c_str());
   }
+
+  //printf("(containing %i) ", ast->id().numContainedChildren());
+  printf("%p", ast);
+
+  printf("\n");
+
   for (const ASTNode* child : ast->children()) {
     dumpHelper(child, depth+1);
   }

@@ -57,5 +57,32 @@ int ID::compare(const ID& other) const {
   return this->postOrderId() - other.postOrderId();
 }
 
+std::string ID::toString() const {
+  int slashPos = -1;
+  const char* path = this->symbolPath().c_str();
+  for (int i = 0; path[i]; i++) {
+    if (path[i] == '/') slashPos = i;
+  }
+
+  std::string noslash;
+  if (slashPos < 0) {
+    noslash = std::string(path);
+  } else {
+    noslash = std::string(path, slashPos);
+  }
+
+  std::string ret = noslash;
+  if (!noslash.empty()) {
+    ret += "@";
+    ret += std::to_string(this->postOrderId());
+  }
+
+  if (slashPos >= 0) {
+    // append the / part
+    ret += std::string(&path[slashPos]);
+  }
+
+  return ret;
+}
 
 } // end namespace chpl

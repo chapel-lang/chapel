@@ -142,6 +142,8 @@ class ID final {
   void markUniqueStrings(Context* context) const {
     this->symbolPath_.mark(context);
   }
+
+  std::string toString() const;
 };
 
 // docs are turned off for this as a workaround for breathe errors
