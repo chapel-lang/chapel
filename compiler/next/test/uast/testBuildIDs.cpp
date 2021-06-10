@@ -170,6 +170,7 @@ static  void test2() {
   assert(r.topLevelExpressions.size() == 1);
   assert(r.topLevelExpressions[0]->isModule());
   auto module = r.topLevelExpressions[0]->toModule();
+  assert(0 == module->name().compare("test"));
   assert(r.locations.size() == 5); // +1 module
   assert(module->stmt(0)->isBlock());
   const Block* block = module->stmt(0)->toBlock();
@@ -186,8 +187,10 @@ static  void test2() {
   assert(block->stmt(1)->id().numContainedChildren() == 0);
   assert(block->stmt(2)->id().postOrderId() == 2);
   assert(block->stmt(2)->id().numContainedChildren() == 0);
+  assert(0 == block->stmt(2)->id().symbolPath().compare("test"));
   assert(block->id().postOrderId() == 3);
   assert(block->id().numContainedChildren() == 3);
+  assert(0 == block->id().symbolPath().compare("test"));
   assert(module->id().postOrderId() == 4);
   assert(module->id().numContainedChildren() == 4);
 
@@ -362,17 +365,23 @@ static void test4() {
   // now check the IDs
   assert(modI->id().postOrderId() == 3);
   assert(modI->id().numContainedChildren() == 3);
+  assert(0 == modI->id().symbolPath().compare("M.I"));
   assert(modM->stmt(1)->id().postOrderId() == 0);
   assert(modM->stmt(1)->id().numContainedChildren() == 0);
+  assert(0 == modM->stmt(1)->id().symbolPath().compare("M"));
   assert(modM->id().postOrderId() == 1);
   assert(modM->id().numContainedChildren() == 1);
+  assert(0 == modM->id().symbolPath().compare("M"));
 
   assert(modI->stmt(0)->id().postOrderId() == 0);
   assert(modI->stmt(0)->id().numContainedChildren() == 0);
+  assert(0 == modI->stmt(0)->id().symbolPath().compare("M.I"));
   assert(modI->stmt(1)->id().postOrderId() == 1);
   assert(modI->stmt(1)->id().numContainedChildren() == 0);
+  assert(0 == modI->stmt(1)->id().symbolPath().compare("M.I"));
   assert(modI->stmt(2)->id().postOrderId() == 2);
   assert(modI->stmt(2)->id().numContainedChildren() == 0);
+  assert(0 == modI->stmt(2)->id().symbolPath().compare("M.I"));
 
   // check ID containment
   assert(modM->id().contains(modM->id()));
