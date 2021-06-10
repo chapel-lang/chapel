@@ -132,7 +132,7 @@ static std::string getIdStr(const ASTNode* ast) {
 
 static void dumpMaxIdLen(const ASTNode* ast, int& maxIdLen) {
   std::string idStr = getIdStr(ast);
-  if (idStr.length() > maxIdLen)
+  if ((int) idStr.length() > maxIdLen)
     maxIdLen = idStr.length();
 
   if (ast != nullptr) {
