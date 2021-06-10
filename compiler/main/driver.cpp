@@ -1542,7 +1542,7 @@ static void checkLibraryPythonAndLibmode(void) {
   // This flag implies compilation of a library.
   fLibraryCompile = true;
 
-  if (!strcmp(CHPL_LIB_PIC, "pic")) {
+  if (strcmp(CHPL_LIB_PIC, "pic")) {
     USR_FATAL("Python libraries require position independent code, "
               "recompile Chapel with CHPL_LIB_PIC=pic");
   }
