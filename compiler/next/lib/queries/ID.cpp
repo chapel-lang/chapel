@@ -58,28 +58,11 @@ int ID::compare(const ID& other) const {
 }
 
 std::string ID::toString() const {
-  int slashPos = -1;
-  const char* path = this->symbolPath().c_str();
-  for (int i = 0; path[i]; i++) {
-    if (path[i] == '/') slashPos = i;
-  }
+  std::string ret = this->symbolPath().c_str();
 
-  std::string noslash;
-  if (slashPos < 0) {
-    noslash = std::string(path);
-  } else {
-    noslash = std::string(path, slashPos);
-  }
-
-  std::string ret = noslash;
-  if (!noslash.empty()) {
+  if (!ret.empty()) {
     ret += "@";
     ret += std::to_string(this->postOrderId());
-  }
-
-  if (slashPos >= 0) {
-    // append the / part
-    ret += std::string(&path[slashPos]);
   }
 
   return ret;
