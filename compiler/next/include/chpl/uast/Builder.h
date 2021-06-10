@@ -52,7 +52,7 @@ class Builder final {
   ASTList topLevelExpressions_;
   std::vector<ErrorMessage> errors_;
   std::unordered_map<const ASTNode*, Location> locations_map_;
-  std::vector<std::pair<ID, Location>> locations_;
+  std::vector<std::pair<const ASTNode*, Location>> locations_;
 
   Builder(Context* context,
           UniqueString filepath,
@@ -94,9 +94,13 @@ class Builder final {
    */
   struct Result final {
     UniqueString filePath;
-    uast::ASTList topLevelExpressions;
+    ASTList topLevelExpressions;
     std::vector<ErrorMessage> errors;
-    std::vector<std::pair<ID, Location>> locations;
+    // This one really needs to go from ASTNode* to Location
+    // because comments don't have AST Ids, so being able to
+    // map from the pointer to the Location is important to be
+    // able to retrieve the location of a parsed comment.
+    std::vector<std::pair<const ASTNode*, Location>> locations;
 
     Result();
     Result(Result&&) = default; // move-constructable

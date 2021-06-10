@@ -40,6 +40,8 @@ namespace frontend {
 
   using LocationsMap = std::unordered_map<ID, Location>;
   const LocationsMap& fileLocations(Context* context, UniqueString path);
+
+  // These functions can't return the Location for a Comment
   const Location& locateID(Context* context, ID id);
   const Location& locate(Context* context, const uast::ASTNode* ast);
 

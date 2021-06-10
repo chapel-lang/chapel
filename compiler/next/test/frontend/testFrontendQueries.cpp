@@ -495,13 +495,11 @@ static void test5() {
     assert(B);
 
     // Now check their locations
-    Location commentLoc = locate(ctx, comment);
+    // Not checking comment locations here
     Location aLoc = locate(ctx, A);
     Location bLoc = locate(ctx, B);
-    assert(commentLoc.path() == modulePath);
     assert(aLoc.path() == modulePath);
     assert(bLoc.path() == modulePath);
-    assert(commentLoc.line() == 1);
     assert(aLoc.line() == 2);
     assert(bLoc.line() == 3);
 

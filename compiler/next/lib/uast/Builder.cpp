@@ -129,7 +129,7 @@ void Builder::assignIDs(UniqueString inferredModule) {
       UniqueString emptyString;
       doAssignIDs(module, emptyString, i, pathVec, duplicates);
     } else if (ownedExpression->isComment()) {
-      // ignore comments
+      // ignore assigning IDs for toplevel comments
     } else {
       assert(false && "topLevelExpressions should only be module decls or comments");
     }
@@ -163,15 +163,18 @@ void Builder::assignIDs(UniqueString inferredModule) {
               }
   M@0         x;
             }
+
+  Comments are not included in ID assignment.
+  That means that comments don't have IDs and as a result it's not
+  possible to go from a Comment to the file. We think this is acceptable
+  because a documentation tool processing Comments can work with the
+  parse result and make its own tables of these things.
  */
 void Builder::doAssignIDs(ASTNode* ast, UniqueString symbolPath, int& i,
                           pathVecT& pathVec, declaredHereT& duplicates) {
-  // It is appealing not to consider comments when computing AST ids,
-  // but if that happens then we can't figure out source line numbers
-  // for comments, which would be an issue in some documentation use cases.
-  //
-  // However we could make this be a flag on the Context - whether or not
-  // comments can be ignored entirely.
+
+  if (ast->isComment())
+    return;
 
   int firstChildID = i;
 
@@ -250,7 +253,7 @@ void Builder::doAssignIDs(ASTNode* ast, UniqueString symbolPath, int& i,
   }
 
   // store the location for the ast id
-  locations_.push_back(std::make_pair(ast->id(), locations_map_[ast]));
+  locations_.push_back(std::make_pair(ast, locations_map_[ast]));
 }
 
 Builder::Result::Result()

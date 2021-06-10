@@ -147,10 +147,10 @@ const LocationsMap& fileLocations(Context* context, UniqueString path) {
   // Create a map of ast to Location
   LocationsMap result(p.locations.size());
   for (auto& pair : p.locations) {
-    const ID& id = pair.first;
+    const ASTNode* ast = pair.first;
     Location loc = pair.second;
-    if (!id.isEmpty()) {
-      result.insert({id, loc});
+    if (ast != nullptr && !ast->id().isEmpty()) {
+      result.insert({ast->id(), loc});
     }
   }
 
