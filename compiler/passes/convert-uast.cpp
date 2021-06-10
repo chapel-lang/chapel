@@ -317,7 +317,7 @@ struct Converter {
   DefExpr* convertModule(const uast::Module* node) {
     chpl::UniqueString ustr = node->name();
     const char* name = ustr.c_str();
-    const char* path = context->filePathForModuleName(ustr).c_str();
+    const char* path = context->filePathForID(node->id()).c_str();
     ModTag tag = MOD_USER; // TODO: distinguish internal/standard/etc
     bool priv = (node->visibility() == uast::Decl::PRIVATE);
     bool prototype = (node->kind() == uast::Module::PROTOTYPE ||
@@ -358,22 +358,13 @@ struct Converter {
   }
 };
 
-// TODO: it would be preferable to put off creating this
-// location information until later, to have more incremental compiles.
-// Could store a chpl::ID instead.
-static astlocT getConvertedLocation(chpl::Context* context,
-                                    const uast::ASTNode* node) {
-  chpl::Location uloc = chpl::frontend::locate(context, node);
-  return astlocT(uloc.line(), uloc.path().c_str());
-}
-
 /// Generic conversion calling the above functions ///
 Expr* Converter::convertAST(const uast::ASTNode* node) {
   switch (node->tag()) {
     #define CONVERT(NAME) \
       case chpl::uast::asttags::NAME: \
       { \
-        astlocMarker markAstLoc(getConvertedLocation(context, node)); \
+        astlocMarker markAstLoc(node->id()); \
         return convert##NAME((const chpl::uast::NAME*) node); \
       }
 
@@ -408,7 +399,7 @@ Expr* Converter::convertAST(const uast::ASTNode* node) {
 ModuleSymbol* convertToplevelModule(chpl::Context* context,
                                     const chpl::uast::Module* mod) {
   printf("Converting module named %s\n", mod->name().c_str());
-  astlocMarker markAstLoc(getConvertedLocation(context, mod));
+  astlocMarker markAstLoc(mod->id());
   Converter c(context);
   DefExpr* def = c.convertModule(mod);
   ModuleSymbol* ret = toModuleSymbol(def->sym);

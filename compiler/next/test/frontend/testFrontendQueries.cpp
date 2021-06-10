@@ -509,15 +509,49 @@ static void test5() {
   }
 }
 
-int main() {
-  test4();
+static void checkPathAllChildren(Context* context,
+                                 const ASTNode* ast,
+                                 UniqueString expectPath) {
+  UniqueString gotPath = context->filePathForID(ast->id());
+  assert(gotPath == expectPath);
 
+  for (const ASTNode* child : ast->children()) {
+    checkPathAllChildren(context, child, expectPath);
+  }
+}
+
+static void test6() {
+  printf("test6\n");
+  Context context;
+  Context* ctx = &context;
+
+  auto modulePath = UniqueString::build(ctx, "MyModule.chpl");
+  std::string moduleContents;
+
+  moduleContents = "module MyModule {\n"
+                   "  a;\n"
+                   "  module Inner {\n"
+                   "    b;\n"
+                   "    proc innerProc() { }\n"
+                   "  }\n"
+                   "  proc myModuleProc() { }\n"
+                   "  c;\n"
+                   "}\n";
+
+  setFileText(ctx, modulePath, moduleContents);
+  const Module* mod = parseOneModule(ctx, modulePath);
+
+  checkPathAllChildren(ctx, mod, modulePath);
+}
+
+int main() {
   test0();
   test1();
   test2();
   test3();
   test4();
   test5();
+  test6();
 
   return 0;
 }
