@@ -4188,7 +4188,8 @@ static std::string buildLLVMLinkCommand(std::string useLinkCXX,
   // with it).
   // Note that in multi-locale interop we are building a server executable
   // that cannot be built with `-static`, because because it depends on
-  // dynamic libraries.
+  // dynamic libraries. So even if the client library is being built as
+  // static, the server cannot be.
   if (fLinkStyle == LS_STATIC && !fMultiLocaleInterop) {
     command += " -static";
   }

@@ -1417,16 +1417,7 @@ static void postStaticLink() {
   if (!strcmp(CHPL_TARGET_PLATFORM, "darwin")) {
     if (fLinkStyle == LS_STATIC) {
       USR_WARN("Static compilation is not supported on OS X, ignoring flag.");
-      fLinkStyle = fMultiLocaleInterop ? LS_DYNAMIC : LS_DEFAULT;
-    }
-
-    //
-    // The default link style translates to static (at least for now), so we
-    // need to account for that when building a multi-locale library or else
-    // we'll get the same errors we do for static linking on `darwin`.
-    //
-    if (fMultiLocaleInterop && fLinkStyle == LS_DEFAULT) {
-      fLinkStyle = LS_DYNAMIC;
+      fLinkStyle = LS_DEFAULT;
     }
   }
 }
@@ -1530,17 +1521,44 @@ static void checkUnsupportedConfigs(void) {
 }
 
 static void checkMLDebugAndLibmode(void) {
-
   if (!fMultiLocaleLibraryDebug) { return; }
 
+  // This flag implies compilation of a library.
   fLibraryCompile = true;
 
   if (!strcmp(CHPL_COMM, "none")) {
     fMultiLocaleLibraryDebug = false;
     USR_WARN("Compiling a single locale library because CHPL_COMM is none.");
+  } else {
+    fMultiLocaleInterop = true;
   }
 
   return;
+}
+
+static void checkLibraryPythonAndLibmode(void) {
+  if (!fLibraryPython) return;
+
+  // This flag implies compilation of a library.
+  fLibraryCompile = true;
+
+  if (!strcmp(CHPL_LIB_PIC, "pic")) {
+    USR_FATAL("Python libraries require position independent code, "
+              "set CHPL_LIB_PIC=pic");
+  }
+
+  if (fMultiLocaleInterop && fLinkStyle == LS_STATIC) {
+    USR_WARN("Multi-locale Python libraries cannot be compiled "
+             "with -static, ignoring flag");
+    fLinkStyle = LS_DEFAULT;
+  }
+
+  // TODO (dlongnecke): Force set dynamic?
+  /*
+  if (fLinkStyle = LS_DEFAULT) {
+    fLinkStyle = LS_DYNAMIC;
+  }
+  */
 }
 
 static void checkNotLibraryAndMinimalModules(void) {
@@ -1568,6 +1586,8 @@ static void postprocess_args() {
   postStaticLink();
 
   checkMLDebugAndLibmode();
+
+  checkLibraryPythonAndLibmode();
 
   checkNotLibraryAndMinimalModules();
 
