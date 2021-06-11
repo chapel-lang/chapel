@@ -435,3 +435,25 @@ use TestUtils;
 
   assertAlmostEqual(E, X, ' ');
 }
+
+{
+  const vec = 0..2;
+  var D = {vec,vec};
+  var X:[D] complex;
+  X(1,1) = 1.0 + 1i;
+  X(0,0) = 1.0 + 1i;
+  X(2,2) = 1.0 + 1i;
+  X(0,1) = 1.0;
+  X(1,0) = 1.0;
+  X(1,2) = 1.0;
+  X(2,1) = 1.0;
+
+  var Z_cos = cosm(X);
+  var Z_sin = sinm(X);
+  var exp_iX = Z_cos + 1.0i * Z_sin;
+  var iX = 1.0i * X;
+
+  var E = expm(iX);
+
+  assertAlmostEqual(E, exp_iX, 'Check sinm, cosm, expm');
+}

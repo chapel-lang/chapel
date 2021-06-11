@@ -2352,21 +2352,21 @@ proc expm(A: [], param UseExactOneNorm=true) throws {
   var h = new ExpmPadeHelper(A, UseExactOneNorm);
 
   // Try Pade order 3
-  var eta_1 = max(h.comp_Loosed4(), h.comp_Loosed6());
+  var eta_1 = max(abs(h.comp_Loosed4()), abs(h.comp_Loosed6()));
   if eta_1 < 1.495585217958292e-002 then {
     var (U,V) = h.pade3();
     return solvePQ(U, V);
   }
 
   // Try Pade order 5
-  var eta_2 = max(h.comp_Exactd4(), h.comp_Loosed6());
+  var eta_2 = max(abs(h.comp_Exactd4()), abs(h.comp_Loosed6()));
   if eta_2 < 2.539398330063230e-001 then {
     var (U,V) = h.pade5();
     return solvePQ(U, V);
   }
 
   // Try Pade order 7 and 9
-  var eta_3 = max(h.comp_Exactd6(), h.comp_Loosed8());
+  var eta_3 = max(abs(h.comp_Exactd6()), abs(h.comp_Loosed8()));
   if eta_3 < 9.504178996162932e-001 then {
     var (U,V) = h.pade7();
     return solvePQ(U, V);
@@ -2378,7 +2378,7 @@ proc expm(A: [], param UseExactOneNorm=true) throws {
   }
 
   // Use Pade order 13.
-  var eta_4 = max(h.comp_Loosed8(), h.comp_Loosed10());
+  var eta_4 = max(abs(h.comp_Loosed8()), abs(h.comp_Loosed10()));
   var eta_5 = min(eta_3, eta_4);
   var theta_13 = 4.25;
 
@@ -2409,8 +2409,8 @@ it then returns X where Q*X = P.
 private proc solvePQ(U: [?D], V: [D]){
   var P = U + V;
   var Q = -U + V;
-  var res : [D] real;
-  var b : [D.dim(0)] real;
+  var res : [D] U.eltType;
+  var b : [D.dim(0)] U.eltType;
 
   // Need to rewrite solve function
   // to solve for A*X = B where B
@@ -2425,6 +2425,34 @@ private proc solvePQ(U: [?D], V: [D]){
     }
   }
   return res;
+}
+
+/*
+This method returns the sine of the matrix A.
+*/
+proc sinm(A: []) throws {
+  if A.eltType == real {
+    return expm(1.0i * A).im;
+  }
+  else{
+    var U = 1.0i * A;
+    var V = -1.0i * A;
+    return -0.5i * (expm(U) - expm(V));
+  }
+}
+
+/*
+This method returns the cosine of the matrix A.
+*/
+proc cosm(A: []) throws {
+  if A.eltType == real {
+    return expm(1.0i * A).re;
+  }
+  else{
+    var U = 1.0i * A;
+    var V = -1.0i * A;
+    return 0.5 * (expm(U) + expm(V));
+  }
 }
 
 //
