@@ -233,21 +233,20 @@ of the matrix.
 */
 class ExpmPadeHelper {
   type matType;
-  type eltType;
   var A : matType;
   var A2 : matType;
   var A4 : matType;
   var A6 : matType;
   var A8 : matType;
   var A10 : matType;
-  var Exactd4 : eltType;
-  var Exactd6 : eltType;
-  var Exactd8 : eltType;
-  var Exactd10 : eltType;
-  var Approxd4 : eltType;
-  var Approxd6 : eltType;
-  var Approxd8 : eltType;
-  var Approxd10 : eltType;
+  var Exactd4 : real;
+  var Exactd6 : real;
+  var Exactd8 : real;
+  var Exactd10 : real;
+  var Approxd4 : real;
+  var Approxd6 : real;
+  var Approxd8 : real;
+  var Approxd10 : real;
   var Ident : matType;
   var UseExactOneNorm : bool;
   // Boolean arrays to know if A, Exactd, Approxd
@@ -266,7 +265,6 @@ class ExpmPadeHelper {
   */
   proc init(A, UseExactOneNorm: bool) {
     this.matType = A.type;
-    this.eltType = A.eltType;
     this.A = A;
     this.Ident = eye(A.indices);
     this.UseExactOneNorm = UseExactOneNorm;
@@ -2425,6 +2423,25 @@ private proc solvePQ(U: [?D], V: [D]){
     }
   }
   return res;
+}
+
+/*
+This method returns both sine and cosine of the matrix A.
+*/
+proc sincos(A: []) throws {
+  if A.eltType == real {
+    var exp = expm(1.0i * A);
+    return (exp.im, exp.re);
+  }
+  else{
+    var U = 1.0i * A;
+    var exp_U = expm(U);
+    var V = -1.0i * A;
+    var exp_V = expm(V);
+    var sin = -0.5i * (exp_U - exp_V);
+    var cos = 0.5 * (exp_U + exp_V);
+    return (sin, cos);
+  }
 }
 
 /*

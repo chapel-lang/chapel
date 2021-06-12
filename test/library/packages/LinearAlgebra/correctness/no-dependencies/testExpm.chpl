@@ -6,7 +6,7 @@ use TestUtils;
   var D = {vec,vec};
   var X = eye(D);
   X(0,1) = 1;
-  X = reshape(2*X, D);
+  X = 2*X;
 
   var E = expm(X);
 
@@ -25,7 +25,7 @@ use TestUtils;
   X(0,1) = 1;
   X(0,2) = 1;
   X(2,0) = 1;
-  X = reshape(2*X, D);
+  X = 2*X;
 
   var E = expm(X);
 
@@ -43,356 +43,61 @@ use TestUtils;
 }
 
 {
-  //Pade3 case
+  //Pade3, Pade5, Pade7, Pade9, Pade13 cases
   const vec = 0..2;
   var D = {vec,vec};
-  var X = eye(D);
-  var w = 0.01;
-  var Y = X * w;
 
-  var E = expm(Y);
+  const b = [0.01, 0.1, 0.5, 1.0, 10.0];
+  const res = [1.010050, 1.105171, 1.648721, 2.718282, 22026.465795];
+  const pade = [3,5,7,9,13];
 
-  X(0,0) = 1.010050;
-  X(0,1) = 0.0;
-  X(0,2) = 0.0;
-  X(1,0) = 0.0;
-  X(1,1) = 1.010050;
-  X(1,2) = 0.0;
-  X(2,0) = 0.0;
-  X(2,1) = 0.0;
-  X(2,2) = 1.010050;
+  for i in 0..4 do {
+    var X = eye(D);
+    var Y = X * b[i];
+    var E = expm(Y);
+    setDiag(X, 0, res[i]);
 
-  assertAlmostEqual(E, X, 'Matrix Exponential - X = 3*3 (Uses Pade3)');
+    assertAlmostEqual(E, X, 'Matrix Exponential - X = 3*3 : Uses Pade' + (pade[i]: string));
+  }
 }
 
 {
-  //Pade5 case
+  // Input Matrices of Format
+  // [1.0 10^n 0.0]
+  // [0.0 -1.0 0.0]
+  // [0.0  0.0 0.0]
   const vec = 0..2;
   var D = {vec,vec};
+
+  const b = [1.0, 10.0, 100.0, 1000.0, 10000.0, 100000.0, 1000000.0, 10000000.0, 100000000.0];
+  const res = [1.175201, 11.752012, 117.520119, 1175.201194, 11752.011936, 117520.119364, 1175201.193644, 11752011.936438, 117520119.364380];
+
   var X = eye(D);
-  var w = 0.1;
-  var Y = X * w;
-
-  var E = expm(Y);
-
-  X(0,0) = 1.105171;
-  X(0,1) = 0.0;
-  X(0,2) = 0.0;
-  X(1,0) = 0.0;
-  X(1,1) = 1.105171;
-  X(1,2) = 0.0;
-  X(2,0) = 0.0;
-  X(2,1) = 0.0;
-  X(2,2) = 1.105171;
-
-  assertAlmostEqual(E, X, 'Matrix Exponential - X = 3*3 (Uses Pade5)');
-}
-
-{
-  //Pade7 case
-  const vec = 0..2;
-  var D = {vec,vec};
-  var X = eye(D);
-  var w = 0.5;
-  var Y = X * w;
-
-  var E = expm(Y);
-
-  X(0,0) = 1.648721;
-  X(0,1) = 0.0;
-  X(0,2) = 0.0;
-  X(1,0) = 0.0;
-  X(1,1) = 1.648721;
-  X(1,2) = 0.0;
-  X(2,0) = 0.0;
-  X(2,1) = 0.0;
-  X(2,2) = 1.648721;
-
-  assertAlmostEqual(E, X, 'Matrix Exponential - X = 3*3 (Uses Pade7)');
-}
-
-{
-  //Pade9 case
-  const vec = 0..2;
-  var D = {vec,vec};
-  var X = eye(D);
-  var w = 1;
-  var Y = X * w;
-
-  var E = expm(Y);
-
-  X(0,0) = 2.718282;
-  X(0,1) = 0.0;
-  X(0,2) = 0.0;
-  X(1,0) = 0.0;
-  X(1,1) = 2.718282;
-  X(1,2) = 0.0;
-  X(2,0) = 0.0;
-  X(2,1) = 0.0;
-  X(2,2) = 2.718282;
-
-  assertAlmostEqual(E, X, 'Matrix Exponential - X = 3*3 (Uses Pade9)');
-}
-
-{
-  //Pade13 case
-  const vec = 0..2;
-  var D = {vec,vec};
-  var X = eye(D);
-  var w = 10;
-  var Y = X * w;
-
-  var E = expm(Y);
-
-  X(0,0) = 22026.465795;
-  X(0,1) = 0.0;
-  X(0,2) = 0.0;
-  X(1,0) = 0.0;
-  X(1,1) = 22026.465795;
-  X(1,2) = 0.0;
-  X(2,0) = 0.0;
-  X(2,1) = 0.0;
-  X(2,2) = 22026.465795;
-
-  assertAlmostEqual(E, X, 'Matrix Exponential - X = 3*3 (Uses Pade13)');
-}
-
-{
-  const vec = 0..2;
-  var D = {vec,vec};
-  var X = eye(D);
-  var b = 1.0;
   X(0,0) = 1.0;
-  X(0,1) = b;
   X(1,0) = 0.0;
   X(1,1) = -1.0;
 
-  var E = expm(X);
+  var Y = eye(D);
+  setDiag(Y, 0, 2.718282);
+  Y(1,1) = 0.367879;
 
-  X(0,0) = 2.718282;
-  X(0,1) = 1.175201;
-  X(0,2) = 0.0;
-  X(1,0) = 0.0;
-  X(1,1) = 0.367879;
-  X(1,2) = 0.0;
-  X(2,0) = 0.0;
-  X(2,1) = 0.0;
-  X(2,2) = 2.718282;
+  for i in 0..8 do {
+    X(0,1) = b[i];
+    Y(0,1) = res[i];
 
-  assertAlmostEqual(E, X, ' ');
+    var E = expm(X);
+    assertAlmostEqual(E, Y, ' ');
+  }
 }
 
 {
   const vec = 0..2;
   var D = {vec,vec};
   var X = eye(D);
-  var b = 10.0;
-  X(0,0) = 1.0;
-  X(0,1) = b;
-  X(1,0) = 0.0;
-  X(1,1) = -1.0;
+  setDiag(X, 0, 0.0);
+  setDiag(X, 1, 1.0);
+  setDiag(X, -1, -1.0);
 
-  var E = expm(X);
-
-  X(0,0) = 2.718282;
-  X(0,1) = 11.752012;
-  X(0,2) = 0.0;
-  X(1,0) = 0.0;
-  X(1,1) = 0.367879;
-  X(1,2) = 0.0;
-  X(2,0) = 0.0;
-  X(2,1) = 0.0;
-  X(2,2) = 2.718282;
-
-  assertAlmostEqual(E, X, ' ');
-}
-
-{
-  const vec = 0..2;
-  var D = {vec,vec};
-  var X = eye(D);
-  var b = 100.0;
-  X(0,0) = 1.0;
-  X(0,1) = b;
-  X(1,0) = 0.0;
-  X(1,1) = -1.0;
-
-  var E = expm(X);
-
-  X(0,0) = 2.718282;
-  X(0,1) = 117.520119;
-  X(0,2) = 0.0;
-  X(1,0) = 0.0;
-  X(1,1) = 0.367879;
-  X(1,2) = 0.0;
-  X(2,0) = 0.0;
-  X(2,1) = 0.0;
-  X(2,2) = 2.718282;
-
-  assertAlmostEqual(E, X, ' ');
-}
-
-{
-  const vec = 0..2;
-  var D = {vec,vec};
-  var X = eye(D);
-  var b = 1000.0;
-  X(0,0) = 1.0;
-  X(0,1) = b;
-  X(1,0) = 0.0;
-  X(1,1) = -1.0;
-
-  var E = expm(X);
-
-  X(0,0) = 2.718282;
-  X(0,1) = 1175.201194;
-  X(0,2) = 0.0;
-  X(1,0) = 0.0;
-  X(1,1) = 0.367879;
-  X(1,2) = 0.0;
-  X(2,0) = 0.0;
-  X(2,1) = 0.0;
-  X(2,2) = 2.718282;
-
-  assertAlmostEqual(E, X, ' ');
-}
-
-{
-  const vec = 0..2;
-  var D = {vec,vec};
-  var X = eye(D);
-  var b = 10000.0;
-  X(0,0) = 1.0;
-  X(0,1) = b;
-  X(1,0) = 0.0;
-  X(1,1) = -1.0;
-
-  var E = expm(X);
-
-  X(0,0) = 2.718282;
-  X(0,1) = 11752.011936;
-  X(0,2) = 0.0;
-  X(1,0) = 0.0;
-  X(1,1) = 0.367879;
-  X(1,2) = 0.0;
-  X(2,0) = 0.0;
-  X(2,1) = 0.0;
-  X(2,2) = 2.718282;
-
-  assertAlmostEqual(E, X, ' ');
-}
-
-{
-  const vec = 0..2;
-  var D = {vec,vec};
-  var X = eye(D);
-  var b = 100000.0;
-  X(0,0) = 1.0;
-  X(0,1) = b;
-  X(1,0) = 0.0;
-  X(1,1) = -1.0;
-
-  var E = expm(X);
-
-  X(0,0) = 2.718282;
-  X(0,1) = 117520.119364;
-  X(0,2) = 0.0;
-  X(1,0) = 0.0;
-  X(1,1) = 0.367879;
-  X(1,2) = 0.0;
-  X(2,0) = 0.0;
-  X(2,1) = 0.0;
-  X(2,2) = 2.718282;
-
-  assertAlmostEqual(E, X, ' ');
-}
-
-{
-  const vec = 0..2;
-  var D = {vec,vec};
-  var X = eye(D);
-  var b = 1000000.0;
-  X(0,0) = 1.0;
-  X(0,1) = b;
-  X(1,0) = 0.0;
-  X(1,1) = -1.0;
-
-  var E = expm(X);
-
-  X(0,0) = 2.718282;
-  X(0,1) = 1175201.193644;
-  X(0,2) = 0.0;
-  X(1,0) = 0.0;
-  X(1,1) = 0.367879;
-  X(1,2) = 0.0;
-  X(2,0) = 0.0;
-  X(2,1) = 0.0;
-  X(2,2) = 2.718282;
-
-  assertAlmostEqual(E, X, ' ');
-}
-
-{
-  const vec = 0..2;
-  var D = {vec,vec};
-  var X = eye(D);
-  var b = 10000000.0;
-  X(0,0) = 1.0;
-  X(0,1) = b;
-  X(1,0) = 0.0;
-  X(1,1) = -1.0;
-
-  var E = expm(X);
-
-  X(0,0) = 2.718282;
-  X(0,1) = 11752011.936438;
-  X(0,2) = 0.0;
-  X(1,0) = 0.0;
-  X(1,1) = 0.367879;
-  X(1,2) = 0.0;
-  X(2,0) = 0.0;
-  X(2,1) = 0.0;
-  X(2,2) = 2.718282;
-
-  assertAlmostEqual(E, X, ' ');
-}
-
-{
-  const vec = 0..2;
-  var D = {vec,vec};
-  var X = eye(D);
-  var b = 100000000.0;
-  X(0,0) = 1.0;
-  X(0,1) = b;
-  X(1,0) = 0.0;
-  X(1,1) = -1.0;
-
-  var E = expm(X);
-
-  X(0,0) = 2.718282;
-  X(0,1) = 117520119.364380;
-  X(0,2) = 0.0;
-  X(1,0) = 0.0;
-  X(1,1) = 0.367879;
-  X(1,2) = 0.0;
-  X(2,0) = 0.0;
-  X(2,1) = 0.0;
-  X(2,2) = 2.718282;
-
-  assertAlmostEqual(E, X, ' ');
-}
-
-{
-  const vec = 0..2;
-  var D = {vec,vec};
-  var X = eye(D);
-  X(0,0) = 0.0;
-  X(1,1) = 0.0;
-  X(2,2) = 0.0;
-  X(0,1) = 1.0;
-  X(1,0) = -1.0;
-  X(1,2) = 1.0;
-  X(2,1) = -1.0;
 
   var E = expm(X);
 
@@ -413,13 +118,9 @@ use TestUtils;
   const vec = 0..2;
   var D = {vec,vec};
   var X = eye(D);
-  X(0,0) = -2.0;
-  X(1,1) = -2.0;
-  X(2,2) = -2.0;
-  X(0,1) = 1.0;
-  X(1,0) = 1.0;
-  X(1,2) = 1.0;
-  X(2,1) = 1.0;
+  setDiag(X, 0, -2.0);
+  setDiag(X, 1, 1.0);
+  setDiag(X, -1, 1.0);
 
   var E = expm(X);
 
@@ -437,16 +138,13 @@ use TestUtils;
 }
 
 {
+  // Test for sinm, cosm, expm
   const vec = 0..2;
   var D = {vec,vec};
   var X:[D] complex;
-  X(1,1) = 1.0 + 1i;
-  X(0,0) = 1.0 + 1i;
-  X(2,2) = 1.0 + 1i;
-  X(0,1) = 1.0;
-  X(1,0) = 1.0;
-  X(1,2) = 1.0;
-  X(2,1) = 1.0;
+  setDiag(X, 0, 1.0 + 1i);
+  setDiag(X, 1, 1.0);
+  setDiag(X, -1, 1.0);
 
   var Z_cos = cosm(X);
   var Z_sin = sinm(X);
@@ -456,4 +154,22 @@ use TestUtils;
   var E = expm(iX);
 
   assertAlmostEqual(E, exp_iX, 'Check sinm, cosm, expm');
+}
+
+{
+  // Test for sincos, expm
+  const vec = 0..2;
+  var D = {vec,vec};
+  var X:[D] complex;
+  setDiag(X, 0, 1.0 + 1i);
+  setDiag(X, 1, 1.0);
+  setDiag(X, -1, 1.0);
+
+  var (Z_sin, Z_cos) = sincos(X);
+  var exp_iX = Z_cos + 1.0i * Z_sin;
+  var iX = 1.0i * X;
+
+  var E = expm(iX);
+
+  assertAlmostEqual(E, exp_iX, 'Check sincos, expm');
 }
