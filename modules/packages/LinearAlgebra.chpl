@@ -2333,7 +2333,8 @@ proc kron(A: [?ADom] ?eltType, B: [?BDom] eltType) {
   TODO: Need to write a method to find approximate norm.
   Currently only supports for UseExactOneNorm = true.
 
-  .. note::
+.. note::
+
   [1] Awad H. Al-Mohy and Nicholas J. Higham (2009)
   "A New Scaling and Squaring Algorithm for the Matrix Exponential."
   SIAM Journal on Matrix Analysis and Applications.
