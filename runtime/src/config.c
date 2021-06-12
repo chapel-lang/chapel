@@ -22,6 +22,7 @@
 
 #include "arg.h"
 #include "chplcgfns.h"
+#include "chpl-comm.h"
 #include "chplexit.h"
 #include "chplio.h"
 #include "chpl-mem.h"
@@ -40,7 +41,7 @@ typedef struct _configVarType { /* table entry */
   const char* moduleName;
   char* defaultValue;
   char* setValue;
-  int private;
+  int isPrivate;
   int deprecated;
   const char* deprecationMsg;
 
@@ -216,9 +217,9 @@ void printConfigVarTable(void) {
         }
         fprintf(stdout, "  %*s: ", longestName, configVar->varName);
         fprintf(stdout, "%s", configVar->defaultValue);
-        if (configVar->setValue || configVar->private) {
+        if (configVar->setValue || configVar->isPrivate) {
           fprintf(stdout, " (");
-          if (configVar->private) {
+          if (configVar->isPrivate) {
             fprintf(stdout, "private");
             if (configVar->setValue) {
               fprintf(stdout, ", ");
@@ -253,7 +254,7 @@ static configVarType* lookupConfigVar(const char* moduleName,
     if (strcmp(configVar->varName, varName) == 0) {
       if (strcmp(moduleName, "") == 0) {
         // only public configs can be referred to in an unqualified manner
-        if (!configVar->private) {
+        if (!configVar->isPrivate) {
           numTimesFound++;
           if (numTimesFound == 1) {
             foundConfigVar = configVar;
@@ -299,7 +300,11 @@ void initSetValue(const char* varName, const char* value,
                                             varName, "'.");
     chpl_error(message, lineno, filename);
   } else if (configVar->deprecated) {
-    chpl_warning(configVar->deprecationMsg, lineno, filename);
+    #ifndef LAUNCHER
+    if (chpl_nodeID == 0) {
+      chpl_warning(configVar->deprecationMsg, lineno, filename);
+    }
+    #endif
   }
   if (strcmp(varName, "numLocales") == 0) {
     parseNumLocales(value, lineno, filename);
@@ -327,7 +332,7 @@ const char* lookupSetValue(const char* varName, const char* moduleName) {
 
 
 void installConfigVar(const char* varName, const char* value,
-                      const char* moduleName, int private, int deprecated,
+                      const char* moduleName, int isPrivate, int deprecated,
                       const char* deprecationMsg) {
   unsigned hashValue;
   configVarType* configVar = (configVarType*)
@@ -347,7 +352,7 @@ void installConfigVar(const char* varName, const char* value,
   configVar->moduleName = chpl_glom_strings(1, moduleName);
   configVar->defaultValue = chpl_glom_strings(1, value);
   configVar->setValue = NULL;
-  configVar->private = private;
+  configVar->isPrivate = isPrivate;
   configVar->deprecated = deprecated;
   configVar->deprecationMsg = deprecationMsg;
 }

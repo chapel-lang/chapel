@@ -712,7 +712,7 @@ static void setLlvmCodegen(const ArgumentDescription* desc, const char* unused)
 {
   if (fYesLlvmCodegen) {
     fNoLlvmCodegen = false;
-    //    USR_WARN("--llvm is deprecated -- please use --target-compiler=llvm");
+    USR_WARN("--llvm is deprecated -- please use --target-compiler=llvm");
     envMap["CHPL_TARGET_COMPILER"] = "llvm";
     // set the environment variable for follow-on processes including
     // any printchplenv invocation
@@ -720,7 +720,7 @@ static void setLlvmCodegen(const ArgumentDescription* desc, const char* unused)
     if( rc ) USR_FATAL("Could not setenv CHPL_TARGET_COMPILER");
   } else {
     fNoLlvmCodegen = true;
-    //    USR_WARN("--no-llvm is deprecated -- please use e.g. --target-compiler=gnu");
+    USR_WARN("--no-llvm is deprecated -- please use e.g. --target-compiler=gnu");
   }
 }
 
