@@ -18,6 +18,7 @@
  */
 
 #include "chpl/uast/Block.h"
+#include "chpl/uast/Comment.h"
 #include "chpl/uast/Defer.h"
 #include "chpl/uast/Expression.h"
 #include "chpl/uast/Identifier.h"
@@ -56,13 +57,14 @@ static void test0(Parser* parser) {
   assert(defer->blockStyle() == BlockStyle::IMPLICIT);
   assert(defer->numStmts() == 2);
   assert(defer->stmt(0)->isComment());
+  assert(defer->stmt(0)->toComment()->str() == "/* comment 2 */");
   assert(defer->stmt(1)->isFnCall());
 
   // Make sure the statements iterator works as expected.
   {
     std::array<ASTTag, 2> stmtList = {
       asttags::Comment,
-      asttags::FnCall,
+      asttags::FnCall
     };
     auto i = 0;
     for (const auto stmt : defer->stmts()) {
@@ -92,16 +94,14 @@ static void test1(Parser* parser) {
   const Defer* defer = mod->stmt(1)->toDefer();
   assert(defer);
   assert(defer->blockStyle() == BlockStyle::EXPLICIT);
-  assert(defer->numStmts() == 4);
+  assert(defer->numStmts() == 3);
   assert(defer->stmt(0)->isComment());
-  assert(defer->stmt(1)->isComment());
-  assert(defer->stmt(2)->isFnCall());
-  assert(defer->stmt(3)->isComment());
+  assert(defer->stmt(1)->isFnCall());
+  assert(defer->stmt(2)->isComment());
 
   // Make sure the statements iterator works as expected.
   {
-    std::array<ASTTag, 4> stmtList = {
-      asttags::Comment,
+    std::array<ASTTag, 3> stmtList = {
       asttags::Comment,
       asttags::FnCall,
       asttags::Comment

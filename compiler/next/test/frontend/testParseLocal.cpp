@@ -105,12 +105,11 @@ static void test2(Parser* parser) {
   const Local* local = mod->stmt(1)->toLocal();
   assert(local != nullptr);
   assert(local->condition() == nullptr);
-  assert(local->numStmts() == 4);
+  assert(local->numStmts() == 3);
   assert(local->blockStyle() == BlockStyle::EXPLICIT);
   assert(local->stmt(0)->isComment());
-  assert(local->stmt(1)->isComment());
-  assert(local->stmt(2)->isVariable());
-  assert(local->stmt(3)->isComment());
+  assert(local->stmt(1)->isVariable());
+  assert(local->stmt(2)->isComment());
 }
 
 static void test3(Parser* parser) {
@@ -134,12 +133,11 @@ static void test3(Parser* parser) {
   assert(local != nullptr);
   assert(local->condition() != nullptr);
   assert(local->condition()->isIdentifier());
-  assert(local->numStmts() == 4);
+  assert(local->numStmts() == 3);
   assert(local->blockStyle() == BlockStyle::EXPLICIT);
   assert(local->stmt(0)->isComment());
-  assert(local->stmt(1)->isComment());
-  assert(local->stmt(2)->isVariable());
-  assert(local->stmt(3)->isComment());
+  assert(local->stmt(1)->isVariable());
+  assert(local->stmt(2)->isComment());
 }
 
 static void test4(Parser* parser) {

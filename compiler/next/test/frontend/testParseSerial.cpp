@@ -104,12 +104,11 @@ static void test2(Parser* parser) {
   const Serial* serial = mod->stmt(1)->toSerial();
   assert(serial != nullptr);
   assert(serial->condition() == nullptr);
-  assert(serial->numStmts() == 4);
+  assert(serial->numStmts() == 3);
   assert(serial->blockStyle() == BlockStyle::EXPLICIT);
   assert(serial->stmt(0)->isComment());
-  assert(serial->stmt(1)->isComment());
-  assert(serial->stmt(2)->isVariable());
-  assert(serial->stmt(3)->isComment());
+  assert(serial->stmt(1)->isVariable());
+  assert(serial->stmt(2)->isComment());
 }
 
 static void test3(Parser* parser) {
@@ -133,12 +132,11 @@ static void test3(Parser* parser) {
   assert(serial != nullptr);
   assert(serial->condition() != nullptr);
   assert(serial->condition()->isIdentifier());
-  assert(serial->numStmts() == 4);
+  assert(serial->numStmts() == 3);
   assert(serial->blockStyle() == BlockStyle::EXPLICIT);
   assert(serial->stmt(0)->isComment());
-  assert(serial->stmt(1)->isComment());
-  assert(serial->stmt(2)->isVariable());
-  assert(serial->stmt(3)->isComment());
+  assert(serial->stmt(1)->isVariable());
+  assert(serial->stmt(2)->isComment());
 }
 
 static void test4(Parser* parser) {

@@ -18,6 +18,7 @@
  */
 
 #include "chpl/uast/Block.h"
+#include "chpl/uast/Comment.h"
 #include "chpl/uast/For.h"
 #include "chpl/uast/DoWhile.h"
 #include "chpl/uast/Expression.h"
@@ -69,7 +70,7 @@ static void test0(Parser* parser) {
 static void test1(Parser* parser) {
   auto parseResult = parser->parseString("test1.chpl",
       "/* comment 1 */\n"
-      "do /*comment 2 */\n"
+      "do /* comment 2 */\n"
       "  for x in thing do\n"
       "    /* comment 3 */\n"
       "    bar();\n"
@@ -92,6 +93,7 @@ static void test1(Parser* parser) {
   // Comment between 'while' and condition is discarded.
   assert(doWhile->numStmts() == 3);
   assert(doWhile->stmt(0)->isComment());
+  assert(doWhile->stmt(0)->toComment()->str() == "/* comment 2 */");
   assert(doWhile->stmt(1)->isFor());
   assert(doWhile->stmt(2)->isComment());
   const For* forLoop = doWhile->stmt(1)->toFor();
@@ -132,7 +134,6 @@ static void test2(Parser* parser) {
   assert(doWhile->blockStyle() == BlockStyle::IMPLICIT);
   assert(doWhile->condition());
   assert(doWhile->condition()->isIdentifier());
-  // Comment between 'while' and condition is discarded.
   assert(doWhile->numStmts() == 3);
   assert(doWhile->stmt(0)->isComment());
   assert(doWhile->stmt(1)->isDoWhile());
@@ -141,12 +142,10 @@ static void test2(Parser* parser) {
   assert(doWhileInner);
   assert(doWhileInner->blockStyle() == BlockStyle::EXPLICIT);
   assert(doWhileInner->condition()->isIdentifier());
-  assert(doWhileInner->numStmts() == 5);
+  assert(doWhileInner->numStmts() == 3);
   assert(doWhileInner->stmt(0)->isComment());
-  assert(doWhileInner->stmt(1)->isComment());
-  assert(doWhileInner->stmt(2)->isFnCall());
-  assert(doWhileInner->stmt(3)->isComment());
-  assert(doWhileInner->stmt(4)->isComment());
+  assert(doWhileInner->stmt(1)->isFnCall());
+  assert(doWhileInner->stmt(2)->isComment());
 }
 
 int main() {

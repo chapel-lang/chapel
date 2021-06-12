@@ -45,6 +45,21 @@
 //  rules produces a result, that result needs to be either
 //  freed or wired up into another structure to be freed later.
 
+// A note about clearing comments for statements:
+//
+//  After gathering top level comments that precede the statement, you'll
+//  want to clear expression-level comments preceding the start of the body.
+//  Here are some examples:
+//
+//    Clear no comments (c1 and c2 are preserved):
+//      defer /* c1 */ /* c2 */ writeln('a');
+//    Clear everything before the '{' (c1 and c2 are discarded):
+//      defer /* c1 */ /* c2 */ { writeln('a'); }
+//    Clear everything before the '{' (c1 is discarded):
+//      for 0..15 /* c1 */ {}
+//    Clear everything before the 'do' (c1 is discarded):
+//      'while true /* c1 */ do /* c2 */ writeln('a');
+
 // "%code requires" puts the code in the .h and in the .cpp files
 // "%code" (without "requires") puts the code in the .cpp file
 // Note that the generated flex scanner includes the generated bison .h
@@ -214,7 +229,7 @@
   // were produced following a 'do' or not. E.g...
   // do { ... } vs { ... }
   struct BlockOrDo {
-    ParserExprList* exprList;
+    CommentsAndStmt cs;
     bool usesDo;
   };
 
@@ -688,15 +703,16 @@ stmt:
 | select_stmt               { $$ = context->finishStmt($1); }
 | TDEFER stmt
   {
-    BlockStyle blockStyle = $2.stmt->isBlock() ? BlockStyle::EXPLICIT
-                                               : BlockStyle::IMPLICIT;
-    auto exprLst = context->makeList($2);
-    auto comments = context->gatherCommentsFromList(exprLst, @1);
-    auto astLst = context->consumeList(exprLst);
-    auto statements = BUILDER->flattenTopLevelBlocks(std::move(astLst));
+    std::vector<ParserComment>* comments;
+    ParserExprList* exprLst;
+    BlockStyle blockStyle;
+    context->prepareStmtPieces(comments, exprLst, blockStyle, @1,
+                               false, @1, $2);
+    auto stmts = context->consumeAndFlattenTopLevelBlocks(exprLst);
     auto node = Defer::build(BUILDER, LOC(@$), blockStyle,
-                             std::move(statements));
-    $$ = { .comments=comments, .stmt=node.release() };
+                             std::move(stmts));
+    CommentsAndStmt ret = { .comments=comments, .stmt=node.release() };
+    $$ = context->finishStmt(ret);
   }
 | try_stmt                  { $$ = context->finishStmt($1); }
 | throw_stmt                { $$ = context->finishStmt($1); }
@@ -705,16 +721,17 @@ stmt:
 | TATOMIC stmt              { $$ = TODOSTMT(@$); }
 | TBEGIN opt_task_intent_ls stmt
   {
-    BlockStyle blockStyle = $3.stmt->isBlock() ? BlockStyle::EXPLICIT
-                                               : BlockStyle::IMPLICIT;
-    auto exprLst = context->makeList($3);
-    auto comments = context->gatherCommentsFromList(exprLst, @1);
-    context->discardCommentsFromList(exprLst, @3);
-    auto astLst = context->consumeList(exprLst);
-    auto statements = BUILDER->flattenTopLevelBlocks(std::move(astLst));
+    std::vector<ParserComment>* comments;
+    ParserExprList* exprLst;
+    BlockStyle blockStyle;
+    YYLTYPE locBodyAnchor = context->makeLocationAtLast(@2);
+    context->prepareStmtPieces(comments, exprLst, blockStyle, @1,
+                               false, locBodyAnchor, $3);
+    auto stmts = context->consumeAndFlattenTopLevelBlocks(exprLst);
     auto node = Begin::build(BUILDER, LOC(@$), toOwned($2), blockStyle,
-                             std::move(statements));
-    $$ = { .comments=comments, .stmt=node.release() };
+                             std::move(stmts));
+    CommentsAndStmt ret = { .comments=comments, .stmt=node.release() };
+    $$ = context->finishStmt(ret);
   }
 | TBREAK opt_label_ident TSEMI           { $$ = context->finishStmt(TODOSTMT(@$)); }
 | TCOBEGIN opt_task_intent_ls block_stmt { $$ = context->finishStmt(TODOSTMT(@$)); }
@@ -730,59 +747,61 @@ stmt:
 | TLABEL ident_def stmt     { $$ = context->finishStmt(TODOSTMT(@$)); }
 | TLOCAL expr do_stmt
   {
-    // Pull up any comments that appear before the TLOCAL keyword.
-    auto comments = context->gatherCommentsFromList($3.exprList, @1);
-    context->discardExprLevelComments(true, @2, @3, $3);
-    auto blockStyle = context->determineBlockStyle($3);
-    auto statements = context->consumeAndFlattenTopLevelBlocks($3);
-    auto node = Local::build(BUILDER, LOC(@1), toOwned($2),
-                             blockStyle,
-                             std::move(statements));
-    $$ = { .comments=comments, .stmt=node.release() };
+    std::vector<ParserComment>* comments;
+    ParserExprList* exprLst;
+    BlockStyle blockStyle;
+    context->prepareStmtPieces(comments, exprLst, blockStyle, @1, @3, $3);
+    auto stmts = context->consumeAndFlattenTopLevelBlocks(exprLst);
+    auto node = Local::build(BUILDER, LOC(@$), toOwned($2), blockStyle,
+                             std::move(stmts));
+    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+    $$ = context->finishStmt(cs);
   }
 | TLOCAL do_stmt
   {
-    // Pull up any comments that appear before the TLOCAL keyword.
-    auto comments = context->gatherCommentsFromList($2.exprList, @1);
-    context->discardExprLevelComments(false, @2, @2, $2);
-    auto blockStyle = context->determineBlockStyle($2);
-    auto statements = context->consumeAndFlattenTopLevelBlocks($2);
-    auto node = Local::build(BUILDER, LOC(@1), blockStyle,
-                             std::move(statements));
-    $$ = { .comments=comments, .stmt=node.release() };
+    std::vector<ParserComment>* comments;
+    ParserExprList* exprLst;
+    BlockStyle blockStyle;
+    context->prepareStmtPieces(comments, exprLst, blockStyle, @1, @2, $2);
+    auto stmts = context->consumeAndFlattenTopLevelBlocks(exprLst);
+    auto node = Local::build(BUILDER, LOC(@$), blockStyle, std::move(stmts));
+    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+    $$ = context->finishStmt(cs);
   }
 | TON expr do_stmt
   {
-    auto comments = context->gatherCommentsFromList($3.exprList, @1);
-    context->discardExprLevelComments(true, @2, @3, $3);
-    auto blockStyle = context->determineBlockStyle($3);
-    auto statements = context->consumeAndFlattenTopLevelBlocks($3);
-    auto node = On::build(BUILDER, LOC(@1), toOwned($2), blockStyle,
-                          std::move(statements));
-    $$ = { .comments=comments, .stmt=node.release() };
+    std::vector<ParserComment>* comments;
+    ParserExprList* exprLst;
+    BlockStyle blockStyle;
+    context->prepareStmtPieces(comments, exprLst, blockStyle, @1, @3, $3);
+    auto stmts = context->consumeAndFlattenTopLevelBlocks(exprLst);
+    auto node = On::build(BUILDER, LOC(@$), toOwned($2), blockStyle,
+                          std::move(stmts));
+    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+    $$ = context->finishStmt(cs);
   }
 | TSERIAL expr do_stmt
   {
-    // Pull up any comments that appear before the TSERIAL keyword.
-    auto comments = context->gatherCommentsFromList($3.exprList, @1);
-    context->discardExprLevelComments(true, @2, @3, $3);
-    auto blockStyle = context->determineBlockStyle($3);
-    auto statements = context->consumeAndFlattenTopLevelBlocks($3);
-    auto node = Serial::build(BUILDER, LOC(@1), toOwned($2),
-                              blockStyle,
-                              std::move(statements));
-    $$ = { .comments=comments, .stmt=node.release() };
+    std::vector<ParserComment>* comments;
+    ParserExprList* exprLst;
+    BlockStyle blockStyle;
+    context->prepareStmtPieces(comments, exprLst, blockStyle, @1, @3, $3);
+    auto stmts = context->consumeAndFlattenTopLevelBlocks(exprLst);
+    auto node = Serial::build(BUILDER, LOC(@$), toOwned($2), blockStyle,
+                              std::move(stmts));
+    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+    $$ = context->finishStmt(cs);
   }
 | TSERIAL do_stmt
   {
-    // Pull up any comments that appear before the TSERIAL keyword.
-    auto comments = context->gatherCommentsFromList($2.exprList, @1);
-    context->discardExprLevelComments(false, @2, @2, $2);
-    auto blockStyle = context->determineBlockStyle($2);
-    auto statements = context->consumeAndFlattenTopLevelBlocks($2);
-    auto node = Serial::build(BUILDER, LOC(@1), blockStyle,
-                              std::move(statements));
-    $$ = { .comments=comments, .stmt=node.release() };
+    std::vector<ParserComment>* comments;
+    ParserExprList* exprLst;
+    BlockStyle blockStyle;
+    context->prepareStmtPieces(comments, exprLst, blockStyle, @1, @2, $2);
+    auto stmts = context->consumeAndFlattenTopLevelBlocks(exprLst);
+    auto node = Serial::build(BUILDER, LOC(@$), blockStyle, std::move(stmts));
+    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+    $$ = context->finishStmt(cs);
   }
 | TSYNC stmt                { $$ = context->finishStmt(TODOSTMT(@$)); }
 | TYIELD expr TSEMI
@@ -1210,8 +1229,8 @@ reserved_type_ident_use:
 ;
 
 do_stmt:
-  TDO stmt            { $$ = { context->makeList($2), true }; }
-| block_stmt_body     { $$ = { $1, false }; }
+  TDO stmt      { $$ = { $2, true }; }
+| block_stmt    { $$ = { $1, false }; }
 ;
 
 return_stmt:
@@ -1381,181 +1400,191 @@ extern_block_stmt:
 loop_stmt:
   TDO stmt TWHILE expr TSEMI
   {
-    auto blockStyle = $2.stmt->isBlock() ? BlockStyle::EXPLICIT
-                                         : BlockStyle::IMPLICIT;
-    auto exprLst = context->makeList($2);
-    auto comments = context->gatherCommentsFromList(exprLst, @1);
-
-    // Append any comment appearing before 'while' into the exprs of $2.
-    exprLst = context->appendList(exprLst, context->gatherComments(@3));
-
-    auto astLst = context->consumeList(exprLst);
-    auto statements = BUILDER->flattenTopLevelBlocks(std::move(astLst));
-    auto node = DoWhile::build(BUILDER, LOC(@1), blockStyle,
-                               std::move(statements),
+    std::vector<ParserComment>* comments;
+    ParserExprList* exprLst;
+    BlockStyle blockStyle;
+    context->prepareStmtPieces(comments, exprLst, blockStyle, @1,
+                               false, @1, $2);
+    // If the body is not a block, snag any comments before the 'while'.
+    if (blockStyle == BlockStyle::IMPLICIT) {
+      exprLst = context->appendList(exprLst, context->gatherComments(@3));
+    }
+    auto stmts = context->consumeAndFlattenTopLevelBlocks(exprLst);
+    auto node = DoWhile::build(BUILDER, LOC(@$), blockStyle,
+                               std::move(stmts),
                                toOwned($4));
-    $$ = { .comments=comments, .stmt=node.release() };
+    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+    $$ = context->finishStmt(cs);
   }
 | TWHILE expr do_stmt
   {
-    auto comments = context->gatherCommentsFromList($3.exprList, @1);
-    auto blockStyle = context->determineBlockStyle($3);
-    auto statements = context->consumeAndFlattenTopLevelBlocks($3);
+    std::vector<ParserComment>* comments;
+    ParserExprList* exprLst;
+    BlockStyle blockStyle;
+    context->prepareStmtPieces(comments, exprLst, blockStyle, @1, @3, $3);
+    auto stmts = context->consumeAndFlattenTopLevelBlocks(exprLst);
     auto node = While::build(BUILDER, LOC(@1), toOwned($2),
                              blockStyle,
-                             std::move(statements));
-    $$ = { .comments=comments, .stmt=node.release() };
+                             std::move(stmts));
+    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+    $$ = context->finishStmt(cs);
   }
 | TWHILE ifvar do_stmt
   {
-    auto comments = context->gatherCommentsFromList($3.exprList, @1);
-    auto blockStyle = context->determineBlockStyle($3);
-    auto statements = context->consumeAndFlattenTopLevelBlocks($3);
+    std::vector<ParserComment>* comments;
+    ParserExprList* exprLst;
+    BlockStyle blockStyle;
+    context->prepareStmtPieces(comments, exprLst, blockStyle, @1, @3, $3);
+    auto stmts = context->consumeAndFlattenTopLevelBlocks(exprLst);
     auto node = While::build(BUILDER, LOC(@1), toOwned($2),
                              blockStyle,
-                             std::move(statements));
-    $$ = { .comments=comments, .stmt=node.release() };
+                             std::move(stmts));
+    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+    $$ = context->finishStmt(cs);
   }
 | TCOFORALL expr TIN expr opt_task_intent_ls do_stmt
   {
-    $$ = context->buildCoforallLoopStmt(@1, @2, $2, $4, $5, $6);
+    $$ = context->buildCoforallLoopStmt(@1, @2, @6, $2, $4, $5, $6);
   }
 | TCOFORALL expr TIN zippered_iterator opt_task_intent_ls do_stmt
   {
-    $$ = context->buildCoforallLoopStmt(@1, @2, $2, $4, $5, $6);
+    $$ = context->buildCoforallLoopStmt(@1, @2, @6, $2, $4, $5, $6);
   }
 | TCOFORALL expr opt_task_intent_ls do_stmt
   {
-    $$ = context->buildCoforallLoopStmt(@1, @1, nullptr, $2, $3, $4);
+    $$ = context->buildCoforallLoopStmt(@1, @1, @4, nullptr, $2, $3, $4);
   }
 | TFOR expr TIN expr do_stmt
   {
-    $$ = context->buildForLoopStmt(@1, @2, $2, $4, $5);
+    $$ = context->buildForLoopStmt(@1, @2, @5, $2, $4, $5);
   }
 | TFOR expr TIN zippered_iterator do_stmt
   {
-    $$ = context->buildForLoopStmt(@1, @2, $2, $4, $5);
+    $$ = context->buildForLoopStmt(@1, @2, @5, $2, $4, $5);
   }
 | TFOR expr do_stmt
   {
-    $$ = context->buildForLoopStmt(@1, @1, nullptr, $2, $3);
+    $$ = context->buildForLoopStmt(@1, @1, @3, nullptr, $2, $3);
   }
 | TFOR zippered_iterator do_stmt
   {
-    $$ = context->buildForLoopStmt(@1, @1, nullptr, $2, $3);
+    $$ = context->buildForLoopStmt(@1, @1, @3, nullptr, $2, $3);
   }
 | TFOR TPARAM ident_def TIN expr do_stmt
   {
+    std::vector<ParserComment>* comments;
+    ParserExprList* exprLst;
+    BlockStyle blockStyle;
+    context->prepareStmtPieces(comments, exprLst, blockStyle, @1, @6, $6);
     Expression* ident = context->buildIdent(@3, $3);
     auto index = context->buildLoopIndexDecl(@3, toOwned(ident));
-    auto comments = context->gatherCommentsFromList($6.exprList, @1);
-    auto blockStyle = context->determineBlockStyle($6);
-    auto statements = context->consumeAndFlattenTopLevelBlocks($6);
+    auto stmts = context->consumeAndFlattenTopLevelBlocks(exprLst);
     auto node = For::build(BUILDER, LOC(@1), std::move(index),
                            toOwned($5),
                            blockStyle,
-                           std::move(statements),
+                           std::move(stmts),
                            /*isExpressionLevel*/ false,
                            /*isParam*/ true);
-    $$ = { .comments=comments, .stmt=node.release() };
+    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+    $$ = context->finishStmt(cs);
   }
 | TFORALL expr TIN expr                                   do_stmt
   {
-    $$ = context->buildForallLoopStmt(@1, @2, $2, $4, nullptr, $5);
+    $$ = context->buildForallLoopStmt(@1, @2, @5, $2, $4, nullptr, $5);
   }
 | TFORALL expr TIN expr              forall_intent_clause do_stmt
   {
-    $$ = context->buildForallLoopStmt(@1, @2, $2, $4, $5, $6);
+    $$ = context->buildForallLoopStmt(@1, @2, @6, $2, $4, $5, $6);
   }
 | TFORALL expr TIN zippered_iterator                      do_stmt
   {
-    $$ = context->buildForallLoopStmt(@1, @2, $2, $4, nullptr, $5);
+    $$ = context->buildForallLoopStmt(@1, @2, @5, $2, $4, nullptr, $5);
   }
 | TFORALL expr TIN zippered_iterator forall_intent_clause do_stmt
   {
-    $$ = context->buildForallLoopStmt(@1, @2, $2, $4, $5, $6);
+    $$ = context->buildForallLoopStmt(@1, @2, @6, $2, $4, $5, $6);
   }
 | TFORALL          expr                                   do_stmt
   {
-    $$ = context->buildForallLoopStmt(@1, @1, nullptr, $2, nullptr, $3);
+    $$ = context->buildForallLoopStmt(@1, @1, @3, nullptr, $2, nullptr, $3);
   }
 | TFORALL          expr              forall_intent_clause do_stmt
   {
-    $$ = context->buildForallLoopStmt(@1, @1, nullptr, $2, $3, $4);
+    $$ = context->buildForallLoopStmt(@1, @1, @4, nullptr, $2, $3, $4);
   }
 | TFORALL          zippered_iterator                      do_stmt
   {
-    $$ = context->buildForallLoopStmt(@1, @1, nullptr, $2, nullptr, $3);
+    $$ = context->buildForallLoopStmt(@1, @1, @3, nullptr, $2, nullptr, $3);
   }
 | TFORALL          zippered_iterator forall_intent_clause do_stmt
   {
-    $$ = context->buildForallLoopStmt(@1, @1, nullptr, $2, $3, $4);
+    $$ = context->buildForallLoopStmt(@1, @1, @4, nullptr, $2, $3, $4);
   }
 | TFOREACH expr TIN expr                                   do_stmt
   {
-    $$ = context->buildForeachLoopStmt(@1, @2, $2, $4, nullptr, $5);
+    $$ = context->buildForeachLoopStmt(@1, @2, @5, $2, $4, nullptr, $5);
   }
 | TFOREACH expr TIN expr              forall_intent_clause do_stmt
   {
-    $$ = context->buildForeachLoopStmt(@1, @2, $2, $4, $5, $6);
+    $$ = context->buildForeachLoopStmt(@1, @2, @6, $2, $4, $5, $6);
   }
 | TFOREACH expr TIN zippered_iterator                      do_stmt
   {
-    $$ = context->buildForeachLoopStmt(@1, @2, $2, $4, nullptr, $5);
+    $$ = context->buildForeachLoopStmt(@1, @2, @5, $2, $4, nullptr, $5);
   }
 | TFOREACH expr TIN zippered_iterator forall_intent_clause do_stmt
   {
-    $$ = context->buildForeachLoopStmt(@1, @2, $2, $4, $5, $6);
+    $$ = context->buildForeachLoopStmt(@1, @2, @6, $2, $4, $5, $6);
   }
 | TFOREACH          expr                                   do_stmt
   {
-    $$ = context->buildForeachLoopStmt(@1, @1, nullptr, $2, nullptr, $3);
+    $$ = context->buildForeachLoopStmt(@1, @1, @3, nullptr, $2, nullptr, $3);
   }
 | TFOREACH          expr              forall_intent_clause do_stmt
   {
-    $$ = context->buildForeachLoopStmt(@1, @1, nullptr, $2, $3, $4);
+    $$ = context->buildForeachLoopStmt(@1, @1, @4, nullptr, $2, $3, $4);
   }
 | TFOREACH          zippered_iterator                      do_stmt
   {
-    $$ = context->buildForeachLoopStmt(@1, @1, nullptr, $2, nullptr, $3);
+    $$ = context->buildForeachLoopStmt(@1, @1, @3, nullptr, $2, nullptr, $3);
   }
 | TFOREACH          zippered_iterator forall_intent_clause do_stmt
   {
-    $$ = context->buildForeachLoopStmt(@1, @1, nullptr, $2, $3, $4);
+    $$ = context->buildForeachLoopStmt(@1, @1, @4, nullptr, $2, $3, $4);
   }
 | TLSBR expr_ls TIN expr TRSBR stmt
   {
-    $$ = context->buildBracketLoopStmt(@1, @2, $2, $4, nullptr, $6);
+    $$ = context->buildBracketLoopStmt(@1, @2, @5, $2, $4, nullptr, $6);
   }
 | TLSBR expr_ls TIN expr forall_intent_clause TRSBR stmt
   {
-    $$ = context->buildBracketLoopStmt(@1, @2, $2, $4, $5, $7);
+    $$ = context->buildBracketLoopStmt(@1, @2, @6, $2, $4, $5, $7);
   }
 | TLSBR expr_ls TIN zippered_iterator TRSBR stmt
   {
-    $$ = context->buildBracketLoopStmt(@1, @2, $2, $4, nullptr, $6);
+    $$ = context->buildBracketLoopStmt(@1, @2, @5, $2, $4, nullptr, $6);
   }
 | TLSBR expr_ls TIN zippered_iterator forall_intent_clause TRSBR stmt
   {
-    $$ = context->buildBracketLoopStmt(@1, @2, $2, $4, $5, $7);
+    $$ = context->buildBracketLoopStmt(@1, @2, @6, $2, $4, $5, $7);
   }
 | TLSBR expr_ls TRSBR stmt
   {
-    $$ = context->buildBracketLoopStmt(@1, @2, $2, nullptr, $4);
+    $$ = context->buildBracketLoopStmt(@1, @2, @3, $2, nullptr, $4);
   }
 | TLSBR expr_ls forall_intent_clause TRSBR stmt
   {
-    $$ = context->buildBracketLoopStmt(@1, @2, $2, $3, $5);
+    $$ = context->buildBracketLoopStmt(@1, @2, @4, $2, $3, $5);
   }
 | TLSBR zippered_iterator TRSBR stmt
   {
     auto iterExprs = context->makeList($2);
-    $$ = context->buildBracketLoopStmt(@1, @2, iterExprs, nullptr, $4);
+    $$ = context->buildBracketLoopStmt(@1, @2, @3, iterExprs, nullptr, $4);
   }
 | TLSBR zippered_iterator forall_intent_clause TRSBR stmt
   {
     auto iterExprs = context->makeList($2);
-    $$ = context->buildBracketLoopStmt(@1, @2, iterExprs, $3, $5);
+    $$ = context->buildBracketLoopStmt(@1, @2, @4, iterExprs, $3, $5);
   }
 ;
 
@@ -1571,55 +1600,55 @@ zippered_iterator:
 if_stmt:
   TIF expr TTHEN stmt %prec TNOELSE
   {
-    $$ = context->buildConditionalStmt(true, @1, @2, @3, $2, $4);
+    $$ = context->buildConditionalStmt(true, @1, @3, $2, $4);
   }
 | TIF expr block_stmt %prec TNOELSE
   {
-    $$ = context->buildConditionalStmt(false, @1, @2, @$, $2, $3);
+    $$ = context->buildConditionalStmt(false, @1, @3, $2, $3);
   }
 | TIF expr TTHEN stmt TELSE stmt
   {
-    $$ = context->buildConditionalStmt(true, @1, @2, @3, @5, $2, $4, $6);
+    $$ = context->buildConditionalStmt(true, @1, @3, @5, $2, $4, $6);
   }
 | TIF expr block_stmt TELSE stmt
   {
-    $$ = context->buildConditionalStmt(false, @1, @2, @$, @4, $2, $3, $5);
+    $$ = context->buildConditionalStmt(false, @1, @3, @4, $2, $3, $5);
   }
 | TIF ifvar TTHEN stmt %prec TNOELSE
   {
-    $$ = context->buildConditionalStmt(true, @1, @2, @3, $2, $4);
+    $$ = context->buildConditionalStmt(true, @1, @3, $2, $4);
   }
 | TIF ifvar block_stmt %prec TNOELSE
   {
-    $$ = context->buildConditionalStmt(false, @1, @2, @$, $2, $3);
+    $$ = context->buildConditionalStmt(false, @1, @3, $2, $3);
   }
 | TIF ifvar TTHEN stmt TELSE stmt
   {
-    $$ = context->buildConditionalStmt(true, @1, @2, @3, @5, $2, $4, $6);
+    $$ = context->buildConditionalStmt(true, @1, @3, @5, $2, $4, $6);
   }
 | TIF ifvar block_stmt TELSE stmt
   {
-    $$ = context->buildConditionalStmt(false, @1, @2, @$, @4, $2, $3, $5);
+    $$ = context->buildConditionalStmt(false, @1, @3, @4, $2, $3, $5);
   }
 | TIF expr assignop_ident expr TTHEN stmt %prec TNOELSE
   {
     auto op = context->buildBinOp(@3, $2, $3, $4);
-    $$ = context->buildConditionalStmt(true, @1, @4, @5, op, $6);
+    $$ = context->buildConditionalStmt(true, @1, @5, op, $6);
   }
 | TIF expr assignop_ident expr block_stmt %prec TNOELSE
   {
     auto op = context->buildBinOp(@3, $2, $3, $4);
-    $$ = context->buildConditionalStmt(false, @1, @4, @$, op, $5);
+    $$ = context->buildConditionalStmt(false, @1, @5, op, $5);
   }
 | TIF expr assignop_ident expr TTHEN stmt TELSE stmt
   {
     auto op = context->buildBinOp(@3, $2, $3, $4);
-    $$ = context->buildConditionalStmt(true, @1, @4, @5, @7, op, $6, $8);
+    $$ = context->buildConditionalStmt(true, @1, @5, @7, op, $6, $8);
   }
 | TIF expr assignop_ident expr block_stmt TELSE stmt
   {
     auto op = context->buildBinOp(@3, $2, $3, $4);
-    $$ = context->buildConditionalStmt(false, @1, @4, @$, @6, op, $5, $7);
+    $$ = context->buildConditionalStmt(false, @1, @5, @6, op, $5, $7);
   }
 ;
 

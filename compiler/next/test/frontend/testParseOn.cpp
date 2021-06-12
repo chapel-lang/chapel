@@ -81,12 +81,11 @@ static void test1(Parser* parser) {
   assert(on != nullptr);
   assert(on->destination() != nullptr);
   assert(on->destination()->isIdentifier());
-  assert(on->numStmts() == 4);
+  assert(on->numStmts() == 3);
   assert(on->blockStyle() == BlockStyle::EXPLICIT);
   assert(on->stmt(0)->isComment());
-  assert(on->stmt(1)->isComment());
-  assert(on->stmt(2)->isVariable());
-  assert(on->stmt(3)->isComment());
+  assert(on->stmt(1)->isVariable());
+  assert(on->stmt(2)->isComment());
 }
 
 static void test2(Parser* parser) {

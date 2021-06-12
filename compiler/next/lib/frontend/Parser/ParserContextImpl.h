@@ -126,6 +126,10 @@ void ParserContext::noteComment(YYLTYPE loc, const char* data, long size) {
 
 void ParserContext::clearCommentsBefore(YYLTYPE loc) {
   auto comments = this->gatherComments(loc);
+  clearComments(comments);
+}
+
+void ParserContext::clearComments(std::vector<ParserComment>* comments) {
   if (comments != nullptr) {
     for (ParserComment parserComment : *comments) {
       delete parserComment.comment;
@@ -133,6 +137,17 @@ void ParserContext::clearCommentsBefore(YYLTYPE loc) {
     delete comments;
   }
 }
+
+void ParserContext::clearComments(ParserExprList* comments) {
+  if (comments != nullptr) {
+    for (Expression* expr : *comments) {
+      assert(expr->isComment());
+      delete expr;
+    }
+    delete comments;
+  }
+}
+
 void ParserContext::clearComments() {
   if (this->comments != nullptr) {
     for (ParserComment parserComment : *this->comments) {
@@ -149,6 +164,7 @@ ParserExprList* ParserContext::makeList(ParserExprList* lst) {
   return lst;
 }
 ParserExprList* ParserContext::makeList(Expression* e) {
+  assert(e != nullptr);
   ParserExprList* ret = new ParserExprList();
   ret->push_back(e);
   return ret;
@@ -161,6 +177,7 @@ ParserExprList* ParserContext::makeList(CommentsAndStmt cs) {
 
 ParserExprList* ParserContext::appendList(ParserExprList* dst,
                                           ParserExprList* lst) {
+  if (lst == nullptr) return dst;
   for (Expression* elt : *lst) {
     dst->push_back(elt);
   }
@@ -169,6 +186,7 @@ ParserExprList* ParserContext::appendList(ParserExprList* dst,
 }
 
 ParserExprList* ParserContext::appendList(ParserExprList* dst, Expression* e) {
+  assert(e != nullptr);
   dst->push_back(e);
   return dst;
 }
@@ -437,60 +455,86 @@ FnCall* ParserContext::wrapCalledExpressionInNew(YYLTYPE location,
   return fnCall;
 }
 
-BlockStyle ParserContext::determineBlockStyle(BlockOrDo blockOrDo) {
-  BlockStyle ret = blockOrDo.usesDo ? BlockStyle::IMPLICIT
-                                    : BlockStyle::EXPLICIT;
-  auto exprLst = blockOrDo.exprList;
-
-  int numNonCommentExprs = 0;
-  bool foundBlock = false;
-
-  // Look for one non-comment expression that is a block.
-  for (auto expr : *exprLst) {
-    numNonCommentExprs += !expr->isComment() ? 1 : 0;
-    foundBlock = expr->isBlock();
-    if (numNonCommentExprs > 1) break;
-  }
-
-  if (numNonCommentExprs == 1 && foundBlock &&
-      ret == BlockStyle::IMPLICIT) {
-    ret = BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK;
-  }
-
-  return ret;
-}
-
 ASTList
-ParserContext::consumeAndFlattenTopLevelBlocks(BlockOrDo blockOrDo) {
-  return builder->flattenTopLevelBlocks(consumeList(blockOrDo.exprList));
+ParserContext::consumeAndFlattenTopLevelBlocks(ParserExprList* exprLst) {
+  return builder->flattenTopLevelBlocks(consumeList(exprLst));
 }
 
-void ParserContext::discardExprLevelComments(bool hasExpression,
-                                             YYLTYPE locExpr,
-                                             YYLTYPE locDoStmt,
-                                             BlockOrDo blockOrDo) {
-  if (blockOrDo.usesDo) {
-    discardCommentsFromList(blockOrDo.exprList, locDoStmt);
-  } else if (hasExpression) {
-    discardCommentsFromList(blockOrDo.exprList, locExpr);
+void
+ParserContext::prepareStmtPieces(std::vector<ParserComment>*& outComments,
+                                 ParserExprList*& outExprLst,
+                                 BlockStyle& outBlockStyle,
+                                 YYLTYPE locStartKeyword,
+                                 bool isBodyAnchorSecondKeyword,
+                                 YYLTYPE locBodyAnchor,
+                                 CommentsAndStmt consume) {
+  auto comments = consume.comments;
+  auto bodyStmt = consume.stmt;
+
+  auto blockStyle = bodyStmt->isBlock() ? BlockStyle::EXPLICIT
+                                        : BlockStyle::IMPLICIT;
+
+  if (isBodyAnchorSecondKeyword && bodyStmt->isBlock()) {
+    blockStyle = BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK;
   }
+
+  // Set the block style of the statement.
+  outBlockStyle = blockStyle;
+
+  auto csCommentLst = appendList(makeList(), comments);
+
+  // Set the comments preceding the statement.
+  outComments = gatherCommentsFromList(csCommentLst, locStartKeyword);
+
+  // If the body is a block, clear all remaining comments, else just clear
+  // the comments that precede the anchor point.
+  if (csCommentLst) {
+    if (bodyStmt->isBlock()) {
+      clearComments(csCommentLst);
+      csCommentLst = nullptr;
+    } else {
+      discardCommentsFromList(csCommentLst, locBodyAnchor);
+    }
+  }
+
+  outExprLst = csCommentLst ? appendList(csCommentLst, makeList(bodyStmt))
+                            : makeList(bodyStmt);
+}
+
+void
+ParserContext::prepareStmtPieces(std::vector<ParserComment>*& outComments,
+                                 ParserExprList*& outExprLst,
+                                 BlockStyle& outBlockStyle,
+                                 YYLTYPE locStartKeyword,
+                                 YYLTYPE locBodyAnchor,
+                                 BlockOrDo consume) {
+  return prepareStmtPieces(outComments, outExprLst, outBlockStyle,
+                           locStartKeyword,
+                           consume.usesDo,
+                           locBodyAnchor,
+                           consume.cs);
 }
 
 CommentsAndStmt
 ParserContext::buildBracketLoopStmt(YYLTYPE locLeftBracket,
                                     YYLTYPE locIndex,
+                                    YYLTYPE locBodyAnchor,
                                     ParserExprList* indexExprs,
                                     Expression* iterandExpr,
                                     WithClause* withClause,
-                                    CommentsAndStmt stmt) {
+                                    CommentsAndStmt cs) {
   // Should not be nullptr, use other overload instead.
   assert(indexExprs && indexExprs->size() >= 1);
 
-  auto blockStyle = stmt.stmt->isBlock() ? BlockStyle::EXPLICIT
-                                         : BlockStyle::IMPLICIT;
+  std::vector<ParserComment>* comments;
+  ParserExprList* exprLst;
+  BlockStyle blockStyle;
 
-  auto exprLst = makeList(stmt);
-  auto comments = gatherCommentsFromList(exprLst, locLeftBracket);
+  prepareStmtPieces(comments, exprLst, blockStyle, locLeftBracket,
+                    false,
+                    locBodyAnchor,
+                    cs);
+
   Expression* indexExpr = nullptr;
 
   if (indexExprs->size() > 1) {
@@ -504,31 +548,38 @@ ParserContext::buildBracketLoopStmt(YYLTYPE locLeftBracket,
   assert(indexExpr);
   auto index = buildLoopIndexDecl(locIndex, toOwned(indexExpr));
 
-  auto astLst = consumeList(exprLst);
-  auto statements = builder->flattenTopLevelBlocks(std::move(astLst));
+  auto stmts = consumeAndFlattenTopLevelBlocks(exprLst);
+
   auto node = BracketLoop::build(builder, convertLocation(locLeftBracket),
                                  std::move(index),
                                  toOwned(iterandExpr),
                                  toOwned(withClause),
                                  blockStyle,
-                                 std::move(statements),
+                                 std::move(stmts),
                                  /*isExpressionLevel*/ false);
 
-  return { .comments=comments, .stmt=node.release() };
+  CommentsAndStmt ret = { .comments=comments, .stmt=node.release() };
+
+  return finishStmt(ret);
 }
 
 CommentsAndStmt ParserContext::buildBracketLoopStmt(YYLTYPE locLeftBracket,
                                                     YYLTYPE locIterExprs,
+                                                    YYLTYPE locBodyAnchor,
                                                     ParserExprList* iterExprs,
                                                     WithClause* withClause,
-                                                    CommentsAndStmt stmt) {
+                                                    CommentsAndStmt cs) {
   assert(iterExprs && iterExprs->size() >= 1);
 
-  auto blockStyle = stmt.stmt->isBlock() ? BlockStyle::EXPLICIT
-                                         : BlockStyle::IMPLICIT;
+  std::vector<ParserComment>* comments;
+  ParserExprList* exprLst;
+  BlockStyle blockStyle;
 
-  auto exprLst = makeList(stmt);
-  auto comments = gatherCommentsFromList(exprLst, locLeftBracket);
+  prepareStmtPieces(comments, exprLst, blockStyle, locLeftBracket,
+                    false,
+                    locBodyAnchor,
+                    cs);
+
   Expression* iterandExpr = nullptr;
 
   if (iterExprs->size() > 1) {
@@ -541,182 +592,219 @@ CommentsAndStmt ParserContext::buildBracketLoopStmt(YYLTYPE locLeftBracket,
 
   assert(iterandExpr);
 
-  auto astLst = consumeList(exprLst);
-  auto statements = builder->flattenTopLevelBlocks(std::move(astLst));
+  auto stmts = consumeAndFlattenTopLevelBlocks(exprLst);
+
   auto node = BracketLoop::build(builder, convertLocation(locLeftBracket),
                                  /*index*/ nullptr,
                                  toOwned(iterandExpr),
                                  toOwned(withClause),
                                  blockStyle,
-                                 std::move(statements),
+                                 std::move(stmts),
                                  /*isExpressionLevel*/ false);
 
-  return { .comments=comments, .stmt=node.release() };
+  CommentsAndStmt ret = { .comments=comments, .stmt=node.release() };
+
+  return finishStmt(ret);
 }
 
 CommentsAndStmt ParserContext::buildForallLoopStmt(YYLTYPE locForall,
                                                    YYLTYPE locIndex,
+                                                   YYLTYPE locBodyAnchor,
                                                    Expression* indexExpr,
                                                    Expression* iterandExpr,
                                                    WithClause* withClause,
                                                    BlockOrDo blockOrDo) {
   auto index = indexExpr ? buildLoopIndexDecl(locIndex, toOwned(indexExpr))
                          : nullptr;
-  auto comments = gatherCommentsFromList(blockOrDo.exprList, locForall);
-  auto blockStyle = determineBlockStyle(blockOrDo);
-  auto statements = consumeAndFlattenTopLevelBlocks(blockOrDo);
+
+  std::vector<ParserComment>* comments;
+  ParserExprList* exprLst;
+  BlockStyle blockStyle;
+
+  prepareStmtPieces(comments, exprLst, blockStyle, locForall,
+                    locBodyAnchor,
+                    blockOrDo);
+
+  auto stmts = consumeAndFlattenTopLevelBlocks(exprLst);
+
   auto node = Forall::build(builder, convertLocation(locForall),
                             std::move(index),
                             toOwned(iterandExpr),
                             toOwned(withClause),
                             blockStyle,
-                            std::move(statements),
+                            std::move(stmts),
                             /*isExpressionLevel*/ false);
-  return { .comments=comments, .stmt=node.release() };
+
+  CommentsAndStmt ret = { .comments=comments, .stmt=node.release() };
+
+  return finishStmt(ret);
 }
 
 CommentsAndStmt ParserContext::buildForeachLoopStmt(YYLTYPE locForeach,
                                                     YYLTYPE locIndex,
+                                                    YYLTYPE locBodyAnchor,
                                                     Expression* indexExpr,
                                                     Expression* iterandExpr,
                                                     WithClause* withClause,
                                                     BlockOrDo blockOrDo) {
   auto index = indexExpr ? buildLoopIndexDecl(locIndex, toOwned(indexExpr))
                          : nullptr;
-  auto comments = gatherCommentsFromList(blockOrDo.exprList, locForeach);
-  auto blockStyle = determineBlockStyle(blockOrDo);
-  auto statements = consumeAndFlattenTopLevelBlocks(blockOrDo);
+
+  std::vector<ParserComment>* comments;
+  ParserExprList* exprLst;
+  BlockStyle blockStyle;
+
+  prepareStmtPieces(comments, exprLst, blockStyle, locForeach,
+                    locBodyAnchor,
+                    blockOrDo);
+
+  auto stmts = consumeAndFlattenTopLevelBlocks(exprLst);
+
   auto node = Foreach::build(builder, convertLocation(locForeach),
                              std::move(index),
                              toOwned(iterandExpr),
                              toOwned(withClause),
                              blockStyle,
-                             std::move(statements));
+                             std::move(stmts));
 
-  return { .comments=comments, .stmt=node.release() };
+  CommentsAndStmt ret = { .comments=comments, .stmt=node.release() };
+
+  return finishStmt(ret);
 }
 
 CommentsAndStmt ParserContext::buildForLoopStmt(YYLTYPE locFor,
                                                 YYLTYPE locIndex,
+                                                YYLTYPE locBodyAnchor,
                                                 Expression* indexExpr,
                                                 Expression* iterandExpr,
                                                 BlockOrDo blockOrDo) {
   auto index = indexExpr ? buildLoopIndexDecl(locIndex, toOwned(indexExpr))
                          : nullptr;
-  auto comments = gatherCommentsFromList(blockOrDo.exprList, locFor);
-  auto blockStyle = determineBlockStyle(blockOrDo);
-  auto statements = consumeAndFlattenTopLevelBlocks(blockOrDo);
+
+  std::vector<ParserComment>* comments;
+  ParserExprList* exprLst;
+  BlockStyle blockStyle;
+
+  prepareStmtPieces(comments, exprLst, blockStyle, locFor,
+                    locBodyAnchor,
+                    blockOrDo);
+
+  auto stmts = consumeAndFlattenTopLevelBlocks(exprLst);
+
   auto node = For::build(builder, convertLocation(locFor),
                          std::move(index),
                          toOwned(iterandExpr),
                          blockStyle,
-                         std::move(statements),
+                         std::move(stmts),
                          /*isExpressionLevel*/ false,
                          /*isParam*/ false);
-  return { .comments=comments, .stmt=node.release() };
+
+  CommentsAndStmt ret = { .comments=comments, .stmt=node.release() };
+
+  return finishStmt(ret);
 }
 
 CommentsAndStmt ParserContext::buildCoforallLoopStmt(YYLTYPE locCoforall,
                                                      YYLTYPE locIndex,
+                                                     YYLTYPE locBodyAnchor,
                                                      Expression* indexExpr,
                                                      Expression* iterandExpr,
                                                      WithClause* withClause,
                                                      BlockOrDo blockOrDo) {
   auto index = indexExpr ? buildLoopIndexDecl(locIndex, toOwned(indexExpr))
                          : nullptr;
-  auto comments = gatherCommentsFromList(blockOrDo.exprList, locCoforall);
-  auto blockStyle = determineBlockStyle(blockOrDo);
-  auto statements = consumeAndFlattenTopLevelBlocks(blockOrDo);
+
+  std::vector<ParserComment>* comments;
+  ParserExprList* exprLst;
+  BlockStyle blockStyle;
+
+  prepareStmtPieces(comments, exprLst, blockStyle, locCoforall,
+                    locBodyAnchor,
+                    blockOrDo);
+
+  auto stmts = consumeAndFlattenTopLevelBlocks(exprLst);
+
   auto node = Coforall::build(builder, convertLocation(locCoforall),
                               std::move(index),
                               toOwned(iterandExpr),
                               toOwned(withClause),
                               blockStyle,
-                              std::move(statements));
+                              std::move(stmts));
 
-  return { .comments=comments, .stmt=node.release() };
+  CommentsAndStmt ret = { .comments=comments, .stmt=node.release() };
+
+  return finishStmt(ret);
 }
 
 CommentsAndStmt
 ParserContext::buildConditionalStmt(bool usesThenKeyword, YYLTYPE locIf,
-                                    YYLTYPE locCondition,
-                                    YYLTYPE locThen,
+                                    YYLTYPE locThenBodyAnchor,
                                     Expression* condition,
-                                    CommentsAndStmt thenStmt) {
+                                    CommentsAndStmt thenCs) {
 
-  auto thenBlockStyle = usesThenKeyword ? BlockStyle::IMPLICIT
-                                        : BlockStyle::EXPLICIT;
+  std::vector<ParserComment>* comments;
+  ParserExprList* thenExprLst;
+  BlockStyle thenBlockStyle;
+
+  prepareStmtPieces(comments, thenExprLst, thenBlockStyle, locIf,
+                    usesThenKeyword,
+                    locThenBodyAnchor,
+                    thenCs);
 
   // E.g. 'if true then { ... }'
-  if (thenBlockStyle == BlockStyle::IMPLICIT &&
-      thenStmt.stmt->isBlock()) {
+  if (usesThenKeyword && thenBlockStyle == BlockStyle::EXPLICIT) {
     thenBlockStyle = BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK;
   }
 
-  auto thenExprLst = makeList(thenStmt);
-  auto comments = gatherCommentsFromList(thenExprLst, locIf);
-
-  // If there's a 'then' keyword, discard any comments before the 'then'.
-  // Else, discard any comments before the condition.
-  auto discardPoint = usesThenKeyword ? locThen : locCondition;
-  discardCommentsFromList(thenExprLst, discardPoint);
-
-  auto thenAstLst = consumeList(thenExprLst);
-  auto thenStmts = builder->flattenTopLevelBlocks(std::move(thenAstLst));
+  auto thenStmts = consumeAndFlattenTopLevelBlocks(thenExprLst);
 
   auto node = Conditional::build(builder, convertLocation(locIf),
                                  toOwned(condition),
                                  thenBlockStyle,
                                  std::move(thenStmts));
 
+  // Do NOT clear comments here! Due to lookahead we might clear a valid
+  // comment that has already been stored.
   return { .comments=comments, .stmt=node.release() };
 }
 
 CommentsAndStmt
 ParserContext::buildConditionalStmt(bool usesThenKeyword, YYLTYPE locIf,
-                                    YYLTYPE locCondition,
-                                    YYLTYPE locThen,
+                                    YYLTYPE locThenBodyAnchor,
                                     YYLTYPE locElse,
                                     Expression* condition,
-                                    CommentsAndStmt thenStmt,
-                                    CommentsAndStmt elseStmt) {
+                                    CommentsAndStmt thenCs,
+                                    CommentsAndStmt elseCs) {
 
-  auto thenBlockStyle = usesThenKeyword ? BlockStyle::IMPLICIT
-                                        : BlockStyle::EXPLICIT;
+  std::vector<ParserComment>* comments;
+  ParserExprList* thenExprLst;
+  BlockStyle thenBlockStyle;
 
-  // E.g. 'if true then { ... }'
-  if (thenBlockStyle == BlockStyle::IMPLICIT &&
-      thenStmt.stmt->isBlock()) {
-    thenBlockStyle = BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK;
+  prepareStmtPieces(comments, thenExprLst, thenBlockStyle,
+                    locIf,
+                    usesThenKeyword,
+                    locThenBodyAnchor,
+                    thenCs);
+
+  const bool isElseBodyBlock = elseCs.stmt->isBlock();
+
+  auto elseBlockStyle = isElseBodyBlock ? BlockStyle::EXPLICIT
+                                        : BlockStyle::IMPLICIT;
+
+  auto thenStmts = consumeAndFlattenTopLevelBlocks(thenExprLst);
+
+  // If the else body is a block, discard all comments preceding it.
+  if (isElseBodyBlock) {
+    clearComments(elseCs.comments);
+    elseCs.comments = nullptr;
   }
 
-  // Else block can only be IMPLICIT or EXPLICIT.
-  auto elseBlockStyle = elseStmt.stmt->isBlock() ? BlockStyle::EXPLICIT
-                                                 : BlockStyle::IMPLICIT;
+  auto elseExprLst = makeList(elseCs);
 
-  auto thenExprLst = makeList(thenStmt);
-  auto comments = gatherCommentsFromList(thenExprLst, locIf);
+  // If else body is not a block, discard comments preceding the 'else'.
+  if (!isElseBodyBlock) discardCommentsFromList(elseExprLst, locElse);
 
-  // If there's a 'then' keyword, discard any comments before the 'then'.
-  // Else, discard any comments before the condition.
-  auto commentsToDiscard = usesThenKeyword
-      ? gatherCommentsFromList(thenExprLst, locThen)
-      : gatherCommentsFromList(thenExprLst, locCondition);
-  delete commentsToDiscard;
-
-  auto elseExprLst = makeList(elseStmt);
-
-  // Move any comments before the 'else' into the 'thenExprLst'.
-  auto commentsBeforeElse = gatherCommentsFromList(elseExprLst, locElse);
-  thenExprLst = appendList(thenExprLst, commentsBeforeElse);
-
-  // Create the 'then' statement list.
-  auto thenAstLst = consumeList(thenExprLst);
-  auto thenStmts = builder->flattenTopLevelBlocks(std::move(thenAstLst));
-
-  // Create the 'else' statement list.
-  auto elseAstLst = consumeList(elseExprLst);
-  auto elseStmts = builder->flattenTopLevelBlocks(std::move(elseAstLst));
+  auto elseStmts = consumeAndFlattenTopLevelBlocks(elseExprLst);
 
   auto node = Conditional::build(builder, convertLocation(locIf),
                                  toOwned(condition),
@@ -726,7 +814,9 @@ ParserContext::buildConditionalStmt(bool usesThenKeyword, YYLTYPE locIf,
                                  std::move(elseStmts),
                                  /*isExpressionLevel*/ false);
 
-  return { .comments=comments, .stmt=node.release() };
+  CommentsAndStmt ret = { .comments=comments, .stmt=node.release() };
+
+  return finishStmt(ret);
 }
 
 uint64_t ParserContext::binStr2uint64(YYLTYPE location,
