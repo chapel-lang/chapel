@@ -27,6 +27,7 @@ target_sources(libchplcomp-obj
                Builder.cpp
                BytesLiteral.cpp
                Call.cpp
+               Cobegin.cpp
                Coforall.cpp
                Comment.cpp
                Conditional.cpp

@@ -31,6 +31,7 @@
 #include "chpl/uast/Builder.h"
 #include "chpl/uast/BytesLiteral.h"
 #include "chpl/uast/Call.h"
+#include "chpl/uast/Cobegin.h"
 #include "chpl/uast/Coforall.h"
 #include "chpl/uast/Comment.h"
 #include "chpl/uast/Conditional.h"
