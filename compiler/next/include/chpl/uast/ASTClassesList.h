@@ -73,6 +73,7 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
   AST_NODE(Break)                    // old AST: GotoStmt
   AST_NODE(Conditional)              // old AST: IfExpr/CondStmt
   AST_NODE(Continue)                 // old AST: GotoStmt
+  AST_NODE(Label)                    //
   AST_NODE(On)                       //
   AST_NODE(Return)                   //
   AST_NODE(Select)                   //

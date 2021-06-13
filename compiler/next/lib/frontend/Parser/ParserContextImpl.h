@@ -471,11 +471,15 @@ ParserContext::prepareStmtPieces(std::vector<ParserComment>*& outComments,
   auto comments = consume.comments;
   auto bodyStmt = consume.stmt;
 
-  auto blockStyle = bodyStmt->isBlock() ? BlockStyle::EXPLICIT
-                                        : BlockStyle::IMPLICIT;
+  auto blockStyle = BlockStyle::IMPLICIT;
 
-  if (isBodyAnchorSecondKeyword && bodyStmt->isBlock()) {
-    blockStyle = BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK;
+  // The body statement can be nullptr.
+  if (bodyStmt && bodyStmt->isBlock()) {
+    if (isBodyAnchorSecondKeyword) {
+      blockStyle = BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK;
+    } else {
+      blockStyle = BlockStyle::EXPLICIT;
+    }
   }
 
   // Set the block style of the statement.
@@ -486,10 +490,11 @@ ParserContext::prepareStmtPieces(std::vector<ParserComment>*& outComments,
   // Set the comments preceding the statement.
   outComments = gatherCommentsFromList(csCommentLst, locStartKeyword);
 
-  // If the body is a block, clear all remaining comments, else just clear
-  // the comments that precede the anchor point.
+  // If there is no body statement, or the body statement is a block, clear
+  // all remaining comments. Else just clear the comments that precede the
+  // anchor point.
   if (csCommentLst) {
-    if (bodyStmt->isBlock()) {
+    if (!bodyStmt || bodyStmt->isBlock()) {
       clearComments(csCommentLst);
       csCommentLst = nullptr;
     } else {
@@ -497,8 +502,10 @@ ParserContext::prepareStmtPieces(std::vector<ParserComment>*& outComments,
     }
   }
 
-  outExprLst = csCommentLst ? appendList(csCommentLst, makeList(bodyStmt))
-                            : makeList(bodyStmt);
+  auto bodyExprLst = bodyStmt ? makeList(bodyStmt) : nullptr;
+
+  outExprLst = csCommentLst ? appendList(csCommentLst, bodyExprLst)
+                            : bodyExprLst;
 }
 
 void

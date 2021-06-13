@@ -24,6 +24,7 @@ target_sources(libchplcomp-obj
                Begin.cpp
                Block.cpp
                BracketLoop.cpp
+               Break.cpp
                Builder.cpp
                BytesLiteral.cpp
                Call.cpp
@@ -31,6 +32,7 @@ target_sources(libchplcomp-obj
                Coforall.cpp
                Comment.cpp
                Conditional.cpp
+               Continue.cpp
                CStringLiteral.cpp
                Decl.cpp
                Defer.cpp
@@ -51,6 +53,7 @@ target_sources(libchplcomp-obj
                ImagLiteral.cpp
                IndexableLoop.cpp
                IntLiteral.cpp
+               Label.cpp
                Literal.cpp
                Local.cpp
                Loop.cpp

@@ -59,6 +59,11 @@
 //      for 0..15 /* c1 */ {}
 //    Clear everything before the 'do' (c1 is discarded):
 //      'while true /* c1 */ do /* c2 */ writeln('a');
+//
+// After gathering top level comments, if the statement body is a block,
+// clear every comment to the left of the '{'. Otherwise, if the body is
+// a non-block statement, preserve comments immediately preceding the
+// statement, but clear any expression-level comments before that point.
 
 // "%code requires" puts the code in the .h and in the .cpp files
 // "%code" (without "requires") puts the code in the .cpp file
@@ -733,7 +738,15 @@ stmt:
     CommentsAndStmt ret = { .comments=comments, .stmt=node.release() };
     $$ = context->finishStmt(ret);
   }
-| TBREAK opt_label_ident TSEMI           { $$ = context->finishStmt(TODOSTMT(@$)); }
+| TBREAK opt_label_ident TSEMI
+  {
+    auto comments = context->gatherComments(@1);
+    auto ident = !$2.isEmpty() ? Identifier::build(BUILDER, LOC(@2), $2)
+                               : nullptr;
+    auto node = Break::build(BUILDER, LOC(@$), std::move(ident));
+    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+    $$ = context->finishStmt(cs);
+  }
 | TCOBEGIN opt_task_intent_ls block_stmt
   {
     std::vector<ParserComment>* comments;
@@ -748,7 +761,15 @@ stmt:
     CommentsAndStmt ret = { .comments=comments, .stmt=node.release() };
     $$ = context->finishStmt(ret);
   }
-| TCONTINUE opt_label_ident TSEMI        { $$ = context->finishStmt(TODOSTMT(@$)); }
+| TCONTINUE opt_label_ident TSEMI
+  {
+    auto comments = context->gatherComments(@1);
+    auto ident = !$2.isEmpty() ? Identifier::build(BUILDER, LOC(@2), $2)
+                               : nullptr;
+    auto node = Continue::build(BUILDER, LOC(@$), std::move(ident));
+    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+    $$ = context->finishStmt(cs);
+  }
 | TDELETE simple_expr_ls TSEMI
   {
     auto comments = context->gatherComments(@1);
@@ -757,7 +778,20 @@ stmt:
     CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
     $$ = context->finishStmt(cs);
   }
-| TLABEL ident_def stmt     { $$ = context->finishStmt(TODOSTMT(@$)); }
+| TLABEL ident_def stmt
+  {
+    std::vector<ParserComment>* comments;
+    ParserExprList* exprLst;
+    BlockStyle blockStyle;
+    YYLTYPE locBodyAnchor = context->makeLocationAtLast(@2);
+    context->prepareStmtPieces(comments, exprLst, blockStyle, @1,
+                               false, locBodyAnchor, $3);
+    auto stmts = context->consumeAndFlattenTopLevelBlocks(exprLst);
+    auto node = Label::build(BUILDER, LOC(@$), $2, blockStyle,
+                             std::move(stmts));
+    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+    $$ = context->finishStmt(cs);
+  }
 | TLOCAL expr do_stmt
   {
     std::vector<ParserComment>* comments;
@@ -2985,7 +3019,7 @@ dot_expr:
  * ( <tuple_expr_ls> ) -- Two-tuples and up.  A tuple_expr_ls contains at least 2 elements.
  */
 parenthesized_expr:
-  TLP tuple_component TRP           { $$ = TODOEXPR(@$); }
+  TLP tuple_component TRP           { $$ = $2; }
 | TLP tuple_component TCOMMA TRP    { $$ = TODOEXPR(@$); }
 | TLP tuple_expr_ls TRP             { $$ = TODOEXPR(@$); }
 | TLP tuple_expr_ls TCOMMA TRP      { $$ = TODOEXPR(@$); }
