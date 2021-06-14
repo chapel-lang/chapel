@@ -17,9 +17,9 @@ alloc wrapper (chpl-mem-sys.h)
 Also checks for calls to exit. We want to use chpl_exit_* instead so there's a
 common place to break.
 
-Skip checking files in 'runtime/etc/src', because right now this directory
-only contains C code for multilocale-libaries, and the shims there may call C
-standard library functions when defined for the client.
+Skip checking files in 'runtime/etc/src/mli/chpl-mli-libc-wrappers.h', because
+this file contains calls to functions from libc that are used by the client
+of a multi-locale library.
 
 We have chpl_ wrappers for the atomic_*_fence() calls and we want to use those
 for portability.
@@ -41,7 +41,8 @@ def main():
     runtime_dir = os.path.join(chpl_home, 'runtime')
 
     # Check runtime (except chpl-mem-sys.h) for alloc calls
-    alloc_exclude_paths = ['chpl-mem-sys.h', 'etc/src']
+    alloc_exclude_paths = ['chpl-mem-sys.h',
+                           'etc/src/mli/chpl-mli-libc-wrappers.h']
     alloc_funcs = look_for_calls.get_alloc_funcs()
     ret = look_for_calls.check_for_calls(alloc_funcs, runtime_dir, alloc_exclude_paths)
 
@@ -52,7 +53,8 @@ def main():
     ret = ret or look_for_calls.check_for_calls(atomic_funcs, runtime_dir, atomic_exclude_paths)
 
     # Check runtime for exit calls
-    exit_exclude_paths = ['error.h', 'chplexit.c', 'chplexit.h', 'etc/src']
+    exit_exclude_paths = ['error.h', 'chplexit.c', 'chplexit.h',
+                          'etc/src/mli/chpl-mli-libc-wrappers.h']
     exit_funcs = look_for_calls.get_exit_funcs()
     ret = ret or look_for_calls.check_for_calls(exit_funcs, runtime_dir, exit_exclude_paths)
     return ret

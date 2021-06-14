@@ -40,6 +40,10 @@ const char* gMultiLocaleLibMarshallingFile = NULL;
 const char* gMultiLocaleLibClientFile = NULL;
 const char* gMultiLocaleLibServerFile = NULL;
 
+const char* mliClientRuntimeSource = "chpl-mli-client-runtime.c";
+const char* mliServerRuntimeSource = "chpl-mli-server-runtime.c";
+const char* mliCommonRuntimeSource = "chpl-mli-common-runtime.c";
+
 static const char* client_main = "chpl_client.main";
 static const char* client_arg = "chpl_client.arg";
 static const char* client_res = "chpl_client.res";
@@ -220,7 +224,7 @@ void MLIContext::emitClientPrelude(void) {
 
   gen += this->debugPrint ? this->genDefine("CHPL_MLI_DEBUG_PRINT") : "";
   gen += this->genDefine("CHPL_MLI_IS_CLIENT");
-  gen += this->genHeaderInc("mli/client_runtime.c");
+  gen += this->genHeaderInc(astr("mli/", mliClientRuntimeSource));
   gen += this->genHeaderInc("chpl_mli_marshalling.c");
   gen += "\n";
 
@@ -276,7 +280,7 @@ void MLIContext::emitServerPrelude(void) {
 
   gen += this->debugPrint ? this->genDefine("CHPL_MLI_DEBUG_PRINT") : "";
   gen += this->genDefine("CHPL_MLI_IS_SERVER");
-  gen += this->genHeaderInc("mli/server_runtime.c");
+  gen += this->genHeaderInc(astr("mli/", mliServerRuntimeSource));
   gen += this->genHeaderInc("chpl_mli_marshalling.c");
 
   // This file does not exist in LLVM compiles.
@@ -304,7 +308,7 @@ void MLIContext::emitMarshalRoutines(void) {
     gen += this->genHeaderInc("chpl__header.h");
   }
 
-  gen += this->genHeaderInc("mli/common_code.c");
+  gen += this->genHeaderInc(astr("mli/", mliCommonRuntimeSource));
   gen += "\n";
 
   for (i = this->typeMap.begin(); i != this->typeMap.end(); ++i) {

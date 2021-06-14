@@ -18,10 +18,10 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_RUNTIME_ETC_SRC_MLI_SERVER_RUNTIME_C_
-#define CHPL_RUNTIME_ETC_SRC_MLI_SERVER_RUNTIME_C_
+#ifndef CHPL_RUNTIME_ETC_SRC_MLI_CHPL_MLI_SERVER_RUNTIME_C
+#define CHPL_RUNTIME_ETC_SRC_MLI_CHPL_MLI_SERVER_RUNTIME_C
 
-#include "mli/common_code.c"
+#include "mli/chpl-mli-common-runtime.c"
 #include <time.h>
 
 void chpl_mli_server_init(struct chpl_mli_context* server);

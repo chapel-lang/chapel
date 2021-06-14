@@ -18,8 +18,8 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_RUNTIME_ETC_SRC_MLI_COMMON_CODE_C_
-#define CHPL_RUNTIME_ETC_SRC_MLI_COMMON_CODE_C_
+#ifndef CHPL_RUNTIME_ETC_SRC_MLI_CHPL_MLI_COMMON_RUNTIME_C
+#define CHPL_RUNTIME_ETC_SRC_MLI_CHPL_MLI_COMMON_RUNTIME_C
 
 // Include these for definitions of interop types.
 #include "chpl-export-wrappers.h"
@@ -30,6 +30,12 @@
   #include "chplexit.h"
   #include "chpl-mem.h"
   #include "error.h"
+#endif
+
+// Include a file with libc wrappers for the client. This file is
+// ignored by the 'lookForBadRTCalls' script.
+#ifdef CHPL_MLI_IS_CLIENT
+  #include "mli/chpl-mli-libc-wrappers.h"
 #endif
 
 #include <inttypes.h>
@@ -62,15 +68,15 @@
            chpl_mem_alloc(bytes, CHPL_RT_MD_MLI_DATA, 0, 0)
 #   define chpl_mli_free(ptr) chpl_mem_free(ptr, 0, 0)
 #else
-#   define chpl_mli_malloc(bytes) malloc(bytes)
-#   define chpl_mli_free(ptr) free(ptr)
+#   define chpl_mli_malloc(bytes) chpl_mli_libc_malloc(bytes)
+#   define chpl_mli_free(ptr) chpl_mli_libc_free(ptr)
 #endif
 
 // Shim for exit.
 #ifdef CHPL_MLI_IS_SERVER
 #   define chpl_mli_exit(status) chpl_exit_any(status)
 # else
-#   define chpl_mli_exit(status) exit(status)
+#   define chpl_mli_exit(status) chpl_mli_libc_exit(status)
 #endif
 
 // Shim for terminate (exit with error).
@@ -78,7 +84,7 @@
 #ifdef CHPL_MLI_IS_SERVER
 #   define chpl_mli_terminate() chpl_error("", 0, 0)
 # else
-#   define chpl_mli_terminate() exit(1)
+#   define chpl_mli_terminate() chpl_mli_libc_exit(1)
 #endif
 
 // Print prefix, use for debugging.
