@@ -67,7 +67,7 @@ public:
 
   // always returns an astr or nullptr
   const char* filename() const {
-    if (filename_ != nullptr)
+    if (filename_ != nullptr || id_.isEmpty())
       return filename_;
 
     // otherwise, get the filename from the id
@@ -78,7 +78,7 @@ public:
   }
 
   int lineno() const {
-    if (filename_ != nullptr)
+    if (filename_ != nullptr || id_.isEmpty())
       return lineno_;
 
     // otherwise, get the lineno from the id
