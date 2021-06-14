@@ -164,7 +164,7 @@ static void dumpHelper(const ASTNode* ast, int maxIdLen, int depth) {
   }
 
   //printf("(containing %i) ", ast->id().numContainedChildren());
-  printf("%p", ast);
+  //printf("%p", ast);
 
   printf("\n");
 
