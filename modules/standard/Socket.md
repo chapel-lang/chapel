@@ -125,7 +125,7 @@ The `write` method on socket will take in `host`, `port` and `data` to write to 
 
 __Method:__
 ```chapel
-socketServ.write(host:IPAddr,port:int,data)
+socketServ.send(host:IPAddr,port:int,data)
 ```
 
 **Parameters:**
