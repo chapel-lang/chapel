@@ -21,7 +21,6 @@
 #ifndef _chpl_H_
 #define _chpl_H_
 
-//#include "extern.h"
 #include "list.h"
 #include "map.h"
 #include "misc.h"
