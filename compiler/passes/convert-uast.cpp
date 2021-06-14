@@ -39,11 +39,21 @@ using namespace chpl;
 namespace {
 
 struct Converter {
-  chpl::Context* context;
+  chpl::Context* context = nullptr;
+  bool inTupleDecl = false;
 
   Converter(chpl::Context* context) : context(context) { }
 
   Expr* convertAST(const uast::ASTNode* node);
+
+  Expr* convertExprOrNull(const uast::ASTNode* node) {
+    if (node == nullptr)
+      return nullptr;
+
+    Expr* ret = convertAST(node);
+    INT_ASSERT(ret);
+    return ret;
+  }
 
   Expr* convertComment(const uast::Comment* node) {
     // old ast does not represent comments
@@ -62,10 +72,8 @@ struct Converter {
       uast::ASTListIteratorPair<uast::Expression> stmts) {
     BlockStmt* block = new BlockStmt();
     for (auto stmt: stmts) {
-      auto ast = convertAST(stmt);
-      if (ast) {
-        Expr* e = toExpr(ast);
-        INT_ASSERT(e);
+      Expr* e = convertAST(stmt);
+      if (e) {
         block->insertAtTail(e);
       }
     }
@@ -78,10 +86,9 @@ struct Converter {
 
   BlockStmt* convertLocal(const uast::Local* node) {
     BlockStmt* body = createBlockWithStmts(node->stmts()); 
-    if (node->condition()) {
-      Expr* e = toExpr(convertAST(node->condition()));
-      INT_ASSERT(e);
-      return buildLocalStmt(e, body);
+    Expr* condition = convertExprOrNull(node->condition());
+    if (condition) {
+      return buildLocalStmt(condition, body);
     } else {
       return buildLocalStmt(body);
     }
@@ -114,14 +121,13 @@ struct Converter {
 
   BlockStmt* convertSerial(const uast::Serial* node) {
     BlockStmt* body = createBlockWithStmts(node->stmts()); 
-    if (node->condition()) {
-      Expr* e = toExpr(convertAST(node->condition()));
-      INT_ASSERT(e);
-      return buildSerialStmt(e, body);
+    Expr* condition = convertExprOrNull(node->condition());
+
+    if (condition) {
+      return buildSerialStmt(condition, body);
     } else {
       return buildSerialStmt(new SymExpr(gTrue), body);
     }
-
   }
 
   Expr* convertWithClause(const uast::WithClause* node) {
@@ -204,7 +210,7 @@ struct Converter {
     SymExpr* se = buildRealLiteral(node->text().c_str());
     VarSymbol* v = toVarSymbol(se->symbol());
     INT_ASSERT(v && v->immediate && v->immediate->const_kind == NUM_KIND_REAL);
-    INT_ASSERT(v->immediate->int_value() == node->value());
+    INT_ASSERT(v->immediate->real_value() == node->value());
     return se;
   }
 
@@ -258,14 +264,14 @@ struct Converter {
   Expr* convertFnCall(const uast::FnCall* node) {
     const uast::Expression* calledExpression = node->calledExpression();
     INT_ASSERT(calledExpression);
-    Expr* calledExpr = toExpr(convertAST(calledExpression));
+    Expr* calledExpr = convertAST(calledExpression);
     INT_ASSERT(calledExpr);
 
     CallExpr* ret = new CallExpr(calledExpr);
 
     int nActuals = node->numActuals();
     for (int i = 0; i < nActuals; i++) {
-      Expr* actual = toExpr(convertAST(node->actual(i)));
+      Expr* actual = convertAST(node->actual(i));
       INT_ASSERT(actual);
       if (node->isNamedActual(i)) {
         actual = buildNamedActual(node->actualName(i).c_str(), actual);
@@ -280,7 +286,7 @@ struct Converter {
     CallExpr* ret = new CallExpr(node->op().c_str());
     int nActuals = node->numActuals();
     for (int i = 0; i < nActuals; i++) {
-      Expr* actual = toExpr(convertAST(node->actual(i)));
+      Expr* actual = convertAST(node->actual(i));
       INT_ASSERT(actual);
       ret->insertAtTail(actual);
     }
@@ -306,8 +312,32 @@ struct Converter {
   }
 
   Expr* convertTupleDecl(const uast::TupleDecl* node) {
-    INT_FATAL("TODO");
-    return nullptr;
+    BlockStmt* block = new BlockStmt(BLOCK_SCOPELESS);
+
+    bool saveInTupleDecl = inTupleDecl;
+    inTupleDecl = true;
+
+    for (auto decl : node->decls()) {
+      Expr* d = convertAST(decl);
+      INT_ASSERT(d);
+      if (DefExpr* def = toDefExpr(d)) {
+        if (VarSymbol* var = toVarSymbol(def->sym)) {
+          if (var->name[0] == '_' && var->name[1] == '\0') {
+            var->name = astr("chpl_tuple_blank");
+            var->cname = astr("chpl_tuple_blank");
+          }
+        }
+      }
+      block->insertAtTail(d);
+    }
+
+    Expr* typeExpr = convertExprOrNull(node->typeExpression());
+    Expr* initExpr = convertExprOrNull(node->initExpression());
+
+    BlockStmt* ret = buildTupleVarDeclStmt(block, typeExpr, initExpr);
+
+    inTupleDecl = saveInTupleDecl;
+    return ret;
   }
 
   /// NamedDecls ///
@@ -402,16 +432,8 @@ struct Converter {
       }
     }
 
-    Expr* retType = nullptr;
-    if (node->returnType()) {
-      retType = convertAST(node->returnType());
-      INT_ASSERT(retType);
-    }
-    Expr* whereClause = nullptr;
-    if (node->whereClause()) {
-      whereClause = convertAST(node->whereClause());
-      INT_ASSERT(whereClause);
-    }
+    Expr* retType = convertExprOrNull(node->returnType());
+    Expr* whereClause = convertExprOrNull(node->whereClause());
 
     Expr* lifetimeConstraints = nullptr;
     if (node->numLifetimeClauses() > 0) {
@@ -493,35 +515,31 @@ struct Converter {
   DefExpr* convertFormal(const uast::Formal* node) {
     IntentTag intentTag = convertFormalIntent(node->intent());
 
-    Expr* typeExpr = nullptr;
-    if (node->typeExpression()) {
-      typeExpr = convertAST(node->typeExpression());
-      INT_ASSERT(typeExpr);
-    }
-
-    Expr* initExpr = nullptr;
-    if (node->initExpression()) {
-      initExpr = convertAST(node->initExpression());
-      INT_ASSERT(initExpr);
-    }
+    Expr* typeExpr = convertExprOrNull(node->typeExpression());
+    Expr* initExpr = convertExprOrNull(node->initExpression());
 
     Expr* varargsVariable = nullptr; // TODO: handle varargs
 
-    DefExpr* def =  buildArgDefExpr(intentTag, node->name().c_str(),
-                                    typeExpr, initExpr, varargsVariable);
-
-    INT_ASSERT(def);
-    return def;
+    return buildArgDefExpr(intentTag, node->name().c_str(),
+                           typeExpr, initExpr, varargsVariable);
   }
 
   Expr* convertTaskVar(const uast::TaskVar* node) {
     INT_FATAL("TODO");
     return nullptr;
   }
+
+  const char* tupleVariableName(const char* name) {
+    if (inTupleDecl && name[0] == '_' && name[1] == '\0')
+      return "chpl__tuple_blank";
+    else
+      return name;
+  }
+
   Expr* convertVariable(const uast::Variable* node) {
     auto stmts = new BlockStmt(BLOCK_SCOPELESS);
 
-    auto varSym = new VarSymbol(node->name().c_str());
+    auto varSym = new VarSymbol(tupleVariableName(node->name().c_str()));
     // Adjust the variable according to its kind
     switch (node->kind()) {
       case uast::Variable::VAR:
@@ -551,21 +569,14 @@ struct Converter {
         break;
     }
 
-    Expr* typeExpr = nullptr;
-    Expr* initExpr = nullptr;
-    if (node->typeExpression()) {
-      typeExpr = convertAST(node->typeExpression());
-      INT_ASSERT(typeExpr);
-    }
-    if (node->initExpression()) {
-      initExpr = convertAST(node->initExpression());
-      INT_ASSERT(initExpr);
-    }
+    Expr* typeExpr = convertExprOrNull(node->typeExpression());
+    Expr* initExpr = convertExprOrNull(node->initExpression());
+
     auto defExpr = new DefExpr(varSym, initExpr, typeExpr);
     stmts->insertAtTail(defExpr);
 
     // Add a PRIM_END_OF_STATEMENT.
-    if (fDocs == false) {
+    if (fDocs == false && inTupleDecl == false) {
       CallExpr* end = new CallExpr(PRIM_END_OF_STATEMENT);
       stmts->insertAtTail(end);
     }
