@@ -317,9 +317,126 @@ struct Converter {
     return nullptr;
   }
 
+  static RetTag convertRetTag(uast::Function::ReturnIntent returnIntent) {
+    switch (returnIntent) {
+      case uast::Function::DEFAULT_RETURN_INTENT:
+        return RET_VALUE;
+      case uast::Function::CONST:
+        return RET_VALUE;
+      case uast::Function::CONST_REF:
+        return RET_CONST_REF;
+      case uast::Function::REF:
+        return RET_REF;
+      case uast::Function::PARAM:
+        return RET_PARAM;
+      case uast::Function::TYPE:
+        return RET_TYPE;
+    }
+
+    INT_FATAL("case not handled");
+    return RET_VALUE;
+  }
+
+  static bool isAssignOp(UniqueString name) {
+    return (name == "=" ||
+            name == "+=" ||
+            name == "-=" ||
+            name == "*=" ||
+            name == "/=" ||
+            name == "%=" ||
+            name == "**=" ||
+            name == "&=" ||
+            name == "|=" ||
+            name == "^=" ||
+            name == ">>=" ||
+            name == "<<=");
+  }
+
   Expr* convertFunction(const uast::Function* node) {
-    INT_FATAL("TODO");
-    return nullptr;
+    FnSymbol* fn = new FnSymbol("_");
+    if (node->isInline()) {
+      fn->addFlag(FLAG_INLINE);
+    }
+    if (node->isOverride()) {
+      fn->addFlag(FLAG_OVERRIDE);
+    }
+    // TODO: add FLAG_NO_PARENS for parenless functions
+
+    // Add the formals
+    if (node->numFormals() > 0) {
+      for (auto formal : node->formals()) {
+        DefExpr* def = convertFormal(formal);
+        INT_ASSERT(def);
+        buildFunctionFormal(fn, def); // adds it to the list
+      }
+    }
+
+    IntentTag thisTag = INTENT_BLANK;
+    Expr* receiver = nullptr;
+    // TODO adjust the above two variables once we have methods
+
+    UniqueString name = node->name();
+
+    fn = buildFunctionSymbol(fn, name.c_str(), thisTag, receiver);
+
+    if (isAssignOp(name)) {
+      fn->addFlag(FLAG_ASSIGNOP);
+    }
+
+    RetTag retTag = convertRetTag(node->returnIntent());
+
+
+    // TODO: handle specified cname for extern/export functions
+
+    if (node->kind() == uast::Function::ITER) {
+      if (fn->hasFlag(FLAG_EXTERN))
+        USR_FATAL_CONT(fn, "'iter' is not legal with 'extern'");
+      fn->addFlag(FLAG_ITERATOR_FN);
+    }
+
+    if (node->kind() == uast::Function::OPERATOR) {
+      fn->addFlag(FLAG_OPERATOR);
+      if (fn->_this != NULL) {
+        updateOpThisTagOrErr(fn);
+        setupTypeIntentArg(toArgSymbol(fn->_this));
+      }
+    }
+
+    Expr* retType = nullptr;
+    if (node->returnType()) {
+      retType = convertAST(node->returnType());
+      INT_ASSERT(retType);
+    }
+    Expr* whereClause = nullptr;
+    if (node->whereClause()) {
+      whereClause = convertAST(node->whereClause());
+      INT_ASSERT(whereClause);
+    }
+
+    Expr* lifetimeConstraints = nullptr;
+    if (node->numLifetimeClauses() > 0) {
+      for (auto clause : node->lifetimeClauses()) {
+        Expr* convertedClause = convertAST(clause);
+        INT_ASSERT(convertedClause);
+
+        if (lifetimeConstraints == nullptr) {
+          lifetimeConstraints = convertedClause;
+        } else {
+          lifetimeConstraints =
+            new CallExpr(",", lifetimeConstraints, convertedClause);
+        }
+      }
+      INT_ASSERT(lifetimeConstraints);
+    }
+
+    BlockStmt* body = createBlockWithStmts(node->stmts());
+    BlockStmt* decl = buildFunctionDecl(fn, retTag, retType,
+                                        node->throws(), whereClause,
+                                        lifetimeConstraints,
+                                        body,
+                                        /* docs */ nullptr);
+
+    return decl;
   }
 
   DefExpr* convertModule(const uast::Module* node) {
@@ -345,10 +462,58 @@ struct Converter {
 
   /// VarLikeDecls ///
 
-  Expr* convertFormal(const uast::Formal* node) {
-    INT_FATAL("TODO");
-    return nullptr;
+  static IntentTag convertFormalIntent(uast::Formal::Intent intent) {
+    switch (intent) {
+      case uast::Formal::DEFAULT_INTENT:
+        return INTENT_BLANK;
+      case uast::Formal::CONST:
+        return INTENT_CONST;
+      case uast::Formal::CONST_REF:
+        return INTENT_CONST_REF;
+      case uast::Formal::REF:
+        return INTENT_REF;
+      case uast::Formal::IN:
+        return INTENT_IN;
+      case uast::Formal::CONST_IN:
+        return INTENT_CONST_IN;
+      case uast::Formal::OUT:
+        return INTENT_OUT;
+      case uast::Formal::INOUT:
+        return INTENT_INOUT;
+      case uast::Formal::PARAM:
+        return INTENT_PARAM;
+      case uast::Formal::TYPE:
+        return INTENT_TYPE;
+    }
+
+    INT_FATAL("case not handled");
+    return INTENT_BLANK;
   }
+
+  DefExpr* convertFormal(const uast::Formal* node) {
+    IntentTag intentTag = convertFormalIntent(node->intent());
+
+    Expr* typeExpr = nullptr;
+    if (node->typeExpression()) {
+      typeExpr = convertAST(node->typeExpression());
+      INT_ASSERT(typeExpr);
+    }
+
+    Expr* initExpr = nullptr;
+    if (node->initExpression()) {
+      initExpr = convertAST(node->initExpression());
+      INT_ASSERT(initExpr);
+    }
+
+    Expr* varargsVariable = nullptr; // TODO: handle varargs
+
+    DefExpr* def =  buildArgDefExpr(intentTag, node->name().c_str(),
+                                    typeExpr, initExpr, varargsVariable);
+
+    INT_ASSERT(def);
+    return def;
+  }
+
   Expr* convertTaskVar(const uast::TaskVar* node) {
     INT_FATAL("TODO");
     return nullptr;
