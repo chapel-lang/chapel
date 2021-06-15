@@ -346,8 +346,8 @@ static void test4() {
 
   assert(comment == oldComment);
   // these should match though
-  assert(AA = oldAA);
-  assert(BB = oldBB);
+  assert(AA == oldAA);
+  assert(BB == oldBB);
   assert(A == oldA);
   assert(B == oldB);
   const Block* oldBlock = block;
@@ -385,8 +385,8 @@ static void test4() {
 
   assert(comment == oldComment);
   assert(block != oldBlock); // should not match because contents changed
-  assert(AA = oldAA);
-  assert(BB = oldBB);
+  assert(AA == oldAA);
+  assert(BB == oldBB);
   assert(A == oldA);
   assert(B == oldB);
 
@@ -421,8 +421,8 @@ static void test4() {
 
   assert(comment == oldComment);
   // these should match though.
-  assert(AA = oldAA);
-  assert(BB = oldBB);
+  assert(AA == oldAA);
+  assert(BB == oldBB);
   assert(A == oldA);
   assert(B == oldB);
 
@@ -457,7 +457,7 @@ static void test4() {
   assert(comment == oldComment);
 
   assert(A != oldA); // name changed
-  assert(BB = oldBB);
+  assert(BB == oldBB);
   assert(B == oldB);
 }
 

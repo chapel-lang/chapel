@@ -42,6 +42,8 @@ namespace frontend {
   const LocationsMap& fileLocations(Context* context, UniqueString path);
 
   // These functions can't return the Location for a Comment
+  // because Comments don't have IDs. If Locations for Comments are needed,
+  // instead use the locations field from the result of parseFile.
   const Location& locateID(Context* context, ID id);
   const Location& locate(Context* context, const uast::ASTNode* ast);
 
