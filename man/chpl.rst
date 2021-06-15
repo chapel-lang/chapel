@@ -475,11 +475,10 @@ OPTIONS
 **\--[no-]llvm-wide-opt**
 
     Enable [disable] LLVM wide pointer communication optimizations. This
-    option requires **\--llvm** and packed wide pointers. Packed wide
-    pointers are enabled by setting CHPL\_WIDE\_POINTERS = node16. You must
-    also supply **\--fast** to enable wide pointer optimizations. This flag
-    allows existing LLVM optimizations to work with wide pointers - for
-    example, they might be able to hoist a 'get' out of a loop. See
+    option requires CHPL_TARGET_COMPILER=llvm. You must also supply
+    **\--fast** to enable wide pointer optimizations. This flag allows
+    existing LLVM optimizations to work with wide pointers - for example,
+    they might be able to hoist a 'get' out of a loop. See
     $CHPL\_HOME/doc/rst/technotes/llvm.rst for details.
 
 **\--mllvm <option>**

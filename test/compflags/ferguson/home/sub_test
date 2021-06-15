@@ -42,6 +42,11 @@ mkpath($BIN);
 # Copy util dir because that's what the compiler will check for
 0 == system("cp -R $ORIG_CHPL_HOME/util $HOME") or die "could not cp -R $ORIG_CHPL_HOME/util $HOME";
 0 == system("cp -R $ORIG_CHPL_HOME/util $HOME2") or die "could not cp -R $ORIG_CHPL_HOME/util $HOME2";
+symlink("$ORIG_CHPL_HOME/make", "$HOME/make");
+symlink("$ORIG_CHPL_HOME/make", "$HOME2/make");
+symlink("$ORIG_CHPL_HOME/third-party", "$HOME/third-party");
+symlink("$ORIG_CHPL_HOME/third-party", "$HOME2/third-party");
+
 0 == system("cp -R $ORIG_CHPL $HOMEBIN") or die "could not cp -R $ORIG_CHPL $HOMEBIN";
 0 == system("cp -R $ORIG_CHPL $HOME2BIN") or die "could not cp -R $ORIG_CHPL $HOME2BIN";
 0 == system("cp -R $ORIG_CHPL $HOME3BIN") or die "could not cp -R $ORIG_CHPL $HOME3BIN";
@@ -107,33 +112,38 @@ sub check {
     $ENV{"PATH"} = $ORIG_PATH;
   }
 
+  #print "PATH is " . $ENV{"PATH"} . "\n";
+  #print "RUNNING $exe --print-chpl-home\n";
   $got = `$exe --print-chpl-home 2>&1`;
+  #print "GOT IS $got\n";
+
+
   my @lines = split('\n', $got);
   my ($gothome, $gotexe) = split('\t', $lines[-1]);
 
   #print "[Success compiling --print-chpl-home]\n";
   if ($expecthome ne "") {
     if( realpath($gothome) eq realpath($expecthome) ) {
-      print "[Success matching --print-chpl-home home $name]\n";
+      print "[Success matching compflags/ferguson/home --print-chpl-home home $name]\n";
     } else {
-      print "[Error matching --print-chpl-home home $name (got $gothome but expected $expecthome)]\n";
+      print "[Error matching compflags/ferguson/home --print-chpl-home home $name (got $gothome but expected $expecthome)]\n";
     }
   }
   if ($expectexe ne "") {
     if( realpath($gotexe) eq realpath($expectexe) ) {
-      print "[Success matching --print-chpl-home exe $name]\n";
+      print "[Success matching compflags/ferguson/home --print-chpl-home exe $name]\n";
     } else {
-      print "[Error matching --print-chpl-home exe $name (got $gotexe but expected $expectexe)]\n";
+      print "[Error matching compflags/ferguson/home --print-chpl-home exe $name (got $gotexe but expected $expectexe)]\n";
     }
   }
   if ($expecterror ne "") {
     if( $got =~ /$expecterror/i ) {
-      print "[Success matching --print-chpl-home errs $name]\n";
+      print "[Success matching compflags/ferguson/home --print-chpl-home errs $name]\n";
       # OK 
     } else {
       my $errs = $got;
       $errs =~ tr/\n/ /;
-      print "[Error matching --print-chpl-home errs $name did not find $expecterror in $errs]\n";
+      print "[Error matching compflags/ferguson/home --print-chpl-home errs $name did not find $expecterror in $errs]\n";
     }
   }
 }

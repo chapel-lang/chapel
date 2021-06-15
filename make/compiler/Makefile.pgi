@@ -23,8 +23,8 @@
 #
 # Tools
 #
-CXX = pgc++
-CC = pgcc
+CXX = $(CHPL_MAKE_COMPILER_COMMAND_CXX) # normally pgc++
+CC = $(CHPL_MAKE_COMPILER_COMMAND_C)    # normally pgcc
 
 RANLIB = ranlib
 

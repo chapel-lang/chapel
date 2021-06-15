@@ -33,8 +33,8 @@ namespace uast {
  */
 class RealLiteral final : public NumericLiteral<double> {
  private:
-  RealLiteral(double value, int base)
-    : NumericLiteral(asttags::RealLiteral, value, base)
+  RealLiteral(double value, UniqueString text)
+    : NumericLiteral(asttags::RealLiteral, value, text)
   { }
 
   // contentsMatchInner / markUniqueStringsInner are in NumericLiteral
@@ -44,7 +44,7 @@ class RealLiteral final : public NumericLiteral<double> {
   ~RealLiteral() override = default;
 
   static owned<RealLiteral> build(Builder* builder, Location loc,
-                                  double value, int base);
+                                  double value, UniqueString text);
 };
 
 

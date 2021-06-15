@@ -116,9 +116,16 @@ class UniqueString final {
   inline bool operator==(const UniqueString other) const {
     return this->s.i.v == other.s.i.v;
   }
+  inline bool operator==(const char* other) const {
+    return 0 == this->compare(other);
+  }
   inline bool operator!=(const UniqueString other) const {
     return !(*this == other);
   }
+  inline bool operator!=(const char* other) const {
+    return 0 != this->compare(other);
+  }
+
   int compare(const UniqueString other) const {
     return *this == other ? 0 : compare(other.c_str());
   }

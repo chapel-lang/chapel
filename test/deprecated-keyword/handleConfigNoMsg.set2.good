@@ -1,0 +1,4 @@
+handleConfigNoMsg.chpl:5: In function 'main':
+handleConfigNoMsg.chpl:6: warning: x is deprecated
+true
+<command-line arg>:2: warning: x is deprecated

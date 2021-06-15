@@ -1,1 +1,1 @@
---llvm  --llvm-print-ir mytest
+--llvm-print-ir mytest

@@ -1,1 +1,1 @@
---no-llvm --library --ccflags=-Wno-incompatible-pointer-types
+--library --ccflags=-Wno-incompatible-pointer-types

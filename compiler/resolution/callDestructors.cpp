@@ -1904,7 +1904,7 @@ static void checkForErroneousInitCopies() {
 
             if (printsUserLocation(t)) {
               USR_PRINT(t, "%s does not have a valid init=", toString(t));
-            } else if (t->symbol->userInstantiationPointLoc.filename != NULL) {
+            } else if (!t->symbol->userInstantiationPointLoc.isEmpty()) {
               USR_PRINT(t->symbol->userInstantiationPointLoc,
                         "%s does not have a valid init=", toString(t));
             }

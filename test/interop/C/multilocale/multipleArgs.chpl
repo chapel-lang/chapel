@@ -5,8 +5,8 @@ export proc take2(x: int, y: int) {
   writeln("Was given x: ", x, ", and y: ", y);
 }
 
-export proc take2Diff(x: int, in y: c_string) {
-  writeln("string is: " + y: string);
+export proc take2Diff(x: int, in y: real) {
+  writeln("real is: ", y);
   writeln("int is: ", x);
 }
 

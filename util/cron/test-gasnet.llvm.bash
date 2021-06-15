@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
-# Test gasnet configuration with CHPL_LLVM=bundled and pass --llvm flag to
-# compiler on linux64.
+# Test gasnet configuration with CHPL_LLVM=bundled & CHPL_TARGET_COMPILER=llvm
+# on linux64.
 
 CWD=$(cd $(dirname $0) ; pwd)
 source $CWD/common-gasnet.bash

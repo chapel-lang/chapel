@@ -84,6 +84,7 @@
 #include "driver.h"
 #include "expr.h"
 #include "files.h"
+#include "mli.h"
 #include "mysystem.h"
 #include "passes.h"
 #include "stmt.h"
@@ -268,8 +269,7 @@ void addMinMax(const char* prefix, int nbits, bool isSigned)
 
   astlocT prevloc = currentAstLoc;
 
-  currentAstLoc.lineno = 0;
-  currentAstLoc.filename = astr("<internal>");
+  currentAstLoc = astlocT(0, astr("<internal>"));
 
   const char* min_name = astr(prefix, "_MIN");
   const char* max_name = astr(prefix, "_MAX");
@@ -2161,9 +2161,12 @@ void runClang(const char* just_parse_filename) {
 
   clangCCArgs.push_back("-pthread");
 
-  // library directories/files and ldflags are handled during linking later.
-
-  clangCCArgs.push_back("-DCHPL_GEN_CODE");
+  // Library directories/files and ldflags are handled during linking later.
+  // Skip this in multi-locale libraries because the C blob that is built
+  // already defines this.
+  if (!fMultiLocaleInterop) {
+    clangCCArgs.push_back("-DCHPL_GEN_CODE");
+  }
 
   // tell clang to use CUDA support
   if (localeUsesGPU()) {
@@ -2232,6 +2235,20 @@ void runClang(const char* just_parse_filename) {
       clangOtherArgs.push_back("-include");
       clangOtherArgs.push_back(gAllExternCode.filename);
     }
+
+    // Include a few extra things if generating a multi-locale library.
+    if (fMultiLocaleInterop) {
+
+      // Include the contents of the server bundle...
+      clangOtherArgs.push_back("-include");
+      INT_ASSERT(gMultiLocaleLibServerFile != NULL);
+      clangOtherArgs.push_back(gMultiLocaleLibServerFile);
+
+      // As well as the path to extra code for the client and server.
+      std::string incPath = std::string("-I") + std::string(CHPL_HOME);
+      incPath += "/runtime/etc/src/";
+      clangOtherArgs.push_back(incPath);
+    }
   } else {
     // Just running clang to parse the extern blocks for this module.
     clangOtherArgs.push_back("-include");
@@ -2253,12 +2270,19 @@ void runClang(const char* just_parse_filename) {
     printf("\n");
   }
 
+  bool parseOnly = (just_parse_filename != NULL);
+
   // Initialize gGenInfo
   // Toggle LLVM code generation in our clang run;
   // turn it off if we just wanted to parse some C.
-  gGenInfo = new GenInfo();
-
-  bool parseOnly = (just_parse_filename != NULL);
+  if (parseOnly) {
+    // TODO (dlongnecke): Always initialize outside of this function?
+    gGenInfo = new GenInfo();
+  } else {
+    // Note that if we are calling 'runClang(NULL)' then the final gGenInfo
+    // Should have already been initialized for us.
+    INT_ASSERT(gGenInfo != NULL);
+  }
 
   gGenInfo->lvt = new LayeredValueTable();
 
@@ -3854,6 +3878,16 @@ void makeBinaryLLVM(void) {
     clangLDArgs = runtimeArgs;
   }
 
+  // Grab extra dependencies for multilocale libraries if needed.
+  if (fMultiLocaleInterop) {
+    std::string cmd = std::string(CHPL_HOME);
+    cmd += "/util/config/compileline --multilocale-lib-deps";
+    std::string libs = runCommand(cmd);
+    // Erase trailing newline.
+    libs.erase(libs.size() - 1);
+    clangLDArgs.push_back(libs);
+  }
+
   // Substitute $CHPL_HOME $CHPL_RUNTIME_LIB etc
   expandInstallationPaths(clangLDArgs);
 
@@ -3961,11 +3995,18 @@ void makeBinaryLLVM(void) {
   mainfile.filename = "chpl__module.o";
   mainfile.pathname = moduleFilename.c_str();
   const char* tmpbinname = NULL;
+  const char* tmpservername = NULL;
 
-  codegen_makefile(&mainfile, &tmpbinname, true);
-  INT_ASSERT(tmpbinname);
+  if (fMultiLocaleInterop) {
+    codegen_makefile(&mainfile, &tmpbinname, &tmpservername, true);
+    INT_ASSERT(tmpservername);
+    INT_ASSERT(tmpbinname);
+  } else {
+    codegen_makefile(&mainfile, &tmpbinname, NULL, true);
+    INT_ASSERT(tmpbinname);
+  }
 
-  if (fLibraryCompile) {
+  if (fLibraryCompile && !fMultiLocaleInterop) {
     switch (fLinkStyle) {
     // The default library link style for Chapel is _static_.
     case LS_DEFAULT:
@@ -3981,8 +4022,10 @@ void makeBinaryLLVM(void) {
       break;
     }
   } else {
+    const char* outbin = fMultiLocaleInterop ? tmpservername : tmpbinname;
+
     // Runs the LLVM link command for executables.
-    runLLVMLinking(useLinkCXX, options, moduleFilename, maino, tmpbinname,
+    runLLVMLinking(useLinkCXX, options, moduleFilename, maino, outbin,
                    dotOFiles, clangLDArgs, sawSysroot);
   }
 
@@ -4137,10 +4180,14 @@ static std::string buildLLVMLinkCommand(std::string useLinkCXX,
   std::string command = useLinkCXX + " " + options + " " +
                         moduleFilename + " " + maino;
 
-  // For dynamic linking, leave it alone.  For static, append -static .
+  // For dynamic linking, leave it alone.  For static, append -static.
   // See $CHPL_HOME/make/compiler/Makefile.clang (and keep this in sync
   // with it).
-  if (fLinkStyle == LS_STATIC) {
+  // Note that in multi-locale interop we are building a server executable
+  // that cannot be built with `-static`, because because it depends on
+  // dynamic libraries. So even if the client library is being built as
+  // static, the server cannot be.
+  if (fLinkStyle == LS_STATIC && !fMultiLocaleInterop) {
     command += " -static";
   }
 

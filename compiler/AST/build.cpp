@@ -263,7 +263,7 @@ Expr* buildFormalArrayType(Expr* iterator, Expr* eltType, Expr* index) {
   }
 }
 
-Expr* buildIntLiteral(const char* pch, const char* file, int line) {
+SymExpr* buildIntLiteral(const char* pch, const char* file, int line) {
   uint64_t ull;
   int len = strlen(pch);
   char* noUnderscores = (char*)malloc(len+1);
@@ -298,12 +298,12 @@ Expr* buildIntLiteral(const char* pch, const char* file, int line) {
 }
 
 
-Expr* buildRealLiteral(const char* pch) {
+SymExpr* buildRealLiteral(const char* pch) {
   return new SymExpr(new_RealSymbol(pch));
 }
 
 
-Expr* buildImagLiteral(const char* pch) {
+SymExpr* buildImagLiteral(const char* pch) {
   char* str = strdup(pch);
   str[strlen(pch)-1] = '\0';
   SymExpr* se = new SymExpr(new_ImagSymbol(str));
@@ -312,15 +312,15 @@ Expr* buildImagLiteral(const char* pch) {
 }
 
 
-Expr* buildStringLiteral(const char* pch) {
+SymExpr* buildStringLiteral(const char* pch) {
   return new SymExpr(new_StringSymbol(pch));
 }
 
-Expr* buildBytesLiteral(const char* pch) {
+SymExpr* buildBytesLiteral(const char* pch) {
   return new SymExpr(new_BytesSymbol(pch));
 }
 
-Expr* buildCStringLiteral(const char* pch) {
+SymExpr* buildCStringLiteral(const char* pch) {
   return new SymExpr(new_CStringSymbol(pch));
 }
 
@@ -382,6 +382,15 @@ DefExpr* buildDeprecated(DefExpr* def, const char* msg) {
   Symbol* sym = def->sym;
   sym->addFlag(FLAG_DEPRECATED);
   sym->deprecationMsg = msg;
+
+  if (sym->hasFlag(FLAG_CONFIG)) {
+    // Trigger a warning now if the deprecated config has been set via the
+    // compilation line
+    if (isUsedCmdLineConfig(sym->name)) {
+      USR_WARN("%s", sym->getDeprecationMsg());
+      USR_PRINT("'%s' was set via a compiler flag", sym->name);
+    }
+  }
   return def;
 }
 

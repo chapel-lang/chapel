@@ -1,0 +1,5 @@
+bug
+#17898
+
+chpl: /lus/scratch/killough/chapel/third-party/llvm/llvm-src/lib/IR/Instructions.cpp:2873: static llvm::CastInst* llvm::CastInst::Create(llvm::Instruction::CastOps, llvm::Value*, llvm::Type*, const llvm::Twine&, llvm::Instruction*): Assertion `castIsValid(op, S, Ty) && "Invalid cast!"' failed.
+timedexec: target program died with signal 6, with coredump

@@ -126,7 +126,7 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
     ( *runtime* )
         log_info "Building Chapel component: runtime"
 
-        compilers=gnu,cray,intel
+        compilers=gnu,llvm,cray,intel
         comms=gasnet,none,ugni
         launchers=pbs-aprun,aprun,none,slurm-srun
         substrates=aries,mpi,none
@@ -368,18 +368,26 @@ else
 
     # ---
 
-    # NOTE: The CHPL_TARGET_COMPILER env values from build_configs are not passed to Chapel.
-    # Instead, they drive module load commands in the setenv callback
+    # NOTE: build_configs uses different values for CHPL_TARGET_COMPILER.
+    # The below statements translate to the variable needed by the
+    # Makefiles and perform appropriate module load commands.
 
     case "$CHPL_TARGET_COMPILER" in
     ( gnu )
         load_prgenv_gnu
+        export CHPL_TARGET_COMPILER=cray-prgenv-gnu
+        ;;
+    ( llvm )
+        load_prgenv_gnu
+        export CHPL_TARGET_COMPILER=llvm
         ;;
     ( intel )
         load_prgenv_intel
+        export CHPL_TARGET_COMPILER=cray-prgenv-intel
         ;;
     ( cray )
         load_prgenv_cray
+        export CHPL_TARGET_COMPILER=cray-prgenv-cray
         ;;
     ( compiler )
         load_prgenv_gnu
@@ -396,11 +404,6 @@ else
         ;;
     esac
 
-    # Discard the artificial CHPL_TARGET_COMPILER value.
-    # Chapel make will select cray-prgenv-gnu, cray-prgenv-intel, or cray-prgenv-cray,
-    # based on which module (PrgEnv-gnu, PrgEnv-intel, or PrgEnv-cray) it finds in the environment
-
-    unset CHPL_TARGET_COMPILER
     load_target_cpu $target_cpu_module
 
     if [ "$CHPL_AUX_FILESYS" == lustre ]; then

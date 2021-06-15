@@ -568,22 +568,22 @@ static bool printErrorHeader(BaseAST* ast, astlocT astloc) {
   const char* filename;
   int linenum;
 
-  if ( ast && ast->linenum() ) {
+  if (ast && ast->linenum()) {
     have_ast_line = true;
     filename = cleanFilename(ast);
     linenum = ast->linenum();
-  } else if ( astloc.filename != NULL) {
+  } else if (astloc.filename() != nullptr) {
     have_ast_line = true;
-    filename = cleanFilename(astloc.filename);
-    linenum = astloc.lineno;
+    filename = cleanFilename(astloc.filename());
+    linenum = astloc.lineno();
   } else {
     have_ast_line = false;
-    if ( !err_print && currentAstLoc.filename && currentAstLoc.lineno > 0 ) {
+    if (!err_print && currentAstLoc.filename() && currentAstLoc.lineno() > 0) {
       // Use our best guess for the line number for user errors,
       // but don't do that for err_print (USR_PRINT) notes that don't
       // come with line numbers.
-      filename = cleanFilename(currentAstLoc.filename);
-      linenum = currentAstLoc.lineno;
+      filename = cleanFilename(currentAstLoc.filename());
+      linenum = currentAstLoc.lineno();
     } else {
       filename = NULL;
       linenum = -1;
@@ -595,8 +595,7 @@ static bool printErrorHeader(BaseAST* ast, astlocT astloc) {
   if (filename) {
     if (err_fatal && err_user) {
       // save the error location for printsSameLocationAsLastError
-      last_error_loc.filename = filename;
-      last_error_loc.lineno = linenum;
+      last_error_loc = astlocT(linenum, filename);
     }
     print_error("%s:%d: ", filename, linenum);
   }
@@ -886,19 +885,17 @@ void clearFatalErrors() {
 }
 
 bool printsSameLocationAsLastError(const BaseAST* ast) {
-  astlocT loc(0, NULL);
+  astlocT loc(0, nullptr);
 
   if ( ast && ast->linenum() ) {
-    loc.filename = cleanFilename(ast);
-    loc.lineno = ast->linenum();
+    loc = astlocT(ast->linenum(), cleanFilename(ast));
   }
 
   return loc == last_error_loc;
 }
 
 void clearLastErrorLocation() {
-  last_error_loc.filename = NULL;
-  last_error_loc.lineno = 0;
+  last_error_loc = astlocT(0, nullptr);
 }
 
 static void handleInterrupt(int sig) {

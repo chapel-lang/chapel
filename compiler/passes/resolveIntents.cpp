@@ -243,7 +243,7 @@ static IntentTag blankIntentForThisArg(Type* t) {
 static
 IntentTag blankIntentForExternFnArg(Type* type) {
   if (fLlvmCodegen && type->getValType()->symbol->hasFlag(FLAG_C_ARRAY))
-    // Pass c_array by ref by default for --llvm
+    // Pass c_array by ref by default for LLVM backend
     // (for C, an argument like int arg[2] is actually just int* arg).
     // This needs to be here because otherwise the following rule overrides it.
     return INTENT_REF_MAYBE_CONST;

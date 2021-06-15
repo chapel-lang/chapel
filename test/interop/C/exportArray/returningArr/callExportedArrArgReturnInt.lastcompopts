@@ -1,1 +1,1 @@
--Llib/ -lexportArrArgReturnInt `$CHPL_HOME/util/config/compileline --libraries`
+-Llib/ -lexportArrArgReturnInt `$CHPL_HOME/util/config/compileline --libraries` -lexportArrArgReturnInt

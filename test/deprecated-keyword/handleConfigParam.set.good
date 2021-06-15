@@ -1,0 +1,5 @@
+warning: don't use x, use y
+note: 'x' was set via a compiler flag
+handleConfigParam.chpl:5: In function 'main':
+handleConfigParam.chpl:6: warning: don't use x, use y
+true

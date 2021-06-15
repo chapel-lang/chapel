@@ -1,10 +1,10 @@
 # Many of these packages have newer versions that work on Python 3 only.
-Jinja2==2.11.2
-MarkupSafe==1.1.1
-Pygments==2.7.1
-Sphinx==3.2.1
-docutils==0.16
+Jinja2==3.0.1
+MarkupSafe==2.0.1
+Pygments==2.9.0
+Sphinx==4.0.2
+docutils==0.17.1
 sphinx-rtd-theme==0.5.0
 sphinxcontrib-chapeldomain==0.0.20
-babel==2.8.0
-breathe==4.27
+babel==2.9.1
+breathe==4.30.0
