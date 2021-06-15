@@ -96,7 +96,7 @@ struct ParserContext {
   YYLTYPE declStartLoc(YYLTYPE curLoc);
   void resetDeclState();
 
-  // Given a location, create a new one pointing to the end of the first.
+  // Given a location, create a new one pointing to the end of it.
   YYLTYPE makeLocationAtLast(YYLTYPE location) {
     return {
       .first_line     = location.last_line,

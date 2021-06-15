@@ -50,6 +50,7 @@ class Yield final : public Expression {
   }
 
   bool contentsMatchInner(const ASTNode* other) const override {
+    // The 'valueChildNum_' is const and does not need to be compared.
     return this->expressionContentsMatchInner(other->toExpression());
   }
 

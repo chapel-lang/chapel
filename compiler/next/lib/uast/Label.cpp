@@ -28,6 +28,8 @@ bool Label::contentsMatchInner(const ASTNode* other) const {
   const Label* lhs = this;
   const Label* rhs = other->toLabel();
 
+  assert(lhs->loopChildNum_ == rhs->loopChildNum_);
+
   if (lhs->name_ != rhs->name_)
     return false;
 

@@ -29,7 +29,21 @@ namespace uast {
 
 
 /**
-  This class represents any sort of block-like construct.
+  This class represents any sort of block-like construct. Candidates for
+  use of this abstract class have:
+
+    - Simple-to-no (e.g. Local, or Block) control flow
+    - A body that may be enclosed by curly braces
+    - A body containing statements that execute serially
+
+  Thus Begin would be a candidate for this class (because while it spawns
+  a new task, the contained statements execute serially), while Cobegin
+  would not because the contained statements each execute in a different
+  task.
+
+  Conditional would not be a candidate for this class because its control
+  flow is slightly more complex than "conditionally execute entire block".
+  This is because the conditional may have an else block.
  */
 class SimpleBlockLike : public Expression {
  protected:
