@@ -44,6 +44,9 @@ const char* mliClientRuntimeSource = "chpl-mli-client-runtime.c";
 const char* mliServerRuntimeSource = "chpl-mli-server-runtime.c";
 const char* mliCommonRuntimeSource = "chpl-mli-common-runtime.c";
 
+static const char* mliPushFunctionName = "chpl_mli_push";
+static const char* mliPullFunctionName = "chpl_mli_pull";
+
 static const char* client_main = "chpl_client.main";
 static const char* client_arg = "chpl_client.arg";
 static const char* client_res = "chpl_client.res";
@@ -411,7 +414,7 @@ std::string MLIContext::genMarshalBodyChplBytesWrapper(Type* t, bool push) {
   std::string gen;
 
   // TODO: Should do something with the error code.
-  gen += push ? "chpl_mli_push" : "chpl_mli_pull";
+  gen += push ? mliPushFunctionName : mliPullFunctionName;
   gen += "_byte_buffer(skt,&";
   gen += target;
   gen += ");\n";
@@ -436,7 +439,7 @@ std::string MLIContext::genMarshalRoutineProto(Type* t, bool push) {
   }
 
   // Select appropriate prefix for function name based on direction.
-  gen += push ? "chpl_mli_push_" : "chpl_mli_pull_";
+  gen += push ? mliPushFunctionName : mliPullFunctionName;
   gen += str(id);
   gen += "(void* skt";
 
@@ -887,7 +890,7 @@ std::string MLIContext::genMarshalCall(const char* skt, const char* var,
   std::string gen;
   int64_t id = this->assignUniqueTypeID(t);
 
-  gen += push ? "chpl_mli_push_" : "chpl_mli_pull_";
+  gen += push ? mliPushFunctionName : mliPullFunctionName;
   gen += str(id);
   gen += "(";
   gen += skt;
@@ -922,7 +925,7 @@ MLIContext::genSocketCallBuffer(const char* skt, const char* var,
                                 const char* len, bool push) {
   std::string gen;
 
-  gen += push ? "chpl_mli_push" : "chpl_mli_pull";
+  gen += push ? mliPushFunctionName : mliPullFunctionName;
   gen += "(";
   gen += skt;
   gen += ", ";
@@ -942,7 +945,7 @@ MLIContext::genSocketCall(const char* skt, const char* var, const char* len,
                           bool push) {
   std::string gen;
 
-  gen += push ? "chpl_mli_push" : "chpl_mli_pull";
+  gen += push ? mliPushFunctionName : mliPullFunctionName;
   gen += "(";
   gen += skt;
   gen += ", ";
