@@ -4039,36 +4039,36 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
   }
 
   // 5.6 Division Functions
-  proc bigint.divQ(const ref n: bigint,
+  proc bigint.divQ(const ref numer: bigint,
                    const ref d: bigint,
                    param rounding = round.zero) {
     if _local {
       select rounding {
-        when round.up   do mpz_cdiv_q(this.mpz, n.mpz,  d.mpz);
-        when round.down do mpz_fdiv_q(this.mpz, n.mpz,  d.mpz);
-        when round.zero do mpz_tdiv_q(this.mpz, n.mpz,  d.mpz);
+        when round.up   do mpz_cdiv_q(this.mpz, numer.mpz,  d.mpz);
+        when round.down do mpz_fdiv_q(this.mpz, numer.mpz,  d.mpz);
+        when round.zero do mpz_tdiv_q(this.mpz, numer.mpz,  d.mpz);
       }
 
     } else if this.localeId == chpl_nodeID &&
-              n.localeId    == chpl_nodeID &&
+              numer.localeId    == chpl_nodeID &&
               d.localeId    == chpl_nodeID {
       select rounding {
-        when round.up   do mpz_cdiv_q(this.mpz, n.mpz,  d.mpz);
-        when round.down do mpz_fdiv_q(this.mpz, n.mpz,  d.mpz);
-        when round.zero do mpz_tdiv_q(this.mpz, n.mpz,  d.mpz);
+        when round.up   do mpz_cdiv_q(this.mpz, numer.mpz,  d.mpz);
+        when round.down do mpz_fdiv_q(this.mpz, numer.mpz,  d.mpz);
+        when round.zero do mpz_tdiv_q(this.mpz, numer.mpz,  d.mpz);
       }
 
     } else {
       const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
-        const n_ = n;
+        const numer_ = numer;
         const d_ = d;
 
         select rounding {
-          when round.up   do mpz_cdiv_q(this.mpz, n_.mpz, d_.mpz);
-          when round.down do mpz_fdiv_q(this.mpz, n_.mpz, d_.mpz);
-          when round.zero do mpz_tdiv_q(this.mpz, n_.mpz, d_.mpz);
+          when round.up   do mpz_cdiv_q(this.mpz, numer_.mpz, d_.mpz);
+          when round.down do mpz_fdiv_q(this.mpz, numer_.mpz, d_.mpz);
+          when round.zero do mpz_tdiv_q(this.mpz, numer_.mpz, d_.mpz);
           }
       }
     }
@@ -4089,11 +4089,11 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
     }
   }
 
-  proc bigint.divQ(const ref n: bigint,
+  proc bigint.divQ(const ref numer: bigint,
                              d: integral,
                    param     rounding = round.zero) {
 
-    this.divQ(n, new bigint(d), rounding);
+    this.divQ(numer, new bigint(d), rounding);
   }
 
   deprecated
@@ -4112,36 +4112,36 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
 
   }
 
-  proc bigint.divR(const ref n: bigint,
+  proc bigint.divR(const ref numer: bigint,
                    const ref d: bigint,
                    param     rounding = round.zero) {
     if _local {
       select rounding {
-        when round.up   do mpz_cdiv_r(this.mpz, n.mpz,  d.mpz);
-        when round.down do mpz_fdiv_r(this.mpz, n.mpz,  d.mpz);
-        when round.zero do mpz_tdiv_r(this.mpz, n.mpz,  d.mpz);
+        when round.up   do mpz_cdiv_r(this.mpz, numer.mpz,  d.mpz);
+        when round.down do mpz_fdiv_r(this.mpz, numer.mpz,  d.mpz);
+        when round.zero do mpz_tdiv_r(this.mpz, numer.mpz,  d.mpz);
       }
 
     } else if this.localeId == chpl_nodeID &&
-              n.localeId    == chpl_nodeID &&
+              numer.localeId    == chpl_nodeID &&
               d.localeId    == chpl_nodeID {
       select rounding {
-        when round.up   do mpz_cdiv_r(this.mpz, n.mpz,  d.mpz);
-        when round.down do mpz_fdiv_r(this.mpz, n.mpz,  d.mpz);
-        when round.zero do mpz_tdiv_r(this.mpz, n.mpz,  d.mpz);
+        when round.up   do mpz_cdiv_r(this.mpz, numer.mpz,  d.mpz);
+        when round.down do mpz_fdiv_r(this.mpz, numer.mpz,  d.mpz);
+        when round.zero do mpz_tdiv_r(this.mpz, numer.mpz,  d.mpz);
       }
 
     } else {
       const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
-        const n_ = n;
+        const numer_ = numer;
         const d_ = d;
 
         select rounding {
-          when round.up   do mpz_cdiv_r(this.mpz, n_.mpz, d_.mpz);
-          when round.down do mpz_fdiv_r(this.mpz, n_.mpz, d_.mpz);
-          when round.zero do mpz_tdiv_r(this.mpz, n_.mpz, d_.mpz);
+          when round.up   do mpz_cdiv_r(this.mpz, numer_.mpz, d_.mpz);
+          when round.down do mpz_fdiv_r(this.mpz, numer_.mpz, d_.mpz);
+          when round.zero do mpz_tdiv_r(this.mpz, numer_.mpz, d_.mpz);
         }
       }
     }
@@ -4162,10 +4162,10 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
     }
   }
 
-  proc bigint.divR(const ref n: bigint,
+  proc bigint.divR(const ref numer: bigint,
                              d: integral,
                    param     rounding = round.zero) {
-    this.divR(n, new bigint(d), rounding);
+    this.divR(numer, new bigint(d), rounding);
   }
 
   deprecated
@@ -4186,24 +4186,24 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
 
   // this gets quotient, r gets remainder
   proc bigint.divQR(ref       r:        bigint,
-                    const ref n:        bigint,
+                    const ref numer:        bigint,
                     const ref d:        bigint,
                     param     rounding = round.zero) {
     if _local {
       select rounding {
-        when round.up   do mpz_cdiv_qr(this.mpz, r.mpz, n.mpz, d.mpz);
-        when round.down do mpz_fdiv_qr(this.mpz, r.mpz, n.mpz, d.mpz);
-        when round.zero do mpz_tdiv_qr(this.mpz, r.mpz, n.mpz, d.mpz);
+        when round.up   do mpz_cdiv_qr(this.mpz, r.mpz, numer.mpz, d.mpz);
+        when round.down do mpz_fdiv_qr(this.mpz, r.mpz, numer.mpz, d.mpz);
+        when round.zero do mpz_tdiv_qr(this.mpz, r.mpz, numer.mpz, d.mpz);
       }
 
     } else if this.localeId == chpl_nodeID &&
               r.localeId    == chpl_nodeID &&
-              n.localeId    == chpl_nodeID &&
+              numer.localeId    == chpl_nodeID &&
               d.localeId    == chpl_nodeID {
       select rounding {
-        when round.up   do mpz_cdiv_qr(this.mpz, r.mpz, n.mpz, d.mpz);
-        when round.down do mpz_fdiv_qr(this.mpz, r.mpz, n.mpz, d.mpz);
-        when round.zero do mpz_tdiv_qr(this.mpz, r.mpz, n.mpz, d.mpz);
+        when round.up   do mpz_cdiv_qr(this.mpz, r.mpz, numer.mpz, d.mpz);
+        when round.down do mpz_fdiv_qr(this.mpz, r.mpz, numer.mpz, d.mpz);
+        when round.zero do mpz_tdiv_qr(this.mpz, r.mpz, numer.mpz, d.mpz);
       }
 
     } else {
@@ -4211,13 +4211,13 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
 
       on __primitive("chpl_on_locale_num", thisLoc) {
         var   r_ = r;
-        const n_ = n;
+        const numer_ = numer;
         const d_ = d;
 
         select rounding {
-          when round.up   do mpz_cdiv_qr(this.mpz, r_.mpz, n_.mpz, d_.mpz);
-          when round.down do mpz_fdiv_qr(this.mpz, r_.mpz, n_.mpz, d_.mpz);
-          when round.zero do mpz_tdiv_qr(this.mpz, r_.mpz, n_.mpz, d_.mpz);
+          when round.up   do mpz_cdiv_qr(this.mpz, r_.mpz, numer_.mpz, d_.mpz);
+          when round.down do mpz_fdiv_qr(this.mpz, r_.mpz, numer_.mpz, d_.mpz);
+          when round.zero do mpz_tdiv_qr(this.mpz, r_.mpz, numer_.mpz, d_.mpz);
         }
 
         r = r_;
@@ -4242,10 +4242,10 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
   }
 
   proc bigint.divQR(ref       r: bigint,
-                    const ref n: bigint,
+                    const ref numer: bigint,
                               d: integral,
                     param     rounding = round.zero) {
-    this.divQR(r, n, new bigint(d), rounding);
+    this.divQR(r, numer, new bigint(d), rounding);
   }
 
   deprecated
@@ -4263,36 +4263,36 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
     }
   }
 
-  proc bigint.divQ2Exp(const ref n: bigint,
+  proc bigint.divQ2Exp(const ref numer: bigint,
                                  b: integral,
                        param     rounding = round.zero) {
     const b_ = b.safeCast(mp_bitcnt_t);
 
     if _local {
       select rounding {
-        when round.up   do mpz_cdiv_q_2exp(this.mpz, n.mpz, b_);
-        when round.down do mpz_fdiv_q_2exp(this.mpz, n.mpz, b_);
-        when round.zero do mpz_tdiv_q_2exp(this.mpz, n.mpz, b_);
+        when round.up   do mpz_cdiv_q_2exp(this.mpz, numer.mpz, b_);
+        when round.down do mpz_fdiv_q_2exp(this.mpz, numer.mpz, b_);
+        when round.zero do mpz_tdiv_q_2exp(this.mpz, numer.mpz, b_);
       }
 
     } else if this.localeId == chpl_nodeID &&
-              n.localeId    == chpl_nodeID {
+              numer.localeId    == chpl_nodeID {
       select rounding {
-        when round.up   do mpz_cdiv_q_2exp(this.mpz, n.mpz, b_);
-        when round.down do mpz_fdiv_q_2exp(this.mpz, n.mpz, b_);
-        when round.zero do mpz_tdiv_q_2exp(this.mpz, n.mpz, b_);
+        when round.up   do mpz_cdiv_q_2exp(this.mpz, numer.mpz, b_);
+        when round.down do mpz_fdiv_q_2exp(this.mpz, numer.mpz, b_);
+        when round.zero do mpz_tdiv_q_2exp(this.mpz, numer.mpz, b_);
       }
 
     } else {
       const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
-        const n_ = n;
+        const numer_ = numer;
 
         select rounding {
-          when round.up   do mpz_cdiv_q_2exp(this.mpz, n_.mpz, b_);
-          when round.down do mpz_fdiv_q_2exp(this.mpz, n_.mpz, b_);
-          when round.zero do mpz_tdiv_q_2exp(this.mpz, n_.mpz, b_);
+          when round.up   do mpz_cdiv_q_2exp(this.mpz, numer_.mpz, b_);
+          when round.down do mpz_fdiv_q_2exp(this.mpz, numer_.mpz, b_);
+          when round.zero do mpz_tdiv_q_2exp(this.mpz, numer_.mpz, b_);
         }
       }
     }
@@ -4313,35 +4313,35 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
     }
   }
 
-  proc bigint.divR2Exp(const ref n: bigint,
+  proc bigint.divR2Exp(const ref numer: bigint,
                                  b: integral,
                        param     rounding = round.zero) {
     const b_ = b.safeCast(mp_bitcnt_t);
 
     if _local {
       select rounding {
-        when round.up   do mpz_cdiv_r_2exp(this.mpz, n.mpz, b_);
-        when round.down do mpz_fdiv_r_2exp(this.mpz, n.mpz, b_);
-        when round.zero do mpz_tdiv_r_2exp(this.mpz, n.mpz, b_);
+        when round.up   do mpz_cdiv_r_2exp(this.mpz, numer.mpz, b_);
+        when round.down do mpz_fdiv_r_2exp(this.mpz, numer.mpz, b_);
+        when round.zero do mpz_tdiv_r_2exp(this.mpz, numer.mpz, b_);
       }
 
-    } else if this.localeId == chpl_nodeID && n.localeId == chpl_nodeID {
+    } else if this.localeId == chpl_nodeID && numer.localeId == chpl_nodeID {
       select rounding {
-        when round.up   do mpz_cdiv_r_2exp(this.mpz, n.mpz, b_);
-        when round.down do mpz_fdiv_r_2exp(this.mpz, n.mpz, b_);
-        when round.zero do mpz_tdiv_r_2exp(this.mpz, n.mpz, b_);
+        when round.up   do mpz_cdiv_r_2exp(this.mpz, numer.mpz, b_);
+        when round.down do mpz_fdiv_r_2exp(this.mpz, numer.mpz, b_);
+        when round.zero do mpz_tdiv_r_2exp(this.mpz, numer.mpz, b_);
       }
 
     } else {
       const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
-        const n_ = n;
+        const numer_ = numer;
 
         select rounding {
-          when round.up   do mpz_cdiv_r_2exp(this.mpz, n_.mpz, b_);
-          when round.down do mpz_fdiv_r_2exp(this.mpz, n_.mpz, b_);
-          when round.zero do mpz_tdiv_r_2exp(this.mpz, n_.mpz, b_);
+          when round.up   do mpz_cdiv_r_2exp(this.mpz, numer_.mpz, b_);
+          when round.down do mpz_fdiv_r_2exp(this.mpz, numer_.mpz, b_);
+          when round.zero do mpz_tdiv_r_2exp(this.mpz, numer_.mpz, b_);
         }
       }
     }
