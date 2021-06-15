@@ -1,6 +1,9 @@
 ## Socket Module API
 
-To those familiar with the Unix socket API, the method names will feel familiar, though their usage will be somewhat simpler than the raw Unix socket API.
+To those familiar with the Unix socket API, the method names will feel familiar, though their usage will be somewhat simpler than the raw Unix socket API. The Module will comprise of three classes which will abstract lower order functions to higher and more intutive methods for user:
+- TCPConn : A TCP Socket with established connection
+- TCPListener : A TCP Socket listening for connections
+- UDPSocket : A connection less UDP Socket
 
 ## Connecting to remote sockets
 
