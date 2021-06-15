@@ -79,6 +79,11 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
    :returns: The elapsed time since midnight, local time, in the units specified
    :rtype:   `real(64)`
+
+.. warning::
+
+  Deprecated. Use ``DateTime.timeSinceEpoch()``
+
  */
 proc getCurrentTime(unit: TimeUnits = TimeUnits.seconds) : real(64)
   return _convert_microseconds(unit, chpl_now_time());
