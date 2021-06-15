@@ -18,15 +18,21 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_COMPILER_INCLUDE_MLI_H
-#define CHPL_COMPILER_INCLUDE_MLI_H
+#ifndef CHPL_RUNTIME_ETC_SRC_MLI_CHPL_MLI_LIBC_WRAPPERS_H
+#define CHPL_RUNTIME_ETC_SRC_MLI_CHPL_MLI_LIBC_WRAPPERS_H
 
-#include "files.h"
+#include <stdlib.h>
 
-extern const char* gMultiLocaleLibMarshallingFile;
-extern const char* gMultiLocaleLibClientFile;
-extern const char* gMultiLocaleLibServerFile;
+void chpl_mli_libc_exit(int status) {
+  exit(status);
+}
 
-void codegenMultiLocaleInteropWrappers(void);
+void* chpl_mli_libc_malloc(size_t bytes) {
+  return malloc(bytes);
+}
+
+void chpl_mli_libc_free(void* ptr) {
+  free(ptr);
+}
 
 #endif

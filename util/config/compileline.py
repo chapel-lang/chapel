@@ -102,6 +102,12 @@ def parseArguments():
                       dest="actions", action='append_const',
                       help="print out libraries required to link "
                            "multi-locale libraries")
+    parser.add_option("--host-c-compiler", const="host-c-compiler",
+                      dest="actions", action='append_const',
+                      help="print out the host C compiler")
+    parser.add_option("--host-cxx-compiler", const="host-cxx-compiler",
+                      dest="actions", action='append_const',
+                      help="print out the host C++ compiler")
 
     (options, args) = parser.parse_args()
 
@@ -226,6 +232,14 @@ def main():
           mysystem(make_helper, "printlauncherlibdir")
         elif a == "multilocale-lib-deps":
           mysystem(make_helper, "printmultilocalelibdeps")
+        elif a == "host-c-compiler":
+          compiler_family = chpl_compiler.get("host")
+          compiler = chpl_compiler.get_compiler_name_c(compiler_family)
+          sys.stdout.write("{}\n".format(compiler))
+        elif a == "host-cxx-compiler":
+          compiler_family = chpl_compiler.get("host")
+          compiler = chpl_compiler.get_compiler_name_cxx(compiler_family)
+          sys.stdout.write("{}\n".format(compiler))
 
 if __name__ == '__main__':
     main()

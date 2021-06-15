@@ -1417,16 +1417,8 @@ static void postStaticLink() {
   if (!strcmp(CHPL_TARGET_PLATFORM, "darwin")) {
     if (fLinkStyle == LS_STATIC) {
       USR_WARN("Static compilation is not supported on OS X, ignoring flag.");
+      // To handle linker errors and relocations in the client library.
       fLinkStyle = fMultiLocaleInterop ? LS_DYNAMIC : LS_DEFAULT;
-    }
-
-    //
-    // The default link style translates to static (at least for now), so we
-    // need to account for that when building a multi-locale library or else
-    // we'll get the same errors we do for static linking on `darwin`.
-    //
-    if (fMultiLocaleInterop && fLinkStyle == LS_DEFAULT) {
-      fLinkStyle = LS_DYNAMIC;
     }
   }
 }
@@ -1462,10 +1454,6 @@ static void setMultiLocaleInterop() {
   // We must be compiling a multi-locale library to be eligible for MLI.
   if (!fLibraryCompile || !strcmp(CHPL_COMM, "none")) {
     return;
-  }
-
-  if (fLlvmCodegen) {
-    USR_FATAL("Multi-locale libraries do not support CHPL_TARGET_COMPILER=llvm");
   }
 
   if (fLibraryFortran) {
@@ -1534,17 +1522,49 @@ static void checkUnsupportedConfigs(void) {
 }
 
 static void checkMLDebugAndLibmode(void) {
-
   if (!fMultiLocaleLibraryDebug) { return; }
 
+  // This flag implies compilation of a library.
   fLibraryCompile = true;
 
   if (!strcmp(CHPL_COMM, "none")) {
     fMultiLocaleLibraryDebug = false;
     USR_WARN("Compiling a single locale library because CHPL_COMM is none.");
+  } else {
+    fMultiLocaleInterop = true;
   }
 
   return;
+}
+
+static void checkLibraryPythonAndLibmode(void) {
+  if (!fLibraryPython) return;
+
+  // This flag implies compilation of a library.
+  fLibraryCompile = true;
+
+  if (strcmp(CHPL_LIB_PIC, "pic")) {
+    USR_FATAL("Python libraries require position independent code, "
+              "recompile Chapel with CHPL_LIB_PIC=pic");
+  }
+
+  if (fLinkStyle == LS_STATIC) {
+    const char* libKindMsg = fMultiLocaleInterop
+        ? "Multi-locale Python libraries"
+        : "Python libraries";
+    USR_WARN("%s cannot be compiled with -static, ignoring flag",
+             libKindMsg);
+    fLinkStyle = LS_DEFAULT;
+  }
+
+  INT_ASSERT(fLinkStyle == LS_DEFAULT || fLinkStyle == LS_DYNAMIC);
+
+  // For single-locale libraries LS_DEFAULT may work, but for multi-locale
+  // libraries we need to force dynamic linking in order to prevent
+  // relocations in the client library.
+  if (fMultiLocaleInterop) {
+    fLinkStyle = LS_DYNAMIC;
+  }
 }
 
 static void checkNotLibraryAndMinimalModules(void) {
@@ -1572,6 +1592,8 @@ static void postprocess_args() {
   postStaticLink();
 
   checkMLDebugAndLibmode();
+
+  checkLibraryPythonAndLibmode();
 
   checkNotLibraryAndMinimalModules();
 

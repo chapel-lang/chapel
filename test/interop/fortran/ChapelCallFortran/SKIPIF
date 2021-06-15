@@ -1,1 +1,2 @@
+# TODO (dlongnecke): Could not find some symbols when we run with --llvm
 CHPL_TARGET_COMPILER == llvm

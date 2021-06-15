@@ -1,2 +1,0 @@
-CHPL_TARGET_PLATFORM == darwin
-CHPL_COMM != none

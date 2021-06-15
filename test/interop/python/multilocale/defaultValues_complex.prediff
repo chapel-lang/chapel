@@ -4,4 +4,11 @@ sed '/from defaultValues_complex.c:[0-9]*/d' $2 > $2.tmp
 sed '/^ *$/d' $2.tmp > $2
 rm $2.tmp
 export PYTHONPATH=lib/
+
+# TODO (dlongnecke): Maybe we can add a python interop test mode instead?
+if [[ `uname` == "Linux" ]]; then
+  CWD=$(cd $(dirname $0) ; pwd)
+  export LD_LIBRARY_PATH=$CWD/lib:$LD_LIBRARY_PATH
+fi
+
 python3 use_defaultValues_complex.py >> $2

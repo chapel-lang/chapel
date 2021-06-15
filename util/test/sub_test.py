@@ -728,6 +728,25 @@ cpp_compiler = p.communicate()[0].rstrip()
 if p.returncode != 0:
   Fatal('Cannot find c++ compiler')
 
+p = py3_compat.Popen([compileline, '--host-c-compiler'],
+                     stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+host_c_compiler = p.communicate()[0].rstrip()
+if p.returncode != 0:
+  Fatal('Cannot find host c compiler')
+
+p = py3_compat.Popen([compileline, '--host-cxx-compiler'],
+                     stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+host_cpp_compiler = p.communicate()[0].rstrip()
+if p.returncode != 0:
+  Fatal('Cannot find host c++ compiler')
+
+# Get runtime includes and defines
+p = py3_compat.Popen([compileline, '--includes-and-defines'],
+                     stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+runtime_includes_and_defines= p.communicate()[0].rstrip()
+if p.returncode != 0:
+  Fatal('Cannot find runtime includes and defines')
+
 # Find the test directory
 testdir=chpl_home+'/test'
 if os.path.isdir(testdir)==0:
@@ -1559,10 +1578,16 @@ for testname in testsrc:
             # for `chpl` so don't include them here
             args = ['-o', test_filename]+shlex.split(compopts)+[testname]
             cmd = None
-            if is_c_test or is_ml_c_test:
+            if is_c_test:
                 cmd = c_compiler
-            elif is_cpp_test or is_ml_cpp_test:
+            elif is_ml_c_test:
+                cmd_pieces = [host_c_compiler, runtime_includes_and_defines]
+                cmd = ' '.join(cmd_pieces)
+            elif is_cpp_test:
                 cmd = cpp_compiler
+            elif is_ml_cpp_test:
+                cmd_pieces = [host_cpp_compiler, runtime_includes_and_defines]
+                cmd = ' '.join(cmd_pieces)
         else:
             if test_is_chpldoc and not compiler.endswith('chpldoc'):
                 # For tests with .doc.chpl suffix, use chpldoc compiler. Update

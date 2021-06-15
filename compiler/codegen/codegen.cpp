@@ -27,6 +27,7 @@
 #include "driver.h"
 #include "expr.h"
 #include "files.h"
+#include "fixupExports.h"
 #include "insertLineNumbers.h"
 #include "library.h"
 #include "llvmDebug.h"
@@ -2390,17 +2391,21 @@ static void codegenPartOne() {
 
 // Do this for GPU and then do for CPU
 static void codegenPartTwo() {
-  if( fLlvmCodegen ) {
+
+  // Initialize the global gGenInfo for C code generation.
+  gGenInfo = new GenInfo();
+
+  if (fMultiLocaleInterop) {
+    codegenMultiLocaleInteropWrappers();
+  }
+
+  if (fLlvmCodegen) {
 #ifndef HAVE_LLVM
     USR_FATAL("This compiler was built without LLVM support");
 #else
-    // Initialize the global gGenInfo for for LLVM code generation
-    // by starting out with data from running clang on C dependencies.
+    INT_ASSERT(gGenInfo != NULL);
     runClang(NULL);
 #endif
-  } else {
-    // Initialize the global gGenInfo for C code generation
-    gGenInfo = new GenInfo();
   }
 
   SET_LINENO(rootModule);
@@ -2493,8 +2498,7 @@ static void codegenPartTwo() {
         }
       }
     }
-
-    codegen_makefile(&mainfile, NULL, false, userFileName);
+    codegen_makefile(&mainfile, NULL, NULL, false, userFileName);
   }
 
   if (fLibraryCompile && fLibraryMakefile) {
