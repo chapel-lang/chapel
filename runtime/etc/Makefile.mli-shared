@@ -22,9 +22,6 @@
 
 include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.mli-common
 
-# Use the C++ compiler as our linker.
-LD=$(CXX)
-
 .PHONY: all
 all: checkRtLibDir buildServer buildClientAsHost runTagsCommand FORCE
 
