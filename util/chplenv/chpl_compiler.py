@@ -153,87 +153,57 @@ def get_compiler_name_cxx(compiler):
 def compiler_is_prgenv(compiler_val):
   return compiler_val.startswith('cray-prgenv')
 
-def get_compiler_prefix(flag='host'):
-    compiler_val = get(flag=flag)
-    prefix = ''
-
-    import chpl_llvm
-    if (chpl_llvm.llvm_enabled() and
-        (compiler_val == 'clang' or compiler_val == 'llvm')):
-
-        if (flag == 'host' and
-            chpl_llvm.get() == 'bundled' and
-            compiler_val == 'clang'):
-            # don't change the prefix in this setting
-            # (bundled LLVM might not be built yet)
-            pass
-
-        else:
-            prefix = chpl_llvm.get_clang_prefix()
-
-    #elif compiler_val == 'clang':
-    #    return overrides.get('CHPL_CLANG_PREFIX', '')
-
-    #elif compiler_val == 'gnu':
-    #    prefix = overrides.get('CHPL_GCC_PREFIX', '')
-    #    if prefix:
-    #        return prefix
-
-    return prefix
-
-def get_compiler_suffix(flag='host'):
-    compiler_val = get(flag=flag)
-    suffix = ''
-
-    import chpl_llvm
-    if (chpl_llvm.llvm_enabled() and
-        (compiler_val == 'clang' or compiler_val == 'llvm')):
-        return chpl_llvm.get_clang_suffix()
-
-    #elif compiler_val == 'clang':
-    #    return overrides.get('CHPL_CLANG_SUFFIX', '')
-
-    #elif compiler_val == 'gnu':
-    #    return overrides.get('CHPL_GCC_SUFFIX', '')
-
-    return ''
-
+# flag should be host or target
+# lang should be c or cxx (aka c++)
 @memoize
-def get_command_c(flag='host'):
+def get_compiler_command(flag, lang):
+
+    flag_upper = flag.upper()
+    lang_upper = lang.upper()
+
+    if lang_upper == 'C++':
+        lang_upper = 'CXX'
+
+    if flag_upper == 'HOST' or flag_upper == 'TARGET':
+        pass
+    else:
+        error('unknown flag {0}'.format(flag))
+
+    if lang_upper == 'C' or lang_upper == 'CXX':
+        pass
+    else:
+        error('unknown lang {0}'.format(lang))
+
+    varname = 'CHPL_' + flag_upper + '_COMPILER_COMMAND_' + lang_upper
+
+    command = overrides.get(varname, '');
+    if command:
+        return command
+
     compiler_val = get(flag=flag)
 
-    if flag == 'host':
-        command = overrides.get('CHPL_HOST_COMPILER_COMMAND_C', '')
-    elif flag == 'target':
-        command = overrides.get('CHPL_TARGET_COMPILER_COMMAND_C', '')
+    if lang_upper == 'C':
+        command = get_compiler_name_c(compiler_val)
+    elif lang_upper == 'CXX':
+        command = get_compiler_name_cxx(compiler_val)
 
-    command = get_compiler_name_c(compiler_val)
+    # Adjust the path in two situations:
+    #  CHPL_TARGET_COMPILER=llvm -- means use the selected llvm/clang
+    #  CHPL_TARGET_COMPILER=clang with CHPL_LLVM=bundled -- use bundled clang
+    if compiler_val == 'clang' or compiler_val == 'llvm':
+        import chpl_llvm
+        llvm_val = chpl_llvm.get()
+        if llvm_val == 'bundled' or compiler_val == 'llvm':
+            if (flag == 'host' and
+                llvm_val == 'bundled' and
+                compiler_val == 'clang'):
+                # don't change the prefix in this setting
+                # (bundled LLVM might not be built yet)
+                pass
 
-    prefix = get_compiler_prefix(flag=flag);
-    if prefix:
-        command = os.path.join(prefix, 'bin', command)
+            else:
+                command = chpl_llvm.get_llvm_clang(lang_upper)
 
-    suffix = get_compiler_suffix(flag=flag);
-    command = command + suffix
-    return command
-
-@memoize
-def get_command_cxx(flag='host'):
-    compiler_val = get(flag=flag)
-
-    if flag == 'host':
-        command = overrides.get('CHPL_HOST_COMPILER_COMMAND_CXX', '')
-    elif flag == 'target':
-        command = overrides.get('CHPL_TARGET_COMPILER_COMMAND_CXX', '')
-
-    command = get_compiler_name_cxx(compiler_val)
-
-    prefix = get_compiler_prefix(flag=flag);
-    if prefix:
-        command = os.path.join(prefix, 'bin', command)
-
-    suffix = get_compiler_suffix(flag=flag);
-    command = command + suffix
     return command
 
 def _main():
