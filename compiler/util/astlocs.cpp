@@ -41,10 +41,9 @@ int astlocT::compare(const astlocT& other) const {
   } else if (this->filename_ != nullptr && other.filename_ != nullptr) {
     // compare filename and line
     int strResult = strcmp(this->filename_, other.filename_);
-    if (strResult == 0)
-      return this->lineno_ < other.lineno_;
-    else
-      return strResult < 0;
+    if (strResult != 0)
+      return strResult;
+    return this->lineno_ - other.lineno_;
   } else {
     // filename is nullptr in one but not the other
     // (arbitrarily) consider no filename < filename

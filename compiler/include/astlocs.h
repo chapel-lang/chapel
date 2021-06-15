@@ -61,7 +61,7 @@ public:
     return id_.isEmpty();
   }
 
-  chpl::ID id() const {
+  const chpl::ID& id() const {
     return id_;
   }
 

@@ -355,7 +355,7 @@ BaseAST::BaseAST(AstTag type) :
       if (developer || fVerify) {
         INT_FATAL("no line number available");
       } else {
-        astloc = astlocT(-1, astr("[file unknown]"));
+        astloc = astlocT(0, astr("[file unknown]"));
       }
     }
   }

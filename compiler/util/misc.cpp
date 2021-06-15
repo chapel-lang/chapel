@@ -895,9 +895,7 @@ bool printsSameLocationAsLastError(const BaseAST* ast) {
 }
 
 void clearLastErrorLocation() {
-  astlocT loc(0, nullptr);
-
-  last_error_loc = loc;
+  last_error_loc = astlocT(0, nullptr);
 }
 
 static void handleInterrupt(int sig) {
