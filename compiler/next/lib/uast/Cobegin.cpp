@@ -32,17 +32,22 @@ bool Cobegin::contentsMatchInner(const ASTNode* other) const {
   if (lhs->withClauseChildNum_ != rhs->withClauseChildNum_)
     return false;
 
-  if (!lhs->simpleBlockLikeContentsMatchInner(rhs))
+  if (lhs->bodyChildNum_ != rhs->bodyChildNum_)
+    return false;
+
+  if (lhs->numTaskBodies_ != rhs->numTaskBodies_)
+    return false;
+
+  if (!lhs->expressionContentsMatchInner(rhs))
     return false;
 
   return true;
 }
 
 owned<Cobegin> Cobegin::build(Builder* builder,
-                          Location loc,
-                          owned<WithClause> withClause,
-                          BlockStyle blockStyle,
-                          ASTList stmts) {
+                              Location loc,
+                              owned<WithClause> withClause,
+                              ASTList taskBodies) {
   ASTList lst;
   int8_t withClauseChildNum = -1;
 
@@ -52,15 +57,15 @@ owned<Cobegin> Cobegin::build(Builder* builder,
   }
 
   const int bodyChildNum = lst.size();
-  const int numBodyStmts = stmts.size();
+  const int numTaskBodies = taskBodies.size();
 
-  for (auto& stmt : stmts) {
-    lst.push_back(std::move(stmt));
+  for (auto& taskBody : taskBodies) {
+    lst.push_back(std::move(taskBody));
   }
 
-  Cobegin* ret = new Cobegin(std::move(lst), withClauseChildNum, blockStyle,
+  Cobegin* ret = new Cobegin(std::move(lst), withClauseChildNum,
                              bodyChildNum,
-                             numBodyStmts);
+                             numTaskBodies);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

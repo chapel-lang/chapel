@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/Cobegin.h"
 #include "chpl/uast/Block.h"
+#include "chpl/uast/Cobegin.h"
 #include "chpl/uast/Comment.h"
 #include "chpl/uast/Expression.h"
 #include "chpl/uast/Identifier.h"
@@ -32,6 +32,7 @@
 #undef NDEBUG
 #endif
 
+#include <array>
 #include <cassert>
 
 using namespace chpl;
@@ -67,12 +68,25 @@ static void test0(Parser* parser) {
   auto tv2 = withClause->expr(1)->toTaskVar();
   assert(tv2 && tv2->intent() == TaskVar::VAR);
   assert(!tv2->typeExpression() && tv2->initExpression());
-  assert(cobegin->blockStyle() == BlockStyle::EXPLICIT);
-  assert(cobegin->numStmts() == 3);
-  assert(cobegin->stmt(0)->isComment());
-  assert(cobegin->stmt(0)->toComment()->str() == "/* comment 5 */");
-  assert(cobegin->stmt(1)->isFnCall());
-  assert(cobegin->stmt(2)->isComment());
+  assert(cobegin->numTaskBodies() == 3);
+  assert(cobegin->taskBody(0)->isComment());
+  assert(cobegin->taskBody(0)->toComment()->str() == "/* comment 5 */");
+  assert(cobegin->taskBody(1)->isFnCall());
+  assert(cobegin->taskBody(2)->isComment());
+  // Make sure the task bodies iterator works as expected.
+  {
+    // Include comments even if they have no meaning.
+    std::array<ASTTag, 3> taskBodyList = {
+      asttags::Comment,
+      asttags::FnCall,
+      asttags::Comment
+    };
+    auto i = 0;
+    for (const auto taskBody : cobegin->taskBodies()) {
+      assert(taskBody->tag() == taskBodyList[i]);
+      assert(taskBody->tag() == cobegin->taskBody(i++)->tag());
+    }
+  }
 }
 
 static void test1(Parser* parser) {
@@ -95,12 +109,11 @@ static void test1(Parser* parser) {
   const Cobegin* cobegin = mod->stmt(1)->toCobegin();
   assert(cobegin != nullptr);
   assert(!cobegin->withClause());
-  assert(cobegin->blockStyle() == BlockStyle::EXPLICIT);
-  assert(cobegin->numStmts() == 3);
-  assert(cobegin->stmt(0)->isComment());
-  assert(cobegin->stmt(0)->toComment()->str() == "/* comment 5 */");
-  assert(cobegin->stmt(1)->isFnCall());
-  assert(cobegin->stmt(2)->isComment());
+  assert(cobegin->numTaskBodies() == 3);
+  assert(cobegin->taskBody(0)->isComment());
+  assert(cobegin->taskBody(0)->toComment()->str() == "/* comment 5 */");
+  assert(cobegin->taskBody(1)->isFnCall());
+  assert(cobegin->taskBody(2)->isComment());
 }
 
 int main() {

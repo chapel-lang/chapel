@@ -45,25 +45,26 @@ namespace uast {
   \endrst
 
  */
-class Cobegin final : public SimpleBlockLike {
+class Cobegin final : public Expression {
  private:
-  Cobegin(ASTList children, int8_t withClauseChildNum, BlockStyle blockStyle,
-          int bodyChildNum,
-          int numBodyStmts)
-    : SimpleBlockLike(asttags::Cobegin, std::move(children), blockStyle,
-                      bodyChildNum,
-                      numBodyStmts),
-      withClauseChildNum_(withClauseChildNum) {
+  Cobegin(ASTList children, int8_t withClauseChildNum, int bodyChildNum,
+          int numTaskBodies)
+    : Expression(asttags::Cobegin, std::move(children)),
+      withClauseChildNum_(withClauseChildNum),
+      bodyChildNum_(bodyChildNum),
+      numTaskBodies_(numTaskBodies) {
     assert(isExpressionASTList(children_));
   }
 
   bool contentsMatchInner(const ASTNode* other) const override;
 
   void markUniqueStringsInner(Context* context) const override {
-    simpleBlockLikeMarkUniqueStringsInner(context);
+    expressionMarkUniqueStringsInner(context);
   }
 
   int8_t withClauseChildNum_;
+  int bodyChildNum_;
+  int numTaskBodies_;
 
  public:
 
@@ -72,18 +73,43 @@ class Cobegin final : public SimpleBlockLike {
   */
   static owned<Cobegin> build(Builder* builder, Location loc,
                               owned<WithClause> withClause,
-                              BlockStyle blockStyle,
-                              ASTList stmts);
+                              ASTList taskBodies);
 
   /**
-    Returns the with clause of this cobegin statement, or nullptr if it does
-    not exist.
+    Returns the with clause of this cobegin statement, or nullptr if there
+    is none.
   */
   const WithClause* withClause() const {
     if (withClauseChildNum_ < 0) return nullptr;
     auto ret = child(withClauseChildNum_);
     assert(ret->isWithClause());
     return (const WithClause*)ret;
+  }
+
+  /**
+    Return a way to iterate over the task bodies.
+   */
+  ASTListIteratorPair<Expression> taskBodies() const {
+    auto begin = children_.begin() + bodyChildNum_;
+    auto end = begin + numTaskBodies_ - 1;
+    return ASTListIteratorPair<Expression>(begin, end);
+  }
+
+  /**
+    Return the number of task bodies in this.
+  */
+  int numTaskBodies() const {
+    return this->numTaskBodies_;
+  }
+
+  /**
+    Return the i'th task body in this.
+  */
+  const Expression* taskBody(int i) const {
+    assert(i >= 0 && i < numTaskBodies_);
+    const ASTNode* ast = this->child(i + bodyChildNum_);
+    assert(ast->isExpression());
+    return (const Expression*)ast;
   }
 
 };

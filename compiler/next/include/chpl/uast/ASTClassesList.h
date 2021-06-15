@@ -53,10 +53,12 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
   AST_LEAF(Identifier)                 // old AST: UnresolvedSymExpr
 
   AST_BEGIN_SUBCLASSES(SimpleBlockLike)
+    AST_NODE(Begin)
     AST_NODE(Block)                    // old AST: BlockStmt
     AST_NODE(Defer)                    // old AST: DeferStmt
-    AST_NODE(Local)
-    AST_NODE(Serial)
+    AST_NODE(Local)                    //
+    AST_NODE(On)                       //
+    AST_NODE(Serial)                   //
   AST_END_SUBCLASSES(SimpleBlockLike)
 
   AST_NODE(Delete)                     //
@@ -68,13 +70,11 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
   AST_NODE(Use)                        // old AST: UseStmt
   AST_NODE(WithClause)
 
-  AST_NODE(Begin)                    //
-  AST_NODE(Cobegin)                  //
   AST_NODE(Break)                    // old AST: GotoStmt
+  AST_NODE(Cobegin)                  //
   AST_NODE(Conditional)              // old AST: IfExpr/CondStmt
   AST_NODE(Continue)                 // old AST: GotoStmt
   AST_NODE(Label)                    //
-  AST_NODE(On)                       //
   AST_NODE(Return)                   //
   AST_NODE(Select)                   //
   AST_NODE(Sync)                     //

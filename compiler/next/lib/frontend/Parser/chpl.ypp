@@ -755,9 +755,10 @@ stmt:
     YYLTYPE locBodyAnchor = context->makeLocationAtLast(@2);
     context->prepareStmtPieces(comments, exprLst, blockStyle, @1,
                                false, locBodyAnchor, $3);
-    auto stmts = context->consumeAndFlattenTopLevelBlocks(exprLst);
-    auto node = Cobegin::build(BUILDER, LOC(@$), toOwned($2), blockStyle,
-                               std::move(stmts));
+    assert(blockStyle == BlockStyle::EXPLICIT);
+    auto taskBodies = context->consumeAndFlattenTopLevelBlocks(exprLst);
+    auto node = Cobegin::build(BUILDER, LOC(@$), toOwned($2), 
+                               std::move(taskBodies));
     CommentsAndStmt ret = { .comments=comments, .stmt=node.release() };
     $$ = context->finishStmt(ret);
   }
