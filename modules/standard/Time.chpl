@@ -71,6 +71,7 @@ private extern proc chpl_timevalue_parts(t:           _timevalue,
 enum TimeUnits { microseconds, milliseconds, seconds, minutes, hours }
 
 /* Specifies the day of the week */
+deprecated "Enum Day is deprecated, use DateTime module"
 enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturday }
 
 /*
@@ -85,8 +86,10 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   Deprecated. Use ``DateTime.timeSinceEpoch()``
 
  */
-proc getCurrentTime(unit: TimeUnits = TimeUnits.seconds) : real(64)
+proc getCurrentTime(unit: TimeUnits = TimeUnits.seconds) : real(64) {
+  compilerWarning("getCurrentTime is deprecated, use DateTime.datetime.timeSinceEpoch()");
   return _convert_microseconds(unit, chpl_now_time());
+}
 
 /*
    :returns:  (year, month, day) as a tuple of 3 ints
@@ -95,6 +98,7 @@ proc getCurrentTime(unit: TimeUnits = TimeUnits.seconds) : real(64)
    The day   is in the range 1 to 31
 */
 proc getCurrentDate() {
+  compilerWarning("getCurrentDate is deprecated, use DateTime.date.today().isocalendar()");
   var now = chpl_now_timevalue();
 
   var seconds, minutes, hours, mday, month, year, wday, yday, isdst:int(32);
@@ -109,6 +113,7 @@ proc getCurrentDate() {
    :rtype:   :type:`Day`
  */
 proc getCurrentDayOfWeek() : Day {
+  compilerWarning("getCurrentDayOfWeek is deprecated, use DateTime.date.today().weekday():string");
   var now = chpl_now_timevalue();
 
   var seconds, minutes, hours, mday, month, year, wday, yday, isdst:int(32);
