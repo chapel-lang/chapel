@@ -4024,24 +4024,24 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
   }
 
   deprecated
-  "bigint.div_q using Round is deprecated, use bigint.div_q with round instead"
+  "bigint.div_q using Round is deprecated, use bigint.divQ with round instead"
   proc bigint.div_q(const ref n: bigint,
                     const ref d: bigint,
                     param     rounding: Round) {
     use Round;
     if (rounding == UP) {
-      this.div_q(n, d, round.up);
+      this.divQ(n, d, round.up);
     } else if (rounding == ZERO) {
-      this.div_q(n, d, round.zero);
+      this.divQ(n, d, round.zero);
     } else {
-      this.div_q(n, d, round.down);
+      this.divQ(n, d, round.down);
     }
   }
 
   // 5.6 Division Functions
-  proc bigint.div_q(const ref n: bigint,
-                    const ref d: bigint,
-                    param rounding = round.zero) {
+  proc bigint.divQ(const ref n: bigint,
+                   const ref d: bigint,
+                   param rounding = round.zero) {
     if _local {
       select rounding {
         when round.up   do mpz_cdiv_q(this.mpz, n.mpz,  d.mpz);
@@ -4075,46 +4075,46 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
   }
 
   deprecated
-  "bigint.div_q using Round is deprecated, use bigint.div_q with round instead"
+  "bigint.div_q using Round is deprecated, use bigint.divQ with round instead"
   proc bigint.div_q(const ref n: bigint,
                               d: integral,
                     param     rounding: Round) {
     use Round;
     if (rounding == UP) {
-      this.div_q(n, d, round.up);
+      this.divQ(n, d, round.up);
     } else if (rounding == ZERO) {
-      this.div_q(n, d, round.zero);
+      this.divQ(n, d, round.zero);
     } else {
-      this.div_q(n, d, round.down);
+      this.divQ(n, d, round.down);
     }
   }
 
-  proc bigint.div_q(const ref n: bigint,
-                              d: integral,
-                    param     rounding = round.zero) {
+  proc bigint.divQ(const ref n: bigint,
+                             d: integral,
+                   param     rounding = round.zero) {
 
-    this.div_q(n, new bigint(d), rounding);
+    this.divQ(n, new bigint(d), rounding);
   }
 
   deprecated
-  "bigint.div_r using Round is deprecated, use bigint.div_r with round instead"
+  "bigint.div_r using Round is deprecated, use bigint.divR with round instead"
   proc bigint.div_r(const ref n: bigint,
                     const ref d: bigint,
                     param     rounding: Round) {
     use Round;
     if (rounding == UP) {
-      this.div_r(n, d, round.up);
+      this.divR(n, d, round.up);
     } else if (rounding == ZERO) {
-      this.div_r(n, d, round.zero);
+      this.divR(n, d, round.zero);
     } else {
-      this.div_r(n, d, round.down);
+      this.divR(n, d, round.down);
     }
 
   }
 
-  proc bigint.div_r(const ref n: bigint,
-                    const ref d: bigint,
-                    param     rounding = round.zero) {
+  proc bigint.divR(const ref n: bigint,
+                   const ref d: bigint,
+                   param     rounding = round.zero) {
     if _local {
       select rounding {
         when round.up   do mpz_cdiv_r(this.mpz, n.mpz,  d.mpz);
@@ -4148,47 +4148,47 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
   }
 
   deprecated
-  "bigint.div_r using Round is deprecated, use bigint.div_r with round instead"
+  "bigint.div_r using Round is deprecated, use bigint.divR with round instead"
   proc bigint.div_r(const ref n: bigint,
                               d: integral,
                     param     rounding: Round) {
     use Round;
     if (rounding == UP) {
-      this.div_r(n, d, round.up);
+      this.divR(n, d, round.up);
     } else if (rounding == ZERO) {
-      this.div_r(n, d, round.zero);
+      this.divR(n, d, round.zero);
     } else {
-      this.div_r(n, d, round.down);
+      this.divR(n, d, round.down);
     }
   }
 
-  proc bigint.div_r(const ref n: bigint,
-                              d: integral,
-                    param     rounding = round.zero) {
-    this.div_r(n, new bigint(d), rounding);
+  proc bigint.divR(const ref n: bigint,
+                             d: integral,
+                   param     rounding = round.zero) {
+    this.divR(n, new bigint(d), rounding);
   }
 
   deprecated
-  "bigint.div_qr using Round is deprecated, use bigint.div_qr with round instead"
+  "bigint.div_qr using Round is deprecated, use bigint.divQR with round instead"
   proc bigint.div_qr(ref       r:        bigint,
                      const ref n:        bigint,
                      const ref d:        bigint,
                      param     rounding: Round) {
     use Round;
     if (rounding == UP) {
-      this.div_qr(r, n, d, round.up);
+      this.divQR(r, n, d, round.up);
     } else if (rounding == ZERO) {
-      this.div_qr(r, n, d, round.zero);
+      this.divQR(r, n, d, round.zero);
     } else {
-      this.div_qr(r, n, d, round.down);
+      this.divQR(r, n, d, round.down);
     }
   }
 
   // this gets quotient, r gets remainder
-  proc bigint.div_qr(ref       r:        bigint,
-                     const ref n:        bigint,
-                     const ref d:        bigint,
-                     param     rounding = round.zero) {
+  proc bigint.divQR(ref       r:        bigint,
+                    const ref n:        bigint,
+                    const ref d:        bigint,
+                    param     rounding = round.zero) {
     if _local {
       select rounding {
         when round.up   do mpz_cdiv_qr(this.mpz, r.mpz, n.mpz, d.mpz);
@@ -4226,46 +4226,46 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
   }
 
   deprecated
-  "bigint.div_qr using Round is deprecated, use bigint.div_qr with round instead"
+  "bigint.div_qr using Round is deprecated, use bigint.divQR with round instead"
   proc bigint.div_qr(ref       r: bigint,
                      const ref n: bigint,
                                d: integral,
                      param     rounding: Round) {
     use Round;
     if (rounding == UP) {
-      this.div_qr(r, n, d, round.up);
+      this.divQR(r, n, d, round.up);
     } else if (rounding == ZERO) {
-      this.div_qr(r, n, d, round.zero);
+      this.divQR(r, n, d, round.zero);
     } else {
-      this.div_qr(r, n, d, round.down);
+      this.divQR(r, n, d, round.down);
     }
   }
 
-  proc bigint.div_qr(ref       r: bigint,
-                     const ref n: bigint,
-                               d: integral,
-                     param     rounding = round.zero) {
-    this.div_qr(r, n, new bigint(d), rounding);
+  proc bigint.divQR(ref       r: bigint,
+                    const ref n: bigint,
+                              d: integral,
+                    param     rounding = round.zero) {
+    this.divQR(r, n, new bigint(d), rounding);
   }
 
   deprecated
-  "bigint.div_q_2exp using Round is deprecated, use bigint.div_q_2xp with round instead"
+  "bigint.div_q_2exp using Round is deprecated, use bigint.divQ2Exp with round instead"
   proc bigint.div_q_2exp(const ref n: bigint,
                                    b: integral,
                          param     rounding: Round) {
     use Round;
     if (rounding == UP) {
-      this.div_q_2exp(n, b, round.up);
+      this.divQ2Exp(n, b, round.up);
     } else if (rounding == ZERO) {
-      this.div_q_2exp(n, b, round.zero);
+      this.divQ2Exp(n, b, round.zero);
     } else {
-      this.div_q_2exp(n, b, round.down);
+      this.divQ2Exp(n, b, round.down);
     }
   }
 
-  proc bigint.div_q_2exp(const ref n: bigint,
-                                   b: integral,
-                         param     rounding = round.zero) {
+  proc bigint.divQ2Exp(const ref n: bigint,
+                                 b: integral,
+                       param     rounding = round.zero) {
     const b_ = b.safeCast(mp_bitcnt_t);
 
     if _local {
@@ -4299,23 +4299,23 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
   }
 
   deprecated
-  "bigint.div_r_2exp using Round is deprecated, use bigint.div_r_2xp with round instead"
+  "bigint.div_r_2exp using Round is deprecated, use bigint.divR2Exp with round instead"
   proc bigint.div_r_2exp(const ref n: bigint,
                                    b: integral,
                          param     rounding: Round) {
     use Round;
     if (rounding == UP) {
-      this.div_r_2exp(n, b, round.up);
+      this.divR2Exp(n, b, round.up);
     } else if (rounding == ZERO) {
-      this.div_r_2exp(n, b, round.zero);
+      this.divR2Exp(n, b, round.zero);
     } else {
-      this.div_r_2exp(n, b, round.down);
+      this.divR2Exp(n, b, round.down);
     }
   }
 
-  proc bigint.div_r_2exp(const ref n: bigint,
-                                   b: integral,
-                         param     rounding = round.zero) {
+  proc bigint.divR2Exp(const ref n: bigint,
+                                 b: integral,
+                       param     rounding = round.zero) {
     const b_ = b.safeCast(mp_bitcnt_t);
 
     if _local {
