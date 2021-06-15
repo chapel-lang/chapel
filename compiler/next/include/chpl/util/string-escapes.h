@@ -17,21 +17,17 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/ImagLiteral.h"
+#ifndef CHPL_UTIL_STRING_ESCAPES_H
+#define CHPL_UTIL_STRING_ESCAPES_H
 
-#include "chpl/uast/Builder.h"
+#include <string>
 
 namespace chpl {
-namespace uast {
 
 
-owned<ImagLiteral> ImagLiteral::build(Builder* builder, Location loc,
-                                      double value, UniqueString text) {
-  ImagLiteral* ret = new ImagLiteral(value, text);
-  builder->noteLocation(ret, loc);
-  return toOwned(ret);
-}
+std::string quoteStringForC(const std::string& s);
 
 
-} // namespace uast
-} // namespace chpl
+} // end namespace chpl
+
+#endif

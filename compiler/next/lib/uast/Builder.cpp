@@ -65,7 +65,7 @@ void Builder::addError(ErrorMessage e) {
 }
 
 void Builder::noteLocation(ASTNode* ast, Location loc) {
-  this->locations_.push_back(std::make_pair(ast, loc));
+  locations_map_[ast] = loc;
 }
 
 Builder::Result Builder::result() {
@@ -83,6 +83,7 @@ Builder::Result Builder::result() {
   ret.topLevelExpressions.swap(topLevelExpressions_);
   ret.errors.swap(errors_);
   ret.locations.swap(locations_);
+  locations_map_.clear();
   return ret;
 }
 
@@ -128,21 +129,52 @@ void Builder::assignIDs(UniqueString inferredModule) {
       UniqueString emptyString;
       doAssignIDs(module, emptyString, i, pathVec, duplicates);
     } else if (ownedExpression->isComment()) {
-      // ignore comments
+      // ignore assigning IDs for toplevel comments
     } else {
       assert(false && "topLevelExpressions should only be module decls or comments");
     }
   }
 }
 
+/* A note about ID assignment
+
+  This ID assigment tries to balance several competing goals:
+   * would like postorder Ids to be available to make it easy to store e.g.
+     resolution results for a function in a vector
+   * would like incremental recompilation to minimize recomputation if code is
+     added -- in particular this means that for say a function we don't want
+     that function's ID to include the postOrderId in the parent scope
+
+  The ID assignment uses the strategy of having functions, type decls, and
+  modules create a new ID scope (with a new postOrderId counter). These uAST
+  nodes have an ID based upon the path to that symbol and have a postOrderId
+  that is just after the last element contained within.
+
+  When printing IDs we use the notation of putting the symbolPath
+  part first and then '@' and then the postOrderId.
+
+  For example:
+
+  M@1       module M {
+  M.Inner@3   module Inner {
+  M.Inner@0     a;
+  M.Inner@1     b;
+  M.Inner@2     c;
+              }
+  M@0         x;
+            }
+
+  Comments are not included in ID assignment.
+  That means that comments don't have IDs and as a result it's not
+  possible to go from a Comment to the file. We think this is acceptable
+  because a documentation tool processing Comments can work with the
+  parse result and make its own tables of these things.
+ */
 void Builder::doAssignIDs(ASTNode* ast, UniqueString symbolPath, int& i,
                           pathVecT& pathVec, declaredHereT& duplicates) {
-  // It is appealing not to consider comments when computing AST ids,
-  // but if that happens then we can't figure out source line numbers
-  // for comments, which would be an issue in some documentation use cases.
-  //
-  // However we could make this be a flag on the Context - whether or not
-  // comments can be ignored entirely.
+
+  if (ast->isComment())
+    return;
 
   int firstChildID = i;
 
@@ -194,7 +226,12 @@ void Builder::doAssignIDs(ASTNode* ast, UniqueString symbolPath, int& i,
     }
 
     int numContainedIds = freshId;
-    ast->setID(ID(symbolPath, numContainedIds, numContainedIds));
+    ast->setID(ID(newSymbolPath, numContainedIds, numContainedIds));
+
+    // Note: when creating a new symbol (e.g. fn), we're not incrementing i.
+    // The new symbol ID has the updated path (e.g. function name)
+    // and other IDs in the parent scope don't consider the position
+    // of this function.
 
     // pop the path component we just added
     pathVec.pop_back();
@@ -215,6 +252,8 @@ void Builder::doAssignIDs(ASTNode* ast, UniqueString symbolPath, int& i,
     ast->setID(ID(symbolPath, myID, numContainedIDs));
   }
 
+  // store the location for the ast id
+  locations_.push_back(std::make_pair(ast, locations_map_[ast]));
 }
 
 Builder::Result::Result()
@@ -260,8 +299,7 @@ void Builder::Result::updateFilePaths(Context* context, const Result& keep) {
   // Update the filePathForModuleName query
   for (auto & topLevelExpression : keep.topLevelExpressions) {
     if (Module* module = topLevelExpression->toModule()) {
-      UniqueString moduleName = module->name();
-      context->setFilePathForModuleName(moduleName, path);
+      context->setFilePathForModuleID(module->id(), path);
     } else if (topLevelExpression->isComment()) {
       // ignore comments
     } else {

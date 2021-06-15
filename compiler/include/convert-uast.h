@@ -2,15 +2,15 @@
  * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,15 +18,16 @@
  * limitations under the License.
  */
 
-#ifndef _extern_H_
-#define _extern_H_
+#ifndef _CONVERT_UAST_H_
+#define _CONVERT_UAST_H_
 
-#ifdef EXTERN
-#define EXTERN_INIT(_x) = _x
-#else
-#define EXTERN_INIT(_x)
-#define EXTERN extern
+#include "baseAST.h"
+#include "alist.h"
+
+#include "chpl/frontend/frontend-queries.h"
+#include "chpl/uast/Module.h"
+
+ModuleSymbol* convertToplevelModule(chpl::Context* context,
+                                    const chpl::uast::Module* mod);
+
 #endif
-
-#endif
-

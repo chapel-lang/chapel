@@ -932,6 +932,7 @@ double ParserContext::str2double(YYLTYPE location,
 Expression* ParserContext::buildNumericLiteral(YYLTYPE location,
                                                PODUniqueString str,
                                                int type) {
+  UniqueString text = str;
   const char* pch = str.c_str();
   uint64_t ull;
   int len = strlen(pch);
@@ -947,33 +948,28 @@ Expression* ParserContext::buildNumericLiteral(YYLTYPE location,
   noUnderscores[noUnderscoresLen] = '\0';
 
   bool erroneous = false;
-  int base = 0;
   Expression* ret = nullptr;
   auto loc = convertLocation(location);
 
   if (type == INTLITERAL) {
     if (!strncmp("0b", pch, 2) || !strncmp("0B", pch, 2)) {
       ull = binStr2uint64(location, noUnderscores, erroneous);
-      base = 2;
     } else if (!strncmp("0o", pch, 2) || !strncmp("0O", pch, 2)) {
       // The second case is difficult to read, but is zero followed by a capital
       // letter 'o'
       ull = octStr2uint64(location, noUnderscores, erroneous);
-      base = 8;
     } else if (!strncmp("0x", pch, 2) || !strncmp("0X", pch, 2)) {
       ull = hexStr2uint64(location, noUnderscores, erroneous);
-      base = 16;
     } else {
       ull = decStr2uint64(location, noUnderscores, erroneous);
-      base = 10;
     }
 
     if (erroneous)
       ret = ErroneousExpression::build(builder, loc).release();
     else if (ull <= 9223372036854775807ull)
-      ret = IntLiteral::build(builder, loc, ull, base).release();
+      ret = IntLiteral::build(builder, loc, ull, text).release();
     else
-      ret =  UintLiteral::build(builder, loc, ull, base).release();
+      ret =  UintLiteral::build(builder, loc, ull, text).release();
   } else if (type == REALLITERAL || type == IMAGLITERAL) {
 
     if (type == IMAGLITERAL) {
@@ -982,20 +978,14 @@ Expression* ParserContext::buildNumericLiteral(YYLTYPE location,
       noUnderscores[noUnderscoresLen-1] = '\0';
     }
 
-    if (!strncmp("0x", pch, 2) || !strncmp("0X", pch, 2)) {
-      base = 16;
-    } else {
-      base = 10;
-    }
-
     double num = str2double(location, noUnderscores, erroneous);
 
     if (erroneous)
       ret = ErroneousExpression::build(builder, loc).release();
     else if (type == IMAGLITERAL)
-      ret = ImagLiteral::build(builder, loc, num, base).release();
+      ret = ImagLiteral::build(builder, loc, num, text).release();
     else
-      ret = RealLiteral::build(builder, loc, num, base).release();
+      ret = RealLiteral::build(builder, loc, num, text).release();
 
   } else {
     assert(false && "Case note handled in buildNumericLiteral");

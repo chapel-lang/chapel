@@ -26,8 +26,8 @@ namespace uast {
 
 
 owned<RealLiteral> RealLiteral::build(Builder* builder, Location loc,
-                                      double value, int base) {
-  RealLiteral* ret = new RealLiteral(value, base);
+                                      double value, UniqueString text) {
+  RealLiteral* ret = new RealLiteral(value, text);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

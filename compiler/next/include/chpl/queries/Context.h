@@ -314,18 +314,9 @@ class Context {
   void markUniqueCString(const char* s);
 
   /**
-    Return the name of the module containing this ID.
-   */
-  UniqueString moduleNameForID(ID id);
-  /**
     Return the file path for the file containing this ID.
    */
   UniqueString filePathForID(ID id);
-
-  /**
-    Query to get a file path given a module name
-   */
-  UniqueString filePathForModuleName(UniqueString modName);
 
   /**
     This function increments the current revision number stored
@@ -350,10 +341,10 @@ class Context {
   // setters for named queries.
 
   /**
-    Sets the file path for the given toplevel module name. This
+    Sets the file path for the given module ID. This
     is suitable to call from a parse query.
    */
-  void setFilePathForModuleName(UniqueString modName, UniqueString path);
+  void setFilePathForModuleID(ID moduleID, UniqueString path);
 
   // the following functions are called by the macros defined in QueryImpl.h
   // and should not be called directly

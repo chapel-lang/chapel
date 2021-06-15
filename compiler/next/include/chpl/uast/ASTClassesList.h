@@ -53,37 +53,38 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
   AST_LEAF(Identifier)                 // old AST: UnresolvedSymExpr
 
   AST_NODE(Block)                      // old AST: BlockStmt
-  AST_NODE(ExternBlock)                // old AST: ExternBlockStmt
-  AST_NODE(Implements)                 // old AST: ImplementsStmt
-  AST_NODE(Import)                     // old AST: ImportStmt
+  //AST_NODE(ExternBlock)                // old AST: ExternBlockStmt
+  //AST_NODE(Implements)                 // old AST: ImplementsStmt
+  //AST_NODE(Import)                     // old AST: ImportStmt
   AST_NODE(Local)                      //
   AST_NODE(New)
-  AST_NODE(Require)                    //
+  //AST_NODE(Require)                    //
   AST_NODE(Serial)                     //
-  AST_NODE(Use)                        // old AST: UseStmt
+  //AST_NODE(Use)                        // old AST: UseStmt
   AST_NODE(WithClause)
 
-  AST_NODE(ArrayExpr) // TODO: figure out good names for these
-  AST_NODE(DomainExpr)
-  AST_NODE(TupleExpr)
+  //AST_NODE(ArrayExpr) // TODO: figure out good names for these
+  //AST_NODE(DomainExpr)
+  //AST_NODE(TupleExpr)
 
   AST_BEGIN_SUBCLASSES(ControlFlow)
 
-    AST_NODE(Begin)                    //
-    AST_NODE(Cobegin)                  //
-    AST_NODE(Break)                    // old AST: GotoStmt
+    //AST_NODE(Begin)                    //
+    //AST_NODE(Cobegin)                  //
+    //AST_NODE(Break)                    // old AST: GotoStmt
     AST_NODE(Conditional)              // old AST: IfExpr/CondStmt
-    AST_NODE(Continue)                 // old AST: GotoStmt
-    AST_NODE(Defer)                    // old AST: DeferStmt
-    AST_NODE(On)                       //
-    AST_NODE(Return)                   //
-    AST_NODE(Select)                   //
-    AST_NODE(Sync)                     //
-    AST_NODE(TryCatch)                 // old AST: TryStmt/CatchStmt
+    //AST_NODE(Continue)                 // old AST: GotoStmt
+    //AST_NODE(Defer)                    // old AST: DeferStmt
+    //AST_NODE(On)                       //
+    //AST_NODE(Return)                   //
+    //AST_NODE(Select)                   //
+    //AST_NODE(Sync)                     //
+    //AST_NODE(TryCatch)                 // old AST: TryStmt/CatchStmt
 
     AST_BEGIN_SUBCLASSES(Loop)         // old AST: LoopExpr / LoopStmt
 
       AST_NODE(DoWhile)                // old AST: DoWhileStmt
+      AST_NODE(While)                  // old AST: WhileStmt
 
       AST_BEGIN_SUBCLASSES(IndexableLoop)
         AST_NODE(BracketLoop)
@@ -92,8 +93,6 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
         AST_NODE(Forall)                 // old AST: ForallStmt / LoopExpr
         AST_NODE(Foreach)                //
       AST_END_SUBCLASSES(IndexableLoop)
-
-      AST_NODE(While)                  // old AST: WhileStmt
 
     AST_END_SUBCLASSES(Loop)
 
@@ -122,7 +121,7 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
     AST_NODE(FnCall)
     AST_NODE(OpCall)
     AST_NODE(PrimCall)                 // old AST: CallExpr/PrimitiveOp
-    AST_NODE(Try)                      //
+    //AST_NODE(Try)                      //
     AST_NODE(Zip)
   AST_END_SUBCLASSES(Call)
 
@@ -136,7 +135,7 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
 
       AST_NODE(EnumElement)                // old AST: EnumSymbol
       AST_NODE(Function)                   // old AST: FnSymbol
-      AST_NODE(Interface)                  // old AST: InterfaceSymbol
+      //AST_NODE(Interface)                  // old AST: InterfaceSymbol
       AST_NODE(Module)                     // old AST: ModuleSymbol
 
       AST_BEGIN_SUBCLASSES(VarLikeDecl)
@@ -150,9 +149,9 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
         AST_NODE(Enum)                     // old AST: EnumType
 
         AST_BEGIN_SUBCLASSES(AggregateDecl)// old AST: AggregateType
-          AST_NODE(Class)                  //
-          AST_NODE(Record)                 //
-          AST_NODE(Union)                  //
+          //AST_NODE(Class)                  //
+          //AST_NODE(Record)                 //
+          //AST_NODE(Union)                  //
         AST_END_SUBCLASSES(AggregateDecl)
 
       AST_END_SUBCLASSES(TypeDecl)

@@ -17,21 +17,39 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/ImagLiteral.h"
+#include "chpl/util/string-escapes.h"
 
-#include "chpl/uast/Builder.h"
+#include <cassert>
 
-namespace chpl {
-namespace uast {
+// always check assertions in this test
+#ifdef NDEBUG
+#undef NDEBUG
+#endif
 
+using namespace chpl;
 
-owned<ImagLiteral> ImagLiteral::build(Builder* builder, Location loc,
-                                      double value, UniqueString text) {
-  ImagLiteral* ret = new ImagLiteral(value, text);
-  builder->noteLocation(ret, loc);
-  return toOwned(ret);
+static void checkQuoting(const char* input, const char* expect) {
+  std::string input_s = input;
+  std::string expect_s = expect;
+
+  std::string got = quoteStringForC(input_s);
+  assert(got == expect_s);
 }
 
+int main(int argc, char** argv) {
+ 
+  checkQuoting("\a", "\\a");
+  checkQuoting("\"", "\\\"");
+  checkQuoting("?", "\\?");
+  checkQuoting("\x01", "\\x01");
 
-} // namespace uast
-} // namespace chpl
+  {
+    char input[4] = {1, 'a', 'a', 0};
+    checkQuoting(input, "\\x01\\x61\\x61");
+  }
+
+  checkQuoting("\\ \? \a \b \f \n \r \t \v",
+               "\\\\ \\\? \\a \\b \\f \\n \\r \\t \\v");
+
+  return 0;
+}
