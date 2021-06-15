@@ -14,7 +14,7 @@ proc connect(addr:ipAddr,port:int) : TCPConn
 **Parameters:**
 
 ```
-addr: ipAddr - ipv4/ipv6 address
+addr: ipAddr - ipv4/ipv6 address default localhost
 port: Integer - port number
 ```
 
@@ -27,7 +27,7 @@ proc connect(addr:string,port:int) : TCPConn
 
 **Parameters:**
 ```
-addr: String - host name either in dot-dash or domain form
+addr: String - host name either in dot-dash or domain form default localhost
 port: Integer - port number
 ```
 
@@ -53,7 +53,7 @@ proc listen(addr:ipAddr,port:int,backlog=5,reuseaddr=true) : TCPListener
 
 **Parameters**
 ```
-addr: ipAddr - ipv4/ipv6 address
+addr: ipAddr - ipv4/ipv6 address default localhost
 port: Integer - port number
 backlog: Integer - optional parameter, default value = 0
 reuseaddr: Boolean - optional parameter, default value = true
@@ -92,23 +92,23 @@ proc bind(socketServ,addr:ipAddr,port:int,reuseAddr=true)
 
 ```
 - socket : TCPListener|TCPConn|UDPSocket - socket object to be bound
-- addr: ipAddr - ipv4/ipv6 address
+- addr: ipAddr - ipv4/ipv6 address default localhost
 - port: Integer - port number
 - reuseaddr: Boolean - optional parameter, default value = true
 ```
 
 ## Data transfer on UDP
 
-UDP Sockets will have method to call `recvFrom` on it this will return the `host`, `port` of client socket and `data` being written to the socket.
+UDP Sockets will have method to call `recvFrom` on it this will return the `addr`, `port` of client socket and `data` being written to the socket.
 
 **Method:**
 ```chapel
-proc socketServ.recvFrom() : (host:ipAddr, port:int, data:Generic)
+proc socketServ.recvFrom() : (addr:ipAddr, port:int, data:Generic)
 ```
 
 **Return:**
 ```
-- host: ipAddr - ipv4/ipv6 address of sender socket
+- addr: ipAddr - ipv4/ipv6 address of sender socket
 - port: int - related port number
 - data: Generic - data to send
 ```
@@ -121,16 +121,16 @@ __Method:__
 proc socketServ.recv() : (data:Generic)
 ```
 
-The `write` method on socket will take in `host`, `port` and `data` to write to the socket at provided address
+The `send` method on socket will take in `addr`, `port` and `data` to write to the socket at provided address
 
 __Method:__
 ```chapel
-proc socketServ.send(host:ipAddr,port:int,data:Generic)
+proc socketServ.send(addr:ipAddr,port:int,data:Generic)
 ```
 
 **Parameters:**
 ```
-- host: ipAddr - ipv4/ipv6 address of sender socket
+- addr: ipAddr - ipv4/ipv6 address of sender socket default localhost
 - port: int - related port number
 - data: Generic - data to send
 ```
