@@ -14,11 +14,11 @@ proc connect(addr:ipAddr,port:int) : TCPConn
 **Parameters:**
 
 ```
-addr: IPAddr - ipv4/ipv6 address
+addr: ipAddr - ipv4/ipv6 address
 port: Integer - port number
 ```
 
-A higher level construct for socket will take in addr as `string` which will we resolved and converted to `IPAddr` internally.
+A higher level construct for socket will take in addr as `string` which will we resolved and converted to `ipAddr` internally.
 
 **Method:**
 ```chapel
@@ -42,25 +42,18 @@ The `TCPConn` instance will have methods on it to call
 - `setReadBuffer`
 - and `setWriteBuffer`
 
-The additional support with `TCPConn` and `TCPListener` will be to enable or disable two of the prominent optimization algorithm for TCP Protocol that are:
-
-- `nagle`
-- `quickack`
-
-The support will be in form of separate utility function attached with socket module that can set/unset the optimization based on `boolean` argument
-
 ## Creating a Listener
 
 `listen` function will create a `TCPListener` Instance which will take in following parameters
 
 **Method:**
 ```chapel
-listen(addr:IPAddr,port:int,backlog=5,reuseaddr=true) -> TCPListener
+proc listen(addr:ipAddr,port:int,backlog=5,reuseaddr=true) : TCPListener
 ```
 
 **Parameters**
 ```
-addr: IPAddr - ipv4/ipv6 address
+addr: ipAddr - ipv4/ipv6 address
 port: Integer - port number
 backlog: Integer - optional parameter, default value = 0
 reuseaddr: Boolean - optional parameter, default value = true
@@ -73,6 +66,13 @@ The `TCPListener` instance will have methods on it to call
 - `setSocketOpt` to set various socket options.
 
 `accept` method will return a `TCPConn` instance and associated `addr` of the connection.
+
+The additional support with `TCPConn` and `TCPListener` will be to enable or disable two of the prominent optimization algorithm for TCP Protocol that are:
+
+- `nagle`
+- `quickack`
+
+The support will be in form of separate utility function attached with socket module that can set/unset the optimization based on `boolean` argument
 
 ## UDP Support
 
@@ -91,8 +91,8 @@ proc bind(socketServ,addr:ipAddr,port:int,reuseAddr=true)
 **Parameters**
 
 ```
-- socket : TCPListener|TCPConn|UDPSocket - socket object to be binded
-- addr: IPAddr - ipv4/ipv6 address
+- socket : TCPListener|TCPConn|UDPSocket - socket object to be bound
+- addr: ipAddr - ipv4/ipv6 address
 - port: Integer - port number
 - reuseaddr: Boolean - optional parameter, default value = true
 ```
@@ -108,7 +108,7 @@ proc socketServ.recvFrom() : (host:ipAddr, port:int, data:Generic)
 
 **Return:**
 ```
-- host: IPAddr - ipv4/ipv6 address of sender socket
+- host: ipAddr - ipv4/ipv6 address of sender socket
 - port: int - related port number
 - data: Generic - data to send
 ```
@@ -130,7 +130,7 @@ proc socketServ.send(host:ipAddr,port:int,data:Generic)
 
 **Parameters:**
 ```
-- host: IPAddr - ipv4/ipv6 address of sender socket
+- host: ipAddr - ipv4/ipv6 address of sender socket
 - port: int - related port number
 - data: Generic - data to send
 ```
