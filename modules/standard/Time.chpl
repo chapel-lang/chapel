@@ -70,7 +70,13 @@ private extern proc chpl_timevalue_parts(t:           _timevalue,
 /* Specifies the units to be used when certain functions return a time */
 enum TimeUnits { microseconds, milliseconds, seconds, minutes, hours }
 
-/* Specifies the day of the week */
+/* Specifies the day of the week 
+
+   .. warning::
+
+    ``Day`` is deprecated since ``getCurrentDayOfWeek`` is deprecated.
+
+*/
 deprecated "Enum Day is deprecated, use DateTime module"
 enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturday }
 
@@ -81,9 +87,9 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
    :returns: The elapsed time since midnight, local time, in the units specified
    :rtype:   `real(64)`
 
-.. warning::
+   .. warning::
 
-  Deprecated. Use ``DateTime.timeSinceEpoch()``
+      ```getCurrentTime`` is deprecated, use ``DateTime.datetime.timeSinceEpoch()``.
 
  */
 proc getCurrentTime(unit: TimeUnits = TimeUnits.seconds) : real(64) {
@@ -96,6 +102,11 @@ proc getCurrentTime(unit: TimeUnits = TimeUnits.seconds) : real(64) {
 
    The month is in the range 1 to 12.
    The day   is in the range 1 to 31
+
+   .. warning::
+
+      ``getCurrentDate`` is deprecated, use ``DateTime.date.today().isocalendar()``.
+
 */
 proc getCurrentDate() {
   compilerWarning("getCurrentDate is deprecated, use DateTime.date.today().isocalendar()");
@@ -111,6 +122,11 @@ proc getCurrentDate() {
 /*
    :returns: The current day of the week
    :rtype:   :type:`Day`
+
+   .. warning::
+
+      ``getCurrentDayOfWeek`` is deprecated, use ``DateTime.date.today().weekday():string``.
+
  */
 proc getCurrentDayOfWeek() : Day {
   compilerWarning("getCurrentDayOfWeek is deprecated, use DateTime.date.today().weekday():string");
