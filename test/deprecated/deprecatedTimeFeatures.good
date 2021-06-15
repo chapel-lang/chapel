@@ -1,7 +1,3 @@
-deprecatedTimeFeatures.chpl:4: warning: Enum Day is deprecated, use DateTime module
-$CHPL_HOME/modules/standard/Time.chpl:115: In function 'getCurrentDayOfWeek':
-$CHPL_HOME/modules/standard/Time.chpl:115: warning: Enum Day is deprecated, use DateTime module
-$CHPL_HOME/modules/standard/Time.chpl:123: warning: Enum Day is deprecated, use DateTime module
 deprecatedTimeFeatures.chpl:5: warning: getCurrentTime is deprecated, use DateTime.datetime.timeSinceEpoch()
 deprecatedTimeFeatures.chpl:6: warning: getCurrentDate is deprecated, use DateTime.date.today().isocalendar()
 deprecatedTimeFeatures.chpl:7: warning: getCurrentDayOfWeek is deprecated, use DateTime.date.today().weekday():string

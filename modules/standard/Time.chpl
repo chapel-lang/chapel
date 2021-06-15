@@ -77,7 +77,6 @@ enum TimeUnits { microseconds, milliseconds, seconds, minutes, hours }
     ``Day`` is deprecated since ``getCurrentDayOfWeek`` is deprecated.
 
 */
-deprecated "Enum Day is deprecated, use DateTime module"
 enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturday }
 
 /*
