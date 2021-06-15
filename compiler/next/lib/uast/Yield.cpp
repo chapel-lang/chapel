@@ -17,31 +17,25 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/Loop.h"
+#include "chpl/uast/Yield.h"
+
+#include "chpl/uast/Builder.h"
 
 namespace chpl {
 namespace uast {
 
-bool Loop::loopContentsMatchInner(const Loop* other) const {
-  const Loop* lhs = this;
-  const Loop* rhs = other;
 
-  if (lhs->loopBodyChildNum_ != rhs->loopBodyChildNum_)
-    return false;
+owned<Yield> Yield::build(Builder* builder, Location loc,
+                          owned<Expression> value) {
+  assert(value.get() != nullptr);
 
-  if (lhs->numLoopBodyStmts_ != rhs->numLoopBodyStmts_)
-    return false;
+  ASTList lst;
 
-  if (lhs->blockStyle_ != rhs->blockStyle_)
-    return false;
+  lst.push_back(std::move(value));
 
-  if (!lhs->expressionContentsMatchInner(rhs))
-    return false;
-
-  return true;
-}
-
-Loop::~Loop() {
+  Yield* ret = new Yield(std::move(lst));
+  builder->noteLocation(ret, loc);
+  return toOwned(ret);
 }
 
 

@@ -25,19 +25,11 @@ namespace chpl {
 namespace uast {
 
 
-bool Block::contentsMatchInner(const ASTNode* other) const {
-  const Block* lhs = this;
-  const Block* rhs = (const Block*) other;
-  return lhs->expressionContentsMatchInner(rhs);
-}
-void Block::markUniqueStringsInner(Context* context) const {
-  expressionMarkUniqueStringsInner(context);
-}
+owned<Block> Block::build(Builder* builder, Location loc, ASTList stmts) {
+  const int bodyChildNum = 0;
+  const int numBodyStmts = stmts.size();
 
-owned<Block> Block::build(Builder* builder,
-                          Location loc,
-                          ASTList stmts) {
-  Block* ret = new Block(std::move(stmts));
+  Block* ret = new Block(std::move(stmts), bodyChildNum, numBodyStmts);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

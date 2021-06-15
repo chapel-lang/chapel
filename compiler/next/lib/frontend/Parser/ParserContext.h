@@ -96,6 +96,16 @@ struct ParserContext {
   YYLTYPE declStartLoc(YYLTYPE curLoc);
   void resetDeclState();
 
+  // Given a location, create a new one pointing to the end of it.
+  YYLTYPE makeLocationAtLast(YYLTYPE location) {
+    return {
+      .first_line     = location.last_line,
+      .first_column   = location.last_column,
+      .last_line      = location.last_line,
+      .last_column    = location.last_column
+    };
+  }
+
   void noteError(ParserError error) {
     errors.push_back(std::move(error));
   }
@@ -122,6 +132,8 @@ struct ParserContext {
   void noteComment(YYLTYPE loc, const char* data, long size);
   std::vector<ParserComment>* gatherComments(YYLTYPE location);
   void clearCommentsBefore(YYLTYPE loc);
+  void clearComments(std::vector<ParserComment>* comments);
+  void clearComments(ParserExprList* comments);
   void clearComments();
   ParserExprList* makeList();
   ParserExprList* makeList(ParserExprList* lst);
@@ -129,6 +141,7 @@ struct ParserContext {
   ParserExprList* makeList(owned<Expression> e) {
     return this->makeList(e.release());
   }
+
   ParserExprList* makeList(CommentsAndStmt cs);
 
   ParserExprList* appendList(ParserExprList* dst, ParserExprList* lst);
@@ -148,6 +161,7 @@ struct ParserContext {
 
   std::vector<ParserComment>* gatherCommentsFromList(ParserExprList* lst,
                                                      YYLTYPE location);
+
   void discardCommentsFromList(ParserExprList* lst, YYLTYPE location);
 
   void appendComments(CommentsAndStmt*cs, std::vector<ParserComment>* comments);
@@ -160,6 +174,8 @@ struct ParserContext {
   CommentsAndStmt finishStmt(owned<Expression> e) {
     return this->finishStmt(e.release());
   }
+
+
 
   // Create a ParserExprList containing the passed statements, and any
   // comments before the right brace brace location.
@@ -207,23 +223,67 @@ struct ParserContext {
 
   BlockStyle determineBlockStyle(BlockOrDo blockOrDo);
 
-  ASTList consumeAndFlattenTopLevelBlocks(BlockOrDo blockOrDo);
+  ASTList consumeAndFlattenTopLevelBlocks(ParserExprList* exprLst);
+
+  // Lift up top level comments, clear expression level comments, prepare
+  // the statement body, and determine the block style.
+  //
+  // Note that the body anchor is the location at which non-statement
+  // expressions preceding the body end. For constructs that precede their
+  // body with a keyword, the body anchor is the keyword. For constructs
+  // that always have a block as their body, the body anchor is the '{'.
+  //
+  // For constructs which have a <stmt> as the body and are preceded by
+  // some number of non-statement expressions, the anchor should be the
+  // location which marks the end of the non-statement expressions, and
+  // not the location of the <stmt>. For example, given:
+  //
+  //    begin /*c2*/ with (var a=0) ^^^ /*c3*/ writeln(a);
+  //
+  // The anchor point is at ^^^, because this is the point where the with
+  // clause ends. We want /*c3*/ to be included in the statements of the
+  // begin, so we cannot use the location of the 'writeln' as the anchor
+  // point. If we do, then /*c3*/ will be discarded along with /*c2*/.
+  //
+  // Constructs that have an arbitrary <stmt> as their body can use the
+  // 'makeLocationAtLast' method to produce a location at the ^^^. The
+  // constructed location can be passed as the anchor.
+  //
+  // This approach is used over mid-rule actions because mid-rule actions
+  // make the parser rules/actions harder to read.
+  void prepareStmtPieces(std::vector<ParserComment>*& outComments,
+                         ParserExprList*& outExprLst,
+                         BlockStyle& outBlockStyle,
+                         YYLTYPE locStartKeyword,
+                         bool isBodyAnchorSecondKeyword,
+                         YYLTYPE locBodyAnchor,
+                         CommentsAndStmt consume);
+
+  void prepareStmtPieces(std::vector<ParserComment>*& outComments,
+                         ParserExprList*& outExprLst,
+                         BlockStyle& outBlockStyle,
+                         YYLTYPE locStartKeyword,
+                         YYLTYPE locBodyAnchor, 
+                         BlockOrDo consume);
 
   CommentsAndStmt buildBracketLoopStmt(YYLTYPE locLeftBracket,
                                        YYLTYPE locIndex,
+                                       YYLTYPE locBodyAnchor,
                                        ParserExprList* indexExprs,
                                        Expression* iterandExpr,
                                        WithClause* withClause,
-                                       CommentsAndStmt stmt);
+                                       CommentsAndStmt cs);
 
   CommentsAndStmt buildBracketLoopStmt(YYLTYPE locLeftBracket,
                                        YYLTYPE locIterExprs,
+                                       YYLTYPE locBodyAnchor,
                                        ParserExprList* iterExprs,
                                        WithClause* withClause,
-                                       CommentsAndStmt stmt);
+                                       CommentsAndStmt cs);
 
   CommentsAndStmt buildForallLoopStmt(YYLTYPE locForall,
                                       YYLTYPE locIndex,
+                                      YYLTYPE locBodyAnchor,
                                       Expression* indexExpr,
                                       Expression* iterandExpr,
                                       WithClause* withClause,
@@ -231,6 +291,7 @@ struct ParserContext {
 
   CommentsAndStmt buildForeachLoopStmt(YYLTYPE locForeach,
                                        YYLTYPE locIndex,
+                                       YYLTYPE locBodyAnchor,
                                        Expression* indexExpr,
                                        Expression* iterandExpr,
                                        WithClause* withClause,
@@ -238,30 +299,30 @@ struct ParserContext {
 
   CommentsAndStmt buildForLoopStmt(YYLTYPE locFor,
                                    YYLTYPE locIndex,
+                                   YYLTYPE locBodyAnchor,
                                    Expression* indexExpr,
                                    Expression* iterandExpr,
                                    BlockOrDo blockOrDo);
 
   CommentsAndStmt buildCoforallLoopStmt(YYLTYPE locCoforall,
                                         YYLTYPE locIndex,
+                                        YYLTYPE locBodyAnchor,
                                         Expression* indexExpr,
                                         Expression* iterandExpr,
                                         WithClause* withClause,
                                         BlockOrDo blockOrDo);
 
-CommentsAndStmt buildConditionalStmt(bool usesThenKeyword, YYLTYPE locIf,
-                                     YYLTYPE locCondition,
-                                     YYLTYPE locThen,
-                                     Expression* condition,
-                                     CommentsAndStmt thenStmt);
+  CommentsAndStmt buildConditionalStmt(bool usesThenKeyword, YYLTYPE locIf,
+                                       YYLTYPE locThenBodyAnchor,
+                                       Expression* condition,
+                                       CommentsAndStmt thenCs);
 
-CommentsAndStmt buildConditionalStmt(bool usesThenKeyword, YYLTYPE locIf,
-                                     YYLTYPE locCondition,
-                                     YYLTYPE locThen,
-                                     YYLTYPE locElse,
-                                     Expression* condition,
-                                     CommentsAndStmt thenStmt,
-                                     CommentsAndStmt elseStmt);
+  CommentsAndStmt buildConditionalStmt(bool usesThenKeyword, YYLTYPE locIf,
+                                       YYLTYPE locThenBodyAnchor,
+                                       YYLTYPE locElse,
+                                       Expression* condition,
+                                       CommentsAndStmt thenCs,
+                                       CommentsAndStmt elseCs);
 
   uint64_t binStr2uint64(YYLTYPE location, const char* str, bool& erroroneous);
   uint64_t octStr2uint64(YYLTYPE location, const char* str, bool& erroroneous);

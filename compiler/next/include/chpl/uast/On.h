@@ -17,10 +17,11 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_UAST_BLOCK_H
-#define CHPL_UAST_BLOCK_H
+#ifndef CHPL_UAST_ON_H
+#define CHPL_UAST_ON_H
 
 #include "chpl/queries/Location.h"
+#include "chpl/uast/BlockStyle.h"
 #include "chpl/uast/Expression.h"
 #include "chpl/uast/SimpleBlockLike.h"
 
@@ -29,18 +30,26 @@ namespace uast {
 
 
 /**
-  This class represents a { } block.
+  This class represents an on statement. For example:
+
+  \rst
+  .. code-block:: chapel
+
+      // Example 1:
+      var x = 0;
+      on Locales[1] do writeln(x);
+
+  \endrst
+
  */
-class Block final : public SimpleBlockLike {
+class On final : public SimpleBlockLike {
  private:
-  Block(ASTList stmts, int bodyChildNum, int numBodyStmts)
-    : SimpleBlockLike(asttags::Block, std::move(stmts),
-                      BlockStyle::EXPLICIT,
+  On(ASTList children, BlockStyle blockStyle, int bodyChildNum,
+     int numBodyStmts)
+    : SimpleBlockLike(asttags::On, std::move(children), blockStyle,
                       bodyChildNum,
                       numBodyStmts) {
     assert(isExpressionASTList(children_));
-    assert(blockStyle_ == BlockStyle::EXPLICIT);
-    assert(bodyChildNum_ >= 0);
   }
 
   bool contentsMatchInner(const ASTNode* other) const override {
@@ -51,13 +60,26 @@ class Block final : public SimpleBlockLike {
     simpleBlockLikeMarkUniqueStringsInner(context);
   }
 
+  static const int8_t destChildNum_ = 0;
+
  public:
-  ~Block() override = default;
 
   /**
-   Create and return a Block containing the passed stmts.
-   */
-  static owned<Block> build(Builder* builder, Location loc, ASTList stmts);
+    Create and return an on statement.
+  */
+  static owned<On> build(Builder* builder, Location loc,
+                         owned<Expression> destination,
+                         BlockStyle blockStyle,
+                         ASTList stmts);
+
+  /**
+    Returns the destination of this on statement.
+  */
+  const Expression* destination() const {
+    auto ret = child(destChildNum_);
+    assert(ret->isExpression());
+    return (const Expression*)ret;
+  }
 
 };
 

@@ -24,17 +24,22 @@ NEXT_UAST_SRCS =                                 \
   ASTList.cpp \
   ASTNode.cpp \
   ASTTag.cpp \
+  Begin.cpp \
   Block.cpp \
   BracketLoop.cpp \
+  Break.cpp \
   Builder.cpp \
   BytesLiteral.cpp \
   Call.cpp \
+  Cobegin.cpp \
   Coforall.cpp \
   Comment.cpp \
   Conditional.cpp \
-  ControlFlow.cpp \
+  Continue.cpp \
   CStringLiteral.cpp \
   Decl.cpp \
+  Defer.cpp \
+  Delete.cpp \
   Dot.cpp \
   DoWhile.cpp \
   Enum.cpp \
@@ -51,6 +56,7 @@ NEXT_UAST_SRCS =                                 \
   ImagLiteral.cpp \
   IndexableLoop.cpp \
   IntLiteral.cpp \
+  Label.cpp \
   Literal.cpp \
   Local.cpp \
   Loop.cpp \
@@ -59,9 +65,12 @@ NEXT_UAST_SRCS =                                 \
   NamedDecl.cpp \
   New.cpp \
   NumericLiteral.cpp \
+  On.cpp \
   OpCall.cpp \
   RealLiteral.cpp \
+  Return.cpp \
   Serial.cpp \
+  SimpleBlockLike.cpp \
   StringLikeLiteral.cpp \
   StringLiteral.cpp \
   TaskVar.cpp \
@@ -73,6 +82,7 @@ NEXT_UAST_SRCS =                                 \
   Visitor.cpp \
   While.cpp \
   WithClause.cpp \
+  Yield.cpp \
   Zip.cpp \
 
 

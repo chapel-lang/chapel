@@ -17,31 +17,24 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/Loop.h"
+#include "chpl/uast/Defer.h"
+
+#include "chpl/uast/Builder.h"
 
 namespace chpl {
 namespace uast {
 
-bool Loop::loopContentsMatchInner(const Loop* other) const {
-  const Loop* lhs = this;
-  const Loop* rhs = other;
 
-  if (lhs->loopBodyChildNum_ != rhs->loopBodyChildNum_)
-    return false;
+owned<Defer> Defer::build(Builder* builder, Location loc,
+                          BlockStyle blockStyle,
+                          ASTList stmts) {
+  const int bodyChildNum = 0;
+  const int numBodyStmts = stmts.size();
 
-  if (lhs->numLoopBodyStmts_ != rhs->numLoopBodyStmts_)
-    return false;
-
-  if (lhs->blockStyle_ != rhs->blockStyle_)
-    return false;
-
-  if (!lhs->expressionContentsMatchInner(rhs))
-    return false;
-
-  return true;
-}
-
-Loop::~Loop() {
+  Defer* ret = new Defer(std::move(stmts), blockStyle, bodyChildNum,
+                         numBodyStmts);
+  builder->noteLocation(ret, loc);
+  return toOwned(ret);
 }
 
 

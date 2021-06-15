@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/Local.h"
+#include "chpl/uast/Begin.h"
 
 #include "chpl/uast/Builder.h"
 
@@ -25,11 +25,11 @@ namespace chpl {
 namespace uast {
 
 
-bool Local::contentsMatchInner(const ASTNode* other) const {
-  const Local* lhs = this;
-  const Local* rhs = (const Local*) other;
+bool Begin::contentsMatchInner(const ASTNode* other) const {
+  const Begin* lhs = this;
+  const Begin* rhs = (const Begin*) other;
 
-  if (lhs->condChildNum_ != rhs->condChildNum_)
+  if (lhs->withClauseChildNum_ != rhs->withClauseChildNum_)
     return false;
 
   if (!lhs->simpleBlockLikeContentsMatchInner(rhs))
@@ -38,41 +38,17 @@ bool Local::contentsMatchInner(const ASTNode* other) const {
   return true;
 }
 
-owned<Local> Local::build(Builder* builder,
+owned<Begin> Begin::build(Builder* builder,
                           Location loc,
+                          owned<WithClause> withClause,
                           BlockStyle blockStyle,
                           ASTList stmts) {
-
   ASTList lst;
-  int8_t condChildNum = -1;
+  int8_t withClauseChildNum = -1;
 
-  const int bodyChildNum = lst.size();
-  const int numBodyStmts = stmts.size();
-
-  for (auto& stmt : stmts) {
-    lst.push_back(std::move(stmt));
-  }
-
-  Local* ret = new Local(std::move(lst), condChildNum, blockStyle,
-                         bodyChildNum,
-                         numBodyStmts);
-  builder->noteLocation(ret, loc);
-  return toOwned(ret);
-}
-
-owned<Local> Local::build(Builder* builder,
-                          Location loc,
-                          owned<Expression> condition,
-                          BlockStyle blockStyle,
-                          ASTList stmts) {
-  assert(condition.get() != nullptr);
-
-  ASTList lst;
-  int8_t condChildNum = -1;
-
-  if (condition.get() != nullptr) {
-    condChildNum = lst.size();
-    lst.push_back(std::move(condition));
+  if (withClause.get() != nullptr) {
+    withClauseChildNum = lst.size();
+    lst.push_back(std::move(withClause));
   }
 
   const int bodyChildNum = lst.size();
@@ -82,7 +58,7 @@ owned<Local> Local::build(Builder* builder,
     lst.push_back(std::move(stmt));
   }
 
-  Local* ret = new Local(std::move(lst), condChildNum, blockStyle,
+  Begin* ret = new Begin(std::move(lst), withClauseChildNum, blockStyle,
                          bodyChildNum,
                          numBodyStmts);
   builder->noteLocation(ret, loc);

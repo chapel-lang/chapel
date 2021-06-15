@@ -17,22 +17,20 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/Loop.h"
+#include "chpl/uast/Label.h"
+
+#include "chpl/uast/Builder.h"
 
 namespace chpl {
 namespace uast {
 
-bool Loop::loopContentsMatchInner(const Loop* other) const {
-  const Loop* lhs = this;
-  const Loop* rhs = other;
+bool Label::contentsMatchInner(const ASTNode* other) const {
+  const Label* lhs = this;
+  const Label* rhs = other->toLabel();
 
-  if (lhs->loopBodyChildNum_ != rhs->loopBodyChildNum_)
-    return false;
+  assert(lhs->loopChildNum_ == rhs->loopChildNum_);
 
-  if (lhs->numLoopBodyStmts_ != rhs->numLoopBodyStmts_)
-    return false;
-
-  if (lhs->blockStyle_ != rhs->blockStyle_)
+  if (lhs->name_ != rhs->name_)
     return false;
 
   if (!lhs->expressionContentsMatchInner(rhs))
@@ -41,7 +39,21 @@ bool Loop::loopContentsMatchInner(const Loop* other) const {
   return true;
 }
 
-Loop::~Loop() {
+void Label::markUniqueStringsInner(Context* context) const {
+  name_.mark(context);
+  expressionMarkUniqueStringsInner(context);
+}
+
+owned<Label> Label::build(Builder* builder, Location loc, UniqueString name,
+                          owned<Loop> loop) {
+  assert(loop.get() != nullptr);
+  ASTList lst;
+
+  lst.push_back(std::move(loop));
+
+  Label* ret = new Label(std::move(lst), name);
+  builder->noteLocation(ret, loc);
+  return toOwned(ret);
 }
 
 

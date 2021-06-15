@@ -17,22 +17,19 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/Loop.h"
+#include "chpl/uast/Return.h"
+
+#include "chpl/uast/Builder.h"
 
 namespace chpl {
 namespace uast {
 
-bool Loop::loopContentsMatchInner(const Loop* other) const {
-  const Loop* lhs = this;
-  const Loop* rhs = other;
 
-  if (lhs->loopBodyChildNum_ != rhs->loopBodyChildNum_)
-    return false;
+bool Return::contentsMatchInner(const ASTNode* other) const {
+  const Return* lhs = this;
+  const Return* rhs = (const Return*) other;
 
-  if (lhs->numLoopBodyStmts_ != rhs->numLoopBodyStmts_)
-    return false;
-
-  if (lhs->blockStyle_ != rhs->blockStyle_)
+  if (lhs->valueChildNum_ != rhs->valueChildNum_)
     return false;
 
   if (!lhs->expressionContentsMatchInner(rhs))
@@ -41,7 +38,19 @@ bool Loop::loopContentsMatchInner(const Loop* other) const {
   return true;
 }
 
-Loop::~Loop() {
+owned<Return> Return::build(Builder* builder, Location loc,
+                            owned<Expression> value) {
+  ASTList lst;
+  int8_t valueChildNum = -1;
+
+  if (value.get() != nullptr) {
+    valueChildNum = lst.size();
+    lst.push_back(std::move(value));
+  }
+
+  Return* ret = new Return(std::move(lst), valueChildNum);
+  builder->noteLocation(ret, loc);
+  return toOwned(ret);
 }
 
 

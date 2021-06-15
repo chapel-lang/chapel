@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_UAST_BLOCK_H
-#define CHPL_UAST_BLOCK_H
+#ifndef CHPL_UAST_DEFER_H
+#define CHPL_UAST_DEFER_H
 
 #include "chpl/queries/Location.h"
 #include "chpl/uast/Expression.h"
@@ -29,17 +29,32 @@ namespace uast {
 
 
 /**
-  This class represents a { } block.
+  This class represents a defer block. For example:
+
+  \rst
+  .. code-block:: chapel
+
+      // Example 1:
+      proc deferExample() {
+        defer {
+          writeln('bar');
+        }
+        writeln('foo');
+      }
+      deferExample();
+
+  \endrst
+
+  This code will write 'bar' after 'foo' due to use of the defer block.
  */
-class Block final : public SimpleBlockLike {
+class Defer final : public SimpleBlockLike {
  private:
-  Block(ASTList stmts, int bodyChildNum, int numBodyStmts)
-    : SimpleBlockLike(asttags::Block, std::move(stmts),
-                      BlockStyle::EXPLICIT,
+  Defer(ASTList stmts, BlockStyle blockStyle, int bodyChildNum,
+        int numBodyStmts)
+    : SimpleBlockLike(asttags::Defer, std::move(stmts), blockStyle,
                       bodyChildNum,
                       numBodyStmts) {
     assert(isExpressionASTList(children_));
-    assert(blockStyle_ == BlockStyle::EXPLICIT);
     assert(bodyChildNum_ >= 0);
   }
 
@@ -52,12 +67,14 @@ class Block final : public SimpleBlockLike {
   }
 
  public:
-  ~Block() override = default;
+  ~Defer() override = default;
 
   /**
-   Create and return a Block containing the passed stmts.
+   Create and return a Defer containing the passed stmts.
    */
-  static owned<Block> build(Builder* builder, Location loc, ASTList stmts);
+  static owned<Defer> build(Builder* builder, Location loc,
+                            BlockStyle blockStyle,
+                            ASTList stmts);
 
 };
 

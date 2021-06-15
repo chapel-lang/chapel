@@ -22,7 +22,7 @@
 
 #include "chpl/queries/Location.h"
 #include "chpl/uast/BlockStyle.h"
-#include "chpl/uast/ControlFlow.h"
+#include "chpl/uast/Expression.h"
 
 namespace chpl {
 namespace uast {
@@ -41,7 +41,7 @@ namespace uast {
   \endrst
 
  */
-class Conditional final : public ControlFlow {
+class Conditional final : public Expression {
  private:
   Conditional(ASTList children, BlockStyle thenBlockStyle,
               int8_t thenBodyChildNum,
@@ -50,7 +50,7 @@ class Conditional final : public ControlFlow {
               int elseBodyChildNum,
               int numElseBodyStmts,
               bool isExpressionLevel)
-      : ControlFlow(asttags::Conditional, std::move(children)),
+      : Expression(asttags::Conditional, std::move(children)),
         thenBlockStyle_(thenBlockStyle),
         thenBodyChildNum_(thenBodyChildNum),
         numThenBodyStmts_(numThenBodyStmts),
@@ -86,7 +86,7 @@ class Conditional final : public ControlFlow {
   bool contentsMatchInner(const ASTNode* other) const override;
 
   void markUniqueStringsInner(Context* context) const override {
-    controlFlowMarkUniqueStringsInner(context);
+    expressionMarkUniqueStringsInner(context);
   }
 
   // Condition always exists, and its position is always the same.

@@ -17,46 +17,43 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_UAST_SERIAL_H
-#define CHPL_UAST_SERIAL_H
+#ifndef CHPL_UAST_BEGIN_H
+#define CHPL_UAST_BEGIN_H
 
 #include "chpl/queries/Location.h"
 #include "chpl/uast/BlockStyle.h"
 #include "chpl/uast/Expression.h"
 #include "chpl/uast/SimpleBlockLike.h"
+#include "chpl/uast/WithClause.h"
 
 namespace chpl {
 namespace uast {
 
 
 /**
-  This class represents a serial statement. For example:
+  This class represents a begin statement. For example:
 
   \rst
   .. code-block:: chapel
 
       // Example 1:
-      const flag = true;
-      serial flag {
-        var x = 0;
+      var x = 0;
+      begin {
         writeln(x);
       }
 
-      // Example 2:
-      var x = 0;
-      serial do writeln(x);
   \endrst
 
  */
-class Serial final : public SimpleBlockLike {
+class Begin final : public SimpleBlockLike {
  private:
-  Serial(ASTList children, int8_t condChildNum, BlockStyle blockStyle,
-         int bodyChildNum,
-         int numBodyStmts)
-    : SimpleBlockLike(asttags::Serial, std::move(children), blockStyle,
+  Begin(ASTList children, int8_t withClauseChildNum, BlockStyle blockStyle,
+        int bodyChildNum,
+        int numBodyStmts)
+    : SimpleBlockLike(asttags::Begin, std::move(children), blockStyle,
                       bodyChildNum,
                       numBodyStmts),
-      condChildNum_(condChildNum) {
+      withClauseChildNum_(withClauseChildNum) {
     assert(isExpressionASTList(children_));
   }
 
@@ -66,34 +63,27 @@ class Serial final : public SimpleBlockLike {
     simpleBlockLikeMarkUniqueStringsInner(context);
   }
 
-  int8_t condChildNum_;
+  int8_t withClauseChildNum_;
 
  public:
 
   /**
-    Create and return a serial statement containing the passed statements.
+    Create and return a begin statement. 
   */
-  static owned<Serial> build(Builder* builder, Location loc,
-                             BlockStyle blockStyle,
-                             ASTList stmts);
-
+  static owned<Begin> build(Builder* builder, Location loc,
+                            owned<WithClause> withClause,
+                            BlockStyle blockStyle,
+                            ASTList stmts);
 
   /**
-    Create and return a serial statement with the given condition and
-    containing the passed statements.
-  */
-  static owned<Serial> build(Builder* builder, Location loc,
-                             owned<Expression> condition,
-                             BlockStyle blockStyle,
-                             ASTList stmts);
-
-  /**
-    Returns the condition of this serial statement, or nullptr if there
+    Returns the with clause of this begin statement, or nullptr if there
     is none.
   */
-  const Expression* condition() const {
-    return condChildNum_ < 0 ? nullptr
-      : (const Expression*)child(condChildNum_);
+  const WithClause* withClause() const {
+    if (withClauseChildNum_ < 0) return nullptr;
+    auto ret = child(withClauseChildNum_);
+    assert(ret->isWithClause());
+    return (const WithClause*)ret;
   }
 
 };

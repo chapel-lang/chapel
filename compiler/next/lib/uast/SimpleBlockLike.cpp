@@ -17,22 +17,26 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/Loop.h"
+#include "chpl/uast/SimpleBlockLike.h"
+
+#include "chpl/uast/Builder.h"
 
 namespace chpl {
 namespace uast {
 
-bool Loop::loopContentsMatchInner(const Loop* other) const {
-  const Loop* lhs = this;
-  const Loop* rhs = other;
 
-  if (lhs->loopBodyChildNum_ != rhs->loopBodyChildNum_)
-    return false;
-
-  if (lhs->numLoopBodyStmts_ != rhs->numLoopBodyStmts_)
-    return false;
+bool SimpleBlockLike::
+simpleBlockLikeContentsMatchInner(const ASTNode* other) const {
+  const SimpleBlockLike* lhs = this;
+  const SimpleBlockLike* rhs = other->toSimpleBlockLike();
 
   if (lhs->blockStyle_ != rhs->blockStyle_)
+    return false;
+
+  if (lhs->bodyChildNum_ != rhs->bodyChildNum_)
+    return false;
+
+  if (lhs->numBodyStmts_ != rhs->numBodyStmts_)
     return false;
 
   if (!lhs->expressionContentsMatchInner(rhs))
@@ -41,9 +45,8 @@ bool Loop::loopContentsMatchInner(const Loop* other) const {
   return true;
 }
 
-Loop::~Loop() {
+SimpleBlockLike::~SimpleBlockLike() {
 }
-
 
 } // namespace uast
 } // namespace chpl

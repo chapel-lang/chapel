@@ -17,13 +17,18 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/ControlFlow.h"
+#include "chpl/uast/Delete.h"
+
+#include "chpl/uast/Builder.h"
 
 namespace chpl {
 namespace uast {
 
 
-ControlFlow::~ControlFlow() {
+owned<Delete> Delete::build(Builder* builder, Location loc, ASTList exprs) {
+  Delete* ret = new Delete(std::move(exprs));
+  builder->noteLocation(ret, loc);
+  return toOwned(ret);
 }
 
 

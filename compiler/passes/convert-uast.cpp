@@ -68,6 +68,8 @@ struct Converter {
     return new UnresolvedSymExpr(node->name().c_str());
   }
 
+  /// SimpleBlockLikes ///
+
   BlockStmt* createBlockWithStmts(
       uast::ASTListIteratorPair<uast::Expression> stmts) {
     BlockStmt* block = new BlockStmt();
@@ -80,8 +82,18 @@ struct Converter {
     return block;
   }
 
+  BlockStmt* convertBegin(const uast::Begin* node) {
+    INT_FATAL("TODO");
+    return nullptr;
+  }
+
   BlockStmt* convertBlock(const uast::Block* node) {
     return createBlockWithStmts(node->stmts());
+  }
+
+  BlockStmt* convertDefer(const uast::Defer* node) {
+    INT_FATAL("TODO");
+    return nullptr;
   }
 
   BlockStmt* convertLocal(const uast::Local* node) {
@@ -92,6 +104,29 @@ struct Converter {
     } else {
       return buildLocalStmt(body);
     }
+  }
+
+  BlockStmt* convertOn(const uast::On* node) {
+    INT_FATAL("TODO");
+    return nullptr;
+  }
+
+  BlockStmt* convertSerial(const uast::Serial* node) {
+    BlockStmt* body = createBlockWithStmts(node->stmts()); 
+    Expr* condition = convertExprOrNull(node->condition());
+
+    if (condition) {
+      return buildSerialStmt(condition, body);
+    } else {
+      return buildSerialStmt(new SymExpr(gTrue), body);
+    }
+  }
+
+  /// Expressions ///
+
+  CallExpr* convertDelete(const uast::Delete* node) {
+    INT_FATAL("TODO");
+    return nullptr;
   }
 
   CallExpr* convertNew(const uast::New* node) {
@@ -119,23 +154,22 @@ struct Converter {
     return nullptr;
   }
 
-  BlockStmt* convertSerial(const uast::Serial* node) {
-    BlockStmt* body = createBlockWithStmts(node->stmts()); 
-    Expr* condition = convertExprOrNull(node->condition());
-
-    if (condition) {
-      return buildSerialStmt(condition, body);
-    } else {
-      return buildSerialStmt(new SymExpr(gTrue), body);
-    }
-  }
-
   Expr* convertWithClause(const uast::WithClause* node) {
     INT_FATAL("TODO");
     return nullptr;
   }
 
-  /// ControlFlows ///
+  /// Control FLow ///
+
+  GotoStmt* convertBreak(const uast::Break* node) {
+    INT_FATAL("TODO");
+    return nullptr;
+  }
+
+  BlockStmt* convertCobegin(const uast::Cobegin* node) {
+    INT_FATAL("TODO");
+    return nullptr;
+  }
 
   Expr* convertConditional(const uast::Conditional* node) {
     Expr* condExpr = toExpr(convertAST(node->condition()));
@@ -148,7 +182,28 @@ struct Converter {
     return buildIfStmt(condExpr, thenBlock, elseBlock);
   }
 
+  GotoStmt* convertContinue(const uast::Continue* node) {
+    INT_FATAL("TODO");
+    return nullptr;
+  }
+
+  DefExpr* convertLabel(const uast::Label* node) {
+    INT_FATAL("TODO");
+    return nullptr;
+  }
+
+  CallExpr* convertReturn(const uast::Return* node) {
+    INT_FATAL("TODO");
+    return nullptr;
+  }
+
+  CallExpr* convertYield(const uast::Yield* node) {
+    INT_FATAL("TODO");
+    return nullptr;
+  }
+
   /// Loops ///
+
   BlockStmt* convertDoWhile(const uast::DoWhile* node) {
     Expr* condExpr = toExpr(convertAST(node->condition()));
     BlockStmt* body = createBlockWithStmts(node->stmts());
@@ -162,6 +217,7 @@ struct Converter {
   }
 
   /// IndexableLoops ///
+
   BlockStmt* convertBracketLoop(const uast::BracketLoop* node) {
     INT_FATAL("TODO");
     return nullptr;
@@ -190,6 +246,7 @@ struct Converter {
   /// Literals ///
 
   /// NumericLiterals ///
+
   Expr* convertImagLiteral(const uast::ImagLiteral* node) {
     SymExpr* se = buildImagLiteral(node->text().c_str());
     VarSymbol* v = toVarSymbol(se->symbol());

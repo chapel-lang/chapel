@@ -18,6 +18,7 @@
  */
 
 #include "chpl/uast/Block.h"
+#include "chpl/uast/Comment.h"
 #include "chpl/uast/BracketLoop.h"
 #include "chpl/uast/Expression.h"
 #include "chpl/uast/Identifier.h"
@@ -66,6 +67,7 @@ static void test0(Parser* parser) {
   assert(!bracketLoop->isExpressionLevel());
   assert(bracketLoop->numStmts() == 2);
   assert(bracketLoop->stmt(0)->isComment());
+  assert(bracketLoop->stmt(0)->toComment()->str() == "/* comment 2 */");
   assert(bracketLoop->stmt(1)->isFnCall());
 }
 
@@ -208,10 +210,11 @@ static void test4(Parser* parser) {
   assert(bracketLoop->iterand() != nullptr);
   assert(bracketLoop->iterand()->isFnCall());
   assert(bracketLoop->withClause() == nullptr);
-  assert(bracketLoop->numStmts() == 2);
   assert(bracketLoop->blockStyle() == BlockStyle::IMPLICIT);
   assert(!bracketLoop->isExpressionLevel());
+  assert(bracketLoop->numStmts() == 2);
   assert(bracketLoop->stmt(0)->isComment());
+  assert(bracketLoop->stmt(0)->toComment()->str() == "/* comment 2 */");
   assert(bracketLoop->stmt(1)->isFnCall());
 }
 

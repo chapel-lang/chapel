@@ -17,36 +17,42 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_UAST_CONTROLFLOW_H
-#define CHPL_UAST_CONTROLFLOW_H
+#include "chpl/uast/Break.h"
 
-#include "chpl/uast/Expression.h"
+#include "chpl/uast/Builder.h"
 
 namespace chpl {
 namespace uast {
 
 
-/**
-  This abstract class represents some sort of control flow.
- */
-class ControlFlow : public Expression {
- protected:
-  ControlFlow(ASTTag tag) : Expression(tag) {}
-  ControlFlow(ASTTag tag, ASTList children)
-    : Expression(tag, std::move(children)) {};
-  bool controlFlowContentsMatchInner(const ControlFlow* other) const {
-    return this->expressionContentsMatchInner(other);
+bool Break::contentsMatchInner(const ASTNode* other) const {
+  const Break* lhs = this;
+  const Break* rhs = other->toBreak();
+
+  if (lhs->targetChildNum_ != rhs->targetChildNum_)
+    return false;
+
+  if (!lhs->expressionContentsMatchInner(rhs))
+    return false;
+
+  return true;
+}
+
+owned<Break> Break::build(Builder* builder, Location loc,
+                          owned<Identifier> target) {
+  ASTList lst;
+  int8_t targetChildNum = -1;
+
+  if (target.get() != nullptr) {
+    targetChildNum = lst.size();
+    lst.push_back(std::move(target));
   }
-  void controlFlowMarkUniqueStringsInner(Context* context) const {
-    this->expressionMarkUniqueStringsInner(context);
-  }
 
- public:
-  virtual ~ControlFlow() override = 0; // this is an abstract base class
-};
+  Break* ret = new Break(std::move(lst), targetChildNum);
+  builder->noteLocation(ret, loc);
+  return toOwned(ret);
+}
 
 
-} // end namespace uast
-} // end namespace chpl
-
-#endif
+} // namespace uast
+} // namespace chpl

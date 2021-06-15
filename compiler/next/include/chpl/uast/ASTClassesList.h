@@ -52,52 +52,52 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
   AST_LEAF(ErroneousExpression)        //
   AST_LEAF(Identifier)                 // old AST: UnresolvedSymExpr
 
-  AST_NODE(Block)                      // old AST: BlockStmt
+  AST_BEGIN_SUBCLASSES(SimpleBlockLike)
+    AST_NODE(Begin)
+    AST_NODE(Block)                    // old AST: BlockStmt
+    AST_NODE(Defer)                    // old AST: DeferStmt
+    AST_NODE(Local)                    //
+    AST_NODE(On)                       //
+    AST_NODE(Serial)                   //
+  AST_END_SUBCLASSES(SimpleBlockLike)
+
+  AST_NODE(Delete)                     //
   //AST_NODE(ExternBlock)                // old AST: ExternBlockStmt
   //AST_NODE(Implements)                 // old AST: ImplementsStmt
   //AST_NODE(Import)                     // old AST: ImportStmt
-  AST_NODE(Local)                      //
   AST_NODE(New)
   //AST_NODE(Require)                    //
-  AST_NODE(Serial)                     //
   //AST_NODE(Use)                        // old AST: UseStmt
   AST_NODE(WithClause)
+
+  AST_NODE(Break)                    // old AST: GotoStmt
+  AST_NODE(Cobegin)                  //
+  AST_NODE(Conditional)              // old AST: IfExpr/CondStmt
+  AST_NODE(Continue)                 // old AST: GotoStmt
+  AST_NODE(Label)                    //
+  AST_NODE(Return)                   //
+  //AST_NODE(Select)                   //
+  //AST_NODE(Sync)                     //
+  //AST_NODE(TryCatch)                 // old AST: TryStmt/CatchStmt
+  AST_NODE(Yield)                    //
+
+  AST_BEGIN_SUBCLASSES(Loop)         // old AST: LoopExpr / LoopStmt
+      AST_NODE(DoWhile)                // old AST: DoWhileStmt
+      AST_NODE(While)                  // old AST: WhileStmt
+
+    AST_BEGIN_SUBCLASSES(IndexableLoop)
+      AST_NODE(BracketLoop)
+      AST_NODE(Coforall)
+      AST_NODE(For)                    // old AST: ForLoop / LoopExpr
+      AST_NODE(Forall)                 // old AST: ForallStmt / LoopExpr
+      AST_NODE(Foreach)                //
+    AST_END_SUBCLASSES(IndexableLoop)
+
+  AST_END_SUBCLASSES(Loop)
 
   //AST_NODE(ArrayExpr) // TODO: figure out good names for these
   //AST_NODE(DomainExpr)
   //AST_NODE(TupleExpr)
-
-  AST_BEGIN_SUBCLASSES(ControlFlow)
-
-    //AST_NODE(Begin)                    //
-    //AST_NODE(Cobegin)                  //
-    //AST_NODE(Break)                    // old AST: GotoStmt
-    AST_NODE(Conditional)              // old AST: IfExpr/CondStmt
-    //AST_NODE(Continue)                 // old AST: GotoStmt
-    //AST_NODE(Defer)                    // old AST: DeferStmt
-    //AST_NODE(On)                       //
-    //AST_NODE(Return)                   //
-    //AST_NODE(Select)                   //
-    //AST_NODE(Sync)                     //
-    //AST_NODE(TryCatch)                 // old AST: TryStmt/CatchStmt
-
-    AST_BEGIN_SUBCLASSES(Loop)         // old AST: LoopExpr / LoopStmt
-
-      AST_NODE(DoWhile)                // old AST: DoWhileStmt
-      AST_NODE(While)                  // old AST: WhileStmt
-
-      AST_BEGIN_SUBCLASSES(IndexableLoop)
-        AST_NODE(BracketLoop)
-        AST_NODE(Coforall)
-        AST_NODE(For)                    // old AST: ForLoop / LoopExpr
-        AST_NODE(Forall)                 // old AST: ForallStmt / LoopExpr
-        AST_NODE(Foreach)                //
-      AST_END_SUBCLASSES(IndexableLoop)
-
-    AST_END_SUBCLASSES(Loop)
-
-  AST_END_SUBCLASSES(ControlFlow)
-
 
   AST_BEGIN_SUBCLASSES(Literal)        // old AST: Immediate
 

@@ -21,17 +21,22 @@ target_sources(libchplcomp-obj
                ASTList.cpp
                ASTNode.cpp
                ASTTag.cpp
+               Begin.cpp
                Block.cpp
                BracketLoop.cpp
+               Break.cpp
                Builder.cpp
                BytesLiteral.cpp
                Call.cpp
+               Cobegin.cpp
                Coforall.cpp
                Comment.cpp
                Conditional.cpp
-               ControlFlow.cpp
+               Continue.cpp
                CStringLiteral.cpp
                Decl.cpp
+               Defer.cpp
+               Delete.cpp
                Dot.cpp
                DoWhile.cpp
                Enum.cpp
@@ -48,6 +53,7 @@ target_sources(libchplcomp-obj
                ImagLiteral.cpp
                IndexableLoop.cpp
                IntLiteral.cpp
+               Label.cpp
                Literal.cpp
                Local.cpp
                Loop.cpp
@@ -56,9 +62,12 @@ target_sources(libchplcomp-obj
                NamedDecl.cpp
                New.cpp
                NumericLiteral.cpp
+               On.cpp
                OpCall.cpp
                RealLiteral.cpp
+               Return.cpp
                Serial.cpp
+               SimpleBlockLike.cpp
                StringLikeLiteral.cpp
                StringLiteral.cpp
                TaskVar.cpp
@@ -70,6 +79,7 @@ target_sources(libchplcomp-obj
                Visitor.cpp
                While.cpp
                WithClause.cpp
+               Yield.cpp
                Zip.cpp
 
               )

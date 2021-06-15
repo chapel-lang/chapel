@@ -17,22 +17,19 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/Loop.h"
+#include "chpl/uast/Continue.h"
+
+#include "chpl/uast/Builder.h"
 
 namespace chpl {
 namespace uast {
 
-bool Loop::loopContentsMatchInner(const Loop* other) const {
-  const Loop* lhs = this;
-  const Loop* rhs = other;
 
-  if (lhs->loopBodyChildNum_ != rhs->loopBodyChildNum_)
-    return false;
+bool Continue::contentsMatchInner(const ASTNode* other) const {
+  const Continue* lhs = this;
+  const Continue* rhs = other->toContinue();
 
-  if (lhs->numLoopBodyStmts_ != rhs->numLoopBodyStmts_)
-    return false;
-
-  if (lhs->blockStyle_ != rhs->blockStyle_)
+  if (lhs->targetChildNum_ != rhs->targetChildNum_)
     return false;
 
   if (!lhs->expressionContentsMatchInner(rhs))
@@ -41,7 +38,19 @@ bool Loop::loopContentsMatchInner(const Loop* other) const {
   return true;
 }
 
-Loop::~Loop() {
+owned<Continue> Continue::build(Builder* builder, Location loc,
+                                owned<Identifier> target) {
+  ASTList lst;
+  int8_t targetChildNum = -1;
+
+  if (target.get() != nullptr) {
+    targetChildNum = lst.size();
+    lst.push_back(std::move(target));
+  }
+
+  Continue* ret = new Continue(std::move(lst), targetChildNum);
+  builder->noteLocation(ret, loc);
+  return toOwned(ret);
 }
 
 
