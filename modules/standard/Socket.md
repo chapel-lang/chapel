@@ -8,7 +8,7 @@ To those familiar with the Unix socket API, the method names will feel familiar,
 
 **Method:**
 ```chapel
-connect(addr:IPAddr,port:int) -> TCPConn
+proc connect(addr:ipAddr,port:int) : TCPConn
 ```
 
 **Parameters:**
@@ -22,7 +22,7 @@ A higher level construct for socket will take in addr as `string` which will we 
 
 **Method:**
 ```chapel
-connect(addr:string,port:int) -> TCPConn
+proc connect(addr:string,port:int) : TCPConn
 ```
 
 **Parameters:**
@@ -85,7 +85,7 @@ A generic `bind` function will be used which will take in any of the socket thre
 **Method**
 
 ```
-bind(socketServ,addr:IPAddr,port:int,reuseAddr=true) -> void
+proc bind(socketServ,addr:ipAddr,port:int,reuseAddr=true)
 ```
 
 **Parameters**
@@ -103,7 +103,7 @@ UDP Sockets will have method to call `recvFrom` on it this will return the `host
 
 **Method:**
 ```chapel
-socketServ.recvFrom() -> (host, port, data)
+proc socketServ.recvFrom() : (host:ipAddr, port:int, data:Generic)
 ```
 
 **Return:**
@@ -118,14 +118,14 @@ Another alternate method will be `recv` which will return just the `data` and no
 
 __Method:__
 ```chapel
-socketServ.recv() -> data
+proc socketServ.recv() : (data:Generic)
 ```
 
 The `write` method on socket will take in `host`, `port` and `data` to write to the socket at provided address
 
 __Method:__
 ```chapel
-socketServ.send(host:IPAddr,port:int,data)
+proc socketServ.send(host:ipAddr,port:int,data:Generic)
 ```
 
 **Parameters:**
