@@ -3881,10 +3881,6 @@ void makeBinaryLLVM(void) {
 
   // Grab extra dependencies for multilocale libraries if needed.
   if (fMultiLocaleInterop) {
-
-    // TODO: Has to be a more friendly way to do this?
-    clangLDArgs.push_back("-L/usr/local/lib");
-
     std::string cmd = std::string(CHPL_HOME);
     cmd += "/util/config/compileline --multilocale-lib-deps";
     std::string libs = runCommand(cmd);
