@@ -21,8 +21,9 @@
 #define CHPL_UAST_LABEL_H
 
 #include "chpl/queries/Location.h"
+#include "chpl/uast/Loop.h"
 #include "chpl/queries/UniqueString.h"
-#include "chpl/uast/SimpleBlockLike.h"
+
 
 namespace chpl {
 namespace uast {
@@ -34,32 +35,27 @@ namespace uast {
   \rst
   .. code-block:: chapel
 
-    for 0..15 {
-      while true do
-        if !(i % 2) then break print; else break end;
-      label print writeln(i);
-      label end;
-    }
- 
+    label outer for i in 0..15 do
+      label inner while true do
+        if i == 12 then break outer; else break inner;
+
   \endrst
 
 */
-class Label final : public SimpleBlockLike {
+class Label final : public Expression {
  private:
-  Label(ASTList children, UniqueString name, BlockStyle blockStyle,
-        int bodyChildNum,
-        int numBodyStmts)
-
-    : SimpleBlockLike(asttags::Label, std::move(children),
-                      blockStyle,
-                      bodyChildNum,
-                      numBodyStmts),
+  Label(ASTList children, UniqueString name)
+    : Expression(asttags::Label, std::move(children)),
       name_(name) {
     assert(isExpressionASTList(children_));
+    assert(numChildren() == 1);
   }
 
   bool contentsMatchInner(const ASTNode* other) const override;
   void markUniqueStringsInner(Context* context) const override;
+
+  // This always exists and its position can never change.
+  static const int8_t loopChildNum_ = 0;
 
   UniqueString name_;
 
@@ -71,8 +67,16 @@ class Label final : public SimpleBlockLike {
   */
   static owned<Label> build(Builder* builder, Location loc,
                             UniqueString name,
-                            BlockStyle blockStyle,
-                            ASTList stmts);
+                            owned<Loop> loop);
+
+  /**
+    Return the loop of this label statement.
+  */
+  const Loop* loop() const {
+    auto ret = child(loopChildNum_);
+    assert(ret->isLoop());
+    return (const Loop*)ret;
+  }
 
   /**
     Return the name of this label statement.

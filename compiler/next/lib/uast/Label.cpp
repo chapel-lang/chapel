@@ -31,7 +31,7 @@ bool Label::contentsMatchInner(const ASTNode* other) const {
   if (lhs->name_ != rhs->name_)
     return false;
 
-  if (!lhs->simpleBlockLikeContentsMatchInner(rhs))
+  if (!lhs->expressionContentsMatchInner(rhs))
     return false;
 
   return true;
@@ -39,18 +39,17 @@ bool Label::contentsMatchInner(const ASTNode* other) const {
 
 void Label::markUniqueStringsInner(Context* context) const {
   name_.mark(context);
-  simpleBlockLikeMarkUniqueStringsInner(context);
+  expressionMarkUniqueStringsInner(context);
 }
 
 owned<Label> Label::build(Builder* builder, Location loc, UniqueString name,
-                          BlockStyle blockStyle,
-                          ASTList stmts) {
-  const int bodyChildNum = 0;
-  const int numBodyStmts = stmts.size();
+                          owned<Loop> loop) {
+  assert(loop.get() != nullptr);
+  ASTList lst;
 
-  Label* ret = new Label(std::move(stmts), name, blockStyle,
-                         bodyChildNum,
-                         numBodyStmts);
+  lst.push_back(std::move(loop));
+
+  Label* ret = new Label(std::move(lst), name);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

@@ -704,7 +704,7 @@ stmt:
 | if_stmt                   { $$ = $1; } // Don't clear stored comments.
 | implements_stmt           { $$ = context->finishStmt($1); }
 | interface_stmt            { $$ = context->finishStmt($1); }
-| loop_stmt                 { $$ = context->finishStmt($1); }
+| loop_stmt                 { $$ = $1; } // Don't clear stored comments.
 | select_stmt               { $$ = context->finishStmt($1); }
 | TDEFER stmt
   {
@@ -781,17 +781,26 @@ stmt:
   }
 | TLABEL ident_def stmt
   {
-    std::vector<ParserComment>* comments;
-    ParserExprList* exprLst;
-    BlockStyle blockStyle;
-    YYLTYPE locBodyAnchor = context->makeLocationAtLast(@2);
-    context->prepareStmtPieces(comments, exprLst, blockStyle, @1,
-                               false, locBodyAnchor, $3);
-    auto stmts = context->consumeAndFlattenTopLevelBlocks(exprLst);
-    auto node = Label::build(BUILDER, LOC(@$), $2, blockStyle,
-                             std::move(stmts));
-    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
-    $$ = context->finishStmt(cs);
+    if ($3.stmt->isFor() || $3.stmt->isWhile() || $3.stmt->isDoWhile()) {
+      auto exprLst = context->makeList($3);
+      auto comments = context->gatherCommentsFromList(exprLst, @1);
+      auto astLst = context->consumeList(exprLst);
+      Loop* loop = nullptr;
+      for (auto& ast : astLst) {
+        if (ast->isLoop()) {
+          loop = ast.release()->toLoop();
+          break;
+        }
+      }
+      assert(loop);
+      auto node = Label::build(BUILDER, LOC(@$), $2, toOwned(loop));
+      $$ = { .comments=comments, .stmt=node.release() };
+    } else {
+      const char* msg = "can only label for-, while-do- "
+                        "and do-while-statements";
+      auto err = context->raiseError(@$, msg);
+      $$ = context->finishStmt(err);
+    }
   }
 | TLOCAL expr do_stmt
   {
