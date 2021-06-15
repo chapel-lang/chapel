@@ -21,9 +21,9 @@
 #
 
 # Only include Makefile.include when we are compiling the server. Otherwise,
-# we'll build pieces of the client with the target compiler. Note that if
-# we don't include Makefile.include, we have to define CHPL_RT_INC_DIR
-# ourselves - but the client only needs access to "chpllaunch.h".
+# we'll build pieces of the client with the target compiler. Note that since
+# the client path doesn't include Makefile.include, we have to define
+# CHPL_RT_INC_DIR ourselves.
 ifeq ($(CHPL_MAKE_HOST_TARGET),--host)
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 CHPL_RT_INC_DIR=-I$(CHPL_MAKE_HOME)/runtime/include

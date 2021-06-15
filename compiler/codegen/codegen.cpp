@@ -2395,11 +2395,6 @@ static void codegenPartTwo() {
   // Initialize the global gGenInfo for C code generation.
   gGenInfo = new GenInfo();
 
-  // This function assumes the existence of a "_main.c" file before it
-  // actually exists (it is populated down below). In '--llvm' compiles,
-  // the source files this function produces are compiled by a call to
-  // 'runClang(NULL)', and the "_main.c" file is not included in the
-  // client or server bundles.
   if (fMultiLocaleInterop) {
     codegenMultiLocaleInteropWrappers();
   }

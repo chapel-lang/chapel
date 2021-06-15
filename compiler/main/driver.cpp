@@ -1417,7 +1417,8 @@ static void postStaticLink() {
   if (!strcmp(CHPL_TARGET_PLATFORM, "darwin")) {
     if (fLinkStyle == LS_STATIC) {
       USR_WARN("Static compilation is not supported on OS X, ignoring flag.");
-      fLinkStyle = LS_DEFAULT;
+      // To handle linker errors and relocations in the client library.
+      fLinkStyle = fMultiLocaleInterop ? LS_DYNAMIC : LS_DEFAULT;
     }
   }
 }

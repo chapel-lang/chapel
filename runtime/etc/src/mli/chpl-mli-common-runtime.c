@@ -113,7 +113,7 @@ enum chpl_mli_errors {
   CHPL_MLI_CODE_UNKNOWN   = -2,
   CHPL_MLI_CODE_NOFUNC    = -3,
   CHPL_MLI_CODE_SOCKET    = -4,
-  CHPL_MLI_CODE_MEMORY    = -6
+  CHPL_MLI_CODE_MEMORY    = -5
 
 };
 
@@ -327,6 +327,7 @@ char * chpl_mli_connection_info(void* socket) {
   char* portRes = (char *)chpl_mli_malloc(lenPort);
   int portErr = zmq_getsockopt(socket, ZMQ_LAST_ENDPOINT,
                                portRes, &lenPort);
+  // TODO (dlongnecke): Look into possible errors and handle them.
   (void) portErr;
 
   // Get to port portion of the last endpoint.

@@ -43,8 +43,10 @@ buildClient: $(TMPBINNAME)
 # need to pass on the $(GEN_CFLAGS) variable, because we're building a shared
 # object and $(GEN_CFLAGS) contains the -fPIC flag.
 #
-# Always run this, even when compiling with `--llvm`. TODO: Verify that we
-# are building with CHPL_TARGET_COMPILER here.
+# TODO (dlongnecke): Do we need to run this under LLVM?
+# TODO (dlongnecke):
+#   Is there a way to assert that we are building the launcher and the client
+#   with the host compiler?
 #
 $(TMPBINNAME): $(CHPL_CL_OBJS) FORCE
 	$(MAKE) -f $(CHPL_MAKE_HOME)/runtime/etc/Makefile.launcher all \
@@ -77,6 +79,7 @@ $(TMPBINNAME): $(CHPL_CL_OBJS) FORCE
 		$(LAUNCH_LIBS) \
 		-lzmq \
 		$(CHPL_MLI_LIB_DIRS)
+
 
 # Last minute munging in case of output file name collisions.
 ifneq ($(TMPBINNAME),$(BINNAME))

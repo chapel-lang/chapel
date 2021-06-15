@@ -389,11 +389,8 @@ std::string MLIContext::genMarshalBodyPrimArray(Type* t, bool push) {
     // Null terminate the string we just received.
     gen += "((char*) buffer)[bytes] = '\\0';\n";
 
-    if (t == dtStringC) {
-      // Cast buffer to const char.
-      gen += "result = ((const char*) buffer);\n";
-    } else if (t->symbol->hasFlag(FLAG_C_PTR_CLASS) &&
-               getDataClassType(t->symbol)->typeInfo() == dtInt[INT_SIZE_8]) {
+    if (t->symbol->hasFlag(FLAG_C_PTR_CLASS) &&
+        getDataClassType(t->symbol)->typeInfo() == dtInt[INT_SIZE_8]) {
       // Cast buffer to int8*
       Type* underlyingType = getDataClassType(t->symbol)->typeInfo();
       const char* underlyingTypeName = underlyingType->symbol->cname;
@@ -474,8 +471,9 @@ std::string MLIContext::genMarshalRoutine(Type* t, bool push) {
   // If unpacking, declare a temporary for the return value.
   if (!push) { gen += this->genNewDecl(t, "result"); }
 
-  // TODO: We don't use 'skt_err' consistently right now, we should revisit
-  // it and develop a more comprehensive plan for handling errors.
+  // TODO (dlongnecke, 6/14/21): We don't use 'skt_err' consistently right
+  // now, we should revisit it and develop a more comprehensive plan for
+  // handling errors.
   gen += "(void) skt_err;\n";
 
   // Insert a debug message if appropriate.
@@ -704,7 +702,6 @@ MLIContext::genServerDispatchSwitch(const std::vector<FnSymbol*>& fns) {
 bool MLIContext::isSupportedType(Type* t) {
   return (
       (isPrimitiveScalar(t) && !is_complex_type(t)) ||
-      t == dtStringC ||
       t == exportTypeChplByteBuffer
   );
 }
@@ -874,12 +871,7 @@ std::string MLIContext::genServersideRPC(FnSymbol* fn) {
 std::string MLIContext::genMemCleanup(Type* t, const char* var) {
   std::string gen;
 
-  if (t == dtStringC) {
-    gen += "mli_free(";
-    gen += "((void*) ";
-    gen += var;
-    gen += "));\n";
-  } else if (t == exportTypeChplByteBuffer) {
+  if (t == exportTypeChplByteBuffer) {
     gen += "chpl_byte_buffer_free_server(";
     gen += var;
     gen += ");\n";

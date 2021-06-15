@@ -2277,6 +2277,7 @@ void runClang(const char* just_parse_filename) {
   // Toggle LLVM code generation in our clang run;
   // turn it off if we just wanted to parse some C.
   if (parseOnly) {
+    // TODO (dlongnecke): Always initialize outside of this function?
     gGenInfo = new GenInfo();
   } else {
     // Note that if we are calling 'runClang(NULL)' then the final gGenInfo
@@ -3887,6 +3888,7 @@ void makeBinaryLLVM(void) {
     std::string cmd = std::string(CHPL_HOME);
     cmd += "/util/config/compileline --multilocale-lib-deps";
     std::string libs = runCommand(cmd);
+    // Erase trailing newline.
     libs.erase(libs.size() - 1);
     clangLDArgs.push_back(libs);
   }

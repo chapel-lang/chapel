@@ -3,7 +3,7 @@
 # The dynamic tests need to run either on a Mac or with CHPL_LIB_PIC=pic
 # Otherwise they will encounter symbol relocation errors
 if [[ $CHPL_TARGET_PLATFORM == darwin || $CHPL_LIB_PIC == pic ]] ; then
-   echo False
+  echo False
 else
   echo True
 fi
