@@ -4184,43 +4184,43 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
     }
   }
 
-  // this gets quotient, r gets remainder
-  proc bigint.divQR(ref       r:        bigint,
+  // this gets quotient, remain gets remainder
+  proc bigint.divQR(ref       remain:        bigint,
                     const ref numer:        bigint,
                     const ref denom:        bigint,
                     param     rounding = round.zero) {
     if _local {
       select rounding {
-        when round.up   do mpz_cdiv_qr(this.mpz, r.mpz, numer.mpz, denom.mpz);
-        when round.down do mpz_fdiv_qr(this.mpz, r.mpz, numer.mpz, denom.mpz);
-        when round.zero do mpz_tdiv_qr(this.mpz, r.mpz, numer.mpz, denom.mpz);
+        when round.up   do mpz_cdiv_qr(this.mpz, remain.mpz, numer.mpz, denom.mpz);
+        when round.down do mpz_fdiv_qr(this.mpz, remain.mpz, numer.mpz, denom.mpz);
+        when round.zero do mpz_tdiv_qr(this.mpz, remain.mpz, numer.mpz, denom.mpz);
       }
 
     } else if this.localeId == chpl_nodeID &&
-              r.localeId    == chpl_nodeID &&
+              remain.localeId    == chpl_nodeID &&
               numer.localeId    == chpl_nodeID &&
               denom.localeId    == chpl_nodeID {
       select rounding {
-        when round.up   do mpz_cdiv_qr(this.mpz, r.mpz, numer.mpz, denom.mpz);
-        when round.down do mpz_fdiv_qr(this.mpz, r.mpz, numer.mpz, denom.mpz);
-        when round.zero do mpz_tdiv_qr(this.mpz, r.mpz, numer.mpz, denom.mpz);
+        when round.up   do mpz_cdiv_qr(this.mpz, remain.mpz, numer.mpz, denom.mpz);
+        when round.down do mpz_fdiv_qr(this.mpz, remain.mpz, numer.mpz, denom.mpz);
+        when round.zero do mpz_tdiv_qr(this.mpz, remain.mpz, numer.mpz, denom.mpz);
       }
 
     } else {
       const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
-        var   r_ = r;
+        var   remain_ = remain;
         const numer_ = numer;
         const denom_ = denom;
 
         select rounding {
-          when round.up   do mpz_cdiv_qr(this.mpz, r_.mpz, numer_.mpz, denom_.mpz);
-          when round.down do mpz_fdiv_qr(this.mpz, r_.mpz, numer_.mpz, denom_.mpz);
-          when round.zero do mpz_tdiv_qr(this.mpz, r_.mpz, numer_.mpz, denom_.mpz);
+          when round.up   do mpz_cdiv_qr(this.mpz, remain_.mpz, numer_.mpz, denom_.mpz);
+          when round.down do mpz_fdiv_qr(this.mpz, remain_.mpz, numer_.mpz, denom_.mpz);
+          when round.zero do mpz_tdiv_qr(this.mpz, remain_.mpz, numer_.mpz, denom_.mpz);
         }
 
-        r = r_;
+        remain = remain_;
       }
     }
   }
@@ -4241,11 +4241,11 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
     }
   }
 
-  proc bigint.divQR(ref       r: bigint,
+  proc bigint.divQR(ref       remain: bigint,
                     const ref numer: bigint,
                               denom: integral,
                     param     rounding = round.zero) {
-    this.divQR(r, numer, new bigint(denom), rounding);
+    this.divQR(remain, numer, new bigint(denom), rounding);
   }
 
   deprecated
