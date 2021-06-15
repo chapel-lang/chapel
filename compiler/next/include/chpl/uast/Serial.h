@@ -88,8 +88,8 @@ class Serial final : public SimpleBlockLike {
                              ASTList stmts);
 
   /**
-    Returns the condition of this serial statement, or nullptr if it does
-    not exist.
+    Returns the condition of this serial statement, or nullptr if there
+    is none.
   */
   const Expression* condition() const {
     return condChildNum_ < 0 ? nullptr

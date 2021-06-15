@@ -64,8 +64,8 @@ class Break : public Expression {
                             owned<Identifier> target);
 
   /**
-    Returns the target of this break statement, or nullptr if it does
-    not exist.
+    Returns the target of this break statement, or nullptr if there
+    is none.
   */
   const Identifier* target() const {
     if (targetChildNum_ < 0) return nullptr;

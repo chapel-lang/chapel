@@ -76,8 +76,8 @@ class Begin final : public SimpleBlockLike {
                             ASTList stmts);
 
   /**
-    Returns the with clause of this begin statement, or nullptr if it does
-    not exist.
+    Returns the with clause of this begin statement, or nullptr if there
+    is none.
   */
   const WithClause* withClause() const {
     if (withClauseChildNum_ < 0) return nullptr;

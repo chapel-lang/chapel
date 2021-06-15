@@ -69,8 +69,8 @@ class Return final : public Expression {
                              owned<Expression> value);
 
   /**
-    Returns the value of this return statement, or nullptr if it does
-    not exist.
+    Returns the value of this return statement, or nullptr if there
+    is none.
   */
   const Expression* value() const {
     if (valueChildNum_ < 0) return nullptr;
